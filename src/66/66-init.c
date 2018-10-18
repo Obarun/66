@@ -229,7 +229,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		VERBO2 strerr_warni3x("switch ",pathsvd," to source directory ...") ;
 		r = backup_cmd_switcher(VERBOSITY,"-t30 -s0",treename) ;
 		if (r != 1)
-			strerr_diefu3x(111,"switch: ",pathsvd," to original directory") ;
+			strerr_diefu3x(111,"switch: ",pathsvd," to source directory") ;
 	}
 	if (db || both)
 	{
