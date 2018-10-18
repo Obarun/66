@@ -25,11 +25,10 @@ Fine tuning of the installation directories:
   
   --shebangdir=DIR              absolute path for #! invocations [BINDIR]
   --livedir=DIR                 default live directory [/run/66]
-  --with-execline-bindir=DIR	execlineb executable [PREFIX/bin]
   --with-system-dir=DIR         working directory for s6 tools as root[PREFIX/lib/66]
   --with-user-dir=DIR           working directory for s6 tools as user[.66]
   --with-system-logpath=DIR     log directory for root[/var/log/66]
-  --with-user-logpath=DIR       log directory for user[.log/66]
+  --with-user-logpath=DIR       log directory for user[.66/log]
   --with-service-path=DIR		service source directory[/etc/66]
   
  Do not set an absolute path but a $HOME relative path for --with-user-dir 
@@ -37,8 +36,7 @@ Fine tuning of the installation directories:
  automatically in function of the user.
  For example , by default the final path for --with-user-dir will be $HOME/.66.
  
- If no --prefix option is given, by default with-execline-bindir will be /usr/bin,
- and with-system-dir will be /usr/lib/66.
+ If no --prefix option is given, by default with-system-dir will be /var/lib/66.
 
 Dependencies:
   --with-include=DIR            add DIR to the list of searched directories for headers
@@ -153,7 +151,7 @@ livedir='/run/66'
 system_dir='$prefix/lib/66'
 user_dir='.66'
 system_logpath='/var/log/66'
-user_logpath='.log/66'
+user_logpath='.66/log'
 service_paht='/etc/66'
 shared=false
 static=true
@@ -226,7 +224,7 @@ if test -z "$prefix" ; then
     includedir=/usr/include
   fi
   if test "$system_dir" = '$prefix/lib/66' ; then
-	system_dir=/usr/lib/66
+	system_dir=/var/lib/66
   fi
   
 fi
