@@ -27,6 +27,7 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/types.h>
+#include <env.h>
 
 #include <s6/config.h>
 #include <s6-portable-utils/config.h>
