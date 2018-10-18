@@ -1,0 +1,24 @@
+66 - Helpers tools around S6 supervision suite
+--------------------------------
+
+ 66 is a suite of programs designed to handle services from
+S6 supervision suite.
+
+ See http://skarnet.org/software/s6/ for details about S6 supervision 
+ suite.
+
+
+* Installation
+  ------------
+
+ See the INSTALL file.
+
+
+* Contact information
+  -------------------
+
+ Eric Vidal <eric@obarun.org>
+
+ https://web.obarun.org/
+ https://forum.obarun.org/
+ IRC on freenode : #obarun
