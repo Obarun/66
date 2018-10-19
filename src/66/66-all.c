@@ -302,7 +302,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			newargv[m++] = fmt ;
 			newargv[m++] = "-l" ;
 			newargv[m++] = live.s ;
-			newargv[m++] = "-d" ;
+			newargv[m++] = "-B" ;
 			newargv[m++] = treename ;
 			newargv[m++] = 0 ;
 				
