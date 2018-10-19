@@ -140,23 +140,20 @@ int scandir_down(char const *scandir, char const *signal, char const *const *env
 					csig[2] = 'n' ;
 					csig[3] = 0 ;
 					break ;
-			case 1: csig[1] = 'r' ;
-					csig[2] = 't' ;
-					csig[3] = 0 ;
+			case 1: csig[1] = 'i' ;
+					csig[2] = 0 ;
 					break ;
 			case 2: csig[1] = 'q' ; 
 					csig[2] = 0 ;
 					break ;
-			case 3: csig[1] = 's' ;
-					csig[2] = 't' ;
-					csig[3] = 0 ;
+			case 3: csig[1] = '0' ;
+					csig[2] = 0 ;
 					break ;
 			case 4: csig[1] = '6' ;
 					csig[2] = 0 ;
 					break ;
-			case 5: csig[1] = 'p' ;
-					csig[2] = 't' ;
-					csig[3] = 0 ;
+			case 5: csig[1] = '7' ;
+					csig[2] = 0 ;
 					break ;
 			default: break ;
 		}
@@ -473,7 +470,7 @@ int write_bootlog(char const *live, char const *scandir, char const *scanname)
 }
 
 
-int write_control(char const *scandir,char const *tree, char const *filename, int file)
+int write_control(char const *scandir,char const *live, char const *filename, int file)
 {
 	int r ;
 	
@@ -529,7 +526,7 @@ int write_control(char const *scandir,char const *tree, char const *filename, in
 	
 	if (file == USR1)
 	{
-			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -an -- ")) retstralloc(0, "write_controlboot") ;
+			
 			if (!stralloc_cats(&sa,bscan)) retstralloc(0, "write_controlboot") ;
 			if (!stralloc_cats(&sa,"\n")) retstralloc(0, "write_controlboot") ;
 			goto write ;
@@ -543,11 +540,14 @@ int write_control(char const *scandir,char const *tree, char const *filename, in
 	else
 	{
 		if (!stralloc_cats(&sa, EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-all -v3 -l ")) retstralloc(0, "write_control") ;
-		if (!stralloc_cats(&sa, tree)) retstralloc(0, "write_control") ;
+		if (!stralloc_cats(&sa, live)) retstralloc(0, "write_control") ;
 		if (!stralloc_cats(&sa, " down }\n")) retstralloc(0, "write_control") ;
 	}
 	switch(file)
 	{
+		case USR1:
+			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -7 -- ")) retstralloc(0, "write_controlboot") ;
+			break ;
 		case USR2: 
 			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -0 -- ")) retstralloc(0, "write_controlboot") ;
 			break ;
@@ -555,7 +555,7 @@ int write_control(char const *scandir,char const *tree, char const *filename, in
 			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -t -- ")) retstralloc(0, "write_controlboot") ;
 			break ;
 		case QUIT:
-			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -7 -- ")) retstralloc(0, "write_controlboot") ;
+			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -q -- ")) retstralloc(0, "write_controlboot") ;
 			break ;
 		case INT:
 			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -6 -- ")) retstralloc(0, "write_controlboot") ;
