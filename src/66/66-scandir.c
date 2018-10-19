@@ -491,8 +491,14 @@ int write_control(char const *scandir,char const *tree, char const *filename, in
 	bscan[r] = 0 ;
 
 	/** shebang */
-	if (!stralloc_cats(&sa, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n")) ;
-	
+	if (file == FINISH)
+	{
+		if (!stralloc_cats(&sa, "#!" EXECLINE_SHEBANGPREFIX "execlineb -S0\n")) ;
+	}
+	else
+	{
+		if (!stralloc_cats(&sa, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n")) ;
+	}
 	if (file == FINISH)
 	{
 		if (BOOT)
