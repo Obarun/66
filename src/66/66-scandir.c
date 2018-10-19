@@ -524,13 +524,6 @@ int write_control(char const *scandir,char const *live, char const *filename, in
 		goto write ;
 	}
 	
-	if (file == USR1)
-	{
-			
-			if (!stralloc_cats(&sa,bscan)) retstralloc(0, "write_controlboot") ;
-			if (!stralloc_cats(&sa,"\n")) retstralloc(0, "write_controlboot") ;
-			goto write ;
-	}
 	if (BOOT)
 	{
 		if (!stralloc_cats(&sa, EXECLINE_BINPREFIX "foreground { ")) retstralloc(0, "write_controlboot") ;
