@@ -265,7 +265,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (resolve_read(&type,saresolve.s,svname,"type") <= 0)
 			strerr_diefu2sys(111,"read type of: ",svname) ;
 		
-		if (get_enumbyid(type.s,key_enum_el) == CLASSIC || get_enumbyid(type.s,key_enum_el) == LONGRUN)
+		//if (get_enumbyid(type.s,key_enum_el) == CLASSIC || get_enumbyid(type.s,key_enum_el) == LONGRUN)
+		if (get_enumbyid(type.s,key_enum_el) == LONGRUN)
 		{
 			stat.len = newlen ;
 			
