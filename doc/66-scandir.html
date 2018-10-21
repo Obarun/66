@@ -49,7 +49,7 @@
 	 
 	 <li>
 		<tt>-b&nbsp;</tt>&nbsp;: create specific files for boot. Only root
-		user can use this option - see ".s6-svscan control directory" section.
+		user can use this option - see <a href="#svscanctld">.s6-svscan control directory"</a>.
 	 </li>
 	 <li> 
 		<tt>-l&nbsp;<em>live</em></tt>&nbsp;: create the scandir at <em>live</em>. Default is
@@ -61,7 +61,7 @@
 	 
 	 <li>
 		<tt>-t&nbsp;<em>rescan</em></tt>&nbsp;: perform a scan every <tt><em>rescan</em></tt>
-		milliseconds. If <tt><em>rescan</em></tt> is set to 0 (the default), automatic scans are never performed after
+		milliseconds. If <tt><em>rescan</em></tt> is set to <tty>0</tty> (the default), automatic scans are never performed after
 		the first one and s6-svscan will only detect new services by 
 		issuing either <tt><em>66-scandir -s reload</em></tt> 
 		or <tt><em><a href="https://skarnet.org/software/s6/s6-svscanctl.html">66-svscanctl -a</a>
@@ -70,28 +70,28 @@
 	 </li>
 	 
 	 <li> 
-		<tt>-2&nbsp;<em>stage2.tini</em></tt>&nbsp;: set the command to 
-		execute with configurable handlers when the scandir receive a signal.
-		An absolute path is expected. This options is mandatory if passing <em>-b</em>
+		<tt>-2&nbsp;<em>stage2.tini</em></tt>&nbsp;: make the command to 
+		execute a script with configurable handlers when the scandir receives a signal.
+		An absolute path is expected. This option is mandatory if passing <em>-b</em>
 		and cannot be used on its own. If not set, the default script at
 		<tt><em>/etc/66/stage2.tini</em></tt> will be called.
-		Also, 66 tools do not provide this scripts. It's the responsability
-		of the system administrator to furnish it. 	
+		None of the 66 tools will provide such a script. It's the responsability
+		of the system administrator to provide it. 	
 	 </li>
 	 
 	 <li> 
 		<tt>-3&nbsp;<em>stage3</em></tt>&nbsp;: script to execute when
 		the scandir is asked to be shut down. An absolute path is expected. 
-		This options is mandatory if passing <em>-b</em> and cannot be 
+		This option is mandatory if passing <em>-b</em> and cannot be 
 		used on its own. If not set, the default script at 
-		<tt><em>/etc/66/stage3</em></tt> will be called. Also, 66 tools
-		do not provide this scripts. It's the responsability
-		of the system administrator to furnish it.
+		<tt><em>/etc/66/stage3</em></tt> will be called.
+		None of the 66 tools will provide such a script. It's the responsability
+		of the system administrator to provide it. 
 	 </li>
 		 
 	 <li>
 		<tt>-e&nbsp;<em>environment</em></tt>&nbsp;: merge the current 
-		environment variable of the scandir with variables found in the 
+		environment variables of the scandir with variables found in the 
 		<em>environment</em> directory. Any file in <tt><em>environment</em></tt> 
 		not beginning with a dot and not containing the '=' character will 
 		be read. An absolute path is expected. 
@@ -105,7 +105,7 @@
 	 <li>
 		<tt>-r&nbsp;</tt>: remove the scandir directory at <em>live</em>. 
 		If it was already started with <tt><em>-u</em></tt> it must first 
-		be stopped sending a signal with <tt><em>-s</em></tt> - see "Signals" section.
+		be stopped sending a signal with e.g. <tt><em>&#8209;s quit</em></tt> - see <a href="#signals">"Signals"</a>.
 	 </li>
 	
 	 <li>
@@ -115,11 +115,11 @@
 	 <li> 
 		<tt>-s&nbsp;<em>signal</em></tt>&nbsp;: send a <em>signal</em> to the scandir directory. 
 		The signal can be any valid <tt><a href="https://skarnet.org/software/s6/s6-svscanctl.html">s6&#8209;svscanctl</a></tt> 
-		command or a predefined keyword - see "Signals" section.
+		command or a predefined keyword - see <a href="#signals">"Signals</a>.
 	 </li>
 	</ul>
 
-<h2> Signals </h2>
+<h2 id=signals> Signals </h2>
 
 	<p>The <em>-s</em> option sends a signal to the scandir and is built 
 	around the <a href="https://skarnet.org/software/s6/s6-svscanctl.html">s6-svscanctl</a>. 
@@ -131,13 +131,14 @@
 	A few convenient keywords were added to avoid having to remember 
 	basic and useful series of commands like:
 	<ul>
-		<li><tt>reload&nbsp;</tt>&nbsp;: this will send an <em>-an</em> command</li>
-		<li><tt>interrupt&nbsp;</tt>&nbsp;: this will send an <em>-i</em> command</li>
-		<li><tt>quit&nbsp;</tt>&nbsp;: this will send an <em>-q</em> command</li>
-		<li><tt>halt&nbsp;</tt>&nbsp;: this will send an <em>-0</em> command</li>
-		<li><tt>reboot&nbsp;</tt>&nbsp;: this will send an <em>-6</em> command</li>
-		<li><tt>poweroff&nbsp;</tt>&nbsp;: this will send an <em>-7</em> command</li>
-	</ul></p>
+		<li><tt>reload&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;an</em></strong></tt></li>
+		<li><tt>interrupt&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;i</em></strong></tt></li>
+		<li><tt>quit&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;q</em></strong></tt></li>
+		<li><tt>halt&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;0</em></strong></tt></li>
+		<li><tt>reboot&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;6</em></strong></tt></li>
+		<li><tt>poweroff&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;7</em></strong></tt></li>
+	</ul>
+	</p>
 
 	<h3>Signal usage examples</h3>
 	<pre>   66&#8209;scandir &#8209;s reload</pre>
@@ -208,7 +209,7 @@
       the same <tt><em>owner</em></tt> you must delete it first with <tt>&#8209;r</tt>.
     </p>
 
-<h3>.s6&#8209;svscan control directory</h3>
+<h3 id="svscanctld">.s6&#8209;svscan control directory</h3>
 
 	<p>
       <tt><a href="https://skarnet.org/software/s6/s6-svscan.html">s6&#8209;svscan</a></tt> 
@@ -390,7 +391,7 @@
 	<pre><tt>  /etc/66/env/TZ </tt></pre>
     <p> Content of the file: </p>
     <pre><tt>   Pacific/Noumea </tt></pre>
-    <p>Every daemon launched on the scandir should inherits the environment 
+    <p>Every daemon launched on the scandir should inherit the environment 
     variables of the scandir. So if you want to have a specific <em>key=value</em>
 	pair for every daemon, use this option.</p>
 
@@ -406,13 +407,13 @@
     
     <ul>
       <li>
-        <tt>/run/66/scandir/0 will be removed</tt>
+        <tt>/run/66/scandir/0 	# will be deleted</tt>
       </li>
       <li>
-        <tt>/run/66/tree/0 will be removed</tt>
+        <tt>/run/66/tree/0		# will be deleted</tt>
       </li>
       <li>
-        <tt>/run/66/log/0 will be removed</tt>
+        <tt>/run/66/log/0		# will be deleted</tt>
       </li>
     </ul>
 
@@ -423,12 +424,13 @@
 		use it. In fact <tt>66&#8209;scandir</tt> will only remove the 
 		subdirectories of the corresponding UID of the <tt><em>owner</em></tt> 
 		and the <tt><em>live</em></tt> root directory is not touched. 
-		As <tt><em>live</em></tt> should be created on RAM filesystem the deletion happen on next reboot.
+		As <tt><em>live</em></tt> should be created on a RAM filesystem 
+		the deletion happens on the next reboot.
     </p>
     
     <p>
 		<strong>Note</strong>: A running scandir can not be removed. 
-		You must stop it with <tt>&#8209;d</tt> first to 
+		You must stop it with e.g. <tt>&#8209;s quit</tt> first to 
 		be able to remove it.
     </p>
 </body>
