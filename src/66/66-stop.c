@@ -561,7 +561,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		VERBO2 strerr_warni1x("release svc services ...") ;
 		if (!svc_release(base.s,scandir.s,live.s,tree.s,treename))
 			strerr_diefu1x(111,"release svc services ...") ;
-		VERBO2 strerr_warni3x("switch svc service of: ",treename," to source") ;
+		VERBO2 strerr_warni3x("switch svc services of: ",treename," to source") ;
 		if (!svc_switch_to(base.s,tree.s,treename,SS_SWSRC))
 			strerr_diefu3x(111,"switch svc service of: ",treename," to source") ;
 		
@@ -576,6 +576,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		VERBO2 strerr_warni1x("release rc services ...") ;
 		if (!rc_release(base.s,live.s,tree.s,treename))
 			strerr_diefu1x(111,"release rc services") ;
+		VERBO2 strerr_warni3x("switch rc services of: ",treename," to source") ;
 		if (!db_switch_to(base.s,livetree.s,tree.s,treename,envp,SS_SWSRC))
 			strerr_diefu5x(111,"switch",livetree.s,"/",treename," to source") ;
 	}
