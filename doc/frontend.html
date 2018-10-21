@@ -88,12 +88,11 @@ the <tt>#</tt> at the beginning of section name like this:</p>
 
 <p>The frontend file use these valid section name: </p>
 <ul>
- <li> <tt>[main]&nbsp;</tt>&nbsp;: This section is mandatory</li>
- <li> <tt>[start]&nbsp;</tt>&nbsp;: This section is mandatory for <em>classic</em>, <em>longrun</em> 
- and <em>oneshot</em> service.</li>
- <li> <tt>[stop]&nbsp;</tt>&nbsp;: This section is not a mandatory section</li>
- <li> <tt>[logger]&nbsp;</tt>&nbsp;: This section is mandatory if the options <tt>log</tt> is set - see below</li>
- <li> <tt>[environment]&nbsp;</tt>&nbsp;: This section is mandatory if the options <tt>env</tt> is set - see below</li>
+ <li> <tt>[main]&nbsp;</tt></li>
+ <li> <tt>[start]&nbsp;</tt></li>
+ <li> <tt>[stop]&nbsp;</tt></li>
+ <li> <tt>[logger]&nbsp;</tt></li>
+ <li> <tt>[environment]&nbsp;</tt></li>
 </ul>
 <p>A section can be a mandatory one but not all the key field are necessarily mandatory.</p>
 
@@ -101,66 +100,110 @@ the <tt>#</tt> at the beginning of section name like this:</p>
 
 <h2>Key field syntax legend</h2>
 
-<p>Divers syntax format is used to parse the <em>value</em> of a <em>key</em>.</p>
+	<p>Divers syntax format is used to parse the <em>value</em> of a <em>key</em>.</p>
 
-<ul>
- <li> <tt>line&nbsp;</tt>&nbsp;: expect to find the <em>value</em> on the same
- line that the <em>key</em>.
- <h6>example of valid syntax</h6>
- <pre>@type = classic</pre>
- <pre>@type=classic</pre>
- <h6>example of unvalid syntax</h6>
- <pre>@type=
- classic</pre>
- </li>
- 
- <li> <tt>quote&nbsp;</tt>&nbsp;: expect to find the <em>value</em> between
- double-quote and on the same line that the <em>key</em>.</li>
- <h6>example of valid syntax</h6>
- <pre>@description = " some awesome description "</pre>
- <pre>@description="some awesome description"</pre>
- <h6>example of unvalid syntax</h6>
- <pre>@description = " new line onto double-quote
- is not allowed"</pre>
- 
- <li> <tt>bracket&nbsp;</tt>&nbsp;: expect to find the <em>value</em> between
- '()' bracket. Each <em>value</em> between bracket need to be separated
- by a space. A new line can be found between bracket.</li>
- <h6>example of valid syntax</h6>
- <pre>@depends = ( fooA fooB fooC )</pre>
- <pre>@depends=(fooA fooB fooC)</pre>
- <pre>@depends=(
- fooA
- fooB
- fooC
- )</pre>
- <h6>example of unvalid syntax</h6>
- <pre>@depends = (fooAfooB fooC)</pre>
- <li> <tt>uint&nbsp;</tt>&nbsp;: expect to find a number as <em>value</em>
- and on the same line that the <em>key</em>.</li>
- <h6>example of valid syntax</h6>
- <pre>@notify = 3</pre>
- <pre>@notify=3</pre>
- <h6>example of unvalid syntax</h6>
- <pre>@notify=
- 3</pre>
- <li> <tt>slash&nbsp;</tt>&nbsp;: expect to find a <em>value</em> beginning by
- a '/' character and on the same line that the <em>key</em>.</li>
- <h6>example of valid syntax</h6>
- <pre>@destination = /etc/66 </pre>
- <pre>@destination=/etc/66 </pre>
- <h6>example of unvalid syntax</h6>
- <pre>@destination=/a/very/
- long/path</pre>
- <li> <tt>pair&nbsp;</tt>&nbsp;: expect to find a <em>value</em> on the form
- <em>key=value</em> and on the same line that the <em>key</em>.</li>
- <h6>example of valid syntax</h6>
- <pre>MYKEY = MYVALUE</pre>
- <pre>anotherkey=anothervalue</pre>
- <h6>example of unvalid syntax</h6>
- <pre>MYKEY=
- MYVALUE</pre>
-</ul>
+	<ul>
+		<li>
+			<tt>line&nbsp;</tt>&nbsp;: expect to find the <em>value</em> on the same
+			line that the <em>key</em>.
+			<p>example of valid syntax<p>
+			<ul>
+				<pre>@type = classic</pre>
+				<pre>@type=classic</pre>
+			</ul>
+	
+			<p>example of unvalid syntax</p>
+			<ul>
+				<pre>@type=
+classic</pre>
+			</ul>
+			 
+			</li>
+		<hr>
+	 
+		<li> 
+			<tt>quote&nbsp;</tt>&nbsp;: expect to find the <em>value</em> between
+			double-quote and on the same line that the <em>key</em>.
+		</li>
+		<p>example of valid syntax</p>
+		<ul>
+			<pre>@description = " some awesome description "</pre>
+			<pre>@description="some awesome description"</pre>
+		</ul
+		<p>example of unvalid syntax</p>
+		<ul>
+			<pre>@description = " new line onto double-quote
+is not allowed"</pre>
+		</ul>
+		<hr>
+		
+		<li>
+			<tt>bracket&nbsp;</tt>&nbsp;: expect to find the <em>value</em> between
+			'()' bracket. Each <em>value</em> between bracket need to be separated
+			by a space. A new line can be found between bracket.
+		</li>
+		<p>example of valid syntax</p>
+		<ul>
+			<pre>@depends = ( fooA fooB fooC )</pre>
+			<pre>@depends=(fooA fooB fooC)</pre>
+			<pre>@depends=(
+fooA
+fooB
+fooC
+)</pre>
+		</ul>
+		<p>example of unvalid syntax</p>
+		<ul>
+			 <pre>@depends = (fooAfooB fooC)</pre>
+		</ul>
+		<hr>
+		
+		<li>
+			<tt>uint&nbsp;</tt>&nbsp;: expect to find a number as <em>value</em>
+			and on the same line that the <em>key</em>.
+		</li>
+		<p>example of valid syntax</p>
+		<ul>
+			<pre>@notify = 3</pre>
+			<pre>@notify=3</pre>
+		</ul>
+		<p>example of unvalid syntax</h3>
+		<ul>
+			<pre>@notify=
+3</pre>
+		</ul>
+		<hr>
+		<li> 
+			<tt>slash&nbsp;</tt>&nbsp;: expect to find a <em>value</em> beginning by 
+			a '/' character and on the same line that the <em>key</em>.
+		</li>
+		<p>example of valid syntax</p>
+		<ul>
+			<pre>@destination = /etc/66 </pre>
+			<pre>@destination=/etc/66 </pre>
+		</ul>
+		<p>example of unvalid syntax</p>
+		<ul>
+			<pre>@destination=/a/very/
+long/path</pre>
+		</ul>
+		<hr>
+
+		<li>
+			<tt>pair&nbsp;</tt>&nbsp;: expect to find a <em>value</em> on the form
+			<em>key=value</em> and on the same line that the <em>key</em>.
+		</li>
+		<p>example of valid syntax</p>
+		<ul>
+			<pre>MYKEY = MYVALUE</pre>
+			<pre>anotherkey=anothervalue</pre>
+		</ul>
+		<p>example of unvalid syntax</p>
+		<ul>
+			<pre>MYKEY=
+MYVALUE</pre>
+		</ul>
+	</ul>
 
 <hr>
 
