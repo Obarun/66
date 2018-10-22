@@ -41,7 +41,7 @@
 /** @Return 0 on fail
  * @Return 1 on success
  * @Return 2 if the service is ignored */
-int write_services(sv_alltype *sv, char const *workdir, char const *tree, unsigned int force)
+int write_services(sv_alltype *sv, char const *workdir, unsigned int force)
 {
 	int r ;
 	
@@ -106,14 +106,14 @@ int write_services(sv_alltype *sv, char const *workdir, char const *tree, unsign
 	switch(type)
 	{
 		case CLASSIC:
-			if (!write_classic(workdir,sv, wname,tree, force))
+			if (!write_classic(workdir,sv, wname, force))
 			{
 				VERBO3 strerr_warnwu2x("write: ",wname) ;
 				return 0 ;
 			}
 			break ;
 		case LONGRUN:
-			if (!write_longrun(workdir,sv, wname,tree, force))
+			if (!write_longrun(workdir,sv, wname, force))
 			{
 				VERBO3 strerr_warnwu2x("write: ",wname) ;
 				return 0 ;
@@ -121,7 +121,7 @@ int write_services(sv_alltype *sv, char const *workdir, char const *tree, unsign
 			
 			break ;
 		case ONESHOT:
-			if (!write_oneshot(workdir,sv, wname,tree, force))
+			if (!write_oneshot(workdir,sv, wname, force))
 			{
 				VERBO3 strerr_warnwu2x("write: ",wname) ;
 				return 0 ;
@@ -187,7 +187,7 @@ int write_services(sv_alltype *sv, char const *workdir, char const *tree, unsign
 	return 1 ;
 }
 
-int write_classic(char const *src, sv_alltype *sv, char const *dst, char const *tree, unsigned int force)
+int write_classic(char const *src, sv_alltype *sv, char const *dst, unsigned int force)
 {	
 	/**notification,timeout, ...*/
 	if (!write_common(sv, dst))
@@ -196,7 +196,7 @@ int write_classic(char const *src, sv_alltype *sv, char const *dst, char const *
 		return 0 ;
 	}
 	/** run file*/
-	if (!write_exec(sv, &sv->type.classic_longrun.run,"run",dst,0755,tree))
+	if (!write_exec(sv, &sv->type.classic_longrun.run,"run",dst,0755))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/run") ;
 		return 0 ;
@@ -204,7 +204,7 @@ int write_classic(char const *src, sv_alltype *sv, char const *dst, char const *
 	/** finish file*/
 	if (sv->type.classic_longrun.finish.exec) 
 	{	
-		if (!write_exec(sv, &sv->type.classic_longrun.finish,"finish",dst,0755,tree))
+		if (!write_exec(sv, &sv->type.classic_longrun.finish,"finish",dst,0755))
 		{
 			VERBO3 strerr_warnwu3x("write: ",dst,"/finish") ;
 			return 0 ;
@@ -213,7 +213,7 @@ int write_classic(char const *src, sv_alltype *sv, char const *dst, char const *
 	/**logger */
 	if (sv->opts[0])
 	{
-		if (!write_logger(sv, &sv->type.classic_longrun.log,"log",dst,keep.s+sv->cname.name,0755,tree,force))
+		if (!write_logger(sv, &sv->type.classic_longrun.log,"log",dst,keep.s+sv->cname.name,0755,force))
 		{
 			VERBO3 strerr_warnwu3x("write: ",dst,"/log") ;
 			return 0 ;
@@ -224,7 +224,7 @@ int write_classic(char const *src, sv_alltype *sv, char const *dst, char const *
 	return 1 ;
 }
 
-int write_longrun(char const *src, sv_alltype *sv,char const *dst, char const *tree, unsigned force)
+int write_longrun(char const *src, sv_alltype *sv,char const *dst, unsigned force)
 {	
 	size_t r ;
 	char *name = keep.s+sv->cname.name ;
@@ -240,7 +240,7 @@ int write_longrun(char const *src, sv_alltype *sv,char const *dst, char const *t
 		return 0 ;
 	}
 	/**run file*/
-	if (!write_exec(sv, &sv->type.classic_longrun.run,"run",dst,0644,tree))
+	if (!write_exec(sv, &sv->type.classic_longrun.run,"run",dst,0644))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/run") ;
 		return 0 ;
@@ -249,7 +249,7 @@ int write_longrun(char const *src, sv_alltype *sv,char const *dst, char const *t
 	if (sv->type.classic_longrun.finish.exec) 
 	{
 		
-		if (!write_exec(sv, &sv->type.classic_longrun.finish,"finish",dst,0644,tree))
+		if (!write_exec(sv, &sv->type.classic_longrun.finish,"finish",dst,0644))
 		{
 			VERBO3 strerr_warnwu3x("write: ",dst,"/finish") ;
 			return 0 ;
@@ -265,7 +265,7 @@ int write_longrun(char const *src, sv_alltype *sv,char const *dst, char const *t
 		r = byte_search(dst,dstlen,keep.s+sv->cname.name,namelen) ;
 		memcpy(dstlog,dst,r) ;
 		dstlog[r] = 0 ;
-		if (!write_logger(sv, &sv->type.classic_longrun.log,logname,dstlog,keep.s+sv->cname.name,0644,tree,force)) 
+		if (!write_logger(sv, &sv->type.classic_longrun.log,logname,dstlog,keep.s+sv->cname.name,0644,force)) 
 		{
 			VERBO3 strerr_warnwu3x("write: ",dstlog,logname) ;
 			return 0 ;
@@ -288,7 +288,7 @@ int write_longrun(char const *src, sv_alltype *sv,char const *dst, char const *t
 	return 1 ;
 }
 
-int write_oneshot(char const *src, sv_alltype *sv,char const *dst, char const *tree, unsigned int force)
+int write_oneshot(char const *src, sv_alltype *sv,char const *dst, unsigned int force)
 {
 	
 	if (!write_common(sv, dst))
@@ -297,7 +297,7 @@ int write_oneshot(char const *src, sv_alltype *sv,char const *dst, char const *t
 		return 0 ;
 	}
 	/** up file*/
-	if (!write_exec(sv, &sv->type.oneshot.up,"up",dst,0644,tree))
+	if (!write_exec(sv, &sv->type.oneshot.up,"up",dst,0644))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/up") ;
 		return 0 ;
@@ -305,7 +305,7 @@ int write_oneshot(char const *src, sv_alltype *sv,char const *dst, char const *t
 	/** down file*/
 	if (sv->type.oneshot.down.exec) 
 	{	
-		if (!write_exec(sv, &sv->type.oneshot.down,"down",dst,0644,tree))
+		if (!write_exec(sv, &sv->type.oneshot.down,"down",dst,0644))
 		{
 			VERBO3 strerr_warnwu3x("write: ",dst,"/down") ;
 			return 0 ;
@@ -339,7 +339,7 @@ int write_bundle(char const *src, sv_alltype *sv, char const *dst, unsigned int 
 	return 1 ;
 }
 
-int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, char const *svname,int mode, char const *tree, unsigned int force)
+int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, char const *svname,int mode, unsigned int force)
 {
 	int r ;
 	int logbuild = log->run.build ;
@@ -529,7 +529,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			}
 			break;
 		case CUSTOM:
-			if (!write_exec(sv, &log->run,"run",ddst.s,mode,tree))
+			if (!write_exec(sv, &log->run,"run",ddst.s,mode))
 			{ 
 				VERBO3 strerr_warnwu3x("write: ",ddst.s,"/run") ;
 				return 0 ;
@@ -685,6 +685,7 @@ int write_dependencies(char const *src, sv_name_t *cname,char const *dst,char co
 
 int write_common(sv_alltype *sv, char const *dst)
 {
+	int r ;
 	char *time = NULL ;
 	
 	/**down file*/
@@ -759,13 +760,34 @@ int write_common(sv_alltype *sv, char const *dst)
 	/** environment */
 	if (sv->opts[2])
 	{
-		size_t dstlen = strlen(dst) ;
-		char env[dstlen + SS_ENVDIR_LEN +1] ;
-		memcpy(env,dst,dstlen) ;
-		memcpy(env + dstlen,SS_ENVDIR,SS_ENVDIR_LEN) ;
-		env[dstlen + SS_ENVDIR_LEN] = 0 ;
+		/** /etc/env/sv_name*/
+		size_t sslen = strlen(SS_SERVICEDIR) - 1 ;
+		char *name = keep.s + sv->cname.name ;
+		size_t namelen = strlen(name) ;
+		char dst[sslen + SS_ENVDIR_LEN +1 + namelen ] ;
+		memcpy(dst,SS_SERVICEDIR,sslen) ;
+		memcpy(dst + sslen,SS_ENVDIR,SS_ENVDIR_LEN) ;
+		dst[sslen + SS_ENVDIR_LEN] = 0 ;
+		r = scan_mode(dst,S_IFDIR) ;
+		if (r < 0)
+		{
+			VERBO3 strerr_warnwu2sys("invalid environment directory: ",dst) ;
+			return 0 ;
+		}
+		if (!r)
+		{
+			if (!dir_create(dst,0755))
+			{
+				VERBO3 strerr_warnwu2sys("create environment directory: ",dst) ;
+				return 0 ;
+			}
+		}
 		
-		if (!write_env(&sv->env,&saenv,env))
+		dst[sslen + SS_ENVDIR_LEN] = '/' ;
+		memcpy(dst + sslen + SS_ENVDIR_LEN + 1, name,namelen) ;
+		dst[sslen + SS_ENVDIR_LEN + 1 + namelen] = 0 ;
+		
+		if (!write_env(&sv->env,&saenv,dst))
 		{
 			VERBO3 strerr_warnwu1x("write environment") ;
 			return 0 ;
@@ -775,7 +797,7 @@ int write_common(sv_alltype *sv, char const *dst)
 }
 
 
-int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,int mode, char const *tree)
+int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,int mode)
 {
 	
 	unsigned int key, val ;
@@ -793,35 +815,15 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 	stralloc execute = STRALLOC_ZERO ;
 	
 	key = val = 0 ;
-	size_t treelen = strlen(tree) ;
-	size_t newtree ;
-	size_t longsize ;
-	if (treelen > dstlen) longsize = treelen ;
-	else longsize = dstlen ;
-	char envdata[longsize + SS_SVDIRS_LEN + 1 + SS_SYM_SVC_LEN + SS_SRC_LEN + 1 + namelen + 1] ;
-	memcpy(envdata,tree,treelen) ;
-	memcpy(envdata + treelen, SS_SVDIRS,SS_SVDIRS_LEN) ;
-	envdata[treelen + SS_SVDIRS_LEN] = '/' ;
-	newtree = treelen + SS_SVDIRS_LEN + 1 ;
-
-	if (type == CLASSIC)
-	{
-		memcpy(envdata + newtree, SS_SYM_SVC, SS_SYM_SVC_LEN) ;
-		envdata[newtree + SS_SYM_SVC_LEN] = '/' ;
-		memcpy(envdata + newtree + SS_SYM_SVC_LEN + 1, name,namelen) ;
-		newtree = newtree + SS_SYM_SVC_LEN + 1 + namelen ;
-	}
-	else
-	{
-		memcpy(envdata + newtree, SS_SYM_DB, SS_SYM_DB_LEN) ;
-		memcpy(envdata + newtree + SS_SYM_DB_LEN, SS_SRC,SS_SRC_LEN) ;
-		envdata[newtree + SS_SYM_DB_LEN + SS_SRC_LEN] = '/' ;
-		memcpy(envdata + newtree + SS_SYM_DB_LEN + SS_SRC_LEN + 1, name, namelen) ;
-		newtree = newtree + SS_SYM_DB_LEN + SS_SRC_LEN + 1 + namelen ;
-	}
-	memcpy(envdata + newtree, SS_ENVDIR,SS_ENVDIR_LEN) ;
-	envdata[newtree + SS_ENVDIR_LEN] = 0 ;
+	size_t envdstlen = strlen(SS_SERVICEDIR) - 1;
+	char envdata[envdstlen + SS_ENVDIR_LEN + 1 + namelen + 1] ;
+	memcpy(envdata,SS_SERVICEDIR,envdstlen) ;
+	memcpy(envdata + envdstlen, SS_ENVDIR,SS_ENVDIR_LEN) ;
+	envdata[envdstlen + SS_ENVDIR_LEN] = '/' ;
+	memcpy(envdata + envdstlen + SS_ENVDIR_LEN + 1, name,namelen) ;
+	envdata[envdstlen + SS_ENVDIR_LEN + 1 + namelen] = 0 ;
 	
+		
 	switch (exec->build)
 	{
 		case AUTO:
@@ -953,7 +955,7 @@ int write_env(genalloc *env,stralloc *sa,char const *dst)
 		{
 			if (!dir_create(dst,0755))
 			{
-				VERBO3 strerr_warnwu2sys("create environment directory: ",dst) ;
+				VERBO3 strerr_warnwu2sys("create service environment directory: ",dst) ;
 				return 0 ;
 			}
 		}
@@ -961,11 +963,11 @@ int write_env(genalloc *env,stralloc *sa,char const *dst)
 		{
 			key = genalloc_s(sv_env,env)[i].key ;
 			val = genalloc_s(sv_env,env)[i].val ;
-			if (dir_search(dst,sa->s+key,S_IFREG))
+		/*	if (dir_search(dst,sa->s+key,S_IFREG))
 			{
 				VERBO3 strerr_warnw5x("file: ",dst,"/",sa->s+key," already exist, skip it") ;
 				continue ;
-			}
+			}*/
 			if (!file_write_unsafe(dst,sa->s+key,sa->s+val,strlen(sa->s+val)))
 			{
 				VERBO3 strerr_warnwu4sys("create file: ",dst,"/",sa->s+key) ;

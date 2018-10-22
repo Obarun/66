@@ -59,9 +59,11 @@ static gid_t GIDOWNER ;
 size_t GIDOWNERLEN ;
 char GIDSTR[256] ;
 
+static char const *stage2tini = "/etc/66/stage2" ;
+static char const *stage3 = "/etc/66/stage3 $@" ;
 
 
-#define USAGE "66-scandir [ -h help ] [ -v verbosity ] [ -b boot ] [ -l live ] [ -t rescan ]  [ -f finish command ] [ -e environment ] [ -c create ] [ -r remove ] [ -u up ] [ -s signal ] owner"
+#define USAGE "66-scandir [ -h help ] [ -v verbosity ] [ -b boot ] [ -l live ] [ -t rescan ] [ -2 stage2.tini ] [ -3 stage3 ] [ -e environment ] [ -c create ] [ -r remove ] [ -u up ] [ -s signal ] owner"
 
 unsigned int VERBOSITY = 1 ;
 static unsigned int BOOT = 0 ;
@@ -77,7 +79,8 @@ static inline void info_help (void)
 "	-b: boot scandir\n"
 "	-l: live directory\n"
 "	-t: rescan scandir every milliseconds\n"
-"	-f: finish command line\n"
+"	-2: stage2.tini scripts\n"
+"	-3: stage3 scripts\n"
 "	-e: directory environment\n"
 "	-c: create scandir\n"
 "	-r: remove scandir\n"
@@ -110,6 +113,7 @@ static inline unsigned int parse_signal (char const *signal)
   if (!signal_table[i]) strerr_dief2x(111,"unknow signal: ",signal) ;
   return i ;
 }
+
 int scandir_down(char const *scandir, char const *signal, char const *const *envp)
 {
 	int r ;
@@ -136,23 +140,20 @@ int scandir_down(char const *scandir, char const *signal, char const *const *env
 					csig[2] = 'n' ;
 					csig[3] = 0 ;
 					break ;
-			case 1: csig[1] = 'r' ;
-					csig[2] = 't' ;
-					csig[3] = 0 ;
+			case 1: csig[1] = 'i' ;
+					csig[2] = 0 ;
 					break ;
 			case 2: csig[1] = 'q' ; 
 					csig[2] = 0 ;
 					break ;
-			case 3: csig[1] = 's' ;
-					csig[2] = 't' ;
-					csig[3] = 0 ;
+			case 3: csig[1] = '0' ;
+					csig[2] = 0 ;
 					break ;
 			case 4: csig[1] = '6' ;
 					csig[2] = 0 ;
 					break ;
-			case 5: csig[1] = 'p' ;
-					csig[2] = 't' ;
-					csig[3] = 0 ;
+			case 5: csig[1] = '7' ;
+					csig[2] = 0 ;
 					break ;
 			default: break ;
 		}
@@ -283,7 +284,6 @@ int write_log(char const *scandir, char const *scanname)
 	VERBO3 strerr_warnt3x("write: ",b,"/run file") ;
 	if (!stralloc_cats(&run, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n" \
 							EXECLINE_BINPREFIX "fdmove -c 2 1\n" \
-							"exec -c\n" \
 							S6_BINPREFIX "s6-log n3 t s1000000 ")) retstralloc(0, "write_log") ;
 	if (!stralloc_cats(&run,path.s)) retstralloc(0, "write_log") ;
 	if (!stralloc_cats(&run,"\n")) retstralloc(0, "write_log") ;						
@@ -434,7 +434,7 @@ int write_bootlog(char const *live, char const *scandir, char const *scanname)
 	/** make run file */
 	if (!stralloc_cats(&run, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n" \
 							EXECLINE_BINPREFIX "redirfd -w 2 /dev/console\n" \
-							EXECLINE_BINPREFIX "fdmove -c 1 2\n" \
+							EXECLINE_BINPREFIX "redirfd -w 1 /dev/null\n" \
 							EXECLINE_BINPREFIX "redirfd -rnb 0 fifo\n" \
 							S6_BINPREFIX "s6-log -bp -- t ")) retstralloc(0, "write_bootlog") ;
 	if (!stralloc_cats(&run,path)) retstralloc(0, "write_bootlog") ;
@@ -469,7 +469,8 @@ int write_bootlog(char const *live, char const *scandir, char const *scanname)
 	return 1 ;
 }
 
-int write_control(char const *scandir, char const *tree, char const *filename, int file)
+
+int write_control(char const *scandir,char const *live, char const *filename, int file)
 {
 	int r ;
 	
@@ -486,130 +487,30 @@ int write_control(char const *scandir, char const *tree, char const *filename, i
 	r = get_rlen_until(bscan,'/',scandirlen) ;
 	bscan[r] = 0 ;
 
+	/** shebang */
 	if (file == FINISH)
 	{
-		if (!stralloc_cats(&sa, "#!" EXECLINE_SHEBANGPREFIX "execlineb -S0\n" \
-								EXECLINE_BINPREFIX "fdmove -c 2 1\n" \
-								S6_BINPREFIX "s6-envdir .env\n")) retstralloc(0,"write_control") ;
-	
-		if (!stralloc_cats(&sa,S6_PORTABLE_UTILS_BINPREFIX "s6-echo -- \"scandir ")) retstralloc(0, "write_control") ;
-		if (!stralloc_cats(&sa, bscan)) retstralloc(0, "write_control") ;
-		if (!stralloc_cats(&sa, " shutted down...\"\n")) retstralloc(0, "write_control") ;
-		goto write ;
+		if (!stralloc_cats(&sa, "#!" EXECLINE_SHEBANGPREFIX "execlineb -S0\n")) ;
 	}
-	/** set shebang */
-	if (!stralloc_cats(&sa, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n" \
-							EXECLINE_BINPREFIX "fdmove -c 2 1\n" \
-							S6_BINPREFIX "s6-envdir .env\n")) retstralloc(0, "write_control") ;
-	if (file == CRASH)
+	else
 	{
-		if (!stralloc_cats(&sa, EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-all -v3 -l ")) retstralloc(0, "write_control") ;
-		if (!stralloc_cats(&sa, tree)) retstralloc(0, "write_control") ;
-		if (!stralloc_cats(&sa, " down }\n")) retstralloc(0, "write_control") ;
-		if (!stralloc_cats(&sa, S6_PORTABLE_UTILS_BINPREFIX "s6-echo -- \"scandir ")) retstralloc(0, "write_control") ;
-		if (!stralloc_cats(&sa, bscan)) retstralloc(0, "write_control") ;
-		if (!stralloc_cats(&sa, " crashed...\"\n")) retstralloc(0, "write_control") ;
-		goto write ;
+		if (!stralloc_cats(&sa, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n")) ;
 	}
-	
-	if (file == USR1)
-	{
-			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -an .\n")) retstralloc(0, "write_control") ;
-			goto write ;
-	}
-	/** shut down db*/
-	if (!stralloc_cats(&sa, EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-all -v3 -l ")) retstralloc(0, "write_control") ;
-	if (!stralloc_cats(&sa, tree)) retstralloc(0, "write_control") ;
-	if (!stralloc_cats(&sa, " down }\n")) retstralloc(0, "write_control") ;
-		
-	switch(file)
-	{
-		case USR2:
-			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -0 .\n")) retstralloc(0, "write_control") ;
-			break ;
-		case TERM:
-			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -t .\n")) retstralloc(0, "write_control") ;
-			break ;
-		case QUIT:
-			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -7 .\n")) retstralloc(0, "write_control") ;
-			break ;
-		case INT:
-			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -6 .\n")) retstralloc(0, "write_control") ;
-			break ;
-		case HUP:
-			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -h .\n")) retstralloc(0, "write_control") ;
-			break ;
-		default:
-			break ;
-	}
-	
-	write:
-		VERBO3 strerr_warnt3x("write file: ",scandir,filename) ;
-		if (!file_write_unsafe(scandir,filename,sa.s,sa.len)) 
-		{
-			VERBO3 strerr_warnwu3sys("write file: ",scandir,filename) ;
-			return 0 ;
-		}
-		char mode[scandirlen + strlen(filename) + 1] ;
-		memcpy(mode,scandir,scandirlen) ;
-		memcpy(mode+scandirlen,filename,strlen(filename)) ;
-		mode[scandirlen + strlen(filename)] = 0 ;
-		
-		VERBO3 strerr_warnt2x("chmod 0755: ",mode) ;
-		if (chmod(mode,0755) < 0)
-		{
-			VERBO3 strerr_warnwu2sys("chmod: ",mode) ;
-			return 0 ;
-		}
-		VERBO3 strerr_warnt6x("chown directory: ",mode," to: ",OWNERSTR,":",GIDSTR) ;
-		if (chown(mode,OWNER,GIDOWNER) < 0)
-		{
-			VERBO3 strerr_warnwu2sys("chown: ",mode) ;
-			return 0 ;
-		}
-		
-	stralloc_free(&sa) ;
-	
-	return 1 ;
-}
-
-int write_controlboot(char const *scandir,char const *live, char const *filename, int file,char const *finish)
-{
-	int r ;
-	
-	size_t scandirlen = strlen(scandir) ;
-
-	char bscan[scandirlen + 1] ;
-	
-	stralloc sa = STRALLOC_ZERO ;
-	
-	VERBO2 strerr_warni3x("write control file ",filename + 1," ...") ;
-	
-	memcpy(bscan, scandir,scandirlen) ;
-	dir_unslash(bscan) ;
-	r = get_rlen_until(bscan,'/',scandirlen) ;
-	bscan[r] = 0 ;
-		
 	if (file == FINISH)
 	{
-		if (!stralloc_cats(&sa, "#!" EXECLINE_SHEBANGPREFIX "execlineb -S0\n" \
-								EXECLINE_BINPREFIX "fdmove -c 2 1\n" \
-								S6_BINPREFIX "s6-envdir .env\n")) retstralloc(0, "write_controlboot") ;
-		
-		if (!stralloc_cats(&sa,EXECLINE_BINPREFIX "cd /\nredirfd -w 2 /dev/console\n" \
-								EXECLINE_BINPREFIX "fdmove -c 1 2\n" \
-								EXECLINE_BINPREFIX "foreground { ")) retstralloc(0, "write_controlboot") ;
-		if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svc -X -- " )) retstralloc(0, "write_controlboot") ;
-		if (!stralloc_cats(&sa, bscan )) retstralloc(0, "write_controlboot") ;
-		if (!stralloc_cats(&sa, "/scandir-log }\n" "unexport ?\n" "wait r -- { }\n" )) retstralloc(0, "write_controlboot") ;
-		if (!stralloc_cats(&sa, finish)) retstralloc(0, "write_controlboot") ;
-		if (!stralloc_cats(&sa, "\n" )) retstralloc(0, "write_controlboot") ;
+		if (BOOT)
+		{
+			if (!stralloc_cats(&sa, stage3)) retstralloc(0, "write_controlboot") ;
+			if (!stralloc_cats(&sa, "\n" )) retstralloc(0, "write_controlboot") ;
+		}
+		else
+		{
+			if (!stralloc_cats(&sa,S6_PORTABLE_UTILS_BINPREFIX "s6-echo -- \"scandir ")) retstralloc(0, "write_control") ;
+			if (!stralloc_cats(&sa, bscan)) retstralloc(0, "write_control") ;
+			if (!stralloc_cats(&sa, " shutted down...\"\n")) retstralloc(0, "write_control") ;
+		}
 		goto write ;
 	}
-	/** set shebang */
-	if (!stralloc_cats(&sa, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n" \
-								EXECLINE_BINPREFIX "fdmove -c 2 1\n" \
-								S6_BINPREFIX "s6-envdir .env\n")) retstralloc(0, "write_controlboot") ;
 	
 	if (file == CRASH)
 	{
@@ -618,40 +519,48 @@ int write_controlboot(char const *scandir,char const *live, char const *filename
 								EXECLINE_BINPREFIX "fdmove -c 2 1\n" \
 								S6_PORTABLE_UTILS_BINPREFIX "s6-echo -- \"scandir ")) retstralloc(0, "write_controlboot") ;
 		if (!stralloc_cats(&sa, bscan)) retstralloc(0, "write_controlboot") ;
-		if (!stralloc_cats(&sa, " crashed...\n")) retstralloc(0, "write_controlboot") ;
+		if (!stralloc_cats(&sa, " crashed ... \"\n")) retstralloc(0, "write_controlboot") ;
+		if (!stralloc_cats(&sa, "/bin/sh -i\n")) retstralloc(0, "write_controlboot") ;
 		goto write ;
 	}
 	
-	if (file == USR1)
+	if (BOOT)
 	{
-			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -an .\n")) retstralloc(0, "write_controlboot") ;
-			goto write ;
+		if (!stralloc_cats(&sa, EXECLINE_BINPREFIX "foreground { ")) retstralloc(0, "write_controlboot") ;
+		if (!stralloc_cats(&sa, stage2tini)) retstralloc(0, "write_controlboot") ;
+		if (!stralloc_cats(&sa, " }\n")) retstralloc(0, "write_controlboot") ;
 	}
-	
-	if (!stralloc_cats(&sa, EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-dbctl -v3 -l ")) retstralloc(0, "write_controlboot") ;
-	if (!stralloc_cats(&sa, live)) retstralloc(0, "write_controlboot") ;
-	if (!stralloc_cats(&sa, " -d Master }\n")) retstralloc(0, "write_controlboot") ;
-	
+	else
+	{
+		if (!stralloc_cats(&sa, EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-all -v3 -l ")) retstralloc(0, "write_control") ;
+		if (!stralloc_cats(&sa, live)) retstralloc(0, "write_control") ;
+		if (!stralloc_cats(&sa, " down }\n")) retstralloc(0, "write_control") ;
+	}
 	switch(file)
 	{
+		case USR1:
+			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -7 -- ")) retstralloc(0, "write_controlboot") ;
+			break ;
 		case USR2: 
-			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -0 .\n")) retstralloc(0, "write_controlboot") ;
+			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -0 -- ")) retstralloc(0, "write_controlboot") ;
 			break ;
 		case TERM:
-			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -t .\n")) retstralloc(0, "write_controlboot") ;
+			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -t -- ")) retstralloc(0, "write_controlboot") ;
 			break ;
 		case QUIT:
-			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -7 .\n")) retstralloc(0, "write_controlboot") ;
+			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -q -- ")) retstralloc(0, "write_controlboot") ;
 			break ;
 		case INT:
-			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -6 .\n")) retstralloc(0, "write_controlboot") ;
+			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -6 -- ")) retstralloc(0, "write_controlboot") ;
 			break ;
 		case HUP:
-			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -h .\n")) retstralloc(0, "write_controlboot") ;
+			if (!stralloc_cats(&sa, S6_BINPREFIX "s6-svscanctl -h -- ")) retstralloc(0, "write_controlboot") ;
 			break ;
 		default:
 			break ;
 	}
+	if (!stralloc_cats(&sa,bscan)) retstralloc(0, "write_controlboot") ;
+	if (!stralloc_cats(&sa,"\n")) retstralloc(0, "write_controlboot") ;
 	
 	write:
 		VERBO3 strerr_warnt3x("write file: ",scandir,filename) ;
@@ -684,7 +593,7 @@ int write_controlboot(char const *scandir,char const *live, char const *filename
 	return 1 ;
 }
 
-int create_scandir(char const *live, char const *scandir, char const *scanname, char const *finish, uid_t owner)
+int create_scandir(char const *live, char const *scandir, char const *scanname, uid_t owner)
 {
 	int r,e ;
 
@@ -720,28 +629,6 @@ int create_scandir(char const *live, char const *scandir, char const *scanname, 
 			VERBO3 strerr_warnwu2sys("chown: ",scan) ;
 			return 0 ;
 		}
-	}
-	
-	/** run/66/scandir/name/.env */
-	memcpy(scan + newlen, "/.env",5) ;
-	scan[newlen+5] = 0 ;
-	r = scan_mode(scan,S_IFDIR) ;
-	if (r < 0 || r) { errno = EEXIST ; return 0 ; }
-	if (!r)
-	{
-		VERBO3 strerr_warnt2x("create directory: ",scan) ;
-		r = dir_create(scan,0755) ;
-		if (!r) 
-		{
-			VERBO3 strerr_warnwu2sys("create directory: ",scan) ;
-			return 0 ;
-		}
-		VERBO3 strerr_warnt6x("chown directory: ",scan," to: ",OWNERSTR,":",GIDSTR) ;
-		if (chown(scan,OWNER,GIDOWNER) < 0)
-		{
-			VERBO3 strerr_warnwu2sys("chown: ",scan) ;
-			return 0 ;
-		}		
 	}
 	
 	/** run/66/scandir/name/.svscan */
@@ -782,12 +669,7 @@ int create_scandir(char const *live, char const *scandir, char const *scanname, 
 	e = errno ;
 	for (int i = 0 ; i < 8; i++)
 	{	
-		if (BOOT)
-		{
-			write_controlboot(scan,live,file[i],i,finish) ;
-		}
-		else
-			write_control(scan,live,file[i],i) ;
+		write_control(scan,live,file[i],i) ;
 	}
 	errno = e ;
 	
@@ -952,7 +834,6 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	stralloc live = STRALLOC_ZERO ;
 	stralloc livetree = STRALLOC_ZERO ;
 	stralloc scandir = STRALLOC_ZERO ;
-	stralloc finish = STRALLOC_ZERO ;
 	stralloc envdir = STRALLOC_ZERO ;
 	stralloc signal = STRALLOC_ZERO ;
 	
@@ -967,7 +848,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, "hv:bl:t:f:e:crus:", &l) ;
+			int opt = getopt_args(argc,argv, "hv:bl:t:3:2:e:crus:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
@@ -980,9 +861,8 @@ int main(int argc, char const *const *argv, char const *const *envp)
 						   break ;
 				
 				case 't' : if (uint0_scan(l.arg, &rescan)) break ;
-				case 'f' : if(!stralloc_cats(&finish,l.arg)) retstralloc(111,"main") ;
-						   if(!stralloc_0(&finish)) retstralloc(111,"main") ;
-						   break ;
+				case '2' : stage2tini = l.arg ; break ;
+				case '3' : stage3 = l.arg ; break ;
 				case 'e' : if(!stralloc_cats(&envdir,l.arg)) retstralloc(111,"main") ;
 						   if(!stralloc_0(&envdir)) retstralloc(111,"main") ;
 						   break ;
@@ -1032,17 +912,11 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	memcpy(scanname, scandir.s + slash ,scannamelen) ;
 	scanname[scannamelen] = 0 ;
 	
-	if (finish.len)
-	{
-		r = dir_scan_absopath(finish.s) ;
-		if(r < 0)
-			strerr_dief3x(110,"finish: ", finish.s, " must be an absolute path") ;
-		finish.len--;//be able to add "\n"
-	}
-	else if (BOOT) strerr_dief1x(111,"finish command must be set for boot request") ;
+	 if (stage2tini[0] != '/')
+		strerr_dief3x(110, "stage2: ",stage2tini," is not absolute") ;
 	
-	if (!stralloc_cats(&finish,"\n")) retstralloc(0, "main") ;
-	if (!stralloc_0(&finish)) retstralloc(0, "main") ;
+	 if (stage3[0] != '/')
+		strerr_dief3x(110, "stage3: ",stage3," is not absolute") ;
 	
 	if (envdir.len)
 	{
@@ -1066,7 +940,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		VERBO2 strerr_warni3x("sanitize ",live.s," ...") ;
 		if (!sanitize_live(live.s,scandir.s,scanname,OWNER)) strerr_diefu2sys(111,"create: ",live.s) ;
 		VERBO2 strerr_warni3x("create scandir ",scandir.s," ...") ;
-		if (!create_scandir(live.s, scandir.s,scanname, finish.s,OWNER)) strerr_diefu2sys(111,"create scandir: ", scandir.s) ;
+		if (!create_scandir(live.s, scandir.s,scanname, OWNER)) strerr_diefu2sys(111,"create scandir: ", scandir.s) ;
 	}
 	if (r && create)
 		VERBO2 strerr_warni3x("scandir: ",scandir.s," already exist, keep it") ;
@@ -1089,8 +963,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		if (!r) strerr_diefu1sys(111,"set livetree directory") ;
 	}
 	stralloc_free(&live) ;
-	stralloc_free(&finish) ;
-	
+		
 	if (down)
 	{
 		scandir_down(rlive,signal.s,genv) ;

@@ -226,10 +226,10 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	{
 		VERBO2 strerr_warni5x("copy svc service from ",pathsvd," to ",scandir," ...") ;
 		if (!copy_svc(pathscandir,pathsvd)) strerr_diefu2sys(111,"copy svc service to: ",pathscandir) ;
-		VERBO2 strerr_warni3x("switch ",pathsvd," to source directory ...") ;
-		r = backup_cmd_switcher(VERBOSITY,"-t30 -s0",treename) ;
-		if (r != 1)
-			strerr_diefu3x(111,"switch: ",pathsvd," to source directory") ;
+	//	VERBO2 strerr_warni3x("switch ",pathsvd," to source directory ...") ;
+	//	r = backup_cmd_switcher(VERBOSITY,"-t30 -s0",treename) ;
+	//	if (r != 1)
+	//		strerr_diefu3x(111,"switch: ",pathsvd," to source directory") ;
 	}
 	if (db || both)
 	{
@@ -277,10 +277,10 @@ int main(int argc, char const *const *argv, char const *const *envp)
 				strerr_diefu2x(111,"init: ",pathsvd) ;
 		}
 		
-		VERBO2 strerr_warni3x("switch ",pathsvd," to source directory ...") ;
-		r = backup_cmd_switcher(VERBOSITY,"-t31 -s0",treename) ;
-		if (r != 1)
-			strerr_diefu3x(111,"switch: ",pathsvd," to original directory") ;
+	//	VERBO2 strerr_warni3x("switch ",pathsvd," to source directory ...") ;
+	//	r = backup_cmd_switcher(VERBOSITY,"-t31 -s0",treename) ;
+	//	if (r != 1)
+	//		strerr_diefu3x(111,"switch: ",pathsvd," to original directory") ;
 	}
 	
 	stralloc_free(&base) ;

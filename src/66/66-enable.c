@@ -27,6 +27,8 @@
 #include <skalibs/genalloc.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/buffer.h>
+#include <skalibs/direntry.h>
+#include <skalibs/unix-transactional.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
@@ -210,7 +212,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		for (unsigned int i = 0; i < before.nsv; i++)
 		{
 			VERBO2 strerr_warni3x("add ",keep.s + before.services[i].cname.name," service ...") ;
-			r = write_services(&before.services[i], workdir.s,tree.s,FORCE) ;
+			r = write_services(&before.services[i], workdir.s,FORCE) ;
 			if (!r)
 			{
 				cleanup(workdir.s) ;

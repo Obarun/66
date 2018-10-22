@@ -73,8 +73,7 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree)
 	
 	memcpy(dst,base,baselen) ;
 	dst[baselen] = 0 ;
-
-	
+		
 	/** base is /var/lib/66 or $HOME/.66*/
 	/** this verification is made in case of 
 	 * first use of 66-*** tools */
