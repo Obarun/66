@@ -393,15 +393,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		stralloc_free(&type) ;
 	}
 
-	size_t wlen = workdir.len - 1 ;
 	size_t tlen = tree.len - 1 ;
-	
-	char src[wlen + SS_DB_LEN + SS_SRC_LEN + 1] ;
-	memcpy(src,workdir.s,wlen) ;
-	
-/*	char dst[tlen + SS_SVDIRS_LEN + SS_DB_LEN + SS_SRC_LEN + SS_MASTER_LEN + 1] ;
-	memcpy(dst,tree.s,tlen) ;
-	memcpy(dst + tlen, SS_SVDIRS, SS_SVDIRS_LEN) ;*/
 
 	if (nclassic)
 	{
