@@ -381,6 +381,7 @@ libexecdir := $libexecdir
 bindir := $bindir
 libdir := $libdir
 includedir := $includedir
+servicedir := $service_path
 slashpackage := $slashpackage
 sproot := $sproot
 version := $version
