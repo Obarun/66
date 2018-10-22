@@ -151,13 +151,11 @@ int parse_service_before(char const *src,char const *sv,char const *tree,strallo
 	sv_alltype sv_before = SV_ALLTYPE_ZERO ;
 	stralloc srctmp = STRALLOC_ZERO ;
 		
-	char svtmp[srclen + svlen + 1 + svlen + 1] ;
+	char svtmp[srclen + svlen + 1] ;
 	memcpy(svtmp,src,srclen) ;
 	svtmp[srclen] = '/' ;
 	memcpy(svtmp + srclen + 1, sv, svlen) ;
-	svtmp[srclen + svlen + 1] = '/' ;
-	memcpy(svtmp + srclen + 1 + svlen + 1, sv, svlen) ;
-	svtmp[srclen + 1 + svlen + 1 + svlen] = 0 ;
+	svtmp[srclen + svlen + 1] = 0 ;
 	
 	size_t filesize=file_get_size(svtmp) ;
 	if (!filesize)

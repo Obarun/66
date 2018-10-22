@@ -74,37 +74,6 @@ static void cleanup(char const *dst)
 	errno = e ;
 }
 
-int dir_get_fromdir(genalloc *ga,char const *srcdir)
-{
-	int fdsrc ;
-	
-	DIR *dir = opendir(srcdir) ;
-	if (!dir)
-		return 0 ;
-	
-	fdsrc = dir_fd(dir) ;
-	
-	for (;;)
-    {
-		struct stat st ;
-		direntry *d ;
-		d = readdir(dir) ;
-		if (!d) break ;
-		if (d->d_name[0] == '.')
-		if (((d->d_name[1] == '.') && !d->d_name[2]) || !d->d_name[1])
-			continue ;
-		if (stat_at(fdsrc, d->d_name, &st) < 0)
-			return 0 ;
-		
-		if (S_ISDIR(st.st_mode)){
-				printf("d->d_name::%s\n",d->d_name) ;
-		
-			if (!stra_add(ga,d->d_name)) return 0 ;		 
-		}
-	}
-
-	return 1 ;
-}
 int main(int argc, char const *const *argv,char const *const *envp)
 {
 	int r ;
@@ -206,7 +175,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	/** get all service on sv_src directory*/
 	if (MULTI){
-		if (!dir_get_fromdir(&gargv,sv_src.s)) strerr_diefu2sys(111,"get services from directory: ",sv_src.s) ;
+		if (!file_get_fromdir(&gargv,sv_src.s)) strerr_diefu2sys(111,"get services from directory: ",sv_src.s) ;
 		MSTART = *argv ;
 	}
 	else{
