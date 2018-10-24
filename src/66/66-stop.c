@@ -237,7 +237,7 @@ int svc_down(char const *base,char const *scandir,char const *live,char const *t
 }
 int rc_release(char const *base, char const *scandir, char const *live,char const *tree, char const *treename)
 {
-	size_t scanlen = strlen(scandir) ;
+//	size_t scanlen = strlen(scandir) ;
 /*	size_t treenamelen = strlen(treename) ;
 
 	if (genalloc_len(stralist,&gaunsup))
