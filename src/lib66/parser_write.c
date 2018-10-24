@@ -159,7 +159,7 @@ int write_services(sv_alltype *sv, char const *workdir, unsigned int force)
 		{
 			VERBO3 strerr_warnwu2x("write resolve file: reload for service: ",name) ;
 			return 0 ;
-		}
+		}		
 	}
 	if (sv->opts[0])
 	{
@@ -175,11 +175,32 @@ int write_services(sv_alltype *sv, char const *workdir, unsigned int force)
 		}
 		logname[namelen + 4] = 0 ;
 		
+		/** resolve directory*/
+		if (!resolve_remove_service(workdir,logname))
+		{
+			VERBO3 strerr_warnwu2sys("remove resolve directory for: ",name) ;
+			return 0 ;
+		}
 		//VERBO2 strerr_warnt4x("write resolve file ", src,SS_RESOLVE,"/logger ...") ;
 		if (!resolve_write(workdir,name,"logger",logname,force))
 		{
 			VERBO3 strerr_warnwu2x("write resolve file: logger for service: ",name) ;
 			return 0 ;
+		}
+		/** write resolve logger file */
+		if (!resolve_write(workdir,logname,"type",get_keybyid(type),force))
+		{
+			VERBO3 strerr_warnwu2x("write resolve file: type for service: ",logname) ;
+			return 0 ;
+		}
+		if (type == LONGRUN && force)
+		{
+			/** reload file */
+			if (!resolve_write(workdir,logname,"reload","",force))
+			{
+				VERBO3 strerr_warnwu2x("write resolve file: reload for service: ",logname) ;
+				return 0 ;
+			}
 		}
 	}
 	
