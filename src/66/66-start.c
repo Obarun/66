@@ -773,6 +773,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (!rc_sanitize(base.s,live.s,livetree.s,tree.s,treename,&nrc,envp)) strerr_diefu1x(111,"sanitize s6-rc services") ;
 		VERBO2 strerr_warni1x("start rc services ...") ;
 		if (!rc_start(base.s,live.s,livetree.s,tree.s,treename,&nrc,envp,trc)) strerr_diefu1x(111,"update s6-rc services") ;
+		VERBO2 strerr_warni3x("switch rc services of: ",treename," to source") ;
+		if (!db_switch_to(base.s,livetree.s,tree.s,treename,envp,SS_SWSRC))
+			strerr_diefu5x(111,"switch",livetree.s,"/",treename," to source") ;
 	}
 	
 	stralloc_free(&base) ;
