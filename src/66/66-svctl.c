@@ -329,7 +329,7 @@ int iopause_svc(svc_sig *sv_signal,char const *sig, ftrigr_t *fifo)
 							{
 								case GOTIT:
 									h = handle_signal_svc(sv_signal) ;
-									if (!h)
+									if (h)
 									{
 										check = 4 ;
 										break ;
