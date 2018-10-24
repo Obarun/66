@@ -278,18 +278,12 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			if (down)
 			{
 				if (WEXITSTATUS(status.wstat) && WIFEXITED(status.wstat) && status.pid)
-				{
-					VERBO3 strerr_warnwu2x("stop: ",svname) ;
-					e = 111 ;
-				}
+					strerr_diefu2x(111,"stop: ",svname) ;
 			}
 			if (up)
 			{
 				if (WEXITSTATUS(status.wstat) && WIFEXITED(status.wstat))
-				{
-					VERBO3 strerr_warnwu2x("start: ",svname) ;
-					e = 111 ;
-				}
+					strerr_diefu2x(111,"start: ",svname) ;
 			}
 		}
 	}
