@@ -167,7 +167,7 @@ int svc_down(char const *base,char const *scandir,char const *live,char const *t
 			{
 				if (!stra_add(&gatoremove,saresolve.s))
 				{
-					VERBO3 strerr_warnwu3x("add logger of: ",svname," as service to remove") ;
+					VERBO3 strerr_warnwu3x("add logger of: ",saresolve.s," as service to remove") ;
 					return 0 ;
 				}
 			}
@@ -175,7 +175,7 @@ int svc_down(char const *base,char const *scandir,char const *live,char const *t
 			{
 				if (!stra_add(&gaunsup,svname))
 				{
-					VERBO3 strerr_warnwu3x("add: ",svname," as service to unsupervise") ;
+					VERBO3 strerr_warnwu3x("add: ",saresolve.s," as service to unsupervise") ;
 					return 0 ;
 				}
 			}
@@ -235,8 +235,33 @@ int svc_down(char const *base,char const *scandir,char const *live,char const *t
 	return 1 ;
 	
 }
-int rc_release(char const *base, char const *live,char const *tree, char const *treename)
+int rc_release(char const *base, char const *scandir, char const *live,char const *tree, char const *treename)
 {
+	size_t scanlen = strlen(scandir) ;
+/*	size_t treenamelen = strlen(treename) ;
+
+	if (genalloc_len(stralist,&gaunsup))
+	{
+		for (unsigned int i = 0; i < genalloc_len(stralist,&gaunsup); i++)
+		{
+			char const *svname = gaistr(&gaunsup,i) ;
+			size_t svnamelen = gaistrlen(&gaunsup,i) ;
+	
+			char rm[scanlen + 1 + treenamelen + 1 + svnamelen + 1] ;
+			memcpy(rm,scandir,scanlen) ;
+			rm[scanlen] = '/' ;
+			memcpy(rm + scanlen + 1, treename,treenamelen) ;
+			rm[scanlen + 1 + svnamelen] = '-' ;
+			memcpy(rm + scanlen + 1 + treenamelen + 1,svname,svnamelen) ;
+			rm[scanlen + 1 + treenamelen + 1 + svnamelen] = 0 ;
+			VERBO3 strerr_warnt2x("unsupervise: ",rm) ;
+			if (rm_rf(rm) < 0)
+			{
+				VERBO3 strerr_warnwu2sys("remove directory: ",rm) ;
+				return 0 ;
+			}
+		}
+	}*/
 	if (!resolve_pointo(&saresolve,base,live,tree,treename,0,SS_RESOLVE_SRC))
 	{
 		VERBO3 strerr_warnwu1x("set revolve pointer to source") ;
@@ -276,6 +301,7 @@ int rc_down(char const *base, char const *scandir, char const *live, char const 
 		
 		char const *svname = genalloc_s(svstat_t,ga)[i].name ;
 		int torm = genalloc_s(svstat_t,ga)[i].remove ;
+	//	int unsup = genalloc_s(svstat_t,ga)[i].unsupervise ;
 		
 		if (!stra_add(&tot,svname))
 		{
@@ -292,6 +318,15 @@ int rc_down(char const *base, char const *scandir, char const *live, char const 
 				return 0 ;
 			}
 		}
+		/** unsupervise */
+	/*	if (unsup)
+		{
+			if (!stra_add(&gaunsup,svname))
+			{
+				VERBO3 strerr_warnwu3x("add: ",svname," as service to unsupervise") ;
+				return 0 ;
+			}
+		}*/
 		/** logger */
 		if (!resolve_pointo(&saresolve,base,live,tree,treename,0,SS_RESOLVE_SRC))
 		{
@@ -309,10 +344,18 @@ int rc_down(char const *base, char const *scandir, char const *live, char const 
 			{
 				if (!stra_add(&gatoremove,saresolve.s))
 				{
-					VERBO3 strerr_warnwu3x("add logger of: ",svname," as service to remove") ;
+					VERBO3 strerr_warnwu3x("add logger of: ",saresolve.s," as service to remove") ;
 					return 0 ;
 				}
 			}
+		/*	if (unsup)
+			{
+				if (!stra_add(&gaunsup,saresolve.s))
+				{
+					VERBO3 strerr_warnwu3x("add: ",saresolve.s," as service to unsupervise") ;
+					return 0 ;
+				}
+			}*/
 		}
 	}
 	
@@ -526,7 +569,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_BACK))
 					strerr_diefu1x(111,"set revolve pointer to backup") ;
 				r = resolve_read(&type,saresolve.s,*argv,"type") ;
-				if (r <= 0) strerr_dief3x(111,"service: ",*argv," is not running, you can only start it") ;
+				if (r <= 0 && !UNSUP) strerr_dief3x(111,"service: ",*argv," is not running, you can only start it") ;
 			}
 			if (svsrc.type == CLASSIC)
 			{
@@ -568,13 +611,11 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	}
 	if (genalloc_len(svstat_t,&nrc))
 	{
-		gatoremove = genalloc_zero ;
-		gaunsup = genalloc_zero ;
 		VERBO2 strerr_warni1x("stop rc services ...") ;
 		if (!rc_down(base.s, scandir.s, live.s,livetree.s,tree.s,treename,&nrc,envp,trc))
 			strerr_diefu1x(111,"update rc services") ;
 		VERBO2 strerr_warni1x("release rc services ...") ;
-		if (!rc_release(base.s,live.s,tree.s,treename))
+		if (!rc_release(base.s,scandir.s, live.s,tree.s,treename))
 			strerr_diefu1x(111,"release rc services") ;
 		VERBO2 strerr_warni3x("switch rc services of: ",treename," to source") ;
 		if (!db_switch_to(base.s,livetree.s,tree.s,treename,envp,SS_SWSRC))
