@@ -24,7 +24,7 @@ int main(int argc, char const **argv, char const *const *envp)
 
 	int r, argc1 ;
 
-	PROG = "66-execl" ;
+	PROG = "execl-cmdline" ;
 
 	stralloc modifs = STRALLOC_ZERO ;
 	
