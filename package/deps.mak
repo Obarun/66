@@ -9,13 +9,13 @@ src/66/66-all.o src/66/66-all.lo: src/66/66-all.c src/include/66/config.h src/in
 src/66/66-dbctl.o src/66/66-dbctl.lo: src/66/66-dbctl.c src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-disable.o src/66/66-disable.lo: src/66/66-disable.c src/include/66/backup.h src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-enable.o src/66/66-enable.lo: src/66/66-enable.c src/include/66/backup.h src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/parser.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
-src/66/66-execl.o src/66/66-execl.lo: src/66/66-execl.c
 src/66/66-init.o src/66/66-init.lo: src/66/66-init.c src/include/66/backup.h src/include/66/constants.h src/include/66/db.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-scandir.o src/66/66-scandir.lo: src/66/66-scandir.c src/include/66/config.h src/include/66/constants.h src/include/66/utils.h
 src/66/66-start.o src/66/66-start.lo: src/66/66-start.c src/include/66/backup.h src/include/66/config.h src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-stop.o src/66/66-stop.lo: src/66/66-stop.c src/include/66/backup.h src/include/66/config.h src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-svctl.o src/66/66-svctl.lo: src/66/66-svctl.c src/include/66/constants.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-tree.o src/66/66-tree.lo: src/66/66-tree.c src/include/66/config.h src/include/66/constants.h src/include/66/db.h src/include/66/tree.h src/include/66/utils.h
+src/66/execl-cmdline.o src/66/execl-cmdline.lo: src/66/execl-cmdline.c
 src/lib66/backup_cmd_switcher.o src/lib66/backup_cmd_switcher.lo: src/lib66/backup_cmd_switcher.c src/include/66/constants.h src/include/66/enum.h src/include/66/utils.h
 src/lib66/backup_make_new.o src/lib66/backup_make_new.lo: src/lib66/backup_make_new.c src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/tree.h src/include/66/utils.h
 src/lib66/backup_realpath_sym.o src/lib66/backup_realpath_sym.lo: src/lib66/backup_realpath_sym.c src/include/66/constants.h src/include/66/enum.h src/include/66/utils.h
@@ -64,8 +64,6 @@ src/lib66/tree_switch_tobackup.o src/lib66/tree_switch_tobackup.lo: src/lib66/tr
 66-disable: src/66/66-disable.o ${LIB66} -loblibs -lskarnet 
 66-enable: EXTRA_LIBS :=
 66-enable: src/66/66-enable.o ${LIB66} -loblibs -lskarnet -lexecline -ls6
-66-execl: EXTRA_LIBS :=
-66-execl: src/66/66-execl.o -loblibs -lskarnet
 66-init: EXTRA_LIBS :=
 66-init: src/66/66-init.o ${LIB66} -loblibs -ls6 -lskarnet
 66-scandir: EXTRA_LIBS :=
@@ -78,6 +76,8 @@ src/lib66/tree_switch_tobackup.o src/lib66/tree_switch_tobackup.lo: src/lib66/tr
 66-svctl: src/66/66-svctl.o ${LIB66} -loblibs -ls6 -lskarnet
 66-tree: EXTRA_LIBS :=
 66-tree: src/66/66-tree.o ${LIB66} -loblibs -lskarnet
+execl-cmdline: EXTRA_LIBS :=
+execl-cmdline: src/66/execl-cmdline.o -lexecline -loblibs -lskarnet
 ifeq ($(strip $(STATIC_LIBS_ARE_PIC)),)
 lib66.a.xyzzy: src/lib66/backup_cmd_switcher.o src/lib66/backup_make_new.o src/lib66/backup_realpath_sym.o src/lib66/db_cmd_master.o src/lib66/db_compile.o src/lib66/db_find_compiled_state.o src/lib66/db_get_permissions.o src/lib66/db_ok.o src/lib66/db_switch_to.o src/lib66/db_update.o src/lib66/dir_cmpndel.o src/lib66/find_sv_src.o src/lib66/get_enum.o src/lib66/get_uidgid.o src/lib66/get_userhome.o src/lib66/parser.o src/lib66/parser_utils.o src/lib66/parser_write.o src/lib66/resolve.o src/lib66/scandir_ok.o src/lib66/scandir_send_signal.o src/lib66/set_livedir.o src/lib66/set_livescan.o src/lib66/set_livetree.o src/lib66/set_ownerhome.o src/lib66/set_ownersysdir.o src/lib66/sv_alltype_zero.o src/lib66/svc_switch_to.o src/lib66/tree_cmd_state.o src/lib66/tree_cmd_switcher.o src/lib66/tree_copy.o src/lib66/tree_find_current.o src/lib66/tree_from_current.o src/lib66/tree_get_permissions.o src/lib66/tree_make_backup.o src/lib66/tree_sethome.o src/lib66/tree_switch_current.o src/lib66/tree_switch_tobackup.o
 else
