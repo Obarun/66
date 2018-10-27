@@ -886,18 +886,11 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 			{
 				if (!stralloc_cats(&shebang, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n")) retstralloc(0,"write_exec") ;
 			}
-			/** command to execute */
-			if (!stralloc_cats(&runuser, SS_BINPREFIX "66-execl ")) retstralloc(0,"write_exec") ;
-			if (!stralloc_cats(&runuser, keep.s+exec->exec)) retstralloc(0,"write_exec") ;
 			break ;
 		case CUSTOM:
 			if (!stralloc_cats(&shebang, "#!")) retstralloc(0,"write_exec") ;
 			if (!stralloc_cats(&shebang, keep.s+exec->shebang)) retstralloc(0,"write_exec") ;
 			if (!stralloc_cats(&shebang,"\n")) retstralloc(0,"write_exec") ;
-			
-			if (!stralloc_cats(&runuser, keep.s+exec->exec)) retstralloc(0,"write_exec") ;
-			if (!stralloc_cats(&runuser,"\n")) retstralloc(0,"write_exec") ;
-			
 			break ;
 		default:
 			VERBO3 strerr_warnw3x("unknow ", get_keybyid(exec->build)," build type") ;
@@ -910,6 +903,8 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 	/** close shebang */
 	if (!stralloc_0(&shebang)) retstralloc(0,"write_exec") ;
 	/** close command */
+	if (!stralloc_cats(&runuser, keep.s+exec->exec)) retstralloc(0,"write_exec") ;
+	if (!stralloc_cats(&runuser,"\n")) retstralloc(0,"write_exec") ;
 	if (!stralloc_0(&runuser)) retstralloc(0,"write_exec") ;
 	
 	/** build the file*/	
