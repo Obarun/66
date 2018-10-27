@@ -865,14 +865,14 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 						key = genalloc_s(sv_env,&sv->env)[i].key ;
 						if ((saenv.s+key)[0] == '!')
 						{
-							if (!stralloc_cats(&env,"importas -iu ")) retstralloc(0,"write_exec") ;
+							if (!stralloc_cats(&env,"importas -uD \"\" ")) retstralloc(0,"write_exec") ;
 							if (!stralloc_cats(&env,saenv.s+1+key)) retstralloc(0,"write_exec") ;
 							if (!stralloc_cats(&env," ")) retstralloc(0,"write_exec") ;
 							if (!stralloc_cats(&env,saenv.s+1+key)) retstralloc(0,"write_exec") ;
 						}
 						else
 						{
-							if (!stralloc_cats(&env,"importas -i ")) retstralloc(0,"write_exec") ;
+							if (!stralloc_cats(&env,"importas -D \"\" ")) retstralloc(0,"write_exec") ;
 							if (!stralloc_cats(&env,saenv.s+key)) retstralloc(0,"write_exec") ;
 							if (!stralloc_cats(&env," ")) retstralloc(0,"write_exec") ;
 							if (!stralloc_cats(&env,saenv.s+key)) retstralloc(0,"write_exec") ;
