@@ -15,6 +15,7 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/strerr2.h>
 #include <skalibs/env.h>
+#include <skalibs/djbunix.h>
 
 #include <execline/execline.h>
 
@@ -47,5 +48,6 @@ int main(int argc, char const **argv, char const *const *envp)
     if (!env_make(newarg, r, modifs.s, modifs.len)) strerr_diefu1sys(111, "env_make") ;
     newarg[r] = 0 ;
 	
-	el_execsequence(newarg, argv+argc1+1, envp) ;
+	xpathexec_run(newarg[0],newarg,envp) ;
+	//el_execsequence(newarg, argv+argc1+1, envp) ;
 }
