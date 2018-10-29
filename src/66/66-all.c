@@ -36,6 +36,9 @@
 #include <66/utils.h>
 #include <66/tree.h>
 
+#include <s6/s6-supervise.h>
+#include <s6/config.h>
+
 #include <stdio.h>
 unsigned int VERBOSITY = 1 ;
 static tain_t DEADLINE ;
@@ -312,6 +315,14 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			
 			if (wstat)
 				strerr_diefu2x(111,"init services for tree: ",treename) ;
+			
+			VERBO3 strerr_warnt2x("reload scandir: ",scandir.s) ;
+			r = s6_svc_writectl(scandir.s, S6_SVSCAN_CTLDIR, "an", 2) ;
+			if (r < 0)
+			{
+				VERBO3 strerr_warnw3sys("something is wrong with the ",scandir.s, "/" S6_SVSCAN_CTLDIR " directory. errno reported") ;
+				return -1 ;
+			}
 		}
 		if (!doit(tree.s,treename,live.s,what,envp)) strerr_diefu2x(111,"start service for tree: ",treename) ;
 	}
