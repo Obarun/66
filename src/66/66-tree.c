@@ -33,6 +33,7 @@
 #include <66/constants.h>
 #include <66/db.h>
 
+
 #define USAGE "66-tree [ -h help ] [ -v verbosity ] [ -n new ] [ -a allow user,user,... ] [ -d deny user,user,... ] [ -c current ] [ -E enable ] [ -D disable ] [ -R remove ] [ -C clone ] tree"
 
 unsigned int VERBOSITY = 1 ;
@@ -121,18 +122,20 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree)
 			return -1 ;
 		}
 	}
+	
 	r = dir_search(dst,tree,S_IFDIR) ;
 	if (r < 0){
 		VERBO3 strerr_warnw3x(dst,tree," is not a directory") ;
 		return -1 ;
 	}
+	
+	if (!r) return 0 ;
+	
 	/** we have one, keep it*/
 	if (!stralloc_cats(dstree,dst)) retstralloc(0,"sanitize_tree") ;
 	if (!stralloc_cats(dstree,"/")) retstralloc(0,"sanitize_tree") ;
 	if (!stralloc_cats(dstree,tree)) retstralloc(0,"sanitize_tree") ;
 	if (!stralloc_0(dstree)) retstralloc(0,"sanitize_tree") ;
-
-	if (!r) return 0 ;
 	
 	return 1 ;
 }

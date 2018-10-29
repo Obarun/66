@@ -130,7 +130,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (r < 0) strerr_diefu1x(110,"find the current tree. You must use -t options") ;
 	if (!r) strerr_diefu2sys(111,"find tree: ", tree.s) ;
 	
-	size_t treelen = get_rlen_until(tree.s,'/',tree.len) ;
+	size_t treelen = get_rlen_until(tree.s,'/',tree.len - 1) ;
 	size_t treenamelen = (tree.len - 1) - treelen ;
 	char treename[treenamelen + 1] ;
 	memcpy(treename, tree.s + treelen + 1,treenamelen) ;

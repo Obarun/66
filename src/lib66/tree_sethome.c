@@ -35,7 +35,7 @@ int tree_sethome(stralloc *tree, char const *base)
 	}
 	else
 	{
-		char treename[tree->len] ;
+		char treename[tree->len + 1] ;
 		memcpy(treename,tree->s,tree->len - 1) ;
 		treename[tree->len - 1] = 0 ;
 		tree->len = 0 ;
