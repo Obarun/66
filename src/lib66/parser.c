@@ -237,7 +237,6 @@ int parse_service_before(char const *src,char const *sv,char const *tree,strallo
 			if (!r) return 0 ;
 			if (r == 2)	VERBO3 strerr_warni3x("ignore ",deps.s+(genalloc_s(unsigned int,&gadeps)[sv_before.cname.idga+i])," service dependency: already added") ;
 		}
-		
 	}
 
 	stralloc_free(&srctmp) ;

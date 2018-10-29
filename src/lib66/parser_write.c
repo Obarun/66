@@ -159,7 +159,7 @@ int write_services(sv_alltype *sv, char const *workdir, unsigned int force)
 		{
 			VERBO3 strerr_warnwu2x("write resolve file: reload for service: ",name) ;
 			return 0 ;
-		}
+		}		
 	}
 	if (sv->opts[0])
 	{
@@ -175,11 +175,32 @@ int write_services(sv_alltype *sv, char const *workdir, unsigned int force)
 		}
 		logname[namelen + 4] = 0 ;
 		
+		/** resolve directory*/
+		if (!resolve_remove_service(workdir,logname))
+		{
+			VERBO3 strerr_warnwu2sys("remove resolve directory for: ",name) ;
+			return 0 ;
+		}
 		//VERBO2 strerr_warnt4x("write resolve file ", src,SS_RESOLVE,"/logger ...") ;
 		if (!resolve_write(workdir,name,"logger",logname,force))
 		{
 			VERBO3 strerr_warnwu2x("write resolve file: logger for service: ",name) ;
 			return 0 ;
+		}
+		/** write resolve logger file */
+		if (!resolve_write(workdir,logname,"type",get_keybyid(type),force))
+		{
+			VERBO3 strerr_warnwu2x("write resolve file: type for service: ",logname) ;
+			return 0 ;
+		}
+		if (type == LONGRUN && force)
+		{
+			/** reload file */
+			if (!resolve_write(workdir,logname,"reload","",force))
+			{
+				VERBO3 strerr_warnwu2x("write resolve file: reload for service: ",logname) ;
+				return 0 ;
+			}
 		}
 	}
 	
@@ -429,27 +450,10 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 	switch(logbuild)
 	{
 		case AUTO:
+			/** uid */
 			if (!stralloc_cats(&shebang, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n")) retstralloc(0,"write_logger") ;
 			if (!stralloc_0(&shebang)) retstralloc(0,"write_logger") ;
-			if (MYUID > 0){
-				if (!stralloc_cats(&ui,"\n")) retstralloc(0,"write_logger") ;
-				if (!stralloc_0(&ui)) retstralloc(0,"write_logger") ;
-				if (!log->destination)
-				{
-					if (!stralloc_cats(&destlog,userhome)) retstralloc(0,"write_logger") ;
-					if (!stralloc_cats(&destlog,"/")) retstralloc(0,"write_logger") ;
-					if (!stralloc_cats(&destlog,SS_LOGGER_USER_DIRECTORY)) retstralloc(0,"write_logger") ;
-					if (!stralloc_cats(&destlog,svname)) retstralloc(0,"write_logger") ;
-				//	if (!stralloc_cats(&destlog,"\n")) retstralloc(0,"write_logger") ;
-				}
-				else
-				{
-					if (!stralloc_cats(&destlog,keep.s+log->destination)) retstralloc(0,"write_logger") ;
-				//	if (!stralloc_cats(&destlog,"\n")) retstralloc(0,"write_logger") ;
-				}
-				if (!stralloc_0(&destlog)) retstralloc(0,"write_logger") ;
-			}
-			else
+			if ((!MYUID && log->run.runas))
 			{
 				if (!stralloc_cats(&ui,S6_BINPREFIX "s6-setuidgid ")) retstralloc(0,"write_logger") ;
 				if (!get_namebyuid(log->run.runas,&ui))
@@ -457,22 +461,32 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 					VERBO3 strerr_warnwu1sys("set owner for the logger") ;
 					return 0 ;
 				}
-				if (!stralloc_cats(&ui,"\n")) retstralloc(0,"write_logger") ;
-				if (!stralloc_0(&ui)) retstralloc(0,"write_logger") ;
+			}
+			if (!stralloc_cats(&ui,"\n")) retstralloc(0,"write_logger") ;
+			if (!stralloc_0(&ui)) retstralloc(0,"write_logger") ;
+			/** destination */		
+			if (!log->destination)
+			{	
+				if(MYUID > 0)
+				{	
 				
-				if (!log->destination)
-				{				
-					if (!stralloc_cats(&destlog,SS_LOGGER_SYS_DIRECTORY)) retstralloc(0,"write_logger") ;
+					if (!stralloc_cats(&destlog,userhome)) retstralloc(0,"write_logger") ;
+					if (!stralloc_cats(&destlog,"/")) retstralloc(0,"write_logger") ;
+					if (!stralloc_cats(&destlog,SS_LOGGER_USER_DIRECTORY)) retstralloc(0,"write_logger") ;
 					if (!stralloc_cats(&destlog,svname)) retstralloc(0,"write_logger") ;
-				//	if (!stralloc_cats(&destlog,"\n")) retstralloc(0,"write_logger") ;
 				}
 				else
 				{
-					if (!stralloc_cats(&destlog,keep.s+log->destination)) retstralloc(0,"write_logger") ;
-				//	if (!stralloc_cats(&destlog,"\n")) retstralloc(0,"write_logger") ;
+					if (!stralloc_cats(&destlog,SS_LOGGER_SYS_DIRECTORY)) retstralloc(0,"write_logger") ;
+					if (!stralloc_cats(&destlog,svname)) retstralloc(0,"write_logger") ;
 				}
-				if (!stralloc_0(&destlog)) retstralloc(0,"write_logger") ;
 			}
+			else
+			{
+				if (!stralloc_cats(&destlog,keep.s+log->destination)) retstralloc(0,"write_logger") ;
+			}
+			if (!stralloc_0(&destlog)) retstralloc(0,"write_logger") ;
+			
 			if (log->timestamp == TAI)
 				timestamp = "t" ;
 			else
@@ -497,7 +511,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			if (!stralloc_cats(&exec,shebang.s)) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec,EXECLINE_BINPREFIX "fdmove -c 2 1\n")) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec,ui.s)) retstralloc(0,"write_logger") ;
-			if (!stralloc_cats(&exec,EXECLINE_BINPREFIX "exec\n" S6_BINPREFIX "s6-log " "n")) retstralloc(0,"write_logger") ;
+			if (!stralloc_cats(&exec,S6_BINPREFIX "s6-log " "n")) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec,pback)) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec," ")) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec,timestamp)) retstralloc(0,"write_logger") ;
@@ -561,7 +575,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			return 0 ;
 		}
 	}
-	if (r)
+/*	if (r)
 	{
 		if (force)
 		{
@@ -588,7 +602,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			VERBO3 strerr_warnw5x("ignoring creation of: ",destlog.s,"/",svname,": already exist") ;
 			return 1 ;
 		}
-	}
+	}*/
 	
 	
 	stralloc_free(&shebang) ;
@@ -849,10 +863,20 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 					for (unsigned int i = 0 ; i < genalloc_len(sv_env,&sv->env) ; i++)
 					{
 						key = genalloc_s(sv_env,&sv->env)[i].key ;
-						if (!stralloc_cats(&env,"importas -i ")) retstralloc(0,"write_exec") ;
-						if (!stralloc_cats(&env,saenv.s+key)) retstralloc(0,"write_exec") ;
-						if (!stralloc_cats(&env," ")) retstralloc(0,"write_exec") ;
-						if (!stralloc_cats(&env,saenv.s+key)) retstralloc(0,"write_exec") ;
+						if ((saenv.s+key)[0] == '!')
+						{
+							if (!stralloc_cats(&env,"importas -uD \"\" ")) retstralloc(0,"write_exec") ;
+							if (!stralloc_cats(&env,saenv.s+1+key)) retstralloc(0,"write_exec") ;
+							if (!stralloc_cats(&env," ")) retstralloc(0,"write_exec") ;
+							if (!stralloc_cats(&env,saenv.s+1+key)) retstralloc(0,"write_exec") ;
+						}
+						else
+						{
+							if (!stralloc_cats(&env,"importas -D \"\" ")) retstralloc(0,"write_exec") ;
+							if (!stralloc_cats(&env,saenv.s+key)) retstralloc(0,"write_exec") ;
+							if (!stralloc_cats(&env," ")) retstralloc(0,"write_exec") ;
+							if (!stralloc_cats(&env,saenv.s+key)) retstralloc(0,"write_exec") ;
+						}
 						if (!stralloc_cats(&env,"\n")) retstralloc(0,"write_exec") ;
 					}
 				}
@@ -862,17 +886,11 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 			{
 				if (!stralloc_cats(&shebang, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n")) retstralloc(0,"write_exec") ;
 			}
-			/** command to execute */
-			if (!stralloc_cats(&runuser, keep.s+exec->exec)) retstralloc(0,"write_exec") ;
 			break ;
 		case CUSTOM:
 			if (!stralloc_cats(&shebang, "#!")) retstralloc(0,"write_exec") ;
 			if (!stralloc_cats(&shebang, keep.s+exec->shebang)) retstralloc(0,"write_exec") ;
 			if (!stralloc_cats(&shebang,"\n")) retstralloc(0,"write_exec") ;
-			
-			if (!stralloc_cats(&runuser, keep.s+exec->exec)) retstralloc(0,"write_exec") ;
-			if (!stralloc_cats(&runuser,"\n")) retstralloc(0,"write_exec") ;
-			
 			break ;
 		default:
 			VERBO3 strerr_warnw3x("unknow ", get_keybyid(exec->build)," build type") ;
@@ -885,6 +903,8 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 	/** close shebang */
 	if (!stralloc_0(&shebang)) retstralloc(0,"write_exec") ;
 	/** close command */
+	if (!stralloc_cats(&runuser, keep.s+exec->exec)) retstralloc(0,"write_exec") ;
+	if (!stralloc_cats(&runuser,"\n")) retstralloc(0,"write_exec") ;
 	if (!stralloc_0(&runuser)) retstralloc(0,"write_exec") ;
 	
 	/** build the file*/	
@@ -963,6 +983,9 @@ int write_env(genalloc *env,stralloc *sa,char const *dst)
 		{
 			key = genalloc_s(sv_env,env)[i].key ;
 			val = genalloc_s(sv_env,env)[i].val ;
+			
+			if ((sa->s+key)[0] == '!')
+				key++ ;
 		/*	if (dir_search(dst,sa->s+key,S_IFREG))
 			{
 				VERBO3 strerr_warnw5x("file: ",dst,"/",sa->s+key," already exist, skip it") ;

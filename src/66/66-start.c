@@ -177,10 +177,7 @@ int svc_start(char const *base,char const *scandir,char const *live,char const *
 	pid_t pid ; 
 	
 	genalloc tot = genalloc_zero ; //stralist
-	/** search logger */
 	
-	
-
 	for (unsigned int i = 0; i < genalloc_len(svstat_t,ga) ; i++)
 	{	
 		if (!stra_add(&tot,genalloc_s(svstat_t,ga)[i].name))
@@ -660,7 +657,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (r < 0) strerr_diefu1x(110,"find the current tree. You must use -t options") ;
 	if (!r) strerr_diefu2sys(111,"find tree: ", tree.s) ;
 	
-	size_t treelen = get_rlen_until(tree.s,'/',tree.len) ;
+	size_t treelen = get_rlen_until(tree.s,'/',tree.len - 1) ;
 	size_t treenamelen = (tree.len - 1) - treelen ;
 	char treename[treenamelen + 1] ;
 	memcpy(treename, tree.s + treelen + 1,treenamelen) ;
@@ -773,6 +770,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (!rc_sanitize(base.s,live.s,livetree.s,tree.s,treename,&nrc,envp)) strerr_diefu1x(111,"sanitize s6-rc services") ;
 		VERBO2 strerr_warni1x("start rc services ...") ;
 		if (!rc_start(base.s,live.s,livetree.s,tree.s,treename,&nrc,envp,trc)) strerr_diefu1x(111,"update s6-rc services") ;
+		VERBO2 strerr_warni3x("switch rc services of: ",treename," to source") ;
+		if (!db_switch_to(base.s,livetree.s,tree.s,treename,envp,SS_SWSRC))
+			strerr_diefu5x(111,"switch",livetree.s,"/",treename," to source") ;
 	}
 	
 	stralloc_free(&base) ;

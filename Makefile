@@ -63,7 +63,7 @@ ALL_ENV := $(DESTDIR)$(ENV_TARGETS)
 all: $(ALL_LIBS) $(ALL_BINS) $(ALL_INCLUDES)
 
 clean:
-	@exec rm -f $(ALL_LIBS) $(ALL_BINS) $(wildcard src/*/*.o src/*/*.lo) $(EXTRA_TARGETS) $(ENV_TARGETS)
+	@exec rm -f $(ALL_LIBS) $(ALL_BINS) $(wildcard src/*/*.o src/*/*.lo) $(EXTRA_TARGETS) 
 
 distclean: clean
 	@exec rm -f config.mak src/include/$(package)/config.h

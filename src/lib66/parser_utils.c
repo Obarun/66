@@ -126,8 +126,9 @@ int get_key(char const *s,char const *key,stralloc *keep)
 {
 	int pos,newpos ;
 	size_t end ;
-	
+
 	pos = get_keyline(s,key,keep) ;
+
 	if (pos < 0){
 		return -1 ;
 	}
@@ -299,9 +300,9 @@ int parse_bracket(keynocheck *nocheck)
 	
 	ssize_t start,end,nl ;
 	size_t nlen ;
-	char tmp[nocheck->val.len + 1 + 1] ;
+	char tmp[nocheck->val.len + 1] ;
 	start = end = nl = 0 ;
-	nlen = nocheck->val.len ;
+	nlen = nocheck->val.len - 1 ;
 	start = get_len_until(nocheck->val.s,'(') ;
 	if (start < 0) return 0 ;
 	start++;
