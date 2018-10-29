@@ -177,10 +177,7 @@ int svc_start(char const *base,char const *scandir,char const *live,char const *
 	pid_t pid ; 
 	
 	genalloc tot = genalloc_zero ; //stralist
-	/** search logger */
 	
-	
-
 	for (unsigned int i = 0; i < genalloc_len(svstat_t,ga) ; i++)
 	{	
 		if (!stra_add(&tot,genalloc_s(svstat_t,ga)[i].name))
