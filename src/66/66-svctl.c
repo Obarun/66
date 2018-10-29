@@ -42,7 +42,7 @@
 unsigned int VERBOSITY = 1 ;
 stralloc svkeep = STRALLOC_ZERO ;
 genalloc gakeep = GENALLOC_ZERO ; //type svc_sig_s
-
+stralloc saresolve = STRALLOC_ZERO ;
 typedef struct svc_sig_s svc_sig, *svc_sig_t_ref ;
 struct svc_sig_s
 {
@@ -517,8 +517,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (r < 0) strerr_diefu1x(110,"find the current tree. You must use -t options") ;
 	if (!r) strerr_diefu2sys(111,"find tree: ", tree.s) ;
 	
-	stralloc_free(&base) ;
-	
 	size_t treelen = get_rlen_until(tree.s,'/',tree.len - 1) ;
 	size_t treenamelen = (tree.len - 1) - treelen ;
 	char treename[treenamelen + 1] ;
@@ -538,8 +536,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	r = set_livescan(&scandir,owner) ;
 	if (!r) retstralloc(111,"main") ;
 	if (r < 0 ) strerr_dief3x(111,"live: ",scandir.s," must be an absolute path") ;
-	
-	stralloc_free(&live) ;
 	
 	if ((scandir_ok(scandir.s)) !=1 ) strerr_dief3sys(111,"scandir: ", scandir.s," is not running") ;
 	
@@ -564,12 +560,20 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		svok[svoklen] = '/' ;
 		memcpy(svok + svoklen + 1 ,svname,namelen + 1) ;
 		svoklen = svoklen + 1 + namelen ;
-		
-		r = s6_svc_ok(svok) ;
-		if (r < 0) strerr_diefu2sys(111,"check ", svok) ;
-		if (!r)
+		/** do not check the logger*/
+		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_SRC))
 		{
-			strerr_dief2x(110,svok," is not initialized") ;
+			VERBO3 strerr_warnwu1x("set revolve pointer to source") ;
+			return 0 ;
+		}
+		if (resolve_read(&saresolve,saresolve.s,svname,"logger"))
+		{
+			if (str_diff(saresolve.s,svname))
+			{
+				r = s6_svc_ok(svok) ;
+				if (r < 0) strerr_diefu2sys(111,"check ", svok) ;
+				if (!r)	strerr_dief2x(110,svok," is not initialized") ;
+			}
 		}
 		sv_signal.scan = svkeep.len ;
 		if (!stralloc_catb(&svkeep, svok, svoklen + 1)) retstralloc(111,"main") ;
@@ -659,6 +663,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				
 	}
 	
+	stralloc_free(&base) ;
+	stralloc_free(&live) ;
 	stralloc_free(&tree) ;
 	stralloc_free(&scandir) ;
 	
