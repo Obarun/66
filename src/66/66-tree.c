@@ -129,13 +129,13 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree)
 		return -1 ;
 	}
 	
-	if (!r) return 0 ;
-	
 	/** we have one, keep it*/
 	if (!stralloc_cats(dstree,dst)) retstralloc(0,"sanitize_tree") ;
 	if (!stralloc_cats(dstree,"/")) retstralloc(0,"sanitize_tree") ;
 	if (!stralloc_cats(dstree,tree)) retstralloc(0,"sanitize_tree") ;
 	if (!stralloc_0(dstree)) retstralloc(0,"sanitize_tree") ;
+	
+	if (!r) return 0 ;
 	
 	return 1 ;
 }
