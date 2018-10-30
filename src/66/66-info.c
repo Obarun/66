@@ -41,7 +41,6 @@
 
 #include <stdio.h>
 unsigned int VERBOSITY = 1 ;
-
 static stralloc base = STRALLOC_ZERO ;
 static stralloc live = STRALLOC_ZERO ;
 static stralloc saresolve = STRALLOC_ZERO ;
@@ -54,9 +53,9 @@ static uid_t owner ;
 
 
 #define USAGE "66-info [ -h help ] [ -T tree ] [ -S service ] sub-options (use -h as sub-options for futher informations)"
-#define TREE_USAGE "66-info -T [ -help ] [ -v verbosity ] [ -L list] [ -t tree ]"
+#define TREE_USAGE "66-info -T [ -help ] [ -L list] [ -t tree ]"
 #define exit_tree_usage() strerr_dieusage(100, TREE_USAGE)
-#define SV_USAGE "66-info -S [ -help ] [ -v verbosity ] [ -t tree ] [ -s status] service"
+#define SV_USAGE "66-info -S [ -help ] [ -t tree ] [ -l live ] [ -p n lines ] service"
 #define exit_sv_usage() strerr_dieusage(100, SV_USAGE)
 
 /*
@@ -111,9 +110,8 @@ static inline void tree_help (void)
 "\n"
 "options :\n"
 "	-h: print this help\n" 
-"	-v: increase/decrease verbosity\n"
 "	-L: list available tree\n"
-"	-t: get informations about tree\n"
+"	-t: get informations about the given tree\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
@@ -127,62 +125,48 @@ static inline void sv_help (void)
 "\n"
 "options :\n"
 "	-h: print this help\n" 
-"	-v: increase/decrease verbosity\n"
 "	-t: tree to use\n"
-"	-s: status\n"
+"	-l: live directory\n"
+"	-p: print n last lines of the associated logger\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
     strerr_diefu1sys(111, "write to stdout") ;
 }
+char *print_nlog(char *str, int n) 
+{ 
+	int r = 0 ;
+	int DELIM ='\n' ;
+	size_t slen = strlen(str) ;
+	
+	if (n <= 0) return NULL; 
 
-int print_status(char const *svname,char const *const *envp)
-{
-	int r ;
-	int wstat ;
-	pid_t pid ;
-	/** TODO longrun need to be check with prefix*/
-	if (!stralloc_copy(&SCANDIR,&live)) retstralloc(111,"main") ;
+	size_t ndelim = 0;  
+	char *target_pos = NULL;   
 	
-	r = set_livescan(&SCANDIR,owner) ;
-	if (!r) retstralloc(111,"main") ;
-	if(r < 0) strerr_dief3x(111,"live: ",SCANDIR.s," must be an absolute path") ;
+	r = get_rlen_until(str,DELIM,slen) ;
 	
-	if ((scandir_ok(SCANDIR.s)) !=1 )
-	{
-		if (buffer_putsflush(buffer_1,"not running\n") < 0) return 0 ;
-		return 1 ;
-	}
-	size_t svnamelen = strlen(svname) ;
-	size_t scanlen = SCANDIR.len - 1 ;
-	char svok[scanlen + 1 + svnamelen + 1] ;
-	memcpy(svok,SCANDIR.s,scanlen) ;
-	svok[scanlen] = '/' ;
-	memcpy(svok + scanlen + 1, svname,svnamelen) ;
-	svok[scanlen + 1 + svnamelen] = 0 ;
-	
-	r = s6_svc_ok(svok) ;
-	if (r != 1)
-	{
-		if (buffer_putsflush(buffer_1,"not running\n") < 0) return 0 ;
-		return 1 ;
-	}
-	char const *newargv[3] ;
-	unsigned int m = 0 ;
-	
-	newargv[m++] = SS_BINPREFIX "s6-svstat" ;
-	newargv[m++] = svok ;
-	newargv[m++] = 0 ;
-				
-	pid = child_spawn0(newargv[0],newargv,envp) ;
-	if (waitpid_nointr(pid,&wstat, 0) < 0)
-		strerr_diefu2sys(111,"wait for ",newargv[0]) ;
-	
-	if (wstat)
-		strerr_diefu2x(111,"status for service: ",svname) ;
-	
-	return 1 ;
-}
+	//target_pos = strrchr(str, DELIM); 
+	target_pos = str + r ; 
+
+	if (target_pos == NULL) return NULL; 
+
+	while (ndelim < n) 
+	{ 
+		while (str < target_pos && *target_pos != DELIM) 
+			--target_pos; 
+
+		if (*target_pos ==  DELIM) 
+			--target_pos, ++ndelim; 
+		else break; 
+	} 
+
+	if (str < target_pos) 
+		target_pos += 2; 
+
+	return target_pos ;
+} 
+
 int get_fromdir(genalloc *ga, char const *srcdir,mode_t mode)
 {
 	int fdsrc ;
@@ -213,6 +197,86 @@ int get_fromdir(genalloc *ga, char const *srcdir,mode_t mode)
 
 	return 1 ;
 }
+
+int print_status(char const *svname,char const *type,char const *treename, char const *const *envp)
+{
+	int r ;
+	int wstat ;
+	pid_t pid ;
+	
+	stralloc livetree = STRALLOC_ZERO ;
+	stralloc svok = STRALLOC_ZERO ;
+	
+	if (!stralloc_copy(&SCANDIR,&live)) retstralloc(111,"main") ;
+	if (!stralloc_copy(&livetree,&live)) retstralloc(111,"main") ;
+	
+	r = set_livescan(&SCANDIR,owner) ;
+	if (!r) retstralloc(111,"main") ;
+	if(r < 0) strerr_dief3x(111,"live: ",SCANDIR.s," must be an absolute path") ;
+	
+	if ((scandir_ok(SCANDIR.s)) !=1 )
+	{
+		if (buffer_putsflush(buffer_1,"scandir is not running\n") < 0) return 0 ;
+		goto out ;
+	}
+	
+	if (!stralloc_copy(&livetree,&live)) retstralloc(111,"main") ;
+	
+	r = set_livetree(&livetree,owner) ;
+	if (!r) retstralloc(111,"main") ;
+	if (r < 0 ) strerr_dief3x(111,"live: ",livetree.s," must be an absolute path") ;
+	
+	if (get_enumbyid(type,key_enum_el) == CLASSIC)
+	{
+		size_t scanlen = SCANDIR.len - 1 ;
+		if (!stralloc_catb(&svok,SCANDIR.s,scanlen)) retstralloc(0,"print_status") ;
+		if (!stralloc_cats(&svok,"/")) retstralloc(0,"print_status") ;
+		if (!stralloc_cats(&svok,svname)) retstralloc(0,"print_status") ;
+	}
+	else if (get_enumbyid(type,key_enum_el) == LONGRUN)
+	{
+		size_t livelen = livetree.len -1 ;
+		if (!stralloc_catb(&svok,livetree.s,livelen)) retstralloc(0,"print_status") ;
+		if (!stralloc_cats(&svok,"/")) retstralloc(0,"print_status") ;
+		if (!stralloc_cats(&svok,treename)) retstralloc(0,"print_status") ;
+		if (!stralloc_cats(&svok,SS_SVDIRS)) retstralloc(0,"print_status") ;
+		if (!stralloc_cats(&svok,"/")) retstralloc(0,"print_status") ;
+		if (!stralloc_cats(&svok,svname)) retstralloc(0,"print_status") ;
+	}
+	else
+	{
+		if (buffer_putsflush(buffer_1,"nothing to display\n") < 0) return 0 ;
+		goto out ;
+	}
+	if (!stralloc_0(&svok)) retstralloc(0,"print_status") ;
+	
+	r = s6_svc_ok(svok.s) ;
+	if (r != 1)
+	{
+		if (buffer_putsflush(buffer_1,"not running\n") < 0) return 0 ;
+		goto out ;
+	}
+	char const *newargv[3] ;
+	unsigned int m = 0 ;
+	
+	newargv[m++] = SS_BINPREFIX "s6-svstat" ;
+	newargv[m++] = svok.s ;
+	newargv[m++] = 0 ;
+				
+	pid = child_spawn0(newargv[0],newargv,envp) ;
+	if (waitpid_nointr(pid,&wstat, 0) < 0)
+		strerr_diefu2sys(111,"wait for ",newargv[0]) ;
+	
+	if (wstat)
+		strerr_diefu2x(111,"status for service: ",svname) ;
+	
+	out:
+		stralloc_free(&livetree) ;
+		stralloc_free(&svok) ;
+		
+	return 1 ;
+}
+
 int tree_args(int argc, char const *const *argv)
 {
 	int r, list, comma, master ;
@@ -247,14 +311,13 @@ int tree_args(int argc, char const *const *argv)
 			
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:Lt:", &l) ;
+			int opt = getopt_args(argc,argv, ">hLt:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			
 			switch (opt)
 			{
 				case 'h' : 	tree_help(); return 0 ;
-				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) exitusage() ; break ;
 				case 'L' :	list = 1 ; break ;
 				case 't' : 	if(!stralloc_cats(&tree,l.arg)) retstralloc(111,"main") ;
 							if(!stralloc_0(&tree)) retstralloc(111,"main") ;
@@ -353,39 +416,7 @@ int tree_args(int argc, char const *const *argv)
 	
 	return 1 ;
 }
-char *print_nlog(char *str, int n) 
-{ 
-	int r = 0 ;
-	int DELIM ='\n' ;
-	size_t slen = strlen(str) ;
-	
-	if (n <= 0) return NULL; 
 
-	size_t ndelim = 0;  
-	char *target_pos = NULL;   
-	
-	r = get_rlen_until(str,DELIM,slen) ;
-	
-	//target_pos = strrchr(str, DELIM); 
-	target_pos = str + r ; 
-
-	if (target_pos == NULL) return NULL; 
-
-	while (ndelim < n) 
-	{ 
-		while (str < target_pos && *target_pos != DELIM) 
-			--target_pos; 
-
-		if (*target_pos ==  DELIM) 
-			--target_pos, ++ndelim; 
-		else break; 
-	} 
-
-	if (str < target_pos) 
-		target_pos += 2; 
-
-	return target_pos ;
-} 
 int sv_args(int argc, char const *const *argv,char const *const *envp)
 {
 	int r ; 
@@ -405,13 +436,12 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 		
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:l:t:p:", &l) ;
+			int opt = getopt_args(argc,argv, ">hl:t:p:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
 			{
 				case 'h' : 	sv_help(); return 0 ;
-				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) exitusage() ; break ;
 				case 't' : 	if(!stralloc_cats(&tree,l.arg)) retstralloc(111,"main") ;
 							if(!stralloc_0(&tree)) retstralloc(111,"main") ;
 							break ;
@@ -444,16 +474,18 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	
 	if (!bprintf(buffer_1,"%s%s%s\n","[",svname,"]")) return 0 ;
 	
-	/** status */
-	if (buffer_putsflush(buffer_1,"status : ") < 0) return 0 ;
-	print_status(svname,envp) ;
-	
 	if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_SRC))
 		strerr_diefu1x(111,"set revolve pointer to source") ;
-	/** type */	
+	/** retrieve type but do not print it*/	
 	r = resolve_read(&type,saresolve.s,svname,"type") ;
 	if (r < -1) strerr_dief2sys(111,"invalid .resolve directory: ",saresolve.s) ;
 	if (r <= 0) strerr_diefu2x(111,"read type of: ",svname) ;
+	
+	/** status */
+	if (buffer_putsflush(buffer_1,"status : ") < 0) return 0 ;
+	print_status(svname,type.s,treename,envp) ;
+
+	/** print the type */	
 	if (!bprintf(buffer_1,"%s %s\n","type :",type.s)) return 0 ;
 	
 	/** description */
@@ -510,16 +542,17 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 					stralloc log = STRALLOC_ZERO ;
 					if (!file_readputsa(&log,what.s,"current")) retstralloc(0,"sv_args") ;
 					if (!bprintf(buffer_1,"%s \n",print_nlog(log.s,nlog))) return 0 ;
+					stralloc_free(&log) ;
 				}
 			}
 		}
 	}
-		
 	if (buffer_putsflush(buffer_1,"") < 0) return 0 ;
-	/** statut */
 	
-	
-	
+	stralloc_free(&tree) ;
+	stralloc_free(&what) ;
+	stralloc_free(&type) ;
+	genalloc_deepfree(stralist,&gawhat,stra_free) ;
 	
 	return 0 ;
 }
