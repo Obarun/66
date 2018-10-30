@@ -104,9 +104,9 @@ int resolve_write(char const *dst,char const *svname, char const *file, char con
 			VERBO3 strerr_warnwu3sys("create directory: ",solve,svname) ;
 			return 0 ;
 		}
+		memcpy(solve + newlen,svname,namelen) ;
 	}
-			
-	memcpy(solve + newlen,svname,namelen) ;
+		
 	solve[newlen + namelen] = '/' ;
 	solve[newlen + namelen + 1] = 0 ;
 	newlen = newlen + namelen + 1 ;

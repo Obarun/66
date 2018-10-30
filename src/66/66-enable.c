@@ -289,7 +289,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			strerr_diefu3x(111,"switch ",treename," to backup") ;
 		}		
 	}
-	
+
 	stralloc swap = stralloc_zero ;
 	size_t svdirlen ;	
 	char svdir[tree.len + SS_SVDIRS_LEN + SS_RESOLVE_LEN + 1] ;

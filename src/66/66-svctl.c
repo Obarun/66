@@ -69,7 +69,7 @@ struct svc_sig_s
 	.deadline = TAIN_ZERO \
 }
 
-unsigned int SV_DEADLINE = 5000 ;
+unsigned int SV_DEADLINE = 1000 ;
 
 typedef enum state_e state_t, *state_t_ref ;
 enum state_e
