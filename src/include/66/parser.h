@@ -310,13 +310,13 @@ extern int keep_logger(sv_execlog *log,keynocheck *nocheck) ;
 
 extern int write_services(sv_alltype *sv, char const *workdir, unsigned int force) ;
 
-extern int write_classic(char const *src, sv_alltype *sv, char const *dst, unsigned int force) ;
+extern int write_classic(char const *workdir, sv_alltype *sv, char const *dst, unsigned int force) ;
 
-extern int write_longrun(char const *src, sv_alltype *sv,char const *dst, unsigned int force) ;
+extern int write_longrun(char const *workdir, sv_alltype *sv,char const *dst, unsigned int force) ;
 
-extern int write_oneshot(char const *src, sv_alltype *sv,char const *dst, unsigned int force) ;
+extern int write_oneshot(char const *workdir, sv_alltype *sv,char const *dst, unsigned int force) ;
 
-extern int write_bundle(char const *src, sv_alltype *sv, char const *dst, unsigned int force) ;
+extern int write_bundle(char const *workdir, sv_alltype *sv, char const *dst, unsigned int force) ;
 
 extern int write_common(sv_alltype *sv, char const *dst) ;
 
@@ -324,7 +324,7 @@ extern int write_exec(sv_alltype *sv, sv_exec *exec,char const *name,char const 
 
 extern int write_uint(char const *dst, char const *name, uint32_t ui) ;
 
-extern int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, char const *svname,int mode, unsigned int force) ;
+extern int write_logger(char const *workdir,sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, char const *svname,int mode, unsigned int force) ;
 
 extern int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char const *proddst,char const *consdst) ;
 

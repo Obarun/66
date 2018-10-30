@@ -93,7 +93,12 @@ int write_services(sv_alltype *sv, char const *workdir, unsigned int force)
 			VERBO3 strerr_warnwu2sys("create ",wname) ;
 			return 0 ;
 		}
-		
+		/** resolve directory*/
+		if (!resolve_remove_service(workdir,name))
+		{
+			VERBO3 strerr_warnwu2sys("remove resolve directory for: ",name) ;
+			return 0 ;
+		}
 	}
 	else if (r && !force)
 	{
@@ -140,16 +145,17 @@ int write_services(sv_alltype *sv, char const *workdir, unsigned int force)
 			VERBO3 strerr_warni2x("unkown type: ", get_keybyid(sv->cname.itype)) ;
 			break ;
 	}
-	/** resolve directory*/
-	if (!resolve_remove_service(workdir,name))
-	{
-		VERBO3 strerr_warnwu2sys("remove resolve directory for: ",name) ;
-		return 0 ;
-	}
-	//VERBO2 strerr_warnt4x("write resolve file ", src,SS_RESOLVE,"/type ...") ;
+	
+	//VERBO2 strerr_warnt4x("write resolve file ", workdir,SS_RESOLVE,"/type ...") ;
 	if (!resolve_write(workdir,name,"type",get_keybyid(type),force))
 	{
 		VERBO3 strerr_warnwu2x("write resolve file: type for service: ",name) ;
+		return 0 ;
+	}
+
+	if (!resolve_write(workdir,name,"description",keep.s+sv->cname.description,force))
+	{
+		VERBO3 strerr_warnwu2x("write resolve file: description for service: ",name) ;
 		return 0 ;
 	}
 	if (type == CLASSIC || type == BUNDLE || type == ONESHOT || (type == LONGRUN && force))
@@ -208,7 +214,7 @@ int write_services(sv_alltype *sv, char const *workdir, unsigned int force)
 	return 1 ;
 }
 
-int write_classic(char const *src, sv_alltype *sv, char const *dst, unsigned int force)
+int write_classic(char const *workdir, sv_alltype *sv, char const *dst, unsigned int force)
 {	
 	/**notification,timeout, ...*/
 	if (!write_common(sv, dst))
@@ -234,7 +240,7 @@ int write_classic(char const *src, sv_alltype *sv, char const *dst, unsigned int
 	/**logger */
 	if (sv->opts[0])
 	{
-		if (!write_logger(sv, &sv->type.classic_longrun.log,"log",dst,keep.s+sv->cname.name,0755,force))
+		if (!write_logger(workdir,sv, &sv->type.classic_longrun.log,"log",dst,keep.s+sv->cname.name,0755,force))
 		{
 			VERBO3 strerr_warnwu3x("write: ",dst,"/log") ;
 			return 0 ;
@@ -245,7 +251,7 @@ int write_classic(char const *src, sv_alltype *sv, char const *dst, unsigned int
 	return 1 ;
 }
 
-int write_longrun(char const *src, sv_alltype *sv,char const *dst, unsigned force)
+int write_longrun(char const *workdir, sv_alltype *sv,char const *dst, unsigned force)
 {	
 	size_t r ;
 	char *name = keep.s+sv->cname.name ;
@@ -286,7 +292,7 @@ int write_longrun(char const *src, sv_alltype *sv,char const *dst, unsigned forc
 		r = byte_search(dst,dstlen,keep.s+sv->cname.name,namelen) ;
 		memcpy(dstlog,dst,r) ;
 		dstlog[r] = 0 ;
-		if (!write_logger(sv, &sv->type.classic_longrun.log,logname,dstlog,keep.s+sv->cname.name,0644,force)) 
+		if (!write_logger(workdir,sv, &sv->type.classic_longrun.log,logname,dstlog,keep.s+sv->cname.name,0644,force)) 
 		{
 			VERBO3 strerr_warnwu3x("write: ",dstlog,logname) ;
 			return 0 ;
@@ -299,7 +305,7 @@ int write_longrun(char const *src, sv_alltype *sv,char const *dst, unsigned forc
 			
 	}
 	/** dependencies */
-	if (!write_dependencies(src,&sv->cname, dst, "dependencies", &gadeps,force))
+	if (!write_dependencies(workdir,&sv->cname, dst, "dependencies", &gadeps,force))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/dependencies") ;
 		return 0 ;
@@ -360,7 +366,7 @@ int write_bundle(char const *src, sv_alltype *sv, char const *dst, unsigned int 
 	return 1 ;
 }
 
-int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, char const *svname,int mode, unsigned int force)
+int write_logger(char const *workdir, sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, char const *svname,int mode, unsigned int force)
 {
 	int r ;
 	int logbuild = log->run.build ;
@@ -378,8 +384,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 	stralloc ui = STRALLOC_ZERO ;
 	stralloc exec = STRALLOC_ZERO ;
 	stralloc destlog = STRALLOC_ZERO ;
-	
-	
+		
 	if(!stralloc_cats(&ddst,dst)) retstralloc(0,"write_logger") ;
 	if(!stralloc_cats(&ddst,"/")) retstralloc(0,"write_logger") ;
 	if(!stralloc_cats(&ddst,name)) retstralloc(0,"write_logger") ;
@@ -440,7 +445,6 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			return 0 ;
 		}
 	}
-	
 	
 	/**logger section may not be set
 	 * pick auto by default*/
@@ -541,6 +545,12 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 					return 0 ;
 				}
 			}
+			
+			if (!resolve_write(workdir,svname,"dstlog",destlog.s,force))
+			{
+				VERBO3 strerr_warnwu2x("write resolve file: dstlogger for service: ",name) ;
+				return 0 ;
+			}
 			break;
 		case CUSTOM:
 			if (!write_exec(sv, &log->run,"run",ddst.s,mode))
@@ -555,41 +565,22 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 	
 	}
 	
-	/** create the corresponding log directory*/
-	size_t destlen = get_rlen_until(destlog.s,'/',destlog.len) ;
-	destlog.len = destlen ;
-	if (!stralloc_0(&destlog)) retstralloc(0,"write_logger") ;
-	
-	r = dir_search(destlog.s,svname,S_IFDIR) ;
-	if (r < 0)
+	/** create the corresponding log directory
+	 * only pass through here if destlog was set */
+	if (logbuild == AUTO)
 	{
-		VERBO3 strerr_warnw4x(destlog.s,"/",svname," already exist with different mode") ;
-		return 0 ;
-	}
-	if (!r)
-	{
-		r = dir_create_under(destlog.s,svname,0755) ;
+		size_t destlen = get_rlen_until(destlog.s,'/',destlog.len) ;
+		destlog.len = destlen ;
+		if (!stralloc_0(&destlog)) retstralloc(0,"write_logger") ;
+		
+		r = dir_search(destlog.s,svname,S_IFDIR) ;
 		if (r < 0)
 		{
-			VERBO3 strerr_warnwu5sys("create ",destlog.s,"/",svname," directory") ;
+			VERBO3 strerr_warnw4x(destlog.s,"/",svname," already exist with different mode") ;
 			return 0 ;
 		}
-	}
-/*	if (r)
-	{
-		if (force)
+		if (!r)
 		{
-			char tmp[destlen + 1 + strlen(svname) + 1];
-			memcpy(tmp,destlog.s, destlen) ;
-			tmp[destlen] = '/' ;
-			memcpy(tmp + destlen + 1,svname,strlen(svname)) ;
-			tmp[destlen + 1 + strlen(svname)] = 0 ;
-			
-			if (rm_rf(tmp) < 0)
-			{
-				VERBO3 strerr_warnwu2sys("remove log directory: ",tmp) ;
-				return 0 ;
-			}
 			r = dir_create_under(destlog.s,svname,0755) ;
 			if (r < 0)
 			{
@@ -597,13 +588,35 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 				return 0 ;
 			}
 		}
-		else
+	/*	if (r)
 		{
-			VERBO3 strerr_warnw5x("ignoring creation of: ",destlog.s,"/",svname,": already exist") ;
-			return 1 ;
-		}
-	}*/
-	
+			if (force)
+			{
+				char tmp[destlen + 1 + strlen(svname) + 1];
+				memcpy(tmp,destlog.s, destlen) ;
+				tmp[destlen] = '/' ;
+				memcpy(tmp + destlen + 1,svname,strlen(svname)) ;
+				tmp[destlen + 1 + strlen(svname)] = 0 ;
+				
+				if (rm_rf(tmp) < 0)
+				{
+					VERBO3 strerr_warnwu2sys("remove log directory: ",tmp) ;
+					return 0 ;
+				}
+				r = dir_create_under(destlog.s,svname,0755) ;
+				if (r < 0)
+				{
+					VERBO3 strerr_warnwu5sys("create ",destlog.s,"/",svname," directory") ;
+					return 0 ;
+				}
+			}
+			else
+			{
+				VERBO3 strerr_warnw5x("ignoring creation of: ",destlog.s,"/",svname,": already exist") ;
+				return 1 ;
+			}
+		}*/
+	}
 	
 	stralloc_free(&shebang) ;
 	stralloc_free(&ui) ;
@@ -662,39 +675,6 @@ int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char
 	}	
 	
 	return 1 ;
-}
-
-int write_dependencies(char const *src, sv_name_t *cname,char const *dst,char const *filename, genalloc *ga, unsigned int force)
-{
-	char *name = keep.s + cname->name ;
-	
-	stralloc contents = STRALLOC_ZERO ;
-	
-	for (unsigned int i = 0; i < cname->nga; i++)
-	{
-		if (!stralloc_cats(&contents,deps.s+genalloc_s(unsigned int,ga)[cname->idga+i])) retstralloc(0,"write_dependencies") ;
-		if (!stralloc_cats(&contents,"\n")) retstralloc(0,"write_dependencies") ;
-	}
-	if (contents.len)
-	{
-		if (!file_write_unsafe(dst,filename,contents.s,contents.len))
-		{
-			VERBO3 strerr_warnwu3sys("create file: ",dst,filename) ;
-			goto err ;
-		}
-		if (!resolve_write(src,name,"deps",contents.s,force))
-		{
-			VERBO3 strerr_warnwu2x("write resolve file: deps for service: ",name) ;
-			goto err ;
-		}
-	}
-	
-	stralloc_free(&contents) ;
-	
-	return 1 ;
-	err:
-		stralloc_free(&contents) ;
-		return 0 ;
 }
 
 int write_common(sv_alltype *sv, char const *dst)
@@ -942,7 +922,40 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 	return 1 ;	
 }
 
-
+int write_dependencies(char const *src, sv_name_t *cname,char const *dst,char const *filename, genalloc *ga, unsigned int force)
+{
+	char *name = keep.s + cname->name ;
+	
+	stralloc contents = STRALLOC_ZERO ;
+	
+	for (unsigned int i = 0; i < cname->nga; i++)
+	{
+		if (!stralloc_cats(&contents,deps.s+genalloc_s(unsigned int,ga)[cname->idga+i])) retstralloc(0,"write_dependencies") ;
+		if (!stralloc_cats(&contents,"\n")) retstralloc(0,"write_dependencies") ;
+	}
+		
+	if (contents.len)
+	{
+		if (!file_write_unsafe(dst,filename,contents.s,contents.len))
+		{
+			VERBO3 strerr_warnwu3sys("create file: ",dst,filename) ;
+			goto err ;
+		}
+		if (!stralloc_0(&contents)) retstralloc(0,"write_dependencies") ;
+		if (!resolve_write(src,name,"deps",contents.s,force))
+		{
+			VERBO3 strerr_warnwu2x("write resolve file: deps for service: ",name) ;
+			goto err ;
+		}
+	}
+	
+	stralloc_free(&contents) ;
+	
+	return 1 ;
+	err:
+		stralloc_free(&contents) ;
+		return 0 ;
+}
 
 int write_uint(char const *dst, char const *name, uint32_t ui)
 {
