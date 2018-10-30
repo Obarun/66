@@ -8,4 +8,5 @@
 66-stop			0755
 66-svctl		0755
 66-all			0755
+66-info			0755
 execl-cmdline	0755

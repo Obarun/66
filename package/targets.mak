@@ -9,6 +9,7 @@ BIN_TARGETS := \
 66-stop \
 66-svctl \
 66-all \
+66-info \
 execl-cmdline
 
 LIB_DEFS := 66=66

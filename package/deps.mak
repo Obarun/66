@@ -9,6 +9,7 @@ src/66/66-all.o src/66/66-all.lo: src/66/66-all.c src/include/66/config.h src/in
 src/66/66-dbctl.o src/66/66-dbctl.lo: src/66/66-dbctl.c src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-disable.o src/66/66-disable.lo: src/66/66-disable.c src/include/66/backup.h src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-enable.o src/66/66-enable.lo: src/66/66-enable.c src/include/66/backup.h src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/parser.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
+src/66/66-info.o src/66/66-info.lo: src/66/66-info.c src/include/66/constants.h src/include/66/enum.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-init.o src/66/66-init.lo: src/66/66-init.c src/include/66/backup.h src/include/66/constants.h src/include/66/db.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-scandir.o src/66/66-scandir.lo: src/66/66-scandir.c src/include/66/config.h src/include/66/constants.h src/include/66/utils.h
 src/66/66-start.o src/66/66-start.lo: src/66/66-start.c src/include/66/backup.h src/include/66/config.h src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
@@ -64,6 +65,8 @@ src/lib66/tree_switch_tobackup.o src/lib66/tree_switch_tobackup.lo: src/lib66/tr
 66-disable: src/66/66-disable.o ${LIB66} -loblibs -lskarnet 
 66-enable: EXTRA_LIBS :=
 66-enable: src/66/66-enable.o ${LIB66} -loblibs -lskarnet -lexecline -ls6
+66-info: EXTRA_LIBS :=
+66-info: src/66/66-info.o ${LIB66} -loblibs -ls6 -lskarnet
 66-init: EXTRA_LIBS :=
 66-init: src/66/66-init.o ${LIB66} -loblibs -ls6 -lskarnet
 66-scandir: EXTRA_LIBS :=
