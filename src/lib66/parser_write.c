@@ -143,7 +143,7 @@ int write_services(sv_alltype *sv, char const *workdir, unsigned int force)
 			break ;
 		default: 
 			VERBO3 strerr_warni2x("unkown type: ", get_keybyid(sv->cname.itype)) ;
-			break ;
+			return 0 ;
 	}
 	
 	//VERBO2 strerr_warnt4x("write resolve file ", workdir,SS_RESOLVE,"/type ...") ;
