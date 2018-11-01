@@ -47,7 +47,7 @@ unsigned int VERBOSITY = 1 ;
 
 stralloc saresolve = STRALLOC_ZERO ;
 
-#define USAGE "66-enable [ -h help ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -f force ] [ -d directory ] service(s)"
+#define USAGE "66-enable [ -h help ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -f force ] [ -d directory ] [ -I instance ] service(s)"
 
 static inline void info_help (void)
 {
@@ -61,6 +61,7 @@ static inline void info_help (void)
 "	-t: name of the tree to use\n"
 "	-f: owerwrite service(s)\n"
 "	-d: enable an entire directory\n"
+"	-I: create an instance of service\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
@@ -74,12 +75,96 @@ static void cleanup(char const *dst)
 	errno = e ;
 }
 
+int start_parser(char const *src,char const *svname,char const *tree, stralloc *keep, unsigned int *nbsv)
+{
+	stralloc sasv = STRALLOC_ZERO ;
+	
+	if (!parse_service_before(src,svname,tree,keep, nbsv, &sasv)) strerr_dief4x(111,"invalid service file: ",src,"/",svname) ;
+	
+	stralloc_free(&sasv) ;
+	
+	return 1 ;
+}
+
+int insta_replace(stralloc *sa,char const *src,char const *cpy)
+{
+	
+	int curr, count ;
+	
+	if (!src || !*src) return 0;
+	
+	size_t len = strlen(src) ;
+	size_t clen= strlen(cpy) ;
+			
+	curr = count = 0 ;
+	for(int i = 0; (size_t)i < len;i++)
+		if (src[i] == '@')
+			count++ ;
+		
+	size_t resultlen = len + (clen * count) ;
+	char result[resultlen + 1 ] ;
+	
+	for(int i = 0; (size_t)i < len;i++)
+	{
+		if (src[i] == '@')
+		{
+			
+			if (((size_t)i + 1) == len) break ;
+			if (src[i + 1] == 'I')
+			{
+				memcpy(result + curr,cpy,clen) ;
+				curr = curr + clen;
+				i = i + 2 ;
+			}
+		}
+		result[curr++] = src[i] ;	
+			
+	}
+	result[curr] = 0 ;
+	
+	return stralloc_obreplace(sa,result) ;
+}
+int insta_create(char const *src,char const *instasrc, char const *instacopy, char const *tree,stralloc *keep,unsigned int *nbsv)
+{
+	
+	stralloc sa = STRALLOC_ZERO ;
+	stralloc tmp = STRALLOC_ZERO ;	
+	
+	if (get_len_until(instasrc,'@') < 0)
+		strerr_dief2x(111,"unvalid instance service file: ",instasrc) ;
+	
+	if (!dir_create_tmp(&tmp,"/tmp",instacopy))
+		strerr_diefu1x(111,"create instance tmp dir") ;
+	
+	if (!file_readputsa(&sa,src,instasrc))
+		strerr_diefu4sys(111,"open: ",tmp.s,"/",instasrc) ;
+	
+	if (!insta_replace(&sa,sa.s,instacopy))
+		strerr_diefu2x(111,"replace instance character at: ",sa.s) ;
+	
+	if (!file_write_unsafe(tmp.s,instacopy,sa.s,sa.len))
+		strerr_diefu4sys(111,"create instance service file: ",src,"/",instacopy) ;
+		
+	start_parser(tmp.s,instacopy,tree,keep,nbsv) ;
+	
+	if (rm_rf(tmp.s) < 0)
+		VERBO3 strerr_warnwu2x("remove tmp directory: ",tmp.s) ;
+		
+	stralloc_free(&sa) ;
+	stralloc_free(&tmp) ;
+	
+	return 1 ;
+}
+
 int main(int argc, char const *const *argv,char const *const *envp)
 {
 	int r ;
-	unsigned int nbsv, nlongrun, nclassic ;
+	unsigned int nbsv, nlongrun, nclassic, insta ;
 	
 	uid_t owner ;
+	
+	char const *instasrc = NULL ;
+	char const *instacopy = NULL ;
 	
 	stralloc base = STRALLOC_ZERO ;//SS_SYSTEM
 	stralloc tree = STRALLOC_ZERO ;//-t options
@@ -93,7 +178,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	genalloc ganlong = GENALLOC_ZERO ; // type stralist
 	genalloc ganclassic = GENALLOC_ZERO ; // name of classic service, type stralist
 	
-	r = nbsv = nclassic = nlongrun =  0 ;
+	r = nbsv = nclassic = nlongrun = insta = 0 ;
 		
 	PROG = "66-enable" ;
 	{
@@ -101,7 +186,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:l:t:fd:", &l) ;
+			int opt = getopt_args(argc,argv, ">hv:l:t:fd:I:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
@@ -119,6 +204,10 @@ int main(int argc, char const *const *argv,char const *const *envp)
 							if(!stralloc_0(&dir)) retstralloc(111,"main") ;
 							MULTI = 1 ;
 							break ;
+				case 'I' :	if (MULTI) exitusage() ; 
+							instacopy = l.arg ; 
+							insta = 1 ; 
+							break ;
 				default : exitusage() ; 
 			}
 		}
@@ -127,7 +216,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	if (argc < 1) exitusage() ;
 	/**only name of the service to enable is allowed with -d options*/
-	if (argc > 1 && MULTI) exitusage() ;
+	if ((argc > 1 && MULTI) || (argc > 1 && insta)) exitusage() ;
 	owner = MYUID ;
 	if (!set_ownersysdir(&base,owner)) strerr_diefu1sys(111, "set owner directory") ;
 	
@@ -173,26 +262,28 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	}		
 	stralloc_free(&dir) ;
 	
-	/** get all service on sv_src directory*/
-	if (MULTI){
-		if (!file_get_fromdir(&gargv,sv_src.s)) strerr_diefu2sys(111,"get services from directory: ",sv_src.s) ;
-		MSTART = *argv ;
+	if (!insta)
+	{
+		
+		/** get all service on sv_src directory*/
+		if (MULTI){
+			if (!file_get_fromdir(&gargv,sv_src.s)) strerr_diefu2sys(111,"get services from directory: ",sv_src.s) ;
+			MSTART = *argv ;
+			for (unsigned int i = 0; i < genalloc_len(stralist,&gasv); i++)
+				start_parser(sv_src.s,gaistr(&gasv,i),tree.s,&keep,&nbsv) ;
+		}
+		else
+		{
+			for(;*argv;argv++)
+				start_parser(sv_src.s,*argv,tree.s,&keep,&nbsv) ; 
+		}
 	}
-	else{
-		for(;*argv;argv++)
-			if (!stra_add(&gargv,*argv)) retstralloc(111,"main") ;
+	else
+	{
+		instasrc = argv[0] ;
+		if (!insta_create(sv_src.s,instasrc,instacopy,tree.s,&keep,&nbsv)) strerr_diefu4x(111,"make instance from: ",instasrc," to: ",instacopy) ;
 	}
 	
-	/** parse all the files*/
-	{
-		stralloc sasv = STRALLOC_ZERO ;
-		for(unsigned int i=0;i<genalloc_len(stralist,&gargv);i++)
-		{
-			if (!parse_service_before(sv_src.s, gaistr(&gargv,i),tree.s,&keep, &nbsv, &sasv)) strerr_dief4x(111,"invalid service file: ",sv_src.s,"/",gaistr(&gargv,i)) ;
-		}
-		stralloc_free(&sasv) ;
-	}
-
 
 	sv_alltype svblob[nbsv] ;
 	

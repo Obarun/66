@@ -53,6 +53,7 @@ void freed_parser(void)
 	stralloc_free(&ganame) ;
 	genalloc_free(unsigned int,&gadeps) ;
 	genalloc_free(sv_alltype,&gasv) ;
+	avltree_free(&deps_map) ;
 }
 
 static void *sv_toadd (unsigned int d, void *x)

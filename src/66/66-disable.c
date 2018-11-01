@@ -357,8 +357,15 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	/** retrieve dependencies */
 	{
 		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_SRC))
+		{
+			cleanup(workdir.s) ;
 			strerr_diefu1x(111,"set revolve pointer to source") ;
-		if (!make_depends_graph(saresolve.s)) strerr_diefu1x(111,"make dependencies graph") ;
+		}
+		if (!make_depends_graph(saresolve.s))
+		{
+			cleanup(workdir.s) ;
+			strerr_diefu1x(111,"make dependencies graph") ;
+		}
 	}
 	
 	{
@@ -367,8 +374,10 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		for(;*argv;argv++)
 		{
 			if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_SRC))
+			{
+				cleanup(workdir.s) ;
 				strerr_diefu1x(111,"set revolve pointer to source") ;
-			
+			}
 			/*rb = resolve_read(&type,saresolve.s,*argv,"remove") ;
 			if (rb < -1) strerr_dief2x(111,"invalid .resolve directory: ",saresolve.s) ;
 			if (rb >= 1)
@@ -402,10 +411,16 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			char *name = gaistr(&ganclassic,i) ;
 			VERBO2 strerr_warni1x("remove svc services ... ") ;
 			if (!remove_sv(workdir.s,name,CLASSIC,&gadepstoremove))
+			{
+				cleanup(workdir.s) ;
 				strerr_diefu2x(111,"disable: ",name) ;
+			}
 			/** modify the resolve file for 66-stop*/
-			if (!resolve_write(workdir.s,gaistr(&ganclassic,i),"remove","",1)) 
+			if (!resolve_write(workdir.s,gaistr(&ganclassic,i),"remove","",1))
+			{
+				cleanup(workdir.s) ;
 				strerr_diefu2sys(111,"write resolve file: remove for service: ",gaistr(&ganclassic,i)) ;
+			}
 		}
 		
 		r = backup_cmd_switcher(VERBOSITY,"-t30 -b",treename) ;
@@ -446,12 +461,17 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		{
 			char *name = gaistr(&ganlong,i) ;
 			if (!remove_sv(workdir.s,name,LONGRUN,&gadepstoremove))
+			{
+				cleanup(workdir.s) ;
 				strerr_diefu2x(111,"disable: ",name) ;
+			}
 			if (!stralloc_cats(&newupdate," ")) retstralloc(111,"main") ;
 			if (!stralloc_cats(&newupdate,name)) retstralloc(111,"main") ;
-			if (!resolve_write(workdir.s,gaistr(&ganlong,i),"remove","",1)) 
+			if (!resolve_write(workdir.s,gaistr(&ganlong,i),"remove","",1))
+			{
+				cleanup(workdir.s) ;
 				strerr_diefu2sys(111,"write resolve file: remove for service: ",gaistr(&ganlong,i)) ;
-			
+			}
 		}
 		for (unsigned int i = 0 ; i < genalloc_len(stralist,&gadepstoremove) ; i++ )
 		{
@@ -459,8 +479,11 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			if (!stralloc_cats(&newupdate,gaistr(&gadepstoremove,i))) retstralloc(111,"main") ;
 		
 			/** modify the resolve file for 66-stop*/
-			if (!resolve_write(workdir.s,gaistr(&gadepstoremove,i),"remove","",1)) 
+			if (!resolve_write(workdir.s,gaistr(&gadepstoremove,i),"remove","",1))
+			{
+				cleanup(workdir.s) ;
 				strerr_diefu2sys(111,"write resolve file: remove for service: ",gaistr(&gadepstoremove,i)) ;
+			}
 		}
 		if (!stralloc_0(&newupdate)) retstralloc(111,"main") ;
 			
@@ -480,8 +503,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		/** this is an important part, we call s6-rc-update here */
 		if (!db_switch_to(base.s,livetree.s,tree.s,treename,envp,SS_SWBACK))
 		{
-			VERBO3 strerr_warnwu3x("switch ",treename," to backup") ;
-			return 0 ;
+			cleanup(workdir.s) ;
+			strerr_diefu3x(111,"switch ",treename," to backup") ;
 		}
 		
 	}
@@ -500,10 +523,15 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (rm_rf(svdir) < 0)
 	{
 		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,CLASSIC,SS_RESOLVE_SRC))
+		{
+			cleanup(workdir.s) ;
 			strerr_diefu1x(111,"set revolve pointer to source") ;
-		
+		}
 		if (!resolve_pointo(&swap,base.s,live.s,tree.s,treename,CLASSIC,SS_RESOLVE_BACK))
+		{
+			cleanup(workdir.s) ;
 			strerr_diefu1x(111,"set revolve pointer to source") ;
+		}
 		if (!hiercopy(swap.s,saresolve.s))
 		{
 			cleanup(workdir.s) ;
@@ -520,10 +548,15 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (rm_rf(svdir) < 0)
 	{
 		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,LONGRUN,SS_RESOLVE_SRC))
+		{
+			cleanup(workdir.s) ;
 			strerr_diefu1x(111,"set revolve pointer to source") ;
-		
+		}
 		if (!resolve_pointo(&swap,base.s,live.s,tree.s,treename,LONGRUN,SS_RESOLVE_BACK))
+		{
+			cleanup(workdir.s) ;
 			strerr_diefu1x(111,"set revolve pointer to source") ;
+		}
 		if (!hiercopy(swap.s,saresolve.s))
 		{
 			cleanup(workdir.s) ;
@@ -551,10 +584,15 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (!hiercopy(workdir.s,svdir))
 	{
 		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_SRC))
+		{	
+			cleanup(workdir.s) ;
 			strerr_diefu1x(111,"set revolve pointer to source") ;
-		
+		}
 		if (!resolve_pointo(&swap,base.s,live.s,tree.s,treename,0,SS_RESOLVE_BACK))
+		{
+			cleanup(workdir.s) ;
 			strerr_diefu1x(111,"set revolve pointer to source") ;
+		}
 		if (!hiercopy(swap.s,saresolve.s))
 		{
 			cleanup(workdir.s) ;

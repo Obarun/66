@@ -183,7 +183,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc contents = STRALLOC_ZERO ;
 	genalloc in = GENALLOC_ZERO ; //stralist
 	
-	what = -1 ;
+	what = 1 ;
 	
 	PROG = "66-all" ;
 	{
