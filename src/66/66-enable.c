@@ -147,6 +147,9 @@ int insta_create(char const *src,char const *instasrc, char const *instacopy, ch
 		
 	start_parser(tmp.s,instacopy,tree,keep,nbsv) ;
 	
+	if (rm_rf(tmp.s) < 0)
+		VERBO3 strerr_warnwu2x("remove tmp directory: ",tmp.s) ;
+		
 	stralloc_free(&sa) ;
 	stralloc_free(&tmp) ;
 	
