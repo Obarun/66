@@ -243,10 +243,9 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, c
 		{
 			VERBO3 strerr_warni3x("Resolving ",name," service dependencies") ;
 		}else VERBO3 strerr_warni2x("Resolving service declaration of bundle: ",name) ;
-	
+		
 		for (int i = 0;i < sv_before->cname.nga;i++)
 		{
-			ga =genalloc_zero ;
 			if (sv_before->cname.itype != BUNDLE)
 			{
 				VERBO3 strerr_warni4x("Service : ",mainsv, " depends on : ",deps.s+(genalloc_s(unsigned int,&gadeps)[sv_before->cname.idga+i])) ;
@@ -257,6 +256,7 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, c
 		
 		for (int i = 0;i < genalloc_len(stralist,&ga);i++)
 		{	
+			sv_before_deps = sv_alltype_zero ;
 			newsrc = stralloc_zero ;
 			dname = gaistr(&ga,i) ;
 			if (obstr_equal(dname,name))
