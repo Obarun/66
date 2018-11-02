@@ -441,6 +441,21 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		
 	if (!hiercopy(workdir.s,svdir))
 	{
+		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_SRC))
+		{	
+			cleanup(workdir.s) ;
+			strerr_diefu1x(111,"set revolve pointer to source") ;
+		}
+		if (!resolve_pointo(&swap,base.s,live.s,tree.s,treename,0,SS_RESOLVE_BACK))
+		{
+			cleanup(workdir.s) ;
+			strerr_diefu1x(111,"set revolve pointer to source") ;
+		}
+		if (!hiercopy(swap.s,saresolve.s))
+		{
+			cleanup(workdir.s) ;
+			strerr_diefu4sys(111,"to copy tree: ",saresolve.s," to ", swap.s) ;
+		}
 		cleanup(workdir.s) ;
 		strerr_diefu4sys(111,"to copy tree: ",workdir.s," to ", svdir) ;
 	}
