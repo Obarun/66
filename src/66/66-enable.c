@@ -75,11 +75,11 @@ static void cleanup(char const *dst)
 	errno = e ;
 }
 
-int start_parser(char const *src,char const *svname,char const *tree, stralloc *keep, unsigned int *nbsv)
+int start_parser(char const *src,char const *svname,char const *tree, unsigned int *nbsv)
 {
 	stralloc sasv = STRALLOC_ZERO ;
 	
-	if (!parse_service_before(src,svname,tree,keep, nbsv, &sasv)) strerr_dief4x(111,"invalid service file: ",src,"/",svname) ;
+	if (!parse_service_before(src,svname,tree,nbsv,&sasv)) strerr_dief4x(111,"invalid service file: ",src,"/",svname) ;
 	
 	stralloc_free(&sasv) ;
 	
@@ -124,7 +124,7 @@ int insta_replace(stralloc *sa,char const *src,char const *cpy)
 	
 	return stralloc_obreplace(sa,result) ;
 }
-int insta_create(char const *src,char const *instasrc, char const *instacopy, char const *tree,stralloc *keep,unsigned int *nbsv)
+int insta_create(char const *src,char const *instasrc, char const *instacopy, char const *tree,unsigned int *nbsv)
 {
 	
 	stralloc sa = STRALLOC_ZERO ;
@@ -145,7 +145,7 @@ int insta_create(char const *src,char const *instasrc, char const *instacopy, ch
 	if (!file_write_unsafe(tmp.s,instacopy,sa.s,sa.len))
 		strerr_diefu4sys(111,"create instance service file: ",src,"/",instacopy) ;
 		
-	start_parser(tmp.s,instacopy,tree,keep,nbsv) ;
+	start_parser(tmp.s,instacopy,tree,nbsv) ;
 	
 	if (rm_rf(tmp.s) < 0)
 		VERBO3 strerr_warnwu2x("remove tmp directory: ",tmp.s) ;
@@ -266,22 +266,23 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	{
 		
 		/** get all service on sv_src directory*/
-		if (MULTI){
+		if (MULTI)
+		{
 			if (!file_get_fromdir(&gargv,sv_src.s)) strerr_diefu2sys(111,"get services from directory: ",sv_src.s) ;
 			MSTART = *argv ;
-			for (unsigned int i = 0; i < genalloc_len(stralist,&gasv); i++)
-				start_parser(sv_src.s,gaistr(&gasv,i),tree.s,&keep,&nbsv) ;
+			for (unsigned int i = 0; i < genalloc_len(stralist,&gargv); i++)
+				start_parser(sv_src.s,gaistr(&gargv,i),tree.s,&nbsv) ;
 		}
 		else
 		{
 			for(;*argv;argv++)
-				start_parser(sv_src.s,*argv,tree.s,&keep,&nbsv) ; 
+				start_parser(sv_src.s,*argv,tree.s,&nbsv) ; 
 		}
 	}
 	else
 	{
 		instasrc = argv[0] ;
-		if (!insta_create(sv_src.s,instasrc,instacopy,tree.s,&keep,&nbsv)) strerr_diefu4x(111,"make instance from: ",instasrc," to: ",instacopy) ;
+		if (!insta_create(sv_src.s,instasrc,instacopy,tree.s,&nbsv)) strerr_diefu4x(111,"make instance from: ",instasrc," to: ",instacopy) ;
 	}
 	
 
@@ -302,7 +303,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (!tree_copy(&workdir,tree.s,treename)) strerr_diefu1sys(111,"create tmp working directory") ;
 		for (unsigned int i = 0; i < before.nsv; i++)
 		{
-			VERBO2 strerr_warni3x("add ",keep.s + before.services[i].cname.name," service ...") ;
 			r = write_services(&before.services[i], workdir.s,FORCE) ;
 			if (!r)
 			{

@@ -70,56 +70,128 @@ static int sv_cmp(void const *a, void const *b, void *x)
 
 avltree deps_map = AVLTREE_INIT(8, 3, 8, &sv_toadd, &sv_cmp, &ganame) ;
 
-int add_cname(char const *name, sv_alltype *sv_before,genalloc *ganame,avltree *deps_map)
+int add_cname(char const *name, sv_alltype *sv_before)
 {
-	uint32_t id = genalloc_len(sv_name_t,ganame) ;
+	uint32_t id = genalloc_len(sv_name_t,&ganame) ;
 	
-	if (!genalloc_append(sv_name_t,ganame,&sv_before->cname)) retstralloc(0,"add_name") ;
+	if (!genalloc_append(sv_name_t,&ganame,&sv_before->cname)) retstralloc(0,"add_name") ;
 	
-	return avltree_insert(deps_map,id) ;
+	return avltree_insert(&deps_map,id) ;
 }
-/** @Return 0 on fail
- * @Return 1 on success
- * @Return 2 service already added */
-int resolve_srcdeps(char const *src, char const *tree,avltree *deps_map,unsigned int *nbsv, unsigned int id,stralloc *sasv)
+static inline int add_sv(sv_alltype *sv_before,char const *name,unsigned int *nbsv)
 {
 	int r ;
-
-	stralloc sasrc = STRALLOC_ZERO ;
-	char *name = NULL ;
-	uint32_t avlid ;
-
-	name = deps.s+(genalloc_s(unsigned int,&gadeps)[id]) ;
 	
-	VERBO2 strerr_warni3x("Resolving source of ", name, " service dependency") ;
-	r = avltree_search(deps_map,name,&avlid) ;
-	if (r)
+	VERBO2 strerr_warni2x("Add service: ",name) ;
+	
+	if (!genalloc_append(sv_alltype,&gasv,sv_before)) retstralloc(0,"parse_service_before") ;
+	
+	r = add_cname(name,sv_before) ;
+	if (!r)
 	{
-		stralloc_free(&sasrc) ;
-		return 2 ;
+		VERBO3 strerr_warnwu3x("insert", name," as node") ;
+		return 0 ;
 	}
+	(*nbsv)++ ;
+	
+	return 1 ;
+}
+static inline int read_svfile(stralloc *sasv,char const *name,char const *src)
+{
+	int r ; 
+	size_t srclen = strlen(src) ;
+	size_t namelen = strlen(name) ;
+	
+	char svtmp[srclen + namelen + 1] ;
+	memcpy(svtmp,src,srclen) ;
+	svtmp[srclen] = '/' ;
+	memcpy(svtmp + srclen + 1, name, namelen) ;
+	svtmp[srclen + namelen + 1] = 0 ;
+	
+	VERBO3 strerr_warni4x("Read service file of : ",name," at: ",src) ;
+	
+	size_t filesize=file_get_size(svtmp) ;
+	if (!filesize)
+	{
+		VERBO3 strerr_warnw2x(svtmp," is empty") ;
+		return 0 ;
+	}
+	*sasv = stralloc_zero ;
+	
+	r = openreadfileclose(svtmp,sasv,filesize) ;
+	if(!r)
+	{
+		VERBO3 strerr_warnwu2sys("open ", svtmp) ;
+		return 0 ;
+	}
+	/** ensure that we have an empty line at the end of the string*/
+	if (!stralloc_cats(sasv,"\n")) retstralloc(0,"parse_service_before") ;
+	if (!stralloc_0(sasv)) retstralloc(0,"parse_service_before") ;
+	
+	return 1 ;
+}
+static inline int start_parser(stralloc *sasv,char const *name,sv_alltype *sv_before)
+{
+	VERBO2 strerr_warni3x("Parsing ", name," service...") ;
+	
+	int r ;
+	/**@Return -5 for invalid svtype 
+	* @Return -4 for invalid section
+	* @Return -3 invalid key in section
+	* @Return -2 for invalid keystyle
+	* @Return -1 mandatory key is missing
+	* @Return 0 unable to transfer to service struct*/
+	r = parser(sasv->s,sv_before) ;
+	if (r == -5) VERBO3 strerr_warnw3x("invalid type for: ",name," service") ;
+	if (r == -4) VERBO3 strerr_warnw3x("invalid section for: ",name," service") ;
+	if (r == -3) VERBO3 strerr_warnw3x("invalid key in section for: ",name," service") ;
+	if (r == -2) VERBO3 strerr_warnw3x("invalid key value for: ",name," service") ;
+	if (r == -1) VERBO3 strerr_warnw3x("mandatory key is missing for: ",name," service") ;
+	if (!r) VERBO3 strerr_warnwu3x("keep information of: ",name," service") ;
+	
+	if (r <= 0)
+	{
+		stralloc_free(sasv) ;
+		return 0 ;
+	}
+	
+	*sasv = stralloc_zero ;
+	
+	return 1 ;
+}
+static inline int deps_src(stralloc *newsrc,char const *src, char const *name, char const *tree)
+{
+	int r ;
+	uint32_t avlid ;
+	
+	VERBO3 strerr_warni3x("Resolving source of ", name, " service dependency") ;
+	r = avltree_search(&deps_map,name,&avlid) ;
+	if (r) return 2 ; //already added nothing to do
+	
+	*newsrc = stralloc_zero ;
+	
 	/** Search in current dir*/
-	if (!stralloc_cats(&sasrc,src)) retstralloc(0,"resolve_srcdeps") ;
-	if (!stralloc_0(&sasrc)) retstralloc(0,"resolve_srcdeps") ;
-	r = dir_search(sasrc.s,name,S_IFREG) ;
+	if (!stralloc_cats(newsrc,src)) retstralloc(0,"resolve_srcdeps") ;
+	if (!stralloc_0(newsrc)) retstralloc(0,"resolve_srcdeps") ;
+	r = dir_search(newsrc->s,name,S_IFREG) ;
 	if (!r)
 	{
 		/** Search on current tree*/
-		if (!stralloc_obreplace(&sasrc, tree)) retstralloc(0,"resolve_deps") ;
-		if (!stralloc_cats(&sasrc,tree)) retstralloc(0,"resolve_deps") ;
-		if (!stralloc_cats(&sasrc,SS_SVDIRS)) retstralloc(0,"resolve_deps") ;
-		if (!stralloc_cats(&sasrc,SS_DB)) retstralloc(0,"resolve_deps") ;
-		if (!stralloc_cats(&sasrc,SS_SRC)) retstralloc(0,"resolve_deps") ;
-		if (!stralloc_0(&sasrc)) retstralloc(0,"resolve_deps") ;
+		if (!stralloc_obreplace(newsrc, tree)) retstralloc(0,"resolve_deps") ;
+		if (!stralloc_cats(newsrc,tree)) retstralloc(0,"resolve_deps") ;
+		if (!stralloc_cats(newsrc,SS_SVDIRS)) retstralloc(0,"resolve_deps") ;
+		if (!stralloc_cats(newsrc,SS_DB)) retstralloc(0,"resolve_deps") ;
+		if (!stralloc_cats(newsrc,SS_SRC)) retstralloc(0,"resolve_deps") ;
+		if (!stralloc_0(newsrc)) retstralloc(0,"resolve_deps") ;
 			
-		r = dir_search(sasrc.s,name,S_IFDIR) ;
+		r = dir_search(newsrc->s,name,S_IFDIR) ;
 		
 		if (r) return 2 ;// already on the tree, nothing to do here
 		else 
 		if (!r)
 		{ 
-			if (!stralloc_obreplace(&sasrc, SS_SERVICE_DIR)) retstralloc(0,"resolve_deps") ;
-			r = dir_search(sasrc.s,name,S_IFREG) ;		
+			if (!stralloc_obreplace(newsrc, SS_SERVICE_DIR)) retstralloc(0,"resolve_deps") ;
+			r = dir_search(newsrc->s,name,S_IFREG) ;		
 			if (r != 1)
 			{
 				VERBO3 strerr_warnwu2sys("find dependency ",name) ;
@@ -133,48 +205,102 @@ int resolve_srcdeps(char const *src, char const *tree,avltree *deps_map,unsigned
 		VERBO3 strerr_warnw3x("Conflicting format type for ",name," service file") ;
 		return 0 ;
 	}
-	if (!parse_service_before(sasrc.s,name,tree,&deps,nbsv,sasv)) 
+	
+	return 1 ;
+}
+/** @Return 0 on fail
+ * @Return 1 on success
+ * @Return 2 service already added */
+int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, char const *tree,unsigned int *nbsv, stralloc *sasv)
+{
+	int r ;
+
+	stralloc newsrc = STRALLOC_ZERO ;
+	genalloc ga = GENALLOC_ZERO ;
+	sv_alltype sv_before_deps = SV_ALLTYPE_ZERO ;
+	
+	char const *name = NULL ;
+	char const *dname = NULL ;
+	uint32_t avlid = 0 ;
+	
+	name = keep.s+sv_before->cname.name ;
+			
+	if (sv_before->cname.itype == CLASSIC)
 	{
-		VERBO3 strerr_warnwu2x("parse service file: ",name) ;
+		VERBO3 strerr_warnw3x("invalid service type compatibility for ",name," service") ;
 		return 0 ;
 	}
+	r = avltree_search(&deps_map,name,&avlid) ;
+	if (r)
+	{
+		VERBO3 strerr_warni3x("ignore ",mainsv," service dependency: already added") ;
+		return 2 ;
+	}
+	
+	if (sv_before->cname.nga)
+	{
+		if (sv_before->cname.itype != BUNDLE)
+		{
+			VERBO3 strerr_warni3x("Resolving ",name," service dependencies") ;
+		}else VERBO3 strerr_warni2x("Resolving service declaration of bundle: ",name) ;
+	
+		for (int i = 0;i < sv_before->cname.nga;i++)
+		{
+			ga =genalloc_zero ;
+			if (sv_before->cname.itype != BUNDLE)
+			{
+				VERBO3 strerr_warni4x("Service : ",mainsv, " depends on : ",deps.s+(genalloc_s(unsigned int,&gadeps)[sv_before->cname.idga+i])) ;
+			}else VERBO3 strerr_warni5x("Bundle : ",mainsv, " contents : ",deps.s+(genalloc_s(unsigned int,&gadeps)[sv_before->cname.idga+i])," as service") ;
+		
+			if(!stra_add(&ga,deps.s+(genalloc_s(unsigned int,&gadeps)[sv_before->cname.idga+i]))) return 0 ;
+		}
+		
+		for (int i = 0;i < genalloc_len(stralist,&ga);i++)
+		{	
+			newsrc = stralloc_zero ;
+			dname = gaistr(&ga,i) ;
+			if (obstr_equal(dname,name))
+			{
+				VERBO3 strerr_warnw3x("direct cyclic dependency detected on ",name," service") ;
+				return 0 ;
+			}
+			
+			r = avltree_search(&deps_map,dname,&avlid) ;
+			if (r) continue ;
+					
+			r = deps_src(&newsrc,src,dname,tree) ;
+			if (!r) return 0 ;
+					
+			if (!read_svfile(sasv,dname,newsrc.s)) return 0 ;
+
+			if (!start_parser(sasv,dname,&sv_before_deps)) return 0 ;
+		
+			r = resolve_srcdeps(&sv_before_deps,dname,newsrc.s,tree,nbsv,sasv) ;
+			
+			if (!r) return 0 ;
+			if (r == 2) continue ;
+		}
+	}
+	else VERBO3 strerr_warni3x("service: ",name," haven't dependencies") ;
+	
+	r = avltree_search(&deps_map,name,&avlid) ;
+	if (!r)	if (!add_sv(sv_before,mainsv,nbsv)) return 0 ;
+	
+	stralloc_free(&newsrc) ;
+	genalloc_deepfree(stralist,&ga,stra_free) ;
 	
 	return 1 ;
 }
 
-int parse_service_before(char const *src,char const *sv,char const *tree,stralloc *store, unsigned int *nbsv, stralloc *sasv)
+int parse_service_before(char const *src,char const *sv,char const *tree, unsigned int *nbsv, stralloc *sasv)
 {
 	int r = 0 ;
-	size_t srclen = strlen(src) ;
-	size_t svlen = strlen(sv) ;
+	
 	uint32_t id ;
 
 	sv_alltype sv_before = SV_ALLTYPE_ZERO ;
-	stralloc srctmp = STRALLOC_ZERO ;
 		
-	char svtmp[srclen + svlen + 1] ;
-	memcpy(svtmp,src,srclen) ;
-	svtmp[srclen] = '/' ;
-	memcpy(svtmp + srclen + 1, sv, svlen) ;
-	svtmp[srclen + svlen + 1] = 0 ;
-	
-	size_t filesize=file_get_size(svtmp) ;
-	if (!filesize)
-	{
-		VERBO3 strerr_warnw2x(svtmp," is empty") ;
-		return 0 ;
-	}
-	r = openreadfileclose(svtmp,sasv,filesize) ;
-	if(!r)
-	{
-		VERBO3 strerr_warnwu2sys("open ", svtmp) ;
-		return 0 ;
-	}
-	/** ensure that we have an empty line at the end of the string*/
-	if (!stralloc_cats(sasv,"\n")) retstralloc(0,"parse_service_before") ;
-	if (!stralloc_0(sasv)) retstralloc(0,"parse_service_before") ;
-	
-	VERBO2 strerr_warni3x("Parsing ", sv," service...") ;
+	if (!read_svfile(sasv,sv,src)) return 0 ;
 	
 	r = avltree_search(&deps_map,sv,&id) ;
 	if (r)
@@ -183,64 +309,14 @@ int parse_service_before(char const *src,char const *sv,char const *tree,strallo
 		sasv->len = 0 ;
 		return 1 ;
 	}
-	/**@Return -5 for invalid svtype 
-	* @Return -4 for invalid section
-	* @Return -3 invalid key in section
-	* @Return -2 for invalid keystyle
-	* @Return -1 mandatory key is missing
-	* @Return 0 unable to transfer to service struct*/
-	r = parser(sasv->s,&sv_before) ;
-	if (r == -5) VERBO3 strerr_warnw3x("invalid type for: ",sv," service") ;
-	if (r == -4) VERBO3 strerr_warnw3x("invalid section for: ",sv," service") ;
-	if (r == -3) VERBO3 strerr_warnw3x("invalid key in section for: ",sv," service") ;
-	if (r == -2) VERBO3 strerr_warnw3x("invalid key value for: ",sv," service") ;
-	if (r == -1) VERBO3 strerr_warnw3x("mandatory key is missing for: ",sv," service") ;
-	if (!r) VERBO3 strerr_warnwu3x("keep information of: ",sv," service") ;
-	
-	if (r <= 0) return 0 ;
-	
-	sasv->len = 0 ;
-	
-	if (!genalloc_append(sv_alltype,&gasv,&sv_before)) retstralloc(0,"parse_service_before") ;
-	
-	r = add_cname(sv,&sv_before,&ganame,&deps_map) ;
-	if (!r)
-	{
-		VERBO3 strerr_warnwu3x("insert", sv," as node") ;
-		return 0 ;
-	}
-	(*nbsv)++ ;
 		
-	if (sv_before.cname.nga)
+	if (!start_parser(sasv,sv,&sv_before)) return 0 ;
+	if (sv_before.cname.itype > CLASSIC)
 	{
-		
-		if (!stralloc_obreplace(&srctmp,src)) retstralloc(0,"parse_service_before") ;
-		VERBO3 strerr_warni3x("Resolving ", keep.s+sv_before.cname.name, " service dependency") ;
-		for (int i = 0;i < sv_before.cname.nga;i++)
-		{
-			if (sv_before.cname.itype == CLASSIC)
-			{
-				VERBO3 strerr_warnw3x("invalid service type compatibility for ",keep.s+sv_before.cname.name," service") ;
-				return 0 ;
-			}
-			if (obstr_equal(deps.s+genalloc_s(unsigned int,&gadeps)[sv_before.cname.idga+i],keep.s+sv_before.cname.name))
-			{
-				VERBO3 strerr_warnw3x("direct cyclic dependency detected on ",keep.s+sv_before.cname.name," service") ;
-				return 0 ;
-			}
-			r = avltree_search(&deps_map,deps.s+(genalloc_s(unsigned int,&gadeps)[sv_before.cname.idga+i]),&id) ;
-			if (r)
-			{
-				VERBO3 strerr_warni3x("ignore ",deps.s+(genalloc_s(unsigned int,&gadeps)[sv_before.cname.idga+i])," service dependency: already added") ;
-				continue ;
-			}
-			r = resolve_srcdeps(srctmp.s,tree,&deps_map,nbsv,sv_before.cname.idga+i,sasv) ;
-			if (!r) return 0 ;
-			if (r == 2)	VERBO3 strerr_warni3x("ignore ",deps.s+(genalloc_s(unsigned int,&gadeps)[sv_before.cname.idga+i])," service dependency: already added") ;
-		}
+		r = resolve_srcdeps(&sv_before,sv,src,tree,nbsv,sasv) ;
+		if (!r) return 0 ;
 	}
-
-	stralloc_free(&srctmp) ;
+	else if (!add_sv(&sv_before,sv,nbsv)) return 0 ;		
 	
 	return 1 ;
 }

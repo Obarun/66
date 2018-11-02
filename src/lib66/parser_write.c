@@ -106,7 +106,7 @@ int write_services(sv_alltype *sv, char const *workdir, unsigned int force)
 		return 2 ;
 	}
 	
-	VERBO2 strerr_warnt3x("write service ", name," ...") ;
+	VERBO2 strerr_warnt3x("Write service ", name," ...") ;
 	
 	switch(type)
 	{
