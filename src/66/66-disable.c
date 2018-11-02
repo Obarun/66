@@ -119,6 +119,8 @@ int make_depends_graph(char const *src)
 		}
 		if (!S_ISDIR(st.st_mode)) continue ;
 		
+		if (obstr_equal(SS_MASTER+1,d->d_name)) continue ;
+		
 		if (!stra_add(&tokeep,d->d_name))
 		{
 			VERBO3 strerr_warnwu3sys("add: ",d->d_name," to the dependencies graph") ;
@@ -129,9 +131,9 @@ int make_depends_graph(char const *src)
 	solve[srclen] = 0 ;
 	for (unsigned int i = 0 ; i < genalloc_len(stralist,&tokeep) ; i++)
 	{
-		
 		if (resolve_read(&ndeps,src,gaistr(&tokeep,i),"deps"))
 		{
+			
 			if (!clean_val(&gatmp,ndeps.s))
 			{
 				VERBO3 strerr_warnwu2x("clean val: ",ndeps.s) ;
@@ -141,7 +143,7 @@ int make_depends_graph(char const *src)
 		else continue ;
 		gdeps.name = keep.len ;
 		if (!stralloc_catb(&keep, gaistr(&tokeep,i), gaistrlen(&tokeep,i) + 1)) retstralloc(0,"make_depends_graph") ;
-					
+		
 		/** remove previous ndeps */
 		gdeps.ndeps = 0 ;
 		gdeps.ideps = genalloc_len(unsigned int, &gadeps) ;
@@ -181,30 +183,37 @@ int find_logger(genalloc *gakeep, char const *src, char const *service)
 	return 1 ;
 }
 
-int find_rdeps(genalloc *gakeep, char const *src, char const *name)
+int find_rdeps(genalloc *gakeep, char const *name, char const *src)
 {
+	int r ;
 	for (unsigned int i = 0 ; i < genalloc_len(deps_graph_t,&graph) ; i++)
 	{
 		if (obstr_equal(name,keep.s + genalloc_s(deps_graph_t,&graph)[i].name)) continue ;
-			
-		for (unsigned int k = 0; k < genalloc_s(deps_graph_t,&graph)[i].ndeps; k++)
+		if (genalloc_s(deps_graph_t,&graph)[i].ndeps)
 		{
-			if (obstr_equal(name,deps.s + genalloc_s(unsigned int,&gadeps)[genalloc_s(deps_graph_t,&graph)[i].ideps+k]))
+			for (unsigned int k = 0; k < genalloc_s(deps_graph_t,&graph)[i].ndeps; k++)
 			{
-				if (!stra_add(gakeep,keep.s + genalloc_s(deps_graph_t,&graph)[i].name)) 
-				{ 
-					VERBO3 strerr_warnwu3x("add: ",keep.s + genalloc_s(deps_graph_t,&graph)[i].name," as dependency to remove") ;
-					return 0 ;
-				}
-				if (!find_logger(gakeep,src,keep.s + genalloc_s(deps_graph_t,&graph)[i].name)) 
+				if (obstr_equal(name,deps.s + genalloc_s(unsigned int,&gadeps)[genalloc_s(deps_graph_t,&graph)[i].ideps+k]))
 				{
-					VERBO3 strerr_warnwu3x("add: ",gaistr(gakeep,genalloc_len(stralist,gakeep)-1)," as dependency to remove") ;
-					return 0 ;
+					if (!stra_cmp(gakeep,keep.s + genalloc_s(deps_graph_t,&graph)[i].name))
+					{
+						if (!stra_add(gakeep,keep.s + genalloc_s(deps_graph_t,&graph)[i].name)) 
+						{	 
+							VERBO3 strerr_warnwu3x("add: ",keep.s + genalloc_s(deps_graph_t,&graph)[i].name," as dependency to remove") ;
+							return 0 ;
+						}
+						if (!find_logger(gakeep,src,keep.s + genalloc_s(deps_graph_t,&graph)[i].name)) 
+						{
+							VERBO3 strerr_warnwu3x("add: ",gaistr(gakeep,genalloc_len(stralist,gakeep)-1)," as dependency to remove") ;
+							return 0 ;
+						}
+						r = find_rdeps(gakeep,keep.s + genalloc_s(deps_graph_t,&graph)[i].name,src) ;
+						if (!r)	return 0 ;		
+						if (r == 2) return 2 ;
+					}
 				}
-				if (find_rdeps(gakeep,src,keep.s + genalloc_s(deps_graph_t,&graph)[i].name))
-					return 0 ;
-			}	
-		}
+			}
+		}else return 2 ;
 	}
 		
 	return 1 ;
@@ -212,6 +221,7 @@ int find_rdeps(genalloc *gakeep, char const *src, char const *name)
 
 int remove_sv(char const *src, char const *name,unsigned int type,genalloc *toremove)
 {
+	int r ;
 	size_t namelen = strlen(name) ;
 	size_t srclen = strlen(src) ;
 	size_t newlen ;
@@ -242,7 +252,13 @@ int remove_sv(char const *src, char const *name,unsigned int type,genalloc *tore
 	/** rc services */
 	{
 		
-		if (!find_rdeps(toremove,src,name)) VERBO3 strerr_warnwu2x("resolve dependencies for: ",name) ;
+		r = find_rdeps(toremove,name,src) ;
+		if (!r) 
+		{
+			VERBO3 strerr_warnwu2x("find dependencies of service: ",name) ;
+			return 0 ;
+		}
+		if(r == 2) VERBO3 strerr_warnt3x("service: ",name," haven't dependencies") ;
 		
 		if (!stralloc_catb(&sa,src,srclen)) retstralloc(0,"remove_sv") ;
 		if (!stralloc_cats(&sa,SS_DB SS_SRC)) retstralloc(0,"remove_sv") ;
@@ -361,6 +377,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			cleanup(workdir.s) ;
 			strerr_diefu1x(111,"set revolve pointer to source") ;
 		}
+		
 		if (!make_depends_graph(saresolve.s))
 		{
 			cleanup(workdir.s) ;

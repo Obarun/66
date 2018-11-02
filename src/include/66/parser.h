@@ -296,11 +296,11 @@ extern int add_pipe(sv_alltype *sv, stralloc *sa) ;
 /** Display the corresponding warning when @sepend and @sepstart are not equal */ 
 extern void sep_err(int r,char const sepstart,char const sepend,char const *keyname) ;
 
-extern int add_cname(char const *name, sv_alltype *sv_before,genalloc *ganame,avltree *deps_map) ;
+extern int add_cname(char const *name, sv_alltype *sv_before) ;
 
-extern int resolve_srcdeps(char const *src, char const *tree,avltree *deps_map,unsigned int *nbsv, unsigned int id,stralloc *sasv) ;
+extern int resolve_srcdeps(sv_alltype *sv_before,char const *svmain,char const *src, char const *tree,unsigned int *nbsv,stralloc *sasv) ;
 
-extern int parse_service_before(char const *src,char const *sv,char const *tree,stralloc *store, unsigned int *nbsv, stralloc *sasv) ;
+extern int parse_service_before(char const *src,char const *sv,char const *tree, unsigned int *nbsv, stralloc *sasv) ;
 
 extern int keep_common(sv_alltype *service,keynocheck *nocheck) ;
 
