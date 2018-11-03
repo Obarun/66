@@ -33,7 +33,7 @@
 #include <66/constants.h>
 #include <66/db.h>
 
-
+#include <stdio.h>
 #define USAGE "66-tree [ -h help ] [ -v verbosity ] [ -n new ] [ -a allow user,user,... ] [ -d deny user,user,... ] [ -c current ] [ -E enable ] [ -D disable ] [ -R remove ] [ -C clone ] tree"
 
 unsigned int VERBOSITY = 1 ;
@@ -210,10 +210,11 @@ int create_tree(char const *tree,char const *const *envp)
 	dst[newlen] = 0 ;
 	
 	char sym[newlen + 1 + SS_SYM_SVC_LEN + 1] ;
-	char dstsym[newlen + SS_SVC_LEN] ;
+	char dstsym[newlen + SS_SVC_LEN + 1] ;
 	
 	memcpy(sym,dst,newlen) ;
 	sym[newlen] = '/' ;
+	
 	memcpy(sym + newlen + 1, SS_SYM_SVC, SS_SYM_SVC_LEN) ;
 	sym[newlen + 1 + SS_SYM_SVC_LEN] = 0 ;
 	
@@ -221,7 +222,7 @@ int create_tree(char const *tree,char const *const *envp)
 	memcpy(dstsym,dst,newlen) ;
 	memcpy(dstsym + newlen, SS_SVC, SS_SVC_LEN) ;
 	dstsym[newlen + SS_SVC_LEN] = 0 ;
-	
+
 	VERBO3 strerr_warnt4x("point symlink: ",sym," to ",dstsym) ;
 	if (symlink(dstsym,sym) < 0)
 	{
