@@ -45,7 +45,7 @@ int backup_realpath_sym(stralloc *sa, char const *tree,unsigned int type)
 		typelen = SS_SYM_DB_LEN;
 	}
 	
-	char sym[treelen + SS_SVDIRS_LEN + 1 + typelen] ;
+	char sym[treelen + SS_SVDIRS_LEN + 1 + typelen + 1] ;
 	memcpy(sym,tree,treelen) ;
 	memcpy(sym + treelen, SS_SVDIRS, SS_SVDIRS_LEN) ;
 	sym[treelen + SS_SVDIRS_LEN] = '/' ;
