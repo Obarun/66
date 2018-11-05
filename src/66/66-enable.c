@@ -47,7 +47,7 @@ unsigned int VERBOSITY = 1 ;
 
 stralloc saresolve = STRALLOC_ZERO ;
 
-#define USAGE "66-enable [ -h help ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -f force ] [ -d directory ] [ -I instance ] service(s)"
+#define USAGE "66-enable [ -h help ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -f force ] [ -d directory ] [ -I instance ] [ -S start ] service(s)"
 
 static inline void info_help (void)
 {
@@ -62,6 +62,7 @@ static inline void info_help (void)
 "	-f: owerwrite service(s)\n"
 "	-d: enable an entire directory\n"
 "	-I: create an instance of service\n"
+"	-S: enable and start the service\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
@@ -159,7 +160,7 @@ int insta_create(char const *src,char const *instasrc, char const *instacopy, ch
 int main(int argc, char const *const *argv,char const *const *envp)
 {
 	int r ;
-	unsigned int nbsv, nlongrun, nclassic, insta ;
+	unsigned int nbsv, nlongrun, nclassic, insta, start ;
 	
 	uid_t owner ;
 	
@@ -178,7 +179,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	genalloc ganlong = GENALLOC_ZERO ; // type stralist
 	genalloc ganclassic = GENALLOC_ZERO ; // name of classic service, type stralist
 	
-	r = nbsv = nclassic = nlongrun = insta = 0 ;
+	r = nbsv = nclassic = nlongrun = insta = start = 0 ;
 		
 	PROG = "66-enable" ;
 	{
@@ -186,7 +187,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:l:t:fd:I:", &l) ;
+			int opt = getopt_args(argc,argv, ">hv:l:t:fd:I:S", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
@@ -208,6 +209,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 							instacopy = l.arg ; 
 							insta = 1 ; 
 							break ;
+				case 'S' :	start = 1 ;	break ;
 				default : exitusage() ; 
 			}
 		}
@@ -317,6 +319,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			}
 			else if (before.services[i].cname.itype == CLASSIC) 
 			{
+				if (!stra_add(&ganclassic,keep.s + before.services[i].cname.name)) retstralloc(111,"main") ;
 				nclassic++ ;
 			}
 		}
@@ -473,7 +476,34 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	}
 			
 	cleanup(workdir.s) ;
+	
+	if (start)
+	{
+		size_t arglen = 8 + genalloc_len(stralist,&ganclassic) + genalloc_len(stralist,&ganlong) ;
+		char const *newup[arglen] ;
+		unsigned int m = 0 ;
+		char fmt[UINT_FMT] ;
+		fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
 		
+		newup[m++] = SS_BINPREFIX "66-start" ;
+		newup[m++] = "-v" ;
+		newup[m++] = fmt ;
+		newup[m++] = "-l" ;
+		newup[m++] = live.s ;
+		newup[m++] = "-t" ;
+		newup[m++] = treename ;
+		/** classic */
+		for (unsigned int i = 0 ; i<genalloc_len(stralist,&ganclassic); i++)
+			newup[m++] = gaistr(&ganclassic,i) ;
+		/** rc */
+		for (unsigned int i = 0 ; i<genalloc_len(stralist,&ganlong); i++)
+			newup[m++] = gaistr(&ganlong,i) ;
+		
+		newup[m++] = 0 ;
+		
+		xpathexec_run (newup[0], newup, envp) ;
+	}
+	
 	/** general allocation*/
 	freed_parser() ;
 	/** inner allocation */

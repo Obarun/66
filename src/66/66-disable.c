@@ -46,7 +46,7 @@ stralloc saresolve = STRALLOC_ZERO ;
 
 unsigned int VERBOSITY = 1 ;
 
-#define USAGE "66-enable [ -h help ] [ -v verbosity ] [ - l live ] [ -t tree ] service(s)"
+#define USAGE "66-enable [ -h help ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -S stop ] service(s)"
 
 static inline void info_help (void)
 {
@@ -58,6 +58,7 @@ static inline void info_help (void)
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n"
 "	-t: name of the tree to use\n"
+"	-S: disable and stop the service\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
@@ -298,7 +299,7 @@ int remove_sv(char const *src, char const *name,unsigned int type,genalloc *tore
 int main(int argc, char const *const *argv,char const *const *envp)
 {
 	int r,rb ;
-	unsigned int nlongrun, nclassic ;
+	unsigned int nlongrun, nclassic, stop ;
 	
 	uid_t owner ;
 	
@@ -311,7 +312,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	genalloc ganlong = GENALLOC_ZERO ; //name of longrun service, type stralist
 	genalloc ganclassic = GENALLOC_ZERO ; //name of classic service, stralist
 	genalloc gadepstoremove = GENALLOC_ZERO ;
-	r = nclassic = nlongrun = 0 ;
+	
+	r = nclassic = nlongrun = stop = 0 ;
 		
 	PROG = "66-disable" ;
 	{
@@ -319,7 +321,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:l:t:", &l) ;
+			int opt = getopt_args(argc,argv, ">hv:l:t:S", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
@@ -332,6 +334,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 't' : 	if(!stralloc_cats(&tree,l.arg)) retstralloc(111,"main") ;
 							if(!stralloc_0(&tree)) retstralloc(111,"main") ;
 							break ;
+				case 'S' :	stop = 1 ;	break ;
 				default : exitusage() ; 
 			}
 		}
@@ -632,6 +635,34 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	}
 			
 	cleanup(workdir.s) ;
+	
+	if (stop)
+	{
+		size_t arglen = 9 + genalloc_len(stralist,&ganclassic) + genalloc_len(stralist,&ganlong) ;
+		char const *newstop[arglen] ;
+		unsigned int m = 0 ;
+		char fmt[UINT_FMT] ;
+		fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
+		
+		newstop[m++] = SS_BINPREFIX "66-stop" ;
+		newstop[m++] = "-v" ;
+		newstop[m++] = fmt ;
+		newstop[m++] = "-l" ;
+		newstop[m++] = live.s ;
+		newstop[m++] = "-t" ;
+		newstop[m++] = treename ;
+		newstop[m++] = "-u" ;
+		/** classic */
+		for (unsigned int i = 0 ; i<genalloc_len(stralist,&ganclassic); i++)
+			newstop[m++] = gaistr(&ganclassic,i) ;
+		/** rc */
+		for (unsigned int i = 0 ; i<genalloc_len(stralist,&ganlong); i++)
+			newstop[m++] = gaistr(&ganlong,i) ;
+		
+		newstop[m++] = 0 ;
+		
+		xpathexec_run (newstop[0], newstop, envp) ;
+	}
 	
 	stralloc_free(&base) ;
 	stralloc_free(&tree) ;
