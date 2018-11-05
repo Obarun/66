@@ -17,18 +17,17 @@
 
 <p>
 The <a href="https://skarnet.org/software/s6">s6</a> and <a href="https://skarnet.org/software/s6">s6-rc</a> 
-programs each handle and use several kinds of services and different files. If you're interested in the details
+programs each handle and use several kinds of services and different files. It is quite complex to
+understand and manage the relationship between all those files and services. If you're interested in the details
 you should read <a href="https://skarnet.org/software/s6/servicedir.html">the documentation for the s6 servicedir</a>
 and also about <a href="https://wiki.obarun.org/doku.php?id=s6services"><em>classic</em></a>, <a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html">
-<em>oneshot</em>, <em>longrun</em> and <em>bundle</em> services</a> on Obarun. It is quite complex to
-understand and manage the link between all those files and services. With the 66 tools
-the frontend service file allows you to deal with all these different services in
+<em>oneshot</em>, <em>longrun</em> and <em>bundle</em> services</a> on Obarun. The frontend service file of 66 tools allows you to deal with all these different services in
 a centralized manner in one single place.<br>
-By default the 66 tools expect to find service files at <tt>/etc/66/service</tt> although this
+By default 66 tools expect to find any service file in <tt>/etc/66/service</tt> although this
 can be changed at compile-time by passing the <tt>--with-service-path=<em>DIR</em></tt>
 option to <tt>./configure.</tt></p>
 
-<p>The frontend service file has a format of INI with specific syntax on the key field. 
+<p>The frontend service file has a format of INI with a specific syntax on the key field. 
 The name of the file usually corresponds to the name of the daemon and does not
 have any extension or prefix.
 
@@ -77,25 +76,22 @@ the number sign '#' in front of the opening square bracket like this:</p>
 
 <p>The frontend service file allows the following section names: </p>
 <ul>
- <li> <em><a href="#main">[main]</a></em></li>
- <li> <em><a href="#start">[start]</a></em></li>
- <li> <em><a href="#stop">[stop]</a></em></li>
- <li> <em><a href="#logger">[logger]</a></em></li>
- <li> <em><a href="#environment">[environment]</a></em></li>
+ <li><a href="#main">[main]</a></li>
+ <li><a href="#start">[start]</a></li>
+ <li><a href="#stop">[stop]</a></li>
+ <li><a href="#logger">[logger]</a></li>
+ <li><a href="#environment">[environment]</a></li>
 </ul>
 <p>Although a section can be mandatory not all of its key fields must be necessarily so.</p>
 
 <hr>
 
 <h2>Syntax legend</h2>
-<!-- Make this simple to understand. In the descriptions of the sections you only use "syntax" too. --> 
 
 	<p> The <em>value</em> of a <em>key</em> is parsed in a specific format depending on the key. 
-            To better understand the keys of a section further on in this documentation the following is a break down of how to write these syntaxes:</p>
-        <!-- What is divers?! drivers?! -->
+            The following is a break down of how to write these syntaxes:</p>
 	<ul>
 		<li>
-                        <!-- would be super clear if this was called inline: -->
 			<tt>inline&nbsp;</tt>&nbsp;: An inline <em>value</em> must be on the same
 			line of its corresponding <em>key</em>.
 			<p>Valid syntax:</p><p>
@@ -165,8 +161,8 @@ fooC
 		</ul>
 		<br><hr>
 		<li> 
-			<tt>slash&nbsp;</tt>&nbsp;: A <em>value</em> containing 
-			one or more slashes '/' must stay on the same line of its corresponding <em>key</em>.
+			<tt>slash&nbsp;</tt>&nbsp;: A <em>value</em> beginning by a slashe '/' 
+			and must stay on the same line of its corresponding <em>key</em>.
 		</li>
 		<p>Valid syntax:</p>
 		<ul>
@@ -181,10 +177,10 @@ long/path</pre>
 		<br><hr>
 
 		<li>
-			<tt>pair&nbsp;</tt>&nbsp;: For a <em>key=value</em> pair
-                        to be valid it must stay on one single line.
+			<tt>pair&nbsp;</tt>&nbsp;: same as <tt>inline</tt> syntax.
 		</li>
-                <!-- Isn't pair exactly the same as line/inline? Looks completely superfluous to me. -->
+                <!-- Yes you're right but this is allow me to give example, in particular
+                the one with the double-equal -->
 		<p>Valid syntax:</p>
 		<ul>
 			<pre>MYKEY = MYVALUE</pre>
@@ -211,8 +207,8 @@ MYVALUE</pre>
  <li><h4>@type</h4></li>
  <h5>Corresponds to the file "<em>type</em>" of s6-rc programs.</h5>
  <p>Declare the type of the service.</p>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: yes.</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: line</p>
+ <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)</p>
+ <p><tt>syntax&nbsp;</tt>&nbsp;: inline</p>
  <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
   <ul>
    <li><tt>classic&nbsp;</tt>&nbsp;: declares the service as "classic".</li>
@@ -228,8 +224,8 @@ MYVALUE</pre>
  <li><h4>@name</h4></li>
  <h5>Corresponds to the <em>name of the service directory</em> of s6 and s6-rc programs.</h5>
  <p>Name of the service.</p>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: yes.</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: line</p>
+ <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)</p>
+ <p><tt>syntax&nbsp;</tt>&nbsp;: inline</p>
  <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
   <ul>
    <li>Any name can be set as a <em>value</em>. A good pratice is to use the
@@ -239,9 +235,9 @@ MYVALUE</pre>
  <br><hr style="border: 1px dashed #000000">
 
  <li><h4>@description</h4></li>
- <h5>Without equivalent, this key is new to 66 tools.</h5>
+ <h5>Without equivalent, this key is unique to 66 tools.</h5>
  <p>A short description of the service.</p>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: yes.</p>
+ <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)</p>
  <p><tt>syntax&nbsp;</tt>&nbsp;: quote</p>
  <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
   <ul>
@@ -251,9 +247,9 @@ MYVALUE</pre>
 <br><hr style="border: 1px dashed #000000">
 
  <li><h4>@user</h4></li>
- <h5>Without equivalent, this key is new to 66 tools.</h5>
+ <h5>Without equivalent, this key is unique to 66 tools.</h5>
  <p>Declare the permissions of the service.</p>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: yes.</p>
+ <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)</p>
  <p><tt>syntax&nbsp;</tt>&nbsp;: bracket</p>
  <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
   <ul>
@@ -261,9 +257,9 @@ MYVALUE</pre>
 	know in advance the name of the user who will deal with the service, 
 	you can use the term '<tt>user</tt>'. In that case every user of the
 	system will be able to deal with the service.
-	<br>Be aware that <em>root is not automatically added</em>. 
+	<br>(!) Be aware that <em>root is not automatically added</em>. 
 	If you don't declare <tt>root</tt> in this field, you will <em>not be able
-	to use the service even with root privilegies. (!)</em></li>
+	to use the service even with root privileges.</em></li>
   </ul>
  
  <br><hr style="border: 1px dashed #000000">
@@ -271,7 +267,7 @@ MYVALUE</pre>
  <li><h4>@depends</h4></li>
  <h5>Corresponds to the file "<em>dependencies</em>" of s6-rc programs.</h5>
  <p>Declare dependencies of the service.</p>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no. <em>This field has no effect if the 
+ <p><tt>mandatory&nbsp;</tt>&nbsp;: no&#8212;this field has no effect if the 
  type of the service is "classic"</em>.</p>
  <p><tt>syntax&nbsp;</tt>&nbsp;: bracket</p>
  <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
@@ -284,8 +280,8 @@ MYVALUE</pre>
 	<pre>@depends=(fooA fooB fooC)</pre>
 	It is unnecessary to manually define chained sets of dependencies.
 	The parser will properly handle this for you.
-	If fooA depends on fooB &#8212; no matter the underlying implementation of fooB,
-	and although the current implementation of fooB depends on fooC &#8212; you should 
+	If fooA depends on fooB&#8212;no matter the underlying implementation of fooB,
+	and although the current implementation of fooB depends on fooC&#8212;you should 
 	just put fooB in the <tt>@depends</tt> key field of fooA. When starting the set,
 	66-enable will parse and enable fooA, fooB and fooC and 66-start will start 
 	fooC first, then fooB, then fooA.
@@ -301,8 +297,8 @@ MYVALUE</pre>
  <li><h4>@contents</h4></li>
  <h5>Corresponds to the file "<em>contents</em>" of s6-rc programs.</h5>
  <p>Declare the contents of a bundle service.</p>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: yes &#8212; for services of type <tt>bundle</tt>.
- Not for services of type <tt>oneshot</tt> or <tt>longrun</tt>.
+ <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)&#8212;for services of type <tt>bundle</tt>.
+ <em>Optional</em> for services of type <tt>oneshot</tt> or <tt>longrun</tt>.
  No effect at all for services of type <tt>classic</tt>.</p>
  <p><tt>syntax&nbsp;</tt>&nbsp;: bracket</p>
  <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
@@ -315,16 +311,16 @@ MYVALUE</pre>
  <br><hr style="border: 1px dashed #000000">
 
  <li><h4>@options</h4></li>
- <h5>Without equivalent, this key is new to 66 tools.</h5>
+ <h5>Without equivalent, this key is unique to 66 tools.</h5>
  <p><tt>mandatory&nbsp;</tt>&nbsp;: no
  </p><p><tt>syntax&nbsp;</tt>&nbsp;: bracket</p>
  <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
   <ul>
    <li><tt>log&nbsp;</tt>&nbsp;: automatically create a logger for the service.
    The behavior of the logger can be adjusted in the corresponding 
-   section &#8212; see <em><a href="#logger">Section: [logger]</a></em>.</li>
+   section&#8212;see <a href="#logger">[logger]</a>.</li>
    <li><tt>env&nbsp;</tt>&nbsp;: enable the use of the <tt>[environment]</tt>
-   section for the service &#8212; see <em><a href="#environment">Section: [environment]</a></em>.</li>
+   section for the service&#8212;see <a href="#environment">[environment]</a>.</li>
    <li><tt>pipeline&nbsp;</tt>&nbsp;: automatically create a pipeline between
    the service and the logger. For more information read 
    <a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html">the s6-rc documentation</a>.</li>
@@ -385,7 +381,7 @@ MYVALUE</pre>
    <li>Any valid number.
    <p>This will create the file <tt>timeout-finish</tt>. 
    Once this file was created the <em>value</em> will equal the number of milliseconds
-   after which the ./finish script &#8212; if it exists &#8212; will be killed with a 
+   after which the <tt>./finish</tt> script&#8212;if it exists&#8212;will be killed with a 
    SIGKILL. The default is <tt>5000</tt>; finish scripts are killed if they're 
    still alive after 5 seconds. A value of <tt>0</tt> allows finish scripts to run forever.
    </li>
@@ -486,19 +482,19 @@ MYVALUE</pre>
 <ul>
 	
  <li><h4>@build</h4></li>
- <h5>Without equivalent, this key is new to 66 tools.</h5>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: yes</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: line</p>
+ <h5>Without equivalent, this key is unique to 66 tools.</h5>
+ <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)</p>
+ <p><tt>syntax&nbsp;</tt>&nbsp;: inline</p>
  <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
   <ul>
-   <li><tt>auto&nbsp;</tt>&nbsp;: create the script file
-   as <a href="https://skarnet.org/software/execline/">execline</a> scripts.</li>
-   <p>The corresponding file to start the service will automatically written in 
+   <li><tt>auto&nbsp;</tt>&nbsp;: creates the service script file
+   as <a href="https://skarnet.org/software/execline/">execline</a> script.</li>
+   <p>The corresponding file to start the service will automatically be written in 
    <a href="https://skarnet.org/software/execline/">execline</a> format with
    the <tt>@execute</tt> key <em>value</em>.</p>
-   <li><tt>custom&nbsp;</tt>&nbsp;: create the script file
+   <li><tt>custom&nbsp;</tt>&nbsp;: creates the service script file
    in the language set in the <tt>@shebang</tt> key <em>value</em>.</li>
-  <p>The corresponding file to start the service will be written in 
+  <p>The corresponding file to start the service will be written 
    in the language set in the <tt>@shebang</tt> key <em>value</em>.</p>
    </li>
   </ul>
@@ -506,48 +502,49 @@ MYVALUE</pre>
 <br><hr style="border: 1px dashed #000000">
 
  <li><h4>@runas</h4></li>
- <h5>Without equivalent, this key is new to 66 tools.</h5>
+ <h5>Without equivalent, this key is unique to 66 tools.</h5>
  
- <p><tt>mandatory&nbsp;</tt>&nbsp;: yes</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: line</p>
+ <p><tt>mandatory&nbsp;</tt>&nbsp;: no (!)</p>
+ <p><tt>syntax&nbsp;</tt>&nbsp;: inline</p>
  <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
   <ul>
    <li>Any valid user set on the system</li>
-   <p>This will drop the privilegies to the given user before starting the daemon.</p>
+   <p>This will pass the privileges of the service to the given user before starting the 
+   last command of the service.</p>
   </ul>
-  <p><tt><strong>Note:</strong></tt> The daemon need to be first started 
-  with root privilegies. Only root can drop privilegies. This field have
-  no effects in other case.</p>
+  <p><tt><strong>Note:</strong></tt> (!) The service needs to be first started 
+  with root. Only root can pass on privileges. This field has
+  <strong>no effects</strong> in other cases.</p>
+  <!-- error from my part this field is NOT mandatory :) -->
  
  <hr style="border: 1px dashed #000000">
  
   <li><h4>@shebang</h4></li>
- <h5>Without equivalent, this key is new to 66 tools.</h5>
+ <h5>Without equivalent, this key is unique to 66 tools.</h5>
  
- <p><tt>mandatory&nbsp;</tt>&nbsp;: yes &#8212; if the <tt>@build</tt> key is set to <em>custom</em>.</p>
+ <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)&#8212;if the <tt>@build</tt> key is set to <em>custom</em>.</p>
  <p><tt>syntax&nbsp;</tt>&nbsp;: quotes, slash</p>
  <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
   <ul>
    <li>Any valid interpreter installed on your system.</li>
-   <p>This will set the language to use for read and write the <tt>@execute</tt> key <em>value</em>
-   field.</p>
+   <p>This will set the language that will be used to read and write the <tt>@execute</tt> key <em>value</em>.</p>
   </ul>
-  
+ 
  <hr style="border: 1px dashed #000000">
  
  <li><h4>@execute</h4></li>
- <h5>Corresponds to the file "<em>run</em>" for a "classic" or 
+ <h5>Corresponds to the file "<em>run</em>" for a <em>classic</em> or 
  <em>longrun</em> service and to the file "<em>up</em>" for
   a <em>oneshot</em> service.</h5>
  
- <p><tt>mandatory&nbsp;</tt>&nbsp;: yes.</p>
+ <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)</p>
  <p><tt>syntax&nbsp;</tt>&nbsp;: bracket</p>
  <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
   <ul>
-   <li>This field define the command to execute to start the daemon.</li>
+   <li>The command to execute when starting the service.</li>
    </ul>
-  <p><tt><strong>Note:</strong></tt> The field is used as it, no change is applied. It's the 
-  responsability of the user to set the content of this field correctly.</p>
+  <p><tt><strong>Note:</strong></tt> The field will be used as is. No changes will be applied at all. It's the 
+  responsability of the author to make sure that the content of this field is correct.</p>
  
 </ul>
 
@@ -555,86 +552,104 @@ MYVALUE</pre>
 
 <h2 id="stop">Section: [stop]</h2>
 
-<p>This section is not <em>mandatory</em>. (!)</p>
+<p>This section is <em>optional</em>.</p>
 
-<p>This section is exactly the same as the section <tt><a href="#start">start</a></tt> execpt that 
-it will be applied to set the file "<em>finish</em>" for a "classic" or <em>longrun</em> service
-and to set the file "<em>down</em>" for a <em>oneshot</em> service.</p>
+<p>This section is exactly the same as <tt><a href="#start">[start]</a></tt> and shares the same keys. With the exception that 
+it will only be considered when creating the file "<em>finish</em>" for a <em>classic</em> or <em>longrun</em> service
+and when creating the file "<em>down</em>" for a <em>oneshot</em> service to create its content.</p>
+<!--yes perfect -->
 
 <br><hr>
 
 <h2 id="logger">Section: [logger]</h2>
 
-<p>This section is not <em>mandatory</em>. (!)</p>
-<p>To be effective the <em>key</em> <tt>log</tt> need to be set at the
-<tt>@options</tt> field.</p>
-<p>This section accept the <tt>@build,@runas,@shebang,@execute</tt> key field
-as the manner as the section <tt><a href="#start">start</a>,<a href="#stop">stop</a></tt>
-and <tt>@timeout-finish,@timeout-kill</tt> key field as the section 
+<p>This section is <em>optional</em>.</p>
+<p>It will only have an effect when the value <tt>log</tt> is added to the
+<tt>@options</tt> key in the <tt>[main]</tt> section.</p>
+<p>This section can contain the <tt>@build,@runas,@shebang,@execute</tt> key field
+with the same behaviour than the section <tt><a href="#start">start</a>,<a href="#stop">stop</a></tt>
+and the <tt>@timeout-finish,@timeout-kill</tt> key field with the same behaviour than the section 
 <tt><a href="#main">main</a> </tt>more :</p>
+<!-- the section logger can be
+[logger]
+@build =
+@runas =
+@shebang
+@execute
+@timeout-finish
+@timeout-kill
+
+more
+
+@destination =
+@backup =
+@maxsize =
+@timestamp-->
+
+<h3>Valid <em>key</em> names:</h3>
 
 <ul>
 	
  <li><h4>@destination</h4></li>
- <h5>Without equivalent, this key is new to 66 tools.</h5>
+ <h5>Without equivalent, this key is unique to 66 tools.</h5>
  <p><tt>mandatory&nbsp;</tt>&nbsp;: no</p>
  <p><tt>syntax&nbsp;</tt>&nbsp;: slash</p>
  <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
   <ul>
-   <li>Any valid directory on the system.</li>
-  <p>This will set the directory to use to store the output log file
-  of the daemon. The default is /var/log/66/name_of_daemon for the root user and
-  $HOME/.66/log/name_of_daemon for a normal user. The default can also be changed at compile-time by 
+   <li>Any valid path on the system.</li>
+   <!-- the slash syntax was modified, slash mean absoluth path  -->
+  <p>The directory where to save the log file. This directory is automatically created. Obviously,
+   the current user of the process need to have sufficient permissions on the destination directory 
+   to be able to create it. The default directory is <tt>/var/log/66/servicename</tt> for <tt>root</tt> and
+  <tt>$HOME/.66/log/servicename</tt> for any regular user. The default can also be changed at compile-time by 
   passing the <tt>--with-system-logpath=<em>DIR</em></tt> option 
-  for root and <tt>--with-user-logpath=<em>DIR</em></tt> for an user
-  option to <tt>./configure</tt></p>
+  for root and <tt>--with-user-logpath=<em>DIR</em></tt> for a user to <tt>./configure.</tt></p>
   </ul>
   
   <hr style="border: 1px dashed #000000">
   
   <li><h4>@backup</h4></li>
- <h5>Without equivalent, this key is new to 66 tools.</h5>
+ <h5>Without equivalent, this key is unique to 66 tools.</h5>
  <p><tt>mandatory&nbsp;</tt>&nbsp;: no</p>
  <p><tt>syntax&nbsp;</tt>&nbsp;: uint</p>
  <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
   <ul>
    <li>Any valid number.</li>
-  <p>Next logdirs will contain up to number archived log files. 
-  If there are more, the oldest archived log files will be suppressed, 
-  only the latest number will be kept. By default, number is 3.</p>
+  <p>The log directory will keep <em>value</em> files. 
+  The next log to be saved will replace the oldest file present. By default 3 files are kept.</p>
   </ul>
   
   <hr style="border: 1px dashed #000000">
    
   <li><h4>@maxsize</h4></li>
- <h5>Without equivalent, this key is new to 66 tools.</h5>
+ <h5>Without equivalent, this key is unique to 66 tools.</h5>
  <p><tt>mandatory&nbsp;</tt>&nbsp;: no</p>
  <p><tt>syntax&nbsp;</tt>&nbsp;: uint</p>
  <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
   <ul>
    <li>Any valid number.</li>
-  <p>next rotations will occur when current log files approach filesize 
-  bytes. By default, filesize is 1000000; it cannot be set lower than 4096
-  or higher than 268435455.</p>
+  <p>A new log file will be created every time the current one approaches <em>value</em> 
+  bytes. By default, filesize is <tt>1000000</tt>; it cannot be set lower than <tt>4096</tt>
+  or higher than <tt>268435455</tt>.</p>
   </ul>
   
   <hr style="border: 1px dashed #000000">
   
   <li><h4>@timestamp</h4></li>
- <h5>Without equivalent, this key is new to 66 tools.</h5>
+ <h5>Without equivalent, this key is unique to 66 tools.</h5>
  <p><tt>mandatory&nbsp;</tt>&nbsp;: no</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: line</p>
+ <p><tt>syntax&nbsp;</tt>&nbsp;: inline</p>
  <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
   <ul>
    <li>TAI
-   	<p>The logged line will be prepended with a TAI64N timestamp 
-	(and a space) before being processed by the next action directive</p></li>
+   	<p>The logged line will be preceded by a TAI64N timestamp 
+	(and a space) before being processed by the next action directive.</p></li>
    <li>ISO
-	<p>The selected line will be prepended with a ISO 8601 timestamp for
+	<p>The selected line will be preceded by a ISO 8601 timestamp for
 	 combined date and time representing local time according to the 
-	 system's timezone, with a space (not a 'T') between the date and 
+	 systems timezone, with a space (not a 'T') between the date and 
 	 the time and two spaces after the time, before being processed by 
-	 the next action directive</p></li>
+	 the next action directive.</p></li>
   </ul>
   
 </ul>
@@ -643,76 +658,81 @@ and <tt>@timeout-finish,@timeout-kill</tt> key field as the section
 
 <h2 id="environment">Section: [environment]</h2>
 
-<p>This section is not <em>mandatory</em>. (!)</p>
-<p>To be effective the <em>key</em> <tt>env</tt> need to be set at the
-<tt>@options</tt> field.</p>
+<p>This section is <em>optional</em>.</p>
+<p>It will only have an effect when the value <tt>env</tt> is added to the
+<tt>@options</tt> key in the <tt>[main]</tt> section.</p>
 <p>A file named <em>key</em> with the <em>value</em> as contain will be
 created by default at /etc/66/env/name_of_daemon directory. The default can also be changed at compile-time by 
   passing the <tt>--with-service-path=<em>DIR</em></tt> option to <tt>./configure</tt>.</p>
+
+<h3>Valid <em>key</em> names:</h3>
+
 <ul>
  <li><h4>Any <em>key=value</em> pair</h4></li>
- <h5>Without equivalent, this key is new to 66 tools.</h5>
+ <h5>Without equivalent, this key is unique to 66 tools.</h5>
  <p><tt>mandatory&nbsp;</tt>&nbsp;: no</p>
  <p><tt>syntax&nbsp;</tt>&nbsp;: pair</p>
  <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
   <ul>
-   <p>You can define any variables that you want to add at the environment
-   of the daemon. The '!' character can be set at the begin
+   <p>You can define any variables that you want to add to the environment
+   of the service. For example:</p>
+<pre>
+   [environment]
+   RUNDIR=/run/openntpd
+   CMD_ARGS=-d -s
+</pre>
+   <p>The '!' character can be put in front
    of the <em>key=value</em> pair like this :</p>
 <pre>
    [environment]
    !RUNDIR=/run/openntpd
    !CMD_ARGS=-d -s
 </pre>
-   <p>This is specify to not set the <em>value</em> 
-   of the <em>key</em> for the runtime process but only at the start process of the daemon.
-   In this example the <em>key=value</em> pair set for the daemon command line do not need
-   to be present in the general environment variable of the daemon.</p>
+   <p>This will explicitly <em>not</em> set the <em>value</em> 
+   of the <em>key</em> for the runtime process but only at the start of the service. 
+   In this example the <em>key=value</em> pair passed to the command line does not need
+   to be present in the general environment variable of the service.</p> 
   </ul>
  </ul>
  <br><hr>
 
-<h2>A word about @execute key</h2>
+<h2>A word about the @execute key</h2>
 
-<p>As we have seen the <tt>@execute</tt> <em>key</em> field can be written
-in any language provided you define the <em>key</em> <tt>@build</tt> to <em>custom</em>
-and the <tt>@shebang</tt> <em>key</em> to the language interpreter to use. For example 
+<p>As described above the <tt>@execute</tt> key can be written
+in any language as long as you define the key <tt>@build</tt> as <em>custom</em>
+and the <tt>@shebang</tt> key to the language interpreter to use. For example 
 if you want to write your <tt>@execute</tt> field with bash :
 <pre>    @build = custom
     @shebang = "/usr/bin/bash"
     @execute = ( 
-    echo "this scripts display available service"
-    for i in $(ls /etc/66/service); do
-         echo "daemon : ${i} is available"
-    done
-    )</pre>
-This is a stupid example but show you how the things goes. The parser will 
-put your <tt>@shebang</tt> at the beginning of the scripts and copy as it the
-<tt>@execute</tt> field. So, the resulting file will be :
+        echo "This script displays available services"
+        for i in $(ls /etc/66/service); do
+            echo "daemon : ${i} is available"
+        done
+    )
+</pre>
+This is an unnecessary example but it shows how to construct this use case. The parser will 
+put your <tt>@shebang</tt> at the beginning of the script and copy the contents of the <tt>@execute</tt> field. So, the resulting file will be :
 <pre>    #!/usr/bin/bash
-    echo "this scripts display available service"
+    echo "This script displays available services"
     for i in $(ls /etc/66/service); do
-         echo "daemon : ${i} is available"
+        echo "daemon : ${i} is available"
     done</pre>
-So far so good but this mean that <tt>@runas</tt> have <strong>no effects</strong>
-if you use <em>custom</em> build. You must exactly define what you what on <em>custom</em>
+When using this sort of custom function <tt>@runas</tt> has <strong>no effect</strong>. You must define with care what you want to happen in a <em>custom</em>
 case.</p>
-<p>Futhermore, when you use <em>auto</em> build the parser will take care about the 
-redirection of the ouput of the daemon if the logger is asked. But it cannot make this for you
-if you use <em>custom</em> build. You need explicity set it :
+<p>Furthermore when you set <tt>@build</tt> to <em>auto</em> the parser will take care about the 
+redirection of the ouput of the service when the logger is activated. When setting <tt>@build</tt> to <em>custom</em> though the parser will not do this automatically. You need to explicitly tell it to:
 <pre>    #!/usr/bin/bash
     exec 2>&1
-    echo "This scripts redirect file descriptor 2 to the file descriptor 1"
-    echo "Then the logger will read the file descriptor 1 and so you have"
+    echo "This script redirects file descriptor 2 to the file descriptor 1"
+    echo "Then the logger reads the file descriptor 1 and you have"
     echo "the error of the daemon written into the appropriate file"</pre>
 </p>
-<p>Finally, you need to take care about how you define your environment variable
-in the section <tt><a href="#environment">[environment]</a></tt>. When you
-use <em>auto</em> build the parser will take care about the '!' character if you set it.
-This character will have <strong>no effects</strong> on <em>custom</em> case. 
+<p>Finally you need to take care about how you define your environment variable
+in the section <tt><a href="#environment">[environment]</a></tt>. When setting <tt>@build</tt> to <em>auto</em> the parser will also take care about the '!' character if you use it. This character will have <strong>no effect</strong> in the case of <em>custom</em>. 
 </p>
-<p>This same behaviour is apply for the <tt><a href="#logger">[logger]</a></tt> section.
-The field <tt>@destination,@backup,@maxsize,@timestamp</tt> will have <strong>no effects</strong>
-on <em>custom</em> case. You need to explicity define the program to use as logger and the options
+<p>This same behavior applies to the <tt><a href="#logger">[logger]</a></tt> section.
+The fields <tt>@destination, @backup, @maxsize</tt> and <tt>@timestamp</tt> will have <strong>no effect</strong>
+in a <em>custom</em> case. You need to explicitly define the program to use the logger and the options
 for it in your <tt>@execute</tt> field.</p>
 </ul></body></html>
