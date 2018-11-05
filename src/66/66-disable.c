@@ -585,19 +585,31 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	/** resolve */
 	memcpy(svdir + svdirlen,SS_RESOLVE,SS_RESOLVE_LEN) ;
 	svdir[svdirlen + SS_RESOLVE_LEN] = 0 ;
-	size_t workdirlen = workdir.len - 1;
-	char srcresolve[workdirlen + SS_RESOLVE_LEN + 1] ;
-	memcpy(srcresolve,workdir.s,workdirlen) ;
-	memcpy(srcresolve + workdirlen,SS_RESOLVE,SS_RESOLVE_LEN) ;
-	srcresolve[workdirlen + SS_RESOLVE_LEN] = 0 ;
-		
-	if (!dir_cmpndel(srcresolve,svdir,""))
-	{
-		cleanup(workdir.s) ;
-		strerr_diefu4sys(111,"compare resolve directory: ",srcresolve," to: ",svdir) ;
-	}
-	svdir[svdirlen] = 0 ;
 	
+	if (rm_rf(svdir) < 0)
+	{
+		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_SRC))
+			strerr_diefu1x(111,"set revolve pointer to source") ;
+		saresolve.len--;
+		if (!stralloc_cats(&saresolve,SS_RESOLVE)) retstralloc(111,"main") ;
+		if (!stralloc_0(&saresolve)) retstralloc(111,"main") ;
+		
+		if (!resolve_pointo(&swap,base.s,live.s,tree.s,treename,0,SS_RESOLVE_BACK))
+			strerr_diefu1x(111,"set revolve pointer to source") ;
+		swap.len--;
+		if (!stralloc_cats(&swap,SS_RESOLVE)) retstralloc(111,"main") ;	
+		if (!stralloc_0(&swap)) retstralloc(111,"main") ;
+		if (!hiercopy(swap.s,saresolve.s))
+		{
+			cleanup(workdir.s) ;
+			strerr_diefu4sys(111,"to copy tree: ",saresolve.s," to ", swap.s) ;
+		}
+		cleanup(workdir.s) ;
+		strerr_diefu2sys(111,"remove directory: ", svdir) ;
+	}	
+
+	svdir[svdirlen] = 0 ;
+		
 	if (!hiercopy(workdir.s,svdir))
 	{
 		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_SRC))
@@ -618,7 +630,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		cleanup(workdir.s) ;
 		strerr_diefu4sys(111,"to copy tree: ",workdir.s," to ", svdir) ;
 	}
-	
+			
 	cleanup(workdir.s) ;
 	
 	stralloc_free(&base) ;
