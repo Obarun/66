@@ -58,7 +58,7 @@ int dir_cmpndel(char const *src, char const *dst,char const *exclude)
 		r = dir_search(src,d->d_name,S_IFDIR) ;
 		if(r)
 		{
-			char del[dstlen + 1 + strlen(d->d_name)] ;
+			char del[dstlen + 1 + strlen(d->d_name) + 1] ;
 			memcpy(del,dst,dstlen) ;
 			memcpy(del + dstlen, "/",1) ;
 			memcpy(del + dstlen + 1, d->d_name,strlen(d->d_name)) ;

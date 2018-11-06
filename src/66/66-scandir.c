@@ -908,7 +908,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	
 	size_t slash =  get_rlen_until(scandir.s,'/',scandir.len) + 1 ;// +1 remove first '/'
 	size_t scannamelen = scandir.len - slash ;
-	char scanname[scannamelen] ;
+	char scanname[scannamelen + 1] ;
 	memcpy(scanname, scandir.s + slash ,scannamelen) ;
 	scanname[scannamelen] = 0 ;
 	

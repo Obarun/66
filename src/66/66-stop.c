@@ -79,7 +79,7 @@ int svc_release(char const *base, char const *scandir, char const *live, char co
 			char const *svname = gaistr(&gaunsup,i) ;
 			size_t svnamelen = gaistrlen(&gaunsup,i) ;
 	
-			char rm[scanlen + 1 + svnamelen] ;
+			char rm[scanlen + 1 + svnamelen + 1] ;
 			memcpy(rm,scandir,scanlen) ;
 			rm[scanlen] = '/' ;
 			memcpy(rm + scanlen + 1, svname,svnamelen) ;

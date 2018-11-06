@@ -41,8 +41,9 @@ int resolve_read(stralloc *sa, char const *src, char const *svname,char const *f
 	size_t namelen = strlen(svname) ;
 	size_t filelen = strlen(file) ;
 	size_t newlen ;
+	size_t max = if (namelen > filelen) ? namelen : filelen ;
 	
-	char solve[srclen + SS_RESOLVE_LEN + 1 + namelen + 7 + 1] ;
+	char solve[srclen + SS_RESOLVE_LEN + 1 + max + 7 + 1] ;
 	memcpy(solve,src,srclen) ;
 	memcpy(solve + srclen, SS_RESOLVE, SS_RESOLVE_LEN) ;
 	solve[srclen + SS_RESOLVE_LEN] = '/' ;

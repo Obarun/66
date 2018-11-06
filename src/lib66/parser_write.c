@@ -257,8 +257,8 @@ int write_longrun(char const *workdir, sv_alltype *sv,char const *dst, unsigned 
 	char *name = keep.s+sv->cname.name ;
 	size_t namelen = strlen(name) ;
 	size_t dstlen = strlen(dst) ;
-	char logname[namelen + 5 + 1] ;
-	char dstlog[dstlen + 5 + 1] ;
+	char logname[namelen + SS_LOG_RCSUFFIX_LEN + 1] ;
+	char dstlog[dstlen + 1] ;
 	
 	/**notification,timeout ...*/
 	if (!write_common(sv, dst))
@@ -758,7 +758,7 @@ int write_common(sv_alltype *sv, char const *dst)
 		size_t sslen = strlen(SS_SERVICEDIR) - 1 ;
 		char *name = keep.s + sv->cname.name ;
 		size_t namelen = strlen(name) ;
-		char dst[sslen + SS_ENVDIR_LEN +1 + namelen ] ;
+		char dst[sslen + SS_ENVDIR_LEN + 1 + namelen + 1] ;
 		memcpy(dst,SS_SERVICEDIR,sslen) ;
 		memcpy(dst + sslen,SS_ENVDIR,SS_ENVDIR_LEN) ;
 		dst[sslen + SS_ENVDIR_LEN] = 0 ;
