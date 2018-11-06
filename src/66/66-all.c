@@ -43,18 +43,19 @@
 unsigned int VERBOSITY = 1 ;
 static tain_t DEADLINE ;
 unsigned int trc = 0 ;
-#define USAGE "66-all [ -h help ] [ -v verbosity ] [ -T timeout ] [ -l live ] up/down"
+#define USAGE "66-all [ -h help ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] up/down"
 
 static inline void info_help (void)
 {
   static char const *help =
-"66-all <options> tree\n"
+"66-all <options> up/down\n"
 "\n"
 "options :\n"
 "	-h: print this help\n" 
 "	-v: increase/decrease verbosity\n"
 "	-T: timeout\n"
 "	-l: live directory\n"
+"	-t: tree to use\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
@@ -109,6 +110,7 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 	{
 		VERBO3 strerr_warni4x("no classic service for tree: ",treename," to ", what ? "start" : "stop") ;
 	}
+	/** add transparent Master to start the db*/
 	if (!stra_add(&ga,"Master"))
 	{
 		VERBO3 strerr_warnwu2x("add Master as service to ", what ? "start" : "stop") ;
@@ -175,6 +177,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	unsigned int tmain = 0 ;
 	uid_t owner ;
 	
+	char const *treename = NULL ;
+	
 	stralloc base = STRALLOC_ZERO ;
 	stralloc scandir = STRALLOC_ZERO ;
 	stralloc livetree = STRALLOC_ZERO ;
@@ -191,7 +195,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:l:t:T:", &l) ;
+			int opt = getopt_args(argc,argv, ">hv:l:T:t:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
@@ -202,9 +206,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 							if (!stralloc_0(&live)) retstralloc(111,"main") ;
 							break ;
 				case 'T' :	if (!uint0_scan(l.arg, &tmain)) exitusage() ; break ;
-				case 't' : 	if(!stralloc_cats(&tree,l.arg)) retstralloc(111,"main") ;
-							if(!stralloc_0(&tree)) retstralloc(111,"main") ;
-							break ;
+				case 't' : 	treename = l.arg ; break ;
 				default : exitusage() ; 
 			}
 		}
@@ -268,9 +270,17 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	/** ensure that we have an empty line at the end of the string*/
 	if (!stralloc_cats(&contents,"\n")) retstralloc(111,"main") ;
 	if (!stralloc_0(&contents)) retstralloc(111,"main") ;
-		
-	if (!clean_val(&in,contents.s))
-		strerr_diefu2x(111,"clean: ",contents.s) ;
+	
+	/** only one tree?*/
+	if (treename)
+	{
+		if (!stra_add(&in,treename)) strerr_diefu3x(111,"add: ", treename," as tree to start") ;
+	}
+	else
+	{
+		if (!clean_val(&in,contents.s))
+			strerr_diefu2x(111,"clean: ",contents.s) ;
+	}
 	
 	if (!in.len)
 	{
