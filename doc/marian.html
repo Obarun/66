@@ -92,8 +92,8 @@ the number sign '#' in front of the opening square bracket like this:</p>
             The following is a break down of how to write these syntaxes:</p>
 	<ul>
 		<li>
-			<tt>inline&nbsp;</tt>&nbsp;: An inline <em>value</em>. Must be on the same
-			line with its corresponding <em>key</em>.
+			<tt>inline&nbsp;</tt>&nbsp;: An inline <em>value</em> must be on the same
+			line of its corresponding <em>key</em>.
 			<p>Valid syntax:</p><p>
 			</p><ul>
 				<pre>@type = classic</pre>
@@ -111,7 +111,7 @@ classic</pre>
 	 
 		<li> 
 			<tt>quotes&nbsp;</tt>&nbsp;: A <em>value</em> between
-			double-quotes. Must be on the same line with its corresponding <em>key</em>.
+			double-quotes must stay on the same line of its corresponding <em>key</em>.
 		</li>
 		<p>Valid syntax:</p>
 		<ul>
@@ -126,8 +126,8 @@ is not allowed"</pre>
 		
 		<li>
 			<tt>brackets&nbsp;</tt>&nbsp;: Multiple <em>values</em> between
-			parentheses '()'. Values need to be separated
-			with a space. A line break can be used instead.
+			brackets '()' need to be separated
+			by spaces. A line break can be used instead.
 		</li>
 		<p>Valid syntax:</p>
 		<ul>
@@ -146,8 +146,8 @@ fooC
 		<br><hr>
 		
 		<li>
-			<tt>uint&nbsp;</tt>&nbsp;: A positive whole number. 
-			Must be on the same line with its corresponding <em>key</em>.
+			<tt>uint&nbsp;</tt>&nbsp;: A number <em>value</em>
+			must be on the same line of its corresponding <em>key</em>.
 		</li>
 		<p>Valid syntax:</p>
 		<ul>
@@ -161,8 +161,8 @@ fooC
 		</ul>
 		<br><hr>
 		<li> 
-			<tt>path&nbsp;</tt>&nbsp;: An absolute path beginning with a forward slash '/'. 
-			Must be on the same line with its corresponding <em>key</em>.
+			<tt>slash&nbsp;</tt>&nbsp;: A <em>value</em> containing 
+			one or more slashes '/' must stay on the same line of its corresponding <em>key</em>.
 		</li>
 		<p>Valid syntax:</p>
 		<ul>
@@ -177,8 +177,10 @@ long/path</pre>
 		<br><hr>
 
 		<li>
-			<tt>pair&nbsp;</tt>&nbsp;: same as <tt>inline</tt>.
+			<tt>pair&nbsp;</tt>&nbsp;: For a <em>key=value</em> pair
+                        to be valid it must stay on one single line.
 		</li>
+                <!-- Isn't pair exactly the same as line/inline? Looks completely superfluous to me. -->
 		<p>Valid syntax:</p>
 		<ul>
 			<pre>MYKEY = MYVALUE</pre>
@@ -275,9 +277,9 @@ MYVALUE</pre>
 	are not allowed.
 	<br>The <em>order is of importance</em> (!). If fooA depends on fooB and fooB
 	depends on fooC the order needs to be: 
-	<pre>@depends=(FooA BooA CooA)</pre>
+	<pre>@depends=(fooA fooB fooC)</pre>
 	It is unnecessary to manually define chained sets of dependencies.
-	The parser will properly handle this for you. For example,
+	The parser will properly handle this for you.
 	If fooA depends on fooB&#8212;no matter the underlying implementation of fooB,
 	and although the current implementation of fooB depends on fooC&#8212;you should 
 	just put fooB in the <tt>@depends</tt> key field of fooA. When starting the set,
@@ -288,29 +290,6 @@ MYVALUE</pre>
 	Beware though that if fooA depends on fooC, you need to add both fooB and fooC
 	to the dependencies of fooA.
    </li>
-   
-   <!-- Taking an another example : 
-   FooA depens of FooB which depends of FooC, your service file can just declare FooB and
-   the parser will automatically add FooB because in your service file of FooB you declare
-   FooC as dependencies, so
-   
-   FooA service file is : @depends=( FooB )
-   FooB service file is : @depends=( FooC )
-   
-   Now we have FooA service BooA service and CooA service, FooA depends on BooA which 
-   depends of CooA. 
-   FooA service : @depends = ( BooA ) ;
-   BooA service : @depends = ( BooB BooC BooD CooA ) ;
-   CooA service : @depends = ( CooB CooC) ;
-   
-   the complete chained dependency should be :
-   FooA service : @depends = ( BooA BooB BooC BooD CooA CooB CooC ) ;
-   BooA service : @depends = ( BooB BooC BooD CooA CooB CooC )
-   CooA service : @depends = ( CooB CooC) ;
-   So you're right, the sentence is not clear.
- 
- -->
-    
   </ul>
  
  <br><hr style="border: 1px dashed #000000">
@@ -525,17 +504,27 @@ MYVALUE</pre>
  <li><h4>@runas</h4></li>
  <h5>Without equivalent, this key is unique to 66 tools.</h5>
  
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no</p>
+ <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)</p>
  <p><tt>syntax&nbsp;</tt>&nbsp;: inline</p>
  <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
   <ul>
    <li>Any valid user set on the system</li>
-   <p>This will pass the privileges of the service to the given user before starting the 
-   last command of the service.</p>
+   <p>This will pass the privileges of the service to the given user before starting the daemon.</p>
   </ul>
-  <p><tt><strong>Note:</strong></tt> (!) The service needs to be first started 
-  with root if you want to hand over priviliges to a user. Only root can pass on privileges. This field has
-  <strong>no effect</strong> for other use cases.</p>
+  <p><tt><strong>Note:</strong></tt> (!) The daemon needs to be first started 
+  with root. Only root can pass on privileges. This field has
+  no effects in other cases.</p>
+  <!-- This is very confusing!
+  
+  You say this is mandatory but then make a note about how this has no other use case. What other use case could there possibly be if this is mandatory?
+  
+  Will my service not start if I do not run it as root? You say the field has no effect but if this field is mandatory will my whole service error out?
+
+  Do you mean something like: "If not started with root, the service will not start at all!"? Do all services need to be run as root?
+
+  Also from what I understand and read a "daemon" is a running instance of a service, ain't that so? Then how can I start a daemon seperately from a service? Because that is how it sounds.
+
+  It's completely understandable what this key does. It's just that the note instead of explaining the key, raises doubt. To clear this confusion I propose to either: not use the word daemon and clearly explain the alternative effects—if there were any possible—or briefly explain how I possibly can mess things up with this key. -->
  
  <hr style="border: 1px dashed #000000">
  
@@ -543,10 +532,10 @@ MYVALUE</pre>
  <h5>Without equivalent, this key is unique to 66 tools.</h5>
  
  <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)&#8212;if the <tt>@build</tt> key is set to <em>custom</em>.</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: quotes, path</p>
+ <p><tt>syntax&nbsp;</tt>&nbsp;: quotes, slash</p>
  <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
   <ul>
-   <li>A valid path to an interpreter installed on your system.</li>
+   <li>Any valid interpreter installed on your system.</li>
    <p>This will set the language that will be used to read and write the <tt>@execute</tt> key <em>value</em>.</p>
   </ul>
  
@@ -561,7 +550,8 @@ MYVALUE</pre>
  <p><tt>syntax&nbsp;</tt>&nbsp;: bracket</p>
  <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
   <ul>
-   <li>The command to execute when starting the service.</li>
+   <li>The command to execute when starting the daemon.</li>
+   <!-- The same as with @runas, why all of a sudden is it a daemon now? Could this be better named service here or would that be incorrect? -->
    </ul>
   <p><tt><strong>Note:</strong></tt> The field will be used as is. No changes will be applied at all. It's the 
   responsability of the author to make sure that the content of this field is correct.</p>
@@ -577,44 +567,40 @@ MYVALUE</pre>
 <p>This section is exactly the same as <tt><a href="#start">[start]</a></tt> and shares the same keys. With the exception that 
 it will only be considered when creating the file "<em>finish</em>" for a <em>classic</em> or <em>longrun</em> service
 and when creating the file "<em>down</em>" for a <em>oneshot</em> service to create its content.</p>
+<!-- Did I get that right? ._." -->
+
 <br><hr>
 
 <h2 id="logger">Section: [logger]</h2>
 
 <p>This section is <em>optional</em>.</p>
-<p>The value <tt>log</tt> must be added to the
-<tt>@options</tt> key in the <tt>[main]</tt> section for <tt>[logger]</tt> to have any effect.</p>
-<p>This section extends the <tt>@build, @runas, @shebang</tt> and <tt>@execute</tt> 
-key fields from <tt><a href="#start">[start]</a>/<a href="#stop">[stop]</a></tt> 
-and the <tt>@timeout-finish</tt> and <tt>@timeout-kill</tt> key 
-fields from <tt><a href="#main">[main]</a> </tt>. These are also valid keys 
-for <tt>[logger]</tt> and behave the same way they do in the other sections but they can be not specified&#8212;see<a href="logex">example</a> below. 
-In such case the default behaviour for those key are apply.</p>
-<p>Furthermore there are some keys specific to the log.</p>
-
-<!-- the logger is a service as any another service so the key @build,@runas, @timeout-finish as exactly the same behaviour. So yes by default
-the run file for the logger will be written in execlineb script, the runas if it's set will be run s6-log with the given user  and so on... EXACTLY the
-same behaviour. -->
+<p>It will only have an effect when the value <tt>log</tt> is added to the
+<tt>@options</tt> key in the <tt>[main]</tt> section.</p>
+<p>This section accepts the <tt>@build,@runas,@shebang,@execute</tt> key field
+as the manner as the section <tt><a href="#start">start</a>,<a href="#stop">stop</a></tt>
+and <tt>@timeout-finish,@timeout-kill</tt> key field as the section 
+<tt><a href="#main">main</a> </tt>more :</p>
+<!-- You completely lost me here. I can not make any sense of this paragraph, sorry. -->
 
 <h3>Valid <em>key</em> names:</h3>
 
 <ul>
-
- <li><h4>@build, @runas, @shebang, @execute &mdash; See <tt><a href="#start">[start]</a></tt></h4></li>
- <li><h4>@timeout-finish, @timeout-kill &mdash; See <tt><a href="#start">[main]</a></tt></h4></li>
-
- <hr style="border: 1px dashed #000000">
-
+	
  <li><h4>@destination</h4></li>
  <h5>Without equivalent, this key is unique to 66 tools.</h5>
  <p><tt>mandatory&nbsp;</tt>&nbsp;: no</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: path</p>
+ <p><tt>syntax&nbsp;</tt>&nbsp;: slash</p>
  <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
   <ul>
    <li>Any valid path on the system.</li>
-   <p>The directory where to save the log file. This directory is automatically created. Obviously,
-   the current user of the process need to have sufficient permissions on the destination directory 
-   to be able to create it. The default directory is <tt>/var/log/66/servicename</tt> for <tt>root</tt> and
+   <!-- Only absolute or relative as well?
+        Must this directory be present? Is that what valid means here?
+        Or will it be created if not?
+        Could be:
+        "Any existing absolute path on the system" or
+        "An absolute path"
+   -->
+  <p>The directory where to save the log file. <!-- "The path must exist and be writable by [...?]." --> The default is <tt>/var/log/66/servicename</tt> for <tt>root</tt> and
   <tt>$HOME/.66/log/servicename</tt> for any regular user. The default can also be changed at compile-time by 
   passing the <tt>--with-system-logpath=<em>DIR</em></tt> option 
   for root and <tt>--with-user-logpath=<em>DIR</em></tt> for a user to <tt>./configure.</tt></p>
@@ -665,19 +651,7 @@ same behaviour. -->
 	 the time and two spaces after the time, before being processed by 
 	 the next action directive.</p></li>
   </ul>
-  <p id="#logex">The following give you two examples of the possible <tt>[logger]</tt> section definition.</p>
-  <pre>    [logger]
-    @build = auto
-    @runas = user
-    @timeout-finish = 10000
-
-    @destination = /run/log
-    @backup = 10
-    @timestamp = ISO</pre>
-  <pre>    [logger]
-    @destination = /run/log
-    @backup = 10
-    @timestamp = ISO</pre>
+  
 </ul>
 
 <br><hr>
@@ -715,9 +689,9 @@ created by default at /etc/66/env/name_of_daemon directory. The default can also
    !CMD_ARGS=-d -s
 </pre>
    <p>This will explicitly <em>not</em> set the <em>value</em> 
-   of the <em>key</em> for the runtime process but only at the start of the service. 
+   of the <em>key</em> for the runtime process but only at the start of the daemon. <!-- Service?! -->
    In this example the <em>key=value</em> pair passed to the command line does not need
-   to be present in the general environment variable of the service.</p> 
+   to be present in the general environment variable of the daemon.</p> <!-- Service?! -->
   </ul>
  </ul>
  <br><hr>
@@ -747,7 +721,7 @@ put your <tt>@shebang</tt> at the beginning of the script and copy the contents 
 When using this sort of custom function <tt>@runas</tt> has <strong>no effect</strong>. You must define with care what you want to happen in a <em>custom</em>
 case.</p>
 <p>Furthermore when you set <tt>@build</tt> to <em>auto</em> the parser will take care about the 
-redirection of the ouput of the service when the logger is activated. When setting <tt>@build</tt> to <em>custom</em> though the parser will not do this automatically. You need to explicitly tell it to:
+redirection of the ouput of the daemon <!-- Service?! --> when the logger is activated. When setting <tt>@build</tt> to <em>custom</em> though the parser will not do this automatically. You need to explicitly tell it to:
 <pre>    #!/usr/bin/bash
     exec 2>&1
     echo "This script redirects file descriptor 2 to the file descriptor 1"
