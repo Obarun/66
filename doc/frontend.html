@@ -755,10 +755,51 @@ redirection of the ouput of the service when the logger is activated. When setti
     echo "the error of the daemon written into the appropriate file"</pre>
 </p>
 <p>Finally you need to take care about how you define your environment variable
-in the section <tt><a href="#environment">[environment]</a></tt>. When setting <tt>@build</tt> to <em>auto</em> the parser will also take care about the '!' character if you use it. This character will have <strong>no effect</strong> in the case of <em>custom</em>. 
+in the section <tt><a href="#environment">[environment]</a></tt>. When 
+setting <tt>@build</tt> to <em>auto</em> the parser will also take care 
+about the '!' character if you use it. This character will have 
+<strong>no effect</strong> in the case of <em>custom</em>. 
 </p>
 <p>This same behavior applies to the <tt><a href="#logger">[logger]</a></tt> section.
 The fields <tt>@destination, @backup, @maxsize</tt> and <tt>@timestamp</tt> will have <strong>no effect</strong>
 in a <em>custom</em> case. You need to explicitly define the program to use the logger and the options
 for it in your <tt>@execute</tt> field.</p>
-</ul></body></html>
+</ul>
+
+<br><hr>
+
+<h2 id="instance">Instance service file creation</h2>
+	<p>An <em>instance</em> service file have strictly the same syntax as 
+	decribe on this document as another service. It can be any <em>type</em> 
+	of service. However some little different exist :
+		<ul>
+			<li>the name of file need to be appended with a '@' character.</li>
+			<li>every value that you want to replace inside the file need to be written with '@I' characters.</li>
+		</ul>
+	<p>Example :</p>
+	<pre>    Name of the file : tty@
+   
+    Contain of the file :
+    [main]
+    @type = classic
+    @name = @I
+    @description = "Launch @I"
+    @user = ( root )
+    
+    [start]
+    @build = auto
+    @execute = ( agetty -J 38400 @I } )
+	</pre>
+	<p>At the invocation of the <a href="66-enable.html">66-enable -I tty1 tty@</a>, 
+	the resulting file before the parsing process will be: </p>
+	<pre>    [main]
+    @type = classic
+    @name = tty1
+    @description = "Launch tty1"
+    @user = ( root )
+    
+    [start]
+    @build = auto
+    @execute = ( agetty -J 38400 tty1 } )</pre>
+	</p>
+</body></html>

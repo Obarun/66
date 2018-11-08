@@ -27,8 +27,18 @@
 	</pre>
 
 	<p>
-      66-enable
+      66-enable will handle <em>service</em> on a specific <em>tree</em>. This tool 
+      will expect to find a <em>service</em> <a href="frontend.html">file</a> by default
+      at <tt>/etc/66/service</tt>. The default can also be changed at compile-time 
+      by passing the <tt>--with-service-path=<em>DIR</em></tt> option to 
+      <tt>./configure.</tt> It will run a parsing process and write the result
+      at the directory of the <em>tree</em>&#8212;see <a href="66-tree.html">66-tree</a> 
+      for futher information. The <em>service</em> will be available on the 
+      <em>tree</em> for the next boot time depending of the state of the
+      <em>tree</em> or can be started directly&#8212;see 
+      <tt>-S</tt> options below.
     </p>
+    <p><em>service</em> as arguments can be multiple.</p>
 
 <h2> Options </h2>
 
@@ -43,33 +53,65 @@
 	 </li>
 	 
 	 <li> 
-		<tt>-l&nbsp;<em>live</em></tt>&nbsp;: create the scandir at <em>live</em>. Default is
-		<tt>/run/66</tt>. The default can also be changed at compile-time by
-		passing the <tt>--livedir=<em>live</em></tt> option to <tt>./configure</tt>. 
-		An absolute path is expected and should be under a writable filesystem 
-		- likely a RAM filesystem.
+		<tt>-l&nbsp;<em>live</em></tt>&nbsp;: <em>live</em> directory to 
+		start the supervision of <em>service</em>. Default is <tt>/run/66</tt>. The default can 
+		also be changed at compile-time by passing the <tt>--livedir=<em>live</em></tt>
+		option to <tt>./configure</tt>. An absolute path is expected and
+		should be under a writable filesystem - likely a RAM filesystem and 
+		also already exist&#8212;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
 	 </li>
 	 <li> 
-		<tt>-t&nbsp;<em>tree</em></tt>&nbsp;: 
+		<tt>-t&nbsp;<em>tree</em></tt>&nbsp;: <em>tree</em> used to store
+		the <em>service</em> file. This options is <strong>mandatory</strong>
+		except if the option <tt>-c</tt> has been invoked on 
+		<a href="66-tree.html">66-tree</a> tool.
 	 </li>
 	 
 	 <li> 
-		<tt>-f&nbsp;</tt>&nbsp;: owerwritte an existing service.
+		<tt>-f&nbsp;</tt>&nbsp;: overwrite an existing <em>service</em>. If the
+		<em>service</em> is already enabled, the parsing and write process will
+		overwrite it. 
 	</li>
 	 
 	 <li>
-		<tt>-d&nbsp;<em>directory</em></tt>&nbsp;: 
+		<tt>-d&nbsp;<em>directory</em></tt>&nbsp;: enable all service files
+		found at <em>directory</em> where <em>service</em> is the first service
+		to start&#8212;see <a href="#directory">directory</a>. <em>directory</em> 
+		may or may not be an absolute path. In case of relative path, <em>directory</em>
+		must exist by default at <tt>/etc/66/service</tt> depending of 
+		the option given at compile-time. In case of absolute path, the current 
+		user of the process need to have sufficient permissions to read <em>directory</em>.
+		In both case <tt>66-enable</tt> expect to find a valid services file inside <em>directory</em>.
 	 </li>
 	 
 	 <li> 
-		<tt>-I&nbsp;<em>instance</em></tt>&nbsp;: 
+		<tt>-I&nbsp;<em>instance</em></tt>&nbsp;: create a <em>instance</em> 
+		service from <em>service</em> template where <em>service</em> must contain a '@'
+		at the end of the name. For example : <tt>66-enable -I tty1 tty@</tt>. This will create the <em>service</em> 
+		tty1 from the template tty@.&#8212;see <a href="frontend.html#instance">instance</a>
+		<em>service</em> file. 
 	 </li>
 	 
 	 <li> 
-		<tt>-S&nbsp;</tt>&nbsp;:
+		<tt>-S&nbsp;</tt>&nbsp;: start <em>service</em> after the enable 
+		process. If the state of <em>service</em> is already up, this option
+		will have no effects. If the state of <em>service</em> is already up
+		and the <tt>-f</tt> option is invoked, <em>service</em> will be reloaded.
 	 </li>	 
 
 	</ul>
+<h2 id="directory">Directory option</h2>
 
+	<p>This option should be used on specific case like a set of <em>bundle,longrun,oneshot</em> 
+	service type which several of them depends from each others. This doesn't mean that
+	the directory can only contain <em>bundle,longrun,oneshot</em>, it can be a mix of 
+	all service type. The perfect example is the set of service for the boot process. To achieve 
+	this specific tasks a large number of <em>oneshot</em> service is used but also contain "classic" 
+	service.</p>
+	<p>It can be difficult to know the first service to start on a dependencies service graph. 
+	To avoids problem about the resolution of the services dependencies graph, it's 
+	neccessary to pass the first service to start as arguments. In general, the root node
+	of a service dependencies graph is a <em>bundle</em>.</p>
+	<p>Also this behaviour can be change on future release of 66-enable tool.</p>
 </body>
 </html>
