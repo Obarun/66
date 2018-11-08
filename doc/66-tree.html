@@ -1,0 +1,103 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>The 66 Suite: 66-tree</title>
+    <meta name="Description" content="Detailed documentation for the 66-tree command which is part of the 66 software suite" />
+    <meta name="Keywords" content="66 command 66-tree scandir supervision supervise set service creation" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">66</a><br />
+<a href="//obarun.org/">www.obarun.org</a>
+</p>
+
+<h1>66-tree</h1>
+
+	<p>
+      This command handles a set of services.
+    </p>
+
+<h2> Interface </h2>
+	<pre>
+	66-tree [ -h help ] [ -v <em>verbosity</em> ] [ -n new ] [ -a allow <em>user,user,...</em> ] [ -d deny <em>user,user,...</em> ] [ -c current ] [ -E enable ] [ -D disable ] [ -R remove ] [ -C <em>clone</em> ] tree"
+	</pre>
+
+	<p>
+      66-tree will handle a set of any kind of services into <em>tree</em>. 
+      <em>tree</em> will be handled for the current user of the process. 
+      Each <em>tree</em> are completely independent from each other.
+    </p>
+
+<h2> Options </h2>
+
+	<ul>
+	 <li> <tt>-h&nbsp;</tt>&nbsp;: print the help. </li>
+	 
+	 <li>
+		<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increase/decrease 
+		the verbosity of the command. <tt>1(Default)</tt>: Only print 
+		error messages. <tt>2</tt>: Also print warning messages. 
+		<tt>3</tt>: Also print debugging messages.
+	 </li>
+	 
+	 <li>
+		<tt>-n&nbsp;</tt>&nbsp;: create a new empty <em>tree</em>. <em>tree</em>
+		doesn't exist yet on the system.
+	 </li>
+	 <li> 
+		<tt>-a&nbsp;<em>user</em></tt>&nbsp;: allow <em>user</em> to deal with
+		<em>tree</em>. <em>user</em> can be any valid user on the system. <em>user</em>
+		need to be the name of the user. A list of <em>user</em> separated by comma is allowed.
+		This options is used by <em>66-tree</em> to set the uid,gid at the compilation time of a services database. 
+		That's mean that an undefined <em>user</em> is automatically denied for the given <em>tree</em>.
+		By default the current user of the process is automatically allowed when the <em>tree</em> is created.
+	 </li>
+	 
+	 <li> 
+		<tt>-d&nbsp;<em>user</em></tt>&nbsp;: deny <em>user</em> to deal with
+		<em>tree</em>. <em>user</em> can be any valid user on the system. <em>user</em>
+		need to be the name of the user. A list of <em>user</em> separated by comma is allowed.
+	</li>
+	 
+	 <li>
+		<tt>-c&nbsp;</tt>&nbsp;: make <em>tree</em> as current. The majority of the 66 tools
+		have a <tt>-t</tt> options used to specify the <em>tree</em> to use. It can be
+		really annoying to specify this options for each command executed. When you set
+		<em>tree</em> as current all other 66 tools know the <em>tree</em> to use
+		by default and avoid to specify it each time.Also, you can see which
+		<em>tree</em> is the current one with the <tt><a href="66-info.html">66-info</a></tt> tool.
+	 </li>
+	 
+	 <li> 
+		<tt>-E&nbsp;</tt>&nbsp;: enable <em>tree</em>. This options
+		allow the <tt><a href="66-all.html">66-all</a></tt> tool to know which tree 
+		need to be started. If <em>tree</em> is enabled, all services into <em>tree</em> 
+		will be started when you use the <tt>66-all</tt> tool.  	
+	 </li>
+	 
+	 <li> 
+		<tt>-D&nbsp;</tt>&nbsp;: disable <em>tree</em>. This is the strict
+		reverse of the <tt>-E</tt> options.  	
+	 </li>	 
+	 
+	 <li> 
+		<tt>-R&nbsp;</tt>&nbsp;: Remove <em>tree</em>. Delette <em>tree</em>
+		from the system. This options cannot be reversed, you will not able
+		to retrieve any information of the <em>tree</em> after the use of this
+		options.  	
+	 </li>
+	 
+	 <li> 
+		<tt>-C&nbsp;<em>clone</em></tt>&nbsp;: make a strict copy of <em>tree</em>
+		named <em>clone</em>. This is usefull to create a backup of <em>tree</em> or
+		to start a new tree from an existing one. <em>clone</em> doesn't exist yet 
+		on the system.
+	 </li>
+	</ul>
+
+</body>
+</html>
