@@ -18,7 +18,7 @@
 <h1>66-tree</h1>
 
 	<p>
-      This command handles a set of services.
+      This command handles a directory containing a set of services.
     </p>
 
 <h2> Interface </h2>
@@ -29,7 +29,9 @@
 	<p>
       66-tree will handle a set of any kind of services into <em>tree</em>. 
       <em>tree</em> will be handled for the current user of the process. 
-      Each <em>tree</em> are completely independent from each other.
+      Each <em>tree</em> are completely independent from each other. If you 
+      want to know which tree are currently available on the system use
+      <tt><a href="66-info.html">66-info</a></tt> tool.
     </p>
 
 <h2> Options </h2>
@@ -85,7 +87,7 @@
 	 </li>	 
 	 
 	 <li> 
-		<tt>-R&nbsp;</tt>&nbsp;: Remove <em>tree</em>. Delette <em>tree</em>
+		<tt>-R&nbsp;</tt>&nbsp;: Remove <em>tree</em>. Delete <em>tree</em>
 		from the system. This options cannot be reversed, you will not able
 		to retrieve any information of the <em>tree</em> after the use of this
 		options.  	
@@ -99,5 +101,29 @@
 	 </li>
 	</ul>
 
+<h2> How it works </h2>
+
+	<p>At the creation time, by default the <em>tree</em> will be created at 
+	<tt>/usr/lib/66/system/<em>tree</em></tt> for root and <tt>$HOME/.66/system/<em>tree</em></tt>
+	for an user. The base name of the directory, it mean <tt>/usr/lib/66/,$HOME/.66/</tt>, can also be changed
+	at compile-time by passing the <tt>--with-system-dir=<em>DIR</em></tt> option 
+	for root and <tt>--with-user-dir=<em>DIR</em></tt> for an user to <tt>./configure.</tt> 
+	When you e.g enable a service as root, the resulting file service parser process will be
+	written at <tt>/usr/lib/66/system/<em>tree</em>/servicedirs/svc</tt>
+	for a service with "classic" type and at <tt>/usr/lib/66/system/<em>tree</em>/servicedirs/db/source</tt> 
+	for a service as <em>bundle,longrun,oneshot</em> service type. <strong>Never</strong> 
+	handles manually the directory and sub-directory of a <em>tree</em>. You will goes on trouble doing this.</p>
+	<p>In fact, when you use 66 tools like <tt>66-enable,66-disable,66-start,66-dbctl,...</tt> the tool
+	will go to the directory of the <em>tree</em> to find information about the service itself.
+	For example when you ask to start all services of a <em>tree</em> with 
+	<tt><a href="66-all.html">66-all</a></tt> tool,the directory 
+	<tt>/usr/lib/66/system/<em>tree</em>/servicedirs/svc</tt> will be opened. For each
+	service found into it <tt>66-all</tt> will start it. The process is a little different
+	for a service as type <em>bundle,longrun,oneshot</em>. Instead of openning the directory <tt>/usr/lib/66/system/<em>tree</em>/servicedirs/db/source</tt>, 
+	the corresponding compiled database found at 
+	<tt>/usr/lib/66/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> will be used. This 
+	compiled database is the resulting of an <tt><a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html">s6-rc-compile</a></tt> 
+	invocation at enable process time of the directory <tt>/usr/lib/66/system/<em>tree</em>/servicedirs/db/source</tt>.
+	</p>
 </body>
 </html>

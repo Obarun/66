@@ -1,0 +1,75 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>The 66 Suite: 66-enable</title>
+    <meta name="Description" content="Detailed documentation for the 66-enable command which is part of the 66 software suite" />
+    <meta name="Keywords" content="66 command 66-enable service supervision supervise enable service parse boot" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">66</a><br />
+<a href="//obarun.org/">www.obarun.org</a>
+</p>
+
+<h1>66-enable</h1>
+
+	<p>
+      This command enable a service(s) into a <em>tree</em>.
+    </p>
+
+<h2> Interface </h2>
+	<pre>
+	66-enable [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -f force ] [ -d <em>directory</em> ] [ -I <em>instance</em> ] [ -S start ] service(s)"
+	</pre>
+
+	<p>
+      66-enable
+    </p>
+
+<h2> Options </h2>
+
+	<ul>
+	 <li> <tt>-h&nbsp;</tt>&nbsp;: print the help. </li>
+	 
+	 <li>
+		<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increase/decrease 
+		the verbosity of the command. <tt>1(Default)</tt>: Only print 
+		error messages. <tt>2</tt>: Also print warning messages. 
+		<tt>3</tt>: Also print debugging messages.
+	 </li>
+	 
+	 <li> 
+		<tt>-l&nbsp;<em>live</em></tt>&nbsp;: create the scandir at <em>live</em>. Default is
+		<tt>/run/66</tt>. The default can also be changed at compile-time by
+		passing the <tt>--livedir=<em>live</em></tt> option to <tt>./configure</tt>. 
+		An absolute path is expected and should be under a writable filesystem 
+		- likely a RAM filesystem.
+	 </li>
+	 <li> 
+		<tt>-t&nbsp;<em>tree</em></tt>&nbsp;: 
+	 </li>
+	 
+	 <li> 
+		<tt>-f&nbsp;</tt>&nbsp;: owerwritte an existing service.
+	</li>
+	 
+	 <li>
+		<tt>-d&nbsp;<em>directory</em></tt>&nbsp;: 
+	 </li>
+	 
+	 <li> 
+		<tt>-I&nbsp;<em>instance</em></tt>&nbsp;: 
+	 </li>
+	 
+	 <li> 
+		<tt>-S&nbsp;</tt>&nbsp;:
+	 </li>	 
+
+	</ul>
+
+</body>
+</html>
