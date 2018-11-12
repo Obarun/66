@@ -55,7 +55,7 @@ unsigned int RELOAD = 0 ;
 static tain_t DEADLINE ;
 stralloc saresolve = STRALLOC_ZERO ;
 
-#define USAGE "66-start [ -h help ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ]  [ -r reload ] service(s)"
+#define USAGE "66-start [ -h help ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -r reload ] service(s)"
 
 static inline void info_help (void)
 {
@@ -65,9 +65,9 @@ static inline void info_help (void)
 "options :\n"
 "	-h: print this help\n" 
 "	-v: increase/decrease verbosity\n"
-"	-T: timeout\n"
 "	-l: live directory\n"
 "	-t: tree to use\n"
+"	-T: timeout\n"
 "	-r: reload the service(s)\n"
 ;
 
