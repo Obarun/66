@@ -1,0 +1,83 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>The 66 Suite: 66-init</title>
+    <meta name="Description" content="Detailed documentation for the 66-init command which is part of the 66 software suite" />
+    <meta name="Keywords" content="66 command 66-init service supervision supervise initiate service" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">66</a><br />
+<a href="//obarun.org/">www.obarun.org</a>
+</p>
+
+<h1>66-init</h1>
+
+	<p>
+      This command initiate services from a given <em>tree</em> to a <em>live</em> directory.
+    </p>
+
+<h2> Interface </h2>
+	<pre>
+	66-init [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -c classic ] [ -d database ] [ -B both ] <em>tree</em>
+	</pre>
+
+	<p>
+      This tool expects to find an already created <em><a href="66-scandir.html">scandir</a></em> directory at <em>live</em> location.
+      The <em>scandir</em> is not necessary running depending on the provided options. 
+      Administrators should invoke <tt>66-init</tt> only once time.  
+    </p>
+
+<h2> Options </h2>
+
+	<ul>
+	 <li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
+	 
+	 <li>
+		<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
+		the verbosity of the command. <tt>1(Default)</tt>: Only print 
+		error messages. <tt>2</tt>: Also print warning messages. 
+		<tt>3</tt>: Also print debugging messages.
+	 </li>
+	 
+	 <li> 
+		<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the <em>scandir</em> directory location to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
+		also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
+		option to <tt>./configure</tt>. An existing absolute path is expected and
+		should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
+	 </li>
+	 <li> 
+		<tt>-c&nbsp;</tt>&nbsp;: only initiate "classic" service from <em>tree</em> 
+		at <em>live</em> location.
+	 </li>
+	 
+	 <li> 
+		<tt>-d&nbsp;</tt>&nbsp;: only initiate a service database from <em>tree</em> 
+		at <em>live</em> location.
+	 </li>
+	 
+	<li> 
+		<tt>-B&nbsp;</tt>&nbsp;: initiate "classic" and service database from <em>tree</em> 
+		at <em>live</em> location.
+	</li>	 
+
+	</ul>
+<h2>Initiatlization process</h2>
+<h3>Classic service</h3>
+	<p>The tool will make a verbatim copy of all classic service files and directories of the <em>tree</em> inside a <em>scandir</em> directory at <em>live</em> location. 
+	By default, <em>/run/66/scandir/UID</em> is created if it not exist yet where <em>UID</em> is the uid of the current owner of the process. The <em>scandir</em> is <strong>not</strong>
+	necessary running. For instance, this is usefull at boot time to initiate an earlier service before starting the <em>scandir</em>. When the <em>scandir</em> 
+	starts&mdash;see <tt><a href="66-scandir.html">66-scandir -u</a></tt> option, the already presents services starts automatically.</p>
+	<p>If the <em>scandir</em> is running, you should invoke a <tt>66-scandir -s reload</tt> command to prevents the <em>scandir</em> about the changes.</p>
+<h3>Bundle,longrun,oneshot service</h3>
+	<p>The tool will invoke an <tt><a href="https://skarnet.org/software/s6-rc/s6-rc-init.html">s6-rc-init -l <em>live</em> -c <em>compiled</em> - p <em>prefix</em></a></tt> command 
+	where by default <em>live</em> is <tt>/run/66/tree/UID/<em>tree</em></tt>, <em>compiled</em> is <tt>/var/lib/66/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> or 
+	<tt>$HOME/.66/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> depending of the owner of the process and <em>prefix</em> the name of <em>tree</em>. The <em>live</em> 
+	is created if it doesn't exist yet. The <em>scandir</em> <strong>must</strong> be running. In contrary of <tt>s6-rc-init</tt> behaviour, this tool like any other 66 tool can be invoked with
+	user permissions.</p>
+</body>
+</html>

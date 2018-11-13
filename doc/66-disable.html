@@ -1,0 +1,73 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>The 66 Suite: 66-disable</title>
+    <meta name="Description" content="Detailed documentation for the 66-disable command which is part of the 66 software suite" />
+    <meta name="Keywords" content="66 command 66-disable service supervision supervise disable service parse boot" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">66</a><br />
+<a href="//obarun.org/">www.obarun.org</a>
+</p>
+
+<h1>66-disable</h1>
+
+	<p>
+      This command disable one ore more services inside a given <em>tree</em>.
+    </p>
+
+<h2> Interface </h2>
+	<pre>
+	66-disable [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -S stop ] <em>service(s)</em>"
+	</pre>
+
+	<p>
+      This tool expects to find an already enabled service inside the given <em>tree</em>. The targeted service(s) can also be stopped on the fly when disabling it with the <tt>-S</tt> option.
+      Generally speaking this command is strictly the reverse of the <tt><a href="66-enable.html">66-enable</a></tt> tool.
+    </p>
+    <p>Multiple <em>services</em> can be disabled by seperating their names with a space.</p>
+
+<h2> Options </h2>
+
+	<ul>
+	 <li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
+	 
+	 <li>
+		<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
+		the verbosity of the command. <tt>1(Default)</tt>: Only print 
+		error messages. <tt>2</tt>: Also print warning messages. 
+		<tt>3</tt>: Also print debugging messages.
+	 </li>
+	 
+	 <li> 
+		<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
+		also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
+		option to <tt>./configure</tt>. An existing absolute path is expected and
+		should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
+	 </li>
+	 <li> 
+		<tt>-t&nbsp;<em>tree</em></tt>&nbsp;: disables the <em>service</em> from
+		the given <em>tree</em>. This option is mandatory
+		except if a tree was marked as 'current'&mdash;see <a href="66-tree.html"><tt>66-tree</tt></a>.
+	 </li>
+	 
+	 <li> 
+		<tt>-S&nbsp;</tt>&nbsp;: stops the <em>service</em> on the fly directly after disabling it. If the state of the <em>service</em> is already down, this option
+		will have no effect.
+	 </li>	 
+
+	</ul>
+	
+<h2 id="dependencies">Dependencies handling</h2>
+
+<p>In case of <tt><em>'bundle'</em></tt>, <tt><em>'longrun'</em></tt> or <tt><em>'oneshot'</em></tt> services, the dependencies chain will be automatically resolves.
+It is unnecessary to manually define chained sets of dependencies. If FooA have a declared dependency FooB, FooB will be automatically added to the chain at FooA disabling process.
+This is done recursively.</p>
+
+</body>
+</html>
