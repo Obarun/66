@@ -18,100 +18,90 @@
 <h1>66-enable</h1>
 
 	<p>
-      This command enable a service(s) into a <em>tree</em>.
+      This command enables one ore more services inside a given <em>tree</em>.
     </p>
 
 <h2> Interface </h2>
 	<pre>
-	66-enable [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -f force ] [ -d <em>directory</em> ] [ -I <em>instance</em> ] [ -S start ] service(s)"
+	66-enable [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -f force ] [ -d <em>directory</em> ] [ -I <em>instance</em> ] [ -S start ] <em>service(s)</em>"
 	</pre>
 
 	<p>
-      66-enable will handle <em>service</em> on a specific <em>tree</em>. This tool 
-      will expect to find a <em>service</em> <a href="frontend.html">file</a> by default
-      at <tt>/etc/66/service</tt>. The default can also be changed at compile-time 
+      This tool expects to find a corresponding <a href="frontend.html">frontend service file</a>, by default at <tt>/etc/66/service</tt>. The default path can be changed at compile time 
       by passing the <tt>--with-service-path=<em>DIR</em></tt> option to 
-      <tt>./configure.</tt> It will run a parsing process and write the result
-      at the directory of the <em>tree</em>&#8212;see <a href="66-tree.html">66-tree</a> 
-      for futher information. The <em>service</em> will be available on the 
-      <em>tree</em> for the next boot time depending of the state of the
-      <em>tree</em> or can be started directly&#8212;see 
-      <tt>-S</tt> options below.
+      <tt>./configure.</tt> It will run a parser on the frontend service file and write the result to the directory of the given <em>tree</em>&mdash;see <a href="66-tree.html">66-tree</a>. The <em>service</em> will then be available in the given 
+      <em>tree</em> for the next boot depending on the state of the
+      <em>tree</em>. The targeted service(s) can also be started on the fly when enabling it with the <tt>-S</tt> option.
     </p>
-    <p><em>service</em> as arguments can be multiple.</p>
+    <p>Multiple <em>services</em> can be enabled by seperating their names with a space.</p>
 
 <h2> Options </h2>
 
 	<ul>
-	 <li> <tt>-h&nbsp;</tt>&nbsp;: print the help. </li>
+	 <li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
 	 
 	 <li>
-		<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increase/decrease 
+		<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
 		the verbosity of the command. <tt>1(Default)</tt>: Only print 
 		error messages. <tt>2</tt>: Also print warning messages. 
 		<tt>3</tt>: Also print debugging messages.
 	 </li>
 	 
 	 <li> 
-		<tt>-l&nbsp;<em>live</em></tt>&nbsp;: <em>live</em> directory to 
-		start the supervision of <em>service</em>. Default is <tt>/run/66</tt>. The default can 
-		also be changed at compile-time by passing the <tt>--livedir=<em>live</em></tt>
-		option to <tt>./configure</tt>. An absolute path is expected and
-		should be under a writable filesystem - likely a RAM filesystem and 
-		also already exist&#8212;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
+		<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
+		also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
+		option to <tt>./configure</tt>. An existing absolute path is expected and
+		should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
 	 </li>
 	 <li> 
-		<tt>-t&nbsp;<em>tree</em></tt>&nbsp;: <em>tree</em> used to store
-		the <em>service</em> file. This options is <strong>mandatory</strong>
-		except if the option <tt>-c</tt> has been invoked on 
-		<a href="66-tree.html">66-tree</a> tool.
+		<tt>-t&nbsp;<em>tree</em></tt>&nbsp;: specifies the <em>tree</em> used to store
+		the parsed <em>service</em> file. This option is mandatory
+		except if a tree was marked as 'current'&mdash;see <a href="66-tree.html"><tt>66-tree</tt></a>.
 	 </li>
 	 
 	 <li> 
-		<tt>-f&nbsp;</tt>&nbsp;: overwrite an existing <em>service</em>. If the
-		<em>service</em> is already enabled, the parsing and write process will
-		overwrite it. 
+		<tt>-f&nbsp;</tt>&nbsp;: reenables an already enabled <em>service</em> with the given options.
 	</li>
 	 
 	 <li>
-		<tt>-d&nbsp;<em>directory</em></tt>&nbsp;: enable all service files
-		found at <em>directory</em> where <em>service</em> is the first service
-		to start&#8212;see <a href="#directory">directory</a>. <em>directory</em> 
-		may or may not be an absolute path. In case of relative path, <em>directory</em>
-		must exist by default at <tt>/etc/66/service</tt> depending of 
-		the option given at compile-time. In case of absolute path, the current 
-		user of the process need to have sufficient permissions to read <em>directory</em>.
-		In both case <tt>66-enable</tt> expect to find a valid services file inside <em>directory</em>.
+		<tt>-d&nbsp;<em>directory</em></tt>&nbsp;: enables all service files
+		found at <em>directory</em> where <em>service</em> is the first one
+		to start&mdash;see <a href="#directory">below</a>. Can be a relative or an absolute path. If relative, <em>directory</em>
+		must exist by default at <tt>/etc/66/service</tt> depending on 
+		the option given at compile time. If absolute, the current 
+		user of the process needs to have sufficient permissions to read <em>directory</em>.
+		In any case <tt>66-enable</tt> expects to find at least one valid service file inside the given <em>directory</em>.
 	 </li>
 	 
 	 <li> 
-		<tt>-I&nbsp;<em>instance</em></tt>&nbsp;: create a <em>instance</em> 
-		service from <em>service</em> template where <em>service</em> must contain a '@'
-		at the end of the name. For example : <tt>66-enable -I tty1 tty@</tt>. This will create the <em>service</em> 
-		tty1 from the template tty@.&#8212;see <a href="frontend.html#instance">instance</a>
-		<em>service</em> file. 
+		<tt>-I&nbsp;<em>instance</em></tt>&nbsp;: creates an instanced 
+		service named <em>instance</em> from a service template where the name of <em>service</em> must end with a '@' (commercial at).&mdash;see <a href="frontend.html#instance"><tt>frontend service file</tt></a>.
 	 </li>
 	 
 	 <li> 
-		<tt>-S&nbsp;</tt>&nbsp;: start <em>service</em> after the enable 
-		process. If the state of <em>service</em> is already up, this option
-		will have no effects. If the state of <em>service</em> is already up
-		and the <tt>-f</tt> option is invoked, <em>service</em> will be reloaded.
+		<tt>-S&nbsp;</tt>&nbsp;: starts the <em>service</em> on the fly directly after enabling it. If the state of the <em>service</em> is already up, this option
+		will have no effect unless the <tt>-f</tt> option is used to reload it.
 	 </li>	 
 
 	</ul>
-<h2 id="directory">Directory option</h2>
+<h2 id="dependencies">Dependencies handling</h2>
+<p>In case of <tt><em>'bundle'</em></tt>, <tt><em>'longrun'</em></tt> or <tt><em>'oneshot'</em></tt> services, the dependencies chain will be automatically resolves except in use of <tt><a href="#directory">-d</a></tt> option.
+It is unnecessary to manually define chained sets of dependencies. If FooA have a declared dependency FooB, FooB will be automatically added to the chain at FooA enabling process.
+This is done recursively.</p>
 
-	<p>This option should be used on specific case like a set of <em>bundle,longrun,oneshot</em> 
-	service type which several of them depends from each others. This doesn't mean that
-	the directory can only contain <em>bundle,longrun,oneshot</em>, it can be a mix of 
-	all service type. The perfect example is the set of service for the boot process. To achieve 
-	this specific tasks a large number of <em>oneshot</em> service is used but also contain "classic" 
-	service.</p>
-	<p>It can be difficult to know the first service to start on a dependencies service graph. 
-	To avoids problem about the resolution of the services dependencies graph, it's 
-	neccessary to pass the first service to start as arguments. In general, the root node
-	of a service dependencies graph is a <em>bundle</em>.</p>
-	<p>Also this behaviour can be change on future release of 66-enable tool.</p>
+<h2 id="directory">The directory option</h2>
+
+	<p>The directory option <tt>-d</tt> should only be used in specific use cases like a mixed set of <tt><em>bundle</em></tt>, <tt><em>longrun</em></tt> and <tt><em>oneshot</em></tt> 
+	services where some of those depend on each other. The directory option is not limited to these types though. Any available service type can be part of the set.</p>
+	<p>A good example is a set of services for the boot process. To achieve 
+	this specific task a large number of <tt><em>oneshot</em></tt> services is used along with some <tt><em>classic</em></tt> 
+	services.</p>
+	<p>From the parser point of view, it can be rather difficult to know which service to start first in a complex set with lots of services depending on others. 
+	<!-- Difficult for who?! If I don't know which one, then the next sentence doesn't make any sense, since it just makes things more complicated. I will have to do research to know this. If you mean the parser or some technological algorhythm then that would be a reason why I had to pass the first one from my behalf. -->
+	To help out on this problem it is 
+	neccessary to tell the command which service to start before any other when using <tt>-d</tt> by passing it as the <em>service</em> argument. In most cases, the root node
+	of any dependency chain is a <em>bundle</em>.</p>
+	<p>This option and its mechanics can be subject to change in future releases of the 66-enable tool.</p>
+
 </body>
 </html>
