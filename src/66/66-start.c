@@ -412,7 +412,50 @@ int svc_sanitize(char const *base,char const *scandir,char const *live,char cons
 	return 1 ;
 }
 
-int rc_sanitize(char const *base, char const *live, char const *livetree, char const *tree, char const *treename,genalloc *ga, char const *const *envp)
+int rc_init(char const *scandir, char const *live, char const *treename, char const *const *envp)
+{
+	pid_t pid ;
+	int r, wstat ;
+	
+	char const *newargv[8] ;
+	unsigned int m = 0 ;
+	char fmt[UINT_FMT] ;
+	fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
+				
+	newargv[m++] = SS_BINPREFIX "66-init" ;
+	newargv[m++] = "-v" ;
+	newargv[m++] = fmt ;
+	newargv[m++] = "-l" ;
+	newargv[m++] = live ;
+	newargv[m++] = "-d" ;
+	newargv[m++] = treename ;
+	newargv[m++] = 0 ;
+				
+	pid = child_spawn0(newargv[0],newargv,envp) ;
+	if (waitpid_nointr(pid,&wstat, 0) < 0)
+	{
+		strerr_warnwu2sys("wait for ",newargv[0]) ;
+		return 0 ;
+	}
+	
+	if (wstat)
+	{
+		strerr_warnwu2x("init rc services for tree: ",treename) ;
+		return 0 ;
+	}
+	
+	VERBO3 strerr_warnt2x("reload scandir: ",scandir) ;
+	r = s6_svc_writectl(scandir, S6_SVSCAN_CTLDIR, "an", 2) ;
+	if (r < 0)
+	{
+		VERBO3 strerr_warnw3sys("something is wrong with the ",scandir, "/" S6_SVSCAN_CTLDIR " directory. errno reported") ;
+		return 0 ;
+	}
+	
+	return 1 ;
+}
+
+int rc_sanitize(char const *base, char const *scandir, char const *live, char const *livetree, char const *tree, char const *treename,genalloc *ga, char const *const *envp)
 {
 	pid_t pid ;
 	int wstat ;
@@ -428,7 +471,8 @@ int rc_sanitize(char const *base, char const *live, char const *livetree, char c
 	db[livetreelen + 1 + namelen] = 0 ;
 	
 	if (!db_ok(livetree, treename))
-		strerr_dief2x(111,db," is not initialized") ;
+		if (!rc_init(scandir,live,treename,envp)) return 0 ;
+	
 		
 	for (unsigned int i = 0; i < genalloc_len(svstat_t,ga) ; i++)
 	{
@@ -767,7 +811,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (genalloc_len(svstat_t,&nrc))
 	{
 		VERBO2 strerr_warni1x("sanitize rc services ...") ;
-		if (!rc_sanitize(base.s,live.s,livetree.s,tree.s,treename,&nrc,envp)) strerr_diefu1x(111,"sanitize s6-rc services") ;
+		if (!rc_sanitize(base.s,scandir.s,live.s,livetree.s,tree.s,treename,&nrc,envp)) strerr_diefu1x(111,"sanitize s6-rc services") ;
 		VERBO2 strerr_warni1x("start rc services ...") ;
 		if (!rc_start(base.s,live.s,livetree.s,tree.s,treename,&nrc,envp,trc)) strerr_diefu1x(111,"update s6-rc services") ;
 		VERBO2 strerr_warni3x("switch rc services of: ",treename," to source") ;
