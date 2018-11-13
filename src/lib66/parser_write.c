@@ -877,7 +877,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 			else
 			{
 				if (!stralloc_cats(&shebang, keep.s+exec->shebang)) retstralloc(0,"write_exec") ;			
-				if (!stralloc_cats(&shebang," \\\n\"")) retstralloc(0,"write_exec") ;
+				if (!stralloc_cats(&shebang," \"")) retstralloc(0,"write_exec") ;
 			}
 			break ;
 		default:
@@ -892,7 +892,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 	if (!stralloc_0(&shebang)) retstralloc(0,"write_exec") ;
 	/** close command */
 	if (!stralloc_cats(&runuser, keep.s+exec->exec)) retstralloc(0,"write_exec") ;
-	if (type == ONESHOT)
+	if ((type == ONESHOT) && (exec->build == CUSTOM))
 	{
 		if (!stralloc_cats(&runuser," \"")) retstralloc(0,"write_exec") ;
 	}
