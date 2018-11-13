@@ -49,7 +49,7 @@ static inline void info_help (void)
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n" 
 "	-c: init classic service\n"
-"	-r: init database service\n"
+"	-d: init database service\n"
 "	-B: init classic and database service\n"
 ;
 
