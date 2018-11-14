@@ -455,7 +455,7 @@ int rc_init(char const *scandir, char const *live, char const *treename, char co
 	return 1 ;
 }
 
-int rc_sanitize(char const *base, char const *scandir, char const *live, char const *livetree, char const *tree, char const *treename,genalloc *ga, char const *const *envp)
+int rc_sanitize(char const *base, char const *scandir, char const *live, char const *livetree, char const *tree, char const *treename,genalloc *ga, char const *const *envp,unsigned int trc)
 {
 	pid_t pid ;
 	int wstat ;
@@ -507,14 +507,27 @@ int rc_sanitize(char const *base, char const *scandir, char const *live, char co
 			VERBO3 strerr_warnwu3x("switch ",treename," to backup") ;
 			return 0 ;
 		}
-		char const *newargv[9 + genalloc_len(stralist,&toreload)] ;
+		char const *newargv[11 + genalloc_len(stralist,&toreload)] ;
 		unsigned int m = 0 ;
 		char fmt[UINT_FMT] ;
 		fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;	
+
+		int globalt ;
+		tain_t globaltto ;
+		tain_sub(&globaltto,&DEADLINE, &STAMP) ;
+		globalt = tain_to_millisecs(&globaltto) ;
+		if (!globalt) globalt = 1 ;
+		if (globalt > 0 && (!trc || (unsigned int) globalt < trc))
+			trc = (uint32_t)globalt ;
+		
+		char tt[UINT32_FMT] ;
+		tt[uint32_fmt(tt,trc)] = 0 ;
 	
 		newargv[m++] = SS_BINPREFIX "66-dbctl" ;
 		newargv[m++] = "-v" ;
 		newargv[m++] = fmt ;
+		newargv[m++] = "-T" ;
+		newargv[m++] = tt ;
 		newargv[m++] = "-l" ;
 		newargv[m++] = live ;
 		newargv[m++] = "-t" ;
@@ -801,9 +814,11 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (genalloc_len(svstat_t,&nclassic))
 	{
 		VERBO2 strerr_warni1x("sanitize svc services ...") ;
-		if(!svc_sanitize(base.s,scandir.s,live.s,tree.s,treename,&nclassic,envp)) strerr_diefu1x(111,"sanitize s6-svc services") ;
+		if(!svc_sanitize(base.s,scandir.s,live.s,tree.s,treename,&nclassic,envp)) 
+			strerr_diefu1x(111,"sanitize s6-svc services") ;
 		VERBO2 strerr_warni1x("start svc services ...") ;
-		if(!svc_start(base.s,scandir.s,live.s,tree.s,treename,&nclassic,envp)) strerr_diefu1x(111,"start s6-svc services") ;
+		if(!svc_start(base.s,scandir.s,live.s,tree.s,treename,&nclassic,envp)) 
+			strerr_diefu1x(111,"start s6-svc services") ;
 		VERBO2 strerr_warni3x("switch svc service of: ",treename," to source") ;
 		if (!svc_switch_to(base.s,tree.s,treename,SS_SWSRC))
 			strerr_diefu3x(111,"switch svc service of: ",treename," to source") ;
@@ -811,9 +826,11 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (genalloc_len(svstat_t,&nrc))
 	{
 		VERBO2 strerr_warni1x("sanitize rc services ...") ;
-		if (!rc_sanitize(base.s,scandir.s,live.s,livetree.s,tree.s,treename,&nrc,envp)) strerr_diefu1x(111,"sanitize s6-rc services") ;
+		if (!rc_sanitize(base.s,scandir.s,live.s,livetree.s,tree.s,treename,&nrc,envp,trc)) 
+			strerr_diefu1x(111,"sanitize s6-rc services") ;
 		VERBO2 strerr_warni1x("start rc services ...") ;
-		if (!rc_start(base.s,live.s,livetree.s,tree.s,treename,&nrc,envp,trc)) strerr_diefu1x(111,"update s6-rc services") ;
+		if (!rc_start(base.s,live.s,livetree.s,tree.s,treename,&nrc,envp,trc)) 
+			strerr_diefu1x(111,"update s6-rc services") ;
 		VERBO2 strerr_warni3x("switch rc services of: ",treename," to source") ;
 		if (!db_switch_to(base.s,livetree.s,tree.s,treename,envp,SS_SWSRC))
 			strerr_diefu5x(111,"switch",livetree.s,"/",treename," to source") ;
