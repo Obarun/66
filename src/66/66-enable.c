@@ -59,7 +59,7 @@ static inline void info_help (void)
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n"
 "	-t: name of the tree to use\n"
-"	-f: owerwrite service(s)\n"
+"	-f: overwrite service(s)\n"
 "	-d: enable an entire directory\n"
 "	-I: create an instance of service\n"
 "	-S: enable and start the service\n"
