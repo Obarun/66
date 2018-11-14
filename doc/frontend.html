@@ -588,7 +588,9 @@ and when creating the file "<em>down</em>" for a <em>oneshot</em> service to cre
 key fields from <tt><a href="#start">[start]</a>/<a href="#stop">[stop]</a></tt> 
 and the <tt>@timeout-finish</tt> and <tt>@timeout-kill</tt> key 
 fields from <tt><a href="#main">[main]</a> </tt>. These are also valid keys 
-for <tt>[logger]</tt> and behave the same way they do in the other sections but they can not be specified&#8212;see<a href="logex">example</a> below. 
+for <tt>[logger]</tt> and behave the same way they do in the other sections 
+but they can not be specified execpt for the <strong>mandatory</strong> key 
+<tt>@build</tt>&#8212;see <a href="logex">example</a> below. 
 In such case the default behaviour for those key are apply.</p>
 <p>Furthermore there are some keys specific to the log.</p>
 
@@ -675,8 +677,7 @@ same behaviour. -->
     @backup = 10
     @timestamp = iso</pre>
   <pre>    [logger]
-    @destination = /run/log
-    @backup = 10
+    @build = auto
     @timestamp = iso</pre>
 </ul>
 
@@ -754,6 +755,10 @@ redirection of the ouput of the service when the logger is activated. When setti
     echo "Then the logger reads the file descriptor 1 and you have"
     echo "the error of the daemon written into the appropriate file"</pre>
 </p>
+<p>Moreover, for <em>oneshot</em> type the <tt>@shebang</tt> need to contain the interpreter options to correctly parse the commandline like this:
+<pre>    @build = custom
+    @shebang = "/usr/bin/bash -c"
+    @execute = ( echo " this is a oneshot service with a correct shebang definition )</pre> </p>
 <p>Finally you need to take care about how you define your environment variable
 in the section <tt><a href="#environment">[environment]</a></tt>. When setting <tt>@build</tt> to <em>auto</em> the parser will also take care about the '!' character if you use it. This character will have <strong>no effect</strong> in the case of <em>custom</em>. 
 </p>

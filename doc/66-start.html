@@ -1,0 +1,168 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>The 66 Suite: 66-start</title>
+    <meta name="Description" content="Detailed documentation for the 66-start command which is part of the 66 software suite" />
+    <meta name="Keywords" content="66 command 66-start service supervision supervise start service" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">66</a><br />
+<a href="//obarun.org/">www.obarun.org</a>
+</p>
+
+<h1>66-start</h1>
+
+	<p>
+      This command starts one ore more <em>services</em> defined in <em>tree</em>.
+    </p>
+
+<h2> Interface </h2>
+	<pre>
+	66-start [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -T <em>timeout</em> ] [ -r reload ] <em>service(s)</em>"
+	</pre>
+
+	<p>
+      This tool expects to find an already enabled service inside the given <em>tree</em> and an already running <em>scandir</em>. 
+      If the state of the <em>service</em> is already up, <tt>66-start</tt> do nothing execpt in case of <tt>-r</tt> option&mdash;see <a href="#reload"><tt>reload transition</tt></a>.
+    </p>
+    <p>Multiple <em>services</em> can be started by seperating their names with a space.</p>
+
+<h2> Options </h2>
+
+	<ul>
+	 <li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
+	 
+	 <li>
+		<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
+		the verbosity of the command. <tt>1(Default)</tt>: Only print 
+		error messages. <tt>2</tt>: Also print warning messages. 
+		<tt>3</tt>: Also print debugging messages.
+	 </li>
+	 
+	 <li> 
+		<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
+		also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
+		option to <tt>./configure</tt>. An existing absolute path is expected and
+		should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
+	 </li>
+	 <li> 
+		<tt>-t&nbsp;<em>tree</em></tt>&nbsp;: starts the <em>service</em> from
+		the given <em>tree</em>. This option is mandatory
+		except if a tree was marked as 'current'&mdash;see <a href="66-tree.html"><tt>66-tree</tt></a>.
+	 </li>
+	 
+	 <li> 
+		<tt>-T&nbsp;<em>timeout</em></tt></tt>&nbsp;: specifies a timeout (in milliseconds)
+		after which <tt>66-start</tt> will exit 111 with an error message if the service still hasn't reached the up state.
+		By default, the timeout is 1000. 
+	</li>
+	 
+	<li> 
+		<tt>-r&nbsp;</tt>&nbsp;: reload the <em>service</em>&mdash;see <a href="#reload"><tt>reload transition</tt></a>.
+	 </li>	 
+
+	</ul>
+<h2 id="dependencies">Dependencies handling</h2>
+<p>In case of <tt><em>'bundle'</em></tt>, <tt><em>'longrun'</em></tt> or <tt><em>'oneshot'</em></tt> services, the dependencies chain will be automatically resolves.
+It is unnecessary to manually define chained sets of dependencies. If FooA have a declared dependency FooB, 
+FooB will be automatically added to the chain at FooA starting process and FooB will be started first.
+This is done recursively.</p>
+
+<h2>Classic services transitions</h2>
+
+	<p>
+		<ul>
+			<li>
+				<tt>66-start</tt> computes the arguments services in one list of classic services called <em>selection</em>.
+			</li>
+			<li>
+				Inspect the <em>selection</em> to determine if the <em>service</em> is already initiate.
+				If not, a new <em>selection</em> is made. It copy verbatim the files and directories of the <em>selection</em>, 
+				create a <em>down</em> file and the <em>event</em> fifo directory. It subscribe to the <em>service</em> fifo events, 
+				send a reload signal to the <em>scandir</em> and wait for an events for every service on the <em>selection</em>.
+				If a <em>timeout</em> occurs before an events reception, the initialization fail.
+			</li>
+			<li>
+				If a reload was asked, a <a href="#reload">reload</a> transition is operated.
+			</li>
+			<li>
+				Inspect the <em>selection</em> and look if a looger is associated for a <em>service</em>. 
+				If yes, it add the logger service to the <em>selection</em>.
+			</li>
+			<li>
+				Finally it send an <tt>66-svctl -v <em>verbosity</em> -T <em>timeout</em> -l <em>live</em> -t <em>tree</em> -U <em>selection</em></tt> command 
+				and wait for the exit code status of command.
+			</li>
+		</ul>
+	</p>
+<p>Obviously, if one of those process fail <tt>66-start</tt> fail too and exit 111.</p>
+<h2>Bundle,longrun,oneshot transitions</h2>
+	<p>
+		<ul>
+			<li>
+				<tt>66-start</tt> computes the arguments services in one list of Bundle,longrun,oneshot services called <em>selection</em>.
+			</li>
+			<li>
+				Inspect the <em>selection</em> to determine if the associated service database of the <em>tree</em> 
+				is already initiated. If not an <tt>66-init -v <em>verbosity</em> -l <em>live</em> -d <em>tree</em></tt> is invoked and 
+				wait for the exit status code of the command. Than a reload signal 
+				is send to the <em>scandir</em> to prevents it about the change.
+			</li>
+			<li>
+				If a reload was asked, a <a href="#reload">reload</a> transition is operated.
+			</li>
+			<li>
+				Finally it send an <tt>66-dbctl -v <em>verbosity</em> -T <em>timeout</em> -l <em>live</em> -t <em>tree</em> -u <em>selection</em></tt> command 
+				and wait for the exit status code of the command.
+			</li>
+		</ul>
+	</p>
+<p>Obviously, if one of those process fail <tt>66-start</tt> fail too and exit 111.</p>
+<h2 id ="reload">Reload transitions</h2>
+<h3>Classic</h3>
+	<p>
+		<ul>
+			<li>
+				<tt>66-start</tt> computes the arguments services in one list of classic services called <em>selection</em>.
+			</li>
+			<li>
+				It look after the logger of the <em>service</em> if exist and add it to the <em>selection</em>, 
+				send an <tt>66-svctl -v <em>verbosity</em> -T <em>timeout</em> -l <em>live</em> -t <em>tree</em> -D <em>selection</em></tt> command 
+				and wait for the exit status of the command. It removes all 
+				files and directories of <em>service</em> from the <em>scandir</em> than an init transition is operated&mdash;see above.
+			</li>
+		</ul>
+	</p>
+	<p>Obviously, if one of those process fail <tt>66-start</tt> fail too and exit 111.</p>
+<h3>Bundle,longrun,oneshot</h3>
+	<p>
+		<ul>
+			<li>
+				<tt>66-start</tt> computes the arguments services in one list of Bundle,longrun,oneshot services called <em>selection</em>.
+			</li>
+			<li>
+				It make a backup of the <em>live</em> service database of the <em>tree</em> and switch to this one with 
+				the help of <tt><a href="https://skarnet.org/software/s6-rc/s6-rc-update.html">s6-rc-update</a></tt> program. 
+			</li>
+			<li>
+				Compile the service database of the <em>tree</em> from the source with the help of <tt><a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html">s6-rc-compile</a></tt> 
+				program.
+			</li>
+			<li>
+				Switch the <em>live</em> service database of the <em>tree</em> to this new fresh compiled database. 
+				Send an <tt>66-dbctl -v <em>verbosity</em> -l <em>live</em> -t <em>tree</em> -d <em>selection</em></tt> command.
+			</li>
+			<li>
+				Finally performs an <tt><tt>66-dbctl -v <em>verbosity</em> -T <em>timeout</em> -l <em>live</em> -t <em>tree</em> -u <em>selection</em></tt> command</tt> 
+				and wait for the exit status code of the command.
+			</li>
+		</ul>
+	</p>
+	<p>Obviously, if one of those process fail <tt>66-start</tt> fail too and exit 111.</p>
+</body>
+</html>
