@@ -755,10 +755,10 @@ redirection of the ouput of the service when the logger is activated. When setti
     echo "Then the logger reads the file descriptor 1 and you have"
     echo "the error of the daemon written into the appropriate file"</pre>
 </p>
-<p>Moreover, for <em>oneshot</em> type the <tt>@shebang</tt> need to contain the interpreter options to correctly parse the commandline like this:
+<p>Moreover, for <em>oneshot</em> type the <tt>@shebang</tt> need to contain the interpreter options to correctly parse the command line as above:
 <pre>    @build = custom
     @shebang = "/usr/bin/bash -c"
-    @execute = ( echo " this is a oneshot service with a correct shebang definition )</pre> </p>
+    @execute = ( echo "this is a oneshot service with a correct shebang definition" )</pre> </p>
 <p>Finally you need to take care about how you define your environment variable
 in the section <tt><a href="#environment">[environment]</a></tt>. When setting <tt>@build</tt> to <em>auto</em> the parser will also take care about the '!' character if you use it. This character will have <strong>no effect</strong> in the case of <em>custom</em>. 
 </p>
@@ -804,4 +804,52 @@ for it in your <tt>@execute</tt> field.</p>
     @build = auto
     @execute = ( agetty -J 38400 tty1 } )</pre>
 	</p>
+<br><hr>
+<h2 id="proto">Prototype of a frontend file</h2>
+<p>This prototype contain all valid <em>section</em> with all valid <em>key=value</em> pair.</p>
+<pre>
+    [main]
+    @type = classic,bundle,longrun,oneshot
+    @name = 
+    @description = ""
+    @depends = ()
+    @contents = ()
+    @options = ( log env pipeline )
+    @flags = ( down nosetsid )
+    @notify = 
+    @user = ()
+    @timeout-finish =
+    @timeout-kill =
+    @timeout-up =
+    @timeout-down =
+    @maxdeath = 
+    
+    [start]
+    @build = auto,custom
+    @runas = 
+    @shebang = "/path"
+    @execute = ()
+    
+    [stop]
+    @build = auto,custom
+    @runas = 
+    @shebang = "/path"
+    @execute = ()
+    
+    [logger]
+    @build = auto,custom
+    @runas = 
+    @shebang = "/path"
+    @destination = /path
+    @backup = 
+    @maxsize = 
+    @timestamp = 
+    @timeout-finish = 
+    @timeout-kill =
+    @execute = ()
+    
+    [environment]
+    MYKEY=myvalue
+    !ANOTHERKEY=antohervalue
+    </pre>
 </body></html>
