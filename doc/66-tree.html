@@ -60,8 +60,6 @@
 		<tt>-d&nbsp;<em>user</em></tt>&nbsp;: denies <em>user</em> to deal with the given
 		<em>tree</em>. Must match an existing username on the system. Several users can be denied by separating their names with a comma.&mdash;Useful to revoke access that has been given before with -a.
 	</li>
-	<!-- I guess the only valid use case for -d would be to REVOKE access for a user that has been explicitly allowed before?
-		Correct -->
 	 
 	 <li>
 		<tt>-c&nbsp;</tt>&nbsp;: makes <em>tree</em> the current tree to use by default with other 66 tools. The majority of commands
@@ -75,10 +73,6 @@
 		needs to be started. If the given <em>tree</em> is enabled, all services in that tree 
 		will be started when you use the <tt>66-all</tt> tool.  	
 	 </li>
-	 <!-- After finishing the doc, I came to understand that 66-all will start all the services of the CURRENTLY ENABLED tree. Is that right? Wouldn't this actually make it superfluous to -c?
-	 Or is there a situation where I want one tree to be the "current" tree for start/stop etc. and one to be the "enabled" tree specifically for 66-all? 
-	 Passing the -t options for other tools when you build a tree can be really annoying because you will use several command. Example : 66-enable -> 66-init -> 66-svctl (testing s6-svc purpose), 
-	 (service do not goes right) 66 enable -f -> (test again) 66-svctl -> (same thing for s6-rc) 66-dbctl -> (not good) -> 66-enable -f, and so on -->  
 	 
 	 <li> 
 		<tt>-D&nbsp;</tt>&nbsp;: disables <em>tree</em>. The strict

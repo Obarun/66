@@ -359,7 +359,8 @@ MYVALUE</pre>
    <h5>Corresponds to the file "<em>nosetsid</em>" of s6-rc and s6 programs</h5>
    <p>This will create the file <tt>nosetsid</tt></p>
    <p>Once this file was created the service will be run in the same process group
-   as the supervisor of the service <a href="https://skarnet.org/software/s6/s6-supervise.html">(s6-supervise)</a>. Without this file the service will have its own process group and is started as a session leader.</p>
+   as the supervisor of the service <a href="https://skarnet.org/software/s6/s6-supervise.html">(s6-supervise)</a>. 
+   Without this file the service will have its own process group and is started as a session leader.</p>
    </li><li><tt>down&nbsp;</tt>&nbsp;:
    <h5>Corresponds to the file "<em>down</em>" of s6-rc and s6 programs.</h5>
    This will create the file <tt>down</tt><br><br>
@@ -589,7 +590,7 @@ key fields from <tt><a href="#start">[start]</a>/<a href="#stop">[stop]</a></tt>
 and the <tt>@timeout-finish</tt> and <tt>@timeout-kill</tt> key 
 fields from <tt><a href="#main">[main]</a> </tt>. These are also valid keys 
 for <tt>[logger]</tt> and behave the same way they do in the other sections 
-but they can not be specified execpt for the <strong>mandatory</strong> key 
+but they can not be specified except for the <strong>mandatory</strong> key 
 <tt>@build</tt>&#8212;see <a href="logex">example</a> below. 
 In such case the default behaviour for those key are apply.</p>
 <p>Furthermore there are some keys specific to the log.</p>
@@ -748,19 +749,25 @@ put your <tt>@shebang</tt> at the beginning of the script and copy the contents 
 When using this sort of custom function <tt>@runas</tt> has <strong>no effect</strong>. You must define with care what you want to happen in a <em>custom</em>
 case.</p>
 <p>Furthermore when you set <tt>@build</tt> to <em>auto</em> the parser will take care about the 
-redirection of the ouput of the service when the logger is activated. When setting <tt>@build</tt> to <em>custom</em> though the parser will not do this automatically. You need to explicitly tell it to:
+redirection of the ouput of the service when the logger is activated. 
+When setting <tt>@build</tt> to <em>custom</em> though the parser will 
+not do this automatically. You need to explicitly tell it to:
 <pre>    #!/usr/bin/bash
     exec 2>&1
     echo "This script redirects file descriptor 2 to the file descriptor 1"
     echo "Then the logger reads the file descriptor 1 and you have"
     echo "the error of the daemon written into the appropriate file"</pre>
 </p>
-<p>Moreover, for <em>oneshot</em> type the <tt>@shebang</tt> need to contain the interpreter options to correctly parse the command line as above:
+<p>Moreover, for <em>oneshot</em> type the <tt>@shebang</tt> needs to 
+contain the interpreter options as below:
 <pre>    @build = custom
     @shebang = "/usr/bin/bash -c"
     @execute = ( echo "this is a oneshot service with a correct shebang definition" )</pre> </p>
 <p>Finally you need to take care about how you define your environment variable
-in the section <tt><a href="#environment">[environment]</a></tt>. When setting <tt>@build</tt> to <em>auto</em> the parser will also take care about the '!' character if you use it. This character will have <strong>no effect</strong> in the case of <em>custom</em>. 
+in the section <tt><a href="#environment">[environment]</a></tt>. When setting 
+<tt>@build</tt> to <em>auto</em> the parser will also take care about 
+the '!' character if you use it. This character will have <strong>no effect</strong> 
+in the case of <em>custom</em>. 
 </p>
 <p>This same behavior applies to the <tt><a href="#logger">[logger]</a></tt> section.
 The fields <tt>@destination, @backup, @maxsize</tt> and <tt>@timestamp</tt> will have <strong>no effect</strong>
@@ -771,17 +778,19 @@ for it in your <tt>@execute</tt> field.</p>
 <br><hr>
 
 <h2 id="instance">Instance service file creation</h2>
-	<p>An <em>instance</em> service file have strictly the same syntax as 
-	decribe on this document as another service. It can be any <em>type</em> 
-	of service. However some little different exist :
+	<p>An <em>instance</em> service file is of the same syntax as 
+	decribed in this document for any other service. It can be any <em>type</em> 
+	of service. However some differences exist :
 		<ul>
-			<li>the name of file need to be appended with a '@' character.</li>
-			<li>every value that you want to replace inside the file need to be written with '@I' characters.</li>
+			<li>the name of the file needs to be appended with an '@' (commercial at) character.</li>
+			<li>every value replaced in an instance file needs to be written with '@I'.</li>
 		</ul>
+    <!-- Apart from the example I think a short explanation of instances would be very helpful. Could be a use case, or just a general situation. -->
 	<p>Example :</p>
-	<pre>    Name of the file : tty@
+	<pre>    File name : tty@
    
-    Contain of the file :
+    Contents :
+    
     [main]
     @type = classic
     @name = @I
@@ -792,8 +801,7 @@ for it in your <tt>@execute</tt> field.</p>
     @build = auto
     @execute = ( agetty -J 38400 @I } )
 	</pre>
-	<p>At the invocation of the <tt><a href="66-enable.html">66-enable -I tty1 tty@</a></tt> command, 
-	the resulting file before the parsing process will be: </p>
+	<p>By using <tt><a href="66-enable.html">66-enable -I tty1 tty@</a></tt>, the resulting file will then be: </p>
 	<pre>    [main]
     @type = classic
     @name = tty1

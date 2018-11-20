@@ -96,8 +96,7 @@ This is done recursively.</p>
 	<p>A good example is a set of services for the boot process. To achieve 
 	this specific task a large number of <tt><em>oneshot</em></tt> services is used along with some <tt><em>classic</em></tt> 
 	services.</p>
-	<p>From the parser point of view, it can be rather difficult to know which service to start first in a complex set with lots of services depending on others. 
-	<!-- Difficult for who?! If I don't know which one, then the next sentence doesn't make any sense, since it just makes things more complicated. I will have to do research to know this. If you mean the parser or some technological algorhythm then that would be a reason why I had to pass the first one from my behalf. -->
+	<p>For the parser it can be rather difficult to know which service to start first in a complex set with lots of services depending on others. 
 	To help out on this problem it is 
 	neccessary to tell the command which service to start before any other when using <tt>-d</tt> by passing it as the <em>service</em> argument. In most cases, the root node
 	of any dependency chain is a <em>bundle</em>.</p>
