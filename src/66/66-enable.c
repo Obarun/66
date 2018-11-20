@@ -132,7 +132,7 @@ int insta_create(char const *src,char const *instasrc, char const *instacopy, ch
 	stralloc tmp = STRALLOC_ZERO ;	
 	
 	if (get_len_until(instasrc,'@') < 0)
-		strerr_dief2x(111,"unvalid instance service file: ",instasrc) ;
+		strerr_dief2x(111,"invalid instance service file: ",instasrc) ;
 	
 	if (!dir_create_tmp(&tmp,"/tmp",instacopy))
 		strerr_diefu1x(111,"create instance tmp dir") ;
