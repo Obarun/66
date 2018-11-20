@@ -78,7 +78,7 @@ int add_cname(char const *name, sv_alltype *sv_before)
 	
 	return avltree_insert(&deps_map,id) ;
 }
-static inline int add_sv(sv_alltype *sv_before,char const *name,unsigned int *nbsv)
+static int add_sv(sv_alltype *sv_before,char const *name,unsigned int *nbsv)
 {
 	int r ;
 	
@@ -96,7 +96,7 @@ static inline int add_sv(sv_alltype *sv_before,char const *name,unsigned int *nb
 	
 	return 1 ;
 }
-static inline int read_svfile(stralloc *sasv,char const *name,char const *src)
+static int read_svfile(stralloc *sasv,char const *name,char const *src)
 {
 	int r ; 
 	size_t srclen = strlen(src) ;
@@ -130,7 +130,7 @@ static inline int read_svfile(stralloc *sasv,char const *name,char const *src)
 	
 	return 1 ;
 }
-static inline int start_parser(stralloc *sasv,char const *name,sv_alltype *sv_before)
+static int start_parser(stralloc *sasv,char const *name,sv_alltype *sv_before)
 {
 	VERBO2 strerr_warni3x("Parsing ", name," service...") ;
 	
@@ -142,24 +142,26 @@ static inline int start_parser(stralloc *sasv,char const *name,sv_alltype *sv_be
 	* @Return -1 mandatory key is missing
 	* @Return 0 unable to transfer to service struct*/
 	r = parser(sasv->s,sv_before) ;
-	if (r == -5) VERBO3 strerr_warnw3x("invalid type for: ",name," service") ;
-	if (r == -4) VERBO3 strerr_warnw3x("invalid section for: ",name," service") ;
-	if (r == -3) VERBO3 strerr_warnw3x("invalid key in section for: ",name," service") ;
-	if (r == -2) VERBO3 strerr_warnw3x("invalid key value for: ",name," service") ;
-	if (r == -1) VERBO3 strerr_warnw3x("mandatory key is missing for: ",name," service") ;
-	if (!r) VERBO3 strerr_warnwu3x("keep information of: ",name," service") ;
-	
-	if (r <= 0)
+	switch(r)
 	{
-		stralloc_free(sasv) ;
-		return 0 ;
+		case -5: VERBO3 strerr_warnw3x("invalid type for: ",name," service") ; goto err ;
+		case -4: VERBO3 strerr_warnw3x("invalid section for: ",name," service") ; goto err ;
+		case -3: VERBO3 strerr_warnw3x("invalid key in section for: ",name," service") ; goto err ;
+		case -2: VERBO3 strerr_warnw3x("invalid key value for: ",name," service") ; goto err ;
+		case -1: VERBO3 strerr_warnw3x("mandatory key is missing for: ",name," service") ; goto err ;
+		case  0: VERBO3 strerr_warnwu3x("keep information of: ",name," service") ; goto err ;
+		default: break ;
 	}
 	
 	*sasv = stralloc_zero ;
 	
 	return 1 ;
+
+	err:
+		stralloc_free(sasv) ;
+		return 0 ;
 }
-static inline int deps_src(stralloc *newsrc,char const *src, char const *name, char const *tree)
+static int deps_src(stralloc *newsrc,char const *src, char const *name, char const *tree)
 {
 	int r ;
 	uint32_t avlid ;
