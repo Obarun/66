@@ -59,35 +59,7 @@ static uid_t owner ;
 #define SV_USAGE "66-info -S [ -help ] [ -l live ] [ -p n lines ] service"
 #define exit_sv_usage() strerr_dieusage(100, SV_USAGE)
 
-/*
-struct graph_style {
-	const char *tip;
-	const char *last;
-	const char *limb;
-	int indent;
-};
 
-#define UTF_V   "\342\224\202"  // U+2502, Vertical line drawing char
-#define UTF_VR  "\342\224\234"  // U+251C, Vertical and right
-#define UTF_H   "\342\224\200"  // U+2500, Horizontal 
-#define UTF_UR  "\342\224\224"  // U+2514, Up and right
-
-static struct graph_style graph_utf8 = {
-	UTF_VR UTF_H,
-	UTF_UR UTF_H,
-	UTF_V " ",
-	2
-};
-
-static struct graph_style graph_default = {
-	"|-",
-	"`-",
-	"|",
-	2
-};
-
-static struct graph_style *style = &graph_default;
-*/
 
 static inline void info_help (void)
 {
