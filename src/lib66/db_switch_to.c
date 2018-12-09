@@ -17,6 +17,7 @@
 #include <oblibs/error2.h>
 
 #include <skalibs/stralloc.h>
+#include <skalibs/types.h>
 
 #include <66/constants.h>
 #include <66/backup.h>
@@ -30,8 +31,18 @@ int db_switch_to(char const *base, char const *livetree, char const *tree, char 
 	int r ;
 	
 	stralloc db = STRALLOC_ZERO ;
+	char type[UINT_FMT] ;
+	type[uint_fmt(type, BUNDLE)] = 0 ;
+	size_t typelen = strlen(type) ;
+	size_t cmdlen ;
+	char cmd[typelen + 6 + 1] ;
+	memcpy(cmd,"-t",2) ;
+	memcpy(cmd + 2,type,typelen) ;
+	cmdlen = 2 + typelen ;
+	memcpy(cmd + cmdlen," -b",3) ;
+	cmd[cmdlen + 3] = 0 ;
 	
-	r = backup_cmd_switcher(VERBOSITY,"-t31 -b",treename) ;
+	r = backup_cmd_switcher(VERBOSITY,cmd,treename) ;
 	if (r < 0)
 	{
 		VERBO3 strerr_warnwu2sys("find origin of db service for: ",treename) ;
@@ -47,7 +58,9 @@ int db_switch_to(char const *base, char const *livetree, char const *tree, char 
 			goto err ;
 		}
 		VERBO3 strerr_warnt3x("switch db service for tree: ",treename," to backup") ;
-		r = backup_cmd_switcher(VERBOSITY,"-t31 -s1",treename) ;
+		memcpy(cmd + cmdlen," -s1",4) ;
+		cmd[cmdlen + 4] = 0 ;
+		r = backup_cmd_switcher(VERBOSITY,cmd,treename) ;
 		if (r < 0)
 		{
 			VERBO3 strerr_warnwu3sys("switch db service for: ",treename," to backup") ;
@@ -63,7 +76,9 @@ int db_switch_to(char const *base, char const *livetree, char const *tree, char 
 			if (!db_update(db.s, treename,livetree,envp))
 			{	
 				VERBO3 strerr_warnt2x("rollback db service: ", treename) ;
-				r = backup_cmd_switcher(VERBOSITY,"-t31 -s0",treename) ;
+				memcpy(cmd + cmdlen," -s0",4) ;
+				cmd[cmdlen + 4] = 0 ;
+				r = backup_cmd_switcher(VERBOSITY,cmd,treename) ;
 				if (r < 0)
 				{
 					VERBO3 strerr_warnwu3sys("switch db service for: ",treename," to source") ;
@@ -87,7 +102,9 @@ int db_switch_to(char const *base, char const *livetree, char const *tree, char 
 	else if (r > 0 && !where)
 	{
 		VERBO3 strerr_warnt3x("switch db service for tree: ",treename," to source") ;
-		r = backup_cmd_switcher(VERBOSITY,"-t31 -s0",treename) ;
+		memcpy(cmd + cmdlen," -s0",4) ;
+		cmd[cmdlen + 4] = 0 ;
+		r = backup_cmd_switcher(VERBOSITY,cmd,treename) ;
 		if (r < 0)
 		{
 			VERBO3 strerr_warnwu3sys("switch db service for: ",treename," to source") ;
@@ -105,7 +122,9 @@ int db_switch_to(char const *base, char const *livetree, char const *tree, char 
 			if (!db_update(db.s, treename,livetree,envp))
 			{	
 				VERBO3 strerr_warnt2x("rollback db: ", treename) ;
-				r = backup_cmd_switcher(VERBOSITY,"-t31 -s1",treename) ;
+				memcpy(cmd + cmdlen," -s1",4) ;
+				cmd[cmdlen + 4] = 0 ;
+				r = backup_cmd_switcher(VERBOSITY,cmd,treename) ;
 				if (r < 0)
 				{
 					VERBO3 strerr_warnwu3sys("switch db service for: ",treename," to backup") ;
