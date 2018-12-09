@@ -41,7 +41,7 @@ int db_get_permissions(stralloc *uid, char const *tree)
 	memcpy(tmp + treelen, SS_RULES, SS_RULES_LEN) ;
 	tmp[treelen + SS_RULES_LEN] = 0 ;
 	
-	if (!file_get_fromdir(&list,tmp)) return 0 ;
+	if (!dir_get(&list,tmp,"",S_IFREG)) return 0 ;
 	
 	for (unsigned int i = 0; i < genalloc_len(stralist,&list); i++)
 	{
