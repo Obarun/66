@@ -136,7 +136,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	if (!stralloc_copy(&livetree,&live)) retstralloc(111,"main") ;
 	r = set_livetree(&livetree,owner) ;
 	if (!r) retstralloc(111,"main") ;
-	if (r < 0) strerr_dief3x(111,"live: ",livetree.s," must be an absolute path") ;
+	if (r < 0) strerr_dief3x(111,"livetree: ",livetree.s," must be an absolute path") ;
 	
 	r = scan_mode(livetree.s,S_IFDIR) ;
 	if (r < 0) strerr_dief2x(111,livetree.s," is not a directory") ;
