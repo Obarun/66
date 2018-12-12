@@ -32,8 +32,8 @@ int set_livedir(stralloc *live)
 		if (live->s[live->len - 2] != '/')
 		{
 			live->len-- ;
-			if (!stralloc_cats(live,"/")) retstralloc(0,"main") ;
-			if (!stralloc_0(live)) retstralloc(0,"main") ;
+			if (!stralloc_cats(live,"/")) retstralloc(0,"set_livedir") ;
+			if (!stralloc_0(live)) retstralloc(0,"set_livedir") ;
 		}
 	}
 	else
