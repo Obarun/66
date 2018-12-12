@@ -35,6 +35,7 @@ char const *get_keybyid(key_enum_t key)
 			(key == NOTIFY ) ? "@notify" :
 			(key == USER ) ? "@user" :
 			(key == BUILD ) ? "@build" :
+			(key == SIGNAL) ? "@down-signal" :
 			(key == FLAGS ) ? "@flags" :
 			(key == RUNAS ) ? "@runas" :
 			(key == SHEBANG ) ? "@shebang" :
