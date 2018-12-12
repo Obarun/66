@@ -25,11 +25,14 @@
 
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/direntry.h>
+#include <skalibs/unix-transactional.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
 #include <66/enum.h>
 
+#include <stdio.h>
 /** @Return -2 on error
  * @Return -1 if resolve directory doesn't exist
  * @Return 0 is file doesn't exist
@@ -344,4 +347,116 @@ int resolve_pointo(stralloc *sa,char const *base, char const *live,char const *t
 	if (what > 1) r = backup ;
 
 	return stralloc_obreplace(sa,r) ;
+}
+
+int resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src)
+{
+	int fdsrc, obr, insta ;
+	
+	sv_src_t svtmp = {0} ;
+	
+	size_t srclen = strlen(src) ;
+	size_t namelen = strlen(name) ;
+	genalloc tmp = GENALLOC_ZERO ; //type stralist
+	
+	stralloc sainsta = STRALLOC_ZERO ;
+	stralloc subdir = STRALLOC_ZERO ;
+	if (!stralloc_cats(&subdir,src)) goto errstra ;
+	if (!stralloc_cats(&subdir,"/")) goto errstra ;
+	
+	obr = insta = 0 ;
+	
+	DIR *dir = opendir(src) ;
+	if (!dir)
+	{
+		VERBO3 strerr_warnwu2sys("to open : ", src) ;
+		goto errstra ;
+	}
+	fdsrc = dir_fd(dir) ;
+	
+	for (;;)
+    {
+		struct stat st ;
+		direntry *d ;
+		d = readdir(dir) ;
+		if (!d) break ;
+		if (d->d_name[0] == '.')
+		if (((d->d_name[1] == '.') && !d->d_name[2]) || !d->d_name[1])
+			continue ;
+		
+		if (stat_at(fdsrc, d->d_name, &st) < 0)
+		{
+			VERBO3 strerr_warnwu3sys("stat ", src, d->d_name) ;
+			goto errdir ;
+		}
+		if (S_ISDIR(st.st_mode))
+		{
+			if (!stralloc_cats(&subdir,d->d_name)) goto errdir ;
+			if (!stralloc_0(&subdir)) goto errdir ;
+			if (!resolve_src(ga,sasrc,name,subdir.s)) goto errdir ;
+		}
+		obr = 0 ;
+		insta = 0 ;
+		obr = obstr_equal(name,d->d_name) ;
+		insta = insta_check(name) ;
+			
+		if (insta > 0)
+		{	
+			if (!insta_splitname(&sainsta,name,insta,0)) goto errdir ;
+			obr = obstr_equal(sainsta.s,d->d_name) ;
+		}
+		
+		if (obr)
+		{
+			if (stat_at(fdsrc, d->d_name, &st) < 0)
+			{
+				VERBO3 strerr_warnwu3sys("stat ", src, d->d_name) ;
+				goto errdir ;
+			}
+			if (S_ISDIR(st.st_mode))
+			{
+				if (!stralloc_cats(&subdir,d->d_name)) goto errdir ;
+				if (!stralloc_0(&subdir)) goto errdir ;
+				
+				if (!dir_get(&tmp,subdir.s,"",S_IFREG))
+				{
+					strerr_warnwu2sys("get services from directory: ",subdir.s) ;
+					goto errdir ;
+				}
+				for (unsigned int i = 0 ; i < genalloc_len(stralist,&tmp) ; i++)
+				{
+					svtmp.name = sasrc->len ;
+					if (!stralloc_catb(sasrc,gaistr(&tmp,i), gaistrlen(&tmp,i) + 1)) goto errdir ;
+					svtmp.src = sasrc->len ;
+					if (!stralloc_catb(sasrc,subdir.s, subdir.len + 1)) goto errdir ;
+					if (!genalloc_append(sv_src_t,ga,&svtmp)) goto errdir ;
+				}
+				break ;
+			}
+			else if(S_ISREG(st.st_mode))
+			{
+				svtmp.name = sasrc->len ;
+				if (!stralloc_catb(sasrc,name, namelen + 1)) goto errdir ;
+				svtmp.src = sasrc->len ;
+				if (!stralloc_catb(sasrc,src,srclen + 1)) goto errdir ;
+				if (!genalloc_append(sv_src_t,ga,&svtmp)) goto errdir ;
+				break ;
+			}
+			else goto errdir ;
+		}
+	}
+	
+	dir_close(dir) ;
+	genalloc_deepfree(stralist,&tmp,stra_free) ;
+	stralloc_free(&subdir) ;
+	stralloc_free(&sainsta) ;
+	return 1 ;
+	
+	errdir:
+		dir_close(dir) ;
+	errstra:
+		genalloc_deepfree(stralist,&tmp,stra_free) ;
+		stralloc_free(&subdir) ;
+		stralloc_free(&sainsta) ;
+		return 0 ;
 }
