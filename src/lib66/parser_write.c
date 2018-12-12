@@ -28,6 +28,7 @@
 #include <skalibs/types.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/diuint32.h>
 
 #include <66/constants.h>
 #include <66/enum.h>
@@ -751,6 +752,15 @@ int write_common(sv_alltype *sv, char const *dst)
 			return 0 ;
 		}
 	}
+	/**down-signal*/
+	if (sv->signal)
+	{
+		if (!write_uint(dst,"down-signal", sv->signal))
+		{
+			VERBO3 strerr_warnwu1x("write down-signal file") ;
+			return 0 ;
+		}
+	}
 	/** environment */
 	if (sv->opts[2])
 	{
@@ -838,11 +848,11 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 				if (!stralloc_cats(&env,S6_BINPREFIX "s6-envdir ")) retstralloc(0,"write_exec") ;
 				if (!stralloc_cats(&env,envdata)) retstralloc(0,"write_exec") ;
 				if (!stralloc_cats(&env,"\n")) retstralloc(0,"write_exec") ;
-				if (genalloc_len(sv_env,&sv->env))
+				if (genalloc_len(diuint32,&sv->env))
 				{
-					for (unsigned int i = 0 ; i < genalloc_len(sv_env,&sv->env) ; i++)
+					for (unsigned int i = 0 ; i < genalloc_len(diuint32,&sv->env) ; i++)
 					{
-						key = genalloc_s(sv_env,&sv->env)[i].key ;
+						key = genalloc_s(diuint32,&sv->env)[i].left ;
 						if ((saenv.s+key)[0] == '!')
 						{
 							if (!stralloc_cats(&env,"importas -uD \"\" ")) retstralloc(0,"write_exec") ;
@@ -936,13 +946,30 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 
 int write_dependencies(char const *src, sv_name_t *cname,char const *dst,char const *filename, genalloc *ga, unsigned int force)
 {
+	int r ;
 	char *name = keep.s + cname->name ;
 	
 	stralloc contents = STRALLOC_ZERO ;
+	stralloc namedeps = STRALLOC_ZERO ;
 	
 	for (unsigned int i = 0; i < cname->nga; i++)
 	{
-		if (!stralloc_cats(&contents,deps.s+genalloc_s(unsigned int,ga)[cname->idga+i])) retstralloc(0,"write_dependencies") ;
+		if (!stralloc_obreplace(&namedeps,deps.s+genalloc_s(unsigned int,ga)[cname->idga+i])) return 0 ;
+		r = insta_check(namedeps.s) ;
+		if (!r) 
+		{
+			VERBO3 strerr_warnw2x("invalid instance name: ",namedeps.s) ;
+			return 0 ;
+		}
+		if (r > 0)
+		{
+			if (!insta_splitname(&namedeps,namedeps.s,r,1))
+			{
+				VERBO3 strerr_warnwu2x("split copy name of instance: ",namedeps.s) ;
+				return 0 ;
+			}
+		}
+		if (!stralloc_cats(&contents,namedeps.s)) retstralloc(0,"write_dependencies") ;
 		if (!stralloc_cats(&contents,"\n")) retstralloc(0,"write_dependencies") ;
 	}
 		
@@ -986,7 +1013,7 @@ int write_env(genalloc *env,stralloc *sa,char const *dst)
 {
 	int r ;
 	
-	if (genalloc_len(sv_env,env))
+	if (genalloc_len(diuint32,env))
 	{
 		unsigned int key = 0 ;
 		unsigned int val = 0 ;
@@ -1004,10 +1031,10 @@ int write_env(genalloc *env,stralloc *sa,char const *dst)
 				return 0 ;
 			}
 		}
-		for (unsigned int i = 0;i < genalloc_len(sv_env,env) ; i++)
+		for (unsigned int i = 0 ; i < genalloc_len(diuint32,env) ; i++)
 		{
-			key = genalloc_s(sv_env,env)[i].key ;
-			val = genalloc_s(sv_env,env)[i].val ;
+			key = genalloc_s(diuint32,env)[i].left ;
+			val = genalloc_s(diuint32,env)[i].right ;
 			
 			if ((sa->s+key)[0] == '!')
 				key++ ;
