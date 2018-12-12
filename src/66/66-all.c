@@ -21,6 +21,7 @@
 #include <oblibs/types.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
+#include <oblibs/directory.h>
 
 #include <skalibs/buffer.h>
 #include <skalibs/stralloc.h>
