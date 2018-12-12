@@ -12,7 +12,9 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <string.h>
 #include <sys/stat.h>
+#include <stdlib.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -40,7 +42,8 @@
 #include <66/enum.h>
 #include <66/svc.h>
 #include <66/backup.h>
-#include <stdio.h>
+
+//#include <stdio.h>
 
 unsigned int VERBOSITY = 1 ;
 static tain_t DEADLINE ;
@@ -237,31 +240,7 @@ int svc_down(char const *base,char const *scandir,char const *live,char const *t
 }
 int rc_release(char const *base, char const *scandir, char const *live,char const *tree, char const *treename)
 {
-//	size_t scanlen = strlen(scandir) ;
-/*	size_t treenamelen = strlen(treename) ;
 
-	if (genalloc_len(stralist,&gaunsup))
-	{
-		for (unsigned int i = 0; i < genalloc_len(stralist,&gaunsup); i++)
-		{
-			char const *svname = gaistr(&gaunsup,i) ;
-			size_t svnamelen = gaistrlen(&gaunsup,i) ;
-	
-			char rm[scanlen + 1 + treenamelen + 1 + svnamelen + 1] ;
-			memcpy(rm,scandir,scanlen) ;
-			rm[scanlen] = '/' ;
-			memcpy(rm + scanlen + 1, treename,treenamelen) ;
-			rm[scanlen + 1 + svnamelen] = '-' ;
-			memcpy(rm + scanlen + 1 + treenamelen + 1,svname,svnamelen) ;
-			rm[scanlen + 1 + treenamelen + 1 + svnamelen] = 0 ;
-			VERBO3 strerr_warnt2x("unsupervise: ",rm) ;
-			if (rm_rf(rm) < 0)
-			{
-				VERBO3 strerr_warnwu2sys("remove directory: ",rm) ;
-				return 0 ;
-			}
-		}
-	}*/
 	if (!resolve_pointo(&saresolve,base,live,tree,treename,0,SS_RESOLVE_SRC))
 	{
 		VERBO3 strerr_warnwu1x("set revolve pointer to source") ;
@@ -281,8 +260,6 @@ int rc_release(char const *base, char const *scandir, char const *live,char cons
 		}
 	}
 	
-	
-		
 	return 1 ;
 }
 
@@ -301,7 +278,6 @@ int rc_down(char const *base, char const *scandir, char const *live, char const 
 		
 		char const *svname = genalloc_s(svstat_t,ga)[i].name ;
 		int torm = genalloc_s(svstat_t,ga)[i].remove ;
-	//	int unsup = genalloc_s(svstat_t,ga)[i].unsupervise ;
 		
 		if (!stra_add(&tot,svname))
 		{
@@ -318,15 +294,6 @@ int rc_down(char const *base, char const *scandir, char const *live, char const 
 				return 0 ;
 			}
 		}
-		/** unsupervise */
-	/*	if (unsup)
-		{
-			if (!stra_add(&gaunsup,svname))
-			{
-				VERBO3 strerr_warnwu3x("add: ",svname," as service to unsupervise") ;
-				return 0 ;
-			}
-		}*/
 		/** logger */
 		if (!resolve_pointo(&saresolve,base,live,tree,treename,0,SS_RESOLVE_SRC))
 		{
@@ -348,14 +315,6 @@ int rc_down(char const *base, char const *scandir, char const *live, char const 
 					return 0 ;
 				}
 			}
-		/*	if (unsup)
-			{
-				if (!stra_add(&gaunsup,saresolve.s))
-				{
-					VERBO3 strerr_warnwu3x("add: ",saresolve.s," as service to unsupervise") ;
-					return 0 ;
-				}
-			}*/
 		}
 	}
 	
@@ -369,10 +328,7 @@ int rc_down(char const *base, char const *scandir, char const *live, char const 
 	
 	if (!db_ok(livetree, treename))
 		strerr_dief2x(111,db," is not initialized") ;
-	
-	//if (!db_switch_to(base,livetree,tree,treename,envp,SS_SWSRC))
-	//	strerr_diefu3x(111,"switch",db," to source") ;
-		
+			
 	char const *newargv[11 + genalloc_len(stralist,&tot)] ;
 	unsigned int m = 0 ;
 	char fmt[UINT_FMT] ;
@@ -445,6 +401,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	uid_t owner ;
 	
+	char *treename = 0 ;
+	
 	stralloc base = STRALLOC_ZERO ;
 	stralloc tree = STRALLOC_ZERO ;
 	stralloc scandir = STRALLOC_ZERO ;
@@ -501,12 +459,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (r < 0) strerr_diefu1x(110,"find the current tree. You must use -t options") ;
 	if (!r) strerr_diefu2sys(111,"find tree: ", tree.s) ;
 	
-	size_t treelen = get_rlen_until(tree.s,'/',tree.len - 1) ;
-	size_t treenamelen = (tree.len - 1) - treelen ;
-	char treename[treenamelen + 1] ;
-	memcpy(treename, tree.s + treelen + 1,treenamelen) ;
-	treenamelen-- ;
-	treename[treenamelen] = 0 ;
+	treename = tree_setname(tree.s) ;
+	if (!treename) strerr_diefu1x(111,"set the tree name") ;
 	
 	if (!tree_get_permissions(tree.s))
 		strerr_dief2x(110,"You're not allowed to use the tree: ",tree.s) ;
@@ -520,11 +474,11 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		
 	r = set_livetree(&livetree,owner) ;
 	if (!r) retstralloc(111,"main") ;
-	if(r < 0) strerr_dief3x(111,"live: ",livetree.s," must be an absolute path") ;
+	if(r < 0) strerr_dief3x(111,"livetree: ",livetree.s," must be an absolute path") ;
 
 	r = set_livescan(&scandir,owner) ;
 	if (!r) retstralloc(111,"main") ;
-	if(r < 0) strerr_dief3x(111,"live: ",scandir.s," must be an absolute path") ;
+	if(r < 0) strerr_dief3x(111,"scandir: ",scandir.s," must be an absolute path") ;
 	
 	if ((scandir_ok(scandir.s)) !=1 ) strerr_dief3sys(111,"scandir: ", scandir.s," is not running") ;
 	
@@ -636,6 +590,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc_free(&livetree) ;
 	genalloc_free(svstat_t,&nrc) ;
 	genalloc_free(svstat_t,&nclassic) ;
+	free(treename) ;
 	
 	return 0 ;		
 }
