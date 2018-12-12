@@ -14,6 +14,7 @@
 
 #include <string.h>
 #include <sys/stat.h>
+#include <stdlib.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -29,20 +30,19 @@
 #include <skalibs/buffer.h>
 #include <skalibs/unix-transactional.h>
 #include <skalibs/direntry.h>
-
+#include <skalibs/diuint32.h>
+ 
 #include <66/constants.h>
 #include <66/utils.h>
 #include <66/enum.h>
 #include <66/tree.h>
 #include <66/db.h>
 #include <66/backup.h>
+#include <66/graph.h>
 
-#include <stdio.h>
-stralloc keep = STRALLOC_ZERO ;
-stralloc deps = STRALLOC_ZERO ;
-genalloc gadeps = GENALLOC_ZERO ;
-genalloc graph = GENALLOC_ZERO ;
-stralloc saresolve = STRALLOC_ZERO ;
+//#include <stdio.h>
+
+static stralloc saresolve = STRALLOC_ZERO ;
 
 unsigned int VERBOSITY = 1 ;
 
@@ -65,14 +65,6 @@ static inline void info_help (void)
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
-typedef struct deps_graph_s deps_graph_t, *deps_graph_t_ref ;
-struct deps_graph_s
-{
-	unsigned int name ; //pos in keep, name of the service
-	unsigned int ndeps ; // number of deps 
-	unsigned int ideps ; //pos in genalloc gadeps, id of 1 first deps
-} ;
-
 static void cleanup(char const *dst)
 {
 	int e = errno ;
@@ -80,149 +72,25 @@ static void cleanup(char const *dst)
 	errno = e ;
 }
 
-
-int make_depends_graph(char const *src)
+int find_logger(genalloc *ga, char const *name, char const *src)
 {
-	int fdsrc ;
-	
-	size_t srclen = strlen(src) ;
-	char solve[srclen + SS_RESOLVE_LEN + 1] ;
-	memcpy(solve,src,srclen) ;
-	memcpy(solve + srclen, SS_RESOLVE,SS_RESOLVE_LEN) ;
-	solve[srclen + SS_RESOLVE_LEN] = 0 ;
-	
-	stralloc ndeps = STRALLOC_ZERO ;
-	genalloc gatmp = GENALLOC_ZERO ;//stralist
-	genalloc tokeep = GENALLOC_ZERO ; //stralist
-	deps_graph_t gdeps = { 0 , 0 , 0 } ; 
-	
-	DIR *dir = opendir(solve) ;
-	if (!dir)
+	stralloc sa = STRALLOC_ZERO ;
+	if (resolve_read(&sa,src,name,"logger"))
 	{
-		VERBO3 strerr_warnwu2sys("to open : ", solve) ;
-		return 0 ;
-	}
-	fdsrc = dir_fd(dir) ;
-		
-	for (;;)
-    {
-		struct stat st ;
-		direntry *d ;
-		d = readdir(dir) ;
-		if (!d) break ;
-		if (d->d_name[0] == '.')
-		if (((d->d_name[1] == '.') && !d->d_name[2]) || !d->d_name[1])
-			continue ;
-		if (stat_at(fdsrc, d->d_name, &st) < 0)
+		if (!stra_add(ga,sa.s))
 		{
-			VERBO3 strerr_warnwu3sys("stat ", src, d->d_name) ;
-			goto errdir ;
-		}
-		if (!S_ISDIR(st.st_mode)) continue ;
-		
-		if (obstr_equal(SS_MASTER+1,d->d_name)) continue ;
-		
-		if (!stra_add(&tokeep,d->d_name))
-		{
-			VERBO3 strerr_warnwu3sys("add: ",d->d_name," to the dependencies graph") ;
-			goto errdir ;
-		}
-	}
-	dir_close(dir) ;
-	solve[srclen] = 0 ;
-	for (unsigned int i = 0 ; i < genalloc_len(stralist,&tokeep) ; i++)
-	{
-		if (resolve_read(&ndeps,src,gaistr(&tokeep,i),"deps"))
-		{
-			
-			if (!clean_val(&gatmp,ndeps.s))
-			{
-				VERBO3 strerr_warnwu2x("clean val: ",ndeps.s) ;
-				goto err ;
-			}
-		}
-		else continue ;
-		gdeps.name = keep.len ;
-		if (!stralloc_catb(&keep, gaistr(&tokeep,i), gaistrlen(&tokeep,i) + 1)) retstralloc(0,"make_depends_graph") ;
-		
-		/** remove previous ndeps */
-		gdeps.ndeps = 0 ;
-		gdeps.ideps = genalloc_len(unsigned int, &gadeps) ;
-		for (unsigned int i = 0 ; i < genalloc_len(stralist,&gatmp);i++)
-		{
-			if (!genalloc_append(unsigned int,&gadeps,&deps.len)) retstralloc(0,"make_depends_graph") ;
-			if (!stralloc_catb(&deps,gaistr(&gatmp,i),gaistrlen(&gatmp,i) + 1)) retstralloc(0,"make_depends_graph") ;
-			gdeps.ndeps++ ;
-		}
-		if (!genalloc_append(deps_graph_t,&graph,&gdeps)) retstralloc(0,"make_depends_graph") ;
-		gatmp = genalloc_zero ;
-	}
-	
-	genalloc_deepfree(stralist,&gatmp,stra_free) ;
-	genalloc_deepfree(stralist,&tokeep,stra_free) ;
-	stralloc_free(&ndeps) ;
-	
-	return 1 ;
-	
-	errdir:
-		dir_close(dir) ;
-	err:
-		genalloc_deepfree(stralist,&gatmp,stra_free) ;
-		genalloc_deepfree(stralist,&tokeep,stra_free) ;
-		stralloc_free(&ndeps) ;
-		return 0 ;
-}
-
-int find_logger(genalloc *gakeep, char const *src, char const *service)
-{
-	if (resolve_read(&saresolve,src,service,"logger"))
-	{
-		if (!stra_add(gakeep,saresolve.s))
+			stralloc_free(&sa) ;
 			return 0 ;
+		}
 	}
-	
+	stralloc_free(&sa) ;
 	return 1 ;
 }
 
-int find_rdeps(genalloc *gakeep, char const *name, char const *src)
+int remove_sv(genalloc *toremove, char const *name, char const *src, unsigned int type)
 {
 	int r ;
-	for (unsigned int i = 0 ; i < genalloc_len(deps_graph_t,&graph) ; i++)
-	{
-		if (obstr_equal(name,keep.s + genalloc_s(deps_graph_t,&graph)[i].name)) continue ;
-		if (genalloc_s(deps_graph_t,&graph)[i].ndeps)
-		{
-			for (unsigned int k = 0; k < genalloc_s(deps_graph_t,&graph)[i].ndeps; k++)
-			{
-				if (obstr_equal(name,deps.s + genalloc_s(unsigned int,&gadeps)[genalloc_s(deps_graph_t,&graph)[i].ideps+k]))
-				{
-					if (!stra_cmp(gakeep,keep.s + genalloc_s(deps_graph_t,&graph)[i].name))
-					{
-						if (!stra_add(gakeep,keep.s + genalloc_s(deps_graph_t,&graph)[i].name)) 
-						{	 
-							VERBO3 strerr_warnwu3x("add: ",keep.s + genalloc_s(deps_graph_t,&graph)[i].name," as dependency to remove") ;
-							return 0 ;
-						}
-						if (!find_logger(gakeep,src,keep.s + genalloc_s(deps_graph_t,&graph)[i].name)) 
-						{
-							VERBO3 strerr_warnwu3x("add: ",gaistr(gakeep,genalloc_len(stralist,gakeep)-1)," as dependency to remove") ;
-							return 0 ;
-						}
-						r = find_rdeps(gakeep,keep.s + genalloc_s(deps_graph_t,&graph)[i].name,src) ;
-						if (!r)	return 0 ;		
-						if (r == 2) return 2 ;
-					}
-				}
-			}
-		}else return 2 ;
-	}
-		
-	return 1 ;
-}
 
-int remove_sv(char const *src, char const *name,unsigned int type,genalloc *toremove)
-{
-	int r ;
 	size_t namelen = strlen(name) ;
 	size_t srclen = strlen(src) ;
 	size_t newlen ;
@@ -250,25 +118,48 @@ int remove_sv(char const *src, char const *name,unsigned int type,genalloc *tore
 	stralloc sa = STRALLOC_ZERO ;
 	genalloc gatmp = GENALLOC_ZERO ;// type stralist
 	
+	graph_t g = GRAPH_ZERO ;
+	stralloc sagraph = STRALLOC_ZERO ;
+	genalloc tokeep = GENALLOC_ZERO ;
+	
 	/** rc services */
 	{
+		/** build dependencies graph*/
+		r = graph_type_src(&tokeep,src,1) ;
+		if (r <= 0)
+		{
+			strerr_warnwu2x("resolve source of graph for tree: ",src) ;
+			goto err ;
+		}
+		if (!graph_build(&g,&sagraph,&tokeep,src))
+		{
+			strerr_warnwu1x("make dependencies graph") ;
+			goto err ;
+		}
+	
+		if (!stra_add(toremove,name)) 
+		{	 
+			VERBO3 strerr_warnwu3x("add: ",name," as dependency to remove") ;
+			goto err ;
+		}
 		
-		r = find_rdeps(toremove,name,src) ;
+		r = graph_rdepends(toremove,&g,name,src) ;
 		if (!r) 
 		{
-			VERBO3 strerr_warnwu2x("find dependencies of service: ",name) ;
-			return 0 ;
+			VERBO3 strerr_warnwu2x("find services depending for: ",name) ;
+			goto err ;
 		}
-		if(r == 2) VERBO3 strerr_warnt3x("service: ",name," haven't dependencies") ;
+		if(r == 2) VERBO3 strerr_warnt2x("any services don't depends of: ",name) ;
 		
 		if (!stralloc_catb(&sa,src,srclen)) retstralloc(0,"remove_sv") ;
 		if (!stralloc_cats(&sa,SS_DB SS_SRC)) retstralloc(0,"remove_sv") ;
 		if (!stralloc_cats(&sa, "/")) retstralloc(0,"remove_sv") ;
 		newlen = sa.len ;
-		if (!find_logger(toremove,src,name)) return 0 ;
+		if (genalloc_len(stralist,toremove))
+			if (!find_logger(toremove,name,src)) goto err ;
+			
 		for (unsigned int i = 0; i < genalloc_len(stralist,toremove); i++)
 		{
-			
 			sa.len = newlen ;
 			if (!stralloc_cats(&sa,gaistr(toremove,i))) retstralloc(0,"remove_sv") ;
 			if (!stralloc_0(&sa)) retstralloc(0,"remove_sv") ;
@@ -276,24 +167,27 @@ int remove_sv(char const *src, char const *name,unsigned int type,genalloc *tore
 			if (rm_rf(sa.s) < 0)
 			{
 				VERBO3 strerr_warnwu2sys("remove: ", sa.s) ;
-				return 0 ;
+				goto err ;
 			}
 		}
-		/** remove the service itself */
-		sa.len = newlen ;
-		if (!stralloc_cats(&sa,name)) retstralloc(0,"remove_sv") ;
-		if (!stralloc_0(&sa)) retstralloc(0,"remove_sv") ;
-		VERBO3 strerr_warnt3x("Removing ",sa.s + srclen + 1," service... ") ;
-		if (rm_rf(sa.s) < 0)
-		{
-			VERBO3 strerr_warnwu2sys("remove: ", sa.s) ;
-			return 0 ;
-		}
+
 	}
+	
+	genalloc_free(vertex_graph_t,&g.stack) ;
+	genalloc_free(vertex_graph_t,&g.vertex) ;
+	stralloc_free(&sagraph) ;
 	stralloc_free(&sa) ;
 	genalloc_deepfree(stralist,&gatmp,stra_free) ;
 	
 	return 1 ;
+	
+	err:
+		genalloc_free(vertex_graph_t,&g.stack) ;
+		genalloc_free(vertex_graph_t,&g.vertex) ;
+		stralloc_free(&sagraph) ;
+		stralloc_free(&sa) ;
+		genalloc_deepfree(stralist,&gatmp,stra_free) ;
+		return 0 ;
 }
 		
 int main(int argc, char const *const *argv,char const *const *envp)
@@ -302,6 +196,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	unsigned int nlongrun, nclassic, stop ;
 	
 	uid_t owner ;
+	
+	char *treename = 0 ;
 	
 	stralloc base = STRALLOC_ZERO ;
 	stralloc tree = STRALLOC_ZERO ;
@@ -312,6 +208,11 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	genalloc ganlong = GENALLOC_ZERO ; //name of longrun service, type stralist
 	genalloc ganclassic = GENALLOC_ZERO ; //name of classic service, stralist
 	genalloc gadepstoremove = GENALLOC_ZERO ;
+	
+	graph_t g = GRAPH_ZERO ;
+	stralloc sagraph = STRALLOC_ZERO ;
+	genalloc tokeep = GENALLOC_ZERO ;
+	genalloc master = GENALLOC_ZERO ;
 	
 	r = nclassic = nlongrun = stop = 0 ;
 		
@@ -350,43 +251,24 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (r < 0) strerr_diefu1x(110,"find the current tree. You must use -t options") ;
 	if (!r) strerr_diefu2sys(111,"find tree: ", tree.s) ;
 	
-	size_t treelen = get_rlen_until(tree.s,'/',tree.len - 1) ;
-	size_t treenamelen = (tree.len - 1) - treelen ;
-	char treename[treenamelen + 1] ;
-	memcpy(treename, tree.s + treelen + 1,treenamelen) ;
-	treenamelen-- ;
-	treename[treenamelen] = 0 ;
+	treename = tree_setname(tree.s) ;
+	if (!treename) strerr_diefu1x(111,"set the tree name") ;
 		
 	if (!tree_get_permissions(tree.s))
 		strerr_dief2x(110,"You're not allowed to use the tree: ",tree.s) ;
 	
 	r = set_livedir(&live) ;
-	if (!r) return 111 ;
+	if (!r) retstralloc(111,"main") ;
 	if(r < 0) strerr_dief3x(111,"live: ",live.s," must be an absolute path") ;
 	
 	if (!stralloc_copy(&livetree,&live)) retstralloc(111,"main") ;
 		
 	r = set_livetree(&livetree,owner) ;
 	if (!r) retstralloc(111,"main") ;
-	if(r < 0) strerr_dief3x(111,"live: ",livetree.s," must be an absolute path") ;
+	if(r < 0) strerr_dief3x(111,"livetree: ",livetree.s," must be an absolute path") ;
 	
 	
 	if (!tree_copy(&workdir,tree.s,treename)) strerr_diefu1sys(111,"create tmp working directory") ;
-	
-	/** retrieve dependencies */
-	{
-		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_SRC))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu1x(111,"set revolve pointer to source") ;
-		}
-		
-		if (!make_depends_graph(saresolve.s))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu1x(111,"make dependencies graph") ;
-		}
-	}
 	
 	{
 		stralloc type = STRALLOC_ZERO ;
@@ -398,22 +280,30 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				cleanup(workdir.s) ;
 				strerr_diefu1x(111,"set revolve pointer to source") ;
 			}
-			/*rb = resolve_read(&type,saresolve.s,*argv,"remove") ;
-			if (rb < -1) strerr_dief2x(111,"invalid .resolve directory: ",saresolve.s) ;
-			if (rb >= 1)
+			rb = resolve_read(&type,saresolve.s,*argv,"remove") ;
+			if (rb) 
 			{
-				VERBO2 strerr_warni2x(*argv,": already disabled") ;
-				return 0 ;
-			}*/
+				strerr_warni2x(*argv,": is already disabled") ;
+				continue ;
+			}
 			rb = resolve_read(&type,saresolve.s,*argv,"type") ;
-			if (rb < -1) strerr_dief2x(111,"invalid .resolve directory: ",saresolve.s) ;
-			if (rb <= 0) strerr_dief2x(111,*argv,": is not enabled") ;
+			if (rb < -1)
+			{
+				cleanup(workdir.s) ;
+				strerr_dief2x(111,"invalid .resolve directory: ",saresolve.s) ;
+			}
+			if (rb <= 0)
+			{
+				cleanup(workdir.s) ;
+				strerr_dief2x(111,*argv,": is not enabled") ;
+			}
+			
 			if (get_enumbyid(type.s,key_enum_el) == CLASSIC)
 			{
 				if (!stra_add(&ganclassic,*argv)) retstralloc(111,"main") ;
 				nclassic++ ;
 			}					
-			if (get_enumbyid(type.s,key_enum_el) >= LONGRUN)
+			if (get_enumbyid(type.s,key_enum_el) >= BUNDLE)
 			{
 				if (!stra_add(&ganlong,*argv)) retstralloc(111,"main") ;
 				nlongrun++ ;
@@ -422,19 +312,19 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		stralloc_free(&type) ;
 	}
 
-	size_t tlen = tree.len - 1 ;
-
 	if (nclassic)
 	{
+		VERBO2 strerr_warni1x("remove svc services ... ") ;
 		for (unsigned int i = 0 ; i < genalloc_len(stralist,&ganclassic) ; i++)
 		{
 			char *name = gaistr(&ganclassic,i) ;
-			VERBO2 strerr_warni1x("remove svc services ... ") ;
-			if (!remove_sv(workdir.s,name,CLASSIC,&gadepstoremove))
+			
+			if (!remove_sv(&gadepstoremove,name,workdir.s,CLASSIC))
 			{
 				cleanup(workdir.s) ;
 				strerr_diefu2x(111,"disable: ",name) ;
 			}
+			
 			/** modify the resolve file for 66-stop*/
 			if (!resolve_write(workdir.s,gaistr(&ganclassic,i),"remove","",1))
 			{
@@ -442,8 +332,17 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				strerr_diefu2sys(111,"write resolve file: remove for service: ",gaistr(&ganclassic,i)) ;
 			}
 		}
-		
-		r = backup_cmd_switcher(VERBOSITY,"-t30 -b",treename) ;
+		char type[UINT_FMT] ;
+		size_t typelen = uint_fmt(type, CLASSIC) ;
+		type[typelen] = 0 ;
+		size_t cmdlen ;
+		char cmd[typelen + 6 + 1] ;
+		memcpy(cmd,"-t",2) ;
+		memcpy(cmd + 2,type,typelen) ;
+		cmdlen = 2 + typelen ;
+		memcpy(cmd + cmdlen," -b",3) ;
+		cmd[cmdlen + 3] = 0 ;
+		r = backup_cmd_switcher(VERBOSITY,cmd,treename) ;
 		if (r < 0)
 		{
 			cleanup(workdir.s) ;
@@ -459,7 +358,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				cleanup(workdir.s) ;
 				strerr_diefu2sys(111,"make a backup of db: ",treename) ;
 			}
-			r = backup_cmd_switcher(VERBOSITY,"-t30 -s1",treename) ;
+			memcpy(cmd + cmdlen," -s1",4) ;
+			cmd[cmdlen + 4] = 0 ;
+			r = backup_cmd_switcher(VERBOSITY,cmd,treename) ;
 			if (r < 0)
 			{
 				cleanup(workdir.s) ;
@@ -470,50 +371,68 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		}
 		gadepstoremove = genalloc_zero ;
 	}
+	
 	if (nlongrun)
 	{	
-		stralloc newupdate = STRALLOC_ZERO ;
 		
-		if (!stralloc_cats(&newupdate,"-d -D ")) retstralloc(111,"main") ;
-		if (!stralloc_cats(&newupdate,workdir.s)) retstralloc(111,"main") ;
-		
+		VERBO2 strerr_warni1x("remove rc services ... ") ;
 		for (unsigned int i = 0 ; i < genalloc_len(stralist,&ganlong) ; i++)
 		{
 			char *name = gaistr(&ganlong,i) ;
-			if (!remove_sv(workdir.s,name,LONGRUN,&gadepstoremove))
+			
+			if (!remove_sv(&gadepstoremove,name,workdir.s,LONGRUN))
 			{
 				cleanup(workdir.s) ;
 				strerr_diefu2x(111,"disable: ",name) ;
 			}
-			if (!stralloc_cats(&newupdate," ")) retstralloc(111,"main") ;
-			if (!stralloc_cats(&newupdate,name)) retstralloc(111,"main") ;
-			if (!resolve_write(workdir.s,gaistr(&ganlong,i),"remove","",1))
-			{
-				cleanup(workdir.s) ;
-				strerr_diefu2sys(111,"write resolve file: remove for service: ",gaistr(&ganlong,i)) ;
-			}
 		}
+
 		for (unsigned int i = 0 ; i < genalloc_len(stralist,&gadepstoremove) ; i++ )
 		{
-			if (!stralloc_cats(&newupdate," ")) retstralloc(111,"main") ;
-			if (!stralloc_cats(&newupdate,gaistr(&gadepstoremove,i))) retstralloc(111,"main") ;
-		
-			/** modify the resolve file for 66-stop*/
+			// modify the resolve file for 66-stop*/
 			if (!resolve_write(workdir.s,gaistr(&gadepstoremove,i),"remove","",1))
 			{
 				cleanup(workdir.s) ;
 				strerr_diefu2sys(111,"write resolve file: remove for service: ",gaistr(&gadepstoremove,i)) ;
 			}
 		}
-		if (!stralloc_0(&newupdate)) retstralloc(111,"main") ;
-			
-		if (db_cmd_master(VERBOSITY,newupdate.s) != 1)
-		{
-				cleanup(workdir.s) ;
-				strerr_diefu1x(111,"update bundle Start") ;
-		}	
-		stralloc_free(&newupdate) ;
 		
+		r = graph_type_src(&tokeep,workdir.s,1) ;
+		if (!r)
+		{
+			cleanup(workdir.s) ;
+			strerr_diefu2x(111,"resolve source of graph for tree: ",treename) ;
+		}
+		if (r < 0)
+		{
+			if (!stra_add(&master,"")) retstralloc(111,"main") ;
+		}
+		else 
+		{
+			if (!graph_build(&g,&sagraph,&tokeep,workdir.s))
+			{
+				cleanup(workdir.s) ;
+				strerr_diefu1x(111,"make dependencies graph") ;
+			}
+			if (!graph_sort(&g))
+			{
+				cleanup(workdir.s) ;
+				strerr_dief1x(111,"cyclic graph detected") ;
+			}
+			if (!graph_master(&master,&g))
+			{
+				cleanup(workdir.s) ;
+				strerr_dief1x(111,"find master service") ;
+			}
+		}
+		
+		
+		if (!db_write_contents(&master,SS_MASTER + 1,workdir.s))
+		{
+			cleanup(workdir.s) ;
+			strerr_diefu2x(111,"update bundle: ", SS_MASTER) ;
+		}
+			
 		if (!db_compile(workdir.s,tree.s,treename,envp))
 		{
 			cleanup(workdir.s) ;
@@ -529,112 +448,11 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		
 	}
 	
-	size_t svdirlen ;
-	char svdir[tlen + SS_SVDIRS_LEN + SS_SVC_LEN + 1] ;
-	memcpy(svdir,tree.s,tlen) ;
-	memcpy(svdir + tlen,SS_SVDIRS,SS_SVDIRS_LEN) ;
-	svdirlen = tlen + SS_SVDIRS_LEN ;
-	memcpy(svdir + svdirlen,SS_SVC, SS_SVC_LEN) ;
-	svdir[svdirlen + SS_SVC_LEN] = 0 ;
-	
-	stralloc swap = stralloc_zero ;
-	
-	/** svc */
-	if (rm_rf(svdir) < 0)
+	if (!tree_copy_tmp(workdir.s,base.s,live.s,tree.s,treename))
 	{
-		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,CLASSIC,SS_RESOLVE_SRC))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu1x(111,"set revolve pointer to source") ;
-		}
-		if (!resolve_pointo(&swap,base.s,live.s,tree.s,treename,CLASSIC,SS_RESOLVE_BACK))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu1x(111,"set revolve pointer to source") ;
-		}
-		if (!hiercopy(swap.s,saresolve.s))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu4sys(111,"to copy tree: ",saresolve.s," to ", swap.s) ;
-		}
 		cleanup(workdir.s) ;
-		strerr_diefu2sys(111,"remove directory: ", svdir) ;
+		strerr_diefu4x(111,"copy: ",workdir.s," to: ", tree.s) ;
 	}
-	
-	/** db */	
-	memcpy(svdir + svdirlen,SS_DB, SS_DB_LEN) ;
-	svdir[svdirlen + SS_DB_LEN] = 0 ;
-	
-	if (rm_rf(svdir) < 0)
-	{
-		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,LONGRUN,SS_RESOLVE_SRC))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu1x(111,"set revolve pointer to source") ;
-		}
-		if (!resolve_pointo(&swap,base.s,live.s,tree.s,treename,LONGRUN,SS_RESOLVE_BACK))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu1x(111,"set revolve pointer to source") ;
-		}
-		if (!hiercopy(swap.s,saresolve.s))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu4sys(111,"to copy tree: ",saresolve.s," to ", swap.s) ;
-		}
-		cleanup(workdir.s) ;
-		strerr_diefu2sys(111,"remove directory: ", svdir) ;
-	}
-	/** resolve */
-	memcpy(svdir + svdirlen,SS_RESOLVE,SS_RESOLVE_LEN) ;
-	svdir[svdirlen + SS_RESOLVE_LEN] = 0 ;
-	
-	if (rm_rf(svdir) < 0)
-	{
-		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_SRC))
-			strerr_diefu1x(111,"set revolve pointer to source") ;
-		saresolve.len--;
-		if (!stralloc_cats(&saresolve,SS_RESOLVE)) retstralloc(111,"main") ;
-		if (!stralloc_0(&saresolve)) retstralloc(111,"main") ;
-		
-		if (!resolve_pointo(&swap,base.s,live.s,tree.s,treename,0,SS_RESOLVE_BACK))
-			strerr_diefu1x(111,"set revolve pointer to source") ;
-		swap.len--;
-		if (!stralloc_cats(&swap,SS_RESOLVE)) retstralloc(111,"main") ;	
-		if (!stralloc_0(&swap)) retstralloc(111,"main") ;
-		if (!hiercopy(swap.s,saresolve.s))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu4sys(111,"to copy tree: ",saresolve.s," to ", swap.s) ;
-		}
-		cleanup(workdir.s) ;
-		strerr_diefu2sys(111,"remove directory: ", svdir) ;
-	}	
-
-	svdir[svdirlen] = 0 ;
-		
-	if (!hiercopy(workdir.s,svdir))
-	{
-		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_SRC))
-		{	
-			cleanup(workdir.s) ;
-			strerr_diefu1x(111,"set revolve pointer to source") ;
-		}
-		if (!resolve_pointo(&swap,base.s,live.s,tree.s,treename,0,SS_RESOLVE_BACK))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu1x(111,"set revolve pointer to source") ;
-		}
-		if (!hiercopy(swap.s,saresolve.s))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu4sys(111,"to copy tree: ",saresolve.s," to ", swap.s) ;
-		}
-		cleanup(workdir.s) ;
-		strerr_diefu4sys(111,"to copy tree: ",workdir.s," to ", svdir) ;
-	}
-			
-	cleanup(workdir.s) ;
 	
 	if (stop)
 	{
@@ -664,14 +482,25 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		xpathexec_run (newstop[0], newstop, envp) ;
 	}
 	
+	cleanup(workdir.s) ;
+
 	stralloc_free(&base) ;
 	stralloc_free(&tree) ;
 	stralloc_free(&workdir) ;
 	stralloc_free(&live) ;
 	stralloc_free(&livetree) ;
-	stralloc_free(&swap) ;
+	
 	genalloc_deepfree(stralist,&ganlong,stra_free) ;
 	genalloc_deepfree(stralist,&ganclassic,stra_free) ;
+	genalloc_deepfree(stralist,&gadepstoremove,stra_free) ;
+	free(treename) ;
+		
+	/** graph stuff */
+	genalloc_free(vertex_graph_t,&g.stack) ;
+	genalloc_free(vertex_graph_t,&g.vertex) ;
+	stralloc_free(&sagraph) ;	
+	genalloc_deepfree(stralist,&master,stra_free) ;
+	genalloc_deepfree(stralist,&tokeep,stra_free) ;
 	
 	return 0 ;		
 }
