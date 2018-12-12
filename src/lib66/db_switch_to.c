@@ -32,8 +32,9 @@ int db_switch_to(char const *base, char const *livetree, char const *tree, char 
 	
 	stralloc db = STRALLOC_ZERO ;
 	char type[UINT_FMT] ;
-	type[uint_fmt(type, BUNDLE)] = 0 ;
-	size_t typelen = strlen(type) ;
+	size_t typelen = uint_fmt(type, BUNDLE) ;
+	type[typelen] = 0 ;
+	
 	size_t cmdlen ;
 	char cmd[typelen + 6 + 1] ;
 	memcpy(cmd,"-t",2) ;
