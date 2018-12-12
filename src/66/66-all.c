@@ -39,7 +39,8 @@
 #include <s6/s6-supervise.h>
 #include <s6/config.h>
 
-#include <stdio.h>
+//#include <stdio.h>
+
 unsigned int VERBOSITY = 1 ;
 static tain_t DEADLINE ;
 unsigned int trc = 0 ;
@@ -61,33 +62,7 @@ static inline void info_help (void)
  if (buffer_putsflush(buffer_1, help) < 0)
     strerr_diefu1sys(111, "write to stdout") ;
 }
-int get_fromdir(genalloc *ga,char const *srcdir)
-{
-	int fdsrc ;
-	
-	DIR *dir = opendir(srcdir) ;
-	if (!dir)
-		return 0 ;
-	
-	fdsrc = dir_fd(dir) ;
-	
-	for (;;)
-    {
-		struct stat st ;
-		direntry *d ;
-		d = readdir(dir) ;
-		if (!d) break ;
-		if (d->d_name[0] == '.')
-		if (((d->d_name[1] == '.') && !d->d_name[2]) || !d->d_name[1])
-			continue ;
-		if (stat_at(fdsrc, d->d_name, &st) < 0)
-			return 0 ;
-		if (S_ISDIR(st.st_mode))
-			if (!stra_add(ga,d->d_name)) return 0 ;		 
-	}
 
-	return 1 ;
-}
 int doit(char const *tree,char const *treename,char const *live, unsigned int what, char const *const *envp)
 {
 	int wstat ;
@@ -101,7 +76,7 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 	memcpy(src + treelen +SS_SVDIRS_LEN, SS_SVC,SS_SVC_LEN) ;
 	src[treelen +SS_SVDIRS_LEN + SS_SVC_LEN] = 0 ;
 	
-	if (!get_fromdir(&ga,src))
+	if (!dir_get(&ga,src,"",S_IFDIR))
 	{
 		VERBO3 strerr_warnwu2x("find source of classic service for tree: ",treename) ;
 		return 0 ;
@@ -237,7 +212,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	r = set_livescan(&scandir,owner) ;
 	if (!r) retstralloc(111,"main") ;
-	if (r < 0 ) strerr_dief3x(111,"live: ",scandir.s," must be an absolute path") ;
+	if (r < 0 ) strerr_dief3x(111,"scandir: ",scandir.s," must be an absolute path") ;
 	
 	if ((scandir_ok(scandir.s)) !=1 ) strerr_dief3sys(111,"scandir: ", scandir.s," is not running") ;
 	
@@ -245,7 +220,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	r = set_livetree(&livetree,owner) ;
 	if (!r) retstralloc(111,"main") ;
-	if (r < 0 ) strerr_dief3x(111,"live: ",livetree.s," must be an absolute path") ;
+	if (r < 0 ) strerr_dief3x(111,"livetree: ",livetree.s," must be an absolute path") ;
 	
 	size_t statesize ;
 	/** /system/state */
@@ -324,7 +299,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				strerr_diefu2sys(111,"wait for ",newargv[0]) ;
 			
 			if (wstat)
-				strerr_diefu2x(111,"init services for tree: ",treename) ;
+				strerr_diefu2x(111,"initiate services of tree: ",treename) ;
 			
 			VERBO3 strerr_warnt2x("reload scandir: ",scandir.s) ;
 			r = s6_svc_writectl(scandir.s, S6_SVSCAN_CTLDIR, "an", 2) ;
@@ -343,6 +318,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc_free(&livetree) ;
 	stralloc_free(&scandir) ;
 	stralloc_free(&contents) ;
+	genalloc_deepfree(stralist,&in,stra_free) ;
 	
 	return 0 ;
 }
