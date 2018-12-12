@@ -18,7 +18,7 @@
 <h1>66-disable</h1>
 
 	<p>
-      This command disable one ore more services inside a given <em>tree</em>.
+      This command disables one ore more services inside a given <em>tree</em>.
     </p>
 
 <h2> Interface </h2>
@@ -28,7 +28,7 @@
 
 	<p>
       This tool expects to find an already enabled service inside the given <em>tree</em>. The targeted service(s) can also be stopped on the fly when disabling it with the <tt>-S</tt> option.
-      Generally speaking this command is strictly the reverse of the <tt><a href="66-enable.html">66-enable</a></tt> tool.
+      Generally speaking this command is the strict opposite of the <tt><a href="66-enable.html">66-enable</a></tt> tool.
     </p>
     <p>Multiple <em>services</em> can be disabled by seperating their names with a space.</p>
 
@@ -65,9 +65,12 @@
 	
 <h2 id="dependencies">Dependencies handling</h2>
 
-<p>In case of <tt><em>'bundle'</em></tt>, <tt><em>'longrun'</em></tt> or <tt><em>'oneshot'</em></tt> services, the dependencies chain will be automatically resolves.
-It is unnecessary to manually define chained sets of dependencies. If FooA have a declared dependency FooB, FooB will be automatically added to the chain at FooA disabling process.
-This is done recursively.</p>
+<p>In case of <tt><em>'bundle'</em></tt>, <tt><em>'longrun'</em></tt> or <tt><em>'oneshot'</em></tt> services, any dependency chain will be automatically resolved.
+It is unnecessary to manually define chained sets of dependencies. If FooA has a declared dependency on FooB, FooB will be automatically disabled as well when disabling FooA.
+This will run recursively until all dependencies are disabled.</p>
+<!-- ...but only if the chained services do not have other processes running that require it. -->
+
+<!-- Is the before commented sentence true? Would make sense to mention it if it was. -->
 
 </body>
 </html>

@@ -18,7 +18,7 @@
 <h1>66-init</h1>
 
 	<p>
-      This command initiate services from a given <em>tree</em> to a <em>live</em> directory.
+      This command initiates services from a given <em>tree</em> at a <em>live</em> directory.
     </p>
 
 <h2> Interface </h2>
@@ -28,8 +28,8 @@
 
 	<p>
       This tool expects to find an already created <em><a href="66-scandir.html">scandir</a></em> directory at <em>live</em> location.
-      The <em>scandir</em> is not necessary running depending on the provided options. 
-      Administrators should invoke <tt>66-init</tt> only once time.  
+      The <em>scandir</em> does not need to be necessarily running depending on the provided options. 
+      Administrators should invoke <tt>66-init</tt> only once.  
     </p>
 
 <h2> Options </h2>
@@ -45,39 +45,41 @@
 	 </li>
 	 
 	 <li> 
-		<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the <em>scandir</em> directory location to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
+		<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the <em>scandir</em> directory to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
 		also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
 		option to <tt>./configure</tt>. An existing absolute path is expected and
 		should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
 	 </li>
 	 <li> 
-		<tt>-c&nbsp;</tt>&nbsp;: only initiate "classic" service from <em>tree</em> 
-		at <em>live</em> location.
+		<tt>-c&nbsp;</tt>&nbsp;: only initiate all <em>classic</em> services from <em>tree</em> 
+		at <em>live</em>.
 	 </li>
 	 
 	 <li> 
-		<tt>-d&nbsp;</tt>&nbsp;: only initiate a service database from <em>tree</em> 
-		at <em>live</em> location.
+		<tt>-d&nbsp;</tt>&nbsp;: only initiate service databases from <em>tree</em> 
+		at <em>live</em>.
 	 </li>
+	 <!-- are these meant to be single or plural? -->
 	 
 	<li> 
-		<tt>-B&nbsp;</tt>&nbsp;: initiate "classic" and service database from <em>tree</em> 
+		<tt>-B&nbsp;</tt>&nbsp;: initiate all <em>classic</em> services and service databases from <em>tree</em> 
 		at <em>live</em> location.
 	</li>	 
+	<!-- Again are there multiple services initiated or only one at a time? I read and understand this as if it were usually multiple. -->
 
 	</ul>
 <h2>Initiatlization process</h2>
-<h3>Classic service</h3>
-	<p>The tool will make a verbatim copy of all classic service files and directories of the <em>tree</em> inside a <em>scandir</em> directory at <em>live</em> location. 
-	By default, <em>/run/66/scandir/UID</em> is created if it not exist yet where <em>UID</em> is the uid of the current owner of the process. The <em>scandir</em> is <strong>not</strong>
-	necessary running. For instance, this is usefull at boot time to initiate an earlier service before starting the <em>scandir</em>. When the <em>scandir</em> 
-	starts&mdash;see <tt><a href="66-scandir.html">66-scandir -u</a></tt> option, the already presents services starts automatically.</p>
-	<p>If the <em>scandir</em> is running, you should invoke a <tt>66-scandir -s reload</tt> command to prevents the <em>scandir</em> about the changes.</p>
-<h3>Bundle,longrun,oneshot service</h3>
-	<p>The tool will invoke an <tt><a href="https://skarnet.org/software/s6-rc/s6-rc-init.html">s6-rc-init -l <em>live</em> -c <em>compiled</em> - p <em>prefix</em></a></tt> command 
-	where by default <em>live</em> is <tt>/run/66/tree/UID/<em>tree</em></tt>, <em>compiled</em> is <tt>/var/lib/66/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> or 
-	<tt>$HOME/.66/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> depending of the owner of the process and <em>prefix</em> the name of <em>tree</em>. The <em>live</em> 
-	is created if it doesn't exist yet. The <em>scandir</em> <strong>must</strong> be running. In contrary of <tt>s6-rc-init</tt> behaviour, this tool like any other 66 tool can be invoked with
+<h3>Classic services</h3>
+	<p>The tool will make an exact copy of all classic service files and directories of the <em>tree</em> inside a <em>scandir</em> directory at <em>live</em>. 
+	By default <em>/run/66/scandir/UID</em> is created if it does not exist yet, where <em>UID</em> is the uid of the current owner of the process. The <em>scandir</em> does <strong>not</strong> need to be
+	necessarily running. This is useful at boot time to initiate an early service before starting the <em>scandir</em>. Once the <em>scandir</em> 
+	starts&mdash;see <tt><a href="66-scandir.html">66-scandir -u</a></tt> option, the already present services start automatically.</p>
+	<p>If the <em>scandir</em> is running, you should invoke a <tt>66-scandir -s reload</tt> command to inform it about the changes.</p>
+<h3>Bundle, longrun, oneshot services</h3>
+	<p>The tool will automatically invoke <tt><a href="https://skarnet.org/software/s6-rc/s6-rc-init.html">s6-rc-init -l <em>live</em> -c <em>compiled</em> - p <em>prefix</em></a></tt>, 
+	where, by default, <em>live</em> translates to <tt>/run/66/tree/UID/<em>tree</em></tt> and <em>compiled</em> to <tt>/var/lib/66/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> or 
+	<tt>$HOME/.66/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> depending on the owner of the process and the <em>prefix</em> of the name of the <em>tree</em>. If it doesn't exist yet <em>live</em> 
+	is created in the process. For these services the <em>scandir</em> <strong>must</strong> be running. In contrary to <tt>s6-rc-init</tt>, this tool like any other 66 tool can be invoked with
 	user permissions.</p>
 </body>
 </html>
