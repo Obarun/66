@@ -38,6 +38,8 @@ extern int tree_switcher(int argc, char const *const *argv) ;
 
 extern int tree_copy(stralloc *dir, char const *tree,char const *treename) ;
 
+extern int tree_copy_tmp(char const *workdir, char const *base, char const *live, char const *tree,char const *treename) ;
+
 /** Set the tree to use as current for 66 tools
  * This is avoid to use the -t options for all 66 tools
  * Search on @base the directory current and append @tree
@@ -52,10 +54,13 @@ extern int tree_get_permissions(char const *tree) ;
 
 extern int tree_sethome(stralloc *tree, char const *base) ;
 
+extern char *tree_setname(char const *tree) ;
+
 extern int tree_switch_current(char const *base, char const *tree) ;
 
 extern int tree_switch_tobackup(char const *base, char const *treename, char const *tree, char const *livetree,char const *const *envp) ;
 
 extern int tree_make_backup(char const *base, char const *tree,  char const *treename) ;
+
 
 #endif
