@@ -14,7 +14,7 @@
 
 #include <string.h>
 #include <sys/stat.h>
-
+#include <stdlib.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -40,7 +40,8 @@
 #include <66/tree.h>
 #include <66/enum.h>
 
-#include <stdio.h>
+//#include <stdio.h>
+
 unsigned int VERBOSITY = 1 ;
 static tain_t DEADLINE ;
 stralloc saresolve = STRALLOC_ZERO ;
@@ -75,6 +76,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	pid_t pid ;
 	
 	uid_t owner ;
+	
+	char *treename = 0 ;
 	
 	stralloc base = STRALLOC_ZERO ;
 	stralloc tree = STRALLOC_ZERO ;
@@ -130,12 +133,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (r < 0) strerr_diefu1x(110,"find the current tree. You must use -t options") ;
 	if (!r) strerr_diefu2sys(111,"find tree: ", tree.s) ;
 	
-	size_t treelen = get_rlen_until(tree.s,'/',tree.len - 1) ;
-	size_t treenamelen = (tree.len - 1) - treelen ;
-	char treename[treenamelen + 1] ;
-	memcpy(treename, tree.s + treelen + 1,treenamelen) ;
-	treenamelen-- ;
-	treename[treenamelen] = 0 ;
+	treename = tree_setname(tree.s) ;
+	if (!treename) strerr_diefu1x(111,"set the tree name") ;
 		
 	if (!tree_get_permissions(tree.s))
 		strerr_dief2x(110,"You're not allowed to use the tree: ",tree.s) ;
@@ -148,7 +147,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	r = set_livescan(&scandir,owner) ;
 	if (!r) retstralloc(111,"main") ;
-	if (r < 0 ) strerr_dief3x(111,"live: ",scandir.s," must be an absolute path") ;
+	if (r < 0 ) strerr_dief3x(111,"scandir: ",scandir.s," must be an absolute path") ;
 	
 	if ((scandir_ok(scandir.s)) !=1 ) strerr_dief3sys(111,"scandir: ", scandir.s," is not running") ;
 	
@@ -156,7 +155,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	r = set_livetree(&livetree,owner) ;
 	if (!r) retstralloc(111,"main") ;
-	if (r < 0 ) strerr_dief3x(111,"live: ",livetree.s," must be an absolute path") ;
+	if (r < 0 ) strerr_dief3x(111,"livetree: ",livetree.s," must be an absolute path") ;
 	
 	if (!db_ok(livetree.s,treename))
 		strerr_dief5sys(111,"db: ",livetree.s,"/",treename," is not running") ;
@@ -229,9 +228,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (wstat)
 	{
 		if (down)
-			strerr_diefu1x(111,"bring down service list") ;
+			strerr_diefu1x(111,"bring down services list") ;
 		else
-			strerr_diefu1x(111,"bring up service list") ;
+			strerr_diefu1x(111,"bring up services list") ;
 	}
 	
 	/** we are forced to do this ugly check cause of the design
@@ -246,17 +245,15 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	int e = 0 ;
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	stralloc stat = STRALLOC_ZERO ;
-	if (!stralloc_catb(&stat,livetree.s,livetree.len - 1)) retstralloc(0,"rc_start") ; 
+	if (!stralloc_catb(&stat,livetree.s,livetree.len - 1)) retstralloc(111,"main") ; 
 	
-	if (!stralloc_cats(&stat,SS_SVDIRS)) retstralloc(0,"rc_start") ; 
-	if (!stralloc_cats(&stat,"/")) retstralloc(0,"rc_start") ; 
+	if (!stralloc_cats(&stat,SS_SVDIRS)) retstralloc(111,"main") ; 
+	if (!stralloc_cats(&stat,"/")) retstralloc(111,"main") ; 
 	size_t newlen = stat.len ;
 	
 	if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_SRC))
-	{
-		VERBO3 strerr_warnwu1x("set revolve pointer to source") ;
-		return 0 ;
-	}
+		strerr_diefu1x(111,"set revolve pointer to source") ;
+	
 	stralloc type = STRALLOC_ZERO ;
 		
 	for (unsigned int i = 0; i < genalloc_len(stralist,&gasv) ; i++)
@@ -265,7 +262,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (resolve_read(&type,saresolve.s,svname,"type") <= 0)
 			strerr_diefu2sys(111,"read type of: ",svname) ;
 		
-		//if (get_enumbyid(type.s,key_enum_el) == CLASSIC || get_enumbyid(type.s,key_enum_el) == LONGRUN)
 		if (get_enumbyid(type.s,key_enum_el) == LONGRUN)
 		{
 			stat.len = newlen ;
@@ -297,6 +293,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc_free(&stat) ;
 	stralloc_free(&type) ;
 	stralloc_free(&saresolve) ;
+	free(treename) ;
+	
 	return e ;
 }
 	
