@@ -41,7 +41,7 @@
 
 #include <s6/s6-supervise.h>//s6_svc_ok
 
-//#include <stdio.h>
+#include <stdio.h>
 unsigned int VERBOSITY = 1 ;
 static stralloc base = STRALLOC_ZERO ;
 static stralloc live = STRALLOC_ZERO ;
@@ -349,12 +349,15 @@ int tree_args(int argc, char const *const *argv)
 			tree = stralloc_zero ;
 				
 			char *treename = gaistr(&gatree,i) ;
+			int cu = 0 ;
 			
 			if (todisplay)
 				if (!obstr_equal(treename,argv[0])) continue ;
 			
 			int enabled = tree_cmd_state(VERBOSITY,"-s",treename) ; 
-			int cu = obstr_equal(treename,currname) ;
+			if (currname)
+				cu = obstr_equal(treename,currname) ;
+			
 			if (!bprintf(buffer_1,"%s%s%s%s%s%s%s\n","[Name:",treename,",Current:",cu ? "yes":"no",",Enabled:",enabled?"yes":"no","]")) goto err ;
 		
 			
