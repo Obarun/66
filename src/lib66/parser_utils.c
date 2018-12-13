@@ -34,7 +34,7 @@
 #include <skalibs/bytestr.h>
 #include <skalibs/diuint32.h>
 
-//#include <stdio.h>
+#include <stdio.h>
 ssize_t get_sep_before (char const *line, char const sepstart, char const sepend)
 {
 	size_t linend, linesep ;
@@ -358,8 +358,6 @@ int parse_env(keynocheck *nocheck)
 			continue ;
 		}
 		memcpy(buf,gaistr(&trunc,pos),gaistrlen(&trunc,pos)) ;
-		
-		if (!obstr_replace(buf,'\n',' ')) return 0 ;
 		r = get_sep_before(buf,'=','\n') ;
 		if (r < 0)
 		{ 
@@ -430,9 +428,12 @@ void sep_err(int r,char const sepstart,char const sepend,char const *keyname)
 
 int add_env(char *line,genalloc *ga,stralloc *sa)
 {
+	unsigned i = 0 ;
 	char *k = NULL ;
 	char *v = NULL ;
 	
+	genalloc gatmp = GENALLOC_ZERO ;
+	stralloc satmp = STRALLOC_ZERO ;
 	diuint32 tmp = DIUINT32_ZERO ;
 	
 	if (!get_wasted_line(line)) return 1 ;
@@ -441,15 +442,36 @@ int add_env(char *line,genalloc *ga,stralloc *sa)
 	obstr_sep(&v,"=") ;
 	if (v == NULL) return 0 ;
 	
-	//if (!obstr_trim(v,' ')) return 0 ;
-	if (!obstr_trim(v,'\n')) return 0 ;
-	//if (!obstr_trim(k,' ')) return 0 ;
-	
+	if (!clean_val(&gatmp,k)) return 0 ;
+	for (i = 0 ; i < genalloc_len(stralist,&gatmp) ; i++)
+	{
+		if (!stralloc_cats(&satmp,gaistr(&gatmp,i))) return 0 ;
+		if (!stralloc_cats(&satmp," ")) return 0 ;
+	}
+	satmp.len--;
+	if (!stralloc_0(&satmp)) return 0 ;
 	tmp.left = sa->len ;
-	if(!stralloc_catb(sa,k,strlen(k)+1)) return 0 ; 
+	if(!stralloc_catb(sa,satmp.s,satmp.len+1)) return 0 ;
+	
+	if (!obstr_trim(v,'\n')) return 0 ;
+	satmp = stralloc_zero ;
+	gatmp =  genalloc_zero ;
+	
+	if (!clean_val(&gatmp,v)) return 0 ;
+	for (i = 0 ; i < genalloc_len(stralist,&gatmp) ; i++)
+	{
+		if (!stralloc_cats(&satmp,gaistr(&gatmp,i))) return 0 ;
+		if (!stralloc_cats(&satmp," ")) return 0 ;
+	}
+	satmp.len--;
+	if (!stralloc_0(&satmp)) return 0 ;
 	tmp.right = sa->len ;
-	if(!stralloc_catb(sa,v,strlen(v)+1)) return 0 ;
+	if(!stralloc_catb(sa,satmp.s,satmp.len+1)) return 0 ;
+	
 	if (!genalloc_append(diuint32,ga,&tmp)) return 0 ;
+	
+	stralloc_free(&satmp) ;
+	genalloc_deepfree(stralist,&gatmp,stra_free) ;
 	
 	return 1 ;
 }
