@@ -256,7 +256,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (!db_write_contents(&master,SS_MASTER + 1,workdir.s))
 		{
 			cleanup(workdir.s) ;
-			strerr_diefu2x(111,"update bundle: ", SS_MASTER) ;
+			strerr_diefu2x(111,"update bundle: ", SS_MASTER + 1) ;
 		}
 				
 		if (!db_compile(workdir.s,tree.s,treename,envp))
