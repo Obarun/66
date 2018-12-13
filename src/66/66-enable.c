@@ -14,6 +14,7 @@
 
 #include <string.h>
 #include <sys/stat.h>
+#include <stdlib.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -38,16 +39,16 @@
 #include <66/parser.h>
 #include <66/backup.h>
 #include <66/svc.h>
+#include <66/graph.h>
 
-#include <stdio.h>
-static unsigned int MULTI = 0 ;
+//#include <stdio.h>
+
 static unsigned int FORCE = 0 ;
-static char const *MSTART = NULL ;
 unsigned int VERBOSITY = 1 ;
 
 stralloc saresolve = STRALLOC_ZERO ;
 
-#define USAGE "66-enable [ -h help ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -f force ] [ -d directory ] [ -I instance ] [ -S start ] service(s)"
+#define USAGE "66-enable [ -h help ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -f force ] [ -S start ] service(s)"
 
 static inline void info_help (void)
 {
@@ -60,8 +61,6 @@ static inline void info_help (void)
 "	-l: live directory\n"
 "	-t: name of the tree to use\n"
 "	-f: overwrite service(s)\n"
-"	-d: enable an entire directory\n"
-"	-I: create an instance of service\n"
 "	-S: enable and start the service\n"
 ;
 
@@ -76,7 +75,7 @@ static void cleanup(char const *dst)
 	errno = e ;
 }
 
-int start_parser(char const *src,char const *svname,char const *tree, unsigned int *nbsv)
+static int start_parser(char const *src,char const *svname,char const *tree, unsigned int *nbsv)
 {
 	stralloc sasv = STRALLOC_ZERO ;
 	
@@ -87,99 +86,32 @@ int start_parser(char const *src,char const *svname,char const *tree, unsigned i
 	return 1 ;
 }
 
-int insta_replace(stralloc *sa,char const *src,char const *cpy)
-{
-	
-	int curr, count ;
-	
-	if (!src || !*src) return 0;
-	
-	size_t len = strlen(src) ;
-	size_t clen= strlen(cpy) ;
-			
-	curr = count = 0 ;
-	for(int i = 0; (size_t)i < len;i++)
-		if (src[i] == '@')
-			count++ ;
-		
-	size_t resultlen = len + (clen * count) ;
-	char result[resultlen + 1 ] ;
-	
-	for(int i = 0; (size_t)i < len;i++)
-	{
-		if (src[i] == '@')
-		{
-			
-			if (((size_t)i + 1) == len) break ;
-			if (src[i + 1] == 'I')
-			{
-				memcpy(result + curr,cpy,clen) ;
-				curr = curr + clen;
-				i = i + 2 ;
-			}
-		}
-		result[curr++] = src[i] ;	
-			
-	}
-	result[curr] = 0 ;
-	
-	return stralloc_obreplace(sa,result) ;
-}
-int insta_create(char const *src,char const *instasrc, char const *instacopy, char const *tree,unsigned int *nbsv)
-{
-	
-	stralloc sa = STRALLOC_ZERO ;
-	stralloc tmp = STRALLOC_ZERO ;	
-	
-	if (get_len_until(instasrc,'@') < 0)
-		strerr_dief2x(111,"invalid instance service file: ",instasrc) ;
-	
-	if (!dir_create_tmp(&tmp,"/tmp",instacopy))
-		strerr_diefu1x(111,"create instance tmp dir") ;
-	
-	if (!file_readputsa(&sa,src,instasrc))
-		strerr_diefu4sys(111,"open: ",tmp.s,"/",instasrc) ;
-	
-	if (!insta_replace(&sa,sa.s,instacopy))
-		strerr_diefu2x(111,"replace instance character at: ",sa.s) ;
-	
-	if (!file_write_unsafe(tmp.s,instacopy,sa.s,sa.len))
-		strerr_diefu4sys(111,"create instance service file: ",src,"/",instacopy) ;
-		
-	start_parser(tmp.s,instacopy,tree,nbsv) ;
-	
-	if (rm_rf(tmp.s) < 0)
-		VERBO3 strerr_warnwu2x("remove tmp directory: ",tmp.s) ;
-		
-	stralloc_free(&sa) ;
-	stralloc_free(&tmp) ;
-	
-	return 1 ;
-}
-
 int main(int argc, char const *const *argv,char const *const *envp)
 {
 	int r ;
-	unsigned int nbsv, nlongrun, nclassic, insta, start ;
+	unsigned int nbsv, nlongrun, nclassic, start ;
 	
 	uid_t owner ;
 	
-	char const *instasrc = NULL ;
-	char const *instacopy = NULL ;
+	char const *src = SS_SERVICE_DIR ;
+	char *treename = 0 ;
 	
 	stralloc base = STRALLOC_ZERO ;//SS_SYSTEM
 	stralloc tree = STRALLOC_ZERO ;//-t options
-	stralloc dir = STRALLOC_ZERO ; //-d options
-	stralloc sv_src = STRALLOC_ZERO ;//service src 
 	stralloc workdir = STRALLOC_ZERO ;//working dir directory
 	stralloc live = STRALLOC_ZERO ;
 	stralloc livetree = STRALLOC_ZERO ;
-	
-	genalloc gargv = GENALLOC_ZERO ;//Multi service as arguments, type stralist
+	stralloc sasrc = STRALLOC_ZERO ;
+	genalloc gasrc = GENALLOC_ZERO ; //type sv_src_t
 	genalloc ganlong = GENALLOC_ZERO ; // type stralist
 	genalloc ganclassic = GENALLOC_ZERO ; // name of classic service, type stralist
 	
-	r = nbsv = nclassic = nlongrun = insta = start = 0 ;
+	graph_t g = GRAPH_ZERO ;
+	stralloc sagraph = STRALLOC_ZERO ;
+	genalloc master = GENALLOC_ZERO ;
+	genalloc tokeep = GENALLOC_ZERO ;
+	
+	r = nbsv = nclassic = nlongrun = start = 0 ;
 		
 	PROG = "66-enable" ;
 	{
@@ -201,14 +133,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 							if(!stralloc_0(&tree)) retstralloc(111,"main") ;
 							break ;
 				case 'f' : 	FORCE = 1 ; break ;
-				case 'd' : 	if(!stralloc_cats(&dir,l.arg)) retstralloc(111,"main") ;
-							if(!stralloc_0(&dir)) retstralloc(111,"main") ;
-							MULTI = 1 ;
-							break ;
-				case 'I' :	if (MULTI) exitusage() ; 
-							instacopy = l.arg ; 
-							insta = 1 ; 
-							break ;
 				case 'S' :	start = 1 ;	break ;
 				default : exitusage() ; 
 			}
@@ -217,22 +141,19 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	}
 	
 	if (argc < 1) exitusage() ;
-	/**only name of the service to enable is allowed with -d options*/
-	if ((argc > 1 && MULTI) || (argc > 1 && insta)) exitusage() ;
+	
 	owner = MYUID ;
+	
 	if (!set_ownersysdir(&base,owner)) strerr_diefu1sys(111, "set owner directory") ;
 	
 	r = tree_sethome(&tree,base.s) ;
 	if (r < 0) strerr_diefu1x(110,"find the current tree. You must use -t options") ;
 	if (!r) strerr_diefu2sys(111,"find tree: ", tree.s) ;
 	
-	size_t treelen = get_rlen_until(tree.s,'/',tree.len - 1) ;
-	size_t treenamelen = (tree.len - 1) - treelen ;
-	char treename[treenamelen + 1] ;
-	memcpy(treename, tree.s + treelen + 1,treenamelen) ;
-	treenamelen-- ;
-	treename[treenamelen] = 0 ;
-		
+	
+	treename = tree_setname(tree.s) ;
+	if (!treename) strerr_diefu1x(111,"set the tree name") ;
+	
 	if (!tree_get_permissions(tree.s))
 		strerr_dief2x(110,"You're not allowed to use the tree: ",tree.s) ;
 	
@@ -244,50 +165,15 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		
 	r = set_livetree(&livetree,owner) ;
 	if (!r) retstralloc(111,"main") ;
-	if(r < 0) strerr_dief3x(111,"live: ",livetree.s," must be an absolute path") ;
+	if(r < 0) strerr_dief3x(111,"livetree: ",livetree.s," must be an absolute path") ;
 	
-	/** relative path of absolute path
-	 * if relative use SS_SYSTEM as path*/
-	if (!stralloc_cats(&sv_src,SS_SERVICE_DIR)) retstralloc(111,"main") ;
-	if (!stralloc_0(&sv_src)) retstralloc(111,"main") ;
-	{
-		if(MULTI){
-			r = dir_scan_absopath(dir.s) ;
-			if (r < 0){
-				sv_src.len--;
-				if (!stralloc_cats(&sv_src,"/")) retstralloc(111,"main") ;
-				if (!stralloc_cats(&sv_src,dir.s)) retstralloc(111,"main") ;
-				if (!stralloc_0(&sv_src)) retstralloc(111,"main") ;
-			}else
-				if (!stralloc_obreplace(&sv_src,dir.s)) retstralloc(111,"main") ;
-		}
-	}		
-	stralloc_free(&dir) ;
-	
-	if (!insta)
-	{
-		
-		/** get all service on sv_src directory*/
-		if (MULTI)
-		{
-			if (!file_get_fromdir(&gargv,sv_src.s)) strerr_diefu2sys(111,"get services from directory: ",sv_src.s) ;
-			MSTART = *argv ;
-			for (unsigned int i = 0; i < genalloc_len(stralist,&gargv); i++)
-				start_parser(sv_src.s,gaistr(&gargv,i),tree.s,&nbsv) ;
-		}
-		else
-		{
-			for(;*argv;argv++)
-				start_parser(sv_src.s,*argv,tree.s,&nbsv) ; 
-		}
-	}
-	else
-	{
-		instasrc = argv[0] ;
-		if (!insta_create(sv_src.s,instasrc,instacopy,tree.s,&nbsv)) strerr_diefu4x(111,"make instance from: ",instasrc," to: ",instacopy) ;
-	}
+	for(;*argv;argv++)
+		if (!resolve_src(&gasrc,&sasrc,*argv,src)) strerr_dief2x(111,"resolve source of service file: ",*argv) ;
 	
 
+	for (unsigned int i = 0 ; i < genalloc_len(sv_src_t,&gasrc) ; i++)
+		start_parser(sasrc.s + genalloc_s(sv_src_t,&gasrc)[i].src,sasrc.s + genalloc_s(sv_src_t,&gasrc)[i].name,tree.s,&nbsv) ;
+	
 	sv_alltype svblob[nbsv] ;
 	
 	for (int i = 0;i < nbsv;i++)
@@ -311,7 +197,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				cleanup(workdir.s) ;
 				strerr_diefu2x(111,"write service: ",keep.s+before.services[i].cname.name) ;
 			}
-			if (r > 1) continue ;
+			if (r > 1) continue ; //service already added
+			
 			if (before.services[i].cname.itype > CLASSIC)
 			{
 				if (!stra_add(&ganlong,keep.s + before.services[i].cname.name)) retstralloc(111,"main") ;
@@ -337,39 +224,41 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	if(nlongrun)
 	{
-		stralloc newupdate = STRALLOC_ZERO ;
-		if (!stralloc_cats(&newupdate,"-a -D ")) retstralloc(111,"main") ;
-		if (!stralloc_cats(&newupdate,workdir.s)) retstralloc(111,"main") ;
-		
-		if (MULTI)
+		r = graph_type_src(&tokeep,workdir.s,1) ;
+		if (!r)
 		{
-			if (!stralloc_cats(&newupdate," ")) retstralloc(111,"main") ;
-			if (!stralloc_cats(&newupdate,MSTART)) retstralloc(111,"main") ;
-			if (!stralloc_0(&newupdate)) retstralloc(111,"main") ;
-			if (db_cmd_master(VERBOSITY,newupdate.s) != 1)
+			cleanup(workdir.s) ;
+			strerr_diefu2x(111,"resolve source of graph for tree: ",treename) ;
+		}
+		if (r < 0)
+		{
+			if (!stra_add(&master,"")) retstralloc(111,"main") ;
+		}
+		else 
+		{
+			if (!graph_build(&g,&sagraph,&tokeep,workdir.s))
 			{
-					cleanup(workdir.s) ;
-					strerr_diefu1x(111,"update bundle Start") ;
+				cleanup(workdir.s) ;
+				strerr_diefu1x(111,"make dependencies graph") ;
+			}
+			if (!graph_sort(&g))
+			{
+				cleanup(workdir.s) ;
+				strerr_dief1x(111,"cyclic graph detected") ;
+			}
+			if (!graph_master(&master,&g))
+			{
+				cleanup(workdir.s) ;
+				strerr_dief1x(111,"find master service") ;
 			}
 		}
-		else
+
+		if (!db_write_contents(&master,SS_MASTER + 1,workdir.s))
 		{
-			for (unsigned int i = 0 ; i < genalloc_len(stralist,&ganlong) ; i++)
-			{
-				char *name = gaistr(&ganlong,i) ;
-				if (!stralloc_cats(&newupdate," ")) retstralloc(111,"main") ;
-				if (!stralloc_cats(&newupdate,name)) retstralloc(111,"main") ;
+			cleanup(workdir.s) ;
+			strerr_diefu2x(111,"update bundle: ", SS_MASTER + 1) ;
+		}
 				
-			}
-			if (!stralloc_0(&newupdate)) retstralloc(111,"main") ;
-		
-			if (db_cmd_master(VERBOSITY,newupdate.s) != 1)
-			{
-					cleanup(workdir.s) ;
-					strerr_diefu1x(111,"update bundle Start") ;
-			}	
-		}
-		stralloc_free(&newupdate) ;
 		if (!db_compile(workdir.s,tree.s,treename,envp))
 		{
 				cleanup(workdir.s) ;
@@ -384,98 +273,11 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		}		
 	}
 
-	stralloc swap = stralloc_zero ;
-	size_t svdirlen ;	
-	char svdir[tree.len + SS_SVDIRS_LEN + SS_RESOLVE_LEN + 1] ;
-	memcpy(svdir,tree.s,tree.len--) ;//tree.len-1 to remove 0's stralloc
-	memcpy(svdir + tree.len,SS_SVDIRS,SS_SVDIRS_LEN) ;
-	svdirlen = tree.len + SS_SVDIRS_LEN ;
-	memcpy(svdir + svdirlen,SS_SVC, SS_SVC_LEN) ;
-	svdir[svdirlen + SS_SVC_LEN] = 0 ;
-	/** svc */
-	if (rm_rf(svdir) < 0)
+	if (!tree_copy_tmp(workdir.s,base.s,live.s,tree.s,treename))
 	{
-		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,CLASSIC,SS_RESOLVE_SRC))
-			strerr_diefu1x(111,"set revolve pointer to source") ;
-		
-		if (!resolve_pointo(&swap,base.s,live.s,tree.s,treename,CLASSIC,SS_RESOLVE_BACK))
-			strerr_diefu1x(111,"set revolve pointer to source") ;
-		if (!hiercopy(swap.s,saresolve.s))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu4sys(111,"to copy tree: ",saresolve.s," to ", swap.s) ;
-		}
 		cleanup(workdir.s) ;
-		strerr_diefu2sys(111,"remove directory: ", svdir) ;
+		strerr_diefu4x(111,"copy: ",workdir.s," to: ", tree.s) ;
 	}
-	/** db */
-	memcpy(svdir + svdirlen,SS_DB, SS_DB_LEN) ;
-	svdir[svdirlen + SS_DB_LEN] = 0 ;
-	if (rm_rf(svdir) < 0)
-	{
-		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,LONGRUN,SS_RESOLVE_SRC))
-			strerr_diefu1x(111,"set revolve pointer to source") ;
-		
-		if (!resolve_pointo(&swap,base.s,live.s,tree.s,treename,LONGRUN,SS_RESOLVE_BACK))
-			strerr_diefu1x(111,"set revolve pointer to source") ;
-		if (!hiercopy(swap.s,saresolve.s))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu4sys(111,"to copy tree: ",saresolve.s," to ", swap.s) ;
-		}
-		cleanup(workdir.s) ;
-		strerr_diefu2sys(111,"remove directory: ", svdir) ;
-	}	
-	/** resolve */
-	memcpy(svdir + svdirlen,SS_RESOLVE,SS_RESOLVE_LEN) ;
-	svdir[svdirlen + SS_RESOLVE_LEN] = 0 ;
-	
-	if (rm_rf(svdir) < 0)
-	{
-		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_SRC))
-			strerr_diefu1x(111,"set revolve pointer to source") ;
-		saresolve.len--;
-		if (!stralloc_cats(&saresolve,SS_RESOLVE)) retstralloc(111,"main") ;
-		if (!stralloc_0(&saresolve)) retstralloc(111,"main") ;
-		
-		if (!resolve_pointo(&swap,base.s,live.s,tree.s,treename,0,SS_RESOLVE_BACK))
-			strerr_diefu1x(111,"set revolve pointer to source") ;
-		swap.len--;
-		if (!stralloc_cats(&swap,SS_RESOLVE)) retstralloc(111,"main") ;	
-		if (!stralloc_0(&swap)) retstralloc(111,"main") ;
-		if (!hiercopy(swap.s,saresolve.s))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu4sys(111,"to copy tree: ",saresolve.s," to ", swap.s) ;
-		}
-		cleanup(workdir.s) ;
-		strerr_diefu2sys(111,"remove directory: ", svdir) ;
-	}	
-
-	svdir[svdirlen] = 0 ;
-		
-	if (!hiercopy(workdir.s,svdir))
-	{
-		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_SRC))
-		{	
-			cleanup(workdir.s) ;
-			strerr_diefu1x(111,"set revolve pointer to source") ;
-		}
-		if (!resolve_pointo(&swap,base.s,live.s,tree.s,treename,0,SS_RESOLVE_BACK))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu1x(111,"set revolve pointer to source") ;
-		}
-		if (!hiercopy(swap.s,saresolve.s))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu4sys(111,"to copy tree: ",saresolve.s," to ", swap.s) ;
-		}
-		cleanup(workdir.s) ;
-		strerr_diefu4sys(111,"to copy tree: ",workdir.s," to ", svdir) ;
-	}
-			
-	cleanup(workdir.s) ;
 	
 	if (start)
 	{
@@ -504,19 +306,28 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		xpathexec_run (newup[0], newup, envp) ;
 	}
 	
+	cleanup(workdir.s) ;
+	
 	/** general allocation*/
 	freed_parser() ;
 	/** inner allocation */
 	stralloc_free(&base) ;
 	stralloc_free(&tree) ;
-	stralloc_free(&dir) ;
-	stralloc_free(&sv_src) ;
 	stralloc_free(&workdir) ;
 	stralloc_free(&live) ;
 	stralloc_free(&livetree) ;
-	stralloc_free(&swap) ;
+	stralloc_free(&sasrc) ;
+	genalloc_free(sv_src_t,&gasrc) ;
 	genalloc_deepfree(stralist,&ganclassic,stra_free) ;
 	genalloc_deepfree(stralist,&ganlong,stra_free) ;
+	free(treename) ;
+	
+	/** graph stuff */
+	genalloc_free(vertex_graph_t,&g.stack) ;
+	genalloc_free(vertex_graph_t,&g.vertex) ;
+	genalloc_deepfree(stralist,&master,stra_free) ;
+	stralloc_free(&sagraph) ;
+	genalloc_deepfree(stralist,&tokeep,stra_free) ;
 	
 	return 0 ;		
 }

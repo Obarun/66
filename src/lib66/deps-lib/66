@@ -9,10 +9,10 @@ db_ok.o
 db_switch_to.o
 db_update.o
 dir_cmpndel.o
-find_sv_src.o
 get_enum.o
 get_uidgid.o
 get_userhome.o
+graph.o
 parser.o
 parser_utils.o
 parser_write.o
@@ -29,11 +29,13 @@ svc_switch_to.o
 tree_cmd_state.o
 tree_cmd_switcher.o
 tree_copy.o
+tree_copy_tmp.o
 tree_find_current.o
 tree_from_current.o
 tree_get_permissions.o
 tree_make_backup.o
 tree_sethome.o
+tree_setname.o
 tree_switch_current.o
 tree_switch_tobackup.o
 -loblibs

@@ -28,7 +28,7 @@
 
 	<p>
       This tool expects to find an already enabled service inside the given <em>tree</em> and an already running <em>scandir</em>. 
-      If the state of the <em>service</em> is already up, <tt>66-start</tt> do nothing execpt in case of <tt>-r</tt> option&mdash;see <a href="#reload"><tt>reload transition</tt></a>.
+      If the state of the <em>service</em> is already up, <tt>66-start</tt> does nothing except when passing the <tt>-r</tt> option&mdash;see <a href="#reload"><tt>reload transition</tt></a>.
     </p>
     <p>Multiple <em>services</em> can be started by seperating their names with a space.</p>
 
@@ -68,101 +68,99 @@
 
 	</ul>
 <h2 id="dependencies">Dependencies handling</h2>
-<p>In case of <tt><em>'bundle'</em></tt>, <tt><em>'longrun'</em></tt> or <tt><em>'oneshot'</em></tt> services, the dependencies chain will be automatically resolves.
-It is unnecessary to manually define chained sets of dependencies. If FooA have a declared dependency FooB, 
-FooB will be automatically added to the chain at FooA starting process and FooB will be started first.
-This is done recursively.</p>
+<p>In case of <tt><em>'bundle'</em></tt>, <tt><em>'longrun'</em></tt> or <tt><em>'oneshot'</em></tt> services, any dependency chain will be resolved automatically.
+It is unnecessary to manually define chained sets of dependencies. If FooA has a declared dependency on FooB, 
+FooB will be automatically considered and started first when starting FooA.
+This will run recursively until all dependencies are started.</p>
 
-<h2>Classic services transitions</h2>
+<h2>Classic service transitions</h2>
 
 	<p>
 		<ul>
 			<li>
-				<tt>66-start</tt> computes the arguments services in one list of classic services called <em>selection</em>.
+				<tt>66-start</tt> gathers the classic service(s) passed as argument in a list called <em>selection</em>.
 			</li>
 			<li>
-				Inspect the <em>selection</em> to determine if the <em>service</em> is already initiate.
-				If not, a new <em>selection</em> is made. It copy verbatim the files and directories of the <em>selection</em>, 
-				create a <em>down</em> file and the <em>event</em> fifo directory. It subscribe to the <em>service</em> fifo events, 
-				send a reload signal to the <em>scandir</em> and wait for an events for every service on the <em>selection</em>.
-				If a <em>timeout</em> occurs before an events reception, the initialization fail.
+				The command first inspects this list to determine if any <em>service</em> in question was already written to it.
+				If it was not then a new entry is added for each service passed as argument. It then copies the necessary files and directories of each newly written entry, 
+				creates a <em>down</em> file and the <em>event</em> fifo directory. After that it subscribes to the <em>services</em> fifo events, 
+				sends a reload signal to the <em>scandir</em> and waits for an event for every service in the <em>selection</em>.
+				If a <em>timeout</em> occurs before receiving an event, the initialization fails.
 			</li>
 			<li>
-				If a reload was asked, a <a href="#reload">reload</a> transition is operated.
+				If a reload was forced the command will use a <a href="#reload">reload</a> transition instead.
 			</li>
 			<li>
-				Inspect the <em>selection</em> and look if a looger is associated for a <em>service</em>. 
-				If yes, it add the logger service to the <em>selection</em>.
+				The <em>selection</em> is then inspected again and searched for any logger that needs to be associated with the passed <em>service</em>. 
+				If any such instruction was found the corresponding logger service will be added to the <em>selection</em> as well.
 			</li>
 			<li>
-				Finally it send an <tt>66-svctl -v <em>verbosity</em> -T <em>timeout</em> -l <em>live</em> -t <em>tree</em> -U <em>selection</em></tt> command 
-				and wait for the exit code status of command.
+				Finally the command sends a <tt>66-svctl -v <em>verbosity</em> -T <em>timeout</em> -l <em>live</em> -t <em>tree</em> -U <em>selection</em></tt> 
+				and waits for the resulting exit code.
 			</li>
 		</ul>
 	</p>
-<p>Obviously, if one of those process fail <tt>66-start</tt> fail too and exit 111.</p>
-<h2>Bundle,longrun,oneshot transitions</h2>
+<p>If any one of these processes fails then as a result <tt>66-start</tt> fails too and exits with code 111.</p>
+<h2>Bundle, longrun, oneshot transitions</h2>
 	<p>
 		<ul>
 			<li>
-				<tt>66-start</tt> computes the arguments services in one list of Bundle,longrun,oneshot services called <em>selection</em>.
+				<tt>66-start</tt> gathers the bundle, longrun and/or oneshot service(s) passed as argument in a list called <em>selection</em>. <!-- Is this the same list as for classic services or a dedicated one that shares the same name space? -->
 			</li>
 			<li>
-				Inspect the <em>selection</em> to determine if the associated service database of the <em>tree</em> 
-				is already initiated. If not an <tt>66-init -v <em>verbosity</em> -l <em>live</em> -d <em>tree</em></tt> is invoked and 
-				wait for the exit status code of the command. Than a reload signal 
-				is send to the <em>scandir</em> to prevents it about the change.
+				The command first inspects this list to determine if any service database in question of the given <em>tree</em> was already written to it. If it was not then a <tt>66-init -v <em>verbosity</em> -l <em>live</em> -d <em>tree</em></tt> is automatically invoked and <tt>66-start</tt> will wait for the exit code of this automatic command. After that a reload signal 
+				is sent to the <em>scandir</em> to inform it about the change.
 			</li>
 			<li>
-				If a reload was asked, a <a href="#reload">reload</a> transition is operated.
+				If a reload was forced the command will use a <a href="#reload">reload</a> transition instead.
 			</li>
 			<li>
-				Finally it send an <tt>66-dbctl -v <em>verbosity</em> -T <em>timeout</em> -l <em>live</em> -t <em>tree</em> -u <em>selection</em></tt> command 
-				and wait for the exit status code of the command.
+				Finally the command sends a <tt>66-dbctl -v <em>verbosity</em> -T <em>timeout</em> -l <em>live</em> -t <em>tree</em> -u <em>selection</em></tt> 
+				and waits for the resulting exit code.
 			</li>
 		</ul>
 	</p>
-<p>Obviously, if one of those process fail <tt>66-start</tt> fail too and exit 111.</p>
+<p>If any one of these processes fails then as a result <tt>66-start</tt> fails too and exits with code 111.</p>
 <h2 id ="reload">Reload transitions</h2>
-<h3>Classic</h3>
+<h3>For classic services</h3>
 	<p>
 		<ul>
 			<li>
-				<tt>66-start</tt> computes the arguments services in one list of classic services called <em>selection</em>.
+				<tt>66-start</tt> gathers the classic service(s) passed as argument in a list called <em>selection</em>.
 			</li>
 			<li>
-				It look after the logger of the <em>service</em> if exist and add it to the <em>selection</em>, 
-				send an <tt>66-svctl -v <em>verbosity</em> -T <em>timeout</em> -l <em>live</em> -t <em>tree</em> -D <em>selection</em></tt> command 
-				and wait for the exit status of the command. It removes all 
-				files and directories of <em>service</em> from the <em>scandir</em> than an init transition is operated&mdash;see above.
+				If the <em>service(s)</em> require(s) a logger it will also be added to the <em>selection</em>. The command then 
+				sends a <tt>66-svctl -v <em>verbosity</em> -T <em>timeout</em> -l <em>live</em> -t <em>tree</em> -D <em>selection</em></tt> and waits for the corresponding exit code. It removes all 
+				files and directories of the <em>service(s)</em> from the <em>scandir</em> and continues with an init transition&mdash;see above.
 			</li>
 		</ul>
 	</p>
-	<p>Obviously, if one of those process fail <tt>66-start</tt> fail too and exit 111.</p>
-<h3>Bundle,longrun,oneshot</h3>
+	<p>If this process fails then as a result <tt>66-start</tt> fails too and exits with code 111.</p>
+<h3>For bundle, longrun and oneshot services</h3>
 	<p>
 		<ul>
 			<li>
-				<tt>66-start</tt> computes the arguments services in one list of Bundle,longrun,oneshot services called <em>selection</em>.
+				<tt>66-start</tt> gathers the bundle, longrun and/or oneshot service(s) passed as argument in a list called <em>selection</em>.
 			</li>
 			<li>
-				It make a backup of the <em>live</em> service database of the <em>tree</em> and switch to this one with 
-				the help of <tt><a href="https://skarnet.org/software/s6-rc/s6-rc-update.html">s6-rc-update</a></tt> program. 
+				The command first makes a backup of the services database <em>live</em> within the given <em>tree</em> and switches to the backup with 
+				the help of <tt><a href="https://skarnet.org/software/s6-rc/s6-rc-update.html">s6-rc-update</a></tt>.
+				<!-- Which one is "this one"?! -->
 			</li>
 			<li>
-				Compile the service database of the <em>tree</em> from the source with the help of <tt><a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html">s6-rc-compile</a></tt> 
-				program.
+				It then compiles the services database of the given <em>tree</em> from source with the help of <tt><a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html">s6-rc-compile</a></tt>.
 			</li>
 			<li>
-				Switch the <em>live</em> service database of the <em>tree</em> to this new fresh compiled database. 
-				Send an <tt>66-dbctl -v <em>verbosity</em> -T <em>timeout</em> -l <em>live</em> -t <em>tree</em> -d <em>selection</em></tt> command.
+				Next it switches from the services database <em>live</em> of the given <em>tree</em> to this newly compiled database after which it then
+				sends a <tt>66-dbctl -v <em>verbosity</em> -T <em>timeout</em> -l <em>live</em> -t <em>tree</em> -d <em>selection</em></tt>.
 			</li>
 			<li>
-				Finally performs an <tt><tt>66-dbctl -v <em>verbosity</em> -T <em>timeout</em> -l <em>live</em> -t <em>tree</em> -u <em>selection</em></tt> command</tt> 
-				and wait for the exit status code of the command.
+				Finally it performs a <tt>66-dbctl -v <em>verbosity</em> -T <em>timeout</em> -l <em>live</em> -t <em>tree</em> -u <em>selection</em></tt>  
+				and waits for the corresponding exit code.
 			</li>
 		</ul>
 	</p>
-	<p>Obviously, if one of those process fail <tt>66-start</tt> fail too and exit 111.</p>
+	<!-- The reload transition for b/l/o services is VERY hard to understand, there's a lot of compiling and switching and database going on here without very detailed information. I suppose it's in the nature of s6. I wouldn't bother too much about refining this for now as long as the command works as expected. -->
+	<p>If any one of these processes fails then as a result <tt>66-start</tt> fails too and exits with code 111.</p>
 </body>
 </html>

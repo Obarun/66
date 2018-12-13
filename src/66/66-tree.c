@@ -392,7 +392,7 @@ int set_rules(char const *tree,uid_t *uids, size_t uidn,unsigned int what)
 	return 1 ;
 }
 
-/** bug ici, la cmd -n -E ensemble provoque une erreur de segmentation*/ 
+ 
 int main(int argc, char const *const *argv,char const *const *envp)
 {
 	int r, current, create, allow, deny, enable, disable, remove, snap ;
@@ -578,8 +578,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		VERBO2 strerr_warni5x("clone ",dstree.s," as ",tmp," ..." ) ;
 		if (!hiercopy(tmp,dstree.s)) strerr_diefu4sys(111,"copy: ",dstree.s," at: ",clone.s) ;
 	}
-	/** voila la cause du bug, le free ne se passe pas bien*/
-	//stralloc_free(&base) ;
+	
+	stralloc_free(&base) ;
 	stralloc_free(&dstree) ;
 	stralloc_free(&clone) ;
 	

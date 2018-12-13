@@ -35,6 +35,8 @@
 #include <66/backup.h>
 #include <66/db.h>
 
+//#include <stdio.h>
+
 #define USAGE "66-init [ -h help ] [ -v verbosity ] [ -l live ] [ -c classic ] [ -d database ] [ -B both service ] tree"
 
 unsigned int VERBOSITY = 1 ;
@@ -57,51 +59,22 @@ static inline void info_help (void)
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
-int copy_svc(char const *scandir, char const *pathsvc)
-{
-	int r ;
-	
-	r = scan_mode(scandir,S_IFDIR) ;
-	if (r < 0) { errno = EEXIST ; return 0 ; }
-	if (!r)
-	{
-		VERBO3 strerr_warnt2x("create directory: ",scandir) ;
-		r = dir_create(scandir,0755) ;
-		if (!r){
-			VERBO3 strerr_warnwu2sys("create directory: ",scandir) ;
-			return 0 ;
-		}
-	}
-	VERBO3 strerr_warnt4x("copy service to: ",scandir," from: ", pathsvc) ;
-	if (!hiercopy(pathsvc,scandir))
-	{
-		VERBO3 strerr_warnwu4sys("copy service to: ",scandir," from:", pathsvc) ;
-		return 0 ;
-	}
-/*	VERBO3 strerr_warnt2x("reload scandir: ",scandir) ;
-	r = s6_svc_writectl(scandir, S6_SVSCAN_CTLDIR, "an", 2) ;
-	if (r < 0)
-	{
-		VERBO3 strerr_warnw3sys("something is wrong with the ",scandir, "/" S6_SVSCAN_CTLDIR " directory. errno reported") ;
-		return -1 ;
-	}
-		*/
-	return 1 ;
-}
 int main(int argc, char const *const *argv, char const *const *envp)
 {
 	int r, both, classic, db ;
-	char ownerpack[256] ;
+	
 	uid_t owner ;
 	int wstat ;
 	pid_t pid ;
 	
-	char const *treename = NULL ;
+	char const *treename = 0 ;
 	size_t treenamelen ;
 	
 	stralloc base = STRALLOC_ZERO ;
 	stralloc tree = STRALLOC_ZERO ;
 	stralloc live = STRALLOC_ZERO ;
+	stralloc scandir = STRALLOC_ZERO ;
+	stralloc livetree = STRALLOC_ZERO ;
 	
 	both = classic = db = 0 ;
 	
@@ -133,103 +106,71 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	if (argc != 1) exitusage() ;
 	
 	owner = MYUID ;
+	treename = *argv ;
+	treenamelen = strlen(treename) ;
 	
 	if (!set_ownersysdir(&base,owner)) strerr_diefu1sys(111, "set owner directory") ;
-	
-	size_t ownerlen = uid_fmt(ownerpack,owner) ;
-	ownerpack[ownerlen] = 0 ;
 	
 	r = set_livedir(&live) ;
 	if (!r) retstralloc(111,"main") ;
 	if(r < 0) strerr_dief3x(111,"live: ",live.s," must be an absolute path") ;
 	
-	if (!stralloc_cats(&tree,*argv)) retstralloc(111,"main") ;
+	if (!stralloc_cats(&tree,treename)) retstralloc(111,"main") ;
 	if (!stralloc_0(&tree)) retstralloc(111,"main") ;
 	
-	//treename = *argv ;
-	treename = *argv ;
-	//treenamelen = strlen(treename) ;
-	treenamelen = strlen(treename) ;
-	
-	/** /run/66/scandir */
-	live.len-- ;
-	size_t scandirlen ;
-	char scandir[live.len + ownerlen + 8 + 1] ;
-	memcpy(scandir,live.s,live.len) ;
-	memcpy(scandir + live.len, "scandir/",8) ;
-	scandirlen = live.len + 8 ;
-	scandir[scandirlen] = 0 ;
-	
-	/** /run/66/scandir/owner */
-	size_t pathscandirlen ;
-	char pathscandir[scandirlen + ownerlen + 1] ;
-	memcpy(pathscandir,scandir,scandirlen) ;
-	memcpy(pathscandir + scandirlen,ownerpack,ownerlen) ;
-	pathscandirlen = scandirlen + ownerlen ;
-	pathscandir[pathscandirlen] = 0 ;
-		
-	r = dir_search(scandir,ownerpack,S_IFDIR) ;
-	if (r != 1) strerr_dief4x(110,"scandir ",scandir,ownerpack," doesn't exist") ;
-	
 	r = tree_sethome(&tree,base.s) ;
-	if (r < 0) strerr_diefu1x(110,"find the current tree. You must use -t options") ;
 	if (!r) strerr_diefu2sys(111,"find tree: ", tree.s) ;
-	
-	r = scan_mode(tree.s,S_IFDIR) ;
-	if (!r) strerr_diefu2sys(111,"find tree: ",tree.s) ; 
 	
 	if (!tree_get_permissions(tree.s))
 		strerr_dief2x(110,"You're not allowed to use the tree: ",tree.s) ;
+		
+	if (!stralloc_copy(&scandir,&live)) retstralloc(111,"main") ;
 	
-	/** /base/.66/system/tree/servicedirs */
-	tree.len-- ;
-	size_t pathsvdlen ;
-	char pathsvd[tree.len + SS_SVDIRS_LEN + SS_DB_LEN + treenamelen + 1 + 1] ;
-	memcpy(pathsvd,tree.s,tree.len) ;
-	memcpy(pathsvd + tree.len ,SS_SVDIRS ,SS_SVDIRS_LEN) ;
-	pathsvdlen = tree.len + SS_SVDIRS_LEN ;
-	/** base/.66/system/tree/servicedirs/svc */
-	memcpy(pathsvd + pathsvdlen, SS_SVC ,SS_SVC_LEN) ;
-	pathsvd[pathsvdlen +  SS_SVC_LEN] = 0 ;
+	r = set_livescan(&scandir,owner) ;
+	if (!r) retstralloc(111,"main") ;
+	if (r < 0) strerr_dief3x(111,"scandir: ",scandir.s," must be an absolute path") ;
 	
-	/** run/66/tree/owner */
-	size_t pathlivetreelen ;
-	char pathlivetree[live.len + 5 + ownerlen + 1 + treenamelen + 1] ;
-	memcpy(pathlivetree,live.s,live.len) ;
-	memcpy(pathlivetree + live.len,"tree/",5) ;
-	memcpy(pathlivetree + live.len + 5,ownerpack,ownerlen) ;
-	pathlivetree[live.len + 5 + ownerlen] = 0 ;
-	r = scan_mode(pathlivetree,S_IFDIR) ;
-	if (r < 0) strerr_dief2x(111,pathlivetree," is not a directory") ;
+	r = scan_mode(scandir.s,S_IFDIR) ;
+	if (!r) strerr_dief3x(110,"scandir: ",scandir.s," doesn't exist") ;
+	
+	if (!stralloc_copy(&livetree,&live)) retstralloc(111,"main") ;
+	r = set_livetree(&livetree,owner) ;
+	if (!r) retstralloc(111,"main") ;
+	if (r < 0) strerr_dief3x(111,"livetree: ",livetree.s," must be an absolute path") ;
+	
+	r = scan_mode(livetree.s,S_IFDIR) ;
+	if (r < 0) strerr_dief2x(111,livetree.s," is not a directory") ;
 	if (!r)
 	{
-		VERBO2 strerr_warni2x("create directory: ",pathlivetree) ;
-		r = dir_create(pathlivetree,0700) ;
-		if (!r) strerr_diefu2sys(111,"create directory: ",pathlivetree) ;
+		VERBO2 strerr_warni2x("create directory: ",livetree.s) ;
+		r = dir_create(livetree.s,0700) ;
+		if (!r) strerr_diefu2sys(111,"create directory: ",livetree.s) ;
 	}
-	if (db_ok(pathlivetree,treename))
+	if (db_ok(livetree.s,treename))
 	{
 		strerr_warni2x(treename," already initiated") ;
 		return 0 ;
 	}
-	memcpy(pathlivetree + live.len + 5 + ownerlen, "/",1) ;
-	memcpy(pathlivetree + live.len + 5 + ownerlen + 1,treename,treenamelen) ;
-	pathlivetreelen = live.len + 5 + ownerlen + 1 + treenamelen ;
-	pathlivetree[pathlivetreelen] = 0 ;
+	livetree.len--;
+	if (!stralloc_cats(&livetree,"/")) retstralloc(111,"main") ;
+	if (!stralloc_cats(&livetree,treename)) retstralloc(111,"main") ;
+	if (!stralloc_0(&livetree)) retstralloc(111,"main") ;
 	
 	
-	//r = scan_mode(pathlivetree,S_IFDIR) ;
-	///if (r) strerr_dief2x(110,pathlivetree," already exist") ;
+	tree.len-- ;
+	size_t svdirlen ;
+	char svdir[tree.len + SS_SVDIRS_LEN + SS_DB_LEN + treenamelen + 1 + 1] ;
+	memcpy(svdir,tree.s,tree.len) ;
+	memcpy(svdir + tree.len ,SS_SVDIRS ,SS_SVDIRS_LEN) ;
+	svdirlen = tree.len + SS_SVDIRS_LEN ;
+	memcpy(svdir + svdirlen, SS_SVC ,SS_SVC_LEN) ;
+	svdir[svdirlen +  SS_SVC_LEN] = 0 ;
 	
 	/** svc service work */
 	if (classic || both)
 	{
-		VERBO2 strerr_warni5x("copy svc service from ",pathsvd," to ",scandir," ...") ;
-		if (!copy_svc(pathscandir,pathsvd)) strerr_diefu2sys(111,"copy svc service to: ",pathscandir) ;
-	//	VERBO2 strerr_warni3x("switch ",pathsvd," to source directory ...") ;
-	//	r = backup_cmd_switcher(VERBOSITY,"-t30 -s0",treename) ;
-	//	if (r != 1)
-	//		strerr_diefu3x(111,"switch: ",pathsvd," to source directory") ;
+		VERBO2 strerr_warni5x("copy svc service from ",svdir," to ",scandir.s," ...") ;
+		if (!hiercopy(svdir,scandir.s)) strerr_diefu4sys(111,"copy: ",svdir," to: ",scandir.s) ;
 	}
 	if (db || both)
 	{
@@ -237,15 +178,14 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		/** we assume that 66-scandir was launched previously because a db
 		 * need an operationnal scandir, so we control if /run/66/scandir/owner exist,
 		 * if not, exist immediately  */	
-		r = scandir_ok(pathscandir) ;
-		if (r != 1) strerr_dief3x(111,"scandir: ",pathscandir," is not running") ;
+		r = scandir_ok(scandir.s) ;
+		if (r != 1) strerr_dief3x(111,"scandir: ",scandir.s," is not running") ;
 			
 		/** rc services work */
-		/** base/.66/system/tree/servicedirs/compiled */
-		memcpy(pathsvd + pathsvdlen,SS_DB,SS_DB_LEN) ;
-		memcpy(pathsvd + pathsvdlen + SS_DB_LEN, "/", 1) ;
-		memcpy(pathsvd + pathsvdlen + SS_DB_LEN + 1, treename,treenamelen) ;
-		pathsvd[pathsvdlen + SS_DB_LEN + 1 + treenamelen] = 0 ;
+		memcpy(svdir + svdirlen,SS_DB,SS_DB_LEN) ;
+		memcpy(svdir + svdirlen + SS_DB_LEN, "/", 1) ;
+		memcpy(svdir + svdirlen + SS_DB_LEN + 1, treename,treenamelen) ;
+		svdir[svdirlen + SS_DB_LEN + 1 + treenamelen] = 0 ;
 		
 		char prefix[treenamelen + 1 + 1] ;
 		memcpy(prefix,treename,treenamelen) ;
@@ -258,34 +198,31 @@ int main(int argc, char const *const *argv, char const *const *envp)
 			
 			newargv[m++] = S6RC_BINPREFIX "s6-rc-init" ;
 			newargv[m++] = "-l" ;
-			newargv[m++] = pathlivetree ;
+			newargv[m++] = livetree.s ;
 			newargv[m++] = "-c" ;
-			newargv[m++] = pathsvd ;
+			newargv[m++] = svdir ;
 			newargv[m++] = "-p" ;
 			newargv[m++] = prefix ;
 			newargv[m++] = "--" ;
-			newargv[m++] = pathscandir ;
+			newargv[m++] = scandir.s ;
 			newargv[m++] = 0 ;
 			
-			VERBO2 strerr_warni3x("initiate db ",pathsvd," ...") ;
+			VERBO2 strerr_warni3x("initiate db ",svdir," ...") ;
 			
 			pid = child_spawn0(newargv[0],newargv,envp) ;
 			if (waitpid_nointr(pid,&wstat, 0) < 0)
 				strerr_diefu2sys(111,"wait for ",newargv[0]) ;
 				
 			if (wstat)
-				strerr_diefu2x(111,"init: ",pathsvd) ;
+				strerr_diefu2x(111,"init db: ",svdir) ;
 		}
-		
-	//	VERBO2 strerr_warni3x("switch ",pathsvd," to source directory ...") ;
-	//	r = backup_cmd_switcher(VERBOSITY,"-t31 -s0",treename) ;
-	//	if (r != 1)
-	//		strerr_diefu3x(111,"switch: ",pathsvd," to original directory") ;
 	}
 	
 	stralloc_free(&base) ;
 	stralloc_free(&tree) ;
 	stralloc_free(&live) ;
+	stralloc_free(&scandir) ;
+	stralloc_free(&livetree) ;
 
 	return 0 ;
 }

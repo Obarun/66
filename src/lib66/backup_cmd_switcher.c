@@ -31,7 +31,7 @@
 #include <66/constants.h>
 #include <66/enum.h>
 
-
+//#include <stdio.h>
 //USAGE "backup_switcher [ -v verbosity ] [ -t type ] [ -b backup ] [ -s switch ] tree"
 // for -b: return 0 if point to original source, return 1 if point to backup
 // for -s: -s0 -> origin, -s1 -> backup ;
@@ -74,7 +74,7 @@ int backup_switcher(int argc, char const *const *argv)
 
 	if (argc < 1) return -1 ;
 	if ((!change && !back) || !type) return -1 ;
-	
+
 	if (type < CLASSIC || type > ONESHOT)
 	{
 		VERBO3 strerr_warnw1x("unknow type for backup_switcher") ;

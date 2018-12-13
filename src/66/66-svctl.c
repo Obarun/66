@@ -13,6 +13,7 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -458,6 +459,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	svc_sig sv_signal = SVC_SIG_ZERO ;
 	
+	char *treename = 0 ;
+	
 	stralloc base = STRALLOC_ZERO ;
 	stralloc tree = STRALLOC_ZERO ;
 	stralloc live = STRALLOC_ZERO ;
@@ -517,12 +520,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (r < 0) strerr_diefu1x(110,"find the current tree. You must use -t options") ;
 	if (!r) strerr_diefu2sys(111,"find tree: ", tree.s) ;
 	
-	size_t treelen = get_rlen_until(tree.s,'/',tree.len - 1) ;
-	size_t treenamelen = (tree.len - 1) - treelen ;
-	char treename[treenamelen + 1] ;
-	memcpy(treename, tree.s + treelen + 1,treenamelen) ;
-	treenamelen-- ;
-	treename[treenamelen] = 0 ;
+	treename = tree_setname(tree.s) ;
+	if (!treename) strerr_diefu1x(111,"set the tree name") ;
 		
 	if (!tree_get_permissions(tree.s))
 		strerr_dief2x(110,"You're not allowed to use the tree: ",tree.s) ;
@@ -535,7 +534,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	r = set_livescan(&scandir,owner) ;
 	if (!r) retstralloc(111,"main") ;
-	if (r < 0 ) strerr_dief3x(111,"live: ",scandir.s," must be an absolute path") ;
+	if (r < 0 ) strerr_dief3x(111,"scandir: ",scandir.s," must be an absolute path") ;
 	
 	if ((scandir_ok(scandir.s)) !=1 ) strerr_dief3sys(111,"scandir: ", scandir.s," is not running") ;
 	
@@ -776,6 +775,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	ftrigr_end(&fifo) ;
 	stralloc_free(&svkeep) ;
 	genalloc_free(svc_sig,&gakeep) ;
+	free(treename) ;
 	
 	return 0 ;		
 	
@@ -783,6 +783,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		ftrigr_end(&fifo) ;
 		stralloc_free(&svkeep) ;
 		genalloc_free(svc_sig,&gakeep) ;
+		free(treename) ;
 		return 111 ;
 }
 	

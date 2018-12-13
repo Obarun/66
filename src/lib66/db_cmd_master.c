@@ -25,6 +25,7 @@
 #include <oblibs/files.h>
 #include <oblibs/obgetopt.h>
 #include <oblibs/directory.h>
+#include <oblibs/strakeyval.h>
 
 #include <skalibs/types.h>
 #include <skalibs/stralloc.h>
@@ -35,10 +36,10 @@
 #include <66/constants.h>
 #include <66/parser.h>
 #include <66/utils.h>
+#include <66/graph.h>
 
-
-#include <stdio.h>
-//USAGE "db_update_start [ -v verbosity ] [ -a add ] [ -d delete ] [ -c copy to ] [ -D directory ] service"
+//#include <stdio.h>
+//USAGE "db_update_start [ -v verbosity ] [ -a add ] [ -d delete ] [ -c copy to ] [ -B bundle ] [ -D directory ] service"
 // -c -> copy the contents file to the given directory, in this case service is not mandatory
 int db_update_master(int argc, char const *const *argv)
 {
@@ -49,61 +50,67 @@ int db_update_master(int argc, char const *const *argv)
 	
 	add = del = copy = 0 ;
 	
-	stralloc dir = STRALLOC_ZERO ; 
 	stralloc contents = STRALLOC_ZERO ;
 	stralloc tocopy = STRALLOC_ZERO ;
 	
 	genalloc in = GENALLOC_ZERO ;//type stralist
 	genalloc gargv = GENALLOC_ZERO ;//type stralist	
+	
+	char const *bundle = 0 ;
+	char const *dir = 0 ;
+	
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, "v:adc:D:", &l) ;
+			int opt = getopt_args(argc,argv, "v:adc:D:B:", &l) ;
 			if (opt == -1) break ;
-			if (opt == -2){ strerr_warnw1x("options must be set first") ; return -1 ; }
+			if (opt == -2){ strerr_warnw1x("options must be set first") ; return 0 ; }
 			switch (opt)
 			{
-				case 'v' : 	if (!uint0_scan(l.arg, &verbosity)) return -1 ;  break ;
-				case 'a' : 	add = 1 ; if (del) return -1 ; break ;
-				case 'd' :	del = 1 ; if (add) return -1 ; break ;
-				case 'D' :	if(!stralloc_cats(&dir,l.arg)) return -1 ; break ;
+				case 'v' : 	if (!uint0_scan(l.arg, &verbosity)) return 0 ;  break ;
+				case 'a' : 	add = 1 ; if (del) return 0 ; break ;
+				case 'd' :	del = 1 ; if (add) return 0 ; break ;
+				case 'D' :	dir = l.arg ; break ;
+				case 'B' :	bundle = l.arg ; break ;
 				case 'c' : 	copy = 1 ; 
-							if(!stralloc_cats(&tocopy,l.arg)) return -1 ; 
-							if(!stralloc_0(&tocopy)) return -1 ; 
+							if(!stralloc_cats(&tocopy,l.arg)) return 0 ; 
+							if(!stralloc_0(&tocopy)) return 0 ; 
 							break ;
-				default : 	return -1 ; 
+				default : 	return 0 ; 
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
 	
-	if (argc < 1 && !copy) return -1 ;
-	if (!add && !del && !copy) return -1 ;
-	if (!dir.len) return -1 ;
+	if (argc < 1 && !copy) return 0 ;
+	if (!add && !del && !copy) return 0 ;
+	if (!dir) return 0 ;
+	if (!bundle) bundle = SS_MASTER ;
 	if (copy)
-		if (dir_scan_absopath(tocopy.s) < 0) return -1 ;
+		if (dir_scan_absopath(tocopy.s) < 0) return 0 ;
 
+	size_t dirlen = strlen(dir) ;
+	size_t bundlen = strlen(bundle) ;
 	size_t newlen ;
-	char dst[dir.len + SS_DB_LEN + SS_SRC_LEN + SS_MASTER_LEN + 1 + SS_CONTENTS_LEN + 1] ;
+	char dst[dirlen + SS_DB_LEN + SS_SRC_LEN + bundlen + 1 + SS_CONTENTS_LEN + 1] ;
 	
-	if (dir_scan_absopath(dir.s) < 0) goto err ;
+	if (dir_scan_absopath(dir) < 0) goto err ;
 	
 	for(;*argv;argv++)
 		if (!stra_add(&gargv,*argv)) retstralloc(111,"main") ;
 	
-	memcpy(dst, dir.s, dir.len) ;
-	memcpy(dst + dir.len, SS_DB, SS_DB_LEN) ;
-	memcpy(dst + dir.len + SS_DB_LEN, SS_SRC, SS_SRC_LEN) ;
-	memcpy(dst + dir.len + SS_DB_LEN + SS_SRC_LEN, SS_MASTER, SS_MASTER_LEN) ;
-	memcpy(dst + dir.len + SS_DB_LEN + SS_SRC_LEN + SS_MASTER_LEN, "/" , 1) ;
-	newlen = dir.len + SS_DB_LEN + SS_SRC_LEN + SS_MASTER_LEN + 1 ;
-	memcpy(dst + dir.len + SS_DB_LEN + SS_SRC_LEN + SS_MASTER_LEN + 1, SS_CONTENTS, SS_CONTENTS_LEN) ;
-	dst[dir.len + SS_DB_LEN + SS_SRC_LEN + SS_MASTER_LEN + 1 + SS_CONTENTS_LEN] = 0 ;
-	
-	stralloc_free(&dir) ;
-	
+	memcpy(dst, dir, dirlen) ;
+	memcpy(dst + dirlen, SS_DB, SS_DB_LEN) ;
+	memcpy(dst + dirlen + SS_DB_LEN, SS_SRC, SS_SRC_LEN) ;
+	dst[dirlen + SS_DB_LEN + SS_SRC_LEN] = '/' ;
+	memcpy(dst + dirlen + SS_DB_LEN + SS_SRC_LEN + 1, bundle, bundlen) ;
+	dst[dirlen + SS_DB_LEN + SS_SRC_LEN + 1 + bundlen] = '/' ;
+	newlen = dirlen + SS_DB_LEN + SS_SRC_LEN + 1 + bundlen + 1 ;
+	memcpy(dst + newlen, SS_CONTENTS, SS_CONTENTS_LEN) ;
+	dst[newlen + SS_CONTENTS_LEN] = 0 ;
+
 	size_t filesize=file_get_size(dst) ;
 
 	r = openreadfileclose(dst,&contents,filesize) ;
@@ -113,8 +120,8 @@ int db_update_master(int argc, char const *const *argv)
 		goto err ;
 	}
 	/** ensure that we have an empty line at the end of the string*/
-	if (!stralloc_cats(&contents,"\n")) goto retstra ;
-	if (!stralloc_0(&contents)) goto retstra ;
+	if (!stralloc_cats(&contents,"\n")) goto err ;
+	if (!stralloc_0(&contents)) goto err ;
 	
 	if (!clean_val(&in,contents.s))
 	{
@@ -156,8 +163,8 @@ int db_update_master(int argc, char const *const *argv)
 	
 	for (unsigned int i =0 ; i < genalloc_len(stralist,&in); i++)
 	{
-		if (!stralloc_cats(&contents,gaistr(&in,i))) goto retstra ;
-		if (!stralloc_cats(&contents,"\n")) goto retstra ;
+		if (!stralloc_cats(&contents,gaistr(&in,i))) goto err ;
+		if (!stralloc_cats(&contents,"\n")) goto err ;
 	}
 	dst[newlen] = 0 ;
 	
@@ -183,19 +190,11 @@ int db_update_master(int argc, char const *const *argv)
 
 	return 1 ;
 	
-	retstra:
-		stralloc_free(&dir) ;
-		stralloc_free(&contents) ;
-		genalloc_deepfree(stralist,&in,stra_free) ;
-		genalloc_deepfree(stralist,&gargv,stra_free) ;
-		retstralloc(-1,"update_start") ;
-		
 	err:
-		stralloc_free(&dir) ;
 		stralloc_free(&contents) ;
 		genalloc_deepfree(stralist,&in,stra_free) ;
 		genalloc_deepfree(stralist,&gargv,stra_free) ;
-		return -1 ;
+		return 0 ;
 }
 
 int db_cmd_master(unsigned int verbosity,char const *cmd)
@@ -207,7 +206,8 @@ int db_cmd_master(unsigned int verbosity,char const *cmd)
 	if (!clean_val(&opts,cmd))
 	{
 		VERBO3 strerr_warnwu2x("clean: ",cmd) ;
-		return -1 ;
+		genalloc_deepfree(stralist,&opts,stra_free) ;
+		return 0 ;
 	}
 	int newopts = 4 + genalloc_len(stralist,&opts) ;
 	char const *newargv[newopts] ;
@@ -229,4 +229,124 @@ int db_cmd_master(unsigned int verbosity,char const *cmd)
 	genalloc_deepfree(stralist,&opts,stra_free) ;
 	
 	return r ;
+}
+
+/** action = 0 -> delete, action = 1 -> add, default delete*/
+int db_bundle_modif(genalloc *bundle,unsigned int verbosity, char const *src,unsigned int action)
+{
+	unsigned int i = 0 ;
+	size_t salen ;
+	stralloc update = STRALLOC_ZERO ;
+	char *what ;
+	
+	if (action) what = "-a" ;
+	else what = "-d" ;
+	 
+	if (!stralloc_cats(&update,what)) return 0 ;
+	if (!stralloc_cats(&update," -D ")) return 0 ;
+	if (!stralloc_cats(&update,src)) return 0 ;
+	if (!stralloc_cats(&update," ")) return 0 ;
+	salen = update.len ;
+	for (;i < genalloc_len(strakeyval,bundle) ; i++)
+	{
+		update.len = salen ;
+		char *bname = gaikvkey(bundle,i) ;
+		char *svname = gaikvval(bundle,i) ;
+		
+		if (!stralloc_cats(&update,"-B ")) return 0 ;
+		if (!stralloc_cats(&update,bname)) return 0 ;
+		if (!stralloc_cats(&update," ")) return 0 ;
+		if (!stralloc_cats(&update,svname)) return 0 ;
+		if (!stralloc_0(&update)) return 0 ;
+		if (!db_cmd_master(verbosity,update.s))
+		{
+			strerr_warnwu2x("update contents of bundle: ",bname) ;
+			return 0 ;
+		}	
+	}
+	stralloc_free(&update) ;
+	
+	return 1 ;
+}
+
+int db_bundle_contents(graph_t *g, char const *name, char const *src, unsigned int verbosity, unsigned int action)
+{
+	unsigned int a, b, c ;
+	int r = 0 ;
+	genalloc bundle = GENALLOC_ZERO ;
+	char const *string = g->string ; 
+	for (a = 0 ; a < g->nvertex ; a++)
+	{
+		char const *bname = string + genalloc_s(vertex_graph_t,&g->vertex)[a].name ;
+		
+		if (genalloc_s(vertex_graph_t,&g->vertex)[a].type == BUNDLE)
+		{
+			
+			for (b = 0 ; b < genalloc_s(vertex_graph_t,&g->vertex)[a].ndeps; b++)
+			{
+				char const *depname = string + genalloc_s(vertex_graph_t,&genalloc_s(vertex_graph_t,&g->vertex)[a].dps)[b].name ;
+				if(obstr_equal(name,depname))
+				{
+					for(c = 0; c < genalloc_len(strakeyval,&bundle) ; c++)
+					{
+						r = obstr_equal(depname,gaikvkey(&bundle,c)) ;
+						if (r) break ;
+					}
+					if (!r)
+						if (!strakv_add(&bundle,bname,name)) return 0 ;		
+				}
+			}
+		}
+	}
+	if (genalloc_len(strakeyval,&bundle))
+	{
+		if (!db_bundle_modif(&bundle,verbosity,src,action))
+			goto err ;
+	}
+	genalloc_free(strakeyval,&bundle) ;
+	
+	return 1 ;
+	
+	err:
+		genalloc_free(strakeyval,&bundle) ;
+		return 0 ;
+}
+
+int db_write_contents(genalloc *ga, char const *bundle,char const *dir)
+{
+	int r ;
+	
+	stralloc in = STRALLOC_ZERO ;
+	
+	size_t dirlen = strlen(dir) ;
+	size_t bundlen = strlen(bundle) ;
+	
+	char dst[dirlen + SS_DB_LEN + SS_SRC_LEN + 1 + bundlen + 1] ;
+	memcpy(dst, dir, dirlen) ;
+	memcpy(dst + dirlen, SS_DB, SS_DB_LEN) ;
+	memcpy(dst + dirlen + SS_DB_LEN, SS_SRC, SS_SRC_LEN) ;
+	dst[dirlen + SS_DB_LEN + SS_SRC_LEN] = '/' ;
+	memcpy(dst + dirlen + SS_DB_LEN + SS_SRC_LEN + 1, bundle, bundlen) ;
+	dst[dirlen + SS_DB_LEN + SS_SRC_LEN + 1 + bundlen] = 0 ;
+	
+	for (unsigned int i = 0 ; i < genalloc_len(stralist,ga); i++)
+	{
+		if (!stralloc_cats(&in,gaistr(ga,i))) goto err ;
+		if (!stralloc_cats(&in,"\n")) goto err ;
+	}
+	
+	r = file_write_unsafe(dst,SS_CONTENTS,in.s,in.len) ;
+	if (!r) 
+	{ 
+		VERBO3 strerr_warnwu3sys("write: ",dst,"contents") ;
+		goto err ;
+	}
+	
+	stralloc_free(&in) ;
+	
+	return 1 ;
+	
+	err:
+		stralloc_free(&in) ;
+		return 0 ;
 }

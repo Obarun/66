@@ -97,12 +97,6 @@ union sv_type_u
 	sv_oneshot oneshot ;
 } ;
 
-typedef struct sv_env_s sv_env, *sv_env_t_ref ;
-struct sv_env_s
-{
-	unsigned int key ;//pos in saenv 
-	unsigned int val ;//pos in saenv
-} ;
 typedef struct sv_name_s sv_name_t, *sv_name_t_ref ;
 struct sv_name_s
 {
@@ -135,6 +129,7 @@ struct sv_alltype_s
 	* timeout-kill[0][X] enabled,timeout-kill[0][0] not enabled*/
 	uint32_t timeout[4][UINT_FMT] ;
 	uint32_t death ;
+	int signal ;
 	unsigned int pipeline ; //pos in deps
 	genalloc env ; //type sv_env, pos in gaenv
 } ;
@@ -188,6 +183,7 @@ struct sv_alltype_s
 	0 , \
 	{ 0 } , \
 	{ { 0 } } ,\
+	0 , \
 	0 , \
 	0 ,\
 	GENALLOC_ZERO \
@@ -296,7 +292,7 @@ extern int add_pipe(sv_alltype *sv, stralloc *sa) ;
 /** Display the corresponding warning when @sepend and @sepstart are not equal */ 
 extern void sep_err(int r,char const sepstart,char const sepend,char const *keyname) ;
 
-extern int add_cname(char const *name, sv_alltype *sv_before) ;
+extern int add_cname(genalloc *ga,avltree *tree,char const *name, sv_alltype *sv_before) ;
 
 extern int resolve_srcdeps(sv_alltype *sv_before,char const *svmain,char const *src, char const *tree,unsigned int *nbsv,stralloc *sasv) ;
 
@@ -333,4 +329,5 @@ extern int write_dependencies(char const *src, sv_name_t *cname,char const *dst,
 extern int write_env(genalloc *env,stralloc *sa,char const *dst) ;
 
 extern void freed_parser(void) ;
+
 #endif

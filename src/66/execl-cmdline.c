@@ -92,5 +92,4 @@ int main(int argc, char const **argv, char const *const *envp)
     newarg[r] = 0 ;
 		
 	xpathexec_run(newarg[0],newarg,envp) ;
-	//el_execsequence(newarg, argv+argc1+1, envp) ;
 }

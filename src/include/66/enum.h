@@ -39,6 +39,7 @@ enum key_enum_e
 	PRODUCER ,
 	CONSUMER ,
 	BUILD ,
+	SIGNAL ,
 	FLAGS ,
 	RUNAS ,
 	SHEBANG ,
@@ -54,33 +55,33 @@ enum key_enum_e
 	TIMESTP ,
 	ENVAL ,
 	//Service type
-	CLASSIC, // = 30
+	CLASSIC, // = 31
 	BUNDLE ,
 	LONGRUN ,
 	ONESHOT ,
 	//Key expected
-	LINE , // = 34
+	LINE , // = 35
 	BRACKET ,
 	UINT ,
 	SLASH ,
 	QUOTE ,
 	KEYVAL ,
 	//Options
-	LOGGER , // = 35
+	LOGGER , // = 36
 	PIPELINE ,
 	DATA ,
 	//Flags
-	DOWN , // = 43
+	DOWN , // = 44
 	NOSETSID ,
 	ENVIR ,
 	//Build
-	AUTO , // = 46
+	AUTO , // = 45
 	CUSTOM ,
 	//Mandatory
-	NEED , // = 48
+	NEED , // = 49
 	OPTS ,
 	//Time
-	TAI , // = 49
+	TAI , // = 50
 	ISO ,
 	ENDOFKEY
 } ;
@@ -128,6 +129,7 @@ static key_description_t const main_section_list[] =
 	{ .name = "@timeout-up", .expected = UINT, .mandatory = OPTS },
 	{ .name = "@timeout-down", .expected = UINT, .mandatory = OPTS },
 	{ .name = "@maxdeath", .expected = UINT, .mandatory = OPTS },
+	{ .name = "@down-signal", .expected = UINT, .mandatory = OPTS },
 	{ .name = 0 } 
 } ;
 
@@ -161,7 +163,7 @@ static key_description_t const environment_section_list[] =
 	{ .name = 0 }
 } ;
 
-static int const total_list_el[6] = { 15, 5, 5, 11, 2, 0 } ;
+static int const total_list_el[6] = { 16, 5, 5, 11, 2, 0 } ;
 
 static key_all_t const total_list[] =
 {

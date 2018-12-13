@@ -138,6 +138,12 @@ fooA
 fooB
 fooC
 )</pre>
+			<pre>@depends= 
+(
+fooA
+fooB
+fooC
+)</pre>
 		</ul>
 		<p>(!) Invalid syntax:</p>
 		<ul>
@@ -275,7 +281,7 @@ MYVALUE</pre>
 	are not allowed.
 	<br>The <em>order is of importance</em> (!). If fooA depends on fooB and fooB
 	depends on fooC the order needs to be: 
-	<pre>@depends=(FooA BooA CooA)</pre>
+	<pre>@depends=(fooA fooB fooC)</pre>
 	It is unnecessary to manually define chained sets of dependencies.
 	The parser will properly handle this for you. For example,
 	if fooA depends on fooB&#8212;no matter the underlying implementation of fooB,

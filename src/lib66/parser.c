@@ -35,7 +35,7 @@
 #include <66/constants.h>
 #include <66/utils.h>
 
-#include <stdio.h>
+//#include <stdio.h>
 stralloc keep = STRALLOC_ZERO ;//sv_alltype data
 stralloc deps = STRALLOC_ZERO ;//sv_name depends
 stralloc saenv = STRALLOC_ZERO ;//sv_alltype env
@@ -50,7 +50,7 @@ void freed_parser(void)
 	stralloc_free(&keep) ;
 	stralloc_free(&deps) ;
 	stralloc_free(&saenv) ;
-	stralloc_free(&ganame) ;
+	genalloc_free(sv_name_t,&ganame) ;
 	genalloc_free(unsigned int,&gadeps) ;
 	genalloc_free(sv_alltype,&gasv) ;
 	avltree_free(&deps_map) ;
@@ -70,13 +70,13 @@ static int sv_cmp(void const *a, void const *b, void *x)
 
 avltree deps_map = AVLTREE_INIT(8, 3, 8, &sv_toadd, &sv_cmp, &ganame) ;
 
-int add_cname(char const *name, sv_alltype *sv_before)
+int add_cname(genalloc *ga,avltree *tree,char const *name, sv_alltype *sv_before)
 {
-	uint32_t id = genalloc_len(sv_name_t,&ganame) ;
+	uint32_t id = genalloc_len(sv_name_t,ga) ;
 	
-	if (!genalloc_append(sv_name_t,&ganame,&sv_before->cname)) retstralloc(0,"add_name") ;
+	if (!genalloc_append(sv_name_t,ga,&sv_before->cname)) retstralloc(0,"add_name") ;
 	
-	return avltree_insert(&deps_map,id) ;
+	return avltree_insert(tree,id) ;
 }
 static int add_sv(sv_alltype *sv_before,char const *name,unsigned int *nbsv)
 {
@@ -84,9 +84,9 @@ static int add_sv(sv_alltype *sv_before,char const *name,unsigned int *nbsv)
 	
 	VERBO2 strerr_warni2x("Add service: ",name) ;
 	
-	if (!genalloc_append(sv_alltype,&gasv,sv_before)) retstralloc(0,"parse_service_before") ;
+	if (!genalloc_append(sv_alltype,&gasv,sv_before)) retstralloc(0,"add_sv") ;
 	
-	r = add_cname(name,sv_before) ;
+	r = add_cname(&ganame,&deps_map,name,sv_before) ;
 	if (!r)
 	{
 		VERBO3 strerr_warnwu3x("insert", name," as node") ;
@@ -96,6 +96,7 @@ static int add_sv(sv_alltype *sv_before,char const *name,unsigned int *nbsv)
 	
 	return 1 ;
 }
+
 static int read_svfile(stralloc *sasv,char const *name,char const *src)
 {
 	int r ; 
@@ -130,6 +131,113 @@ static int read_svfile(stralloc *sasv,char const *name,char const *src)
 	
 	return 1 ;
 }
+int insta_replace(stralloc *sa,char const *src,char const *cpy)
+{
+	
+	int curr, count ;
+	
+	if (!src || !*src) return 0;
+	
+	size_t len = strlen(src) ;
+	size_t clen= strlen(cpy) ;
+			
+	curr = count = 0 ;
+	for(int i = 0; (size_t)i < len;i++)
+		if (src[i] == '@')
+			count++ ;
+		
+	size_t resultlen = len + (clen * count) ;
+	char result[resultlen + 1 ] ;
+	
+	for(int i = 0; (size_t)i < len;i++)
+	{
+		if (src[i] == '@')
+		{
+			
+			if (((size_t)i + 1) == len) break ;
+			if (src[i + 1] == 'I')
+			{
+				memcpy(result + curr,cpy,clen) ;
+				curr = curr + clen;
+				i = i + 2 ;
+			}
+		}
+		result[curr++] = src[i] ;	
+			
+	}
+	result[curr] = 0 ;
+	
+	return stralloc_obreplace(sa,result) ;
+}
+/** instance -> 0, copy -> 1 */
+int insta_splitname(stralloc *sa,char const *name,int len,int what)
+{
+	char const *copy ;
+	size_t tlen = len + 1 ;
+	
+	char template[tlen + 1] ;
+	memcpy(template,name,tlen) ;
+	template[tlen] = 0 ;
+	
+	copy = name + tlen ;
+	
+	if (!what)
+		return stralloc_obreplace(sa,template) ;
+	else
+		return stralloc_obreplace(sa,copy) ;
+}
+int insta_create(stralloc *sasv,stralloc *sv, char const *src, int len)
+{
+	char const *copy ;
+	size_t tlen = len + 1 ;
+	
+	stralloc sa = STRALLOC_ZERO ;
+	stralloc tmp = STRALLOC_ZERO ;	
+	
+	char template[tlen + 1] ;
+	memcpy(template,sv->s,tlen) ;
+	template[tlen] = 0 ;
+	
+	copy = sv->s + tlen ;
+
+	if (!dir_create_tmp(&tmp,"/tmp",copy))
+	{
+		VERBO3 strerr_warnwu1x("create instance tmp dir") ;
+		return 0 ;
+	}
+
+	if (!file_readputsa(&sa,src,template))
+		strerr_diefu4sys(111,"open: ",src,"/",template) ;
+	
+	if (!insta_replace(&sa,sa.s,copy))
+		strerr_diefu2x(111,"replace instance character at: ",sa.s) ;
+	/** remove the last \0 */
+	sa.len-- ;
+	
+	if (!file_write_unsafe(tmp.s,copy,sa.s,sa.len))
+		strerr_diefu4sys(111,"create instance service file: ",tmp.s,"/",copy) ;
+	
+	if (!read_svfile(sasv,copy,tmp.s)) return 0 ;
+	
+	if (rm_rf(tmp.s) < 0)
+		VERBO3 strerr_warnwu2x("remove tmp directory: ",tmp.s) ;
+	
+	stralloc_free(&sa) ;
+	stralloc_free(&tmp) ;
+	
+	return stralloc_obreplace(sv,copy) ;
+}
+
+int insta_check(char const *svname)
+{
+	int r ;
+		
+	r = get_len_until(svname,'@') ;
+	if (r < 0) return -1 ;
+	
+	return r ;
+}
+
 static int start_parser(stralloc *sasv,char const *name,sv_alltype *sv_before)
 {
 	VERBO2 strerr_warni3x("Parsing ", name," service...") ;
@@ -170,6 +278,8 @@ static int deps_src(stralloc *newsrc,char const *src, char const *name, char con
 	r = avltree_search(&deps_map,name,&avlid) ;
 	if (r) return 2 ; //already added nothing to do
 	
+	genalloc tmpsrc = GENALLOC_ZERO ; //type sv_src_t
+	
 	*newsrc = stralloc_zero ;
 	
 	/** Search in current dir*/
@@ -192,13 +302,15 @@ static int deps_src(stralloc *newsrc,char const *src, char const *name, char con
 		else 
 		if (!r)
 		{ 
+			stralloc sa = STRALLOC_ZERO ;
 			if (!stralloc_obreplace(newsrc, SS_SERVICE_DIR)) retstralloc(0,"resolve_deps") ;
-			r = dir_search(newsrc->s,name,S_IFREG) ;		
-			if (r != 1)
+			if (!resolve_src(&tmpsrc,&sa,name,newsrc->s)) 
 			{
 				VERBO3 strerr_warnwu2sys("find dependency ",name) ;
 				return 0 ;
 			}
+			if (!stralloc_obreplace(newsrc, sa.s + genalloc_s(sv_src_t,&tmpsrc)->src)) retstralloc(0,"resolve_deps") ;
+			stralloc_free(&sa) ;
 		}
 	}
 	else 
@@ -208,6 +320,8 @@ static int deps_src(stralloc *newsrc,char const *src, char const *name, char con
 		return 0 ;
 	}
 	
+	genalloc_free(sv_src_t,&tmpsrc) ;
+	
 	return 1 ;
 }
 /** @Return 0 on fail
@@ -215,18 +329,19 @@ static int deps_src(stralloc *newsrc,char const *src, char const *name, char con
  * @Return 2 service already added */
 int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, char const *tree,unsigned int *nbsv, stralloc *sasv)
 {
-	int r ;
+	int r, insta ;
 
 	stralloc newsrc = STRALLOC_ZERO ;
 	genalloc ga = GENALLOC_ZERO ;
 	sv_alltype sv_before_deps = SV_ALLTYPE_ZERO ;
 	
 	char const *name = NULL ;
-	char const *dname = NULL ;
+	stralloc dname = STRALLOC_ZERO ;
+	stralloc maininsta = STRALLOC_ZERO ;
 	uint32_t avlid = 0 ;
 	
 	name = keep.s+sv_before->cname.name ;
-			
+		
 	if (sv_before->cname.itype == CLASSIC)
 	{
 		VERBO3 strerr_warnw3x("invalid service type compatibility for ",name," service") ;
@@ -237,6 +352,16 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, c
 	{
 		VERBO3 strerr_warni3x("ignore ",mainsv," service dependency: already added") ;
 		return 2 ;
+	}
+	
+	insta = insta_check(mainsv) ;
+	if (insta > 0)
+	{
+		if (!insta_splitname(&maininsta,mainsv,insta,0))
+		{
+			VERBO3 strerr_warnwu2x("split source name of instance: ",mainsv) ;
+			return 0 ;
+		}
 	}
 	
 	if (sv_before->cname.nga)
@@ -260,24 +385,60 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, c
 		{	
 			sv_before_deps = sv_alltype_zero ;
 			newsrc = stralloc_zero ;
-			dname = gaistr(&ga,i) ;
-			if (obstr_equal(dname,name))
+			char *dname_src = gaistr(&ga,i) ;
+			
+			if (!stralloc_obreplace(&dname,dname_src)) retstralloc(0,"resolve_srcdeps") ;
+			if (obstr_equal(dname.s,name))
 			{
 				VERBO3 strerr_warnw3x("direct cyclic dependency detected on ",name," service") ;
 				return 0 ;
 			}
+			insta = insta_check(dname.s) ;
+			if (!insta) 
+			{
+				VERBO3 strerr_warnw2x("invalid instance name: ",dname.s) ;
+				return 0 ;
+			}
+	
+			if (insta > 0)
+			{
+				if (!insta_splitname(&dname,dname_src,insta,1))
+				{
+					VERBO3 strerr_warnwu2x("split copy name of instance: ",dname_src) ;
+					return 0 ;
+				}
+			}
 			
-			r = avltree_search(&deps_map,dname,&avlid) ;
+			r = avltree_search(&deps_map,dname.s,&avlid) ;
 			if (r) continue ;
-					
-			r = deps_src(&newsrc,src,dname,tree) ;
+			if (insta > 0)
+			{
+				if (!insta_splitname(&dname,dname_src,insta,0))
+				{
+					VERBO3 strerr_warnwu2x("split source name of instance: ",dname_src) ;
+					return 0 ;
+				}
+				if (obstr_equal(dname.s,maininsta.s))
+				{
+					VERBO3 strerr_warnw3x("direct cyclic instance dependency detected on ",mainsv," service") ;
+					return 0 ;
+				}
+			}
+			r = deps_src(&newsrc,src,dname.s,tree) ;
 			if (!r) return 0 ;
-					
-			if (!read_svfile(sasv,dname,newsrc.s)) return 0 ;
-
-			if (!start_parser(sasv,dname,&sv_before_deps)) return 0 ;
-		
-			r = resolve_srcdeps(&sv_before_deps,dname,newsrc.s,tree,nbsv,sasv) ;
+			if (insta > 0)
+			{
+				if (!stralloc_obreplace(&dname,dname_src)) retstralloc(0,"resolve_srcdeps") ;
+				if (!insta_create(sasv,&dname,newsrc.s,insta))
+				{
+					VERBO3 strerr_warnwu2x("create instance service: ",dname.s) ;
+					return 0 ;
+				}
+			}else if (!read_svfile(sasv,dname.s,newsrc.s)) return 0 ;
+			
+			if (!start_parser(sasv,dname.s,&sv_before_deps)) return 0 ;
+			
+			r = resolve_srcdeps(&sv_before_deps,dname.s,newsrc.s,tree,nbsv,sasv) ;
 			
 			if (!r) return 0 ;
 			if (r == 2) continue ;
@@ -289,36 +450,63 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, c
 	if (!r)	if (!add_sv(sv_before,mainsv,nbsv)) return 0 ;
 	
 	stralloc_free(&newsrc) ;
+	stralloc_free(&dname) ;
+	stralloc_free(&maininsta) ;
 	genalloc_deepfree(stralist,&ga,stra_free) ;
-	
+
 	return 1 ;
 }
+
+
 
 int parse_service_before(char const *src,char const *sv,char const *tree, unsigned int *nbsv, stralloc *sasv)
 {
 	int r = 0 ;
 	
 	uint32_t id ;
-
-	sv_alltype sv_before = SV_ALLTYPE_ZERO ;
-		
-	if (!read_svfile(sasv,sv,src)) return 0 ;
 	
-	r = avltree_search(&deps_map,sv,&id) ;
+	stralloc newsv = STRALLOC_ZERO ;
+		
+	if (!stralloc_cats(&newsv,sv)) retstralloc(0,"parse_service_before");
+	if (!stralloc_0(&newsv)) retstralloc(0,"parse_service_before") ;
+	
+	sv_alltype sv_before = SV_ALLTYPE_ZERO ;
+	r = insta_check(newsv.s) ;
+	if (!r) 
+	{
+		VERBO3 strerr_warnw2x("invalid instance name: ",newsv.s) ;
+		return 0 ;
+	}
+	if (r > 0)
+	{
+		
+		if (!insta_create(sasv,&newsv,src,r))
+		{
+			VERBO3 strerr_warnwu2x("create instance service: ",newsv.s) ;
+			return 0 ;
+		}
+	
+	}else if (!read_svfile(sasv,newsv.s,src)) return 0 ;
+	
+		
+	r = avltree_search(&deps_map,newsv.s,&id) ;
 	if (r)
 	{
-		VERBO3 strerr_warni3x("ignore ",sv," service: already added") ;
+		VERBO3 strerr_warni3x("ignore ",newsv.s," service: already added") ;
 		sasv->len = 0 ;
 		return 1 ;
 	}
 		
-	if (!start_parser(sasv,sv,&sv_before)) return 0 ;
+	if (!start_parser(sasv,newsv.s,&sv_before)) return 0 ;
+	
 	if (sv_before.cname.itype > CLASSIC)
 	{
 		r = resolve_srcdeps(&sv_before,sv,src,tree,nbsv,sasv) ;
 		if (!r) return 0 ;
 	}
-	else if (!add_sv(&sv_before,sv,nbsv)) return 0 ;		
+	else if (!add_sv(&sv_before,newsv.s,nbsv)) return 0 ;		
+	
+	stralloc_free(&newsv) ;
 	
 	return 1 ;
 }
@@ -346,6 +534,8 @@ int get_section_range(char const *s, int idsec, genalloc *gasection)
 	if (!stralloc_0(&sectmp)) retstralloc(0,"get_section_range") ;
 
 	pos = get_key(s,sectmp.s,&stmp) ;
+
+	if (!get_wasted_line(stmp.s)) return 1 ;
 
 	if (pos >= 0){
 		r = get_cleansection(stmp.s,&secbase) ;
@@ -429,7 +619,10 @@ int get_key_range(char const *s, int idsec, genalloc *ganocheck)
 			}
 			
 			if (r < 0) continue ;
-						
+			
+			if (!get_wasted_line(tmp.s))
+				 continue ;
+				
 			rk = get_cleankey(tmp.s) ;
 			if (!rk) return 0 ;
 			

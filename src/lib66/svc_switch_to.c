@@ -15,7 +15,7 @@
 
 #include <oblibs/error2.h>
 
-#include <skalibs/stralloc.h>
+#include <skalibs/types.h>
 
 #include <66/backup.h>
 #include <66/utils.h>
@@ -27,13 +27,22 @@ int svc_switch_to(char const *base, char const *tree,char const *treename,unsign
 {
 	int r ;
 	
-	stralloc sv = STRALLOC_ZERO ;
+	char type[UINT_FMT] ;
+	type[uint_fmt(type, CLASSIC)] = 0 ;
+	size_t typelen = strlen(type) ;
+	size_t cmdlen ;
+	char cmd[typelen + 6 + 1] ;
+	memcpy(cmd,"-t",2) ;
+	memcpy(cmd + 2,type,typelen) ;
+	cmdlen = 2 + typelen ;
+	memcpy(cmd + cmdlen," -b",3) ;
+	cmd[cmdlen + 3] = 0 ;
 	
-	r = backup_cmd_switcher(VERBOSITY,"-t30 -b",treename) ;
+	r = backup_cmd_switcher(VERBOSITY,cmd,treename) ;
 	if (r < 0)
 	{
 		VERBO3 strerr_warnwu2sys("find origin of svc service for: ",treename) ;
-		goto err ;
+		return 0 ;
 	}
 	// point to origin
 	if (!r && where)
@@ -42,10 +51,12 @@ int svc_switch_to(char const *base, char const *tree,char const *treename,unsign
 		if (!backup_make_new(base,tree,treename,CLASSIC))
 		{
 			VERBO3 strerr_warnwu2sys("make a backup of svc service for: ",treename) ;
-			goto err ;
+			return 0 ;
 		}
 		VERBO3 strerr_warnt3x("switch svc service for tree: ",treename," to backup") ;
-		r = backup_cmd_switcher(VERBOSITY,"-t30 -s1",treename) ;
+		memcpy(cmd + cmdlen," -s1",4) ;
+		cmd[cmdlen + 4] = 0 ;
+		r = backup_cmd_switcher(VERBOSITY,cmd,treename) ;
 		if (r < 0)
 		{
 			VERBO3 strerr_warnwu3sys("switch svc service for: ",treename," to backup") ;
@@ -54,7 +65,9 @@ int svc_switch_to(char const *base, char const *tree,char const *treename,unsign
 	else if (r > 0 && !where)
 	{
 		VERBO3 strerr_warnt3x("switch svc service for tree: ",treename," to source") ;
-		r = backup_cmd_switcher(VERBOSITY,"-t30 -s0",treename) ;
+		memcpy(cmd + cmdlen," -s0",4) ;
+		cmd[cmdlen + 4] = 0 ;
+		r = backup_cmd_switcher(VERBOSITY,cmd,treename) ;
 		if (r < 0)
 		{
 			VERBO3 strerr_warnwu3sys("switch svc service for: ",treename," to source") ;
@@ -63,12 +76,8 @@ int svc_switch_to(char const *base, char const *tree,char const *treename,unsign
 		if (!backup_make_new(base,tree,treename,CLASSIC))
 		{
 			VERBO3 strerr_warnwu2sys("make a backup of svc service for: ",treename) ;
-			goto err ;
+			return 0 ;
 		}
 	}
 	return 1 ;
-	
-	err:
-		stralloc_free(&sv) ;
-		return 0 ;
 }
