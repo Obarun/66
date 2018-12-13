@@ -497,6 +497,23 @@ MYVALUE</pre>
    is used.</p>
    </li>
   </ul>
+
+
+<br><hr style="border: 1px dashed #000000">
+
+ <li><h4>@down-signal</h4></li>
+ <h5>Corresponds to the file "<em>down-signal</em>" of s6-rc and s6 programs.</h5>
+ <p><tt>mandatory&nbsp;</tt>&nbsp;: no
+ </p><p><tt>syntax&nbsp;</tt>&nbsp;: uint</p>
+ <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
+  <ul>
+   <li>The name or number of a signal.
+   <p>This will create the file <tt>down-signal</tt> which is 
+   used to kill the supervised process when a <tt><a href="66-start.html">66-start -r</a></tt> or
+   <tt><a href="66-stop.html">66-stop</a></tt> command is used.
+   If the file does not exist, SIGTERM will be used by default. </p>
+   </li>
+  </ul>
 </ul>
 
 <br><hr>
@@ -807,7 +824,7 @@ for it in your <tt>@execute</tt> field.</p>
     @build = auto
     @execute = ( agetty -J 38400 @I } )
 	</pre>
-	<p>By using <tt><a href="66-enable.html">66-enable -I tty1 tty@</a></tt>, the resulting file will then be: </p>
+	<p>By using <tt><a href="66-enable.html">66-enable tty@tty1</a></tt>, the resulting file will then be: </p>
 	<pre>    [main]
     @type = classic
     @name = tty1
@@ -837,6 +854,7 @@ for it in your <tt>@execute</tt> field.</p>
     @timeout-up =
     @timeout-down =
     @maxdeath = 
+    @down-signal =
     
     [start]
     @build = auto,custom
