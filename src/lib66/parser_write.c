@@ -200,6 +200,15 @@ int write_services(sv_alltype *sv, char const *workdir, unsigned int force)
 			VERBO3 strerr_warnwu2x("write resolve file: type for service: ",logname) ;
 			return 0 ;
 		}
+		char descrip[namelen + 7 + 1] ;
+		memcpy(descrip,name,namelen) ;
+		memcpy(descrip + namelen," logger",7) ;
+		descrip[namelen + 7] = 0 ;
+		if (!resolve_write(workdir,logname,"description",descrip,force))
+		{
+			VERBO3 strerr_warnwu2x("write resolve file: description for service: ",logname) ;
+			return 0 ;
+		}
 		if (type == LONGRUN && force)
 		{
 			/** reload file */
@@ -589,34 +598,6 @@ int write_logger(char const *workdir, sv_alltype *sv, sv_execlog *log,char const
 				return 0 ;
 			}
 		}
-	/*	if (r)
-		{
-			if (force)
-			{
-				char tmp[destlen + 1 + strlen(svname) + 1];
-				memcpy(tmp,destlog.s, destlen) ;
-				tmp[destlen] = '/' ;
-				memcpy(tmp + destlen + 1,svname,strlen(svname)) ;
-				tmp[destlen + 1 + strlen(svname)] = 0 ;
-				
-				if (rm_rf(tmp) < 0)
-				{
-					VERBO3 strerr_warnwu2sys("remove log directory: ",tmp) ;
-					return 0 ;
-				}
-				r = dir_create_under(destlog.s,svname,0755) ;
-				if (r < 0)
-				{
-					VERBO3 strerr_warnwu5sys("create ",destlog.s,"/",svname," directory") ;
-					return 0 ;
-				}
-			}
-			else
-			{
-				VERBO3 strerr_warnw5x("ignoring creation of: ",destlog.s,"/",svname,": already exist") ;
-				return 1 ;
-			}
-		}*/
 	}
 	
 	stralloc_free(&shebang) ;
