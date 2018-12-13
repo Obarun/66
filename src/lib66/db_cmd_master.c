@@ -38,7 +38,7 @@
 #include <66/utils.h>
 #include <66/graph.h>
 
-#include <stdio.h>
+//#include <stdio.h>
 //USAGE "db_update_start [ -v verbosity ] [ -a add ] [ -d delete ] [ -c copy to ] [ -B bundle ] [ -D directory ] service"
 // -c -> copy the contents file to the given directory, in this case service is not mandatory
 int db_update_master(int argc, char const *const *argv)
@@ -315,10 +315,13 @@ int db_bundle_contents(graph_t *g, char const *name, char const *src, unsigned i
 int db_write_contents(genalloc *ga, char const *bundle,char const *dir)
 {
 	int r ;
+	
 	stralloc in = STRALLOC_ZERO ;
+	
 	size_t dirlen = strlen(dir) ;
 	size_t bundlen = strlen(bundle) ;
-	char dst[dirlen + SS_DB_LEN + SS_SRC_LEN + bundlen + 1] ;
+	
+	char dst[dirlen + SS_DB_LEN + SS_SRC_LEN + 1 + bundlen + 1] ;
 	memcpy(dst, dir, dirlen) ;
 	memcpy(dst + dirlen, SS_DB, SS_DB_LEN) ;
 	memcpy(dst + dirlen + SS_DB_LEN, SS_SRC, SS_SRC_LEN) ;
@@ -331,12 +334,15 @@ int db_write_contents(genalloc *ga, char const *bundle,char const *dir)
 		if (!stralloc_cats(&in,gaistr(ga,i))) goto err ;
 		if (!stralloc_cats(&in,"\n")) goto err ;
 	}
+	
 	r = file_write_unsafe(dst,SS_CONTENTS,in.s,in.len) ;
 	if (!r) 
 	{ 
 		VERBO3 strerr_warnwu3sys("write: ",dst,"contents") ;
 		goto err ;
 	}
+	
+	stralloc_free(&in) ;
 	
 	return 1 ;
 	
