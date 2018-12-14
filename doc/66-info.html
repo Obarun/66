@@ -1,0 +1,192 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>The 66 Suite: 66-info</title>
+    <meta name="Description" content="Detailed documentation for the 66-info command which is part of the 66 software suite" />
+    <meta name="Keywords" content="66 command 66-info scandir supervision supervise set service information" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">66</a><br />
+<a href="//obarun.org/">www.obarun.org</a>
+</p>
+
+<h1>66-info</h1>
+
+	<p>
+      This command display information of trees and services.
+    </p>
+
+<h2>Interface </h2>
+<h3>Main interface</h3>
+	<pre>
+	66-info [ -h help ] [ -T tree ] [ -S service ]
+	</pre>
+<h3>Tree sub interface</h3>
+	<pre>
+	66-info [ -T ] [ -h help ] [ -v <em>verbosity</em> ] [ -r recurse ] [ -d <em>depth</em> ] <em>tree</em>
+	</pre>
+<h3>Service sub interface</h3>
+	<pre>
+	66-info [ -S ] [ -h help ] [ -v <em>verbosity</em> ] [ -l live ] [ -p n lines ] [ -r recurse ] [ -d <em>depth</em> ] <em>service</em>
+	</pre>
+	<p>
+      66-info displays information about the <em>tree</em> or a specific <em>service</em> depending of the options passed.
+    </p>
+
+<h2>Main Options </h2>
+
+	<ul>
+		<li> 
+			<tt>-h&nbsp;</tt>&nbsp;: prints this help.
+		</li>
+		<li> 
+			<tt>-T&nbsp;</tt>&nbsp;: asks for <em>tree</em> information.
+		</li>
+		<li> 
+			<tt>-S&nbsp;</tt>&nbsp;: asks for <em>service</em> information.
+		</li>
+	</ul>
+<h2>Tree sub options </h2>		 
+	<ul>	
+		<li> 
+			<tt>-h&nbsp;</tt>&nbsp;: prints this help.
+		</li>
+		<li>
+			<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
+			the verbosity of the command. <tt>1(Default)</tt>: Only print 
+			error messages. <tt>2</tt>: Also print warning messages. 
+			<tt>3</tt>: Also print debugging messages.
+		 </li>
+		 
+		 <li>
+			<tt>-r&nbsp;</tt>&nbsp;: recurse the result of the service dependencies graph of the <em>tree</em>.
+		 </li>
+		 
+		 <li> 
+			<tt>-d&nbsp;<em>depth</em></tt>&nbsp;: limit the depth of the recursion service dependencies graph. By default this will be 1.
+		</li>
+		
+		<p>If <em>tree</em> is not specified, <tt>66-info</tt> displays information about all available tree for the current owner of the process.</p>
+	</ul>
+	
+<h2>Service sub options </h2>		 
+	<ul>	
+		<li> 
+			<tt>-h&nbsp;</tt>&nbsp;: prints this help.
+		</li>
+		<li>
+			<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
+			the verbosity of the command. <tt>1(Default)</tt>: Only print 
+			error messages. <tt>2</tt>: Also print warning messages. 
+			<tt>3</tt>: Also print debugging messages.
+		 </li>
+		<li> 
+			<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
+			also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
+			option to <tt>./configure</tt>. An existing absolute path is expected and
+			should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
+		</li>
+		<li>
+			<tt>-p&nbsp;<em>n lines</em></tt>&nbsp;: prints the <em>n</em> last lines from the associated log file of the <em>service</em>.
+		</li>
+		<li>
+			<tt>-r&nbsp;</tt>&nbsp;: recurse the result of the service dependencies graph of the <em>service</em>.
+		</li>
+		<li> 
+			<tt>-d&nbsp;<em>depth</em></tt>&nbsp;: limit the depth of the recursion service dependencies graph. By default this will be 1.
+		</li>
+	</ul>
+	
+<h2>Tree output display example</h2>
+
+	<p>The command <tt>66-info -T boot</tt> as root user on the <em>Obarun</em> default system displays the following where <em>boot</em>
+	is the tree used to properly boot the machine:
+	<pre>   
+   [Name:boot,Current:no,Enabled:no]
+    ├─All  :bundle
+    ├─boot-extra  :oneshot
+    ├─all-Rwfs  :bundle
+    ├─rwfs-tmpfiles  :oneshot
+    ├─rwfs-66local  :oneshot
+    ├─rwfs-dmesglog  :oneshot
+    ├─rwfs-end  :oneshot
+    ├─rwfs-logfiles  :oneshot
+    ├─rwfs-random  :oneshot
+    ├─rwfs-localtime  :oneshot
+    ├─rwfs-nofilesystem  :oneshot
+    ├─rwfs-loopback  :oneshot
+    ├─rwfs-ip6tables  :oneshot
+    ├─rwfs-iptables  :oneshot
+    ├─rwfs-tmpdir  :oneshot
+    ├─rwfs-fsrw  :oneshot
+    ├─all-Rofs  :bundle
+    ├─rofs-kernruntime  :oneshot
+    ├─rofs-swap  :oneshot
+    ├─rofs-modules  :oneshot
+    ├─rofs-Checkfs  :bundle
+    ├─checkfs-fscheck  :oneshot
+    |─checkfs-lvm  :oneshot
+    ├─checkfs-btrfs  :oneshot
+    ├─checkfs-dmraid  :oneshot
+    ├─rofs-hardclock  :oneshot
+    ├─rofs-console  :oneshot
+    ├─rofs-Udevd  :bundle
+    ├─udevd-udevadm  :oneshot
+    ├─udevd-udev  :longrun
+    ├─rofs-kernmod  :oneshot
+    ├─rofs-cgroups  :oneshot
+    ├─00  :bundle
+    ├─hostname  :oneshot
+    ├─conf  :oneshot
+    ├─filesystem  :oneshot
+    └─tty12  :classic
+	</pre>
+	</p>
+	<p>The first line give you usefull information about the <em>tree</em> itself where <tt><em>Name</em></tt> is the name of the tree, 
+		<tt><em>Current</em></tt> if the <em>tree</em> is the current one or not&mdash;see <tt><a href="66-tree.html">66-tree -c</a></tt> option, 
+		<tt><em>Enabled</em></tt> the state of the tree&mdash;see <tt><a href="66-tree.html">66-tree -E</a></tt> option.
+		In front of each service name, the type of the service is displayed.
+	</p>
+	<p>
+		By default the service dependencies graph is displayed by finished order of execution. In our case the <em>'bundle' All</em> is the last finished
+		service and so, <em>'classic' tty12</em> is the first one executed. 	
+	</p>
+	
+<h2>Service output display example</h2>
+
+	<p>The command <tt>sudo 66-info -S -d3 00</tt> displays the following where <em>00</em> 
+	is the name of the service:
+	<pre>    [00]
+    tree : boot
+    status : nothing to display
+    type : bundle
+    description : mount filesystem, parse the 66.conf file, set the hostname
+    contents :
+     └─00  :bundle
+       ├─filesystem  :oneshot
+       ├─conf  :oneshot
+       │  └─filesystem  :oneshot
+       └─hostname  :oneshot
+         └─conf  :oneshot
+	</pre>
+	</p>
+	<p>Let's take an another example, the command sudo <tt>66-info -S -p5 ntpd</tt> displays the following:
+	<pre>    [ntpd]
+    tree : root
+    status : up (pid 11458) 30 seconds
+    type : classic
+    description : ntpd daemon
+    logger at : /var/log/66/ntpd 
+    2018-12-14 17:56:11.876483500  peer 43.245.48.27 now valid
+    2018-12-14 17:56:11.876508500  reply from 43.245.48.27: offset -0.000546 delay 0.035899, next query 5s
+    2018-12-14 17:56:12.946922500  reply from 103.106.66.123: offset 0.018069 delay 0.069026, next query 8s
+    2018-12-14 17:56:12.947754500  reply from 103.239.8.22: offset 0.001671 delay 0.069848, next query 6s
+	</pre>
+	</p>
+</body>
+</html>
