@@ -315,7 +315,7 @@ int tree_args(int argc, char const *const *argv)
 			
 			switch (opt)
 			{
-				case 'h' : 	tree_help(); return 0 ;
+				case 'h' : 	tree_help(); return 1 ;
 				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) exit_tree_usage() ; break ;
 				case 'r' : 	REVERSE = 1 ; break ;
 				case 'd' : 	if (!uint0_scan(l.arg, &MAXDEPTH)) exit_tree_usage(); break ;
@@ -421,7 +421,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
 			{
-				case 'h' : 	sv_help(); return 0 ;
+				case 'h' : 	sv_help(); return 1 ;
 				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) exit_sv_usage() ; break ;
 				case 'l' : 	if (!stralloc_cats(&live,l.arg)) retstralloc(0,"sv_args") ;
 							if (!stralloc_0(&live)) retstralloc(0,"sv_args") ;
