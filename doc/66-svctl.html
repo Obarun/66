@@ -1,0 +1,95 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>The 66 Suite: 66-svctl</title>
+    <meta name="Description" content="Detailed documentation for the 66-svctl command which is part of the 66 software suite" />
+    <meta name="Keywords" content="66 command 66-svctl service supervision supervise handles service" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">66</a><br />
+<a href="//obarun.org/">www.obarun.org</a>
+</p>
+
+<h1>66-svctl</h1>
+
+	<p>
+      This command is used to control an already supervised <em>services</em> in <em>live</em> defined in <em>tree</em>.
+    </p>
+
+<h2> Interface </h2>
+	<pre>
+	66-svctl [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -T <em>timeout</em> ] [ -S <em>service timeout</em> ] [ -n <em>death</em> ] [ -u|U up ] [ -d|D down ] <em>service(s)</em>
+	</pre>
+
+	<p>
+      This tool expects to find an already supervised <em>service</em> in <em>live</em> defined in the given <em>tree</em> and an already running <em>scandir</em>. 
+      This tool only deal with <em>'classic'</em> service&mdash;see <a href="66-dbctl.html"><tt>66-dbctl</tt></a> for other kind of services.
+    </p>
+    <p>Multiple <em>services</em> can be handled by seperating their names with a space. <tt>66-svctl</tt> gathers the service(s) passed as argument in a list called <em>selection</em>.</p>
+	
+<h2> Options </h2>
+
+	<ul>
+		<li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
+		 
+		<li>
+			<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
+			the verbosity of the command. <tt>1(Default)</tt>: Only print 
+			error messages. <tt>2</tt>: Also print warning messages. 
+			<tt>3</tt>: Also print debugging messages.
+		</li>
+		 
+		<li> 
+			<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
+			also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
+			option to <tt>./configure</tt>. An existing absolute path is expected and
+			should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
+		</li>
+		<li> 
+			<tt>-t&nbsp;<em>tree</em></tt>&nbsp;: handles the <em>service</em> from
+			the given <em>tree</em>. This option is mandatory
+			except if a tree was marked as 'current'&mdash;see <a href="66-tree.html"><tt>66-tree</tt></a>.
+		</li>
+		 
+		<li> 
+			<tt>-T&nbsp;<em>timeout</em></tt></tt>&nbsp;: specifies a general timeout (in milliseconds)
+			after which <tt>66-svctl</tt> will exit 111 with an error message if the <em>selection</em> still hasn't reached the desired state for each <em>service</em>.
+			By default, the timeout is 0, which means that <tt>66-svctl</tt> will block indefinitely.
+		</li>
+		 
+		<li> 
+			<tt>-S&nbsp;<em>service timeout</em></tt>&nbsp;: specifies a timeout (in milliseconds)
+			after which <tt>66-svctl</tt> will exit 111 with an error message if the <em>services</em> still hasn't reached the desired state.
+			This option has <strong>no effects</strong> if a <em>timeout-up</em> (for <em>up</em> signal) or <em>timeout-down</em> (for <em>down</em> signal) was defined 
+			for the given service at the parsing time&mdash;see <tt><a href="66-frontend.html">frontend</a></tt>. In such case priority is given to those files.
+			If the option is not given and the <em>timeout-up,timeout-down</em> files doesn't exist, 1000 is pick by default.
+		</li>	
+		
+		<li> 
+			<tt>-n&nbsp;<em>death</em></tt>&nbsp;: specifies the maximum number of service death events that the supervisor will keep track.
+			If the service dies more than this number of times, <tt>66-svctl</tt> will exit 111 with an error message if the <em>services</em> still hasn't reached the desired state.
+			This option has <strong>no effects</strong> if a <em>maxdeath</em> was defined for the given service at the parsing time&mdash;see <tt><a href="66-frontend.html">frontend</a></tt>.
+			In such case priority is given to this file. If the option is not given and the <em>max-death-tally</em> files doesn't exist, 3 is pick by default.
+		</li>
+		<li> 
+			<tt>-u|U&nbsp;</tt>&nbsp;: sends a up signal to the <em>service</em> where <tt>U</tt> asks for readiness notification. In case of <tt>U</tt>, <tt>66-svctl</tt> look after a <em>notification-fd</em>
+			file&mdash;see <tt><a href="https://skarnet.org/software/s6/notifywhenup.html">service startup notifications</a></tt> and <tt><a href="66-frontend.html">frontend</a></tt>.
+			In such case priority is given to this file. If such file doesn't exist, <tt>66-svctl</tt> will change the <tt>U</tt> to <tt>u</tt> and warn the user about the change.
+		</li>
+		<li> 
+			<tt>-d|D&nbsp;</tt>&nbsp;: sends a down signal to the <em>service</em> where <tt>D</tt> asks for readiness notification. In case of <tt>D</tt>, <tt>66-svctl</tt> look after a <em>notification-fd</em>
+			file&mdash;see <tt><a href="https://skarnet.org/software/s6/notifywhenup.html">service startup notifications</a></tt> and <tt><a href="66-frontend.html">frontend</a></tt>.
+			In such case priority is given to this file. If such file doesn't exist, <tt>66-svctl</tt> will change the <tt>D</tt> to <tt>d</tt> and warn the user about the change.
+		</li>
+	</ul>
+<h2> Note </h2>
+<p>You can sends a signal to a <em>'classic'</em> service with the <tt><a href="https://skarnet.org/software/s6/s6-svc.html">s6-svc</a></tt> program. <tt>s6-svc</tt> has the philosophy <em>"launch and forget"</em>
+and do not take care of the exit status of the service when a signal is sends. <tt>s6-svctl</tt> does. Futhermore, the <tt>-S</tt> and <tt>-n</tt> allow you to deal directly on the command line with the 
+<em>timeout-up</em> and <em>timeout-down</em> options even if those files doesn't exist.</p>
+</body>
+</html>

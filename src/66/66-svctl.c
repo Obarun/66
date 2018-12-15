@@ -192,7 +192,7 @@ int handle_signal_svc(svc_sig *sv_signal)
  * 	 
  *	 timeout-up and timeout-down will define the deadline for the iopause
  * 		each service contain his deadline into the sv_signal.deadline key.
- * 		If thoses files doesn't exit 3000 millisec is set by default.
+ * 		If thoses files doesn't exit 1000 millisec is set by default.
  * 		This deadline value can be set on commandline by the -S options.
  *	 max-death-tally
  * 		We let s6-supervise make what it need to do with this file but

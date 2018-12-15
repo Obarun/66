@@ -1,0 +1,83 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>The 66 Suite: execl-cmdline</title>
+    <meta name="Description" content="Detailed documentation for the execl-cmdline command which is part of the 66 software suite" />
+    <meta name="Keywords" content="66 command execl-cmdline service supervision execute script execline" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">66</a><br />
+<a href="//obarun.org/">www.obarun.org</a>
+</p>
+
+<h1>execl-cmdline</h1>
+
+	<p>
+      This command parse a <em>command</em> line into an <a href="https://skarnet.org/software/execline"><tt>execline</tt></a> script.
+    </p>
+
+
+<h2> Interface </h2>
+
+	<p>
+	 In an <a href="execlineb.html">execlineb</a> script:
+	</p>
+
+	<pre>
+	execl-cmdline -S { <em>command</em> }
+	</pre>
+
+	<ul>
+		<li>
+			<tt>execl-cmdline</tt> reads the <em>command</em> and remove all space or 'no word' found before executing it. 
+		</li>
+		<li>
+			<tt>execl-cmdline</tt> will exit with the exit code of the <em>command</em>.
+		</li>
+	</ul>
+
+<h2> Options </h2>
+
+	<ul>
+		<li>
+			<tt>-S&nbsp;</tt>&nbsp;: split into separate words a command considered as one word by <em>execline</em> scripting language.
+		</li>
+	</ul>
+
+<h2> Note and usage examples </h2>
+	<p><tt>execl-cmdline</tt> should be used at the end of the <em>execline</em> scripts. If you want run another program after the call of <tt>execl-cmdline</tt> you need to use e.g 
+	<a href="https://skarnet.org/software/execline/if.html"><tt>if</tt></a> command, <a href="https://skarnet.org/software/execline/foreground.html"><tt>foreground</tt></a>, 
+	<a href="https://skarnet.org/software/execline/background.html"><tt>background</tt></a>, ...</p>
+	<p>
+	The following <em>command</em>:
+	<pre>
+	execl-cmdline { /usr/bin/ntpd -d "" -S }
+	</pre>
+	will give:
+	<pre>
+	/usr/bin/ntpd "-d" "-S"
+	</pre>
+	</p>
+	<p>
+	The following <em>command</em>:
+	<pre>
+	execl-cmdline -S { /usr/bin/ntpd "-d -S" }
+	</pre>
+	will give:
+	<pre>
+	/usr/bin/ntpd "-d" "-S"
+	</pre>
+	</p>
+	<p>
+	To run another program after the call of <em>execl-cmdline</em> program:
+	<pre>
+	foreground { execl-cmdline { /usr/bin/ntpd -d "" -S } }
+	</pre>
+	</p>
+</body>
+</html>
