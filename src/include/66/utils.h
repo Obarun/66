@@ -41,12 +41,13 @@ struct svstat_s
 	int type ;
 	char const *name ;
 	size_t namelen ;
+	int down ;
 	int reload ;
 	int init ;
 	int unsupervise ;
 	int remove ;
 } ;
-#define SVSTAT_ZERO { .type = 0, .name = 0, .namelen = 0, .init = 0, .reload = 0, .unsupervise = 0, .remove = 0 }
+#define SVSTAT_ZERO { .type = 0, .name = 0, .namelen = 0, .down = 0, .init = 0, .reload = 0, .unsupervise = 0, .remove = 0 }
 /** signal */
 #define ALARM 0
 

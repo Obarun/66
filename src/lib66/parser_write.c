@@ -219,8 +219,15 @@ int write_services(sv_alltype *sv, char const *workdir, unsigned int force)
 			}
 		}
 	}
-	
-		
+	/** down file*/
+	if (sv->flags[0])
+	{
+		if (!resolve_write(workdir,name,"down","",force))
+		{
+			VERBO3 strerr_warnwu2x("write resolve file: down for service: ",name) ;
+			return 0 ;
+		}		
+	}
 	return 1 ;
 }
 

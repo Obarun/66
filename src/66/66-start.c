@@ -52,9 +52,11 @@
 //#include <stdio.h>
 unsigned int VERBOSITY = 1 ;
 
-unsigned int RELOAD = 0 ;
+static unsigned int RELOAD = 0 ;
 static tain_t DEADLINE ;
-stralloc saresolve = STRALLOC_ZERO ;
+static stralloc saresolve = STRALLOC_ZERO ;
+
+static genalloc DOWNFILE = GENALLOC_ZERO ; //stralist
 
 #define USAGE "66-start [ -h help ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -r reload ] service(s)"
 
@@ -250,7 +252,11 @@ int svc_start(char const *base,char const *scandir,char const *live,char const *
 			return 0 ;
 		}
 	}
-	
+	for (unsigned int i = 0 ; genalloc_len(stralist,&DOWNFILE) ; i++)
+	{
+		VERBO3 strerr_warnt2x("remove down file for: ",genalloc_s(svstat_t,ga)[i].name) ;
+		if (unlink(gaistr(&DOWNFILE,i)) < 0 && errno != ENOENT) return 0 ;
+	}
 	return 1 ;
 }
 
@@ -300,7 +306,16 @@ int svc_init(char const *scandir,char const *src, genalloc *ga)
 		}
 		memcpy(svscan + svscanlen, "/down", 5) ;
 		svscan[svscanlen + 5] = 0 ;
-				
+		
+		if (!genalloc_s(svstat_t,ga)[i].down)
+		{
+			if (!stra_add(&DOWNFILE,svscan))
+			{
+				VERBO3 strerr_warnwu3x("add: ",svscan," to genalloc") ;
+				goto err ;
+			}
+		}
+		
 		VERBO3 strerr_warnt2x("create file: ",svscan) ;
 		if (!touch(svscan))
 		{
@@ -754,6 +769,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			svsrc.type = 0 ;
 			svsrc.name = 0 ;
 			svsrc.namelen = 0 ;
+			svsrc.down = 0 ;
 			svsrc.reload = 0 ;
 			svsrc.init = 0 ;
 			svok.len = svoklen ;
@@ -779,6 +795,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				r = resolve_read(&type,saresolve.s,*argv,"reload") ;
 				if (r < -1) strerr_diefu2sys(111,"invalid .resolve directory: ",saresolve.s) ;
 				if (r > 0) svsrc.reload = 1 ;
+				r = resolve_read(&type,saresolve.s,*argv,"down") ;
+				if (r < -1) strerr_diefu2sys(111,"invalid .resolve directory: ",saresolve.s) ;
+				if (r > 0) svsrc.down = 1 ;
 				r = resolve_read(&type,saresolve.s,*argv,"remove") ;
 				if (r > 0) strerr_dief3x(111,"service: ",*argv," was disabled, you can only stop it") ;
 			}
@@ -843,6 +862,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc_free(&saresolve) ;
 	genalloc_free(svstat_t,&nclassic) ;
 	genalloc_free(svstat_t,&nrc) ;
+	genalloc_deepfree(stralist,&DOWNFILE,stra_free) ;
 	free(treename) ;
 	
 	return 0 ;		
