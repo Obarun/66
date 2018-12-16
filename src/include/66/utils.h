@@ -50,14 +50,6 @@ struct svstat_s
 /** signal */
 #define ALARM 0
 
-/** struct to resolve source of service */
-typedef struct sv_src_s sv_src_t, *sv_src_t_ref ;
-struct sv_src_s
-{
-	int name ;
-	int src ;
-} ;
-
 
 extern int dir_cmpndel(char const *src, char const *dst,char const *exclude) ;
 

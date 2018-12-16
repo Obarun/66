@@ -29,6 +29,7 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/avltree.h>
+#include <skalibs/diuint32.h>
 
 #include <66/enum.h>
 #include <66/config.h>
@@ -278,7 +279,7 @@ static int deps_src(stralloc *newsrc,char const *src, char const *name, char con
 	r = avltree_search(&deps_map,name,&avlid) ;
 	if (r) return 2 ; //already added nothing to do
 	
-	genalloc tmpsrc = GENALLOC_ZERO ; //type sv_src_t
+	genalloc tmpsrc = GENALLOC_ZERO ; //type diuint32
 	
 	*newsrc = stralloc_zero ;
 	
@@ -309,7 +310,7 @@ static int deps_src(stralloc *newsrc,char const *src, char const *name, char con
 				VERBO3 strerr_warnwu2sys("find dependency ",name) ;
 				return 0 ;
 			}
-			if (!stralloc_obreplace(newsrc, sa.s + genalloc_s(sv_src_t,&tmpsrc)->src)) retstralloc(0,"resolve_deps") ;
+			if (!stralloc_obreplace(newsrc, sa.s + genalloc_s(diuint32,&tmpsrc)->right)) retstralloc(0,"resolve_deps") ;
 			stralloc_free(&sa) ;
 		}
 	}
@@ -320,7 +321,7 @@ static int deps_src(stralloc *newsrc,char const *src, char const *name, char con
 		return 0 ;
 	}
 	
-	genalloc_free(sv_src_t,&tmpsrc) ;
+	genalloc_free(diuint32,&tmpsrc) ;
 	
 	return 1 ;
 }

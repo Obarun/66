@@ -27,6 +27,7 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/direntry.h>
 #include <skalibs/unix-transactional.h>
+#include <skalibs/diuint32.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
@@ -353,7 +354,7 @@ int resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src
 {
 	int fdsrc, obr, insta ;
 	
-	sv_src_t svtmp = {0} ;
+	diuint32 svtmp = DIUINT32_ZERO ;//left->name,right->src
 	
 	size_t srclen = strlen(src) ;
 	size_t namelen = strlen(name) ;
@@ -425,21 +426,21 @@ int resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src
 				}
 				for (unsigned int i = 0 ; i < genalloc_len(stralist,&tmp) ; i++)
 				{
-					svtmp.name = sasrc->len ;
+					svtmp.left = sasrc->len ;
 					if (!stralloc_catb(sasrc,gaistr(&tmp,i), gaistrlen(&tmp,i) + 1)) goto errdir ;
-					svtmp.src = sasrc->len ;
+					svtmp.right = sasrc->len ;
 					if (!stralloc_catb(sasrc,subdir.s, subdir.len + 1)) goto errdir ;
-					if (!genalloc_append(sv_src_t,ga,&svtmp)) goto errdir ;
+					if (!genalloc_append(diuint32,ga,&svtmp)) goto errdir ;
 				}
 				break ;
 			}
 			else if(S_ISREG(st.st_mode))
 			{
-				svtmp.name = sasrc->len ;
+				svtmp.left = sasrc->len ;
 				if (!stralloc_catb(sasrc,name, namelen + 1)) goto errdir ;
-				svtmp.src = sasrc->len ;
+				svtmp.right = sasrc->len ;
 				if (!stralloc_catb(sasrc,src,srclen + 1)) goto errdir ;
-				if (!genalloc_append(sv_src_t,ga,&svtmp)) goto errdir ;
+				if (!genalloc_append(diuint32,ga,&svtmp)) goto errdir ;
 				break ;
 			}
 			else goto errdir ;

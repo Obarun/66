@@ -30,6 +30,7 @@
 #include <skalibs/buffer.h>
 #include <skalibs/direntry.h>
 #include <skalibs/unix-transactional.h>
+#include <skalibs/diuint32.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
@@ -102,7 +103,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc live = STRALLOC_ZERO ;
 	stralloc livetree = STRALLOC_ZERO ;
 	stralloc sasrc = STRALLOC_ZERO ;
-	genalloc gasrc = GENALLOC_ZERO ; //type sv_src_t
+	genalloc gasrc = GENALLOC_ZERO ; //type diuint32
 	genalloc ganlong = GENALLOC_ZERO ; // type stralist
 	genalloc ganclassic = GENALLOC_ZERO ; // name of classic service, type stralist
 	
@@ -171,8 +172,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (!resolve_src(&gasrc,&sasrc,*argv,src)) strerr_dief2x(111,"resolve source of service file: ",*argv) ;
 	
 
-	for (unsigned int i = 0 ; i < genalloc_len(sv_src_t,&gasrc) ; i++)
-		start_parser(sasrc.s + genalloc_s(sv_src_t,&gasrc)[i].src,sasrc.s + genalloc_s(sv_src_t,&gasrc)[i].name,tree.s,&nbsv) ;
+	for (unsigned int i = 0 ; i < genalloc_len(diuint32,&gasrc) ; i++)
+		start_parser(sasrc.s + genalloc_s(diuint32,&gasrc)[i].right,sasrc.s + genalloc_s(diuint32,&gasrc)[i].left,tree.s,&nbsv) ;
 	
 	sv_alltype svblob[nbsv] ;
 	
