@@ -240,18 +240,19 @@ int print_status(char const *svname,char const *type,char const *treename, char 
 int graph_display(char const *tree,char const *treename,char const *svname,unsigned int what)
 {
 	
-	int r ;
+	int r, e ;
 	
 	graph_t g = GRAPH_ZERO ;
 	stralloc sagraph = STRALLOC_ZERO ;
 	genalloc tokeep = GENALLOC_ZERO ;
 	
+	e = 1 ;
+	
 	size_t treelen = strlen(tree) ;
-	char dir[treelen + 1 + SS_SVDIRS_LEN + 1] ;
+	char dir[treelen + SS_SVDIRS_LEN + 1] ;
 	memcpy(dir,tree,treelen) ;
-	dir[treelen] = '/' ;
-	memcpy(dir + treelen + 1,SS_SVDIRS,SS_SVDIRS_LEN) ;
-	dir[treelen + 1 + SS_SVDIRS_LEN] = 0 ;
+	memcpy(dir + treelen,SS_SVDIRS,SS_SVDIRS_LEN) ;
+	dir[treelen + SS_SVDIRS_LEN] = 0 ;
 	
 	r = graph_type_src(&tokeep,dir,what) ;
 	if (!r)
@@ -260,7 +261,7 @@ int graph_display(char const *tree,char const *treename,char const *svname,unsig
 		goto err ;
 	}
 	if (r < 0)
-		goto err ;
+		goto empty ;
 	
 	if (!graph_build(&g,&sagraph,&tokeep,dir))
 	{
@@ -285,14 +286,16 @@ int graph_display(char const *tree,char const *treename,char const *svname,unsig
 	genalloc_free(vertex_graph_t,&g.stack) ;
 	genalloc_free(vertex_graph_t,&g.vertex) ;
 	
-	return 1 ;
+	return e ;
 	
+	empty:
+		e = -1 ;
 	err:
 		genalloc_deepfree(stralist,&tokeep,stra_free) ;
 		sagraph = stralloc_zero ;
 		genalloc_free(vertex_graph_t,&g.stack) ;
 		genalloc_free(vertex_graph_t,&g.vertex) ;
-		return 0 ;
+		return e ;
 }
 
 int tree_args(int argc, char const *const *argv)
