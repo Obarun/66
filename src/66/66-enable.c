@@ -169,9 +169,21 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if(r < 0) strerr_dief3x(111,"livetree: ",livetree.s," must be an absolute path") ;
 	
 	for(;*argv;argv++)
+	{
 		if (!resolve_src(&gasrc,&sasrc,*argv,src)) strerr_dief2x(111,"resolve source of service file: ",*argv) ;
+		int found = 0 ;
+		for (unsigned int i = 0 ; i < genalloc_len(diuint32,&gasrc) ; i++)
+		{
+			char *name = sasrc.s + genalloc_s(diuint32,&gasrc)[i].left ;
+			if (obstr_equal(*argv,name))
+			{
+				found = 1 ;
+				break ;
+			}
+		}
+		if (!found) strerr_diefu2x(111,"find service: ",*argv) ;
+	}
 	
-
 	for (unsigned int i = 0 ; i < genalloc_len(diuint32,&gasrc) ; i++)
 		start_parser(sasrc.s + genalloc_s(diuint32,&gasrc)[i].right,sasrc.s + genalloc_s(diuint32,&gasrc)[i].left,tree.s,&nbsv) ;
 	
