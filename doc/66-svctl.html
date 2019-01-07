@@ -18,7 +18,7 @@
 <h1>66-svctl</h1>
 
 	<p>
-      This command is used to control an already supervised <em>services</em> in <em>live</em> defined in <em>tree</em>.
+      This command is used to control an already supervised <em>service</em> at <em>live</em> defined in a <em>tree</em>.
     </p>
 
 <h2> Interface </h2>
@@ -27,10 +27,10 @@
 	</pre>
 
 	<p>
-      This tool expects to find an already supervised <em>service</em> in <em>live</em> defined in the given <em>tree</em> and an already running <em>scandir</em>. 
-      This tool only deal with <em>'classic'</em> service&mdash;see <a href="66-dbctl.html"><tt>66-dbctl</tt></a> for other kind of services.
+      This tool expects to find an already supervised <em>service</em> at <em>live</em> defined in the given <em>tree</em> and an already running <em>scandir</em>. 
+      <br>(!) This tool only deals with <em>'classic'</em> services&mdash;see <a href="66-dbctl.html"><tt>66-dbctl</tt></a> for other types of services.
     </p>
-    <p>Multiple <em>services</em> can be handled by seperating their names with a space. <tt>66-svctl</tt> gathers the service(s) passed as argument in a list called <em>selection</em>.</p>
+    <p>Multiple <em>services</em> can be handled by seperating their names with a space. <tt>66-svctl</tt> gathers each of these services in a list called <em>selection</em>.</p>
 	
 <h2> Options </h2>
 
@@ -38,58 +38,59 @@
 		<li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
 		 
 		<li>
-			<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
+			<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>&nbsp;: increases/decreases 
 			the verbosity of the command. <tt>1(Default)</tt>: Only print 
 			error messages. <tt>2</tt>: Also print warning messages. 
 			<tt>3</tt>: Also print debugging messages.
 		</li>
 		 
 		<li> 
-			<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
+			<tt>-l&nbsp;<em>live</em>&nbsp;</tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
 			also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
 			option to <tt>./configure</tt>. An existing absolute path is expected and
 			should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
 		</li>
 		<li> 
-			<tt>-t&nbsp;<em>tree</em></tt>&nbsp;: handles the <em>service</em> from
+			<tt>-t&nbsp;<em>tree</em>&nbsp;</tt>&nbsp;: handles the <em>service</em> from
 			the given <em>tree</em>. This option is mandatory
 			except if a tree was marked as 'current'&mdash;see <a href="66-tree.html"><tt>66-tree</tt></a>.
 		</li>
 		 
 		<li> 
-			<tt>-T&nbsp;<em>timeout</em></tt></tt>&nbsp;: specifies a general timeout (in milliseconds)
-			after which <tt>66-svctl</tt> will exit 111 with an error message if the <em>selection</em> still hasn't reached the desired state for each <em>service</em>.
-			By default, the timeout is 0, which means that <tt>66-svctl</tt> will block indefinitely.
+			<tt>-T&nbsp;<em>timeout</em>&nbsp;</tt></tt>&nbsp;: specifies a general timeout (in milliseconds)
+			after which <tt>66-svctl</tt> will exit 111 with an error message if the <em>selection</em> still hasn't reached the desired state for each <em>service</em>;
+			defaults to 0 (blocks indefinitely).
 		</li>
 		 
 		<li> 
-			<tt>-S&nbsp;<em>service timeout</em></tt>&nbsp;: specifies a timeout (in milliseconds)
+			<tt>-S&nbsp;<em>service timeout</em>&nbsp;</tt>&nbsp;: specifies a timeout (in milliseconds)
 			after which <tt>66-svctl</tt> will exit 111 with an error message if the <em>services</em> still hasn't reached the desired state.
-			This option has <strong>no effects</strong> if a <em>timeout-up</em> (for <em>up</em> signal) or <em>timeout-down</em> (for <em>down</em> signal) was defined 
-			for the given service at the parsing time&mdash;see <tt><a href="66-frontend.html">frontend</a></tt>. In such case priority is given to those files.
-			If the option is not given and the <em>timeout-up,timeout-down</em> files doesn't exist, 1000 is pick by default.
+			This option has <strong>no effect</strong> if a <em>timeout-up</em> (for <em>up</em> signal) or <em>timeout-down</em> (for <em>down</em> signal) was defined 
+			for the given service at parsing time&mdash;see <tt><a href="66-frontend.html">frontend</a></tt>.
+			If this option is not specified and no <em>timeout-up</em> or <em>timeout-down</em> file exists the timeout will default to 1000.
 		</li>	
 		
 		<li> 
-			<tt>-n&nbsp;<em>death</em></tt>&nbsp;: specifies the maximum number of service death events that the supervisor will keep track.
+			<tt>-n&nbsp;<em>death</em>&nbsp;</tt>&nbsp;: specifies the maximum number of service death events that the supervisor will keep track of.
 			If the service dies more than this number of times, <tt>66-svctl</tt> will exit 111 with an error message if the <em>services</em> still hasn't reached the desired state.
-			This option has <strong>no effects</strong> if a <em>maxdeath</em> was defined for the given service at the parsing time&mdash;see <tt><a href="66-frontend.html">frontend</a></tt>.
-			In such case priority is given to this file. If the option is not given and the <em>max-death-tally</em> files doesn't exist, 3 is pick by default.
+			This option has <strong>no effect</strong> if a <em>maxdeath</em> was defined for the given service at parsing time&mdash;see <tt><a href="66-frontend.html">frontend</a></tt>.
+			If this option is not specified and no <em>max-death-tally</em> file exists the maximum allowed deaths will default to 3.
 		</li>
 		<li> 
-			<tt>-u|U&nbsp;</tt>&nbsp;: sends a up signal to the <em>service</em> where <tt>U</tt> asks for readiness notification. In case of <tt>U</tt>, <tt>66-svctl</tt> look after a <em>notification-fd</em>
+			<tt>-u|U&nbsp;</tt>&nbsp;: sends an <em>up</em> signal to the <em>service</em>. Uppercase <tt>U</tt> asks for readiness notification and searches for a <em>notification-fd</em>
 			file&mdash;see <tt><a href="https://skarnet.org/software/s6/notifywhenup.html">service startup notifications</a></tt> and <tt><a href="66-frontend.html">frontend</a></tt>.
-			In such case priority is given to this file. If such file doesn't exist, <tt>66-svctl</tt> will change the <tt>U</tt> to <tt>u</tt> and warn the user about the change.
+			If this file doesn't exist <tt>66-svctl</tt> will automatically change to lowercase <tt>u</tt> and warn the user about the change.
 		</li>
 		<li> 
-			<tt>-d|D&nbsp;</tt>&nbsp;: sends a down signal to the <em>service</em> where <tt>D</tt> asks for readiness notification. In case of <tt>D</tt>, <tt>66-svctl</tt> look after a <em>notification-fd</em>
+			<tt>-d|D&nbsp;</tt>&nbsp;: sends a <em>down</em> signal to the <em>service</em>. Uppercase <tt>D</tt> asks for readiness notification and searches for a <em>notification-fd</em>
 			file&mdash;see <tt><a href="https://skarnet.org/software/s6/notifywhenup.html">service startup notifications</a></tt> and <tt><a href="66-frontend.html">frontend</a></tt>.
-			In such case priority is given to this file. If such file doesn't exist, <tt>66-svctl</tt> will change the <tt>D</tt> to <tt>d</tt> and warn the user about the change.
+			If this file doesn't exist <tt>66-svctl</tt> will automatically change to lowercase <tt>d</tt> and warn the user about the change.
 		</li>
 	</ul>
 <h2> Note </h2>
-<p>You can sends a signal to a <em>'classic'</em> service with the <tt><a href="https://skarnet.org/software/s6/s6-svc.html">s6-svc</a></tt> program. <tt>s6-svc</tt> has the philosophy <em>"launch and forget"</em>
-and do not take care of the exit status of the service when a signal is sends. <tt>s6-svctl</tt> does. Futhermore, the <tt>-S</tt> and <tt>-n</tt> allow you to deal directly on the command line with the 
-<em>timeout-up</em> and <em>timeout-down</em> options even if those files doesn't exist.</p>
+<p>You can also send a signal in a similar fashion to a <em>'classic'</em> service with the <tt><a href="https://skarnet.org/software/s6/s6-svc.html">s6-svc</a></tt> tool which has the philosophy <em>"launch and forget"</em>.
+In contrast to <tt>s6-svctl</tt> this does not care for the exit status of the service when a signal is sent.</p>
+<p>As an extra convenience the <tt>-S</tt> and <tt>-n</tt> options allow you to deal directly on the command line with 
+<em>timeout-up</em> and <em>timeout-down</em> even if these were not specified explicitely in the services frontend file and no corresponding files exist.</p>
 </body>
 </html>

@@ -18,7 +18,7 @@
 <h1>66-info</h1>
 
 	<p>
-      This command display information of trees and services.
+      This command displays information about trees and services.
     </p>
 
 <h2>Interface </h2>
@@ -35,7 +35,7 @@
 	66-info [ -S ] [ -h help ] [ -v <em>verbosity</em> ] [ -l live ] [ -p n lines ] [ -r recurse ] [ -d <em>depth</em> ] <em>service</em>
 	</pre>
 	<p>
-      66-info displays information about the <em>tree</em> or a specific <em>service</em> depending of the options passed.
+      66-info displays detailed information about a <em>tree</em> or a specific <em>service</em> depending on the options passed.
     </p>
 
 <h2>Main Options </h2>
@@ -57,21 +57,21 @@
 			<tt>-h&nbsp;</tt>&nbsp;: prints this help.
 		</li>
 		<li>
-			<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
+			<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>&nbsp;: increases/decreases 
 			the verbosity of the command. <tt>1(Default)</tt>: Only print 
 			error messages. <tt>2</tt>: Also print warning messages. 
 			<tt>3</tt>: Also print debugging messages.
 		 </li>
 		 
 		 <li>
-			<tt>-r&nbsp;</tt>&nbsp;: recurse the result of the service dependencies graph of the <em>tree</em>.
+			<tt>-r&nbsp;</tt>&nbsp;: shows the dependency graph of <em>tree</em>.
 		 </li>
 		 
 		 <li> 
-			<tt>-d&nbsp;<em>depth</em></tt>&nbsp;: limit the depth of the recursion service dependencies graph. By default this will be 1.
+			<tt>-d&nbsp;<em>depth</em>&nbsp;</tt>&nbsp;: limits the depth of the dependency graph visualisation; defaults to 1.
 		</li>
 		
-		<p>If <em>tree</em> is not specified, <tt>66-info</tt> displays information about all available tree for the current owner of the process.</p>
+		<p>(!) If <em>tree</em> is not specified <tt>66-info</tt> will display information about all available trees for the current owner of the process.</p>
 	</ul>
 	
 <h2>Service sub options </h2>		 
@@ -80,25 +80,25 @@
 			<tt>-h&nbsp;</tt>&nbsp;: prints this help.
 		</li>
 		<li>
-			<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
+			<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>&nbsp;: increases/decreases 
 			the verbosity of the command. <tt>1(Default)</tt>: Only print 
 			error messages. <tt>2</tt>: Also print warning messages. 
 			<tt>3</tt>: Also print debugging messages.
 		 </li>
 		<li> 
-			<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
+			<tt>-l&nbsp;<em>live</em>&nbsp;</tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
 			also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
 			option to <tt>./configure</tt>. An existing absolute path is expected and
 			should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
 		</li>
 		<li>
-			<tt>-p&nbsp;<em>n lines</em></tt>&nbsp;: prints the <em>n</em> last lines from the associated log file of the <em>service</em>.
+			<tt>-p&nbsp;<em>n lines</em>&nbsp;</tt>&nbsp;: prints the <em>n</em> last lines from the associated log file of the <em>service</em>.
 		</li>
 		<li>
-			<tt>-r&nbsp;</tt>&nbsp;: recurse the result of the service dependencies graph of the <em>service</em>.
+			<tt>-r&nbsp;</tt>&nbsp;: shows the dependency graph of <em>service</em>.
 		</li>
 		<li> 
-			<tt>-d&nbsp;<em>depth</em></tt>&nbsp;: limit the depth of the recursion service dependencies graph. By default this will be 1.
+			<tt>-d&nbsp;<em>depth</em>&nbsp;</tt>&nbsp;: limits the depth of the dependency graph visualisation; defaults to 1.
 		</li>
 	</ul>
 	
@@ -147,14 +147,14 @@
     └─tty12  :classic
 	</pre>
 	</p>
-	<p>The first line give you usefull information about the <em>tree</em> itself where <tt><em>Name</em></tt> is the name of the tree, 
-		<tt><em>Current</em></tt> if the <em>tree</em> is the current one or not&mdash;see <tt><a href="66-tree.html">66-tree -c</a></tt> option, 
-		<tt><em>Enabled</em></tt> the state of the tree&mdash;see <tt><a href="66-tree.html">66-tree -E</a></tt> option.
-		In front of each service name, the type of the service is displayed.
+	<p>The first line gives you useful information about the <em>tree</em> itself where <tt><em>Name</em></tt> is the name of the tree, 
+		<tt><em>Current</em></tt> tells if the <em>tree</em> is the current one or not&mdash;see <tt><a href="66-tree.html">66-tree -c</a></tt> and
+		<tt><em>Enabled</em></tt> reveals the state of the tree&mdash;see <tt><a href="66-tree.html">66-tree -E</a></tt>.
+		In addition to the name of each service the type of the service is shown next to it.
 	</p>
 	<p>
-		By default the service dependencies graph is displayed by finished order of execution. In our case the <em>'bundle' All</em> is the last finished
-		service and so, <em>'classic' tty12</em> is the first one executed. 	
+		By default the dependency graph is rendered in order of execution. In this example the <em>'bundle' All</em> is the last finished
+		service and <em>'classic' tty12</em> is the first one executed.
 	</p>
 	
 <h2>Service output display example</h2>
@@ -175,7 +175,7 @@
          └─conf  :oneshot
 	</pre>
 	</p>
-	<p>Let's take an another example, the command sudo <tt>66-info -S -p5 ntpd</tt> displays the following:
+	<p>Let's take another example, the command sudo <tt>66-info -S -p5 ntpd</tt> displays the following:
 	<pre>    [ntpd]
     tree : root
     status : up (pid 11458) 30 seconds

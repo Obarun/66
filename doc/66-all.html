@@ -18,7 +18,7 @@
 <h1>66-all</h1>
 
 	<p>
-      This command handles all <em>service</em> for all <em>tree</em> define for the current user of the proccess.
+      This command handles all <em>services</em> for any <em>tree</em> defined for the current user of the proccess at once.
     </p>
 
 <h2> Interface </h2>
@@ -27,9 +27,9 @@
 	</pre>
 
 	<p>
-      This tool expects to find an enabled <em>tree(s)</em>&mdash;see <a href="66-tree.html"><tt>66-tree -E</tt></a> option, or a specific one given by <tt>-t</tt> option of the current user of the process 
-      and an already running <em>scandir</em>. 
-      This tool is a safe wrapper build around <tt><a href="66-start.html">66-start</a></tt> and <tt><a href="66-stop.html">66-stop</a></tt> tools.
+      Any enabled <em>tree</em>&mdash;see <a href="66-tree.html"><tt>66-tree -E</tt></a>&mdash;or a specific one passed with the <tt>-t</tt> option, 
+      and an already running <em>scandir</em> will be processed. 
+      It is a safe wrapper around <tt><a href="66-start.html">66-start</a></tt> and <tt><a href="66-stop.html">66-stop</a></tt>.
     </p>
     
 
@@ -57,18 +57,18 @@
 		 
 		<li> 
 			<tt>-T&nbsp;<em>timeout</em></tt></tt>&nbsp;: specifies a general timeout (in milliseconds)
-			passed to <tt>66-start</tt> or <tt>66-stop</tt> program.
-			By default, the timeout is 0, which means infinite.
+			passed to <tt>66-start</tt> or <tt>66-stop</tt>.
+			By default the timeout is set to 0 (infinite).
 		</li>
 		<li> 
-			<tt>up&nbsp;</tt>&nbsp;: sends a up signal to the all <em>service</em> of all <em>tree</em>.
+			<tt>up&nbsp;</tt>&nbsp;: sends an <em>up</em> signal to every <em>service</em> inside any <em>tree</em> processed by the command.
 		</li>
 		<li> 
-			<tt>down&nbsp;</tt>&nbsp;: sends a down signal to the all <em>service</em> of all <em>tree</em>.
+			<tt>down&nbsp;</tt>&nbsp;: sends a <em>down</em> signal to every <em>service</em> inside any <em>tree</em> processed by the command.
 		</li>
 	</ul>
 
 <h2> Initialization phase </h2>
-<p>In case of <tt>up</tt> signal, <tt>66-all</tt> will launch <tt><a href="66-init.html">66-init</a></tt> program to initiate <em>service(s)</em> of the <em>tree(s)</em>.</p>
+<p>In case <tt>up</tt> was passed as option, <tt>66-all</tt> will automatically launch <tt><a href="66-init.html">66-init</a></tt> to initiate all <em>services</em> of the <em>trees</em> processed by the command. As described above this means either any enabled tree for the user currently launching the process or just the tree passed with the -t option.</p>
 </body>
 </html>

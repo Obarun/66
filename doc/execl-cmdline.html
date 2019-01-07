@@ -18,14 +18,14 @@
 <h1>execl-cmdline</h1>
 
 	<p>
-      This command parse a <em>command</em> line into an <a href="https://skarnet.org/software/execline"><tt>execline</tt></a> script.
+      This command parses a <em>command</em> line into an <a href="https://skarnet.org/software/execline"><tt>execline</tt></a> script.
     </p>
 
 
 <h2> Interface </h2>
 
 	<p>
-	 In an <a href="execlineb.html">execlineb</a> script:
+	 As <a href="execlineb.html">execlineb</a> script:
 	</p>
 
 	<pre>
@@ -34,10 +34,10 @@
 
 	<ul>
 		<li>
-			<tt>execl-cmdline</tt> reads the <em>command</em> and remove all space or 'no word' found before executing it. 
+			<tt>execl-cmdline</tt> reads the <em>command</em> and removes all whitespace or 'no word' before executing. 
 		</li>
 		<li>
-			<tt>execl-cmdline</tt> will exit with the exit code of the <em>command</em>.
+			<tt>execl-cmdline</tt> exits with the exit code of the <em>command</em>.
 		</li>
 	</ul>
 
@@ -45,30 +45,30 @@
 
 	<ul>
 		<li>
-			<tt>-S&nbsp;</tt>&nbsp;: split into separate words a command considered as one word by <em>execline</em> scripting language.
+			<tt>-S&nbsp;</tt>&nbsp;: splits a command considered by <em>execline</em> scripting language as one word into separate words.
 		</li>
 	</ul>
 
 <h2> Note and usage examples </h2>
-	<p><tt>execl-cmdline</tt> should be used at the end of the <em>execline</em> scripts. If you want run another program after the call of <tt>execl-cmdline</tt> you need to use e.g 
+	<p><tt>execl-cmdline</tt> should be used at the end of <em>execline</em> scripts. If you want to run another program after the call of <tt>execl-cmdline</tt> you would need to use an 
 	<a href="https://skarnet.org/software/execline/if.html"><tt>if</tt></a> command, <a href="https://skarnet.org/software/execline/foreground.html"><tt>foreground</tt></a>, 
-	<a href="https://skarnet.org/software/execline/background.html"><tt>background</tt></a>, ...</p>
+	<a href="https://skarnet.org/software/execline/background.html"><tt>background</tt></a> or the likes.</p>
 	<p>
 	The following <em>command</em>:
 	<pre>
 	execl-cmdline { /usr/bin/ntpd -d "" -S }
 	</pre>
-	will give:
+	will result in:
 	<pre>
 	/usr/bin/ntpd "-d" "-S"
 	</pre>
 	</p>
 	<p>
-	The following <em>command</em>:
+	This <em>command</em>:
 	<pre>
 	execl-cmdline -S { /usr/bin/ntpd "-d -S" }
 	</pre>
-	will give:
+	will result in:
 	<pre>
 	/usr/bin/ntpd "-d" "-S"
 	</pre>
