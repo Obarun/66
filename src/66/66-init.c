@@ -146,11 +146,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		r = dir_create(livetree.s,0700) ;
 		if (!r) strerr_diefu2sys(111,"create directory: ",livetree.s) ;
 	}
-	if (db_ok(livetree.s,treename))
-	{
-		strerr_warni2x(treename," already initiated") ;
-		return 0 ;
-	}
+	
 	livetree.len--;
 	if (!stralloc_cats(&livetree,"/")) retstralloc(111,"main") ;
 	if (!stralloc_cats(&livetree,treename)) retstralloc(111,"main") ;
@@ -169,9 +165,18 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	/** svc service work */
 	if (classic || both)
 	{
+		r = scan_mode(scandir.s,S_IFDIR) ;
+		if (r < 0) strerr_dief2x(111,scandir.s," conflicted format") ;
+		if (r)
+		{
+			strerr_warni2x(treename," svc services already initiated") ;
+			return 0 ;
+		}
 		VERBO2 strerr_warni5x("copy svc service from ",svdir," to ",scandir.s," ...") ;
 		if (!hiercopy(svdir,scandir.s)) strerr_diefu4sys(111,"copy: ",svdir," to: ",scandir.s) ;
 	}
+	
+	/** rc services work */
 	if (db || both)
 	{
 		
@@ -180,8 +185,14 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		 * if not, exist immediately  */	
 		r = scandir_ok(scandir.s) ;
 		if (r != 1) strerr_dief3x(111,"scandir: ",scandir.s," is not running") ;
-			
-		/** rc services work */
+		
+		/** db already initiated? */
+		if (db_ok(livetree.s,treename))
+		{
+			strerr_warni2x(treename," db already initiated") ;
+			return 0 ;
+		}
+		
 		memcpy(svdir + svdirlen,SS_DB,SS_DB_LEN) ;
 		memcpy(svdir + svdirlen + SS_DB_LEN, "/", 1) ;
 		memcpy(svdir + svdirlen + SS_DB_LEN + 1, treename,treenamelen) ;
