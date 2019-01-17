@@ -19,6 +19,7 @@
 #include <oblibs/error2.h>
 #include <oblibs/directory.h>
 #include <oblibs/types.h>//scan_mode
+#include <oblibs/stralist.h>
 
 #include <skalibs/buffer.h>
 #include <skalibs/types.h>
@@ -147,12 +148,6 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		if (!r) strerr_diefu2sys(111,"create directory: ",livetree.s) ;
 	}
 	
-	livetree.len--;
-	if (!stralloc_cats(&livetree,"/")) retstralloc(111,"main") ;
-	if (!stralloc_cats(&livetree,treename)) retstralloc(111,"main") ;
-	if (!stralloc_0(&livetree)) retstralloc(111,"main") ;
-	
-	
 	tree.len-- ;
 	size_t svdirlen ;
 	char svdir[tree.len + SS_SVDIRS_LEN + SS_DB_LEN + treenamelen + 1 + 1] ;
@@ -167,16 +162,32 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	if (r < 0) strerr_dief2x(111,scandir.s," conflicted format") ;
 	if (r)
 	{
-		strerr_warni2x(treename," svc services already initiated") ;
-		classic = 0 ;
+		genalloc gasvc = GENALLOC_ZERO ;
+		if (!dir_get(&gasvc,scandir.s,"",S_IFDIR)) strerr_diefu2x(111,"parse directory: ",scandir.s) ;
+		for (unsigned int i = 0 ; i < genalloc_len(stralist,&gasvc) ; i++)
+		{
+			char *name = gaistr(&gasvc,i) ;
+			if (dir_search(svdir,name,S_IFDIR))
+			{
+				strerr_warni2x(treename," svc services already initiated") ;
+				classic = 0 ;
+			}
+		}
+		genalloc_deepfree(stralist,&gasvc,stra_free) ;
 	}
 	
 	/** db already initiated? */
 	if (db_ok(livetree.s,treename))
 	{
+		
 		strerr_warni2x(treename," db already initiated") ;
 		db = 0 ;
 	}
+	
+	livetree.len--;
+	if (!stralloc_cats(&livetree,"/")) retstralloc(111,"main") ;
+	if (!stralloc_cats(&livetree,treename)) retstralloc(111,"main") ;
+	if (!stralloc_0(&livetree)) retstralloc(111,"main") ;
 	
 	/** svc service work */
 	if (classic)
