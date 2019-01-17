@@ -61,7 +61,7 @@ static inline void info_help (void)
 
 int main(int argc, char const *const *argv, char const *const *envp)
 {
-	int r, both, classic, db ;
+	int r, classic, db ;
 	
 	uid_t owner ;
 	int wstat ;
@@ -76,7 +76,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	stralloc scandir = STRALLOC_ZERO ;
 	stralloc livetree = STRALLOC_ZERO ;
 	
-	both = classic = db = 0 ;
+	classic = db = 0 ;
 	
 	PROG = "66-init" ;
 	{
@@ -96,7 +96,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 						   break ;
 				case 'c' : classic = 1 ; break ;
 				case 'd' : db = 1 ; break ;
-				case 'B' : both = 1 ; break ;
+				case 'B' : classic = 1 ; db = 1 ; break ;
 				default : exitusage() ; 
 			}
 		}
@@ -162,22 +162,31 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	memcpy(svdir + svdirlen, SS_SVC ,SS_SVC_LEN) ;
 	svdir[svdirlen +  SS_SVC_LEN] = 0 ;
 	
-	/** svc service work */
-	if (classic || both)
+	/** svc already initiated */
+	r = scan_mode(scandir.s,S_IFDIR) ;
+	if (r < 0) strerr_dief2x(111,scandir.s," conflicted format") ;
+	if (r)
 	{
-		r = scan_mode(scandir.s,S_IFDIR) ;
-		if (r < 0) strerr_dief2x(111,scandir.s," conflicted format") ;
-		if (r)
-		{
-			strerr_warni2x(treename," svc services already initiated") ;
-			return 0 ;
-		}
+		strerr_warni2x(treename," svc services already initiated") ;
+		classic = 0 ;
+	}
+	
+	/** db already initiated? */
+	if (db_ok(livetree.s,treename))
+	{
+		strerr_warni2x(treename," db already initiated") ;
+		db = 0 ;
+	}
+	
+	/** svc service work */
+	if (classic)
+	{
 		VERBO2 strerr_warni5x("copy svc service from ",svdir," to ",scandir.s," ...") ;
 		if (!hiercopy(svdir,scandir.s)) strerr_diefu4sys(111,"copy: ",svdir," to: ",scandir.s) ;
 	}
 	
 	/** rc services work */
-	if (db || both)
+	if (db)
 	{
 		
 		/** we assume that 66-scandir was launched previously because a db
@@ -185,14 +194,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		 * if not, exist immediately  */	
 		r = scandir_ok(scandir.s) ;
 		if (r != 1) strerr_dief3x(111,"scandir: ",scandir.s," is not running") ;
-		
-		/** db already initiated? */
-		if (db_ok(livetree.s,treename))
-		{
-			strerr_warni2x(treename," db already initiated") ;
-			return 0 ;
-		}
-		
+			
 		memcpy(svdir + svdirlen,SS_DB,SS_DB_LEN) ;
 		memcpy(svdir + svdirlen + SS_DB_LEN, "/", 1) ;
 		memcpy(svdir + svdirlen + SS_DB_LEN + 1, treename,treenamelen) ;
