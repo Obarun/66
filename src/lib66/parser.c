@@ -304,8 +304,9 @@ static int deps_src(stralloc *newsrc,char const *src, char const *name, char con
 		if (!r)
 		{ 
 			stralloc sa = STRALLOC_ZERO ;
+			unsigned int found = 0 ;
 			if (!stralloc_obreplace(newsrc, SS_SERVICE_DIR)) retstralloc(0,"resolve_deps") ;
-			if (!resolve_src(&tmpsrc,&sa,name,newsrc->s)) 
+			if (!resolve_src(&tmpsrc,&sa,name,newsrc->s,&found)) 
 			{
 				VERBO3 strerr_warnwu2sys("find dependency ",name) ;
 				return 0 ;

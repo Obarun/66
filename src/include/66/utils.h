@@ -86,7 +86,7 @@ extern int resolve_symlive(char const *live, char const *tree, char const *treen
 
 extern int resolve_pointo(stralloc *sa,char const *base, char const *live,char const *tree,char const *treename,unsigned int type, unsigned int what) ;
 
-extern int resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src) ;
+extern int resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src,unsigned int *found) ;
 
 extern int insta_check(char const *svname) ;
 
