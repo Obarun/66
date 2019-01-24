@@ -32,72 +32,26 @@
 #include <skalibs/sig.h>
 
 #include <s6/s6-supervise.h>//s6_svstatus_t
-#include <s6/ftrigw.h>
 #include <s6/ftrigr.h>
 
+#include <66/svc.h>
 #include <66/constants.h>
 #include <66/utils.h>
 #include <66/tree.h>
 
+//#include <stdio.h>
 
 unsigned int VERBOSITY = 1 ;
 stralloc svkeep = STRALLOC_ZERO ;
 genalloc gakeep = GENALLOC_ZERO ; //type svc_sig_s
 stralloc saresolve = STRALLOC_ZERO ;
-typedef struct svc_sig_s svc_sig, *svc_sig_t_ref ;
-struct svc_sig_s
-{
-	unsigned int scan ; //pos in sv
-	size_t scanlen ;
-	unsigned int name ; //pos in sv
-	size_t namelen ;
-	unsigned int src ; //pos in sv
-	size_t srclen ;
-	unsigned int notify ;
-	unsigned int ndeath;
-	tain_t deadline ;
-} ;
 
-#define SVC_SIG_ZERO \
-{ \
-	.scan = 0 , \
-	.name = 0 , \
-	.namelen = 0 , \
-	.src = 0 , \
-	.srclen = 0, \
-	.notify = 0, \
-	.ndeath = 3, \
-	.deadline = TAIN_ZERO \
-}
-
-unsigned int SV_DEADLINE = 1000 ;
-
-typedef enum state_e state_t, *state_t_ref ;
-enum state_e
-{
-	UP = 0, // u
-	RUP , // U - really up
-	DOWN , // d
-	RDOWN ,// D - really down
-	SUP ,//supervise
-	O , //0
-	X //x
-} ;
-typedef enum actions_e actions_t, *actions_t_ref ;
-enum actions_e
-{
-	GOTIT = 0 ,
-	WAIT ,
-	DEAD ,
-	DONE ,
-	PERM ,
-	OUT ,
-	UKNOW 
-} ;
+unsigned int SV_DEADLINE = 3000 ;
+unsigned int DEATHSV = 10 ;
 
 int SIGNAL = -1 ;
 
-#define USAGE "66-svctl [ -h help ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -S service timeout ] [ -n death ] [ -u|U up ] [ -d|D down ] service(s)"
+#define USAGE "66-svctl [ -h help ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -n death ] [ -u|U up ] [ -d|D down ] [ -K kill ] [ -r|R reload ] [ -X kill supervisor ] service(s)"
 
 static inline void info_help (void)
 {
@@ -109,13 +63,16 @@ static inline void info_help (void)
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n"
 "	-t: tree to use\n"
-"	-T: general timeout\n"
-"	-S: service timeout\n"
+"	-T: service timeout\n"
 "	-n: number of death\n"
-"	-u: bring up service\n"
+"	-u: bring up the service(s)\n"
 "	-U: really up\n"
-"	-d: bring down service\n"
+"	-d: bring down the service(s)\n"
 "	-D: really down\n"
+"	-r: reload\n"
+"	-R: reload and really up\n"
+"	-X: bring down the service(s) and the kill his supervisor\n"
+"	-K: kill the service(s) and keep it down\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
@@ -146,8 +103,7 @@ static int read_uint (char const *file, unsigned int *fd)
 	return 1 ;
 }
 
-/** @Return -1 on error
- * @Return 0 on fail
+/** @Return 0 on fail
  * @Return 1 on success */
 int handle_signal_svc(svc_sig *sv_signal)
 {
@@ -160,40 +116,76 @@ int handle_signal_svc(svc_sig *sv_signal)
 	}
 	
 	int exitcode, exitstatus ;
+	exitcode = WIFEXITED(status.wstat) ;
+	exitstatus = WEXITSTATUS(status.wstat) ;
+	if (exitcode && exitstatus <= 1) return 1 ;
+	else return 0 ;
+}
+
+static int handle_signal_pipe(svc_sig *svc)
+{
+	char *sv = svkeep.s + svc->scan ;
 	for (;;)
 	{
-		int sig = selfpipe_read() ;
-		switch (sig)
+		switch (selfpipe_read())
 		{
-			case -1:	VERBO3 strerr_warnwu1sys("selfpipe_read()") ;
-						return -1 ;
-			case 0: 	
-				exitcode = WIFEXITED(status.wstat) ;
-				exitstatus = WEXITSTATUS(status.wstat) ;
-			
-				if (exitcode && exitstatus <= 1) 
-					return 1 ;
-				else
+			case -1 : strerr_warnwu1sys("selfpipe_read") ; return 0 ;
+			case 0 : return 1 ;
+			case SIGCHLD: wait_reap() ; return 1 ;
+			case SIGINT: 		
+					// TODO, little ugly for me
+					// KILL work but s6-supervice reload it
+					VERBO2 strerr_warnw1x("received SIGINT, aborting service transition") ;
+					if (svc->sig <= SIGRR)
+						s6_svc_writectl(sv, S6_SUPERVISE_CTLDIR, "d", 1) ;
 					return 0 ;
-			case SIGTERM:
-			case SIGINT:
-				/** TODO, little ugly for me
-				 * KILL work but s6-supervice reload it*/
-				if (SIGNAL == UP || SIGNAL == RUP)
-					s6_svc_writectl(sv, S6_SUPERVISE_CTLDIR, "d", 1) ;
-			//	kill(status.pid, SIGKILL) ;
-				return -1 ;
-			default : VERBO3 strerr_warnw1x("inconsistent signal state") ; return 0 ;
+			default : strerr_warn1x("unexpected data in selfpipe") ; return 0 ;
 		}
 	}
 }
 
-/** we use three file more for s6-svc service :
+static unsigned char const actions[9][9] = 
+{
+ //signal receive:
+ //  c->u		U		r/u		R/U		d		D		x		O		s						
+																				//signal wanted
+    { GOTIT,	DONE,	GOTIT,	DONE,	DEAD,	DEAD,	PERM,	PERM,	UKNOW },// SIGUP 
+    { WAIT,		GOTIT,	WAIT,	GOTIT,	DEAD,	DEAD,	PERM,	PERM,	UKNOW },// SIGRUP
+    { GOTIT,	DONE,	GOTIT,	DONE,	WAIT,	WAIT,	PERM,	PERM,	UKNOW },// SIGR
+    { WAIT,		GOTIT,	WAIT,	GOTIT,	WAIT,	WAIT,	PERM,	PERM,	UKNOW },// SIGRR
+    { DEAD,		DEAD,	DEAD,	DEAD,	GOTIT,	DONE,	PERM,	PERM,	UKNOW },// SIGDOWN
+    { DEAD,		DEAD,	DEAD,	DEAD,	WAIT,	GOTIT,	PERM,	PERM,	UKNOW },// SIGRDOWN
+    { DEAD,		DEAD,	DEAD,	DEAD,	WAIT,	WAIT,	GOTIT,	WAIT, 	UKNOW },// SIGX
+    { WAIT,		WAIT,	WAIT,	WAIT,	WAIT,	WAIT,	PERM,	GOTIT, 	UKNOW },// SIGO
+    { UKNOW,	UKNOW,	UKNOW,	UKNOW,	UKNOW,	UKNOW,	UKNOW,	UKNOW, 	DONE },	// SIGSUP
+    
+} ;
+//	convert signal receive into enum number
+static const uint8_t chtenum[128] = 
+{	
+	0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //8
+	0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //16
+	0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //24
+	0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //32
+	0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //40
+	0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //48
+	0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //56
+	0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //64
+	0 ,  0 ,  0 ,  0 ,  5 ,  0 ,  0 ,  0 , //72
+	0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  7 , //80
+	0 ,  0 ,  0 ,  0 ,  0 ,  1,   0 ,  0 , //88
+	6 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //96
+	0 ,  0 ,  0 ,  0 ,  4 ,  0 ,  0 ,  0 , //104
+	0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //112
+	0 ,  0 ,  0 ,  8 ,  0 ,  0 ,  0 ,  0 , //120
+	6 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0   //128
+} ;
+/** we use three file more than s6-svc program :
  * 	 
  *	 timeout-up and timeout-down will define the deadline for the iopause
  * 		each service contain his deadline into the sv_signal.deadline key.
- * 		If thoses files doesn't exit 1000 millisec is set by default.
- * 		This deadline value can be set on commandline by the -S options.
+ * 		If thoses files doesn't exit 3000 millisec is set by default.
+ * 		This deadline value can be set on commandline by the -T options.
  *	 max-death-tally
  * 		We let s6-supervise make what it need to do with this file but
  * 		we take the same number to set the sv_signal.death value
@@ -208,7 +200,7 @@ int handle_signal_svc(svc_sig *sv_signal)
  * doesn't exist and the SIGNAL is U , we change SIGNAL to u and warn
  * the user about it.
  *
- * In the iopause_svc function a reached timeout is not an absolute error
+ * In the send_svc function a reached timeout is not an absolute error
  * because we can have a notification-file in the servicedirs of the
  * service with a deamon which doesn't support readiness notification. 
  * In this case, we send U and only receive u as event, the daemon is
@@ -216,250 +208,124 @@ int handle_signal_svc(svc_sig *sv_signal)
  * We accept this case as an "half" success. We exit with success but
  * the user is warned about the state. */
  	
-/** @Return -2 on SIGINT reception 
- * @Return -1 on error 
- * @Return 0 on fail
- * @Return 1 on success
- * @Return 2 if signal is not complete (e.g. want U receive only u)
- * @Return 3 for PERMANENT failure
- * @Return 4 is a last status checking is need */
-int iopause_svc(svc_sig *sv_signal,char const *sig, ftrigr_t *fifo)
+/**@Return 0 on success
+ * @Return 1 on if signal is not complete (e.g. want U receive only u)
+ * @Return 2 on fail
+ * @Return 3 for PERMANENT failure */
+
+int handle_case(char c, svc_sig *sv_signal)
 {
-
-	int id ;
+	int p, h, err ;
+	unsigned int state ;
+	state = sv_signal->sig ;
+	err = 2 ;
 	
-	stralloc sa = STRALLOC_ZERO ;
+	p = chtenum[(unsigned char)c] ;
 	
-	static unsigned char const actions[7][8] = 
+	unsigned char action = actions[state][p] ;
+	
+	switch (action)
 	{
- //signal receive:
- //		c->UP,		RUP,	DOWN,	RDOWN 	O		X		SUP		UNKNOW
-	    { GOTIT,	DONE,	DEAD,	DEAD,	PERM,	PERM, 	DEAD,	UKNOW }, 	// u
-	    { WAIT,		GOTIT,	DEAD, 	DEAD, 	PERM,	PERM, 	DEAD,	UKNOW }, 	// U signal
-	    { DEAD,		DEAD,	GOTIT, 	DONE,	DONE,	DONE,	DEAD,	UKNOW },	// d wanted
-	    { DEAD,		DEAD,	WAIT, 	GOTIT, 	DONE,	DONE, 	DEAD,	UKNOW }, 	// D
-	    { DEAD,		DEAD,	DEAD, 	DEAD, 	OUT,	OUT, 	GOTIT,	UKNOW }, 	// s
-	    { PERM,		PERM,	WAIT, 	WAIT, 	GOTIT,	WAIT, 	PERM,	UKNOW }, 	// O
-	    { PERM,		PERM,	DONE, 	GOTIT, 	DONE,	GOTIT, 	PERM,	UKNOW }, 	// x
-																
-	
-	} ;
-//	convert signal receive into enum number
-	static const uint8_t chtenum[128] = 
-	{	
-		0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , 
-		0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , 
-		0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , 
-		0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , 
-		0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , 
-		0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , 
-		0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , 
-		0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , 
-		0 ,  0 ,  0 ,  0 ,  3 ,  0 ,  0 ,  0 , 
-		0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  5 , 
-		0 ,  0 ,  0 ,  0 ,  0 ,  1,   0 ,  0 , 
-		0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , 
-		0 ,  0 ,  0 ,  0 ,  2 ,  0 ,  0 ,  0 , 
-		0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , 
-		0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , 
-		6 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 
-	} ;
-
-	int spfd = selfpipe_init() ;
-	if (spfd < 0){ VERBO3 strerr_warnwu1sys("init selfpipe") ; return -1 ; }
-	{
-		sigset_t set ;
-		sigemptyset(&set) ;
-		sigaddset(&set, SIGINT) ;
-		sigaddset(&set, SIGTERM) ;
-		if (selfpipe_trapset(&set) < 0)
-		{
-			VERBO3 strerr_warnwu1sys("trap signals") ;
-			return -1 ;
-		}
-	}
-
-	iopause_fd x[2] = { { .fd = ftrigr_fd(fifo), .events = IOPAUSE_READ }, { .fd = spfd, .events = IOPAUSE_READ, .revents = 0 } } ;
-	
-	unsigned int t, h, p, state, err, check ;
-		
-	err = h = t = check = 0 ;
-	state = SIGNAL ;
-	
-	tain_now_g() ;
-	tain_add_g(&sv_signal->deadline,&sv_signal->deadline) ;
-
-	int n = sv_signal->ndeath ;
-	/** loop even number of death is reached */
-	while(n>0)
-	{
-		int r = iopause_g(x, 2, &sv_signal->deadline) ;
-		if (r < 0){ VERBO3 strerr_warnwu1sys("iopause") ; err = -1 ; goto end ; }
-		/** timeout is not a error , the iopause process did right */
-		else if (!r) { VERBO3 strerr_warnt2x("timed out reached for: ",svkeep.s + sv_signal->scan) ; t = 1 ; goto end ; } 
-		if (x[1].revents & IOPAUSE_READ)
-			if (handle_signal_svc(sv_signal) < 0){ err = -2 ; goto end ; }
-		
-		if (x->revents & IOPAUSE_READ)  
-		{	
-			
-			id = ftrigr_updateb(fifo) ;
-			if (id < 0){ VERBO3 strerr_warnwu1sys("ftrigr_update") ; return -1 ; } 
-			if (id)
-			{
-				sa.len = 0 ;
-				r = ftrigr_checksa(fifo, id, &sa) ;
-				if (r < 0) { VERBO3 strerr_warnwu1sys("ftrigr_update") ; return -1 ; } 
-				if (r)
-				{
-					VERBO3
+		case GOTIT:
+					h = handle_signal_svc(sv_signal) ;
+					
+					if (!h)
 					{
-						buffer_putsflush(buffer_1,"66-svctl: tracing: ") ;
-						buffer_putsflush(buffer_1,"signal received: ") ;
-						buffer_putflush(buffer_1,sa.s,1) ;
-						buffer_putsflush(buffer_1,"\n") ;
+						err = 1 ;
+						break ;
 					}
-					for (int i = 0;i < sa.len ; i++)
-					{	
-						
-						p = chtenum[(unsigned char)sa.s[i]] ;
-						{
-							unsigned char action = actions[state][p] ;
-						
-							switch (action)
-							{
-								case GOTIT:
-									h = handle_signal_svc(sv_signal) ;
-									if (h)
-									{
-										check = 4 ;
-										break ;
-									}
-									err = 1 ;
-									goto end ;
-								case WAIT:
-									err = 2 ;
-									break ;
-								case DEAD:
-									err = -1 ;
-									break ;
-								case DONE:
-									err = 1 ;
-									goto end ;
-								case OUT:
-									err = 0 ;
-									goto end ;
-								case PERM:
-									err = 3 ;
-									goto end ;
-								case UKNOW :
-								default:
-									VERBO3 strerr_warnw1x("invalid state");
-									err = -1 ;
-									goto end ;
-							}
-						}
-					}
-				}
-			}
-			n-- ;
-		}
+					err = 0 ;
+					break ;
+		case WAIT:
+					err = 1 ;
+					break ;
+		case DEAD:
+					err = 2 ;
+					break ;
+		case DONE:
+					err = 0 ;
+					break ;
+		case PERM:
+					err = 3 ;
+					break ;
+		case UKNOW:
+		default:
+					VERBO3 strerr_warnw1x("invalid state, make a bug report");
+					err = 2 ;
+					break ;
 	}
-	end:
-		stralloc_free(&sa) ;
-		selfpipe_finish() ;
 	
-		if (err == 2 && sv_signal->ndeath == 1 && !h)
-			err = 2 ;
-				
-		if ((err < 0)  && (t) )
-			err = 2 ;
-	
-		if (check) return check ;
-
-		return err ;
+	return err ;
 }
 
-int send_svc(svc_sig *sv_signal, char const *sig, ftrigr_t *fifo,tain_t const *ttmain)
+static void announce(svc_sig *sv_signal)
 {
-	int r, id, fdlock ;
-	size_t siglen = strlen(sig) ;
-	
-	size_t scanlen = sv_signal->scanlen ;
-	char *svok = svkeep.s + sv_signal->scan ;
-	
-	char svfifo[scanlen + 6 + 1] ;
-	memcpy(svfifo, svok,scanlen) ;
-	memcpy(svfifo + scanlen, "/event",6 + 1) ;
-	
-	VERBO3 strerr_warnt2x("take lock of: ",svok) ;
-	fdlock = s6_svc_lock_take(svok) ;
-	if (fdlock < 0)
-	{
-		VERBO3 strerr_warnwu2sys("take lock of: ",svok) ;
-		return 0 ;
-	}
-	VERBO3 strerr_warnt2x("clean up fifo: ", svfifo) ;
-	if (!ftrigw_clean (svok))
-	{
-		VERBO3 strerr_warnwu2sys("clean up fifo: ", svfifo) ;
-		return 0 ;
-	}
-	VERBO3 strerr_warnt2x("subcribe to fifo: ",svfifo) ;
-	/** we let opened the fifo for the iopause work */
-	id = ftrigr_subscribe_g(fifo, svfifo, "[DuUdOx]", 1, ttmain) ;
-	if (!id)
-	{
-		VERBO3 strerr_warnwu2sys("subcribe to fifo: ",svfifo) ;
-		goto errlock ;
-	}
-	VERBO3 strerr_warnt2x("unlock: ",svok) ;
-	s6_svc_lock_release(fdlock) ;
-	VERBO3 strerr_warnt6x("send signal: ",sig," to: ", svok,"/",S6_SUPERVISE_CTLDIR) ;
-	r = s6_svc_writectl(svok, S6_SUPERVISE_CTLDIR, sig, siglen) ;
-	if (r < 0)
-	{
-		VERBO3 strerr_warnwu3sys("something is wrong with the ",svok, "/" S6_SUPERVISE_CTLDIR " directory. errno reported") ;
-		goto errunsub ;
-	}
-	if (!r)
-	{
-		VERBO3 strerr_warnw3x("sv: ",svok, " is not supervised") ;
-		goto errunsub ;
-	}
-	VERBO3 strerr_warnt2x("start iopause for: ",svok) ;
-	r = iopause_svc(sv_signal,sig,fifo) ;
 
-	if (r < 0)
+	int r = sv_signal->state ;
+	char *sv = svkeep.s + sv_signal->scan ;
+	if (r == 3) { VERBO2 strerr_warnw3x(sv," report permanent failure to bring ",(sv_signal->sig > 1) ? "down" : "up") ; }
+	else if (r == 2) { VERBO2 strerr_warnwu3x("bring ", (sv_signal->sig > 3) ? "down " : "up ", sv) ; }
+	else if (r == 1) { VERBO2 strerr_warni4x(sv," is ",(sv_signal->sig > 3) ? "down" : "up"," but not notified by the daemon itself") ; }
+	else if (!r) { VERBO2 strerr_warni4x(sv,": ",(sv_signal->sig > 3) ? "stopped" : "started"," successfully") ; }
+}
+		
+int svc_listen(genalloc *gasv, ftrigr_t *fifo,int spfd,svc_sig *svc)
+{
+	int r ;
+	iopause_fd x[2] = { { .fd = ftrigr_fd(fifo), .events = IOPAUSE_READ } , { .fd = spfd, .events = IOPAUSE_READ, .revents = 0 } } ;
+	
+	tain_t t ;
+	tain_now_g() ;
+	tain_add_g(&t,&svc->deadline) ;
+	
+	VERBO3 strerr_warnt2x("start iopause for: ",svkeep.s + svc->name) ;
+	for(;;)
 	{
-		VERBO3 strerr_warnt1sys("handle iopause") ;
-		return -1 ;
-	}
-
-	if (!ftrigr_unsubscribe_g(fifo,id, ttmain)) 
-	{
-		VERBO3 strerr_warnwu2sys("unsubcribe from: ",svfifo) ;
-		return 0 ;
+		char receive ;
+		r = ftrigr_check(fifo,svc->ids, &receive) ;
+		if (r < 0) { VERBO3 strerr_warnwu1sys("ftrigr_check") ; return 0 ; } 
+		if (r)
+		{
+			svc->state = handle_case(receive, svc) ;
+			if (svc->state < 0) return 0 ;
+			if (!svc->state){ announce(svc) ; break ; }
+			else if (svc->state > 2){ announce(svc) ; break ; }
+		}
+		if (!(svc->ndeath))
+		{
+			VERBO2 strerr_warnw2x("number of try exceeded for: ",svkeep.s + svc->scan) ;
+			announce(svc) ;
+			break ;
+		}
+		
+		r = iopause_g(x,2, &t) ;
+		if (r < 0){ VERBO3 strerr_warnwu1sys("iopause") ; return 0 ; }
+		/** timeout is not a error , the iopause process did right */
+		else if (!r) { VERBO3 strerr_warnt2x("timed out reached for: ",svkeep.s + svc->name) ; announce(svc) ; break ; } 
+		
+		if (x[1].revents & IOPAUSE_READ) return handle_signal_pipe(svc) ? 1 : 0 ;
+				
+		if (x[0].revents & IOPAUSE_READ)  
+		{	
+			if (ftrigr_update(fifo) < 0){ VERBO3 strerr_warnwu1sys("ftrigr_update") ; return 0 ; }
+			svc->ndeath--;
+		}
 	}
 	
-	return r ;
-	
-	errlock:
-		s6_svc_lock_release(fdlock) ;
-	errunsub:
-		if (!ftrigr_unsubscribe_g(fifo,id, &sv_signal->deadline)) VERBO3 strerr_warnwu2sys("unsubcribe from: ",svfifo) ;
-		return 0 ;
+	return 1 ;
 }
 
 int main(int argc, char const *const *argv,char const *const *envp)
 {
-	int r, e ;
-	
+	int r, e, isup ;
+	unsigned int death, tsv ;
 	uid_t owner ;
+	
 	
 	svc_sig sv_signal = SVC_SIG_ZERO ;
 	
 	char *treename = 0 ;
+	char *sig = 0 ;
 	
 	stralloc base = STRALLOC_ZERO ;
 	stralloc tree = STRALLOC_ZERO ;
@@ -469,10 +335,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	ftrigr_t fifo = FTRIGR_ZERO ;
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	
-	tain_t ttmain ; 
-	unsigned int deathsv = 0 ;
-	unsigned int tmain = 0 ;
-	unsigned int tsv = 0 ;
+	tsv = death = 0 ;
 	
 	PROG = "66-svctl" ;
 	{
@@ -480,7 +343,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, "hv:l:t:T:S:n:udUD", &l) ;
+			int opt = getopt_args(argc,argv, "hv:l:t:T:n:udUDXrRK", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
@@ -493,13 +356,16 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 't' : 	if(!stralloc_cats(&tree,l.arg)) retstralloc(111,"main") ;
 							if(!stralloc_0(&tree)) retstralloc(111,"main") ;
 							break ;
-				case 'T' :	if (!uint0_scan(l.arg, &tmain)) exitusage() ; break ;
-				case 'S' : 	if (!uint0_scan(l.arg, &tsv)) exitusage() ; break ;
-				case 'n' :	if (!uint0_scan(l.arg, &deathsv)) exitusage() ; break ;
-				case 'u' :	if (SIGNAL == DOWN || SIGNAL == RDOWN) exitusage() ; SIGNAL = UP ; break ;
-				case 'U' :	if (SIGNAL == DOWN || SIGNAL == DOWN) exitusage() ; SIGNAL = RUP ; break ;
-				case 'd' : 	if (SIGNAL == UP || SIGNAL == RUP) ; SIGNAL = DOWN ; break ;
-				case 'D' :	if (SIGNAL == UP || SIGNAL == RUP) ; SIGNAL = RDOWN ; break ;
+				case 'T' : 	if (!uint0_scan(l.arg, &tsv)) exitusage() ; break ;
+				case 'n' :	if (!uint0_scan(l.arg, &death)) exitusage() ; break ;
+				case 'u' :	if (SIGNAL > 0) exitusage() ; SIGNAL = SIGUP ; sig ="u" ; break ;
+				case 'U' :	if (SIGNAL > 0) exitusage() ; SIGNAL = SIGRUP ; sig = "u" ; break ;
+				case 'd' : 	if (SIGNAL > 0) ; SIGNAL = SIGDOWN ; sig = "d" ; break ;
+				case 'D' :	if (SIGNAL > 0) ; SIGNAL = SIGRDOWN ; sig = "d" ; break ;
+				case 'X' :	if (SIGNAL > 0) ; SIGNAL = SIGX ; sig = "dX" ; break ;
+				case 'K' :	if (SIGNAL > 0) ; SIGNAL = SIGRDOWN ; sig = "kd" ; break ;
+				case 'r' :	if (SIGNAL > 0) ; SIGNAL = SIGR ; sig = "r" ; break ;
+				case 'R' :	if (SIGNAL > 0) ; SIGNAL = SIGRR ; sig = "r" ; break ;
 				
 				default : exitusage() ; 
 			}
@@ -508,9 +374,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	}
 	
 	if (argc < 1 || (SIGNAL < 0)) exitusage() ;
-	
-	if (tmain) tain_from_millisecs(&ttmain, tmain) ;
-	else ttmain = tain_infinite_relative ;
 	
 	owner = MYUID ;
 	
@@ -559,6 +422,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		svok[svoklen] = '/' ;
 		memcpy(svok + svoklen + 1 ,svname,namelen + 1) ;
 		svoklen = svoklen + 1 + namelen ;
+					
 		/** do not check the logger*/
 		if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_SRC))
 		{
@@ -574,6 +438,21 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				if (!r)	strerr_dief2x(110,svok," is not initialized") ;
 			}
 		}
+		
+		if (!s6_svstatus_read(svok,&status)) strerr_diefu2sys(111,"read status of: ",svok) ;
+		isup = status.pid && !status.flagfinishing ;
+			
+		if (isup && (SIGNAL <= SIGRUP))
+		{
+			VERBO2 strerr_warni2x(svok,": already up") ;
+			continue ;
+		}
+		else if (!isup && (SIGNAL >= SIGDOWN))
+		{
+			VERBO2 strerr_warni2x(svok,": already down") ;
+			continue ;
+		}
+		
 		sv_signal.scan = svkeep.len ;
 		if (!stralloc_catb(&svkeep, svok, svoklen + 1)) retstralloc(111,"main") ;
 		sv_signal.scanlen = svoklen ;
@@ -586,6 +465,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (!stralloc_catb(&svkeep, src, srclen + 1)) retstralloc(111,"main") ;
 		sv_signal.srclen = srclen ;
 		
+		sv_signal.sigtosend = sig ;
+		sv_signal.sig = SIGNAL ;
 		
 		/** notification-fd */
 		memcpy(svok + svoklen,"/notification-fd",16) ;
@@ -595,10 +476,24 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (access(svok, F_OK) < 0)
 		{
 			if (errno != ENOENT) strerr_diefu2sys(111, "access ", svok) ;
-			if (SIGNAL == RUP) SIGNAL = UP ;
-			if (SIGNAL == RDOWN) SIGNAL = DOWN ;
-			
-			VERBO2 strerr_warnw2x(svok, " is not present - ignoring request for readiness notification") ;
+			if (SIGNAL == SIGRUP)
+			{
+				sv_signal.sig = SIGUP ;
+				sv_signal.sigtosend = "uwu" ;
+				VERBO2 strerr_warnw2x(svok, " is not present - ignoring request for readiness notification") ;
+			}
+			if (SIGNAL == SIGRR)
+			{
+				sv_signal.sig = SIGR ;
+				sv_signal.sigtosend = "uwr" ;
+				VERBO2 strerr_warnw2x(svok, " is not present - ignoring request for readiness notification") ;
+			}
+			if (SIGNAL == SIGRDOWN)
+			{
+				sv_signal.sig = SIGDOWN ;
+				sv_signal.sigtosend = "dwd" ;
+				VERBO2 strerr_warnw2x(svok, " is not present - ignoring request for readiness notification") ;
+			}		
 		}
 		else
 		{
@@ -606,7 +501,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		}
 		
 		/** max-death-tally */
-		if (!deathsv)
+		if (!death)
 		{
 			memcpy(svok + svoklen,"/max-death-tally", 16) ;
 			svok[svoklen + 16] = 0 ;
@@ -615,22 +510,29 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			{
 				if (errno != ENOENT) strerr_diefu2sys(111, "access ", svok) ;
 			}
+			if (errno == ENOENT)
+			{
+				sv_signal.ndeath = DEATHSV ;
+			}
 			else
 			{
 				if (!read_uint(svok,&sv_signal.ndeath)) strerr_diefu2sys(111,"read: ",svok) ;
 			}
 		}
-		else sv_signal.ndeath = deathsv ;
-
-		errno = 0 ;
-	
-		if (!tsv)
+		else sv_signal.ndeath = death ;
+		
+		tain_t tcheck ;
+		tain_from_millisecs(&tcheck,tsv) ;
+		int check = tain_to_millisecs(&tcheck) ;
+		if (check > 0) tain_from_millisecs(&sv_signal.deadline, tsv) ;
+			
+		else
 		{
 			/** timeout-{up/down} */
 			{
 				char *tm = NULL ;
 				unsigned int t ;
-				if (SIGNAL == RUP || SIGNAL == UP)
+				if (SIGNAL <= SIGRR)
 				{
 					tm="/timeout-up" ;
 				}
@@ -638,7 +540,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				{
 					tm="/timeout-down" ;
 				}
-			
+				errno = 0 ;
 				memcpy(svok + svoklen,tm, strlen(tm) + 1) ;
 				if (access(svok, F_OK) < 0)
 				{
@@ -655,7 +557,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				}
 			}
 		}
-		else tain_from_millisecs(&sv_signal.deadline, tsv) ;
+		
 		errno = e ;
 		
 		if (!genalloc_append(svc_sig,&gakeep,&sv_signal)) strerr_diefu1sys(111,"append genalloc") ;
@@ -667,124 +569,31 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc_free(&tree) ;
 	stralloc_free(&scandir) ;
 	
-	if (!genalloc_len(svc_sig,&gakeep))
-	{
-		VERBO2 strerr_warni1x("nothing to do") ;
-		return 0 ;
-	}
-	
-	tain_now_g() ;
-	tain_add_g(&ttmain, &ttmain) ;
-	
-	VERBO2 strerr_warni1x("initiate fifo: fifo") ;
-	if (!ftrigr_startf(&fifo, &ttmain, &STAMP))
-		strerr_diefu1sys(111,"initiate fifo") ;
-	
+	/** nothing to do */
+	if (!genalloc_len(svc_sig,&gakeep))	goto finish ;
+		
+	int spfd = selfpipe_init() ;
+	if (spfd < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
+	if (selfpipe_trap(SIGCHLD) < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
+	if (selfpipe_trap(SIGINT) < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
+	if (sig_ignore(SIGHUP) < 0) strerr_diefu1sys(111, "ignore SIGHUP") ;
+	if (sig_ignore(SIGPIPE) < 0) strerr_diefu1sys(111,"ignore SIGPIPE") ;
+		
+	if (!svc_init_pipe(&fifo,&gakeep,&svkeep)) strerr_diefu1x(111,"init pipe") ;
+
 	for (unsigned int i = 0 ; i < genalloc_len(svc_sig,&gakeep) ; i++)
-	{
-		int isup ;
-		char *sig ;
-		
-		char *sv = svkeep.s + genalloc_s(svc_sig,&gakeep)[i].scan ;
-		if (!s6_svstatus_read(sv,&status)) strerr_diefu2sys(111,"read status of: ",sv) ;
-		isup = status.pid && !status.flagfinishing ;
-			
-		if (isup && (SIGNAL == RUP || SIGNAL == UP))
-		{
-			VERBO2 strerr_warni2x(sv,": already up") ;
-			continue ;
-		}
-		
-		if (isup && (SIGNAL == RDOWN || SIGNAL == DOWN))
-		{
-			if (SIGNAL == RDOWN)
-				sig = "dwD" ;
-			else sig = "dwd" ;
-			
-			VERBO2 strerr_warni3x("bring down ", sv," ...") ;
-			r = send_svc(&genalloc_s(svc_sig,&gakeep)[i],sig,&fifo,&ttmain) ;
-			if (r == 4)
-			{
-				if (!s6_svstatus_read(sv,&status)) strerr_diefu2sys(111,"read status of: ",sv) ;
-				isup = status.pid && !status.flagfinishing ;
-				if (!isup) r = 1 ;
-				else r = 0 ;
-			}
-			if (r == 3)
-			{
-				VERBO2 strerr_warnw2x(sv," report permanent failure to bring down") ;
-				goto errftrigr ;
-			}
-			if (r == 2) VERBO2 strerr_warni2x(sv," is down but not notified by the daemon itself") ; 
-			if (!r)
-			{
-				VERBO2 strerr_warnwu2x("bring down: ",  sv) ;
-				goto errftrigr ;
-			}
-			if (r < -1)
-			{
-				VERBO2 strerr_warnw1x("received SIGINT, aborting service transition") ;
-				goto errftrigr ;
-			}
-			if (r == 1) VERBO2 strerr_warni2x(sv,": stopped successfully") ;
-			continue ;
-		}
-		
-		if (!isup && (SIGNAL == RDOWN || SIGNAL == DOWN))
-		{
-			VERBO2 strerr_warni2x(sv,": already down") ;
-			continue ;
-		}
-		
-		if (!isup && (SIGNAL == RUP || SIGNAL == UP))
-		{
-			if (SIGNAL == RUP)
-				sig = "uwU" ;
-			else sig = "uwu" ;
-	
-			VERBO2 strerr_warni3x("bring up ", sv," ...") ;
-			r = send_svc(&genalloc_s(svc_sig,&gakeep)[i],sig,&fifo,&ttmain) ;
-			if (r == 4)
-			{
-				if (!s6_svstatus_read(sv,&status)) strerr_diefu2sys(111,"read status of: ",sv) ;
-				isup = status.pid && !status.flagfinishing ;
-				if (isup) r = 1 ;
-				else r = 0 ;
-			}
-			if (r == 3)
-			{
-				VERBO2 strerr_warnw2x(sv,"report permanent failure to bring up") ;
-				goto errftrigr ;
-			}
-			if (r == 2) VERBO2 strerr_warni2x(sv," is up but not notified by the daemon itself") ; 
-			if (!r)
-			{
-				VERBO2 strerr_warnwu2x("bring up: ",  sv) ;
-				goto errftrigr ;
-			}
-			if (r < -1)
-			{
-				VERBO2 strerr_warnw1x("received SIGINT, aborting service transition") ;
-				goto errftrigr ;
-			}
-			if (r == 1) VERBO2 strerr_warni2x(sv,": started successfully") ;
-			
-		}
+	{ 
+		svc_sig *sv = &genalloc_s(svc_sig,&gakeep)[i] ;
+		if (!svc_listen(&gakeep,&fifo,spfd,sv)) strerr_diefu1x(111,"listen pipe") ;
 	}
-	
-	ftrigr_end(&fifo) ;
-	stralloc_free(&svkeep) ;
-	genalloc_free(svc_sig,&gakeep) ;
-	free(treename) ;
-	
-	return 0 ;		
-	
-	errftrigr:
+	finish:
 		ftrigr_end(&fifo) ;
+		selfpipe_finish() ;
 		stralloc_free(&svkeep) ;
 		genalloc_free(svc_sig,&gakeep) ;
 		free(treename) ;
-		return 111 ;
+	
+	return 0 ;		
 }
 	
 
