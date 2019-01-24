@@ -53,12 +53,12 @@
 unsigned int VERBOSITY = 1 ;
 
 static unsigned int RELOAD = 0 ;
-static tain_t DEADLINE ;
+static unsigned int DEADLINE = 0 ;
 static stralloc saresolve = STRALLOC_ZERO ;
-
+static char *SIG = "-U" ;
 static genalloc DOWNFILE = GENALLOC_ZERO ; //stralist
 
-#define USAGE "66-start [ -h help ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -r reload ] service(s)"
+#define USAGE "66-start [ -h help ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -r reload ] [ -R reload file ] service(s)"
 
 static inline void info_help (void)
 {
@@ -72,6 +72,7 @@ static inline void info_help (void)
 "	-t: tree to use\n"
 "	-T: timeout\n"
 "	-r: reload the service(s)\n"
+"	-R: reload service(s) file(s) and the service(s) itself\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
@@ -121,8 +122,9 @@ int svc_shutnremove(char const *base,char const *scandir,char const *live,char c
 	unsigned int m = 0 ;
 	char fmt[UINT_FMT] ;
 	fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
+
 	char tt[UINT32_FMT] ;
-	tt[uint32_fmt(tt,tain_to_millisecs(&DEADLINE))] = 0 ;
+	tt[uint32_fmt(tt,DEADLINE)] = 0 ;
 
 	newargv[m++] = SS_BINPREFIX "66-svctl" ;
 	newargv[m++] = "-v" ;
@@ -161,10 +163,10 @@ int svc_shutnremove(char const *base,char const *scandir,char const *live,char c
 		memcpy(svscan + scanlen + 1,name, namelen) ;
 		svscan[scanlen + 1 + namelen] = 0 ;
 		
-		VERBO3 strerr_warnt2x("remove: ", svscan) ;
+		VERBO3 strerr_warnt2x("delete: ", svscan) ;
 		if (rm_rf(svscan) < 0)
 		{
-			VERBO3 strerr_warnwu2sys("remove: ",svscan) ;
+			VERBO3 strerr_warnwu2sys("delete: ",svscan) ;
 			return 0 ;
 		}
 	}
@@ -207,8 +209,9 @@ int svc_start(char const *base,char const *scandir,char const *live,char const *
 	unsigned int m = 0 ;
 	char fmt[UINT_FMT] ;
 	fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
+
 	char tt[UINT32_FMT] ;
-	tt[uint32_fmt(tt,tain_to_millisecs(&DEADLINE))] = 0 ;
+	tt[uint32_fmt(tt,DEADLINE)] = 0 ;
 	
 	newargv[m++] = SS_BINPREFIX "66-svctl" ;
 	newargv[m++] = "-v" ;
@@ -219,7 +222,7 @@ int svc_start(char const *base,char const *scandir,char const *live,char const *
 	newargv[m++] = live ;
 	newargv[m++] = "-t" ;
 	newargv[m++] = treename ;
-	newargv[m++] = "-U" ;
+	newargv[m++] = SIG ;
 	
 	for (unsigned int i = 0 ; i < genalloc_len(stralist,&tot) ; i++) 
 		newargv[m++] = gaistr(&tot,i) ;
@@ -245,125 +248,18 @@ int svc_start(char const *base,char const *scandir,char const *live,char const *
 
 	for (unsigned int i = 0; i < genalloc_len(svstat_t,ga) ; i++)
 	{
-		VERBO3 strerr_warnt2x("remove reload resolve file for: ",genalloc_s(svstat_t,ga)[i].name) ;
-		if (!resolve_remove(saresolve.s,genalloc_s(svstat_t,ga)[i].name,"reload"))
+		if (genalloc_s(svstat_t,ga)[i].reload)
 		{
-			VERBO3 strerr_warnwu3sys("remove resolve file",saresolve.s,"/reload") ;
-			return 0 ;
-		}
-	}
-	for (unsigned int i = 0 ; genalloc_len(stralist,&DOWNFILE) ; i++)
-	{
-		VERBO3 strerr_warnt2x("remove down file for: ",genalloc_s(svstat_t,ga)[i].name) ;
-		if (unlink(gaistr(&DOWNFILE,i)) < 0 && errno != ENOENT) return 0 ;
-	}
-	return 1 ;
-}
-
-int svc_init(char const *scandir,char const *src, genalloc *ga)
-{
-	
-	int r ;
-	gid_t gid = getgid() ;
-	uint16_t id ;
-		
-	ftrigr_t fifo = FTRIGR_ZERO ;
-	
-	tain_now_g() ;
-	tain_add_g(&DEADLINE, &DEADLINE) ;
-	
-	VERBO3 strerr_warnt1x("iniate fifo: fifo") ;
-		if (!ftrigr_startf(&fifo, &DEADLINE, &STAMP))
-			return 0 ;
-		
-	for (unsigned int i=0 ; i <genalloc_len(svstat_t,ga); i++) 
-	{
-		char const *name = genalloc_s(svstat_t,ga)[i].name ;
-		size_t namelen = genalloc_s(svstat_t,ga)[i].namelen ;
-			
-		size_t srclen = strlen(src) ;	
-		char svsrc[srclen + 1 + namelen + 1] ;
-		memcpy(svsrc,src,srclen) ;
-		svsrc[srclen] = '/' ;
-		memcpy(svsrc + srclen + 1, name,namelen) ;
-		svsrc[srclen + 1 + namelen] = 0 ;
-		
-		size_t svscanlen = strlen(scandir) ;
-		char svscan[svscanlen + 1 + namelen + 6 + 1] ;
-		memcpy(svscan,scandir,svscanlen) ;
-		svscan[svscanlen] = '/' ;
-		memcpy(svscan + svscanlen + 1, name,namelen) ;
-		svscanlen = svscanlen + 1 + namelen ;
-		svscan[svscanlen] = 0 ;
-		
-		VERBO3 strerr_warnt2x("init service: ", svscan) ;
-			
-		VERBO3 strerr_warnt4x("copy: ",svsrc, " to ", svscan) ;
-		if (!hiercopy(svsrc,svscan ))
-		{
-			VERBO3 strerr_warnwu4sys("copy: ",svsrc," to: ",svscan) ;
-			goto err ;
-		}
-		memcpy(svscan + svscanlen, "/down", 5) ;
-		svscan[svscanlen + 5] = 0 ;
-		
-		if (!genalloc_s(svstat_t,ga)[i].down)
-		{
-			if (!stra_add(&DOWNFILE,svscan))
+			VERBO3 strerr_warnt2x("delete reload resolve file for: ",genalloc_s(svstat_t,ga)[i].name) ;
+			if (!resolve_remove(saresolve.s,genalloc_s(svstat_t,ga)[i].name,"reload"))
 			{
-				VERBO3 strerr_warnwu3x("add: ",svscan," to genalloc") ;
-				goto err ;
+				VERBO3 strerr_warnwu3sys("delete resolve file",saresolve.s,"/reload") ;
+				return 0 ;
 			}
 		}
-		
-		VERBO3 strerr_warnt2x("create file: ",svscan) ;
-		if (!touch(svscan))
-		{
-			VERBO3 strerr_warnwu2sys("create file: ",svscan) ;
-			goto err ;
-		}
-		memcpy(svscan + svscanlen, "/event", 6) ;
-		svscan[svscanlen + 6] = 0 ;	
-		VERBO3 strerr_warnt2x("create fifo: ",svscan) ;
-		if (!ftrigw_fifodir_make(svscan, gid, 0))
-		{
-			VERBO3 strerr_warnwu2sys("create fifo: ",svscan) ;
-			goto err ;
-		}
-		VERBO3 strerr_warnt2x("subcribe to fifo: ",svscan) ;
-		/** unsubscribe automatically, options is 0 */
-		id = ftrigr_subscribe_g(&fifo, svscan, "s", 0, &DEADLINE) ;
-		if (!id)
-		{
-			VERBO3 strerr_warnwu2x("subcribe to fifo: ",svscan) ;
-			goto err ;
-		}
 	}
-	VERBO3 strerr_warnt2x("reload scandir: ",scandir) ;
-	r = s6_svc_writectl(scandir, S6_SVSCAN_CTLDIR, "an", 2) ;
-	if (r < 0)
-	{
-		VERBO3 strerr_warnw3sys("something is wrong with the ",scandir, "/" S6_SVSCAN_CTLDIR " directory. errno reported") ;
-		goto err ;
-	}
-	if (!r)
-	{
-		VERBO3 strerr_warnw3x("scandir: ",scandir, " is not running") ;
-		goto err ;
-	}
-	
-	VERBO3 strerr_warnt1x("waiting for events on fifo") ;
-	if (ftrigr_wait_and_g(&fifo, &id, 1, &DEADLINE) < 0)
-			goto err ;
-	
-	ftrigr_end(&fifo) ;
-	
-	return 1 ;
-	
-	err:
-		ftrigr_end(&fifo) ;
-		return 0 ;
 
+	return 1 ;
 }
 
 int svc_sanitize(char const *base,char const *scandir,char const *live,char const *tree,char const *treename, genalloc *ga, char const *const *envp)
@@ -471,7 +367,7 @@ int rc_init(char const *scandir, char const *live, char const *treename, char co
 	return 1 ;
 }
 
-int rc_sanitize(char const *base, char const *scandir, char const *live, char const *livetree, char const *tree, char const *treename,genalloc *ga, char const *const *envp,unsigned int trc)
+int rc_sanitize(char const *base, char const *scandir, char const *live, char const *livetree, char const *tree, char const *treename,genalloc *ga, char const *const *envp)
 {
 	pid_t pid ;
 	int wstat ;
@@ -503,6 +399,7 @@ int rc_sanitize(char const *base, char const *scandir, char const *live, char co
 	}
 	if (genalloc_len(stralist,&toreload))
 	{
+		
 		if (!db_switch_to(base,livetree,tree,treename,envp,SS_SWBACK))
 		{
 			VERBO3 strerr_warnwu3x("switch ",treename," to backup") ;
@@ -523,22 +420,18 @@ int rc_sanitize(char const *base, char const *scandir, char const *live, char co
 			VERBO3 strerr_warnwu3x("switch ",treename," to backup") ;
 			return 0 ;
 		}
+	}
+	
+	if (RELOAD || genalloc_len(stralist,&toreload))
+	{ 
 		char const *newargv[11 + genalloc_len(stralist,&toreload)] ;
 		unsigned int m = 0 ;
 		char fmt[UINT_FMT] ;
 		fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;	
 
-		int globalt ;
-		tain_t globaltto ;
-		tain_sub(&globaltto,&DEADLINE, &STAMP) ;
-		globalt = tain_to_millisecs(&globaltto) ;
-		if (!globalt) globalt = 1 ;
-		if (globalt > 0 && (!trc || (unsigned int) globalt < trc))
-			trc = (uint32_t)globalt ;
-		
 		char tt[UINT32_FMT] ;
-		tt[uint32_fmt(tt,trc)] = 0 ;
-	
+		tt[uint32_fmt(tt,DEADLINE)] = 0 ;
+		
 		newargv[m++] = SS_BINPREFIX "66-dbctl" ;
 		newargv[m++] = "-v" ;
 		newargv[m++] = fmt ;
@@ -575,7 +468,8 @@ int rc_sanitize(char const *base, char const *scandir, char const *live, char co
 		genalloc_deepfree(stralist,&toreload,stra_free) ;
 		return 0 ;
 }
-int rc_start(char const *base,char const *live, char const *livetree,char const *tree, char const *treename,genalloc *ga,char const *const *envp,unsigned int trc)
+
+int rc_start(char const *base,char const *live, char const *livetree,char const *tree, char const *treename,genalloc *ga,char const *const *envp)
 {
 
 	int wstat ;
@@ -588,18 +482,10 @@ int rc_start(char const *base,char const *live, char const *livetree,char const 
 	unsigned int m = 0 ;
 	char fmt[UINT_FMT] ;
 	fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;	
-	
-	int globalt ;
-	tain_t globaltto ;
-	tain_sub(&globaltto,&DEADLINE, &STAMP) ;
-	globalt = tain_to_millisecs(&globaltto) ;
-	if (!globalt) globalt = 1 ;
-	if (globalt > 0 && (!trc || (unsigned int) globalt < trc))
-		trc = (uint32_t)globalt ;
-	
+
 	char tt[UINT32_FMT] ;
-	tt[uint32_fmt(tt,trc)] = 0 ;
-	
+	tt[uint32_fmt(tt,DEADLINE)] = 0 ;
+		
 	newargv[m++] = SS_BINPREFIX "66-dbctl" ;
 	newargv[m++] = "-v" ;
 	newargv[m++] = fmt ;
@@ -615,21 +501,13 @@ int rc_start(char const *base,char const *live, char const *livetree,char const 
 		newargv[m++] = genalloc_s(svstat_t,ga)[i].name ; ;
 		
 	newargv[m++] = 0 ;
-		
-	tain_now_g() ;
-	tain_add_g(&DEADLINE,&DEADLINE) ;
 	
-	int spfd = selfpipe_init() ;
-	if (spfd < 0) VERBO3 strerr_diefu1sys(111,"init selfpipe") ;
-	{
-		sigset_t set ;
-		sigemptyset(&set) ;
-		sigaddset(&set, SIGCHLD) ;
-		sigaddset(&set, SIGINT) ;
-		sigaddset(&set, SIGTERM) ;
-		if (selfpipe_trapset(&set) < 0)
-			VERBO3 strerr_diefu1sys(111,"trap signals") ;
-	}
+	tain_t deadline ;
+	tain_from_millisecs(&deadline, DEADLINE) ;
+	
+	tain_now_g() ;
+	tain_add_g(&deadline, &deadline) ;
+	
 	
 	pid = child_spawn0(newargv[0],newargv,envp) ;
 	if (waitpid_nointr(pid,&wstat, 0) < 0)
@@ -652,10 +530,10 @@ int rc_start(char const *base,char const *live, char const *livetree,char const 
 
 	for (unsigned int i = 0; i < genalloc_len(svstat_t,ga) ; i++)
 	{
-		VERBO3 strerr_warnt2x("remove reload resolve file for: ",genalloc_s(svstat_t,ga)[i].name) ;
+		VERBO3 strerr_warnt2x("delete reload resolve file for: ",genalloc_s(svstat_t,ga)[i].name) ;
 		if (!resolve_remove(saresolve.s,genalloc_s(svstat_t,ga)[i].name,"reload"))
 		{
-			VERBO3 strerr_warnwu3sys("remove resolve file",saresolve.s,"/reload") ;
+			VERBO3 strerr_warnwu3sys("delete resolve file",saresolve.s,"/reload") ;
 			return 0 ;
 		}
 	}
@@ -663,14 +541,12 @@ int rc_start(char const *base,char const *live, char const *livetree,char const 
 	return 1 ;
 	
 	err: 
-		selfpipe_finish() ;
 		return 0 ;
 }
 
 int main(int argc, char const *const *argv,char const *const *envp)
 {
 	int r,rb ;
-	unsigned int trc ;
 	
 	uid_t owner ;
 	
@@ -686,15 +562,13 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	genalloc nclassic = GENALLOC_ZERO ; //svstat_t type
 	genalloc nrc = GENALLOC_ZERO ; //svstat_t type
 		
-	unsigned int tmain = trc = 0 ;
-	
 	PROG = "66-start" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:l:t:rT:", &l) ;
+			int opt = getopt_args(argc,argv, ">hv:l:t:rRT:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 
@@ -702,8 +576,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			{
 				case 'h' : 	info_help(); return 0 ;
 				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) exitusage() ; break ;
-				case 'T' :	if (!uint0_scan(l.arg, &tmain)) exitusage() ; break ;
-				case 'r' : 	RELOAD = 1 ; break ;
+				case 'T' :	if (!uint0_scan(l.arg, &DEADLINE)) exitusage() ; break ;
+				case 'r' : 	if (RELOAD) exitusage() ; RELOAD = 1 ; SIG = "-R" ; break ;
+				case 'R' : 	if (RELOAD) exitusage() ; RELOAD = 2 ; SIG = "-R" ; break ;
 				case 'l' : 	if(!stralloc_cats(&live,l.arg)) retstralloc(111,"main") ;
 							if(!stralloc_0(&live)) retstralloc(111,"main") ;
 							break ;
@@ -721,12 +596,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	owner = MYUID ;
 	
 	if (!set_ownersysdir(&base,owner)) strerr_diefu1sys(111, "set owner directory") ;
-	
-	if (tmain){
-		tain_from_millisecs(&DEADLINE, tmain) ;
-		trc = tmain ;
-	}
-	else DEADLINE = tain_infinite_relative ;
 	
 	r = tree_sethome(&tree,base.s) ;
 	if (r < 0) strerr_diefu1x(110,"find the current tree. You must use -t options") ;
@@ -810,7 +679,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				if (!r)	svsrc.init = 1 ;
 			}
 
-			if (RELOAD) svsrc.reload = 1 ;
+			if (RELOAD > 1) svsrc.reload = 1 ;
 			if (svsrc.init) svsrc.reload = 0 ;
 			
 			if (svsrc.type == CLASSIC)
@@ -844,10 +713,10 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (genalloc_len(svstat_t,&nrc))
 	{
 		VERBO2 strerr_warni1x("sanitize rc services ...") ;
-		if (!rc_sanitize(base.s,scandir.s,live.s,livetree.s,tree.s,treename,&nrc,envp,trc)) 
+		if (!rc_sanitize(base.s,scandir.s,live.s,livetree.s,tree.s,treename,&nrc,envp)) 
 			strerr_diefu1x(111,"sanitize s6-rc services") ;
 		VERBO2 strerr_warni1x("start rc services ...") ;
-		if (!rc_start(base.s,live.s,livetree.s,tree.s,treename,&nrc,envp,trc)) 
+		if (!rc_start(base.s,live.s,livetree.s,tree.s,treename,&nrc,envp)) 
 			strerr_diefu1x(111,"update s6-rc services") ;
 		VERBO2 strerr_warni3x("switch rc services of: ",treename," to source") ;
 		if (!db_switch_to(base.s,livetree.s,tree.s,treename,envp,SS_SWSRC))
