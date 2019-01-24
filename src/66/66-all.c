@@ -31,6 +31,8 @@
 #include <skalibs/direntry.h>
 #include <skalibs/tai.h>
 #include <skalibs/unix-transactional.h>
+#include <skalibs/selfpipe.h>
+#include <skalibs/sig.h>
 
 #include <66/constants.h>
 #include <66/config.h>
@@ -43,7 +45,7 @@
 //#include <stdio.h>
 
 unsigned int VERBOSITY = 1 ;
-static tain_t DEADLINE ;
+static unsigned int DEADLINE = 0 ;
 unsigned int trc = 0 ;
 #define USAGE "66-all [ -h help ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] up/down"
 
@@ -92,25 +94,16 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 		VERBO3 strerr_warnwu2x("add Master as service to ", what ? "start" : "stop") ;
 		return 0 ;
 	}
-	tain_now_g() ;
-	tain_add_g(&DEADLINE, &DEADLINE) ;
+	
 	
 	char const *newargv[10 + genalloc_len(stralist,&ga)] ;
 	unsigned int m = 0 ;
 	char fmt[UINT_FMT] ;
 	fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
-	
-	int globalt ;
-	tain_t globaltto ;
-	tain_sub(&globaltto,&DEADLINE, &STAMP) ;
-	globalt = tain_to_millisecs(&globaltto) ;
-	if (!globalt) globalt = 1 ;
-	if (globalt > 0 && (!trc || (unsigned int) globalt < trc))
-		trc = (uint32_t)globalt ;
-	
+		
 	char tt[UINT32_FMT] ;
-	tt[uint32_fmt(tt,trc)] = 0 ;
-
+	tt[uint32_fmt(tt,DEADLINE)] = 0 ;
+	
 	if (what)
 		newargv[m++] = SS_BINPREFIX "66-start" ;
 	else
@@ -135,12 +128,8 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 		VERBO3 strerr_warnwu2sys("wait for ",newargv[0]) ;
 		return 0 ;
 	}
-	if (wstat)
-	{
-		VERBO3 strerr_warnwu3x(what ? "start" : "stop"," classic services for tree: ", treename) ;
-		return 0 ;
-	}
-			
+	if (wstat) return 0 ;
+				
 	return 1 ;
 }
 
@@ -150,7 +139,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	int what ;
 	int wstat ;
 	pid_t pid ; 
-	unsigned int tmain = 0 ;
 	uid_t owner ;
 	
 	char const *treename = NULL ;
@@ -181,7 +169,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 'l' : 	if (!stralloc_cats(&live,l.arg)) retstralloc(111,"main") ;
 							if (!stralloc_0(&live)) retstralloc(111,"main") ;
 							break ;
-				case 'T' :	if (!uint0_scan(l.arg, &tmain)) exitusage() ; break ;
+				case 'T' :	if (!uint0_scan(l.arg, &DEADLINE)) exitusage() ; break ;
 				case 't' : 	treename = l.arg ; break ;
 				default : exitusage() ; 
 			}
@@ -195,12 +183,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	else if (*argv[0] == 'd') what = 0 ;
 	else exitusage() ;
 	
-	if (tmain){
-		tain_from_millisecs(&DEADLINE, tmain) ;
-		trc = tmain ;
-	}
-	else DEADLINE = tain_infinite_relative ;;
-
 	owner = MYUID ;
 
 	if (!set_ownersysdir(&base,owner)) strerr_diefu1sys(111, "set owner directory") ;
@@ -310,7 +292,12 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				return -1 ;
 			}
 		}
-		if (!doit(tree.s,treename,live.s,what,envp)) strerr_diefu2x(111,"start service for tree: ",treename) ;
+		int spfd = selfpipe_init() ;
+		if (spfd < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
+		if (sig_ignore(SIGHUP) < 0) strerr_diefu1sys(111, "ignore SIGHUP") ;
+		if (sig_ignore(SIGPIPE) < 0) strerr_diefu1sys(111,"ignore SIGPIPE") ;
+	
+		if (!doit(tree.s,treename,live.s,what,envp)) strerr_diefu3x(111, (what) ? "start" : "stop" , " service for tree: ",treename) ;
 	}
 	
 	stralloc_free(&base) ;

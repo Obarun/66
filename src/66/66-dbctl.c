@@ -43,7 +43,7 @@
 //#include <stdio.h>
 
 unsigned int VERBOSITY = 1 ;
-static tain_t DEADLINE ;
+static unsigned int DEADLINE = 0 ;
 stralloc saresolve = STRALLOC_ZERO ;
 
 #define USAGE "66-dbctl [ -h help ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -u up ] [ -d down ] service(s)"
@@ -70,7 +70,7 @@ static inline void info_help (void)
 int main(int argc, char const *const *argv,char const *const *envp)
 {
 	int r ;
-	unsigned int up, down, tmain, trc ;
+	unsigned int up, down ;
 	
 	int wstat ;
 	pid_t pid ;
@@ -87,7 +87,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	genalloc gasv = GENALLOC_ZERO ; //stralist
 	
-	up = down = tmain = trc = 0 ;
+	up = down = 0 ;
 		
 	PROG = "66-dbctl" ;
 	{
@@ -105,7 +105,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 'l' : 	if (!stralloc_cats(&live,l.arg)) retstralloc(111,"main") ;
 							if (!stralloc_0(&live)) retstralloc(111,"main") ;
 							break ;
-				case 'T' :	if (!uint0_scan(l.arg, &tmain)) exitusage() ; break ;
+				case 'T' :	if (!uint0_scan(l.arg, &DEADLINE)) exitusage() ; break ;
 				case 't' : 	if(!stralloc_cats(&tree,l.arg)) retstralloc(111,"main") ;
 							if(!stralloc_0(&tree)) retstralloc(111,"main") ;
 							break ;
@@ -119,12 +119,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 	if (argc < 1) exitusage() ;
 	
-	if (tmain){
-		tain_from_millisecs(&DEADLINE, tmain) ;
-		trc = tmain ;
-	}
-	else DEADLINE = tain_infinite_relative ;
-
 	owner = MYUID ;
 
 	if (!set_ownersysdir(&base,owner)) strerr_diefu1sys(111, "set owner directory") ;
@@ -168,21 +162,18 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (!stralloc_cats(&livetree,treename)) retstralloc(111,"main") ;
 	if (!stralloc_0(&livetree)) retstralloc(111,"main") ;
 	
+	int spfd = selfpipe_init() ;
+	if (spfd < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
+	if (sig_ignore(SIGHUP) < 0) strerr_diefu1sys(111, "ignore SIGHUP") ;
+	if (sig_ignore(SIGPIPE) < 0) strerr_diefu1sys(111,"ignore SIGPIPE") ;
+	
 	char const *newargv[10 + genalloc_len(stralist,&gasv)] ;
 	unsigned int m = 0 ;
 	char fmt[UINT_FMT] ;
 	fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
 	
-	int globalt ;
-	tain_t globaltto ;
-	tain_sub(&globaltto,&DEADLINE, &STAMP) ;
-	globalt = tain_to_millisecs(&globaltto) ;
-	if (!globalt) globalt = 1 ;
-	if (globalt > 0 && (!trc || (unsigned int) globalt < trc))
-		trc = (uint32_t)globalt ;
-	
 	char tt[UINT32_FMT] ;
-	tt[uint32_fmt(tt,trc)] = 0 ;
+	tt[uint32_fmt(tt,DEADLINE)] = 0 ;
 	
 	newargv[m++] = S6RC_BINPREFIX "s6-rc" ;
 	newargv[m++] = "-v" ;
@@ -206,20 +197,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	newargv[m++] = 0 ;
 	
-	
-	/** implementation of a sigpipe is needed here in case of
-	 * INT signal */
-	int spfd = selfpipe_init() ;
-	if (spfd < 0) VERBO3 strerr_diefu1sys(111,"init selfpipe") ;
-	{
-		sigset_t set ;
-		sigemptyset(&set) ;
-		sigaddset(&set, SIGCHLD) ;
-		sigaddset(&set, SIGINT) ;
-		sigaddset(&set, SIGTERM) ;
-		if (selfpipe_trapset(&set) < 0)
-			strerr_diefu1sys(111,"trap signals") ;
-	}
 	
 	pid = child_spawn0(newargv[0],newargv,envp) ;
 	if (waitpid_nointr(pid,&wstat, 0) < 0)
