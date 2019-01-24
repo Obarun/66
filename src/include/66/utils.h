@@ -20,9 +20,6 @@
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
-#include <skalibs/tai.h>
-
-#include <s6/ftrigr.h>
 
 extern unsigned int VERBOSITY ;
 
@@ -35,21 +32,7 @@ extern unsigned int VERBOSITY ;
 #define MYGID getgid()
 #define YOURGID(passto,owner) yourgid(passto,owner)
 
-typedef struct svstat_s svstat_t, *svstat_t_ref ;
-struct svstat_s
-{
-	int type ;
-	char const *name ;
-	size_t namelen ;
-	int down ;
-	int reload ;
-	int init ;
-	int unsupervise ;
-	int remove ;
-} ;
-#define SVSTAT_ZERO { .type = 0, .name = 0, .namelen = 0, .down = 0, .init = 0, .reload = 0, .unsupervise = 0, .remove = 0 }
-/** signal */
-#define ALARM 0
+
 
 
 extern int dir_cmpndel(char const *src, char const *dst,char const *exclude) ;
