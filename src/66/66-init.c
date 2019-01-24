@@ -25,16 +25,19 @@
 #include <skalibs/types.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/direntry.h>
 
 #include <s6/config.h>
 #include <s6-rc/config.h>
 #include <s6/s6-supervise.h>
 
 #include <66/utils.h>
+#include <66/enum.h>
 #include <66/constants.h>
 #include <66/tree.h>
 #include <66/backup.h>
 #include <66/db.h>
+#include <66/svc.h>
 
 //#include <stdio.h>
 
@@ -62,7 +65,7 @@ static inline void info_help (void)
 
 int main(int argc, char const *const *argv, char const *const *envp)
 {
-	int r, classic, db ;
+	int r, db, classic, earlier ;
 	
 	uid_t owner ;
 	int wstat ;
@@ -76,8 +79,13 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	stralloc live = STRALLOC_ZERO ;
 	stralloc scandir = STRALLOC_ZERO ;
 	stralloc livetree = STRALLOC_ZERO ;
+	stralloc saresolve = STRALLOC_ZERO ;
+	stralloc type = STRALLOC_ZERO ;
+	genalloc gasvc = GENALLOC_ZERO ; //stralist type
 	
-	classic = db = 0 ;
+	svstat_t svstat = SVSTAT_ZERO ;
+	genalloc gasvstat = GENALLOC_ZERO ; //svstat_t type
+	classic = db = earlier = 0 ;
 	
 	PROG = "66-init" ;
 	{
@@ -132,7 +140,11 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	if (r < 0) strerr_dief3x(111,"scandir: ",scandir.s," must be an absolute path") ;
 	
 	r = scan_mode(scandir.s,S_IFDIR) ;
+	if (r < 0) strerr_dief2x(111,scandir.s," conflicted format") ;
 	if (!r) strerr_dief3x(110,"scandir: ",scandir.s," doesn't exist") ;
+	
+	r = scandir_ok(scandir.s) ;
+	if (r != 1) earlier = 1 ; 
 	
 	if (!stralloc_copy(&livetree,&live)) retstralloc(111,"main") ;
 	r = set_livetree(&livetree,owner) ;
@@ -158,54 +170,83 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	svdir[svdirlen +  SS_SVC_LEN] = 0 ;
 	
 	/** svc already initiated */
-	r = scan_mode(scandir.s,S_IFDIR) ;
-	if (r < 0) strerr_dief2x(111,scandir.s," conflicted format") ;
-	if (r)
-	{
-		genalloc gasvc = GENALLOC_ZERO ;
-		if (!dir_get(&gasvc,scandir.s,"",S_IFDIR)) strerr_diefu2x(111,"parse directory: ",scandir.s) ;
-		for (unsigned int i = 0 ; i < genalloc_len(stralist,&gasvc) ; i++)
-		{
-			char *name = gaistr(&gasvc,i) ;
-			if (dir_search(svdir,name,S_IFDIR))
-			{
-				strerr_warni2x(treename," svc services already initiated") ;
-				classic = 0 ;
-			}
-		}
-		genalloc_deepfree(stralist,&gasvc,stra_free) ;
-	}
-	
-	/** db already initiated? */
-	if (db_ok(livetree.s,treename))
-	{
-		
-		strerr_warni2x(treename," db already initiated") ;
-		db = 0 ;
-	}
-	
-	livetree.len--;
-	if (!stralloc_cats(&livetree,"/")) retstralloc(111,"main") ;
-	if (!stralloc_cats(&livetree,treename)) retstralloc(111,"main") ;
-	if (!stralloc_0(&livetree)) retstralloc(111,"main") ;
-	
-	/** svc service work */
 	if (classic)
 	{
-		VERBO2 strerr_warni5x("copy svc service from ",svdir," to ",scandir.s," ...") ;
-		if (!hiercopy(svdir,scandir.s)) strerr_diefu4sys(111,"copy: ",svdir," to: ",scandir.s) ;
+		int i ;
+		if (!dir_cmp(svdir,scandir.s,"",&gasvc)) strerr_diefu4x(111,"compare ",svdir," to ",scandir.s) ;
+		if (!earlier)
+		{
+			for (i = 0 ; i < genalloc_len(stralist,&gasvc) ; i++)
+			{
+				char *name = gaistr(&gasvc,i) ;
+				size_t namelen = gaistrlen(&gasvc,i) ;
+			
+				if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_SRC))
+					strerr_diefu1x(111,"set revolve pointer to source") ;
+				r = resolve_read(&type,saresolve.s,name,"type") ;
+				if (r < -1) strerr_dief2x(111,"invalid .resolve directory: ",saresolve.s) ;
+				if (r && type.len && get_enumbyid(type.s,key_enum_el) == CLASSIC)
+				{
+					svstat.down = 0 ;
+					svstat.name = name ;
+					svstat.namelen = namelen ;
+					r = resolve_read(&type,saresolve.s,name,"down") ;
+					if (r > 0) svstat.down = 1 ;
+					if (!genalloc_append(svstat_t,&gasvstat,&svstat)) strerr_diefu3x(111,"add: ",name," on genalloc") ;
+				}
+			}
+			if (genalloc_len(svstat_t,&gasvstat))
+			{
+				if (!svc_init(scandir.s,svdir,&gasvstat)) strerr_diefu2x(111,"initiate service of tree: ",treename) ;
+			}
+			else strerr_warni3x("svc service of tree: ",treename," already initiated") ;
+		}
+		else
+		{
+			size_t dirlen = strlen(svdir) ;
+			for (i = 0 ; i < genalloc_len(stralist,&gasvc) ; i++)
+			{
+				char *name = gaistr(&gasvc,i) ;
+				size_t namelen = gaistrlen(&gasvc,i) ;
+				size_t scanlen = scandir.len - 1 ;
+				char svscan[scanlen + 1 + namelen + 1] ;
+				memcpy(svscan,scandir.s,scanlen) ;
+				svscan[scanlen] = '/' ;
+				memcpy(svscan + scanlen + 1, name,namelen) ;
+				svscan[scanlen + 1 + namelen] = 0 ;
+				char tocopy[dirlen + 1 + namelen + 1] ;
+				memcpy(tocopy,svdir,dirlen) ;
+				tocopy[dirlen] = '/' ;
+				memcpy(tocopy + dirlen + 1, name, namelen) ;
+				tocopy[dirlen + 1 + namelen] = 0 ;
+				if (!hiercopy(tocopy,svscan)) strerr_diefu4sys(111,"to copy: ",tocopy," to: ",svscan) ;
+			}
+		}
 	}
+	genalloc_deepfree(stralist,&gasvc,stra_free) ;
+	genalloc_free(svstat_t,&gasvstat) ;
+	stralloc_free(&saresolve) ;
+	stralloc_free(&type) ;
 	
-	/** rc services work */
+	/** db already initiated? */
 	if (db)
 	{
+		if (!earlier)
+		{
+			if (db_ok(livetree.s,treename))
+			{
+				strerr_warni3x(" db of tree: ",treename," already initiated") ;
+				goto end ;
+			}
+		}else strerr_dief3x(110,"scandir: ",scandir.s," is not running") ;
+	}else goto end ;
+	
+	{
+		livetree.len--;
+		if (!stralloc_cats(&livetree,"/")) retstralloc(111,"main") ;
+		if (!stralloc_cats(&livetree,treename)) retstralloc(111,"main") ;
+		if (!stralloc_0(&livetree)) retstralloc(111,"main") ;
 		
-		/** we assume that 66-scandir was launched previously because a db
-		 * need an operationnal scandir, so we control if /run/66/scandir/owner exist,
-		 * if not, exist immediately  */	
-		r = scandir_ok(scandir.s) ;
-		if (r != 1) strerr_dief3x(111,"scandir: ",scandir.s," is not running") ;
-			
 		memcpy(svdir + svdirlen,SS_DB,SS_DB_LEN) ;
 		memcpy(svdir + svdirlen + SS_DB_LEN, "/", 1) ;
 		memcpy(svdir + svdirlen + SS_DB_LEN + 1, treename,treenamelen) ;
@@ -241,12 +282,13 @@ int main(int argc, char const *const *argv, char const *const *envp)
 				strerr_diefu2x(111,"init db: ",svdir) ;
 		}
 	}
-	
-	stralloc_free(&base) ;
-	stralloc_free(&tree) ;
-	stralloc_free(&live) ;
-	stralloc_free(&scandir) ;
-	stralloc_free(&livetree) ;
+		
+	end:
+		stralloc_free(&base) ;
+		stralloc_free(&tree) ;
+		stralloc_free(&live) ;
+		stralloc_free(&scandir) ;
+		stralloc_free(&livetree) ;
 
 	return 0 ;
 }
