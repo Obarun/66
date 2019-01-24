@@ -29,6 +29,8 @@
 #include <skalibs/genalloc.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/unix-transactional.h>
+#include <skalibs/selfpipe.h>
+#include <skalibs/sig.h>
 
 #include <s6/s6-supervise.h>//s6_svc_ok
 #include <s6/config.h>
@@ -46,12 +48,14 @@
 //#include <stdio.h>
 
 unsigned int VERBOSITY = 1 ;
-static tain_t DEADLINE ;
+static unsigned int DEADLINE = 0 ;
 unsigned int UNSUP = 0 ;
+static char *SIG = "-D" ;
 stralloc saresolve = STRALLOC_ZERO ;
 genalloc gatoremove = GENALLOC_ZERO ;//stralist
 genalloc gaunsup = GENALLOC_ZERO ; //stralist
-#define USAGE "66-stop [ -h help ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -u unsupervise ] service(s)"
+
+#define USAGE "66-stop [ -h help ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -u unsupervise ] [ -X kill supervisor ] [ -K kill ] service(s)"
 
 static inline void info_help (void)
 {
@@ -64,7 +68,10 @@ static inline void info_help (void)
 "	-l: live directory\n"
 "	-T: timeout\n"
 "	-t: tree to use\n"
-"	-u: unsupervise service\n"
+"	-u: unsupervise service(s)\n"
+"	-X: bring down the service(s) and kill his supervisor\n"
+"	-K: kill the service(s) and keep it down\n"
+
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
@@ -90,7 +97,7 @@ int svc_release(char const *base, char const *scandir, char const *live, char co
 			VERBO3 strerr_warnt2x("unsupervise: ",rm) ;
 			if (rm_rf(rm) < 0)
 			{
-				VERBO3 strerr_warnwu2sys("remove directory: ",rm) ;
+				VERBO3 strerr_warnwu2sys("delete directory: ",rm) ;
 				return 0 ;
 			}
 		}
@@ -108,7 +115,7 @@ int svc_release(char const *base, char const *scandir, char const *live, char co
 			
 			if (!resolve_remove_service(saresolve.s,svname))
 			{
-				VERBO3 strerr_warnwu4sys("remove resolve service file: ",saresolve.s,"/.resolve/",svname) ;
+				VERBO3 strerr_warnwu4sys("delete resolve service file: ",saresolve.s,"/.resolve/",svname) ;
 				return 0 ;
 			}
 		}
@@ -140,7 +147,7 @@ int svc_down(char const *base,char const *scandir,char const *live,char const *t
 		{
 			if (!stra_add(&gatoremove,svname))
 			{
-				VERBO3 strerr_warnwu3x("add: ",svname," as service to remove") ;
+				VERBO3 strerr_warnwu3x("add: ",svname," as service to delete") ;
 				return 0 ;
 			}
 		}
@@ -170,7 +177,7 @@ int svc_down(char const *base,char const *scandir,char const *live,char const *t
 			{
 				if (!stra_add(&gatoremove,saresolve.s))
 				{
-					VERBO3 strerr_warnwu3x("add logger of: ",saresolve.s," as service to remove") ;
+					VERBO3 strerr_warnwu3x("add logger of: ",saresolve.s," as service to delete") ;
 					return 0 ;
 				}
 			}
@@ -188,9 +195,10 @@ int svc_down(char const *base,char const *scandir,char const *live,char const *t
 	unsigned int m = 0 ;
 	char fmt[UINT_FMT] ;
 	fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
+	/*char tt[UINT32_FMT] ;
+	tt[uint32_fmt(tt,tain_to_millisecs(&DEADLINE))] = 0 ; */
 	char tt[UINT32_FMT] ;
-	tt[uint32_fmt(tt,tain_to_millisecs(&DEADLINE))] = 0 ;
-
+	tt[uint32_fmt(tt,DEADLINE)] = 0 ;
 	newargv[m++] = SS_BINPREFIX "66-svctl" ;
 	newargv[m++] = "-v" ;
 	newargv[m++] = fmt ;
@@ -200,7 +208,7 @@ int svc_down(char const *base,char const *scandir,char const *live,char const *t
 	newargv[m++] = live ;
 	newargv[m++] = "-t" ;
 	newargv[m++] = treename ;
-	newargv[m++] = "-D" ;
+	newargv[m++] = SIG ;
 	for (unsigned int i = 0 ; i < genalloc_len(stralist,&tot) ; i++) 
 		newargv[m++] = gaistr(&tot,i) ;
 	
@@ -226,10 +234,10 @@ int svc_down(char const *base,char const *scandir,char const *live,char const *t
 	}
 	for (unsigned int i = 0; i < genalloc_len(svstat_t,ga) ; i++)
 	{
-		VERBO3 strerr_warnt2x("remove remove resolve file for: ",genalloc_s(svstat_t,ga)[i].name) ;
+		VERBO3 strerr_warnt2x("delete remove resolve file for: ",genalloc_s(svstat_t,ga)[i].name) ;
 		if (!resolve_remove(saresolve.s,genalloc_s(svstat_t,ga)[i].name,"remove"))
 		{
-			VERBO3 strerr_warnwu3sys("remove resolve file",saresolve.s,"/remove") ;
+			VERBO3 strerr_warnwu3sys("delete resolve file",saresolve.s,"/remove") ;
 			return 0 ;
 		}
 	}
@@ -254,7 +262,7 @@ int rc_release(char const *base, char const *scandir, char const *live,char cons
 			
 			if (!resolve_remove_service(saresolve.s,svname))
 			{
-				VERBO3 strerr_warnwu4sys("remove resolve service file: ",saresolve.s,"/.resolve/",svname) ;
+				VERBO3 strerr_warnwu4sys("delete resolve service file: ",saresolve.s,"/.resolve/",svname) ;
 				return 0 ;
 			}
 		}
@@ -263,7 +271,7 @@ int rc_release(char const *base, char const *scandir, char const *live,char cons
 	return 1 ;
 }
 
-int rc_down(char const *base, char const *scandir, char const *live, char const *livetree,char const *tree, char const *treename,genalloc *ga,char const *const *envp,unsigned int trc)
+int rc_down(char const *base, char const *scandir, char const *live, char const *livetree,char const *tree, char const *treename,genalloc *ga,char const *const *envp)
 {
 	int wstat ;
 	pid_t pid ;
@@ -290,7 +298,7 @@ int rc_down(char const *base, char const *scandir, char const *live, char const 
 		{
 			if (!stra_add(&gatoremove,svname))
 			{
-				VERBO3 strerr_warnwu3x("add: ",svname," as service to remove") ;
+				VERBO3 strerr_warnwu3x("add: ",svname," as service to delete") ;
 				return 0 ;
 			}
 		}
@@ -311,7 +319,7 @@ int rc_down(char const *base, char const *scandir, char const *live, char const 
 			{
 				if (!stra_add(&gatoremove,saresolve.s))
 				{
-					VERBO3 strerr_warnwu3x("add logger of: ",saresolve.s," as service to remove") ;
+					VERBO3 strerr_warnwu3x("add logger of: ",saresolve.s," as service to delete") ;
 					return 0 ;
 				}
 			}
@@ -333,18 +341,10 @@ int rc_down(char const *base, char const *scandir, char const *live, char const 
 	unsigned int m = 0 ;
 	char fmt[UINT_FMT] ;
 	fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;	
-	
-	int globalt ;
-	tain_t globaltto ;
-	tain_sub(&globaltto,&DEADLINE, &STAMP) ;
-	globalt = tain_to_millisecs(&globaltto) ;
-	if (!globalt) globalt = 1 ;
-	if (globalt > 0 && (!trc || (unsigned int) globalt < trc))
-		trc = (uint32_t)globalt ;
-	
+
 	char tt[UINT32_FMT] ;
-	tt[uint32_fmt(tt,trc)] = 0 ;
-	
+	tt[uint32_fmt(tt,DEADLINE)] = 0 ;
+
 	newargv[m++] = SS_BINPREFIX "66-dbctl" ;
 	newargv[m++] = "-v" ;
 	newargv[m++] = fmt ;
@@ -380,10 +380,10 @@ int rc_down(char const *base, char const *scandir, char const *live, char const 
 	}
 	for (unsigned int i = 0; i < genalloc_len(svstat_t,ga) ; i++)
 	{
-		VERBO3 strerr_warnt2x("remove remove resolve file for: ",genalloc_s(svstat_t,ga)[i].name) ;
+		VERBO3 strerr_warnt2x("delete remove resolve file for: ",genalloc_s(svstat_t,ga)[i].name) ;
 		if (!resolve_remove(saresolve.s,genalloc_s(svstat_t,ga)[i].name,"remove"))
 		{
-			VERBO3 strerr_warnwu3sys("remove resolve file",saresolve.s,"/remove") ;
+			VERBO3 strerr_warnwu3sys("delete resolve file",saresolve.s,"/remove") ;
 			return 0 ;
 		}
 	}
@@ -396,9 +396,8 @@ int rc_down(char const *base, char const *scandir, char const *live, char const 
 
 int main(int argc, char const *const *argv,char const *const *envp)
 {
-	int r, rb ;
-	unsigned int trc ;
-	
+	int r, rb, sigopt ;
+		
 	uid_t owner ;
 	
 	char *treename = 0 ;
@@ -413,7 +412,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	genalloc nclassic = GENALLOC_ZERO ;
 	genalloc nrc = GENALLOC_ZERO ;
 	
-	unsigned int tmain = trc = 0 ;
+	sigopt = 0 ;
 	
 	PROG = "66-stop" ;
 	{
@@ -421,7 +420,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:l:t:T:u", &l) ;
+			int opt = getopt_args(argc,argv, ">hv:l:t:T:uXK", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 
@@ -432,11 +431,13 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 'l' : 	if(!stralloc_cats(&live,l.arg)) retstralloc(111,"main") ;
 							if(!stralloc_0(&live)) retstralloc(111,"main") ;
 							break ;
-				case 'T' :	if (!uint0_scan(l.arg, &tmain)) exitusage() ; break ;
+				case 'T' :	if (!uint0_scan(l.arg, &DEADLINE)) exitusage() ; break ;
 				case 't' : 	if(!stralloc_cats(&tree,l.arg)) retstralloc(111,"main") ;
 							if(!stralloc_0(&tree)) retstralloc(111,"main") ;
 							break ;
 				case 'u' :	UNSUP = 1 ; break ;
+				case 'X' :	if (sigopt) exitusage() ; sigopt = 1 ; SIG = "-X" ; break ;
+				case 'K' :	if (sigopt) exitusage() ; sigopt = 1 ; SIG = "-K" ; break ;
 				default : exitusage() ; 
 			}
 		}
@@ -448,13 +449,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	owner = MYUID ;
 	
 	if (!set_ownersysdir(&base,owner)) strerr_diefu1sys(111, "set owner directory") ;
-	
-	if (tmain){
-		tain_from_millisecs(&DEADLINE, tmain) ;
-		trc = tmain ;
-	}
-	else DEADLINE = tain_infinite_relative ;
-	
+
 	r = tree_sethome(&tree,base.s) ;
 	if (r < 0) strerr_diefu1x(110,"find the current tree. You must use -t options") ;
 	if (!r) strerr_diefu2sys(111,"find tree: ", tree.s) ;
@@ -520,10 +515,10 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				r = resolve_read(&type,saresolve.s,*argv,"remove") ;
 				if (r < -1) strerr_diefu2sys(111,"invalid .resolve directory: ",saresolve.s) ;
 				if (r > 0) svsrc.remove = 1 ;
-				if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_BACK))
+			/*	if (!resolve_pointo(&saresolve,base.s,live.s,tree.s,treename,0,SS_RESOLVE_BACK))
 					strerr_diefu1x(111,"set revolve pointer to backup") ;
 				r = resolve_read(&type,saresolve.s,*argv,"type") ;
-				if (r <= 0 && !UNSUP) strerr_dief3x(111,"service: ",*argv," is not running, you can only start it") ;
+				if (r <= 0 && !UNSUP) strerr_dief3x(111,"service: ",*argv," is not running, you can only start it") ;*/
 			}
 			if (svsrc.type == CLASSIC)
 			{
@@ -531,7 +526,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				if (!stralloc_0(&svok)) retstralloc(111,"main") ; 
 				r = s6_svc_ok(svok.s) ;
 				if (r < 0) strerr_diefu2sys(111,"check ", svok.s) ;
-				if (!r)	svsrc.remove = 1 ;
+				//if (!r)	svsrc.remove = 1 ;
+				if (!r) strerr_dief3x(111,"service: ",*argv," is not running, you can only start it") ;
 			}
 			
 			if (UNSUP) svsrc.unsupervise = 1 ;
@@ -549,7 +545,27 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		stralloc_free(&type) ;
 		stralloc_free(&svok) ;
 	}
-
+	
+	int spfd = selfpipe_init() ;
+	if (spfd < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
+	if (sig_ignore(SIGHUP) < 0) strerr_diefu1sys(111, "ignore SIGHUP") ;
+	if (sig_ignore(SIGPIPE) < 0) strerr_diefu1sys(111,"ignore SIGPIPE") ;
+	
+	/** rc work */
+	if (genalloc_len(svstat_t,&nrc))
+	{
+		VERBO2 strerr_warni1x("stop rc services ...") ;
+		if (!rc_down(base.s, scandir.s, live.s,livetree.s,tree.s,treename,&nrc,envp))
+			strerr_diefu1x(111,"update rc services") ;
+		VERBO2 strerr_warni1x("release rc services ...") ;
+		if (!rc_release(base.s,scandir.s, live.s,tree.s,treename))
+			strerr_diefu1x(111,"release rc services") ;
+		VERBO2 strerr_warni3x("switch rc services of: ",treename," to source") ;
+		if (!db_switch_to(base.s,livetree.s,tree.s,treename,envp,SS_SWSRC))
+			strerr_diefu5x(111,"switch",livetree.s,"/",treename," to source") ;
+	}
+	
+	/** svc work */
 	if (genalloc_len(svstat_t,&nclassic))
 	{
 		VERBO2 strerr_warni1x("stop svc services ...") ;
@@ -562,18 +578,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (!svc_switch_to(base.s,tree.s,treename,SS_SWSRC))
 			strerr_diefu3x(111,"switch svc service of: ",treename," to source") ;
 		
-	}
-	if (genalloc_len(svstat_t,&nrc))
-	{
-		VERBO2 strerr_warni1x("stop rc services ...") ;
-		if (!rc_down(base.s, scandir.s, live.s,livetree.s,tree.s,treename,&nrc,envp,trc))
-			strerr_diefu1x(111,"update rc services") ;
-		VERBO2 strerr_warni1x("release rc services ...") ;
-		if (!rc_release(base.s,scandir.s, live.s,tree.s,treename))
-			strerr_diefu1x(111,"release rc services") ;
-		VERBO2 strerr_warni3x("switch rc services of: ",treename," to source") ;
-		if (!db_switch_to(base.s,livetree.s,tree.s,treename,envp,SS_SWSRC))
-			strerr_diefu5x(111,"switch",livetree.s,"/",treename," to source") ;
 	}
 		
 	if (UNSUP || genalloc_len(stralist,&gatoremove))
@@ -591,6 +595,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	genalloc_free(svstat_t,&nrc) ;
 	genalloc_free(svstat_t,&nclassic) ;
 	free(treename) ;
+	selfpipe_finish() ;
 	
 	return 0 ;		
 }
