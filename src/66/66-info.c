@@ -41,7 +41,8 @@
 
 #include <s6/s6-supervise.h>//s6_svc_ok
 
-#include <stdio.h>
+//#include <stdio.h>
+
 unsigned int VERBOSITY = 1 ;
 static stralloc base = STRALLOC_ZERO ;
 static stralloc live = STRALLOC_ZERO ;

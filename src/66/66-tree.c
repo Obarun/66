@@ -33,7 +33,8 @@
 #include <66/constants.h>
 #include <66/db.h>
 
-#include <stdio.h>
+//#include <stdio.h>
+
 #define USAGE "66-tree [ -h help ] [ -v verbosity ] [ -n new ] [ -a allow user,user,... ] [ -d deny user,user,... ] [ -c current ] [ -E enable ] [ -D disable ] [ -R remove ] [ -C clone ] tree"
 
 unsigned int VERBOSITY = 1 ;
