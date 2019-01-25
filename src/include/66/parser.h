@@ -131,7 +131,7 @@ struct sv_alltype_s
 	uint32_t death ;
 	int signal ;
 	unsigned int pipeline ; //pos in deps
-	genalloc env ; //type sv_env, pos in gaenv
+	genalloc env ; //type diuint32, pos in saenv
 } ;
 
 #define SV_EXEC_ZERO \
@@ -293,6 +293,10 @@ extern int add_pipe(sv_alltype *sv, stralloc *sa) ;
 extern void sep_err(int r,char const sepstart,char const sepend,char const *keyname) ;
 
 extern int add_cname(genalloc *ga,avltree *tree,char const *name, sv_alltype *sv_before) ;
+
+extern int add_env(char *line,genalloc *ga,stralloc *sa) ;
+
+extern int parse_env(keynocheck *nocheck) ;
 
 extern int resolve_srcdeps(sv_alltype *sv_before,char const *svmain,char const *src, char const *tree,unsigned int *nbsv,stralloc *sasv) ;
 

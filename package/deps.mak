@@ -18,6 +18,8 @@ src/66/66-stop.o src/66/66-stop.lo: src/66/66-stop.c src/include/66/backup.h src
 src/66/66-svctl.o src/66/66-svctl.lo: src/66/66-svctl.c src/include/66/constants.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-tree.o src/66/66-tree.lo: src/66/66-tree.c src/include/66/config.h src/include/66/constants.h src/include/66/db.h src/include/66/tree.h src/include/66/utils.h
 src/66/execl-cmdline.o src/66/execl-cmdline.lo: src/66/execl-cmdline.c
+src/extra-tools/66-envfile.o src/extra-tools/66-envfile.lo: src/extra-tools/66-envfile.c src/include/66/parser.h
+src/extra-tools/execl-cmdline.o src/extra-tools/execl-cmdline.lo: src/extra-tools/execl-cmdline.c
 src/lib66/backup_cmd_switcher.o src/lib66/backup_cmd_switcher.lo: src/lib66/backup_cmd_switcher.c src/include/66/constants.h src/include/66/enum.h src/include/66/utils.h
 src/lib66/backup_make_new.o src/lib66/backup_make_new.lo: src/lib66/backup_make_new.c src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/tree.h src/include/66/utils.h
 src/lib66/backup_realpath_sym.o src/lib66/backup_realpath_sym.lo: src/lib66/backup_realpath_sym.c src/include/66/constants.h src/include/66/enum.h src/include/66/utils.h
@@ -45,7 +47,7 @@ src/lib66/set_livetree.o src/lib66/set_livetree.lo: src/lib66/set_livetree.c src
 src/lib66/set_ownerhome.o src/lib66/set_ownerhome.lo: src/lib66/set_ownerhome.c src/include/66/config.h src/include/66/utils.h
 src/lib66/set_ownersysdir.o src/lib66/set_ownersysdir.lo: src/lib66/set_ownersysdir.c src/include/66/config.h src/include/66/utils.h
 src/lib66/sv_alltype_zero.o src/lib66/sv_alltype_zero.lo: src/lib66/sv_alltype_zero.c src/include/66/parser.h
-src/lib66/svc_init.o src/lib66/svc_init.lo: src/lib66/svc_init.c
+src/lib66/svc_init.o src/lib66/svc_init.lo: src/lib66/svc_init.c src/include/66/svc.h src/include/66/utils.h
 src/lib66/svc_init_pipe.o src/lib66/svc_init_pipe.lo: src/lib66/svc_init_pipe.c src/include/66/svc.h src/include/66/utils.h
 src/lib66/svc_switch_to.o src/lib66/svc_switch_to.lo: src/lib66/svc_switch_to.c src/include/66/backup.h src/include/66/enum.h src/include/66/utils.h
 src/lib66/tree_cmd_state.o src/lib66/tree_cmd_state.lo: src/lib66/tree_cmd_state.c src/include/66/constants.h src/include/66/utils.h
@@ -79,8 +81,10 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-svctl: src/66/66-svctl.o ${LIB66} -loblibs -ls6 -lskarnet
 66-tree: EXTRA_LIBS :=
 66-tree: src/66/66-tree.o ${LIB66} -loblibs -lskarnet
+66-envfile: EXTRA_LIBS :=
+66-envfile: src/extra-tools/66-envfile.o ${LIB66} -lexecline -loblibs -lskarnet ${LIBEXECLINE}
 execl-cmdline: EXTRA_LIBS :=
-execl-cmdline: src/66/execl-cmdline.o -lexecline -loblibs -lskarnet
+execl-cmdline: src/extra-tools/execl-cmdline.o -lexecline -loblibs -lskarnet
 ifeq ($(strip $(STATIC_LIBS_ARE_PIC)),)
 lib66.a.xyzzy: src/lib66/backup_cmd_switcher.o src/lib66/backup_make_new.o src/lib66/backup_realpath_sym.o src/lib66/db_cmd_master.o src/lib66/db_compile.o src/lib66/db_find_compiled_state.o src/lib66/db_get_permissions.o src/lib66/db_ok.o src/lib66/db_switch_to.o src/lib66/db_update.o src/lib66/dir_cmpndel.o src/lib66/get_enum.o src/lib66/get_uidgid.o src/lib66/get_userhome.o src/lib66/graph.o src/lib66/parser.o src/lib66/parser_utils.o src/lib66/parser_write.o src/lib66/resolve.o src/lib66/scandir_ok.o src/lib66/scandir_send_signal.o src/lib66/set_livedir.o src/lib66/set_livescan.o src/lib66/set_livetree.o src/lib66/set_ownerhome.o src/lib66/set_ownersysdir.o src/lib66/sv_alltype_zero.o src/lib66/svc_init.o src/lib66/svc_init_pipe.o src/lib66/svc_switch_to.o src/lib66/tree_cmd_state.o src/lib66/tree_copy.o src/lib66/tree_copy_tmp.o src/lib66/tree_find_current.o src/lib66/tree_get_permissions.o src/lib66/tree_sethome.o src/lib66/tree_setname.o src/lib66/tree_switch_current.o
 else

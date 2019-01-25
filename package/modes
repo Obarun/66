@@ -3,6 +3,7 @@
 66-tree			0755
 66-dbctl		0755
 66-enable		0755
+66-envfile		0755
 66-disable		0755
 66-start		0755
 66-stop			0755
