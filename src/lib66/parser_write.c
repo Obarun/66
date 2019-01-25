@@ -762,7 +762,6 @@ int write_common(sv_alltype *sv, char const *dst)
 		/** /etc/env/sv_name*/
 		size_t sslen = sa.len - 2 ;//-2 remove 0 and '/'
 		char *name = keep.s + sv->cname.name ;
-		size_t namelen = strlen(name) ;
 		char dst[sslen + SS_ENVDIR_LEN + 1] ;
 		memcpy(dst,sa.s,sslen) ;
 		memcpy(dst + sslen,SS_ENVDIR,SS_ENVDIR_LEN) ;
