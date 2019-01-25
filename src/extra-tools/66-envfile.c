@@ -30,12 +30,13 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/diuint32.h>
 #include <skalibs/env.h>
+#include <skalibs/sgetopt.h>
 
 #include <execline/execline.h>
 
 #include <66/parser.h>
 
-#include <stdio.h>
+//#include <stdio.h>
 
 unsigned int VERBOSITY = 1 ;
 static stralloc senv = STRALLOC_ZERO ;
@@ -161,14 +162,14 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	
 	r = i = one = unexport = 0 ;
 	insist = 1 ;
-		
+	
 	PROG = "66-envfile" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hf:l", &l) ;
+			int opt = subgetopt_r(argc,argv, ">hlf:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
