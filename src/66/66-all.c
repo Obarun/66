@@ -245,7 +245,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		strerr_warni1x("nothing to do") ;
 		return 0 ;
 	}
-	
+			
 	for (unsigned int i = 0 ; i < genalloc_len(stralist,&in) ; i++)
 	{
 		tree = stralloc_zero ;
@@ -292,11 +292,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				return -1 ;
 			}
 		}
-		int spfd = selfpipe_init() ;
-		if (spfd < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
-		if (sig_ignore(SIGHUP) < 0) strerr_diefu1sys(111, "ignore SIGHUP") ;
-		if (sig_ignore(SIGPIPE) < 0) strerr_diefu1sys(111,"ignore SIGPIPE") ;
-	
+			
 		if (!doit(tree.s,treename,live.s,what,envp)) strerr_diefu3x(111, (what) ? "start" : "stop" , " service for tree: ",treename) ;
 	}
 	
