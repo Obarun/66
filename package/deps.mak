@@ -17,7 +17,6 @@ src/66/66-start.o src/66/66-start.lo: src/66/66-start.c src/include/66/backup.h 
 src/66/66-stop.o src/66/66-stop.lo: src/66/66-stop.c src/include/66/backup.h src/include/66/config.h src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-svctl.o src/66/66-svctl.lo: src/66/66-svctl.c src/include/66/constants.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-tree.o src/66/66-tree.lo: src/66/66-tree.c src/include/66/config.h src/include/66/constants.h src/include/66/db.h src/include/66/tree.h src/include/66/utils.h
-src/66/execl-cmdline.o src/66/execl-cmdline.lo: src/66/execl-cmdline.c
 src/extra-tools/66-envfile.o src/extra-tools/66-envfile.lo: src/extra-tools/66-envfile.c src/include/66/parser.h
 src/extra-tools/execl-cmdline.o src/extra-tools/execl-cmdline.lo: src/extra-tools/execl-cmdline.c
 src/lib66/backup_cmd_switcher.o src/lib66/backup_cmd_switcher.lo: src/lib66/backup_cmd_switcher.c src/include/66/constants.h src/include/66/enum.h src/include/66/utils.h
