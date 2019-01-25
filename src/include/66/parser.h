@@ -330,7 +330,7 @@ extern int write_consprod(sv_alltype *sv,char const *prodname,char const *consna
 
 extern int write_dependencies(char const *src, sv_name_t *cname,char const *dst,char const *filename, genalloc *ga, unsigned int force) ;
 
-extern int write_env(genalloc *env,stralloc *sa,char const *dst) ;
+extern int write_env(char const *name, genalloc *env,stralloc *sa,char const *dst) ;
 
 extern void freed_parser(void) ;
 

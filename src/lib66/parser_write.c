@@ -752,18 +752,28 @@ int write_common(sv_alltype *sv, char const *dst)
 	/** environment */
 	if (sv->opts[2])
 	{
+		stralloc sa = STRALLOC_ZERO ;
+		if (!set_ownersysdir(&sa,MYUID))
+		{
+			VERBO3 strerr_warnwu1sys("get home system directory") ;
+			return 0 ;
+		}
+		
 		/** /etc/env/sv_name*/
-		size_t sslen = strlen(SS_SERVICEDIR) - 1 ;
+		size_t sslen = sa.len - 2 ;//-2 remove 0 and '/'
 		char *name = keep.s + sv->cname.name ;
 		size_t namelen = strlen(name) ;
-		char dst[sslen + SS_ENVDIR_LEN + 1 + namelen + 1] ;
-		memcpy(dst,SS_SERVICEDIR,sslen) ;
+		char dst[sslen + SS_ENVDIR_LEN + 1] ;
+		memcpy(dst,sa.s,sslen) ;
 		memcpy(dst + sslen,SS_ENVDIR,SS_ENVDIR_LEN) ;
 		dst[sslen + SS_ENVDIR_LEN] = 0 ;
+		
+		stralloc_free(&sa) ;
+		
 		r = scan_mode(dst,S_IFDIR) ;
 		if (r < 0)
 		{
-			VERBO3 strerr_warnwu2sys("invalid environment directory: ",dst) ;
+			VERBO3 strerr_warnw2sys("invalid environment directory: ",dst) ;
 			return 0 ;
 		}
 		if (!r)
@@ -774,12 +784,8 @@ int write_common(sv_alltype *sv, char const *dst)
 				return 0 ;
 			}
 		}
-		
-		dst[sslen + SS_ENVDIR_LEN] = '/' ;
-		memcpy(dst + sslen + SS_ENVDIR_LEN + 1, name,namelen) ;
-		dst[sslen + SS_ENVDIR_LEN + 1 + namelen] = 0 ;
-		
-		if (!write_env(&sv->env,&saenv,dst))
+				
+		if (!write_env(name,&sv->env,&saenv,dst))
 		{
 			VERBO3 strerr_warnwu1x("write environment") ;
 			return 0 ;
@@ -792,10 +798,9 @@ int write_common(sv_alltype *sv, char const *dst)
 int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,int mode)
 {
 	
-	unsigned int key, val ;
 	unsigned int type = sv->cname.itype ;
 	char *name = keep.s+sv->cname.name ;
-	size_t namelen = strlen(name) ;
+	
 	size_t filelen = strlen(file) ;
 	size_t dstlen = strlen(dst) ;
 	char write[dstlen + 1 + filelen + 1] ;
@@ -806,16 +811,21 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 	stralloc runuser = STRALLOC_ZERO ;
 	stralloc execute = STRALLOC_ZERO ;
 	
-	key = val = 0 ;
-	size_t envdstlen = strlen(SS_SERVICEDIR) - 1;
-	char envdata[envdstlen + SS_ENVDIR_LEN + 1 + namelen + 1] ;
-	memcpy(envdata,SS_SERVICEDIR,envdstlen) ;
+	stralloc sa = STRALLOC_ZERO ;
+	if (!set_ownersysdir(&sa,MYUID))
+	{
+		VERBO3 strerr_warnwu1sys("get home system directory") ;
+		return 0 ;
+	}
+	size_t envdstlen = sa.len - 2 ;//-2 0 of stra and last '/'
+	char envdata[envdstlen + SS_ENVDIR_LEN + 1] ;
+	memcpy(envdata,sa.s,envdstlen) ;
 	memcpy(envdata + envdstlen, SS_ENVDIR,SS_ENVDIR_LEN) ;
-	envdata[envdstlen + SS_ENVDIR_LEN] = '/' ;
-	memcpy(envdata + envdstlen + SS_ENVDIR_LEN + 1, name,namelen) ;
-	envdata[envdstlen + SS_ENVDIR_LEN + 1 + namelen] = 0 ;
+	envdata[envdstlen + SS_ENVDIR_LEN] = 0 ;
 	
-		
+	
+	stralloc_free(&sa) ;
+			
 	switch (exec->build)
 	{
 		case AUTO:
@@ -833,31 +843,11 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 			/** environment */
 			if (sv->opts[2] && (exec->build == AUTO))
 			{
-				if (!stralloc_cats(&env,S6_BINPREFIX "s6-envdir ")) retstralloc(0,"write_exec") ;
+				if (!stralloc_cats(&env,S6_BINPREFIX "66-envfile -f ")) retstralloc(0,"write_exec") ;
+				if (!stralloc_cats(&env,name)) retstralloc(0,"write_exec") ;
+				if (!stralloc_cats(&env," ")) retstralloc(0,"write_exec") ;
 				if (!stralloc_cats(&env,envdata)) retstralloc(0,"write_exec") ;
 				if (!stralloc_cats(&env,"\n")) retstralloc(0,"write_exec") ;
-				if (genalloc_len(diuint32,&sv->env))
-				{
-					for (unsigned int i = 0 ; i < genalloc_len(diuint32,&sv->env) ; i++)
-					{
-						key = genalloc_s(diuint32,&sv->env)[i].left ;
-						if ((saenv.s+key)[0] == '!')
-						{
-							if (!stralloc_cats(&env,"importas -uD \"\" ")) retstralloc(0,"write_exec") ;
-							if (!stralloc_cats(&env,saenv.s+1+key)) retstralloc(0,"write_exec") ;
-							if (!stralloc_cats(&env," ")) retstralloc(0,"write_exec") ;
-							if (!stralloc_cats(&env,saenv.s+1+key)) retstralloc(0,"write_exec") ;
-						}
-						else
-						{
-							if (!stralloc_cats(&env,"importas -D \"\" ")) retstralloc(0,"write_exec") ;
-							if (!stralloc_cats(&env,saenv.s+key)) retstralloc(0,"write_exec") ;
-							if (!stralloc_cats(&env," ")) retstralloc(0,"write_exec") ;
-							if (!stralloc_cats(&env,saenv.s+key)) retstralloc(0,"write_exec") ;
-						}
-						if (!stralloc_cats(&env,"\n")) retstralloc(0,"write_exec") ;
-					}
-				}
 			}
 			/** shebang */
 			if (type != ONESHOT)
@@ -997,14 +987,14 @@ int write_uint(char const *dst, char const *name, uint32_t ui)
 	return 1 ;
 }
 
-int write_env(genalloc *env,stralloc *sa,char const *dst)
+int write_env(char const *name, genalloc *env,stralloc *sa,char const *dst)
 {
 	int r ;
-	
+	stralloc tmp = STRALLOC_ZERO ;
 	if (genalloc_len(diuint32,env))
 	{
-		unsigned int key = 0 ;
-		unsigned int val = 0 ;
+		char *key = 0 ;
+		char *val = 0 ;
 		r = scan_mode(dst,S_IFDIR) ;
 		if (r < 0)
 		{
@@ -1021,23 +1011,22 @@ int write_env(genalloc *env,stralloc *sa,char const *dst)
 		}
 		for (unsigned int i = 0 ; i < genalloc_len(diuint32,env) ; i++)
 		{
-			key = genalloc_s(diuint32,env)[i].left ;
-			val = genalloc_s(diuint32,env)[i].right ;
+			key = sa->s + genalloc_s(diuint32,env)[i].left ;
+			val = sa->s + genalloc_s(diuint32,env)[i].right ;
 			
-			if ((sa->s+key)[0] == '!')
-				key++ ;
-		/*	if (dir_search(dst,sa->s+key,S_IFREG))
-			{
-				VERBO3 strerr_warnw5x("file: ",dst,"/",sa->s+key," already exist, skip it") ;
-				continue ;
-			}*/
-			if (!file_write_unsafe(dst,sa->s+key,sa->s+val,strlen(sa->s+val)))
-			{
-				VERBO3 strerr_warnwu4sys("create file: ",dst,"/",sa->s+key) ;
-				return 0 ;
-			}
+			if (!stralloc_cats(&tmp,key)) retstralloc(0,"write_env") ;
+			if (!stralloc_cats(&tmp,"=")) retstralloc(0,"write_env") ;
+			if (!stralloc_cats(&tmp,val)) retstralloc(0,"write_env") ;
+			if (!stralloc_cats(&tmp,"\n")) retstralloc(0,"write_env") ;
 		}
 	}
+	if (!file_write_unsafe(dst,name,tmp.s,tmp.len))
+	{
+		VERBO3 strerr_warnwu4sys("create file: ",dst,"/",name) ;
+		return 0 ;
+	}
+	
+	stralloc_free(&tmp) ;
 	
 	return 1 ;
 }

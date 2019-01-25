@@ -74,7 +74,7 @@
 #define SS_SWBACK 1 //switch to backup
 
 /** environment and data */
-#define SS_ENVDIR "/env"
+#define SS_ENVDIR "/conf"
 #define SS_ENVDIR_LEN (sizeof SS_ENVDIR - 1)
 #define SS_DATADIR "/data"
 #define SS_DATADIR_LEN (sizeof SS_DATADIR - 1)
