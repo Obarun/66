@@ -46,7 +46,7 @@ unsigned int VERBOSITY = 1 ;
 static unsigned int DEADLINE = 0 ;
 stralloc saresolve = STRALLOC_ZERO ;
 
-#define USAGE "66-dbctl [ -h help ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -u up ] [ -d down ] service(s)"
+#define USAGE "66-dbctl [ -h help ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -r reload ] [ -u up ] [ -d down ] service(s)"
 
 static inline void info_help (void)
 {
@@ -61,16 +61,46 @@ static inline void info_help (void)
 "	-t: tree to use\n"
 "	-u: bring up service in database of tree\n"
 "	-d: bring down service in database of tree\n"
+"	-r: reload service\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
     strerr_diefu1sys(111, "write to stdout") ;
 }
+static pid_t send(genalloc *gasv, char const *livetree, char const *signal,char const *const *envp)
+{
+	char const *newargv[10 + genalloc_len(stralist,gasv)] ;
+	unsigned int m = 0 ;
+	char fmt[UINT_FMT] ;
+	fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
+	
+	char tt[UINT32_FMT] ;
+	tt[uint32_fmt(tt,DEADLINE)] = 0 ;
+	
+	newargv[m++] = S6RC_BINPREFIX "s6-rc" ;
+	newargv[m++] = "-v" ;
+	newargv[m++] = fmt ;
+	newargv[m++] = "-t" ;
+	newargv[m++] = tt ;
+	newargv[m++] = "-l" ;
+	newargv[m++] = livetree ;
+	newargv[m++] = signal ;
+	newargv[m++] = "change" ;
+	
+	for (unsigned int i = 0 ; i<genalloc_len(stralist,gasv); i++)
+		newargv[m++] = gaistr(gasv,i) ;
+	
+	newargv[m++] = 0 ;
+	
+	
+	return child_spawn0(newargv[0],newargv,envp) ;
+	
+}
 
 int main(int argc, char const *const *argv,char const *const *envp)
 {
 	int r ;
-	unsigned int up, down ;
+	unsigned int up, down, reload ;
 	
 	int wstat ;
 	pid_t pid ;
@@ -78,7 +108,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	uid_t owner ;
 	
 	char *treename = 0 ;
-	
+	char *signal = 0 ;
 	stralloc base = STRALLOC_ZERO ;
 	stralloc tree = STRALLOC_ZERO ;
 	stralloc live = STRALLOC_ZERO ;
@@ -87,7 +117,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	genalloc gasv = GENALLOC_ZERO ; //stralist
 	
-	up = down = 0 ;
+	up = down = reload = 0 ;
 		
 	PROG = "66-dbctl" ;
 	{
@@ -95,7 +125,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, "hv:l:t:udT:", &l) ;
+			int opt = getopt_args(argc,argv, "hv:l:t:udT:r", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
@@ -111,6 +141,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 							break ;
 				case 'u' :	up = 1 ; if (down) exitusage() ; break ;
 				case 'd' : 	down = 1 ; if (up) exitusage() ; break ;
+				case 'r' : 	reload = 1 ; if (down || up) exitusage() ; break ;
 				default : exitusage() ; 
 			}
 		}
@@ -162,45 +193,29 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (!stralloc_cats(&livetree,treename)) retstralloc(111,"main") ;
 	if (!stralloc_0(&livetree)) retstralloc(111,"main") ;
 	
-	int spfd = selfpipe_init() ;
-	if (spfd < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
-	if (sig_ignore(SIGHUP) < 0) strerr_diefu1sys(111, "ignore SIGHUP") ;
-	if (sig_ignore(SIGPIPE) < 0) strerr_diefu1sys(111,"ignore SIGPIPE") ;
-	
-	char const *newargv[10 + genalloc_len(stralist,&gasv)] ;
-	unsigned int m = 0 ;
-	char fmt[UINT_FMT] ;
-	fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
-	
-	char tt[UINT32_FMT] ;
-	tt[uint32_fmt(tt,DEADLINE)] = 0 ;
-	
-	newargv[m++] = S6RC_BINPREFIX "s6-rc" ;
-	newargv[m++] = "-v" ;
-	newargv[m++] = fmt ;
-	newargv[m++] = "-t" ;
-	newargv[m++] = tt ;
-	newargv[m++] = "-l" ;
-	newargv[m++] = livetree.s ;
-	if (down)
+	if (reload)
 	{
-		newargv[m++] = "-d" ;
+		pid = send(&gasv,livetree.s,"-d",envp) ;
+		
+		if (waitpid_nointr(pid,&wstat, 0) < 0)
+			strerr_diefu1sys(111,"wait for s6-rc") ;
+		
+		if (wstat)
+		{
+			if (down)
+				strerr_diefu1x(111,"bring down services list") ;
+			else
+				strerr_diefu1x(111,"bring up services list") ;
+		}
 	}
-	else
-	{
-		newargv[m++] = "-u" ;
-	}
-	newargv[m++] = "change" ;
 	
-	for (unsigned int i = 0 ; i<genalloc_len(stralist,&gasv); i++)
-		newargv[m++] = gaistr(&gasv,i) ;
+	if (down) signal = "-d" ;
+	else signal = "-u" ;
 	
-	newargv[m++] = 0 ;
+	pid = send(&gasv,livetree.s,signal,envp) ;
 	
-	
-	pid = child_spawn0(newargv[0],newargv,envp) ;
 	if (waitpid_nointr(pid,&wstat, 0) < 0)
-		strerr_diefu2sys(111,"wait for ",newargv[0]) ;
+		strerr_diefu1sys(111,"wait for s6-rc") ;
 	
 	if (wstat)
 	{
@@ -209,7 +224,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		else
 			strerr_diefu1x(111,"bring up services list") ;
 	}
-	
 	/** we are forced to do this ugly check cause of the design
 	 * of s6-rc(generally s6-svc) which is launch and forgot. So
 	 * s6-rc will not warn us if the daemon fail when we don't use
@@ -261,7 +275,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		}
 	}
 		
-	selfpipe_finish() ;
 	stralloc_free(&base) ;
 	stralloc_free(&live) ;
 	stralloc_free(&tree) ;

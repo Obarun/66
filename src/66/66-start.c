@@ -420,51 +420,45 @@ int rc_sanitize(char const *base, char const *scandir, char const *live, char co
 			VERBO3 strerr_warnwu3x("switch ",treename," to backup") ;
 			return 0 ;
 		}
-	}
 	
-	if (RELOAD)
-	{ 
-		if (genalloc_len(stralist,&toreload))
-		{
-			char const *newargv[11 + genalloc_len(stralist,&toreload)] ;
-			unsigned int m = 0 ;
-			char fmt[UINT_FMT] ;
-			fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;	
+		char const *newargv[11 + genalloc_len(stralist,&toreload)] ;
+		unsigned int m = 0 ;
+		char fmt[UINT_FMT] ;
+		fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;	
 
-			char tt[UINT32_FMT] ;
-			tt[uint32_fmt(tt,DEADLINE)] = 0 ;
+		char tt[UINT32_FMT] ;
+		tt[uint32_fmt(tt,DEADLINE)] = 0 ;
 			
-			newargv[m++] = SS_BINPREFIX "66-dbctl" ;
-			newargv[m++] = "-v" ;
-			newargv[m++] = fmt ;
-			newargv[m++] = "-T" ;
-			newargv[m++] = tt ;
-			newargv[m++] = "-l" ;
-			newargv[m++] = live ;
-			newargv[m++] = "-t" ;
-			newargv[m++] = treename ;
-			newargv[m++] = "-d" ;
+		newargv[m++] = SS_BINPREFIX "66-dbctl" ;
+		newargv[m++] = "-v" ;
+		newargv[m++] = fmt ;
+		newargv[m++] = "-T" ;
+		newargv[m++] = tt ;
+		newargv[m++] = "-l" ;
+		newargv[m++] = live ;
+		newargv[m++] = "-t" ;
+		newargv[m++] = treename ;
+		newargv[m++] = "-d" ;
 
-			for (unsigned int i = 0; i < genalloc_len(stralist,&toreload) ; i++)
-				newargv[m++] = gaistr(&toreload,i) ;
+		for (unsigned int i = 0; i < genalloc_len(stralist,&toreload) ; i++)
+			newargv[m++] = gaistr(&toreload,i) ;
 				
-			newargv[m++] = 0 ;
+		newargv[m++] = 0 ;
 			
-			pid = child_spawn0(newargv[0],newargv,envp) ;
-			if (waitpid_nointr(pid,&wstat, 0) < 0)
-			{
-				VERBO3 strerr_warnwu2sys("wait for ",newargv[0]) ;
-				goto err ;
-			}
-		
-			if (wstat)
-			{
-				VERBO3 strerr_warnwu1x("bring down service list") ;
-				goto err ;
-			}
+		pid = child_spawn0(newargv[0],newargv,envp) ;
+		if (waitpid_nointr(pid,&wstat, 0) < 0)
+		{
+			VERBO3 strerr_warnwu2sys("wait for ",newargv[0]) ;
+			goto err ;
+		}
+	
+		if (wstat)
+		{
+			VERBO3 strerr_warnwu1x("bring down service list") ;
+			goto err ;
 		}
 	}
-	
+
 	return 1 ;
 	
 	err:
@@ -498,8 +492,11 @@ int rc_start(char const *base,char const *live, char const *livetree,char const 
 	newargv[m++] = live ;
 	newargv[m++] = "-t" ;
 	newargv[m++] = treename ;
-	newargv[m++] = "-u" ;
-
+	if (RELOAD == 1) 
+		newargv[m++] = "-r" ;
+	else
+		newargv[m++] = "-u" ;
+		
 	for (unsigned int i = 0; i < genalloc_len(svstat_t,ga) ; i++)
 		newargv[m++] = genalloc_s(svstat_t,ga)[i].name ; ;
 		
