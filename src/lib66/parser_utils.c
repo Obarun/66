@@ -872,7 +872,7 @@ int keep_logger(sv_execlog *log,keynocheck *nocheck)
 			r = get_enumbyid (nocheck->val.s,key_enum_el) ;
 			if (r < 0)
 			{
-				VERBO3 parse_err(0,nocheck->idsec,TIMESTAMP) ;
+				VERBO3 parse_err(0,nocheck->idsec,TIMESTP) ;
 				return 0 ;
 			}
 			log->timestamp = r ;

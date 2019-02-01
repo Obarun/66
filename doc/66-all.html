@@ -1,0 +1,74 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>The 66 Suite: 66-all</title>
+    <meta name="Description" content="Detailed documentation for the 66-all command which is part of the 66 software suite" />
+    <meta name="Keywords" content="66 command 66-all service supervision supervise handles database service tree" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">66</a><br />
+<a href="//obarun.org/">www.obarun.org</a>
+</p>
+
+<h1>66-all</h1>
+
+	<p>
+      This command handles all <em>services</em> for any <em>tree</em> defined for the current user of the proccess at once.
+    </p>
+
+<h2> Interface </h2>
+	<pre>
+	66-all [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -T timeout ] <em>up/down</em>
+	</pre>
+
+	<p>
+      Any enabled <em>tree</em>&mdash;see <a href="66-tree.html"><tt>66-tree -E</tt></a>&mdash;or a specific one passed with the <tt>-t</tt> option, 
+      and an already running <em>scandir</em> will be processed. 
+      It is a safe wrapper around <tt><a href="66-start.html">66-start</a></tt> and <tt><a href="66-stop.html">66-stop</a></tt>.
+    </p>
+    
+
+<h2> Options </h2>
+
+	<ul>
+		<li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
+		 
+		<li>
+			<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
+			the verbosity of the command. <tt>1(Default)</tt>: Only print 
+			error messages. <tt>2</tt>: Also print warning messages. 
+			<tt>3</tt>: Also print debugging messages.
+		</li>
+		 
+		<li> 
+			<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
+			also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
+			option to <tt>./configure</tt>. An existing absolute path is expected and
+			should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
+		</li>
+		<li> 
+			<tt>-t&nbsp;<em>tree</em></tt>&nbsp;: only handles <em>service(s)</em> for <em>tree</em>.
+		</li>
+		 
+		<li> 
+			<tt>-T&nbsp;<em>timeout</em></tt></tt>&nbsp;: specifies a general timeout (in milliseconds)
+			passed to <tt>66-start</tt> or <tt>66-stop</tt>.
+			By default the timeout is set to 0 (infinite).
+		</li>
+		<li> 
+			<tt>up&nbsp;</tt>&nbsp;: sends an <em>up</em> signal to every <em>service</em> inside any <em>tree</em> processed by the command.
+		</li>
+		<li> 
+			<tt>down&nbsp;</tt>&nbsp;: sends a <em>down</em> signal to every <em>service</em> inside any <em>tree</em> processed by the command.
+		</li>
+	</ul>
+
+<h2> Initialization phase </h2>
+<p>In case <tt>up</tt> was passed as option, <tt>66-all</tt> will automatically launch <tt><a href="66-init.html">66-init</a></tt> to initiate all <em>services</em> of the <em>trees</em> processed by the command. As described above this means either any enabled tree for the user currently launching the process or just the tree passed with the -t option.</p>
+</body>
+</html>

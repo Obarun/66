@@ -4,6 +4,7 @@ BIN_TARGETS := \
 66-tree \
 66-dbctl \
 66-enable \
+66-envfile \
 66-disable \
 66-start \
 66-stop \

@@ -1,0 +1,76 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>The 66 Suite: 66-dbctl</title>
+    <meta name="Description" content="Detailed documentation for the 66-dbctl command which is part of the 66 software suite" />
+    <meta name="Keywords" content="66 command 66-dbctl service supervision supervise handles database service" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">66</a><br />
+<a href="//obarun.org/">www.obarun.org</a>
+</p>
+
+<h1>66-dbctl</h1>
+
+	<p>
+      This command is used to control an already supervised <em>service</em> in <em>live</em> defined in <em>tree</em>.
+    </p>
+
+<h2> Interface </h2>
+	<pre>
+	66-dbctl [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -T <em>timeout</em> ] [ -u up ] [ -d down ] <em>service(s)</em>
+	</pre>
+
+	<p>
+      66-dbctl expects to find an already supervised <em>service</em> in <em>live</em> defined in the given <em>tree</em> and an already running <em>scandir</em>. 
+      <br><b>(!)</b> This tool <b>only</b> deals with <b><em>'bundle'</em></b>, <b><em>'longrun'</em></b> and <b><em>'oneshot'</em></b> services&mdash;for <em>'classic'</em> services see <a href="66-svctl.html"><tt>66-svctl</tt></a>.
+    </p>
+    <p>Multiple <em>services</em> can be handled by separating their names with a space. <tt>66-dbctl</tt> gathers the services passed as argument in a list called <em>selection</em>.</p>
+
+<h2> Options </h2>
+
+	<ul>
+		<li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
+		 
+		<li>
+			<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
+			the verbosity of the command. <tt>1(Default)</tt>: Only print 
+			error messages. <tt>2</tt>: Also print warning messages. 
+			<tt>3</tt>: Also print debugging messages.
+		</li>
+		 
+		<li> 
+			<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
+			also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
+			option to <tt>./configure</tt>. An existing absolute path is expected and
+			should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
+		</li>
+		<li> 
+			<tt>-t&nbsp;<em>tree</em></tt>&nbsp;: handles the <em>selection</em> of
+			the given <em>tree</em>. This option is mandatory
+			except if a tree was marked as 'current'&mdash;see <a href="66-tree.html"><tt>66-tree</tt></a>.
+		</li>
+		 
+		<li> 
+			<tt>-T&nbsp;<em>timeout</em></tt></tt>&nbsp;: specifies a general timeout (in milliseconds)
+			after which <tt>66-dbctl</tt> will exit 111 with an error message if the <em>selection</em> still hasn't reached the desired state for each <em>service</em>;
+			default is 0 (blocks indefinitely).
+		</li>
+		<li> 
+			<tt>-u&nbsp;</tt>&nbsp;: sends an <em>up</em> signal to the <em>service</em>.
+		</li>
+		<li> 
+			<tt>-d&nbsp;</tt>&nbsp;: sends a <em>down</em> signal to the <em>service</em>.
+		</li>
+	</ul>
+
+<h2> Note </h2>
+<p>This tool is a safe wrapper around <tt><a href="https://skarnet.org/software/s6-rc/s6-rc.html">s6-rc</a></tt>. It exclusively handles files that form part of the <tt>66</tt> ecosystem before sending the <em>selection</em> list to 
+<tt>s6-rc</tt>.</p>
+</body>
+</html>

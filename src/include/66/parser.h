@@ -131,7 +131,7 @@ struct sv_alltype_s
 	uint32_t death ;
 	int signal ;
 	unsigned int pipeline ; //pos in deps
-	genalloc env ; //type sv_env, pos in gaenv
+	genalloc env ; //type diuint32, pos in saenv
 } ;
 
 #define SV_EXEC_ZERO \
@@ -294,6 +294,10 @@ extern void sep_err(int r,char const sepstart,char const sepend,char const *keyn
 
 extern int add_cname(genalloc *ga,avltree *tree,char const *name, sv_alltype *sv_before) ;
 
+extern int add_env(char *line,genalloc *ga,stralloc *sa) ;
+
+extern int parse_env(keynocheck *nocheck) ;
+
 extern int resolve_srcdeps(sv_alltype *sv_before,char const *svmain,char const *src, char const *tree,unsigned int *nbsv,stralloc *sasv) ;
 
 extern int parse_service_before(char const *src,char const *sv,char const *tree, unsigned int *nbsv, stralloc *sasv) ;
@@ -326,7 +330,7 @@ extern int write_consprod(sv_alltype *sv,char const *prodname,char const *consna
 
 extern int write_dependencies(char const *src, sv_name_t *cname,char const *dst,char const *filename, genalloc *ga, unsigned int force) ;
 
-extern int write_env(genalloc *env,stralloc *sa,char const *dst) ;
+extern int write_env(char const *name, genalloc *env,stralloc *sa,char const *dst) ;
 
 extern void freed_parser(void) ;
 

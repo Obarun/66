@@ -43,10 +43,10 @@
 //#include <stdio.h>
 
 unsigned int VERBOSITY = 1 ;
-static tain_t DEADLINE ;
+static unsigned int DEADLINE = 0 ;
 stralloc saresolve = STRALLOC_ZERO ;
 
-#define USAGE "66-dbctl [ -h help ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -u up ] [ -d down ] service(s)"
+#define USAGE "66-dbctl [ -h ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -u | d | r ] service(s)"
 
 static inline void info_help (void)
 {
@@ -61,16 +61,46 @@ static inline void info_help (void)
 "	-t: tree to use\n"
 "	-u: bring up service in database of tree\n"
 "	-d: bring down service in database of tree\n"
+"	-r: reload service\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
     strerr_diefu1sys(111, "write to stdout") ;
 }
+static pid_t send(genalloc *gasv, char const *livetree, char const *signal,char const *const *envp)
+{
+	char const *newargv[10 + genalloc_len(stralist,gasv)] ;
+	unsigned int m = 0 ;
+	char fmt[UINT_FMT] ;
+	fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
+	
+	char tt[UINT32_FMT] ;
+	tt[uint32_fmt(tt,DEADLINE)] = 0 ;
+	
+	newargv[m++] = S6RC_BINPREFIX "s6-rc" ;
+	newargv[m++] = "-v" ;
+	newargv[m++] = fmt ;
+	newargv[m++] = "-t" ;
+	newargv[m++] = tt ;
+	newargv[m++] = "-l" ;
+	newargv[m++] = livetree ;
+	newargv[m++] = signal ;
+	newargv[m++] = "change" ;
+	
+	for (unsigned int i = 0 ; i<genalloc_len(stralist,gasv); i++)
+		newargv[m++] = gaistr(gasv,i) ;
+	
+	newargv[m++] = 0 ;
+	
+	
+	return child_spawn0(newargv[0],newargv,envp) ;
+	
+}
 
 int main(int argc, char const *const *argv,char const *const *envp)
 {
 	int r ;
-	unsigned int up, down, tmain, trc ;
+	unsigned int up, down, reload ;
 	
 	int wstat ;
 	pid_t pid ;
@@ -78,6 +108,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	uid_t owner ;
 	
 	char *treename = 0 ;
+	char *signal = 0 ;
+	char *mainsv = "Master" ;
 	
 	stralloc base = STRALLOC_ZERO ;
 	stralloc tree = STRALLOC_ZERO ;
@@ -87,7 +119,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	genalloc gasv = GENALLOC_ZERO ; //stralist
 	
-	up = down = tmain = trc = 0 ;
+	up = down = reload = 0 ;
 		
 	PROG = "66-dbctl" ;
 	{
@@ -95,7 +127,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, "hv:l:t:udT:", &l) ;
+			int opt = getopt_args(argc,argv, "hv:l:t:udT:r", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
@@ -105,26 +137,21 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 'l' : 	if (!stralloc_cats(&live,l.arg)) retstralloc(111,"main") ;
 							if (!stralloc_0(&live)) retstralloc(111,"main") ;
 							break ;
-				case 'T' :	if (!uint0_scan(l.arg, &tmain)) exitusage() ; break ;
+				case 'T' :	if (!uint0_scan(l.arg, &DEADLINE)) exitusage() ; break ;
 				case 't' : 	if(!stralloc_cats(&tree,l.arg)) retstralloc(111,"main") ;
 							if(!stralloc_0(&tree)) retstralloc(111,"main") ;
 							break ;
 				case 'u' :	up = 1 ; if (down) exitusage() ; break ;
 				case 'd' : 	down = 1 ; if (up) exitusage() ; break ;
+				case 'r' : 	reload = 1 ; if (down || up) exitusage() ; break ;
 				default : exitusage() ; 
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
 
-	if (argc < 1) exitusage() ;
+	if (argc < 1) if (!stra_add(&gasv,mainsv)) strerr_diefu1sys(111,"add: Master as service to handle") ;
 	
-	if (tmain){
-		tain_from_millisecs(&DEADLINE, tmain) ;
-		trc = tmain ;
-	}
-	else DEADLINE = tain_infinite_relative ;
-
 	owner = MYUID ;
 
 	if (!set_ownersysdir(&base,owner)) strerr_diefu1sys(111, "set owner directory") ;
@@ -168,62 +195,29 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (!stralloc_cats(&livetree,treename)) retstralloc(111,"main") ;
 	if (!stralloc_0(&livetree)) retstralloc(111,"main") ;
 	
-	char const *newargv[10 + genalloc_len(stralist,&gasv)] ;
-	unsigned int m = 0 ;
-	char fmt[UINT_FMT] ;
-	fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
-	
-	int globalt ;
-	tain_t globaltto ;
-	tain_sub(&globaltto,&DEADLINE, &STAMP) ;
-	globalt = tain_to_millisecs(&globaltto) ;
-	if (!globalt) globalt = 1 ;
-	if (globalt > 0 && (!trc || (unsigned int) globalt < trc))
-		trc = (uint32_t)globalt ;
-	
-	char tt[UINT32_FMT] ;
-	tt[uint32_fmt(tt,trc)] = 0 ;
-	
-	newargv[m++] = S6RC_BINPREFIX "s6-rc" ;
-	newargv[m++] = "-v" ;
-	newargv[m++] = fmt ;
-	newargv[m++] = "-t" ;
-	newargv[m++] = tt ;
-	newargv[m++] = "-l" ;
-	newargv[m++] = livetree.s ;
-	if (down)
+	if (reload)
 	{
-		newargv[m++] = "-d" ;
-	}
-	else
-	{
-		newargv[m++] = "-u" ;
-	}
-	newargv[m++] = "change" ;
-	
-	for (unsigned int i = 0 ; i<genalloc_len(stralist,&gasv); i++)
-		newargv[m++] = gaistr(&gasv,i) ;
-	
-	newargv[m++] = 0 ;
-	
-	
-	/** implementation of a sigpipe is needed here in case of
-	 * INT signal */
-	int spfd = selfpipe_init() ;
-	if (spfd < 0) VERBO3 strerr_diefu1sys(111,"init selfpipe") ;
-	{
-		sigset_t set ;
-		sigemptyset(&set) ;
-		sigaddset(&set, SIGCHLD) ;
-		sigaddset(&set, SIGINT) ;
-		sigaddset(&set, SIGTERM) ;
-		if (selfpipe_trapset(&set) < 0)
-			strerr_diefu1sys(111,"trap signals") ;
+		pid = send(&gasv,livetree.s,"-d",envp) ;
+		
+		if (waitpid_nointr(pid,&wstat, 0) < 0)
+			strerr_diefu1sys(111,"wait for s6-rc") ;
+		
+		if (wstat)
+		{
+			if (down)
+				strerr_diefu1x(111,"bring down services list") ;
+			else
+				strerr_diefu1x(111,"bring up services list") ;
+		}
 	}
 	
-	pid = child_spawn0(newargv[0],newargv,envp) ;
+	if (down) signal = "-d" ;
+	else signal = "-u" ;
+	
+	pid = send(&gasv,livetree.s,signal,envp) ;
+	
 	if (waitpid_nointr(pid,&wstat, 0) < 0)
-		strerr_diefu2sys(111,"wait for ",newargv[0]) ;
+		strerr_diefu1sys(111,"wait for s6-rc") ;
 	
 	if (wstat)
 	{
@@ -232,7 +226,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		else
 			strerr_diefu1x(111,"bring up services list") ;
 	}
-	
 	/** we are forced to do this ugly check cause of the design
 	 * of s6-rc(generally s6-svc) which is launch and forgot. So
 	 * s6-rc will not warn us if the daemon fail when we don't use
@@ -242,7 +235,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	 * between the end of the s6-rc process and the check of the daemon status,
 	 * the real value of the status can be not written yet,so we can hit
 	 * this window.*/
-	int e = 0 ;
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	stralloc stat = STRALLOC_ZERO ;
 	if (!stralloc_catb(&stat,livetree.s,livetree.len - 1)) retstralloc(111,"main") ; 
@@ -284,7 +276,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		}
 	}
 		
-	selfpipe_finish() ;
 	stralloc_free(&base) ;
 	stralloc_free(&live) ;
 	stralloc_free(&tree) ;
@@ -295,7 +286,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc_free(&saresolve) ;
 	free(treename) ;
 	
-	return e ;
+	return 0 ;
 }
 	
 

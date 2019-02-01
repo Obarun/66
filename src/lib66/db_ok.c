@@ -30,7 +30,7 @@ int db_ok(char const *livetree, char const *treename)
 	sym[treelen] = '/' ;
 	memcpy(sym + treelen + 1, treename,namelen) ;
 	sym[treelen + 1 + namelen] = 0 ;
-
+	
 	if(lstat(sym,&st) < 0) return 0 ;
 	if(!(S_ISLNK(st.st_mode))) 
 		return 0 ;

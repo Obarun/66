@@ -27,12 +27,13 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/direntry.h>
 #include <skalibs/unix-transactional.h>
+#include <skalibs/diuint32.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
 #include <66/enum.h>
 
-#include <stdio.h>
+//#include <stdio.h>
 /** @Return -2 on error
  * @Return -1 if resolve directory doesn't exist
  * @Return 0 is file doesn't exist
@@ -349,11 +350,11 @@ int resolve_pointo(stralloc *sa,char const *base, char const *live,char const *t
 	return stralloc_obreplace(sa,r) ;
 }
 
-int resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src)
+int resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src,unsigned int *found)
 {
 	int fdsrc, obr, insta ;
 	
-	sv_src_t svtmp = {0} ;
+	diuint32 svtmp = DIUINT32_ZERO ;//left->name,right->src
 	
 	size_t srclen = strlen(src) ;
 	size_t namelen = strlen(name) ;
@@ -393,7 +394,8 @@ int resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src
 		{
 			if (!stralloc_cats(&subdir,d->d_name)) goto errdir ;
 			if (!stralloc_0(&subdir)) goto errdir ;
-			if (!resolve_src(ga,sasrc,name,subdir.s)) goto errdir ;
+			*found = 2 ;
+			if (!resolve_src(ga,sasrc,name,subdir.s,found)) goto errdir ;
 		}
 		obr = 0 ;
 		insta = 0 ;
@@ -405,14 +407,16 @@ int resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src
 			if (!insta_splitname(&sainsta,name,insta,0)) goto errdir ;
 			obr = obstr_equal(sainsta.s,d->d_name) ;
 		}
-		
+				
 		if (obr)
 		{
+			*found = 1 ;
 			if (stat_at(fdsrc, d->d_name, &st) < 0)
 			{
 				VERBO3 strerr_warnwu3sys("stat ", src, d->d_name) ;
 				goto errdir ;
 			}
+			
 			if (S_ISDIR(st.st_mode))
 			{
 				if (!stralloc_cats(&subdir,d->d_name)) goto errdir ;
@@ -425,21 +429,21 @@ int resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src
 				}
 				for (unsigned int i = 0 ; i < genalloc_len(stralist,&tmp) ; i++)
 				{
-					svtmp.name = sasrc->len ;
+					svtmp.left = sasrc->len ;
 					if (!stralloc_catb(sasrc,gaistr(&tmp,i), gaistrlen(&tmp,i) + 1)) goto errdir ;
-					svtmp.src = sasrc->len ;
+					svtmp.right = sasrc->len ;
 					if (!stralloc_catb(sasrc,subdir.s, subdir.len + 1)) goto errdir ;
-					if (!genalloc_append(sv_src_t,ga,&svtmp)) goto errdir ;
+					if (!genalloc_append(diuint32,ga,&svtmp)) goto errdir ;
 				}
 				break ;
 			}
 			else if(S_ISREG(st.st_mode))
 			{
-				svtmp.name = sasrc->len ;
+				svtmp.left = sasrc->len ;
 				if (!stralloc_catb(sasrc,name, namelen + 1)) goto errdir ;
-				svtmp.src = sasrc->len ;
+				svtmp.right = sasrc->len ;
 				if (!stralloc_catb(sasrc,src,srclen + 1)) goto errdir ;
-				if (!genalloc_append(sv_src_t,ga,&svtmp)) goto errdir ;
+				if (!genalloc_append(diuint32,ga,&svtmp)) goto errdir ;
 				break ;
 			}
 			else goto errdir ;
@@ -450,7 +454,14 @@ int resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src
 	genalloc_deepfree(stralist,&tmp,stra_free) ;
 	stralloc_free(&subdir) ;
 	stralloc_free(&sainsta) ;
-	return 1 ;
+	
+	if (*found > 1)
+	{
+		*found = 0 ;
+		return 1 ;
+	}
+	
+	return (*found) ? 1 : 0 ;
 	
 	errdir:
 		dir_close(dir) ;

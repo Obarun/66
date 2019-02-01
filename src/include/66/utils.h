@@ -20,9 +20,6 @@
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
-#include <skalibs/tai.h>
-
-#include <s6/ftrigr.h>
 
 extern unsigned int VERBOSITY ;
 
@@ -35,28 +32,7 @@ extern unsigned int VERBOSITY ;
 #define MYGID getgid()
 #define YOURGID(passto,owner) yourgid(passto,owner)
 
-typedef struct svstat_s svstat_t, *svstat_t_ref ;
-struct svstat_s
-{
-	int type ;
-	char const *name ;
-	size_t namelen ;
-	int reload ;
-	int init ;
-	int unsupervise ;
-	int remove ;
-} ;
-#define SVSTAT_ZERO { .type = 0, .name = 0, .namelen = 0, .init = 0, .reload = 0, .unsupervise = 0, .remove = 0 }
-/** signal */
-#define ALARM 0
 
-/** struct to resolve source of service */
-typedef struct sv_src_s sv_src_t, *sv_src_t_ref ;
-struct sv_src_s
-{
-	int name ;
-	int src ;
-} ;
 
 
 extern int dir_cmpndel(char const *src, char const *dst,char const *exclude) ;
@@ -93,7 +69,7 @@ extern int resolve_symlive(char const *live, char const *tree, char const *treen
 
 extern int resolve_pointo(stralloc *sa,char const *base, char const *live,char const *tree,char const *treename,unsigned int type, unsigned int what) ;
 
-extern int resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src) ;
+extern int resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src,unsigned int *found) ;
 
 extern int insta_check(char const *svname) ;
 

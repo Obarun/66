@@ -42,7 +42,7 @@ char const *get_keybyid(key_enum_t key)
 			(key == T_FINISH ) ? "@timeout-finish" :
 			(key == T_KILL ) ? "@timeout-kill" :
 			(key == T_UP ) ? "@timeout-up" :
-			(key == T_DOWN ) ? "t@imeout-down" :
+			(key == T_DOWN ) ? "@timeout-down" :
 			(key == DEATH) ? "@maxdeath" :
 			(key == EXEC ) ? "@execute" :
 			(key == DESTINATION ) ? "@destination" :

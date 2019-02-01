@@ -41,7 +41,8 @@
 
 #include <s6/s6-supervise.h>//s6_svc_ok
 
-#include <stdio.h>
+//#include <stdio.h>
+
 unsigned int VERBOSITY = 1 ;
 static stralloc base = STRALLOC_ZERO ;
 static stralloc live = STRALLOC_ZERO ;
@@ -53,11 +54,11 @@ static uid_t owner ;
 				buffer_putflush(buffer_1,"\n",1) ;
 
 
-#define USAGE "66-info [ -h help ] [ -T tree ] [ -S service ] sub-options (use -h as sub-options for futher informations)"
+#define USAGE "66-info [ -h ] [ -T ] [ -S ] sub-options (use -h as sub-options for futher informations)"
 
-#define TREE_USAGE "66-info -T [ -help ] [ -v verbosity ] [ -r reverse ] [ -d depth ] tree "
+#define TREE_USAGE "66-info -T [ -h ] [ -v verbosity ] [ -r ] [ -d depth ] tree "
 #define exit_tree_usage() strerr_dieusage(100, TREE_USAGE)
-#define SV_USAGE "66-info -S [ -help ] [ -v verbosity ] [ -l live ] [ -p n lines ] [ -r reverse ] [ -d depth ] service"
+#define SV_USAGE "66-info -S [ -h ] [ -v verbosity ] [ -l live ] [ -p n lines ] [ -r ] [ -d depth ] service"
 #define exit_sv_usage() strerr_dieusage(100, SV_USAGE)
 
 unsigned int REVERSE = 0 ;
@@ -240,18 +241,19 @@ int print_status(char const *svname,char const *type,char const *treename, char 
 int graph_display(char const *tree,char const *treename,char const *svname,unsigned int what)
 {
 	
-	int r ;
+	int r, e ;
 	
 	graph_t g = GRAPH_ZERO ;
 	stralloc sagraph = STRALLOC_ZERO ;
 	genalloc tokeep = GENALLOC_ZERO ;
 	
+	e = 1 ;
+	
 	size_t treelen = strlen(tree) ;
-	char dir[treelen + 1 + SS_SVDIRS_LEN + 1] ;
+	char dir[treelen + SS_SVDIRS_LEN + 1] ;
 	memcpy(dir,tree,treelen) ;
-	dir[treelen] = '/' ;
-	memcpy(dir + treelen + 1,SS_SVDIRS,SS_SVDIRS_LEN) ;
-	dir[treelen + 1 + SS_SVDIRS_LEN] = 0 ;
+	memcpy(dir + treelen,SS_SVDIRS,SS_SVDIRS_LEN) ;
+	dir[treelen + SS_SVDIRS_LEN] = 0 ;
 	
 	r = graph_type_src(&tokeep,dir,what) ;
 	if (!r)
@@ -260,7 +262,7 @@ int graph_display(char const *tree,char const *treename,char const *svname,unsig
 		goto err ;
 	}
 	if (r < 0)
-		goto err ;
+		goto empty ;
 	
 	if (!graph_build(&g,&sagraph,&tokeep,dir))
 	{
@@ -285,14 +287,16 @@ int graph_display(char const *tree,char const *treename,char const *svname,unsig
 	genalloc_free(vertex_graph_t,&g.stack) ;
 	genalloc_free(vertex_graph_t,&g.vertex) ;
 	
-	return 1 ;
+	return e ;
 	
+	empty:
+		e = -1 ;
 	err:
 		genalloc_deepfree(stralist,&tokeep,stra_free) ;
 		sagraph = stralloc_zero ;
 		genalloc_free(vertex_graph_t,&g.stack) ;
 		genalloc_free(vertex_graph_t,&g.vertex) ;
-		return 0 ;
+		return e ;
 }
 
 int tree_args(int argc, char const *const *argv)
@@ -315,7 +319,7 @@ int tree_args(int argc, char const *const *argv)
 			
 			switch (opt)
 			{
-				case 'h' : 	tree_help(); return 0 ;
+				case 'h' : 	tree_help(); return 1 ;
 				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) exit_tree_usage() ; break ;
 				case 'r' : 	REVERSE = 1 ; break ;
 				case 'd' : 	if (!uint0_scan(l.arg, &MAXDEPTH)) exit_tree_usage(); break ;
@@ -421,7 +425,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
 			{
-				case 'h' : 	sv_help(); return 0 ;
+				case 'h' : 	sv_help(); return 1 ;
 				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) exit_sv_usage() ; break ;
 				case 'l' : 	if (!stralloc_cats(&live,l.arg)) retstralloc(0,"sv_args") ;
 							if (!stralloc_0(&live)) retstralloc(0,"sv_args") ;

@@ -30,6 +30,7 @@
 #include <skalibs/buffer.h>
 #include <skalibs/direntry.h>
 #include <skalibs/unix-transactional.h>
+#include <skalibs/diuint32.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
@@ -48,7 +49,7 @@ unsigned int VERBOSITY = 1 ;
 
 stralloc saresolve = STRALLOC_ZERO ;
 
-#define USAGE "66-enable [ -h help ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -f force ] [ -S start ] service(s)"
+#define USAGE "66-enable [ -h help ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -f ] [ -S ] service(s)"
 
 static inline void info_help (void)
 {
@@ -102,7 +103,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc live = STRALLOC_ZERO ;
 	stralloc livetree = STRALLOC_ZERO ;
 	stralloc sasrc = STRALLOC_ZERO ;
-	genalloc gasrc = GENALLOC_ZERO ; //type sv_src_t
+	genalloc gasrc = GENALLOC_ZERO ; //type diuint32
 	genalloc ganlong = GENALLOC_ZERO ; // type stralist
 	genalloc ganclassic = GENALLOC_ZERO ; // name of classic service, type stralist
 	
@@ -119,7 +120,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:l:t:fd:I:S", &l) ;
+			int opt = getopt_args(argc,argv, ">hv:l:t:fS", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
@@ -168,11 +169,13 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if(r < 0) strerr_dief3x(111,"livetree: ",livetree.s," must be an absolute path") ;
 	
 	for(;*argv;argv++)
-		if (!resolve_src(&gasrc,&sasrc,*argv,src)) strerr_dief2x(111,"resolve source of service file: ",*argv) ;
+	{
+		unsigned int found = 0 ;
+		if (!resolve_src(&gasrc,&sasrc,*argv,src,&found)) strerr_diefu2x(111,"resolve source of service file: ",*argv) ;
+	}
 	
-
-	for (unsigned int i = 0 ; i < genalloc_len(sv_src_t,&gasrc) ; i++)
-		start_parser(sasrc.s + genalloc_s(sv_src_t,&gasrc)[i].src,sasrc.s + genalloc_s(sv_src_t,&gasrc)[i].name,tree.s,&nbsv) ;
+	for (unsigned int i = 0 ; i < genalloc_len(diuint32,&gasrc) ; i++)
+		start_parser(sasrc.s + genalloc_s(diuint32,&gasrc)[i].right,sasrc.s + genalloc_s(diuint32,&gasrc)[i].left,tree.s,&nbsv) ;
 	
 	sv_alltype svblob[nbsv] ;
 	
