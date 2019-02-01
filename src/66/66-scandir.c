@@ -63,7 +63,7 @@ static char const *stage2tini = "/etc/66/stage2" ;
 static char const *stage3 = "/etc/66/stage3 $@" ;
 
 
-#define USAGE "66-scandir [ -h help ] [ -v verbosity ] [ -b boot ] [ -l live ] [ -t rescan ] [ -2 stage2.tini ] [ -3 stage3 ] [ -e environment ] [ -c create ] [ -r remove ] [ -u up ] [ -s signal ] owner"
+#define USAGE "66-scandir [ -h ] [ -v verbosity ] [ -b ] [ -l live ] [ -t rescan ] [ -2 stage2.tini ] [ -3 stage3 ] [ -e environment ] [ -c | u | r ] [ -s signal ] owner"
 
 unsigned int VERBOSITY = 1 ;
 static unsigned int BOOT = 0 ;

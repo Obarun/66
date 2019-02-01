@@ -54,11 +54,11 @@ static uid_t owner ;
 				buffer_putflush(buffer_1,"\n",1) ;
 
 
-#define USAGE "66-info [ -h help ] [ -T tree ] [ -S service ] sub-options (use -h as sub-options for futher informations)"
+#define USAGE "66-info [ -h ] [ -T ] [ -S ] sub-options (use -h as sub-options for futher informations)"
 
-#define TREE_USAGE "66-info -T [ -help ] [ -v verbosity ] [ -r reverse ] [ -d depth ] tree "
+#define TREE_USAGE "66-info -T [ -h ] [ -v verbosity ] [ -r ] [ -d depth ] tree "
 #define exit_tree_usage() strerr_dieusage(100, TREE_USAGE)
-#define SV_USAGE "66-info -S [ -help ] [ -v verbosity ] [ -l live ] [ -p n lines ] [ -r reverse ] [ -d depth ] service"
+#define SV_USAGE "66-info -S [ -h ] [ -v verbosity ] [ -l live ] [ -p n lines ] [ -r ] [ -d depth ] service"
 #define exit_sv_usage() strerr_dieusage(100, SV_USAGE)
 
 unsigned int REVERSE = 0 ;

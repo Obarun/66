@@ -49,7 +49,7 @@ unsigned int VERBOSITY = 1 ;
 
 stralloc saresolve = STRALLOC_ZERO ;
 
-#define USAGE "66-enable [ -h help ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -f force ] [ -S start ] service(s)"
+#define USAGE "66-enable [ -h help ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -f ] [ -S ] service(s)"
 
 static inline void info_help (void)
 {

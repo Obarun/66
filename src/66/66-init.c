@@ -41,7 +41,7 @@
 
 //#include <stdio.h>
 
-#define USAGE "66-init [ -h help ] [ -v verbosity ] [ -l live ] [ -c classic ] [ -d database ] [ -B both service ] tree"
+#define USAGE "66-init [ -h ] [ -v verbosity ] [ -l live ] [ -c | d | B ] tree"
 
 unsigned int VERBOSITY = 1 ;
 

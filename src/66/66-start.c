@@ -58,7 +58,7 @@ static stralloc saresolve = STRALLOC_ZERO ;
 static char *SIG = "-U" ;
 static genalloc DOWNFILE = GENALLOC_ZERO ; //stralist
 
-#define USAGE "66-start [ -h help ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -r reload ] [ -R reload file ] service(s)"
+#define USAGE "66-start [ -h ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -r | R ] service(s)"
 
 static inline void info_help (void)
 {
