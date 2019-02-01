@@ -11,7 +11,8 @@
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file./
  */
-
+#include <signal.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -51,7 +52,7 @@ unsigned int DEATHSV = 10 ;
 
 int SIGNAL = -1 ;
 
-#define USAGE "66-svctl [ -h help ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -n death ] [ -u|U up ] [ -d|D down ] [ -K kill ] [ -r|R reload ] [ -X kill supervisor ] service(s)"
+#define USAGE "66-svctl [ -h ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -n death ] [ -u | U | d | D | r | R | K | X ] service(s)"
 
 static inline void info_help (void)
 {
@@ -122,27 +123,6 @@ int handle_signal_svc(svc_sig *sv_signal)
 	else return 0 ;
 }
 
-static int handle_signal_pipe(svc_sig *svc)
-{
-	char *sv = svkeep.s + svc->scan ;
-	for (;;)
-	{
-		switch (selfpipe_read())
-		{
-			case -1 : strerr_warnwu1sys("selfpipe_read") ; return 0 ;
-			case 0 : return 1 ;
-			case SIGCHLD: wait_reap() ; return 1 ;
-			case SIGINT: 		
-					// TODO, little ugly for me
-					// KILL work but s6-supervice reload it
-					VERBO2 strerr_warnw1x("received SIGINT, aborting service transition") ;
-					if (svc->sig <= SIGRR)
-						s6_svc_writectl(sv, S6_SUPERVISE_CTLDIR, "d", 1) ;
-					return 0 ;
-			default : strerr_warn1x("unexpected data in selfpipe") ; return 0 ;
-		}
-	}
-}
 
 static unsigned char const actions[9][9] = 
 {
@@ -258,6 +238,26 @@ int handle_case(char c, svc_sig *sv_signal)
 	return err ;
 }
 
+static int handle_signal_pipe(svc_sig *svc)
+{
+	char *sv = svkeep.s + svc->scan ;
+	for (;;)
+	{
+		switch (selfpipe_read())
+		{
+			case -1 : strerr_warnwu1sys("selfpipe_read") ; return 0 ;
+			case 0 : return 1 ;
+			case SIGTERM: 		
+			case SIGINT: 		
+					// TODO, little ugly for me
+					VERBO2 strerr_warnw1x("received SIGINT, aborting service transition") ;
+					if (svc->sig <= SIGRR)
+						s6_svc_writectl(sv, S6_SUPERVISE_CTLDIR, "d", 1) ;
+					return 0 ;
+			default : strerr_warn1x("unexpected data in selfpipe") ; return 0 ;
+		}
+	}
+}
 static void announce(svc_sig *sv_signal)
 {
 
@@ -268,17 +268,18 @@ static void announce(svc_sig *sv_signal)
 	else if (r == 1) { VERBO2 strerr_warni4x(sv," is ",(sv_signal->sig > 3) ? "down" : "up"," but not notified by the daemon itself") ; }
 	else if (!r) { VERBO2 strerr_warni4x(sv,": ",(sv_signal->sig > 3) ? "stopped" : "started"," successfully") ; }
 }
-		
+
 int svc_listen(genalloc *gasv, ftrigr_t *fifo,int spfd,svc_sig *svc)
 {
 	int r ;
 	iopause_fd x[2] = { { .fd = ftrigr_fd(fifo), .events = IOPAUSE_READ } , { .fd = spfd, .events = IOPAUSE_READ, .revents = 0 } } ;
-	
+		
 	tain_t t ;
 	tain_now_g() ;
 	tain_add_g(&t,&svc->deadline) ;
 	
 	VERBO3 strerr_warnt2x("start iopause for: ",svkeep.s + svc->name) ;
+	
 	for(;;)
 	{
 		char receive ;
@@ -298,7 +299,7 @@ int svc_listen(genalloc *gasv, ftrigr_t *fifo,int spfd,svc_sig *svc)
 			break ;
 		}
 		
-		r = iopause_g(x,2, &t) ;
+		r = iopause_g(x, 2, &t) ;
 		if (r < 0){ VERBO3 strerr_warnwu1sys("iopause") ; return 0 ; }
 		/** timeout is not a error , the iopause process did right */
 		else if (!r) { VERBO3 strerr_warnt2x("timed out reached for: ",svkeep.s + svc->name) ; announce(svc) ; break ; } 
@@ -311,7 +312,7 @@ int svc_listen(genalloc *gasv, ftrigr_t *fifo,int spfd,svc_sig *svc)
 			svc->ndeath--;
 		}
 	}
-	
+
 	return 1 ;
 }
 
@@ -362,7 +363,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 'U' :	if (SIGNAL > 0) exitusage() ; SIGNAL = SIGRUP ; sig = "u" ; break ;
 				case 'd' : 	if (SIGNAL > 0) ; SIGNAL = SIGDOWN ; sig = "d" ; break ;
 				case 'D' :	if (SIGNAL > 0) ; SIGNAL = SIGRDOWN ; sig = "d" ; break ;
-				case 'X' :	if (SIGNAL > 0) ; SIGNAL = SIGX ; sig = "dX" ; break ;
+				case 'X' :	if (SIGNAL > 0) ; SIGNAL = SIGX ; sig = "dx" ; break ;
 				case 'K' :	if (SIGNAL > 0) ; SIGNAL = SIGRDOWN ; sig = "kd" ; break ;
 				case 'r' :	if (SIGNAL > 0) ; SIGNAL = SIGR ; sig = "r" ; break ;
 				case 'R' :	if (SIGNAL > 0) ; SIGNAL = SIGRR ; sig = "r" ; break ;
@@ -571,12 +572,11 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	/** nothing to do */
 	if (!genalloc_len(svc_sig,&gakeep))	goto finish ;
-		
+	
 	int spfd = selfpipe_init() ;
 	if (spfd < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
-	if (selfpipe_trap(SIGCHLD) < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
 	if (selfpipe_trap(SIGINT) < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
-	if (sig_ignore(SIGHUP) < 0) strerr_diefu1sys(111, "ignore SIGHUP") ;
+	if (selfpipe_trap(SIGTERM) < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
 	if (sig_ignore(SIGPIPE) < 0) strerr_diefu1sys(111,"ignore SIGPIPE") ;
 		
 	if (!svc_init_pipe(&fifo,&gakeep,&svkeep)) strerr_diefu1x(111,"init pipe") ;
@@ -586,6 +586,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		svc_sig *sv = &genalloc_s(svc_sig,&gakeep)[i] ;
 		if (!svc_listen(&gakeep,&fifo,spfd,sv)) strerr_diefu1x(111,"listen pipe") ;
 	}
+	
 	finish:
 		ftrigr_end(&fifo) ;
 		selfpipe_finish() ;
