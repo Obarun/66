@@ -109,6 +109,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	char *treename = 0 ;
 	char *signal = 0 ;
+	char *mainsv = "Master" ;
+	
 	stralloc base = STRALLOC_ZERO ;
 	stralloc tree = STRALLOC_ZERO ;
 	stralloc live = STRALLOC_ZERO ;
@@ -148,7 +150,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		argc -= l.ind ; argv += l.ind ;
 	}
 
-	if (argc < 1) exitusage() ;
+	if (argc < 1) if (!stra_add(&gasv,mainsv)) strerr_diefu3sys(111,"add: ",*argv," as service to handle") ;
 	
 	owner = MYUID ;
 
