@@ -55,7 +55,7 @@ stralloc saresolve = STRALLOC_ZERO ;
 genalloc gatoremove = GENALLOC_ZERO ;//stralist
 genalloc gaunsup = GENALLOC_ZERO ; //stralist
 
-#define USAGE "66-stop [ -h help ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -u unsupervise ] [ -X kill supervisor ] [ -K kill ] service(s)"
+#define USAGE "66-stop [ -h ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -u ] [ -X ] [ -K ] service(s)"
 
 static inline void info_help (void)
 {
@@ -195,10 +195,10 @@ int svc_down(char const *base,char const *scandir,char const *live,char const *t
 	unsigned int m = 0 ;
 	char fmt[UINT_FMT] ;
 	fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
-	/*char tt[UINT32_FMT] ;
-	tt[uint32_fmt(tt,tain_to_millisecs(&DEADLINE))] = 0 ; */
+
 	char tt[UINT32_FMT] ;
 	tt[uint32_fmt(tt,DEADLINE)] = 0 ;
+
 	newargv[m++] = SS_BINPREFIX "66-svctl" ;
 	newargv[m++] = "-v" ;
 	newargv[m++] = fmt ;
@@ -546,11 +546,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		stralloc_free(&svok) ;
 	}
 	
-	int spfd = selfpipe_init() ;
-	if (spfd < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
-	if (sig_ignore(SIGHUP) < 0) strerr_diefu1sys(111, "ignore SIGHUP") ;
-	if (sig_ignore(SIGPIPE) < 0) strerr_diefu1sys(111,"ignore SIGPIPE") ;
-	
 	/** rc work */
 	if (genalloc_len(svstat_t,&nrc))
 	{
@@ -595,8 +590,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	genalloc_free(svstat_t,&nrc) ;
 	genalloc_free(svstat_t,&nclassic) ;
 	free(treename) ;
-	selfpipe_finish() ;
-	
+
 	return 0 ;		
 }
 	
