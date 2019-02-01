@@ -46,7 +46,7 @@ unsigned int VERBOSITY = 1 ;
 static unsigned int DEADLINE = 0 ;
 stralloc saresolve = STRALLOC_ZERO ;
 
-#define USAGE "66-dbctl [ -h help ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -r reload ] [ -u up ] [ -d down ] service(s)"
+#define USAGE "66-dbctl [ -h ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -u | d | r ] service(s)"
 
 static inline void info_help (void)
 {
@@ -233,7 +233,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	 * between the end of the s6-rc process and the check of the daemon status,
 	 * the real value of the status can be not written yet,so we can hit
 	 * this window.*/
-	int e = 0 ;
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	stralloc stat = STRALLOC_ZERO ;
 	if (!stralloc_catb(&stat,livetree.s,livetree.len - 1)) retstralloc(111,"main") ; 
@@ -285,7 +284,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc_free(&saresolve) ;
 	free(treename) ;
 	
-	return e ;
+	return 0 ;
 }
 	
 
