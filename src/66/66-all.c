@@ -185,7 +185,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:l:T:t:s", &l) ;
+			int opt = getopt_args(argc,argv, ">hv:l:T:t:f", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
