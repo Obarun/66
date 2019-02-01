@@ -150,7 +150,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		argc -= l.ind ; argv += l.ind ;
 	}
 
-	if (argc < 1) if (!stra_add(&gasv,mainsv)) strerr_diefu3sys(111,"add: ",*argv," as service to handle") ;
+	if (argc < 1) if (!stra_add(&gasv,mainsv)) strerr_diefu1sys(111,"add: Master as service to handle") ;
 	
 	owner = MYUID ;
 
