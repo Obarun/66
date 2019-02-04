@@ -760,7 +760,7 @@ int write_common(sv_alltype *sv, char const *dst)
 		}
 		
 		/** /etc/env/sv_name*/
-		size_t sslen = sa.len - 2 ;//-2 remove 0 and '/'
+		size_t sslen = sa.len - 1 ;//-1 for last '/'
 		char *name = keep.s + sv->cname.name ;
 		char dst[sslen + SS_ENVDIR_LEN + 1] ;
 		memcpy(dst,sa.s,sslen) ;
@@ -816,7 +816,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 		VERBO3 strerr_warnwu1sys("get home system directory") ;
 		return 0 ;
 	}
-	size_t envdstlen = sa.len - 2 ;//-2 0 of stra and last '/'
+	size_t envdstlen = sa.len - 1 ;//-1 last '/'
 	char envdata[envdstlen + SS_ENVDIR_LEN + 1] ;
 	memcpy(envdata,sa.s,envdstlen) ;
 	memcpy(envdata + envdstlen, SS_ENVDIR,SS_ENVDIR_LEN) ;

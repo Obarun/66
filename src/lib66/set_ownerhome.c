@@ -40,8 +40,8 @@ int set_ownerhome(stralloc *base,uid_t owner)
 	if (!user_home) return 0 ;
 	
 	if (!stralloc_cats(base,user_home))	retstralloc(0,"set_ownerhome") ;
-	if (!stralloc_catb(base,"/",1))	retstralloc(0,"set_ownerhome") ;
+	if (!stralloc_cats(base,"/"))	retstralloc(0,"set_ownerhome") ;
 	if (!stralloc_0(base)) retstralloc(0,"set_ownerhome") ;
-		
+	base->len--;
 	return 1 ;
 }

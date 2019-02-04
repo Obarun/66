@@ -21,6 +21,8 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 
+#include <66/ssexec.h>
+
 extern unsigned int VERBOSITY ;
 
 #define VERBO1 if(VERBOSITY >= 1) 
@@ -31,8 +33,6 @@ extern unsigned int VERBOSITY ;
 #define YOURUID(passto,owner) youruid(passto,owner)
 #define MYGID getgid()
 #define YOURGID(passto,owner) yourgid(passto,owner)
-
-
 
 
 extern int dir_cmpndel(char const *src, char const *dst,char const *exclude) ;
@@ -67,7 +67,7 @@ extern int resolve_remove_service(char const *dst, char const *svname) ;
 
 extern int resolve_symlive(char const *live, char const *tree, char const *treename) ;
 
-extern int resolve_pointo(stralloc *sa,char const *base, char const *live,char const *tree,char const *treename,unsigned int type, unsigned int what) ;
+extern int resolve_pointo(stralloc *sa,ssexec_t *info,unsigned int type, unsigned int what) ;
 
 extern int resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src,unsigned int *found) ;
 

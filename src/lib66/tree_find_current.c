@@ -26,15 +26,14 @@
 
 #include <66/constants.h>
 
-
-int tree_find_current(stralloc *tree, char const *base)
+int tree_find_current(stralloc *tree, char const *base,uid_t owner)
 {
 	ssize_t r ;
 	size_t baselen = strlen(base) ;
 	char pack[256] ;
 	
-	uint32_pack(pack,MYUID) ;
-	size_t packlen = uint_fmt(pack,MYUID) ;
+	uint32_pack(pack,owner) ;
+	size_t packlen = uint_fmt(pack,owner) ;
 	pack[packlen] = 0 ;
 	
 	char sa[baselen + SS_TREE_CURRENT_LEN + 1 + packlen + 1 + SS_TREE_CURRENT_LEN + 1] ;
@@ -48,10 +47,9 @@ int tree_find_current(stralloc *tree, char const *base)
 	
 	r = scan_mode(sa,S_IFDIR) ;
 	if(r <= 0) return 0 ; 
-	//	strerr_warni2x("sa tree_find_current",sa) ;
 	r = sarealpath(tree,sa) ;
 	if (r < 0 ) return 0 ; 
 	if (!stralloc_0(tree)) retstralloc(0,"find_current") ;
-	
+	tree->len--;
 	return 1 ;
 }

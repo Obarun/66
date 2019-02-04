@@ -1,5 +1,5 @@
 /* 
- * 66-init.c
+ * ssexec_free.c
  * 
  * Copyright (c) 2018 Eric Vidal <eric@obarun.org>
  * 
@@ -11,24 +11,21 @@
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file./
  */
+ 
 
-#include <skalibs/strerr2.h>
+#include <skalibs/stralloc.h>
 
 #include <66/ssexec.h>
 
-unsigned int VERBOSITY = 1 ;
+ssexec_t const ssexec_zero = SSEXEC_ZERO ; 
 
-int main(int argc, char const *const *argv,char const *const *envp)
+void ssexec_free(ssexec_t *info)
 {
-	PROG = "66-init" ;
-	
-	ssexec_t info = SSEXEC_ZERO ;
-	
-	info.prog = PROG ;
-	info.help = help_init ;
-	info.usage = usage_init ;
-	
-	return ssexec_main(argc,argv,envp,&ssexec_init,&info) ;
+	stralloc_free(&info->base) ;
+	stralloc_free(&info->live) ;
+	stralloc_free(&info->tree) ;
+	stralloc_free(&info->livetree) ;
+	stralloc_free(&info->scandir) ;
 }
 	
 

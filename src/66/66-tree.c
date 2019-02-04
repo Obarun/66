@@ -35,7 +35,7 @@
 
 //#include <stdio.h>
 
-#define USAGE "66-tree [ -h ] [ -v verbosity ] [ -n | R ] [ -a ] [ -d ] [ -c ] [ -E | D ] [ -C ] tree"
+#define USAGE "66-tree [ -h ] [ -v verbosity ] [ -n | R ] [ -a ] [ -d ] [ -c ] [ -E | D ] [ -C ] tree" 
 
 unsigned int VERBOSITY = 1 ;
 
@@ -427,31 +427,31 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			switch (opt)
 			{
 				case 'h' : info_help(); return 0 ;
-				case 'v' : if (!uint0_scan(l.arg, &VERBOSITY)) exitusage() ; break ;
+				case 'v' : if (!uint0_scan(l.arg, &VERBOSITY)) exitusage(USAGE) ; break ;
 				case 'n' : create = 1 ; break ;
-				case 'a' : if (!scan_uidlist_wdelim(l.arg,auids,',')) exitusage() ; 
+				case 'a' : if (!scan_uidlist_wdelim(l.arg,auids,',')) exitusage(USAGE) ; 
 						   auidn = auids[0] ;
 						   allow = 1 ;
 						   break ;
-				case 'd' : if (!scan_uidlist_wdelim(l.arg,duids,',')) exitusage() ; 
+				case 'd' : if (!scan_uidlist_wdelim(l.arg,duids,',')) exitusage(USAGE) ; 
 						   duidn = duids[0] ;
 						   deny = 1 ;
 						   break ;
 				case 'c' : current = 1 ; break ;
-				case 'E' : enable = 1 ; if (disable) exitusage() ; break ;
-				case 'D' : disable = 1 ; if (enable) exitusage () ; break ;
-				case 'R' : remove = 1 ; if (create) exitusage() ; break ;
+				case 'E' : enable = 1 ; if (disable) exitusage(USAGE) ; break ;
+				case 'D' : disable = 1 ; if (enable) exitusage (USAGE) ; break ;
+				case 'R' : remove = 1 ; if (create) exitusage(USAGE) ; break ;
 				case 'C' : if (!stralloc_cats(&clone,l.arg)) retstralloc(111,"main") ;
 						   if (!stralloc_0(&clone)) retstralloc(111,"main") ;
 						   snap = 1 ;
 						   break ;
-				default : exitusage() ; 
+				default : exitusage(USAGE) ; 
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
 	
-	if (argc != 1) exitusage() ;
+	if (argc != 1) exitusage(USAGE) ;
 	
 	tree = argv[0] ;
 	owner = MYUID ;
@@ -540,7 +540,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (rm_rf(dstree.s) < 0) strerr_diefu2sys(111,"remove ", dstree.s) ;
 				
 		size_t treelen = strlen(tree) ;
-		size_t baselen = base.len - 1 ;
+		size_t baselen = base.len ;
 		char treetmp[baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen  + 1] ;
 		memcpy(treetmp, base.s, baselen) ;
 		memcpy(treetmp + baselen, SS_SYSTEM, SS_SYSTEM_LEN) ;

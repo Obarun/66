@@ -82,7 +82,7 @@ int tree_state(int argc, char const *const *argv)
 	}
 	size_t statesize ;
 	/** /system/state */
-	base.len-- ;
+	//base.len-- ;
 	size_t statelen ;
 	char state[base.len + SS_SYSTEM_LEN + SS_STATE_LEN + 1] ;
 	memcpy(state,base.s,base.len) ;

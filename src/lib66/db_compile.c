@@ -29,9 +29,10 @@
 
 #include <66/utils.h>
 #include <66/constants.h>
+#include <66/ssexec.h>
 
 #include <stdio.h>
-int db_compile(char const *workdir, char const *tree, char const *treename,char const *const *envp)
+int db_compile(char const *workdir, char const *tree, char const *treename, char const *const *envp)
 {
 	int wstat, r ;
 	pid_t pid ;

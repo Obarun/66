@@ -22,23 +22,22 @@
 
 #include <66/config.h>
 
-int set_livetree(stralloc *live,uid_t owner)
+int set_livetree(stralloc *livetree,uid_t owner)
 {
 	int r ;
 	char ownerpack[256] ;
 	
 	
-	r = set_livedir(live) ;
+	r = set_livedir(livetree) ;
 	if (r < 0) return -1 ;
 	if (!r) return 0 ;
 		
 	size_t ownerlen = uid_fmt(ownerpack,owner) ;
 	ownerpack[ownerlen] = 0 ;
 	
-	live->len-- ;
-	if (!stralloc_cats(live,"tree/")) retstralloc(0,"set_livedir") ;
-	if (!stralloc_cats(live,ownerpack)) retstralloc(0,"set_livedir") ;
-	if (!stralloc_0(live)) retstralloc(0,"set_livedir") ;
-	
+	if (!stralloc_cats(livetree,"tree/")) retstralloc(0,"set_livedir") ;
+	if (!stralloc_cats(livetree,ownerpack)) retstralloc(0,"set_livedir") ;
+	if (!stralloc_0(livetree)) retstralloc(0,"set_livedir") ;
+	livetree->len--;
 	return 1 ;
 }

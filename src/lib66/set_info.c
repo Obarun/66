@@ -1,5 +1,5 @@
 /* 
- * 66-init.c
+ * set_info.c
  * 
  * Copyright (c) 2018 Eric Vidal <eric@obarun.org>
  * 
@@ -11,24 +11,19 @@
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file./
  */
+ 
+#include <66/utils.h>
+ 
+#include <oblibs/error2.h>
+#include <oblibs/directory.h>
 
-#include <skalibs/strerr2.h>
+#include <skalibs/stralloc.h>
 
-#include <66/ssexec.h>
+#include <66/config.h>
 
-unsigned int VERBOSITY = 1 ;
-
-int main(int argc, char const *const *argv,char const *const *envp)
+int set_info(ssexec_t *info)
 {
-	PROG = "66-init" ;
 	
-	ssexec_t info = SSEXEC_ZERO ;
 	
-	info.prog = PROG ;
-	info.help = help_init ;
-	info.usage = usage_init ;
-	
-	return ssexec_main(argc,argv,envp,&ssexec_init,&info) ;
+	return 1 ;
 }
-	
-

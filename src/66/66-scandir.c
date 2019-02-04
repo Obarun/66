@@ -237,7 +237,7 @@ int write_log(char const *scandir, char const *scanname)
 			VERBO3 strerr_warnwu1x("set owner path") ;
 			return 0 ;
 		}
-		path.len-- ;
+		//path.len-- ;
 		if (!stralloc_cats(&path,SS_LOGGER_USER_DIRECTORY)) retstralloc(0,"write_log") ;
 	}
 	pathless = path.len ;
@@ -854,7 +854,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 			switch (opt)
 			{
 				case 'h' : info_help(); return 0 ;
-				case 'v' : if (!uint0_scan(l.arg, &VERBOSITY)) exitusage() ; break ;
+				case 'v' : if (!uint0_scan(l.arg, &VERBOSITY)) exitusage(USAGE) ; break ;
 				case 'b' : BOOT = 1 ; break ;
 				case 'l' : if(!stralloc_cats(&live,l.arg)) retstralloc(111,"main") ;
 						   if(!stralloc_0(&live)) retstralloc(111,"main") ;
@@ -866,20 +866,20 @@ int main(int argc, char const *const *argv, char const *const *envp)
 				case 'e' : if(!stralloc_cats(&envdir,l.arg)) retstralloc(111,"main") ;
 						   if(!stralloc_0(&envdir)) retstralloc(111,"main") ;
 						   break ;
-				case 'c' : create = 1 ; if (remove) exitusage() ; break ;
-				case 'r' : remove = 1 ; if (create) exitusage() ; break ;
-				case 'u' : up = 1 ; if (down) exitusage() ; break ;
-				case 's' : down = 1 ; if (up) exitusage() ; 
+				case 'c' : create = 1 ; if (remove) exitusage(USAGE) ; break ;
+				case 'r' : remove = 1 ; if (create) exitusage(USAGE) ; break ;
+				case 'u' : up = 1 ; if (down) exitusage(USAGE) ; break ;
+				case 's' : down = 1 ; if (up) exitusage(USAGE) ; 
 						   if(!stralloc_cats(&signal,l.arg)) retstralloc(111,"main") ;
 						   if(!stralloc_0(&signal)) retstralloc(111,"main") ;
 						   break ;
-				default : exitusage() ; 
+				default : exitusage(USAGE) ; 
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
 	
-	if (argc > 1) exitusage() ;
+	if (argc > 1) exitusage(USAGE) ;
 	
 	if (!argc) OWNER = MYUID ;
 	else 

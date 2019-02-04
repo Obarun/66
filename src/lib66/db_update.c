@@ -25,27 +25,26 @@
 
 #include <66/constants.h>
 #include <66/utils.h>
+#include <66/ssexec.h>
 
-int db_update(char const *newdb, char const *tree, char const *live,char const *const *envp)
+int db_update(char const *newdb, ssexec_t *info,char const *const *envp)
 {
 	
 	pid_t pid ;
 	int wstat ;
-	size_t treelen = strlen(tree) ;
 	size_t newdblen = strlen(newdb) ;
-	size_t livelen = strlen(live) ;
 	
-	char db[newdblen + 1 + treelen + 1] ; 
+	char db[newdblen + 1 + info->tree.len + 1] ; 
 	memcpy(db, newdb, newdblen) ;
 	memcpy(db + newdblen, "/", 1) ;
-	memcpy(db + newdblen + 1, tree, treelen) ;
-	db[newdblen + 1 + treelen] = 0 ;
+	memcpy(db + newdblen + 1, info->tree.s, info->tree.len) ;
+	db[newdblen + 1 + info->tree.len] = 0 ;
 		
-	char newlive[livelen + 1 + treelen + 1] ;
-	memcpy(newlive, live,livelen) ;
-	memcpy(newlive + livelen , "/", 1) ;
-	memcpy(newlive + livelen + 1, tree,treelen) ;
-	newlive[livelen + 1 + treelen] = 0 ;
+	char newlive[info->live.len + 1 + info->tree.len + 1] ;
+	memcpy(newlive, info->live.s,info->live.len) ;
+	memcpy(newlive + info->live.len , "/", 1) ;
+	memcpy(newlive + info->live.len + 1, info->tree.s,info->tree.len) ;
+	newlive[info->live.len + 1 + info->tree.len] = 0 ;
 	
 	char const *newargv[10] ;
 	unsigned int m = 0 ;

@@ -20,6 +20,8 @@
 #include <skalibs/genalloc.h>
 #include <s6/ftrigr.h>
 
+#include <66/ssexec.h>
+
 typedef struct svstat_s svstat_t, *svstat_t_ref ;
 struct svstat_s
 {
@@ -104,7 +106,7 @@ enum sigactions_e
 } ;
 
 
-extern int svc_switch_to(char const *base, char const *tree,char const *treename,unsigned int where) ;
+extern int svc_switch_to(ssexec_t *info,unsigned int where) ;
 extern int svc_init(char const *scandir,char const *src, genalloc *ga) ;
 extern int svc_init_pipe(ftrigr_t *fifo,genalloc *gasv,stralloc *sasv) ;
 

@@ -57,9 +57,9 @@ static uid_t owner ;
 #define USAGE "66-info [ -h ] [ -T ] [ -S ] sub-options (use -h as sub-options for futher informations)"
 
 #define TREE_USAGE "66-info -T [ -h ] [ -v verbosity ] [ -r ] [ -d depth ] tree "
-#define exit_tree_usage() strerr_dieusage(100, TREE_USAGE)
+#define exit_tree_usage() exitusage(TREE_USAGE)
 #define SV_USAGE "66-info -S [ -h ] [ -v verbosity ] [ -l live ] [ -p n lines ] [ -r ] [ -d depth ] service"
-#define exit_sv_usage() strerr_dieusage(100, SV_USAGE)
+#define exit_sv_usage() exitusage(SV_USAGE)
 
 unsigned int REVERSE = 0 ;
 
@@ -181,14 +181,14 @@ int print_status(char const *svname,char const *type,char const *treename, char 
 	
 	if (get_enumbyid(type,key_enum_el) == CLASSIC)
 	{
-		size_t scanlen = SCANDIR.len - 1 ;
+		size_t scanlen = SCANDIR.len ;
 		if (!stralloc_catb(&svok,SCANDIR.s,scanlen)) retstralloc(0,"print_status") ;
 		if (!stralloc_cats(&svok,"/")) retstralloc(0,"print_status") ;
 		if (!stralloc_cats(&svok,svname)) retstralloc(0,"print_status") ;
 	}
 	else if (get_enumbyid(type,key_enum_el) == LONGRUN)
 	{
-		size_t livelen = livetree.len -1 ;
+		size_t livelen = livetree.len ;
 		if (!stralloc_catb(&svok,livetree.s,livelen)) retstralloc(0,"print_status") ;
 		if (!stralloc_cats(&svok,"/")) retstralloc(0,"print_status") ;
 		if (!stralloc_cats(&svok,treename)) retstralloc(0,"print_status") ;
@@ -332,14 +332,14 @@ int tree_args(int argc, char const *const *argv)
 	
 	if (argv[0]) todisplay = 1 ;
 	
-	r = tree_find_current(&sacurrent,base.s) ;
+	r = tree_find_current(&sacurrent,base.s,MYUID) ;
 	if (r)
 	{
 		currname = tree_setname(sacurrent.s) ;
 		if (!currname) strerr_diefu1x(111,"set the tree name") ;
 	}
 	
-	size_t baselen = base.len - 1 ;
+	size_t baselen = base.len ;
 	char src[baselen + SS_SYSTEM_LEN + 1] ;
 	memcpy(src,base.s,baselen) ;
 	memcpy(src + baselen,SS_SYSTEM, SS_SYSTEM_LEN) ;
@@ -368,7 +368,7 @@ int tree_args(int argc, char const *const *argv)
 			if(!stralloc_cats(&tree,treename)) retstralloc(0,"tree_args") ;
 			if(!stralloc_0(&tree)) retstralloc(0,"tree_args") ;
 	
-			r = tree_sethome(&tree,base.s) ;
+			r = tree_sethome(&tree,base.s,MYUID) ;
 			if (!r) strerr_diefu2sys(111,"find tree: ", tree.s) ;
 			
 			r = graph_display(tree.s,treename,"",2) ;
@@ -430,9 +430,9 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 				case 'l' : 	if (!stralloc_cats(&live,l.arg)) retstralloc(0,"sv_args") ;
 							if (!stralloc_0(&live)) retstralloc(0,"sv_args") ;
 							break ;
-				case 'p' :	if (!uint0_scan(l.arg, &nlog)) exitusage() ; break ;
+				case 'p' :	if (!uint0_scan(l.arg, &nlog)) exit_sv_usage() ; break ;
 				case 'r' : 	REVERSE = 1 ; break ;
-				case 'd' : 	if (!uint0_scan(l.arg, &MAXDEPTH)) exit_tree_usage(); break ;
+				case 'd' : 	if (!uint0_scan(l.arg, &MAXDEPTH)) exit_sv_usage(); break ;
 				default : exit_sv_usage() ; 
 			}
 		}
@@ -446,7 +446,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	if (!r) retstralloc(0,"sv_args") ;
 	if (r < 0 ) strerr_dief3x(111,"live: ",live.s," must be an absolute path") ;
 	
-	size_t baselen = base.len - 1 ;
+	size_t baselen = base.len ;
 	size_t newlen ;
 	char src[MAXSIZE] ;
 	memcpy(src,base.s,baselen) ;
@@ -485,7 +485,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 		return 1 ;
 	}
 	
-	r = tree_sethome(&tree,base.s) ;
+	r = tree_sethome(&tree,base.s,MYUID) ;
 	if (!r) strerr_diefu2sys(111,"find tree: ", tree.s) ;
 	
 	if (!bprintf(buffer_1,"%s%s%s\n","[",svname,"]")) goto err ;
@@ -595,11 +595,11 @@ int main(int argc, char const *const *argv, char const *const *envp)
 				case 'h' : 	info_help(); return 0 ;
 				case 'T' : 	what = 0 ; break ;
 				case 'S' :	what = 1 ; break ;
-				default : exitusage() ; 
+				default : exitusage(USAGE) ; 
 			}
 		}
 	}
-	if (what<0) exitusage() ;
+	if (what<0) exitusage(USAGE) ;
 	
 	owner = MYUID ;
 		

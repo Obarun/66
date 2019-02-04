@@ -212,7 +212,7 @@ int resolve_symlive(char const *live, char const *tree, char const *treename)
 {
 	int r ;
 	
-	size_t livelen = strlen(live) - 1 ;
+	size_t livelen = strlen(live) ;
 	size_t treelen = strlen(tree) ;
 	size_t treenamelen = strlen(treename) ;
 	size_t newlen ;
@@ -281,44 +281,42 @@ int resolve_symlive(char const *live, char const *tree, char const *treename)
 	return 1 ;
 }
 
-int resolve_pointo(stralloc *sa,char const *base, char const *live,char const *tree,char const *treename,unsigned int type, unsigned int what)
+int resolve_pointo(stralloc *sa,ssexec_t *info,unsigned int type, unsigned int what)
 {
-	size_t baselen = strlen(base)  ;
-	size_t treelen = strlen(tree) ;
-	size_t livelen = strlen(live) - 1 ;
-	size_t treenamelen = strlen(treename) ;
+	size_t treenamelen = strlen(info->treename) ;
+	size_t livelen = info->live.len - 1 ;
 	size_t sourcelen ;
 	size_t backlen ;
 	size_t psrclen ;
 	
 	char *r = NULL ;
-	uid_t owner = MYUID ;
+	
 	char ownerstr[256] ;
-	size_t ownerlen = uid_fmt(ownerstr,owner) ;
+	size_t ownerlen = uid_fmt(ownerstr,info->owner) ;
 	ownerstr[ownerlen] = 0 ;
 
 	char resolve[livelen + SS_RESOLVE_LEN + 1 + ownerlen + 1 + treenamelen + 1] ;
-	memcpy(resolve, live,livelen) ;
+	memcpy(resolve, info->live.s,livelen) ;
 	memcpy(resolve + livelen, SS_RESOLVE, SS_RESOLVE_LEN) ;
 	resolve[livelen + SS_RESOLVE_LEN] = '/' ;
 	memcpy(resolve + livelen + SS_RESOLVE_LEN + 1, ownerstr,ownerlen) ;
 	resolve[livelen + SS_RESOLVE_LEN + 1 + ownerlen] = '/' ;
-	memcpy(resolve + livelen + SS_RESOLVE_LEN + 1 + ownerlen + 1, treename,treenamelen) ;
+	memcpy(resolve + livelen + SS_RESOLVE_LEN + 1 + ownerlen + 1, info->treename,treenamelen) ;
 	resolve[livelen + SS_RESOLVE_LEN + 1 + ownerlen + 1 + treenamelen] = 0 ;
 	
-	char source[treelen + SS_SVDIRS_LEN + SS_SVC_LEN + 1] ;
-	memcpy(source,tree,treelen) ;
-	memcpy(source + treelen, SS_SVDIRS, SS_SVDIRS_LEN) ;
-	sourcelen = treelen + SS_SVDIRS_LEN ;
+	char source[info->tree.len + SS_SVDIRS_LEN + SS_SVC_LEN + 1] ;
+	memcpy(source,info->tree.s,info->tree.len) ;
+	memcpy(source + info->tree.len, SS_SVDIRS, SS_SVDIRS_LEN) ;
+	sourcelen = info->tree.len + SS_SVDIRS_LEN ;
 	source[sourcelen] = 0 ;
 	
-	char backup[baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treenamelen + SS_SVC_LEN + 1] ;
-	memcpy(backup,base,baselen) ;
-	memcpy(backup + baselen, SS_SYSTEM, SS_SYSTEM_LEN) ;
-	memcpy(backup + baselen + SS_SYSTEM_LEN, SS_BACKUP, SS_BACKUP_LEN) ;
-	backup[baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN] = '/' ;
-	memcpy(backup + baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1, treename,treenamelen) ;
-	backlen = baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treenamelen ;
+	char backup[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treenamelen + SS_SVC_LEN + 1] ;
+	memcpy(backup,info->base.s,info->base.len) ;
+	memcpy(backup + info->base.len, SS_SYSTEM, SS_SYSTEM_LEN) ;
+	memcpy(backup + info->base.len + SS_SYSTEM_LEN, SS_BACKUP, SS_BACKUP_LEN) ;
+	backup[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN] = '/' ;
+	memcpy(backup + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1, info->treename,treenamelen) ;
+	backlen = info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treenamelen ;
 	backup[backlen] = 0 ;
 	
 	if (type && what)

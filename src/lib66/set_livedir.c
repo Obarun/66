@@ -23,12 +23,10 @@
 
 int set_livedir(stralloc *live)
 {
-	int r ;
 	
 	if (live->len)
 	{
-		r = dir_scan_absopath(live->s) ;
-		if(r < 0) return -1 ;
+		if (live->s[0] != '/') return -1 ;
 		if (live->s[live->len - 2] != '/')
 		{
 			live->len-- ;
@@ -41,6 +39,6 @@ int set_livedir(stralloc *live)
 		if (!stralloc_cats(live,SS_LIVE)) retstralloc(0,"set_livedir") ;
 		if (!stralloc_0(live)) retstralloc(0,"set_livedir") ;
 	}
-	
+	live->len--;
 	return 1 ;
 }

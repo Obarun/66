@@ -191,24 +191,24 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			switch (opt)
 			{
 				case 'h' : 	info_help(); return 0 ;
-				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) exitusage() ; break ;
+				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) exitusage(USAGE) ; break ;
 				case 'l' : 	if (!stralloc_cats(&live,l.arg)) retstralloc(111,"main") ;
 							if (!stralloc_0(&live)) retstralloc(111,"main") ;
 							break ;
-				case 'T' :	if (!uint0_scan(l.arg, &DEADLINE)) exitusage() ; break ;
+				case 'T' :	if (!uint0_scan(l.arg, &DEADLINE)) exitusage(USAGE) ; break ;
 				case 't' : 	treename = l.arg ; break ;
 				case 'f' : 	shut = 1 ; break ;
-				default : exitusage() ; 
+				default : exitusage(USAGE) ; 
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
 
-	if (argc != 1) exitusage() ;
+	if (argc != 1) exitusage(USAGE) ;
 	
 	if (*argv[0] == 'u') what = 1 ;
 	else if (*argv[0] == 'd') what = 0 ;
-	else exitusage() ;
+	else exitusage(USAGE) ;
 	
 	owner = MYUID ;
 
@@ -234,7 +234,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	size_t statesize ;
 	/** /system/state */
-	base.len-- ;
 	size_t statelen ;
 	char state[base.len + SS_SYSTEM_LEN + SS_STATE_LEN + 1] ;
 	memcpy(state,base.s,base.len) ;
@@ -304,10 +303,10 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if(!stralloc_cats(&tree,treename)) retstralloc(111,"main") ;
 		if(!stralloc_0(&tree)) retstralloc(111,"main") ;
 		
-		r = tree_sethome(&tree,base.s) ;
+		r = tree_sethome(&tree,base.s,owner) ;
 		if (r < 0 || !r) strerr_diefu2sys(111,"find tree: ", tree.s) ;
 	
-		if (!tree_get_permissions(tree.s))
+		if (!tree_get_permissions(tree.s,owner))
 			strerr_dief2x(110,"You're not allowed to use the tree: ",tree.s) ;
 		
 		if (what)
@@ -345,15 +344,17 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (!doit(tree.s,treename,live.s,what,envp)) strerr_warnwu3x((what) ? "start" : "stop" , " service for tree: ",treename) ;
 	}
 	end:
-		while((fd = open("/dev/tty",O_RDWR|O_NOCTTY)) >= 0)
+		if (shut)
 		{
-			if (fd >= 3) break ;
+			while((fd = open("/dev/tty",O_RDWR|O_NOCTTY)) >= 0)
+			{
+				if (fd >= 3) break ;
+			}
+			dup2 (fd,0) ;
+			dup2 (fd,1) ;
+			dup2 (fd,2) ;
+			fd_close(fd) ;
 		}
-		dup2 (fd,0) ;
-		dup2 (fd,1) ;
-		dup2 (fd,2) ;
-		fd_close(fd) ;
-
 		stralloc_free(&base) ;
 		stralloc_free(&live) ;
 		stralloc_free(&tree) ;

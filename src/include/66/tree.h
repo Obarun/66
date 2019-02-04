@@ -18,13 +18,14 @@
 #include <sys/types.h>
 
 #include <skalibs/stralloc.h>
+#include <66/ssexec.h>
 
 extern int tree_cmd_state(unsigned int verbosity,char const *cmd,char const *tree) ;
 extern int tree_state(int argc, char const *const *argv) ;
 
 extern int tree_copy(stralloc *dir, char const *tree,char const *treename) ;
 
-extern int tree_copy_tmp(char const *workdir, char const *base, char const *live, char const *tree,char const *treename) ;
+extern int tree_copy_tmp(char const *workdir, ssexec_t *info) ;
 
 /** Set the tree to use as current for 66 tools
  * This is avoid to use the -t options for all 66 tools
@@ -32,12 +33,12 @@ extern int tree_copy_tmp(char const *workdir, char const *base, char const *live
  * with the path.
  * @Return 1 on success
  * @Return 0 on fail */
-extern int tree_find_current(stralloc *tree, char const *base) ;
+extern int tree_find_current(stralloc *tree, char const *base,uid_t owner) ;
 
 
-extern int tree_get_permissions(char const *tree) ;
+extern int tree_get_permissions(char const *tree, uid_t owner) ;
 
-extern int tree_sethome(stralloc *tree, char const *base) ;
+extern int tree_sethome(stralloc *tree, char const *base,uid_t owner) ;
 
 extern char *tree_setname(char const *tree) ;
 
