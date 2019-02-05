@@ -493,12 +493,12 @@ int write_logger(char const *workdir, sv_alltype *sv, sv_execlog *log,char const
 				
 					if (!stralloc_cats(&destlog,userhome)) retstralloc(0,"write_logger") ;
 					if (!stralloc_cats(&destlog,"/")) retstralloc(0,"write_logger") ;
-					if (!stralloc_cats(&destlog,SS_LOGGER_USER_DIRECTORY)) retstralloc(0,"write_logger") ;
+					if (!stralloc_cats(&destlog,SS_LOGGER_USERDIR)) retstralloc(0,"write_logger") ;
 					if (!stralloc_cats(&destlog,svname)) retstralloc(0,"write_logger") ;
 				}
 				else
 				{
-					if (!stralloc_cats(&destlog,SS_LOGGER_SYS_DIRECTORY)) retstralloc(0,"write_logger") ;
+					if (!stralloc_cats(&destlog,SS_LOGGER_SYSDIR)) retstralloc(0,"write_logger") ;
 					if (!stralloc_cats(&destlog,svname)) retstralloc(0,"write_logger") ;
 				}
 			}
@@ -752,23 +752,12 @@ int write_common(sv_alltype *sv, char const *dst)
 	/** environment */
 	if (sv->opts[2])
 	{
-		stralloc sa = STRALLOC_ZERO ;
-		if (!set_ownersysdir(&sa,MYUID))
-		{
-			VERBO3 strerr_warnwu1sys("get home system directory") ;
-			return 0 ;
-		}
-		
-		/** /etc/env/sv_name*/
-		size_t sslen = sa.len - 1 ;//-1 for last '/'
+		char *dst = 0 ;
+		if (!MYUID) dst = SS_SERVICE_SYSCONFDIR ;
+		else dst = SS_SERVICE_USERCONFDIR ;
+			
 		char *name = keep.s + sv->cname.name ;
-		char dst[sslen + SS_ENVDIR_LEN + 1] ;
-		memcpy(dst,sa.s,sslen) ;
-		memcpy(dst + sslen,SS_ENVDIR,SS_ENVDIR_LEN) ;
-		dst[sslen + SS_ENVDIR_LEN] = 0 ;
-		
-		stralloc_free(&sa) ;
-		
+				
 		r = scan_mode(dst,S_IFDIR) ;
 		if (r < 0)
 		{
@@ -777,11 +766,8 @@ int write_common(sv_alltype *sv, char const *dst)
 		}
 		if (!r)
 		{
-			if (!dir_create(dst,0755))
-			{
-				VERBO3 strerr_warnwu2sys("create environment directory: ",dst) ;
-				return 0 ;
-			}
+			VERBO3 strerr_warnw2sys(dst,"environment directory doesn't exist") ;
+			return 0 ;
 		}
 				
 		if (!write_env(name,&sv->env,&saenv,dst))
@@ -810,21 +796,10 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 	stralloc runuser = STRALLOC_ZERO ;
 	stralloc execute = STRALLOC_ZERO ;
 	
-	stralloc sa = STRALLOC_ZERO ;
-	if (!set_ownersysdir(&sa,MYUID))
-	{
-		VERBO3 strerr_warnwu1sys("get home system directory") ;
-		return 0 ;
-	}
-	size_t envdstlen = sa.len - 1 ;//-1 last '/'
-	char envdata[envdstlen + SS_ENVDIR_LEN + 1] ;
-	memcpy(envdata,sa.s,envdstlen) ;
-	memcpy(envdata + envdstlen, SS_ENVDIR,SS_ENVDIR_LEN) ;
-	envdata[envdstlen + SS_ENVDIR_LEN] = 0 ;
-	
-	
-	stralloc_free(&sa) ;
-			
+	char *envdata = 0 ;
+	if (!MYUID) envdata = SS_SERVICE_SYSCONFDIR ;
+	else envdata = SS_SERVICE_USERCONFDIR ;
+		
 	switch (exec->build)
 	{
 		case AUTO:
@@ -997,16 +972,13 @@ int write_env(char const *name, genalloc *env,stralloc *sa,char const *dst)
 		r = scan_mode(dst,S_IFDIR) ;
 		if (r < 0)
 		{
-			VERBO3 strerr_warnwu2sys("invalid environment directory: ",dst) ;
+			VERBO3 strerr_warnw2sys("invalid environment directory: ",dst) ;
 			return 0 ;
 		}
 		if (!r)
 		{
-			if (!dir_create(dst,0755))
-			{
-				VERBO3 strerr_warnwu2sys("create service environment directory: ",dst) ;
-				return 0 ;
-			}
+			VERBO3 strerr_warnw2sys(dst,"service environment directory doesn't exist") ;
+			return 0 ;
 		}
 		for (unsigned int i = 0 ; i < genalloc_len(diuint32,env) ; i++)
 		{

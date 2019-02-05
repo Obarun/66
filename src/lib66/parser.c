@@ -270,66 +270,66 @@ static int start_parser(stralloc *sasv,char const *name,sv_alltype *sv_before)
 		stralloc_free(sasv) ;
 		return 0 ;
 }
-static int deps_src(stralloc *newsrc,char const *src, char const *name, char const *tree)
+static int deps_src(stralloc *newsrc,char const *src, char const *name, char const *tree, unsigned int force)
 {
-	int r ;
+	int r, err ;
 	uint32_t avlid ;
+	unsigned int found = 0 ;
+	uid_t owner = MYUID ;
 	
 	VERBO3 strerr_warni3x("Resolving source of ", name, " service dependency") ;
 	r = avltree_search(&deps_map,name,&avlid) ;
 	if (r) return 2 ; //already added nothing to do
 	
 	genalloc tmpsrc = GENALLOC_ZERO ; //type diuint32
+	stralloc sa = STRALLOC_ZERO ;
 	
 	*newsrc = stralloc_zero ;
+	err = 1 ;
+	if (!owner) src = SS_SERVICE_SYSDIR ;
+	else src = SS_SERVICE_USERDIR ; 
 	
-	/** Search in current dir*/
-	if (!stralloc_cats(newsrc,src)) retstralloc(0,"resolve_srcdeps") ;
-	if (!stralloc_0(newsrc)) retstralloc(0,"resolve_srcdeps") ;
-	r = dir_search(newsrc->s,name,S_IFREG) ;
-	if (!r)
-	{
-		/** Search on current tree*/
-		if (!stralloc_obreplace(newsrc, tree)) retstralloc(0,"resolve_deps") ;
-		if (!stralloc_cats(newsrc,tree)) retstralloc(0,"resolve_deps") ;
-		if (!stralloc_cats(newsrc,SS_SVDIRS)) retstralloc(0,"resolve_deps") ;
-		if (!stralloc_cats(newsrc,SS_DB)) retstralloc(0,"resolve_deps") ;
-		if (!stralloc_cats(newsrc,SS_SRC)) retstralloc(0,"resolve_deps") ;
-		if (!stralloc_0(newsrc)) retstralloc(0,"resolve_deps") ;
-			
-		r = dir_search(newsrc->s,name,S_IFDIR) ;
-		
-		if (r) return 2 ;// already on the tree, nothing to do here
-		else 
-		if (!r)
-		{ 
-			stralloc sa = STRALLOC_ZERO ;
-			unsigned int found = 0 ;
-			if (!stralloc_obreplace(newsrc, SS_SERVICE_DIR)) retstralloc(0,"resolve_deps") ;
-			if (!resolve_src(&tmpsrc,&sa,name,newsrc->s,&found)) 
-			{
-				VERBO3 strerr_warnwu2sys("find dependency ",name) ;
-				return 0 ;
-			}
-			if (!stralloc_obreplace(newsrc, sa.s + genalloc_s(diuint32,&tmpsrc)->right)) retstralloc(0,"resolve_deps") ;
-			stralloc_free(&sa) ;
-		}
-	}
-	else 
-	if (r < 0)
+	if (!stralloc_cats(newsrc,tree)) retstralloc(0,"deps_src") ;
+	if (!stralloc_cats(newsrc,SS_SVDIRS)) retstralloc(0,"deps_src") ;
+	if (!stralloc_cats(newsrc,SS_DB)) retstralloc(0,"deps_src") ;
+	if (!stralloc_cats(newsrc,SS_SRC)) retstralloc(0,"deps_src") ;
+	if (!stralloc_0(newsrc)) retstralloc(0,"deps_src") ;
+	r = dir_search(newsrc->s,name,S_IFDIR) ;
+	if (r && force) goto end ;
+	else if (r && !force) { err=2 ; goto end ; }
+	else if (r < 0)
 	{
 		VERBO3 strerr_warnw3x("Conflicting format type for ",name," service file") ;
 		return 0 ;
 	}
 	
-	genalloc_free(diuint32,&tmpsrc) ;
+	if (!owner)
+	{
+		if (!stralloc_obreplace(newsrc, SS_SERVICE_SYSDIR)) retstralloc(0,"deps_src") ;
+	}else if (!stralloc_obreplace(newsrc, SS_SERVICE_USERDIR)) retstralloc(0,"deps_src") ;
 	
-	return 1 ;
+	 
+	if (!resolve_src(&tmpsrc,&sa,name,newsrc->s,&found)) 
+	{
+		if (!stralloc_obreplace(newsrc, SS_SERVICE_PACKDIR)) retstralloc(0,"deps_src") ;
+		{
+			VERBO3 strerr_warnwu2sys("find dependency ",name) ;
+			err = 0 ;
+			goto end ;
+		}
+	}
+	
+	if (!stralloc_obreplace(newsrc, sa.s + genalloc_s(diuint32,&tmpsrc)->right)) retstralloc(0,"deps_src") ;
+	
+	end:
+		genalloc_free(diuint32,&tmpsrc) ;
+		stralloc_free(&sa) ;
+	return err ;
 }
 /** @Return 0 on fail
  * @Return 1 on success
  * @Return 2 service already added */
-int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, char const *tree,unsigned int *nbsv, stralloc *sasv)
+int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, char const *tree,unsigned int *nbsv, stralloc *sasv,unsigned int force)
 {
 	int r, insta ;
 
@@ -426,7 +426,7 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, c
 					return 0 ;
 				}
 			}
-			r = deps_src(&newsrc,src,dname.s,tree) ;
+			r = deps_src(&newsrc,src,dname.s,tree,force) ;
 			if (!r) return 0 ;
 			if (insta > 0)
 			{
@@ -440,7 +440,7 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, c
 			
 			if (!start_parser(sasv,dname.s,&sv_before_deps)) return 0 ;
 			
-			r = resolve_srcdeps(&sv_before_deps,dname.s,newsrc.s,tree,nbsv,sasv) ;
+			r = resolve_srcdeps(&sv_before_deps,dname.s,newsrc.s,tree,nbsv,sasv,force) ;
 			
 			if (!r) return 0 ;
 			if (r == 2) continue ;
@@ -461,7 +461,7 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, c
 
 
 
-int parse_service_before(char const *src,char const *sv,char const *tree, unsigned int *nbsv, stralloc *sasv)
+int parse_service_before(char const *src,char const *sv,char const *tree, unsigned int *nbsv, stralloc *sasv,unsigned int force)
 {
 	int r = 0 ;
 	
@@ -503,7 +503,7 @@ int parse_service_before(char const *src,char const *sv,char const *tree, unsign
 	
 	if (sv_before.cname.itype > CLASSIC)
 	{
-		r = resolve_srcdeps(&sv_before,sv,src,tree,nbsv,sasv) ;
+		r = resolve_srcdeps(&sv_before,sv,src,tree,nbsv,sasv,force) ;
 		if (!r) return 0 ;
 	}
 	else if (!add_sv(&sv_before,newsv.s,nbsv)) return 0 ;		

@@ -57,7 +57,7 @@ static int start_parser(char const *src,char const *svname,char const *tree, uns
 {
 	stralloc sasv = STRALLOC_ZERO ;
 	
-	if (!parse_service_before(src,svname,tree,nbsv,&sasv)) strerr_dief4x(111,"invalid service file: ",src,"/",svname) ;
+	if (!parse_service_before(src,svname,tree,nbsv,&sasv,FORCE)) strerr_dief4x(111,"invalid service file: ",src,"/",svname) ;
 	
 	stralloc_free(&sasv) ;
 	
@@ -72,7 +72,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	int r ;
 	unsigned int nbsv, nlongrun, nclassic, start ;
 	
-	char const *src = SS_SERVICE_DIR ;
+	char const *src ;
 	
 	stralloc workdir = STRALLOC_ZERO ;//working dir directory
 	stralloc sasrc = STRALLOC_ZERO ;
@@ -87,6 +87,9 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	genalloc tokeep = GENALLOC_ZERO ;
 	
 	r = nbsv = nclassic = nlongrun = start = 0 ;
+	
+	if (!info->owner) src = SS_SERVICE_SYSDIR ;
+	else src = SS_SERVICE_USERDIR ;
 	
 	//PROG = "66-enable" ;
 	{
@@ -112,7 +115,12 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	for(;*argv;argv++)
 	{
 		unsigned int found = 0 ;
-		if (!resolve_src(&gasrc,&sasrc,*argv,src,&found)) strerr_diefu2x(111,"resolve source of service file: ",*argv) ;
+		if (!resolve_src(&gasrc,&sasrc,*argv,src,&found))
+		{
+			src = SS_SERVICE_PACKDIR ;
+			if (!resolve_src(&gasrc,&sasrc,*argv,src,&found))
+				strerr_diefu2x(111,"resolve source of service file: ",*argv) ;
+		}
 	}
 	
 	for (unsigned int i = 0 ; i < genalloc_len(diuint32,&gasrc) ; i++)

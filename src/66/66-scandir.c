@@ -228,7 +228,7 @@ int write_log(char const *scandir, char const *scanname)
 	
 	if (!OWNER)
 	{
-		if (!stralloc_cats(&path,SS_LOGGER_SYS_DIRECTORY)) retstralloc(0,"write_log") ;
+		if (!stralloc_cats(&path,SS_LOGGER_SYSDIR)) retstralloc(0,"write_log") ;
 	}
 	else
 	{
@@ -238,7 +238,7 @@ int write_log(char const *scandir, char const *scanname)
 			return 0 ;
 		}
 		//path.len-- ;
-		if (!stralloc_cats(&path,SS_LOGGER_USER_DIRECTORY)) retstralloc(0,"write_log") ;
+		if (!stralloc_cats(&path,SS_LOGGER_USERDIR)) retstralloc(0,"write_log") ;
 	}
 	pathless = path.len ;
 	if (!stralloc_0(&path)) retstralloc(0,"write_log") ;

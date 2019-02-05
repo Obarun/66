@@ -42,12 +42,12 @@ int set_ownersysdir(stralloc *base, uid_t owner)
 	if(owner > 0){
 		if (!stralloc_cats(base,user_home))	retstralloc(0,"set_ownersysdir") ;
 		if (!stralloc_cats(base,"/"))	retstralloc(0,"set_ownersysdir") ;
-		if (!stralloc_cats(base,SS_USER_DIRECTORY))	retstralloc(0,"set_ownersysdir") ;
+		if (!stralloc_cats(base,SS_USER_DIR))	retstralloc(0,"set_ownersysdir") ;
 		if (!stralloc_0(base)) retstralloc(0,"set_ownersysdir") ;
 	}
 	else
 	{
-		if (!stralloc_cats(base,SS_SYSTEM_DIRECTORY)) retstralloc(0,"set_ownersysdir") ;
+		if (!stralloc_cats(base,SS_SYSTEM_DIR)) retstralloc(0,"set_ownersysdir") ;
 		if (!stralloc_0(base)) retstralloc(0,"set_ownersysdir") ;
 	}
 	base->len--;

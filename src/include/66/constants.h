@@ -46,9 +46,6 @@
 #define SS_CONTENTS "contents"
 #define SS_CONTENTS_LEN (sizeof SS_CONTENTS - 1)
 
-#define SS_SERVICE_DIR SS_SERVICEDIR SS_SERVICE
-#define SS_SERVICE_DIR_LEN ((sizeof SS_SERVICEDIR - 1) + SS_SERVICE_LEN)
-
 /** logger */
 #define SS_LOG_RCSUFFIX "-log"
 #define SS_LOG_RCSUFFIX_LEN (sizeof SS_LOG_RCSUFFIX - 1)

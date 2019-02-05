@@ -66,7 +66,21 @@ void cleanup(char const *tree){
 	rm_rf(tree) ;
 }
 
-int sanitize_tree(stralloc *dstree, char const *base, char const *tree)
+int sanitize_extra(char const *dst)
+{
+	int r ;
+	size_t dstlen, slash ;
+	dstlen = strlen(dst) - 1 ;//-1 remove last slash
+	char parentdir[dstlen + 1] ;
+	memcpy(parentdir,dst,dstlen) ;
+	slash = get_rlen_until(dst,'/',dstlen) ;
+	parentdir[slash] = '\0' ;
+	r = dir_create_under(parentdir,dst+slash+1,0755) ;
+	
+	return r ;
+}
+
+int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t owner)
 {
 	
 	ssize_t r ;
@@ -92,6 +106,27 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree)
 		if (!r){
 			VERBO3 strerr_warnwu3sys("create ",dst,SS_SYSTEM) ;
 			return -1 ;
+		}
+		/** create extra directory for service part */
+		if (!owner)
+		{
+			if (sanitize_extra(SS_LOGGER_SYSDIR) < 0)
+			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_LOGGER_SYSDIR) ; return -1 ; }
+			if (sanitize_extra(SS_SERVICE_PACKDIR) < 0)
+			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_LOGGER_SYSDIR) ; return -1 ; }
+			if (sanitize_extra(SS_SERVICE_SYSDIR) < 0)
+			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_LOGGER_SYSDIR) ; return -1 ; }
+			if (sanitize_extra(SS_SERVICE_SYSCONFDIR) < 0)
+			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_LOGGER_SYSDIR) ; return -1 ; }
+		}
+		else
+		{
+			if (sanitize_extra(SS_LOGGER_USERDIR) < 0)
+			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_LOGGER_SYSDIR) ; return -1 ; }
+			if (sanitize_extra(SS_SERVICE_USERDIR) < 0)
+			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_LOGGER_SYSDIR) ; return -1 ; }
+			if (sanitize_extra(SS_SERVICE_USERCONFDIR) < 0)
+			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_LOGGER_SYSDIR) ; return -1 ; }
 		}
 	}
 	if (!dir_search(dst,SS_TREE_CURRENT,S_IFDIR))
@@ -459,7 +494,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (!set_ownersysdir(&base, owner)) strerr_diefu1sys(111, "set owner directory") ;
 	
 	VERBO2 strerr_warni3x("sanitize ",tree," ..." ) ;
-	r = sanitize_tree(&dstree,base.s,tree) ;
+	r = sanitize_tree(&dstree,base.s,tree,owner) ;
 	if (r < 0){
 		strerr_diefu2x(111,"sanitize ",tree) ;
 	}

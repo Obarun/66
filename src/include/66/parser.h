@@ -298,9 +298,9 @@ extern int add_env(char *line,genalloc *ga,stralloc *sa) ;
 
 extern int parse_env(keynocheck *nocheck) ;
 
-extern int resolve_srcdeps(sv_alltype *sv_before,char const *svmain,char const *src, char const *tree,unsigned int *nbsv,stralloc *sasv) ;
+extern int resolve_srcdeps(sv_alltype *sv_before,char const *svmain,char const *src, char const *tree,unsigned int *nbsv,stralloc *sasv,unsigned int force) ;
 
-extern int parse_service_before(char const *src,char const *sv,char const *tree, unsigned int *nbsv, stralloc *sasv) ;
+extern int parse_service_before(char const *src,char const *sv,char const *tree, unsigned int *nbsv, stralloc *sasv,unsigned int force) ;
 
 extern int keep_common(sv_alltype *service,keynocheck *nocheck) ;
 

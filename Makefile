@@ -53,12 +53,10 @@ AR := $(CROSS_COMPILE)ar
 RANLIB := $(CROSS_COMPILE)ranlib
 STRIP := $(CROSS_COMPILE)strip
 INSTALL := ./tools/install.sh
-ENV_TARGETS := $(servicedir)/env
 
 ALL_BINS := $(LIBEXEC_TARGETS) $(BIN_TARGETS)
 ALL_LIBS := $(SHARED_LIBS) $(STATIC_LIBS) $(INTERNAL_LIBS)
 ALL_INCLUDES := $(wildcard src/include/$(package)/*.h)
-ALL_ENV := $(DESTDIR)$(ENV_TARGETS)
 
 all: $(ALL_LIBS) $(ALL_BINS) $(ALL_INCLUDES)
 
@@ -84,15 +82,13 @@ ifneq ($(strip $(ALL_BINS)$(SHARED_LIBS)),)
 	exec $(STRIP) -R .note -R .comment -R .note.GNU-stack $(ALL_BINS) $(SHARED_LIBS)
 endif
 
-install: install-dynlib install-libexec install-bin install-lib install-include install-env
+install: install-dynlib install-libexec install-bin install-lib install-include
 install-dynlib: $(SHARED_LIBS:lib%.so.xyzzy=$(DESTDIR)$(dynlibdir)/lib%.so)
 install-libexec: $(LIBEXEC_TARGETS:%=$(DESTDIR)$(libexecdir)/%)
 install-bin: $(BIN_TARGETS:%=$(DESTDIR)$(bindir)/%)
 install-lib: $(STATIC_LIBS:lib%.a.xyzzy=$(DESTDIR)$(libdir)/lib%.a)
 install-include: $(ALL_INCLUDES:src/include/$(package)/%.h=$(DESTDIR)$(includedir)/$(package)/%.h)
-install-env: 
-	exec install -d -m 1777 $(ALL_ENV)
-
+	
 ifneq ($(exthome),)
 
 $(DESTDIR)$(exthome): $(DESTDIR)$(home)
@@ -112,8 +108,8 @@ $(DESTDIR)$(sproot)/library.so/lib%.so.$(version_M): $(DESTDIR)$(dynlibdir)/lib%
 
 endif
 
-$(DESTDIR)$(servicedir)/%: src/etc/%
-	exec $(INSTALL) -D -m 1777 $< $@
+$(DESTDIR)$(system_log)/% $(DESTDIR)$(service_packager)/% $(DESTDIR)$(service_sys)/% $(DESTDIR)$(service_sysconf)/% : 
+	exec $(INSTALL) -D -m 0755 $< $@
 
 $(DESTDIR)$(dynlibdir)/lib%.so: lib%.so.xyzzy
 	$(INSTALL) -D -m 755 $< $@.$(version) && \
@@ -149,6 +145,6 @@ lib%.a.xyzzy:
 lib%.so.xyzzy:
 	exec $(REALCC) -o $@ $(CFLAGS_ALL) $(CFLAGS_SHARED) $(LDFLAGS_ALL) $(LDFLAGS_SHARED) -Wl,-soname,$(patsubst lib%.so.xyzzy,lib%.so.$(version_M),$@) $^ $(EXTRA_LIBS) $(LDLIBS)
 
-.PHONY: it all clean distclean tgz strip install install-dynlib install-bin install-lib install-include install-env
+.PHONY: it all clean distclean tgz strip install install-dynlib install-bin install-lib install-include
 
 .DELETE_ON_ERROR:
