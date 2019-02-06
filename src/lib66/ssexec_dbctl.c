@@ -40,7 +40,7 @@
 #include <66/tree.h>
 #include <66/enum.h>
 
-//#include <stdio.h>
+#include <stdio.h>
 
 static unsigned int DEADLINE = 0 ;
 static stralloc saresolve = STRALLOC_ZERO ;
@@ -69,7 +69,7 @@ static pid_t send(genalloc *gasv, char const *livetree, char const *signal,char 
 		newargv[m++] = gaistr(gasv,i) ;
 	
 	newargv[m++] = 0 ;
-		
+
 	return child_spawn0(newargv[0],newargv,envp) ;
 	
 }
@@ -100,13 +100,13 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">udr", &l) ;
+			int opt = getopt_args(argc,argv, "udr", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
 			{
-				case 'u' :	up = 1 ; if (down) exitusage(usage_dbctl) ; break ;
-				case 'd' : 	down = 1 ; if (up) exitusage(usage_dbctl) ; break ;
+				case 'u' :	up = 1 ; if (down || reload) exitusage(usage_dbctl) ; break ;
+				case 'd' : 	down = 1 ; if (up || reload) exitusage(usage_dbctl) ; break ;
 				case 'r' : 	reload = 1 ; if (down || up) exitusage(usage_dbctl) ; break ;
 				default : exitusage(usage_dbctl) ; 
 			}
@@ -114,16 +114,21 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		argc -= l.ind ; argv += l.ind ;
 	}
 	
-	if (argc < 1) if (!stra_add(&gasv,mainsv)) strerr_diefu1sys(111,"add: Master as service to handle") ;
-	
+	if (!up && !down && !reload) strerr_dief1x(110,"signal must be set") ;
+	if (argc < 1)
+	{
+		if (!stra_add(&gasv,mainsv)) strerr_diefu1sys(111,"add: Master as service to handle") ;
+	}
+	else 
+	{
+		for(;*argv;argv++)
+			if (!stra_add(&gasv,*argv)) strerr_diefu3sys(111,"add: ",*argv," as service to handle") ;
+	}
 	if (info->timeout) DEADLINE = info->timeout ;
 	
 	if (!db_ok(info->livetree.s,info->treename))
 		strerr_dief5sys(111,"db: ",info->livetree.s,"/",info->treename," is not running") ;
 
-	for(;*argv;argv++)
-		if (!stra_add(&gasv,*argv)) strerr_diefu3sys(111,"add: ",*argv," as service to handle") ;
-	
 	if (!stralloc_cats(&tmp,info->livetree.s)) retstralloc(111,"main") ;
 	if (!stralloc_cats(&tmp,"/")) retstralloc(111,"main") ;
 	if (!stralloc_cats(&tmp,info->treename)) retstralloc(111,"main") ;
