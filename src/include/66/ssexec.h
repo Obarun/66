@@ -38,7 +38,7 @@ struct ssexec_s
 #define SSEXEC_ZERO { 	.base = STRALLOC_ZERO , \
 						.live = STRALLOC_ZERO , \
 						.tree = STRALLOC_ZERO , \
-						.live = STRALLOC_ZERO , \
+						.livetree = STRALLOC_ZERO , \
 						.scandir = STRALLOC_ZERO , \
 						.treename = 0 , \
 						.treeallow = 0 , \
