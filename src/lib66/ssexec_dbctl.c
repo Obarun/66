@@ -191,6 +191,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			tmp.len = newlen ;
 			
 			if (!stralloc_cats(&tmp,svname)) retstralloc(111,"main") ; 
+			if (!stralloc_0(&tmp)) retstralloc(111,"main") ; 
 			
 			if (!s6_svstatus_read(tmp.s,&status)) strerr_diefu2sys(111,"read status of: ",tmp.s) ;
 					

@@ -39,7 +39,7 @@
 #include <66/db.h>
 #include <66/svc.h>
 
-//#include <stdio.h>
+#include <stdio.h>
 
 int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
@@ -59,7 +59,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	svstat_t svstat = SVSTAT_ZERO ;
 	genalloc gasvstat = GENALLOC_ZERO ; //svstat_t type
 	classic = db = earlier = 0 ;
-	
+
 	//PROG = "66-init" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
@@ -80,7 +80,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 		argc -= l.ind ; argv += l.ind ;
 	}
 	
-	if (argc != 1) exitusage(usage_init) ;
+	if (argc < 1) exitusage(usage_init) ;
 	
 	treename = *argv ;
 	treenamelen = strlen(treename) ;

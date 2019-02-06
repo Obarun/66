@@ -74,6 +74,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	
 	char const *src ;
 	
+	stralloc home = STRALLOC_ZERO ;
 	stralloc workdir = STRALLOC_ZERO ;//working dir directory
 	stralloc sasrc = STRALLOC_ZERO ;
 	stralloc saresolve = STRALLOC_ZERO ;
@@ -89,7 +90,14 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	r = nbsv = nclassic = nlongrun = start = 0 ;
 	
 	if (!info->owner) src = SS_SERVICE_SYSDIR ;
-	else src = SS_SERVICE_USERDIR ;
+	else
+	{	
+		if (!set_ownerhome(&home,info->owner)) strerr_diefu1sys(111,"set home directory");
+		if (!stralloc_cats(&home,SS_SERVICE_USERDIR)) retstralloc(111,"main") ;
+		if (!stralloc_0(&home)) retstralloc(111,"main") ;
+		home.len-- ;
+		src = home.s ;
+	}
 	
 	//PROG = "66-enable" ;
 	{
@@ -279,6 +287,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	/** general allocation*/
 	freed_parser() ;
 	/** inner allocation */
+	stralloc_free(&home) ;
 	stralloc_free(&workdir) ;
 	stralloc_free(&sasrc) ;
 	stralloc_free(&saresolve) ;

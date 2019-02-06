@@ -368,7 +368,7 @@ int resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src
 	DIR *dir = opendir(src) ;
 	if (!dir)
 	{
-		VERBO3 strerr_warnwu2sys("to open : ", src) ;
+		VERBO3 strerr_warnwu2sys("open : ", src) ;
 		goto errstra ;
 	}
 	fdsrc = dir_fd(dir) ;
