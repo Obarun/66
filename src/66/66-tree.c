@@ -99,8 +99,8 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t own
 		VERBO3 strerr_warnwu2x("invalid directorey: ",dst) ;
 		return -1 ;
 	}
-	if(!r){
-		
+	if(!r)
+	{
 		VERBO3 strerr_warnt3x("create directory: ",dst,SS_SYSTEM) ;
 		r = dir_create_under(dst,SS_SYSTEM,0755) ;
 		if (!r){
@@ -121,12 +121,29 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t own
 		}
 		else
 		{
-			if (sanitize_extra(SS_LOGGER_USERDIR) < 0)
-			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_LOGGER_SYSDIR) ; return -1 ; }
-			if (sanitize_extra(SS_SERVICE_USERDIR) < 0)
-			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_LOGGER_SYSDIR) ; return -1 ; }
-			if (sanitize_extra(SS_SERVICE_USERCONFDIR) < 0)
-			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_LOGGER_SYSDIR) ; return -1 ; }
+			size_t extralen ;
+			stralloc extra = STRALLOC_ZERO ;
+			if (!set_ownerhome(&extra,owner))
+			{
+				VERBO3 strerr_warnwu1sys("set home directory") ;
+				return -1 ;
+			}
+			extralen = extra.len ;
+			if (!stralloc_cats(&extra,SS_LOGGER_USERDIR)) retstralloc(0,"sanitize_tree") ;
+			if (!stralloc_0(&extra)) retstralloc(0,"sanitize_tree") ;
+			if (sanitize_extra(extra.s) < 0)
+			{ VERBO3 strerr_warnwu2sys("create directory: ",extra.s) ; return -1 ; }
+			extra.len = extralen ;
+			if (!stralloc_cats(&extra,SS_SERVICE_USERDIR)) retstralloc(0,"sanitize_tree") ;
+			if (!stralloc_0(&extra)) retstralloc(0,"sanitize_tree") ;
+			if (sanitize_extra(extra.s) < 0)
+			{ VERBO3 strerr_warnwu2sys("create directory: ",extra.s) ; return -1 ; }
+			extra.len = extralen ;
+			if (!stralloc_cats(&extra,SS_SERVICE_USERCONFDIR)) retstralloc(0,"sanitize_tree") ;
+			if (!stralloc_0(&extra)) retstralloc(0,"sanitize_tree") ;
+			if (sanitize_extra(extra.s) < 0)
+			{ VERBO3 strerr_warnwu2sys("create directory: ",extra.s) ; return -1 ; }
+			stralloc_free(&extra) ;
 		}
 	}
 	if (!dir_search(dst,SS_TREE_CURRENT,S_IFDIR))
