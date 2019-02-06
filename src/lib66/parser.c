@@ -104,11 +104,11 @@ static int read_svfile(stralloc *sasv,char const *name,char const *src)
 	size_t srclen = strlen(src) ;
 	size_t namelen = strlen(name) ;
 	
-	char svtmp[srclen + namelen + 1] ;
+	char svtmp[srclen + 1 + namelen + 1] ;
 	memcpy(svtmp,src,srclen) ;
 	svtmp[srclen] = '/' ;
 	memcpy(svtmp + srclen + 1, name, namelen) ;
-	svtmp[srclen + namelen + 1] = 0 ;
+	svtmp[srclen + 1 + namelen] = 0 ;
 	
 	VERBO3 strerr_warni4x("Read service file of : ",name," at: ",src) ;
 	
@@ -270,7 +270,7 @@ static int start_parser(stralloc *sasv,char const *name,sv_alltype *sv_before)
 		stralloc_free(sasv) ;
 		return 0 ;
 }
-static int deps_src(stralloc *newsrc,char const *src, char const *name, char const *tree, unsigned int force)
+static int deps_src(stralloc *newsrc, char const *name, char const *tree, unsigned int force)
 {
 	int r, err ;
 	uint32_t avlid ;
@@ -283,11 +283,16 @@ static int deps_src(stralloc *newsrc,char const *src, char const *name, char con
 	
 	genalloc tmpsrc = GENALLOC_ZERO ; //type diuint32
 	stralloc sa = STRALLOC_ZERO ;
+	stralloc home = STRALLOC_ZERO ;
 	
 	*newsrc = stralloc_zero ;
 	err = 1 ;
-	if (!owner) src = SS_SERVICE_SYSDIR ;
-	else src = SS_SERVICE_USERDIR ; 
+	
+	if (!set_ownerhome(&home,owner))
+	{
+		VERBO3 strerr_warnwu1sys("set home directory") ; 
+		err = 0 ; goto end ;
+	}
 	
 	if (!stralloc_cats(newsrc,tree)) retstralloc(0,"deps_src") ;
 	if (!stralloc_cats(newsrc,SS_SVDIRS)) retstralloc(0,"deps_src") ;
@@ -306,8 +311,12 @@ static int deps_src(stralloc *newsrc,char const *src, char const *name, char con
 	if (!owner)
 	{
 		if (!stralloc_obreplace(newsrc, SS_SERVICE_SYSDIR)) retstralloc(0,"deps_src") ;
-	}else if (!stralloc_obreplace(newsrc, SS_SERVICE_USERDIR)) retstralloc(0,"deps_src") ;
-	
+	}
+	else
+	{
+		if (!stralloc_cats(&home,SS_SERVICE_USERDIR)) retstralloc(0,"deps_src") ;
+		if (!stralloc_obreplace(newsrc, home.s)) retstralloc(0,"deps_src") ;
+	}
 	 
 	if (!resolve_src(&tmpsrc,&sa,name,newsrc->s,&found)) 
 	{
@@ -426,7 +435,7 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, c
 					return 0 ;
 				}
 			}
-			r = deps_src(&newsrc,src,dname.s,tree,force) ;
+			r = deps_src(&newsrc,dname.s,tree,force) ;
 			if (!r) return 0 ;
 			if (insta > 0)
 			{

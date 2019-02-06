@@ -753,8 +753,18 @@ int write_common(sv_alltype *sv, char const *dst)
 	if (sv->opts[2])
 	{
 		char *dst = 0 ;
-		if (!MYUID) dst = SS_SERVICE_SYSCONFDIR ;
-		else dst = SS_SERVICE_USERCONFDIR ;
+		uid_t owner = MYUID ;
+		stralloc home = STRALLOC_ZERO ;
+		if (!owner) dst = SS_SERVICE_SYSCONFDIR ;
+		else
+		{
+			if (!set_ownerhome(&home,owner))
+			{ VERBO3 strerr_warnwu1sys("set home directory") ; return 0 ; }
+			if (!stralloc_cats(&home,SS_SERVICE_USERCONFDIR)) retstralloc(111,"write_common") ;
+			if (!stralloc_0(&home)) retstralloc(111,"write_common") ;
+			home.len-- ;
+			dst = home.s ;
+		}
 			
 		char *name = keep.s + sv->cname.name ;
 				
@@ -775,7 +785,10 @@ int write_common(sv_alltype *sv, char const *dst)
 			VERBO3 strerr_warnwu1x("write environment") ;
 			return 0 ;
 		}
+		stralloc_free(&home) ;
 	}
+	
+	
 	return 1 ;
 }
 
@@ -785,11 +798,12 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 	
 	unsigned int type = sv->cname.itype ;
 	char *name = keep.s+sv->cname.name ;
-	
+	uid_t owner = MYUID ;
 	size_t filelen = strlen(file) ;
 	size_t dstlen = strlen(dst) ;
 	char write[dstlen + 1 + filelen + 1] ;
 	
+	stralloc home = STRALLOC_ZERO ;
 	stralloc shebang = STRALLOC_ZERO ;
 	stralloc ui = STRALLOC_ZERO ;
 	stralloc env = STRALLOC_ZERO ;
@@ -797,14 +811,22 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 	stralloc execute = STRALLOC_ZERO ;
 	
 	char *envdata = 0 ;
-	if (!MYUID) envdata = SS_SERVICE_SYSCONFDIR ;
-	else envdata = SS_SERVICE_USERCONFDIR ;
-		
+	if (!owner) envdata = SS_SERVICE_SYSCONFDIR ;
+	else
+	{
+		if (!set_ownerhome(&home,owner))
+		{ VERBO3 strerr_warnwu1sys("set home directory") ; return 0 ; }
+		if (!stralloc_cats(&home,SS_SERVICE_USERCONFDIR)) retstralloc(111,"write_exec") ;
+		if (!stralloc_0(&home)) retstralloc(111,"write_exec") ;
+		home.len-- ;
+		envdata = home.s ;
+	}	
+	
 	switch (exec->build)
 	{
 		case AUTO:
 			/** uid */
-			if ((!MYUID && exec->runas))
+			if ((!owner && exec->runas))
 			{
 				if (!stralloc_cats(&ui,S6_BINPREFIX "s6-setuidgid ")) retstralloc(0,"write_exec") ;
 				if (!get_namebyuid(exec->runas,&ui))
@@ -888,6 +910,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 		return 0 ;
 	}
 	
+	stralloc_free(&home) ;
 	stralloc_free(&shebang) ;
 	stralloc_free(&ui) ;
 	stralloc_free(&execute) ;
