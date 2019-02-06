@@ -36,7 +36,7 @@
 #include <66/constants.h>
 #include <66/utils.h>
 
-//#include <stdio.h>
+#include <stdio.h>
 stralloc keep = STRALLOC_ZERO ;//sv_alltype data
 stralloc deps = STRALLOC_ZERO ;//sv_name depends
 stralloc saenv = STRALLOC_ZERO ;//sv_alltype env
@@ -300,8 +300,7 @@ static int deps_src(stralloc *newsrc, char const *name, char const *tree, unsign
 	if (!stralloc_cats(newsrc,SS_SRC)) retstralloc(0,"deps_src") ;
 	if (!stralloc_0(newsrc)) retstralloc(0,"deps_src") ;
 	r = dir_search(newsrc->s,name,S_IFDIR) ;
-	if (r && force) goto end ;
-	else if (r && !force) { err=2 ; goto end ; }
+	if (r && !force) { err=2 ; goto end ; }
 	else if (r < 0)
 	{
 		VERBO3 strerr_warnw3x("Conflicting format type for ",name," service file") ;
@@ -437,6 +436,7 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, c
 			}
 			r = deps_src(&newsrc,dname.s,tree,force) ;
 			if (!r) return 0 ;
+			else if (r == 2) continue ;
 			if (insta > 0)
 			{
 				if (!stralloc_obreplace(&dname,dname_src)) retstralloc(0,"resolve_srcdeps") ;
