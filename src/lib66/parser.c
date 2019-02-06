@@ -326,9 +326,9 @@ static int deps_src(stralloc *newsrc, char const *name, char const *tree, unsign
 			err = 0 ;
 			goto end ;
 		}
+		if (!stralloc_obreplace(newsrc, sa.s + genalloc_s(diuint32,&tmpsrc)->right)) retstralloc(0,"deps_src") ;
 	}
 	
-	if (!stralloc_obreplace(newsrc, sa.s + genalloc_s(diuint32,&tmpsrc)->right)) retstralloc(0,"deps_src") ;
 	
 	end:
 		genalloc_free(diuint32,&tmpsrc) ;
