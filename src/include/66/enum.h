@@ -144,7 +144,7 @@ static key_description_t const startstop_section_list[] =
 
 static key_description_t const logger_section_list[] =
 {
-	{ .name = "@destination", .expected = SLASH, .mandatory = OPTS },
+	{ .name = "@destination", .expected = SLASH, .mandatory = CUSTOM },
 	{ .name = "@build",  .expected = LINE, .mandatory = NEED },
 	{ .name = "@runas", .expected = LINE, .mandatory = OPTS },
 	{ .name = "@shebang", .expected = QUOTE, .mandatory = CUSTOM },
