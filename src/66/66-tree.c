@@ -241,7 +241,7 @@ int create_tree(char const *tree,char const *const *envp)
 	{
 		VERBO3 strerr_warnwu3sys("create ",dst,SS_RESOLVE) ;
 		return 0 ;
-	}
+	}/*
 	memcpy(dst + newlen, SS_RESOLVE, SS_RESOLVE_LEN) ;
 	dst[newlen + SS_RESOLVE_LEN] = 0 ;
 	VERBO3 strerr_warnt3x("create directory: ",dst,SS_MASTER) ;
@@ -259,7 +259,7 @@ int create_tree(char const *tree,char const *const *envp)
 		VERBO3 strerr_warnwu3sys("write ",dst,"/type") ;
 		return 0 ;
 	}
-	
+	*/
 	dst[newlen] = 0 ;
 	
 	char sym[newlen + 1 + SS_SYM_SVC_LEN + 1] ;
