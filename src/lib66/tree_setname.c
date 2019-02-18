@@ -18,7 +18,7 @@
 
 #include <oblibs/string.h>
 
-char *tree_setname(char const *tree)
+char tree_setname(stralloc *sa,char const *tree)
 {
 	size_t tlen = strlen(tree) ;
 	ssize_t treelen = get_rlen_until(tree,'/',tlen) ;
@@ -26,9 +26,8 @@ char *tree_setname(char const *tree)
 	treelen++ ;
 	size_t treenamelen = tlen - treelen ;
 
-	char treename[treenamelen + 1] ;
-	memcpy(treename, tree + treelen,treenamelen) ;
-	treename[treenamelen] = 0 ;
-	
-	return obstr_dup(treename) ;
+	if (!stralloc_catb(sa,tree + treelen,treenamelen)) return 0 ;
+	if (!stralloc_0(sa)) return 0 ;
+	sa->len--;
+	return 1 ;
 }
