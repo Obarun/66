@@ -40,7 +40,7 @@ extern int tree_get_permissions(char const *tree, uid_t owner) ;
 
 extern int tree_sethome(stralloc *tree, char const *base,uid_t owner) ;
 
-extern char *tree_setname(char const *tree) ;
+extern char tree_setname(stralloc *sa, char const *tree) ;
 
 extern int tree_switch_current(char const *base, char const *tree) ;
 
