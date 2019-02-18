@@ -22,6 +22,8 @@
 #include <66/enum.h>
 #include <66/graph.h>
 #include <66/parser.h>
+#include <66/resolve.h>
+#include <66/ssexec.h>
 #include <66/svc.h>
 #include <66/tree.h>
 #include <66/utils.h>
