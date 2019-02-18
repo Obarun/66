@@ -22,6 +22,7 @@
 #include <skalibs/genalloc.h>
 
 #include <66/ssexec.h>
+#include <66/resolve.h>
 
 extern unsigned int VERBOSITY ;
 
@@ -57,20 +58,6 @@ extern int set_livescan(stralloc *live,uid_t owner) ;
 
 extern int set_livetree(stralloc *live,uid_t owner) ;
 
-extern int resolve_write(char const *dst,char const *svname, char const *file, char const *contents,unsigned int force) ;
-
-extern int resolve_read(stralloc *sa, char const *src, char const *svname,char const *file) ;
-
-extern int resolve_remove(char const *dst,char const *svname,char const *file) ;
-
-extern int resolve_remove_service(char const *dst, char const *svname) ;
-
-extern int resolve_symlive(char const *live, char const *tree, char const *treename) ;
-
-extern int resolve_pointo(stralloc *sa,ssexec_t *info,unsigned int type, unsigned int what) ;
-
-extern int resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src,unsigned int *found) ;
-
 extern int insta_check(char const *svname) ;
 
 extern int insta_create(stralloc *sasv,stralloc *sv, char const *src, int len) ;
@@ -79,6 +66,6 @@ extern int insta_splitname(stralloc *sa,char const *name,int len,int what) ;
 
 extern int insta_replace(stralloc *sa,char const *src,char const *cpy) ;
 
-extern int find_logger(genalloc *ga, char const *name, char const *src) ;
+extern int find_logger(genalloc *ga,ss_resolve_t *res) ;
 
 #endif
