@@ -47,21 +47,14 @@
 #define SS_CONTENTS_LEN (sizeof SS_CONTENTS - 1)
 
 /** logger */
-#define SS_LOG_RCSUFFIX "-log"
-#define SS_LOG_RCSUFFIX_LEN (sizeof SS_LOG_RCSUFFIX - 1)
-#define SS_LOG_SVSUFFIX "/log"
-#define SS_LOG_SVSUFFIX_LEN (sizeof SS_LOG_SVSUFFIX - 1)
+#define SS_LOG_SUFFIX "-log"
+#define SS_LOG_SUFFIX_LEN (sizeof SS_LOG_SUFFIX - 1)
+
 /** pipe */
 #define SS_PIPE_NAME "bundle-"
 #define SS_PIPE_NAME_LEN (sizeof SS_PIPE_NAME - 1)
 
-/** backup and resolve */
-#define SS_RESOLVE "/.resolve"
-#define SS_RESOLVE_LEN (sizeof SS_RESOLVE - 1)
-#define SS_RESOLVE_LIVE 0
-#define SS_RESOLVE_SRC 1
-#define SS_RESOLVE_BACK 2
-
+/** backup */
 #define SS_SYM_DB "bdb"
 #define SS_SYM_DB_LEN (sizeof SS_SYM_DB - 1)
 #define SS_SYM_SVC "bsvc"
