@@ -38,8 +38,8 @@ int set_ssinfo(ssexec_t *info)
 	if (r < 0) strerr_diefu1x(110,"find the current tree. You must use -t options") ;
 	if (!r) strerr_diefu2sys(111,"find tree: ", info->tree.s) ;
 	
-	info->treename = tree_setname(info->tree.s) ;
-	if (!info->treename) strerr_diefu1x(111,"set the tree name") ;
+	r = tree_setname(&info->treename,info->tree.s) ;
+	if (r < 0) strerr_diefu1x(111,"set the tree name") ;
 	
 	if (!tree_get_permissions(info->tree.s,info->owner))
 		strerr_dief2x(110,"You're not allowed to use the tree: ",info->tree.s) ;

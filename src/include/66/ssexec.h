@@ -26,7 +26,7 @@ struct ssexec_s
 	stralloc tree ;
 	stralloc livetree ;
 	stralloc scandir ;
-	char *treename ;
+	stralloc treename ;
 	int treeallow ; //1 yes , 0 no
 	uid_t owner ;
 	unsigned int timeout ;
@@ -40,7 +40,7 @@ struct ssexec_s
 						.tree = STRALLOC_ZERO , \
 						.livetree = STRALLOC_ZERO , \
 						.scandir = STRALLOC_ZERO , \
-						.treename = 0 , \
+						.treename = STRALLOC_ZERO , \
 						.treeallow = 0 , \
 						.owner = 0 , \
 						.timeout = 0 , \

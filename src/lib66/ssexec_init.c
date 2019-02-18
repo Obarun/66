@@ -14,6 +14,7 @@
  
 #include <string.h>
 #include <sys/stat.h>
+#include <stdlib.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -38,8 +39,9 @@
 #include <66/backup.h>
 #include <66/db.h>
 #include <66/svc.h>
+#include <66/resolve.h>
 
-#include <stdio.h>
+//#include <stdio.h>
 
 int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
@@ -52,12 +54,11 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	size_t treenamelen ;
 	
 	stralloc tree = STRALLOC_ZERO ;
-	stralloc saresolve = STRALLOC_ZERO ;
-	stralloc type = STRALLOC_ZERO ;
 	genalloc gasvc = GENALLOC_ZERO ; //stralist type
 	
-	svstat_t svstat = SVSTAT_ZERO ;
-	genalloc gasvstat = GENALLOC_ZERO ; //svstat_t type
+	genalloc gares = GENALLOC_ZERO ; //ss_resolve_t type
+	ss_resolve_t res = RESOLVE_ZERO ;
+	
 	classic = db = earlier = 0 ;
 
 	//PROG = "66-init" ;
@@ -109,72 +110,66 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 		if (!r) strerr_diefu2sys(111,"create directory: ",info->livetree.s) ;
 	}
 	
-	
+	size_t dirlen ;
 	size_t svdirlen ;
-	char svdir[tree.len + SS_SVDIRS_LEN + SS_DB_LEN + treenamelen + 1 + 1] ;
+	char svdir[tree.len + SS_SVDIRS_LEN + SS_DB_LEN + 1 + treenamelen + 1] ;
 	memcpy(svdir,tree.s,tree.len) ;
 	memcpy(svdir + tree.len ,SS_SVDIRS ,SS_SVDIRS_LEN) ;
 	svdirlen = tree.len + SS_SVDIRS_LEN ;
 	memcpy(svdir + svdirlen, SS_SVC ,SS_SVC_LEN) ;
 	svdir[svdirlen +  SS_SVC_LEN] = 0 ;
-	
+	stralloc src = STRALLOC_ZERO ;
+	if (!ss_resolve_pointo(&src,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;
 	/** svc already initiated */
 	if (classic)
 	{
 		int i ;
+			
 		if (!dir_cmp(svdir,info->scandir.s,"",&gasvc)) strerr_diefu4x(111,"compare ",svdir," to ",info->scandir.s) ;
+		if (!genalloc_len(stralist,&gasvc))
+		{
+			strerr_warni3x("svc service of tree: ",treename," already initiated") ;
+			goto follow ;
+		}
+		for (i = 0 ; i < genalloc_len(stralist,&gasvc) ; i++)
+		{
+			char *name = gaistr(&gasvc,i) ;
+			ss_resolve_t tmp = RESOLVE_ZERO ;
+			if (!ss_resolve_check(info,name,SS_RESOLVE_SRC)) strerr_dief2sys(110,"unknow service: ",name) ;
+			if (!ss_resolve_read(&tmp,src.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
+			
+			if (!genalloc_append(ss_resolve_t,&gares,&tmp)) strerr_diefu3x(111,"add: ",name," on genalloc") ;
+			
+		}
+		if (!ss_resolve_addlogger(info,&gares))	strerr_diefu1sys(111,"add logger to list") ;
+		
 		if (!earlier)
 		{
-			for (i = 0 ; i < genalloc_len(stralist,&gasvc) ; i++)
-			{
-				char *name = gaistr(&gasvc,i) ;
-				size_t namelen = gaistrlen(&gasvc,i) ;
-			
-				if (!resolve_pointo(&saresolve,info,0,SS_RESOLVE_SRC))
-					strerr_diefu1x(111,"set revolve pointer to source") ;
-				r = resolve_read(&type,saresolve.s,name,"type") ;
-				if (r < -1) strerr_dief2x(111,"invalid .resolve directory: ",saresolve.s) ;
-				if (r && type.len && get_enumbyid(type.s,key_enum_el) == CLASSIC)
-				{
-					svstat.down = 0 ;
-					svstat.name = name ;
-					svstat.namelen = namelen ;
-					r = resolve_read(&type,saresolve.s,name,"down") ;
-					if (r > 0) svstat.down = 1 ;
-					if (!genalloc_append(svstat_t,&gasvstat,&svstat)) strerr_diefu3x(111,"add: ",name," on genalloc") ;
-				}
-			}
-			if (genalloc_len(svstat_t,&gasvstat))
-			{
-				if (!svc_init(info->scandir.s,svdir,&gasvstat)) strerr_diefu2x(111,"initiate service of tree: ",treename) ;
-			}
-			else strerr_warni3x("svc service of tree: ",treename," already initiated") ;
+			if (!svc_init(info,svdir,&gares)) strerr_diefu2x(111,"initiate service of tree: ",treename) ;
 		}
 		else
 		{
-			size_t dirlen = strlen(svdir) ;
-			for (i = 0 ; i < genalloc_len(stralist,&gasvc) ; i++)
+			dirlen = strlen(svdir) ;
+			for (i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
 			{
-				char *name = gaistr(&gasvc,i) ;
+				char *string = genalloc_s(ss_resolve_t,&gares)[i].sa.s ;
+				char *name = string + genalloc_s(ss_resolve_t,&gares)[i].name ;
 				size_t namelen = gaistrlen(&gasvc,i) ;
-				char svscan[info->scandir.len + 1 + namelen + 1] ;
-				memcpy(svscan,info->scandir.s,info->scandir.len) ;
-				svscan[info->scandir.len] = '/' ;
-				memcpy(svscan + info->scandir.len + 1, name,namelen) ;
-				svscan[info->scandir.len + 1 + namelen] = 0 ;
 				char tocopy[dirlen + 1 + namelen + 1] ;
 				memcpy(tocopy,svdir,dirlen) ;
 				tocopy[dirlen] = '/' ;
 				memcpy(tocopy + dirlen + 1, name, namelen) ;
 				tocopy[dirlen + 1 + namelen] = 0 ;
-				if (!hiercopy(tocopy,svscan)) strerr_diefu4sys(111,"to copy: ",tocopy," to: ",svscan) ;
+				if (!hiercopy(tocopy,string + genalloc_s(ss_resolve_t,&gares)[i].runat)) strerr_diefu4sys(111,"to copy: ",tocopy," to: ",string + genalloc_s(ss_resolve_t,&gares)[i].runat) ;
 			}
 		}
 	}
-	genalloc_deepfree(stralist,&gasvc,stra_free) ;
-	genalloc_free(svstat_t,&gasvstat) ;
-	stralloc_free(&saresolve) ;
-	stralloc_free(&type) ;
+
+	follow:
+
+	stralloc_free(&src) ;
+	ss_resolve_free(&res) ;
+	genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
 	stralloc_free(&tree) ;
 	
 	/** db already initiated? */
@@ -191,7 +186,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	}else goto end ;
 	
 	{
-		char ltree[info->livetree.len + 4 + treenamelen] ;
+		char ltree[info->livetree.len + 1 + treenamelen + 1] ;
 		memcpy(ltree,info->livetree.s,info->livetree.len) ;
 		ltree[info->livetree.len] = '/' ;
 		memcpy(ltree + info->livetree.len + 1, treename, treenamelen) ;
@@ -233,5 +228,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 		}
 	}
 	end:	
+	
+	genalloc_deepfree(stralist,&gasvc,stra_free) ;
 	return 0 ;
 }
