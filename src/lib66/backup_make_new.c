@@ -33,7 +33,6 @@ int backup_make_new(ssexec_t *info, unsigned int type)
 {
 	int r ;
 	
-	size_t treenamelen = strlen(info->treename) ;
 	size_t newsrc ;
 	size_t newback ;
 	size_t typelen ;
@@ -50,25 +49,25 @@ int backup_make_new(ssexec_t *info, unsigned int type)
 		typelen = SS_DB_LEN ;
 	}
 	
-	char src[info->base.len + SS_SYSTEM_LEN + 1 + treenamelen + SS_SVDIRS_LEN + SS_RESOLVE_LEN + 1] ;
+	char src[info->base.len + SS_SYSTEM_LEN + 1 + info->treename.len + SS_SVDIRS_LEN + SS_RESOLVE_LEN + 1] ;
 	memcpy(src,info->base.s,info->base.len) ;
 	memcpy(src + info->base.len, SS_SYSTEM, SS_SYSTEM_LEN) ;
 	src[info->base.len + SS_SYSTEM_LEN] = '/' ;
-	memcpy(src + info->base.len + SS_SYSTEM_LEN + 1,info->treename,treenamelen) ;
-	memcpy(src+ info->base.len + SS_SYSTEM_LEN + 1 + treenamelen,SS_SVDIRS, SS_SVDIRS_LEN) ;
-	newsrc = info->base.len + SS_SYSTEM_LEN + 1 + treenamelen + SS_SVDIRS_LEN ;
-	memcpy(src+ info->base.len + SS_SYSTEM_LEN + 1 + treenamelen + SS_SVDIRS_LEN, ptype,typelen) ;
-	src[info->base.len + SS_SYSTEM_LEN + 1 + treenamelen + SS_SVDIRS_LEN +  typelen] = 0 ;
+	memcpy(src + info->base.len + SS_SYSTEM_LEN + 1,info->treename.s,info->treename.len) ;
+	memcpy(src+ info->base.len + SS_SYSTEM_LEN + 1 + info->treename.len,SS_SVDIRS, SS_SVDIRS_LEN) ;
+	newsrc = info->base.len + SS_SYSTEM_LEN + 1 + info->treename.len + SS_SVDIRS_LEN ;
+	memcpy(src+ info->base.len + SS_SYSTEM_LEN + 1 + info->treename.len + SS_SVDIRS_LEN, ptype,typelen) ;
+	src[info->base.len + SS_SYSTEM_LEN + 1 + info->treename.len + SS_SVDIRS_LEN +  typelen] = 0 ;
 	
-	char back[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treenamelen + SS_RESOLVE_LEN + 1] ;
+	char back[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + info->treename.len + SS_RESOLVE_LEN + 1] ;
 	memcpy(back, info->base.s, info->base.len) ;
 	memcpy(back + info->base.len, SS_SYSTEM, SS_SYSTEM_LEN) ;
 	memcpy(back + info->base.len + SS_SYSTEM_LEN, SS_BACKUP, SS_BACKUP_LEN) ;
 	back[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN] = '/' ;
-	memcpy(back + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1, info->treename, treenamelen) ;
-	newback = info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treenamelen ;
-	memcpy(back + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treenamelen, ptype,typelen) ;
-	back[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treenamelen + typelen] = 0 ;
+	memcpy(back + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1, info->treename.s, info->treename.len) ;
+	newback = info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + info->treename.len ;
+	memcpy(back + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + info->treename.len, ptype,typelen) ;
+	back[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + info->treename.len + typelen] = 0 ;
 	
 	r = scan_mode(back,S_IFDIR) ;
 	if (r || (r < 0))

@@ -24,7 +24,7 @@
 #include <66/constants.h>
 
 /** 1-> backup
- * 0-> ori 
+ * 0-> src 
  * -1->not initiated */
 int db_find_compiled_state(char const *livetree, char const *treename)
 {
@@ -33,13 +33,13 @@ int db_find_compiled_state(char const *livetree, char const *treename)
 	size_t namelen = strlen(treename) ;
 		
 	struct stat st ;
-
-	char current[treelen + 1 + namelen + SS_DB_LEN + 1] ;
+	
+	char current[treelen + 1 + namelen + 8 + 1] ;
 	memcpy(current, livetree, treelen) ;
 	current[treelen] = '/' ;
 	memcpy(current + treelen + 1, treename,namelen) ;
-	memcpy(current + treelen + 1 + namelen, SS_DB, SS_DB_LEN) ;
-	current[treelen + 1 + namelen + SS_DB_LEN] = 0 ;
+	memcpy(current + treelen + 1 + namelen, "/compiled", 9) ;
+	current[treelen + 1 + namelen + 9] = 0 ;
 	
 	if(lstat(current,&st) < 0) return -1 ;
 	if(!(S_ISLNK(st.st_mode))) 

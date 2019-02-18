@@ -230,7 +230,7 @@ int backup_cmd_switcher(unsigned int verbosity,char const *cmd,ssexec_t *info)
 	for (unsigned int i = 0; i < genalloc_len(stralist,&opts); i++)
 		newargv[m++] = gaistr(&opts,i) ;
 		
-	newargv[m++] = info->treename ;
+	newargv[m++] = info->treename.s ;
 	newargv[m++] = 0 ;
 	
 	r = backup_switcher(newopts,newargv,info) ;
