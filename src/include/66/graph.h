@@ -101,4 +101,8 @@ extern int graph_tree(graph_t *g, char const *name, char const *tree) ;
 
 extern void stack_reverse(genalloc *st) ;
 
+extern void vertex_graph_free(vertex_graph_t *vgraph) ;
+
+extern void graph_free(graph_t *graph) ;
+
 #endif

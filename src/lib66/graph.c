@@ -33,6 +33,7 @@
 #include <66/enum.h>
 #include <66/utils.h>
 #include <66/constants.h>
+#include <66/resolve.h>
 
 #include <stdio.h>
 
@@ -225,7 +226,6 @@ int graph_tree(graph_t *g, char const *name, char const *tree)
 
 int stack_init(genalloc *st, unsigned int len)
 {
-	*st = genalloc_zero ;
 	return genalloc_ready(vertex_graph_t,st,len) ;
 }
 
@@ -281,19 +281,15 @@ int graph_sort(graph_t *g)
 	visit c[color] ;
 	for (unsigned int i = 0 ; i < color; i++) c[i] = WHITE ;
 	if (!len) return 0 ;
-	if (!stack_init(&g->stack,color))
+	/*if (!stack_init(&g->stack,color))
 	{
 		VERBO3 strerr_warnwu1x("iniate stack") ;
 		return 0;
-	}
+	}*/
 	for (unsigned int i = 0 ; i < len ; i++)
-	{
 		if ( c[i] == WHITE && dfs(g,i,&g->stack,c))
-		{
-			genalloc_free(vertex_graph_t,&g->stack) ;
 			return -1 ;
-		}
-	}
+	
 	return 1 ;
 }
 
@@ -329,9 +325,8 @@ int graph_rdepends(genalloc *ga,graph_t *g, char const *name, char const *src)
 {
 	unsigned int i,k ;
 	int r ;
-	
+
 	char *string = g->string ;
-	
 	unsigned int type = graph_search(g,name) ;
 	/** bundle , we need to check every service set onto it*/
 	if (genalloc_s(vertex_graph_t,&g->vertex)[type].type == BUNDLE)
@@ -348,11 +343,6 @@ int graph_rdepends(genalloc *ga,graph_t *g, char const *name, char const *src)
 					VERBO3 strerr_warnwu3x("add: ",depname," as dependency to remove") ;
 					return 0 ;
 				}
-				if (!find_logger(ga,depname,src)) 
-				{
-						VERBO3 strerr_warnwu3x("add: ",gaistr(ga,genalloc_len(stralist,ga)-1)," as dependency to remove") ;
-						return 0 ;
-				}
 			}
 			r = graph_rdepends(ga,g,depname,src) ;
 			if (!r) 
@@ -368,23 +358,21 @@ int graph_rdepends(genalloc *ga,graph_t *g, char const *name, char const *src)
 		}
 	}
 	
+	
+	
 	for (i = 0 ; i < g->nvertex ; i++)
 	{
 		
 		char *master = string + genalloc_s(vertex_graph_t,&g->vertex)[i].name ;
 		if (obstr_equal(name,master)) continue ;
-		
+	
 		if (genalloc_s(vertex_graph_t,&g->vertex)[i].ndeps)
 		{
 			for (k = 0; k < genalloc_s(vertex_graph_t,&g->vertex)[i].ndeps; k++)
 			{
 				char *depname = string + genalloc_s(vertex_graph_t,&genalloc_s(vertex_graph_t,&g->vertex)[i].dps)[k].name ;
-				
 				if (obstr_equal(name,depname))
 				{
-				/*	if (genalloc_s(vertex_graph_t,&g->vertex)[i].type == BUNDLE)
-						continue ;*/
-					
 					if (!stra_cmp(ga,master))
 					{
 						if (!stra_add(ga,master)) 
@@ -392,12 +380,6 @@ int graph_rdepends(genalloc *ga,graph_t *g, char const *name, char const *src)
 							VERBO3 strerr_warnwu3x("add: ",depname," as dependency to remove") ;
 							return 0 ;
 						}
-						if (!find_logger(ga,master,src)) 
-						{
-							VERBO3 strerr_warnwu3x("add: ",gaistr(ga,genalloc_len(stralist,ga)-1)," as dependency to remove") ;
-							return 0 ;
-						}
-						
 						r = graph_rdepends(ga,g,master,src) ;
 						if (!r)	return 0 ;		
 					}
@@ -405,12 +387,10 @@ int graph_rdepends(genalloc *ga,graph_t *g, char const *name, char const *src)
 			}
 		}
 	}
+		
+	if (!genalloc_len(stralist,ga)) return 2 ;
 	
-	if (!genalloc_len(stralist,ga))
-	{
-		genalloc_deepfree(stralist,ga,stra_free) ;
-		return 2 ;
-	}
+	//genalloc_reverse(stralist,ga) ;
 	return 1 ;
 }
 /** what = 0 -> only classic
@@ -438,71 +418,60 @@ int graph_type_src(genalloc *ga,char const *dir,unsigned int what)
 	if (what)
 		if (!dir_get(ga,solve,SS_MASTER + 1,S_IFDIR)) return 0 ;
 	
-	if (!genalloc_len(stralist,ga)) return -1 ;
-	
+	if (!genalloc_len(stralist,ga))
+	{
+		genalloc_deepfree(stralist,ga,stra_free) ;
+		return -1 ;
+	}
 	return 1 ;
 }
+void vertex_graph_free(vertex_graph_t *vg)
+{
+	genalloc_free(vertex_graph_t,&vg->dps) ;	
+}
 
+void graph_free(graph_t *graph)
+{
+	genalloc_deepfree(vertex_graph_t,&graph->vertex,vertex_graph_free) ;
+	genalloc_free(vertex_graph_t,&graph->stack) ;
+}
 int graph_build(graph_t *g, stralloc *sagraph, genalloc *tokeep,char const *dir)
 {
 	
-	
-	size_t dirlen = strlen(dir) ;
-	size_t newlen = 0 ;
-	char solve[dirlen + SS_RESOLVE_LEN + 1 + 1] ;
-	memcpy(solve,dir,dirlen) ;
-	memcpy(solve + dirlen, SS_RESOLVE,SS_RESOLVE_LEN) ;
-	solve[dirlen + SS_RESOLVE_LEN] = '/' ;
-	newlen = dirlen + SS_RESOLVE_LEN + 1 ;
-	solve[newlen] = 0 ;
-	
+	ss_resolve_t res = RESOLVE_ZERO ;
 	genalloc gatmp = GENALLOC_ZERO ;//stralist
-	stralloc res = STRALLOC_ZERO ;
-
+		
 	graph_t gtmp = GRAPH_ZERO ;
-	vertex_graph_t gsv = VERTEX_GRAPH_ZERO ; 
-	vertex_graph_t gdeps = VERTEX_GRAPH_ZERO ;
-	
+		
 	unsigned int nvertex = 0 ;
 	unsigned int nedge = 0 ;
 	
 	for (unsigned int i = 0 ; i < genalloc_len(stralist,tokeep) ; i++)
 	{
-		char *file = "deps" ;
+		vertex_graph_t gsv = VERTEX_GRAPH_ZERO ; 
+		vertex_graph_t gdeps = VERTEX_GRAPH_ZERO ;
+		genalloc_deepfree(stralist,&gatmp,stra_free) ;
+		res.sa.len = 0 ;
+		
 		char const *name = gaistr(tokeep,i) ;
 		size_t namelen = gaistrlen(tokeep,i) ;
-		char namesrc[newlen + namelen + 1] ;
-		memcpy(namesrc,solve,newlen) ;
-		memcpy(namesrc + newlen,name,namelen) ;
-		namesrc[newlen + namelen] = 0 ;
 		
-		res = stralloc_zero ;
-		if (!file_readputsa(&res,namesrc,"type"))
+		if (!ss_resolve_read(&res,dir,name))
 		{
-			VERBO3 strerr_warnwu2x("read type of: ",name) ;
+			VERBO3 strerr_warnwu2sys("read resolve file of: ",name) ;
 			goto err ;
-		}else gsv.type = get_enumbyid(res.s,key_enum_el) ;
-		res = stralloc_zero ;
-		if (file_readputsa(&res,namesrc,file))
+		}
+		
+		gsv.type = res.type ;
+		if (res.ndeps)
 		{
-			
-			if (!clean_val(&gatmp,res.s))
+			if (!clean_val(&gatmp,res.sa.s + res.deps))
 			{
-				VERBO3 strerr_warnwu2x("clean val: ",res.s) ;
+				VERBO3 strerr_warnwu2x("clean val: ",res.sa.s + res.deps) ;
 				goto err ;
 			}
 		}
-		/*file = "logger" ;
-		res = stralloc_zero ;
-		if(file_readputsa(&res,namesrc,file))
-		{
-			if (!clean_val(&gatmp,res.s))
-			{
-				VERBO3 strerr_warnwu2x("clean val: ",res.s) ;
-				goto err ;
-			}
-		}*/
-
+		
 		gsv.idx = nedge ;
 		nedge++ ;
 		gsv.gaidx = genalloc_len(vertex_graph_t, &gtmp.vertex) ;
@@ -511,16 +480,15 @@ int graph_build(graph_t *g, stralloc *sagraph, genalloc *tokeep,char const *dir)
 		
 		if (genalloc_len(stralist,&gatmp))
 		{	
-			
 			gsv.ndeps = genalloc_len(stralist,&gatmp) ;
 			for (unsigned int i = 0 ; i < genalloc_len(stralist,&gatmp);i++)
-			{
+			{ 
 				gdeps.idx = nedge++ ;
 				gdeps.name = sagraph->len ;
 				if (!stralloc_catb(sagraph,gaistr(&gatmp,i),gaistrlen(&gatmp,i) + 1)) goto err ;
 				gdeps.gaidx = genalloc_len(vertex_graph_t,&gsv.dps) ;
 				gdeps.ndeps = 0 ;
-				gdeps.dps = genalloc_zero ;
+				gdeps.dps.len = 0 ;
 				if (!genalloc_append(vertex_graph_t,&gsv.dps,&gdeps)) goto err ;
 				
 			}
@@ -528,20 +496,16 @@ int graph_build(graph_t *g, stralloc *sagraph, genalloc *tokeep,char const *dir)
 		gtmp.nedge = nedge ;
 		gtmp.nvertex = ++nvertex ;
 		if (!genalloc_append(vertex_graph_t,&gtmp.vertex,&gsv)) goto err ;
-		gsv = vertex_graph_zero ;
-		gdeps = vertex_graph_zero ;
-		gatmp = genalloc_zero ;
 	}
-	
-	stralloc_free(&res) ;
-	genalloc_deepfree(stralist,&gatmp,stra_free) ;
-	
+
 	/** second pass */
 	
 	char *string = sagraph->s ;
 	for (unsigned int a = 0 ; a < gtmp.nvertex ; a++)
 	{
-		
+		vertex_graph_t gsv = VERTEX_GRAPH_ZERO ; 
+		vertex_graph_t gdeps = VERTEX_GRAPH_ZERO ;
+				
 		int idxa = genalloc_s(vertex_graph_t,&gtmp.vertex)[a].idx ;
 		gsv.idx = idxa ;
 		gsv.type = genalloc_s(vertex_graph_t,&gtmp.vertex)[a].type ;
@@ -556,7 +520,7 @@ int graph_build(graph_t *g, stralloc *sagraph, genalloc *tokeep,char const *dir)
 			char *nameb = string + nb ;
 			gdeps.gaidx = genalloc_s(vertex_graph_t,&genalloc_s(vertex_graph_t,&gtmp.vertex)[a].dps)[b].gaidx ;
 			gdeps.ndeps = 0 ;
-			gdeps.dps = genalloc_zero ;
+			gdeps.dps.len = 0 ;
 			gdeps.idx = idxb ;
 			gdeps.name = nb ;
 			for (unsigned int c = 0 ; c < gtmp.nvertex ; c++)
@@ -580,43 +544,20 @@ int graph_build(graph_t *g, stralloc *sagraph, genalloc *tokeep,char const *dir)
 				
 		}
 		if (!genalloc_append(vertex_graph_t,&g->vertex,&gsv)) goto err ;
-		gsv = vertex_graph_zero ;
-		gdeps = vertex_graph_zero ;
 	}
+	
 	g->string = sagraph->s ;
 	g->nvertex = gtmp.nvertex ;
 	g->nedge = gtmp.nedge ;
-	
-	genalloc_free(vertex_graph_t,&gsv.dps) ;
-	genalloc_free(vertex_graph_t,&gdeps.dps) ;
-	
-	/*for (unsigned int i = 0 ; i < genalloc_len(vertex_graph_t,&g->vertex) ; i++)
-	{
-		char *string = g->string ;
-		//int idx = genalloc_s(unsigned int,&g->vertex)[i] ;
-		printf("i::%i::type::%s\n",i,get_keybyid(genalloc_s(vertex_graph_t,&g->vertex)[i].type)) ;
-		//printf("i::%i::idx::%i\n",i,genalloc_s(vertex_graph_t,&g->vertex)[i].idx) ;
-		printf("i::%i::name::%s\n",i,string + genalloc_s(vertex_graph_t,&g->vertex)[i].name) ;
-		//printf("i::%i::ndeps::%i\n",i,genalloc_s(vertex_graph_t,&g->vertex)[i].ndeps) ;
-		//printf("i::%i::gaidx::%i\n",i,genalloc_s(vertex_graph_t,&g->vertex)[i].gaidx) ;
-		for (unsigned int d = 0 ; d < genalloc_s(vertex_graph_t,&g->vertex)[i].ndeps ; d++)
-		{
-			printf("	deps type::%s\n", get_keybyid(genalloc_s(vertex_graph_t,&genalloc_s(vertex_graph_t,&g->vertex)[i].dps)[d].type)) ;
-			//printf("	deps idx::%i\n", genalloc_s(vertex_graph_t,&genalloc_s(vertex_graph_t,&g->vertex)[i].dps)[d].idx) ;
-			printf("	deps name::%s\n", string + genalloc_s(vertex_graph_t,&genalloc_s(vertex_graph_t,&g->vertex)[i].dps)[d].name) ;
-			//printf("	deps ndeps::%i\n", genalloc_s(vertex_graph_t,&genalloc_s(vertex_graph_t,&g->vertex)[i].dps)[d].ndeps) ;
-		//	printf("	deps gaidx::%i\n---\n", genalloc_s(vertex_graph_t,&genalloc_s(vertex_graph_t,&g->vertex)[i].dps)[d].gaidx) ;
-		}
-		
-		
-	}	*/
+	graph_free(&gtmp) ;
+	genalloc_deepfree(stralist,&gatmp,stra_free) ;
+	ss_resolve_free(&res) ;
 	return 1 ;
 	
 	err:
+		graph_free(&gtmp) ;
 		genalloc_deepfree(stralist,&gatmp,stra_free) ;
-		stralloc_free(&res) ;
-		genalloc_free(vertex_graph_t,&gsv.dps) ;
-		genalloc_free(vertex_graph_t,&gdeps.dps) ;
+		ss_resolve_free(&res) ;
 		return 0 ;
 }
 
