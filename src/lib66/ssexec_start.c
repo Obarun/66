@@ -503,6 +503,8 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 		VERBO1 strerr_warni3x("switch classic service of: ",info->treename.s," to source") ;
 		if (!svc_switch_to(info,SS_SWSRC))
 			strerr_diefu3x(111,"switch classic service of: ",info->treename.s," to source") ;
+			
+		genalloc_deepfree(ss_resolve_t,&nclassic,ss_resolve_free) ;
 	} 
 	if (rc)
 	{
@@ -515,6 +517,8 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 		VERBO1 strerr_warni3x("switch atomic services of: ",info->treename.s," to source") ;
 		if (!db_switch_to(info,envp,SS_SWSRC))
 			strerr_diefu5x(111,"switch",info->livetree.s,"/",info->treename.s," to source") ;
+		
+		genalloc_deepfree(ss_resolve_t,&nrc,ss_resolve_free) ;
 	}
 	
 	return 0 ;		
