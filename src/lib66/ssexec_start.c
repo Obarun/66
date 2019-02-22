@@ -457,7 +457,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 		{
 			char const *name = *argv ;
 			logname = 0 ;
-			
+			printf("name::%s\n",name) ;
 			ss_resolve_t res = RESOLVE_ZERO ;
 			pres = &res ;
 			if (!ss_resolve_check(info,name,SS_RESOLVE_SRC)) strerr_dief2x(111,name,": is not enabled") ;
@@ -468,11 +468,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 				 continue ;
 			}
 			else if (!res.disen) strerr_dief2x(111,name,": is not enabled") ;
-			if (res.pid && !RELOAD)
-			{
-				VERBO1 strerr_warni2x(name,": is already up") ;
-				continue ;
-			}
+			
 			logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 			if ((RELOAD > 1) && (logname > 0)) strerr_dief1x(111,"-R signal is not allowed to a logger") ;
 			if (RELOAD > 1) res.reload = 1 ;
