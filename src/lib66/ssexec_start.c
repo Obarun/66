@@ -145,7 +145,7 @@ int svc_start(ssexec_t *info,genalloc *ga,char const *const *envp)
 			VERBO2 strerr_warnt2x("Write logger resolve file of: ",name) ;
 			if (!ss_resolve_setlognwrite(&genalloc_s(ss_resolve_t,ga)[i],sares.s))
 			{
-				strerr_warnwu2sys("write logger resolve file of: ",name) ;
+				VERBO2 strerr_warnwu2sys("write logger resolve file of: ",name) ;
 				return 0 ;
 			}
 		}
@@ -401,7 +401,7 @@ int rc_start(ssexec_t *info,genalloc *ga,char const *const *envp)
 			VERBO2 strerr_warnt2x("Write logger resolve file of: ",name) ;
 			if (!ss_resolve_setlognwrite(&genalloc_s(ss_resolve_t,ga)[i],sares.s))
 			{
-				strerr_warnwu2sys("write logger resolve file of: ",name) ;
+				VERBO2 strerr_warnwu2sys("write logger resolve file of: ",name) ;
 				return 0 ;
 			}
 		}
