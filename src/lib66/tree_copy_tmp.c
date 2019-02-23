@@ -61,12 +61,12 @@ int tree_copy_tmp(char const *workdir, ssexec_t *info)
 	/** svc */
 	if (rm_rf(svdir) < 0)
 	{
-		if (!resolve_pointo(&saresolve,info,CLASSIC,SS_RESOLVE_SRC))
+		if (!ss_resolve_pointo(&saresolve,info,CLASSIC,SS_RESOLVE_SRC))
 		{
 			err(&e,0,saresolve.s,swap.s,svdir) ;
 			goto err ;
 		}
-		if (!resolve_pointo(&swap,info,CLASSIC,SS_RESOLVE_BACK))
+		if (!ss_resolve_pointo(&swap,info,CLASSIC,SS_RESOLVE_BACK))
 		{
 			err(&e,1,saresolve.s,swap.s,svdir) ;
 			goto err ;
@@ -85,12 +85,12 @@ int tree_copy_tmp(char const *workdir, ssexec_t *info)
 	svdir[svdirlen + SS_DB_LEN] = 0 ;
 	if (rm_rf(svdir) < 0)
 	{
-		if (!resolve_pointo(&saresolve,info,LONGRUN,SS_RESOLVE_SRC))
+		if (!ss_resolve_pointo(&saresolve,info,LONGRUN,SS_RESOLVE_SRC))
 		{
 			err(&e,0,saresolve.s,swap.s,svdir) ;
 			goto err ;
 		}
-		if (!resolve_pointo(&swap,info,LONGRUN,SS_RESOLVE_BACK))
+		if (!ss_resolve_pointo(&swap,info,LONGRUN,SS_RESOLVE_BACK))
 		{
 			err(&e,1,saresolve.s,swap.s,svdir) ;
 			goto err ;
@@ -110,7 +110,7 @@ int tree_copy_tmp(char const *workdir, ssexec_t *info)
 	
 	if (rm_rf(svdir) < 0)
 	{
-		if (!resolve_pointo(&saresolve,info,0,SS_RESOLVE_SRC))
+		if (!ss_resolve_pointo(&saresolve,info,SS_NOTYPE,SS_RESOLVE_SRC))
 		{
 			err(&e,0,saresolve.s,swap.s,svdir) ;
 			goto err ;
@@ -119,7 +119,7 @@ int tree_copy_tmp(char const *workdir, ssexec_t *info)
 		if (!stralloc_cats(&saresolve,SS_RESOLVE)) retstralloc(0,"tree_copy_tmp") ;
 		if (!stralloc_0(&saresolve)) retstralloc(0,"tree_copy_tmp") ;
 		
-		if (!resolve_pointo(&swap,info,0,SS_RESOLVE_BACK))
+		if (!ss_resolve_pointo(&swap,info,SS_NOTYPE,SS_RESOLVE_BACK))
 		{
 			err(&e,1,saresolve.s,swap.s,svdir) ;
 			goto err ;
@@ -140,12 +140,12 @@ int tree_copy_tmp(char const *workdir, ssexec_t *info)
 		
 	if (!hiercopy(workdir,svdir))
 	{
-		if (!resolve_pointo(&saresolve,info,0,SS_RESOLVE_SRC))
+		if (!ss_resolve_pointo(&saresolve,info,SS_NOTYPE,SS_RESOLVE_SRC))
 		{	
 			err(&e,0,saresolve.s,swap.s,svdir) ;
 			goto err ;
 		}
-		if (!resolve_pointo(&swap,info,0,SS_RESOLVE_BACK))
+		if (!ss_resolve_pointo(&swap,info,SS_NOTYPE,SS_RESOLVE_BACK))
 		{
 			err(&e,1,saresolve.s,swap.s,svdir) ;
 			goto err ;
