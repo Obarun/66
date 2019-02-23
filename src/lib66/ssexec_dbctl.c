@@ -40,6 +40,7 @@
 #include <66/tree.h>
 #include <66/enum.h>
 #include <66/resolve.h>
+#include <66/ssexec.h>
 
 //#include <stdio.h>
 
@@ -190,21 +191,27 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		
 		if (!ss_resolve_check(info,name,SS_RESOLVE_SRC)) strerr_dief2sys(111,"unknow service: ",name) ;
 		if (!ss_resolve_read(&res,src.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
-		
-		if (!s6_svstatus_read(res.sa.s + res.runat,&status)) strerr_diefu2sys(111,"read status of: ",res.sa.s + res.runat) ;
-				
-		if (down)
-		{
-			if (WEXITSTATUS(status.wstat) && WIFEXITED(status.wstat) && status.pid)
-				strerr_diefu2x(111,"stop: ",name) ;
-		}
-		else if (up)
-		{
-			if (WEXITSTATUS(status.wstat) && WIFEXITED(status.wstat))
-				strerr_diefu2x(111,"start: ",name) ;
+		/** only check longrun service */
+		if (res.type == LONGRUN)
+		{	
+			if (!s6_svstatus_read(res.sa.s + res.runat,&status))
+			{
+				strerr_warnwu4sys("read status of: ",res.sa.s + res.runat," -- race condition, try 66-info -S ",res.sa.s + res.name) ;
+				goto freed ;
+			}
+			if (down)
+			{
+				if (WEXITSTATUS(status.wstat) && WIFEXITED(status.wstat) && status.pid)
+					strerr_warnwu2x("stop: ",name) ;
+			}
+			else if (up)
+			{
+				if (WEXITSTATUS(status.wstat) && WIFEXITED(status.wstat))
+					strerr_warnwu2x("start: ",name) ;
+			}
 		}
 	}
-	
+	freed:
 	ss_resolve_free(&res) ;
 	stralloc_free(&tmp) ;	
 	stralloc_free(&src) ;
