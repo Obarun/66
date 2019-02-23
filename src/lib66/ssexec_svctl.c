@@ -42,7 +42,7 @@
 #include <66/ssexec.h>
 #include <66/resolve.h>
 
-//#include <stdio.h>
+#include <stdio.h>
 
 unsigned int SV_DEADLINE = 3000 ;
 unsigned int DEATHSV = 10 ;
@@ -315,12 +315,12 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			{
 				case 'n' :	if (!uint0_scan(l.arg, &death)) exitusage(usage_svctl) ; break ;
 				case 'u' :	if (SIGNAL > 0) exitusage(usage_svctl) ; SIGNAL = SIGUP ; sig ="u" ; break ;
-				case 'U' :	if (SIGNAL > 0) exitusage(usage_svctl) ; SIGNAL = SIGRUP ; sig = "u" ; break ;
+				case 'U' :	if (SIGNAL > 0) exitusage(usage_svctl) ; SIGNAL = SIGRUP ; sig = "uwU" ; break ;
 				case 'd' : 	if (SIGNAL > 0) ; SIGNAL = SIGDOWN ; sig = "d" ; break ;
-				case 'D' :	if (SIGNAL > 0) ; SIGNAL = SIGRDOWN ; sig = "d" ; break ;
+				case 'D' :	if (SIGNAL > 0) ; SIGNAL = SIGRDOWN ; sig = "dwD" ; break ;
 				case 'r' :	if (SIGNAL > 0) ; SIGNAL = SIGR ; sig = "r" ; break ;
-				case 'R' :	if (SIGNAL > 0) ; SIGNAL = SIGRR ; sig = "r" ; break ;
-				case 'X' :	if (SIGNAL > 0) ; SIGNAL = SIGX ; sig = "dx" ; break ;
+				case 'R' :	if (SIGNAL > 0) ; SIGNAL = SIGRR ; sig = "rwR" ; break ;
+				case 'X' :	if (SIGNAL > 0) ; SIGNAL = SIGX ; sig = "xd" ; break ;
 				case 'K' :	if (SIGNAL > 0) ; SIGNAL = SIGRDOWN ; sig = "kd" ; break ;
 				
 				default : exitusage(usage_svctl) ; 
@@ -506,7 +506,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	finish:
 		stralloc_free(&src) ;
 		genalloc_deepfree(ss_resolve_sig_t,&gakeep,ss_resolve_free) ;
-		//ss_resolve_free(&sv_signal.res) ;
+		
 		
 	return 0 ;		
 }
