@@ -98,7 +98,7 @@ int write_services(sv_alltype *sv, char const *workdir, unsigned int force)
 	}
 	else if (r && !force)
 	{
-		VERBO3 strerr_warnw3x("ignoring: ",name," service: already enabled") ;
+		VERBO1 strerr_warnw3x("ignoring: ",name," service: already enabled") ;
 		return 2 ;
 	}
 	
