@@ -41,6 +41,7 @@
 #include <66/utils.h>
 #include <66/tree.h>
 #include <66/ssexec.h>
+#include <66/graph.h>
 
 #include <s6/s6-supervise.h>
 #include <s6/config.h>
@@ -57,8 +58,36 @@ int doit(ssexec_t *info, unsigned int what, char const *const *envp)
 	char src[info->tree.len + SS_SVDIRS_LEN + SS_SVC_LEN + 1] ;
 	memcpy(src,info->tree.s,info->tree.len) ;
 	memcpy(src + info->tree.len, SS_SVDIRS,SS_SVDIRS_LEN) ;
-	memcpy(src + info->tree.len +SS_SVDIRS_LEN, SS_SVC,SS_SVC_LEN) ;
-	src[info->tree.len +SS_SVDIRS_LEN + SS_SVC_LEN] = 0 ;
+	src[info->tree.len + SS_SVDIRS_LEN] = 0 ;
+	
+/*	graph_t g = GRAPH_ZERO ;
+	stralloc sagraph = STRALLOC_ZERO ;
+	genalloc tokeep = GENALLOC_ZERO ;
+	int r ;
+	// build dependencies graph
+	r = graph_type_src(&tokeep,src,1) ;
+	if (r <= 0)
+	{
+		strerr_warnwu2x("resolve source of graph for tree: ",src) ;
+		return 0 ;
+	}
+	if (!graph_build(&g,&sagraph,&tokeep,src))
+	{
+		strerr_warnwu1x("make dependencies graph") ;
+		return 0 ;
+	}
+	
+	r = graph_rdepends(&ga,&g,"Master",src) ;
+	if (!r) 
+	{
+		strerr_warnwu2x("find services depending for: ","Master") ;
+		return 0 ;
+	}
+	graph_free(&g) ;
+	stralloc_free(&sagraph) ;
+	genalloc_deepfree(stralist,&tokeep,stra_free) ;*/
+	memcpy(src + info->tree.len + SS_SVDIRS_LEN, SS_SVC,SS_SVC_LEN) ;
+	src[info->tree.len + SS_SVDIRS_LEN + SS_SVC_LEN] = 0 ;
 	
 	if (!dir_get(&ga,src,"",S_IFDIR))
 	{
@@ -69,7 +98,7 @@ int doit(ssexec_t *info, unsigned int what, char const *const *envp)
 	{
 		VERBO3 strerr_warni4x("no classic service for tree: ",info->treename.s," to ", what ? "start" : "stop") ;
 	}
-	/** add transparent Master to start the db*/
+
 	if (!stra_add(&ga,"Master"))
 	{
 		VERBO3 strerr_warnwu2x("add Master as service to ", what ? "start" : "stop") ;
