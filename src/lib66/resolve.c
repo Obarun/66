@@ -459,28 +459,7 @@ int ss_resolve_read(ss_resolve_t *res, char const *src, char const *name)
 	uint32_unpack_big(sa.s + global,&res->run) ;
 	global += 4 ;
 	uint64_unpack_big(sa.s + global,&res->pid) ;
-	/*char *string = res->sa.s ;
-	printf("res->name::%s\n",string + res->name) ;
-	printf("res->description::%s\n",string + res->description) ;
-	printf("res->logger::%s\n",string +res->logger) ;
-	printf("res->logreal::%s\n",string +res->logreal) ;
-	printf("res->dstlog::%s\n",string +res->dstlog) ;
-	printf("res->deps::%s\n",string +res->deps) ;
-	printf("res->src::%s\n",string + res->src) ;
-	printf("res->runat::%s\n",string +res->runat) ;
-	printf("res->tree::%s\n",string +res->tree) ;
-	printf("res->treename::%s\n",string +res->treename) ;
-	printf("res->exec_run::%s\n",string +res->exec_run) ;
-	printf("res->exec_finish::%s\n",string +res->exec_finish) ;
-	printf("res->ndeps::%i\n",res->ndeps) ;
-	printf("res->type::%i\n",res->type) ;
-	printf("res->reload::%i\n",res->reload) ;
-	printf("res->disen::%i\n",res->disen) ;
-	printf("res->init::%i\n",res->init) ;
-	printf("res->down::%i\n",res->down) ;
-	printf("res->unsupervise::%i\n",res->unsupervise) ;
-	printf("res->run::%i\n",res->run) ;
-	printf("res->run::%i\n",res->pid) ;*/
+	
 	stralloc_0(&res->sa) ;
 	stralloc_free(&sa) ;
 	
@@ -522,6 +501,8 @@ int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst)
 {
 	int r ;
 	
+	if (!sv->logger) return 1 ;
+	
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	
 	ss_resolve_t res = RESOLVE_ZERO ;
@@ -558,6 +539,7 @@ int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst)
 	res.runat = ss_resolve_add_string(&res,live) ;
 	res.init = sv->init ;
 	res.reload = sv->reload ;
+	res.unsupervise = sv->unsupervise ;
 	
 	r = s6_svc_ok(res.sa.s + res.runat) ;
 	if (r < 0) { strerr_warnwu2sys("check ", res.sa.s + res.runat) ; goto err ; }
@@ -618,6 +600,7 @@ int ss_resolve_setnwrite(ss_resolve_t *res, sv_alltype *services, ssexec_t *info
 	res->ndeps = services->cname.nga ;
 	res->reload = 1 ;
 	res->disen = 1 ;
+	res->unsupervise = 0 ;
 	if (services->flags[0])	res->down = 1 ;
 
 	if (res->type == CLASSIC)
@@ -703,8 +686,10 @@ int ss_resolve_setnwrite(ss_resolve_t *res, sv_alltype *services, ssexec_t *info
 				}
 			}
 			namedeps.len--;
-			if (!stralloc_catb(&final,namedeps.s,namedeps.len + 1)) { warnstralloc("ss_resolve_fromscratch") ; goto err ; }
+			if (!stralloc_catb(&final,namedeps.s,namedeps.len)) { warnstralloc("ss_resolve_fromscratch") ; goto err ; }
+			if (!stralloc_catb(&final," ",1)) { warnstralloc("ss_resolve_fromscratch") ; goto err ; }
 		}
+		final.len-- ;
 		if (!stralloc_0(&final)){ warnstralloc("ss_resolve_fromscratch") ; goto err ; } 
 		res->deps = ss_resolve_add_string(res,final.s) ;
 	}
@@ -775,35 +760,49 @@ int ss_resolve_setnwrite(ss_resolve_t *res, sv_alltype *services, ssexec_t *info
 		stralloc_free(&destlog) ;
 		return 0 ;
 }
-
+int ss_resolve_cmp(genalloc *ga,char const *name)
+{
+	unsigned int i = 0 ;
+	for (;i < genalloc_len(ss_resolve_t,ga) ; i++)
+	{
+		char *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
+		char *s = string + genalloc_s(ss_resolve_t,ga)[i].name ;
+		if (obstr_equal(name,s)) return 1 ;
+	}
+	return 0 ;
+}
+	
 int ss_resolve_addlogger(ssexec_t *info,genalloc *ga)
 {
 	stralloc tmp = STRALLOC_ZERO ;
-	
-	ss_resolve_t res = RESOLVE_ZERO ;
 	genalloc gatmp = GENALLOC_ZERO ;
+
 	if (!ss_resolve_pointo(&tmp,info,SS_NOTYPE,SS_RESOLVE_SRC))		
 		goto err ;
+//	if (!genalloc_copy(ss_resolve_t,&gatmp,ga)) goto err ;
 	
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++) 
 	{
-		res = ss_resolve_zero ;
-		
+		ss_resolve_t res = RESOLVE_ZERO ;
 		char *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
-		if (!genalloc_append(ss_resolve_t,&gatmp,&genalloc_s(ss_resolve_t,ga)[i])) 
-			goto err ;
-		
-		/** logger finish last */
-		if (genalloc_s(ss_resolve_t,ga)[i].logger)
+		char *name = string + genalloc_s(ss_resolve_t,ga)[i].name ;
+		if (!ss_resolve_cmp(&gatmp,name))
 		{
-			if (!ss_resolve_read(&res,tmp.s,string + genalloc_s(ss_resolve_t,ga)[i].logger))
+			if (!genalloc_append(ss_resolve_t,&gatmp,&genalloc_s(ss_resolve_t,ga)[i])) 
 				goto err ;
+		
+			if (genalloc_s(ss_resolve_t,ga)[i].logger)
+			{
+				if (!ss_resolve_read(&res,tmp.s,string + genalloc_s(ss_resolve_t,ga)[i].logger))
+					goto err ;
 			
-			if (!genalloc_append(ss_resolve_t,&gatmp,&res)) goto err ;
+				if (!genalloc_append(ss_resolve_t,&gatmp,&res)) goto err ;
+			}
 		}
+		
 	}
-	genalloc_copy(ss_resolve_t,ga,&gatmp) ;
-	
+	if (!genalloc_copy(ss_resolve_t,ga,&gatmp)) goto err ;
+		
 	genalloc_free(ss_resolve_t,&gatmp) ;
 	stralloc_free(&tmp) ;
 	return 1 ;
