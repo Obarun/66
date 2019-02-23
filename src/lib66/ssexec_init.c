@@ -40,6 +40,7 @@
 #include <66/db.h>
 #include <66/svc.h>
 #include <66/resolve.h>
+#include <66/ssexec.h>
 
 //#include <stdio.h>
 
