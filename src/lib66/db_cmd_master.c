@@ -38,7 +38,7 @@
 #include <66/utils.h>
 #include <66/graph.h>
 
-//#include <stdio.h>
+#include <stdio.h>
 //USAGE "db_update_start [ -v verbosity ] [ -a add ] [ -d delete ] [ -c copy to ] [ -B bundle ] [ -D directory ] service"
 // -c -> copy the contents file to the given directory, in this case service is not mandatory
 int db_update_master(int argc, char const *const *argv)
@@ -348,5 +348,78 @@ int db_write_contents(genalloc *ga, char const *bundle,char const *dir)
 	
 	err:
 		stralloc_free(&in) ;
+		return 0 ;
+}
+
+int db_write_master(ssexec_t *info, genalloc *ga, char const *dir)
+{
+	int r ;
+	
+	stralloc in = STRALLOC_ZERO ;
+	stralloc inres = STRALLOC_ZERO ;
+	ss_resolve_t res = RESOLVE_ZERO ;
+	
+	size_t dirlen = strlen(dir) ;
+	
+	char runat[info->livetree.len + 1 + info->treename.len + SS_SVDIRS_LEN + SS_MASTER_LEN + 1] ;
+	memcpy(runat,info->livetree.s,info->livetree.len) ;
+	runat[info->livetree.len] = '/' ;
+	memcpy(runat + info->livetree.len + 1,info->treename.s,info->treename.len) ;
+	memcpy(runat + info->livetree.len + 1 + info->treename.len, SS_SVDIRS,SS_SVDIRS_LEN) ;
+	memcpy(runat + info->livetree.len + 1 + info->treename.len + SS_SVDIRS_LEN, SS_MASTER, SS_MASTER_LEN) ;
+	runat[info->livetree.len + 1 + info->treename.len + SS_SVDIRS_LEN + SS_MASTER_LEN] = 0 ;
+	
+	char dst[dirlen + SS_DB_LEN + SS_SRC_LEN + SS_MASTER_LEN + 1] ;
+	memcpy(dst, dir, dirlen) ;
+	memcpy(dst + dirlen, SS_DB, SS_DB_LEN) ;
+	memcpy(dst + dirlen + SS_DB_LEN, SS_SRC, SS_SRC_LEN) ;
+	memcpy(dst + dirlen + SS_DB_LEN + SS_SRC_LEN, SS_MASTER, SS_MASTER_LEN) ;
+	dst[dirlen + SS_DB_LEN + SS_SRC_LEN + SS_MASTER_LEN] = 0 ;
+	
+	for (unsigned int i = 0 ; i < genalloc_len(stralist,ga); i++)
+	{
+		
+		if (!stralloc_cats(&in,gaistr(ga,i))) goto err ;
+		if (!stralloc_cats(&in,"\n")) goto err ;
+	
+		if (!stralloc_cats(&inres,gaistr(ga,i))) goto err ;
+		if (!stralloc_cats(&inres," ")) goto err ;
+	}
+	inres.len--;
+	if (!stralloc_0(&inres)) goto err ;
+	
+	r = file_write_unsafe(dst,SS_CONTENTS,in.s,in.len) ;
+	if (!r) 
+	{ 
+		VERBO3 strerr_warnwu3sys("write: ",dst,"contents") ;
+		goto err ;
+	}
+	
+	ss_resolve_init(&res) ;
+	res.name = ss_resolve_add_string(&res,"Master") ;
+	res.description = ss_resolve_add_string(&res,"inner bundle - do not use it") ;
+	res.treename = ss_resolve_add_string(&res,info->treename.s) ;
+	res.tree = ss_resolve_add_string(&res,info->tree.s) ;
+	res.type = BUNDLE ;
+	res.deps = ss_resolve_add_string(&res,inres.s) ;
+	res.ndeps = genalloc_len(stralist,ga) ;
+	res.runat = ss_resolve_add_string(&res,runat) ;	
+	res.disen = 1 ;
+	res.init = 0 ;
+	res.unsupervise = 0 ;
+	res.reload = 0 ;
+	
+	if (!ss_resolve_write(&res,dir,"Master")) goto err ;
+	
+	stralloc_free(&in) ;
+	stralloc_free(&inres) ;
+	ss_resolve_free(&res) ;
+	
+	return 1 ;
+	
+	err:
+		ss_resolve_free(&res) ;
+		stralloc_free(&in) ;
+		stralloc_free(&inres) ;
 		return 0 ;
 }
