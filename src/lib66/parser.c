@@ -85,7 +85,7 @@ static int add_sv(sv_alltype *sv_before,char const *name,unsigned int *nbsv)
 {
 	int r ;
 	
-	VERBO1 strerr_warni2x("Add service: ",name) ;
+	VERBO1 strerr_warni2x("Service parsed successfully: ",name) ;
 	
 	if (!genalloc_append(sv_alltype,&gasv,sv_before)) retstralloc(0,"add_sv") ;
 	
