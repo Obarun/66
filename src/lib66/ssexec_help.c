@@ -123,3 +123,17 @@ char const *help_svctl =
 "	-X: bring down the service(s) and the kill his supervisor\n"
 "	-K: kill the service(s) and keep it down\n"
 ;
+
+char const *usage_all = "66-all [ -h ] [ -v verbosity ] [ -f ] [ -T timeout ] [ -l live ] [ -o tree ] up/down" ;
+
+char const *help_all =
+"66-all <options> up/down\n"
+"\n"
+"options :\n"
+"	-h: print this help\n" 
+"	-v: increase/decrease verbosity\n"
+"	-T: timeout\n"
+"	-l: live directory\n"
+"	-o: tree to use\n"
+"	-f: fork the process\n"
+;
