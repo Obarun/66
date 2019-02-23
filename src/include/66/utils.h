@@ -66,6 +66,5 @@ extern int insta_splitname(stralloc *sa,char const *name,int len,int what) ;
 
 extern int insta_replace(stralloc *sa,char const *src,char const *cpy) ;
 
-extern int find_logger(genalloc *ga,ss_resolve_t *res) ;
 
 #endif
