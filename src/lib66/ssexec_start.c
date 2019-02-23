@@ -50,6 +50,7 @@
 #include <66/svc.h>
 #include <66/ssexec.h>
 #include <66/resolve.h>
+#include <66/rc.h>
 
 #include <stdio.h>
 
@@ -59,27 +60,6 @@ static char *SIG = "-U" ;
 static stralloc sares = STRALLOC_ZERO ;
 static genalloc nclassic = GENALLOC_ZERO ; //resolve_t type
 static genalloc nrc = GENALLOC_ZERO ; //resolve_t type
-
-int svc_send(ssexec_t *info,genalloc *ga,char const *sig,char const *const *envp)
-{
-	unsigned int i = 0 ;
-	int nargc = 3 + genalloc_len(ss_resolve_t,ga) ;
-	char const *newargv[nargc] ;
-	unsigned int m = 0 ;
-	
-	newargv[m++] = "fake_name" ;
-	newargv[m++] = sig ;
-	
-	for (; i < genalloc_len(ss_resolve_t,ga) ; i++) 
-		newargv[m++] = genalloc_s(ss_resolve_t,ga)[i].sa.s + genalloc_s(ss_resolve_t,ga)[i].name ;
-	
-	newargv[m++] = 0 ;
-
-	if (ssexec_svctl(nargc,newargv,envp,info))
-		return 0 ;
-	
-	return 1 ;
-}
 
 int svc_shutnremove(ssexec_t *info, genalloc *ga, char const *sig,char const *const *envp)
 {
@@ -92,7 +72,7 @@ int svc_shutnremove(ssexec_t *info, genalloc *ga, char const *sig,char const *co
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++) 
 	{
 		char const *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
-		VERBO1 strerr_warnt2x("Delete: ", string + genalloc_s(ss_resolve_t,ga)[i].runat) ;
+		VERBO1 strerr_warni2x("Delete: ", string + genalloc_s(ss_resolve_t,ga)[i].runat) ;
 		if (rm_rf(string + genalloc_s(ss_resolve_t,ga)[i].runat) < 0)
 		{
 			VERBO1 strerr_warnwu2sys("delete: ",string + genalloc_s(ss_resolve_t,ga)[i].runat) ;
@@ -130,22 +110,22 @@ int svc_start(ssexec_t *info,genalloc *ga,char const *const *envp)
 		genalloc_s(ss_resolve_t,ga)[i].unsupervise = 0 ;
 		if (!s6_svstatus_read(string + genalloc_s(ss_resolve_t,ga)[i].runat,&status))
 		{ 
-			VERBO3 strerr_warnwu2sys("read status of: ",name) ;
+			VERBO1 strerr_warnwu2sys("read status of: ",name) ;
 			return 0 ;
 		}
 		genalloc_s(ss_resolve_t,ga)[i].pid = status.pid ;
-		VERBO2 strerr_warnt2x("Write resolve file of: ",name) ;
+		VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
 		if (!ss_resolve_write(&genalloc_s(ss_resolve_t,ga)[i],sares.s,name))
 		{
-			VERBO3 strerr_warnwu2sys("write resolve file of: ",name) ;
+			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
 			return 0 ;
 		}
 		if (genalloc_s(ss_resolve_t,ga)[i].logger)
 		{
-			VERBO2 strerr_warnt2x("Write logger resolve file of: ",name) ;
+			VERBO2 strerr_warni2x("Write logger resolve file of: ",name) ;
 			if (!ss_resolve_setlognwrite(&genalloc_s(ss_resolve_t,ga)[i],sares.s))
 			{
-				VERBO2 strerr_warnwu2sys("write logger resolve file of: ",name) ;
+				VERBO1 strerr_warnwu2sys("write logger resolve file of: ",name) ;
 				return 0 ;
 			}
 		}
@@ -220,36 +200,6 @@ int svc_sanitize(ssexec_t *info,genalloc *ga, char const *const *envp)
 		return 0 ;
 }
 
-int rc_init(ssexec_t *info, char const *const *envp)
-{
-	int r ;
-	
-	int nargc = 4 ;
-	char const *newargv[nargc] ;
-	unsigned int m = 0 ;
-	
-	newargv[m++] = "fake_name" ;
-	newargv[m++] = "-d" ;
-	newargv[m++] = info->treename.s ;
-	newargv[m++] = 0 ;
-				
-	if (ssexec_init(nargc,newargv,envp,info))
-	{
-		VERBO1 strerr_warnwu2x("init rc services for tree: ",info->treename.s) ;
-		return 0 ;
-	}
-	
-	VERBO1 strerr_warnt2x("reload scandir: ",info->scandir.s) ;
-	r = s6_svc_writectl(info->scandir.s, S6_SVSCAN_CTLDIR, "an", 2) ;
-	if (r < 0)
-	{
-		VERBO1 strerr_warnw3sys("something is wrong with the ",info->scandir.s, "/" S6_SVSCAN_CTLDIR " directory. errno reported") ;
-		return 0 ;
-	}
-	
-	return 1 ;
-}
-
 int rc_sanitize(ssexec_t *info,genalloc *ga, char const *const *envp)
 {
 	genalloc toreload = GENALLOC_ZERO ; //stralist
@@ -278,7 +228,7 @@ int rc_sanitize(ssexec_t *info,genalloc *ga, char const *const *envp)
 			}
 		}
 	}
-	if (genalloc_len(stralist,&toreload))
+	if (genalloc_len(ss_resolve_t,&toreload))
 	{		
 		if (!db_switch_to(info,envp,SS_SWBACK))
 		{
@@ -303,21 +253,9 @@ int rc_sanitize(ssexec_t *info,genalloc *ga, char const *const *envp)
 			goto err ;
 		}
 		
-		int nargc = 3 + genalloc_len(ss_resolve_t,&toreload) ;
-		char const *newargv[nargc] ;
-		unsigned int m = 0 ;
-		
-		newargv[m++] = "fake_name" ;
-		newargv[m++] = "-d" ;
-
-		for (unsigned int i = 0; i < genalloc_len(ss_resolve_t,&toreload) ; i++)
-			newargv[m++] = genalloc_s(ss_resolve_t,&toreload)[i].sa.s + genalloc_s(ss_resolve_t,&toreload)[i].name ;
-				
-		newargv[m++] = 0 ;
-			
-		if (ssexec_dbctl(nargc,newargv,envp,info))
+		if (!rc_send(info,&toreload,"-d",envp))
 		{
-			VERBO1 strerr_warnwu1x("bring down service list") ;
+			VERBO1 strerr_warnwu1x("bring down services") ;
 			goto err ;
 		}
 	}
@@ -335,7 +273,7 @@ int rc_sanitize(ssexec_t *info,genalloc *ga, char const *const *envp)
 int rc_start(ssexec_t *info,genalloc *ga,char const *const *envp)
 {
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
-	
+	char *s = 0 ;
 	int r = db_find_compiled_state(info->livetree.s,info->treename.s) ;
 	if (r)
 	{
@@ -344,28 +282,14 @@ int rc_start(ssexec_t *info,genalloc *ga,char const *const *envp)
 	}
 	/** reverse to start first the logger */
 	genalloc_reverse(ss_resolve_t,ga) ;
-	
-	int nargc = 3 + genalloc_len(ss_resolve_t,ga) ;
-	char const *newargv[nargc] ;
-	unsigned int m = 0 ;
-	
-	newargv[m++] = "fake_name" ;
-	if (RELOAD == 1) 
-		newargv[m++] = "-r" ;
-	else
-		newargv[m++] = "-u" ;
-		
-	for (unsigned int i = 0; i < genalloc_len(ss_resolve_t,ga) ; i++)
-		newargv[m++] = genalloc_s(ss_resolve_t,ga)[i].sa.s + genalloc_s(ss_resolve_t,ga)[i].name ;
-
-	newargv[m++] = 0 ;
-	
-	if (ssexec_dbctl(nargc,newargv,envp,info))
+	if (RELOAD == 1) s = "-r" ;
+	else s = "-u" ;
+	if (!rc_send(info,ga,s,envp))
 	{
-		VERBO3 strerr_warnwu1x("bring up service list") ;
+		VERBO1 strerr_warnwu1x("bring down services") ;
 		return 0 ;
 	}
-		
+	
 	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
 	{
 		VERBO1 strerr_warnwu1sys("set revolve pointer to source") ;
@@ -385,23 +309,23 @@ int rc_start(ssexec_t *info,genalloc *ga,char const *const *envp)
 		{
 			if (!s6_svstatus_read(string + genalloc_s(ss_resolve_t,ga)[i].runat,&status))
 			{ 
-				VERBO3 strerr_warnwu2sys("read status of: ",name) ;
+				VERBO1 strerr_warnwu2sys("read status of: ",name) ;
 				return 0 ;
 			}
 			genalloc_s(ss_resolve_t,ga)[i].pid = status.pid ;
 		}
-		VERBO2 strerr_warnt2x("Write resolve file of: ",name) ;
+		VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
 		if (!ss_resolve_write(&genalloc_s(ss_resolve_t,ga)[i],sares.s,name))
 		{
-			VERBO3 strerr_warnwu2sys("write resolve file of: ",name) ;
+			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
 			return 0 ;
 		}
 		if (genalloc_s(ss_resolve_t,ga)[i].logger) 
 		{
-			VERBO2 strerr_warnt2x("Write logger resolve file of: ",name) ;
+			VERBO2 strerr_warni2x("Write logger resolve file of: ",name) ;
 			if (!ss_resolve_setlognwrite(&genalloc_s(ss_resolve_t,ga)[i],sares.s))
 			{
-				VERBO2 strerr_warnwu2sys("write logger resolve file of: ",name) ;
+				VERBO1 strerr_warnwu2sys("write logger resolve file of: ",name) ;
 				return 0 ;
 			}
 		}
@@ -449,7 +373,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 	if (info->timeout) DEADLINE = info->timeout ;
 	
 	if ((scandir_ok(info->scandir.s)) !=1 ) strerr_dief3sys(111,"scandir: ", info->scandir.s," is not running") ;
-	
+
 	{
 		if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;
 		
