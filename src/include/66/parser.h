@@ -206,11 +206,10 @@ struct keynocheck_s
 	int idkey ;
 	int expected ;
 	int mandatory ;
-	int idsa ;
-	stralloc tbsa[115] ;
+	stralloc val ;
 	
 } ;
-#define KEYNOCHECK_ZERO { .nkey = 0, .idsec = -1, .idkey = -1, .expected = -1, .mandatory = -1, .idsa = 0, .tbsa = { STRALLOC_ZERO } }
+#define KEYNOCHECK_ZERO { .nkey = 0, .idsec = -1, .idkey = -1, .expected = -1, .mandatory = -1, .val = STRALLOC_ZERO }
 extern keynocheck const keynocheck_zero ;//set in sv_alltype_zero.c
 
 typedef struct sv_db_s sv_db, *sv_db_t_ref ;
@@ -310,7 +309,7 @@ extern int resolve_srcdeps(sv_alltype *sv_before,char const *svmain,char const *
 
 extern int parse_service_before(char const *src,char const *sv,char const *tree, unsigned int *nbsv, stralloc *sasv,unsigned int force) ;
 
-extern int keep_common(sv_alltype *service,keynocheck *nocheck) ;
+extern int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype) ;
 
 extern int keep_runfinish(sv_exec *exec,keynocheck *nocheck) ;
 
@@ -342,4 +341,7 @@ extern int write_env(char const *name, genalloc *env,stralloc *sa,char const *ds
 
 extern void freed_parser(void) ;
 
+extern void keynocheck_free(keynocheck *nocheck) ;
+
+extern void sv_alltype_free(sv_alltype *sv) ;
 #endif
