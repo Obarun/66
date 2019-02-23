@@ -20,6 +20,7 @@
 
 #include <string.h>
 #include <unistd.h>//getuid
+#include <stdlib.h>
 
 #include <oblibs/bytes.h>
 #include <oblibs/string.h>
@@ -35,6 +36,18 @@
 #include <skalibs/diuint32.h>
 
 #include <stdio.h>
+
+void sv_alltype_free(sv_alltype *sv) 
+{
+	genalloc_free(diuint32,&sv->env) ;
+	*&sv->env = genalloc_zero ;
+}
+void keynocheck_free(keynocheck *nocheck) 
+{
+	stralloc_free(&nocheck->val) ;
+	*nocheck = keynocheck_zero ; 
+}
+
 ssize_t get_sep_before (char const *line, char const sepstart, char const sepend)
 {
 	size_t linend, linesep ;
@@ -88,7 +101,7 @@ int get_cleanval(char *s)
 	end++ ;
 	plen = slen - end ;
 	memcpy(k,s+end,plen) ;
-	k[plen] = '\0' ;
+	k[plen] = 0 ;
 	nlen = strlen(k) ;
 	byte_tozero(s,slen) ;
 	memcpy(s,k,nlen) ;
@@ -99,6 +112,7 @@ int get_cleanval(char *s)
 int get_keyline(char const *s,char const *key,stralloc *sa)
 {
 	int pos ;
+	size_t stmp ;
 	size_t rs, re ;
 	size_t keylen = strlen(key) ;
 	size_t slen = strlen(s) ;
@@ -115,9 +129,10 @@ int get_keyline(char const *s,char const *key,stralloc *sa)
 	}else pos = rs + 1 ; //remove the rlen character
 	re  = get_len_until(s+pos,'\n') ;
 	if (!re) return -1 ;
-	memcpy(buff,s+pos,re) ;
-	buff[re] = '\0' ;
-	*sa = stralloc_zero ;
+	stmp = slen - ((slen - re)) ;
+	memcpy(buff,s+pos,stmp) ;
+	buff[re] = 0 ;
+	sa->len = 0 ;
 	if (!stralloc_cats(sa,buff)) retstralloc(-1,"get_keyline") ;
 	if (!stralloc_0(sa)) retstralloc(-1,"get_keyline") ;
 	
@@ -127,36 +142,8 @@ int get_keyline(char const *s,char const *key,stralloc *sa)
 int get_key(char const *s,char const *key,stralloc *keep)
 {
 	int pos ;
-	//int newpos ;
-	//size_t end ;
-
 	pos = get_keyline(s,key,keep) ;
-
-	if (pos < 0){
-		return -1 ;
-	}
-//	newpos = end = 0 ;
-//	newpos = pos ;
-	/** make a loop here to remove all wasted line*/
-	/*wasted:
-		end = get_len_until(s+newpos,'\n') ;
-		newpos = pos + newpos ;
-		
-		if (!get_wasted_line(keep->s)){
-			keep->len = 0 ;
-			if (!stralloc_cats(keep,s+newpos+end)) retstralloc(-1,"get_key") ;
-			if (!stralloc_0(keep)) retstralloc(-1,"get_key") ;
-			
-			pos = get_keyline(keep->s,key,keep) ;
-			if (pos < 0){
-				*keep = stralloc_zero ;
-				return -1 ;
-			}
-			pos = pos + end ;
-			goto wasted ;
-		}*/
-	//return newpos ;	
-	return pos ;	
+	return (pos < 0) ? -1 : pos ;
 }
 
 int get_nextkey(char const *val, int idsec, const key_description_t *list)
@@ -173,8 +160,11 @@ int get_nextkey(char const *val, int idsec, const key_description_t *list)
 
 	pos = get_key(val,"=",&tmp) ;
 	/** end of string*/
-	if (pos < 0) return pos ;
-	
+	if (pos < 0)
+	{
+		stralloc_free(&tmp) ;
+		return pos ;
+	}
 	strcpy(key,tmp.s) ;
 	get_cleankey(key) ;
 	size_t keylen = strlen(key) ;
@@ -192,12 +182,19 @@ int get_nextkey(char const *val, int idsec, const key_description_t *list)
 				if (key[wpos] == '@') break ; 
 			}
 			if(list[i].name)
-				if (obstr_equal(key+wpos,list[i].name))	return newpos ; 
+				if (obstr_equal(key+wpos,list[i].name))
+				{
+					stralloc_free(&tmp) ;
+					return newpos ; 
+				}
 		}
 		pos = get_key(val+newpos+end,"=",&tmp) ;
 		/** end of string*/
-		if (pos < 0) return pos ;//+ newpos ;
-	
+		if (pos < 0)
+		{
+			stralloc_free(&tmp) ;
+			return pos ;//+ newpos ;
+		}
 		strcpy(key,tmp.s) ;
 		get_cleankey(key) ;
 		
@@ -222,28 +219,35 @@ ssize_t scan_section(char const *s)
 int get_cleansection(char const *s,stralloc *sa)
 {
 	ssize_t end ;
+	size_t slen = strlen(s) ;
 	int r, ierr ;
 	r = ierr = 0 ;
+	char tmp[slen + 1] ;
 	r = scan_isspace(s) ;
 	end = scan_section(s+r) ;
 	
 	if(end>0){
-		if (!stralloc_catb(sa,s+r+1,end - 1 )) retstralloc(-1,"get_cleansection") ;
+		memcpy(tmp,s+r+1,end -1);
+		tmp[end-1] = 0 ;
+		//if (!stralloc_catb(sa,s+r+1,end - 1 )) retstralloc(-1,"get_cleansection") ;
 	}else{
-		if (!stralloc_catb(sa,s+r+1,strlen(s))) retstralloc(-1,"get_cleansection") ;
+		memcpy(tmp,s+r+1,slen) ;
+		tmp[slen] = 0 ;
+		//if (!stralloc_catb(sa,s+r+1,strlen(s))) retstralloc(-1,"get_cleansection") ;
 	}
+	if (!stralloc_cats(sa,tmp)) retstralloc(-1,"get_cleansection") ;
 	if (!stralloc_0(sa)) retstralloc(-1,"get_cleansection:stralloc_0") ;
 	r = get_enumbyid(sa->s,key_enum_section_el) ;
 	if (end<0){
-		*sa = stralloc_zero ;
+		sa->len = 0 ;
 		return -4 ;
 	}
 	if (!end){
-		*sa = stralloc_zero ;
+		sa->len = 0 ;
 		return -1 ;
 	}
 	if (r < 0){
-		*sa = stralloc_zero ;
+		sa->len = 0 ;
 		return -2 ;
 	}
 	return 1 ;
@@ -253,9 +257,8 @@ int get_cleansection(char const *s,stralloc *sa)
 int parse_line(keynocheck *nocheck)
 {
 	char *val ;
-	size_t end ;
+	ssize_t end ;
 	
-	end = 0 ;
 	end = get_len_until(nocheck->val.s,'\n') ;
 	if (end < 0) return 0 ;
 	
@@ -279,7 +282,7 @@ int parse_line(keynocheck *nocheck)
 int parse_quote(keynocheck *nocheck)
 {
 	char *val ;
-	size_t end, r ;
+	ssize_t end, r ;
 	
 	end = 0 ;
 	end = get_len_until(nocheck->val.s,'\n') ;
@@ -319,8 +322,9 @@ int parse_bracket(keynocheck *nocheck)
 	
 	if (end < 0) return 0 ;
 	memcpy(tmp,nocheck->val.s+start,end  - start) ;
-	obstr_replace(tmp,'\n',' ') ;
 	tmp[end - start] = 0 ;
+	obstr_replace(tmp,'\n',' ') ;
+	
 	if (!stralloc_obreplace(&nocheck->val, tmp)) return 0 ;
 	
 	/** we don't accept empty value*/
@@ -329,6 +333,7 @@ int parse_bracket(keynocheck *nocheck)
 		VERBO3 strerr_warnw2x("empty value for key: ",get_keybyid(nocheck->idkey)) ;
 		return 0 ;
 	}
+	
 	return 1 ;
 }
 
@@ -346,7 +351,7 @@ int parse_env(keynocheck *nocheck)
 	pos = base = 0 ;
 
 	while(pos < nbline){
-		byte_tozero(buf,nocheck->val.len+1) ;
+		byte_tozero(buf,nocheck->val.len + 1) ;
 		if (!get_wasted_line(gaistr(&trunc,pos)))
 		{
 			pos++ ;
@@ -411,7 +416,7 @@ void parse_err(int ierr,int idsec,int idkey)
 }
 int scan_nbsep(char *line,int lensearch, char const sepstart, char const sepend)
 {
-	size_t start, end ;
+	ssize_t start, end ;
 	start = byte_tosearch(line,lensearch,sepstart) ;
 	end = byte_tosearch(line,lensearch,sepend) ;
 	if (start > end ) return -1 ; /**unmatched ( */
@@ -428,52 +433,58 @@ void sep_err(int r,char const sepstart,char const sepend,char const *keyname)
 
 int add_env(char *line,genalloc *ga,stralloc *sa)
 {
-	unsigned i = 0 ;
-	char *k = NULL ;
-	char *v = NULL ;
+	unsigned int i = 0, err = 1 ;
+	
+	char *k = 0 ;
+	char *v = 0 ;
 	
 	genalloc gatmp = GENALLOC_ZERO ;
 	stralloc satmp = STRALLOC_ZERO ;
 	diuint32 tmp = DIUINT32_ZERO ;
 	
-	if (!get_wasted_line(line)) return 1 ;
+	if (!get_wasted_line(line)) goto freed ;
 	k = line ;
 	v = line ;
 	obstr_sep(&v,"=") ;
-	if (v == NULL) return 0 ;
+	if (v == NULL) { err = 0 ; goto freed ; }
 	
-	if (!clean_val(&gatmp,k)) return 0 ;
+	if (!clean_val(&gatmp,k)) { err = 0 ; goto freed ; }
 	for (i = 0 ; i < genalloc_len(stralist,&gatmp) ; i++)
 	{
-		if (!stralloc_cats(&satmp,gaistr(&gatmp,i))) return 0 ;
-		if (!stralloc_cats(&satmp," ")) return 0 ;
+		if ((i+1) < genalloc_len(stralist,&gatmp))
+		{
+			if (!stralloc_cats(&satmp,gaistr(&gatmp,i))) { err = 0 ; goto freed ; }
+			if (!stralloc_cats(&satmp," ")) { err = 0 ; goto freed ; }
+		}
+		else if (!stralloc_catb(&satmp,gaistr(&gatmp,i),gaistrlen(&gatmp,i)+1)) { err = 0 ; goto freed ; }
 	}
-	satmp.len--;
-	if (!stralloc_0(&satmp)) return 0 ;
 	tmp.left = sa->len ;
-	if(!stralloc_catb(sa,satmp.s,satmp.len+1)) return 0 ;
+	if(!stralloc_catb(sa,satmp.s,satmp.len+1)) { err = 0 ; goto freed ; }
 	
-	if (!obstr_trim(v,'\n')) return 0 ;
-	satmp = stralloc_zero ;
-	gatmp =  genalloc_zero ;
-	
-	if (!clean_val(&gatmp,v)) return 0 ;
-	for (i = 0 ; i < genalloc_len(stralist,&gatmp) ; i++)
-	{
-		if (!stralloc_cats(&satmp,gaistr(&gatmp,i))) return 0 ;
-		if (!stralloc_cats(&satmp," ")) return 0 ;
-	}
-	satmp.len--;
-	if (!stralloc_0(&satmp)) return 0 ;
-	tmp.right = sa->len ;
-	if(!stralloc_catb(sa,satmp.s,satmp.len+1)) return 0 ;
-	
-	if (!genalloc_append(diuint32,ga,&tmp)) return 0 ;
-	
-	stralloc_free(&satmp) ;
+	if (!obstr_trim(v,'\n')) { err = 0 ; goto freed ; }
+	satmp.len = 0 ;
 	genalloc_deepfree(stralist,&gatmp,stra_free) ;
 	
-	return 1 ;
+	if (!clean_val(&gatmp,v)) { err = 0 ; goto freed ; }
+	for (i = 0 ; i < genalloc_len(stralist,&gatmp) ; i++)
+	{
+		if ((i+1) < genalloc_len(stralist,&gatmp))
+		{
+			if (!stralloc_cats(&satmp,gaistr(&gatmp,i))) { err = 0 ; goto freed ; }
+			if (!stralloc_cats(&satmp," ")) { err = 0 ; goto freed ; }
+		}
+		else if (!stralloc_catb(&satmp,gaistr(&gatmp,i),gaistrlen(&gatmp,i)+1)) { err = 0 ; goto freed ; }
+	}
+	tmp.right = sa->len ;
+	if(!stralloc_catb(sa,satmp.s,satmp.len+1)) { err = 0 ; goto freed ; }
+	
+	if (!genalloc_append(diuint32,ga,&tmp)) err = 0 ;
+		
+	freed:
+		stralloc_free(&satmp) ;
+		genalloc_deepfree(stralist,&gatmp,stra_free) ;
+	
+	return err ;
 }
 int add_pipe(sv_alltype *sv, stralloc *sa)
 {
@@ -492,7 +503,7 @@ int add_pipe(sv_alltype *sv, stralloc *sa)
 	
 	return 1 ;
 }
-int keep_common(sv_alltype *service,keynocheck *nocheck)
+int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 {
 	int r, nbline ;
 	unsigned int i ;
@@ -531,13 +542,16 @@ int keep_common(sv_alltype *service,keynocheck *nocheck)
 					VERBO3 parse_err(0,nocheck->idsec,OPTIONS) ;
 					return 0 ;
 				}
-				if (r == LOGGER)
-					service->opts[0] = 1 ;/**0 means not enabled*/
-				if (r == PIPELINE)
-					service->opts[1] = 1 ;
+				if (svtype == CLASSIC || svtype == LONGRUN)
+				{
+					if (r == LOGGER)
+						service->opts[0] = 1 ;/**0 means not enabled*/
+					else if (r == PIPELINE)
+						service->opts[1] = 1 ;
+				}
 				if (r == ENVIR)
 					service->opts[2] = 1 ;
-				if (r == DATA)
+				else if (r == DATA)
 					service->opts[3] = 1 ;
 			}
 			
@@ -571,7 +585,8 @@ int keep_common(sv_alltype *service,keynocheck *nocheck)
 			/** special case, we don't know which user want to use
 			 * the service, we need a general name to allow all user
 			 * the term "user" is took here to allow the current user*/
-			if (stra_cmp(&gatmp,"user")) {
+			if (stra_cmp(&gatmp,"user"))
+			{
 				stra_remove(&gatmp,"user") ;
 				for (i=0;i<genalloc_len(stralist,&gatmp);i++)
 				{

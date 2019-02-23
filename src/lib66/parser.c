@@ -24,6 +24,7 @@
 #include <oblibs/strakeyval.h>
 #include <oblibs/directory.h>
 #include <oblibs/files.h>
+#include <oblibs/bytes.h>
 
 #include <skalibs/genalloc.h>
 #include <skalibs/stralloc.h>
@@ -53,7 +54,8 @@ void freed_parser(void)
 	stralloc_free(&saenv) ;
 	genalloc_free(sv_name_t,&ganame) ;
 	genalloc_free(unsigned int,&gadeps) ;
-	genalloc_free(sv_alltype,&gasv) ;
+	for (unsigned int i = 0 ; i < genalloc_len(sv_alltype,&gasv) ; i++)
+		sv_alltype_free(&genalloc_s(sv_alltype,&gasv)[i]) ;
 	avltree_free(&deps_map) ;
 }
 
@@ -83,7 +85,7 @@ static int add_sv(sv_alltype *sv_before,char const *name,unsigned int *nbsv)
 {
 	int r ;
 	
-	VERBO2 strerr_warni2x("Add service: ",name) ;
+	VERBO1 strerr_warni2x("Add service: ",name) ;
 	
 	if (!genalloc_append(sv_alltype,&gasv,sv_before)) retstralloc(0,"add_sv") ;
 	
@@ -118,7 +120,7 @@ static int read_svfile(stralloc *sasv,char const *name,char const *src)
 		VERBO3 strerr_warnw2x(svtmp," is empty") ;
 		return 0 ;
 	}
-	*sasv = stralloc_zero ;
+	sasv->len = 0 ;
 	
 	r = openreadfileclose(svtmp,sasv,filesize) ;
 	if(!r)
@@ -189,6 +191,7 @@ int insta_splitname(stralloc *sa,char const *name,int len,int what)
 }
 int insta_create(stralloc *sasv,stralloc *sv, char const *src, int len)
 {
+	char *fdtmp ;
 	char const *copy ;
 	size_t tlen = len + 1 ;
 	
@@ -201,7 +204,8 @@ int insta_create(stralloc *sasv,stralloc *sv, char const *src, int len)
 	
 	copy = sv->s + tlen ;
 
-	if (!dir_create_tmp(&tmp,"/tmp",copy))
+	fdtmp = dir_create_tmp(&tmp,"/tmp",copy) ;
+	if(!fdtmp)
 	{
 		VERBO3 strerr_warnwu1x("create instance tmp dir") ;
 		return 0 ;
@@ -253,22 +257,16 @@ static int start_parser(stralloc *sasv,char const *name,sv_alltype *sv_before)
 	r = parser(sasv->s,sv_before) ;
 	switch(r)
 	{
-		case -5: VERBO3 strerr_warnw3x("invalid type for: ",name," service") ; goto err ;
-		case -4: VERBO3 strerr_warnw3x("invalid section for: ",name," service") ; goto err ;
-		case -3: VERBO3 strerr_warnw3x("invalid key in section for: ",name," service") ; goto err ;
-		case -2: VERBO3 strerr_warnw3x("invalid key value for: ",name," service") ; goto err ;
-		case -1: VERBO3 strerr_warnw3x("mandatory key is missing for: ",name," service") ; goto err ;
-		case  0: VERBO3 strerr_warnwu3x("keep information of: ",name," service") ; goto err ;
+		case -5: VERBO3 strerr_warnw3x("invalid type for: ",name," service") ; return 0 ;
+		case -4: VERBO3 strerr_warnw3x("invalid section for: ",name," service") ; return 0 ;
+		case -3: VERBO3 strerr_warnw3x("invalid key in section for: ",name," service") ; return 0 ;
+		case -2: VERBO3 strerr_warnw3x("invalid key value for: ",name," service") ; return 0 ;
+		case -1: VERBO3 strerr_warnw3x("mandatory key is missing for: ",name," service") ; return 0 ;
+		case  0: VERBO3 strerr_warnwu3x("keep information of: ",name," service") ; return 0 ;
 		default: break ;
 	}
 	
-	*sasv = stralloc_zero ;
-	
 	return 1 ;
-
-	err:
-		stralloc_free(sasv) ;
-		return 0 ;
 }
 static int deps_src(stralloc *newsrc, char const *name, char const *tree, unsigned int force)
 {
@@ -285,7 +283,7 @@ static int deps_src(stralloc *newsrc, char const *name, char const *tree, unsign
 	stralloc sa = STRALLOC_ZERO ;
 	stralloc home = STRALLOC_ZERO ;
 	
-	*newsrc = stralloc_zero ;
+	newsrc->len = 0 ;
 	err = 1 ;
 	
 	if (!set_ownerhome(&home,owner))
@@ -314,12 +312,14 @@ static int deps_src(stralloc *newsrc, char const *name, char const *tree, unsign
 	else
 	{
 		if (!stralloc_cats(&home,SS_SERVICE_USERDIR)) retstralloc(0,"deps_src") ;
+		if (!stralloc_0(&home)) retstralloc(0,"deps_src") ;
 		if (!stralloc_obreplace(newsrc, home.s)) retstralloc(0,"deps_src") ;
 	}
-	 
-	if (!resolve_src(&tmpsrc,&sa,name,newsrc->s,&found)) 
+
+	if (!ss_resolve_src(&tmpsrc,&sa,name,newsrc->s,&found)) 
 	{
 		if (!stralloc_obreplace(newsrc, SS_SERVICE_PACKDIR)) retstralloc(0,"deps_src") ;
+		if (!ss_resolve_src(&tmpsrc,&sa,name,newsrc->s,&found))
 		{
 			VERBO3 strerr_warnwu2sys("find dependency ",name) ;
 			err = 0 ;
@@ -328,10 +328,10 @@ static int deps_src(stralloc *newsrc, char const *name, char const *tree, unsign
 		if (!stralloc_obreplace(newsrc, sa.s + genalloc_s(diuint32,&tmpsrc)->right)) retstralloc(0,"deps_src") ;
 	}
 	
-	
 	end:
 		genalloc_free(diuint32,&tmpsrc) ;
 		stralloc_free(&sa) ;
+		stralloc_free(&home) ;
 	return err ;
 }
 /** @Return 0 on fail
@@ -340,24 +340,24 @@ static int deps_src(stralloc *newsrc, char const *name, char const *tree, unsign
 int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, char const *tree,unsigned int *nbsv, stralloc *sasv,unsigned int force)
 {
 	int r, insta ;
-
-	stralloc newsrc = STRALLOC_ZERO ;
-	genalloc ga = GENALLOC_ZERO ;
-	sv_alltype sv_before_deps = SV_ALLTYPE_ZERO ;
 	
-	char const *name = NULL ;
+	size_t srclen ;
+	
+	stralloc newsrc = STRALLOC_ZERO ;
+	genalloc ga = GENALLOC_ZERO ;//stralist
+	
+	
 	stralloc dname = STRALLOC_ZERO ;
 	stralloc maininsta = STRALLOC_ZERO ;
 	uint32_t avlid = 0 ;
 	
-	name = keep.s+sv_before->cname.name ;
 		
 	if (sv_before->cname.itype == CLASSIC)
 	{
-		VERBO3 strerr_warnw3x("invalid service type compatibility for ",name," service") ;
+		VERBO3 strerr_warnw3x("invalid service type compatibility for ",mainsv," service") ;
 		return 0 ;
 	}
-	r = avltree_search(&deps_map,name,&avlid) ;
+	r = avltree_search(&deps_map,mainsv,&avlid) ;
 	if (r)
 	{
 		VERBO3 strerr_warni3x("ignore ",mainsv," service dependency: already added") ;
@@ -378,8 +378,8 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, c
 	{
 		if (sv_before->cname.itype != BUNDLE)
 		{
-			VERBO3 strerr_warni3x("Resolving ",name," service dependencies") ;
-		}else VERBO3 strerr_warni2x("Resolving service declaration of bundle: ",name) ;
+			VERBO3 strerr_warni3x("Resolving ",mainsv," service dependencies") ;
+		}else VERBO3 strerr_warni2x("Resolving service declaration of bundle: ",mainsv) ;
 		
 		for (int i = 0;i < sv_before->cname.nga;i++)
 		{
@@ -393,14 +393,15 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, c
 		
 		for (int i = 0;i < genalloc_len(stralist,&ga);i++)
 		{	
-			sv_before_deps = sv_alltype_zero ;
-			newsrc = stralloc_zero ;
+			sv_alltype sv_before_deps = SV_ALLTYPE_ZERO ;
+			newsrc.len = 0 ;
 			char *dname_src = gaistr(&ga,i) ;
 			
 			if (!stralloc_obreplace(&dname,dname_src)) retstralloc(0,"resolve_srcdeps") ;
-			if (obstr_equal(dname.s,name))
+			
+			if (obstr_equal(dname.s,mainsv))
 			{
-				VERBO3 strerr_warnw3x("direct cyclic dependency detected on ",name," service") ;
+				VERBO1 strerr_warnw3x("direct cyclic dependency detected on ",mainsv," service") ;
 				return 0 ;
 			}
 			insta = insta_check(dname.s) ;
@@ -436,7 +437,11 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, c
 			}
 			r = deps_src(&newsrc,dname.s,tree,force) ;
 			if (!r) return 0 ;
-			else if (r == 2) continue ;
+			else if (r == 2)
+			{ 
+				VERBO3 strerr_warni3x("ignore ",dname.s," service dependency: already added") ;
+				continue ;
+			}
 			if (insta > 0)
 			{
 				if (!stralloc_obreplace(&dname,dname_src)) retstralloc(0,"resolve_srcdeps") ;
@@ -455,9 +460,13 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, c
 			if (r == 2) continue ;
 		}
 	}
-	else VERBO3 strerr_warni3x("service: ",name," haven't dependencies") ;
+	else VERBO3 strerr_warni3x("service: ",mainsv," haven't dependencies") ;
 	
-	r = avltree_search(&deps_map,name,&avlid) ;
+	srclen = strlen(src) ;
+	sv_before->src = keep.len ;
+	if (!stralloc_catb(&keep,src,srclen + 1)) retstralloc(0,"resolve_srcdeps") ;
+	
+	r = avltree_search(&deps_map,mainsv,&avlid) ;
 	if (!r)	if (!add_sv(sv_before,mainsv,nbsv)) return 0 ;
 	
 	stralloc_free(&newsrc) ;
@@ -474,6 +483,7 @@ int parse_service_before(char const *src,char const *sv,char const *tree, unsign
 {
 	int r = 0 ;
 	
+	size_t srclen ; 
 	uint32_t id ;
 	
 	stralloc newsv = STRALLOC_ZERO ;
@@ -503,8 +513,10 @@ int parse_service_before(char const *src,char const *sv,char const *tree, unsign
 	r = avltree_search(&deps_map,newsv.s,&id) ;
 	if (r)
 	{
-		VERBO3 strerr_warni3x("ignore ",newsv.s," service: already added") ;
+		VERBO1 strerr_warni3x("ignore ",newsv.s," service: already added") ;
 		sasv->len = 0 ;
+		stralloc_free(&newsv) ;
+		sv_alltype_free(&sv_before) ;
 		return 1 ;
 	}
 		
@@ -515,8 +527,13 @@ int parse_service_before(char const *src,char const *sv,char const *tree, unsign
 		r = resolve_srcdeps(&sv_before,sv,src,tree,nbsv,sasv,force) ;
 		if (!r) return 0 ;
 	}
-	else if (!add_sv(&sv_before,newsv.s,nbsv)) return 0 ;		
-	
+	else
+	{
+		srclen = strlen(src) ;
+		sv_before.src = keep.len ;
+		if (!stralloc_catb(&keep,src,srclen + 1)) retstralloc(0,"parse_service_before") ;
+		if (!add_sv(&sv_before,newsv.s,nbsv)) return 0 ;		
+	}
 	stralloc_free(&newsv) ;
 	
 	return 1 ;
@@ -524,15 +541,17 @@ int parse_service_before(char const *src,char const *sv,char const *tree, unsign
 
 int get_section_range(char const *s, int idsec, genalloc *gasection)
 {
-	int r,base,pos,newpos ;
+	int err,r,base,pos,newpos ;
 	size_t begin,end ;
 	base = pos = newpos = begin = 0  ;
-	
+	size_t slen = strlen(s) ;
+	char satmp[slen + 1] ;
 	stralloc stmp = STRALLOC_ZERO ;
 	stralloc sectmp = STRALLOC_ZERO ;
 	stralloc secbase = STRALLOC_ZERO ;
-	genalloc wasted = GENALLOC_ZERO ;
+	genalloc wasted = GENALLOC_ZERO ;//stralist
 	
+	err = 1 ;
 	base = 0 ;
 	stmp.len = 0 ; 
 	sectmp.len = 0 ; 
@@ -546,11 +565,11 @@ int get_section_range(char const *s, int idsec, genalloc *gasection)
 
 	pos = get_key(s,sectmp.s,&stmp) ;
 
-	if (!get_wasted_line(stmp.s)) return 1 ;
+	if (!get_wasted_line(stmp.s)) goto freed ;
 
 	if (pos >= 0){
 		r = get_cleansection(stmp.s,&secbase) ;
-		if(r<0) return 0 ;
+		if(r < 0) { err = 0 ; goto freed ; }
 		stmp.len = 0 ; 
 		sectmp.len = 0 ;
 		end = get_len_until(s+pos,'\n') ;
@@ -575,11 +594,11 @@ int get_section_range(char const *s, int idsec, genalloc *gasection)
 			} 
 			else newpos = strlen(s) - base ;//end of string
 	}else{
-		if (!idsec) return 0 ;
+		if (!idsec) { err = 0 ; goto freed ; }
 		//only main section are mandatory
 		// so, even if the section was not found
 		// return 1 ;
-		return 1 ;
+		goto freed ;
 	}
 	int nl ; 
 	nl = get_nbline_ga(s+base,newpos,&wasted) ;
@@ -587,36 +606,44 @@ int get_section_range(char const *s, int idsec, genalloc *gasection)
 	for (int i = 0;i < genalloc_len(stralist,&wasted); i++){
 		if (!get_wasted_line(gaistr(&wasted,i))) nl--;
 	}
-	if (!nl) return 0 ;
-	
-	if (!strakv_new(gasection,secbase.s,secbase.len,s+base,newpos)) return 0 ;
+	if (!nl) { err = 0 ; goto freed ; }
+	/** leak here */
+	memcpy(satmp,s+base,newpos) ;
+	satmp[newpos] = 0 ;
+	if (!strakv_new(gasection,secbase.s,secbase.len,satmp,newpos)){ err = 0 ; goto freed ; }
 
+	freed:
 	stralloc_free(&stmp) ;
 	stralloc_free(&sectmp) ;
 	stralloc_free(&secbase) ;
-	genalloc_deepfree(stralist,&wasted,stralloc_free) ;
+	genalloc_deepfree(stralist,&wasted,stra_free) ;
 	
-	return 1 ;
+	return err ;
 }
 
 int get_key_range(char const *s, int idsec, genalloc *ganocheck)
 {
-	int r,rn,rk ;
-	
+	int err,r,rn,rk ;
+	size_t slen = strlen(s) ;
+	size_t tplen = 0 ;
+	char satmp[slen + 1] ;
 	stralloc tmp = STRALLOC_ZERO ;
 	stralloc kp = STRALLOC_ZERO ;
-
-	keynocheck nocheck = KEYNOCHECK_ZERO ;
+	
 	key_all_t const *list = total_list ;
+	
+	err = 1 ;
 	
 	for (int i = 0;i<total_list_el[idsec];i++)
 	{	
+		keynocheck nocheck = KEYNOCHECK_ZERO ;
+		
 		r = -1 ;
 		rk =  0 ;
 		rn = 0 ;
 		kp.len = 0 ;
 		tmp.len = 0 ;
-
+		
 		if (idsec == ENV){
 			if (list[idsec].list[i].name){
 				r = get_keyline(s,"=",&tmp) ;
@@ -635,17 +662,19 @@ int get_key_range(char const *s, int idsec, genalloc *ganocheck)
 				 continue ;
 				
 			rk = get_cleankey(tmp.s) ;
-			if (!rk) return 0 ;
+			if (!rk) { err = 0 ; goto freed ; }
 			
 			if (!obstr_equal(tmp.s,list[idsec].list[i].name))
 				continue ;
 			
 			rk = get_len_until(s+r,'\n') ;
-			if (rk < 0) return 0 ;
-			rk++;//remove the last '\n' character
+			if (rk < 0) { err = 0 ; goto freed ; }
+			//rk++;//remove the last '\n' character
 		}
-		
-		if (!stralloc_cats(&kp,s+r+rk)) retstralloc(0,"get_key_range") ;
+		tplen = slen - (r+rk) ;
+		memcpy(satmp,s+r+rk,tplen) ;
+		satmp[tplen] = 0 ;
+		if (!stralloc_cats(&kp,satmp)) retstralloc(0,"get_key_range") ;
 		if (!stralloc_0(&kp)) retstralloc(0,"get_key_range") ;
 		
 		rn = get_nextkey(kp.s, idsec, list[idsec].list) ;
@@ -659,22 +688,28 @@ int get_key_range(char const *s, int idsec, genalloc *ganocheck)
 		nocheck.expected = list[idsec].list[i].expected ;
 		nocheck.mandatory = list[idsec].list[i].mandatory ;
 		if (rn < 0 || idsec == ENV){
-			if (!stralloc_cats(&nocheck.val, s+r)) retstralloc(0,"get_key_range") ;
-			if (!stralloc_0(&nocheck.val)) retstralloc(0,"get_key_range") ;
+			tplen = slen - r ;
+			memcpy(satmp,s+r,tplen) ;
+			satmp[tplen] = 0 ;
 		}
-		else{
-			if (!stralloc_catb(&nocheck.val, s+r,rk+rn)) retstralloc(0,"get_key_range") ;
-			if (!stralloc_0(&nocheck.val)) retstralloc(0,"get_key_range") ;
+		else
+		{
+			tplen = rk + rn ;
+			memcpy(satmp,s+r,tplen) ;
+			satmp[tplen] = 0 ;
 		}
+		
+		if (!stralloc_catb(&nocheck.val,satmp,tplen)) retstralloc(0,"get_key_range") ;
+		if (!stralloc_0(&nocheck.val)) retstralloc(0,"get_key_range") ;
 		if (!genalloc_append(keynocheck,ganocheck,&nocheck)) retstralloc(0,"get_key_range") ;
 		
-		nocheck = keynocheck_zero ;
 	}
-	if (!genalloc_len(keynocheck,ganocheck)) return 0 ;
+	freed:
 	stralloc_free(&tmp) ;
 	stralloc_free(&kp) ;
-
-	return 1 ;
+	if (!genalloc_len(keynocheck,ganocheck)) return 0 ;
+	
+	return err ;
 }
 
 int get_keystyle(keynocheck *nocheck)
@@ -683,10 +718,11 @@ int get_keystyle(keynocheck *nocheck)
 	if (nocheck->idsec != ENV){
 		char tmp[nocheck->val.len + 1] ;
 		memcpy(tmp,nocheck->val.s,nocheck->val.len) ;
+		tmp[nocheck->val.len] = 0 ;
 		get_cleanval(tmp) ;
 		if (!stralloc_obreplace(&nocheck->val,tmp)) return 0 ;
 	}
-		
+
 	switch(nocheck->expected){
 			
 			case LINE:
@@ -895,7 +931,7 @@ int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service)
 	    switch (action) {
 			case COMMON:
 				if (!nocheck->idsec)
-					if (!keep_common(service,nocheck))
+					if (!keep_common(service,nocheck,svtype))
 					{
 						VERBO3 strerr_warnwu1x("keep common") ;
 						return 0 ;
@@ -943,7 +979,7 @@ int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service)
 				break ;
 			case ENVIRON:
 				if (nocheck->idsec == 4)
-					if (!keep_common(service,nocheck))
+					if (!keep_common(service,nocheck,svtype))
 					{
 						VERBO3 strerr_warnwu1x("keep environ") ;
 						return 0 ;
@@ -967,51 +1003,55 @@ int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service)
  * @Return 0 unable to transfer to service struct*/
 int parser(char const *str,sv_alltype *service)
 {
-	int idsec, svtype ;
+	int err, idsec, svtype ;
 	
 	genalloc section = GENALLOC_ZERO ;//stra_keyval type
 	genalloc nocheck = GENALLOC_ZERO ;//keynocheck type
+	
+	err = 1 ;
 		
 	for (int i = 0 ; i<key_enum_section_el;i++)
-		if (!get_section_range(str,i,&section)) return -4 ;
-	
+		if (!get_section_range(str,i,&section)){ err = -4 ; goto freed ; }
+			
 	for (unsigned int i = 0;i < genalloc_len(strakeyval,&section);i++)
 	{
 		idsec = get_enumbyid(gaikvkey(&section,i),key_enum_section_el) ;
-		if (!get_key_range(gaikvval(&section,i),idsec,&nocheck)) return -3 ;
+		if (!get_key_range(gaikvval(&section,i),idsec,&nocheck)) { err = -3 ; goto freed ; }
 	}
 	
 	for (unsigned int i = 0;i < genalloc_len(keynocheck,&nocheck);i++)
 	{
-		if (!get_keystyle(&(genalloc_s(keynocheck,&nocheck)[i]))) return -2 ;
+		if (!get_keystyle(&(genalloc_s(keynocheck,&nocheck)[i]))) { err = -2 ; goto freed ; }
 	}
 	svtype = get_enumbyid(genalloc_s(keynocheck,&nocheck)[0].val.s,key_enum_el) ;
-	if (svtype < 0) return -5 ;
+	if (svtype < 0) { err = -5 ; goto freed ; }
 	
 	for (unsigned int i = 0;i < genalloc_len(keynocheck,&nocheck);i++)
 	{
 		idsec = genalloc_s(keynocheck,&nocheck)[i].idsec ;
 		
 		for (int j = 0;j < total_list_el[idsec] && total_list[idsec].list > 0;j++)
-			if (!get_mandatory(&nocheck,idsec,j)) return -1 ;
+			if (!get_mandatory(&nocheck,idsec,j)) { err = -1 ; goto freed ; }
 	}
 	
 	for (unsigned int i = 0;i < genalloc_len(keynocheck,&nocheck);i++)
 	{
-		if (!nocheck_toservice(&(genalloc_s(keynocheck,&nocheck)[i]),svtype,service)) return 0 ;
+		if (!nocheck_toservice(&(genalloc_s(keynocheck,&nocheck)[i]),svtype,service)) { err = 0 ; goto freed ; }
 	}
 	if ((service->opts[1]) && (svtype == LONGRUN))
 	{
 		if (!add_pipe(service, &deps))
 		{
 			VERBO3 strerr_warnwu2x("add pipe: ", keep.s+service->cname.name) ;
-			return 0 ;
+			{ err = 0 ; goto freed ; };
 		} 
 	}
-	genalloc_free(stralist,&section) ;
-	genalloc_free(keynocheck,&nocheck) ;
+	
+	freed:
+		genalloc_deepfree(strakeyval,&section,strakv_free) ;
+		genalloc_deepfree(keynocheck,&nocheck,keynocheck_free) ;
 
-	return 1 ;
+	return err ;
 }
 
 			
