@@ -12,6 +12,7 @@
  * except according to the terms contained in the LICENSE file./
  */
  
+#include <stdlib.h>
 
 #include <skalibs/stralloc.h>
 
@@ -26,6 +27,7 @@ void ssexec_free(ssexec_t *info)
 	stralloc_free(&info->tree) ;
 	stralloc_free(&info->livetree) ;
 	stralloc_free(&info->scandir) ;
+	stralloc_free(&info->treename) ;
 }
 	
 
