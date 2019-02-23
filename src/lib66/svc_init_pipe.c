@@ -12,6 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
  
+#include <stddef.h>
+#include <stdlib.h>
 
 #include <66/svc.h>
 
@@ -26,27 +28,30 @@
 #include <s6/s6-supervise.h>
 
 #include <66/utils.h>
+#include <66/resolve.h>
 
-int svc_init_pipe(ftrigr_t *fifo,genalloc *gasv,stralloc *sasv)
+
+int svc_init_pipe(ftrigr_t *fifo,genalloc *gasv)
 {
 	tain_t ttmain ;
 	
 	tain_now_g() ;
 	tain_addsec(&ttmain,&STAMP,2) ;
 	
-	VERBO2 strerr_warni1x("initiate fifo: fifo") ;
+	ss_resolve_sig_t *svc ;
+	
+	//VERBO2 strerr_warni1x("initiate fifo: fifo") ;
 	if (!ftrigr_startf(fifo, &ttmain, &STAMP))
 		VERBO3 { strerr_warnwu1sys("initiate fifo") ; return 0 ; }
 		
-	for (unsigned int i = 0 ; i < genalloc_len(svc_sig,gasv) ; i++)
+	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_sig_t,gasv) ; i++)
 	{
-		svc_sig *svc = &genalloc_s(svc_sig,gasv)[i] ;
+		svc = &genalloc_s(ss_resolve_sig_t,gasv)[i] ;
 		int r ;
 		size_t siglen = strlen(svc->sigtosend) ;
-	
-		size_t scanlen = svc->scanlen ;
-		char *svok = sasv->s + svc->scan ;
-	
+		char *svok = svc->res.sa.s + svc->res.runat ;
+		size_t scanlen = strlen(svok) ;
+		
 		char svfifo[scanlen + 6 + 1] ;
 		memcpy(svfifo, svok,scanlen) ;
 		memcpy(svfifo + scanlen, "/event",6) ;
@@ -81,8 +86,10 @@ int svc_init_pipe(ftrigr_t *fifo,genalloc *gasv,stralloc *sasv)
 		}
 	}
 	
+	
 	return 1 ;
 	
 	end:
+		
 		return 0 ;
 }
