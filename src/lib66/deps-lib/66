@@ -16,6 +16,8 @@ graph.o
 parser.o
 parser_utils.o
 parser_write.o
+rc_init.o
+rc_send.o
 resolve.o
 scandir_ok.o
 scandir_send_signal.o
@@ -24,6 +26,7 @@ set_livescan.o
 set_livetree.o
 set_ownerhome.o
 set_ownersysdir.o
+ssexec_all.o
 ssexec_dbctl.o
 ssexec_enable.o
 ssexec_disable.o
@@ -37,6 +40,7 @@ ssexec_svctl.o
 sv_alltype_zero.o
 svc_init.o
 svc_init_pipe.o
+svc_send.o
 svc_switch_to.o
 tree_cmd_state.o
 tree_copy.o
