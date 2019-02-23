@@ -23,8 +23,8 @@
 
 #include <66/constants.h>
 
-/** 1-> backup
- * 0-> src 
+/** return 1-> backup
+ * return 0-> src 
  * -1->not initiated */
 int db_find_compiled_state(char const *livetree, char const *treename)
 {
