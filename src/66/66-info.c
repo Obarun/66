@@ -428,6 +428,11 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 				src[newlen] = 0 ;
 				break ;
 			}
+			else
+			{
+				strerr_warnw2x("unknow service: ",svname) ;
+				goto err ;
+			}
 		}
 	}
 	else 
