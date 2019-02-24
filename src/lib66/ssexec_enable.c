@@ -196,6 +196,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 				cleanup(workdir.s) ;
 				strerr_diefu2x(111,"write revolve file for: ",keep.s + sv->cname.name) ;
 			}
+			VERBO1 strerr_warni2x("Service written successfully: ", keep.s + sv->cname.name) ;
 			ss_resolve_free(&res) ;
 		}
 		
