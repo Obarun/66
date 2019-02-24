@@ -396,14 +396,15 @@ int graph_type_src(genalloc *ga,char const *dir,unsigned int what)
 		size_t dlen = strlen(solve) ;
 		for(unsigned int i = 0 ; i < genalloc_len(stralist,ga) ; i++)
 		{
+			char *name = gaistr(ga,i) ;
 			size_t namelen = gaistrlen(ga,i) ;
-			char tmp[dlen + 1 + namelen + SS_LOG_SUFFIX_LEN] ;
+			char tmp[dlen + 1 + namelen + SS_LOG_SUFFIX_LEN +1] ;
 			memcpy(tmp,solve,dlen) ;
 			tmp[dlen] = '/' ;
-			memcpy(tmp + dlen + 1,gaistr(ga,i),namelen) ;
+			memcpy(tmp + dlen + 1,name,namelen) ;
 			memcpy(tmp + dlen + 1 + namelen,"/log",SS_LOG_SUFFIX_LEN) ;
 			tmp[dlen + 1 + namelen + SS_LOG_SUFFIX_LEN] = 0 ;
-		
+	
 			if (scan_mode(tmp,S_IFDIR))
 			{
 				memcpy(tmp,gaistr(ga,i),namelen) ;
