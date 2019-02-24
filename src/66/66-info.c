@@ -352,7 +352,7 @@ int tree_args(int argc, char const *const *argv)
 
 int sv_args(int argc, char const *const *argv,char const *const *envp)
 {
-	int r ; 
+	int r, found ; 
 	unsigned int nlog = 0 ;
 	
 	stralloc tree = STRALLOC_ZERO ;
@@ -364,7 +364,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	char const *svname = 0 ;
 	char const *treename = 0 ;
 	
-	r = 0 ;
+	r = found = 0 ;
 	
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
@@ -426,12 +426,8 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 				if(!stralloc_cats(&tree,treename)) retstralloc(0,"sv_args") ;
 				if(!stralloc_0(&tree)) retstralloc(0,"sv_args") ;
 				src[newlen] = 0 ;
+				found = 1 ;
 				break ;
-			}
-			else
-			{
-				strerr_warnw2x("unknow service: ",svname) ;
-				goto err ;
 			}
 		}
 	}
@@ -441,7 +437,11 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 		if (buffer_putflush(buffer_1,"\n",1) < 0) goto err ;
 		return 1 ;
 	}
-	
+	if (!found)
+	{
+		strerr_warnw2x("unknow service: ",svname) ;
+		goto err ;
+	}
 	r = tree_sethome(&tree,base.s,MYUID) ;
 	if (!r) strerr_diefu2sys(111,"find tree: ", tree.s) ;
 	
