@@ -22,6 +22,7 @@
 #include <oblibs/strakeyval.h>
 #include <oblibs/directory.h>
 #include <oblibs/files.h>
+#include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
@@ -34,6 +35,7 @@
 #include <66/utils.h>
 #include <66/constants.h>
 #include <66/resolve.h>
+#include <66/ssexec.h>
 
 #include <stdio.h>
 
@@ -51,13 +53,17 @@ graph_style graph_default = {
 	2
 } ;
 
-static void print_text(const char *pkg, const char *info, tdepth *depth, int last)
+static void print_text(char const *srctree,const char *sv, tdepth *depth, int last)
 {
+	ss_resolve_t res = RESOLVE_ZERO ;
+		
+	if (!ss_resolve_read(&res,srctree,sv)) return ;
+	
 	const char *tip = "" ;
 	int level = 1 ;
-	if(!pkg)
+	if(!sv)
 		return ;
-
+	
 	if(depth->level > 0)
 	{
 		tip = last ? STYLE->last : STYLE->tip;
@@ -68,7 +74,7 @@ static void print_text(const char *pkg, const char *info, tdepth *depth, int las
 	
 		while(depth->next)
 		{
-			if (!bprintf(buffer_1," %*s%-*s",STYLE->indent * (depth->level - level), "", STYLE->indent, STYLE->limb)) return ;
+			if (!bprintf(buffer_1,"%*s%-*s",STYLE->indent * (depth->level - level), "", STYLE->indent, STYLE->limb)) return ;
 			level = depth->level + 1;
 			depth = depth->next;
 		} 
@@ -76,39 +82,18 @@ static void print_text(const char *pkg, const char *info, tdepth *depth, int las
 
 	if(depth->level > 0)
 	{
-		if (!bprintf(buffer_1," %*s%s%s ",STYLE->indent * (depth->level - level),"",tip,pkg)) return ;
-	}
-	else if (!bprintf(buffer_1," %s%s ",tip,pkg)) return ;
-	
-	if(info)
-		if (!bprintf(buffer_1," %s%s", ":",info)) return ;
+		if (!bprintf(buffer_1,"%*s%s(%i,%s) %s", STYLE->indent * (depth->level - level), "", tip, res.pid ? res.pid : 0,get_keybyid(res.type), sv)) return ;
 		
+	}
+	else if (!bprintf(buffer_1,"%s(%i) %s: %s",tip,res.pid ? res.pid : 0, sv, get_keybyid(res.type))) return ;
+
 	if (buffer_putsflush(buffer_1,"\n") < 0) return ; 
 
+	ss_resolve_free(&res) ;
 	
 }
 
-static void print(const char *pkgname, const char *depname, tdepth *depth, int last)
-{
-	print_text(pkgname, depname, depth, last);
-	
-}
-/*
-static void print_start(const char *pkgname, const char *provname)
-{
-	
-		tdepth d = {
-			NULL,
-			NULL,
-			0 ,
-			0 ,
-			0
-		};
-		print_text(pkgname, provname, &d, 0);
-	
-}
-*/
-static void graph_walk(graph_t *g,genalloc *ga,unsigned int src,unsigned int nlen, tdepth *depth)
+static void graph_walk(char const *srctree, graph_t *g,genalloc *ga,unsigned int src,unsigned int nlen, tdepth *depth)
 {
 	
 	unsigned int last, i, newdata ;
@@ -140,14 +125,13 @@ static void graph_walk(graph_t *g,genalloc *ga,unsigned int src,unsigned int nle
 		
 		int idx = genalloc_s(vertex_graph_t,&g->vertex)[newdata].name ;
 		char *name = string + idx ;
-		char const *type = get_keybyid(genalloc_s(vertex_graph_t,&g->vertex)[newdata].type) ;
 		unsigned int dplen = genalloc_s(vertex_graph_t,&g->vertex)[newdata].ndeps ; 
 	
 		last =  i + 1 < depth->pndeps  ? 0 : 1 ;		
 		
 
-		print(name, type, depth, last) ;
-		
+		print_text(srctree,name, depth, last) ;
+	
 		if (dplen)
 		{
 			genalloc data = genalloc_s(vertex_graph_t,&g->vertex)[newdata].dps ;
@@ -176,8 +160,7 @@ static void graph_walk(graph_t *g,genalloc *ga,unsigned int src,unsigned int nle
 				else 
 					d.prev = NULL;
 			}
-			
-			graph_walk(g,&data,0,dplen,&d);
+			graph_walk(srctree,g,&data,0,dplen,&d);
 			depth->next = NULL;
 			depth->cndeps = 0 ;
 		}
@@ -187,7 +170,7 @@ static void graph_walk(graph_t *g,genalloc *ga,unsigned int src,unsigned int nle
 	
 }
 
-int graph_tree(graph_t *g, char const *name, char const *tree)
+int graph_tree(char const *srctree,graph_t *g, char const *name, char const *tree)
 {
 	unsigned int a = 0 ;
 	unsigned int first = 0 ;
@@ -219,7 +202,7 @@ int graph_tree(graph_t *g, char const *name, char const *tree)
 		ndeps
 	} ;	
 	
-	graph_walk(g,&g->stack,first,ndeps,&d);
+	graph_walk(srctree,g,&g->stack,first,ndeps,&d);
 		
 	return 1 ;
 }
@@ -281,13 +264,13 @@ int graph_sort(graph_t *g)
 	visit c[color] ;
 	for (unsigned int i = 0 ; i < color; i++) c[i] = WHITE ;
 	if (!len) return 0 ;
-	/*if (!stack_init(&g->stack,color))
+/*	if (!stack_init(&g->stack,color))
 	{
 		VERBO3 strerr_warnwu1x("iniate stack") ;
 		return 0;
-	}*/
+	}*/ 
 	for (unsigned int i = 0 ; i < len ; i++)
-		if ( c[i] == WHITE && dfs(g,i,&g->stack,c))
+		if (c[i] == WHITE && dfs(g,i,&g->stack,c))
 			return -1 ;
 	
 	return 1 ;
@@ -408,8 +391,28 @@ int graph_type_src(genalloc *ga,char const *dir,unsigned int what)
 	solve[dirlen + SS_SVC_LEN] = 0 ;
 	
 	if (!what || what == 2)
-		if (!dir_get(ga,solve,SS_MASTER + 1,S_IFDIR)) return 0 ;
-	
+	{
+		if (!dir_get(ga,solve,"",S_IFDIR)) return 0 ;
+		size_t dlen = strlen(solve) ;
+		for(unsigned int i = 0 ; i < genalloc_len(stralist,ga) ; i++)
+		{
+			size_t namelen = gaistrlen(ga,i) ;
+			char tmp[dlen + 1 + namelen + SS_LOG_SUFFIX_LEN] ;
+			memcpy(tmp,solve,dlen) ;
+			tmp[dlen] = '/' ;
+			memcpy(tmp + dlen + 1,gaistr(ga,i),namelen) ;
+			memcpy(tmp + dlen + 1 + namelen,"/log",SS_LOG_SUFFIX_LEN) ;
+			tmp[dlen + 1 + namelen + SS_LOG_SUFFIX_LEN] = 0 ;
+		
+			if (scan_mode(tmp,S_IFDIR))
+			{
+				memcpy(tmp,gaistr(ga,i),namelen) ;
+				memcpy(tmp + namelen,"-log",SS_LOG_SUFFIX_LEN) ;
+				tmp[namelen + SS_LOG_SUFFIX_LEN] = 0 ;
+				if (!stra_add(ga,tmp)) return 0 ;
+			}
+		}
+	}
 	
 	memcpy(solve + dirlen, SS_DB, SS_DB_LEN) ;
 	memcpy(solve + dirlen + SS_DB_LEN, SS_SRC, SS_SRC_LEN) ;
@@ -455,7 +458,6 @@ int graph_build(graph_t *g, stralloc *sagraph, genalloc *tokeep,char const *dir)
 		
 		char const *name = gaistr(tokeep,i) ;
 		size_t namelen = gaistrlen(tokeep,i) ;
-		
 		if (!ss_resolve_read(&res,dir,name))
 		{
 			VERBO3 strerr_warnwu2sys("read resolve file of: ",name) ;
@@ -490,7 +492,6 @@ int graph_build(graph_t *g, stralloc *sagraph, genalloc *tokeep,char const *dir)
 				gdeps.ndeps = 0 ;
 				gdeps.dps.len = 0 ;
 				if (!genalloc_append(vertex_graph_t,&gsv.dps,&gdeps)) goto err ;
-				
 			}
 		}
 		gtmp.nedge = nedge ;
@@ -545,7 +546,6 @@ int graph_build(graph_t *g, stralloc *sagraph, genalloc *tokeep,char const *dir)
 		}
 		if (!genalloc_append(vertex_graph_t,&g->vertex,&gsv)) goto err ;
 	}
-	
 	g->string = sagraph->s ;
 	g->nvertex = gtmp.nvertex ;
 	g->nedge = gtmp.nedge ;
