@@ -115,8 +115,7 @@ int doit(ssexec_t *info, unsigned int what, char const *const *envp)
 		newargv[m++] = gaistr(&ga,i) ;
 		
 	newargv[m++] = 0 ;
-	for (int i = 0 ; i < m; i++)
-		printf("newarg::%s\n",newargv[i]) ;
+	
 	if (what)
 	{
 		if (ssexec_start(nargc,newargv,envp,info))
