@@ -32,6 +32,7 @@
 #include <66/utils.h>
 #include <66/constants.h>
 #include <66/db.h>
+#include <66/enum.h>
 
 //#include <stdio.h>
 
@@ -195,17 +196,25 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t own
 
 
 
-int create_tree(char const *tree,char const *const *envp)
+int create_tree(char const *tree,char const *treename)
 {
 	size_t newlen = 0 ;
 	size_t treelen = strlen(tree) ;
 	
 	char dst[treelen + SS_DB_LEN + SS_SRC_LEN + 13 + 1] ;
-
+	ss_resolve_t res = RESOLVE_ZERO ;
+	ss_resolve_init(&res) ;
 	
 	memcpy(dst, tree, treelen) ;
 	newlen = treelen ;
 	dst[newlen] = 0 ;
+	
+	res.name = ss_resolve_add_string(&res,"Master") ;
+	res.description = ss_resolve_add_string(&res,"inner bundle - do not use it") ;
+	res.tree = ss_resolve_add_string(&res,dst) ;
+	res.treename = ss_resolve_add_string(&res,treename) ;
+	res.type = BUNDLE ;
+	res.disen = 1 ;
 	
 	VERBO3 strerr_warnt3x("create directory: ",dst,SS_SVDIRS) ;
 	if(!dir_create_under(dst,SS_SVDIRS + 1,0755))
@@ -242,7 +251,15 @@ int create_tree(char const *tree,char const *const *envp)
 		VERBO3 strerr_warnwu3sys("create ",dst,SS_RESOLVE) ;
 		return 0 ;
 	}
-	dst[newlen] = 0 ;
+	
+	VERBO3 strerr_warnt1x("write resolve file of: Master") ;
+	if (!ss_resolve_write(&res,dst,"Master"))
+	{
+		VERBO3 strerr_warnwu1sys("write resolve file of: Master") ;
+		ss_resolve_free(&res) ;
+		return 0 ;
+	}
+	ss_resolve_free(&res) ;
 	
 	char sym[newlen + 1 + SS_SYM_SVC_LEN + 1] ;
 	char dstsym[newlen + SS_SVC_LEN + 1] ;
@@ -279,12 +296,10 @@ int create_tree(char const *tree,char const *const *envp)
 		VERBO3 strerr_warnwu2sys("symlink: ", sym) ;
 		return 0 ;
 	}
-	
-	
+		
 	memcpy(dst + newlen,SS_DB,SS_DB_LEN) ;
 	newlen = newlen + SS_DB_LEN ;
 	dst[newlen] = 0 ;
-
 	
 	VERBO3 strerr_warnt3x("create directory: ",dst,SS_SRC) ;
 	if (!dir_create_under(dst,SS_SRC,0755))
@@ -501,7 +516,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if(!r && create)
 	{
 		VERBO2 strerr_warni3x("creating ",dstree.s," ..." ) ;
-		if (!create_tree(dstree.s,envp))
+		if (!create_tree(dstree.s,tree))
 		{
 			cleanup(dstree.s) ;
 			strerr_diefu2x(111,"create tree: ",dstree.s) ;
