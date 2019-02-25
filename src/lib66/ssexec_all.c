@@ -273,7 +273,7 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp,ssexec_
 		r = tree_sethome(&tree,info->base.s,info->owner) ;
 		if (r < 0 || !r) strerr_diefu2sys(111,"find tree: ", tree.s) ;
 	
-		if (!stralloc_obreplace(&info->tree,tree.s)) strerr_diefu1sys(111,"replace info->treename string") ;
+		if (!stralloc_obreplace(&info->tree,tree.s)) strerr_diefu1sys(111,"replace info->tree string") ;
 		
 		stralloc_free(&tree) ;
 		
