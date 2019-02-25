@@ -710,11 +710,7 @@ int ss_resolve_setnwrite(ss_resolve_t *res, sv_alltype *services, ssexec_t *info
 		
 		res->logger = ss_resolve_add_string(res,logname) ;
 		res->logreal = ss_resolve_add_string(res,logreal) ;
-		if (res->type == CLASSIC)
-		{
-			res->ndeps = 1 ;
-		}
-						
+								
 		// destination of the logger
 		if (!services->type.classic_longrun.log.destination)
 		{	
