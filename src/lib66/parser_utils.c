@@ -323,7 +323,7 @@ int parse_bracket(keynocheck *nocheck)
 	if (end < 0) return 0 ;
 	memcpy(tmp,nocheck->val.s+start,end  - start) ;
 	tmp[end - start] = 0 ;
-	obstr_replace(tmp,'\n',' ') ;
+	//obstr_replace(tmp,'\n',' ') ;
 	
 	if (!stralloc_obreplace(&nocheck->val, tmp)) return 0 ;
 	
