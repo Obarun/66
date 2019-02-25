@@ -297,7 +297,7 @@ int graph_master(genalloc *ga, graph_t *g)
 	}
 	
 	for (w = 0 ; w < g->nvertex ; w++)
-		if (c[w] == BLACK)
+		if (c[w] == WHITE)
 			if (!stra_add(ga,string + genalloc_s(vertex_graph_t,&g->stack)[w].name)) 
 				return 0 ;
 			 
