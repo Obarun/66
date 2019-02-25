@@ -13,8 +13,9 @@
  */
 
 #include <66/parser.h>
-
+#include <66/resolve.h>
 
 sv_alltype const sv_alltype_zero = SV_ALLTYPE_ZERO ;
 sv_name_t const sv_name_zero = SV_NAME_ZERO ;
 keynocheck const keynocheck_zero = KEYNOCHECK_ZERO ;
+ss_resolve_t const ss_resolve_zero = RESOLVE_ZERO ;

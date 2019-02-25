@@ -29,17 +29,17 @@
 
 #include <66/utils.h>
 #include <66/constants.h>
+#include <66/ssexec.h>
 
 #include <stdio.h>
-int db_compile(char const *workdir, char const *tree, char const *treename,char const *const *envp)
+int db_compile(char const *workdir, char const *tree, char const *treename, char const *const *envp)
 {
 	int wstat, r ;
 	pid_t pid ;
 	
 	stralloc source = STRALLOC_ZERO ;
 	stralloc destination = STRALLOC_ZERO ;
-	stralloc uid = STRALLOC_ZERO ;
-	
+		
 	if (!stralloc_cats(&destination,workdir)) retstralloc(0,"compile_db") ;
 	if (!stralloc_cats(&destination,SS_DB)) retstralloc(0,"compile_db") ;
 	if (!stralloc_0(&destination)) retstralloc(0,"compile_db") ;
@@ -59,14 +59,8 @@ int db_compile(char const *workdir, char const *tree, char const *treename,char 
 	if (!stralloc_cats(&source,workdir)) retstralloc(0,"compile_db") ;
 	if (!stralloc_cats(&source,SS_DB SS_SRC)) retstralloc(0,"compile_db") ;
 	if (!stralloc_0(&source)) retstralloc(0,"compile_db") ;
-	
-	if (!db_get_permissions(&uid,tree))
-	{
-		VERBO3 strerr_warnwu1sys("get database permissions") ;
-		return 0 ;
-	}
-		
-	char const *newargv[9] ;
+			
+	char const *newargv[7] ;
 	unsigned int m = 0 ;
 	char fmt[UINT_FMT] ;
 	fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
@@ -74,8 +68,6 @@ int db_compile(char const *workdir, char const *tree, char const *treename,char 
 	newargv[m++] = S6RC_BINPREFIX "s6-rc-compile" ;
 	newargv[m++] = "-v" ;
 	newargv[m++] = fmt ;
-	newargv[m++] = "-u" ;
-	newargv[m++] = uid.s ;
 	newargv[m++] = "--" ;
 	newargv[m++] = destination.s ;
 	newargv[m++] = source.s ;
@@ -95,7 +87,6 @@ int db_compile(char const *workdir, char const *tree, char const *treename,char 
 	
 	stralloc_free(&source) ;
 	stralloc_free(&destination) ;
-	stralloc_free(&uid) ;
 	
 	return 1 ;
 }

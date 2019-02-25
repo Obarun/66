@@ -105,6 +105,8 @@ struct sv_name_s
 	unsigned int description ;//pos in keep
 	unsigned int idga ; //pos in genalloc gadeps
 	unsigned int nga ; //len of idga in genalloc gadeps
+	unsigned int logname ; //pos in keep
+	unsigned int dstlog ; //pos in keep
 } ;
 typedef struct sv_alltype_s sv_alltype,*sv_alltype_ref ;
 struct sv_alltype_s
@@ -128,8 +130,9 @@ struct sv_alltype_s
 	* timeout[2]->up,timeout[3]->down
 	* timeout-kill[0][X] enabled,timeout-kill[0][0] not enabled*/
 	uint32_t timeout[4][UINT_FMT] ;
-	uint32_t death ;
-	int signal ;
+	uint32_t src ;// original source of the service
+	uint32_t death ;//max-death-tally file
+	int signal ;//down-signal file
 	unsigned int pipeline ; //pos in deps
 	genalloc env ; //type diuint32, pos in saenv
 } ;
@@ -171,6 +174,8 @@ struct sv_alltype_s
 	0 ,\
 	0 ,\
 	0 ,\
+	0 ,\
+	0 ,\
 	0 \
 }
 						
@@ -183,6 +188,7 @@ struct sv_alltype_s
 	0 , \
 	{ 0 } , \
 	{ { 0 } } ,\
+	0 , \
 	0 , \
 	0 , \
 	0 ,\
@@ -201,6 +207,7 @@ struct keynocheck_s
 	int expected ;
 	int mandatory ;
 	stralloc val ;
+	
 } ;
 #define KEYNOCHECK_ZERO { .nkey = 0, .idsec = -1, .idkey = -1, .expected = -1, .mandatory = -1, .val = STRALLOC_ZERO }
 extern keynocheck const keynocheck_zero ;//set in sv_alltype_zero.c
@@ -298,11 +305,11 @@ extern int add_env(char *line,genalloc *ga,stralloc *sa) ;
 
 extern int parse_env(keynocheck *nocheck) ;
 
-extern int resolve_srcdeps(sv_alltype *sv_before,char const *svmain,char const *src, char const *tree,unsigned int *nbsv,stralloc *sasv) ;
+extern int resolve_srcdeps(sv_alltype *sv_before,char const *svmain,char const *src, char const *tree,unsigned int *nbsv,stralloc *sasv,unsigned int force) ;
 
-extern int parse_service_before(char const *src,char const *sv,char const *tree, unsigned int *nbsv, stralloc *sasv) ;
+extern int parse_service_before(char const *src,char const *sv,char const *tree, unsigned int *nbsv, stralloc *sasv,unsigned int force) ;
 
-extern int keep_common(sv_alltype *service,keynocheck *nocheck) ;
+extern int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype) ;
 
 extern int keep_runfinish(sv_exec *exec,keynocheck *nocheck) ;
 
@@ -310,13 +317,13 @@ extern int keep_logger(sv_execlog *log,keynocheck *nocheck) ;
 
 extern int write_services(sv_alltype *sv, char const *workdir, unsigned int force) ;
 
-extern int write_classic(char const *workdir, sv_alltype *sv, char const *dst, unsigned int force) ;
+extern int write_classic(sv_alltype *sv, char const *dst, unsigned int force) ;
 
-extern int write_longrun(char const *workdir, sv_alltype *sv,char const *dst, unsigned int force) ;
+extern int write_longrun(sv_alltype *sv,char const *dst, unsigned int force) ;
 
-extern int write_oneshot(char const *workdir, sv_alltype *sv,char const *dst, unsigned int force) ;
+extern int write_oneshot(sv_alltype *sv,char const *dst, unsigned int force) ;
 
-extern int write_bundle(char const *workdir, sv_alltype *sv, char const *dst, unsigned int force) ;
+extern int write_bundle(sv_alltype *sv, char const *dst, unsigned int force) ;
 
 extern int write_common(sv_alltype *sv, char const *dst) ;
 
@@ -324,14 +331,17 @@ extern int write_exec(sv_alltype *sv, sv_exec *exec,char const *name,char const 
 
 extern int write_uint(char const *dst, char const *name, uint32_t ui) ;
 
-extern int write_logger(char const *workdir,sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, char const *svname,int mode, unsigned int force) ;
+extern int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, int mode, unsigned int force) ;
 
 extern int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char const *proddst,char const *consdst) ;
 
-extern int write_dependencies(char const *src, sv_name_t *cname,char const *dst,char const *filename, genalloc *ga, unsigned int force) ;
+extern int write_dependencies(sv_name_t *cname,char const *dst,char const *filename, genalloc *ga, unsigned int force) ;
 
 extern int write_env(char const *name, genalloc *env,stralloc *sa,char const *dst) ;
 
 extern void freed_parser(void) ;
 
+extern void keynocheck_free(keynocheck *nocheck) ;
+
+extern void sv_alltype_free(sv_alltype *sv) ;
 #endif

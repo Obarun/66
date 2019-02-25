@@ -48,7 +48,7 @@ int main(int argc, char const **argv, char const *const *envp)
 		  switch (opt)
 		  {
 			case 's' : split = 1 ; break ;
-			default : exitusage() ;
+			default : exitusage(USAGE) ;
 		  }
 		}
 		argc -= l.ind ; argv += l.ind ;

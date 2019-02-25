@@ -22,22 +22,21 @@
 
 #include <66/config.h>
 
-int set_livescan(stralloc *live,uid_t owner)
+int set_livescan(stralloc *scandir,uid_t owner)
 {
 	int r ;
 	char ownerpack[256] ;
 		
-	r = set_livedir(live) ;
+	r = set_livedir(scandir) ;
 	if (r < 0) return -1 ;
 	if (!r) return 0 ;
 		
 	size_t ownerlen = uid_fmt(ownerpack,owner) ;
 	ownerpack[ownerlen] = 0 ;
 	
-	live->len--;
-	if (!stralloc_cats(live,"scandir/")) retstralloc(0,"set_livedir") ;
-	if (!stralloc_cats(live,ownerpack)) retstralloc(0,"set_livedir") ;
-	if (!stralloc_0(live)) retstralloc(0,"set_livedir") ;
-	
+	if (!stralloc_cats(scandir,"scandir/")) retstralloc(0,"set_livedir") ;
+	if (!stralloc_cats(scandir,ownerpack)) retstralloc(0,"set_livedir") ;
+	if (!stralloc_0(scandir)) retstralloc(0,"set_livedir") ;
+	scandir->len--;
 	return 1 ;
 }

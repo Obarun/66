@@ -27,10 +27,9 @@
 #include <66/constants.h>
 #include <66/enum.h>
 
-int backup_realpath_sym(stralloc *sa, char const *tree,unsigned int type)
+int backup_realpath_sym(stralloc *sa, ssexec_t *info,unsigned int type)
 {
 	ssize_t r ;
-	size_t treelen = strlen(tree) ;
 	size_t typelen ;
 	char *ptype = NULL ;
 	
@@ -45,13 +44,13 @@ int backup_realpath_sym(stralloc *sa, char const *tree,unsigned int type)
 		typelen = SS_SYM_DB_LEN;
 	}
 	
-	char sym[treelen + SS_SVDIRS_LEN + 1 + typelen + 1] ;
-	memcpy(sym,tree,treelen) ;
-	memcpy(sym + treelen, SS_SVDIRS, SS_SVDIRS_LEN) ;
-	sym[treelen + SS_SVDIRS_LEN] = '/' ;
-	memcpy(sym + treelen + SS_SVDIRS_LEN + 1, ptype,typelen) ;
-	sym[treelen + SS_SVDIRS_LEN + 1 + typelen] = '/' ;
-	sym[treelen + SS_SVDIRS_LEN + 1 + typelen + 1] = 0 ;
+	char sym[info->tree.len + SS_SVDIRS_LEN + 1 + typelen + 1] ;
+	memcpy(sym,info->tree.s,info->tree.len) ;
+	memcpy(sym + info->tree.len, SS_SVDIRS, SS_SVDIRS_LEN) ;
+	sym[info->tree.len + SS_SVDIRS_LEN] = '/' ;
+	memcpy(sym + info->tree.len + SS_SVDIRS_LEN + 1, ptype,typelen) ;
+	sym[info->tree.len + SS_SVDIRS_LEN + 1 + typelen] = '/' ;
+	sym[info->tree.len + SS_SVDIRS_LEN + 1 + typelen + 1] = 0 ;
 	
 	r = scan_mode(sym,S_IFDIR) ;
 	if(r <= 0) return 0 ; 

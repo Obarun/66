@@ -25,19 +25,19 @@
 
 #include <66/constants.h>
 
-int tree_sethome(stralloc *tree, char const *base)
+int tree_sethome(stralloc *tree, char const *base,uid_t owner)
 {
 	int r ;
 	
 	if (!tree->len)
 	{
-		if (!tree_find_current(tree, base)) return -1 ;
+		if (!tree_find_current(tree, base,owner)) return -1 ;
 	}
 	else
 	{
 		char treename[tree->len + 1] ;
-		memcpy(treename,tree->s,tree->len - 1) ;
-		treename[tree->len - 1] = 0 ;
+		memcpy(treename,tree->s,tree->len) ;
+		treename[tree->len] = 0 ;
 		tree->len = 0 ;
 		if (!stralloc_cats(tree,base)) retstralloc(0,"main") ;
 		if (!stralloc_cats(tree,SS_SYSTEM "/")) retstralloc(0,"main") ;
@@ -46,6 +46,7 @@ int tree_sethome(stralloc *tree, char const *base)
 		r = scan_mode(tree->s,S_IFDIR) ;
 		if (r < 0) errno = EEXIST ;
 		if (r != 1) return 0 ;
+		tree->len--;
 	}
 	
 	return 1 ;

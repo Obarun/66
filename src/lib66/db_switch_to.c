@@ -23,10 +23,11 @@
 #include <66/backup.h>
 #include <66/utils.h>
 #include <66/enum.h>
+#include <66/ssexec.h>
 
 /** 1-> backup
  * 0-> ori */
-int db_switch_to(char const *base, char const *livetree, char const *tree, char const *treename, char const *const *envp,unsigned int where)
+int db_switch_to(ssexec_t *info, char const *const *envp,unsigned int where)
 {
 	int r ;
 	
@@ -43,57 +44,57 @@ int db_switch_to(char const *base, char const *livetree, char const *tree, char 
 	memcpy(cmd + cmdlen," -b",3) ;
 	cmd[cmdlen + 3] = 0 ;
 	
-	r = backup_cmd_switcher(VERBOSITY,cmd,treename) ;
+	r = backup_cmd_switcher(VERBOSITY,cmd,info) ;
 	if (r < 0)
 	{
-		VERBO3 strerr_warnwu2sys("find origin of db service for: ",treename) ;
+		VERBO3 strerr_warnwu2sys("find origin of db service for: ",info->treename.s) ;
 		goto err ;
 	}
 	// point to origin
 	if (!r && where)
 	{
-		VERBO3 strerr_warnt2x("make a backup of db service for: ",treename) ;
-		if (!backup_make_new(base,tree,treename,LONGRUN))
+		VERBO3 strerr_warnt2x("make a backup of db service for: ",info->treename.s) ;
+		if (!backup_make_new(info,LONGRUN))
 		{
-			VERBO3 strerr_warnwu2sys("make a backup of db service for: ",treename) ;
+			VERBO3 strerr_warnwu2sys("make a backup of db service for: ",info->treename.s) ;
 			goto err ;
 		}
-		VERBO3 strerr_warnt3x("switch db service for tree: ",treename," to backup") ;
+		VERBO3 strerr_warnt3x("switch db service for tree: ",info->treename.s," to backup") ;
 		memcpy(cmd + cmdlen," -s1",4) ;
 		cmd[cmdlen + 4] = 0 ;
-		r = backup_cmd_switcher(VERBOSITY,cmd,treename) ;
+		r = backup_cmd_switcher(VERBOSITY,cmd,info) ;
 		if (r < 0)
 		{
-			VERBO3 strerr_warnwu3sys("switch db service for: ",treename," to backup") ;
+			VERBO3 strerr_warnwu3sys("switch db service for: ",info->treename.s," to backup") ;
 			goto err ;
 		}
-		if (db_ok(livetree,treename))
+		if (db_ok(info->livetree.s, info->treename.s))
 		{
-			if (!backup_realpath_sym(&db,tree,LONGRUN))
+			if (!backup_realpath_sym(&db,info,LONGRUN))
 			{
 				VERBO3 strerr_warnwu2sys("find path of db: ",db.s) ;
 			}
-			VERBO3 strerr_warnt4x("update ",livetree," to ",db.s) ;
-			if (!db_update(db.s, treename,livetree,envp))
+			VERBO3 strerr_warnt4x("update ",info->livetree.s," to ",db.s) ;
+			if (!db_update(db.s, info,envp))
 			{	
-				VERBO3 strerr_warnt2x("rollback db service: ", treename) ;
+				VERBO3 strerr_warnt2x("rollback db service: ", info->treename.s) ;
 				memcpy(cmd + cmdlen," -s0",4) ;
 				cmd[cmdlen + 4] = 0 ;
-				r = backup_cmd_switcher(VERBOSITY,cmd,treename) ;
+				r = backup_cmd_switcher(VERBOSITY,cmd,info) ;
 				if (r < 0)
 				{
-					VERBO3 strerr_warnwu3sys("switch db service for: ",treename," to source") ;
+					VERBO3 strerr_warnwu3sys("switch db service for: ",info->treename.s," to source") ;
 					goto err ;
 				}
 				db = stralloc_zero ;
-				if (!backup_realpath_sym(&db,tree,LONGRUN))
+				if (!backup_realpath_sym(&db,info,LONGRUN))
 				{
-					VERBO3 strerr_warnwu2sys("find path of db service for: ",treename) ;
+					VERBO3 strerr_warnwu2sys("find path of db service for: ",info->treename.s) ;
 					goto err ;
 				}
-				if (!db_update(db.s, treename,livetree,envp))
+				if (!db_update(db.s,info,envp))
 				{
-					VERBO3 strerr_warnwu3sys("switch: ",treename," to source") ;
+					VERBO3 strerr_warnwu3sys("switch: ",info->treename.s," to source") ;
 					VERBO3 strerr_warnwu1sys("unable to rollback the db state, please make a bug report") ;
 					goto err ;
 				}
@@ -102,53 +103,53 @@ int db_switch_to(char const *base, char const *livetree, char const *tree, char 
 	}
 	else if (r > 0 && !where)
 	{
-		VERBO3 strerr_warnt3x("switch db service for tree: ",treename," to source") ;
+		VERBO3 strerr_warnt3x("switch db service for tree: ",info->treename.s," to source") ;
 		memcpy(cmd + cmdlen," -s0",4) ;
 		cmd[cmdlen + 4] = 0 ;
-		r = backup_cmd_switcher(VERBOSITY,cmd,treename) ;
+		r = backup_cmd_switcher(VERBOSITY,cmd,info) ;
 		if (r < 0)
 		{
-			VERBO3 strerr_warnwu3sys("switch db service for: ",treename," to source") ;
+			VERBO3 strerr_warnwu3sys("switch db service for: ",info->treename.s," to source") ;
 			goto err ;
 		}
 		
-		if (db_ok(livetree,treename))
+		if (db_ok(info->livetree.s,info->treename.s))
 		{
-			if (!backup_realpath_sym(&db,tree,LONGRUN))
+			if (!backup_realpath_sym(&db,info,LONGRUN))
 			{
 				VERBO3 strerr_warnwu2sys("find path of db: ",db.s) ;
 				goto err ;
 			}
-			VERBO3 strerr_warnt4x("update ",livetree," to ",db.s) ;
-			if (!db_update(db.s, treename,livetree,envp))
+			VERBO3 strerr_warnt4x("update ",info->livetree.s," to ",db.s) ;
+			if (!db_update(db.s, info,envp))
 			{	
-				VERBO3 strerr_warnt2x("rollback db: ", treename) ;
+				VERBO3 strerr_warnt2x("rollback db: ", info->treename.s) ;
 				memcpy(cmd + cmdlen," -s1",4) ;
 				cmd[cmdlen + 4] = 0 ;
-				r = backup_cmd_switcher(VERBOSITY,cmd,treename) ;
+				r = backup_cmd_switcher(VERBOSITY,cmd,info) ;
 				if (r < 0)
 				{
-					VERBO3 strerr_warnwu3sys("switch db service for: ",treename," to backup") ;
+					VERBO3 strerr_warnwu3sys("switch db service for: ",info->treename.s," to backup") ;
 					goto err ;
 				}
 				db = stralloc_zero ;
-				if (!backup_realpath_sym(&db,tree,LONGRUN))
+				if (!backup_realpath_sym(&db,info,LONGRUN))
 				{
-					VERBO3 strerr_warnwu2sys("find path of db: ",treename) ;
+					VERBO3 strerr_warnwu2sys("find path of db: ",info->treename.s) ;
 					goto err ;
 				}
-				if (!db_update(db.s, treename,livetree,envp))
+				if (!db_update(db.s, info,envp))
 				{
-					VERBO3 strerr_warnwu3sys("switch: ",treename," to source") ;
+					VERBO3 strerr_warnwu3sys("switch: ",info->treename.s," to source") ;
 					VERBO3 strerr_warnwu1sys("unable to rollback the db state, please make a bug report") ;
 					goto err ;
 				}
 			}
 		}
-		VERBO3 strerr_warnt2x("make a backup of db service for: ",treename) ;
-		if (!backup_make_new(base,tree,treename,LONGRUN))
+		VERBO3 strerr_warnt2x("make a backup of db service for: ",info->treename.s) ;
+		if (!backup_make_new(info,LONGRUN))
 		{
-			VERBO3 strerr_warnwu2sys("make a backup of db service for: ",treename) ;
+			VERBO3 strerr_warnwu2sys("make a backup of db service for: ",info->treename.s) ;
 			goto err ;
 		}
 	}

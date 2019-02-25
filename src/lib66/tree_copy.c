@@ -14,46 +14,31 @@
  
 #include <66/tree.h>
 
+#include <string.h>
+
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
 #include <oblibs/error2.h>
-
-#include <string.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
-
+#include <stdio.h>
 int tree_copy(stralloc *dir, char const *tree,char const *treename)
 {
-	char *fdir = NULL ;
+	char *fdir = 0 ;
+	size_t treelen = strlen(tree) ;
+	char tmp[treelen + SS_SVDIRS_LEN + 1] ;
+	memcpy(tmp,tree,treelen) ;
+	memcpy(tmp + treelen,SS_SVDIRS,SS_SVDIRS_LEN) ;
+	tmp[treelen + SS_SVDIRS_LEN] = 0 ;
+	
+	fdir = dir_create_tmp(dir,"/tmp",treename) ;
+	if (!fdir) return 0 ;
 
-	
-	stralloc tmp = STRALLOC_ZERO ;
-	stralloc fdirtmp = STRALLOC_ZERO ;
-	
-	fdir = dir_create_tmp(&fdirtmp,"/tmp",treename) ;
-	if (!fdir)
-	{
-		VERBO3 strerr_warnwu1x("create tempory directory") ;
-		return 0 ;
-	}
-	if (!stralloc_cats(&tmp,tree)) retstralloc(0,"copy_tree") ;
-	if (!stralloc_cats(&tmp,SS_SVDIRS)) retstralloc(0,"copy_tree") ;
-	if (!stralloc_0(&tmp)) retstralloc(0,"copy_tree") ;
-	
-	if (!hiercopy(tmp.s, fdir))
-	{
-		VERBO3 strerr_warnwu2sys("to copy tree: ",tmp.s) ;
-		return 0 ;
-	}
-	if (!stralloc_cats(dir,fdir)) retstralloc(0,"copy_tree") ;
-	if (!stralloc_0(dir)) retstralloc(0,"copy_tree") ;
-
-	stralloc_free(&tmp) ;
-	stralloc_free(&fdirtmp) ;
+	if (!hiercopy(tmp,fdir)) return 0 ;
 	
 	return 1 ;
 }

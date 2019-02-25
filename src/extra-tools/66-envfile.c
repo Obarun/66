@@ -177,13 +177,13 @@ int main (int argc, char const *const *argv, char const *const *envp)
 				case 'h' : 	info_help(); return 0 ;
 				case 'f' :  file = l.arg ; one = 1 ; break ;
 				case 'l' : 	insist = 0 ; break ;
-				default : exitusage() ; 
+				default : exitusage(USAGE) ; 
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
 	
-	if (argc < 2) exitusage() ;
+	if (argc < 2) exitusage(USAGE) ;
 	
 	path = *argv ;
 	

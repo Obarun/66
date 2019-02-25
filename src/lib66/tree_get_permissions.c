@@ -27,15 +27,15 @@
 #include <66/constants.h>
 #include <66/utils.h>
 
-int tree_get_permissions(char const *tree)
+int tree_get_permissions(char const *tree,uid_t owner)
 {
 	ssize_t r ;
 	size_t treelen = strlen(tree) ;
 	char pack[256] ;
 	char tmp[treelen + SS_RULES_LEN + 1] ;
 	
-	uint32_pack(pack,MYUID) ;
-	pack[uint_fmt(pack,MYUID)] = 0 ;
+	uint32_pack(pack,owner) ;
+	pack[uint_fmt(pack,owner)] = 0 ;
 	
 	memcpy(tmp,tree,treelen) ;
 	memcpy(tmp + treelen,SS_RULES,SS_RULES_LEN) ;

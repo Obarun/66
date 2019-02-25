@@ -30,24 +30,21 @@
 #include <66/utils.h>
 #include <66/constants.h>
 #include <66/enum.h>
+#include <66/ssexec.h>
 
 //#include <stdio.h>
 //USAGE "backup_switcher [ -v verbosity ] [ -t type ] [ -b backup ] [ -s switch ] tree"
 // for -b: return 0 if point to original source, return 1 if point to backup
 // for -s: -s0 -> origin, -s1 -> backup ;
-int backup_switcher(int argc, char const *const *argv)
+int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 {
 	unsigned int r, change, back, verbosity, type ;
 	uint32_t what = -1 ;
-	
+		
 	struct stat st ;
 	
 	char const *tree = NULL ;
-	
-	uid_t owner = MYUID ;
-	
-	stralloc base = STRALLOC_ZERO ;
-	
+			
 	verbosity = 1 ;
 	
 	change =  back = type = 0 ;
@@ -83,13 +80,9 @@ int backup_switcher(int argc, char const *const *argv)
 	tree = *argv ;
 	size_t treelen = strlen(tree) ;
 	
-	if (!set_ownersysdir(&base,owner))
-	{
-		VERBO3 strerr_warnwu1sys("set owner directory") ;
-		return -1 ;
-	}
+	
 	/** $HOME/66/system/tree/servicedirs */
-	base.len-- ;
+	//base.len-- ;
 	size_t psymlen ;
 	char *psym = NULL ;
 	if (type == CLASSIC)
@@ -102,15 +95,15 @@ int backup_switcher(int argc, char const *const *argv)
 		psym = SS_SYM_DB ;
 		psymlen = SS_SYM_DB_LEN ;
 	}
-	char sym[base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 + psymlen + 1] ;
-	memcpy(sym,base.s,base.len) ;
-	memcpy(sym + base.len, SS_SYSTEM,SS_SYSTEM_LEN) ;
-	sym[base.len + SS_SYSTEM_LEN] = '/' ;
-	memcpy(sym + base.len + SS_SYSTEM_LEN + 1, tree, treelen) ;
-	memcpy(sym + base.len + SS_SYSTEM_LEN + 1 + treelen, SS_SVDIRS, SS_SVDIRS_LEN) ;
-	sym[base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN] = '/' ;
-	memcpy(sym + base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 ,psym,psymlen) ;
-	sym[base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 + psymlen] = 0 ;
+	char sym[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 + psymlen + 1] ;
+	memcpy(sym,info->base.s,info->base.len) ;
+	memcpy(sym + info->base.len, SS_SYSTEM,SS_SYSTEM_LEN) ;
+	sym[info->base.len + SS_SYSTEM_LEN] = '/' ;
+	memcpy(sym + info->base.len + SS_SYSTEM_LEN + 1, tree, treelen) ;
+	memcpy(sym + info->base.len + SS_SYSTEM_LEN + 1 + treelen, SS_SVDIRS, SS_SVDIRS_LEN) ;
+	sym[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN] = '/' ;
+	memcpy(sym + info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 ,psym,psymlen) ;
+	sym[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 + psymlen] = 0 ;
 	
 	if (back)
 	{
@@ -132,7 +125,6 @@ int backup_switcher(int argc, char const *const *argv)
 		b = memmem(symreal.s,symreal.len,SS_BACKUP,SS_BACKUP_LEN) ;
 		
 		stralloc_free(&symreal) ;
-		stralloc_free(&base) ;
 		if (!b) return SS_SWSRC ;
 		
 		return SS_SWBACK ;
@@ -162,24 +154,24 @@ int backup_switcher(int argc, char const *const *argv)
 			pbacklen = SS_DB_LEN ;
 		}
 	
-		char dstsrc[base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + psrclen + 1] ;
-		char dstback[base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen + pbacklen + 1] ;
+		char dstsrc[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + psrclen + 1] ;
+		char dstback[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen + pbacklen + 1] ;
 			
-		memcpy(dstsrc, base.s, base.len) ;
-		memcpy(dstsrc + base.len, SS_SYSTEM, SS_SYSTEM_LEN) ;
-		dstsrc[base.len + SS_SYSTEM_LEN] = '/' ;
-		memcpy(dstsrc + base.len + SS_SYSTEM_LEN + 1, tree, treelen) ;
-		memcpy(dstsrc + base.len + SS_SYSTEM_LEN + 1 + treelen, SS_SVDIRS,SS_SVDIRS_LEN) ;
-		memcpy(dstsrc + base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN,psrc,psrclen) ;
-		dstsrc[base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + psrclen] = 0 ;
+		memcpy(dstsrc, info->base.s, info->base.len) ;
+		memcpy(dstsrc + info->base.len, SS_SYSTEM, SS_SYSTEM_LEN) ;
+		dstsrc[info->base.len + SS_SYSTEM_LEN] = '/' ;
+		memcpy(dstsrc + info->base.len + SS_SYSTEM_LEN + 1, tree, treelen) ;
+		memcpy(dstsrc + info->base.len + SS_SYSTEM_LEN + 1 + treelen, SS_SVDIRS,SS_SVDIRS_LEN) ;
+		memcpy(dstsrc + info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN,psrc,psrclen) ;
+		dstsrc[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + psrclen] = 0 ;
 					
-		memcpy(dstback, base.s, base.len) ;
-		memcpy(dstback + base.len, SS_SYSTEM, SS_SYSTEM_LEN) ;
-		memcpy(dstback + base.len + SS_SYSTEM_LEN, SS_BACKUP, strlen(SS_BACKUP)) ;
-		dstback[base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN] = '/' ;
-		memcpy(dstback + base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1, tree, treelen) ;
-		memcpy(dstback + base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen, pback,pbacklen) ;
-		dstback[base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen + pbacklen] = 0 ;
+		memcpy(dstback, info->base.s, info->base.len) ;
+		memcpy(dstback + info->base.len, SS_SYSTEM, SS_SYSTEM_LEN) ;
+		memcpy(dstback + info->base.len + SS_SYSTEM_LEN, SS_BACKUP, strlen(SS_BACKUP)) ;
+		dstback[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN] = '/' ;
+		memcpy(dstback + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1, tree, treelen) ;
+		memcpy(dstback + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen, pback,pbacklen) ;
+		dstback[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen + pbacklen] = 0 ;
 				
 		
 		
@@ -211,12 +203,10 @@ int backup_switcher(int argc, char const *const *argv)
 		}	
 	}
 	
-	stralloc_free(&base) ;
-	
 	return 1 ;		
 }
 	
-int backup_cmd_switcher(unsigned int verbosity,char const *cmd, char const *tree)
+int backup_cmd_switcher(unsigned int verbosity,char const *cmd,ssexec_t *info)
 {	
 	int r ;
 	
@@ -240,10 +230,10 @@ int backup_cmd_switcher(unsigned int verbosity,char const *cmd, char const *tree
 	for (unsigned int i = 0; i < genalloc_len(stralist,&opts); i++)
 		newargv[m++] = gaistr(&opts,i) ;
 		
-	newargv[m++] = tree ;
+	newargv[m++] = info->treename.s ;
 	newargv[m++] = 0 ;
 	
-	r = backup_switcher(newopts,newargv) ;
+	r = backup_switcher(newopts,newargv,info) ;
 
 	genalloc_deepfree(stralist,&opts,stra_free) ;
 	

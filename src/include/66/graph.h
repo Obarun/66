@@ -15,6 +15,10 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
+#include <skalibs/stralloc.h>
+#include <skalibs/genalloc.h>
+
+
 extern stralloc SAGRAPH ;
 
 typedef enum visit_e visit ;
@@ -97,8 +101,12 @@ extern int graph_sort(graph_t *g) ;
 
 extern int graph_search(graph_t *g, char const *name) ;
 
-extern int graph_tree(graph_t *g, char const *name, char const *tree) ;
+extern int graph_tree(char const *srctree, graph_t *g, char const *name, char const *tree) ;
 
 extern void stack_reverse(genalloc *st) ;
+
+extern void vertex_graph_free(vertex_graph_t *vgraph) ;
+
+extern void graph_free(graph_t *graph) ;
 
 #endif

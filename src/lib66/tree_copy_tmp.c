@@ -25,7 +25,7 @@
 #include <66/constants.h>
 #include <66/enum.h>
 #include <66/utils.h>
-
+#include <66/ssexec.h>
 
 void err(unsigned int *e, unsigned int msg,char const *resolve,char const *swap, char const *svdir)
 {
@@ -44,29 +44,29 @@ void err(unsigned int *e, unsigned int msg,char const *resolve,char const *swap,
 	*e = 0 ;
 }
 
-int tree_copy_tmp(char const *workdir, char const *base, char const *live, char const *tree,char const *treename)
+int tree_copy_tmp(char const *workdir, ssexec_t *info)
 {
 	stralloc saresolve = STRALLOC_ZERO ;
 	stralloc swap = STRALLOC_ZERO ;
 	unsigned int e = 1 ;
 	size_t svdirlen ;
-	size_t treelen = strlen(tree) ;	
-	char svdir[treelen + SS_SVDIRS_LEN + SS_RESOLVE_LEN + 1] ;
-	memcpy(svdir,tree,treelen) ;
-	memcpy(svdir + treelen,SS_SVDIRS,SS_SVDIRS_LEN) ;
-	svdirlen = treelen + SS_SVDIRS_LEN ;
+	
+	char svdir[info->tree.len + SS_SVDIRS_LEN + SS_RESOLVE_LEN + 1] ;
+	memcpy(svdir,info->tree.s,info->tree.len) ;
+	memcpy(svdir + info->tree.len,SS_SVDIRS,SS_SVDIRS_LEN) ;
+	svdirlen = info->tree.len + SS_SVDIRS_LEN ;
 	memcpy(svdir + svdirlen,SS_SVC, SS_SVC_LEN) ;
 	svdir[svdirlen + SS_SVC_LEN] = 0 ;
 	
 	/** svc */
 	if (rm_rf(svdir) < 0)
 	{
-		if (!resolve_pointo(&saresolve,base,live,tree,treename,CLASSIC,SS_RESOLVE_SRC))
+		if (!ss_resolve_pointo(&saresolve,info,CLASSIC,SS_RESOLVE_SRC))
 		{
 			err(&e,0,saresolve.s,swap.s,svdir) ;
 			goto err ;
 		}
-		if (!resolve_pointo(&swap,base,live,tree,treename,CLASSIC,SS_RESOLVE_BACK))
+		if (!ss_resolve_pointo(&swap,info,CLASSIC,SS_RESOLVE_BACK))
 		{
 			err(&e,1,saresolve.s,swap.s,svdir) ;
 			goto err ;
@@ -85,12 +85,12 @@ int tree_copy_tmp(char const *workdir, char const *base, char const *live, char 
 	svdir[svdirlen + SS_DB_LEN] = 0 ;
 	if (rm_rf(svdir) < 0)
 	{
-		if (!resolve_pointo(&saresolve,base,live,tree,treename,LONGRUN,SS_RESOLVE_SRC))
+		if (!ss_resolve_pointo(&saresolve,info,LONGRUN,SS_RESOLVE_SRC))
 		{
 			err(&e,0,saresolve.s,swap.s,svdir) ;
 			goto err ;
 		}
-		if (!resolve_pointo(&swap,base,live,tree,treename,LONGRUN,SS_RESOLVE_BACK))
+		if (!ss_resolve_pointo(&swap,info,LONGRUN,SS_RESOLVE_BACK))
 		{
 			err(&e,1,saresolve.s,swap.s,svdir) ;
 			goto err ;
@@ -110,7 +110,7 @@ int tree_copy_tmp(char const *workdir, char const *base, char const *live, char 
 	
 	if (rm_rf(svdir) < 0)
 	{
-		if (!resolve_pointo(&saresolve,base,live,tree,treename,0,SS_RESOLVE_SRC))
+		if (!ss_resolve_pointo(&saresolve,info,SS_NOTYPE,SS_RESOLVE_SRC))
 		{
 			err(&e,0,saresolve.s,swap.s,svdir) ;
 			goto err ;
@@ -119,7 +119,7 @@ int tree_copy_tmp(char const *workdir, char const *base, char const *live, char 
 		if (!stralloc_cats(&saresolve,SS_RESOLVE)) retstralloc(0,"tree_copy_tmp") ;
 		if (!stralloc_0(&saresolve)) retstralloc(0,"tree_copy_tmp") ;
 		
-		if (!resolve_pointo(&swap,base,live,tree,treename,0,SS_RESOLVE_BACK))
+		if (!ss_resolve_pointo(&swap,info,SS_NOTYPE,SS_RESOLVE_BACK))
 		{
 			err(&e,1,saresolve.s,swap.s,svdir) ;
 			goto err ;
@@ -140,12 +140,12 @@ int tree_copy_tmp(char const *workdir, char const *base, char const *live, char 
 		
 	if (!hiercopy(workdir,svdir))
 	{
-		if (!resolve_pointo(&saresolve,base,live,tree,treename,0,SS_RESOLVE_SRC))
+		if (!ss_resolve_pointo(&saresolve,info,SS_NOTYPE,SS_RESOLVE_SRC))
 		{	
 			err(&e,0,saresolve.s,swap.s,svdir) ;
 			goto err ;
 		}
-		if (!resolve_pointo(&swap,base,live,tree,treename,0,SS_RESOLVE_BACK))
+		if (!ss_resolve_pointo(&swap,info,SS_NOTYPE,SS_RESOLVE_BACK))
 		{
 			err(&e,1,saresolve.s,swap.s,svdir) ;
 			goto err ;

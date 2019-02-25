@@ -36,8 +36,11 @@
 
 int tree_state(int argc, char const *const *argv)
 {
-	int r, fd ;
+	int r, fd, err ;
 	unsigned int add, del, sch, verbosity ;
+	size_t statesize ;
+	size_t treelen ;
+	size_t statelen ;
 	
 	char const *tree = NULL ;
 	
@@ -45,7 +48,7 @@ int tree_state(int argc, char const *const *argv)
 	stralloc contents = STRALLOC_ZERO ; 
 	genalloc in = GENALLOC_ZERO ; //type stralist
 	
-	verbosity = 1 ;
+	verbosity = err = 1 ;
 	
 	uid_t owner = MYUID ;
 	
@@ -73,17 +76,17 @@ int tree_state(int argc, char const *const *argv)
 	if (argc < 1) return -1 ;
 
 	tree = *argv ;
-	size_t treelen = strlen(tree) ;
+	treelen = strlen(tree) ;
 	
 	if (!set_ownersysdir(&base,owner))
 	{
 		VERBO3 strerr_warnwu1sys("set owner directory") ;
 		return -1 ;
 	}
-	size_t statesize ;
+
 	/** /system/state */
-	base.len-- ;
-	size_t statelen ;
+	//base.len-- ;
+	
 	char state[base.len + SS_SYSTEM_LEN + SS_STATE_LEN + 1] ;
 	memcpy(state,base.s,base.len) ;
 	memcpy(state + base.len,SS_SYSTEM,SS_SYSTEM_LEN) ;
@@ -92,11 +95,11 @@ int tree_state(int argc, char const *const *argv)
 	state[statelen] = 0 ;
 
 	r = scan_mode(state,S_IFREG) ;
-	if (r < 0) { errno = EEXIST ; return -1 ; }
+	if (r < 0) { errno = EEXIST ;  err = -1 ; goto out ; }
 	if (!r)
 	{
 		VERBO3 strerr_warnwu2sys("find: ",state) ;
-		return -1 ;
+		{ err = -1 ; goto out ; }
 	}
 	
 	statesize = file_get_size(state) ;
@@ -105,7 +108,7 @@ int tree_state(int argc, char const *const *argv)
 	if(!r)
 	{
 		VERBO3 strerr_warnwu2sys("open: ", state) ;
-		return -1 ;
+		{ err = -1 ; goto out ; }
 	}
 	/** ensure that we have an empty line at the end of the string*/
 	if (!stralloc_cats(&contents,"\n")) retstralloc(-1,"tree_registrer") ;
@@ -114,7 +117,7 @@ int tree_state(int argc, char const *const *argv)
 	if (!clean_val(&in,contents.s))
 	{
 		VERBO3 strerr_warnwu2x("clean: ",contents.s) ;
-		return -1 ;
+		{ err = -1 ; goto out ; }
 	}
 
 	
@@ -126,7 +129,7 @@ int tree_state(int argc, char const *const *argv)
 			if (fd < 0)
 			{
 				VERBO3 strerr_warnwu2sys("open: ",state) ;
-				return -1 ;
+				{ err = -1 ; goto out ; }
 			}
 			r = write(fd, tree,treelen);
 			r = write(fd, "\n",1);
@@ -134,7 +137,7 @@ int tree_state(int argc, char const *const *argv)
 			{
 				VERBO3 strerr_warnwu5sys("write: ",state," with ", tree," as content") ;
 				fd_close(fd) ;
-				return -1 ;
+				{ err = -1 ; goto out ; }
 			}
 			fd_close(fd) ;
 		}
@@ -148,20 +151,20 @@ int tree_state(int argc, char const *const *argv)
 			if (!stra_remove(&in,tree))
 			{
 				VERBO3 strerr_warnwu4x("to remove: ",tree," in: ",state) ;
-				return -1 ;
+				{ err = -1 ; goto out ; }
 			}
 			fd = open_trunc(state) ;
 			if (fd < 0)
 			{
 				VERBO3 strerr_warnwu2sys("open_trunc ", state) ;
-				return -1 ;
-			}
+				{ err = -1 ; goto out ; }
+			}/*
 			fd = open_append(state) ;
 			if (fd < 0)
 			{
 				VERBO3 strerr_warnwu2sys("open: ",state) ;
-				return -1 ;
-			}
+				{ err = -1 ; goto out ; }
+			}*/
 			
 			/*** replace it by write_file_unsafe*/
 			for (unsigned int i = 0 ; i < genalloc_len(stralist,&in) ; i++)
@@ -171,14 +174,14 @@ int tree_state(int argc, char const *const *argv)
 				{
 					VERBO3 strerr_warnwu5sys("write: ",state," with ", gaistr(&in,i)," as content") ;
 					fd_close(fd) ;
-					return -1 ;
+					{ err = -1 ; goto out ; }
 				}
 				r = write(fd, "\n",1);
 				if (r < 0)
 				{
 					VERBO3 strerr_warnwu5sys("write: ",state," with ", gaistr(&in,i)," as content") ;
 					fd_close(fd) ;
-					return -1 ;
+					{ err = -1 ; goto out ; }
 				}
 			}
 			fd_close(fd) ;
@@ -188,16 +191,23 @@ int tree_state(int argc, char const *const *argv)
 	{
 		if (stra_cmp(&in,tree))
 		{
-			return 1 ;
+			err = 1 ;
+			goto out ;
 		}
-		else return 0 ;
+		else 
+		{
+			err = 0 ;
+			goto out ;
+		}
 	}
 	
+	out:
 	stralloc_free(&base) ;
 	stralloc_free(&contents) ; 
 	genalloc_deepfree(stralist,&in,stra_free) ;
 	
-	return 1 ;		
+	return err ;
+
 }
 	
 int tree_cmd_state(unsigned int verbosity,char const *cmd, char const *tree)
