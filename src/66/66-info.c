@@ -64,7 +64,7 @@ static uid_t owner ;
 unsigned int REVERSE = 0 ;
 
 graph_style *STYLE = &graph_default ;
-unsigned int MAXDEPTH = 2 ;
+unsigned int MAXDEPTH = 1 ;
 
 static inline void info_help (void)
 {
@@ -460,14 +460,17 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	if (!bprintf(buffer_1,"%s %s\n","description :",res.sa.s + res.description)) goto err ;
 	if (!bprintf(buffer_1,"%s%s\n","source : ",res.sa.s + res.src)) goto err ;
 	if (!bprintf(buffer_1,"%s%s\n","run at : ",res.sa.s + res.runat)) goto err ;
-	if (!bprintf(buffer_1,"%s%s\n","start script :",res.sa.s + res.exec_run)) goto err ;
-	if (res.exec_finish)
+	if (res.exec_run)
 	{
 		if (!bprintf(buffer_1,"%s%s\n","start script :",res.sa.s + res.exec_run)) goto err ;
 	}
+	if (res.exec_finish)
+	{
+		if (!bprintf(buffer_1,"%s%s\n","finish script :",res.sa.s + res.exec_run)) goto err ;
+	}
 	
 	/** dependencies */
-	if (res.type > CLASSIC) 
+//	if (res.type > CLASSIC) 
 	{	
 		if (res.type == BUNDLE) 
 		{
@@ -477,7 +480,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 		
 		if (res.ndeps)
 		{
-			if (!graph_display(tree.s,treename,svname,1)) strerr_diefu2x(111,"display graph of tree: ", treename) ;
+			if (!graph_display(tree.s,treename,svname,2)) strerr_diefu2x(111,"display graph of tree: ", treename) ;
 		}
 	}
 	
@@ -497,6 +500,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 				else
 				{
 					if (!file_readputsa(&log,res.sa.s + res.dstlog,"current")) retstralloc(0,"sv_args") ;
+					if (!bprintf(buffer_1,"\n")) goto err ;
 					if (!bprintf(buffer_1,"%s \n",print_nlog(log.s,nlog))) goto err ;
 					stralloc_free(&log) ;
 				}
