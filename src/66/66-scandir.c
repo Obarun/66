@@ -237,7 +237,6 @@ int write_log(char const *scandir, char const *scanname)
 			VERBO3 strerr_warnwu1x("set owner path") ;
 			return 0 ;
 		}
-		//path.len-- ;
 		if (!stralloc_cats(&path,SS_LOGGER_USERDIR)) retstralloc(0,"write_log") ;
 	}
 	pathless = path.len ;
