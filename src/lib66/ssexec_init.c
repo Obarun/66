@@ -95,9 +95,16 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	if (!tree_get_permissions(tree.s,info->owner))
 		strerr_dief2x(110,"You're not allowed to use the tree: ",tree.s) ;
 	
+	
+		
 	r = scan_mode(info->scandir.s,S_IFDIR) ;
 	if (r < 0) strerr_dief2x(111,info->scandir.s," conflicted format") ;
 	if (!r) strerr_dief3x(110,"scandir: ",info->scandir.s," doesn't exist") ;
+	
+	if (!stralloc_obreplace(&info->tree,tree.s)) strerr_diefu1sys(111,"replace info->tree string") ;
+	if (!stralloc_obreplace(&info->treename,treename)) strerr_diefu1sys(111,"replace info->treename string") ;
+	info->tree.len--;
+	info->treename.len--;
 	
 	r = scandir_ok(info->scandir.s) ;
 	if (r != 1) earlier = 1 ; 
@@ -113,12 +120,13 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	
 	size_t dirlen ;
 	size_t svdirlen ;
-	char svdir[tree.len + SS_SVDIRS_LEN + SS_DB_LEN + 1 + treenamelen + 1] ;
-	memcpy(svdir,tree.s,tree.len) ;
-	memcpy(svdir + tree.len ,SS_SVDIRS ,SS_SVDIRS_LEN) ;
-	svdirlen = tree.len + SS_SVDIRS_LEN ;
+	char svdir[info->tree.len + SS_SVDIRS_LEN + SS_DB_LEN + 1 + treenamelen + 1] ;
+	memcpy(svdir,info->tree.s,info->tree.len) ;
+	memcpy(svdir + info->tree.len ,SS_SVDIRS ,SS_SVDIRS_LEN) ;
+	svdirlen = info->tree.len + SS_SVDIRS_LEN ;
 	memcpy(svdir + svdirlen, SS_SVC ,SS_SVC_LEN) ;
 	svdir[svdirlen +  SS_SVC_LEN] = 0 ;
+
 	stralloc src = STRALLOC_ZERO ;
 	if (!ss_resolve_pointo(&src,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;
 	/** svc already initiated */
@@ -129,7 +137,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 		if (!dir_cmp(svdir,info->scandir.s,"",&gasvc)) strerr_diefu4x(111,"compare ",svdir," to ",info->scandir.s) ;
 		if (!genalloc_len(stralist,&gasvc))
 		{
-			strerr_warni3x("svc service of tree: ",treename," already initiated") ;
+			strerr_warni3x("svc service of tree: ",info->treename.s," already initiated") ;
 			goto follow ;
 		}
 		for (i = 0 ; i < genalloc_len(stralist,&gasvc) ; i++)
@@ -146,7 +154,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 		
 		if (!earlier)
 		{
-			if (!svc_init(info,svdir,&gares)) strerr_diefu2x(111,"initiate service of tree: ",treename) ;
+			if (!svc_init(info,svdir,&gares)) strerr_diefu2x(111,"initiate service of tree: ",info->treename.s) ;
 		}
 		else
 		{
