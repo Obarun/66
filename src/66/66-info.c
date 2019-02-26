@@ -466,7 +466,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	}
 	if (res.exec_finish)
 	{
-		if (!bprintf(buffer_1,"%s%s\n","finish script :",res.sa.s + res.exec_run)) goto err ;
+		if (!bprintf(buffer_1,"%s%s\n","finish script :",res.sa.s + res.exec_finish)) goto err ;
 	}
 	
 	/** dependencies */
