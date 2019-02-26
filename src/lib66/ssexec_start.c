@@ -61,6 +61,48 @@ static stralloc sares = STRALLOC_ZERO ;
 static genalloc nclassic = GENALLOC_ZERO ; //resolve_t type
 static genalloc nrc = GENALLOC_ZERO ; //resolve_t type
 
+int write_start_resolve(ss_resolve_t *res,ssexec_t *info)
+{
+	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
+	
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
+	{
+		strerr_warnwu1sys("set revolve pointer to source") ;
+		return 0 ;
+	}
+	char const *string = res->sa.s ;
+	char const *name = string + res->name  ;
+	res->reload = 0 ;
+	res->init = 0 ;
+	res->run = 1 ;
+	res->unsupervise = 0 ;
+	if (res->type == CLASSIC || res->type == LONGRUN)
+	{
+		if (!s6_svstatus_read(string + res->runat,&status))
+		{ 
+			VERBO1 strerr_warnwu2sys("read status of: ",name) ;
+			return 0 ;
+		}
+		res->pid = status.pid ;
+	}
+	VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
+	if (!ss_resolve_write(res,sares.s,name))
+	{
+		VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
+		return 0 ;
+	}
+	if (res->logger)
+	{
+		VERBO2 strerr_warni2x("Write logger resolve file of: ",name) ;
+		if (!ss_resolve_setlognwrite(res,sares.s))
+		{
+			VERBO1 strerr_warnwu2sys("write logger resolve file of: ",name) ;
+			return 0 ;
+		}
+	}
+	
+	return 1 ;
+}
 int svc_shutnremove(ssexec_t *info, genalloc *ga, char const *sig,char const *const *envp)
 {
 	if (!svc_send(info,ga,sig,envp))
@@ -72,7 +114,7 @@ int svc_shutnremove(ssexec_t *info, genalloc *ga, char const *sig,char const *co
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++) 
 	{
 		char const *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
-		VERBO1 strerr_warni2x("Delete: ", string + genalloc_s(ss_resolve_t,ga)[i].runat) ;
+		VERBO2 strerr_warni2x("Delete: ", string + genalloc_s(ss_resolve_t,ga)[i].runat) ;
 		if (rm_rf(string + genalloc_s(ss_resolve_t,ga)[i].runat) < 0)
 		{
 			VERBO1 strerr_warnwu2sys("delete: ",string + genalloc_s(ss_resolve_t,ga)[i].runat) ;
@@ -85,7 +127,6 @@ int svc_shutnremove(ssexec_t *info, genalloc *ga, char const *sig,char const *co
 
 int svc_start(ssexec_t *info,genalloc *ga,char const *const *envp)
 {	
-	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	
 	/** reverse to start first the logger */
 	genalloc_reverse(ss_resolve_t,ga) ;
@@ -95,41 +136,9 @@ int svc_start(ssexec_t *info,genalloc *ga,char const *const *envp)
 		return 0 ;
 	}
 		
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
-	{
-		VERBO1 strerr_warnwu1sys("set revolve pointer to source") ;
-		return 0 ;
-	}
 	for (unsigned int i = 0; i < genalloc_len(ss_resolve_t,ga) ; i++)
-	{
-		char *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
-		char *name = string + genalloc_s(ss_resolve_t,ga)[i].name ;
-		genalloc_s(ss_resolve_t,ga)[i].reload = 0 ;
-		genalloc_s(ss_resolve_t,ga)[i].init = 0 ;
-		genalloc_s(ss_resolve_t,ga)[i].run = 1 ;
-		genalloc_s(ss_resolve_t,ga)[i].unsupervise = 0 ;
-		if (!s6_svstatus_read(string + genalloc_s(ss_resolve_t,ga)[i].runat,&status))
-		{ 
-			VERBO1 strerr_warnwu2sys("read status of: ",name) ;
-			return 0 ;
-		}
-		genalloc_s(ss_resolve_t,ga)[i].pid = status.pid ;
-		VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-		if (!ss_resolve_write(&genalloc_s(ss_resolve_t,ga)[i],sares.s,name))
-		{
-			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
-			return 0 ;
-		}
-		if (genalloc_s(ss_resolve_t,ga)[i].logger)
-		{
-			VERBO2 strerr_warni2x("Write logger resolve file of: ",name) ;
-			if (!ss_resolve_setlognwrite(&genalloc_s(ss_resolve_t,ga)[i],sares.s))
-			{
-				VERBO1 strerr_warnwu2sys("write logger resolve file of: ",name) ;
-				return 0 ;
-			}
-		}
-	}
+		if (!write_start_resolve(&genalloc_s(ss_resolve_t,ga)[i],info)) return 0 ;
+	
 	
 	return 1 ;
 }
@@ -272,7 +281,6 @@ int rc_sanitize(ssexec_t *info,genalloc *ga, char const *const *envp)
 
 int rc_start(ssexec_t *info,genalloc *ga,char const *const *envp)
 {
-	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	char *s = 0 ;
 	int r = db_find_compiled_state(info->livetree.s,info->treename.s) ;
 	if (r)
@@ -286,52 +294,14 @@ int rc_start(ssexec_t *info,genalloc *ga,char const *const *envp)
 	else s = "-u" ;
 	if (!rc_send(info,ga,s,envp))
 	{
-		VERBO1 strerr_warnwu1x("bring down services") ;
+		VERBO1 strerr_warnwu1x("bring up services") ;
 		return 0 ;
 	}
 	
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
-	{
-		VERBO1 strerr_warnwu1sys("set revolve pointer to source") ;
-		return 0 ;
-	}
+	
 	for (unsigned int i = 0; i < genalloc_len(ss_resolve_t,ga) ; i++)
-	{
-		char *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
-		char *name = string + genalloc_s(ss_resolve_t,ga)[i].name ;
-		genalloc_s(ss_resolve_t,ga)[i].reload = 0 ;
-		genalloc_s(ss_resolve_t,ga)[i].init = 0 ;
-		genalloc_s(ss_resolve_t,ga)[i].run = 1 ;
-		genalloc_s(ss_resolve_t,ga)[i].unsupervise = 0 ;
+		if (!write_start_resolve(&genalloc_s(ss_resolve_t,ga)[i],info)) return 0 ;
 		
-		/** only check longrun */
-		if (genalloc_s(ss_resolve_t,ga)[i].type == LONGRUN)
-		{
-			if (!s6_svstatus_read(string + genalloc_s(ss_resolve_t,ga)[i].runat,&status))
-			{ 
-				VERBO1 strerr_warnwu2sys("read status of: ",name) ;
-				return 0 ;
-			}
-			genalloc_s(ss_resolve_t,ga)[i].pid = status.pid ;
-		}
-		VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-		if (!ss_resolve_write(&genalloc_s(ss_resolve_t,ga)[i],sares.s,name))
-		{
-			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
-			return 0 ;
-		}
-		if (genalloc_s(ss_resolve_t,ga)[i].logger) 
-		{
-			VERBO2 strerr_warni2x("Write logger resolve file of: ",name) ;
-			if (!ss_resolve_setlognwrite(&genalloc_s(ss_resolve_t,ga)[i],sares.s))
-			{
-				VERBO1 strerr_warnwu2sys("write logger resolve file of: ",name) ;
-				return 0 ;
-			}
-		}
-	}
-	
-	
 	return 1 ;
 }
 
@@ -418,13 +388,13 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 	if (!cl && !rc) ss_resolve_free(pres) ;
 	if (cl)
 	{
-		VERBO1 strerr_warni1x("sanitize classic services ...") ;
+		VERBO2 strerr_warni1x("sanitize classic services ...") ;
 		if(!svc_sanitize(info,&nclassic,envp)) 
 			strerr_diefu1x(111,"sanitize classic services") ;
 		VERBO1 strerr_warni1x("start classic services ...") ;
 		if(!svc_start(info,&nclassic,envp)) 
 			strerr_diefu1x(111,"start classic services") ;
-		VERBO1 strerr_warni3x("switch classic service of: ",info->treename.s," to source") ;
+		VERBO2 strerr_warni3x("switch classic service of: ",info->treename.s," to source") ;
 		if (!svc_switch_to(info,SS_SWSRC))
 			strerr_diefu3x(111,"switch classic service of: ",info->treename.s," to source") ;
 			
@@ -432,13 +402,13 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 	} 
 	if (rc)
 	{
-		VERBO1 strerr_warni1x("sanitize atomic services ...") ;
+		VERBO2 strerr_warni1x("sanitize atomic services ...") ;
 		if (!rc_sanitize(info,&nrc,envp)) 
 			strerr_diefu1x(111,"sanitize atomic services") ;
 		VERBO1 strerr_warni1x("start atomic services ...") ;
 		if (!rc_start(info,&nrc,envp)) 
 			strerr_diefu1x(111,"update atomic services") ;
-		VERBO1 strerr_warni3x("switch atomic services of: ",info->treename.s," to source") ;
+		VERBO2 strerr_warni3x("switch atomic services of: ",info->treename.s," to source") ;
 		if (!db_switch_to(info,envp,SS_SWSRC))
 			strerr_diefu5x(111,"switch",info->livetree.s,"/",info->treename.s," to source") ;
 		
