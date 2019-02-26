@@ -228,10 +228,10 @@ static void announce(ss_resolve_sig_t *sv_signal)
 
 	int r = sv_signal->state ;
 	char *sv = sv_signal->res.sa.s + sv_signal->res.runat ;
-	if (r == 3) { VERBO2 strerr_warnw3x(sv," report permanent failure to bring ",(sv_signal->sig > 1) ? "down" : "up") ; }
-	else if (r == 2) { VERBO2 strerr_warnwu3x("bring ", (sv_signal->sig > 3) ? "down " : "up ", sv) ; }
-	else if (r == 1) { VERBO2 strerr_warni4x(sv," is ",(sv_signal->sig > 3) ? "down" : "up"," but not notified by the daemon itself") ; }
-	else if (!r) { VERBO2 strerr_warni4x(sv,": ",(sv_signal->sig > 3) ? "stopped" : "started"," successfully") ; }
+	if (r == 3) { VERBO1 strerr_warnw3x(sv," report permanent failure to bring ",(sv_signal->sig > 1) ? "down" : "up") ; }
+	else if (r == 2) { VERBO1 strerr_warnwu3x("bring ", (sv_signal->sig > 3) ? "down " : "up ", sv) ; }
+	else if (r == 1) { VERBO1 strerr_warni4x(sv," is ",(sv_signal->sig > 3) ? "down" : "up"," but not notified by the daemon itself") ; }
+	else if (!r) { VERBO1 strerr_warni4x(sv,": ",(sv_signal->sig > 3) ? "stopped" : "started"," successfully") ; }
 }
 
 int svc_listen(genalloc *gasv, ftrigr_t *fifo,int spfd,ss_resolve_sig_t *svc)
@@ -356,13 +356,13 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			
 		if (isup && (SIGNAL <= SIGRUP))
 		{
-			VERBO2 strerr_warni2x(svok,": already up") ;
+			VERBO1 strerr_warni2x(svok,": already up") ;
 			ss_resolve_free(&sv_signal.res) ;
 			continue ;
 		}
 		else if (!isup && (SIGNAL >= SIGDOWN))
 		{
-			VERBO2 strerr_warni2x(svok,": already down") ;
+			VERBO1 strerr_warni2x(svok,": already down") ;
 			ss_resolve_free(&sv_signal.res) ;
 			continue ;
 		}
