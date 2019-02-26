@@ -178,7 +178,7 @@ int ss_resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *
 	stralloc sainsta = STRALLOC_ZERO ;
 	stralloc subdir = STRALLOC_ZERO ;
 	if (!stralloc_cats(&subdir,src)) goto errstra ;
-	if (!stralloc_cats(&subdir,"/")) goto errstra ;
+	//if (!stralloc_cats(&subdir,"/")) goto errstra ;
 	
 	obr = insta = 0 ;
 	
@@ -353,7 +353,7 @@ int ss_resolve_rmfile(ss_resolve_t *res, char const *src,char const *name)
 	tmp[srclen + SS_RESOLVE_LEN] = '/' ;
 	memcpy(tmp + srclen + SS_RESOLVE_LEN + 1, name, namelen) ;
 	tmp[srclen + SS_RESOLVE_LEN + 1 + namelen] = 0 ;
-			
+
 	if (unlink(tmp) < 0) return 0 ;
 	if (res->logger)
 	{
