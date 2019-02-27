@@ -546,7 +546,7 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 				{
 					if (r == LOGGER)
 						service->opts[0] = 1 ;/**0 means not enabled*/
-					else if (r == PIPELINE)
+					else if (svtype == LONGRUN && r == PIPELINE)
 						service->opts[1] = 1 ;
 				}
 				if (r == ENVIR)
