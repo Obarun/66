@@ -211,7 +211,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		}
 		VERBO1 strerr_warni3x(name,down ? " stopped " : " started ", "successfully") ;
 	}
-	freed:
+	
 	ss_resolve_free(&res) ;
 	stralloc_free(&tmp) ;	
 	stralloc_free(&src) ;
