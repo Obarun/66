@@ -56,7 +56,6 @@ extern ssexec_t const ssexec_zero ;
 extern int set_ssinfo(ssexec_t *info) ;
 
 extern ssexec_func_t ssexec_init ;
-extern ssexec_func_t ssexec_all ;
 extern ssexec_func_t ssexec_enable ;
 extern ssexec_func_t ssexec_disable ;
 extern ssexec_func_t ssexec_start ;
@@ -78,8 +77,6 @@ extern char const *usage_stop ;
 extern char const *help_stop ;
 extern char const *usage_init ;
 extern char const *help_init ;
-extern char const *usage_all ;
-extern char const *help_all ;
 
 extern int ssexec_main(int argc, char const *const *argv, char const *const *envp,ssexec_func_t *func,ssexec_t *info) ;
 

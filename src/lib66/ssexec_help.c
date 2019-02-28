@@ -57,18 +57,16 @@ char const *help_disable =
 "	-S: disable and stop the service\n"
 ;
 
-char const *usage_init = "66-init [ -h ] [ -v verbosity ] [ -l live ] [ -c | d | B ] tree" ;
+char const *usage_init = "66-init [ -h ] [ -v verbosity ] [ -l live ] [ -t tree ] classic|database|both" ;
 
 char const *help_init =
-"66-init <options> tree\n"
+"66-init <options> classic|database|both\n"
 "\n"
 "options :\n"
 "	-h: print this help\n" 
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n" 
-"	-c: init classic service\n"
-"	-d: init database service\n"
-"	-B: init classic and database service\n"
+"	-t: name of the tree to use\n"
 ;
 
 char const *usage_start = "66-start [ -h ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -r | R ] service(s)" ;
@@ -122,18 +120,4 @@ char const *help_svctl =
 "	-R: reload and really up\n"
 "	-X: bring down the service(s) and the kill his supervisor\n"
 "	-K: kill the service(s) and keep it down\n"
-;
-
-char const *usage_all = "66-all [ -h ] [ -v verbosity ] [ -f ] [ -T timeout ] [ -l live ] [ -o tree ] up/down" ;
-
-char const *help_all =
-"66-all <options> up/down\n"
-"\n"
-"options :\n"
-"	-h: print this help\n" 
-"	-v: increase/decrease verbosity\n"
-"	-T: timeout\n"
-"	-l: live directory\n"
-"	-o: tree to use\n"
-"	-f: fork the process\n"
 ;
