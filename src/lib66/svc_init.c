@@ -64,7 +64,7 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 		char *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
 		char *name = string + genalloc_s(ss_resolve_t,ga)[i].name ;
 		logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-		if (logname > 0) name = string + genalloc_s(ss_resolve_t,ga)[i].deps ;
+		if (logname > 0) name = string + genalloc_s(ss_resolve_t,ga)[i].logassoc ;
 		
 		size_t namelen = strlen(name) ;
 		size_t srclen = strlen(src) ;	
