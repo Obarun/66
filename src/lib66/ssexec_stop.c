@@ -116,11 +116,6 @@ int svc_down(ssexec_t *info,genalloc *ga,char const *const *envp)
 		if (!svc_shutnremove(info,&tounsup,SIG,envp)) return 0 ;
 		if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
 		{
-			VERBO1 strerr_warnwu1sys("set revolve pointer to source") ;
-			goto err ;
-		}
-		if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
-		{
 			strerr_warnwu1sys("set revolve pointer to source") ;
 			return 0 ;
 		}
@@ -306,6 +301,10 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 			 * make an orphan service.
 			 * check if it's the case and force to stop it*/
 			if (!res.run) strerr_dief2x(110,name," : is not running, try 66-start before") ;
+			/** always check if the daemon is present or not into the scandir
+			 * it can be stopped from different manner (crash,66-scandir signal,..)
+			 * without changing the corresponding resolve file */
+			if (!s6_svc_ok(res.sa.s + res.runat)) strerr_dief2x(110,name," : is not running") ;
 			if (logname > 0)
 			{
 				if (UNSUP)

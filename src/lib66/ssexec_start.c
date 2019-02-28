@@ -366,8 +366,14 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 			logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 			if ((RELOAD > 1) && (logname > 0)) strerr_dief1x(111,"-R signal is not allowed to a logger") ;
 			if (RELOAD > 1) res.reload = 1 ;
-			if (res.init) res.reload = 0 ;
+			/** always check if the daemon is present or not into the scandir
+			 * it can be stopped from different manner (crash,66-scandir signal,..)
+			 * without changing the corresponding resolve file */
+			if (!s6_svc_ok(res.sa.s + res.runat)) res.init = 1 ;
+			else res.init = 0 ;
 			
+			if (res.init) res.reload = 0 ;
+					
 			if (res.type == CLASSIC)
 			{
 				if (!genalloc_append(ss_resolve_t,&nclassic,&res)) strerr_diefu3x(111,"add: ",name," on genalloc") ;
