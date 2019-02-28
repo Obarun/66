@@ -101,7 +101,7 @@ extern int graph_sort(graph_t *g) ;
 
 extern int graph_search(graph_t *g, char const *name) ;
 
-extern int graph_tree(char const *srctree, graph_t *g, char const *name, char const *tree) ;
+extern int graph_tree(char const *srctree, graph_t *g, char const *name, char const *tree,int reverse) ;
 
 extern void stack_reverse(genalloc *st) ;
 
