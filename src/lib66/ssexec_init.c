@@ -58,11 +58,11 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	
 	classic = db = earlier = 0 ;
 
-	if (argc > 2) exitusage(usage_init) ;
+	if (argc != 2) exitusage(usage_init) ;
 	if (*argv[1] == 'c') classic = 1 ;
 	else if (*argv[1] == 'd') db = 1 ;
 	else if (*argv[1] == 'b') classic = db = 1 ;
-	else strerr_dief2x(110,"uknow command: ",*argv) ;
+	else strerr_dief2x(110,"uknow command: ",argv[1]) ;
 	
 	if (!tree_get_permissions(info->tree.s,info->owner))
 		strerr_dief2x(110,"You're not allowed to use the tree: ",info->tree.s) ;
