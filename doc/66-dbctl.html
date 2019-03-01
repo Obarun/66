@@ -23,14 +23,15 @@
 
 <h2> Interface </h2>
 	<pre>
-	66-dbctl [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -T <em>timeout</em> ] [ -u up ] [ -d down ] <em>service(s)</em>
+	66-dbctl [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -T <em>timeout</em> ] [ -u | d | r ] <em>service(s)</em>
 	</pre>
 
 	<p>
       66-dbctl expects to find an already supervised <em>service</em> in <em>live</em> defined in the given <em>tree</em> and an already running <em>scandir</em>. 
-      <br><b>(!)</b> This tool <b>only</b> deals with <b><em>'bundle'</em></b>, <b><em>'longrun'</em></b> and <b><em>'oneshot'</em></b> services&mdash;for <em>'classic'</em> services see <a href="66-svctl.html"><tt>66-svctl</tt></a>.
+      <br><b>(!)</b> This tool <b>only</b> deals with <b><em>'bundle'</em></b> and <b><em>'atomic'</em></b> services&mdash;for <em>'classic'</em> services see <a href="66-svctl.html"><tt>66-svctl</tt></a>.
     </p>
     <p>Multiple <em>services</em> can be handled by separating their names with a space. <tt>66-dbctl</tt> gathers the services passed as argument in a list called <em>selection</em>.</p>
+    <p>If <em>service</em> is not given, 66-dbctl deals with all <b><em>'atomic'</em></b> services of the given <em>tree</em>.</p>
 
 <h2> Options </h2>
 
@@ -66,6 +67,9 @@
 		</li>
 		<li> 
 			<tt>-d&nbsp;</tt>&nbsp;: sends a <em>down</em> signal to the <em>service</em>.
+		</li>
+		<li> 
+			<tt>-r&nbsp;</tt>&nbsp;: reload the <em>service</em>. It sends a <em>down</em> signal then a <em>up</em> signal to the <em>service</em>.
 		</li>
 	</ul>
 

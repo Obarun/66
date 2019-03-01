@@ -20,10 +20,10 @@
 	<p>
       This command stops one ore more <em>services</em> defined in <em>tree</em>.
     </p>
-
+[ -h ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -u ] [ -X ] [ -K ] service(s)"
 <h2> Interface </h2>
 	<pre>
-	66-stop [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -T <em>timeout</em> ] [ -u unsupervise ] <em>service</em>"
+	66-stop [ -h ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -T <em>timeout</em> ] [ -u ] [ -X ] [ -K ]<em>service</em>"
 	</pre>
 
 	<p>
@@ -66,7 +66,12 @@
 		<tt>-u&nbsp;</tt>&nbsp;: unsupervise the <em>service</em>.
 		Remove the <em>service</em> directory from the <em>scandir</em> at the end of the stop process. This option only applies to services of type <tt><em>'classic'</em></tt>.
 	 </li>	 
-
+	<li> 
+		<tt>-X&nbsp;</tt>&nbsp;: exit. The supervisor of the service will exit too. This command should normally never be used on a working system.
+	 </li>
+	 <li> 
+		<tt>-K&nbsp;</tt>&nbsp;: sends a SIGKILL to the <em>service</em> and keep it down.
+	 </li>		
 	</ul>
 <h2 id="dependencies">Dependency handling</h2>
 <p>For <em>services</em> of type <tt><em>'bundle'</em></tt>, <tt><em>'longrun'</em></tt> or <tt><em>'oneshot'</em></tt> any existing dependency chain will be resolved automatically.

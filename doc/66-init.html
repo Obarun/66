@@ -23,7 +23,7 @@
 
 <h2> Interface </h2>
 	<pre>
-	66-init [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -c classic ] [ -d database ] [ -B both ] <em>tree</em>
+	66-init [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t tree ] <em>classic|database|both</em>
 	</pre>
 
 	<p>
@@ -50,19 +50,22 @@
 		option to <tt>./configure</tt>. An existing absolute path is expected and
 		should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
 	 </li>
+	</ul> 
+<h2> Arguments </h2>	
+	<ul>
 	 <li> 
-		<tt>-c&nbsp;</tt>&nbsp;: only initiate all <em>classic</em> services from <em>tree</em> 
-		at <em>live</em>.
+		<tt>classic&nbsp;</tt>&nbsp;: only initiate all <em>classic</em> services from <em>tree</em> 
+		at <em>live</em> location.
 	 </li>
 	 
 	 <li> 
-		<tt>-d&nbsp;</tt>&nbsp;: only initiate service databases from <em>tree</em> 
-		at <em>live</em>.
+		<tt>database&nbsp;</tt>&nbsp;: only initiate all <em>bundle</em> and <em>atomic</em> services from <em>tree</em> 
+		at <em>live</em> location.
 	 </li>
 	 <!-- are these meant to be single or plural? -->
 	 
 	<li> 
-		<tt>-B&nbsp;</tt>&nbsp;: initiate all <em>classic</em> services and service databases from <em>tree</em> 
+		<tt>both&nbsp;</tt>&nbsp;: initiate all <em>classic</em> services and all <em>bundle</em> and <em>atomic</em> services from <em>tree</em>
 		at <em>live</em> location.
 	</li>	 
 	<!-- Again are there multiple services initiated or only one at a time? I read and understand this as if it were usually multiple. -->
@@ -71,15 +74,14 @@
 <h2>Initiatlization process</h2>
 <h3>Classic services</h3>
 	<p>The tool will make an exact copy of all classic service files and directories of the <em>tree</em> inside a <em>scandir</em> directory at <em>live</em>. 
-	By default <em>/run/66/scandir/UID</em> is created if it does not exist yet, where <em>UID</em> is the uid of the current owner of the process. The <em>scandir</em> does <strong>not</strong> need to be
+	By default <tt>/run/66/scandir/UID</tt> is created if it does not exist yet, where <tt>UID</tt> is the uid of the current owner of the process. The <em>scandir</em> does <strong>not</strong> need to be
 	necessarily running. This is useful at boot time to initiate an early service before starting the <em>scandir</em>. Once the <em>scandir</em> 
 	starts&mdash;see <tt><a href="66-scandir.html">66-scandir -u</a></tt> option, the already present services start automatically.</p>
-	<p>If the <em>scandir</em> is running, you should invoke a <tt>66-scandir -s reload</tt> command to inform it about the changes.</p>
-<h3>Bundle, longrun, oneshot services</h3>
+	<p>If the <em>scandir</em> is running, you should invoke a <tt><a href="66-scandir.html">66-scandir -s reload</a></tt> command to inform it about the changes.</p>
+<h3>Bundle, atomic services</h3>
 	<p>The tool will automatically invoke <tt><a href="https://skarnet.org/software/s6-rc/s6-rc-init.html">s6-rc-init -l <em>live</em> -c <em>compiled</em> - p <em>prefix</em></a></tt>, 
 	where, by default, <em>live</em> translates to <tt>/run/66/tree/UID/<em>tree</em></tt> and <em>compiled</em> to <tt>/var/lib/66/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> or 
 	<tt>$HOME/.66/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> depending on the owner of the process and the <em>prefix</em> of the name of the <em>tree</em>. If it doesn't exist yet <em>live</em> 
-	is created in the process. For these services the <em>scandir</em> <strong>must</strong> be running. In contrary to <tt>s6-rc-init</tt>, this tool like any other 66 tool can be invoked with
-	user permissions.</p>
+	is created in the process. For these services the <em>scandir</em> <strong>must</strong> be running. This tool like any other 66 tool can be invoked with user permissions.</p>
 </body>
 </html>
