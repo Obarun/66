@@ -494,7 +494,8 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 	}
 	size_t destlen = get_rlen_until(destlog.s,'/',destlog.len) ;
 	destlog.len = destlen ;
-		
+	if (!stralloc_0(&destlog)) retstralloc(0,"write_logger") ;
+	
 	r = dir_search(destlog.s,svname,S_IFDIR) ;
 	if (r < 0)
 	{
