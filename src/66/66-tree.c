@@ -36,7 +36,7 @@
 
 //#include <stdio.h>
 
-#define USAGE "66-tree [ -h ] [ -v verbosity ] [ -n | R ] [ -a ] [ -d ] [ -c ] [ -E | D ] [ -C clone ] tree" 
+#define USAGE "66-tree [ -h ] [ -v <em>verbosity</em> ] [ -n|R ] [ -a|d ] [ -c ] [ -E|D ] [ -C clone ] tree" 
 
 unsigned int VERBOSITY = 1 ;
 
