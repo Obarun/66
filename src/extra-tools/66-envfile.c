@@ -191,7 +191,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	
 	r = dir_get(&toparse,path,"",S_IFREG) ;
 	if (!r && insist) strerr_diefu2sys(111,"get file from: ",path) ;
-	else if (!r && !insist)
+	else if ((!r && !insist) || !genalloc_len(stralist,&toparse))
 	{
 		argv++;
 		argc--;
