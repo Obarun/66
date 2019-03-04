@@ -64,7 +64,7 @@
 		 </li>
 		 
 		 <li>
-			<tt>-r&nbsp;</tt>&nbsp;: shows the dependency graph of <em>tree</em>.
+			<tt>-r&nbsp;</tt>&nbsp;: shows the dependency graph of <em>tree</em> in reverse mode.
 		 </li>
 		 
 		 <li> 
@@ -95,7 +95,7 @@
 			<tt>-p&nbsp;<em>n lines</em>&nbsp;</tt>&nbsp;: prints the <em>n</em> last lines from the associated log file of the <em>service</em>.
 		</li>
 		<li>
-			<tt>-r&nbsp;</tt>&nbsp;: shows the dependency graph of <em>service</em>.
+			<tt>-r&nbsp;</tt>&nbsp;: shows the dependency graph of <em>service</em> in reverse mode.
 		</li>
 		<li> 
 			<tt>-d&nbsp;<em>depth</em>&nbsp;</tt>&nbsp;: limits the depth of the dependency graph visualisation; defaults to 1.
@@ -107,86 +107,134 @@
 	<p>The command <tt>66-info -T boot</tt> as root user on the <em>Obarun</em> default system displays the following where <em>boot</em>
 	is the tree used to properly boot the machine:
 	<pre>   
-   [Name:boot,Current:no,Enabled:no]
-    ├─All  :bundle
-    ├─boot-extra  :oneshot
-    ├─all-Rwfs  :bundle
-    ├─rwfs-tmpfiles  :oneshot
-    ├─rwfs-66local  :oneshot
-    ├─rwfs-dmesglog  :oneshot
-    ├─rwfs-end  :oneshot
-    ├─rwfs-logfiles  :oneshot
-    ├─rwfs-random  :oneshot
-    ├─rwfs-localtime  :oneshot
-    ├─rwfs-nofilesystem  :oneshot
-    ├─rwfs-loopback  :oneshot
-    ├─rwfs-ip6tables  :oneshot
-    ├─rwfs-iptables  :oneshot
-    ├─rwfs-tmpdir  :oneshot
-    ├─rwfs-fsrw  :oneshot
-    ├─all-Rofs  :bundle
-    ├─rofs-kernruntime  :oneshot
-    ├─rofs-swap  :oneshot
-    ├─rofs-modules  :oneshot
-    ├─rofs-Checkfs  :bundle
-    ├─checkfs-fscheck  :oneshot
-    |─checkfs-lvm  :oneshot
-    ├─checkfs-btrfs  :oneshot
-    ├─checkfs-dmraid  :oneshot
-    ├─rofs-hardclock  :oneshot
-    ├─rofs-console  :oneshot
-    ├─rofs-Udevd  :bundle
-    ├─udevd-udevadm  :oneshot
-    ├─udevd-udev  :longrun
-    ├─rofs-kernmod  :oneshot
-    ├─rofs-cgroups  :oneshot
-    ├─00  :bundle
-    ├─hostname  :oneshot
-    ├─conf  :oneshot
-    ├─filesystem  :oneshot
-    └─tty12  :classic
+	[Name:boot_backup-2019-02-28-40,Current:no,Enabled:no]
+	├─(250,classic) tty12
+	├─(0,oneshot) filesystem
+	├─(0,oneshot) hostname
+	├─(0,bundle) 00
+	├─(0,oneshot) rofs-cgroups
+	├─(0,oneshot) rofs-kernmod
+	├─(419,longrun) udevd-udev
+	├─(0,oneshot) udevd-udevadm
+	├─(0,bundle) rofs-Udevd
+	├─(0,oneshot) rofs-console
+	├─(0,oneshot) rofs-hardclock
+	├─(0,oneshot) checkfs-dmraid
+	├─(0,oneshot) checkfs-btrfs
+	├─(0,oneshot) checkfs-lvm
+	├─(0,oneshot) checkfs-fscheck
+	├─(0,bundle) rofs-Checkfs
+	├─(0,oneshot) rofs-modules
+	├─(0,oneshot) rofs-swap
+	├─(0,oneshot) rofs-kernruntime
+	├─(0,bundle) all-Rofs
+	├─(0,oneshot) rwfs-fsrw
+	├─(0,oneshot) rwfs-tmpdir
+	├─(0,oneshot) rwfs-iptables
+	├─(0,oneshot) rwfs-ip6tables
+	├─(0,oneshot) rwfs-loopback
+	├─(0,oneshot) rwfs-nofilesystem
+	├─(0,oneshot) rwfs-localtime
+	├─(0,oneshot) rwfs-random
+	├─(0,oneshot) rwfs-logfiles
+	├─(0,oneshot) rwfs-end
+	├─(0,oneshot) rwfs-dmesglog
+	├─(0,oneshot) rwfs-66local
+	├─(0,oneshot) rwfs-tmpfiles
+	├─(0,bundle) all-Rwfs
+	├─(0,oneshot) boot-extra
+	└─(0,bundle) All
+
 	</pre>
 	</p>
+	<p>By default the first service displayed is the first service started, the second one is the second started and so on.</p>
 	<p>The first line gives you useful information about the <em>tree</em> itself where <tt><em>Name</em></tt> is the name of the tree, 
 		<tt><em>Current</em></tt> tells if the <em>tree</em> is the current one or not&mdash;see <tt><a href="66-tree.html">66-tree -c</a></tt> and
 		<tt><em>Enabled</em></tt> reveals the state of the tree&mdash;see <tt><a href="66-tree.html">66-tree -E</a></tt>.
-		In addition to the name of each service the type of the service is shown next to it.
+		For each service the first number found between '()' bracket is the corresponding pid of the service, the type of the service is shown next to it. Finally the name of the service is displayed.
 	</p>
 	<p>
 		By default the dependency graph is rendered in order of execution. In this example the <em>'bundle' All</em> is the last finished
-		service and <em>'classic' tty12</em> is the first one executed.
+		service and <em>'classic' tty12</em> is the first one executed. You can reverse the rendered order with the <tt>-r</tt> option.</p>
 	</p>
 	
 <h2>Service output display example</h2>
 
 	<p>The command <tt>sudo 66-info -S -d3 00</tt> displays the following where <em>00</em> 
 	is the name of the service:
-	<pre>    [00]
-    tree : boot
-    status : nothing to display
-    type : bundle
-    description : mount filesystem, parse the 66.conf file, set the hostname
-    contents :
-     └─00  :bundle
-       ├─filesystem  :oneshot
-       ├─conf  :oneshot
-       │  └─filesystem  :oneshot
-       └─hostname  :oneshot
-         └─conf  :oneshot
+	<pre>
+	[00]
+	on tree : boot
+	status : nothing to display
+	type : bundle
+	description : mount filesystem and set the hostname
+	source : /etc/66/service/boot
+	run at : /run/66/tree/0/boot/servicedirs/00
+	[contents:2]
+	└─(0,bundle) 00
+	  ├─(0,oneshot) filesystem
+	  └─(0,oneshot) hostname
+
 	</pre>
 	</p>
 	<p>Let's take another example, the command sudo <tt>66-info -S -p5 ntpd</tt> displays the following:
-	<pre>    [ntpd]
-    tree : root
-    status : up (pid 11458) 30 seconds
-    type : classic
-    description : ntpd daemon
-    logger at : /var/log/66/ntpd 
-    2018-12-14 17:56:11.876483500  peer 43.245.48.27 now valid
-    2018-12-14 17:56:11.876508500  reply from 43.245.48.27: offset -0.000546 delay 0.035899, next query 5s
-    2018-12-14 17:56:12.946922500  reply from 103.106.66.123: offset 0.018069 delay 0.069026, next query 8s
-    2018-12-14 17:56:12.947754500  reply from 103.239.8.22: offset 0.001671 delay 0.069848, next query 6s
+	<pre> 
+	[ntpd]
+	on tree : root
+	status : up (pid 808) 6386 seconds
+	type : classic
+	description : ntpd daemon
+	source : /etc/66/service/
+	run at : /run/66/scandir/0/ntpd
+	start script : foreground { mkdir -p  -m 0755 ${RUNDIR} } 
+	execl-cmdline -s { ntpd ${CMD_ARGS} } 
+	[dependencies:1]
+	└─(808,classic) ntpd
+	  └─(807,classic) ntpd-log
+	logger associated : ntpd-log
+	log destination : /var/log/66/ntpd 
+
+	2019-03-01 07:28:15.592154500  adjtimex returns frequency of 0.000000ppm
+	2019-03-01 07:28:15.601109500  ntp engine ready
+	2019-03-01 07:28:15.770395500  adjtimex adjusted frequency by 16.428986ppm
+	2019-03-01 07:28:15.770433500  set local clock to Fri Mar  1 07:28:15 +11 2019 (offset 0.000000s)
 	</pre>
+	<p> In our case :
+	<ul>
+		<li>
+			<tt>[ntpd]&nbsp;</tt>&nbsp;: name of the service.
+		</li>
+		<li>
+			<tt>on tree&nbsp;</tt>&nbsp;: service enable on tree root.
+		</li>
+		<li>
+			<tt>status&nbsp;</tt>&nbsp;: status of the service.
+		</li>
+		<li>
+			<tt>type&nbsp;</tt>&nbsp;: type of the service.
+		</li>
+		<li>
+			<tt>description&nbsp;</tt>&nbsp;: short description of the service.
+		</li>
+		<li>
+			<tt>source&nbsp;</tt>&nbsp;: origin of the frontend service file used to enable the service.
+		</li>
+		<li>
+			<tt>runat&nbsp;</tt>&nbsp;: location of the service into the scandir.
+		</li>
+		<li>
+			<tt>start script&nbsp;</tt>&nbsp;: command line executed at start process. If a stop section was set an additionnal field called stop script will be displayed with the corresponding command line executed at stop process.
+		</li>
+		<li>
+			<tt>[dependencies:number]&nbsp;</tt>&nbsp;: number of direct dependencies of the service followed by the dependencies graph.
+		</li>
+		<li>
+			<tt>logger associated&nbsp;</tt>&nbsp;: name of the service logger.
+		</li>
+		<li>
+			<tt>log destination&nbsp;</tt>&nbsp;: destination of the logger file.
+		</li>
+	</ul>
 	</p>
 </body>
 </html>

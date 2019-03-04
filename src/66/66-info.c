@@ -1,7 +1,7 @@
 /* 
  * 66-info.c
  * 
- * Copyright (c) 2018 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
  * 
  * All rights reserved.
  * 
@@ -223,15 +223,16 @@ int graph_display(char const *tree,char const *treename,char const *svname,unsig
 	}
 	if (graph_sort(&g) < 0)
 	{
-		VERBO3 strerr_warnw1x("cyclic graph detected") ;
-		e= 0 ; goto err ;
+		VERBO1 strerr_warnw1x("cyclic graph detected") ;
+		e = 0 ; goto err ;
 	}
 	
 	if(genalloc_len(vertex_graph_t,&g.stack))
 	{	
-		if (REVERSE) stack_reverse(&g.stack) ;
+		//if (!REVERSE) stack_reverse(&g.stack) ;
+	
 		if (buffer_putflush(buffer_1,"",1) < 0){ e = 0 ; goto err ; }
-		graph_tree(dir,&g,svname,treename) ;
+		if (!graph_tree(dir,&g,svname,treename,REVERSE)) { e = 0 ; goto err ; } ;
 	}
 	
 	graph_free(&g) ;
@@ -466,7 +467,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	}
 	if (res.exec_finish)
 	{
-		if (!bprintf(buffer_1,"%s%s\n","finish script :",res.sa.s + res.exec_run)) goto err ;
+		if (!bprintf(buffer_1,"%s%s\n","stop script :",res.sa.s + res.exec_finish)) goto err ;
 	}
 	
 	/** dependencies */
@@ -474,9 +475,9 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	{	
 		if (res.type == BUNDLE) 
 		{
-			if (!bprintf(buffer_1,"%s\n","contents :")) goto err ;
+			if (!bprintf(buffer_1,"%s%i%s\n","[contents:",res.ndeps,"]")) goto err ;
 		}
-		else if (!bprintf(buffer_1,"%s%i%s\n","direct dependencies : ",res.ndeps," service(s)")) goto err ;
+		else if (!bprintf(buffer_1,"%s%i%s\n","[dependencies:",res.ndeps,"]")) goto err ;
 		
 		if (res.ndeps)
 		{

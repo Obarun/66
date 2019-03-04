@@ -23,7 +23,7 @@
 
 <h2> Interface </h2>
 	<pre>
-	66-disable [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -S stop ] <em>service(s)</em>
+	66-disable [ -h ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -S ] <em>service(s)</em>
 	</pre>
 
 	<p>
@@ -65,12 +65,8 @@
 	
 <h2 id="dependencies">Dependencies handling</h2>
 
-<p>In case of <tt><em>'bundle'</em></tt>, <tt><em>'longrun'</em></tt> or <tt><em>'oneshot'</em></tt> services, any dependency chain will be automatically resolved.
+<p>In case of <tt><em>'bundle'</em></tt> or <tt><em>'atomic'</em></tt> services, any dependency chain will be automatically resolved.
 It is unnecessary to manually define chained sets of dependencies. If FooA has a declared dependency on FooB, FooB will be automatically disabled as well when disabling FooA.
 This will run recursively until all dependencies are disabled.</p>
-<!-- ...but only if the chained services do not have other processes running that require it. -->
-
-<!-- Is the before commented sentence true? Would make sense to mention it if it was. -->
-
 </body>
 </html>

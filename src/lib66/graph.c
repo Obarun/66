@@ -1,7 +1,7 @@
 /* 
  * graph.c
  * 
- * Copyright (c) 2018 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
  * 
  * All rights reserved.
  * 
@@ -23,6 +23,7 @@
 #include <oblibs/directory.h>
 #include <oblibs/files.h>
 #include <oblibs/types.h>
+#include <oblibs/strakeyval.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
@@ -93,7 +94,7 @@ static void print_text(char const *srctree,const char *sv, tdepth *depth, int la
 	
 }
 
-static void graph_walk(char const *srctree, graph_t *g,genalloc *ga,unsigned int src,unsigned int nlen, tdepth *depth)
+void graph_walk(char const *srctree, graph_t *g,genalloc *ga,unsigned int src,unsigned int nlen, tdepth *depth)
 {
 	
 	unsigned int last, i, newdata ;
@@ -128,8 +129,7 @@ static void graph_walk(char const *srctree, graph_t *g,genalloc *ga,unsigned int
 		unsigned int dplen = genalloc_s(vertex_graph_t,&g->vertex)[newdata].ndeps ; 
 	
 		last =  i + 1 < depth->pndeps  ? 0 : 1 ;		
-		
-
+	
 		print_text(srctree,name, depth, last) ;
 	
 		if (dplen)
@@ -170,30 +170,28 @@ static void graph_walk(char const *srctree, graph_t *g,genalloc *ga,unsigned int
 	
 }
 
-int graph_tree(char const *srctree,graph_t *g, char const *name, char const *tree)
+int graph_tree(char const *srctree,graph_t *g, char const *name, char const *tree,int reverse)
 {
 	unsigned int a = 0 ;
 	unsigned int first = 0 ;
 	unsigned int ndeps = g->nvertex ;
-
-	//print_start(tree, 0) ;
-	
-	if (name)
+	if (!reverse) stack_reverse(&g->stack) ;
+	if (*name) stack_reverse(&g->stack) ;
+	if (*name)
 	{
 		char *string = g->string ;
-		
 		for (; a < g->nvertex ; a++)
 		{
 			char *gname = string + genalloc_s(vertex_graph_t,&g->stack)[a].name ;
-			
 			if (obstr_equal(name,gname))
-			{ 	
+			{
 				first = a ;
 				ndeps = first + 1 ;
 				break ;
 			}
 		}
 	}
+	
 	tdepth d = {
 		NULL,
 		NULL,
@@ -201,7 +199,6 @@ int graph_tree(char const *srctree,graph_t *g, char const *name, char const *tre
 		0 ,
 		ndeps
 	} ;	
-	
 	graph_walk(srctree,g,&g->stack,first,ndeps,&d);
 		
 	return 1 ;
@@ -278,29 +275,11 @@ int graph_sort(graph_t *g)
 
 int graph_master(genalloc *ga, graph_t *g)
 {
-	unsigned int data, ddata,a,b,w ;
-	unsigned int color = g->nedge ;
-	visit c[color] ;
-	for (unsigned int i = 0 ; i < color; i++) c[i] = WHITE ;
+	unsigned int a ;
 	char *string = g->string ;
 	for (a = 0 ; a < genalloc_len(vertex_graph_t,&g->stack) ; a++)
-	{
-		data = genalloc_s(vertex_graph_t,&g->stack)[a].idx ;
-		for (b = 0 ; b < genalloc_len(vertex_graph_t,&g->stack) ; b++)
-		{
-			for (unsigned int d = 0 ; d < genalloc_s(vertex_graph_t,&g->stack)[b].ndeps ; d++)
-			{
-				ddata = genalloc_s(vertex_graph_t,&genalloc_s(vertex_graph_t,&g->stack)[b].dps)[d].idx ;
-				if (data == ddata) c[a] = BLACK ;
-			}
-		}
-	}
-	
-	for (w = 0 ; w < g->nvertex ; w++)
-		if (c[w] == WHITE)
-			if (!stra_add(ga,string + genalloc_s(vertex_graph_t,&g->stack)[w].name)) 
-				return 0 ;
-			 
+		if (!stra_add(ga,string + genalloc_s(vertex_graph_t,&g->stack)[a].name)) return 0 ;
+	 
 	return 1 ;
 }
 
@@ -340,9 +319,7 @@ int graph_rdepends(genalloc *ga,graph_t *g, char const *name, char const *src)
 			}
 		}
 	}
-	
-	
-	
+		
 	for (i = 0 ; i < g->nvertex ; i++)
 	{
 		
@@ -354,6 +331,7 @@ int graph_rdepends(genalloc *ga,graph_t *g, char const *name, char const *src)
 			for (k = 0; k < genalloc_s(vertex_graph_t,&g->vertex)[i].ndeps; k++)
 			{
 				char *depname = string + genalloc_s(vertex_graph_t,&genalloc_s(vertex_graph_t,&g->vertex)[i].dps)[k].name ;
+			
 				if (obstr_equal(name,depname))
 				{
 					if (!stra_cmp(ga,master))
@@ -450,31 +428,34 @@ int graph_build(graph_t *g, stralloc *sagraph, genalloc *tokeep,char const *dir)
 	unsigned int nvertex = 0 ;
 	unsigned int nedge = 0 ;
 	
+	
 	for (unsigned int i = 0 ; i < genalloc_len(stralist,tokeep) ; i++)
 	{
 		vertex_graph_t gsv = VERTEX_GRAPH_ZERO ; 
 		vertex_graph_t gdeps = VERTEX_GRAPH_ZERO ;
 		genalloc_deepfree(stralist,&gatmp,stra_free) ;
 		res.sa.len = 0 ;
-		
 		char const *name = gaistr(tokeep,i) ;
 		size_t namelen = gaistrlen(tokeep,i) ;
+			
 		if (!ss_resolve_read(&res,dir,name))
 		{
 			VERBO3 strerr_warnwu2sys("read resolve file of: ",name) ;
 			goto err ;
 		}
-		
-		gsv.type = res.type ;
-		if (res.ndeps)
+			
+		if (res.ndeps )
 		{
+			
 			if (!clean_val(&gatmp,res.sa.s + res.deps))
 			{
 				VERBO3 strerr_warnwu2x("clean val: ",res.sa.s + res.deps) ;
 				goto err ;
 			}
+			
 		}
 		
+		gsv.type = res.type ;
 		gsv.idx = nedge ;
 		nedge++ ;
 		gsv.gaidx = genalloc_len(vertex_graph_t, &gtmp.vertex) ;
@@ -499,7 +480,7 @@ int graph_build(graph_t *g, stralloc *sagraph, genalloc *tokeep,char const *dir)
 		gtmp.nvertex = ++nvertex ;
 		if (!genalloc_append(vertex_graph_t,&gtmp.vertex,&gsv)) goto err ;
 	}
-
+	
 	/** second pass */
 	
 	char *string = sagraph->s ;
@@ -547,6 +528,7 @@ int graph_build(graph_t *g, stralloc *sagraph, genalloc *tokeep,char const *dir)
 		}
 		if (!genalloc_append(vertex_graph_t,&g->vertex,&gsv)) goto err ;
 	}
+	
 	g->string = sagraph->s ;
 	g->nvertex = gtmp.nvertex ;
 	g->nedge = gtmp.nedge ;
@@ -571,7 +553,8 @@ int graph_search(graph_t *g, char const *name)
 	for (i = 0 ; i < g->nvertex ; i++)
 	{
 		char *master = string + genalloc_s(vertex_graph_t,&g->vertex)[i].name ;
-		if (obstr_equal(name,master)) return i ;
+		if (obstr_equal(name,master)) return i ;// return genalloc_s(vertex_graph_t,&g->vertex)[i].gaidx ;
+		
 	}
 	
 	return -1 ;

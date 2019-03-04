@@ -1,7 +1,7 @@
 /* 
  * ssexec_dbctl.c
  * 
- * Copyright (c) 2018 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
  * 
  * All rights reserved.
  * 
@@ -196,22 +196,22 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		{	
 			if (!s6_svstatus_read(res.sa.s + res.runat,&status))
 			{
-				strerr_warnwu4sys("read status of: ",res.sa.s + res.runat," -- race condition, try 66-info -S ",res.sa.s + res.name) ;
-				goto freed ;
+				strerr_diefu4sys(111,"read status of: ",res.sa.s + res.runat," -- race condition, try 66-info -S ",res.sa.s + res.name) ;
 			}
 			if (down)
 			{
 				if (WEXITSTATUS(status.wstat) && WIFEXITED(status.wstat) && status.pid)
-					strerr_warnwu2x("stop: ",name) ;
+					strerr_diefu2x(111,"stop: ",name) ;
 			}
 			else if (up)
 			{
 				if (WEXITSTATUS(status.wstat) && WIFEXITED(status.wstat))
-					strerr_warnwu2x("start: ",name) ;
+					strerr_diefu2x(111,"start: ",name) ;
 			}
 		}
+		VERBO1 strerr_warni3x(name,down ? " stopped " : " started ", "successfully") ;
 	}
-	freed:
+	
 	ss_resolve_free(&res) ;
 	stralloc_free(&tmp) ;	
 	stralloc_free(&src) ;

@@ -23,12 +23,12 @@
 
 <h2> Interface </h2>
 	<pre>
-	66-start [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -T <em>timeout</em> ] [ -r reload ] <em>service(s)</em>
+	66-start [ -h ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -T <em>timeout</em> ] [ -r | R ] <em>service(s)</em>
 	</pre>
 
 	<p>
       This tool expects to find an already enabled service inside the given <em>tree</em> and an already running <em>scandir</em>. 
-      If the state of the <em>service</em> is already up, <tt>66-start</tt> does nothing except when passing the <tt>-r</tt> option&mdash;see <a href="#reload"><tt>reload transition</tt></a>.
+      If the state of the <em>service</em> is already up, <tt>66-start</tt> does nothing except when passing the <tt>-r</tt> or <tt>-R</tt>option&mdash;see <a href="#reload"><tt>reload transition</tt></a>.
     </p>
     <p>Multiple <em>services</em> can be started by seperating their names with a space.</p>
 
@@ -63,12 +63,14 @@
 	</li>
 	 
 	<li> 
-		<tt>-r&nbsp;</tt>&nbsp;: reload the <em>service</em>&mdash;see <a href="#reload"><tt>reload transition</tt></a>.
+		<tt>-r&nbsp;</tt>&nbsp;:  If the service is up, restart it, by sending it a signal to kill it and letting s6-supervise start it again. By default, the signal is a SIGTERM; this can be configured via the <tt>@down-signal</tt> field in the frontend service file. 
 	 </li>	 
-
+	<li> 
+		<tt>-R&nbsp;</tt>&nbsp;: reload the <em>service</em> entirely&mdash;see <a href="#reload"><tt>reload transition</tt></a>.
+	 </li>
 	</ul>
 <h2 id="dependencies">Dependencies handling</h2>
-<p>In case of <tt><em>'bundle'</em></tt>, <tt><em>'longrun'</em></tt> or <tt><em>'oneshot'</em></tt> services, any dependency chain will be resolved automatically.
+<p>In case of <tt><em>'bundle'</em></tt> or <tt><em>'atomic'</em></tt> services, any dependency chain will be resolved automatically.
 It is unnecessary to manually define chained sets of dependencies. If FooA has a declared dependency on FooB, 
 FooB will be automatically considered and started first when starting FooA.
 This will run recursively until all dependencies are started.</p>
@@ -101,11 +103,11 @@ This will run recursively until all dependencies are started.</p>
 		</ul>
 	</p>
 <p>If any one of these processes fails then as a result <tt>66-start</tt> fails too and exits with code 111.</p>
-<h2>Bundle, longrun, oneshot transitions</h2>
+<h2>Bundle, atomic transitions</h2>
 	<p>
 		<ul>
 			<li>
-				<tt>66-start</tt> gathers the bundle, longrun and/or oneshot service(s) passed as argument in a list called <em>selection</em>. <!-- Is this the same list as for classic services or a dedicated one that shares the same name space? -->
+				<tt>66-start</tt> gathers the bundle and/or atomic service(s) passed as argument in a list called <em>selection</em>. <!-- Is this the same list as for classic services or a dedicated one that shares the same name space? -->
 			</li>
 			<li>
 				The command first inspects this list to determine if any service database in question of the given <em>tree</em> was already written to it. If it was not then a <tt>66-init -v <em>verbosity</em> -l <em>live</em> -d <em>tree</em></tt> is automatically invoked and <tt>66-start</tt> will wait for the exit code of this automatic command. After that a reload signal 
@@ -136,11 +138,11 @@ This will run recursively until all dependencies are started.</p>
 		</ul>
 	</p>
 	<p>If this process fails then as a result <tt>66-start</tt> fails too and exits with code 111.</p>
-<h3>For bundle, longrun and oneshot services</h3>
+<h3>For bundle, atomic services</h3>
 	<p>
 		<ul>
 			<li>
-				<tt>66-start</tt> gathers the bundle, longrun and/or oneshot service(s) passed as argument in a list called <em>selection</em>.
+				<tt>66-start</tt> gathers the bundle and/or atomic service(s) passed as argument in a list called <em>selection</em>.
 			</li>
 			<li>
 				The command first makes a backup of the services database <em>live</em> within the given <em>tree</em> and switches to the backup with 

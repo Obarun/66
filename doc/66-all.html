@@ -23,11 +23,11 @@
 
 <h2> Interface </h2>
 	<pre>
-	66-all [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -T timeout ] <em>up/down</em>
+	66-all [ -h ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -T <em>timeout</em> ] [ -f ] [ -t <em>tree</em> ] <em>up/down</em>
 	</pre>
 
 	<p>
-      Any enabled <em>tree</em>&mdash;see <a href="66-tree.html"><tt>66-tree -E</tt></a>&mdash;or a specific one passed with the <tt>-t</tt> option, 
+      Any enabled <em>tree</em>&mdash;see <a href="66-tree.html"><tt>66-tree -E</tt></a>&mdash;or a specific one passed with the <tt>-o</tt> option, 
       and an already running <em>scandir</em> will be processed. 
       It is a safe wrapper around <tt><a href="66-start.html">66-start</a></tt> and <tt><a href="66-stop.html">66-stop</a></tt>.
     </p>
@@ -51,15 +51,19 @@
 			option to <tt>./configure</tt>. An existing absolute path is expected and
 			should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
 		</li>
-		<li> 
-			<tt>-t&nbsp;<em>tree</em></tt>&nbsp;: only handles <em>service(s)</em> for <em>tree</em>.
-		</li>
-		 
+			 
 		<li> 
 			<tt>-T&nbsp;<em>timeout</em></tt></tt>&nbsp;: specifies a general timeout (in milliseconds)
 			passed to <tt>66-start</tt> or <tt>66-stop</tt>.
 			By default the timeout is set to 0 (infinite).
 		</li>
+		<li> 
+			<tt>-f&nbsp;</tt>&nbsp;: fork the process and lose the controlling terminal. This option should be used only for a shutdown process.
+		</li>
+		<li> 
+			<tt>-t&nbsp;<em>tree</em></tt>&nbsp;: only handles <em>service(s)</em> for <em>tree</em>.
+		</li>
+		
 		<li> 
 			<tt>up&nbsp;</tt>&nbsp;: sends an <em>up</em> signal to every <em>service</em> inside any <em>tree</em> processed by the command.
 		</li>
@@ -69,6 +73,6 @@
 	</ul>
 
 <h2> Initialization phase </h2>
-<p>In case <tt>up</tt> was passed as option, <tt>66-all</tt> will automatically launch <tt><a href="66-init.html">66-init</a></tt> to initiate all <em>services</em> of the <em>trees</em> processed by the command. As described above this means either any enabled tree for the user currently launching the process or just the tree passed with the -t option.</p>
+<p>In case <tt>up</tt> was passed as option, <tt>66-all</tt> will automatically launch <tt><a href="66-init.html">66-init</a></tt> to initiate all <em>services</em> of the <em>trees</em> processed by the command. As described above this means either any enabled tree for the user currently launching the process or just the tree passed with the -o option.</p>
 </body>
 </html>

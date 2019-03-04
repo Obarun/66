@@ -1,7 +1,7 @@
 /* 
  * ssexec_disable.c
  * 
- * Copyright (c) 2018 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
  * 
  * All rights reserved.
  * 
@@ -97,7 +97,7 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src)
 
 int rc_remove(genalloc *toremove, ss_resolve_t *res, char const *src)
 {
-	int r, logname ;
+	int r ;
 	char *name = res->sa.s + res->name ;
 	size_t newlen ;
 		
@@ -146,9 +146,7 @@ int rc_remove(genalloc *toremove, ss_resolve_t *res, char const *src)
 	for (unsigned int i = 0; i < genalloc_len(stralist,toremove); i++)
 	{
 		ss_resolve_init(&dres) ;
-		logname = 0 ;
 		char *dname = gaistr(toremove,i) ;
-		logname = get_rstrlen_until(dname,SS_LOG_SUFFIX) ;
 		sa.len = newlen ;
 		if (!stralloc_cats(&sa,dname)) retstralloc(0,"remove_sv") ;
 		if (!stralloc_0(&sa)) retstralloc(0,"remove_sv") ;
@@ -158,36 +156,43 @@ int rc_remove(genalloc *toremove, ss_resolve_t *res, char const *src)
 			VERBO1 strerr_warnwu2sys("remove: ", sa.s) ;
 			goto err ;
 		}
-		/** do not pass in case of logger, it's already done */
-		if (logname <= 0)
-		{
-			if (!ss_resolve_read(&dres,src,dname))
-			{
-				VERBO1 strerr_warnwu2sys("read resolve file of: ",dname) ;
-				goto err ;
-			}
-			dres.disen = 0 ;
-			dres.reload = 0 ;
-			dres.init = 0 ;
-			dres.unsupervise = 1 ;
-			VERBO2 strerr_warni2x("Write resolve file of: ",dname) ;
-			if (!ss_resolve_write(&dres,src,dname)) 
-			{
-				VERBO1 strerr_warnwu2sys("write resolve file of: ",dname) ;
-				goto err ;
-			}
-			if (dres.logger) 
-			{
-				VERBO2 strerr_warni2x("Write logger resolve file of: ",dname) ;
-				if (!ss_resolve_setlognwrite(&dres,src))
-				{
-					VERBO1 strerr_warnwu2sys("write logger resolve file of: ",dname) ;
-					goto err ;
-				}
-			}
-		}			
-	}
 	
+		if (!ss_resolve_read(&dres,src,dname))
+		{
+			VERBO1 strerr_warnwu2sys("read resolve file of: ",dname) ;
+			goto err ;
+		}
+		dres.disen = 0 ;
+		dres.reload = 0 ;
+		dres.init = 0 ;
+		dres.unsupervise = 1 ;
+		VERBO2 strerr_warni2x("Write resolve file of: ",dname) ;
+		if (!ss_resolve_write(&dres,src,dname)) 
+		{
+			VERBO1 strerr_warnwu2sys("write resolve file of: ",dname) ;
+			goto err ;
+		}
+		if (dres.logger) 
+		{
+			sa.len = newlen ;
+			if (!stralloc_cats(&sa,dres.sa.s + dres.logger)) retstralloc(0,"remove_sv") ;
+			if (!stralloc_0(&sa)) retstralloc(0,"remove_sv") ;
+			VERBO1 strerr_warni3x("Removing: ",dres.sa.s + dres.logger," directory service") ;
+			if (rm_rf(sa.s) < 0)
+			{
+				VERBO1 strerr_warnwu2sys("remove: ", sa.s) ;
+				goto err ;
+			}
+			VERBO2 strerr_warni2x("Write logger resolve file of: ",dname) ;
+			if (!ss_resolve_setlognwrite(&dres,src))
+			{
+				VERBO1 strerr_warnwu2sys("write logger resolve file of: ",dname) ;
+				goto err ;
+			}
+		}
+					
+	}
+		
 	graph_free(&g) ;
 	stralloc_free(&sagraph) ;
 	genalloc_deepfree(stralist,&tokeep,stra_free) ;
@@ -240,8 +245,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 	}
 	
 	if (argc < 1) exitusage(usage_disable) ;
-	/******* TODO les sortie sont pas bonne
-	 *  en cas de crash il te faut enlever le workdir */
+
 	if (!tree_copy(&workdir,info->tree.s,info->treename.s)) strerr_diefu1sys(111,"create tmp working directory") ;
 	
 	{
@@ -355,7 +359,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 				strerr_dief1x(111,"find master service") ;
 			}
 		}
-		
+		genalloc_reverse(stralist,&master) ;
 		if (!db_write_master(info,&master,workdir.s))
 		{
 			cleanup(workdir.s) ;

@@ -20,10 +20,10 @@
 	<p>
       This command handles a directory containing a set of services.
     </p>
-
+    
 <h2> Interface </h2>
 	<pre>
-	66-tree [ -h help ] [ -v <em>verbosity</em> ] [ -n new ] [ -a allow <em>user,user,...</em> ] [ -d deny <em>user,user,...</em> ] [ -c current ] [ -E enable ] [ -D disable ] [ -R remove ] [ -C <em>clone</em> ] <em>tree</em>
+	66-tree [ -h ] [ -v <em>verbosity</em> ] [ -n|R ] [ -a|d ] [ -c ] [ -E|D ] [ -C <em>clone</em> ] <em>tree</em>
 	</pre>
 
 	<p>
@@ -123,11 +123,11 @@
 	<h4>When enabling a service</h4>
 
 	<p>By enabling a service its corresponding frontend service file is parsed and the result
-	written to a sub directory of the trees path called <tt>servicedirs/svc</tt> for <tt><em>'classic'</em></tt> services and <tt>servicedirs/db/source</tt> for <tt><em>'bundle'</em></tt>, <tt><em>'longrun'</em></tt> or <tt><em>'oneshot'</em></tt> services.</p>
+	written to a sub directory of the trees path called <tt>servicedirs/svc</tt> for <tt><em>'classic'</em></tt> services and <tt>servicedirs/db/source</tt> for <tt><em>'bundle'</em></tt> or <tt><em>'atomic'</em></tt> services.</p>
 
 	<p>As an example for root the resulting files would, by default, be found at <tt>/usr/lib/66/system/<em>tree</em>/servicedirs/svc</tt>
 	for services of type <tt><em>'classic'</em></tt> and at <tt>/usr/lib/66/system/<em>tree</em>/servicedirs/db/source</tt> 
-	for any service of type <tt><em>'bundle'</em></tt>, <tt><em>'longrun'</em></tt> or <tt><em>'oneshot'</em></tt>.</p>
+	for any service of type <tt><em>'bundle'</em></tt> or <tt><em>'atomic'</em></tt>.</p>
 	
 	<h4>When enabling a whole tree</h4>
 
@@ -135,7 +135,7 @@
 	<tt><a href="66-all.html">66-all</a></tt> tool, the directory 
 	<tt>/usr/lib/66/system/<em>tree</em>/servicedirs/svc</tt> is opened and the command will start any service found inside of that directory.</p>
 
-	<p>For services of type <tt><em>bundle</em></tt>, <tt><em>longrun</em></tt> and <tt><em>oneshot</em></tt>, instead of opening the directory <tt>/usr/lib/66/system/<em>tree</em>/servicedirs/db/source</tt>, 
+	<p>For services of type <tt><em>bundle</em></tt> and <tt><em>atomic</em></tt>, instead of opening the directory <tt>/usr/lib/66/system/<em>tree</em>/servicedirs/db/source</tt>, 
 	the corresponding compiled database found at 
 	<tt>/usr/lib/66/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> is used. The 
 	database found at this location is the result of an automatic use of the command <tt><a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html">s6-rc-compile</a></tt> when enabling such a service.

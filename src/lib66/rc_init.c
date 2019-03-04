@@ -1,7 +1,7 @@
 /* 
  * rc_send.c
  * 
- * Copyright (c) 2018 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
  * 
  * All rights reserved.
  * 
@@ -30,14 +30,13 @@ int rc_init(ssexec_t *info, char const *const *envp)
 {
 	int r ;
 	
-	int nargc = 4 ;
+	int nargc = 2 ;
 	char const *newargv[nargc] ;
 	unsigned int m = 0 ;
 	
 	newargv[m++] = "fake_name" ;
-	newargv[m++] = "-d" ;
-	newargv[m++] = info->treename.s ;
-	newargv[m++] = 0 ;
+	newargv[m++] = "d" ;
+	//newargv[m++] = 0 ;
 				
 	if (ssexec_init(nargc,newargv,envp,info))
 		return 0 ;

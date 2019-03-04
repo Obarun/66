@@ -26,7 +26,6 @@ set_livescan.o
 set_livetree.o
 set_ownerhome.o
 set_ownersysdir.o
-ssexec_all.o
 ssexec_dbctl.o
 ssexec_enable.o
 ssexec_disable.o

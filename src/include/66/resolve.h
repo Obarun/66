@@ -1,7 +1,7 @@
 /* 
  * resolve.h
  * 
- * Copyright (c) 2018 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
  * 
  * All rights reserved.
  * 
@@ -40,6 +40,7 @@ struct ss_resolve_s
 	uint32_t description ;
 	uint32_t logger ;
 	uint32_t logreal ;
+	uint32_t logassoc ;
 	uint32_t dstlog ;
 	uint32_t deps ;
 	uint32_t src ;
@@ -59,7 +60,7 @@ struct ss_resolve_s
 	uint32_t run ;
 	uint64_t pid ;
 } ;
-#define RESOLVE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
 extern ss_resolve_t const ss_resolve_zero ;
 

@@ -1,7 +1,7 @@
 /* 
  * 66-tree.c
  * 
- * Copyright (c) 2018 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2019-2019 Eric Vidal <eric@obarun.org>
  * 
  * All rights reserved.
  * 
@@ -36,7 +36,7 @@
 
 //#include <stdio.h>
 
-#define USAGE "66-tree [ -h ] [ -v verbosity ] [ -n | R ] [ -a ] [ -d ] [ -c ] [ -E | D ] [ -C ] tree" 
+#define USAGE "66-tree [ -h ] [ -v <em>verbosity</em> ] [ -n|R ] [ -a|d ] [ -c ] [ -E|D ] [ -C clone ] tree" 
 
 unsigned int VERBOSITY = 1 ;
 
@@ -52,10 +52,10 @@ static inline void info_help (void)
 "	-a: allow user(s) at tree\n"
 "	-d: deny user(s) at tree\n"
 "	-c: set tree as default\n"
-"	-E: enable tree\n"
-"	-D: disable tree\n"
-"	-R: remove tree\n"
-"	-C: clone tree\n"
+"	-E: enable the tree\n"
+"	-D: disable the tree\n"
+"	-R: remove the tree\n"
+"	-C: clone the tree\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)

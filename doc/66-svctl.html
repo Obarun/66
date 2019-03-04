@@ -23,7 +23,7 @@
 
 <h2> Interface </h2>
 	<pre>
-	66-svctl [ -h help ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -T <em>timeout</em> ] [ -S <em>service timeout</em> ] [ -n <em>death</em> ] [ -u|U up ] [ -d|D down ] <em>service(s)</em>
+	66-svctl [ -h ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -T <em>timeout</em> ] [ -n <em>death</em> ] [ -u| U | d | D | r | R | K | X ] <em>service(s)</em>
 	</pre>
 
 	<p>
@@ -63,14 +63,6 @@
 		</li>
 		 
 		<li> 
-			<tt>-S&nbsp;<em>service timeout</em>&nbsp;</tt>&nbsp;: specifies a timeout (in milliseconds)
-			after which <tt>66-svctl</tt> will exit 111 with an error message if the <em>services</em> still hasn't reached the desired state.
-			This option has <strong>no effect</strong> if a <em>timeout-up</em> (for <em>up</em> signal) or <em>timeout-down</em> (for <em>down</em> signal) was defined 
-			for the given service at parsing time&mdash;see <tt><a href="66-frontend.html">frontend</a></tt>.
-			If this option is not specified and no <em>timeout-up</em> or <em>timeout-down</em> file exists the timeout will default to 1000.
-		</li>	
-		
-		<li> 
 			<tt>-n&nbsp;<em>death</em>&nbsp;</tt>&nbsp;: specifies the maximum number of service death events that the supervisor will keep track of.
 			If the service dies more than this number of times, <tt>66-svctl</tt> will exit 111 with an error message if the <em>services</em> still hasn't reached the desired state.
 			This option has <strong>no effect</strong> if a <em>maxdeath</em> was defined for the given service at parsing time&mdash;see <tt><a href="66-frontend.html">frontend</a></tt>.
@@ -86,11 +78,22 @@
 			file&mdash;see <tt><a href="https://skarnet.org/software/s6/notifywhenup.html">service startup notifications</a></tt> and <tt><a href="66-frontend.html">frontend</a></tt>.
 			If this file doesn't exist <tt>66-svctl</tt> will automatically change to lowercase <tt>d</tt> and warn the user about the change.
 		</li>
+		<li> 
+			<tt>-r|R&nbsp;</tt>&nbsp;: sends a <em>reload</em> signal to the <em>service</em>. By default, the signal is a SIGTERM; this can be configured via the <tt>@down-signal</tt> field in the <tt><a href="66-frontend.html">frontend</a></tt> service file. Uppercase <tt>R</tt> asks for readiness notification and searches for a <em>notification-fd</em>
+			file&mdash;see <tt><a href="https://skarnet.org/software/s6/notifywhenup.html">service startup notifications</a></tt> and <tt><a href="66-frontend.html">frontend</a></tt>.
+			If this file doesn't exist <tt>66-svctl</tt> will automatically change to lowercase <tt>r</tt> and warn the user about the change.
+		</li>
+		<li> 
+			<tt>-X&nbsp;</tt>&nbsp;: exit. The supervisor of the service will exit too. This command should normally never be used on a working system.
+		</li>
+		<li> 
+			<tt>-K&nbsp;</tt>&nbsp;: sends a SIGKILL to the <em>service</em> and keep it down.
+		</li>
 	</ul>
 <h2> Note </h2>
 <p>You can also send a signal in a similar fashion to a <em>'classic'</em> service with the <tt><a href="https://skarnet.org/software/s6/s6-svc.html">s6-svc</a></tt> tool which has the philosophy <em>"launch and forget"</em>.
 In contrast to <tt>s6-svctl</tt> this does not care for the exit status of the service when a signal is sent.</p>
-<p>As an extra convenience the <tt>-S</tt> and <tt>-n</tt> options allow you to deal directly on the command line with 
-<em>timeout-up</em> and <em>timeout-down</em> even if these were not specified explicitely in the services frontend file and no corresponding files exist.</p>
+<p>As an extra convenience the <tt>-n</tt> options allow you to deal directly on the command line with 
+<em>max-death-tally</em> even if these were not specified explicitely in the services frontend file and no corresponding files exist.</p>
 </body>
 </html>

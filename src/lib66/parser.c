@@ -1,7 +1,7 @@
 /* 
  * parser.c
  * 
- * Copyright (c) 2018 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
  * 
  * All rights reserved.
  * 
@@ -85,8 +85,6 @@ static int add_sv(sv_alltype *sv_before,char const *name,unsigned int *nbsv)
 {
 	int r ;
 	
-	VERBO1 strerr_warni2x("Service parsed successfully: ",name) ;
-	
 	if (!genalloc_append(sv_alltype,&gasv,sv_before)) retstralloc(0,"add_sv") ;
 	
 	r = add_cname(&ganame,&deps_map,name,sv_before) ;
@@ -96,6 +94,8 @@ static int add_sv(sv_alltype *sv_before,char const *name,unsigned int *nbsv)
 		return 0 ;
 	}
 	(*nbsv)++ ;
+	
+	VERBO1 strerr_warni2x("Service parsed successfully: ",name) ;
 	
 	return 1 ;
 }
