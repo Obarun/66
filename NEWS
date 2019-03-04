@@ -1,5 +1,6 @@
 Changelog for 66
 
-In 0.0.0.1
+In 0.0.1.1
 --------
-
+	
+	- Bugs fix at rc_init function
