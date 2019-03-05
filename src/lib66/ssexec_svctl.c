@@ -495,7 +495,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		ss_resolve_sig_t *sv = &genalloc_s(ss_resolve_sig_t,&gakeep)[i] ;
 		if (!ftrigr_unsubscribe_g(&fifo, sv->ids, &ttmain))
 		{ 
-			VERBO3 strerr_warnwu1sys("unsubscribe to fifo of") ;
+			VERBO3 strerr_warnwu2sys("unsubscribe to fifo of: ",sv->res.sa.s + sv->res.name) ;
 			return 0 ;
 		}
 	}
