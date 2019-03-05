@@ -21,6 +21,7 @@
 #include <oblibs/directory.h>
 #include <oblibs/types.h>//scan_mode
 #include <oblibs/stralist.h>
+#include <oblibs/files.h>
 
 #include <skalibs/buffer.h>
 #include <skalibs/types.h>
@@ -135,6 +136,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 				memcpy(tocopy + dirlen + 1, name, namelen) ;
 				tocopy[dirlen + 1 + namelen] = 0 ;
 				if (!hiercopy(tocopy,string + genalloc_s(ss_resolve_t,&gares)[i].runat)) strerr_diefu4sys(111,"to copy: ",tocopy," to: ",string + genalloc_s(ss_resolve_t,&gares)[i].runat) ;
+				if (!file_create_empty(string + genalloc_s(ss_resolve_t,&gares)[i].runat,"earlier",0644)) strerr_diefu3sys(111,"mark ",string + genalloc_s(ss_resolve_t,&gares)[i].name," as earlier service") ;
 			}
 		}
 	}
