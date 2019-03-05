@@ -400,6 +400,7 @@ int db_write_master(ssexec_t *info, genalloc *ga, char const *dir)
 	res.description = ss_resolve_add_string(&res,"inner bundle - do not use it") ;
 	res.treename = ss_resolve_add_string(&res,info->treename.s) ;
 	res.tree = ss_resolve_add_string(&res,info->tree.s) ;
+	res.live = ss_resolve_add_string(&res,info->live.s) ;
 	res.type = BUNDLE ;
 	res.deps = ss_resolve_add_string(&res,inres.s) ;
 	res.ndeps = genalloc_len(stralist,ga) ;
