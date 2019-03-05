@@ -81,7 +81,7 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-all: EXTRA_LIBS :=
 66-all: src/66/66-all.o ${LIB66} -loblibs -ls6 -lskarnet 
 66-dbctl: EXTRA_LIBS :=
-66-dbctl: src/66/66-dbctl.o ${LIB66} -loblibs -ls6 -lskarnet -ls6rc ${LIBS6RC}
+66-dbctl: src/66/66-dbctl.o ${LIB66} -loblibs -ls6 -lskarnet -ls6rc 
 66-disable: EXTRA_LIBS :=
 66-disable: src/66/66-disable.o ${LIB66} -loblibs -lexecline -ls6 -lskarnet 
 66-enable: EXTRA_LIBS :=
@@ -99,7 +99,7 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-svctl: EXTRA_LIBS :=
 66-svctl: src/66/66-svctl.o ${LIB66} -loblibs -ls6 -lskarnet
 66-tree: EXTRA_LIBS :=
-66-tree: src/66/66-tree.o ${LIB66} -loblibs -lskarnet
+66-tree: src/66/66-tree.o ${LIB66} -loblibs -ls6rc -ls6 -lskarnet 
 66-envfile: EXTRA_LIBS :=
 66-envfile: src/extra-tools/66-envfile.o ${LIB66} -lexecline -loblibs -lskarnet ${LIBEXECLINE}
 execl-cmdline: EXTRA_LIBS :=
