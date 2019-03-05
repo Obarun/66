@@ -44,6 +44,7 @@ struct ss_resolve_s
 	uint32_t dstlog ;
 	uint32_t deps ;
 	uint32_t src ;
+	uint32_t live ;
 	uint32_t runat ; //livetree->longrun,scandir->svc
 	uint32_t tree ;
 	uint32_t treename ;
@@ -60,7 +61,7 @@ struct ss_resolve_s
 	uint32_t run ;
 	uint64_t pid ;
 } ;
-#define RESOLVE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
 extern ss_resolve_t const ss_resolve_zero ;
 

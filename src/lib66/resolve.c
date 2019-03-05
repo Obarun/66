@@ -349,6 +349,7 @@ int ss_resolve_pack(stralloc *sa, ss_resolve_t *res)
 	!ss_resolve_add_uint32(sa,res->dstlog) ||
 	!ss_resolve_add_uint32(sa,res->deps) ||
 	!ss_resolve_add_uint32(sa,res->src) ||
+	!ss_resolve_add_uint32(sa,res->live) ||
 	!ss_resolve_add_uint32(sa,res->runat) ||
 	!ss_resolve_add_uint32(sa,res->tree) ||
 	!ss_resolve_add_uint32(sa,res->treename) ||
@@ -435,6 +436,8 @@ int ss_resolve_read(ss_resolve_t *res, char const *src, char const *name)
 	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->src) ;
 	
+	global += 4 ;
+	uint32_unpack_big(sa.s + global,&res->live) ;
 	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->runat) ;
 	global += 4 ;
@@ -535,6 +538,7 @@ int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst)
 	res.logreal = ss_resolve_add_string(&res,string + sv->logreal) ;
 	res.logassoc = ss_resolve_add_string(&res,string + sv->name) ;
 	res.dstlog = ss_resolve_add_string(&res,string + sv->dstlog) ;
+	res.live = ss_resolve_add_string(&res,string + sv->live) ;
 	//res.deps = ss_resolve_add_string(&res,string + sv->name) ;
 	res.tree = ss_resolve_add_string(&res,string + sv->tree) ;
 	res.treename = ss_resolve_add_string(&res,string + sv->treename) ;
@@ -598,6 +602,7 @@ int ss_resolve_setnwrite(ss_resolve_t *res, sv_alltype *services, ssexec_t *info
 	res->description = ss_resolve_add_string(res,keep.s + services->cname.description) ;
 	res->tree = ss_resolve_add_string(res,info->tree.s) ;
 	res->treename = ss_resolve_add_string(res,info->treename.s) ;
+	res->live = ss_resolve_add_string(res,info->live.s) ;
 	res->src = ss_resolve_add_string(res,keep.s + services->src) ;
 	if (services->type.classic_longrun.run.exec)
 		res->exec_run = ss_resolve_add_string(res,keep.s + services->type.classic_longrun.run.exec) ;
