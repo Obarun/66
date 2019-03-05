@@ -6,16 +6,11 @@ Build Instructions
 
   - A POSIX-compliant C development environment
   - GNU make version 3.81 or later
-  - skalibs version 2.7.0.0 at least commit e99801ab4bdd096b5e2e3e4619f1a8317a8aedf8 
-  or later: http://skarnet.org/software/skalibs/
-  - execline version 2.5.0.1 at least commit 3664d1fdc26a9b5fa1be1e3743b6fb1ff14ebaca
-  or later: http://skarnet.org/software/execline/
-  - s6 version 2.7.2.2 at least commit 6c65c3dd94ce2e6a054d9358795ba1f17de03cad
-  or later: http://skarnet.org/software/s6/
-  - s6-rc version 0.4.1.0 at least commit f01bb649f33d9005e30ec2e82fef05f25b9a8dff
-  or later: http://skarnet.org/software/s6-rc/
-  - s6-portable-utils version 2.2.1.2 at least 8e32ad68593aeb3c9ffd664aabc421d2eddc0467
-  or later: http://skarnet.org/software/s6-portable-utils/
+  - skalibs version 2.8.0.0 or later: http://skarnet.org/software/skalibs/
+  - execline version 2.5.1.0 or later: http://skarnet.org/software/execline/
+  - s6 version 2.8.0.0 or later: http://skarnet.org/software/s6/
+  - s6-rc version 0.5.0.0 or later: http://skarnet.org/software/s6-rc/
+  - s6-portable-utils version 2.2.1.3 or later: http://skarnet.org/software/s6-portable-utils/
   - oblibs version 0.0.1.0 or later: https://framagit.org/Obarun/oblibs/
  
  This software will run on any operating system that implements
