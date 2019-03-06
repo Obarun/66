@@ -42,7 +42,7 @@
 int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 {
 	
-	int r,logname ;
+	int logname ;
 	gid_t gid = getgid() ;
 	uint16_t id ;
 		
@@ -150,18 +150,12 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 		if (!genalloc_append(uint16_t, &ids, &id)) goto err ;
 	}
 	VERBO3 strerr_warnt2x("reload scandir: ",info->scandir.s) ;
-	r = s6_svc_writectl(info->scandir.s, S6_SVSCAN_CTLDIR, "an", 2) ;
-	if (r < 0)
+	if (scandir_send_signal(info->scandir.s,"an") <= 0) 
 	{
-		VERBO3 strerr_warnw3sys("something is wrong with the ",info->scandir.s, "/" S6_SVSCAN_CTLDIR " directory. errno reported") ;
+		VERBO3 strerr_warnwu2sys("reload scandir: ",info->scandir.s) ;
 		goto err ;
 	}
-	if (!r)
-	{
-		VERBO3 strerr_warnw3x("scandir: ",info->scandir.s, " is not running, make a bug report") ;
-		goto err ;
-	}
-	
+		
 	VERBO3 strerr_warnt1x("waiting for events on fifo") ;
 	if (ftrigr_wait_and_g(&fifo, genalloc_s(uint16_t, &ids), genalloc_len(uint16_t, &ids), &deadline) < 0)
 			goto err ;
