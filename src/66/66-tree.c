@@ -501,7 +501,7 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 				VERBO3 strerr_warnwu2sys("wait for ",newargv[0]) ;
 				return 0 ;
 			}
-			if (wstat) strerr_diefu2sys(111,"unable to brind down db service of tree: ",treename) ;
+			if (wstat) strerr_diefu2sys(111,"bring down db service of tree: ",treename) ;
 			/** unsupervise service into the scandir */
 			if (!clean_val(&gasv,res.sa.s + res.deps)) strerr_diefu2sys(111,"clean deps of inner bundle of tree: ", treename) ;
 			if (!stra_add(&gasv,S6RC_ONESHOT_RUNNER)) strerr_diefu3sys(111,"add ",S6RC_ONESHOT_RUNNER," as service to unsupervise") ;
@@ -564,7 +564,7 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 			if (waitpid_nointr(pid,&wstat, 0) < 0)
 				strerr_diefu2sys(111,"wait for ",newargv[0]) ;
 			
-			if (wstat) strerr_diefu2sys(111,"unable to brind down db service of tree: ",treename) ;
+			if (wstat) strerr_diefu2sys(111,"bring down db service of tree: ",treename) ;
 			
 			for (unsigned int i = 0 ; i < genalloc_len(stralist,&tostop) ; i++) 
 			{
@@ -579,8 +579,7 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 	{
 		if (!stralloc_0(&scandir)) retstralloc(111,"tree_unsupervise") ;
 		if (!set_livescan(&scandir,owner)) strerr_diefu1sys(111,"set scandir") ;
-		r = s6_svc_writectl(scandir.s, S6_SVSCAN_CTLDIR, "an", 2) ;
-		if (r < 0) strerr_dief3sys(111,"something is wrong with the ",scandir.s, "/" S6_SVSCAN_CTLDIR " directory. errno reported") ;
+		if (scandir_send_signal(scandir.s,"an") <= 0) strerr_diefu2sys(111,"reload scandir: ",scandir.s) ;
 	}
 	genalloc_deepfree(stralist,&gasv,stra_free) ;
 	stralloc_free(&livetree) ; 
