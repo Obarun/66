@@ -243,7 +243,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	state[statelen] = 0 ;
 
 	r = scan_mode(state,S_IFREG) ;
-	if (r < 0) { errno = EEXIST ; return -1 ; }
+	if (r < 0) strerr_dief2x(111,"conflict format for: ",state) ;
 	if (!r)	strerr_diefu2sys(111,"find: ",state) ;
 	
 	statesize = file_get_size(state) ;
@@ -334,10 +334,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				strerr_diefu2x(111,"initiate services of tree: ",treename) ;
 			
 			VERBO3 strerr_warnt2x("reload scandir: ",scandir.s) ;
-			r = s6_svc_writectl(scandir.s, S6_SVSCAN_CTLDIR, "an", 2) ;
-			if (r < 0)
+			if (scandir_send_signal(scandir.s,"an") <= 0) 
 			{
-				VERBO3 strerr_warnw3sys("something is wrong with the ",scandir.s, "/" S6_SVSCAN_CTLDIR " directory. errno reported") ;
+				VERBO3 strerr_warnwu2sys("reload scandir: ",scandir.s) ;
 				return -1 ;
 			}
 		}
