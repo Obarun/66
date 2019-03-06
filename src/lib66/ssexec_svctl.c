@@ -83,6 +83,8 @@ int handle_signal_svc(ss_resolve_sig_t *sv_signal)
 		VERBO3 strerr_warnwu2sys("read status of: ",sv) ;
 		return 0 ;
 	}
+	sv_signal->pid = status.pid ;
+	
 	if (WIFSIGNALED(status.wstat) && !WEXITSTATUS(status.wstat) && (WTERMSIG(status.wstat) == 15 )) return 1 ;
 	if (!WIFSIGNALED(status.wstat) && !WEXITSTATUS(status.wstat)) return 1 ;
 	else return 0 ;
@@ -158,48 +160,49 @@ static const uint8_t chtenum[128] =
  * @Return 2 on fail
  * @Return 3 for PERMANENT failure */
 
-int handle_case(char c, ss_resolve_sig_t *sv_signal)
+int handle_case(stralloc *sa, ss_resolve_sig_t *sv_signal)
 {
 	int p, h, err ;
-	unsigned int state ;
+	unsigned int state, i = 0 ;
 	state = sv_signal->sig ;
 	err = 2 ;
 	
-	p = chtenum[(unsigned char)c] ;
-	
-	unsigned char action = actions[state][p] ;
-	
-	switch (action)
+	for (;i < sa->len ; i++)
 	{
-		case GOTIT:
-					h = handle_signal_svc(sv_signal) ;
-					
-					if (!h)
-					{
+		p = chtenum[(unsigned char)sa->s[i]] ;
+		
+		unsigned char action = actions[state][p] ;
+		
+		
+		switch (action)
+		{
+			case GOTIT:
+						h = handle_signal_svc(sv_signal) ;
+						if (!h)
+						{
+							err = 1 ;
+							break ;
+						}
+						err = 0 ;
+						return err ; 
+			case WAIT:
 						err = 1 ;
 						break ;
-					}
-					err = 0 ;
-					break ;
-		case WAIT:
-					err = 1 ;
-					break ;
-		case DEAD:
-					err = 2 ;
-					break ;
-		case DONE:
-					err = 0 ;
-					break ;
-		case PERM:
-					err = 3 ;
-					break ;
-		case UKNOW:
-		default:
-					VERBO3 strerr_warnw1x("invalid state, make a bug report");
-					err = 2 ;
-					break ;
+			case DEAD:
+						err = 2 ;
+						return err ; 
+			case DONE:
+						err = 0 ;
+						return err ; 
+			case PERM:
+						err = 3 ;
+						return err ; 
+			default:
+						VERBO3 strerr_warnw1x("invalid state, make a bug report");
+						err = 2 ;
+						return err ; 
+		}
 	}
-	
 	return err ;
 }
 
@@ -237,6 +240,9 @@ static void announce(ss_resolve_sig_t *sv_signal)
 int svc_listen(genalloc *gasv, ftrigr_t *fifo,int spfd,ss_resolve_sig_t *svc)
 {
 	int r ;
+
+	stralloc sa = STRALLOC_ZERO ;
+	
 	iopause_fd x[2] = { { .fd = ftrigr_fd(fifo), .events = IOPAUSE_READ } , { .fd = spfd, .events = IOPAUSE_READ, .revents = 0 } } ;
 		
 	tain_t t ;
@@ -247,21 +253,19 @@ int svc_listen(genalloc *gasv, ftrigr_t *fifo,int spfd,ss_resolve_sig_t *svc)
 	
 	for(;;)
 	{
-		char receive ;
-		r = ftrigr_check(fifo,svc->ids, &receive) ;
+		r = ftrigr_checksa(fifo,svc->ids, &sa) ;
 		if (r < 0) { VERBO3 strerr_warnwu1sys("ftrigr_check") ; return 0 ; } 
 		if (r)
 		{
-			svc->state = handle_case(receive, svc) ;
-			if (svc->state < 0) return 0 ;
-			if (!svc->state){ announce(svc) ; break ; }
-			else if (svc->state > 2){ announce(svc) ; break ; }
+			svc->state = handle_case(&sa,svc) ;
+			if (!svc->state){ announce(svc) ; goto end ; }
+			else if (svc->state >= 2){ announce(svc) ; goto end ; }
 		}
 		if (!(svc->ndeath))
 		{
 			VERBO2 strerr_warnw2x("number of try exceeded for: ",svc->res.sa.s + svc->res.runat) ;
 			announce(svc) ;
-			break ;
+			goto end ;
 		}
 		
 		r = iopause_g(x, 2, &t) ;
@@ -277,8 +281,9 @@ int svc_listen(genalloc *gasv, ftrigr_t *fifo,int spfd,ss_resolve_sig_t *svc)
 			svc->ndeath--;
 		}
 	}
-	
-	return 1 ;
+	end:
+	stralloc_free(&sa) ;
+	return svc->state ;
 }
 
 int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
@@ -289,7 +294,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	DEATHSV = 10 ;
 	tain_t ttmain ;
 	
-	int e, isup ;
+	int e, isup, ret ;
 	unsigned int death, tsv ;
 	int SIGNAL = -1 ;
 	
@@ -300,7 +305,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	ftrigr_t fifo = FTRIGR_ZERO ;
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	
-	tsv = death = 0 ;
+	tsv = death = ret = 0 ;
 	
 	//PROG = "66-svctl" ;
 	{
@@ -316,10 +321,10 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 				case 'n' :	if (!uint0_scan(l.arg, &death)) exitusage(usage_svctl) ; break ;
 				case 'u' :	if (SIGNAL > 0) exitusage(usage_svctl) ; SIGNAL = SIGUP ; sig ="u" ; break ;
 				case 'U' :	if (SIGNAL > 0) exitusage(usage_svctl) ; SIGNAL = SIGRUP ; sig = "uwU" ; break ;
-				case 'd' : 	if (SIGNAL > 0) ; SIGNAL = SIGDOWN ; sig = "d" ; break ;
-				case 'D' :	if (SIGNAL > 0) ; SIGNAL = SIGRDOWN ; sig = "dwD" ; break ;
 				case 'r' :	if (SIGNAL > 0) ; SIGNAL = SIGR ; sig = "r" ; break ;
 				case 'R' :	if (SIGNAL > 0) ; SIGNAL = SIGRR ; sig = "rwR" ; break ;
+				case 'd' : 	if (SIGNAL > 0) ; SIGNAL = SIGDOWN ; sig = "d" ; break ;
+				case 'D' :	if (SIGNAL > 0) ; SIGNAL = SIGRDOWN ; sig = "dwD" ; break ;
 				case 'X' :	if (SIGNAL > 0) ; SIGNAL = SIGX ; sig = "xd" ; break ;
 				case 'K' :	if (SIGNAL > 0) ; SIGNAL = SIGRDOWN ; sig = "kd" ; break ;
 				
@@ -482,11 +487,47 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_sig_t,&gakeep) ; i++)
 	{ 
+		int nret = 0 ;
+	
 		ss_resolve_sig_t *sv = &genalloc_s(ss_resolve_sig_t,&gakeep)[i] ;
-		if (!svc_listen(&gakeep,&fifo,spfd,sv)) strerr_diefu1x(111,"listen pipe") ;
+		char *name = sv->res.sa.s + sv->res.name ;
+		int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
+		nret = svc_listen(&gakeep,&fifo,spfd,sv) ;
+		if (nret > 1) ret = 1 ;
+		if (sv->sig <= 3)
+		{
+			if (nret <= 1)
+				ss_resolve_setflag(&sv->res,SS_FLAGS_PID,(uint32_t)sv->pid) ;
+			else ss_resolve_setflag(&sv->res,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+		}
+		else
+		{
+			if (nret <=1)
+				ss_resolve_setflag(&sv->res,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+			/** wtf, the system can kill a process?? should never happen */
+			else strerr_diefu1x(111,"kill the process - this should never happen - please, make a bug report") ;
+		}
+		ss_resolve_setflag(&sv->res,SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
+		ss_resolve_setflag(&sv->res,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+		ss_resolve_setflag(&sv->res,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+		ss_resolve_setflag(&sv->res,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+		VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
+		if (!ss_resolve_write(&sv->res,src.s,name))
+		{
+			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
+			ret = 1 ;
+		}
+		if (sv->res.logger)
+		{
+			VERBO2 strerr_warni2x("Write logger resolve file of: ",name) ;
+			if (!ss_resolve_setlognwrite(&sv->res,src.s))
+			{
+				VERBO1 strerr_warnwu2sys("write logger resolve file of: ",name) ;
+				ret = 1 ;
+			}
+		}
 		ss_resolve_free(&sv->res) ;
 	}
-	
 	tain_now_g() ;
 	tain_addsec(&ttmain,&STAMP,2) ;
 	
@@ -496,7 +537,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		if (!ftrigr_unsubscribe_g(&fifo, sv->ids, &ttmain))
 		{ 
 			VERBO3 strerr_warnwu2sys("unsubscribe to fifo of: ",sv->res.sa.s + sv->res.name) ;
-			return 0 ;
+			ret = 1 ;
 		}
 	}
 	
@@ -508,7 +549,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		genalloc_deepfree(ss_resolve_sig_t,&gakeep,ss_resolve_free) ;
 		
 		
-	return 0 ;		
+	return ret ;		
 }
 
 	
