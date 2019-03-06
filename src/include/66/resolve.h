@@ -90,5 +90,8 @@ extern int ss_resolve_setnwrite(ss_resolve_t *res, sv_alltype *services,ssexec_t
 extern int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst) ;
 extern int ss_resolve_rmfile(ss_resolve_t *res, char const *src,char const *name) ;
 extern int ss_resolve_addlogger(ssexec_t *info,genalloc *ga) ;
+extern int ss_resolve_cmp(genalloc *ga,char const *name) ;
 extern void ss_resolve_setflag(ss_resolve_t *res,int flags,int flags_val) ;
+extern int ss_resolve_deps(genalloc *tokeep,ss_resolve_t *res, ssexec_t *info) ;
+extern int ss_resolve_rdeps(genalloc *tokeep,genalloc *nsv, ss_resolve_t *res,ssexec_t *info) ;
 #endif

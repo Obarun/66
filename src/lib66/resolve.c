@@ -838,3 +838,77 @@ void ss_resolve_setflag(ss_resolve_t *res,int flags,int flags_val)
 		default: return ;
 	}
 }
+
+int ss_resolve_deps(genalloc *tokeep,ss_resolve_t *res, ssexec_t *info)
+{
+	unsigned int i = 0 ;
+	genalloc tmp = GENALLOC_ZERO ;
+	size_t srclen = strlen(res->sa.s + res->tree) ;
+	char src[srclen + SS_SVDIRS_LEN + 1] ;
+	memcpy(src,res->sa.s + res->tree,srclen) ;
+	memcpy(src + srclen, SS_SVDIRS,SS_SVDIRS_LEN) ;
+	src[srclen + SS_SVDIRS_LEN] = 0 ;
+	
+	char *name = res->sa.s + res->name ;
+	char *deps = res->sa.s + res->deps ;
+	if (!ss_resolve_cmp(tokeep,name))
+		if (!genalloc_append(ss_resolve_t,tokeep,res)) return 0 ;
+	
+	if (res->ndeps)
+	{
+		if (!clean_val(&tmp,deps)) return 0 ;
+		for (;i < genalloc_len(stralist,&tmp) ; i++)
+		{
+			
+			ss_resolve_t dres = RESOLVE_ZERO ;
+			if (!ss_resolve_check(info,gaistr(&tmp,i),SS_RESOLVE_SRC)) return 0 ;
+			if (!ss_resolve_read(&dres,src,gaistr(&tmp,i))) return 0 ;
+			if (dres.ndeps) ss_resolve_deps(tokeep,&dres,info) ;
+			
+			if (!ss_resolve_cmp(tokeep,gaistr(&tmp,i)))
+				if (!genalloc_append(ss_resolve_t,tokeep,&dres)) return 0 ;
+		}
+	}
+	genalloc_deepfree(stralist,&tmp,stra_free) ;
+	return 1 ;
+}
+
+int ss_resolve_rdeps(genalloc *tokeep,genalloc *nsv, ss_resolve_t *res,ssexec_t *info)
+{
+	genalloc tmp = GENALLOC_ZERO ;
+	char *name = res->sa.s + res->name ;
+	size_t srclen = strlen(res->sa.s + res->tree) ;
+	char src[srclen + SS_SVDIRS_LEN + 1] ;
+	memcpy(src,res->sa.s + res->tree,srclen) ;
+	memcpy(src + srclen, SS_SVDIRS,SS_SVDIRS_LEN) ;
+	src[srclen + SS_SVDIRS_LEN] = 0 ;
+	if (!ss_resolve_cmp(tokeep,name))
+		if (!genalloc_append(ss_resolve_t,tokeep,res)) return 0 ;
+		
+	for (unsigned int i = 0 ; i < genalloc_len(stralist,nsv) ; i++)
+	{
+		genalloc_deepfree(stralist,&tmp,stra_free) ;
+		ss_resolve_t dres = RESOLVE_ZERO ;
+		char *dname = gaistr(nsv,i) ;
+		if (obstr_equal(name,dname)) continue ;
+		if (!ss_resolve_check(info,dname,SS_RESOLVE_SRC)) return 0 ;
+		if (!ss_resolve_read(&dres,src,gaistr(nsv,i))) return 0 ;
+		if (dres.ndeps || (dres.type == BUNDLE && dres.ndeps))
+		{
+			if (!clean_val(&tmp,dres.sa.s + dres.deps)) return 0 ;
+			for (unsigned int j = 0 ; j < genalloc_len(stralist,&tmp) ; j++)
+			{
+				if (obstr_equal(name,gaistr(&tmp,j)))
+				{
+					if (!ss_resolve_cmp(tokeep,dname))
+					{
+						if (!genalloc_append(ss_resolve_t,tokeep,&dres)) return 0 ;
+						break ;
+					}
+				}
+			}
+		}
+	}
+	genalloc_deepfree(stralist,&tmp,stra_free) ;
+	return 1 ;
+}
