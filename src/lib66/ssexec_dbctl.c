@@ -42,7 +42,7 @@
 #include <66/resolve.h>
 #include <66/ssexec.h>
 
-//#include <stdio.h>
+#include <stdio.h>
 
 static unsigned int DEADLINE = 0 ;
 
@@ -87,7 +87,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	// be sure that the global var are set correctly
 	DEADLINE = 0 ;
 
-	unsigned int up, down, reload ;
+	unsigned int up, down, reload, ret ;
 	
 	int wstat ;
 	pid_t pid ;
@@ -96,12 +96,14 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	char *mainsv = "Master" ;
 	
 	genalloc gasv = GENALLOC_ZERO ; //stralist
+	genalloc resdeps = GENALLOC_ZERO ; //ss_resolve_t
+	genalloc gasrc = GENALLOC_ZERO ;
 	stralloc tmp = STRALLOC_ZERO ;
 	ss_resolve_t res = RESOLVE_ZERO ;
 	stralloc src = STRALLOC_ZERO ;
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	
-	up = down = reload = 0 ;
+	up = down = reload = ret = 0 ;
 	
 	if (!ss_resolve_pointo(&src,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;
 	//PROG = "66-dbctl" ;
@@ -160,7 +162,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		if (waitpid_nointr(pid,&wstat, 0) < 0)
 			strerr_diefu1sys(111,"wait for s6-rc") ;
 		
-		if (wstat) strerr_diefu3x(111,"bring",down ? " down " : " up ","services list") ;
+		if (wstat) strerr_diefu2x(111,down ? " stop " : " start ","services list") ;
 	}
 	
 	if (down) signal = "-d" ;
@@ -171,7 +173,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	if (waitpid_nointr(pid,&wstat, 0) < 0)
 		strerr_diefu1sys(111,"wait for s6-rc") ;
 	
-	if (wstat) strerr_diefu3x(111,"bring",down ? " down " : " up ","services list") ;
+	if (wstat) strerr_diefu2x(111,down ? " start " : " stop ","services list") ;
 	
 	/** we are forced to do this ugly check cause of the design
 	 * of s6-rc(generally s6-svc) which is launch and forgot. So
@@ -182,42 +184,88 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	 * between the end of the s6-rc process and the check of the daemon status,
 	 * the real value of the status can be not written yet,so we can hit
 	 * this window.*/
-	
+	if (!graph_type_src(&gasrc,src.s,1)) strerr_diefu2x(111,"resolve graph source of tree: ",info->treename.s) ; ;
 	for (unsigned int i = 0; i < genalloc_len(stralist,&gasv) ; i++)
 	{
 		res.sa.len = 0 ;
 		char *name = gaistr(&gasv,i) ;
-		if (obstr_equal(name,SS_MASTER + 1)) continue ;
-		
+	
 		if (!ss_resolve_check(info,name,SS_RESOLVE_SRC)) strerr_dief2sys(111,"unknow service: ",name) ;
 		if (!ss_resolve_read(&res,src.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
+		if (up)
+		{
+			if (!ss_resolve_deps(&resdeps,&res,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
+		}
+		else if (!ss_resolve_rdeps(&resdeps,&gasrc,&res,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
+		
+	}
+	
+	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&resdeps) ; i++)
+	{ 
+		int nret = 0 ;
+		ss_resolve_t_ref dres = &genalloc_s(ss_resolve_t,&resdeps)[i] ;
+		char *name = dres->sa.s + dres->name ;
+		/** do not touche the Master resolve file*/
+		if (obstr_equal(name,SS_MASTER + 1)) continue ;
 		/** only check longrun service */
-		if (res.type == LONGRUN)
+		if (dres->type == LONGRUN)
 		{	
-			if (!s6_svstatus_read(res.sa.s + res.runat,&status))
+			if (!s6_svstatus_read(dres->sa.s + dres->runat,&status))
 			{
-				strerr_diefu4sys(111,"read status of: ",res.sa.s + res.runat," -- race condition, try 66-info -S ",res.sa.s + res.name) ;
+				strerr_diefu4sys(111,"read status of: ",dres->sa.s + dres->runat," -- race condition, try 66-info -S ",dres->sa.s + dres->name) ;
 			}
 			if (down)
 			{
 				if (WEXITSTATUS(status.wstat) && WIFEXITED(status.wstat) && status.pid)
-					strerr_diefu2x(111,"stop: ",name) ;
+				{
+					VERBO1 strerr_warnwu2x("stop: ",name) ;
+					ss_resolve_setflag(dres,SS_FLAGS_PID,(uint32_t)status.pid) ;
+					nret = 1 ;
+				}
+				else ss_resolve_setflag(dres,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
 			}
 			else if (up)
 			{
 				if (WEXITSTATUS(status.wstat) && WIFEXITED(status.wstat))
-					strerr_diefu2x(111,"start: ",name) ;
+				{
+					VERBO1 strerr_warnwu2x("start: ",name) ;
+					nret = 1 ;
+					ss_resolve_setflag(dres,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+				}
+				else ss_resolve_setflag(dres,SS_FLAGS_PID,(uint32_t)status.pid) ;
 			}
 		}
-		VERBO1 strerr_warni3x(name,down ? " stopped " : " started ", "successfully") ;
+		if (!nret) VERBO1 strerr_warni3x(name,down ? " stopped " : " started ", "successfully") ;
+		if (nret) ret = 111 ;
+		ss_resolve_setflag(dres,SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
+		ss_resolve_setflag(dres,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+		ss_resolve_setflag(dres,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+		ss_resolve_setflag(dres,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+		VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
+		if (!ss_resolve_write(dres,src.s,name))
+		{
+			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
+			ret = 111 ;
+		}
+		if (dres->logger)
+		{
+			VERBO2 strerr_warni2x("Write logger resolve file of: ",name) ;
+			if (!ss_resolve_setlognwrite(dres,src.s))
+			{
+				VERBO1 strerr_warnwu2sys("write logger resolve file of: ",name) ;
+				ret = 111 ;
+			}
+		}
+		ss_resolve_free(dres) ;
 	}
 	
-	ss_resolve_free(&res) ;
+	//ss_resolve_free(&res) ;
 	stralloc_free(&tmp) ;	
 	stralloc_free(&src) ;
 	genalloc_deepfree(stralist,&gasv,stra_free) ;
-	
-	return 0 ;
+	genalloc_deepfree(stralist,&gasrc,stra_free) ;
+	genalloc_deepfree(ss_resolve_t,&resdeps,ss_resolve_free) ;
+	return ret ;
 }
 
 	
