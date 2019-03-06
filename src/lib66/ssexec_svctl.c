@@ -231,8 +231,8 @@ static void announce(ss_resolve_sig_t *sv_signal)
 
 	int r = sv_signal->state ;
 	char *sv = sv_signal->res.sa.s + sv_signal->res.runat ;
-	if (r == 3) { VERBO1 strerr_warnw3x(sv," report permanent failure to bring ",(sv_signal->sig > 1) ? "down" : "up") ; }
-	else if (r == 2) { VERBO1 strerr_warnwu3x("bring ", (sv_signal->sig > 3) ? "down " : "up ", sv) ; }
+	if (r == 3) { VERBO1 strerr_warnw3x(sv," report permanent failure -- unable to ",(sv_signal->sig > 1) ? "stop" : "start") ; }
+	else if (r == 2) { VERBO1 strerr_warnwu2x((sv_signal->sig > 3) ? "stop " : "start ", sv) ; }
 	else if (r == 1) { VERBO1 strerr_warni4x(sv," is ",(sv_signal->sig > 3) ? "down" : "up"," but not notified by the daemon itself") ; }
 	else if (!r) { VERBO1 strerr_warni4x(sv,": ",(sv_signal->sig > 3) ? "stopped" : "started"," successfully") ; }
 }
@@ -488,12 +488,10 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_sig_t,&gakeep) ; i++)
 	{ 
 		int nret = 0 ;
-	
 		ss_resolve_sig_t *sv = &genalloc_s(ss_resolve_sig_t,&gakeep)[i] ;
 		char *name = sv->res.sa.s + sv->res.name ;
-		int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 		nret = svc_listen(&gakeep,&fifo,spfd,sv) ;
-		if (nret > 1) ret = 1 ;
+		if (nret > 1) ret = 111 ;
 		if (sv->sig <= 3)
 		{
 			if (nret <= 1)
@@ -505,7 +503,8 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			if (nret <=1)
 				ss_resolve_setflag(&sv->res,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
 			/** wtf, the system can kill a process?? should never happen */
-			else strerr_diefu1x(111,"kill the process - this should never happen - please, make a bug report") ;
+			else ss_resolve_setflag(&sv->res,SS_FLAGS_PID,(uint32_t)sv->pid) ;
+			//else strerr_diefu1x(111,"kill the process - this should never happen - please, make a bug report") ;
 		}
 		ss_resolve_setflag(&sv->res,SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
 		ss_resolve_setflag(&sv->res,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
@@ -515,7 +514,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		if (!ss_resolve_write(&sv->res,src.s,name))
 		{
 			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
-			ret = 1 ;
+			ret = 111 ;
 		}
 		if (sv->res.logger)
 		{
@@ -523,7 +522,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			if (!ss_resolve_setlognwrite(&sv->res,src.s))
 			{
 				VERBO1 strerr_warnwu2sys("write logger resolve file of: ",name) ;
-				ret = 1 ;
+				ret = 111 ;
 			}
 		}
 		ss_resolve_free(&sv->res) ;
@@ -537,7 +536,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		if (!ftrigr_unsubscribe_g(&fifo, sv->ids, &ttmain))
 		{ 
 			VERBO3 strerr_warnwu2sys("unsubscribe to fifo of: ",sv->res.sa.s + sv->res.name) ;
-			ret = 1 ;
+			ret = 111 ;
 		}
 	}
 	
