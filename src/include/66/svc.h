@@ -23,31 +23,6 @@
 #include <66/resolve.h>
 #include <66/ssexec.h>
 
-typedef struct svstat_s svstat_t, *svstat_t_ref ;
-struct svstat_s
-{
-	int type ;
-	char const *name ;
-	size_t namelen ;
-	int down ;
-	int reload ;
-	int init ;
-	int unsupervise ;
-	int remove ;
-} ;
-
-#define SVSTAT_ZERO \
-{ \
-	.type = 0, \
-	.name = 0, \
-	.namelen = 0, \
-	.down = 0, \
-	.init = 0, \
-	.reload = 0, \
-	.unsupervise = 0, \
-	.remove = 0 \
-}
-
 typedef struct ss_resolve_sig_s ss_resolve_sig_t, *ss_resovle_sig_t_ref ;
 struct ss_resolve_sig_s
 {
@@ -59,6 +34,7 @@ struct ss_resolve_sig_s
 	char *sigtosend ;
 	int sig ;
 	int state ;
+	pid_t pid ;
 } ;
 
 #define RESOLVE_SIG_ZERO \
@@ -70,7 +46,8 @@ struct ss_resolve_sig_s
 	.ids = 0, \
 	.sigtosend = 0, \
 	.sig = 0, \
-	.state = -1 \
+	.state = -1, \
+	.pid = 0 \
 } 
 
 typedef enum state_e state_t, *state_t_ref ;
