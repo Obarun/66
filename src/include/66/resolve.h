@@ -30,6 +30,16 @@
 #define SS_RESOLVE_BACK 2
 #define SS_NOTYPE 0
 
+#define SS_FLAGS_TRUE 1
+#define SS_FLAGS_FALSE 0
+#define SS_FLAGS_RELOAD 0
+#define SS_FLAGS_DISEN 1
+#define SS_FLAGS_INIT 2
+#define SS_FLAGS_UNSUPERVISE 3
+#define SS_FLAGS_DOWN 4
+#define SS_FLAGS_RUN 5
+#define SS_FLAGS_PID 6
+
 typedef struct ss_resolve_s ss_resolve_t, *ss_resolve_t_ref ;
 struct ss_resolve_s
 {
@@ -80,4 +90,5 @@ extern int ss_resolve_setnwrite(ss_resolve_t *res, sv_alltype *services,ssexec_t
 extern int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst) ;
 extern int ss_resolve_rmfile(ss_resolve_t *res, char const *src,char const *name) ;
 extern int ss_resolve_addlogger(ssexec_t *info,genalloc *ga) ;
+extern void ss_resolve_setflag(ss_resolve_t *res,int flags,int flags_val) ;
 #endif

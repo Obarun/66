@@ -539,35 +539,34 @@ int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst)
 	res.logassoc = ss_resolve_add_string(&res,string + sv->name) ;
 	res.dstlog = ss_resolve_add_string(&res,string + sv->dstlog) ;
 	res.live = ss_resolve_add_string(&res,string + sv->live) ;
+	res.runat = ss_resolve_add_string(&res,live) ;
 	//res.deps = ss_resolve_add_string(&res,string + sv->name) ;
 	res.tree = ss_resolve_add_string(&res,string + sv->tree) ;
 	res.treename = ss_resolve_add_string(&res,string + sv->treename) ;
 	//res.ndeps = 1 ;
 	res.type = sv->type ;
-	res.reload = sv->reload ;
-	res.disen = sv->disen ;
-	res.down = sv->down ;
-	res.runat = ss_resolve_add_string(&res,live) ;
-	res.init = sv->init ;
-	res.reload = sv->reload ;
-	res.unsupervise = sv->unsupervise ;
+	ss_resolve_setflag(&res,SS_FLAGS_RELOAD,sv->reload) ;
+	ss_resolve_setflag(&res,SS_FLAGS_DISEN,sv->disen) ;
+	ss_resolve_setflag(&res,SS_FLAGS_DOWN,sv->down) ;
+	ss_resolve_setflag(&res,SS_FLAGS_INIT,sv->init) ;
+	ss_resolve_setflag(&res,SS_FLAGS_UNSUPERVISE,sv->unsupervise) ;
 	
 	r = s6_svc_ok(res.sa.s + res.runat) ;
 	if (r < 0) { strerr_warnwu2sys("check ", res.sa.s + res.runat) ; goto err ; }
 	if (!r)
 	{	
-		res.pid = 0 ;
-		res.run = 0 ;
+		ss_resolve_setflag(&res,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+		ss_resolve_setflag(&res,SS_FLAGS_RUN,SS_FLAGS_FALSE) ;
 	}
 	else
 	{
-		res.run = 1 ;
+		ss_resolve_setflag(&res,SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
 		if (!s6_svstatus_read(res.sa.s + res.runat,&status))
 		{ 
 			strerr_warnwu2sys("read status of: ",res.sa.s + res.name) ;
 			goto err ;
 		}
-		res.pid = status.pid ;
+		ss_resolve_setflag(&res,SS_FLAGS_PID,(uint32_t)status.pid) ;
 	}
 	
 	if (!ss_resolve_write(&res,dst,res.sa.s + res.name))
@@ -610,10 +609,10 @@ int ss_resolve_setnwrite(ss_resolve_t *res, sv_alltype *services, ssexec_t *info
 		res->exec_finish = ss_resolve_add_string(res,keep.s + services->type.classic_longrun.finish.exec) ;
 	res->type = services->cname.itype ;
 	res->ndeps = services->cname.nga ;
-	res->reload = 1 ;
-	res->disen = 1 ;
-	res->unsupervise = 0 ;
-	if (services->flags[0])	res->down = 1 ;
+	ss_resolve_setflag(res,SS_FLAGS_RELOAD,SS_FLAGS_TRUE) ;
+	ss_resolve_setflag(res,SS_FLAGS_DISEN,SS_FLAGS_TRUE) ;
+	ss_resolve_setflag(res,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+	if (services->flags[0])	ss_resolve_setflag(res,SS_FLAGS_DOWN,SS_FLAGS_TRUE) ;
 
 	if (res->type == CLASSIC)
 	{
@@ -627,22 +626,22 @@ int ss_resolve_setnwrite(ss_resolve_t *res, sv_alltype *services, ssexec_t *info
 		if (r < 0) { strerr_warnwu2sys("check ", res->sa.s + res->runat) ; goto err ; }
 		if (!r)
 		{	
-			res->init = 1 ;
-			res->reload = 0 ;
-			res->pid = 0 ;
-			res->run = 0 ;
+			ss_resolve_setflag(res,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
+			ss_resolve_setflag(res,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+			ss_resolve_setflag(res,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+			ss_resolve_setflag(res,SS_FLAGS_RUN,SS_FLAGS_FALSE) ;
 		}
 		else
 		{
-			res->init = 0 ;
-			res->run = 1 ;
-			res->reload = 1 ;
+			ss_resolve_setflag(res,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+			ss_resolve_setflag(res,SS_FLAGS_RELOAD,SS_FLAGS_TRUE) ;
+			ss_resolve_setflag(res,SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
 			if (!s6_svstatus_read(res->sa.s + res->runat,&status))
 			{ 
 				strerr_warnwu2sys("read status of: ",res->sa.s + res->name) ;
 				goto err ;
 			}
-			res->pid = status.pid ;
+			ss_resolve_setflag(res,SS_FLAGS_PID,(uint32_t)status.pid) ;
 		}
 	}
 	else if (res->type >= BUNDLE)
@@ -659,22 +658,22 @@ int ss_resolve_setnwrite(ss_resolve_t *res, sv_alltype *services, ssexec_t *info
 		if (r < 0) { strerr_warnwu2sys("check ", res->sa.s + res->runat) ; goto err ; }
 		if (!r)
 		{	
-			res->init = 1 ;
-			res->reload = 0 ;
-			res->pid = 0 ;
-			res->run = 0 ;
+			ss_resolve_setflag(res,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
+			ss_resolve_setflag(res,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+			ss_resolve_setflag(res,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+			ss_resolve_setflag(res,SS_FLAGS_RUN,SS_FLAGS_FALSE) ;
 		}
 		else
 		{
-			res->init = 0 ;
-			res->run = 1 ;
-			res->reload = 1 ;
+			ss_resolve_setflag(res,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+			ss_resolve_setflag(res,SS_FLAGS_RELOAD,SS_FLAGS_TRUE) ;
+			ss_resolve_setflag(res,SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
 			if (!s6_svstatus_read(res->sa.s + res->runat,&status))
 			{ 
 				strerr_warnwu2sys("read status of: ",res->sa.s + res->name) ;
 				goto err ;
 			}
-			res->pid = status.pid ;
+			ss_resolve_setflag(res,SS_FLAGS_PID,(uint32_t)status.pid) ;
 		}
 	}
 
@@ -773,6 +772,7 @@ int ss_resolve_setnwrite(ss_resolve_t *res, sv_alltype *services, ssexec_t *info
 		stralloc_free(&destlog) ;
 		return 0 ;
 }
+
 int ss_resolve_cmp(genalloc *ga,char const *name)
 {
 	unsigned int i = 0 ;
@@ -792,7 +792,6 @@ int ss_resolve_addlogger(ssexec_t *info,genalloc *ga)
 
 	if (!ss_resolve_pointo(&tmp,info,SS_NOTYPE,SS_RESOLVE_SRC))		
 		goto err ;
-//	if (!genalloc_copy(ss_resolve_t,&gatmp,ga)) goto err ;
 	
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++) 
 	{
@@ -823,4 +822,19 @@ int ss_resolve_addlogger(ssexec_t *info,genalloc *ga)
 		genalloc_free(ss_resolve_t,&gatmp) ;
 		stralloc_free(&tmp) ;
 		return 0 ;
+}
+
+void ss_resolve_setflag(ss_resolve_t *res,int flags,int flags_val)
+{
+	switch (flags)
+	{
+		case SS_FLAGS_RELOAD: res->reload = flags_val ; break ;
+		case SS_FLAGS_DISEN: res->disen = flags_val ; break ;
+		case SS_FLAGS_INIT: res->init = flags_val ; break ;
+		case SS_FLAGS_UNSUPERVISE: res->unsupervise = flags_val ; break ;
+		case SS_FLAGS_DOWN: res->down = flags_val ; break ;
+		case SS_FLAGS_RUN: res->run = flags_val ; break ;
+		case SS_FLAGS_PID: res->pid = flags_val ; break ;
+		default: return ;
+	}
 }
