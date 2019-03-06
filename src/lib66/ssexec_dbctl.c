@@ -99,7 +99,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	genalloc resdeps = GENALLOC_ZERO ; //ss_resolve_t
 	genalloc gasrc = GENALLOC_ZERO ;
 	stralloc tmp = STRALLOC_ZERO ;
-	ss_resolve_t res = RESOLVE_ZERO ;
+		
 	stralloc src = STRALLOC_ZERO ;
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	
@@ -137,11 +137,12 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		for(;*argv;argv++)
 		{
 			char const *name = *argv ;
-			res.sa.len = 0 ;
+			ss_resolve_t res = RESOLVE_ZERO ;
 			if (!ss_resolve_check(info,name,SS_RESOLVE_SRC)) strerr_dief2sys(110,"unknow service: ",name) ;
 			if (!ss_resolve_read(&res,src.s,name)) strerr_diefu3sys(111,"read resolve file of: ",src.s,name) ;
 			if (res.type == CLASSIC) strerr_dief2x(111,name," has type classic") ;
-			if (!stra_add(&gasv,name)) strerr_diefu3sys(111,"add: ",name," as service to handle") ;
+			if (!stra_add(&gasv,name)) strerr_diefu3sys(111,"add: ",name," as service to handle") ;	
+			ss_resolve_free(&res) ;
 		}
 		
 	}
@@ -187,84 +188,84 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	if (!graph_type_src(&gasrc,src.s,1)) strerr_diefu2x(111,"resolve graph source of tree: ",info->treename.s) ; ;
 	for (unsigned int i = 0; i < genalloc_len(stralist,&gasv) ; i++)
 	{
-		res.sa.len = 0 ;
+		ss_resolve_t gres = RESOLVE_ZERO ;
 		char *name = gaistr(&gasv,i) ;
 	
 		if (!ss_resolve_check(info,name,SS_RESOLVE_SRC)) strerr_dief2sys(111,"unknow service: ",name) ;
-		if (!ss_resolve_read(&res,src.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
+		if (!ss_resolve_read(&gres,src.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
 		if (up)
 		{
-			if (!ss_resolve_deps(&resdeps,&res,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
+			if (!ss_resolve_deps(&resdeps,&gres,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
 		}
-		else if (!ss_resolve_rdeps(&resdeps,&gasrc,&res,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
-		
+		else if (!ss_resolve_rdeps(&resdeps,&gasrc,&gres,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
 	}
-	
+	ss_resolve_t_ref pres = 0 ;
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&resdeps) ; i++)
 	{ 
 		int nret = 0 ;
-		ss_resolve_t_ref dres = &genalloc_s(ss_resolve_t,&resdeps)[i] ;
-		char *name = dres->sa.s + dres->name ;
+		pres = &genalloc_s(ss_resolve_t,&resdeps)[i] ;
+		char *name = pres->sa.s + pres->name ;
 		/** do not touche the Master resolve file*/
 		if (obstr_equal(name,SS_MASTER + 1)) continue ;
 		/** only check longrun service */
-		if (dres->type == LONGRUN)
+		
+		if (pres->type == LONGRUN)
 		{	
-			if (!s6_svstatus_read(dres->sa.s + dres->runat,&status))
+			if (!s6_svstatus_read(pres->sa.s + pres->runat,&status))
 			{
-				strerr_diefu4sys(111,"read status of: ",dres->sa.s + dres->runat," -- race condition, try 66-info -S ",dres->sa.s + dres->name) ;
+				strerr_diefu4sys(111,"read status of: ",pres->sa.s + pres->runat," -- race condition, try 66-info -S ",pres->sa.s + pres->name) ;
 			}
-			if (down)
+			else if (down)
 			{
 				if (WEXITSTATUS(status.wstat) && WIFEXITED(status.wstat) && status.pid)
 				{
 					VERBO1 strerr_warnwu2x("stop: ",name) ;
-					ss_resolve_setflag(dres,SS_FLAGS_PID,(uint32_t)status.pid) ;
+					ss_resolve_setflag(pres,SS_FLAGS_PID,(uint32_t)status.pid) ;
 					nret = 1 ;
 				}
-				else ss_resolve_setflag(dres,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+				else ss_resolve_setflag(pres,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
 			}
-			else if (up)
+			else 
 			{
 				if (WEXITSTATUS(status.wstat) && WIFEXITED(status.wstat))
 				{
 					VERBO1 strerr_warnwu2x("start: ",name) ;
 					nret = 1 ;
-					ss_resolve_setflag(dres,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+					ss_resolve_setflag(pres,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
 				}
-				else ss_resolve_setflag(dres,SS_FLAGS_PID,(uint32_t)status.pid) ;
+				else ss_resolve_setflag(pres,SS_FLAGS_PID,(uint32_t)status.pid) ;
 			}
 		}
 		if (!nret) VERBO1 strerr_warni3x(name,down ? " stopped " : " started ", "successfully") ;
 		if (nret) ret = 111 ;
-		ss_resolve_setflag(dres,SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
-		ss_resolve_setflag(dres,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-		ss_resolve_setflag(dres,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-		ss_resolve_setflag(dres,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+		ss_resolve_setflag(pres,SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
+		ss_resolve_setflag(pres,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+		ss_resolve_setflag(pres,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+		ss_resolve_setflag(pres,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
 		VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-		if (!ss_resolve_write(dres,src.s,name))
+		if (!ss_resolve_write(pres,src.s,name))
 		{
 			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
 			ret = 111 ;
 		}
-		if (dres->logger)
+		if (pres->logger)
 		{
 			VERBO2 strerr_warni2x("Write logger resolve file of: ",name) ;
-			if (!ss_resolve_setlognwrite(dres,src.s))
+			if (!ss_resolve_setlognwrite(pres,src.s))
 			{
 				VERBO1 strerr_warnwu2sys("write logger resolve file of: ",name) ;
 				ret = 111 ;
 			}
 		}
-		ss_resolve_free(dres) ;
+		ss_resolve_free(pres) ;
 	}
 	
-	//ss_resolve_free(&res) ;
 	stralloc_free(&tmp) ;	
 	stralloc_free(&src) ;
 	genalloc_deepfree(stralist,&gasv,stra_free) ;
 	genalloc_deepfree(stralist,&gasrc,stra_free) ;
 	genalloc_deepfree(ss_resolve_t,&resdeps,ss_resolve_free) ;
+	
 	return ret ;
 }
 
