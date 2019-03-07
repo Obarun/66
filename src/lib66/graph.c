@@ -261,11 +261,6 @@ int graph_sort(graph_t *g)
 	visit c[color] ;
 	for (unsigned int i = 0 ; i < color; i++) c[i] = WHITE ;
 	if (!len) return 0 ;
-/*	if (!stack_init(&g->stack,color))
-	{
-		VERBO3 strerr_warnwu1x("iniate stack") ;
-		return 0;
-	}*/ 
 	for (unsigned int i = 0 ; i < len ; i++)
 		if (c[i] == WHITE && dfs(g,i,&g->stack,c))
 			return -1 ;
