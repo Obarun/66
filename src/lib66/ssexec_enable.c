@@ -51,7 +51,7 @@ static unsigned int FORCE = 0 ;
 static void cleanup(char const *dst)
 {
 	int e = errno ;
-	//rm_rf(dst) ;
+	rm_rf(dst) ;
 	errno = e ;
 }
 
@@ -124,12 +124,12 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	if (argc < 1) exitusage(usage_enable) ;
 	
 	
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1sys(111,"set revolve pointer to source") ;
 	
 	for(;*argv;argv++)
 	{
 		ss_resolve_t_ref pres = &res ;
-		if (ss_resolve_check(info,*argv,SS_RESOLVE_SRC))
+		if (ss_resolve_check(info,*argv,SS_RESOLVE_LIVE))
 		{
 			if (!ss_resolve_read(pres,sares.s,*argv)) strerr_diefu2sys(111,"read resolve file of: ",*argv) ;
 			if (res.disen && !FORCE)
@@ -142,9 +142,13 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 		unsigned int found = 0 ;
 		if (!ss_resolve_src(&gasrc,&sasrc,*argv,src,&found))
 		{
-			src = SS_SERVICE_PACKDIR ;
+			src = SS_SERVICE_SYSDIR ;
 			if (!ss_resolve_src(&gasrc,&sasrc,*argv,src,&found))
-				strerr_dief2sys(110,"unknow service: ",*argv) ;
+			{
+				src = SS_SERVICE_PACKDIR ;
+				if (!ss_resolve_src(&gasrc,&sasrc,*argv,src,&found))
+					strerr_dief2sys(110,"unknow service: ",*argv) ;
+			}
 		}
 		
 	}
@@ -244,7 +248,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 			}
 		}
 		genalloc_reverse(stralist,&master) ;
-		if (!db_write_master(info,&master,workdir.s))
+		if (!db_write_master(info,&master,workdir.s,SS_SIMPLE))
 		{
 			cleanup(workdir.s) ;
 			strerr_diefu2sys(111,"update bundle: ", SS_MASTER + 1) ;
@@ -271,7 +275,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	}
 	
 	cleanup(workdir.s) ;
-	
+
 	freed:
 	/** parser allocation*/
 	freed_parser() ;
