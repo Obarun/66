@@ -29,6 +29,8 @@
 #define SS_RESOLVE_SRC 1
 #define SS_RESOLVE_BACK 2
 #define SS_NOTYPE 0
+#define SS_SIMPLE 0
+#define SS_DOUBLE 1
 
 #define SS_FLAGS_TRUE 1
 #define SS_FLAGS_FALSE 0
@@ -53,11 +55,12 @@ struct ss_resolve_s
 	uint32_t logassoc ;
 	uint32_t dstlog ;
 	uint32_t deps ;
-	uint32_t src ;
-	uint32_t live ;
+	uint32_t src ;	//etc/service
+	uint32_t live ; //run/66
 	uint32_t runat ; //livetree->longrun,scandir->svc
-	uint32_t tree ;
+	uint32_t tree ;	//var/lib/66/system/tree
 	uint32_t treename ;
+	uint32_t resolve ; //run/66/state/treename/
 	uint32_t exec_run ;
 	uint32_t exec_finish ;
 	
@@ -71,7 +74,7 @@ struct ss_resolve_s
 	uint32_t run ;
 	uint64_t pid ;
 } ;
-#define RESOLVE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
 extern ss_resolve_t const ss_resolve_zero ;
 
@@ -82,7 +85,7 @@ extern int ss_resolve_add_uint32(stralloc *sa, uint32_t data) ;
 extern int ss_resolve_add_uint64(stralloc *sa, uint64_t data) ;
 extern uint32_t ss_resolve_add_string(ss_resolve_t *res,char const *data) ;
 extern int ss_resolve_pack(stralloc *sa,ss_resolve_t *res) ;
-extern int ss_resolve_write(ss_resolve_t *res,char const *dst,char const *name) ;
+extern int ss_resolve_write(ss_resolve_t *res,char const *dst,char const *name,int both) ;
 extern int ss_resolve_read(ss_resolve_t *res,char const *src,char const *name) ;
 extern void ss_resolve_free(ss_resolve_t *res) ;
 extern int ss_resolve_check(ssexec_t *info, char const *name,unsigned int where) ;
@@ -92,6 +95,6 @@ extern int ss_resolve_rmfile(ss_resolve_t *res, char const *src,char const *name
 extern int ss_resolve_addlogger(ssexec_t *info,genalloc *ga) ;
 extern int ss_resolve_cmp(genalloc *ga,char const *name) ;
 extern void ss_resolve_setflag(ss_resolve_t *res,int flags,int flags_val) ;
-extern int ss_resolve_deps(genalloc *tokeep,ss_resolve_t *res, ssexec_t *info) ;
-extern int ss_resolve_rdeps(genalloc *tokeep,genalloc *nsv, ss_resolve_t *res,ssexec_t *info) ;
+extern int ss_resolve_add_deps(genalloc *tokeep,ss_resolve_t *res, ssexec_t *info) ;
+extern int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res,ssexec_t *info) ;
 #endif
