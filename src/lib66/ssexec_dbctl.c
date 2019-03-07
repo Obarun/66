@@ -44,7 +44,7 @@
 
 #include <stdio.h>
 
-static unsigned int DEADLINE = 0 ;
+static unsigned int DEADLINE = 3000 ;
 
 static pid_t send(genalloc *gasv, char const *livetree, char const *signal,char const *const *envp)
 {
@@ -84,7 +84,7 @@ static pid_t send(genalloc *gasv, char const *livetree, char const *signal,char 
 int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
 	
-	DEADLINE = info->timeout ;
+	if (info->timeout) DEADLINE = info->timeout ;
 
 	unsigned int up, down, reload, ret ;
 	
