@@ -54,7 +54,7 @@ static pid_t send(genalloc *gasv, char const *livetree, char const *signal,char 
     tain_now_g() ;
     tain_add_g(&deadline, &deadline) ;
 
-	char const *newargv[10 + genalloc_len(stralist,gasv)] ;
+	char const *newargv[10 + genalloc_len(ss_resolve_t,gasv)] ;
 	unsigned int m = 0 ;
 	char fmt[UINT_FMT] ;
 	fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
@@ -72,8 +72,8 @@ static pid_t send(genalloc *gasv, char const *livetree, char const *signal,char 
 	newargv[m++] = signal ;
 	newargv[m++] = "change" ;
 	
-	for (unsigned int i = 0 ; i<genalloc_len(stralist,gasv); i++)
-		newargv[m++] = gaistr(gasv,i) ;
+	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,gasv); i++)
+		newargv[m++] = genalloc_s(ss_resolve_t,gasv)[i].sa.s + genalloc_s(ss_resolve_t,gasv)[i].name  ;
 	
 	newargv[m++] = 0 ;
 
@@ -84,28 +84,28 @@ static pid_t send(genalloc *gasv, char const *livetree, char const *signal,char 
 int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
 	
-	// be sure that the global var are set correctly
-	DEADLINE = 0 ;
+	DEADLINE = info->timeout ;
 
 	unsigned int up, down, reload, ret ;
 	
-	int wstat ;
+	int wstat, writein ;
 	pid_t pid ;
 	
 	char *signal = 0 ;
 	char *mainsv = "Master" ;
 	
-	genalloc gasv = GENALLOC_ZERO ; //stralist
 	genalloc resdeps = GENALLOC_ZERO ; //ss_resolve_t
-	genalloc gasrc = GENALLOC_ZERO ;
+	genalloc toreload = GENALLOC_ZERO ;//ss_resolve_t
 	stralloc tmp = STRALLOC_ZERO ;
-		
 	stralloc src = STRALLOC_ZERO ;
+	
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	
 	up = down = reload = ret = 0 ;
+	if (!access(info->tree.s,W_OK)) writein = SS_DOUBLE ;
+	else writein = SS_SIMPLE ;
 	
-	if (!ss_resolve_pointo(&src,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;
+	
 	//PROG = "66-dbctl" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
@@ -127,27 +127,67 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	}
 	
 	if (!up && !down && !reload){ strerr_warnw1x("signal must be set") ; exitusage(usage_dbctl) ; }
+	
+	if (down) signal = "-d" ;
+	else signal = "-u" ;
+
+	if (!ss_resolve_pointo(&src,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1sys(111,"set revolve pointer to live") ;
+	
 	if (argc < 1)
 	{
-		if (!stra_add(&gasv,mainsv)) strerr_diefu1sys(111,"add: Master as service to handle") ;
+		unsigned int i = 0 ;
+		genalloc tmp = GENALLOC_ZERO ;
+		ss_resolve_t res = RESOLVE_ZERO ;
+		if (!ss_resolve_check(info,mainsv,SS_RESOLVE_LIVE)) strerr_dief1sys(111,"inner bundle doesn't exit -- please make a bug report") ;
+		if (!ss_resolve_read(&res,src.s,mainsv)) strerr_diefu1sys(111,"read resolve file of inner bundle") ;
+		if (res.ndeps)
+		{
+			if (!clean_val(&tmp,res.sa.s + res.deps)) strerr_dief1sys(111,"retrieve dependencies of inner bundle") ;
+			for (;i < genalloc_len(stralist,&tmp) ; i++)
+			{
+				ss_resolve_t dres = RESOLVE_ZERO ;
+				char *name = gaistr(&tmp,i) ;
+				if (!ss_resolve_check(info,name,SS_RESOLVE_LIVE)) strerr_dief2sys(110,"unknow service: ",name) ;
+				if (!ss_resolve_read(&dres,src.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
+				if (!genalloc_append(ss_resolve_t,&resdeps,&dres)) strerr_diefu1sys(111,"append genalloc") ;
+				if (reload) if (!genalloc_append(ss_resolve_t,&toreload,&dres)) strerr_diefu1sys(111,"append genalloc") ;
+			}
+		}
+		else
+		{
+			VERBO1 strerr_warni1x("nothing to do") ;
+			ss_resolve_free(&res) ;
+			genalloc_deepfree(stralist,&tmp,stra_free) ;
+			goto freed ;
+		}
+		ss_resolve_free(&res) ;
+		genalloc_deepfree(stralist,&tmp,stra_free) ;
 	}
 	else 
 	{
-		
 		for(;*argv;argv++)
 		{
-			char const *name = *argv ;
 			ss_resolve_t res = RESOLVE_ZERO ;
-			if (!ss_resolve_check(info,name,SS_RESOLVE_SRC)) strerr_dief2sys(110,"unknow service: ",name) ;
-			if (!ss_resolve_read(&res,src.s,name)) strerr_diefu3sys(111,"read resolve file of: ",src.s,name) ;
+			char const *name = *argv ;
+			if (!ss_resolve_check(info,name,SS_RESOLVE_LIVE)) strerr_dief2sys(110,"unknow service: ",name) ;
+			if (!ss_resolve_read(&res,src.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
 			if (res.type == CLASSIC) strerr_dief2x(111,name," has type classic") ;
-			if (!stra_add(&gasv,name)) strerr_diefu3sys(111,"add: ",name," as service to handle") ;	
-			ss_resolve_free(&res) ;
+			
+			if (up)
+			{
+				if (!ss_resolve_add_deps(&resdeps,&res,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
+			}
+			else 
+			{
+				if (!ss_resolve_add_rdeps(&resdeps,&res,info)) strerr_diefu2sys(111,"resolve recursive dependencies of: ",name) ;
+			}
+			if (reload)
+			{
+				if (!ss_resolve_add_rdeps(&toreload,&res,info)) strerr_diefu2sys(111,"resolve recursive dependencies of: ",name) ;
+			}
 		}
 		
-	}
-	if (info->timeout) DEADLINE = info->timeout ;
-	
+	}	
 	if (!db_ok(info->livetree.s,info->treename.s))
 		strerr_dief5sys(111,"db: ",info->livetree.s,"/",info->treename.s," is not running") ;
 
@@ -158,57 +198,29 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 
 	if (reload)
 	{
-		pid = send(&gasv,tmp.s,"-d",envp) ;
+		pid = send(&toreload,tmp.s,"-d",envp) ;
 		
 		if (waitpid_nointr(pid,&wstat, 0) < 0)
 			strerr_diefu1sys(111,"wait for s6-rc") ;
 		
 		if (wstat) strerr_diefu2x(111,down ? " stop " : " start ","services list") ;
 	}
-	
-	if (down) signal = "-d" ;
-	else signal = "-u" ;
-	
-	pid = send(&gasv,tmp.s,signal,envp) ;
+		
+	pid = send(&resdeps,tmp.s,signal,envp) ;
 	
 	if (waitpid_nointr(pid,&wstat, 0) < 0)
 		strerr_diefu1sys(111,"wait for s6-rc") ;
 	
 	if (wstat) strerr_diefu2x(111,down ? " start " : " stop ","services list") ;
 	
-	/** we are forced to do this ugly check cause of the design
-	 * of s6-rc(generally s6-svc) which is launch and forgot. So
-	 * s6-rc will not warn us if the daemon fail when we don't use
-	 * readiness which is rarely used on DESKTOP configuration due of
-	 * the bad design of the majority of daemon.
-	 * The result of the check is not guaranted due of the rapidity of the code.
-	 * between the end of the s6-rc process and the check of the daemon status,
-	 * the real value of the status can be not written yet,so we can hit
-	 * this window.*/
-	if (!graph_type_src(&gasrc,src.s,1)) strerr_diefu2x(111,"resolve graph source of tree: ",info->treename.s) ; ;
-	for (unsigned int i = 0; i < genalloc_len(stralist,&gasv) ; i++)
-	{
-		ss_resolve_t gres = RESOLVE_ZERO ;
-		char *name = gaistr(&gasv,i) ;
-	
-		if (!ss_resolve_check(info,name,SS_RESOLVE_SRC)) strerr_dief2sys(111,"unknow service: ",name) ;
-		if (!ss_resolve_read(&gres,src.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
-		if (up)
-		{
-			if (!ss_resolve_deps(&resdeps,&gres,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
-		}
-		else if (!ss_resolve_rdeps(&resdeps,&gasrc,&gres,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
-	}
-	ss_resolve_t_ref pres = 0 ;
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&resdeps) ; i++)
 	{ 
 		int nret = 0 ;
-		pres = &genalloc_s(ss_resolve_t,&resdeps)[i] ;
+		ss_resolve_t_ref pres = &genalloc_s(ss_resolve_t,&resdeps)[i] ;
 		char *name = pres->sa.s + pres->name ;
-		/** do not touche the Master resolve file*/
+		/** do not touch the Master resolve file*/
 		if (obstr_equal(name,SS_MASTER + 1)) continue ;
 		/** only check longrun service */
-		
 		if (pres->type == LONGRUN)
 		{	
 			if (!s6_svstatus_read(pres->sa.s + pres->runat,&status))
@@ -243,28 +255,18 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		ss_resolve_setflag(pres,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 		ss_resolve_setflag(pres,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
 		VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-		if (!ss_resolve_write(pres,src.s,name))
+		if (!ss_resolve_write(pres,src.s,name,writein))
 		{
 			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
 			ret = 111 ;
 		}
-		if (pres->logger)
-		{
-			VERBO2 strerr_warni2x("Write logger resolve file of: ",name) ;
-			if (!ss_resolve_setlognwrite(pres,src.s))
-			{
-				VERBO1 strerr_warnwu2sys("write logger resolve file of: ",name) ;
-				ret = 111 ;
-			}
-		}
-		ss_resolve_free(pres) ;
 	}
 	
+	freed:
 	stralloc_free(&tmp) ;	
 	stralloc_free(&src) ;
-	genalloc_deepfree(stralist,&gasv,stra_free) ;
-	genalloc_deepfree(stralist,&gasrc,stra_free) ;
 	genalloc_deepfree(ss_resolve_t,&resdeps,ss_resolve_free) ;
+	genalloc_free(ss_resolve_t,&toreload) ;
 	
 	return ret ;
 }
