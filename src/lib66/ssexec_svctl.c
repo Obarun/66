@@ -294,11 +294,12 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	DEATHSV = 10 ;
 	tain_t ttmain ;
 	
-	int e, isup, ret ;
+	int e, isup, ret,writein ;
 	unsigned int death, tsv ;
 	int SIGNAL = -1 ;
 	
 	genalloc gakeep = GENALLOC_ZERO ; //type ss_resolve_sig
+	genalloc resdeps = GENALLOC_ZERO ; //ss_resolve_t
 	
 	char *sig = 0 ;
 	
@@ -306,6 +307,9 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	
 	tsv = death = ret = 0 ;
+	
+	if (!access(info->tree.s,W_OK)) writein = SS_DOUBLE ;
+	else writein = SS_SIMPLE ;
 	
 	//PROG = "66-svctl" ;
 	{
@@ -337,25 +341,37 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	if (argc < 1 || (SIGNAL < 0)) exitusage(usage_svctl) ;
 	
 	if (info->timeout) tsv = info->timeout ;
-	
-		
+			
 	if ((scandir_ok(info->scandir.s)) !=1 ) strerr_dief3sys(111,"scandir: ", info->scandir.s," is not running") ;
 	
 	stralloc src = STRALLOC_ZERO ;
-	if (!ss_resolve_pointo(&src,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;
+	if (!ss_resolve_pointo(&src,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1sys(111,"set revolve pointer to source") ;
+	
 	for(;*argv;argv++)
 	{
-		ss_resolve_sig_t sv_signal = RESOLVE_SIG_ZERO ;
+		ss_resolve_t gres = RESOLVE_ZERO ;
 		char const *name = *argv ;
-		if (!ss_resolve_check(info,name,SS_RESOLVE_SRC)) strerr_dief2sys(110,"unknow service: ",name) ;
-		if (!ss_resolve_read(&sv_signal.res,src.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
-		if (sv_signal.res.type >= BUNDLE) strerr_dief3x(111,name," has type ",get_keybyid(sv_signal.res.type)) ;
+	
+		if (!ss_resolve_check(info,name,SS_RESOLVE_LIVE)) strerr_dief2sys(111,"unknow service: ",name) ;
+		if (!ss_resolve_read(&gres,src.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
+		if (gres.type >= BUNDLE) strerr_dief3x(111,name," has type ",get_keybyid(gres.type)) ;
+		
+		if (SIGNAL <= SIGRR)
+		{
+			if (!ss_resolve_add_deps(&resdeps,&gres,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
+		}
+		else if (!ss_resolve_add_rdeps(&resdeps,&gres,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
+	}
+	genalloc_reverse(ss_resolve_t,&resdeps) ;
+	for(unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&resdeps) ; i++)
+	{
+		ss_resolve_sig_t sv_signal = RESOLVE_SIG_ZERO ;
+		sv_signal.res = genalloc_s(ss_resolve_t,&resdeps)[i] ;
 		char *string = sv_signal.res.sa.s ;
 		char *svok = string + sv_signal.res.runat ;
 		size_t svoklen = strlen(svok) ;
 		char file[svoklen + 16 + 1] ;
 		memcpy(file,svok,svoklen) ;
-		
 		if (!s6_svstatus_read(svok,&status)) strerr_diefu2sys(111,"read status of: ",svok) ;
 		isup = status.pid && !status.flagfinishing ;
 			
@@ -484,7 +500,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	if (sig_ignore(SIGPIPE) < 0) strerr_diefu1sys(111,"ignore SIGPIPE") ;
 		
 	if (!svc_init_pipe(&fifo,&gakeep)) strerr_diefu1x(111,"init pipe") ;
-
+	
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_sig_t,&gakeep) ; i++)
 	{ 
 		int nret = 0 ;
@@ -504,29 +520,20 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 				ss_resolve_setflag(&sv->res,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
 			/** wtf, the system can kill a process?? should never happen */
 			else ss_resolve_setflag(&sv->res,SS_FLAGS_PID,(uint32_t)sv->pid) ;
-			//else strerr_diefu1x(111,"kill the process - this should never happen - please, make a bug report") ;
 		}
 		ss_resolve_setflag(&sv->res,SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
 		ss_resolve_setflag(&sv->res,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
 		ss_resolve_setflag(&sv->res,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 		ss_resolve_setflag(&sv->res,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
 		VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-		if (!ss_resolve_write(&sv->res,src.s,name))
+		if (!ss_resolve_write(&sv->res,src.s,name,writein))
 		{
 			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
 			ret = 111 ;
 		}
-		if (sv->res.logger)
-		{
-			VERBO2 strerr_warni2x("Write logger resolve file of: ",name) ;
-			if (!ss_resolve_setlognwrite(&sv->res,src.s))
-			{
-				VERBO1 strerr_warnwu2sys("write logger resolve file of: ",name) ;
-				ret = 111 ;
-			}
-		}
 		ss_resolve_free(&sv->res) ;
 	}
+	
 	tain_now_g() ;
 	tain_addsec(&ttmain,&STAMP,2) ;
 	
