@@ -695,6 +695,7 @@ int sanitize_live(char const *live, char const *scandir, char const *scanname, u
 	char basescan[scandirlen + 1 + scannamelen + 1] ;
 	char tree[livelen + 4 + 1] ;
 	char baselog[livelen + 3 + 1] ;
+	char resolve[livelen + SS_STATE_LEN + 1 + 1] ;
 	/** run/66 */
 	r = scan_mode(live,S_IFDIR) ;
 	if (r < 0) { errno = EEXIST ; return 0 ; }
@@ -796,6 +797,35 @@ int sanitize_live(char const *live, char const *scandir, char const *scanname, u
 		if (chown(baselog,OWNER,GIDOWNER) < 0)
 		{
 			VERBO3 strerr_warnwu2sys("chown: ",baselog) ;
+			return 0 ;
+		}
+	}
+	/** /run/66/state*/
+	memcpy(resolve,live,livelen - 1) ;
+	memcpy(resolve + livelen - 1, SS_STATE, SS_STATE_LEN) ;
+	resolve[(livelen - 1) + SS_STATE_LEN] = '/' ;
+	resolve[(livelen - 1) + SS_STATE_LEN + 1] = 0 ;
+	r = scan_mode(resolve,S_IFDIR) ;
+	if (r < 0) { errno = EEXIST ; return 0 ; }
+	if (!r)
+	{	
+		VERBO3 strerr_warnt2x("create directory: ",resolve) ;
+		r = dir_create(resolve,0755) ;
+		if (!r)
+		{
+			VERBO3 strerr_warnwu2sys("create directory: ",resolve) ;
+			return 0 ;
+		}
+		VERBO3 strerr_warnt2x("chmod 1777: ",resolve) ;
+		if (chmod(resolve,S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO) < 0)
+		{
+			VERBO3 strerr_warnwu2sys("chmod: ",resolve) ;
+			return 0 ;
+		}
+		VERBO3 strerr_warnt6x("chown directory: ",resolve," to: ",OWNERSTR,":",GIDSTR) ;
+		if (chown(resolve,OWNER,GIDOWNER) < 0)
+		{
+			VERBO3 strerr_warnwu2sys("chown: ",resolve) ;
 			return 0 ;
 		}
 	}
