@@ -43,6 +43,7 @@
 #define USAGE "66-tree [ -h ] [ -v verbosity ] [ -n|R ] [ -a|d ] [ -c ] [ -E|D ] [ -U ] [ -C clone ] tree" 
 
 unsigned int VERBOSITY = 1 ;
+static stralloc reslive = STRALLOC_ZERO ;
 
 static inline void info_help (void)
 {
@@ -256,7 +257,7 @@ int create_tree(char const *tree,char const *treename)
 	}
 	
 	VERBO3 strerr_warnt1x("write resolve file of: Master") ;
-	if (!ss_resolve_write(&res,dst,"Master"))
+	if (!ss_resolve_write(&res,dst,"Master",SS_SIMPLE))
 	{
 		VERBO3 strerr_warnwu1sys("write resolve file of: Master") ;
 		ss_resolve_free(&res) ;
@@ -472,6 +473,7 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 	{
 		
 		if (!stralloc_cats(&scandir,res.sa.s + res.live)) retstralloc(111,"tree_unsupervise") ;
+		if (!stralloc_cats(&reslive,res.sa.s + res.resolve)) retstralloc(111,"tree_unsupervise") ;
 		
 		if (!stralloc_cats(&livetree,res.sa.s + res.live)) retstralloc(111,"tree_unsupervise") ;
 		r = set_livetree(&livetree,owner) ;
@@ -501,9 +503,21 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 				VERBO3 strerr_warnwu2sys("wait for ",newargv[0]) ;
 				return 0 ;
 			}
-			if (wstat) strerr_diefu2sys(111,"bring down db service of tree: ",treename) ;
+			if (wstat) strerr_diefu2sys(111,"stop db service of tree: ",treename) ;
 			/** unsupervise service into the scandir */
 			if (!clean_val(&gasv,res.sa.s + res.deps)) strerr_diefu2sys(111,"clean deps of inner bundle of tree: ", treename) ;
+			for (unsigned int i = 0 ; i < genalloc_len(stralist,&gasv) ; i++)
+			{
+				ss_resolve_t dres = RESOLVE_ZERO ;
+				ss_resolve_init(&dres) ;
+				if (!ss_resolve_read(&dres,res.sa.s + res.resolve,gaistr(&gasv,i))) strerr_diefu2sys(111,"read resolve file of: ",gaistr(&gasv,i)) ;
+				ss_resolve_setflag(&dres,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
+				ss_resolve_setflag(&dres,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+				ss_resolve_setflag(&dres,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+				ss_resolve_setflag(&dres,SS_FLAGS_RUN,SS_FLAGS_FALSE) ;
+				if (!ss_resolve_write(&dres,res.sa.s + res.resolve,gaistr(&gasv,i),SS_DOUBLE)) strerr_diefu2sys(111,"write resolve file of: ", gaistr(&gasv,i)) ;
+				ss_resolve_free(&dres) ;
+			}
 			if (!stra_add(&gasv,S6RC_ONESHOT_RUNNER)) strerr_diefu3sys(111,"add ",S6RC_ONESHOT_RUNNER," as service to unsupervise") ;
 			if (!stra_add(&gasv,S6RC_FDHOLDER)) strerr_diefu3sys(111,"add ",S6RC_FDHOLDER," as service to unsupervise") ;
 		
@@ -518,8 +532,7 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 			if (r < 0 ) strerr_diefu2sys(111,"find realpath of: ",livetree.s) ; 
 			if (!stralloc_0(&realsym)) retstralloc(111,"tree_unsupervise") ;
 			if (rm_rf(realsym.s) < 0) strerr_diefu2sys(111,"remove ", realsym.s) ;
-			if (rm_rf(livetree.s) < 0) strerr_diefu2sys(111,"remove ", livetree.s) ;
-		
+			if (rm_rf(livetree.s) < 0) strerr_diefu2sys(111,"remove ", livetree.s) ;		
 		}
 	}
 	genalloc_deepfree(stralist,&gasv,stra_free) ;
@@ -529,9 +542,17 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 		genalloc tostop = GENALLOC_ZERO ;
 		for (unsigned int i = 0 ; i < genalloc_len(stralist,&gasv) ; i++) 
 		{
-			res.sa.len = 0 ;
+			ss_resolve_init(&res) ;
 			if (!ss_resolve_read(&res,dtree.s,gaistr(&gasv,i))) strerr_diefu1sys(111,"read resolve file of inner bundle") ;
-			if (res.run) if (!stra_add(&tostop,gaistr(&gasv,i))) strerr_diefu3sys(111,"add ",gaistr(&gasv,i)," as service to stop") ;
+			if (res.run)
+			{
+				if (!stra_add(&tostop,gaistr(&gasv,i))) strerr_diefu3sys(111,"add ",gaistr(&gasv,i)," as service to stop") ;
+				ss_resolve_setflag(&res,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
+				ss_resolve_setflag(&res,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+				ss_resolve_setflag(&res,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+				ss_resolve_setflag(&res,SS_FLAGS_RUN,SS_FLAGS_FALSE) ;
+				if (!ss_resolve_write(&res,res.sa.s + res.resolve,gaistr(&gasv,i),SS_DOUBLE)) strerr_diefu2sys(111,"set write resolve file of: ", gaistr(&gasv,i)) ;
+			}
 		}
 		if (genalloc_len(stralist,&tostop))
 		{
@@ -540,6 +561,8 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 			 * to avoid double path*/
 			scandir.len = 0 ;
 			if (!stralloc_cats(&scandir,res.sa.s + res.live)) retstralloc(111,"tree_unsupervise") ;
+			reslive.len = 0 ;
+			if (!stralloc_cats(&reslive,res.sa.s + res.resolve)) retstralloc(111,"tree_unsupervise") ;
 			
 			char const *newargv[9 + genalloc_len(stralist,&tostop)] ;
 			unsigned int m = 0 ;
@@ -577,6 +600,7 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 	}
 	if (reload)
 	{
+		if (!stralloc_0(&reslive)) retstralloc(111,"tree_unsupervise") ;
 		if (!stralloc_0(&scandir)) retstralloc(111,"tree_unsupervise") ;
 		if (!set_livescan(&scandir,owner)) strerr_diefu1sys(111,"set scandir") ;
 		if (scandir_send_signal(scandir.s,"an") <= 0) strerr_diefu2sys(111,"reload scandir: ",scandir.s) ;
@@ -736,8 +760,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	if (remove)
 	{
-		VERBO2 strerr_warni3x("remove ",dstree.s," ..." ) ;
-		if (rm_rf(dstree.s) < 0) strerr_diefu2sys(111,"remove ", dstree.s) ;
+		VERBO2 strerr_warni3x("delete ",dstree.s," ..." ) ;
+		if (rm_rf(dstree.s) < 0) strerr_diefu2sys(111,"delete ", dstree.s) ;
 				
 		size_t treelen = strlen(tree) ;
 		size_t baselen = base.len ;
@@ -752,16 +776,22 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		r = scan_mode(treetmp,S_IFDIR) ;
 		if (r || (r < 0))
 		{
-			VERBO2 strerr_warni3x("remove backup of tree ",treetmp," ...") ;
+			VERBO2 strerr_warni3x("delete backup of tree ",treetmp," ...") ;
 			if (rm_rf(treetmp) < 0)
 			{
-				VERBO3 strerr_warnwu2sys("remove: ",treetmp) ;
+				VERBO3 strerr_warnwu2sys("delete: ",treetmp) ;
 				return 0 ;
 			}
 		}
 		VERBO2 strerr_warni6x("disable: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
 		r  = tree_cmd_state(VERBOSITY,"-d",tree) ;
-		if (r != 1) strerr_diefu6x(111,"remove: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
+		if (r != 1) strerr_diefu6x(111,"delete: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
+		/** remove /run/66/state/treename directory */
+		if (reslive.len)
+		{
+			VERBO2 strerr_warni3x("delete ",reslive.s," ..." ) ;
+			if (rm_rf(reslive.s) < 0) strerr_diefu2sys(111,"delete ",reslive.s) ;
+		}
 	}
 	
 	if (snap)
