@@ -231,10 +231,10 @@ static void announce(ss_resolve_sig_t *sv_signal)
 
 	int r = sv_signal->state ;
 	char *sv = sv_signal->res.sa.s + sv_signal->res.runat ;
-	if (r == 3) { VERBO1 strerr_warnw3x(sv," report permanent failure -- unable to ",(sv_signal->sig > 1) ? "stop" : "start") ; }
-	else if (r == 2) { VERBO1 strerr_warnwu2x((sv_signal->sig > 3) ? "stop " : "start ", sv) ; }
-	else if (r == 1) { VERBO1 strerr_warni4x(sv," is ",(sv_signal->sig > 3) ? "down" : "up"," but not notified by the daemon itself") ; }
-	else if (!r) { VERBO1 strerr_warni4x(sv,": ",(sv_signal->sig > 3) ? "stopped" : "started"," successfully") ; }
+	if (r == 3) { VERBO2 strerr_warnw3x(sv," report permanent failure -- unable to ",(sv_signal->sig > 1) ? "stop" : "start") ; }
+	else if (r == 2) { VERBO2 strerr_warnwu2x((sv_signal->sig > 3) ? "stop " : "start ", sv) ; }
+	else if (r == 1) { VERBO2 strerr_warni4x(sv," is ",(sv_signal->sig > 3) ? "down" : "up"," but not notified by the daemon itself") ; }
+	else if (!r) { VERBO2 strerr_warni4x(sv,": ",(sv_signal->sig > 3) ? "stopped" : "started"," successfully") ; }
 }
 
 int svc_listen(genalloc *gasv, ftrigr_t *fifo,int spfd,ss_resolve_sig_t *svc)
@@ -377,13 +377,13 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			
 		if (isup && (SIGNAL <= SIGRUP))
 		{
-			VERBO1 strerr_warni2x(svok,": already up") ;
+			VERBO1 strerr_warni2x("Already up: ",string + sv_signal.res.name) ;
 			ss_resolve_free(&sv_signal.res) ;
 			continue ;
 		}
 		else if (!isup && (SIGNAL >= SIGDOWN))
 		{
-			VERBO1 strerr_warni2x(svok,": already down") ;
+			VERBO1 strerr_warni2x("Already down: ",string + sv_signal.res.name) ;
 			ss_resolve_free(&sv_signal.res) ;
 			continue ;
 		}
@@ -531,6 +531,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
 			ret = 111 ;
 		}
+		VERBO1 strerr_warni3x((sv->sig > 3) ? "Stopped" : "Started"," successfully: ",name) ; 
 		ss_resolve_free(&sv->res) ;
 	}
 	
