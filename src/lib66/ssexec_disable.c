@@ -50,162 +50,70 @@ static void cleanup(char const *dst)
 	rm_rf(dst) ;
 	errno = e ;
 }
-int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src)
-{
-	char *name = res->sa.s + res->name ;
-	size_t namelen = strlen(name) ;
-	size_t srclen = strlen(src) ; 
-	
-	char dst[srclen + SS_SVC_LEN + 1 + namelen + 1] ;
-	memcpy(dst,src,srclen) ;
-	memcpy(dst + srclen, SS_SVC, SS_SVC_LEN) ;
-	dst[srclen + SS_SVC_LEN]  =  '/' ;
-	memcpy(dst + srclen + SS_SVC_LEN + 1, name, namelen) ;
-	dst[srclen + SS_SVC_LEN + 1 + namelen] = 0 ;
-		
-	VERBO1 strerr_warni3x("Removing: ",name," directory service") ;
-	if (rm_rf(dst) < 0)
-	{
-		VERBO1 strerr_warnwu2sys("remove: ", dst) ;
-		return 0 ;
-	}
-	/** modify the resolve file for 66-stop*/
-	res->disen = 0 ;
-	res->reload = 0 ;
-	res->init = 0 ;
-	res->unsupervise = 1 ;
-	VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-	if (!ss_resolve_write(res,src,name)) 
-	{
-		VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
-		return 0 ;
-	}
-	/** if a logger is associated modify the resolve for it */
-	if (res->logger) 
-	{
-		VERBO2 strerr_warni2x("Write logger resolve file of: ",name) ;
-		if (!ss_resolve_setlognwrite(res,src))
-		{
-			VERBO1 strerr_warnwu2sys("write logger resolve file of: ",name) ;
-			return 0 ;
-		}
-		if (!stra_add(tostop,res->sa.s + res->logger)) retstralloc(0,"main") ;
-	}
-	
-	return 1 ;
-}
 
-int rc_remove(genalloc *toremove, ss_resolve_t *res, char const *src)
+int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *info)
 {
-	int r ;
-	char *name = res->sa.s + res->name ;
+	unsigned int i = 0 ;
+	genalloc rdeps = GENALLOC_ZERO ;
+	stralloc dst = STRALLOC_ZERO ;
 	size_t newlen ;
-		
-	stralloc sa = STRALLOC_ZERO ;
-			
-	ss_resolve_t dres = RESOLVE_ZERO ;
-		
-	graph_t g = GRAPH_ZERO ;
-	stralloc sagraph = STRALLOC_ZERO ;
-	genalloc tokeep = GENALLOC_ZERO ;
 	
-	/** build dependencies graph*/
-	r = graph_type_src(&tokeep,src,1) ;
-	if (r <= 0)
+	char *name = res->sa.s + res->name ;
+	if (!stralloc_cats(&dst,src)) goto err ;
+	if (res->type == CLASSIC)
 	{
-		VERBO1 strerr_warnwu2x("resolve source of graph for tree: ",src) ;
+		if (!stralloc_cats(&dst,SS_SVC)) goto err ;
+	}
+	else if (!stralloc_cats(&dst,SS_DB SS_SRC)) retstralloc(0,"remove_sv") ;
+	if (!stralloc_cats(&dst,"/")) goto err ;
+	newlen = dst.len ;
+	
+	if (!ss_resolve_add_rdeps(&rdeps,res,info))
+	{
+		strerr_warnwu2sys("resolve recursive dependencies of: ",name) ;
 		goto err ;
 	}
-	if (!graph_build(&g,&sagraph,&tokeep,src))
+	if (!ss_resolve_add_logger(&rdeps,info))
 	{
-		VERBO1 strerr_warnwu1x("make dependencies graph") ;
+		strerr_warnwu1sys("resolve logger") ;
 		goto err ;
 	}
-	
-	r = graph_rdepends(toremove,&g,name,src) ;
-	if (!r) 
+	for (;i < genalloc_len(ss_resolve_t,&rdeps) ; i++)
 	{
-		VERBO1 strerr_warnwu2x("find services depending for: ",name) ;
-		goto err ;
-	}
-	if(r == 2) VERBO2 strerr_warnt2x("any services depends of: ",name) ;
-	
-	if (!stra_cmp(toremove,name))
-	{
-		if (!stra_add(toremove,name)) 
-		{	 
-			VERBO1 strerr_warnwu3x("add: ",name," as dependency to remove") ;
-			goto err ;
-		}
-	}
-	if (!stralloc_cats(&sa,src)) retstralloc(0,"remove_sv") ;
-	if (!stralloc_cats(&sa,SS_DB SS_SRC)) retstralloc(0,"remove_sv") ;
-	if (!stralloc_cats(&sa, "/")) retstralloc(0,"remove_sv") ;
-	newlen = sa.len ;
-	genalloc_reverse(stralist,toremove) ;		
-	for (unsigned int i = 0; i < genalloc_len(stralist,toremove); i++)
-	{
-		ss_resolve_init(&dres) ;
-		char *dname = gaistr(toremove,i) ;
-		sa.len = newlen ;
-		if (!stralloc_cats(&sa,dname)) retstralloc(0,"remove_sv") ;
-		if (!stralloc_0(&sa)) retstralloc(0,"remove_sv") ;
-		VERBO1 strerr_warni3x("Removing: ",dname," directory service") ;
-		if (rm_rf(sa.s) < 0)
-		{
-			VERBO1 strerr_warnwu2sys("remove: ", sa.s) ;
-			goto err ;
-		}
-	
-		if (!ss_resolve_read(&dres,src,dname))
-		{
-			VERBO1 strerr_warnwu2sys("read resolve file of: ",dname) ;
-			goto err ;
-		}
-		dres.disen = 0 ;
-		dres.reload = 0 ;
-		dres.init = 0 ;
-		dres.unsupervise = 1 ;
-		VERBO2 strerr_warni2x("Write resolve file of: ",dname) ;
-		if (!ss_resolve_write(&dres,src,dname)) 
-		{
-			VERBO1 strerr_warnwu2sys("write resolve file of: ",dname) ;
-			goto err ;
-		}
-		if (dres.logger) 
-		{
-			sa.len = newlen ;
-			if (!stralloc_cats(&sa,dres.sa.s + dres.logger)) retstralloc(0,"remove_sv") ;
-			if (!stralloc_0(&sa)) retstralloc(0,"remove_sv") ;
-			VERBO1 strerr_warni3x("Removing: ",dres.sa.s + dres.logger," directory service") ;
-			if (rm_rf(sa.s) < 0)
-			{
-				VERBO1 strerr_warnwu2sys("remove: ", sa.s) ;
-				goto err ;
-			}
-			VERBO2 strerr_warni2x("Write logger resolve file of: ",dname) ;
-			if (!ss_resolve_setlognwrite(&dres,src))
-			{
-				VERBO1 strerr_warnwu2sys("write logger resolve file of: ",dname) ;
-				goto err ;
-			}
-		}
-					
-	}
+		ss_resolve_t_ref pres = &genalloc_s(ss_resolve_t,&rdeps)[i] ;
+		char *string = pres->sa.s ;
+		char *name = string + pres->name ;
+		dst.len = newlen ;
+		if (!stralloc_cats(&dst,name)) goto err ;
+		if (!stralloc_0(&dst)) goto err ;
 		
-	graph_free(&g) ;
-	stralloc_free(&sagraph) ;
-	genalloc_deepfree(stralist,&tokeep,stra_free) ;
-	stralloc_free(&sa) ;
-	ss_resolve_free(&dres) ;
+		VERBO2 strerr_warni2x("delete directory service of: ",name) ;
+		if (rm_rf(dst.s) < 0)
+		{
+			VERBO1 strerr_warnwu2sys("delete directory service: ",dst.s) ;
+			goto err ;
+		}
+		/** modify the resolve file for 66-stop*/
+		ss_resolve_setflag(pres,SS_FLAGS_DISEN,SS_FLAGS_FALSE) ;
+		ss_resolve_setflag(pres,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+		ss_resolve_setflag(pres,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+		ss_resolve_setflag(pres,SS_FLAGS_UNSUPERVISE,SS_FLAGS_TRUE) ;
+		
+		VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
+		if (!ss_resolve_write(pres,src,name,SS_SIMPLE)) 
+		{
+			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
+			goto err ;
+		}
+		if (!ss_resolve_cmp(tostop,name))
+			if (!genalloc_append(ss_resolve_t,tostop,pres)) goto err ;
+	}
+
+	stralloc_free(&dst) ;
 	return 1 ;
 	
 	err:
-		graph_free(&g) ;
-		stralloc_free(&sagraph) ;
-		genalloc_deepfree(stralist,&tokeep,stra_free) ;
-		stralloc_free(&sa) ;
-		ss_resolve_free(&dres) ;
+		stralloc_free(&dst) ;
 		return 0 ;
 }
 
@@ -216,9 +124,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 	
 	stralloc workdir = STRALLOC_ZERO ;
 	
-	genalloc tostop = GENALLOC_ZERO ;//stralist
-	
-	ss_resolve_t res = RESOLVE_ZERO ;
+	genalloc tostop = GENALLOC_ZERO ;//ss_resolve_t
 	
 	graph_t g = GRAPH_ZERO ;
 	stralloc sagraph = STRALLOC_ZERO ;
@@ -248,70 +154,49 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 
 	if (!tree_copy(&workdir,info->tree.s,info->treename.s)) strerr_diefu1sys(111,"create tmp working directory") ;
 	
+	for(;*argv;argv++)
 	{
-				
-		for(;*argv;argv++)
+		ss_resolve_t res = RESOLVE_ZERO ;
+		char const *name = *argv ;
+		logname = 0 ;
+		if (obstr_equal(name,SS_MASTER + 1))
 		{
-			char const *name = *argv ;
-			logname = 0 ;
-			if (obstr_equal(name,SS_MASTER + 1))
-			{
-					cleanup(workdir.s) ;
-					strerr_dief1x(110,"nice try peon") ;
-			}
-			ss_resolve_init(&res) ;
-			logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-			if (logname > 0)
-			{
-					cleanup(workdir.s) ;
-					strerr_dief1x(110,"logger detected - disabling is not allowed") ;
-			}
-			if (!ss_resolve_check(info,name,SS_RESOLVE_SRC))
-			{
-					cleanup(workdir.s) ;
-					strerr_dief2x(110,name," is not enabled") ;
-			}
-			if (!ss_resolve_read(&res,workdir.s,name))
-			{
 				cleanup(workdir.s) ;
-				strerr_diefu2sys(111,"read resolve file of: ",name) ;
-			}
-			
-			if (!res.disen)
-			{
-				strerr_warni2x(name,": is already disabled") ;
-				continue ;
-			}
-			
-			if (res.type == CLASSIC)
-			{
-				if (!svc_remove(&tostop,&res,workdir.s))
-				{
-					cleanup(workdir.s) ;
-					strerr_diefu3sys(111,"remove",name," directory service") ;
-				}
-				if (!stra_add(&tostop,name))
-				{
-					cleanup(workdir.s) ;
-					retstralloc(111,"main") ;
-				}
-				nclassic++ ;
-			}	
-			else if (res.type >= BUNDLE)
-			{
-				if (!stra_cmp(&tostop,name))
-				{
-					if (!rc_remove(&tostop,&res,workdir.s))
-					{
-						cleanup(workdir.s) ;
-						strerr_diefu2x(111,"disable: ",name) ;
-					}
-				}
-				nlongrun++ ;
-			}
+				strerr_dief1x(110,"nice try peon") ;
 		}
+		ss_resolve_init(&res) ;
+		logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
+		if (logname > 0)
+		{
+				cleanup(workdir.s) ;
+				strerr_dief1x(110,"logger detected - disabling is not allowed") ;
+		}
+		if (!ss_resolve_check(info,name,SS_RESOLVE_LIVE))
+		{
+				cleanup(workdir.s) ;
+				strerr_dief2x(110,name," is not enabled") ;
+		}
+		if (!ss_resolve_read(&res,workdir.s,name))
+		{
+			cleanup(workdir.s) ;
+			strerr_diefu2sys(111,"read resolve file of: ",name) ;
+		}
+		
+		if (!res.disen)
+		{
+			VERBO1 strerr_warni2x(name,": is already disabled") ;
+			continue ;
+		}
+		if (!svc_remove(&tostop,&res,workdir.s,info))
+		{
+			cleanup(workdir.s) ;
+			strerr_diefu3sys(111,"remove",name," directory service") ;
+		}
+		if (res.type == CLASSIC) nclassic++ ;
+		else nlongrun++ ;
 	}
-	ss_resolve_free(&res) ;
+	/** logger first */
+	genalloc_reverse(ss_resolve_t,&tostop) ;
 	
 	if (nclassic)
 	{
@@ -325,7 +210,6 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 	
 	if (nlongrun)
 	{	
-		
 		r = graph_type_src(&tokeep,workdir.s,1) ;
 		if (!r)
 		{
@@ -360,7 +244,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 			}
 		}
 		genalloc_reverse(stralist,&master) ;
-		if (!db_write_master(info,&master,workdir.s))
+		if (!db_write_master(info,&master,workdir.s,SS_SIMPLE))
 		{
 			cleanup(workdir.s) ;
 			strerr_diefu2x(111,"update bundle: ", SS_MASTER) ;
@@ -388,8 +272,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 	}
 	
 	cleanup(workdir.s) ;
-	workdir.len = 0 ;
-	
+		
 	stralloc_free(&workdir) ;
 	/** graph allocation */
 	graph_free(&g) ;
@@ -397,35 +280,32 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 	genalloc_deepfree(stralist,&master,stra_free) ;
 	genalloc_deepfree(stralist,&tokeep,stra_free) ;
 	
-	if (stop && genalloc_len(stralist,&tostop))
+	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&tostop); i++)
+		VERBO1 strerr_warni2x("Disabled successfully: ",genalloc_s(ss_resolve_t,&tostop)[i].sa.s + genalloc_s(ss_resolve_t,&tostop)[i].name) ;
+			
+	if (stop && genalloc_len(ss_resolve_t,&tostop))
 	{
-		for (unsigned int i = 0 ; i < genalloc_len(stralist,&tostop) ; i++)
-		{
-			char *name = gaistr(&tostop,i) ;
-			int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-			if (logname > 0) 
-				if (!stra_remove(&tostop,name)) strerr_diefu1sys(111,"logger from the list to stop") ;
-		}	
-		int nargc = 3 + genalloc_len(stralist,&tostop) ;
+		
+		int nargc = 3 + genalloc_len(ss_resolve_t,&tostop) ;
 		char const *newargv[nargc] ;
 		unsigned int m = 0 ;
 		
 		newargv[m++] = "fake_name" ;
 		newargv[m++] = "-u" ;
 		
-		for (unsigned int i = 0 ; i < genalloc_len(stralist,&tostop); i++)
-			newargv[m++] = gaistr(&tostop,i) ;
+		for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&tostop); i++)
+			newargv[m++] = genalloc_s(ss_resolve_t,&tostop)[i].sa.s + genalloc_s(ss_resolve_t,&tostop)[i].name ;
 		
 		newargv[m++] = 0 ;
 		
 		if (ssexec_stop(nargc,newargv,envp,info))
 		{
-			genalloc_deepfree(stralist,&tostop,stra_free) ;
+			genalloc_deepfree(ss_resolve_t,&tostop,ss_resolve_free) ;
 			return 111 ;
 		}
 	}
 	
-	genalloc_deepfree(stralist,&tostop,stra_free) ;
+	genalloc_deepfree(ss_resolve_t,&tostop,ss_resolve_free) ;
 		
 	return 0 ;		
 }
