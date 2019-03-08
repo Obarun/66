@@ -213,6 +213,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	
 	if (wstat) strerr_diefu2x(111,down ? " start " : " stop ","services list") ;
 	
+	genalloc_reverse(ss_resolve_t,&resdeps) ;
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&resdeps) ; i++)
 	{ 
 		int nret = 0 ;
@@ -248,7 +249,6 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 				else ss_resolve_setflag(pres,SS_FLAGS_PID,(uint32_t)status.pid) ;
 			}
 		}
-		if (!nret) VERBO1 strerr_warni3x(name,down ? " stopped " : " started ", "successfully") ;
 		if (nret) ret = 111 ;
 		ss_resolve_setflag(pres,SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
 		ss_resolve_setflag(pres,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
@@ -260,6 +260,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
 			ret = 111 ;
 		}
+		if (!nret) VERBO1 strerr_warni3x(reload ? "Reloaded" : up ? "Started" : "Stopped"," successfully: ",name) ;
 	}
 	
 	freed:
