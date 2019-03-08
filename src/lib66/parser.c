@@ -513,7 +513,7 @@ int parse_service_before(char const *src,char const *sv,char const *tree, unsign
 	r = avltree_search(&deps_map,newsv.s,&id) ;
 	if (r)
 	{
-		VERBO1 strerr_warni3x("ignore ",newsv.s," service: already added") ;
+		VERBO2 strerr_warni3x("ignore ",newsv.s," service: already added") ;
 		sasv->len = 0 ;
 		stralloc_free(&newsv) ;
 		sv_alltype_free(&sv_before) ;
