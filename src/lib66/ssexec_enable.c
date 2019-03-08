@@ -134,7 +134,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 			if (!ss_resolve_read(pres,sares.s,*argv)) strerr_diefu2sys(111,"read resolve file of: ",*argv) ;
 			if (res.disen && !FORCE)
 			{
-				VERBO1 strerr_warnw3x("ignoring: ",*argv," service: already enabled") ;
+				VERBO1 strerr_warnw3x("Ignoring: ",*argv," service: already enabled") ;
 				ss_resolve_free(pres) ;
 				continue ;
 			}
@@ -179,7 +179,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 			cleanup(workdir.s) ;
 			strerr_diefu2x(111,"write revolve file for: ",name) ;
 		}
-		VERBO1 strerr_warni2x("Service written successfully: ", name) ;
+		VERBO2 strerr_warni2x("Service written successfully: ", name) ;
 		if (!stra_cmp(&tostart,name))
 		{
 			if (sv->cname.itype == CLASSIC) nclassic++ ;
@@ -274,7 +274,10 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	genalloc_deepfree(stralist,&master,stra_free) ;
 	stralloc_free(&sagraph) ;
 	genalloc_deepfree(stralist,&tokeep,stra_free) ;
-			
+	
+	for (unsigned int i = 0 ; i < genalloc_len(stralist,&tostart); i++)
+		VERBO1 strerr_warni2x("Enabled successfully: ", gaistr(&tostart,i)) ;
+	
 	if (start && genalloc_len(stralist,&tostart))
 	{
 		int nargc = 2 + genalloc_len(stralist,&tostart) ;
