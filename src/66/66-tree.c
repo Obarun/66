@@ -418,10 +418,7 @@ int set_rules(char const *tree,uid_t *uids, size_t uidn,unsigned int what)
 				VERBO3 strerr_warnwu4sys("create file : ",pack," at ",tmp) ;
 				return 0 ;
 			}
-			else
-			{
-				VERBO3 strerr_warnt4x("user: ",pack," is allowed for tree: ",tree) ;
-			}
+			VERBO3 strerr_warnt4x("user: ",pack," is allowed for tree: ",tree) ;
 		}
 		return 1 ;
 	}
@@ -605,6 +602,7 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 		if (!set_livescan(&scandir,owner)) strerr_diefu1sys(111,"set scandir") ;
 		if (scandir_send_signal(scandir.s,"an") <= 0) strerr_diefu2sys(111,"reload scandir: ",scandir.s) ;
 	}
+	if (reload) VERBO1 strerr_warni2x("Unsupervised successfully: ",treename) ;
 	genalloc_deepfree(stralist,&gasv,stra_free) ;
 	stralloc_free(&livetree) ; 
 	stralloc_free(&dtree) ; 
@@ -721,6 +719,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		}
 		r = 1 ;
 		create = 0 ;
+		VERBO1 strerr_warni2x("Created successfully tree: ",tree) ;
 	}
 	
 	if ((!r && !create) || (!r && enable)) strerr_diefu2x(111,"find tree: ",dstree.s) ;
@@ -732,6 +731,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		r  = tree_cmd_state(VERBOSITY,"-a",tree) ;
 		
 		if (r != 1) strerr_diefu6x(111,"add: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
+		VERBO1 strerr_warni2x("Enabled successfully tree: ",tree) ;
 	}
 	
 	if (disable)
@@ -739,6 +739,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		VERBO2 strerr_warni3x("disable ",dstree.s," ..." ) ;
 		r  = tree_cmd_state(VERBOSITY,"-d",tree) ;
 		if (r != 1) strerr_diefu6x(111,"remove: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
+		VERBO1 strerr_warni2x("Disabled successfully tree: ",tree) ;
 	}
 	
 	if (auidn)
@@ -755,6 +756,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	{
 		VERBO2 strerr_warni3x("make ",dstree.s," as default ..." ) ;
 		if (!tree_switch_current(base.s,tree)) strerr_diefu3sys(111,"set ",dstree.s," as default") ;
+		VERBO1 strerr_warni3x("Set successfully ",tree," as default") ;
 	}
 	if (unsupervise) tree_unsupervise(dstree.s,tree,owner,envp) ;
 	
@@ -792,6 +794,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			VERBO2 strerr_warni3x("delete ",reslive.s," ..." ) ;
 			if (rm_rf(reslive.s) < 0) strerr_diefu2sys(111,"delete ",reslive.s) ;
 		}
+		VERBO1 strerr_warni2x("Deleted successfully: ",tree) ;
 	}
 	
 	if (snap)
@@ -808,6 +811,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if ((r < 0) || r) strerr_dief2x(111,dstree.s,": already exist") ; 
 		VERBO2 strerr_warni5x("clone ",dstree.s," as ",tmp," ..." ) ;
 		if (!hiercopy(tmp,dstree.s)) strerr_diefu4sys(111,"copy: ",dstree.s," at: ",clone.s) ;
+		VERBO1 strerr_warni4x("Cloned successfully: ",tree," to ",clone.s) ;
 	}
 	
 	stralloc_free(&base) ;
