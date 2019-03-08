@@ -95,7 +95,7 @@ static int add_sv(sv_alltype *sv_before,char const *name,unsigned int *nbsv)
 	}
 	(*nbsv)++ ;
 	
-	VERBO1 strerr_warni2x("Service parsed successfully: ",name) ;
+	VERBO2 strerr_warni2x("Service parsed successfully: ",name) ;
 	
 	return 1 ;
 }
