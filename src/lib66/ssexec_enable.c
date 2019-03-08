@@ -158,55 +158,40 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	
 	for (unsigned int i = 0 ; i < genalloc_len(diuint32,&gasrc) ; i++)
 		start_parser(sasrc.s + genalloc_s(diuint32,&gasrc)[i].right,sasrc.s + genalloc_s(diuint32,&gasrc)[i].left,info->tree.s,&nbsv) ;
-		
+	
+	if (!tree_copy(&workdir,info->tree.s,info->treename.s)) strerr_diefu1sys(111,"create tmp working directory") ;
+
+	for (unsigned int i = 0; i < genalloc_len(sv_alltype,&gasv); i++)
 	{
-		
-		if (!tree_copy(&workdir,info->tree.s,info->treename.s)) strerr_diefu1sys(111,"create tmp working directory") ;
-		
-		for (unsigned int i = 0; i < genalloc_len(sv_alltype,&gasv); i++)
+		sv_alltype_ref sv = &genalloc_s(sv_alltype,&gasv)[i] ;
+		char *name = keep.s + sv->cname.name ;
+		r = write_services(sv, workdir.s,FORCE) ;
+		if (!r)
 		{
-			ss_resolve_t res = RESOLVE_ZERO ;
-			ss_resolve_init(&res) ;
-			sv_alltype_ref sv = &genalloc_s(sv_alltype,&gasv)[i] ;
-			r = write_services(sv, workdir.s,FORCE) ;
-			if (!r)
-			{
-				cleanup(workdir.s) ;
-				strerr_diefu2x(111,"write service: ",keep.s+sv->cname.name) ;
-			}
-			if (r > 1) continue ; //service already added
-			
-			if (sv->cname.itype > CLASSIC)
-			{
-				if (!stra_add(&tostart,keep.s + sv->cname.name))
-				{
-					cleanup(workdir.s) ;
-					retstralloc(111,"main") ;
-				}
-				nlongrun++ ;
-			}
-			else if (sv->cname.itype == CLASSIC) 
-			{
-				if (!stra_add(&tostart,keep.s + sv->cname.name))
-				{
-					cleanup(workdir.s) ;
-					retstralloc(111,"main") ;
-				}
-				nclassic++ ;
-			}
-			VERBO2 strerr_warni2x("write resolve file of: ",keep.s + sv->cname.name) ;
-			if (!ss_resolve_setnwrite(&res,sv,info,workdir.s))
-			{
-				cleanup(workdir.s) ;
-				strerr_diefu2x(111,"write revolve file for: ",keep.s + sv->cname.name) ;
-			}
-			VERBO1 strerr_warni2x("Service written successfully: ", keep.s + sv->cname.name) ;
-			ss_resolve_free(&res) ;
+			cleanup(workdir.s) ;
+			strerr_diefu2x(111,"write service: ",name) ;
 		}
+		if (r > 1) continue ; //service already added
 		
+		VERBO2 strerr_warni2x("write resolve file of: ",name) ;
+		if (!ss_resolve_setnwrite(sv,info,workdir.s))
+		{
+			cleanup(workdir.s) ;
+			strerr_diefu2x(111,"write revolve file for: ",name) ;
+		}
+		VERBO1 strerr_warni2x("Service written successfully: ", name) ;
+		if (!stra_cmp(&tostart,name))
+		{
+			if (sv->cname.itype == CLASSIC) nclassic++ ;
+			else nlongrun++ ;
+			if (!stra_add(&tostart,name))
+			{
+				cleanup(workdir.s) ;
+				retstralloc(111,"main") ;
+			}
+		}
 	}
 	
-
 	if (nclassic)
 	{
 		if (!svc_switch_to(info,SS_SWBACK))
@@ -308,7 +293,6 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 			genalloc_deepfree(stralist,&tostart,stra_free) ;
 			return 111 ;
 		}
-		
 	}
 	
 	genalloc_deepfree(stralist,&tostart,stra_free) ;
