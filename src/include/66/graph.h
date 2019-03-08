@@ -93,8 +93,6 @@ extern int graph_type_src(genalloc *ga,char const *tree,unsigned int what) ;
 
 extern int graph_build(graph_t *g, stralloc *sagraph, genalloc *tokeep,char const *tree) ;
 
-extern int graph_rdepends(genalloc *ga,graph_t *g, char const *name, char const *src) ;
-
 extern int graph_master(genalloc *ga, graph_t *g) ;
 
 extern int graph_sort(graph_t *g) ;
