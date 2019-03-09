@@ -44,7 +44,7 @@
 
 #include <stdio.h>
 
-static unsigned int DEADLINE = 3000 ;
+static unsigned int DEADLINE = 0 ;
 
 static pid_t send(genalloc *gasv, char const *livetree, char const *signal,char const *const *envp)
 {
