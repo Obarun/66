@@ -54,7 +54,7 @@ int backup_realpath_sym(stralloc *sa, ssexec_t *info,unsigned int type)
 	
 	r = scan_mode(sym,S_IFDIR) ;
 	if(r <= 0) return 0 ; 
-		
+	sa->len = 0 ;
 	r = sarealpath(sa,sym) ;
 	if (r < 0 ) return 0 ; 
 	if (!stralloc_0(sa)) retstralloc(0,"find_current") ;

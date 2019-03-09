@@ -351,7 +351,7 @@ int db_write_contents(genalloc *ga, char const *bundle,char const *dir)
 		return 0 ;
 }
 
-int db_write_master(ssexec_t *info, genalloc *ga, char const *dir)
+int db_write_master(ssexec_t *info, genalloc *ga, char const *dir,int both)
 {
 	int r ;
 	
@@ -376,6 +376,14 @@ int db_write_master(ssexec_t *info, genalloc *ga, char const *dir)
 	memcpy(dst + dirlen + SS_DB_LEN + SS_SRC_LEN, SS_MASTER, SS_MASTER_LEN) ;
 	dst[dirlen + SS_DB_LEN + SS_SRC_LEN + SS_MASTER_LEN] = 0 ;
 	
+	size_t livelen = info->live.len - 1 ; 
+	char resolve[livelen + SS_STATE_LEN + 1 + info->treename.len + 1] ;
+	memcpy(resolve,info->live.s,livelen) ;
+	memcpy(resolve + livelen, SS_STATE,SS_STATE_LEN) ;
+	resolve[livelen + SS_STATE_LEN] = '/' ;
+	memcpy(resolve + livelen + SS_STATE_LEN + 1,info->treename.s,info->treename.len) ;
+	resolve[livelen + SS_STATE_LEN + 1 + info->treename.len] = 0 ;
+	
 	for (unsigned int i = 0 ; i < genalloc_len(stralist,ga); i++)
 	{
 		
@@ -385,7 +393,7 @@ int db_write_master(ssexec_t *info, genalloc *ga, char const *dir)
 		if (!stralloc_cats(&inres,gaistr(ga,i))) goto err ;
 		if (!stralloc_cats(&inres," ")) goto err ;
 	}
-	inres.len--;
+	if (genalloc_len(stralist,ga)) inres.len--;
 	if (!stralloc_0(&inres)) goto err ;
 	
 	r = file_write_unsafe(dst,SS_CONTENTS,in.s,in.len) ;
@@ -400,16 +408,18 @@ int db_write_master(ssexec_t *info, genalloc *ga, char const *dir)
 	res.description = ss_resolve_add_string(&res,"inner bundle - do not use it") ;
 	res.treename = ss_resolve_add_string(&res,info->treename.s) ;
 	res.tree = ss_resolve_add_string(&res,info->tree.s) ;
+	res.live = ss_resolve_add_string(&res,info->live.s) ;
 	res.type = BUNDLE ;
 	res.deps = ss_resolve_add_string(&res,inres.s) ;
 	res.ndeps = genalloc_len(stralist,ga) ;
-	res.runat = ss_resolve_add_string(&res,runat) ;	
+	res.runat = ss_resolve_add_string(&res,runat) ;
+	res.resolve = ss_resolve_add_string(&res,resolve) ;
 	res.disen = 1 ;
 	res.init = 0 ;
 	res.unsupervise = 0 ;
 	res.reload = 0 ;
 	
-	if (!ss_resolve_write(&res,dir,"Master")) goto err ;
+	if (!ss_resolve_write(&res,dir,"Master",both)) goto err ;
 	
 	stralloc_free(&in) ;
 	stralloc_free(&inres) ;

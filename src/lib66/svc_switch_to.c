@@ -54,25 +54,26 @@ int svc_switch_to(ssexec_t *info,unsigned int where)
 			VERBO3 strerr_warnwu2sys("make a backup of svc service for: ",info->treename.s) ;
 			return 0 ;
 		}
-		VERBO3 strerr_warnt3x("switch svc service for tree: ",info->treename.s," to backup") ;
+		VERBO3 strerr_warnt3x("switch svc symlink of tree: ",info->treename.s," to backup") ;
 		memcpy(cmd + cmdlen," -s1",4) ;
 		cmd[cmdlen + 4] = 0 ;
 		r = backup_cmd_switcher(VERBOSITY,cmd,info) ;
 		if (r < 0)
 		{
-			VERBO3 strerr_warnwu3sys("switch svc service for: ",info->treename.s," to backup") ;
+			VERBO3 strerr_warnwu3sys("switch svc symlink of tree: ",info->treename.s," to backup") ;
 		}
 	}
 	else if (r > 0 && !where)
 	{
-		VERBO3 strerr_warnt3x("switch svc service for tree: ",info->treename.s," to source") ;
+		VERBO3 strerr_warnt3x("switch svc symlink of tree: ",info->treename.s," to source") ;
 		memcpy(cmd + cmdlen," -s0",4) ;
 		cmd[cmdlen + 4] = 0 ;
 		r = backup_cmd_switcher(VERBOSITY,cmd,info) ;
 		if (r < 0)
 		{
-			VERBO3 strerr_warnwu3sys("switch svc service for: ",info->treename.s," to source") ;
+			VERBO3 strerr_warnwu3sys("switch svc symlink of tree: ",info->treename.s," to source") ;
 		}
+		
 		VERBO3 strerr_warnt2x("make a backup of svc service for: ",info->treename.s) ;
 		if (!backup_make_new(info,CLASSIC))
 		{

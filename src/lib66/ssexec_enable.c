@@ -51,10 +51,13 @@ static unsigned int FORCE = 0 ;
 static void cleanup(char const *dst)
 {
 	int e = errno ;
-	//rm_rf(dst) ;
+	rm_rf(dst) ;
 	errno = e ;
 }
-
+static void check_identifier(char const *name)
+{
+	if (!memcmp(name,"Master",6)) strerr_dief3x(111,"service: ",name,": starts with reserved prefix") ;
+}
 static int start_parser(char const *src,char const *svname,char const *tree, unsigned int *nbsv)
 {
 	stralloc sasv = STRALLOC_ZERO ;
@@ -124,27 +127,30 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	if (argc < 1) exitusage(usage_enable) ;
 	
 	
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1sys(111,"set revolve pointer to source") ;
 	
 	for(;*argv;argv++)
 	{
-		ss_resolve_t_ref pres = &res ;
-		if (ss_resolve_check(info,*argv,SS_RESOLVE_SRC))
+		check_identifier(*argv) ;
+		if (ss_resolve_check(info,*argv,SS_RESOLVE_LIVE))
 		{
-			if (!ss_resolve_read(pres,sares.s,*argv)) strerr_diefu2sys(111,"read resolve file of: ",*argv) ;
+			if (!ss_resolve_read(&res,sares.s,*argv)) strerr_diefu2sys(111,"read resolve file of: ",*argv) ;
 			if (res.disen && !FORCE)
 			{
-				VERBO1 strerr_warnw3x("ignoring: ",*argv," service: already enabled") ;
-				ss_resolve_free(pres) ;
+				VERBO1 strerr_warnw3x("Ignoring: ",*argv," service: already enabled") ;
 				continue ;
 			}
 		}
 		unsigned int found = 0 ;
 		if (!ss_resolve_src(&gasrc,&sasrc,*argv,src,&found))
 		{
-			src = SS_SERVICE_PACKDIR ;
+			src = SS_SERVICE_SYSDIR ;
 			if (!ss_resolve_src(&gasrc,&sasrc,*argv,src,&found))
-				strerr_dief2sys(110,"unknow service: ",*argv) ;
+			{
+				src = SS_SERVICE_PACKDIR ;
+				if (!ss_resolve_src(&gasrc,&sasrc,*argv,src,&found))
+					strerr_dief2sys(110,"unknow service: ",*argv) ;
+			}
 		}
 		
 	}
@@ -154,55 +160,40 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	
 	for (unsigned int i = 0 ; i < genalloc_len(diuint32,&gasrc) ; i++)
 		start_parser(sasrc.s + genalloc_s(diuint32,&gasrc)[i].right,sasrc.s + genalloc_s(diuint32,&gasrc)[i].left,info->tree.s,&nbsv) ;
-		
+	
+	if (!tree_copy(&workdir,info->tree.s,info->treename.s)) strerr_diefu1sys(111,"create tmp working directory") ;
+
+	for (unsigned int i = 0; i < genalloc_len(sv_alltype,&gasv); i++)
 	{
-		
-		if (!tree_copy(&workdir,info->tree.s,info->treename.s)) strerr_diefu1sys(111,"create tmp working directory") ;
-		
-		for (unsigned int i = 0; i < genalloc_len(sv_alltype,&gasv); i++)
+		sv_alltype_ref sv = &genalloc_s(sv_alltype,&gasv)[i] ;
+		char *name = keep.s + sv->cname.name ;
+		r = write_services(info,sv, workdir.s,FORCE) ;
+		if (!r)
 		{
-			ss_resolve_t res = RESOLVE_ZERO ;
-			ss_resolve_init(&res) ;
-			sv_alltype_ref sv = &genalloc_s(sv_alltype,&gasv)[i] ;
-			r = write_services(sv, workdir.s,FORCE) ;
-			if (!r)
-			{
-				cleanup(workdir.s) ;
-				strerr_diefu2x(111,"write service: ",keep.s+sv->cname.name) ;
-			}
-			if (r > 1) continue ; //service already added
-			
-			if (sv->cname.itype > CLASSIC)
-			{
-				if (!stra_add(&tostart,keep.s + sv->cname.name))
-				{
-					cleanup(workdir.s) ;
-					retstralloc(111,"main") ;
-				}
-				nlongrun++ ;
-			}
-			else if (sv->cname.itype == CLASSIC) 
-			{
-				if (!stra_add(&tostart,keep.s + sv->cname.name))
-				{
-					cleanup(workdir.s) ;
-					retstralloc(111,"main") ;
-				}
-				nclassic++ ;
-			}
-			VERBO2 strerr_warni2x("write resolve file of: ",keep.s + sv->cname.name) ;
-			if (!ss_resolve_setnwrite(&res,sv,info,workdir.s))
-			{
-				cleanup(workdir.s) ;
-				strerr_diefu2x(111,"write revolve file for: ",keep.s + sv->cname.name) ;
-			}
-			VERBO1 strerr_warni2x("Service written successfully: ", keep.s + sv->cname.name) ;
-			ss_resolve_free(&res) ;
+			cleanup(workdir.s) ;
+			strerr_diefu2x(111,"write service: ",name) ;
 		}
+		if (r > 1) continue ; //service already added
 		
+		VERBO2 strerr_warni2x("write resolve file of: ",name) ;
+		if (!ss_resolve_setnwrite(sv,info,workdir.s))
+		{
+			cleanup(workdir.s) ;
+			strerr_diefu2x(111,"write revolve file for: ",name) ;
+		}
+		VERBO2 strerr_warni2x("Service written successfully: ", name) ;
+		if (!stra_cmp(&tostart,name))
+		{
+			if (sv->cname.itype == CLASSIC) nclassic++ ;
+			else nlongrun++ ;
+			if (!stra_add(&tostart,name))
+			{
+				cleanup(workdir.s) ;
+				retstralloc(111,"main") ;
+			}
+		}
 	}
 	
-
 	if (nclassic)
 	{
 		if (!svc_switch_to(info,SS_SWBACK))
@@ -244,7 +235,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 			}
 		}
 		genalloc_reverse(stralist,&master) ;
-		if (!db_write_master(info,&master,workdir.s))
+		if (!db_write_master(info,&master,workdir.s,SS_SIMPLE))
 		{
 			cleanup(workdir.s) ;
 			strerr_diefu2sys(111,"update bundle: ", SS_MASTER + 1) ;
@@ -271,7 +262,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	}
 	
 	cleanup(workdir.s) ;
-	
+
 	freed:
 	/** parser allocation*/
 	freed_parser() ;
@@ -285,7 +276,10 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	genalloc_deepfree(stralist,&master,stra_free) ;
 	stralloc_free(&sagraph) ;
 	genalloc_deepfree(stralist,&tokeep,stra_free) ;
-			
+	
+	for (unsigned int i = 0 ; i < genalloc_len(stralist,&tostart); i++)
+		VERBO1 strerr_warni2x("Enabled successfully: ", gaistr(&tostart,i)) ;
+	
 	if (start && genalloc_len(stralist,&tostart))
 	{
 		int nargc = 2 + genalloc_len(stralist,&tostart) ;
@@ -304,7 +298,6 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 			genalloc_deepfree(stralist,&tostart,stra_free) ;
 			return 111 ;
 		}
-		
 	}
 	
 	genalloc_deepfree(stralist,&tostart,stra_free) ;

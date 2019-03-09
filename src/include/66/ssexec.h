@@ -29,7 +29,7 @@ struct ssexec_s
 	stralloc treename ;
 	int treeallow ; //1 yes , 0 no
 	uid_t owner ;
-	unsigned int timeout ;
+	uint32_t timeout ;
 	char const *prog ;
 	char const *help ;
 	char const *usage ;

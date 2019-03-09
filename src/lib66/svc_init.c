@@ -42,21 +42,24 @@
 int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 {
 	
-	int r,logname ;
+	int logname, writein ;
 	gid_t gid = getgid() ;
 	uint16_t id ;
 		
 	ftrigr_t fifo = FTRIGR_ZERO ;
 	genalloc gadown = GENALLOC_ZERO ;
 	genalloc ids = GENALLOC_ZERO ; // uint16_t
-
+	stralloc sares = STRALLOC_ZERO ;
+	
 	tain_t deadline ;
 	tain_now_g() ;
 	tain_addsec(&deadline,&STAMP,2) ;	
 	
-	//VERBO3 strerr_warnt1x("iniate fifo") ;
-		if (!ftrigr_startf(&fifo, &deadline, &STAMP))
-			return 0 ;
+	if (!access(info->tree.s,W_OK)) writein = SS_DOUBLE ;
+	else writein = SS_SIMPLE ;
+	
+	if (!ftrigr_startf(&fifo, &deadline, &STAMP))
+		return 0 ;
 		
 	for (unsigned int i=0 ; i < genalloc_len(ss_resolve_t,ga); i++) 
 	{
@@ -150,18 +153,12 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 		if (!genalloc_append(uint16_t, &ids, &id)) goto err ;
 	}
 	VERBO3 strerr_warnt2x("reload scandir: ",info->scandir.s) ;
-	r = s6_svc_writectl(info->scandir.s, S6_SVSCAN_CTLDIR, "an", 2) ;
-	if (r < 0)
+	if (scandir_send_signal(info->scandir.s,"an") <= 0) 
 	{
-		VERBO3 strerr_warnw3sys("something is wrong with the ",info->scandir.s, "/" S6_SVSCAN_CTLDIR " directory. errno reported") ;
+		VERBO3 strerr_warnwu2sys("reload scandir: ",info->scandir.s) ;
 		goto err ;
 	}
-	if (!r)
-	{
-		VERBO3 strerr_warnw3x("scandir: ",info->scandir.s, " is not running, make a bug report") ;
-		goto err ;
-	}
-	
+		
 	VERBO3 strerr_warnt1x("waiting for events on fifo") ;
 	if (ftrigr_wait_and_g(&fifo, genalloc_s(uint16_t, &ids), genalloc_len(uint16_t, &ids), &deadline) < 0)
 			goto err ;
@@ -171,7 +168,25 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 		VERBO3 strerr_warnt2x("Delete down file at: ",gaistr(&gadown,i)) ;
 		if (unlink(gaistr(&gadown,i)) < 0 && errno != ENOENT) return 0 ;
 	}
-		
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE))		
+	{
+		VERBO3 strerr_warnwu1x("set revolve pointer to live") ;
+		goto err ;
+	}
+	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
+	{
+		char const *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
+		char const *name = string + genalloc_s(ss_resolve_t,ga)[i].name  ;
+		ss_resolve_setflag(&genalloc_s(ss_resolve_t,ga)[i],SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+		VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
+		if (!ss_resolve_write(&genalloc_s(ss_resolve_t,ga)[i],sares.s,name,writein))
+		{
+			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
+			goto err ;
+		}
+		VERBO1 strerr_warni2x("Initiated successfully: ",name) ;
+	}
+			
 	ftrigr_end(&fifo) ;
 	genalloc_deepfree(stralist,&gadown,stra_free) ;
 	genalloc_free(uint16_t, &ids) ;

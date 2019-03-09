@@ -25,7 +25,7 @@ extern int db_update_master(int argc, char const *const *argv) ;
 extern int db_bundle_modif(genalloc *bundle,unsigned int verbosity, char const *src, unsigned int action) ;
 extern int db_bundle_contents(graph_t *g, char const *name, char const *src, unsigned int verbosity, unsigned int action) ;
 extern int db_write_contents(genalloc *ga, char const *bundle,char const *dir) ;
-extern int db_write_master(ssexec_t *info, genalloc *ga, char const *dir) ;
+extern int db_write_master(ssexec_t *info, genalloc *ga, char const *dir,int both) ;
 
 extern int db_compile(char const *workdir, char const *tree, char const *treename,char const *const *envp) ;
 
