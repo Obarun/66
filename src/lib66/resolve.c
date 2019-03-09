@@ -630,7 +630,7 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	stralloc destlog = STRALLOC_ZERO ;
 	stralloc namedeps = STRALLOC_ZERO ;
 	stralloc final = STRALLOC_ZERO ;
-		
+	
 	res.name = ss_resolve_add_string(&res,name) ;
 	res.description = ss_resolve_add_string(&res,keep.s + services->cname.description) ;
 	res.tree = ss_resolve_add_string(&res,info->tree.s) ;
@@ -657,27 +657,6 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		memcpy(stmp + info->scandir.len + 1,name,namelen) ;
 		stmp[info->scandir.len + 1 + namelen] = 0 ;
 		res.runat = ss_resolve_add_string(&res,stmp) ;
-		r = s6_svc_ok(res.sa.s + res.runat) ;
-		if (r < 0) { strerr_warnwu2sys("check ", res.sa.s + res.runat) ; goto err ; }
-		if (!r)
-		{	
-			ss_resolve_setflag(&res,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
-			ss_resolve_setflag(&res,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-			ss_resolve_setflag(&res,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
-			ss_resolve_setflag(&res,SS_FLAGS_RUN,SS_FLAGS_FALSE) ;
-		}
-		else
-		{
-			ss_resolve_setflag(&res,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-			ss_resolve_setflag(&res,SS_FLAGS_RELOAD,SS_FLAGS_TRUE) ;
-			ss_resolve_setflag(&res,SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
-			if (!s6_svstatus_read(res.sa.s + res.runat,&status))
-			{ 
-				strerr_warnwu2sys("read status of: ",res.sa.s + res.name) ;
-				goto err ;
-			}
-			ss_resolve_setflag(&res,SS_FLAGS_PID,(uint32_t)status.pid) ;
-		}
 	}
 	else if (res.type >= BUNDLE)
 	{
@@ -689,29 +668,29 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		memcpy(stmp + info->livetree.len + 1 + info->treename.len + SS_SVDIRS_LEN + 1, name,namelen) ;
 		stmp[info->livetree.len + 1 + info->treename.len + SS_SVDIRS_LEN + 1 + namelen] = 0 ;
 		res.runat = ss_resolve_add_string(&res,stmp) ;
-		r = s6_svc_ok(res.sa.s + res.runat) ;
-		if (r < 0) { strerr_warnwu2sys("check ", res.sa.s + res.runat) ; goto err ; }
-		if (!r)
-		{	
-			ss_resolve_setflag(&res,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
-			ss_resolve_setflag(&res,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-			ss_resolve_setflag(&res,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
-			ss_resolve_setflag(&res,SS_FLAGS_RUN,SS_FLAGS_FALSE) ;
-		}
-		else
-		{
-			ss_resolve_setflag(&res,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-			ss_resolve_setflag(&res,SS_FLAGS_RELOAD,SS_FLAGS_TRUE) ;
-			ss_resolve_setflag(&res,SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
-			if (!s6_svstatus_read(res.sa.s + res.runat,&status))
-			{ 
-				strerr_warnwu2sys("read status of: ",res.sa.s + res.name) ;
-				goto err ;
-			}
-			ss_resolve_setflag(&res,SS_FLAGS_PID,(uint32_t)status.pid) ;
-		}
 	}
-
+	r = s6_svc_ok(res.sa.s + res.runat) ;
+	if (r < 0) { strerr_warnwu2sys("check ", res.sa.s + res.runat) ; goto err ; }
+	if (!r)
+	{	
+		ss_resolve_setflag(&res,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
+		ss_resolve_setflag(&res,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+		ss_resolve_setflag(&res,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+		ss_resolve_setflag(&res,SS_FLAGS_RUN,SS_FLAGS_FALSE) ;
+	}
+	else
+	{
+		ss_resolve_setflag(&res,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+		ss_resolve_setflag(&res,SS_FLAGS_RELOAD,SS_FLAGS_TRUE) ;
+		ss_resolve_setflag(&res,SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
+		if (!s6_svstatus_read(res.sa.s + res.runat,&status))
+		{ 
+			strerr_warnwu2sys("read status of: ",res.sa.s + res.name) ;
+			goto err ;
+		}
+		ss_resolve_setflag(&res,SS_FLAGS_PID,(uint32_t)status.pid) ;
+	}
+	
 	if (res.ndeps)
 	{
 		for (unsigned int i = 0; i < res.ndeps; i++)
