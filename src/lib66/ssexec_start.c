@@ -61,29 +61,6 @@ static stralloc sares = STRALLOC_ZERO ;
 static genalloc nclassic = GENALLOC_ZERO ; //resolve_t type
 static genalloc nrc = GENALLOC_ZERO ; //resolve_t type
 
-int svc_shutnremove(ssexec_t *info, genalloc *ga, char const *sig,char const *const *envp)
-{
-	
-	if (!svc_send(info,ga,sig,envp))
-	{
-		VERBO1 strerr_warnwu1x("stop services") ;
-		return 0 ;
-	}
-	
-	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++) 
-	{
-		char const *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
-		VERBO2 strerr_warni2x("delete directory service of: ",string + genalloc_s(ss_resolve_t,ga)[i].name) ;
-		if (rm_rf(string + genalloc_s(ss_resolve_t,ga)[i].runat) < 0)
-		{
-			VERBO1 strerr_warnwu2sys("delete: ",string + genalloc_s(ss_resolve_t,ga)[i].runat) ;
-			return 0 ;
-		}
-	}
-	
-	return 1 ;
-}
-
 int svc_start(ssexec_t *info,genalloc *ga,char const *const *envp)
 {	
 	if (!svc_send(info,ga,SIG,envp))
@@ -127,7 +104,7 @@ int svc_sanitize(ssexec_t *info,genalloc *ga, char const *const *envp)
 		
 	if (genalloc_len(ss_resolve_t,&toreload))
 	{
-		if (!svc_shutnremove(info,&toreload,"-D",envp))	goto err ;
+		if (!svc_unsupervise(info,&toreload,"-D",envp))	goto err ;
 		genalloc_cat(ss_resolve_t,&toinit,&toreload) ;
 	}
 	if (!ss_resolve_pointo(&sares,info,CLASSIC,SS_RESOLVE_SRC))		
@@ -293,7 +270,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 		if (!ss_resolve_check(info,name,SS_RESOLVE_LIVE)) strerr_dief2x(110,name," is not enabled") ;
 		else if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
 		if (!genalloc_append(ss_resolve_t,&gagen,&res)) strerr_diefu3x(111,"add: ",name," on genalloc") ;
-		if (!ss_resolve_add_rdeps(&gagen,&res,info)) strerr_diefu2sys(111,"resolve recursive dependencies of: ",name) ;
+		if (!ss_resolve_add_deps(&gagen,&res,info)) strerr_diefu2sys(111,"resolve recursive dependencies of: ",name) ;
 	}
 		
 	stralloc_free(&sares) ;
@@ -336,7 +313,10 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 		else if (!pres->disen) strerr_dief2x(111,name,": is not enabled") ;
 		
 		logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-		if ((RELOAD > 1) && (logname > 0)) strerr_dief1x(111,"-R signal is not allowed to a logger") ;
+		if (RELOAD > 1)
+		{
+			if (logname > 0 && (!ss_resolve_cmp(&gagen,string + pres->logassoc))) strerr_dief1x(111,"-R signal is not allowed to a logger") ;
+		}
 		if (RELOAD > 1) pres->reload = 1 ;
 					
 		if (pres->init) pres->reload = 0 ;
