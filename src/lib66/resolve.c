@@ -207,6 +207,7 @@ int ss_resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *
 		if (S_ISDIR(st.st_mode))
 		{
 			if (!stralloc_cats(&subdir,d->d_name)) goto errdir ;
+			if (!stralloc_cats(&subdir,"/")) goto errdir ;
 			if (!stralloc_0(&subdir)) goto errdir ;
 			*found = 2 ;
 			if (!ss_resolve_src(ga,sasrc,name,subdir.s,found)) goto errdir ;
