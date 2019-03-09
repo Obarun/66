@@ -43,9 +43,9 @@ src/lib66/graph.o src/lib66/graph.lo: src/lib66/graph.c src/include/66/constants
 src/lib66/parser.o src/lib66/parser.lo: src/lib66/parser.c src/include/66/config.h src/include/66/constants.h src/include/66/enum.h src/include/66/parser.h src/include/66/utils.h
 src/lib66/parser_utils.o src/lib66/parser_utils.lo: src/lib66/parser_utils.c src/include/66/config.h src/include/66/constants.h src/include/66/enum.h src/include/66/parser.h src/include/66/utils.h
 src/lib66/parser_write.o src/lib66/parser_write.lo: src/lib66/parser_write.c src/include/66/constants.h src/include/66/enum.h src/include/66/parser.h src/include/66/resolve.h src/include/66/utils.h
-src/lib66/rc_init.o src/lib66/rc_init.lo: src/lib66/rc_init.c src/include/66/rc.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/utils.h
+src/lib66/rc_init.o src/lib66/rc_init.lo: src/lib66/rc_init.c src/include/66/constants.h src/include/66/rc.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/rc_send.o src/lib66/rc_send.lo: src/lib66/rc_send.c src/include/66/rc.h src/include/66/resolve.h src/include/66/ssexec.h
-src/lib66/resolve.o src/lib66/resolve.lo: src/lib66/resolve.c src/include/66/constants.h src/include/66/enum.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/utils.h
+src/lib66/resolve.o src/lib66/resolve.lo: src/lib66/resolve.c src/include/66/constants.h src/include/66/enum.h src/include/66/graph.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/scandir_ok.o src/lib66/scandir_ok.lo: src/lib66/scandir_ok.c src/include/66/utils.h
 src/lib66/scandir_send_signal.o src/lib66/scandir_send_signal.lo: src/lib66/scandir_send_signal.c src/include/66/utils.h
 src/lib66/set_info.o src/lib66/set_info.lo: src/lib66/set_info.c src/include/66/config.h src/include/66/utils.h
