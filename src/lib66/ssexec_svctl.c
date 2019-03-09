@@ -531,7 +531,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
 			ret = 111 ;
 		}
-		VERBO1 strerr_warni3x((sv->sig > 3) ? "Stopped" : "Started"," successfully: ",name) ; 
+		if (!nret) VERBO1 strerr_warni3x((sv->sig > 3) ? "Stopped" : "Started"," successfully: ",name) ; 
 		ss_resolve_free(&sv->res) ;
 	}
 	
@@ -556,7 +556,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		genalloc_deepfree(ss_resolve_sig_t,&gakeep,ss_resolve_free) ;
 		
 		
-	return ret ;		
+	return (ret > 1) ? 111 : 0 ;		
 }
 
 	
