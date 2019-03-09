@@ -54,7 +54,10 @@ static void cleanup(char const *dst)
 	rm_rf(dst) ;
 	errno = e ;
 }
-
+static void check_identifier(char const *name)
+{
+	if (!memcmp(name,"Master",6)) strerr_dief3x(111,"service: ",name,": starts with reserved prefix") ;
+}
 static int start_parser(char const *src,char const *svname,char const *tree, unsigned int *nbsv)
 {
 	stralloc sasv = STRALLOC_ZERO ;
@@ -128,14 +131,13 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	
 	for(;*argv;argv++)
 	{
-		ss_resolve_t_ref pres = &res ;
+		check_identifier(*argv) ;
 		if (ss_resolve_check(info,*argv,SS_RESOLVE_LIVE))
 		{
-			if (!ss_resolve_read(pres,sares.s,*argv)) strerr_diefu2sys(111,"read resolve file of: ",*argv) ;
+			if (!ss_resolve_read(&res,sares.s,*argv)) strerr_diefu2sys(111,"read resolve file of: ",*argv) ;
 			if (res.disen && !FORCE)
 			{
 				VERBO1 strerr_warnw3x("Ignoring: ",*argv," service: already enabled") ;
-				ss_resolve_free(pres) ;
 				continue ;
 			}
 		}
@@ -165,7 +167,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	{
 		sv_alltype_ref sv = &genalloc_s(sv_alltype,&gasv)[i] ;
 		char *name = keep.s + sv->cname.name ;
-		r = write_services(sv, workdir.s,FORCE) ;
+		r = write_services(info,sv, workdir.s,FORCE) ;
 		if (!r)
 		{
 			cleanup(workdir.s) ;
