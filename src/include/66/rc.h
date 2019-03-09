@@ -21,5 +21,6 @@
 
 extern int rc_init(ssexec_t *info, genalloc *ga, char const *const *envp) ;
 extern int rc_send(ssexec_t *info,genalloc *ga,char const *sig,char const *const *envp) ;
+extern int rc_unsupervise(ssexec_t *info, genalloc *ga,char const *sig,char const *const *envp) ;
 
 #endif

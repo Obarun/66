@@ -58,43 +58,6 @@ static stralloc sares = STRALLOC_ZERO ;
 static genalloc nclassic = GENALLOC_ZERO ;//ss_resolve_t
 static genalloc nrc = GENALLOC_ZERO ;//ss_resolve_t
 
-int write_stop_resolve(genalloc *tounsup,ssexec_t *info)
-{
-	ss_resolve_t_ref pres ;
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE))
-	{
-		strerr_warnwu1sys("set revolve pointer to source") ;
-		return 0 ;
-	}
-	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,tounsup) ; i++)
-	{
-		pres = &genalloc_s(ss_resolve_t,tounsup)[i] ;
-		char const *string = pres->sa.s ;
-		char const *name = string + pres->name  ;
-		// do not remove the resolve file if the daemon was not disabled
-		if (pres->disen)
-		{				
-			ss_resolve_setflag(pres,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
-			ss_resolve_setflag(pres,SS_FLAGS_RUN,SS_FLAGS_FALSE) ;
-			VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-			if (!ss_resolve_write(pres,sares.s,name,SS_DOUBLE))
-			{
-				VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
-				return 0 ;
-			}
-			continue ;
-		}
-		VERBO2 strerr_warni2x("Delete resolve file of: ",name) ;
-		if (!ss_resolve_rmfile(pres,sares.s,name,SS_DOUBLE))
-		{
-			VERBO1 strerr_warnwu2sys("delete resolve file of: ",name) ;
-			return 0 ;
-		}
-		VERBO1 strerr_warni2x("Disabled successfully: ",name) ;
-	}
-	return 1 ;
-}
-
 int svc_down(ssexec_t *info,genalloc *ga,char const *const *envp)
 {
 	genalloc tounsup = GENALLOC_ZERO ; //stralist
@@ -117,8 +80,7 @@ int svc_down(ssexec_t *info,genalloc *ga,char const *const *envp)
 	if (genalloc_len(ss_resolve_t,&tounsup))
 	{
 		UNSUP = 1 ;
-		if (!svc_shutnremove(info,&tounsup,SIG,envp)) return 0 ;
-		if (!write_stop_resolve(&tounsup,info)) return 0 ;
+		if (!svc_unsupervise(info,&tounsup,SIG,envp)) return 0 ;
 	}
 	else
 	{
@@ -136,6 +98,65 @@ int svc_down(ssexec_t *info,genalloc *ga,char const *const *envp)
 		return 0 ;
 }
 
+int rc_unsupervise(ssexec_t *info, genalloc *ga,char const *sig,char const *const *envp)
+{
+	int writein ;
+	
+	ss_resolve_t_ref pres ;
+	stralloc sares = STRALLOC_ZERO ;
+	
+	if (!access(info->tree.s,W_OK)) writein = SS_DOUBLE ;
+	else writein = SS_SIMPLE ;
+	
+	if (!rc_send(info,ga,sig,envp))
+	{
+		VERBO1 strerr_warnwu1x("stop services") ;
+		goto err ;
+	}
+	if (!db_switch_to(info,envp,SS_SWSRC))
+	{
+		VERBO1 strerr_warnwu3x("switch ",info->treename.s," to source") ;
+		goto err ;
+	}
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE))
+	{
+		VERBO1 strerr_warnwu1sys("set revolve pointer to live") ;
+		return 0 ;
+	}
+	
+	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
+	{
+		pres = &genalloc_s(ss_resolve_t,ga)[i] ;
+		char const *string = pres->sa.s ;
+		char const *name = string + pres->name  ;
+		// do not remove the resolve file if the daemon was not disabled
+		if (pres->disen)
+		{				
+			ss_resolve_setflag(pres,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
+			ss_resolve_setflag(pres,SS_FLAGS_RUN,SS_FLAGS_FALSE) ;
+			VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
+			if (!ss_resolve_write(pres,sares.s,name,writein))
+			{
+				VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
+				goto err ;
+			}
+			VERBO1 strerr_warni2x("Unsupervised successfully: ",name) ;
+			continue ;
+		}
+		VERBO2 strerr_warni2x("Delete resolve file of: ",name) ;
+		if (!ss_resolve_rmfile(pres,sares.s,name,writein))
+		{
+			VERBO1 strerr_warnwu2sys("delete resolve file of: ",name) ;
+			goto err ;
+		}
+		VERBO1 strerr_warni2x("Unsupervised successfully: ",name) ;
+	}
+	
+	return 1 ;
+	err:
+		stralloc_free(&sares) ;
+		return 0 ;
+}
 
 int rc_down(ssexec_t *info,genalloc *ga,char const *const *envp)
 {
@@ -164,17 +185,11 @@ int rc_down(ssexec_t *info,genalloc *ga,char const *const *envp)
 	if (genalloc_len(ss_resolve_t,&tounsup))
 	{
 		UNSUP = 1 ;
-		if (!rc_send(info,&tounsup,"-d",envp))
+		if (!rc_unsupervise(info,&tounsup,"-d",envp))
 		{
 			VERBO1 strerr_warnwu1x("stop services") ;
 			goto err ;
 		}
-		if (!db_switch_to(info,envp,SS_SWSRC))
-		{
-			VERBO1 strerr_warnwu3x("switch ",info->treename.s," to source") ;
-			goto err ;
-		}
-		if (!write_stop_resolve(&tounsup,info)) return 0 ;
 	}
 	else
 	{	
