@@ -17,6 +17,7 @@
 #include <stdlib.h>
 
 #include <oblibs/obgetopt.h>
+#include <oblibs/string.h>
 #include <oblibs/error2.h>
 #include <oblibs/directory.h>
 #include <oblibs/types.h>//scan_mode
@@ -29,10 +30,6 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/direntry.h>
 
-#include <s6/config.h>
-#include <s6-rc/config.h>
-#include <s6/s6-supervise.h>
-
 #include <66/utils.h>
 #include <66/enum.h>
 #include <66/constants.h>
@@ -42,15 +39,13 @@
 #include <66/svc.h>
 #include <66/resolve.h>
 #include <66/ssexec.h>
+#include <66/rc.h>
 
 #include <stdio.h>
 
 int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
 	int r, db, classic, earlier ;
-	
-	int wstat ;
-	pid_t pid ;
 	
 	genalloc gasvc = GENALLOC_ZERO ; //stralist type
 	genalloc gares = GENALLOC_ZERO ; //ss_resolve_t type
@@ -108,9 +103,9 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	if (r < 0) strerr_dief2x(111,src.s," conflicting format") ;
 	if (!r)
 	{
-		VERBO2 strerr_warni3x("create directory: ",src.s,SS_RESOLVE+1) ;
+		VERBO2 strerr_warni3x("create directory: ",src.s,SS_RESOLVE) ;
 		r = dir_create_under(src.s,SS_RESOLVE+1,0700) ;
-		if (!r) strerr_diefu3sys(111,"create directory: ",src.s,SS_RESOLVE+1) ;
+		if (!r) strerr_diefu3sys(111,"create directory: ",src.s,SS_RESOLVE) ;
 	}
 	if (!stralloc_copy(&resdst,&src)) retstralloc(111,"main") ;
 	resdst.len--;
@@ -172,6 +167,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	stralloc_free(&src) ;
 	ss_resolve_free(&res) ;
 	genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
+	genalloc_deepfree(stralist,&gasvc,stra_free) ;
 	
 	/** db already initiated? */
 	if (db)
@@ -187,54 +183,30 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	}else goto end ;
 	
 	{
-		char ltree[info->livetree.len + 1 + info->treename.len + 1] ;
-		memcpy(ltree,info->livetree.s,info->livetree.len) ;
-		ltree[info->livetree.len] = '/' ;
-		memcpy(ltree + info->livetree.len + 1, info->treename.s, info->treename.len) ;
-		ltree[info->livetree.len + 1 + info->treename.len] = 0 ;
+		if (!ss_resolve_pointo(&src,info,SS_NOTYPE,SS_RESOLVE_SRC))		
+			VERBO1 strerr_diefu1x(111,"set revolve pointer to source") ;
 		
-		memcpy(svdir + svdirlen,SS_DB,SS_DB_LEN) ;
-		memcpy(svdir + svdirlen + SS_DB_LEN, "/", 1) ;
-		memcpy(svdir + svdirlen + SS_DB_LEN + 1, info->treename.s,info->treename.len) ;
-		svdir[svdirlen + SS_DB_LEN + 1 + info->treename.len] = 0 ;
+		if (!ss_resolve_check(info,SS_MASTER +1,SS_RESOLVE_SRC))  strerr_diefu1x(111,"find inner bundle -- please make a bug report") ;
+		if (!ss_resolve_read(&res,src.s,SS_MASTER + 1)) strerr_diefu1sys(111,"read resolve file of inner bundle") ;
+		if (!clean_val(&gasvc,res.sa.s + res.deps)) strerr_diefu1sys(111,"clean dependencies of inner bundle") ;
 		
-		char prefix[info->treename.len + 1 + 1] ;
-		memcpy(prefix,info->treename.s,info->treename.len) ;
-		memcpy(prefix + info->treename.len, "-",1) ;
-		prefix[info->treename.len + 1] = 0 ;
-		
+		for (unsigned int i = 0 ; i < genalloc_len(stralist,&gasvc) ; i++)
 		{
-			char tt[UINT32_FMT] ;
-			tt[uint32_fmt(tt,info->timeout)] = 0 ;
-			
-			char const *newargv[12] ;
-			unsigned int m = 0 ;
-			
-			newargv[m++] = S6RC_BINPREFIX "s6-rc-init" ;
-			newargv[m++] = "-l" ;
-			newargv[m++] = ltree ;
-			newargv[m++] = "-c" ;
-			newargv[m++] = svdir ;
-			newargv[m++] = "-p" ;
-			newargv[m++] = prefix ;
-			newargv[m++] = "-t" ;
-			newargv[m++] = tt ;
-			newargv[m++] = "--" ;
-			newargv[m++] = info->scandir.s ;
-			newargv[m++] = 0 ;
-			
-			VERBO2 strerr_warni3x("initiate db of tree: ",info->treename.s," ...") ;
-			
-			pid = child_spawn0(newargv[0],newargv,envp) ;
-			if (waitpid_nointr(pid,&wstat, 0) < 0)
-				strerr_diefu2sys(111,"wait for ",newargv[0]) ;
-				
-			if (wstat)
-				strerr_diefu2x(111,"init db of tree: ",info->treename.s) ;
+			char *name = gaistr(&gasvc,i) ;
+			ss_resolve_t tmp = RESOLVE_ZERO ;
+			if (!ss_resolve_check(info,name,SS_RESOLVE_SRC)) strerr_dief2sys(110,"unknow service: ",name) ;
+			if (!ss_resolve_read(&tmp,src.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
+			if (!genalloc_append(ss_resolve_t,&gares,&tmp)) strerr_diefu3x(111,"add: ",name," on genalloc") ;
+			if (!ss_resolve_add_deps(&gares,&tmp,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;	
 		}
+						
+		if (!rc_init(info,&gares,envp)) strerr_diefu2sys(111,"initiate db of tree: ",info->treename.s) ;
+		
+		genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
+		genalloc_deepfree(stralist,&gasvc,stra_free) ;
+		ss_resolve_free(&res) ;
+		stralloc_free(&src) ;
 	}
 	end:	
-	genalloc_deepfree(stralist,&gasvc,stra_free) ;
-	
 	return 0 ;
 }
