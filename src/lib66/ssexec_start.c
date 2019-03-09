@@ -255,9 +255,10 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 	
 	if (info->timeout) DEADLINE = info->timeout ;
 	
-	ss_resolve_t_ref pres ;
-		
 	int cl, rc, logname ;
+	genalloc gagen = GENALLOC_ZERO ; //ss_resolve_t	
+	ss_resolve_t_ref pres ;
+	
 	cl = rc = logname = 0 ;
 	
 	{
@@ -285,68 +286,74 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 
 	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1sys(111,"set revolve pointer to source") ;
 	
-	for(;*argv;argv++)
+	for (;*argv;argv++)
 	{
 		char const *name = *argv ;
-		logname = 0 ;
-		
 		ss_resolve_t res = RESOLVE_ZERO ;
-		pres = &res ;
-		if (!ss_resolve_check(info,name,SS_RESOLVE_LIVE))  strerr_dief2x(111,name,": is not enabled") ;
-		if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
-		size_t earlen = strlen(res.sa.s + res.runat) ;
+		if (!ss_resolve_check(info,name,SS_RESOLVE_LIVE)) strerr_dief2x(110,name," is not enabled") ;
+		else if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
+		if (!genalloc_append(ss_resolve_t,&gagen,&res)) strerr_diefu3x(111,"add: ",name," on genalloc") ;
+		if (!ss_resolve_add_rdeps(&gagen,&res,info)) strerr_diefu2sys(111,"resolve recursive dependencies of: ",name) ;
+	}
+		
+	stralloc_free(&sares) ;
+	
+	for(unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gagen) ; i++)
+	{
+		pres = &genalloc_s(ss_resolve_t,&gagen)[i] ;
+		char const *string = pres->sa.s ;
+		char const *name = string + pres->name ;
+		logname = 0 ;
+		size_t earlen = strlen(string + pres->runat) ;
 		char earlier[earlen + 8 + 1] ;
-		memcpy(earlier,res.sa.s + res.runat,earlen) ;
+		memcpy(earlier,string + pres->runat,earlen) ;
 		memcpy(earlier + earlen,"/earlier",8) ;
 		earlier[earlen + 8] = 0 ;
 		if (!access(earlier, F_OK))
 		{ 
-			res.disen = 1 ;
-			res.run = 1 ;
+			pres->disen = 1 ;
+			pres->run = 1 ;
 			unlink_void(earlier) ;
 		}
+		if (obstr_equal(name,SS_MASTER + 1)) goto run ;
 		/** always check if the daemon is present or not into the scandir
 		 * it can be stopped from different manner (crash,66-scandir signal,..)
 		 * without changing the corresponding resolve file */
-		if (res.type == LONGRUN || res.type == CLASSIC)
+		if (pres->type == LONGRUN || pres->type == CLASSIC)
 		{
-			if (!s6_svc_ok(res.sa.s + res.runat))
+			if (!s6_svc_ok(string + pres->runat))
 			{
-				res.init = 1 ;
-				res.run = 0 ;
+				pres->init = 1 ;
+				pres->run = 0 ;
 			}
 			else 
 			{
-				res.init = 0 ;
-				res.run = 1 ;
+				pres->init = 0 ;
+				pres->run = 1 ;
 			}
 		}
-		if (!res.disen && res.run){ VERBO1 strerr_dief3x(111,"service: ",name," was disabled, you can only stop it") ; }
-		else if (!res.disen) strerr_dief2x(111,name,": is not enabled") ;
+		if (!pres->disen && pres->run){ VERBO1 strerr_dief3x(111,"service: ",name," was disabled, you can only stop it") ; }
+		else if (!pres->disen) strerr_dief2x(111,name,": is not enabled") ;
 		
 		logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 		if ((RELOAD > 1) && (logname > 0)) strerr_dief1x(111,"-R signal is not allowed to a logger") ;
-		if (RELOAD > 1) res.reload = 1 ;
+		if (RELOAD > 1) pres->reload = 1 ;
 					
-		if (res.init) res.reload = 0 ;
-				
-		if (res.type == CLASSIC)
+		if (pres->init) pres->reload = 0 ;
+		
+		run:		
+		if (pres->type == CLASSIC)
 		{
-			if (!genalloc_append(ss_resolve_t,&nclassic,&res)) strerr_diefu3x(111,"add: ",name," on genalloc") ;
-			if (!ss_resolve_add_deps(&nclassic,&res,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
+			if (!genalloc_append(ss_resolve_t,&nclassic,pres)) strerr_diefu3x(111,"add: ",name," on genalloc") ;
 			cl++ ;
 		}
 		else
 		{
-			if (!genalloc_append(ss_resolve_t,&nrc,&res)) strerr_diefu3x(111,"add: ",name," on genalloc") ;
-			if (!ss_resolve_add_deps(&nrc,&res,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
+			if (!genalloc_append(ss_resolve_t,&nrc,pres)) strerr_diefu3x(111,"add: ",name," on genalloc") ;
 			rc++;
 		}
 	}
-	stralloc_free(&sares) ;
-	
-	if (!cl && !rc) ss_resolve_free(pres) ;
-	
+			
 	if (cl)
 	{
 		VERBO2 strerr_warni1x("sanitize classic services list...") ;
