@@ -315,15 +315,19 @@ static int deps_src(stralloc *newsrc, char const *name, char const *tree, unsign
 		if (!stralloc_0(&home)) retstralloc(0,"deps_src") ;
 		if (!stralloc_obreplace(newsrc, home.s)) retstralloc(0,"deps_src") ;
 	}
-
+	printf("newsrc::%s\n",newsrc->s) ;
 	if (!ss_resolve_src(&tmpsrc,&sa,name,newsrc->s,&found)) 
 	{
-		if (!stralloc_obreplace(newsrc, SS_SERVICE_PACKDIR)) retstralloc(0,"deps_src") ;
+		if (!stralloc_obreplace(newsrc, SS_SERVICE_SYSDIR)) retstralloc(0,"deps_src") ;
 		if (!ss_resolve_src(&tmpsrc,&sa,name,newsrc->s,&found))
 		{
-			VERBO3 strerr_warnwu2sys("find dependency ",name) ;
-			err = 0 ;
-			goto end ;
+			if (!stralloc_obreplace(newsrc, SS_SERVICE_PACKDIR)) retstralloc(0,"deps_src") ;
+			if (!ss_resolve_src(&tmpsrc,&sa,name,newsrc->s,&found))
+			{
+				VERBO3 strerr_warnwu2sys("find dependency ",name) ;
+				err = 0 ;
+				goto end ;
+			}
 		}
 		if (!stralloc_obreplace(newsrc, sa.s + genalloc_s(diuint32,&tmpsrc)->right)) retstralloc(0,"deps_src") ;
 	}
