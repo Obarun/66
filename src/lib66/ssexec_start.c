@@ -168,7 +168,7 @@ int rc_sanitize(ssexec_t *info,genalloc *ga, char const *const *envp)
 	db[info->livetree.len + 1 + info->treename.len] = 0 ;
 	
 	if (!db_ok(info->livetree.s,info->treename.s))
-		if (!rc_init(info,envp)) return 0 ;
+		if (!rc_init(info,ga,envp)) return 0 ;
 	
 
 	for (unsigned int i = 0; i < genalloc_len(ss_resolve_t,ga) ; i++)
