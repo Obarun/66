@@ -35,6 +35,7 @@
 #include <66/utils.h>
 #include <66/enum.h>
 #include <66/resolve.h>
+#include <66/ssexec.h>
 
 #include <s6/config.h>//S6_BINPREFIX
 #include <execline/config.h>//EXECLINE_BINPREFIX
@@ -43,15 +44,26 @@
 /** @Return 0 on fail
  * @Return 1 on success
  * @Return 2 if the service is ignored */
-int write_services(sv_alltype *sv, char const *workdir, unsigned int force)
+int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned int force)
 {
 	int r ;
 	
+	ss_resolve_t res = RESOLVE_ZERO ;
+		
 	size_t workdirlen = strlen(workdir) ;
 	char *name = keep.s+sv->cname.name ;
 	size_t namelen = strlen(name) ;
 	int type = sv->cname.itype ;
 
+	if (ss_resolve_check(info,name,SS_RESOLVE_LIVE)) 
+	{
+		stralloc sares = STRALLOC_ZERO ;
+		if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
+		if (res.type != type) strerr_dief4x(111,"Detection of incompatible type format -- current: ",get_keybyid(type)," previous: ",get_keybyid(res.type)) ;
+		stralloc_free(&sares) ;
+	}
+	ss_resolve_free(&res) ;
+	
 	size_t wnamelen ;
 	char wname[workdirlen + SS_SVC_LEN + SS_SRC_LEN + namelen + 1 + 1] ;
 	memcpy(wname,workdir,workdirlen) ;

@@ -29,6 +29,8 @@
 #include <skalibs/types.h>
 #include <skalibs/avltree.h>
 
+#include <66/ssexec.h>
+
 extern stralloc keep ;
 extern stralloc deps ;
 extern stralloc saenv ;
@@ -315,7 +317,7 @@ extern int keep_runfinish(sv_exec *exec,keynocheck *nocheck) ;
 
 extern int keep_logger(sv_execlog *log,keynocheck *nocheck) ;
 
-extern int write_services(sv_alltype *sv, char const *workdir, unsigned int force) ;
+extern int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned int force) ;
 
 extern int write_classic(sv_alltype *sv, char const *dst, unsigned int force) ;
 
