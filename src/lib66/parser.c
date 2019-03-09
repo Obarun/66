@@ -315,7 +315,7 @@ static int deps_src(stralloc *newsrc, char const *name, char const *tree, unsign
 		if (!stralloc_0(&home)) retstralloc(0,"deps_src") ;
 		if (!stralloc_obreplace(newsrc, home.s)) retstralloc(0,"deps_src") ;
 	}
-	printf("newsrc::%s\n",newsrc->s) ;
+	
 	if (!ss_resolve_src(&tmpsrc,&sa,name,newsrc->s,&found)) 
 	{
 		if (!stralloc_obreplace(newsrc, SS_SERVICE_SYSDIR)) retstralloc(0,"deps_src") ;
