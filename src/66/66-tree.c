@@ -466,12 +466,14 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 	if (!stralloc_0(&dtree)) retstralloc(111,"tree_unsupervise") ;
 	if (!ss_resolve_read(&res,dtree.s,"Master")) strerr_diefu1sys(111,"read resolve file of inner bundle") ;
 	/** if Master is empty we don't need to bring down any service */
+	if (!stralloc_cats(&reslive,res.sa.s + res.resolve)) retstralloc(111,"tree_unsupervise") ;
+	if (!stralloc_0(&reslive)) retstralloc(111,"tree_unsupervise") ;
+	
 	if (res.ndeps)
 	{
 		
 		if (!stralloc_cats(&scandir,res.sa.s + res.live)) retstralloc(111,"tree_unsupervise") ;
-		if (!stralloc_cats(&reslive,res.sa.s + res.resolve)) retstralloc(111,"tree_unsupervise") ;
-		
+				
 		if (!stralloc_cats(&livetree,res.sa.s + res.live)) retstralloc(111,"tree_unsupervise") ;
 		r = set_livetree(&livetree,owner) ;
 		if (!r) retstralloc(111,"tree_unsupervise") ;
@@ -558,9 +560,7 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 			 * to avoid double path*/
 			scandir.len = 0 ;
 			if (!stralloc_cats(&scandir,res.sa.s + res.live)) retstralloc(111,"tree_unsupervise") ;
-			reslive.len = 0 ;
-			if (!stralloc_cats(&reslive,res.sa.s + res.resolve)) retstralloc(111,"tree_unsupervise") ;
-			
+						
 			char const *newargv[9 + genalloc_len(stralist,&tostop)] ;
 			unsigned int m = 0 ;
 			char fmt[UINT_FMT] ;
@@ -597,7 +597,6 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 	}
 	if (reload)
 	{
-		if (!stralloc_0(&reslive)) retstralloc(111,"tree_unsupervise") ;
 		if (!stralloc_0(&scandir)) retstralloc(111,"tree_unsupervise") ;
 		if (!set_livescan(&scandir,owner)) strerr_diefu1sys(111,"set scandir") ;
 		if (scandir_send_signal(scandir.s,"an") <= 0) strerr_diefu2sys(111,"reload scandir: ",scandir.s) ;
@@ -789,7 +788,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		r  = tree_cmd_state(VERBOSITY,"-d",tree) ;
 		if (r != 1) strerr_diefu6x(111,"delete: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
 		/** remove /run/66/state/treename directory */
-		if (reslive.len)
+		if (reslive.len && (scan_mode(reslive.s,S_IFDIR)))
 		{
 			VERBO2 strerr_warni3x("delete ",reslive.s," ..." ) ;
 			if (rm_rf(reslive.s) < 0) strerr_diefu2sys(111,"delete ",reslive.s) ;
