@@ -26,6 +26,64 @@
 
 #define USAGE "execl-cmdline [ -s ] { command... }"
 
+int clean_val_doublequoted(genalloc *ga,char const *line)
+{
+	size_t slen = strlen(line) ;
+	size_t tl ;
+	char s[slen+1] ;
+	memcpy(s,line,slen) ;
+	s[slen] = 0 ;
+	int f = 0, r = 0 , prev = 0 ;
+	r = get_len_until(s,'"') ;
+	if (r < 0)
+	{
+		if (!clean_val(ga,s)) return 0 ;
+		return 1 ;
+	}
+	for (int i = 0 ; i < slen ; i++)
+	{
+		if (s[i] == '"')
+		{
+			if (f)
+			{
+				char t[slen] ;
+				tl = i ;
+				memcpy(t,s+prev,tl-prev+1) ;
+				t[tl-prev+1] = 0 ;
+				if (!stra_add(ga,t)) return 0 ;
+				f = 0 ; prev = i+1 ;
+			}
+			else
+			{
+				if (i > 0)
+				{
+					char t[slen] ;
+					tl = i - 1 ;
+					if (prev == tl){ f++ ; continue ; }
+					memcpy(t,s+prev,tl-prev) ;
+					t[tl-prev] = 0 ;
+					if (!clean_val(ga,t)) return 0 ;
+					f++ ; prev = i ;
+				}
+				else f++ ; 
+			}
+		}
+		else
+		if (i+1 == slen)
+		{
+			char t[slen] ;
+			tl = i - 1 ;
+			memcpy(t,s+prev,slen-prev) ;
+			t[slen-prev] = 0 ;
+			if (!clean_val(ga,t)) return 0 ;
+			break ;
+		}
+	}
+	if (f) strerr_dief2x(111,"odd number of double quote in: ",line) ;
+
+	return 1 ;
+}
+
 int main(int argc, char const **argv, char const *const *envp)
 {
 
@@ -74,7 +132,7 @@ int main(int argc, char const **argv, char const *const *envp)
 	
 	if (split)
 	{
-		if (!clean_val(&ga,tmodifs.s)) strerr_diefu2x(111,"clean val: ",tmodifs.s) ;
+		if (!clean_val_doublequoted(&ga,tmodifs.s)) strerr_diefu2x(111,"clean val: ",tmodifs.s) ;
 		for (unsigned int i = 0 ; i < genalloc_len(stralist,&ga) ; i++)
 		{
 			stralloc_cats(&modifs,gaistr(&ga,i)) ;
@@ -90,6 +148,6 @@ int main(int argc, char const **argv, char const *const *envp)
 	char const *newarg[r + 1] ;
     if (!env_make(newarg, r, modifs.s, modifs.len)) strerr_diefu1sys(111, "env_make") ;
     newarg[r] = 0 ;
-		
+	
 	xpathexec_run(newarg[0],newarg,envp) ;
 }
