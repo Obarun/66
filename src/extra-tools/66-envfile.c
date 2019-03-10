@@ -36,8 +36,6 @@
 
 #include <66/parser.h>
 
-//#include <stdio.h>
-
 unsigned int VERBOSITY = 1 ;
 static stralloc senv = STRALLOC_ZERO ;
 static genalloc gaenv = GENALLOC_ZERO ; //diuint32, pos in senv
@@ -156,8 +154,6 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	stralloc dst = STRALLOC_ZERO ;
 	genalloc toparse = GENALLOC_ZERO ; //stralist
 	
-	
-	
 	exlsn_t info = EXLSN_ZERO ;
 	
 	r = i = one = unexport = 0 ;
@@ -201,7 +197,16 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	if (one)
 	{
 		r = stra_findidx(&toparse,file) ;
-		if (r < 0) strerr_diefu2x(111,"find: ",file) ;
+		if (r < 0) 
+		{
+			if (insist) strerr_diefu2x(111,"find: ",file) ;
+			else
+			{
+				argv++;
+				argc--;
+				xpathexec_run(argv[0],argv,envp) ;
+			}
+		}
 		new_env(path,file,&modifs) ;
 	}
 	else
