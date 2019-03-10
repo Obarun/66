@@ -177,7 +177,6 @@ int ss_resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *
 	stralloc sainsta = STRALLOC_ZERO ;
 	stralloc subdir = STRALLOC_ZERO ;
 	if (!stralloc_cats(&subdir,src)) goto errstra ;
-	//if (!stralloc_cats(&subdir,"/")) goto errstra ;
 	
 	obr = insta = 0 ;
 	
@@ -209,7 +208,7 @@ int ss_resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *
 			if (!stralloc_cats(&subdir,d->d_name)) goto errdir ;
 			if (!stralloc_cats(&subdir,"/")) goto errdir ;
 			if (!stralloc_0(&subdir)) goto errdir ;
-			*found = 2 ;
+			(*found)++ ;
 			if (!ss_resolve_src(ga,sasrc,name,subdir.s,found)) goto errdir ;
 		}
 		obr = 0 ;
@@ -272,7 +271,7 @@ int ss_resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *
 	
 	if (*found > 1)
 	{
-		*found = 0 ;
+		(*found)-- ;
 		return 1 ;
 	}
 	
