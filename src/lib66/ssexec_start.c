@@ -319,8 +319,11 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 		}
 		if (RELOAD > 1) pres->reload = 1 ;
 					
-		if (pres->init) pres->reload = 0 ;
-		
+		if (pres->init)
+		{
+			pres->reload = 0 ;
+			SIG="-U" ;
+		}
 		run:		
 		if (pres->type == CLASSIC)
 		{
