@@ -293,7 +293,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 		
 		newargv[m++] = 0 ;
 		
-		if (!ssexec_start(nargc,newargv,envp,info))
+		if (ssexec_start(nargc,newargv,envp,info))
 		{
 			genalloc_deepfree(stralist,&tostart,stra_free) ;
 			return 111 ;
