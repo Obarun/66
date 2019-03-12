@@ -97,4 +97,6 @@ extern int ss_resolve_cmp(genalloc *ga,char const *name) ;
 extern void ss_resolve_setflag(ss_resolve_t *res,int flags,int flags_val) ;
 extern int ss_resolve_add_deps(genalloc *tokeep,ss_resolve_t *res, ssexec_t *info) ;
 extern int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res,ssexec_t *info) ;
+extern int ss_resolve_copy(ss_resolve_t *dst,ss_resolve_t *res) ;
+extern int ss_resolve_append(genalloc *ga,ss_resolve_t *res) ;
 #endif

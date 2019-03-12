@@ -566,6 +566,7 @@ int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst)
 	res.tree = ss_resolve_add_string(&res,string + sv->tree) ;
 	res.treename = ss_resolve_add_string(&res,string + sv->treename) ;
 	res.resolve = ss_resolve_add_string(&res,string + sv->resolve) ;
+	res.src = ss_resolve_add_string(&res,string + sv->src) ;
 	//res.ndeps = 1 ;
 	res.type = sv->type ;
 	ss_resolve_setflag(&res,SS_FLAGS_RELOAD,sv->reload) ;
@@ -768,19 +769,21 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		
 		if (!ss_resolve_setlognwrite(&res,dst)) goto err ;
 	}
-	
+	/** may on workdir so a copy with made to source, write it SIMPLE */
 	if (!ss_resolve_write(&res,dst,res.sa.s + res.name,SS_SIMPLE))
 	{
 		strerr_warnwu5sys("write resolve file: ",dst,SS_RESOLVE,"/",res.sa.s + res.name) ;
 		goto err ;
 	}
 	
+	ss_resolve_free(&res) ;
 	stralloc_free(&namedeps) ;
 	stralloc_free(&final) ;
 	stralloc_free(&destlog) ;
 	return 1 ;
 	
 	err:
+		ss_resolve_free(&res) ;
 		stralloc_free(&namedeps) ;
 		stralloc_free(&final) ;
 		stralloc_free(&destlog) ;
@@ -810,30 +813,38 @@ int ss_resolve_add_logger(genalloc *ga,ssexec_t *info)
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++) 
 	{
 		ss_resolve_t res = RESOLVE_ZERO ;
-		char *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
-		char *name = string + genalloc_s(ss_resolve_t,ga)[i].name ;
+		ss_resolve_t dres = RESOLVE_ZERO ;
+		if (!ss_resolve_copy(&res,&genalloc_s(ss_resolve_t,ga)[i]))
+		{
+			VERBO1 strerr_warnwu1sys("copy resolve file") ;
+			goto err ;
+		}
+		char *string = res.sa.s ;
+		char *name = string + res.name ;
 		if (!ss_resolve_cmp(&gatmp,name))
 		{
-			if (!genalloc_append(ss_resolve_t,&gatmp,&genalloc_s(ss_resolve_t,ga)[i])) 
+			if (!ss_resolve_append(&gatmp,&res)) 
 				goto err ;
 		
-			if (genalloc_s(ss_resolve_t,ga)[i].logger)
+			if (res.logger)
 			{
-				if (!ss_resolve_read(&res,tmp.s,string + genalloc_s(ss_resolve_t,ga)[i].logger))
+				if (!ss_resolve_read(&dres,tmp.s,string + res.logger))
 					goto err ;
 			
-				if (!genalloc_append(ss_resolve_t,&gatmp,&res)) goto err ;
+				if (!ss_resolve_append(&gatmp,&dres)) goto err ;
 			}
-		}
-		
+		}		
+		ss_resolve_free(&res) ;
+		ss_resolve_free(&dres) ;
 	}
+	genalloc_deepfree(ss_resolve_t,ga,ss_resolve_free) ;
 	if (!genalloc_copy(ss_resolve_t,ga,&gatmp)) goto err ;
-		
-	genalloc_free(ss_resolve_t,&gatmp) ;
+
+	genalloc_deepfree(ss_resolve_t,&gatmp,ss_resolve_free) ;
 	stralloc_free(&tmp) ;
 	return 1 ;
 	err:
-		genalloc_free(ss_resolve_t,&gatmp) ;
+		genalloc_deepfree(ss_resolve_t,&gatmp,ss_resolve_free) ;
 		stralloc_free(&tmp) ;
 		return 0 ;
 }
@@ -853,6 +864,50 @@ void ss_resolve_setflag(ss_resolve_t *res,int flags,int flags_val)
 	}
 }
 
+int ss_resolve_copy(ss_resolve_t *dst,ss_resolve_t *res)
+{
+	size_t len = res->sa.len - 1 ;
+	dst->salen = res->salen ;
+	if (!stralloc_catb(&dst->sa,res->sa.s,len)) return 0 ;
+	dst->name = res->name ;
+	dst->description = res->description ;
+	dst->logger = res->logger ;
+	dst->logreal = res->logreal ;
+	dst->logassoc = res->logassoc ;
+	dst->dstlog = res->dstlog ;
+	dst->deps = res->deps ;
+	dst->src = res->src ;
+	dst->live = res->live ;
+	dst->runat = res->runat ;
+	dst->tree = res->tree ;
+	dst->treename = res->treename ;
+	dst->resolve = res->resolve ;
+	dst->exec_run = res->exec_run ;
+	dst->exec_finish = res->exec_finish ;
+	dst->type = res->type ;
+	dst->ndeps = res->ndeps ;
+	dst->reload = res->reload ;
+	dst->disen = res->disen ;
+	dst->init = res->init ;
+	dst->unsupervise = res->unsupervise ;
+	dst->down = res->down ;
+	dst->run = res->run ;
+	dst->pid = res->pid ;
+	if (!stralloc_0(&dst->sa)) return 0 ;
+	return 1 ;
+}
+
+int ss_resolve_append(genalloc *ga,ss_resolve_t *res)
+{
+	ss_resolve_t cp = RESOLVE_ZERO ;
+	if (!ss_resolve_copy(&cp,res)) goto err ;
+	if (!genalloc_append(ss_resolve_t,ga,&cp)) goto err ;
+	return 1 ;
+	err:
+		ss_resolve_free(&cp) ;
+		return 0 ;
+}
+
 int ss_resolve_add_deps(genalloc *tokeep,ss_resolve_t *res, ssexec_t *info)
 {
 	unsigned int i = 0 ;
@@ -866,7 +921,9 @@ int ss_resolve_add_deps(genalloc *tokeep,ss_resolve_t *res, ssexec_t *info)
 	char *name = res->sa.s + res->name ;
 	char *deps = res->sa.s + res->deps ;
 	if (!ss_resolve_cmp(tokeep,name))
-		if (!genalloc_append(ss_resolve_t,tokeep,res)) goto err ;
+	{
+		if (!ss_resolve_append(tokeep,res)) goto err ;
+	}
 	
 	if (res->ndeps)
 	{
@@ -877,10 +934,15 @@ int ss_resolve_add_deps(genalloc *tokeep,ss_resolve_t *res, ssexec_t *info)
 			ss_resolve_t dres = RESOLVE_ZERO ;
 			if (!ss_resolve_check(info,gaistr(&tmp,i),SS_RESOLVE_LIVE)) goto err ;
 			if (!ss_resolve_read(&dres,src,gaistr(&tmp,i))) goto err ;
-			if (dres.ndeps) ss_resolve_add_deps(tokeep,&dres,info) ;
-			
+			if (dres.ndeps)
+			{
+				if (!ss_resolve_add_deps(tokeep,&dres,info)) goto err ;
+			}
 			if (!ss_resolve_cmp(tokeep,gaistr(&tmp,i)))
-				if (!genalloc_append(ss_resolve_t,tokeep,&dres)) goto err ;
+			{
+				if (!ss_resolve_append(tokeep,&dres)) goto err ;
+			}
+			ss_resolve_free(&dres) ;
 		}
 	}
 	genalloc_deepfree(stralist,&tmp,stra_free) ;
@@ -904,8 +966,11 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res,ssexec_t *info)
 	if (res->type == CLASSIC) type = 0 ;
 	else type = 1 ;
 	if (!graph_type_src(&nsv,src,type)) goto err ; 
+	
 	if (!ss_resolve_cmp(tokeep,name))
-		if (!genalloc_append(ss_resolve_t,tokeep,res)) goto err ;
+	{
+		if (!ss_resolve_append(tokeep,res)) goto err ;
+	}
 	
 	for (unsigned int i = 0 ; i < genalloc_len(stralist,&nsv) ; i++)
 	{
@@ -915,26 +980,31 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res,ssexec_t *info)
 		if (obstr_equal(name,dname)) continue ;
 		if (!ss_resolve_check(info,dname,SS_RESOLVE_LIVE)) goto err ;
 		if (!ss_resolve_read(&dres,src,gaistr(&nsv,i))) goto err ;
-		if (dres.ndeps || (dres.type == BUNDLE && dres.ndeps) || (res->type == BUNDLE && res->ndeps))
+		if (!ss_resolve_cmp(tokeep,dname))
 		{
-			if (!clean_val(&tmp,dres.sa.s + dres.deps)) goto err ;
-			for (unsigned int j = 0 ; j < genalloc_len(stralist,&tmp) ; j++)
+			if (dres.ndeps || (dres.type == BUNDLE && dres.ndeps) || (res->type == BUNDLE && res->ndeps))
 			{
-				if (obstr_equal(name,gaistr(&tmp,j)) || res->type == BUNDLE)
+				if (!clean_val(&tmp,dres.sa.s + dres.deps)) goto err ;
+				for (unsigned int j = 0 ; j < genalloc_len(stralist,&tmp) ; j++)
 				{
-					if (!ss_resolve_cmp(tokeep,dname))
+					if (obstr_equal(name,gaistr(&tmp,j)) || res->type == BUNDLE)
 					{
-						if (!genalloc_append(ss_resolve_t,tokeep,&dres)) goto err ;
-						if (!ss_resolve_add_rdeps(tokeep,&dres,info)) goto err ;
-						break ;
+							if (!ss_resolve_append(tokeep,&dres)) goto err ;
+							if (!ss_resolve_add_rdeps(tokeep,&dres,info)) goto err ;
+							break ;
 					}
 				}
 			}
 		}
+		ss_resolve_free(&dres) ;
 	}
+
 	genalloc_deepfree(stralist,&tmp,stra_free) ;
+	genalloc_deepfree(stralist,&nsv,stra_free) ;
 	return 1 ;
 	err:
 		genalloc_deepfree(stralist,&tmp,stra_free) ;
+		genalloc_deepfree(stralist,&nsv,stra_free) ;
 		return 0 ;
 }
+
