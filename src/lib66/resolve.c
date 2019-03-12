@@ -840,7 +840,7 @@ int ss_resolve_add_logger(genalloc *ga,ssexec_t *info)
 	genalloc_deepfree(ss_resolve_t,ga,ss_resolve_free) ;
 	if (!genalloc_copy(ss_resolve_t,ga,&gatmp)) goto err ;
 
-	genalloc_deepfree(ss_resolve_t,&gatmp,ss_resolve_free) ;
+	genalloc_free(ss_resolve_t,&gatmp) ;
 	stralloc_free(&tmp) ;
 	return 1 ;
 	err:
