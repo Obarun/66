@@ -502,9 +502,9 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 				VERBO3 strerr_warnwu2sys("wait for ",newargv[0]) ;
 				return 0 ;
 			}
-			if (wstat) strerr_diefu2sys(111,"stop db service of tree: ",treename) ;
+			if (wstat) strerr_diefu1sys(111,"stop services") ;
 			/** unsupervise service into the scandir */
-			if (!clean_val(&gasv,res.sa.s + res.deps)) strerr_diefu2sys(111,"clean deps of inner bundle of tree: ", treename) ;
+			if (!clean_val(&gasv,res.sa.s + res.deps)) strerr_diefu1sys(111,"clean deps of inner bundle") ;
 			for (unsigned int i = 0 ; i < genalloc_len(stralist,&gasv) ; i++)
 			{
 				ss_resolve_t dres = RESOLVE_ZERO ;
@@ -535,7 +535,7 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 		}
 	}
 	genalloc_deepfree(stralist,&gasv,stra_free) ;
-	if (!graph_type_src(&gasv,dtree.s,0)) strerr_diefu2sys(111,"get svc service of tree: ",treename) ;
+	if (!graph_type_src(&gasv,dtree.s,0)) strerr_diefu1sys(111,"find services") ;
 	if (genalloc_len(stralist,&gasv))
 	{
 		genalloc tostop = GENALLOC_ZERO ;
@@ -584,7 +584,7 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 			if (waitpid_nointr(pid,&wstat, 0) < 0)
 				strerr_diefu2sys(111,"wait for ",newargv[0]) ;
 			
-			if (wstat) strerr_diefu2sys(111,"bring down db service of tree: ",treename) ;
+			if (wstat) strerr_diefu1sys(111,"stop services") ;
 			
 			for (unsigned int i = 0 ; i < genalloc_len(stralist,&tostop) ; i++) 
 			{
@@ -601,7 +601,8 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 		if (!set_livescan(&scandir,owner)) strerr_diefu1sys(111,"set scandir") ;
 		if (scandir_send_signal(scandir.s,"an") <= 0) strerr_diefu2sys(111,"reload scandir: ",scandir.s) ;
 	}
-	if (reload) VERBO1 strerr_warni2x("Unsupervised successfully: ",treename) ;
+	if (reload){ VERBO1 strerr_warni2x("Unsupervised successfully: ",treename) ; }
+	else VERBO1 strerr_warni2x("Not supervised: ",treename) ;
 	genalloc_deepfree(stralist,&gasv,stra_free) ;
 	stralloc_free(&livetree) ; 
 	stralloc_free(&dtree) ; 
@@ -812,7 +813,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (!hiercopy(tmp,dstree.s)) strerr_diefu4sys(111,"copy: ",dstree.s," at: ",clone.s) ;
 		VERBO1 strerr_warni4x("Cloned successfully: ",tree," to ",clone.s) ;
 	}
-	
+	stralloc_free(&reslive) ;
 	stralloc_free(&base) ;
 	stralloc_free(&dstree) ;
 	stralloc_free(&clone) ;
