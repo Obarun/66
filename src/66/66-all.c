@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include <stdio.h>
 
 #include <oblibs/error2.h>
 #include <oblibs/obgetopt.h>
@@ -28,23 +29,12 @@
 #include <skalibs/buffer.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
-#include <skalibs/types.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/direntry.h>
-#include <skalibs/tai.h>
-#include <skalibs/unix-transactional.h>
-#include <skalibs/selfpipe.h>
-#include <skalibs/sig.h>
 
 #include <66/constants.h>
 #include <66/config.h>
 #include <66/utils.h>
 #include <66/tree.h>
-
-#include <s6/s6-supervise.h>
-#include <s6/config.h>
-
-#include <stdio.h>
 
 unsigned int VERBOSITY = 1 ;
 static unsigned int DEADLINE = 0 ;
@@ -86,7 +76,7 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 	if (!dir_get(&ga,src,"",S_IFDIR))
 	{
 		VERBO3 strerr_warnwu2x("find source of classic service for tree: ",treename) ;
-		return 0 ;
+		goto err ;
 	}
 	if (!genalloc_len(stralist,&ga))
 	{
@@ -96,45 +86,49 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 	if (!stra_add(&ga,"Master"))
 	{
 		VERBO3 strerr_warnwu2x("add Master as service to ", what ? "start" : "stop") ;
-		return 0 ;
+		goto err ;
 	}
 	
-	
-	char const *newargv[10 + genalloc_len(stralist,&ga)] ;
-	unsigned int m = 0 ;
-	char fmt[UINT_FMT] ;
-	fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
-		
-	char tt[UINT32_FMT] ;
-	tt[uint32_fmt(tt,DEADLINE)] = 0 ;
-	
-	if (what)
-		newargv[m++] = SS_BINPREFIX "66-start" ;
-	else
-		newargv[m++] = SS_BINPREFIX "66-stop" ;
-	newargv[m++] = "-v" ;
-	newargv[m++] = fmt ;
-	newargv[m++] = "-T" ;
-	newargv[m++] = tt ;
-	newargv[m++] = "-l" ;
-	newargv[m++] = live ;
-	newargv[m++] = "-t" ;
-	newargv[m++] = treename ;
-	
-	for (unsigned int i = 0 ; i < genalloc_len(stralist,&ga) ; i++) 
-		newargv[m++] = gaistr(&ga,i) ;
-			
-	newargv[m++] = 0 ;
-	
-	pid = child_spawn0(newargv[0],newargv,envp) ;
-	if (waitpid_nointr(pid,&wstat, 0) < 0)
 	{
-		VERBO3 strerr_warnwu2sys("wait for ",newargv[0]) ;
-		return 0 ;
+		char const *newargv[10 + genalloc_len(stralist,&ga)] ;
+		unsigned int m = 0 ;
+		char fmt[UINT_FMT] ;
+		fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
+			
+		char tt[UINT32_FMT] ;
+		tt[uint32_fmt(tt,DEADLINE)] = 0 ;
+		
+		if (what)
+			newargv[m++] = SS_BINPREFIX "66-start" ;
+		else
+			newargv[m++] = SS_BINPREFIX "66-stop" ;
+		newargv[m++] = "-v" ;
+		newargv[m++] = fmt ;
+		newargv[m++] = "-T" ;
+		newargv[m++] = tt ;
+		newargv[m++] = "-l" ;
+		newargv[m++] = live ;
+		newargv[m++] = "-t" ;
+		newargv[m++] = treename ;
+		
+		for (unsigned int i = 0 ; i < genalloc_len(stralist,&ga) ; i++) 
+			newargv[m++] = gaistr(&ga,i) ;
+		
+		newargv[m++] = 0 ;
+		
+		pid = child_spawn0(newargv[0],newargv,envp) ;
+		if (waitpid_nointr(pid,&wstat, 0) < 0)
+		{
+			VERBO3 strerr_warnwu2sys("wait for ",newargv[0]) ;
+			goto err ;
+		}
+		if (wstat) goto err ;
 	}
-	if (wstat) return 0 ;
-				
+	genalloc_deepfree(stralist,&ga,stra_free) ;	
 	return 1 ;
+	err:
+		genalloc_deepfree(stralist,&ga,stra_free) ;	
+		return 0 ;
 }
 
 static void redir_fd(void)  
@@ -269,7 +263,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (!in.len)
 	{
 		strerr_warni1x("nothing to do") ;
-		return 0 ;
+		goto end ;
 	}
 	
 	if (shut)
@@ -296,7 +290,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			
 	for (unsigned int i = 0 ; i < genalloc_len(stralist,&in) ; i++)
 	{
-		tree = stralloc_zero ;
+		tree.len = 0 ;
 		
 		char *treename = gaistr(&in,i) ;
 		
@@ -335,13 +329,11 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			
 			VERBO3 strerr_warnt2x("reload scandir: ",scandir.s) ;
 			if (scandir_send_signal(scandir.s,"an") <= 0) 
-			{
-				VERBO3 strerr_warnwu2sys("reload scandir: ",scandir.s) ;
-				return -1 ;
-			}
+				strerr_diefu2sys(111,"reload scandir: ",scandir.s) ;
+				
 		}
 		
-		if (!doit(tree.s,treename,live.s,what,envp)) strerr_warnwu3x((what) ? "start" : "stop" , " service for tree: ",treename) ;
+		if (!doit(tree.s,treename,live.s,what,envp)) strerr_diefu3x(111,(what) ? "start" : "stop" , " service for tree: ",treename) ;
 	}
 	end:
 		if (shut)
