@@ -25,17 +25,12 @@
 #include <oblibs/stralist.h>
 #include <oblibs/files.h>
 
-#include <skalibs/buffer.h>
-#include <skalibs/types.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/direntry.h>
 
 #include <66/utils.h>
-#include <66/enum.h>
 #include <66/constants.h>
 #include <66/tree.h>
-#include <66/backup.h>
 #include <66/db.h>
 #include <66/svc.h>
 #include <66/resolve.h>
