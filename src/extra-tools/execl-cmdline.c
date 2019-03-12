@@ -147,15 +147,8 @@ int main(int argc, char const **argv, char const *const *envp)
 	
 	stralloc_free(&tmodifs) ;
 	
-	size_t enlen = modifs.len ;
-	char toend[modifs.len + 1] ;
-	memcpy(toend,modifs.s,enlen) ;
-	toend[enlen] = 0 ;
-	
-	stralloc_free(&modifs) ;
-	
 	char const *newarg[r + 1] ;
-	if (!env_make(newarg, r, toend, enlen)) strerr_diefu1sys(111, "env_make") ;
+    if (!env_make(newarg, r, modifs.s, modifs.len)) strerr_diefu1sys(111, "env_make") ;
     newarg[r] = 0 ;
 
 	xpathexec_run(newarg[0],newarg,envp) ;
