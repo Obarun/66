@@ -190,6 +190,7 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 	ftrigr_end(&fifo) ;
 	genalloc_deepfree(stralist,&gadown,stra_free) ;
 	genalloc_free(uint16_t, &ids) ;
+	stralloc_free(&sares) ;
 	return 1 ;
 	
 	err:
@@ -197,6 +198,7 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 		genalloc_free(uint16_t, &ids) ;
 		genalloc_deepfree(stralist,&gadown,stra_free) ;
 		ftrigr_end(&fifo) ;
+		stralloc_free(&sares) ;
 		return 0 ;
 
 }
