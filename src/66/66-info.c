@@ -542,6 +542,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	genalloc_deepfree(stralist,&gawhat,stra_free) ;
 	genalloc_deepfree(stralist,&gatree,stra_free) ;
 	ss_resolve_free(&res) ;
+	stralloc_free(&src) ;
 	return 1 ;
 	
 	err:
@@ -550,6 +551,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 		genalloc_deepfree(stralist,&gawhat,stra_free) ;
 		genalloc_deepfree(stralist,&gatree,stra_free) ;
 		ss_resolve_free(&res) ;
+		stralloc_free(&src) ;
 		return 0 ;
 }
 
