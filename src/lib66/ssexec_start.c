@@ -15,44 +15,27 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
 #include <oblibs/string.h>
-#include <oblibs/types.h>
-#include <oblibs/directory.h>
-#include <oblibs/files.h>
-#include <oblibs/stralist.h>
 
-#include <skalibs/buffer.h>
-#include <skalibs/types.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/unix-transactional.h>
-#include <skalibs/tai.h>
 
-#include <skalibs/selfpipe.h>
-#include <skalibs/iopause.h>
-#include <skalibs/sig.h>
-
-#include <s6/s6-supervise.h>//s6_svstatus_t
-#include <s6/ftrigw.h>
-#include <s6/config.h>
-
-#include <66/tree.h>
 #include <66/db.h>
 #include <66/config.h>
 #include <66/utils.h>
 #include <66/constants.h>
-#include <66/enum.h>
 #include <66/backup.h>
 #include <66/svc.h>
 #include <66/ssexec.h>
 #include <66/resolve.h>
 #include <66/rc.h>
 
-#include <stdio.h>
+#include <s6/s6-supervise.h>
 
 static unsigned int RELOAD = 0 ;
 static unsigned int DEADLINE = 0 ;
@@ -87,7 +70,6 @@ int svc_sanitize(ssexec_t *info,genalloc *ga, char const *const *envp)
 			VERBO1 strerr_warnwu1sys("copy resolve file") ;
 			goto err ;
 		}
-		char *name = cp.sa.s + cp.name ; 
 		if (cp.reload) 
 		{	
 			if (!ss_resolve_append(&toreload,&cp)) goto err ;
@@ -154,7 +136,6 @@ int rc_sanitize(ssexec_t *info,genalloc *ga, char const *const *envp)
 			VERBO1 strerr_warnwu1sys("copy resolve file") ;
 			goto err ;
 		}
-		char *name = cp.sa.s + cp.name ; 
 		if (cp.reload)
 		{
 			if (!ss_resolve_append(&toreload,&cp)) goto err ;
