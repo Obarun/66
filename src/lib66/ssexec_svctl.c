@@ -300,6 +300,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	
 	genalloc gakeep = GENALLOC_ZERO ; //type ss_resolve_sig
 	genalloc resdeps = GENALLOC_ZERO ; //ss_resolve_t
+	stralloc sares = STRALLOC_ZERO ;
 	
 	char *sig = 0 ;
 	
@@ -344,23 +345,23 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			
 	if ((scandir_ok(info->scandir.s)) !=1 ) strerr_dief3sys(111,"scandir: ", info->scandir.s," is not running") ;
 	
-	stralloc src = STRALLOC_ZERO ;
-	if (!ss_resolve_pointo(&src,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1sys(111,"set revolve pointer to source") ;
+	
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1sys(111,"set revolve pointer to live") ;
 	
 	for(;*argv;argv++)
 	{
-		ss_resolve_t gres = RESOLVE_ZERO ;
+		ss_resolve_t res = RESOLVE_ZERO ;
 		char const *name = *argv ;
 	
 		if (!ss_resolve_check(info,name,SS_RESOLVE_LIVE)) strerr_dief2sys(111,"unknow service: ",name) ;
-		if (!ss_resolve_read(&gres,src.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
-		if (gres.type >= BUNDLE) strerr_dief3x(111,name," has type ",get_keybyid(gres.type)) ;
-		
+		if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
+		if (res.type >= BUNDLE) strerr_dief3x(111,name," has type ",get_keybyid(res.type)) ;
 		if (SIGNAL <= SIGRR)
 		{
-			if (!ss_resolve_add_deps(&resdeps,&gres,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
+			if (!ss_resolve_add_deps(&resdeps,&res,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
 		}
-		else if (!ss_resolve_add_rdeps(&resdeps,&gres,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
+		else if (!ss_resolve_add_rdeps(&resdeps,&res,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
+		ss_resolve_free(&res) ;
 	}
 	genalloc_reverse(ss_resolve_t,&resdeps) ;
 	for(unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&resdeps) ; i++)
@@ -483,9 +484,9 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 				}
 			}
 		}
-		
+	
 		errno = e ;
-		
+	
 		if (!genalloc_append(ss_resolve_sig_t,&gakeep,&sv_signal)) strerr_diefu1sys(111,"append genalloc") ;
 		
 	}
@@ -498,7 +499,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	if (selfpipe_trap(SIGINT) < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
 	if (selfpipe_trap(SIGTERM) < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
 	if (sig_ignore(SIGPIPE) < 0) strerr_diefu1sys(111,"ignore SIGPIPE") ;
-		
+	
 	if (!svc_init_pipe(&fifo,&gakeep)) strerr_diefu1x(111,"init pipe") ;
 	
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_sig_t,&gakeep) ; i++)
@@ -526,7 +527,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		ss_resolve_setflag(&sv->res,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 		ss_resolve_setflag(&sv->res,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
 		VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-		if (!ss_resolve_write(&sv->res,src.s,name,writein))
+		if (!ss_resolve_write(&sv->res,sares.s,name,writein))
 		{
 			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
 			ret = 111 ;
@@ -547,17 +548,13 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			ret = 111 ;
 		}
 	}
-	
+	finish:
 	ftrigr_end(&fifo) ;
 	selfpipe_finish() ;
-	
-	finish:
-		stralloc_free(&src) ;
-		genalloc_deepfree(ss_resolve_sig_t,&gakeep,ss_resolve_free) ;
-		
+	genalloc_free(ss_resolve_t,&resdeps) ;
+	stralloc_free(&sares) ;
+	genalloc_deepfree(ss_resolve_sig_t,&gakeep,ss_resolve_free) ;
+	genalloc_free(ss_resolve_t,&resdeps) ;
 		
 	return (ret > 1) ? 111 : 0 ;		
 }
-
-	
-
