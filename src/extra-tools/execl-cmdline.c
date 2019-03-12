@@ -12,6 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <string.h>
+
 #include <oblibs/string.h>
 #include <oblibs/stralist.h>
 #include <oblibs/error2.h>
@@ -46,8 +48,8 @@ int clean_val_doublequoted(genalloc *ga,char const *line)
 		{
 			if (f)
 			{
-				char t[slen] ;
-				tl = i ;
+				char t[slen+1] ;
+				tl = i-1 ;
 				memcpy(t,s+prev,tl-prev+1) ;
 				t[tl-prev+1] = 0 ;
 				if (!stra_add(ga,t)) return 0 ;
@@ -57,13 +59,13 @@ int clean_val_doublequoted(genalloc *ga,char const *line)
 			{
 				if (i > 0)
 				{
-					char t[slen] ;
-					tl = i - 1 ;
+					char t[slen+1] ;
+					tl = i ;
 					if (prev == tl){ f++ ; continue ; }
 					memcpy(t,s+prev,tl-prev) ;
 					t[tl-prev] = 0 ;
 					if (!clean_val(ga,t)) return 0 ;
-					f++ ; prev = i ;
+					f++ ; prev = i+1 ;
 				}
 				else f++ ; 
 			}
@@ -71,7 +73,7 @@ int clean_val_doublequoted(genalloc *ga,char const *line)
 		else
 		if (i+1 == slen)
 		{
-			char t[slen] ;
+			char t[slen+1] ;
 			tl = i - 1 ;
 			memcpy(t,s+prev,slen-prev) ;
 			t[slen-prev] = 0 ;
@@ -144,10 +146,17 @@ int main(int argc, char const **argv, char const *const *envp)
 	else if (!stralloc_copy(&modifs,&tmodifs)) retstralloc(111,"copy") ;
 	
 	stralloc_free(&tmodifs) ;
-		
-	char const *newarg[r + 1] ;
-    if (!env_make(newarg, r, modifs.s, modifs.len)) strerr_diefu1sys(111, "env_make") ;
-    newarg[r] = 0 ;
 	
+	size_t enlen = modifs.len ;
+	char toend[modifs.len + 1] ;
+	memcpy(toend,modifs.s,enlen) ;
+	toend[enlen] = 0 ;
+	
+	stralloc_free(&modifs) ;
+	
+	char const *newarg[r + 1] ;
+	if (!env_make(newarg, r, toend, enlen)) strerr_diefu1sys(111, "env_make") ;
+    newarg[r] = 0 ;
+
 	xpathexec_run(newarg[0],newarg,envp) ;
 }
