@@ -465,10 +465,13 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 	if (!stralloc_cats(&dtree,SS_SVDIRS)) retstralloc(111,"tree_unsupervise") ;
 	if (!stralloc_0(&dtree)) retstralloc(111,"tree_unsupervise") ;
 	if (!ss_resolve_read(&res,dtree.s,"Master")) strerr_diefu1sys(111,"read resolve file of inner bundle") ;
-	/** if Master is empty we don't need to bring down any service */
-	if (!stralloc_cats(&reslive,res.sa.s + res.resolve)) retstralloc(111,"tree_unsupervise") ;
-	if (!stralloc_0(&reslive)) retstralloc(111,"tree_unsupervise") ;
 	
+	if (res.resolve)
+	{
+		if (!stralloc_cats(&reslive,res.sa.s + res.resolve)) retstralloc(111,"tree_unsupervise") ;
+		if (!stralloc_0(&reslive)) retstralloc(111,"tree_unsupervise") ;
+	}
+	/** if Master is empty we don't need to bring down any service */
 	if (res.ndeps)
 	{
 		
@@ -552,6 +555,11 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 				ss_resolve_setflag(&res,SS_FLAGS_RUN,SS_FLAGS_FALSE) ;
 				if (!ss_resolve_write(&res,res.sa.s + res.resolve,gaistr(&gasv,i),SS_DOUBLE)) strerr_diefu2sys(111,"set write resolve file of: ", gaistr(&gasv,i)) ;
 			}
+			if (!reslive.len && res.resolve)
+			{
+				if (!stralloc_cats(&reslive,res.sa.s + res.resolve)) retstralloc(111,"tree_unsupervise") ;
+				if (!stralloc_0(&reslive)) retstralloc(111,"tree_unsupervise") ;
+			}
 		}
 		if (genalloc_len(stralist,&tostop))
 		{
@@ -560,7 +568,7 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 			 * to avoid double path*/
 			scandir.len = 0 ;
 			if (!stralloc_cats(&scandir,res.sa.s + res.live)) retstralloc(111,"tree_unsupervise") ;
-						
+									
 			char const *newargv[9 + genalloc_len(stralist,&tostop)] ;
 			unsigned int m = 0 ;
 			char fmt[UINT_FMT] ;
