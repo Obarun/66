@@ -37,23 +37,13 @@
 
 #include <s6/s6-supervise.h>
 
+static int empty = 0 ;
 static unsigned int RELOAD = 0 ;
 static unsigned int DEADLINE = 0 ;
 static char *SIG = "-U" ;
 
 static genalloc nclassic = GENALLOC_ZERO ; //resolve_t type
 static genalloc nrc = GENALLOC_ZERO ; //resolve_t type
-
-int svc_start(ssexec_t *info,genalloc *ga,char const *const *envp)
-{	
-	if (!svc_send(info,ga,SIG,envp))
-	{
-		VERBO1 strerr_warnwu1x("start services") ;
-		return 0 ;
-	}
-
-	return 1 ;
-}
 
 int svc_sanitize(ssexec_t *info,genalloc *ga, char const *const *envp)
 {
@@ -116,6 +106,7 @@ int svc_sanitize(ssexec_t *info,genalloc *ga, char const *const *envp)
 
 int rc_sanitize(ssexec_t *info,genalloc *ga, char const *const *envp)
 {
+	int r ;
 	stralloc sares = STRALLOC_ZERO ;
 	genalloc toreload = GENALLOC_ZERO ; //stralist
 		
@@ -126,7 +117,11 @@ int rc_sanitize(ssexec_t *info,genalloc *ga, char const *const *envp)
 	db[info->livetree.len + 1 + info->treename.len] = 0 ;
 	
 	if (!db_ok(info->livetree.s,info->treename.s))
-		if (!rc_init(info,ga,envp)) goto err ;
+	{
+		r = rc_init(info,envp) ;
+		if (!r) goto err ;
+		else if (r > 1) { empty = 1 ; goto end ; }
+	}
 	
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
 	{
@@ -168,13 +163,9 @@ int rc_sanitize(ssexec_t *info,genalloc *ga, char const *const *envp)
 			goto err ;
 		}
 	
-		if (!rc_send(info,&toreload,"-d",envp))
-		{
-			VERBO1 strerr_warnwu1x("stop services") ;
-			goto err ;
-		}
+		if (!rc_send(info,&toreload,"-d",envp)) goto err ;
 	}
-
+	end:
 	genalloc_deepfree(ss_resolve_t,&toreload,ss_resolve_free) ;
 	stralloc_free(&sares) ;
 	return 1 ;
@@ -195,12 +186,8 @@ int rc_start(ssexec_t *info,genalloc *ga,char const *const *envp)
 			strerr_diefu3x(111,"switch: ",info->treename.s," to source") ;
 	}
 	
-	if (!rc_send(info,ga,s,envp))
-	{
-		VERBO1 strerr_warnwu1x("start services") ;
-		return 0 ;
-	}
-
+	if (!rc_send(info,ga,s,envp)) return 0 ;
+	
 	return 1 ;
 }
 
@@ -218,7 +205,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 	genalloc gagen = GENALLOC_ZERO ; //ss_resolve_t	
 	ss_resolve_t_ref pres ;
 	
-	cl = rc = logname = 0 ;
+	cl = rc = logname = 0  ;
 	
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
@@ -249,9 +236,9 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 	{
 		char const *name = *argv ;
 		ss_resolve_t res = RESOLVE_ZERO ;
-		if (!ss_resolve_check(info,name,SS_RESOLVE_LIVE)) strerr_dief2x(110,name," is not enabled") ;
+		if (!ss_resolve_check(sares.s,name)) strerr_dief2x(110,name," is not enabled") ;
 		if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
-		if (!ss_resolve_add_deps(&gagen,&res,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
+		if (!ss_resolve_add_deps(&gagen,&res,sares.s)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
 		ss_resolve_free(&res) ;
 	}
 		
@@ -327,7 +314,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 		if(!svc_sanitize(info,&nclassic,envp)) 
 			strerr_diefu1x(111,"sanitize classic services list") ;
 		VERBO2 strerr_warni1x("start classic services list ...") ;
-		if(!svc_start(info,&nclassic,envp)) 
+		if (!svc_send(info,&nclassic,SIG,envp))
 			strerr_diefu1x(111,"start classic services list") ;
 		VERBO2 strerr_warni3x("switch classic service list of: ",info->treename.s," to source") ;
 		if (!svc_switch_to(info,SS_SWSRC))
@@ -340,13 +327,15 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 		VERBO2 strerr_warni1x("sanitize atomic services list...") ;
 		if (!rc_sanitize(info,&nrc,envp)) 
 			strerr_diefu1x(111,"sanitize atomic services list") ;
-		VERBO2 strerr_warni1x("start atomic services list ...") ;
-		if (!rc_start(info,&nrc,envp)) 
-			strerr_diefu1x(111,"start atomic services list ") ;
-		VERBO2 strerr_warni3x("switch atomic services list of: ",info->treename.s," to source") ;
-		if (!db_switch_to(info,envp,SS_SWSRC))
-			strerr_diefu3x(111,"switch atomic services list of: ",info->treename.s," to source") ;
-		
+		if (!empty)
+		{
+			VERBO2 strerr_warni1x("start atomic services list ...") ;
+			if (!rc_start(info,&nrc,envp)) 
+				strerr_diefu1x(111,"start atomic services list ") ;
+			VERBO2 strerr_warni3x("switch atomic services list of: ",info->treename.s," to source") ;
+			if (!db_switch_to(info,envp,SS_SWSRC))
+				strerr_diefu3x(111,"switch atomic services list of: ",info->treename.s," to source") ;
+		}
 		genalloc_deepfree(ss_resolve_t,&nrc,ss_resolve_free) ;
 	}
 
