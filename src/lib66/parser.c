@@ -316,13 +316,19 @@ static int deps_src(stralloc *newsrc, char const *name, char const *tree, unsign
 		if (!stralloc_obreplace(newsrc, home.s)) retstralloc(0,"deps_src") ;
 	}
 	
-	if (!ss_resolve_src(&tmpsrc,&sa,name,newsrc->s,&found)) 
+	r = ss_resolve_src(&tmpsrc,&sa,name,newsrc->s,&found) ; 
+	if (r < 0) strerr_diefu2sys(111,"parse source directory: ",newsrc->s) ;
+	if (!r)
 	{
 		if (!stralloc_obreplace(newsrc, SS_SERVICE_SYSDIR)) retstralloc(0,"deps_src") ;
-		if (!ss_resolve_src(&tmpsrc,&sa,name,newsrc->s,&found))
+		r = ss_resolve_src(&tmpsrc,&sa,name,newsrc->s,&found) ;
+		if (r < 0) strerr_diefu2sys(111,"parse source directory: ",newsrc->s) ;
+		if (!r)
 		{
 			if (!stralloc_obreplace(newsrc, SS_SERVICE_PACKDIR)) retstralloc(0,"deps_src") ;
-			if (!ss_resolve_src(&tmpsrc,&sa,name,newsrc->s,&found))
+			r = ss_resolve_src(&tmpsrc,&sa,name,newsrc->s,&found) ;
+			if (r < 0) strerr_diefu2sys(111,"parse source directory: ",newsrc->s) ;
+			if (!r)
 			{
 				VERBO3 strerr_warnwu2sys("find dependency ",name) ;
 				err = 0 ;
@@ -338,6 +344,7 @@ static int deps_src(stralloc *newsrc, char const *name, char const *tree, unsign
 		stralloc_free(&home) ;
 	return err ;
 }
+
 /** @Return 0 on fail
  * @Return 1 on success
  * @Return 2 service already added */

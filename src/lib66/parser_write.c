@@ -52,18 +52,16 @@ int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned 
 	char *name = keep.s+sv->cname.name ;
 	size_t namelen = strlen(name) ;
 	int type = sv->cname.itype ;
-
-	if (ss_resolve_check(info,name,SS_RESOLVE_LIVE)) 
+	
 	{
 		ss_resolve_t res = RESOLVE_ZERO ;
-		stralloc sares = STRALLOC_ZERO ;
-		if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1sys(111,"set revolve pointer to live") ;
-		if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
-		if (res.type != type) strerr_dief6x(111,"Detection of incompatible type format for: ",name," -- current: ",get_keybyid(type)," previous: ",get_keybyid(res.type)) ;
-		stralloc_free(&sares) ;
+		if (ss_resolve_check(workdir,name)) 
+		{
+			if (!ss_resolve_read(&res,workdir,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
+			if (res.type != type) strerr_dief6x(111,"Detection of incompatible type format for: ",name," -- current: ",get_keybyid(type)," previous: ",get_keybyid(res.type)) ;
+		}
 		ss_resolve_free(&res) ;
 	}
-	
 	
 	size_t wnamelen ;
 	char wname[workdirlen + SS_SVC_LEN + SS_SRC_LEN + namelen + 1 + 1] ;
