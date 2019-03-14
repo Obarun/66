@@ -88,15 +88,17 @@ extern int ss_resolve_pack(stralloc *sa,ss_resolve_t *res) ;
 extern int ss_resolve_write(ss_resolve_t *res,char const *dst,char const *name,int both) ;
 extern int ss_resolve_read(ss_resolve_t *res,char const *src,char const *name) ;
 extern void ss_resolve_free(ss_resolve_t *res) ;
-extern int ss_resolve_check(ssexec_t *info, char const *name,unsigned int where) ;
+extern int ss_resolve_check(char const *src, char const *name) ;
 extern int ss_resolve_setnwrite(sv_alltype *services,ssexec_t *info,char const *dst) ;
 extern int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst) ;
 extern int ss_resolve_rmfile(ss_resolve_t *res, char const *src,char const *name,int both) ;
-extern int ss_resolve_add_logger(genalloc *ga,ssexec_t *info) ;
 extern int ss_resolve_cmp(genalloc *ga,char const *name) ;
 extern void ss_resolve_setflag(ss_resolve_t *res,int flags,int flags_val) ;
-extern int ss_resolve_add_deps(genalloc *tokeep,ss_resolve_t *res, ssexec_t *info) ;
-extern int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res,ssexec_t *info) ;
+extern int ss_resolve_add_deps(genalloc *tokeep,ss_resolve_t *res, char const *src) ;
+extern int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src) ;
+extern int ss_resolve_add_logger(genalloc *ga,char const *src) ;
 extern int ss_resolve_copy(ss_resolve_t *dst,ss_resolve_t *res) ;
 extern int ss_resolve_append(genalloc *ga,ss_resolve_t *res) ;
+extern int ss_resolve_create_live(ssexec_t *info) ;
+
 #endif
