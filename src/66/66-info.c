@@ -400,10 +400,17 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	if (!r) retstralloc(0,"sv_args") ;
 	if (r < 0 ) strerr_dief3x(111,"live: ",live.s," must be an absolute path") ;
 	
+	char ownerstr[256] ;
+	size_t ownerlen = uid_fmt(ownerstr,MYUID) ;
+	ownerstr[ownerlen] = 0 ;
+	
 	size_t newlen ;
 	
 	if (!stralloc_copy(&src,&live)) goto err ;
-	if (!stralloc_cats(&src,"state/")) goto err ;
+	if (!stralloc_cats(&src,SS_STATE + 1)) goto err ;
+	if (!stralloc_cats(&src,"/")) goto err ;
+	if (!stralloc_cats(&src,ownerstr)) goto err ;
+	if (!stralloc_cats(&src,"/")) goto err ;
 	newlen = src.len ;
 	
 	if (!tname)
