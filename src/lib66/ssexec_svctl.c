@@ -353,14 +353,14 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		ss_resolve_t res = RESOLVE_ZERO ;
 		char const *name = *argv ;
 	
-		if (!ss_resolve_check(info,name,SS_RESOLVE_LIVE)) strerr_dief2sys(111,"unknow service: ",name) ;
+		if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(111,"unknow service or not initialized: ",name) ;
 		if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
 		if (res.type >= BUNDLE) strerr_dief3x(111,name," has type ",get_keybyid(res.type)) ;
 		if (SIGNAL <= SIGRR)
 		{
-			if (!ss_resolve_add_deps(&resdeps,&res,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
+			if (!ss_resolve_add_deps(&resdeps,&res,sares.s)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
 		}
-		else if (!ss_resolve_add_rdeps(&resdeps,&res,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
+		else if (!ss_resolve_add_rdeps(&resdeps,&res,sares.s)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
 		ss_resolve_free(&res) ;
 	}
 	genalloc_reverse(ss_resolve_t,&resdeps) ;
@@ -373,6 +373,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		size_t svoklen = strlen(svok) ;
 		char file[svoklen + 16 + 1] ;
 		memcpy(file,svok,svoklen) ;
+		if (!s6_svc_ok(svok)) strerr_dief2x(111,string + sv_signal.res.name," : is not initiated") ;
 		if (!s6_svstatus_read(svok,&status)) strerr_diefu2sys(111,"read status of: ",svok) ;
 		isup = status.pid && !status.flagfinishing ;
 			

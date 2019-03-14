@@ -73,18 +73,19 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 	if (!stralloc_cats(&dst,"/")) goto err ;
 	newlen = dst.len ;
 
-	if (!ss_resolve_add_rdeps(&rdeps,&cp,info))
+	if (!ss_resolve_add_rdeps(&rdeps,&cp,src))
 	{
 		VERBO1 strerr_warnwu2sys("resolve recursive dependencies of: ",name) ;
 		goto err ;
 	}
 	ss_resolve_free(&cp) ;
 	
-	if (!ss_resolve_add_logger(&rdeps,info))
+	if (!ss_resolve_add_logger(&rdeps,src))
 	{
 		VERBO1 strerr_warnwu1sys("resolve logger") ;
 		goto err ;
 	}
+	genalloc_reverse(ss_resolve_t,&rdeps) ;
 	for (;i < genalloc_len(ss_resolve_t,&rdeps) ; i++)
 	{
 		ss_resolve_t_ref pres = &genalloc_s(ss_resolve_t,&rdeps)[i] ;
@@ -180,7 +181,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 				cleanup(workdir.s) ;
 				strerr_dief1x(110,"logger detected - disabling is not allowed") ;
 		}
-		if (!ss_resolve_check(info,name,SS_RESOLVE_LIVE))
+		if (!ss_resolve_check(workdir.s,name))
 		{
 				cleanup(workdir.s) ;
 				strerr_dief2x(110,name," is not enabled") ;

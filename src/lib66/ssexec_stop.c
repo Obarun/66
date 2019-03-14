@@ -70,11 +70,7 @@ int svc_down(ssexec_t *info,genalloc *ga,char const *const *envp)
 	}
 	else
 	{
-		if (!svc_send(info,ga,SIG,envp))
-		{
-			VERBO1 strerr_warnwu1x("stop services") ;
-			goto err ;
-		}
+		if (!svc_send(info,ga,SIG,envp))goto err ;
 	}
 		
 	return 1 ;
@@ -182,11 +178,7 @@ int rc_down(ssexec_t *info,genalloc *ga,char const *const *envp)
 	}
 	else
 	{	
-		if (!rc_send(info,ga,"-d",envp))
-		{
-			VERBO1 strerr_warnwu1x("stop services") ;
-			goto err ;
-		}
+		if (!rc_send(info,ga,"-d",envp)) goto err ;
 	}
 	
 	stralloc_free(&sares) ;
@@ -243,14 +235,15 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 	{
 		char const *name = *argv ;
 		ss_resolve_t res = RESOLVE_ZERO ;
-		if (!ss_resolve_check(info,name,SS_RESOLVE_LIVE)) strerr_dief2x(110,name," is not enabled") ;
+		if (!ss_resolve_check(sares.s,name)) strerr_dief2x(110,name," is not enabled") ;
 		if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
-		if (!ss_resolve_add_rdeps(&gagen,&res,info)) strerr_diefu2sys(111,"resolve recursive dependencies of: ",name) ;
+		if (!ss_resolve_add_rdeps(&gagen,&res,sares.s)) strerr_diefu2sys(111,"resolve recursive dependencies of: ",name) ;
+		if (!ss_resolve_add_logger(&gagen,sares.s)) strerr_diefu1sys(111,"resolve logger") ;
 		ss_resolve_free(&res) ;
 	}
 		
 	stralloc_free(&sares) ;
-		
+	genalloc_reverse(ss_resolve_t,&gagen) ;
 	for(unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gagen) ; i++)
 	{
 		pres = &genalloc_s(ss_resolve_t,&gagen)[i] ;
@@ -313,7 +306,7 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 	{
 		VERBO2 strerr_warni1x("stop atomic services ...") ;
 		if (!rc_down(info,&nrc,envp))
-			strerr_diefu1x(111,"update atomic services") ;
+			strerr_diefu1x(111,"stop atomic services") ;
 		VERBO2 strerr_warni3x("switch atomic services of: ",info->treename.s," to source") ;
 		if (!db_switch_to(info,envp,SS_SWSRC))
 			strerr_diefu5x(111,"switch",info->livetree.s,"/",info->treename.s," to source") ;
@@ -326,7 +319,7 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 	{
 		VERBO2 strerr_warni1x("stop classic services ...") ;
 		if (!svc_down(info,&nclassic,envp))
-			strerr_diefu1x(111,"update classic services") ;
+			strerr_diefu1x(111,"stop classic services") ;
 		VERBO2 strerr_warni3x("switch classic services of: ",info->treename.s," to source") ;
 		if (!svc_switch_to(info,SS_SWSRC))
 			strerr_diefu3x(111,"switch classic service of: ",info->treename.s," to source") ;
