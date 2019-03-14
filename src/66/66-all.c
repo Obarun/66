@@ -60,20 +60,30 @@ static inline void info_help (void)
 }
 
 
-int doit(char const *tree,char const *treename,char const *live, unsigned int what, char const *const *envp)
+int doit(char const *tree,char const *treename,char const *live, unsigned int what,uid_t owner, char const *const *envp)
 {
 	int wstat ;
 	pid_t pid ; 
-	size_t treelen = strlen(tree) ;
+	
 	genalloc ga = GENALLOC_ZERO ; //stralist
 	
-	char src[treelen + SS_SVDIRS_LEN + SS_SVC_LEN + 1] ;
-	memcpy(src,tree,treelen) ;
-	memcpy(src + treelen, SS_SVDIRS,SS_SVDIRS_LEN) ;
-	memcpy(src + treelen +SS_SVDIRS_LEN, SS_SVC,SS_SVC_LEN) ;
-	src[treelen +SS_SVDIRS_LEN + SS_SVC_LEN] = 0 ;
+	char ownerstr[256] ;
+	size_t ownerlen = uid_fmt(ownerstr,owner) ;
+	ownerstr[ownerlen] = 0 ;
 	
-	if (!dir_get(&ga,src,"",S_IFDIR))
+	size_t livelen = strlen(live) - 1 ;
+	size_t treenamelen = strlen(treename) ;
+	char src[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + treenamelen + SS_RESOLVE_LEN + 1] ;
+	memcpy(src,live,livelen) ;
+	memcpy(src + livelen, SS_STATE,SS_STATE_LEN) ;
+	src[livelen + SS_STATE_LEN] = '/' ;
+	memcpy(src + livelen + SS_STATE_LEN + 1,ownerstr,ownerlen) ;
+	src[livelen + SS_STATE_LEN + 1 + ownerlen] = '/' ;
+	memcpy(src + livelen + SS_STATE_LEN + 1 + ownerlen + 1,treename,treenamelen) ;
+	memcpy(src + livelen + SS_STATE_LEN + 1 + ownerlen + 1 + treenamelen, SS_RESOLVE,SS_RESOLVE_LEN) ;
+	src[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + treenamelen + SS_RESOLVE_LEN] = 0 ;
+	
+	if (!dir_get(&ga,src,"",S_IFREG))
 	{
 		VERBO3 strerr_warnwu2x("find source of classic service for tree: ",treename) ;
 		goto err ;
@@ -81,12 +91,6 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 	if (!genalloc_len(stralist,&ga))
 	{
 		VERBO3 strerr_warni4x("no classic service for tree: ",treename," to ", what ? "start" : "stop") ;
-	}
-	/** add transparent Master to start the db*/
-	if (!stra_add(&ga,"Master"))
-	{
-		VERBO3 strerr_warnwu2x("add Master as service to ", what ? "start" : "stop") ;
-		goto err ;
 	}
 	
 	{
@@ -333,7 +337,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				
 		}
 		
-		if (!doit(tree.s,treename,live.s,what,envp)) strerr_diefu3x(111,(what) ? "start" : "stop" , " service for tree: ",treename) ;
+		if (!doit(tree.s,treename,live.s,what,owner,envp)) strerr_diefu3x(111,(what) ? "start" : "stop" , " service for tree: ",treename) ;
 	}
 	end:
 		if (shut)
