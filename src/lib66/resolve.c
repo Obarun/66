@@ -511,7 +511,7 @@ int ss_resolve_check(char const *src, char const *name)
 {
 	int r ;
 	size_t srclen = strlen(src) ;
-	char tmp[srclen + 1] ;
+	char tmp[srclen + SS_RESOLVE_LEN + 1] ;
 	memcpy(tmp,src,srclen) ;
 	memcpy(tmp + srclen, SS_RESOLVE,SS_RESOLVE_LEN) ;
 	tmp[srclen + SS_RESOLVE_LEN] = 0 ;
