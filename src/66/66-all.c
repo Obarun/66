@@ -83,14 +83,14 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 	memcpy(src + livelen + SS_STATE_LEN + 1 + ownerlen + 1 + treenamelen, SS_RESOLVE,SS_RESOLVE_LEN) ;
 	src[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + treenamelen + SS_RESOLVE_LEN] = 0 ;
 	
-	if (!dir_get(&ga,src,"",S_IFREG))
+	if (!dir_get(&ga,src,SS_MASTER+1,S_IFREG))
 	{
-		VERBO3 strerr_warnwu2x("find source of classic service for tree: ",treename) ;
+		VERBO3 strerr_warnwu2x("find source of service for tree: ",treename) ;
 		goto err ;
 	}
 	if (!genalloc_len(stralist,&ga))
 	{
-		VERBO3 strerr_warni4x("no classic service for tree: ",treename," to ", what ? "start" : "stop") ;
+		VERBO3 strerr_warni4x("no services for tree: ",treename," to ", what ? "start" : "stop") ;
 	}
 	
 	{
