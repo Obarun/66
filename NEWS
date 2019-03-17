@@ -1,5 +1,13 @@
 Changelog for 66
 
+In 0.0.2.0
+----------
+	- Bugs fix
+	- Add 66-tree -U options to unsupervise a tree from a scandir
+	- Rewrite 66-info to provide color and more informations
+	- Empty database cannot be initialized
+	- Respect /etc/66/sysadmin/service even for user
+
 In 0.0.1.1
 --------
 	
