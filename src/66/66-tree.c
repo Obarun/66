@@ -448,6 +448,7 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 	int r, wstat ;
 	pid_t pid ;
 	size_t treenamelen = strlen(treename) ;
+	size_t newlen ;
 	
 	genalloc nclassic = GENALLOC_ZERO ;
 	genalloc nrc = GENALLOC_ZERO ;
@@ -588,7 +589,16 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 			}
 		}
 		if (scandir_send_signal(scandir.s,"an") <= 0) strerr_diefu2sys(111,"reload scandir: ",scandir.s) ;
-		
+		if (dir_search(reslive.s,"init",S_IFREG)) 
+		{
+			newlen = reslive.len - 1 ;
+			reslive.len--; 
+			if (!stralloc_cats(&reslive,"/init")) retstralloc(111,"tree_unsupervise") ;
+			if (!stralloc_0(&reslive)) retstralloc(111,"tree_unsupervise") ;
+			if (rm_rf(reslive.s) < 0) strerr_diefu2sys(111,"remove: ",reslive.s) ;
+			reslive.len = newlen ;
+			if (!stralloc_0(&reslive)) retstralloc(111,"tree_unsupervise") ;
+		}
 		VERBO1 strerr_warni2x("Unsupervised successfully: ",treename) ;
 	}
 	else VERBO1 strerr_warni2x("Not supervised: ",treename) ;

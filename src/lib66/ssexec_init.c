@@ -100,7 +100,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 			genalloc_deepfree(stralist,&gasvc,stra_free) ;
 			goto follow ;
 		}
-				
+		
 		for (i = 0 ; i < genalloc_len(stralist,&gasvc) ; i++)
 		{
 			char *name = gaistr(&gasvc,i) ;
@@ -133,6 +133,8 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 				if (!file_create_empty(string + genalloc_s(ss_resolve_t,&gares)[i].runat,"earlier",0644)) strerr_diefu3sys(111,"mark ",string + genalloc_s(ss_resolve_t,&gares)[i].name," as earlier service") ;
 			}
 		}
+		/** live/state/uid/treename/state */
+		if (!file_write_unsafe(sares.s,"init","",0)) strerr_diefu2sys(111,"create init file of tree: ",info->treename.s) ;
 	}
 
 	follow:
@@ -156,7 +158,11 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	}else goto end ;
 	
 	if (!rc_init(info,envp)) strerr_diefu2sys(111,"initiate db of tree: ",info->treename.s) ;
-		
+	/** live/state/uid/treename/state */
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1x(111,"set revolve pointer to live") ;
+	if (!file_write_unsafe(sares.s,"init","",0)) strerr_diefu2sys(111,"create init file of tree: ",info->treename.s) ;
+	stralloc_free(&sares) ;
+	
 	end:
 	return 0 ;
 }
