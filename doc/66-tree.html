@@ -23,7 +23,7 @@
     
 <h2> Interface </h2>
 	<pre>
-	66-tree [ -h ] [ -v <em>verbosity</em> ] [ -n|R ] [ -a|d ] [ -c ] [ -E|D ] [ -C <em>clone</em> ] <em>tree</em>
+	66-tree [ -h ] [ -v <em>verbosity</em> ] [ -n|R ] [ -a|d ] [ -c ] [ -E|D ] [ -U ] [ -C <em>clone</em> ] <em>tree</em>
 	</pre>
 
 	<p>
@@ -82,7 +82,10 @@
 	 <li> 
 		<tt>-R&nbsp;</tt>&nbsp;: deletes <em>tree</em>. Can not be undone! This will completely remove the given tree
 		from the system! You will not be able
-		to retrieve any information of the deleted <em>tree</em> after deleting it.
+		to retrieve any information of the deleted <em>tree</em> after deleting it. Services currently running on <em>tree</em> will be bringed down before remove it. 
+	 </li>
+	  <li> 
+		<tt>-U&nbsp;</tt>&nbsp;: unsupervise <em>tree</em>. Bring down all services contained into the <em>tree</em> and remove the corresponding directory of the service from the scandir.
 	 </li>
 	 <!-- Rather just say "delete" right away. Shortcuts not always need to be explained with the literal word. It may cause the user to not read further and misinterpret the command as not critical. -->
 	 
