@@ -1,5 +1,11 @@
 Changelog for 66
 
+
+In 0.0.2.2
+----------
+
+	- Hot fix, do not stop an empty db
+
 In 0.0.2.1
 ----------
 	
