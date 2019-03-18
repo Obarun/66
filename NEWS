@@ -1,5 +1,10 @@
 Changelog for 66
 
+In 0.0.2.1
+----------
+	
+	- Hot fix, do not append inner bundle with empty word
+	
 In 0.0.2.0
 ----------
 	- Bugs fix
