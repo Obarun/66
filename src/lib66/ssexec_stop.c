@@ -153,6 +153,7 @@ int rc_down(ssexec_t *info,genalloc *ga,char const *const *envp)
 	
 	for (unsigned int i = 0; i < genalloc_len(ss_resolve_t,ga) ; i++)
 	{
+		printf("ici::%s\n",genalloc_s(ss_resolve_t,ga)->sa.s + genalloc_s(ss_resolve_t,ga)->name) ;
 		ss_resolve_t cp = RESOLVE_ZERO ;
 		if (!ss_resolve_copy(&cp,&genalloc_s(ss_resolve_t,ga)[i]))
 		{
@@ -254,6 +255,7 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 		memcpy(earlier,string + pres->runat,earlen) ;
 		memcpy(earlier + earlen,"/earlier",8) ;
 		earlier[earlen + 8] = 0 ;
+	
 		if (!access(earlier, F_OK))
 		{ 
 			pres->run = 1 ;
@@ -261,7 +263,11 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 		}
 		int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 		
-		if (obstr_equal(name,SS_MASTER + 1)) goto append ;
+		if (obstr_equal(name,SS_MASTER + 1))
+		{
+			if (pres->ndeps) goto append ;
+			else continue ;
+		}
 		/** special case, enabling->starting->stopping->disabling
 		 * make an orphan service.
 		 * check if it's the case and force to stop it*/
