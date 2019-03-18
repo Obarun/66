@@ -599,6 +599,12 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 			reslive.len = newlen ;
 			if (!stralloc_0(&reslive)) retstralloc(111,"tree_unsupervise") ;
 		}
+		/** remove /run/66/state/treename directory */
+		if (reslive.len && (scan_mode(reslive.s,S_IFDIR)))
+		{
+			VERBO2 strerr_warni3x("delete ",reslive.s," ..." ) ;
+			if (rm_rf(reslive.s) < 0) strerr_diefu2sys(111,"delete ",reslive.s) ;
+		}
 		VERBO1 strerr_warni2x("Unsupervised successfully: ",treename) ;
 	}
 	else VERBO1 strerr_warni2x("Not supervised: ",treename) ;
@@ -789,12 +795,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		VERBO2 strerr_warni6x("disable: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
 		r  = tree_cmd_state(VERBOSITY,"-d",tree) ;
 		if (r != 1) strerr_diefu6x(111,"delete: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
-		/** remove /run/66/state/treename directory */
-		if (reslive.len && (scan_mode(reslive.s,S_IFDIR)))
-		{
-			VERBO2 strerr_warni3x("delete ",reslive.s," ..." ) ;
-			if (rm_rf(reslive.s) < 0) strerr_diefu2sys(111,"delete ",reslive.s) ;
-		}
+		
 		VERBO1 strerr_warni2x("Deleted successfully: ",tree) ;
 	}
 	
