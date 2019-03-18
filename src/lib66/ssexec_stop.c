@@ -153,7 +153,6 @@ int rc_down(ssexec_t *info,genalloc *ga,char const *const *envp)
 	
 	for (unsigned int i = 0; i < genalloc_len(ss_resolve_t,ga) ; i++)
 	{
-		printf("ici::%s\n",genalloc_s(ss_resolve_t,ga)->sa.s + genalloc_s(ss_resolve_t,ga)->name) ;
 		ss_resolve_t cp = RESOLVE_ZERO ;
 		if (!ss_resolve_copy(&cp,&genalloc_s(ss_resolve_t,ga)[i]))
 		{
