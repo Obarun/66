@@ -28,7 +28,7 @@
 	</pre>
 <h3>Tree sub interface</h3>
 	<pre>
-	66-info [ -T ] [ -h help ] [ -v <em>verbosity</em> ] [ -r recurse ] [ -d <em>depth</em> ] <em>tree</em>
+	66-info [ -T ] [ -h help ] [ -v <em>verbosity</em> ] [ -l live ] [ -r recurse ] [ -d <em>depth</em> ] <em>tree</em>
 	</pre>
 <h3>Service sub interface</h3>
 	<pre>
@@ -62,7 +62,12 @@
 			error messages. <tt>2</tt>: Also print warning messages. 
 			<tt>3</tt>: Also print debugging messages.
 		 </li>
-		 
+		 <li> 
+			<tt>-l&nbsp;<em>live</em>&nbsp;</tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
+			also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
+			option to <tt>./configure</tt>. An existing absolute path is expected and
+			should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
+		</li>
 		 <li>
 			<tt>-r&nbsp;</tt>&nbsp;: shows the dependency graph of <em>tree</em> in reverse mode.
 		 </li>
@@ -103,18 +108,20 @@
 	</ul>
 	
 <h2>Tree output display example</h2>
-
+	
 	<p>The command <tt>66-info -T boot</tt> as root user on the <em>Obarun</em> default system displays the following where <em>boot</em>
 	is the tree used to properly boot the machine:
 	<pre>   
-	[Name:boot_backup-2019-02-28-40,Current:no,Enabled:no]
-	├─(250,classic) tty12
+	               boot           
+	Initialized: yes | Current: no
+	Contains:       | Enabled: no
+	├─(253,classic) tty12
 	├─(0,oneshot) filesystem
 	├─(0,oneshot) hostname
 	├─(0,bundle) 00
 	├─(0,oneshot) rofs-cgroups
 	├─(0,oneshot) rofs-kernmod
-	├─(419,longrun) udevd-udev
+	├─(421,longrun) udevd-udev
 	├─(0,oneshot) udevd-udevadm
 	├─(0,bundle) rofs-Udevd
 	├─(0,oneshot) rofs-console
@@ -144,11 +151,10 @@
 	├─(0,bundle) all-Rwfs
 	├─(0,oneshot) boot-extra
 	└─(0,bundle) All
-
 	</pre>
 	</p>
 	<p>By default the first service displayed is the first service started, the second one is the second started and so on.</p>
-	<p>The first line gives you useful information about the <em>tree</em> itself where <tt><em>Name</em></tt> is the name of the tree, 
+	<p>The first line give you the name of the <em>tree</em>, <tt><em>Initialized</em></tt> tells if the <tree>tree</tree> was initialized with <tt><a href="66-init.html">66-init</a></tt> tool, 
 		<tt><em>Current</em></tt> tells if the <em>tree</em> is the current one or not&mdash;see <tt><a href="66-tree.html">66-tree -c</a></tt> and
 		<tt><em>Enabled</em></tt> reveals the state of the tree&mdash;see <tt><a href="66-tree.html">66-tree -E</a></tt>.
 		For each service the first number found between '()' bracket is the corresponding pid of the service, the type of the service is shown next to it. Finally the name of the service is displayed.
@@ -163,46 +169,51 @@
 	<p>The command <tt>sudo 66-info -S -d3 00</tt> displays the following where <em>00</em> 
 	is the name of the service:
 	<pre>
-	[00]
+                       00            
 	on tree : boot
 	status : nothing to display
 	type : bundle
 	description : mount filesystem and set the hostname
-	source : /etc/66/service/boot
+	source : /etc/66/service/boot/
 	run at : /run/66/tree/0/boot/servicedirs/00
-	[contents:2]
-	└─(0,bundle) 00
-	  ├─(0,oneshot) filesystem
-	  └─(0,oneshot) hostname
+                   contents         
+	├─(0,oneshot) filesystem
+	└─(0,oneshot) hostname
+
 
 	</pre>
 	</p>
 	<p>Let's take another example, the command sudo <tt>66-info -S -p5 ntpd</tt> displays the following:
 	<pre> 
-	[ntpd]
+                       ntpd           
 	on tree : root
-	status : up (pid 808) 6386 seconds
+	status : up (pid 786) 2380 seconds
 	type : classic
 	description : ntpd daemon
 	source : /etc/66/service/
 	run at : /run/66/scandir/0/ntpd
+                   dependencies       
+	└─(785,classic) ntpd-log
+				 scripts          
 	start script : foreground { mkdir -p  -m 0755 ${RUNDIR} } 
 	execl-cmdline -s { ntpd ${CMD_ARGS} } 
-	[dependencies:1]
-	└─(808,classic) ntpd
-	  └─(807,classic) ntpd-log
+                  environment        
+	!RUNDIR=/run/openntpd
+	!CMD_ARGS=-d -s
+                    logger          
 	logger associated : ntpd-log
 	log destination : /var/log/66/ntpd 
 
-	2019-03-01 07:28:15.592154500  adjtimex returns frequency of 0.000000ppm
-	2019-03-01 07:28:15.601109500  ntp engine ready
-	2019-03-01 07:28:15.770395500  adjtimex adjusted frequency by 16.428986ppm
-	2019-03-01 07:28:15.770433500  set local clock to Fri Mar  1 07:28:15 +11 2019 (offset 0.000000s)
+	2019-03-18 06:50:21.749572500  adjtimex returns frequency of 0.000000ppm
+	2019-03-18 06:50:21.764241500  ntp engine ready
+	2019-03-18 06:50:21.847440500  adjtimex adjusted frequency by 16.428986ppm
+	2019-03-18 06:50:21.847479500  set local clock to Mon Mar 18 06:50:21 +11 2019 (offset 0.000000s)
+
 	</pre>
 	<p> In our case :
 	<ul>
 		<li>
-			<tt>[ntpd]&nbsp;</tt>&nbsp;: name of the service.
+			<tt>ntpd&nbsp;</tt>&nbsp;: name of the service. Main section where general informations is displayed.
 		</li>
 		<li>
 			<tt>on tree&nbsp;</tt>&nbsp;: service enable on tree root.
@@ -220,13 +231,22 @@
 			<tt>source&nbsp;</tt>&nbsp;: origin of the frontend service file used to enable the service.
 		</li>
 		<li>
-			<tt>runat&nbsp;</tt>&nbsp;: location of the service into the scandir.
+			<tt>run at&nbsp;</tt>&nbsp;: location of the service into the scandir.
+		</li>
+		<li>
+			<tt>dependencies</tt>&nbsp;: dependencies informations section. This section will display a graphical tree on the service dependencies.
+		</li>
+		<li>
+			<tt>scripts</tt>&nbsp;: scripts informations section. This will display the command executed at start and stop process.
 		</li>
 		<li>
 			<tt>start script&nbsp;</tt>&nbsp;: command line executed at start process. If a stop section was set an additionnal field called stop script will be displayed with the corresponding command line executed at stop process.
 		</li>
 		<li>
-			<tt>[dependencies:number]&nbsp;</tt>&nbsp;: number of direct dependencies of the service followed by the dependencies graph.
+			<tt>environment</tt>&nbsp;: environment informations section. Display the environment variables set at <tt>/etc/66/conf/<service_name></tt> or <tt>$HOME/.66/conf/<service_name></tt> depending of the owner of the process.
+		</li>
+		<li>
+			<tt>logger</tt>&nbsp;: logger informations section.
 		</li>
 		<li>
 			<tt>logger associated&nbsp;</tt>&nbsp;: name of the service logger.
@@ -234,7 +254,11 @@
 		<li>
 			<tt>log destination&nbsp;</tt>&nbsp;: destination of the logger file.
 		</li>
+		<li>
+			the last part display the last 5 line of the logger file.
+		</li>
 	</ul>
 	</p>
+	<p>Note: <tt>66-info</tt> use color to output the informations, the previous examples do not reflect the veritable output concerning the colors.</p>
 </body>
 </html>

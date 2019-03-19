@@ -125,14 +125,13 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	}
 	
 	if (argc < 1) exitusage(usage_enable) ;
-	
-	
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1sys(111,"set revolve pointer to source") ;
+		
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;
 	
 	for(;*argv;argv++)
 	{
 		check_identifier(*argv) ;
-		if (ss_resolve_check(info,*argv,SS_RESOLVE_LIVE))
+		if (ss_resolve_check(sares.s,*argv))
 		{
 			if (!ss_resolve_read(&res,sares.s,*argv)) strerr_diefu2sys(111,"read resolve file of: ",*argv) ;
 			if (res.disen && !FORCE)
@@ -142,17 +141,21 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 			}
 		}
 		unsigned int found = 0 ;
-		if (!ss_resolve_src(&gasrc,&sasrc,*argv,src,&found))
+		r = ss_resolve_src(&gasrc,&sasrc,*argv,src,&found) ;
+		if (r < 0) strerr_diefu2sys(111,"parse source directory: ",src) ;
+		if (!r)
 		{
 			src = SS_SERVICE_SYSDIR ;
-			if (!ss_resolve_src(&gasrc,&sasrc,*argv,src,&found))
+			r = ss_resolve_src(&gasrc,&sasrc,*argv,src,&found) ;
+			if (r < 0) strerr_diefu2sys(111,"parse source directory: ",src) ;
+			if (!r)
 			{
 				src = SS_SERVICE_PACKDIR ;
-				if (!ss_resolve_src(&gasrc,&sasrc,*argv,src,&found))
-					strerr_dief2sys(110,"unknow service: ",*argv) ;
+				r = ss_resolve_src(&gasrc,&sasrc,*argv,src,&found) ;
+				if (r < 0) strerr_diefu2sys(111,"parse source directory: ",src) ;
+				if (!r)	strerr_dief2sys(110,"unknow service: ",*argv) ;
 			}
 		}
-		
 	}
 	ss_resolve_free(&res) ;
 	stralloc_free(&sares) ;
@@ -211,28 +214,21 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 			cleanup(workdir.s) ;
 			strerr_diefu2x(111,"resolve source of graph for tree: ",info->treename.s) ;
 		}
-		if (r < 0)
+		if (!graph_build(&g,&sagraph,&tokeep,workdir.s))
 		{
-			if (!stra_add(&master,"")) retstralloc(111,"main") ;
+			cleanup(workdir.s) ;
+			strerr_diefu1x(111,"make dependencies graph") ;
 		}
-		else 
+		if (graph_sort(&g) < 0)
 		{
-			if (!graph_build(&g,&sagraph,&tokeep,workdir.s))
-			{
-				cleanup(workdir.s) ;
-				strerr_diefu1x(111,"make dependencies graph") ;
-			}
-			if (graph_sort(&g) < 0)
-			{
-				cleanup(workdir.s) ;
-				strerr_dief1x(111,"cyclic graph detected") ;
-			}
-			
-			if (!graph_master(&master,&g))
-			{
-				cleanup(workdir.s) ;
-				strerr_dief1x(111,"find master service") ;
-			}
+			cleanup(workdir.s) ;
+			strerr_dief1x(111,"cyclic graph detected") ;
+		}
+		
+		if (!graph_master(&master,&g))
+		{
+			cleanup(workdir.s) ;
+			strerr_dief1x(111,"find master service") ;
 		}
 		genalloc_reverse(stralist,&master) ;
 		if (!db_write_master(info,&master,workdir.s,SS_SIMPLE))
@@ -293,7 +289,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 		
 		newargv[m++] = 0 ;
 		
-		if (!ssexec_start(nargc,newargv,envp,info))
+		if (ssexec_start(nargc,newargv,envp,info))
 		{
 			genalloc_deepfree(stralist,&tostart,stra_free) ;
 			return 111 ;

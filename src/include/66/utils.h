@@ -35,9 +35,6 @@ extern unsigned int VERBOSITY ;
 #define MYGID getgid()
 #define YOURGID(passto,owner) yourgid(passto,owner)
 
-
-extern int dir_cmpndel(char const *src, char const *dst,char const *exclude) ;
-
 /** get_uidgid.c */
 extern int youruid(uid_t *passto,char const *owner) ;
 extern int yourgid(gid_t *passto,uid_t owner) ;

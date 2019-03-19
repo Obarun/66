@@ -15,86 +15,67 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
 #include <oblibs/string.h>
-#include <oblibs/types.h>
-#include <oblibs/directory.h>
-#include <oblibs/stralist.h>
 
-#include <skalibs/buffer.h>
-#include <skalibs/types.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/unix-transactional.h>
-#include <skalibs/selfpipe.h>
-#include <skalibs/sig.h>
 
 #include <s6/s6-supervise.h>//s6_svc_ok
-#include <s6/config.h>
 
-
-#include <66/tree.h>
 #include <66/db.h>
 #include <66/config.h>
 #include <66/utils.h>
 #include <66/constants.h>
-#include <66/enum.h>
 #include <66/svc.h>
 #include <66/rc.h>
-#include <66/backup.h>
 #include <66/ssexec.h>
 #include <66/resolve.h>
-
-#include <stdio.h>
-
 
 static unsigned int DEADLINE = 0 ;
 static unsigned int UNSUP = 0 ;
 static char *SIG = "-D" ;
-static stralloc sares = STRALLOC_ZERO ;
+
 static genalloc nclassic = GENALLOC_ZERO ;//ss_resolve_t
 static genalloc nrc = GENALLOC_ZERO ;//ss_resolve_t
 
 int svc_down(ssexec_t *info,genalloc *ga,char const *const *envp)
 {
 	genalloc tounsup = GENALLOC_ZERO ; //stralist
-	ss_resolve_t_ref pres ;
-	
+		
 	for (unsigned int i = 0; i < genalloc_len(ss_resolve_t,ga) ; i++)
 	{
-		pres = &genalloc_s(ss_resolve_t,ga)[i] ;
-		char *name = pres->sa.s + pres->name ; 
-		if (pres->unsupervise) 
-		{	
-			if (!genalloc_append(ss_resolve_t,&tounsup,pres))
-			{
-				VERBO1 strerr_warnwu3x("add: ",name," on genalloc") ;
-				goto err ;
-			}
+		ss_resolve_t cp = RESOLVE_ZERO ;
+		if (!ss_resolve_copy(&cp,&genalloc_s(ss_resolve_t,ga)[i]))
+		{
+			VERBO1 strerr_warnwu1sys("copy resolve file") ;
+			goto err ;
 		}
+		if (cp.unsupervise) 
+		{	
+			if (!ss_resolve_append(&tounsup,&cp)) goto err ;
+		}
+		ss_resolve_free(&cp) ;
 	}
 	
 	if (genalloc_len(ss_resolve_t,&tounsup))
 	{
 		UNSUP = 1 ;
-		if (!svc_unsupervise(info,&tounsup,SIG,envp)) return 0 ;
+		if (!svc_unsupervise(info,&tounsup,SIG,envp)) goto err ;
+		genalloc_deepfree(ss_resolve_t,&tounsup,ss_resolve_free) ;
 	}
 	else
 	{
-		if (!svc_send(info,ga,SIG,envp))
-		{
-			VERBO1 strerr_warnwu1x("stop services") ;
-			goto err ;
-		}
-	}			
+		if (!svc_send(info,ga,SIG,envp))goto err ;
+	}
 		
-	genalloc_free(ss_resolve_t,&tounsup) ;
 	return 1 ;
 	err: 
-		genalloc_free(ss_resolve_t,&tounsup) ;
+		genalloc_deepfree(ss_resolve_t,&tounsup,ss_resolve_free) ;
 		return 0 ;
 }
 
@@ -152,6 +133,7 @@ int rc_unsupervise(ssexec_t *info, genalloc *ga,char const *sig,char const *cons
 		VERBO1 strerr_warni2x("Unsupervised successfully: ",name) ;
 	}
 	
+	stralloc_free(&sares) ;
 	return 1 ;
 	err:
 		stralloc_free(&sares) ;
@@ -160,27 +142,29 @@ int rc_unsupervise(ssexec_t *info, genalloc *ga,char const *sig,char const *cons
 
 int rc_down(ssexec_t *info,genalloc *ga,char const *const *envp)
 {
+	stralloc sares = STRALLOC_ZERO ;
 	genalloc tounsup = GENALLOC_ZERO ; //stralist
-	ss_resolve_t_ref pres ;
-	
+		
 	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE))
 	{
-		VERBO1 strerr_warnwu1sys("set revolve pointer to source") ;
+		VERBO1 strerr_warnwu1sys("set revolve pointer to live") ;
 		return 0 ;
 	}
 	
 	for (unsigned int i = 0; i < genalloc_len(ss_resolve_t,ga) ; i++)
 	{
-		pres = &genalloc_s(ss_resolve_t,ga)[i] ;
-		char *name = pres->sa.s + pres->name ; 
-		if (pres->unsupervise) 
-		{	
-			if (!genalloc_append(ss_resolve_t,&tounsup,pres))
-			{
-				VERBO1 strerr_warnwu3x("add: ",name," on genalloc") ;
-				goto err ;
-			}
+		ss_resolve_t cp = RESOLVE_ZERO ;
+		if (!ss_resolve_copy(&cp,&genalloc_s(ss_resolve_t,ga)[i]))
+		{
+			VERBO1 strerr_warnwu1sys("copy resolve file") ;
+			goto err ;
 		}
+		
+		if (cp.unsupervise) 
+		{	
+			if (!ss_resolve_append(&tounsup,&cp)) goto err ;
+		}
+		ss_resolve_free(&cp) ;
 	}
 	if (genalloc_len(ss_resolve_t,&tounsup))
 	{
@@ -190,33 +174,32 @@ int rc_down(ssexec_t *info,genalloc *ga,char const *const *envp)
 			VERBO1 strerr_warnwu1x("stop services") ;
 			goto err ;
 		}
+		genalloc_deepfree(ss_resolve_t,&tounsup,ss_resolve_free) ;
 	}
 	else
 	{	
-		if (!rc_send(info,ga,"-d",envp))
-		{
-			VERBO1 strerr_warnwu1x("bring down services") ;
-			goto err ;
-		}
+		if (!rc_send(info,ga,"-d",envp)) goto err ;
 	}
 	
-	if (!UNSUP) genalloc_free(ss_resolve_t,&tounsup) ;
+	stralloc_free(&sares) ;
 	return 1 ;
 	err: 
-		genalloc_free(ss_resolve_t,&tounsup) ;
+		genalloc_deepfree(ss_resolve_t,&tounsup,ss_resolve_free) ;
+		stralloc_free(&sares) ;
 		return 0 ;
 }
 
 int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
 	// be sure that the global var are set correctly
+	DEADLINE = 0 ;
 	UNSUP = 0 ;
 	SIG = "-D" ;
-	sares.len = 0 ;
-	
+		
 	if (info->timeout) DEADLINE = info->timeout ;
 	
 	int cl, rc, sigopt, mainunsup ;
+	stralloc sares = STRALLOC_ZERO ;
 	genalloc gagen = GENALLOC_ZERO ; //ss_resolve_t
 	ss_resolve_t_ref pres ;
 	
@@ -246,83 +229,89 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 	
 	if ((scandir_ok(info->scandir.s)) !=1 ) strerr_dief3sys(111,"scandir: ", info->scandir.s," is not running") ;
 	
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1sys(111,"set revolve pointer to source") ;
+		
+	for (;*argv;argv++)
 	{
-		if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1sys(111,"set revolve pointer to source") ;
-		
-		for (;*argv;argv++)
-		{
-			char const *name = *argv ;
-			ss_resolve_t res = RESOLVE_ZERO ;
-			if (!ss_resolve_check(info,name,SS_RESOLVE_LIVE)) strerr_dief2x(110,name," is not enabled") ;
-			else if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
-			if (!genalloc_append(ss_resolve_t,&gagen,&res)) strerr_diefu3x(111,"add: ",name," on genalloc") ;
-			if (!ss_resolve_add_rdeps(&gagen,&res,info)) strerr_diefu2sys(111,"resolve recursive dependencies of: ",name) ;
-		}
-		
-		stralloc_free(&sares) ;
-		
-		for(unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gagen) ; i++)
-		{
-			pres = &genalloc_s(ss_resolve_t,&gagen)[i] ;
-			char const *string = pres->sa.s ;
-			char const *name = string + pres->name ;
-			size_t earlen = strlen(string + pres->runat) ;
-			char earlier[earlen + 8 +1] ;
-			memcpy(earlier,string + pres->runat,earlen) ;
-			memcpy(earlier + earlen,"/earlier",8) ;
-			earlier[earlen + 8] = 0 ;
-			if (!access(earlier, F_OK))
-			{ 
-				pres->run = 1 ;
-				unlink_void(earlier) ;
-			}
-			int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-			
-			if (obstr_equal(name,SS_MASTER + 1)) goto run ;
-			/** special case, enabling->starting->stopping->disabling
-			 * make an orphan service.
-			 * check if it's the case and force to stop it*/
-			if (!pres->run && pres->disen) strerr_dief2x(110,name," : is not running, try 66-start before") ;
-			if (!pres->unsupervise && !pres->disen) strerr_dief2x(110,name," : is not enabled") ;
-			
-			/** always check if the daemon is present or not into the scandir
-			 * it can be stopped from different manner (crash,66-scandir signal,..)
-			 * without changing the corresponding resolve file */
-			if (pres->type == LONGRUN || pres->type == CLASSIC)
-			{
-				if (!s6_svc_ok(string + pres->runat)) strerr_dief2x(110,name," : is not running") ;
-			}
-			/** logger cannot be unsupervised alone */
-			if (logname > 0)
-			{
-				if (UNSUP && (!ss_resolve_cmp(&gagen,string + pres->logassoc))) strerr_dief1x(111,"logger detected - unsupervise request is not allowed") ;
-			}
-			if (UNSUP) pres->unsupervise = 1 ;
-			if (UNSUP && pres->type >= BUNDLE && !pres->unsupervise)
-			{
-				VERBO1 strerr_warnw2x(get_keybyid(pres->type)," detected - ignoring unsupervise request") ;
-				pres->unsupervise = 0 ;
-			}
-			run:		
-			if (pres->type == CLASSIC)
-			{
-				if (!genalloc_append(ss_resolve_t,&nclassic,pres)) strerr_diefu3x(111,"add: ",name," on genalloc") ;
-				cl++ ;
-			}
-			else
-			{
-				if (!genalloc_append(ss_resolve_t,&nrc,pres)) strerr_diefu3x(111,"add: ",name," on genalloc") ;
-				rc++;
-			}
-		}
+		char const *name = *argv ;
+		ss_resolve_t res = RESOLVE_ZERO ;
+		if (!ss_resolve_check(sares.s,name)) strerr_dief2x(110,name," is not enabled") ;
+		if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
+		if (!ss_resolve_add_rdeps(&gagen,&res,sares.s)) strerr_diefu2sys(111,"resolve recursive dependencies of: ",name) ;
+		if (!ss_resolve_add_logger(&gagen,sares.s)) strerr_diefu1sys(111,"resolve logger") ;
+		ss_resolve_free(&res) ;
 	}
 		
+	stralloc_free(&sares) ;
+	genalloc_reverse(ss_resolve_t,&gagen) ;
+	for(unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gagen) ; i++)
+	{
+		pres = &genalloc_s(ss_resolve_t,&gagen)[i] ;
+		char const *string = pres->sa.s ;
+		char const *name = string + pres->name ;
+		size_t earlen = strlen(string + pres->runat) ;
+		char earlier[earlen + 8 +1] ;
+		memcpy(earlier,string + pres->runat,earlen) ;
+		memcpy(earlier + earlen,"/earlier",8) ;
+		earlier[earlen + 8] = 0 ;
+	
+		if (!access(earlier, F_OK))
+		{ 
+			pres->run = 1 ;
+			unlink_void(earlier) ;
+		}
+		int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
+		
+		if (obstr_equal(name,SS_MASTER + 1))
+		{
+			if (pres->ndeps) goto append ;
+			else continue ;
+		}
+		/** special case, enabling->starting->stopping->disabling
+		 * make an orphan service.
+		 * check if it's the case and force to stop it*/
+		if (!pres->run && pres->disen) strerr_dief2x(110,name," : is not running, try 66-start before") ;
+		if (!pres->unsupervise && !pres->disen) strerr_dief2x(110,name," : is not enabled") ;
+		
+		/** always check if the daemon is present or not into the scandir
+		 * it can be stopped from different manner (crash,66-scandir signal,..)
+		 * without changing the corresponding resolve file */
+		if (pres->type == LONGRUN || pres->type == CLASSIC)
+		{
+			if (!s6_svc_ok(string + pres->runat)) strerr_dief2x(110,name," : is not running") ;
+		}
+		/** logger cannot be unsupervised alone */
+		if (logname > 0)
+		{
+			if (UNSUP && (!ss_resolve_cmp(&gagen,string + pres->logassoc))) strerr_dief1x(111,"logger detected - unsupervise request is not allowed") ;
+		}
+		if (UNSUP) pres->unsupervise = 1 ;
+		if (UNSUP && pres->type >= BUNDLE && !pres->unsupervise)
+		{
+			VERBO1 strerr_warnw2x(get_keybyid(pres->type)," detected - ignoring unsupervise request") ;
+			pres->unsupervise = 0 ;
+		}
+		append:		
+		if (pres->type == CLASSIC)
+		{
+			if (!ss_resolve_append(&nclassic,pres)) strerr_diefu3x(111,"add: ",name," on genalloc") ;
+			cl++ ;
+		}
+		else
+		{
+			if (!ss_resolve_append(&nrc,pres)) strerr_diefu3x(111,"add: ",name," on genalloc") ;
+			rc++;
+		}
+	}
+	
+	genalloc_deepfree(ss_resolve_t,&gagen,ss_resolve_free) ;
+	
 	/** rc work */
 	if (rc)
 	{
 		VERBO2 strerr_warni1x("stop atomic services ...") ;
 		if (!rc_down(info,&nrc,envp))
-			strerr_diefu1x(111,"update atomic services") ;
+			strerr_diefu1x(111,"stop atomic services") ;
 		VERBO2 strerr_warni3x("switch atomic services of: ",info->treename.s," to source") ;
 		if (!db_switch_to(info,envp,SS_SWSRC))
 			strerr_diefu5x(111,"switch",info->livetree.s,"/",info->treename.s," to source") ;
@@ -335,7 +324,7 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 	{
 		VERBO2 strerr_warni1x("stop classic services ...") ;
 		if (!svc_down(info,&nclassic,envp))
-			strerr_diefu1x(111,"update classic services") ;
+			strerr_diefu1x(111,"stop classic services") ;
 		VERBO2 strerr_warni3x("switch classic services of: ",info->treename.s," to source") ;
 		if (!svc_switch_to(info,SS_SWSRC))
 			strerr_diefu3x(111,"switch classic service of: ",info->treename.s," to source") ;

@@ -83,6 +83,7 @@ static pid_t send(genalloc *gasv, char const *livetree, char const *signal,char 
 
 int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
+	DEADLINE = 0 ;
 	
 	if (info->timeout) DEADLINE = info->timeout ;
 
@@ -97,7 +98,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	genalloc resdeps = GENALLOC_ZERO ; //ss_resolve_t
 	genalloc toreload = GENALLOC_ZERO ;//ss_resolve_t
 	stralloc tmp = STRALLOC_ZERO ;
-	stralloc src = STRALLOC_ZERO ;
+	stralloc sares = STRALLOC_ZERO ;
 	
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	
@@ -131,15 +132,15 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	if (down) signal = "-d" ;
 	else signal = "-u" ;
 
-	if (!ss_resolve_pointo(&src,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1sys(111,"set revolve pointer to live") ;
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1sys(111,"set revolve pointer to live") ;
 	
 	if (argc < 1)
 	{
 		unsigned int i = 0 ;
 		genalloc tmp = GENALLOC_ZERO ;
 		ss_resolve_t res = RESOLVE_ZERO ;
-		if (!ss_resolve_check(info,mainsv,SS_RESOLVE_LIVE)) strerr_dief1sys(111,"inner bundle doesn't exit -- please make a bug report") ;
-		if (!ss_resolve_read(&res,src.s,mainsv)) strerr_diefu1sys(111,"read resolve file of inner bundle") ;
+		if (!ss_resolve_check(sares.s,mainsv)) strerr_dief1sys(111,"inner bundle doesn't exit -- please make a bug report") ;
+		if (!ss_resolve_read(&res,sares.s,mainsv)) strerr_diefu1sys(111,"read resolve file of inner bundle") ;
 		if (res.ndeps)
 		{
 			if (!clean_val(&tmp,res.sa.s + res.deps)) strerr_dief1sys(111,"retrieve dependencies of inner bundle") ;
@@ -147,10 +148,11 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			{
 				ss_resolve_t dres = RESOLVE_ZERO ;
 				char *name = gaistr(&tmp,i) ;
-				if (!ss_resolve_check(info,name,SS_RESOLVE_LIVE)) strerr_dief2sys(110,"unknow service: ",name) ;
-				if (!ss_resolve_read(&dres,src.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
-				if (!genalloc_append(ss_resolve_t,&resdeps,&dres)) strerr_diefu1sys(111,"append genalloc") ;
-				if (reload) if (!genalloc_append(ss_resolve_t,&toreload,&dres)) strerr_diefu1sys(111,"append genalloc") ;
+				if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(110,"unknow service: ",name) ;
+				if (!ss_resolve_read(&dres,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
+				if (!ss_resolve_append(&resdeps,&dres)) strerr_diefu1sys(111,"append resolve") ;
+				if (reload) if (!ss_resolve_append(&toreload,&dres)) strerr_diefu1sys(111,"append resolve") ;
+				ss_resolve_free(&dres) ;
 			}
 		}
 		else
@@ -169,22 +171,23 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		{
 			ss_resolve_t res = RESOLVE_ZERO ;
 			char const *name = *argv ;
-			if (!ss_resolve_check(info,name,SS_RESOLVE_LIVE)) strerr_dief2sys(110,"unknow service: ",name) ;
-			if (!ss_resolve_read(&res,src.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
+			if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(110,"unknow service: ",name) ;
+			if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
 			if (res.type == CLASSIC) strerr_dief2x(111,name," has type classic") ;
 			
 			if (up)
 			{
-				if (!ss_resolve_add_deps(&resdeps,&res,info)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
+				if (!ss_resolve_add_deps(&resdeps,&res,sares.s)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
 			}
 			else 
-			{
-				if (!ss_resolve_add_rdeps(&resdeps,&res,info)) strerr_diefu2sys(111,"resolve recursive dependencies of: ",name) ;
+			{ 
+				if (!ss_resolve_add_rdeps(&resdeps,&res,sares.s)) strerr_diefu2sys(111,"resolve recursive dependencies of: ",name) ;
 			}
 			if (reload)
 			{
-				if (!ss_resolve_add_rdeps(&toreload,&res,info)) strerr_diefu2sys(111,"resolve recursive dependencies of: ",name) ;
+				if (!ss_resolve_add_rdeps(&toreload,&res,sares.s)) strerr_diefu2sys(111,"resolve recursive dependencies of: ",name) ;
 			}
+			ss_resolve_free(&res) ;
 		}
 		
 	}	
@@ -203,7 +206,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		if (waitpid_nointr(pid,&wstat, 0) < 0)
 			strerr_diefu1sys(111,"wait for s6-rc") ;
 		
-		if (wstat) strerr_diefu2x(111,down ? " stop " : " start ","services list") ;
+		if (wstat) strerr_diefu1x(111," stop services list") ;
 	}
 		
 	pid = send(&resdeps,tmp.s,signal,envp) ;
@@ -255,7 +258,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		ss_resolve_setflag(pres,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 		ss_resolve_setflag(pres,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
 		VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-		if (!ss_resolve_write(pres,src.s,name,writein))
+		if (!ss_resolve_write(pres,sares.s,name,writein))
 		{
 			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
 			ret = 111 ;
@@ -265,9 +268,9 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	
 	freed:
 	stralloc_free(&tmp) ;	
-	stralloc_free(&src) ;
+	stralloc_free(&sares) ;
 	genalloc_deepfree(ss_resolve_t,&resdeps,ss_resolve_free) ;
-	genalloc_free(ss_resolve_t,&toreload) ;
+	genalloc_deepfree(ss_resolve_t,&toreload,ss_resolve_free) ;
 	
 	return ret ;
 }

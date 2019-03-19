@@ -185,6 +185,11 @@ int tree_copy_tmp(char const *workdir, ssexec_t *info)
 	
 	r = scan_mode(saresolve.s,S_IFDIR) ;
 	if (r < 0) strerr_dief2x(111,resolve," conflicting format") ;
+	if (r)
+	{
+		if (rm_rf(saresolve.s) <0) goto err ;
+		r = 0 ;
+	}
 	if (!r)
 	{
 		saresolve.len = newlen ;

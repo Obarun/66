@@ -355,6 +355,10 @@ int db_write_master(ssexec_t *info, genalloc *ga, char const *dir,int both)
 {
 	int r ;
 	
+	char ownerstr[256] ;
+	size_t ownerlen = uid_fmt(ownerstr,info->owner) ;
+	ownerstr[ownerlen] = 0 ;
+	
 	stralloc in = STRALLOC_ZERO ;
 	stralloc inres = STRALLOC_ZERO ;
 	ss_resolve_t res = RESOLVE_ZERO ;
@@ -377,12 +381,14 @@ int db_write_master(ssexec_t *info, genalloc *ga, char const *dir,int both)
 	dst[dirlen + SS_DB_LEN + SS_SRC_LEN + SS_MASTER_LEN] = 0 ;
 	
 	size_t livelen = info->live.len - 1 ; 
-	char resolve[livelen + SS_STATE_LEN + 1 + info->treename.len + 1] ;
+	char resolve[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len + 1] ;
 	memcpy(resolve,info->live.s,livelen) ;
 	memcpy(resolve + livelen, SS_STATE,SS_STATE_LEN) ;
-	resolve[livelen + SS_STATE_LEN] = '/' ;
-	memcpy(resolve + livelen + SS_STATE_LEN + 1,info->treename.s,info->treename.len) ;
-	resolve[livelen + SS_STATE_LEN + 1 + info->treename.len] = 0 ;
+	resolve[livelen+ SS_STATE_LEN] = '/' ;
+	memcpy(resolve + livelen + SS_STATE_LEN + 1,ownerstr,ownerlen) ;
+	resolve[livelen + SS_STATE_LEN + 1 + ownerlen] = '/' ;
+	memcpy(resolve + livelen + SS_STATE_LEN + 1 + ownerlen + 1,info->treename.s,info->treename.len) ;
+	resolve[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len] = 0 ;
 	
 	for (unsigned int i = 0 ; i < genalloc_len(stralist,ga); i++)
 	{

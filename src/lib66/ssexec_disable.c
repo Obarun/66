@@ -56,28 +56,36 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 	unsigned int i = 0 ;
 	genalloc rdeps = GENALLOC_ZERO ;
 	stralloc dst = STRALLOC_ZERO ;
+	ss_resolve_t cp = RESOLVE_ZERO ;
 	size_t newlen ;
-	
 	char *name = res->sa.s + res->name ;
+	if (!ss_resolve_copy(&cp,res))
+	{
+		VERBO1 strerr_warnwu1sys("copy resolve file") ;
+		goto err ;
+	}
 	if (!stralloc_cats(&dst,src)) goto err ;
-	if (res->type == CLASSIC)
+	if (cp.type == CLASSIC)
 	{
 		if (!stralloc_cats(&dst,SS_SVC)) goto err ;
 	}
 	else if (!stralloc_cats(&dst,SS_DB SS_SRC)) retstralloc(0,"remove_sv") ;
 	if (!stralloc_cats(&dst,"/")) goto err ;
 	newlen = dst.len ;
-	
-	if (!ss_resolve_add_rdeps(&rdeps,res,info))
+
+	if (!ss_resolve_add_rdeps(&rdeps,&cp,src))
 	{
 		VERBO1 strerr_warnwu2sys("resolve recursive dependencies of: ",name) ;
 		goto err ;
 	}
-	if (!ss_resolve_add_logger(&rdeps,info))
+	ss_resolve_free(&cp) ;
+	
+	if (!ss_resolve_add_logger(&rdeps,src))
 	{
 		VERBO1 strerr_warnwu1sys("resolve logger") ;
 		goto err ;
 	}
+	genalloc_reverse(ss_resolve_t,&rdeps) ;
 	for (;i < genalloc_len(ss_resolve_t,&rdeps) ; i++)
 	{
 		ss_resolve_t_ref pres = &genalloc_s(ss_resolve_t,&rdeps)[i] ;
@@ -106,13 +114,16 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 			goto err ;
 		}
 		if (!ss_resolve_cmp(tostop,name))
-			if (!genalloc_append(ss_resolve_t,tostop,pres)) goto err ;
+			if (!ss_resolve_append(tostop,pres)) goto err ;
 	}
-
+	
+	genalloc_deepfree(ss_resolve_t,&rdeps,ss_resolve_free) ;
 	stralloc_free(&dst) ;
 	return 1 ;
 	
 	err:
+		ss_resolve_free(&cp) ;
+		genalloc_deepfree(ss_resolve_t,&rdeps,ss_resolve_free) ;
 		stralloc_free(&dst) ;
 		return 0 ;
 }
@@ -164,14 +175,13 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 				cleanup(workdir.s) ;
 				strerr_dief1x(110,"nice try peon") ;
 		}
-		ss_resolve_init(&res) ;
 		logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 		if (logname > 0)
 		{
 				cleanup(workdir.s) ;
 				strerr_dief1x(110,"logger detected - disabling is not allowed") ;
 		}
-		if (!ss_resolve_check(info,name,SS_RESOLVE_LIVE))
+		if (!ss_resolve_check(workdir.s,name))
 		{
 				cleanup(workdir.s) ;
 				strerr_dief2x(110,name," is not enabled") ;
@@ -185,6 +195,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 		if (!res.disen)
 		{
 			VERBO1 strerr_warni2x(name,": is already disabled") ;
+			ss_resolve_free(&res) ;
 			continue ;
 		}
 		if (!svc_remove(&tostop,&res,workdir.s,info))
@@ -194,6 +205,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 		}
 		if (res.type == CLASSIC) nclassic++ ;
 		else nlongrun++ ;
+		ss_resolve_free(&res) ;
 	}
 	
 	if (nclassic)
@@ -214,32 +226,21 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 			cleanup(workdir.s) ;
 			strerr_diefu2x(111,"resolve source of graph for tree: ",info->treename.s) ;
 		}
-		if (r < 0)
+		if (!graph_build(&g,&sagraph,&tokeep,workdir.s))
 		{
-			if (!stra_add(&master,""))
-			{
-				cleanup(workdir.s) ;
-				retstralloc(111,"main") ;
-			}
+			cleanup(workdir.s) ;
+			strerr_diefu1x(111,"make dependencies graph") ;
 		}
-		else 
+		if (graph_sort(&g) < 0)
 		{
-			if (!graph_build(&g,&sagraph,&tokeep,workdir.s))
-			{
-				cleanup(workdir.s) ;
-				strerr_diefu1x(111,"make dependencies graph") ;
-			}
-			if (graph_sort(&g) < 0)
-			{
-				cleanup(workdir.s) ;
-				strerr_dief1x(111,"cyclic graph detected") ;
-			}
-			
-			if (!graph_master(&master,&g))
-			{
-				cleanup(workdir.s) ;
-				strerr_dief1x(111,"find master service") ;
-			}
+			cleanup(workdir.s) ;
+			strerr_dief1x(111,"cyclic graph detected") ;
+		}
+		
+		if (!graph_master(&master,&g))
+		{
+			cleanup(workdir.s) ;
+			strerr_dief1x(111,"find master service") ;
 		}
 		genalloc_reverse(stralist,&master) ;
 		if (!db_write_master(info,&master,workdir.s,SS_SIMPLE))
