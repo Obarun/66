@@ -80,7 +80,7 @@ char const *get_keybyid(key_enum_t key)
 			//logger
 			(key == PRODUCER ) ? "producer-for" :
 			(key == CONSUMER ) ? "consumer-for" :
-			"unknow" ;
+			"unknown" ;
 }
 
 ssize_t get_enumbyid(char const *str, key_enum_t key_el)

@@ -153,7 +153,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 				src = SS_SERVICE_PACKDIR ;
 				r = ss_resolve_src(&gasrc,&sasrc,*argv,src,&found) ;
 				if (r < 0) strerr_diefu2sys(111,"parse source directory: ",src) ;
-				if (!r)	strerr_dief2sys(110,"unknow service: ",*argv) ;
+				if (!r)	strerr_dief2sys(110,"unknown service: ",*argv) ;
 			}
 		}
 	}

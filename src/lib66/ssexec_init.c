@@ -105,7 +105,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 		{
 			char *name = gaistr(&gasvc,i) ;
 			ss_resolve_t tmp = RESOLVE_ZERO ;
-			if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(110,"unknow service: ",name) ;
+			if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(110,"unknown service: ",name) ;
 			if (!ss_resolve_read(&tmp,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
 			if (!ss_resolve_add_deps(&gares,&tmp,sares.s)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;	
 			ss_resolve_free(&tmp) ;

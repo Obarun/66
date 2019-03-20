@@ -114,7 +114,7 @@ int rc_init(ssexec_t *info, char const *const *envp)
 	{
 		char *name = gaistr(&gasvc,i) ;
 		ss_resolve_t tmp = RESOLVE_ZERO ;
-		if (!ss_resolve_check(sares.s,name)){ VERBO1 strerr_warnw2sys("unknow service: ",name) ; goto err ; }
+		if (!ss_resolve_check(sares.s,name)){ VERBO1 strerr_warnw2sys("unknown service: ",name) ; goto err ; }
 		if (!ss_resolve_read(&tmp,sares.s,name)) { VERBO1 strerr_warnwu2sys("read resolve file of: ",name) ; goto err ; }
 		if (!ss_resolve_add_deps(&gares,&tmp,sares.s)) { VERBO1 strerr_warnwu2sys("resolve dependencies of: ",name) ; goto err ; }
 		ss_resolve_free(&tmp) ;

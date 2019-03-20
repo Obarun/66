@@ -410,7 +410,7 @@ void parse_err(int ierr,int idsec,int idkey)
 			strerr_warnw4x("key : ",get_keybyid(idkey)," : must be set in section : ",get_keybyid(idsec)) ;
 			break ;
 		default:
-			strerr_warnw1x("unknow parse_err number") ;
+			strerr_warnw1x("unknown parse_err number") ;
 			break ;
 	}
 }
@@ -764,7 +764,7 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			}
 			break ;
 		default:
-			VERBO3 strerr_warnw2x("unknow key: ",get_keybyid(nocheck->idkey)) ;
+			VERBO3 strerr_warnw2x("unknown key: ",get_keybyid(nocheck->idkey)) ;
 			return 0 ;
 	}
 	
@@ -813,7 +813,7 @@ int keep_runfinish(sv_exec *exec,keynocheck *nocheck)
 			
 			break ;
 		default:
-			VERBO3 strerr_warnw2x("unknow key: ",get_keybyid(nocheck->idkey)) ;
+			VERBO3 strerr_warnw2x("unknown key: ",get_keybyid(nocheck->idkey)) ;
 			return 0 ;
 		}
 
@@ -893,7 +893,7 @@ int keep_logger(sv_execlog *log,keynocheck *nocheck)
 			log->timestamp = r ;
 			break ;
 		default:
-			VERBO3 strerr_warnw2x("unknow key: ",get_keybyid(nocheck->idkey)) ;
+			VERBO3 strerr_warnw2x("unknown key: ",get_keybyid(nocheck->idkey)) ;
 			return 0 ;
 	}
 	

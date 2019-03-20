@@ -474,7 +474,7 @@ int tree_args(int argc, char const *const *argv)
 	if (!stralloc_0(&src)) goto err ;
 	
 	if (todisplay)
-		if (!dir_search(src.s,argv[0],S_IFDIR)) strerr_dief2x(110,"unknow tree: ",argv[0]) ;
+		if (!dir_search(src.s,argv[0],S_IFDIR)) strerr_dief2x(110,"unknown tree: ",argv[0]) ;
 	
 	if (!dir_get(&gatree, src.s,SS_BACKUP + 1, S_IFDIR)) goto err ;
 	if (genalloc_len(stralist,&gatree))
@@ -645,7 +645,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 
 	if (!found)
 	{
-		strerr_warnw2x("unknow service: ",svname) ;
+		strerr_warnw2x("unknown service: ",svname) ;
 		goto err ;
 	}
 	else if (found > 1)

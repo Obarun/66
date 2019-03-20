@@ -499,7 +499,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			}
 			break;
 		default:
-			VERBO3 strerr_warnw2x("unknow build value: ",get_keybyid(logbuild)) ;
+			VERBO3 strerr_warnw2x("unknown build value: ",get_keybyid(logbuild)) ;
 			return 0 ;
 	
 	}
@@ -770,7 +770,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 			}
 			break ;
 		default:
-			VERBO3 strerr_warnw3x("unknow ", get_keybyid(exec->build)," build type") ;
+			VERBO3 strerr_warnw3x("unknown ", get_keybyid(exec->build)," build type") ;
 			break ;
 	}
 	/** close uid */

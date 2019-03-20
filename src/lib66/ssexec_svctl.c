@@ -353,7 +353,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		ss_resolve_t res = RESOLVE_ZERO ;
 		char const *name = *argv ;
 	
-		if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(111,"unknow service or not initialized: ",name) ;
+		if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(111,"unknown service or not initialized: ",name) ;
 		if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
 		if (res.type >= BUNDLE) strerr_dief3x(111,name," has type ",get_keybyid(res.type)) ;
 		if (SIGNAL <= SIGRR)

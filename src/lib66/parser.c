@@ -780,7 +780,7 @@ int get_keystyle(keynocheck *nocheck)
 				}
 				break ;
 			default:
-				VERBO3 strerr_warnw2x("unknow format : ",get_keybyid(nocheck->expected)) ;
+				VERBO3 strerr_warnw2x("unknown format : ",get_keybyid(nocheck->expected)) ;
 				return 0 ;
 		}
 
@@ -898,7 +898,7 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 		default:
 			/*VERBO3
 			{
-				strerr_warnw2x("unknow mandatory type: ",get_keybyid(list[idsec].list[idkey].mandatory)) ; 
+				strerr_warnw2x("unknown mandatory type: ",get_keybyid(list[idsec].list[idkey].mandatory)) ; 
 				//return 0 ;
 			}*/
 			break ;
@@ -999,7 +999,7 @@ int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service)
 			case SKIP:
 				break ;
 			default:
-				VERBO3 strerr_warnw1x("unknow action") ;
+				VERBO3 strerr_warnw1x("unknown action") ;
 				return 0 ;
 			}
 	}

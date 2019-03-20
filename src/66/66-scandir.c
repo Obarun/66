@@ -110,7 +110,7 @@ static inline unsigned int parse_signal (char const *signal)
     0
   } ;
   unsigned int i = lookup(signal_table, signal) ;
-  if (!signal_table[i]) strerr_dief2x(111,"unknow signal: ",signal) ;
+  if (!signal_table[i]) strerr_dief2x(111,"unknown signal: ",signal) ;
   return i ;
 }
 

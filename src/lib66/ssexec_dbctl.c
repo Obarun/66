@@ -148,7 +148,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			{
 				ss_resolve_t dres = RESOLVE_ZERO ;
 				char *name = gaistr(&tmp,i) ;
-				if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(110,"unknow service: ",name) ;
+				if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(110,"unknown service: ",name) ;
 				if (!ss_resolve_read(&dres,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
 				if (!ss_resolve_append(&resdeps,&dres)) strerr_diefu1sys(111,"append resolve") ;
 				if (reload) if (!ss_resolve_append(&toreload,&dres)) strerr_diefu1sys(111,"append resolve") ;
@@ -171,7 +171,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		{
 			ss_resolve_t res = RESOLVE_ZERO ;
 			char const *name = *argv ;
-			if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(110,"unknow service: ",name) ;
+			if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(110,"unknown service: ",name) ;
 			if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
 			if (res.type == CLASSIC) strerr_dief2x(111,name," has type classic") ;
 			

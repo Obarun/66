@@ -74,7 +74,7 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 
 	if (type < CLASSIC || type > ONESHOT)
 	{
-		VERBO3 strerr_warnw1x("unknow type for backup_switcher") ;
+		VERBO3 strerr_warnw1x("unknown type for backup_switcher") ;
 		return -1 ;
 	}
 	tree = *argv ;
