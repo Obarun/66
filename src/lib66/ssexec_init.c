@@ -37,8 +37,6 @@
 #include <66/ssexec.h>
 #include <66/rc.h>
 
-
-
 int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
 	int r, db, classic, earlier ;
@@ -85,14 +83,11 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	memcpy(svdir + svdirlen, SS_SVC ,SS_SVC_LEN) ;
 	svdir[svdirlen +  SS_SVC_LEN] = 0 ;
 	
-	if (!ss_resolve_create_live(info)) strerr_diefu1sys(111,"create live state") ;
-		
-	/** svc already initiated */
+	/** svc already initiated? */
 	if (classic)
 	{
 		int i ;
-		if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1x(111,"set revolve pointer to live") ;
-		if (!dir_cmp(svdir,info->scandir.s,"",&gasvc)) strerr_diefu4x(111,"compare ",svdir," to ",info->scandir.s) ;
+		if (!dir_get(&gasvc,svdir,"",S_IFDIR)) strerr_diefu1x(111,"get classic services") ;
 		if (!genalloc_len(stralist,&gasvc))
 		{
 			VERBO1 strerr_warni2x("Initialization aborted -- no classic services into tree: ",info->treename.s) ;
@@ -100,6 +95,9 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 			genalloc_deepfree(stralist,&gasvc,stra_free) ;
 			goto follow ;
 		}
+		
+		if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) 
+			strerr_diefu1x(111,"set revolve pointer to live") ;
 		
 		for (i = 0 ; i < genalloc_len(stralist,&gasvc) ; i++)
 		{
@@ -118,6 +116,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 		}
 		else
 		{
+			if (!ss_resolve_create_live(info)) strerr_diefu1sys(111,"create live state") ;
 			dirlen = strlen(svdir) ;
 			for (i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
 			{
@@ -131,10 +130,9 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 				tocopy[dirlen + 1 + namelen] = 0 ;
 				if (!hiercopy(tocopy,string + genalloc_s(ss_resolve_t,&gares)[i].runat)) strerr_diefu4sys(111,"to copy: ",tocopy," to: ",string + genalloc_s(ss_resolve_t,&gares)[i].runat) ;
 				if (!file_create_empty(string + genalloc_s(ss_resolve_t,&gares)[i].runat,"earlier",0644)) strerr_diefu3sys(111,"mark ",string + genalloc_s(ss_resolve_t,&gares)[i].name," as earlier service") ;
+				VERBO1 strerr_warni2x("Initialized successfully: ",name) ;
 			}
 		}
-		/** live/state/uid/treename/state */
-		if (!file_write_unsafe(sares.s,"init","",0)) strerr_diefu2sys(111,"create init file of tree: ",info->treename.s) ;
 	}
 
 	follow:
@@ -151,17 +149,13 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 		{
 			if (db_ok(info->livetree.s,info->treename.s))
 			{
-				VERBO1 strerr_warni3x("db of tree: ",info->treename.s," already initiated") ;
+				VERBO1 strerr_warni3x("db of tree: ",info->treename.s," already initialized") ;
 				goto end ;
 			}
 		}else strerr_dief3x(110,"scandir: ",info->scandir.s," is not running") ;
 	}else goto end ;
 	
 	if (!rc_init(info,envp)) strerr_diefu2sys(111,"initiate db of tree: ",info->treename.s) ;
-	/** live/state/uid/treename/state */
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1x(111,"set revolve pointer to live") ;
-	if (!file_write_unsafe(sares.s,"init","",0)) strerr_diefu2sys(111,"create init file of tree: ",info->treename.s) ;
-	stralloc_free(&sares) ;
 	
 	end:
 	return 0 ;
