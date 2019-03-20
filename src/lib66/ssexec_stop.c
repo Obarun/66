@@ -64,6 +64,7 @@ int svc_down(ssexec_t *info,genalloc *ga,char const *const *envp)
 	
 	if (genalloc_len(ss_resolve_t,&tounsup))
 	{
+		genalloc_reverse(ss_resolve_t,&tounsup) ;
 		UNSUP = 1 ;
 		if (!svc_unsupervise(info,&tounsup,SIG,envp)) goto err ;
 		genalloc_deepfree(ss_resolve_t,&tounsup,ss_resolve_free) ;
