@@ -1005,9 +1005,6 @@ int ss_resolve_add_logger(genalloc *ga,char const *src)
 int ss_resolve_create_live(ssexec_t *info)
 {
 	int r ;
-	char ownerstr[256] ;
-	size_t ownerlen = uid_fmt(ownerstr,info->owner) ;
-	ownerstr[ownerlen] = 0 ;
 	gid_t gidowner ;
 	if (!yourgid(&gidowner,info->owner)) return 0 ;
 	stralloc sares = STRALLOC_ZERO ;
@@ -1037,7 +1034,9 @@ int ss_resolve_create_live(ssexec_t *info)
 		
 		if (!hiercopy(ressrc.s,resdst.s)) goto err ;
 	}
-	
+	/** live/state/uid/treename/init file */
+	if (!file_write_unsafe(sares.s,"init","",0)) goto err ;
+
 	stralloc_free(&ressrc) ;
 	stralloc_free(&resdst) ;
 	stralloc_free(&sares) ;
