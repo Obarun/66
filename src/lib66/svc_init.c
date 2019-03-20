@@ -68,6 +68,11 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 		logname = 0 ;
 		char *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
 		char *name = string + genalloc_s(ss_resolve_t,ga)[i].name ;
+		if (s6_svc_ok(string + genalloc_s(ss_resolve_t,ga)[i].runat))
+		{
+			VERBO1 strerr_warni3x("Initialization aborted -- ",name," already initialized") ;
+			continue ;
+		}
 		logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 		if (logname > 0) name = string + genalloc_s(ss_resolve_t,ga)[i].logassoc ;
 		
@@ -98,6 +103,7 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 				goto err ;
 			}
 		}
+		
 		/** if logger you need to copy again the real path */
 		svscanlen = strlen(string + genalloc_s(ss_resolve_t,ga)[i].runat) ;
 		memcpy(svscan,string + genalloc_s(ss_resolve_t,ga)[i].runat,svscanlen) ;
@@ -154,42 +160,45 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 		}
 		if (!genalloc_append(uint16_t, &ids, &id)) goto err ;
 	}
-	VERBO3 strerr_warnt2x("reload scandir: ",info->scandir.s) ;
-	if (scandir_send_signal(info->scandir.s,"an") <= 0) 
+	if (genalloc_len(uint16_t,&ids))
 	{
-		VERBO3 strerr_warnwu2sys("reload scandir: ",info->scandir.s) ;
-		goto err ;
-	}
-		
-	VERBO3 strerr_warnt1x("waiting for events on fifo") ;
-	if (ftrigr_wait_and_g(&fifo, genalloc_s(uint16_t, &ids), genalloc_len(uint16_t, &ids), &deadline) < 0)
-			goto err ;
-	
-	for (unsigned int i = 0 ; i < genalloc_len(stralist,&gadown) ; i++)
-	{
-		VERBO3 strerr_warnt2x("Delete down file at: ",gaistr(&gadown,i)) ;
-		if (unlink(gaistr(&gadown,i)) < 0 && errno != ENOENT) goto err ;
-	}
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE))		
-	{
-		VERBO3 strerr_warnwu1x("set revolve pointer to live") ;
-		goto err ;
-	}
-	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
-	{
-		char const *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
-		char const *name = string + genalloc_s(ss_resolve_t,ga)[i].name  ;
-		ss_resolve_setflag(&genalloc_s(ss_resolve_t,ga)[i],SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-		ss_resolve_setflag(&genalloc_s(ss_resolve_t,ga)[i],SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
-		VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-		if (!ss_resolve_write(&genalloc_s(ss_resolve_t,ga)[i],sares.s,name,writein))
+		VERBO3 strerr_warnt2x("reload scandir: ",info->scandir.s) ;
+		if (scandir_send_signal(info->scandir.s,"an") <= 0) 
 		{
-			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
+			VERBO3 strerr_warnwu2sys("reload scandir: ",info->scandir.s) ;
 			goto err ;
 		}
-		VERBO1 strerr_warni2x("Initialized successfully: ",name) ;
+	
+	
+		VERBO3 strerr_warnt1x("waiting for events on fifo") ;
+		if (ftrigr_wait_and_g(&fifo, genalloc_s(uint16_t, &ids), genalloc_len(uint16_t, &ids), &deadline) < 0)
+				goto err ;
+	
+		for (unsigned int i = 0 ; i < genalloc_len(stralist,&gadown) ; i++)
+		{
+			VERBO3 strerr_warnt2x("Delete down file at: ",gaistr(&gadown,i)) ;
+			if (unlink(gaistr(&gadown,i)) < 0 && errno != ENOENT) goto err ;
+		}
+		if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE))		
+		{
+			VERBO3 strerr_warnwu1x("set revolve pointer to live") ;
+			goto err ;
+		}
+		for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
+		{
+			char const *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
+			char const *name = string + genalloc_s(ss_resolve_t,ga)[i].name  ;
+			ss_resolve_setflag(&genalloc_s(ss_resolve_t,ga)[i],SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+			ss_resolve_setflag(&genalloc_s(ss_resolve_t,ga)[i],SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
+			VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
+			if (!ss_resolve_write(&genalloc_s(ss_resolve_t,ga)[i],sares.s,name,writein))
+			{
+				VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
+				goto err ;
+			}
+			VERBO1 strerr_warni2x("Initialized successfully: ",name) ;
+		}
 	}
-			
 	ftrigr_end(&fifo) ;
 	genalloc_deepfree(stralist,&gadown,stra_free) ;
 	genalloc_free(uint16_t, &ids) ;
