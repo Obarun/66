@@ -20,7 +20,6 @@
 #include <66/constants.h>
 #include <66/db.h>
 #include <66/enum.h>
-#include <66/graph.h>
 #include <66/parser.h>
 #include <66/resolve.h>
 #include <66/ssexec.h>
