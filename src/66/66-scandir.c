@@ -678,7 +678,7 @@ int create_scandir(char const *live, char const *scandir, char const *scanname, 
 	{
 		if (!write_bootlog(live, scan, scanname)) return 0 ;
 	}
-	else if (!write_log(scan,scanname)) return 0 ;
+	//else if (!write_log(scan,scanname)) return 0 ;
 	
 	stralloc_free(&contents) ;
 	
