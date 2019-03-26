@@ -16,6 +16,7 @@
 
 #include <string.h>
 #include <sys/stat.h>
+//#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -37,8 +38,6 @@
 #include <s6/s6-supervise.h>
 #include <s6-rc/s6rc-servicedir.h>
 #include <s6-rc/s6rc-constants.h>
-
-#include <stdio.h>
 
 #define USAGE "66-tree [ -h ] [ -v verbosity ] [ -n|R ] [ -a|d ] [ -c ] [ -E|D ] [ -U ] [ -C clone ] tree" 
 
@@ -213,7 +212,7 @@ int create_tree(char const *tree,char const *treename)
 	newlen = treelen ;
 	dst[newlen] = 0 ;
 	
-	res.name = ss_resolve_add_string(&res,"Master") ;
+	res.name = ss_resolve_add_string(&res,SS_MASTER+1) ;
 	res.description = ss_resolve_add_string(&res,"inner bundle - do not use it") ;
 	res.tree = ss_resolve_add_string(&res,dst) ;
 	res.treename = ss_resolve_add_string(&res,treename) ;
@@ -256,10 +255,10 @@ int create_tree(char const *tree,char const *treename)
 		return 0 ;
 	}
 	
-	VERBO3 strerr_warnt1x("write resolve file of: Master") ;
-	if (!ss_resolve_write(&res,dst,"Master",SS_SIMPLE))
+	VERBO3 strerr_warnt1x("write resolve file of inner bundle") ;
+	if (!ss_resolve_write(&res,dst,SS_MASTER+1,SS_SIMPLE))
 	{
-		VERBO3 strerr_warnwu1sys("write resolve file of: Master") ;
+		VERBO3 strerr_warnwu1sys("write resolve file of inner bundle") ;
 		ss_resolve_free(&res) ;
 		return 0 ;
 	}
@@ -452,13 +451,14 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 	
 	genalloc nclassic = GENALLOC_ZERO ;
 	genalloc nrc = GENALLOC_ZERO ;
-	genalloc gasv = GENALLOC_ZERO ; //stralist
+	
 	stralloc dtree = STRALLOC_ZERO ;
 	stralloc livetree = STRALLOC_ZERO ;
 	stralloc live = STRALLOC_ZERO ;
 	stralloc realsym = STRALLOC_ZERO ;
 	stralloc scandir = STRALLOC_ZERO ;
-	ss_resolve_t res = RESOLVE_ZERO ;
+	ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
+	ss_resolve_t_ref pres ;
 	
 	char prefix[treenamelen + 2] ;
 	memcpy(prefix,treename,treenamelen) ;
@@ -467,100 +467,115 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 	
 	if (!stralloc_cats(&dtree,tree)) retstralloc(111,"tree_unsupervise") ;
 	if (!stralloc_cats(&dtree,SS_SVDIRS)) retstralloc(111,"tree_unsupervise") ;
+	newlen = dtree.len ;
+	if (!stralloc_cats(&dtree,SS_RESOLVE)) retstralloc(111,"tree_unsupervise") ;
 	if (!stralloc_0(&dtree)) retstralloc(111,"tree_unsupervise") ;
 	
-	/** we don't now the live directory because a tree do not depends of the live
+	/** we don't now the live directory because a tree do not depends of a live directory
 	 * we need to check every resolve file to find the resolve live flag*/
-	if (!graph_type_src(&gasv,dtree.s,2)) strerr_diefu1sys(111,"find services") ;
-	/** should be always true because of Master existence at least*/
 	
-	for (unsigned int i = 0 ; i < genalloc_len(stralist,&gasv) ; i++) 
 	{
-		if (!ss_resolve_read(&res,dtree.s,gaistr(&gasv,i))) strerr_diefu2sys(111,"read resolve file of: ",gaistr(&gasv,i)) ;
-		if (res.type == CLASSIC && res.run) 
+		genalloc gatmp = GENALLOC_ZERO ;
+		if (!dir_get(&gatmp,dtree.s,SS_MASTER+1,S_IFREG)) strerr_diefu2x(111,"get resolve file of tree: ",treename) ;
+		dtree.len = newlen ;
+		if (!stralloc_0(&dtree)) retstralloc(111,"tree_unsupervise") ;
+		ss_resolve_t res = RESOLVE_ZERO ;
+		for (unsigned int i = 0 ; i < genalloc_len(stralist,&gatmp) ; i++)
 		{
-			if (!stra_add(&nclassic,gaistr(&gasv,i))) strerr_diefu3sys(111,"add: ",gaistr(&gasv,i)," as service to handle") ;
+			char *name = gaistr(&gatmp,i) ;
+			if (!ss_resolve_check(dtree.s,name)) strerr_diefu2x(111,"get resolve file of: ",name) ;
+			if (!ss_resolve_read(&res,dtree.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
+			if (!ss_resolve_graph_build(&graph,&res,dtree.s,0)) strerr_diefu2sys(111,"build graph dependencies of tree: ", treename) ;
 		}
-		else if (res.type >= BUNDLE && res.run)
+		ss_resolve_free(&res) ;
+		genalloc_deepfree(stralist,&gatmp,stra_free) ;
+	}
+	//if (!ss_resolve_graph_src(&graph,dtree.s,0,2)) strerr_diefu2x(111,"resolve source of graph for tree: ",treename) ;
+	/** should be always true because of Master existence at least*/
+	r= ss_resolve_graph_publish(&graph,0) ;
+	if (r <= 0) 
+	{
+		if (r < 0) strerr_dief1x(110,"cyclic graph detected") ;
+		strerr_diefu1sys(111,"publish service graph") ;
+	}
+	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&graph.sorted) ; i++) 
+	{
+		pres = &genalloc_s(ss_resolve_t,&graph.sorted)[i] ;
+		char *string = pres->sa.s ;
+		char *name = string + pres->name ;
+		if (pres->type == CLASSIC && pres->run) 
+		{
+			if (!stra_add(&nclassic,name)) strerr_diefu2sys(111,"append services selection with: ",name) ;
+		}
+		else if (pres->type >= BUNDLE && pres->run)
 		{ 
-			if (!stra_add(&nrc,gaistr(&gasv,i))) strerr_diefu3sys(111,"add: ",gaistr(&gasv,i)," as service to handle") ;
+			if (!stra_add(&nrc,name)) strerr_diefu2sys(111,"append services selection with: ",name) ;
 		}
-		if (res.live && !reslive.len)
+		
+		if (pres->live && !reslive.len)
 		{
-			if (!stralloc_cats(&live,res.sa.s + res.live)) retstralloc(111,"tree_unsupervise") ;
+			if (!stralloc_cats(&live,pres->sa.s + pres->live)) retstralloc(111,"tree_unsupervise") ;
 			if (!stralloc_0(&live)) retstralloc(111,"tree_unsupervise") ;
-			if (!stralloc_cats(&scandir,res.sa.s + res.live)) retstralloc(111,"tree_unsupervise") ;
+			if (!stralloc_cats(&scandir,pres->sa.s + pres->live)) retstralloc(111,"tree_unsupervise") ;
 			if (!stralloc_0(&scandir)) retstralloc(111,"tree_unsupervise") ;
-			if (!stralloc_cats(&livetree,res.sa.s + res.live)) retstralloc(111,"tree_unsupervise") ;
+			if (!stralloc_cats(&livetree,pres->sa.s + pres->live)) retstralloc(111,"tree_unsupervise") ;
 			if (!stralloc_0(&livetree)) retstralloc(111,"tree_unsupervise") ;
-			if (!stralloc_cats(&reslive,res.sa.s + res.resolve)) retstralloc(111,"tree_unsupervise") ;
+			if (!stralloc_cats(&reslive,pres->sa.s + pres->resolve)) retstralloc(111,"tree_unsupervise") ;
 			if (!stralloc_0(&reslive)) retstralloc(111,"tree_unsupervise") ;
 		}
 	}
-	genalloc_deepfree(stralist,&gasv,stra_free) ;
-	/** db can be empty but Master is should be found,
-	 * res.live can be empty if any rc service was enabled.
-	 * in this case we have nothing to do  because an empty
-	 * database cannot be initialized */
+	ss_resolve_graph_free(&graph) ;
 	
-	if (reslive.len && scan_mode(reslive.s,S_IFDIR) && (genalloc_len(stralist,&nclassic) || genalloc_len(stralist,&nrc)))
+	r = set_livetree(&livetree,owner) ;
+	if (!r) retstralloc(111,"tree_unsupervise") ;
+	if (!stralloc_cats(&livetree,"/")) retstralloc(111,"tree_unsupervise") ;
+	if (!stralloc_0(&livetree)) retstralloc(111,"tree_unsupervise") ;
+	newlen = livetree.len - 1 ;
+	if (!set_livescan(&scandir,owner)) strerr_diefu1sys(111,"set scandir") ;
+
+	if ((reslive.len && scan_mode(reslive.s,S_IFDIR)) || (db_find_compiled_state(livetree.s,treename) >=0) || genalloc_len(stralist,&nclassic))
 	{
-		r = set_livetree(&livetree,owner) ;
-		if (!r) retstralloc(111,"tree_unsupervise") ;
-		if (!set_livescan(&scandir,owner)) strerr_diefu1sys(111,"set scandir") ;
-		/** do not trust Master because some service can be disabled but the user
-		 * did not stop yet , so Master comport less service than the resolve directory*/
-		
-		char const *newargv[9 + genalloc_len(stralist,&nrc) + genalloc_len(stralist,&nclassic) ] ;
-		unsigned int m = 0 ;
-		char fmt[UINT_FMT] ;
-		fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
-				
-		newargv[m++] = SS_BINPREFIX "66-stop" ;
-		newargv[m++] = "-v" ;
-		newargv[m++] = fmt ;
-		newargv[m++] = "-l" ;
-		newargv[m++] = live.s ;
-		newargv[m++] = "-t" ;
-		newargv[m++] = treename ;
-		newargv[m++] = "-X" ;
-				
-		for (unsigned int i=0 ; i < genalloc_len(stralist,&nrc) ; i++)
-			newargv[m++] = gaistr(&nrc,i) ;
-
-		for (unsigned int i=0 ; i < genalloc_len(stralist,&nclassic) ; i++)
-			newargv[m++] = gaistr(&nclassic,i) ;
-
-		newargv[m++] = 0 ;
+		if 	(genalloc_len(stralist,&nrc) || genalloc_len(stralist,&nclassic))
+		{ 
+			char const *newargv[9 + genalloc_len(stralist,&nrc) + genalloc_len(stralist,&nclassic) ] ;
+			unsigned int m = 0 ;
+			char fmt[UINT_FMT] ;
+			fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
 					
-		pid = child_spawn0(newargv[0],newargv,envp) ;
-		if (waitpid_nointr(pid,&wstat, 0) < 0)
-		{
-			VERBO3 strerr_warnwu2sys("wait for ",newargv[0]) ;
-			return 0 ;
-		}
-		if (wstat) strerr_diefu1sys(111,"stop services") ;
-		/** in use? bring down all db service */
-		
+			newargv[m++] = SS_BINPREFIX "66-stop" ;
+			newargv[m++] = "-v" ;
+			newargv[m++] = fmt ;
+			newargv[m++] = "-l" ;
+			newargv[m++] = live.s ;
+			newargv[m++] = "-t" ;
+			newargv[m++] = treename ;
+			newargv[m++] = "-u" ;
+					
+			for (unsigned int i=0 ; i < genalloc_len(stralist,&nrc) ; i++)
+				newargv[m++] = gaistr(&nrc,i) ;
+
+			for (unsigned int i=0 ; i < genalloc_len(stralist,&nclassic) ; i++)
+				newargv[m++] = gaistr(&nclassic,i) ;
+
+			newargv[m++] = 0 ;
+						
+			pid = child_spawn0(newargv[0],newargv,envp) ;
+			if (waitpid_nointr(pid,&wstat, 0) < 0)
+			{
+				VERBO3 strerr_warnwu2sys("wait for ",newargv[0]) ;
+				return 0 ;
+			}
+			if (wstat) strerr_diefu1sys(111,"stop services") ;
+		}	
 		if (db_find_compiled_state(livetree.s,treename) >=0)
 		{	
-			for (unsigned int i = 0 ; i < genalloc_len(stralist,&nrc) ; i++)
-			{
-				if (obstr_equal(gaistr(&nrc,i),SS_MASTER+1)) continue ;
-				ss_resolve_t dres = RESOLVE_ZERO ;
-				ss_resolve_init(&dres) ;
-				if (!ss_resolve_read(&dres,res.sa.s + res.resolve,gaistr(&nrc,i))) strerr_diefu2sys(111,"read resolve file of: ",gaistr(&nrc,i)) ;
-				ss_resolve_setflag(&dres,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
-				ss_resolve_setflag(&dres,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-				ss_resolve_setflag(&dres,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
-				ss_resolve_setflag(&dres,SS_FLAGS_RUN,SS_FLAGS_FALSE) ;
-				if (!ss_resolve_write(&dres,res.sa.s + res.resolve,gaistr(&nrc,i),SS_DOUBLE)) strerr_diefu2sys(111,"write resolve file of: ", gaistr(&nrc,i)) ;
-				ss_resolve_free(&dres) ;
-			}
-			if (!stra_add(&nrc,S6RC_ONESHOT_RUNNER)) strerr_diefu3sys(111,"add ",S6RC_ONESHOT_RUNNER," as service to unsupervise") ;
-			if (!stra_add(&nrc,S6RC_FDHOLDER)) strerr_diefu3sys(111,"add ",S6RC_FDHOLDER," as service to unsupervise") ;
-			
-			if (!stralloc_cats(&livetree,"/")) retstralloc(111,"tree_unsupervise") ;
+			genalloc_deepfree(stralist,&nrc,stra_free) ;
+			livetree.len = newlen ;
+			if (!stralloc_cats(&livetree,treename)) retstralloc(111,"tree_unsupervise") ;
+			if (!stralloc_cats(&livetree,SS_SVDIRS)) retstralloc(111,"tree_unsupervise") ;
+			if (!stralloc_0(&livetree)) retstralloc(111,"tree_unsupervise") ;
+			if (!dir_get(&nrc,livetree.s,"",S_IFDIR)) strerr_diefu2sys(111,"append selection selection with: ",livetree.s) ;
+			livetree.len = newlen ;
 			if (!stralloc_cats(&livetree,treename)) retstralloc(111,"tree_unsupervise") ;
 			if (!stralloc_0(&livetree)) retstralloc(111,"tree_unsupervise") ;
 			/** unsupervise service into the scandir */
@@ -571,23 +586,13 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 			if (r < 0 ) strerr_diefu2sys(111,"find realpath of: ",livetree.s) ; 
 			if (!stralloc_0(&realsym)) retstralloc(111,"tree_unsupervise") ;
 			if (rm_rf(realsym.s) < 0) strerr_diefu2sys(111,"remove ", realsym.s) ;
-			if (rm_rf(livetree.s) < 0) strerr_diefu2sys(111,"remove ", livetree.s) ;		
+			if (rm_rf(livetree.s) < 0) strerr_diefu2sys(111,"remove ", livetree.s) ;
+			livetree.len = newlen ;
+			if (!stralloc_cats(&livetree,treename)) retstralloc(111,"tree_unsupervise") ;
+			if (!stralloc_0(&livetree)) retstralloc(111,"tree_unsupervise") ;	
+			unlink_void(livetree.s) ;
 		}
 		
-		if (genalloc_len(stralist,&nclassic))
-		{
-			for (unsigned int i = 0 ; i < genalloc_len(stralist,&nclassic) ; i++) 
-			{
-				ss_resolve_init(&res) ;
-				if (!ss_resolve_read(&res,reslive.s,gaistr(&nclassic,i))) strerr_diefu2sys(111,"read resolve file of: ",gaistr(&nclassic,i)) ;
-				ss_resolve_setflag(&res,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
-				ss_resolve_setflag(&res,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-				ss_resolve_setflag(&res,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
-				ss_resolve_setflag(&res,SS_FLAGS_RUN,SS_FLAGS_FALSE) ;
-				if (!ss_resolve_write(&res,res.sa.s + res.resolve,gaistr(&nclassic,i),SS_DOUBLE)) strerr_diefu2sys(111,"set write resolve file of: ", gaistr(&nclassic,i)) ;
-				if (rm_rf(res.sa.s + res.runat) < 0) strerr_diefu2sys(111,"remove: ", res.sa.s + res.runat) ;
-			}
-		}
 		if (scandir_send_signal(scandir.s,"an") <= 0) strerr_diefu2sys(111,"reload scandir: ",scandir.s) ;
 		if (dir_search(reslive.s,"init",S_IFREG)) 
 		{
@@ -599,13 +604,13 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 			reslive.len = newlen ;
 			if (!stralloc_0(&reslive)) retstralloc(111,"tree_unsupervise") ;
 		}
-		/** remove /run/66/state/treename directory */
+		/** remove /run/66/state/uid/treename directory */
 		if (reslive.len && (scan_mode(reslive.s,S_IFDIR)))
 		{
 			VERBO2 strerr_warni3x("delete ",reslive.s," ..." ) ;
 			if (rm_rf(reslive.s) < 0) strerr_diefu2sys(111,"delete ",reslive.s) ;
 		}
-		VERBO1 strerr_warni2x("Unsupervised successfully: ",treename) ;
+		VERBO1 strerr_warni2x("Unsupervised successfully tree: ",treename) ;
 	}
 	else VERBO1 strerr_warni2x("Not supervised: ",treename) ;
 	
@@ -616,7 +621,6 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 	stralloc_free(&live) ;
 	stralloc_free(&realsym) ; 
 	stralloc_free(&scandir) ; 
-	ss_resolve_free(&res) ;
 	
 	return 1 ;
 }
