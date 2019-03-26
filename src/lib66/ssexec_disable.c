@@ -38,7 +38,6 @@
 #include <66/tree.h>
 #include <66/db.h>
 #include <66/backup.h>
-#include <66/graph.h>
 #include <66/resolve.h>
 #include <66/svc.h>
 
@@ -95,23 +94,34 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 		if (!stralloc_cats(&dst,name)) goto err ;
 		if (!stralloc_0(&dst)) goto err ;
 		
-		VERBO2 strerr_warni2x("delete directory service of: ",name) ;
+		VERBO2 strerr_warni2x("delete source service file of: ",name) ;
 		if (rm_rf(dst.s) < 0)
 		{
-			VERBO1 strerr_warnwu2sys("delete directory service: ",dst.s) ;
+			VERBO1 strerr_warnwu2sys("delete source service file: ",dst.s) ;
 			goto err ;
 		}
-		/** modify the resolve file for 66-stop*/
-		ss_resolve_setflag(pres,SS_FLAGS_DISEN,SS_FLAGS_FALSE) ;
-		ss_resolve_setflag(pres,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-		ss_resolve_setflag(pres,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-		ss_resolve_setflag(pres,SS_FLAGS_UNSUPERVISE,SS_FLAGS_TRUE) ;
-		
-		VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-		if (!ss_resolve_write(pres,src,name,SS_SIMPLE)) 
+		if (!pres->run)
 		{
-			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
-			goto err ;
+			VERBO2 strerr_warni2x("Delete resolve file of: ",name) ;
+			if (!ss_resolve_rmfile(pres,src,name,SS_SIMPLE))
+			{
+				VERBO1 strerr_warnwu2sys("delete resolve file of: ",name) ;
+			}
+		}
+		else
+		{
+			/** modify the resolve file for 66-stop*/
+			ss_resolve_setflag(pres,SS_FLAGS_DISEN,SS_FLAGS_FALSE) ;
+			ss_resolve_setflag(pres,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+			ss_resolve_setflag(pres,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+			ss_resolve_setflag(pres,SS_FLAGS_UNSUPERVISE,SS_FLAGS_TRUE) ;
+				
+			VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
+			if (!ss_resolve_write(pres,src,name,SS_SIMPLE)) 
+			{
+				VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
+				goto err ;
+			}
 		}
 		if (!ss_resolve_cmp(tostop,name))
 			if (!ss_resolve_append(tostop,pres)) goto err ;
@@ -136,12 +146,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 	stralloc workdir = STRALLOC_ZERO ;
 	
 	genalloc tostop = GENALLOC_ZERO ;//ss_resolve_t
-	
-	graph_t g = GRAPH_ZERO ;
-	stralloc sagraph = STRALLOC_ZERO ;
-	genalloc tokeep = GENALLOC_ZERO ;
-	genalloc master = GENALLOC_ZERO ;
-		
+			
 	r = nclassic = nlongrun = stop = logname = 0 ;
 	
 	{
@@ -220,35 +225,26 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 	
 	if (nlongrun)
 	{	
-		r = graph_type_src(&tokeep,workdir.s,1) ;
+		ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
+		r = ss_resolve_graph_src(&graph,workdir.s,0,1) ;
 		if (!r)
 		{
 			cleanup(workdir.s) ;
 			strerr_diefu2x(111,"resolve source of graph for tree: ",info->treename.s) ;
 		}
-		if (!graph_build(&g,&sagraph,&tokeep,workdir.s))
+		r= ss_resolve_graph_publish(&graph,0) ;
+		if (r <= 0) 
 		{
 			cleanup(workdir.s) ;
-			strerr_diefu1x(111,"make dependencies graph") ;
+			if (r < 0) strerr_dief1x(110,"cyclic graph detected") ;
+			strerr_diefu1sys(111,"publish service graph") ;
 		}
-		if (graph_sort(&g) < 0)
+		if (!ss_resolve_write_master(info,&graph,workdir.s,SS_SIMPLE,1))
 		{
 			cleanup(workdir.s) ;
-			strerr_dief1x(111,"cyclic graph detected") ;
+			strerr_diefu1sys(111,"update inner bundle") ;
 		}
-		
-		if (!graph_master(&master,&g))
-		{
-			cleanup(workdir.s) ;
-			strerr_dief1x(111,"find master service") ;
-		}
-		genalloc_reverse(stralist,&master) ;
-		if (!db_write_master(info,&master,workdir.s,SS_SIMPLE))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu2x(111,"update bundle: ", SS_MASTER) ;
-		}
-			
+		ss_resolve_graph_free(&graph) ;
 		if (!db_compile(workdir.s,info->tree.s, info->treename.s,envp))
 		{
 			cleanup(workdir.s) ;
@@ -273,12 +269,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 	cleanup(workdir.s) ;
 		
 	stralloc_free(&workdir) ;
-	/** graph allocation */
-	graph_free(&g) ;
-	stralloc_free(&sagraph) ;	
-	genalloc_deepfree(stralist,&master,stra_free) ;
-	genalloc_deepfree(stralist,&tokeep,stra_free) ;
-	
+		
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&tostop); i++)
 		VERBO1 strerr_warni2x("Disabled successfully: ",genalloc_s(ss_resolve_t,&tostop)[i].sa.s + genalloc_s(ss_resolve_t,&tostop)[i].name) ;
 			

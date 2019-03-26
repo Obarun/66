@@ -14,6 +14,7 @@
  
 #include <string.h>
 #include <sys/stat.h>
+//#include <stdio.h>
 #include <stdlib.h>
 
 #include <oblibs/obgetopt.h>
@@ -41,8 +42,6 @@
 #include <66/enum.h>
 #include <66/resolve.h>
 #include <66/ssexec.h>
-
-#include <stdio.h>
 
 static unsigned int DEADLINE = 0 ;
 
@@ -87,26 +86,27 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	
 	if (info->timeout) DEADLINE = info->timeout ;
 
-	unsigned int up, down, reload, ret ;
+	unsigned int up, down, reload, ret, reverse ;
 	
-	int wstat, writein ;
+	int r, wstat, writein ;
 	pid_t pid ;
 	
 	char *signal = 0 ;
-	char *mainsv = "Master" ;
+	char *mainsv = SS_MASTER + 1 ;
 	
-	genalloc resdeps = GENALLOC_ZERO ; //ss_resolve_t
-	genalloc toreload = GENALLOC_ZERO ;//ss_resolve_t
+	genalloc gares = GENALLOC_ZERO ; //ss_resolve_t
 	stralloc tmp = STRALLOC_ZERO ;
 	stralloc sares = STRALLOC_ZERO ;
+	ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
+	ss_resolve_t res = RESOLVE_ZERO ;
 	
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	
-	up = down = reload = ret = 0 ;
+	up = down = reload = ret = reverse = 0 ;
+	
 	if (!access(info->tree.s,W_OK)) writein = SS_DOUBLE ;
 	else writein = SS_SIMPLE ;
-	
-	
+		
 	//PROG = "66-dbctl" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
@@ -129,68 +129,51 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	
 	if (!up && !down && !reload){ strerr_warnw1x("signal must be set") ; exitusage(usage_dbctl) ; }
 	
-	if (down) signal = "-d" ;
+	if (down) 
+	{
+		signal = "-d" ;
+	}
 	else signal = "-u" ;
 
 	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1sys(111,"set revolve pointer to live") ;
 	
 	if (argc < 1)
 	{
-		unsigned int i = 0 ;
-		genalloc tmp = GENALLOC_ZERO ;
-		ss_resolve_t res = RESOLVE_ZERO ;
-		if (!ss_resolve_check(sares.s,mainsv)) strerr_dief1sys(111,"inner bundle doesn't exit -- please make a bug report") ;
+		
+		if (!ss_resolve_check(sares.s,mainsv))
+		{
+			if (!ss_resolve_check_insrc(info,mainsv)) strerr_dief1sys(111,"inner bundle doesn't exit -- please make a bug report") ;
+			else strerr_dief2x(111,"unitialized service database of tree: ",info->treename.s) ;
+		}
 		if (!ss_resolve_read(&res,sares.s,mainsv)) strerr_diefu1sys(111,"read resolve file of inner bundle") ;
 		if (res.ndeps)
 		{
-			if (!clean_val(&tmp,res.sa.s + res.deps)) strerr_dief1sys(111,"retrieve dependencies of inner bundle") ;
-			for (;i < genalloc_len(stralist,&tmp) ; i++)
-			{
-				ss_resolve_t dres = RESOLVE_ZERO ;
-				char *name = gaistr(&tmp,i) ;
-				if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(110,"unknown service: ",name) ;
-				if (!ss_resolve_read(&dres,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
-				if (!ss_resolve_append(&resdeps,&dres)) strerr_diefu1sys(111,"append resolve") ;
-				if (reload) if (!ss_resolve_append(&toreload,&dres)) strerr_diefu1sys(111,"append resolve") ;
-				ss_resolve_free(&dres) ;
-			}
+			if (!ss_resolve_append(&gares,&res)) strerr_diefu1sys(111,"append services selection with inner bundle") ;
 		}
 		else
 		{
 			VERBO1 strerr_warni1x("nothing to do") ;
 			ss_resolve_free(&res) ;
-			genalloc_deepfree(stralist,&tmp,stra_free) ;
 			goto freed ;
 		}
-		ss_resolve_free(&res) ;
-		genalloc_deepfree(stralist,&tmp,stra_free) ;
+		
 	}
 	else 
 	{
 		for(;*argv;argv++)
 		{
-			ss_resolve_t res = RESOLVE_ZERO ;
 			char const *name = *argv ;
-			if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(110,"unknown service: ",name) ;
+			if (!ss_resolve_check(sares.s,name))
+			{
+				if (!ss_resolve_check_insrc(info,name)) strerr_dief2sys(111,"unknown service: ",name) ;
+				else strerr_dief2x(111,"unitialized service: ",name) ;
+			}
 			if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
 			if (res.type == CLASSIC) strerr_dief2x(111,name," has type classic") ;
-			
-			if (up)
-			{
-				if (!ss_resolve_add_deps(&resdeps,&res,sares.s)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
-			}
-			else 
-			{ 
-				if (!ss_resolve_add_rdeps(&resdeps,&res,sares.s)) strerr_diefu2sys(111,"resolve recursive dependencies of: ",name) ;
-			}
-			if (reload)
-			{
-				if (!ss_resolve_add_rdeps(&toreload,&res,sares.s)) strerr_diefu2sys(111,"resolve recursive dependencies of: ",name) ;
-			}
-			ss_resolve_free(&res) ;
+			if (!ss_resolve_append(&gares,&res)) strerr_diefu2sys(111,"append services selection with: ", name) ;
 		}
-		
-	}	
+	}
+	
 	if (!db_ok(info->livetree.s,info->treename.s))
 		strerr_dief5sys(111,"db: ",info->livetree.s,"/",info->treename.s," is not running") ;
 
@@ -201,26 +184,53 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 
 	if (reload)
 	{
-		pid = send(&toreload,tmp.s,"-d",envp) ;
+		reverse = 1 ;
+		for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
+		{
+			if (!ss_resolve_graph_build(&graph,&genalloc_s(ss_resolve_t,&gares)[i],sares.s,reverse)) strerr_diefu1sys(111,"build services graph") ;
+		}
+		r = ss_resolve_graph_publish(&graph,reverse) ;
+		if (r < 0) strerr_dief1x(111,"cyclic dependencies detected") ;
+		if (!r) strerr_diefu1sys(111,"publish service graph") ;
+		pid = send(&graph.sorted,tmp.s,"-d",envp) ;
 		
 		if (waitpid_nointr(pid,&wstat, 0) < 0)
 			strerr_diefu1sys(111,"wait for s6-rc") ;
 		
-		if (wstat) strerr_diefu1x(111," stop services list") ;
+		if (wstat) strerr_diefu1x(111," stop services selection") ;
+		ss_resolve_graph_free(&graph) ;
 	}
+	
+	if (down) reverse = 1 ;
+	else reverse = 0 ;
+	
+	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
+	{
+		int ireverse = reverse ;
+		int logname = get_rstrlen_until(genalloc_s(ss_resolve_t,&gares)[i].sa.s + genalloc_s(ss_resolve_t,&gares)[i].name,SS_LOG_SUFFIX) ;
+		if (logname > 0 && (!ss_resolve_cmp(&gares,genalloc_s(ss_resolve_t,&gares)[i].sa.s + genalloc_s(ss_resolve_t,&gares)[i].logassoc)) && down)
+			ireverse = 1  ;
 		
-	pid = send(&resdeps,tmp.s,signal,envp) ;
+		if (reload) ireverse = 1 ; 
+		if (!ss_resolve_graph_build(&graph,&genalloc_s(ss_resolve_t,&gares)[i],sares.s,ireverse)) strerr_diefu1sys(111,"build services graph") ;
+	}
+	
+	r = ss_resolve_graph_publish(&graph,reverse) ;
+	if (r < 0) strerr_dief1x(111,"cyclic dependencies detected") ;
+	if (!r) strerr_diefu1sys(111,"publish service graph") ;
+	
+	pid = send(&graph.sorted,tmp.s,signal,envp) ;
 	
 	if (waitpid_nointr(pid,&wstat, 0) < 0)
 		strerr_diefu1sys(111,"wait for s6-rc") ;
 	
-	if (wstat) strerr_diefu2x(111,down ? " start " : " stop ","services list") ;
+	if (wstat) strerr_diefu2x(111,down ? " start " : " stop ","services selection") ;
 	
-	genalloc_reverse(ss_resolve_t,&resdeps) ;
-	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&resdeps) ; i++)
+	
+	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&graph.sorted) ; i++)
 	{ 
 		int nret = 0 ;
-		ss_resolve_t_ref pres = &genalloc_s(ss_resolve_t,&resdeps)[i] ;
+		ss_resolve_t_ref pres = &genalloc_s(ss_resolve_t,&graph.sorted)[i] ;
 		char *name = pres->sa.s + pres->name ;
 		/** do not touch the Master resolve file*/
 		if (obstr_equal(name,SS_MASTER + 1)) continue ;
@@ -269,8 +279,9 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	freed:
 	stralloc_free(&tmp) ;	
 	stralloc_free(&sares) ;
-	genalloc_deepfree(ss_resolve_t,&resdeps,ss_resolve_free) ;
-	genalloc_deepfree(ss_resolve_t,&toreload,ss_resolve_free) ;
+	ss_resolve_graph_free(&graph) ;
+	ss_resolve_free(&res) ;
+	genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
 	
 	return ret ;
 }

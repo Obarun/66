@@ -40,7 +40,6 @@
 #include <66/parser.h>
 #include <66/backup.h>
 #include <66/svc.h>
-#include <66/graph.h>
 #include <66/resolve.h>
 #include <66/ssexec.h>
 
@@ -56,7 +55,7 @@ static void cleanup(char const *dst)
 }
 static void check_identifier(char const *name)
 {
-	if (!memcmp(name,"Master",6)) strerr_dief3x(111,"service: ",name,": starts with reserved prefix") ;
+	if (!memcmp(name,SS_MASTER+1,6)) strerr_dief3x(111,"service: ",name,": starts with reserved prefix") ;
 }
 static int start_parser(char const *src,char const *svname,char const *tree, unsigned int *nbsv)
 {
@@ -88,11 +87,6 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	genalloc tostart = GENALLOC_ZERO ; // type stralist
 	
 	ss_resolve_t res = RESOLVE_ZERO ;
-	
-	graph_t g = GRAPH_ZERO ;
-	stralloc sagraph = STRALLOC_ZERO ;
-	genalloc master = GENALLOC_ZERO ;
-	genalloc tokeep = GENALLOC_ZERO ;
 	
 	r = nbsv = nclassic = nlongrun = start = 0 ;
 	
@@ -157,8 +151,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 			}
 		}
 	}
-	ss_resolve_free(&res) ;
-	stralloc_free(&sares) ;
+	
 	if (!genalloc_len(diuint32,&gasrc)) goto freed ;
 	
 	for (unsigned int i = 0 ; i < genalloc_len(diuint32,&gasrc) ; i++)
@@ -208,41 +201,31 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	
 	if(nlongrun)
 	{
-		r = graph_type_src(&tokeep,workdir.s,1) ;
+		ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
+		r = ss_resolve_graph_src(&graph,workdir.s,0,1) ;
 		if (!r)
 		{
 			cleanup(workdir.s) ;
 			strerr_diefu2x(111,"resolve source of graph for tree: ",info->treename.s) ;
 		}
-		if (!graph_build(&g,&sagraph,&tokeep,workdir.s))
+		r= ss_resolve_graph_publish(&graph,0) ;
+		if (r <= 0) 
 		{
 			cleanup(workdir.s) ;
-			strerr_diefu1x(111,"make dependencies graph") ;
+			if (r < 0) strerr_dief1x(110,"cyclic graph detected") ;
+			strerr_diefu1sys(111,"publish service graph") ;
 		}
-		if (graph_sort(&g) < 0)
+		if (!ss_resolve_write_master(info,&graph,workdir.s,SS_SIMPLE,0))
 		{
 			cleanup(workdir.s) ;
-			strerr_dief1x(111,"cyclic graph detected") ;
+			strerr_diefu1sys(111,"update inner bundle") ;
 		}
-		
-		if (!graph_master(&master,&g))
-		{
-			cleanup(workdir.s) ;
-			strerr_dief1x(111,"find master service") ;
-		}
-		genalloc_reverse(stralist,&master) ;
-		if (!db_write_master(info,&master,workdir.s,SS_SIMPLE))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu2sys(111,"update bundle: ", SS_MASTER + 1) ;
-		}
-				
+		ss_resolve_graph_free(&graph) ;
 		if (!db_compile(workdir.s,info->tree.s,info->treename.s,envp))
 		{
 				cleanup(workdir.s) ;
 				strerr_diefu4x(111,"compile ",workdir.s,"/",info->treename.s) ;
 		}
-		
 		/** this is an important part, we call s6-rc-update here */
 		if (!db_switch_to(info,envp,SS_SWBACK))
 		{
@@ -267,12 +250,9 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	stralloc_free(&workdir) ;
 	stralloc_free(&sasrc) ;
 	genalloc_free(diuint32,&gasrc) ;
-	/** graph allocation */
-	graph_free(&g) ;
-	genalloc_deepfree(stralist,&master,stra_free) ;
-	stralloc_free(&sagraph) ;
-	genalloc_deepfree(stralist,&tokeep,stra_free) ;
-	
+	ss_resolve_free(&res) ;
+	stralloc_free(&sares) ;
+		
 	for (unsigned int i = 0 ; i < genalloc_len(stralist,&tostart); i++)
 		VERBO1 strerr_warni2x("Enabled successfully: ", gaistr(&tostart,i)) ;
 	

@@ -12,7 +12,7 @@
  * except according to the terms contained in the LICENSE file./
  */
 #include <signal.h>
-#include <stdio.h>
+//#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -41,8 +41,6 @@
 #include <66/tree.h>
 #include <66/ssexec.h>
 #include <66/resolve.h>
-
-#include <stdio.h>
 
 unsigned int SV_DEADLINE = 3000 ;
 unsigned int DEATHSV = 10 ;
@@ -294,20 +292,21 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	DEATHSV = 10 ;
 	tain_t ttmain ;
 	
-	int e, isup, ret,writein ;
-	unsigned int death, tsv ;
+	int e, isup, ret, writein, r ;
+	unsigned int death, tsv, reverse ;
 	int SIGNAL = -1 ;
 	
 	genalloc gakeep = GENALLOC_ZERO ; //type ss_resolve_sig
-	genalloc resdeps = GENALLOC_ZERO ; //ss_resolve_t
 	stralloc sares = STRALLOC_ZERO ;
+	ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
+	ss_resolve_t res = RESOLVE_ZERO ;
 	
 	char *sig = 0 ;
 	
 	ftrigr_t fifo = FTRIGR_ZERO ;
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	
-	tsv = death = ret = 0 ;
+	tsv = death = ret = reverse = 0 ;
 	
 	if (!access(info->tree.s,W_OK)) writein = SS_DOUBLE ;
 	else writein = SS_SIMPLE ;
@@ -344,49 +343,50 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	if (info->timeout) tsv = info->timeout ;
 			
 	if ((scandir_ok(info->scandir.s)) !=1 ) strerr_dief3sys(111,"scandir: ", info->scandir.s," is not running") ;
-	
-	
+		
 	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1sys(111,"set revolve pointer to live") ;
+	
+	if (SIGNAL > SIGRUP) reverse = 1 ;
 	
 	for(;*argv;argv++)
 	{
-		ss_resolve_t res = RESOLVE_ZERO ;
 		char const *name = *argv ;
-	
-		if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(111,"unknown service or not initialized: ",name) ;
+		if (!ss_resolve_check(sares.s,name))
+		{
+			if (!ss_resolve_check_insrc(info,name)) strerr_dief2sys(111,"unknown service: ",name) ;
+			else strerr_dief2x(111,"unitialized service: ",name) ;
+		}
 		if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
 		if (res.type >= BUNDLE) strerr_dief3x(111,name," has type ",get_keybyid(res.type)) ;
-		if (SIGNAL <= SIGRR)
-		{
-			if (!ss_resolve_add_deps(&resdeps,&res,sares.s)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
-		}
-		else if (!ss_resolve_add_rdeps(&resdeps,&res,sares.s)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;
-		ss_resolve_free(&res) ;
+		if (!ss_resolve_graph_build(&graph,&res,sares.s,reverse)) strerr_diefu1sys(111,"build services graph") ;
 	}
-	genalloc_reverse(ss_resolve_t,&resdeps) ;
-	for(unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&resdeps) ; i++)
+	
+	if (SIGNAL == SIGR || SIGNAL == SIGRR) reverse = 0 ;
+	r = ss_resolve_graph_publish(&graph,reverse) ;
+	if (r < 0) strerr_dief1x(111,"cyclic dependencies detected") ;
+	if (!r) strerr_diefu1sys(111,"publish service graph") ;
+	
+	for(unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&graph.sorted) ; i++)
 	{
 		ss_resolve_sig_t sv_signal = RESOLVE_SIG_ZERO ;
-		sv_signal.res = genalloc_s(ss_resolve_t,&resdeps)[i] ;
+		sv_signal.res = genalloc_s(ss_resolve_t,&graph.sorted)[i] ;
 		char *string = sv_signal.res.sa.s ;
 		char *svok = string + sv_signal.res.runat ;
 		size_t svoklen = strlen(svok) ;
 		char file[svoklen + 16 + 1] ;
 		memcpy(file,svok,svoklen) ;
-		if (!s6_svc_ok(svok)) strerr_dief2x(111,string + sv_signal.res.name," : is not initiated") ;
+		if (!s6_svc_ok(svok)) strerr_dief2x(111,"unitialized service: ",string + sv_signal.res.name) ;
 		if (!s6_svstatus_read(svok,&status)) strerr_diefu2sys(111,"read status of: ",svok) ;
 		isup = status.pid && !status.flagfinishing ;
 			
 		if (isup && (SIGNAL <= SIGRUP))
 		{
 			VERBO1 strerr_warni2x("Already up: ",string + sv_signal.res.name) ;
-			ss_resolve_free(&sv_signal.res) ;
 			continue ;
 		}
 		else if (!isup && (SIGNAL >= SIGDOWN))
 		{
 			VERBO1 strerr_warni2x("Already down: ",string + sv_signal.res.name) ;
-			ss_resolve_free(&sv_signal.res) ;
 			continue ;
 		}
 		
@@ -422,10 +422,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 				VERBO1 strerr_warnw2x(file, " is not present - ignoring request for readiness notification") ;
 			}		
 		}
-		else
-		{
-			if (!read_uint(file,&sv_signal.notify)) strerr_diefu2sys(111,"read: ",file) ;
-		}
+		else if (!read_uint(file,&sv_signal.notify)) strerr_diefu2sys(111,"read: ",file) ;
 		
 		/** max-death-tally */
 		if (!death)
@@ -488,10 +485,8 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	
 		errno = e ;
 	
-		if (!genalloc_append(ss_resolve_sig_t,&gakeep,&sv_signal)) strerr_diefu1sys(111,"append genalloc") ;
-		
+		if (!genalloc_append(ss_resolve_sig_t,&gakeep,&sv_signal)) strerr_diefu2sys(111,"append services selection with: ",string + sv_signal.res.name) ;
 	}
-	
 	/** nothing to do */
 	if (!genalloc_len(ss_resolve_sig_t,&gakeep)) goto finish ;
 	
@@ -520,7 +515,6 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		{
 			if (nret <=1)
 				ss_resolve_setflag(&sv->res,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
-			/** wtf, the system can kill a process?? should never happen */
 			else ss_resolve_setflag(&sv->res,SS_FLAGS_PID,(uint32_t)sv->pid) ;
 		}
 		ss_resolve_setflag(&sv->res,SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
@@ -534,7 +528,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			ret = 111 ;
 		}
 		if (!nret) VERBO1 strerr_warni3x((sv->sig > 3) ? "Stopped" : "Started"," successfully: ",name) ; 
-		ss_resolve_free(&sv->res) ;
+		//ss_resolve_free(&sv->res) ;
 	}
 	
 	tain_now_g() ;
@@ -549,13 +543,14 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			ret = 111 ;
 		}
 	}
+	
 	finish:
 	ftrigr_end(&fifo) ;
 	selfpipe_finish() ;
-	genalloc_free(ss_resolve_t,&resdeps) ;
 	stralloc_free(&sares) ;
-	genalloc_deepfree(ss_resolve_sig_t,&gakeep,ss_resolve_free) ;
-	genalloc_free(ss_resolve_t,&resdeps) ;
-		
+	ss_resolve_graph_free(&graph) ;
+	genalloc_free(ss_resolve_sig_t,&gakeep) ;
+	ss_resolve_free(&res) ;
+			
 	return (ret > 1) ? 111 : 0 ;		
 }
