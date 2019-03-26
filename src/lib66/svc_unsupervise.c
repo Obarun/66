@@ -42,6 +42,7 @@ int svc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *cons
 		VERBO1 strerr_warnwu1x("stop services") ;
 		goto err ;
 	}
+	
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++) 
 	{
 		char const *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
@@ -67,6 +68,8 @@ int svc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *cons
 		{				
 			ss_resolve_setflag(pres,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
 			ss_resolve_setflag(pres,SS_FLAGS_RUN,SS_FLAGS_FALSE) ;
+			ss_resolve_setflag(pres,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+			ss_resolve_setflag(pres,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
 			VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
 			if (!ss_resolve_write(pres,sares.s,name,writein))
 			{
