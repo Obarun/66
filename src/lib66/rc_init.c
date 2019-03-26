@@ -19,6 +19,8 @@
 
 #include <oblibs/error2.h>
 #include <oblibs/string.h>
+#include <oblibs/types.h>
+#include <oblibs/directory.h>
 
 #include <skalibs/genalloc.h>
 #include <skalibs/djbunix.h>
@@ -35,7 +37,7 @@
  * @Return 0 on fail */
 int rc_init(ssexec_t *info, char const *const *envp)
 {
-	int writein, wstat, empty = 0 ;
+	int r, writein, wstat, empty = 0 ;
 	pid_t pid ;
 	
 	stralloc sares = STRALLOC_ZERO ;
@@ -52,6 +54,20 @@ int rc_init(ssexec_t *info, char const *const *envp)
 	char tt[UINT32_FMT] ;
 	char const *newargv[12] ;
 	unsigned int m = 0 ;
+	
+	gid_t gidowner ;
+	if (!yourgid(&gidowner,info->owner)){ VERBO1 strerr_warnwu1sys("set gid") ; goto err ; }
+	
+	r = scan_mode(info->livetree.s,S_IFDIR) ;
+	if (r < 0){ VERBO1 strerr_warnw2x(info->livetree.s," conflicted format") ; goto err ; }
+	if (!r)
+	{
+		VERBO2 strerr_warni2x("create directory: ",info->livetree.s) ;
+		r = dir_create(info->livetree.s,0700) ;
+		if (!r){ VERBO1 strerr_warnwu2sys("create directory: ",info->livetree.s) ; goto err ; }
+		VERBO2 strerr_warni2x("chown directory: ",info->livetree.s) ;
+		if (chown(info->livetree.s,info->owner,gidowner) < 0){ VERBO1 strerr_warnwu2sys("chown directory: ",info->livetree.s) ; goto err ; }
+	}
 	
 	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))		
 		{ VERBO1 strerr_warnwu1x("set revolve pointer to source") ; goto err ; }
