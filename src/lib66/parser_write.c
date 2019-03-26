@@ -58,7 +58,7 @@ int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned 
 		if (ss_resolve_check(workdir,name)) 
 		{
 			if (!ss_resolve_read(&res,workdir,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
-			if (res.type != type) strerr_dief6x(111,"Detection of incompatible type format for: ",name," -- current: ",get_keybyid(type)," previous: ",get_keybyid(res.type)) ;
+			if (res.type != type && res.disen) strerr_dief6x(111,"Detection of incompatible type format for: ",name," -- current: ",get_keybyid(type)," previous: ",get_keybyid(res.type)) ;
 		}
 		ss_resolve_free(&res) ;
 	}
