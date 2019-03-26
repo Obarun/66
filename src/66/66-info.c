@@ -37,7 +37,6 @@
 #include <66/tree.h>
 #include <66/constants.h>
 #include <66/enum.h>
-#include <66/graph.h>
 #include <66/resolve.h>
 
 #include <s6/s6-supervise.h>//s6_svc_ok
@@ -57,14 +56,14 @@ static char OWNERSTR[UID_FMT] ;
 
 #define USAGE "66-info [ -h ] [ -T ] [ -S ] sub-options (use -h as sub-options for futher informations)"
 
-#define TREE_USAGE "66-info -T [ -h ] [ -v verbosity ] [ -r ] [ -d depth ] tree "
+#define TREE_USAGE "66-info -T [ -c ] [ -h ] [ -v verbosity ] [ -r ] [ -d depth ] tree "
 #define exit_tree_usage() exitusage(TREE_USAGE)
-#define SV_USAGE "66-info -S [ -h ] [ -v verbosity ] [-t tree ] [ -l live ] [ -p n lines ] [ -r ] [ -d depth ] service"
+#define SV_USAGE "66-info -S [ -c ] [ -h ] [ -v verbosity ] [-t tree ] [ -l live ] [ -p n lines ] [ -r ] [ -d depth ] service"
 #define exit_sv_usage() exitusage(SV_USAGE)
 
 unsigned int REVERSE = 0 ;
 
-graph_style *STYLE = &graph_default ;
+ss_resolve_graph_style *STYLE = &graph_default ;
 unsigned int MAXDEPTH = 1 ;
 
 typedef struct depth_s depth_t ;
@@ -76,22 +75,31 @@ struct depth_s
 } ;
 
 struct set_color {
+	const char *bold_white ;
 	const char *back_blue ;
+	const char *white_underline ; 
 	const char *yellow ;
 	const char *blue ;
 	const char *blink_blue ;
+	const char *red ;
 	const char *off ;
 } ;
 
 static struct set_color use_color = {
+	"\033[1;37m", // bold_white
 	"\033[44m", // background blue 
-	"\033[38;5;226m", // yellow 
-	"\033[38;5;117m", // blue 
-	"\033[5;38;5;117m", // blink blue
+	"\033[3;4;1;117m", // white underline 
+	"\033[1;38;5;226m", // yellow 
+	"\033[1;38;5;117m", // blue 
+	"\033[1;5;38;5;117m", // blink blue
+	"\033[1;31m", // red
 	"\033[0m" //off
 } ;
 
 static struct set_color no_color = {
+	"",
+	"",
+	"",
 	"",
 	"",
 	"",
@@ -107,7 +115,7 @@ static inline void info_help (void)
 "66-info <options> sub-options \n"
 "\n"
 "options :\n"
-"	-h: print this help\n" 
+"	-h: print this help\n"
 "	-v: increase/decrease verbosity\n"
 "	-T: get informations about tree(s)\n"
 "	-S: get informations about service(s)\n"
@@ -123,7 +131,8 @@ static inline void tree_help (void)
 "66-info -T <options> tree\n"
 "\n"
 "options :\n"
-"	-h: print this help\n" 
+"	-h: print this help\n"
+"	-c: disable colorization" 
 "	-v: increase/decrease verbosity\n"
 "	-r: reserve the dependencies graph\n" 
 "	-d: limit the depth of the graph recursion\n" 
@@ -139,7 +148,8 @@ static inline void sv_help (void)
 "66-info -S <options> service\n"
 "\n"
 "options :\n"
-"	-h: print this help\n" 
+"	-h: print this help\n"
+"	-c: disable colorization" 
 "	-t: tree to use\n"
 "	-l: live directory\n"
 "	-p: print n last lines of the associated log file\n"
@@ -184,7 +194,34 @@ char *print_nlog(char *str, int n)
 	return target_pos ;
 } 
 
-int print_status(ss_resolve_t *res,char const *treename, char const *const *envp)
+int info_print_title(char const *name)
+{	
+	size_t half = 17 ;
+	size_t tlen = strlen(name) ;
+	size_t htlen = tlen/2 ;
+	size_t paddingl ;
+	size_t paddingr ;
+	if (tlen > half) paddingr = 0 ;
+	paddingl = half + htlen ;
+	paddingr = paddingl - htlen < half ? half : (half-htlen) ;
+	
+	if (!bprintf(buffer_1,"%s%*s%*s",color->white_underline,paddingl,name,paddingr,color->off)) return 0 ;
+	if (buffer_putsflush(buffer_1,"\n") < 0) return 0 ; 
+	return 1 ;
+}
+
+int info_print_tree(char const *treename,int init,int current,int enabled)
+{
+	if (!info_print_title(treename)) return 0 ;
+	if (!bprintf(buffer_1,"%s%s%s%s%1s","Initialized: ",init ? color->blue : color->yellow, init ? "yes":"no",color->off," | ")) return 0 ;
+	if (!bprintf(buffer_1,"%s%s%s%s","Current: ",current ? color->blink_blue : color->yellow ,current ? "yes":"no",color->off)) return 0 ;
+	if (buffer_putsflush(buffer_1,"\n") < 0) return 0 ; 
+	if (!bprintf(buffer_1,"%s%9s%s%s%s%s","Contains:"," | ","Enabled: ",enabled ? color->blue : color->yellow ,enabled ? "yes":"no",color->off)) return 0 ;
+	if (buffer_putsflush(buffer_1,"\n") < 0) return  0 ;
+	return 1 ;
+} 
+
+int info_print_status(ss_resolve_t *res,char const *treename, char const *const *envp)
 {
 	int r ;
 	int wstat ;
@@ -218,7 +255,7 @@ int print_status(ss_resolve_t *res,char const *treename, char const *const *envp
 	return 1 ;
 }
 
-static void info_print_text(ss_resolve_t *res, depth_t *depth, int last)
+static void info_print_graph(ss_resolve_t *res, depth_t *depth, int last)
 {
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	char *name = res->sa.s + res->name ;
@@ -249,35 +286,43 @@ static void info_print_text(ss_resolve_t *res, depth_t *depth, int last)
 
 	if(depth->level > 0)
 	{
-		if (!bprintf(buffer_1,"%*s%s(%s%i%s,%s) %s", STYLE->indent * (depth->level - level), "", tip, status.pid ? color->blue : color->off,status.pid ? status.pid : 0,color->off,get_keybyid(res->type), name)) return ;
+		if (!bprintf(buffer_1,"%*s%s(%s%i%s,%s%s%s,%s) %s", STYLE->indent * (depth->level - level), "", tip, status.pid ? color->blue : color->off,status.pid ? status.pid : 0,color->off, res->disen ? color->off : color->red, res->disen ? "Enabled" : "Disabled",color->off,get_keybyid(res->type), name)) return ;
 	}
 	else if (!bprintf(buffer_1,"%s(%i,%s) %s",tip, status.pid ? status.pid : 0, get_keybyid(res->type),name)) return ;
 
 	if (buffer_putsflush(buffer_1,"\n") < 0) return ; 
 }
-void info_print_title(char const *name)
-{	
-	size_t half = 17 ;
-	size_t tlen = strlen(name) ;
-	size_t htlen = tlen/2 ;
-	size_t paddingl ;
-	size_t paddingr ;
-	if (tlen > half) paddingr = 0 ;
-	paddingl = half + htlen ;
-	paddingr = paddingl - htlen < half ? half : (half-htlen) ;
-	
-	if (!bprintf(buffer_1,"%s%*s%*s",color->back_blue,paddingl,name,paddingr,color->off)) return ;
-	if (buffer_putsflush(buffer_1,"\n") < 0) return ; 
-}
-void info_print_tree(char const *treename,int init,int current,int enabled)
+
+int info_cmpnsort(genalloc *ga)
 {
-	info_print_title(treename) ;
-	if (!bprintf(buffer_1,"%s%s%s%s%1s","Initialized: ",init ? color->blue : color->yellow, init ? "yes":"no",color->off," | ")) return ;
-	if (!bprintf(buffer_1,"%s%s%s%s","Current: ",current ? color->blink_blue : color->yellow ,current ? "yes":"no",color->off)) return ;
-	if (buffer_putsflush(buffer_1,"\n") < 0) return ; 
-	if (!bprintf(buffer_1,"%s%9s%s%s%s%s","Contains:"," | ","Enabled: ",enabled ? color->blink_blue : color->yellow ,enabled ? "yes":"no",color->off)) return ;
-	if (buffer_putsflush(buffer_1,"\n") < 0) return  ;
-} 
+	unsigned int len = genalloc_len(stralist,ga) ;
+	if (!len) return 0 ;
+	char names[len][4096] ;
+	char tmp[4096] ;
+	for (unsigned int i = 0 ; i < genalloc_len(stralist,ga) ; i++)
+	{
+		memcpy(names[i],gaistr(ga,i),gaistrlen(ga,i)) ;
+	}
+	genalloc_deepfree(stralist,ga,stra_free) ;
+	for (unsigned int i = 0 ; i < len - 1 ; i++)
+	{
+		for (unsigned int j = i+1 ; j < len ; j++)
+		{
+			if (strcmp(names[i],names[j]) > 0)
+			{
+				strcpy(tmp,names[i]) ;
+				strcpy(names[i],names[j]);
+				strcpy(names[j],tmp);
+			}
+		}
+	}
+	
+	for (unsigned int i = 0 ; i < len ; i++)
+	{
+		if (!stra_add(ga,names[i])) return 0 ;
+	}	
+	return 1 ;
+}
 
 void info_walk(ss_resolve_t *res,char const *src,int reverse, depth_t *depth)
 {
@@ -297,7 +342,7 @@ void info_walk(ss_resolve_t *res,char const *src,int reverse, depth_t *depth)
 		if (!ss_resolve_check(src,name)) goto err ;	
 		if (!ss_resolve_read(&dres,src,name)) goto err ;
 		
-		info_print_text(&dres, depth, last) ;
+		info_print_graph(&dres, depth, last) ;
 						
 		if (dres.ndeps)
 		{
@@ -330,6 +375,7 @@ void info_walk(ss_resolve_t *res,char const *src,int reverse, depth_t *depth)
 		ss_resolve_free(&dres) ;
 		genalloc_deepfree(stralist,&gadeps,stra_free) ;
 }
+
 /** what = 0 -> complete tree
  * what = 1 -> only name */
 int graph_display(char const *tree,char const *name,unsigned int what)
@@ -376,7 +422,7 @@ int graph_display(char const *tree,char const *name,unsigned int what)
 					found = 1 ;
 					int logname = get_rstrlen_until(res.sa.s + res.name,SS_LOG_SUFFIX) ;
 					if (logname > 0) continue ;
-					info_print_text(&res, &id, 0) ;
+					info_print_graph(&res, &id, 0) ;
 					if (res.ndeps)
 					{
 						if (!bprintf(buffer_1,"%s%-*s","", STYLE->indent, STYLE->limb)) goto err ;
@@ -431,13 +477,14 @@ int tree_args(int argc, char const *const *argv)
 			
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:rd:l:", &l) ;
+			int opt = getopt_args(argc,argv, ">hcv:rd:l:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			
 			switch (opt)
 			{
 				case 'h' : 	tree_help(); return 1 ;
+				case 'c' :	color = &no_color ; break ;
 				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) exit_tree_usage() ; break ;
 				case 'r' : 	REVERSE = 1 ; break ;
 				case 'd' : 	if (!uint0_scan(l.arg, &MAXDEPTH)) exit_tree_usage(); break ;
@@ -479,6 +526,7 @@ int tree_args(int argc, char const *const *argv)
 	if (!dir_get(&gatree, src.s,SS_BACKUP + 1, S_IFDIR)) goto err ;
 	if (genalloc_len(stralist,&gatree))
 	{
+		if (!info_cmpnsort(&gatree)) strerr_diefu1x(111,"sort list of tree") ;
 		for (unsigned int i = 0 ; i < genalloc_len(stralist,&gatree) ; i++)
 		{
 			tree.len = 0 ;
@@ -491,14 +539,15 @@ int tree_args(int argc, char const *const *argv)
 			int init = 0 ;
 			live.len = newlen ;
 			if (!stralloc_cats(&live,treename)) goto err ;
+			if (!stralloc_cats(&live,"/init")) goto err ;
 			if (!stralloc_0(&live)) goto err ;
-			if (dir_search(live.s,"init",S_IFREG)) init = 1 ;
+			if (!access(live.s, F_OK)) init = 1 ;
 		
 			int enabled = tree_cmd_state(VERBOSITY,"-s",treename) ; 
 			if (currname.len)
 				current = obstr_equal(treename,currname.s) ;
 			
-			info_print_tree(treename,init,current,enabled) ;
+			if (!info_print_tree(treename,init,current,enabled)) goto err ;
 					
 			if(!stralloc_cats(&tree,treename)) retstralloc(0,"tree_args") ;
 			if(!stralloc_0(&tree)) retstralloc(0,"tree_args") ;
@@ -547,7 +596,6 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	
 	stralloc treename = STRALLOC_ZERO ;
 	stralloc tree = STRALLOC_ZERO ;
-	genalloc gawhat = GENALLOC_ZERO ;//stralist
 	genalloc gatree = GENALLOC_ZERO ;
 	stralloc src = STRALLOC_ZERO ;
 	stralloc env = STRALLOC_ZERO ;
@@ -565,12 +613,13 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 		
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:l:p:rd:t:", &l) ;
+			int opt = getopt_args(argc,argv, ">hcv:l:p:rd:t:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
 			{
 				case 'h' : 	sv_help(); return 1 ;
+				case 'c' :	color = &no_color ; break ;
 				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) exit_sv_usage() ; break ;
 				case 'l' : 	if (!stralloc_cats(&live,l.arg)) retstralloc(0,"sv_args") ;
 							if (!stralloc_0(&live)) retstralloc(0,"sv_args") ;
@@ -594,19 +643,23 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	
 	size_t newlen ;
 	
-	if (!stralloc_copy(&src,&live)) goto err ;
+	/*if (!stralloc_copy(&src,&live)) goto err ;
 	if (!stralloc_cats(&src,SS_STATE + 1)) goto err ;
 	if (!stralloc_cats(&src,"/")) goto err ;
 	if (!stralloc_cats(&src,OWNERSTR)) goto err ;
+	if (!stralloc_cats(&src,"/")) goto err ;*/
+	
+	if (!stralloc_copy(&src,&base)) goto err ;
+	if (!stralloc_cats(&src,SS_SYSTEM)) goto err ;
 	if (!stralloc_cats(&src,"/")) goto err ;
 	newlen = src.len ;
-	
+
 	if (!tname)
 	{	
 		
 		if (!stralloc_0(&src)) goto err ;
 		
-		if (!dir_get(&gatree, src.s,"", S_IFDIR)) 
+		if (!dir_get(&gatree, src.s,SS_BACKUP+1, S_IFDIR)) 
 			strerr_diefu2x(111,"get tree from directory: ",src.s) ;
 		
 		if (genalloc_len(stralist,&gatree))
@@ -615,10 +668,11 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 			{
 				src.len = newlen ;
 				char *name = gaistr(&gatree,i) ;
+				
 				if (!stralloc_cats(&src,name)) goto err ;
-				if (!stralloc_cats(&src,SS_RESOLVE)) goto err ;
+				if (!stralloc_cats(&src,SS_SVDIRS)) goto err ;
 				if (!stralloc_0(&src)) goto err ;
-				if (dir_search(src.s,svname,S_IFREG))
+				if (ss_resolve_check(src.s,svname))
 				{
 					if(!stralloc_cats(&treename,name)) retstralloc(0,"sv_args") ;
 					if(!stralloc_0(&treename)) retstralloc(0,"sv_args") ;
@@ -635,12 +689,12 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	}
 	else
 	{
-		if(!stralloc_cats(&treename,tname)) retstralloc(0,"sv_args") ;
-		if(!stralloc_0(&treename)) retstralloc(0,"sv_args") ;
+		if (!stralloc_cats(&treename,tname)) retstralloc(0,"sv_args") ;
+		if (!stralloc_0(&treename)) retstralloc(0,"sv_args") ;
 		if (!stralloc_cats(&src,treename.s)) goto err ;
-		if (!stralloc_cats(&src,SS_RESOLVE)) goto err ;
+		if (!stralloc_cats(&src,SS_SVDIRS)) goto err ;
 		if (!stralloc_0(&src)) goto err ;
-		if (dir_search(src.s,svname,S_IFREG)) found++;
+		if (ss_resolve_check(src.s,svname)) found++;
 	}
 
 	if (!found)
@@ -657,17 +711,19 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	r = tree_sethome(&tree,base.s,OWNER) ;
 	if (r<=0) strerr_diefu2sys(111,"find tree: ", tree.s) ;
 	
-	info_print_title(svname) ;
+	if (!info_print_title(svname)) goto err ;
 	if (!bprintf(buffer_1,"%s%s\n","on tree : ",treename.s)) goto err ;
 	
 	src.len = newlen ;
 	if (!stralloc_cats(&src,treename.s)) goto err ;
+	if (!stralloc_cats(&src,SS_SVDIRS)) goto err ;
 	if (!stralloc_0(&src)) goto err ;
 	if (!ss_resolve_read(&res,src.s,svname)) strerr_diefu2sys(111,"read resolve file of: ",svname) ;
 	
 	/** status */
-	if (buffer_putsflush(buffer_1,"status : ") < 0) goto err ;
-	if (!print_status(&res,treename.s,envp)) goto err ;
+	if (!bprintf(buffer_1,"%s%s%s%s%s","status : ",res.disen ? color->off : color->red,res.disen ? "Enabled" : "Disabled",color->off,", ")) goto err ;
+	if (buffer_putsflush(buffer_1,"") < 0) goto err ;
+	if (!info_print_status(&res,treename.s,envp)) goto err ;
 
 	/** print the type */	
 	if (!bprintf(buffer_1,"%s %s\n","type :",get_keybyid(res.type))) goto err ;
@@ -678,8 +734,8 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	/** dependencies */
 	if (res.ndeps) 
 	{	
-		if (res.type == BUNDLE) info_print_title("contents") ;
-		else info_print_title("dependencies") ;
+		if (res.type == BUNDLE){ if (!info_print_title("contents")) goto err ; }
+		else if (!info_print_title("dependencies")) goto err ;
 	
 		if (!graph_display(tree.s,svname,1)) strerr_diefu2x(111,"display graph of tree: ", treename.s) ;
 		
@@ -687,7 +743,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	/** scripts*/
 	if (res.exec_run||res.exec_finish)
 	{
-		info_print_title("scripts") ;
+		if (!info_print_title("scripts")) goto err ;
 		if (res.exec_run)
 		{
 			if (!bprintf(buffer_1,"%s%s\n","start script :",res.sa.s + res.exec_run)) goto err ;
@@ -713,7 +769,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	if (dir_search(env.s,svname,S_IFREG))
 	{
 		if (!file_readputsa(&conf,env.s,svname)) goto err ;
-		info_print_title("environment") ;
+		if (!info_print_title("environment")) goto err ;
 		if (!bprintf(buffer_1,"%s",conf.s)) goto err ;
 	}
 	
@@ -723,22 +779,23 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	{
 		if (res.logger)
 		{
-			info_print_title("logger") ;
+			if (!info_print_title("logger")) goto err ;
 			if (!bprintf(buffer_1,"%s%s\n","logger associated : ",res.sa.s + res.logger)) goto err ;
 			if (!bprintf(buffer_1,"%s ","log destination :")) goto err ;
 			if (!bprintf(buffer_1,"%s \n",res.sa.s + res.dstlog)) goto err ;
 			if (nlog)
 			{
+				if (!info_print_title("log file")) goto err ;
 				stralloc log = STRALLOC_ZERO ;
 				/** the file current may not exist if the service was never started*/
-				if (!dir_search(res.sa.s + res.dstlog,"current",S_IFREG)){	if (!bprintf(buffer_1,"%s \n","unable to find the log file")) goto err ; }
+				if (!dir_search(res.sa.s + res.dstlog,"current",S_IFREG)){	if (!bprintf(buffer_1,"%s%s%s \n",color->red,"unable to find the log file",color->off)) goto err ; }
 				else
 				{
 					if (!file_readputsa(&log,res.sa.s + res.dstlog,"current")) retstralloc(0,"sv_args") ;
-					if (!log.len) 
+					if (log.len < 10) 
 					{
 						if (!bprintf(buffer_1,"\n")) goto err ;
-						if (!bprintf(buffer_1,"log file is empty \n")) goto err ;
+						if (!bprintf(buffer_1,"%s%s%s",color->yellow,"log file is empty \n",color->off)) goto err ;
 					}
 					else
 					{
@@ -755,7 +812,6 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	end:
 	stralloc_free(&tree) ;
 	stralloc_free(&treename) ;
-	genalloc_deepfree(stralist,&gawhat,stra_free) ;
 	genalloc_deepfree(stralist,&gatree,stra_free) ;
 	ss_resolve_free(&res) ;
 	stralloc_free(&src) ;
@@ -766,7 +822,6 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	err:
 		stralloc_free(&tree) ;
 		stralloc_free(&treename) ;
-		genalloc_deepfree(stralist,&gawhat,stra_free) ;
 		genalloc_deepfree(stralist,&gatree,stra_free) ;
 		ss_resolve_free(&res) ;
 		stralloc_free(&src) ;
@@ -780,7 +835,8 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	int what ;
 	
 	what = -1 ;
-		
+	color = &use_color ;
+	
 	PROG = "66-info" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
@@ -801,10 +857,12 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	}
 	if (what<0) exitusage(USAGE) ;
 	
+	argc-- ; argv++ ;
+		
 	OWNER = MYUID ;
 	size_t ownerlen = uid_fmt(OWNERSTR,OWNER) ;
 	OWNERSTR[ownerlen] = 0 ;
-	color = &use_color ;
+	
 		
 	setlocale(LC_ALL, "");
 	
@@ -815,10 +873,10 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	if (!set_ownersysdir(&base,OWNER)) strerr_diefu1sys(111, "set owner directory") ;
 	
 	if (!what)
-		if (!tree_args(--argc,++argv)) strerr_diefu1x(111,"display trees informations") ;
+		if (!tree_args(argc,argv)) strerr_diefu1x(111,"display trees informations") ;
 	
 	if (what)
-		if (!sv_args(--argc,++argv,envp)) strerr_diefu1x(111,"display services informations") ;
+		if (!sv_args(argc,argv,envp)) strerr_diefu1x(111,"display services informations") ;
 	
 	stralloc_free(&base) ;
 	stralloc_free(&live) ;
