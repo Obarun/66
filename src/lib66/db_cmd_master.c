@@ -410,7 +410,7 @@ int db_write_master(ssexec_t *info, genalloc *ga, char const *dir,int both)
 	}
 	
 	ss_resolve_init(&res) ;
-	res.name = ss_resolve_add_string(&res,"Master") ;
+	res.name = ss_resolve_add_string(&res,SS_MASTER+1) ;
 	res.description = ss_resolve_add_string(&res,"inner bundle - do not use it") ;
 	res.treename = ss_resolve_add_string(&res,info->treename.s) ;
 	res.tree = ss_resolve_add_string(&res,info->tree.s) ;
@@ -425,7 +425,7 @@ int db_write_master(ssexec_t *info, genalloc *ga, char const *dir,int both)
 	res.unsupervise = 0 ;
 	res.reload = 0 ;
 	
-	if (!ss_resolve_write(&res,dir,"Master",both)) goto err ;
+	if (!ss_resolve_write(&res,dir,SS_MASTER+1,both)) goto err ;
 	
 	stralloc_free(&in) ;
 	stralloc_free(&inres) ;
