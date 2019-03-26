@@ -21,6 +21,7 @@
 #include <oblibs/string.h>
 #include <oblibs/error2.h>
 #include <oblibs/directory.h>
+
 #include <oblibs/types.h>//scan_mode
 #include <oblibs/stralist.h>
 #include <oblibs/files.h>
@@ -48,7 +49,10 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	ss_resolve_t res = RESOLVE_ZERO ;
 	
 	classic = db = earlier = 0 ;
-
+	
+	gid_t gidowner ;
+	if (!yourgid(&gidowner,info->owner)) strerr_diefu1sys(111,"set gid") ;
+	
 	if (argc != 2) exitusage(usage_init) ;
 	if (*argv[1] == 'c') classic = 1 ;
 	else if (*argv[1] == 'd') db = 1 ;
@@ -72,6 +76,8 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 		VERBO2 strerr_warni2x("create directory: ",info->livetree.s) ;
 		r = dir_create(info->livetree.s,0700) ;
 		if (!r) strerr_diefu2sys(111,"create directory: ",info->livetree.s) ;
+		VERBO2 strerr_warni2x("chown directory: ",info->livetree.s) ;
+		if (chown(info->livetree.s,info->owner,gidowner) < 0) strerr_diefu2sys(111,"chown directory: ",info->livetree.s) ;
 	}
 	
 	size_t dirlen ;
