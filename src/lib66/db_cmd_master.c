@@ -36,7 +36,6 @@
 #include <66/constants.h>
 #include <66/parser.h>
 #include <66/utils.h>
-#include <66/graph.h>
 
 #include <stdio.h>
 //USAGE "db_update_start [ -v verbosity ] [ -a add ] [ -d delete ] [ -c copy to ] [ -B bundle ] [ -D directory ] service"
@@ -268,7 +267,7 @@ int db_bundle_modif(genalloc *bundle,unsigned int verbosity, char const *src,uns
 	
 	return 1 ;
 }
-
+/*
 int db_bundle_contents(graph_t *g, char const *name, char const *src, unsigned int verbosity, unsigned int action)
 {
 	unsigned int a, b, c ;
@@ -311,7 +310,7 @@ int db_bundle_contents(graph_t *g, char const *name, char const *src, unsigned i
 		genalloc_free(strakeyval,&bundle) ;
 		return 0 ;
 }
-
+*/
 int db_write_contents(genalloc *ga, char const *bundle,char const *dir)
 {
 	int r ;
