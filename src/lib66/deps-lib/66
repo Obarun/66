@@ -11,13 +11,13 @@ db_update.o
 get_enum.o
 get_uidgid.o
 get_userhome.o
-graph.o
 parser.o
 parser_utils.o
 parser_write.o
 rc_init.o
 rc_send.o
 resolve.o
+resolve_graph.o
 scandir_ok.o
 scandir_send_signal.o
 set_livedir.o
