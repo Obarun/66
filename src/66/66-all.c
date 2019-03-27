@@ -66,7 +66,7 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 	
 	genalloc ga = GENALLOC_ZERO ; //stralist
 	
-	char ownerstr[256] ;
+	char ownerstr[UID_FMT] ;
 	size_t ownerlen = uid_fmt(ownerstr,owner) ;
 	ownerstr[ownerlen] = 0 ;
 		   
@@ -84,7 +84,7 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
        
 	if (!dir_get(&ga,src,"",S_IFREG))
 	{
-		VERBO3 strerr_warnwu2x("find source of classic service for tree: ",treename) ;
+		VERBO3 strerr_warnwu2x("get services of tree: ",src) ;
 		goto err ;
 	}
 
@@ -152,14 +152,10 @@ static void redir_fd(void)
 
 int main(int argc, char const *const *argv,char const *const *envp)
 {
-	int r ;
-	int what ;
-	int wstat ;
-	int shut = 0 ;
+	int r, what, wstat, shut = 0, fd ;
 	pid_t pid ; 
 	uid_t owner ;
-	int fd ;
-	
+		
 	char const *treename = NULL ;
 	
 	stralloc base = STRALLOC_ZERO ;
@@ -217,7 +213,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (!r) retstralloc(111,"main") ;
 	if (r < 0 ) strerr_dief3x(111,"scandir: ",scandir.s," must be an absolute path") ;
 	
-	if ((scandir_ok(scandir.s)) !=1 ) strerr_dief3sys(111,"scandir: ", scandir.s," is not running") ;
+	if ((scandir_ok(scandir.s)) <= 0) strerr_dief3sys(111,"scandir: ", scandir.s," is not running") ;
 	
 	if (!stralloc_copy(&livetree,&live)) retstralloc(111,"main") ;
 	
@@ -301,7 +297,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 		if (!tree_get_permissions(tree.s,owner))
 			strerr_dief2x(110,"You're not allowed to use the tree: ",tree.s) ;
-		
+
 		if (what)
 		{
 			char const *newargv[9] ;
@@ -332,7 +328,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				
 		}
 		
-		if (!doit(tree.s,treename,live.s,what,owner,envp)) strerr_diefu3x(111,(what) ? "start" : "stop" , " service for tree: ",treename) ;
+		if (!doit(tree.s,treename,live.s,what,owner,envp)) strerr_diefu3x(111,(what) ? "start" : "stop" , " services of tree: ",treename) ;
 	}
 	end:
 		if (shut)
