@@ -34,6 +34,8 @@
 #include <66/constants.h>
 #include <66/db.h>
 #include <66/enum.h>
+#include <66/state.h>
+#include <66/resolve.h>
 
 #include <s6/s6-supervise.h>
 #include <s6-rc/s6rc-servicedir.h>
@@ -256,7 +258,7 @@ int create_tree(char const *tree,char const *treename)
 	}
 	
 	VERBO3 strerr_warnt1x("write resolve file of inner bundle") ;
-	if (!ss_resolve_write(&res,dst,SS_MASTER+1,SS_SIMPLE))
+	if (!ss_resolve_write(&res,dst,SS_MASTER+1))
 	{
 		VERBO3 strerr_warnwu1sys("write resolve file of inner bundle") ;
 		ss_resolve_free(&res) ;
@@ -503,11 +505,11 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 		pres = &genalloc_s(ss_resolve_t,&graph.sorted)[i] ;
 		char *string = pres->sa.s ;
 		char *name = string + pres->name ;
-		if (pres->type == CLASSIC && pres->run) 
+		if (pres->type == CLASSIC && (ss_state_check(string + pres->state,name))) 
 		{
 			if (!stra_add(&nclassic,name)) strerr_diefu2sys(111,"append services selection with: ",name) ;
 		}
-		else if (pres->type >= BUNDLE && pres->run)
+		else if (pres->type >= BUNDLE && (ss_state_check(string + pres->state,name)))
 		{ 
 			if (!stra_add(&nrc,name)) strerr_diefu2sys(111,"append services selection with: ",name) ;
 		}
@@ -520,7 +522,7 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 			if (!stralloc_0(&scandir)) retstralloc(111,"tree_unsupervise") ;
 			if (!stralloc_cats(&livetree,pres->sa.s + pres->live)) retstralloc(111,"tree_unsupervise") ;
 			if (!stralloc_0(&livetree)) retstralloc(111,"tree_unsupervise") ;
-			if (!stralloc_cats(&reslive,pres->sa.s + pres->resolve)) retstralloc(111,"tree_unsupervise") ;
+			if (!stralloc_cats(&reslive,pres->sa.s + pres->state)) retstralloc(111,"tree_unsupervise") ;
 			if (!stralloc_0(&reslive)) retstralloc(111,"tree_unsupervise") ;
 		}
 	}
