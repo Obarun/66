@@ -349,7 +349,7 @@ int db_write_contents(genalloc *ga, char const *bundle,char const *dir)
 		stralloc_free(&in) ;
 		return 0 ;
 }
-
+/*
 int db_write_master(ssexec_t *info, genalloc *ga, char const *dir,int both)
 {
 	int r ;
@@ -438,3 +438,4 @@ int db_write_master(ssexec_t *info, genalloc *ga, char const *dir,int both)
 		stralloc_free(&inres) ;
 		return 0 ;
 }
+*/
