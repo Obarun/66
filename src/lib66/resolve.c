@@ -911,6 +911,7 @@ int ss_resolve_create_live(ssexec_t *info)
 	
 		char sym[sares.len + SS_RESOLVE_LEN + 1] ;
 		memcpy(sym,sares.s,len) ;
+		sym[len] = 0 ;
 		r = dir_create_under(sym,info->treename.s,0700) ;
 		if (!r) goto err ;
 		if (chown(sym,info->owner,gidowner) < 0) goto err ;
