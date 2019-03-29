@@ -565,8 +565,7 @@ int tree_args(int argc, char const *const *argv)
 	}
 	else 
 	{
-		if (!bprintf(buffer_1," %s ","nothing to display")) goto err ;
-		if (buffer_putflush(buffer_1,"\n",1) < 0) goto err ;
+		strerr_warni1x("no tree exist yet") ;
 	}
 	
 	stralloc_free(&live) ;
