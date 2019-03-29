@@ -673,7 +673,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 'c' : current = 1 ; break ;
 				case 'E' : enable = 1 ; if (disable) exitusage(USAGE) ; break ;
 				case 'D' : disable = 1 ; if (enable) exitusage (USAGE) ; break ;
-				case 'R' : remove = 1 ; unsupervise = 1 ; if (create) exitusage(USAGE) ; break ;
+				case 'R' : remove = 1 ; if (create) exitusage(USAGE) ; break ;
 				case 'C' : if (!stralloc_cats(&clone,l.arg)) retstralloc(111,"main") ;
 						   if (!stralloc_0(&clone)) retstralloc(111,"main") ;
 						   snap = 1 ;
