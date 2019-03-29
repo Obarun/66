@@ -215,7 +215,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 			if (r < 0) strerr_dief1x(110,"cyclic graph detected") ;
 			strerr_diefu1sys(111,"publish service graph") ;
 		}
-		if (!ss_resolve_write_master(info,&graph,workdir.s,SS_SIMPLE,0))
+		if (!ss_resolve_write_master(info,&graph,workdir.s,0))
 		{
 			cleanup(workdir.s) ;
 			strerr_diefu1sys(111,"update inner bundle") ;

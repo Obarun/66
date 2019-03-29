@@ -35,78 +35,58 @@
 #include <66/rc.h>
 #include <66/ssexec.h>
 #include <66/resolve.h>
+#include <66/state.h>
 
 static unsigned int DEADLINE = 0 ;
 static unsigned int UNSUP = 0 ;
 static char *SIG = "-D" ;
 
-static genalloc nclassic = GENALLOC_ZERO ;//ss_resolve_t
-static genalloc nrc = GENALLOC_ZERO ;//ss_resolve_t
+static ss_resolve_graph_t graph_unsup_cl = RESOLVE_GRAPH_ZERO ;
+static ss_resolve_graph_t graph_cl = RESOLVE_GRAPH_ZERO ;
+static ss_resolve_graph_t graph_unsup_rc = RESOLVE_GRAPH_ZERO ;
+static ss_resolve_graph_t graph_rc = RESOLVE_GRAPH_ZERO ;
 
-int svc_down(ssexec_t *info,genalloc *ga,char const *const *envp)
+int svc_down(ssexec_t *info, char const *const *envp)
 {
-	unsigned int i = 0 , reverse = 1 ;
+	unsigned int reverse = 1 ;
 	int r ;
-	stralloc sares = STRALLOC_ZERO ;
-	ss_resolve_graph_t graph_unsup = RESOLVE_GRAPH_ZERO ;
-	ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
-	
-	if (!ss_resolve_pointo(&sares,info,CLASSIC,SS_RESOLVE_LIVE))		
-	{
-		VERBO1 strerr_warnwu1x("set revolve pointer to live") ;
-		goto err;
-	}
-	for (; i < genalloc_len(ss_resolve_t,ga) ; i++)
-	{
-		if (genalloc_s(ss_resolve_t,ga)[i].unsupervise) 
-		{	
-			if (!ss_resolve_graph_build(&graph_unsup,&genalloc_s(ss_resolve_t,ga)[i],sares.s,reverse)) goto err ;
-			if (!ss_resolve_add_logger(&graph_unsup.name,sares.s)) goto err ;
-		}
-		if (!ss_resolve_graph_build(&graph,&genalloc_s(ss_resolve_t,ga)[i],sares.s,reverse)) goto err ;
-	}
-	
-	if (genalloc_len(ss_resolve_t,&graph_unsup.name))
+
+	if (genalloc_len(ss_resolve_t,&graph_unsup_cl.name))
 	{
 		UNSUP = 1 ;
-		r = ss_resolve_graph_publish(&graph_unsup,reverse) ;
+		r = ss_resolve_graph_publish(&graph_unsup_cl,reverse) ;
 		if (r < 0 || !r)
 		{
 			VERBO1 strerr_warnwu1sys("publish service graph") ;
 			goto err ;
 		}
-		if (!svc_unsupervise(info,&graph_unsup.sorted,SIG,envp)) goto err ;
+		if (!svc_unsupervise(info,&graph_unsup_cl.sorted,SIG,envp)) goto err ;
 	}
 	else
 	{
-		r = ss_resolve_graph_publish(&graph,reverse) ;
+		r = ss_resolve_graph_publish(&graph_cl,reverse) ;
 		if (r < 0 || !r)
 		{
 			VERBO1 strerr_warnwu1sys("publish service graph") ;
 			goto err ;
 		}
-		if (!svc_send(info,&graph.sorted,SIG,envp)) goto err ;
+		if (!svc_send(info,&graph_cl.sorted,SIG,envp)) goto err ;
 	}
-	stralloc_free(&sares) ;
-	ss_resolve_graph_free(&graph_unsup) ;	
-	ss_resolve_graph_free(&graph) ;	
+	ss_resolve_graph_free(&graph_unsup_cl) ;	
+	ss_resolve_graph_free(&graph_cl) ;	
 	return 1 ;
 	err: 
-		stralloc_free(&sares) ;
-		ss_resolve_graph_free(&graph_unsup) ;	
-		ss_resolve_graph_free(&graph) ;	
+		ss_resolve_graph_free(&graph_unsup_cl) ;	
+		ss_resolve_graph_free(&graph_cl) ;	
 		return 0 ;
 }
 
 int rc_unsupervise(ssexec_t *info, genalloc *ga,char const *sig,char const *const *envp)
 {
-	int writein ;
-	
 	ss_resolve_t_ref pres ;
+	ss_state_t sta = STATE_ZERO ;
 	stralloc sares = STRALLOC_ZERO ;
-	
-	if (!access(info->tree.s,W_OK)) writein = SS_DOUBLE ;
-	else writein = SS_SIMPLE ;
+	stralloc sasta = STRALLOC_ZERO ;
 	
 	if (!rc_send(info,ga,sig,envp))
 	{
@@ -118,101 +98,88 @@ int rc_unsupervise(ssexec_t *info, genalloc *ga,char const *sig,char const *cons
 		VERBO1 strerr_warnwu3x("switch ",info->treename.s," to source") ;
 		goto err ;
 	}
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE))
+	if (!ss_resolve_pointo(&sasta,info,SS_NOTYPE,SS_RESOLVE_STATE))
 	{
-		VERBO1 strerr_warnwu1sys("set revolve pointer to live") ;
+		VERBO1 strerr_warnwu1sys("set revolve pointer to state") ;
 		return 0 ;
 	}
-	
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
+	{
+		VERBO1 strerr_warnwu1sys("set revolve pointer to source") ;
+		return 0 ;
+	}
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
 	{
 		pres = &genalloc_s(ss_resolve_t,ga)[i] ;
 		char const *string = pres->sa.s ;
 		char const *name = string + pres->name  ;
 		// do not remove the resolve file if the daemon was not disabled
-		if (pres->disen)
+		if (!pres->disen)
 		{				
-			ss_resolve_setflag(pres,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
-			ss_resolve_setflag(pres,SS_FLAGS_RUN,SS_FLAGS_FALSE) ;
-			ss_resolve_setflag(pres,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-			ss_resolve_setflag(pres,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
-			VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-			if (!ss_resolve_write(pres,sares.s,name,writein))
+			VERBO2 strerr_warni2x("Delete resolve file of: ",name) ;
+			ss_resolve_rmfile(pres,sares.s,name) ;
+			VERBO2 strerr_warni2x("Delete state file of: ",name) ;
+			ss_state_rmfile(sasta.s,name) ;
+		}
+		else
+		{
+			ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+			ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
+			ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+			ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
+			ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+			VERBO2 strerr_warni2x("Write state file of: ",name) ;
+			if (!ss_state_write(&sta,sasta.s,name))
 			{
-				VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
+				VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
 				goto err ;
 			}
-			VERBO1 strerr_warni2x("Unsupervised successfully: ",name) ;
-			continue ;
-		}
-		VERBO2 strerr_warni2x("Delete resolve file of: ",name) ;
-		if (!ss_resolve_rmfile(pres,sares.s,name,writein))
-		{
-			VERBO1 strerr_warnwu2sys("delete resolve file of: ",name) ;
-			goto err ;
 		}
 		VERBO1 strerr_warni2x("Unsupervised successfully: ",name) ;
 	}
 	
 	stralloc_free(&sares) ;
+	stralloc_free(&sasta) ;
 	return 1 ;
 	err:
 		stralloc_free(&sares) ;
+		stralloc_free(&sasta) ;
 		return 0 ;
 }
 
-int rc_down(ssexec_t *info,genalloc *ga,char const *const *envp)
+int rc_down(ssexec_t *info, char const *const *envp)
 {
-	unsigned int i = 0 , reverse = 1 ;
+	unsigned int reverse = 1 ;
 	int r ;
-	stralloc sares = STRALLOC_ZERO ;
-	ss_resolve_graph_t graph_unsup = RESOLVE_GRAPH_ZERO ;
-	ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
 		
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE))
-	{
-		VERBO1 strerr_warnwu1sys("set revolve pointer to live") ;
-		return 0 ;
-	}
-	for (; i < genalloc_len(ss_resolve_t,ga) ; i++)
-	{
-		if (genalloc_s(ss_resolve_t,ga)[i].unsupervise) 
-		{	
-			if (!ss_resolve_graph_build(&graph_unsup,&genalloc_s(ss_resolve_t,ga)[i],sares.s,reverse)) goto err ;
-			if (!ss_resolve_add_logger(&graph_unsup.name,sares.s)) goto err ;
-		}
-		else if (!ss_resolve_graph_build(&graph,&genalloc_s(ss_resolve_t,ga)[i],sares.s,reverse)) goto err ;
-	}
-	if (genalloc_len(ss_resolve_t,&graph_unsup.name))
+	if (genalloc_len(ss_resolve_t,&graph_unsup_rc.name))
 	{
 		UNSUP = 1 ;
-		r = ss_resolve_graph_publish(&graph_unsup,reverse) ;
+		r = ss_resolve_graph_publish(&graph_unsup_rc,reverse) ;
 		if (r < 0 || !r)
 		{
 			VERBO1 strerr_warnwu1sys("publish service graph") ;
 			goto err ;
 		}
-		if (!rc_unsupervise(info,&graph_unsup.sorted,"-d",envp)) goto err ;
+		if (!rc_unsupervise(info,&graph_unsup_rc.sorted,"-d",envp)) goto err ;
 	}
 	else
 	{
-		r = ss_resolve_graph_publish(&graph,reverse) ;
+		r = ss_resolve_graph_publish(&graph_rc,reverse) ;
 		if (r < 0 || !r)
 		{
 			VERBO1 strerr_warnwu1sys("publish service graph") ;
 			goto err ;
 		}
-		if (!rc_send(info,&graph.sorted,"-d",envp)) goto err ;
+		if (!rc_send(info,&graph_rc.sorted,"-d",envp)) goto err ;
 	}
 	
-	stralloc_free(&sares) ;
-	ss_resolve_graph_free(&graph_unsup) ;
-	ss_resolve_graph_free(&graph) ;
+	ss_resolve_graph_free(&graph_unsup_rc) ;
+	ss_resolve_graph_free(&graph_rc) ;
 	return 1 ;
 	err: 
-		stralloc_free(&sares) ;
-		ss_resolve_graph_free(&graph_unsup) ;
-		ss_resolve_graph_free(&graph) ;
+		ss_resolve_graph_free(&graph_unsup_rc) ;
+		ss_resolve_graph_free(&graph_rc) ;
 		return 0 ;
 }
 
@@ -227,9 +194,11 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 	
 	int cl, rc, sigopt, mainunsup ;
 	stralloc sares = STRALLOC_ZERO ;
+	stralloc sasta = STRALLOC_ZERO ;
 	genalloc gares = GENALLOC_ZERO ; //ss_resolve_t
 	ss_resolve_t_ref pres ;
 	ss_resolve_t res = RESOLVE_ZERO ;
+	ss_state_t sta = STATE_ZERO ;
 	
 	cl = rc = sigopt = mainunsup = 0 ;
 	
@@ -257,36 +226,28 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 	
 	if ((scandir_ok(info->scandir.s)) !=1 ) strerr_dief3sys(111,"scandir: ", info->scandir.s," is not running") ;
 	
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1sys(111,"set revolve pointer to live") ;
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;
 		
 	for (;*argv;argv++)
 	{
 		char const *name = *argv ;
-		if (!ss_resolve_check(sares.s,name))
-		{
-			if (!ss_resolve_check_insrc(info,name)) strerr_dief2x(110,name," is not enabled") ;
-			else strerr_dief2x(110,"Unitialized service : ", name) ;
-		}
+		if (!ss_resolve_check(sares.s,name)) strerr_dief2x(110,name," is not enabled") ;
 		if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
 		if (!ss_resolve_append(&gares,&res)) strerr_diefu2sys(111,"append resolve file of: ",name) ;
 	}
 	
-	for(unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
+	if (!ss_resolve_pointo(&sasta,info,SS_NOTYPE,SS_RESOLVE_STATE)) strerr_diefu1sys(111,"set revolve pointer to state") ;
+	
+	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
 	{
+		int unsup = 0 , reverse = 1 ;
 		pres = &genalloc_s(ss_resolve_t,&gares)[i] ;
 		char const *string = pres->sa.s ;
 		char const *name = string + pres->name ;
-		size_t earlen = strlen(string + pres->runat) ;
-		char earlier[earlen + 8 +1] ;
-		memcpy(earlier,string + pres->runat,earlen) ;
-		memcpy(earlier + earlen,"/earlier",8) ;
-		earlier[earlen + 8] = 0 ;
-		
-		if (!access(earlier, F_OK))
-		{ 
-			pres->run = 1 ;
-			unlink_void(earlier) ;
-		}
+	
+		if (!ss_state_check(sasta.s,name)) strerr_dief2x(110,name," : is not initialized") ;
+		else if (!ss_state_read(&sta,sasta.s,name)) strerr_diefu2sys(111,"read state file of: ",name) ;
+	
 		int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 		
 		if (obstr_equal(name,SS_MASTER + 1))
@@ -294,39 +255,39 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 			if (pres->ndeps) goto append ;
 			else continue ;
 		}
-		/** always check if the daemon is present or not into the scandir
-		 * it can be stopped from different manner (crash,66-scandir signal,..)
-		 * without changing the corresponding resolve file */
-		if (pres->type == LONGRUN || pres->type == CLASSIC)
-		{
-			if (!s6_svc_ok(string + pres->runat)) strerr_dief2x(110,name," : is not running") ;
-		}
-		/** special case, enabling->starting->stopping->disabling
-		 * make an orphan service.
-		 * check if it's the case and force to stop it*/
-		if (!pres->run && pres->disen) strerr_dief2x(110,name," : is not running, try 66-start before") ;
-		if (!pres->unsupervise && !pres->disen) strerr_dief2x(110,name," : is not enabled") ;
-
+		
 		/** logger cannot be unsupervised alone */
-		if (logname > 0)
+		if (logname > 0 && (!ss_resolve_cmp(&gares,string + pres->logassoc)))
 		{
-			if (UNSUP && (!ss_resolve_cmp(&gares,string + pres->logassoc))) strerr_dief1x(111,"logger detected - unsupervise request is not allowed") ;
+			if (UNSUP) strerr_dief1x(111,"logger detected - unsupervise request is not allowed") ;
 		}
-		if (UNSUP) pres->unsupervise = 1 ;
-		/*if (UNSUP && pres->type >= BUNDLE && !pres->unsupervise)
-		{
-			VERBO1 strerr_warnw2x(get_keybyid(pres->type)," detected - ignoring unsupervise request") ;
-			pres->unsupervise = 0 ;
-		}*/
+		if (UNSUP) unsup = 1 ;
+		if (sta.unsupervise) unsup = 1 ;
 		append:		
 		if (pres->type == CLASSIC)
 		{
-			if (!ss_resolve_append(&nclassic,pres)) strerr_diefu2sys(111,"append services selection with: ",name) ;
+			if (unsup)
+			{
+				if (!ss_resolve_graph_build(&graph_unsup_cl,&genalloc_s(ss_resolve_t,&gares)[i],sares.s,reverse)) 
+					strerr_diefu1sys(111,"build services graph") ;
+				if (!ss_resolve_add_logger(&graph_unsup_cl.name,sares.s)) 
+					strerr_diefu1sys(111,"append service selection with logger") ;
+			}
+			if (!ss_resolve_graph_build(&graph_cl,&genalloc_s(ss_resolve_t,&gares)[i],sares.s,reverse))
+				strerr_diefu1sys(111,"build services graph") ;
 			cl++ ;
 		}
 		else
 		{
-			if (!ss_resolve_append(&nrc,pres)) strerr_diefu2sys(111,"append services selection with: ",name) ;
+			if (unsup)
+			{
+				if (!ss_resolve_graph_build(&graph_unsup_rc,&genalloc_s(ss_resolve_t,&gares)[i],sares.s,reverse)) 
+					strerr_diefu1sys(111,"build services graph") ;
+				if (!ss_resolve_add_logger(&graph_unsup_rc.name,sares.s)) 
+					strerr_diefu1sys(111,"append service selection with logger") ;
+			}
+			if (!ss_resolve_graph_build(&graph_rc,&genalloc_s(ss_resolve_t,&gares)[i],sares.s,reverse))
+				strerr_diefu1sys(111,"build services graph") ;
 			rc++;
 		}
 	}
@@ -335,26 +296,23 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 	if (rc)
 	{
 		VERBO2 strerr_warni1x("stop atomic services ...") ;
-		if (!rc_down(info,&nrc,envp))
+		if (!rc_down(info,envp))
 			strerr_diefu1x(111,"stop atomic services") ;
 		VERBO2 strerr_warni3x("switch atomic services of: ",info->treename.s," to source") ;
 		if (!db_switch_to(info,envp,SS_SWSRC))
 			strerr_diefu5x(111,"switch",info->livetree.s,"/",info->treename.s," to source") ;
-	
-		genalloc_deepfree(ss_resolve_t,&nrc,ss_resolve_free) ;
+
 	}
 	
 	/** svc work */
 	if (cl)
 	{
 		VERBO2 strerr_warni1x("stop classic services ...") ;
-		if (!svc_down(info,&nclassic,envp))
+		if (!svc_down(info,envp))
 			strerr_diefu1x(111,"stop classic services") ;
 		VERBO2 strerr_warni3x("switch classic services of: ",info->treename.s," to source") ;
 		if (!svc_switch_to(info,SS_SWSRC))
 			strerr_diefu3x(111,"switch classic service of: ",info->treename.s," to source") ;
-		
-		genalloc_deepfree(ss_resolve_t,&nclassic,ss_resolve_free) ;
 	}
 		
 	if (UNSUP)
@@ -364,6 +322,7 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 			strerr_diefu2sys(111,"send signal to scandir: ", info->scandir.s) ;
 	}
 	stralloc_free(&sares) ;
+	stralloc_free(&sasta) ;
 	ss_resolve_free(&res) ;
 	genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
 	

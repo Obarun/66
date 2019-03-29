@@ -15,6 +15,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdlib.h>
+//#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -40,8 +41,7 @@
 #include <66/backup.h>
 #include <66/resolve.h>
 #include <66/svc.h>
-
-#include <stdio.h>
+#include <66/state.h>
 
 static void cleanup(char const *dst)
 {
@@ -56,6 +56,8 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 	genalloc rdeps = GENALLOC_ZERO ;
 	stralloc dst = STRALLOC_ZERO ;
 	ss_resolve_t cp = RESOLVE_ZERO ;
+	ss_state_t sta = STATE_ZERO ;
+	stralloc sasta = STRALLOC_ZERO ;
 	size_t newlen ;
 	char *name = res->sa.s + res->name ;
 	if (!ss_resolve_copy(&cp,res))
@@ -84,7 +86,11 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 		VERBO1 strerr_warnwu1sys("resolve logger") ;
 		goto err ;
 	}
-	genalloc_reverse(ss_resolve_t,&rdeps) ;
+	if (!ss_resolve_pointo(&sasta,info,SS_NOTYPE,SS_RESOLVE_STATE))
+	{
+		VERBO1 strerr_warnwu1sys("set revolve pointer to state") ;
+		goto err ;
+	}
 	for (;i < genalloc_len(ss_resolve_t,&rdeps) ; i++)
 	{
 		ss_resolve_t_ref pres = &genalloc_s(ss_resolve_t,&rdeps)[i] ;
@@ -100,26 +106,28 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 			VERBO1 strerr_warnwu2sys("delete source service file: ",dst.s) ;
 			goto err ;
 		}
-		if (!pres->run)
+		if (!ss_state_check(string + pres->state,name))
 		{
 			VERBO2 strerr_warni2x("Delete resolve file of: ",name) ;
-			if (!ss_resolve_rmfile(pres,src,name,SS_SIMPLE))
-			{
-				VERBO1 strerr_warnwu2sys("delete resolve file of: ",name) ;
-			}
+			ss_resolve_rmfile(pres,src,name) ;
 		}
 		else
 		{
 			/** modify the resolve file for 66-stop*/
-			ss_resolve_setflag(pres,SS_FLAGS_DISEN,SS_FLAGS_FALSE) ;
-			ss_resolve_setflag(pres,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-			ss_resolve_setflag(pres,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-			ss_resolve_setflag(pres,SS_FLAGS_UNSUPERVISE,SS_FLAGS_TRUE) ;
-				
+			pres->disen = 0 ;
 			VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-			if (!ss_resolve_write(pres,src,name,SS_SIMPLE)) 
+			if (!ss_resolve_write(pres,src,name)) 
 			{
 				VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
+				goto err ;
+			}
+			ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+			ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+			ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_TRUE) ;
+			VERBO2 strerr_warni2x("Write state file of: ",name) ;
+			if (!ss_state_write(&sta,sasta.s,name))
+			{
+				VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
 				goto err ;
 			}
 		}
@@ -129,12 +137,14 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 	
 	genalloc_deepfree(ss_resolve_t,&rdeps,ss_resolve_free) ;
 	stralloc_free(&dst) ;
+	stralloc_free(&sasta) ;
 	return 1 ;
 	
 	err:
 		ss_resolve_free(&cp) ;
 		genalloc_deepfree(ss_resolve_t,&rdeps,ss_resolve_free) ;
 		stralloc_free(&dst) ;
+		stralloc_free(&sasta) ;
 		return 0 ;
 }
 
@@ -239,7 +249,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 			if (r < 0) strerr_dief1x(110,"cyclic graph detected") ;
 			strerr_diefu1sys(111,"publish service graph") ;
 		}
-		if (!ss_resolve_write_master(info,&graph,workdir.s,SS_SIMPLE,1))
+		if (!ss_resolve_write_master(info,&graph,workdir.s,1))
 		{
 			cleanup(workdir.s) ;
 			strerr_diefu1sys(111,"update inner bundle") ;

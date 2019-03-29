@@ -29,6 +29,7 @@
 #include <66/ssexec.h>
 #include <66/constants.h>
 #include <66/utils.h>
+#include <66/state.h>
 
 #include <s6-rc/config.h>
 
@@ -37,16 +38,14 @@
  * @Return 0 on fail */
 int rc_init(ssexec_t *info, char const *const *envp)
 {
-	int r, writein, wstat, empty = 0 ;
+	int r, wstat, empty = 0 ;
 	pid_t pid ;
 	
+	ss_state_t sta = STATE_ZERO ;
 	stralloc sares = STRALLOC_ZERO ;
 	ss_resolve_t res = RESOLVE_ZERO ;
 	genalloc gasvc = GENALLOC_ZERO ; //stralist type
 	genalloc gares = GENALLOC_ZERO ; //ss_resolve_t type
-	
-	if (!access(info->tree.s,W_OK)) writein = SS_DOUBLE ;
-	else writein = SS_SIMPLE ;
 	
 	char svdir[info->tree.len + SS_SVDIRS_LEN + SS_DB_LEN + 1 + info->treename.len + 1] ;
 	char ltree[info->livetree.len + 1 + info->treename.len + 1] ;
@@ -123,9 +122,6 @@ int rc_init(ssexec_t *info, char const *const *envp)
 	
 	if (!clean_val(&gasvc,res.sa.s + res.deps)) { VERBO1 strerr_warnwu1sys("clean dependencies of inner bundle") ; goto err ; }
 	
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE))		
-		{ VERBO1 strerr_warnwu1x("set revolve pointer to live") ; goto err ; }
-		
 	for (unsigned int i = 0 ; i < genalloc_len(stralist,&gasvc) ; i++)
 	{
 		char *name = gaistr(&gasvc,i) ;
@@ -135,24 +131,31 @@ int rc_init(ssexec_t *info, char const *const *envp)
 		if (!ss_resolve_add_deps(&gares,&tmp,sares.s)) { VERBO1 strerr_warnwu2sys("resolve dependencies of: ",name) ; goto err ; }
 		ss_resolve_free(&tmp) ;
 	}
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_STATE))		
+		{ VERBO1 strerr_warnwu1x("set revolve pointer to state") ; goto err ; }
 	
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
 	{
 		char const *string = genalloc_s(ss_resolve_t,&gares)[i].sa.s ;
 		char const *name = string + genalloc_s(ss_resolve_t,&gares)[i].name  ;
 		if (obstr_equal(name,SS_MASTER+1)) continue ;
-		ss_resolve_setflag(&genalloc_s(ss_resolve_t,&gares)[i],SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-		ss_resolve_setflag(&genalloc_s(ss_resolve_t,&gares)[i],SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
-		VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-		if (!ss_resolve_write(&genalloc_s(ss_resolve_t,&gares)[i],sares.s,name,writein))
-			{ VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ; goto err ; }
+		ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+		ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+		ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+		VERBO2 strerr_warni2x("Write state file of: ",name) ;
+		if (!ss_state_write(&sta,sares.s,name))
+		{
+			VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
+			goto err ;
+		}
 			
 		VERBO1 strerr_warni2x("Initialized successfully: ",name) ;
 	}
 	
+	/*
 	VERBO2 strerr_warnt2x("reload scandir: ",info->scandir.s) ;
 	if (scandir_send_signal(info->scandir.s,"an") <= 0) goto err ;
-	
+	*/
 	end:
 	genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
 	genalloc_deepfree(stralist,&gasvc,stra_free) ;

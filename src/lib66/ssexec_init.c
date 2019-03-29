@@ -37,6 +37,7 @@
 #include <66/resolve.h>
 #include <66/ssexec.h>
 #include <66/rc.h>
+#include <66/state.h>
 
 int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
@@ -47,6 +48,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	
 	stralloc sares = STRALLOC_ZERO ;
 	ss_resolve_t res = RESOLVE_ZERO ;
+	ss_state_t sta = STATE_ZERO ;
 	
 	classic = db = earlier = 0 ;
 	
@@ -103,7 +105,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 		}
 		
 		if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) 
-			strerr_diefu1x(111,"set revolve pointer to live") ;
+			strerr_diefu1x(111,"set revolve pointer to source") ;
 		
 		for (i = 0 ; i < genalloc_len(stralist,&gasvc) ; i++)
 		{
@@ -135,7 +137,12 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 				memcpy(tocopy + dirlen + 1, name, namelen) ;
 				tocopy[dirlen + 1 + namelen] = 0 ;
 				if (!hiercopy(tocopy,string + genalloc_s(ss_resolve_t,&gares)[i].runat)) strerr_diefu4sys(111,"to copy: ",tocopy," to: ",string + genalloc_s(ss_resolve_t,&gares)[i].runat) ;
-				if (!file_create_empty(string + genalloc_s(ss_resolve_t,&gares)[i].runat,"earlier",0644)) strerr_diefu3sys(111,"mark ",string + genalloc_s(ss_resolve_t,&gares)[i].name," as earlier service") ;
+				ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+				ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
+				ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+				ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_UNKNOWN) ;
+				ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_UNKNOWN) ;
+				if (!ss_state_write(&sta,string + genalloc_s(ss_resolve_t,&gares)[i].state,name)) strerr_diefu2sys(111,"write state file of: ",name) ;
 				VERBO1 strerr_warni2x("Initialized successfully: ",name) ;
 			}
 		}

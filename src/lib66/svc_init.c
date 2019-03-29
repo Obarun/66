@@ -16,6 +16,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+//#include <stdio.h>
 
 #include <oblibs/error2.h>
 #include <oblibs/stralist.h>
@@ -36,27 +37,24 @@
 #include <66/resolve.h>
 #include <66/constants.h>
 #include <66/ssexec.h>
-
-#include <stdio.h>
+#include <66/state.h>
 
 int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 {
 	
-	int logname, writein ;
+	int logname ;
 	gid_t gid = getgid() ;
 	uint16_t id ;
 		
 	ftrigr_t fifo = FTRIGR_ZERO ;
 	genalloc gadown = GENALLOC_ZERO ;
 	genalloc ids = GENALLOC_ZERO ; // uint16_t
-	stralloc sares = STRALLOC_ZERO ;
+	stralloc sasta = STRALLOC_ZERO ;
+	ss_state_t sta = STATE_ZERO ;
 	
 	tain_t deadline ;
 	tain_now_g() ;
 	tain_addsec(&deadline,&STAMP,2) ;	
-	
-	if (!access(info->tree.s,W_OK)) writein = SS_DOUBLE ;
-	else writein = SS_SIMPLE ;
 	
 	if (!ftrigr_startf(&fifo, &deadline, &STAMP))
 		goto err ;
@@ -169,7 +167,6 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 			goto err ;
 		}
 	
-	
 		VERBO3 strerr_warnt1x("waiting for events on fifo") ;
 		if (ftrigr_wait_and_g(&fifo, genalloc_s(uint16_t, &ids), genalloc_len(uint16_t, &ids), &deadline) < 0)
 				goto err ;
@@ -179,21 +176,20 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 			VERBO3 strerr_warnt2x("Delete down file at: ",gaistr(&gadown,i)) ;
 			if (unlink(gaistr(&gadown,i)) < 0 && errno != ENOENT) goto err ;
 		}
-		if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE))		
+		if (!ss_resolve_pointo(&sasta,info,SS_NOTYPE,SS_RESOLVE_STATE))		
 		{
-			VERBO3 strerr_warnwu1x("set revolve pointer to live") ;
+			VERBO3 strerr_warnwu1x("set revolve pointer to state") ;
 			goto err ;
 		}
 		for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
 		{
 			char const *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
 			char const *name = string + genalloc_s(ss_resolve_t,ga)[i].name  ;
-			ss_resolve_setflag(&genalloc_s(ss_resolve_t,ga)[i],SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-			ss_resolve_setflag(&genalloc_s(ss_resolve_t,ga)[i],SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
-			VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-			if (!ss_resolve_write(&genalloc_s(ss_resolve_t,ga)[i],sares.s,name,writein))
+			
+			VERBO2 strerr_warni2x("Write state file of: ",name) ;
+			if (!ss_state_write(&sta,sasta.s,name))
 			{
-				VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
+				VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
 				goto err ;
 			}
 			VERBO1 strerr_warni2x("Initialized successfully: ",name) ;
@@ -202,7 +198,7 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 	ftrigr_end(&fifo) ;
 	genalloc_deepfree(stralist,&gadown,stra_free) ;
 	genalloc_free(uint16_t, &ids) ;
-	stralloc_free(&sares) ;
+	stralloc_free(&sasta) ;
 	return 1 ;
 	
 	err:
@@ -210,7 +206,7 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 		genalloc_free(uint16_t, &ids) ;
 		genalloc_deepfree(stralist,&gadown,stra_free) ;
 		ftrigr_end(&fifo) ;
-		stralloc_free(&sares) ;
+		stralloc_free(&sasta) ;
 		return 0 ;
 
 }

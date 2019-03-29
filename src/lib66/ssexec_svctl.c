@@ -41,6 +41,7 @@
 #include <66/tree.h>
 #include <66/ssexec.h>
 #include <66/resolve.h>
+#include <66/state.h>
 
 unsigned int SV_DEADLINE = 3000 ;
 unsigned int DEATHSV = 10 ;
@@ -292,24 +293,24 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	DEATHSV = 10 ;
 	tain_t ttmain ;
 	
-	int e, isup, ret, writein, r ;
+	int e, isup, ret, r ;
 	unsigned int death, tsv, reverse ;
 	int SIGNAL = -1 ;
 	
 	genalloc gakeep = GENALLOC_ZERO ; //type ss_resolve_sig
 	stralloc sares = STRALLOC_ZERO ;
+	stralloc sasta = STRALLOC_ZERO ;
 	ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
 	ss_resolve_t res = RESOLVE_ZERO ;
+	ss_state_t sta = STATE_ZERO ;
 	
 	char *sig = 0 ;
 	
 	ftrigr_t fifo = FTRIGR_ZERO ;
+	
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	
 	tsv = death = ret = reverse = 0 ;
-	
-	if (!access(info->tree.s,W_OK)) writein = SS_DOUBLE ;
-	else writein = SS_SIMPLE ;
 	
 	//PROG = "66-svctl" ;
 	{
@@ -344,18 +345,14 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			
 	if ((scandir_ok(info->scandir.s)) !=1 ) strerr_dief3sys(111,"scandir: ", info->scandir.s," is not running") ;
 		
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE)) strerr_diefu1sys(111,"set revolve pointer to live") ;
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;
 	
 	if (SIGNAL > SIGRUP) reverse = 1 ;
 	
 	for(;*argv;argv++)
 	{
 		char const *name = *argv ;
-		if (!ss_resolve_check(sares.s,name))
-		{
-			if (!ss_resolve_check_insrc(info,name)) strerr_dief2sys(111,"unknown service: ",name) ;
-			else strerr_dief2x(111,"unitialized service: ",name) ;
-		}
+		if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(111,"unknown service: ",name) ;
 		if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
 		if (res.type >= BUNDLE) strerr_dief3x(111,name," has type ",get_keybyid(res.type)) ;
 		if (!ss_resolve_graph_build(&graph,&res,sares.s,reverse)) strerr_diefu1sys(111,"build services graph") ;
@@ -366,6 +363,8 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	if (r < 0) strerr_dief1x(111,"cyclic dependencies detected") ;
 	if (!r) strerr_diefu1sys(111,"publish service graph") ;
 	
+	if (!ss_resolve_pointo(&sasta,info,SS_NOTYPE,SS_RESOLVE_STATE)) strerr_diefu1sys(111,"set revolve pointer to state") ;
+	
 	for(unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&graph.sorted) ; i++)
 	{
 		ss_resolve_sig_t sv_signal = RESOLVE_SIG_ZERO ;
@@ -375,10 +374,10 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		size_t svoklen = strlen(svok) ;
 		char file[svoklen + 16 + 1] ;
 		memcpy(file,svok,svoklen) ;
-		if (!s6_svc_ok(svok)) strerr_dief2x(111,"unitialized service: ",string + sv_signal.res.name) ;
+		if (!ss_state_check(sasta.s,string + sv_signal.res.name)) strerr_dief2x(111,"unitialized service: ",string + sv_signal.res.name) ;
 		if (!s6_svstatus_read(svok,&status)) strerr_diefu2sys(111,"read status of: ",svok) ;
 		isup = status.pid && !status.flagfinishing ;
-			
+						
 		if (isup && (SIGNAL <= SIGRUP))
 		{
 			VERBO1 strerr_warni2x("Already up: ",string + sv_signal.res.name) ;
@@ -388,6 +387,10 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		{
 			VERBO1 strerr_warni2x("Already down: ",string + sv_signal.res.name) ;
 			continue ;
+		}
+		else if ((SIGNAL == SIGR) || (SIGNAL == SIGRR)) 
+		{
+			SIGNAL = SIGRUP ;
 		}
 		
 		sv_signal.sigtosend = sig ;
@@ -508,27 +511,39 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		if (sv->sig <= 3)
 		{
 			if (nret <= 1)
-				ss_resolve_setflag(&sv->res,SS_FLAGS_PID,(uint32_t)sv->pid) ;
-			else ss_resolve_setflag(&sv->res,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+			{
+				ss_state_setflag(&sta,SS_FLAGS_PID,sv->pid) ;
+				ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
+			}
+			else 
+			{
+				ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+				ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
+			}
 		}
 		else
 		{
 			if (nret <=1)
-				ss_resolve_setflag(&sv->res,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
-			else ss_resolve_setflag(&sv->res,SS_FLAGS_PID,(uint32_t)sv->pid) ;
+			{
+				ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+				ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
+			}
+			else
+			{
+				ss_state_setflag(&sta,SS_FLAGS_PID,sv->pid) ;
+				ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
+			}
 		}
-		ss_resolve_setflag(&sv->res,SS_FLAGS_RUN,SS_FLAGS_TRUE) ;
-		ss_resolve_setflag(&sv->res,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-		ss_resolve_setflag(&sv->res,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-		ss_resolve_setflag(&sv->res,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
-		VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-		if (!ss_resolve_write(&sv->res,sares.s,name,writein))
+		ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+		ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+		ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+		VERBO2 strerr_warni2x("Write state file of: ",name) ;
+		if (!ss_state_write(&sta,sasta.s,name))
 		{
-			VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
+			VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
 			ret = 111 ;
 		}
 		if (!nret) VERBO1 strerr_warni3x((sv->sig > 3) ? "Stopped" : "Started"," successfully: ",name) ; 
-		//ss_resolve_free(&sv->res) ;
 	}
 	
 	tain_now_g() ;
@@ -548,6 +563,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	ftrigr_end(&fifo) ;
 	selfpipe_finish() ;
 	stralloc_free(&sares) ;
+	stralloc_free(&sasta) ;
 	ss_resolve_graph_free(&graph) ;
 	genalloc_free(ss_resolve_sig_t,&gakeep) ;
 	ss_resolve_free(&res) ;

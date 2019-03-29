@@ -26,16 +26,14 @@
 #include <66/utils.h>
 #include <66/resolve.h>
 #include <66/ssexec.h>
+#include <66/state.h>
 
 int svc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *const *envp)
 {
-	int writein ;
-	
+	ss_state_t sta = STATE_ZERO ;
 	ss_resolve_t_ref pres ;
 	stralloc sares = STRALLOC_ZERO ;
-	
-	if (!access(info->tree.s,W_OK)) writein = SS_DOUBLE ;
-	else writein = SS_SIMPLE ;
+	stralloc sasta = STRALLOC_ZERO ;
 	
 	if (!svc_send(info,ga,sig,envp))
 	{
@@ -53,9 +51,14 @@ int svc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *cons
 			goto err ;
 		}
 	}
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_LIVE))
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
 	{
-		strerr_warnwu1sys("set revolve pointer to live") ;
+		strerr_warnwu1sys("set revolve pointer to source") ;
+		goto err ;
+	}
+	if (!ss_resolve_pointo(&sasta,info,SS_NOTYPE,SS_RESOLVE_STATE))
+	{
+		strerr_warnwu1sys("set revolve pointer to state") ;
 		goto err ;
 	}
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
@@ -64,33 +67,35 @@ int svc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *cons
 		char const *string = pres->sa.s ;
 		char const *name = string + pres->name  ;
 		// do not remove the resolve file if the daemon was not disabled
-		if (pres->disen)
+		if (!pres->disen)
 		{				
-			ss_resolve_setflag(pres,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
-			ss_resolve_setflag(pres,SS_FLAGS_RUN,SS_FLAGS_FALSE) ;
-			ss_resolve_setflag(pres,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-			ss_resolve_setflag(pres,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
-			VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-			if (!ss_resolve_write(pres,sares.s,name,writein))
+			VERBO2 strerr_warni2x("Delete resolve file of: ",name) ;
+			ss_resolve_rmfile(pres,sares.s,name) ;
+			VERBO2 strerr_warni2x("Delete state file of: ",name) ;
+			ss_state_rmfile(sasta.s,name) ;
+		}
+		else
+		{
+			ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+			ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
+			ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+			ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
+			ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+			VERBO2 strerr_warni2x("Write state file of: ",name) ;
+			if (!ss_state_write(&sta,sasta.s,name))
 			{
-				VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
+				VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
 				goto err ;
 			}
-			VERBO1 strerr_warni2x("Unsupervised successfully: ",name) ;
-			continue ;
-		}
-		VERBO2 strerr_warni2x("Delete resolve file of: ",name) ;
-		if (!ss_resolve_rmfile(pres,sares.s,name,writein))
-		{
-			VERBO1 strerr_warnwu2sys("delete resolve file of: ",name) ;
-			goto err ;
 		}
 		VERBO1 strerr_warni2x("Unsupervised successfully: ",name) ;
 	}
 	stralloc_free(&sares) ;
+	stralloc_free(&sasta) ;
 	return 1 ;
 	err:
 		stralloc_free(&sares) ;
+		stralloc_free(&sasta) ;
 		return 0 ;
 }
 
