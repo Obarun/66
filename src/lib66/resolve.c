@@ -517,14 +517,14 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	char stmp[info->livetree.len + 1 + info->treename.len + SS_SVDIRS_LEN + 1 + namelen + SS_LOG_SUFFIX_LEN + 1] ;
 	
 	size_t livelen = info->live.len - 1 ; 
-	char resolve[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len + 1 + namelen + 1] ;
-	memcpy(resolve,info->live.s,livelen) ;
-	memcpy(resolve + livelen, SS_STATE,SS_STATE_LEN) ;
-	resolve[livelen+ SS_STATE_LEN] = '/' ;
-	memcpy(resolve + livelen + SS_STATE_LEN + 1,ownerstr,ownerlen) ;
-	resolve[livelen + SS_STATE_LEN + 1 + ownerlen] = '/' ;
-	memcpy(resolve + livelen + SS_STATE_LEN + 1 + ownerlen + 1,info->treename.s,info->treename.len) ;
-	resolve[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len] = 0 ;
+	char state[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len + 1 + namelen + 1] ;
+	memcpy(state,info->live.s,livelen) ;
+	memcpy(state + livelen, SS_STATE,SS_STATE_LEN) ;
+	state[livelen+ SS_STATE_LEN] = '/' ;
+	memcpy(state + livelen + SS_STATE_LEN + 1,ownerstr,ownerlen) ;
+	state[livelen + SS_STATE_LEN + 1 + ownerlen] = '/' ;
+	memcpy(state + livelen + SS_STATE_LEN + 1 + ownerlen + 1,info->treename.s,info->treename.len) ;
+	state[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len] = 0 ;
 	
 	
 	res.name = ss_resolve_add_string(&res,name) ;
@@ -532,7 +532,7 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	res.tree = ss_resolve_add_string(&res,info->tree.s) ;
 	res.treename = ss_resolve_add_string(&res,info->treename.s) ;
 	res.live = ss_resolve_add_string(&res,info->live.s) ;
-	res.state = ss_resolve_add_string(&res,resolve) ;
+	res.state = ss_resolve_add_string(&res,state) ;
 	res.src = ss_resolve_add_string(&res,keep.s + services->src) ;
 	if (services->type.classic_longrun.run.exec)
 		res.exec_run = ss_resolve_add_string(&res,keep.s + services->type.classic_longrun.run.exec) ;
@@ -563,11 +563,11 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		stmp[info->livetree.len + 1 + info->treename.len + SS_SVDIRS_LEN + 1 + namelen] = 0 ;
 		res.runat = ss_resolve_add_string(&res,stmp) ;
 	}
-	resolve[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len] = '/' ;
-	memcpy(resolve + livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len + 1,name,namelen) ;
-	resolve[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len + 1 + namelen] = 0 ;
-	r = scan_mode(resolve,S_IFREG) ;
-	if (r < 0) { VERBO1 strerr_warnwu2sys("conflicting format: ",resolve) ; goto err ; }
+	state[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len] = '/' ;
+	memcpy(state + livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len + 1,name,namelen) ;
+	state[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len + 1 + namelen] = 0 ;
+	r = scan_mode(state,S_IFREG) ;
+	if (r < 0) { VERBO1 strerr_warnwu2sys("conflicting format: ",state) ; goto err ; }
 	if (r)
 	{
 		ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_TRUE) ;
@@ -981,14 +981,14 @@ int ss_resolve_write_master(ssexec_t *info,ss_resolve_graph_t *graph,char const 
 	dst[dirlen + SS_DB_LEN + SS_SRC_LEN + SS_MASTER_LEN] = 0 ;
 	
 	size_t livelen = info->live.len - 1 ; 
-	char resolve[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len + 1] ;
-	memcpy(resolve,info->live.s,livelen) ;
-	memcpy(resolve + livelen, SS_STATE,SS_STATE_LEN) ;
-	resolve[livelen+ SS_STATE_LEN] = '/' ;
-	memcpy(resolve + livelen + SS_STATE_LEN + 1,ownerstr,ownerlen) ;
-	resolve[livelen + SS_STATE_LEN + 1 + ownerlen] = '/' ;
-	memcpy(resolve + livelen + SS_STATE_LEN + 1 + ownerlen + 1,info->treename.s,info->treename.len) ;
-	resolve[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len] = 0 ;
+	char state[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len + 1] ;
+	memcpy(state,info->live.s,livelen) ;
+	memcpy(state + livelen, SS_STATE,SS_STATE_LEN) ;
+	state[livelen+ SS_STATE_LEN] = '/' ;
+	memcpy(state + livelen + SS_STATE_LEN + 1,ownerstr,ownerlen) ;
+	state[livelen + SS_STATE_LEN + 1 + ownerlen] = '/' ;
+	memcpy(state + livelen + SS_STATE_LEN + 1 + ownerlen + 1,info->treename.s,info->treename.len) ;
+	state[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len] = 0 ;
 	
 	if (reverse)
 	{
@@ -1043,7 +1043,7 @@ int ss_resolve_write_master(ssexec_t *info,ss_resolve_graph_t *graph,char const 
 	res.deps = ss_resolve_add_string(&res,inres.s) ;
 	res.ndeps = genalloc_len(ss_resolve_t,&graph->sorted) ;
 	res.runat = ss_resolve_add_string(&res,runat) ;
-	res.state = ss_resolve_add_string(&res,resolve) ;
+	res.state = ss_resolve_add_string(&res,state) ;
 		
 	if (!ss_resolve_write(&res,dir,SS_MASTER+1)) goto err ;
 	
