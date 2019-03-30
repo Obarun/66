@@ -72,17 +72,16 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 		   
 	size_t livelen = strlen(live) - 1 ;
 	size_t treenamelen = strlen(treename) ;
-	char src[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + treenamelen + SS_RESOLVE_LEN + 1] ;
+	char src[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + treenamelen + 1] ;
 	memcpy(src,live,livelen) ;
 	memcpy(src + livelen, SS_STATE,SS_STATE_LEN) ;
 	src[livelen + SS_STATE_LEN] = '/' ;
 	memcpy(src + livelen + SS_STATE_LEN + 1,ownerstr,ownerlen) ;
 	src[livelen + SS_STATE_LEN + 1 + ownerlen] = '/' ;
 	memcpy(src + livelen + SS_STATE_LEN + 1 + ownerlen + 1,treename,treenamelen) ;
-	memcpy(src + livelen + SS_STATE_LEN + 1 + ownerlen + 1 + treenamelen, SS_RESOLVE,SS_RESOLVE_LEN) ;
-	src[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + treenamelen + SS_RESOLVE_LEN] = 0 ;
+	src[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + treenamelen] = 0 ;
        
-	if (!dir_get(&ga,src,"",S_IFREG))
+	if (!dir_get(&ga,src,"init",S_IFREG))
 	{
 		VERBO3 strerr_warnwu2x("get services of tree: ",src) ;
 		goto err ;
