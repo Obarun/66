@@ -84,7 +84,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	
 	size_t dirlen ;
 	size_t svdirlen ;
-	char svdir[info->tree.len + SS_SVDIRS_LEN + SS_DB_LEN + 1 + info->treename.len + 1] ;
+	char svdir[info->tree.len + SS_SVDIRS_LEN + SS_SVC_LEN + 1] ;
 	memcpy(svdir,info->tree.s,info->tree.len) ;
 	memcpy(svdir + info->tree.len ,SS_SVDIRS ,SS_SVDIRS_LEN) ;
 	svdirlen = info->tree.len + SS_SVDIRS_LEN ;
