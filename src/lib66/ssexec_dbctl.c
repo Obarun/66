@@ -14,7 +14,7 @@
  
 #include <string.h>
 #include <sys/types.h>//pid_t
-//#include <stdio.h>
+#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -118,8 +118,7 @@ static int check_status(genalloc *gares,ssexec_t *info,int signal)
 			if (!s6_svstatus_read(pres->sa.s + pres->runat,&status)) strerr_diefu2sys(111,"read status of: ",pres->sa.s + pres->runat) ;
 			else if (up)
 			{
-				
-				if (!WEXITSTATUS(status.wstat) && !WIFSIGNALED(status.wstat))
+				if ((!WEXITSTATUS(status.wstat) && !WIFSIGNALED(status.wstat)) || (WIFSIGNALED(status.wstat) && !WEXITSTATUS(status.wstat) && (WTERMSIG(status.wstat) == 15 )))
 				{
 					ss_state_setflag(&sta,SS_FLAGS_PID,status.pid) ;
 					ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
@@ -134,7 +133,7 @@ static int check_status(genalloc *gares,ssexec_t *info,int signal)
 			}
 			else 
 			{
-				if (!WEXITSTATUS(status.wstat) && !WIFSIGNALED(status.wstat))
+				if ((!WEXITSTATUS(status.wstat) && !WIFSIGNALED(status.wstat)) || (WIFSIGNALED(status.wstat) && !WEXITSTATUS(status.wstat) && (WTERMSIG(status.wstat) == 15 )))
 				{
 					ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
 					ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
@@ -339,7 +338,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	if (waitpid_nointr(pid,&wstat, 0) < 0)
 		strerr_diefu1sys(111,"wait for s6-rc") ;
 	
-	if (wstat) strerr_diefu2x(111,down ? " start " : " stop ","services selection") ;
+	if (wstat) strerr_diefu2x(111,down ? "start" : "stop"," services selection") ;
 	
 	ret = check_status(&graph.sorted,info,down ? 2 : 1) ;
 	
