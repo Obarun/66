@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <locale.h>
 #include <langinfo.h>
+#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -41,7 +42,7 @@
 
 #include <s6/s6-supervise.h>//s6_svc_ok
 
-#include <stdio.h>
+
 
 unsigned int VERBOSITY = 1 ;
 static stralloc base = STRALLOC_ZERO ;
@@ -324,13 +325,13 @@ int info_cmpnsort(genalloc *ga)
 	return 1 ;
 }
 
-void info_walk(ss_resolve_t *res,char const *src,int reverse, depth_t *depth)
+int info_walk(ss_resolve_t *res,char const *src,int reverse, depth_t *depth)
 {
 	genalloc gadeps = GENALLOC_ZERO ;
 	ss_resolve_t dres = RESOLVE_ZERO ;
 	
 	if((!res->ndeps) || (depth->level > MAXDEPTH))
-		goto err ;
+		goto freed ;
 
 	if (!clean_val(&gadeps,res->sa.s + res->deps)) goto err ;
 	if (reverse) genalloc_reverse(stralist,&gadeps) ;
@@ -366,14 +367,18 @@ void info_walk(ss_resolve_t *res,char const *src,int reverse, depth_t *depth)
 				else 
 					d.prev = NULL;
 			}
-			info_walk(&dres,src,reverse,&d);
+			if (!info_walk(&dres,src,reverse,&d)) goto err;
 			depth->next = NULL;
 		}
 	}
-	
+	freed:
+	ss_resolve_free(&dres) ;
+	genalloc_deepfree(stralist,&gadeps,stra_free) ;
+	return 1 ;
 	err: 
 		ss_resolve_free(&dres) ;
 		genalloc_deepfree(stralist,&gadeps,stra_free) ;
+		return 0 ;
 }
 
 /** what = 0 -> complete tree
@@ -385,7 +390,7 @@ int graph_display(char const *tree,char const *name,unsigned int what)
 	genalloc tokeep = GENALLOC_ZERO ; //stralist
 	ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
 	stralloc inres = STRALLOC_ZERO ;
-	e = 1 ;
+	e = 0 ;
 	
 	size_t treelen = strlen(tree) ;
 	char src[treelen + SS_SVDIRS_LEN + 1] ;
@@ -403,7 +408,7 @@ int graph_display(char const *tree,char const *name,unsigned int what)
 		NULL,
 		1
 	} ;	
-	
+
 	if (!what)
 	{
 		if (!dir_get(&tokeep,srcres,SS_MASTER+1,S_IFREG)) goto err ;
@@ -411,6 +416,7 @@ int graph_display(char const *tree,char const *name,unsigned int what)
 		{
 			for (unsigned int i = 0 ; i < genalloc_len(stralist,&tokeep) ; i++)
 			{
+				
 				if (!ss_resolve_check(src,gaistr(&tokeep,i))) goto err ;
 				if (!ss_resolve_read(&res,src,gaistr(&tokeep,i))) goto err ;
 				if (!ss_resolve_graph_build(&graph,&res,src,REVERSE)) goto err ;
@@ -429,7 +435,7 @@ int graph_display(char const *tree,char const *name,unsigned int what)
 			ss_resolve_init(&res) ;
 			res.ndeps = genalloc_len(ss_resolve_t,&graph.sorted) ;
 			res.deps = ss_resolve_add_string(&res,inres.s) ;
-			info_walk(&res,src,0,&d) ;
+			if(!info_walk(&res,src,0,&d)) goto err ;
 		}
 		else
 		{
@@ -440,14 +446,15 @@ int graph_display(char const *tree,char const *name,unsigned int what)
 	{
 		if (!ss_resolve_check(src,name)) goto err ;
 		if (!ss_resolve_read(&res,src,name)) goto err ;
-		info_walk(&res,src,REVERSE,&d) ;
+		/*if (res.disen)*/ if(!info_walk(&res,src,REVERSE,&d)) goto err ;
+		
 	}
 	
 	ss_resolve_free(&res) ;
 	genalloc_deepfree(stralist,&tokeep,stra_free) ;
 	ss_resolve_graph_free(&graph) ;
 	stralloc_free(&inres) ;
-	return e ;
+	return 1 ;
 	
 	empty:
 		e = -1 ;
@@ -557,7 +564,7 @@ int tree_args(int argc, char const *const *argv)
 			r = graph_display(tree.s,"",0) ;
 			if (r < 0)
 			{
-				if (!bprintf(buffer_1," %s ","nothing to display")) goto err ;
+				if (!bprintf(buffer_1,"%s","nothing to display")) goto err ;
 				if (buffer_putflush(buffer_1,"\n",1) < 0) goto err ;
 			}else if (!r) goto err ;
 			if (buffer_putflush(buffer_1,"\n",1) < 0) goto err ;		
@@ -735,7 +742,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 		if (res.type == BUNDLE){ if (!info_print_title("contents")) goto err ; }
 		else if (!info_print_title("dependencies")) goto err ;
 	
-		if (!graph_display(tree.s,svname,1)) strerr_diefu2x(111,"display graph of tree: ", treename.s) ;
+		if (!graph_display(tree.s,svname,1)) strerr_diefu2x(111,"display dependencies of: ", svname) ;
 		
 	}
 	/** scripts*/
