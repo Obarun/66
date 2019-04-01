@@ -33,7 +33,6 @@ int svc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *cons
 	ss_state_t sta = STATE_ZERO ;
 	ss_resolve_t_ref pres ;
 	stralloc sares = STRALLOC_ZERO ;
-	stralloc sasta = STRALLOC_ZERO ;
 	
 	if (!svc_send(info,ga,sig,envp))
 	{
@@ -56,23 +55,19 @@ int svc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *cons
 		strerr_warnwu1sys("set revolve pointer to source") ;
 		goto err ;
 	}
-	if (!ss_resolve_pointo(&sasta,info,SS_NOTYPE,SS_RESOLVE_STATE))
-	{
-		strerr_warnwu1sys("set revolve pointer to state") ;
-		goto err ;
-	}
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
 	{
 		pres = &genalloc_s(ss_resolve_t,ga)[i] ;
 		char const *string = pres->sa.s ;
 		char const *name = string + pres->name  ;
-		// do not remove the resolve file if the daemon was not disabled
+		char const *state = string + pres->state ;
+		// remove the resolve/state file if the service is disabled
 		if (!pres->disen)
 		{				
 			VERBO2 strerr_warni2x("Delete resolve file of: ",name) ;
-			ss_resolve_rmfile(pres,sares.s,name) ;
+			ss_resolve_rmfile(sares.s,name) ;
 			VERBO2 strerr_warni2x("Delete state file of: ",name) ;
-			ss_state_rmfile(sasta.s,name) ;
+			ss_state_rmfile(state,name) ;
 		}
 		else
 		{
@@ -82,7 +77,7 @@ int svc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *cons
 			ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
 			ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
 			VERBO2 strerr_warni2x("Write state file of: ",name) ;
-			if (!ss_state_write(&sta,sasta.s,name))
+			if (!ss_state_write(&sta,state,name))
 			{
 				VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
 				goto err ;
@@ -91,11 +86,9 @@ int svc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *cons
 		VERBO1 strerr_warni2x("Unsupervised successfully: ",name) ;
 	}
 	stralloc_free(&sares) ;
-	stralloc_free(&sasta) ;
 	return 1 ;
 	err:
 		stralloc_free(&sares) ;
-		stralloc_free(&sasta) ;
 		return 0 ;
 }
 
