@@ -65,9 +65,16 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 		logname = 0 ;
 		char *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
 		char *name = string + genalloc_s(ss_resolve_t,ga)[i].name ;
+		char *state = string + genalloc_s(ss_resolve_t,ga)[i].state ;
 		if (s6_svc_ok(string + genalloc_s(ss_resolve_t,ga)[i].runat))
 		{
 			VERBO1 strerr_warni3x("Initialization aborted -- ",name," already initialized") ;
+			VERBO2 strerr_warni2x("Write state file of: ",name) ;
+			if (!ss_state_write(&sta,state,name))
+			{
+				VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
+				goto err ;
+			}
 			continue ;
 		}
 		logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
