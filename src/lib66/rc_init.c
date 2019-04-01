@@ -1,5 +1,5 @@
 /* 
- * rc_send.c
+ * rc_init.c
  * 
  * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
  * 
@@ -131,24 +131,19 @@ int rc_init(ssexec_t *info, char const *const *envp)
 		if (!ss_resolve_add_deps(&gares,&tmp,sares.s)) { VERBO1 strerr_warnwu2sys("resolve dependencies of: ",name) ; goto err ; }
 		ss_resolve_free(&tmp) ;
 	}
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_STATE))		
-		{ VERBO1 strerr_warnwu1x("set revolve pointer to state") ; goto err ; }
 	
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
 	{
 		char const *string = genalloc_s(ss_resolve_t,&gares)[i].sa.s ;
 		char const *name = string + genalloc_s(ss_resolve_t,&gares)[i].name  ;
-		if (obstr_equal(name,SS_MASTER+1)) continue ;
-		ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-		ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-		ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+		char const *state = string + genalloc_s(ss_resolve_t,&gares)[i].state  ;
+		
 		VERBO2 strerr_warni2x("Write state file of: ",name) ;
-		if (!ss_state_write(&sta,sares.s,name))
+		if (!ss_state_write(&sta,state,name))
 		{
 			VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
 			goto err ;
 		}
-			
 		VERBO1 strerr_warni2x("Initialized successfully: ",name) ;
 	}
 	
