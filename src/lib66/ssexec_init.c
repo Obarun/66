@@ -13,20 +13,17 @@
  */
  
 #include <string.h>
-#include <sys/stat.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>//chown
+//#include <stdio.h>
 
-#include <oblibs/obgetopt.h>
-#include <oblibs/string.h>
 #include <oblibs/error2.h>
-#include <oblibs/directory.h>
-
 #include <oblibs/types.h>//scan_mode
 #include <oblibs/stralist.h>
-#include <oblibs/files.h>
+#include <oblibs/directory.h>
 
 #include <skalibs/stralloc.h>
+#include <skalibs/genalloc.h>
 #include <skalibs/djbunix.h>
 
 #include <66/utils.h>
