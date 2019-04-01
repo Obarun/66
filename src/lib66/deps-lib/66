@@ -15,7 +15,9 @@ parser.o
 parser_utils.o
 parser_write.o
 rc_init.o
+rc_manage.o
 rc_send.o
+rc_unsupervise.o
 resolve.o
 resolve_graph.o
 scandir_ok.o
@@ -35,6 +37,7 @@ ssexec_main.o
 ssexec_start.o
 ssexec_stop.o
 ssexec_svctl.o
+state.o
 sv_alltype_zero.o
 svc_init.o
 svc_init_pipe.o

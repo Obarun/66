@@ -13,37 +13,26 @@
  */
  
 #include <string.h>
-#include <sys/stat.h>
-#include <stdlib.h>
+#include <errno.h>
+//#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
-#include <oblibs/directory.h>
-#include <oblibs/files.h>
-#include <oblibs/string.h>
-#include <oblibs/types.h>
 #include <oblibs/stralist.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/buffer.h>
-#include <skalibs/direntry.h>
-#include <skalibs/unix-transactional.h>
 #include <skalibs/diuint32.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
-#include <66/enum.h>
 #include <66/tree.h>
 #include <66/db.h>
 #include <66/parser.h>
-#include <66/backup.h>
 #include <66/svc.h>
 #include <66/resolve.h>
 #include <66/ssexec.h>
-
-#include <stdio.h>
 
 static unsigned int FORCE = 0 ;
 
@@ -215,7 +204,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 			if (r < 0) strerr_dief1x(110,"cyclic graph detected") ;
 			strerr_diefu1sys(111,"publish service graph") ;
 		}
-		if (!ss_resolve_write_master(info,&graph,workdir.s,SS_SIMPLE,0))
+		if (!ss_resolve_write_master(info,&graph,workdir.s,0))
 		{
 			cleanup(workdir.s) ;
 			strerr_diefu1sys(111,"update inner bundle") ;

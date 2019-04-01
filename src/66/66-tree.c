@@ -34,6 +34,8 @@
 #include <66/constants.h>
 #include <66/db.h>
 #include <66/enum.h>
+#include <66/state.h>
+#include <66/resolve.h>
 
 #include <s6/s6-supervise.h>
 #include <s6-rc/s6rc-servicedir.h>
@@ -256,7 +258,7 @@ int create_tree(char const *tree,char const *treename)
 	}
 	
 	VERBO3 strerr_warnt1x("write resolve file of inner bundle") ;
-	if (!ss_resolve_write(&res,dst,SS_MASTER+1,SS_SIMPLE))
+	if (!ss_resolve_write(&res,dst,SS_MASTER+1))
 	{
 		VERBO3 strerr_warnwu1sys("write resolve file of inner bundle") ;
 		ss_resolve_free(&res) ;
@@ -459,6 +461,7 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 	stralloc scandir = STRALLOC_ZERO ;
 	ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
 	ss_resolve_t_ref pres ;
+	ss_state_t sta = STATE_ZERO ;
 	
 	char prefix[treenamelen + 2] ;
 	memcpy(prefix,treename,treenamelen) ;
@@ -500,14 +503,22 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 	}
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&graph.sorted) ; i++) 
 	{
+		int st = 0 ;
 		pres = &genalloc_s(ss_resolve_t,&graph.sorted)[i] ;
 		char *string = pres->sa.s ;
 		char *name = string + pres->name ;
-		if (pres->type == CLASSIC && pres->run) 
+		char *state = string + pres->state ;
+		if (ss_state_check(state,name))
+		{
+			if (!ss_state_read(&sta,state,name)) strerr_diefu2sys(111,"read state file of: ",name) ;
+			st = sta.state ;
+		}
+		
+		if (pres->type == CLASSIC && st) 
 		{
 			if (!stra_add(&nclassic,name)) strerr_diefu2sys(111,"append services selection with: ",name) ;
 		}
-		else if (pres->type >= BUNDLE && pres->run)
+		else if (pres->type >= BUNDLE && st)
 		{ 
 			if (!stra_add(&nrc,name)) strerr_diefu2sys(111,"append services selection with: ",name) ;
 		}
@@ -520,7 +531,7 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 			if (!stralloc_0(&scandir)) retstralloc(111,"tree_unsupervise") ;
 			if (!stralloc_cats(&livetree,pres->sa.s + pres->live)) retstralloc(111,"tree_unsupervise") ;
 			if (!stralloc_0(&livetree)) retstralloc(111,"tree_unsupervise") ;
-			if (!stralloc_cats(&reslive,pres->sa.s + pres->resolve)) retstralloc(111,"tree_unsupervise") ;
+			if (!stralloc_cats(&reslive,pres->sa.s + pres->state)) retstralloc(111,"tree_unsupervise") ;
 			if (!stralloc_0(&reslive)) retstralloc(111,"tree_unsupervise") ;
 		}
 	}
@@ -671,7 +682,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 'c' : current = 1 ; break ;
 				case 'E' : enable = 1 ; if (disable) exitusage(USAGE) ; break ;
 				case 'D' : disable = 1 ; if (enable) exitusage (USAGE) ; break ;
-				case 'R' : remove = 1 ; unsupervise = 1 ; if (create) exitusage(USAGE) ; break ;
+				case 'R' : remove = 1 ; if (create) exitusage(USAGE) ; break ;
 				case 'C' : if (!stralloc_cats(&clone,l.arg)) retstralloc(111,"main") ;
 						   if (!stralloc_0(&clone)) retstralloc(111,"main") ;
 						   snap = 1 ;

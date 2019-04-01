@@ -13,35 +13,24 @@
  */
  
 #include <string.h>
-#include <sys/stat.h>
-#include <stdlib.h>
+#include <errno.h>
+//#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
-#include <oblibs/directory.h>
-#include <oblibs/types.h>
 #include <oblibs/string.h>
-#include <oblibs/files.h>
-#include <oblibs/stralist.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/buffer.h>
-#include <skalibs/unix-transactional.h>
-#include <skalibs/direntry.h>
-#include <skalibs/diuint32.h>
  
 #include <66/constants.h>
-#include <66/utils.h>
-#include <66/enum.h>
 #include <66/tree.h>
 #include <66/db.h>
-#include <66/backup.h>
 #include <66/resolve.h>
 #include <66/svc.h>
-
-#include <stdio.h>
+#include <66/state.h>
+#include <66/utils.h>
 
 static void cleanup(char const *dst)
 {
@@ -56,6 +45,8 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 	genalloc rdeps = GENALLOC_ZERO ;
 	stralloc dst = STRALLOC_ZERO ;
 	ss_resolve_t cp = RESOLVE_ZERO ;
+	ss_state_t sta = STATE_ZERO ;
+	
 	size_t newlen ;
 	char *name = res->sa.s + res->name ;
 	if (!ss_resolve_copy(&cp,res))
@@ -84,12 +75,13 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 		VERBO1 strerr_warnwu1sys("resolve logger") ;
 		goto err ;
 	}
-	genalloc_reverse(ss_resolve_t,&rdeps) ;
+
 	for (;i < genalloc_len(ss_resolve_t,&rdeps) ; i++)
 	{
 		ss_resolve_t_ref pres = &genalloc_s(ss_resolve_t,&rdeps)[i] ;
 		char *string = pres->sa.s ;
 		char *name = string + pres->name ;
+		char *state = string + pres->state ;
 		dst.len = newlen ;
 		if (!stralloc_cats(&dst,name)) goto err ;
 		if (!stralloc_0(&dst)) goto err ;
@@ -100,26 +92,29 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 			VERBO1 strerr_warnwu2sys("delete source service file: ",dst.s) ;
 			goto err ;
 		}
-		if (!pres->run)
+		/** service was not initialized */
+		if (!ss_state_check(state,name))
 		{
 			VERBO2 strerr_warni2x("Delete resolve file of: ",name) ;
-			if (!ss_resolve_rmfile(pres,src,name,SS_SIMPLE))
-			{
-				VERBO1 strerr_warnwu2sys("delete resolve file of: ",name) ;
-			}
+			ss_resolve_rmfile(src,name) ;
 		}
 		else
 		{
 			/** modify the resolve file for 66-stop*/
-			ss_resolve_setflag(pres,SS_FLAGS_DISEN,SS_FLAGS_FALSE) ;
-			ss_resolve_setflag(pres,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-			ss_resolve_setflag(pres,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-			ss_resolve_setflag(pres,SS_FLAGS_UNSUPERVISE,SS_FLAGS_TRUE) ;
-				
+			pres->disen = 0 ;
 			VERBO2 strerr_warni2x("Write resolve file of: ",name) ;
-			if (!ss_resolve_write(pres,src,name,SS_SIMPLE)) 
+			if (!ss_resolve_write(pres,src,name)) 
 			{
 				VERBO1 strerr_warnwu2sys("write resolve file of: ",name) ;
+				goto err ;
+			}
+			ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+			ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+			ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_TRUE) ;
+			VERBO2 strerr_warni2x("Write state file of: ",name) ;
+			if (!ss_state_write(&sta,state,name))
+			{
+				VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
 				goto err ;
 			}
 		}
@@ -144,9 +139,11 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 	unsigned int nlongrun, nclassic, stop ;
 	
 	stralloc workdir = STRALLOC_ZERO ;
-	
 	genalloc tostop = GENALLOC_ZERO ;//ss_resolve_t
-			
+	genalloc gares = GENALLOC_ZERO ; //ss_resolve_t
+	ss_resolve_t res = RESOLVE_ZERO ;
+	ss_resolve_t_ref pres ;
+	
 	r = nclassic = nlongrun = stop = logname = 0 ;
 	
 	{
@@ -170,10 +167,19 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 
 	if (!tree_copy(&workdir,info->tree.s,info->treename.s)) strerr_diefu1sys(111,"create tmp working directory") ;
 	
-	for(;*argv;argv++)
+	for (;*argv;argv++)
 	{
-		ss_resolve_t res = RESOLVE_ZERO ;
 		char const *name = *argv ;
+		if (!ss_resolve_check(workdir.s,name)) { cleanup(workdir.s) ; strerr_dief2x(110,name," is not enabled") ; }
+		if (!ss_resolve_read(&res,workdir.s,name)) { cleanup(workdir.s) ; strerr_diefu2sys(111,"read resolve file of: ",name) ; }
+		if (!ss_resolve_append(&gares,&res)) {	cleanup(workdir.s) ; strerr_diefu2sys(111,"append services selection with: ",name) ; }
+	}
+	
+	for(unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
+	{
+		pres = &genalloc_s(ss_resolve_t,&gares)[i] ;
+		char *string = pres->sa.s ;
+		char  *name = string + pres->name ;
 		logname = 0 ;
 		if (obstr_equal(name,SS_MASTER + 1))
 		{
@@ -181,36 +187,25 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 				strerr_dief1x(110,"nice try peon") ;
 		}
 		logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-		if (logname > 0)
+		if (logname > 0 && (!ss_resolve_cmp(&gares,string + pres->logassoc)))
 		{
 				cleanup(workdir.s) ;
 				strerr_dief1x(110,"logger detected - disabling is not allowed") ;
-		}
-		if (!ss_resolve_check(workdir.s,name))
-		{
-				cleanup(workdir.s) ;
-				strerr_dief2x(110,name," is not enabled") ;
-		}
-		if (!ss_resolve_read(&res,workdir.s,name))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu2sys(111,"read resolve file of: ",name) ;
-		}
-		
-		if (!res.disen)
+		}		
+		if (!pres->disen)
 		{
 			VERBO1 strerr_warni2x(name,": is already disabled") ;
 			ss_resolve_free(&res) ;
 			continue ;
 		}
-		if (!svc_remove(&tostop,&res,workdir.s,info))
+		if (!svc_remove(&tostop,pres,workdir.s,info))
 		{
 			cleanup(workdir.s) ;
 			strerr_diefu3sys(111,"remove",name," directory service") ;
 		}
 		if (res.type == CLASSIC) nclassic++ ;
 		else nlongrun++ ;
-		ss_resolve_free(&res) ;
+		
 	}
 	
 	if (nclassic)
@@ -239,7 +234,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 			if (r < 0) strerr_dief1x(110,"cyclic graph detected") ;
 			strerr_diefu1sys(111,"publish service graph") ;
 		}
-		if (!ss_resolve_write_master(info,&graph,workdir.s,SS_SIMPLE,1))
+		if (!ss_resolve_write_master(info,&graph,workdir.s,1))
 		{
 			cleanup(workdir.s) ;
 			strerr_diefu1sys(111,"update inner bundle") ;
@@ -250,7 +245,6 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 			cleanup(workdir.s) ;
 			strerr_diefu4x(111,"compile ",workdir.s,"/",info->treename.s) ; 
 		}
-		
 		/** this is an important part, we call s6-rc-update here */
 		if (!db_switch_to(info,envp,SS_SWBACK))
 		{
@@ -269,13 +263,14 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 	cleanup(workdir.s) ;
 		
 	stralloc_free(&workdir) ;
+	ss_resolve_free(&res) ;
+	genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
 		
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&tostop); i++)
 		VERBO1 strerr_warni2x("Disabled successfully: ",genalloc_s(ss_resolve_t,&tostop)[i].sa.s + genalloc_s(ss_resolve_t,&tostop)[i].name) ;
 			
 	if (stop && genalloc_len(ss_resolve_t,&tostop))
 	{
-		
 		int nargc = 3 + genalloc_len(ss_resolve_t,&tostop) ;
 		char const *newargv[nargc] ;
 		unsigned int m = 0 ;
