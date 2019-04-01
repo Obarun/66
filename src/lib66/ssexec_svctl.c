@@ -11,18 +11,17 @@
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file./
  */
-#include <signal.h>
-//#include <stdio.h>
+
 #include <string.h>
-#include <stdlib.h>
+#include <errno.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <unistd.h>//access
+//#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
-#include <oblibs/types.h>
-#include <oblibs/string.h>
-#include <oblibs/stralist.h>
 
-#include <skalibs/buffer.h>
 #include <skalibs/types.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
@@ -30,22 +29,21 @@
 #include <skalibs/bytestr.h>
 #include <skalibs/selfpipe.h>
 #include <skalibs/iopause.h>
-#include <skalibs/sig.h>
+#include <skalibs/tai.h>
+#include <skalibs/sig.h>//sig_ignore
 
 #include <s6/s6-supervise.h>//s6_svstatus_t
 #include <s6/ftrigr.h>
 
-#include <66/svc.h>
-#include <66/constants.h>
 #include <66/utils.h>
-#include <66/tree.h>
+#include <66/constants.h>
+#include <66/svc.h>
 #include <66/ssexec.h>
 #include <66/resolve.h>
 #include <66/state.h>
 
 unsigned int SV_DEADLINE = 3000 ;
 unsigned int DEATHSV = 10 ;
-
 
 static int read_file (char const *file, char *buf, size_t n)
 {
@@ -89,7 +87,6 @@ int handle_signal_svc(ss_resolve_sig_t *sv_signal)
 	else return 0 ;
 }
 
-
 static unsigned char const actions[9][9] = 
 {
  //signal receive:
@@ -106,6 +103,7 @@ static unsigned char const actions[9][9] =
     { UKNOW,	UKNOW,	UKNOW,	UKNOW,	UKNOW,	UKNOW,	UKNOW,	UKNOW, 	DONE },	// SIGSUP
     
 } ;
+
 //	convert signal receive into enum number
 static const uint8_t chtenum[128] = 
 {	
@@ -158,7 +156,6 @@ static const uint8_t chtenum[128] =
  * @Return 1 on if signal is not complete (e.g. want U receive only u)
  * @Return 2 on fail
  * @Return 3 for PERMANENT failure */
-
 int handle_case(stralloc *sa, ss_resolve_sig_t *sv_signal)
 {
 	int p, h, err ;
@@ -225,6 +222,7 @@ static int handle_signal_pipe(ss_resolve_sig_t *svc)
 		}
 	}
 }
+
 static void announce(ss_resolve_sig_t *sv_signal)
 {
 
@@ -299,7 +297,6 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	
 	genalloc gakeep = GENALLOC_ZERO ; //type ss_resolve_sig
 	stralloc sares = STRALLOC_ZERO ;
-	stralloc sasta = STRALLOC_ZERO ;
 	ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
 	ss_resolve_t res = RESOLVE_ZERO ;
 	ss_state_t sta = STATE_ZERO ;
@@ -363,18 +360,19 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	if (r < 0) strerr_dief1x(111,"cyclic dependencies detected") ;
 	if (!r) strerr_diefu1sys(111,"publish service graph") ;
 	
-	if (!ss_resolve_pointo(&sasta,info,SS_NOTYPE,SS_RESOLVE_STATE)) strerr_diefu1sys(111,"set revolve pointer to state") ;
-	
 	for(unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&graph.sorted) ; i++)
 	{
 		ss_resolve_sig_t sv_signal = RESOLVE_SIG_ZERO ;
 		sv_signal.res = genalloc_s(ss_resolve_t,&graph.sorted)[i] ;
 		char *string = sv_signal.res.sa.s ;
 		char *svok = string + sv_signal.res.runat ;
+		char *state = string + sv_signal.res.state ;
 		size_t svoklen = strlen(svok) ;
 		char file[svoklen + 16 + 1] ;
 		memcpy(file,svok,svoklen) ;
-		if (!ss_state_check(sasta.s,string + sv_signal.res.name)) strerr_dief2x(111,"unitialized service: ",string + sv_signal.res.name) ;
+		if (!ss_state_check(state,string + sv_signal.res.name)) strerr_dief2x(111,"unitialized service: ",string + sv_signal.res.name) ;
+		if (!ss_state_read(&sta,state,string + sv_signal.res.name)) strerr_diefu2sys(111,"read state of: ",string + sv_signal.res.name) ;
+		if (sta.init) strerr_dief2x(111,"unitialized service: ",string + sv_signal.res.name) ;
 		if (!s6_svstatus_read(svok,&status)) strerr_diefu2sys(111,"read status of: ",svok) ;
 		isup = status.pid && !status.flagfinishing ;
 						
@@ -388,11 +386,10 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			VERBO1 strerr_warni2x("Already down: ",string + sv_signal.res.name) ;
 			continue ;
 		}
-		else if ((SIGNAL == SIGR) || (SIGNAL == SIGRR)) 
+		/*else if ((SIGNAL == SIGR) || (SIGNAL == SIGRR)) 
 		{
 			SIGNAL = SIGRUP ;
-		}
-		
+		}*/
 		sv_signal.sigtosend = sig ;
 		sv_signal.sig = SIGNAL ;
 		
@@ -505,7 +502,8 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	{ 
 		int nret = 0 ;
 		ss_resolve_sig_t *sv = &genalloc_s(ss_resolve_sig_t,&gakeep)[i] ;
-		char *name = sv->res.sa.s + sv->res.name ;
+		char const *name = sv->res.sa.s + sv->res.name ;
+		char const *state = sv->res.sa.s + sv->res.state ;
 		nret = svc_listen(&gakeep,&fifo,spfd,sv) ;
 		if (nret > 1) ret = 111 ;
 		if (sv->sig <= 3)
@@ -538,7 +536,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 		ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
 		VERBO2 strerr_warni2x("Write state file of: ",name) ;
-		if (!ss_state_write(&sta,sasta.s,name))
+		if (!ss_state_write(&sta,state,name))
 		{
 			VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
 			ret = 111 ;
@@ -563,7 +561,6 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	ftrigr_end(&fifo) ;
 	selfpipe_finish() ;
 	stralloc_free(&sares) ;
-	stralloc_free(&sasta) ;
 	ss_resolve_graph_free(&graph) ;
 	genalloc_free(ss_resolve_sig_t,&gakeep) ;
 	ss_resolve_free(&res) ;
