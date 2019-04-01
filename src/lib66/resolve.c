@@ -40,6 +40,17 @@
 
 #include <s6/s6-supervise.h>
 
+void ss_resolve_free(ss_resolve_t *res)
+{
+	stralloc_free(&res->sa) ;
+}
+
+void ss_resolve_init(ss_resolve_t *res)
+{
+	res->sa.len = 0 ;
+	ss_resolve_add_string(res,"") ;
+}
+
 int ss_resolve_pointo(stralloc *sa,ssexec_t *info,unsigned int type, unsigned int where)
 {
 	stralloc tmp = STRALLOC_ZERO ;
@@ -216,7 +227,7 @@ int ss_resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *
 		return -1 ;
 }
 
-void ss_resolve_rmfile(ss_resolve_t *res, char const *src,char const *name)
+void ss_resolve_rmfile(char const *src,char const *name)
 {
 	size_t srclen = strlen(src) ;
 	size_t namelen = strlen(name) ;
@@ -376,17 +387,6 @@ int ss_resolve_read(ss_resolve_t *res, char const *src, char const *name)
 		return 0 ;
 }
 
-void ss_resolve_free(ss_resolve_t *res)
-{
-	stralloc_free(&res->sa) ;
-}
-
-void ss_resolve_init(ss_resolve_t *res)
-{
-	res->sa.len = 0 ;
-	ss_resolve_add_string(res,"") ;
-}
-
 int ss_resolve_check_insrc(ssexec_t *info, char const *name)
 {
 	stralloc sares = STRALLOC_ZERO ;
@@ -417,8 +417,6 @@ int ss_resolve_check(char const *src, char const *name)
 
 int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst,ssexec_t *info)
 {
-	int r ;
-	
 	if (!sv->logger) return 1 ;
 	
 	ss_state_t sta = STATE_ZERO ;
@@ -441,14 +439,6 @@ int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst,ssexec_t *info)
 	}else memcpy(live + runlen,"/log",4)  ;
 	live[runlen + 4] = 0 ;
 	
-	size_t reslen = strlen(string + sv->state) ;
-	size_t loglen = strlen(string + sv->logger) ;
-	char tmp[reslen + 1 + loglen + 1] ;
-	memcpy(tmp,string + sv->state,reslen) ;
-	tmp[reslen] = '/' ;
-	memcpy(tmp + reslen + 1,string + sv->logger,loglen) ;
-	tmp[reslen + 1 + loglen] = 0 ;
-	
 	res.name = ss_resolve_add_string(&res,string + sv->logger) ;
 	res.description = ss_resolve_add_string(&res,descrip) ;
 	res.logreal = ss_resolve_add_string(&res,string + sv->logreal) ;
@@ -464,22 +454,14 @@ int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst,ssexec_t *info)
 	res.down = sv->down ;
 	res.disen = sv->disen ;
 	
-	r = scan_mode(tmp,S_IFREG) ;
-	if (r < 0) { VERBO1 strerr_warnwu2sys("conflicting format: ",tmp) ; goto err ; }
-	if (r)
+	if (ss_state_check(string + sv->state,string + sv->logger))
 	{
-		ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_TRUE) ;
+		if (!ss_state_read(&sta,string + sv->state,string + sv->logger)) { VERBO1 strerr_warnwu2sys("read state file of: ",string + sv->logger) ; goto err ; }
+		if (!sta.init)
+			ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_TRUE) ;
 		ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 		ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
-		if (!ss_state_write(&sta,res.sa.s + res.state,res.sa.s + res.name)){ VERBO1 strerr_warnwu2sys("write state file of: ",res.sa.s + res.name) ; goto err ; }
-	}
-	else
-	{
-		if (!ss_resolve_create_live(info)){ VERBO1 strerr_diefu1sys(111,"create live state") ; goto err ; }
-		ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-		ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_INIT) ;
-		ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
-		if (!ss_state_write(&sta,res.sa.s + res.state,res.sa.s + res.name)){ VERBO1 strerr_warnwu2sys("write state file of: ",res.sa.s + res.name) ; goto err ; }
+		if (!ss_state_write(&sta,string + sv->state,string + sv->logger)){ VERBO1 strerr_warnwu2sys("write state file of: ",string + sv->logger) ; goto err ; }
 	}
 	
 	if (!ss_resolve_write(&res,dst,res.sa.s + res.name))
@@ -563,26 +545,17 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		stmp[info->livetree.len + 1 + info->treename.len + SS_SVDIRS_LEN + 1 + namelen] = 0 ;
 		res.runat = ss_resolve_add_string(&res,stmp) ;
 	}
-	state[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len] = '/' ;
-	memcpy(state + livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len + 1,name,namelen) ;
-	state[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len + 1 + namelen] = 0 ;
-	r = scan_mode(state,S_IFREG) ;
-	if (r < 0) { VERBO1 strerr_warnwu2sys("conflicting format: ",state) ; goto err ; }
-	if (r)
+
+	if (ss_state_check(state,name))
 	{
-		ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_TRUE) ;
+		if (!ss_state_read(&sta,state,name)) { VERBO1 strerr_warnwu2sys("read state file of: ",name) ; goto err ; }
+		if (!sta.init)
+			ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_TRUE) ;
 		ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 		ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
 		if (!ss_state_write(&sta,res.sa.s + res.state,name)){ VERBO1 strerr_warnwu2sys("write state file of: ",name) ; goto err ; }
 	}
-	else
-	{
-		if (!ss_resolve_create_live(info)){ VERBO1 strerr_diefu1sys(111,"create live state") ; goto err ; }
-		ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-		ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_INIT) ;
-		ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
-		if (!ss_state_write(&sta,res.sa.s + res.state,name)){ VERBO1 strerr_warnwu2sys("write state file of: ",name) ; goto err ; }
-	}
+
 	
 	if (res.ndeps)
 	{
@@ -775,6 +748,7 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 	int type ;
 	genalloc tmp = GENALLOC_ZERO ;
 	genalloc nsv = GENALLOC_ZERO ;
+	ss_state_t sta = STATE_ZERO ;
 	
 	char *name = res->sa.s + res->name ;
 	size_t srclen = strlen(src) ;
@@ -816,10 +790,18 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 		char *dname = gaistr(&nsv,i) ;
 		if (obstr_equal(name,dname)) { ss_resolve_free(&dres) ; continue ; }
 		if (!ss_resolve_check(src,dname)) goto err ;
+		
 		if (!ss_resolve_read(&dres,src,dname)) goto err ;
+		
 		if (dres.type == CLASSIC) dtype = 0 ;
 		else dtype = 1 ;
-		if (dtype != type || (!dres.disen)){ ss_resolve_free(&dres) ; continue ; }
+				
+		if (ss_state_check(dres.sa.s + dres.state,dname))
+		{ 
+			if (!ss_state_read(&sta,dres.sa.s + dres.state,dname)) goto err ;
+			if (dtype != type || (!dres.disen && !sta.unsupervise)){ ss_resolve_free(&dres) ; continue ; }
+		}
+		else if (dtype != type || (!dres.disen)){ ss_resolve_free(&dres) ; continue ; }
 		if (dres.type == BUNDLE && !dres.ndeps){ ss_resolve_free(&dres) ; continue ; }
 		if (!ss_resolve_cmp(tokeep,dname))
 		{
