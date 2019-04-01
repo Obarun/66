@@ -82,7 +82,8 @@
 	 <li> 
 		<tt>-R&nbsp;</tt>&nbsp;: deletes <em>tree</em>. Can not be undone! This will completely remove the given tree
 		from the system! You will not be able
-		to retrieve any information of the deleted <em>tree</em> after deleting it. Services currently running on <em>tree</em> will be bringed down before remove it. 
+		to retrieve any information of the deleted <em>tree</em> after deleting it. Services currently running on <em>tree</em> will be <strong>not</strong> bringed down before remove it. To do so, use the <tt>-U</tt> option
+		in conjonction e.g. <tt><em>66-tree -UR <em>tree</em></em></tt>.
 	 </li>
 	  <li> 
 		<tt>-U&nbsp;</tt>&nbsp;: unsupervise <em>tree</em>. Bring down all services contained into the <em>tree</em> and remove the corresponding directory of the service from the scandir.
