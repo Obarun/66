@@ -49,7 +49,6 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 	ftrigr_t fifo = FTRIGR_ZERO ;
 	genalloc gadown = GENALLOC_ZERO ;
 	genalloc ids = GENALLOC_ZERO ; // uint16_t
-	stralloc sasta = STRALLOC_ZERO ;
 	ss_state_t sta = STATE_ZERO ;
 	
 	tain_t deadline ;
@@ -176,18 +175,15 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 			VERBO3 strerr_warnt2x("Delete down file at: ",gaistr(&gadown,i)) ;
 			if (unlink(gaistr(&gadown,i)) < 0 && errno != ENOENT) goto err ;
 		}
-		if (!ss_resolve_pointo(&sasta,info,SS_NOTYPE,SS_RESOLVE_STATE))		
-		{
-			VERBO3 strerr_warnwu1x("set revolve pointer to state") ;
-			goto err ;
-		}
+	
 		for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
 		{
 			char const *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
 			char const *name = string + genalloc_s(ss_resolve_t,ga)[i].name  ;
+			char const *state = string + genalloc_s(ss_resolve_t,ga)[i].state  ;
 			
 			VERBO2 strerr_warni2x("Write state file of: ",name) ;
-			if (!ss_state_write(&sta,sasta.s,name))
+			if (!ss_state_write(&sta,state,name))
 			{
 				VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
 				goto err ;
@@ -198,7 +194,6 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 	ftrigr_end(&fifo) ;
 	genalloc_deepfree(stralist,&gadown,stra_free) ;
 	genalloc_free(uint16_t, &ids) ;
-	stralloc_free(&sasta) ;
 	return 1 ;
 	
 	err:
@@ -206,7 +201,6 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 		genalloc_free(uint16_t, &ids) ;
 		genalloc_deepfree(stralist,&gadown,stra_free) ;
 		ftrigr_end(&fifo) ;
-		stralloc_free(&sasta) ;
 		return 0 ;
 
 }
