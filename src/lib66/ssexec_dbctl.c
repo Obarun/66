@@ -13,32 +13,25 @@
  */
  
 #include <string.h>
-#include <sys/stat.h>
-#include <stdlib.h>
+#include <sys/types.h>//pid_t
 //#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
-#include <oblibs/directory.h>
-#include <oblibs/types.h>
 #include <oblibs/string.h>
-#include <oblibs/stralist.h>
 
-#include <skalibs/buffer.h>
-#include <skalibs/types.h>
+#include <skalibs/tai.h>
+#include <skalibs/types.h>//UINT_FMT
 #include <skalibs/stralloc.h>
+#include <skalibs/genalloc.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/selfpipe.h>
-#include <skalibs/iopause.h>
-#include <skalibs/sig.h>
 
-#include <s6-rc/config.h>
 #include <s6/s6-supervise.h>
+#include <s6-rc/config.h>
 
-#include <66/utils.h>
 #include <66/constants.h>
+#include <66/utils.h>
 #include <66/db.h>
-#include <66/tree.h>
 #include <66/enum.h>
 #include <66/resolve.h>
 #include <66/ssexec.h>
@@ -52,16 +45,19 @@ static void rebuild_list(ss_resolve_graph_t *graph,ssexec_t *info, int what)
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	genalloc gatmp = GENALLOC_ZERO ;
 	ss_state_t sta = STATE_ZERO ;
-	stralloc sasta = STRALLOC_ZERO ;
-	if (!ss_resolve_pointo(&sasta,info,SS_NOTYPE,SS_RESOLVE_STATE)) strerr_diefu1sys(111,"set revolve pointer to state") ;
+
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&graph->sorted) ; i++)
 	{
 		char *string = genalloc_s(ss_resolve_t,&graph->sorted)[i].sa.s ;
 		char *name = string + genalloc_s(ss_resolve_t,&graph->sorted)[i].name ;
 		char *runat = string + genalloc_s(ss_resolve_t,&graph->sorted)[i].runat ;
-		if (!ss_state_check(sasta.s,name)) strerr_dief2x(111,"unitialized service: ",name) ;
+		char *state = string + genalloc_s(ss_resolve_t,&graph->sorted)[i].state ;
+		if (!ss_state_check(state,name)) strerr_dief2x(111,"unitialized service: ",name) ;
+		if (!ss_state_read(&sta,state,name)) strerr_diefu2sys(111,"read state of: ",name) ;
+		if (sta.init) strerr_dief2x(111,"unitialized service: ",name) ;
+		
 		int type = genalloc_s(ss_resolve_t,&graph->sorted)[i].type ;
-		if (type == LONGRUN)
+		if (type == LONGRUN && genalloc_s(ss_resolve_t,&graph->sorted)[i].disen)
 		{
 			if (!s6_svstatus_read(runat,&status)) strerr_diefu2sys(111,"read status of: ",runat) ;
 			isup = status.pid && !status.flagfinishing ;
@@ -79,8 +75,6 @@ static void rebuild_list(ss_resolve_graph_t *graph,ssexec_t *info, int what)
 		}
 		else
 		{
-			if (!ss_state_read(&sta,sasta.s,name)) strerr_diefu2sys(111,"read state of: ",name) ;
-			
 			if (!sta.state && what)
 			{
 				VERBO1 strerr_warni2x("Already down: ",name) ;
@@ -96,7 +90,6 @@ static void rebuild_list(ss_resolve_graph_t *graph,ssexec_t *info, int what)
 	}
 	genalloc_copy(ss_resolve_t,&graph->sorted,&gatmp) ;
 	genalloc_free(ss_resolve_t,&gatmp) ;
-	stralloc_free(&sasta) ;	
 }
 
 /* signal = 0 -> reload
@@ -108,17 +101,15 @@ static int check_status(genalloc *gares,ssexec_t *info,int signal)
 	
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	ss_state_t sta = STATE_ZERO ;
-	stralloc sasta = STRALLOC_ZERO ;
 	if (!signal) reload = 1 ;
 	else if (signal == 1) up = 1 ;
-	
-	if (!ss_resolve_pointo(&sasta,info,SS_NOTYPE,SS_RESOLVE_STATE)) strerr_diefu1sys(111,"set revolve pointer to state") ;
 	
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,gares) ; i++)
 	{ 
 		int nret = 0 ;
 		ss_resolve_t_ref pres = &genalloc_s(ss_resolve_t,gares)[i] ;
-		char *name = pres->sa.s + pres->name ;
+		char const *name = pres->sa.s + pres->name ;
+		char const *state = pres->sa.s + pres->state ;
 		/** do not touch the Master resolve file*/
 		if (obstr_equal(name,SS_MASTER + 1)) continue ;
 		/** only check longrun service */
@@ -161,15 +152,18 @@ static int check_status(genalloc *gares,ssexec_t *info,int signal)
 		ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
 		ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 		ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+		if (pres->type == BUNDLE || pres->type == ONESHOT)
+			ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
+			
 		VERBO2 strerr_warni2x("Write state file of: ",name) ;
-		if (!ss_state_write(&sta,sasta.s,name))
+		if (!ss_state_write(&sta,state,name))
 		{
 			VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
 			ret = 111 ;
 		}
 		if (!nret) VERBO1 strerr_warni3x(reload ? "Reloaded" : up ? "Started" : "Stopped"," successfully: ",name) ;
 	}	
-	stralloc_free(&sasta) ;	
+	
 	return ret ;
 }
 static pid_t send(genalloc *gasv, char const *livetree, char const *signal,char const *const *envp)
@@ -339,7 +333,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	if (!r) strerr_diefu1sys(111,"publish service graph") ;
 
 	rebuild_list(&graph,info,reverse) ;
-
+	
 	pid = send(&graph.sorted,tmp.s,signal,envp) ;
 	
 	if (waitpid_nointr(pid,&wstat, 0) < 0)
