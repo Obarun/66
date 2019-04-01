@@ -13,9 +13,6 @@
  */
 
 #include <string.h>
-#include <sys/stat.h>
-#include <stdlib.h>
-#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -23,14 +20,10 @@
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
-#include <skalibs/djbunix.h>
 
-#include <s6/s6-supervise.h>//s6_svc_ok
-
-#include <66/db.h>
-#include <66/config.h>
 #include <66/utils.h>
 #include <66/constants.h>
+#include <66/db.h>
 #include <66/svc.h>
 #include <66/rc.h>
 #include <66/ssexec.h>
@@ -81,72 +74,6 @@ int svc_down(ssexec_t *info, char const *const *envp)
 		return 0 ;
 }
 
-int rc_unsupervise(ssexec_t *info, genalloc *ga,char const *sig,char const *const *envp)
-{
-	ss_resolve_t_ref pres ;
-	ss_state_t sta = STATE_ZERO ;
-	stralloc sares = STRALLOC_ZERO ;
-	stralloc sasta = STRALLOC_ZERO ;
-	
-	if (!rc_send(info,ga,sig,envp))
-	{
-		VERBO1 strerr_warnwu1x("stop services") ;
-		goto err ;
-	}
-	if (!db_switch_to(info,envp,SS_SWSRC))
-	{
-		VERBO1 strerr_warnwu3x("switch ",info->treename.s," to source") ;
-		goto err ;
-	}
-	if (!ss_resolve_pointo(&sasta,info,SS_NOTYPE,SS_RESOLVE_STATE))
-	{
-		VERBO1 strerr_warnwu1sys("set revolve pointer to state") ;
-		return 0 ;
-	}
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
-	{
-		VERBO1 strerr_warnwu1sys("set revolve pointer to source") ;
-		return 0 ;
-	}
-	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
-	{
-		pres = &genalloc_s(ss_resolve_t,ga)[i] ;
-		char const *string = pres->sa.s ;
-		char const *name = string + pres->name  ;
-		// do not remove the resolve file if the daemon was not disabled
-		if (!pres->disen)
-		{				
-			VERBO2 strerr_warni2x("Delete resolve file of: ",name) ;
-			ss_resolve_rmfile(pres,sares.s,name) ;
-			VERBO2 strerr_warni2x("Delete state file of: ",name) ;
-			ss_state_rmfile(sasta.s,name) ;
-		}
-		else
-		{
-			ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-			ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
-			ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
-			ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
-			ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
-			VERBO2 strerr_warni2x("Write state file of: ",name) ;
-			if (!ss_state_write(&sta,sasta.s,name))
-			{
-				VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
-				goto err ;
-			}
-		}
-		VERBO1 strerr_warni2x("Unsupervised successfully: ",name) ;
-	}
-	
-	stralloc_free(&sares) ;
-	stralloc_free(&sasta) ;
-	return 1 ;
-	err:
-		stralloc_free(&sares) ;
-		stralloc_free(&sasta) ;
-		return 0 ;
-}
-
 int rc_down(ssexec_t *info, char const *const *envp)
 {
 	unsigned int reverse = 1 ;
@@ -194,7 +121,6 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 	
 	int cl, rc, sigopt, mainunsup ;
 	stralloc sares = STRALLOC_ZERO ;
-	stralloc sasta = STRALLOC_ZERO ;
 	genalloc gares = GENALLOC_ZERO ; //ss_resolve_t
 	ss_resolve_t_ref pres ;
 	ss_resolve_t res = RESOLVE_ZERO ;
@@ -236,18 +162,17 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 		if (!ss_resolve_append(&gares,&res)) strerr_diefu2sys(111,"append resolve file of: ",name) ;
 	}
 	
-	if (!ss_resolve_pointo(&sasta,info,SS_NOTYPE,SS_RESOLVE_STATE)) strerr_diefu1sys(111,"set revolve pointer to state") ;
-	
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
 	{
 		int unsup = 0 , reverse = 1 ;
 		pres = &genalloc_s(ss_resolve_t,&gares)[i] ;
 		char const *string = pres->sa.s ;
 		char const *name = string + pres->name ;
-	
-		if (!ss_state_check(sasta.s,name)) strerr_dief2x(110,name," : is not initialized") ;
-		else if (!ss_state_read(&sta,sasta.s,name)) strerr_diefu2sys(111,"read state file of: ",name) ;
-	
+		char const *state = string + pres->state ;
+		
+		if (!ss_state_check(state,name)) strerr_dief2x(110,name," : is not initialized") ;
+		else if (!ss_state_read(&sta,state,name)) strerr_diefu2sys(111,"read state file of: ",name) ;
+		
 		int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 		
 		if (obstr_equal(name,SS_MASTER + 1))
@@ -314,7 +239,7 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 		if (!svc_switch_to(info,SS_SWSRC))
 			strerr_diefu3x(111,"switch classic service of: ",info->treename.s," to source") ;
 	}
-		
+
 	if (UNSUP)
 	{
 		VERBO2 strerr_warnt2x("send signal -an to scandir: ",info->scandir.s) ;
@@ -322,7 +247,6 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 			strerr_diefu2sys(111,"send signal to scandir: ", info->scandir.s) ;
 	}
 	stralloc_free(&sares) ;
-	stralloc_free(&sasta) ;
 	ss_resolve_free(&res) ;
 	genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
 	

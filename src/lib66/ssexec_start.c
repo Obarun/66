@@ -13,9 +13,7 @@
  */
  
 #include <string.h>
-#include <sys/stat.h>
-#include <stdlib.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -24,20 +22,15 @@
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
-#include <skalibs/djbunix.h>
 
 #include <66/db.h>
-#include <66/config.h>
 #include <66/utils.h>
 #include <66/constants.h>
-#include <66/backup.h>
 #include <66/svc.h>
 #include <66/ssexec.h>
 #include <66/resolve.h>
 #include <66/rc.h>
 #include <66/state.h>
-
-#include <s6/s6-supervise.h>
 
 static int empty = 0 ;
 static unsigned int RELOAD = 0 ;
@@ -108,7 +101,7 @@ int svc_sanitize(ssexec_t *info, char const *const *envp)
 
 int rc_sanitize(ssexec_t *info, char const *const *envp)
 {
-	int r, reverse = 1 ;
+	int r, reverse = 1, done = 0 ;
 	stralloc sares = STRALLOC_ZERO ;
 	
 	char db[info->livetree.len + 1 + info->treename.len + 1] ;
@@ -117,18 +110,33 @@ int rc_sanitize(ssexec_t *info, char const *const *envp)
 	memcpy(db + info->livetree.len + 1, info->treename.s, info->treename.len) ;
 	db[info->livetree.len + 1 + info->treename.len] = 0 ;
 	
-	if (!db_ok(info->livetree.s,info->treename.s) || genalloc_len(ss_resolve_t,&graph_init_rc.name))
+	if (!db_ok(info->livetree.s,info->treename.s))
 	{
 		r = rc_init(info,envp) ;
 		if (!r) goto err ;
 		else if (r > 1) { empty = 1 ; goto end ; }
+		done = 1 ;
 	}
-	if (!ss_resolve_pointo(&sares,info,CLASSIC,SS_RESOLVE_SRC))		
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))		
 	{
 		VERBO1 strerr_warnwu1x("set revolve pointer to source") ;
 		goto err;
 	}
-	
+	if (genalloc_len(ss_resolve_t,&graph_init_rc.name) && !done)
+	{
+		int ireverse = 0 ;
+		r = ss_resolve_graph_publish(&graph_init_rc,ireverse) ;
+		if (r < 0 || !r)
+		{
+			VERBO1 strerr_warnwu1sys("publish service graph") ;
+			goto err ;
+		}
+		if (!rc_manage(info,&graph_init_rc.sorted))
+		{
+			VERBO1 strerr_warnwu1x("iniatiate service list") ;
+			goto err ;
+		}
+	}
 	if (genalloc_len(ss_resolve_t,&graph_reload_rc.name))
 	{	
 		r = ss_resolve_graph_publish(&graph_reload_rc,reverse) ;
@@ -140,7 +148,7 @@ int rc_sanitize(ssexec_t *info, char const *const *envp)
 		if (!db_switch_to(info,envp,SS_SWBACK))
 		{
 			VERBO1 strerr_warnwu3x("switch ",info->treename.s," to backup") ;
-			return 0 ;
+			goto err ;
 		}
 		if (!db_compile(sares.s,info->tree.s, info->treename.s,envp))
 		{
@@ -172,14 +180,17 @@ int rc_sanitize(ssexec_t *info, char const *const *envp)
 int rc_start(ssexec_t *info,genalloc *ga,char const *signal,char const *const *envp)
 {
 	char const *sig ;
-	if (obstr_equal("-U",signal)) sig = "-u" ;
-	else sig = signal ;
+	if (RELOAD >= 1) sig = "-r" ;
+	else sig = "-u" ;
 	
 	int r = db_find_compiled_state(info->livetree.s,info->treename.s) ;
-	if (r)
+	if (r >= 1)
 	{
 		if (!db_switch_to(info,envp,SS_SWSRC))
-			strerr_diefu3x(111,"switch: ",info->treename.s," to source") ;
+		{
+			VERBO1 strerr_warnwu3x("switch: ",info->treename.s," to source") ;
+			return 0 ;
+		}
 	}
 	if (!rc_send(info,ga,sig,envp)) return 0 ;
 	
@@ -227,8 +238,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 	if (argc < 1) exitusage(usage_start) ;
 	
 	if ((scandir_ok(info->scandir.s)) !=1 ) strerr_dief3sys(111,"scandir: ", info->scandir.s," is not running") ;
-	
-	
+		
 	if (!ss_resolve_pointo(&sasta,info,SS_NOTYPE,SS_RESOLVE_STATE)) strerr_diefu1sys(111,"set revolve pointer to state") ;
 	/** the tree may not initialized already, check it and create
 	 * the live directory if it's the case */
@@ -271,7 +281,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 			if (RELOAD > 1) strerr_dief1x(111,"-R signal is not allowed to a logger") ;
 			if (sta.init) reverse = 1 ;
 		}
-		if (RELOAD > 1) reload = 1 ;
+		if (RELOAD > 1 || sta.reload) reload = 1 ;
 	
 		if (sta.init){ reload = 0 ; init = 1 ; }
 		
@@ -286,6 +296,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 			}
 			else if (init)
 			{
+				reverse = 0 ;
 				if (!ss_resolve_graph_build(&graph_init_cl,&genalloc_s(ss_resolve_t,&gares)[i],sares.s,reverse)) 
 					strerr_diefu1sys(111,"build services graph") ;
 			}
@@ -302,6 +313,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 			}
 			else if (init)
 			{
+				reverse = 0 ;
 				if (!ss_resolve_graph_build(&graph_init_rc,&genalloc_s(ss_resolve_t,&gares)[i],sares.s,reverse)) 
 					strerr_diefu1sys(111,"build services graph") ;
 			}
