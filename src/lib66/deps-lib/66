@@ -15,7 +15,9 @@ parser.o
 parser_utils.o
 parser_write.o
 rc_init.o
+rc_manage.o
 rc_send.o
+rc_unsupervise.o
 resolve.o
 resolve_graph.o
 scandir_ok.o
