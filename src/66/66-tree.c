@@ -461,6 +461,7 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 	stralloc scandir = STRALLOC_ZERO ;
 	ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
 	ss_resolve_t_ref pres ;
+	ss_state_t sta = STATE_ZERO ;
 	
 	char prefix[treenamelen + 2] ;
 	memcpy(prefix,treename,treenamelen) ;
@@ -502,14 +503,22 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 	}
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&graph.sorted) ; i++) 
 	{
+		int st = 0 ;
 		pres = &genalloc_s(ss_resolve_t,&graph.sorted)[i] ;
 		char *string = pres->sa.s ;
 		char *name = string + pres->name ;
-		if (pres->type == CLASSIC && (ss_state_check(string + pres->state,name))) 
+		char *state = string + pres->state ;
+		if (ss_state_check(state,name))
+		{
+			if (!ss_state_read(&sta,state,name)) strerr_diefu2sys(111,"read state file of: ",name) ;
+			st = sta.state ;
+		}
+		
+		if (pres->type == CLASSIC && st) 
 		{
 			if (!stra_add(&nclassic,name)) strerr_diefu2sys(111,"append services selection with: ",name) ;
 		}
-		else if (pres->type >= BUNDLE && (ss_state_check(string + pres->state,name)))
+		else if (pres->type >= BUNDLE && st)
 		{ 
 			if (!stra_add(&nrc,name)) strerr_diefu2sys(111,"append services selection with: ",name) ;
 		}
