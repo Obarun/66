@@ -122,7 +122,7 @@ extern int ss_resolve_read(ss_resolve_t *res,char const *src,char const *name) ;
 extern int ss_resolve_check(char const *src, char const *name) ;
 extern int ss_resolve_setnwrite(sv_alltype *services,ssexec_t *info,char const *dst) ;
 extern int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst,ssexec_t *info) ;
-extern void ss_resolve_rmfile(ss_resolve_t *res, char const *src,char const *name) ;
+extern void ss_resolve_rmfile(char const *src,char const *name) ;
 extern int ss_resolve_cmp(genalloc *ga,char const *name) ;
 extern int ss_resolve_add_deps(genalloc *tokeep,ss_resolve_t *res, char const *src) ;
 extern int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src) ;
