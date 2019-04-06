@@ -573,7 +573,7 @@ int tree_args(int argc, char const *const *argv)
 	}
 	else 
 	{
-		emtpy:
+		empty:
 		strerr_warni1x("no tree exist yet") ;
 	}
 	
