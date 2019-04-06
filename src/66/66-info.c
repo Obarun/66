@@ -24,6 +24,7 @@
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 #include <oblibs/directory.h>
+#include <oblibs/types.h>
 
 #include <skalibs/buffer.h>
 #include <skalibs/stralloc.h>
@@ -525,7 +526,7 @@ int tree_args(int argc, char const *const *argv)
 	if (!stralloc_copy(&src,&base)) goto err ;
 	if (!stralloc_cats(&src,"/" SS_SYSTEM)) goto err ;
 	if (!stralloc_0(&src)) goto err ;
-	
+	if (!scan_mode(src.s,S_IFDIR)) goto empty ;
 	if (todisplay)
 		if (!dir_search(src.s,argv[0],S_IFDIR)) strerr_dief2x(110,"unknown tree: ",argv[0]) ;
 	
@@ -572,6 +573,7 @@ int tree_args(int argc, char const *const *argv)
 	}
 	else 
 	{
+		emtpy:
 		strerr_warni1x("no tree exist yet") ;
 	}
 	
