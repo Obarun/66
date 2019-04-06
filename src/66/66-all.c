@@ -83,8 +83,8 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
        
 	if (!dir_get(&ga,src,"init",S_IFREG))
 	{
-		VERBO3 strerr_warnwu2x("get services of tree: ",src) ;
-		goto err ;
+		VERBO1 strerr_warnwu3x("Empty tree: ",treename,": nothing to do") ;
+		goto freed ;
 	}
 
 	{
@@ -122,6 +122,7 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 		}
 		if (wstat) goto err ;
 	}
+	freed:
 	genalloc_deepfree(stralist,&ga,stra_free) ;	
 	return 1 ;
 	err:
