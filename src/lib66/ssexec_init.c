@@ -135,7 +135,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 				tocopy[dirlen + 1 + namelen] = 0 ;
 				if (!hiercopy(tocopy,string + genalloc_s(ss_resolve_t,&gares)[i].runat)) strerr_diefu4sys(111,"to copy: ",tocopy," to: ",string + genalloc_s(ss_resolve_t,&gares)[i].runat) ;
 				ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-				ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
+				ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 				ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
 				ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_UNKNOWN) ;
 				ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_UNKNOWN) ;
