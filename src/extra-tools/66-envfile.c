@@ -220,7 +220,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	char const *newenv[n] ;
 	if (!env_merge (newenv, n ,envp,env_len(envp),modifs.s, modifs.len)) strerr_diefu1sys(111,"build environment") ;
 	
-	modifs = stralloc_zero ;
+	modifs.len = 0 ;
 	
 	for (i = 0 ; i < genalloc_len(diuint32,&gaenv) ; i++)
 	{
