@@ -11,6 +11,9 @@ BIN_TARGETS := \
 66-svctl \
 66-all \
 66-info \
-execl-cmdline
+execl-cmdline \
+66-writenv \
+66-getenv \
+66-gnwenv
 
 LIB_DEFS := 66=66

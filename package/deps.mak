@@ -24,7 +24,11 @@ src/66/66-stop.o src/66/66-stop.lo: src/66/66-stop.c src/include/66/ssexec.h
 src/66/66-svctl.o src/66/66-svctl.lo: src/66/66-svctl.c src/include/66/ssexec.h
 src/66/66-tree.o src/66/66-tree.lo: src/66/66-tree.c src/include/66/config.h src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/resolve.h src/include/66/state.h src/include/66/tree.h src/include/66/utils.h
 src/extra-tools/66-envfile.o src/extra-tools/66-envfile.lo: src/extra-tools/66-envfile.c src/include/66/parser.h
+src/extra-tools/66-getenv.o src/extra-tools/66-getenv.lo: src/extra-tools/66-getenv.c
+src/extra-tools/66-gnwenv.o src/extra-tools/66-gnwenv.lo: src/extra-tools/66-gnwenv.c
+src/extra-tools/66-writenv.o src/extra-tools/66-writenv.lo: src/extra-tools/66-writenv.c
 src/extra-tools/execl-cmdline.o src/extra-tools/execl-cmdline.lo: src/extra-tools/execl-cmdline.c
+src/extra-tools/execl-getuidgid.o src/extra-tools/execl-getuidgid.lo: src/extra-tools/execl-getuidgid.c
 src/lib66/backup_cmd_switcher.o src/lib66/backup_cmd_switcher.lo: src/lib66/backup_cmd_switcher.c src/include/66/constants.h src/include/66/enum.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/backup_make_new.o src/lib66/backup_make_new.lo: src/lib66/backup_make_new.c src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/tree.h src/include/66/utils.h
 src/lib66/backup_realpath_sym.o src/lib66/backup_realpath_sym.lo: src/lib66/backup_realpath_sym.c src/include/66/constants.h src/include/66/enum.h src/include/66/utils.h
@@ -105,6 +109,12 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-tree: src/66/66-tree.o ${LIB66} -loblibs -ls6rc -ls6 -lskarnet 
 66-envfile: EXTRA_LIBS :=
 66-envfile: src/extra-tools/66-envfile.o ${LIB66} -lexecline -loblibs -lskarnet ${LIBEXECLINE}
+66-getenv: EXTRA_LIBS := ${PROCPS_LIB}
+66-getenv: src/extra-tools/66-getenv.o -lskarnet 
+66-gnwenv: EXTRA_LIBS :=
+66-gnwenv: src/extra-tools/66-gnwenv.o -loblibs -lskarnet 
+66-writenv: EXTRA_LIBS :=
+66-writenv: src/extra-tools/66-writenv.o -lskarnet
 execl-cmdline: EXTRA_LIBS :=
 execl-cmdline: src/extra-tools/execl-cmdline.o -lexecline -loblibs -lskarnet
 ifeq ($(strip $(STATIC_LIBS_ARE_PIC)),)
