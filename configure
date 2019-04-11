@@ -35,10 +35,10 @@ Fine tuning of the installation directories:
   --with-sys-service-conf=DIR     sysadmin service configuration directory[/etc/66/conf]
   --with-user-service-conf=DIR    user service configuration directory[.66/conf]
  
- Do not set an absolute path but a $HOME relative path for --with-user-dir,  
- --with-user-log, --with-user-service, --with-user-service-conf. The $HOME prefix 
+ Do not set an absolute path but a \$HOME relative path for --with-user-dir,  
+ --with-user-log, --with-user-service, --with-user-service-conf. The \$HOME prefix 
  will be appened at the pathname automatically in function of the user.
- For example , by default the final path for --with-user-dir will be $HOME/.66.
+ For example , by default the final path for --with-user-dir will be \$HOME/.66.
  
  --with-packager-service and --with-sys-service directory must be two differents path.
  For example do not set --with-sys-service=/etc/66/service/sysadmin with packager service   
@@ -326,6 +326,8 @@ if $allpic ; then
   tryflag CFLAGS_AUTO -fPIC
 fi
 
+procps_lib=$(pkg-config --libs libprocps)
+
 tryflag CFLAGS_AUTO -std=c99
 tryflag CFLAGS -fomit-frame-pointer
 tryflag CFLAGS_AUTO -fno-exceptions
@@ -403,6 +405,7 @@ sproot := $sproot
 version := $version
 home := $home
 exthome := $exthome
+PROCPS_LIB := ${procps_lib}
 
 CC := ${CC_AUTO##${cross}}
 CPPFLAGS_AUTO := $CPPFLAGS_AUTO
@@ -465,7 +468,7 @@ All rights reserved.*/
 #define ${package_macro_name}_SERVICE_SYSDIR "$service_sys/"
 #define ${package_macro_name}_SERVICE_SYSCONFDIR "$service_sysconf/"
 
-/** Do not use absolute path but a $HOME relative path
+/** Do not use absolute path but a \$HOME relative path
  * The /home/name_of_user prefix will be automatically added to the pathname */
 #define ${package_macro_name}_USER_DIR "$user_dir/"
 #define ${package_macro_name}_LOGGER_USERDIR "$user_log/"
