@@ -30,8 +30,9 @@
 
 #define MAX_ENV 4095
 static char const *pattern = 0 ;
+static unsigned int EXACT = 0 ;
 
-#define USAGE "66-gnwenv [ -m ] process dir file"
+#define USAGE "66-gnwenv [ -x ][ -m ] process dir file"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 static inline void info_help (void)
@@ -42,6 +43,7 @@ static inline void info_help (void)
 "options :\n"
 "	-h: print this help\n" 
 "	-m: create dir with given mode\n"
+"	-x: match exactly with the process name\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
@@ -71,7 +73,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	
 	char const *dir = 0 , *file = 0 ;
 	char const *newargv[6+1] ;
-	char const *newread[5+1] ;
+	char const *newread[6+1] ;
 	char md[UINT32_FMT] ;
 	char buf[MAX_ENV+1] ;
 	char tmp[MAX_ENV+1] ;
@@ -81,10 +83,11 @@ int main (int argc, char const *const *argv, char const *const *envp)
 		subgetopt_t l = SUBGETOPT_ZERO ;
 		for (;;)
 		{
-			int opt = subgetopt_r(argc, argv, "m:", &l) ;
+			int opt = subgetopt_r(argc, argv, "xm:", &l) ;
 			if (opt == -1) break ;
 			switch (opt)
 			{
+				case 'x' : EXACT = 1 ; break ;
 				case 'm' : if (!uint0_oscan(l.arg, &mode)) dieusage() ; did = 1 ; break ;
 				default : dieusage() ;
 			}
@@ -98,6 +101,8 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	file = argv[2] ;
 	
 	newread[rm++] = "66-getenv" ;
+	if (EXACT)
+		newread[rm++] = "-x" ;
 	newread[rm++] = pattern ;
 	newread[rm++] = dir ;
 	newread[rm++] = file ;

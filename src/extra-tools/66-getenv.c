@@ -27,8 +27,9 @@
 #define MAX_ENV 4095
 static char const *delim = "\n" ;
 static char const *pattern = 0 ;
+static unsigned int EXACT = 0 ;
 
-#define USAGE "66-getenv [ -d delim ] process"
+#define USAGE "66-getenv [ -x ] [ -d delim ] process"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 static inline void info_help (void)
@@ -39,6 +40,7 @@ static inline void info_help (void)
 "options :\n"
 "	-h: print this help\n" 
 "	-d: specify output delimiter\n"
+"	-x: match exactly with the process name\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
@@ -48,7 +50,7 @@ static inline void info_help (void)
 static PROCTAB *open_proc (void)
 {
 	PROCTAB *ptp ;
-	int flags = PROC_FILLCOM | PROC_FILLENV | PROC_FILLSTATUS ;
+	int flags = PROC_FILLCOM | PROC_FILLENV ;
 
 	ptp = openproc (flags) ;
 	
@@ -65,10 +67,19 @@ static regex_t *regex_cmp (void)
 	
 	preg = malloc (sizeof (regex_t)) ;
 	if (!preg) strerr_diefu1sys(111,"allocate preg") ;
-
-	memcpy(re,pattern,plen) ;
-	re[plen] = 0 ;
-
+	if (EXACT)
+	{
+		memcpy(re,"^(",2) ;
+		memcpy(re + 2,pattern,plen) ;
+		memcpy(re + 2 + plen,")$",2) ;
+		re[2 + plen + 2] = 0 ;
+	}
+	else
+	{
+		memcpy(re,pattern,plen) ;
+		re[plen] = 0 ;
+	}
+	
 	r = regcomp (preg, re, REG_EXTENDED | REG_NOSUB) ;
 	if (r)
 	{
@@ -152,11 +163,12 @@ int main (int argc, char const *const *argv, char const *const *envp)
 		subgetopt_t l = SUBGETOPT_ZERO ;
 		for (;;)
 		{
-			int opt = subgetopt_r(argc, argv, "hd:", &l) ;
+			int opt = subgetopt_r(argc, argv, "hxd:", &l) ;
 			if (opt == -1) break ;
 			switch (opt)
 			{
 				case 'h' : info_help() ; return 0 ;
+				case 'x' : EXACT = 1 ; break ;
 				case 'd' : delim = l.arg ; break ;
 				default : dieusage() ;
 			}
