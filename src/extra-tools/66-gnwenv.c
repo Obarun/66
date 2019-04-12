@@ -32,7 +32,7 @@
 static char const *pattern = 0 ;
 static unsigned int EXACT = 0 ;
 
-#define USAGE "66-gnwenv [ -x ][ -m ] process dir file"
+#define USAGE "66-gnwenv [ -x ] [ -m ] process dir file"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 static inline void info_help (void)
