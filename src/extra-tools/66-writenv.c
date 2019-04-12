@@ -25,7 +25,7 @@
 #include <skalibs/djbunix.h>
 
 #define MAX_ENV 4095
-#define USAGE "66-writenv [ -m mode ] dir file"
+#define USAGE "66-writenv [ - h ] [ -m mode ] dir file"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 static inline void info_help (void)

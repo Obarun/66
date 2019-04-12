@@ -29,7 +29,7 @@ static char const *delim = "\n" ;
 static char const *pattern = 0 ;
 static unsigned int EXACT = 0 ;
 
-#define USAGE "66-getenv [ -x ] [ -d delim ] process"
+#define USAGE "66-getenv [ -h ] [ -x ] [ -d delim ] process"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 static inline void info_help (void)
