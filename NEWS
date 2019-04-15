@@ -1,6 +1,11 @@
 Changelog for 66
 
+In 0.1.0.1
+----------
 
+	- Bugs fix
+	- Add 66-getenv,66-writenv and 66-gnwenv extra-tools
+	
 In 0.1.0.0
 ----------
 	
