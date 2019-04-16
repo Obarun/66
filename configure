@@ -348,13 +348,19 @@ if [ "x$target" != "x$(cat $sysdeps/target)" ] ; then
   exit 1
 fi
 
+if ! test -z "$PKG_CONFIG" && command -v $PKG_CONFIG > /dev/null ; then
+    pkg_config=$PKG_CONFIG
+else
+    pkg_config=${cross}pkg-config
+fi
+
 spawn_lib=$(cat $sysdeps/spawn.lib)
 socket_lib=$(cat $sysdeps/socket.lib)
 sysclock_lib=$(cat $sysdeps/sysclock.lib)
 tainnow_lib=$(cat $sysdeps/tainnow.lib)
 timer_lib=$(cat $sysdeps/timer.lib)
 util_lib=$(cat $sysdeps/util.lib)
-procps_lib=$(pkg-config --libs libprocps)
+procps_lib=$($pkg_config --libs libprocps)
 
 if $allpic ; then
   tryflag CFLAGS_AUTO -fPIC
