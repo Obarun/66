@@ -642,6 +642,12 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 				VERBO3 strerr_warnw3x("key : ",get_keybyid(nocheck->idkey)," : is not valid for type classic") ;
 				return 0 ;
 			}
+			else
+			if (service->cname.itype == BUNDLE)
+			{
+				VERBO3 strerr_warnw3x("key : ",get_keybyid(nocheck->idkey)," : is not valid for type bundle") ;
+				return 0 ;
+			}
 			if (!clean_val(&gatmp,nocheck->val.s))
 			{
 				VERBO3 strerr_warnwu2x("parse file ",nocheck->val.s) ;
