@@ -441,7 +441,7 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, c
 					VERBO3 strerr_warnwu2x("split source name of instance: ",dname_src) ;
 					return 0 ;
 				}
-				if (obstr_equal(dname.s,maininsta.s))
+				if (maininsta.len && obstr_equal(dname.s,maininsta.s))
 				{
 					VERBO3 strerr_warnw3x("direct cyclic instance dependency detected on ",mainsv," service") ;
 					return 0 ;
