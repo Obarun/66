@@ -662,9 +662,9 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			}
 			break ;
 		case CONTENTS:
-			if (service->cname.itype == CLASSIC)
+			if (service->cname.itype != BUNDLE)
 			{
-				VERBO3 strerr_warnw3x("key : ",get_keybyid(nocheck->idkey)," : is not valid for type classic") ;
+				VERBO3 strerr_warnw4x("key : ",get_keybyid(nocheck->idkey)," : is not valid for type ",get_keybyid(service->cname.itype)) ;
 				return 0 ;
 			}
 			if (!clean_val(&gatmp,nocheck->val.s))
