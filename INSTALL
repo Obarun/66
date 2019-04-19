@@ -12,6 +12,7 @@ Build Instructions
   - s6-rc version 0.5.0.0 or later: http://skarnet.org/software/s6-rc/
   - oblibs version 0.0.1.0 or later: https://framagit.org/Obarun/oblibs/
   - procps-ng version 3.3.15 or later: https://gitlab.com/procps-ng/procps
+  - scdoc version 1.9.4 or later for man pages: https://git.sr.ht/~sircmpwn/scdoc
   
  This software will run on any operating system that implements
 POSIX.1-2008, available at:
@@ -139,6 +140,12 @@ make is necessary because targets are symbolic links, and the default make
 behaviour is to check the pointed file's timestamp and not the symlink's
 timestamp.
 
+* Man Pages
+  ---------
+
+ To generate man pages, be sure that scdoc (https://git.sr.ht/~sircmpwn/scdoc)
+utility is installed. Run "make man" to generate the pages and "man install-man"
+to install them under mandir.
 
 * Absolute pathnames
   ------------------
