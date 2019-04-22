@@ -27,7 +27,7 @@
 	</pre>
 
 	<p>
-      This tool expects to find a corresponding <a href="frontend.html">frontend service file</a>, a directory name (see <a href="#directory">below</a>) or a  <em>service</em> instance (see <a href="#instance">below</a>), by default at <tt>/etc/66/sysadmin/service</tt> or <tt>/etc/66/service</tt> in this order of precedence for root user and <tt>$HOME/.66/service</tt> or <tt>/etc/66/service</tt> in this order of precedence for a normal user. The default path can be changed at compile time 
+      This tool expects to find a corresponding <a href="frontend.html">frontend service file</a>, a directory name (see <a href="#directory">below</a>) or a  <em>service</em> instance (see <a href="#instance">below</a>), by default at <tt>/etc/66/sysadmin/service</tt> or <tt>/etc/66/service</tt> in this order of precedence for root user and <tt>$HOME/.66/service</tt>,<tt>/etc/66/sysadmin/service</tt> or <tt>/etc/66/service</tt> in this order of precedence for a normal user. The default path can be changed at compile time 
       by passing the <tt>--with-sys-service=<em>DIR</em></tt>, <tt>--with-packager-service=<em>DIR</em></tt> and <tt>--with-user-service=<em>DIR</em></tt> to 
       <tt>./configure.</tt> It will run a parser on the frontend service file and write the result to the directory of the given <em>tree</em>&mdash;see <a href="66-tree.html">66-tree</a>. The <em>service</em> will then be available in the given 
       <em>tree</em> for the next boot depending on the state of the
