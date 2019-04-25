@@ -79,7 +79,7 @@
 	starts&mdash;see <tt><a href="66-scandir.html">66-scandir -u</a></tt> option, the already present services start automatically.</p>
 	<p>If the <em>scandir</em> is running, you should invoke a <tt><a href="66-scandir.html">66-scandir -s reload</a></tt> command to inform it about the changes.</p>
 <h3>Bundle, atomic services</h3>
-	<p>The tool will automatically invoke <tt><a href="https://skarnet.org/software/s6-rc/s6-rc-init.html">s6-rc-init -l <em>live</em> -c <em>compiled</em> - p <em>prefix</em></a></tt>, 
+	<p>The tool will automatically invoke <tt><a href="https://skarnet.org/software/s6-rc/s6-rc-init.html">s6-rc-init -l <em>live</em> -c <em>compiled</em> -p <em>prefix</em></a></tt>, 
 	where, by default, <em>live</em> translates to <tt>/run/66/tree/UID/<em>tree</em></tt> and <em>compiled</em> to <tt>/var/lib/66/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> or 
 	<tt>$HOME/.66/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> depending on the owner of the process and the <em>prefix</em> of the name of the <em>tree</em>. If it doesn't exist yet <em>live</em> 
 	is created in the process. For these services the <em>scandir</em> <strong>must</strong> be running. This tool like any other 66 tool can be invoked with user permissions.</p>
