@@ -63,5 +63,6 @@ extern int insta_splitname(stralloc *sa,char const *name,int len,int what) ;
 
 extern int insta_replace(stralloc *sa,char const *src,char const *cpy) ;
 
+extern int read_svfile(stralloc *sasv,char const *name,char const *src) ;
 
 #endif

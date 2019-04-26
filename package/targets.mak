@@ -6,6 +6,7 @@ BIN_TARGETS := \
 66-enable \
 66-envfile \
 66-disable \
+66-parser \
 66-start \
 66-stop \
 66-svctl \
