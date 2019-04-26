@@ -39,6 +39,8 @@
 unsigned int VERBOSITY = 1 ;
 static stralloc senv = STRALLOC_ZERO ;
 static genalloc gaenv = GENALLOC_ZERO ; //diuint32, pos in senv
+static int MAXVAR = 100 ;
+static int MAXFILE = 500 ;
 
 #define USAGE "66-envfile [ -h help ] [ -f file ] [ -l ] dir prog"
 
@@ -121,15 +123,16 @@ int new_env(char const *path,char const *file,stralloc *modifs)
 	genalloc gatmp = GENALLOC_ZERO ;//stralist
 	
 	if (!file_readputsa(&nocheck.val,path,file)) strerr_diefu4sys(111,"read file: ",path,"/",file) ;
-	if (!parse_env(&nocheck)) strerr_dief2x(111,"parse file: ", file) ;
+	if (!parse_env(&nocheck.val)) strerr_dief2x(111,"parse file: ", file) ;
 	
 	nbline = get_nbline_ga(nocheck.val.s,nocheck.val.len,&gatmp) ;
-
+	
 	for (i = 0;i < nbline;i++)
 		if (!add_env(gaistr(&gatmp,i),&gaenv,&senv)) strerr_diefu2x(111,"append genalloc with: ",gaistr(&gatmp,i)) ;
 
 	for (i = 0 ; i < genalloc_len(diuint32,&gaenv) ; i++)
 	{
+		if (i > MAXVAR) strerr_dief4x(111,"to many variable in file: ",path,"/",file) ;
 		int key = genalloc_s(diuint32,&gaenv)[i].left ;
 		int val = genalloc_s(diuint32,&gaenv)[i].right ;
 		if ((senv.s+key)[0] == '!')
@@ -212,7 +215,10 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	else
 	{
 		for (i = 0 ; i < genalloc_len(stralist,&toparse) ; i++)
+		{
+			if (i > MAXFILE) strerr_dief2x(111,"to many file to parse in: ",path) ;
 			new_env(path,gaistr(&toparse,i),&modifs) ;
+		}
 	}
 	genalloc_deepfree(stralist,&toparse,stra_free) ;
 	
