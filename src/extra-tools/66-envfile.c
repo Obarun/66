@@ -119,13 +119,13 @@ int new_env(char const *path,char const *file,stralloc *modifs)
 {
 	int nbline = 0, i = 0 ;
 	
-	keynocheck nocheck = KEYNOCHECK_ZERO ;
+	stralloc sa = STRALLOC_ZERO ;
 	genalloc gatmp = GENALLOC_ZERO ;//stralist
 	
-	if (!file_readputsa(&nocheck.val,path,file)) strerr_diefu4sys(111,"read file: ",path,"/",file) ;
-	if (!parse_env(&nocheck.val)) strerr_dief2x(111,"parse file: ", file) ;
+	if (!file_readputsa(&sa,path,file)) strerr_diefu4sys(111,"read file: ",path,"/",file) ;
+	if (!parse_env(&sa)) strerr_dief2x(111,"parse file: ", file) ;
 	
-	nbline = get_nbline_ga(nocheck.val.s,nocheck.val.len,&gatmp) ;
+	nbline = get_nbline_ga(sa.s,sa.len,&gatmp) ;
 	
 	for (i = 0;i < nbline;i++)
 		if (!add_env(gaistr(&gatmp,i),&gaenv,&senv)) strerr_diefu2x(111,"append genalloc with: ",gaistr(&gatmp,i)) ;
