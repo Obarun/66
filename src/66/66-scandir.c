@@ -71,7 +71,7 @@ static unsigned int BOOT = 0 ;
 static inline void info_help (void)
 {
   static char const *help =
-"66-scandir <options> tree\n"
+"66-scandir <options> owner\n"
 "\n"
 "options :\n"
 "	-h: print this help\n" 
