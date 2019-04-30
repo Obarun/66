@@ -347,76 +347,78 @@ int get_key_range(genalloc *ga, section_t *sasection,char const *file,int *svtyp
 							.forceskip = 1, .force = 1, \
 							.inner = PARSE_MILL_INNER_ZERO } ;
 							
-	for (int i = 0 ; i < key_enum_section_el && sasection->idx[i]; i++)
+	for (int i = 0 ; i < key_enum_section_el ; i++)
 	{	
-		if (i == ENV)
-		{	
-			keynocheck nocheck = KEYNOCHECK_ZERO ;
-			nocheck.idsec = i ;
-			nocheck.idkey = ENVAL ;
-			nocheck.expected = KEYVAL ;
-			nocheck.mandatory = OPTS ;
-			section_setsa(i,&psasection,sasection) ;
-			if (!stralloc_cats(&nocheck.val,psasection->s+1)) goto err ;
-			if (!parse_env(&nocheck.val)) { strerr_warnwu2x("parse section: ",get_keybyid(i)) ; goto err ; }
-			if (!genalloc_append(keynocheck,ga,&nocheck)) goto err ;
-		} 
-		else
+		if (sasection->idx[i])
 		{
-			section_setsa(i,&psasection,sasection) ;
-			pos = 0 ;
-			size_t blen = psasection->len ;
-			while (pos < blen)
-			{
+			if (i == ENV)
+			{				
 				keynocheck nocheck = KEYNOCHECK_ZERO ;
-				key.inner.nopen = key.inner.nclose = sakey.len = 0 ; 
-				r = parse_config(&key,file,psasection,&sakey,&pos) ;
-				if (!r) goto err ;
-				if (!stralloc_cats(&nocheck.val,psasection->s+pos)) goto err ;
-				if (!stralloc_0(&nocheck.val)) goto err ;
-				if (!sakey.len) break ;// end of string
-				stralloc_inserts(&sakey,0,"@") ;
-				stralloc_0(&sakey) ;
-				for (int j = 0 ; j < total_list_el[i]; j++)
+				nocheck.idsec = i ;
+				nocheck.idkey = ENVAL ;
+				nocheck.expected = KEYVAL ;
+				nocheck.mandatory = OPTS ;
+				section_setsa(i,&psasection,sasection) ;
+				if (!stralloc_cats(&nocheck.val,psasection->s+1)) goto err ;
+				if (!parse_env(&nocheck.val)) { strerr_warnwu2x("parse section: ",get_keybyid(i)) ; goto err ; }
+				if (!genalloc_append(keynocheck,ga,&nocheck)) goto err ;
+			} 
+			else
+			{
+				section_setsa(i,&psasection,sasection) ;
+				pos = 0 ;
+				size_t blen = psasection->len ;
+				while (pos < blen)
 				{
-					found = 0 ;
-					if (list[i].list[j].name && obstr_equal(sakey.s,list[i].list[j].name))
+					keynocheck nocheck = KEYNOCHECK_ZERO ;
+					key.inner.nopen = key.inner.nclose = sakey.len = 0 ; 
+					r = parse_config(&key,file,psasection,&sakey,&pos) ;
+					if (!r) goto err ;
+					if (!stralloc_cats(&nocheck.val,psasection->s+pos)) goto err ;
+					if (!stralloc_0(&nocheck.val)) goto err ;
+					if (!sakey.len) break ;// end of string
+					stralloc_inserts(&sakey,0,"@") ;
+					stralloc_0(&sakey) ;
+					for (int j = 0 ; j < total_list_el[i]; j++)
 					{
-						nocheck.idsec = i ;
-						nocheck.idkey = get_enumbyid(sakey.s,key_enum_el) ;
-						nocheck.expected = list[i].list[j].expected ;
-						nocheck.mandatory = list[i].list[j].mandatory ;
-						found = 1 ;
-						switch(list[i].list[j].expected)
+						found = 0 ;
+						if (list[i].list[j].name && obstr_equal(sakey.s,list[i].list[j].name))
 						{
-							case QUOTE:
-								if (!parse_quote(&nocheck.val)) goto err ;
-								break ;
-							case BRACKET:
-								if (!parse_bracket(&nocheck.val)) goto err ;
-								break ;
-							case LINE:
-							case UINT:
-							case SLASH:
-								if (!parse_line(&nocheck.val)) goto err ;
-								if (!i && !j) (*svtype) = get_enumbyid(nocheck.val.s,key_enum_el) ;
-								break ;
-							default:
-								return 0 ;
+							nocheck.idsec = i ;
+							nocheck.idkey = get_enumbyid(sakey.s,key_enum_el) ;
+							nocheck.expected = list[i].list[j].expected ;
+							nocheck.mandatory = list[i].list[j].mandatory ;
+							found = 1 ;
+							switch(list[i].list[j].expected)
+							{
+								case QUOTE:
+									if (!parse_quote(&nocheck.val)) goto err ;
+									break ;
+								case BRACKET:
+									if (!parse_bracket(&nocheck.val)) goto err ;
+									break ;
+								case LINE:
+								case UINT:
+								case SLASH:
+									if (!parse_line(&nocheck.val)) goto err ;
+									if (!i && !j) (*svtype) = get_enumbyid(nocheck.val.s,key_enum_el) ;
+									break ;
+								default:
+									return 0 ;
+							}
+							if (!genalloc_append(keynocheck,ga,&nocheck)) goto err ;
+							break ;
 						}
-						if (!genalloc_append(keynocheck,ga,&nocheck)) goto err ;
-						break ;
+					}			 
+					if (!found && r >=0) 
+					{ 
+						VERBO1 strerr_warnw4x("unknown key: ",sakey.s," on section: ",get_keybyid(i)) ; 
+						keynocheck_free(&nocheck) ;
+						goto err ; 
 					}
-				}			 
-				if (!found && r >=0) 
-				{ 
-					VERBO1 strerr_warnw4x("unknown key: ",sakey.s," on section: ",get_keybyid(i)) ; 
-					keynocheck_free(&nocheck) ;
-					goto err ; 
 				}
 			}
 		}
-		
 	}
 	
 	stralloc_free(&sakey) ;
@@ -570,7 +572,7 @@ int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service)
 	    unsigned int c = p - CLASSIC; 
 	    unsigned int action = actions[state][c] ;
 	    state = states[state][c] ;
-	
+
 	    switch (action) {
 			case COMMON:
 				if (!nocheck->idsec)
@@ -626,7 +628,7 @@ int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service)
 					{
 						VERBO3 strerr_warnwu1x("keep environ") ;
 						return 0 ;
-					} 
+					}
 				break ;
 			case SKIP:
 				break ;
