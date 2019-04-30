@@ -48,7 +48,7 @@
 #define USR1 6
 #define USR2 7
 
-#define MAXENV 4096 
+#define MAXENV 4095 
 #define SIGSIZE 64
 
 static uid_t OWNER ;
@@ -866,7 +866,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	stralloc envdir = STRALLOC_ZERO ;
 	stralloc signal = STRALLOC_ZERO ;
 	
-	char const *newenv[MAXENV] ;
+	char const *newenv[MAXENV+1] ;
 	char const *const *genv = NULL ;
 	
 	up = down = rescan = create = remove = 0 ;
