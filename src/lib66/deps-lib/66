@@ -8,6 +8,7 @@ db_get_permissions.o
 db_ok.o
 db_switch_to.o
 db_update.o
+environ.o
 get_enum.o
 get_uidgid.o
 get_userhome.o
