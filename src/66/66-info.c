@@ -134,7 +134,7 @@ static inline void tree_help (void)
 "\n"
 "options :\n"
 "	-h: print this help\n"
-"	-c: disable colorization" 
+"	-c: disable colorization\n" 
 "	-v: increase/decrease verbosity\n"
 "	-r: reserve the dependencies graph\n" 
 "	-d: limit the depth of the graph recursion\n" 
@@ -151,7 +151,7 @@ static inline void sv_help (void)
 "\n"
 "options :\n"
 "	-h: print this help\n"
-"	-c: disable colorization" 
+"	-c: disable colorization\n" 
 "	-t: tree to use\n"
 "	-l: live directory\n"
 "	-p: print n last lines of the associated log file\n"
@@ -214,8 +214,9 @@ int info_print_title(char const *name)
 
 int info_print_tree(char const *treename,int init,int current,int enabled)
 {
+	int indent = init ? 0 : 1 ;
 	if (!info_print_title(treename)) return 0 ;
-	if (!bprintf(buffer_1,"%s%s%s%s%1s","Initialized: ",init ? color->blue : color->yellow, init ? "yes":"no",color->off," | ")) return 0 ;
+	if (!bprintf(buffer_1,"%s%s%s%*s%s%s","Initialized: ",init ? color->blue : color->yellow, init ? "yes":"no",indent,"",color->off,"| ")) return 0 ;
 	if (!bprintf(buffer_1,"%s%s%s%s","Current: ",current ? color->blink_blue : color->yellow ,current ? "yes":"no",color->off)) return 0 ;
 	if (buffer_putsflush(buffer_1,"\n") < 0) return 0 ; 
 	if (!bprintf(buffer_1,"%s%9s%s%s%s%s","Contains:"," | ","Enabled: ",enabled ? color->blue : color->yellow ,enabled ? "yes":"no",color->off)) return 0 ;
