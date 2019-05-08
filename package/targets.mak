@@ -13,6 +13,7 @@ BIN_TARGETS := \
 66-all \
 66-info \
 execl-cmdline \
+execl-envfile \
 66-writenv \
 66-getenv \
 66-gnwenv
