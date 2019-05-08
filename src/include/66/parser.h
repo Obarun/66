@@ -310,7 +310,6 @@ extern int section_skip(char const *s,size_t pos,int nline) ;
 extern int section_valid(int id, uint32_t nline, size_t pos,stralloc *src, char const *file) ;
 extern int clean_value(stralloc *sa) ;
 extern void parse_err(int ierr,int idsec,int idkey) ;
-extern int add_env(char *line,genalloc *ga,stralloc *sa) ;
 extern int add_pipe(sv_alltype *sv, stralloc *sa) ;
 
 /** enable phase */
@@ -330,6 +329,6 @@ extern int write_uint(char const *dst, char const *name, uint32_t ui) ;
 extern int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, int mode, unsigned int force) ;
 extern int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char const *proddst,char const *consdst) ;
 extern int write_dependencies(sv_name_t *cname,char const *dst,char const *filename, genalloc *ga, unsigned int force) ;
-extern int write_env(char const *name, genalloc *env,stralloc *sa,char const *dst) ;
+extern int write_env(char const *name,stralloc *sa,char const *dst) ;
 
 #endif

@@ -86,7 +86,10 @@ inline char next(stralloc *s,size_t *pos)
 	(*pos) += 1 ;
 	return c ;
 }
-
+/** @Return 1 on sucess
+ * @Return 0 on fail
+ * @Return 2 for end of file
+ * @Return -1 if close was not found */  
 inline int parse_config(parse_mill_t *p,char const *file, stralloc *src, stralloc *kp,size_t *pos)
 {
 	uint8_t what = 0 ;
@@ -147,15 +150,13 @@ inline int parse_config(parse_mill_t *p,char const *file, stralloc *src, strallo
 		strerr_warnw6x("umatched ",(p->inner.nopen > p->inner.nclose) ? sepopen : sepclose," in: ",file," at line: ",fmt) ;
 		return 0 ;
 	}
-	/** make a return distinction for a end of string*/
-	if (end) return -1 ;
+	if (!p->inner.nclose) return -1 ;
+	if (end) return 2 ;
 	return 1 ;
 }
 
 int parser(sv_alltype *service,stralloc *src,char const *file)
 {
-	VERBO2 strerr_warni2x("Parsing service file: ", file) ;
-	
 	int r ;
 	int svtype = -1 ;
 	section_t sasection = SECTION_ZERO ;

@@ -38,6 +38,7 @@
 #include <66/constants.h>
 #include <66/enum.h>
 #include <66/utils.h>//MYUID
+#include <66/environ.h>//MYUID
 
 stralloc keep = STRALLOC_ZERO ;//sv_alltype data
 stralloc deps = STRALLOC_ZERO ;//sv_name depends
@@ -203,32 +204,18 @@ int parse_env(stralloc *src)
 							.forceskip = 0, .force = 1, \
 							.inner = PARSE_MILL_INNER_ZERO } ;
 	
-	size_t blen = src->len, n = 0, len = 0 ;
-	if (!stralloc_inserts(src,1,"@")) goto err ;
+	size_t blen = src->len, n = 0 ;
+	if (!stralloc_inserts(src,0,"@")) goto err ;
 	while(pos < (blen+n))
 	{
 		line.inner.nopen = line.inner.nclose = 0 ;
 		if (!parse_config(&line,file,src,&kp,&pos)) goto err ;
-		if (!stralloc_0(&kp)) goto err ;
+		if (!stralloc_cats(&kp,"\n")) goto err ;
 		if (!stralloc_inserts(src,pos,"@")) goto err ;
 		n++;
 	}
 	if (!stralloc_0(&kp)) goto err ;
-	
-	len = kp.len ;
-	char *p = kp.s ;
-	for (uint32_t i = 0 ;i < line.inner.nline;i++)
-	{
-		n = strlen(p) + 1 ;
-		if (n > len) return (errno = EINVAL, 0) ;
-		if (n > 1)
-		{
-			if (!stralloc_cats(&tmp,p) ||
-			!stralloc_0(&tmp)) goto err ;
-		}
-		p += n ; len -= n ;
-	}
-	if (!stralloc_copy(src,&tmp)) goto err ;
+	if (!stralloc_copy(src,&kp)) goto err ;
 	
 	stralloc_free(&kp) ;
 	stralloc_free(&tmp) ;
@@ -650,6 +637,7 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 	int r, nbline ;
 	unsigned int i ;
 	genalloc gatmp = GENALLOC_ZERO ;
+	stralloc satmp = STRALLOC_ZERO ;
 	r = i = 0 ;
 
 	switch(nocheck->idkey){
@@ -892,9 +880,29 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			nbline = get_nbline_ga(nocheck->val.s,nocheck->val.len,&gatmp) ;
 			for (i = 0;i < nbline;i++)
 			{
-				if (!add_env(gaistr(&gatmp,i),&service->env,&saenv))
+				satmp.len = 0 ;
+				if (!stralloc_cats(&satmp,gaistr(&gatmp,i)) ||
+				!stralloc_0(&satmp)) 
 				{
-					VERBO3 strerr_warnwu2x("add environment value: ",gaistr(&gatmp,i)) ;
+					VERBO3 strerr_warnwu2x("append environment value: ",gaistr(&gatmp,i)) ;
+					stralloc_free(&satmp) ;
+					return 0 ;
+				}
+				r = env_clean(&satmp) ;
+				if (r > 0)
+				{
+					if (!stralloc_cats(&saenv,satmp.s) ||
+					!stralloc_cats(&saenv,"\n"))
+					{
+						VERBO3 strerr_warnwu2x("store environment value: ",gaistr(&gatmp,i)) ;
+						stralloc_free(&satmp) ;
+						return 0 ;
+					}
+				}
+				else if (!r)
+				{
+					VERBO3 strerr_warnwu2x("clean environment value: ",gaistr(&gatmp,i)) ;
+					stralloc_free(&satmp) ;
 					return 0 ;
 				}
 			}
@@ -917,7 +925,7 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 	}
 	
 	genalloc_deepfree(stralist,&gatmp,stra_free) ;
-	
+	stralloc_free(&satmp) ;
 	return 1 ;
 }
 
@@ -1234,62 +1242,6 @@ void parse_err(int ierr,int idsec,int idkey)
 			strerr_warnw1x("unknown parse_err number") ;
 			break ;
 	}
-}
-
-int add_env(char *line,genalloc *ga,stralloc *sa)
-{
-	unsigned int i = 0, err = 1 ;
-	
-	char *k = 0 ;
-	char *v = 0 ;
-	
-	genalloc gatmp = GENALLOC_ZERO ;
-	stralloc satmp = STRALLOC_ZERO ;
-	diuint32 tmp = DIUINT32_ZERO ;
-	
-	if (!get_wasted_line(line)) goto freed ;
-	k = line ;
-	v = line ;
-	obstr_sep(&v,"=") ;
-	if (v == NULL) { err = 0 ; goto freed ; }
-	
-	if (!clean_val(&gatmp,k)) { err = 0 ; goto freed ; }
-	for (i = 0 ; i < genalloc_len(stralist,&gatmp) ; i++)
-	{
-		if ((i+1) < genalloc_len(stralist,&gatmp))
-		{
-			if (!stralloc_cats(&satmp,gaistr(&gatmp,i))) { err = 0 ; goto freed ; }
-			if (!stralloc_cats(&satmp," ")) { err = 0 ; goto freed ; }
-		}
-		else if (!stralloc_catb(&satmp,gaistr(&gatmp,i),gaistrlen(&gatmp,i)+1)) { err = 0 ; goto freed ; }
-	}
-	tmp.left = sa->len ;
-	if(!stralloc_catb(sa,satmp.s,satmp.len+1)) { err = 0 ; goto freed ; }
-	
-	if (!obstr_trim(v,'\n')) { err = 0 ; goto freed ; }
-	satmp.len = 0 ;
-	genalloc_deepfree(stralist,&gatmp,stra_free) ;
-	
-	if (!clean_val(&gatmp,v)) { err = 0 ; goto freed ; }
-	for (i = 0 ; i < genalloc_len(stralist,&gatmp) ; i++)
-	{
-		if ((i+1) < genalloc_len(stralist,&gatmp))
-		{
-			if (!stralloc_cats(&satmp,gaistr(&gatmp,i))) { err = 0 ; goto freed ; }
-			if (!stralloc_cats(&satmp," ")) { err = 0 ; goto freed ; }
-		}
-		else if (!stralloc_catb(&satmp,gaistr(&gatmp,i),gaistrlen(&gatmp,i)+1)) { err = 0 ; goto freed ; }
-	}
-	tmp.right = sa->len ;
-	if(!stralloc_catb(sa,satmp.s,satmp.len+1)) { err = 0 ; goto freed ; }
-	
-	if (!genalloc_append(diuint32,ga,&tmp)) err = 0 ;
-		
-	freed:
-		stralloc_free(&satmp) ;
-		genalloc_deepfree(stralist,&gatmp,stra_free) ;
-	
-	return err ;
 }
 
 int add_pipe(sv_alltype *sv, stralloc *sa)

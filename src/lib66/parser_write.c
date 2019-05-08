@@ -684,7 +684,8 @@ int write_common(sv_alltype *sv, char const *dst)
 			
 		char *name = keep.s + sv->cname.name ;
 				
-		if (!write_env(name,&sv->env,&saenv,dst))
+		//if (!write_env(name,&sv->env,&saenv,dst))
+		if (!write_env(name,&saenv,dst))
 		{
 			VERBO3 strerr_warnwu1x("write environment") ;
 			return 0 ;
@@ -884,43 +885,27 @@ int write_uint(char const *dst, char const *name, uint32_t ui)
 	return 1 ;
 }
 
-int write_env(char const *name, genalloc *env,stralloc *sa,char const *dst)
+int write_env(char const *name, stralloc *sa,char const *dst)
 {
 	int r ;
-	stralloc tmp = STRALLOC_ZERO ;
-	if (genalloc_len(diuint32,env))
-	{
-		char *key = 0 ;
-		char *val = 0 ;
-		r = scan_mode(dst,S_IFDIR) ;
-		if (r < 0)
-		{
-			VERBO3 strerr_warnw2sys(" invalid environment directory: ",dst) ;
-			return 0 ;
-		}
-		if (!r)
-		{
-			VERBO3 strerr_warnw2sys(dst," service environment directory doesn't exist") ;
-			return 0 ;
-		}
-		for (unsigned int i = 0 ; i < genalloc_len(diuint32,env) ; i++)
-		{
-			key = sa->s + genalloc_s(diuint32,env)[i].left ;
-			val = sa->s + genalloc_s(diuint32,env)[i].right ;
 			
-			if (!stralloc_cats(&tmp,key)) retstralloc(0,"write_env") ;
-			if (!stralloc_cats(&tmp,"=")) retstralloc(0,"write_env") ;
-			if (!stralloc_cats(&tmp,val)) retstralloc(0,"write_env") ;
-			if (!stralloc_cats(&tmp,"\n")) retstralloc(0,"write_env") ;
-		}
+	r = scan_mode(dst,S_IFDIR) ;
+	if (r < 0)
+	{
+		VERBO3 strerr_warnw2sys(" invalid environment directory: ",dst) ;
+		return 0 ;
 	}
-	if (!file_write_unsafe(dst,name,tmp.s,tmp.len))
+	else if (!r)
+	{
+		VERBO3 strerr_warnw2sys(dst," service environment directory doesn't exist") ;
+		return 0 ;
+	}
+	if (!file_write_unsafe(dst,name,sa->s,sa->len))
 	{
 		VERBO3 strerr_warnwu4sys("create file: ",dst,"/",name) ;
 		return 0 ;
 	}
-	
-	stralloc_free(&tmp) ;
-	
+		
 	return 1 ;
 }
+

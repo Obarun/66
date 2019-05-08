@@ -55,12 +55,15 @@ static int check_dir(char const *dir,int force)
 	r = scan_mode(dir,S_IFDIR) ;
 	if (r < 0) return 0 ;
 	
-	if ((r && force) || !r)
+	if (r && force)
 	{
 		if (rm_rf(dir) < 0) return 0 ;
-		r = dir_create(dir, 0755) ;
 		if (!r)	return 0 ;
+		r = 0 ;
 	}
+	else if (r && !force) return -1 ;
+	if (!r)
+		if (!dir_create(dir, 0755)) return 0 ;
 	return 1 ;
 }
 
@@ -112,14 +115,17 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (dir[0] != '/') strerr_dief3x(110, "directory: ",dir," must be an absolute path") ;
 	if (sv[0] != '/') strerr_dief3x(110, "service: ",sv," must be an absolute path") ;
 	if (!setname(name,sv)) strerr_diefu1x(111,"parse service name") ;
-	if (!check_dir(dir,force)) strerr_diefu2sys(111,"sanitize directory: ",dir) ;
+	r = check_dir(dir,force) ;
+	if (r < 1) strerr_dief3x(111,"destination: ",dir," already exist") ;
+	else if (!r) strerr_diefu2sys(111,"sanitize directory: ",dir) ;
 	filesize=file_get_size(sv) ;
 	r = openreadfileclose(sv,&src,filesize) ;
 	if (!r) strerr_dief2sys(111,"open: ",sv) ;
 	if (!stralloc_cats(&src,"\n")) retstralloc(111,"main") ;
 	if (!stralloc_0(&src)) retstralloc(111,"main") ;
+	VERBO1 strerr_warni2x("Parsing service file: ", sv) ;
 	if (!parser(&service,&src,sv)) strerr_diefu2x(111,"parse service file: ",sv) ;
-
+	VERBO1 strerr_warni4x("Write service file: ", sv," at: ",dir) ;
 	type = service.cname.itype ;
 	switch(type)
 	{
