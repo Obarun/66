@@ -59,7 +59,7 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 	{
 		if (!stralloc_cats(&dst,SS_SVC)) goto err ;
 	}
-	else if (!stralloc_cats(&dst,SS_DB SS_SRC)) retstralloc(0,"remove_sv") ;
+	else if (!stralloc_cats(&dst,SS_DB SS_SRC)) goto err ;
 	if (!stralloc_cats(&dst,"/")) goto err ;
 	newlen = dst.len ;
 
