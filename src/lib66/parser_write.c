@@ -224,13 +224,14 @@ int write_longrun(sv_alltype *sv,char const *dst, unsigned force)
 			return 0 ;
 		}
 	}
+	
 	/**logger*/
 	if (sv->opts[0])
 	{
 		memcpy(logname,name,namelen) ;
 		memcpy(logname + namelen,SS_LOG_SUFFIX,SS_LOG_SUFFIX_LEN) ;
 		logname[namelen + SS_LOG_SUFFIX_LEN] = 0 ;
-		
+	
 		r = get_rstrlen_until(dst,name) ;
 		r--;//remove the last slash
 		memcpy(dstlog,dst,r) ;
@@ -249,7 +250,7 @@ int write_longrun(sv_alltype *sv,char const *dst, unsigned force)
 			
 	}
 	/** dependencies */
-	if (!write_dependencies(&sv->cname, dst, "dependencies", &gadeps,force))
+	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "dependencies", &gadeps,force))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/dependencies") ;
 		return 0 ;
@@ -283,7 +284,7 @@ int write_oneshot(sv_alltype *sv,char const *dst, unsigned int force)
 		}
 	}
 	
-	if (!write_dependencies(&sv->cname, dst, "dependencies", &gadeps,force))
+	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "dependencies", &gadeps,force))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/dependencies") ;
 		return 0 ;
@@ -301,7 +302,7 @@ int write_bundle(sv_alltype *sv, char const *dst, unsigned int force)
 		return 0 ;
 	}
 	/** contents file*/
-	if (!write_dependencies(&sv->cname, dst, "contents", &gadeps, force))
+	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "contents", &gadeps, force))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/contents") ;
 		return 0 ;
@@ -382,6 +383,16 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 		}
 		
 	}
+	/** dependencies*/
+	if (log->nga)
+	{
+		if (!write_dependencies(log->nga,log->idga,ddst.s,"dependencies",&gadeps,force))
+		{
+			VERBO3 strerr_warnwu3x("write: ",ddst.s,"/dependencies") ;
+			return 0 ;
+		}
+	}
+	
 	if (sv->cname.itype > CLASSIC)
 	{
 		if (!file_write_unsafe(ddst.s,"type","longrun",7))
@@ -826,16 +837,16 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 	return 1 ;	
 }
 
-int write_dependencies(sv_name_t *cname,char const *dst,char const *filename, genalloc *ga, unsigned int force)
+int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename, genalloc *ga, unsigned int force)
 {
 	int r ;
 		
 	stralloc contents = STRALLOC_ZERO ;
 	stralloc namedeps = STRALLOC_ZERO ;
 	
-	for (unsigned int i = 0; i < cname->nga; i++)
+	for (unsigned int i = 0; i < nga; i++)
 	{
-		if (!stralloc_obreplace(&namedeps,deps.s+genalloc_s(unsigned int,ga)[cname->idga+i])) return 0 ;
+		if (!stralloc_obreplace(&namedeps,deps.s+genalloc_s(unsigned int,ga)[idga+i])) return 0 ;
 		r = insta_check(namedeps.s) ;
 		if (!r) 
 		{

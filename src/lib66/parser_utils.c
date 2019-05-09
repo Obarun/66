@@ -248,7 +248,7 @@ int get_section_range(section_t *sasection,stralloc *src)
 							.check = 0, .flush = 1, \
 							.forceskip = 0, .force = 1, \
 							.inner = PARSE_MILL_INNER_ZERO } ;
-				
+	
 	while (pos < src->len)
 	{
 		if(secname.len && n)
@@ -431,7 +431,7 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 	count = 0 ;
 	bkey = -1 ;
 	countidsec = 0 ;
-			
+
 	switch(list[idsec].list[idkey].mandatory){
 		
 		case NEED:
@@ -456,6 +456,7 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 		case CUSTOM:
 			for (unsigned int j = 0;j < genalloc_len(keynocheck,nocheck);j++)
 			{
+				
 				if (genalloc_s(keynocheck,nocheck)[j].idsec == idsec)
 				{
 					countidsec++ ;
@@ -464,17 +465,21 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 						bkey = j ;
 						
 					}
+					
 					if (genalloc_s(keynocheck,nocheck)[j].idkey == get_enumbyid(list[idsec].list[idkey].name,key_enum_el))
 					{
 						count++ ;
 						break ;
 					}
 				}
-			}	
-			if((obstr_equal(genalloc_s(keynocheck,nocheck)[bkey].val.s,get_keybyid(CUSTOM))) && (!count) && (countidsec))
+			}
+			if ((!count) && (countidsec) && bkey>=0)
 			{
-				VERBO3 strerr_warnw5x("custom build asked on section: ",get_keybyid(idsec),", key: ",list[idsec].list[idkey].name," must be set") ;
-				return 0 ;
+				if (obstr_equal(genalloc_s(keynocheck,nocheck)[bkey].val.s,get_keybyid(CUSTOM)))
+				{
+					VERBO3 strerr_warnw5x("custom build asked on section: ",get_keybyid(idsec),", key: ",list[idsec].list[idkey].name," must be set") ;
+					return 0 ;
+				}
 			}
 			break ;
 		case BUNDLE:
@@ -494,10 +499,13 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 					}
 				}
 			}
-			if ((obstr_equal(genalloc_s(keynocheck,nocheck)[bkey].val.s,get_keybyid(BUNDLE))) && (!count) && (countidsec))
+			if ((!count) && (countidsec) && bkey>=0)
 			{
-				VERBO3 strerr_warnw1x("bundle type: key @contents must be set") ;
-				return 0 ;
+				if (obstr_equal(genalloc_s(keynocheck,nocheck)[bkey].val.s,get_keybyid(BUNDLE)))
+				{
+					VERBO3 strerr_warnw1x("bundle type: key @contents must be set") ;
+					return 0 ;
+				}
 			}
 			break ;
 		/** only pass through here to check if flags env was asked
@@ -985,7 +993,7 @@ int keep_runfinish(sv_exec *exec,keynocheck *nocheck)
 
 int keep_logger(sv_execlog *log,keynocheck *nocheck)
 {
-	int r ;
+	int r, i ;
 
 	genalloc gatmp = GENALLOC_ZERO ;
 
@@ -995,6 +1003,20 @@ int keep_logger(sv_execlog *log,keynocheck *nocheck)
 			break ;
 		case RUNAS:
 			if (!keep_runfinish(&log->run,nocheck)) return 0 ;
+			break ;
+		case DEPENDS:
+			if (!clean_val(&gatmp,nocheck->val.s))
+			{
+				VERBO3 strerr_warnwu2x("parse file ",nocheck->val.s) ;
+				return 0 ;
+			}
+			log->idga = genalloc_len(unsigned int,&gadeps) ;
+			for (i = 0;i<genalloc_len(stralist,&gatmp);i++)
+			{
+				if (!genalloc_append(unsigned int,&gadeps,&deps.len)) retstralloc(0,"parse_logger") ;
+				if (!stralloc_catb(&deps,gaistr(&gatmp,i),gaistrlen(&gatmp,i) + 1)) retstralloc(0,"parse_logger") ;
+				log->nga++ ;
+			}
 			break ;
 		case SHEBANG:
 			if (!keep_runfinish(&log->run,nocheck)) return 0 ;
@@ -1119,7 +1141,7 @@ void section_setsa(int id, stralloc_ref *p,section_t *sa)
 		case MAIN: *p = &sa->main ; break ;
 		case START: *p = &sa->start ; break ;
 		case STOP: *p = &sa->stop ; break ;
-		case LOGGER: *p = &sa->logger ; break ;
+		case LOG: *p = &sa->logger ; break ;
 		case ENV: *p = &sa->environment ; break ;
 		default: break ;
 	}

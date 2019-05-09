@@ -145,8 +145,9 @@ static key_description_t const startstop_section_list[] =
 static key_description_t const logger_section_list[] =
 {
 	{ .name = "@destination", .expected = SLASH, .mandatory = CUSTOM },
-	{ .name = "@build",  .expected = LINE, .mandatory = NEED },
+	{ .name = "@build", .expected = LINE, .mandatory = NEED },
 	{ .name = "@runas", .expected = LINE, .mandatory = OPTS },
+	{ .name = "@depends", .expected = BRACKET, .mandatory = OPTS },
 	{ .name = "@shebang", .expected = QUOTE, .mandatory = CUSTOM },
 	{ .name = "@timeout-finish", .expected = UINT, .mandatory = OPTS },
 	{ .name = "@timeout-kill", .expected = UINT, .mandatory = OPTS },
@@ -163,7 +164,7 @@ static key_description_t const environment_section_list[] =
 	{ .name = 0 }
 } ;
 
-static int const total_list_el[6] = { 16, 5, 5, 11, 2, 0 } ;
+static int const total_list_el[6] = { 16, 5, 5, 12, 2, 0 } ;
 
 static key_all_t const total_list[] =
 {

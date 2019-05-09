@@ -74,6 +74,8 @@ struct sv_execlog_s
 	uint32_t maxsize ;
 	/**timestamp=49->tai,timestamp=50->iso*/
 	int timestamp ;
+	unsigned int idga ; //pos in genalloc gadeps
+	unsigned int nga ; //len of idga in genalloc gadeps
 } ;
 
 typedef struct sv_classic_longrun_s sv_classic_longrun,*sv_classic_ref ;
@@ -153,6 +155,8 @@ struct sv_alltype_s
 	0 ,\
 	0 ,\
 	0 ,\
+	0,\
+	0,\
 	0 \
 }
 
@@ -328,7 +332,7 @@ extern int write_exec(sv_alltype *sv, sv_exec *exec,char const *name,char const 
 extern int write_uint(char const *dst, char const *name, uint32_t ui) ;
 extern int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, int mode, unsigned int force) ;
 extern int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char const *proddst,char const *consdst) ;
-extern int write_dependencies(sv_name_t *cname,char const *dst,char const *filename, genalloc *ga, unsigned int force) ;
+extern int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename, genalloc *ga, unsigned int force) ;
 extern int write_env(char const *name,stralloc *sa,char const *dst) ;
 
 #endif
