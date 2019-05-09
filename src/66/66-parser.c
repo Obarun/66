@@ -27,7 +27,6 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 
-
 #include <66/utils.h>
 #include <66/parser.h>
 
