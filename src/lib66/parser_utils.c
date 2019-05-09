@@ -192,7 +192,9 @@ int parse_bracket(stralloc *src)
 
 int parse_env(stralloc *src)
 {
+	int r ;
 	size_t pos = 0 ;
+	size_t base ;
 	stralloc kp = STRALLOC_ZERO ;
 	stralloc tmp = STRALLOC_ZERO ;
 	char const *file = "parse_env" ;
@@ -208,15 +210,18 @@ int parse_env(stralloc *src)
 	if (!stralloc_inserts(src,0,"@")) goto err ;
 	while(pos < (blen+n))
 	{
+		base = kp.len ;
 		line.inner.nopen = line.inner.nclose = 0 ;
-		if (!parse_config(&line,file,src,&kp,&pos)) goto err ;
+		r = parse_config(&line,file,src,&kp,&pos) ;
+		if (!r) goto err ;
+		else if (r < 0){ kp.len = base ; goto append ; }
 		if (!stralloc_cats(&kp,"\n")) goto err ;
+		append:
 		if (!stralloc_inserts(src,pos,"@")) goto err ;
 		n++;
 	}
 	if (!stralloc_0(&kp)) goto err ;
 	if (!stralloc_copy(src,&kp)) goto err ;
-	
 	stralloc_free(&kp) ;
 	stralloc_free(&tmp) ;
 	return 1 ;
