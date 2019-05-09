@@ -113,15 +113,13 @@ int env_split_one(char *line,genalloc *ga,stralloc *sa)
 int env_split(genalloc *gaenv,stralloc *saenv,stralloc *src)
 {
 	int nbline = 0, i = 0 ;
-	printf("src::%s\n",src->s) ;
 	genalloc gatmp = GENALLOC_ZERO ;//stralist
 	nbline = get_nbline_ga(src->s,src->len,&gatmp) ;
-	printf("nbline::%i\n",nbline) ;
 	for (; i < nbline ; i++)
 	{
 		char *line = gaistr(&gatmp,i) ;
-		printf("line::%s\n",line) ;
-		if (!env_split_one(line,gaenv,saenv)) goto err ;
+		if (*line)
+			if (!env_split_one(line,gaenv,saenv)) goto err ;
 	}
 	genalloc_deepfree(stralist,&gatmp,stra_free) ;
 	return 1 ;
@@ -134,25 +132,28 @@ int env_parsenclean(stralloc *modifs,stralloc *src)
 {
 	int nbline = 0, i = 0 ;
 	genalloc gatmp = GENALLOC_ZERO ;//stralist
-	
-	if (!parse_env(src)) goto err ;
-	if (!env_clean(src)) goto err ;
+	stralloc tmp = STRALLOC_ZERO ;
 	nbline = get_nbline_ga(src->s,src->len,&gatmp) ;
-printf("src + u::%s\n",src->s ) ;
+	
 	for (; i < nbline ; i++)
 	{
-		char *line = gaistr(&gatmp,i) ;
+		tmp.len = 0 ;
+		if (!gaistrlen(&gatmp,i)) break ;
+		if (!stralloc_cats(&tmp,gaistr(&gatmp,i))) goto err ;
+		if (!parse_env(&tmp)) goto err ;
+		if (!env_clean(&tmp)) goto err ;
+		tmp.len--;//remove '0'
 		int u = 0 ;
-		if (line[0] == '!') u++ ;
-		printf("line + u::%s\n",gaistr(&gatmp,i) ) ;
-		if (!stralloc_catb(modifs,line + u ,strlen(line) - u) ||
-		!stralloc_0(modifs)) goto err ;
+		if (tmp.s[0] == '!') u++ ;
+		if (!stralloc_catb(modifs,tmp.s + u ,(tmp.len - u) + 1)) goto err ;// ||
+//		!stralloc_0(modifs)) goto err ;
 	}
 	
 	genalloc_deepfree(stralist,&gatmp,stra_free) ;
-	
+	stralloc_free(&tmp) ;
 	return 1 ;
 	err:
 		genalloc_deepfree(stralist,&gatmp,stra_free) ;
+		stralloc_free(&tmp) ;
 		return 0 ;
 }
