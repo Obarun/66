@@ -40,9 +40,9 @@
 unsigned int VERBOSITY = 1 ;
 static stralloc SAENV = STRALLOC_ZERO ;
 static genalloc GAENV = GENALLOC_ZERO ; //diuint32, pos in senv
-static int MAXVAR = 50 ;
-static int MAXFILE = 500 ;
-static int MAXENV = 4096 ;
+#define MAXVAR  50 
+#define MAXFILE 500 
+#define MAXENV 4096 
 
 #define USAGE "execl-envfile [ -h help ] [ -f file ] [ -l ] dir prog"
 
