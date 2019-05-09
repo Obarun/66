@@ -49,33 +49,30 @@ static inline void info_help (void)
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
-static int check_dir(char const *dir,int force)
+static void check_dir(char const *dir,int force)
 {
 	int r ;
 	r = scan_mode(dir,S_IFDIR) ;
-	if (r < 0) return 0 ;
+	if (r < 0) strerr_dief2sys(111,"conflicting format of: ",dir) ;
 	
 	if (r && force)
 	{
-		if (rm_rf(dir) < 0) return 0 ;
-		if (!r)	return 0 ;
+		if ((rm_rf(dir) < 0) || !r ) strerr_diefu2sys(111,"sanitize directory: ",dir) ;
 		r = 0 ;
 	}
-	else if (r && !force) return -1 ;
+	else if (r && !force) strerr_dief3x(111,"destination: ",dir," already exist") ;
 	if (!r)
-		if (!dir_create(dir, 0755)) return 0 ;
-	return 1 ;
+		if (!dir_create(dir, 0755)) strerr_diefu2sys(111,"create: ",dir) ;
 }
 
-static int setname(char *name,char const *sv)
+static void setname(char *name,char const *sv)
 {
 	size_t slen = strlen(sv) ;
 	ssize_t svlen = get_rlen_until(sv,'/',slen) ;
-	if (svlen <= 0) return 0 ;
+	if (svlen <= 0) strerr_diefu1x(111,"parse service name") ;
 	svlen++ ;
 	size_t svnamelen = slen - svlen ;
 	memcpy(name,sv+svlen,svnamelen) ;
-	return 1 ;
 }
 
 int main(int argc, char const *const *argv,char const *const *envp)
@@ -83,6 +80,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	int r ;
 	size_t filesize ;
 	stralloc src = STRALLOC_ZERO ;
+	stralloc dst = STRALLOC_ZERO ;
 	sv_alltype service = SV_ALLTYPE_ZERO ;
 	char const *dir ;
 	char const *sv  ;
@@ -114,42 +112,43 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	dir = argv[1] ;
 	if (dir[0] != '/') strerr_dief3x(110, "directory: ",dir," must be an absolute path") ;
 	if (sv[0] != '/') strerr_dief3x(110, "service: ",sv," must be an absolute path") ;
-	if (!setname(name,sv)) strerr_diefu1x(111,"parse service name") ;
-	r = check_dir(dir,force) ;
-	if (r < 1) strerr_dief3x(111,"destination: ",dir," already exist") ;
-	else if (!r) strerr_diefu2sys(111,"sanitize directory: ",dir) ;
+	setname(name,sv) ; 
+	check_dir(dir,force) ;
 	filesize=file_get_size(sv) ;
 	r = openreadfileclose(sv,&src,filesize) ;
 	if (!r) strerr_dief2sys(111,"open: ",sv) ;
-	if (!stralloc_cats(&src,"\n")) retstralloc(111,"main") ;
-	if (!stralloc_0(&src)) retstralloc(111,"main") ;
+	if (!stralloc_cats(&src,"\n") || !stralloc_0(&src)) retstralloc(111,"main") ;
 	VERBO1 strerr_warni2x("Parsing service file: ", sv) ;
 	if (!parser(&service,&src,sv)) strerr_diefu2x(111,"parse service file: ",sv) ;
-	VERBO1 strerr_warni4x("Write service file: ", sv," at: ",dir) ;
+	if (!stralloc_cats(&dst,dir) ||
+	!stralloc_cats(&dst,"/") ||
+	!stralloc_cats(&dst,name)) retstralloc(111,"main") ;
+	check_dir(dst.s,force) ;
+	VERBO1 strerr_warni4x("Write service file: ", name," at: ",dst.s) ;
 	type = service.cname.itype ;
 	switch(type)
 	{
 		case CLASSIC:
-			if (!write_classic(&service, dir, force))
+			if (!write_classic(&service, dst.s, force))
 				strerr_diefu2x(111,"write: ",name) ;
 			break ;
 		case LONGRUN:
-			if (!write_longrun(&service, dir, force))
+			if (!write_longrun(&service, dst.s, force))
 				strerr_diefu2x(111,"write: ",name) ;
 			break ;
 		case ONESHOT:
-			if (!write_oneshot(&service, dir, force))
+			if (!write_oneshot(&service, dst.s, force))
 				strerr_diefu2x(111,"write: ",name) ;
 			break ;
 		case BUNDLE:
-			if (!write_bundle(&service, dir, force))
+			if (!write_bundle(&service, dst.s, force))
 				strerr_diefu2x(111,"write: ",name) ;
 			break ;
 		default: break ;
 	}	
 	sv_alltype_free(&service) ;
 	stralloc_free(&src) ;
-	
+	stralloc_free(&dst) ;
 	return 0 ;
 	
 }
