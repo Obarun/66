@@ -51,9 +51,13 @@ inline uint8_t cclass (parse_mill_t *p)
 		}
 	}
 	for (i = 0 ; i < p->endlen ; i++)
+	{
 		if (p->inner.curr == p->end[i])
+		{
+			if (p->inner.curr == p->close) p->inner.nclose++ ;
 			return 3 ;
-	
+		}
+	}
 	for (i = 0 ; i < p->skiplen ; i++)
 	{
 		if (p->inner.curr == p->skip[i])
@@ -68,6 +72,7 @@ inline uint8_t cclass (parse_mill_t *p)
 		p->inner.nopen++ ;
 		return 0 ;
 	}
+	
 	if (p->inner.curr == p->close)
 	{
 		p->inner.nclose++ ;
