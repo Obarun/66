@@ -33,16 +33,17 @@
 
 unsigned int VERBOSITY = 1 ;
 
-#define USAGE "66-parser [ -h ] [ -v verbosity ] service destination"
+#define USAGE "66-parser [ -h ] [ -v verbosity ] [ -f ] service destination"
 
 static inline void info_help (void)
 {
   static char const *help =
-"66-parser <options> dir service\n"
+"66-parser <options> service destination\n"
 "\n"
 "options :\n"
 "	-h: print this help\n" 
 "	-v: increase/decrease verbosity\n"
+"	-f: force to overwrite existing destination\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
@@ -73,6 +74,7 @@ static void setname(char *name,char const *sv)
 	svlen++ ;
 	size_t svnamelen = slen - svlen ;
 	memcpy(name,sv+svlen,svnamelen) ;
+	name[svnamelen] = 0 ;
 }
 
 int main(int argc, char const *const *argv,char const *const *envp)
