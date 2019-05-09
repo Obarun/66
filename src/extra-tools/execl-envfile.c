@@ -158,15 +158,14 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	if (argc < 2) exitusage(USAGE) ;
 	
 	path = *argv ;
-	
+	argv++;
+	argc--;
 	if (path[0] != '/') strerr_dief3x(111,"directory: ",path," must be an absolute path") ;
 	
 	r = dir_get(&toparse,path,"",S_IFREG) ;
 	if (!r && insist) strerr_diefu2sys(111,"get file from: ",path) ;
 	else if ((!r && !insist) || !genalloc_len(stralist,&toparse))
 	{
-		argv++;
-		argc--;
 		xpathexec_run(argv[0],argv,envp) ;
 	}
 	
@@ -178,8 +177,6 @@ int main (int argc, char const *const *argv, char const *const *envp)
 			if (insist) strerr_diefu2x(111,"find: ",file) ;
 			else
 			{
-				argv++;
-				argc--;
 				xpathexec_run(argv[0],argv,envp) ;
 			}
 		}
@@ -201,11 +198,16 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	genalloc_deepfree(stralist,&toparse,stra_free) ;
 	stralloc_free(&src) ;
 	
+	/** be able to freed the stralloc before existing */
+	char tmp[modifs.len] ;
+	memcpy(tmp,modifs.s,modifs.len) ;
+	tmp[modifs.len] = 0 ;
+	
 	size_t n = env_len(envp) + 1 + byte_count(modifs.s,modifs.len,'\0') ;
 	if (n > MAXENV) strerr_dief1x(111,"environment string too long") ;
 	char const *newenv[n] ;
-	if (!env_merge (newenv, n ,envp,env_len(envp),modifs.s, modifs.len)) strerr_diefu1sys(111,"build environment") ;
-
+	if (!env_merge (newenv, n ,envp,env_len(envp),tmp, modifs.len)) strerr_diefu1sys(111,"build environment") ;
+	
 	for (i = 0 ; i < genalloc_len(diuint32,&GAENV) ; i++)
 	{
 			if (i > MAXVAR) strerr_dief1x(111,"to many variables") ;
@@ -222,21 +224,18 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	genalloc_free(diuint32,&GAENV) ;
 	stralloc_free(&SAENV) ;
 	
-	argv++;
-	argc--;
-
 	modifs.len = 0 ;
 	if (!env_string (&modifs, argv, (unsigned int) argc)) strerr_diefu1x(111,"make environment string") ;
+	
 	r = el_substitute (&dst, modifs.s, modifs.len, info.vars.s, info.values.s,
 		genalloc_s (elsubst_t const, &info.data),genalloc_len (elsubst_t const, &info.data)) ;
 	if (r < 0) strerr_diefu1sys(111,"el_substitute") ;
 	else if (!r) _exit(0) ;
-
+	
 	stralloc_free(&modifs) ;
-	{
-		char const *v[r + 1] ;
-		if (!env_make (v, r ,dst.s, dst.len)) strerr_diefu1sys(111,"make environment") ;
-		v[r] = 0 ;
-		pathexec_r (v, newenv, env_len(newenv),info.modifs.s,info.modifs.len) ;
-	}
+	
+	char const *v[r + 1] ;
+	if (!env_make (v, r ,dst.s, dst.len)) strerr_diefu1sys(111,"make environment") ;
+	v[r] = 0 ;
+	pathexec_r (v, newenv, env_len(newenv),info.modifs.s,info.modifs.len) ;
 }
