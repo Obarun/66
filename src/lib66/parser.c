@@ -66,8 +66,9 @@ inline uint8_t cclass (parse_mill_t *p)
 			return 0 ;
 		}
 	}
-	
-	if (p->inner.curr == p->open)
+	/* close and open can be the same, in this case
+	 * we skip open if it already found */
+	if (p->inner.curr == p->open && !p->inner.nopen)
 	{
 		p->inner.nopen++ ;
 		return 0 ;
