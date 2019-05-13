@@ -114,6 +114,7 @@ int parse_line(stralloc *src)
 
 int parse_quote(stralloc *src)
 {
+	int r, err = 0 ;
 	size_t pos = 0 ;
 	char const *file = "parse_quote" ;
 	stralloc kp = STRALLOC_ZERO ;
@@ -125,18 +126,21 @@ int parse_quote(stralloc *src)
 							.forceskip = 0, .force = 0, \
 							.inner = PARSE_MILL_INNER_ZERO } ;
 
-	if (!parse_config(&quote,file,src,&kp,&pos)) goto err ;
+	r = parse_config(&quote,file,src,&kp,&pos) ;
+	if (!r) goto err ;
+	else if (r == -1) { err = -1 ; goto err ; }
 	if (!stralloc_0(&kp)) goto err ;
 	if (!stralloc_copy(src,&kp)) goto err ;
 	stralloc_free(&kp) ;
 	return 1 ;
 	err:
 		stralloc_free(&kp) ;
-		return 0 ;
+		return err ;
 }
 
 int parse_bracket(stralloc *src)
 {
+	int err = -1 ;
 	size_t pos = 0 ;
 	ssize_t id = -1, start = -1, end = -1 ;
 	char const *file = "parse_bracket" ;
@@ -173,10 +177,10 @@ int parse_bracket(stralloc *src)
 	if (!stralloc_0(&tmp)) goto err ;
 	kp.len = 0 ;
 	start = get_sep_before(tmp.s,'(','\n') ;
-	if (start < 0) goto err ;
+	if (start < 0) { err = -1 ; goto err ; }
 	start++ ;
 	end = get_rlen_until(tmp.s,')',tmp.len) ;
-	if (end < 0) goto err ;
+	if (end < 0) { err = -1 ; goto err ; }
 	if (!stralloc_catb(&kp,tmp.s+start,end-start)) goto err ;
 	if (!stralloc_0(&kp)) goto err ;
 	if (!stralloc_copy(src,&kp)) goto err ;
@@ -187,7 +191,7 @@ int parse_bracket(stralloc *src)
 	err:
 		stralloc_free(&kp) ;
 		stralloc_free(&tmp) ;
-		return 0 ;
+		return err ;
 }
 
 int parse_env(stralloc *src)
@@ -384,10 +388,22 @@ int get_key_range(genalloc *ga, section_t *sasection,char const *file,int *svtyp
 							switch(list[i].list[j].expected)
 							{
 								case QUOTE:
-									if (!parse_quote(&nocheck.val)) goto err ;
+									r = parse_quote(&nocheck.val) ;
+									if (r < 0)
+									{
+										VERBO3 parse_err(6,nocheck.idsec,nocheck.idkey) ;
+										goto err ;
+									}
+									else if (!r) goto err ;
 									break ;
 								case BRACKET:
-									if (!parse_bracket(&nocheck.val)) goto err ;
+									r = parse_bracket(&nocheck.val) ;
+									if (r < 0)
+									{
+										VERBO3 parse_err(6,nocheck.idsec,nocheck.idkey) ;
+										goto err ;
+									}
+									else if (!r) goto err ;
 									break ;
 								case LINE:
 								case UINT:
@@ -1248,22 +1264,25 @@ void parse_err(int ierr,int idsec,int idkey)
 	switch(ierr)
 	{
 		case 0: 
-			strerr_warnw4x("invalid value for key : ",get_keybyid(idkey)," : in section : ",get_keybyid(idsec)) ;
+			strerr_warnw4x("invalid value for key: ",get_keybyid(idkey)," : in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 1:
-			strerr_warnw4x("multiple definition of key : ",get_keybyid(idkey)," : in section : ",get_keybyid(idsec)) ;
+			strerr_warnw4x("multiple definition of key: ",get_keybyid(idkey)," : in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 2:
-			strerr_warnw4x("same value for key : ",get_keybyid(idkey)," : in section : ",get_keybyid(idsec)) ;
+			strerr_warnw4x("same value for key: ",get_keybyid(idkey)," : in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 3:
-			strerr_warnw4x("key : ",get_keybyid(idkey)," : must be an integrer value in section : ",get_keybyid(idsec)) ;
+			strerr_warnw4x("key: ",get_keybyid(idkey)," : must be an integrer value in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 4:
-			strerr_warnw4x("key : ",get_keybyid(idkey)," : must be an absolute path in section : ",get_keybyid(idsec)) ;
+			strerr_warnw4x("key: ",get_keybyid(idkey)," : must be an absolute path in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 5:
-			strerr_warnw4x("key : ",get_keybyid(idkey)," : must be set in section : ",get_keybyid(idsec)) ;
+			strerr_warnw4x("key: ",get_keybyid(idkey)," : must be set in section: ",get_keybyid(idsec)) ;
+			break ;
+		case 6:
+			strerr_warnw4x("invalid format of key: ",get_keybyid(idkey)," : in section: ",get_keybyid(idsec)) ;
 			break ;
 		default:
 			strerr_warnw1x("unknown parse_err number") ;
