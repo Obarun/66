@@ -14,7 +14,7 @@
  
 #include <stddef.h>
 #include <stdlib.h>
-//#include <stdio.h>
+#include <stdio.h>
 
 #include <oblibs/error2.h>
 #include <oblibs/files.h>
@@ -49,9 +49,28 @@ static inline void info_help (void)
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
+static void setname(char *name,char const *sv)
+{
+	size_t slen = strlen(sv) ;
+	ssize_t svlen = get_rlen_until(sv,'/',slen) ;
+	if (svlen <= 0) strerr_diefu1x(111,"parse service name") ;
+	svlen++ ;
+	size_t svnamelen = slen - svlen ;
+	memcpy(name,sv+svlen,svnamelen) ;
+	name[svnamelen] = 0 ;
+}
+
 static void check_dir(char const *dir,int force)
 {
 	int r ;
+	size_t dirlen = strlen(dir) ;
+	char name[dirlen+1] ;
+	setname(name,dir) ;
+	size_t namelen = strlen(name) ;
+	char tmp[dirlen+1] ;
+	memcpy(tmp,dir,dirlen-namelen-1) ;//-1 remove last '/'
+	tmp[dirlen-namelen-1] = 0 ;
+	 
 	r = scan_mode(dir,S_IFDIR) ;
 	if (r < 0) strerr_dief2sys(111,"conflicting format of: ",dir) ;
 	
@@ -62,18 +81,7 @@ static void check_dir(char const *dir,int force)
 	}
 	else if (r && !force) strerr_dief3x(111,"destination: ",dir," already exist") ;
 	if (!r)
-		if (!dir_create(dir, 0755)) strerr_diefu2sys(111,"create: ",dir) ;
-}
-
-static void setname(char *name,char const *sv)
-{
-	size_t slen = strlen(sv) ;
-	ssize_t svlen = get_rlen_until(sv,'/',slen) ;
-	if (svlen <= 0) strerr_diefu1x(111,"parse service name") ;
-	svlen++ ;
-	size_t svnamelen = slen - svlen ;
-	memcpy(name,sv+svlen,svnamelen) ;
-	name[svnamelen] = 0 ;
+		if (!dir_create_under(tmp,name, 0755)) strerr_diefu2sys(111,"create: ",dir) ;
 }
 
 int main(int argc, char const *const *argv,char const *const *envp)
