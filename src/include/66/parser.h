@@ -72,7 +72,7 @@ struct sv_execlog_s
 	unsigned int destination ;
 	uint32_t backup ;
 	uint32_t maxsize ;
-	/**timestamp=49->tai,timestamp=50->iso*/
+	/**timestamp=50->tai,timestamp=51->iso,52->none*/
 	int timestamp ;
 	unsigned int idga ; //pos in genalloc gadeps
 	unsigned int nga ; //len of idga in genalloc gadeps

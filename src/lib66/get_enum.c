@@ -77,6 +77,7 @@ char const *get_keybyid(key_enum_t key)
 			//Time
 			(key == TAI ) ? "tai" :
 			(key == ISO ) ? "iso" :
+			(key == NONE ) ? "none" :
 			//logger
 			(key == PRODUCER ) ? "producer-for" :
 			(key == CONSUMER ) ? "consumer-for" :
@@ -104,5 +105,6 @@ int const key_enum_options_el = DOWN - LOGGER ;
 int const key_enum_flags_el = AUTO - DOWN ;
 int const key_enum_build_el = NEED - AUTO ;
 int const key_enum_mandatory_el = TAI - NEED ;
-int const key_enum_time_el = ENDOFKEY - TAI ;
+int const key_enum_time_el = PRODUCER - TAI ;
+int const key_enum_logger_el = ENDOFKEY - PRODUCER ;
 

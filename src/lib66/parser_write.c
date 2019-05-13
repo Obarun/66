@@ -319,7 +319,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 	char *time = NULL ;
 	char *pmax = NULL ;
 	char *pback = NULL ;
-	char *timestamp = NULL ;
+	char *timestamp = "t" ;
 	char max[UINT32_FMT] ;
 	char back[UINT32_FMT] ;
 	char const *userhome ;
@@ -447,10 +447,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			}
 			if (!stralloc_0(&destlog)) retstralloc(0,"write_logger") ;
 
-			if (log->timestamp == TAI)
-				timestamp = "t" ;
-			else
-				timestamp = "T" ;
+			if (log->timestamp == ISO) timestamp = "T" ;
 			
 			if (log->backup > 0)
 			{
@@ -474,8 +471,11 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			if (!stralloc_cats(&exec,S6_BINPREFIX "s6-log " "n")) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec,pback)) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec," ")) retstralloc(0,"write_logger") ;
-			if (!stralloc_cats(&exec,timestamp)) retstralloc(0,"write_logger") ;
-			if (!stralloc_cats(&exec," ")) retstralloc(0,"write_logger") ;
+			if (log->timestamp) 
+			{
+				if (!stralloc_cats(&exec,timestamp)) retstralloc(0,"write_logger") ;
+				if (!stralloc_cats(&exec," ")) retstralloc(0,"write_logger") ;
+			}
 			if (!stralloc_cats(&exec,"s")) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec,pmax)) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec," ")) retstralloc(0,"write_logger") ;

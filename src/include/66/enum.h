@@ -83,6 +83,7 @@ enum key_enum_e
 	//Time
 	TAI , // = 50
 	ISO ,
+	NONE ,
 	ENDOFKEY
 } ;
 #define PIPELINE_NAME "pipeline-name"
