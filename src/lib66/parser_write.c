@@ -448,6 +448,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			if (!stralloc_0(&destlog)) retstralloc(0,"write_logger") ;
 
 			if (log->timestamp == ISO) timestamp = "T" ;
+			else if (log->timestamp == NONE) timestamp = "" ;
 			
 			if (log->backup > 0)
 			{
@@ -471,7 +472,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			if (!stralloc_cats(&exec,S6_BINPREFIX "s6-log " "n")) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec,pback)) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec," ")) retstralloc(0,"write_logger") ;
-			if (log->timestamp) 
+			if (log->timestamp < NONE) 
 			{
 				if (!stralloc_cats(&exec,timestamp)) retstralloc(0,"write_logger") ;
 				if (!stralloc_cats(&exec," ")) retstralloc(0,"write_logger") ;
