@@ -87,9 +87,9 @@ void freed_parser(void)
 /**********************************
  *		parser utilities
  * *******************************/
-int parse_line(stralloc *src)
+int parse_line(stralloc *src, size_t *pos)
 {
-	size_t pos = 0 ;
+	size_t newpos = 0 ;
 	stralloc kp = STRALLOC_ZERO ;
 	char const *file = "parse_line" ;
 	parse_mill_t line = { .open = '@', .close = '\n', \
@@ -101,10 +101,11 @@ int parse_line(stralloc *src)
 							.inner = PARSE_MILL_INNER_ZERO } ;
 					
 	stralloc_inserts(src,0,"@") ;
-	if (!parse_config(&line,file,src,&kp,&pos)) goto err ;
+	if (!parse_config(&line,file,src,&kp,&newpos)) goto err ;
 	if (!stralloc_0(&kp)) goto err ;
 	if (!clean_value(&kp)) goto err ;
 	if (!stralloc_copy(src,&kp)) goto err ;
+	*pos += newpos - 1 ;
 	stralloc_free(&kp) ;
 	return 1 ;
 	err:
@@ -112,10 +113,10 @@ int parse_line(stralloc *src)
 		return 0 ;
 }
 
-int parse_quote(stralloc *src)
+int parse_quote(stralloc *src,size_t *pos)
 {
 	int r, err = 0 ;
-	size_t pos = 0 ;
+	size_t newpos = 0 ;
 	char const *file = "parse_quote" ;
 	stralloc kp = STRALLOC_ZERO ;
 	parse_mill_t quote = { .open = '"', .close = '"', \
@@ -126,11 +127,12 @@ int parse_quote(stralloc *src)
 							.forceskip = 0, .force = 0, \
 							.inner = PARSE_MILL_INNER_ZERO } ;
 
-	r = parse_config(&quote,file,src,&kp,&pos) ;
+	r = parse_config(&quote,file,src,&kp,&newpos) ;
 	if (!r) goto err ;
 	else if (r == -1) { err = -1 ; goto err ; }
 	if (!stralloc_0(&kp)) goto err ;
 	if (!stralloc_copy(src,&kp)) goto err ;
+	*pos += newpos - 1 ;
 	stralloc_free(&kp) ;
 	return 1 ;
 	err:
@@ -138,15 +140,15 @@ int parse_quote(stralloc *src)
 		return err ;
 }
 
-int parse_bracket(stralloc *src)
+int parse_bracket(stralloc *src,size_t *pos)
 {
 	int err = -1 ;
-	size_t pos = 0 ;
+	size_t newpos = 0 ;
 	ssize_t id = -1, start = -1, end = -1 ;
 	char const *file = "parse_bracket" ;
 	stralloc kp = STRALLOC_ZERO ;
 	stralloc tmp = STRALLOC_ZERO ;
-
+	
 	parse_mill_t key = { .open = '@', .close = '=', \
 							.skip = " \n\t\r", .skiplen = 4, \
 							.end = 0, .endlen = 0, \
@@ -155,12 +157,13 @@ int parse_bracket(stralloc *src)
 							.forceskip = 0, .force = 1, \
 							.inner = PARSE_MILL_INNER_ZERO } ;
 	
-	while (id < 0 && pos < src->len) 
+	
+	while (id < 0 && newpos < src->len) 
 	{
 		kp.len = 0 ;
 		key.inner.nclose = 0 ;
 		key.inner.nopen = 0 ;
-		if (!parse_config(&key,file,src,&kp,&pos)) goto err ;
+		if (!parse_config(&key,file,src,&kp,&newpos)) goto err ;
 		if (!kp.len) break ;//end of string
 		if (!stralloc_0(&kp)) goto err ;
 		if (!clean_value(&kp)) goto err ;
@@ -172,8 +175,8 @@ int parse_bracket(stralloc *src)
 	 * in this case we keep the src as it */
 	if (id < 0)
 	{
-		if (!stralloc_cats(&tmp,src->s)) goto err ;//+1 remove the @ of the next key
-	}else if (!stralloc_catb(&tmp,src->s,(pos - (kp.len+1)))) goto err ;//+1 remove the @ of the next key
+		if (!stralloc_cats(&tmp,src->s)) goto err ;
+	}else if (!stralloc_catb(&tmp,src->s,(newpos - (kp.len+1)))) goto err ;//+1 remove the @ of the next key
 	if (!stralloc_0(&tmp)) goto err ;
 	kp.len = 0 ;
 	start = get_sep_before(tmp.s,'(','\n') ;
@@ -184,7 +187,7 @@ int parse_bracket(stralloc *src)
 	if (!stralloc_catb(&kp,tmp.s+start,end-start)) goto err ;
 	if (!stralloc_0(&kp)) goto err ;
 	if (!stralloc_copy(src,&kp)) goto err ;
-	
+	*pos += end + 1 ; //+1 to remove the last ')'
 	stralloc_free(&kp) ;
 	stralloc_free(&tmp) ;
 	return 1 ;
@@ -194,10 +197,10 @@ int parse_bracket(stralloc *src)
 		return err ;
 }
 
-int parse_env(stralloc *src)
+int parse_env(stralloc *src,size_t *pos)
 {
 	int r ;
-	size_t pos = 0 ;
+	size_t newpos = 0 ;
 	size_t base ;
 	stralloc kp = STRALLOC_ZERO ;
 	stralloc tmp = STRALLOC_ZERO ;
@@ -212,20 +215,21 @@ int parse_env(stralloc *src)
 	
 	size_t blen = src->len, n = 0 ;
 	if (!stralloc_inserts(src,0,"@")) goto err ;
-	while(pos < (blen+n))
+	while(newpos < (blen+n))
 	{
 		base = kp.len ;
 		line.inner.nopen = line.inner.nclose = 0 ;
-		r = parse_config(&line,file,src,&kp,&pos) ;
+		r = parse_config(&line,file,src,&kp,&newpos) ;
 		if (!r) goto err ;
 		else if (r < 0){ kp.len = base ; goto append ; }
 		if (!stralloc_cats(&kp,"\n")) goto err ;
 		append:
-		if (!stralloc_inserts(src,pos,"@")) goto err ;
+		if (!stralloc_inserts(src,newpos,"@")) goto err ;
 		n++;
 	}
 	if (!stralloc_0(&kp)) goto err ;
 	if (!stralloc_copy(src,&kp)) goto err ;
+	*pos += newpos - 1 ;
 	stralloc_free(&kp) ;
 	stralloc_free(&tmp) ;
 	return 1 ;
@@ -348,7 +352,8 @@ int get_key_range(genalloc *ga, section_t *sasection,char const *file,int *svtyp
 		if (sasection->idx[i])
 		{
 			if (i == ENV)
-			{				
+			{	
+				pos = 0 ;	
 				keynocheck nocheck = KEYNOCHECK_ZERO ;
 				nocheck.idsec = i ;
 				nocheck.idkey = ENVAL ;
@@ -356,7 +361,7 @@ int get_key_range(genalloc *ga, section_t *sasection,char const *file,int *svtyp
 				nocheck.mandatory = OPTS ;
 				section_setsa(i,&psasection,sasection) ;
 				if (!stralloc_cats(&nocheck.val,psasection->s+1)) goto err ;
-				if (!parse_env(&nocheck.val)) { strerr_warnwu2x("parse section: ",get_keybyid(i)) ; goto err ; }
+				if (!parse_env(&nocheck.val,&pos)) { strerr_warnwu2x("parse section: ",get_keybyid(i)) ; goto err ; }
 				if (!genalloc_append(keynocheck,ga,&nocheck)) goto err ;
 			} 
 			else
@@ -388,7 +393,7 @@ int get_key_range(genalloc *ga, section_t *sasection,char const *file,int *svtyp
 							switch(list[i].list[j].expected)
 							{
 								case QUOTE:
-									r = parse_quote(&nocheck.val) ;
+									r = parse_quote(&nocheck.val,&pos) ;
 									if (r < 0)
 									{
 										VERBO3 parse_err(6,nocheck.idsec,nocheck.idkey) ;
@@ -397,7 +402,7 @@ int get_key_range(genalloc *ga, section_t *sasection,char const *file,int *svtyp
 									else if (!r) goto err ;
 									break ;
 								case BRACKET:
-									r = parse_bracket(&nocheck.val) ;
+									r = parse_bracket(&nocheck.val,&pos) ;
 									if (r < 0)
 									{
 										VERBO3 parse_err(6,nocheck.idsec,nocheck.idkey) ;
@@ -408,7 +413,7 @@ int get_key_range(genalloc *ga, section_t *sasection,char const *file,int *svtyp
 								case LINE:
 								case UINT:
 								case SLASH:
-									if (!parse_line(&nocheck.val)) goto err ;
+									if (!parse_line(&nocheck.val,&pos)) goto err ;
 									if (!i && !j) (*svtype) = get_enumbyid(nocheck.val.s,key_enum_el) ;
 									break ;
 								default:
@@ -420,7 +425,7 @@ int get_key_range(genalloc *ga, section_t *sasection,char const *file,int *svtyp
 					}			 
 					if (!found && r >=0) 
 					{ 
-						VERBO1 strerr_warnw4x("unknown key: ",sakey.s," on section: ",get_keybyid(i)) ; 
+						VERBO3 strerr_warnw4x("unknown key: ",sakey.s," : in section: ",get_keybyid(sasection->idx[i])) ; 
 						keynocheck_free(&nocheck) ;
 						goto err ; 
 					}
@@ -529,12 +534,13 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 		case OPTS:
 			for (unsigned int j = 0;j < genalloc_len(keynocheck,nocheck);j++)
 			{
+				
 				if (genalloc_s(keynocheck,nocheck)[j].idsec == ENV)
 					count++ ;
 				
 				if (genalloc_s(keynocheck,nocheck)[j].idsec == MAIN) 
 				{
-					if (genalloc_s(keynocheck,nocheck)[j].idkey == ENVAL)
+					if (genalloc_s(keynocheck,nocheck)[j].idkey == OPTIONS)
 					{
 						bkey = j;						
 					}
@@ -546,7 +552,7 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 				r = stra_cmp(&gatmp,get_keybyid(ENVIR)) ;
 				if ((r) && (!count))
 				{
-					VERBO3 strerr_warnw1x("flags env was asked, section environment must be set") ;
+					VERBO3 strerr_warnw1x("options: env was asked -- section environment must be set") ;
 					return 0 ;
 				}
 			}

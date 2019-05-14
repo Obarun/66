@@ -293,10 +293,10 @@ extern void keynocheck_free(keynocheck *nocheck) ;
 extern void section_free(section_t *sec) ;
 extern void freed_parser(void) ;
 /** utilities */
-extern int parse_line(stralloc *src) ;
-extern int parse_quote(stralloc *src) ;
-extern int parse_bracket(stralloc *src) ;
-extern int parse_env(stralloc *src) ;
+extern int parse_line(stralloc *src,size_t *pos) ;
+extern int parse_quote(stralloc *src,size_t *pos) ;
+extern int parse_bracket(stralloc *src,size_t *pos) ;
+extern int parse_env(stralloc *src,size_t *pos) ;
 /** split */
 extern int get_section_range(section_t *sasection,stralloc *src) ;
 extern int get_key_range(genalloc *ga, section_t *sasection,char const *file,int *svtype) ;

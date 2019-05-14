@@ -131,6 +131,7 @@ int env_split(genalloc *gaenv,stralloc *saenv,stralloc *src)
 int env_parsenclean(stralloc *modifs,stralloc *src)
 {
 	int nbline = 0, i = 0 ;
+	size_t pos = 0 ;
 	genalloc gatmp = GENALLOC_ZERO ;//stralist
 	stralloc tmp = STRALLOC_ZERO ;
 	nbline = get_nbline_ga(src->s,src->len,&gatmp) ;
@@ -140,7 +141,7 @@ int env_parsenclean(stralloc *modifs,stralloc *src)
 		tmp.len = 0 ;
 		if (!gaistrlen(&gatmp,i)) break ;
 		if (!stralloc_cats(&tmp,gaistr(&gatmp,i))) goto err ;
-		if (!parse_env(&tmp)) goto err ;
+		if (!parse_env(&tmp,&pos)) goto err ;
 		if (!env_clean(&tmp)) goto err ;
 		tmp.len--;//remove '0'
 		int u = 0 ;
