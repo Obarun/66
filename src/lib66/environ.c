@@ -44,6 +44,13 @@ int env_clean(stralloc *src)
 							.check = 0, .flush = 0, \
 							.forceskip = 0, .force = 1, \
 							.inner = PARSE_MILL_INNER_ZERO } ;
+	parse_mill_t line_end = { .open = '@', .close = '\n', \
+							.skip = " \t\r", .skiplen = 3, \
+							.end = "\n", .endlen = 1, \
+							.jump = "#", .jumplen = 1,\
+							.check = 0, .flush = 0, \
+							.forceskip = 0, .force = 1, \
+							.inner = PARSE_MILL_INNER_ZERO } ;
 	
 	size_t blen = src->len, n = 0 ;
 	if (!stralloc_inserts(src,0,"@")) goto err ;
@@ -52,7 +59,7 @@ int env_clean(stralloc *src)
 		kp.len = 0 ;
 		genalloc_deepfree(stralist,&gatmp,stra_free) ;
 		line.inner.nopen = line.inner.nclose = 0 ;
-		r = parse_config(&line,file,src,&kp,&pos) ;
+		r = parse_config(!n?&line:&line_end,file,src,&kp,&pos) ;
 		if (!r) goto err ;
 		if (r < 0 && !n){ e = -1 ; goto freed ; }
 		if (!stralloc_0(&kp)) goto err ;
