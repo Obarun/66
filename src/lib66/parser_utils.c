@@ -275,12 +275,12 @@ int get_section_range(section_t *sasection,stralloc *src)
 			if (!secname.len) break ; //end of string
 			if (!stralloc_0(&secname)) goto err ;
 			id = get_enumbyid(secname.s,key_enum_section_el) ;
-			if (id < 0)
+			/*if (id < 0)
 			{ 
 				idc = section_valid(id,section.inner.nline,pos,src,sasection->file) ;
 				if (!idc) goto err ;
 				else if (idc < 0) goto invalid ;
-			}
+			}*/
 		}
 		if (!n)
 		{ 
@@ -296,12 +296,12 @@ int get_section_range(section_t *sasection,stralloc *src)
 				if (!secname.len) break ; //end of string
 				if (!stralloc_0(&secname)) goto err ;
 				id = get_enumbyid(secname.s,key_enum_section_el) ;
-				if (id < 0)
+				/*if (id < 0)
 				{
 					idc = section_valid(id,section.inner.nline,pos,src,sasection->file) ;
 					if (!idc) goto err ;
 					else if (idc < 0) goto invalid ;
-				}
+				}*/
 			}
 			if(skip)
 			{
@@ -470,7 +470,7 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 			}					
 			if ((!count) && (countidsec))
 			{
-				VERBO3 strerr_warnw4x("mandatory key: ",list[idsec].list[idkey].name," : not found on section: ",get_keybyid(idsec)) ;
+				VERBO3 strerr_warnw4x("mandatory key: ",list[idsec].list[idkey].name," not found on section: ",get_keybyid(idsec)) ;
 				return 0 ;
 			}
 			break ;
@@ -498,7 +498,7 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 			{
 				if (obstr_equal(genalloc_s(keynocheck,nocheck)[bkey].val.s,get_keybyid(CUSTOM)))
 				{
-					VERBO3 strerr_warnw5x("custom build asked on section: ",get_keybyid(idsec),", key: ",list[idsec].list[idkey].name," must be set") ;
+					VERBO3 strerr_warnw5x("custom build asked on section: ",get_keybyid(idsec)," -- key: ",list[idsec].list[idkey].name," must be set") ;
 					return 0 ;
 				}
 			}
@@ -524,7 +524,7 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 			{
 				if (obstr_equal(genalloc_s(keynocheck,nocheck)[bkey].val.s,get_keybyid(BUNDLE)))
 				{
-					VERBO3 strerr_warnw1x("bundle type: key @contents must be set") ;
+					VERBO3 strerr_warnw1x("bundle type detected -- key @contents must be set") ;
 					return 0 ;
 				}
 			}
@@ -552,7 +552,7 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 				r = stra_cmp(&gatmp,get_keybyid(ENVIR)) ;
 				if ((r) && (!count))
 				{
-					VERBO3 strerr_warnw1x("options: env was asked -- section environment must be set") ;
+					VERBO3 strerr_warnw1x("options env was asked -- section environment must be set") ;
 					return 0 ;
 				}
 			}
@@ -599,58 +599,44 @@ int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service)
 			case COMMON:
 				if (!nocheck->idsec)
 					if (!keep_common(service,nocheck,svtype))
-					{
-						VERBO3 strerr_warnwu1x("keep common") ;
 						return 0 ;
-					} 
+				
 				break ;
 			case EXECRUN:
 				if (nocheck->idsec == 1)
 					if (!keep_runfinish(&service->type.classic_longrun.run,nocheck))
-					{
-						VERBO3 strerr_warnwu1x("keep execrun") ;
 						return 0 ;
-					} 
+					 
 				break ;
 			case EXECFINISH:
 				if (nocheck->idsec == 2)
 					if (!keep_runfinish(&service->type.classic_longrun.finish,nocheck))
-					{
-						VERBO3 strerr_warnwu1x("keep execfinish") ;
 						return 0 ;
-					} 
+				 
 				break ;
 			case EXECLOG:
 				if (nocheck->idsec == 3)
 					if (!keep_logger(&service->type.classic_longrun.log,nocheck))
-					{
-						VERBO3 strerr_warnwu1x("keep execlog") ;
 						return 0 ;
-					} 
+				 
 				break ;
 			case EXECUP:
 				if (nocheck->idsec == 1)
 					if (!keep_runfinish(&service->type.oneshot.up,nocheck))
-					{
-						VERBO3 strerr_warnwu1x("keep execup") ;
 						return 0 ;
-					} 
+				 
 				break ;
 			case EXECDOWN:
 				if (nocheck->idsec == 2)
 					if (!keep_runfinish(&service->type.oneshot.down,nocheck))
-					{
-						VERBO3 strerr_warnwu1x("keep execdown") ;
 						return 0 ;
-					} 
+				 
 				break ;
 			case ENVIRON:
 				if (nocheck->idsec == 4)
 					if (!keep_common(service,nocheck,svtype))
-					{
-						VERBO3 strerr_warnwu1x("keep environ") ;
 						return 0 ;
-					}
+				
 				break ;
 			case SKIP:
 				break ;
@@ -1123,7 +1109,7 @@ int read_svfile(stralloc *sasv,char const *name,char const *src)
 	memcpy(svtmp + srclen + 1, name, namelen) ;
 	svtmp[srclen + 1 + namelen] = 0 ;
 	
-	VERBO3 strerr_warni4x("Read service file of : ",name," at: ",src) ;
+	VERBO3 strerr_warni4x("Read service file of : ",name," from: ",src) ;
 	
 	size_t filesize=file_get_size(svtmp) ;
 	if (!filesize)
@@ -1270,25 +1256,25 @@ void parse_err(int ierr,int idsec,int idkey)
 	switch(ierr)
 	{
 		case 0: 
-			strerr_warnw4x("invalid value for key: ",get_keybyid(idkey)," : in section: ",get_keybyid(idsec)) ;
+			strerr_warnw4x("invalid value for key: ",get_keybyid(idkey)," in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 1:
-			strerr_warnw4x("multiple definition of key: ",get_keybyid(idkey)," : in section: ",get_keybyid(idsec)) ;
+			strerr_warnw4x("multiple definition of key: ",get_keybyid(idkey)," in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 2:
-			strerr_warnw4x("same value for key: ",get_keybyid(idkey)," : in section: ",get_keybyid(idsec)) ;
+			strerr_warnw4x("same value for key: ",get_keybyid(idkey)," in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 3:
-			strerr_warnw4x("key: ",get_keybyid(idkey)," : must be an integrer value in section: ",get_keybyid(idsec)) ;
+			strerr_warnw4x("key: ",get_keybyid(idkey)," must be an integrer value in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 4:
-			strerr_warnw4x("key: ",get_keybyid(idkey)," : must be an absolute path in section: ",get_keybyid(idsec)) ;
+			strerr_warnw4x("key: ",get_keybyid(idkey)," must be an absolute path in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 5:
-			strerr_warnw4x("key: ",get_keybyid(idkey)," : must be set in section: ",get_keybyid(idsec)) ;
+			strerr_warnw4x("key: ",get_keybyid(idkey)," must be set in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 6:
-			strerr_warnw4x("invalid format of key: ",get_keybyid(idkey)," : in section: ",get_keybyid(idsec)) ;
+			strerr_warnw4x("invalid format of key: ",get_keybyid(idkey)," in section: ",get_keybyid(idsec)) ;
 			break ;
 		default:
 			strerr_warnw1x("unknown parse_err number") ;
