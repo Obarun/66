@@ -182,7 +182,7 @@ int parser(sv_alltype *service,stralloc *src,char const *file)
 	if (!get_key_range(&ganocheck,&sasection,file,&svtype)) goto err ;
 	if (svtype < 0)
 	{
-		VERBO1 strerr_warnw4x("invalid type: ",get_keybyid(svtype)," in service file: ",file) ;
+		VERBO1 strerr_warnw2x("invalid value for key: @type in service file: ",file) ;
 		goto err ;
 	}
 	if (svtype != BUNDLE && !sasection.idx[START])
