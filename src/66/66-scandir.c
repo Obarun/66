@@ -28,6 +28,7 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/types.h>
 #include <skalibs/env.h>
+#include <skalibs/bytestr.h>//byte_count
 
 #include <s6/config.h>
 #include <s6-portable-utils/config.h>
@@ -36,6 +37,7 @@
 #include <66/config.h>
 #include <66/utils.h>
 #include <66/constants.h>
+#include <66/environ.h>
 
 //#include <stdio.h>
 
@@ -48,7 +50,8 @@
 #define USR1 6
 #define USR2 7
 
-#define MAXENV 4096 
+#define MAXENV 4095 
+#define MAXFILE 500
 #define SIGSIZE 64
 
 static uid_t OWNER ;
@@ -62,6 +65,7 @@ char GIDSTR[256] ;
 static char const *stage2tini = "/etc/66/stage2" ;
 static char const *stage3 = "/etc/66/stage3 $@" ;
 
+static char TMPENV[MAXENV+1] ;
 
 #define USAGE "66-scandir [ -h ] [ -v verbosity ] [ -b ] [ -l live ] [ -t rescan ] [ -2 stage2.tini ] [ -3 stage3 ] [ -e environment ] [ -c | u | r ] [ -s signal ] owner"
 
@@ -71,7 +75,7 @@ static unsigned int BOOT = 0 ;
 static inline void info_help (void)
 {
   static char const *help =
-"66-scandir <options> tree\n"
+"66-scandir <options> owner\n"
 "\n"
 "options :\n"
 "	-h: print this help\n" 
@@ -836,23 +840,84 @@ int sanitize_live(char const *live, char const *scandir, char const *scanname, u
 size_t make_env(char const *src,char const *const *envp,char const **newenv)
 {
 	stralloc sa = STRALLOC_ZERO ;
+	stralloc modifs = STRALLOC_ZERO ;
+	genalloc toparse = GENALLOC_ZERO ;
+	int r, i ;
+	size_t filesize, envlen = env_len(envp) ;
 	
-	size_t envlen = env_len(envp);
-	size_t envdirlen = envdir(src,&sa) ;
-	size_t newlen = envlen + envdirlen + 1 ;
-	if (newlen > MAXENV)
+	r = scan_mode(src,S_IFDIR) ;
+	if (r < 0)
+	{ 
+		r = scan_mode(src,S_IFREG) ;
+		if (!r || r < 0)
+		{
+			VERBO3 strerr_warnw2sys("invalid environment: ",src) ;
+			goto err ;
+		}
+		filesize=file_get_size(src) ;
+		if (filesize > MAXENV)
+		{
+			VERBO3 strerr_warnw2x("environment too long: ",src) ;
+			goto err ;
+		}
+		if (!openreadfileclose(src,&sa,filesize))
+		{
+			VERBO3 strerr_warnwu2sys("open: ",src ) ;
+			goto err ;
+		} 
+		if (!env_parsenclean(&modifs,&sa))
+		{
+			VERBO3 strerr_warnwu2x("parse and clean environment of: ",sa.s)  ;
+			goto err ;
+		}
+	}
+	else if (!r)
 	{
-		VERBO3 strerr_warnw2x("to many key on envdir: ",src) ;
-		return 0 ;
-	} 
-	if (!env_merge(newenv, newlen, envp, envlen, sa.s, sa.len))
+		VERBO3 strerr_warnw2sys("invalid environment: ",src) ;
+		goto err ;
+	}
+	/** we parse all file of the directory*/
+	else
+	{
+		r = dir_get(&toparse,src,"",S_IFREG) ;
+		if (!r)
+		{
+			VERBO3 strerr_warnwu2sys("get file from: ",src) ;
+			goto err ;
+		}
+		for (i = 0 ; i < genalloc_len(stralist,&toparse) ; i++)
+		{
+			sa.len = 0 ;
+			if (i > MAXFILE) strerr_dief2x(111,"to many file to parse in: ",src) ;
+			if (!file_readputsa(&sa,src,gaistr(&toparse,i))) strerr_diefu4sys(111,"read file: ",src,"/",gaistr(&toparse,i)) ;
+			if (!env_parsenclean(&modifs,&sa)) strerr_diefu4x(111,"parse and clean environment of: ",src,"/",gaistr(&toparse,i)) ;
+		}
+	}
+	size_t n = env_len(envp) + 1 + byte_count(modifs.s,modifs.len,'\0') ;
+	size_t mlen = modifs.len ;
+	if (mlen > MAXENV)
+	{
+		VERBO3 strerr_warnw2x("environment too long: ",src) ;
+		goto err ;
+	}
+	memcpy(TMPENV,modifs.s,mlen) ;
+	TMPENV[mlen] = 0 ;
+	
+	if (!env_merge(newenv, n, envp, envlen, TMPENV, mlen))
 	{
 		VERBO3 strerr_warnwu2x("merge environment from: ",src) ;
-		stralloc_free(&sa) ;
-		return 0 ;
+		goto err ;
 	}
-	
-	return newlen ;
+	genalloc_deepfree(stralist,&toparse,stra_free) ;
+	stralloc_free(&sa) ;
+	stralloc_free(&modifs) ;
+		
+	return 1 ;
+	err:
+		genalloc_deepfree(stralist,&toparse,stra_free) ;
+		stralloc_free(&sa) ;
+		stralloc_free(&modifs) ;
+		return 0 ;
 }
 
 int main(int argc, char const *const *argv, char const *const *envp)
@@ -866,7 +931,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	stralloc envdir = STRALLOC_ZERO ;
 	stralloc signal = STRALLOC_ZERO ;
 	
-	char const *newenv[MAXENV] ;
+	char const *newenv[MAXENV+1] ;
 	char const *const *genv = NULL ;
 	
 	up = down = rescan = create = remove = 0 ;

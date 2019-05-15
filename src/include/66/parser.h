@@ -15,7 +15,6 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-
 #include <66/enum.h>
 
 #include <sys/types.h>
@@ -73,8 +72,10 @@ struct sv_execlog_s
 	unsigned int destination ;
 	uint32_t backup ;
 	uint32_t maxsize ;
-	/**timestamp=49->tai,timestamp=50->iso*/
+	/**timestamp=50->tai,timestamp=51->iso,52->none*/
 	int timestamp ;
+	unsigned int idga ; //pos in genalloc gadeps
+	unsigned int nga ; //len of idga in genalloc gadeps
 } ;
 
 typedef struct sv_classic_longrun_s sv_classic_longrun,*sv_classic_ref ;
@@ -154,6 +155,8 @@ struct sv_alltype_s
 	0 ,\
 	0 ,\
 	0 ,\
+	0,\
+	0,\
 	0 \
 }
 
@@ -203,7 +206,6 @@ extern sv_name_t const sv_name_zero ;//set in sv_alltype_zero.c
 typedef struct keynocheck_s keynocheck, *keynocheck_t_ref;
 struct keynocheck_s
 {
-	int nkey ;
 	int idsec ;
 	int idkey ;
 	int expected ;
@@ -211,139 +213,126 @@ struct keynocheck_s
 	stralloc val ;
 	
 } ;
-#define KEYNOCHECK_ZERO { .nkey = 0, .idsec = -1, .idkey = -1, .expected = -1, .mandatory = -1, .val = STRALLOC_ZERO }
+#define KEYNOCHECK_ZERO { .idsec = -1, .idkey = -1, .expected = -1, .mandatory = -1, .val = STRALLOC_ZERO }
 extern keynocheck const keynocheck_zero ;//set in sv_alltype_zero.c
 
-typedef struct sv_db_s sv_db, *sv_db_t_ref ;
-struct sv_db_s
+typedef struct section_s section_t,*section_t_ref ;
+struct section_s
 {
-	sv_alltype *services ; //pos in gasv
-	unsigned int nsv ; //number of service
-	char *string ;
-	unsigned int stringlen ;
-	unsigned int ndeps ;//deps genalloc_len	
+	stralloc main ;
+	stralloc start ;
+	stralloc stop ;
+	stralloc logger ;
+	stralloc environment ;
+	uint32_t idx[5] ; //[0] == 0 -> no, [0] == 1-> yes
+	char const *file ;
+} ;
+#define SECTION_ZERO { .main = STRALLOC_ZERO , \
+						.start = STRALLOC_ZERO , \
+						.stop = STRALLOC_ZERO , \
+						.logger = STRALLOC_ZERO , \
+						.environment = STRALLOC_ZERO , \
+						.idx = { 0 } , \
+						.file = 0 }
+
+
+typedef struct parse_mill_inner_s parse_mill_inner_t, *parse_mill_inner_t_ref ;
+struct parse_mill_inner_s
+{
+	char curr ;
+	uint32_t nline ;
+	uint8_t nopen ; //number of open found
+	uint8_t nclose ; //number of close found
+	uint8_t jumped ;//jump was made or not 1->no,0->yes
+	uint8_t flushed ;//flush was made or not 1->no,0->yes
+	
+} ;
+#define PARSE_MILL_INNER_ZERO { .curr = 0, \
+							.nline = 1, \
+							.nopen = 0, \
+							.nclose = 0, \
+							.jumped = 0, \
+							.flushed = 0 }
+							
+typedef struct parse_mill_s parse_mill_t,*parse_mill_t_ref ;
+struct parse_mill_s
+{
+	char const open ;
+	char const close ;
+	uint8_t force ; //1 -> only one open and close
+	char const *skip ;
+	size_t skiplen ;
+	char const *end ;
+	size_t endlen ;
+	char const *jump ;//skip the complete line
+	size_t jumplen ;
+	uint8_t check ;//check if nopen == openclose, 0 -> no,1->yes
+	uint8_t flush ;//set nopen,nclose,sa.len to 0 at every new line
+	uint8_t forceskip ;//force to skip even if nopen is positive
+	parse_mill_inner_t inner ;
 } ;
 
-/** Main functions */
-extern int parser(char const *str,sv_alltype *service) ;
+typedef enum parse_enum_e parse_enum_t,*parse_enum_t_ref ;
+enum parse_enum_e
+{
+	IGN = 0 ,
+	KEEP ,
+	JUMP ,
+	EXIT ,
+	END
+} ;
 
-extern int get_section_range(char const *s, int idsec, genalloc *gasection) ;
-
-extern int get_key_range(char const *s, int idsec, genalloc *ganocheck) ;
-
-extern int get_keystyle(keynocheck *nocheck) ;
-
+/** Main */
+extern int parser(sv_alltype *service,stralloc *src,char const *file) ;
+extern int parse_config(parse_mill_t *p,char const *file, stralloc *src, stralloc *kp,size_t *pos) ;
+extern char next(stralloc *s,size_t *pos) ;
+extern uint8_t cclass (parse_mill_t *p) ;
+/** freed */
+extern void sv_alltype_free(sv_alltype *sv) ;
+extern void keynocheck_free(keynocheck *nocheck) ;
+extern void section_free(section_t *sec) ;
+extern void freed_parser(void) ;
+/** utilities */
+extern int parse_line(stralloc *src,size_t *pos) ;
+extern int parse_quote(stralloc *src,size_t *pos) ;
+extern int parse_bracket(stralloc *src,size_t *pos) ;
+extern int parse_env(stralloc *src,size_t *pos) ;
+/** split */
+extern int get_section_range(section_t *sasection,stralloc *src) ;
+extern int get_key_range(genalloc *ga, section_t *sasection,char const *file,int *svtype) ;
+extern int get_mandatory(genalloc *nocheck,int idsec,int idkey) ;
 extern int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service) ;
-
-/** Sub functions set in parser_utils.c*/
-
-/** Check if @septart exist before @sepend into @line
- * @Return the lenght on success
- * @Return -1 if @sepstart was not found or
- * if @sepstart is found after @sepend
- * @Return 0 if @sepend is not found*/
+/** store */
+extern int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype) ;
+extern int keep_runfinish(sv_exec *exec,keynocheck *nocheck) ;
+extern int keep_logger(sv_execlog *log,keynocheck *nocheck) ;
+/** helper */
+extern int read_svfile(stralloc *sasv,char const *name,char const *src) ;
 extern ssize_t get_sep_before (char const *line, char const sepstart, char const sepend) ;
-
-/** Search in @s the '=' character
- * @Return n bytes to '='
- * @Return -1 if '=' is not found 
- * @Return -2 if '=' is the first character of the line*/
-extern int scan_key(char const *s) ;
-
-/** Search for a valid key at @s
- * remove all spaces around @s
- * @Return 1 on success
- *@Return 0 on fail*/
-extern int get_cleankey(char *s) ;
-
-extern int get_cleanval(char *s) ;
-
-extern int get_keyline(char const *s,char const *key,stralloc *sa) ;
-
-extern int get_key(char const *s,char const *key,stralloc *keep) ;
-
-extern int get_nextkey(char const *val, int idsec, const key_description_t *list) ;
-
-/** Scan @s to find '[' and ']' character
- * @Return n bytes to ']'
- * @Return 0 if '[' is not found
- * @Return -1 if ']' is not found*/ 
-extern ssize_t scan_section(char const *s) ;
-
-/** Search for a valid section on @s
- * and store the result in @sa
- * @Return 1 on success
- * @Return -4 for invalid section syntax
- * @Return -1 if it's not a section
- * @Return -2 if it's not a good section*/
-extern int get_cleansection(char const *s,stralloc *sa) ;
-
-extern int parse_line(keynocheck *nocheck) ;
-
-extern int parse_quote(keynocheck *nocheck) ;
-
-extern int parse_bracket(keynocheck *nocheck) ;
-
-extern int parse_env(keynocheck *nocheck) ;
-
-void parse_err(int ierr,int idsec,int idkey) ;
-
-/** Search if the number of @sepstart and @sepend are equal
- * into @line over @lensearch of lenght
- * @Return 1 on success
- * @Return -1 if @sepstart>@sepend
- * @Return -2 if @sepstart<@sepend
- * @Return 0 if @sepstart && @sepend is zero*/
-extern int scan_nbsep(char *line,int lensearch, char const sepstart, char const sepend) ;
-
+extern void section_setsa(int id, stralloc_ref *p,section_t *sa) ;
+extern int section_skip(char const *s,size_t pos,int nline) ;
+extern int section_valid(int id, uint32_t nline, size_t pos,stralloc *src, char const *file) ;
+extern int clean_value(stralloc *sa) ;
+extern void parse_err(int ierr,int idsec,int idkey) ;
 extern int add_pipe(sv_alltype *sv, stralloc *sa) ;
 
-/** Display the corresponding warning when @sepend and @sepstart are not equal */ 
-extern void sep_err(int r,char const sepstart,char const sepend,char const *keyname) ;
-
+/** enable phase */
 extern int add_cname(genalloc *ga,avltree *tree,char const *name, sv_alltype *sv_before) ;
-
-extern int add_env(char *line,genalloc *ga,stralloc *sa) ;
-
-extern int parse_env(keynocheck *nocheck) ;
-
 extern int resolve_srcdeps(sv_alltype *sv_before,char const *svmain,char const *src, char const *tree,unsigned int *nbsv,stralloc *sasv,unsigned int force) ;
-
 extern int parse_service_before(char const *src,char const *sv,char const *tree, unsigned int *nbsv, stralloc *sasv,unsigned int force) ;
 
-extern int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype) ;
-
-extern int keep_runfinish(sv_exec *exec,keynocheck *nocheck) ;
-
-extern int keep_logger(sv_execlog *log,keynocheck *nocheck) ;
-
+/** write */
 extern int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned int force) ;
-
 extern int write_classic(sv_alltype *sv, char const *dst, unsigned int force) ;
-
 extern int write_longrun(sv_alltype *sv,char const *dst, unsigned int force) ;
-
 extern int write_oneshot(sv_alltype *sv,char const *dst, unsigned int force) ;
-
 extern int write_bundle(sv_alltype *sv, char const *dst, unsigned int force) ;
-
 extern int write_common(sv_alltype *sv, char const *dst) ;
-
 extern int write_exec(sv_alltype *sv, sv_exec *exec,char const *name,char const *dst,int mode) ;
-
 extern int write_uint(char const *dst, char const *name, uint32_t ui) ;
-
 extern int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, int mode, unsigned int force) ;
-
 extern int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char const *proddst,char const *consdst) ;
+extern int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename, genalloc *ga, unsigned int force) ;
+extern int write_env(char const *name,stralloc *sa,char const *dst) ;
 
-extern int write_dependencies(sv_name_t *cname,char const *dst,char const *filename, genalloc *ga, unsigned int force) ;
-
-extern int write_env(char const *name, genalloc *env,stralloc *sa,char const *dst) ;
-
-extern void freed_parser(void) ;
-
-extern void keynocheck_free(keynocheck *nocheck) ;
-
-extern void sv_alltype_free(sv_alltype *sv) ;
 #endif

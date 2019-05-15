@@ -27,7 +27,7 @@
 	</pre>
 
 	<p>
-      Any enabled <em>tree</em>&mdash;see <a href="66-tree.html"><tt>66-tree -E</tt></a>&mdash;or a specific one passed with the <tt>-o</tt> option, 
+      Any enabled <em>tree</em>&mdash;see <a href="66-tree.html"><tt>66-tree -E</tt></a>&mdash;or a specific one passed with the <tt>-t</tt> option, 
       and an already running <em>scandir</em> will be processed. 
       It is a safe wrapper around <tt><a href="66-start.html">66-start</a></tt> and <tt><a href="66-stop.html">66-stop</a></tt>.
     </p>
@@ -73,6 +73,7 @@
 	</ul>
 
 <h2> Initialization phase </h2>
-<p>In case <tt>up</tt> was passed as option, <tt>66-all</tt> will automatically launch <tt><a href="66-init.html">66-init</a></tt> to initiate all <em>services</em> of the <em>trees</em> processed by the command. As described above this means either any enabled tree for the user currently launching the process or just the tree passed with the -o option.</p>
+<p>In case <tt>up</tt> was passed as option, <tt>66-all</tt> will automatically launch <tt><a href="66-init.html">66-init</a></tt> to initiate all <em>services</em> of the <em>trees</em> 
+processed by the command. As described above this means either any enabled tree for the user currently launching the process or just the tree passed with the <tt>-t</tt> option.</p>
 </body>
 </html>

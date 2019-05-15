@@ -1,25 +1,42 @@
 Changelog for 66
 
+In 0.1.0.1
+----------
+
+	- Bugs fix
+	- Add 66-getenv,66-writenv and 66-gnwenv extra-tools
+	
+In 0.1.0.0
+----------
+	
+	- Logger for nested tree at scandir creation time is disabled.
+	- Pass graph function to new ss_resolve_graph_? function.
+	- Split resolve file and state flags.
+	- Add ss_state_? function.
+	- Really unsupervise rc service, add rc_manage, rc_unsupervise function.
+	- Fix -U option for 66-tree.
+	- Fix 66-info, add -c option.
 
 In 0.0.2.2
 ----------
 
-	- Hot fix, do not stop an empty db
+	- Hot fix, do not stop an empty db.
 
 In 0.0.2.1
 ----------
 	
-	- Hot fix, do not append inner bundle with empty word
+	- Hot fix, do not append inner bundle with empty word.
 	
 In 0.0.2.0
 ----------
-	- Bugs fix
-	- Add 66-tree -U options to unsupervise a tree from a scandir
-	- Rewrite 66-info to provide color and more informations
-	- Empty database cannot be initialized
-	- Respect /etc/66/sysadmin/service even for user
+
+	- Bugs fix.
+	- Add 66-tree -U options to unsupervise a tree from a scandir.
+	- Rewrite 66-info to provide color and more informations.
+	- Empty database cannot be initialized.
+	- Respect /etc/66/sysadmin/service even for user.
 
 In 0.0.1.1
 --------
 	
-	- Bugs fix at rc_init function
+	- Bugs fix at rc_init function.

@@ -35,10 +35,10 @@ Fine tuning of the installation directories:
   --with-sys-service-conf=DIR     sysadmin service configuration directory[/etc/66/conf]
   --with-user-service-conf=DIR    user service configuration directory[.66/conf]
  
- Do not set an absolute path but a $HOME relative path for --with-user-dir,  
- --with-user-log, --with-user-service, --with-user-service-conf. The $HOME prefix 
+ Do not set an absolute path but a \$HOME relative path for --with-user-dir,  
+ --with-user-log, --with-user-service, --with-user-service-conf. The \$HOME prefix 
  will be appened at the pathname automatically in function of the user.
- For example , by default the final path for --with-user-dir will be $HOME/.66.
+ For example , by default the final path for --with-user-dir will be \$HOME/.66.
  
  --with-packager-service and --with-sys-service directory must be two differents path.
  For example do not set --with-sys-service=/etc/66/service/sysadmin with packager service   
@@ -47,6 +47,7 @@ Fine tuning of the installation directories:
  If no --prefix option is given, by default --with-system-dir will be /var/lib/66.
 
 Dependencies:
+  --with-sysdeps=DIR            use sysdeps in DIR [PREFIX/lib/skalibs/sysdeps]
   --with-include=DIR             add DIR to the list of searched directories for headers
   --with-lib=DIR                 add DIR to the list of searched directories for static libraries
   --with-dynlib=DIR              add DIR to the list of searched directories for shared libraries
@@ -165,6 +166,8 @@ service_sys='/etc/66/sysadmin/service'
 service_user='.66/service'
 service_sysconf='/etc/66/conf'
 service_userconf='.66/conf'
+sysdeps='$prefix/lib/skalibs/sysdeps'
+manualsysdeps=false
 shared=false
 static=true
 allpic=true
@@ -204,6 +207,7 @@ for arg ; do
     --with-user-service=*) service_user=${arg#*=} ;;
     --with-sys-service-conf=*) service_sysconf=${arg#*=} ;;
     --with-user-service-conf=*) service_userconf=${arg#*=} ;;
+    --with-sysdeps=*) sysdeps=${arg#*=} manualsysdeps=true ;;
     --with-include=*) var=${arg#*=} ; stripdir var ; addincpath="$addincpath -I$var" ;;
     --with-lib=*) var=${arg#*=} ; stripdir var ; addlibspath="$addlibspath -L$var" ; vpaths="$vpaths $var" ;;
     --with-dynlib=*) var=${arg#*=} ; stripdir var ; addlibdpath="$addlibdpath -L$var" ; vpathd="$vpathd $var" ;;
@@ -242,12 +246,14 @@ if test -z "$prefix" ; then
   if test "$system_dir" = '$prefix/lib/66' ; then
 	system_dir=/var/lib/66
   fi
-  
+  if test "$sysdeps" = '$prefix/lib/skalibs/sysdeps' ; then
+    sysdeps=/usr/lib/skalibs/sysdeps
+  fi
 fi
 
 # Expand installation directories
 stripdir prefix
-for i in exec_prefix dynlibdir libexecdir bindir libdir includedir shebangdir sproot system_dir; do
+for i in exec_prefix dynlibdir libexecdir bindir libdir includedir shebangdir sproot sysdeps system_dir; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
@@ -271,6 +277,11 @@ trap 'rm -f "$tmpc" "$tmpe"' EXIT ABRT INT QUIT TERM HUP
 if $slashpackage ; then
   home=${sproot}/package/${category}/${package}-${version}
   exthome=${sproot}/package/${category}/${package}
+  if $manualsysdeps ; then
+    :
+  else
+    sysdeps=${sproot}/package/prog/skalibs/sysdeps
+  fi
   extbinprefix=${exthome}/command
   dynlibdir=${home}/library.so
   bindir=${home}/command
@@ -280,12 +291,19 @@ if $slashpackage ; then
   if $shebangisdefault ; then
     shebangdir=${extbinprefix}
   fi
-  while read dep ; do
-    addincpath="$addincpath -I${sproot}${dep}/include"
-    vpaths="$vpaths ${sproot}${dep}/library"
-    addlibspath="$addlibspath -L${sproot}${dep}/library"
-    vpathd="$vpathd ${sproot}${dep}/library.so"
-    addlibdpath="$addlibdpath -L${sproot}${dep}/library.so"
+  while read dep condvar ; do
+    if test -n "$condvar" ; then
+      eval "cond=$condvar"
+    else
+      cond=true
+    fi
+    if $cond ; then
+      addincpath="$addincpath -I${sproot}${dep}/include"
+      vpaths="$vpaths ${sproot}${dep}/library"
+      addlibspath="$addlibspath -L${sproot}${dep}/library"
+      vpathd="$vpathd ${sproot}${dep}/library.so"
+      addlibdpath="$addlibdpath -L${sproot}${dep}/library.so"
+    fi
   done < package/deps-build
 fi
 
@@ -321,10 +339,34 @@ if test -z "$target" ; then
   fi
 fi
 echo "  ... $target"
+if test ! -d $sysdeps || test ! -f $sysdeps/target ; then
+  echo "$0: error: $sysdeps is not a valid sysdeps directory"
+  exit 1
+fi
+if [ "x$target" != "x$(cat $sysdeps/target)" ] ; then
+  echo "$0: error: target $target does not match the contents of $sysdeps/target"
+  exit 1
+fi
+
+if ! test -z "$PKG_CONFIG" && command -v $PKG_CONFIG > /dev/null ; then
+    pkg_config=$PKG_CONFIG
+else
+    pkg_config=${cross}pkg-config
+fi
+
+spawn_lib=$(cat $sysdeps/spawn.lib)
+socket_lib=$(cat $sysdeps/socket.lib)
+sysclock_lib=$(cat $sysdeps/sysclock.lib)
+tainnow_lib=$(cat $sysdeps/tainnow.lib)
+timer_lib=$(cat $sysdeps/timer.lib)
+util_lib=$(cat $sysdeps/util.lib)
+procps_lib=$($pkg_config --libs libprocps)
 
 if $allpic ; then
   tryflag CFLAGS_AUTO -fPIC
 fi
+
+
 
 tryflag CFLAGS_AUTO -std=c99
 tryflag CFLAGS -fomit-frame-pointer
@@ -337,6 +379,8 @@ tryflag CPPFLAGS_AUTO -Werror=implicit-function-declaration
 tryflag CPPFLAGS_AUTO -Werror=implicit-int
 tryflag CPPFLAGS_AUTO -Werror=pointer-sign
 tryflag CPPFLAGS_AUTO -Werror=pointer-arith
+tryflag CPPFLAGS_AUTO -Wno-unused-value
+tryflag CPPFLAGS_AUTO -Wno-parentheses
 tryflag CFLAGS_AUTO -ffunction-sections
 tryflag CFLAGS_AUTO -fdata-sections
 
@@ -398,11 +442,19 @@ service_sys := $service_sys
 service_user := $service_user
 service_sysconf := $service_sysconf
 service_userconf := $service_userconf
+sysdeps := $sysdeps
 slashpackage := $slashpackage
 sproot := $sproot
 version := $version
 home := $home
 exthome := $exthome
+PROCPS_LIB := ${procps_lib}
+SPAWN_LIB := ${spawn_lib}
+SOCKET_LIB := ${socket_lib}
+SYSCLOCK_LIB := ${sysclock_lib}
+TAINNOW_LIB := ${tainnow_lib}
+TIMER_LIB := ${timer_lib}
+UTIL_LIB := ${util_lib}
 
 CC := ${CC_AUTO##${cross}}
 CPPFLAGS_AUTO := $CPPFLAGS_AUTO
@@ -413,7 +465,7 @@ LDFLAGS_AUTO := $LDFLAGS_AUTO
 LDFLAGS := $LDFLAGS $LDFLAGS_POST
 LDFLAGS_SHARED := $LDFLAGS_SHARED
 LDFLAGS_NOSHARED := $LDFLAGS_NOSHARED
-CROSS_COMPILE := $cross
+CROSS_COMPILE := ${cross}
 
 vpath lib%.a$vpaths
 vpath lib%.so$vpathd
@@ -465,7 +517,7 @@ All rights reserved.*/
 #define ${package_macro_name}_SERVICE_SYSDIR "$service_sys/"
 #define ${package_macro_name}_SERVICE_SYSCONFDIR "$service_sysconf/"
 
-/** Do not use absolute path but a $HOME relative path
+/** Do not use absolute path but a \$HOME relative path
  * The /home/name_of_user prefix will be automatically added to the pathname */
 #define ${package_macro_name}_USER_DIR "$user_dir/"
 #define ${package_macro_name}_LOGGER_USERDIR "$user_log/"

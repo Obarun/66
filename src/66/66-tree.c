@@ -511,14 +511,14 @@ int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char con
 		if (ss_state_check(state,name))
 		{
 			if (!ss_state_read(&sta,state,name)) strerr_diefu2sys(111,"read state file of: ",name) ;
-			st = sta.state ;
+			st = sta.init ;
 		}
 		
-		if (pres->type == CLASSIC && st) 
+		if (pres->type == CLASSIC && !st) 
 		{
 			if (!stra_add(&nclassic,name)) strerr_diefu2sys(111,"append services selection with: ",name) ;
 		}
-		else if (pres->type >= BUNDLE && st)
+		else if (pres->type >= BUNDLE && !st)
 		{ 
 			if (!stra_add(&nrc,name)) strerr_diefu2sys(111,"append services selection with: ",name) ;
 		}

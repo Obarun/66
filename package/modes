@@ -5,9 +5,14 @@
 66-enable		0755
 66-envfile		0755
 66-disable		0755
+66-parser		0755
 66-start		0755
 66-stop			0755
 66-svctl		0755
 66-all			0755
 66-info			0755
 execl-cmdline	0755
+execl-envfile	0755
+66-writenv		0755
+66-getenv		0755
+66-gnwenv		0755

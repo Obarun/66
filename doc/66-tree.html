@@ -82,7 +82,8 @@
 	 <li> 
 		<tt>-R&nbsp;</tt>&nbsp;: deletes <em>tree</em>. Can not be undone! This will completely remove the given tree
 		from the system! You will not be able
-		to retrieve any information of the deleted <em>tree</em> after deleting it. Services currently running on <em>tree</em> will be bringed down before remove it. 
+		to retrieve any information of the deleted <em>tree</em> after deleting it. Services currently running on <em>tree</em> will be <strong>not</strong> bringed down before remove it. To do so, use the <tt>-U</tt> option
+		in conjonction e.g. <tt><em>66-tree -UR <em>tree</em></em></tt>.
 	 </li>
 	  <li> 
 		<tt>-U&nbsp;</tt>&nbsp;: unsupervise <em>tree</em>. Bring down all services contained into the <em>tree</em> and remove the corresponding directory of the service from the scandir.
@@ -117,9 +118,9 @@
 	<h4>At creation time</h4>
 
 	<p>When creating a new tree, by default it will be created at 
-	<tt>/usr/lib/66/system/<em>tree</em></tt> for root and at <tt>$HOME/.66/system/<em>tree</em></tt>
+	<tt>/var/lib/66/system/<em>tree</em></tt> for root and at <tt>$HOME/.66/system/<em>tree</em></tt>
 	for any regular user.<br>
-	The base name of the directory, namely <tt>/usr/lib/66/</tt> and <tt>$HOME/.66/</tt> can be changed
+	The base name of the directory, namely <tt>/var/lib/66/</tt> and <tt>$HOME/.66/</tt> can be changed
 	at compile time by passing the <tt>--with-system-dir=<em>DIR</em></tt> option 
 	for root and the <tt>--with-user-dir=<em>DIR</em></tt> option for any regular user to <tt>./configure.</tt></p>
 
@@ -128,19 +129,19 @@
 	<p>By enabling a service its corresponding frontend service file is parsed and the result
 	written to a sub directory of the trees path called <tt>servicedirs/svc</tt> for <tt><em>'classic'</em></tt> services and <tt>servicedirs/db/source</tt> for <tt><em>'bundle'</em></tt> or <tt><em>'atomic'</em></tt> services.</p>
 
-	<p>As an example for root the resulting files would, by default, be found at <tt>/usr/lib/66/system/<em>tree</em>/servicedirs/svc</tt>
-	for services of type <tt><em>'classic'</em></tt> and at <tt>/usr/lib/66/system/<em>tree</em>/servicedirs/db/source</tt> 
+	<p>As an example for root the resulting files would, by default, be found at <tt>/var/lib/66/system/<em>tree</em>/servicedirs/svc</tt>
+	for services of type <tt><em>'classic'</em></tt> and at <tt>/var/lib/66/system/<em>tree</em>/servicedirs/db/source</tt> 
 	for any service of type <tt><em>'bundle'</em></tt> or <tt><em>'atomic'</em></tt>.</p>
 	
 	<h4>When enabling a whole tree</h4>
 
 	<p>When you ask to start all services of the currently enabled <em>tree</em> at once with the 
 	<tt><a href="66-all.html">66-all</a></tt> tool, the directory 
-	<tt>/usr/lib/66/system/<em>tree</em>/servicedirs/svc</tt> is opened and the command will start any service found inside of that directory.</p>
+	<tt>/var/lib/66/system/<em>tree</em>/servicedirs/svc</tt> is opened and the command will start any service found inside of that directory.</p>
 
-	<p>For services of type <tt><em>bundle</em></tt> and <tt><em>atomic</em></tt>, instead of opening the directory <tt>/usr/lib/66/system/<em>tree</em>/servicedirs/db/source</tt>, 
+	<p>For services of type <tt><em>bundle</em></tt> and <tt><em>atomic</em></tt>, instead of opening the directory <tt>/var/lib/66/system/<em>tree</em>/servicedirs/db/source</tt>, 
 	the corresponding compiled database found at 
-	<tt>/usr/lib/66/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> is used. The 
+	<tt>/var/lib/66/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> is used. The 
 	database found at this location is the result of an automatic use of the command <tt><a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html">s6-rc-compile</a></tt> when enabling such a service.
 	</p>
 </body>

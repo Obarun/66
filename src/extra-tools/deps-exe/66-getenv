@@ -1,0 +1,3 @@
+${PROCPS_LIB}
+-lskarnet
+

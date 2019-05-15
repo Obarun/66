@@ -224,13 +224,14 @@ int write_longrun(sv_alltype *sv,char const *dst, unsigned force)
 			return 0 ;
 		}
 	}
+	
 	/**logger*/
 	if (sv->opts[0])
 	{
 		memcpy(logname,name,namelen) ;
 		memcpy(logname + namelen,SS_LOG_SUFFIX,SS_LOG_SUFFIX_LEN) ;
 		logname[namelen + SS_LOG_SUFFIX_LEN] = 0 ;
-		
+	
 		r = get_rstrlen_until(dst,name) ;
 		r--;//remove the last slash
 		memcpy(dstlog,dst,r) ;
@@ -249,7 +250,7 @@ int write_longrun(sv_alltype *sv,char const *dst, unsigned force)
 			
 	}
 	/** dependencies */
-	if (!write_dependencies(&sv->cname, dst, "dependencies", &gadeps,force))
+	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "dependencies", &gadeps,force))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/dependencies") ;
 		return 0 ;
@@ -283,7 +284,7 @@ int write_oneshot(sv_alltype *sv,char const *dst, unsigned int force)
 		}
 	}
 	
-	if (!write_dependencies(&sv->cname, dst, "dependencies", &gadeps,force))
+	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "dependencies", &gadeps,force))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/dependencies") ;
 		return 0 ;
@@ -301,7 +302,7 @@ int write_bundle(sv_alltype *sv, char const *dst, unsigned int force)
 		return 0 ;
 	}
 	/** contents file*/
-	if (!write_dependencies(&sv->cname, dst, "contents", &gadeps, force))
+	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "contents", &gadeps, force))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/contents") ;
 		return 0 ;
@@ -318,7 +319,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 	char *time = NULL ;
 	char *pmax = NULL ;
 	char *pback = NULL ;
-	char *timestamp = NULL ;
+	char *timestamp = "t" ;
 	char max[UINT32_FMT] ;
 	char back[UINT32_FMT] ;
 	char const *userhome ;
@@ -382,6 +383,16 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 		}
 		
 	}
+	/** dependencies*/
+	if (log->nga)
+	{
+		if (!write_dependencies(log->nga,log->idga,ddst.s,"dependencies",&gadeps,force))
+		{
+			VERBO3 strerr_warnwu3x("write: ",ddst.s,"/dependencies") ;
+			return 0 ;
+		}
+	}
+	
 	if (sv->cname.itype > CLASSIC)
 	{
 		if (!file_write_unsafe(ddst.s,"type","longrun",7))
@@ -436,10 +447,8 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			}
 			if (!stralloc_0(&destlog)) retstralloc(0,"write_logger") ;
 
-			if (log->timestamp == TAI)
-				timestamp = "t" ;
-			else
-				timestamp = "T" ;
+			if (log->timestamp == ISO) timestamp = "T" ;
+			else if (log->timestamp == NONE) timestamp = "" ;
 			
 			if (log->backup > 0)
 			{
@@ -463,8 +472,11 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			if (!stralloc_cats(&exec,S6_BINPREFIX "s6-log " "n")) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec,pback)) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec," ")) retstralloc(0,"write_logger") ;
-			if (!stralloc_cats(&exec,timestamp)) retstralloc(0,"write_logger") ;
-			if (!stralloc_cats(&exec," ")) retstralloc(0,"write_logger") ;
+			if (log->timestamp < NONE) 
+			{
+				if (!stralloc_cats(&exec,timestamp)) retstralloc(0,"write_logger") ;
+				if (!stralloc_cats(&exec," ")) retstralloc(0,"write_logger") ;
+			}
 			if (!stralloc_cats(&exec,"s")) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec,pmax)) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec," ")) retstralloc(0,"write_logger") ;
@@ -684,7 +696,8 @@ int write_common(sv_alltype *sv, char const *dst)
 			
 		char *name = keep.s + sv->cname.name ;
 				
-		if (!write_env(name,&sv->env,&saenv,dst))
+		//if (!write_env(name,&sv->env,&saenv,dst))
+		if (!write_env(name,&saenv,dst))
 		{
 			VERBO3 strerr_warnwu1x("write environment") ;
 			return 0 ;
@@ -825,16 +838,16 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 	return 1 ;	
 }
 
-int write_dependencies(sv_name_t *cname,char const *dst,char const *filename, genalloc *ga, unsigned int force)
+int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename, genalloc *ga, unsigned int force)
 {
 	int r ;
 		
 	stralloc contents = STRALLOC_ZERO ;
 	stralloc namedeps = STRALLOC_ZERO ;
 	
-	for (unsigned int i = 0; i < cname->nga; i++)
+	for (unsigned int i = 0; i < nga; i++)
 	{
-		if (!stralloc_obreplace(&namedeps,deps.s+genalloc_s(unsigned int,ga)[cname->idga+i])) return 0 ;
+		if (!stralloc_obreplace(&namedeps,deps.s+genalloc_s(unsigned int,ga)[idga+i])) return 0 ;
 		r = insta_check(namedeps.s) ;
 		if (!r) 
 		{
@@ -884,43 +897,27 @@ int write_uint(char const *dst, char const *name, uint32_t ui)
 	return 1 ;
 }
 
-int write_env(char const *name, genalloc *env,stralloc *sa,char const *dst)
+int write_env(char const *name, stralloc *sa,char const *dst)
 {
 	int r ;
-	stralloc tmp = STRALLOC_ZERO ;
-	if (genalloc_len(diuint32,env))
-	{
-		char *key = 0 ;
-		char *val = 0 ;
-		r = scan_mode(dst,S_IFDIR) ;
-		if (r < 0)
-		{
-			VERBO3 strerr_warnw2sys(" invalid environment directory: ",dst) ;
-			return 0 ;
-		}
-		if (!r)
-		{
-			VERBO3 strerr_warnw2sys(dst," service environment directory doesn't exist") ;
-			return 0 ;
-		}
-		for (unsigned int i = 0 ; i < genalloc_len(diuint32,env) ; i++)
-		{
-			key = sa->s + genalloc_s(diuint32,env)[i].left ;
-			val = sa->s + genalloc_s(diuint32,env)[i].right ;
 			
-			if (!stralloc_cats(&tmp,key)) retstralloc(0,"write_env") ;
-			if (!stralloc_cats(&tmp,"=")) retstralloc(0,"write_env") ;
-			if (!stralloc_cats(&tmp,val)) retstralloc(0,"write_env") ;
-			if (!stralloc_cats(&tmp,"\n")) retstralloc(0,"write_env") ;
-		}
+	r = scan_mode(dst,S_IFDIR) ;
+	if (r < 0)
+	{
+		VERBO3 strerr_warnw2sys(" invalid environment directory: ",dst) ;
+		return 0 ;
 	}
-	if (!file_write_unsafe(dst,name,tmp.s,tmp.len))
+	else if (!r)
+	{
+		VERBO3 strerr_warnw2sys(dst," service environment directory doesn't exist") ;
+		return 0 ;
+	}
+	if (!file_write_unsafe(dst,name,sa->s,sa->len))
 	{
 		VERBO3 strerr_warnwu4sys("create file: ",dst,"/",name) ;
 		return 0 ;
 	}
-	
-	stralloc_free(&tmp) ;
-	
+		
 	return 1 ;
 }
+

@@ -1,5 +1,5 @@
 /* 
- * 66.h
+ * environ.h
  * 
  * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
  * 
@@ -12,22 +12,15 @@
  * except according to the terms contained in the LICENSE file./
  */
  
-#ifndef SS_H
-#define SS_H
+#ifndef ENVIRON_H
+#define ENVIRON_H
 
-#include <66/backup.h>
-#include <66/config.h>
-#include <66/constants.h>
-#include <66/db.h>
-#include <66/enum.h>
-#include <66/environ.h>
-#include <66/parser.h>
-#include <66/rc.h>
-#include <66/resolve.h>
-#include <66/ssexec.h>
-#include <66/state.h>
-#include <66/svc.h>
-#include <66/tree.h>
-#include <66/utils.h>
+#include <skalibs/stralloc.h>
+#include <skalibs/genalloc.h>
+
+extern int env_clean(stralloc *src) ;
+extern int env_split_one(char *line,genalloc *ga,stralloc *sa) ;
+extern int env_split(genalloc *gaenv,stralloc *saenv,stralloc *src) ;
+extern int env_parsenclean(stralloc *modifs,stralloc *src) ;
 
 #endif
