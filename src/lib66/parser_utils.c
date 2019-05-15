@@ -323,10 +323,10 @@ int get_section_range(section_t *sasection,stralloc *src)
 	}
 	stralloc_free(&secname) ;
 	return 1 ;
-	invalid:
+	/*invalid:
 		err = -1 ;
 		VERBO1 strerr_warnw2x("invalid section: ",secname.s) ;
-	err:
+	*/err:
 		stralloc_free(&secname) ;
 		return err ;
 }
