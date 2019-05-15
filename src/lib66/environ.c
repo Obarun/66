@@ -121,17 +121,24 @@ int env_split(genalloc *gaenv,stralloc *saenv,stralloc *src)
 {
 	int nbline = 0, i = 0 ;
 	genalloc gatmp = GENALLOC_ZERO ;//stralist
+	stralloc tmp = STRALLOC_ZERO ;
 	nbline = get_nbline_ga(src->s,src->len,&gatmp) ;
 	for (; i < nbline ; i++)
 	{
 		char *line = gaistr(&gatmp,i) ;
+		tmp.len = 0 ;
+		stralloc_cats(&tmp,line) ;
+		/** skip commented line or empty line*/
+		if (env_clean(&tmp) < 0) continue ;
 		if (*line)
 			if (!env_split_one(line,gaenv,saenv)) goto err ;
 	}
 	genalloc_deepfree(stralist,&gatmp,stra_free) ;
+	stralloc_free(&tmp) ;
 	return 1 ;
 	err: 
 		genalloc_deepfree(stralist,&gatmp,stra_free) ;
+		stralloc_free(&tmp) ;
 		return 0 ;
 }
 
