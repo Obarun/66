@@ -179,7 +179,7 @@ int parse_bracket(stralloc *src,size_t *pos)
 	}else if (!stralloc_catb(&tmp,src->s,(newpos - (kp.len+1)))) goto err ;//+1 remove the @ of the next key
 	if (!stralloc_0(&tmp)) goto err ;
 	kp.len = 0 ;
-	start = get_sep_before(tmp.s,'(','\n') ;
+	start = get_len_until(tmp.s,'(') ;
 	if (start < 0) { err = -1 ; goto err ; }
 	start++ ;
 	end = get_rlen_until(tmp.s,')',tmp.len) ;
