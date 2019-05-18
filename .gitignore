@@ -1,6 +1,7 @@
 *.o
 *.lo
 *.a.*
+.deps/
 /66-all
 /66-dbctl
 /66-disable
@@ -12,6 +13,11 @@
 /66-stop
 /66-svctl
 /66-tree
+/66-env
+/66-gnwenv
+/66-parser
+/66-writenv
+/execl-envfile
 /config.mak
 /execl-cmdline
 /66-envfile
