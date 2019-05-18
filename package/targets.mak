@@ -12,6 +12,7 @@ BIN_TARGETS := \
 66-svctl \
 66-all \
 66-info \
+66-env \
 execl-cmdline \
 execl-envfile \
 66-writenv \

@@ -11,6 +11,7 @@
 66-svctl		0755
 66-all			0755
 66-info			0755
+66-env			0755
 execl-cmdline	0755
 execl-envfile	0755
 66-writenv		0755
