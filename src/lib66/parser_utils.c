@@ -246,7 +246,7 @@ int parse_env(stralloc *src,size_t *pos)
 int get_section_range(section_t *sasection,stralloc *src)
 {
 	size_t pos = 0, start = 0 ;
-	int n = 0, id = -1, idc = 0, skip = 0, err = 0 ;
+	int n = 0, id = -1, /*idc = 0,*/ skip = 0, err = 0 ;
 	stralloc secname = STRALLOC_ZERO ;
 	stralloc_ref psasection ;
 	parse_mill_t section = { .open = '[', .close = ']', \
