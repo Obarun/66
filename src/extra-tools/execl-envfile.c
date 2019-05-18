@@ -40,22 +40,8 @@
 unsigned int VERBOSITY = 1 ;
 static stralloc SAENV = STRALLOC_ZERO ;
 static genalloc GAENV = GENALLOC_ZERO ; //diuint32, pos in senv
-#define MAXVAR  50 
-#define MAXFILE 500 
-#define MAXENV 4096 
 
 #define USAGE "execl-envfile [ -h help ] [ -f file ] [ -l ] dir prog"
-
-typedef struct exlsn_s exlsn_t, *exlsn_t_ref ;
-struct exlsn_s
-{
-  stralloc vars ;
-  stralloc values ;
-  genalloc data ; // array of elsubst
-  stralloc modifs ;
-} ;
-
-#define EXLSN_ZERO { .vars = STRALLOC_ZERO, .values = STRALLOC_ZERO, .data = GENALLOC_ZERO, .modifs = STRALLOC_ZERO }
 
 static inline void info_help (void)
 {
@@ -70,51 +56,6 @@ static inline void info_help (void)
 
  if (buffer_putsflush(buffer_1, help) < 0)
     strerr_diefu1sys(111, "write to stdout") ;
-}
-
-static int env_substitute(char const *key, char const *val,exlsn_t *info, char const *const *envp,int unexport)
-{
-	char const *defaultval = "" ;
-	char const *x ;
-	int insist = 0 ;
-		
-	eltransforminfo_t si = ELTRANSFORMINFO_ZERO ;
-	elsubst_t blah ;
-	
-	blah.var = info->vars.len ;
-	blah.value = info->values.len ;
-	
-	if (el_vardupl(key, info->vars.s, info->vars.len)) strerr_dief1x(111, "bad substitution key") ;
-	if (!stralloc_catb(&info->vars,key, strlen(key) + 1)) retstralloc(111,"env_substitute") ;
-	
-	x = env_get2(envp, key) ;
-	if (!x)
-	{
-		if (insist) strerr_dief2x(111, val,": is not set") ;
-		x = defaultval ;
-	}
-	else if (unexport)
-	{
-		if (!stralloc_catb(&info->modifs, key, strlen(key) + 1)) goto err ;
-	}
-	if (!x) blah.n = 0 ;
-	else
-	{
-		int r ;
-		if (!stralloc_cats(&info->values, x)) goto err ;
-		r = el_transform(&info->values, blah.value, &si) ;
-		if (r < 0) goto err ;
-		blah.n = r ;
-	}
-	
-	if (!genalloc_append(elsubst_t, &info->data, &blah)) goto err ;
-		
-	return 1 ;
-	
-	err:
-		info->vars.len = blah.var ;
-		info->values.len = blah.value ;
-		return 0 ;
 }
 
 int main (int argc, char const *const *argv, char const *const *envp)
@@ -219,7 +160,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 				key++ ;
 				unexport = 1 ;
 			}
-			env_substitute(SAENV.s + key,SAENV.s + val,&info,newenv,unexport) ;
+			if (!env_substitute(SAENV.s + key,SAENV.s + val,&info,newenv,unexport)) strerr_diefu4x(111,"substitute value of: ",SAENV.s + key," by: ",SAENV.s + val) ;
 	}
 	genalloc_free(diuint32,&GAENV) ;
 	stralloc_free(&SAENV) ;

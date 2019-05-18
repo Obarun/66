@@ -21,9 +21,13 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 #include <skalibs/diuint32.h>
+#include <skalibs/env.h>
+#include <skalibs/strerr2.h>
 
 #include <66/parser.h>
+#include <66/environ.h>
 
+#include <execline/execline.h>
 /* @Return 1 on success
  * @Return 0 on fail
  * @Return -1 for empty line */
@@ -170,5 +174,99 @@ int env_parsenclean(stralloc *modifs,stralloc *src)
 	err:
 		genalloc_deepfree(stralist,&gatmp,stra_free) ;
 		stralloc_free(&tmp) ;
+		return 0 ;
+}
+
+int make_env_from_line(char const **v,stralloc *sa)
+{
+	genalloc gatmp = GENALLOC_ZERO ;
+	stralloc copy = STRALLOC_ZERO ;
+	unsigned int i = 0 ;
+	if (!sa->len) goto err ;
+	if (!clean_val(&gatmp,sa->s)) goto err ;
+	for (;i < genalloc_len(stralist,&gatmp) ; i++)
+	{
+		char *line = gaistr(&gatmp,i) ;
+		if (!stralloc_catb(&copy,line,gaistrlen(&gatmp,i) + 1)) goto err ;
+	}
+	stralloc_copy(sa,&copy) ;
+	stralloc_free(&copy) ;
+	if (!env_make(v,i,sa->s,sa->len)) goto err ;
+	genalloc_deepfree(stralist,&gatmp,stra_free) ;
+	return i ;
+	err:
+		stralloc_free(&copy) ;
+		genalloc_deepfree(stralist,&gatmp,stra_free) ;
+		return 0 ;
+}
+
+int env_substitute(char const *key, char const *val,exlsn_t *info, char const *const *envp,int unexport)
+{
+	char const *defaultval = "" ;
+	char const *x ;
+	int insist = 0 ;
+		
+	eltransforminfo_t si = ELTRANSFORMINFO_ZERO ;
+	elsubst_t blah ;
+	
+	blah.var = info->vars.len ;
+	blah.value = info->values.len ;
+	
+	if (el_vardupl(key, info->vars.s, info->vars.len)) { strerr_warnw1x("bad substitution key") ; goto err ; }
+	if (!stralloc_catb(&info->vars,key, strlen(key) + 1)) { strerr_warnw1x("env_substitute") ; goto err ; }
+	
+	x = env_get2(envp, key) ;
+	if (!x)
+	{
+		if (insist) { strerr_warnw2x(val,": is not set") ; goto err ; }
+		x = defaultval ;
+	}
+	else if (unexport)
+	{
+		if (!stralloc_catb(&info->modifs, key, strlen(key) + 1)) goto err ;
+	}
+	if (!x) blah.n = 0 ;
+	else
+	{
+		int r ;
+		if (!stralloc_cats(&info->values, x)) goto err ;
+		r = el_transform(&info->values, blah.value, &si) ;
+		if (r < 0) goto err ;
+		blah.n = r ;
+	}
+	
+	if (!genalloc_append(elsubst_t, &info->data, &blah)) goto err ;
+		
+	return 1 ;
+	
+	err:
+		info->vars.len = blah.var ;
+		info->values.len = blah.value ;
+		return 0 ;
+}
+
+int env_addkv (const char *key, const char *val, exlsn_t *info)
+{
+    int r ;
+    eltransforminfo_t si = ELTRANSFORMINFO_ZERO ;
+    elsubst_t blah ;
+
+    blah.var = info->vars.len ;
+    blah.value = info->values.len ;
+
+    if (el_vardupl (key, info->vars.s, info->vars.len)) goto err ;
+    if (!stralloc_catb (&info->vars, key, strlen(key) + 1)) goto err ;
+    if (!stralloc_cats (&info->values, val)) goto err ;
+   
+	r = el_transform (&info->values, blah.value, &si) ;
+	if (r < 0) goto err;
+	blah.n = r ;
+   
+	if (!genalloc_append (elsubst_t, &info->data, &blah)) goto err ;
+
+	return 1 ;
+	err:
+		info->vars.len = blah.var ;
+		info->values.len = blah.value ;
 		return 0 ;
 }
