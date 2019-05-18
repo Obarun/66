@@ -62,6 +62,7 @@ extern ssexec_func_t ssexec_start ;
 extern ssexec_func_t ssexec_stop ;
 extern ssexec_func_t ssexec_svctl ;
 extern ssexec_func_t ssexec_dbctl ;
+extern ssexec_func_t ssexec_env ;
 
 extern char const *usage_enable ;
 extern char const *help_enable ;
@@ -77,6 +78,8 @@ extern char const *usage_stop ;
 extern char const *help_stop ;
 extern char const *usage_init ;
 extern char const *help_init ;
+extern char const *usage_env ;
+extern char const *help_env ;
 
 extern int ssexec_main(int argc, char const *const *argv, char const *const *envp,ssexec_func_t *func,ssexec_t *info) ;
 

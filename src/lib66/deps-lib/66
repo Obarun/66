@@ -32,6 +32,7 @@ set_ownerhome.o
 set_ownersysdir.o
 ssexec_dbctl.o
 ssexec_enable.o
+ssexec_env.o
 ssexec_disable.o
 ssexec_free.o
 ssexec_help.o
