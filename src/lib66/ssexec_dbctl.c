@@ -338,7 +338,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	if (waitpid_nointr(pid,&wstat, 0) < 0)
 		strerr_diefu1sys(111,"wait for s6-rc") ;
 	
-	if (wstat) strerr_diefu2x(111,down ? "start" : "stop"," services selection") ;
+	if (wstat) strerr_diefu2x(111,down ? "stop" : "start"," services selection") ;
 	
 	ret = check_status(&graph.sorted,info,down ? 2 : 1) ;
 	
