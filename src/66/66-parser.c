@@ -100,6 +100,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc dst = STRALLOC_ZERO ;
 	stralloc insta = STRALLOC_ZERO ;
 	sv_alltype service = SV_ALLTYPE_ZERO ;
+	size_t srcdirlen ;
 	char const *dir ;
 	char const *sv  ;
 	char name[4095+1] ;
@@ -132,6 +133,17 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (dir[0] != '/') strerr_dief3x(110, "directory: ",dir," must be an absolute path") ;
 	if (sv[0] != '/') strerr_dief3x(110, "service: ",sv," must be an absolute path") ;
 	setname(name,sv) ;
+	size_t svlen = strlen(sv) ;
+	size_t namelen = strlen(name) ;
+	char tmp[svlen + 1 + namelen + 1] ;
+	if (scan_mode(sv,S_IFDIR))
+	{
+		memcpy(tmp,sv,svlen) ;
+		tmp[svlen] = '/' ;
+		memcpy(tmp + svlen + 1, name,namelen) ;
+		tmp[svlen + 1 + namelen] = 0 ;
+		sv = tmp ;
+	}
 	setsrc(srcdir,sv) ;
 	check_dir(dir,force,0) ;
 	if (!stralloc_cats(&insta,name) ||
@@ -157,6 +169,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	check_dir(dst.s,force,1) ;
 	VERBO1 strerr_warni4x("Write service file: ", name," at: ",dst.s) ;
 	type = service.cname.itype ;
+	srcdirlen = strlen(srcdir) ;
+	service.src = keep.len ;
+	if (!stralloc_catb(&keep,srcdir,srcdirlen + 1)) retstralloc(111,"main") ;
 	switch(type)
 	{
 		case CLASSIC:
