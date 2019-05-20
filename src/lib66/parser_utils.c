@@ -702,8 +702,6 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 				}
 				if (r == ENVIR)
 					service->opts[2] = 1 ;
-				else if (r == DATA)
-					service->opts[3] = 1 ;
 			}
 			
 			break ;
@@ -785,6 +783,21 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			{
 				VERBO3 parse_err(0,nocheck->idsec,USER) ;
 				return 0 ;
+			}
+			break ;
+		case HIERCOPY:
+			if (!clean_val(&gatmp,nocheck->val.s))
+			{
+				VERBO3 strerr_warnwu2x("parse file ",nocheck->val.s) ;
+				return 0 ;
+			}
+			for (i = 0 ; i < genalloc_len(stralist,&gatmp) ; i++)
+			{
+				char *name = gaistr(&gatmp,i) ;
+				size_t namelen = gaistrlen(&gatmp,i) ;
+				service->hiercopy[i+1] = keep.len ;
+				if (!stralloc_catb(&keep,name,namelen + 1)) retstralloc(0,"parse_common:hiercopy") ;
+				service->hiercopy[0] = i+1 ;
 			}
 			break ;
 		case DEPENDS:

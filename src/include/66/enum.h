@@ -48,6 +48,7 @@ enum key_enum_e
 	T_UP ,
 	T_DOWN ,
 	DEATH ,
+	HIERCOPY ,
 	EXEC ,
 	DESTINATION ,
 	BACKUP ,
@@ -69,7 +70,6 @@ enum key_enum_e
 	//Options
 	LOGGER , // = 36
 	PIPELINE ,
-	DATA ,
 	//Flags
 	DOWN , // = 44
 	NOSETSID ,
@@ -131,6 +131,7 @@ static key_description_t const main_section_list[] =
 	{ .name = "@timeout-down", .expected = UINT, .mandatory = OPTS },
 	{ .name = "@maxdeath", .expected = UINT, .mandatory = OPTS },
 	{ .name = "@down-signal", .expected = UINT, .mandatory = OPTS },
+	{ .name = "@hiercopy", .expected = BRACKET, .mandatory = OPTS },
 	{ .name = 0 } 
 } ;
 
@@ -165,7 +166,7 @@ static key_description_t const environment_section_list[] =
 	{ .name = 0 }
 } ;
 
-static int const total_list_el[6] = { 16, 5, 5, 12, 2, 0 } ;
+static int const total_list_el[6] = { 17, 5, 5, 12, 2, 0 } ;
 
 static key_all_t const total_list[] =
 {

@@ -598,7 +598,9 @@ int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char
 int write_common(sv_alltype *sv, char const *dst)
 {
 	char *time = NULL ;
-	
+	char *name = keep.s + sv->cname.name ;
+	char *src = keep.s + sv->src ;
+
 	/**down file*/
 	if (sv->flags[0])
 	{
@@ -693,10 +695,6 @@ int write_common(sv_alltype *sv, char const *dst)
 			home.len-- ;
 			dst = home.s ;
 		}
-			
-		char *name = keep.s + sv->cname.name ;
-				
-		//if (!write_env(name,&sv->env,&saenv,dst))
 		if (!write_env(name,&saenv,dst))
 		{
 			VERBO3 strerr_warnwu1x("write environment") ;
@@ -704,8 +702,40 @@ int write_common(sv_alltype *sv, char const *dst)
 		}
 		stralloc_free(&home) ;
 	}
-	
-	
+	/** hierarchy copy */
+	if (sv->hiercopy[0])
+	{
+		int r ;
+		size_t dstlen = strlen(dst) ;
+		size_t srclen = strlen(src) ;
+		for (uint32_t i = 0 ; i < sv->hiercopy[0] ; i++)
+		{
+			char *what = keep.s + sv->hiercopy[i+1] ;
+			size_t whatlen = strlen(what) ;
+			char tmp[srclen + 1 + whatlen + 1] ;
+			memcpy(tmp,src,srclen) ;
+			tmp[srclen] = '/' ;
+			memcpy(tmp + srclen + 1,what,whatlen) ;
+			tmp[srclen + 1 + whatlen] = 0 ;
+			char dtmp[dstlen + 1 + whatlen] ;
+			memcpy(dtmp,dst,dstlen) ;
+			dtmp[dstlen] = '/' ;
+			memcpy(dtmp + dstlen + 1, what, whatlen) ;
+			dtmp[dstlen + 1 + whatlen] = 0 ;	
+			r = scan_mode(tmp,S_IFDIR) ;
+			if (r <= 0)
+			{
+				r = scan_mode(tmp,S_IFREG) ;
+				if (!r) { VERBO3 strerr_warnwu2sys("find: ",tmp) ; return 0 ; }
+				if (r < 0) { errno = ENOTSUP ; VERBO3 strerr_warnw2sys("invalid format of: ",tmp) ; return 0 ; }
+			}
+			if (!hiercopy(tmp,dtmp))
+			{
+				VERBO3 strerr_warnwu4sys("copy: ",tmp," to: ",dst) ;
+				return 0 ;
+			}
+		}
+	}
 	return 1 ;
 }
 

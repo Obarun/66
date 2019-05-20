@@ -44,6 +44,7 @@ char const *get_keybyid(key_enum_t key)
 			(key == T_UP ) ? "@timeout-up" :
 			(key == T_DOWN ) ? "@timeout-down" :
 			(key == DEATH) ? "@maxdeath" :
+			(key == HIERCOPY) ? "@hiercopy" :
 			(key == EXEC ) ? "@execute" :
 			(key == DESTINATION ) ? "@destination" :
 			(key == BACKUP ) ? "@backup" :
@@ -63,7 +64,7 @@ char const *get_keybyid(key_enum_t key)
 			//Options
 			(key == LOGGER ) ? "log" :
 			(key == ENVIR ) ? "env" :
-			(key == DATA ) ? "data" :
+			(key == HIERCOPY ) ? "hiercopy" :
 			(key == PIPELINE ) ? "pipeline" :
 			//Flags
 			(key == DOWN ) ? "down" :

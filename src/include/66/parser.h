@@ -116,9 +116,9 @@ struct sv_alltype_s
 {
 	sv_type_t type ;
 	sv_name_t cname ;//cname, Container Name
-	/**opts[0]->logger,opts[1]->pipeline,[2]->env,opts[3]->data
+	/**opts[0]->logger,opts[1]->pipeline,[2]->env
 	 * logger[1] enabled,logger[0] not enabled*/
-	unsigned int opts[4] ;
+	unsigned int opts[3] ;
 	/**0->no notification*/
 	/**flags[0]->down,flags[1]->nosetsid,
 	 * down[1] enabled,down[0] not enabled*/
@@ -135,6 +135,11 @@ struct sv_alltype_s
 	uint32_t timeout[4][UINT_FMT] ;
 	uint32_t src ;// original source of the service
 	uint32_t death ;//max-death-tally file
+	/** array of uint32_t
+	 * the first element of the table
+	 * is reserved to know the number of
+	 * dir/file to copy e.g hiercopy[0]=3->3 dir/file to copy */
+	uint32_t hiercopy[24] ; //dir/file to copy
 	int signal ;//down-signal file
 	unsigned int pipeline ; //pos in deps
 	genalloc env ; //type diuint32, pos in saenv
@@ -195,8 +200,9 @@ struct sv_alltype_s
 	{ { 0 } } ,\
 	0 , \
 	0 , \
+	{ 0 } , \
 	0 , \
-	0 ,\
+	0 , \
 	GENALLOC_ZERO \
 }
 
