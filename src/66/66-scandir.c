@@ -50,8 +50,6 @@
 #define USR1 6
 #define USR2 7
 
-#define MAXENV 4095 
-#define MAXFILE 500
 #define SIGSIZE 64
 
 static uid_t OWNER ;
