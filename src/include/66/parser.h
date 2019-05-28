@@ -32,7 +32,6 @@
 
 extern stralloc keep ;
 extern stralloc deps ;
-extern stralloc saenv ;
 extern genalloc ganame ;
 extern genalloc gadeps ;
 extern genalloc gasv ;
@@ -142,7 +141,7 @@ struct sv_alltype_s
 	uint32_t hiercopy[24] ; //dir/file to copy
 	int signal ;//down-signal file
 	unsigned int pipeline ; //pos in deps
-	genalloc env ; //type diuint32, pos in saenv
+	stralloc saenv ; //type diuint32, pos in saenv
 } ;
 
 #define SV_EXEC_ZERO \
@@ -203,7 +202,7 @@ struct sv_alltype_s
 	{ 0 } , \
 	0 , \
 	0 , \
-	GENALLOC_ZERO \
+	STRALLOC_ZERO \
 }
 
 extern sv_alltype const sv_alltype_zero ;
@@ -339,6 +338,6 @@ extern int write_uint(char const *dst, char const *name, uint32_t ui) ;
 extern int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, int mode, unsigned int force) ;
 extern int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char const *proddst,char const *consdst) ;
 extern int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename, genalloc *ga, unsigned int force) ;
-extern int write_env(char const *name,stralloc *sa,char const *dst) ;
+extern int write_env(char const *name,stralloc *sa,char const *dst,char const *dsym) ;
 
 #endif

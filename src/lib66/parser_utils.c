@@ -42,7 +42,6 @@
 
 stralloc keep = STRALLOC_ZERO ;//sv_alltype data
 stralloc deps = STRALLOC_ZERO ;//sv_name depends
-stralloc saenv = STRALLOC_ZERO ;//sv_alltype env
 
 genalloc ganame = GENALLOC_ZERO ;//sv_name_t, avltree
 genalloc gadeps = GENALLOC_ZERO ;//unsigned int, pos in deps
@@ -54,8 +53,8 @@ genalloc gasv = GENALLOC_ZERO ;//sv_alltype general
  * *******************************/
 void sv_alltype_free(sv_alltype *sv) 
 {
-	genalloc_free(diuint32,&sv->env) ;
-	*&sv->env = genalloc_zero ;
+	stralloc_free(&sv->saenv) ;
+	*&sv->saenv = stralloc_zero ;
 }
 
 void keynocheck_free(keynocheck *nocheck) 
@@ -77,7 +76,6 @@ void freed_parser(void)
 {
 	stralloc_free(&keep) ;
 	stralloc_free(&deps) ;
-	stralloc_free(&saenv) ;
 	genalloc_free(sv_name_t,&ganame) ;
 	genalloc_free(unsigned int,&gadeps) ;
 	for (unsigned int i = 0 ; i < genalloc_len(sv_alltype,&gasv) ; i++)
@@ -925,8 +923,8 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 				r = env_clean(&satmp) ;
 				if (r > 0)
 				{
-					if (!stralloc_cats(&saenv,satmp.s) ||
-					!stralloc_cats(&saenv,"\n"))
+					if (!stralloc_cats(&service->saenv,satmp.s) ||
+					!stralloc_cats(&service->saenv,"\n"))
 					{
 						VERBO3 strerr_warnwu2x("store environment value: ",gaistr(&gatmp,i)) ;
 						stralloc_free(&satmp) ;
