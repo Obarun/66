@@ -136,7 +136,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	size_t svlen = strlen(sv) ;
 	size_t namelen = strlen(name) ;
 	char tmp[svlen + 1 + namelen + 1] ;
-	if (scan_mode(sv,S_IFDIR))
+	r = scan_mode(sv,S_IFDIR) ;
+	if (r > 0)
 	{
 		memcpy(tmp,sv,svlen) ;
 		tmp[svlen] = '/' ;
