@@ -695,7 +695,7 @@ int write_common(sv_alltype *sv, char const *dst)
 			home.len-- ;
 			dst = home.s ;
 		}
-		if (!write_env(name,&saenv,dst))
+		if (!write_env(name,&sv->saenv,dst))
 		{
 			VERBO3 strerr_warnwu1x("write environment") ;
 			return 0 ;
@@ -731,7 +731,7 @@ int write_common(sv_alltype *sv, char const *dst)
 			}
 			if (!hiercopy(tmp,dtmp))
 			{
-				VERBO3 strerr_warnwu4sys("copy: ",tmp," to: ",dst) ;
+				VERBO3 strerr_warnwu4sys("copy: ",tmp," to: ",dtmp) ;
 				return 0 ;
 			}
 		}
