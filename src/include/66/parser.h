@@ -338,6 +338,6 @@ extern int write_uint(char const *dst, char const *name, uint32_t ui) ;
 extern int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, int mode, unsigned int force) ;
 extern int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char const *proddst,char const *consdst) ;
 extern int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename, genalloc *ga, unsigned int force) ;
-extern int write_env(char const *name,stralloc *sa,char const *dst,char const *dsym) ;
+extern int write_env(char const *name,stralloc *sa,char const *dst) ;
 
 #endif
