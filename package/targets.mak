@@ -13,6 +13,10 @@ BIN_TARGETS := \
 66-all \
 66-info \
 66-env \
+66-boot \
+66-shutdown \
+66-shutdownd \
+66-hpr \
 execl-cmdline \
 execl-envfile \
 66-writenv \

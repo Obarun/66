@@ -12,6 +12,8 @@ environ.o
 get_enum.o
 get_uidgid.o
 get_userhome.o
+hpr_shutdown.o
+hpr_wall.o
 instance.o
 parser.o
 parser_enabled.o

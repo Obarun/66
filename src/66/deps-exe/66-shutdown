@@ -1,0 +1,6 @@
+${LIB66}
+${LIBUTMPS}
+-lskarnet
+${TAINNOW_LIB}
+${SOCKET_LIB}
+

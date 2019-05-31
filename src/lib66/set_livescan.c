@@ -21,6 +21,7 @@
 #include <skalibs/types.h>
 
 #include <66/config.h>
+#include <66/constants.h>
 
 int set_livescan(stralloc *scandir,uid_t owner)
 {
@@ -34,7 +35,7 @@ int set_livescan(stralloc *scandir,uid_t owner)
 	size_t ownerlen = uid_fmt(ownerpack,owner) ;
 	ownerpack[ownerlen] = 0 ;
 	
-	if (!stralloc_cats(scandir,"scandir/")) retstralloc(0,"set_livedir") ;
+	if (!stralloc_cats(scandir,SS_SCANDIR "/")) retstralloc(0,"set_livedir") ;
 	if (!stralloc_cats(scandir,ownerpack)) retstralloc(0,"set_livedir") ;
 	if (!stralloc_0(scandir)) retstralloc(0,"set_livedir") ;
 	scandir->len--;

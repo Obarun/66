@@ -25,7 +25,8 @@
 #define SS_TREE_CURRENT_LEN (sizeof SS_TREE_CURRENT - 1)
 #define SS_SERVICE "service"
 #define SS_SERVICE_LEN (sizeof SS_SERVICE - 1)
-
+#define SS_SCANDIR "scandir"
+#define SS_SCANDIR_LEN (sizeof SS_SCANDIR - 1)
 /**tree dir*/
 #define SS_RULES "/rules"
 #define SS_RULES_LEN (sizeof SS_RULES - 1)
@@ -73,4 +74,19 @@
 
 #define SS_STATE "/state"
 #define SS_STATE_LEN (sizeof SS_STATE - 1)
+
+/** boot */
+#define SS_BOOT_CONF SS_DATA_SYSDIR "boot.conf"
+#define SS_BOOT_CONF_LEN (sizeof SS_BOOTCONF - 1)
+#define SS_BOOT_PATH "/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin"
+#define SS_BOOT_PATH_LEN (sizeof SS_BOOT_PATH - 1)
+#define SS_BOOT_TREE "boot"
+#define SS_BOOT_TREE_LEN (sizeof SS_BOOT_TREE - 1)
+#define SS_BOOT_RCINIT "rc.init"
+#define SS_BOOT_RCINIT_LEN (sizeof SS_BOOT_RCINIT - 1)
+#define SS_BOOT_RCSHUTDOWN "rc.shutdown"
+#define SS_BOOT_RCSHUTDOWN_LEN (sizeof SS_BOOT_RCSHUTDOWN - 1)
+#define SS_BOOT_UMASK 0022
+#define SS_BOOT_RESCAN 0
+#define SS_BOOT_LOGFIFO "scandir/0/scandir-log/fifo"
 #endif
