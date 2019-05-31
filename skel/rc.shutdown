@@ -1,0 +1,12 @@
+#!@BINDIR@/sh -e
+
+## It's the responsability of the sysadmin to properly define
+## the configuration file. By default /etc/66/boot.conf or
+## instructed by 66-boot via the -f option.
+CONF="$1"
+source "$conf"
+
+echo [Starting rc.shutdown process ...]
+echo [Stop all services of tree ${TREE}]
+66-all -v${VERBOSITY} -l ${LIVE} -t ${TREE} -f down || exit 111 
+echo [rc.shutdown completed successfully]
