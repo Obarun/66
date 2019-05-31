@@ -17,15 +17,21 @@
 
 #include <oblibs/string.h>
 #include <oblibs/stralist.h>
+#include <oblibs/directory.h>
+#include <oblibs/files.h>
+#include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 #include <skalibs/diuint32.h>
 #include <skalibs/env.h>
 #include <skalibs/strerr2.h>
+#include <skalibs/djbunix.h>
+#include <skalibs/bytestr.h>
 
 #include <66/parser.h>
 #include <66/environ.h>
+#include <66/utils.h>
 
 #include <execline/execline.h>
 /* @Return 1 on success
@@ -268,5 +274,116 @@ int env_addkv (const char *key, const char *val, exlsn_t *info)
 	err:
 		info->vars.len = blah.var ;
 		info->values.len = blah.value ;
+		return 0 ;
+}
+
+int env_get_from_src(stralloc *modifs,char const *src)
+{
+	int r ;
+	size_t filesize ;
+	unsigned int i ;
+	stralloc sa = STRALLOC_ZERO ;
+	genalloc toparse = GENALLOC_ZERO ;
+	r = scan_mode(src,S_IFDIR) ;
+	if (r < 0)
+	{ 
+		r = scan_mode(src,S_IFREG) ;
+		if (!r || r < 0)
+		{
+			VERBO3 strerr_warnw2sys("invalid environment: ",src) ;
+			goto err ;
+		}
+		filesize=file_get_size(src) ;
+		if (filesize > MAXENV)
+		{
+			VERBO3 strerr_warnw2x("environment too long: ",src) ;
+			goto err ;
+		}
+		if (!openreadfileclose(src,&sa,filesize))
+		{
+			VERBO3 strerr_warnwu2sys("open: ",src ) ;
+			goto err ;
+		} 
+		if (!env_parsenclean(modifs,&sa))
+		{
+			VERBO3 strerr_warnwu2x("parse and clean environment of: ",sa.s)  ;
+			goto err ;
+		}
+	}
+	else if (!r)
+	{
+		VERBO3 strerr_warnw2sys("invalid environment: ",src) ;
+		goto err ;
+	}
+	/** we parse all file of the directory*/
+	else
+	{
+		r = dir_get(&toparse,src,"",S_IFREG) ;
+		if (!r)
+		{
+			VERBO3 strerr_warnwu2sys("get file from: ",src) ;
+			goto err ;
+		}
+		for (i = 0 ; i < genalloc_len(stralist,&toparse) ; i++)
+		{
+			sa.len = 0 ;
+			if (i > MAXFILE)
+			{
+				VERBO3 strerr_warnw2x("to many file to parse in: ",src) ;
+				goto err ;
+			}
+			if (!file_readputsa(&sa,src,gaistr(&toparse,i)))
+			{
+				VERBO3 strerr_warnw4x("read file: ",src,"/",gaistr(&toparse,i)) ;
+				goto err ;
+			} 
+			if (!env_parsenclean(modifs,&sa))
+			{
+				VERBO3 strerr_warnw4x("parse and clean environment of: ",src,"/",gaistr(&toparse,i)) ;
+				goto err ;
+			} 
+		}
+	}
+	genalloc_deepfree(stralist,&toparse,stra_free) ;
+	stralloc_free(&sa) ;
+	return 1 ;
+	err:
+		genalloc_deepfree(stralist,&toparse,stra_free) ;
+		stralloc_free(&sa) ;
+		return 0 ;
+}
+
+size_t build_env(char const *src,char const *const *envp,char const **newenv, char *tmpenv)
+{
+	
+	stralloc modifs = STRALLOC_ZERO ;
+	size_t envlen = env_len(envp) ;
+	
+	if (!env_get_from_src(&modifs,src)) 
+	{
+		VERBO3 strerr_warnw2x("get environment file from: ",src) ;
+		goto err ;
+	}
+	size_t n = env_len(envp) + 1 + byte_count(modifs.s,modifs.len,'\0') ;
+	size_t mlen = modifs.len ;
+	if (mlen > MAXENV)
+	{
+		VERBO3 strerr_warnw2x("environment too long: ",src) ;
+		goto err ;
+	}
+	memcpy(tmpenv,modifs.s,mlen) ;
+	tmpenv[mlen] = 0 ;
+	
+	if (!env_merge(newenv, n, envp, envlen, tmpenv, mlen))
+	{
+		VERBO3 strerr_warnwu2x("merge environment from: ",src) ;
+		goto err ;
+	}
+	
+	stralloc_free(&modifs) ;
+		
+	return 1 ;
+	err:
+		stralloc_free(&modifs) ;
 		return 0 ;
 }
