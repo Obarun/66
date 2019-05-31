@@ -22,17 +22,18 @@ Fine tuning of the installation directories:
   --libexecdir=DIR                package-scoped executables [EPREFIX/libexec]
   --libdir=DIR                    static library files [PREFIX/lib/$package]
   --includedir=DIR                C header files [PREFIX/include]
+  --datadir=DATADIR               global configuration files [/etc/66]
   
   --shebangdir=DIR                absolute path for #! invocations [BINDIR]
   --livedir=DIR                   default live directory [/run/66]
   --with-system-dir=DIR           66 tools root working directory[PREFIX/lib/66]
+  --with-packager-service=DIR     packager service installation directory[DATADIR/service]
+  --with-sys-service=DIR          sysadmin service directory[DATADIR/sysadmin/service]
+  --with-sys-service-conf=DIR     sysadmin service configuration directory[DATADIR/conf]
+  --with-system-log=DIR           root service log directory[/var/log/66]
   --with-user-dir=DIR             66 tools user working directory[.66]
-  --with-system-log=DIR           root service log directory[PREFIX/log/66]
   --with-user-log=DIR             user service log directory[.66/log]
-  --with-packager-service=DIR     packager service installation directory[/etc/66/service]
-  --with-sys-service=DIR          sysadmin service directory[/etc/66/sysadmin/service]
   --with-user-service=DIR         user service directory[.66/service]
-  --with-sys-service-conf=DIR     sysadmin service configuration directory[/etc/66/conf]
   --with-user-service-conf=DIR    user service configuration directory[.66/conf]
  
  Do not set an absolute path but a \$HOME relative path for --with-user-dir,  
@@ -155,16 +156,17 @@ libexecdir='$exec_prefix/libexec'
 bindir='$exec_prefix/bin'
 libdir='$prefix/lib/$package'
 includedir='$prefix/include'
+datadir='/etc/66'
 shebangdir='$bindir'
 livedir='/run/66'
 system_dir='$prefix/lib/66'
 user_dir='.66'
 system_log='/var/log/66'
 user_log='.66/log'
-service_packager='/etc/66/service'
-service_sys='/etc/66/sysadmin/service'
+service_packager='$datadir/service'
+service_sys='$datadir/sysadmin/service'
 service_user='.66/service'
-service_sysconf='/etc/66/conf'
+service_sysconf='$datadir/conf'
 service_userconf='.66/conf'
 sysdeps='$prefix/lib/skalibs/sysdeps'
 manualsysdeps=false
@@ -196,6 +198,7 @@ for arg ; do
     --bindir=*) bindir=${arg#*=} ;;
     --libdir=*) libdir=${arg#*=} ;;
     --includedir=*) includedir=${arg#*=} ;;
+    --datadir=*) datadir=${arg#*=} ;;
     --shebangdir=*) shebangisdefault=false ; shebangdir=${arg#*=} ;;
     --livedir=*) livedir=${arg#*=} ;;
     --with-system-dir=*) system_dir=${arg#*=} ;;
@@ -253,7 +256,7 @@ fi
 
 # Expand installation directories
 stripdir prefix
-for i in exec_prefix dynlibdir libexecdir bindir libdir includedir shebangdir sproot sysdeps system_dir; do
+for i in exec_prefix dynlibdir libexecdir bindir libdir includedir datadir shebangdir sproot sysdeps system_dir; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
@@ -431,6 +434,7 @@ libexecdir := $libexecdir
 bindir := $bindir
 libdir := $libdir
 includedir := $includedir
+datadir := $datadir
 shebangdir := $bindir
 livedir := $livedir
 system_dir := $system_dir
@@ -512,6 +516,7 @@ All rights reserved.*/
 #define ${package_macro_name}_VERSION "$version"
 #define ${package_macro_name}_LIVE "$livedir/"
 #define ${package_macro_name}_SYSTEM_DIR "$system_dir/"
+#define ${package_macro_name}_DATA_SYSDIR "$datadir/"
 #define ${package_macro_name}_LOGGER_SYSDIR "$system_log/"
 #define ${package_macro_name}_SERVICE_PACKDIR "$service_packager/"
 #define ${package_macro_name}_SERVICE_SYSDIR "$service_sys/"
