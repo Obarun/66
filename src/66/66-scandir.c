@@ -65,7 +65,7 @@ static char const *stage3 = "/etc/66/stage3 $@" ;
 
 static char TMPENV[MAXENV+1] ;
 
-#define USAGE "66-scandir [ -h ] [ -v verbosity ] [ -b ] [ -l live ] [ -t rescan ] [ -2 stage2.tini ] [ -3 stage3 ] [ -e environment ] [ -c | u | r ] [ -s signal ] owner"
+#define USAGE "66-scandir [ -h ] [ -v verbosity ] [ -b ] [ -l live ] [ -t rescan ] [ -2 stage2.tini ] [ -3 stage3 ] [ -e environment ] [ -c | u | r ] owner"
 
 unsigned int VERBOSITY = 1 ;
 static unsigned int BOOT = 0 ;
@@ -87,96 +87,10 @@ static inline void info_help (void)
 "	-c: create scandir\n"
 "	-r: remove scandir\n"
 "	-u: bring up scandir\n"
-"	-s: send a signal to the scandir\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
     strerr_diefu1sys(111, "write to stdout") ;
-}
-static inline unsigned int lookup (char const *const *table, char const *signal)
-{
-  unsigned int i = 0 ;
-  for (; table[i] ; i++) if (!strcmp(signal, table[i])) break ;
-  return i ;
-}
-static inline unsigned int parse_signal (char const *signal)
-{
-  static char const *const signal_table[] =
-  {
-    "reload",
-    "interrupt",
-    "quit",
-    "halt",
-    "reboot",
-    "poweroff",
-    0
-  } ;
-  unsigned int i = lookup(signal_table, signal) ;
-  if (!signal_table[i]) strerr_dief2x(111,"unknown signal: ",signal) ;
-  return i ;
-}
-
-int scandir_down(char const *scandir, char const *signal, char const *const *envp)
-{
-	int r ;
-	unsigned int sig = 5 ;
-	size_t siglen = strlen(signal) ;
-	char csig[SIGSIZE + 1] ;
-	
-	if (siglen > SIGSIZE) strerr_diefu2x(111,"too many command to send to: ",scandir) ;
-	r = scandir_ok(scandir) ;
-	if (r < 0) strerr_diefu2sys(111, "check ", scandir) ;
-	if (!r)
-	{
-		VERBO2 strerr_warni3x("scandir ",scandir," not running") ;
-		return 0 ;
-	}
-	sig = parse_signal(signal) ;
-	
-	if (sig < 6)
-	{
-		csig[0] = '-' ;
-		switch(sig)
-		{
-			case 0: csig[1] = 'a' ; 
-					csig[2] = 'n' ;
-					csig[3] = 0 ;
-					break ;
-			case 1: csig[1] = 'i' ;
-					csig[2] = 0 ;
-					break ;
-			case 2: csig[1] = 'q' ; 
-					csig[2] = 0 ;
-					break ;
-			case 3: csig[1] = '0' ;
-					csig[2] = 0 ;
-					break ;
-			case 4: csig[1] = '6' ;
-					csig[2] = 0 ;
-					break ;
-			case 5: csig[1] = '7' ;
-					csig[2] = 0 ;
-					break ;
-			default: break ;
-		}
-	}
-	else
-	{
-		csig[0] = '-' ;
-		memcpy(csig + 1,signal,siglen) ;
-		csig[siglen + 1] = 0 ;
-	}
-
-	char const *newdown[5] ;
-	unsigned int m = 0 ;
-	newdown[m++] = S6_BINPREFIX "s6-svscanctl" ;
-	newdown[m++] = csig ;
-	newdown[m++] = "--" ;
-	newdown[m++] = scandir ;
-	newdown[m++] = 0 ;
-	VERBO2 strerr_warni5x("Sending ",csig," signal to scandir: ",scandir," ...") ;	
-	xpathexec_run (newdown[0], newdown, envp) ;
-
 }
 
 int scandir_up(char const *scandir, unsigned int timeout, char const *const *envp)
@@ -391,7 +305,6 @@ int write_bootlog(char const *live, char const *scandir, char const *scanname)
 	memcpy(logdir + logdirless, "/fifo", 5) ;
 	logdir[logdirless + 5] = 0 ;
 	
-	
 	r = scan_mode(logdir,S_IFIFO) ;
 	if (r < 0) { errno = EEXIST ; return 0 ; }
 	if (!r)
@@ -437,7 +350,7 @@ int write_bootlog(char const *live, char const *scandir, char const *scanname)
 							EXECLINE_BINPREFIX "redirfd -w 2 /dev/console\n" \
 							EXECLINE_BINPREFIX "redirfd -w 1 /dev/null\n" \
 							EXECLINE_BINPREFIX "redirfd -rnb 0 fifo\n" \
-							S6_BINPREFIX "s6-log -bp -- t ")) retstralloc(0, "write_bootlog") ;
+							S6_BINPREFIX "s6-log -bpd3 -- 1 t ")) retstralloc(0, "write_bootlog") ;
 	if (!stralloc_cats(&run,path)) retstralloc(0, "write_bootlog") ;
 	if (!stralloc_cats(&run,"\n")) retstralloc(0, "write_bootlog") ;
 	
@@ -445,6 +358,13 @@ int write_bootlog(char const *live, char const *scandir, char const *scanname)
 
 	VERBO3 strerr_warnt3x("write file: ",logdir,"/run") ;
 	if (!file_write_unsafe(logdir,"run",run.s,run.len))
+	{
+		VERBO3 strerr_warnwu3sys("write file: ",logdir,"/run") ;
+		return 0 ;
+	}
+	
+	VERBO3 strerr_warnt3x("write file: ",logdir,"/notification-fd") ;
+	if (!file_write_unsafe(logdir,"notification-fd","3\n",2))
 	{
 		VERBO3 strerr_warnwu3sys("write file: ",logdir,"/run") ;
 		return 0 ;
@@ -835,104 +755,20 @@ int sanitize_live(char const *live, char const *scandir, char const *scanname, u
 	return 1 ;
 }
 
-size_t make_env(char const *src,char const *const *envp,char const **newenv)
-{
-	stralloc sa = STRALLOC_ZERO ;
-	stralloc modifs = STRALLOC_ZERO ;
-	genalloc toparse = GENALLOC_ZERO ;
-	int r, i ;
-	size_t filesize, envlen = env_len(envp) ;
-	
-	r = scan_mode(src,S_IFDIR) ;
-	if (r < 0)
-	{ 
-		r = scan_mode(src,S_IFREG) ;
-		if (!r || r < 0)
-		{
-			VERBO3 strerr_warnw2sys("invalid environment: ",src) ;
-			goto err ;
-		}
-		filesize=file_get_size(src) ;
-		if (filesize > MAXENV)
-		{
-			VERBO3 strerr_warnw2x("environment too long: ",src) ;
-			goto err ;
-		}
-		if (!openreadfileclose(src,&sa,filesize))
-		{
-			VERBO3 strerr_warnwu2sys("open: ",src ) ;
-			goto err ;
-		} 
-		if (!env_parsenclean(&modifs,&sa))
-		{
-			VERBO3 strerr_warnwu2x("parse and clean environment of: ",sa.s)  ;
-			goto err ;
-		}
-	}
-	else if (!r)
-	{
-		VERBO3 strerr_warnw2sys("invalid environment: ",src) ;
-		goto err ;
-	}
-	/** we parse all file of the directory*/
-	else
-	{
-		r = dir_get(&toparse,src,"",S_IFREG) ;
-		if (!r)
-		{
-			VERBO3 strerr_warnwu2sys("get file from: ",src) ;
-			goto err ;
-		}
-		for (i = 0 ; i < genalloc_len(stralist,&toparse) ; i++)
-		{
-			sa.len = 0 ;
-			if (i > MAXFILE) strerr_dief2x(111,"to many file to parse in: ",src) ;
-			if (!file_readputsa(&sa,src,gaistr(&toparse,i))) strerr_diefu4sys(111,"read file: ",src,"/",gaistr(&toparse,i)) ;
-			if (!env_parsenclean(&modifs,&sa)) strerr_diefu4x(111,"parse and clean environment of: ",src,"/",gaistr(&toparse,i)) ;
-		}
-	}
-	size_t n = env_len(envp) + 1 + byte_count(modifs.s,modifs.len,'\0') ;
-	size_t mlen = modifs.len ;
-	if (mlen > MAXENV)
-	{
-		VERBO3 strerr_warnw2x("environment too long: ",src) ;
-		goto err ;
-	}
-	memcpy(TMPENV,modifs.s,mlen) ;
-	TMPENV[mlen] = 0 ;
-	
-	if (!env_merge(newenv, n, envp, envlen, TMPENV, mlen))
-	{
-		VERBO3 strerr_warnwu2x("merge environment from: ",src) ;
-		goto err ;
-	}
-	genalloc_deepfree(stralist,&toparse,stra_free) ;
-	stralloc_free(&sa) ;
-	stralloc_free(&modifs) ;
-		
-	return 1 ;
-	err:
-		genalloc_deepfree(stralist,&toparse,stra_free) ;
-		stralloc_free(&sa) ;
-		stralloc_free(&modifs) ;
-		return 0 ;
-}
-
 int main(int argc, char const *const *argv, char const *const *envp)
 {
 	int r ;
-	unsigned int up, down, rescan, create, remove ;
+	unsigned int up, rescan, create, remove ;
 	
 	stralloc live = STRALLOC_ZERO ;
 	stralloc livetree = STRALLOC_ZERO ;
 	stralloc scandir = STRALLOC_ZERO ;
 	stralloc envdir = STRALLOC_ZERO ;
-	stralloc signal = STRALLOC_ZERO ;
 	
 	char const *newenv[MAXENV+1] ;
-	char const *const *genv = NULL ;
+	char const *const *genv = 0 ;
 	
-	up = down = rescan = create = remove = 0 ;
+	up = rescan = create = remove = 0 ;
 	
 	PROG = "66-scandir" ;
 	{
@@ -940,7 +776,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:bl:t:3:2:e:crus:", &l) ;
+			int opt = getopt_args(argc,argv, ">hv:bl:t:2:e:cru", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
@@ -952,26 +788,21 @@ int main(int argc, char const *const *argv, char const *const *envp)
 						   if(!stralloc_0(&live)) retstralloc(111,"main") ;
 						   break ;
 				
-				case 't' : if (uint0_scan(l.arg, &rescan)) break ;
+				case 't' : if (!uint0_scan(l.arg, &rescan)) break ;
 				case '2' : stage2tini = l.arg ; break ;
-				case '3' : stage3 = l.arg ; break ;
 				case 'e' : if(!stralloc_cats(&envdir,l.arg)) retstralloc(111,"main") ;
 						   if(!stralloc_0(&envdir)) retstralloc(111,"main") ;
 						   break ;
 				case 'c' : create = 1 ; if (remove) exitusage(USAGE) ; break ;
 				case 'r' : remove = 1 ; if (create) exitusage(USAGE) ; break ;
-				case 'u' : up = 1 ; if (down) exitusage(USAGE) ; break ;
-				case 's' : down = 1 ; if (up) exitusage(USAGE) ; 
-						   if(!stralloc_cats(&signal,l.arg)) retstralloc(111,"main") ;
-						   if(!stralloc_0(&signal)) retstralloc(111,"main") ;
-						   break ;
+				case 'u' : up = 1 ; break ;
 				default : exitusage(USAGE) ; 
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
 	
-	if (argc > 1 || (!create && !remove && !up && !down)) exitusage(USAGE) ;
+	if (argc > 1 || (!create && !remove && !up)) exitusage(USAGE) ;
 	
 	if (!argc) OWNER = MYUID ;
 	else 
@@ -1016,7 +847,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		if (r < 0)
 			strerr_dief3x(110,"environment: ",envdir.s," must be an absolute path") ;
 		
-		if (!make_env(envdir.s,envp,newenv)) strerr_diefu2x(111,"parse environment directory; ",envdir.s) ;
+		if (!build_env(envdir.s,envp,newenv,TMPENV)) strerr_diefu2x(111,"build environment with: ",envdir.s) ;
 		genv = newenv ;
 	}
 	else
@@ -1056,10 +887,6 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	}
 	stralloc_free(&live) ;
 		
-	if (down)
-	{
-		scandir_down(rlive,signal.s,genv) ;
-	}
 	if (up)
 	{
 		scandir_up(rlive,rescan,genv) ;
@@ -1090,7 +917,6 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	stralloc_free(&livetree) ;
 	stralloc_free(&scandir) ;
 	stralloc_free(&envdir) ;
-	stralloc_free(&signal) ;
 	
 	return 0 ;
 }

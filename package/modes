@@ -1,4 +1,5 @@
 66-scandir		0755
+66-scanctl		0755
 66-init			0755
 66-tree			0755
 66-dbctl		0755

@@ -1,5 +1,6 @@
 BIN_TARGETS := \
 66-scandir \
+66-scanctl \
 66-init \
 66-tree \
 66-dbctl \

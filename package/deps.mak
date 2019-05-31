@@ -23,6 +23,7 @@ src/66/66-hpr.o src/66/66-hpr.lo: src/66/66-hpr.c src/include/66/config.h src/in
 src/66/66-info.o src/66/66-info.lo: src/66/66-info.c src/include/66/constants.h src/include/66/enum.h src/include/66/resolve.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-init.o src/66/66-init.lo: src/66/66-init.c src/include/66/ssexec.h
 src/66/66-parser.o src/66/66-parser.lo: src/66/66-parser.c src/include/66/parser.h src/include/66/utils.h
+src/66/66-scanctl.o src/66/66-scanctl.lo: src/66/66-scanctl.c src/include/66/utils.h
 src/66/66-scandir.o src/66/66-scandir.lo: src/66/66-scandir.c src/include/66/config.h src/include/66/constants.h src/include/66/environ.h src/include/66/utils.h
 src/66/66-shutdown.o src/66/66-shutdown.lo: src/66/66-shutdown.c src/include/66/config.h src/include/66/hpr.h
 src/66/66-shutdownd.o src/66/66-shutdownd.lo: src/66/66-shutdownd.c src/include/66/config.h src/include/66/constants.h
@@ -120,6 +121,8 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-init: src/66/66-init.o ${LIB66} -loblibs -ls6 -lskarnet
 66-parser: EXTRA_LIBS :=
 66-parser: src/66/66-parser.o ${LIB66} -loblibs -lskarnet
+66-scanctl: EXTRA_LIBS :=
+66-scanctl: src/66/66-scanctl.o ${LIB66} -loblibs -ls6 -lskarnet  
 66-scandir: EXTRA_LIBS :=
 66-scandir: src/66/66-scandir.o ${LIB66} -loblibs -ls6 -lskarnet  
 66-shutdown: EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB}
