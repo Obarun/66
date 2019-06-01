@@ -39,8 +39,8 @@
 unsigned int VERBOSITY = 1 ;
 static mode_t mask = SS_BOOT_UMASK ;
 static unsigned int rescan = SS_BOOT_RESCAN ;
-static char const *confile = SS_BOOT_CONF ;
-static char *live = SS_LIVE ;
+static char const *skel = SS_DATA_SYSDIR ;
+static char const *live = SS_LIVE ;
 static char const *path = SS_BOOT_PATH ;
 static char const *tree = SS_BOOT_TREE ;
 static char const *rcinit = SS_DATA_SYSDIR SS_BOOT_RCINIT ;
@@ -55,23 +55,10 @@ static char trcinit[MAXENV+1] ;
 static char trcshut[MAXENV+1] ;
 static char tlive[MAXENV+1] ;
 static char ttree[MAXENV+1] ;
+static char confile[MAXENV+1] ;
 static int fdin ;
 
-#define USAGE "66-boot [ -h ] [ -m ] [ -f confile ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]"
-
-static void sulogin(char const *msg,char const *arg)
-{
-	fd_close(0) ;
-	fd_close(1) ;
-	fd_close(2) ;
-	dup2(fdin,0) ;
-	fd_close(fdin) ;
-	open("/dev/console",O_WRONLY) ;
-	fd_copy(2,1) ;
-	if (*msg) strerr_warnwu2sys(msg,arg) ;
-	char const *newarg[] = { SS_EXTBINPREFIX "sulogin" , 0 } ;
-	xpathexec (newarg) ; 
-}
+#define USAGE "66-boot [ -h ] [ -m ] [ -s skel ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]"
 
 static inline void info_help (void)
 {
@@ -82,13 +69,27 @@ static inline void info_help (void)
 "	-h: print this help\n" 
 "	-m: mount parent live directory\n"
 "	-l: run catch-all logger as log_user user\n"
-"	-f: configuration file\n"
+"	-s: skeleton directory\n"
 "	-e: environment directory or file\n"
 "	-d: dev directory\n"
 "	-b: banner to display\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0) sulogin("","") ;
+}
+
+static void sulogin(char const *msg,char const *arg)
+{
+	static char const *const newarg[2] = { SS_EXTBINPREFIX "sulogin" , 0 } ;
+	fd_close(0) ;
+	fd_close(1) ;
+	fd_close(2) ;
+	dup2(fdin,0) ;
+	fd_close(fdin) ;
+	open("/dev/console",O_WRONLY) ;
+	fd_copy(2,1) ;
+	if (*msg) strerr_warnwu2sys(msg,arg) ;
+	xpathexec (newarg) ; 
 }
 
 static void parse_conf(void)
@@ -100,6 +101,12 @@ static void parse_conf(void)
 	stralloc src = STRALLOC_ZERO ;
 	stralloc saconf = STRALLOC_ZERO ;
 	genalloc gaconf = GENALLOC_ZERO ;
+	if (skel[0] != '/') sulogin("skeleton directory must be an aboslute path: ",skel) ;
+	size_t skelen = strlen(skel) ;
+	memcpy(confile,skel,skelen) ;
+	confile[skelen] = '/' ;
+	mempcy(confile + skelen + 1, SS_BOOT_CONF, SS_BOOT_CONF_LEN) ;
+	confile[skelen + 1 + SS_BOOT_CONF_LEN] = 0 ;
 	size_t filesize=file_get_size(confile) ;
 	r = openreadfileclose(confile,&src,filesize) ;
 	if(!r) sulogin("open configuration file: ",confile) ; 
@@ -161,7 +168,6 @@ static void split_tmpfs(char *dst,char *str)
 
 static inline void run_stage2 (char const *const *envp, size_t envlen, char const *modifs, size_t modiflen)
 {
-	
 	char const *newargv[3] = { rcinit, confile, 0 } ;
 	setsid() ;
 	fd_close(1) ;
@@ -181,6 +187,21 @@ static inline void run_cmdline(char const *const *newargv, char const *const *en
 	if (wstat) sulogin(msg,arg) ;
 }
 
+static inline void make_cmdline(char const *prog,char const **add,int len,char const *msg,char const *arg)
+{
+	int m = 6 + len, i = 0, n = 0 ;
+	char const *newargv[m] ;
+	newargv[n++] = prog ;
+	newargv[n++] = "-v" ; 
+	newargv[n++] = verbo ;
+	newargv[n++] = "-l" ;
+	newargv[n++] = live ; 
+	for (;i<len;i++)
+		newargv[n++] = add[i] ;
+	newargv[n] = 0 ;
+	run_cmdline(newargv,envp,msg,arg) ;
+}
+
 int main(int argc, char const *const *argv,char const *const *envp)
 {
 	unsigned int tmpfs = 0 ;
@@ -195,14 +216,14 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hmf:e:d:b:", &l) ;
+			int opt = getopt_args(argc,argv, ">hmf:s:d:b:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) sulogin("options must be set first","") ;
 			switch (opt)
 			{
 				case 'h' : info_help(); return 0 ;
 				case 'm' : tmpfs = 1 ; break ;
-				case 'f' : confile = l.arg ; break ;
+				case 's' : skel = l.arg ; break ;
 				case 'e' : envdir = l.arg ; break ;
 				case 'd' : slashdev = l.arg ; break ;
 				case 'b' : banner = l.arg ; break ;
@@ -257,41 +278,19 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (mount("tmpfs", fs, "tmpfs", MS_NODEV | MS_NOSUID, "mode=0755") == -1) 
 			sulogin("mount: ",fs) ;
 	}
-	
+	/** create scandir */
 	{
+		int m = log ? 4 : 2 ;
+		if (log) char const *t[] = { "-b","-c","-L",log } ;
+		else char const *t[] = { "-b","-c" } ;
 		strerr_warni2x("Create live scandir at: ",live) ;
-		int m = log ? 10 : 8 ;
-		char const *newargv[m] ;
-		newargv[0] = SS_EXTBINPREFIX "66-scandir" ;
-		newargv[1] = "-v" ; 
-		newargv[2] = verbo ;
-		newargv[3] = "-l" ;
-		newargv[4] = live ; 
-		newargv[5] = "-b" ;
-		newargv[6] = "-c" ;
-		if (log)
-		{
-			newargv[7] = "-L" ;
-			newargv[8] = log ;
-			newargv[9] =  0 ;
-		}
-		else newargv[7] = 0 ;
-		run_cmdline(newargv,envp,"create live scandir at: ",live) ;
+		make_cmdline(SS_EXTBINPREFIX "66-scandir",t,m,"create live scandir at: ",live) ;		
 	}
-	
+	/** initiate earlier service */
 	{
+		char const *t[] = { "-t",tree,"classic" } ;
 		strerr_warni2x("Initiate earlier service of tree: ",tree) ;
-		char const *newargv[9] ;
-		newargv[0] = SS_EXTBINPREFIX "66-init" ;
-		newargv[1] = "-v" ; 
-		newargv[2] = verbo ;
-		newargv[3] = "-l" ;
-		newargv[4] = live ; 
-		newargv[5] = "-t" ;
-		newargv[6] = tree ;
-		newargv[7] = "classic" ;
-		newargv[8] = 0 ;
-		run_cmdline(newargv,envp,"initiate earlier service of tree: ",tree) ;
+		make_cmdline(SS_EXTBINPREFIX "66-init",t,3,"initiate earlier service of tree: ",tree) ;	
 	}
 	
 	if (envdir)
@@ -305,8 +304,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (open(fifo, O_WRONLY) != 1) sulogin("open fifo: ",fifo) ;
 		fd_close(fdr) ;
 	}
-		
+	/** fork and starts scandir */
 	{
+		static char *const newargv[7] = {  SS_EXTBINPREFIX "66-scandir", "-v" , verbo, "-l", live, "-u", 0 } ; 
 		char const *newenvp[2] = { 0, 0 } ;
 		size_t pathlen = strlen(path) ;
 		char pathvar[6 + pathlen] ;
@@ -314,14 +314,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		memcpy(pathvar, "PATH=", 5) ;
 		memcpy(pathvar + 5, path, pathlen + 1) ;
 		newenvp[0] = pathvar ;
-		char const *newargv[7] ;
-		newargv[0] = SS_EXTBINPREFIX "66-scandir" ;
-		newargv[1] = "-v" ; 
-		newargv[2] = verbo ;
-		newargv[3] = "-l" ;
-		newargv[4] = live ; 
-		newargv[5] = "-u" ;
-		newargv[6] =  0 ;
 		pid = fork() ;
 		if (pid == -1) sulogin("fork: ",rcinit) ;
 		if (!pid) run_stage2(newenvp, 2, envmodifs.s,envmodifs.len) ;

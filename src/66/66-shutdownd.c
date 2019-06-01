@@ -54,8 +54,10 @@
 #define DOTSUFFIX ":XXXXXX"
 #define DOTSUFFIXLEN (sizeof(DOTSUFFIX) - 1)
 #define SHUTDOWND_FIFO "fifo"
+static char const *rcshut = SS_DATA_SYSDIR ;
+static char const *live = 0 ;
 
-#define USAGE "66-shutdownd [ -h ] [ -l live ] [ -s rc.shutdown ] [ -g gracetime ]"
+#define USAGE "66-shutdownd [ -h ] [ -l live ] [ -s skel ] [ -g gracetime ]"
 
 static inline void info_help (void)
 {
@@ -65,16 +67,13 @@ static inline void info_help (void)
 "options :\n"
 "	-h: print this help\n" 
 "	-l: live directory\n"
-"	-s: rc.shutdown script\n"
+"	-s: skeleton directory\n"
 "	-g: grace time between the SIGTERM and the SIGKILL\n"
 ;
 
 	if (buffer_putsflush(buffer_1, help) < 0)
 		strerr_diefu1sys(111, "write to stdout") ;
 }
-
-static char const *rcshut = 0 ;
-static char const *live = 0 ;
 
 struct at_s
 {
@@ -98,7 +97,19 @@ static int mkrenametemp (int fd, char const *src, char *dst)
 static inline void run_rcshut (char const *rcshut, char const *const *envp)
 {
 	pid_t pid ;
-	char const *rcshut_argv[2] = { rcshut, 0 } ;
+	size_t shutlen = strlen(rcshut) ;
+	char skel[shutlen + 1 + SS_BOOT_RCSHUTDOWN_LEN + 1] ;
+	memcpy(skel,rcshut,shutlen) ;
+	skel[shutlen] = '/' ;
+	memcpy(skel + shutlen + 1, SS_BOOT_RCSHUTDOWN,SS_BOOT_RCSHUTDOWN_LEN) ;
+	skel[shutlen + 1 + SS_BOOT_RCSHUTDOWN_LEN] = 0 ;
+	rcshut = skel ;
+	char confile[shutlen + 1 + SS_BOOT_CONF_LEN + 1] ;
+	memcpy(confile,rcshut,shutlen) ;
+	confile[shutlen] = '/' ;
+	memcpy(confile + shutlen + 1,SS_BOOT_CONF,SS_BOOT_CONF_LEN) ;
+	confile[shutlen + 1 + SS_BOOT_CONF_LEN] = 0 ;
+	char const *rcshut_argv[3] = { rcshut, confile, 0 } ;
 	pid = child_spawn0(rcshut_argv[0], rcshut_argv, envp) ;
 	if (pid)
 	{
@@ -267,8 +278,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
-	if (rcshut && rcshut[0] != '/') strerr_dief3x(110, "rc.shutdown: ",rcshut," must be an absolute path") ;
-	else rcshut = SS_DATA_SYSDIR SS_BOOT_RCSHUTDOWN ;
+	if (rcshut[0] != '/') strerr_dief3x(110, "skeleton: ",rcshut," must be an absolute path") ;
 	if (live && live[0] != '/') strerr_dief3x(110,"live: ",live," must be an absolute path") ;
 	else live = SS_LIVE ;
 	if (grace_time > 300000) grace_time = 300000 ;

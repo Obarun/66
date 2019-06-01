@@ -60,12 +60,13 @@ static char OWNERSTR[UID_FMT] ;
 static gid_t GIDOWNER ;
 static char GIDSTR[GID_FMT] ;
 static char TMPENV[MAXENV+1] ;
-static char const *rcshut = SS_DATA_SYSDIR SS_BOOT_RCSHUTDOWN ;
+static char tskelfile[MAXENV+1] ;
+static char const *rcshut = SS_DATA_SYSDIR ;
 static char const *log_user = "root" ;
 static unsigned int BOOT = 0 ;
 unsigned int VERBOSITY = 1 ;
 
-#define USAGE "66-scandir [ -h ] [ -v verbosity ] [ -b ] [ -l live ] [ -t rescan ] [ -L log_user ] [ -s rc.shutdown ] [ -e environment ] [ -c | u | r ] owner"
+#define USAGE "66-scandir [ -h ] [ -v verbosity ] [ -b ] [ -l live ] [ -t rescan ] [ -L log_user ] [ -s skel ] [ -e environment ] [ -c | u | r ] owner"
 
 static inline void info_help (void)
 {
@@ -79,7 +80,7 @@ static inline void info_help (void)
 "	-l: live directory\n"
 "	-t: rescan scandir every milliseconds\n"
 "	-L: run catch-all logger as log_user user\n"
-"	-s: rc.shutdown scripts\n"
+"	-s: skeleton directory\n"
 "	-e: directory environment\n"
 "	-c: create scandir\n"
 "	-r: remove scandir\n"
@@ -516,8 +517,17 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	if (r < 0) strerr_dief3x(110,"scandir: ", scandir.s, " must be an absolute path") ;
 	if (!r) strerr_diefu1sys(111,"set scandir directory") ;
 		
-	if (BOOT && rcshut[0] != '/')
-		strerr_dief3x(110, "rc.shutdown: ",rcshut," must be an absolute path") ;
+	if (BOOT)
+	{	
+		if (rcshut[0] != '/')
+			strerr_dief3x(110, "rc.shutdown: ",rcshut," must be an absolute path") ;
+		size_t shutlen = strlen(rcshut) ;
+		memcpy(tskelfile,rcshut,shutlen) ;
+		tskelfile[shutlen] = '/' ;
+		memcpy(tskelfile + shutlen + 1,SS_BOOT_RCSHUTDOWN,SS_BOOT_RCSHUTDOWN_LEN) ;
+		tskelfile[shutlen + 1 + SS_BOOT_RCSHUTDOWN_LEN] = 0 ;
+		rcshut = tskelfile ;
+	}
 	
 	if (envdir.len)
 	{
