@@ -132,7 +132,7 @@ static void inline auto_dir(char const *str,mode_t mode)
 
 static void inline auto_chmod(char const *str,mode_t mode)
 {
-	VERBO3 strerr_warnt2x("chmod: ",str) ;
+	//VERBO3 strerr_warnt2x("chmod: ",str) ;
 	if (chmod(str,mode) < 0)
 		strerr_diefu2sys(111,"chmod: ",str) ;
 }
@@ -228,9 +228,6 @@ void write_bootlog(char const *live, char const *scandir)
 	char logdir[scandirlen + SS_SCANDIR_LEN + SS_LOG_SUFFIX_LEN + 1 + 5 + 1] ;
 	
 	stralloc run = STRALLOC_ZERO ;
-	
-	VERBO2 strerr_warni3x("creating scandir boot logger ",scandir,"/" SS_SCANDIR SS_LOG_SUFFIX "...") ;
-	
 	/** run/66/scandir/uid_name/scandir-log */
 	memcpy(logdir,scandir,scandirlen) ;
 	memcpy(logdir + scandirlen,"/" SS_SCANDIR SS_LOG_SUFFIX,SS_SCANDIR_LEN + SS_LOG_SUFFIX_LEN + 1) ;
@@ -287,8 +284,9 @@ void write_bootlog(char const *live, char const *scandir)
 void write_control(char const *scandir,char const *live, char const *filename, int file)
 {
 	size_t scandirlen = strlen(scandir) ;
+	size_t filen = strlen(filename) ;
+	char mode[scandirlen + SS_SVSCAN_LOG_LEN + filen + 1] ;
 	stralloc sa = STRALLOC_ZERO ;
-	VERBO2 strerr_warni3x("write control file ",filename + 1," ...") ;
 
 	/** shebang */
 	auto_stralloc(&sa, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n") ;
@@ -303,7 +301,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
 				EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-echo -- \"scandir ") ;
 			auto_stralloc(&sa,scandir) ;
 			auto_stralloc(&sa,
-				" exited. Rebooting.\n\" }\n" \
+				" exited. Rebooting.\" }\n" \
 				SS_BINPREFIX "66-hpr -r -f -l ") ;
 			auto_addlive(&sa,live,"\n") ;
 		}
@@ -379,12 +377,12 @@ void write_control(char const *scandir,char const *live, char const *filename, i
 	}
 	
 	write:
-		auto_file(scandir,filename,sa.s,sa.len) ;		
-		char mode[scandirlen + 1 + strlen(filename) + 1] ;
 		memcpy(mode,scandir,scandirlen) ;
-		mode[scandirlen] = '/' ;
-		memcpy(mode + scandirlen + 1,filename,strlen(filename)) ;
-		mode[scandirlen + 1 + strlen(filename)] = 0 ;
+		memcpy(mode + scandirlen, SS_SVSCAN_LOG, SS_SVSCAN_LOG_LEN) ;
+		mode[scandirlen + SS_SVSCAN_LOG_LEN ] = 0 ;
+		auto_file(mode,filename+1,sa.s,sa.len) ;	
+		memcpy(mode + scandirlen + SS_SVSCAN_LOG_LEN,filename,filen) ;
+		mode[scandirlen + SS_SVSCAN_LOG_LEN + filen] = 0 ;
 		auto_chmod(mode,0755) ;
 			
 	stralloc_free(&sa) ;
@@ -401,8 +399,8 @@ void create_scandir(char const *live, char const *scandir)
 	auto_check(tmp,S_IFDIR,0755,0,AUTO_CRTE_CHW) ;
 	
 	/** run/66/scandir/name/.svscan */
-	memcpy(tmp + scanlen, "/.s6-svscan", 11) ;
-	tmp[scanlen + 11] = 0 ;
+	memcpy(tmp + scanlen, SS_SVSCAN_LOG, SS_SVSCAN_LOG_LEN) ;
+	tmp[scanlen + SS_SVSCAN_LOG_LEN] = 0 ;
 	auto_check(tmp,S_IFDIR,0755,0,AUTO_CRTE_CHW) ;
 	
 	char const *const file[] = 
@@ -410,6 +408,7 @@ void create_scandir(char const *live, char const *scandir)
 		"/crash", "/finish", "/SIGHUP", "/SIGINT",
 		"/SIGQUIT", "/SIGTERM", "/SIGUSR1", "/SIGUSR2"
 	 } ;
+	VERBO2 strerr_warni1x("write control file... ") ;
 	for (int i = 0 ; i < 8; i++)
 		write_control(scandir,live,file[i],i) ;
 
@@ -547,7 +546,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	}
 	if (r && create)
 	{
-		VERBO2 strerr_warni3x("scandir: ",scandir.s," already exist, keep it") ;
+		VERBO1 strerr_warni3x("scandir: ",scandir.s," already exist, keep it") ;
 		goto end ;
 	}
  	
@@ -562,14 +561,6 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		
 		VERBO2 strerr_warni3x("removing ",ownerscan," ...") ;
 		if (rm_rf(ownerscan) < 0) strerr_diefu2sys(111,"remove: ",ownerscan) ;
-		/*
-		r = scan_mode(live.s,S_IFDIR) ;
-		if (r > 0)
-		{
-			VERBO2 strerr_warni3x("removing ",live.s," ...") ;
-			if (rm_rf(live.s) < 0) strerr_diefu2sys(111,"remove: ",live.s) ;
-		}*/
-		
 	}
 	end:
 	stralloc_free(&scandir) ;
