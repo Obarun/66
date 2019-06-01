@@ -60,8 +60,7 @@ static char OWNERSTR[UID_FMT] ;
 static gid_t GIDOWNER ;
 static char GIDSTR[GID_FMT] ;
 static char TMPENV[MAXENV+1] ;
-static char tskelfile[MAXENV+1] ;
-static char const *rcshut = SS_DATA_SYSDIR ;
+static char const *skel = SS_DATA_SYSDIR ;
 static char const *log_user = "root" ;
 static unsigned int BOOT = 0 ;
 unsigned int VERBOSITY = 1 ;
@@ -206,7 +205,7 @@ void write_shutdownd(char const *live, char const *scandir)
 		SS_BINPREFIX "66-shutdownd -l ") ;
 	auto_stralloc(&run,live) ;
 	auto_stralloc(&run," -s ") ;
-	auto_stralloc(&run,rcshut) ;
+	auto_stralloc(&run,skel) ;
 	auto_stralloc(&run," -g 3000\n") ;
 	shut[scandirlen + 1 + SS_BOOT_SHUTDOWND_LEN] = 0 ;
 	auto_file(shut,"run",run.s,run.len) ;
@@ -482,7 +481,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 						   if(!stralloc_0(&live)) retstralloc(111,"main") ;
 						   break ;
 				case 't' : if (!uint0_scan(l.arg, &rescan)) break ;
-				case 's' : rcshut = l.arg ; break ;
+				case 's' : skel = l.arg ; break ;
 				case 'e' : if(!stralloc_cats(&envdir,l.arg)) retstralloc(111,"main") ;
 						   if(!stralloc_0(&envdir)) retstralloc(111,"main") ;
 						   break ;
@@ -517,17 +516,8 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	if (r < 0) strerr_dief3x(110,"scandir: ", scandir.s, " must be an absolute path") ;
 	if (!r) strerr_diefu1sys(111,"set scandir directory") ;
 		
-	if (BOOT)
-	{	
-		if (rcshut[0] != '/')
-			strerr_dief3x(110, "rc.shutdown: ",rcshut," must be an absolute path") ;
-		size_t shutlen = strlen(rcshut) ;
-		memcpy(tskelfile,rcshut,shutlen) ;
-		tskelfile[shutlen] = '/' ;
-		memcpy(tskelfile + shutlen + 1,SS_BOOT_RCSHUTDOWN,SS_BOOT_RCSHUTDOWN_LEN) ;
-		tskelfile[shutlen + 1 + SS_BOOT_RCSHUTDOWN_LEN] = 0 ;
-		rcshut = tskelfile ;
-	}
+	if (BOOT && skel[0] != '/')
+		strerr_dief3x(110, "rc.shutdown: ",skel," must be an absolute path") ;
 	
 	if (envdir.len)
 	{

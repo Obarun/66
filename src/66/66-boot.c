@@ -40,25 +40,38 @@ unsigned int VERBOSITY = 1 ;
 static mode_t mask = SS_BOOT_UMASK ;
 static unsigned int rescan = SS_BOOT_RESCAN ;
 static char const *skel = SS_DATA_SYSDIR ;
-static char const *live = SS_LIVE ;
+static char *live = SS_LIVE ;
 static char const *path = SS_BOOT_PATH ;
 static char const *tree = SS_BOOT_TREE ;
 static char const *rcinit = SS_DATA_SYSDIR SS_BOOT_RCINIT ;
-static char const *rcshut = SS_DATA_SYSDIR SS_BOOT_RCSHUTDOWN ;
 static char const *banner = "\n[Starts boot process ...]" ;
 static char const *slashdev = 0 ;
 static char const *envdir = 0 ;
 static char const *fifo = 0 ;
 static char const *log = 0 ;
+static char const *cver = 0 ;
 static char tpath[MAXENV+1] ;
 static char trcinit[MAXENV+1] ;
-static char trcshut[MAXENV+1] ;
 static char tlive[MAXENV+1] ;
 static char ttree[MAXENV+1] ;
 static char confile[MAXENV+1] ;
 static int fdin ;
 
 #define USAGE "66-boot [ -h ] [ -m ] [ -s skel ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]"
+
+static void sulogin(char const *msg,char const *arg)
+{
+	static char const *const newarg[2] = { SS_EXTBINPREFIX "sulogin" , 0 } ;
+	fd_close(0) ;
+	fd_close(1) ;
+	fd_close(2) ;
+	dup2(fdin,0) ;
+	fd_close(fdin) ;
+	open("/dev/console",O_WRONLY) ;
+	fd_copy(2,1) ;
+	if (*msg) strerr_warnwu2sys(msg,arg) ;
+	xpathexec (newarg) ; 
+}
 
 static inline void info_help (void)
 {
@@ -78,20 +91,6 @@ static inline void info_help (void)
  if (buffer_putsflush(buffer_1, help) < 0) sulogin("","") ;
 }
 
-static void sulogin(char const *msg,char const *arg)
-{
-	static char const *const newarg[2] = { SS_EXTBINPREFIX "sulogin" , 0 } ;
-	fd_close(0) ;
-	fd_close(1) ;
-	fd_close(2) ;
-	dup2(fdin,0) ;
-	fd_close(fdin) ;
-	open("/dev/console",O_WRONLY) ;
-	fd_copy(2,1) ;
-	if (*msg) strerr_warnwu2sys(msg,arg) ;
-	xpathexec (newarg) ; 
-}
-
 static void parse_conf(void)
 {
 	static char const *valid[] = 
@@ -105,7 +104,7 @@ static void parse_conf(void)
 	size_t skelen = strlen(skel) ;
 	memcpy(confile,skel,skelen) ;
 	confile[skelen] = '/' ;
-	mempcy(confile + skelen + 1, SS_BOOT_CONF, SS_BOOT_CONF_LEN) ;
+	memcpy(confile + skelen + 1, SS_BOOT_CONF, SS_BOOT_CONF_LEN) ;
 	confile[skelen + 1 + SS_BOOT_CONF_LEN] = 0 ;
 	size_t filesize=file_get_size(confile) ;
 	r = openreadfileclose(confile,&src,filesize) ;
@@ -187,13 +186,14 @@ static inline void run_cmdline(char const *const *newargv, char const *const *en
 	if (wstat) sulogin(msg,arg) ;
 }
 
-static inline void make_cmdline(char const *prog,char const **add,int len,char const *msg,char const *arg)
+static inline void make_cmdline(char const *prog,char const **add,int len,char const *msg,char const *arg,char const *const *envp)
 {
+	
 	int m = 6 + len, i = 0, n = 0 ;
 	char const *newargv[m] ;
 	newargv[n++] = prog ;
 	newargv[n++] = "-v" ; 
-	newargv[n++] = verbo ;
+	newargv[n++] = cver ;
 	newargv[n++] = "-l" ;
 	newargv[n++] = live ; 
 	for (;i<len;i++)
@@ -208,6 +208,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	size_t bannerlen, livelen ;
 	pid_t pid ;
 	char verbo[UINT_FMT] ;
+	cver = verbo ;
 	stralloc envmodifs = STRALLOC_ZERO ;
 	fdin = dup(0) ;
 	PROG = "66-boot" ;
@@ -280,17 +281,16 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	}
 	/** create scandir */
 	{
-		int m = log ? 4 : 2 ;
-		if (log) char const *t[] = { "-b","-c","-L",log } ;
-		else char const *t[] = { "-b","-c" } ;
+		int m = log ? 6 : 4 ;
+		char const *t[] = { "-b", "-c", "-s", skel, log ? "-L" : 0, log ? log : 0 } ;
 		strerr_warni2x("Create live scandir at: ",live) ;
-		make_cmdline(SS_EXTBINPREFIX "66-scandir",t,m,"create live scandir at: ",live) ;		
+		make_cmdline(SS_EXTBINPREFIX "66-scandir",t,m,"create live scandir at: ",live,envp) ;		
 	}
 	/** initiate earlier service */
 	{
 		char const *t[] = { "-t",tree,"classic" } ;
 		strerr_warni2x("Initiate earlier service of tree: ",tree) ;
-		make_cmdline(SS_EXTBINPREFIX "66-init",t,3,"initiate earlier service of tree: ",tree) ;	
+		make_cmdline(SS_EXTBINPREFIX "66-init",t,3,"initiate earlier service of tree: ",tree,envp) ;	
 	}
 	
 	if (envdir)
@@ -306,7 +306,14 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	}
 	/** fork and starts scandir */
 	{
-		static char *const newargv[7] = {  SS_EXTBINPREFIX "66-scandir", "-v" , verbo, "-l", live, "-u", 0 } ; 
+		static char const *newargv[7] ; 
+		newargv[0] = SS_EXTBINPREFIX "66-scandir" ;
+		newargv[1] = "-v" ;
+		newargv[2] = verbo ;
+		newargv[3] = "-l" ;
+		newargv[4] = live ;
+		newargv[5] = "-u" ;
+		newargv[6] = 0 ; 
 		char const *newenvp[2] = { 0, 0 } ;
 		size_t pathlen = strlen(path) ;
 		char pathvar[6 + pathlen] ;
