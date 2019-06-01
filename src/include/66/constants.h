@@ -54,7 +54,8 @@
 #define SS_LOG_LEN (sizeof SS_LOG - 1)
 #define SS_LOG_SUFFIX "-" SS_LOG
 #define SS_LOG_SUFFIX_LEN (sizeof SS_LOG_SUFFIX - 1)
-
+#define SS_SVSCAN_LOG "/.s6-svscan"
+#define SS_SVSCAN_LOG_LEN (sizeof SS_SVSCAN_LOG - 1)
 /** pipe */
 #define SS_PIPE_NAME "bundle-"
 #define SS_PIPE_NAME_LEN (sizeof SS_PIPE_NAME - 1)
