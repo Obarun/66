@@ -7,6 +7,5 @@ CONF="$1"
 source "$CONF"
 
 66-echo [Starting rc.shutdown process ...]
-66-echo [Stop all services of tree ${TREE}]
 66-all -v${VERBOSITY} -l ${LIVE} -t ${TREE} -f down
 66-echo [rc.shutdown completed successfully]
