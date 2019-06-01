@@ -48,13 +48,14 @@ static char const *banner = "\n[Starts boot process ...]\n" ;
 static char const *slashdev = 0 ;
 static char const *envdir = 0 ;
 static char const *fifo = 0 ;
+static char const *log = 0 ;
 static char tpath[MAXENV+1] ;
 static char trcinit[MAXENV+1] ;
 static char trcshut[MAXENV+1] ;
 static char tlive[MAXENV+1] ;
 static char ttree[MAXENV+1] ;
 
-#define USAGE "66-boot [ -h ] [ -m ] [ -f confile ] [ -e environment ] [ -d dev ] [ -b banner ]"
+#define USAGE "66-boot [ -h ] [ -m ] [ -f confile ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]"
 
 static void sulogin(char const *msg,char const *arg)
 {
@@ -71,6 +72,7 @@ static inline void info_help (void)
 "options :\n"
 "	-h: print this help\n" 
 "	-m: mount parent live directory\n"
+"	-l: run catch-all logger as log_user user\n"
 "	-f: configuration file\n"
 "	-e: environment directory or file\n"
 "	-d: dev directory\n"
@@ -169,6 +171,7 @@ static inline void run_cmdline(char const *const *newargv, char const *const *en
 		sulogin("wait for: ",newargv[0]) ;
 	if (wstat) sulogin(msg,arg) ;
 }
+
 int main(int argc, char const *const *argv,char const *const *envp)
 {
 	unsigned int tmpfs = 0 ;
@@ -194,6 +197,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 'e' : envdir = l.arg ; break ;
 				case 'd' : slashdev = l.arg ; break ;
 				case 'b' : banner = l.arg ; break ;
+				case 'l' : log = l.arg ; break ;
 				default : exitusage(USAGE) ; 
 			}
 		}
@@ -248,7 +252,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	{
 		strerr_warni2x("Create live scandir at: ",live) ;
-		char const *newargv[8] ;
+		int m = log ? 10 : 8 ;
+		char const *newargv[m] ;
 		newargv[0] = SS_EXTBINPREFIX "66-scandir" ;
 		newargv[1] = "-v" ; 
 		newargv[2] = verbo ;
@@ -256,7 +261,13 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		newargv[4] = live ; 
 		newargv[5] = "-b" ;
 		newargv[6] = "-c" ;
-		newargv[7] =  0 ;
+		if (log)
+		{
+			newargv[7] = "-L" ;
+			newargv[8] = log ;
+			newargv[9] =  0 ;
+		}
+		else newargv[7] = 0 ;
 		run_cmdline(newargv,envp,"create live scandir at: ",live) ;
 	}
 	
@@ -312,5 +323,3 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		xpathexec_r(newargv, newenvp, 2, envmodifs.s, envmodifs.len) ;
 	}
 }
-	
-
