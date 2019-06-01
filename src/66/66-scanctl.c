@@ -13,7 +13,6 @@
  */
  
 #include <string.h>
-
 #include <oblibs/error2.h>
 #include <oblibs/obgetopt.h>
 
@@ -32,7 +31,7 @@ unsigned int VERBOSITY = 1 ;
 static inline void info_help (void)
 {
   static char const *help =
-"66-scandir <options> signal\n"
+"66-scanctl <options> signal\n"
 "\n"
 "options :\n"
 "	-h: print this help\n" 
@@ -63,7 +62,7 @@ static inline unsigned int parse_signal (char const *signal)
     0
   } ;
   unsigned int i = lookup(signal_table, signal) ;
-  if (!signal_table[i]) strerr_dief2x(111,"unknown signal: ",signal) ;
+  if (!signal_table[i]) i = 7 ;
   return i ;
 }
 
@@ -75,38 +74,36 @@ int send_signal(char const *scandir, char const *signal)
 	sig = parse_signal(signal) ;
 	if (sig < 6)
 	{
-		csig[0] = '-' ;
 		switch(sig)
 		{
-			case 0: csig[1] = 'a' ; 
-					csig[2] = 'n' ;
-					csig[3] = 0 ;
-					break ;
-			case 1: csig[1] = 'i' ;
+			case 0: csig[0] = 'a' ; 
+					csig[1] = 'n' ;
 					csig[2] = 0 ;
 					break ;
-			case 2: csig[1] = 'q' ; 
-					csig[2] = 0 ;
+			case 1: csig[0] = 'i' ;
+					csig[1] = 0 ;
 					break ;
-			case 3: csig[1] = '0' ;
-					csig[2] = 0 ;
+			case 2: csig[0] = 'q' ; 
+					csig[1] = 0 ;
 					break ;
-			case 4: csig[1] = '6' ;
-					csig[2] = 0 ;
+			case 3: csig[0] = '0' ;
+					csig[1] = 0 ;
 					break ;
-			case 5: csig[1] = '7' ;
-					csig[2] = 0 ;
+			case 4: csig[0] = '6' ;
+					csig[1] = 0 ;
+					break ;
+			case 5: csig[0] = '7' ;
+					csig[1] = 0 ;
 					break ;
 			default: break ;
 		}
 	}
 	else
 	{
-		csig[0] = '-' ;
-		memcpy(csig + 1,signal,siglen) ;
-		csig[siglen + 1] = 0 ;
+		memcpy(csig,signal,siglen) ;
+		csig[siglen] = 0 ;
 	}
-	VERBO1 strerr_warni5x("Sending ",csig," signal to scandir: ",scandir," ...") ;
+	VERBO1 strerr_warni5x("Sending -",csig," signal to scandir: ",scandir," ...") ;
 	return scandir_send_signal(scandir,csig) ;
 }
 
@@ -117,7 +114,7 @@ int main(int argc, char const *const *argv)
 	char const *signal ;
 	stralloc scandir = STRALLOC_ZERO ;
 		
-	PROG = "66-scandir" ;
+	PROG = "66-scanctl" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
 
