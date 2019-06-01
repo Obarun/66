@@ -66,7 +66,7 @@ static void sulogin(char const *msg,char const *arg)
 	fd_close(2) ;
 	dup2(fdin,0) ;
 	fd_close(fdin) ;
-	open("/dev/console",O_WDONLY) ;
+	open("/dev/console",O_WRONLY) ;
 	fd_copy(2,1) ;
 	if (*msg) strerr_warnwu2sys(msg,arg) ;
 	char const *newarg[] = { SS_EXTBINPREFIX "sulogin" , 0 } ;
@@ -325,7 +325,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		pid = fork() ;
 		if (pid == -1) sulogin("fork: ",rcinit) ;
 		if (!pid) run_stage2(newenvp, 2, envmodifs.s,envmodifs.len) ;
-		if (fd_copy(2, 1) == -1) strerr_diefu1sys(111,"redirect output file descriptor","") ;
+		if (fd_copy(2, 1) == -1) strerr_diefu1sys(111,"redirect output file descriptor") ;
 		strerr_warni1x("Boot completed successfully") ;
 		strerr_warni1x("Supervision starts...") ;
 		xpathexec_r(newargv, newenvp, 2, envmodifs.s, envmodifs.len) ;
