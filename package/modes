@@ -22,3 +22,5 @@ execl-envfile	0755
 66-writenv		0755
 66-getenv		0755
 66-gnwenv		0755
+66-umountall	0755
+66-echo			0755
