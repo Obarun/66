@@ -787,7 +787,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 			/** environment */
 			if (sv->opts[2] && (exec->build == AUTO))
 			{
-				if (!stralloc_cats(&env,S6_BINPREFIX "66-envfile -f ")) retstralloc(0,"write_exec") ;
+				if (!stralloc_cats(&env,SS_BINPREFIX "execl-envfile -f ")) retstralloc(0,"write_exec") ;
 				if (!stralloc_cats(&env,name)) retstralloc(0,"write_exec") ;
 				if (!stralloc_cats(&env," ")) retstralloc(0,"write_exec") ;
 				if (!stralloc_cats(&env,envdata)) retstralloc(0,"write_exec") ;
