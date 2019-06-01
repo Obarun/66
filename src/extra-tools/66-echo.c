@@ -30,8 +30,7 @@ static inline void info_help (void)
 "options :\n"
 "	-h: print this help\n" 
 "	-n: do not output a trailing newline\n"
-"	-s: separate arguments with the sep character \
-		instead of space\n"
+"	-s: use as character separator\n"
 ;
 	if (buffer_putsflush(buffer_1, help) < 0)
 		strerr_diefu1sys(111, "write to stdout") ;
