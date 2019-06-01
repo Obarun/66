@@ -83,7 +83,7 @@ int main (int argc, char const *const *argv)
 		subgetopt_t l = SUBGETOPT_ZERO ;
 		for (;;)
 		{
-			int opt = subgetopt_r(argc, argv, "l:hprfdwWb:", &l) ;
+			int opt = subgetopt_r(argc, argv, "Hl:hprfdwWb:", &l) ;
 			if (opt == -1) break ;
 			switch (opt)
 			{
