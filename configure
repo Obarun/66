@@ -163,10 +163,10 @@ system_dir='$prefix/lib/66'
 user_dir='.66'
 system_log='/var/log/66'
 user_log='.66/log'
-service_packager='$datadir/service'
-service_sys='$datadir/sysadmin/service'
+service_packager="$datadir/service"
+service_sys="$datadir/sysadmin/service"
 service_user='.66/service'
-service_sysconf='$datadir/conf'
+service_sysconf="$datadir/conf"
 service_userconf='.66/conf'
 sysdeps='$prefix/lib/skalibs/sysdeps'
 manualsysdeps=false
@@ -253,6 +253,7 @@ if test -z "$prefix" ; then
     sysdeps=/usr/lib/skalibs/sysdeps
   fi
 fi
+
 
 # Expand installation directories
 stripdir prefix
@@ -503,7 +504,7 @@ echo "creating src/include/${package}/config.h..."
 mkdir -p -m 0755 src/include/${package}
 exec 3>&1 1> src/include/${package}/config.h
 cat <<EOF
-/* Copyright (c) 2018 Eric Vidal <eric@obarun.org>
+/* Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
 All rights reserved.*/
 
 /* ISC license. */
