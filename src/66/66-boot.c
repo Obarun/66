@@ -32,6 +32,7 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
 
+#include <66/config.h>
 #include <66/environ.h>
 #include <66/constants.h>
 
@@ -44,7 +45,7 @@ static char const *path = SS_BOOT_PATH ;
 static char const *tree = SS_BOOT_TREE ;
 static char const *rcinit = SS_DATA_SYSDIR SS_BOOT_RCINIT ;
 static char const *rcshut = SS_DATA_SYSDIR SS_BOOT_RCSHUTDOWN ;
-static char const *banner = "\n[Starts boot process ...]\n" ;
+static char const *banner = "\n[Starts boot process ...]" ;
 static char const *slashdev = 0 ;
 static char const *envdir = 0 ;
 static char const *fifo = 0 ;
@@ -54,11 +55,19 @@ static char trcinit[MAXENV+1] ;
 static char trcshut[MAXENV+1] ;
 static char tlive[MAXENV+1] ;
 static char ttree[MAXENV+1] ;
+static int fdin ;
 
 #define USAGE "66-boot [ -h ] [ -m ] [ -f confile ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]"
 
 static void sulogin(char const *msg,char const *arg)
 {
+	fd_close(0) ;
+	fd_close(1) ;
+	fd_close(2) ;
+	dup2(fdin,0) ;
+	fd_close(fdin) ;
+	open("/dev/console",O_WDONLY) ;
+	fd_copy(2,1) ;
 	if (*msg) strerr_warnwu2sys(msg,arg) ;
 	char const *newarg[] = { SS_EXTBINPREFIX "sulogin" , 0 } ;
 	xpathexec (newarg) ; 
@@ -157,9 +166,9 @@ static inline void run_stage2 (char const *const *envp, size_t envlen, char cons
 	setsid() ;
 	fd_close(1) ;
 	if (open(fifo, O_WRONLY) != 1)  /* blocks until catch-all logger is up */
-		sulogin("open for writing fifo: ",fifo) ;
+		strerr_diefu2sys(111,"open for writing fifo: ",fifo) ;
 	if (fd_copy(2, 1) == -1)
-		sulogin("fd_copy stdout to stderr","") ;
+		strerr_diefu1sys(111,"fd_copy stdout to stderr") ;
 	xpathexec_r(newargv, envp, envlen, modifs, modiflen) ;
 }
 static inline void run_cmdline(char const *const *newargv, char const *const *envp, char const *msg,char const *arg)
@@ -175,20 +184,20 @@ static inline void run_cmdline(char const *const *newargv, char const *const *en
 int main(int argc, char const *const *argv,char const *const *envp)
 {
 	unsigned int tmpfs = 0 ;
-	size_t bannerlen, livelen, fifolen ;
+	size_t bannerlen, livelen ;
 	pid_t pid ;
 	char verbo[UINT_FMT] ;
 	stralloc envmodifs = STRALLOC_ZERO ;
+	fdin = dup(0) ;
 	PROG = "66-boot" ;
-	
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hmf:e:d:b", &l) ;
+			int opt = getopt_args(argc,argv, ">hmf:e:d:b:", &l) ;
 			if (opt == -1) break ;
-			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
+			if (opt == -2) sulogin("options must be set first","") ;
 			switch (opt)
 			{
 				case 'h' : info_help(); return 0 ;
@@ -207,16 +216,15 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	verbo[uint_fmt(verbo, VERBOSITY)] = 0 ;
 	bannerlen = strlen(banner) ;
 	livelen = strlen(live) ;
-	{
-		fifolen = strlen(SS_BOOT_LOGFIFO) ;
-		char tfifo[livelen + 1 + fifolen + 1] ;
-		memcpy(tfifo,live,livelen) ;
-		tfifo[livelen] = '/' ;
-		memcpy(tfifo + livelen + 1,SS_BOOT_LOGFIFO,fifolen) ;
-		tfifo[livelen + 1 + fifolen] = 0 ;
-		fifo = tfifo ;
-	}
+	char tfifo[livelen + 1 + SS_BOOT_LOGFIFO_LEN + 1] ;
+	memcpy(tfifo,live,livelen) ;
+	tfifo[livelen] = '/' ;
+	memcpy(tfifo + livelen + 1,SS_BOOT_LOGFIFO,SS_BOOT_LOGFIFO_LEN) ;
+	tfifo[livelen + 1 + SS_BOOT_LOGFIFO_LEN] = 0 ;
+	fifo = tfifo ;
+	
 	allwrite(1, banner, bannerlen) ;
+	allwrite(1, "\n", 2) ;
 	if (chdir("/") == -1) sulogin("chdir to ","/") ;
 	umask(mask) ;
 	setpgid(0, 0) ;
@@ -290,7 +298,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (!env_get_from_src(&envmodifs,envdir)) sulogin("get environment from: ",envdir) ;
 	
 	{
-		strerr_warni3x("Start boot logger at: ",live,"/log/0/current") ;
+		strerr_warni3x("Starts boot logger at: ",live,"/log/0") ;
 		int fdr = open_read(fifo) ;
 		if (fdr == -1) sulogin("open fifo: ",fifo) ;
 		fd_close(1) ;
@@ -300,7 +308,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		
 	{
 		char const *newenvp[2] = { 0, 0 } ;
-        size_t pathlen = strlen(path) ;
+		size_t pathlen = strlen(path) ;
 		char pathvar[6 + pathlen] ;
 		if (setenv("PATH", path, 1) == -1) sulogin("set initial PATH: ",path) ;
 		memcpy(pathvar, "PATH=", 5) ;
@@ -317,7 +325,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		pid = fork() ;
 		if (pid == -1) sulogin("fork: ",rcinit) ;
 		if (!pid) run_stage2(newenvp, 2, envmodifs.s,envmodifs.len) ;
-		if (fd_copy(2, 1) == -1) sulogin("redirect output file descriptor","") ;
+		if (fd_copy(2, 1) == -1) strerr_diefu1sys(111,"redirect output file descriptor","") ;
 		strerr_warni1x("Boot completed successfully") ;
 		strerr_warni1x("Supervision starts...") ;
 		xpathexec_r(newargv, newenvp, 2, envmodifs.s, envmodifs.len) ;
