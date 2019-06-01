@@ -81,11 +81,11 @@
 #define SS_STATE_LEN (sizeof SS_STATE - 1)
 
 /** boot */
-#define SS_BOOT_CONF SS_DATA_SYSDIR "boot.conf"
+#define SS_BOOT_CONF "init.conf"
 #define SS_BOOT_CONF_LEN (sizeof SS_BOOTCONF - 1)
 #define SS_BOOT_PATH "/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin"
 #define SS_BOOT_PATH_LEN (sizeof SS_BOOT_PATH - 1)
-#define SS_BOOT_TREE "boot"
+#define SS_BOOT_TREE "init"
 #define SS_BOOT_TREE_LEN (sizeof SS_BOOT_TREE - 1)
 #define SS_BOOT_RCINIT "rc.init"
 #define SS_BOOT_RCINIT_LEN (sizeof SS_BOOT_RCINIT - 1)
