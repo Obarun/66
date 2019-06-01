@@ -18,11 +18,13 @@
 int main (int argc, char const *const *argv, char const *const *envp)
 {
 	PROG = "66-envfile" ;
-	int i = 1 ;
+	int i = 0 ;
 	strerr_warnw1x("the 66-envfile is obsolescent, please use execl-envfile instead") ;
+	argv++ ;
 	char const *cmd[argc] ;
 	cmd[0] = "execl-envfile" ;
 	for(; i < argc ;i++)
-		cmd[i] = argv[i] ;
+		cmd[i+1] = argv[i] ;
+	cmd[i+1] = 0 ;
 	pathexec_run(cmd[0],cmd,envp) ;
 }
