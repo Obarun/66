@@ -4,7 +4,7 @@
 ## the configuration file. By default /etc/66/boot.conf or
 ## instructed by 66-boot via the -f option.
 CONF="$1"
-source "$conf"
+source "$CONF"
 
 echo [Starting stage2 process ...] 1>/dev/console
 

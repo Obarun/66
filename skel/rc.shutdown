@@ -4,9 +4,9 @@
 ## the configuration file. By default /etc/66/boot.conf or
 ## instructed by 66-boot via the -f option.
 CONF="$1"
-source "$conf"
+source "$CONF"
 
-echo [Starting rc.shutdown process ...]
-echo [Stop all services of tree ${TREE}]
-66-all -v${VERBOSITY} -l ${LIVE} -t ${TREE} -f down || exit 111 
-echo [rc.shutdown completed successfully]
+66-echo [Starting rc.shutdown process ...]
+66-echo [Stop all services of tree ${TREE}]
+66-all -v${VERBOSITY} -l ${LIVE} -t ${TREE} -f down
+66-echo [rc.shutdown completed successfully]
