@@ -1,0 +1,22 @@
+#!@BINDIR@/sh -e
+
+## It's the responsability of the sysadmin to properly define
+## the configuration file. By default /etc/66/init.conf or
+## instructed by 66-boot via the -s option(see 66-boot documentation).
+CONF="$1"
+source "$CONF"
+
+echo [Starting stage2 process ...] 1>&/dev/console
+
+# initiate the database service
+echo [Initiate db of tree ${TREE}]
+66-init -v${VERBOSITY} -l ${LIVE} -t ${TREE} database || 
+{ echo "rc.init: fatal: please see the log at ${LIVE}/log/0/current" ; ${ISHELL} ; exit 111 ; }
+
+# start the database service
+echo [Start db services of tree ${TREE}]
+66-dbctl -v${VERBOSITY} -l ${LIVE} -t ${TREE} -u ||
+{ echo "rc.init: fatal: please see the log at ${LIVE}/log/0/current" ; ${ISHELL} ; exit 111 ; }
+
+
+

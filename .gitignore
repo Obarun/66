@@ -3,12 +3,17 @@
 *.a.*
 .deps/
 /66-all
+/66-boot
+/66-shutdown
+/66-shutdownd
+/66-hpr
 /66-dbctl
 /66-disable
 /66-enable
 /66-info
 /66-init
 /66-scandir
+/66-scanctl
 /66-start
 /66-stop
 /66-svctl
@@ -22,4 +27,6 @@
 /config.mak
 /execl-cmdline
 /66-envfile
+/66-echo
+/66-umountall
 /src/include/66/config.h

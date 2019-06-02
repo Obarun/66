@@ -1,5 +1,6 @@
 BIN_TARGETS := \
 66-scandir \
+66-scanctl \
 66-init \
 66-tree \
 66-dbctl \
@@ -13,10 +14,16 @@ BIN_TARGETS := \
 66-all \
 66-info \
 66-env \
+66-boot \
+66-shutdown \
+66-shutdownd \
+66-hpr \
 execl-cmdline \
 execl-envfile \
 66-writenv \
 66-getenv \
-66-gnwenv
+66-gnwenv \
+66-umountall \
+66-echo
 
 LIB_DEFS := 66=66
