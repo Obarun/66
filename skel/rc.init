@@ -1,12 +1,12 @@
 #!@BINDIR@/sh -e
 
 ## It's the responsability of the sysadmin to properly define
-## the configuration file. By default /etc/66/boot.conf or
-## instructed by 66-boot via the -f option.
+## the configuration file. By default /etc/66/init.conf or
+## instructed by 66-boot via the -s option(see 66-boot documentation).
 CONF="$1"
 source "$CONF"
 
-echo [Starting stage2 process ...] 1>/dev/console
+echo [Starting stage2 process ...] 1>&/dev/console
 
 # initiate the database service
 echo [Initiate db of tree ${TREE}]
