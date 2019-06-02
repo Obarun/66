@@ -217,7 +217,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hmf:s:d:b:", &l) ;
+			int opt = getopt_args(argc,argv, ">hms:e:d:b:l:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) sulogin("options must be set first","") ;
 			switch (opt)
