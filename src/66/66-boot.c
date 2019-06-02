@@ -171,9 +171,9 @@ static inline void run_stage2 (char const *const *envp, size_t envlen, char cons
 	setsid() ;
 	fd_close(1) ;
 	if (open(fifo, O_WRONLY) != 1)  /* blocks until catch-all logger is up */
-		strerr_diefu2sys(111,"open for writing fifo: ",fifo) ;
+		sulogin("open for writing fifo: ",fifo) ;
 	if (fd_copy(2, 1) == -1)
-		strerr_diefu1sys(111,"fd_copy stdout to stderr") ;
+		sulogin("copy stderr to stdout","") ;
 	xpathexec_r(newargv, envp, envlen, modifs, modiflen) ;
 }
 static inline void run_cmdline(char const *const *newargv, char const *const *envp, char const *msg,char const *arg)
@@ -323,7 +323,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		pid = fork() ;
 		if (pid == -1) sulogin("fork: ",rcinit) ;
 		if (!pid) run_stage2(newenvp, 2, envmodifs.s,envmodifs.len) ;
-		if (fd_copy(2, 1) == -1) strerr_diefu1sys(111,"redirect output file descriptor") ;
+		if (fd_copy(2, 1) == -1) sulogin("copy stderr to stdout","") ;
 		strerr_warni1x("Boot completed successfully") ;
 		strerr_warni1x("Supervision starts...") ;
 		xpathexec_r(newargv, newenvp, 2, envmodifs.s, envmodifs.len) ;
