@@ -234,6 +234,11 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
+	if (geteuid())
+	{
+		errno = EPERM ;
+		strerr_dief1sys(100, "nice try, peon") ;
+	}
 	parse_conf() ;
 	verbo[uint_fmt(verbo, VERBOSITY)] = 0 ;
 	bannerlen = strlen(banner) ;
@@ -257,14 +262,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		fd_close(1) ;
 		fd_close(2) ;
 		if (mount("dev", slashdev, "devtmpfs", MS_NOSUID | MS_NOEXEC, "") == -1)
-		{
-			int e = errno ;
-			open("/dev/null", O_RDONLY) ;
-			open("/dev/console", O_WRONLY) ;
-			fd_copy(2, 1) ;
-			errno = e ;
 			sulogin ("mount: ", slashdev) ;
-		}
+		
 		if (open("/dev/console", O_WRONLY) ||
 		fd_copy(1, 0) == -1 ||
 		fd_move(2, 0) == -1) return 111 ;
