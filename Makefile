@@ -117,7 +117,7 @@ $(DESTDIR)$(datadir)/%: skel/%
 	chmod $$mode $@ ; }
 	exec sed -e "s/@BINDIR@/$(subst /,\/,$(bindir))/g" \
 			-e "s/@EXECLINE_SHEBANGPREFIX@/$(subst /,\/,$(shebangdir))/g" $< > $@ 
-	
+	exec sed -e "s/@LIVEDIR@/$(subst /,\/,$(livedir))/g" $< > $@
 $(DESTDIR)$(system_log)/% $(DESTDIR)$(service_packager)/% $(DESTDIR)$(service_sys)/% $(DESTDIR)$(service_sysconf)/% : 
 	exec $(INSTALL) -D -m 0755 $< $@
 
