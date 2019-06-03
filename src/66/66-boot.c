@@ -161,7 +161,7 @@ static int is_mnt(char const *str)
 {
 	struct stat st;
 	size_t slen = strlen(str) ;
-	int is_not_mnt ;
+	int is_not_mnt = 0 ;
 	if (lstat(str,&st) < 0) sulogin("lstat: ",str) ;
 	if (S_ISDIR(st.st_mode))
 	{
@@ -223,7 +223,7 @@ static inline void make_cmdline(char const *prog,char const **add,int len,char c
 
 int main(int argc, char const *const *argv,char const *const *envp)
 {
-	unsigned int r, tmpfs = 0 ;
+	unsigned int r , tmpfs = 0 ;
 	size_t bannerlen, livelen ;
 	pid_t pid ;
 	char verbo[UINT_FMT] ;
@@ -353,6 +353,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (fd_copy(2, 1) == -1) sulogin("copy stderr to stdout","") ;
 		strerr_warni1x("Boot completed successfully") ;
 		strerr_warni1x("Supervision starts...") ;
+		fd_close(fdin) ;
 		xpathexec_r(newargv, newenvp, 2, envmodifs.s, envmodifs.len) ;
 	}
 }
