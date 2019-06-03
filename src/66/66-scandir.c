@@ -174,7 +174,16 @@ static void inline auto_fifo(char const *str)
 			strerr_diefu2sys(111,"create fifo: ",str) ;
 	}
 }
-
+static void inline auto_rm(char const *str)
+{
+	int r ;
+	r = scan_mode(str,S_IFDIR) ;
+	if (r > 0)
+	{
+		VERBO2 strerr_warni3x("removing ",str," ...") ;
+		if (rm_rf(str) < 0) strerr_diefu2sys(111,"remove: ",str) ;
+	}
+}
 static void inline log_perm(char const *str,uid_t *uid,gid_t *gid)
 {
 	if (!youruid(uid,str)) strerr_diefu2sys(111,"set uid of: ",str) ;
@@ -529,11 +538,6 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	}
 	else genv = envp ;
 	
-	/**swap to char [] to be able to freed stralloc*/
-	char ownerscan[scandir.len + 1] ;
-	memcpy(ownerscan,scandir.s,scandir.len) ;
-	ownerscan[scandir.len] = 0 ;
-	
 	r = scan_mode(scandir.s, S_IFDIR) ;
 	if (r < 0) strerr_dief3x(111,"scandir: ",scandir.s," exist with unkown mode") ;
 	if (!r && !create && !remove) strerr_dief3x(110,"scandir: ",scandir.s," doesn't exist") ;
@@ -544,23 +548,32 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		VERBO2 strerr_warni3x("create scandir ",scandir.s," ...") ;
 		create_scandir(live.s, scandir.s) ;
 	}
+	/**swap to char [] to be able to freed stralloc*/
+	char ownerscan[scandir.len + 1] ;
+	memcpy(ownerscan,scandir.s,scandir.len) ;
+	ownerscan[scandir.len] = 0 ;
 	if (r && create)
 	{
 		VERBO1 strerr_warni3x("scandir: ",scandir.s," already exist, keep it") ;
 		goto end ;
 	}
  	
-	if (remove && r)
+ 	r = scandir_ok(scandir.s) ;
+	if (r < 0) strerr_diefu2sys(111, "check: ", scandir.s) ;
+	if (r && remove) strerr_diefu3x(110,"remove: ",scandir.s,": is running")  ;
+	if (remove)
 	{
-		r = set_livetree(&live,OWNER) ;
-		if (r < 0) strerr_dief3x(110,"scandir: ", live.s, " must be an absolute path") ;
+		auto_rm(scandir.s) ;
+		/** /run/66/tree/uid */
+		if (!stralloc_copy(&scandir,&live)) retstralloc(111,"main") ;
+		r = set_livetree(&scandir,OWNER) ;
 		if (!r) strerr_diefu1sys(111,"set livetree directory") ;
-		r = scandir_ok(ownerscan) ;
-		if (r < 0) strerr_diefu2sys(111, "check: ", scandir.s) ;
-		if (r) strerr_diefu3x(110,"remove: ",ownerscan,": is running")  ;
-		
-		VERBO2 strerr_warni3x("removing ",ownerscan," ...") ;
-		if (rm_rf(ownerscan) < 0) strerr_diefu2sys(111,"remove: ",ownerscan) ;
+		auto_rm(scandir.s) ;
+		if (!stralloc_copy(&scandir,&live)) retstralloc(111,"main") ;
+		/** run/66/state/uid */
+		r = set_livestate(&scandir,OWNER) ;
+		if (!r) strerr_diefu1sys(111,"set livestate directory") ;
+		auto_rm(scandir.s) ;
 	}
 	end:
 	stralloc_free(&scandir) ;
