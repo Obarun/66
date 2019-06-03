@@ -44,7 +44,7 @@ static char *live = SS_LIVE ;
 static char const *path = SS_BOOT_PATH ;
 static char const *tree = SS_BOOT_TREE ;
 static char const *rcinit = SS_DATA_SYSDIR SS_BOOT_RCINIT ;
-static char const *banner = "\n[Starts boot process ...]" ;
+static char const *banner = "\n[Starts stage1 process ...]" ;
 static char const *slashdev = 0 ;
 static char const *envdir = 0 ;
 static char const *fifo = 0 ;
@@ -157,6 +157,25 @@ static void parse_conf(void)
 	stralloc_free(&src) ;
 }
 
+static int is_mnt(char const *str)
+{
+	struct stat st;
+	size_t slen = strlen(str) ;
+	int is_not_mnt ;
+	if (lstat(str,&st) < 0) sulogin("lstat: ",str) ;
+	if (S_ISDIR(st.st_mode))
+	{
+		dev_t st_dev = st.st_dev ; ino_t st_ino = st.st_ino ;
+		char p[slen+4] ;
+		memcpy(p,str,slen) ;
+		memcpy(p + slen,"/..",3) ;
+		p[slen+3] = 0 ;
+		if (!stat(p,&st))
+			is_not_mnt = (st_dev == st.st_dev) && (st_ino != st.st_ino) ;
+	}else return 0 ;
+	return is_not_mnt ? 0 : 1 ;
+}
+
 static void split_tmpfs(char *dst,char *str)
 {
 	size_t len = get_len_until(str+1,'/') ;
@@ -204,7 +223,7 @@ static inline void make_cmdline(char const *prog,char const **add,int len,char c
 
 int main(int argc, char const *const *argv,char const *const *envp)
 {
-	unsigned int tmpfs = 0 ;
+	unsigned int r, tmpfs = 0 ;
 	size_t bannerlen, livelen ;
 	pid_t pid ;
 	char verbo[UINT_FMT] ;
@@ -273,10 +292,18 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	{
 		char fs[livelen + 1] ;
 		split_tmpfs(fs,live) ;
-		strerr_warni2x("Mount: ",fs) ;
-		if (umount(fs) == -1) sulogin ("umount tmpfs directory: ",fs ) ;
-		if (mount("tmpfs", fs, "tmpfs", MS_NODEV | MS_NOSUID, "mode=0755") == -1) 
-			sulogin("mount: ",fs) ;
+		r = is_mnt(fs) ;
+		if (r)
+		{
+			strerr_warni2x("Umount: ",fs) ;
+			if (umount(fs) == -1) sulogin ("umount: ",fs ) ;
+		}
+		if (!r)
+		{
+			strerr_warni2x("Mount: ",fs) ;
+			if (mount("tmpfs", fs, "tmpfs", MS_NODEV | MS_NOSUID, "mode=0755") == -1) 
+				sulogin("mount: ",fs) ;
+		}
 	}
 	/** create scandir */
 	{
