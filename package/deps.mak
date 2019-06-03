@@ -71,7 +71,7 @@ src/lib66/scandir_ok.o src/lib66/scandir_ok.lo: src/lib66/scandir_ok.c src/inclu
 src/lib66/scandir_send_signal.o src/lib66/scandir_send_signal.lo: src/lib66/scandir_send_signal.c src/include/66/utils.h
 src/lib66/set_livedir.o src/lib66/set_livedir.lo: src/lib66/set_livedir.c src/include/66/config.h src/include/66/utils.h
 src/lib66/set_livescan.o src/lib66/set_livescan.lo: src/lib66/set_livescan.c src/include/66/config.h src/include/66/constants.h src/include/66/utils.h
-src/lib66/set_livestate.o src/lib66/set_livestate.lo: src/lib66/set_livestate.c src/include/66/config.h src/include/66/utils.h
+src/lib66/set_livestate.o src/lib66/set_livestate.lo: src/lib66/set_livestate.c src/include/66/config.h src/include/66/constants.h src/include/66/utils.h
 src/lib66/set_livetree.o src/lib66/set_livetree.lo: src/lib66/set_livetree.c src/include/66/config.h src/include/66/constants.h src/include/66/utils.h
 src/lib66/set_ownerhome.o src/lib66/set_ownerhome.lo: src/lib66/set_ownerhome.c src/include/66/config.h src/include/66/utils.h
 src/lib66/set_ownersysdir.o src/lib66/set_ownersysdir.lo: src/lib66/set_ownersysdir.c src/include/66/config.h src/include/66/utils.h
