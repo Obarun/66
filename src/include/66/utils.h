@@ -38,31 +38,19 @@ extern unsigned int VERBOSITY ;
 /** get_uidgid.c */
 extern int youruid(uid_t *passto,char const *owner) ;
 extern int yourgid(gid_t *passto,uid_t owner) ;
-
 extern char const *get_userhome(uid_t myuid) ;
-
 extern int set_ownerhome(stralloc *base,uid_t owner) ;
-
 extern int set_ownersysdir(stralloc *base,uid_t owner) ;
-
 extern int scandir_ok (char const *dir) ;
-
 extern int scandir_send_signal(char const *scandir,char const *signal) ;
-
 extern int set_livedir(stralloc *live) ;
-
 extern int set_livescan(stralloc *live,uid_t owner) ;
-
 extern int set_livetree(stralloc *live,uid_t owner) ;
-
+extern int set_livestate(stralloc *live,uid_t owner) ;
 extern int insta_check(char const *svname) ;
-
 extern int insta_create(stralloc *sasv,stralloc *sv, char const *src, int len) ;
-
 extern int insta_splitname(stralloc *sa,char const *name,int len,int what) ;
-
 extern int insta_replace(stralloc *sa,char const *src,char const *cpy) ;
-
 extern int read_svfile(stralloc *sasv,char const *name,char const *src) ;
 
 #endif

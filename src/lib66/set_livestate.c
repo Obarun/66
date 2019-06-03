@@ -1,5 +1,5 @@
 /* 
- * set_livescan.c
+ * set_livestate.c
  * 
  * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
  * 
@@ -23,21 +23,23 @@
 #include <66/config.h>
 #include <66/constants.h>
 
-int set_livescan(stralloc *scandir,uid_t owner)
+int set_livestate(stralloc *livestate,uid_t owner)
 {
 	int r ;
 	char ownerpack[UID_FMT] ;
-		
-	r = set_livedir(scandir) ;
+	
+	
+	r = set_livedir(livestate) ;
 	if (r < 0) return -1 ;
 	if (!r) return 0 ;
 		
 	size_t ownerlen = uid_fmt(ownerpack,owner) ;
 	ownerpack[ownerlen] = 0 ;
 	
-	if (!stralloc_cats(scandir,SS_SCANDIR "/")) retstralloc(0,"set_livescan") ;
-	if (!stralloc_cats(scandir,ownerpack)) retstralloc(0,"set_livescan") ;
-	if (!stralloc_0(scandir)) retstralloc(0,"set_livescan") ;
-	scandir->len--;
+	if (!stralloc_cats(livestate,SS_STATE + 1)) retstralloc(0,"set_livestate") ;
+	if (!stralloc_cats(livestate,"/")) retstralloc(0,"set_livestate") ;
+	if (!stralloc_cats(livestate,ownerpack)) retstralloc(0,"set_livestate") ;
+	if (!stralloc_0(livestate)) retstralloc(0,"set_livestate") ;
+	livestate->len--;
 	return 1 ;
 }

@@ -21,11 +21,12 @@
 #include <skalibs/types.h>
 
 #include <66/config.h>
+#include <66/constants.h>
 
 int set_livetree(stralloc *livetree,uid_t owner)
 {
 	int r ;
-	char ownerpack[256] ;
+	char ownerpack[UID_FMT] ;
 	
 	
 	r = set_livedir(livetree) ;
@@ -35,9 +36,9 @@ int set_livetree(stralloc *livetree,uid_t owner)
 	size_t ownerlen = uid_fmt(ownerpack,owner) ;
 	ownerpack[ownerlen] = 0 ;
 	
-	if (!stralloc_cats(livetree,"tree/")) retstralloc(0,"set_livedir") ;
-	if (!stralloc_cats(livetree,ownerpack)) retstralloc(0,"set_livedir") ;
-	if (!stralloc_0(livetree)) retstralloc(0,"set_livedir") ;
+	if (!stralloc_cats(livetree,SS_TREE "/")) retstralloc(0,"set_livetree") ;
+	if (!stralloc_cats(livetree,ownerpack)) retstralloc(0,"set_livetree") ;
+	if (!stralloc_0(livetree)) retstralloc(0,"set_livetree") ;
 	livetree->len--;
 	return 1 ;
 }
