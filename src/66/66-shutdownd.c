@@ -122,7 +122,7 @@ static void parse_conf(char const *confile,char *rcshut,size_t filesize)
 	{
 		char *key = saconf.s + genalloc_s(diuint32,&gaconf)[i].left ;
 		char *val = saconf.s + genalloc_s(diuint32,&gaconf)[i].right ;
-		if (!strcmp(key,"RCSHUT"))
+		if (!strcmp(key,"RCSHUTDOWN"))
 		{
 			memcpy(rcshut,val,strlen(val)) ;
 			rcshut[strlen(val)] = 0 ;
