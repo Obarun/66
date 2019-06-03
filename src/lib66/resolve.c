@@ -123,7 +123,7 @@ int ss_resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *
 	
 	stralloc sainsta = STRALLOC_ZERO ;
 	stralloc subdir = STRALLOC_ZERO ;
-	if (!stralloc_cats(&subdir,src)) goto errstra ;
+	//if (!stralloc_cats(&subdir,src)) goto errstra ;
 	
 	obr = insta = 0 ;
 	
@@ -144,7 +144,7 @@ int ss_resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *
 		if (d->d_name[0] == '.')
 		if (((d->d_name[1] == '.') && !d->d_name[2]) || !d->d_name[1])
 			continue ;
-	
+		
 		if (stat_at(fdsrc, d->d_name, &st) < 0)
 		{
 			VERBO3 strerr_warnwu3sys("stat ", src, d->d_name) ;
@@ -152,10 +152,12 @@ int ss_resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *
 		}
 		if (S_ISDIR(st.st_mode))
 		{
+			if (!stralloc_cats(&subdir,src)) goto errstra ;
 			if (!stralloc_cats(&subdir,d->d_name)) goto errdir ;
 			if (!stralloc_cats(&subdir,"/")) goto errdir ;
 			if (!stralloc_0(&subdir)) goto errdir ;
 			*found = ss_resolve_src(ga,sasrc,name,subdir.s,found) ;
+			stralloc_free(&subdir) ;
 			if (*found < 0) goto errdir ;
 		}
 		obr = 0 ;
@@ -180,6 +182,7 @@ int ss_resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *
 			
 			if (S_ISDIR(st.st_mode))
 			{
+				if (!stralloc_cats(&subdir,src)) goto errstra ;
 				if (!stralloc_cats(&subdir,d->d_name)) goto errdir ;
 				if (!stralloc_0(&subdir)) goto errdir ;
 				
@@ -196,6 +199,7 @@ int ss_resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *
 					if (!stralloc_catb(sasrc,subdir.s, subdir.len + 1)) goto errdir ;
 					if (!genalloc_append(diuint32,ga,&svtmp)) goto errdir ;
 				}
+				stralloc_free(&subdir) ;
 				break ;
 			}
 			else if(S_ISREG(st.st_mode))
