@@ -56,21 +56,26 @@ static char tlive[MAXENV+1] ;
 static char ttree[MAXENV+1] ;
 static char confile[MAXENV+1] ;
 static int fdin ;
+static char const *const *genv = 0 ;
 
 #define USAGE "66-boot [ -h ] [ -m ] [ -s skel ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]"
 
 static void sulogin(char const *msg,char const *arg)
 {
 	static char const *const newarg[2] = { SS_EXTBINPREFIX "sulogin" , 0 } ;
+	pid_t pid ;
+	int wstat ;
 	fd_close(0) ;
 	fd_close(1) ;
 	fd_close(2) ;
 	dup2(fdin,0) ;
-	fd_close(fdin) ;
 	open("/dev/console",O_WRONLY) ;
 	fd_copy(2,1) ;
 	if (*msg) strerr_warnwu2sys(msg,arg) ;
-	xpathexec (newarg) ; 
+	pid = child_spawn0(newarg[0],newarg,genv) ;
+	if (waitpid_nointr(pid,&wstat, 0) < 0)
+			strerr_diefu1sys(111,"wait for sulogin") ;
+	//xpathexec (newarg) ; 
 }
 
 static inline void info_help (void)
@@ -230,6 +235,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	cver = verbo ;
 	stralloc envmodifs = STRALLOC_ZERO ;
 	fdin = dup(0) ;
+	genv = envp ;
 	PROG = "66-boot" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
