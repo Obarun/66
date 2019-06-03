@@ -51,7 +51,7 @@ static int start_parser(char const *src,char const *svname,char const *tree, uns
 	stralloc sasv = STRALLOC_ZERO ;
 	
 	if (!parse_service_before(src,svname,tree,nbsv,&sasv,FORCE))
-		strerr_dief3x(111,"invalid service file: ",src,svname) ;
+		strerr_diefu4x(111,"parse service file: ",src,svname,": or its dependencies") ;
 	
 	stralloc_free(&sasv) ;
 	
@@ -128,11 +128,13 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 		if (r < 0) strerr_diefu2sys(111,"parse source directory: ",src) ;
 		if (!r)
 		{
+			found = 0 ;
 			src = SS_SERVICE_SYSDIR ;
 			r = ss_resolve_src(&gasrc,&sasrc,*argv,src,&found) ;
 			if (r < 0) strerr_diefu2sys(111,"parse source directory: ",src) ;
 			if (!r)
 			{
+				found = 0 ;
 				src = SS_SERVICE_PACKDIR ;
 				r = ss_resolve_src(&gasrc,&sasrc,*argv,src,&found) ;
 				if (r < 0) strerr_diefu2sys(111,"parse source directory: ",src) ;
