@@ -40,6 +40,7 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/iopause.h>
 #include <skalibs/skamisc.h>
+#include <skalibs/diuint32.h>
 
 #include <execline/config.h>
 
@@ -47,6 +48,7 @@
 
 #include <66/config.h>
 #include <66/constants.h>
+#include <66/environ.h>
 
 #define STAGE4_FILE "stage4"
 #define DOTPREFIX ".66-shutdownd:"
@@ -54,7 +56,7 @@
 #define DOTSUFFIX ":XXXXXX"
 #define DOTSUFFIXLEN (sizeof(DOTSUFFIX) - 1)
 #define SHUTDOWND_FIFO "fifo"
-static char const *rcshut = SS_DATA_SYSDIR ;
+static char const *conf = SS_DATA_SYSDIR ;
 static char const *live = 0 ;
 
 #define USAGE "66-shutdownd [ -h ] [ -l live ] [ -s skel ] [ -g gracetime ]"
@@ -94,21 +96,55 @@ static int mkrenametemp (int fd, char const *src, char *dst)
 	return mkfiletemp(dst, &renametemp, 0700, &at) ;
 }
 
-static inline void run_rcshut (char const *rcshut, char const *const *envp)
+ssize_t file_get_size(const char* filename)
+{
+	struct stat st;
+	errno = 0 ;
+	if (stat(filename, &st) == -1) return -1 ;
+	return st.st_size;
+}
+
+static void parse_conf(char const *confile,char *rcshut,size_t filesize)
+{
+	int r ;
+	unsigned int i = 0 ;
+	stralloc src = STRALLOC_ZERO ;
+	stralloc saconf = STRALLOC_ZERO ;
+	genalloc gaconf = GENALLOC_ZERO ;
+	r = openreadfileclose(confile,&src,filesize) ;
+	if(!r) strerr_diefu2sys(111,"open configuration file: ",confile) ; 
+	if (!stralloc_0(&src)) strerr_diefu1sys(111,"append stralloc configuration file") ;
+	
+	r = env_split(&gaconf,&saconf,&src) ;
+	if (!r) strerr_diefu2sys(111,"parse configuration file: ",confile) ;
+	
+	for (;i < genalloc_len(diuint32,&gaconf) ; i++)
+	{
+		char *key = saconf.s + genalloc_s(diuint32,&gaconf)[i].left ;
+		char *val = saconf.s + genalloc_s(diuint32,&gaconf)[i].right ;
+		if (!strcmp(key,"RCSHUT"))
+		{
+			memcpy(rcshut,val,strlen(val)) ;
+			rcshut[strlen(val)] = 0 ;
+		}
+	}
+	genalloc_free(diuint32,&gaconf) ;
+	stralloc_free(&saconf) ;
+	stralloc_free(&src) ;
+}
+
+static inline void run_rcshut (char const *const *envp)
 {
 	pid_t pid ;
-	size_t shutlen = strlen(rcshut) ;
-	char skel[shutlen + 1 + SS_BOOT_RCSHUTDOWN_LEN + 1] ;
-	memcpy(skel,rcshut,shutlen) ;
-	skel[shutlen] = '/' ;
-	memcpy(skel + shutlen + 1, SS_BOOT_RCSHUTDOWN,SS_BOOT_RCSHUTDOWN_LEN) ;
-	skel[shutlen + 1 + SS_BOOT_RCSHUTDOWN_LEN] = 0 ;
-	rcshut = skel ;
-	char confile[shutlen + 1 + SS_BOOT_CONF_LEN + 1] ;
-	memcpy(confile,rcshut,shutlen) ;
-	confile[shutlen] = '/' ;
-	memcpy(confile + shutlen + 1,SS_BOOT_CONF,SS_BOOT_CONF_LEN) ;
-	confile[shutlen + 1 + SS_BOOT_CONF_LEN] = 0 ;
+	size_t filesize, conflen = strlen(conf) ;
+	char confile[conflen + 1 + SS_BOOT_CONF_LEN] ;
+	memcpy(confile,conf,conflen) ;
+	confile[conflen] = '/' ;
+	memcpy(confile + conflen + 1, SS_BOOT_CONF, SS_BOOT_CONF_LEN) ;
+	confile[conflen + 1 + SS_BOOT_CONF_LEN] = 0 ;
+	filesize=file_get_size(confile) ;
+	char rcshut[filesize+1] ;
+	parse_conf(confile,rcshut,filesize) ;
 	char const *rcshut_argv[3] = { rcshut, confile, 0 } ;
 	pid = child_spawn0(rcshut_argv[0], rcshut_argv, envp) ;
 	if (pid)
@@ -271,14 +307,14 @@ int main (int argc, char const *const *argv, char const *const *envp)
 			{
 				case 'h' : info_help(); return 0 ;
 				case 'l' : live = l.arg ; break ;
-				case 's' : rcshut = l.arg ; break ;
+				case 's' : conf = l.arg ; break ;
 				case 'g' : if (!uint0_scan(l.arg, &grace_time)) strerr_dieusage(100,USAGE) ; break ;
 				default : strerr_dieusage(100,USAGE) ;
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
-	if (rcshut[0] != '/') strerr_dief3x(110, "skeleton: ",rcshut," must be an absolute path") ;
+	if (conf[0] != '/') strerr_dief3x(110, "skeleton: ",conf," must be an absolute path") ;
 	if (live && live[0] != '/') strerr_dief3x(110,"live: ",live," must be an absolute path") ;
 	else live = SS_LIVE ;
 	if (grace_time > 300000) grace_time = 300000 ;
@@ -309,7 +345,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 		if (r == -1) strerr_diefu1sys(111, "iopause") ;
 		if (!r)
 		{
-			run_rcshut(rcshut, envp) ;
+			run_rcshut(envp) ;
 			tain_now_g() ;
 			if (what != 'S') break ;
 			tain_add_g(&deadline, &tain_infinite_relative) ;

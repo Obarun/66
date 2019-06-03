@@ -1,4 +1,5 @@
 ${LIB66}
+-loblibs
 -ls6
 ${LIBUTMPS}
 -lskarnet

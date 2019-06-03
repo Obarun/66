@@ -26,7 +26,7 @@ src/66/66-parser.o src/66/66-parser.lo: src/66/66-parser.c src/include/66/parser
 src/66/66-scanctl.o src/66/66-scanctl.lo: src/66/66-scanctl.c src/include/66/utils.h
 src/66/66-scandir.o src/66/66-scandir.lo: src/66/66-scandir.c src/include/66/config.h src/include/66/constants.h src/include/66/environ.h src/include/66/utils.h
 src/66/66-shutdown.o src/66/66-shutdown.lo: src/66/66-shutdown.c src/include/66/config.h src/include/66/hpr.h
-src/66/66-shutdownd.o src/66/66-shutdownd.lo: src/66/66-shutdownd.c src/include/66/config.h src/include/66/constants.h
+src/66/66-shutdownd.o src/66/66-shutdownd.lo: src/66/66-shutdownd.c src/include/66/config.h src/include/66/constants.h src/include/66/environ.h
 src/66/66-start.o src/66/66-start.lo: src/66/66-start.c src/include/66/ssexec.h
 src/66/66-stop.o src/66/66-stop.lo: src/66/66-stop.c src/include/66/ssexec.h
 src/66/66-svctl.o src/66/66-svctl.lo: src/66/66-svctl.c src/include/66/ssexec.h
@@ -129,7 +129,7 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-shutdown: EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB}
 66-shutdown: src/66/66-shutdown.o ${LIB66} ${LIBUTMPS} -lskarnet 
 66-shutdownd: EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB}
-66-shutdownd: src/66/66-shutdownd.o ${LIB66} -ls6 ${LIBUTMPS} -lskarnet 
+66-shutdownd: src/66/66-shutdownd.o ${LIB66} -loblibs -ls6 ${LIBUTMPS} -lskarnet 
 66-start: EXTRA_LIBS :=
 66-start: src/66/66-start.o ${LIB66} -loblibs -ls6rc -ls6 -lskarnet 
 66-stop: EXTRA_LIBS :=
