@@ -469,7 +469,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			if (!stralloc_cats(&exec,shebang.s)) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec,EXECLINE_BINPREFIX "fdmove -c 2 1\n")) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec,ui.s)) retstralloc(0,"write_logger") ;
-			if (!stralloc_cats(&exec,S6_BINPREFIX "s6-log " "n")) retstralloc(0,"write_logger") ;
+			if (!stralloc_cats(&exec,S6_BINPREFIX "s6-log -d3 " "n")) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec,pback)) retstralloc(0,"write_logger") ;
 			if (!stralloc_cats(&exec," ")) retstralloc(0,"write_logger") ;
 			if (log->timestamp < NONE) 
@@ -489,7 +489,12 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 				VERBO3 strerr_warnwu3sys("write: ",ddst.s,"/run") ;
 				return 0 ;
 			}
-			
+			/** notification fd */
+			if (!file_write_unsafe(ddst.s,SS_NOTIFICATION,"3\n",2))
+			{
+				VERBO3 strerr_warnwu3sys("write: ",ddst.s,"/" SS_NOTIFICATION) ;
+				return 0 ;
+			}
 			if (sv->cname.itype == CLASSIC)
 			{
 				ddst.len-- ;
