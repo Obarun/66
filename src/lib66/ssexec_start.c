@@ -35,7 +35,7 @@
 static int empty = 0 ;
 static unsigned int RELOAD = 0 ;
 static unsigned int DEADLINE = 0 ;
-static char *SIG = "-U" ;
+static char *SIG = "-u" ;
 
 static genalloc nclassic = GENALLOC_ZERO ; //resolve_t type
 static genalloc nrc = GENALLOC_ZERO ; //resolve_t type
@@ -202,7 +202,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 	// be sure that the global var are set correctly
 	RELOAD = 0 ;
 	DEADLINE = 0 ;
-	SIG = "-U" ;
+	SIG = "-u" ;
 		
 	if (info->timeout) DEADLINE = info->timeout ;
 	

@@ -32,7 +32,7 @@
 
 static unsigned int DEADLINE = 0 ;
 static unsigned int UNSUP = 0 ;
-static char *SIG = "-D" ;
+static char *SIG = "-d" ;
 
 static ss_resolve_graph_t graph_unsup_cl = RESOLVE_GRAPH_ZERO ;
 static ss_resolve_graph_t graph_cl = RESOLVE_GRAPH_ZERO ;
@@ -115,7 +115,7 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 	// be sure that the global var are set correctly
 	DEADLINE = 0 ;
 	UNSUP = 0 ;
-	SIG = "-D" ;
+	SIG = "-d" ;
 		
 	if (info->timeout) DEADLINE = info->timeout ;
 	
