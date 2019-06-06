@@ -1,0 +1,145 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>The 66 Suite: 66-boot</title>
+    <meta name="Description" content="Detailed documentation for the 66-boot command which is part of the 66 software suite" />
+    <meta name="Keywords" content="66 command 66-boot service supervision supervise handles init system PID1" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">66</a><br />
+<a href="//obarun.org/">www.obarun.org</a>
+</p>
+
+<h1>66-boot</h1>
+
+	<p>
+      <tt>66-boot</tt> is a program that is meant to run as pid 1, as a <em>stage1 init</em>: it performs the necessary early system preparation and execs into <a href="66-scandir.html">66-scandir</a>.
+    </p>
+
+<h2> Interface </h2>
+	<pre>
+	66-boot [ -h ] [ -s <em>skel</em> ] [ -m ] [ -l <em>log_user</em> ] [ -e environment ] [ -d <em>dev</em> ] [ -b <em>banner</em> ]
+	</pre>
+
+	<p>
+      it performs some early preparation, spawns a process that will run the <em>rc.init</em> script, then execs into <a href="66-scandir.html">66-scandir</a>.
+    </p>
+    
+
+<h2> Options </h2>
+
+	<ul>
+		<li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
+		 
+		<li>
+			<tt>-s&nbsp;<em>skel</em>&nbsp;</tt>: path of the skeleton files. By default this will be <tt>/etc/66/</tt>. The default can also be changed at compile time by passing the <tt>--sysconfdir=<em>SYSDIR</em></tt> option to <tt>./configure</tt>. This directory <strong>must</strong> contains the necessaries skeleton files to properly boot the machine, without it the system <strong>will not boot</strong>. <em>skel</em> must be an absolute path.
+		</li>
+		 
+		<li> 
+			<tt>-m&nbsp;</tt>: umount the basename of the <em>LIVE</em> directory set into the <tt>init.conf</tt> skeleton file and mount a tmpfs on it.
+		</li>
+			 
+		<li> 
+			<tt>-l&nbsp;<em>log_user</em></tt></tt>&nbsp;: the catch-all logger will run as the <em>log_user</em> user. Default is <tt>root</tt>. 
+		</li>
+		<li> 
+			<tt>-e&nbsp;<em>environment</em></tt>&nbsp;: <em>stage 1 init</em> empties its environment before spawning <em>rc.init</em> skeleton file and executing into <a href="66-scandir.html">66-scandir</a>, in order to prevent those "kernel" environment variables from leaking into the whole process tree. The <em>PATH</em> variable will be the only one variable set into the environment. If you want to define environment variable use this options. <em>environment</em> must be an absolute path and reacts at the same as <a href="66-scandir.html">66-scandir <tt>-e</tt></a> option.
+		</li>
+		<li> 
+			<tt>-d&nbsp;<em>dev</em></tt>&nbsp;: mount a devtmpfs on <em>dev</em>. By default, no such mount is performed - it is assumed that a devtmpfs is automounted on <tt>/dev</tt> at boot time by the kernel or an initramfs.
+		</li>
+		
+		<li> 
+			<tt>-b&nbsp;<em>banner</em></tt>&nbsp;: prints <em>banner</em> to <tt>/dev/console</tt> at the start of the <em>stage 1 init</em> process. By default <tt>[Starts stage1 process ...]</tt>.
+		</li>
+	</ul>
+
+<h2> Early preparation </h2>
+
+	<p>
+		When booting a system, <tt>66-boot</tt> performs the following
+		operations:
+	</p>
+	<ul>
+		<li> It prints a banner to <tt>/dev/console</tt>. </li>
+		<li> It parse the <em>init.conf</em> skeleton file. </li>
+		<li> It chdirs to <tt>/</tt>. </li>
+		<li> It sets the umask to <em>initial_umask</em>. </li>
+		<li> It becomes a session leader. </li>
+		<li> It mounts a devtmpfs on <em>dev</em>, if requested. </li>
+		<li> It uses <tt>/dev/null</tt> as its stdin (instead of <tt>/dev/console</tt>).
+			<tt>/dev/console</tt> is still used, for now, as stdout and stderr. </li>
+		<li> It check the <em>LIVE</em> basename as valid mountpoint and unmount it in such case then mount a tmpfs on it if requested. If <em>LIVE</em> basename is not valid mountpoint it mount directly a tmpfs on it.</li>
+		<li> It create <em>LIVE</em> directory invocating <tt><em><a href="66-scandir.html">66-scandir -v VERBOSITY -l LIVE -b -c -s skel</a></tt></em> more <tt>-L</tt> user_log if requested.</li>
+		<li> It initiate the early services of <em>TREE</em> invocating <tt><em><a href="66-init.html">66-init -v VERBOSITY -l LIVE -t TREE classic</a></tt></em>.</li>
+		<li> It reads the initial environment from <em>environment</em> if requested. </li>
+		<li> It performs "the fifo trick", i.e. it redirects its stdout to the
+		catch-all logger's fifo, without blocking, before the catch-all
+		logger is even up (because it's a service that will be spawned a bit
+		later, when <tt><em><a href="66-scandir.html">66-scandir</a></em></tt> is executed). </li>
+		<li> It forks a child, also called <em>stage2</em>
+			<ul>
+				<li> The child blocks until the catch-all logger runs. </li>
+				<li> The child starts service of tree <em>TREE</em>. </li>
+				<li> The child becomes a session leader. </li>
+			</ul> 
+		</li>
+		<li> It also makes the catch-all logger's fifo its stderr. </li>
+		<li> It execs into <tt><em><a href="66-scandir.html">66-scandir -v VERBOSITY -l LIVE -u</a></tt></em>
+		with <tt>LIVE/scandir/0</tt> (default <tt>/run/66/scandir/0</tt>) as its scandir.</li>
+		<ul>
+			<li> <a href="66-scandir.html">66-scandir</a> pass the relay to <a href="https://skarnet.org/software/s6/s6-svscan.html">s6-svscan</a> which
+			spawns the early services that are defined in <em>TREE</em> where one of those services is <tt>scandir-log</tt>, which is
+			the catch-all logger. When this service is up, <tt>66-boot</tt>'s
+			child unblocks. </li>
+			<li> The child execs into <tt>rc.init</tt>.</li>
+		</ul>
+	</ul>
+	<p>
+		If one of the above processus fail, <tt>66-boot</tt> try to launch a Single-user login a.k.a. <em>sulogin</em> which let you the ability to fix the error. This case should not arrive.
+	</p>
+<h2>Exit codes</h2>
+	<p><tt>66-boot</tt> never exits. It spawns the <tt>rc.init</tt> script and execs into <tt>66-scandir</tt>, which runs forever until the machine stops or reboots.</p>
+<h2> Skeleton files </h2>
+	<p>Skeleton files are mandatories and must exist on your system to be able to boot and shutdown the machine properly. By default those files are installed at <tt>/etc/66</tt>. Use the <tt>--sysconfdir=<em>SYSDIR</em></tt> option at compile time to change it.</p>
+	<ul>
+		<li><tt>init&nbsp;</tt>: <tt>66-boot</tt> binary is not meant to be called directly, or be linked to the binary directory directly, because it takes command-line options. Thereby the <tt>init</tt> file is used to pass an options to <tt>66-boot</tt>. By default <tt>66-boot</tt> is launched without any options. This file <strong>should be copied</strong> by the administrator into the binary directory of your system.</li>
+		</li>
+		<li><tt>init.conf&nbsp;</tt>: this file contains a set of <tt>key=value</tt> pairs. <strong>All</strong> keys are mandatory and thereby the name of the key <strong>cannot</strong> be changed. This is the file used by an user to configure the boot process. By default:
+			<ul>
+				<li><tt>VERBOSITY=0&nbsp;</tt>: increase/decrease the verbosity of <em>stage1</em> process.</li>
+				<li><tt>LIVE=/run/66&nbsp;</tt>: create the scandir at <em>LIVE</em>. The value by default will depend of the <tt>--livedir=<em>live</em></tt> set a compile time. An absolute is expected as value.</li>
+				<li><tt>PATH=/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin&nbsp;</tt>: the initial value for the <em>PATH</em> environment variable, that will be transmitted to all the starting process unless it's overridden by a <em>PATH</em> declaration via the <tt>-e</tt> option. It is absolutely necessary for <a href="https://skarnet.org/software/execline/">execline</a>,<a href="https://skarnet.org/software/s6/">s6</a>, <a href="https://skarnet.org/software/s6-rc/">s6-rc</a> and all <tt>66 tools</tt> binaries to be accessible via <em>PATH</em>, else the machine will not boot.</li>
+				<li><tt>TREE=init&nbsp;</tt>: name of the <tt>tree</tt> to start. This <tt>tree</tt> should contain a set of service to bring up the machine to an operating system. 'classic' services will become earlier service at <a href="66-init.html">66-init</a> invocation. <em>stage2</em> will start all other kind of service defined into it. It's the responsability of the administrator to correctly set this tree.</li>
+				<li><tt>RCINIT=/etc/66/rc.init&nbsp;</tt>: This file is launched at the end of the <em>stage1</em> and run as <em>stage2</em>. It call <a href="66-init.html">66-init</a> to iniatiate all service of <em>TREE</em> except 'classic' which are already initiated on the <em>stage1</em> than invoke <a href="66-dbctl.html">66-dbctl</a> to bring up the services. An absolute path is expected as value pointing to the name of the file to run.</li>
+				<li><tt>RCSHUTDOWN=/etc/66/rc.shutdown&nbsp;</tt>: This is launched when a shutdown is requested also called <em>stage3</em>. It invoke <a href="66-all">66-all</a> to bring down all services of <em>TREE</em>. An absolute path is expected as value pointing to the name of the file to run.</li>
+				<li><tt>UMASK=0022&nbsp;</tt>: set the value of the initial file umask for all the starting processes, in octal.</li>
+				<li><tt>RESCAN=0&nbsp;</tt>: ask at <a href="https://skarnet.org/software/s6/s6-svscan.html">s6-svscan</a> to perform a scan every <em>RESCAN</em> milliseconds. It should be 0 at <em>stage1</em> but its here just in case. It is strongly discouraged to set <em>RESCAN</em> to a positive value under 500.</li>
+				<li><tt>ISHELL=/etc/66/ishell&nbsp;</tt>: run <em>ISHELL</em> in case of <em>stage2</em> crash. This file try to run a <em>sulogin</em>. An absolute path is expected as value pointing to the name of the file to run.</li>
+			</ul>
+		</li>
+		<li><tt>rc.init&nbsp;</tt>: this file is called by the child of <tt>66-boot</tt> to process the <em>stage2</em>. It invoke two command:
+			<ul>
+				<li><tt>66-init -v${VERBOSITY} -l ${LIVE} -t ${TREE} database</tt> will initiate 'bundle' and 'atomic' service of the <em>TREE</em>. If the process fail, it try to run <em>ISHELL</em> as command to rescue.</li>
+				<li><tt>66-dbctl -v${VERBOSITY} -l ${LIVE} -t ${TREE} -u</tt> will bring up all 'bundle' and 'atomic' service of the <em>TREE</em>. If the process fail, it try to run <em>ISHELL</em> as command to rescue.</li>
+			</ul>
+		</li>
+		<li><tt>rc.shutdown&nbsp;</tt>: this file is called at shudown request when the administrator runs the <tt>shutdown</tt>, <tt>halt</tt>, <tt>poweroff</tt> or <tt>reboot</tt> command. It invoke one command:
+			<ul>
+				<li><tt>66-all -v${VERBOSITY} -l ${LIVE} -t ${TREE} -f down</tt> will bring down all <em>services</em> for all <em>tree</em> marked enabled.</li>
+			</ul>
+		
+		</li>
+		<li><tt>ishell&nbsp;</tt>: this file is called by <tt>rc.init</tt> in case of crash of the <em>stage2</em> and try to run a <em>sulogin</em>.</li>
+		<li><tt>halt&nbsp;</tt>: safe wrapper around <a href="66-hpr">66-hpr -h</a> command and accept any command options of it. This is the file called to halt the system and <strong>should be copied or symlinked</strong> by the administrator into the binary directory of your system</li>
+		<li><tt>poweroff&nbsp;</tt>: safe wrapper around <a href="66-hpr">66-hpr -p</a> command and accept any command options of it. This is the file called to poweroff the system and <strong>should be copied or symlinked</strong> by the administrator into the binary directory of your system</li>
+		<li><tt>reboot&nbsp;</tt>: safe wrapper around <a href="66-hpr">66-hpr -r</a> command and accept any command options of it. This is the file called to reboot the system and <strong>should be copied or symlinked</strong> by the administrator into the binary directory of your system</li>
+		<li><tt>shutdown&nbsp;</tt>: safe wrapper around <a href="66-shutdown">66-shutdown</a> command and accept any command options of it. This is the file called to shutdown the system and <strong>should be copied or symlinked</strong> by the administrator into the binary directory of your system</li>
+	</ul>
+</body>
+</html>
