@@ -375,7 +375,7 @@ static void svc_listen(unsigned int nsv)
 					svc_listen_less(0,state,did,&j,i) ;
 				sa.len = 0 ;
 				r = ftrigr_checksa(&fifo,svc->ids, &sa) ;
-				if (r < 0) { VERBO3 strerr_warnwu1sys("check fifo") ; goto end ; } 
+				if (r < 0) strerr_diefu1sys(111,"check fifo") ; 
 				else if (r)
 				{
 					(*ndeath)-- ;
