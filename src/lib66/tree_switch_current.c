@@ -34,7 +34,7 @@
 int tree_switch_current(char const *base, char const *treename)
 {
 	ssize_t r ;
-	char pack[256] ;
+	char pack[UID_FMT] ;
 	size_t baselen = strlen(base) ;
 	size_t treelen = strlen(treename) ;
 	size_t newlen ;

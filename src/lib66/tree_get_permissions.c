@@ -31,7 +31,7 @@ int tree_get_permissions(char const *tree,uid_t owner)
 {
 	ssize_t r ;
 	size_t treelen = strlen(tree) ;
-	char pack[256] ;
+	char pack[UID_FMT] ;
 	char tmp[treelen + SS_RULES_LEN + 1] ;
 	
 	uint32_pack(pack,owner) ;
