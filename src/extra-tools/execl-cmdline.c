@@ -23,10 +23,25 @@
 #include <skalibs/env.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/sgetopt.h>
+#include <skalibs/buffer.h>
 
 #include <execline/execline.h>
 
 #define USAGE "execl-cmdline [ -s ] { command... }"
+
+static inline void info_help (void)
+{
+  static char const *help =
+"execl-envfile <options> { command... }\n"
+"\n"
+"options :\n"
+"	-h: print this help\n" 
+"	-s: split command\n"
+;
+
+ if (buffer_putsflush(buffer_1, help) < 0)
+    strerr_diefu1sys(111, "write to stdout") ;
+}
 
 int clean_val_doublequoted(genalloc *ga,char const *line)
 {
@@ -103,16 +118,18 @@ int main(int argc, char const **argv, char const *const *envp)
 		subgetopt_t l = SUBGETOPT_ZERO ;
 		for (;;)
 		{
-		  int opt = subgetopt_r(argc, argv, "s", &l) ;
+		  int opt = subgetopt_r(argc, argv, "hs", &l) ;
 		  if (opt == -1) break ;
 		  switch (opt)
 		  {
+			case 'h' : info_help() ; return 0 ;
 			case 's' : split = 1 ; break ;
 			default : exitusage(USAGE) ;
 		  }
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
+	if (!argc) exitusage(USAGE) ;
 	argc1 = el_semicolon(argv) ;
 	if (argc1 >= argc) strerr_dief1x(100, "unterminated block") ;
 	argv[argc1] = 0 ;
