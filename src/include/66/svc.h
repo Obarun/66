@@ -23,7 +23,7 @@
 #include <66/resolve.h>
 #include <66/ssexec.h>
 
-typedef struct ss_resolve_sig_s ss_resolve_sig_t, *ss_resovle_sig_t_ref ;
+typedef struct ss_resolve_sig_s ss_resolve_sig_t, *ss_resolve_sig_t_ref ;
 struct ss_resolve_sig_s
 {
 	ss_resolve_t res ;
