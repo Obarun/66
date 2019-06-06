@@ -13,7 +13,7 @@
  */
  
 #include <string.h>
-//#include <stdio.h>
+#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -63,7 +63,7 @@ int svc_sanitize(ssexec_t *info, char const *const *envp)
 			VERBO1 strerr_warnwu1sys("publish service graph") ;
 			goto err ;
 		}
-		if (!svc_unsupervise(info,&graph_reload_cl.sorted,"-D",envp))	goto err ;
+		if (!svc_unsupervise(info,&graph_reload_cl.sorted,"-d",envp))	goto err ;
 		genalloc_reverse(ss_resolve_t,&graph_reload_cl.sorted) ;
 		if (!svc_init(info,sares.s,&graph_reload_cl.sorted))
 		{
@@ -228,7 +228,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 			switch (opt)
 			{
 				case 'r' : 	if (RELOAD) exitusage(usage_start) ; RELOAD = 1 ; SIG = "-r" ; break ;
-				case 'R' : 	if (RELOAD) exitusage(usage_start) ; RELOAD = 2 ; SIG = "-U" ; break ;
+				case 'R' : 	if (RELOAD) exitusage(usage_start) ; RELOAD = 2 ; SIG = "-u" ; break ;
 				default : exitusage(usage_start) ; 
 			}
 		}
