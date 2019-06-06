@@ -20,6 +20,7 @@ BIN_TARGETS := \
 66-hpr \
 execl-cmdline \
 execl-envfile \
+execl-subuidgid \
 66-writenv \
 66-getenv \
 66-gnwenv \
