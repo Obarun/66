@@ -100,7 +100,7 @@ char const *help_stop =
 "	-K: kill the service(s) and keep it down\n"
 ;
 
-char const *usage_svctl = "66-svctl [ -h ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -n death ] [ -u | U | d | D | r | R | K | X ] service(s)" ;
+char const *usage_svctl = "66-svctl [ -h ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -n death ] [ -u | d | r | K | X ] service(s)" ;
 
 char const *help_svctl =
 "66-svctl <options> tree\n"
@@ -113,11 +113,8 @@ char const *help_svctl =
 "	-T: service timeout\n"
 "	-n: number of death\n"
 "	-u: bring up the service(s)\n"
-"	-U: really up\n"
 "	-d: bring down the service(s)\n"
-"	-D: really down\n"
 "	-r: reload\n"
-"	-R: reload and really up\n"
 "	-X: bring down the service(s) and the kill his supervisor\n"
 "	-K: kill the service(s) and keep it down\n"
 ;

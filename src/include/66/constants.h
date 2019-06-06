@@ -31,6 +31,8 @@
 #define SS_TREE_LEN (sizeof SS_TREE - 1)
 #define SS_NOTIFICATION "notification-fd"
 #define SS_NOTIFICATION_LEN (sizeof SS_NOTIFICATION - 1)
+#define SS_MAXDEATHTALLY "max-death-tally"
+#define SS_MAXDEATHTALLY_LEN (sizeof SS_MAXDEATHTALLY - 1)
 /**tree dir*/
 #define SS_RULES "/rules"
 #define SS_RULES_LEN (sizeof SS_RULES - 1)

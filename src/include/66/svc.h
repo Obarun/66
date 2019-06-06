@@ -23,7 +23,7 @@
 #include <66/resolve.h>
 #include <66/ssexec.h>
 
-typedef struct ss_resolve_sig_s ss_resolve_sig_t, *ss_resovle_sig_t_ref ;
+typedef struct ss_resolve_sig_s ss_resolve_sig_t, *ss_resolve_sig_t_ref ;
 struct ss_resolve_sig_s
 {
 	ss_resolve_t res ;
@@ -77,7 +77,7 @@ enum sigactions_e
 
 extern int svc_switch_to(ssexec_t *info,unsigned int where) ;
 extern int svc_init(ssexec_t *info,char const *src, genalloc *ga) ;
-extern int svc_init_pipe(ftrigr_t *fifo,genalloc *gasv) ;
+extern int svc_init_pipe(ftrigr_t *fifo,genalloc *gasv,tain_t *deadline) ;
 extern int svc_send(ssexec_t *info,genalloc *ga,char const *sig,char const *const *envp) ;
 extern int svc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *const *envp) ;
 
