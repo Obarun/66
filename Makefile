@@ -89,7 +89,7 @@ install-libexec: $(LIBEXEC_TARGETS:%=$(DESTDIR)$(libexecdir)/%)
 install-bin: $(BIN_TARGETS:%=$(DESTDIR)$(bindir)/%)
 install-lib: $(STATIC_LIBS:lib%.a.xyzzy=$(DESTDIR)$(libdir)/lib%.a)
 install-include: $(ALL_INCLUDES:src/include/$(package)/%.h=$(DESTDIR)$(includedir)/$(package)/%.h)
-install-data: $(ALL_DATA:skel/%=$(DESTDIR)$(datadir)/%)
+install-data: $(ALL_DATA:skel/%=$(DESTDIR)$(sysconfdir)/%)
 
 ifneq ($(exthome),)
 
@@ -110,7 +110,7 @@ $(DESTDIR)$(sproot)/library.so/lib%.so.$(version_M): $(DESTDIR)$(dynlibdir)/lib%
 
 endif
 
-$(DESTDIR)$(datadir)/%: skel/% 
+$(DESTDIR)$(sysconfdir)/%: skel/% 
 	exec $(INSTALL) -D -m 644 $< $@ 
 	grep -- ^$(@F) < package/modes | { read name mode owner && \
 	if [ x$$owner != x ] ; then chown -- $$owner $@ ; fi && \
