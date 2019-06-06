@@ -17,7 +17,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <unistd.h>//access
-//#include <stdio.h>
+#include <stdio.h>
 //#include <stdlib.h>
 
 #include <oblibs/obgetopt.h>
@@ -242,10 +242,13 @@ static int announce(ss_resolve_sig_t *svc)
 	char *sv = svc->res.sa.s + svc->res.name ;
 	/** special case time out reached or number execeeded,
 	 *  last check with s6-svstat framboise*/
-	if (r == 0 || r == 4)
+	if (r == 0 || r == 4 || r == 5)
 	{
 		int e = handle_signal_svc(svc) ;
-		if (!e) r = r == 0 ? 2 : 4 ;
+		if (!e){
+			if (!r) r = 2 ;
+			else r = r ;
+		}
 		else r = r == 0 ? 0 : 1 ;
 		svc->state = r ;
 	}
@@ -261,7 +264,10 @@ static int announce(ss_resolve_sig_t *svc)
 				break ;
 		case 4: VERBO1 strerr_warnwu3x((svc->sig > 3) ? "stop: " : "start: ",sv, ": number of try exceeded") ;
 				break ;
-		case-1: VERBO1 strerr_warnw3x("unexpected data in state file of: ",sv," -- please make a bug report") ;
+		case 5: VERBO1 strerr_warnwu3x((svc->sig > 3) ? "stop: " : "start: ",sv, ": time out reached") ;
+				break ;
+		case-1: 
+		default:VERBO1 strerr_warnw3x("unexpected data in state file of: ",sv," -- please make a bug report") ;
 				break ;
 	}		
 	return r ;
@@ -323,9 +329,9 @@ static int handle_signal_pipe(genalloc *gakeep)
 }
 static int compute_timeout(tain_t *start,tain_t *tsv)
 {
-	tain_t now ;
-	tain_t tpass ;
-	tain_now(&now) ;
+	tain_t now,tpass ;
+	tain_now_g() ;
+	tain_copynow(&now) ;
 	tain_sub(&tpass,&now,start) ;
 	if (tain_less(tsv,&tpass)) return 0 ;
 	return 1 ;	
@@ -337,10 +343,9 @@ static void svc_listen_less(int state_val, int *state,unsigned int *did,unsigned
 	did[pos] = 1 ;
 	(*loop)--;
 }
-static void svc_listen(unsigned int nsv)
+static void svc_listen(unsigned int nsv,tain_t *deadline)
 {
 	int r ;
-	tain_t t ;
 	tain_t start ;
 	stralloc sa = STRALLOC_ZERO ;
 	iopause_fd x = { .fd = ftrigr_fd(&fifo), .events = IOPAUSE_READ } ;
@@ -349,15 +354,16 @@ static void svc_listen(unsigned int nsv)
 	unsigned int *ndeath = 0, i, j ;
 	unsigned int did[nsv] ;
 	i = j = nsv ;
-	tain_now(&start) ;
-	tain_from_millisecs(&t,SV_DEADLINE) ;
-	tain_add_g(&t,&t) ;
+	
+	tain_now_g() ;
+	tain_copynow(&start) ;
+		
 	while(i--)
 		did[i] = 0 ;
 
 	while(j)
 	{
-		r = iopause_g(&x, 1, &t) ;
+		r = iopause_g(&x, 1, deadline) ;
 		if (r < 0) strerr_dief1sys(111,"listen iopause") ;
 		/** timeout is not a error , the iopause process did right*/ 
 		else if (!r) strerr_dief1sys(111,"listen time out") ;
@@ -372,7 +378,7 @@ static void svc_listen(unsigned int nsv)
 				state = &svc->state ;
 				ndeath = &svc->ndeath ;
 				if (!compute_timeout(&start,&pidindex[i].sv->deadline))
-					svc_listen_less(0,state,did,&j,i) ;
+				{ svc_listen_less(5,state,did,&j,i) ; continue ; }
 				sa.len = 0 ;
 				r = ftrigr_checksa(&fifo,svc->ids, &sa) ;
 				if (r < 0) strerr_diefu1sys(111,"check fifo") ; 
@@ -387,9 +393,7 @@ static void svc_listen(unsigned int nsv)
 			}			
 		}
 	}
-	
-	end: 
-		stralloc_free(&sa) ;
+	stralloc_free(&sa) ;
 }
 /* @return 111 unable to control
  * @return 100 "something is wrong with the S6_SUPERVISE_CTLDIR directory. errno reported
@@ -424,7 +428,7 @@ static void svc_async(unsigned int i,unsigned int nsv)
 	return ;
 }
 
-int doit (int spfd, genalloc *gakeep, tain_t *dead)
+int doit (int spfd, genalloc *gakeep, tain_t *deadline)
 {
 	iopause_fd x = { .fd = spfd, .events = IOPAUSE_READ } ;
 	unsigned int nsv = genalloc_len(ss_resolve_sig_t,gakeep) ;
@@ -445,10 +449,10 @@ int doit (int spfd, genalloc *gakeep, tain_t *dead)
 		svc_async(i,nsv) ;
 		i++ ;
 	}
-	svc_listen(nsv) ;
+	svc_listen(nsv,deadline) ;
 	while (npids)
 	{
-		int r = iopause_g(&x,1,dead) ;
+		int r = iopause_g(&x,1,deadline) ;
 		if (r < 0) strerr_diefu1sys(111,"iopause") ;
 		if (!r) strerr_dief1x(111,"time out") ;
 		if (!handle_signal_pipe(gakeep)) exitcode = 0 ;
