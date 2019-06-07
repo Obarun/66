@@ -18,23 +18,24 @@
 <h1>66-scandir</h1>
 
 	<p>
-      This command handles the scandir for a given user. It is designed to be either root or a branch of the <em>supervision tree</em>.
+      This command handles the <tt><em>scandir</em></tt> for a given user. It is designed to be either root or a branch of the <em>supervision tree</em>.
     </p>
 
 <h2> Interface </h2>
 	<pre>
-	66-scandir [ -h help ] [ -v <em>verbosity</em> ] [ -b boot ] [ -l <em>live</em> ] [ -t <em>rescan</em> ] [ -2 <em>stage2.tini</em> ] [ -3 <em>stage3</em> ] [ -e <em>environment</em> ] [ -c create ] [ -r remove ] [ -u up ] [ -s <em>signal</em> ] owner
+	66-scandir [ -h help ] [ -v <em>verbosity</em> ] [ -b ] [ -l <em>live</em> ] [ -t <em>rescan</em> ] [ -L <em>log_user</em> ] [ -s <em>skel</em> ] [ -e <em>environment</em> ] [ -c | r | u ] owner
 	</pre>
 
 	<p>
-      66-scandir will handle or create the scandir for the given <tt><em>owner</em></tt>
+      66-scandir create or start the <tt><em>scandir</em></tt> (a.k.a directory containing a 
+      collection of <a href="https://skarnet.org/software/s6/s6-supervise.html">s6-supervise processes</a>) for the given <tt><em>owner</em></tt>
       depending on the provided options. Note that <tt><em>owner</em></tt>
       can be any valid user on the system. However, the given user must have
       sufficient permissions to create the necessary directories at its location. 
       That is <tt>/run/66</tt> by default or the resulting path provided by the <tt>-l</tt> option.
       If <tt><em>owner</em></tt> is ommited, the user of the current process will be used instead.
     </p>
-
+	
 <h2> Options </h2>
 
 	<ul>
@@ -49,10 +50,11 @@
 	 
 	 <li>
 		<tt>-b&nbsp;</tt>&nbsp;: create specific files for boot. Only root
-		user can use this option - see <a href="#svscanctld">.s6-svscan control directory"</a>.
+		user can use this option. This option is not meant to be used directly even with root. 
+		Instead the <a href="66-boot.html">66-boot</a> program calls it at boot time.
 	 </li>
 	 <li> 
-		<tt>-l&nbsp;<em>live</em></tt>&nbsp;: create the scandir at <em>live</em>. Default is
+		<tt>-l&nbsp;<em>live</em></tt>&nbsp;: create the <tt><em>scandir</em></tt> at <em>live</em>. Default is
 		<tt>/run/66</tt>. The default can also be changed at compile-time by
 		passing the <tt>--livedir=<em>live</em></tt> option to <tt>./configure</tt>. 
 		An absolute path is expected and should be under a writable filesystem 
@@ -63,38 +65,27 @@
 		<tt>-t&nbsp;<em>rescan</em></tt>&nbsp;: perform a scan every <tt><em>rescan</em></tt>
 		milliseconds. If <tt><em>rescan</em></tt> is set to <tty>0</tty> (the default), automatic scans are never performed after
 		the first one and s6-svscan will only detect new services by 
-		issuing either <tt><em>66-scandir -s reload</em></tt> 
+		issuing either <tt><em>66-scanctl reload</em></tt> 
 		or <tt><em><a href="https://skarnet.org/software/s6/s6-svscanctl.html">s6-svscanctl -a</a>
 		 </em></tt>. It is <em>strongly</em> discouraged to set <tt><em>rescan</em></tt> 
 		 to a positive value under 500.
 	 </li>
 	 
 	 <li> 
-		<tt>-2&nbsp;<em>stage2.tini</em></tt>&nbsp;: make the command to 
-		execute a script with configurable handlers when the scandir receives a signal.
-		An absolute path is expected. This option is mandatory if passing <em>-b</em>
-		and cannot be used on its own. If not set, the default script at
-		<tt><em>/etc/66/stage2.tini</em></tt> will be called.
-		None of the 66 tools will provide such a script. It's the responsability
-		of the system administrator to provide it. 	
+		<tt>-s&nbsp;<em>skel</em></tt>&nbsp;: path directory of <em>skel</em>(a.k.a skeleton) files. An absolute path is expected.
+		This option is not meant to be used directly even with root. Instead the <a href="66-boot.html">66-boot</a> program calls it at boot time.
 	 </li>
 	 
 	 <li> 
-		<tt>-3&nbsp;<em>stage3</em></tt>&nbsp;: script to execute when
-		the scandir is asked to be shut down. An absolute path is expected. 
-		This option is mandatory if passing <em>-b</em> and cannot be 
-		used on its own. If not set, the default script at 
-		<tt><em>/etc/66/stage3</em></tt> will be called.
-		None of the 66 tools will provide such a script. It's the responsability
-		of the system administrator to provide it. 
+		<tt>-L&nbsp;<em>log_user</em></tt>&nbsp;: the catch-all logger will run as the <em>log_user</em> user. Default is <tt>root</tt>. 
 	 </li>
 		 
 	 <li>
 		<tt>-e&nbsp;<em>environment</em></tt>&nbsp;: merge the current 
-		environment variables of the scandir with variables found in the 
+		environment variables of the <tt><em>scandir</em></tt> with variables found in the 
 		<em>environment</em> directory. Any file in <tt><em>environment</em></tt> 
 		not beginning with a dot and not containing the '=' character will 
-		be read. An absolute path is expected. 
+		be read and parsed. An absolute path is expected. 
 	 </li>
 	 
 	 <li>
@@ -103,55 +94,17 @@
 	 </li>
 	
 	 <li>
-		<tt>-r&nbsp;</tt>: remove the scandir directory at <em>live</em>. 
+		<tt>-r&nbsp;</tt>: remove the <tt><em>scandir</em></tt> directory at <em>live</em>. 
 		If it was already started with <tt><em>-u</em></tt> it must first 
-		be stopped sending a signal with e.g. <tt><em>&#8209;s quit</em></tt> - see <a href="#signals">"Signals"</a>.
+		be stopped sending a signal with e.g. <a href="66-scanctl"><tt><em>66-scanctl quit</em></tt></a>.
 	 </li>
 	
 	 <li>
-		<tt>-u&nbsp;</tt>&nbsp;: start the scandir directory at <em>live</em>.
+		<tt>-u&nbsp;</tt>&nbsp;: start the <tt><em>scandir</em></tt> directory at <em>live</em> invocating the <a href="https://skarnet.org/software/s6/s6-svscan.html">s6-svscan</a> program.
 	 </li>
+	 </ul>
 	 
-	 <li> 
-		<tt>-s&nbsp;<em>signal</em></tt>&nbsp;: send a <em>signal</em> to the scandir directory. 
-		The signal can be any valid <tt><a href="https://skarnet.org/software/s6/s6-svscanctl.html">s6&#8209;svscanctl</a></tt> 
-		command or a predefined keyword - see <a href="#signals">"Signals</a>.
-	 </li>
-	</ul>
-
-<h2 id=signals> Signals </h2>
-
-	<p>The <em>-s</em> option sends a signal to the scandir and is built 
-	around the <a href="https://skarnet.org/software/s6/s6-svscanctl.html">s6-svscanctl</a>. 
-	It therefore acts in the same way.  Any signal accepted by <tt><em>s6-svscanctl</em></tt> 
-	can be passed just without the '-' character. If, for example, you 
-	want to send a <tt><em>-t</em></tt> signal, you need to use: 
-	<tt><em>66&#8209;scandir&nbsp;&#8209;s&nbsp;t</em></tt>. A series 
-	of commands is also accepted in the same way: <tt><em>66&#8209;scandir&nbsp;&#8209;s&nbsp;st</em></tt>. 
-	A few convenient keywords were added to avoid having to remember 
-	basic and useful series of commands like:
-	<ul>
-		<li><tt>reload&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;an</em></strong></tt></li>
-		<li><tt>interrupt&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;i</em></strong></tt></li>
-		<li><tt>quit&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;q</em></strong></tt></li>
-		<li><tt>halt&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;0</em></strong></tt></li>
-		<li><tt>reboot&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;6</em></strong></tt></li>
-		<li><tt>poweroff&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;7</em></strong></tt></li>
-	</ul>
-	</p>
-
-	<h3>Signal usage examples</h3>
-	<pre>   66&#8209;scandir &#8209;s reload</pre>
-	<p>
-		Updates the process supervision tree
-		to exactly match the services listed in <tt>scandir</tt>.
-	</p>
-	<p>
-		This command is strictly equal to :
-	</p>
-	<pre>   s6&#8209;svscanctl &#8209;an /service</pre>
-
-<h2>Scandir creation process</h2>
+<h2> Scandir creation process</h2>
 
 	<p>
       When creating the <tt><em>scandir</em></tt> with the <tt>&#8209;c</tt> 
@@ -174,8 +127,11 @@
 		</li>
 		<li>
 			<tt>/run/66/log/0&nbsp;</tt>: stores the catch-all logger 
-			when the scandir is created for a boot procedure with the 
+			when the <tt><em>scandir</em></tt> is created for a boot procedure with the 
 			<tt>&#8209;b</tt> option.
+		</li>
+		<li>
+			<tt>/run/66/state/0&nbsp;</tt>: stores inner 66 program ecosystem files.
 		</li>
 	</ul>
 	</p>
@@ -191,211 +147,35 @@
       <li>
         <tt>/run/66/tree/1000</tt>
       </li>
+      <li>
+        <tt>/run/66/state/1000</tt>
+      </li>
     </ul>
-    <p>
-      For regular users the log directory can not be set due to missing 
-      permissions. Instead the default location at <tt>/var/log/scandir&#8209;1000</tt> 
-      will be used. The default log directory can be changed at compile 
-      time by passing the following options to <tt>./configure</tt>:
-    </p>
-    <ul>
-      <li><tt>--with-system-log=<em>DIR</em>&nbsp;</tt>: for root permissions</li>
-       <li><tt>--with-user-log=<em>DIR</em>&nbsp;</tt>: for user permissions.</li>
-    </ul>
+   
 	<p>
       If a <tt><em>scandir</em></tt> already exists for the given user 
       it will prevent the creation when issuing <tt>66&#8209;scandir&nbsp;&#8209;c</tt>.
       If you want to create a different <tt><em>scandir</em></tt> for 
-      the same <tt><em>owner</em></tt> you must delete it first with <tt>&#8209;r</tt>.
+      the same <tt><em>owner</em></tt> at the same <em>live</em> location you must delete it first with <tt>&#8209;r</tt>.
     </p>
 
-<h3 id="svscanctld">.s6&#8209;svscan control directory</h3>
+<h2> Environment configuration</h2>
 
 	<p>
-      <tt><a href="https://skarnet.org/software/s6/s6-svscan.html">s6&#8209;svscan</a></tt> 
-      expects to find one or more control files when it receives a signal. 
-      Those files are not mandatory and are not created by any s6 program 
-      but are useful to control several processes like <tt>shutdown</tt> 
-      for example. <tt><em>66&#8209;scandir</em></tt> will take care of 
-      this and create the following files at <tt>/run/66/scandir/0/.s6&#8209;svscan</tt>. 
-      Depending on whether the <tt>-b</tt> option is passed or not the 
-      files will change as outlined below.
-    </p>
-
-    <p>
-      The path of the scandir in the control file is automatically adjusted 
-      when altered with the <tt>-l <em>live</em></tt> option.
-    </p>
-
-    <h4>crash file</h4>
-
-    <p>
-      With or without the <tt>-b</tt> option the file will look like this:
-    </p>
-
-    <pre>   #!/usr/bin/execlineb -P
-   redirfd -r 0 /dev/console
-   redirfd -w 1 /dev/console
-   fdmove -c 2 1
-   s6-echo -- "scandir /run/66/scandir/0 crashed ... "
-   /bin/sh -i
-    </pre>
-
-    <h4> finish file </h4>
-
-    <p> With <tt>-b</tt> set: </p>
-
-    <pre>   #!/usr/bin/execlineb -S0
-   /etc/66/stage3 $@
-    </pre>
-
-    <p>
-      The last command depends on the <tt>-3&nbsp;<em>stage3</em></tt> 
-      option given on the command line. If your <tt>stage3</tt> argument 
-      is <em>/usr/bin/true</em> for example then your <em>finish</em> file will be:
-    </p>
-
-    <pre>   #!/usr/bin/execlineb -S0
-   /usr/bin/true
-    </pre>
-    
-    <p> Without the <tt>-b</tt> option: </p>
-
-    <pre>   #!/usr/bin/execlineb -S0
-   s6-echo -- "scandir /run/66/scandir/1000 shutted down..."
-    </pre>
-
-    <h4> SIGHUP file </h4>
-
-    <p> With <tt>-b</tt> set: </p>
-
-    <pre>   #!/usr/bin/execlineb -P
-   foreground { /etc/66/stage2.tini }
-   s6-svscanctl -h -- /run/66/scandir/0
-    </pre>
-
-    <p>
-      The command executed before sending a signal to the scandir is set 
-      by the <tt>-2&nbsp;<em>stage2.tini</em></tt> option given on the command line.
-    </p>
-
-    <p> Without the <tt>-b</tt> option: </p>
-
-    <pre>   #!/usr/bin/execlineb -P
-   foreground { 66-all -v3 -l /run/66/ down }
-   s6-svscanctl -h -- /run/66/scandir/0
-    </pre>
-
-    <h4> SIGINT file </h4>
-
-    <p> With <tt>-b</tt> set: </p>
-
-    <pre>   #!/usr/bin/execlineb -P
-   foreground { /etc/66/stage2.tini }
-   s6-svscanctl -6 -- /run/66/scandir/0
-    </pre>
-
-    <p> Without the <tt>-b</tt> option: </p>
-
-    <pre>   #!/usr/bin/execlineb -P
-   foreground { 66-all -v3 -l /run/66/ down }
-   s6-svscanctl -6 -- /run/66/scandir/0
-    </pre>
-
-    <h4> SIGQUIT file </h4>
-
-    <p> With <tt>-b</tt> set:</p>
-
-    <pre>   #!/usr/bin/execlineb -P
-   foreground { /etc/66/stage2.tini }
-   s6-svscanctl -q -- /run/66/scandir/0
-    </pre>
-
-    <p> Without the <tt>-b</tt> option: </p>
-
-    <pre>   #!/usr/bin/execlineb -P
-   foreground { 66-all -v3 -l /run/66/ down }
-   s6-svscanctl -q -- /run/66/scandir/0
-    </pre>
-
-    <h4> SIGTERM file </h4>
-
-    <p> With <tt>-b</tt> set: </p>
-
-    <pre>   #!/usr/bin/execlineb -P
-   foreground { /etc/66/stage2.tini }
-   s6-svscanctl -t -- /run/66/scandir/0
-    </pre>
-
-    <p> Without the <tt>-b</tt> option: </p>
-
-    <pre>   #!/usr/bin/execlineb -P
-   foreground { 66-all -v3 -l /run/66/ down }
-   s6-svscanctl -t -- /run/66/scandir/0
-    </pre>
-
-    <h4> SIGUSR1 file </h4>
-
-    <p> With <tt>-b</tt> set: </p>
-
-    <pre>   #!/usr/bin/execlineb -P
-   foreground { /etc/66/stage2.tini }
-   s6-svscanctl -7 -- /run/66/scandir/0
-    </pre>
-
-    <p> Without the <tt>-b</tt> option: </p>
-
-    <pre>   #!/usr/bin/execlineb -P
-   foreground { 66-all -v3 -l /run/66/ down }
-   s6-svscanctl -7 -- /run/66/scandir/0
-    </pre>
-
-    <h4> SIGUSR2 file </h4>
-
-    <p> With <tt>-b</tt> set: </p>
-
-    <pre>   #!/usr/bin/execlineb -P
-   foreground { /etc/66/stage2.tini }
-   s6-svscanctl -O -- /run/66/scandir/0
-    </pre>
-
-    <p> Without the <tt>-b</tt> option: </p>
-
-    <pre>   #!/usr/bin/execlineb -P
-   foreground { 66-all -v3 -l /run/66/ down }
-   s6-svscanctl -O -- /run/66/scandir/0
-    </pre>
-
-
-<h2>Environment configuration</h2>
-
-	<p>
-      You can modify environment variables when starting the scandir 
+      You can modify environment variables when starting the <tt><em>scandir</em></tt> 
       with the <tt>&#8209;e</tt> option. This option expects to find a 
       valid absolute path for a directory which contains files where 
-      the formatting must follow these rules:
+      the format is the classic <em>key=value</em> pair. Each file found will be
+      read and parsed.
     </p>
 
-    <ul>
-      <li>
-        The name of the file is the name of the key. It must not begin 
-        with a dot and must not contain '=' (equals sign).
-      </li>
-      <li>
-        The content of the file is the value of the key. Only one value 
-        is accepted followed by an empty new line.
-      </li>
-    </ul>
-	
-	<h3>example</h3>
-	<pre><tt>  /etc/66/env/TZ </tt></pre>
-    <p> Content of the file: </p>
-    <pre><tt>   Pacific/Noumea </tt></pre>
     <p>Every daemon launched on the scandir should inherit the environment 
     variables of the scandir. So if you want to have a specific <em>key=value</em>
 	pair for every daemon, use this option.</p>
 
-<h2>Scandir remove process</h2>
+<h3> Environment variable limits</h3>
+<p>The environment directory cannot exceed more than 100 files. Each file cannot contains more than 4095 bytes or more than 50 <em>key=value</em> pairs.</p>
+<h2> Scandir remove process</h2>
 
 	<p>
       When using the <tt>&#8209;r</tt> option to delete the scandir of 
@@ -415,6 +195,9 @@
       <li>
         <tt>/run/66/log/0		# will be deleted</tt>
       </li>
+	<li>
+        <tt>/run/66/state/0		# will be deleted</tt>
+      </li>
     </ul>
 
     <p>
@@ -430,8 +213,12 @@
     
     <p>
 		<strong>Note</strong>: A running scandir can not be removed. 
-		You must stop it with e.g. <tt>&#8209;s quit</tt> first to 
+		You must stop it with e.g. <a href="66-scanctl.html"><tt>66-scanctl quit</tt></a><tt>&#8209;s quit</tt> first to 
 		be able to remove it.
     </p>
+<h2> Boot specification</h2>
+<p>The <tt>-b</tt> and <tt>-s</tt> options should be calls by <a href="66-boot.html">66-boot</a> program. <tt>-b</tt> option will create .s6-svscan control files (see <a href="https://skarnet.org/software/s6/s6-svscan.html">s6-svscan</a> interface documentation) specifically for the <em>stage1</em> a.k.a PID1 process. This <em>scandir</em> should be controlled by the safe <em>halt</em>, <em>poweroff</em>, <em>reboot</em>, <em>shutdown</em> wrapper provided with <em>66</em> tools suite. The <a href="66-shutdownd.html"><em>66-shutdownd</em></a> daemon which control the shut down request will be created automatically at the correct location. Also, this specific tasks need the reads of the <em>skel</em> file <em>init.conf</em> which contain the <em>live</em> directory location where is the exact role of the <tt>-s</tt> option.
+</p>
+<p>The <em>live</em> directory for a boot process requires writable directories, so in order to accommodate read-only root filesystems, there needs to be a tmpfs mounted before <a href="https://skarnet.org/software/s6/s6-svscan.html">s6-svscan</a> program is run.</p>
 </body>
 </html>
