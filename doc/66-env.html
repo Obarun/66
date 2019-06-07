@@ -1,0 +1,93 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>The 66 Suite: 66-env</title>
+    <meta name="Description" content="Detailed documentation for the 66-env command which is part of the 66 software suite" />
+    <meta name="Keywords" content="66 command 66-env service supervision execute script execline environment read write modify" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">66</a><br />
+<a href="//obarun.org/">www.obarun.org</a>
+</p>
+
+<h1>66-env</h1>
+
+	<p>
+     66-env lists or replace an environment variables of a service depending of the options past.
+    </p>
+
+
+<h2> Interface </h2>
+	<pre>
+	66-env [ -h ] [ -v <em>verbosity</em> ] [ -t <em>tree</em> ] [ -d <em>dir</em> ] [ -L ] [ -r <em>key=value</em> ] <em>service</em>
+	</pre>
+
+	<ul>
+		<li>
+			66-env open and read the configuration file of <em>service</em> find at <em>/etc/66/conf</em> by default.
+		</li>
+		<li>
+			It display the contain of the file or replace a <em>key=value</em> pair if requested.
+		</li>
+    </ul>
+
+<h2> Exit codes</h2>
+	<p>
+		<ul>
+			<li>0: success.</li>
+			<li>110: wrong usage.</li>
+			<li>111: system call failed.</li>
+		</ul>
+	</p>
+	
+<h2> Options </h2>
+
+	<ul>
+		<li>
+			<tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
+			 
+		<li>
+			<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>&nbsp;: increases/decreases 
+			the verbosity of the command. <tt>1(Default)</tt>: Only print 
+			error messages. <tt>2</tt>: Also print warning messages. 
+			<tt>3</tt>: Also print debugging messages.
+		</li>
+		<li> 
+			<tt>-t&nbsp;<em>tree</em>&nbsp;</tt>&nbsp;: ignored. This option is only provide to keep compatibility between <tt>66</tt> tools.
+		</li>
+		<li> 
+			<tt>-d&nbsp;<em>dir</em>&nbsp;</tt>&nbsp;: use <em>dir</em> as configuration file directory instead of the default one.
+		</li>
+		<li> 
+			<tt>-L&nbsp;</tt>&nbsp;: lists the environment variable of <em>service</em>.
+		</li>
+		<li> 
+			<tt>-r&nbsp;<em>key=value</em></tt>&nbsp;: replace the <em>key=value</em> pair by the given one. The <em>key=value</em> need to be double-quoted in case of multiple arguments. Backslash '\' should be used to properly parse a double-quoted element.
+		</li>
+	</ul>
+	
+<h2> Usage examples</h2>
+		<ul>
+			<pre>66-env -L ntpd</pre>
+			<pre>66-env -r CMD_ARGS=-d </pre>
+			<pre>66-env -r "CMD_ARGS=-c /etc/nginx/nginx.conf -g \"daemon off;\""</pre>
+		</ul>
+<h2>Notes</h2>
+		<p>
+			Any '!' character found at begins of a <tt>key=value</tt> from the configuration <em>service</em> file is ignored at replacement time. For example, a <tt>key=value</tt> corresponding to:
+		</p>
+		<ul>
+			<pre>!CMD_ARGS=--print-pid=4</pre>
+		</ul>
+		<p>can be replaced by the command:</p>
+		<ul>
+			<pre>66-env -r CMD_ARGS=--print-pid=3</pre>
+		</ul>
+	</ul>
+</body>
+</html>
