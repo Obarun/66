@@ -514,6 +514,21 @@ MYVALUE</pre>
    If the file does not exist SIGTERM will be used by default. </p>
    </li>
   </ul>
+
+<br><hr style="border: 1px dashed #000000">
+  
+  <li><h4>@hiercopy</h4></li>
+ <h5>Without equivalent, this key is unique to 66 tools.</h5>
+ <p>Copy the corresponding name to the service directory destination.</p>
+ <p><tt>mandatory&nbsp;</tt>&nbsp;: no </p>
+ <p><tt>syntax&nbsp;</tt>&nbsp;: bracket</p>
+ <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
+  <ul>
+   <li>Any elements name at the directory frontend service file. If the frontend service file found at /etc/66/service/foo/foo where 
+   directory /etc/66/service/foo contains /etc/66/service/foo/data as directory and /etc/66/service/foo/scripts, use
+   <pre>@hiercopy=(data scripts)</pre>
+   to copy the directory data and the file scripts to the service directory destination.</li>
+   </ul>
 </ul>
 
 <br><hr>
