@@ -14,7 +14,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
-
+#include <stdio.h>
 #include <oblibs/error2.h>
 
 #include <skalibs/types.h>
@@ -74,12 +74,15 @@ int main (int argc, char const **argv, char const *const *envp)
 		argc -= l.ind ; argv += l.ind ;
 	}
 	if (owner)
+	{
 		if (!youruid(&uid,owner)) strerr_diefu2sys(111,"get uid of: ",owner) ;
+	}
 	else uid = getuid() ;
 		
 	if (!yourgid(&gid,uid)) strerr_diefu1sys(111,"get gid") ;
 	cuid[uid_fmt(cuid,uid)] = 0 ;
-	cgid[uid_fmt(cgid,gid)] = 0 ;
+	cgid[gid_fmt(cgid,gid)] = 0 ;
+	
 	if (!env_addkv("UID",cuid,&info)) strerr_diefu1sys(111,"set UID") ;
 	if (!env_addkv("GID",cgid,&info)) strerr_diefu1sys(111,"set GID") ;
 	
