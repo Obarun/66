@@ -19,7 +19,7 @@
 #include <skalibs/genalloc.h>
 
 #define MAXVAR  50 
-#define MAXFILE 500 
+#define MAXFILE 100 
 #define MAXENV 4095 
 
 typedef struct exlsn_s exlsn_t, *exlsn_t_ref ;
