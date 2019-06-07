@@ -15,7 +15,7 @@
 <a href="//obarun.org/">www.obarun.org</a>
 </p>
 
-<h1>66-boot</h1>
+<h1> 66-boot</h1>
 
 	<p>
       <tt>66-boot</tt> is a program that is meant to run as pid 1, as a <em>stage1 init</em>: it performs the necessary early system preparation and execs into <a href="66-scandir.html">66-scandir</a>.
@@ -103,9 +103,9 @@
 	<p>
 		If one of the above processus fail, <tt>66-boot</tt> try to launch a Single-user login a.k.a. <em>sulogin</em> which let you the ability to fix the error. This case should not arrive.
 	</p>
-<h2>Exit codes</h2>
+<h2> Exit codes</h2>
 	<p><tt>66-boot</tt> never exits. It spawns the <tt>rc.init</tt> script and execs into <tt>66-scandir</tt>, which runs forever until the machine stops or reboots.</p>
-<h2> Skeleton files </h2>
+<h2> Skeleton files</h2>
 	<p>Skeleton files are mandatories and must exist on your system to be able to boot and shutdown the machine properly. By default those files are installed at <tt>/etc/66</tt>. Use the <tt>--sysconfdir=<em>SYSDIR</em></tt> option at compile time to change it.</p>
 	<ul>
 		<li><tt>init&nbsp;</tt>: <tt>66-boot</tt> binary is not meant to be called directly, or be linked to the binary directory directly, because it takes command-line options. Thereby the <tt>init</tt> file is used to pass an options to <tt>66-boot</tt>. By default <tt>66-boot</tt> is launched without any options. This file <strong>should be copied</strong> by the administrator into the binary directory of your system.</li>
