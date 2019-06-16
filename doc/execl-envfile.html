@@ -18,7 +18,7 @@
 <h1>execl-envfile</h1>
 
 	<p>
-      This command is a mix of <a href="https://skarnet.org/software/s6/s6-envdir.html"><tt>s6-envdir</tt></a> and <a href="https://skarnet.org/software/execline/importas.html"><tt>importas</tt></a> <em>program</em>.
+      This command is a blend of <a href="https://skarnet.org/software/s6/s6-envdir.html"><tt>s6-envdir</tt></a> and <a href="https://skarnet.org/software/execline/importas.html"><tt>importas</tt></a> <em>program</em>.
       It reads files containing variable assignments on the given directory, adds the variables to the environment, then executes a program.
     </p>
 
@@ -29,14 +29,14 @@
 	</pre>
 
 	<p>
-      This tool expects to find a regular file(s) in <em>dir</em> containing one or multiple <tt>key=value</tt> pair. For earch files found:  it will parse the file, import the <tt>key=value</tt> then execs <em>prog</em> with the modified environment.
+      This tool expects to find a regular file(s) in <em>dir</em> containing one or multiple <tt>key=value</tt> pair. For each files found:  it will parse the file, import the <tt>key=value</tt> then execs <em>prog</em> with the modified environment.
     </p>
 	<ul>
-		<li>It open and read the file.</li>
-		<li>It parse the file.</li>
-		<li>It import the <tt>key=value</tt> pair.</li>
-		<li>It substitute each corresponding <tt>key</tt> by <tt>value</tt> into the file.</li>
-		<li>It unexport the variable if requested.</li>
+		<li>It opens and reads the file.</li>
+		<li>It parses the file.</li>
+		<li>It imports the <tt>key=value</tt> pair.</li>
+		<li>It substitutes each corresponding <tt>key</tt> by <tt>value</tt> into the file.</li>
+		<li>It unexports the variable if requested.</li>
 		<li>It execs <em>prog</em> with the modified environment.</li>
 	</ul>
 <h2> Options </h2>
@@ -44,10 +44,10 @@
 	<ul>
 		<li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
 		<li>
-			<tt>-f&nbsp;<em>file</em>&nbsp;</tt>&nbsp;: only parse <em>file</em> found in <em>dir</em>.
+			<tt>-f&nbsp;<em>file</em>&nbsp;</tt>&nbsp;: only parses the <em>file</em> found in <em>dir</em>.
 		</li>
 		<li>
-			<tt>-l&nbsp;</tt>&nbsp;: loose. do nothing and executes <em>prog</em> directly if <em>dir</em> do not contain any regular file(s) or <em>dir</em> doesn't exist.
+			<tt>-l&nbsp;</tt>&nbsp;: loose. does nothing and executes <em>prog</em> directly if <em>dir</em> does not contain any regular file(s) or <em>dir</em> doesn't exist.
 		</li>
 		
 	</ul>
@@ -82,6 +82,6 @@
 	</pre>
 	<p>where <tt>/etc/66/conf</tt> directory contains two named files <tt>RUNDIR</tt> and <tt>CMD_ARGS</tt> written with <tt>/run/openntpd</tt> and <tt>-d -s</tt> respectively.</p>
 <h2> limits</h2>
-<p><em>dir</em> cannot exceed more than 100 files. Each file cannot contains more than 4095 bytes or more than 50 <em>key=value</em> pairs.</p>
+<p><em>dir</em> cannot exceed more than 100 files. Each file cannot contain more than 4095 bytes or more than 50 <em>key=value</em> pairs.</p>
 </body>
 </html>

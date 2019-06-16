@@ -31,7 +31,7 @@
       <br>(!) This tool only deals with <em>'classic'</em> services&mdash;see <a href="66-dbctl.html"><tt>66-dbctl</tt></a> for other types of services.
     </p>
     <p>Multiple <em>services</em> can be handled by seperating their names with a space. <tt>66-svctl</tt> gathers each of these services in a list called <em>selection</em>.
-    It try to be quicker as possible and send command to the <em>selection</em> asynchronously.</p>
+    It tries to be as quick as possible and sends a command to the <em>selection</em> asynchronously.</p>
 <h2>Exit codes</h2>
 	<p>
 		<ul>
@@ -66,12 +66,12 @@
 		 
 		<li> 
 			<tt>-T&nbsp;<em>timeout</em>&nbsp;</tt></tt>&nbsp;: specifies a timeout (in milliseconds)
-			after which <tt>66-svctl</tt> will stop to try to reach the desired state of the <em>service</em>; defaults to 3000. <em>timeout</em> is apply for each service of the selection. If you want to set <em>timeout</em> for each <em>service</em> separately use the <tt>@timeout-up</tt> or <tt>@timeout-down</tt> key into the <a href="frontend.html">frontend</a> service file instead. In such case this option has <strong>no effect</strong>.
+			after which <tt>66-svctl</tt> will stop to try to reach the desired state of the <em>service</em>; defaults to 3000. <em>timeout</em> is applied for each service of the selection. If you want to set <em>timeout</em> for each <em>service</em> separately use the <tt>@timeout-up</tt> or <tt>@timeout-down</tt> key into the <a href="frontend.html">frontend</a> service file instead. In such case this option has <strong>no effect</strong>.
 		</li>
 		 
 		<li> 
 			<tt>-n&nbsp;<em>death</em>&nbsp;</tt>&nbsp;: specifies the maximum number of service death events that the supervisor will keep track of.
-			If the service dies more than this number of times, <tt>66-svctl</tt> will stop to try to reach the desired state of the <em>services</em>.
+			If the service dies more than this number of times, <tt>66-svctl</tt> will stop trying to reach the desired state of the <em>services</em>.
 			This option has <strong>no effect</strong> if a <tt>@maxdeath</tt> was defined for the given service at parsing time&mdash;see <tt><a href="66-frontend.html">frontend</a></tt>.
 			If this option is not specified and no <em>max-death-tally</em> file exists the maximum allowed deaths will default to 5.
 		</li>
