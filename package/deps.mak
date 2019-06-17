@@ -39,7 +39,8 @@ src/extra-tools/66-umountall.o src/extra-tools/66-umountall.lo: src/extra-tools/
 src/extra-tools/66-writenv.o src/extra-tools/66-writenv.lo: src/extra-tools/66-writenv.c
 src/extra-tools/execl-cmdline.o src/extra-tools/execl-cmdline.lo: src/extra-tools/execl-cmdline.c
 src/extra-tools/execl-envfile.o src/extra-tools/execl-envfile.lo: src/extra-tools/execl-envfile.c src/include/66/environ.h src/include/66/parser.h
-src/extra-tools/execl-getuidgid.o src/extra-tools/execl-getuidgid.lo: src/extra-tools/execl-getuidgid.c src/include/66/environ.h src/include/66/utils.h
+src/extra-tools/execl-subuidgid.o src/extra-tools/execl-subuidgid.lo: src/extra-tools/execl-subuidgid.c src/include/66/environ.h src/include/66/utils.h
+src/extra-tools/execl-testncreate.o src/extra-tools/execl-testncreate.lo: src/extra-tools/execl-testncreate.c
 src/lib66/backup_cmd_switcher.o src/lib66/backup_cmd_switcher.lo: src/lib66/backup_cmd_switcher.c src/include/66/constants.h src/include/66/enum.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/backup_make_new.o src/lib66/backup_make_new.lo: src/lib66/backup_make_new.c src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/tree.h src/include/66/utils.h
 src/lib66/backup_realpath_sym.o src/lib66/backup_realpath_sym.lo: src/lib66/backup_realpath_sym.c src/include/66/constants.h src/include/66/enum.h src/include/66/utils.h
@@ -141,7 +142,7 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-echo: EXTRA_LIBS :=
 66-echo: src/extra-tools/66-echo.o -lskarnet 
 66-envfile: EXTRA_LIBS :=
-66-envfile: src/extra-tools/66-envfile.o ${LIB66} -lexecline -loblibs -lskarnet ${LIBEXECLINE}
+66-envfile: src/extra-tools/66-envfile.o -lskarnet
 66-getenv: EXTRA_LIBS := ${PROCPS_LIB}
 66-getenv: src/extra-tools/66-getenv.o -lskarnet 
 66-gnwenv: EXTRA_LIBS :=
