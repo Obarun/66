@@ -61,3 +61,4 @@ tree_setname.o
 tree_switch_current.o
 -loblibs
 -lskarnet
+-lexecline
