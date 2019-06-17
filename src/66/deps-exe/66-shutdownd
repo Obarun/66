@@ -1,8 +1,7 @@
 ${LIB66}
--loblibs
 -ls6
+-loblibs
 ${LIBUTMPS}
 -lskarnet
 ${TAINNOW_LIB}
 ${SOCKET_LIB}
-

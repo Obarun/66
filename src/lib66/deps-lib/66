@@ -59,6 +59,8 @@ tree_get_permissions.o
 tree_sethome.o
 tree_setname.o
 tree_switch_current.o
+-ls6rc
+-ls6
 -loblibs
--lskarnet
 -lexecline
+-lskarnet
