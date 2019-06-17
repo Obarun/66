@@ -1,6 +1,7 @@
 ${LIB66}
 -loblibs
 -ls6
+-lexecline
 -lskarnet
 
 

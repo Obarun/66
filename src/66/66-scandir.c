@@ -31,7 +31,6 @@
 #include <skalibs/bytestr.h>//byte_count
 
 #include <s6/config.h>
-#include <s6-portable-utils/config.h>
 #include <execline/config.h>
 
 #include <66/config.h>
