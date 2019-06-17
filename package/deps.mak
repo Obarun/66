@@ -126,7 +126,7 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-scanctl: EXTRA_LIBS :=
 66-scanctl: src/66/66-scanctl.o ${LIB66} -loblibs -ls6 -lskarnet  
 66-scandir: EXTRA_LIBS :=
-66-scandir: src/66/66-scandir.o ${LIB66} -loblibs -ls6 -lskarnet  
+66-scandir: src/66/66-scandir.o ${LIB66} -loblibs -ls6 -lexecline -lskarnet  
 66-shutdown: EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB}
 66-shutdown: src/66/66-shutdown.o ${LIB66} ${LIBUTMPS} -lskarnet 
 66-shutdownd: EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB}
