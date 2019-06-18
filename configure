@@ -22,9 +22,9 @@ Fine tuning of the installation directories:
   --libexecdir=DIR                package-scoped executables [EPREFIX/libexec]
   --libdir=DIR                    static library files [PREFIX/lib/$package]
   --includedir=DIR                C header files [PREFIX/include]
-  --sysconfdir=SYSDIR                global configuration files [/etc/66]
+  --sysconfdir=SYSDIR             global configuration files [/etc/66]
   
-  --shebangdir=DIR                absolute path for #! invocations [BINDIR]
+  --shebangdir=DIR                absolute path for execline #\! invocations [BINDIR]
   --livedir=DIR                   default live directory [/run/66]
   --with-system-dir=DIR           66 tools root working directory[PREFIX/lib/66]
   --with-packager-service=DIR     packager service installation directory[SYSDIR/service]
