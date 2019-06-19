@@ -305,12 +305,10 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			strerr_warni2x("Umount: ",fs) ;
 			if (umount(fs) == -1) sulogin ("umount: ",fs ) ;
 		}
-		if (!r)
-		{
-			strerr_warni2x("Mount: ",fs) ;
-			if (mount("tmpfs", fs, "tmpfs", MS_NODEV | MS_NOSUID, "mode=0755") == -1) 
-				sulogin("mount: ",fs) ;
-		}
+		
+		strerr_warni2x("Mount: ",fs) ;
+		if (mount("tmpfs", fs, "tmpfs", MS_NODEV | MS_NOSUID, "mode=0755") == -1) 
+			sulogin("mount: ",fs) ;
 	}
 	/** create scandir */
 	{
