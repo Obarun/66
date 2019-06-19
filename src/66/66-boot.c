@@ -198,6 +198,7 @@ static inline void run_stage2 (char const *const *envp, size_t envlen, char cons
 		sulogin("open for writing fifo: ",fifo) ;
 	if (fd_copy(2, 1) == -1)
 		sulogin("copy stderr to stdout","") ;
+	fd_close(fdin) ;
 	xpathexec_r(newargv, envp, envlen, modifs, modiflen) ;
 }
 static inline void run_cmdline(char const *const *newargv, char const *const *envp, char const *msg,char const *arg)
@@ -357,8 +358,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (pid == -1) sulogin("fork: ",rcinit) ;
 		if (!pid) run_stage2(newenvp, 2, envmodifs.s,envmodifs.len) ;
 		if (fd_copy(2, 1) == -1) sulogin("copy stderr to stdout","") ;
-		strerr_warni1x("Boot completed successfully") ;
-		strerr_warni1x("Supervision starts...") ;
+		//strerr_warni1x("Boot completed successfully") ;
+		//strerr_warni1x("Supervision starts...") ;
 		fd_close(fdin) ;
 		xpathexec_r(newargv, newenvp, 2, envmodifs.s, envmodifs.len) ;
 	}
