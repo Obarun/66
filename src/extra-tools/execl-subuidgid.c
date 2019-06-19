@@ -29,7 +29,7 @@
 #include <66/environ.h>
 #include <66/utils.h>
 
-#define USAGE "execl-subuidgid [ -o owner ] prog..."
+#define USAGE "execl-subuidgid [ -h ] [ -o owner ] prog..."
 
 static inline void info_help (void)
 {
