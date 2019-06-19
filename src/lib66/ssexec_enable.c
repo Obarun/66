@@ -51,7 +51,7 @@ static int start_parser(char const *src,char const *svname,char const *tree, uns
 	stralloc sasv = STRALLOC_ZERO ;
 	
 	if (!parse_service_before(src,svname,tree,nbsv,&sasv,FORCE))
-		strerr_diefu4x(111,"parse service file: ",src,svname,": or its dependencies") ;
+		strerr_diefu5x(111,"parse service file: ",src,"/",svname,": or its dependencies") ;
 	
 	stralloc_free(&sasv) ;
 	
