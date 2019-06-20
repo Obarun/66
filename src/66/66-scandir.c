@@ -111,7 +111,9 @@ void scandir_up(char const *scandir, unsigned int timeout, char const *const *en
 	newup[m++] = "--" ;
 	newup[m++] = scandir ;
 	newup[m++] = 0 ;
-	VERBO2 strerr_warni3x("Starts scandir ",scandir," ...") ;
+	/** in case of boot process, the redirection of the uncaught-log
+	 * will block the fd, so , do not sends anything
+	 * VERBO2 strerr_warni3x("Starts scandir ",scandir," ...") ; */
 	xpathexec_run (newup[0], newup, envp) ;
 }
 
