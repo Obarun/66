@@ -55,8 +55,8 @@ static char trcinit[MAXENV+1] ;
 static char tlive[MAXENV+1] ;
 static char ttree[MAXENV+1] ;
 static char confile[MAXENV+1] ;
-static int fdin ;
 static char const *const *genv = 0 ;
+static int fdin ;
 
 #define USAGE "66-boot [ -h ] [ -m ] [ -s skel ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]"
 
@@ -66,16 +66,16 @@ static void sulogin(char const *msg,char const *arg)
 	pid_t pid ;
 	int wstat ;
 	fd_close(0) ;
-	fd_close(1) ;
-	fd_close(2) ;
-	dup2(fdin,0) ;
-	open("/dev/console",O_WRONLY) ;
-	fd_copy(2,1) ;
+	if (dup2(fdin,0) == -1) strerr_diefu1x(111,"duplicate stdin -- you are on your own") ;
+	fd_close(fdin) ;	
 	if (*msg) strerr_warnwu2sys(msg,arg) ;
 	pid = child_spawn0(newarg[0],newarg,genv) ;
 	if (waitpid_nointr(pid,&wstat, 0) < 0)
 			strerr_diefu1sys(111,"wait for sulogin") ;
-	//xpathexec (newarg) ; 
+	fdin=dup(0) ;
+	if (fdin == -1) strerr_diefu1x(111,"duplicate stdin -- you are on your own") ;
+	fd_close(0) ;
+	if (open("/dev/null",O_WRONLY)) strerr_diefu1x(111,"open /dev/console -- you are on your own") ;
 }
 
 static inline void info_help (void)
@@ -235,7 +235,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	char verbo[UINT_FMT] ;
 	cver = verbo ;
 	stralloc envmodifs = STRALLOC_ZERO ;
-	fdin = dup(0) ;
 	genv = envp ;
 	PROG = "66-boot" ;
 	{
@@ -281,7 +280,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (chdir("/") == -1) sulogin("chdir to ","/") ;
 	umask(mask) ;
 	setpgid(0, 0) ;
+	fdin=dup(0) ;
 	fd_close(0) ;
+	
 	if (slashdev)
 	{
 		strerr_warni2x("Mount: ",slashdev) ;
@@ -294,7 +295,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		fd_copy(1, 0) == -1 ||
 		fd_move(2, 0) == -1) return 111 ;
 	}
+	
 	if (open("/dev/null", O_RDONLY)) sulogin("open: ", "/dev/null") ;
+	
 	if (tmpfs)
 	{
 		char fs[livelen + 1] ;
@@ -356,8 +359,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (pid == -1) sulogin("fork: ",rcinit) ;
 		if (!pid) run_stage2(newenvp, 2, envmodifs.s,envmodifs.len) ;
 		if (fd_copy(2, 1) == -1) sulogin("copy stderr to stdout","") ;
-		//strerr_warni1x("Boot completed successfully") ;
-		//strerr_warni1x("Supervision starts...") ;
 		fd_close(fdin) ;
 		xpathexec_r(newargv, newenvp, 2, envmodifs.s, envmodifs.len) ;
 	}
