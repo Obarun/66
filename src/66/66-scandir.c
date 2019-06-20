@@ -273,7 +273,7 @@ void write_bootlog(char const *live, char const *scandir)
 		EXECLINE_BINPREFIX "redirfd -rnb 0 fifo\n" \
 		S6_BINPREFIX "s6-setuidgid ") ;
 	auto_stralloc(&run,log_user) ;
-	auto_stralloc(&run,S6_BINPREFIX "\ns6-log -bpd3 -- 1 t ") ;
+	auto_stralloc(&run,"\n" S6_BINPREFIX "s6-log -bpd3 -- 1 t ") ;
 	auto_stralloc(&run,path) ;
 	auto_stralloc(&run,"\n") ;
 	
