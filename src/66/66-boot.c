@@ -71,11 +71,11 @@ static void sulogin(char const *msg,char const *arg)
 	if (*msg) strerr_warnwu2sys(msg,arg) ;
 	pid = child_spawn0(newarg[0],newarg,genv) ;
 	if (waitpid_nointr(pid,&wstat, 0) < 0)
-			strerr_diefu1sys(111,"wait for sulogin") ;
+			strerr_diefu1sys(111,"wait for sulogin -- you are on your own") ;
 	fdin=dup(0) ;
 	if (fdin == -1) strerr_diefu1x(111,"duplicate stdin -- you are on your own") ;
 	fd_close(0) ;
-	if (open("/dev/null",O_WRONLY)) strerr_diefu1x(111,"open /dev/console -- you are on your own") ;
+	if (open("/dev/null",O_WRONLY)) strerr_diefu1x(111,"open /dev/null -- you are on your own") ;
 }
 
 static inline void info_help (void)
@@ -232,6 +232,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	unsigned int r , tmpfs = 0 ;
 	size_t bannerlen, livelen ;
 	pid_t pid ;
+	int opened = 0 ;
 	char verbo[UINT_FMT] ;
 	cver = verbo ;
 	stralloc envmodifs = STRALLOC_ZERO ;
@@ -289,14 +290,14 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		fd_close(1) ;
 		fd_close(2) ;
 		if (mount("dev", slashdev, "devtmpfs", MS_NOSUID | MS_NOEXEC, "") == -1)
-			sulogin ("mount: ", slashdev) ;
+			{ opened++ ; sulogin ("mount: ", slashdev) ; }
 		
 		if (open("/dev/console", O_WRONLY) ||
 		fd_copy(1, 0) == -1 ||
 		fd_move(2, 0) == -1) return 111 ;
 	}
-	
-	if (open("/dev/null", O_RDONLY)) sulogin("open: ", "/dev/null") ;
+	if (!opened)
+		if (open("/dev/null", O_RDONLY)) sulogin("open: ", "/dev/null") ;
 	
 	if (tmpfs)
 	{
