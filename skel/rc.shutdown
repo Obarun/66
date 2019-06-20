@@ -4,7 +4,7 @@
 ## the configuration file. By default /etc/66/init.conf or
 ## instructed by 66-boot via the -s option(see 66-boot documentation).
 CONF="$1"
-source "$CONF"
+. "$CONF"
 
 ## By default the output goes to the uncaught-logs at
 ## /run/66/log/0/current
