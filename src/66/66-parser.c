@@ -31,8 +31,6 @@
 #include <66/utils.h>
 #include <66/parser.h>
 
-unsigned int VERBOSITY = 1 ;
-
 #define USAGE "66-parser [ -h ] [ -v verbosity ] [ -f ] service destination"
 
 static inline void info_help (void)
@@ -50,35 +48,14 @@ static inline void info_help (void)
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
-static void setname(char *name,char const *sv)
-{
-	size_t slen = strlen(sv) ;
-	ssize_t svlen = get_rlen_until(sv,'/',slen) ;
-	if (svlen <= 0) strerr_diefu1x(111,"parse service name") ;
-	svlen++ ;
-	size_t svnamelen = slen - svlen ;
-	memcpy(name,sv+svlen,svnamelen) ;
-	name[svnamelen] = 0 ;
-}
-
-static void setsrc(char *src,char const *dir)
-{
-	size_t dirlen = strlen(dir) ;
-	char name[dirlen+1] ;
-	setname(name,dir) ;
-	size_t namelen = strlen(name) ;
-	memcpy(src,dir,dirlen-namelen-1) ;
-	src[dirlen-namelen-1] = 0 ;
-}
-
 static void check_dir(char const *dir,int force,int main)
 {
 	int r ;
 	size_t dirlen = strlen(dir) ;
 	char tmp[dirlen+1] ;
-	setsrc(tmp,dir) ;
+	if (!dirname(tmp,dir)) strerr_diefu1x(111,"set directory name") ;
 	char name[dirlen+1] ;
-	setname(name,dir) ;
+	if (!basename(name,dir)) strerr_diefu1x(111,"set name") ;
 	
 	r = scan_mode(dir,S_IFDIR) ;
 	if (r < 0){ errno = ENOTDIR ; strerr_dief2sys(111,"conflicting format of: ",dir) ; }
@@ -132,7 +109,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	dir = argv[1] ;
 	if (dir[0] != '/') strerr_dief3x(110, "directory: ",dir," must be an absolute path") ;
 	if (sv[0] != '/') strerr_dief3x(110, "service: ",sv," must be an absolute path") ;
-	setname(name,sv) ;
+	if (!basename(name,sv)) strerr_diefu1x(111,"set name");
 	size_t svlen = strlen(sv) ;
 	size_t namelen = strlen(name) ;
 	char tmp[svlen + 1 + namelen + 1] ;
@@ -145,7 +122,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		tmp[svlen + 1 + namelen] = 0 ;
 		sv = tmp ;
 	}
-	setsrc(srcdir,sv) ;
+	if (!dirname(srcdir,sv)) strerr_diefu1x(111,"set directory name") ;
 	check_dir(dir,force,0) ;
 	if (!stralloc_cats(&insta,name) ||
 	!stralloc_0(&insta)) retstralloc(111,"main") ;
