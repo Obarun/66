@@ -25,11 +25,11 @@
 
 <h2> Interface </h2>
 	<pre>
-	execl-envfile [ -h ] [ -f <em>file</em> ] [ -l ] <em>dir</em> <em>prog</em>
+	execl-envfile [ -h ] [ -l ] <em>src</em> <em>prog</em>
 	</pre>
 
 	<p>
-      This tool expects to find a regular file(s) in <em>dir</em> containing one or multiple <tt>key=value</tt> pair. For each files found:  it will parse the file, import the <tt>key=value</tt> then execs <em>prog</em> with the modified environment.
+      This tool expects to find a regular file(s) or directory as <em>src</em> containing one or multiple <tt>key=value</tt> pair. For each files found:  it will parse the file, import the <tt>key=value</tt> then execs <em>prog</em> with the modified environment.
     </p>
 	<ul>
 		<li>It opens and reads the file.</li>
@@ -39,21 +39,22 @@
 		<li>It unexports the variable if requested.</li>
 		<li>It execs <em>prog</em> with the modified environment.</li>
 	</ul>
+	<p>In case as <em>src</em> is a directory, the same processus is made for each files found in <em>src</em>. <em>src</em> can be absolute or relative path. In case of relative path only <tt>'../'</tt>,<tt>'./'</tt>, <tt>'.'</tt> or <tt>'..'</tt> are accepted as valid format.</p>
 <h2> Options </h2>
 
 	<ul>
 		<li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
 		<li>
-			<tt>-f&nbsp;<em>file</em>&nbsp;</tt>&nbsp;: only parses the <em>file</em> found in <em>dir</em>.
+			<tt>-f&nbsp;<em>file</em>&nbsp;</tt>&nbsp;: only parses the <em>file</em> found in <em>src</em>.<strong>deprecated</strong>
 		</li>
 		<li>
-			<tt>-l&nbsp;</tt>&nbsp;: loose. does nothing and executes <em>prog</em> directly if <em>dir</em> does not contain any regular file(s) or <em>dir</em> doesn't exist.
+			<tt>-l&nbsp;</tt>&nbsp;: loose. does nothing and executes <em>prog</em> directly if <em>src</em> does not contain any regular file(s) or <em>src</em> doesn't exist.
 		</li>
 		
 	</ul>
 
-<h2> File syntax </h2>
-	<p><em>file</em> is a text file containing lines of the form <tt>key = value</tt>. Whitespace is permitted before and after <em>key</em>, and before or after <em>value</em>,
+<h2> <em>File</em> syntax </h2>
+	<p><em>file</em> is a text file containing lines of the form <tt>key=value</tt>. Whitespace is permitted before and after <em>key</em>, and before or after <em>value</em>,
 	Quoting is also possible. In this case, the quoting field is treated as one word.
 	</p>
 	<p>Empty lines, or lines containing only whitespace, are ignored. Lines beginning with <tt>#</tt> (possibly after some whitespace) are ignored (and typically used for comments). Comments are <strong>not</strong> possible at the end of lines:
@@ -61,11 +62,13 @@
 	</p>
 	<p>Empty <em>value</em> is <strong>not</strong> permitted.</p>
 	<p>If <tt>key</tt> begin by a <tt>'!'</tt> character: <tt>!key=value</tt> the <tt>key</tt> will be removed from the environment after the substitution.</p>
+	<p>If the same <tt>key=value</tt> pair is found multiple time, only the first one definition is keepts.</p>
+	<p>It must be terminated by an <strong>empty new line</strong>.</p>
 <h2> Example of use </h2>
 	<pre>
 	#!/usr/bin/execlineb -P
 	fdmove -c 2 1
-	execl-envfile -f ntpd /etc/66/conf/
+	execl-envfile /etc/66/conf/ntpd
 	foreground { mkdir -p  -m 0755 ${RUNDIR} } 
 	execl-cmdline -s { ntpd ${CMD_ARGS} }
 	</pre>
@@ -82,6 +85,6 @@
 	</pre>
 	<p>where <tt>/etc/66/conf</tt> directory contains two named files <tt>RUNDIR</tt> and <tt>CMD_ARGS</tt> written with <tt>/run/openntpd</tt> and <tt>-d -s</tt> respectively.</p>
 <h2> limits</h2>
-<p><em>dir</em> cannot exceed more than 100 files. Each file cannot contain more than 4095 bytes or more than 50 <em>key=value</em> pairs.</p>
+<p><em>src</em> cannot exceed more than 100 files. Each file cannot contain more than 4095 bytes or more than 50 <em>key=value</em> pairs.</p>
 </body>
 </html>
