@@ -15,7 +15,6 @@
 #include <66/parser.h>
 
 #include <string.h>
-#include <stdio.h>
 
 #include <oblibs/string.h>
 #include <oblibs/stralist.h>
@@ -217,7 +216,7 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *gensv,char const *mainsv, 
 			char *dname_src = gaistr(&ga,i) ;
 			
 			if (!stralloc_obreplace(&dname,dname_src)) retstralloc(0,"resolve_srcdeps") ;
-			printf("dname.s::%s	mainsv::%s gensv::%s\n",dname.s,mainsv,gensv) ;
+			
 			if (obstr_equal(dname.s,mainsv) || obstr_equal(dname.s,gensv))
 			{
 				VERBO1 strerr_warnw3x("direct cyclic dependency detected on ",mainsv," service") ;
