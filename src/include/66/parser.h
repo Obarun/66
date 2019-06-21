@@ -323,7 +323,7 @@ extern int add_pipe(sv_alltype *sv, stralloc *sa) ;
 
 /** enable phase */
 extern int add_cname(genalloc *ga,avltree *tree,char const *name, sv_alltype *sv_before) ;
-extern int resolve_srcdeps(sv_alltype *sv_before,char const *svmain,char const *src, char const *tree,unsigned int *nbsv,stralloc *sasv,unsigned int force) ;
+extern int resolve_srcdeps(sv_alltype *sv_before,char const *gensv,char const *svmain,char const *src, char const *tree,unsigned int *nbsv,stralloc *sasv,unsigned int force) ;
 extern int parse_service_before(char const *src,char const *sv,char const *tree, unsigned int *nbsv, stralloc *sasv,unsigned int force) ;
 
 /** write */

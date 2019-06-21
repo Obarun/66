@@ -15,6 +15,7 @@
 #include <66/parser.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #include <oblibs/string.h>
 #include <oblibs/stralist.h>
@@ -155,7 +156,7 @@ static int deps_src(stralloc *newsrc, char const *name, char const *tree, unsign
 /** @Return 0 on fail
  * @Return 1 on success
  * @Return 2 service already added */
-int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, char const *tree,unsigned int *nbsv, stralloc *sasv,unsigned int force)
+int resolve_srcdeps(sv_alltype *sv_before,char const *gensv,char const *mainsv, char const *src, char const *tree,unsigned int *nbsv, stralloc *sasv,unsigned int force)
 {
 	int r, insta ;
 	
@@ -216,8 +217,8 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, c
 			char *dname_src = gaistr(&ga,i) ;
 			
 			if (!stralloc_obreplace(&dname,dname_src)) retstralloc(0,"resolve_srcdeps") ;
-			
-			if (obstr_equal(dname.s,mainsv))
+			printf("dname.s::%s	mainsv::%s gensv::%s\n",dname.s,mainsv,gensv) ;
+			if (obstr_equal(dname.s,mainsv) || obstr_equal(dname.s,gensv))
 			{
 				VERBO1 strerr_warnw3x("direct cyclic dependency detected on ",mainsv," service") ;
 				return 0 ;
@@ -272,7 +273,7 @@ int resolve_srcdeps(sv_alltype *sv_before,char const *mainsv, char const *src, c
 			
 			if (!parser(&sv_before_deps,sasv,dname.s)) return 0 ;
 			
-			r = resolve_srcdeps(&sv_before_deps,dname.s,newsrc.s,tree,nbsv,sasv,force) ;
+			r = resolve_srcdeps(&sv_before_deps,mainsv,dname.s,newsrc.s,tree,nbsv,sasv,force) ;
 			
 			if (!r) return 0 ;
 			if (r == 2) continue ;
@@ -340,7 +341,7 @@ int parse_service_before(char const *src,char const *sv,char const *tree, unsign
 	
 	if (sv_before.cname.itype > CLASSIC)
 	{
-		r = resolve_srcdeps(&sv_before,sv,src,tree,nbsv,sasv,force) ;
+		r = resolve_srcdeps(&sv_before,sv,sv,src,tree,nbsv,sasv,force) ;
 		if (!r) return 0 ;
 	}
 	else
