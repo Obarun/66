@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <oblibs/string.h>
 #include <oblibs/stralist.h>
@@ -169,23 +169,26 @@ int main (int argc, char const *const *argv, char const *const *envp)
 				xpathexec_run(argv[0],argv,envp) ;
 			}
 		}
+		
 		if (!file_readputsa(&src,path,file)) strerr_diefu4sys(111,"read file: ",path,"/",file) ;
 		if (!env_parsenclean(&modifs,&src)) strerr_diefu4x(111,"parse and clean environment of: ",path,"/",file)  ;
 		if (!env_split(&GAENV,&SAENV,&src)) strerr_diefu4x(111,"split environment of: ",path,"/",file) ;
+		if (genalloc_len(diuint32,&GAENV) > MAXVAR) strerr_dief4x(111,"to many variables in file: ",path,"/",file) ;
 	}
 	else
 	{
 		for (i = 0 ; i < genalloc_len(stralist,&toparse) ; i++)
 		{
 			src.len = 0 ;
-			size_t n = i + MAXVAR ;
+			size_t n = genalloc_len(diuint32,&GAENV) + MAXVAR ;
 			if (i > MAXFILE) strerr_dief2x(111,"to many file to parse in: ",path) ;
 			if (!file_readputsa(&src,path,gaistr(&toparse,i))) strerr_diefu4sys(111,"read file: ",path,"/",gaistr(&toparse,i)) ;
 			if (!env_parsenclean(&modifs,&src)) strerr_diefu4x(111,"parse and clean environment of: ",path,"/",gaistr(&toparse,i)) ;
 			if (!env_split(&GAENV,&SAENV,&src)) strerr_diefu4x(111,"split environment of: ",path,"/",gaistr(&toparse,i)) ;
-			if (genalloc_len(stralist,&toparse) > n) strerr_dief4x(111,"to many variables in file: ",path,"/",gaistr(&toparse,i)) ;
+			if (genalloc_len(diuint32,&GAENV) > n) strerr_dief4x(111,"to many variables in file: ",path,"/",gaistr(&toparse,i)) ;
 		}
 	}
+
 	genalloc_deepfree(stralist,&toparse,stra_free) ;
 	stralloc_free(&src) ;
 	

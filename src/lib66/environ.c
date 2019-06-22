@@ -111,7 +111,6 @@ int env_split_one(char *line,genalloc *ga,stralloc *sa)
 	diuint32 tmp = DIUINT32_ZERO ;
 	k = line ;
 	v = line ;
-	
 	obstr_sep(&v,"=") ;
 	if (v == NULL) return 0 ;
 		
@@ -141,7 +140,7 @@ int env_split(genalloc *gaenv,stralloc *saenv,stralloc *src)
 		/** skip commented line or empty line*/
 		if (env_clean(&tmp) < 0) continue ;
 		if (*line)
-			if (!env_split_one(line,gaenv,saenv)) goto err ;
+			if (!env_split_one(tmp.s,gaenv,saenv)) goto err ;
 	}
 	genalloc_deepfree(stralist,&gatmp,stra_free) ;
 	stralloc_free(&tmp) ;
