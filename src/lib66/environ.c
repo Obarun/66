@@ -13,7 +13,7 @@
  */
  
 #include <stddef.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <oblibs/string.h>
 #include <oblibs/stralist.h>
@@ -106,17 +106,24 @@ int env_clean(stralloc *src)
 
 int env_split_one(char *line,genalloc *ga,stralloc *sa)
 {
+	size_t slen = strlen(line) ;
+	char s[slen] ;
+	memcpy(s,line,slen) ;
+	s[slen] = 0 ;
+
 	char *k = 0 ;
 	char *v = 0 ;
 	diuint32 tmp = DIUINT32_ZERO ;
-	k = line ;
-	v = line ;
+	k = s ;
+	v = s ;
 	obstr_sep(&v,"=") ;
-	if (v == NULL) return 0 ;
-		
+	/** TODO, for the moment we just ignore un key with an empty
+	 * value, this is clearely not a good way, it must be handled
+	 * correctly. By the way the parser is currently re written and 
+	 * the env_** will changes. Just be functionnal here*/
+	if (!*v) return -1 ; 
 	tmp.left = sa->len ;
 	if(!stralloc_catb(sa,k,strlen(k)+1)) return 0 ;
-	
 	if (!obstr_trim(v,'\n')) return 0 ;
 	tmp.right = sa->len ;
 	if(!stralloc_catb(sa,v,strlen(v)+1)) return 0 ;
@@ -135,12 +142,13 @@ int env_split(genalloc *gaenv,stralloc *saenv,stralloc *src)
 	for (; i < nbline ; i++)
 	{
 		char *line = gaistr(&gatmp,i) ;
+		if (!*line) continue ;
 		tmp.len = 0 ;
-		stralloc_cats(&tmp,line) ;
+		if (!stralloc_cats(&tmp,line)) goto err ;
 		/** skip commented line or empty line*/
 		if (env_clean(&tmp) < 0) continue ;
-		if (*line)
-			if (!env_split_one(tmp.s,gaenv,saenv)) goto err ;
+		if (!stralloc_0(&tmp)) goto err ;
+		if (!env_split_one(tmp.s,gaenv,saenv)) goto err ;
 	}
 	genalloc_deepfree(stralist,&gatmp,stra_free) ;
 	stralloc_free(&tmp) ;
