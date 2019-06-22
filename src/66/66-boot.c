@@ -314,6 +314,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (mount("tmpfs", fs, "tmpfs", MS_NODEV | MS_NOSUID, "mode=0755") == -1) 
 			sulogin("mount: ",fs) ;
 	}
+	/** respect the path before run 66-xxx API*/
+	if (setenv("PATH", path, 1) == -1) sulogin("set initial PATH: ",path) ;
 	/** create scandir */
 	{
 		int m = log ? 6 : 4 ;
@@ -352,7 +354,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		char const *newenvp[2] = { 0, 0 } ;
 		size_t pathlen = strlen(path) ;
 		char pathvar[6 + pathlen] ;
-		if (setenv("PATH", path, 1) == -1) sulogin("set initial PATH: ",path) ;
 		memcpy(pathvar, "PATH=", 5) ;
 		memcpy(pathvar + 5, path, pathlen + 1) ;
 		newenvp[0] = pathvar ;
