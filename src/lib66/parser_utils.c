@@ -42,10 +42,7 @@
 
 stralloc keep = STRALLOC_ZERO ;//sv_alltype data
 stralloc deps = STRALLOC_ZERO ;//sv_name depends
-
-genalloc ganame = GENALLOC_ZERO ;//sv_name_t, avltree
 genalloc gadeps = GENALLOC_ZERO ;//unsigned int, pos in deps
-
 genalloc gasv = GENALLOC_ZERO ;//sv_alltype general
 
 /**********************************
@@ -76,11 +73,9 @@ void freed_parser(void)
 {
 	stralloc_free(&keep) ;
 	stralloc_free(&deps) ;
-	genalloc_free(sv_name_t,&ganame) ;
 	genalloc_free(unsigned int,&gadeps) ;
 	for (unsigned int i = 0 ; i < genalloc_len(sv_alltype,&gasv) ; i++)
 		sv_alltype_free(&genalloc_s(sv_alltype,&gasv)[i]) ;
-	avltree_free(&deps_map) ;
 }
 /**********************************
  *		parser utilities

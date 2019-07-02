@@ -32,10 +32,8 @@
 
 extern stralloc keep ;
 extern stralloc deps ;
-extern genalloc ganame ;
 extern genalloc gadeps ;
 extern genalloc gasv ;
-extern avltree deps_map ;
 
 typedef enum actions_e actions_t, *actions_t_ref ;
 enum actions_e
@@ -297,6 +295,11 @@ extern void sv_alltype_free(sv_alltype *sv) ;
 extern void keynocheck_free(keynocheck *nocheck) ;
 extern void section_free(section_t *sec) ;
 extern void freed_parser(void) ;
+/** enable phase */
+extern int parse_service_get_list(stralloc *result, stralloc *list) ;
+extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, char const *sv,unsigned int *nbsv, stralloc *sasv,unsigned int force) ;
+extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,unsigned int force) ;
+extern int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv) ;
 /** utilities */
 extern int parse_line(stralloc *src,size_t *pos) ;
 extern int parse_quote(stralloc *src,size_t *pos) ;
@@ -320,12 +323,6 @@ extern int section_valid(int id, uint32_t nline, size_t pos,stralloc *src, char 
 extern int clean_value(stralloc *sa) ;
 extern void parse_err(int ierr,int idsec,int idkey) ;
 extern int add_pipe(sv_alltype *sv, stralloc *sa) ;
-
-/** enable phase */
-extern int add_cname(genalloc *ga,avltree *tree,char const *name, sv_alltype *sv_before) ;
-extern int resolve_srcdeps(sv_alltype *sv_before,char const *gensv,char const *svmain,char const *src, char const *tree,unsigned int *nbsv,stralloc *sasv,unsigned int force) ;
-extern int parse_service_before(char const *src,char const *sv,char const *tree, unsigned int *nbsv, stralloc *sasv,unsigned int force) ;
-
 /** write */
 extern int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned int force) ;
 extern int write_classic(sv_alltype *sv, char const *dst, unsigned int force) ;
