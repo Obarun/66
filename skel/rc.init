@@ -1,19 +1,26 @@
-#!@BINDIR@/sh -e
+#!@EXECLINE_SHEBANGPREFIX@/execlineb -S0
 
 ## It's the responsability of the sysadmin to properly define
 ## the configuration file. By default /etc/66/init.conf or
 ## instructed by 66-boot via the -s option(see 66-boot documentation).
-CONF="$1"
-. "$CONF"
 
-echo [Starting stage2 process ...] >/dev/console 2>&1
+execl-envfile ${1}
 
-# initiate the database service
-echo [Initiate db of tree ${TREE}]
-66-init -v${VERBOSITY} -l ${LIVE} -t ${TREE} database || 
-{ echo "rc.init: fatal: please see the log at ${LIVE}/log/0/current" ; ${ISHELL} ; exit 111 ; }
+## By default the output goes to the uncaught-logs at
+## /run/66/log/0/current
+## If you want to see it on console uncomment the following line
+#
+# redirfd -w 1 /dev/console
 
-# start the database service
-echo [Start db services of tree ${TREE}]
-66-dbctl -v${VERBOSITY} -l ${LIVE} -t ${TREE} -u ||
-{ echo "rc.init: fatal: please see the log at ${LIVE}/log/0/current" ; ${ISHELL} ; exit 111 ; }
+if -n {
+    if { 66-echo -- "[Initiate db of tree ${TREE}...]" }
+    if { 66-init -v${VERBOSITY} -l ${LIVE} -t ${TREE} database }
+	if { 66-echo -- "[Start db services of tree ${TREE}...]" }
+    66-dbctl -v${VERBOSITY} -l ${LIVE} -t ${TREE} -u
+}
+
+if { 66-echo -- "rc.init: fatal: please see the log at ${LIVE}/log/0/current" }
+
+foreground { ${ISHELL} }
+
+exit 111

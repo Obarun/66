@@ -1,16 +1,19 @@
-#!@BINDIR@/sh -e
+#!@EXECLINE_SHEBANGPREFIX@/execlineb -S0
 
 ## It's the responsability of the sysadmin to properly define
 ## the configuration file. By default /etc/66/init.conf or
 ## instructed by 66-boot via the -s option(see 66-boot documentation).
-CONF="$1"
-. "$CONF"
+
+execl-envfile ${1}
 
 ## By default the output goes to the uncaught-logs at
 ## /run/66/log/0/current
 ## If you want to see it on console uncomment the following line
-# exec 1>&/dev/console
+#
+# redirfd -w 1 /dev/console
 
-66-echo [Starting rc.shutdown process ...]
-66-all -v${VERBOSITY} -l ${LIVE} -t ${TREE} -f down
-66-echo [rc.shutdown completed successfully]
+if {
+    if { 66-echo -- "[Starts rc.shutdown...]" }
+    66-all -v${VERBOSITY} -l ${LIVE} -t ${TREE} -f down
+}
+66-echo -- "[rc.shutdown completed successfully]"
