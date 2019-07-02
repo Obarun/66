@@ -18,72 +18,73 @@
 <h1>66-scanctl</h1>
 
 	<p>
-      66-scanctl sends signal to a <em>scandir</em>. This is a safe wrapper around <a href="https://skarnet.org/software/s6/s6-svscanctl.html">s6-svscanctl</a>.
+      Sends a <em>signal</em> to a <em>scandir</em>. Safe wrapper around <a href="https://skarnet.org/software/s6/s6-svscanctl.html">s6&#8209;svscanctl</a>.
     </p>
 
-<h2> Interface </h2>
+<h2>Interface</h2>
+
 	<pre>
 	66-scanctl [ -h ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -o <em>owner</em> ] signal
 	</pre>
 
 	<p>
-      66-scandir sends <em>signal</em> to an already running <a href="66-scandir.html">scandir</a> at <em>live</em> location where <em>live</em> is <tt>/run/66</tt> by default or the resulting path provided by the <tt>-l</tt> option.
-      If <tt><em>owner</em></tt> is ommited, the user of the current process will be used instead.
-    </p>
+		This program sends a <em>signal</em> to an already running <a href="66-scandir.html">scandir</a> at <em>live</em> where by default <em>live</em> is at <tt>/run/66</tt> or the resulting path provided by the <tt>&#8209;l</tt> option. If <tt><em>owner</em></tt> is not explicitely set with <tt>&#8209;o</tt> then the user of the current process will be used instead.
+	</p>
 
-<h2> Options </h2>
+<h2>Options</h2>
 
 	<ul>
-	 <li> <tt>-h&nbsp;</tt>&nbsp;: print the help. </li>
-	 
-	 <li>
-		<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increase/decrease 
-		the verbosity of the command. <tt>1(Default)</tt>: Only print 
-		error messages. <tt>2</tt>: Also print warning messages. 
-		<tt>3</tt>: Also print debugging messages.
-	 </li>
-	 
-	 <li> 
-		<tt>-l&nbsp;<em>live</em></tt>&nbsp;: sends signal to a <em>scandir</em> at <em>live</em>. Default is
-		<tt>/run/66</tt>. The default can also be changed at compile-time by
-		passing the <tt>--livedir=<em>live</em></tt> option to <tt>./configure</tt>. 
-		An absolute path is expected and should be under a writable filesystem 
-		- likely a RAM filesystem.
-	 </li>
-	 
-	 <li>
-		<tt>-o&nbsp;<em>owner</em></tt>&nbsp;: sends signal to a <em>scandir</em> owned by <em>owner</em> instead of the current owner of the process. <em>owner</em> should have the correct permissions access to deal with the <em>scandir</em>.
-	 </li>
-	</ul> 
-<h2 id=signals> Signals </h2>
+		<li>
+			<tt><b>-h</b></tt> : print this help.
+		</li>
+
+		<li>
+			<tt><b>&#8209;v <em>verbosity</em></b></tt> : increase/decrease the verbosity of the command. <tt>1(Default)</tt>: Only print error messages. <tt>2</tt>: Also print warning messages. <tt>3</tt>: Also print debugging messages.
+		</li>
+
+		<li>
+			<tt><b>&#8209;l&nbsp;<em>live</em></b></tt> : an absolute path. Send the signal to a <em>scandir</em> at <em>live</em>. Default is <tt>/run/66</tt>. The default can also be changed at compile time by passing the <tt>&#8209;&#8209;livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem.
+		</li>
+
+		<li>
+			<tt><b>-o&nbsp;<em>owner</em></b></tt> : send the signal to a <em>scandir</em> owned by <em>owner</em> instead of the current owner of the process. <em>owner</em> needs adecuate permissions to deal with the <em>scandir</em>.
+		</li>
+	</ul>
+
+<h2 id=signals>Signals</h2>
 
 	<p>
-	Any signal accepted by <tt><em>s6-svscanctl</em></tt> 
-	can be passed just without the '-' character. If, for example, you 
-	want to send a <tt><em>-t</em></tt> signal, you need to use: 
-	<tt><em>66&#8209;scanctl&nbsp;t</em></tt>. A series 
-	of commands is also accepted in the same way: <tt><em>66&#8209;scanctl&nbsp;st</em></tt>. 
-	A few convenient keywords were added to avoid having to remember 
-	basic and useful series of commands like:
+		Any signal accepted by <tt><em>s6&#8209;svscanctl</em></tt> can be passed but without the dash '&#8209;' character. As a result if you wanted to send a <tt><em>&#8209;t</em></tt> signal, you need to use: <tt><em>66&#8209;scanctl&nbsp;t</em></tt>. Further a series of commands is also accepted in the same way: <tt><em>66&#8209;scanctl&nbsp;st</em></tt>. A few convenient keywords were added to avoid having to remember basic and useful commands:
+	</p>
+
 	<ul>
-		<li><tt>reload&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;an</em></strong></tt></li>
-		<li><tt>interrupt&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;i</em></strong></tt></li>
-		<li><tt>quit&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;q</em></strong></tt></li>
-		<li><tt>halt&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;0</em></strong></tt>. 
-		<li><tt>reboot&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;6</em></strong></tt>.
-		<li><tt>poweroff&nbsp;</tt>&nbsp;: equal to <tt><strong><em>&#8209;7</em></strong></tt>.
+		<li>
+			<tt><b>reload&nbsp;&nbsp;&nbsp;&nbsp;</b></tt>=<tt>&nbsp;<em>&#8209;an</em></tt>
+		</li>
+		<li>
+			<tt><b>interrupt&nbsp;</b></tt>=<tt><em>&nbsp;&#8209;i</em></tt>
+		</li>
+		<li>
+			<tt><b>quit&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b></tt>=<tt>&nbsp;<em>&#8209;q</em></tt>
+		</li>
+		<li>
+			<tt><b>halt&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b></tt>=<tt>&nbsp;<em>&#8209;0</em></tt>
+		</li>
+		<li>
+			<tt><b>reboot&nbsp;&nbsp;&nbsp;&nbsp;</b></tt>=<tt>&nbsp;<em>&#8209;6</em></tt>
+		</li>
+		<li>
+			<tt><b>poweroff&nbsp;&nbsp;</b></tt>=<tt>&nbsp;<em>&#8209;7</em></tt>
+		</li>
 	</ul>
 	</p>
 
-<h2> Usage examples</h2>
-	<pre>   66&#8209;scanctl reload</pre>
+<h2>Usage examples</h2>
+
+	<pre>   66-scanctl reload</pre>
 	<p>
-		Updates the process supervision tree
-		to exactly match the services listed in <tt>scandir</tt>.
+		Updates the process supervision tree to exactly match the services listed in <tt>scandir</tt>.<br>This command is strictly equal to:
 	</p>
-	<p>
-		This command is strictly equal to :
-	</p>
-	<pre>   s6&#8209;svscanctl &#8209;an /service</pre>
+	<pre>   s6-svscanctl -an /service</pre>
 </body>
 </html>

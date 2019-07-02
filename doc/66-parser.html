@@ -18,39 +18,49 @@
 <h1>66-parser</h1>
 
 	<p>
-      This command parses <a href="frontend.html"><em>frontend</em></a> service file and write the result to a directory.
+      Parses a <a href="frontend.html"><em>frontend</em></a> service file and writes the result to a directory.
     </p>
 
-<h2> Interface </h2>
+<h2>Interface</h2>
+
 	<pre>
 	66-parser [ -h ] [ -v <em>verbosity</em> ] [ -f ] service destination</em>
 	</pre>
 
 	<ul>
-		<li>It open and reads the <em>frontend</em> <em>service</em> file.</li>
-		<li>It run a parser on the file.</li>
-		<li>It write the parsing result to <em>destination</em> directory.</li>
+		<li>
+			Opens and reads the <em>frontend</em> <em>service</em> file.
+		</li>
+		<li>
+			Runs a parser on the file.
+		</li>
+		<li>
+			Writes the parsing result to the <em>destination</em> directory.
+		</li>
 	</ul>
-	<p> An absolute path is expected for <em>service</em> and <em>destination</em>.
-<h2> Options </h2>
+	<p>
+		An absolute path is expected for either <em>service</em> and <em>destination</em>.
+	</p>
+
+<h2>Options</h2>
 
 	<ul>
-	 <li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
-	 
-	 <li>
-		<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
-		the verbosity of the command. <tt>1(Default)</tt>: Only print 
-		error messages. <tt>2</tt>: Also print warning messages. 
-		<tt>3</tt>: Also print debugging messages.
-	 </li>
-	 
-	 <li> 
-		<tt>-f&nbsp;</tt>: force to owerwrite an existing parsing result at <em>destination</em>.
-	</li>
+		<li>
+			<tt><b>-h</b></tt> : print this help.
+		</li>
+		<li>
+			<tt><b>-v <em>verbosity</em></b></tt> : increase/decrease the verbosity of the command. <tt>1(Default)</tt>: Only print error messages. <tt>2</tt>: Also print warning messages. <tt>3</tt>: Also print debugging messages.
+		</li>
+		<li>
+			<tt><b>-f</b></tt> : force. Owerwrite an existing parsing result at <em>destination</em>.
+		</li>
 	</ul>
 	
-<h2> Notes </h2>
-<p>It will not try to read and parse any services declared at <em>@depends</em> field. This tools should be used for debugging purpose and see the result of a parse process before trying to enable the service on the system. 
-Also, it's recommended to <strong>not set the [environment] section</strong>. This tool use the exact same parser as <a href="66-enable.html">66-enable</a> which write by default the configuration file at /etc/66/conf/<em>service_name</em>. That's mean that a corresponding file will be overwritten.</p>
+<h2>Notes</h2>
+
+	<p>
+		66-parser will not try to read and parse any services declared under the <em>@depends</em> key of the given frontend file. This tool is mainly intended for debugging purposes and to see the result of a parsing process before actually enabling the service on the system. It is further recommended to <strong>not have the [environment] section set</strong> when running this tool on any frontend file of any given service. The tool uses the exact same parser as <a href="66-enable.html">66&#8209;enable</a> which by default writes the configuration file to /etc/66/conf/<em>service_name</em>. As a consequence any corresponding existing file will be overwritten.
+	</p>
+
 </body>
 </html>

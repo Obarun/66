@@ -9,38 +9,33 @@
 <body>
 
 <p>
-<a href="index.html">66</a><br>
-<a href="//obarun.org/">www.obarun.org</a>
+	<a href="index.html">66</a><br>
+	<a href="//obarun.org/">www.obarun.org</a>
 </p>
 
-<h1> The frontend service file </h1>
+<h1>The frontend service file</h1>
 
-<p>
-The <a href="https://skarnet.org/software/s6">s6</a> and <a href="https://skarnet.org/software/s6">s6-rc</a> 
-programs each handle and use several kinds of services and different files. It is quite complex to
-understand and manage the relationship between all those files and services. If you're interested in the details
-you should read <a href="https://skarnet.org/software/s6/servicedir.html">the documentation for the s6 servicedir</a>
-and also about <a href="https://wiki.obarun.org/doku.php?id=s6services"><em>classic</em></a>, <a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html">
-<em>oneshot</em>, <em>longrun</em> and <em>bundle</em> services</a> on Obarun. The frontend service file of 66 tools allows you to deal with all these different services in
-a centralized manner in one single place.<br>
-By default 66 tools expect to find any service file in <tt>/etc/66/service</tt> although this
-can be changed at compile-time by passing the <tt>--with-service-path=<em>DIR</em></tt>
-option to <tt>./configure.</tt></p>
+	<p>
+		The <a href="https://skarnet.org/software/s6">s6</a> and <a href="https://skarnet.org/software/s6">s6-rc</a> programs each handle and use several kinds of services and different files. It is quite complex to understand and manage the relationship between all those files and services. If you're interested in the details you should read <a href="https://skarnet.org/software/s6/servicedir.html">the documentation for the s6 servicedir</a> and also about <a href="https://wiki.obarun.org/doku.php?id=s6services"><em>classic</em></a>, <a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html"> <em>oneshot</em>, <em>longrun</em> and <em>bundle</em> services</a> on Obarun. The frontend service file of 66 tools allows you to deal with all these different services in a centralized manner in one single place.
+		<br>
+		By default 66 tools expects to find any service files in <tt>/etc/66/service</tt> although this can be changed at compile time by passing the <tt>--with-service-path=<em>DIR</em></tt> option to <tt>./configure.</tt>
+	</p>
 
-<p>The frontend service file has a format of INI with a specific syntax on the key field. 
-The name of the file usually corresponds to the name of the daemon and does not
-have any extension or prefix.
+	<p>
+		The frontend service file has a format of INI with a specific syntax on the key field. The name of the file usually corresponds to the name of the daemon and does not have any extension or prefix.
+	</p>
 
-</p><p>The file is made of <em>sections</em> which can contain one or more <em>key value</em> pairs
-where the <em>key</em> name can contain special characters like <em>'-' (hyphen)</em> or <em>'_' (low line)</em>
-except the character <em>'@' (commercial at)</em> which is reserved.</p>
+	<p>
+		The file is made of <em>sections</em> which can contain one or more <em>key value</em> pairs where the <em>key</em> name can contain special characters like <em>'-' (hyphen)</em> or <em>'_' (low line)</em> except the character <em>'@' (commercial at)</em> which is reserved.</p>
 
 <h3>File name examples</h3>
-<pre>/etc/66/service/dhcpcd</pre>
-<pre>/etc/66/service/very_long_name</pre>
+
+	<pre>/etc/66/service/dhcpcd</pre>
+	<pre>/etc/66/service/very_long_name</pre>
 
 <h3>File content examples</h3>
-<pre>   [main]
+
+	<pre>   [main]
    @type = classic
    @name = ntpd
    @description = "ntpd daemon"
@@ -57,60 +52,75 @@ except the character <em>'@' (commercial at)</em> which is reserved.</p>
    !CMD_ARGS=-d -s
    </pre>
 
-<p>The parser will not accept any empty <em>value</em>. If a
-<em>key</em> is set, the <em>value</em> cannot be empty. Comments are allowed
-using the number sign '#'. Empty lines are also allowed.<br>
-<em>Key names</em> are <strong>case sensitive</strong> and <em>cannot be
-modified</em>. Most names should be specific enough to avoid confusion.<br>
-The sections can be declared in any order but as a good practice 
-the <tt>[main]</tt> section should be declared first. That way the parser
-can read the file as fast as possible.</p>
+	<p>
+		The parser will not accept an empty <em>value</em>. If a <em>key</em> is set then the <em>value</em> can not be empty. Comments are allowed using the number sign '#'. Empty lines are also allowed.<br>
+		<em>Key names</em> are <strong>case sensitive</strong> and <em>can not be modified</em>. Most names should be specific enough to avoid confusion.<br>
+		The sections can be declared in any order but as a good practice the <tt>[main]</tt> section should be declared first. That way the parser can read the file as fast as possible.
+	</p>
 
 <h2>Sections</h2>
 
-<p>All sections need to be declared with the name written between square brackets '[]'
-and must be of lowercase letters <strong>only</strong>. This means that special characters, uppercase letters and numbers are not allowed in the name of a section. An <em>entire</em> section can be commented out by placing
-the number sign '#' in front of the opening square bracket like this:</p>
+	<p>
+		All sections need to be declared with the name written between square brackets '[]' and must be of lowercase letters <strong>only</strong>. This means that special characters, uppercase letters and numbers are not allowed in the name of a section. An <em>entire</em> section can be commented out by placing the number sign '#' in front of the opening square bracket like this:
+	</p>
 
-<pre>   #[stop]</pre>
+	<pre>   #[stop]</pre>
 
-<p>The frontend service file allows the following section names: </p>
-<ul>
- <li><a href="#main">[main]</a></li>
- <li><a href="#start">[start]</a></li>
- <li><a href="#stop">[stop]</a></li>
- <li><a href="#logger">[logger]</a></li>
- <li><a href="#environment">[environment]</a></li>
-</ul>
-<p>Although a section can be mandatory not all of its key fields must be necessarily so.</p>
+	<p>
+		The frontend service file allows the following section names:
+	</p>
 
-<hr>
+	<ul>
+		<li>
+			<a href="#main">[main]</a>
+		</li>
+
+		<li>
+			<a href="#start">[start]</a>
+		</li>
+
+		<li>
+			<a href="#stop">[stop]</a>
+		</li>
+
+		<li>
+			<a href="#logger">[logger]</a>
+		</li>
+
+		<li>
+			<a href="#environment">[environment]</a>
+		</li>
+	</ul>
+
+	<p>
+		Although a section can be mandatory not all of its key fields must be necessarily so.
+	</p>
 
 <h2>Syntax legend</h2>
 
-	<p> The <em>value</em> of a <em>key</em> is parsed in a specific format depending on the key. 
-            The following is a break down of how to write these syntaxes:</p>
+	<p>
+		The <em>value</em> of a <em>key</em> is parsed in a specific format depending on the key. The following is a break down of how to write these syntaxes:</p>
+
 	<ul>
 		<li>
-			<tt>inline&nbsp;</tt>&nbsp;: An inline <em>value</em>. Must be on the same
-			line with its corresponding <em>key</em>.
-			<p>Valid syntax:</p><p>
-			</p><ul>
+			<tt><b>inline</b></tt> : An inline <em>value</em>. Must be on the same line with its corresponding <em>key</em>.
+			<p>Valid syntax:</p>
+			<ul>
 				<pre>@type = classic</pre>
 				<pre>@type=classic</pre>
 			</ul>
 	
 			<p>(!) Invalid syntax:</p>
 			<ul>
-				<pre>@type=
-classic</pre>
+				<pre>@type=<br>classic</pre>
 			</ul>
 			 
 			</li>
-		<br><hr>
+
+		<br><hr><br>
 	 
 		<li> 
-			<tt>quotes&nbsp;</tt>&nbsp;: A <em>value</em> between
+			<tt><b>quotes</b></tt> : A <em>value</em> between
 			double-quotes. Must be on the same line with its corresponding <em>key</em>.
 		</li>
 		<p>Valid syntax:</p>
@@ -119,13 +129,13 @@ classic</pre>
 			<pre>@description="some awesome description"</pre>
 		</ul>(!) Invalid syntax:<p></p>
 		<ul>
-			<pre>@description = "line break inside a double-quote
-is not allowed"</pre>
+			<pre>@description = "line break inside a double-quote<br>is not allowed"</pre>
 		</ul>
-		<br><hr>
+
+		<br><hr><br>
 		
 		<li>
-			<tt>brackets&nbsp;</tt>&nbsp;: Multiple <em>values</em> between
+			<tt><b>brackets</b></tt> : Multiple <em>values</em> between
 			parentheses '()'. Values need to be separated
 			with a space. A line break can be used instead.
 		</li>
@@ -149,10 +159,10 @@ fooC
 		<ul>
 			 <pre>@depends = (fooAfooBfooC)</pre>
 		</ul>
-		<br><hr>
+		<br><hr><br>
 		
 		<li>
-			<tt>uint&nbsp;</tt>&nbsp;: A positive whole number. 
+			<tt><b>uint</b></tt> : A positive whole number. 
 			Must be on the same line with its corresponding <em>key</em>.
 		</li>
 		<p>Valid syntax:</p>
@@ -165,9 +175,9 @@ fooC
 			<pre>@notify=
 3</pre>
 		</ul>
-		<br><hr>
+		<br><hr><br>
 		<li> 
-			<tt>path&nbsp;</tt>&nbsp;: An absolute path beginning with a forward slash '/'. 
+			<tt><b>path</b></tt> : An absolute path beginning with a forward slash '/'. 
 			Must be on the same line with its corresponding <em>key</em>.
 		</li>
 		<p>Valid syntax:</p>
@@ -180,10 +190,10 @@ fooC
 			<pre>@destination=/a/very/
 long/path</pre>
 		</ul>
-		<br><hr>
+		<br><hr><br>
 
 		<li>
-			<tt>pair&nbsp;</tt>&nbsp;: same as <tt>inline</tt>.
+			<tt><b>pair</b></tt> : same as <tt>inline</tt>.
 		</li>
 		<p>Valid syntax:</p>
 		<ul>
@@ -197,8 +207,7 @@ long/path</pre>
 MYVALUE</pre>
 		</ul>
 	</ul>
-
-<br><hr>
+	<br>
 
 <h2 id="main">Section: [main]</h2>
 
@@ -211,14 +220,14 @@ MYVALUE</pre>
  <li><h4>@type</h4></li>
  <h5>Corresponds to the file "<em>type</em>" of s6-rc programs.</h5>
  <p>Declare the type of the service.</p>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: inline</p>
- <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : yes (!)</p>
+ <p><tt>syntax</tt> : inline</p>
+ <p><tt>valid values</tt> :</p>
   <ul>
-   <li><tt>classic&nbsp;</tt>&nbsp;: declares the service as "classic".</li>
-   <li><tt>bundle&nbsp;</tt>&nbsp;: declares the service as <tt>bundle</tt> service.</li>
-   <li><tt>longrun&nbsp;</tt>&nbsp;: declares the service as <tt>longrun</tt> service.</li>
-   <li><tt>oneshot&nbsp;</tt>&nbsp;: declares the service as <tt>oneshot</tt> service.</li>
+   <li><tt>classic</tt> : declares the service as "classic".</li>
+   <li><tt>bundle</tt> : declares the service as <tt>bundle</tt> service.</li>
+   <li><tt>longrun</tt> : declares the service as <tt>longrun</tt> service.</li>
+   <li><tt>oneshot</tt> : declares the service as <tt>oneshot</tt> service.</li>
    </ul>
  <p><em><tt><strong>Note:</strong></tt></em> If you don't care about dependencies between services or if you don't need
    specific tasks to get done before running the daemon, "classic" is the best pick.</p><br>
@@ -228,9 +237,9 @@ MYVALUE</pre>
  <li><h4>@name</h4></li>
  <h5>Corresponds to the <em>name of the service directory</em> of s6 and s6-rc programs.</h5>
  <p>Name of the service.</p>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: inline</p>
- <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : yes (!)</p>
+ <p><tt>syntax</tt> : inline</p>
+ <p><tt>valid values</tt> :</p>
   <ul>
    <li>Any name can be set as a <em>value</em>. A good pratice is to use the
    same name of the frontend service file.</li>
@@ -241,9 +250,9 @@ MYVALUE</pre>
  <li><h4>@description</h4></li>
  <h5>Without equivalent, this key is unique to 66 tools.</h5>
  <p>A short description of the service.</p>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: quote</p>
- <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : yes (!)</p>
+ <p><tt>syntax</tt> : quote</p>
+ <p><tt>valid values</tt> :</p>
   <ul>
    <li>Anything you want.</li>
   </ul>
@@ -253,9 +262,9 @@ MYVALUE</pre>
  <li><h4>@user</h4></li>
  <h5>Without equivalent, this key is unique to 66 tools.</h5>
  <p>Declare the permissions of the service.</p>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: bracket</p>
- <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : yes (!)</p>
+ <p><tt>syntax</tt> : bracket</p>
+ <p><tt>valid values</tt> :</p>
   <ul>
    <li>Any valid user of the system. If you don't 
 	know in advance the name of the user who will deal with the service, 
@@ -271,10 +280,10 @@ MYVALUE</pre>
  <li><h4>@depends</h4></li>
  <h5>Corresponds to the file "<em>dependencies</em>" of s6-rc programs.</h5>
  <p>Declare dependencies of the service.</p>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no&#8212;this field has no effect if the 
+ <p><tt>mandatory</tt> : no&#8212;this field has no effect if the 
  type of the service is "classic"</em>.</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: bracket</p>
- <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
+ <p><tt>syntax</tt> : bracket</p>
+ <p><tt>valid values</tt> :</p>
   <ul>
    <li>The <em>name</em> of any valid service with type 
 	<tt>bundle</tt>, <tt>longrun</tt> or <tt>oneshot</tt>. Services of type <tt>classic</tt>
@@ -324,11 +333,11 @@ MYVALUE</pre>
  <li><h4>@contents</h4></li>
  <h5>Corresponds to the file "<em>contents</em>" of s6-rc programs.</h5>
  <p>Declare the contents of a bundle service.</p>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)&#8212;for services of type <tt>bundle</tt>.
+ <p><tt>mandatory</tt> : yes (!)&#8212;for services of type <tt>bundle</tt>.
  <em>Optional</em> for services of type <tt>oneshot</tt> or <tt>longrun</tt>.
  No effect at all for services of type <tt>classic</tt>.</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: bracket</p>
- <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
+ <p><tt>syntax</tt> : bracket</p>
+ <p><tt>valid values</tt> :</p>
   <ul>
    <li>The name of any valid service of type <tt>bundle</tt>, <tt>longrun</tt> or <tt>oneshot</tt>. Services of type <tt>classic</tt>
 	are not allowed.
@@ -339,16 +348,16 @@ MYVALUE</pre>
 
  <li><h4>@options</h4></li>
  <h5>Without equivalent, this key is unique to 66 tools.</h5>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no
- </p><p><tt>syntax&nbsp;</tt>&nbsp;: bracket</p>
- <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : no
+ </p><p><tt>syntax</tt> : bracket</p>
+ <p><tt>valid values</tt> :</p>
   <ul>
-   <li><tt>log&nbsp;</tt>&nbsp;: automatically create a logger for the service.
+   <li><tt>log</tt> : automatically create a logger for the service.
    The behavior of the logger can be adjusted in the corresponding 
    section&#8212;see <a href="#logger">[logger]</a>.</li>
-   <li><tt>env&nbsp;</tt>&nbsp;: enable the use of the <tt>[environment]</tt>
+   <li><tt>env</tt> : enable the use of the <tt>[environment]</tt>
    section for the service&#8212;see <a href="#environment">[environment]</a>.</li>
-   <li><tt>pipeline&nbsp;</tt>&nbsp;: automatically create a pipeline between
+   <li><tt>pipeline</tt> : automatically create a pipeline between
    the service and the logger. For more information read 
    <a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html">the s6-rc documentation</a>.</li>
     </ul>
@@ -357,17 +366,17 @@ MYVALUE</pre>
 <br><hr style="border: 1px dashed #000000">
 
  <li><h4>@flags</h4></li>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no
- </p><p><tt>syntax&nbsp;</tt>&nbsp;: bracket</p>
- <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : no
+ </p><p><tt>syntax</tt> : bracket</p>
+ <p><tt>valid values</tt> :</p>
   <ul>
-   <li><tt>nosetsid&nbsp;</tt>&nbsp;: 
+   <li><tt>nosetsid</tt> : 
    <h5>Corresponds to the file "<em>nosetsid</em>" of s6-rc and s6 programs</h5>
    <p>This will create the file <tt>nosetsid</tt></p>
    <p>Once this file was created the service will be run in the same process group
    as the supervisor of the service <a href="https://skarnet.org/software/s6/s6-supervise.html">(s6-supervise)</a>. 
    Without this file the service will have its own process group and is started as a session leader.</p>
-   </li><li><tt>down&nbsp;</tt>&nbsp;:
+   </li><li><tt>down</tt> :
    <h5>Corresponds to the file "<em>down</em>" of s6-rc and s6 programs.</h5>
    This will create the file <tt>down</tt><br><br>
    Once this file was created the default state of the service will be considered <em>down</em>,
@@ -380,9 +389,9 @@ MYVALUE</pre>
 
  <li><h4>@notify</h4></li>
  <h5>Corresponds to the file "<em>notification-fd</em>" of s6-rc programs.</h5>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no
- </p><p><tt>syntax&nbsp;</tt>&nbsp;: uint</p>
- <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : no
+ </p><p><tt>syntax</tt> : uint</p>
+ <p><tt>valid values</tt> :</p>
   <ul>
    <li>Any valid number.
    <p>This will create the file <tt>notification-fd</tt>. 
@@ -402,9 +411,9 @@ MYVALUE</pre>
 
  <li><h4>@timeout-finish</h4></li>
  <h5>Corresponds to the file "<em>timeout-finish</em>" of s6-rc and s6 programs.</h5>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no
- </p><p><tt>syntax&nbsp;</tt>&nbsp;: uint</p>
- <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : no
+ </p><p><tt>syntax</tt> : uint</p>
+ <p><tt>valid values</tt> :</p>
   <ul>
    <li>Any valid number.
    <p>This will create the file <tt>timeout-finish</tt>. 
@@ -419,9 +428,9 @@ MYVALUE</pre>
  
  <li><h4>@timeout-kill</h4></li>
  <h5>Corresponds to the file "<em>timeout-kill</em>" of s6-rc and s6 programs.</h5>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no
- </p><p><tt>syntax&nbsp;</tt>&nbsp;: uint</p>
- <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : no
+ </p><p><tt>syntax</tt> : uint</p>
+ <p><tt>valid values</tt> :</p>
   <ul>
    <li>Any valid number.
    <p>This will create the file <tt>timeout-kill</tt>. 
@@ -439,9 +448,9 @@ MYVALUE</pre>
  
  <li><h4>@timeout-up</h4></li>
  <h5>Corresponds to the file "<em>timeout-up</em>" of s6-rc programs.</h5>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no
- </p><p><tt>syntax&nbsp;</tt>&nbsp;: uint</p>
- <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : no
+ </p><p><tt>syntax</tt> : uint</p>
+ <p><tt>valid value</tt> :</p>
   <ul>
    <li>Any valid number.
    <p>This will create the file <tt>timeout-up</tt>. 
@@ -460,9 +469,9 @@ MYVALUE</pre>
  
  <li><h4>@timeout-down</h4></li>
  <h5>Corresponds to the file "<em>timeout-down</em>" of s6-rc programs.</h5>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no
- </p><p><tt>syntax&nbsp;</tt>&nbsp;: uint</p>
- <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : no
+ </p><p><tt>syntax</tt> : uint</p>
+ <p><tt>valid value</tt> :</p>
   <ul>
    <li>Any valid number.
    <p>This will create the file <tt>timeout-down</tt>. 
@@ -481,9 +490,9 @@ MYVALUE</pre>
 
  <li><h4>@maxdeath</h4></li>
  <h5>Corresponds to the file "<em>max-death-tally</em>" of s6-rc and s6 programs.</h5>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no
- </p><p><tt>syntax&nbsp;</tt>&nbsp;: uint</p>
- <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : no
+ </p><p><tt>syntax</tt> : uint</p>
+ <p><tt>valid value</tt> :</p>
   <ul>
    <li>Any valid number.
    <p>This will create the file <tt>max-death-tally</tt>. 
@@ -503,9 +512,9 @@ MYVALUE</pre>
 
  <li><h4>@down-signal</h4></li>
  <h5>Corresponds to the file "<em>down-signal</em>" of s6-rc and s6 programs.</h5>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no
- </p><p><tt>syntax&nbsp;</tt>&nbsp;: uint</p>
- <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : no
+ </p><p><tt>syntax</tt> : uint</p>
+ <p><tt>valid value</tt> :</p>
   <ul>
    <li>The name or number of a signal.
    <p>This will create the file <tt>down-signal</tt> which is 
@@ -519,15 +528,20 @@ MYVALUE</pre>
   
   <li><h4>@hiercopy</h4></li>
  <h5>Without equivalent, this key is unique to 66 tools.</h5>
- <p>Copy the corresponding name to the service directory destination.</p>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no </p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: bracket</p>
- <p><tt>valid values&nbsp;</tt>&nbsp;:</p>
+ <p>Copy subdirectories and files on the fly to the main service destination.</p>
+ <p><tt>mandatory</tt> : no </p>
+ <p><tt>syntax</tt> : bracket</p>
+ <p><tt>valid values</tt> :</p>
   <ul>
-   <li>Any elements name at the directory frontend service file. If the frontend service file found at /etc/66/service/foo/foo where 
-   directory /etc/66/service/foo contains /etc/66/service/foo/data as directory and /etc/66/service/foo/scripts, use
+   <!-- Is the following correct by your definition? (I tried to make it easier to understand but am only 90% sure if I understood it well to begin with) -->
+   <li>Any file or subdirectory in the services main directory that do not by default form part of the service itself. If the frontend service file was to be found at /etc/66/service/foo/foo and /etc/66/service/foo contains an additional subdirectory "data" and a file named "scripts", use
    <pre>@hiercopy=(data scripts)</pre>
-   to copy the directory data and the file scripts to the service directory destination.</li>
+   to copy these to the service directory destination.</li>
+   <!-- I think there should be an anchor here to the definition of "service directory destionation" -->
+   <!-- What if the frontend file was at /etc/66/service/foo instead? Will it behave the same? -->
+   <!-- Is the copy recursive? Meaning that ../service/foo/data/sub/sub will also get copied? -->
+
+
    </ul>
 </ul>
 
@@ -543,16 +557,16 @@ MYVALUE</pre>
 	
  <li><h4>@build</h4></li>
  <h5>Without equivalent, this key is unique to 66 tools.</h5>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: inline</p>
- <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : yes (!)</p>
+ <p><tt>syntax</tt> : inline</p>
+ <p><tt>valid value</tt> :</p>
   <ul>
-   <li><tt>auto&nbsp;</tt>&nbsp;: creates the service script file
+   <li><tt>auto</tt> : creates the service script file
    as <a href="https://skarnet.org/software/execline/">execline</a> script.</li>
    <p>The corresponding file to start the service will automatically be written in 
    <a href="https://skarnet.org/software/execline/">execline</a> format with
    the <tt>@execute</tt> key <em>value</em>.</p>
-   <li><tt>custom&nbsp;</tt>&nbsp;: creates the service script file
+   <li><tt>custom</tt> : creates the service script file
    in the language set in the <tt>@shebang</tt> key <em>value</em>.</li>
   <p>The corresponding file to start the service will be written 
    in the language set in the <tt>@shebang</tt> key <em>value</em>.</p>
@@ -564,9 +578,9 @@ MYVALUE</pre>
  <li><h4>@runas</h4></li>
  <h5>Without equivalent, this key is unique to 66 tools.</h5>
  
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: inline</p>
- <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : no</p>
+ <p><tt>syntax</tt> : inline</p>
+ <p><tt>valid value</tt> :</p>
   <ul>
    <li>Any valid user set on the system</li>
    <p>This will pass the privileges of the service to the given user before starting the 
@@ -581,9 +595,9 @@ MYVALUE</pre>
   <li><h4>@shebang</h4></li>
  <h5>Without equivalent, this key is unique to 66 tools.</h5>
  
- <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)&#8212;if the <tt>@build</tt> key is set to <em>custom</em>.</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: quotes, path</p>
- <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : yes (!)&#8212;if the <tt>@build</tt> key is set to <em>custom</em>.</p>
+ <p><tt>syntax</tt> : quotes, path</p>
+ <p><tt>valid value</tt> :</p>
   <ul>
    <li>A valid path to an interpreter installed on your system.</li>
    <p>This will set the language that will be used to read and write the <tt>@execute</tt> key <em>value</em>.</p>
@@ -596,9 +610,9 @@ MYVALUE</pre>
  <em>longrun</em> service and to the file "<em>up</em>" for
   a <em>oneshot</em> service.</h5>
  
- <p><tt>mandatory&nbsp;</tt>&nbsp;: yes (!)</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: bracket</p>
- <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : yes (!)</p>
+ <p><tt>syntax</tt> : bracket</p>
+ <p><tt>valid value</tt> :</p>
   <ul>
    <li>The command to execute when starting the service.</li>
    </ul>
@@ -648,9 +662,9 @@ same behaviour. -->
 
  <li><h4>@destination</h4></li>
  <h5>Without equivalent, this key is unique to 66 tools.</h5>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: path</p>
- <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : no</p>
+ <p><tt>syntax</tt> : path</p>
+ <p><tt>valid value</tt> :</p>
   <ul>
    <li>Any valid path on the system.</li>
    <p>The directory where to save the log file. This directory is automatically created.
@@ -665,9 +679,9 @@ same behaviour. -->
   
   <li><h4>@backup</h4></li>
  <h5>Without equivalent, this key is unique to 66 tools.</h5>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: uint</p>
- <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : no</p>
+ <p><tt>syntax</tt> : uint</p>
+ <p><tt>valid value</tt> :</p>
   <ul>
    <li>Any valid number.</li>
   <p>The log directory will keep <em>value</em> files. 
@@ -678,9 +692,9 @@ same behaviour. -->
    
   <li><h4>@maxsize</h4></li>
  <h5>Without equivalent, this key is unique to 66 tools.</h5>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: uint</p>
- <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : no</p>
+ <p><tt>syntax</tt> : uint</p>
+ <p><tt>valid value</tt> :</p>
   <ul>
    <li>Any valid number.</li>
   <p>A new log file will be created every time the current one approaches <em>value</em> 
@@ -692,9 +706,9 @@ same behaviour. -->
   
   <li><h4>@timestamp</h4></li>
  <h5>Without equivalent, this key is unique to 66 tools.</h5>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: inline</p>
- <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : no</p>
+ <p><tt>syntax</tt> : inline</p>
+ <p><tt>valid value</tt> :</p>
   <ul>
    <li>tai
    	<p>The logged line will be preceded by a TAI64N timestamp 
@@ -736,9 +750,9 @@ created by default at /etc/66/env/name_of_daemon directory. The default can also
 <ul>
  <li><h4>Any <em>key=value</em> pair</h4></li>
  <h5>Without equivalent, this key is unique to 66 tools.</h5>
- <p><tt>mandatory&nbsp;</tt>&nbsp;: no</p>
- <p><tt>syntax&nbsp;</tt>&nbsp;: pair</p>
- <p><tt>valid value&nbsp;</tt>&nbsp;:</p>
+ <p><tt>mandatory</tt> : no</p>
+ <p><tt>syntax</tt> : pair</p>
+ <p><tt>valid value</tt> :</p>
   <ul>
    <p>You can define any variables that you want to add to the environment
    of the service. For example:</p>
@@ -870,7 +884,7 @@ for it in your <tt>@execute</tt> field.</p>
     @timeout-down =
     @maxdeath = 
     @down-signal =
-    @hiercopy = ()
+    @hiercopy = 
     
     [start]
     @build = auto,custom
@@ -898,6 +912,6 @@ for it in your <tt>@execute</tt> field.</p>
     
     [environment]
     MYKEY=myvalue
-    !ANOTHERKEY=anothervalue
+    !ANOTHERKEY=antohervalue
     </pre>
 </body></html>

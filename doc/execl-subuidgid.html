@@ -11,18 +11,18 @@
 <body>
 
 <p>
-<a href="index.html">66</a><br />
-<a href="//obarun.org/">www.obarun.org</a>
+	<a href="index.html">66</a><br />
+	<a href="//obarun.org/">www.obarun.org</a>
 </p>
 
 <h1>execl-subuidgid</h1>
 
 	<p>
-      This command substitutes a litteral GID UID term by the UID GID of the current owner of the process.
+		Substitutes a literal GID UID with the UID GID of the current owner of the process.
 	</p>
 
 
-<h2> Interface </h2>
+<h2>Interface</h2>
 
 	<pre>
 	execl-subuidgid [ -o owner ] <em>prog</em>
@@ -30,31 +30,31 @@
 
 	<ul>
 		<li>
-			<tt>execl-subuidgid</tt> reads the <em>command</em> and substitutes the variable UID GID on <em>prog</em>. 
+			Substitutes the variable UID GID on <em>prog</em>. 
 		</li>
 	</ul>
 
-<h2> Options </h2>
+<h2>Options</h2>
 
 	<ul>
 		<li>
-			<tt>-o&nbsp;<em>owner</em>&nbsp;</tt>: sets UID GID of <em>owner</em> instead of the current one.
+			<tt><b>-o <em>owner</em></b></tt> : set UID GID of <em>owner</em> instead of the current one.
 		</li>
 	</ul>
 
-<h2> Usage examples </h2>
-	<p>
+<h2>Usage examples</h2>
+
 	<pre>
 	execl-subuidgid
 	if { mkdir -p /run/user }
 	chown -R $UID:$GID /run/user 
 	</pre>
+
 	<pre>
 	execl-subuidgid -o root
 	if { mkdir /run }
 	chmow -R $UID:$GID /run/user 
 	</pre>
-	</p>
-	<p>
+
 </body>
 </html>

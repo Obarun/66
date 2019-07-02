@@ -11,111 +11,121 @@
 <body>
 
 <p>
-<a href="index.html">66</a><br />
-<a href="//obarun.org/">www.obarun.org</a>
+	<a href="index.html">66</a><br />
+	<a href="//obarun.org/">www.obarun.org</a>
 </p>
 
-<h1> 66-shutdown</h1>
+<h1>66-shutdown</h1>
 	<p>
-		<tt>66-shutdown</tt> triggers the system shutdown procedure. It is normally invoked as <tt>shutdown</tt> at your binary system directory. This program is a modified copy of <a href="https://skarnet.org/software/s6-linux-init/s6-linux-init-shutdown.html">s6-linux-init-shudown</a> program.
+		Triggers the system shutdown procedure. It is normally invoked as <tt>shutdown</tt> at your binary system directory. This program is a modified copy of <a href="https://skarnet.org/software/s6-linux-init/s6-linux-init-shutdown.html">s6-linux-init-shutdown</a>.
 	</p>
 
-<h2> Interface </h2>
+<h2>Interface </h2>
 
-<pre>
-     66-shutdown [ -H ] [ -l live ] [ -h | -p | -r | -k ] [ -a ] [ -t <em>sec</em> ] [ -f | -F ] <em>time</em> [ <em>message</em> ]
+	<pre>
+	66-shutdown [ -H ] [ -l live ] [ -h | -p | -r | -k ] [ -a ] [ -t <em>sec</em> ] [ -f | -F ] <em>time</em> [ <em>message</em> ]
      66-shutdown -c [ <em>message</em> ]
-</pre>
+	</pre>
 
 	<ul>
-		 <li> If the <tt>-c</tt> option is present, a pending shutdown is cancelled. </li>
-		 <li> Else, it plans the shutdown procedure at time <em>time</em>. </li>
-		 <li> If a <em>message</em> argument has been given, <em>message</em> is
-		broadcast to all logged in users (as tracked by utmp). </li>
-		 <li> <tt>shutdown</tt> exits 0. The shutdown procedure happens asynchronously. </li>
+		<li>
+			Will cancel a pending shutdown if <tt>-c</tt> is passed.
+		</li>
+
+		<li>
+			Else plans the shutdown procedure at time <em>time</em>.
+		</li>
+
+		<li>
+			If a <em>message</em> argument has been given it is broadcast to all logged in users as tracked by utmp.
+		</li>
+
+		<li>
+			Exits with <tt>0</tt>. The shutdown procedure happens asynchronously.
+		</li>
 	</ul>
 
 	<p>
-	 The <tt>66-shutdown</tt> program conforms to the LSB-3.0.0
-	<a href="http://refspecs.linuxbase.org/LSB_3.0.0/LSB-PDA/LSB-PDA/shutdown.html">shutdown</a>
-	interface.
+		The <tt>66-shutdown</tt> program abides to the standards of the LSB-3.0.0 <a href="http://refspecs.linuxbase.org/LSB_3.0.0/LSB-PDA/LSB-PDA/shutdown.html">shutdown</a> interface.
 	</p>
 
 	<p>
-		 <em>time</em> must follow the following format:
-		<tt>[&nbsp;now&nbsp;|&nbsp;[+]<em>mins</em>&nbsp;|&nbsp;<em>hh</em>:<em>mm</em>&nbsp;]</tt>
+		<em>time</em> must be one of these formats: <tt>[&nbsp;now&nbsp;|&nbsp;[+]mins&nbsp;|&nbsp;hh:mm&nbsp;]</tt> where:
 	</p>
 
 	<ul>
-		 <li> <tt>now</tt> means: trigger the shutdown sequence immediately. </li>
-		 <li> <em>hh</em>:<em>mm</em> means: absolute time. Trigger the shutdown sequence when the time
-		<em>hh</em>:<em>mm</em> occurs. If that time has passed for the day, it will wait for the
-		next day. <em>hh</em> must have 1 or 2 digits; <em>mm</em> must have 2 digits. </li>
-		 <li> <em>mins</em> or <tt>+</tt><em>mins</em> means: relative time. Trigger the shutdown
-		sequence after <em>mins</em> minutes. </li>
+		<li>
+			<tt><b>now</b></tt> : triggers the shutdown sequence immediately.
+		</li>
+
+		<li>
+			<tt><b>mins</b></tt> or <tt><b>+mins</b></tt> : relative time; triggers the shutdown sequence after <em>mins</em> minutes.
+		</li>
+
+		<li>
+			<tt><b>hh:mm</b></tt> : absolute time; triggers the shutdown sequence when the time <em>hh</em>:<em>mm</em> occurs. If that time has passed for the current day, it will wait for the next day. <em>hh</em> can have 1 or 2 digits; <em>mm</em> must have 2 digits.
+		</li>
 	</ul>
 
-<h2> Options </h2>
+<h2>Options</h2>
 
 	<ul>
 		<li>
-			 <tt>-H&nbsp;</tt>&nbsp;: prints this help.
+			<!-- uppercase H is non-standard to the rest of 66 -->
+			<!-- I see why you'd want to keep -h/-p/-r together but it's a strange situation. How do other programs handle this? -->
+			<tt><b>-H</b></tt> : print this help.
 		</li>
+
 		<li>
-			<tt>-l&nbsp;<em>live</em></tt>&nbsp;: <em>live</em> directory to use. <tt>66-shutdown</tt> sends signal the pipe of the <a href="66-shutdownd.html">66-shutdownd</a> service at <tt><em>live</em>/scandir/0/shutdownd/fifo</tt>. Default is
-			<tt>/run/66</tt>. The default can also be changed at compile-time by
-			passing the <tt>--livedir=<em>live</em></tt> option to <tt>./configure</tt>. 
-			An absolute path is expected and should be under a writable filesystem 
-			- likely a RAM filesystem.
+			<tt><b>-l <em>live</em></b></tt> : an absolute path; directory to use. <tt>66-shutdown</tt> sends a signal to the listening pipe of the <a href="66-shutdownd.html">66-shutdownd</a> service at <tt><em>live</em>/scandir/0/shutdownd/fifo</tt>. Default is <tt>/run/66</tt>. The default can also be changed at compile-time by passing the <tt>--livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem.
 		</li>
+
 		<li>
-			<tt>-a</tt>&nbsp;: access control. The shutdown sequence will only be
-			launched if one of the users listed in <tt>/etc/shutdown.allow</tt>
-			is currently logged in (as tracked by utmp). <tt>/etc/shutdown.allow</tt>
-			is a text file, one user per line, lines starting with <tt>#</tt> are comments. 
+			<tt><b>-a</b></tt> : access control. The shutdown sequence will only be launched if one of the users listed in <tt>/etc/shutdown.allow</tt> is currently logged in (as tracked by utmp). <tt>/etc/shutdown.allow</tt> is a text file which accepts one user per line. Lines starting with <tt>#</tt> are commented out.
 		</li>
+
 		<li>
-			<tt>-t</tt>&nbsp;<em>sec</em>&nbsp;: at the end of the shutdown sequence,
-			when it's time to kill all processes, have a "grace time" period
-			of <em>sec</em> seconds between the SIGTERM and the SIGKILL (to allow processes
-			receiving SIGTERM to exit cleanly). Default is 3 seconds. 
+			<tt><b>-t <em>sec</em></b></tt> : have a "grace time" period of <em>sec</em> seconds between the SIGTERM and the SIGKILL at the end of the shutdown sequence when it is time to kill all processes (allows processes to receive SIGTERM to exit cleanly). Default is 3 seconds.
 		</li>
-		
+
 		<li>
-			<tt>-k</tt>&nbsp;: warning only. <em>message</em> will be sent to all
-			logged in users, but the shutdown sequence will not be triggered. 
+			<tt><b>-k</b></tt> : do not shut down; send a warning <em>message</em> to all logged in users.
 		</li>
+
 		<li>
-			<tt>-h</tt>&nbsp;: at the end of the shutdown sequence, halt the system.
+			<tt><b>-h</b></tt> : halt the system at the end of the shutdown sequence.
 		</li>
+
 		<li>
-			<tt>-p</tt>&nbsp;: at the end of the shutdown sequence, power off the system.
-			(This option is provided as an extension, it is not required by the LSB interface.) 
+			<tt><b>-p</b></tt> : power off the system at the end of the shutdown sequence. This option is provided as an extension it is not required by the LSB interface.
 		</li>
+
 		<li>
-			<tt>-r</tt>&nbsp;: at the end of the shutdown sequence, reboot the system.
+			<tt><b>-r</b></tt> : reboot the system at the end of the shutdown sequence.
 		</li>
+
 		<li>
-			<tt>-f</tt>&nbsp;: ignored. 
+			<tt><b>-f</b></tt> : ignored. 
 		</li>
+
 		<li>
-			<tt>-F</tt>&nbsp;: ignored. 
+			<tt><b>-F</b></tt> : ignored. 
 		</li>
+
 		<li>
-			<tt>-c</tt>&nbspl: cancel a planned shutdown (i.e. cancel the effect of a
-			previous call to <tt>shutdown</tt> with a <em>time</em> argument that was not <tt>now</tt>).
-			This cannot be used to interrupt a shutdown sequence that has already started. 
+			<tt><b>-c</b></tt> : cancel a planned shutdown. Can only cancel the effect of a previous call to <tt>shutdown</tt> with a <em>time</em> argument that was not <tt>now</tt>. This cannot be used to interrupt a shutdown sequence that has already started.
 		</li>
 	</ul>
 
-	<h2> Notes </h2>
+<h2>Notes</h2>
 
 	<ul>
 		<li> 
-			The <tt>66-shutdown</tt> binary is not meant to be called directly by administrators. Instead, use the <tt>shutdown</tt> <em>skel</em> file installed by default at <tt>/etc/66</tt> directory. This <strong>should be copied or symlinked</strong> by the administrator into the binary directory of your system.
+			The <tt>66-shutdown</tt> binary is not meant to be called directly. It should always be referenced by the <tt>shutdown</tt> <em>skeleton</em> file installed by default at <tt>/etc/66</tt>. The binary <b>should be copied or symlinked</b> into the binary directory of the system.
 		</li>
+
 		<li>
-			The <tt>-f</tt> and <tt>-F</tt> options are only accepted for compatibility. LSB says they are used to advise the system to skip or enforce a <tt>fsck</tt> after rebooting. But they are only advisory, and for decades now systems have used other methods of evaluating whether they should perform filesystem checks, so these options are largely obsolete nowadays.
+			The <tt>-f</tt> and <tt>-F</tt> exist for compatibility reasons. The LSB sepcification says they are used to advise the system to skip or enforce a <tt>fsck</tt> after rebooting. But they are only advisory and for decades now systems have used other methods of evaluating whether they should perform filesystem checks so these options are largely obsolete nowadays.
 		</li>
 	</ul>
 

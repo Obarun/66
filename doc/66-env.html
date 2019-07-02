@@ -18,68 +18,76 @@
 <h1>66-env</h1>
 
 	<p>
-     66-env lists or replace an environment variables of a service depending of the options past.
+     Lists or replaces an environment variable of a service depending on the options passed.
     </p>
 
 
-<h2> Interface </h2>
+<h2>Interface</h2>
+
 	<pre>
 	66-env [ -h ] [ -v <em>verbosity</em> ] [ -t <em>tree</em> ] [ -d <em>dir</em> ] [ -L ] [ -r <em>key=value</em> ] <em>service</em>
 	</pre>
 
 	<ul>
 		<li>
-			66-env open and read the configuration file of <em>service</em> find at <em>/etc/66/conf</em> by default.
+			This program opens and reads the configuration file of <em>service</em> found by default at <em>/etc/66/conf</em>.
 		</li>
 		<li>
-			It display the contain of the file or replace a <em>key=value</em> pair if requested.
+			It displays the contents of the file or replaces a <em>key=value</em> pair if instructed to do so with the <tt>&#8209;r</tt> option.
 		</li>
     </ul>
 
 <h2> Exit codes</h2>
+
 	<p>
 		<ul>
-			<li>0: success.</li>
-			<li>110: wrong usage.</li>
-			<li>111: system call failed.</li>
+			<li>
+				<tt><b>&nbsp;&nbsp;0</b>&nbsp;:&nbsp;</tt>success
+			</li>
+			<li>
+				<tt><b>110</b>&nbsp;:&nbsp;</tt>bad usage
+			</li>
+			<li>
+				<tt><b>111</b>&nbsp;:&nbsp;</tt>system call failed
+			</li>
 		</ul>
 	</p>
 	
-<h2> Options </h2>
+<h2>Options</h2>
 
 	<ul>
 		<li>
-			<tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
-			 
+			<tt><b>-h</b></tt> : print this help.
+		</li>
 		<li>
-			<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>&nbsp;: increases/decreases 
-			the verbosity of the command. <tt>1(Default)</tt>: Only print 
-			error messages. <tt>2</tt>: Also print warning messages. 
-			<tt>3</tt>: Also print debugging messages.
+			<tt><b>-v <em>verbosity</em></b></tt> : increase/decrease verbosity of the command. <tt>1(Default)</tt>: Only print error messages. <tt>2</tt>: Also print warning messages. <tt>3</tt>: Also print debugging messages.
 		</li>
 		<li> 
-			<tt>-t&nbsp;<em>tree</em>&nbsp;</tt>&nbsp;: ignored. This option is only provide to keep compatibility between <tt>66</tt> tools.
+			<tt><b>-t <em>tree</em></b></tt> : ignored. Provides internal compatibility for <tt>66</tt> tools.
 		</li>
 		<li> 
-			<tt>-d&nbsp;<em>dir</em>&nbsp;</tt>&nbsp;: use <em>dir</em> as configuration file directory instead of the default one.
+			<tt><b>-d <em>dir</em></b></tt> : use <em>dir</em> as configuration file directory instead of the default one.
 		</li>
 		<li> 
-			<tt>-L&nbsp;</tt>&nbsp;: lists the environment variable of <em>service</em>.
+			<tt><b>-L</b></tt> : list defined environment variables for <em>service</em>.
 		</li>
 		<li> 
-			<tt>-r&nbsp;<em>key=value</em></tt>&nbsp;: replace the <em>key=value</em> pair by the given one. The <em>key=value</em> need to be double-quoted in case of multiple arguments. Backslash '\' should be used to properly parse a double-quoted element.
+			<tt><b>-r&nbsp;<em>key=value</em></b></tt> : override an existing <em>key=value</em> pair with the given one. The <em>key=value</em> needs to be double-quoted in case of multiple arguments. Backslash '\' should be used to properly parse a double-quoted element.
 		</li>
 	</ul>
 	
 <h2> Usage examples</h2>
+
 		<ul>
 			<pre>66-env -L ntpd</pre>
 			<pre>66-env -r CMD_ARGS=-d </pre>
 			<pre>66-env -r "CMD_ARGS=-c /etc/nginx/nginx.conf -g \"daemon off;\""</pre>
 		</ul>
+
 <h2>Notes</h2>
+
 		<p>
-			Any '!' character found at begins of a <tt>key=value</tt> from the configuration <em>service</em> file is ignored at replacement time. For example, a <tt>key=value</tt> corresponding to:
+			Keys which are preceded by an exclamation mark "!" in the configuration <em>service</em> file can be accessed as if they had none. For example, a <tt>key=value</tt> corresponding to:
 		</p>
 		<ul>
 			<pre>!CMD_ARGS=--print-pid=4</pre>
@@ -88,6 +96,9 @@
 		<ul>
 			<pre>66-env -r CMD_ARGS=--print-pid=3</pre>
 		</ul>
+		<p>
+			In this case the operator will be kept even if it was not included in the overwriting command.
+		</p>
 	</ul>
 </body>
 </html>
