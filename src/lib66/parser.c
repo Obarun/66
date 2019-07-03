@@ -12,8 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
  
-#include <stdio.h>
 #include <string.h>
+//#include <stdio.h>
 
 #include <oblibs/error2.h>
 #include <oblibs/string.h>

@@ -14,7 +14,7 @@
  
 #include <string.h>
 #include <errno.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -47,21 +47,13 @@ static void check_identifier(char const *name)
 {
 	if (!memcmp(name,SS_MASTER+1,6)) strerr_dief3x(111,"service: ",name,": starts with reserved prefix") ;
 }
-void sastr_loop(stralloc *sa,char const *msg)
-{
-	size_t i = 0, len = sa->len ;
-	for (;i < len; i += strlen(sa->s + i) + 1)
-		printf("%s::%s\n",msg,sa->s+i) ;
-	
-	return ;
-}
+
 static void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv)
 {
 	
 	stralloc sasv = STRALLOC_ZERO ;
 	stralloc tmp = STRALLOC_ZERO ;
 	if (!parse_service_get_list(&tmp,list)) strerr_diefu1x(111,"get services list") ;
-	sastr_loop(&tmp,"parser") ;
 	if (!stralloc_copy(list,&tmp)) strerr_diefu1sys(111,"copy stralloc") ;
 	tmp.len = 0 ;
 	size_t i = 0, len = list->len ;

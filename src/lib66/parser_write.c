@@ -40,7 +40,7 @@
 #include <s6/config.h>//S6_BINPREFIX
 #include <execline/config.h>//EXECLINE_BINPREFIX
 
-#include <stdio.h>
+//#include <stdio.h>
 /** @Return 0 on fail
  * @Return 1 on success
  * @Return 2 if the service is ignored */

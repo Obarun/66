@@ -17,7 +17,7 @@
 #include <string.h>
 #include <unistd.h>//getuid
 #include <stdlib.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <oblibs/bytes.h>
 #include <oblibs/string.h>
