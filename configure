@@ -401,8 +401,6 @@ if $allpic ; then
   tryflag CFLAGS_AUTO -fPIC
 fi
 
-
-
 tryflag CFLAGS_AUTO -std=c99
 tryflag CFLAGS -fomit-frame-pointer
 tryflag CFLAGS_AUTO -fno-exceptions
