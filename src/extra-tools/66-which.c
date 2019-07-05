@@ -2,9 +2,11 @@
  * 66-which.c
  * 
  * Copyright (c) 2019 Dyne.org Foundation, Amsterdam
+ * Copyright (c) 2019 Eric Vidal <eric@obarun.org>
  * 
  * Written by:
  *  - Danilo Spinella <danyspin97@protonmail.com>
+ *  - Eric Vidal <eric@obarun.org>
  * 
  * All rights reserved.
  * 
@@ -16,7 +18,6 @@
  *
  * */
 
-#include <limits.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -31,7 +32,7 @@
 #include <oblibs/error2.h>
 #include <oblibs/string.h>
 
-#define USAGE "66-which [ -h ] [ -a ] [ -q ] commands..."
+#define USAGE "66-which [ -h ] [ -a | -q ] commands..."
 
 static inline void info_help (void)
 {
@@ -52,15 +53,16 @@ int check_executable(char const* filepath) {
 	return (stat(filepath, &sb) == 0 && sb.st_mode & S_IXUSR
 			&& !S_ISDIR(sb.st_mode)) ? 1 : 0 ;
 }
-int parse_path(genalloc_ref folders, char* path) {
+int parse_path(genalloc* folders, char* path) {
 	char* rp = NULL ;
 	size_t i, len, s ;
 	int found ;
 	stralloc filepath = STRALLOC_ZERO ;
 	while (path) {
 		s = str_chr(path, ':') ;
-		if (stralloc_copyb(&filepath, path, s) < 0
-			|| !stralloc_0(&filepath)) retstralloc(111, "PATH") ;
+		if (!stralloc_copyb(&filepath, path, s)
+			|| !stralloc_0(&filepath))
+			strerr_diefu1sys(111, "append stralloc with PATH") ;
 		rp = realpath(filepath.s, NULL);
 		if (rp != NULL) {
 			char const** ss = genalloc_s(char const*, folders);
@@ -73,7 +75,8 @@ int parse_path(genalloc_ref folders, char* path) {
 				}
 			}
 			if (!found) {
-				genalloc_append(char const*, folders, &rp) ;
+				if (!genalloc_append(char const*, folders, &rp))
+					strerr_diefu1sys(111, "append genalloc") ;
 			} else {
 				free(rp);
 			}
@@ -85,60 +88,20 @@ int parse_path(genalloc_ref folders, char* path) {
 	return genalloc_len(char const*, folders) ;
 }
 
-int split_filepath(char const* name, stralloc_ref filepath,
-					stralloc_ref basename) {
-	size_t strip_chars = 1 ;
-
-	switch (name[0]) {
-		case '~':
-		case '.':
-			if (name[0] == '.' && name[1] == '.') {
-				if (name[2] != '/') break ;
-				strip_chars = 3 ;
-			} else if (name[1] != '/') break ;
-			if (name[1] == '/') strip_chars = 2 ;
-		case '/': 
-			if (stralloc_catb(filepath, name, strip_chars) < 0)
-				retstralloc(111, "filepath") ;
-			name += strip_chars ;
-			int d ;
-			while ((d = str_chr(name, '/')) != strlen(name)) {
-				if (stralloc_catb(filepath, name, d + 1) < 0)
-					retstralloc(111, "filepath") ;
-				name += d + 1;
-			}
-			if (!stralloc_0(filepath)
-				|| stralloc_copys(basename, name) < 0
-				|| !stralloc_0(basename)) retstralloc(111, "filepath") ;
-			return 1;
-		default: break ;
-	}
-
-	return 0;
-}
-
 int handle_string(char const* name, char const* env_path, genalloc_ref paths,
 				  int quiet, int printall) {
-	size_t i, len ;
-	int found = 0, string_is_path = 0;
+	size_t len = genalloc_len(char const*, paths) ;
+	int found = 0 ;
 
 	stralloc filepath = STRALLOC_ZERO ;
-	stralloc basename = STRALLOC_ZERO ;
-	if (split_filepath(name, &filepath, &basename)) {
-		len = 0 ;
-		string_is_path = 1 ;
-		name = basename.s ;
-	}
-
 	char const** ss = genalloc_s(char const*, paths) ;
-	len = genalloc_len(char const*, paths) ;
 
-	for (i = 0 ; i < len ; i++) {
+	for (size_t i = 0 ; i < len ; i++) {
 		if (!stralloc_copys(&filepath, ss[i])
 			|| !stralloc_cats(&filepath, "/")
 			|| !stralloc_cats(&filepath, name)
 			|| !stralloc_0(&filepath))
-			retstralloc(111, "filepath");
+				retstralloc(111, "filepath");
 
 		if (check_executable(filepath.s)) {
 			if (!quiet && (buffer_puts(buffer_1small, filepath.s) < 0
@@ -150,23 +113,14 @@ int handle_string(char const* name, char const* env_path, genalloc_ref paths,
 		}
 	}
 
-	if (found == 0 && !printall) {
-		if (!quiet && (buffer_puts(buffer_2, PROG) < 0
-			|| buffer_puts(buffer_2, ": error: no ") < 0
-			|| buffer_puts(buffer_2, name) < 0
-			|| buffer_puts(buffer_2, " in (") < 0
-			|| buffer_puts(buffer_2, string_is_path ? filepath.s : env_path) < 0
-			|| buffer_puts(buffer_2, ")\n") < 0)
-			|| !buffer_flush(buffer_2))
-			strerr_diefu1sys(111, "write to stderr");
-	}
+	if (found == 0 && !quiet)
+		strerr_warnw5x("no ",name," in (",env_path,")") ;
 
 	stralloc_free(&filepath);
-	stralloc_free(&basename);
 	return found == 1 ? 0 : 111;
 }
 
-int handle_path(char const* path, int quiet, int printall) {
+int handle_path(char const* path, int quiet) {
 	char* rp = realpath(path, NULL) ;
 	if (rp != NULL && check_executable(rp)) {
 		if (!quiet && (buffer_puts(buffer_1small, rp) < 0
@@ -176,32 +130,26 @@ int handle_path(char const* path, int quiet, int printall) {
 		return 0 ;
 	}
 
-	stralloc filepath = STRALLOC_ZERO ;
-	stralloc basename = STRALLOC_ZERO;
-	split_filepath(path, &filepath, &basename) ;
+	size_t len = strlen(path) ;
+	char base[len+1] ;
+	char dir[len+1] ;
+	if (!basename(base, path))
+		strerr_diefu1sys(111, "get basename") ;
+	if (!dirname(dir, path))
+		strerr_diefu1sys(111, "get dirname") ;
 
-	if (!quiet && (buffer_puts(buffer_2, PROG) < 0
-		|| buffer_puts(buffer_2, ": error: no ") < 0
-		|| buffer_puts(buffer_2, basename.s) < 0
-		|| buffer_puts(buffer_2, " in (") < 0
-		|| buffer_puts(buffer_2, filepath.s) < 0
-		|| buffer_puts(buffer_2, ")\n") < 0
-		|| !buffer_flush(buffer_2)))
-		strerr_diefu1sys(111, "write to stderr");
+	if (!quiet) strerr_warnw5x("no ",base," in (",dir,")") ;
 
-	stralloc_free(&filepath) ;
-	stralloc_free(&basename) ;
 	return 111 ;
 }
 
 int main (int argc, char const *const *argv)
 {
-	char printall = 0 ;
-	char quiet = 0 ;
-	char* path ;
-	char* rp ;
+	int printall = 0 ;
+	int quiet = 0 ;
+	char* path = 0 ;
 	int ret = 0;
-	genalloc paths = GENALLOC_ZERO ;
+	genalloc paths = GENALLOC_ZERO ; // char const *
 	PROG = "66-which" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
@@ -214,35 +162,31 @@ int main (int argc, char const *const *argv)
 				case 'h': info_help() ; return 0 ;
 				case 'a': printall = 1 ; break ;
 				case 'q': quiet = 1 ; break ;
-				default : strerr_dieusage(100, USAGE) ;
+				default : strerr_dieusage(110, USAGE) ;
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
 
-	path = getenv("PATH");
-	if (path == NULL) {
-		path = SKALIBS_DEFAULTPATH;
-	}
-	if (! *argv) strerr_dieusage(100, USAGE) ;
-	if (parse_path(&paths, path) == 0)
-		strerr_diefu1sys(110, "PATH is empty or contains non valid values") ;
+	if (printall && quiet) strerr_dieusage(110, USAGE) ;
+
+	path = getenv("PATH") ;
+	if (!path) path = SKALIBS_DEFAULTPATH ;
+
+	if (argc < 0) strerr_dieusage(110, USAGE) ;
+	if (!parse_path(&paths, path))
+		strerr_diefu1sys(111, "PATH is empty or contains non valid values") ;
 
 	for ( ; *argv ; argv++) {
-		if ((*argv)[0] != '/'
-			&& ((*argv)[0] != '~' || ((*argv)[0] == '~' && (*argv)[1] != '/'))
-			&& ((*argv)[0] != '.' || ((*argv)[0] == '.' && (*argv)[1] != '/')
-				|| ((*argv)[0] == '.' && (*argv)[1] == '.' && (*argv)[2] != '/')))
-			ret = handle_string(*argv, path, &paths, quiet, printall);
+		if ((*argv)[0] == '/'
+			|| (*argv)[0] == '~' || ((*argv)[0] == '~' && (*argv)[1] == '/')
+			|| (*argv)[0] == '.' || ((*argv)[0] == '.' && (*argv)[1] == '/')
+			|| ((*argv)[0] == '.' || ((*argv)[1] == '.' && (*argv)[2] == '/')))
+			ret = handle_path(*argv, quiet);
 		else
-			ret = handle_path(*argv, quiet, printall);
+			ret = handle_string(*argv, path, &paths, quiet, printall);
 	}
 
-	//free(path) ;
-	size_t len = genalloc_len(char const*, &paths) ;
-	char** s = genalloc_s(char*, &paths) ;
-	for (int i = 0 ; i < len ; i++) {
-		free(s[i]) ;
-	}
+	genalloc_free(char const *, &paths) ;
 	return ret ;
 }
