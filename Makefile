@@ -58,8 +58,8 @@ ALL_BINS := $(LIBEXEC_TARGETS) $(BIN_TARGETS)
 ALL_LIBS := $(SHARED_LIBS) $(STATIC_LIBS) $(INTERNAL_LIBS)
 ALL_INCLUDES := $(wildcard src/include/$(package)/*.h)
 ALL_DATA := $(wildcard skel/*)
-ALL_MAN := $(wildcard man/*.[1-8].scd)
-INSTALL_MAN := $(wildcard man/*.[1-8])
+ALL_MAN := $(wildcard doc/man/*.[1-8].scd)
+INSTALL_MAN := $(wildcard doc/man/*.[1-8])
 
 all: $(ALL_LIBS) $(ALL_BINS) $(ALL_INCLUDES) $(ALL_DATA)
 
