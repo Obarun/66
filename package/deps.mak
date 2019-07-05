@@ -36,11 +36,11 @@ src/extra-tools/66-envfile.o src/extra-tools/66-envfile.lo: src/extra-tools/66-e
 src/extra-tools/66-getenv.o src/extra-tools/66-getenv.lo: src/extra-tools/66-getenv.c
 src/extra-tools/66-gnwenv.o src/extra-tools/66-gnwenv.lo: src/extra-tools/66-gnwenv.c
 src/extra-tools/66-umountall.o src/extra-tools/66-umountall.lo: src/extra-tools/66-umountall.c
+src/extra-tools/66-which.o src/extra-tools/66-which.lo: src/extra-tools/66-which.c
 src/extra-tools/66-writenv.o src/extra-tools/66-writenv.lo: src/extra-tools/66-writenv.c
 src/extra-tools/execl-cmdline.o src/extra-tools/execl-cmdline.lo: src/extra-tools/execl-cmdline.c
 src/extra-tools/execl-envfile.o src/extra-tools/execl-envfile.lo: src/extra-tools/execl-envfile.c src/include/66/environ.h src/include/66/parser.h
 src/extra-tools/execl-subuidgid.o src/extra-tools/execl-subuidgid.lo: src/extra-tools/execl-subuidgid.c src/include/66/environ.h src/include/66/utils.h
-src/extra-tools/execl-testncreate.o src/extra-tools/execl-testncreate.lo: src/extra-tools/execl-testncreate.c
 src/lib66/backup_cmd_switcher.o src/lib66/backup_cmd_switcher.lo: src/lib66/backup_cmd_switcher.c src/include/66/constants.h src/include/66/enum.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/backup_make_new.o src/lib66/backup_make_new.lo: src/lib66/backup_make_new.c src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/tree.h src/include/66/utils.h
 src/lib66/backup_realpath_sym.o src/lib66/backup_realpath_sym.lo: src/lib66/backup_realpath_sym.c src/include/66/constants.h src/include/66/enum.h src/include/66/utils.h
@@ -150,6 +150,8 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-gnwenv: src/extra-tools/66-gnwenv.o -loblibs -lskarnet 
 66-umountall: EXTRA_LIBS :=
 66-umountall: src/extra-tools/66-umountall.o -lskarnet 
+66-which: EXTRA_LIBS :=
+66-which: src/extra-tools/66-which.o -lskarnet -loblibs
 66-writenv: EXTRA_LIBS :=
 66-writenv: src/extra-tools/66-writenv.o -lskarnet
 execl-cmdline: EXTRA_LIBS :=

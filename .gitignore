@@ -21,6 +21,7 @@
 /66-env
 /66-gnwenv
 /66-parser
+/66-which
 /66-writenv
 /66-getenv
 /execl-envfile

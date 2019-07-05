@@ -25,6 +25,7 @@ execl-subuidgid \
 66-getenv \
 66-gnwenv \
 66-umountall \
-66-echo
+66-echo \
+66-which
 
 LIB_DEFS := 66=66

@@ -25,6 +25,7 @@ execl-subuidgid	0755
 66-gnwenv		0755
 66-umountall	0755
 66-echo			0755
+66-which		0755
 halt			0755
 init			0755
 init.conf		0644
