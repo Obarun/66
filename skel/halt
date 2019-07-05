@@ -1,0 +1,3 @@
+#!@EXECLINE_SHEBANGPREFIX@/execlineb -S0
+
+66-hpr -h $@

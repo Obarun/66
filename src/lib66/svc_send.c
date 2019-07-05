@@ -22,15 +22,13 @@
 #include <66/resolve.h>
 #include <66/ssexec.h>
 
-
-
 int svc_send(ssexec_t *info,genalloc *ga,char const *sig,char const *const *envp)
 {
 	unsigned int i = 0 ;
 	int nargc = 3 + genalloc_len(ss_resolve_t,ga) ;
 	char const *newargv[nargc] ;
 	unsigned int m = 0 ;
-	
+
 	newargv[m++] = "fake_name" ;
 	newargv[m++] = sig ;
 	

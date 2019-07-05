@@ -80,13 +80,12 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	}
 	
 	size_t dirlen ;
-	size_t svdirlen ;
 	char svdir[info->tree.len + SS_SVDIRS_LEN + SS_SVC_LEN + 1] ;
 	memcpy(svdir,info->tree.s,info->tree.len) ;
 	memcpy(svdir + info->tree.len ,SS_SVDIRS ,SS_SVDIRS_LEN) ;
-	svdirlen = info->tree.len + SS_SVDIRS_LEN ;
-	memcpy(svdir + svdirlen, SS_SVC ,SS_SVC_LEN) ;
-	svdir[svdirlen +  SS_SVC_LEN] = 0 ;
+	memcpy(svdir + info->tree.len + SS_SVDIRS_LEN, SS_SVC ,SS_SVC_LEN) ;
+	dirlen = info->tree.len + SS_SVDIRS_LEN + SS_SVC_LEN ;
+	svdir[dirlen] = 0 ;
 	
 	/** svc already initiated? */
 	if (classic)
@@ -122,18 +121,17 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 		else
 		{
 			if (!ss_resolve_create_live(info)) strerr_diefu1sys(111,"create live state") ;
-			dirlen = strlen(svdir) ;
 			for (i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
 			{
 				char *string = genalloc_s(ss_resolve_t,&gares)[i].sa.s ;
 				char *name = string + genalloc_s(ss_resolve_t,&gares)[i].name ;
-				size_t namelen = gaistrlen(&gasvc,i) ;
+				size_t namelen = strlen(name) ;
 				char tocopy[dirlen + 1 + namelen + 1] ;
 				memcpy(tocopy,svdir,dirlen) ;
 				tocopy[dirlen] = '/' ;
 				memcpy(tocopy + dirlen + 1, name, namelen) ;
 				tocopy[dirlen + 1 + namelen] = 0 ;
-				if (!hiercopy(tocopy,string + genalloc_s(ss_resolve_t,&gares)[i].runat)) strerr_diefu4sys(111,"to copy: ",tocopy," to: ",string + genalloc_s(ss_resolve_t,&gares)[i].runat) ;
+				if (!hiercopy(tocopy,string + genalloc_s(ss_resolve_t,&gares)[i].runat)) strerr_diefu4sys(111,"copy: ",tocopy," to: ",string + genalloc_s(ss_resolve_t,&gares)[i].runat) ;
 				ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
 				ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 				ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;

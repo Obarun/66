@@ -100,7 +100,7 @@ char const *help_stop =
 "	-K: kill the service(s) and keep it down\n"
 ;
 
-char const *usage_svctl = "66-svctl [ -h ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -n death ] [ -u | U | d | D | r | R | K | X ] service(s)" ;
+char const *usage_svctl = "66-svctl [ -h ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -n death ] [ -u | d | r | K | X ] service(s)" ;
 
 char const *help_svctl =
 "66-svctl <options> tree\n"
@@ -113,11 +113,22 @@ char const *help_svctl =
 "	-T: service timeout\n"
 "	-n: number of death\n"
 "	-u: bring up the service(s)\n"
-"	-U: really up\n"
 "	-d: bring down the service(s)\n"
-"	-D: really down\n"
 "	-r: reload\n"
-"	-R: reload and really up\n"
 "	-X: bring down the service(s) and the kill his supervisor\n"
 "	-K: kill the service(s) and keep it down\n"
+;
+
+char const *usage_env = "66-env [ -h ] [ -v verbosity ] [ -t tree ] [ -d dir ] [ -L ] [ -r key=value ] service" ;
+
+char const *help_env =
+"66-env <options> service\n"
+"\n"
+"options :\n"
+"	-h: print this help\n" 
+"	-v: increase/decrease verbosity\n"
+"	-t: tree to use\n"
+"	-L: list environment variable of service\n"
+"	-d: directory of configuration service file\n"
+"	-r: replace the value of the key \n"
 ;

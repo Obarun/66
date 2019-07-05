@@ -1,5 +1,5 @@
 /* 
- * set_info.c
+ * 66-env.c
  * 
  * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
  * 
@@ -11,19 +11,24 @@
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file./
  */
- 
-#include <66/utils.h>
- 
-#include <oblibs/error2.h>
-#include <oblibs/directory.h>
 
-#include <skalibs/stralloc.h>
+#include <skalibs/strerr2.h>
 
-#include <66/config.h>
+#include <66/ssexec.h>
 
-int set_info(ssexec_t *info)
+unsigned int VERBOSITY = 1 ;
+
+int main(int argc, char const *const *argv,char const *const *envp)
 {
+	PROG = "66-env" ;
 	
+	ssexec_t info = SSEXEC_ZERO ;
 	
-	return 1 ;
+	info.prog = PROG ;
+	info.help = help_env ;
+	info.usage = usage_env ;
+	
+	return ssexec_main(argc,argv,envp,&ssexec_env,&info) ;
 }
+	
+

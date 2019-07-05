@@ -42,20 +42,30 @@ static void cleanup(char const *dst)
 	rm_rf(dst) ;
 	errno = e ;
 }
+
 static void check_identifier(char const *name)
 {
 	if (!memcmp(name,SS_MASTER+1,6)) strerr_dief3x(111,"service: ",name,": starts with reserved prefix") ;
 }
-static int start_parser(char const *src,char const *svname,char const *tree, unsigned int *nbsv)
+
+static void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv)
 {
+	
 	stralloc sasv = STRALLOC_ZERO ;
-	
-	if (!parse_service_before(src,svname,tree,nbsv,&sasv,FORCE))
-		strerr_dief3x(111,"invalid service file: ",src,svname) ;
-	
+	stralloc tmp = STRALLOC_ZERO ;
+	if (!parse_service_get_list(&tmp,list)) strerr_diefu1x(111,"get services list") ;
+	if (!stralloc_copy(list,&tmp)) strerr_diefu1sys(111,"copy stralloc") ;
+	tmp.len = 0 ;
+	size_t i = 0, len = list->len ;
+	for (;i < len; i += strlen(list->s + i) + 1)
+	{
+		char *svname = list->s+i ;
+		if (!parse_service_before(info,&tmp,svname,nbsv,&sasv,FORCE))
+			strerr_diefu3x(111,"parse service file: ",svname,": or its dependencies") ;
+	}
 	stralloc_free(&sasv) ;
+	stralloc_free(&tmp) ;
 	
-	return 1 ;
 }
 
 int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
@@ -65,30 +75,17 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	
 	int r ;
 	unsigned int nbsv, nlongrun, nclassic, start ;
-	
-	char const *src ;
-	
+
 	stralloc home = STRALLOC_ZERO ;
 	stralloc workdir = STRALLOC_ZERO ;
 	stralloc sasrc = STRALLOC_ZERO ;
 	stralloc sares = STRALLOC_ZERO ;
-	genalloc gasrc = GENALLOC_ZERO ; //type diuint32
 	genalloc tostart = GENALLOC_ZERO ; // type stralist
 	
 	ss_resolve_t res = RESOLVE_ZERO ;
 	
 	r = nbsv = nclassic = nlongrun = start = 0 ;
 	
-	if (!info->owner) src = SS_SERVICE_SYSDIR ;
-	else
-	{	
-		if (!set_ownerhome(&home,info->owner)) strerr_diefu1sys(111,"set home directory");
-		if (!stralloc_cats(&home,SS_SERVICE_USERDIR)) retstralloc(111,"main") ;
-		if (!stralloc_0(&home)) retstralloc(111,"main") ;
-		home.len-- ;
-		src = home.s ;
-	}
-		
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
 
@@ -123,28 +120,12 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 				continue ;
 			}
 		}
-		unsigned int found = 0 ;
-		r = ss_resolve_src(&gasrc,&sasrc,*argv,src,&found) ;
-		if (r < 0) strerr_diefu2sys(111,"parse source directory: ",src) ;
-		if (!r)
-		{
-			src = SS_SERVICE_SYSDIR ;
-			r = ss_resolve_src(&gasrc,&sasrc,*argv,src,&found) ;
-			if (r < 0) strerr_diefu2sys(111,"parse source directory: ",src) ;
-			if (!r)
-			{
-				src = SS_SERVICE_PACKDIR ;
-				r = ss_resolve_src(&gasrc,&sasrc,*argv,src,&found) ;
-				if (r < 0) strerr_diefu2sys(111,"parse source directory: ",src) ;
-				if (!r)	strerr_dief2sys(110,"unknown service: ",*argv) ;
-			}
-		}
+		if (!ss_resolve_src_path(&sasrc,*argv,info)) strerr_diefu2x(111,"resolve source path of: ",*argv) ;
 	}
 	
-	if (!genalloc_len(diuint32,&gasrc)) goto freed ;
+	if (!sasrc.len) goto freed ;
 	
-	for (unsigned int i = 0 ; i < genalloc_len(diuint32,&gasrc) ; i++)
-		start_parser(sasrc.s + genalloc_s(diuint32,&gasrc)[i].right,sasrc.s + genalloc_s(diuint32,&gasrc)[i].left,info->tree.s,&nbsv) ;
+	start_parser(&sasrc,info,&nbsv) ;
 	
 	if (!tree_copy(&workdir,info->tree.s,info->treename.s)) strerr_diefu1sys(111,"create tmp working directory") ;
 
@@ -197,7 +178,8 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 			cleanup(workdir.s) ;
 			strerr_diefu2x(111,"resolve source of graph for tree: ",info->treename.s) ;
 		}
-		r= ss_resolve_graph_publish(&graph,0) ;
+		
+		r = ss_resolve_graph_publish(&graph,0) ;
 		if (r <= 0) 
 		{
 			cleanup(workdir.s) ;
@@ -238,7 +220,6 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	stralloc_free(&home) ;
 	stralloc_free(&workdir) ;
 	stralloc_free(&sasrc) ;
-	genalloc_free(diuint32,&gasrc) ;
 	ss_resolve_free(&res) ;
 	stralloc_free(&sares) ;
 		

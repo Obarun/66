@@ -48,6 +48,7 @@ enum key_enum_e
 	T_UP ,
 	T_DOWN ,
 	DEATH ,
+	HIERCOPY ,
 	EXEC ,
 	DESTINATION ,
 	BACKUP ,
@@ -69,7 +70,6 @@ enum key_enum_e
 	//Options
 	LOGGER , // = 36
 	PIPELINE ,
-	DATA ,
 	//Flags
 	DOWN , // = 44
 	NOSETSID ,
@@ -83,6 +83,7 @@ enum key_enum_e
 	//Time
 	TAI , // = 50
 	ISO ,
+	NONE ,
 	ENDOFKEY
 } ;
 #define PIPELINE_NAME "pipeline-name"
@@ -130,6 +131,7 @@ static key_description_t const main_section_list[] =
 	{ .name = "@timeout-down", .expected = UINT, .mandatory = OPTS },
 	{ .name = "@maxdeath", .expected = UINT, .mandatory = OPTS },
 	{ .name = "@down-signal", .expected = UINT, .mandatory = OPTS },
+	{ .name = "@hiercopy", .expected = BRACKET, .mandatory = OPTS },
 	{ .name = 0 } 
 } ;
 
@@ -145,8 +147,9 @@ static key_description_t const startstop_section_list[] =
 static key_description_t const logger_section_list[] =
 {
 	{ .name = "@destination", .expected = SLASH, .mandatory = CUSTOM },
-	{ .name = "@build",  .expected = LINE, .mandatory = NEED },
+	{ .name = "@build", .expected = LINE, .mandatory = NEED },
 	{ .name = "@runas", .expected = LINE, .mandatory = OPTS },
+	{ .name = "@depends", .expected = BRACKET, .mandatory = OPTS },
 	{ .name = "@shebang", .expected = QUOTE, .mandatory = CUSTOM },
 	{ .name = "@timeout-finish", .expected = UINT, .mandatory = OPTS },
 	{ .name = "@timeout-kill", .expected = UINT, .mandatory = OPTS },
@@ -163,7 +166,7 @@ static key_description_t const environment_section_list[] =
 	{ .name = 0 }
 } ;
 
-static int const total_list_el[6] = { 16, 5, 5, 11, 2, 0 } ;
+static int const total_list_el[6] = { 17, 5, 5, 12, 2, 0 } ;
 
 static key_all_t const total_list[] =
 {

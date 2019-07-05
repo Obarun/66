@@ -15,7 +15,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdlib.h>//realpath
-//#include <stdio.h>
+#include <stdio.h>
 
 #include <oblibs/types.h>
 #include <oblibs/error2.h>
@@ -23,6 +23,7 @@
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/stralist.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
@@ -111,19 +112,53 @@ int ss_resolve_pointo(stralloc *sa,ssexec_t *info,unsigned int type, unsigned in
 		return 0 ;
 }
 
-int ss_resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src,unsigned int *found)
+int ss_resolve_src_path(stralloc *sasrc,char const *sv, ssexec_t *info)
+{
+	int r ;
+	char const *src = 0 ;
+	unsigned int found = 0 ;
+	stralloc home = STRALLOC_ZERO ;
+	if (!info->owner) src = SS_SERVICE_SYSDIR ;
+	else
+	{	
+		if (!set_ownerhome(&home,info->owner)){ VERBO3 strerr_warnwu1sys("set home directory") ; goto err ; }
+		if (!stralloc_cats(&home,SS_SERVICE_USERDIR)) retstralloc(0,"ss_resolve_src_path") ;
+		if (!stralloc_0(&home)) retstralloc(0,"ss_resolve_src_path") ;
+		home.len-- ;
+		src = home.s ;
+	}
+	
+	r = ss_resolve_src(sasrc,sv,src,&found) ;
+	if (r < 0){ VERBO3 strerr_warnwu2sys("parse source directory: ",src) ; goto err ; }
+	if (!r)
+	{
+		found = 0 ;
+		src = SS_SERVICE_SYSDIR ;
+		r = ss_resolve_src(sasrc,sv,src,&found) ;
+		if (r < 0) { VERBO3 strerr_warnwu2sys("parse source directory: ",src) ; goto err ; }
+		if (!r)
+		{
+			found = 0 ;
+			src = SS_SERVICE_PACKDIR ;
+			r = ss_resolve_src(sasrc,sv,src,&found) ;
+			if (r < 0) { VERBO3 strerr_warnwu2sys("parse source directory: ",src) ; goto err ; }
+			if (!r) { VERBO3 strerr_warnw2sys("unknown service: ",sv) ; goto err ; }
+		}
+	}
+	stralloc_free(&home) ;
+	return 1 ;
+	err:
+		stralloc_free(&home) ;
+		return 0 ;
+}
+
+int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,unsigned int *found)
 {
 	int fdsrc, obr, insta ;
-	
-	diuint32 svtmp = DIUINT32_ZERO ;//left->name,right->src
-	
-	size_t srclen = strlen(src) ;
-	size_t namelen = strlen(name) ;
-	genalloc tmp = GENALLOC_ZERO ; //type stralist
-	
+	size_t i, len, namelen = strlen(name) ;
 	stralloc sainsta = STRALLOC_ZERO ;
 	stralloc subdir = STRALLOC_ZERO ;
-	if (!stralloc_cats(&subdir,src)) goto errstra ;
+	stralloc satmp = STRALLOC_ZERO ;
 	
 	obr = insta = 0 ;
 	
@@ -144,7 +179,7 @@ int ss_resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *
 		if (d->d_name[0] == '.')
 		if (((d->d_name[1] == '.') && !d->d_name[2]) || !d->d_name[1])
 			continue ;
-	
+		
 		if (stat_at(fdsrc, d->d_name, &st) < 0)
 		{
 			VERBO3 strerr_warnwu3sys("stat ", src, d->d_name) ;
@@ -152,10 +187,12 @@ int ss_resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *
 		}
 		if (S_ISDIR(st.st_mode))
 		{
+			if (!stralloc_cats(&subdir,src)) goto errdir ;
 			if (!stralloc_cats(&subdir,d->d_name)) goto errdir ;
 			if (!stralloc_cats(&subdir,"/")) goto errdir ;
 			if (!stralloc_0(&subdir)) goto errdir ;
-			*found = ss_resolve_src(ga,sasrc,name,subdir.s,found) ;
+			*found = ss_resolve_src(sasrc,name,subdir.s,found) ;
+			stralloc_free(&subdir) ;
 			if (*found < 0) goto errdir ;
 		}
 		obr = 0 ;
@@ -180,31 +217,30 @@ int ss_resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *
 			
 			if (S_ISDIR(st.st_mode))
 			{
+				if (!stralloc_cats(&subdir,src)) goto errstra ;
 				if (!stralloc_cats(&subdir,d->d_name)) goto errdir ;
 				if (!stralloc_0(&subdir)) goto errdir ;
 				
-				if (!dir_get(&tmp,subdir.s,"",S_IFREG))
+				if (!sastr_dir_get(&satmp,subdir.s,"",S_IFREG|S_IFDIR))
 				{
-					strerr_warnwu2sys("get services from directory: ",subdir.s) ;
+					VERBO3 strerr_warnwu2sys("get services from directory: ",subdir.s) ;
 					goto errdir ;
 				}
-				for (unsigned int i = 0 ; i < genalloc_len(stralist,&tmp) ; i++)
+				i = 0, len = satmp.len ;
+				subdir.len-- ;
+				for (;i < len; i += strlen(satmp.s + i) + 1)
 				{
-					svtmp.left = sasrc->len ;
-					if (!stralloc_catb(sasrc,gaistr(&tmp,i), gaistrlen(&tmp,i) + 1)) goto errdir ;
-					svtmp.right = sasrc->len ;
-					if (!stralloc_catb(sasrc,subdir.s, subdir.len + 1)) goto errdir ;
-					if (!genalloc_append(diuint32,ga,&svtmp)) goto errdir ;
+					if (!stralloc_cats(sasrc,subdir.s)) goto errdir ;
+					if (!stralloc_cats(sasrc,"/")) goto errdir ;
+					if (!stralloc_catb(sasrc,satmp.s+i,strlen(satmp.s+i)+1)) goto errdir ;
 				}
+				stralloc_free(&subdir) ;
 				break ;
 			}
 			else if(S_ISREG(st.st_mode))
 			{
-				svtmp.left = sasrc->len ;
-				if (!stralloc_catb(sasrc,name, namelen + 1)) goto errdir ;
-				svtmp.right = sasrc->len ;
-				if (!stralloc_catb(sasrc,src,srclen + 1)) goto errdir ;
-				if (!genalloc_append(diuint32,ga,&svtmp)) goto errdir ;
+				if (!stralloc_cats(sasrc,src)) goto errdir ;
+				if (!stralloc_catb(sasrc,name,namelen+1)) goto errdir ;
 				break ;
 			}
 			else goto errdir ;
@@ -212,18 +248,18 @@ int ss_resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *
 	}
 	
 	dir_close(dir) ;
-	genalloc_deepfree(stralist,&tmp,stra_free) ;
 	stralloc_free(&subdir) ;
 	stralloc_free(&sainsta) ;
+	stralloc_free(&satmp) ;
 
 	return (*found) ;
 
 	errdir:
 		dir_close(dir) ;
 	errstra:
-		genalloc_deepfree(stralist,&tmp,stra_free) ;
 		stralloc_free(&subdir) ;
 		stralloc_free(&sainsta) ;
+		stralloc_free(&satmp) ;
 		return -1 ;
 }
 
@@ -725,7 +761,7 @@ int ss_resolve_add_deps(genalloc *tokeep,ss_resolve_t *res, char const *src)
 			ss_resolve_t dres = RESOLVE_ZERO ;
 			if (!ss_resolve_check(src,gaistr(&tmp,i))) goto err ;
 			if (!ss_resolve_read(&dres,src,gaistr(&tmp,i))) goto err ;
-			if (dres.ndeps)
+			if (dres.ndeps && !ss_resolve_cmp(tokeep,gaistr(&tmp,i)))
 			{
 				if (!ss_resolve_add_deps(tokeep,&dres,src)) goto err ;
 			}

@@ -20,12 +20,13 @@
 #include <66/constants.h>
 #include <66/db.h>
 #include <66/enum.h>
+#include <66/environ.h>
 #include <66/parser.h>
+#include <66/rc.h>
 #include <66/resolve.h>
 #include <66/ssexec.h>
 #include <66/state.h>
 #include <66/svc.h>
-#include <66/rc.h>
 #include <66/tree.h>
 #include <66/utils.h>
 

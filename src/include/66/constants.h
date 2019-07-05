@@ -25,7 +25,14 @@
 #define SS_TREE_CURRENT_LEN (sizeof SS_TREE_CURRENT - 1)
 #define SS_SERVICE "service"
 #define SS_SERVICE_LEN (sizeof SS_SERVICE - 1)
-
+#define SS_SCANDIR "scandir"
+#define SS_SCANDIR_LEN (sizeof SS_SCANDIR - 1)
+#define SS_TREE "tree"
+#define SS_TREE_LEN (sizeof SS_TREE - 1)
+#define SS_NOTIFICATION "notification-fd"
+#define SS_NOTIFICATION_LEN (sizeof SS_NOTIFICATION - 1)
+#define SS_MAXDEATHTALLY "max-death-tally"
+#define SS_MAXDEATHTALLY_LEN (sizeof SS_MAXDEATHTALLY - 1)
 /**tree dir*/
 #define SS_RULES "/rules"
 #define SS_RULES_LEN (sizeof SS_RULES - 1)
@@ -47,8 +54,12 @@
 #define SS_CONTENTS_LEN (sizeof SS_CONTENTS - 1)
 
 /** logger */
-#define SS_LOG_SUFFIX "-log"
+#define SS_LOG "log"
+#define SS_LOG_LEN (sizeof SS_LOG - 1)
+#define SS_LOG_SUFFIX "-" SS_LOG
 #define SS_LOG_SUFFIX_LEN (sizeof SS_LOG_SUFFIX - 1)
+#define SS_SVSCAN_LOG "/.s6-svscan"
+#define SS_SVSCAN_LOG_LEN (sizeof SS_SVSCAN_LOG - 1)
 
 /** pipe */
 #define SS_PIPE_NAME "bundle-"
@@ -73,4 +84,22 @@
 
 #define SS_STATE "/state"
 #define SS_STATE_LEN (sizeof SS_STATE - 1)
+
+/** boot */
+#define SS_BOOT_CONF "init.conf"
+#define SS_BOOT_CONF_LEN (sizeof SS_BOOT_CONF - 1)
+#define SS_BOOT_PATH "/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin"
+#define SS_BOOT_PATH_LEN (sizeof SS_BOOT_PATH - 1)
+#define SS_BOOT_TREE "init"
+#define SS_BOOT_TREE_LEN (sizeof SS_BOOT_TREE - 1)
+#define SS_BOOT_RCINIT "rc.init"
+#define SS_BOOT_RCINIT_LEN (sizeof SS_BOOT_RCINIT - 1)
+#define SS_BOOT_RCSHUTDOWN "rc.shutdown"
+#define SS_BOOT_RCSHUTDOWN_LEN (sizeof SS_BOOT_RCSHUTDOWN - 1)
+#define SS_BOOT_UMASK 0022
+#define SS_BOOT_RESCAN 0
+#define SS_BOOT_LOGFIFO "scandir/0/scandir-log/fifo"
+#define SS_BOOT_LOGFIFO_LEN (sizeof SS_BOOT_LOGFIFO - 1)
+#define SS_BOOT_SHUTDOWND "66-shutdownd"
+#define SS_BOOT_SHUTDOWND_LEN (sizeof SS_BOOT_SHUTDOWND - 1)
 #endif

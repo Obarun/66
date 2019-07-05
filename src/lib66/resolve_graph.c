@@ -1,11 +1,27 @@
+/* 
+ * resolve_graph.c
+ * 
+ * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
+ * 
+ * All rights reserved.
+ * 
+ * This file is part of Obarun. It is subject to the license terms in
+ * the LICENSE file found in the top-level directory of this
+ * distribution.
+ * This file may not be copied, modified, propagated, or distributed
+ * except according to the terms contained in the LICENSE file./
+ */
+ 
 #include <66/resolve.h>
 
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
+#include <oblibs/error2.h>
 
 #include <skalibs/genalloc.h>
 
 #include <66/constants.h>
+#include <66/utils.h>
 
 ss_resolve_graph_style graph_utf8 = {
 	UTF_VR UTF_H,
@@ -33,7 +49,7 @@ void ss_resolve_graph_free(ss_resolve_graph_t *graph)
 	genalloc_free(ss_resolve_t,&graph->sorted) ;
 }
 
-int ss_resolve_dfs(ss_resolve_graph_t *graph, unsigned int idx, visit *c)
+int ss_resolve_dfs(ss_resolve_graph_t *graph, unsigned int idx, visit *c,unsigned int *ename,unsigned int *edeps)
 {
 	int cycle = 0 ;
 	unsigned int i, data ;
@@ -45,12 +61,21 @@ int ss_resolve_dfs(ss_resolve_graph_t *graph, unsigned int idx, visit *c)
 		for (i = 0 ; i < len ; i++)
 		{
 			data = genalloc_s(uint32_t,&genalloc_s(ss_resolve_graph_ndeps_t,&graph->cp)[idx].ndeps)[i] ;
-			cycle = (cycle || ss_resolve_dfs(graph,data,c)) ;
+			cycle = (cycle || ss_resolve_dfs(graph,data,c,ename,edeps)) ;
+			if (cycle)
+			{ 
+				if (!*ename)
+				{
+					(*ename) = idx ; 
+					(*edeps) =  i ; 
+				}
+				goto end ; 
+			} 
 		}
 		c[idx] = BLACK ;
 		genalloc_insertb(ss_resolve_t, &graph->sorted, 0, &genalloc_s(ss_resolve_t,&graph->name)[idx],1) ; 
 	}
-	
+	end:
 	return cycle ;
 }
 
@@ -58,14 +83,20 @@ int ss_resolve_graph_sort(ss_resolve_graph_t *graph)
 {
 	unsigned int len = genalloc_len(ss_resolve_graph_ndeps_t,&graph->cp) ;
 	visit c[len] ;
-	unsigned int i ;
+	unsigned int i, ename = 0, edeps = 0 ;
 	for (i = 0 ; i < len; i++) c[i] = WHITE ;
 	if (!len) return 0 ;
-	
+
 	for (i = 0 ; i < len ; i++)
 	{
-		if (c[i] == WHITE && ss_resolve_dfs(graph,genalloc_s(ss_resolve_graph_ndeps_t,&graph->cp)[i].idx,c))
+		if (c[i] == WHITE && ss_resolve_dfs(graph,genalloc_s(ss_resolve_graph_ndeps_t,&graph->cp)[i].idx,c,&ename,&edeps))
+		{
+			int data = genalloc_s(uint32_t,&genalloc_s(ss_resolve_graph_ndeps_t,&graph->cp)[ename].ndeps)[edeps] ;
+			char *name = genalloc_s(ss_resolve_t,&graph->name)[ename].sa.s + genalloc_s(ss_resolve_t,&graph->name)[ename].name ;
+			char *deps = genalloc_s(ss_resolve_t,&graph->name)[data].sa.s + genalloc_s(ss_resolve_t,&graph->name)[data].name ;
+			VERBO3 strerr_warnw4x("resolution of : ",name,": encountered a cycle involving service: ",deps) ;
 			return -1 ;
+		}
 	}
 	
 	return 1 ;
@@ -146,7 +177,7 @@ int ss_resolve_graph_src(ss_resolve_graph_t *graph, char const *dir, unsigned in
 	
 	char solve[dirlen + SS_DB_LEN + SS_SRC_LEN + 1] ;
 	memcpy(solve,dir,dirlen) ;
-		
+	
 	if (!what || what == 2)
 	{
 		memcpy(solve + dirlen, SS_SVC, SS_SVC_LEN) ;
@@ -164,7 +195,6 @@ int ss_resolve_graph_src(ss_resolve_graph_t *graph, char const *dir, unsigned in
 	for(unsigned int i = 0 ; i < genalloc_len(stralist,&gatmp) ; i++)
 	{
 		char *name = gaistr(&gatmp,i) ;
-		
 		if (!ss_resolve_check(dir,name)) goto err ;
 		if (!ss_resolve_read(&res,dir,name)) goto err ;
 		if (!ss_resolve_graph_build(graph,&res,dir,reverse)) goto err ;

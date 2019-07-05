@@ -1,0 +1,6 @@
+#!@BINDIR@/sh -e
+exec 0>/dev/console
+exec 1>/dev/console
+exec 2>&1
+echo "trying to run a sulogin command"
+exec s6-setsid -q -- sulogin

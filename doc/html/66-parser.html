@@ -1,0 +1,66 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>The 66 Suite: 66-parser</title>
+    <meta name="Description" content="Detailed documentation for the 66-parser command which is part of the 66 software suite" />
+    <meta name="Keywords" content="66 command 66-parser service supervision supervise start service parse write" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">66</a><br />
+<a href="//obarun.org/">www.obarun.org</a>
+</p>
+
+<h1>66-parser</h1>
+
+	<p>
+      Parses a <a href="frontend.html"><em>frontend</em></a> service file and writes the result to a directory.
+    </p>
+
+<h2>Interface</h2>
+
+	<pre>
+	66-parser [ -h ] [ -v <em>verbosity</em> ] [ -f ] service destination</em>
+	</pre>
+
+	<ul>
+		<li>
+			Opens and reads the <em>frontend</em> <em>service</em> file.
+		</li>
+		<li>
+			Runs a parser on the file.
+		</li>
+		<li>
+			Writes the parsing result to the <em>destination</em> directory.
+		</li>
+	</ul>
+	<p>
+		An absolute path is expected for either <em>service</em> and <em>destination</em>.
+	</p>
+
+<h2>Options</h2>
+
+	<ul>
+		<li>
+			<tt><b>-h</b></tt> : print this help.
+		</li>
+		<li>
+			<tt><b>-v <em>verbosity</em></b></tt> : increase/decrease the verbosity of the command. <tt>1(Default)</tt>: Only print error messages. <tt>2</tt>: Also print warning messages. <tt>3</tt>: Also print debugging messages.
+		</li>
+		<li>
+			<tt><b>-f</b></tt> : force. Owerwrite an existing parsing result at <em>destination</em>.
+		</li>
+	</ul>
+	
+<h2>Notes</h2>
+
+	<p>
+		66-parser will not try to read and parse any services declared under the <em>@depends</em> key of the given frontend file. This tool is mainly intended for debugging purposes and to see the result of a parsing process before actually enabling the service on the system. It is further recommended to <strong>not have the [environment] section set</strong> when running this tool on any frontend file of any given service. The tool uses the exact same parser as <a href="66-enable.html">66&#8209;enable</a> which by default writes the configuration file to /etc/66/conf/<em>service_name</em>. As a consequence any corresponding existing file will be overwritten.
+	</p>
+
+</body>
+</html>

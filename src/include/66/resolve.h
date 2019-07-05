@@ -113,7 +113,8 @@ extern void ss_resolve_init(ss_resolve_t *res) ;
 extern void ss_resolve_free(ss_resolve_t *res) ;
 
 extern int ss_resolve_pointo(stralloc *sa,ssexec_t *info,unsigned int type, unsigned int where) ;
-extern int ss_resolve_src(genalloc *ga, stralloc *sasrc, char const *name, char const *src,unsigned int *found) ;
+extern int ss_resolve_src_path(stralloc *sasrc,char const *sv, ssexec_t *info) ;
+extern int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,unsigned int *found) ;
 extern int ss_resolve_add_uint32(stralloc *sa, uint32_t data) ;
 extern uint32_t ss_resolve_add_string(ss_resolve_t *res,char const *data) ;
 extern int ss_resolve_pack(stralloc *sa,ss_resolve_t *res) ;
@@ -141,7 +142,7 @@ extern void ss_resolve_graph_free(ss_resolve_graph_t *graph) ;
 extern int ss_resolve_graph_src(ss_resolve_graph_t *graph, char const *dir, unsigned int reverse, unsigned int what) ;
 extern int ss_resolve_graph_build(ss_resolve_graph_t *graph,ss_resolve_t *res,char const *src,unsigned int reverse) ;
 extern int ss_resolve_graph_sort(ss_resolve_graph_t *graph) ;
-extern int ss_resolve_dfs(ss_resolve_graph_t *graph, unsigned int idx, visit *c) ;
+extern int ss_resolve_dfs(ss_resolve_graph_t *graph, unsigned int idx, visit *c,unsigned int *ename,unsigned int *edeps) ;
 extern int ss_resolve_graph_publish(ss_resolve_graph_t *graph,unsigned int reverse) ;
 
 #endif

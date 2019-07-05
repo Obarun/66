@@ -1,0 +1,149 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>The 66 Suite: 66-svctl</title>
+    <meta name="Description" content="Detailed documentation for the 66-svctl command which is part of the 66 software suite" />
+    <meta name="Keywords" content="66 command 66-svctl service supervision supervise handles service" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+	<a href="index.html">66</a><br />
+	<a href="//obarun.org/">www.obarun.org</a>
+</p>
+
+<h1>66-svctl</h1>
+
+	<p>
+		Controls an already supervised <em>service</em> at <em>live</em> defined in a <em>tree</em>.
+    </p>
+
+<h2>Interface</h2>
+
+	<pre>
+	66-svctl [ -h ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -T <em>timeout</em> ] [ -n <em>death</em> ] [ -u | d | r | K | X ] <em>service(s)</em>
+	</pre>
+
+	<p>
+		This tool expects to find an already supervised <em>service</em> at <em>live</em> defined in the given <em>tree</em> and an already running <em>scandir</em>.<br>(!) This tool only deals with <em>'classic'</em> services&mdash;see <a href="66-dbctl.html"><tt>66&#8209;dbctl</tt></a> for other types of services.
+	</p>
+
+	<p>
+		Multiple <em>services</em> can be handled by separating their names with a space. <tt>66&#8209;svctl</tt> gathers each of these services in a list called <em>selection</em>. The command is sent to the <em>selection</em> asynchronously.
+	</p>
+
+<h2>Exit codes</h2>
+
+	<p>
+		<ul>
+			<li>
+				<tt><b>&nbsp;&nbsp;0</b></tt> : success; the wanted state has been reached
+			</li>
+
+			<li>
+				<tt><b>110</b></tt> : bad usage
+			</li>
+
+			<li>
+				<tt><b>111</b></tt> : system call failed
+			</li>
+		</ul>
+	</p>
+
+<h2>Options</h2>
+
+	<ul>
+		<li>
+			<tt><b>-h</b></tt> : print this help.
+		</li>
+
+		<li>
+			<tt><b>-v <em>verbosity</em></b></tt> : increase/decrease the verbosity of the command. <tt>1(Default)</tt>: Only print error messages. <tt>2</tt>: Also print warning messages. <tt>3</tt>: Also print debugging messages.
+		</li>
+
+		<li>
+			<tt><b>-l <em>live</em></b></tt> : an absolute path; directory to use for the <em>service</em> supervision. By default this will be <tt>/run/66</tt>. The default can be changed at compile time by passing the <tt>&#8209;&#8209;livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66&#8209;scandir</a></tt>.
+		</li>
+
+		<li>
+			<tt><b>-t <em>tree</em></b></tt> : handle a <em>service</em> from the given <em>tree</em>. This option is mandatory except if a tree was marked as 'current'&mdash;see <a href="66-tree.html"><tt>66&#8209;tree</tt></a>.
+		</li>
+		
+		<li>
+			<tt><b>-T <em>timeout</em></b></tt> : specify a timeout in milliseconds after which <tt>66-svctl</tt> will stop trying to reach the desired state of the <em>service</em>; defaults to 3000. <em>timeout</em> is applied to each service of the selection. Separate timeouts for different <em>services</em> can be set in their respective frontend files using the <tt>@timeout&#8209;up</tt> or <tt>@timeout&#8209;down</tt> key. The frontend key is prioritized over this option.
+		</li>
+		
+		<li>
+			<tt><b>-n <em>death</em></b></tt> : specifiy the maximum number of service death events that the supervisor will keep track of. If the service dies more than this number of times <tt>66&#8209;svctl</tt> will stop trying to reach the desired state of the <em>service</em>. The frontend key <tt>@maxdeath</tt> is prioritized over this option&mdash;see <tt><a href="66-frontend.html">frontend</a></tt>. If this option is not specified and no <em>max-death-tally</em> file exists then the maximum allowed deaths will be 5 by default.
+		</li>
+
+		<li>
+			<tt><b>-u</b></tt> : send an <em>up</em> signal to <em>service</em>. It searches for a <em>notification-fd</em> file&mdash;see <tt><a href="https://skarnet.org/software/s6/notifywhenup.html">service startup notifications</a></tt> and <tt><a href="66-frontend.html">frontend</a></tt>. If this file exists <tt>66&#8209;svctl</tt> will automatically change to uppercase <tt>U</tt>.
+		</li>
+
+		<li>
+			<tt><b>-d</b></tt> : send a <em>down</em> signal to <em>service</em>. It searches for a <em>notification&#8209;fd</em> file&mdash;see <tt><a href="https://skarnet.org/software/s6/notifywhenup.html">service startup notifications</a></tt> and <tt><a href="66-frontend.html">frontend</a></tt>. If this file exists <tt>66&#8209;svctl</tt> will automatically change to uppercase <tt>D</tt>.
+		</li>
+
+		<li>
+			<tt><b>-r</b></tt> : send a <em>reload</em> signal to <em>service</em>. By default the signal is a SIGTERM; this can be configured with the <tt>@down-signal</tt> field in the <tt><a href="66-frontend.html">frontend</a></tt> service file. It searches for a <em>notification-fd</em> file&mdash;see <tt><a href="https://skarnet.org/software/s6/notifywhenup.html">service startup notifications</a></tt> and <tt><a href="66-frontend.html">frontend</a></tt>. If this file exists <tt>66&#8209;svctl</tt> will automatically change to uppercase <tt>R</tt>.
+		</li>
+
+		<li>
+			<tt><b>-X</b></tt> : exit; the supervisor of the service will exit too. This command should normally never be used on a working system.
+		</li>
+
+		<li> 
+			<tt><b>-K</b></tt> : send a SIGKILL to <em>service</em> and keep it down.
+		</li>
+	</ul>
+
+<h2><a href="https://skarnet.org/software/s6/s6-svc.html">s6-svc</a> corresponding signal</h2>
+
+	<p>The 66&#8209;svctl signals correspond to s6&#8209;svc in the following manner:</p>
+
+	<ul>
+		<li>
+			<tt><b>-u</b> &nbsp;= -u</tt>
+		</li>
+
+		<li>
+			<tt><b>-U</b> &nbsp;= -uwU</tt>
+		</li>
+
+		<li>
+			<tt><b>-d</b> &nbsp;= -d</tt>
+		</li>
+
+		<li>
+			<tt><b>-D</b> &nbsp;= -uwD</tt>
+		</li>
+
+		<li>
+			<tt><b>-r</b> &nbsp;= -r</tt>
+		</li>
+
+		<li>
+			<tt><b>-X</b> &nbsp;= -xd</tt>
+		</li>
+
+		<li>
+			<tt><b>-K</b> &nbsp;= -kd</tt>
+		</li>
+	</ul>
+
+<h2> Note </h2>
+
+	<p>
+		You can also send a signal in a similar fashion to a <em>'classic'</em> or <em>'longrun'</em> service with the <tt><a href="https://skarnet.org/software/s6/s6-svc.html">s6&#8209;svc</a></tt> tool which has the philosophy <em>"launch and forget"</em> which unlike <tt>66&#8209;svctl</tt> does not care for the exit status of the service when a signal is sent.
+	</p>
+
+	<p>
+		As an extra convenience the <tt>-n</tt> option allows to deal directly with <em>max-death-tally</em> from the command line even if it was not specified explicitely in the services frontend file and no corresponding file exists.
+	</p>
+
+</body>
+</html>

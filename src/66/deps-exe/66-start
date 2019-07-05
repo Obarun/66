@@ -1,6 +1,5 @@
 ${LIB66}
--loblibs
 -ls6rc
 -ls6
+-loblibs
 -lskarnet
-
