@@ -98,9 +98,9 @@ From 66-svctl to s6-svc:++
 *-X* -> *-xd*++
 *-K* -> *-kd*
 
-You can also send a signal in a similar fashion to a _classic_ service with the
+You can also send a signal in a similar fashion to a _classic_ or _longrun_ service with the
 *s6-svc* tool which has the philosophy "launch and forget". In contrast to
-*s6-svctl* this does not care for the exit status of the service when a signal
+*66-svctl* this does not care for the exit status of the service when a signal
 is sent.
 
 As an extra convenience the *-n* option allow you to deal directly on the
