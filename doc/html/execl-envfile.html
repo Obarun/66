@@ -18,17 +18,17 @@
 <h1>execl-envfile</h1>
 
 	<p>
-		A mix of <a href="https://skarnet.org/software/s6/s6-envdir.html"><tt>s6-envdir</tt></a> and <a href="https://skarnet.org/software/execline/importas.html"><tt>importas</tt></a>. Reads files containing variable assignments in the given directory, adds the variables to the environment and then executes a program.
+		A mix of <a href="https://skarnet.org/software/s6/s6-envdir.html"><tt>s6-envdir</tt></a> and <a href="https://skarnet.org/software/execline/importas.html"><tt>importas</tt></a>. Reads files containing variable assignments in the given file/directory, adds the variables to the environment and then executes a program.
 	</p>
 
 <h2>Interface</h2>
 
 	<pre>
-	execl-envfile [ -h ] [ -f <em>file</em> ] [ -l ] <em>dir</em> <em>prog</em>
+	execl-envfile [ -h ] [ -f <em>file</em> ] [ -l ] <em>conf</em> <em>prog</em>
 	</pre>
 
 	<p>
-		This tool expects to find one or more regular file(s) in <em>dir</em> containing one or multiple <tt>key=value</tt> pair(s). For earch file found it will parse that file, import the <tt>key=value</tt> and then exec the given <em>prog</em> with the modified environment.
+		This tool expects to find a regular file or a directory in <em>conf</em> containing one or multiple <tt>key=value</tt> pair(s). It will parse that file, import the <tt>key=value</tt> and then exec the given <em>prog</em> with the modified environment. In case of directory for each file found it apply the same process.
 	</p>
 
 	<ul>
@@ -65,18 +65,18 @@
 		</li>
 
 		<li>
-			<tt><b>-f <em>file</em></b></tt> : only parse <em>file</em> found in <em>dir</em>.
+			<tt><b>-f <em>file</em></b></tt> : only parse <em>file</em> found in <em>conf</em>.<i>deprecated option</i>
 		</li>
 
 		<li>
-			<tt><b>-l</b></tt> : loose; do nothing and execute <em>prog</em> directly if <em>dir</em> does not contain any regular file(s) or <em>dir</em> does not exist.
+			<tt><b>-l</b></tt> : loose; do nothing and execute <em>prog</em> directly if <em>conf</em> does not contain any regular file(s) or <em>conf</em> does not exist.
 		</li>
 	</ul>
 
 <h2>File syntax</h2>
 
 	<p>
-		<em>file</em> is a text file containing lines of pairs with the syntax being:<br><tt>key = value</tt><br>Whitespace is permitted before and after <em>key</em>, and before or after <em>value</em>. Quoting is also possible.
+		<em>conf</em> is a text file or a directory containing lines of pairs with the syntax being:<br><tt>key = value</tt><br>Whitespace is permitted before and after <em>key</em>, and before or after <em>value</em>. Quoting is also possible.
 	</p>
 
 	<p>
@@ -96,7 +96,7 @@
 	<pre>
 	#!/usr/bin/execlineb -P
 	fdmove -c 2 1
-	execl-envfile -f ntpd /etc/66/conf/
+	execl-envfile /etc/66/conf/ntpd
 	foreground { mkdir -p  -m 0755 ${RUNDIR} } 
 	execl-cmdline -s { ntpd ${CMD_ARGS} }
 	</pre>
@@ -120,7 +120,7 @@
 <h2>Limits</h2>
 
 	<p>
-		<em>dir</em> can not exceed more than 100 files. Each file can not contain more than 4095 bytes or more than 50 <em>key=value</em> pairs.
+		<em>conf</em> can not exceed more than 100 files. Each file can not contain more than 4095 bytes or more than 50 <em>key=value</em> pairs.
 	</p>
 
 </body>
