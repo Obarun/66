@@ -23,6 +23,8 @@ Fine tuning of the installation directories:
   --libdir=DIR                    static library files [PREFIX/lib/$package]
   --includedir=DIR                C header files [PREFIX/include]
   --sysconfdir=SYSDIR             global configuration files [/etc/66]
+  --datarootdir=DIR               read-only architecture-independent data root [PREFIX/share]
+  --mandir=DIR                    man documentation [$datarootdir/man]
   
   --shebangdir=DIR                absolute path for execline #\! invocations [BINDIR]
   --livedir=DIR                   default live directory [/run/66]
@@ -157,6 +159,8 @@ bindir='$exec_prefix/bin'
 libdir='$prefix/lib/$package'
 includedir='$prefix/include'
 sysconfdir='/etc/66'
+datarootdir='$prefix/share'
+mandir='$datarootdir/man'
 shebangdir='$bindir'
 livedir='/run/66'
 system_dir='$prefix/lib/66'
@@ -199,6 +203,8 @@ for arg ; do
     --libdir=*) libdir=${arg#*=} ;;
     --includedir=*) includedir=${arg#*=} ;;
     --sysconfdir=*) sysconfdir=${arg#*=} ;;
+    --datarootdir=*) datarootdir=${arg#*=} ;;
+    --mandir=*) mandir=${arg#*=} ;;
     --shebangdir=*) shebangisdefault=false ; shebangdir=${arg#*=} ;;
     --livedir=*) livedir=${arg#*=} ;;
     --with-system-dir=*) system_dir=${arg#*=} ;;
@@ -245,6 +251,12 @@ if test -z "$prefix" ; then
   fi
   if test "$includedir" = '$prefix/include' ; then
     includedir=/usr/include
+  fi
+  if test "$datarootdir" = '$prefix/share'; then
+    datarootdir=/usr/share
+  fi
+  if test "$mandir" = '$datarootdir/man'; then
+    mandir=$datarootdir/man
   fi
   if test "$system_dir" = '$prefix/lib/66' ; then
 	system_dir=/var/lib/66
@@ -445,6 +457,8 @@ libdir := $libdir
 includedir := $includedir
 sysconfdir := $sysconfdir
 shebangdir := $shebangdir
+datarootdir := $datarootdir
+mandir := $mandir
 livedir := $livedir
 system_dir := $system_dir
 user_dir := $user_dir

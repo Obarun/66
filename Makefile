@@ -58,11 +58,14 @@ ALL_BINS := $(LIBEXEC_TARGETS) $(BIN_TARGETS)
 ALL_LIBS := $(SHARED_LIBS) $(STATIC_LIBS) $(INTERNAL_LIBS)
 ALL_INCLUDES := $(wildcard src/include/$(package)/*.h)
 ALL_DATA := $(wildcard skel/*)
+ALL_MAN := $(wildcard man/*.[1-8].scd)
+INSTALL_MAN := $(wildcard man/*.[1-8])
 
 all: $(ALL_LIBS) $(ALL_BINS) $(ALL_INCLUDES) $(ALL_DATA)
 
 clean:
-	@exec rm -f $(ALL_LIBS) $(ALL_BINS) $(wildcard src/*/*.o src/*/*.lo) $(EXTRA_TARGETS) 
+	@exec rm -f $(ALL_LIBS) $(ALL_BINS) $(wildcard src/*/*.o src/*/*.lo) \
+	$(INSTALL_MAN) $(EXTRA_TARGETS)
 
 distclean: clean
 	@exec rm -f config.mak src/include/$(package)/config.h
@@ -140,6 +143,9 @@ $(DESTDIR)$(libdir)/lib%.a: lib%.a.xyzzy
 $(DESTDIR)$(includedir)/$(package)/%.h: src/include/$(package)/%.h
 	exec $(INSTALL) -D -m 644 $< $@
 
+$(DESTDIR)$(mandir)/man1/%.1: man/%.1
+	exec $(INSTALL) -D -m 644 $< $@
+
 %.o: %.c
 	exec $(REALCC) $(CPPFLAGS_ALL) $(CFLAGS_ALL) -c -o $@ $<
 
@@ -156,6 +162,36 @@ lib%.a.xyzzy:
 lib%.so.xyzzy:
 	exec $(REALCC) -o $@ $(CFLAGS_ALL) $(CFLAGS_SHARED) $(LDFLAGS_ALL) $(LDFLAGS_SHARED) -Wl,-soname,$(patsubst lib%.so.xyzzy,lib%.so.$(version_M),$@) $^ $(EXTRA_LIBS) $(LDLIBS)
 
-.PHONY: it all clean distclean tgz strip install install-dynlib install-bin install-lib install-include
+man: $(ALL_MAN:%.scd=%)
+
+%: %.scd
+	sed -e 's,%%livedir%%,$(livedir),' \
+		-e 's,%%system_dir%%,$(system_dir),' \
+		-e 's,%%user_dir%%,$(user_dir),' \
+		-e 's,%%service_sysconf%%,$(service_sysconf),' \
+		-e 's,%%service_userconf%%,$(service_userconf),' \
+		-e 's,%%service_packager%%,$(service_packager),g' \
+		-e 's,%%user_log%%,$(user_log),' \
+		-e 's,%%service_sys%%,$(service_sys),' \
+		-e 's,%%system_log%%,$(system_log),' \
+		-e 's,%%sysconfdir%%,$(sysconfdir),' \
+		-e 's,%%service_user%%,$(service_user),' $@.scd | scdoc > $@
+	
+install-man:
+	for i in 1 5 8 ; do \
+		install -m755 -d $(DESTDIR)$(mandir)/man$$i; \
+		install -m644 man/*.$$i $(DESTDIR)$(mandir)/man$$i/ ; \
+	done
+	
+# %.1: %.1.scd
+# 	scdoc < $@.scd > $@
+
+# %.5: %.5.scd
+# 	scdoc < $@.scd > $@
+	
+# %.8: %.8.scd
+# 	scdoc < $@.scd > $@
+
+.PHONY: it all clean distclean tgz strip install install-dynlib install-bin install-lib install-include man install-man
 
 .DELETE_ON_ERROR:
