@@ -13,18 +13,23 @@
  */
  
 #include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <unistd.h>//read
+#include <stdlib.h>//malloc
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <errno.h>
-#include <proc/readproc.h>
 #include <regex.h>
 
+#include <oblibs/sastr.h>
+
 #include <skalibs/sgetopt.h>
+#include <skalibs/stralloc.h>
 #include <skalibs/buffer.h>
 #include <skalibs/strerr2.h>
+#include <skalibs/types.h>
 
-#define MAX_ENV 4095
+#define MAXBUF 1024*64*2
+
 static char const *delim = "\n" ;
 static char const *pattern = 0 ;
 static unsigned int EXACT = 0 ;
@@ -47,14 +52,50 @@ static inline void info_help (void)
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
-static PROCTAB *open_proc (void)
+static int read_line(stralloc *dst, char const *line) 
 {
-	PROCTAB *ptp ;
-	int flags = PROC_FILLCOM | PROC_FILLENV ;
-
-	ptp = openproc (flags) ;
+	char b[MAXBUF] ;
+	int fd ;
+	unsigned int n = 0, m = MAXBUF ;
 	
-	return (ptp) ;
+	fd = open(line, O_RDONLY) ;
+	if (fd == -1) return 0 ;
+	
+	for(;;)
+	{
+		ssize_t r = read(fd,b+n,m-n);
+		if (r == -1)
+		{
+			if (errno == EINTR) continue ;
+			break ;
+		}
+		n += r ;
+		// buffer is full
+		if (n == m)
+		{
+			--n ;
+			break ;
+		}
+		// end of file
+		if (r == 0) break ;
+	}
+	close(fd) ;
+	
+	if(n)
+	{
+		int i = n ;
+		// remove trailing zeroes
+		while (i && b[i-1] == '\0') --i ;
+		while (i--)
+			if (b[i] == '\n' || b[i] == '\0') b[i] = ' ' ;
+		
+		if (b[n-1] == ' ') b[n-1] = '\0' ;
+	}
+	b[n] = '\0';
+	
+	if (!stralloc_cats(dst,b) ||
+		!stralloc_0(dst)) strerr_diefu1sys(111,"append stralloc") ;
+ 	return n ;
 }
 
 static regex_t *regex_cmp (void)
@@ -79,7 +120,7 @@ static regex_t *regex_cmp (void)
 		memcpy(re,pattern,plen) ;
 		re[plen] = 0 ;
 	}
-	
+
 	r = regcomp (preg, re, REG_EXTENDED | REG_NOSUB) ;
 	if (r)
 	{
@@ -92,72 +133,75 @@ static regex_t *regex_cmp (void)
 
 void get_procs ()
 {
-	PROCTAB *ptp ;
-	proc_t task ;
-	
-	int i = 0 ;
+	char *proc = "/proc" ;
+	char *cmdline = "/cmdline" ;
+	char *environ = "/environ" ;
+	size_t proclen = 5, linelen = 8, i = 0, len ;
+	char myself [PID_FMT] ;
+	myself[pid_fmt(myself,getpid())] = 0 ;
 	regex_t *preg ;
-	pid_t myself = getpid() ;
-	char cmd[MAX_ENV+1] ;
-	int bytes ;
-	char *str ;
-	
-	ptp = open_proc() ;
 	preg = regex_cmp() ;
+	stralloc satmp = STRALLOC_ZERO ;
+	stralloc saproc = STRALLOC_ZERO ;
+		
+	if (!sastr_dir_get(&satmp,proc,"",S_IFDIR)) strerr_diefu1sys(111,"get content of /proc") ;
 	
-	memset (&task, 0, sizeof (task)) ;
-	while (readproc (ptp, &task)) 
+	i = 0, len = satmp.len ;
+	for (;i < len; i += strlen(satmp.s + i) + 1)
 	{
-		int found = 1 ;
+		char *name = satmp.s + i ;
+		char c = name[0] ;
+		// keep only pid directories
+		if ( c >= '0' && c <= '9' ) 
+			if (!stralloc_catb(&saproc,name,strlen(name) + 1)) strerr_diefu1sys(111,"append stralloc") ;
+	}
 	
-		if (task.XXXID == myself) continue ;
+	i = 0, len = saproc.len ;
+	for (;i < len; i += strlen(saproc.s + i) + 1)
+	{
+		satmp.len = 0 ;
+		int found = 1 ;
+		char *name = saproc.s + i ;
+		size_t namelen = strlen(name) ;
+		if (!strcmp(name,myself)) continue ;
+		char tmp[proclen + 1 + namelen + linelen + 1] ;
+		memcpy(tmp,proc,proclen) ;
+		tmp[proclen] = '/' ;
+		memcpy(tmp + proclen + 1,name,namelen) ;
+		memcpy(tmp + proclen + 1 + namelen,cmdline,linelen) ;
+		tmp[proclen + 1 + namelen + linelen] = 0 ;
+		if (!read_line(&satmp,tmp)) continue ;
 		
-		if (!task.cmdline) continue ;
-		
-		{
-			i = 0 ;
-			bytes = sizeof(cmd) ;
-			str = cmd ;
-			/* make sure it is always NUL-terminated */
-			*str = 0 ;
-
-			while (task.cmdline[i] && bytes > 1)
-			{
-				const int len = snprintf(str, bytes, "%s%s", i ? " " : "", task.cmdline[i]) ;
-				if (len < 0) {
-					*str = 0 ;
-					break ;
-				}
-				if (len >= bytes) break ;
-				str += len ;
-				bytes -= len ;
-				i++ ;
-			}
-		}
-		cmd[strlen(cmd)] = 0 ;
-		if (regexec (preg, cmd, 0, NULL, 0) != 0)
+		if (regexec (preg, satmp.s, 0, NULL, 0) != 0)
 			found = 0 ;
 		
-		if (!task.environ) continue ;		
+		satmp.len = 0 ;
+		memcpy(tmp + proclen + 1 + namelen,environ,linelen) ;
+		tmp[proclen + 1 + namelen + linelen] = 0 ;
+		if (!read_line(&satmp,tmp)) continue ;
 		
 		if (found) 
 		{	
-			for(;*task.environ;task.environ++)
+			size_t j = 0 ;
+			for(;j < satmp.len; j++)
 			{
-				if ((buffer_putsflush(buffer_1, *task.environ) < 0) ||
-				(buffer_putsflush(buffer_1, delim) < 0)) strerr_diefu1sys(111, "write to stdout") ;	
+				char ch[2] = { satmp.s[j], 0 } ;
+				if (satmp.s[j] == ' ' || satmp.s[j] == '\0')
+				{
+					if (buffer_putsflush(buffer_1, delim) < 0) strerr_diefu1sys(111, "write to stdout") ;
+				}
+				else if (buffer_puts(buffer_1, ch) < 0) strerr_diefu1sys(111, "write to stdout") ;
 			}
 			break ;
 		}
-		memset (&task, 0, sizeof (task)) ;
 	}
+	stralloc_free(&satmp) ;
+	stralloc_free(&saproc) ;
 	regfree(preg) ;
-	closeproc(ptp) ;
 }
 
 int main (int argc, char const *const *argv, char const *const *envp)
 {
-	
 	PROG = "66-getenv" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
@@ -176,12 +220,9 @@ int main (int argc, char const *const *argv, char const *const *envp)
 		argc -= l.ind ; argv += l.ind ;
 	}
 	if (argc < 1) dieusage() ;
-	pattern = argv[0] ;
+	pattern = *argv ;
 
  	get_procs() ;
 	
 	return 0 ;	
 }
-
-
-

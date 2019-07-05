@@ -59,7 +59,7 @@ src/lib66/hpr_shutdown.o src/lib66/hpr_shutdown.lo: src/lib66/hpr_shutdown.c src
 src/lib66/hpr_wall.o src/lib66/hpr_wall.lo: src/lib66/hpr_wall.c src/include/66/hpr.h
 src/lib66/instance.o src/lib66/instance.lo: src/lib66/instance.c src/include/66/utils.h
 src/lib66/parser.o src/lib66/parser.lo: src/lib66/parser.c src/include/66/enum.h src/include/66/parser.h src/include/66/utils.h
-src/lib66/parser_enabled.o src/lib66/parser_enabled.lo: src/lib66/parser_enabled.c src/include/66/config.h src/include/66/constants.h src/include/66/enum.h src/include/66/parser.h src/include/66/resolve.h src/include/66/utils.h
+src/lib66/parser_enabled.o src/lib66/parser_enabled.lo: src/lib66/parser_enabled.c src/include/66/constants.h src/include/66/parser.h src/include/66/resolve.h src/include/66/utils.h
 src/lib66/parser_utils.o src/lib66/parser_utils.lo: src/lib66/parser_utils.c src/include/66/config.h src/include/66/constants.h src/include/66/enum.h src/include/66/environ.h src/include/66/parser.h src/include/66/utils.h
 src/lib66/parser_write.o src/lib66/parser_write.lo: src/lib66/parser_write.c src/include/66/constants.h src/include/66/enum.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/rc_init.o src/lib66/rc_init.lo: src/lib66/rc_init.c src/include/66/constants.h src/include/66/rc.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/state.h src/include/66/utils.h
@@ -67,7 +67,7 @@ src/lib66/rc_manage.o src/lib66/rc_manage.lo: src/lib66/rc_manage.c src/include/
 src/lib66/rc_send.o src/lib66/rc_send.lo: src/lib66/rc_send.c src/include/66/rc.h src/include/66/resolve.h src/include/66/ssexec.h
 src/lib66/rc_unsupervise.o src/lib66/rc_unsupervise.lo: src/lib66/rc_unsupervise.c src/include/66/constants.h src/include/66/db.h src/include/66/rc.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/state.h src/include/66/utils.h
 src/lib66/resolve.o src/lib66/resolve.lo: src/lib66/resolve.c src/include/66/constants.h src/include/66/enum.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/state.h src/include/66/utils.h
-src/lib66/resolve_graph.o src/lib66/resolve_graph.lo: src/lib66/resolve_graph.c src/include/66/constants.h src/include/66/resolve.h
+src/lib66/resolve_graph.o src/lib66/resolve_graph.lo: src/lib66/resolve_graph.c src/include/66/constants.h src/include/66/resolve.h src/include/66/utils.h
 src/lib66/scandir_ok.o src/lib66/scandir_ok.lo: src/lib66/scandir_ok.c src/include/66/utils.h
 src/lib66/scandir_send_signal.o src/lib66/scandir_send_signal.lo: src/lib66/scandir_send_signal.c src/include/66/utils.h
 src/lib66/set_livedir.o src/lib66/set_livedir.lo: src/lib66/set_livedir.c src/include/66/config.h src/include/66/utils.h
@@ -144,8 +144,8 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-echo: src/extra-tools/66-echo.o -lskarnet 
 66-envfile: EXTRA_LIBS :=
 66-envfile: src/extra-tools/66-envfile.o -lskarnet
-66-getenv: EXTRA_LIBS := ${PROCPS_LIB}
-66-getenv: src/extra-tools/66-getenv.o -lskarnet 
+66-getenv: EXTRA_LIBS :=
+66-getenv: src/extra-tools/66-getenv.o -loblibs -lskarnet 
 66-gnwenv: EXTRA_LIBS :=
 66-gnwenv: src/extra-tools/66-gnwenv.o -loblibs -lskarnet 
 66-umountall: EXTRA_LIBS :=

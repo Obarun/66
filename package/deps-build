@@ -1,6 +1,5 @@
 /package/prog/oblibs
 /package/prog/skalibs
-/package/admin/procps
 /package/admin/execline
 /package/admin/s6
 /package/admin/s6-rc

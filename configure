@@ -384,7 +384,6 @@ sysclock_lib=$(cat $sysdeps/sysclock.lib)
 tainnow_lib=$(cat $sysdeps/tainnow.lib)
 timer_lib=$(cat $sysdeps/timer.lib)
 util_lib=$(cat $sysdeps/util.lib)
-procps_lib=$($pkg_config --libs libprocps)
 
 if $allpic ; then
   tryflag CFLAGS_AUTO -fPIC
@@ -475,7 +474,6 @@ sproot := $sproot
 version := $version
 home := $home
 exthome := $exthome
-PROCPS_LIB := ${procps_lib}
 SPAWN_LIB := ${spawn_lib}
 SOCKET_LIB := ${socket_lib}
 SYSCLOCK_LIB := ${sysclock_lib}
