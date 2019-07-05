@@ -23,13 +23,13 @@ Fine tuning of the installation directories:
   --libdir=DIR                    static library files [PREFIX/lib/$package]
   --includedir=DIR                C header files [PREFIX/include]
   --sysconfdir=SYSDIR             global configuration files [/etc/66]
-  --datarootdir=DIR               read-only architecture-independent data root [PREFIX/share]
+  --datarootdir=DATAROOTDIR       read-only architecture-independent data root [PREFIX/share]
   --mandir=DIR                    man documentation [$datarootdir/man]
   
   --shebangdir=DIR                absolute path for execline #\! invocations [BINDIR]
   --livedir=DIR                   default live directory [/run/66]
   --with-system-dir=DIR           66 tools root working directory[PREFIX/lib/66]
-  --with-packager-service=DIR     packager service installation directory[SYSDIR/service]
+  --with-packager-service=DIR     packager service installation directory[DATAROOTDIR/66/service]
   --with-sys-service=DIR          sysadmin service directory[SYSDIR/sysadmin/service]
   --with-sys-service-conf=DIR     sysadmin service configuration directory[SYSDIR/conf]
   --with-system-log=DIR           root service log directory[/var/log/66]
@@ -167,7 +167,7 @@ system_dir='$prefix/lib/66'
 user_dir='.66'
 system_log='/var/log/66'
 user_log='.66/log'
-service_packager='$sysconfdir/service'
+service_packager='$datarootdir/66/service'
 service_sys='$sysconfdir/sysadmin/service'
 service_user='.66/service'
 service_sysconf='$sysconfdir/conf'
@@ -258,6 +258,9 @@ if test -z "$prefix" ; then
   if test "$mandir" = '$datarootdir/man'; then
     mandir=$datarootdir/man
   fi
+  if test "$service_packager" = '$datarootdir/service' ; then
+	service_packager = '$datarootdir/66/service'
+  fi
   if test "$system_dir" = '$prefix/lib/66' ; then
 	system_dir=/var/lib/66
   fi
@@ -275,8 +278,15 @@ for i in exec_prefix dynlibdir libexecdir bindir libdir includedir shebangdir sp
   stripdir $i
 done
 
+stripdir datarootdir
+for i in service_packager mandir; do
+  eval tmp=\${$i}
+  eval $i=$tmp
+  stripdir $i
+done
+
 stripdir sysconfdir
-for i in service_packager service_sys service_user service_sysconf; do
+for i in service_sys service_user service_sysconf; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
@@ -312,6 +322,8 @@ if $slashpackage ; then
   libexecdir=$bindir
   includedir=${home}/include
   sysconfdir=${home}/etc/66
+  datarootdir=${home}/usr/share
+  service_packager=${home}/${datarootdir}/66/service
   if $shebangisdefault ; then
     shebangdir=${extbinprefix}
   fi
