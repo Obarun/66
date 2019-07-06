@@ -33,6 +33,7 @@
 #define SS_NOTIFICATION_LEN (sizeof SS_NOTIFICATION - 1)
 #define SS_MAXDEATHTALLY "max-death-tally"
 #define SS_MAXDEATHTALLY_LEN (sizeof SS_MAXDEATHTALLY - 1)
+
 /**tree dir*/
 #define SS_RULES "/rules"
 #define SS_RULES_LEN (sizeof SS_RULES - 1)
@@ -85,6 +86,7 @@
 #define SS_STATE "/state"
 #define SS_STATE_LEN (sizeof SS_STATE - 1)
 
+#define SS_VAR_UNEXPORT '!'
 /** boot */
 #define SS_BOOT_CONF "init.conf"
 #define SS_BOOT_CONF_LEN (sizeof SS_BOOT_CONF - 1)

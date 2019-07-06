@@ -38,6 +38,7 @@
 
 #include <66/parser.h>
 #include <66/environ.h>
+#include <66/constants.h>
 
 static stralloc SAENV = STRALLOC_ZERO ;
 static genalloc GAENV = GENALLOC_ZERO ; //diuint32, pos in senv
@@ -193,7 +194,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	stralloc_free(&src) ;
 	
 	/** be able to freed the stralloc before existing */
-	char tmp[modifs.len] ;
+	char tmp[modifs.len+1] ;
 	memcpy(tmp,modifs.s,modifs.len) ;
 	tmp[modifs.len] = 0 ;
 	
@@ -207,9 +208,9 @@ int main (int argc, char const *const *argv, char const *const *envp)
 			unexport = 0 ;
 			int key = genalloc_s(diuint32,&GAENV)[i].left ;
 			int val = genalloc_s(diuint32,&GAENV)[i].right ;
-			if ((SAENV.s+key)[0] == '!')
+			if ((SAENV.s+val)[0] == SS_VAR_UNEXPORT)
 			{
-				key++ ;
+				val++ ;
 				unexport = 1 ;
 			}
 			if(!loop_stra(&info.vars,SAENV.s + key))

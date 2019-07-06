@@ -2,7 +2,8 @@
 
 # NAME
 
-66-env - List or replace an environment variables of a service
+66-env - List or replaces an environment variables of a service depending
+on the options passed.
 
 # SYNOPSIS
 
@@ -39,7 +40,8 @@ It display the contain of the file or replace a _key=value_ pair if requested.
 *-r* _key=value_
 	Override an existing _key=value_ pair with the given one. The
 	_key=value_ needs to be double-quoted in case of multiple arguments.
-	Backslash *\\* should be used to properly parse a double-quoted element.
+	In case of double quote backslash *\\* should be used to properly 
+	parse a double-quoted element.
 
 # EXIT STATUS
 
@@ -52,20 +54,12 @@ It display the contain of the file or replace a _key=value_ pair if requested.
 ```
 66-env -L ntpd
 66-env -r CMD_ARGS=-d 
-66-env -r "CMD_ARGS=-c /etc/nginx/nginx.conf -g \"daemon off;\""
+66-env -r CMD_ARGS='-c /etc/nginx/nginx.conf -g "daemon off;"'
 ```
 
 # NOTES
 
-Keys which are preceded by an exclamation mark *!* in the configuration
-_service_ file can be accessed as if they had none. For example, a _key=value_
-corresponding to:
+Unexport a _key_ from the environment can be handled by using an exclamation
+mark *!* at the begin of the _value_. For example:
 
-	!CMD_ARGS=--print-pid=4
-
-can be replaced by the command:
-
-	66-env -r CMD_ARGS=--print-pid=3
-
-In this case the operator will be kept even if it was not included in the
-overwriting command.
+	66-env -r CMD_ARGS='!-c /etc/nginx/nginx.conf -g "daemon off;"'

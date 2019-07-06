@@ -6,17 +6,17 @@ execl-envfile - A blend of *s6-envdir* and *importas* program.
 
 # SYNOPSIS
 
-execl-envfile [ *-h* ] [ *-l* ] _dir_ _prog_
+execl-envfile [ *-h* ] [ *-l* ] _src_ _prog_
 
 # DESCRIPTION
 
-It reads files containing variable assignments on the given directory, adds the
+It reads files containing variable assignments on the given file/directory, adds the
 variables to the environment, then executes a program.
 
-This tool expects to find one or more regular file(s) in _dir_ containing
-one or multiple _key=value_ pair. For each file found: it will parse the file,
+This tool expects to find a regular file or a directory in _src_ containing
+one or multiple _key=value_ pair(s). It will parse that file,
 import the _key=value_ and then exec the given _prog_ with the modified
-environment.
+environment. In case of directory for each file found it apply the same process.
 
 - It opens and reads the file.
 - It parses the file.
@@ -31,18 +31,18 @@ environment.
 	Prints this help.
 
 *-f* _file_
-	Only parses the _file_ found in _dir_.
+	Only parses the _file_ found in _src_. *deprecated option*
 
 *-l*
-	Loose. Do nothing and executes _prog_ directly if _dir_ does not contain
-	any regular file(s) or _dir_ doesn't exist.
+	Loose. Do nothing and executes _prog_ directly if _src_ does not contain
+	any regular file(s) or _src_ doesn't exist.
 
 # EXAMPLE
 
 ```
 	#!/usr/bin/execlineb -P
 	fdmove -c 2 1
-	execl-envfile -f ntpd /etc/66/conf
+	execl-envfile /etc/66/conf/ntpd
 	foreground { mkdir -p  -m 0755 ${RUNDIR} } 
 	execl-cmdline -s { ntpd ${CMD_ARGS} }
 ```

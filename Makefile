@@ -182,15 +182,6 @@ install-man:
 		install -m755 -d $(DESTDIR)$(mandir)/man$$i; \
 		install -m644 man/*.$$i $(DESTDIR)$(mandir)/man$$i/ ; \
 	done
-	
-# %.1: %.1.scd
-# 	scdoc < $@.scd > $@
-
-# %.5: %.5.scd
-# 	scdoc < $@.scd > $@
-	
-# %.8: %.8.scd
-# 	scdoc < $@.scd > $@
 
 .PHONY: it all clean distclean tgz strip install install-dynlib install-bin install-lib install-include man install-man
 

@@ -83,9 +83,11 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 	else if (replace)
 	{
 		stralloc newlist = STRALLOC_ZERO ;
-		genalloc mga = GENALLOC_ZERO ;
+		// key=value from cmdline
+		genalloc mga = GENALLOC_ZERO ;// diuint32
 		stralloc msa = STRALLOC_ZERO ;
-		genalloc ga = GENALLOC_ZERO ;
+		// key=value from file
+		genalloc ga = GENALLOC_ZERO ;// diuint32
 		stralloc sa = STRALLOC_ZERO ;
 		char *key, *val, *mkey, *mval ;
 		if (!env_clean(&var)) strerr_diefu1x(111,"clean key=value pair") ;
@@ -100,7 +102,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 			if (!stralloc_cats(&newlist,key) ||
 			!stralloc_cats(&newlist,"=")) retstralloc(111,"replace") ;
 			
-			if (obstr_equal((key[0] == '!') ? key+1:key,mkey)) {
+			if (obstr_equal(key,mkey)) {
 				if (!stralloc_cats(&newlist,mval)) retstralloc(111,"replace") ;
 			}else if (!stralloc_cats(&newlist,val)) retstralloc(111,"replace") ;
 			if (!stralloc_cats(&newlist,"\n")) retstralloc(111,"replace") ;

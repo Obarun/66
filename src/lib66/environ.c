@@ -32,6 +32,7 @@
 #include <66/parser.h>
 #include <66/environ.h>
 #include <66/utils.h>
+#include <66/constants.h>
 
 #include <execline/execline.h>
 /* @Return 1 on success
@@ -175,10 +176,16 @@ int env_parsenclean(stralloc *modifs,stralloc *src)
 		if (!parse_env(&tmp,&pos)) goto err ;
 		if (!env_clean(&tmp)) goto err ;
 		tmp.len--;//remove '0'
-		int u = 0 ;
-		if (tmp.s[0] == '!') u++ ;
-		if (!stralloc_catb(modifs,tmp.s + u ,(tmp.len - u) + 1)) goto err ;// ||
-//		!stralloc_0(modifs)) goto err ;
+		int r = get_len_until(tmp.s,'=') ;
+		if (tmp.s[r+1] == SS_VAR_UNEXPORT){
+			r++ ;
+			char t[tmp.len+1] ;
+			memcpy(t,tmp.s,r) ;
+			memcpy(t+r,tmp.s+r+1,tmp.len-(r+1)) ;
+			tmp.len--;
+			t[tmp.len] = 0 ;
+			if (!stralloc_catb(modifs,t,tmp.len + 1)) goto err ;
+		}else if (!stralloc_catb(modifs,tmp.s,tmp.len + 1)) goto err ;// ||
 	}
 	
 	genalloc_deepfree(stralist,&gatmp,stra_free) ;
@@ -225,13 +232,13 @@ int env_substitute(char const *key, char const *val,exlsn_t *info, char const *c
 	blah.var = info->vars.len ;
 	blah.value = info->values.len ;
 	
-	if (el_vardupl(key, info->vars.s, info->vars.len)) { strerr_warnw1x("bad substitution key") ; goto err ; }
-	if (!stralloc_catb(&info->vars,key, strlen(key) + 1)) { strerr_warnw1x("env_substitute") ; goto err ; }
+	if (el_vardupl(key, info->vars.s, info->vars.len)) { strerr_warnwu1x("el_vardupl") ; goto err ; }
+	if (!stralloc_catb(&info->vars,key, strlen(key) + 1)) { strerr_warnwu1x("append stralloc of env_substitute") ; goto err ; }
 	
 	x = env_get2(envp, key) ;
 	if (!x)
 	{
-		if (insist) { strerr_warnw2x(val,": is not set") ; goto err ; }
+		if (insist) { strerr_warnw2x(key,": is not set") ; goto err ; }
 		x = defaultval ;
 	}
 	else if (unexport)
