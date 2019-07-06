@@ -139,7 +139,8 @@ struct sv_alltype_s
 	uint32_t hiercopy[24] ; //dir/file to copy
 	int signal ;//down-signal file
 	unsigned int pipeline ; //pos in deps
-	stralloc saenv ; //type diuint32, pos in saenv
+	stralloc saenv ; 
+	uint32_t srconf ; //path of the environment file
 } ;
 
 #define SV_EXEC_ZERO \

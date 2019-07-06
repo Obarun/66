@@ -36,6 +36,7 @@
 #include <66/enum.h>
 #include <66/resolve.h>
 #include <66/ssexec.h>
+#include <66/environ.h>
 
 #include <s6/config.h>//S6_BINPREFIX
 #include <execline/config.h>//EXECLINE_BINPREFIX
@@ -762,19 +763,6 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 	stralloc runuser = STRALLOC_ZERO ;
 	stralloc execute = STRALLOC_ZERO ;
 	
-	
-	char *envdata = 0 ;
-	if (!owner) envdata = SS_SERVICE_SYSCONFDIR ;
-	else
-	{
-		if (!set_ownerhome(&home,owner))
-		{ VERBO3 strerr_warnwu1sys("set home directory") ; return 0 ; }
-		if (!stralloc_cats(&home,SS_SERVICE_USERCONFDIR)) retstralloc(111,"write_exec") ;
-		if (!stralloc_0(&home)) retstralloc(111,"write_exec") ;
-		home.len-- ;
-		envdata = home.s ;
-	}	
-	
 	switch (exec->build)
 	{
 		case AUTO:
@@ -793,7 +781,8 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 			if (sv->opts[2] && (exec->build == AUTO))
 			{
 				if (!stralloc_cats(&env,SS_BINPREFIX "execl-envfile ")) retstralloc(0,"write_exec") ;
-				if (!stralloc_cats(&env,envdata)) retstralloc(0,"write_exec") ;
+				if (!env_resolve_conf(&env,name,owner)) 
+				{ VERBO3 strerr_warnwu1sys("get path of service configuration file") ; return 0 ; }
 				if (!stralloc_cats(&env,name)) retstralloc(0,"write_exec") ;
 				if (!stralloc_cats(&env,"\n")) retstralloc(0,"write_exec") ;
 			}

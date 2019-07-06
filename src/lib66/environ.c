@@ -13,6 +13,8 @@
  */
  
 #include <stddef.h>
+#include <string.h>
+#include <errno.h>
 //#include <stdio.h>
 
 #include <oblibs/string.h>
@@ -33,6 +35,7 @@
 #include <66/environ.h>
 #include <66/utils.h>
 #include <66/constants.h>
+#include <66/config.h>
 
 #include <execline/execline.h>
 /* @Return 1 on success
@@ -400,4 +403,35 @@ size_t build_env(char const *src,char const *const *envp,char const **newenv, ch
 	err:
 		stralloc_free(&modifs) ;
 		return 0 ;
+}
+
+int env_resolve_conf(stralloc *env, char const *sv,uid_t owner)
+{
+	int err = errno ;
+	size_t svlen = strlen(sv) ;
+	size_t len = sizeof SS_SERVICE_ADMCONFDIR - 1 ;
+	char e[len + svlen + 1] ;
+	memcpy(e,SS_SERVICE_ADMCONFDIR,len) ;
+	memcpy(e + len,sv,svlen) ;
+	e[len + svlen] = 0 ;
+		
+	if (!owner)
+	{
+		errno = 0 ;
+		if (access(e, F_OK) < 0) 
+			if (errno != ENOENT) return 0 ;
+		if (errno == ENOENT){
+			if (!stralloc_cats(env,SS_SERVICE_SYSCONFDIR)) return 0 ;
+		}
+		else if (!stralloc_cats(env,SS_SERVICE_ADMCONFDIR)) return 0 ;
+	}
+	else
+	{
+		if (!set_ownerhome(env,owner)) return 0 ;
+		if (!stralloc_cats(env,SS_SERVICE_USERCONFDIR)) return 0 ;
+	}	
+	if (!stralloc_0(env)) return 0 ;
+	env->len-- ;
+	errno = err ;
+	return 1 ;
 }

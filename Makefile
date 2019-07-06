@@ -180,7 +180,7 @@ man: $(ALL_MAN:%.scd=%)
 install-man:
 	for i in 1 5 8 ; do \
 		install -m755 -d $(DESTDIR)$(mandir)/man$$i; \
-		install -m644 man/*.$$i $(DESTDIR)$(mandir)/man$$i/ ; \
+		install -m644 doc/man/*.$$i $(DESTDIR)$(mandir)/man$$i/ ; \
 	done
 
 .PHONY: it all clean distclean tgz strip install install-dynlib install-bin install-lib install-include man install-man

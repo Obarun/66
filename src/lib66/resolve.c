@@ -118,7 +118,7 @@ int ss_resolve_src_path(stralloc *sasrc,char const *sv, ssexec_t *info)
 	char const *src = 0 ;
 	unsigned int found = 0 ;
 	stralloc home = STRALLOC_ZERO ;
-	if (!info->owner) src = SS_SERVICE_SYSDIR ;
+	if (!info->owner) src = SS_SERVICE_ADMDIR ;
 	else
 	{	
 		if (!set_ownerhome(&home,info->owner)){ VERBO3 strerr_warnwu1sys("set home directory") ; goto err ; }
@@ -133,13 +133,13 @@ int ss_resolve_src_path(stralloc *sasrc,char const *sv, ssexec_t *info)
 	if (!r)
 	{
 		found = 0 ;
-		src = SS_SERVICE_SYSDIR ;
+		src = SS_SERVICE_ADMDIR ;
 		r = ss_resolve_src(sasrc,sv,src,&found) ;
 		if (r < 0) { VERBO3 strerr_warnwu2sys("parse source directory: ",src) ; goto err ; }
 		if (!r)
 		{
 			found = 0 ;
-			src = SS_SERVICE_PACKDIR ;
+			src = SS_SERVICE_SYSDIR ;
 			r = ss_resolve_src(sasrc,sv,src,&found) ;
 			if (r < 0) { VERBO3 strerr_warnwu2sys("parse source directory: ",src) ; goto err ; }
 			if (!r) { VERBO3 strerr_warnw2sys("unknown service: ",sv) ; goto err ; }

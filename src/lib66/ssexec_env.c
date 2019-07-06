@@ -37,19 +37,10 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 	stralloc conf = STRALLOC_ZERO ;
 	stralloc var = STRALLOC_ZERO ;
 	stralloc salist = STRALLOC_ZERO ;
+	stralloc sasrc = STRALLOC_ZERO ;
 	
-	char const *src = 0 , *sv = 0 ;
-		
-	if (!info->owner) src = SS_SERVICE_SYSCONFDIR ;
-	else
-	{	
-		if (!set_ownerhome(&conf,info->owner)) strerr_diefu1sys(111,"set home directory");
-		if (!stralloc_cats(&conf,SS_SERVICE_USERCONFDIR)) retstralloc(111,"main") ;
-		if (!stralloc_0(&conf)) retstralloc(111,"main") ;
-		conf.len-- ;
-		src = conf.s ;
-	}
-	
+	char const *sv = 0, *src = 0 ;
+
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
 
@@ -73,6 +64,8 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 	
 	if (argc < 1) exitusage(usage_env) ;
 	sv = argv[0] ;
+	if (!env_resolve_conf(&sasrc,sv,info->owner)) strerr_diefu1sys(111,"get path of the configuration file") ;
+	if (!src) src = sasrc.s ;
 	if (!file_readputsa(&salist,src,sv)) strerr_diefu3sys(111,"read: ",src,sv) ;
 	if (list)
 	{
@@ -108,7 +101,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 			if (!stralloc_cats(&newlist,"\n")) retstralloc(111,"replace") ;
 		}
 		if (!file_write_unsafe(src,sv,newlist.s,newlist.len))
-			strerr_diefu4sys(111,"write: ",src,"/",sv) ;
+			strerr_diefu3sys(111,"write: ",src,sv) ;
 	
 		stralloc_free(&newlist) ;
 		stralloc_free(&sa) ;
@@ -118,6 +111,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 	}
 	freed:
 		stralloc_free(&conf) ;
+		stralloc_free(&sasrc) ;
 		stralloc_free(&var) ;
 		stralloc_free(&salist) ;
 	return 0 ;

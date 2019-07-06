@@ -764,7 +764,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	/** environment */
 	if(!OWNER)
 	{
-		if (!stralloc_cats(&env,SS_SERVICE_SYSCONFDIR)) goto err ;
+		if (!stralloc_cats(&env,SS_SERVICE_ADMCONFDIR)) goto err ;
 		if (!stralloc_0(&env)) goto err ;
 	}
 	else
