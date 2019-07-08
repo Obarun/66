@@ -15,7 +15,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdlib.h>//realpath
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <oblibs/types.h>
 #include <oblibs/error2.h>
@@ -118,7 +118,7 @@ int ss_resolve_src_path(stralloc *sasrc,char const *sv, ssexec_t *info)
 	char const *src = 0 ;
 	unsigned int found = 0 ;
 	stralloc home = STRALLOC_ZERO ;
-	if (!info->owner) src = SS_SERVICE_SYSDIR ;
+	if (!info->owner) src = SS_SERVICE_ADMDIR ;
 	else
 	{	
 		if (!set_ownerhome(&home,info->owner)){ VERBO3 strerr_warnwu1sys("set home directory") ; goto err ; }
@@ -133,13 +133,13 @@ int ss_resolve_src_path(stralloc *sasrc,char const *sv, ssexec_t *info)
 	if (!r)
 	{
 		found = 0 ;
-		src = SS_SERVICE_SYSDIR ;
+		src = SS_SERVICE_ADMDIR ;
 		r = ss_resolve_src(sasrc,sv,src,&found) ;
 		if (r < 0) { VERBO3 strerr_warnwu2sys("parse source directory: ",src) ; goto err ; }
 		if (!r)
 		{
 			found = 0 ;
-			src = SS_SERVICE_PACKDIR ;
+			src = SS_SERVICE_SYSDIR ;
 			r = ss_resolve_src(sasrc,sv,src,&found) ;
 			if (r < 0) { VERBO3 strerr_warnwu2sys("parse source directory: ",src) ; goto err ; }
 			if (!r) { VERBO3 strerr_warnw2sys("unknown service: ",sv) ; goto err ; }
@@ -152,10 +152,19 @@ int ss_resolve_src_path(stralloc *sasrc,char const *sv, ssexec_t *info)
 		return 0 ;
 }
 
+int ss_resolve_service_isdir(char const *dir, char const *name)
+{
+	size_t dirlen = strlen(dir) ;
+	char t[dirlen + 1] ;
+	if (!basename(t,dir)) return -1 ;
+	if (!strcmp(t,name)) return 1 ;
+	return 0 ;
+}
+
 int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,unsigned int *found)
 {
 	int fdsrc, obr, insta ;
-	size_t i, len, namelen = strlen(name) ;
+	size_t i, len, namelen = strlen(name), srclen = strlen(src) ;
 	stralloc sainsta = STRALLOC_ZERO ;
 	stralloc subdir = STRALLOC_ZERO ;
 	stralloc satmp = STRALLOC_ZERO ;
@@ -217,11 +226,16 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,unsigned i
 			
 			if (S_ISDIR(st.st_mode))
 			{
+				int r ;
 				if (!stralloc_cats(&subdir,src)) goto errstra ;
 				if (!stralloc_cats(&subdir,d->d_name)) goto errdir ;
 				if (!stralloc_0(&subdir)) goto errdir ;
-				
-				if (!sastr_dir_get(&satmp,subdir.s,"",S_IFREG|S_IFDIR))
+				r = ss_resolve_service_isdir(subdir.s,d->d_name) ;
+				if (r == -1) goto errdir ;
+				if (!r)
+					r = sastr_dir_get(&satmp,subdir.s,"",S_IFREG|S_IFDIR) ;
+				else r = sastr_dir_get(&satmp,subdir.s,"",S_IFREG) ;
+				if (!r)
 				{
 					VERBO3 strerr_warnwu2sys("get services from directory: ",subdir.s) ;
 					goto errdir ;
@@ -230,17 +244,50 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,unsigned i
 				subdir.len-- ;
 				for (;i < len; i += strlen(satmp.s + i) + 1)
 				{
-					if (!stralloc_cats(sasrc,subdir.s)) goto errdir ;
-					if (!stralloc_cats(sasrc,"/")) goto errdir ;
-					if (!stralloc_catb(sasrc,satmp.s+i,strlen(satmp.s+i)+1)) goto errdir ;
+					size_t tlen = strlen(satmp.s+i) ;
+					char t[subdir.len + 1 + tlen + 2];
+					memcpy(t,subdir.s,subdir.len) ;
+					t[subdir.len] ='/' ;
+					memcpy(t+subdir.len + 1,satmp.s+i,tlen) ;
+					t[subdir.len + 1 + tlen] = '/' ;
+					t[subdir.len + 1 + tlen + 1] = 0 ;
+					int r = scan_mode(t,S_IFDIR) ;
+					if (r == 1)
+					{
+						t[subdir.len + 1] = 0 ;
+						*found = ss_resolve_src(sasrc,satmp.s+i,t,found) ;
+						if (*found < 0) goto errdir ;
+					}
+					else
+					{
+						namelen = strlen(satmp.s + i) ;
+						char t[subdir.len + 1 + namelen + 1] ;
+						memcpy(t,subdir.s,subdir.len) ;
+						t[subdir.len] = '/' ;
+						memcpy(t + subdir.len + 1,name,namelen) ;
+						t[srclen + 1 + namelen] = 0 ;
+						if (sastr_cmp(sasrc,t) == -1)
+						{
+							if (!stralloc_cats(sasrc,subdir.s)) goto errdir ;
+							if (!stralloc_cats(sasrc,"/")) goto errdir ;
+							if (!stralloc_catb(sasrc,satmp.s+i,strlen(satmp.s+i)+1)) goto errdir ;
+						}
+					}
 				}
 				stralloc_free(&subdir) ;
 				break ;
 			}
 			else if(S_ISREG(st.st_mode))
 			{
-				if (!stralloc_cats(sasrc,src)) goto errdir ;
-				if (!stralloc_catb(sasrc,name,namelen+1)) goto errdir ;
+				char t[srclen + namelen + 1] ;
+				memcpy(t,src,srclen) ;
+				memcpy(t + srclen,name,namelen) ;
+				t[srclen + namelen] = 0 ;
+				if (sastr_cmp(sasrc,t) == -1)
+				{
+					if (!stralloc_cats(sasrc,src)) goto errdir ;
+					if (!stralloc_catb(sasrc,name,namelen+1)) goto errdir ;
+				}
 				break ;
 			}
 			else goto errdir ;
@@ -310,6 +357,7 @@ int ss_resolve_pack(stralloc *sa, ss_resolve_t *res)
 	!ss_resolve_add_uint32(sa,res->dstlog) ||
 	!ss_resolve_add_uint32(sa,res->deps) ||
 	!ss_resolve_add_uint32(sa,res->src) ||
+	!ss_resolve_add_uint32(sa,res->srconf) ||
 	!ss_resolve_add_uint32(sa,res->live) ||
 	!ss_resolve_add_uint32(sa,res->runat) ||
 	!ss_resolve_add_uint32(sa,res->tree) ||
@@ -388,6 +436,8 @@ int ss_resolve_read(ss_resolve_t *res, char const *src, char const *name)
 	uint32_unpack_big(sa.s + global,&res->deps) ;
 	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->src) ;
+	global += 4 ;
+	uint32_unpack_big(sa.s + global,&res->srconf) ;
 	
 	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->live) ;
@@ -552,6 +602,8 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	res.live = ss_resolve_add_string(&res,info->live.s) ;
 	res.state = ss_resolve_add_string(&res,state) ;
 	res.src = ss_resolve_add_string(&res,keep.s + services->src) ;
+	if (services->srconf)
+		res.srconf = ss_resolve_add_string(&res,keep.s + services->srconf) ;
 	if (services->type.classic_longrun.run.exec)
 		res.exec_run = ss_resolve_add_string(&res,keep.s + services->type.classic_longrun.run.exec) ;
 	if (services->type.classic_longrun.finish.exec)
@@ -716,6 +768,7 @@ int ss_resolve_copy(ss_resolve_t *dst,ss_resolve_t *res)
 	dst->dstlog = res->dstlog ;
 	dst->deps = res->deps ;
 	dst->src = res->src ;
+	dst->srconf = res->srconf ;
 	dst->live = res->live ;
 	dst->runat = res->runat ;
 	dst->tree = res->tree ;

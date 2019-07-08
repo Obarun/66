@@ -82,7 +82,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	char const *sv  ;
 	char name[4095+1] ;
 	char srcdir[4095+1] ;
-	int type, force = 0 ;
+	int type ;
+	unsigned int force = 0 , conf = 0 ;
 	PROG = "66-parser" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
@@ -153,19 +154,19 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	switch(type)
 	{
 		case CLASSIC:
-			if (!write_classic(&service, dst.s, force))
+			if (!write_classic(&service, dst.s, force, conf))
 				strerr_diefu2x(111,"write: ",name) ;
 			break ;
 		case LONGRUN:
-			if (!write_longrun(&service, dst.s, force))
+			if (!write_longrun(&service, dst.s, force, conf))
 				strerr_diefu2x(111,"write: ",name) ;
 			break ;
 		case ONESHOT:
-			if (!write_oneshot(&service, dst.s, force))
+			if (!write_oneshot(&service, dst.s, conf))
 				strerr_diefu2x(111,"write: ",name) ;
 			break ;
 		case BUNDLE:
-			if (!write_bundle(&service, dst.s, force))
+			if (!write_bundle(&service, dst.s))
 				strerr_diefu2x(111,"write: ",name) ;
 			break ;
 		default: break ;

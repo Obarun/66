@@ -9,61 +9,65 @@ Usage: $0 [OPTION]... [TARGET]
 Defaults for the options are specified in brackets.
 
 System types:
-  --target=TARGET                 configure to run on target TARGET [detected]
-  --host=TARGET                   same as --target
+  --target=TARGET                  configure to run on target TARGET [detected]
+  --host=TARGET                    same as --target
 
 Installation directories:
-  --prefix=PREFIX                 main installation prefix [/]
-  --exec-prefix=EPREFIX           installation prefix for executable files [PREFIX]
+  --prefix=PREFIX                  main installation prefix [/]
+  --exec-prefix=EPREFIX            installation prefix for executable files [PREFIX]
 
 Fine tuning of the installation directories:
-  --dynlibdir=DIR                 shared library files [PREFIX/lib]
-  --bindir=BINDIR                 user executables [EPREFIX/bin]
-  --libexecdir=DIR                package-scoped executables [EPREFIX/libexec]
-  --libdir=DIR                    static library files [PREFIX/lib/$package]
-  --includedir=DIR                C header files [PREFIX/include]
-  --sysconfdir=SYSDIR             global configuration files [/etc/66]
-  --datarootdir=DATAROOTDIR       read-only architecture-independent data root [PREFIX/share]
-  --mandir=DIR                    man documentation [$datarootdir/man]
+  --dynlibdir=DIR                  shared library files [PREFIX/lib]
+  --bindir=BINDIR                  user executables [EPREFIX/bin]
+  --libexecdir=DIR                 package-scoped executables [EPREFIX/libexec]
+  --libdir=DIR                     static library files [PREFIX/lib/$package]
+  --includedir=DIR                 C header files [PREFIX/include]
+  --sysconfdir=SYSDIR              global configuration files [/etc/66]
+  --datarootdir=DATAROOTDIR        read-only architecture-independent data root [PREFIX/share]
+  --mandir=DIR                     man documentation [$datarootdir/man]
   
-  --shebangdir=DIR                absolute path for execline #\! invocations [BINDIR]
-  --livedir=DIR                   default live directory [/run/66]
-  --with-system-dir=DIR           66 tools root working directory[PREFIX/lib/66]
-  --with-packager-service=DIR     packager service installation directory[DATAROOTDIR/66/service]
-  --with-sys-service=DIR          sysadmin service directory[SYSDIR/sysadmin/service]
-  --with-sys-service-conf=DIR     sysadmin service configuration directory[SYSDIR/conf]
-  --with-system-log=DIR           root service log directory[/var/log/66]
-  --with-user-dir=DIR             66 tools user working directory[.66]
-  --with-user-log=DIR             user service log directory[.66/log]
-  --with-user-service=DIR         user service directory[.66/service]
-  --with-user-service-conf=DIR    user service configuration directory[.66/conf]
- 
+  --shebangdir=DIR                 absolute path for execline #\! invocations [BINDIR]
+  --livedir=DIR                    default live directory [/run/66]
+  --with-system-log=DIR            system service log directory[/var/log/66]
+    
+  --with-system-dir=DIR            66 tools system working directory[PREFIX/lib/66]
+  --with-system-service=DIR        system service frontend directory[DATAROOTDIR/66/service]
+  --with-system-service-conf=DIR   system service configuration file directory[DATAROOTDIR/66/conf]
+  
+  --with-sysadmin-service=DIR      sysadmin service frontend directory[SYSDIR/service]
+  --with-sysadmin-service-conf=DIR sysadmin service configuration file directory[SYSDIR/conf]
+  
+  --with-user-dir=DIR              66 tools user working directory[.66]
+  --with-user-log=DIR              user service log directory[.66/log]
+  --with-user-service=DIR          user service directory[.66/service]
+  --with-user-service-conf=DIR     user service configuration directory[.66/conf]
+  
  Do not set an absolute path but a \$HOME relative path for --with-user-dir,  
  --with-user-log, --with-user-service, --with-user-service-conf. The \$HOME prefix 
  will be appened at the pathname automatically in function of the user.
  For example , by default the final path for --with-user-dir will be \$HOME/.66.
  
- --with-packager-service and --with-sys-service directory must be two differents path.
- For example do not set --with-sys-service=/etc/66/service/sysadmin with packager service   
- --with-sys-service=/etc/66/service.
+ --with-system-service and --with-sysadmin-service directory must be two differents path.
+ For example do not set --with-sysadmin-service=/etc/66/service/sysadmin with system service   
+ --with-system-service=/etc/66/service.
  
  If no --prefix option is given, by default --with-system-dir will be /var/lib/66.
 
 Dependencies:
-  --with-sysdeps=DIR            use sysdeps in DIR [PREFIX/lib/skalibs/sysdeps]
-  --with-include=DIR             add DIR to the list of searched directories for headers
-  --with-lib=DIR                 add DIR to the list of searched directories for static libraries
-  --with-dynlib=DIR              add DIR to the list of searched directories for shared libraries
+  --with-sysdeps=DIR               use sysdeps in DIR [PREFIX/lib/skalibs/sysdeps]
+  --with-include=DIR               add DIR to the list of searched directories for headers
+  --with-lib=DIR                   add DIR to the list of searched directories for static libraries
+  --with-dynlib=DIR                add DIR to the list of searched directories for shared libraries
  
 Optional features:
-  --enable-shared                build shared libraries [disabled]
-  --disable-static               do not build static libraries [enabled]
-  --disable-allstatic            do not prefer linking against static libraries [enabled]
-  --enable-static-libc           make entirely static binaries [disabled]
-  --disable-all-pic              do not build static libraries as PIC [enabled]
-  --enable-slashpackage[=ROOT]   assume /package installation at ROOT [disabled]
-  --enable-absolute-paths        do not rely on PATH to access this package's binaries,
-                                 hardcode absolute BINDIR/foobar paths instead [disabled]
+  --enable-shared                  build shared libraries [disabled]
+  --disable-static                 do not build static libraries [enabled]
+  --disable-allstatic              do not prefer linking against static libraries [enabled]
+  --enable-static-libc             make entirely static binaries [disabled]
+  --disable-all-pic                do not build static libraries as PIC [enabled]
+  --enable-slashpackage[=ROOT]     assume /package installation at ROOT [disabled]
+  --enable-absolute-paths          do not rely on PATH to access this package's binaries,
+                                   hardcode absolute BINDIR/foobar paths instead [disabled]
 EOF
 exit 0
 }
@@ -164,14 +168,15 @@ mandir='$datarootdir/man'
 shebangdir='$bindir'
 livedir='/run/66'
 system_dir='$prefix/lib/66'
-user_dir='.66'
 system_log='/var/log/66'
-user_log='.66/log'
-service_packager='$datarootdir/66/service'
-service_sys='$sysconfdir/sysadmin/service'
+service_system='$datarootdir/66/service'
+service_systemconf='$datarootdir/66/conf'
+service_adm='$sysconfdir/service'
+service_admconf='$sysconfdir/conf'
+user_dir='.66'
 service_user='.66/service'
-service_sysconf='$sysconfdir/conf'
 service_userconf='.66/conf'
+user_log='.66/log'
 sysdeps='$prefix/lib/skalibs/sysdeps'
 manualsysdeps=false
 shared=false
@@ -208,14 +213,15 @@ for arg ; do
     --shebangdir=*) shebangisdefault=false ; shebangdir=${arg#*=} ;;
     --livedir=*) livedir=${arg#*=} ;;
     --with-system-dir=*) system_dir=${arg#*=} ;;
-    --with-user-dir=*) user_dir=${arg#*=} ;;
     --with-system-log=*) system_log=${arg#*=} ;;
-    --with-user-log=*) user_log=${arg#*=} ;;
-    --with-packager-service=*) service_packager=${arg#*=} ;;
-    --with-sys-service=*) service_sys=${arg#*=} ;;
+    --with-system-service=*) service_system=${arg#*=} ;;
+    --with-system-service-conf=*) service_systemconf=${arg#*=} ;;
+    --with-sysadmin-service=*) service_adm=${arg#*=} ;;
+    --with-sysadmin-service-conf=*) service_admconf=${arg#*=} ;;
+    --with-user-dir=*) user_dir=${arg#*=} ;;
     --with-user-service=*) service_user=${arg#*=} ;;
-    --with-sys-service-conf=*) service_sysconf=${arg#*=} ;;
     --with-user-service-conf=*) service_userconf=${arg#*=} ;;
+    --with-user-log=*) user_log=${arg#*=} ;;
     --with-sysdeps=*) sysdeps=${arg#*=} manualsysdeps=true ;;
     --with-include=*) var=${arg#*=} ; stripdir var ; addincpath="$addincpath -I$var" ;;
     --with-lib=*) var=${arg#*=} ; stripdir var ; addlibspath="$addlibspath -L$var" ; vpaths="$vpaths $var" ;;
@@ -252,23 +258,32 @@ if test -z "$prefix" ; then
   if test "$includedir" = '$prefix/include' ; then
     includedir=/usr/include
   fi
-  if test "$datarootdir" = '$prefix/share'; then
-    datarootdir=/usr/share
-  fi
-  if test "$mandir" = '$datarootdir/man'; then
-    mandir=$datarootdir/man
-  fi
-  if test "$service_packager" = '$datarootdir/service' ; then
-	service_packager = '$datarootdir/66/service'
-  fi
-  if test "$system_dir" = '$prefix/lib/66' ; then
-	system_dir=/var/lib/66
-  fi
   if test "$sysdeps" = '$prefix/lib/skalibs/sysdeps' ; then
     sysdeps=/usr/lib/skalibs/sysdeps
   fi
+   if test "$datarootdir" = '$prefix/share'; then
+    datarootdir=/usr/share
+  fi
+ if test "$system_dir" = '$prefix/lib/66' ; then
+	system_dir=/var/lib/66
+  fi
+ # if test "$mandir" = '$datarootdir/man'; then
+ #   mandir=$datarootdir/man
+ # fi
+ # if test "$service_system" = '$datarootdir/service' ; then
+ #	service_system = '$datarootdir/66/service'
+ # fi
 fi
 
+# Add /etc/66 in the default case
+if test -z "$sysconfdir" ; then
+  if test "$service_adm" = '$sysconfdir/service' ; then
+	service_adm = '$sysconfdir/service'
+  fi
+  if test "$service_admconf" = '$sysconfdir/conf' ; then
+	service_admconf = '$sysconfdir/conf'
+  fi
+fi
 
 # Expand installation directories
 stripdir prefix
@@ -279,14 +294,14 @@ for i in exec_prefix dynlibdir libexecdir bindir libdir includedir shebangdir sp
 done
 
 stripdir datarootdir
-for i in service_packager mandir; do
+for i in service_system service_systemconf mandir; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
 done
 
 stripdir sysconfdir
-for i in service_sys service_user service_sysconf; do
+for i in service_adm service_admconf; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
@@ -323,7 +338,7 @@ if $slashpackage ; then
   includedir=${home}/include
   sysconfdir=${home}/etc/66
   datarootdir=${home}/usr/share
-  service_packager=${home}/${datarootdir}/66/service
+  service_system=${home}/${datarootdir}/66/service
   if $shebangisdefault ; then
     shebangdir=${extbinprefix}
   fi
@@ -470,14 +485,15 @@ datarootdir := $datarootdir
 mandir := $mandir
 livedir := $livedir
 system_dir := $system_dir
-user_dir := $user_dir
 system_log := $system_log
-user_log := $user_log
-service_packager := $service_packager
-service_sys := $service_sys
+service_system := $service_system
+service_systemconf := $service_systemconf
+service_adm := $service_adm
+service_admconf := $service_admconf
+user_dir := $user_dir
 service_user := $service_user
-service_sysconf := $service_sysconf
 service_userconf := $service_userconf
+user_log := $user_log
 sysdeps := $sysdeps
 slashpackage := $slashpackage
 sproot := $sproot
@@ -549,9 +565,10 @@ All rights reserved.*/
 #define ${package_macro_name}_SYSTEM_DIR "$system_dir/"
 #define ${package_macro_name}_DATA_SYSDIR "$sysconfdir/"
 #define ${package_macro_name}_LOGGER_SYSDIR "$system_log/"
-#define ${package_macro_name}_SERVICE_PACKDIR "$service_packager/"
-#define ${package_macro_name}_SERVICE_SYSDIR "$service_sys/"
-#define ${package_macro_name}_SERVICE_SYSCONFDIR "$service_sysconf/"
+#define ${package_macro_name}_SERVICE_SYSDIR "$service_system/"
+#define ${package_macro_name}_SERVICE_SYSCONFDIR "$service_systemconf/"
+#define ${package_macro_name}_SERVICE_ADMDIR "$service_adm/"
+#define ${package_macro_name}_SERVICE_ADMCONFDIR "$service_admconf/"
 
 /** Do not use absolute path but a \$HOME relative path
  * The /home/name_of_user prefix will be automatically added to the pathname */

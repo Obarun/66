@@ -43,4 +43,6 @@ extern int env_substitute(char const *key, char const *val,exlsn_t *info, char c
 extern int env_addkv (const char *key, const char *val, exlsn_t *info) ;
 extern size_t build_env(char const *src,char const *const *envp,char const **newenv, char *tmpenv) ;
 extern int env_get_from_src(stralloc *modifs,char const *src) ;
+extern int env_resolve_conf(stralloc *env,uid_t owner) ;
+extern int env_merge_conf(char const *dst,char const *file,stralloc *srclist,stralloc *modifs,unsigned int force) ;
 #endif

@@ -40,6 +40,7 @@
 #include <66/constants.h>
 #include <66/enum.h>
 #include <66/resolve.h>
+#include <66/environ.h>
 
 #include <s6/s6-supervise.h>//s6_svc_ok
 
@@ -606,8 +607,8 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	stralloc tree = STRALLOC_ZERO ;
 	genalloc gatree = GENALLOC_ZERO ;
 	stralloc src = STRALLOC_ZERO ;
-	stralloc env = STRALLOC_ZERO ;
 	stralloc conf = STRALLOC_ZERO ;
+	stralloc env = STRALLOC_ZERO ;
 	
 	ss_resolve_t res = RESOLVE_ZERO ;
 	
@@ -650,12 +651,6 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	if (r < 0 ) strerr_dief3x(111,"live: ",live.s," must be an absolute path") ;
 	
 	size_t newlen ;
-	
-	/*if (!stralloc_copy(&src,&live)) goto err ;
-	if (!stralloc_cats(&src,SS_STATE + 1)) goto err ;
-	if (!stralloc_cats(&src,"/")) goto err ;
-	if (!stralloc_cats(&src,OWNERSTR)) goto err ;
-	if (!stralloc_cats(&src,"/")) goto err ;*/
 	
 	if (!stralloc_copy(&src,&base)) goto err ;
 	if (!stralloc_cats(&src,SS_SYSTEM)) goto err ;
@@ -762,25 +757,14 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 		}
 	}
 	/** environment */
-	if(!OWNER)
+	if (res.srconf)
 	{
-		if (!stralloc_cats(&env,SS_SERVICE_SYSCONFDIR)) goto err ;
-		if (!stralloc_0(&env)) goto err ;
-	}
-	else
-	{
-		if (!stralloc_cats(&env,base.s)) goto err ;
-		if (!stralloc_cats(&env,SS_ENVDIR)) goto err ;
-		if (!stralloc_0(&env)) goto err ;
-	}
-	
-	if (dir_search(env.s,svname,S_IFREG))
-	{
+		if (!env_resolve_conf(&env,MYUID)) goto err ;
 		if (!file_readputsa(&conf,env.s,svname)) goto err ;
 		if (!info_print_title("environment")) goto err ;
+		if (!bprintf(buffer_1,"%s%s\n","source : ",env.s)) goto err ;
 		if (!bprintf(buffer_1,"%s",conf.s)) goto err ;
 	}
-	
 	
 	/** logger */
 	if (res.type == CLASSIC || res.type == LONGRUN) 
@@ -823,8 +807,8 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	genalloc_deepfree(stralist,&gatree,stra_free) ;
 	ss_resolve_free(&res) ;
 	stralloc_free(&src) ;
-	stralloc_free(&env) ;
 	stralloc_free(&conf) ;
+	stralloc_free(&env) ;
 	return 1 ;
 	
 	err:
@@ -833,8 +817,8 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 		genalloc_deepfree(stralist,&gatree,stra_free) ;
 		ss_resolve_free(&res) ;
 		stralloc_free(&src) ;
-		stralloc_free(&env) ;
 		stralloc_free(&conf) ;
+		stralloc_free(&env) ;
 		return 0 ;
 }
 

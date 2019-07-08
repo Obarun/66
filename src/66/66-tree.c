@@ -120,12 +120,14 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t own
 		{
 			if (sanitize_extra(SS_LOGGER_SYSDIR) < 0)
 			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_LOGGER_SYSDIR) ; return -1 ; }
-			if (sanitize_extra(SS_SERVICE_PACKDIR) < 0)
-			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_LOGGER_SYSDIR) ; return -1 ; }
 			if (sanitize_extra(SS_SERVICE_SYSDIR) < 0)
-			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_LOGGER_SYSDIR) ; return -1 ; }
+			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_SERVICE_SYSDIR) ; return -1 ; }
 			if (sanitize_extra(SS_SERVICE_SYSCONFDIR) < 0)
-			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_LOGGER_SYSDIR) ; return -1 ; }
+			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_SERVICE_SYSCONFDIR) ; return -1 ; }
+			if (sanitize_extra(SS_SERVICE_ADMDIR) < 0)
+			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_SERVICE_ADMDIR) ; return -1 ; }
+			if (sanitize_extra(SS_SERVICE_ADMCONFDIR) < 0)
+			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_SERVICE_ADMCONFDIR) ; return -1 ; }
 		}
 		else
 		{
