@@ -17,6 +17,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
+//#include <stdio.h>
 
 #include <oblibs/string.h>
 #include <oblibs/files.h>
@@ -41,11 +42,11 @@
 #include <s6/config.h>//S6_BINPREFIX
 #include <execline/config.h>//EXECLINE_BINPREFIX
 
-//#include <stdio.h>
+
 /** @Return 0 on fail
  * @Return 1 on success
  * @Return 2 if the service is ignored */
-int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned int force)
+int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned int force, unsigned int conf)
 {
 	int r ;
 	
@@ -110,7 +111,7 @@ int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned 
 	}
 	else if (r && !force)
 	{
-		VERBO1 strerr_warnw3x("ignoring: ",name," service: already enabled") ;
+		VERBO1 strerr_warnw3x("Ignoring: ",name," service: already enabled") ;
 		return 2 ;
 	}
 	
@@ -119,14 +120,14 @@ int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned 
 	switch(type)
 	{
 		case CLASSIC:
-			if (!write_classic(sv, wname, force))
+			if (!write_classic(sv, wname, force, conf))
 			{
 				VERBO3 strerr_warnwu2x("write: ",wname) ;
 				return 0 ;
 			}
 			break ;
 		case LONGRUN:
-			if (!write_longrun(sv, wname, force))
+			if (!write_longrun(sv, wname, force, conf))
 			{
 				VERBO3 strerr_warnwu2x("write: ",wname) ;
 				return 0 ;
@@ -134,7 +135,7 @@ int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned 
 			
 			break ;
 		case ONESHOT:
-			if (!write_oneshot(sv, wname, force))
+			if (!write_oneshot(sv, wname, conf))
 			{
 				VERBO3 strerr_warnwu2x("write: ",wname) ;
 				return 0 ;
@@ -142,7 +143,7 @@ int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned 
 			
 			break ;
 		case BUNDLE:
-			if (!write_bundle(sv, wname, force))
+			if (!write_bundle(sv, wname))
 			{
 				VERBO3 strerr_warnwu2x("write: ",wname) ;
 				return 0 ;
@@ -157,10 +158,10 @@ int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned 
 	return 1 ;
 }
 
-int write_classic(sv_alltype *sv, char const *dst, unsigned int force)
+int write_classic(sv_alltype *sv, char const *dst, unsigned int force,unsigned int conf)
 {	
 	/**notification,timeout, ...*/
-	if (!write_common(sv, dst))
+	if (!write_common(sv, dst, conf))
 	{
 		VERBO3 strerr_warnwu1x("write common files") ;
 		return 0 ;
@@ -194,7 +195,7 @@ int write_classic(sv_alltype *sv, char const *dst, unsigned int force)
 	return 1 ;
 }
 
-int write_longrun(sv_alltype *sv,char const *dst, unsigned force)
+int write_longrun(sv_alltype *sv,char const *dst, unsigned int force, unsigned int conf)
 {	
 	size_t r ;
 	char *name = keep.s+sv->cname.name ;
@@ -204,7 +205,7 @@ int write_longrun(sv_alltype *sv,char const *dst, unsigned force)
 	char dstlog[dstlen + 1] ;
 	
 	/**notification,timeout ...*/
-	if (!write_common(sv, dst))
+	if (!write_common(sv, dst,conf))
 	{
 		VERBO3 strerr_warnwu1x("write common files") ;
 		return 0 ;
@@ -251,7 +252,7 @@ int write_longrun(sv_alltype *sv,char const *dst, unsigned force)
 			
 	}
 	/** dependencies */
-	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "dependencies", &gadeps,force))
+	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "dependencies", &gadeps))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/dependencies") ;
 		return 0 ;
@@ -261,10 +262,10 @@ int write_longrun(sv_alltype *sv,char const *dst, unsigned force)
 	return 1 ;
 }
 
-int write_oneshot(sv_alltype *sv,char const *dst, unsigned int force)
+int write_oneshot(sv_alltype *sv,char const *dst,unsigned int conf)
 {
 	
-	if (!write_common(sv, dst))
+	if (!write_common(sv, dst,conf))
 	{
 		VERBO3 strerr_warnwu1x("write common files") ;
 		return 0 ;
@@ -285,7 +286,7 @@ int write_oneshot(sv_alltype *sv,char const *dst, unsigned int force)
 		}
 	}
 	
-	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "dependencies", &gadeps,force))
+	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "dependencies", &gadeps))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/dependencies") ;
 		return 0 ;
@@ -294,7 +295,7 @@ int write_oneshot(sv_alltype *sv,char const *dst, unsigned int force)
 	return 1 ;
 }
 
-int write_bundle(sv_alltype *sv, char const *dst, unsigned int force)
+int write_bundle(sv_alltype *sv, char const *dst)
 {
 	/** type file*/
 	if (!file_write_unsafe(dst,"type","bundle",6))
@@ -303,7 +304,7 @@ int write_bundle(sv_alltype *sv, char const *dst, unsigned int force)
 		return 0 ;
 	}
 	/** contents file*/
-	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "contents", &gadeps, force))
+	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "contents", &gadeps))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/contents") ;
 		return 0 ;
@@ -387,7 +388,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 	/** dependencies*/
 	if (log->nga)
 	{
-		if (!write_dependencies(log->nga,log->idga,ddst.s,"dependencies",&gadeps,force))
+		if (!write_dependencies(log->nga,log->idga,ddst.s,"dependencies",&gadeps))
 		{
 			VERBO3 strerr_warnwu3x("write: ",ddst.s,"/dependencies") ;
 			return 0 ;
@@ -601,12 +602,15 @@ int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char
 	return 1 ;
 }
 
-int write_common(sv_alltype *sv, char const *dst)
+int write_common(sv_alltype *sv, char const *dst,unsigned int conf)
 {
+	int r ;
 	char *time = NULL ;
 	char *name = keep.s + sv->cname.name ;
 	char *src = keep.s + sv->src ;
-
+	size_t dstlen = strlen(dst) ;
+	size_t srclen = strlen(src) ;
+	size_t namelen = strlen(name) ;
 	/**down file*/
 	if (sv->flags[0])
 	{
@@ -688,32 +692,48 @@ int write_common(sv_alltype *sv, char const *dst)
 	/** environment */
 	if (sv->opts[2])
 	{
-		char *dst = 0 ;
-		uid_t owner = MYUID ;
-		stralloc home = STRALLOC_ZERO ;
-		if (!owner) dst = SS_SERVICE_SYSCONFDIR ;
-		else
+		// dst is always SS_SERVICE_ADMCONFDIR
+		char *dst = keep.s + sv->srconf ;
+		size_t dlen ;
+		dlen = strlen(SS_SERVICE_ADMCONFDIR) ;
+		char copy[dlen + namelen + 1] ;
+		memcpy(copy,SS_SERVICE_ADMCONFDIR,dlen) ;
+		memcpy(copy + dlen, name,namelen) ;
+		copy[dlen + namelen] = 0 ;
+		// copy config file from upstream in sysadmin
+		r = scan_mode(copy,S_IFREG) ;
+		if (!r || conf)
 		{
-			if (!set_ownerhome(&home,owner))
-			{ VERBO3 strerr_warnwu1sys("set home directory") ; return 0 ; }
-			if (!stralloc_cats(&home,SS_SERVICE_USERCONFDIR)) retstralloc(111,"write_common") ;
-			if (!stralloc_0(&home)) retstralloc(111,"write_common") ;
-			home.len-- ;
-			dst = home.s ;
+			copy[dlen] = 0 ;
+			if (!write_env(name,&sv->saenv,copy))
+			{
+				VERBO3 strerr_warnwu1x("write environment") ;
+				return 0 ;
+			}
 		}
-		if (!write_env(name,&sv->saenv,dst))
+		// we come from upstream, update it
+		if (!strcmp(src,SS_SERVICE_SYSDIR))
 		{
-			VERBO3 strerr_warnwu1x("write environment") ;
+			if (!write_env(name,&sv->saenv,SS_SERVICE_SYSCONFDIR))
+			{
+				VERBO3 strerr_warnwu1x("write environment") ;
+				return 0 ;
+			}
+		}
+		stralloc salist = STRALLOC_ZERO ;
+		//merge config from upstream to sysadmin
+		if (!file_readputsa(&salist,SS_SERVICE_ADMCONFDIR,name)) strerr_diefu3sys(111,"read: ",dst,name) ;
+		if (!env_merge_conf(SS_SERVICE_ADMCONFDIR,name,&salist,&sv->saenv,conf))
+		{
+			VERBO3 strerr_warnwu1x("merge environment file") ;
 			return 0 ;
 		}
-		stralloc_free(&home) ;
+		stralloc_free(&salist) ;
 	}
 	/** hierarchy copy */
 	if (sv->hiercopy[0])
 	{
 		int r ;
-		size_t dstlen = strlen(dst) ;
-		size_t srclen = strlen(src) ;
 		for (uint32_t i = 0 ; i < sv->hiercopy[0] ; i++)
 		{
 			char *what = keep.s + sv->hiercopy[i+1] ;
@@ -781,7 +801,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 			if (sv->opts[2] && (exec->build == AUTO))
 			{
 				if (!stralloc_cats(&env,SS_BINPREFIX "execl-envfile ")) retstralloc(0,"write_exec") ;
-				if (!env_resolve_conf(&env,name,owner)) 
+				if (!env_resolve_conf(&env,owner)) 
 				{ VERBO3 strerr_warnwu1sys("get path of service configuration file") ; return 0 ; }
 				if (!stralloc_cats(&env,name)) retstralloc(0,"write_exec") ;
 				if (!stralloc_cats(&env,"\n")) retstralloc(0,"write_exec") ;
@@ -861,7 +881,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 	return 1 ;	
 }
 
-int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename, genalloc *ga, unsigned int force)
+int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename, genalloc *ga)
 {
 	int r ;
 		

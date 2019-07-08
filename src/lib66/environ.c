@@ -149,6 +149,7 @@ int env_split(genalloc *gaenv,stralloc *saenv,stralloc *src)
 		if (!*line) continue ;
 		tmp.len = 0 ;
 		if (!stralloc_cats(&tmp,line)) goto err ;
+			
 		/** skip commented line or empty line*/
 		if (env_clean(&tmp) < 0) continue ;
 		if (!stralloc_0(&tmp)) goto err ;
@@ -405,25 +406,11 @@ size_t build_env(char const *src,char const *const *envp,char const **newenv, ch
 		return 0 ;
 }
 
-int env_resolve_conf(stralloc *env, char const *sv,uid_t owner)
+int env_resolve_conf(stralloc *env, uid_t owner)
 {
-	int err = errno ;
-	size_t svlen = strlen(sv) ;
-	size_t len = sizeof SS_SERVICE_ADMCONFDIR - 1 ;
-	char e[len + svlen + 1] ;
-	memcpy(e,SS_SERVICE_ADMCONFDIR,len) ;
-	memcpy(e + len,sv,svlen) ;
-	e[len + svlen] = 0 ;
-		
 	if (!owner)
 	{
-		errno = 0 ;
-		if (access(e, F_OK) < 0) 
-			if (errno != ENOENT) return 0 ;
-		if (errno == ENOENT){
-			if (!stralloc_cats(env,SS_SERVICE_SYSCONFDIR)) return 0 ;
-		}
-		else if (!stralloc_cats(env,SS_SERVICE_ADMCONFDIR)) return 0 ;
+		if (!stralloc_cats(env,SS_SERVICE_ADMCONFDIR)) return 0 ;
 	}
 	else
 	{
@@ -432,6 +419,73 @@ int env_resolve_conf(stralloc *env, char const *sv,uid_t owner)
 	}	
 	if (!stralloc_0(env)) return 0 ;
 	env->len-- ;
-	errno = err ;
+	return 1 ;
+}
+
+int env_merge_conf(char const *dst,char const *file,stralloc *srclist,stralloc *modifs,unsigned int force)
+{
+	int found = 0 ;
+	stralloc newlist = STRALLOC_ZERO ;
+	// key=value from modifs
+	genalloc mga = GENALLOC_ZERO ;// diuint32
+	stralloc msa = STRALLOC_ZERO ;
+	// key=value from src
+	genalloc ga = GENALLOC_ZERO ;// diuint32
+	stralloc sa = STRALLOC_ZERO ;
+	char *key, *val, *mkey, *mval ;
+	if (!env_split(&mga,&msa,modifs)) strerr_diefu1x(111,"split key=value pair") ;
+	if (!env_split(&ga,&sa,srclist)) strerr_diefu3x(111,"split key=value pair of file: ",dst,file) ;
+	// replace existing key
+	for (unsigned int i = 0 ; i < genalloc_len(diuint32,&ga) ; i++)
+	{
+		found = 0 ;
+		key = sa.s + genalloc_s(diuint32,&ga)[i].left ;
+		val = sa.s + genalloc_s(diuint32,&ga)[i].right ;
+		if (!stralloc_cats(&newlist,key) ||
+		!stralloc_cats(&newlist,"=")) return 0 ;
+		for (unsigned int j = 0 ; j < genalloc_len(diuint32,&mga) ; j++)
+		{
+			mkey = msa.s + genalloc_s(diuint32,&mga)[j].left ;
+			mval = msa.s + genalloc_s(diuint32,&mga)[j].right ;
+			if (obstr_equal(key,mkey) && force)
+			{
+				found = 1 ;
+				if (!stralloc_cats(&newlist,mval)) return 0 ;
+				break ;
+			}
+		}
+		if (!found) if (!stralloc_cats(&newlist,val)) return 0 ;
+		if (!stralloc_cats(&newlist,"\n")) return 0 ;
+	
+	}
+	// append new key coming from modifs
+	for (unsigned int i = 0 ; i < genalloc_len(diuint32,&mga) ; i++)
+	{
+		found = 0 ;
+		key = msa.s + genalloc_s(diuint32,&mga)[i].left ;
+		val = msa.s + genalloc_s(diuint32,&mga)[i].right ;
+		for (unsigned int j = 0 ; j < genalloc_len(diuint32,&ga) ; j++)
+		{
+			mkey = sa.s + genalloc_s(diuint32,&ga)[j].left ;
+			mval = sa.s + genalloc_s(diuint32,&ga)[j].right ;
+			if (obstr_equal(key,mkey))
+				found = 1 ;
+		}
+		if (!found)
+		{
+			if (!stralloc_cats(&newlist,key) ||
+			!stralloc_cats(&newlist,"=")) return 0 ;
+			if (!stralloc_cats(&newlist,val)) return 0 ;
+			if (!stralloc_cats(&newlist,"\n")) return 0 ;
+		}
+	}
+	if (!file_write_unsafe(dst,file,newlist.s,newlist.len))
+		strerr_diefu3sys(111,"write: ",dst,file) ;
+	
+	stralloc_free(&newlist) ;
+	stralloc_free(&sa) ;
+	stralloc_free(&msa) ;
+	genalloc_free(diuint32,&mga) ;
+	genalloc_free(diuint32,&ga) ;
 	return 1 ;
 }
