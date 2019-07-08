@@ -36,6 +36,9 @@ It display the contain of the file or replace a _key=value_ pair if requested.
 
 *-L*
 	Lists the environment variable of _service_.
+	
+*-e*
+	Edit the configuration file with EDITOR set in your system environment.
 
 *-r* _key=value_
 	Override an existing _key=value_ pair with the given one. The

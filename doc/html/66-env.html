@@ -25,7 +25,7 @@
 <h2>Interface</h2>
 
 	<pre>
-	66-env [ -h ] [ -v <em>verbosity</em> ] [ -t <em>tree</em> ] [ -d <em>dir</em> ] [ -L ] [ -r <em>key=value</em> ] <em>service</em>
+	66-env [ -h ] [ -v <em>verbosity</em> ] [ -t <em>tree</em> ] [ -d <em>dir</em> ] [ -L ] [ -e ] [ -r <em>key=value</em> ] <em>service</em>
 	</pre>
 
 	<ul>
@@ -70,6 +70,12 @@
 		</li>
 		<li> 
 			<tt><b>-L</b></tt> : list defined environment variables for <em>service</em>.
+		</li>
+		<li> 
+			<tt><b>-L</b></tt> : list defined environment variables for <em>service</em>.
+		</li>
+		<li> 
+			<tt><b>-e</b></tt> : edit the configuration file with EDITOR set in your system environment.
 		</li>
 		<li> 
 			<tt><b>-r&nbsp;<em>key=value</em></b></tt> : override an existing <em>key=value</em> pair with the given one. The <em>key=value</em> needs to be double-quoted or single quoted in case of multiple arguments. In case of double quote backslash '\' should be used to properly parse a double-quoted element.

@@ -121,7 +121,7 @@ char const *help_svctl =
 "	-K: kill the service(s) and keep it down\n"
 ;
 
-char const *usage_env = "66-env [ -h ] [ -v verbosity ] [ -t tree ] [ -d dir ] [ -L ] [ -r key=value ] service" ;
+char const *usage_env = "66-env [ -h ] [ -v verbosity ] [ -t tree ] [ -d dir ] [ -L ] [ -e ] [ -r key=value ] service" ;
 
 char const *help_env =
 "66-env <options> service\n"

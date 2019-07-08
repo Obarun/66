@@ -6,7 +6,7 @@
 
 # SYNOPSIS
 
-66-enable [ *-h* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] [ *-f* ] [ *-S* ] _service_...
+66-enable [ *-h* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] [ *-f* ] [ *-F* ] [ *-o* ] [ *-S* ] _service_...
 
 # DESCRIPTION
 
@@ -51,6 +51,12 @@ Multiple _services_ can be enabled by seperating their names with a space.
 *-f*
 	Reenables an already enabled _service_ with the given options. This option
 	will run again the process from the start and overwrite all existing files.
+
+*-F*
+	Same as *-f* but also reenables it dependencies.
+	
+*-o*
+	Overwrite it environment configuration file.
 
 *-S*
 	Starts the _service_ on the fly directly after enabling it. If the state of
