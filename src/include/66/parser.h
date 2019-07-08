@@ -139,8 +139,12 @@ struct sv_alltype_s
 	uint32_t hiercopy[24] ; //dir/file to copy
 	int signal ;//down-signal file
 	unsigned int pipeline ; //pos in deps
-	stralloc saenv ; 
-	uint32_t srconf ; //path of the environment file
+	stralloc saenv ;
+	/* path of the environment file, this is only concern the write 
+	 * process, the read process could be different if conf/sysadmin/service
+	 * exist */
+	uint32_t srconf ; 
+						
 } ;
 
 #define SV_EXEC_ZERO \
@@ -201,7 +205,8 @@ struct sv_alltype_s
 	{ 0 } , \
 	0 , \
 	0 , \
-	STRALLOC_ZERO \
+	STRALLOC_ZERO , \
+	0 \
 }
 
 extern sv_alltype const sv_alltype_zero ;
@@ -298,9 +303,9 @@ extern void section_free(section_t *sec) ;
 extern void freed_parser(void) ;
 /** enable phase */
 extern int parse_service_get_list(stralloc *result, stralloc *list) ;
-extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, char const *sv,unsigned int *nbsv, stralloc *sasv,unsigned int force) ;
+extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, char const *sv,unsigned int *nbsv, stralloc *sasv,unsigned int force,unsigned int exist) ;
 extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,unsigned int force) ;
-extern int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv) ;
+extern int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner) ;
 /** utilities */
 extern int parse_line(stralloc *src,size_t *pos) ;
 extern int parse_quote(stralloc *src,size_t *pos) ;
@@ -325,17 +330,17 @@ extern int clean_value(stralloc *sa) ;
 extern void parse_err(int ierr,int idsec,int idkey) ;
 extern int add_pipe(sv_alltype *sv, stralloc *sa) ;
 /** write */
-extern int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned int force) ;
-extern int write_classic(sv_alltype *sv, char const *dst, unsigned int force) ;
-extern int write_longrun(sv_alltype *sv,char const *dst, unsigned int force) ;
-extern int write_oneshot(sv_alltype *sv,char const *dst, unsigned int force) ;
-extern int write_bundle(sv_alltype *sv, char const *dst, unsigned int force) ;
-extern int write_common(sv_alltype *sv, char const *dst) ;
+extern int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned int force,unsigned int conf) ;
+extern int write_classic(sv_alltype *sv, char const *dst, unsigned int force, unsigned int conf) ;
+extern int write_longrun(sv_alltype *sv,char const *dst, unsigned int force, unsigned int conf) ;
+extern int write_oneshot(sv_alltype *sv,char const *dst, unsigned int conf) ;
+extern int write_bundle(sv_alltype *sv, char const *dst) ;
+extern int write_common(sv_alltype *sv, char const *dst,unsigned int conf) ;
 extern int write_exec(sv_alltype *sv, sv_exec *exec,char const *name,char const *dst,int mode) ;
 extern int write_uint(char const *dst, char const *name, uint32_t ui) ;
 extern int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, int mode, unsigned int force) ;
 extern int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char const *proddst,char const *consdst) ;
-extern int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename, genalloc *ga, unsigned int force) ;
+extern int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename, genalloc *ga) ;
 extern int write_env(char const *name,stralloc *sa,char const *dst) ;
 
 #endif

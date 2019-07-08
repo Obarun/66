@@ -19,6 +19,7 @@
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
 #include <oblibs/stralist.h>
+#include <oblibs/string.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
@@ -34,7 +35,11 @@
 #include <66/resolve.h>
 #include <66/ssexec.h>
 
+/** force == 1, only rewrite the service
+ * force == 2, rewrite the service and it dependencies*/
 static unsigned int FORCE = 0 ;
+/** rewrite configuration file */
+static unsigned int CONF = 0 ;
 
 static void cleanup(char const *dst)
 {
@@ -50,21 +55,46 @@ static void check_identifier(char const *name)
 
 static void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv)
 {
-	
+	unsigned int exist = 0 ;
+	stralloc sares = STRALLOC_ZERO ;
 	stralloc sasv = STRALLOC_ZERO ;
 	stralloc tmp = STRALLOC_ZERO ;
+	ss_resolve_t res = RESOLVE_ZERO ;
 	if (!parse_service_get_list(&tmp,list)) strerr_diefu1x(111,"get services list") ;
 	if (!stralloc_copy(list,&tmp)) strerr_diefu1sys(111,"copy stralloc") ;
 	tmp.len = 0 ;
 	size_t i = 0, len = list->len ;
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;
+	
 	for (;i < len; i += strlen(list->s + i) + 1)
 	{
-		char *svname = list->s+i ;
-		if (!parse_service_before(info,&tmp,svname,nbsv,&sasv,FORCE))
+		exist = 0 ;
+		sares.len = 0 ;
+		char *name = list->s+i ;
+		size_t namelen = strlen(name) ;
+		char svname[namelen + 1] ;
+		if (!basename(svname,name)) strerr_diefu2sys(111,"get basename of: ", name) ;
+			if (ss_resolve_check(sares.s,svname))
+		{
+			if (!ss_resolve_read(&res,sares.s,svname)) strerr_diefu2sys(111,"read resolve file of: ",svname) ;
+			if (res.disen)
+			{	
+				exist = 1 ;
+				if (!FORCE)
+				{
+					VERBO1 strerr_warnw3x("Ignoring: ",svname," service: already enabled") ;
+					continue ;
+				}
+			}
+		}
+		
+		if (!parse_service_before(info,&tmp,name,nbsv,&sasv,FORCE,exist))
 			strerr_diefu3x(111,"parse service file: ",svname,": or its dependencies") ;
 	}
+	stralloc_free(&sares) ;
 	stralloc_free(&sasv) ;
 	stralloc_free(&tmp) ;
+	ss_resolve_free(&res) ;
 	
 }
 
@@ -72,6 +102,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 {
 	// be sure that the global var are set correctly
 	FORCE = 0 ;
+	CONF = 0 ;
 	
 	int r ;
 	unsigned int nbsv, nlongrun, nclassic, start ;
@@ -79,10 +110,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	stralloc home = STRALLOC_ZERO ;
 	stralloc workdir = STRALLOC_ZERO ;
 	stralloc sasrc = STRALLOC_ZERO ;
-	stralloc sares = STRALLOC_ZERO ;
 	genalloc tostart = GENALLOC_ZERO ; // type stralist
-	
-	ss_resolve_t res = RESOLVE_ZERO ;
 	
 	r = nbsv = nclassic = nlongrun = start = 0 ;
 	
@@ -91,12 +119,16 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">fS", &l) ;
+			int opt = getopt_args(argc,argv, ">ofFS", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
 			{
-				case 'f' : 	FORCE = 1 ; break ;
+				case 'f' :	if (FORCE) exitusage(usage_enable) ; 
+							FORCE = 1 ; break ;
+				case 'F' : 	if (FORCE) exitusage(usage_enable) ; 
+							FORCE = 2 ; break ;
+				case 'o' :	CONF = 1 ; break ;
 				case 'S' :	start = 1 ;	break ;
 				default : exitusage(usage_enable) ; 
 			}
@@ -106,25 +138,12 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	
 	if (argc < 1) exitusage(usage_enable) ;
 		
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;
-	
 	for(;*argv;argv++)
 	{
 		check_identifier(*argv) ;
-		if (ss_resolve_check(sares.s,*argv))
-		{
-			if (!ss_resolve_read(&res,sares.s,*argv)) strerr_diefu2sys(111,"read resolve file of: ",*argv) ;
-			if (res.disen && !FORCE)
-			{
-				VERBO1 strerr_warnw3x("Ignoring: ",*argv," service: already enabled") ;
-				continue ;
-			}
-		}
 		if (!ss_resolve_src_path(&sasrc,*argv,info)) strerr_diefu2x(111,"resolve source path of: ",*argv) ;
 	}
-	
-	if (!sasrc.len) goto freed ;
-	
+
 	start_parser(&sasrc,info,&nbsv) ;
 	
 	if (!tree_copy(&workdir,info->tree.s,info->treename.s)) strerr_diefu1sys(111,"create tmp working directory") ;
@@ -133,7 +152,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	{
 		sv_alltype_ref sv = &genalloc_s(sv_alltype,&gasv)[i] ;
 		char *name = keep.s + sv->cname.name ;
-		r = write_services(info,sv, workdir.s,FORCE) ;
+		r = write_services(info,sv, workdir.s,FORCE,CONF) ;
 		if (!r)
 		{
 			cleanup(workdir.s) ;
@@ -213,15 +232,12 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	
 	cleanup(workdir.s) ;
 
-	freed:
 	/** parser allocation*/
 	freed_parser() ;
 	/** inner allocation */
 	stralloc_free(&home) ;
 	stralloc_free(&workdir) ;
 	stralloc_free(&sasrc) ;
-	ss_resolve_free(&res) ;
-	stralloc_free(&sares) ;
 		
 	for (unsigned int i = 0 ; i < genalloc_len(stralist,&tostart); i++)
 		VERBO1 strerr_warni2x("Enabled successfully: ", gaistr(&tostart,i)) ;

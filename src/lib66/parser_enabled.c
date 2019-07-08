@@ -15,6 +15,7 @@
 #include <66/parser.h>
 
 #include <string.h>
+//#include <stdio.h>
 
 #include <oblibs/string.h>
 #include <oblibs/types.h>
@@ -27,6 +28,7 @@
 #include <66/resolve.h>
 #include <66/utils.h>
 #include <66/constants.h>
+#include <66/environ.h>
 
 int parse_service_get_list(stralloc *result, stralloc *list)
 {
@@ -46,23 +48,37 @@ int parse_service_get_list(stralloc *result, stralloc *list)
 	return 1 ;
 }
 
-int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv)
+int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner)
 {
+	stralloc conf = STRALLOC_ZERO ;
 	size_t svlen = strlen(service) ;
 	char svsrc[svlen + 1] ;
 	if (!dirname(svsrc,service)) return 0 ;
 	size_t srclen = strlen(svsrc) ;
+	// keep source of the frontend file
 	sv_before->src = keep.len ;
-	if (!stralloc_catb(&keep,svsrc,srclen + 1)) retstralloc(0,"parse_add_service") ;
-	if (!stralloc_catb(parsed_list,service,svlen + 1)) retstralloc(0,"parse_add_service") ;
-	if (!genalloc_append(sv_alltype,&gasv,sv_before)) retstralloc(0,"parse_add_service") ;
+	if (!stralloc_catb(&keep,svsrc,srclen + 1)) return 0 ;
+	// keep source of the configuration file
+	if (sv_before->opts[2])
+	{
+		if (!env_resolve_conf(&conf,owner)) return 0 ;
+		sv_before->srconf = keep.len ;
+		if (!stralloc_catb(&keep,conf.s,conf.len + 1)) return 0 ;
+	}
+	// keep service on current list
+	if (!stralloc_catb(parsed_list,service,svlen + 1)) return 0 ;
+	if (!genalloc_append(sv_alltype,&gasv,sv_before)) return 0 ;
 	(*nbsv)++ ;
+	stralloc_free(&conf) ;
 	return 1 ;
+	
+	
 	
 }
 
 int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,unsigned int force)
 {
+	unsigned int exist = 0 ;
 	char *dname = 0 ;
 	stralloc newsv = STRALLOC_ZERO ;
 	if (sv_before->cname.nga)
@@ -82,7 +98,7 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_befo
 				stralloc_free(&newsv) ; 
 				return 0 ;
 			}
-			if (!parse_service_before(info,parsed_list,newsv.s,nbsv,sasv,force))
+			if (!parse_service_before(info,parsed_list,newsv.s,nbsv,sasv,force,exist))
 			{ 
 				stralloc_free(&newsv) ; 
 				return 0 ;
@@ -94,7 +110,7 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_befo
 	return 1 ;
 }
 
-int parse_service_before(ssexec_t *info,stralloc *parsed_list, char const *sv,unsigned int *nbsv, stralloc *sasv,unsigned int force)
+int parse_service_before(ssexec_t *info,stralloc *parsed_list, char const *sv,unsigned int *nbsv, stralloc *sasv,unsigned int force,unsigned int exist)
 {
 	
 	int r = 0 , insta ;
@@ -186,9 +202,9 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list, char const *sv,un
 	
 	if (!parser(&sv_before,sasv,newsv.s)) goto err ;
 	
-	if (!parse_add_service(parsed_list,&sv_before,svpath,nbsv)) goto err ;
+	if (!parse_add_service(parsed_list,&sv_before,svpath,nbsv,info->owner)) goto err ;
 	
-	if (sv_before.cname.itype > CLASSIC)
+	if ((sv_before.cname.itype > CLASSIC && force > 1) || !exist)
 		if (!parse_service_deps(info,parsed_list,&sv_before,sv,nbsv,sasv,force)) goto err ;
 	
 	freed:
