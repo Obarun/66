@@ -99,7 +99,7 @@ static inline void info_help (void)
 static void parse_conf(void)
 {
 	static char const *valid[] = 
-	{ "VERBOSITY", "PATH", "LIVE", "TREE", "RCINIT", "UMASK", "RESCAN" } ;
+	{ "VERBOSITY", "PATH", "LIVE", "TREE", "RCINIT", "UMASK", "RESCAN", 0 } ;
 	int r ;
 	unsigned int i = 0, j = 0 ;
 	stralloc src = STRALLOC_ZERO ;
@@ -118,7 +118,7 @@ static void parse_conf(void)
 	
 	r = env_split(&gaconf,&saconf,&src) ;
 	if (!r) sulogin("parse configuration file: ",confile) ;
-	
+
 	for (;i < genalloc_len(diuint32,&gaconf) ; i++)
 	{
 		char *key = saconf.s + genalloc_s(diuint32,&gaconf)[i].left ;
