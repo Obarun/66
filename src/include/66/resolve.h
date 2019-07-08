@@ -47,7 +47,8 @@ struct ss_resolve_s
 	uint32_t logassoc ;
 	uint32_t dstlog ;
 	uint32_t deps ;
-	uint32_t src ;	//etc/service
+	uint32_t src ;	//frontend source
+	uint32_t srconf ; //configuration file source
 	uint32_t live ; //run/66
 	uint32_t runat ; //livetree->longrun,scandir->svc
 	uint32_t tree ;	//var/lib/66/system/tree
@@ -61,7 +62,7 @@ struct ss_resolve_s
 	uint32_t down ;
 	uint32_t disen ;//disable->0,enable->1
 } ;
-#define RESOLVE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
 /** Graph struct */
 typedef struct ss_resolve_graph_ndeps_s ss_resolve_graph_ndeps_t ;
@@ -115,6 +116,7 @@ extern void ss_resolve_free(ss_resolve_t *res) ;
 extern int ss_resolve_pointo(stralloc *sa,ssexec_t *info,unsigned int type, unsigned int where) ;
 extern int ss_resolve_src_path(stralloc *sasrc,char const *sv, ssexec_t *info) ;
 extern int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,unsigned int *found) ;
+extern int ss_resolve_service_isdir(char const *dir, char const *name) ;
 extern int ss_resolve_add_uint32(stralloc *sa, uint32_t data) ;
 extern uint32_t ss_resolve_add_string(ss_resolve_t *res,char const *data) ;
 extern int ss_resolve_pack(stralloc *sa,ss_resolve_t *res) ;
