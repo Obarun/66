@@ -32,10 +32,10 @@ Fine tuning of the installation directories:
     
   --with-system-dir=DIR            66 tools system working directory[PREFIX/lib/66]
   --with-system-service=DIR        system service frontend directory[DATAROOTDIR/66/service]
-  --with-system-service-conf=DIR   system service configuration file directory[SYSDIR/conf/system]
+  --with-system-service-conf=DIR   system service configuration file directory[DATAROOTDIR/66/conf]
   
   --with-sysadmin-service=DIR      sysadmin service frontend directory[SYSDIR/service]
-  --with-sysadmin-service-conf=DIR sysadmin service configuration file directory[SYSDIR/conf/sysadmin]
+  --with-sysadmin-service-conf=DIR sysadmin service configuration file directory[SYSDIR/conf]
   
   --with-user-dir=DIR              66 tools user working directory[.66]
   --with-user-log=DIR              user service log directory[.66/log]
@@ -170,9 +170,9 @@ livedir='/run/66'
 system_dir='$prefix/lib/66'
 system_log='/var/log/66'
 service_system='$datarootdir/66/service'
-service_systemconf='$sysconfdir/conf/system'
+service_systemconf='$datarootdir/66/conf'
 service_adm='$sysconfdir/service'
-service_admconf='$sysconfdir/conf/sysadmin'
+service_admconf='$sysconfdir/conf'
 user_dir='.66'
 service_user='.66/service'
 service_userconf='.66/conf'
@@ -277,14 +277,11 @@ fi
 
 # Add /etc/66 in the default case
 if test -z "$sysconfdir" ; then
-  if test "$service_systemconf" = '$sysconfdir/conf/system' ; then
-	service_systemconf = '$sysconfdir/conf/system'
-  fi
   if test "$service_adm" = '$sysconfdir/service' ; then
 	service_adm = '$sysconfdir/service'
   fi
-  if test "$service_admconf" = '$sysconfdir/conf/sysadmin' ; then
-	service_admconf = '$sysconfdir/conf/sysadmin'
+  if test "$service_admconf" = '$sysconfdir/conf' ; then
+	service_admconf = '$sysconfdir/conf'
   fi
 fi
 
@@ -297,14 +294,14 @@ for i in exec_prefix dynlibdir libexecdir bindir libdir includedir shebangdir sp
 done
 
 stripdir datarootdir
-for i in service_system mandir; do
+for i in service_system service_systemconf mandir; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
 done
 
 stripdir sysconfdir
-for i in service_systemconf service_adm service_admconf; do
+for i in service_adm service_admconf; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
