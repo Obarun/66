@@ -26,7 +26,7 @@
 
 #include <stdio.h>
 
-int set_ssinfo(ssexec_t *info)
+void set_ssinfo(ssexec_t *info)
 {
 	int r ;
 	
@@ -59,8 +59,6 @@ int set_ssinfo(ssexec_t *info)
 	r = set_livescan(&info->scandir,info->owner) ;
 	if (!r) retstralloc(111,"main") ;
 	if(r < 0) strerr_dief3x(111,"scandir: ",info->scandir.s," must be an absolute path") ;
-	
-	return 0 ;
 }
 
 static inline void info_help (char const *help)
