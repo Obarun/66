@@ -46,18 +46,18 @@ void set_ssinfo(ssexec_t *info)
 	else info->treeallow = 1 ;
 
 	r = set_livedir(&info->live) ;
-	if (!r) retstralloc(111,"main") ;
+	if (!r) exitstralloc("set_ssinfo") ;
 	if(r < 0) strerr_dief3x(111,"live: ",info->live.s," must be an absolute path") ;
 	
-	if (!stralloc_copy(&info->livetree,&info->live)) retstralloc(111,"main") ;
-	if (!stralloc_copy(&info->scandir,&info->live)) retstralloc(111,"main") ;
+	if (!stralloc_copy(&info->livetree,&info->live)) exitstralloc("set_ssinfo") ;
+	if (!stralloc_copy(&info->scandir,&info->live)) exitstralloc("set_ssinfo") ;
 	
 	r = set_livetree(&info->livetree,info->owner) ;
-	if (!r) retstralloc(111,"main") ;
+	if (!r) exitstralloc("set_ssinfo") ;
 	if(r < 0) strerr_dief3x(111,"livetree: ",info->livetree.s," must be an absolute path") ;
 	
 	r = set_livescan(&info->scandir,info->owner) ;
-	if (!r) retstralloc(111,"main") ;
+	if (!r) exitstralloc("set_ssinfo") ;
 	if(r < 0) strerr_dief3x(111,"scandir: ",info->scandir.s," must be an absolute path") ;
 }
 

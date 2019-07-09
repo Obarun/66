@@ -53,7 +53,7 @@ typedef ssexec_func_t *ssexec_func_t_ref ;
 
 extern void ssexec_free(ssexec_t *info) ;
 extern ssexec_t const ssexec_zero ;
-extern int set_ssinfo(ssexec_t *info) ;
+extern void set_ssinfo(ssexec_t *info) ;
 
 extern ssexec_func_t ssexec_init ;
 extern ssexec_func_t ssexec_enable ;
