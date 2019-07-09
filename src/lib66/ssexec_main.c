@@ -82,6 +82,7 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
 		for (;;)
 		{
 			int opt = subgetopt_r(argc,argv, "hv:l:t:T:", &l) ;
+			
 			if (opt == -1) break ;
 			switch (opt)
 			{
@@ -95,10 +96,11 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
 							break ;
 				case 'T' :	if (!uint0_scan(l.arg, &info->timeout)) exitusage(info->usage) ; break ;
 				default	:	for (int i = 0 ; i < n ; i++)
-							{ 
+							{						
+								if (!argv[l.ind]) exitusage(info->usage) ;
 								if (obstr_equal(nargv[i],argv[l.ind]))
 									f = 1 ;
-							}
+							} 
 							if (!f) nargv[n++] = argv[l.ind] ;  
 							f = 0 ;
 							break ;
@@ -107,7 +109,7 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
 		argc -= l.ind ; argv += l.ind ;
 	}
 	set_ssinfo(info) ;
-	
+
 	for (int i = 0 ; i < argc ; i++ , argv++)
 			nargv[n++] = *argv ;
 	
