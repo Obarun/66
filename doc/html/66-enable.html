@@ -23,7 +23,7 @@
 
 <h2> Interface </h2>
 	<pre>
-	66-enable [ -h ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -f ] [ -F ] [ -o ] [ -S ] <em>service(s)</em>
+	66-enable [ -h ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -f|F ] [ -c|C ] [ -S ] <em>service(s)</em>
 	</pre>
 
 	<p>
@@ -38,40 +38,44 @@
 <h2> Options </h2>
 
 	<ul>
-	 <li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
-	 
-	 <li>
-		<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
-		the verbosity of the command. <tt>1(Default)</tt>: Only print 
-		error messages. <tt>2</tt>: Also print warning messages. 
-		<tt>3</tt>: Also print debugging messages.
-	 </li>
-	 
-	 <li> 
-		<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
-		also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
-		option to <tt>./configure</tt>. An existing absolute path is expected and
-		should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
-	 </li>
-	 <li> 
-		<tt>-t&nbsp;<em>tree</em></tt>&nbsp;: specifies the <em>tree</em> used to store
-		the parsed <em>service</em> file. This option is mandatory
-		except if a tree was marked as 'current'&mdash;see <a href="66-tree.html"><tt>66-tree</tt></a>.
-	 </li>
-	 
-	 <li> 
-		<tt>-f&nbsp;</tt>&nbsp;: reenables an already enabled <em>service</em> with the given options. This option will run again the process from the start and overwrite all existing files.
-	</li>
-	 <li> 
-		<tt>-F&nbsp;</tt>&nbsp;: same as <tt>-f</tt> but also reenables it dependencies.
-	</li>
-	 <li> 
-		<tt>-o&nbsp;</tt>&nbsp;: overwrite it environment configuration file.
-	</li>
-	<li> 
-		<tt>-S&nbsp;</tt>&nbsp;: starts the <em>service</em> on the fly directly after enabling it. If the state of the <em>service</em> is already up, this option
-		will have no effect unless the <tt>-f</tt> option is used to reload it.
-	 </li>	 
+		<li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
+		
+		<li>
+			<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
+			the verbosity of the command. <tt>1(Default)</tt>: Only print 
+			error messages. <tt>2</tt>: Also print warning messages. 
+			<tt>3</tt>: Also print debugging messages.
+		</li>
+		
+		<li> 
+			<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
+			also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
+			option to <tt>./configure</tt>. An existing absolute path is expected and
+			should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
+		</li>
+		<li> 
+			<tt>-t&nbsp;<em>tree</em></tt>&nbsp;: specifies the <em>tree</em> used to store
+			the parsed <em>service</em> file. This option is mandatory
+			except if a tree was marked as 'current'&mdash;see <a href="66-tree.html"><tt>66-tree</tt></a>.
+		</li>
+		 
+		<li> 
+			<tt>-f&nbsp;</tt>&nbsp;: reenables an already enabled <em>service</em> with the given options. This option will run again the process from the start and overwrite all existing files.
+		</li>
+		<li> 
+			<tt>-F&nbsp;</tt>&nbsp;: same as <tt>-f</tt> but also reenables it dependencies.
+		</li>
+		<li> 
+			<tt>-c&nbsp;</tt>&nbsp;: merge it environment configuration file from <em>frontend</em> file.
+		</li>
+		<li> 
+			<tt>-C&nbsp;</tt>&nbsp;: overwrite it environment configuration file from <em>frontend</em> file.
+		</li>
+		
+		<li> 
+			<tt>-S&nbsp;</tt>&nbsp;: starts the <em>service</em> on the fly directly after enabling it. If the state of the <em>service</em> is already up, this option
+			will have no effect unless the <tt>-f</tt> option is used to reload it.
+		 </li>	 
 
 	</ul>
 <h2 id="dependencies">Dependency handling</h2>

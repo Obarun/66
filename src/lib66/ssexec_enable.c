@@ -119,7 +119,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">ofFS", &l) ;
+			int opt = getopt_args(argc,argv, ">cCfFS", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
@@ -128,7 +128,8 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 							FORCE = 1 ; break ;
 				case 'F' : 	if (FORCE) exitusage(usage_enable) ; 
 							FORCE = 2 ; break ;
-				case 'o' :	CONF = 1 ; break ;
+				case 'c' :	if (CONF) exitusage(usage_enable) ; CONF = 1 ; break ;
+				case 'C' :	if (CONF) exitusage(usage_enable) ; CONF = 2 ; break ;
 				case 'S' :	start = 1 ;	break ;
 				default : exitusage(usage_enable) ; 
 			}

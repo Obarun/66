@@ -702,7 +702,7 @@ int write_common(sv_alltype *sv, char const *dst,unsigned int conf)
 		copy[dlen + namelen] = 0 ;
 		// copy config file from upstream in sysadmin
 		r = scan_mode(copy,S_IFREG) ;
-		if (!r || conf)
+		if (!r || conf > 1)
 		{
 			copy[dlen] = 0 ;
 			if (!write_env(name,&sv->saenv,copy))
@@ -711,24 +711,18 @@ int write_common(sv_alltype *sv, char const *dst,unsigned int conf)
 				return 0 ;
 			}
 		}
-		// we come from upstream, update it
-		if (!strcmp(src,SS_SERVICE_SYSDIR))
+		else if (conf == 1)
 		{
-			if (!write_env(name,&sv->saenv,SS_SERVICE_SYSCONFDIR))
+			stralloc salist = STRALLOC_ZERO ;
+			//merge config from upstream to sysadmin
+			if (!file_readputsa(&salist,SS_SERVICE_ADMCONFDIR,name)) strerr_diefu3sys(111,"read: ",dst,name) ;
+			if (!env_merge_conf(SS_SERVICE_ADMCONFDIR,name,&salist,&sv->saenv,conf))
 			{
-				VERBO3 strerr_warnwu1x("write environment") ;
+				VERBO3 strerr_warnwu1x("merge environment file") ;
 				return 0 ;
 			}
+			stralloc_free(&salist) ;
 		}
-		stralloc salist = STRALLOC_ZERO ;
-		//merge config from upstream to sysadmin
-		if (!file_readputsa(&salist,SS_SERVICE_ADMCONFDIR,name)) strerr_diefu3sys(111,"read: ",dst,name) ;
-		if (!env_merge_conf(SS_SERVICE_ADMCONFDIR,name,&salist,&sv->saenv,conf))
-		{
-			VERBO3 strerr_warnwu1x("merge environment file") ;
-			return 0 ;
-		}
-		stralloc_free(&salist) ;
 	}
 	/** hierarchy copy */
 	if (sv->hiercopy[0])

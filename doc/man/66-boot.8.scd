@@ -24,7 +24,7 @@
 
 *-m*
 	Umount the basename of the _LIVE_ directory set into the _init.conf_
-	skeleton file and mount a tmpfs on it.
+	skeleton file and mount a tmpfs on it. This is the default.
 
 *-l* _log_user_
 	The catch-all logger will run as the _log_user_ user. Default is *root*.
@@ -106,7 +106,7 @@ it.
 *66-boot* binary is not meant to be called directly, or be linked to the
   binary directory directly, because it takes command-line options. Thereby
   the _init_ file is used to pass an options to *66-boot*. By default
-  *66-boot* is launched without any options. This file *should be copied* by
+  *66-boot* is launched with *-m* options. This file *should be copied* by
   the administrator into the binary directory of your system.
 
 - *init.conf*++

@@ -201,7 +201,6 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,unsigned i
 			if (!stralloc_cats(&subdir,"/")) goto errdir ;
 			if (!stralloc_0(&subdir)) goto errdir ;
 			*found = ss_resolve_src(sasrc,name,subdir.s,found) ;
-			//stralloc_free(&subdir) ;
 			subdir.len = 0 ;
 			if (*found < 0) goto errdir ;
 		}

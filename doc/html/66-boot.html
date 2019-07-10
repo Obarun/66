@@ -43,7 +43,7 @@
 		</li>
 		 
 		<li> 
-			<tt><b>-m</b></tt> : umount the basename of the <em>LIVE</em> directory set in the <tt>init.conf</tt> skeleton file and mount a tmpfs on it.
+			<tt><b>-m</b></tt> : umount the basename of the <em>LIVE</em> directory set in the <tt>init.conf</tt> skeleton file and mount a tmpfs on it. This is the default.
 		</li>
 			 
 		<li> 
@@ -170,7 +170,7 @@
 
 	<ul>
 		<li>
-			<tt><b>init</b></tt> : the <tt>66-boot</tt> binary is not meant to be called directly or be linked to the binary directory because it takes command line options. Therefore the <tt>init</tt> skeleton file is used to pass any options to <tt>66&#8209;boot</tt>. By default <tt>66&#8209;boot</tt> is launched without any options. This file <strong>should be copied</strong> by the administrator into the binary directory of your system.
+			<tt><b>init</b></tt> : the <tt>66-boot</tt> binary is not meant to be called directly or be linked to the binary directory because it takes command line options. Therefore the <tt>init</tt> skeleton file is used to pass any options to <tt>66&#8209;boot</tt>. By default <tt>66&#8209;boot</tt> is launched with <tt>-m</tt> options. This file <strong>should be copied</strong> by the administrator into the binary directory of your system.
 		</li>
 
 		<li>

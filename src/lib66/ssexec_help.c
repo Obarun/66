@@ -14,7 +14,7 @@
 
 #include <66/ssexec.h>
 
-char const *usage_enable = "66-enable [ -h help ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -f ] [ -F ] [ -o ] [ -S ] service(s)" ;
+char const *usage_enable = "66-enable [ -h help ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -f|F ] [ -c|C ] [ -S ] service(s)" ;
 
 char const *help_enable =
 "66-enable <options> service(s)\n"
@@ -26,7 +26,8 @@ char const *help_enable =
 "	-t: name of the tree to use\n"
 "	-f: force to overwrite the service(s)\n"
 "	-F: force to overwrite the service(s) and it dependencies\n"
-"	-o: force to overwrite the configuration file\n"
+"	-c: merge it environment configuration file from frontend file\n"
+"	-C: overwrite it environment configuration file from frontend file\n"
 "	-S: enable and start the service\n"
 ;
 
