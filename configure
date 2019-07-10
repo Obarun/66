@@ -28,11 +28,11 @@ Fine tuning of the installation directories:
   
   --shebangdir=DIR                 absolute path for execline #\! invocations [BINDIR]
   --livedir=DIR                    default live directory [/run/66]
+  --with-rc-skeleton=DIR           skeleton rc.{init,shutdown} file [SYSDIR]				
   --with-system-log=DIR            system service log directory[/var/log/66]
     
   --with-system-dir=DIR            66 tools system working directory[PREFIX/lib/66]
   --with-system-service=DIR        system service frontend directory[DATAROOTDIR/66/service]
-  --with-system-service-conf=DIR   system service configuration file directory[DATAROOTDIR/66/conf]
   
   --with-sysadmin-service=DIR      sysadmin service frontend directory[SYSDIR/service]
   --with-sysadmin-service-conf=DIR sysadmin service configuration file directory[SYSDIR/conf]
@@ -167,6 +167,7 @@ datarootdir='$prefix/share'
 mandir='$datarootdir/man'
 shebangdir='$bindir'
 livedir='/run/66'
+skel='$sysconfdir'
 system_dir='$prefix/lib/66'
 system_log='/var/log/66'
 service_system='$datarootdir/66/service'
@@ -211,6 +212,7 @@ for arg ; do
     --mandir=*) mandir=${arg#*=} ;;
     --shebangdir=*) shebangisdefault=false ; shebangdir=${arg#*=} ;;
     --livedir=*) livedir=${arg#*=} ;;
+    --with-rc-skeleton=*) skel=${arg#*=} ;;
     --with-system-dir=*) system_dir=${arg#*=} ;;
     --with-system-log=*) system_log=${arg#*=} ;;
     --with-system-service=*) service_system=${arg#*=} ;;
@@ -293,7 +295,7 @@ for i in service_system mandir; do
 done
 
 stripdir sysconfdir
-for i in service_adm service_admconf; do
+for i in service_adm service_admconf skel; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
@@ -476,6 +478,7 @@ shebangdir := $shebangdir
 datarootdir := $datarootdir
 mandir := $mandir
 livedir := $livedir
+skel := $skel
 system_dir := $system_dir
 system_log := $system_log
 service_system := $service_system
