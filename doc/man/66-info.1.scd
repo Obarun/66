@@ -40,6 +40,9 @@ depending on the options passed.
 *-c*
 	Disable colorization.
 
+*-C*
+	Force colorization.
+
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++
 	*1* : (Default) Only print error messages.++
@@ -68,6 +71,9 @@ depending on the options passed.
 
 *-c*
 	Disable colorization.
+
+*-C*
+	Force colorization.
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++
