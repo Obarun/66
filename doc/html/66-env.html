@@ -30,7 +30,7 @@
 
 	<ul>
 		<li>
-			This program opens and reads the configuration file of <em>service</em> found by default at <em>/etc/66/conf</em>.
+			This program opens and reads the configuration file of <em>service</em> found by default at <em>%%service_admconf%%</em>.
 		</li>
 		<li>
 			It displays the contents of the file or replaces a <em>key=value</em> pair if instructed to do so with the <tt>&#8209;r</tt> option.
@@ -63,7 +63,9 @@
 			<tt><b>-v <em>verbosity</em></b></tt> : increase/decrease verbosity of the command. <tt>1(Default)</tt>: Only print error messages. <tt>2</tt>: Also print warning messages. <tt>3</tt>: Also print debugging messages.
 		</li>
 		<li> 
-			<tt><b>-t <em>tree</em></b></tt> : ignored. Provides internal compatibility for <tt>66</tt> tools.
+			<tt>-t&nbsp;<em>tree</em></tt>&nbsp;: specifies the <em>tree</em> used to store
+			the parsed <em>service</em> file. This option is mandatory
+			except if a tree was marked as 'current'&mdash;see <a href="66-tree.html"><tt>66-tree</tt></a>.
 		</li>
 		<li> 
 			<tt><b>-d <em>dir</em></b></tt> : use <em>dir</em> as configuration file directory instead of the default one.
@@ -78,7 +80,7 @@
 			<tt><b>-e</b></tt> : edit the configuration file with EDITOR set in your system environment.
 		</li>
 		<li> 
-			<tt><b>-r&nbsp;<em>key=value</em></b></tt> : override an existing <em>key=value</em> pair with the given one. The <em>key=value</em> needs to be double-quoted or single quoted in case of multiple arguments. In case of double quote backslash '\' should be used to properly parse a double-quoted element.
+			<tt><b>-r&nbsp;<em>key=value</em></b></tt> : override an existing <em>key=value</em> pair with the given one. The <em>key=value</em> needs to be single quoted in case of multiple arguments.
 		</li>
 	</ul>
 	

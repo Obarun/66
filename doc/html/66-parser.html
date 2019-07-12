@@ -59,7 +59,7 @@
 <h2>Notes</h2>
 
 	<p>
-		66-parser will not try to read and parse any services declared under the <em>@depends</em> key of the given frontend file. This tool is mainly intended for debugging purposes and to see the result of a parsing process before actually enabling the service on the system. It is further recommended to <strong>not have the [environment] section set</strong> when running this tool on any frontend file of any given service. The tool uses the exact same parser as <a href="66-enable.html">66&#8209;enable</a> which by default writes the configuration file to /etc/66/conf/<em>service_name</em>. As a consequence any corresponding existing file will be overwritten.
+		66-parser will not try to read and parse any services declared under the <em>@depends</em> key of the given frontend file. This tool is mainly intended for debugging purposes and to see the result of a parsing process before actually enabling the service on the system. It is further recommended to <strong>not have the [environment] section set</strong> when running this tool on any frontend file of any given service. The tool uses the exact same parser as <a href="66-enable.html">66&#8209;enable</a> which by default writes the configuration file to <tt>%%service_admconf%%/<em>service_name</em></tt>. As a consequence any corresponding existing file will be overwritten.
 	</p>
 
 </body>

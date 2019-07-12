@@ -39,7 +39,7 @@
 		</li>
 		
 		<li>
-			<tt><b>-s <em>skel</em></b></tt> : an absolute path. Directory that holds skeleton files. By default this will be <tt>/etc/66/</tt>. The default can also be changed at compile time by passing the <tt>&#8209;&#8209;sysconfdir=<em>SYSDIR</em></tt> option to <tt>./configure</tt>. This directory <strong>must</strong> contain the necessary skeleton files to properly boot the machine, without it the system <strong>will not boot</strong>.
+			<tt><b>-s <em>skel</em></b></tt> : an absolute path. Directory that holds skeleton files. By default this will be <tt>%%skel%%</tt>. The default can also be changed at compile time by passing the <tt>&#8209;&#8209;--with-skeleton=<em>DIR</em></tt> option to <tt>./configure</tt>. This directory <strong>must</strong> contain the necessary skeleton files to properly boot the machine, without it the system <strong>will not boot</strong>.
 		</li>
 		 
 		<li> 
@@ -138,7 +138,7 @@
 		</li>
 
 		<li>
-			It execs into <tt><em><a href="66-scandir.html">66&#8209;scandir &#8209;v VERBOSITY &#8209;l LIVE &#8209;u</a></tt></em> with <tt>LIVE/scandir/0</tt> (default <tt>/run/66/scandir/0</tt>) as its scandir.
+			It execs into <tt><em><a href="66-scandir.html">66&#8209;scandir &#8209;v VERBOSITY &#8209;l LIVE &#8209;u</a></tt></em> with <tt>LIVE/scandir/0</tt> (default <tt>%%livedir%%/scandir/0</tt>) as its scandir.
 		</li>
 
 		<ul>
@@ -165,7 +165,7 @@
 <h2>Skeleton files</h2>
 
 	<p>
-		Skeleton files are mandatory and must exist on your system to be able to boot and shutdown the machine properly. By default those files are installed at <tt>/etc/66</tt>. Use the <tt>&#8209;&#8209;sysconfdir=<em>SYSDIR</em></tt> option at compile time to change it.
+		Skeleton files are mandatory and must exist on your system to be able to boot and shutdown the machine properly. By default those files are installed at <tt>%%skel%%</tt>. Use the <tt>&#8209;&#8209;with&#8209;skeleton=<em>DIR</em></tt> option at compile time to change it.
 	</p>
 
 	<ul>
@@ -181,7 +181,7 @@
 				</li>
 
 				<li>
-					<tt><b>LIVE=/run/66</b></tt> : an absolute path; creates the scandir at <em>LIVE</em>. The value will depend by default on the <tt>&#8209;&#8209;livedir=<em>live</em></tt> option set at compile time.
+					<tt><b>LIVE=%%livedir%%</b></tt> : an absolute path; creates the scandir at <em>LIVE</em>. The value will depend by default on the <tt>&#8209;&#8209;livedir=<em>live</em></tt> option set at compile time.
 				</li>
 
 				<li>
@@ -189,15 +189,15 @@
 				</li>
 
 				<li>
-					<tt><b>TREE=init</b></tt> : name of the <tt>tree</tt> to start. This <tt>tree</tt> should contain a sane set of services to bring up the machine into an operating system. 'classic' services will start early at the invocation of <a href="66-init.html">66&#8209;init</a>. <em>stage2</em> will then start any other service type. It is the responsibility of the system administrator to build this tree without errors.
+					<tt><b>TREE=boot</b></tt> : name of the <tt>tree</tt> to start. This <tt>tree</tt> should contain a sane set of services to bring up the machine into an operating system. 'classic' services will start early at the invocation of <a href="66-init.html">66&#8209;init</a>. <em>stage2</em> will then start any other service type. It is the responsibility of the system administrator to build this tree without errors.
 				</li>
 
 				<li>
-					<tt><b>RCINIT=/etc/66/rc.init</b></tt> : an absolute path. This file is launched at the end of <em>stage1</em> and run as <em>stage2</em>. It calls <a href="66-init.html">66&#8209;init</a> to initiate any services inside of <em>TREE</em> except 'classic' ones which were already initiated by <em>stage1</em>. After that it invokes <a href="66-dbctl.html">66&#8209;dbctl</a> to bring up all services.
+					<tt><b>RCINIT=%%livedir%%/rc.init</b></tt> : an absolute path. This file is launched at the end of <em>stage1</em> and run as <em>stage2</em>. It calls <a href="66-init.html">66&#8209;init</a> to initiate any services inside of <em>TREE</em> except 'classic' ones which were already initiated by <em>stage1</em>. After that it invokes <a href="66-dbctl.html">66&#8209;dbctl</a> to bring up all services.
 				</li>
 
 				<li>
-					<tt><b>RCSHUTDOWN=/etc/66/rc.shutdown</b></tt> : an absolute path. This is launched when a shutdown is requested also called <em>stage3</em>. It invokes <a href="66-all">66&#8209;all</a> to bring down all services of <em>TREE</em>.
+					<tt><b>RCSHUTDOWN=%%livedir%%/rc.shutdown</b></tt> : an absolute path. This is launched when a shutdown is requested also called <em>stage3</em>. It invokes <a href="66-all">66&#8209;all</a> to bring down all services of <em>TREE</em>.
 				</li>
 
 				<li>
@@ -209,7 +209,7 @@
 				</li>
 
 				<li>
-					<tt><b>ISHELL=/etc/66/ishell</b></tt> : an absolute path. Gets called in case <em>stage2</em> crashes. This file will try to run a <em>sulogin</em>.
+					<tt><b>ISHELL=%%skel%%/ishell</b></tt> : an absolute path. Gets called in case <em>stage2</em> crashes. This file will try to run a <em>sulogin</em>.
 				</li>
 			</ul>
 		</li>

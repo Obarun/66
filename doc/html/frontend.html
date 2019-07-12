@@ -48,8 +48,8 @@
    execl-cmdline -s { ntpd ${CMD_ARGS} } )
 
    [environment]
-   !RUNDIR=/run/openntpd
-   !CMD_ARGS=-d -s
+   dir_run=!/run/openntpd
+   cmd_args=!-d -s
    </pre>
 
 	<p>
@@ -742,8 +742,8 @@ same behaviour. -->
 <p>It will only have an effect when the value <tt>env</tt> is added to the
 <tt>@options</tt> key in the <tt>[main]</tt> section.</p>
 <p>A file named <em>key</em> with the <em>value</em> as contain will be
-created by default at /etc/66/env/name_of_daemon directory. The default can also be changed at compile-time by 
-  passing the <tt>--with-service-path=<em>DIR</em></tt> option to <tt>./configure</tt>.</p>
+created by default at %%service_admconf%%/name_of_service directory. The default can also be changed at compile-time by 
+  passing the <tt>--with-sysadmin-service-conf=<em>DIR</em></tt> option to <tt>./configure</tt>.</p>
 
 <h3>Valid <em>key</em> names:</h3>
 
@@ -758,15 +758,15 @@ created by default at /etc/66/env/name_of_daemon directory. The default can also
    of the service. For example:</p>
 <pre>
    [environment]
-   RUNDIR=/run/openntpd
-   CMD_ARGS=-d -s
+   dir_run=/run/openntpd
+   cmd_args=-d -s
 </pre>
    <p>The '!' character can be put in front
-   of the <em>key=value</em> pair like this :</p>
+   of the <em>value</em> like this :</p>
 <pre>
    [environment]
-   !RUNDIR=/run/openntpd
-   !CMD_ARGS=-d -s
+   dir_run=!/run/openntpd
+   cmd_args=!-d -s
 </pre>
    <p>This will explicitly <em>not</em> set the <em>value</em> 
    of the <em>key</em> for the runtime process but only at the start of the service. 
@@ -884,7 +884,7 @@ for it in your <tt>@execute</tt> field.</p>
     @timeout-down =
     @maxdeath = 
     @down-signal =
-    @hiercopy = 
+    @hiercopy = ()
     
     [start]
     @build = auto,custom
@@ -912,6 +912,6 @@ for it in your <tt>@execute</tt> field.</p>
     
     [environment]
     MYKEY=myvalue
-    !ANOTHERKEY=antohervalue
+    ANOTHERKEY=!antohervalue
     </pre>
 </body></html>

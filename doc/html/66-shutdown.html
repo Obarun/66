@@ -77,11 +77,11 @@
 		</li>
 
 		<li>
-			<tt><b>-l <em>live</em></b></tt> : an absolute path; directory to use. <tt>66-shutdown</tt> sends a signal to the listening pipe of the <a href="66-shutdownd.html">66-shutdownd</a> service at <tt><em>live</em>/scandir/0/shutdownd/fifo</tt>. Default is <tt>/run/66</tt>. The default can also be changed at compile-time by passing the <tt>--livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem.
+			<tt><b>-l <em>live</em></b></tt> : an absolute path; directory to use. <tt>66-shutdown</tt> sends a signal to the listening pipe of the <a href="66-shutdownd.html">66-shutdownd</a> service at <tt><em>live</em>/scandir/0/shutdownd/fifo</tt>. Default is <tt>%%livedir%%</tt>. The default can also be changed at compile-time by passing the <tt>--livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem.
 		</li>
 
 		<li>
-			<tt><b>-a</b></tt> : access control. The shutdown sequence will only be launched if one of the users listed in <tt>/etc/shutdown.allow</tt> is currently logged in (as tracked by utmp). <tt>/etc/shutdown.allow</tt> is a text file which accepts one user per line. Lines starting with <tt>#</tt> are commented out.
+			<tt><b>-a</b></tt> : access control. The shutdown sequence will only be launched if one of the users listed in <tt>%%skel%%/shutdown.allow</tt> is currently logged in (as tracked by utmp). <tt>%%skel%%/shutdown.allow</tt> is a text file which accepts one user per line. Lines starting with <tt>#</tt> are commented out.
 		</li>
 
 		<li>
@@ -121,7 +121,7 @@
 
 	<ul>
 		<li> 
-			The <tt>66-shutdown</tt> binary is not meant to be called directly. It should always be referenced by the <tt>shutdown</tt> <em>skeleton</em> file installed by default at <tt>/etc/66</tt>. The binary <b>should be copied or symlinked</b> into the binary directory of the system.
+			The <tt>66-shutdown</tt> binary is not meant to be called directly. It should always be referenced by the <tt>shutdown</tt> <em>skeleton</em> file installed by default at <tt>%%skel%%</tt>. The binary <b>should be copied or symlinked</b> into the binary directory of the system.
 		</li>
 
 		<li>

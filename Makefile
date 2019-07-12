@@ -61,6 +61,7 @@ ALL_DATA := $(wildcard skel/*)
 ALL_MAN := $(wildcard doc/man/*.[1-8].scd)
 ALL_DIR := $(skel) $(system_dir) $(system_log) $(service_system) $(service_adm) $(service_admconf)
 INSTALL_MAN := $(wildcard doc/man/*.[1-8])
+INSTALL_HTML := $(wildcard doc/html/*.html)
 
 all: $(ALL_LIBS) $(ALL_BINS) $(ALL_INCLUDES) $(ALL_DATA) $(ALL_DIR)
 
@@ -95,6 +96,7 @@ install-lib: $(STATIC_LIBS:lib%.a.xyzzy=$(DESTDIR)$(libdir)/lib%.a)
 install-include: $(ALL_INCLUDES:src/include/$(package)/%.h=$(DESTDIR)$(includedir)/$(package)/%.h)
 install-data: $(ALL_DATA:skel/%=$(DESTDIR)$(skel)/%)
 install-dir: $(ALL_DIR:/%=$(DESTDIR)/%)
+install-html: $(INSTALL_HTML:doc/html/%.html=$(DESTDIR)$(datarootdir)/doc/$(package)/%.html)
 
 $(DESTDIR)/%:
 	install -d -m755 $@ 
@@ -118,6 +120,21 @@ $(DESTDIR)$(sproot)/library.so/lib%.so.$(version_M): $(DESTDIR)$(dynlibdir)/lib%
 
 endif
 
+$(DESTDIR)$(datarootdir)/doc/$(package)/%.html: doc/html/%.html
+	$(INSTALL) -D -m 644 $< $@ && \
+	sed -e 's,%%livedir%%,$(livedir),g' \
+		-e 's,%%sysconfdir%%,$(skel),g' \
+		-e 's,%%system_dir%%,$(system_dir),g' \
+		-e 's,%%system_log%%,$(system_log),g' \
+		-e 's,%%service_system%%,$(service_system),g' \
+		-e 's,%%service_adm%%,$(service_adm),g' \
+		-e 's,%%service_admconf%%,$(service_admconf),g' \
+		-e 's,%%user_dir%%,$(user_dir),g' \
+		-e 's,%%service_user%%,$(service_user),g' \
+		-e 's,%%service_userconf%%,$(service_userconf),g' \
+		-e 's,%%user_log%%,$(user_log),g' $< > $@
+		
+		
 $(DESTDIR)$(skel)/%: skel/% 
 	exec $(INSTALL) -D -m 644 $< $@ 
 	grep -- ^$(@F) < package/modes | { read name mode owner && \
@@ -186,6 +203,6 @@ install-man:
 		install -m644 doc/man/*.$$i $(DESTDIR)$(mandir)/man$$i/ ; \
 	done
 
-.PHONY: it all clean distclean tgz strip install install-dynlib install-bin install-lib install-include man install-man
+.PHONY: it all clean distclean tgz strip install install-dynlib install-bin install-lib install-include man install-man install-html
 
 .DELETE_ON_ERROR:

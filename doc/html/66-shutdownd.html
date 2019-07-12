@@ -34,7 +34,7 @@
 		</li>
 
 		<li>
-			When it receives a command to shut down <tt>66-shutdownd</tt> parses the <em>skel</em> file <em>rc.init</em>&mdash;defined by default at <em>/etc/66</em> directory&mdash; and reads the value of <em>RCSHUTDOWN</em> to be able to spawn the <em>rc.shutdown</em> script. 
+			When it receives a command to shut down <tt>66-shutdownd</tt> parses the <em>skel</em> file <em>rc.init</em>&mdash;defined by default at <em>%%skel%%</em> directory&mdash; and reads the value of <em>RCSHUTDOWN</em> to be able to spawn the <em>rc.shutdown</em> script. 
 		</li>
 
 		<li>
@@ -55,10 +55,10 @@
 		</li>
 
 		<li>
-			<tt>-l <em>live</em></tt> : an absolute path; directory to use. By default <tt>66-shutdownd</tt> will listen to signals from <tt>66&#8209;shutdown</tt> at <tt><em>live</em>/scandir/0/shutdown/fifo where <em>live</em></tt> defaults to <tt>/run/66</tt>. Can also be changed at compile time by passing the <tt>&#8209;&#8209;livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem.
+			<tt>-l <em>live</em></tt> : an absolute path; directory to use. By default <tt>66-shutdownd</tt> will listen to signals from <tt>66&#8209;shutdown</tt> at <tt><em>live</em>/scandir/0/shutdown/fifo where <em>live</em></tt> defaults to <tt>%%livedir%%</tt>. Can also be changed at compile time by passing the <tt>&#8209;&#8209;livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem.
 		</li>
 		<li>
-			<tt>-s <em>skel</em></tt> : an absolute path; directory of the skeleton file <em>rc.init</em>. Default is <tt>/etc/66</tt>.
+			<tt>-s <em>skel</em></tt> : an absolute path; directory of the skeleton file <em>rc.init</em>. Default is <tt>%%skel%%</tt>.
 		</li>
 		<li>
 			<tt>-g <em>gracetime</em></tt> : specify a grace time between the SIGTERM and the SIGKILL in milliseconds if the shutdown command

@@ -27,7 +27,7 @@
 	</pre>
 
 	<p>
-		This program creates or starts the <tt><em>scandir</em></tt> (directory containing a collection of <a href="https://skarnet.org/software/s6/s6-supervise.html">s6&#8209;supervise processes</a>) for the given <tt><em>owner</em></tt> depending on the provided options. Note that <tt><em>owner</em></tt> can be any valid user on the system. However, the given user must have sufficient permissions to create the necessary directories at its location. That is <tt>/run/66</tt> by default or the resulting path provided by the <tt>&#8209;l</tt> option. If <tt><em>owner</em></tt> is not explicitely set then the user of the current process will be used instead.
+		This program creates or starts the <tt><em>scandir</em></tt> (directory containing a collection of <a href="https://skarnet.org/software/s6/s6-supervise.html">s6&#8209;supervise processes</a>) for the given <tt><em>owner</em></tt> depending on the provided options. Note that <tt><em>owner</em></tt> can be any valid user on the system. However, the given user must have sufficient permissions to create the necessary directories at its location. That is <tt>%%livedir%%</tt> by default or the resulting path provided by the <tt>&#8209;l</tt> option. If <tt><em>owner</em></tt> is not explicitely set then the user of the current process will be used instead.
 	</p>
 	
 <h2>Options</h2>
@@ -46,7 +46,7 @@
 		</li>
 
 		<li>
-			<tt><b>-l <em>live</em></b></tt> : an absolute path. create the <tt><em>scandir</em></tt> at <em>live</em>. Default is <tt>/run/66</tt>. The default can also be changed at compile-time by	passing the <tt>&#8209;&#8209;livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem.
+			<tt><b>-l <em>live</em></b></tt> : an absolute path. create the <tt><em>scandir</em></tt> at <em>live</em>. Default is <tt>%%livedir%%</tt>. The default can also be changed at compile-time by	passing the <tt>&#8209;&#8209;livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem.
 		</li>
 
 		<li>
@@ -54,7 +54,7 @@
 		</li>
 
 		<li>
-			<tt><b>-s <em>skel</em></b></tt> : an absolute path. Directory containing <em>skeleton</em> files. This option is not meant to be used directly even with root. <a href="66-boot.html">66&#8209;boot</a> calls it during the boot process.
+			<tt><b>-s <em>skel</em></b></tt> : an absolute path. Directory containing <em>skeleton</em> files. This option is not meant to be used directly even with root. <a href="66-boot.html">66&#8209;boot</a> calls it during the boot process. Default is <tt>%%skel%%</tt>.
 		</li>
 
 		<li>
@@ -90,40 +90,40 @@
 
 	<ul>
 		<li>
-			<tt>/run/66/scandir/0</tt> : stores all longrun proccesses 
+			<tt>%%livedir%%/scandir/0</tt> : stores all longrun proccesses 
 			(commonly known as daemons) started by <tt>root</tt>.
 		</li>
 
 		<li>
-			<tt>/run/66/tree/0</tt> : stores any s6&#8209;rc service 
+			<tt>%%livedir%%/tree/0</tt> : stores any s6&#8209;rc service 
 			database started by <tt>root</tt>.
 		</li>
 
 		<li>
-			<tt>/run/66/log/0</tt> : stores the catch-all logger 
+			<tt>%%livedir%%/log/0</tt> : stores the catch-all logger 
 			when the <tt><em>scandir</em></tt> is created for a boot procedure with the <tt>&#8209;b</tt> option.
 		</li>
 
 		<li>
-			<tt>/run/66/state/0</tt> : stores internal 66 ecosystem files.
+			<tt>%%livedir%%/state/0</tt> : stores internal 66 ecosystem files.
 		</li>
 	</ul>
 
 	<p>
-		If the scandir was created with a regular user you will find the following in <tt>/run/66</tt><br>(Default directories if <tt>&#8209;l</tt> is not passed and <tt>1000</tt> being the UID for the user):
+		If the scandir was created with a regular user you will find the following in <tt>%%livedir%%</tt><br>(Default directories if <tt>&#8209;l</tt> is not passed and <tt>1000</tt> being the UID for the user):
 	</p>
 
 	<ul>
 		<li>
-			<tt>/run/66/scandir/1000</tt>
+			<tt>%%livedir%%/scandir/1000</tt>
 		</li>
 
 		<li>
-			<tt>/run/66/tree/1000</tt>
+			<tt>%%livedir%%/tree/1000</tt>
 		</li>
 
 		<li>
-			<tt>/run/66/state/1000</tt>
+			<tt>%%livedir%%/state/1000</tt>
 		</li>
 	</ul>
 
@@ -155,24 +155,24 @@
 
 	<ul>
 		<li>
-			<tt>/run/66/scandir/0 # will be deleted</tt>
+			<tt>%%livedir%%/scandir/0 # will be deleted</tt>
 		</li>
 
 		<li>
-			<tt>/run/66/tree/0 &nbsp;&nbsp;&nbsp;# will be deleted</tt>
+			<tt>%%livedir%%/tree/0 &nbsp;&nbsp;&nbsp;# will be deleted</tt>
 		</li>
 
 		<li>
-			<tt>/run/66/log/0 &nbsp;&nbsp;&nbsp;&nbsp;# will be deleted</tt>
+			<tt>%%livedir%%/log/0 &nbsp;&nbsp;&nbsp;&nbsp;# will be deleted</tt>
 		</li>
 
 		<li>
-			<tt>/run/66/state/0 &nbsp;&nbsp;# will be deleted</tt>
+			<tt>%%livedir%%/state/0 &nbsp;&nbsp;# will be deleted</tt>
 		</li>
 	</ul>
 
 	<p>
-		The <tt><em>live</em></tt> directory of the <tt>root</tt> user (in this example and by default <tt>/run/66</tt>) will <b>not</b> be removed because another user (the one from our example) can still use it. In fact <tt>66&#8209;scandir</tt> will only remove the subdirectories of the corresponding UID of the <tt><em>owner</em></tt> while the <tt><em>live</em></tt> root directory is not touched. If <tt><em>live</em></tt> was created on a RAM filesystem as suggested the deletion happens on the next reboot.
+		The <tt><em>live</em></tt> directory of the <tt>root</tt> user (in this example and by default <tt>%%livedir%%</tt>) will <b>not</b> be removed because another user (the one from our example) can still use it. In fact <tt>66&#8209;scandir</tt> will only remove the subdirectories of the corresponding UID of the <tt><em>owner</em></tt> while the <tt><em>live</em></tt> root directory is not touched. If <tt><em>live</em></tt> was created on a RAM filesystem as suggested the deletion happens on the next reboot.
 	</p>
 
 	<p>

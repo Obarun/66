@@ -46,7 +46,7 @@
 		</li>
 		 
 		<li> 
-			<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
+			<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>%%livedir%%</tt>. The default can 
 			also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
 			option to <tt>./configure</tt>. An existing absolute path is expected and
 			should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.

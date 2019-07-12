@@ -106,7 +106,7 @@
 	<pre>
 	#!/usr/bin/execlineb -P
 	fdmove -c 2 1
-	s6-envdir /etc/66/conf
+	s6-envdir %%service_admconf%%
 	importas -u RUNDIR RUNDIR
 	importas -u CMD_ARGS CMD_ARGS
 	foreground { mkdir -p  -m 0755 ${RUNDIR} } 
@@ -114,7 +114,7 @@
 	</pre>
 
 	<p>
-		where <tt>/etc/66/conf</tt> contains two named files <tt>RUNDIR</tt> and <tt>CMD_ARGS</tt> written with <tt>/run/openntpd</tt> and <tt>-d -s</tt> respectively.
+		where <tt>%%service_admconf%%</tt> contains two named files <tt>RUNDIR</tt> and <tt>CMD_ARGS</tt> written with <tt>/run/openntpd</tt> and <tt>-d -s</tt> respectively.
 	</p>
 
 <h2>Limits</h2>

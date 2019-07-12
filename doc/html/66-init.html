@@ -45,7 +45,7 @@
 	 </li>
 	 
 	 <li> 
-		<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the <em>scandir</em> directory to <em>live</em>. By default this will be <tt>/run/66</tt>. The default can 
+		<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the <em>scandir</em> directory to <em>live</em>. By default this will be <tt>%%livedir%%</tt>. The default can 
 		also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
 		option to <tt>./configure</tt>. An existing absolute path is expected and
 		should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
@@ -74,14 +74,14 @@
 <h2>Initiatlization process</h2>
 <h3>Classic services</h3>
 	<p>The tool will make an exact copy of all classic service files and directories of the <em>tree</em> inside a <em>scandir</em> directory at <em>live</em>. 
-	By default <tt>/run/66/scandir/UID</tt> is created if it does not exist yet, where <tt>UID</tt> is the uid of the current owner of the process. The <em>scandir</em> does <strong>not</strong> need to be
+	By default <tt>%%livedir%%/scandir/UID</tt> is created if it does not exist yet, where <tt>UID</tt> is the uid of the current owner of the process. The <em>scandir</em> does <strong>not</strong> need to be
 	necessarily running. This is useful at boot time to initiate an early service before starting the <em>scandir</em>. Once the <em>scandir</em> 
 	starts&mdash;see <tt><a href="66-scandir.html">66-scandir -u</a></tt> option, the already present services start automatically.</p>
-	<p>If the <em>scandir</em> is running, you should invoke a <tt><a href="66-scandir.html">66-scandir -s reload</a></tt> command to inform it about the changes.</p>
+	<p>If the <em>scandir</em> is running, you should invoke a <tt><a href="66-scanctl.html">66-scanctl reload</a></tt> command to inform it about the changes.</p>
 <h3>Bundle, atomic services</h3>
 	<p>The tool will automatically invoke <tt><a href="https://skarnet.org/software/s6-rc/s6-rc-init.html">s6-rc-init -l <em>live</em> -c <em>compiled</em> -p <em>prefix</em></a></tt>, 
-	where, by default, <em>live</em> translates to <tt>/run/66/tree/UID/<em>tree</em></tt> and <em>compiled</em> to <tt>/var/lib/66/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> or 
-	<tt>$HOME/.66/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> depending on the owner of the process and the <em>prefix</em> of the name of the <em>tree</em>. If it doesn't exist yet <em>live</em> 
+	where, by default, <em>live</em> translates to <tt>%%livedir%%/tree/UID/<em>tree</em></tt> and <em>compiled</em> to <tt>%%system_dir%%/66/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> or 
+	<tt>$HOME/%%user_dir%%/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> depending on the owner of the process and the <em>prefix</em> of the name of the <em>tree</em>. If it doesn't exist yet <em>live</em> 
 	is created in the process. For these services the <em>scandir</em> <strong>must</strong> be running. This tool like any other 66 tool can be invoked with user permissions.</p>
 </body>
 </html>
