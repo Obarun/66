@@ -265,6 +265,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		errno = EPERM ;
 		strerr_dief1sys(100, "nice try, peon") ;
 	}
+	fdin=dup(0) ;
 	parse_conf() ;
 	verbo[uint_fmt(verbo, VERBOSITY)] = 0 ;
 	bannerlen = strlen(banner) ;
@@ -281,7 +282,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (chdir("/") == -1) sulogin("chdir to ","/") ;
 	umask(mask) ;
 	setpgid(0, 0) ;
-	fdin=dup(0) ;
 	fd_close(0) ;
 	
 	if (slashdev)
