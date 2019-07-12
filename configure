@@ -22,20 +22,20 @@ Fine tuning of the installation directories:
   --libexecdir=DIR                 package-scoped executables [EPREFIX/libexec]
   --libdir=DIR                     static library files [PREFIX/lib/$package]
   --includedir=DIR                 C header files [PREFIX/include]
-  --sysconfdir=SYSDIR              global configuration files [/etc/66]
+  --sysconfdir=SYSDIR              global configuration files [/etc]
   --datarootdir=DATAROOTDIR        read-only architecture-independent data root [PREFIX/share]
   --mandir=DIR                     man documentation [$datarootdir/man]
   
   --shebangdir=DIR                 absolute path for execline #\! invocations [BINDIR]
   --livedir=DIR                    default live directory [/run/66]
-  --with-rc-skeleton=DIR           skeleton rc.{init,shutdown} file [SYSDIR]				
+  --with-rc-skeleton=DIR           skeleton rc.{init,shutdown} file [SYSDIR/66]				
   --with-system-log=DIR            system service log directory[/var/log/66]
     
   --with-system-dir=DIR            66 tools system working directory[PREFIX/lib/66]
   --with-system-service=DIR        system service frontend directory[DATAROOTDIR/66/service]
   
-  --with-sysadmin-service=DIR      sysadmin service frontend directory[SYSDIR/service]
-  --with-sysadmin-service-conf=DIR sysadmin service configuration file directory[SYSDIR/conf]
+  --with-sysadmin-service=DIR      sysadmin service frontend directory[SYSDIR/66/service]
+  --with-sysadmin-service-conf=DIR sysadmin service configuration file directory[SYSDIR/66/conf]
   
   --with-user-dir=DIR              66 tools user working directory[.66]
   --with-user-log=DIR              user service log directory[.66/log]
@@ -162,17 +162,17 @@ libexecdir='$exec_prefix/libexec'
 bindir='$exec_prefix/bin'
 libdir='$prefix/lib/$package'
 includedir='$prefix/include'
-sysconfdir='/etc/66'
+sysconfdir='/etc'
 datarootdir='$prefix/share'
 mandir='$datarootdir/man'
 shebangdir='$bindir'
 livedir='/run/66'
-skel='$sysconfdir'
+skel='$sysconfdir/66'
 system_dir='$prefix/lib/66'
 system_log='/var/log/66'
 service_system='$datarootdir/66/service'
-service_adm='$sysconfdir/service'
-service_admconf='$sysconfdir/conf'
+service_adm='$sysconfdir/66/service'
+service_admconf='$sysconfdir/66/conf'
 user_dir='.66'
 service_user='.66/service'
 service_userconf='.66/conf'
@@ -264,18 +264,21 @@ if test -z "$prefix" ; then
    if test "$datarootdir" = '$prefix/share'; then
     datarootdir=/usr/share
   fi
- if test "$system_dir" = '$prefix/lib/66' ; then
+  if test "$system_dir" = '$prefix/lib/66' ; then
 	system_dir=/var/lib/66
   fi
 fi
 
 # Add /etc/66 in the default case
 if test -z "$sysconfdir" ; then
-  if test "$service_adm" = '$sysconfdir/service' ; then
-	service_adm = '$sysconfdir/service'
+  if test "$service_adm" = '$sysconfdir/66/service' ; then
+	service_adm = '$sysconfdir/66/service'
   fi
-  if test "$service_admconf" = '$sysconfdir/conf' ; then
-	service_admconf = '$sysconfdir/conf'
+  if test "$service_admconf" = '$sysconfdir/66/conf' ; then
+	service_admconf = '$sysconfdir/66/conf'
+  fi
+  if test "$skel" = '$sysconfdir/66' ; then
+	skel = '$sysconfdir/66'
   fi
 fi
 
@@ -330,9 +333,15 @@ if $slashpackage ; then
   libdir=${home}/library
   libexecdir=$bindir
   includedir=${home}/include
-  sysconfdir=${home}/etc/66
-  datarootdir=${home}/usr/share
-  service_system=${home}/${datarootdir}/66/service
+  sysconfdir=${home}/etc
+  datarootdir=${home}/data
+  mandir=${dataroodir}/doc/man
+  skel=${sysconfdir}/66
+  system_dir=${home}/system
+  system_log=${datarootdir}/log/66
+  service_system=${home}/service
+  service_adm=${home}/${sysconfdir}/66/service
+  service_admconf=${home}/${sysconfdir}/66/conf
   if $shebangisdefault ; then
     shebangdir=${extbinprefix}
   fi
