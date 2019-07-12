@@ -51,6 +51,7 @@ static stralloc base = STRALLOC_ZERO ;
 static stralloc live = STRALLOC_ZERO ;
 static uid_t OWNER ;
 static char OWNERSTR[UID_FMT] ;
+static int force_color = 0 ;
 
 #define MAXSIZE 4096
 #define DBG(...) bprintf(buffer_1, __VA_ARGS__) ;\
@@ -59,9 +60,9 @@ static char OWNERSTR[UID_FMT] ;
 
 #define USAGE "66-info [ -h ] [ -T ] [ -S ] sub-options (use -h as sub-options for futher informations)"
 
-#define TREE_USAGE "66-info -T [ -c ] [ -h ] [ -v verbosity ] [ -r ] [ -d depth ] tree "
+#define TREE_USAGE "66-info -T [ -c | -C ] [ -h ] [ -v verbosity ] [ -r ] [ -d depth ] tree "
 #define exit_tree_usage() exitusage(TREE_USAGE)
-#define SV_USAGE "66-info -S [ -c ] [ -h ] [ -v verbosity ] [-t tree ] [ -l live ] [ -p n lines ] [ -r ] [ -d depth ] service"
+#define SV_USAGE "66-info -S [ -c | -C ] [ -h ] [ -v verbosity ] [-t tree ] [ -l live ] [ -p n lines ] [ -r ] [ -d depth ] service"
 #define exit_sv_usage() exitusage(SV_USAGE)
 
 unsigned int REVERSE = 0 ;
@@ -136,6 +137,7 @@ static inline void tree_help (void)
 "options :\n"
 "	-h: print this help\n"
 "	-c: disable colorization\n" 
+"	-C: force colorization\n"
 "	-v: increase/decrease verbosity\n"
 "	-r: reserve the dependencies graph\n" 
 "	-d: limit the depth of the graph recursion\n" 
@@ -153,6 +155,7 @@ static inline void sv_help (void)
 "options :\n"
 "	-h: print this help\n"
 "	-c: disable colorization\n" 
+"	-C: force colorization\n"
 "	-t: tree to use\n"
 "	-l: live directory\n"
 "	-p: print n last lines of the associated log file\n"
@@ -486,7 +489,7 @@ int tree_args(int argc, char const *const *argv)
 			
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hcv:rd:l:", &l) ;
+			int opt = getopt_args(argc,argv, ">hcCv:rd:l:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			
@@ -494,6 +497,7 @@ int tree_args(int argc, char const *const *argv)
 			{
 				case 'h' : 	tree_help(); return 1 ;
 				case 'c' :	color = &no_color ; break ;
+				case 'C' :	force_color = 1 ; break ;
 				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) exit_tree_usage() ; break ;
 				case 'r' : 	REVERSE = 1 ; break ;
 				case 'd' : 	if (!uint0_scan(l.arg, &MAXDEPTH)) exit_tree_usage(); break ;
@@ -508,6 +512,12 @@ int tree_args(int argc, char const *const *argv)
 	if (argc > 1) exit_tree_usage();
 	
 	if (argv[0]) todisplay = 1 ;
+
+	// -c and -C cannot be added togheter
+	if (color == &no_color && force_color) exit_tree_usage() ;
+
+	if (!isatty(1) && !force_color)
+		color = &no_color ;
 	
 	r = set_livedir(&live) ;
 	if (!r) retstralloc(0,"sv_args") ;
@@ -622,13 +632,14 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 		
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hcv:l:p:rd:t:", &l) ;
+			int opt = getopt_args(argc,argv, ">hcCv:l:p:rd:t:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
 			{
 				case 'h' : 	sv_help(); return 1 ;
 				case 'c' :	color = &no_color ; break ;
+				case 'C' :	force_color = 1 ; break ;
 				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) exit_sv_usage() ; break ;
 				case 'l' : 	if (!stralloc_cats(&live,l.arg)) retstralloc(0,"sv_args") ;
 							if (!stralloc_0(&live)) retstralloc(0,"sv_args") ;
@@ -643,6 +654,12 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 		argc -= l.ind ; argv += l.ind ;
 	}
 	if (argc > 1 || !argc) exit_sv_usage() ;
+
+	// -c and -C cannot be added togheter
+	if (color == &no_color && force_color) exit_sv_usage() ;
+
+	if (!isatty(1) && !force_color)
+		color = &no_color ;
 
 	svname = *argv ;
 	
