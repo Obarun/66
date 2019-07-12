@@ -56,7 +56,7 @@
 #define DOTSUFFIX ":XXXXXX"
 #define DOTSUFFIXLEN (sizeof(DOTSUFFIX) - 1)
 #define SHUTDOWND_FIFO "fifo"
-static char const *conf = SS_DATA_SYSDIR ;
+static char const *conf = SS_SKEL_DIR ;
 static char const *live = 0 ;
 
 #define USAGE "66-shutdownd [ -h ] [ -l live ] [ -s skel ] [ -g gracetime ]"

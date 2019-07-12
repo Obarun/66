@@ -39,11 +39,11 @@
 unsigned int VERBOSITY = 1 ;
 static mode_t mask = SS_BOOT_UMASK ;
 static unsigned int rescan = SS_BOOT_RESCAN ;
-static char const *skel = SS_DATA_SYSDIR ;
+static char const *skel = SS_SKEL_DIR ;
 static char *live = SS_LIVE ;
 static char const *path = SS_BOOT_PATH ;
 static char const *tree = SS_BOOT_TREE ;
-static char const *rcinit = SS_DATA_SYSDIR SS_BOOT_RCINIT ;
+static char const *rcinit = SS_SKEL_DIR SS_BOOT_RCINIT ;
 static char const *banner = "\n[Starts stage1 process...]" ;
 static char const *slashdev = 0 ;
 static char const *envdir = 0 ;

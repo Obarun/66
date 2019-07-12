@@ -45,7 +45,7 @@
 
 #define USAGE "66-shutdown [ -H ] [ -l live ] [ -h | -p | -r | -k ] [ -f | -F ] [ -a ] [ -t sec ] time [ message ]  or  66-shutdown -c [ message ]"
 
-#define AC_FILE SS_DATA_SYSDIR "shutdown.allow"
+#define AC_FILE SS_SKEL_DIR "shutdown.allow"
 #define AC_BUFSIZE 4096
 #define AC_MAX 64
 

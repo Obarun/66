@@ -59,9 +59,10 @@ ALL_LIBS := $(SHARED_LIBS) $(STATIC_LIBS) $(INTERNAL_LIBS)
 ALL_INCLUDES := $(wildcard src/include/$(package)/*.h)
 ALL_DATA := $(wildcard skel/*)
 ALL_MAN := $(wildcard doc/man/*.[1-8].scd)
+ALL_DIR := $(skel) $(system_dir) $(system_log) $(service_system) $(service_adm) $(service_admconf)
 INSTALL_MAN := $(wildcard doc/man/*.[1-8])
 
-all: $(ALL_LIBS) $(ALL_BINS) $(ALL_INCLUDES) $(ALL_DATA)
+all: $(ALL_LIBS) $(ALL_BINS) $(ALL_INCLUDES) $(ALL_DATA) $(ALL_DIR)
 
 clean:
 	@exec rm -f $(ALL_LIBS) $(ALL_BINS) $(wildcard src/*/*.o src/*/*.lo) \
@@ -78,7 +79,7 @@ tgz: distclean
 	tar -zpcv --owner=0 --group=0 --numeric-owner --exclude=.git* -f /tmp/$$package-$$version.tar.gz $$package-$$version && \
 	exec rm -rf /tmp/$$package-$$version
 
-strip: $(ALL_LIBS) $(ALL_BINS)
+strip: $(ALL_LIBS) $(ALL_BINS) $(ALL_DIR)
 ifneq ($(strip $(STATIC_LIBS)),)
 	exec $(STRIP) -x -R .note -R .comment -R .note.GNU-stack $(STATIC_LIBS)
 endif
@@ -86,14 +87,18 @@ ifneq ($(strip $(ALL_BINS)$(SHARED_LIBS)),)
 	exec $(STRIP) -R .note -R .comment -R .note.GNU-stack $(ALL_BINS) $(SHARED_LIBS)
 endif
 
-install: install-dynlib install-libexec install-bin install-lib install-include install-data
+install: install-dynlib install-libexec install-bin install-lib install-include install-data install-dir
 install-dynlib: $(SHARED_LIBS:lib%.so.xyzzy=$(DESTDIR)$(dynlibdir)/lib%.so)
 install-libexec: $(LIBEXEC_TARGETS:%=$(DESTDIR)$(libexecdir)/%)
 install-bin: $(BIN_TARGETS:%=$(DESTDIR)$(bindir)/%)
 install-lib: $(STATIC_LIBS:lib%.a.xyzzy=$(DESTDIR)$(libdir)/lib%.a)
 install-include: $(ALL_INCLUDES:src/include/$(package)/%.h=$(DESTDIR)$(includedir)/$(package)/%.h)
-install-data: $(ALL_DATA:skel/%=$(DESTDIR)$(sysconfdir)/66/%)
+install-data: $(ALL_DATA:skel/%=$(DESTDIR)$(skel)/%)
+install-dir: $(ALL_DIR:/%=$(DESTDIR)/%)
 
+$(DESTDIR)/%:
+	install -d -m755 $@ 
+	
 ifneq ($(exthome),)
 
 $(DESTDIR)$(exthome): $(DESTDIR)$(home)
@@ -113,7 +118,7 @@ $(DESTDIR)$(sproot)/library.so/lib%.so.$(version_M): $(DESTDIR)$(dynlibdir)/lib%
 
 endif
 
-$(DESTDIR)$(sysconfdir)/66/%: skel/% 
+$(DESTDIR)$(skel)/%: skel/% 
 	exec $(INSTALL) -D -m 644 $< $@ 
 	grep -- ^$(@F) < package/modes | { read name mode owner && \
 	if [ x$$owner != x ] ; then chown -- $$owner $@ ; fi && \
@@ -123,9 +128,6 @@ $(DESTDIR)$(sysconfdir)/66/%: skel/%
 			-e "s/@LIVEDIR@/$(subst /,\/,$(livedir))/g" \
 			-e "s/@SKEL@/$(subst /,\/,$(skel))/g" $< > $@
 	
-$(DESTDIR)$(system_log)/% $(DESTDIR)$(service_packager)/% $(DESTDIR)$(service_sys)/% $(DESTDIR)$(service_sysconf)/% : 
-	exec $(INSTALL) -D -m 0755 $< $@
-
 $(DESTDIR)$(dynlibdir)/lib%.so: lib%.so.xyzzy
 	$(INSTALL) -D -m 755 $< $@.$(version) && \
 	$(INSTALL) -l $(@F).$(version) $@.$(version_m) && \
@@ -169,13 +171,13 @@ man: $(ALL_MAN:%.scd=%)
 	sed -e 's,%%livedir%%,$(livedir),' \
 		-e 's,%%system_dir%%,$(system_dir),' \
 		-e 's,%%user_dir%%,$(user_dir),' \
-		-e 's,%%service_sysconf%%,$(service_sysconf),' \
+		-e 's,%%service_sysconf%%,$(service_admconf),' \
 		-e 's,%%service_userconf%%,$(service_userconf),' \
-		-e 's,%%service_packager%%,$(service_packager),g' \
+		-e 's,%%service_packager%%,$(service_system),g' \
 		-e 's,%%user_log%%,$(user_log),' \
-		-e 's,%%service_sys%%,$(service_sys),' \
+		-e 's,%%service_sys%%,$(service_adm),' \
 		-e 's,%%system_log%%,$(system_log),' \
-		-e 's,%%sysconfdir%%,$(sysconfdir),' \
+		-e 's,%%sysconfdir%%,$(skel),' \
 		-e 's,%%service_user%%,$(service_user),' $@.scd | scdoc > $@
 	
 install-man:
