@@ -32,7 +32,7 @@
 
 int parse_service_get_list(stralloc *result, stralloc *list)
 {
-	unsigned int found ;
+	int found ;
 	size_t i = 0, len = list->len ;
 	for (;i < len; i += strlen(list->s + i) + 1)
 	{

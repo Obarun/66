@@ -161,7 +161,7 @@ int ss_resolve_service_isdir(char const *dir, char const *name)
 	return 0 ;
 }
 
-int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,unsigned int *found)
+int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found)
 {
 	int fdsrc, obr, insta ;
 	size_t i, len, namelen = strlen(name), srclen = strlen(src) ;
