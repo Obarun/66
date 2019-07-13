@@ -116,7 +116,7 @@ int ss_resolve_src_path(stralloc *sasrc,char const *sv, ssexec_t *info)
 {
 	int r ;
 	char const *src = 0 ;
-	unsigned int found = 0 ;
+	int found = 0 ;
 	stralloc home = STRALLOC_ZERO ;
 	if (!info->owner) src = SS_SERVICE_ADMDIR ;
 	else
