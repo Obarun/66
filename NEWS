@@ -1,5 +1,35 @@
 Changelog for 66
 
+In 0.2.0.0
+----------
+
+	- New tools:
+		- 66-boot.
+		- 66-scanctl.
+		- 66-shutdown.
+		- 66-shutdownd.
+		- 66-hpr.
+		- 66-env.
+		- 66-parser.
+		- 66-which.
+		- 66-echo.
+		- 66-unmountall.
+		- execl-subuidgid.
+	- New @key field and change on frontend file:
+		- [Logger] section accept a @depends field, @timestamp accept none
+		as value, readiness notification is a default.
+		- @hiercopy in [main] allow to copy any file or directory coming
+		from the directory of the service.
+	- 66-envfile is now deprecated, use execl-envfile in replacement.
+	- 66-enable: add -F, -c, -C features.
+	- 66-svctl is now asynchrone to launch services.
+	- Man pages are available.
+	- Environment variables limitation: maximum 100 files by directory,
+	each file cannot contain more than 4096 bytes or 50 variables.
+	- Syntax to unexport variable with execl-envfile change: the exclamation
+	mark '!' need to be placed at begin of value instead of key. 
+	- Bugs fix
+
 In 0.1.0.1
 ----------
 

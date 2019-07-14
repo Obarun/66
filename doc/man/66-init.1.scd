@@ -59,7 +59,7 @@ need to be necessarily running. This is useful at boot time to initiate an
 early service before starting the _scandir_. Once the _scandir_ 
 starts; see *66-scandir*(1) -u option, the already present services start
 automatically.
-If the _scandir_ is running, you should invoke a *66-scandir -s reload* command
+If the _scandir_ is running, you should invoke a *66-scanctl reload* command
 to inform it about the changes.
 
 ## BUNDLE, ATOMIC SERVICES

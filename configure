@@ -31,7 +31,7 @@ Fine tuning of the installation directories:
   --with-skeleton=DIR              skeleton files directory installation [SYSDIR/66]				
   --with-system-log=DIR            system service log directory[/var/log/66]
     
-  --with-system-dir=DIR            66 tools system working directory[PREFIX/lib/66]
+  --with-system-dir=DIR            66 tools system working directory[/var/lib/66]
   --with-system-service=DIR        system service frontend directory[DATAROOTDIR/66/service]
   
   --with-sysadmin-service=DIR      sysadmin service frontend directory[SYSDIR/66/service]
@@ -51,8 +51,6 @@ Fine tuning of the installation directories:
  For example do not set --with-sysadmin-service=/etc/66/service/sysadmin with system service   
  --with-system-service=/etc/66/service.
  
- If no --prefix option is given, by default --with-system-dir will be /var/lib/66.
-
 Dependencies:
   --with-sysdeps=DIR               use sysdeps in DIR [PREFIX/lib/skalibs/sysdeps]
   --with-include=DIR               add DIR to the list of searched directories for headers
@@ -168,7 +166,7 @@ mandir='$datarootdir/man'
 shebangdir='$bindir'
 livedir='/run/66'
 skel='$sysconfdir/66'
-system_dir='$prefix/lib/66'
+system_dir='/var/lib/66'
 system_log='/var/log/66'
 service_system='$datarootdir/66/service'
 service_adm='$sysconfdir/66/service'
@@ -264,9 +262,6 @@ if test -z "$prefix" ; then
    if test "$datarootdir" = '$prefix/share'; then
     datarootdir=/usr/share
   fi
-  if test "$system_dir" = '$prefix/lib/66' ; then
-	system_dir=/var/lib/66
-  fi
 fi
 
 # Add /etc/66 in the default case
@@ -284,7 +279,7 @@ fi
 
 # Expand installation directories
 stripdir prefix
-for i in exec_prefix dynlibdir libexecdir bindir libdir includedir shebangdir sproot sysdeps system_dir; do
+for i in exec_prefix dynlibdir libexecdir bindir libdir includedir shebangdir sproot sysdeps; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i

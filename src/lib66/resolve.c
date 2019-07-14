@@ -155,15 +155,21 @@ int ss_resolve_src_path(stralloc *sasrc,char const *sv, ssexec_t *info)
 int ss_resolve_service_isdir(char const *dir, char const *name)
 {
 	size_t dirlen = strlen(dir) ;
-	char t[dirlen + 1] ;
+	size_t namelen = strlen(name) ;
+	char t[dirlen + 1 + namelen + 1] ;
+	memcpy(t,dir,dirlen) ;
+	t[dirlen] = '/' ;
+	memcpy(t + dirlen + 1, name, namelen) ;
+	t[dirlen + 1 + namelen] = 0 ;
+	int r = scan_mode(t,S_IFREG) ;
 	if (!basename(t,dir)) return -1 ;
-	if (!strcmp(t,name)) return 1 ;
+	if (!strcmp(t,name) && r) return 1 ;
 	return 0 ;
 }
 
 int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found)
 {
-	int fdsrc, obr, insta ;
+	int fdsrc, obr, insta, r ;
 	size_t i, len, namelen = strlen(name), srclen = strlen(src) ;
 	stralloc sainsta = STRALLOC_ZERO ;
 	stralloc subdir = STRALLOC_ZERO ;
@@ -194,6 +200,7 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found
 			VERBO3 strerr_warnwu3sys("stat ", src, d->d_name) ;
 			goto errdir ;
 		}
+		
 		if (S_ISDIR(st.st_mode))
 		{
 			if (!stralloc_cats(&subdir,src)) goto errdir ;
@@ -208,7 +215,7 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found
 		insta = 0 ;
 		obr = obstr_equal(name,d->d_name) ;
 		insta = insta_check(name) ;
-			
+		
 		if (insta > 0)
 		{	
 			if (!insta_splitname(&sainsta,name,insta,0)) goto errdir ;
@@ -223,16 +230,15 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found
 				VERBO3 strerr_warnwu3sys("stat ", src, d->d_name) ;
 				goto errdir ;
 			}
-			
+
 			if (S_ISDIR(st.st_mode))
 			{
-				int r ;
 				if (!stralloc_cats(&subdir,src)) goto errstra ;
 				if (!stralloc_cats(&subdir,d->d_name)) goto errdir ;
 				if (!stralloc_0(&subdir)) goto errdir ;
-				r = ss_resolve_service_isdir(subdir.s,d->d_name) ;
-				if (r == -1) goto errdir ;
-				if (!r)
+				int rd = ss_resolve_service_isdir(subdir.s,d->d_name) ;
+				if (rd == -1) goto errdir ;
+				if (!rd)
 					r = sastr_dir_get(&satmp,subdir.s,"",S_IFREG|S_IFDIR) ;
 				else r = sastr_dir_get(&satmp,subdir.s,"",S_IFREG) ;
 				if (!r)
@@ -248,10 +254,11 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found
 					char t[subdir.len + 1 + tlen + 2];
 					memcpy(t,subdir.s,subdir.len) ;
 					t[subdir.len] ='/' ;
-					memcpy(t+subdir.len + 1,satmp.s+i,tlen) ;
+					memcpy(t + subdir.len + 1,satmp.s+i,tlen) ;
 					t[subdir.len + 1 + tlen] = '/' ;
 					t[subdir.len + 1 + tlen + 1] = 0 ;
-					int r = scan_mode(t,S_IFDIR) ;
+						
+					r = scan_mode(t,S_IFDIR) ;
 					if (r == 1)
 					{
 						t[subdir.len + 1] = 0 ;
@@ -260,17 +267,16 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found
 					}
 					else
 					{
-						namelen = strlen(satmp.s + i) ;
-						char t[subdir.len + 1 + namelen + 1] ;
+						char t[subdir.len + 1 + tlen + 1] ;
 						memcpy(t,subdir.s,subdir.len) ;
 						t[subdir.len] = '/' ;
-						memcpy(t + subdir.len + 1,name,namelen) ;
-						t[srclen + 1 + namelen] = 0 ;
+						memcpy(t + subdir.len + 1, satmp.s+i, tlen) ;
+						t[subdir.len + 1 + tlen] = 0 ;
 						if (sastr_cmp(sasrc,t) == -1)
 						{
 							if (!stralloc_cats(sasrc,subdir.s)) goto errdir ;
 							if (!stralloc_cats(sasrc,"/")) goto errdir ;
-							if (!stralloc_catb(sasrc,satmp.s+i,strlen(satmp.s+i)+1)) goto errdir ;
+							if (!stralloc_catb(sasrc,satmp.s+i,tlen+1)) goto errdir ;
 						}
 					}
 				}
@@ -281,7 +287,7 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found
 			{
 				char t[srclen + namelen + 1] ;
 				memcpy(t,src,srclen) ;
-				memcpy(t + srclen,name,namelen) ;
+				memcpy(t + srclen, name, namelen) ;
 				t[srclen + namelen] = 0 ;
 				if (sastr_cmp(sasrc,t) == -1)
 				{

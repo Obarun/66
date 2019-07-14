@@ -29,6 +29,9 @@ It display the contain of the file or replace a _key=value_ pair if requested.
 
 
 *-t* _tree_
+	Specifies the _tree_ used to store the parsed _service_ file. This option
+	is mandatory except if a tree was marked as 'current'. See *66-tree*(1).
+
 	Ignored. Provides internal compatibility for for *66* tools.
 
 *-d* _dir_
@@ -42,9 +45,7 @@ It display the contain of the file or replace a _key=value_ pair if requested.
 
 *-r* _key=value_
 	Override an existing _key=value_ pair with the given one. The
-	_key=value_ needs to be double-quoted in case of multiple arguments.
-	In case of double quote backslash *\\* should be used to properly 
-	parse a double-quoted element.
+	_key=value_ needs to be single quoted in case of multiple arguments.
 
 # EXIT STATUS
 

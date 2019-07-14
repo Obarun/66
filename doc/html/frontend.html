@@ -786,7 +786,7 @@ if you want to write your <tt>@execute</tt> field with bash :
     @shebang = "/usr/bin/bash"
     @execute = ( 
         echo "This script displays available services"
-        for i in $(ls /etc/66/service); do
+        for i in $(ls %%service_system%%); do
             echo "daemon : ${i} is available"
         done
     )
@@ -795,7 +795,7 @@ This is an unnecessary example but it shows how to construct this use case. The 
 put your <tt>@shebang</tt> at the beginning of the script and copy the contents of the <tt>@execute</tt> field. So, the resulting file will be :
 <pre>    #!/usr/bin/bash
     echo "This script displays available services"
-    for i in $(ls /etc/66/service); do
+    for i in $(ls %%service_system%%); do
         echo "daemon : ${i} is available"
     done</pre>
 When using this sort of custom function <tt>@runas</tt> has <strong>no effect</strong>. You must define with care what you want to happen in a <em>custom</em>

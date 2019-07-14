@@ -60,8 +60,8 @@ static void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv)
 	stralloc sasv = STRALLOC_ZERO ;
 	stralloc tmp = STRALLOC_ZERO ;
 	ss_resolve_t res = RESOLVE_ZERO ;
-	if (!parse_service_get_list(&tmp,list)) strerr_diefu1x(111,"get services list") ;
-	if (!stralloc_copy(list,&tmp)) strerr_diefu1sys(111,"copy stralloc") ;
+//	if (!parse_service_get_list(&tmp,list)) strerr_diefu1x(111,"get services list") ;
+//	if (!stralloc_copy(list,&tmp)) strerr_diefu1sys(111,"copy stralloc") ;
 	tmp.len = 0 ;
 	size_t i = 0, len = list->len ;
 	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;

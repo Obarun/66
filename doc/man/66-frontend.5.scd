@@ -166,14 +166,16 @@ Valid _key_ names:
 	_mandatory_: *yes*++
 	_syntax_: *bracket*++
 	_valid values_:++
-		Any valid user of the system. If you don't know in advance the name++
-		of the user who will deal with the service, you can use the term++
-		*user*. In that case every user of the system will be able to deal++
-		with the service.
+		Any valid user of the system.
 
-		Be aware that _root is not automatically added_.
-		If you don't declare *root* in this field, you will _not_ be able
-		to use the service even with root privileges.
+	If you don't know in advance the name
+	of the user who will deal with the service, you can use the term
+	*user*. In that case every user of the system will be able to deal
+	with the service.
+
+	Be aware that _root is not automatically added_.++
+	If you don't declare *root* in this field, you will _not_ be able
+	to use the service even with root privileges.
 
 	Without equivalent, this key is unique to 66 tools.
 
@@ -389,11 +391,11 @@ Valid _key_ names:
 	_syntax_: *inline*++
 	_valid value_:++
 		*auto*: creates the service script file as *execline* script.++
-			The corresponding file to start the service will automatically be
+			The corresponding file to start the service will automatically be++
 			written in *execline* format with the *@execute* key _value_.++
 		*custom*: creates the service script file in the language set in the++
 			*@shebang* key _value_.++
-			The corresponding file to start the service will be written
+			The corresponding file to start the service will be written++
 			in the language set in the *@shebang* key _value_.
 
 	Without equivalent, this key is unique to 66 tools.
@@ -506,13 +508,13 @@ Valid _key_ names:++
 	_syntax_: *inline*++
 	_valid value_:++
 		*tai*:++
-			The logged line will be preceded by a TAI64N timestamp (and a
+			The logged line will be preceded by a TAI64N timestamp (and a++
 			space) before being processed by the next action directive.++
 		*iso*++
-			The selected line will be preceded by a ISO 8601 timestamp for
-			combined date and time representing local time according to the
-			systems timezone, with a space (not a 'T') between the date and
-			the time and two spaces after the time, before being processed by 
+			The selected line will be preceded by a ISO 8601 timestamp for++
+			combined date and time representing local time according to the++
+			systems timezone, with a space (not a 'T') between the date and++
+			the time and two spaces after the time, before being processed by++
 			the next action directive.
 
 	Without equivalent, this key is unique to 66 tools.
@@ -530,24 +532,24 @@ changed at compile-time by passing the *--with-service-path=*_DIR_ option to
 Valid _key_ names:
 
 Any *key=value* pair:++
- _mandatory_: *no*++
+	_mandatory_: *no*++
 	_syntax_: *pair*++
 	_valid value_:++
-		You can define any variables that you want to add to the environment
+		You can define any variables that you want to add to the environment++
 		of the service.
 
 ```
     [environment]
-    RUNDIR=/run/openntpd
-    CMD_ARGS=-d -s
+    run_dir=/run/openntpd
+    cmd_args=-d -s
 ```
 
-	The *!* character can be put in front of the _key_*=*_value_ pair like this:
+	The *!* character can be put in front the _value_ like this:
 
 ```
     [environment]
-    !RUNDIR=/run/openntpd
-    !CMD_ARGS=-d -s
+    rund_dir=!/run/openntpd
+    cmd_args=!-d -s
 ```
 
 	This will explicitly *not* set the _value_ of the _key_ for the runtime
@@ -570,7 +572,7 @@ A word about the *@execute* key:
     @shebang = "/usr/bin/bash"
     @execute = ( 
         echo "This script displays available services"
-        for i in $(ls /etc/66/service); do
+        for i in $(ls %%service_packager%%); do
             echo "daemon : ${i} is available"
         done
     )
@@ -582,7 +584,7 @@ A word about the *@execute* key:
 ```
     #!/usr/bin/bash
     echo "This script displays available services"
-    for i in $(ls /etc/66/service); do
+    for i in $(ls %%service_packager%%); do
         echo "daemon : ${i} is available"
     done
 ```
@@ -633,8 +635,8 @@ differences exist:
 ## FILE NAME
 
 ```
-/etc/66/service/dhcpcd
-/etc/66/service/very_long_name
+%%service_packager%%/dhcpcd
+%%service_packager%%/very_long_name
 ```
 
 ## FILE CONTENT
@@ -649,12 +651,12 @@ differences exist:
 
 [start]
 @build = auto
-@execute = ( foreground { mkdir -p  -m 0755 ${RUNDIR} } 
-execl-cmdline -s { ntpd ${CMD_ARGS} } )
+@execute = ( foreground { mkdir -p  -m 0755 ${dir_run} } 
+execl-cmdline -s { ntpd ${cmd_args} } )
 
 [environment]
-!RUNDIR=/run/openntpd
-!CMD_ARGS=-d -s
+dir_run=!/run/openntpd
+cmd_args=!-d -s
 ```
 
 ## tty@
@@ -706,6 +708,7 @@ This prototype contain all valid *section* with all valid _key_*=*_value_ pair.
 @timeout-down =
 @maxdeath = 
 @down-signal =
+@hiercopy = ()
 
 [start]
 @build = auto,custom
@@ -732,6 +735,6 @@ This prototype contain all valid *section* with all valid _key_*=*_value_ pair.
 @execute = ()
 
 [environment]
-MYKEY=myvalue
-!ANOTHERKEY=antohervalue
+MYKEY=!myvalue
+ANOTHERKEY=!antohervalue
 ```

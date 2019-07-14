@@ -197,8 +197,8 @@
 	status : Enabled, nothing to display
 	type : bundle
 	description : Set the hostname and mount filesystem
-	source : /usr/lib/66/service/boot/mount/
-	run at : /run/66/tree/0/boot/servicedirs/00
+	source : %%service_system%%/boot/mount/
+	run at : %%livedir%%/tree/0/boot/servicedirs/00
 	<u>             contents                  </u>
 	├─(0,Enabled,oneshot) system-hostname
 	├─(0,Enabled,oneshot) mount-run
@@ -220,7 +220,7 @@
 	├─(0,Enabled,oneshot) mount-shm
 	│ └─(0,Enabled,oneshot) mount-dev
 	└─(0,Enabled,oneshot) populate-dev
-	└─(0,Enabled,oneshot) mount-dev
+	  └─(0,Enabled,oneshot) mount-dev
 
 
 	</pre>
@@ -232,8 +232,8 @@
 	status : Disabled, up (pid 786) 2380 seconds
 	type : classic
 	description : ntpd daemon
-	source : /etc/66/service/
-	run at : /run/66/scandir/0/ntpd
+	source : %%service_adm%%
+	run at : %%livedir%%/scandir/0/ntpd
 	<u>            dependencies                 </u>
 	└─(785,Disabled,classic) ntpd-log
 	<u>              scripts                    </u>
@@ -244,7 +244,7 @@
 	cmd_args=!-d -s
 	<u>              logger                     </u>
 	logger associated : ntpd-log
-	log destination : /var/log/66/ntpd 
+	log destination : %%system_log%%/ntpd 
 	<u>             log file                    </u>	
 	2019-03-18 06:50:21.749572500  adjtimex returns frequency of 0.000000ppm
 	2019-03-18 06:50:21.764241500  ntp engine ready

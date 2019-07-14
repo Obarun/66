@@ -85,7 +85,7 @@ This works recursively until all necessary dependencies are enabled.</p>
 
 <h2 id="directory">Directory name as <em>service</em></h2>
 
-	<p>When choosing to make a directory be recognised as service the path of the directory must exist by default at <tt>%%service_adm%%</tt>, <tt>%%service_system%%</tt> or <tt>$HOME/%%service_user%%</tt> depending of the owner of the process and the option given at compile time. All <em>service</em> files found in this directory will be enabled. This process is done recursively if a sub-directory is found till it not found other directories. The directory can contain a mixed set of <tt><em>bundle</em></tt>, <tt><em>atomic</em></tt> services where some of those depend on each other. The directory option is not limited to these types though. Any available service type can be part of the set.</p>
+	<p>When choosing to make a directory be recognised as service the path of the directory must exist by default at <tt>%%service_adm%%</tt>, <tt>%%service_system%%</tt> or <tt>$HOME/%%service_user%%</tt> depending of the owner of the process and the option given at compile time. All <em>service</em> files found in this directory will be enabled. This process is done recursively if a sub-directory is found till it not found other directories into the sub one. The directory can contain a mixed set of <tt><em>bundle</em></tt>, <tt><em>atomic</em></tt> services where some of those depend on each other. The directory option is not limited to these types though. Any available service type can be part of the set.</p>
 	<p>A good example is a set of services for the boot process. To achieve 
 	this specific task a large number of <tt><em>oneshot</em></tt> services is used along with some <tt><em>classic</em></tt> 
 	services.</p>

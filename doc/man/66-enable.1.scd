@@ -80,10 +80,12 @@ This works recursively until all necessary dependencies are enabled.
 When choosing to make a directory be recognised as service the path of the
 directory must exist by default at *%%service_sys%%*, *%%service_packager%%*
 or *$HOME/%%service_user%%* depending of the owner of the process.
-All _service_ files found in this directory will be enabled. The directory
-can contain a mixed set of _bundle_ and _atomic_ services where some of
-those depend on each other. The directory option is not limited to these
-types though. Any available service type can be part of the set.
+All _service_ files found in this directory will be enabled. This process
+is done recursively if a sub-directory is found till it not found other
+directories into the sub one. The directory can contain a mixed set of 
+_bundle_ and _atomic_ services where some of those depend on each other. 
+The directory option is not limited to these types though. Any available 
+service type can be part of the set.
 
 A good example is a set of services for the boot process. To achieve 
 this specific task a large number of _oneshot_ services is used along

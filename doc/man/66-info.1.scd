@@ -109,43 +109,52 @@ machine:
 	               boot           
 	Initialized: yes | Current: no
 	Contains:       | Enabled: no
-	├─(0,Enabled,oneshot) filesystem
-	├─(0,Enabled,oneshot) hostname
+	├─(0,Enabled,oneshot) system-hostname
+	├─(0,Enabled,oneshot) mount-run
+	├─(0,Enabled,oneshot) populate-run
+	├─(0,Enabled,oneshot) mount-tmp
+	├─(0,Enabled,oneshot) populate-tmp
+	├─(0,Enabled,oneshot) mount-proc
+	├─(0,Enabled,oneshot) mount-sys
+	├─(0,Enabled,oneshot) populate-sys
+	├─(0,Enabled,oneshot) mount-dev
+	├─(0,Enabled,oneshot) mount-pts
+	├─(0,Enabled,oneshot) mount-shm
+	├─(0,Enabled,oneshot) populate-dev
 	├─(0,Enabled,bundle) 00
-	├─(0,Enabled,oneshot) rofs-cgroups
-	├─(0,Enabled,oneshot) rofs-kernmod
-	├─(421,Enabled,longrun) udevd-udev
-	├─(0,Enabled,oneshot) udevd-udevadm
-	├─(0,Enabled,bundle) rofs-Udevd
-	├─(0,Enabled,oneshot) rofs-console
-	├─(0,Enabled,oneshot) rofs-hardclock
-	├─(0,Enabled,oneshot) checkfs-dmraid
-	├─(0,Enabled,oneshot) checkfs-btrfs
-	├─(0,Enabled,oneshot) checkfs-lvm
-	├─(0,Enabled,oneshot) checkfs-fscheck
-	├─(0,Enabled,bundle) rofs-Checkfs
-	├─(0,Enabled,oneshot) rofs-modules
-	├─(0,Enabled,oneshot) rofs-swap
-	├─(0,Enabled,oneshot) rofs-kernruntime
-	├─(0,Enabled,bundle) all-Rofs
-	├─(0,Enabled,oneshot) rwfs-fsrw
-	├─(0,Enabled,oneshot) rwfs-tmpdir
-	├─(0,Enabled,oneshot) rwfs-iptables
-	├─(0,Enabled,oneshot) rwfs-ip6tables
-	├─(0,Enabled,oneshot) rwfs-loopback
-	├─(0,Enabled,oneshot) rwfs-nofilesystem
-	├─(0,Enabled,oneshot) rwfs-localtime
-	├─(0,Enabled,oneshot) rwfs-random
-	├─(0,Enabled,oneshot) rwfs-logfiles
-	├─(0,Enabled,oneshot) rwfs-end
-	├─(0,Enabled,oneshot) rwfs-dmesglog
-	├─(0,Enabled,oneshot) rwfs-66local
-	├─(0,Enabled,oneshot) rwfs-tmpfiles
-	├─(0,Enabled,bundle) all-Rwfs
-	├─(0,Enabled,oneshot) boot-extra
+	├─(0,Enabled,oneshot) modules-kernel
+	├─(490,Enabled,longrun) udevd
+	├─(0,Enabled,oneshot) udevadm
+	├─(0,Enabled,oneshot) devices-crypttab
+	├─(0,Enabled,oneshot) system-hwclock
+	├─(0,Enabled,oneshot) system-random
+	├─(0,Enabled,oneshot) modules-system
+	├─(0,Enabled,oneshot) system-sysctl
+	├─(0,Enabled,oneshot) system-fontnkey
+	├─(0,Enabled,oneshot) devices-dmraid
+	├─(0,Enabled,oneshot) devices-btrfs
+	├─(0,Enabled,oneshot) devices-lvm
+	├─(0,Enabled,bundle) system-Devices
+	├─(0,Enabled,oneshot) system-fsck
+	├─(0,Enabled,oneshot) mount-fstab
+	├─(0,Enabled,bundle) all-System
+	├─(0,Enabled,oneshot) mount-rw
+	├─(0,Enabled,oneshot) local-iptables
+	├─(0,Enabled,oneshot) local-ip6tables
+	├─(0,Enabled,oneshot) local-loop
+	├─(0,Enabled,oneshot) local-time
+	├─(0,Enabled,oneshot) local-authfiles
+	├─(0,Enabled,oneshot) local-tmpfiles
+	├─(0,Enabled,oneshot) local-rc
+	├─(0,Enabled,oneshot) local-dmesg
+	├─(0,Enabled,bundle) all-Local
+	├─(0,Enabled,oneshot) mount-cgroups
+	├─(0,Enabled,oneshot) mount-swap
+	├─(0,Enabled,oneshot) mount-zfs
+	├─(0,Enabled,bundle) all-Mount
+	├─(0,Enabled,oneshot) all-Runtime
 	├─(0,Enabled,bundle) All
 	└─(254,Enabled,classic) tty12
-
 ```
 
 By default the first service displayed is the first service started, the second
@@ -175,12 +184,31 @@ name of the service:
 	on tree : boot
 	status : Enabled, nothing to display
 	type : bundle
-	description : mount filesystem and set the hostname
-	source : /etc/66/service/boot/
-	run at : /run/66/tree/0/boot/servicedirs/00
-	                contents
-	├─(0,Enabled,oneshot) filesystem
-	└─(0,Enabled,oneshot) hostname
+	description : Set the hostname and mount filesystem
+	source : %%service_packager%%/boot/mount/
+	run at : %%livedir%%/tree/0/boot/servicedirs/00
+	             contents                  
+	├─(0,Enabled,oneshot) system-hostname
+	├─(0,Enabled,oneshot) mount-run
+	├─(0,Enabled,oneshot) populate-run
+	│ └─(0,Enabled,oneshot) mount-run
+	├─(0,Enabled,oneshot) mount-tmp
+	├─(0,Enabled,oneshot) populate-tmp
+	│ └─(0,Enabled,oneshot) mount-tmp
+	├─(0,Enabled,oneshot) mount-proc
+	├─(0,Enabled,oneshot) mount-sys
+	│ └─(0,Enabled,oneshot) mount-proc
+	├─(0,Enabled,oneshot) populate-sys
+	│ ├─(0,Enabled,oneshot) mount-proc
+	│ └─(0,Enabled,oneshot) mount-sys
+	├─(0,Enabled,oneshot) mount-dev
+	│ └─(0,Enabled,oneshot) mount-sys
+	├─(0,Enabled,oneshot) mount-pts
+	│ └─(0,Enabled,oneshot) mount-dev
+	├─(0,Enabled,oneshot) mount-shm
+	│ └─(0,Enabled,oneshot) mount-dev
+	└─(0,Enabled,oneshot) populate-dev
+	  └─(0,Enabled,oneshot) mount-dev
 ```
 
 Let's take another example, the command "sudo 66-info -S -p5 ntpd" displays
@@ -192,19 +220,19 @@ the following:
 	status : Disabled, up (pid 786) 2380 seconds
 	type : classic
 	description : ntpd daemon
-	source : /etc/66/service/
-	run at : /run/66/scandir/0/ntpd
+	source : %%service_sys%%
+	run at : %%livedir%%/scandir/0/ntpd
 	               dependencies
 	└─(785,Disabled,classic) ntpd-log
 	                 scripts
-	start script : foreground { mkdir -p  -m 0755 ${RUNDIR} } 
-	execl-cmdline -s { ntpd ${CMD_ARGS} } 
+	start script : foreground { mkdir -p  -m 0755 ${dir_run} } 
+	execl-cmdline -s { ntpd ${cmd_args} } 
 	               environment
-	!RUNDIR=/run/openntpd
-	!CMD_ARGS=-d -s
+	dir_run=!/run/openntpd
+	cmd_args=!-d -s
 	                 logger
 	logger associated : ntpd-log
-	log destination : /var/log/66/ntpd 
+	log destination : %%system_log%%/ntpd 
 	                log file
 	2019-03-18 06:50:21.749572500  adjtimex returns frequency of 0.000000ppm
 	2019-03-18 06:50:21.764241500  ntp engine ready
@@ -230,8 +258,8 @@ In our case :
 	set an additionnal field called stop script will be displayed with the
 	corresponding command line executed at stop process.
 *environment* : environment informations section. Display the environment
-	variables set at *%%service_sysconf%%/<service_name>* or
-	*$HOME/%%service_sysconf%%/<service_name>* depending of the owner of
+	variables set at *%%service_admconf%%<service_name>* or
+	*$HOME/%%service_userconf%%<service_name>* depending of the owner of
 	the process.
 *logger* : logger informations section.++
 *logger associated* : name of the service logger.++
