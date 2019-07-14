@@ -279,7 +279,9 @@ fi
 
 # Expand installation directories
 stripdir prefix
-for i in exec_prefix dynlibdir libexecdir bindir libdir includedir shebangdir sproot sysdeps; do
+for i in exec_prefix dynlibdir libexecdir bindir libdir includedir sysconfdir \
+		datarootdir mandir shebangdir livedir skel system_dir system_log \
+		service_system service_adm service_admconf sproot sysdeps ; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
