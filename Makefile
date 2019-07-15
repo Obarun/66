@@ -57,13 +57,16 @@ INSTALL := ./tools/install.sh
 ALL_BINS := $(LIBEXEC_TARGETS) $(BIN_TARGETS)
 ALL_LIBS := $(SHARED_LIBS) $(STATIC_LIBS) $(INTERNAL_LIBS)
 ALL_INCLUDES := $(wildcard src/include/$(package)/*.h)
-ALL_DATA := $(wildcard skel/*)
 ALL_MAN := $(wildcard doc/man/*.[1-8].scd)
-ALL_DIR := $(skel) $(system_dir) $(system_log) $(service_system) $(service_adm) $(service_admconf)
+INSTALL_DIR := $(skel) $(system_dir) $(system_log) $(service_system) $(service_adm) $(service_admconf)
+INSTALL_DATA += init.conf
 INSTALL_MAN := $(wildcard doc/man/*.[1-8])
 INSTALL_HTML := $(wildcard doc/html/*.html)
+INSTALL_DATA := skel/halt skel/init skel/ishell skel/poweroff skel/rc.init \
+	skel/rc.shutdown skel/reboot skel/shutdown
+INSTALL_CONF := skel/init.conf
 
-all: $(ALL_LIBS) $(ALL_BINS) $(ALL_INCLUDES) $(ALL_DATA) $(ALL_DIR)
+all: $(ALL_LIBS) $(ALL_BINS) $(ALL_INCLUDES)
 
 clean:
 	@exec rm -f $(ALL_LIBS) $(ALL_BINS) $(wildcard src/*/*.o src/*/*.lo) \
@@ -88,14 +91,16 @@ ifneq ($(strip $(ALL_BINS)$(SHARED_LIBS)),)
 	exec $(STRIP) -R .note -R .comment -R .note.GNU-stack $(ALL_BINS) $(SHARED_LIBS)
 endif
 
-install: install-dynlib install-libexec install-bin install-lib install-include install-data install-dir
+install: install-dynlib install-libexec install-bin install-lib install-include install-data install-dir install-conf
 install-dynlib: $(SHARED_LIBS:lib%.so.xyzzy=$(DESTDIR)$(dynlibdir)/lib%.so)
 install-libexec: $(LIBEXEC_TARGETS:%=$(DESTDIR)$(libexecdir)/%)
 install-bin: $(BIN_TARGETS:%=$(DESTDIR)$(bindir)/%)
 install-lib: $(STATIC_LIBS:lib%.a.xyzzy=$(DESTDIR)$(libdir)/lib%.a)
 install-include: $(ALL_INCLUDES:src/include/$(package)/%.h=$(DESTDIR)$(includedir)/$(package)/%.h)
-install-data: $(ALL_DATA:skel/%=$(DESTDIR)$(skel)/%)
-install-dir: $(ALL_DIR:/%=$(DESTDIR)/%)
+install-data: $(INSTALL_DATA:skel/%=$(DESTDIR)$(skel)/%)
+install-conf: $(INSTALL_CONF:skel/%=$(DESTDIR)$(sysconfdir)/66/%)
+
+install-dir: $(INSTALL_DIR:/%=$(DESTDIR)/%)
 install-html: $(INSTALL_HTML:doc/html/%.html=$(DESTDIR)$(datarootdir)/doc/$(package)/%.html)
 
 $(DESTDIR)/%:
@@ -135,6 +140,14 @@ $(DESTDIR)$(datarootdir)/doc/$(package)/%.html: doc/html/%.html
 		-e 's,%%user_log%%,$(user_log),g' $< > $@
 		
 		
+$(DESTDIR)$(sysconfdir)/66/%: skel/%
+	exec $(INSTALL) -D -m 644 $< $@ 
+	grep -- ^$(@F) < package/modes | { read name mode owner && \
+	if [ x$$owner != x ] ; then chown -- $$owner $@ ; fi && \
+	chmod $$mode $@ ; } && \
+	exec sed -e "s/@LIVEDIR@/$(subst /,\/,$(livedir))/g" \
+			-e "s/@SKEL@/$(subst /,\/,$(skel))/g" $< > $@
+
 $(DESTDIR)$(skel)/%: skel/% 
 	exec $(INSTALL) -D -m 644 $< $@ 
 	grep -- ^$(@F) < package/modes | { read name mode owner && \
