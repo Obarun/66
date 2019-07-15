@@ -14,7 +14,7 @@
  
 #include <string.h>
 #include <sys/types.h>//pid_t
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -74,7 +74,7 @@ static void rebuild_list(ss_resolve_graph_t *graph,ssexec_t *info, int what)
 			}
 		}
 		else
-		{
+		{ 
 			if (!sta.state && what)
 			{
 				VERBO1 strerr_warni2x("Already down: ",name) ;
@@ -152,8 +152,10 @@ static int check_status(genalloc *gares,ssexec_t *info,int signal)
 		ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 		ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
 		if (pres->type == BUNDLE || pres->type == ONESHOT)
-			ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
-			
+		{
+			if (up) ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
+			else ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
+		}	
 		VERBO2 strerr_warni2x("Write state file of: ",name) ;
 		if (!ss_state_write(&sta,state,name))
 		{
@@ -301,7 +303,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		if (!r) strerr_diefu1sys(111,"publish service graph") ;
 		
 		rebuild_list(&graph,info,reverse) ;
-		 
+		
 		pid = send(&graph.sorted,tmp.s,"-d",envp) ;
 		
 		if (waitpid_nointr(pid,&wstat, 0) < 0)
