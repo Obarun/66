@@ -6,7 +6,7 @@
 
 # SYNOPSYS
 
-66-tree [ *-h* ] [ *-v* _verbosity_ ] [ *-n* | *-R* ] [ *-a* | *-d* ] [ *-c* _clone_ ] [ *-E* | *-D* ] [ *-U* ] [ *-C* ] _tree_
+66-tree [ *-h* ] [ *-v* _verbosity_ ] [ -l ] [ *-n* | *-R* ] [ *-a* | *-d* ] [ *-c* _clone_ ] [ *-E* | *-D* ] [ *-U* ] [ *-C* ] _tree_
 
 # DESCRIPTION
 
@@ -26,6 +26,13 @@ are currently available on the system use *66-info*(1) tool.
 	*2* : Also print warning messages.
 	*3* : Also print debugging messages.
 
+*-l* _live_
+	An absolute path. It used in conjunction with *-U* and *-R* options 
+	to specify the live	directory place of _tree_. It has no effects otherwise.
+	Default is *%%livedir%%*. The default can also be changed at compile-time
+	by passing the \--livedir=_live_ option to *./configure*. Should be under
+	a writable filesystem - likely a RAM filesystem.
+	
 *-n*
 	Creates a new empty _tree_. The new _tree_ must not exist on the system.
 
