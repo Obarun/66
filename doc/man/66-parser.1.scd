@@ -30,12 +30,19 @@ An absolute path is expected for _service_ and _destination_.
 *-f*
 	Force. Owerwrite an existing parsing result at _destination_.
 
+*-c*
+	merge it environment configuration file from frontend file.
+
+*-C*
+	overwrite it environment configuration file from frontend file.
 
 # NOTES
 
-*66-parser* will not try to read and parse any services declared under *@depends* key of the given frontend file. This tool is maily intended for debugging purpose and to see the result of a parsing
-process before actually enabling the service on the system. It is further
-recommended to *not have the [environment] section set* when running this tool on any frontend file of any given service. This tool use the exact
-same parser as *66-enable* which by default writes the configuration file to
-*%%service_sysconf%%*/_service_name_. That's mean that a corresponding file
-will be overwritten.
+*66-parser* will not try to read and parse any services declared under *@depends* 
+key of the given frontend file. This tool is maily intended for debugging 
+purpose and to see the result of a parsing process before actually enabling 
+the service on the system. This tool use the exact same parser as *66-enable* 
+which by default writes the configuration file to *%%service_sysconf%%*/_service_name_. 
+That's mean that a corresponding file will be overwritten. To avoid this, 
+it writes the configuration file at _destination/env/_ directory and adjust 
+the resulting *run/finish* file to match the configuration file path.

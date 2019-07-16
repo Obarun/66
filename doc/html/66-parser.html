@@ -24,7 +24,7 @@
 <h2>Interface</h2>
 
 	<pre>
-	66-parser [ -h ] [ -v <em>verbosity</em> ] [ -f ] service destination</em>
+	66-parser [ -h ] [ -v <em>verbosity</em> ] [ -f ] [ -c|C ] service destination</em>
 	</pre>
 
 	<ul>
@@ -54,12 +54,18 @@
 		<li>
 			<tt><b>-f</b></tt> : force. Owerwrite an existing parsing result at <em>destination</em>.
 		</li>
+		<li> 
+			<tt>-c&nbsp;</tt>&nbsp;: merge it environment configuration file from <em>frontend</em> file.
+		</li>
+		<li> 
+			<tt>-C&nbsp;</tt>&nbsp;: overwrite it environment configuration file from <em>frontend</em> file.
+		</li>
 	</ul>
 	
 <h2>Notes</h2>
 
 	<p>
-		66-parser will not try to read and parse any services declared under the <em>@depends</em> key of the given frontend file. This tool is mainly intended for debugging purposes and to see the result of a parsing process before actually enabling the service on the system. It is further recommended to <strong>not have the [environment] section set</strong> when running this tool on any frontend file of any given service. The tool uses the exact same parser as <a href="66-enable.html">66&#8209;enable</a> which by default writes the configuration file to <tt>%%service_admconf%%/<em>service_name</em></tt>. As a consequence any corresponding existing file will be overwritten.
+		66-parser will not try to read and parse any services declared under the <em>@depends</em> key of the given frontend file. This tool is mainly intended for debugging purposes and to see the result of a parsing process before actually enabling the service on the system. The tool uses the exact same parser as <a href="66-enable.html">66&#8209;enable</a> which by default writes the configuration file to <tt>%%service_admconf%%/<em>service_name</em></tt>. As a consequence any corresponding existing file will be overwritten. To avoid this, it writes the configuration file at <em>destination/env/</em> directory and adjust the resulting <tt>run/finish</tt> file to match the configuration file path.
 	</p>
 
 </body>

@@ -794,8 +794,9 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 			if (sv->opts[2] && (exec->build == AUTO))
 			{
 				if (!stralloc_cats(&env,SS_BINPREFIX "execl-envfile ")) retstralloc(0,"write_exec") ;
-				if (!env_resolve_conf(&env,owner)) 
-				{ VERBO3 strerr_warnwu1sys("get path of service configuration file") ; return 0 ; }
+				//if (!env_resolve_conf(&env,owner)) 
+				//{ VERBO3 strerr_warnwu1sys("get path of service configuration file") ; return 0 ; }
+				if (!stralloc_cats(&env,keep.s + sv->srconf)) retstralloc(0,"write_exec") ;
 				if (!stralloc_cats(&env,name)) retstralloc(0,"write_exec") ;
 				if (!stralloc_cats(&env,"\n")) retstralloc(0,"write_exec") ;
 			}

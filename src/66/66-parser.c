@@ -31,7 +31,7 @@
 #include <66/utils.h>
 #include <66/parser.h>
 
-#define USAGE "66-parser [ -h ] [ -v verbosity ] [ -f ] service destination"
+#define USAGE "66-parser [ -h ] [ -v verbosity ] [ -f ] [ -c|C ] service destination"
 
 static inline void info_help (void)
 {
@@ -42,6 +42,8 @@ static inline void info_help (void)
 "	-h: print this help\n" 
 "	-v: increase/decrease verbosity\n"
 "	-f: force to overwrite existing destination\n"
+"	-c: merge it environment configuration file from frontend file\n"
+"	-C: overwrite it environment configuration file from frontend file\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
@@ -90,7 +92,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:f", &l) ;
+			int opt = getopt_args(argc,argv, ">hv:fcC", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
@@ -98,6 +100,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 'h' : info_help(); return 0 ;
 				case 'v' : if (!uint0_scan(l.arg, &VERBOSITY)) exitusage(USAGE) ; break ;
 				case 'f' : force = 1 ; break ;
+				case 'c' : if (conf) exitusage(USAGE) ; conf = 1 ; break ;
+				case 'C' : if (conf) exitusage(USAGE) ; conf = 2 ; break ;
 				default : exitusage(USAGE) ; 
 			}
 		}
@@ -151,6 +155,21 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	srcdirlen = strlen(srcdir) ;
 	service.src = keep.len ;
 	if (!stralloc_catb(&keep,srcdir,srcdirlen + 1)) retstralloc(111,"main") ;
+	/* save and prepare environment file */
+	if (service.opts[2])
+	{
+		stralloc conf = STRALLOC_ZERO ;
+		if (!stralloc_catb(&conf,dst.s,dst.len-1)) retstralloc(111,"main") ;
+		if (!stralloc_cats(&conf,"/env/")) retstralloc(111,"main") ;
+		if (!stralloc_0(&conf)) retstralloc(111,"main") ;
+		if (!scan_mode(conf.s,S_IFDIR))
+		{
+			if (!dir_create_parent(conf.s,0755)) strerr_diefu2sys(111,"environment directory: ",conf.s) ;
+		}
+		service.srconf = keep.len ;
+		if (!stralloc_catb(&keep,conf.s,conf.len + 1)) retstralloc(111,"main") ;
+		stralloc_free(&conf) ;
+	}
 	switch(type)
 	{
 		case CLASSIC:
