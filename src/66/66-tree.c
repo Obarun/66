@@ -24,10 +24,12 @@
 #include <oblibs/directory.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/buffer.h>
+#include <skalibs/bytestr.h>//byte_count
 
 #include <66/config.h>
 #include <66/utils.h>
@@ -41,7 +43,7 @@
 #include <s6-rc/s6rc-servicedir.h>
 #include <s6-rc/s6rc-constants.h>
 
-#define USAGE "66-tree [ -h ] [ -v verbosity ] [ -n|R ] [ -a|d ] [ -c ] [ -E|D ] [ -U ] [ -C clone ] tree" 
+#define USAGE "66-tree [ -h ] [ -v verbosity ] [ -l ] [ -n|R ] [ -a|d ] [ -c ] [ -E|D ] [ -U ] [ -C clone ] tree" 
 
 unsigned int VERBOSITY = 1 ;
 static stralloc reslive = STRALLOC_ZERO ;
@@ -54,6 +56,7 @@ static inline void info_help (void)
 "options :\n"
 "	-h: print this help\n"
 "	-v: increase/decrease verbosity\n"
+"	-l: live directory\n"
 "	-n: create a new empty tree\n"
 "	-a: allow user(s) at tree\n"
 "	-d: deny user(s) at tree\n"
@@ -88,6 +91,15 @@ int sanitize_extra(char const *dst)
 	return r ;
 }
 
+static void inline auto_stralloc(stralloc *sa,char const *str)
+{
+	if (!stralloc_cats(sa,str)) strerr_diefu1sys(111,"append stralloc") ;
+}
+static void inline auto_stralloc0(stralloc *sa)
+{
+	if (!stralloc_0(sa)) strerr_diefu1sys(111,"append stralloc") ;
+	sa->len-- ;
+}
 int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t owner)
 {
 	
@@ -444,196 +456,123 @@ int set_rules(char const *tree,uid_t *uids, size_t uidn,unsigned int what)
 	return 1 ;
 }
 
-int tree_unsupervise(char const *tree, char const *treename,uid_t owner,char const *const *envp)
+void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid_t owner,char const *const *envp)
 {
 	int r, wstat ;
 	pid_t pid ;
 	size_t treenamelen = strlen(treename) ;
 	size_t newlen ;
 	
-	genalloc nclassic = GENALLOC_ZERO ;
-	genalloc nrc = GENALLOC_ZERO ;
-	
-	stralloc dtree = STRALLOC_ZERO ;
-	stralloc livetree = STRALLOC_ZERO ;
-	stralloc live = STRALLOC_ZERO ;
-	stralloc realsym = STRALLOC_ZERO ;
 	stralloc scandir = STRALLOC_ZERO ;
-	ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
-	ss_resolve_t_ref pres ;
-	ss_state_t sta = STATE_ZERO ;
+	stralloc livestate = STRALLOC_ZERO ;
+	stralloc livetree = STRALLOC_ZERO ;
+	stralloc list = STRALLOC_ZERO ;
+	stralloc realsym = STRALLOC_ZERO ;
 	
+	/** set what we need */
 	char prefix[treenamelen + 2] ;
 	memcpy(prefix,treename,treenamelen) ;
 	memcpy(prefix + treenamelen,"-",1) ;
 	prefix[treenamelen + 1] = 0 ;
 	
-	if (!stralloc_cats(&dtree,tree)) retstralloc(111,"tree_unsupervise") ;
-	if (!stralloc_cats(&dtree,SS_SVDIRS)) retstralloc(111,"tree_unsupervise") ;
-	newlen = dtree.len ;
-	if (!stralloc_cats(&dtree,SS_RESOLVE)) retstralloc(111,"tree_unsupervise") ;
-	if (!stralloc_0(&dtree)) retstralloc(111,"tree_unsupervise") ;
-	
-	/** we don't now the live directory because a tree do not depends of a live directory
-	 * we need to check every resolve file to find the resolve live flag*/
-	
-	{
-		genalloc gatmp = GENALLOC_ZERO ;
-		if (!dir_get(&gatmp,dtree.s,SS_MASTER+1,S_IFREG)) strerr_diefu2x(111,"get resolve file of tree: ",treename) ;
-		dtree.len = newlen ;
-		if (!stralloc_0(&dtree)) retstralloc(111,"tree_unsupervise") ;
-		ss_resolve_t res = RESOLVE_ZERO ;
-		for (unsigned int i = 0 ; i < genalloc_len(stralist,&gatmp) ; i++)
-		{
-			char *name = gaistr(&gatmp,i) ;
-			if (!ss_resolve_check(dtree.s,name)) strerr_diefu2x(111,"get resolve file of: ",name) ;
-			if (!ss_resolve_read(&res,dtree.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
-			if (!ss_resolve_graph_build(&graph,&res,dtree.s,0)) strerr_diefu2sys(111,"build graph dependencies of tree: ", treename) ;
-		}
-		ss_resolve_free(&res) ;
-		genalloc_deepfree(stralist,&gatmp,stra_free) ;
-	}
-	//if (!ss_resolve_graph_src(&graph,dtree.s,0,2)) strerr_diefu2x(111,"resolve source of graph for tree: ",treename) ;
-	/** should be always true because of Master existence at least*/
-	r= ss_resolve_graph_publish(&graph,0) ;
-	if (r <= 0) 
-	{
-		if (r < 0) strerr_dief1x(110,"cyclic graph detected") ;
-		strerr_diefu1sys(111,"publish service graph") ;
-	}
-	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&graph.sorted) ; i++) 
-	{
-		int st = 0 ;
-		pres = &genalloc_s(ss_resolve_t,&graph.sorted)[i] ;
-		char *string = pres->sa.s ;
-		char *name = string + pres->name ;
-		char *state = string + pres->state ;
-		if (ss_state_check(state,name))
-		{
-			if (!ss_state_read(&sta,state,name)) strerr_diefu2sys(111,"read state file of: ",name) ;
-			st = sta.init ;
-		}
+	auto_stralloc(&scandir,live->s) ;
+	r = set_livescan(&scandir,owner) ;
+	if (!r) strerr_diefu1sys(111,"set livescan directory") ;
 		
-		if (pres->type == CLASSIC && !st) 
-		{
-			if (!stra_add(&nclassic,name)) strerr_diefu2sys(111,"append services selection with: ",name) ;
-		}
-		else if (pres->type >= BUNDLE && !st)
-		{ 
-			if (!stra_add(&nrc,name)) strerr_diefu2sys(111,"append services selection with: ",name) ;
-		}
-		
-		if (pres->live && !reslive.len)
-		{
-			if (!stralloc_cats(&live,pres->sa.s + pres->live)) retstralloc(111,"tree_unsupervise") ;
-			if (!stralloc_0(&live)) retstralloc(111,"tree_unsupervise") ;
-			if (!stralloc_cats(&scandir,pres->sa.s + pres->live)) retstralloc(111,"tree_unsupervise") ;
-			if (!stralloc_0(&scandir)) retstralloc(111,"tree_unsupervise") ;
-			if (!stralloc_cats(&livetree,pres->sa.s + pres->live)) retstralloc(111,"tree_unsupervise") ;
-			if (!stralloc_0(&livetree)) retstralloc(111,"tree_unsupervise") ;
-			if (!stralloc_cats(&reslive,pres->sa.s + pres->state)) retstralloc(111,"tree_unsupervise") ;
-			if (!stralloc_0(&reslive)) retstralloc(111,"tree_unsupervise") ;
-		}
-	}
-	ss_resolve_graph_free(&graph) ;
+	auto_stralloc(&livestate,live->s) ;
+	r = set_livestate(&livestate,owner) ;
+	if (!r) strerr_diefu1sys(111,"set livestate directory") ;
 	
+	auto_stralloc(&livetree,live->s) ;
 	r = set_livetree(&livetree,owner) ;
-	if (!r) retstralloc(111,"tree_unsupervise") ;
-	if (!stralloc_cats(&livetree,"/")) retstralloc(111,"tree_unsupervise") ;
-	if (!stralloc_0(&livetree)) retstralloc(111,"tree_unsupervise") ;
-	newlen = livetree.len - 1 ;
-	if (!set_livescan(&scandir,owner)) strerr_diefu1sys(111,"set scandir") ;
-
-	if ((reslive.len && scan_mode(reslive.s,S_IFDIR)) || (db_find_compiled_state(livetree.s,treename) >=0) || genalloc_len(stralist,&nclassic))
-	{
-		if 	(genalloc_len(stralist,&nrc) || genalloc_len(stralist,&nclassic))
-		{ 
-			char const *newargv[9 + genalloc_len(stralist,&nrc) + genalloc_len(stralist,&nclassic) ] ;
-			unsigned int m = 0 ;
-			char fmt[UINT_FMT] ;
-			fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
-					
-			newargv[m++] = SS_BINPREFIX "66-stop" ;
-			newargv[m++] = "-v" ;
-			newargv[m++] = fmt ;
-			newargv[m++] = "-l" ;
-			newargv[m++] = live.s ;
-			newargv[m++] = "-t" ;
-			newargv[m++] = treename ;
-			newargv[m++] = "-u" ;
-					
-			for (unsigned int i=0 ; i < genalloc_len(stralist,&nrc) ; i++)
-				newargv[m++] = gaistr(&nrc,i) ;
-
-			for (unsigned int i=0 ; i < genalloc_len(stralist,&nclassic) ; i++)
-				newargv[m++] = gaistr(&nclassic,i) ;
-
-			newargv[m++] = 0 ;
-						
-			pid = child_spawn0(newargv[0],newargv,envp) ;
-			if (waitpid_nointr(pid,&wstat, 0) < 0)
-			{
-				VERBO3 strerr_warnwu2sys("wait for ",newargv[0]) ;
-				return 0 ;
-			}
-			if (wstat) strerr_diefu1sys(111,"stop services") ;
-		}	
-		if (db_find_compiled_state(livetree.s,treename) >=0)
-		{	
-			genalloc_deepfree(stralist,&nrc,stra_free) ;
-			livetree.len = newlen ;
-			if (!stralloc_cats(&livetree,treename)) retstralloc(111,"tree_unsupervise") ;
-			if (!stralloc_cats(&livetree,SS_SVDIRS)) retstralloc(111,"tree_unsupervise") ;
-			if (!stralloc_0(&livetree)) retstralloc(111,"tree_unsupervise") ;
-			if (!dir_get(&nrc,livetree.s,"",S_IFDIR)) strerr_diefu2sys(111,"append selection selection with: ",livetree.s) ;
-			livetree.len = newlen ;
-			if (!stralloc_cats(&livetree,treename)) retstralloc(111,"tree_unsupervise") ;
-			if (!stralloc_0(&livetree)) retstralloc(111,"tree_unsupervise") ;
-			/** unsupervise service into the scandir */
-			for (unsigned int i=0 ; i < genalloc_len(stralist,&nrc) ;i++)
-				s6rc_servicedir_unsupervise(livetree.s,prefix,gaistr(&nrc,i),0) ;
-				
-			r = sarealpath(&realsym,livetree.s) ;
-			if (r < 0 ) strerr_diefu2sys(111,"find realpath of: ",livetree.s) ; 
-			if (!stralloc_0(&realsym)) retstralloc(111,"tree_unsupervise") ;
-			if (rm_rf(realsym.s) < 0) strerr_diefu2sys(111,"remove ", realsym.s) ;
-			if (rm_rf(livetree.s) < 0) strerr_diefu2sys(111,"remove ", livetree.s) ;
-			livetree.len = newlen ;
-			if (!stralloc_cats(&livetree,treename)) retstralloc(111,"tree_unsupervise") ;
-			if (!stralloc_0(&livetree)) retstralloc(111,"tree_unsupervise") ;	
-			unlink_void(livetree.s) ;
-		}
-		
-		if (scandir_send_signal(scandir.s,"an") <= 0) strerr_diefu2sys(111,"reload scandir: ",scandir.s) ;
-		if (dir_search(reslive.s,"init",S_IFREG)) 
-		{
-			newlen = reslive.len - 1 ;
-			reslive.len--; 
-			if (!stralloc_cats(&reslive,"/init")) retstralloc(111,"tree_unsupervise") ;
-			if (!stralloc_0(&reslive)) retstralloc(111,"tree_unsupervise") ;
-			if (rm_rf(reslive.s) < 0) strerr_diefu2sys(111,"remove: ",reslive.s) ;
-			reslive.len = newlen ;
-			if (!stralloc_0(&reslive)) retstralloc(111,"tree_unsupervise") ;
-		}
-		/** remove /run/66/state/uid/treename directory */
-		if (reslive.len && (scan_mode(reslive.s,S_IFDIR)))
-		{
-			VERBO2 strerr_warni3x("delete ",reslive.s," ..." ) ;
-			if (rm_rf(reslive.s) < 0) strerr_diefu2sys(111,"delete ",reslive.s) ;
-		}
-		VERBO1 strerr_warni2x("Unsupervised successfully tree: ",treename) ;
+	if (!r) strerr_diefu1sys(111,"set livetree directory") ;
+	auto_stralloc(&livetree,"/") ;
+	newlen = livetree.len ;
+	auto_stralloc0(&livetree) ;
+	
+	auto_stralloc(&livestate,"/") ;
+	auto_stralloc(&livestate,treename) ;
+	auto_stralloc0(&livestate) ;
+	/** works begin */
+	if (scan_mode(livestate.s,S_IFDIR)) 
+		if (!sastr_dir_get(&list,livestate.s,SS_LIVETREE_INIT,S_IFREG)) strerr_diefu2x(111,"get service list at: ",livestate.s) ;
+	
+	if (!list.len) 
+	{ 
+		VERBO1 strerr_warni2x("Not supervised: ",livestate.s) ;
+		return ;
 	}
-	else VERBO1 strerr_warni2x("Not supervised: ",treename) ;
 	
-	genalloc_deepfree(stralist,&nrc,stra_free) ;
-	genalloc_deepfree(stralist,&nclassic,stra_free) ;
-	stralloc_free(&livetree) ; 
-	stralloc_free(&dtree) ; 
-	stralloc_free(&live) ;
-	stralloc_free(&realsym) ; 
+	{ 
+		size_t i = 0, len = byte_count(list.s,list.len,'\0') ;
+		char const *newargv[9 + len + 1] ;
+		unsigned int m = 0 ;
+		char fmt[UINT_FMT] ;
+		fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
+				
+		newargv[m++] = SS_BINPREFIX "66-stop" ;
+		newargv[m++] = "-v" ;
+		newargv[m++] = fmt ;
+		newargv[m++] = "-l" ;
+		newargv[m++] = live->s ;
+		newargv[m++] = "-t" ;
+		newargv[m++] = treename ;
+		newargv[m++] = "-u" ;
+		
+		len = list.len ;
+		for (;i < len; i += strlen(list.s + i) + 1)
+			newargv[m++] = list.s+i ;
+		
+		newargv[m++] = 0 ;
+						
+		pid = child_spawn0(newargv[0],newargv,envp) ;
+		if (waitpid_nointr(pid,&wstat, 0) < 0)
+			VERBO3 strerr_warnwu2sys("wait for ",newargv[0]) ;
+		/** we don't want to die here, we try we can do to stop correctly
+		 * service list, in any case we want to unsupervise */
+		if (wstat) VERBO3 strerr_warnwu1sys("stop services") ;
+	}	
+	
+	if (db_find_compiled_state(livetree.s,treename) >=0)
+	{	
+		list.len = 0 ;
+		livetree.len = newlen ;
+		auto_stralloc(&livetree,treename) ;
+		auto_stralloc(&livetree,SS_SVDIRS) ;
+		auto_stralloc0(&livetree) ;
+		if (!sastr_dir_get(&list,livetree.s,"",S_IFDIR)) strerr_diefu2x(111,"get service list at: ",livetree.s) ;
+		livetree.len = newlen ;
+		auto_stralloc(&livetree,treename) ;
+		auto_stralloc0(&livetree) ;
+		
+		size_t i = 0, len = list.len ;
+		for (;i < len; i += strlen(list.s + i) + 1)
+			s6rc_servicedir_unsupervise(livetree.s,prefix,list.s + i,0) ;
+			
+		r = sarealpath(&realsym,livetree.s) ;
+		if (r < 0 ) strerr_diefu2sys(111,"find realpath of: ",livetree.s) ; 
+		auto_stralloc0(&realsym) ;
+		if (rm_rf(realsym.s) < 0) strerr_diefu2sys(111,"remove ", realsym.s) ;
+		if (rm_rf(livetree.s) < 0) strerr_diefu2sys(111,"remove ", livetree.s) ;
+		livetree.len = newlen ;
+		auto_stralloc(&livetree,treename) ;
+		auto_stralloc0(&livetree) ;
+		/** remove the symlink itself */
+		unlink_void(livetree.s) ;
+	}
+		
+	if (scandir_send_signal(scandir.s,"an") <= 0) strerr_diefu2sys(111,"reload scandir: ",scandir.s) ;
+	/** remove /run/66/state/uid/treename directory */
+	VERBO2 strerr_warni3x("delete ",livestate.s," ..." ) ;
+	if (rm_rf(livestate.s) < 0) strerr_diefu2sys(111,"delete ",livestate.s) ;
+	
+	VERBO1 strerr_warni2x("Unsupervised successfully tree: ",treename) ;
+	
 	stralloc_free(&scandir) ; 
-	
-	return 1 ;
+	stralloc_free(&livestate) ; 
+	stralloc_free(&livetree) ; 
+	stralloc_free(&list) ;
+	stralloc_free(&realsym) ;  
 }
 
 int main(int argc, char const *const *argv,char const *const *envp)
@@ -653,6 +592,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc base = STRALLOC_ZERO ;
 	stralloc dstree = STRALLOC_ZERO ;
 	stralloc clone = STRALLOC_ZERO ;
+	stralloc live = STRALLOC_ZERO ;
 	
 	current = create = allow = deny = enable = disable = remove = snap = unsupervise = 0 ;
 	
@@ -663,13 +603,16 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		for (;;)
 		{
 			
-			int opt = getopt_args(argc,argv, "hv:na:d:cEDRC:U", &l) ;
+			int opt = getopt_args(argc,argv, "hv:l:na:d:cEDRC:U", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
 			{
 				case 'h' : info_help(); return 0 ;
 				case 'v' : if (!uint0_scan(l.arg, &VERBOSITY)) exitusage(USAGE) ; break ;
+				case 'l' : 	if (!stralloc_cats(&live,l.arg)) retstralloc(111,"main") ;
+							if (!stralloc_0(&live)) retstralloc(111,"main") ;
+							break ;
 				case 'n' : create = 1 ; break ;
 				case 'a' : if (!scan_uidlist_wdelim(l.arg,auids,',')) exitusage(USAGE) ; 
 						   auidn = auids[0] ;
@@ -700,6 +643,10 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	owner = MYUID ;
 		
 	if (!set_ownersysdir(&base, owner)) strerr_diefu1sys(111, "set owner directory") ;
+	
+	r = set_livedir(&live) ;
+	if (!r) exitstralloc("main:livedir") ;
+	if(r < 0) strerr_dief3x(111,"livedir: ",live.s," must be an absolute path") ;
 	
 	VERBO2 strerr_warni3x("sanitize ",tree," ..." ) ;
 	r = sanitize_tree(&dstree,base.s,tree,owner) ;
@@ -780,7 +727,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (!tree_switch_current(base.s,tree)) strerr_diefu3sys(111,"set ",dstree.s," as default") ;
 		VERBO1 strerr_warni3x("Set successfully ",tree," as default") ;
 	}
-	if (unsupervise) tree_unsupervise(dstree.s,tree,owner,envp) ;
+	if (unsupervise) tree_unsupervise(&live,dstree.s,tree,owner,envp) ;
 	
 	if (remove)
 	{
