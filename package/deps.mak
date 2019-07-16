@@ -20,7 +20,7 @@ src/66/66-disable.o src/66/66-disable.lo: src/66/66-disable.c src/include/66/sse
 src/66/66-enable.o src/66/66-enable.lo: src/66/66-enable.c src/include/66/ssexec.h
 src/66/66-env.o src/66/66-env.lo: src/66/66-env.c src/include/66/ssexec.h
 src/66/66-hpr.o src/66/66-hpr.lo: src/66/66-hpr.c src/include/66/config.h src/include/66/hpr.h
-src/66/66-info.o src/66/66-info.lo: src/66/66-info.c src/include/66/constants.h src/include/66/enum.h src/include/66/resolve.h src/include/66/tree.h src/include/66/utils.h
+src/66/66-info.o src/66/66-info.lo: src/66/66-info.c src/include/66/constants.h src/include/66/enum.h src/include/66/environ.h src/include/66/resolve.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-init.o src/66/66-init.lo: src/66/66-init.c src/include/66/ssexec.h
 src/66/66-parser.o src/66/66-parser.lo: src/66/66-parser.c src/include/66/parser.h src/include/66/utils.h
 src/66/66-scanctl.o src/66/66-scanctl.lo: src/66/66-scanctl.c src/include/66/utils.h
@@ -39,8 +39,9 @@ src/extra-tools/66-umountall.o src/extra-tools/66-umountall.lo: src/extra-tools/
 src/extra-tools/66-which.o src/extra-tools/66-which.lo: src/extra-tools/66-which.c
 src/extra-tools/66-writenv.o src/extra-tools/66-writenv.lo: src/extra-tools/66-writenv.c
 src/extra-tools/execl-cmdline.o src/extra-tools/execl-cmdline.lo: src/extra-tools/execl-cmdline.c
-src/extra-tools/execl-envfile.o src/extra-tools/execl-envfile.lo: src/extra-tools/execl-envfile.c src/include/66/environ.h src/include/66/parser.h
+src/extra-tools/execl-envfile.o src/extra-tools/execl-envfile.lo: src/extra-tools/execl-envfile.c src/include/66/constants.h src/include/66/environ.h src/include/66/parser.h
 src/extra-tools/execl-subuidgid.o src/extra-tools/execl-subuidgid.lo: src/extra-tools/execl-subuidgid.c src/include/66/environ.h src/include/66/utils.h
+src/extra-tools/execl-testncreate.o src/extra-tools/execl-testncreate.lo: src/extra-tools/execl-testncreate.c
 src/lib66/backup_cmd_switcher.o src/lib66/backup_cmd_switcher.lo: src/lib66/backup_cmd_switcher.c src/include/66/constants.h src/include/66/enum.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/backup_make_new.o src/lib66/backup_make_new.lo: src/lib66/backup_make_new.c src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/tree.h src/include/66/utils.h
 src/lib66/backup_realpath_sym.o src/lib66/backup_realpath_sym.lo: src/lib66/backup_realpath_sym.c src/include/66/constants.h src/include/66/enum.h src/include/66/utils.h
@@ -51,7 +52,7 @@ src/lib66/db_get_permissions.o src/lib66/db_get_permissions.lo: src/lib66/db_get
 src/lib66/db_ok.o src/lib66/db_ok.lo: src/lib66/db_ok.c src/include/66/constants.h
 src/lib66/db_switch_to.o src/lib66/db_switch_to.lo: src/lib66/db_switch_to.c src/include/66/backup.h src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/db_update.o src/lib66/db_update.lo: src/lib66/db_update.c src/include/66/constants.h src/include/66/db.h src/include/66/ssexec.h src/include/66/utils.h
-src/lib66/environ.o src/lib66/environ.lo: src/lib66/environ.c src/include/66/environ.h src/include/66/parser.h src/include/66/utils.h
+src/lib66/environ.o src/lib66/environ.lo: src/lib66/environ.c src/include/66/config.h src/include/66/constants.h src/include/66/environ.h src/include/66/parser.h src/include/66/utils.h
 src/lib66/get_enum.o src/lib66/get_enum.lo: src/lib66/get_enum.c src/include/66/enum.h
 src/lib66/get_uidgid.o src/lib66/get_uidgid.lo: src/lib66/get_uidgid.c
 src/lib66/get_userhome.o src/lib66/get_userhome.lo: src/lib66/get_userhome.c src/include/66/utils.h
@@ -59,9 +60,9 @@ src/lib66/hpr_shutdown.o src/lib66/hpr_shutdown.lo: src/lib66/hpr_shutdown.c src
 src/lib66/hpr_wall.o src/lib66/hpr_wall.lo: src/lib66/hpr_wall.c src/include/66/hpr.h
 src/lib66/instance.o src/lib66/instance.lo: src/lib66/instance.c src/include/66/utils.h
 src/lib66/parser.o src/lib66/parser.lo: src/lib66/parser.c src/include/66/enum.h src/include/66/parser.h src/include/66/utils.h
-src/lib66/parser_enabled.o src/lib66/parser_enabled.lo: src/lib66/parser_enabled.c src/include/66/constants.h src/include/66/parser.h src/include/66/resolve.h src/include/66/utils.h
+src/lib66/parser_enabled.o src/lib66/parser_enabled.lo: src/lib66/parser_enabled.c src/include/66/constants.h src/include/66/environ.h src/include/66/parser.h src/include/66/resolve.h src/include/66/utils.h
 src/lib66/parser_utils.o src/lib66/parser_utils.lo: src/lib66/parser_utils.c src/include/66/config.h src/include/66/constants.h src/include/66/enum.h src/include/66/environ.h src/include/66/parser.h src/include/66/utils.h
-src/lib66/parser_write.o src/lib66/parser_write.lo: src/lib66/parser_write.c src/include/66/constants.h src/include/66/enum.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/utils.h
+src/lib66/parser_write.o src/lib66/parser_write.lo: src/lib66/parser_write.c src/include/66/constants.h src/include/66/enum.h src/include/66/environ.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/rc_init.o src/lib66/rc_init.lo: src/lib66/rc_init.c src/include/66/constants.h src/include/66/rc.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/state.h src/include/66/utils.h
 src/lib66/rc_manage.o src/lib66/rc_manage.lo: src/lib66/rc_manage.c src/include/66/constants.h src/include/66/db.h src/include/66/rc.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/state.h src/include/66/utils.h
 src/lib66/rc_send.o src/lib66/rc_send.lo: src/lib66/rc_send.c src/include/66/rc.h src/include/66/resolve.h src/include/66/ssexec.h

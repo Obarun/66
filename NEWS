@@ -1,5 +1,11 @@
 Changelog for 66
 
+In 0.2.0.2
+
+	- Fix the written of user configuration file 
+	- Fix oneshot and bundle status check
+	- Add -l features to 66-tree, rewrite tree_unsupervise function
+	
 In 0.2.0.0
 ----------
 
