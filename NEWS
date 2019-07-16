@@ -1,6 +1,12 @@
 Changelog for 66
 
+In 0.2.0.3
+----------
+
+	- 66-parser: Fix write of configuration file, add -c|C features 
+	
 In 0.2.0.2
+----------
 
 	- Fix the written of user configuration file 
 	- Fix oneshot and bundle status check
