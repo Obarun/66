@@ -692,12 +692,11 @@ int write_common(sv_alltype *sv, char const *dst,unsigned int conf)
 	/** environment */
 	if (sv->opts[2])
 	{
-		// dst is always SS_SERVICE_ADMCONFDIR
 		char *dst = keep.s + sv->srconf ;
 		size_t dlen ;
-		dlen = strlen(SS_SERVICE_ADMCONFDIR) ;
+		dlen = strlen(dst) ;
 		char copy[dlen + namelen + 1] ;
-		memcpy(copy,SS_SERVICE_ADMCONFDIR,dlen) ;
+		memcpy(copy,dst,dlen) ;
 		memcpy(copy + dlen, name,namelen) ;
 		copy[dlen + namelen] = 0 ;
 		// copy config file from upstream in sysadmin
@@ -715,8 +714,8 @@ int write_common(sv_alltype *sv, char const *dst,unsigned int conf)
 		{
 			stralloc salist = STRALLOC_ZERO ;
 			//merge config from upstream to sysadmin
-			if (!file_readputsa(&salist,SS_SERVICE_ADMCONFDIR,name)) strerr_diefu3sys(111,"read: ",dst,name) ;
-			if (!env_merge_conf(SS_SERVICE_ADMCONFDIR,name,&salist,&sv->saenv,conf))
+			if (!file_readputsa(&salist,dst,name)) strerr_diefu3sys(111,"read: ",dst,name) ;
+			if (!env_merge_conf(dst,name,&salist,&sv->saenv,conf))
 			{
 				VERBO3 strerr_warnwu1x("merge environment file") ;
 				return 0 ;
