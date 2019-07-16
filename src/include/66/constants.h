@@ -41,6 +41,8 @@
 #define SS_SVDIRS_LEN (sizeof SS_SVDIRS - 1)
 #define SS_BACKUP "/backup"
 #define SS_BACKUP_LEN (sizeof SS_BACKUP - 1)
+#define SS_LIVETREE_INIT "init"
+#define SS_LIVETREE_INIT_LEN (sizeof SS_LIVETREE_INIT - 1)
 
 /**service dir*/
 #define SS_SVC "/svc"
