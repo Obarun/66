@@ -200,7 +200,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	
 	size_t n = env_len(envp) + 1 + byte_count(modifs.s,modifs.len,'\0') ;
 	if (n > MAXENV) strerr_dief1x(111,"environment string too long") ;
-	char const *newenv[n] ;
+	char const *newenv[n + 1] ;
 	if (!env_merge (newenv, n ,envp,env_len(envp),tmp, modifs.len)) strerr_diefu1sys(111,"build environment") ;
 	
 	for (i = 0 ; i < genalloc_len(diuint32,&GAENV) ; i++)

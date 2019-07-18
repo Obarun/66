@@ -111,7 +111,7 @@ int env_clean(stralloc *src)
 int env_split_one(char *line,genalloc *ga,stralloc *sa)
 {
 	size_t slen = strlen(line) ;
-	char s[slen] ;
+	char s[slen + 1] ;
 	memcpy(s,line,slen) ;
 	s[slen] = 0 ;
 
@@ -131,9 +131,7 @@ int env_split_one(char *line,genalloc *ga,stralloc *sa)
 	if (!obstr_trim(v,'\n')) return 0 ;
 	tmp.right = sa->len ;
 	if(!stralloc_catb(sa,v,strlen(v)+1)) return 0 ;
-	
 	if (!genalloc_append(diuint32,ga,&tmp)) return 0 ;
-		
 	return 1 ;
 }
 
@@ -149,7 +147,6 @@ int env_split(genalloc *gaenv,stralloc *saenv,stralloc *src)
 		if (!*line) continue ;
 		tmp.len = 0 ;
 		if (!stralloc_cats(&tmp,line)) goto err ;
-			
 		/** skip commented line or empty line*/
 		if (env_clean(&tmp) < 0) continue ;
 		if (!stralloc_0(&tmp)) goto err ;
