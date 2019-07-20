@@ -39,6 +39,12 @@ explicitely set then the user of the current process will be used instead.
 	\--livedir=_live_ option to *./configure*. Should be under a writable
 	filesystem - likely a RAM filesystem.
 
+*-d* _notif_
+	notify readiness on file descriptor _notif_. When scandir is ready to 
+	accept commands from *66-scanctl*, it will write a newline to _notif_.
+	_notif_ cannot be lesser than 3. By default, no notification is sent.
+	if *-b* is set, this option have no effects.
+
 *-t* _rescan_
 	Perform a scan every _rescan_ milliseconds. If _rescan_ is set to *0*
 	(the default), automatic scans are never performed after the first
