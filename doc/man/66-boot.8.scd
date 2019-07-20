@@ -25,6 +25,11 @@
 *-m*
 	Umount the basename of the _LIVE_ directory set into the _init.conf_
 	skeleton file and mount a tmpfs on it. This is the default.
+	Umount the basename of the _LIVE_ directory set into the _init.conf_
+	skeleton file if it already mounted and mount a tmpfs on it. By default, 
+	the _LIVE_ basename is mounted if it not already a valid mountpoint. 
+	Otherwise without the *-m* option, it does nothing.
+
 
 *-l* _log_user_
 	The catch-all logger will run as the _log_user_ user. Default is *root*.
@@ -58,9 +63,9 @@ When booting a system, *66-boot* performs the following operations:
 - It mounts a devtmpfs on */dev*, if requested.
 - It uses */dev/null* as its stdin (instead of */dev/console*).
 	- *dev/console* is still used, for now, as stdout and stderr.
-- It check the _LIVE_ basename as valid mountpoint and unmount it in such
-  case then mount a tmpfs on it if requested. If _LIVE_ basename is not
-  valid mountpoint it mount directly a tmpfs on it.
+- It checks if the _LIVE_ basename is a valid mountpoint and if so mounts it.
+  If requested, it unmounts if the _LIVE_ basename is a valid mountpoint
+  and performs a mount.
 - It create _LIVE_ directory invocating
   "66-scandir -v _VERBOSITY_ -l _LIVE_ -b -c -s _skel_" more "-L user_log" if
   requested.

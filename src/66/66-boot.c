@@ -299,17 +299,17 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (!opened)
 		if (open("/dev/null", O_RDONLY)) sulogin("open: ", "/dev/null") ;
 	
-	if (tmpfs)
+	char fs[livelen + 1] ;
+	split_tmpfs(fs,live) ;
+	r = is_mnt(fs) ;
+	
+	if (!r || tmpfs)
 	{
-		char fs[livelen + 1] ;
-		split_tmpfs(fs,live) ;
-		r = is_mnt(fs) ;
-		if (r)
+		if (r && tmpfs)
 		{
 			strerr_warni2x("Umount: ",fs) ;
 			if (umount(fs) == -1) sulogin ("umount: ",fs ) ;
 		}
-		
 		strerr_warni2x("Mount: ",fs) ;
 		if (mount("tmpfs", fs, "tmpfs", MS_NODEV | MS_NOSUID, "mode=0755") == -1) 
 			sulogin("mount: ",fs) ;
