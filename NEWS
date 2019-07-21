@@ -1,5 +1,13 @@
 Changelog for 66
 
+In 0.2.0.4
+----------
+	
+	- Bugs fix on memory allocation
+	- Respect policies decision of user: 
+		Remove -m option from 66-boot on init file
+	- Add -d feature to 66-scandir 
+
 In 0.2.0.3
 ----------
 
