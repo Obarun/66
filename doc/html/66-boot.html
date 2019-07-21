@@ -43,7 +43,8 @@
 		</li>
 		 
 		<li> 
-			<tt><b>-m</b></tt> : umount the basename of the <em>LIVE</em> directory set in the <tt>init.conf</tt> skeleton file and mount a tmpfs on it. This is the default.
+			<tt><b>-m</b></tt> : umount the basename of the <em>LIVE</em> directory set into the <tt>init.conf</tt> skeleton file if it already mounted and mount a tmpfs on it.
+			By default, the <em>LIVE</em> basename is mounted if it not already a valid mountpoint. Otherwise without the <tt>-m</tt> option, it does nothing.
 		</li>
 			 
 		<li> 
@@ -88,7 +89,6 @@
 		<li>
 			It becomes a session leader.
 		</li>
-
 		<li>
 			It mounts a devtmpfs on <em>dev</em>, if requested.
 		</li>
@@ -98,7 +98,7 @@
 		</li>
 
 		<li>
-			It checks if the <em>LIVE</em> basename is a valid mountpoint and if so unmounts it. If requested it then mounts a tmpfs on top. If the <em>LIVE</em> basename is not a valid mountpoint it directly mounts tmpfs.
+			It checks if the <em>LIVE</em> basename is a valid mountpoint and if so mounts it. If requested, it unmounts if the <em>LIVE</em> basename is a valid mountpoint and performs a mount.
 		</li>
 
 		<li>
@@ -247,7 +247,7 @@
 		<br><hr>
 
 	    <p>
-	    	The following skeleton files are called to execute their corresponding power related functions and are safe wrappers that accept their corresponding command options. They <strong>should be copied or symlinked</strong> to the binary directory of the system.
+	    	The following skeleton files are called to execute their corresponding power related functions and are safe wrappers that accept their corresponding command options. They <b>should be copied or symlinked</b> to the binary directory of the system.
 	    </p>
 
 		<li>

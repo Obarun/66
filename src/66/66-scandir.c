@@ -15,6 +15,9 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+//#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -37,8 +40,6 @@
 #include <66/utils.h>
 #include <66/constants.h>
 #include <66/environ.h>
-
-//#include <stdio.h>
 
 #define CRASH 0
 #define FINISH 1
@@ -63,8 +64,9 @@ static char const *skel = SS_SKEL_DIR ;
 static char const *log_user = "root" ;
 static unsigned int BOOT = 0 ;
 unsigned int VERBOSITY = 1 ;
+unsigned int NOTIF = 0 ;
 
-#define USAGE "66-scandir [ -h ] [ -v verbosity ] [ -b ] [ -l live ] [ -t rescan ] [ -L log_user ] [ -s skel ] [ -e environment ] [ -c | u | r ] owner"
+#define USAGE "66-scandir [ -h ] [ -v verbosity ] [ -b ] [ -l live ] [ -d notif ] [ -t rescan ] [ -L log_user ] [ -s skel ] [ -e environment ] [ -c | u | r ] owner"
 
 static inline void info_help (void)
 {
@@ -76,6 +78,7 @@ static inline void info_help (void)
 "	-v: increase/decrease verbosity\n"
 "	-b: create scandir for a boot process\n"
 "	-l: live directory\n"
+"	-d: notify readiness on file descriptor\n"
 "	-t: rescan scandir every milliseconds\n"
 "	-L: run catch-all logger as log_user user\n"
 "	-s: skeleton directory\n"
@@ -100,12 +103,19 @@ void scandir_up(char const *scandir, unsigned int timeout, char const *const *en
 		return ;
 	}
 	
-	char const *newup[6] ;
+	unsigned int no = NOTIF ? 2 : 0 ;
+	char const *newup[6 + no] ;
 	unsigned int m = 0 ;
 	char fmt[UINT_FMT] ;
 	fmt[uint_fmt(fmt, timeout)] = 0 ;
-	
+	char notif[UINT_FMT] ;
+	notif[uint_fmt(notif, NOTIF)] = 0 ;
+
 	newup[m++] = S6_BINPREFIX "s6-svscan" ;
+	if (no) {
+		newup[m++] = "-d" ;
+		newup[m++] = notif ;
+	}
 	newup[m++] = "-st" ;
 	newup[m++] = fmt ;
 	newup[m++] = "--" ;
@@ -479,7 +489,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:bl:t:s:e:cruL:", &l) ;
+			int opt = getopt_args(argc,argv, ">hv:bl:d:t:s:e:cruL:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
@@ -489,6 +499,10 @@ int main(int argc, char const *const *argv, char const *const *envp)
 				case 'b' : BOOT = 1 ; break ;
 				case 'l' : if(!stralloc_cats(&live,l.arg)) retstralloc(111,"main") ;
 						   if(!stralloc_0(&live)) retstralloc(111,"main") ;
+						   break ;
+				case 'd' : if (!uint0_scan(l.arg, &NOTIF)) exitusage(USAGE) ;
+						   if (NOTIF < 3) strerr_dief1x(110, "notification fd must be 3 or more") ;
+						   if (fcntl(NOTIF, F_GETFD) < 0) strerr_dief1sys(110, "invalid notification fd") ;
 						   break ;
 				case 't' : if (!uint0_scan(l.arg, &rescan)) break ;
 				case 's' : skel = l.arg ; break ;
@@ -507,7 +521,8 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	
 	if (!argc) OWNER = MYUID ;
 	else if (!youruid(&OWNER,argv[0])) strerr_diefu2sys(111,"set uid of: ",argv[0]) ;
-	
+		
+	if (BOOT && NOTIF) NOTIF = 0 ;
 	if (BOOT && OWNER) strerr_dief1x(110,"-b options can be set only with root") ; 
 	OWNERSTR[uid_fmt(OWNERSTR,OWNER)] = 0 ;
 	

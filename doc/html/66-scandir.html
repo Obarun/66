@@ -23,7 +23,7 @@
 
 <h2> Interface </h2>
 	<pre>
-	66-scandir [ -h help ] [ -v <em>verbosity</em> ] [ -b ] [ -l <em>live</em> ] [ -t <em>rescan</em> ] [ -L <em>log_user</em> ] [ -s <em>skel</em> ] [ -e <em>environment</em> ] [ -c | r | u ] owner
+	66-scandir [ -h help ] [ -v <em>verbosity</em> ] [ -b ] [ -l <em>live</em> ] [ -d notif ][ -t <em>rescan</em> ] [ -L <em>log_user</em> ] [ -s <em>skel</em> ] [ -e <em>environment</em> ] [ -c | r | u ] owner
 	</pre>
 
 	<p>
@@ -48,7 +48,9 @@
 		<li>
 			<tt><b>-l <em>live</em></b></tt> : an absolute path. create the <tt><em>scandir</em></tt> at <em>live</em>. Default is <tt>%%livedir%%</tt>. The default can also be changed at compile-time by	passing the <tt>&#8209;&#8209;livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem.
 		</li>
-
+		<li>
+			<tt><b>-d <em>notif</em></b></tt> : notify readiness on file descriptor notif. When <tt><em>scandir</em></tt> is ready to accept commands from <a href="66-scanctl.html">66&#8209;scanctl</a>, it will write a newline to <tt>notif</tt>. <tt>notif</tt> cannot be lesser than 3. By default, no notification is sent. If <tt>-b</tt> is set, this option have no effects.
+		</li>
 		<li>
 			<tt><b>-t <em>rescan</em></b></tt> : perform a scan every <tt><em>rescan</em></tt> milliseconds. If <tt><em>rescan</em></tt> is set to <tty>0</tty> (the default), automatic scans are never performed after the first one and s6&#8209;svscan will only detect new services by issuing either <tt><em>66&#8209;scanctl reload</em></tt> or <tt><em><a href="https://skarnet.org/software/s6/s6-svscanctl.html">s6&#8209;svscanctl &#8209;a</a></em></tt>. It is <em>strongly</em> discouraged to set <tt><em>rescan</em></tt> to a positive value under 500.
 		</li>
