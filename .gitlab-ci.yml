@@ -1,7 +1,7 @@
 image: obarun/base:latest
 
 before_script:
-  - pacman -Syu base-devel --noconfirm
+  - pacman -Syu $(pacman -Sqg base-devel|grep -v systemd) --noconfirm
  
 build:
   stage: build
