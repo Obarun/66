@@ -1,7 +1,7 @@
 image: obarun/base:latest
 
 before_script:
-  - pacman -Syu --noconfirm
+  - pacman -Syu base-devel --noconfirm
  
 build:
   stage: build
