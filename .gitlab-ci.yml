@@ -8,7 +8,7 @@ before_script:
 build:
   stage: build
   script:
-  - ./configure --disable-allstatic
+  - ./configure --bindir=/usr/bin --with-system-dir=/usr/lib/66/service
   - make -j9
   - make -j9 install-html DESTDIR=gitlab-ci
   - make -j9 man
