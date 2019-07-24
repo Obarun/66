@@ -1,8 +1,9 @@
 image: obarun/base:latest
 
 before_script:
-  - pacman -Syu $(pacman -Sqg base-devel|grep -v systemd) --noconfirm
- 
+  - pacman -Syu --noconfirm
+  - pacman -S util-linux autoconf automake binutils bison fakeroot file findutils flex gawk gcc gettext grep groff gzip libtool m4 make patch pkgconf sed sudo texinfo which
+  
 build:
   stage: build
   script:
