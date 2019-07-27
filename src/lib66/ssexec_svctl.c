@@ -17,11 +17,12 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <unistd.h>//access
-#include <stdio.h>
+//#include <stdio.h>
 //#include <stdlib.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
+#include <oblibs/string.h>
 
 #include <skalibs/types.h>
 #include <skalibs/stralloc.h>
@@ -167,6 +168,7 @@ int handle_case(stralloc *sa, ss_resolve_sig_t *svc)
 	unsigned int state, i = 0 ;
 	state = svc->sig ;
 	err = 2 ;
+
 	for (;i < sa->len ; i++)
 	{
 		p = chtenum[(unsigned char)sa->s[i]] ;
@@ -256,15 +258,15 @@ static int announce(ss_resolve_sig_t *svc)
 	{
 		case 0: VERBO1 strerr_warni4x(sv," is ",(svc->sig > 3) ? "down" : "up"," but not notified by the daemon itself") ; 
 				break ;
-		case 1: VERBO1 strerr_warni4x(sv,": ",(svc->sig > 3) ? "stopped" : "started"," successfully") ;
+		case 1: VERBO1 strerr_warni4x(sv,": ",(svc->sig > 3) ? "stopped" : (svc->sig == 2 || svc->sig == 3) ? "reloaded" : "started"," successfully") ;
 				break ;
-		case 2: VERBO1 strerr_warnwu2x((svc->sig > 3) ? "stop " : "start ", sv) ; 
+		case 2: VERBO1 strerr_warnwu2x((svc->sig > 3) ? "stop " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start ", sv) ; 
 				break ;
-		case 3: VERBO1 strerr_warnw3x(sv," report permanent failure -- unable to ",(svc->sig > 1) ? "stop" : "start") ;
+		case 3: VERBO1 strerr_warnw3x(sv," report permanent failure -- unable to ",(svc->sig > 1) ? "stop" : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start") ;
 				break ;
-		case 4: VERBO1 strerr_warnwu3x((svc->sig > 3) ? "stop: " : "start: ",sv, ": number of try exceeded") ;
+		case 4: VERBO1 strerr_warnwu3x((svc->sig > 3) ? "stop: " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start: ",sv, ": number of try exceeded") ;
 				break ;
-		case 5: VERBO1 strerr_warnwu3x((svc->sig > 3) ? "stop: " : "start: ",sv, ": time out reached") ;
+		case 5: VERBO1 strerr_warnwu3x((svc->sig > 3) ? "stop: " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start: ",sv, ": time out reached") ;
 				break ;
 		case-1: 
 		default:VERBO1 strerr_warnw3x("unexpected data in state file of: ",sv," -- please make a bug report") ;
@@ -357,7 +359,7 @@ static void svc_listen(unsigned int nsv,tain_t *deadline)
 	
 	tain_now_g() ;
 	tain_copynow(&start) ;
-		
+	
 	while(i--)
 		did[i] = 0 ;
 
@@ -365,8 +367,7 @@ static void svc_listen(unsigned int nsv,tain_t *deadline)
 	{
 		r = iopause_g(&x, 1, deadline) ;
 		if (r < 0) strerr_dief1sys(111,"listen iopause") ;
-		/** timeout is not a error , the iopause process did right*/ 
-		else if (!r) strerr_dief1sys(111,"listen time out") ;
+		else if (!r) strerr_dief1x(111,"listen time out") ;
 		if (x.revents & IOPAUSE_READ)  
 		{	
 			i = 0 ;
@@ -468,7 +469,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	DEATHSV = 5 ;
 	
 	int e, isup, r, ret = 1 ;
-	unsigned int death, tsv, reverse ;
+	unsigned int death, tsv, reverse, tsv_g ;
 	int SIGNAL = -1 ;
 	tain_t ttmain ;
 	
@@ -483,6 +484,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	
 	tsv = death = reverse = 0 ;
+	tsv_g = SV_DEADLINE ;
 	
 	//PROG = "66-svctl" ;
 	{
@@ -512,21 +514,23 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	if (info->timeout) tsv = info->timeout ;
 	if ((scandir_ok(info->scandir.s)) !=1 ) strerr_dief3sys(111,"scandir: ", info->scandir.s," is not running") ;
 	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;
-	if (SIGNAL > SIGRUP) reverse = 1 ;
+	if (SIGNAL > SIGR) reverse = 1 ;
 	for(;*argv;argv++)
 	{
 		char const *name = *argv ;
+		int logname = 0 ;
+		logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 		if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(111,"unknown service: ",name) ;
 		if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
 		if (res.type >= BUNDLE) strerr_dief3x(111,name," has type ",get_keybyid(res.type)) ;
+		if (SIGNAL == SIGR && logname < 0) reverse = 1 ;
 		if (!ss_resolve_graph_build(&graph,&res,sares.s,reverse)) strerr_diefu1sys(111,"build services graph") ;
 	}
 	
-	if (SIGNAL == SIGR) reverse = 0 ;
 	r = ss_resolve_graph_publish(&graph,reverse) ;
 	if (r < 0) strerr_dief1x(111,"cyclic dependencies detected") ;
 	if (!r) strerr_diefu1sys(111,"publish service graph") ;
-	
+
 	for(unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&graph.sorted) ; i++)
 	{
 		ss_resolve_sig_t sv_signal = RESOLVE_SIG_ZERO ;
@@ -553,6 +557,13 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			VERBO1 strerr_warni2x("Already down: ",string + sv_signal.res.name) ;
 			continue ;
 		}
+		/** special on reload signal, if the process is down
+		 * simply bring it up */
+		else if (!isup && (SIGNAL == SIGR))
+		{
+			sig = "u" ;
+			SIGNAL = SIGUP ;
+		}
 		sv_signal.sigtosend = sig ;	sv_signal.sig = SIGNAL ;
 		
 		/** notification-fd */
@@ -570,7 +581,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			if (SIGNAL == SIGUP)
 			{ sv_signal.sig = SIGRUP ; sv_signal.sigtosend = "uwU" ; }
 			else if (SIGNAL == SIGR)
-			{ sv_signal.sig = SIGRR ; sv_signal.sigtosend = "uwR" ; }
+			{ sv_signal.sig = SIGRR ; sv_signal.sigtosend = "rwR" ; }
 			else if (SIGNAL == SIGDOWN)
 			{ sv_signal.sig = SIGRDOWN ; sv_signal.sigtosend = "dwD" ; }
 		}
@@ -595,7 +606,11 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		tain_t tcheck ;
 		tain_from_millisecs(&tcheck,tsv) ;
 		int check = tain_to_millisecs(&tcheck) ;
-		if (check > 0) tain_from_millisecs(&sv_signal.deadline, tsv) ;
+		if (check > 0)
+		{ 
+			tain_from_millisecs(&sv_signal.deadline, tsv) ; 
+			tsv_g += tsv ; 
+		}
 		else
 		{
 			/** timeout-{up/down} */
@@ -612,11 +627,17 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 				if (errno != ENOENT) strerr_diefu2sys(111, "access ", file) ;
 			
 			if (errno == ENOENT)
+			{
 				tain_from_millisecs(&sv_signal.deadline, SV_DEADLINE) ;
+				tsv_g += SV_DEADLINE ;
+			}
 			else
 			{
 				if (!read_uint(file,&t)) strerr_diefu2sys(111,"read: ",file) ;
+				{	
 					tain_from_millisecs(&sv_signal.deadline, t) ;
+					tsv_g += t ;
+				}
 			}
 		}
 		errno = e ;
@@ -625,11 +646,11 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	/** nothing to do */
 	if (!genalloc_len(ss_resolve_sig_t,&gakeep)) goto finish ;
 	
-	ttmain = tain_infinite_relative ;
-	
+	//ttmain = tain_infinite_relative ;
+	tain_from_millisecs(&ttmain,tsv_g) ;
 	tain_now_g() ;
 	tain_add_g(&ttmain,&ttmain) ;
-	
+
 	int spfd = selfpipe_init() ;
 	if (spfd < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
 	if (selfpipe_trap(SIGCHLD) < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
