@@ -23,9 +23,9 @@
 int scandir_send_signal(char const *scandir,char const *signal)
 {
 	char data[DATASIZE] ;
-	unsigned int datalen = 0 ;
+	size_t datalen = 0 ;
 	
-	int id = strlen(signal) ;
+	size_t id = strlen(signal) ;
 	while (datalen < id)
 	{
 		data[datalen] = signal[datalen] ;

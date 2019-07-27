@@ -90,7 +90,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	/** svc already initiated? */
 	if (classic)
 	{
-		int i ;
+		size_t i ;
 		if (!dir_get(&gasvc,svdir,"",S_IFDIR)) strerr_diefu1x(111,"get classic services") ;
 		if (!genalloc_len(stralist,&gasvc))
 		{

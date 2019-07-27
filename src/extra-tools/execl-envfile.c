@@ -71,9 +71,9 @@ int loop_stra(stralloc *sa,char const *search)
 
 int main (int argc, char const *const *argv, char const *const *envp)
 {
-	int r, i, unexport  ;
+	int r, unexport  ;
 	int insist = 1 ;
-	size_t pathlen ;
+	size_t pathlen, i ;
 	char const *path = 0 ;
 	char const *file = 0 ;
 	char tpath[MAXENV + 1] ;

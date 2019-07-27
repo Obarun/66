@@ -38,9 +38,9 @@
 // for -s: -s0 -> origin, -s1 -> backup ;
 int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 {
-	unsigned int r, change, back, verbosity, type ;
+	unsigned int change, back, verbosity, type ;
 	uint32_t what = -1 ;
-		
+	int r ;
 	struct stat st ;
 	
 	char const *tree = NULL ;
