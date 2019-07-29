@@ -48,7 +48,6 @@ else
 CFLAGS_SHARED :=
 endif
 LDFLAGS_ALL := $(LDFLAGS_AUTO) $(LDFLAGS)
-REALCC = $(CROSS_COMPILE)$(CC)
 AR := $(CROSS_COMPILE)ar
 RANLIB := $(CROSS_COMPILE)ranlib
 STRIP := $(CROSS_COMPILE)strip
@@ -180,20 +179,20 @@ $(DESTDIR)$(mandir)/man1/%.1: man/%.1
 	exec $(INSTALL) -D -m 644 $< $@
 
 %.o: %.c
-	exec $(REALCC) $(CPPFLAGS_ALL) $(CFLAGS_ALL) -c -o $@ $<
+	exec $(CC) $(CPPFLAGS_ALL) $(CFLAGS_ALL) -c -o $@ $<
 
 %.lo: %.c
-	exec $(REALCC) $(CPPFLAGS_ALL) $(CFLAGS_ALL) $(CFLAGS_SHARED) -c -o $@ $<
+	exec $(CC) $(CPPFLAGS_ALL) $(CFLAGS_ALL) $(CFLAGS_SHARED) -c -o $@ $<
 
 $(ALL_BINS):
-	exec $(REALCC) -o $@ $(CFLAGS_ALL) $(LDFLAGS_ALL) $(LDFLAGS_NOSHARED) $^ $(EXTRA_LIBS) $(LDLIBS)
+	exec $(CC) -o $@ $(CFLAGS_ALL) $(LDFLAGS_ALL) $(LDFLAGS_NOSHARED) $^ $(EXTRA_LIBS) $(LDLIBS)
 
 lib%.a.xyzzy:
 	exec $(AR) rc $@ $^
 	exec $(RANLIB) $@
 
 lib%.so.xyzzy:
-	exec $(REALCC) -o $@ $(CFLAGS_ALL) $(CFLAGS_SHARED) $(LDFLAGS_ALL) $(LDFLAGS_SHARED) -Wl,-soname,$(patsubst lib%.so.xyzzy,lib%.so.$(version_M),$@) $^ $(EXTRA_LIBS) $(LDLIBS)
+	exec $(CC) -o $@ $(CFLAGS_ALL) $(CFLAGS_SHARED) $(LDFLAGS_ALL) $(LDFLAGS_SHARED) -Wl,-soname,$(patsubst lib%.so.xyzzy,lib%.so.$(version_M),$@) $^ $(EXTRA_LIBS) $(LDLIBS)
 
 man: $(ALL_MAN:%.scd=%)
 
