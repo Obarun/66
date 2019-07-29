@@ -159,11 +159,6 @@ static inline void run_rcshut (char const *const *envp)
 		}
 		else if (WEXITSTATUS(wstat))
 		{
-			fmt[uint_fmt(fmt, WTERMSIG(wstat))] = 0 ;
-			strerr_warnw3x(rcshut, " was killed by signal ", fmt) ;
-		}
-		else if (WEXITSTATUS(wstat))
-		{
 			fmt[uint_fmt(fmt, WEXITSTATUS(wstat))] = 0 ;
 			strerr_warnw3x(rcshut, " exited ", fmt) ;
 		}
