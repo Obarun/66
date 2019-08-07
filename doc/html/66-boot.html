@@ -193,11 +193,11 @@
 				</li>
 
 				<li>
-					<tt><b>RCINIT=%%livedir%%/rc.init</b></tt> : an absolute path. This file is launched at the end of <em>stage1</em> and run as <em>stage2</em>. It calls <a href="66-init.html">66&#8209;init</a> to initiate any services inside of <em>TREE</em> except 'classic' ones which were already initiated by <em>stage1</em>. After that it invokes <a href="66-dbctl.html">66&#8209;dbctl</a> to bring up all services.
+					<tt><b>RCINIT=%%skel%%/rc.init</b></tt> : an absolute path. This file is launched at the end of <em>stage1</em> and run as <em>stage2</em>. It calls <a href="66-init.html">66&#8209;init</a> to initiate any services inside of <em>TREE</em> except 'classic' ones which were already initiated by <em>stage1</em>. After that it invokes <a href="66-dbctl.html">66&#8209;dbctl</a> to bring up all services.
 				</li>
 
 				<li>
-					<tt><b>RCSHUTDOWN=%%livedir%%/rc.shutdown</b></tt> : an absolute path. This is launched when a shutdown is requested also called <em>stage3</em>. It invokes <a href="66-all">66&#8209;all</a> to bring down all services of <em>TREE</em>.
+					<tt><b>RCSHUTDOWN=%%skel%%/rc.shutdown</b></tt> : an absolute path. This is launched when a shutdown is requested also called <em>stage3</em>. It invokes <a href="66-all">66&#8209;all</a> to bring down all services of <em>TREE</em>.
 				</li>
 
 				<li>

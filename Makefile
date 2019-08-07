@@ -136,6 +136,7 @@ $(DESTDIR)$(datarootdir)/doc/$(package)/%.html: doc/html/%.html
 		-e 's,%%user_dir%%,$(user_dir),g' \
 		-e 's,%%service_user%%,$(service_user),g' \
 		-e 's,%%service_userconf%%,$(service_userconf),g' \
+		-e 's,%%skel%%,$(skel),g' \
 		-e 's,%%user_log%%,$(user_log),g' $< > $@
 		
 		
