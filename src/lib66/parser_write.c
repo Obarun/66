@@ -567,7 +567,7 @@ int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char
 	memcpy(prodfile,proddst,proddstlen) ;
 	prodfile[proddstlen] = 0 ;
 	
-	char pipefile[consdstlen + consnamelen + 1 + 1] ;
+	char pipefile[consdstlen + 1 + consnamelen + 1 + 1] ;
 	
 	/**producer-for*/
 	if (!file_write_unsafe(consfile,get_keybyid(CONSUMER),prodname,strlen(prodname))) 
@@ -587,9 +587,11 @@ int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char
 		size_t len = strlen(deps.s+sv->pipeline) ;
 		char pipename[len + 1] ;
 		memcpy(pipefile,consdst,consdstlen) ;
-		memcpy(pipefile + consdstlen, consname,consnamelen) ;
-		memcpy(pipefile + consdstlen + consnamelen, "/", 1) ;
-		pipefile[consdstlen + consnamelen + 1] = 0  ;
+		pipefile[consdstlen] = '/' ;
+		memcpy(pipefile + consdstlen + 1, consname,consnamelen) ;
+		pipefile[consdstlen + 1 + consnamelen] = '/' ;
+		pipefile[consdstlen + 1 + consnamelen + 1] = 0  ;
+		
 		memcpy(pipename,deps.s+sv->pipeline,len) ;
 		pipename[len] = 0 ;
 		if (!file_write_unsafe(pipefile,PIPELINE_NAME,pipename,len))
@@ -757,7 +759,6 @@ int write_common(sv_alltype *sv, char const *dst,unsigned int conf)
 	}
 	return 1 ;
 }
-
 
 int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,int mode)
 {
