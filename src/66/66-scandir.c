@@ -25,6 +25,7 @@
 #include <oblibs/types.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
+#include <oblibs/environ.h>
 
 #include <skalibs/buffer.h>
 #include <skalibs/stralloc.h>
@@ -549,7 +550,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		if (envdir.s[0] != '/')
 			strerr_dief3x(110,"environment: ",envdir.s," must be an absolute path") ;
 		
-		if (!build_env(envdir.s,envp,newenv,TMPENV)) strerr_diefu2x(111,"build environment with: ",envdir.s) ;
+		if (!environ_get_envfile_n_merge(envdir.s,envp,newenv,TMPENV)) strerr_diefu2x(111,"build environment with: ",envdir.s) ;
 		genv = newenv ;
 	}
 	else genv = envp ;

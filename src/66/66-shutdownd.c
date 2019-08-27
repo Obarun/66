@@ -26,6 +26,8 @@
 #include <stdio.h>
 #include <sys/wait.h>
 
+#include <oblibs/environ.h>
+
 #include <skalibs/posixplz.h>
 #include <skalibs/uint32.h>
 #include <skalibs/types.h>
@@ -40,7 +42,6 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/iopause.h>
 #include <skalibs/skamisc.h>
-#include <skalibs/diuint32.h>
 
 #include <execline/config.h>
 
@@ -48,7 +49,6 @@
 
 #include <66/config.h>
 #include <66/constants.h>
-#include <66/environ.h>
 
 #define STAGE4_FILE "stage4"
 #define DOTPREFIX ".66-shutdownd:"
@@ -107,29 +107,16 @@ ssize_t file_get_size(const char* filename)
 static void parse_conf(char const *confile,char *rcshut,size_t filesize)
 {
 	int r ;
-	unsigned int i = 0 ;
 	stralloc src = STRALLOC_ZERO ;
-	stralloc saconf = STRALLOC_ZERO ;
-	genalloc gaconf = GENALLOC_ZERO ;
 	r = openreadfileclose(confile,&src,filesize) ;
 	if(!r) strerr_diefu2sys(111,"open configuration file: ",confile) ; 
 	if (!stralloc_0(&src)) strerr_diefu1sys(111,"append stralloc configuration file") ;
 	
-	r = env_split(&gaconf,&saconf,&src) ;
-	if (!r) strerr_diefu2sys(111,"parse configuration file: ",confile) ;
-	
-	for (;i < genalloc_len(diuint32,&gaconf) ; i++)
+	if (environ_get_val_of_key(&src,"RCSHUTDOWN"))
 	{
-		char *key = saconf.s + genalloc_s(diuint32,&gaconf)[i].left ;
-		char *val = saconf.s + genalloc_s(diuint32,&gaconf)[i].right ;
-		if (!strcmp(key,"RCSHUTDOWN"))
-		{
-			memcpy(rcshut,val,strlen(val)) ;
-			rcshut[strlen(val)] = 0 ;
-		}
+		memcpy(rcshut,src.s,src.len) ;
+		rcshut[src.len] = 0 ;
 	}
-	genalloc_free(diuint32,&gaconf) ;
-	stralloc_free(&saconf) ;
 	stralloc_free(&src) ;
 }
 

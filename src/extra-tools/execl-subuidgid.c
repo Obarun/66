@@ -15,7 +15,9 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <stdio.h>
+
 #include <oblibs/error2.h>
+#include <oblibs/environ.h>
 
 #include <skalibs/types.h>
 #include <skalibs/buffer.h>
@@ -83,8 +85,8 @@ int main (int argc, char const **argv, char const *const *envp)
 	cuid[uid_fmt(cuid,uid)] = 0 ;
 	cgid[gid_fmt(cgid,gid)] = 0 ;
 	
-	if (!env_addkv("UID",cuid,&info)) strerr_diefu1sys(111,"set UID") ;
-	if (!env_addkv("GID",cgid,&info)) strerr_diefu1sys(111,"set GID") ;
+	if (!environ_add_key_val("UID",cuid,&info)) strerr_diefu1sys(111,"set UID") ;
+	if (!environ_add_key_val("GID",cgid,&info)) strerr_diefu1sys(111,"set GID") ;
 	
 	if (!env_string(&sa,argv,(unsigned int) argc)) strerr_diefu1sys(111,"environment string") ;
 	
