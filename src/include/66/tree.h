@@ -12,8 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
  
-#ifndef TREE_H
-#define TREE_H
+#ifndef SS_TREE_H
+#define SS_TREE_H
 
 #include <sys/types.h>
 

@@ -12,8 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
  
-#ifndef SVC_H
-#define SVC_H
+#ifndef SS_SVC_H
+#define SS_SVC_H
 
 #include <skalibs/tai.h>
 #include <skalibs/stralloc.h>

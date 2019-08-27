@@ -12,8 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
  
-#ifndef SSRESOLVE_H
-#define SSRESOLVE_H
+#ifndef SS_RESOLVE_H
+#define SS_RESOLVE_H
 
 #include <stddef.h>
 

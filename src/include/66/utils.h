@@ -12,8 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
  
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef SS_UTILS_H
+#define SS_UTILS_H
 
 #include <sys/types.h>
 #include <unistd.h> //getuid

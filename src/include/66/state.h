@@ -12,8 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
  
-#ifndef SSSTATE_H
-#define SSSTATE_H
+#ifndef SS_STATE_H
+#define SS_STATE_H
 
 #include <stddef.h>
 

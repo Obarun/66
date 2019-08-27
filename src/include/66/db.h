@@ -12,8 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
  
-#ifndef DB_H
-#define DB_H
+#ifndef SS_DB_H
+#define SS_DB_H
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>

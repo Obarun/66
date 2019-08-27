@@ -12,8 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
  
-#ifndef ENUM_H
-#define ENUM_H
+#ifndef SS_ENUM_H
+#define SS_ENUM_H
 
 
 #include <sys/types.h>
