@@ -13,8 +13,9 @@
  */
  
 #include <string.h>
+#include <stdint.h>
 #include <errno.h>
-//#include <stdio.h>
+#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -37,9 +38,9 @@
 
 /** force == 1, only rewrite the service
  * force == 2, rewrite the service and it dependencies*/
-static unsigned int FORCE = 0 ;
+static uint8_t FORCE = 0 ;
 /** rewrite configuration file */
-static unsigned int CONF = 0 ;
+static uint8_t CONF = 0 ;
 
 static void cleanup(char const *dst)
 {
@@ -55,13 +56,12 @@ static void check_identifier(char const *name)
 
 static void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv)
 {
-	unsigned int exist = 0 ;
+	uint8_t exist = 0 ;
 	stralloc sares = STRALLOC_ZERO ;
 	stralloc sasv = STRALLOC_ZERO ;
 	stralloc tmp = STRALLOC_ZERO ;
 	ss_resolve_t res = RESOLVE_ZERO ;
-//	if (!parse_service_get_list(&tmp,list)) strerr_diefu1x(111,"get services list") ;
-//	if (!stralloc_copy(list,&tmp)) strerr_diefu1sys(111,"copy stralloc") ;
+
 	tmp.len = 0 ;
 	size_t i = 0, len = list->len ;
 	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;
@@ -74,7 +74,7 @@ static void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv)
 		size_t namelen = strlen(name) ;
 		char svname[namelen + 1] ;
 		if (!basename(svname,name)) strerr_diefu2sys(111,"get basename of: ", name) ;
-			if (ss_resolve_check(sares.s,svname))
+		if (ss_resolve_check(sares.s,svname))
 		{
 			if (!ss_resolve_read(&res,sares.s,svname)) strerr_diefu2sys(111,"read resolve file of: ",svname) ;
 			if (res.disen)
@@ -88,7 +88,7 @@ static void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv)
 			}
 		}
 		
-		if (!parse_service_before(info,&tmp,name,nbsv,&sasv,FORCE,exist))
+		if (!parse_service_before(info,&tmp,name,nbsv,&sasv,FORCE,&exist))
 			strerr_diefu3x(111,"parse service file: ",svname,": or its dependencies") ;
 	}
 	stralloc_free(&sares) ;
