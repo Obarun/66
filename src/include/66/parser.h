@@ -252,10 +252,10 @@ extern void keynocheck_free(keynocheck *nocheck) ;
 extern void section_free(section_t *sec) ;
 extern void freed_parser(void) ;
 /** enable phase */
-extern int parser(sv_alltype *service,stralloc *src,char const *file) ;
-extern int parse_service_get_list(stralloc *result, stralloc *list) ;
-extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, char const *sv,unsigned int *nbsv, stralloc *sasv,unsigned int force,unsigned int exist) ;
-extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,unsigned int force) ;
+extern int parser(sv_alltype *service,stralloc *src,char const *svname) ;
+extern int parse_service_check_enabled(ssexec_t *info, char const *svname,uint8_t force,uint8_t *exist) ;
+extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t *exist) ;
+extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force) ;
 extern int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner) ;
 /** mill utilities 
 extern parse_mill_t MILL_FIRST_BRACKET ;
@@ -283,15 +283,15 @@ extern void parse_err(int ierr,int idsec,int idkey) ; */
 extern int read_svfile(stralloc *sasv,char const *name,char const *src) ;
 extern int add_pipe(sv_alltype *sv, stralloc *sa) ;
 /** write */
-extern int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned int force,unsigned int conf) ;
-extern int write_classic(sv_alltype *sv, char const *dst, unsigned int force, unsigned int conf) ;
-extern int write_longrun(sv_alltype *sv,char const *dst, unsigned int force, unsigned int conf) ;
-extern int write_oneshot(sv_alltype *sv,char const *dst, unsigned int conf) ;
+extern int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, uint8_t force,uint8_t conf) ;
+extern int write_classic(sv_alltype *sv, char const *dst, uint8_t force, uint8_t conf) ;
+extern int write_longrun(sv_alltype *sv,char const *dst, uint8_t force, uint8_t conf) ;
+extern int write_oneshot(sv_alltype *sv,char const *dst, uint8_t conf) ;
 extern int write_bundle(sv_alltype *sv, char const *dst) ;
-extern int write_common(sv_alltype *sv, char const *dst,unsigned int conf) ;
+extern int write_common(sv_alltype *sv, char const *dst,uint8_t conf) ;
 extern int write_exec(sv_alltype *sv, sv_exec *exec,char const *name,char const *dst,int mode) ;
 extern int write_uint(char const *dst, char const *name, uint32_t ui) ;
-extern int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, int mode, unsigned int force) ;
+extern int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, int mode, uint8_t force) ;
 extern int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char const *proddst,char const *consdst) ;
 extern int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename, genalloc *ga) ;
 extern int write_env(char const *name,stralloc *sa,char const *dst) ;
