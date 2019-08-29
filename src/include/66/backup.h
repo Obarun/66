@@ -12,8 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
  
-#ifndef BACKUP_H
-#define BACKUP_H
+#ifndef SS_BACKUP_H
+#define SS_BACKUP_H
 
 #include <skalibs/stralloc.h>
 

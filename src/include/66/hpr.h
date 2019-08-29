@@ -16,8 +16,8 @@
  * All credits goes to Laurent Bercot <ska-remove-this-if-you-are-not-a-bot@skarnet.org>
  * */
  
-#ifndef HPR_H
-#define HPR_H
+#ifndef SS_HPR_H
+#define SS_HPR_H
 
 #include <stddef.h>
 

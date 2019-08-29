@@ -21,27 +21,19 @@
 #include <oblibs/stralist.h>
 #include <oblibs/error2.h>
 #include <oblibs/types.h>
-#include <oblibs/obgetopt.h>
 #include <oblibs/directory.h>
 #include <oblibs/files.h>
+#include <oblibs/environ.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/bytestr.h>
 #include <skalibs/stralloc.h>
-#include <skalibs/genalloc.h>
 #include <skalibs/env.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/diuint32.h>
 #include <skalibs/env.h>
 #include <skalibs/sgetopt.h>
 
 #include <execline/execline.h>
-
-#include <66/parser.h>
-#include <66/environ.h>
-#include <66/constants.h>
-
-static stralloc SAENV = STRALLOC_ZERO ;
-static genalloc GAENV = GENALLOC_ZERO ; //diuint32, pos in senv
 
 #define USAGE "execl-envfile [ -h help ] [ -l ] src prog"
 
@@ -60,43 +52,36 @@ static inline void info_help (void)
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
-int loop_stra(stralloc *sa,char const *search)
+void clean_n_unexport(stralloc *modifs, stralloc *dst, stralloc *src)
 {
-	size_t i = 0, len = sa->len ;
-	for (;i < len; i += strlen(sa->s + i) + 1)
-		if (!strcmp(sa->s+i,search)) return 1 ;
-	
-	return 0 ;
+	if (!environ_clean_envfile(modifs,src)) strerr_diefu2sys(111,"prepare modified environment of: ",src->s) ;		
+	if (!sastr_split_string_in_nline(modifs)) strerr_diefu2sys(111,"build environment line of: ",src->s) ; ;
+	if (!stralloc_cats(dst,src->s)) exitstralloc("clean_n_unexport") ;
 }
 
 int main (int argc, char const *const *argv, char const *const *envp)
 {
-	int r, unexport  ;
-	int insist = 1 ;
-	size_t pathlen, i ;
-	char const *path = 0 ;
-	char const *file = 0 ;
-	char tpath[MAXENV + 1] ;
-	char tfile[MAXENV+1] ;
+	int r = 0, unexport = 0, insist = 1, nfile = 0, nvar = 0 ;
+	size_t pos = 0, pathlen = 0 ;
+	char const *path = 0, *file = 0 ;
+	char tpath[MAXENV + 1], tfile[MAXENV+1] ;
 	stralloc src = STRALLOC_ZERO ;
 	stralloc modifs = STRALLOC_ZERO ;
 	stralloc dst = STRALLOC_ZERO ;
-	genalloc toparse = GENALLOC_ZERO ; //stralist
+	stralloc toparse = STRALLOC_ZERO ; 
+	stralloc key = STRALLOC_ZERO ; 
+	stralloc val = STRALLOC_ZERO ; 
 	
 	exlsn_t info = EXLSN_ZERO ;
-	
-	r = i = unexport = 0 ;
-	insist = 1 ;
-	
+		
 	PROG = "execl-envfile" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
 
 		for (;;)
 		{
-			int opt = subgetopt_r(argc,argv, ">hlf:", &l) ;
+			int opt = subgetopt_r(argc,argv, "hlf:", &l) ;
 			if (opt == -1) break ;
-			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
 			switch (opt)
 			{
 				case 'h' : 	info_help(); return 0 ;
@@ -107,7 +92,6 @@ int main (int argc, char const *const *argv, char const *const *envp)
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
-	
 	if (argc < 2) exitusage(USAGE) ;
 	
 	path = *argv ;
@@ -123,11 +107,11 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	else
 	{
 		r = scan_mode(path,S_IFREG) ;
-		if (!r) strerr_diefu2sys(111,"find: ",path) ;
+		if (!r && insist) strerr_diefu2sys(111,"find: ",path) ;
 		if (r < 0)
 		{
 			r = scan_mode(path,S_IFDIR) ;
-			if (!r) strerr_diefu2sys(111,"find: ",path) ;
+			if (!r && insist) strerr_diefu2sys(111,"find: ",path) ;
 			if (r < 0) strerr_dief2x(111,"invalid format of: ", path) ;
 			if (path[0] == '.')
 			{
@@ -152,16 +136,15 @@ int main (int argc, char const *const *argv, char const *const *envp)
 		}
 	}
 	
-	r = dir_get(&toparse,path,"",S_IFREG) ;
+	r = sastr_dir_get(&toparse,path,"",S_IFREG) ;
 	if (!r && insist) strerr_diefu2sys(111,"get file from: ",path) ;
-	else if ((!r && !insist) || !genalloc_len(stralist,&toparse))
+	else if ((!r && !insist) || !toparse.len)
 	{
 		xpathexec_run(argv[0],argv,envp) ;
 	}
-	
 	if (file)
 	{
-		r = stra_findidx(&toparse,file) ;
+		ssize_t	r = sastr_cmp(&toparse,file) ;
 		if (r < 0) 
 		{
 			if (insist) strerr_diefu2x(111,"find: ",file) ;
@@ -170,27 +153,23 @@ int main (int argc, char const *const *argv, char const *const *envp)
 				xpathexec_run(argv[0],argv,envp) ;
 			}
 		}
-		
 		if (!file_readputsa(&src,path,file)) strerr_diefu4sys(111,"read file: ",path,"/",file) ;
-		if (!env_parsenclean(&modifs,&src)) strerr_diefu4x(111,"parse and clean environment of: ",path,"/",file)  ;
-		if (!env_split(&GAENV,&SAENV,&src)) strerr_diefu4x(111,"split environment of: ",path,"/",file) ;
-		if (genalloc_len(diuint32,&GAENV) > MAXVAR) strerr_dief4x(111,"to many variables in file: ",path,"/",file) ;
+		clean_n_unexport(&modifs,&dst,&src) ;
 	}
 	else
 	{
-		for (i = 0 ; i < genalloc_len(stralist,&toparse) ; i++)
+		for (;pos < toparse.len; pos += strlen(toparse.s + pos) + 1)
 		{
+			nfile++;
 			src.len = 0 ;
-			size_t n = genalloc_len(diuint32,&GAENV) + MAXVAR ;
-			if (i > MAXFILE) strerr_dief2x(111,"to many file to parse in: ",path) ;
-			if (!file_readputsa(&src,path,gaistr(&toparse,i))) strerr_diefu4sys(111,"read file: ",path,"/",gaistr(&toparse,i)) ;
-			if (!env_parsenclean(&modifs,&src)) strerr_diefu4x(111,"parse and clean environment of: ",path,"/",gaistr(&toparse,i)) ;
-			if (!env_split(&GAENV,&SAENV,&src)) strerr_diefu4x(111,"split environment of: ",path,"/",gaistr(&toparse,i)) ;
-			if (genalloc_len(diuint32,&GAENV) > n) strerr_dief4x(111,"to many variables in file: ",path,"/",gaistr(&toparse,i)) ;
+			if (nfile > MAXFILE) strerr_dief2x(111,"to many file to parse in: ",path) ;
+			if (!file_readputsa(&src,path,toparse.s+pos)) strerr_diefu4sys(111,"read file: ",path,"/",toparse.s+pos) ;
+			clean_n_unexport(&modifs,&dst,&src) ;
+			nvar = environ_get_num_of_line(&src) ;
+			if (nvar == -1) strerr_diefu4sys(111,"get number of line of:",path,"/",toparse.s+pos) ;
+			if (nvar > MAXVAR) strerr_dief4x(111,"to many variables in file: ",path,"/",toparse.s+pos) ;
 		}
 	}
-
-	genalloc_deepfree(stralist,&toparse,stra_free) ;
 	stralloc_free(&src) ;
 	
 	/** be able to freed the stralloc before existing */
@@ -203,35 +182,45 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	char const *newenv[n + 1] ;
 	if (!env_merge (newenv, n ,envp,env_len(envp),tmp, modifs.len)) strerr_diefu1sys(111,"build environment") ;
 	
-	for (i = 0 ; i < genalloc_len(diuint32,&GAENV) ; i++)
-	{
-			unexport = 0 ;
-			int key = genalloc_s(diuint32,&GAENV)[i].left ;
-			int val = genalloc_s(diuint32,&GAENV)[i].right ;
-			if ((SAENV.s+val)[0] == SS_VAR_UNEXPORT)
-			{
-				val++ ;
-				unexport = 1 ;
-			}
-			if(!loop_stra(&info.vars,SAENV.s + key))
-				if (!env_substitute(SAENV.s + key,SAENV.s + val,&info,newenv,unexport)) 
-					strerr_diefu4x(111,"substitute value of: ",SAENV.s + key," by: ",SAENV.s + val) ;
+	if (!sastr_split_string_in_nline(&dst)) strerr_diefu1x(111,"split line") ;
+	pos = 0 ;
+	while (pos < dst.len)
+	{		
+		unexport = 0 ;
+		key.len = val.len = 0 ;
+		if (!stralloc_copy(&key,&dst) ||
+		!stralloc_copy(&val,&dst)) retstralloc(111,"main") ;
+		
+		if (!environ_get_key_nclean(&key,&pos)) strerr_diefu2x(111,"get key from line: ",key.s) ;
+		pos-- ;// retrieve the '=' character
+		if (!environ_get_val(&val,&pos)) strerr_diefu2x(111,"get value from line: ",val.s) ;
+
+		char *uval = val.s ;
+		if (val.s[0] == VAR_UNEXPORT)
+		{
+			uval = val.s+1 ;
+			unexport = 1 ;
+		}
+		if(sastr_cmp(&info.vars,key.s) == -1)
+			if (!environ_substitute(key.s,uval,&info,newenv,unexport)) 
+				strerr_diefu4x(111,"substitute value of: ",key.s," by: ",uval) ;
 	}
-	genalloc_free(diuint32,&GAENV) ;
-	stralloc_free(&SAENV) ;
+	stralloc_free(&key) ;
+	stralloc_free(&val) ;
+	stralloc_free(&dst) ;
+	stralloc_free(&modifs) ;
 	
-	modifs.len = 0 ;
 	if (!env_string (&modifs, argv, (unsigned int) argc)) strerr_diefu1x(111,"make environment string") ;
-	
 	r = el_substitute (&dst, modifs.s, modifs.len, info.vars.s, info.values.s,
 		genalloc_s (elsubst_t const, &info.data),genalloc_len (elsubst_t const, &info.data)) ;
 	if (r < 0) strerr_diefu1sys(111,"el_substitute") ;
 	else if (!r) _exit(0) ;
-	
+
 	stralloc_free(&modifs) ;
-	
+
 	char const *v[r + 1] ;
 	if (!env_make (v, r ,dst.s, dst.len)) strerr_diefu1sys(111,"make environment") ;
 	v[r] = 0 ;
+	
 	pathexec_r (v, newenv, env_len(newenv),info.modifs.s,info.modifs.len) ;
 }

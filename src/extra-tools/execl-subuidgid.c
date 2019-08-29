@@ -15,7 +15,11 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <stdio.h>
+#include <errno.h>
+#include <pwd.h>
+
 #include <oblibs/error2.h>
+#include <oblibs/environ.h>
 
 #include <skalibs/types.h>
 #include <skalibs/buffer.h>
@@ -26,8 +30,6 @@
 #include <skalibs/djbunix.h>
 
 #include <execline/execline.h>
-#include <66/environ.h>
-#include <66/utils.h>
 
 #define USAGE "execl-subuidgid [ -h ] [ -o owner ] prog..."
 
@@ -43,6 +45,40 @@ static inline void info_help (void)
 
  if (buffer_putsflush(buffer_1, help) < 0)
     strerr_diefu1sys(111, "write to stdout") ;
+}
+
+/** Implement again this function coming from
+ * 66. This is avoid the dependency from it*/
+static int youruid(uid_t *passto,char const *owner)
+{
+	int e ;
+	e = errno ;
+	errno = 0 ;
+	struct passwd *st ;
+	if (!(st = getpwnam(owner)) || errno)
+	{
+		if (!errno) errno = EINVAL ;
+		return 0 ;
+	}
+	*passto = st->pw_uid ;
+	errno = e ;
+	return 1 ;
+}
+
+static int yourgid(gid_t *passto,uid_t owner)
+{
+	int e ;
+	e = errno ;
+	errno = 0 ;
+	struct passwd *st ;
+	if (!(st = getpwuid(owner)) || errno)
+	{
+		if (!errno) errno = EINVAL ;
+		return 0 ;
+	}
+	*passto = st->pw_gid ;
+	errno = e ;
+	return 1 ;
 }
 
 int main (int argc, char const **argv, char const *const *envp)
@@ -83,8 +119,8 @@ int main (int argc, char const **argv, char const *const *envp)
 	cuid[uid_fmt(cuid,uid)] = 0 ;
 	cgid[gid_fmt(cgid,gid)] = 0 ;
 	
-	if (!env_addkv("UID",cuid,&info)) strerr_diefu1sys(111,"set UID") ;
-	if (!env_addkv("GID",cgid,&info)) strerr_diefu1sys(111,"set GID") ;
+	if (!environ_add_key_val("UID",cuid,&info)) strerr_diefu1sys(111,"set UID") ;
+	if (!environ_add_key_val("GID",cgid,&info)) strerr_diefu1sys(111,"set GID") ;
 	
 	if (!env_string(&sa,argv,(unsigned int) argc)) strerr_diefu1sys(111,"environment string") ;
 	

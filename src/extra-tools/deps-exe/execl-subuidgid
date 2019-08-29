@@ -1,5 +1,5 @@
 ${LIB66}
--lexecline
 -loblibs
+-lexecline
 -lskarnet
 ${LIBEXECLINE}

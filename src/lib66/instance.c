@@ -21,9 +21,101 @@
 #include <oblibs/string.h>
 #include <oblibs/stralist.h>
 #include <oblibs/directory.h>
+#include <oblibs/environ.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
+
+#include <66/enum.h>
+
+/** New functions */
+
+int instance_check(char const *svname)
+{
+	int r ;
+	r = get_len_until(svname,'@') ;
+	// avoid empty value after the instance template name
+	if (strlen(svname+r) <= 1 && r > 0) return 0 ;
+	
+	return r ;
+}
+
+int instance_splitname(stralloc *sa,char const *name,int len,int what)
+{
+	char const *copy ;
+	size_t tlen = len + 1 ;
+	
+	char template[tlen + 1] ;
+	memcpy(template,name,tlen) ;
+	template[tlen] = 0 ;
+	
+	copy = name + tlen ;
+	
+	if (!what)
+		return stralloc_obreplace(sa,template) ;
+	else
+		return stralloc_obreplace(sa,copy) ;
+}
+/*
+int instance_change_name(stralloc *sa,char const *template,char const *copy)
+{	
+	stralloc tmp = STRALLOC_ZERO ;
+	stralloc iname = STRALLOC_ZERO ;
+	
+	if (!stralloc_cats(&iname,template) ||
+	!stralloc_cats(&iname,copy) ||
+	!stralloc_0(&iname) ||
+	!stralloc_copy(&tmp,sa) ||
+	!environ_get_val_of_key(&tmp,get_keybyid(NAME)) ||
+	!sastr_replace(sa,tmp.s,iname.s)) goto err ;	
+	
+	stralloc_free(&tmp) ;
+	stralloc_free(&iname) ;
+	return 1 ;
+	err:
+		stralloc_free(&tmp) ;
+		stralloc_free(&iname) ;
+		return 0 ;
+}
+*/
+
+int instance_create(stralloc *sasv,char const *svname, char const *regex, char const *src, int len)
+{
+	char const *copy ;
+	size_t tlen = len + 1 ;
+		
+	stralloc tmp = STRALLOC_ZERO ;	
+	
+	char template[tlen + 1] ;
+	memcpy(template,svname,tlen) ;
+	template[tlen] = 0 ;
+	
+	copy = svname + tlen ;
+
+	if (!file_readputsa(&tmp,src,template)) {
+		VERBO3 strerr_warnwu3sys("open: ",src,template) ;
+		goto err ;
+	}
+/*	if (!instance_change_name(&tmp,template,copy)) {
+		VERBO3 strerr_warnwu3x("replace instance name at: ",src,template) ;
+		goto err ;
+	}*/
+	if (!sastr_replace_all(&tmp,regex,copy)){
+		VERBO3 strerr_warnwu3x("replace instance character at: ",src,template) ;
+		goto err ;
+	}
+	if (!stralloc_copy(sasv,&tmp)) goto err ;
+	stralloc_free(&tmp) ;
+	return 1 ;
+	err:
+		stralloc_free(&tmp) ;
+		return 0 ;
+}
+
+/*********************
+ * Deprecated function 
+ * *******************/
 
 int insta_replace(stralloc *sa,char const *src,char const *cpy)
 {
