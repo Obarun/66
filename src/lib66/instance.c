@@ -34,9 +34,8 @@
 int instance_check(char const *svname)
 {
 	int r ;
-	size_t len = strlen(svname) ;
 	r = get_len_until(svname,'@') ;
-	// len == r avoid empty value after the instance template name
+	// avoid empty value after the instance template name
 	if (strlen(svname+r) <= 1 && r > 0) return 0 ;
 	
 	return r ;
