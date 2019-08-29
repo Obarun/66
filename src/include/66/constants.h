@@ -106,4 +106,7 @@
 #define SS_BOOT_LOGFIFO_LEN (sizeof SS_BOOT_LOGFIFO - 1)
 #define SS_BOOT_SHUTDOWND "66-shutdownd"
 #define SS_BOOT_SHUTDOWND_LEN (sizeof SS_BOOT_SHUTDOWND - 1)
+
+/** Instance */
+#define SS_INSTANCE "@I"
 #endif
