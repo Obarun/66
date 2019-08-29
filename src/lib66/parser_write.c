@@ -17,6 +17,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <stdint.h>
 //#include <stdio.h>
 
 #include <oblibs/string.h>
@@ -46,7 +47,7 @@
 /** @Return 0 on fail
  * @Return 1 on success
  * @Return 2 if the service is ignored */
-int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned int force, unsigned int conf)
+int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, uint8_t force, uint8_t conf)
 {
 	int r ;
 	
@@ -158,7 +159,7 @@ int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned 
 	return 1 ;
 }
 
-int write_classic(sv_alltype *sv, char const *dst, unsigned int force,unsigned int conf)
+int write_classic(sv_alltype *sv, char const *dst, uint8_t force,uint8_t conf)
 {	
 	/**notification,timeout, ...*/
 	if (!write_common(sv, dst, conf))
@@ -195,7 +196,7 @@ int write_classic(sv_alltype *sv, char const *dst, unsigned int force,unsigned i
 	return 1 ;
 }
 
-int write_longrun(sv_alltype *sv,char const *dst, unsigned int force, unsigned int conf)
+int write_longrun(sv_alltype *sv,char const *dst, uint8_t force, uint8_t conf)
 {	
 	size_t r ;
 	char *name = keep.s+sv->cname.name ;
@@ -262,7 +263,7 @@ int write_longrun(sv_alltype *sv,char const *dst, unsigned int force, unsigned i
 	return 1 ;
 }
 
-int write_oneshot(sv_alltype *sv,char const *dst,unsigned int conf)
+int write_oneshot(sv_alltype *sv,char const *dst,uint8_t conf)
 {
 	
 	if (!write_common(sv, dst,conf))
@@ -313,7 +314,7 @@ int write_bundle(sv_alltype *sv, char const *dst)
 	return 1 ;
 }
 
-int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, int mode, unsigned int force)
+int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, int mode, uint8_t force)
 {
 	int r ;
 	int logbuild = log->run.build ;
@@ -604,7 +605,7 @@ int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char
 	return 1 ;
 }
 
-int write_common(sv_alltype *sv, char const *dst,unsigned int conf)
+int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 {
 	int r ;
 	char *time = NULL ;
@@ -878,28 +879,12 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 
 int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename, genalloc *ga)
 {
-	int r ;
-		
 	stralloc contents = STRALLOC_ZERO ;
 	stralloc namedeps = STRALLOC_ZERO ;
 	
 	for (unsigned int i = 0; i < nga; i++)
 	{
 		if (!stralloc_obreplace(&namedeps,deps.s+genalloc_s(unsigned int,ga)[idga+i])) return 0 ;
-		r = insta_check(namedeps.s) ;
-		if (!r) 
-		{
-			VERBO3 strerr_warnw2x(" invalid instance name: ",namedeps.s) ;
-			return 0 ;
-		}
-		if (r > 0)
-		{
-			if (!insta_splitname(&namedeps,namedeps.s,r,1))
-			{
-				VERBO3 strerr_warnwu2x("split copy name of instance: ",namedeps.s) ;
-				return 0 ;
-			}
-		}
 		if (!stralloc_cats(&contents,namedeps.s)) retstralloc(0,"write_dependencies") ;
 		if (!stralloc_cats(&contents,"\n")) retstralloc(0,"write_dependencies") ;
 	}
