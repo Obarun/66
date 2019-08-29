@@ -14,7 +14,9 @@
 
 #include <string.h>
 #include <sys/stat.h>
+#include <stdint.h>
 #include <stdlib.h>//realpath
+#include <sys/types.h>
 //#include <stdio.h>
 
 #include <oblibs/types.h>
@@ -175,8 +177,6 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found
 	stralloc subdir = STRALLOC_ZERO ;
 	stralloc satmp = STRALLOC_ZERO ;
 	
-	obr = insta = 0 ;
-	
 	DIR *dir = opendir(src) ;
 	if (!dir)
 	{
@@ -214,11 +214,11 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found
 		obr = 0 ;
 		insta = 0 ;
 		obr = obstr_equal(name,d->d_name) ;
-		insta = insta_check(name) ;
+		insta = instance_check(name) ;
 		
 		if (insta > 0)
 		{	
-			if (!insta_splitname(&sainsta,name,insta,0)) goto errdir ;
+			if (!instance_splitname(&sainsta,name,insta,0)) goto errdir ;
 			obr = obstr_equal(sainsta.s,d->d_name) ;
 		}
 				
@@ -570,8 +570,6 @@ int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst,ssexec_t *info)
 
 int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 {
-	int r ;
-	
 	char ownerstr[UID_FMT] ;
 	size_t ownerlen = uid_fmt(ownerstr,info->owner) ;
 	ownerstr[ownerlen] = 0 ;
@@ -656,20 +654,6 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		for (unsigned int i = 0; i < res.ndeps; i++)
 		{
 			if (!stralloc_obreplace(&namedeps,deps.s+genalloc_s(unsigned int,&gadeps)[services->cname.idga+i])) goto err ;
-			r = insta_check(namedeps.s) ;
-			if (!r) 
-			{
-				VERBO1 strerr_warnw2x(" invalid instance name: ",namedeps.s) ;
-				goto err ;
-			}
-			if (r > 0)
-			{
-				if (!insta_splitname(&namedeps,namedeps.s,r,1))
-				{
-					VERBO1 strerr_warnwu2x("split copy name of instance: ",namedeps.s) ;
-					goto err ;
-				}
-			}
 			namedeps.len--;
 			if (!stralloc_catb(&final,namedeps.s,namedeps.len)) { VERBO1 warnstralloc("ss_resolve_setnwrite") ; goto err ; }
 			if (!stralloc_catb(&final," ",1)) {VERBO1  warnstralloc("ss_resolve_setnwrite") ; goto err ; }
