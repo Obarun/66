@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/types.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <oblibs/bytes.h>
 #include <oblibs/string.h>
@@ -153,6 +153,7 @@ int section_get_range(section_t *sasection,stralloc *src)
 			if (skip) sasection->idx[id] = 1 ;
 		}
 		if (!section_get_id(&secname,cp.s,&pos,&id)) goto err ;
+		if (!secname.len && !n)  goto err ;
 		if (!n)
 		{ 
 			skip = section_get_skip(cp.s,pos,MILL_GET_SECTION_NAME.inner.nline) ;
@@ -833,8 +834,8 @@ int read_svfile(stralloc *sasv,char const *name,char const *src)
 		return 0 ;
 	}
 	/** ensure that we have an empty line at the end of the string*/
-	if (!stralloc_cats(sasv,"\n")) retstralloc(0,"parse_service_before") ;
-	if (!stralloc_0(sasv)) retstralloc(0,"parse_service_before") ;
+	if (!stralloc_cats(sasv,"\n")) retstralloc(0,"read_svfile") ;
+	if (!stralloc_0(sasv)) retstralloc(0,"read_svfile") ;
 	
 	return 1 ;
 }
