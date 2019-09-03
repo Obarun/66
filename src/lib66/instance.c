@@ -57,28 +57,6 @@ int instance_splitname(stralloc *sa,char const *name,int len,int what)
 	else
 		return stralloc_obreplace(sa,copy) ;
 }
-/*
-int instance_change_name(stralloc *sa,char const *template,char const *copy)
-{	
-	stralloc tmp = STRALLOC_ZERO ;
-	stralloc iname = STRALLOC_ZERO ;
-	
-	if (!stralloc_cats(&iname,template) ||
-	!stralloc_cats(&iname,copy) ||
-	!stralloc_0(&iname) ||
-	!stralloc_copy(&tmp,sa) ||
-	!environ_get_val_of_key(&tmp,get_keybyid(NAME)) ||
-	!sastr_replace(sa,tmp.s,iname.s)) goto err ;	
-	
-	stralloc_free(&tmp) ;
-	stralloc_free(&iname) ;
-	return 1 ;
-	err:
-		stralloc_free(&tmp) ;
-		stralloc_free(&iname) ;
-		return 0 ;
-}
-*/
 
 int instance_create(stralloc *sasv,char const *svname, char const *regex, char const *src, int len)
 {
@@ -97,10 +75,6 @@ int instance_create(stralloc *sasv,char const *svname, char const *regex, char c
 		VERBO3 strerr_warnwu3sys("open: ",src,template) ;
 		goto err ;
 	}
-/*	if (!instance_change_name(&tmp,template,copy)) {
-		VERBO3 strerr_warnwu3x("replace instance name at: ",src,template) ;
-		goto err ;
-	}*/
 	if (!sastr_replace_all(&tmp,regex,copy)){
 		VERBO3 strerr_warnwu3x("replace instance character at: ",src,template) ;
 		goto err ;
