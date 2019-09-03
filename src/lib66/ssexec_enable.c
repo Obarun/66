@@ -56,46 +56,28 @@ static void check_identifier(char const *name)
 
 static void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv)
 {
+	int r ;
 	uint8_t exist = 0 ;
-	stralloc sares = STRALLOC_ZERO ;
+	size_t i = 0, len = list->len ;
+	
 	stralloc sasv = STRALLOC_ZERO ;
 	stralloc tmp = STRALLOC_ZERO ;
-	ss_resolve_t res = RESOLVE_ZERO ;
-
-	tmp.len = 0 ;
-	size_t i = 0, len = list->len ;
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;
 	
 	for (;i < len; i += strlen(list->s + i) + 1)
 	{
 		exist = 0 ;
-		sares.len = 0 ;
 		char *name = list->s+i ;
 		size_t namelen = strlen(name) ;
 		char svname[namelen + 1] ;
-		if (!basename(svname,name)) strerr_diefu2sys(111,"get basename of: ", name) ;
-		if (ss_resolve_check(sares.s,svname))
-		{
-			if (!ss_resolve_read(&res,sares.s,svname)) strerr_diefu2sys(111,"read resolve file of: ",svname) ;
-			if (res.disen)
-			{	
-				exist = 1 ;
-				if (!FORCE)
-				{
-					VERBO1 strerr_warnw3x("Ignoring: ",svname," service: already enabled") ;
-					continue ;
-				}
-			}
-		}
-		
+		if (!basename(svname,name)) strerr_diefu2sys(111,"get basename of: ", svname) ;
+		r = parse_service_check_enabled(info,svname,FORCE,&exist) ;
+		if (!r) strerr_diefu2x(111,"check enabled service: ",svname) ;
+		if (r == 2) continue ;
 		if (!parse_service_before(info,&tmp,name,nbsv,&sasv,FORCE,&exist))
 			strerr_diefu3x(111,"parse service file: ",svname,": or its dependencies") ;
 	}
-	stralloc_free(&sares) ;
 	stralloc_free(&sasv) ;
-	stralloc_free(&tmp) ;
-	ss_resolve_free(&res) ;
-	
+	stralloc_free(&tmp) ;	
 }
 
 int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
