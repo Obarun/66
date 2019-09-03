@@ -144,7 +144,7 @@ int ss_resolve_src_path(stralloc *sasrc,char const *sv, ssexec_t *info)
 			src = SS_SERVICE_SYSDIR ;
 			r = ss_resolve_src(sasrc,sv,src,&found) ;
 			if (r < 0) { VERBO3 strerr_warnwu2sys("parse source directory: ",src) ; goto err ; }
-			if (!r) { VERBO3 strerr_warnw2sys("unknown service: ",sv) ; goto err ; }
+			if (!r) { VERBO3 strerr_warnw2x("unknown service: ",sv) ; goto err ; }
 		}
 	}
 	stralloc_free(&home) ;
