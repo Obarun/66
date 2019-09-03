@@ -104,11 +104,13 @@ void freed_parser(void)
 parse_mill_t MILL_FIRST_BRACKET = \
 { \
 	.search = "(", .searchlen = 1, \
+	.end = ")", .endlen = 1, \
 	.inner.debug = "first_bracket" } ;
 
 parse_mill_t MILL_GET_AROBASE_KEY = \
 { \
 	.open = '@', .close = '=', .keepopen = 1, \
+	.flush = 1, \
 	.forceclose = 1, .skip = " \t\r", .skiplen = 3, \
 	.forceskip = 1,	.inner.debug = "get_arobase_key" } ;
 
@@ -182,8 +184,9 @@ int section_get_range(section_t *sasection,stralloc *src)
 					r = get_rlen_until(cp.s,'\n',pos-1) ;//-1 to retrieve the end of previous line
 					if (r == -1) goto err ;
 					if (!stralloc_catb(psasection,cp.s+start,(r - start))) goto err ;
+					
 				}
-				else if (!stralloc_cats(psasection,cp.s+start)) goto err ;
+				else if (!stralloc_catb(psasection,cp.s+start,cp.len - start)) goto err ;
 				if (!stralloc_0(psasection)) goto err ;
 			}
 			start = pos ;
@@ -220,11 +223,13 @@ int key_get_range(genalloc *ga, section_t *sasection,int *svtype)
 				nocheck.expected = KEYVAL ;
 				nocheck.mandatory = OPTS ;
 				section_setsa(i,&psasection,sasection) ;
-				if (!stralloc_cats(&nocheck.val,psasection->s+1)) goto err ;
+				if (!stralloc_cats(&nocheck.val,psasection->s+1)) goto err ;//+1 remove the first '\n'
 				if (!environ_get_clean_env(&nocheck.val)) { VERBO3 strerr_warnwu2x("parse section: ",get_keybyid(i)) ; goto err ; }
 				if (!stralloc_cats(&nocheck.val,"\n") ||
 				!stralloc_0(&nocheck.val)) goto err ;
 				nocheck.val.len-- ;
+				
+				
 				if (!genalloc_append(keynocheck,ga,&nocheck)) goto err ;
 			} 
 			else
@@ -266,8 +271,7 @@ int key_get_range(genalloc *ga, section_t *sasection,int *svtype)
 									if (!stralloc_0(&nocheck.val)) goto err ;
 									break ;
 								case BRACKET:
-									r = parse_bracket(&nocheck.val,&pos) ;
-									if (r < 0)
+									if (!parse_bracket(&nocheck.val,&pos))
 									{
 										VERBO3 parse_err(6,&nocheck) ;
 										goto err ;
@@ -680,6 +684,7 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 				VERBO3 strerr_warnwu2x("clean environment value: ",chval) ;
 				return 0 ;
 			}
+			if (!stralloc_cats(&nocheck->val,"\n")) return 0 ;
 			if (!stralloc_copy(&service->saenv,&nocheck->val))
 			{
 				VERBO3 strerr_warnwu2x("store environment value: ",chval) ;
