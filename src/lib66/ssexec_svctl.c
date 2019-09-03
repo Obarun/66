@@ -229,7 +229,7 @@ static void write_state(ss_resolve_sig_t *svc)
 	}
 	ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
 	ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-	ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+//	ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
 	VERBO2 strerr_warni2x("Write state file of: ",sv) ;
 	if (!ss_state_write(&sta,state,sv))
 	{

@@ -134,7 +134,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 				if (!hiercopy(tocopy,string + genalloc_s(ss_resolve_t,&gares)[i].runat)) strerr_diefu4sys(111,"copy: ",tocopy," to: ",string + genalloc_s(ss_resolve_t,&gares)[i].runat) ;
 				ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
 				ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-				ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+	//			ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
 				ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_UNKNOWN) ;
 				ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_UNKNOWN) ;
 				if (!ss_state_write(&sta,string + genalloc_s(ss_resolve_t,&gares)[i].state,name)) strerr_diefu2sys(111,"write state file of: ",name) ;

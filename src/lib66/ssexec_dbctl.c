@@ -150,7 +150,7 @@ static int check_status(genalloc *gares,ssexec_t *info,int signal)
 		if (nret) ret = 111 ;
 		ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
 		ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-		ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+	//	ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
 		if (pres->type == BUNDLE || pres->type == ONESHOT)
 		{
 			if (up) ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;

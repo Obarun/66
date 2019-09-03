@@ -73,7 +73,7 @@ int svc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *cons
 		{
 			ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
 			ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
-			ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+	//		ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
 			ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
 			ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
 			VERBO2 strerr_warni2x("Write state file of: ",name) ;
