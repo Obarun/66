@@ -103,7 +103,7 @@ typedef struct sv_name_s sv_name_t, *sv_name_t_ref ;
 struct sv_name_s
 {
 	int itype ;/**int type =30->classic,31->bundle,32->longrun,33->oneshot*/
-	unsigned int name ;//pos in keep
+	int name ;//pos in keep
 	unsigned int description ;//pos in keep
 	unsigned int idga ; //pos in genalloc gadeps
 	unsigned int nga ; //len of idga in genalloc gadeps
@@ -185,7 +185,7 @@ struct sv_alltype_s
 #define SV_NAME_ZERO \
 { \
 	-1 ,\
-	0 ,\
+	-1 ,\
 	0 ,\
 	0 ,\
 	0 ,\
