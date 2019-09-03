@@ -416,14 +416,18 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			/** uid */
 			if (!stralloc_cats(&shebang, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n")) retstralloc(0,"write_logger") ;
 			if (!stralloc_0(&shebang)) retstralloc(0,"write_logger") ;
-			if ((!MYUID && log->run.runas))
+			if ((!MYUID))// && log->run.runas))
 			{
 				if (!stralloc_cats(&ui,S6_BINPREFIX "s6-setuidgid ")) retstralloc(0,"write_logger") ;
-				if (!get_namebyuid(log->run.runas,&ui))
+				if (log->run.runas)
 				{
-					VERBO3 strerr_warnwu1sys("set owner for the logger") ;
-					return 0 ;
+					if (!get_namebyuid(log->run.runas,&ui))
+					{
+						VERBO3 strerr_warnwu1sys("set owner for the logger") ;
+						return 0 ;
+					}
 				}
+				else if (!stralloc_cats(&ui,SS_LOGGER_RUNNER)) retstralloc(0,"write_logger") ;
 			}
 			if (!stralloc_cats(&ui,"\n")) retstralloc(0,"write_logger") ;
 			if (!stralloc_0(&ui)) retstralloc(0,"write_logger") ;
@@ -523,26 +527,21 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			return 0 ;
 	
 	}
-	size_t destlen = get_rlen_until(destlog.s,'/',destlog.len) ;
-	destlog.len = destlen ;
-	if (!stralloc_0(&destlog)) retstralloc(0,"write_logger") ;
-	
-	r = dir_search(destlog.s,svname,S_IFDIR) ;
-	if (r < 0)
+		
+	r = scan_mode(destlog.s,S_IFDIR) ;
+	if (r == -1)
 	{
-		VERBO3 strerr_warnw4x(destlog.s,"/",svname," already exist with different mode") ;
+		VERBO3 strerr_warnw3x("log directory: ", destlog.s,": already exist with a different mode") ;
 		return 0 ;
 	}
-	if (!r)
 	{
-		r = dir_create_under(destlog.s,svname,0755) ;
-		if (r < 0)
+		if (!dir_create_parent(destlog.s,0755))
 		{
-			VERBO3 strerr_warnwu5sys("create ",destlog.s,"/",svname," directory") ;
+			VERBO3 strerr_warnwu2sys("create log directory: ",destlog.s) ;
 			return 0 ;
 		}
 	}
-
+	
 	stralloc_free(&shebang) ;
 	stralloc_free(&ui) ;
 	stralloc_free(&exec) ;
