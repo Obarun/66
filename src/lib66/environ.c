@@ -46,27 +46,38 @@ int env_merge_conf(char const *dst,char const *file,stralloc *srclist,stralloc *
 	int r ;
 	size_t pos = 0, fakepos = 0 ;
 	stralloc result = STRALLOC_ZERO ;
-	stralloc skey = STRALLOC_ZERO ;
 	stralloc sval = STRALLOC_ZERO ;
 	stralloc mkey = STRALLOC_ZERO ;
 	stralloc mval = STRALLOC_ZERO ;
+	
 	if (!environ_get_clean_env(srclist) ||
-	!environ_get_clean_env(modifs) ||
 	!environ_clean_nline(srclist) ||
+	!stralloc_0(srclist)) goto err ;
+	srclist->len-- ;
+	
+		
+	if (!environ_get_clean_env(modifs) ||
 	!environ_clean_nline(modifs) ||
-	!stralloc_copy(&result,srclist)) goto err ;
-	result.len-- ; //remove 0
-	if (!sastr_split_string_in_nline(modifs)) goto err ;
-	if (!sastr_split_string_in_nline(srclist)) goto err ;
+	!stralloc_0(modifs)) goto err ;
+	modifs->len-- ;
+	
+	if (!stralloc_copy(&result,srclist) ||
+	!sastr_split_string_in_nline(modifs) ||
+	!sastr_split_string_in_nline(srclist)) goto err ;
+	
+	if (!stralloc_0(&result)) goto err ;
+	result.len-- ;
+			
 	for (;pos < modifs->len; pos += strlen(modifs->s + pos) + 1)
 	{
 		fakepos = pos ;
-		skey.len = sval.len = mkey.len = mval.len = 0 ;
+		sval.len = mkey.len = mval.len = 0 ;
 		if (!stralloc_copy(&mkey,modifs) ||
 		!stralloc_copy(&mval,modifs) ||
-		!stralloc_copy(&skey,srclist) ||
 		!stralloc_copy(&sval,srclist)) goto err ;
-		if(!environ_get_key_nclean(&mkey,&pos)) goto err ;
+				
+		if (!environ_get_key_nclean(&mkey,&pos)) goto err ;
+		
 		r = sastr_find(srclist,mkey.s) ;
 		if (r >= 0)
 		{
@@ -75,25 +86,31 @@ int env_merge_conf(char const *dst,char const *file,stralloc *srclist,stralloc *
 				if (!environ_get_val_of_key(&sval,mkey.s) ||
 				!environ_get_val_of_key(&mval,mkey.s) ||
 				!sastr_replace(&result,sval.s,mval.s)) goto err ;
+				stralloc_0(&result) ;
 				result.len-- ;
 			}
 		}
 		else
 		{
-			if (!stralloc_cats(&result,modifs->s+fakepos) ||
-			!stralloc_cats(&result,"\n")) goto err ;	
+			if (!stralloc_cats(&result,"\n") ||
+			!stralloc_catb(&result,modifs->s+fakepos,strlen(modifs->s + fakepos))) goto err ;	
+		
 		}
 	}
-	if (!stralloc_cats(&result,"\n")) goto err ;
+	if (!stralloc_cats(&result,"\n") ||
+	!stralloc_0(&result)) goto err ;
+	result.len-- ;
 	if (!file_write_unsafe(dst,file,result.s,result.len)) goto err ;
 	
-	stralloc_free(&result) ; stralloc_free(&skey) ;
-	stralloc_free(&sval) ; stralloc_free(&mkey) ;
+	stralloc_free(&result) ;
+	stralloc_free(&sval) ; 
+	stralloc_free(&mkey) ;
 	stralloc_free(&mval) ;
 	return 1 ;
 	err:
-		stralloc_free(&result) ; stralloc_free(&skey) ;
-		stralloc_free(&sval) ; stralloc_free(&mkey) ;
+		stralloc_free(&result) ;
+		stralloc_free(&sval) ; 
+		stralloc_free(&mkey) ;
 		stralloc_free(&mval) ;
 		return 0 ;
 }
