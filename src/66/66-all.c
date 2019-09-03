@@ -82,11 +82,9 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 	src[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + treenamelen] = 0 ;
        
 	if (!dir_get(&ga,src,"init",S_IFREG))
-	{
-		VERBO1 strerr_warnwu3x("Empty tree: ",treename,": nothing to do") ;
-		goto freed ;
-	}
-
+		strerr_diefu2sys(111,"get state file from directory: ",src) ;
+		
+	if (genalloc_len(stralist,&ga))
 	{
 		char const *newargv[10 + genalloc_len(stralist,&ga)] ;
 		unsigned int m = 0 ;
@@ -122,7 +120,8 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 		}
 		if (wstat) goto err ;
 	}
-	freed:
+	else VERBO1 strerr_warni3x("Empty tree: ",treename," -- nothing to do") ;
+
 	genalloc_deepfree(stralist,&ga,stra_free) ;	
 	return 1 ;
 	err:
