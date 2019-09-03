@@ -5,7 +5,6 @@ BIN_TARGETS := \
 66-tree \
 66-dbctl \
 66-enable \
-66-envfile \
 66-disable \
 66-parser \
 66-start \
@@ -18,14 +17,7 @@ BIN_TARGETS := \
 66-shutdown \
 66-shutdownd \
 66-hpr \
-execl-cmdline \
-execl-envfile \
-execl-subuidgid \
-66-writenv \
-66-getenv \
-66-gnwenv \
 66-umountall \
-66-echo \
-66-which
+66-echo
 
 LIB_DEFS := 66=66
