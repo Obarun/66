@@ -15,7 +15,7 @@
 #include <66/parser.h>
 
 #include <string.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <oblibs/string.h>
 #include <oblibs/types.h>
@@ -32,44 +32,38 @@
 
 int parse_service_check_enabled(ssexec_t *info, char const *svname,uint8_t force,uint8_t *exist)
 {
-	int rc, rl, ret = 1 ;
-	stralloc tmp = STRALLOC_ZERO ;
-	if (!set_ownerhome(&tmp,info->owner))
+	stralloc sares = STRALLOC_ZERO ;
+	ss_resolve_t res = RESOLVE_ZERO ;
+	int ret = 1 ;
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
 	{
-		VERBO3 strerr_warnwu1sys("set home directory") ; 
-		goto err ;
-	}
-	if (!ss_resolve_pointo(&tmp,info,LONGRUN,SS_RESOLVE_SRC)) {
 		VERBO3 strerr_warnwu1sys("set revolve pointer to source") ;
-		goto err ;
-	}
-	tmp.len-- ;
-	if (!stralloc_cats(&tmp,SS_SRC) ||
-	!stralloc_0(&tmp)) retstralloc(0,"parse_service_check_enabled") ;
-	rl = dir_search(tmp.s,svname,S_IFDIR) ;
-	if (!ss_resolve_pointo(&tmp,info,CLASSIC,SS_RESOLVE_SRC)) {
-		VERBO3 strerr_warnwu1sys("set revolve pointer to source") ;
-		goto err ;
-	}
-	rc = dir_search(tmp.s,svname,S_IFDIR) ;
-	if (rc == 1 || rl == 1) {
-		(*exist) = 1 ;
-		if (!force) { 
-			VERBO2 strerr_warni2x("already added: ",svname) ;
-			ret = 2 ;
-			goto freed ;
+		goto err ;	
+	} 
+	if (ss_resolve_check(sares.s,svname))
+	{
+		if (!ss_resolve_read(&res,sares.s,svname)) 
+		{
+			VERBO3 strerr_warnwu2sys("read resolve file of: ",svname) ;
+			goto err ;
+		}
+		if (res.disen)
+		{
+			(*exist) = 1 ;
+			if (!force) { 
+				VERBO1 strerr_warnw3x("Ignoring: ",svname," service: already enabled") ;
+				ret = 2 ;
+				goto freed ;
+			}
 		}
 	}
-	else if (rc == -1 || rl == -1)
-	{
-		VERBO3 strerr_warnw3x("Conflicting format type for ",svname," service file") ;
-		goto err ;
-	}
 	freed:
-	stralloc_free(&tmp) ;
+	stralloc_free(&sares) ;
+	ss_resolve_free(&res) ;
 	return ret ;
 	err:
-		stralloc_free(&tmp) ;
+		stralloc_free(&sares) ;
+		ss_resolve_free(&res) ;
 		return 0 ;
 }
 
@@ -77,12 +71,13 @@ int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *se
 {
 	stralloc conf = STRALLOC_ZERO ;
 	size_t svlen = strlen(service) ;
-	char svsrc[svlen + 1] ;
-	if (!dirname(svsrc,service)) return 0 ;
-	size_t srclen = strlen(svsrc) ;
+//	char svsrc[svlen + 1] ;
+//	if (!dirname(svsrc,service)) return 0 ;
+//	size_t srclen = strlen(svsrc) ;
 	// keep source of the frontend file
 	sv_before->src = keep.len ;
-	if (!stralloc_catb(&keep,svsrc,srclen + 1)) return 0 ;
+//	if (!stralloc_catb(&keep,svsrc,srclen + 1)) return 0 ;
+	if (!stralloc_catb(&keep,service,svlen + 1)) return 0 ;
 	// keep source of the configuration file
 	if (sv_before->opts[2])
 	{
@@ -177,14 +172,39 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list, char const *sv,un
 		sv_alltype_free(&sv_before) ;
 		goto freed ;
 	}
-	/** keep the name by default,
-	 * it will be overwritten if user set 
-	 * the @name key into the frontend file */
-	sv_before.cname.name = keep.len ;
-	if (!stralloc_catb(&keep,svname,svnamelen + 1)) return 0 ;
-	
+		
 	if (!parser(&sv_before,sasv,svname)) return 0 ;
 	
+	/** keep the name set by user
+	 * uniquely for instantiated service
+	 * The name must contain the template string */
+	
+	if (insta > 0 && sv_before.cname.name >= 0 )
+	{
+		stralloc sainsta = STRALLOC_ZERO ;
+		stralloc name = STRALLOC_ZERO ;
+		if (!stralloc_cats(&name,keep.s + sv_before.cname.name)) goto err ;
+		
+		if (!instance_splitname(&sainsta,svname,insta,0)) goto err ;
+		if (sastr_find(&name,sainsta.s) == -1)
+		{
+			strerr_warnw2x("invalid instantiated service name: ", keep.s + sv_before.cname.name) ;
+			goto err ;
+		}
+		stralloc_free(&sainsta) ;
+		stralloc_free(&name) ;
+		goto add ;
+		err:
+			stralloc_free(&sainsta) ;
+			stralloc_free(&name) ;
+			return 0 ;
+	}
+	else
+	{
+		sv_before.cname.name = keep.len ;
+		if (!stralloc_catb(&keep,svname,svnamelen + 1)) return 0 ;
+	}
+	add:
 	if (!parse_add_service(parsed_list,&sv_before,svpath,nbsv,info->owner)) return 0 ;
 	
 	if ((sv_before.cname.itype > CLASSIC && force > 1) || !(*exist))
