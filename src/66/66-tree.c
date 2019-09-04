@@ -16,7 +16,7 @@
 
 #include <string.h>
 #include <sys/stat.h>
-//#include <stdio.h>
+#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -47,6 +47,7 @@
 
 unsigned int VERBOSITY = 1 ;
 static stralloc reslive = STRALLOC_ZERO ;
+static char const *cleantree = 0 ;
 
 static inline void info_help (void)
 {
@@ -72,140 +73,118 @@ static inline void info_help (void)
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
-void cleanup(char const *tree){
+static void cleanup(char const *tree){
 	VERBO3 strerr_warnt3x("removing ",tree," ...") ;
 	rm_rf(tree) ;
 }
 
-int sanitize_extra(char const *dst)
+static void auto_string(char *string,char const *str,size_t baselen)
 {
-	int r ;
-	size_t dstlen, slash ;
-	dstlen = strlen(dst) - 1 ;//-1 remove last slash
-	char parentdir[dstlen + 1] ;
-	memcpy(parentdir,dst,dstlen) ;
-	slash = get_rlen_until(dst,'/',dstlen) ;
-	parentdir[slash] = '\0' ;
-	r = dir_create_under(parentdir,dst+slash+1,0755) ;
-	
-	return r ;
+	size_t slen = strlen(str) ;
+	memcpy(string + baselen,str,slen) ;
+	string[baselen+slen] = 0 ;
+}
+
+static void auto_dir(char const *dst,mode_t mode)
+{
+	VERBO3 strerr_warnt2x("create directory: ",dst) ;
+	if (!dir_create_parent(dst,mode))
+	{
+		if (cleantree) cleanup(cleantree) ;
+		strerr_diefu2sys(111,"create directory: ",dst) ;	
+	}
+}
+
+static void auto_create(char *string,char const *str,size_t baselen,mode_t mode)
+{
+	auto_string(string,str,baselen) ;
+	auto_dir(string,mode) ;
+}
+
+static void auto_check(char *dst,char const *str,size_t baselen,mode_t mode)
+{
+	auto_string(dst,str,baselen) ;
+	if (!scan_mode(dst,mode)) auto_dir(dst,0755) ;
 }
 
 static void inline auto_stralloc(stralloc *sa,char const *str)
 {
 	if (!stralloc_cats(sa,str)) strerr_diefu1sys(111,"append stralloc") ;
 }
+
 static void inline auto_stralloc0(stralloc *sa)
 {
 	if (!stralloc_0(sa)) strerr_diefu1sys(111,"append stralloc") ;
 	sa->len-- ;
 }
+
+static void inline auto_stralloc_0(stralloc *sa,char const *str)
+{
+	auto_stralloc(sa,str) ;
+	auto_stralloc0(sa) ;
+}
+
 int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t owner)
 {
 	
 	ssize_t r ;
 	size_t baselen = strlen(base) ;
 	char dst[baselen + SS_SYSTEM_LEN + 1] ;
-	
-	memcpy(dst,base,baselen) ;
-	dst[baselen] = 0 ;
-		
+	auto_string(dst,base,0) ;
+			
 	/** base is /var/lib/66 or $HOME/.66*/
 	/** this verification is made in case of 
 	 * first use of 66-*** tools */
 	r = scan_mode(dst,S_IFDIR) ;
-	if (r < 0)
-	{
-		VERBO3 strerr_warnwu2x("invalid directorey: ",dst) ;
-		return -1 ;
-	}
+	if (r < 0) strerr_diefu2x(111,"invalid directory: ",dst) ;
+	
 	if(!r)
 	{
 		VERBO3 strerr_warnt3x("create directory: ",dst,SS_SYSTEM) ;
-		r = dir_create_under(dst,SS_SYSTEM,0755) ;
-		if (!r){
-			VERBO3 strerr_warnwu3sys("create ",dst,SS_SYSTEM) ;
-			return -1 ;
-		}
+		auto_create(dst,SS_SYSTEM,baselen,0755) ;
 		/** create extra directory for service part */
 		if (!owner)
 		{
-			if (sanitize_extra(SS_LOGGER_SYSDIR) < 0)
-			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_LOGGER_SYSDIR) ; return -1 ; }
-			if (sanitize_extra(SS_SERVICE_SYSDIR) < 0)
-			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_SERVICE_SYSDIR) ; return -1 ; }
-			if (sanitize_extra(SS_SERVICE_ADMDIR) < 0)
-			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_SERVICE_ADMDIR) ; return -1 ; }
-			if (sanitize_extra(SS_SERVICE_ADMCONFDIR) < 0)
-			{ VERBO3 strerr_warnwu2sys("create directory: ",SS_SERVICE_ADMCONFDIR) ; return -1 ; }
+			auto_dir(SS_LOGGER_SYSDIR,0755) ;
+			auto_dir(SS_SERVICE_SYSDIR,0755) ;
+			auto_dir(SS_SERVICE_ADMDIR,0755) ;
+			auto_dir(SS_SERVICE_ADMCONFDIR,0755) ;	
 		}
 		else
 		{
 			size_t extralen ;
 			stralloc extra = STRALLOC_ZERO ;
 			if (!set_ownerhome(&extra,owner))
-			{
-				VERBO3 strerr_warnwu1sys("set home directory") ;
-				return -1 ;
-			}
+				strerr_diefu1sys(111,"set home directory") ;
+			
 			extralen = extra.len ;
-			if (!stralloc_cats(&extra,SS_LOGGER_USERDIR)) retstralloc(0,"sanitize_tree") ;
-			if (!stralloc_0(&extra)) retstralloc(0,"sanitize_tree") ;
-			if (sanitize_extra(extra.s) < 0)
-			{ VERBO3 strerr_warnwu2sys("create directory: ",extra.s) ; return -1 ; }
+			auto_stralloc_0(&extra,SS_LOGGER_USERDIR) ;
+			auto_dir(extra.s,0755) ;
 			extra.len = extralen ;
-			if (!stralloc_cats(&extra,SS_SERVICE_USERDIR)) retstralloc(0,"sanitize_tree") ;
-			if (!stralloc_0(&extra)) retstralloc(0,"sanitize_tree") ;
-			if (sanitize_extra(extra.s) < 0)
-			{ VERBO3 strerr_warnwu2sys("create directory: ",extra.s) ; return -1 ; }
+			auto_stralloc_0(&extra,SS_SERVICE_USERDIR) ;
+			auto_dir(extra.s,0755) ;
 			extra.len = extralen ;
-			if (!stralloc_cats(&extra,SS_SERVICE_USERCONFDIR)) retstralloc(0,"sanitize_tree") ;
-			if (!stralloc_0(&extra)) retstralloc(0,"sanitize_tree") ;
-			if (sanitize_extra(extra.s) < 0)
-			{ VERBO3 strerr_warnwu2sys("create directory: ",extra.s) ; return -1 ; }
+			auto_stralloc_0(&extra,SS_SERVICE_USERCONFDIR) ;
+			auto_dir(extra.s,0755) ;
 			stralloc_free(&extra) ;
 		}
 	}
-	if (!dir_search(dst,SS_TREE_CURRENT,S_IFDIR))
+	auto_check(dst,SS_TREE_CURRENT,baselen,0755) ;
+	auto_string(dst,SS_SYSTEM,baselen) ;
+	auto_check(dst,SS_BACKUP,baselen + SS_SYSTEM_LEN,0755) ;
+	auto_string(dst,SS_STATE,baselen + SS_SYSTEM_LEN) ;
+	if (!scan_mode(dst,S_IFREG))
 	{
-		VERBO3 strerr_warnt3x("create directory: ",dst,SS_TREE_CURRENT) ;
-		r = dir_create_under(dst,SS_TREE_CURRENT,0755) ;
-		if (!r){
-			VERBO3 strerr_warnwu3sys("create ",dst,SS_TREE_CURRENT) ;
-			return -1 ;
-		}
-	}
-	memcpy(dst + baselen, SS_SYSTEM, SS_SYSTEM_LEN) ;
-	dst[baselen + SS_SYSTEM_LEN] = 0 ;
-	if (!dir_search(dst,SS_BACKUP + 1,S_IFDIR))
-	{	
-		VERBO3 strerr_warnt3x("create directory: ",dst,SS_BACKUP) ;
-		if(!dir_create_under(dst,SS_BACKUP + 1,0755))
-		{
-			VERBO3 strerr_warnwu3sys("create ",dst,SS_BACKUP) ;
-			return -1 ;
-		}
-	}
-	if (!dir_search(dst,SS_STATE + 1,S_IFREG))
-	{
-		VERBO3 strerr_warnt3x("create file: ",dst,SS_STATE) ;
+		auto_string(dst,SS_SYSTEM,baselen) ;
 		if(!file_create_empty(dst,SS_STATE + 1,0644))
-		{
-			VERBO3 strerr_warnwu3sys("create ",dst,SS_STATE) ;
-			return -1 ;
-		}
+			strerr_diefu3sys(111,"create ",dst,SS_STATE) ;
 	}
-	
-	r = dir_search(dst,tree,S_IFDIR) ;
-	if (r < 0){
-		VERBO3 strerr_warnw3x(dst,tree," is not a directory") ;
-		return -1 ;
-	}
-	
+	auto_string(dst,"/",baselen + SS_SYSTEM_LEN) ;
+	auto_string(dst,tree,baselen + SS_SYSTEM_LEN + 1) ;
+	r = scan_mode(dst,S_IFDIR) ;
+	if (r == -1) strerr_dief2x(111,"invalid directory: ",dst) ;
 	/** we have one, keep it*/
 	if (!stralloc_cats(dstree,dst)) retstralloc(0,"sanitize_tree") ;
-	if (!stralloc_cats(dstree,"/")) retstralloc(0,"sanitize_tree") ;
-	if (!stralloc_cats(dstree,tree)) retstralloc(0,"sanitize_tree") ;
 	if (!stralloc_0(dstree)) retstralloc(0,"sanitize_tree") ;
 	
 	if (!r) return 0 ;
@@ -213,11 +192,11 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t own
 	return 1 ;
 }
 
-int create_tree(char const *tree,char const *treename)
+void create_tree(char const *tree,char const *treename)
 {
 	size_t newlen = 0 ;
 	size_t treelen = strlen(tree) ;
-	
+		
 	char dst[treelen + SS_DB_LEN + SS_SRC_LEN + 13 + 1] ;
 	ss_resolve_t res = RESOLVE_ZERO ;
 	ss_resolve_init(&res) ;
@@ -233,143 +212,89 @@ int create_tree(char const *tree,char const *treename)
 	res.type = BUNDLE ;
 	res.disen = 1 ;
 	
-	VERBO3 strerr_warnt3x("create directory: ",dst,SS_SVDIRS) ;
-	if(!dir_create_under(dst,SS_SVDIRS + 1,0755))
-	{
-		VERBO3 strerr_warnwu3sys("create ",dst,SS_SVDIRS) ;
-		return 0 ;
-	}
-	VERBO3 strerr_warnt3x("create directory: ",dst,SS_RULES) ;
-	if (!dir_create_under(dst,SS_RULES + 1,0755)){
-		VERBO3 strerr_warnwu3sys("create ",dst,SS_RULES) ;
-		return 0 ;
-	}
-	
-	memcpy(dst + newlen,SS_SVDIRS,SS_SVDIRS_LEN) ;
+	auto_create(dst,SS_SVDIRS,newlen,0755) ;
+	auto_create(dst,SS_RULES,newlen,0755) ;
+	auto_string(dst,SS_SVDIRS,newlen) ;
 	newlen = newlen + SS_SVDIRS_LEN ;
+	auto_create(dst,SS_DB,newlen,0755) ;
+	auto_create(dst,SS_SVC,newlen,0755) ;
+	auto_create(dst,SS_RESOLVE,newlen,0755) ;
 	dst[newlen] = 0 ;
-
-	VERBO3 strerr_warnt3x("create directory: ",dst,SS_DB) ;
-	if (!dir_create_under(dst,SS_DB + 1,0755))
-	{
-		VERBO3 strerr_warnwu3sys("create ",dst,SS_DB) ;
-		return 0 ;
-	}
-	VERBO3 strerr_warnt3x("create directory: ",dst,SS_SVC) ;
-	if (!dir_create_under(dst,SS_SVC + 1,0755))
-	{
-		VERBO3 strerr_warnwu3sys("create ",dst,SS_DB) ;
-		return 0 ;
-	}
-		
-	VERBO3 strerr_warnt3x("create directory: ",dst,SS_RESOLVE) ;
-	if (!dir_create_under(dst,SS_RESOLVE + 1,0755))
-	{
-		VERBO3 strerr_warnwu3sys("create ",dst,SS_RESOLVE) ;
-		return 0 ;
-	}
-	
 	VERBO3 strerr_warnt1x("write resolve file of inner bundle") ;
 	if (!ss_resolve_write(&res,dst,SS_MASTER+1))
 	{
-		VERBO3 strerr_warnwu1sys("write resolve file of inner bundle") ;
 		ss_resolve_free(&res) ;
-		return 0 ;
+		cleanup(cleantree) ;
+		strerr_diefu1sys(111,"write resolve file of inner bundle") ;
 	}
 	ss_resolve_free(&res) ;
 	
 	char sym[newlen + 1 + SS_SYM_SVC_LEN + 1] ;
 	char dstsym[newlen + SS_SVC_LEN + 1] ;
-	
-	memcpy(sym,dst,newlen) ;
-	sym[newlen] = '/' ;
-	
-	memcpy(sym + newlen + 1, SS_SYM_SVC, SS_SYM_SVC_LEN) ;
-	sym[newlen + 1 + SS_SYM_SVC_LEN] = 0 ;
-	
-	
-	memcpy(dstsym,dst,newlen) ;
-	memcpy(dstsym + newlen, SS_SVC, SS_SVC_LEN) ;
-	dstsym[newlen + SS_SVC_LEN] = 0 ;
+	printf("dst::%s\n",dst) ;
+	auto_string(sym,dst,0) ;
+	auto_string(sym,"/",newlen) ;
+	auto_string(sym,SS_SYM_SVC,newlen + 1) ;
 
+	auto_string(dstsym,dst,0) ;
+	auto_string(dstsym,SS_SVC,newlen) ;
 	VERBO3 strerr_warnt4x("point symlink: ",sym," to ",dstsym) ;
 	if (symlink(dstsym,sym) < 0)
 	{
-		VERBO3 strerr_warnwu2sys("symlink: ", sym) ;
-		return 0 ;
+		cleanup(cleantree) ;
+		strerr_diefu2sys(111,"symlink: ", sym) ;
 	}
 	
-	memcpy(sym + newlen + 1, SS_SYM_DB, SS_SYM_DB_LEN) ;
-	sym[newlen + 1 + SS_SYM_DB_LEN] = 0 ;
-	
-	
-	memcpy(dstsym,dst,newlen) ;
-	memcpy(dstsym + newlen, SS_DB, SS_DB_LEN) ;
-	dstsym[newlen + SS_DB_LEN] = 0 ;
-	
+	auto_string(sym,SS_SYM_DB,newlen + 1) ;
+	auto_string(dstsym,SS_DB,newlen) ;
 	VERBO3 strerr_warnt4x("point symlink: ",sym," to ",dstsym) ;
 	if (symlink(dstsym,sym) < 0)
 	{
-		VERBO3 strerr_warnwu2sys("symlink: ", sym) ;
-		return 0 ;
+		cleanup(cleantree) ;
+		strerr_diefu2sys(111,"symlink: ", sym) ;
 	}
-		
-	memcpy(dst + newlen,SS_DB,SS_DB_LEN) ;
+
+	auto_string(dst,SS_DB,newlen) ;
 	newlen = newlen + SS_DB_LEN ;
-	dst[newlen] = 0 ;
-	
-	VERBO3 strerr_warnt3x("create directory: ",dst,SS_SRC) ;
-	if (!dir_create_under(dst,SS_SRC,0755))
-	{
-		VERBO3 strerr_warnwu3sys("create ",dst,SS_SRC) ;
-		return 0 ;
-	}
-		
-	memcpy(dst + newlen,SS_SRC,SS_SRC_LEN) ;
+	auto_create(dst,SS_SRC,newlen,0755) ;
+	auto_string(dst,SS_SRC,newlen) ;
 	newlen = newlen + SS_SRC_LEN ;
-	dst[newlen] = 0 ;
-	
-	
-	VERBO3 strerr_warnt3x("create directory: ",dst,SS_MASTER) ;
-	if(!dir_create_under(dst,SS_MASTER + 1,0755))
-	{
-		VERBO3 strerr_warnwu3sys("create ",dst,SS_MASTER) ;
-		return 0 ;
-	}
-	
-	memcpy(dst + newlen,SS_MASTER,SS_MASTER_LEN) ;
+	auto_create(dst,SS_MASTER,newlen,0755) ;
+	auto_string(dst,SS_MASTER,newlen) ;
 	newlen = newlen + SS_MASTER_LEN ;
-	dst[newlen] = 0 ;
-	
 	VERBO3 strerr_warnt3x("create file: ",dst,"/contents") ;
 	if (!file_create_empty(dst,"contents",0644))
 	{
-		VERBO3 strerr_warnwu3sys("create ",dst,"/contents") ;
-		return 0 ;
+		cleanup(cleantree) ;
+		strerr_diefu3sys(111,"create ",dst,"/contents") ;
 	}
 
-	memcpy(dst + newlen,"/type",5) ;
-	newlen = newlen + 5 ;
-	dst[newlen] = 0 ;
-	
+	auto_string(dst,"/type",newlen) ;
 	VERBO3 strerr_warnt2x("create file: ",dst) ;
 	if(!openwritenclose_unsafe(dst,"bundle\n",7))
 	{
-		VERBO3 strerr_warnwu2sys("write ",dst) ;
-		return 0 ;
+		cleanup(cleantree) ;
+		strerr_diefu2sys(111,"write ",dst) ;
 	}
-		
-	return 1 ;
+	
 }
 
-int create_backupdir(char const *base, char const *treename)
+void create_backupdir(char const *base, char const *treename)
 {
 	int r ;
 	
 	size_t baselen = strlen(base) - 1 ;//remove the last slash
 	size_t treenamelen = strlen(treename) ;
-	
+
 	char treetmp[baselen + 1 + SS_SYSTEM_LEN + SS_BACKUP_LEN + treenamelen + 1 + 1] ;
+	
+	auto_string(treetmp,base,0) ;
+	auto_string(treetmp,"/",baselen) ;
+	auto_string(treetmp,SS_SYSTEM,baselen + 1) ;
+	auto_string(treetmp,SS_BACKUP,baselen + 1 + SS_SYSTEM_LEN) ;
+	auto_string(treetmp,"/",baselen + 1 + SS_SYSTEM_LEN + SS_BACKUP_LEN) ;
+	auto_string(treetmp,treename,baselen + 1 + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1) ;
+	/*
 	memcpy(treetmp, base, baselen) ;
 	treetmp[baselen] = '/' ;
 	memcpy(treetmp + baselen + 1, SS_SYSTEM, SS_SYSTEM_LEN) ;
@@ -377,28 +302,18 @@ int create_backupdir(char const *base, char const *treename)
 	treetmp[baselen + 1 + SS_SYSTEM_LEN + SS_BACKUP_LEN] = '/' ;
 	memcpy(treetmp + baselen + 1 + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1, treename, treenamelen) ;
 	treetmp[baselen + 1 + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treenamelen ] = 0 ;
-	
+	*/
 	r = scan_mode(treetmp,S_IFDIR) ;
-	if (r || (r < 0))
+	if (r || (r == -1))
 	{
 		VERBO3 strerr_warnt2x("remove existing backup: ",treetmp) ;
 		if (rm_rf(treetmp) < 0)
 		{
-			VERBO3 strerr_warnwu2sys("remove: ",treetmp) ;
-			return 0 ;
+			cleanup(cleantree) ;
+			strerr_diefu2sys(111,"remove: ",treetmp) ;
 		}
 	}
-	if (!r)
-	{
-		VERBO3 strerr_warnt2x("create directory: ",treetmp) ;
-		if (!dir_create(treetmp,0755))
-		{
-			VERBO3 strerr_warnwu2sys("create directory: ",treetmp) ;
-			return 0 ;
-		}
-	}
-	
-	return 1 ;
+	if (!r)	auto_dir(treetmp,0755) ;
 }
 
 int set_rules(char const *tree,uid_t *uids, size_t uidn,unsigned int what) 
@@ -409,10 +324,13 @@ int set_rules(char const *tree,uid_t *uids, size_t uidn,unsigned int what)
 	char pack[256] ;
 	char tmp[treelen + SS_RULES_LEN + 1] ;
 	
-	memcpy(tmp,tree,treelen) ;
+	auto_string(tmp,tree,0) ;
+	auto_string(tmp,SS_RULES,treelen) ;
+
+/*	memcpy(tmp,tree,treelen) ;
 	memcpy(tmp + treelen,SS_RULES,SS_RULES_LEN) ;
 	tmp[treelen + SS_RULES_LEN] = 0 ; 
-	
+	*/
 	if (!uidn && what) 
 	{
 		uids[0] = 1 ;
@@ -449,7 +367,7 @@ int set_rules(char const *tree,uid_t *uids, size_t uidn,unsigned int what)
 			tmp[treelen + SS_RULES_LEN + 1 + uint_fmt(pack,uids[i + 1])] = 0 ;
 			VERBO3 strerr_warnt2x("unlink: ",tmp) ;
 			r = unlink(tmp) ;
-			if (r<0) return 0 ;
+			if (r == -1) return 0 ;
 		}
 		VERBO3 strerr_warnt4x("user: ",pack," is denied for tree: ",tree) ;
 	}
@@ -471,9 +389,13 @@ void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid
 	
 	/** set what we need */
 	char prefix[treenamelen + 2] ;
+	auto_string(prefix,treename,0) ;
+	auto_string(prefix,"-",treenamelen) ;
+/*
 	memcpy(prefix,treename,treenamelen) ;
 	memcpy(prefix + treenamelen,"-",1) ;
 	prefix[treenamelen + 1] = 0 ;
+	*/
 	
 	auto_stralloc(&scandir,live->s) ;
 	r = set_livescan(&scandir,owner) ;
@@ -504,7 +426,7 @@ void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid
 	}
 	
 	{ 
-		size_t i = 0, len = byte_count(list.s,list.len,'\0') ;
+		size_t i = 0, len = sastr_len(&list) ;
 		char const *newargv[9 + len + 1] ;
 		unsigned int m = 0 ;
 		char fmt[UINT_FMT] ;
@@ -650,24 +572,19 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	VERBO2 strerr_warni3x("sanitize ",tree," ..." ) ;
 	r = sanitize_tree(&dstree,base.s,tree,owner) ;
-	if (r < 0){
-		strerr_diefu2x(111,"sanitize ",tree) ;
-	}
 	
 	if(!r && create)
 	{
+		/** set cleanup */
+		cleantree = dstree.s ;
 		VERBO2 strerr_warni3x("creating ",dstree.s," ..." ) ;
-		if (!create_tree(dstree.s,tree))
-		{
-			cleanup(dstree.s) ;
-			strerr_diefu2x(111,"create tree: ",dstree.s) ;
-		}
+		create_tree(dstree.s,tree) ;
+		
 		VERBO2 strerr_warni3x("creating backup directory for ", tree," ...") ;
-		if (!create_backupdir(base.s,tree))
-		{
-			cleanup(dstree.s) ;
-			strerr_diefu2x(111,"create backup directory for: ",tree) ;
-		}
+		create_backupdir(base.s,tree) ;
+		/** unset cleanup */
+		cleantree = 0 ;
+		
 		VERBO2 strerr_warni3x("set permissions rules for ",dstree.s," ..." ) ;
 		if (!set_rules(dstree.s,auids,auidn,1))//1 allow
 		{
@@ -677,9 +594,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		
 		size_t dblen = dstree.len - 1 ;
 		char newdb[dblen + SS_SVDIRS_LEN + 1] ;
-		memcpy(newdb,dstree.s,dblen) ;
-		memcpy(newdb + dblen, SS_SVDIRS, SS_SVDIRS_LEN) ;
-		newdb[dblen + SS_SVDIRS_LEN] = 0 ;
+		auto_string(newdb,dstree.s,0) ;
+		auto_string(newdb,SS_SVDIRS,dblen) ;
+	
 		VERBO2 strerr_warni5x("compile ",newdb,"/db/",tree," ..." ) ;
 		if (!db_compile(newdb,dstree.s,tree,envp))
 		{
@@ -689,6 +606,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		r = 1 ;
 		create = 0 ;
 		VERBO1 strerr_warni2x("Created successfully tree: ",tree) ;
+		
 	}
 	
 	if ((!r && !create) || (!r && enable)) strerr_diefu2x(111,"find tree: ",dstree.s) ;
@@ -737,22 +655,17 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		size_t treelen = strlen(tree) ;
 		size_t baselen = base.len ;
 		char treetmp[baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen  + 1] ;
-		memcpy(treetmp, base.s, baselen) ;
-		memcpy(treetmp + baselen, SS_SYSTEM, SS_SYSTEM_LEN) ;
-		memcpy(treetmp + baselen + SS_SYSTEM_LEN, SS_BACKUP, SS_BACKUP_LEN) ;
-		memcpy(treetmp + baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN, "/", 1) ;
-		memcpy(treetmp + baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1, tree, treelen) ;
-		treetmp[baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen ] = 0 ;
-		
+		auto_string(treetmp,base.s,0) ;
+		auto_string(treetmp,SS_SYSTEM,baselen) ;
+		auto_string(treetmp,SS_BACKUP,baselen + SS_SYSTEM_LEN) ;
+		auto_string(treetmp,"/",baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN) ;
+		auto_string(treetmp,tree,baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1) ;
+	
 		r = scan_mode(treetmp,S_IFDIR) ;
 		if (r || (r < 0))
 		{
 			VERBO2 strerr_warni3x("delete backup of tree ",treetmp," ...") ;
-			if (rm_rf(treetmp) < 0)
-			{
-				VERBO3 strerr_warnwu2sys("delete: ",treetmp) ;
-				return 0 ;
-			}
+			if (rm_rf(treetmp) < 0)	strerr_diefu2sys(111,"delete: ",treetmp) ;
 		}
 		VERBO2 strerr_warni6x("disable: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
 		r  = tree_cmd_state(VERBOSITY,"-d",tree) ;
@@ -764,13 +677,12 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (snap)
 	{
 		char tmp[dstree.len + 1] ;
-		memcpy(tmp,dstree.s,dstree.len) ;
-		tmp[dstree.len] = 0 ;
+		auto_string(tmp,dstree.s,0) ;
+	
 		r  = get_rlen_until(dstree.s,'/',dstree.len) ;
 		dstree.len = r + 1;
-					
-		if (!stralloc_cats(&dstree,clone.s)) retstralloc(111,"main") ;
-		if (!stralloc_0(&dstree)) retstralloc(111,"main") ;
+		
+		auto_stralloc_0(&dstree,clone.s) ;		
 		r = scan_mode(dstree.s,S_IFDIR) ;
 		if ((r < 0) || r) strerr_dief2x(111,dstree.s,": already exist") ; 
 		VERBO2 strerr_warni5x("clone ",dstree.s," as ",tmp," ..." ) ;
