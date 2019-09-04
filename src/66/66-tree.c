@@ -294,15 +294,7 @@ void create_backupdir(char const *base, char const *treename)
 	auto_string(treetmp,SS_BACKUP,baselen + 1 + SS_SYSTEM_LEN) ;
 	auto_string(treetmp,"/",baselen + 1 + SS_SYSTEM_LEN + SS_BACKUP_LEN) ;
 	auto_string(treetmp,treename,baselen + 1 + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1) ;
-	/*
-	memcpy(treetmp, base, baselen) ;
-	treetmp[baselen] = '/' ;
-	memcpy(treetmp + baselen + 1, SS_SYSTEM, SS_SYSTEM_LEN) ;
-	memcpy(treetmp + baselen + 1 + SS_SYSTEM_LEN, SS_BACKUP, SS_BACKUP_LEN) ;
-	treetmp[baselen + 1 + SS_SYSTEM_LEN + SS_BACKUP_LEN] = '/' ;
-	memcpy(treetmp + baselen + 1 + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1, treename, treenamelen) ;
-	treetmp[baselen + 1 + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treenamelen ] = 0 ;
-	*/
+
 	r = scan_mode(treetmp,S_IFDIR) ;
 	if (r || (r == -1))
 	{
@@ -327,10 +319,6 @@ int set_rules(char const *tree,uid_t *uids, size_t uidn,unsigned int what)
 	auto_string(tmp,tree,0) ;
 	auto_string(tmp,SS_RULES,treelen) ;
 
-/*	memcpy(tmp,tree,treelen) ;
-	memcpy(tmp + treelen,SS_RULES,SS_RULES_LEN) ;
-	tmp[treelen + SS_RULES_LEN] = 0 ; 
-	*/
 	if (!uidn && what) 
 	{
 		uids[0] = 1 ;
@@ -391,12 +379,7 @@ void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid
 	char prefix[treenamelen + 2] ;
 	auto_string(prefix,treename,0) ;
 	auto_string(prefix,"-",treenamelen) ;
-/*
-	memcpy(prefix,treename,treenamelen) ;
-	memcpy(prefix + treenamelen,"-",1) ;
-	prefix[treenamelen + 1] = 0 ;
-	*/
-	
+
 	auto_stralloc(&scandir,live->s) ;
 	r = set_livescan(&scandir,owner) ;
 	if (!r) strerr_diefu1sys(111,"set livescan directory") ;
