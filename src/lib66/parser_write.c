@@ -253,7 +253,7 @@ int write_longrun(sv_alltype *sv,char const *dst, uint8_t force, uint8_t conf)
 			
 	}
 	/** dependencies */
-	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "dependencies", &gadeps))
+	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "dependencies"))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/dependencies") ;
 		return 0 ;
@@ -287,7 +287,7 @@ int write_oneshot(sv_alltype *sv,char const *dst,uint8_t conf)
 		}
 	}
 	
-	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "dependencies", &gadeps))
+	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "dependencies"))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/dependencies") ;
 		return 0 ;
@@ -305,7 +305,7 @@ int write_bundle(sv_alltype *sv, char const *dst)
 		return 0 ;
 	}
 	/** contents file*/
-	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "contents", &gadeps))
+	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "contents"))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/contents") ;
 		return 0 ;
@@ -389,7 +389,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 	/** dependencies*/
 	if (log->nga)
 	{
-		if (!write_dependencies(log->nga,log->idga,ddst.s,"dependencies",&gadeps))
+		if (!write_dependencies(log->nga,log->idga,ddst.s,"dependencies"))
 		{
 			VERBO3 strerr_warnwu3x("write: ",ddst.s,"/dependencies") ;
 			return 0 ;
@@ -876,17 +876,22 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 	return 1 ;	
 }
 
-int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename, genalloc *ga)
+int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename)
 {
 	stralloc contents = STRALLOC_ZERO ;
-	stralloc namedeps = STRALLOC_ZERO ;
-	
-	for (unsigned int i = 0; i < nga; i++)
+	//stralloc namedeps = STRALLOC_ZERO ;
+	size_t id = idga, nid = nga ;
+	for (;nid; id += strlen(deps.s + id) + 1, nid--)
+	{
+		if (!stralloc_cats(&contents,deps.s + id) ||
+		!stralloc_cats(&contents,"\n")) retstralloc(0,"write_dependencies") ;
+	}
+	/*for (unsigned int i = 0; i < nga; i++)
 	{
 		if (!stralloc_obreplace(&namedeps,deps.s+genalloc_s(unsigned int,ga)[idga+i])) return 0 ;
 		if (!stralloc_cats(&contents,namedeps.s)) retstralloc(0,"write_dependencies") ;
-		if (!stralloc_cats(&contents,"\n")) retstralloc(0,"write_dependencies") ;
-	}
+		if (!stralloc_cats(&contents,"\n")) 
+	}*/
 		
 	if (contents.len)
 	{
@@ -898,11 +903,11 @@ int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char c
 	}
 	
 	stralloc_free(&contents) ;
-	stralloc_free(&namedeps) ;
+	//stralloc_free(&namedeps) ;
 	return 1 ;
 	err:
 		stralloc_free(&contents) ;
-		stralloc_free(&namedeps) ;
+		//stralloc_free(&namedeps) ;
 		return 0 ;
 }
 

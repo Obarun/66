@@ -34,7 +34,7 @@
 
 extern stralloc keep ;
 extern stralloc deps ;
-extern genalloc gadeps ;
+//extern genalloc gadeps ;
 extern genalloc gasv ;
 
 typedef enum actions_e actions_t, *actions_t_ref ;
@@ -293,7 +293,7 @@ extern int write_exec(sv_alltype *sv, sv_exec *exec,char const *name,char const 
 extern int write_uint(char const *dst, char const *name, uint32_t ui) ;
 extern int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, int mode, uint8_t force) ;
 extern int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char const *proddst,char const *consdst) ;
-extern int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename, genalloc *ga) ;
+extern int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename) ;
 extern int write_env(char const *name,stralloc *sa,char const *dst) ;
 
 #endif

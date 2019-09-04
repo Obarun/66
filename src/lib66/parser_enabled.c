@@ -100,6 +100,29 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_befo
 	stralloc newsv = STRALLOC_ZERO ;
 	if (sv_before->cname.nga)
 	{
+		
+		size_t id = sv_before->cname.idga, nid = sv_before->cname.nga ;
+		for (;nid; id += strlen(deps.s + id) + 1, nid--)
+		{
+			newsv.len = 0 ;
+			if (sv_before->cname.itype != BUNDLE)
+			{
+				VERBO3 strerr_warni4x("Service : ",sv, " depends on : ",deps.s+id) ;
+			}else VERBO3 strerr_warni5x("Bundle : ",sv, " contents : ",deps.s+id," as service") ;
+						dname = deps.s+id ;
+			if (!ss_resolve_src_path(&newsv,dname,info))
+			{
+				VERBO3 strerr_warnwu2x("resolve source path of: ",dname) ;
+				stralloc_free(&newsv) ; 
+				return 0 ;
+			}
+			if (!parse_service_before(info,parsed_list,newsv.s,nbsv,sasv,force,&exist))
+			{ 
+				stralloc_free(&newsv) ; 
+				return 0 ;
+			}
+		}
+		/*		
 		for (int i = 0;i < sv_before->cname.nga;i++)
 		{
 			newsv.len = 0 ;
@@ -120,7 +143,7 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_befo
 				stralloc_free(&newsv) ; 
 				return 0 ;
 			}
-		}
+		}*/
 	}
 	else VERBO3 strerr_warni2x(sv,": haven't dependencies") ;
 	stralloc_free(&newsv) ;
@@ -164,6 +187,7 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list, char const *sv,un
 	
 	memcpy(svpath,svsrc,svsrclen) ;
 	memcpy(svpath + svsrclen,svname,svnamelen) ;
+	svpath[svsrclen + svnamelen] = 0 ;
 	
 	if (sastr_cmp(parsed_list,svpath) >= 0)
 	{

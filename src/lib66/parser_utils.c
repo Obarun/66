@@ -44,7 +44,7 @@
 
 stralloc keep = STRALLOC_ZERO ;//sv_alltype data
 stralloc deps = STRALLOC_ZERO ;//sv_name depends
-genalloc gadeps = GENALLOC_ZERO ;//unsigned int, pos in deps
+//genalloc gadeps = GENALLOC_ZERO ;//unsigned int, pos in deps
 genalloc gasv = GENALLOC_ZERO ;//sv_alltype general
 
 /**********************************
@@ -93,7 +93,7 @@ void freed_parser(void)
 {
 	stralloc_free(&keep) ;
 	stralloc_free(&deps) ;
-	genalloc_free(unsigned int,&gadeps) ;
+//	genalloc_free(unsigned int,&gadeps) ;
 	for (unsigned int i = 0 ; i < genalloc_len(sv_alltype,&gasv) ; i++)
 		sv_alltype_free(&genalloc_s(sv_alltype,&gasv)[i]) ;
 }
@@ -643,10 +643,9 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 				return 0 ;
 			}
 			if (!get_clean_val(nocheck)) return 0 ;
-			service->cname.idga = genalloc_len(unsigned int,&gadeps) ;
+			service->cname.idga = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos)+1)
 			{
-				if (!genalloc_append(unsigned int,&gadeps,&deps.len)) retstralloc(0,"parse_common") ;
 				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) retstralloc(0,"parse_common") ;
 				service->cname.nga++ ;
 			}
@@ -658,10 +657,9 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 				return 0 ;
 			}
 			if (!get_clean_val(nocheck)) return 0 ;
-			service->cname.idga = genalloc_len(unsigned int,&gadeps) ;
+			service->cname.idga = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos) + 1)
 			{
-				if (!genalloc_append(unsigned int,&gadeps,&deps.len)) retstralloc(0,"parse_common") ;
 				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) retstralloc(0,"parse_common") ;
 				service->cname.nga++ ;
 			}
@@ -762,10 +760,9 @@ int keep_logger(sv_execlog *log,keynocheck *nocheck)
 			break ;
 		case DEPENDS:
 			if (!get_clean_val(nocheck)) return 0 ;
-			log->idga = genalloc_len(unsigned int,&gadeps) ;
+			log->idga = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos) + 1)
 			{
-				if (!genalloc_append(unsigned int,&gadeps,&deps.len)) retstralloc(0,"parse_logger") ;
 				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) retstralloc(0,"parse_logger") ;
 				log->nga++ ;
 			}

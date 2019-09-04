@@ -651,13 +651,19 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	
 	if (res.ndeps)
 	{
-		for (unsigned int i = 0; i < res.ndeps; i++)
+		size_t id = services->cname.idga, nid = res.ndeps ;
+		for (;nid; id += strlen(deps.s + id) + 1, nid--)
+		{
+			if (!stralloc_catb(&final,deps.s + id,strlen(deps.s + id)) ||
+			!stralloc_catb(&final," ",1)) retstralloc(0,"write_dependencies") ;
+		}
+		/*for (unsigned int i = 0; i < res.ndeps; i++)
 		{
 			if (!stralloc_obreplace(&namedeps,deps.s+genalloc_s(unsigned int,&gadeps)[services->cname.idga+i])) goto err ;
 			namedeps.len--;
 			if (!stralloc_catb(&final,namedeps.s,namedeps.len)) { VERBO1 warnstralloc("ss_resolve_setnwrite") ; goto err ; }
 			if (!stralloc_catb(&final," ",1)) {VERBO1  warnstralloc("ss_resolve_setnwrite") ; goto err ; }
-		}
+		}*/
 		final.len-- ;
 		if (!stralloc_0(&final)){ VERBO1 warnstralloc("ss_resolve_setnwrite") ; goto err ; } 
 		res.deps = ss_resolve_add_string(&res,final.s) ;
