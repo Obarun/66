@@ -100,6 +100,8 @@
 #define SS_BOOT_RCINIT_LEN (sizeof SS_BOOT_RCINIT - 1)
 #define SS_BOOT_RCSHUTDOWN "rc.shutdown"
 #define SS_BOOT_RCSHUTDOWN_LEN (sizeof SS_BOOT_RCSHUTDOWN - 1)
+#define SS_BOOT_RCSHUTDOWNFINAL "rc.shutdown.final"
+#define SS_BOOT_RCSHUTDOWNFINAL_LEN (sizeof SS_BOOT_RCSHUTDOWNFINAL -1)
 #define SS_BOOT_UMASK 0022
 #define SS_BOOT_RESCAN 0
 #define SS_BOOT_LOGFIFO "scandir/0/scandir-log/fifo"
