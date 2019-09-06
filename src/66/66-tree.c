@@ -16,7 +16,7 @@
 
 #include <string.h>
 #include <sys/stat.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
@@ -231,7 +231,7 @@ void create_tree(char const *tree,char const *treename)
 	
 	char sym[newlen + 1 + SS_SYM_SVC_LEN + 1] ;
 	char dstsym[newlen + SS_SVC_LEN + 1] ;
-	printf("dst::%s\n",dst) ;
+
 	auto_string(sym,dst,0) ;
 	auto_string(sym,"/",newlen) ;
 	auto_string(sym,SS_SYM_SVC,newlen + 1) ;
