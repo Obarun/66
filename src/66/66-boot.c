@@ -119,8 +119,14 @@ static void parse_conf(void)
 	{
 		if (!stralloc_copy(&val,&src)) sulogin("copy stralloc of file: ",confile) ;
 		if (!environ_get_val_of_key(&val,*p)) continue ;
-		sastr_clean_element(&val) ;
-		if (!val.len) strerr_warnwu3x("get value of: ",*p," -- keeps the default") ;
+		/** value may be empty, in this case we use the default one */
+		if (!sastr_clean_element(&val)) 
+		{	
+			strerr_warnwu3x("get value of: ",*p," -- keeps the default") ;
+			continue ;
+		}
+		if (!sastr_rebuild_in_oneline(&val)) sulogin("rebuild line of value: ",val.s) ;
+		if (!stralloc_0(&val)) sulogin("append stralloc of value: ",val.s) ;
 		
 		switch (j)
 		{
