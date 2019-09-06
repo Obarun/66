@@ -265,15 +265,13 @@ void write_bootlog(char const *live, char const *scandir)
 	 * /run/66/log*/
 	memcpy(path,live,livelen) ;
 	memcpy(path+livelen,"log",3) ;
-	path[livelen + 3] = 0 ;
-	log_perm(log_user,&uid,&gid) ;
-	VERBO3 strerr_warnt4x("create directory: ",path,"/",OWNERSTR) ;
-	r = dir_create_under(path,OWNERSTR,02750) ;
-	if (r < 0) strerr_diefu3sys(111,"create: ",path,OWNERSTR) ;
-	/** chown /run/66/log/<uid>*/
 	path[livelen + 3] = '/' ;
 	memcpy(path + livelen + 4,OWNERSTR,ownerlen) ;
 	path[livelen + 4 + ownerlen] = 0 ;
+	VERBO3 strerr_warnt2x("create directory: ",path) ;
+	r = dir_create_parent(path,02750) ;
+	if (!r) strerr_diefu2sys(111,"create: ",path) ;
+	log_perm(log_user,&uid,&gid) ;
 	if (chown(path,uid,gid) < 0)
 		strerr_diefu2sys(111,"chown: ",path) ;
 	auto_chmod(path,02755) ;

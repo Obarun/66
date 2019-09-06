@@ -975,16 +975,18 @@ int ss_resolve_create_live(ssexec_t *info)
 	if (!r)
 	{
 		ssize_t len = get_rlen_until(sares.s,'/',sares.len) ;
-	
-		char sym[sares.len + SS_RESOLVE_LEN + 1] ;
-		memcpy(sym,sares.s,len) ;
-		sym[len] = 0 ;
-		r = dir_create_under(sym,info->treename.s,0700) ;
+		sares.len-- ;
+		char sym[sares.len + SS_SVDIRS_LEN + 1] ;
+		memcpy(sym,sares.s,sares.len) ;
+		sym[sares.len] = 0 ;
+		
+		r = dir_create_parent(sym,0700) ;
 		if (!r) goto err ;
+		sym[len] = 0 ;
 		if (chown(sym,info->owner,gidowner) < 0) goto err ;
-		memcpy(sym,sares.s,sares.len - 1) ;
-		memcpy(sym + (sares.len - 1), SS_SVDIRS, SS_SVDIRS_LEN) ;
-		sym[(sares.len - 1) + SS_SVDIRS_LEN] = 0 ;
+		memcpy(sym,sares.s,sares.len) ;
+		memcpy(sym + sares.len, SS_SVDIRS, SS_SVDIRS_LEN) ;
+		sym[sares.len + SS_SVDIRS_LEN] = 0 ;
 		
 		VERBO3 strerr_warnt4x("point symlink: ",sym," to ",ressrc.s) ;
 		if (symlink(ressrc.s,sym) < 0)

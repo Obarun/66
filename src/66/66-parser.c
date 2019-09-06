@@ -55,11 +55,6 @@ static inline void info_help (void)
 static void check_dir(char const *dir,uint8_t force,int main)
 {
 	int r ;
-	size_t dirlen = strlen(dir) ;
-	char tmp[dirlen+1] ;
-	if (!dirname(tmp,dir)) strerr_diefu1x(111,"set directory name") ;
-	char name[dirlen+1] ;
-	if (!basename(name,dir)) strerr_diefu1x(111,"set name") ;
 	
 	r = scan_mode(dir,S_IFDIR) ;
 	if (r < 0){ errno = ENOTDIR ; strerr_dief2sys(111,"conflicting format of: ",dir) ; }
@@ -71,7 +66,7 @@ static void check_dir(char const *dir,uint8_t force,int main)
 	}
 	else if (r && !force && main) strerr_dief3x(111,"destination: ",dir," already exist") ;
 	if (!r)
-		if (!dir_create_under(tmp,name, 0755)) strerr_diefu2sys(111,"create: ",dir) ;
+		if (!dir_create_parent(dir, 0755)) strerr_diefu2sys(111,"create: ",dir) ;
 }
 
 int main(int argc, char const *const *argv,char const *const *envp)
