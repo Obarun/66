@@ -62,7 +62,6 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 	int wstat ;
 	pid_t pid ; 
 	
-	//genalloc ga = GENALLOC_ZERO ; //stralist
 	stralloc dirlist = STRALLOC_ZERO ;
 	
 	char ownerstr[UID_FMT] ;
