@@ -20,15 +20,13 @@
 
 #include <oblibs/error2.h>
 #include <oblibs/obgetopt.h>
-#include <oblibs/stralist.h>
 #include <oblibs/types.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
-#include <oblibs/directory.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/buffer.h>
 #include <skalibs/stralloc.h>
-#include <skalibs/genalloc.h>
 #include <skalibs/djbunix.h>
 
 #include <66/constants.h>
@@ -64,7 +62,8 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 	int wstat ;
 	pid_t pid ; 
 	
-	genalloc ga = GENALLOC_ZERO ; //stralist
+	//genalloc ga = GENALLOC_ZERO ; //stralist
+	stralloc dirlist = STRALLOC_ZERO ;
 	
 	char ownerstr[UID_FMT] ;
 	size_t ownerlen = uid_fmt(ownerstr,owner) ;
@@ -80,13 +79,14 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 	src[livelen + SS_STATE_LEN + 1 + ownerlen] = '/' ;
 	memcpy(src + livelen + SS_STATE_LEN + 1 + ownerlen + 1,treename,treenamelen) ;
 	src[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + treenamelen] = 0 ;
-       
-	if (!dir_get(&ga,src,"init",S_IFREG))
-		strerr_diefu2sys(111,"get state file from directory: ",src) ;
-		
-	if (genalloc_len(stralist,&ga))
+
+    if (!sastr_dir_get(&dirlist,src,"init",S_IFREG))
+		strerr_diefu2sys(111,"get init file from directory: ",src) ;
+
+	if (dirlist.len)
 	{
-		char const *newargv[10 + genalloc_len(stralist,&ga)] ;
+		size_t i = 0, len = sastr_len(&dirlist) ;
+		char const *newargv[10 + len + 1] ;
 		unsigned int m = 0 ;
 		char fmt[UINT_FMT] ;
 		fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
@@ -107,8 +107,9 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 		newargv[m++] = "-t" ;
 		newargv[m++] = treename ;
 		
-		for (unsigned int i = 0 ; i < genalloc_len(stralist,&ga) ; i++) 
-			newargv[m++] = gaistr(&ga,i) ;
+		len = dirlist.len ;
+		for (;i < len; i += strlen(dirlist.s + i) + 1)
+			newargv[m++] = dirlist.s+i ;
 		
 		newargv[m++] = 0 ;
 		
@@ -122,10 +123,10 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 	}
 	else VERBO1 strerr_warni3x("Empty tree: ",treename," -- nothing to do") ;
 
-	genalloc_deepfree(stralist,&ga,stra_free) ;	
+	stralloc_free(&dirlist) ;
 	return 1 ;
 	err:
-		genalloc_deepfree(stralist,&ga,stra_free) ;	
+		stralloc_free(&dirlist) ;
 		return 0 ;
 }
 
@@ -154,7 +155,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	int r, what, wstat, shut = 0, fd ;
 	pid_t pid ; 
 	uid_t owner ;
-		
+	size_t statesize, statelen, pos = 0 ;
 	char const *treename = NULL ;
 	
 	stralloc base = STRALLOC_ZERO ;
@@ -163,7 +164,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc tree = STRALLOC_ZERO ;
 	stralloc live = STRALLOC_ZERO ;
 	stralloc contents = STRALLOC_ZERO ;
-	genalloc in = GENALLOC_ZERO ; //stralist
+	stralloc ugly = STRALLOC_ZERO ;
 	
 	what = 1 ;
 	
@@ -220,9 +221,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (!r) retstralloc(111,"main") ;
 	if (r < 0 ) strerr_dief3x(111,"livetree: ",livetree.s," must be an absolute path") ;
 	
-	size_t statesize ;
-	/** /system/state */
-	size_t statelen ;
 	char state[base.len + SS_SYSTEM_LEN + SS_STATE_LEN + 1] ;
 	memcpy(state,base.s,base.len) ;
 	memcpy(state + base.len,SS_SYSTEM,SS_SYSTEM_LEN) ;
@@ -234,30 +232,29 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (r < 0) strerr_dief2x(111,"conflict format for: ",state) ;
 	if (!r)	strerr_diefu2sys(111,"find: ",state) ;
 	
-	statesize = file_get_size(state) ;
-	
-	r = openreadfileclose(state,&contents,statesize) ;
-	if(!r) strerr_diefu2sys(111,"open: ", state) ;
-
-	/** ensure that we have an empty line at the end of the string*/
-	if (!stralloc_cats(&contents,"\n")) retstralloc(111,"main") ;
-	if (!stralloc_0(&contents)) retstralloc(111,"main") ;
-	
 	/** only one tree?*/
 	if (treename)
 	{
-		if (!stra_add(&in,treename)) strerr_diefu3x(111,"add: ", treename," as tree to start") ;
+		if (!stralloc_cats(&contents,treename)) strerr_diefu3x(111,"add: ", treename," as tree to start") ;
+		if (!stralloc_0(&contents)) retstralloc(111,"main") ;
 	}
 	else
 	{
-		if (!clean_val(&in,contents.s))
-			strerr_diefu2x(111,"clean: ",contents.s) ;
-	}
+		statesize = file_get_size(state) ;
+	
+		r = openreadfileclose(state,&contents,statesize) ;
+		if(!r) strerr_diefu2sys(111,"open: ", state) ;
 
-	if (!in.len)
-	{
-		strerr_warni1x("nothing to do") ;
-		goto end ;
+		/** ensure that we have an empty line at the end of the string*/
+		if (!stralloc_cats(&contents,"\n")) retstralloc(111,"main") ;
+		if (!stralloc_0(&contents)) retstralloc(111,"main") ;
+	
+		if (!sastr_clean_element(&contents)) 
+		{
+			strerr_warni1x("nothing to do") ;
+			goto end ;
+		}
+		
 	}
 	
 	if (shut)
@@ -282,11 +279,11 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		else redir_fd() ;
 	}
 			
-	for (unsigned int i = 0 ; i < genalloc_len(stralist,&in) ; i++)
+	for (;pos < contents.len; pos += strlen(contents.s + pos) + 1)
 	{
 		tree.len = 0 ;
 		
-		char *treename = gaistr(&in,i) ;
+		char *treename = contents.s + pos ;
 		
 		if(!stralloc_cats(&tree,treename)) retstralloc(111,"main") ;
 		if(!stralloc_0(&tree)) retstralloc(111,"main") ;
@@ -296,7 +293,29 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 		if (!tree_get_permissions(tree.s,owner))
 			strerr_dief2x(110,"You're not allowed to use the tree: ",tree.s) ;
-
+		/* we need to make an ugly check here, a tree might be empty.
+		 * 66-init will not complain about this but doit function will do.
+		 * So, we need to scan the tree before trying to start any service from it.
+		 * This check is a temporary one because the tree dependencies feature
+		 * will come on a near future and it will change this default behavior */
+		size_t newlen = tree.len ;
+		if (!stralloc_cats(&tree,SS_SVDIRS SS_SVC)) retstralloc(111,"main") ;
+		if (!stralloc_0(&tree)) retstralloc(111,"main") ;
+		
+		if (!sastr_dir_get(&ugly,tree.s,"",S_IFDIR)) strerr_diefu2x(111,"get classic services from: ",tree.s) ;
+		if (!ugly.len)
+		{
+			tree.len = newlen ;
+			ugly.len = 0 ;
+			if (!stralloc_cats(&tree,SS_SVDIRS SS_DB SS_SRC)) retstralloc(111,"main") ;
+			if (!stralloc_0(&tree)) retstralloc(111,"main") ;
+			if (!sastr_dir_get(&ugly,tree.s,SS_MASTER+1,S_IFDIR)) strerr_diefu2sys(111,"get rc services from: ",tree.s) ;
+			if (!ugly.len)
+			{
+				strerr_warni3x("empty tree: ",treename," -- nothing to do") ;
+				goto end ;
+			}
+		}
 		if (what)
 		{
 			char const *newargv[9] ;
@@ -347,7 +366,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		stralloc_free(&livetree) ;
 		stralloc_free(&scandir) ;
 		stralloc_free(&contents) ;
-		genalloc_deepfree(stralist,&in,stra_free) ;
-	
+		stralloc_free(&ugly) ;
+			
 	return 0 ;
 }
