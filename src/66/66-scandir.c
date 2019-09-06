@@ -192,7 +192,7 @@ static void inline auto_rm(char const *str)
 	r = scan_mode(str,S_IFDIR) ;
 	if (r > 0)
 	{
-		VERBO2 strerr_warni3x("removing ",str," ...") ;
+		VERBO1 strerr_warni3x("removing ",str," ...") ;
 		if (rm_rf(str) < 0) strerr_diefu2sys(111,"remove: ",str) ;
 	}
 }
