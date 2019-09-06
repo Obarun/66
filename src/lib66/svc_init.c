@@ -42,7 +42,7 @@
 int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 {
 	
-	int logname ;
+	ssize_t logname ;
 	gid_t gid = getgid() ;
 	uint16_t id ;
 		
