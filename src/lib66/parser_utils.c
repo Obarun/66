@@ -56,7 +56,6 @@ int section_get_skip(char const *s,size_t pos,int nline) ;
 int section_get_id(stralloc *secname, char const *string,size_t *pos,int *id) ;
 int key_get_next_id(stralloc *sa, char const *string,size_t *pos) ;
 int get_clean_val(keynocheck *ch) ;
-int get_clean_val(keynocheck *ch) ;
 int get_enum(char const *string, keynocheck *ch) ;
 int get_timeout(keynocheck *ch,uint32_t *ui) ;
 int get_uint(keynocheck *ch,uint32_t *ui) ;
@@ -979,9 +978,7 @@ int key_get_next_id(stralloc *sa, char const *string,size_t *pos)
 
 int get_clean_val(keynocheck *ch)
 {
-	if (!sastr_clean_element(&ch->val) ||
-	!stralloc_0(&ch->val) ||
-	!sastr_split_element_in_nline(&ch->val))
+	if (!sastr_clean_element(&ch->val))
 	{
 		VERBO3 parse_err(8,ch) ;
 		return 0 ;
