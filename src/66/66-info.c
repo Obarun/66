@@ -54,7 +54,7 @@ static char OWNERSTR[UID_FMT] ;
 static int force_color = 0 ;
 
 #define MAXSIZE 4096
-#define DBG(...) bprintf(buffer_1, __VA_ARGS__) ;\
+#define DBG_INFO(...) bprintf(buffer_1, __VA_ARGS__) ;\
 				buffer_putflush(buffer_1,"\n",1) ;
 
 
