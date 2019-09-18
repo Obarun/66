@@ -26,10 +26,10 @@
 
 int set_ownerhome(stralloc *base,uid_t owner)
 {
-	char const *user_home = NULL ;
+	char const *user_home = 0 ;
 	int e = errno ;
 	struct passwd *st = getpwuid(owner) ;
-	
+	errno = 0 ;
 	if (!st)
 	{
 		if (!errno) errno = ESRCH ;

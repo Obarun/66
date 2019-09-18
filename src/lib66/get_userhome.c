@@ -22,7 +22,8 @@ char const *get_userhome(uid_t myuid)
 {
 	char const *user_home = NULL ;
 	struct passwd *st = getpwuid(myuid) ;
-	
+	int e = errno ;
+	errno = 0 ;
 	if (!st)
 	{
 		if (!errno) errno = ESRCH ;
@@ -31,6 +32,6 @@ char const *get_userhome(uid_t myuid)
 	user_home = st->pw_dir ;
 
 	if (!user_home) return 0 ;
-
+	errno = e ;
 	return user_home ;
 }
