@@ -19,6 +19,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <pwd.h>
+#include <errno.h>
 //#include <stdio.h>
 
 #include <oblibs/bytes.h>
@@ -59,6 +61,7 @@ int get_clean_val(keynocheck *ch) ;
 int get_enum(char const *string, keynocheck *ch) ;
 int get_timeout(keynocheck *ch,uint32_t *ui) ;
 int get_uint(keynocheck *ch,uint32_t *ui) ;
+int check_valid_runas(keynocheck *check) ;
 void parse_err(int ierr,keynocheck *check) ;
 int parse_line(stralloc *sa, size_t *pos) ;
 int parse_bracket(stralloc *sa,size_t *pos) ;
@@ -327,8 +330,9 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 	
 	key_all_t const *list = total_list ;
 	
-	genalloc gatmp = GENALLOC_ZERO ;
-	r = 0 ;
+	stralloc sa = STRALLOC_ZERO ;
+	
+	r = -1 ;
 	count = 0 ;
 	bkey = -1 ;
 	countidsec = 0 ;
@@ -428,9 +432,13 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 			}
 			if (bkey >= 0)
 			{
-				if (!clean_val(&gatmp,genalloc_s(keynocheck,nocheck)[bkey].val.s)) strerr_diefu2x(111,"parse file ",genalloc_s(keynocheck,nocheck)[bkey].val.s) ;
-				r = stra_cmp(&gatmp,get_keybyid(ENVIR)) ;
-				if ((r) && (!count))
+				if (!sastr_clean_string(&sa,genalloc_s(keynocheck,nocheck)[bkey].val.s))
+				{
+					VERBO3 strerr_warnwu2x("clean value of: ",sa.s) ;
+					return 0 ;
+				}
+				r = sastr_cmp(&sa,get_keybyid(ENVIR)) ;	
+				if ((r >= 0) && (!count))
 				{
 					VERBO3 strerr_warnw1x("options env was asked -- section environment must be set") ;
 					return 0 ;
@@ -440,9 +448,7 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 		default: break ;
 	}
 			
-
-	genalloc_deepfree(stralist,&gatmp,stra_free) ;
-	
+	stralloc_free(&sa) ;
 	return 1 ;
 }
 
@@ -546,11 +552,11 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			break ;
 		case NAME:
 			service->cname.name = keep.len ;
-			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_common") ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_common:NAME") ;
 			break ;
 		case DESCRIPTION:
 			service->cname.description = keep.len ;
-			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_common") ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_common:DESCRIPTION") ;
 			break ;
 		case OPTIONS:
 			if (!get_clean_val(nocheck)) return 0 ;
@@ -630,7 +636,7 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 					char *name = chval + pos ;
 					size_t namelen =  strlen(chval + pos) ;
 					service->hiercopy[idx+1] = keep.len ;
-					if (!stralloc_catb(&keep,name,namelen + 1)) retstralloc(0,"parse_common:hiercopy") ;
+					if (!stralloc_catb(&keep,name,namelen + 1)) retstralloc(0,"parse_common:HIERCOPY") ;
 					service->hiercopy[0] = ++idx ;
 				}
 			}
@@ -645,7 +651,7 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			service->cname.idga = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos)+1)
 			{
-				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) retstralloc(0,"parse_common") ;
+				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) retstralloc(0,"parse_common:DEPENDS") ;
 				service->cname.nga++ ;
 			}
 			break ;
@@ -659,7 +665,7 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			service->cname.idga = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos) + 1)
 			{
-				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) retstralloc(0,"parse_common") ;
+				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) retstralloc(0,"parse_common:CONTENTS") ;
 				service->cname.nga++ ;
 			}
 			break ;
@@ -708,7 +714,7 @@ int keep_runfinish(sv_exec *exec,keynocheck *nocheck)
 	int r = 0 ;
 	size_t *chlen = &nocheck->val.len ;
 	char *chval = nocheck->val.s ;
-	
+		
 	switch(nocheck->idkey)
 	{
 		case BUILD:
@@ -717,12 +723,9 @@ int keep_runfinish(sv_exec *exec,keynocheck *nocheck)
 			exec->build = r ;
 			break ;
 		case RUNAS:
-			r = scan_uid(chval,&exec->runas) ;
-			if (!r)
-			{
-				VERBO3 parse_err(0,nocheck) ;
-				return 0 ;
-			}
+			if (!check_valid_runas(nocheck)) return 0 ;
+			exec->runas = keep.len ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_runfinish:RUNAS") ;
 			break ;
 		case SHEBANG:
 			if (chval[0] != '/')
@@ -731,11 +734,11 @@ int keep_runfinish(sv_exec *exec,keynocheck *nocheck)
 				return 0 ;
 			}
 			exec->shebang = keep.len ;
-			if (!stralloc_catb(&keep,chval,*chlen + 1)) exitstralloc("parse_runfinish:stralloc:SHEBANG") ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_runfinish:SHEBANG") ;
 			break ;
 		case EXEC:
 			exec->exec = keep.len ;
-			if (!stralloc_catb(&keep,chval,*chlen + 1)) exitstralloc("parse_runfinish:stralloc:EXEC") ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_runfinish:EXEC") ;
 			break ;
 		default:
 			VERBO3 strerr_warnw2x("unknown key: ",get_keybyid(nocheck->idkey)) ;
@@ -762,7 +765,7 @@ int keep_logger(sv_execlog *log,keynocheck *nocheck)
 			log->idga = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos) + 1)
 			{
-				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) retstralloc(0,"parse_logger") ;
+				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) retstralloc(0,"parse_logger:DEPENDS") ;
 				log->nga++ ;
 			}
 			break ;
@@ -783,7 +786,7 @@ int keep_logger(sv_execlog *log,keynocheck *nocheck)
 				return 0 ;
 			}
 			log->destination = keep.len ;
-			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_logger") ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_logger:DESTINATION") ;
 			break ;
 		case BACKUP:
 			if (!get_uint(nocheck,&log->backup)) return 0 ;
@@ -967,7 +970,7 @@ int key_get_next_id(stralloc *sa, char const *string,size_t *pos)
 	}
 	newpos = get_rlen_until(string,')',newpos) ;
 	if (newpos == -1) goto err ;
-	stralloc_catb(sa,string+*pos,newpos - *pos) ;
+	if (!stralloc_catb(sa,string+*pos,newpos - *pos)) goto err ;
 	*pos = newpos + 1 ; //+1 remove the last ')'
 	stralloc_free(&kp) ;
 	return 1 ;
@@ -1019,6 +1022,18 @@ int get_uint(keynocheck *ch,uint32_t *ui)
 		VERBO3 parse_err(3,ch) ;
 		return 0 ;
 	}
+	return 1 ;
+}
+
+int check_valid_runas(keynocheck *ch)
+{
+	errno = 0 ;
+	struct passwd *pw = getpwnam(ch->val.s);
+	if (pw == NULL && errno)
+	{
+		VERBO3 parse_err(0,ch) ;
+		return 0 ;
+	} 
 	return 1 ;
 }
 
