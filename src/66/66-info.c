@@ -223,7 +223,7 @@ int info_print_tree(char const *treename,int init,int current,int enabled)
 	if (!bprintf(buffer_1,"%s%s%s%*s%s%s","Initialized: ",init ? color->blue : color->yellow, init ? "yes":"no",indent,"",color->off,"| ")) return 0 ;
 	if (!bprintf(buffer_1,"%s%s%s%s","Current: ",current ? color->blink_blue : color->yellow ,current ? "yes":"no",color->off)) return 0 ;
 	if (buffer_putsflush(buffer_1,"\n") < 0) return 0 ; 
-	if (!bprintf(buffer_1,"%s%9s%s%s%s%s","Contains:"," | ","Enabled: ",enabled ? color->blue : color->yellow ,enabled ? "yes":"no",color->off)) return 0 ;
+	if (!bprintf(buffer_1,"%s%9s%s%s%s%s","Contains:"," | ","Enabled: ",enabled == 1 ? color->blue : color->yellow ,enabled ? "yes":"no",color->off)) return 0 ;
 	if (buffer_putsflush(buffer_1,"\n") < 0) return  0 ;
 	return 1 ;
 } 
