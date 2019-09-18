@@ -20,10 +20,9 @@
 #include <oblibs/error2.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
-#include <oblibs/stralist.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/genalloc.h>
 #include <skalibs/types.h>
 #include <skalibs/djbunix.h>
 
@@ -79,8 +78,7 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 	}
 	tree = *argv ;
 	size_t treelen = strlen(tree) ;
-	
-	
+
 	/** $HOME/66/system/tree/servicedirs */
 	//base.len-- ;
 	size_t psymlen ;
@@ -172,8 +170,6 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 		memcpy(dstback + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1, tree, treelen) ;
 		memcpy(dstback + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen, pback,pbacklen) ;
 		dstback[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen + pbacklen] = 0 ;
-				
-		
 		
 		if (what >= 0)
 		{
@@ -183,7 +179,6 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 				return -1 ;
 			}
 		}
-		
 		if (what)
 		{
 			
@@ -209,15 +204,15 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 int backup_cmd_switcher(unsigned int verbosity,char const *cmd,ssexec_t *info)
 {	
 	int r ;
+	size_t pos = 0 ;
+	stralloc opts = STRALLOC_ZERO ;
 	
-	genalloc opts = GENALLOC_ZERO ;
-	
-	if (!clean_val(&opts,cmd))
+	if (!sastr_clean_string(&opts,cmd))
 	{
 		VERBO3 strerr_warnwu2x("clean: ",cmd) ;
 		return -1 ;
 	}
-	int newopts = 5 + genalloc_len(stralist,&opts) ;
+	int newopts = 5 + sastr_len(&opts) ;
 	char const *newargv[newopts] ;
 	unsigned int m = 0 ;
 	char fmt[UINT_FMT] ;
@@ -227,15 +222,15 @@ int backup_cmd_switcher(unsigned int verbosity,char const *cmd,ssexec_t *info)
 	newargv[m++] = "-v" ;
 	newargv[m++] = fmt ;
 	
-	for (unsigned int i = 0; i < genalloc_len(stralist,&opts); i++)
-		newargv[m++] = gaistr(&opts,i) ;
+	for (;pos < opts.len; pos += strlen(opts.s + pos) + 1)
+		newargv[m++] = opts.s + pos ;
 		
 	newargv[m++] = info->treename.s ;
 	newargv[m++] = 0 ;
 	
 	r = backup_switcher(newopts,newargv,info) ;
 
-	genalloc_deepfree(stralist,&opts,stra_free) ;
+	stralloc_free(&opts) ;
 	
 	return r ;
 }

@@ -20,12 +20,10 @@
 #include <oblibs/error2.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
-#include <oblibs/directory.h>
 #include <oblibs/files.h>
-#include <oblibs/stralist.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/genalloc.h>
 #include <skalibs/types.h>
 #include <skalibs/djbunix.h>
 
@@ -36,23 +34,14 @@
 
 int tree_state(int argc, char const *const *argv)
 {
-	int r, fd, err ;
-	unsigned int add, del, sch, verbosity ;
-	size_t statesize ;
-	size_t treelen ;
-	size_t statelen ;
-	
-	char const *tree = NULL ;
-	
-	stralloc base = STRALLOC_ZERO ;
-	stralloc contents = STRALLOC_ZERO ; 
-	genalloc in = GENALLOC_ZERO ; //type stralist
-	
-	verbosity = err = 1 ;
-	
+	int r, fd,skip = -1 ;
+	unsigned int add, del, sch, verbosity, err ;
+	size_t statesize = 0, treelen, statelen, pos = 0 ;
 	uid_t owner = MYUID ;
-	
-	add = del = sch =  0 ;
+	char const *tree = 0 ;
+
+	verbosity = 1 ;
+	add = del = sch = err = 0 ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
 
@@ -60,33 +49,35 @@ int tree_state(int argc, char const *const *argv)
 		{
 			int opt = getopt_args(argc,argv, "v:sad", &l) ;
 			if (opt == -1) break ;
-			if (opt == -2){ strerr_warnw1x("options must be set first") ; return -1 ; }
+			if (opt == -2){ strerr_warnw1x("options must be set first") ; return 0 ; }
 			switch (opt)
 			{
-				case 'v' :  if (!uint0_scan(l.arg, &verbosity)) return -1 ;  break ;
-				case 'a' : 	add = 1 ; if (del) return -1 ; break ;
-				case 'd' : 	del = 1 ;  if (add) return -1 ; break ;
+				case 'v' :  if (!uint0_scan(l.arg, &verbosity)) return 0 ;  break ;
+				case 'a' : 	add = 1 ; if (del) return 0 ; break ;
+				case 'd' : 	del = 1 ; if (add) return 0 ; break ;
 				case 's' : 	sch = 1 ; break ;
-				default : 	return -1 ; 
+				default : 	return 0 ; 
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
 
-	if (argc < 1) return -1 ;
-
+	if (argc < 1) return 0 ;
+	
+	stralloc base = STRALLOC_ZERO ;
+	stralloc contents = STRALLOC_ZERO ;
+	
 	tree = *argv ;
 	treelen = strlen(tree) ;
 	
 	if (!set_ownersysdir(&base,owner))
 	{
 		VERBO3 strerr_warnwu1sys("set owner directory") ;
-		return -1 ;
+		stralloc_free(&base) ;
+		stralloc_free(&contents) ;
+		return 0 ;
 	}
-
 	/** /system/state */
-	//base.len-- ;
-	
 	char state[base.len + SS_SYSTEM_LEN + SS_STATE_LEN + 1] ;
 	memcpy(state,base.s,base.len) ;
 	memcpy(state + base.len,SS_SYSTEM,SS_SYSTEM_LEN) ;
@@ -95,41 +86,35 @@ int tree_state(int argc, char const *const *argv)
 	state[statelen] = 0 ;
 
 	r = scan_mode(state,S_IFREG) ;
-	if (r < 0) { errno = EEXIST ;  err = -1 ; goto out ; }
+	if (r == -1) { errno = EEXIST ; goto out ; }
 	if (!r)
 	{
 		VERBO3 strerr_warnwu2sys("find: ",state) ;
-		{ err = -1 ; goto out ; }
+		goto out ;
 	}
 	
 	statesize = file_get_size(state) ;
-
 	r = openreadfileclose(state,&contents,statesize) ;
 	if(!r)
 	{
 		VERBO3 strerr_warnwu2sys("open: ", state) ;
-		{ err = -1 ; goto out ; }
+		goto out ;
 	}
-	/** ensure that we have an empty line at the end of the string*/
-	if (!stralloc_cats(&contents,"\n")) retstralloc(-1,"tree_registrer") ;
-	if (!stralloc_0(&contents)) retstralloc(-1,"tree_registrer") ;
 	
-	if (!clean_val(&in,contents.s))
+	if (contents.len)
 	{
-		VERBO3 strerr_warnwu2x("clean: ",contents.s) ;
-		{ err = -1 ; goto out ; }
+		if (!sastr_split_string_in_nline(&contents)) goto out ;
 	}
-
 	
 	if (add)
 	{
-		if (!stra_cmp(&in,tree))
+		if (sastr_cmp(&contents,tree) == -1)
 		{
 			fd = open_append(state) ;
 			if (fd < 0)
 			{
 				VERBO3 strerr_warnwu2sys("open: ",state) ;
-				{ err = -1 ; goto out ; }
+				goto out ;
 			}
 			r = write(fd, tree,treelen);
 			r = write(fd, "\n",1);
@@ -137,91 +122,92 @@ int tree_state(int argc, char const *const *argv)
 			{
 				VERBO3 strerr_warnwu5sys("write: ",state," with ", tree," as content") ;
 				fd_close(fd) ;
-				{ err = -1 ; goto out ; }
+				goto out ;
 			}
 			fd_close(fd) ;
+		}
+		else
+		{
+			err = 2 ;
+			goto out ;
 		}
 	}
 		
 	if (del)
 	{
-		
-		if (stra_cmp(&in,tree))
+		skip = sastr_cmp(&contents,tree) ;
+		if (skip >= 0)
 		{
-			if (!stra_remove(&in,tree))
-			{
-				VERBO3 strerr_warnwu4x("to remove: ",tree," in: ",state) ;
-				{ err = -1 ; goto out ; }
-			}
 			fd = open_trunc(state) ;
 			if (fd < 0)
 			{
 				VERBO3 strerr_warnwu2sys("open_trunc ", state) ;
-				{ err = -1 ; goto out ; }
-			}/*
-			fd = open_append(state) ;
-			if (fd < 0)
-			{
-				VERBO3 strerr_warnwu2sys("open: ",state) ;
-				{ err = -1 ; goto out ; }
-			}*/
-			
+				goto out ;
+			}
+	
 			/*** replace it by write_file_unsafe*/
-			for (unsigned int i = 0 ; i < genalloc_len(stralist,&in) ; i++)
+			for (;pos < contents.len ; pos += strlen(contents.s + pos) + 1)
 			{
-				r = write(fd, gaistr(&in,i),gaistrlen(&in,i));
+				if (pos == (size_t)skip) continue ;
+				char *name = contents.s + pos ;
+				size_t namelen = strlen(contents.s + pos) ;
+				r = write(fd, name,namelen);
 				if (r < 0)
 				{
-					VERBO3 strerr_warnwu5sys("write: ",state," with ", gaistr(&in,i)," as content") ;
+					VERBO3 strerr_warnwu5sys("write: ",state," with ", name," as content") ;
 					fd_close(fd) ;
-					{ err = -1 ; goto out ; }
+					goto out ;
 				}
 				r = write(fd, "\n",1);
 				if (r < 0)
 				{
-					VERBO3 strerr_warnwu5sys("write: ",state," with ", gaistr(&in,i)," as content") ;
+					VERBO3 strerr_warnwu5sys("write: ",state," with ", name," as content") ;
 					fd_close(fd) ;
-					{ err = -1 ; goto out ; }
+					goto out ;
 				}
 			}
 			fd_close(fd) ;
 		}
+		else
+		{
+			err = 2 ;
+			goto out ;
+		}
 	}
 	if (sch)
 	{
-		if (stra_cmp(&in,tree))
+		if (sastr_cmp(&contents,tree) >= 0)
 		{
 			err = 1 ;
 			goto out ;
 		}
 		else 
 		{
-			err = 0 ;
+			err = 2 ;
 			goto out ;
 		}
 	}
-	
+	err = 1 ;
 	out:
 	stralloc_free(&base) ;
 	stralloc_free(&contents) ; 
-	genalloc_deepfree(stralist,&in,stra_free) ;
 	
 	return err ;
-
 }
 	
 int tree_cmd_state(unsigned int verbosity,char const *cmd, char const *tree)
 {
 	int r ;
+	size_t pos = 0 ;
+	stralloc opts = STRALLOC_ZERO ;
 	
-	genalloc opts = GENALLOC_ZERO ;
-	
-	if (!clean_val(&opts,cmd))
+	if (!sastr_clean_string(&opts,cmd))
 	{
 		VERBO3 strerr_warnwu2x("clean: ",cmd) ;
-		return -1 ;
+		stralloc_free(&opts) ;
+		return 0 ;
 	}
-	int newopts = 5 + genalloc_len(stralist,&opts) ;
+	int newopts = 5 + sastr_len(&opts) ;
 	char const *newargv[newopts] ;
 	unsigned int m = 0 ;
 	char fmt[UINT_FMT] ;
@@ -231,15 +217,15 @@ int tree_cmd_state(unsigned int verbosity,char const *cmd, char const *tree)
 	newargv[m++] = "-v" ;
 	newargv[m++] = fmt ;
 	
-	for (unsigned int i = 0; i < genalloc_len(stralist,&opts); i++)
-		newargv[m++] = gaistr(&opts,i) ;
-		
+	for (;pos < opts.len; pos += strlen(opts.s + pos) + 1)
+		newargv[m++] = opts.s + pos ;
+
 	newargv[m++] = tree ;
 	newargv[m++] = 0 ;
 	
 	r = tree_state(newopts,newargv) ;
 
-	genalloc_deepfree(stralist,&opts,stra_free) ;
+	stralloc_free(&opts) ;
 	
 	return r ;
 }

@@ -17,6 +17,7 @@
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
 #include <oblibs/error2.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/genalloc.h>
 
@@ -105,20 +106,21 @@ int ss_resolve_graph_sort(ss_resolve_graph_t *graph)
 int ss_resolve_graph_publish(ss_resolve_graph_t *graph,unsigned int reverse)
 {
 	int ret = 0 ;
-	genalloc gatmp = GENALLOC_ZERO ;
+	size_t a = 0 , b = 0 ;
+	stralloc sa = STRALLOC_ZERO ;
 
-	for (unsigned int a = 0 ; a < genalloc_len(ss_resolve_t,&graph->name) ; a++)
+	for (; a < genalloc_len(ss_resolve_t,&graph->name) ; a++)
 	{
 		ss_resolve_graph_ndeps_t rescp = RESOLVE_GRAPH_NDEPS_ZERO ;
 		rescp.idx = a ;
 		
 		if (genalloc_s(ss_resolve_t,&graph->name)[a].ndeps)
 		{
-			genalloc_deepfree(stralist,&gatmp,stra_free) ;
-			if (!clean_val(&gatmp, genalloc_s(ss_resolve_t,&graph->name)[a].sa.s +  genalloc_s(ss_resolve_t,&graph->name)[a].deps)) goto err ;
-			for (unsigned int b = 0 ; b < genalloc_len(stralist,&gatmp) ; b++)
+			sa.len = 0 ;
+			if (!sastr_clean_string(&sa, genalloc_s(ss_resolve_t,&graph->name)[a].sa.s +  genalloc_s(ss_resolve_t,&graph->name)[a].deps)) goto err ;
+			for (; b < sa.len ; b += strlen(sa.s + b) +1)
 			{
-				char *deps = gaistr(&gatmp,b) ;
+				char *deps = sa.s + b ;
 				int r = ss_resolve_search(&graph->name,deps) ;
 				if (r >= 0)
 				{
@@ -132,10 +134,10 @@ int ss_resolve_graph_publish(ss_resolve_graph_t *graph,unsigned int reverse)
 	if (ss_resolve_graph_sort(graph) < 0) { ret = -1 ; goto err ; }
 	if (!reverse) genalloc_reverse(ss_resolve_t,&graph->sorted) ;
 	
-	genalloc_deepfree(stralist,&gatmp,stra_free) ;
+	stralloc_free(&sa) ;
 	return 1 ;
 	err:
-		genalloc_deepfree(stralist,&gatmp,stra_free) ;
+		stralloc_free(&sa) ;
 		return ret ;
 }
 
@@ -171,9 +173,9 @@ int ss_resolve_graph_build(ss_resolve_graph_t *graph,ss_resolve_t *res,char cons
  * @Return 0 on fail*/
 int ss_resolve_graph_src(ss_resolve_graph_t *graph, char const *dir, unsigned int reverse, unsigned int what)
 {
-	genalloc gatmp = GENALLOC_ZERO ;
+	stralloc sa = STRALLOC_ZERO ;
 	ss_resolve_t res = RESOLVE_ZERO ;
-	size_t dirlen = strlen(dir) ;
+	size_t dirlen = strlen(dir), pos = 0 ;
 	
 	char solve[dirlen + SS_DB_LEN + SS_SRC_LEN + 1] ;
 	memcpy(solve,dir,dirlen) ;
@@ -182,29 +184,28 @@ int ss_resolve_graph_src(ss_resolve_graph_t *graph, char const *dir, unsigned in
 	{
 		memcpy(solve + dirlen, SS_SVC, SS_SVC_LEN) ;
 		solve[dirlen + SS_SVC_LEN] = 0 ;
-		if (!dir_get(&gatmp,solve,"",S_IFDIR)) goto err ;
+		if (!sastr_dir_get(&sa,solve,"",S_IFDIR)) goto err ;
 	}
 	if (what)
 	{
 		memcpy(solve + dirlen, SS_DB, SS_DB_LEN) ;
 		memcpy(solve + dirlen + SS_DB_LEN, SS_SRC, SS_SRC_LEN) ;
 		solve[dirlen + SS_DB_LEN + SS_SRC_LEN] = 0 ;
-		if (!dir_get(&gatmp,solve,SS_MASTER + 1,S_IFDIR)) goto err ;
+		if (!sastr_dir_get(&sa,solve,SS_MASTER + 1,S_IFDIR)) goto err ;
 	}
-	
-	for(unsigned int i = 0 ; i < genalloc_len(stralist,&gatmp) ; i++)
+	for (;pos < sa.len; pos += strlen(sa.s + pos) + 1)
 	{
-		char *name = gaistr(&gatmp,i) ;
+		char *name = sa.s + pos ;
 		if (!ss_resolve_check(dir,name)) goto err ;
 		if (!ss_resolve_read(&res,dir,name)) goto err ;
 		if (!ss_resolve_graph_build(graph,&res,dir,reverse)) goto err ;
 	}
 	
-	genalloc_deepfree(stralist,&gatmp,stra_free) ;
+	stralloc_free(&sa) ;
 	ss_resolve_free(&res) ;
 	return 1 ;
 	err:
-		genalloc_deepfree(stralist,&gatmp,stra_free) ;
+		stralloc_free(&sa) ;
 		ss_resolve_free(&res) ;
 		return 0 ;
 }

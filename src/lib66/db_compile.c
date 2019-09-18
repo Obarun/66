@@ -18,48 +18,47 @@
 
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
 #include <oblibs/string.h>
 #include <oblibs/error2.h>
-#include <oblibs/directory.h>
+#include <oblibs/types.h>
 
-#include <skalibs/stralloc.h>
 #include <skalibs/types.h>
 #include <skalibs/djbunix.h>
 
 #include <66/utils.h>
 #include <66/constants.h>
-#include <66/ssexec.h>
 
-#include <stdio.h>
 int db_compile(char const *workdir, char const *tree, char const *treename, char const *const *envp)
 {
 	int wstat, r ;
 	pid_t pid ;
+	size_t wlen = strlen(workdir), treelen = strlen(treename) ;
 	
-	stralloc source = STRALLOC_ZERO ;
-	stralloc destination = STRALLOC_ZERO ;
-		
-	if (!stralloc_cats(&destination,workdir)) retstralloc(0,"compile_db") ;
-	if (!stralloc_cats(&destination,SS_DB)) retstralloc(0,"compile_db") ;
-	if (!stralloc_0(&destination)) retstralloc(0,"compile_db") ;
-	r = dir_search(destination.s,treename,S_IFDIR) ;//+1 to remove the '/'
-	destination.len--;
-	if (!stralloc_cats(&destination,"/")) retstralloc(0,"compile_db") ;
-	if (!stralloc_cats(&destination,treename)) retstralloc(0,"compile_db") ;
-	if (!stralloc_0(&destination)) retstralloc(0,"compile_db") ;
+	char dest[wlen + SS_DB_LEN + 1 + treelen + 1] ;
+	memcpy(dest,workdir,wlen) ;
+	memcpy(dest + wlen,SS_DB,SS_DB_LEN) ;
+	dest[wlen + SS_DB_LEN] = '/' ;
+	memcpy(dest + wlen + SS_DB_LEN + 1,treename,treelen) ;
+	dest[wlen + SS_DB_LEN + 1 + treelen] = 0 ;
+	
+	char src[wlen + SS_DB_LEN + SS_SRC_LEN + 1] ;
+	memcpy(src,workdir,wlen) ;
+	memcpy(src + wlen,SS_DB,SS_DB_LEN) ;
+	memcpy(src + wlen + SS_DB_LEN,SS_SRC,SS_SRC_LEN) ;
+	src[wlen + SS_DB_LEN + SS_SRC_LEN] = 0 ;
+	
+	r = scan_mode(dest,S_IFDIR) ;
 	if (r)
 	{
-		if (rm_rf(destination.s) < 0)
+		if (rm_rf(dest) < 0)
 		{
-			VERBO3 strerr_warnwu2sys("remove ", destination.s) ;
+			VERBO3 strerr_warnwu2sys("remove ", dest) ;
 			return 0 ;
 		}
 	}
-	if (!stralloc_cats(&source,workdir)) retstralloc(0,"compile_db") ;
-	if (!stralloc_cats(&source,SS_DB SS_SRC)) retstralloc(0,"compile_db") ;
-	if (!stralloc_0(&source)) retstralloc(0,"compile_db") ;
-			
+				
 	char const *newargv[7] ;
 	unsigned int m = 0 ;
 	char fmt[UINT_FMT] ;
@@ -69,8 +68,8 @@ int db_compile(char const *workdir, char const *tree, char const *treename, char
 	newargv[m++] = "-v" ;
 	newargv[m++] = fmt ;
 	newargv[m++] = "--" ;
-	newargv[m++] = destination.s ;
-	newargv[m++] = source.s ;
+	newargv[m++] = dest ;
+	newargv[m++] = src ;
 	newargv[m++] = 0 ;
 	
 	pid = child_spawn0(newargv[0],newargv,envp) ;
@@ -81,12 +80,9 @@ int db_compile(char const *workdir, char const *tree, char const *treename, char
 	}
 	if (wstat)
 	{
-		VERBO3 strerr_warnwu2x("compile: ",destination.s) ;
+		VERBO3 strerr_warnwu2x("compile: ",dest) ;
 		return 0 ;
 	}
-	
-	stralloc_free(&source) ;
-	stralloc_free(&destination) ;
 	
 	return 1 ;
 }

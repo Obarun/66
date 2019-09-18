@@ -19,7 +19,6 @@
 #include <oblibs/error2.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
-#include <oblibs/stralist.h>
 #include <oblibs/directory.h>
 #include <oblibs/environ.h>
 #include <oblibs/sastr.h>
@@ -52,10 +51,14 @@ int instance_splitname(stralloc *sa,char const *name,int len,int what)
 	
 	copy = name + tlen ;
 	
+	sa->len = 0 ;
 	if (!what)
-		return stralloc_obreplace(sa,template) ;
+		if (!stralloc_cats(sa,template) ||
+		!stralloc_0(sa)) return 0 ;
 	else
-		return stralloc_obreplace(sa,copy) ;
+		if (!stralloc_catb(sa,copy,strlen(copy)) ||
+		!stralloc_0(sa)) return 0 ;
+	return 1 ;
 }
 
 int instance_create(stralloc *sasv,char const *svname, char const *regex, char const *src, int len)
@@ -126,8 +129,10 @@ int insta_replace(stralloc *sa,char const *src,char const *cpy)
 			
 	}
 	result[curr] = 0 ;
-	
-	return stralloc_obreplace(sa,result) ;
+	sa->len = 0 ;
+	if (!stralloc_cats(sa,result) ||
+	!stralloc_0(sa)) return 0 ;
+	return 1 ;
 }
 
 /** instance -> 0, copy -> 1 */
@@ -142,10 +147,14 @@ int insta_splitname(stralloc *sa,char const *name,int len,int what)
 	
 	copy = name + tlen ;
 	
+	sa->len = 0 ;
 	if (!what)
-		return stralloc_obreplace(sa,template) ;
+		if (!stralloc_cats(sa,template) ||
+		!stralloc_0(sa)) return 0 ;
 	else
-		return stralloc_obreplace(sa,copy) ;
+		if (!stralloc_catb(sa,copy,strlen(copy)) ||
+		!stralloc_0(sa)) return 0 ;
+	return 1 ;
 }
 
 int insta_create(stralloc *sasv,stralloc *sv, char const *src, int len)
@@ -196,8 +205,10 @@ int insta_create(stralloc *sasv,stralloc *sv, char const *src, int len)
 	
 	stralloc_free(&sa) ;
 	stralloc_free(&tmp) ;
-	
-	return stralloc_obreplace(sv,copy) ;
+	sv->len = 0 ;
+	if (!stralloc_catb(sv,copy,strlen(copy)) ||
+	!stralloc_0(sv)) return 0 ;
+	return 1 ;
 }
 
 int insta_check(char const *svname)

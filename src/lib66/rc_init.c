@@ -16,14 +16,17 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <sys/types.h>
 
 #include <oblibs/error2.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/genalloc.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/types.h>
 
 #include <66/resolve.h>
 #include <66/ssexec.h>
@@ -40,11 +43,12 @@ int rc_init(ssexec_t *info, char const *const *envp)
 {
 	int r, wstat, empty = 0 ;
 	pid_t pid ;
+	size_t pos = 0 ;
 	
 	ss_state_t sta = STATE_ZERO ;
 	stralloc sares = STRALLOC_ZERO ;
 	ss_resolve_t res = RESOLVE_ZERO ;
-	genalloc gasvc = GENALLOC_ZERO ; //stralist type
+	stralloc sasvc = STRALLOC_ZERO ;
 	genalloc gares = GENALLOC_ZERO ; //ss_resolve_t type
 	
 	char svdir[info->tree.len + SS_SVDIRS_LEN + SS_DB_LEN + 1 + info->treename.len + 1] ;
@@ -120,23 +124,23 @@ int rc_init(ssexec_t *info, char const *const *envp)
 				
 	if (wstat) { VERBO1 strerr_warnwu2x("init db of tree: ",info->treename.s) ; goto err ; }
 	
-	if (!clean_val(&gasvc,res.sa.s + res.deps)) { VERBO1 strerr_warnwu1sys("clean dependencies of inner bundle") ; goto err ; }
+	if (!sastr_clean_string(&sasvc,res.sa.s + res.deps)) { VERBO1 strerr_warnwu1sys("clean dependencies of inner bundle") ; goto err ; }
 	
-	for (unsigned int i = 0 ; i < genalloc_len(stralist,&gasvc) ; i++)
+	for (; pos < sasvc.len ; pos += strlen(sasvc.s + pos) +1)
 	{
-		char *name = gaistr(&gasvc,i) ;
+		char *name = sasvc.s + pos ;
 		ss_resolve_t tmp = RESOLVE_ZERO ;
 		if (!ss_resolve_check(sares.s,name)){ VERBO1 strerr_warnw2sys("unknown service: ",name) ; goto err ; }
 		if (!ss_resolve_read(&tmp,sares.s,name)) { VERBO1 strerr_warnwu2sys("read resolve file of: ",name) ; goto err ; }
 		if (!ss_resolve_add_deps(&gares,&tmp,sares.s)) { VERBO1 strerr_warnwu2sys("resolve dependencies of: ",name) ; goto err ; }
 		ss_resolve_free(&tmp) ;
 	}
-	
-	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
+
+	for (pos = 0 ; pos < genalloc_len(ss_resolve_t,&gares) ; pos++)
 	{
-		char const *string = genalloc_s(ss_resolve_t,&gares)[i].sa.s ;
-		char const *name = string + genalloc_s(ss_resolve_t,&gares)[i].name  ;
-		char const *state = string + genalloc_s(ss_resolve_t,&gares)[i].state  ;
+		char const *string = genalloc_s(ss_resolve_t,&gares)[pos].sa.s ;
+		char const *name = string + genalloc_s(ss_resolve_t,&gares)[pos].name  ;
+		char const *state = string + genalloc_s(ss_resolve_t,&gares)[pos].state  ;
 		
 		VERBO2 strerr_warni2x("Write state file of: ",name) ;
 		if (!ss_state_write(&sta,state,name))
@@ -147,20 +151,16 @@ int rc_init(ssexec_t *info, char const *const *envp)
 		VERBO1 strerr_warni2x("Initialized successfully: ",name) ;
 	}
 	
-	/*
-	VERBO2 strerr_warnt2x("reload scandir: ",info->scandir.s) ;
-	if (scandir_send_signal(info->scandir.s,"an") <= 0) goto err ;
-	*/
 	end:
 	genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
-	genalloc_deepfree(stralist,&gasvc,stra_free) ;
+	stralloc_free(&sasvc) ;
 	ss_resolve_free(&res) ;
 	stralloc_free(&sares) ;
 	return empty ? 2 : 1 ;
 	
 	err:
 		genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
-		genalloc_deepfree(stralist,&gasvc,stra_free) ;
+		stralloc_free(&sasvc) ;
 		ss_resolve_free(&res) ;
 		stralloc_free(&sares) ;
 		return 0 ;

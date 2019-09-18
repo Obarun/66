@@ -15,17 +15,16 @@
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
-#include <oblibs/stralist.h>
 #include <oblibs/string.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/diuint32.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
@@ -87,12 +86,13 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	CONF = 0 ;
 	
 	int r ;
+	size_t pos = 0 ;
 	unsigned int nbsv, nlongrun, nclassic, start ;
 
 	stralloc home = STRALLOC_ZERO ;
 	stralloc workdir = STRALLOC_ZERO ;
 	stralloc sasrc = STRALLOC_ZERO ;
-	genalloc tostart = GENALLOC_ZERO ; // type stralist
+	stralloc tostart = STRALLOC_ZERO ;
 	
 	r = nbsv = nclassic = nlongrun = start = 0 ;
 	
@@ -150,11 +150,11 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 			strerr_diefu2x(111,"write revolve file for: ",name) ;
 		}
 		VERBO2 strerr_warni2x("Service written successfully: ", name) ;
-		if (!stra_cmp(&tostart,name))
+		if (sastr_cmp(&tostart,name) == -1)
 		{
 			if (sv->cname.itype == CLASSIC) nclassic++ ;
 			else nlongrun++ ;
-			if (!stra_add(&tostart,name))
+			if (!sastr_add_string(&tostart,name))
 			{
 				cleanup(workdir.s) ;
 				retstralloc(111,"main") ;
@@ -222,30 +222,30 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	stralloc_free(&workdir) ;
 	stralloc_free(&sasrc) ;
 		
-	for (unsigned int i = 0 ; i < genalloc_len(stralist,&tostart); i++)
-		VERBO1 strerr_warni2x("Enabled successfully: ", gaistr(&tostart,i)) ;
+	for (; pos < tostart.len; pos += strlen(tostart.s + pos) + 1)
+		VERBO1 strerr_warni2x("Enabled successfully: ", tostart.s + pos) ;
 	
-	if (start && genalloc_len(stralist,&tostart))
+	if (start && tostart.len)
 	{
-		int nargc = 2 + genalloc_len(stralist,&tostart) ;
+		int nargc = 2 + sastr_len(&tostart) ;
 		char const *newargv[nargc] ;
 		unsigned int m = 0 ;
 		
 		newargv[m++] = "fake_name" ;
 		
-		for (unsigned int i = 0 ; i < genalloc_len(stralist,&tostart); i++)
-			newargv[m++] = gaistr(&tostart,i) ;
+		for (pos = 0 ; pos < tostart.len; pos += strlen(tostart.s + pos) + 1)
+			newargv[m++] = tostart.s + pos ;
 		
 		newargv[m++] = 0 ;
 		
 		if (ssexec_start(nargc,newargv,envp,info))
 		{
-			genalloc_deepfree(stralist,&tostart,stra_free) ;
+			stralloc_free(&tostart) ;
 			return 111 ;
 		}
 	}
 	
-	genalloc_deepfree(stralist,&tostart,stra_free) ;
+	stralloc_free(&tostart) ;
 		
 	return 0 ;
 }

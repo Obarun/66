@@ -24,7 +24,6 @@
 #include <oblibs/directory.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
-#include <oblibs/stralist.h>
 #include <oblibs/sastr.h>
 
 #include <skalibs/stralloc.h>
@@ -104,7 +103,7 @@ int ss_resolve_pointo(stralloc *sa,ssexec_t *info,unsigned int type, unsigned in
 		else if (!stralloc_cats(&tmp,SS_DB)) goto err ;
 	}
 	if (!stralloc_0(&tmp) ||
-	!stralloc_obreplace(sa,tmp.s)) goto err ;
+	!stralloc_copy(sa,&tmp)) goto err ;
 	
 	stralloc_free(&tmp) ;
 	return 1 ;
@@ -657,13 +656,6 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 			if (!stralloc_catb(&final,deps.s + id,strlen(deps.s + id)) ||
 			!stralloc_catb(&final," ",1)) retstralloc(0,"write_dependencies") ;
 		}
-		/*for (unsigned int i = 0; i < res.ndeps; i++)
-		{
-			if (!stralloc_obreplace(&namedeps,deps.s+genalloc_s(unsigned int,&gadeps)[services->cname.idga+i])) goto err ;
-			namedeps.len--;
-			if (!stralloc_catb(&final,namedeps.s,namedeps.len)) { VERBO1 warnstralloc("ss_resolve_setnwrite") ; goto err ; }
-			if (!stralloc_catb(&final," ",1)) {VERBO1  warnstralloc("ss_resolve_setnwrite") ; goto err ; }
-		}*/
 		final.len-- ;
 		if (!stralloc_0(&final)){ VERBO1 warnstralloc("ss_resolve_setnwrite") ; goto err ; } 
 		res.deps = ss_resolve_add_string(&res,final.s) ;
@@ -794,8 +786,8 @@ int ss_resolve_append(genalloc *ga,ss_resolve_t *res)
 
 int ss_resolve_add_deps(genalloc *tokeep,ss_resolve_t *res, char const *src)
 {
-	unsigned int i = 0 ;
-	genalloc tmp = GENALLOC_ZERO ;
+	size_t pos = 0 ;
+	stralloc tmp = STRALLOC_ZERO ;
 	
 	char *name = res->sa.s + res->name ;
 	char *deps = res->sa.s + res->deps ;
@@ -804,39 +796,40 @@ int ss_resolve_add_deps(genalloc *tokeep,ss_resolve_t *res, char const *src)
 		
 	if (res->ndeps)
 	{
-		if (!clean_val(&tmp,deps)) return 0 ;
-		for (;i < genalloc_len(stralist,&tmp) ; i++)
+		if (!sastr_clean_string(&tmp,deps)) return 0 ;
+		for (;pos < tmp.len ; pos += strlen(tmp.s + pos) + 1)
 		{
 			ss_resolve_t dres = RESOLVE_ZERO ;
-			if (!ss_resolve_check(src,gaistr(&tmp,i))) goto err ;
-			if (!ss_resolve_read(&dres,src,gaistr(&tmp,i))) goto err ;
-			if (dres.ndeps && !ss_resolve_cmp(tokeep,gaistr(&tmp,i)))
+			char *dname = tmp.s + pos ;
+			if (!ss_resolve_check(src,dname)) goto err ;
+			if (!ss_resolve_read(&dres,src,dname)) goto err ;
+			if (dres.ndeps && !ss_resolve_cmp(tokeep,dname))
 			{
 				if (!ss_resolve_add_deps(tokeep,&dres,src)) goto err ;
 			}
-			if (!ss_resolve_cmp(tokeep,gaistr(&tmp,i)))
+			if (!ss_resolve_cmp(tokeep,dname))
 			{
 				if (!ss_resolve_append(tokeep,&dres)) goto err ;
 			}
 			ss_resolve_free(&dres) ;
 		}
 	}
-	genalloc_deepfree(stralist,&tmp,stra_free) ;
+	stralloc_free(&tmp) ;
 	return 1 ;
 	err:
-		genalloc_deepfree(stralist,&tmp,stra_free) ;
+		stralloc_free(&tmp) ;
 		return 0 ;
 }
 
 int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 {
 	int type ;
-	genalloc tmp = GENALLOC_ZERO ;
-	genalloc nsv = GENALLOC_ZERO ;
+	stralloc tmp = STRALLOC_ZERO ;
+	stralloc nsv = STRALLOC_ZERO ;
 	ss_state_t sta = STATE_ZERO ;
 	
 	char *name = res->sa.s + res->name ;
-	size_t srclen = strlen(src) ;
+	size_t srclen = strlen(src), a = 0, b = 0, c = 0 ;
 	char s[srclen + SS_RESOLVE_LEN + 1] ;
 	memcpy(s,src,srclen) ;
 	memcpy(s + srclen,SS_RESOLVE,SS_RESOLVE_LEN) ;
@@ -845,7 +838,7 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 	if (res->type == CLASSIC) type = 0 ;
 	else type = 1 ;
 	
-	if (!dir_get(&nsv,s,SS_MASTER+1,S_IFREG)) goto err ;
+	if (!sastr_dir_get(&nsv,s,SS_MASTER+1,S_IFREG)) goto err ;
 	
 	if (!ss_resolve_cmp(tokeep,name) && (!obstr_equal(name,SS_MASTER+1)))
 	{
@@ -853,13 +846,14 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 	}
 	if (res->type == BUNDLE && res->ndeps)
 	{
-		if (!clean_val(&tmp,res->sa.s + res->deps)) goto err ;
+		if (!sastr_clean_string(&tmp,res->sa.s + res->deps)) goto err ;
 		ss_resolve_t dres = RESOLVE_ZERO ;
-		for (unsigned int i = 0 ; i < genalloc_len(stralist,&tmp) ; i++)
+		for (; a < tmp.len ; a += strlen(tmp.s + a) + 1)
 		{	
-			if (!ss_resolve_check(src,gaistr(&tmp,i))) goto err ; 
-			if (!ss_resolve_read(&dres,src,gaistr(&tmp,i))) goto err ;
-			if (!ss_resolve_cmp(tokeep,gaistr(&tmp,i)))
+			char *name = tmp.s + a ;
+			if (!ss_resolve_check(src,name)) goto err ; 
+			if (!ss_resolve_read(&dres,src,name)) goto err ;
+			if (!ss_resolve_cmp(tokeep,name))
 			{
 				if (!ss_resolve_append(tokeep,&dres)) goto err ;
 				if (!ss_resolve_add_rdeps(tokeep,&dres,src)) goto err ;
@@ -867,12 +861,12 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 			ss_resolve_free(&dres) ;
 		}
 	}
-	for (unsigned int i = 0 ; i < genalloc_len(stralist,&nsv) ; i++)
+	for (; b < nsv.len ; b += strlen(nsv.s + b) +1)
 	{
 		int dtype = 0 ;
-		genalloc_deepfree(stralist,&tmp,stra_free) ;
+		tmp.len = 0 ;
 		ss_resolve_t dres = RESOLVE_ZERO ;
-		char *dname = gaistr(&nsv,i) ;
+		char *dname = nsv.s + b ;
 		if (obstr_equal(name,dname)) { ss_resolve_free(&dres) ; continue ; }
 		if (!ss_resolve_check(src,dname)) goto err ;
 		
@@ -892,10 +886,10 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 		{
 			if (dres.ndeps)// || (dres.type == BUNDLE && dres.ndeps) || )
 			{
-				if (!clean_val(&tmp,dres.sa.s + dres.deps)) goto err ;
-				for (unsigned int j = 0 ; j < genalloc_len(stralist,&tmp) ; j++)
+				if (!sastr_clean_string(&tmp,dres.sa.s + dres.deps)) goto err ;
+				for (c = 0 ; c < tmp.len ; c += strlen(tmp.s + c) + 1)
 				{
-					if (obstr_equal(name,gaistr(&tmp,j)))
+					if (obstr_equal(name,tmp.s + c))
 					{
 						if (!ss_resolve_append(tokeep,&dres)) goto err ;
 						if (!ss_resolve_add_rdeps(tokeep,&dres,src)) goto err ;
@@ -909,20 +903,21 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 		ss_resolve_free(&dres) ;
 	}
 	
-	genalloc_deepfree(stralist,&tmp,stra_free) ;
-	genalloc_deepfree(stralist,&nsv,stra_free) ;
+	stralloc_free(&nsv) ;
+	stralloc_free(&tmp) ;
 	return 1 ;
 	err:
-		genalloc_deepfree(stralist,&tmp,stra_free) ;
-		genalloc_deepfree(stralist,&nsv,stra_free) ;
+		stralloc_free(&nsv) ;
+		stralloc_free(&tmp) ;
 		return 0 ;
 }
 
 int ss_resolve_add_logger(genalloc *ga,char const *src)
 {
+	size_t i = 0 ;
 	genalloc gatmp = GENALLOC_ZERO ;
-
-	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++) 
+	
+	for (; i < genalloc_len(ss_resolve_t,ga) ; i++) 
 	{
 		ss_resolve_t res = RESOLVE_ZERO ;
 		ss_resolve_t dres = RESOLVE_ZERO ;
@@ -1022,15 +1017,14 @@ int ss_resolve_search(genalloc *ga,char const *name)
 int ss_resolve_write_master(ssexec_t *info,ss_resolve_graph_t *graph,char const *dir, unsigned int reverse)
 {
 	int r ;
-	
+	size_t i = 0 ;
 	char ownerstr[UID_FMT] ;
 	size_t ownerlen = uid_fmt(ownerstr,info->owner) ;
 	ownerstr[ownerlen] = 0 ;
 	
 	stralloc in = STRALLOC_ZERO ;
 	stralloc inres = STRALLOC_ZERO ;
-	stralloc already = STRALLOC_ZERO ;
-	genalloc gain = GENALLOC_ZERO ;
+	stralloc gain = STRALLOC_ZERO ;
 	ss_resolve_t res = RESOLVE_ZERO ;
 	
 	size_t dirlen = strlen(dir) ;
@@ -1070,21 +1064,20 @@ int ss_resolve_write_master(ssexec_t *info,ss_resolve_graph_t *graph,char const 
 		file[dstlen + 1 + SS_CONTENTS_LEN] = 0 ;
 		size_t filesize=file_get_size(file) ;
 		
-		r = openreadfileclose(file,&already,filesize) ;
+		r = openreadfileclose(file,&gain,filesize) ;
 		if(!r) goto err ;
 		/** ensure that we have an empty line at the end of the string*/
-		if (!stralloc_cats(&already,"\n")) goto err ;
-		if (!stralloc_0(&already)) goto err ;
-		if (!clean_val(&gain,already.s))	goto err ;
-		stralloc_free(&already) ;
+		if (!stralloc_cats(&gain,"\n")) goto err ;
+		if (!stralloc_0(&gain)) goto err ;
+		if (!sastr_clean_element(&gain)) goto err ;
 	}
 	
-	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&graph->sorted); i++)
+	for (; i < genalloc_len(ss_resolve_t,&graph->sorted); i++)
 	{
 		char *string = genalloc_s(ss_resolve_t,&graph->sorted)[i].sa.s ;
 		char *name = string + genalloc_s(ss_resolve_t,&graph->sorted)[i].name ;
 		if (reverse)
-			if (!stra_cmp(&gain,name)) continue ;
+			if (sastr_cmp(&gain,name) == -1) continue ;
 		
 		if (!stralloc_cats(&in,name)) goto err ;
 		if (!stralloc_cats(&in,"\n")) goto err ;
@@ -1120,15 +1113,13 @@ int ss_resolve_write_master(ssexec_t *info,ss_resolve_graph_t *graph,char const 
 	stralloc_free(&in) ;
 	stralloc_free(&inres) ;
 	ss_resolve_free(&res) ;
-	stralloc_free(&already) ;
-	genalloc_deepfree(stralist,&gain,stra_free) ;
+	stralloc_free(&gain) ;
 	return 1 ;
 	
 	err:
 		ss_resolve_free(&res) ;
 		stralloc_free(&in) ;
 		stralloc_free(&inres) ;
-		stralloc_free(&already) ;
-		genalloc_deepfree(stralist,&gain,stra_free) ;
+		stralloc_free(&gain) ;
 		return 0 ;
 }
