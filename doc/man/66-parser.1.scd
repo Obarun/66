@@ -6,7 +6,7 @@
 
 # SYNOPSIS
 
-66-parser [ *-h* ] [ *-v* _verbosity_ ] [ *-f* ] _service destination_
+66-parser [ *-h* ] [ *-v* _verbosity_ ] [ *-f* ] [ *-c* | *-C* ] _service destination_
 
 # DESCRIPTION
 
