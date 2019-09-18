@@ -71,26 +71,25 @@ int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *se
 {
 	stralloc conf = STRALLOC_ZERO ;
 	size_t svlen = strlen(service) ;
-//	char svsrc[svlen + 1] ;
-//	if (!dirname(svsrc,service)) return 0 ;
-//	size_t srclen = strlen(svsrc) ;
 	// keep source of the frontend file
 	sv_before->src = keep.len ;
-//	if (!stralloc_catb(&keep,svsrc,srclen + 1)) return 0 ;
-	if (!stralloc_catb(&keep,service,svlen + 1)) return 0 ;
+	if (!stralloc_catb(&keep,service,svlen + 1)) goto err ;
 	// keep source of the configuration file
 	if (sv_before->opts[2])
 	{
-		if (!env_resolve_conf(&conf,owner)) return 0 ;
+		if (!env_resolve_conf(&conf,owner)) goto err ;
 		sv_before->srconf = keep.len ;
-		if (!stralloc_catb(&keep,conf.s,conf.len + 1)) return 0 ;
+		if (!stralloc_catb(&keep,conf.s,conf.len + 1)) goto err ;
 	}
 	// keep service on current list
-	if (!stralloc_catb(parsed_list,service,svlen + 1)) return 0 ;
-	if (!genalloc_append(sv_alltype,&gasv,sv_before)) return 0 ;
+	if (!stralloc_catb(parsed_list,service,svlen + 1)) goto err ;
+	if (!genalloc_append(sv_alltype,&gasv,sv_before)) goto err ;
 	(*nbsv)++ ;
 	stralloc_free(&conf) ;
 	return 1 ;
+	err:
+		stralloc_free(&conf) ;
+		return 0 ;
 }
 
 int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force)
@@ -100,7 +99,6 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_befo
 	stralloc newsv = STRALLOC_ZERO ;
 	if (sv_before->cname.nga)
 	{
-		
 		size_t id = sv_before->cname.idga, nid = sv_before->cname.nga ;
 		for (;nid; id += strlen(deps.s + id) + 1, nid--)
 		{
@@ -109,45 +107,21 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_befo
 			{
 				VERBO3 strerr_warni4x("Service : ",sv, " depends on : ",deps.s+id) ;
 			}else VERBO3 strerr_warni5x("Bundle : ",sv, " contents : ",deps.s+id," as service") ;
-						dname = deps.s+id ;
+			dname = deps.s + id ;
 			if (!ss_resolve_src_path(&newsv,dname,info))
 			{
 				VERBO3 strerr_warnwu2x("resolve source path of: ",dname) ;
-				stralloc_free(&newsv) ; 
-				return 0 ;
+				goto err ;
 			}
-			if (!parse_service_before(info,parsed_list,newsv.s,nbsv,sasv,force,&exist))
-			{ 
-				stralloc_free(&newsv) ; 
-				return 0 ;
-			}
+			if (!parse_service_before(info,parsed_list,newsv.s,nbsv,sasv,force,&exist)) goto err ;
 		}
-		/*		
-		for (int i = 0;i < sv_before->cname.nga;i++)
-		{
-			newsv.len = 0 ;
-			if (sv_before->cname.itype != BUNDLE)
-			{
-				VERBO3 strerr_warni4x("Service : ",sv, " depends on : ",deps.s+(genalloc_s(unsigned int,&gadeps)[sv_before->cname.idga+i])) ;
-			}else VERBO3 strerr_warni5x("Bundle : ",sv, " contents : ",deps.s+(genalloc_s(unsigned int,&gadeps)[sv_before->cname.idga+i])," as service") ;
-			
-			dname = deps.s+(genalloc_s(unsigned int,&gadeps)[sv_before->cname.idga+i]) ;
-			if (!ss_resolve_src_path(&newsv,dname,info))
-			{
-				VERBO3 strerr_warnwu2x("resolve source path of: ",dname) ;
-				stralloc_free(&newsv) ; 
-				return 0 ;
-			}
-			if (!parse_service_before(info,parsed_list,newsv.s,nbsv,sasv,force,&exist))
-			{ 
-				stralloc_free(&newsv) ; 
-				return 0 ;
-			}
-		}*/
 	}
 	else VERBO3 strerr_warni2x(sv,": haven't dependencies") ;
 	stralloc_free(&newsv) ;
 	return 1 ;
+	err:
+		stralloc_free(&newsv) ;
+		return 0 ;
 }
 
 int parse_service_before(ssexec_t *info,stralloc *parsed_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t *exist)

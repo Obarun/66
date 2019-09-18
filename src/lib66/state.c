@@ -83,12 +83,7 @@ int ss_state_write(ss_state_t *sta, char const *dst, char const *name)
 	
 	ss_state_pack(pack,sta) ;
 	if (!openwritenclose_unsafe(tmp,pack,SS_STATE_SIZE)) return 0 ;
-	
-	/*printf("sta.reload:write:%i\n",sta->reload) ;
-		printf("sta.init::%i\n",sta->init) ;
-		printf("sta.unsupervise::%i\n",sta->unsupervise) ;
-		printf("sta.state::%i\n",sta->state) ;
-		printf("sta.pid:write:%i\n",sta->pid) ;*/
+
 	return 1 ;
 }
 
@@ -106,11 +101,7 @@ int ss_state_read(ss_state_t *sta, char const *src, char const *name)
 
 	if (openreadnclose(tmp, pack, SS_STATE_SIZE) < SS_STATE_SIZE) return 0 ;
 	ss_state_unpack(pack, sta) ;
-	/*	printf("sta.reload:read:%i\n",sta->reload) ;
-		printf("sta.init::%i\n",sta->init) ;
-		printf("sta.unsupervise::%i\n",sta->unsupervise) ;
-		printf("sta.state::%i\n",sta->state) ;
-		printf("sta.pid:read:%i\n",sta->pid) ;*/
+
 	return 1 ;	
 }
 
