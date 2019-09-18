@@ -314,15 +314,18 @@ int write_bundle(sv_alltype *sv, char const *dst)
 	return 1 ;
 }
 
-int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, int mode, uint8_t force)
+int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, mode_t mode, uint8_t force)
 {
 	int r ;
 	int logbuild = log->run.build ;
 	
-	char *time = NULL ;
-	char *pmax = NULL ;
-	char *pback = NULL ;
+	uid_t log_uid ;
+	gid_t log_gid ;
+	char *time = 0 ;
+	char *pmax = 0 ;
+	char *pback = 0 ;
 	char *timestamp = "t" ;
+	char *logrunner = log->run.runas ? keep.s + log->run.runas : SS_LOGGER_RUNNER ;
 	char max[UINT32_FMT] ;
 	char back[UINT32_FMT] ;
 	char const *userhome ;
@@ -416,18 +419,10 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			/** uid */
 			if (!stralloc_cats(&shebang, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n")) retstralloc(0,"write_logger") ;
 			if (!stralloc_0(&shebang)) retstralloc(0,"write_logger") ;
-			if ((!MYUID))// && log->run.runas))
+			if ((!MYUID))
 			{
 				if (!stralloc_cats(&ui,S6_BINPREFIX "s6-setuidgid ")) retstralloc(0,"write_logger") ;
-				if (log->run.runas)
-				{
-					if (!get_namebyuid(log->run.runas,&ui))
-					{
-						VERBO3 strerr_warnwu1sys("set owner for the logger") ;
-						return 0 ;
-					}
-				}
-				else if (!stralloc_cats(&ui,SS_LOGGER_RUNNER)) retstralloc(0,"write_logger") ;
+				if (!stralloc_cats(&ui,logrunner)) retstralloc(0,"write_logger") ;
 			}
 			if (!stralloc_cats(&ui,"\n")) retstralloc(0,"write_logger") ;
 			if (!stralloc_0(&ui)) retstralloc(0,"write_logger") ;
@@ -541,7 +536,21 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			return 0 ;
 		}
 	}
-	
+	if ((!MYUID))
+	{
+		if (!youruid(&log_uid,logrunner) ||
+		!yourgid(&log_gid,log_uid))
+		{
+			VERBO3 strerr_warnwu2sys("get uid and gid of: ",logrunner) ;
+			return 0 ;
+		}
+		if (chown(destlog.s,log_uid,log_gid) == -1)
+		{
+			VERBO3 strerr_warnwu2sys("chown: ",destlog.s) ;
+			return 0 ;
+		}
+	}
+		
 	stralloc_free(&shebang) ;
 	stralloc_free(&ui) ;
 	stralloc_free(&exec) ;
@@ -760,7 +769,7 @@ int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 	return 1 ;
 }
 
-int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,int mode)
+int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mode_t mode)
 {
 	
 	unsigned int type = sv->cname.itype ;
@@ -784,11 +793,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 			if ((!owner && exec->runas))
 			{
 				if (!stralloc_cats(&ui,S6_BINPREFIX "s6-setuidgid ")) retstralloc(0,"write_exec") ;
-				if (!get_namebyuid(exec->runas,&ui))
-				{
-					VERBO3 strerr_warnwu1sys("set owner for the execute file") ;
-					return 0 ;
-				}
+				if (!stralloc_cats(&ui,keep.s + exec->runas)) retstralloc(0,"write_exec") ;
 				if (!stralloc_cats(&ui,"\n")) retstralloc(0,"write_exec") ;
 			}
 			/** environment */
@@ -879,20 +884,13 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename)
 {
 	stralloc contents = STRALLOC_ZERO ;
-	//stralloc namedeps = STRALLOC_ZERO ;
 	size_t id = idga, nid = nga ;
 	for (;nid; id += strlen(deps.s + id) + 1, nid--)
 	{
 		if (!stralloc_cats(&contents,deps.s + id) ||
 		!stralloc_cats(&contents,"\n")) retstralloc(0,"write_dependencies") ;
 	}
-	/*for (unsigned int i = 0; i < nga; i++)
-	{
-		if (!stralloc_obreplace(&namedeps,deps.s+genalloc_s(unsigned int,ga)[idga+i])) return 0 ;
-		if (!stralloc_cats(&contents,namedeps.s)) retstralloc(0,"write_dependencies") ;
-		if (!stralloc_cats(&contents,"\n")) 
-	}*/
-		
+	
 	if (contents.len)
 	{
 		if (!file_write_unsafe(dst,filename,contents.s,contents.len))
@@ -903,11 +901,9 @@ int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char c
 	}
 	
 	stralloc_free(&contents) ;
-	//stralloc_free(&namedeps) ;
 	return 1 ;
 	err:
 		stralloc_free(&contents) ;
-		//stralloc_free(&namedeps) ;
 		return 0 ;
 }
 

@@ -56,7 +56,7 @@ struct sv_exec_s
 {
 	/**build=45->auto,build=46->custom*/
 	int build ;
-	uid_t runas ;
+	unsigned int runas ;
 	unsigned int shebang ;
 	unsigned int exec ;
 } ;
@@ -257,14 +257,6 @@ extern int parse_service_check_enabled(ssexec_t *info, char const *svname,uint8_
 extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t *exist) ;
 extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force) ;
 extern int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner) ;
-/** mill utilities 
-extern parse_mill_t MILL_FIRST_BRACKET ;
-extern parse_mill_t MILL_GET_AROBASE_KEY ;
-extern parse_mill_t MILL_GET_COMMENTED_KEY ;
-extern parse_mill_t MILL_GET_SECTION_NAME ; */
-/** utilities 
-extern int parse_line(stralloc *src,size_t *pos) ;
-extern int parse_bracket(stralloc *src,size_t *pos) ; */
 /** split */
 extern int section_get_range(section_t *sasection,stralloc *src) ;
 extern int key_get_range(genalloc *ga, section_t *sasection,int *svtype) ;
@@ -274,13 +266,7 @@ extern int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service
 extern int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype) ;
 extern int keep_runfinish(sv_exec *exec,keynocheck *nocheck) ;
 extern int keep_logger(sv_execlog *log,keynocheck *nocheck) ;
-/** helper 
-extern void section_setsa(int id, stralloc_ref *p,section_t *sa) ;
-extern int section_get_skip(char const *s,size_t pos,int nline) ;
-extern int section_get_id(stralloc *secname, char const *string,size_t *pos,int *id) ;
-extern int key_get_next_id(stralloc *sa, char const *string,size_t *pos) ;
-extern void parse_err(int ierr,int idsec,int idkey) ; */
-extern int read_svfile(stralloc *sasv,char const *name,char const *src) ;
+/** helper */
 extern int add_pipe(sv_alltype *sv, stralloc *sa) ;
 /** write */
 extern int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, uint8_t force,uint8_t conf) ;
@@ -289,9 +275,9 @@ extern int write_longrun(sv_alltype *sv,char const *dst, uint8_t force, uint8_t 
 extern int write_oneshot(sv_alltype *sv,char const *dst, uint8_t conf) ;
 extern int write_bundle(sv_alltype *sv, char const *dst) ;
 extern int write_common(sv_alltype *sv, char const *dst,uint8_t conf) ;
-extern int write_exec(sv_alltype *sv, sv_exec *exec,char const *name,char const *dst,int mode) ;
+extern int write_exec(sv_alltype *sv, sv_exec *exec,char const *name,char const *dst,mode_t mode) ;
 extern int write_uint(char const *dst, char const *name, uint32_t ui) ;
-extern int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, int mode, uint8_t force) ;
+extern int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, mode_t mode, uint8_t force) ;
 extern int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char const *proddst,char const *consdst) ;
 extern int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename) ;
 extern int write_env(char const *name,stralloc *sa,char const *dst) ;
