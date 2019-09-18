@@ -20,9 +20,8 @@
 #include <66/ssexec.h>
 
 extern int backup_make_new(ssexec_t *info,unsigned int type) ;
-
 extern int backup_cmd_switcher(unsigned int verbosity,char const *cmd, ssexec_t *info) ;
 extern int backup_switcher(int argc, char const *const *argv,ssexec_t *info) ;
-
 extern int backup_realpath_sym(stralloc *sa,ssexec_t *info,unsigned int type) ;
+
 #endif

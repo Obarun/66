@@ -15,7 +15,6 @@
 #include <66/utils.h>
  
 #include <oblibs/error2.h>
-#include <oblibs/directory.h>
 
 #include <skalibs/stralloc.h>
 

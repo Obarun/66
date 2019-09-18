@@ -13,22 +13,21 @@
  */
  
 #include <66/utils.h>
- 
+
+#include <stddef.h>
+
 #include <oblibs/error2.h>
-#include <oblibs/directory.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
 
-#include <66/config.h>
 #include <66/constants.h>
 
 int set_livetree(stralloc *livetree,uid_t owner)
 {
 	int r ;
 	char ownerpack[UID_FMT] ;
-	
-	
+
 	r = set_livedir(livetree) ;
 	if (r < 0) return -1 ;
 	if (!r) return 0 ;

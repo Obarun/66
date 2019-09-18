@@ -33,6 +33,7 @@
 
 int rc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *const *envp)
 {
+	size_t i = 0 ;
 	ss_resolve_t_ref pres ;
 	stralloc sares = STRALLOC_ZERO ;
 	ss_state_t sta = STATE_ZERO ;
@@ -60,7 +61,7 @@ int rc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *const
 		goto err ;
 	}
 		
-	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++) 
+	for (; i < genalloc_len(ss_resolve_t,ga) ; i++) 
 	{
 		char const *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
 		char const *name = string + genalloc_s(ss_resolve_t,ga)[i].name ;
@@ -73,7 +74,7 @@ int rc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *const
 		strerr_warnwu1sys("set revolve pointer to source") ;
 		goto err ;
 	}
-	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
+	for (i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
 	{
 		pres = &genalloc_s(ss_resolve_t,ga)[i] ;
 		char const *string = pres->sa.s ;

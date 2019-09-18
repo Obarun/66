@@ -14,24 +14,24 @@
  
 #include <66/utils.h>
 
-#include <sys/stat.h>
+#include <sys/types.h>
+#include <string.h>
 
 #include <oblibs/error2.h>
 #include <oblibs/types.h>
 
-#include <skalibs/uint32.h>
-#include <skalibs/types.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 
 #include <66/constants.h>
 #include <66/enum.h>
+#include <66/ssexec.h>
 
 int backup_realpath_sym(stralloc *sa, ssexec_t *info,unsigned int type)
 {
 	ssize_t r ;
 	size_t typelen ;
-	char *ptype = NULL ;
+	char *ptype = 0 ;
 	
 	if (type == CLASSIC)
 	{
@@ -56,8 +56,8 @@ int backup_realpath_sym(stralloc *sa, ssexec_t *info,unsigned int type)
 	if(r <= 0) return 0 ; 
 	sa->len = 0 ;
 	r = sarealpath(sa,sym) ;
-	if (r < 0 ) return 0 ; 
-	if (!stralloc_0(sa)) retstralloc(0,"find_current") ;
+	if (r == -1 ) return 0 ; 
+	if (!stralloc_0(sa)) retstralloc(0,"backup_realpath_sym") ;
 	
 	return 1 ;
 }

@@ -16,14 +16,14 @@
 
 #include <s6-rc/config.h>//S6RC_BINPREFIX
 
-#include <sys/stat.h>
+#include <sys/types.h>
+#include <string.h>
 
 #include <oblibs/error2.h>
 
 #include <skalibs/types.h>
 #include <skalibs/djbunix.h>
 
-#include <66/constants.h>
 #include <66/utils.h>
 #include <66/ssexec.h>
 

@@ -14,9 +14,12 @@
 
 #include <66/tree.h>
 
-#include <stddef.h>
+#include <string.h>
+#include <sys/types.h>//ssize
 
 #include <oblibs/string.h>
+
+#include <skalibs/stralloc.h>
 
 char tree_setname(stralloc *sa,char const *tree)
 {

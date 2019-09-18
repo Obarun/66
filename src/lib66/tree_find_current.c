@@ -15,11 +15,12 @@
 #include <66/utils.h>
 
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <string.h>
 
 #include <oblibs/error2.h>
 #include <oblibs/types.h>
 
-#include <skalibs/uint32.h>
 #include <skalibs/types.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
@@ -30,7 +31,7 @@ int tree_find_current(stralloc *tree, char const *base,uid_t owner)
 {
 	ssize_t r ;
 	size_t baselen = strlen(base) ;
-	char pack[256] ;
+	char pack[UID_FMT] ;
 	
 	uint32_pack(pack,owner) ;
 	size_t packlen = uint_fmt(pack,owner) ;

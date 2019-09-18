@@ -14,6 +14,8 @@
  
 #include <66/utils.h>
 
+#include <stddef.h>
+
 #include <oblibs/error2.h>
 
 #include <s6/s6-supervise.h>
