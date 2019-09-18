@@ -599,17 +599,24 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	{
 		VERBO2 strerr_warni3x("enable ",dstree.s," ..." ) ;
 		r  = tree_cmd_state(VERBOSITY,"-a",tree) ;
-		
-		if (r != 1) strerr_diefu6x(111,"add: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
-		VERBO1 strerr_warni2x("Enabled successfully tree: ",tree) ;
+		if (!r) strerr_diefu6x(111,"add: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
+		else if (r == 1) 
+		{
+			VERBO1 strerr_warni2x("Enabled successfully tree: ",tree) ;
+		}
+		else VERBO1 strerr_warni2x("Already enabled tree: ",tree) ;
 	}
 	
 	if (disable)
 	{
 		VERBO2 strerr_warni3x("disable ",dstree.s," ..." ) ;
 		r  = tree_cmd_state(VERBOSITY,"-d",tree) ;
-		if (r != 1) strerr_diefu6x(111,"remove: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
-		VERBO1 strerr_warni2x("Disabled successfully tree: ",tree) ;
+		if (!r) strerr_diefu6x(111,"remove: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
+		else if (r == 1)
+		{
+			VERBO1 strerr_warni2x("Disabled successfully tree: ",tree) ;
+		}
+		else VERBO1 strerr_warni2x("Already disabled tree: ",tree) ;
 	}
 	
 	if (auidn)
@@ -651,8 +658,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			if (rm_rf(treetmp) < 0)	strerr_diefu2sys(111,"delete: ",treetmp) ;
 		}
 		VERBO2 strerr_warni6x("disable: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
-		r  = tree_cmd_state(VERBOSITY,"-d",tree) ;
-		if (r != 1) strerr_diefu6x(111,"delete: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
+		if (!tree_cmd_state(VERBOSITY,"-d",tree))
+			strerr_diefu6x(111,"disable: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
 		
 		VERBO1 strerr_warni2x("Deleted successfully: ",tree) ;
 	}
