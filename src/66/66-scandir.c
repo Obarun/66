@@ -63,7 +63,7 @@ static gid_t GIDOWNER ;
 static char GIDSTR[GID_FMT] ;
 static char TMPENV[MAXENV+1] ;
 static char const *skel = SS_SKEL_DIR ;
-static char const *log_user = "root" ;
+static char const *log_user = SS_LOGGER_RUNNER ;
 static unsigned int BOOT = 0 ;
 unsigned int VERBOSITY = 1 ;
 unsigned int NOTIF = 0 ;

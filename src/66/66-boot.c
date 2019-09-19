@@ -48,7 +48,7 @@ static char const *banner = "\n[Starts stage1 process...]" ;
 static char const *slashdev = 0 ;
 static char const *envdir = 0 ;
 static char const *fifo = 0 ;
-static char const *log = 0 ;
+static char const *log_user = SS_LOGGER_RUNNER ;
 static char const *cver = 0 ;
 static char tpath[MAXENV+1] ;
 static char trcinit[MAXENV+1] ;
@@ -252,7 +252,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 'e' : envdir = l.arg ; break ;
 				case 'd' : slashdev = l.arg ; break ;
 				case 'b' : banner = l.arg ; break ;
-				case 'l' : log = l.arg ; break ;
+				case 'l' : log_user = l.arg ; break ;
 				default : exitusage(USAGE) ; 
 			}
 		}
@@ -316,10 +316,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (setenv("PATH", path, 1) == -1) sulogin("set initial PATH: ",path) ;
 	/** create scandir */
 	{
-		int m = log ? 6 : 4 ;
-		char const *t[] = { "-b", "-c", "-s", skel, log ? "-L" : 0, log ? log : 0 } ;
+		char const *t[] = { "-b", "-c", "-s", skel, "-L", log_user } ;
 		strerr_warni2x("Create live scandir at: ",live) ;
-		make_cmdline(SS_EXTBINPREFIX "66-scandir",t,m,"create live scandir at: ",live,envp) ;		
+		make_cmdline(SS_EXTBINPREFIX "66-scandir",t,6,"create live scandir at: ",live,envp) ;
 	}
 	/** initiate earlier service */
 	{
