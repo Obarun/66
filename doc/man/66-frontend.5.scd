@@ -145,11 +145,22 @@ Valid _key_ names:
 
 *@name*++
 	Name of the service.++
-	_mandatory_: *yes*++
+	_mandatory_: *no*++
 	_syntax_: *inline*++
 	_valid values_:++
-		Any name can be set as a _value_. A good pratice is to use the same++
-		name of the frontend service file.
+    
+	This field has *no effect* except for instantiated services.
+	In such case the name *must* contain the complete name of the 
+	frontend service file.
+	For example, the following is valid:
+
+	@name = tty@mine-@I
+
+	where:
+
+	@name = mine-@I
+
+	is not for a frontend service file named tty@.
 
 	Corresponds to the _name_ of the service directory of s6 and s6-rc
 	programs.
@@ -666,7 +677,6 @@ Contents:
 ```
 [main]
 @type = classic
-@name = @I
 @description = "Launch @I"
 @user = ( root )
 
@@ -679,7 +689,6 @@ Contents:
 ```
 [main]
 @type = classic
-@name = tty1
 @description = "Launch tty1"
 @user = ( root )
 
