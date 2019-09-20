@@ -30,167 +30,138 @@
 #include <66/constants.h>
 #include <66/environ.h>
 
-int parse_service_get_list(stralloc *result, stralloc *list)
+int parse_service_check_enabled(ssexec_t *info, char const *svname,uint8_t force,uint8_t *exist)
 {
-	int found ;
-	size_t i = 0, len = list->len ;
-	for (;i < len; i += strlen(list->s + i) + 1)
+	stralloc sares = STRALLOC_ZERO ;
+	ss_resolve_t res = RESOLVE_ZERO ;
+	int ret = 1 ;
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
 	{
-		found = 0 ;
-		char *name = list->s+i ;
-		size_t svlen = strlen(name) ;
-		char svname[svlen + 1] ;
-		char svsrc[svlen + 1] ;
-		if (!basename(svname,name)) return 0 ;
-		if (!dirname(svsrc,name)) return 0 ;
-		if (ss_resolve_src(result,svname,svsrc,&found) <= 0) return 0 ;
+		VERBO3 strerr_warnwu1sys("set revolve pointer to source") ;
+		goto err ;	
+	} 
+	if (ss_resolve_check(sares.s,svname))
+	{
+		if (!ss_resolve_read(&res,sares.s,svname)) 
+		{
+			VERBO3 strerr_warnwu2sys("read resolve file of: ",svname) ;
+			goto err ;
+		}
+		if (res.disen)
+		{
+			(*exist) = 1 ;
+			if (!force) { 
+				VERBO1 strerr_warnw3x("Ignoring: ",svname," service: already enabled") ;
+				ret = 2 ;
+				goto freed ;
+			}
+		}
 	}
-	return 1 ;
+	freed:
+	stralloc_free(&sares) ;
+	ss_resolve_free(&res) ;
+	return ret ;
+	err:
+		stralloc_free(&sares) ;
+		ss_resolve_free(&res) ;
+		return 0 ;
 }
 
 int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner)
 {
 	stralloc conf = STRALLOC_ZERO ;
 	size_t svlen = strlen(service) ;
-	char svsrc[svlen + 1] ;
-	if (!dirname(svsrc,service)) return 0 ;
-	size_t srclen = strlen(svsrc) ;
 	// keep source of the frontend file
 	sv_before->src = keep.len ;
-	if (!stralloc_catb(&keep,svsrc,srclen + 1)) return 0 ;
+	if (!stralloc_catb(&keep,service,svlen + 1)) goto err ;
 	// keep source of the configuration file
 	if (sv_before->opts[2])
 	{
-		if (!env_resolve_conf(&conf,owner)) return 0 ;
+		if (!env_resolve_conf(&conf,owner)) goto err ;
 		sv_before->srconf = keep.len ;
-		if (!stralloc_catb(&keep,conf.s,conf.len + 1)) return 0 ;
+		if (!stralloc_catb(&keep,conf.s,conf.len + 1)) goto err ;
 	}
 	// keep service on current list
-	if (!stralloc_catb(parsed_list,service,svlen + 1)) return 0 ;
-	if (!genalloc_append(sv_alltype,&gasv,sv_before)) return 0 ;
+	if (!stralloc_catb(parsed_list,service,svlen + 1)) goto err ;
+	if (!genalloc_append(sv_alltype,&gasv,sv_before)) goto err ;
 	(*nbsv)++ ;
 	stralloc_free(&conf) ;
 	return 1 ;
-	
-	
-	
+	err:
+		stralloc_free(&conf) ;
+		return 0 ;
 }
 
-int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,unsigned int force)
+int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force)
 {
-	unsigned int exist = 0 ;
+	uint8_t exist = 0 ;
 	char *dname = 0 ;
 	stralloc newsv = STRALLOC_ZERO ;
 	if (sv_before->cname.nga)
 	{
-		for (int i = 0;i < sv_before->cname.nga;i++)
+		size_t id = sv_before->cname.idga, nid = sv_before->cname.nga ;
+		for (;nid; id += strlen(deps.s + id) + 1, nid--)
 		{
 			newsv.len = 0 ;
 			if (sv_before->cname.itype != BUNDLE)
 			{
-				VERBO3 strerr_warni4x("Service : ",sv, " depends on : ",deps.s+(genalloc_s(unsigned int,&gadeps)[sv_before->cname.idga+i])) ;
-			}else VERBO3 strerr_warni5x("Bundle : ",sv, " contents : ",deps.s+(genalloc_s(unsigned int,&gadeps)[sv_before->cname.idga+i])," as service") ;
-			
-			dname = deps.s+(genalloc_s(unsigned int,&gadeps)[sv_before->cname.idga+i]) ;
+				VERBO3 strerr_warni4x("Service : ",sv, " depends on : ",deps.s+id) ;
+			}else VERBO3 strerr_warni5x("Bundle : ",sv, " contents : ",deps.s+id," as service") ;
+			dname = deps.s + id ;
 			if (!ss_resolve_src_path(&newsv,dname,info))
 			{
 				VERBO3 strerr_warnwu2x("resolve source path of: ",dname) ;
-				stralloc_free(&newsv) ; 
-				return 0 ;
+				goto err ;
 			}
-			if (!parse_service_before(info,parsed_list,newsv.s,nbsv,sasv,force,exist))
-			{ 
-				stralloc_free(&newsv) ; 
-				return 0 ;
-			}
+			if (!parse_service_before(info,parsed_list,newsv.s,nbsv,sasv,force,&exist)) goto err ;
 		}
 	}
 	else VERBO3 strerr_warni2x(sv,": haven't dependencies") ;
 	stralloc_free(&newsv) ;
 	return 1 ;
+	err:
+		stralloc_free(&newsv) ;
+		return 0 ;
 }
 
-int parse_service_before(ssexec_t *info,stralloc *parsed_list, char const *sv,unsigned int *nbsv, stralloc *sasv,unsigned int force,unsigned int exist)
+int parse_service_before(ssexec_t *info,stralloc *parsed_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t *exist)
 {
 	
-	int r = 0 , insta ;
-	size_t svlen = strlen(sv), svsrclen ; 
-	
-	char svname[svlen + 1] ;
-	char svsrc[svlen + 1] ;
-	char svpath[svlen + 1] ;
+	int r, insta ;
+	size_t svlen = strlen(sv), svsrclen, svnamelen ;
+	char svname[svlen + 1], svsrc[svlen + 1], svpath[svlen + 1] ;
 	if (!basename(svname,sv)) return 0 ;
 	if (!dirname(svsrc,sv)) return 0 ;
 	svsrclen = strlen(svsrc) ;
+	svnamelen = strlen(svname) ;
 	if (scan_mode(sv,S_IFDIR) == 1) return 1 ;
-	
-	stralloc newsv = STRALLOC_ZERO ;
-	stralloc tmp = STRALLOC_ZERO ;
-
-	{
-		if (!set_ownerhome(&tmp,info->owner))
-		{
-			VERBO3 strerr_warnwu1sys("set home directory") ; 
-			goto err ;
-		}
 		
-		if (!stralloc_cats(&tmp,info->tree.s)) retstralloc(0,"parse_service_before") ;
-		if (!stralloc_cats(&tmp,SS_SVDIRS)) retstralloc(0,"parse_service_before") ;
-		if (!stralloc_cats(&tmp,SS_DB)) retstralloc(0,"parse_service_before") ;
-		if (!stralloc_cats(&tmp,SS_SRC)) retstralloc(0,"parse_service_before") ;
-		if (!stralloc_0(&tmp)) retstralloc(0,"parse_service_before") ;
-
-		insta = insta_check(svname) ;
-		if (!insta) 
-		{
-			VERBO3 strerr_warnw2x("invalid instance name: ",svname) ;
-			goto err ;
-		}
-		if (insta > 0)
-		{
-			if (!insta_splitname(&newsv,svname,insta,1))
-			{
-				VERBO3 strerr_warnwu2x("split copy name of instance: ",svname) ;
-				goto err ;
-			}
-		}
-		else if (!stralloc_cats(&newsv,svname)) retstralloc(0,"parse_service_before") ;
-		if (!stralloc_0(&newsv)) goto err ;
-		r = dir_search(tmp.s,newsv.s,S_IFDIR) ;
-		if (r && !force) { 
-			VERBO2 strerr_warni2x(newsv.s,": already added") ;
-			goto freed ;
-		}
-		else if (r < 0)
-		{
-			VERBO3 strerr_warnw3x("Conflicting format type for ",newsv.s," service file") ;
-			goto err ;
-		}
-		newsv.len = 0 ;
-	}
-	if (!stralloc_cats(&newsv,svname)) goto err ;
-	if (!stralloc_0(&newsv)) goto err ;
+	r = parse_service_check_enabled(info,svname,force,exist) ;
+	if (r == 2) goto freed ;
+	else if (!r) return 0 ;
 	
 	sv_alltype sv_before = SV_ALLTYPE_ZERO ;
-	insta = insta_check(newsv.s) ;
+	insta = instance_check(svname) ;
 	if (!insta) 
 	{
-		VERBO3 strerr_warnw2x("invalid instance name: ",newsv.s) ;
-		goto err ;
+		VERBO3 strerr_warnw2x("invalid instance name: ",svname) ;
+		return 0 ;
 	}
 	if (insta > 0)
 	{
-		
-		if (!insta_create(sasv,&newsv,svsrc,insta))
+		if (!instance_create(sasv,svname,SS_INSTANCE,svsrc,insta))
 		{
-			VERBO3 strerr_warnwu2x("create instance service: ",newsv.s) ;
-			goto err ;
+			VERBO3 strerr_warnwu2x("create instance service: ",svname) ;
+			return 0 ;
 		}
-	
-	}else if (!read_svfile(sasv,newsv.s,svsrc)) goto err ;
+		/** ensure that we have an empty line at the end of the string*/
+		if (!stralloc_cats(sasv,"\n")) retstralloc(0,"parse_service_before") ;
+		if (!stralloc_0(sasv)) retstralloc(0,"parse_service_before") ;
+	}else if (!read_svfile(sasv,svname,svsrc)) return 0 ;
 	
 	memcpy(svpath,svsrc,svsrclen) ;
-	memcpy(svpath + svsrclen,newsv.s,newsv.len) ;
+	memcpy(svpath + svsrclen,svname,svnamelen) ;
+	svpath[svsrclen + svnamelen] = 0 ;
 	
 	if (sastr_cmp(parsed_list,svpath) >= 0)
 	{
@@ -199,20 +170,44 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list, char const *sv,un
 		sv_alltype_free(&sv_before) ;
 		goto freed ;
 	}
+		
+	if (!parser(&sv_before,sasv,svname)) return 0 ;
 	
-	if (!parser(&sv_before,sasv,newsv.s)) goto err ;
+	/** keep the name set by user
+	 * uniquely for instantiated service
+	 * The name must contain the template string */
 	
-	if (!parse_add_service(parsed_list,&sv_before,svpath,nbsv,info->owner)) goto err ;
+	if (insta > 0 && sv_before.cname.name >= 0 )
+	{
+		stralloc sainsta = STRALLOC_ZERO ;
+		stralloc name = STRALLOC_ZERO ;
+		if (!stralloc_cats(&name,keep.s + sv_before.cname.name)) goto err ;
+		
+		if (!instance_splitname(&sainsta,svname,insta,0)) goto err ;
+		if (sastr_find(&name,sainsta.s) == -1)
+		{
+			strerr_warnw2x("invalid instantiated service name: ", keep.s + sv_before.cname.name) ;
+			goto err ;
+		}
+		stralloc_free(&sainsta) ;
+		stralloc_free(&name) ;
+		goto add ;
+		err:
+			stralloc_free(&sainsta) ;
+			stralloc_free(&name) ;
+			return 0 ;
+	}
+	else
+	{
+		sv_before.cname.name = keep.len ;
+		if (!stralloc_catb(&keep,svname,svnamelen + 1)) return 0 ;
+	}
+	add:
+	if (!parse_add_service(parsed_list,&sv_before,svpath,nbsv,info->owner)) return 0 ;
 	
-	if ((sv_before.cname.itype > CLASSIC && force > 1) || !exist)
-		if (!parse_service_deps(info,parsed_list,&sv_before,sv,nbsv,sasv,force)) goto err ;
+	if ((sv_before.cname.itype > CLASSIC && force > 1) || !(*exist))
+		if (!parse_service_deps(info,parsed_list,&sv_before,sv,nbsv,sasv,force)) return 0 ;
 	
 	freed:
-		stralloc_free(&newsv) ;
-		stralloc_free(&tmp) ;
 	return 1 ;
-	err:
-		stralloc_free(&newsv) ;
-		stralloc_free(&tmp) ;
-		return 0 ;
 }

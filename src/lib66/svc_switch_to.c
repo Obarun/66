@@ -15,6 +15,8 @@
 
 #include <oblibs/error2.h>
 
+#include <string.h>
+
 #include <skalibs/types.h>
 
 #include <66/backup.h>

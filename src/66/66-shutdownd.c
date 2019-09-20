@@ -26,6 +26,9 @@
 #include <stdio.h>
 #include <sys/wait.h>
 
+#include <oblibs/environ.h>
+#include <oblibs/files.h>
+
 #include <skalibs/posixplz.h>
 #include <skalibs/uint32.h>
 #include <skalibs/types.h>
@@ -40,7 +43,6 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/iopause.h>
 #include <skalibs/skamisc.h>
-#include <skalibs/diuint32.h>
 
 #include <execline/config.h>
 
@@ -48,7 +50,6 @@
 
 #include <66/config.h>
 #include <66/constants.h>
-#include <66/environ.h>
 
 #define STAGE4_FILE "stage4"
 #define DOTPREFIX ".66-shutdownd:"
@@ -104,47 +105,39 @@ ssize_t file_get_size(const char* filename)
 	return st.st_size;
 }
 
-static void parse_conf(char const *confile,char *rcshut,size_t filesize)
+static inline void auto_conf(char *confile,size_t conflen)
+{
+	memcpy(confile,conf,conflen) ;
+	confile[conflen] = '/' ;
+	memcpy(confile + conflen + 1, SS_BOOT_CONF, SS_BOOT_CONF_LEN) ;
+	confile[conflen + 1 + SS_BOOT_CONF_LEN] = 0 ;
+}
+
+static void parse_conf(char const *confile,char *rcshut,char const *key)
 {
 	int r ;
-	unsigned int i = 0 ;
 	stralloc src = STRALLOC_ZERO ;
-	stralloc saconf = STRALLOC_ZERO ;
-	genalloc gaconf = GENALLOC_ZERO ;
+	size_t filesize = file_get_size(confile) ;
 	r = openreadfileclose(confile,&src,filesize) ;
 	if(!r) strerr_diefu2sys(111,"open configuration file: ",confile) ; 
 	if (!stralloc_0(&src)) strerr_diefu1sys(111,"append stralloc configuration file") ;
 	
-	r = env_split(&gaconf,&saconf,&src) ;
-	if (!r) strerr_diefu2sys(111,"parse configuration file: ",confile) ;
-	
-	for (;i < genalloc_len(diuint32,&gaconf) ; i++)
+	if (environ_get_val_of_key(&src,key))
 	{
-		char *key = saconf.s + genalloc_s(diuint32,&gaconf)[i].left ;
-		char *val = saconf.s + genalloc_s(diuint32,&gaconf)[i].right ;
-		if (!strcmp(key,"RCSHUTDOWN"))
-		{
-			memcpy(rcshut,val,strlen(val)) ;
-			rcshut[strlen(val)] = 0 ;
-		}
+		memcpy(rcshut,src.s,src.len) ;
+		rcshut[src.len] = 0 ;
 	}
-	genalloc_free(diuint32,&gaconf) ;
-	stralloc_free(&saconf) ;
 	stralloc_free(&src) ;
 }
 
 static inline void run_rcshut (char const *const *envp)
 {
 	pid_t pid ;
-	size_t filesize, conflen = strlen(conf) ;
+	size_t conflen = strlen(conf) ;
+	char rcshut[4096] ;
 	char confile[conflen + 1 + SS_BOOT_CONF_LEN] ;
-	memcpy(confile,conf,conflen) ;
-	confile[conflen] = '/' ;
-	memcpy(confile + conflen + 1, SS_BOOT_CONF, SS_BOOT_CONF_LEN) ;
-	confile[conflen + 1 + SS_BOOT_CONF_LEN] = 0 ;
-	filesize=file_get_size(confile) ;
-	char rcshut[filesize+1] ;
-	parse_conf(confile,rcshut,filesize) ;
+	auto_conf(confile,conflen) ;
+	parse_conf(confile,rcshut,"RCSHUTDOWN") ;
 	char const *rcshut_argv[3] = { rcshut, confile, 0 } ;
 	pid = child_spawn0(rcshut_argv[0], rcshut_argv, envp) ;
 	if (pid)
@@ -214,6 +207,11 @@ static inline void prepare_stage4 (char what)
 	buffer b ;
 	int fd ;
 	char buf[512] ;
+	char shutfinal[4096] ; //huge path allowed
+	size_t conflen = strlen(conf) ;
+	char confile[conflen + 1 + SS_BOOT_CONF_LEN] ;
+	auto_conf(confile,conflen) ;
+	parse_conf(confile,shutfinal,"RCSHUTDOWNFINAL") ;
 	unlink_void(STAGE4_FILE ".new") ;
 	fd = open_excl(STAGE4_FILE ".new") ;
 	if (fd == -1) strerr_diefu3sys(111, "open ", STAGE4_FILE ".new", " for writing") ;
@@ -223,6 +221,9 @@ static inline void prepare_stage4 (char what)
 		"#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n\n"
 		EXECLINE_EXTBINPREFIX "foreground { "
 		SS_BINPREFIX "66-umountall }\n"
+		EXECLINE_EXTBINPREFIX "foreground { ") < 0
+		|| buffer_put(&b,shutfinal,strlen(shutfinal)) < 0
+		|| buffer_puts(&b," }\n" 
 		SS_BINPREFIX "66-hpr -f -") < 0
 		|| buffer_put(&b, &what, 1) < 0
 		|| buffer_putsflush(&b, "\n") < 0) strerr_diefu2sys(111, "write to ", STAGE4_FILE ".new") ;

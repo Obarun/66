@@ -237,12 +237,21 @@ MYVALUE</pre>
  <li><h4>@name</h4></li>
  <h5>Corresponds to the <em>name of the service directory</em> of s6 and s6-rc programs.</h5>
  <p>Name of the service.</p>
- <p><tt>mandatory</tt> : yes (!)</p>
+ <p><tt>mandatory</tt> : no</p>
  <p><tt>syntax</tt> : inline</p>
  <p><tt>valid values</tt> :</p>
   <ul>
-   <li>Any name can be set as a <em>value</em>. A good pratice is to use the
-   same name of the frontend service file.</li>
+   <li>
+       This field has <strong>no effect</strong> except for 
+       <tt><a href="#instance">instantiated</a></tt> services. In such case
+       the name <strong>must</strong> contain the complete name of the 
+       frontend service file.</p>
+       <p>For example, the following is valid:</p>
+       <pre>@name = tty@mine-@I</pre>
+       <p>where:</p>
+       <pre>@name = mine-@I</pre>
+       <p>is not for a frontend service file named tty@.</p>
+   </li>
   </ul>
  
  <br><hr style="border: 1px dashed #000000">
@@ -304,29 +313,7 @@ MYVALUE</pre>
 	to the dependencies of fooA.
    </li>
    
-   <!-- Taking an another example : 
-   FooA depens of FooB which depends of FooC, your service file can just declare FooB and
-   the parser will automatically add FooB because in your service file of FooB you declare
-   FooC as dependencies, so
-   
-   FooA service file is : @depends=( FooB )
-   FooB service file is : @depends=( FooC )
-   
-   Now we have FooA service BooA service and CooA service, FooA depends on BooA which 
-   depends of CooA. 
-   FooA service : @depends = ( BooA ) ;
-   BooA service : @depends = ( BooB BooC BooD CooA ) ;
-   CooA service : @depends = ( CooB CooC) ;
-   
-   the complete chained dependency should be :
-   FooA service : @depends = ( BooA BooB BooC BooD CooA CooB CooC ) ;
-   BooA service : @depends = ( BooB BooC BooD CooA CooB CooC )
-   CooA service : @depends = ( CooB CooC) ;
-   So you're right, the sentence is not clear.
- 
- -->
-    
-  </ul>
+ </ul>
  
  <br><hr style="border: 1px dashed #000000">
 
@@ -837,15 +824,13 @@ for it in your <tt>@execute</tt> field.</p>
 			<li>the name of the file needs to be appended with an '@' (commercial at) character.</li>
 			<li>every value replaced in an instance file needs to be written with '@I'.</li>
 		</ul>
-    <!-- Apart from the example I think a short explanation of instances would be very helpful. Could be a use case, or just a general situation. -->
-	<p>Example :</p>
+   <p>Example :</p>
 	<pre>    File name : tty@
    
     Contents :
     
     [main]
     @type = classic
-    @name = @I
     @description = "Launch @I"
     @user = ( root )
     
@@ -856,7 +841,6 @@ for it in your <tt>@execute</tt> field.</p>
 	<p>By using <tt><a href="66-enable.html">66-enable tty@tty1</a></tt>, the resulting file will then be: </p>
 	<pre>    [main]
     @type = classic
-    @name = tty1
     @description = "Launch tty1"
     @user = ( root )
     

@@ -12,8 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
  
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+#ifndef SS_CONSTANTS_H
+#define SS_CONSTANTS_H
 
 
 #include <66/config.h>
@@ -94,16 +94,21 @@
 #define SS_BOOT_CONF_LEN (sizeof SS_BOOT_CONF - 1)
 #define SS_BOOT_PATH "/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin"
 #define SS_BOOT_PATH_LEN (sizeof SS_BOOT_PATH - 1)
-#define SS_BOOT_TREE "init"
+#define SS_BOOT_TREE "boot"
 #define SS_BOOT_TREE_LEN (sizeof SS_BOOT_TREE - 1)
 #define SS_BOOT_RCINIT "rc.init"
 #define SS_BOOT_RCINIT_LEN (sizeof SS_BOOT_RCINIT - 1)
 #define SS_BOOT_RCSHUTDOWN "rc.shutdown"
 #define SS_BOOT_RCSHUTDOWN_LEN (sizeof SS_BOOT_RCSHUTDOWN - 1)
+#define SS_BOOT_RCSHUTDOWNFINAL "rc.shutdown.final"
+#define SS_BOOT_RCSHUTDOWNFINAL_LEN (sizeof SS_BOOT_RCSHUTDOWNFINAL -1)
 #define SS_BOOT_UMASK 0022
 #define SS_BOOT_RESCAN 0
 #define SS_BOOT_LOGFIFO "scandir/0/scandir-log/fifo"
 #define SS_BOOT_LOGFIFO_LEN (sizeof SS_BOOT_LOGFIFO - 1)
 #define SS_BOOT_SHUTDOWND "66-shutdownd"
 #define SS_BOOT_SHUTDOWND_LEN (sizeof SS_BOOT_SHUTDOWND - 1)
+
+/** Instance */
+#define SS_INSTANCE "@I"
 #endif

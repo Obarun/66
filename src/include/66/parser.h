@@ -12,8 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
  
-#ifndef PARSER_H
-#define PARSER_H
+#ifndef SS_PARSER_H
+#define SS_PARSER_H
 
 #include <66/enum.h>
 
@@ -22,6 +22,8 @@
 
 #include <oblibs/oblist.h>
 #include <oblibs/stralist.h>
+#include <oblibs/mill.h>
+
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
@@ -32,7 +34,7 @@
 
 extern stralloc keep ;
 extern stralloc deps ;
-extern genalloc gadeps ;
+//extern genalloc gadeps ;
 extern genalloc gasv ;
 
 typedef enum actions_e actions_t, *actions_t_ref ;
@@ -54,7 +56,7 @@ struct sv_exec_s
 {
 	/**build=45->auto,build=46->custom*/
 	int build ;
-	uid_t runas ;
+	unsigned int runas ;
 	unsigned int shebang ;
 	unsigned int exec ;
 } ;
@@ -101,7 +103,7 @@ typedef struct sv_name_s sv_name_t, *sv_name_t_ref ;
 struct sv_name_s
 {
 	int itype ;/**int type =30->classic,31->bundle,32->longrun,33->oneshot*/
-	unsigned int name ;//pos in keep
+	int name ;//pos in keep
 	unsigned int description ;//pos in keep
 	unsigned int idga ; //pos in genalloc gadeps
 	unsigned int nga ; //len of idga in genalloc gadeps
@@ -183,7 +185,7 @@ struct sv_alltype_s
 #define SV_NAME_ZERO \
 { \
 	-1 ,\
-	0 ,\
+	-1 ,\
 	0 ,\
 	0 ,\
 	0 ,\
@@ -244,76 +246,20 @@ struct section_s
 						.idx = { 0 } , \
 						.file = 0 }
 
-
-typedef struct parse_mill_inner_s parse_mill_inner_t, *parse_mill_inner_t_ref ;
-struct parse_mill_inner_s
-{
-	char curr ;
-	uint32_t nline ;
-	uint8_t nopen ; //number of open found
-	uint8_t nclose ; //number of close found
-	uint8_t jumped ;//jump was made or not 1->no,0->yes
-	uint8_t flushed ;//flush was made or not 1->no,0->yes
-	
-} ;
-#define PARSE_MILL_INNER_ZERO { .curr = 0, \
-							.nline = 1, \
-							.nopen = 0, \
-							.nclose = 0, \
-							.jumped = 0, \
-							.flushed = 0 }
-							
-typedef struct parse_mill_s parse_mill_t,*parse_mill_t_ref ;
-struct parse_mill_s
-{
-	char const open ;
-	char const close ;
-	uint8_t force ; //1 -> only one open and close
-	char const *skip ;
-	size_t skiplen ;
-	char const *end ;
-	size_t endlen ;
-	char const *jump ;//skip the complete line
-	size_t jumplen ;
-	uint8_t check ;//check if nopen == openclose, 0 -> no,1->yes
-	uint8_t flush ;//set nopen,nclose,sa.len to 0 at every new line
-	uint8_t forceskip ;//force to skip even if nopen is positive
-	parse_mill_inner_t inner ;
-} ;
-
-typedef enum parse_enum_e parse_enum_t,*parse_enum_t_ref ;
-enum parse_enum_e
-{
-	IGN = 0 ,
-	KEEP ,
-	JUMP ,
-	EXIT ,
-	END
-} ;
-
-/** Main */
-extern int parser(sv_alltype *service,stralloc *src,char const *file) ;
-extern int parse_config(parse_mill_t *p,char const *file, stralloc *src, stralloc *kp,size_t *pos) ;
-extern char next(stralloc *s,size_t *pos) ;
-extern uint8_t cclass (parse_mill_t *p) ;
 /** freed */
 extern void sv_alltype_free(sv_alltype *sv) ;
 extern void keynocheck_free(keynocheck *nocheck) ;
 extern void section_free(section_t *sec) ;
 extern void freed_parser(void) ;
 /** enable phase */
-extern int parse_service_get_list(stralloc *result, stralloc *list) ;
-extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, char const *sv,unsigned int *nbsv, stralloc *sasv,unsigned int force,unsigned int exist) ;
-extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,unsigned int force) ;
+extern int parser(sv_alltype *service,stralloc *src,char const *svname) ;
+extern int parse_service_check_enabled(ssexec_t *info, char const *svname,uint8_t force,uint8_t *exist) ;
+extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t *exist) ;
+extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force) ;
 extern int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner) ;
-/** utilities */
-extern int parse_line(stralloc *src,size_t *pos) ;
-extern int parse_quote(stralloc *src,size_t *pos) ;
-extern int parse_bracket(stralloc *src,size_t *pos) ;
-extern int parse_env(stralloc *src,size_t *pos) ;
 /** split */
-extern int get_section_range(section_t *sasection,stralloc *src) ;
-extern int get_key_range(genalloc *ga, section_t *sasection,char const *file,int *svtype) ;
+extern int section_get_range(section_t *sasection,stralloc *src) ;
+extern int key_get_range(genalloc *ga, section_t *sasection,int *svtype) ;
 extern int get_mandatory(genalloc *nocheck,int idsec,int idkey) ;
 extern int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service) ;
 /** store */
@@ -321,26 +267,19 @@ extern int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype) ;
 extern int keep_runfinish(sv_exec *exec,keynocheck *nocheck) ;
 extern int keep_logger(sv_execlog *log,keynocheck *nocheck) ;
 /** helper */
-extern int read_svfile(stralloc *sasv,char const *name,char const *src) ;
-extern ssize_t get_sep_before (char const *line, char const sepstart, char const sepend) ;
-extern void section_setsa(int id, stralloc_ref *p,section_t *sa) ;
-extern int section_skip(char const *s,size_t pos,int nline) ;
-extern int section_valid(int id, uint32_t nline, size_t pos,stralloc *src, char const *file) ;
-extern int clean_value(stralloc *sa) ;
-extern void parse_err(int ierr,int idsec,int idkey) ;
 extern int add_pipe(sv_alltype *sv, stralloc *sa) ;
 /** write */
-extern int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned int force,unsigned int conf) ;
-extern int write_classic(sv_alltype *sv, char const *dst, unsigned int force, unsigned int conf) ;
-extern int write_longrun(sv_alltype *sv,char const *dst, unsigned int force, unsigned int conf) ;
-extern int write_oneshot(sv_alltype *sv,char const *dst, unsigned int conf) ;
+extern int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, uint8_t force,uint8_t conf) ;
+extern int write_classic(sv_alltype *sv, char const *dst, uint8_t force, uint8_t conf) ;
+extern int write_longrun(sv_alltype *sv,char const *dst, uint8_t force, uint8_t conf) ;
+extern int write_oneshot(sv_alltype *sv,char const *dst, uint8_t conf) ;
 extern int write_bundle(sv_alltype *sv, char const *dst) ;
-extern int write_common(sv_alltype *sv, char const *dst,unsigned int conf) ;
-extern int write_exec(sv_alltype *sv, sv_exec *exec,char const *name,char const *dst,int mode) ;
+extern int write_common(sv_alltype *sv, char const *dst,uint8_t conf) ;
+extern int write_exec(sv_alltype *sv, sv_exec *exec,char const *name,char const *dst,mode_t mode) ;
 extern int write_uint(char const *dst, char const *name, uint32_t ui) ;
-extern int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, int mode, unsigned int force) ;
+extern int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, mode_t mode, uint8_t force) ;
 extern int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char const *proddst,char const *consdst) ;
-extern int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename, genalloc *ga) ;
+extern int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename) ;
 extern int write_env(char const *name,stralloc *sa,char const *dst) ;
 
 #endif

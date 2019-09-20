@@ -12,10 +12,9 @@
  * except according to the terms contained in the LICENSE file./
  */
  
-#include <stddef.h>
-#include <stdlib.h>
-
 #include <66/svc.h>
+
+#include <string.h>
 
 #include <oblibs/error2.h>
 
@@ -33,12 +32,13 @@
 
 int svc_init_pipe(ftrigr_t *fifo,genalloc *gasv,tain_t *deadline)
 {
+	size_t i = 0 ;
 	ss_resolve_sig_t *svc ;
 	
 	if (!ftrigr_startf_g(fifo, deadline))
 		VERBO3 { strerr_warnwu1sys("initiate fifo") ; return 0 ; }
 		
-	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_sig_t,gasv) ; i++)
+	for (; i < genalloc_len(ss_resolve_sig_t,gasv) ; i++)
 	{
 		svc = &genalloc_s(ss_resolve_sig_t,gasv)[i] ;
 		char *svok = svc->res.sa.s + svc->res.runat ;

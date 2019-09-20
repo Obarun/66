@@ -12,8 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
  
-#ifndef RC_H
-#define RC_H
+#ifndef SS_RC_H
+#define SS_RC_H
 
 #include <66/ssexec.h>
 

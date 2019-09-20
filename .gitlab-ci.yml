@@ -14,5 +14,8 @@ build:
   - make -j9 man
   - make -j9 install DESTDIR=gitlab-ci
   - make -j9 install-man DESTDIR=gitlab-ci
-
+  
+  only:
+    refs:
+      - master
     

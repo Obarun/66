@@ -19,10 +19,9 @@
 //#include <stdio.h>
 
 #include <oblibs/error2.h>
-#include <oblibs/stralist.h>
 #include <oblibs/string.h>
-#include <oblibs/directory.h>
 #include <oblibs/types.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/genalloc.h>
 #include <skalibs/types.h>
@@ -41,13 +40,13 @@
 
 int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 {
-	
-	int logname ;
+	size_t namelen, srclen, svscanlen, tmplen, pos, i ;
+	ssize_t logname ;
 	gid_t gid = getgid() ;
 	uint16_t id ;
 		
 	ftrigr_t fifo = FTRIGR_ZERO ;
-	genalloc gadown = GENALLOC_ZERO ;
+	stralloc sadown = STRALLOC_ZERO ;
 	genalloc ids = GENALLOC_ZERO ; // uint16_t
 	ss_state_t sta = STATE_ZERO ;
 	
@@ -60,7 +59,7 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 	
 	if (!ss_resolve_create_live(info)) { VERBO1 strerr_warnwu1sys("create live state") ; goto err ; }
 	
-	for (unsigned int i=0 ; i < genalloc_len(ss_resolve_t,ga); i++) 
+	for (i = 0 ; i < genalloc_len(ss_resolve_t,ga); i++) 
 	{
 		logname = 0 ;
 		char *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
@@ -80,15 +79,14 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 		logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 		if (logname > 0) name = string + genalloc_s(ss_resolve_t,ga)[i].logassoc ;
 		
-		size_t namelen = strlen(name) ;
-		size_t srclen = strlen(src) ;	
+		namelen = strlen(name) ;
+		srclen = strlen(src) ;	
 		char svsrc[srclen + 1 + namelen + 1] ;
 		memcpy(svsrc,src,srclen) ;
 		svsrc[srclen] = '/' ;
 		memcpy(svsrc + srclen + 1,name,namelen) ;
 		svsrc[srclen + 1 + namelen] = 0 ;
 		
-		size_t svscanlen ;
 		if (logname > 0) svscanlen = strlen(string + genalloc_s(ss_resolve_t,ga)[i].runat) - SS_LOG_SUFFIX_LEN ;
 		else svscanlen = strlen(string + genalloc_s(ss_resolve_t,ga)[i].runat) ;
 		char svscan[svscanlen + 6 + 1] ;
@@ -116,7 +114,7 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 		 * check it and create again if doesn't exist */
 		if (!scan_mode(svscan,S_IFDIR))
 		{
-			size_t tmplen = strlen(svsrc) ;
+			tmplen = strlen(svsrc) ;
 			char tmp[tmplen + 4 + 1] ;
 			memcpy(tmp,svsrc,tmplen) ;
 			memcpy(tmp + tmplen,"/log",4) ;
@@ -133,7 +131,7 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 	
 		if (!genalloc_s(ss_resolve_t,ga)[i].down)
 		{
-			if (!stra_add(&gadown,svscan))
+			if (!sastr_add_string(&sadown,svscan))
 			{
 				VERBO3 strerr_warnwu3x("add: ",svscan," to genalloc") ;
 				goto err ;
@@ -177,17 +175,17 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 		if (ftrigr_wait_and_g(&fifo, genalloc_s(uint16_t, &ids), genalloc_len(uint16_t, &ids), &deadline) < 0)
 				goto err ;
 	
-		for (unsigned int i = 0 ; i < genalloc_len(stralist,&gadown) ; i++)
+		for (pos = 0 ; pos < sadown.len; pos += strlen(sadown.s + pos) + 1)
 		{
-			VERBO3 strerr_warnt2x("Delete down file at: ",gaistr(&gadown,i)) ;
-			if (unlink(gaistr(&gadown,i)) < 0 && errno != ENOENT) goto err ;
+			VERBO3 strerr_warnt2x("Delete down file at: ",sadown.s + pos) ;
+			if (unlink(sadown.s + pos) < 0 && errno != ENOENT) goto err ;
 		}
 	
-		for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
+		for (pos = 0 ; pos < genalloc_len(ss_resolve_t,ga) ; pos++)
 		{
-			char const *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
-			char const *name = string + genalloc_s(ss_resolve_t,ga)[i].name  ;
-			char const *state = string + genalloc_s(ss_resolve_t,ga)[i].state  ;
+			char const *string = genalloc_s(ss_resolve_t,ga)[pos].sa.s ;
+			char const *name = string + genalloc_s(ss_resolve_t,ga)[pos].name  ;
+			char const *state = string + genalloc_s(ss_resolve_t,ga)[pos].state  ;
 			
 			VERBO2 strerr_warni2x("Write state file of: ",name) ;
 			if (!ss_state_write(&sta,state,name))
@@ -199,14 +197,14 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 		}
 	}
 	ftrigr_end(&fifo) ;
-	genalloc_deepfree(stralist,&gadown,stra_free) ;
+	stralloc_free(&sadown) ;
 	genalloc_free(uint16_t, &ids) ;
 	return 1 ;
 	
 	err:
 		ftrigr_end(&fifo) ;
 		genalloc_free(uint16_t, &ids) ;
-		genalloc_deepfree(stralist,&gadown,stra_free) ;
+		stralloc_free(&sadown) ;
 		ftrigr_end(&fifo) ;
 		return 0 ;
 

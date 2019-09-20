@@ -16,7 +16,6 @@
 
 #include <string.h>
 
-#include <oblibs/string.h>
 #include <oblibs/directory.h>
 #include <oblibs/error2.h>
 
@@ -24,8 +23,7 @@
 #include <skalibs/djbunix.h>
 
 #include <66/constants.h>
-#include <66/utils.h>
-#include <stdio.h>
+
 int tree_copy(stralloc *dir, char const *tree,char const *treename)
 {
 	char *fdir = 0 ;

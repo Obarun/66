@@ -30,18 +30,19 @@ Fine tuning of the installation directories:
   --shebangdir=DIR                 absolute path for execline #\! invocations [BINDIR]
   --livedir=DIR                    default live directory [/run/66]
   --with-skeleton=DIR              skeleton files directory installation [SYSDIR/66]				
-  --with-system-log=DIR            system service log directory[/var/log/66]
-    
-  --with-system-dir=DIR            66 tools system working directory[/var/lib/66]
-  --with-system-service=DIR        system service frontend directory[DATAROOTDIR/66/service]
+  --with-system-log=DIR            system service log directory [/var/log/66]
+  --with-s6-log-user=USER          user for running s6-log program [root]
+
+  --with-system-dir=DIR            66 tools system working directory [/var/lib/66]
+  --with-system-service=DIR        system service frontend directory [DATAROOTDIR/66/service]
   
-  --with-sysadmin-service=DIR      sysadmin service frontend directory[SYSDIR/66/service]
-  --with-sysadmin-service-conf=DIR sysadmin service configuration file directory[SYSDIR/66/conf]
+  --with-sysadmin-service=DIR      sysadmin service frontend directory [SYSDIR/66/service]
+  --with-sysadmin-service-conf=DIR sysadmin service configuration file directory [SYSDIR/66/conf]
   
-  --with-user-dir=DIR              66 tools user working directory[.66]
-  --with-user-log=DIR              user service log directory[.66/log]
-  --with-user-service=DIR          user service directory[.66/service]
-  --with-user-service-conf=DIR     user service configuration directory[.66/conf]
+  --with-user-dir=DIR              66 tools user working directory [.66]
+  --with-user-log=DIR              user service log directory [.66/log]
+  --with-user-service=DIR          user service directory [.66/service]
+  --with-user-service-conf=DIR     user service configuration directory [.66/conf]
   
  Do not set an absolute path but a \$HOME relative path for --with-user-dir,  
  --with-user-log, --with-user-service, --with-user-service-conf. The \$HOME prefix 
@@ -169,6 +170,7 @@ livedir='/run/66'
 skel='$sysconfdir/66'
 system_dir='/var/lib/66'
 system_log='/var/log/66'
+s6log_user='root'
 service_system='$datarootdir/66/service'
 service_adm='$sysconfdir/66/service'
 service_admconf='$sysconfdir/66/conf'
@@ -214,6 +216,7 @@ for arg ; do
     --with-skeleton=*) skel=${arg#*=} ;;
     --with-system-dir=*) system_dir=${arg#*=} ;;
     --with-system-log=*) system_log=${arg#*=} ;;
+    --with-s6-log-user=*) s6log_user=${arg#*=} ;;
     --with-system-service=*) service_system=${arg#*=} ;;
     --with-sysadmin-service=*) service_adm=${arg#*=} ;;
     --with-sysadmin-service-conf=*) service_admconf=${arg#*=} ;;
@@ -365,6 +368,7 @@ if test -n "$target" && test x${build} != x${target} ; then
 else
   cross=
 fi
+
 echo "Checking for C compiler..."
 trycc ${CC}
 if test -n "$CC_AUTO" ; then
@@ -503,6 +507,7 @@ livedir := $livedir
 skel := $skel
 system_dir := $system_dir
 system_log := $system_log
+s6log_user := $s6log_user
 service_system := $service_system
 service_adm := $service_adm
 service_admconf := $service_admconf
@@ -581,6 +586,7 @@ All rights reserved.*/
 #define ${package_macro_name}_SYSTEM_DIR "$system_dir/"
 #define ${package_macro_name}_SKEL_DIR "$sysconfdir/66/"
 #define ${package_macro_name}_LOGGER_SYSDIR "$system_log/"
+#define ${package_macro_name}_LOGGER_RUNNER "$s6log_user"
 #define ${package_macro_name}_SERVICE_SYSDIR "$service_system/"
 #define ${package_macro_name}_SERVICE_ADMDIR "$service_adm/"
 #define ${package_macro_name}_SERVICE_ADMCONFDIR "$service_admconf/"

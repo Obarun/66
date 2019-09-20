@@ -87,7 +87,7 @@ char const *get_keybyid(key_enum_t key)
 
 ssize_t get_enumbyid(char const *str, key_enum_t key_el)
 {
-	key_enum_t i  = 0 ;
+	key_enum_t i = 0 ;
 	
 	for (;i<key_el;i++)
 		if(obstr_equal(str,get_keybyid(i)))	return i ;

@@ -1,10 +1,8 @@
 backup_cmd_switcher.o
 backup_make_new.o
 backup_realpath_sym.o
-db_cmd_master.o
 db_compile.o
 db_find_compiled_state.o
-db_get_permissions.o
 db_ok.o
 db_switch_to.o
 db_update.o

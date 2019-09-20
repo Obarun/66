@@ -12,8 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
  
-#ifndef SSEXEC_H
-#define SSEXEC_H
+#ifndef SS_SSEXEC_H
+#define SS_SSEXEC_H
 
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>

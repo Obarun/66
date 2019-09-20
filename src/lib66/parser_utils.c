@@ -17,6 +17,10 @@
 #include <string.h>
 #include <unistd.h>//getuid
 #include <stdlib.h>
+#include <stdint.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <errno.h>
 //#include <stdio.h>
 
 #include <oblibs/bytes.h>
@@ -24,8 +28,9 @@
 #include <oblibs/files.h>
 #include <oblibs/error2.h>
 #include <oblibs/types.h>
-#include <oblibs/directory.h>
-#include <oblibs/strakeyval.h>
+#include <oblibs/mill.h>
+#include <oblibs/environ.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/sig.h>
 #include <skalibs/genalloc.h>
@@ -38,16 +43,33 @@
 #include <66/constants.h>
 #include <66/enum.h>
 #include <66/utils.h>//MYUID
-#include <66/environ.h>//MYUID
 
 stralloc keep = STRALLOC_ZERO ;//sv_alltype data
 stralloc deps = STRALLOC_ZERO ;//sv_name depends
-genalloc gadeps = GENALLOC_ZERO ;//unsigned int, pos in deps
+//genalloc gadeps = GENALLOC_ZERO ;//unsigned int, pos in deps
 genalloc gasv = GENALLOC_ZERO ;//sv_alltype general
+
+/**********************************
+ *		function helper declaration
+ * *******************************/
+
+void section_setsa(int id, stralloc_ref *p,section_t *sa) ;
+int section_get_skip(char const *s,size_t pos,int nline) ;
+int section_get_id(stralloc *secname, char const *string,size_t *pos,int *id) ;
+int key_get_next_id(stralloc *sa, char const *string,size_t *pos) ;
+int get_clean_val(keynocheck *ch) ;
+int get_enum(char const *string, keynocheck *ch) ;
+int get_timeout(keynocheck *ch,uint32_t *ui) ;
+int get_uint(keynocheck *ch,uint32_t *ui) ;
+int check_valid_runas(keynocheck *check) ;
+void parse_err(int ierr,keynocheck *check) ;
+int parse_line(stralloc *sa, size_t *pos) ;
+int parse_bracket(stralloc *sa,size_t *pos) ;
 
 /**********************************
  *		freed function
  * *******************************/
+
 void sv_alltype_free(sv_alltype *sv) 
 {
 	stralloc_free(&sv->saenv) ;
@@ -73,232 +95,82 @@ void freed_parser(void)
 {
 	stralloc_free(&keep) ;
 	stralloc_free(&deps) ;
-	genalloc_free(unsigned int,&gadeps) ;
+//	genalloc_free(unsigned int,&gadeps) ;
 	for (unsigned int i = 0 ; i < genalloc_len(sv_alltype,&gasv) ; i++)
 		sv_alltype_free(&genalloc_s(sv_alltype,&gasv)[i]) ;
 }
 /**********************************
- *		parser utilities
+ *		Mill utilities
  * *******************************/
-int parse_line(stralloc *src, size_t *pos)
-{
-	size_t newpos = 0 ;
-	stralloc kp = STRALLOC_ZERO ;
-	char const *file = "parse_line" ;
-	parse_mill_t line = { .open = '@', .close = '\n', \
-							.skip = " \t\r", .skiplen = 3, \
-							.end = "\n", .endlen = 1, \
-							.jump = 0, .jumplen = 0,\
-							.check = 0, .flush = 0, \
-							.forceskip = 0, .force = 1, \
-							.inner = PARSE_MILL_INNER_ZERO } ;
-					
-	stralloc_inserts(src,0,"@") ;
-	if (!parse_config(&line,file,src,&kp,&newpos)) goto err ;
-	if (!stralloc_0(&kp)) goto err ;
-	if (!clean_value(&kp)) goto err ;
-	if (!stralloc_copy(src,&kp)) goto err ;
-	*pos += newpos - 1 ;
-	stralloc_free(&kp) ;
-	return 1 ;
-	err:
-		stralloc_free(&kp) ;
-		return 0 ;
-}
+ 
+parse_mill_t MILL_FIRST_BRACKET = \
+{ \
+	.search = "(", .searchlen = 1, \
+	.end = ")", .endlen = 1, \
+	.inner.debug = "first_bracket" } ;
 
-int parse_quote(stralloc *src,size_t *pos)
-{
-	int r, err = 0 ;
-	size_t newpos = 0 ;
-	char const *file = "parse_quote" ;
-	stralloc kp = STRALLOC_ZERO ;
-	parse_mill_t quote = { .open = '"', .close = '"', \
-							.skip = 0, .skiplen = 0, \
-							.end = "\n", .endlen = 1, \
-							.jump = 0, .jumplen = 0,\
-							.check = 0, .flush = 0, \
-							.forceskip = 0, .force = 0, \
-							.inner = PARSE_MILL_INNER_ZERO } ;
+parse_mill_t MILL_GET_AROBASE_KEY = \
+{ \
+	.open = '@', .close = '=', .keepopen = 1, \
+	.flush = 1, \
+	.forceclose = 1, .skip = " \t\r", .skiplen = 3, \
+	.forceskip = 1,	.inner.debug = "get_arobase_key" } ;
 
-	r = parse_config(&quote,file,src,&kp,&newpos) ;
-	if (!r) goto err ;
-	else if (r == -1) { err = -1 ; goto err ; }
-	if (!stralloc_0(&kp)) goto err ;
-	if (!stralloc_copy(src,&kp)) goto err ;
-	*pos += newpos - 1 ;
-	stralloc_free(&kp) ;
-	return 1 ;
-	err:
-		stralloc_free(&kp) ;
-		return err ;
-}
+parse_mill_t MILL_GET_COMMENTED_KEY = \
+{ \
+	.search = "#", .searchlen = 1, \
+	.end = "@", .endlen = 1,
+	.inner.debug = "get_commented_key" } ;
 
-int parse_bracket(stralloc *src,size_t *pos)
-{
-	int err = -1 ;
-	size_t newpos = 0 ;
-	ssize_t id = -1, start = -1, end = -1 ;
-	char const *file = "parse_bracket" ;
-	stralloc kp = STRALLOC_ZERO ;
-	stralloc tmp = STRALLOC_ZERO ;
+parse_mill_t MILL_GET_SECTION_NAME = \
+{ \
+	.open = '[', .close = ']', \
+	.forceclose = 1, .forceskip = 1, \
+	.skip = " \t\r", .skiplen = 3, \
+	.inner.debug = "get_section_name" } ;
 	
-	parse_mill_t key = { .open = '@', .close = '=', \
-							.skip = " \n\t\r", .skiplen = 4, \
-							.end = 0, .endlen = 0, \
-							.jump = 0, .jumplen = 0,\
-							.check = 0, .flush = 1, \
-							.forceskip = 0, .force = 1, \
-							.inner = PARSE_MILL_INNER_ZERO } ;
-	
-	
-	while (id < 0 && newpos < src->len) 
-	{
-		kp.len = 0 ;
-		key.inner.nclose = 0 ;
-		key.inner.nopen = 0 ;
-		if (!parse_config(&key,file,src,&kp,&newpos)) goto err ;
-		if (!kp.len) break ;//end of string
-		if (!stralloc_0(&kp)) goto err ;
-		if (!clean_value(&kp)) goto err ;
-		if (!stralloc_inserts(&kp,0,"@")) goto err ;
-		id = get_enumbyid(kp.s,key_enum_el) ;
-	}
-	/** id is negative and we are at the end of string
-	 * field can contain instance name with @ character
-	 * in this case we keep the src as it */
-	if (id < 0)
-	{
-		if (!stralloc_cats(&tmp,src->s)) goto err ;
-	}else if (!stralloc_catb(&tmp,src->s,(newpos - (kp.len+1)))) goto err ;//+1 remove the @ of the next key
-	if (!stralloc_0(&tmp)) goto err ;
-	kp.len = 0 ;
-	start = get_len_until(tmp.s,'(') ;
-	if (start < 0) { err = -1 ; goto err ; }
-	start++ ;
-	end = get_rlen_until(tmp.s,')',tmp.len) ;
-	if (end < 0) { err = -1 ; goto err ; }
-	if (!stralloc_catb(&kp,tmp.s+start,end-start)) goto err ;
-	if (!stralloc_0(&kp)) goto err ;
-	if (!stralloc_copy(src,&kp)) goto err ;
-	*pos += end + 1 ; //+1 to remove the last ')'
-	stralloc_free(&kp) ;
-	stralloc_free(&tmp) ;
-	return 1 ;
-	err:
-		stralloc_free(&kp) ;
-		stralloc_free(&tmp) ;
-		return err ;
-}
-
-int parse_env(stralloc *src,size_t *pos)
-{
-	int r ;
-	size_t newpos = 0 ;
-	size_t base ;
-	stralloc kp = STRALLOC_ZERO ;
-	stralloc tmp = STRALLOC_ZERO ;
-	char const *file = "parse_env" ;
-	parse_mill_t line = { .open = '@', .close = '\n', \
-							.skip = " \t\r", .skiplen = 3, \
-							.end = "\n", .endlen = 1, \
-							.jump = "#", .jumplen = 1,\
-							.check = 0, .flush = 0, \
-							.forceskip = 0, .force = 1, \
-							.inner = PARSE_MILL_INNER_ZERO } ;
-	
-	size_t blen = src->len, n = 0 ;
-	if (!stralloc_inserts(src,0,"@")) goto err ;
-	while(newpos < (blen+n))
-	{
-		base = kp.len ;
-		line.inner.nopen = line.inner.nclose = 0 ;
-		r = parse_config(&line,file,src,&kp,&newpos) ;
-		if (!r) goto err ;
-		else if (r < 0){ kp.len = base ; goto append ; }
-		if (!stralloc_cats(&kp,"\n")) goto err ;
-		append:
-		if (!stralloc_inserts(src,newpos,"@")) goto err ;
-		n++;
-	}
-	if (!stralloc_0(&kp)) goto err ;
-	if (!stralloc_copy(src,&kp)) goto err ;
-	*pos += newpos - 1 ;
-	stralloc_free(&kp) ;
-	stralloc_free(&tmp) ;
-	return 1 ;
-	err:
-		stralloc_free(&kp) ;
-		stralloc_free(&tmp) ;
-		return 0 ;
-}
-
 /**********************************
  *		parser split function
  * *******************************/
 
-int get_section_range(section_t *sasection,stralloc *src)
+int section_get_range(section_t *sasection,stralloc *src)
 {
+	if (!src->len) return 0 ;
 	size_t pos = 0, start = 0 ;
-	int n = 0, id = -1, /*idc = 0,*/ skip = 0, err = 0 ;
+	int r, n = 0, id = -1, skip = 0 ;
 	stralloc secname = STRALLOC_ZERO ;
 	stralloc_ref psasection ;
-	parse_mill_t section = { .open = '[', .close = ']', \
-							.skip = " \n\t\r", .skiplen = 4, \
-							.end = 0, .endlen = 0, \
-							.jump = 0, .jumplen = 0,\
-							.check = 0, .flush = 1, \
-							.forceskip = 0, .force = 1, \
-							.inner = PARSE_MILL_INNER_ZERO } ;
-	
-	while (pos < src->len)
+	stralloc cp = STRALLOC_ZERO ;
+	/** be clean */
+	wild_zero_all(&MILL_GET_LINE) ;
+	wild_zero_all(&MILL_GET_SECTION_NAME) ;
+	r = mill_string(&cp,src,&MILL_GET_LINE) ;
+	if (r == -1 || !r) goto err ;
+	if (!sastr_rebuild_in_nline(&cp)) goto err ;
+	while (pos  < cp.len)
 	{
 		if(secname.len && n)
 		{
-			skip = section_skip(src->s,pos,section.inner.nline) ;
+			skip = section_get_skip(cp.s,pos,MILL_GET_SECTION_NAME.inner.nline) ;
 			id = get_enumbyid(secname.s,key_enum_section_el) ;
 			section_setsa(id,&psasection,sasection) ;
 			if (skip) sasection->idx[id] = 1 ;
 		}
-		secname.len = section.inner.nclose = section.inner.nopen = 0 ;
-		id = -1 ;
-		while (id < 0 && pos < src->len) 
-		{
-			secname.len = section.inner.nclose = section.inner.nopen = 0 ;
-			if(!parse_config(&section,sasection->file,src,&secname,&pos)) goto err ;
-			if (!secname.len) break ; //end of string
-			if (!stralloc_0(&secname)) goto err ;
-			id = get_enumbyid(secname.s,key_enum_section_el) ;
-			/*if (id < 0)
-			{ 
-				idc = section_valid(id,section.inner.nline,pos,src,sasection->file) ;
-				if (!idc) goto err ;
-				else if (idc < 0) goto invalid ;
-			}*/
-		}
+		if (!section_get_id(&secname,cp.s,&pos,&id)) goto err ;
+		if (!secname.len && !n)  goto err ;
 		if (!n)
 		{ 
-			skip = section_skip(src->s,pos,section.inner.nline) ;
+			skip = section_get_skip(cp.s,pos,MILL_GET_SECTION_NAME.inner.nline) ;
 			section_setsa(id,&psasection,sasection) ;
 			if (skip) sasection->idx[id] = 1 ;
 			start = pos ;
-			id = -1 ;
-			while (id < 0 && pos < src->len)
-			{	
-				section.inner.nclose = section.inner.nopen = secname.len = 0 ;
-				if (!parse_config(&section,sasection->file,src,&secname,&pos)) goto err ;
-				if (!secname.len) break ; //end of string
-				if (!stralloc_0(&secname)) goto err ;
-				id = get_enumbyid(secname.s,key_enum_section_el) ;
-				/*if (id < 0)
-				{
-					idc = section_valid(id,section.inner.nline,pos,src,sasection->file) ;
-					if (!idc) goto err ;
-					else if (idc < 0) goto invalid ;
-				}*/
-			}
+			
+			if (!section_get_id(&secname,cp.s,&pos,&id)) goto err ;
 			if(skip)
 			{
-				if (!stralloc_catb(psasection,src->s+start,(pos - start) - (secname.len + 2))) goto err ;//+2 to remove '[]'character
+				r = get_rlen_until(cp.s,'\n',pos-1) ;//-1 to retrieve the end of previous line
+				if (r == -1) goto err ;
+				if (!stralloc_catb(psasection,cp.s+start,(r-start))) goto err ;
 				if (!stralloc_0(psasection)) goto err ;
 			}
 			n++ ;
@@ -308,37 +180,37 @@ int get_section_range(section_t *sasection,stralloc *src)
 		{	
 			if (skip)
 			{
-				if (!stralloc_catb(psasection,src->s+start,(pos - start) - (secname.len + 1))) goto err ;//only -1 to remove '\n'character
+				/** end of file do not contain section, avoid to remove the len of it if in the case*/
+				if (secname.len)
+				{
+					r = get_rlen_until(cp.s,'\n',pos-1) ;//-1 to retrieve the end of previous line
+					if (r == -1) goto err ;
+					if (!stralloc_catb(psasection,cp.s+start,(r - start))) goto err ;
+					
+				}
+				else if (!stralloc_catb(psasection,cp.s+start,cp.len - start)) goto err ;
 				if (!stralloc_0(psasection)) goto err ;
 			}
 			start = pos ;
 		}
 	}
 	stralloc_free(&secname) ;
+	stralloc_free(&cp) ;
 	return 1 ;
-	/*invalid:
-		err = -1 ;
-		VERBO1 strerr_warnw2x("invalid section: ",secname.s) ;
-	*/err:
+	err: 
 		stralloc_free(&secname) ;
-		return err ;
+		stralloc_free(&cp) ;
+		return 0 ;
 }
 
-int get_key_range(genalloc *ga, section_t *sasection,char const *file,int *svtype)
+int key_get_range(genalloc *ga, section_t *sasection,int *svtype)
 {	
 	int r ;
-	size_t pos = 0 ;
+	size_t pos = 0, fakepos = 0 ;
 	uint8_t found = 0 ;
 	stralloc sakey = STRALLOC_ZERO ;
 	stralloc_ref psasection ;
 	key_all_t const *list = total_list ;
-	parse_mill_t key = { .open = '@', .close = '=', \
-							.skip = " \n\t\r", .skiplen = 4, \
-							.end = 0, .endlen = 0, \
-							.jump = "#", .jumplen = 1,\
-							.check = 0, .flush = 1, \
-							.forceskip = 1, .force = 1, \
-							.inner = PARSE_MILL_INNER_ZERO } ;
 							
 	for (int i = 0 ; i < key_enum_section_el ; i++)
 	{	
@@ -353,8 +225,13 @@ int get_key_range(genalloc *ga, section_t *sasection,char const *file,int *svtyp
 				nocheck.expected = KEYVAL ;
 				nocheck.mandatory = OPTS ;
 				section_setsa(i,&psasection,sasection) ;
-				if (!stralloc_cats(&nocheck.val,psasection->s+1)) goto err ;
-				if (!parse_env(&nocheck.val,&pos)) { strerr_warnwu2x("parse section: ",get_keybyid(i)) ; goto err ; }
+				if (!stralloc_cats(&nocheck.val,psasection->s+1)) goto err ;//+1 remove the first '\n'
+				if (!environ_get_clean_env(&nocheck.val)) { VERBO3 strerr_warnwu2x("parse section: ",get_keybyid(i)) ; goto err ; }
+				if (!stralloc_cats(&nocheck.val,"\n") ||
+				!stralloc_0(&nocheck.val)) goto err ;
+				nocheck.val.len-- ;
+				
+				
 				if (!genalloc_append(keynocheck,ga,&nocheck)) goto err ;
 			} 
 			else
@@ -365,14 +242,16 @@ int get_key_range(genalloc *ga, section_t *sasection,char const *file,int *svtyp
 				while (pos < blen)
 				{
 					keynocheck nocheck = KEYNOCHECK_ZERO ;
-					key.inner.nopen = key.inner.nclose = sakey.len = 0 ; 
-					r = parse_config(&key,file,psasection,&sakey,&pos) ;
-					if (!r) goto err ;
+					sakey.len = 0 ;
+					r = mill_element(&sakey,psasection->s,&MILL_GET_AROBASE_KEY,&pos) ;
+					if (r == -1) goto err ;
+					if (!r) break ; //end of string
+					fakepos = get_rlen_until(psasection->s,'\n',pos) ;
+					r = mill_element(&sakey,psasection->s,&MILL_GET_COMMENTED_KEY,&fakepos) ;
+					if (r == -1) goto err ;
+					if (r) continue ;
 					if (!stralloc_cats(&nocheck.val,psasection->s+pos)) goto err ;
 					if (!stralloc_0(&nocheck.val)) goto err ;
-					if (!sakey.len) break ;// end of string
-					stralloc_inserts(&sakey,0,"@") ;
-					stralloc_0(&sakey) ;
 					for (int j = 0 ; j < total_list_el[i]; j++)
 					{
 						found = 0 ;
@@ -386,27 +265,38 @@ int get_key_range(genalloc *ga, section_t *sasection,char const *file,int *svtyp
 							switch(list[i].list[j].expected)
 							{
 								case QUOTE:
-									r = parse_quote(&nocheck.val,&pos) ;
-									if (r < 0)
+									if (!sastr_get_double_quote(&nocheck.val))
 									{
-										VERBO3 parse_err(6,nocheck.idsec,nocheck.idkey) ;
+										VERBO3 parse_err(6,&nocheck) ;
 										goto err ;
 									}
-									else if (!r) goto err ;
+									if (!stralloc_0(&nocheck.val)) goto err ;
 									break ;
 								case BRACKET:
-									r = parse_bracket(&nocheck.val,&pos) ;
-									if (r < 0)
+									if (!parse_bracket(&nocheck.val,&pos))
 									{
-										VERBO3 parse_err(6,nocheck.idsec,nocheck.idkey) ;
+										VERBO3 parse_err(6,&nocheck) ;
 										goto err ;
 									}
-									else if (!r) goto err ;
+									if (nocheck.val.len == 1) 
+									{
+										VERBO3 parse_err(9,&nocheck) ;
+										goto err ;
+									}
 									break ;
 								case LINE:
 								case UINT:
 								case SLASH:
-									if (!parse_line(&nocheck.val,&pos)) goto err ;
+									if (!parse_line(&nocheck.val,&pos))
+									{
+										VERBO3 parse_err(7,&nocheck) ;
+										goto err ;
+									}
+									if (nocheck.val.len == 1) 
+									{
+										VERBO3 parse_err(9,&nocheck) ;
+										goto err ;
+									}
 									if (!i && !j) (*svtype) = get_enumbyid(nocheck.val.s,key_enum_el) ;
 									break ;
 								default:
@@ -440,8 +330,9 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 	
 	key_all_t const *list = total_list ;
 	
-	genalloc gatmp = GENALLOC_ZERO ;
-	r = 0 ;
+	stralloc sa = STRALLOC_ZERO ;
+	
+	r = -1 ;
 	count = 0 ;
 	bkey = -1 ;
 	countidsec = 0 ;
@@ -541,9 +432,13 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 			}
 			if (bkey >= 0)
 			{
-				if (!clean_val(&gatmp,genalloc_s(keynocheck,nocheck)[bkey].val.s)) strerr_diefu2x(111,"parse file ",genalloc_s(keynocheck,nocheck)[bkey].val.s) ;
-				r = stra_cmp(&gatmp,get_keybyid(ENVIR)) ;
-				if ((r) && (!count))
+				if (!sastr_clean_string(&sa,genalloc_s(keynocheck,nocheck)[bkey].val.s))
+				{
+					VERBO3 strerr_warnwu2x("clean value of: ",sa.s) ;
+					return 0 ;
+				}
+				r = sastr_cmp(&sa,get_keybyid(ENVIR)) ;	
+				if ((r >= 0) && (!count))
 				{
 					VERBO3 strerr_warnw1x("options env was asked -- section environment must be set") ;
 					return 0 ;
@@ -553,9 +448,7 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 		default: break ;
 	}
 			
-
-	genalloc_deepfree(stralist,&gatmp,stra_free) ;
-	
+	stralloc_free(&sa) ;
 	return 1 ;
 }
 
@@ -645,47 +538,32 @@ int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service)
 /**********************************
  *		store
  * *******************************/
-
 int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 {
-	int r, nbline ;
-	unsigned int i ;
-	genalloc gatmp = GENALLOC_ZERO ;
-	stralloc satmp = STRALLOC_ZERO ;
-	r = i = 0 ;
-
+	int r = 0 ;
+	size_t pos = 0, *chlen = &nocheck->val.len ;
+	char *chval = nocheck->val.s ;
+	
 	switch(nocheck->idkey){
 		case TYPE:
-			r = get_enumbyid(nocheck->val.s,key_enum_el) ;
-			if (r < 0)
-			{
-				VERBO3 parse_err(0,nocheck->idsec,TYPE) ;
-				return 0 ;
-			}
+			r = get_enum(chval,nocheck) ;
+			if (!r) return 0 ;
 			service->cname.itype = r ;
 			break ;
 		case NAME:
 			service->cname.name = keep.len ;
-			if (!stralloc_catb(&keep,nocheck->val.s,nocheck->val.len + 1)) retstralloc(0,"parse_common") ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_common:NAME") ;
 			break ;
 		case DESCRIPTION:
 			service->cname.description = keep.len ;
-			if (!stralloc_catb(&keep,nocheck->val.s,nocheck->val.len + 1)) retstralloc(0,"parse_common") ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_common:DESCRIPTION") ;
 			break ;
 		case OPTIONS:
-			if (!clean_val(&gatmp,nocheck->val.s))
+			if (!get_clean_val(nocheck)) return 0 ;
+			for (;pos < *chlen; pos += strlen(chval + pos)+1)
 			{
-				VERBO3 strerr_warnwu2x("parse file ",nocheck->val.s) ;
-				return 0 ;
-			}
-			for (i = 0;i<genalloc_len(stralist,&gatmp);i++)
-			{
-				r = get_enumbyid(gaistr(&gatmp,i),key_enum_el) ;
-				if (r < 0)
-				{
-					VERBO3 parse_err(0,nocheck->idsec,OPTIONS) ;
-					return 0 ;
-				}
+				r = get_enum(chval + pos,nocheck) ;
+				if (!r) return 0 ;
 				if (svtype == CLASSIC || svtype == LONGRUN)
 				{
 					if (r == LOGGER)
@@ -696,22 +574,13 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 				if (r == ENVIR)
 					service->opts[2] = 1 ;
 			}
-			
 			break ;
 		case FLAGS:
-			if (!clean_val(&gatmp,nocheck->val.s))
+			if (!get_clean_val(nocheck)) return 0 ;
+			for (;pos < *chlen; pos += strlen(chval + pos)+1)
 			{
-				VERBO3 strerr_warnwu2x("parse file ",nocheck->val.s) ;
-				return 0 ;
-			}
-			for (unsigned int i = 0;i<genalloc_len(stralist,&gatmp);i++)
-			{
-				r = get_enumbyid(gaistr(&gatmp,i),key_enum_el) ;
-				if (r < 0)
-				{
-					VERBO3	parse_err(0,nocheck->idsec,FLAGS) ;
-					return 0 ;
-				}
+				r = get_enum(chval + pos,nocheck) ;
+				if (!r) return 0 ;
 				if (r == DOWN) 
 					service->flags[0] = 1 ;/**0 means not enabled*/				
 				if (r == NOSETSID)
@@ -719,230 +588,116 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			}
 			break ;
 		case USER:
-			if (!clean_val(&gatmp,nocheck->val.s))
+			if (!get_clean_val(nocheck)) return 0 ;
 			{
-				VERBO3 strerr_warnwu2x("parse file ",nocheck->val.s) ;
-				return 0 ;
-			}
-			/** special case, we don't know which user want to use
-			 * the service, we need a general name to allow all user
-			 * the term "user" is took here to allow the current user*/
-			if (stra_cmp(&gatmp,"user"))
-			{
-				stra_remove(&gatmp,"user") ;
-				for (i=0;i<genalloc_len(stralist,&gatmp);i++)
+				uid_t owner = MYUID ;
+				if (!owner)
 				{
-					r = scan_uidlist(gaistr(&gatmp,i),(uid_t *)service->user) ;
-					if (!r)
+					if (sastr_find(&nocheck->val,"root") == -1)
 					{
-						VERBO3	parse_err(0,nocheck->idsec,USER) ;
+						VERBO3 strerr_warnwu3x("use service: ",keep.s+service->cname.name," -- permission denied") ;
+						return 0 ;
+					}
+				}
+				/** special case, we don't know which user want to use
+				 * the service, we need a general name to allow all user
+				 * the term "user" is took here to allow the current user*/
+				ssize_t p = sastr_cmp(&nocheck->val,"user") ;
+				for (;pos < *chlen; pos += strlen(chval + pos)+1)
+				{
+					if (pos == (size_t)p) continue ;
+					if (!scan_uidlist(chval + pos,(uid_t *)service->user))
+					{
+						VERBO3 parse_err(0,nocheck) ;
 						return 0 ;
 					}
 				}
 				uid_t nb = service->user[0] ;
-				nb++ ;
-				service->user[0] = nb ;
-				service->user[nb] = MYUID ;
-				//search for root permissions
-				int e = 1 ;
-				for (int i =1; i < nb; i++)
-					if (!service->user[i]) e = 0 ;
-				if ((!MYUID) && (e))
+				if (p == -1 && owner)
 				{
-					VERBO3 strerr_warnwu3x("use ",keep.s+service->cname.name," service: permission denied") ;
-					return 0 ;
+					int e = 0 ;
+					for (int i = 1; i < nb+1; i++)
+						if (service->user[i] == owner) e = 1 ;
+					
+					if (!e)
+					{
+						VERBO3 strerr_warnwu3x("use service: ",keep.s+service->cname.name," -- permission denied") ;
+						return 0 ;
+					}
 				}
-				break ;
-			}
-			else
-			if (MYUID > 0)
-			{
-				VERBO3 strerr_warnwu3x("use ",keep.s+service->cname.name," service: permission denied") ;
-				return 0 ;
-			}
-			else if (genalloc_len(stralist,&gatmp) > 1)
-			{
-				r = scan_uidlist(nocheck->val.s,(uid_t *)service->user) ;
-				if (!r)
-				{
-					VERBO3 parse_err(0,nocheck->idsec,USER) ;
-					return 0 ;
-				}
-				break ;
-			}
-			else
-			r = scan_uidlist("root",(uid_t *)service->user) ;
-			if (!r)
-			{
-				VERBO3 parse_err(0,nocheck->idsec,USER) ;
-				return 0 ;
 			}
 			break ;
 		case HIERCOPY:
-			if (!clean_val(&gatmp,nocheck->val.s))
+			if (!get_clean_val(nocheck)) return 0 ;
 			{
-				VERBO3 strerr_warnwu2x("parse file ",nocheck->val.s) ;
-				return 0 ;
-			}
-			for (i = 0 ; i < genalloc_len(stralist,&gatmp) ; i++)
-			{
-				char *name = gaistr(&gatmp,i) ;
-				size_t namelen = gaistrlen(&gatmp,i) ;
-				service->hiercopy[i+1] = keep.len ;
-				if (!stralloc_catb(&keep,name,namelen + 1)) retstralloc(0,"parse_common:hiercopy") ;
-				service->hiercopy[0] = i+1 ;
+				unsigned int idx = 0 ;
+				for (;pos < *chlen; pos += strlen(chval + pos)+1)
+				{
+					char *name = chval + pos ;
+					size_t namelen =  strlen(chval + pos) ;
+					service->hiercopy[idx+1] = keep.len ;
+					if (!stralloc_catb(&keep,name,namelen + 1)) retstralloc(0,"parse_common:HIERCOPY") ;
+					service->hiercopy[0] = ++idx ;
+				}
 			}
 			break ;
 		case DEPENDS:
-			if (service->cname.itype == CLASSIC)
+			if ((service->cname.itype == CLASSIC) || (service->cname.itype == BUNDLE))
 			{
-				VERBO3 strerr_warnw3x("key : ",get_keybyid(nocheck->idkey)," : is not valid for type classic") ;
+				VERBO3 strerr_warnw4x("key: ",get_keybyid(nocheck->idkey),": is not valid for type ",get_keybyid(service->cname.itype)) ;
 				return 0 ;
 			}
-			else
-			if (service->cname.itype == BUNDLE)
+			if (!get_clean_val(nocheck)) return 0 ;
+			service->cname.idga = deps.len ;
+			for (;pos < *chlen; pos += strlen(chval + pos)+1)
 			{
-				VERBO3 strerr_warnw3x("key : ",get_keybyid(nocheck->idkey)," : is not valid for type bundle") ;
-				return 0 ;
-			}
-			if (!clean_val(&gatmp,nocheck->val.s))
-			{
-				VERBO3 strerr_warnwu2x("parse file ",nocheck->val.s) ;
-				return 0 ;
-			}
-			service->cname.idga = genalloc_len(unsigned int,&gadeps) ;
-			for (i = 0;i<genalloc_len(stralist,&gatmp);i++)
-			{
-				if (!genalloc_append(unsigned int,&gadeps,&deps.len)) retstralloc(0,"parse_common") ;
-				if (!stralloc_catb(&deps,gaistr(&gatmp,i),gaistrlen(&gatmp,i) + 1)) retstralloc(0,"parse_common") ;
+				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) retstralloc(0,"parse_common:DEPENDS") ;
 				service->cname.nga++ ;
 			}
 			break ;
 		case CONTENTS:
 			if (service->cname.itype != BUNDLE)
 			{
-				VERBO3 strerr_warnw4x("key : ",get_keybyid(nocheck->idkey)," : is not valid for type ",get_keybyid(service->cname.itype)) ;
+				VERBO3 strerr_warnw4x("key: ",get_keybyid(nocheck->idkey),": is not valid for type ",get_keybyid(service->cname.itype)) ;
 				return 0 ;
 			}
-			if (!clean_val(&gatmp,nocheck->val.s))
+			if (!get_clean_val(nocheck)) return 0 ;
+			service->cname.idga = deps.len ;
+			for (;pos < *chlen; pos += strlen(chval + pos) + 1)
 			{
-				VERBO3 strerr_warnwu2x("parse file ",nocheck->val.s) ;
-				return 0 ;
-			}
-			service->cname.idga = genalloc_len(unsigned int,&gadeps) ;
-			for (i = 0;i<genalloc_len(stralist,&gatmp);i++)
-			{
-				if (!genalloc_append(unsigned int,&gadeps,&deps.len)) retstralloc(0,"parse_common") ;
-				if (!stralloc_catb(&deps,gaistr(&gatmp,i),gaistrlen(&gatmp,i) + 1)) retstralloc(0,"parse_common") ;
+				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) retstralloc(0,"parse_common:CONTENTS") ;
 				service->cname.nga++ ;
 			}
 			break ;
-		case NOTIFY:
-			if (!clean_val(&gatmp,nocheck->val.s))
-			{
-				VERBO3 strerr_warnwu2x("parse file ",nocheck->val.s) ;
-				return 0 ;
-			}
-			if (!scan_uint32(gastr(&gatmp)))
-			{
-				VERBO3 parse_err(3,nocheck->idsec,NOTIFY) ;
-				return 0 ;
-			}
-			if (!uint32_scan(gastr(&gatmp),&service->notification))
-			{
-				VERBO3 parse_err(3,nocheck->idsec,NOTIFY) ;
-				return 0 ;
-			}
-			break ;
 		case T_KILL:
-			r = scan_timeout(nocheck->val.s,(uint32_t *)service->timeout,0) ;
-			if (r < 0)
-			{
-				VERBO3 parse_err(3,nocheck->idsec,T_KILL) ;
-				return 0 ;
-			}
-			break ;
 		case T_FINISH:
-			r = scan_timeout(nocheck->val.s,(uint32_t *)service->timeout,1) ;
-			if (r < 0)
-			{
-				VERBO3 parse_err(3,nocheck->idsec,T_FINISH) ;
-				return 0 ;
-			}
-			break ;
 		case T_UP:
-			r = scan_timeout(nocheck->val.s,(uint32_t *)service->timeout,2) ;
-			if (r < 0)
-			{
-				VERBO3 parse_err(3,nocheck->idsec,T_UP) ;
-				return 0 ;
-			}
-			break ;
 		case T_DOWN:
-			r = scan_timeout(nocheck->val.s,(uint32_t *)service->timeout,3) ;
-			if (r < 0)
-			{
-				VERBO3 parse_err(3,nocheck->idsec,T_DOWN) ;
-				return 0 ;
-			}
+			if (!get_timeout(nocheck,(uint32_t *)service->timeout)) return 0 ;
 			break ;
 		case DEATH:
-			if (!clean_val(&gatmp,nocheck->val.s))
-			{
-				VERBO3 strerr_warnwu2x("parse file ",nocheck->val.s) ;
-				return 0 ;
-			}
-			if (!scan_uint32(gastr(&gatmp)))
-			{
-				VERBO3 parse_err(3,nocheck->idsec,DEATH) ;
-				return 0 ;
-			}
-			if (!uint32_scan(gastr(&gatmp),&service->death))
-			{
-				VERBO3 parse_err(3,nocheck->idsec,DEATH) ;
-				return 0 ;
-			}
+			if (!get_uint(nocheck,&service->death)) return 0 ;
+			break ;
+		case NOTIFY:
+			if (!get_uint(nocheck,&service->notification)) return 0 ;
 			break ;
 		case ENVAL:
-			nbline = get_nbline_ga(nocheck->val.s,nocheck->val.len,&gatmp) ;
-			for (i = 0;i < nbline;i++)
+			if (!environ_clean_nline(&nocheck->val))
 			{
-				satmp.len = 0 ;
-				if (!stralloc_cats(&satmp,gaistr(&gatmp,i)) ||
-				!stralloc_0(&satmp)) 
-				{
-					VERBO3 strerr_warnwu2x("append environment value: ",gaistr(&gatmp,i)) ;
-					stralloc_free(&satmp) ;
-					return 0 ;
-				}
-				r = env_clean(&satmp) ;
-				if (r > 0)
-				{
-					if (!stralloc_cats(&service->saenv,satmp.s) ||
-					!stralloc_cats(&service->saenv,"\n"))
-					{
-						VERBO3 strerr_warnwu2x("store environment value: ",gaistr(&gatmp,i)) ;
-						stralloc_free(&satmp) ;
-						return 0 ;
-					}
-				}
-				else if (!r)
-				{
-					VERBO3 strerr_warnwu2x("clean environment value: ",gaistr(&gatmp,i)) ;
-					stralloc_free(&satmp) ;
-					return 0 ;
-				}
+				VERBO3 strerr_warnwu2x("clean environment value: ",chval) ;
+				return 0 ;
+			}
+			if (!stralloc_cats(&nocheck->val,"\n")) return 0 ;
+			if (!stralloc_copy(&service->saenv,&nocheck->val))
+			{
+				VERBO3 strerr_warnwu2x("store environment value: ",chval) ;
+				return 0 ;
 			}
 			break ;
 		case SIGNAL:
-			if (!clean_val(&gatmp,nocheck->val.s))
+			if (!sig0_scan(chval,&service->signal))
 			{
-				VERBO3 strerr_warnwu2x("parse file ",nocheck->val.s) ;
-				return 0 ;
-			}
-			if (!sig0_scan(gastr(&gatmp), &service->signal))
-			{
-				VERBO3 parse_err(3,nocheck->idsec,SIGNAL) ;
+				VERBO3 parse_err(3,nocheck) ;
 				return 0 ;
 			}
 			break ;
@@ -951,65 +706,52 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			return 0 ;
 	}
 	
-	genalloc_deepfree(stralist,&gatmp,stra_free) ;
-	stralloc_free(&satmp) ;
 	return 1 ;
 }
 
 int keep_runfinish(sv_exec *exec,keynocheck *nocheck)
 {
-	int r ;
-	
-	genalloc gatmp = GENALLOC_ZERO ;
-	
-	switch(nocheck->idkey){
+	int r = 0 ;
+	size_t *chlen = &nocheck->val.len ;
+	char *chval = nocheck->val.s ;
+		
+	switch(nocheck->idkey)
+	{
 		case BUILD:
-			r = get_enumbyid(nocheck->val.s,key_enum_el) ;
-			if (r < 0)
-			{
-				VERBO3 parse_err(0,nocheck->idsec,BUILD) ;
-				return 0 ;
-			}
+			r = get_enum(chval,nocheck) ;
+			if (!r) return 0 ;
 			exec->build = r ;
 			break ;
 		case RUNAS:
-			r = scan_uid(nocheck->val.s,&exec->runas) ;
-			if (!r)
-			{
-				VERBO3 parse_err(0,nocheck->idsec,RUNAS) ;
-				return 0 ;
-			}
+			if (!check_valid_runas(nocheck)) return 0 ;
+			exec->runas = keep.len ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_runfinish:RUNAS") ;
 			break ;
 		case SHEBANG:
-			r = dir_scan_absopath(nocheck->val.s) ;
-			if (r < 0)
+			if (chval[0] != '/')
 			{
-				VERBO3 parse_err(4,nocheck->idsec,SHEBANG) ;
+				VERBO3 parse_err(4,nocheck) ;
 				return 0 ;
 			}
 			exec->shebang = keep.len ;
-			if (!stralloc_catb(&keep,nocheck->val.s,nocheck->val.len + 1)) exitstralloc("parse_runfinish:stralloc:SHEBANG") ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_runfinish:SHEBANG") ;
 			break ;
 		case EXEC:
 			exec->exec = keep.len ;
-			if (!stralloc_catb(&keep,nocheck->val.s,nocheck->val.len + 1)) exitstralloc("parse_runfinish:stralloc:EXEC") ;
-			
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_runfinish:EXEC") ;
 			break ;
 		default:
 			VERBO3 strerr_warnw2x("unknown key: ",get_keybyid(nocheck->idkey)) ;
 			return 0 ;
-		}
-
-	genalloc_deepfree(stralist,&gatmp,stra_free) ;
-	
+	}
 	return 1 ;
 }
 
 int keep_logger(sv_execlog *log,keynocheck *nocheck)
 {
-	int r, i ;
-
-	genalloc gatmp = GENALLOC_ZERO ;
+	int r ;
+	size_t pos = 0, *chlen = &nocheck->val.len ;
+	char *chval = nocheck->val.s ;
 
 	switch(nocheck->idkey){
 		case BUILD:
@@ -1019,16 +761,11 @@ int keep_logger(sv_execlog *log,keynocheck *nocheck)
 			if (!keep_runfinish(&log->run,nocheck)) return 0 ;
 			break ;
 		case DEPENDS:
-			if (!clean_val(&gatmp,nocheck->val.s))
+			if (!get_clean_val(nocheck)) return 0 ;
+			log->idga = deps.len ;
+			for (;pos < *chlen; pos += strlen(chval + pos) + 1)
 			{
-				VERBO3 strerr_warnwu2x("parse file ",nocheck->val.s) ;
-				return 0 ;
-			}
-			log->idga = genalloc_len(unsigned int,&gadeps) ;
-			for (i = 0;i<genalloc_len(stralist,&gatmp);i++)
-			{
-				if (!genalloc_append(unsigned int,&gadeps,&deps.len)) retstralloc(0,"parse_logger") ;
-				if (!stralloc_catb(&deps,gaistr(&gatmp,i),gaistrlen(&gatmp,i) + 1)) retstralloc(0,"parse_logger") ;
+				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) retstralloc(0,"parse_logger:DEPENDS") ;
 				log->nga++ ;
 			}
 			break ;
@@ -1039,64 +776,33 @@ int keep_logger(sv_execlog *log,keynocheck *nocheck)
 			if (!keep_runfinish(&log->run,nocheck)) return 0 ;
 			break ;
 		case T_KILL:
-			r = scan_timeout(nocheck->val.s,(uint32_t *)log->timeout,0) ;
-			if (r < 0) parse_err(3,nocheck->idsec,T_KILL) ;
-			break ;
 		case T_FINISH:
-			r = scan_timeout(nocheck->val.s,(uint32_t *)log->timeout,1) ;
-			if (r < 0)
-			{
-				VERBO3 parse_err(3,nocheck->idsec,T_FINISH) ;
-				return 0 ;
-			}
+			if (!get_timeout(nocheck,(uint32_t *)log->timeout)) return 0 ;
 			break ;
 		case DESTINATION:
-			r = dir_scan_absopath(nocheck->val.s) ;
-			if (r < 0)
+			if (chval[0] != '/')
 			{
-				VERBO3 parse_err(4,nocheck->idsec,DESTINATION) ;
+				VERBO3 parse_err(4,nocheck) ;
 				return 0 ;
 			}
 			log->destination = keep.len ;
-			if (!stralloc_catb(&keep,nocheck->val.s,nocheck->val.len + 1)) retstralloc(0,"parse_logger") ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_logger:DESTINATION") ;
 			break ;
 		case BACKUP:
-			if (!clean_val(&gatmp,nocheck->val.s))
-			{
-				VERBO3 strerr_warnwu2x("parse file ",nocheck->val.s) ;
-				return 0 ;
-			}
-			if (!scan_uint32(gastr(&gatmp)))
-			{
-				VERBO3 parse_err(3,nocheck->idsec,BACKUP) ;
-				return 0 ;
-			}
-			uint_scan(gastr(&gatmp),&log->backup) ;
+			if (!get_uint(nocheck,&log->backup)) return 0 ;
 			break ;
 		case MAXSIZE:
-			if (!scan_uint32(nocheck->val.s))
-			{
-				VERBO3 parse_err(3,nocheck->idsec,MAXSIZE) ;
-				return 0 ;
-			}
-			uint_scan(nocheck->val.s,&log->maxsize) ;
+			if (!get_uint(nocheck,&log->maxsize)) return 0 ;
 			break ;
 		case TIMESTP:
-			r = get_enumbyid (nocheck->val.s,key_enum_el) ;
-			if (r < 0)
-			{
-				VERBO3 parse_err(0,nocheck->idsec,TIMESTP) ;
-				return 0 ;
-			}
+			r = get_enum(chval,nocheck) ;
+			if (!r) return 0 ;
 			log->timestamp = r ;
 			break ;
 		default:
 			VERBO3 strerr_warnw2x("unknown key: ",get_keybyid(nocheck->idkey)) ;
 			return 0 ;
 	}
-	
-	genalloc_deepfree (stralist,&gatmp,stra_free) ;
-	
 	return 1 ;
 }
 
@@ -1132,160 +838,10 @@ int read_svfile(stralloc *sasv,char const *name,char const *src)
 		return 0 ;
 	}
 	/** ensure that we have an empty line at the end of the string*/
-	if (!stralloc_cats(sasv,"\n")) retstralloc(0,"parse_service_before") ;
-	if (!stralloc_0(sasv)) retstralloc(0,"parse_service_before") ;
+	if (!stralloc_cats(sasv,"\n")) retstralloc(0,"read_svfile") ;
+	if (!stralloc_0(sasv)) retstralloc(0,"read_svfile") ;
 	
 	return 1 ;
-}
-
-ssize_t get_sep_before (char const *line, char const sepstart, char const sepend)
-{
-	size_t linend, linesep ;
-	linesep=get_len_until(line,sepstart) ;
-	linend=get_len_until(line,sepend) ;
-	if (linesep > linend) return -1 ;
-	if (!linend) return 0 ;
-	return linesep ;
-}
-
-void section_setsa(int id, stralloc_ref *p,section_t *sa) 
-{
-	switch(id)
-	{
-		case MAIN: *p = &sa->main ; break ;
-		case START: *p = &sa->start ; break ;
-		case STOP: *p = &sa->stop ; break ;
-		case LOG: *p = &sa->logger ; break ;
-		case ENV: *p = &sa->environment ; break ;
-		default: break ;
-	}
-}
-
-int section_skip(char const *s,size_t pos,int nline)
-{
-	ssize_t r = -1 ;
-	if (nline == 1) 
-	{
-		r = get_sep_before(s,'#','\n') ;
-		if (r >= 0) return 0 ;
-	}
-	r = get_rlen_until(s,'\n',pos) ;
-	if (r >= 0)
-	{
-		r = get_sep_before(s+r+1,'#','\n') ;
-		if (r >= 0) return 0 ;
-	}
-	return 1 ;
-}
-
-/*@Return 1 on success
- * @Return 0 on fail
- * @Return -1 on invalid section */
-int section_valid(int id, uint32_t nline, size_t pos,stralloc *src, char const *file)
-{
-	int r, rn, found = 0, err = 0 ;
-	size_t tpos = 0 ;
-	stralloc tmp = STRALLOC_ZERO ;
-	stralloc fake = STRALLOC_ZERO ;
-	key_all_t const *list = total_list ;
-	parse_mill_t key = { .open = '@', .close = '=', \
-							.skip = " \n\t\r", .skiplen = 4, \
-							.end = 0, .endlen = 0, \
-							.jump = 0, .jumplen = 0,\
-							.check = 0, .flush = 0, \
-							.forceskip = 1, .force = 1, \
-							.inner = PARSE_MILL_INNER_ZERO } ;
-	
-	
-	/* keys like execute can contain '[]' regex character,
-	 * check it and ignore the regex if it's the case*/
-	r = get_rlen_until(src->s,'\n',pos) ;
-	/*we are on first line?*/
-	if (r < 0 && nline > 1) goto err ;
-	else if (nline == 1) goto freed ;
-	r++;
-	rn = get_sep_before(src->s+r,'@','\n') ;
-	if (rn < 0) goto invalid ;
-	if (!stralloc_cats(&tmp,src->s+r)) goto err ;
-	if (!stralloc_0(&tmp)) goto err ;
-	if (!parse_config(&key,file,&tmp,&fake,&tpos)) goto err ;
-	if (!fake.len) goto err ;
-	stralloc_inserts(&fake,0,"@") ;
-	stralloc_0(&fake) ;
-	for (int i = 0 ; i < key_enum_section_el; i++)
-	{
-		for (int j = 0 ; j < total_list_el[i]; j++)
-		{
-			if (list[i].list[j].name && obstr_equal(fake.s,list[i].list[j].name))
-			{ found = 1 ; break ; }
-		}
-	}
-	if (!found) goto invalid ;
-	freed:
-		stralloc_free(&tmp) ;
-		stralloc_free(&fake) ;
-		return 1 ;
-	invalid:
-		err = -1 ;
-	err:
-		stralloc_free(&tmp) ;
-		stralloc_free(&fake) ;
-		return err ;
-}
-
-int clean_value(stralloc *sa)
-{
-	size_t pos = 0 ;
-	char const *file = "clean_value" ;
-	stralloc tmp = STRALLOC_ZERO ;
-	parse_mill_t empty = { .open = '@', .close = ' ', \
-							.skip = " \n\t\r", .skiplen = 4, \
-							.end = 0, .endlen = 0, \
-							.jump = 0, .jumplen = 0,\
-							.check = 0, .flush = 0, \
-							.forceskip = 1, .force = 1, \
-							.inner = PARSE_MILL_INNER_ZERO } ;
-	if (!stralloc_inserts(sa,0,"@")) goto err ;
-	if (!stralloc_cats(sa," ")) goto err ;
-	if (!parse_config(&empty,file,sa,&tmp,&pos)) goto err ;
-	if (!stralloc_0(&tmp)) goto err ;
-	if (!stralloc_copy(sa,&tmp)) goto err ;
-	stralloc_free(&tmp) ;
-	return 1 ;
-	err:
-		stralloc_free(&tmp) ;
-		return 0 ;
-}
-
-void parse_err(int ierr,int idsec,int idkey)
-{
-	switch(ierr)
-	{
-		case 0: 
-			strerr_warnw4x("invalid value for key: ",get_keybyid(idkey)," in section: ",get_keybyid(idsec)) ;
-			break ;
-		case 1:
-			strerr_warnw4x("multiple definition of key: ",get_keybyid(idkey)," in section: ",get_keybyid(idsec)) ;
-			break ;
-		case 2:
-			strerr_warnw4x("same value for key: ",get_keybyid(idkey)," in section: ",get_keybyid(idsec)) ;
-			break ;
-		case 3:
-			strerr_warnw4x("key: ",get_keybyid(idkey)," must be an integrer value in section: ",get_keybyid(idsec)) ;
-			break ;
-		case 4:
-			strerr_warnw4x("key: ",get_keybyid(idkey)," must be an absolute path in section: ",get_keybyid(idsec)) ;
-			break ;
-		case 5:
-			strerr_warnw4x("key: ",get_keybyid(idkey)," must be set in section: ",get_keybyid(idsec)) ;
-			break ;
-		case 6:
-			strerr_warnw4x("invalid format of key: ",get_keybyid(idkey)," in section: ",get_keybyid(idsec)) ;
-			break ;
-		default:
-			strerr_warnw1x("unknown parse_err number") ;
-			break ;
-	}
 }
 
 int add_pipe(sv_alltype *sv, stralloc *sa)
@@ -1304,4 +860,221 @@ int add_pipe(sv_alltype *sv, stralloc *sa)
 	stralloc_free(&tmp) ;
 	
 	return 1 ;
+}
+
+int parse_line(stralloc *sa, size_t *pos)
+{
+	if (!sa->len) return 0 ;
+	int r = 0 ;
+	size_t newpos = 0 ;
+	stralloc kp = STRALLOC_ZERO ;
+	wild_zero_all(&MILL_CLEAN_LINE) ;
+	r = mill_element(&kp,sa->s,&MILL_CLEAN_LINE,&newpos) ;
+	if (r == -1 || !r) goto err ;
+	if (!stralloc_0(&kp)) goto err ;
+	if (!stralloc_copy(sa,&kp)) goto err ;
+	*pos += newpos - 1 ;
+	stralloc_free(&kp) ;
+	return 1 ;
+	err:
+		stralloc_free(&kp) ;
+		return 0 ;
+}
+
+int parse_bracket(stralloc *sa,size_t *pos)
+{
+	if (!sa->len) return 0 ;
+	size_t newpos = 0 ;
+	stralloc kp = STRALLOC_ZERO ;
+	if (!key_get_next_id(&kp,sa->s,&newpos)) goto err ;
+	if (!stralloc_0(&kp)) goto err ;
+	if (!stralloc_copy(sa,&kp)) goto err ;
+	*pos += newpos ;
+	stralloc_free(&kp) ;
+	return 1 ;
+	err:
+		stralloc_free(&kp) ;
+		return 0 ;
+}
+
+void section_setsa(int id, stralloc_ref *p,section_t *sa) 
+{
+	switch(id)
+	{
+		case MAIN: *p = &sa->main ; break ;
+		case START: *p = &sa->start ; break ;
+		case STOP: *p = &sa->stop ; break ;
+		case LOG: *p = &sa->logger ; break ;
+		case ENV: *p = &sa->environment ; break ;
+		default: break ;
+	}
+}
+
+int section_get_skip(char const *s,size_t pos,int nline)
+{
+	ssize_t r = -1 ;
+	if (nline == 1) 
+	{
+		r = get_sep_before(s,'#','[') ;
+		if (r >= 0) return 0 ;
+	}
+	r = get_rlen_until(s,'\n',pos) ;
+	if (r >= 0)
+	{
+		r = get_sep_before(s+r+1,'#','[') ;
+		if (r >= 0) return 0 ;
+	}
+	return 1 ;
+}
+
+int section_get_id(stralloc *secname, char const *string,size_t *pos,int *id)
+{
+	size_t len = strlen(string) ;
+	size_t newpos = 0 ;
+	(*id) = -1 ;
+
+	while ((*id) < 0 && (*pos) < len)
+	{
+		secname->len = 0 ;
+		newpos = 0 ;
+		if (mill_element(secname,string+(*pos),&MILL_GET_SECTION_NAME,&newpos) == -1) return 0 ;
+		if (secname->len)
+		{
+			if (!stralloc_0(secname)) return 0 ;
+			(*id) = get_enumbyid(secname->s,key_enum_section_el) ;
+		}
+		(*pos) += newpos ;
+	}
+	return 1 ;
+}
+
+int key_get_next_id(stralloc *sa, char const *string,size_t *pos)
+{
+	if (!string) return 0 ;
+	int r = 0 ;
+	size_t newpos = 0, len = strlen(string) ;
+	stralloc kp = STRALLOC_ZERO ;
+	wild_zero_all(&MILL_GET_AROBASE_KEY) ;
+	wild_zero_all(&MILL_FIRST_BRACKET) ;
+	int id = -1 ;
+	r = mill_element(&kp,string,&MILL_FIRST_BRACKET,&newpos) ;
+	if (r == -1 || !r) goto err ;
+	*pos = newpos ;
+	while (id == -1 && newpos < len)
+	{
+		kp.len = 0 ;
+		r = mill_element(&kp,string,&MILL_GET_AROBASE_KEY,&newpos) ;
+		if (r == -1) goto err ;
+		if (!stralloc_0(&kp)) goto err ;
+		id = get_enumbyid(kp.s,key_enum_el) ;
+	}
+	newpos = get_rlen_until(string,')',newpos) ;
+	if (newpos == -1) goto err ;
+	if (!stralloc_catb(sa,string+*pos,newpos - *pos)) goto err ;
+	*pos = newpos + 1 ; //+1 remove the last ')'
+	stralloc_free(&kp) ;
+	return 1 ;
+	err:
+		stralloc_free(&kp) ;
+		return 0 ;
+}
+
+int get_clean_val(keynocheck *ch)
+{
+	if (!sastr_clean_element(&ch->val))
+	{
+		VERBO3 parse_err(8,ch) ;
+		return 0 ;
+	}
+	return 1 ;
+}
+
+int get_enum(char const *string, keynocheck *ch)
+{
+	int r = get_enumbyid(string,key_enum_el) ;
+	if (r == -1) 
+	{
+		VERBO3 parse_err(0,ch) ;
+		return 0 ;
+	}
+	return r ;
+}
+
+int get_timeout(keynocheck *ch,uint32_t *ui)
+{
+	int time = 0 ;
+	if (ch->idkey == T_KILL) time = 0 ;
+	else if (ch->idkey == T_FINISH) time = 1 ;
+	else if (ch->idkey == T_UP) time = 2 ;
+	else if (ch->idkey == T_DOWN) time = 3 ;
+	if (scan_timeout(ch->val.s,ui,time) == -1)
+	{
+		VERBO3 parse_err(3,ch) ;
+		return 0 ;
+	}
+	return 1 ;
+}
+
+int get_uint(keynocheck *ch,uint32_t *ui)
+{
+	if (!uint32_scan(ch->val.s,ui))
+	{
+		VERBO3 parse_err(3,ch) ;
+		return 0 ;
+	}
+	return 1 ;
+}
+
+int check_valid_runas(keynocheck *ch)
+{
+	errno = 0 ;
+	struct passwd *pw = getpwnam(ch->val.s);
+	if (pw == NULL && errno)
+	{
+		VERBO3 parse_err(0,ch) ;
+		return 0 ;
+	} 
+	return 1 ;
+}
+
+void parse_err(int ierr,keynocheck *check)
+{
+	int idsec = check->idsec ;
+	int idkey = check->idkey ;
+	switch(ierr)
+	{
+		case 0: 
+			strerr_warnw4x("invalid value for key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			break ;
+		case 1:
+			strerr_warnw4x("multiple definition of key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			break ;
+		case 2:
+			strerr_warnw4x("same value for key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			break ;
+		case 3:
+			strerr_warnw4x("key: ",get_keybyid(idkey),": must be an integrer value in section: ",get_keybyid(idsec)) ;
+			break ;
+		case 4:
+			strerr_warnw4x("key: ",get_keybyid(idkey),": must be an absolute path in section: ",get_keybyid(idsec)) ;
+			break ;
+		case 5:
+			strerr_warnw4x("key: ",get_keybyid(idkey),": must be set in section: ",get_keybyid(idsec)) ;
+			break ;
+		case 6:
+			strerr_warnw4x("invalid format of key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			break ;
+		case 7:
+			strerr_warnwu4x("parse key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			break ;
+		case 8:
+			strerr_warnwu4x("clean value of key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			break ;
+		case 9:
+			strerr_warnw4x("empty value of key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			break ;
+		default:
+			strerr_warnw1x("unknown parse_err number") ;
+			break ;
+	}
 }

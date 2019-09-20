@@ -19,21 +19,21 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/mount.h>
+#include <sys/reboot.h>
 
 #include <oblibs/error2.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/obgetopt.h>
+#include <oblibs/environ.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/buffer.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/diuint32.h>
-#include <skalibs/genalloc.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
 
 #include <66/config.h>
-#include <66/environ.h>
 #include <66/constants.h>
 
 unsigned int VERBOSITY = 1 ;
@@ -48,7 +48,7 @@ static char const *banner = "\n[Starts stage1 process...]" ;
 static char const *slashdev = 0 ;
 static char const *envdir = 0 ;
 static char const *fifo = 0 ;
-static char const *log = 0 ;
+static char const *log_user = SS_LOGGER_RUNNER ;
 static char const *cver = 0 ;
 static char tpath[MAXENV+1] ;
 static char trcinit[MAXENV+1] ;
@@ -68,7 +68,7 @@ static void sulogin(char const *msg,char const *arg)
 	fd_close(0) ;
 	if (dup2(fdin,0) == -1) strerr_diefu1x(111,"duplicate stdin -- you are on your own") ;
 	fd_close(fdin) ;	
-	if (*msg) strerr_warnwu2sys(msg,arg) ;
+	if (*msg) strerr_warnwu2x(msg,arg) ;
 	pid = child_spawn0(newarg[0],newarg,genv) ;
 	if (waitpid_nointr(pid,&wstat, 0) < 0)
 			strerr_diefu1sys(111,"wait for sulogin -- you are on your own") ;
@@ -101,10 +101,9 @@ static void parse_conf(void)
 	static char const *valid[] = 
 	{ "VERBOSITY", "PATH", "LIVE", "TREE", "RCINIT", "UMASK", "RESCAN", 0 } ;
 	int r ;
-	unsigned int i = 0, j = 0 ;
+	unsigned int j = 0 ;
 	stralloc src = STRALLOC_ZERO ;
-	stralloc saconf = STRALLOC_ZERO ;
-	genalloc gaconf = GENALLOC_ZERO ;
+	stralloc val = STRALLOC_ZERO ;
 	if (skel[0] != '/') sulogin("skeleton directory must be an aboslute path: ",skel) ;
 	size_t skelen = strlen(skel) ;
 	memcpy(confile,skel,skelen) ;
@@ -114,51 +113,50 @@ static void parse_conf(void)
 	size_t filesize=file_get_size(confile) ;
 	r = openreadfileclose(confile,&src,filesize) ;
 	if(!r) sulogin("open configuration file: ",confile) ; 
-	if (!stralloc_0(&src)) sulogin("append stralloc configuration file","") ;
+	if (!stralloc_0(&src)) sulogin("append stralloc of file: ",confile) ;
 	
-	r = env_split(&gaconf,&saconf,&src) ;
-	if (!r) sulogin("parse configuration file: ",confile) ;
-
-	for (;i < genalloc_len(diuint32,&gaconf) ; i++)
+	for (char const *const *p = valid;*p;p++,j++)
 	{
-		char *key = saconf.s + genalloc_s(diuint32,&gaconf)[i].left ;
-		char *val = saconf.s + genalloc_s(diuint32,&gaconf)[i].right ;
-		j = 0 ;
-		for (char const *const *p = valid;*p;p++,j++)
-		{
-			if (!strcmp(*p,key))
-			{
-				switch (j)
-				{
-					case 0: if (!uint0_scan(val, &VERBOSITY)) sulogin("invalid VERBOSITY value: ","") ; 
-							break ;
-					case 1: memcpy(tpath,val,strlen(val)) ;
-							tpath[strlen(val)] = 0 ;
-							path = tpath ;
-							break ;
-					case 2: memcpy(tlive,val,strlen(val)) ;
-							tlive[strlen(val)] = 0 ;
-							live = tlive ;
-							if (live[0] != '/') sulogin ("LIVE must be an absolute path","") ; 
-							break ;
-					case 3: memcpy(ttree,val,strlen(val)) ;
-							ttree[strlen(val)] = 0 ;
-							tree = ttree ;
-							break ;
-					case 4: memcpy(trcinit,val,strlen(val)) ;
-							trcinit[strlen(val)] = 0 ;
-							rcinit = trcinit ;
-							if (rcinit[0] != '/') sulogin ("RCINIT must be an absolute path","") ; 
-							break ;
-					case 5: if (!uint0_oscan(val, &mask)) sulogin("invalid MASK value","") ; break ;
-					case 6: if (!uint0_scan(val, &rescan)) sulogin("invalid RESCAN value","") ; break ;
-					default: break ;
-				}
-			}
+		if (!stralloc_copy(&val,&src)) sulogin("copy stralloc of file: ",confile) ;
+		if (!environ_get_val_of_key(&val,*p)) continue ;
+		/** value may be empty, in this case we use the default one */
+		if (!sastr_clean_element(&val)) 
+		{	
+			strerr_warnwu3x("get value of: ",*p," -- keeps the default") ;
+			continue ;
 		}
+		if (!sastr_rebuild_in_oneline(&val)) sulogin("rebuild line of value: ",val.s) ;
+		if (!stralloc_0(&val)) sulogin("append stralloc of value: ",val.s) ;
+		
+		switch (j)
+		{
+			case 0: if (!uint0_scan(val.s, &VERBOSITY)) sulogin("parse VERBOSITY value: ",val.s) ; 
+					break ;
+			case 1: memcpy(tpath,val.s,val.len) ;
+					tpath[val.len] = 0 ;
+					path = tpath ;
+					break ;
+			case 2: memcpy(tlive,val.s,val.len) ;
+					tlive[val.len] = 0 ;
+					live = tlive ;
+					if (live[0] != '/') sulogin ("LIVE must be an absolute path: ",val.s) ; 
+					break ;
+			case 3: memcpy(ttree,val.s,val.len) ;
+					ttree[val.len] = 0 ;
+					tree = ttree ;
+					break ;
+			case 4: memcpy(trcinit,val.s,val.len) ;
+					trcinit[val.len] = 0 ;
+					rcinit = trcinit ;
+					if (rcinit[0] != '/') sulogin ("RCINIT must be an absolute path: ",val.s) ; 
+					break ;
+			case 5: if (!uint0_oscan(val.s, &mask)) sulogin("invalid MASK value: ",val.s) ; break ;
+			case 6: if (!uint0_scan(val.s, &rescan)) sulogin("invalid RESCAN value: ",val.s) ; break ;
+			default: break ;
+		}
+		
 	}
-	genalloc_free(diuint32,&gaconf) ;
-	stralloc_free(&saconf) ;
+	stralloc_free(&val) ;
 	stralloc_free(&src) ;
 }
 
@@ -254,7 +252,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 'e' : envdir = l.arg ; break ;
 				case 'd' : slashdev = l.arg ; break ;
 				case 'b' : banner = l.arg ; break ;
-				case 'l' : log = l.arg ; break ;
+				case 'l' : log_user = l.arg ; break ;
 				default : exitusage(USAGE) ; 
 			}
 		}
@@ -318,10 +316,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (setenv("PATH", path, 1) == -1) sulogin("set initial PATH: ",path) ;
 	/** create scandir */
 	{
-		int m = log ? 6 : 4 ;
-		char const *t[] = { "-b", "-c", "-s", skel, log ? "-L" : 0, log ? log : 0 } ;
+		char const *t[] = { "-b", "-c", "-s", skel, "-L", log_user } ;
 		strerr_warni2x("Create live scandir at: ",live) ;
-		make_cmdline(SS_EXTBINPREFIX "66-scandir",t,m,"create live scandir at: ",live,envp) ;		
+		make_cmdline(SS_EXTBINPREFIX "66-scandir",t,6,"create live scandir at: ",live,envp) ;
 	}
 	/** initiate earlier service */
 	{
@@ -330,8 +327,10 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		make_cmdline(SS_EXTBINPREFIX "66-init",t,3,"initiate earlier service of tree: ",tree,envp) ;	
 	}
 	
-	if (envdir)
-		if (!env_get_from_src(&envmodifs,envdir)) sulogin("get environment from: ",envdir) ;
+	if (envdir) {
+		int e = environ_get_envfile(&envmodifs,envdir) ;
+		if (e <= 0){ environ_get_envfile_error(e,envdir) ; sulogin("","") ; }
+	}
 	
 	{
 		strerr_warni3x("Starts boot logger at: ",live,"/log/0") ;
@@ -360,6 +359,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		pid = fork() ;
 		if (pid == -1) sulogin("fork: ",rcinit) ;
 		if (!pid) run_stage2(newenvp, 2, envmodifs.s,envmodifs.len) ;
+		if (reboot(RB_DISABLE_CAD) == -1) sulogin("trap ctrl-alt-del","") ;
 		if (fd_copy(2, 1) == -1) sulogin("copy stderr to stdout","") ;
 		fd_close(fdin) ;
 		xpathexec_r(newargv, newenvp, 2, envmodifs.s, envmodifs.len) ;

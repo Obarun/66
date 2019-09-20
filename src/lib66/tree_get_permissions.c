@@ -18,7 +18,6 @@
 #include <sys/stat.h>
 
 #include <oblibs/error2.h>
-#include <oblibs/directory.h>
 #include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>
@@ -32,16 +31,19 @@ int tree_get_permissions(char const *tree,uid_t owner)
 	ssize_t r ;
 	size_t treelen = strlen(tree) ;
 	char pack[UID_FMT] ;
-	char tmp[treelen + SS_RULES_LEN + 1] ;
-	
 	uint32_pack(pack,owner) ;
-	pack[uint_fmt(pack,owner)] = 0 ;
+	size_t packlen = uint_fmt(pack,owner) ;
+	pack[packlen] = 0 ;
+	
+	char tmp[treelen + SS_RULES_LEN + 1 + packlen + 1] ;
 	
 	memcpy(tmp,tree,treelen) ;
 	memcpy(tmp + treelen,SS_RULES,SS_RULES_LEN) ;
-	tmp[treelen + SS_RULES_LEN] = 0 ;
-		
-	r = dir_search(tmp,pack,S_IFREG) ;
+	tmp[treelen + SS_RULES_LEN] = '/' ;
+	memcpy(tmp + treelen + SS_RULES_LEN + 1, pack,packlen) ;
+	tmp[treelen + SS_RULES_LEN + 1 + packlen] = 0 ;
+	
+	r = scan_mode(tmp,S_IFREG) ;
 	if (r != 1)	return 0 ;
 	
 	return 1 ;

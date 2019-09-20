@@ -119,14 +119,14 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 		
 	if (info->timeout) DEADLINE = info->timeout ;
 	
-	int cl, rc, sigopt, mainunsup ;
+	int cl, rc, sigopt ;
 	stralloc sares = STRALLOC_ZERO ;
 	genalloc gares = GENALLOC_ZERO ; //ss_resolve_t
 	ss_resolve_t_ref pres ;
 	ss_resolve_t res = RESOLVE_ZERO ;
 	ss_state_t sta = STATE_ZERO ;
 	
-	cl = rc = sigopt = mainunsup = 0 ;
+	cl = rc = sigopt = 0 ;
 	
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
@@ -139,7 +139,7 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 
 			switch (opt)
 			{
-				case 'u' :	UNSUP = 1 ; mainunsup = 1 ; break ;
+				case 'u' :	UNSUP = 1 ; break ;
 				case 'X' :	if (sigopt) exitusage(usage_stop) ; sigopt = 1 ; SIG = "-X" ; break ;
 				case 'K' :	if (sigopt) exitusage(usage_stop) ; sigopt = 1 ; SIG = "-K" ; break ;
 				default : exitusage(usage_stop) ; 

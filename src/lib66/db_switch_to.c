@@ -14,6 +14,8 @@
 
 #include <66/db.h>
 
+#include <string.h>
+
 #include <oblibs/error2.h>
 
 #include <skalibs/stralloc.h>
@@ -86,20 +88,6 @@ int db_switch_to(ssexec_t *info, char const *const *envp,unsigned int where)
 					VERBO3 strerr_warnwu3sys("switch db symlink of tree: ",info->treename.s," to source") ;
 					goto err ;
 				}
-				//db.len = 0 ;
-				/** in case of crash s6-rc-update copy again the old db to the 
-				 * original place, we need to update only the symlink */
-				/*if (!backup_realpath_sym(&db,info,LONGRUN))
-				{
-					VERBO3 strerr_warnwu2sys("find path of db service for: ",info->treename.s) ;
-					goto err ;
-				}
-				if (!db_update(db.s,info,envp))
-				{
-					VERBO3 strerr_warnwu3sys("switch: ",info->treename.s," to source") ;
-					VERBO3 strerr_warnwu1sys("unable to rollback the db state, please make a bug report") ;
-					goto err ;
-				}*/
 			}			
 		}
 	}
@@ -134,18 +122,6 @@ int db_switch_to(ssexec_t *info, char const *const *envp,unsigned int where)
 					VERBO3 strerr_warnwu3sys("switch db service for: ",info->treename.s," to backup") ;
 					goto err ;
 				}
-				//db.len = 0 ;
-				/*if (!backup_realpath_sym(&db,info,LONGRUN))
-				{
-					VERBO3 strerr_warnwu2sys("find path of db: ",info->treename.s) ;
-					goto err ;
-				}
-				if (!db_update(db.s, info,envp))
-				{
-					VERBO3 strerr_warnwu3sys("switch: ",info->treename.s," to source") ;
-					VERBO3 strerr_warnwu1sys("unable to rollback the db state, please make a bug report") ;
-					goto err ;
-				}*/
 			}
 		}
 		VERBO3 strerr_warnt2x("make a backup of db service for: ",info->treename.s) ;

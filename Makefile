@@ -62,7 +62,7 @@ INSTALL_DATA += init.conf
 INSTALL_MAN := $(wildcard doc/man/*.[1-8])
 INSTALL_HTML := $(wildcard doc/html/*.html)
 INSTALL_DATA := skel/halt skel/init skel/ishell skel/poweroff skel/rc.init \
-	skel/rc.shutdown skel/reboot skel/shutdown
+	skel/rc.shutdown skel/reboot skel/shutdown skel/rc.shutdown.final
 INSTALL_CONF := skel/init.conf
 
 all: $(ALL_LIBS) $(ALL_BINS) $(ALL_INCLUDES)

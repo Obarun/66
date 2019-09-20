@@ -12,8 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
  
-#ifndef ENUM_H
-#define ENUM_H
+#ifndef SS_ENUM_H
+#define SS_ENUM_H
 
 
 #include <sys/types.h>
@@ -117,7 +117,7 @@ struct key_all_s
 static key_description_t const main_section_list[] =
 {
 	{ .name = "@type",  .expected = LINE, .mandatory = NEED },
-	{ .name = "@name", .expected = LINE, .mandatory = NEED },
+	{ .name = "@name", .expected = LINE, .mandatory = OPTS },
 	{ .name = "@description", .expected = QUOTE, .mandatory = OPTS },
 	{ .name = "@depends", .expected = BRACKET, .mandatory = OPTS },
 	{ .name = "@contents", .expected = BRACKET, .mandatory = BUNDLE },

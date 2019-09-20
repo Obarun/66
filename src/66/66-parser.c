@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <stdint.h>
 
 #include <oblibs/error2.h>
 #include <oblibs/files.h>
@@ -30,6 +31,7 @@
 
 #include <66/utils.h>
 #include <66/parser.h>
+#include <66/constants.h>
 
 #define USAGE "66-parser [ -h ] [ -v verbosity ] [ -f ] [ -c|C ] service destination"
 
@@ -50,14 +52,9 @@ static inline void info_help (void)
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
-static void check_dir(char const *dir,int force,int main)
+static void check_dir(char const *dir,uint8_t force,int main)
 {
 	int r ;
-	size_t dirlen = strlen(dir) ;
-	char tmp[dirlen+1] ;
-	if (!dirname(tmp,dir)) strerr_diefu1x(111,"set directory name") ;
-	char name[dirlen+1] ;
-	if (!basename(name,dir)) strerr_diefu1x(111,"set name") ;
 	
 	r = scan_mode(dir,S_IFDIR) ;
 	if (r < 0){ errno = ENOTDIR ; strerr_dief2sys(111,"conflicting format of: ",dir) ; }
@@ -69,7 +66,7 @@ static void check_dir(char const *dir,int force,int main)
 	}
 	else if (r && !force && main) strerr_dief3x(111,"destination: ",dir," already exist") ;
 	if (!r)
-		if (!dir_create_under(tmp,name, 0755)) strerr_diefu2sys(111,"create: ",dir) ;
+		if (!dir_create_parent(dir, 0755)) strerr_diefu2sys(111,"create: ",dir) ;
 }
 
 int main(int argc, char const *const *argv,char const *const *envp)
@@ -85,7 +82,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	char name[4095+1] ;
 	char srcdir[4095+1] ;
 	int type ;
-	unsigned int force = 0 , conf = 0 ;
+	uint8_t force = 0 , conf = 0 ;
 	PROG = "66-parser" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
@@ -131,11 +128,11 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	check_dir(dir,force,0) ;
 	if (!stralloc_cats(&insta,name) ||
 	!stralloc_0(&insta)) retstralloc(111,"main") ;
-	r = insta_check(insta.s) ;
+	r = instance_check(insta.s) ;
 	if (!r) strerr_dief2x(111,"invalid instance name: ",insta.s) ;
 	if (r > 0)
 	{
-		if (!insta_create(&src,&insta,srcdir,r))
+		if (!instance_create(&src,insta.s,SS_INSTANCE,srcdir,r))
 			strerr_diefu2x(111,"create instance service: ",name) ;
 		memcpy(name,insta.s,insta.len) ;
 		name[insta.len] = 0 ;

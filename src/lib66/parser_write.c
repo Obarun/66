@@ -17,6 +17,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <stdint.h>
 //#include <stdio.h>
 
 #include <oblibs/string.h>
@@ -46,7 +47,7 @@
 /** @Return 0 on fail
  * @Return 1 on success
  * @Return 2 if the service is ignored */
-int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned int force, unsigned int conf)
+int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, uint8_t force, uint8_t conf)
 {
 	int r ;
 	
@@ -158,7 +159,7 @@ int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, unsigned 
 	return 1 ;
 }
 
-int write_classic(sv_alltype *sv, char const *dst, unsigned int force,unsigned int conf)
+int write_classic(sv_alltype *sv, char const *dst, uint8_t force,uint8_t conf)
 {	
 	/**notification,timeout, ...*/
 	if (!write_common(sv, dst, conf))
@@ -195,7 +196,7 @@ int write_classic(sv_alltype *sv, char const *dst, unsigned int force,unsigned i
 	return 1 ;
 }
 
-int write_longrun(sv_alltype *sv,char const *dst, unsigned int force, unsigned int conf)
+int write_longrun(sv_alltype *sv,char const *dst, uint8_t force, uint8_t conf)
 {	
 	size_t r ;
 	char *name = keep.s+sv->cname.name ;
@@ -252,7 +253,7 @@ int write_longrun(sv_alltype *sv,char const *dst, unsigned int force, unsigned i
 			
 	}
 	/** dependencies */
-	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "dependencies", &gadeps))
+	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "dependencies"))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/dependencies") ;
 		return 0 ;
@@ -262,7 +263,7 @@ int write_longrun(sv_alltype *sv,char const *dst, unsigned int force, unsigned i
 	return 1 ;
 }
 
-int write_oneshot(sv_alltype *sv,char const *dst,unsigned int conf)
+int write_oneshot(sv_alltype *sv,char const *dst,uint8_t conf)
 {
 	
 	if (!write_common(sv, dst,conf))
@@ -286,7 +287,7 @@ int write_oneshot(sv_alltype *sv,char const *dst,unsigned int conf)
 		}
 	}
 	
-	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "dependencies", &gadeps))
+	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "dependencies"))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/dependencies") ;
 		return 0 ;
@@ -304,7 +305,7 @@ int write_bundle(sv_alltype *sv, char const *dst)
 		return 0 ;
 	}
 	/** contents file*/
-	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "contents", &gadeps))
+	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "contents"))
 	{
 		VERBO3 strerr_warnwu3x("write: ",dst,"/contents") ;
 		return 0 ;
@@ -313,15 +314,18 @@ int write_bundle(sv_alltype *sv, char const *dst)
 	return 1 ;
 }
 
-int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, int mode, unsigned int force)
+int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, mode_t mode, uint8_t force)
 {
 	int r ;
 	int logbuild = log->run.build ;
 	
-	char *time = NULL ;
-	char *pmax = NULL ;
-	char *pback = NULL ;
+	uid_t log_uid ;
+	gid_t log_gid ;
+	char *time = 0 ;
+	char *pmax = 0 ;
+	char *pback = 0 ;
 	char *timestamp = "t" ;
+	char *logrunner = log->run.runas ? keep.s + log->run.runas : SS_LOGGER_RUNNER ;
 	char max[UINT32_FMT] ;
 	char back[UINT32_FMT] ;
 	char const *userhome ;
@@ -388,7 +392,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 	/** dependencies*/
 	if (log->nga)
 	{
-		if (!write_dependencies(log->nga,log->idga,ddst.s,"dependencies",&gadeps))
+		if (!write_dependencies(log->nga,log->idga,ddst.s,"dependencies"))
 		{
 			VERBO3 strerr_warnwu3x("write: ",ddst.s,"/dependencies") ;
 			return 0 ;
@@ -415,14 +419,10 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			/** uid */
 			if (!stralloc_cats(&shebang, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n")) retstralloc(0,"write_logger") ;
 			if (!stralloc_0(&shebang)) retstralloc(0,"write_logger") ;
-			if ((!MYUID && log->run.runas))
+			if ((!MYUID))
 			{
 				if (!stralloc_cats(&ui,S6_BINPREFIX "s6-setuidgid ")) retstralloc(0,"write_logger") ;
-				if (!get_namebyuid(log->run.runas,&ui))
-				{
-					VERBO3 strerr_warnwu1sys("set owner for the logger") ;
-					return 0 ;
-				}
+				if (!stralloc_cats(&ui,logrunner)) retstralloc(0,"write_logger") ;
 			}
 			if (!stralloc_cats(&ui,"\n")) retstralloc(0,"write_logger") ;
 			if (!stralloc_0(&ui)) retstralloc(0,"write_logger") ;
@@ -522,26 +522,35 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			return 0 ;
 	
 	}
-	size_t destlen = get_rlen_until(destlog.s,'/',destlog.len) ;
-	destlog.len = destlen ;
-	if (!stralloc_0(&destlog)) retstralloc(0,"write_logger") ;
-	
-	r = dir_search(destlog.s,svname,S_IFDIR) ;
-	if (r < 0)
+		
+	r = scan_mode(destlog.s,S_IFDIR) ;
+	if (r == -1)
 	{
-		VERBO3 strerr_warnw4x(destlog.s,"/",svname," already exist with different mode") ;
+		VERBO3 strerr_warnw3x("log directory: ", destlog.s,": already exist with a different mode") ;
 		return 0 ;
 	}
-	if (!r)
 	{
-		r = dir_create_under(destlog.s,svname,0755) ;
-		if (r < 0)
+		if (!dir_create_parent(destlog.s,0755))
 		{
-			VERBO3 strerr_warnwu5sys("create ",destlog.s,"/",svname," directory") ;
+			VERBO3 strerr_warnwu2sys("create log directory: ",destlog.s) ;
 			return 0 ;
 		}
 	}
-
+	if ((!MYUID))
+	{
+		if (!youruid(&log_uid,logrunner) ||
+		!yourgid(&log_gid,log_uid))
+		{
+			VERBO3 strerr_warnwu2sys("get uid and gid of: ",logrunner) ;
+			return 0 ;
+		}
+		if (chown(destlog.s,log_uid,log_gid) == -1)
+		{
+			VERBO3 strerr_warnwu2sys("chown: ",destlog.s) ;
+			return 0 ;
+		}
+	}
+		
 	stralloc_free(&shebang) ;
 	stralloc_free(&ui) ;
 	stralloc_free(&exec) ;
@@ -567,7 +576,7 @@ int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char
 	memcpy(prodfile,proddst,proddstlen) ;
 	prodfile[proddstlen] = 0 ;
 	
-	char pipefile[consdstlen + consnamelen + 1 + 1] ;
+	char pipefile[consdstlen + 1 + consnamelen + 1 + 1] ;
 	
 	/**producer-for*/
 	if (!file_write_unsafe(consfile,get_keybyid(CONSUMER),prodname,strlen(prodname))) 
@@ -587,9 +596,11 @@ int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char
 		size_t len = strlen(deps.s+sv->pipeline) ;
 		char pipename[len + 1] ;
 		memcpy(pipefile,consdst,consdstlen) ;
-		memcpy(pipefile + consdstlen, consname,consnamelen) ;
-		memcpy(pipefile + consdstlen + consnamelen, "/", 1) ;
-		pipefile[consdstlen + consnamelen + 1] = 0  ;
+		pipefile[consdstlen] = '/' ;
+		memcpy(pipefile + consdstlen + 1, consname,consnamelen) ;
+		pipefile[consdstlen + 1 + consnamelen] = '/' ;
+		pipefile[consdstlen + 1 + consnamelen + 1] = 0  ;
+		
 		memcpy(pipename,deps.s+sv->pipeline,len) ;
 		pipename[len] = 0 ;
 		if (!file_write_unsafe(pipefile,PIPELINE_NAME,pipename,len))
@@ -602,7 +613,7 @@ int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char
 	return 1 ;
 }
 
-int write_common(sv_alltype *sv, char const *dst,unsigned int conf)
+int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 {
 	int r ;
 	char *time = NULL ;
@@ -758,8 +769,7 @@ int write_common(sv_alltype *sv, char const *dst,unsigned int conf)
 	return 1 ;
 }
 
-
-int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,int mode)
+int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mode_t mode)
 {
 	
 	unsigned int type = sv->cname.itype ;
@@ -783,11 +793,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 			if ((!owner && exec->runas))
 			{
 				if (!stralloc_cats(&ui,S6_BINPREFIX "s6-setuidgid ")) retstralloc(0,"write_exec") ;
-				if (!get_namebyuid(exec->runas,&ui))
-				{
-					VERBO3 strerr_warnwu1sys("set owner for the execute file") ;
-					return 0 ;
-				}
+				if (!stralloc_cats(&ui,keep.s + exec->runas)) retstralloc(0,"write_exec") ;
 				if (!stralloc_cats(&ui,"\n")) retstralloc(0,"write_exec") ;
 			}
 			/** environment */
@@ -875,34 +881,16 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,in
 	return 1 ;	
 }
 
-int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename, genalloc *ga)
+int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename)
 {
-	int r ;
-		
 	stralloc contents = STRALLOC_ZERO ;
-	stralloc namedeps = STRALLOC_ZERO ;
-	
-	for (unsigned int i = 0; i < nga; i++)
+	size_t id = idga, nid = nga ;
+	for (;nid; id += strlen(deps.s + id) + 1, nid--)
 	{
-		if (!stralloc_obreplace(&namedeps,deps.s+genalloc_s(unsigned int,ga)[idga+i])) return 0 ;
-		r = insta_check(namedeps.s) ;
-		if (!r) 
-		{
-			VERBO3 strerr_warnw2x(" invalid instance name: ",namedeps.s) ;
-			return 0 ;
-		}
-		if (r > 0)
-		{
-			if (!insta_splitname(&namedeps,namedeps.s,r,1))
-			{
-				VERBO3 strerr_warnwu2x("split copy name of instance: ",namedeps.s) ;
-				return 0 ;
-			}
-		}
-		if (!stralloc_cats(&contents,namedeps.s)) retstralloc(0,"write_dependencies") ;
-		if (!stralloc_cats(&contents,"\n")) retstralloc(0,"write_dependencies") ;
+		if (!stralloc_cats(&contents,deps.s + id) ||
+		!stralloc_cats(&contents,"\n")) retstralloc(0,"write_dependencies") ;
 	}
-		
+	
 	if (contents.len)
 	{
 		if (!file_write_unsafe(dst,filename,contents.s,contents.len))
@@ -913,11 +901,9 @@ int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char c
 	}
 	
 	stralloc_free(&contents) ;
-	stralloc_free(&namedeps) ;
 	return 1 ;
 	err:
 		stralloc_free(&contents) ;
-		stralloc_free(&namedeps) ;
 		return 0 ;
 }
 

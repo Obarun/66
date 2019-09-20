@@ -20,11 +20,11 @@
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/error2.h>
-#include <oblibs/stralist.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 #include <oblibs/directory.h>
 #include <oblibs/types.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/buffer.h>
 #include <skalibs/stralloc.h>
@@ -54,7 +54,7 @@ static char OWNERSTR[UID_FMT] ;
 static int force_color = 0 ;
 
 #define MAXSIZE 4096
-#define DBG(...) bprintf(buffer_1, __VA_ARGS__) ;\
+#define DBG_INFO(...) bprintf(buffer_1, __VA_ARGS__) ;\
 				buffer_putflush(buffer_1,"\n",1) ;
 
 
@@ -223,7 +223,7 @@ int info_print_tree(char const *treename,int init,int current,int enabled)
 	if (!bprintf(buffer_1,"%s%s%s%*s%s%s","Initialized: ",init ? color->blue : color->yellow, init ? "yes":"no",indent,"",color->off,"| ")) return 0 ;
 	if (!bprintf(buffer_1,"%s%s%s%s","Current: ",current ? color->blink_blue : color->yellow ,current ? "yes":"no",color->off)) return 0 ;
 	if (buffer_putsflush(buffer_1,"\n") < 0) return 0 ; 
-	if (!bprintf(buffer_1,"%s%9s%s%s%s%s","Contains:"," | ","Enabled: ",enabled ? color->blue : color->yellow ,enabled ? "yes":"no",color->off)) return 0 ;
+	if (!bprintf(buffer_1,"%s%9s%s%s%s%s","Contains:"," | ","Enabled: ",enabled == 1 ? color->blue : color->yellow ,enabled ? "yes":"no",color->off)) return 0 ;
 	if (buffer_putsflush(buffer_1,"\n") < 0) return  0 ;
 	return 1 ;
 } 
@@ -300,51 +300,55 @@ static void info_print_graph(ss_resolve_t *res, depth_t *depth, int last)
 	if (buffer_putsflush(buffer_1,"\n") < 0) return ; 
 }
 
-int info_cmpnsort(genalloc *ga)
+int info_cmpnsort(stralloc *sa)
 {
-	unsigned int len = genalloc_len(stralist,ga) ;
-	if (!len) return 0 ;
-	char names[len][4096] ;
+	size_t pos = 0 ;
+	if (!sa->len) return 0 ;
+	size_t salen = sa->len ;
+	size_t nel = sastr_len(sa), idx = 0, a = 0, b = 0 ;
+	char names[nel][4096] ;
 	char tmp[4096] ;
-	for (unsigned int i = 0 ; i < genalloc_len(stralist,ga) ; i++)
+	
+	for (; pos < salen && idx < nel ; pos += strlen(sa->s + pos) + 1,idx++)
 	{
-		memcpy(names[i],gaistr(ga,i),gaistrlen(ga,i)) ;
+		memcpy(names[idx],sa->s + pos,strlen(sa->s + pos)) ;
+		names[idx][strlen(sa->s+pos)] = 0 ;
 	}
-	genalloc_deepfree(stralist,ga,stra_free) ;
-	for (unsigned int i = 0 ; i < len - 1 ; i++)
+	for (; a < nel - 1 ; a++)
 	{
-		for (unsigned int j = i+1 ; j < len ; j++)
+		for (b = a + 1 ; b < idx ; b++)
 		{
-			if (strcmp(names[i],names[j]) > 0)
+			if (strcmp(names[a],names[b]) > 0)
 			{
-				strcpy(tmp,names[i]) ;
-				strcpy(names[i],names[j]);
-				strcpy(names[j],tmp);
+				strcpy(tmp,names[a]) ;
+				strcpy(names[a],names[b]);
+				strcpy(names[b],tmp);
 			}
 		}
 	}
-	
-	for (unsigned int i = 0 ; i < len ; i++)
+	sa->len = 0 ;
+	for (a = 0 ; a < nel ; a++)
 	{
-		if (!stra_add(ga,names[i])) return 0 ;
+		if (!sastr_add_string(sa,names[a])) return 0 ;
 	}	
 	return 1 ;
 }
 
 int info_walk(ss_resolve_t *res,char const *src,int reverse, depth_t *depth)
 {
-	genalloc gadeps = GENALLOC_ZERO ;
+	size_t pos = 0 ;
+	stralloc sadeps = STRALLOC_ZERO ;
 	ss_resolve_t dres = RESOLVE_ZERO ;
 	
 	if((!res->ndeps) || (depth->level > MAXDEPTH))
 		goto freed ;
-
-	if (!clean_val(&gadeps,res->sa.s + res->deps)) goto err ;
-	if (reverse) genalloc_reverse(stralist,&gadeps) ;
-	for(unsigned int i = 0 ; i < res->ndeps ; i++ )
+	
+	if (!sastr_clean_string(&sadeps,res->sa.s + res->deps)) goto err ;
+	if (reverse) stralloc_reverse(&sadeps) ;
+	for(; pos < sadeps.len ; pos += strlen(sadeps.s + pos) +1 )
 	{	
-		int last =  i + 1 < res->ndeps  ? 0 : 1 ;		
-		char *name = gaistr(&gadeps,i) ;
+		int last =  pos + 1 < res->ndeps  ? 0 : 1 ;		
+		char *name = sadeps.s + pos ;
 		
 		if (!ss_resolve_check(src,name)) goto err ;	
 		if (!ss_resolve_read(&dres,src,name)) goto err ;
@@ -379,11 +383,11 @@ int info_walk(ss_resolve_t *res,char const *src,int reverse, depth_t *depth)
 	}
 	freed:
 	ss_resolve_free(&dres) ;
-	genalloc_deepfree(stralist,&gadeps,stra_free) ;
+	stralloc_free(&sadeps) ;
 	return 1 ;
 	err: 
 		ss_resolve_free(&dres) ;
-		genalloc_deepfree(stralist,&gadeps,stra_free) ;
+		stralloc_free(&sadeps) ;
 		return 0 ;
 }
 
@@ -392,8 +396,9 @@ int info_walk(ss_resolve_t *res,char const *src,int reverse, depth_t *depth)
 int graph_display(char const *tree,char const *name,unsigned int what)
 {
 	int e ;
+	size_t pos = 0, i = 0 ;
 	ss_resolve_t res = RESOLVE_ZERO ;
-	genalloc tokeep = GENALLOC_ZERO ; //stralist
+	stralloc tokeep = STRALLOC_ZERO ;
 	ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
 	stralloc inres = STRALLOC_ZERO ;
 	e = 0 ;
@@ -417,18 +422,18 @@ int graph_display(char const *tree,char const *name,unsigned int what)
 
 	if (!what)
 	{
-		if (!dir_get(&tokeep,srcres,SS_MASTER+1,S_IFREG)) goto err ;
-		if (genalloc_len(stralist,&tokeep))
+		if (!sastr_dir_get(&tokeep,srcres,SS_MASTER+1,S_IFREG)) goto err ;
+		if (tokeep.len)
 		{
-			for (unsigned int i = 0 ; i < genalloc_len(stralist,&tokeep) ; i++)
+			for(; pos < tokeep.len ; pos += strlen(tokeep.s + pos) +1 )
 			{
-				
-				if (!ss_resolve_check(src,gaistr(&tokeep,i))) goto err ;
-				if (!ss_resolve_read(&res,src,gaistr(&tokeep,i))) goto err ;
+				char *name = tokeep.s + pos ;
+				if (!ss_resolve_check(src,name)) goto err ;
+				if (!ss_resolve_read(&res,src,name)) goto err ;
 				if (!ss_resolve_graph_build(&graph,&res,src,REVERSE)) goto err ;
 			}
 			if (!ss_resolve_graph_publish(&graph,REVERSE)) goto err ;
-			for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&graph.sorted) ; i++)
+			for (; i < genalloc_len(ss_resolve_t,&graph.sorted) ; i++)
 			{
 				char *string = genalloc_s(ss_resolve_t,&graph.sorted)[i].sa.s ;
 				char *name = string + genalloc_s(ss_resolve_t,&graph.sorted)[i].name ;
@@ -457,7 +462,7 @@ int graph_display(char const *tree,char const *name,unsigned int what)
 	}
 	
 	ss_resolve_free(&res) ;
-	genalloc_deepfree(stralist,&tokeep,stra_free) ;
+	stralloc_free(&tokeep) ;
 	ss_resolve_graph_free(&graph) ;
 	stralloc_free(&inres) ;
 	return 1 ;
@@ -466,7 +471,7 @@ int graph_display(char const *tree,char const *name,unsigned int what)
 		e = -1 ;
 	err:
 		ss_resolve_free(&res) ;
-		genalloc_deepfree(stralist,&tokeep,stra_free) ;
+		stralloc_free(&tokeep) ;
 		ss_resolve_graph_free(&graph) ;
 		stralloc_free(&inres) ;
 		return e ;
@@ -475,8 +480,8 @@ int graph_display(char const *tree,char const *name,unsigned int what)
 int tree_args(int argc, char const *const *argv)
 {
 	int r ;
-	size_t newlen ;
-	genalloc gatree = GENALLOC_ZERO ;// stralist, all tree
+	size_t newlen, pos = 0 ;
+	stralloc satree = STRALLOC_ZERO ;//all tree
 	stralloc tree = STRALLOC_ZERO ;
 	stralloc sacurrent = STRALLOC_ZERO ;
 	stralloc currname = STRALLOC_ZERO ;
@@ -542,15 +547,15 @@ int tree_args(int argc, char const *const *argv)
 	if (todisplay)
 		if (!dir_search(src.s,argv[0],S_IFDIR)) strerr_dief2x(110,"unknown tree: ",argv[0]) ;
 	
-	if (!dir_get(&gatree, src.s,SS_BACKUP + 1, S_IFDIR)) goto err ;
-	if (genalloc_len(stralist,&gatree))
+	if (!sastr_dir_get(&satree, src.s,SS_BACKUP + 1, S_IFDIR)) goto err ;
+	if (satree.len)
 	{
-		if (!info_cmpnsort(&gatree)) strerr_diefu1x(111,"sort list of tree") ;
-		for (unsigned int i = 0 ; i < genalloc_len(stralist,&gatree) ; i++)
+		if (!info_cmpnsort(&satree)) strerr_diefu1x(111,"sort list of tree") ;
+		for(; pos < satree.len ; pos += strlen(satree.s + pos) +1 )
 		{
 			tree.len = 0 ;
 				
-			char *treename = gaistr(&gatree,i) ;
+			char *treename = satree.s + pos ;
 			if (todisplay)
 				if (!obstr_equal(treename,argv[0])) continue ;
 			
@@ -594,7 +599,7 @@ int tree_args(int argc, char const *const *argv)
 	stralloc_free(&src) ;
 	stralloc_free(&sacurrent) ;
 	stralloc_free(&currname) ;
-	genalloc_deepfree(stralist,&gatree,stra_free) ;
+	stralloc_free(&satree) ;
 	
 	return 1 ;
 	
@@ -604,7 +609,7 @@ int tree_args(int argc, char const *const *argv)
 		stralloc_free(&src) ;
 		stralloc_free(&sacurrent) ;
 		stralloc_free(&currname) ;
-		genalloc_deepfree(stralist,&gatree,stra_free) ;
+		stralloc_free(&satree) ;
 		return 0 ;
 }
 
@@ -612,10 +617,10 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 {
 	int r, found ; 
 	unsigned int nlog = 0 ;
-	
+	size_t pos = 0 ;
 	stralloc treename = STRALLOC_ZERO ;
 	stralloc tree = STRALLOC_ZERO ;
-	genalloc gatree = GENALLOC_ZERO ;
+	stralloc satree = STRALLOC_ZERO ;
 	stralloc src = STRALLOC_ZERO ;
 	stralloc conf = STRALLOC_ZERO ;
 	stralloc env = STRALLOC_ZERO ;
@@ -679,15 +684,15 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 		
 		if (!stralloc_0(&src)) goto err ;
 		
-		if (!dir_get(&gatree, src.s,SS_BACKUP+1, S_IFDIR)) 
+		if (!sastr_dir_get(&satree, src.s,SS_BACKUP+1, S_IFDIR)) 
 			strerr_diefu2x(111,"get tree from directory: ",src.s) ;
 		
-		if (genalloc_len(stralist,&gatree))
+		if (satree.len)
 		{
-			for (unsigned int i = 0 ; i < genalloc_len(stralist,&gatree) ; i++)
+			for(; pos < satree.len ; pos += strlen(satree.s + pos) +1 )
 			{
 				src.len = newlen ;
-				char *name = gaistr(&gatree,i) ;
+				char *name = satree.s + pos ;
 				
 				if (!stralloc_cats(&src,name)) goto err ;
 				if (!stralloc_cats(&src,SS_SVDIRS)) goto err ;
@@ -821,7 +826,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	end:
 	stralloc_free(&tree) ;
 	stralloc_free(&treename) ;
-	genalloc_deepfree(stralist,&gatree,stra_free) ;
+	stralloc_free(&satree) ;
 	ss_resolve_free(&res) ;
 	stralloc_free(&src) ;
 	stralloc_free(&conf) ;
@@ -831,7 +836,7 @@ int sv_args(int argc, char const *const *argv,char const *const *envp)
 	err:
 		stralloc_free(&tree) ;
 		stralloc_free(&treename) ;
-		genalloc_deepfree(stralist,&gatree,stra_free) ;
+		stralloc_free(&satree) ;
 		ss_resolve_free(&res) ;
 		stralloc_free(&src) ;
 		stralloc_free(&conf) ;

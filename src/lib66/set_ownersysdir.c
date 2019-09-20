@@ -29,7 +29,7 @@ int set_ownersysdir(stralloc *base, uid_t owner)
 	char const *user_home = NULL ;
 	int e = errno ;
 	struct passwd *st = getpwuid(owner) ;
-	
+	errno = 0 ;
 	if (!st)
 	{
 		if (!errno) errno = ESRCH ;

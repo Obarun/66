@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 //#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
@@ -25,6 +26,7 @@
 #include <oblibs/types.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
+#include <oblibs/environ.h>
 
 #include <skalibs/buffer.h>
 #include <skalibs/stralloc.h>
@@ -61,7 +63,7 @@ static gid_t GIDOWNER ;
 static char GIDSTR[GID_FMT] ;
 static char TMPENV[MAXENV+1] ;
 static char const *skel = SS_SKEL_DIR ;
-static char const *log_user = "root" ;
+static char const *log_user = SS_LOGGER_RUNNER ;
 static unsigned int BOOT = 0 ;
 unsigned int VERBOSITY = 1 ;
 unsigned int NOTIF = 0 ;
@@ -191,7 +193,7 @@ static void inline auto_rm(char const *str)
 	r = scan_mode(str,S_IFDIR) ;
 	if (r > 0)
 	{
-		VERBO2 strerr_warni3x("removing ",str," ...") ;
+		VERBO1 strerr_warni3x("removing ",str," ...") ;
 		if (rm_rf(str) < 0) strerr_diefu2sys(111,"remove: ",str) ;
 	}
 }
@@ -264,15 +266,13 @@ void write_bootlog(char const *live, char const *scandir)
 	 * /run/66/log*/
 	memcpy(path,live,livelen) ;
 	memcpy(path+livelen,"log",3) ;
-	path[livelen + 3] = 0 ;
-	log_perm(log_user,&uid,&gid) ;
-	VERBO3 strerr_warnt4x("create directory: ",path,"/",OWNERSTR) ;
-	r = dir_create_under(path,OWNERSTR,02750) ;
-	if (r < 0) strerr_diefu3sys(111,"create: ",path,OWNERSTR) ;
-	/** chown /run/66/log/<uid>*/
 	path[livelen + 3] = '/' ;
 	memcpy(path + livelen + 4,OWNERSTR,ownerlen) ;
 	path[livelen + 4 + ownerlen] = 0 ;
+	VERBO3 strerr_warnt2x("create directory: ",path) ;
+	r = dir_create_parent(path,02750) ;
+	if (!r) strerr_diefu2sys(111,"create: ",path) ;
+	log_perm(log_user,&uid,&gid) ;
 	if (chown(path,uid,gid) < 0)
 		strerr_diefu2sys(111,"chown: ",path) ;
 	auto_chmod(path,02755) ;
@@ -549,7 +549,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		if (envdir.s[0] != '/')
 			strerr_dief3x(110,"environment: ",envdir.s," must be an absolute path") ;
 		
-		if (!build_env(envdir.s,envp,newenv,TMPENV)) strerr_diefu2x(111,"build environment with: ",envdir.s) ;
+		if (!environ_get_envfile_n_merge(envdir.s,envp,newenv,TMPENV)) strerr_diefu2x(111,"build environment with: ",envdir.s) ;
 		genv = newenv ;
 	}
 	else genv = envp ;
