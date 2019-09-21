@@ -32,7 +32,9 @@
 
 
 *-l* _log_user_
-	The catch-all logger will run as the _log_user_ user. Default is *root*.
+	The catch-all logger will run as the _log_user_ user. Default is *%%s6log_user%%*.
+	The default can also be changed at compile-time by passing the
+	\--with-s6-log-user=_user_ option to *./configure*.
 
 *-e* _environment_
 	_stage 1_ init empties its environment before spawning _rc.init_ skeleton
@@ -153,6 +155,11 @@ This is launched when a shutdown is requested also called _stage3_. It invoke
 	  *66-all*(1) to bring down all services of _TREE_. An absolute path is
 	  expected as value pointing to the name of the file to run.
 
+	- *RCSHUTDOWNFINAL=*/etc/66/rc.shutdown_++
+This file will be run at the very end of the shutdown procedure, after 
+      all processes have been killed and all filesystems have been unmounted,
+      just before the system is rebooted or the power turned off.
+	
 	- *UMASK=*_0022_++
 Set the value of the initial file umask for all the starting processes, in
 	  octal.

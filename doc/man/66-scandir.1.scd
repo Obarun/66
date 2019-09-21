@@ -58,7 +58,9 @@ explicitely set then the user of the current process will be used instead.
 	at during the boot process.
 
 *-L* _log_user_
-	Will run as the catch-all logger as _log_user_ user. Default is root.
+	Will run as the catch-all logger as _log_user_ user. Default is *%%s6log_user%%*.
+	The default can also be changed at compile-time by passing the
+	\--with-s6-log-user=_user_ option to *./configure*.
 
 *-e* _environment_
 	An absolute path. Merge the current environment variables of _scandir_

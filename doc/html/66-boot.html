@@ -48,7 +48,7 @@
 		</li>
 			 
 		<li> 
-			<tt><b>-l <em>log_user</em></b></tt> : the catch&#8209;all logger will run as <em>log_user</em>. Default is <tt>root</tt>. 
+			<tt><b>-l <em>log_user</em></b></tt> : the catch&#8209;all logger will run as <em>log_user</em>. Default is <tt>%%s6log_user%%</tt>. The default can also be changed at compile-time by	passing the <tt>&#8209;&#8209;with&#8209;s6&#8209;log&#8209;user=<em>user</em></tt> option to <tt>./configure</tt>.
 		</li>
 		<li> 
 			<tt><b>-e <em>environment</em></b></tt> : an absolute path.  <em>stage 1 init</em> empties its environment before spawning the <em>rc.init</em> skeleton file and executing into <a href="66-scandir.html">66&#8209;scandir</a> in order to prevent kernel environment variables from leaking into the process tree. The <em>PATH</em> variable is the only variable set for the environment. If you want to define additional environment variables then use this option. Behaves the same as <a href="66-scandir.html">66&#8209;scandir <tt>-e</tt></a>.
@@ -199,7 +199,9 @@
 				<li>
 					<tt><b>RCSHUTDOWN=%%skel%%/rc.shutdown</b></tt> : an absolute path. This is launched when a shutdown is requested also called <em>stage3</em>. It invokes <a href="66-all">66&#8209;all</a> to bring down all services of <em>TREE</em>.
 				</li>
-
+                <li>
+					<tt><b>RCSHUTDOWNFINAL=%%skel%%/rc.shutdown.final</b></tt> : an absolute path. This file will be run at the very end of the shutdown procedure, after all processes have been killed and all filesystems have been unmounted, just before the system is rebooted or the power turned off.
+				</li>
 				<li>
 					<tt><b>UMASK=0022</b></tt> : sets the value of the initial file umask for all starting processes in octal.
 				</li>

@@ -137,6 +137,7 @@ $(DESTDIR)$(datarootdir)/doc/$(package)/%.html: doc/html/%.html
 		-e 's,%%service_user%%,$(service_user),g' \
 		-e 's,%%service_userconf%%,$(service_userconf),g' \
 		-e 's,%%skel%%,$(skel),g' \
+        -e 's,%%s6log_user%%,$(s6log_user),g' \
 		-e 's,%%user_log%%,$(user_log),g' $< > $@
 		
 		
@@ -208,6 +209,7 @@ man: $(ALL_MAN:%.scd=%)
 		-e 's,%%service_sys%%,$(service_adm),' \
 		-e 's,%%system_log%%,$(system_log),' \
 		-e 's,%%sysconfdir%%,$(skel),' \
+        -e 's,%%s6log_user%%,$(s6log_user),' \
 		-e 's,%%service_user%%,$(service_user),' $@.scd | scdoc > $@
 	
 install-man:
