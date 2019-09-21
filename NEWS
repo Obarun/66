@@ -1,5 +1,36 @@
 Changelog for 66
 
+In 0.2.1.0
+----------
+
+    - Bugs fix.
+   
+    - A synchronization is now made on reboot even with force option.
+   
+    - The field @name has no effects except for instantiated service but 
+    can be omitted. The name of the frontend file is took as name. 
+    In case of instantiated service, the field @name must contain the 
+    complete name of the frontend service file -- Refer to the frontend 
+    documentation page.
+    
+    - New skeleton file: rc.shutdown.final. This skeleton file will be run
+    at the very end of the shutdown procedure, after all processes have 
+    been killed and all filesystems have been unmounted, just before the 
+    system is rebooted or the power turned off.
+    This script normally remains empty.
+   
+    - Extra tools has removed and provided as an independent programs at
+    https://framagit.org/Obarun/66-tools.git except for 66-echo and 
+    66-unmountall program which are a dependent part of 66.
+   
+    - The account to run the s6-log program at the associate service logger
+    can be set at compilation time by the --with-s6-log-user=USER options.
+    The default is root. Obviously, the @runas field at the [logger] section
+    overwritte it.
+    This options set the account to run the uncaught-logs too. Also,
+    this option can be overwritten with the '-l' option at 66-boot invocation
+    and the '-L' option at 66-scandir invocation. 
+    
 In 0.2.0.4
 ----------
 	
