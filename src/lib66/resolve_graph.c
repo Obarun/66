@@ -14,12 +14,16 @@
  
 #include <66/resolve.h>
 
+#include <string.h>
+#include <stdint.h>
+
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
 #include <oblibs/error2.h>
 #include <oblibs/sastr.h>
 
 #include <skalibs/genalloc.h>
+#include <skalibs/stralloc.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
@@ -116,9 +120,9 @@ int ss_resolve_graph_publish(ss_resolve_graph_t *graph,unsigned int reverse)
 		
 		if (genalloc_s(ss_resolve_t,&graph->name)[a].ndeps)
 		{
-			sa.len = 0 ;
+			sa.len = 0 ; 
 			if (!sastr_clean_string(&sa, genalloc_s(ss_resolve_t,&graph->name)[a].sa.s +  genalloc_s(ss_resolve_t,&graph->name)[a].deps)) goto err ;
-			for (; b < sa.len ; b += strlen(sa.s + b) +1)
+			for (b = 0 ; b < sa.len ; b += strlen(sa.s + b) + 1)
 			{
 				char *deps = sa.s + b ;
 				int r = ss_resolve_search(&graph->name,deps) ;
