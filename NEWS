@@ -1,5 +1,10 @@
 Changelog for 66
 
+In 0.2.1.1
+----------
+
+    - Hot fix: fix the build of the service dependencies graph.
+
 In 0.2.1.0
 ----------
 
