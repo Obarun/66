@@ -146,7 +146,9 @@ int section_get_range(section_t *sasection,stralloc *src)
 	wild_zero_all(&MILL_GET_SECTION_NAME) ;
 	r = mill_string(&cp,src,&MILL_GET_LINE) ;
 	if (r == -1 || !r) goto err ;
-	if (!sastr_rebuild_in_nline(&cp)) goto err ;
+	if (!sastr_rebuild_in_nline(&cp) ||
+	!stralloc_0(&cp)) goto err ;
+
 	while (pos  < cp.len)
 	{
 		if(secname.len && n)
@@ -829,7 +831,6 @@ int read_svfile(stralloc *sasv,char const *name,char const *src)
 		VERBO3 strerr_warnw2x(svtmp," is empty") ;
 		return 0 ;
 	}
-	sasv->len = 0 ;
 	
 	r = openreadfileclose(svtmp,sasv,filesize) ;
 	if(!r)

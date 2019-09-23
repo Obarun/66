@@ -141,6 +141,8 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list, char const *sv,un
 	else if (!r) return 0 ;
 	
 	sv_alltype sv_before = SV_ALLTYPE_ZERO ;
+	sasv->len = 0 ;
+
 	insta = instance_check(svname) ;
 	if (!insta) 
 	{
