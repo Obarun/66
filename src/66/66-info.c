@@ -336,7 +336,7 @@ int info_cmpnsort(stralloc *sa)
 
 int info_walk(ss_resolve_t *res,char const *src,int reverse, depth_t *depth)
 {
-	size_t pos = 0 ;
+	size_t pos = 0, idx = 0 ;
 	stralloc sadeps = STRALLOC_ZERO ;
 	ss_resolve_t dres = RESOLVE_ZERO ;
 	
@@ -345,9 +345,9 @@ int info_walk(ss_resolve_t *res,char const *src,int reverse, depth_t *depth)
 	
 	if (!sastr_clean_string(&sadeps,res->sa.s + res->deps)) goto err ;
 	if (reverse) stralloc_reverse(&sadeps) ;
-	for(; pos < sadeps.len ; pos += strlen(sadeps.s + pos) +1 )
+	for(; pos < sadeps.len ; pos += strlen(sadeps.s + pos) + 1,idx++ )
 	{	
-		int last =  pos + 1 < res->ndeps  ? 0 : 1 ;		
+		int last =  idx + 1 < res->ndeps  ? 0 : 1 ;		
 		char *name = sadeps.s + pos ;
 		
 		if (!ss_resolve_check(src,name)) goto err ;	
