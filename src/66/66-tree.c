@@ -107,6 +107,11 @@ static void auto_check(char *dst,char const *str,size_t baselen,mode_t mode)
 	if (!scan_mode(dst,mode)) auto_dir(dst,0755) ;
 }
 
+static void auto_check_one(char *dst,mode_t mode)
+{
+	if (!scan_mode(dst,mode)) auto_dir(dst,0755) ;
+}
+
 static void inline auto_stralloc(stralloc *sa,char const *str)
 {
 	if (!stralloc_cats(sa,str)) strerr_diefu1sys(111,"append stralloc") ;
@@ -135,40 +140,34 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t own
 	/** base is /var/lib/66 or $HOME/.66*/
 	/** this verification is made in case of 
 	 * first use of 66-*** tools */
-	r = scan_mode(dst,S_IFDIR) ;
-	if (r < 0) strerr_diefu2x(111,"invalid directory: ",dst) ;
-	
-	if(!r)
+	auto_check(dst,SS_SYSTEM,baselen,0755) ;
+	/** create extra directory for service part */
+	if (!owner)
 	{
-		VERBO3 strerr_warnt3x("create directory: ",dst,SS_SYSTEM) ;
-		auto_create(dst,SS_SYSTEM,baselen,0755) ;
-		/** create extra directory for service part */
-		if (!owner)
-		{
-			auto_dir(SS_LOGGER_SYSDIR,0755) ;
-			auto_dir(SS_SERVICE_SYSDIR,0755) ;
-			auto_dir(SS_SERVICE_ADMDIR,0755) ;
-			auto_dir(SS_SERVICE_ADMCONFDIR,0755) ;	
-		}
-		else
-		{
-			size_t extralen ;
-			stralloc extra = STRALLOC_ZERO ;
-			if (!set_ownerhome(&extra,owner))
-				strerr_diefu1sys(111,"set home directory") ;
-			
-			extralen = extra.len ;
-			auto_stralloc_0(&extra,SS_LOGGER_USERDIR) ;
-			auto_dir(extra.s,0755) ;
-			extra.len = extralen ;
-			auto_stralloc_0(&extra,SS_SERVICE_USERDIR) ;
-			auto_dir(extra.s,0755) ;
-			extra.len = extralen ;
-			auto_stralloc_0(&extra,SS_SERVICE_USERCONFDIR) ;
-			auto_dir(extra.s,0755) ;
-			stralloc_free(&extra) ;
-		}
+		auto_check_one(SS_LOGGER_SYSDIR,0755) ;
+		auto_check_one(SS_SERVICE_SYSDIR,0755) ;
+		auto_check_one(SS_SERVICE_ADMDIR,0755) ;
+		auto_check_one(SS_SERVICE_ADMCONFDIR,0755) ;
 	}
+	else
+	{
+		size_t extralen ;
+		stralloc extra = STRALLOC_ZERO ;
+		if (!set_ownerhome(&extra,owner))
+			strerr_diefu1sys(111,"set home directory") ;
+		
+		extralen = extra.len ;
+		auto_stralloc_0(&extra,SS_LOGGER_USERDIR) ;
+		auto_check_one(extra.s,0755) ;
+		extra.len = extralen ;
+		auto_stralloc_0(&extra,SS_SERVICE_USERDIR) ;
+		auto_check_one(extra.s,0755) ;
+		extra.len = extralen ;
+		auto_stralloc_0(&extra,SS_SERVICE_USERCONFDIR) ;
+		auto_check_one(extra.s,0755) ;
+		stralloc_free(&extra) ;
+	}
+	
 	auto_check(dst,SS_TREE_CURRENT,baselen,0755) ;
 	auto_string(dst,SS_SYSTEM,baselen) ;
 	auto_check(dst,SS_BACKUP,baselen + SS_SYSTEM_LEN,0755) ;
