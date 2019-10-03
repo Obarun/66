@@ -1,5 +1,5 @@
 /* 
- * 66-intree.c
+ * 66-inservice.c
  * 
  * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
  * 
@@ -50,8 +50,6 @@ unsigned int VERBOSITY = 1 ;
 static unsigned int REVERSE = 0 ;
 unsigned int MAXDEPTH = 1 ;
 static unsigned int GRAPH = 0 ;
-static uid_t OWNER ;
-static char OWNERSTR[UID_FMT] ;
 static char const *const *ENVP ;
 static unsigned int nlog = 20 ;
 static stralloc src = STRALLOC_ZERO ;
@@ -526,6 +524,9 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	size_t pos, newlen ;
 	int what[MAXOPTS] = { 0 } ;
 	
+	uid_t owner ;
+	char ownerstr[UID_FMT] ;
+	
 	ss_resolve_t res = RESOLVE_ZERO ;
 	stralloc satree = STRALLOC_ZERO ;
 	
@@ -595,9 +596,9 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		what[i] = -1 ;
 	}
 	
-	OWNER = getuid() ;
-	size_t ownerlen = uid_fmt(OWNERSTR,OWNER) ;
-	OWNERSTR[ownerlen] = 0 ;
+	owner = getuid() ;
+	size_t ownerlen = uid_fmt(ownerstr,owner) ;
+	ownerstr[ownerlen] = 0 ;
 	
 	info_field_align(buf,fields,field_suffix,MAXOPTS) ;
 		
@@ -607,7 +608,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		STYLE = &graph_utf8;
 	}
 	
-	if (!set_ownersysdir(&src,OWNER)) strerr_diefu1sys(111, "set owner directory") ;
+	if (!set_ownersysdir(&src,owner)) strerr_diefu1sys(111, "set owner directory") ;
 	if (!stralloc_cats(&src,SS_SYSTEM) ||
 	!stralloc_0(&src))  exitstralloc("main") ;
 	src.len-- ;
