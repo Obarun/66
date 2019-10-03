@@ -10,7 +10,9 @@
 66-stop			    0755
 66-svctl		    0755
 66-all			    0755
-66-info			    0755
+66-info             0755
+66-intree           0755
+66-inservice        0755
 66-env			    0755
 66-boot			    0755
 66-shutdown		    0755

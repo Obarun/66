@@ -85,29 +85,10 @@ struct ss_resolve_graph_s
 typedef enum visit_e visit ;
 enum visit_e
 {
-	WHITE = 0, 
-	GRAY, 
-	BLACK
+	SS_WHITE = 0, 
+	SS_GRAY, 
+	SS_BLACK
 } ; 
-
-#define UTF_V   "\342\224\202"  /* U+2502, Vertical line drawing char */
-#define UTF_VR  "\342\224\234"  /* U+251C, Vertical and right */
-#define UTF_H   "\342\224\200"  /* U+2500, Horizontal */
-#define UTF_UR  "\342\224\224"  /* U+2514, Up and right */
-
-typedef struct ss_resolve_graph_style_s ss_resolve_graph_style ;
-struct ss_resolve_graph_style_s
-{
-	const char *tip;
-	const char *last;
-	const char *limb;
-	int indent;
-} ;
-
-extern unsigned int MAXDEPTH ;
-extern ss_resolve_graph_style *STYLE ; 
-extern ss_resolve_graph_style graph_utf8 ;
-extern ss_resolve_graph_style graph_default ;
 
 extern ss_resolve_t const ss_resolve_zero ;
 extern void ss_resolve_init(ss_resolve_t *res) ;

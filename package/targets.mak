@@ -12,6 +12,8 @@ BIN_TARGETS := \
 66-svctl \
 66-all \
 66-info \
+66-intree \
+66-inservice \
 66-env \
 66-boot \
 66-shutdown \

@@ -1,0 +1,159 @@
+66-inservice(1)
+
+# NAME
+
+66-inservice - Display information about services.
+
+# SYNOPSYS
+
+66-inservice [ *-h* ] [ *-v* _verbosity_ ] [ *-c* ] [ *-o* _name,intree,enabled,..._ ] [ *-g* ] [ *-d* _depth_ ] [ *-r* ] [ *-t* _tree_ ] [ *-p* _nline_ ] _service_
+
+# DESCRIPTION
+
+*66-inservice* displays detailed information about a specific _service_.
+
+# OPTIONS
+
+*-h*
+	Prints this help.
+
+*-v* _verbosity_
+	Increases/decreases the verbosity of the command.++
+	*1* : (Default) Only print error messages.++
+	*2* : Also print warning messages.++
+	*3* : Also print debugging messages.
+
+*-c*
+	enable colorization.
+
+*-o*
+	comma separated list of field to display. If the option is not past,
+	*66-inservice* will display all field.
+
+*-g*
+	shows the dependency list of _tree_ as graph instead of list.
+
+*-d* _depth_
+	Limits the depth of the dependency list visualisation; defaults to 1.
+	This implies the *-g* option.
+
+*-r*
+	Shows the dependency list of _tree_ in reverse mode.
+
+*-t* _tree_
+	only search the _service_ at the specified _tree_.
+
+*-p* _nline_
+	prints the _nline_ last lines from the log file of the _service_.
+	Default to 20.
+
+## VALID FIELD FOR -g OPTION
+
+*name*
+	Displays the name of the _service_.
+
+*intree*
+	Displays the _service_'s tree name.
+
+*status*
+	Displays the status of the _service_.
+
+*type*
+	Displays the type of the _service_.
+
+*description*
+	Displays the description of the _service_.
+
+*intree*
+	Displays the source of the _service_'s frontend file.
+
+*live*
+	Displays the live _service_'s directory.
+
+*depends*
+	Displays the _service_'s dependencies.
+
+*start*
+	Displays the _service_'s start script.
+
+*stop*
+	Displays the _service_'s stop script.
+
+*envat*
+	Displays the source of the environment file.
+
+*envfile*
+	Displays the contain of the environment file.
+
+*logname*
+	Displays the logger's name.
+
+*logdst*
+	Displays the logger's destination.
+
+*logfile*
+	Displays the contain of the log file.
+
+# COMMAND AND OUTPUT EXAMPLE
+
+The command "66-inservice 00" as root user on the _Obarun_ default system
+displays the following where *00* is service contained in the tree *boot*:
+
+```
+Name               : 00
+In tree            : boot
+Status             : enabled, nothing to display
+Type               : bundle
+Description        : Set the hostname and mount filesystem
+Source             : %%service_packager%%/boot/mount/00
+Live               : %%livedir%%/tree/0/boot/servicedirs/00
+Depends on         : system-hostname  mount-run  populate-run  mount-tmp
+                     populate-tmp  mount-proc  mount-sys  populate-sys
+                     mount-dev  mount-pts  mount-shm  populate-dev
+                     mount-cgroups
+Start script       : nothing to display
+Stop script        : nothing to display
+Environment source : environment was not set
+Environment file   : environment was not set
+Log name           : logger doesn't exist
+Log destination    : logger doesn't exist
+Log file           : logger doesn't exist
+    
+```
+
+By default the dependency graph is rendered in order of execution. In 
+this example the *oneshot system-hostname* is the first executed service and 
+*mount-cgroups* is the last finished. You can reverse the rendered order with
+the *-r* option.
+
+You can display the status and depends field and only these fields of a 
+service using the command "66-inservice -o status,depends -g connmand"
+where the dependency list is diplayed as a graph:
+
+```
+Status             : enabled, up (pid 938) 34652 seconds
+Depends on         : /
+                     ├─(933,Enabled,longrun) dbus
+                     └─(929,Enabled,longrun) connmand-log
+
+```
+You can display the status,log file and log destination and only these fields
+of a service using the command "66-inservice -o status,logdst,logfile -g dbus":
+
+```
+
+Status             : enabled, up (pid 933) 34852 seconds, ready 34852 seconds
+Log destination    : %%system_log%%/dbus
+Log file           :
+2019-10-03 16:16:05.246991500  dbus-daemon[933]: [system] Rejected send 
+message, 4 matched rules; type="method_call", sender=":1.3" (uid=1000 
+pid=1226 comm="connman-gtk --tray ") interface="net.connman.Technology" 
+member="Scan" error name="(unset)" requested_reply="0" destination=":1.0"
+(uid=0 pid=938 comm="connmand -n --nobacktrace --nodnsproxy ")
+2019-10-03 16:16:35.256146500  dbus-daemon[933]: [system] Rejected send 
+message, 4 matched rules; type="method_call", sender=":1.3" (uid=1000 
+pid=1226 comm="connman-gtk --tray ") interface="net.connman.Technology" 
+member="Scan" error name="(unset)" requested_reply="0" destination=":1.0"
+(uid=0 pid=938 comm="connmand -n --nobacktrace --nodnsproxy ")
+
+```

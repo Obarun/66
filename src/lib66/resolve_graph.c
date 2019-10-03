@@ -28,20 +28,6 @@
 #include <66/constants.h>
 #include <66/utils.h>
 
-ss_resolve_graph_style graph_utf8 = {
-	UTF_VR UTF_H,
-	UTF_UR UTF_H,
-	UTF_V " ",
-	2
-} ;
-
-ss_resolve_graph_style graph_default = {
-	"|-",
-	"`-",
-	"|",
-	2
-} ;
-
 void ss_resolve_graph_ndeps_free(ss_resolve_graph_ndeps_t *graph)
 {
 	genalloc_free(uint32_t,&graph->ndeps) ;
@@ -59,10 +45,10 @@ int ss_resolve_dfs(ss_resolve_graph_t *graph, unsigned int idx, visit *c,unsigne
 	int cycle = 0 ;
 	unsigned int i, data ;
 	unsigned int len = genalloc_len(uint32_t,&genalloc_s(ss_resolve_graph_ndeps_t,&graph->cp)[idx].ndeps) ;
-	if (c[idx] == GRAY) return 1 ;
-	if (c[idx] == WHITE)
+	if (c[idx] == SS_GRAY) return 1 ;
+	if (c[idx] == SS_WHITE)
 	{
-		c[idx] = GRAY ;
+		c[idx] = SS_GRAY ;
 		for (i = 0 ; i < len ; i++)
 		{
 			data = genalloc_s(uint32_t,&genalloc_s(ss_resolve_graph_ndeps_t,&graph->cp)[idx].ndeps)[i] ;
@@ -77,7 +63,7 @@ int ss_resolve_dfs(ss_resolve_graph_t *graph, unsigned int idx, visit *c,unsigne
 				goto end ; 
 			} 
 		}
-		c[idx] = BLACK ;
+		c[idx] = SS_BLACK ;
 		genalloc_insertb(ss_resolve_t, &graph->sorted, 0, &genalloc_s(ss_resolve_t,&graph->name)[idx],1) ; 
 	}
 	end:
@@ -89,12 +75,12 @@ int ss_resolve_graph_sort(ss_resolve_graph_t *graph)
 	unsigned int len = genalloc_len(ss_resolve_graph_ndeps_t,&graph->cp) ;
 	visit c[len] ;
 	unsigned int i, ename = 0, edeps = 0 ;
-	for (i = 0 ; i < len; i++) c[i] = WHITE ;
+	for (i = 0 ; i < len; i++) c[i] = SS_WHITE ;
 	if (!len) return 0 ;
 
 	for (i = 0 ; i < len ; i++)
 	{
-		if (c[i] == WHITE && ss_resolve_dfs(graph,genalloc_s(ss_resolve_graph_ndeps_t,&graph->cp)[i].idx,c,&ename,&edeps))
+		if (c[i] == SS_WHITE && ss_resolve_dfs(graph,genalloc_s(ss_resolve_graph_ndeps_t,&graph->cp)[i].idx,c,&ename,&edeps))
 		{
 			int data = genalloc_s(uint32_t,&genalloc_s(ss_resolve_graph_ndeps_t,&graph->cp)[ename].ndeps)[edeps] ;
 			char *name = genalloc_s(ss_resolve_t,&graph->name)[ename].sa.s + genalloc_s(ss_resolve_t,&graph->name)[ename].name ;
