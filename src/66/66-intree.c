@@ -162,7 +162,7 @@ static void info_display_init(char const *field,char const *treename)
 	!stralloc_cats(&live,"/init") ||
 	!stralloc_0(&live)) exitstralloc("display_init") ;
 	if (!access(live.s, F_OK)) init = 1 ;
-	
+
 	info_display_field_name(field) ;
 	if (!bprintf(buffer_1," %s%s%s",init ? info_color->valid : info_color->warning, init ? "yes":"no",info_color->off)) 
 		strerr_diefu1sys(111,"write to stdout") ;
@@ -358,7 +358,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 {
 	unsigned int legacy = 1 ;
 	
-	size_t pos, newlen ;
+	size_t pos, newlen, livelen ;
 	int what[MAXOPTS] = { 0 } ;
 	
 	info_color = &no_color ;
@@ -442,8 +442,10 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	}
 	
 	if (!stralloc_cats(&src,"/")) exitstralloc("main") ;
-	newlen = src.len ;
 	
+	newlen = src.len ;
+	livelen = live.len ;
+
 	if (treename)
 	{
 		
@@ -463,6 +465,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 			for(pos = 0 ; pos < satree.len ; pos += strlen(satree.s + pos) +1 )
 			{
 				src.len = newlen ;
+				live.len = livelen ;
 				char *name = satree.s + pos ;
 				info_display_all(name,what) ;
 				if (buffer_puts(buffer_1,"\n") == -1) 
