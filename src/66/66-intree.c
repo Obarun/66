@@ -210,26 +210,17 @@ static void info_get_graph_src(ss_resolve_graph_t *graph,char const *src,unsigne
 	size_t srclen = strlen(src), pos ;
 	stralloc sa = STRALLOC_ZERO ;
 	ss_resolve_t res = RESOLVE_ZERO ;
-	char solve[srclen + 1 + SS_SYM_SVC_LEN + SS_SRC_LEN + 1] ;
+	char solve[srclen + SS_RESOLVE_LEN + 1] ;
 	memcpy(solve,src,srclen) ;
-	memcpy(solve + srclen,"/" SS_SYM_DB, SS_SYM_DB_LEN + 1) ;
-	memcpy(solve + srclen + 1 + SS_SYM_DB_LEN,SS_SRC,SS_SRC_LEN) ;
-	solve[srclen + 1 + SS_SYM_DB_LEN + SS_SRC_LEN] = 0 ;
+	memcpy(solve + srclen, SS_RESOLVE,SS_RESOLVE_LEN) ;
+	solve[srclen + SS_RESOLVE_LEN] = 0 ;
 	
-	if (!sastr_dir_get(&sa,solve,"",S_IFDIR))
-		strerr_diefu2sys(111,"get source service file at: ",solve) ;
-	
-	memcpy(solve + srclen,"/" SS_SYM_SVC,SS_SYM_SVC_LEN + 1) ;
-	solve[srclen + 1 + SS_SYM_SVC_LEN] = 0 ;
-	
-	if (!sastr_dir_get(&sa,solve,"",S_IFDIR)) 
+	if (!sastr_dir_get(&sa,solve,"",S_IFREG))
 		strerr_diefu2sys(111,"get source service file at: ",solve) ;
 	
 	for (pos = 0 ;pos < sa.len; pos += strlen(sa.s + pos) + 1)
 	{
 		char *name = sa.s + pos ;
-		if (!ss_resolve_check(src,name))
-			strerr_diefu2x(111,"get resolve of: ",name) ;
 		if (!ss_resolve_read(&res,src,name))
 			strerr_diefu2x(111,"read resolve file of: ",name) ;
 		if (!ss_resolve_graph_build(graph,&res,src,reverse)) 
