@@ -18,7 +18,7 @@
 	<p>
 		The <a href="https://skarnet.org/software/s6">s6</a> and <a href="https://skarnet.org/software/s6">s6-rc</a> programs each handle and use several kinds of services and different files. It is quite complex to understand and manage the relationship between all those files and services. If you're interested in the details you should read <a href="https://skarnet.org/software/s6/servicedir.html">the documentation for the s6 servicedir</a> and also about <a href="https://wiki.obarun.org/doku.php?id=s6services"><em>classic</em></a>, <a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html"> <em>oneshot</em>, <em>longrun</em> and <em>bundle</em> services</a> on Obarun. The frontend service file of 66 tools allows you to deal with all these different services in a centralized manner in one single place.
 		<br>
-		By default 66 tools expects to find any service files in <tt>/etc/66/service</tt> although this can be changed at compile time by passing the <tt>--with-service-path=<em>DIR</em></tt> option to <tt>./configure.</tt>
+		By default 66 tools expects to find any service files in <tt>%%service_system%%</tt> although this can be changed at compile time by passing the <tt>--with-service-path=<em>DIR</em></tt> option to <tt>./configure.</tt>
 	</p>
 
 	<p>
