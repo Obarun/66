@@ -19,9 +19,9 @@
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++
-	*1* : (Default) Only print error messages.++
-	*2* : Also print warning messages.++
-	*3* : Also print debugging messages.
+	*1* : (Default) Only prints error messages.++
+	*2* : Also prints warning messages.++
+	*3* : Also prints debugging messages.
 
 *-l* _live_
 	Changes the supervision directory of _service_ to _live_.
@@ -56,7 +56,7 @@
 	Displays the name of the _tree_.
 
 *init*
-	Display a boolean value of the initialization state.
+	Displays a boolean value of the initialization state.
 
 *enabled*
 	Displays a boolean value of the enable state.
@@ -69,7 +69,7 @@
 
 # COMMAND AND OUTPUT EXAMPLE
 
-The command "66-intree boot" as root user on the _Obarun_ default system
+The command "66-intree boot" as root user on _Obarun_'s default system
 displays the following where *boot* is the tree used to properly boot 
 the machine:
 
@@ -91,18 +91,18 @@ Contains    : tty12  system-hostname  mount-run  populate-run  mount-tmp
               all-Runtime  All
 ```
 
-The field *name* give you the name of the _tree_.
+The field *name* gives you the name of the _tree_.
 
-The field *Initialized* tells if the _tree_ was initialized with "66-init" tool.
+The field *Initialized* tells you if the _tree_ was initialized with "66-init" tool.
 
 The field *Enabled* reveals the state of the tree -- see "66-tree -E".
 
-The field *Current* tells if the _tree_ is the current one or not -- see
+The field *Current* tells you if the _tree_ is the current one or not -- see
 "66-tree -c".
 
-The field *Contains* give you a list of all services enabled in the _tree_.
+The field *Contains* gives you a list of all services enabled in the _tree_.
 
-You can display the contain list as a graph and only these fields using 
+You can display the contents list as a graph and only these fields using 
 the command "66-intree -o contains -g boot":
 
 ```
@@ -156,14 +156,14 @@ Contains    : /
               └─(0,Enabled,bundle) All
 
 ```
-For each service the first number found between *()* bracket is the 
+For each service the first number found between *()* parentheses is the 
 corresponding pid of the service, the second one is the state of the 
-service, the type of the service is shown next to it. Finally the name 
-of the service is displayed.
+service, the type of the service is shown next to it, and finally the name 
+of the service is displayed after the parenthesis ')'.
 
-By default the dependency graph is rendered in order of execution. In 
+By default the dependency graph is rendered in the order of execution. In 
 this example the *classic tty12* is the first executed service and 
-*bundle All* is the last finished. You can reverse the rendered order with
+*bundle All* is the last before it finishes. You can reverse the rendered order with
 the *-r* option.
 
 You can display the name and current field and only these fields for each 

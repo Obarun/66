@@ -34,27 +34,27 @@
 		</li>
         <li>
 			<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>&nbsp;: increases/decreases 
-			the verbosity of the command. <tt>1(Default)</tt>: Only print 
-			error messages. <tt>2</tt>: Also print warning messages. 
-			<tt>3</tt>: Also print debugging messages.
+			the verbosity of the command. <tt>1(Default)</tt>: Only prints 
+			error messages. <tt>2</tt>: Also prints warning messages. 
+			<tt>3</tt>: Also prints debugging messages.
 		</li>
         <li> 
 			<tt>-c&nbsp;</tt>&nbsp;: enable colorization.
 		</li>
 		<li> 
-			<tt>-o&nbsp;</tt>&nbsp;: comma separated list of field to display. If this option is not past, <tt>66-inservice</tt> will display all field.
+			<tt>-o&nbsp;</tt>&nbsp;: comma separated list of field to display. If this option is not past, <tt>66-inservice</tt> will display all fields.
 		</li>
 		<li>
 			<tt>-g&nbsp;</tt>&nbsp;: shows the dependency list of <em>service</em> as graph instead of list.
 		</li>
         <li> 
-			<tt>-d&nbsp;<em>depth</em>&nbsp;</tt>&nbsp;: limits the depth of the dependency list visualisation; defaults to 1. This is implies <tt>-g</tt> options.
+			<tt>-d&nbsp;<em>depth</em>&nbsp;</tt>&nbsp;: limits the depth of the dependency list visualisation; defaults to 1. This implies <tt>-g</tt> option.
 		</li>
         <li>
-			<tt>-r&nbsp;</tt>&nbsp;: shows the dependency list of <em>service</em> in reverse mode.
+			<tt>-r&nbsp;</tt>&nbsp;: shows the dependency list of <em>services</em> in reverse mode.
 		</li>
          <li> 
-			<tt>-t&nbsp;<em>tree</em>&nbsp;</tt>&nbsp;: only search the <em>service</em> at the specified <em>tree</em>.
+			<tt>-t&nbsp;<em>tree</em>&nbsp;</tt>&nbsp;: only searches the <em>service</em> at the specified <em>tree</em>.
 		</li>
 
         <li>
@@ -72,10 +72,10 @@
             <tt>intree</tt>&nbsp;: displays the <em>service's</em> tree name.
         </li>
         <li>
-            <tt>status</tt>&nbsp;: displays the status of the <em>service</em>.
+            <tt>status</tt>&nbsp;: displays the status.
         </li>
         <li>
-            <tt>type</tt>&nbsp;: displays the type of the <em>service</em>.
+            <tt>type</tt>&nbsp;: displays the <em>service</em> type.
         </li>
         <li>
             <tt>description</tt>&nbsp;: displays the description.
@@ -99,7 +99,7 @@
             <tt>envat</tt>&nbsp;: displays the source of the environment file.
         </li>
         <li>
-            <tt>envfile</tt>&nbsp;: displays the contains of the environment file.
+            <tt>envfile</tt>&nbsp;: displays the contents of the environment file.
         </li>
         <li>
             <tt>logname</tt>&nbsp;: displays the logger's name.
@@ -108,15 +108,14 @@
             <tt>logdst</tt>&nbsp;: displays the logger's destination.
         </li>
         <li>
-            <tt>logfile</tt>&nbsp;: displays the contain of the log file.
+            <tt>logfile</tt>&nbsp;: displays the contents of the log file.
         </li>
     
     </ul>
 	
 <h2>Command and output examples</h2>
 	
-	<p>The command <tt>66-inservice 00</tt> as root user on the <em>Obarun</em> default system displays the following where <em>00</em>
-	is a service contained in the tree <em>boot</em>:
+	<p>The command <tt>66-inservice 00</tt> as root user on <em>Obarun's</em> default system displays the following where <em>00</em> is a service contained in the tree <em>boot</em>:
 	<pre>   
     Name               : 00
     In tree            : boot
@@ -137,8 +136,8 @@
 	</pre>
 	</p>
 	<p>
-		By default the dependency graph is rendered in order of execution. In this example the <em>'oneshot' system-hostname</em> is the first executed
-		service and <em>'oneshot' mount-cgroups</em> is the last finished. You can reverse the rendered order with the <tt>-r</tt> option.</p>
+		By default the dependency graph is rendered in the order of execution. In this example the <em>'oneshot' system-hostname</em> is the first executed
+		service and <em>'oneshot' mount-cgroups</em> is the last one when it finishes. You can reverse the rendered order with the <tt>-r</tt> option.</p>
 	</p>
 	
     <p>You can display the status and depends field and only these fields of a service using the command <tt>66-inservice -o status,depends -g connmand</tt> where the dependency list is diplayed as a graph:

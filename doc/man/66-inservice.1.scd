@@ -19,29 +19,29 @@
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++
-	*1* : (Default) Only print error messages.++
-	*2* : Also print warning messages.++
-	*3* : Also print debugging messages.
+	*1* : (Default) Only prints error messages.++
+	*2* : Also prints warning messages.++
+	*3* : Also prints debugging messages.
 
 *-c*
 	enable colorization.
 
 *-o*
 	comma separated list of field to display. If the option is not past,
-	*66-inservice* will display all field.
+	*66-inservice* will display all fields.
 
 *-g*
-	shows the dependency list of _tree_ as graph instead of list.
+	shows the dependency list of _service_ as graph instead of list.
 
 *-d* _depth_
 	Limits the depth of the dependency list visualisation; defaults to 1.
 	This implies the *-g* option.
 
 *-r*
-	Shows the dependency list of _tree_ in reverse mode.
+	Shows the dependency list of _service_ in reverse mode.
 
 *-t* _tree_
-	only search the _service_ at the specified _tree_.
+	only searches the _service_ at the specified _tree_.
 
 *-p* _nline_
 	prints the _nline_ last lines from the log file of the _service_.
@@ -56,10 +56,10 @@
 	Displays the _service_'s tree name.
 
 *status*
-	Displays the status of the _service_.
+	Displays the status.
 
 *type*
-	Displays the type of the _service_.
+	Displays the _service_ type.
 
 *description*
 	Displays the description of the _service_.
@@ -83,7 +83,7 @@
 	Displays the source of the environment file.
 
 *envfile*
-	Displays the contain of the environment file.
+	Displays the contents of the environment file.
 
 *logname*
 	Displays the logger's name.
@@ -92,11 +92,11 @@
 	Displays the logger's destination.
 
 *logfile*
-	Displays the contain of the log file.
+	Displays the contents of the log file.
 
 # COMMAND AND OUTPUT EXAMPLE
 
-The command "66-inservice 00" as root user on the _Obarun_ default system
+The command "66-inservice 00" as root user on _Obarun_'s default system
 displays the following where *00* is service contained in the tree *boot*:
 
 ```
@@ -121,9 +121,9 @@ Log file           : logger doesn't exist
     
 ```
 
-By default the dependency graph is rendered in order of execution. In 
+By default the dependency graph is rendered in the order of execution. In 
 this example the *oneshot system-hostname* is the first executed service and 
-*mount-cgroups* is the last finished. You can reverse the rendered order with
+*mount-cgroups* is the last one when it finishes. You can reverse the rendered order with
 the *-r* option.
 
 You can display the status and depends field and only these fields of a 
