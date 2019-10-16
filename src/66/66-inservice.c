@@ -466,7 +466,7 @@ static void info_display_logfile(char const *field,ss_resolve_t *res)
 				}
 				stralloc_free(&log) ;
 			}
-		}
+		}else goto empty ;
 	}
 	else goto empty ;
 	
