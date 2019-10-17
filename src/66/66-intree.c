@@ -56,7 +56,7 @@ static void info_display_name(char const *field,char const *treename) ;
 static void info_display_init(char const *field,char const *treename) ;
 static void info_display_enabled(char const *field,char const *treename) ;
 static void info_display_current(char const *field,char const *treename) ;
-static void info_display_contains(char const *field,char const *treename) ;
+static void info_display_contents(char const *field,char const *treename) ;
 ss_resolve_graph_style *STYLE = &graph_default ;
 
 info_opts_map_t const opts_tree_table[] =
@@ -65,7 +65,7 @@ info_opts_map_t const opts_tree_table[] =
 	{ .str = "init", .func = &info_display_init, .id = 1 },
 	{ .str = "enabled", .func = &info_display_enabled, .id = 2 },
 	{ .str = "current", .func = &info_display_current, .id = 3 },
-	{ .str = "contains", .func = &info_display_contains, .id = 4 },
+	{ .str = "contents", .func = &info_display_contents, .id = 4 },
 	{ .str = 0, .func = 0, .id = -1 }
 } ;
 
@@ -86,9 +86,9 @@ static inline void info_help (void)
 "	-l: live directory\n"
 "	-c: use color\n"
 "	-o: comma separated list of field to display\n"
-"	-g: displays the contains field as graph\n"
-"	-d: limit the depth of the contains field recursion\n"
-"	-r: reserve the contains field\n" 
+"	-g: displays the contents field as graph\n"
+"	-d: limit the depth of the contents field recursion\n"
+"	-r: reserve the contents field\n" 
 "\n"
 "valid field for -o options are:\n"
 "\n"
@@ -96,7 +96,7 @@ static inline void info_help (void)
 "	init: displays a boolean value of the initialization state\n"
 "	enabled: displays a boolean value of the enable state\n"
 "	current: displays a boolean value of the current state\n"
-"	contains: displays the contain of the tree\n"
+"	contents: displays the contents of the tree\n"
 "\n"
 ;
 
@@ -231,7 +231,7 @@ static void info_get_graph_src(ss_resolve_graph_t *graph,char const *src,unsigne
 	ss_resolve_free(&res) ;
 }
 
-static void info_display_contains(char const *field, char const *treename)
+static void info_display_contents(char const *field, char const *treename)
 {
 	int r ;
 	size_t padding = 1 ;
@@ -365,7 +365,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		"Initialized",
 		"Enabled",
 		"Current",
-		"Contains" } ;
+		"Contents" } ;
 	
 	
 	stralloc satree = STRALLOC_ZERO ;

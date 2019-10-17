@@ -17,8 +17,8 @@
 #include <langinfo.h>
 #include <sys/types.h>
 #include <wchar.h>
-#include <unistd.h>//access
-#include <stdio.h>//access
+#include <unistd.h>
+//#include <stdio.h>
 
 #include <oblibs/sastr.h>
 #include <oblibs/error2.h>
@@ -111,9 +111,9 @@ static inline void info_help (void)
 "	-v: increase/decrease verbosity\n"
 "	-c: use color\n"
 "	-o: comma separated list of field to display\n"
-"	-g: displays the contains field as graph\n"
-"	-d: limit the depth of the contains field recursion\n"
-"	-r: reserve the contains field\n"
+"	-g: displays the contents field as graph\n"
+"	-d: limit the depth of the contents field recursion\n"
+"	-r: reserve the contents field\n"
 "	-t: only search service at the specified tree\n"
 "	-p: print n last lines of the log file\n"
 "\n"
@@ -130,10 +130,10 @@ static inline void info_help (void)
 "	start: displays the service's start script\n"
 "	stop: displays the service's stop script\n"
 "	envat: displays the source of the environment file\n"
-"	envfile: displays the contains of the environment file\n"
+"	envfile: displays the contents of the environment file\n"
 "	logname: displays the logger's name\n"
 "	logdst: displays the logger's destination\n"
-"	logfile: displays the contains of the log file\n"
+"	logfile: displays the contents of the log file\n"
 "\n"
 ;
 
