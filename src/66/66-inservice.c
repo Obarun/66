@@ -382,6 +382,7 @@ static void info_display_envfile(char const *field,ss_resolve_t *res)
 		char *src = res->sa.s + res->srconf ;
 		if (!file_readputsa(&sa,src,name)) strerr_diefu1sys(111,"read environment file") ;
 		info_display_nline(field,sa.s) ;
+		stralloc_free(&sa) ;
 		return ;
 	}
 	empty:
