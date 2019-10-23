@@ -1,5 +1,13 @@
 Changelog for 66
 
+In 0.2.2.0
+----------
+
+    - Bugs fix: Always check the existing of the 66 heart directories
+    - 66-info is now deprecated and splitted into two differents API.
+    66-intree give informations about tree
+    66-inservice give informations about services
+
 In 0.2.1.2
 ----------
 
