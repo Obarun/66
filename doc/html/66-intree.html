@@ -49,10 +49,10 @@
 			<tt>-c&nbsp;</tt>&nbsp;: enable colorization.
 		</li>
 		<li> 
-			<tt>-o&nbsp;</tt>&nbsp;: comma separated list of field to display. If this option is not past, <tt>66-intree</tt> will display all fields.
+			<tt>-o&nbsp;</tt>&nbsp;: comma separated list of fields to display. If this option is not passed, <tt>66-intree</tt> will display all fields.
 		</li>
         <li>
-			<tt>-g&nbsp;</tt>&nbsp;: shows the dependency list of <em>tree</em> as graph instead of list.
+			<tt>-g&nbsp;</tt>&nbsp;: shows the dependency list of <em>tree</em> as a graph instead of list.
 		</li>
        	<li> 
 			<tt>-d&nbsp;<em>depth</em>&nbsp;</tt>&nbsp;: limits the depth of the dependency list visualisation; defaults to 1. This is implies <tt>-g</tt> options.
@@ -78,13 +78,13 @@
             <tt>current</tt>&nbsp;: displays a boolean value of the current state.
         </li>
         <li>
-            <tt>contains</tt>&nbsp;: displays the contain of the <em>tree</em>.
+            <tt>contains</tt>&nbsp;: displays the contents of the <em>tree</em>.
         </li>
     
     </ul>
 <h2>Command and output examples</h2>
 	
-	<p>The command <tt>66-intree boot</tt> as root user on <em>Obarun's</em> default system displays the following where <em>boot</em>
+	<p>The command <tt>66-intree boot</tt>, run as root user, on <em>Obarun's</em> default system displays the following where <em>boot</em>
 	is the tree used to properly boot the machine:
 	<pre>   
     Name        : boot
@@ -169,8 +169,8 @@
                   └─(0,Enabled,bundle) All
     </pre>
     <p>
-        For each service the first number found between '()' parentheses is the corresponding pid of the service, 
-        the second one is the state of the service, the type of the service is shown next to it, and finally the name of the service is displayed after the parenthesis ')'.
+        For each service the first field found between '()' parentheses is the corresponding pid of the service, 
+        the second one is the state of the service, and next to it is the type of the service, separated by commas, and finally the name of the service is displayed after the parenthesis ')'.
 	</p>
 	<p>
 		By default the dependency graph is rendered in the order of execution. In this example the <em>'classic' tty12</em> is the first executed
