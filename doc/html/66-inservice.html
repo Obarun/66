@@ -42,13 +42,13 @@
 			<tt>-c&nbsp;</tt>&nbsp;: enable colorization.
 		</li>
 		<li> 
-			<tt>-o&nbsp;</tt>&nbsp;: comma separated list of field to display. If this option is not past, <tt>66-inservice</tt> will display all fields.
+			<tt>-o&nbsp;</tt>&nbsp;: comma separated list of fields to display. If this option is not passed, <tt>66-inservice</tt> will display all fields.
 		</li>
 		<li>
-			<tt>-g&nbsp;</tt>&nbsp;: shows the dependency list of <em>service</em> as graph instead of list.
+			<tt>-g&nbsp;</tt>&nbsp;: shows the dependency list of the <em>service</em> as a graph instead of a list.
 		</li>
         <li> 
-			<tt>-d&nbsp;<em>depth</em>&nbsp;</tt>&nbsp;: limits the depth of the dependency list visualisation; defaults to 1. This implies <tt>-g</tt> option.
+			<tt>-d&nbsp;<em>depth</em>&nbsp;</tt>&nbsp;: limits the depth of the dependency list visualisation; defaults is 1. This implies <tt>-g</tt> option.
 		</li>
         <li>
 			<tt>-r&nbsp;</tt>&nbsp;: shows the dependency list of <em>services</em> in reverse mode.
@@ -58,7 +58,7 @@
 		</li>
 
         <li>
-			<tt>-p&nbsp;<em>n lines</em>&nbsp;</tt>&nbsp;: prints the <em>n</em> last lines from the log file of the <em>service</em>. Default to 20.
+			<tt>-p&nbsp;<em>n lines</em>&nbsp;</tt>&nbsp;: prints the <em>n</em> last lines from the log file of the <em>service</em>. Default is 20.
 		</li>
 
 	</ul>
@@ -115,7 +115,7 @@
 	
 <h2>Command and output examples</h2>
 	
-	<p>The command <tt>66-inservice 00</tt> as root user on <em>Obarun's</em> default system displays the following where <em>00</em> is a service contained in the tree <em>boot</em>:
+	<p>The command <tt>66-inservice 00</tt> run as root user on <em>Obarun's</em> default system, displays the following, where <em>00</em> is a service contained in the tree <em>boot</em>:
 	<pre>   
     Name               : 00
     In tree            : boot
@@ -140,7 +140,7 @@
 		service and <em>'oneshot' mount-cgroups</em> is the last one when it finishes. You can reverse the rendered order with the <tt>-r</tt> option.</p>
 	</p>
 	
-    <p>You can display the status and depends field and only these fields of a service using the command <tt>66-inservice -o status,depends -g connmand</tt> where the dependency list is diplayed as a graph:
+    <p>You can display the status and 'depends on' field and only these fields of a service using the command <tt>66-inservice -o status,depends -g connmand</tt> where the dependency list is diplayed as a graph:
     <pre>
     Status             : enabled, up (pid 938) 34652 seconds
     Depends on         : /
