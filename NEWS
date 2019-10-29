@@ -1,5 +1,11 @@
 Changelog for 66
 
+In 0.2.2.1
+----------
+    
+    - Typo fix at html documentation
+    - Fix 66-intree without options
+    
 In 0.2.2.0
 ----------
 
