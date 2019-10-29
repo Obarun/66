@@ -234,16 +234,22 @@ static void info_get_graph_src(ss_resolve_graph_t *graph,char const *src,unsigne
 static void info_display_contents(char const *field, char const *treename)
 {
 	int r ;
-	size_t padding = 1 ;
+	size_t padding = 1, treenamelen = strlen(treename) ;
 	ss_resolve_t res = RESOLVE_ZERO ;
 	ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
 	stralloc salist = STRALLOC_ZERO ;
-
-	if (!stralloc_cats(&src,treename) ||
-	!stralloc_cats(&src,SS_SVDIRS) ||
-	!stralloc_0(&src)) exitstralloc("display_contains") ;
 	
-	info_get_graph_src(&graph,src.s,0) ;
+	char tmp[src.len + treenamelen + SS_SVDIRS_LEN + 1] ;
+	memcpy(tmp,src.s,src.len) ;
+	memcpy(tmp + src.len,treename,treenamelen) ;
+	memcpy(tmp + src.len + treenamelen,SS_SVDIRS,SS_SVDIRS_LEN) ;
+	tmp[src.len + treenamelen + SS_SVDIRS_LEN] = 0 ;
+	
+	/*if (!stralloc_cats(&src,treename) ||
+	!stralloc_cats(&src,SS_SVDIRS) ||
+	!stralloc_0(&src)) exitstralloc("display_contains") ;*/
+	
+	info_get_graph_src(&graph,tmp,0) ;
 	
 	padding = info_display_field_name(field) ;
 	
@@ -269,7 +275,7 @@ static void info_display_contents(char const *field, char const *treename)
 		ss_resolve_init(&res) ;
 		res.ndeps = el ;
 		res.deps = ss_resolve_add_string(&res,salist.s) ;
-		if (!info_graph_init(&res,src.s,REVERSE, padding, STYLE))
+		if (!info_graph_init(&res,tmp,REVERSE, padding, STYLE))
 			strerr_dief2x(111,"display graph of: ",treename) ;
 		goto freed ;
 	}
@@ -448,7 +454,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	}
 	else
 	{
-		
+		if (!stralloc_0(&src)) exitstralloc("main") ;
 	    if (!sastr_dir_get(&satree, src.s,SS_BACKUP + 1, S_IFDIR)) strerr_diefu2sys(111,"get list of tree at: ",src.s) ;
 		if (satree.len)
 		{
