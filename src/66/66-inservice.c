@@ -113,7 +113,7 @@ static inline void info_help (void)
 "	-o: comma separated list of field to display\n"
 "	-g: displays the contents field as graph\n"
 "	-d: limit the depth of the contents field recursion\n"
-"	-r: reserve the contents field\n"
+"	-r: reverse the contents field\n"
 "	-t: only search service at the specified tree\n"
 "	-p: print n last lines of the log file\n"
 "\n"

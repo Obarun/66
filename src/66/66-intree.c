@@ -88,7 +88,7 @@ static inline void info_help (void)
 "	-o: comma separated list of field to display\n"
 "	-g: displays the contents field as graph\n"
 "	-d: limit the depth of the contents field recursion\n"
-"	-r: reserve the contents field\n" 
+"	-r: reverse the contents field\n" 
 "\n"
 "valid field for -o options are:\n"
 "\n"
