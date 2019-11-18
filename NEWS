@@ -1,5 +1,11 @@
 Changelog for 66
 
+In 0.2.2.2
+----------
+    
+    - Adapt to skalibs 2.9.1.0
+    - Remove insta_? deprecated function
+    
 In 0.2.2.1
 ----------
     
