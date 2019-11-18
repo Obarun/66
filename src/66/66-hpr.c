@@ -120,7 +120,7 @@ int main (int argc, char const *const *argv)
 		reboot(what == 3 ? RB_AUTOBOOT : what == 2 ? RB_POWER_OFF : RB_HALT_SYSTEM) ;
 			strerr_diefu1sys(111, "reboot()") ;
 	}
-
+	
 	if (!tain_now_g()) strerr_warnw1sys("get current time") ;
 	if (dowtmp)
 	{
@@ -164,7 +164,7 @@ int main (int argc, char const *const *argv)
 		memcpy(tlive,live,livelen) ;
 		memcpy(tlive + livelen,INITCTL,INITCTL_LEN) ;
 		tlive[livelen + INITCTL_LEN] = 0 ;
-		if (!hpr_shutdown(tlive,what, &STAMP, 0))
+		if (!hpr_shutdown(tlive,what, &tain_zero, 0))
 			strerr_diefu1sys(111, "notify 66-shutdownd") ;
 	}
 	return 0 ;

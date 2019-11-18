@@ -648,7 +648,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	
 	//ttmain = tain_infinite_relative ;
 	tain_from_millisecs(&ttmain,tsv_g) ;
-	tain_now_g() ;
+	tain_now_set_stopwatch_g() ;
 	tain_add_g(&ttmain,&ttmain) ;
 
 	int spfd = selfpipe_init() ;

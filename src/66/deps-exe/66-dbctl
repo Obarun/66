@@ -3,3 +3,5 @@ ${LIB66}
 -ls6
 -loblibs
 -lskarnet
+${SYSCLOCK_LIB}
+${SPAWN_LIB}

@@ -51,7 +51,7 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 	ss_state_t sta = STATE_ZERO ;
 	
 	tain_t deadline ;
-	tain_now_g() ;
+	tain_now_set_stopwatch_g() ;
 	tain_addsec(&deadline,&STAMP,2) ;	
 	
 	if (!ftrigr_startf(&fifo, &deadline, &STAMP))

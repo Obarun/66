@@ -3,5 +3,5 @@ ${LIB66}
 -loblibs
 ${LIBUTMPS}
 -lskarnet
-${TAINNOW_LIB}
+${SYSCLOCK_LIB}
 ${SOCKET_LIB}
