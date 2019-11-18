@@ -20,7 +20,6 @@
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
-#include <skalibs/gccattributes.h>
 
 #include <66/ssexec.h>
 #include <66/resolve.h>
@@ -48,10 +47,6 @@ extern int set_livedir(stralloc *live) ;
 extern int set_livescan(stralloc *live,uid_t owner) ;
 extern int set_livetree(stralloc *live,uid_t owner) ;
 extern int set_livestate(stralloc *live,uid_t owner) ;
-extern int insta_check(char const *svname) gccattr_deprecated ;
-extern int insta_create(stralloc *sasv,stralloc *sv, char const *src, int len) gccattr_deprecated ;
-extern int insta_splitname(stralloc *sa,char const *name,int len,int what) gccattr_deprecated ;
-extern int insta_replace(stralloc *sa,char const *src,char const *cpy) gccattr_deprecated ;
 extern int read_svfile(stralloc *sasv,char const *name,char const *src) ;
 extern int instance_check(char const *svname) ;
 extern int instance_splitname(stralloc *sa,char const *name,int len,int what) ;
