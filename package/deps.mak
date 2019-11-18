@@ -98,11 +98,11 @@ src/lib66/tree_sethome.o src/lib66/tree_sethome.lo: src/lib66/tree_sethome.c src
 src/lib66/tree_setname.o src/lib66/tree_setname.lo: src/lib66/tree_setname.c src/include/66/tree.h
 src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree_switch_current.c src/include/66/config.h src/include/66/constants.h src/include/66/tree.h src/include/66/utils.h
 
-66-all: EXTRA_LIBS :=
+66-all: EXTRA_LIBS := ${SPAWN_LIB}
 66-all: src/66/66-all.o ${LIB66} -ls6 -loblibs -lskarnet
-66-boot: EXTRA_LIBS :=
-66-boot: src/66/66-boot.o ${LIB66} -ls6 -loblibs -lskarnet 
-66-dbctl: EXTRA_LIBS :=
+66-boot: EXTRA_LIBS := ${SPAWN_LIB}
+66-boot: src/66/66-boot.o ${LIB66} -ls6 -loblibs -lskarnet
+66-dbctl: EXTRA_LIBS := ${SYSCLOCK_LIB} ${SPAWN_LIB}
 66-dbctl: src/66/66-dbctl.o ${LIB66} -ls6rc -ls6 -loblibs -lskarnet
 66-disable: EXTRA_LIBS :=
 66-disable: src/66/66-disable.o ${LIB66} -ls6rc -ls6 -loblibs -lskarnet 
@@ -110,13 +110,13 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-enable: src/66/66-enable.o ${LIB66} -ls6rc -ls6 -loblibs -lskarnet
 66-env: EXTRA_LIBS :=
 66-env: src/66/66-env.o ${LIB66} -loblibs -lskarnet  
-66-hpr: EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB}
+66-hpr: EXTRA_LIBS := ${SYSCLOCK_LIB} ${SOCKET_LIB}
 66-hpr: src/66/66-hpr.o ${LIB66} ${LIBUTMPS} -lskarnet 
 66-info: EXTRA_LIBS :=
 66-info: src/66/66-info.o ${LIB66} -ls6 -loblibs -lskarnet
 66-init: EXTRA_LIBS :=
 66-init: src/66/66-init.o ${LIB66} -ls6 -loblibs -lskarnet
-66-inservice: EXTRA_LIBS :=
+66-inservice: EXTRA_LIBS := ${SPAWN_LIB}
 66-inservice: src/66/66-inservice.o ${LIB66} -ls6 -loblibs -lskarnet
 66-intree: EXTRA_LIBS :=
 66-intree: src/66/66-intree.o ${LIB66} -ls6 -loblibs -lskarnet
@@ -126,17 +126,17 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-scanctl: src/66/66-scanctl.o ${LIB66} -ls6 -loblibs -lskarnet
 66-scandir: EXTRA_LIBS :=
 66-scandir: src/66/66-scandir.o ${LIB66} -ls6 -loblibs -lskarnet
-66-shutdown: EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB}
+66-shutdown: EXTRA_LIBS := ${SYSCLOCK_LIB} ${SOCKET_LIB}
 66-shutdown: src/66/66-shutdown.o ${LIB66} ${LIBUTMPS} -lskarnet
-66-shutdownd: EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB}
+66-shutdownd: EXTRA_LIBS := ${SYSCLOCK_LIB} ${SOCKET_LIB}
 66-shutdownd: src/66/66-shutdownd.o ${LIB66} -ls6 -loblibs ${LIBUTMPS} -lskarnet
 66-start: EXTRA_LIBS :=
 66-start: src/66/66-start.o ${LIB66} -ls6rc -ls6 -loblibs -lskarnet
 66-stop: EXTRA_LIBS :=
 66-stop: src/66/66-stop.o ${LIB66} -ls6rc -ls6 -loblibs -lskarnet
-66-svctl: EXTRA_LIBS :=
+66-svctl: EXTRA_LIBS := ${SYSCLOCK_LIB}
 66-svctl: src/66/66-svctl.o ${LIB66} -ls6 -loblibs -lskarnet
-66-tree: EXTRA_LIBS :=
+66-tree: EXTRA_LIBS := ${SPAWN_LIB}
 66-tree: src/66/66-tree.o ${LIB66} -ls6rc -ls6 -loblibs -lskarnet
 66-echo: EXTRA_LIBS :=
 66-echo: src/extra-tools/66-echo.o -lskarnet 
