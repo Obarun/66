@@ -20,7 +20,6 @@
 #include <oblibs/error2.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
-#include <oblibs/stralist.h>
 #include <oblibs/obgetopt.h>
 #include <oblibs/mill.h>
 

@@ -19,7 +19,6 @@
 
 #include <oblibs/error2.h>
 #include <oblibs/types.h>//scan_mode
-#include <oblibs/stralist.h>
 #include <oblibs/directory.h>
 #include <oblibs/sastr.h>
 #include <oblibs/string.h>
