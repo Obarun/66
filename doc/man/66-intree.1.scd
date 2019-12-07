@@ -34,11 +34,11 @@
 	enable colorization.
 
 *-o*
-	comma separated list of field to display. If the option is not past,
-	*66-intree* will display all field.
+	comma separated list of fields to display. If this option is not passed,
+	*66-intree* will display all fields.
 
 *-g*
-	shows the dependency list of _tree_ as graph instead of list.
+	shows the dependency list of _tree_ as a graph instead of list.
 
 *-r*
 	Shows the dependency list of _tree_ in reverse mode.
@@ -61,15 +61,15 @@
 *enabled*
 	Displays a boolean value of the enable state.
 
-*curren*
+*current*
 	Displays a boolean value of the current state.
 
 *contains*
-	Displays the contain of _tree_.
+	Displays the contents of the _tree_.
 
 # COMMAND AND OUTPUT EXAMPLE
 
-The command "66-intree boot" as root user on _Obarun_'s default system
+The command "66-intree boot", run as root user, on _Obarun_'s default system
 displays the following where *boot* is the tree used to properly boot 
 the machine:
 
@@ -156,10 +156,10 @@ Contains    : /
               └─(0,Enabled,bundle) All
 
 ```
-For each service the first number found between *()* parentheses is the 
+For each service the first field found between *()* parentheses is the 
 corresponding pid of the service, the second one is the state of the 
-service, the type of the service is shown next to it, and finally the name 
-of the service is displayed after the parenthesis ')'.
+service, and next to it is the type of the service, separated by commas,
+and finally the name of the service is displayed after the parenthesis ')'.
 
 By default the dependency graph is rendered in the order of execution. In 
 this example the *classic tty12* is the first executed service and 
