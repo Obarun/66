@@ -27,14 +27,14 @@
 	enable colorization.
 
 *-o*
-	comma separated list of field to display. If the option is not past,
+	comma separated list of fields to display. If this option is not passed,
 	*66-inservice* will display all fields.
 
 *-g*
-	shows the dependency list of _service_ as graph instead of list.
+	shows the dependency list of the _service_ as a graph instead of a list.
 
 *-d* _depth_
-	Limits the depth of the dependency list visualisation; defaults to 1.
+	Limits the depth of the dependency list visualisation; default is 1.
 	This implies the *-g* option.
 
 *-r*
@@ -45,7 +45,7 @@
 
 *-p* _nline_
 	prints the _nline_ last lines from the log file of the _service_.
-	Default to 20.
+	Default is 20.
 
 ## VALID FIELD FOR -g OPTION
 
@@ -96,8 +96,8 @@
 
 # COMMAND AND OUTPUT EXAMPLE
 
-The command "66-inservice 00" as root user on _Obarun_'s default system
-displays the following where *00* is service contained in the tree *boot*:
+The command "66-inservice 00" run as root user on _Obarun_'s default system
+displays the following, where *00* is a service contained in the tree *boot*:
 
 ```
 Name               : 00
@@ -126,7 +126,7 @@ this example the *oneshot system-hostname* is the first executed service and
 *mount-cgroups* is the last one when it finishes. You can reverse the rendered order with
 the *-r* option.
 
-You can display the status and depends field and only these fields of a 
+You can display the status and 'depends-on' field and only these fields of a 
 service using the command "66-inservice -o status,depends -g connmand"
 where the dependency list is diplayed as a graph:
 
