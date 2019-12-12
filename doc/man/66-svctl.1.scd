@@ -28,7 +28,8 @@ The command is sent to the _selection_ asynchronously.
 	Increases/decreases the verbosity of the command.++
 	*1* : (Default) Only print error messages.++
 	*2* : Also print warning messages.++
-	*3* : Also print debugging messages.
+	*3* : Also print tracing messages.
+	*4* : Also print debugging messages.
 
 *-l* _live_
 	Changes the supervision directory of _service_ to _live_. By default this

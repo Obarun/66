@@ -26,8 +26,9 @@ explicitely set then the user of the current process will be used instead.
 	Increases/decreases the verbosity of the command.++
 	*1* : (Default) Only print error messages.++
 	*2* : Also print warning messages.++
-	*3* : Also print debugging messages.
-
+	*3* : Also print tracing messages.
+	*4* : Also print debugging messages.
+    
 *-b*
 	Create specific files for boot. Only root user can use this option. It is
 	not meant to be used directly even with root. *66-boot*(8) calls it during

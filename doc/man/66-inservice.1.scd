@@ -21,7 +21,8 @@
 	Increases/decreases the verbosity of the command.++
 	*1* : (Default) Only prints error messages.++
 	*2* : Also prints warning messages.++
-	*3* : Also prints debugging messages.
+	*3* : Also prints tracing messages.
+	*4* : Also prints debugging messages.
 
 *-c*
 	enable colorization.

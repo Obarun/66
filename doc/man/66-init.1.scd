@@ -24,7 +24,8 @@ Administrators should invoke *66-init* only once.
 	Increases/decreases the verbosity of the command.
 	- *1* : (Default) Only print error messages.
 	- *2* : Also print warning messages. 
-	- *3* : Also print debugging messages.
+	- *3* : Also print tracing messages.
+	- *4* : Also print debugging messages.
 
 *-l* _live_
 	Changes the _scandir_ directory to _live_. By default this will be

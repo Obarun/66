@@ -25,7 +25,8 @@ An absolute path is expected for _service_ and _destination_.
 	Increases/decreases the verbosity of the command.
 	- *1* : (Default) Only print error messages.
 	- *2* : Also print warning messages.
-	- *3* : Also print debugging messages.
+	- *3* : Also print tracing messages.
+	- *4* : Also print debugging messages.
 
 *-f*
 	Force. Owerwrite an existing parsing result at _destination_.

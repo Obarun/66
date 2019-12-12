@@ -25,8 +25,8 @@ It display the contain of the file or replace a _key=value_ pair if requested.
 	Increases/decreases the verbosity of the command.++
 	*1* : (Default) Only print error messages.++
 	*2* : Also print warning messages.++
-	*3* : Also print debugging messages.
-
+	*3* : Also print tracing messages.
+	*4* : Also print debugging messages.
 
 *-t* _tree_
 	Specifies the _tree_ used to store the parsed _service_ file. This option

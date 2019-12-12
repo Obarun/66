@@ -24,7 +24,8 @@ are currently available on the system use *66-info*(1) tool.
 	Increases/decreases the verbosity of the command.
 	*1* : (Default) Only print error messages.
 	*2* : Also print warning messages.
-	*3* : Also print debugging messages.
+	*3* : Also print tracing messages.
+	*4* : Also print debugging messages.
 
 *-l* _live_
 	An absolute path. It used in conjunction with *-U* and *-R* options 

@@ -38,9 +38,14 @@
 			<tt><b>-h</b></tt> : print this help.
 		</li>
 
-		<li>
-			<tt><b>&#8209;v <em>verbosity</em></b></tt> : increase/decrease the verbosity of the command. <tt>1(Default)</tt>: Only print error messages. <tt>2</tt>: Also print warning messages. <tt>3</tt>: Also print debugging messages.
-		</li>
+	 <li>
+        <tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
+        the verbosity of the command. 
+        <tt>1(Default)</tt>: Only print error messages. 
+        <tt>2</tt>: Also print warning messages. 
+        <tt>3</tt>: Also print tracing messages.
+        <tt>4</tt>: Also print debugging messages.
+    </li>
 
 		<li>
 			<tt><b>&#8209;l&nbsp;<em>live</em></b></tt> : an absolute path. Send the signal to a <em>scandir</em> at <em>live</em>. Default is <tt>%%livedir%%</tt>. The default can also be changed at compile time by passing the <tt>&#8209;&#8209;livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem.

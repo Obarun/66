@@ -60,9 +60,14 @@
 			<tt><b>-h</b></tt> : print this help.
 		</li>
 
-		<li>
-			<tt><b>-v <em>verbosity</em></b></tt> : increase/decrease the verbosity of the command. <tt>1(Default)</tt>: Only print error messages. <tt>2</tt>: Also print warning messages. <tt>3</tt>: Also print debugging messages.
-		</li>
+        <li>
+            <tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
+            the verbosity of the command. 
+            <tt>1(Default)</tt>: Only print error messages. 
+            <tt>2</tt>: Also print warning messages. 
+            <tt>3</tt>: Also print tracing messages.
+            <tt>4</tt>: Also print debugging messages.
+        </li>
 
 		<li>
 			<tt><b>-l <em>live</em></b></tt> : an absolute path; directory to use for the <em>service</em> supervision. By default this will be <tt>%%livedir%%</tt>. The default can be changed at compile time by passing the <tt>&#8209;&#8209;livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66&#8209;scandir</a></tt>.
