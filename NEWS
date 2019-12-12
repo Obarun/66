@@ -1,5 +1,18 @@
 Changelog for 66
 
+In 0.2.3.0
+----------
+    
+    - Adapt to oblibs 0.0.4.0
+    - Remove RB_DISABLE_CAD at 66-boot by default and allow to enable
+    it with -c option. Starting on virtual system like lxc crash with
+    this option. Well be safe on every case.
+    - Use of new function log_? familly from oblibs:
+        - standardization of the exit code
+        - standardization of the verbosity output
+        - allow verbosity to 4 to display debug message
+    - Doc typo fix        
+    
 In 0.2.2.2
 ----------
     
