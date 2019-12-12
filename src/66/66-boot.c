@@ -85,7 +85,7 @@ static inline void info_help (void)
 "options :\n"
 "	-h: print this help\n" 
 "	-m: mount parent live directory\n"
-"	-c: disable CTRL-ALT-DEL feature\n"
+"	-c: enable CTRL-ALT-DEL feature\n"
 "	-l: run catch-all logger as log_user user\n"
 "	-s: skeleton directory\n"
 "	-e: environment directory or file\n"
@@ -361,7 +361,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		pid = fork() ;
 		if (pid == -1) sulogin("fork: ",rcinit) ;
 		if (!pid) run_stage2(newenvp, 2, envmodifs.s,envmodifs.len) ;
-		if (!cad)
+		if (cad)
 			if (reboot(RB_DISABLE_CAD) == -1) sulogin("trap ctrl-alt-del","") ;
 		if (fd_copy(2, 1) == -1) sulogin("copy stderr to stdout","") ;
 		fd_close(fdin) ;
