@@ -177,7 +177,7 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 	
 		for (pos = 0 ; pos < sadown.len; pos += strlen(sadown.s + pos) + 1)
 		{
-			log_warnusys("Delete down file at: ",sadown.s + pos) ;
+			log_trace("delete down file at: ",sadown.s + pos) ;
 			if (unlink(sadown.s + pos) < 0 && errno != ENOENT) goto err ;
 		}
 	
