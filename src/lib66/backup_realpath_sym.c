@@ -17,7 +17,7 @@
 #include <sys/types.h>
 #include <string.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>
@@ -57,7 +57,7 @@ int backup_realpath_sym(stralloc *sa, ssexec_t *info,unsigned int type)
 	sa->len = 0 ;
 	r = sarealpath(sa,sym) ;
 	if (r == -1 ) return 0 ; 
-	if (!stralloc_0(sa)) retstralloc(0,"backup_realpath_sym") ;
+	if (!stralloc_0(sa)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	
 	return 1 ;
 }

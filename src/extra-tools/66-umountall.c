@@ -22,7 +22,8 @@
 #include <mntent.h>
 #include <sys/mount.h>
 
-#include <skalibs/strerr2.h>
+#include <oblibs/log.h>
+
 #include <skalibs/stralloc.h>
 #include <skalibs/skamisc.h>
 
@@ -44,7 +45,7 @@ int main (int argc, char const *const *argv)
 	PROG = "s6-linux-init-umountall" ;
 
 	fp = setmntent("/proc/mounts", "r") ;
-	if (!fp) strerr_diefu1sys(111, "open /proc/mounts") ;
+	if (!fp) log_dieusys(LOG_EXIT_SYS, "open /proc/mounts") ;
 
 	for (;;)
 	{
@@ -63,12 +64,12 @@ int main (int argc, char const *const *argv)
 		}
 		if (i < EXCLUDEN && got[i] == 1) continue ;
 		if (line >= MAXLINES)
-			strerr_dief1x(100, "too many mount points") ;
+			log_die(100, "too many mount points") ;
 		mountpoints[line++] = sa.len ;
 		if (!stralloc_cats(&sa, p->mnt_dir) || !stralloc_0(&sa))
-			strerr_diefu1sys(111, "add mount point to list") ;
+			log_dieusys(LOG_EXIT_SYS, "add mount point to list") ;
 	}
-	if (errno) strerr_diefu1sys(111, "read /proc/mounts") ;
+	if (errno) log_dieusys(LOG_EXIT_SYS, "read /proc/mounts") ;
 	endmntent(fp) ;
 
 	while (line--)
@@ -76,7 +77,7 @@ int main (int argc, char const *const *argv)
 		if (umount(sa.s + mountpoints[line]) == -1)
 		{
 			e++ ;
-			strerr_warnwu2sys("umount ", sa.s + mountpoints[line]) ;
+			log_warnusys("umount ", sa.s + mountpoints[line]) ;
 		}
 	}
 	stralloc_free(&sa) ;

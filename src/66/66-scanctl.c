@@ -13,7 +13,7 @@
  */
  
 #include <string.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/obgetopt.h>
 
 #include <skalibs/buffer.h>
@@ -25,8 +25,6 @@
 #define SIGSIZE 64
 
 #define USAGE "66-scanctl [ -h ] [ -v verbosity ] [ -l live ] [ -o owner ] signal"
-
-unsigned int VERBOSITY = 1 ;
 
 static inline void info_help (void)
 {
@@ -41,7 +39,7 @@ static inline void info_help (void)
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
-    strerr_diefu1sys(111, "write to stdout") ;
+    log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 static inline unsigned int lookup (char const *const *table, char const *signal)
 {
@@ -103,7 +101,7 @@ int send_signal(char const *scandir, char const *signal)
 		memcpy(csig,signal,siglen) ;
 		csig[siglen] = 0 ;
 	}
-	VERBO1 strerr_warni5x("Sending -",csig," signal to scandir: ",scandir," ...") ;
+	log_info("Sending -",csig," signal to scandir: ",scandir,"...") ;
 	return scandir_send_signal(scandir,csig) ;
 }
 
@@ -122,35 +120,35 @@ int main(int argc, char const *const *argv)
 		{
 			int opt = getopt_args(argc,argv, ">hv:l:o:", &l) ;
 			if (opt == -1) break ;
-			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
+			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
 			{
 				case 'h' : info_help(); return 0 ;
-				case 'v' : if (!uint0_scan(l.arg, &VERBOSITY)) exitusage(USAGE) ; break ;
-				case 'l' : if (!stralloc_cats(&scandir,l.arg)) retstralloc(111,"main") ;
-						   if (!stralloc_0(&scandir)) retstralloc(111,"main") ;
+				case 'v' : if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
+				case 'l' : if (!stralloc_cats(&scandir,l.arg)) log_die_nomem("stralloc") ;
+						   if (!stralloc_0(&scandir)) log_die_nomem("stralloc") ;
 						   break ;
 				case 'o' :
-						if (MYUID) strerr_dief1x(110, "only root can use -o options") ;
-						else if (!youruid(&owner,l.arg)) strerr_diefu2sys(111,"get uid of: ",l.arg) ;
+						if (MYUID) log_die(LOG_EXIT_USER, "only root can use -o options") ;
+						else if (!youruid(&owner,l.arg)) log_dieusys(LOG_EXIT_SYS,"get uid of: ",l.arg) ;
 						break ;
-				default : exitusage(USAGE) ; 
+				default : log_usage(USAGE) ; 
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
 	
-	if (argc < 1) exitusage(USAGE) ;
+	if (argc < 1) log_usage(USAGE) ;
 	signal = argv[0] ;
 	r = set_livedir(&scandir) ;
-	if (r < 0) strerr_dief3x(110,"live: ",scandir.s," must be an absolute path") ;
-	if (!r) strerr_diefu1sys(111,"set live directory") ;
+	if (r < 0) log_die(LOG_EXIT_USER,"live: ",scandir.s," must be an absolute path") ;
+	if (!r) log_dieusys(LOG_EXIT_SYS,"set live directory") ;
 	r = set_livescan(&scandir,owner) ;
-	if (r < 0) strerr_dief3x(110,"scandir: ", scandir.s, " must be an absolute path") ;
-	if (!r) strerr_diefu1sys(111,"set scandir directory") ;
+	if (r < 0) log_die(LOG_EXIT_USER,"scandir: ", scandir.s, " must be an absolute path") ;
+	if (!r) log_dieusys(LOG_EXIT_SYS,"set scandir directory") ;
 	r = scandir_ok(scandir.s) ;
-	if (!r) strerr_dief3sys(111,"scandir: ",scandir.s," is not running") ;
-	else if (r < 0) strerr_diefu2sys(111, "check: ", scandir.s) ;
+	if (!r)log_diesys(LOG_EXIT_SYS,"scandir: ",scandir.s," is not running") ;
+	else if (r < 0) log_dieusys(LOG_EXIT_SYS, "check: ", scandir.s) ;
 	
 	if (send_signal(scandir.s,signal) <= 0) goto err ;			
 	

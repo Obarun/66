@@ -21,7 +21,7 @@
 #include <sys/mount.h>
 #include <sys/reboot.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/obgetopt.h>
@@ -36,7 +36,6 @@
 #include <66/config.h>
 #include <66/constants.h>
 
-unsigned int VERBOSITY = 1 ;
 static mode_t mask = SS_BOOT_UMASK ;
 static unsigned int rescan = SS_BOOT_RESCAN ;
 static char const *skel = SS_SKEL_DIR ;
@@ -66,16 +65,16 @@ static void sulogin(char const *msg,char const *arg)
 	pid_t pid ;
 	int wstat ;
 	fd_close(0) ;
-	if (dup2(fdin,0) == -1) strerr_diefu1x(111,"duplicate stdin -- you are on your own") ;
+	if (dup2(fdin,0) == -1) log_dieu(LOG_EXIT_SYS,"duplicate stdin -- you are on your own") ;
 	fd_close(fdin) ;	
-	if (*msg) strerr_warnwu2x(msg,arg) ;
+	if (*msg) log_warnu(msg,arg) ;
 	pid = child_spawn0(newarg[0],newarg,genv) ;
 	if (waitpid_nointr(pid,&wstat, 0) < 0)
-			strerr_diefu1sys(111,"wait for sulogin -- you are on your own") ;
+			log_dieusys(LOG_EXIT_SYS,"wait for sulogin -- you are on your own") ;
 	fdin=dup(0) ;
-	if (fdin == -1) strerr_diefu1x(111,"duplicate stdin -- you are on your own") ;
+	if (fdin == -1) log_dieu(LOG_EXIT_SYS,"duplicate stdin -- you are on your own") ;
 	fd_close(0) ;
-	if (open("/dev/null",O_WRONLY)) strerr_diefu1x(111,"open /dev/null -- you are on your own") ;
+	if (open("/dev/null",O_WRONLY)) log_dieu(LOG_EXIT_SYS,"open /dev/null -- you are on your own") ;
 }
 
 static inline void info_help (void)
@@ -123,7 +122,7 @@ static void parse_conf(void)
 		/** value may be empty, in this case we use the default one */
 		if (!sastr_clean_element(&val)) 
 		{	
-			strerr_warnwu3x("get value of: ",*p," -- keeps the default") ;
+			log_warnu("get value of: ",*p," -- keeps the default") ;
 			continue ;
 		}
 		if (!sastr_rebuild_in_oneline(&val)) sulogin("rebuild line of value: ",val.s) ;
@@ -255,7 +254,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 'd' : slashdev = l.arg ; break ;
 				case 'b' : banner = l.arg ; break ;
 				case 'l' : log_user = l.arg ; break ;
-				default : exitusage(USAGE) ; 
+				default :  log_usage(USAGE) ; 
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
@@ -263,7 +262,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	if (geteuid())
 	{
 		errno = EPERM ;
-		strerr_dief1sys(100, "nice try, peon") ;
+		log_diesys(LOG_EXIT_USER, "nice try, peon") ;
 	}
 	fdin=dup(0) ;
 	parse_conf() ;
@@ -286,7 +285,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	if (slashdev)
 	{
-		strerr_warni2x("Mount: ",slashdev) ;
+		log_info("Mount: ",slashdev) ;
 		fd_close(1) ;
 		fd_close(2) ;
 		if (mount("dev", slashdev, "devtmpfs", MS_NOSUID | MS_NOEXEC, "") == -1)
@@ -307,10 +306,10 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	{
 		if (r && tmpfs)
 		{
-			strerr_warni2x("Umount: ",fs) ;
+			log_info("Umount: ",fs) ;
 			if (umount(fs) == -1) sulogin ("umount: ",fs ) ;
 		}
-		strerr_warni2x("Mount: ",fs) ;
+		log_info("Mount: ",fs) ;
 		if (mount("tmpfs", fs, "tmpfs", MS_NODEV | MS_NOSUID, "mode=0755") == -1) 
 			sulogin("mount: ",fs) ;
 	}
@@ -319,13 +318,13 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	/** create scandir */
 	{
 		char const *t[] = { "-b", "-c", "-s", skel, "-L", log_user } ;
-		strerr_warni2x("Create live scandir at: ",live) ;
+		log_info("Create live scandir at: ",live) ;
 		make_cmdline(SS_EXTBINPREFIX "66-scandir",t,6,"create live scandir at: ",live,envp) ;
 	}
 	/** initiate earlier service */
 	{
 		char const *t[] = { "-t",tree,"classic" } ;
-		strerr_warni2x("Initiate earlier service of tree: ",tree) ;
+		log_info("Initiate earlier service of tree: ",tree) ;
 		make_cmdline(SS_EXTBINPREFIX "66-init",t,3,"initiate earlier service of tree: ",tree,envp) ;	
 	}
 	
@@ -335,13 +334,14 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	}
 	
 	{
-		strerr_warni3x("Starts boot logger at: ",live,"/log/0") ;
+		log_info("Starts boot logger at: ",live,"/log/0") ;
 		int fdr = open_read(fifo) ;
 		if (fdr == -1) sulogin("open fifo: ",fifo) ;
 		fd_close(1) ;
 		if (open(fifo, O_WRONLY) != 1) sulogin("open fifo: ",fifo) ;
 		fd_close(fdr) ;
 	}
+	
 	/** fork and starts scandir */
 	{
 		static char const *newargv[7] ; 

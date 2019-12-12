@@ -19,7 +19,7 @@
 
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/sastr.h>
 
 #include <skalibs/genalloc.h>
@@ -85,8 +85,7 @@ int ss_resolve_graph_sort(ss_resolve_graph_t *graph)
 			int data = genalloc_s(uint32_t,&genalloc_s(ss_resolve_graph_ndeps_t,&graph->cp)[ename].ndeps)[edeps] ;
 			char *name = genalloc_s(ss_resolve_t,&graph->name)[ename].sa.s + genalloc_s(ss_resolve_t,&graph->name)[ename].name ;
 			char *deps = genalloc_s(ss_resolve_t,&graph->name)[data].sa.s + genalloc_s(ss_resolve_t,&graph->name)[data].name ;
-			VERBO3 strerr_warnw4x("resolution of : ",name,": encountered a cycle involving service: ",deps) ;
-			return -1 ;
+			log_warn_return(LOG_EXIT_LESSONE,"resolution of : ",name,": encountered a cycle involving service: ",deps) ;
 		}
 	}
 	

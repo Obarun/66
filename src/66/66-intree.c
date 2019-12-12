@@ -20,12 +20,11 @@
 #include <unistd.h>//access
 
 #include <oblibs/sastr.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/obgetopt.h>
 #include <oblibs/types.h>
 #include <oblibs/string.h>
 
-#include <skalibs/strerr2.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 #include <skalibs/lolstdio.h>
@@ -39,7 +38,6 @@
 #include <66/enum.h>
 #include <66/resolve.h>
 
-unsigned int VERBOSITY = 1 ;
 static unsigned int REVERSE = 0 ;
 unsigned int MAXDEPTH = 1 ;
 static unsigned int GRAPH = 0 ;
@@ -70,7 +68,7 @@ info_opts_map_t const opts_tree_table[] =
 } ;
 
 #define MAXOPTS 6
-#define checkopts(n) if (n >= MAXOPTS) strerr_dief1x(100, "too many options")
+#define checkopts(n) if (n >= MAXOPTS) log_die(100, "too many options")
 #define DELIM ','
 
 #define USAGE "66-intree [ -h ] [ -v verbosity ] [ -l live ] [ -c ] [ -o name,init,enabled,... ] [ -g ] [ -d depth ] [ -r ] tree"
@@ -101,7 +99,7 @@ static inline void info_help (void)
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
-    strerr_diefu1sys(111, "write to stdout") ;
+    log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
 static int info_cmpnsort(stralloc *sa)
@@ -142,17 +140,17 @@ static void info_display_name(char const *field, char const *treename)
 {
 	info_display_field_name(field) ;
 	if (!bprintf(buffer_1," %s",treename)) 
-		strerr_diefu1sys(111,"write to stdout") ;
+		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 	if (buffer_putsflush(buffer_1,"\n") == -1) 
-		strerr_diefu1sys(111,"write to stdout") ;
+		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 }
 
 static void info_display_init(char const *field,char const *treename)
 {
 	unsigned int init = 0 ;
 	int r = set_livedir(&live) ;
-	if (!r) exitstralloc("display_init") ;
-	if (r == -1) strerr_dief3x(111,"live: ",live.s," must be an absolute path") ;
+	if (!r) log_die_nomem("stralloc") ;
+	if (r == -1) log_die(LOG_EXIT_SYS,"live: ",live.s," must be an absolute path") ;
 	
 	if (!stralloc_cats(&live,SS_STATE + 1) ||
 	!stralloc_cats(&live,"/") ||
@@ -160,15 +158,15 @@ static void info_display_init(char const *field,char const *treename)
 	!stralloc_cats(&live,"/") ||
 	!stralloc_cats(&live,treename) ||
 	!stralloc_cats(&live,"/init") ||
-	!stralloc_0(&live)) exitstralloc("display_init") ;
+	!stralloc_0(&live)) log_die_nomem("stralloc") ;
 	if (!access(live.s, F_OK)) init = 1 ;
 
 	info_display_field_name(field) ;
-	if (!bprintf(buffer_1," %s%s%s",init ? info_color->valid : info_color->warning, init ? "yes":"no",info_color->off)) 
-		strerr_diefu1sys(111,"write to stdout") ;
+	if (!bprintf(buffer_1," %s%s%s",init ? log_color->valid : log_color->warning, init ? "yes":"no",log_color->off)) 
+		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 	
 	if (buffer_putsflush(buffer_1,"\n") == -1) 
-		strerr_diefu1sys(111,"write to stdout") ;
+		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
 }
 
@@ -180,15 +178,15 @@ static void info_display_current(char const *field,char const *treename)
 	if (tree_find_current(&sacurr,base.s,OWNER))
 	{
 		char name[sacurr.len] ;
-		if (!basename(name,sacurr.s)) strerr_diefu2x(111,"basename of: ",sacurr.s) ;
+		if (!basename(name,sacurr.s)) log_dieu(LOG_EXIT_SYS,"basename of: ",sacurr.s) ;
 		current = obstr_equal(treename,name) ;
 	}
 	info_display_field_name(field) ;
-	if (!bprintf(buffer_1," %s%s%s", current ? info_color->blink : info_color->warning, current ? "yes":"no",info_color->off))
-		strerr_diefu1sys(111,"write to stdout") ;
+	if (!bprintf(buffer_1," %s%s%s", current ? log_color->blink : log_color->warning, current ? "yes":"no",log_color->off))
+		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 	
 	if (buffer_putsflush(buffer_1,"\n") == -1) 
-		strerr_diefu1sys(111,"write to stdout") ;	
+		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;	
 	
 	stralloc_free(&sacurr) ;
 }
@@ -197,11 +195,11 @@ static void info_display_enabled(char const *field,char const *treename)
 {
 	int enabled = tree_cmd_state(VERBOSITY,"-s",treename) ;
 	info_display_field_name(field) ;
-	if (!bprintf(buffer_1," %s%s%s",enabled == 1 ? info_color->valid : info_color->warning, enabled == 1 ? "yes":"no",info_color->off)) 
-		strerr_diefu1sys(111,"write to stdout") ;
+	if (!bprintf(buffer_1," %s%s%s",enabled == 1 ? log_color->valid : log_color->warning, enabled == 1 ? "yes":"no",log_color->off)) 
+		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 	
 	if (buffer_putsflush(buffer_1,"\n") == -1) 
-		strerr_diefu1sys(111,"write to stdout") ;
+		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 }
 
 static void info_get_graph_src(ss_resolve_graph_t *graph,char const *src,unsigned int reverse)
@@ -216,15 +214,15 @@ static void info_get_graph_src(ss_resolve_graph_t *graph,char const *src,unsigne
 	solve[srclen + SS_RESOLVE_LEN] = 0 ;
 	
 	if (!sastr_dir_get(&sa,solve,"",S_IFREG))
-		strerr_diefu2sys(111,"get source service file at: ",solve) ;
+		log_dieusys(LOG_EXIT_SYS,"get source service file at: ",solve) ;
 	
 	for (pos = 0 ;pos < sa.len; pos += strlen(sa.s + pos) + 1)
 	{
 		char *name = sa.s + pos ;
 		if (!ss_resolve_read(&res,src,name))
-			strerr_diefu2x(111,"read resolve file of: ",name) ;
+			log_dieu(LOG_EXIT_SYS,"read resolve file of: ",name) ;
 		if (!ss_resolve_graph_build(graph,&res,src,reverse)) 
-			strerr_diefu2x(111,"build the graph from: ",src) ; 
+			log_dieu(LOG_EXIT_SYS,"build the graph from: ",src) ; 
 	}
 	
 	stralloc_free(&sa) ;
@@ -256,36 +254,36 @@ static void info_display_contents(char const *field, char const *treename)
 	if (!genalloc_len(ss_resolve_t,&graph.name)) goto empty ;
 	
 	r = ss_resolve_graph_publish(&graph,0) ;
-	if (r < 0) strerr_dief2x(110,"cyclic graph detected at tree: ", treename) ;
-	else if (!r) strerr_diefu2sys(111,"publish service graph of tree: ",treename) ;
+	if (r < 0) log_die(LOG_EXIT_USER,"cyclic graph detected at tree: ", treename) ;
+	else if (!r) log_dieusys(LOG_EXIT_SYS,"publish service graph of tree: ",treename) ;
 	
 	for (size_t i = 0 ; i < genalloc_len(ss_resolve_t,&graph.sorted) ; i++)
 	{
 		char *string = genalloc_s(ss_resolve_t,&graph.sorted)[i].sa.s ;
 		char *name = string + genalloc_s(ss_resolve_t,&graph.sorted)[i].name ;
-		if (!stralloc_catb(&salist,name,strlen(name)+1)) exitstralloc("display_contains") ;
+		if (!stralloc_catb(&salist,name,strlen(name)+1)) log_die_nomem("stralloc") ;
 	}
 		
 	if (GRAPH)
 	{
 		if (!bprintf(buffer_1," %s\n","/")) 
-			strerr_diefu1sys(111,"write to stdout") ;
+			log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 		size_t el = sastr_len(&salist) ;
-		if (!sastr_rebuild_in_oneline(&salist)) strerr_diefu1x(111,"rebuild dependencies list") ;
+		if (!sastr_rebuild_in_oneline(&salist)) log_dieu(LOG_EXIT_SYS,"rebuild dependencies list") ;
 		ss_resolve_init(&res) ;
 		res.ndeps = el ;
 		res.deps = ss_resolve_add_string(&res,salist.s) ;
 		if (!info_graph_init(&res,tmp,REVERSE, padding, STYLE))
-			strerr_dief2x(111,"display graph of: ",treename) ;
+			log_die(LOG_EXIT_SYS,"display graph of: ",treename) ;
 		goto freed ;
 	}
 	else
 	{
 		if (!bprintf(buffer_1,"%s"," ")) 
-			strerr_diefu1sys(111,"write to stdout") ;
+			log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 		if (REVERSE) 
 			if (!sastr_reverse(&salist))
-				strerr_diefu1x(111,"reverse dependencies list") ;
+				log_dieusys(LOG_EXIT_SYS,"reverse dependencies list") ;
 		info_display_list(field,&salist) ;
 		goto freed ;
 	}
@@ -293,17 +291,17 @@ static void info_display_contents(char const *field, char const *treename)
 		if (GRAPH)
 		{
 			if (!bprintf(buffer_1," %s\n","/")) 
-				strerr_diefu1sys(111,"write to stdout") ;
+				log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 			if (!bprintf(buffer_1,"%*s%s%s",padding,"",STYLE->last," empty tree")) 
-				strerr_diefu1sys(111,"write to stdout") ;
+				log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 		}
 		else
 		{
 			if (!bprintf(buffer_1,"%s"," empty tree")) 
-				strerr_diefu1sys(111,"write to stdout") ;
+				log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 		}
 		if (buffer_putsflush(buffer_1,"\n") == -1)
-			strerr_diefu1sys(111,"write to stdout") ;
+			log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 	freed:
 		ss_resolve_free(&res) ;
 		ss_resolve_graph_free(&graph) ;
@@ -327,7 +325,7 @@ static void info_parse_options(char const *str,int *what)
 	size_t pos = 0 ;
 	stralloc sa = STRALLOC_ZERO ;
 	
-	if (!sastr_clean_string_wdelim(&sa,str,DELIM)) strerr_diefu1x(111,"parse options") ;
+	if (!sastr_clean_string_wdelim(&sa,str,DELIM)) log_dieu(LOG_EXIT_SYS,"parse options") ;
 	unsigned int n = sastr_len(&sa), nopts = 0 , old ;
 	checkopts(n) ;
 	info_opts_map_t const *t ;
@@ -345,7 +343,7 @@ static void info_parse_options(char const *str,int *what)
 				else*/ what[nopts++] = t->id ;
 			}
 		}
-		if (old == nopts) strerr_dief2x(111,"invalid option: ",o) ;
+		if (old == nopts) log_die(LOG_EXIT_SYS,"invalid option: ",o) ;
 	}
 	
 	stralloc_free(&sa) ;
@@ -358,7 +356,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	size_t pos, newlen, livelen ;
 	int what[MAXOPTS] = { 0 } ;
 	
-	info_color = &no_color ;
+	log_color = &log_color_disable ;
 	
 	char const *treename = 0 ;
 	
@@ -384,20 +382,20 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		{
 			int opt = getopt_args(argc,argv, ">hv:co:grd:l:", &l) ;
 			if (opt == -1) break ;
-			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
+			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
 			{
 				case 'h' : 	info_help(); return 0 ;
-				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) exitusage(USAGE) ; break ;
-				case 'c' :	info_color = !isatty(1) ? &no_color : &use_color ; break ;
+				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
+				case 'c' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
 				case 'o' : 	legacy = 0 ; info_parse_options(l.arg,what) ; break ;
 				case 'g' :	GRAPH = 1 ; break ;
 				case 'r' : 	REVERSE = 1 ; break ;
-				case 'd' : 	if (!uint0_scan(l.arg, &MAXDEPTH)) exitusage(USAGE) ; break ;
-				case 'l' : 	if (!stralloc_cats(&live,l.arg)) exitusage(USAGE) ;
-							if (!stralloc_0(&live)) exitusage(USAGE) ;
+				case 'd' : 	if (!uint0_scan(l.arg, &MAXDEPTH)) log_usage(USAGE) ; break ;
+				case 'l' : 	if (!stralloc_cats(&live,l.arg)) log_usage(USAGE) ;
+							if (!stralloc_0(&live)) log_usage(USAGE) ;
 							break ;
-				default : exitusage(USAGE) ; 
+				default : 	log_usage(USAGE) ; 
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
@@ -426,19 +424,19 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		STYLE = &graph_utf8;
 	}
 	
-	if (!set_ownersysdir(&base,OWNER)) strerr_diefu1sys(111, "set owner directory") ;
+	if (!set_ownersysdir(&base,OWNER)) log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 	if (!stralloc_copy(&src,&base) ||
 	!stralloc_cats(&src,SS_SYSTEM) ||
-	!stralloc_0(&src))  exitstralloc("main") ;
+	!stralloc_0(&src)) log_die_nomem("stralloc") ;
 	src.len-- ;
 	
 	if (!scan_mode(src.s,S_IFDIR))
 	{
-		strerr_warni1x("no tree exist yet") ;
+		log_info("no tree exist yet") ;
 		goto freed ;
 	}
 	
-	if (!stralloc_cats(&src,"/")) exitstralloc("main") ;
+	if (!stralloc_cats(&src,"/")) log_die_nomem("stralloc") ;
 	
 	newlen = src.len ;
 	livelen = live.len ;
@@ -447,18 +445,18 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	{
 		
 		if (!stralloc_cats(&src,treename) ||
-		!stralloc_0(&src)) exitstralloc("main") ;
-		if (!scan_mode(src.s,S_IFDIR)) strerr_diefu2sys(111,"find tree: ", src.s) ;
+		!stralloc_0(&src)) log_die_nomem("stralloc") ;
+		if (!scan_mode(src.s,S_IFDIR)) log_dieusys(LOG_EXIT_SYS,"find tree: ", src.s) ;
 		src.len = newlen ;
 		info_display_all(treename,what) ;		
 	}
 	else
 	{
-		if (!stralloc_0(&src)) exitstralloc("main") ;
-	    if (!sastr_dir_get(&satree, src.s,SS_BACKUP + 1, S_IFDIR)) strerr_diefu2sys(111,"get list of tree at: ",src.s) ;
+		if (!stralloc_0(&src)) log_die_nomem("stralloc") ;
+	    if (!sastr_dir_get(&satree, src.s,SS_BACKUP + 1, S_IFDIR)) log_dieusys(LOG_EXIT_SYS,"get list of tree at: ",src.s) ;
 		if (satree.len)
 		{
-			if (!info_cmpnsort(&satree)) strerr_diefu1x(111,"sort list of tree") ;
+			if (!info_cmpnsort(&satree)) log_dieu(LOG_EXIT_SYS,"sort list of tree") ;
 			for(pos = 0 ; pos < satree.len ; pos += strlen(satree.s + pos) +1 )
 			{
 				src.len = newlen ;
@@ -466,18 +464,18 @@ int main(int argc, char const *const *argv, char const *const *envp)
 				char *name = satree.s + pos ;
 				info_display_all(name,what) ;
 				if (buffer_puts(buffer_1,"\n") == -1) 
-					strerr_diefu1sys(111,"write to stdout") ;	
+					log_dieusys(LOG_EXIT_SYS,"write to stdout") ;	
 			}
 		}
 		else 
 		{
-			strerr_warni1x("no tree exist yet") ;
+			log_info("no tree exist yet") ;
 			goto freed ;
 		}
 	}
 
 	if (buffer_putsflush(buffer_1,"\n") == -1) 
-		strerr_diefu1sys(111, "write to stdout") ;
+		log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 	
 		
 	freed:

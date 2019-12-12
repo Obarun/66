@@ -18,7 +18,7 @@
 //#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/sastr.h>
 
@@ -35,22 +35,23 @@
 #include <66/resolve.h>
 #include <66/ssexec.h>
 
+static stralloc workdir = STRALLOC_ZERO ;
 /** force == 1, only rewrite the service
  * force == 2, rewrite the service and it dependencies*/
 static uint8_t FORCE = 0 ;
 /** rewrite configuration file */
 static uint8_t CONF = 0 ;
 
-static void cleanup(char const *dst)
+static void cleanup(void)
 {
 	int e = errno ;
-	rm_rf(dst) ;
+	rm_rf(workdir.s) ;
 	errno = e ;
 }
 
 static void check_identifier(char const *name)
 {
-	if (!memcmp(name,SS_MASTER+1,6)) strerr_dief3x(111,"service: ",name,": starts with reserved prefix") ;
+	if (!memcmp(name,SS_MASTER+1,6)) log_die(LOG_EXIT_USER,"service: ",name,": starts with reserved prefix") ;
 }
 
 static void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv)
@@ -68,12 +69,12 @@ static void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv)
 		char *name = list->s+i ;
 		size_t namelen = strlen(name) ;
 		char svname[namelen + 1] ;
-		if (!basename(svname,name)) strerr_diefu2sys(111,"get basename of: ", svname) ;
+		if (!basename(svname,name)) log_dieusys(LOG_EXIT_SYS,"get basename of: ", svname) ;
 		r = parse_service_check_enabled(info,svname,FORCE,&exist) ;
-		if (!r) strerr_diefu2x(111,"check enabled service: ",svname) ;
+		if (!r) log_dieu(LOG_EXIT_SYS,"check enabled service: ",svname) ;
 		if (r == 2) continue ;
 		if (!parse_service_before(info,&tmp,name,nbsv,&sasv,FORCE,&exist))
-			strerr_diefu3x(111,"parse service file: ",svname,": or its dependencies") ;
+			log_dieu(LOG_EXIT_SYS,"parse service file: ",svname,": or its dependencies") ;
 	}
 	stralloc_free(&sasv) ;
 	stralloc_free(&tmp) ;	
@@ -88,9 +89,8 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	int r ;
 	size_t pos = 0 ;
 	unsigned int nbsv, nlongrun, nclassic, start ;
-
-	stralloc home = STRALLOC_ZERO ;
-	stralloc workdir = STRALLOC_ZERO ;
+	
+	//stralloc home = STRALLOC_ZERO ;
 	stralloc sasrc = STRALLOC_ZERO ;
 	stralloc tostart = STRALLOC_ZERO ;
 	
@@ -103,33 +103,33 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 		{
 			int opt = getopt_args(argc,argv, ">cCfFS", &l) ;
 			if (opt == -1) break ;
-			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
+			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
 			{
-				case 'f' :	if (FORCE) exitusage(usage_enable) ; 
+				case 'f' :	if (FORCE) log_usage(usage_enable) ; 
 							FORCE = 1 ; break ;
-				case 'F' : 	if (FORCE) exitusage(usage_enable) ; 
+				case 'F' : 	if (FORCE) log_usage(usage_enable) ; 
 							FORCE = 2 ; break ;
-				case 'c' :	if (CONF) exitusage(usage_enable) ; CONF = 1 ; break ;
-				case 'C' :	if (CONF) exitusage(usage_enable) ; CONF = 2 ; break ;
+				case 'c' :	if (CONF) log_usage(usage_enable) ; CONF = 1 ; break ;
+				case 'C' :	if (CONF) log_usage(usage_enable) ; CONF = 2 ; break ;
 				case 'S' :	start = 1 ;	break ;
-				default : exitusage(usage_enable) ; 
+				default : 	log_usage(usage_enable) ; 
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
 	
-	if (argc < 1) exitusage(usage_enable) ;
-		
+	if (argc < 1) log_usage(usage_enable) ;
+	
 	for(;*argv;argv++)
 	{
 		check_identifier(*argv) ;
-		if (!ss_resolve_src_path(&sasrc,*argv,info)) strerr_diefu2x(111,"resolve source path of: ",*argv) ;
+		if (!ss_resolve_src_path(&sasrc,*argv,info)) log_dieu(LOG_EXIT_SYS,"resolve source path of: ",*argv) ;
 	}
 
 	start_parser(&sasrc,info,&nbsv) ;
 	
-	if (!tree_copy(&workdir,info->tree.s,info->treename.s)) strerr_diefu1sys(111,"create tmp working directory") ;
+	if (!tree_copy(&workdir,info->tree.s,info->treename.s)) log_dieusys(LOG_EXIT_SYS,"create tmp working directory") ;
 
 	for (unsigned int i = 0; i < genalloc_len(sv_alltype,&gasv); i++)
 	{
@@ -137,38 +137,28 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 		char *name = keep.s + sv->cname.name ;
 		r = write_services(info,sv, workdir.s,FORCE,CONF) ;
 		if (!r)
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu2x(111,"write service: ",name) ;
-		}
+			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write service: ",name) ;
+		
 		if (r > 1) continue ; //service already added
 		
-		VERBO2 strerr_warni2x("write resolve file of: ",name) ;
+		log_trace("write resolve file of: ",name) ;
 		if (!ss_resolve_setnwrite(sv,info,workdir.s))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu2x(111,"write revolve file for: ",name) ;
-		}
-		VERBO2 strerr_warni2x("Service written successfully: ", name) ;
+			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write revolve file for: ",name) ;
+		
+		log_trace("Service written successfully: ", name) ;
 		if (sastr_cmp(&tostart,name) == -1)
 		{
 			if (sv->cname.itype == CLASSIC) nclassic++ ;
 			else nlongrun++ ;
 			if (!sastr_add_string(&tostart,name))
-			{
-				cleanup(workdir.s) ;
-				retstralloc(111,"main") ;
-			}
+				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"stralloc") ;
 		}
 	}
 	
 	if (nclassic)
 	{
 		if (!svc_switch_to(info,SS_SWBACK))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu3x(111,"switch ",info->treename.s," to backup") ;
-		}	
+			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"switch ",info->treename.s," to backup") ;
 	}
 	
 	if(nlongrun)
@@ -176,54 +166,42 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 		ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
 		r = ss_resolve_graph_src(&graph,workdir.s,0,1) ;
 		if (!r)
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu2x(111,"resolve source of graph for tree: ",info->treename.s) ;
-		}
+			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"resolve source of graph for tree: ",info->treename.s) ;
 		
 		r = ss_resolve_graph_publish(&graph,0) ;
 		if (r <= 0) 
 		{
-			cleanup(workdir.s) ;
-			if (r < 0) strerr_dief1x(110,"cyclic graph detected") ;
-			strerr_diefu1sys(111,"publish service graph") ;
+			cleanup() ;
+			if (r < 0) log_die(LOG_EXIT_USER,"cyclic graph detected") ;
+			log_dieusys(LOG_EXIT_SYS,"publish service graph") ;
 		}
 		if (!ss_resolve_write_master(info,&graph,workdir.s,0))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu1sys(111,"update inner bundle") ;
-		}
+			log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"update inner bundle") ;
+		
 		ss_resolve_graph_free(&graph) ;
 		if (!db_compile(workdir.s,info->tree.s,info->treename.s,envp))
-		{
-				cleanup(workdir.s) ;
-				strerr_diefu4x(111,"compile ",workdir.s,"/",info->treename.s) ;
-		}
+			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"compile ",workdir.s,"/",info->treename.s) ;
+		
 		/** this is an important part, we call s6-rc-update here */
 		if (!db_switch_to(info,envp,SS_SWBACK))
-		{
-			cleanup(workdir.s) ;
-			strerr_diefu3x(111,"switch ",info->treename.s," to backup") ;
-		}		
+			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"switch ",info->treename.s," to backup") ;
 	}
 
 	if (!tree_copy_tmp(workdir.s,info))
-	{
-		cleanup(workdir.s) ;
-		strerr_diefu4x(111,"copy: ",workdir.s," to: ", info->tree.s) ;
-	}
+		log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"copy: ",workdir.s," to: ", info->tree.s) ;
 	
-	cleanup(workdir.s) ;
+	
+	cleanup() ;
 
 	/** parser allocation*/
 	freed_parser() ;
 	/** inner allocation */
-	stralloc_free(&home) ;
+	//stralloc_free(&home) ;
 	stralloc_free(&workdir) ;
 	stralloc_free(&sasrc) ;
 		
 	for (; pos < tostart.len; pos += strlen(tostart.s + pos) + 1)
-		VERBO1 strerr_warni2x("Enabled successfully: ", tostart.s + pos) ;
+		log_info("Enabled successfully: ", tostart.s + pos) ;
 	
 	if (start && tostart.len)
 	{

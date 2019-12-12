@@ -20,7 +20,7 @@
 //#include <stdio.h>
 
 #include <oblibs/types.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/directory.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
@@ -122,28 +122,28 @@ int ss_resolve_src_path(stralloc *sasrc,char const *sv, ssexec_t *info)
 	if (!info->owner) src = SS_SERVICE_ADMDIR ;
 	else
 	{	
-		if (!set_ownerhome(&home,info->owner)){ VERBO3 strerr_warnwu1sys("set home directory") ; goto err ; }
-		if (!stralloc_cats(&home,SS_SERVICE_USERDIR)) retstralloc(0,"ss_resolve_src_path") ;
-		if (!stralloc_0(&home)) retstralloc(0,"ss_resolve_src_path") ;
+		if (!set_ownerhome(&home,info->owner)){ log_warnusys("set home directory") ; goto err ; }
+		if (!stralloc_cats(&home,SS_SERVICE_USERDIR)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		if (!stralloc_0(&home)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		home.len-- ;
 		src = home.s ;
 	}
 	
 	r = ss_resolve_src(sasrc,sv,src,&found) ;
-	if (r < 0){ VERBO3 strerr_warnwu2sys("parse source directory: ",src) ; goto err ; }
+	if (r < 0){ log_warnusys("parse source directory: ",src) ; goto err ; }
 	if (!r)
 	{
 		found = 0 ;
 		src = SS_SERVICE_ADMDIR ;
 		r = ss_resolve_src(sasrc,sv,src,&found) ;
-		if (r < 0) { VERBO3 strerr_warnwu2sys("parse source directory: ",src) ; goto err ; }
+		if (r < 0) { log_warnusys("parse source directory: ",src) ; goto err ; }
 		if (!r)
 		{
 			found = 0 ;
 			src = SS_SERVICE_SYSDIR ;
 			r = ss_resolve_src(sasrc,sv,src,&found) ;
-			if (r < 0) { VERBO3 strerr_warnwu2sys("parse source directory: ",src) ; goto err ; }
-			if (!r) { VERBO3 strerr_warnw2x("unknown service: ",sv) ; goto err ; }
+			if (r < 0) { log_warnusys("parse source directory: ",src) ; goto err ; }
+			if (!r) { log_warn("unknown service: ",sv) ; goto err ; }
 		}
 	}
 	stralloc_free(&home) ;
@@ -179,7 +179,7 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found
 	DIR *dir = opendir(src) ;
 	if (!dir)
 	{
-		VERBO3 strerr_warnwu2sys("open : ", src) ;
+		log_warnusys("open : ", src) ;
 		goto errstra ;
 	}
 	fdsrc = dir_fd(dir) ;
@@ -196,7 +196,7 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found
 		
 		if (stat_at(fdsrc, d->d_name, &st) < 0)
 		{
-			VERBO3 strerr_warnwu3sys("stat ", src, d->d_name) ;
+			log_warnusys("stat ", src, d->d_name) ;
 			goto errdir ;
 		}
 		
@@ -226,7 +226,7 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found
 			*found = 1 ;
 			if (stat_at(fdsrc, d->d_name, &st) < 0)
 			{
-				VERBO3 strerr_warnwu3sys("stat ", src, d->d_name) ;
+				log_warnusys("stat ", src, d->d_name) ;
 				goto errdir ;
 			}
 
@@ -242,7 +242,7 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found
 				else r = sastr_dir_get(&satmp,subdir.s,"",S_IFREG) ;
 				if (!r)
 				{
-					VERBO3 strerr_warnwu2sys("get services from directory: ",subdir.s) ;
+					log_warnusys("get services from directory: ",subdir.s) ;
 					goto errdir ;
 				}
 				i = 0, len = satmp.len ;
@@ -342,11 +342,11 @@ uint32_t ss_resolve_add_string(ss_resolve_t *res, char const *data)
 	uint32_t baselen = res->sa.len ;
 	if (!data)
 	{
-		if (!stralloc_catb(&res->sa,"",1)) strerr_diefu1sys(111,"stralloc:resolve_add_string") ;
+		if (!stralloc_catb(&res->sa,"",1)) log_dieusys(LOG_EXIT_SYS,"stralloc:resolve_add_string") ;
 		return baselen ;
 	}
 	size_t datalen = strlen(data) ;
-	if (!stralloc_catb(&res->sa,data,datalen + 1)) strerr_diefu1sys(111,"stralloc:resolve_add_string") ;
+	if (!stralloc_catb(&res->sa,data,datalen + 1)) log_dieusys(LOG_EXIT_SYS,"stralloc:resolve_add_string") ;
 	return baselen ;
 }
 
@@ -547,17 +547,17 @@ int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst,ssexec_t *info)
 	
 	if (ss_state_check(string + sv->state,string + sv->logger))
 	{
-		if (!ss_state_read(&sta,string + sv->state,string + sv->logger)) { VERBO1 strerr_warnwu2sys("read state file of: ",string + sv->logger) ; goto err ; }
+		if (!ss_state_read(&sta,string + sv->state,string + sv->logger)) { log_warnusys("read state file of: ",string + sv->logger) ; goto err ; }
 		if (!sta.init)
 			ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_TRUE) ;
 		ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 		ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
-		if (!ss_state_write(&sta,string + sv->state,string + sv->logger)){ VERBO1 strerr_warnwu2sys("write state file of: ",string + sv->logger) ; goto err ; }
+		if (!ss_state_write(&sta,string + sv->state,string + sv->logger)){ log_warnusys("write state file of: ",string + sv->logger) ; goto err ; }
 	}
 	
 	if (!ss_resolve_write(&res,dst,res.sa.s + res.name))
 	{
-		VERBO1 strerr_warnwu5sys("write resolve file: ",dst,SS_RESOLVE,"/",res.sa.s + res.name) ;
+		log_warnusys("write resolve file: ",dst,SS_RESOLVE,"/",res.sa.s + res.name) ;
 		goto err ;
 	}
 	ss_resolve_free(&res) ;
@@ -639,12 +639,12 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 
 	if (ss_state_check(state,name))
 	{
-		if (!ss_state_read(&sta,state,name)) { VERBO1 strerr_warnwu2sys("read state file of: ",name) ; goto err ; }
+		if (!ss_state_read(&sta,state,name)) { log_warnusys("read state file of: ",name) ; goto err ; }
 		if (!sta.init)
 			ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_TRUE) ;
 		ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 		ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
-		if (!ss_state_write(&sta,res.sa.s + res.state,name)){ VERBO1 strerr_warnwu2sys("write state file of: ",name) ; goto err ; }
+		if (!ss_state_write(&sta,res.sa.s + res.state,name)){ log_warnusys("write state file of: ",name) ; goto err ; }
 	}
 
 	
@@ -654,10 +654,10 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		for (;nid; id += strlen(deps.s + id) + 1, nid--)
 		{
 			if (!stralloc_catb(&final,deps.s + id,strlen(deps.s + id)) ||
-			!stralloc_catb(&final," ",1)) retstralloc(0,"write_dependencies") ;
+			!stralloc_catb(&final," ",1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		}
 		final.len-- ;
-		if (!stralloc_0(&final)){ VERBO1 warnstralloc("ss_resolve_setnwrite") ; goto err ; } 
+		if (!stralloc_0(&final)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		res.deps = ss_resolve_add_string(&res,final.s) ;
 	}
 	
@@ -678,9 +678,9 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		res.logger = ss_resolve_add_string(&res,logname) ;
 		res.logreal = ss_resolve_add_string(&res,logreal) ;
 		if (final.len) final.len--;
-		if (!stralloc_catb(&final," ",1)) { VERBO1 warnstralloc("ss_resolve_setnwrite") ; goto err ; }
-		if (!stralloc_cats(&final,res.sa.s + res.logger)) { VERBO1 warnstralloc("ss_resolve_setnwrite") ; goto err ; }	
-		if (!stralloc_0(&final)){ VERBO1 warnstralloc("ss_resolve_setnwrite") ; goto err ; } 
+		if (!stralloc_catb(&final," ",1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		if (!stralloc_cats(&final,res.sa.s + res.logger)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		if (!stralloc_0(&final)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		res.deps = ss_resolve_add_string(&res,final.s) ;	
 		if (res.type == CLASSIC) res.ndeps = 1 ;
 		else if (res.type == LONGRUN) res.ndeps += 1 ;
@@ -689,22 +689,22 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		{	
 			if(info->owner > 0)
 			{	
-				if (!stralloc_cats(&destlog,get_userhome(info->owner))) { VERBO1 warnstralloc("ss_resolve_setnwrite") ; goto err ; } 
-				if (!stralloc_cats(&destlog,"/")) { VERBO1 warnstralloc("ss_resolve_setnwrite") ; goto err ; } 
-				if (!stralloc_cats(&destlog,SS_LOGGER_USERDIR)) { VERBO1 warnstralloc("ss_resolve_setnwrite") ; goto err ; } 
-				if (!stralloc_cats(&destlog,name)) { VERBO1 warnstralloc("ss_resolve_setnwrite") ; goto err ; } 
+				if (!stralloc_cats(&destlog,get_userhome(info->owner))) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+				if (!stralloc_cats(&destlog,"/")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+				if (!stralloc_cats(&destlog,SS_LOGGER_USERDIR)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+				if (!stralloc_cats(&destlog,name)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			}
 			else
 			{
-				if (!stralloc_cats(&destlog,SS_LOGGER_SYSDIR)) { VERBO1 warnstralloc("ss_resolve_setnwrite") ; goto err ; } 
-				if (!stralloc_cats(&destlog,name)) { VERBO1 warnstralloc("ss_resolve_setnwrite") ; goto err ; } 
+				if (!stralloc_cats(&destlog,SS_LOGGER_SYSDIR)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+				if (!stralloc_cats(&destlog,name)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			}
 		}
 		else
 		{
-			if (!stralloc_cats(&destlog,keep.s+services->type.classic_longrun.log.destination)) { warnstralloc("ss_resolve_setnwrite") ; goto err ; } 
+			if (!stralloc_cats(&destlog,keep.s+services->type.classic_longrun.log.destination)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		}
-		if (!stralloc_0(&destlog)) { VERBO1 warnstralloc("ss_resolve_setnwrite") ; goto err ; } 
+		if (!stralloc_0(&destlog)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		
 		res.dstlog = ss_resolve_add_string(&res,destlog.s) ;
 		
@@ -713,7 +713,7 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	/** may on workdir so a copy with made to source, write it SIMPLE */
 	if (!ss_resolve_write(&res,dst,res.sa.s + res.name))
 	{
-		VERBO1 strerr_warnwu5sys("write resolve file: ",dst,SS_RESOLVE,"/",res.sa.s + res.name) ;
+		log_warnusys("write resolve file: ",dst,SS_RESOLVE,"/",res.sa.s + res.name) ;
 		goto err ;
 	}
 	
@@ -983,10 +983,10 @@ int ss_resolve_create_live(ssexec_t *info)
 		memcpy(sym + sares.len, SS_SVDIRS, SS_SVDIRS_LEN) ;
 		sym[sares.len + SS_SVDIRS_LEN] = 0 ;
 		
-		VERBO3 strerr_warnt4x("point symlink: ",sym," to ",ressrc.s) ;
+		log_trace("point symlink: ",sym," to ",ressrc.s) ;
 		if (symlink(ressrc.s,sym) < 0)
 		{
-			VERBO3 strerr_warnwu2sys("symlink: ", sym) ;
+			log_warnusys("symlink: ", sym) ;
 			goto err ;
 		}
 	}
@@ -1092,7 +1092,7 @@ int ss_resolve_write_master(ssexec_t *info,ss_resolve_graph_t *graph,char const 
 	r = file_write_unsafe(dst,SS_CONTENTS,in.s,in.len) ;
 	if (!r) 
 	{ 
-		VERBO3 strerr_warnwu3sys("write: ",dst,"contents") ;
+		log_warnusys("write: ",dst,"contents") ;
 		goto err ;
 	}
 	

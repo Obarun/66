@@ -16,7 +16,7 @@
 
 #include <sys/stat.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
@@ -43,18 +43,15 @@ int db_find_compiled_state(char const *livetree, char const *treename)
 	
 	if(lstat(current,&st) < 0) return -1 ;
 	if(!(S_ISLNK(st.st_mode))) 
-	{
-		VERBO3 strerr_warnwu2x("find symlink: ",current) ;
-		return -1 ;
-	}
-	
+		log_warnu_return(LOG_EXIT_LESSONE,"find symlink: ",current) ;
+		
 	stralloc symreal = STRALLOC_ZERO ;
 	
 	r = sarealpath(&symreal,current) ;
-	if (r < 0 )
+	if (r < 0 ) 
 	{
-		VERBO3 strerr_warnwu2x("find real path: ",current) ;
-		return -1 ; 
+		stralloc_free(&symreal) ;
+		log_warnu_return(LOG_EXIT_LESSONE,"find real path: ",current) ;
 	}
 	char *b = NULL ;
 	b = memmem(symreal.s,symreal.len,SS_BACKUP,SS_BACKUP_LEN) ;

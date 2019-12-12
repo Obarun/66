@@ -13,7 +13,7 @@
  */
 
 #include <oblibs/obgetopt.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/string.h>
 
 #include <skalibs/buffer.h>
@@ -32,39 +32,39 @@ void set_ssinfo(ssexec_t *info)
 	
 	info->owner = MYUID ;
 	
-	if (!set_ownersysdir(&info->base,info->owner)) strerr_diefu1sys(111, "set owner directory") ;
+	if (!set_ownersysdir(&info->base,info->owner)) log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 	
 	r = tree_sethome(&info->tree,info->base.s,info->owner) ;
-	if (r < 0) strerr_diefu1x(110,"find the current tree. You must use -t options") ;
-	if (!r) strerr_diefu2sys(111,"find tree: ", info->tree.s) ;
+	if (r < 0) log_dieu(LOG_EXIT_USER,"find the current tree. You must use -t options") ;
+	if (!r) log_dieusys(LOG_EXIT_SYS,"find tree: ", info->tree.s) ;
 	
 	r = tree_setname(&info->treename,info->tree.s) ;
-	if (r < 0) strerr_diefu1x(111,"set the tree name") ;
+	if (r < 0) log_dieu(LOG_EXIT_SYS,"set the tree name") ;
 	
 	if (!tree_get_permissions(info->tree.s,info->owner))
-		strerr_dief2x(110,"You're not allowed to use the tree: ",info->tree.s) ;
+		log_die(LOG_EXIT_USER,"You're not allowed to use the tree: ",info->tree.s) ;
 	else info->treeallow = 1 ;
 
 	r = set_livedir(&info->live) ;
-	if (!r) exitstralloc("set_ssinfo") ;
-	if(r < 0) strerr_dief3x(111,"live: ",info->live.s," must be an absolute path") ;
+	if (!r) log_die_nomem("stralloc") ;
+	if(r < 0) log_die(LOG_EXIT_SYS,"live: ",info->live.s," must be an absolute path") ;
 	
-	if (!stralloc_copy(&info->livetree,&info->live)) exitstralloc("set_ssinfo") ;
-	if (!stralloc_copy(&info->scandir,&info->live)) exitstralloc("set_ssinfo") ;
+	if (!stralloc_copy(&info->livetree,&info->live)) log_die_nomem("stralloc") ;
+	if (!stralloc_copy(&info->scandir,&info->live)) log_die_nomem("stralloc") ;
 	
 	r = set_livetree(&info->livetree,info->owner) ;
-	if (!r) exitstralloc("set_ssinfo") ;
-	if(r < 0) strerr_dief3x(111,"livetree: ",info->livetree.s," must be an absolute path") ;
+	if (!r) log_die_nomem("stralloc") ;
+	if(r < 0) log_die(LOG_EXIT_SYS,"livetree: ",info->livetree.s," must be an absolute path") ;
 	
 	r = set_livescan(&info->scandir,info->owner) ;
-	if (!r) exitstralloc("set_ssinfo") ;
-	if(r < 0) strerr_dief3x(111,"scandir: ",info->scandir.s," must be an absolute path") ;
+	if (!r) log_die_nomem("stralloc") ;
+	if(r < 0) log_die(LOG_EXIT_SYS,"scandir: ",info->scandir.s," must be an absolute path") ;
 }
 
 static inline void info_help (char const *help)
 {
 	if (buffer_putsflush(buffer_1, help) < 0)
-		strerr_diefu1sys(111, "write to stdout") ;
+		log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
 
@@ -87,17 +87,17 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
 			switch (opt)
 			{
 				case 'h' : 	info_help(info->help); return 0 ;
-				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) exitusage(info->usage) ; break ;
-				case 'l' : 	if (!stralloc_cats(&info->live,l.arg)) retstralloc(111,"main") ;
-							if (!stralloc_0(&info->live)) retstralloc(111,"main") ;
+				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(info->usage) ; break ;
+				case 'l' : 	if (!stralloc_cats(&info->live,l.arg)) log_die_nomem("stralloc") ;
+							if (!stralloc_0(&info->live)) log_die_nomem("stralloc") ;
 							break ;
-				case 't' : 	if(!stralloc_cats(&info->tree,l.arg)) retstralloc(111,"main") ;
-							if(!stralloc_0(&info->tree)) retstralloc(111,"main") ;
+				case 't' : 	if(!stralloc_cats(&info->tree,l.arg)) log_die_nomem("stralloc") ;
+							if(!stralloc_0(&info->tree)) log_die_nomem("stralloc") ;
 							break ;
-				case 'T' :	if (!uint0_scan(l.arg, &info->timeout)) exitusage(info->usage) ; break ;
+				case 'T' :	if (!uint0_scan(l.arg, &info->timeout)) log_usage(info->usage) ; break ;
 				default	:	for (int i = 0 ; i < n ; i++)
 							{						
-								if (!argv[l.ind]) exitusage(info->usage) ;
+								if (!argv[l.ind]) log_usage(info->usage) ;
 								if (obstr_equal(nargv[i],argv[l.ind]))
 									f = 1 ;
 							} 

@@ -32,7 +32,6 @@ set_livetree.o
 set_ownerhome.o
 set_ownersysdir.o
 ss_info_utils.o
-ss_utils.o
 ssexec_dbctl.o
 ssexec_enable.o
 ssexec_env.o

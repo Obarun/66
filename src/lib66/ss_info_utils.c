@@ -21,9 +21,8 @@
 #include <string.h>
 #include <sys/types.h> //ssize_t
 
-#include <oblibs/display.h>
 #include <oblibs/sastr.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 
 #include <skalibs/buffer.h>
 #include <skalibs/lolstdio.h>
@@ -44,24 +43,6 @@ ss_resolve_graph_style graph_default = {
 	"`-",
 	"|",
 	2
-} ;
-
-set_color_t use_color = {
-	BWHITE, //info
-	BGREEN, // valid
-	BYELLOW,  //warning
-	BL_BBLUE, // blink
-	BRED, //error
-	NOCOLOR //reset
-} ;
-
-set_color_t no_color = {
-	"",
-	"",
-	"",
-	"",
-	"",
-	""
 } ;
 
 int info_getcols_fd(int fd)
@@ -142,7 +123,7 @@ size_t info_display_field_name(char const *field)
 	if(field)
 	{
 		len = info_length_from_wchar(field) + 1 ;
-		if (!bprintf(buffer_1,"%s%s%s", info_color->info, field, info_color->off)) strerr_diefu1sys(111,"write to stdout") ;
+		if (!bprintf(buffer_1,"%s%s%s", log_color->info, field, log_color->off)) log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 	}
 	return len ;
 }
@@ -180,7 +161,7 @@ void info_display_list(char const *field, stralloc *list)
 	
 	return ;
 	err:
-		strerr_diefu1sys(111,"write to stdout") ;
+		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 }
 
 void info_display_nline(char const *field,char const *str)
@@ -189,22 +170,22 @@ void info_display_nline(char const *field,char const *str)
 	stralloc tmp = STRALLOC_ZERO ;
 	stralloc cp = STRALLOC_ZERO ;
 	if (!stralloc_cats(&tmp,str) ||
-	!stralloc_0(&tmp)) exitstralloc("info_display_nline") ;
-	if (!sastr_split_string_in_nline(&tmp)) strerr_diefu1x(111,"split string in nline") ;
+	!stralloc_0(&tmp)) log_die_nomem("stralloc") ;
+	if (!sastr_split_string_in_nline(&tmp)) log_dieu(LOG_EXIT_SYS,"split string in nline") ;
 	for (;pos < tmp.len ; pos += strlen(tmp.s + pos) + 1)
 	{
 		cp.len = 0 ;
 		if (!stralloc_cats(&cp,tmp.s + pos) ||
-		!stralloc_0(&cp)) exitstralloc("info_display_nline") ;
+		!stralloc_0(&cp)) log_die_nomem("stralloc") ;
 		if (!pos)
 		{
 			if (!bprintf(buffer_1,"%s"," "))
-				strerr_diefu1sys(111,"write to stdout") ;
+				log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 		}
 		else
 		{
 			if (!bprintf(buffer_1,"%*s",padding,""))
-				strerr_diefu1sys(111,"write to stdout") ;
+				log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 		}
 		info_display_list(field,&cp) ;
 	}
@@ -237,7 +218,7 @@ void info_graph_display(ss_resolve_t *res, depth_t *depth, int last, int padding
 		depth = depth->next ;
 	} 
 	
-	if (!bprintf(buffer_1,"%*s%*s%s(%s%i%s,%s%s%s,%s) %s",level == 1 ? padding : 0,"", style->indent * (depth->level - level), "", tip, status.pid ? info_color->valid : info_color->off,status.pid ? status.pid : 0,info_color->off, res->disen ? info_color->off : info_color->error, res->disen ? "Enabled" : "Disabled",info_color->off,get_keybyid(res->type), name)) return ;
+	if (!bprintf(buffer_1,"%*s%*s%s(%s%i%s,%s%s%s,%s) %s",level == 1 ? padding : 0,"", style->indent * (depth->level - level), "", tip, status.pid ? log_color->valid : log_color->off,status.pid ? status.pid : 0,log_color->off, res->disen ? log_color->off : log_color->error, res->disen ? "Enabled" : "Disabled",log_color->off,get_keybyid(res->type), name)) return ;
 
 	if (buffer_putsflush(buffer_1,"\n") < 0) return ; 
 }

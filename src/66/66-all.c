@@ -18,7 +18,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/obgetopt.h>
 #include <oblibs/types.h>
 #include <oblibs/string.h>
@@ -34,7 +34,6 @@
 #include <66/utils.h>
 #include <66/tree.h>
 
-unsigned int VERBOSITY = 1 ;
 static unsigned int DEADLINE = 0 ;
 unsigned int trc = 0 ;
 #define USAGE "66-all [ -h ] [ -v verbosity ] [ -f ] [ -T timeout ] [ -l live ] [ -t tree ] up/down"
@@ -54,7 +53,7 @@ static inline void info_help (void)
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
-    strerr_diefu1sys(111, "write to stdout") ;
+    log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
 int doit(char const *tree,char const *treename,char const *live, unsigned int what,uid_t owner, char const *const *envp)
@@ -80,7 +79,7 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 	src[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + treenamelen] = 0 ;
 
     if (!sastr_dir_get(&dirlist,src,"init",S_IFREG))
-		strerr_diefu2sys(111,"get init file from directory: ",src) ;
+		log_dieusys(LOG_EXIT_SYS,"get init file from directory: ",src) ;
 
 	if (dirlist.len)
 	{
@@ -115,12 +114,12 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 		pid = child_spawn0(newargv[0],newargv,envp) ;
 		if (waitpid_nointr(pid,&wstat, 0) < 0)
 		{
-			VERBO3 strerr_warnwu2sys("wait for ",newargv[0]) ;
+			log_warnusys("wait for ",newargv[0]) ;
 			goto err ;
 		}
 		if (wstat) goto err ;
 	}
-	else VERBO1 strerr_warni3x("Empty tree: ",treename," -- nothing to do") ;
+	else log_info("Empty tree: ",treename," -- nothing to do") ;
 
 	stralloc_free(&dirlist) ;
 	return 1 ;
@@ -141,8 +140,8 @@ static void redir_fd(void)
 	dup2 (fd,2) ;
 	fd_close(fd) ;
 
-	if (setsid() < 0) strerr_diefu1sys(111,"setsid") ;
-	if ((chdir("/")) < 0) strerr_diefu1sys(111,"chdir") ;
+	if (setsid() < 0) log_dieusys(LOG_EXIT_SYS,"setsid") ;
+	if ((chdir("/")) < 0) log_dieusys(LOG_EXIT_SYS,"chdir") ;
 	ioctl(0,TIOCSCTTY,1) ;
 
 	umask(022) ;
@@ -175,82 +174,82 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		{
 			int opt = getopt_args(argc,argv, ">hv:l:T:t:f", &l) ;
 			if (opt == -1) break ;
-			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
+			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
 			{
 				case 'h' : 	info_help(); return 0 ;
-				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) exitusage(USAGE) ; break ;
-				case 'l' : 	if (!stralloc_cats(&live,l.arg)) retstralloc(111,"main") ;
-							if (!stralloc_0(&live)) retstralloc(111,"main") ;
+				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
+				case 'l' : 	if (!stralloc_cats(&live,l.arg)) log_die_nomem("stralloc") ;
+							if (!stralloc_0(&live)) log_die_nomem("stralloc") ;
 							break ;
-				case 'T' :	if (!uint0_scan(l.arg, &DEADLINE)) exitusage(USAGE) ; break ;
+				case 'T' :	if (!uint0_scan(l.arg, &DEADLINE)) log_usage(USAGE) ; break ;
 				case 't' : 	treename = l.arg ; break ;
 				case 'f' : 	shut = 1 ; break ;
-				default : exitusage(USAGE) ; 
+				default : 	log_usage(USAGE) ; 
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
 
-	if (argc != 1) exitusage(USAGE) ;
+	if (argc != 1) log_usage(USAGE) ;
 	
 	if (*argv[0] == 'u') what = 1 ;
 	else if (*argv[0] == 'd') what = 0 ;
-	else exitusage(USAGE) ;
+	else log_usage(USAGE) ;
 	
 	owner = MYUID ;
 
-	if (!set_ownersysdir(&base,owner)) strerr_diefu1sys(111, "set owner directory") ;
+	if (!set_ownersysdir(&base,owner)) log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 	
 	r = set_livedir(&live) ;
-	if (!r) retstralloc(111,"main") ;
-	if (r < 0 ) strerr_dief3x(111,"live: ",live.s," must be an absolute path") ;
+	if (!r) log_die_nomem("stralloc") ;
+	if (r < 0 ) log_die(LOG_EXIT_SYS,"live: ",live.s," must be an absolute path") ;
 	
-	if (!stralloc_copy(&scandir,&live)) retstralloc(111,"main") ;
+	if (!stralloc_copy(&scandir,&live))log_die_nomem("stralloc") ;
 	
 	r = set_livescan(&scandir,owner) ;
-	if (!r) retstralloc(111,"main") ;
-	if (r < 0 ) strerr_dief3x(111,"scandir: ",scandir.s," must be an absolute path") ;
+	if (!r) log_die_nomem("stralloc") ;
+	if (r < 0 ) log_die(LOG_EXIT_SYS,"scandir: ",scandir.s," must be an absolute path") ;
 	
-	if ((scandir_ok(scandir.s)) <= 0) strerr_dief3sys(111,"scandir: ", scandir.s," is not running") ;
+	if ((scandir_ok(scandir.s)) <= 0) log_die(LOG_EXIT_SYS,"scandir: ", scandir.s," is not running") ;
 	
-	if (!stralloc_copy(&livetree,&live)) retstralloc(111,"main") ;
+	if (!stralloc_copy(&livetree,&live)) log_die_nomem("stralloc") ;
 	
 	r = set_livetree(&livetree,owner) ;
-	if (!r) retstralloc(111,"main") ;
-	if (r < 0 ) strerr_dief3x(111,"livetree: ",livetree.s," must be an absolute path") ;
+	if (!r) log_die_nomem("stralloc") ;
+	if (r < 0 ) log_die(LOG_EXIT_SYS,"livetree: ",livetree.s," must be an absolute path") ;
 	
-	char state[base.len + SS_SYSTEM_LEN + SS_STATE_LEN + 1] ;
-	memcpy(state,base.s,base.len) ;
-	memcpy(state + base.len,SS_SYSTEM,SS_SYSTEM_LEN) ;
-	memcpy(state + base.len + SS_SYSTEM_LEN, SS_STATE ,SS_STATE_LEN) ;
+	char ste[base.len + SS_SYSTEM_LEN + SS_STATE_LEN + 1] ;
+	memcpy(ste,base.s,base.len) ;
+	memcpy(ste + base.len,SS_SYSTEM,SS_SYSTEM_LEN) ;
+	memcpy(ste + base.len + SS_SYSTEM_LEN, SS_STATE ,SS_STATE_LEN) ;
 	statelen = base.len + SS_SYSTEM_LEN + SS_STATE_LEN ;
-	state[statelen] = 0 ;
+	ste[statelen] = 0 ;
 
-	r = scan_mode(state,S_IFREG) ;
-	if (r < 0) strerr_dief2x(111,"conflict format for: ",state) ;
-	if (!r)	strerr_diefu2sys(111,"find: ",state) ;
+	r = scan_mode(ste,S_IFREG) ;
+	if (r < 0) log_die(LOG_EXIT_SYS,"conflict format for: ",ste) ;
+	if (!r)	log_dieusys(LOG_EXIT_SYS,"find: ",ste) ;
 	
 	/** only one tree?*/
 	if (treename)
 	{
-		if (!stralloc_cats(&contents,treename)) strerr_diefu3x(111,"add: ", treename," as tree to start") ;
-		if (!stralloc_0(&contents)) retstralloc(111,"main") ;
+		if (!stralloc_cats(&contents,treename))log_dieu(LOG_EXIT_SYS,"add: ", treename," as tree to start") ;
+		if (!stralloc_0(&contents)) log_die_nomem("stralloc") ;
 	}
 	else
 	{
-		statesize = file_get_size(state) ;
+		statesize = file_get_size(ste) ;
 	
-		r = openreadfileclose(state,&contents,statesize) ;
-		if(!r) strerr_diefu2sys(111,"open: ", state) ;
+		r = openreadfileclose(ste,&contents,statesize) ;
+		if(!r) log_dieusys(LOG_EXIT_SYS,"open: ", ste) ;
 
 		/** ensure that we have an empty line at the end of the string*/
-		if (!stralloc_cats(&contents,"\n")) retstralloc(111,"main") ;
-		if (!stralloc_0(&contents)) retstralloc(111,"main") ;
+		if (!stralloc_cats(&contents,"\n")) log_die_nomem("stralloc") ;
+		if (!stralloc_0(&contents)) log_die_nomem("stralloc") ;
 	
 		if (!sastr_clean_element(&contents)) 
 		{
-			strerr_warni1x("nothing to do") ;
+			log_info("nothing to do") ;
 			goto end ;
 		}
 		
@@ -263,14 +262,14 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 		dpid = fork() ;  
 		
-		if (dpid < 0) strerr_diefu1sys(111,"fork") ;  
+		if (dpid < 0) log_dieusys(LOG_EXIT_SYS,"fork") ;  
 		else if (dpid > 0)
 		{
 			if (waitpid_nointr(dpid,&wstat, 0) < 0)
-				strerr_diefu1sys(111,"wait for child") ;
+				log_dieusys(LOG_EXIT_SYS,"wait for child") ;
 
 			if (wstat)
-				strerr_dief1x(111,"child fail") ;
+				log_die(LOG_EXIT_SYS,"child fail") ;
 		
 			goto end ;
 			
@@ -284,34 +283,34 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		
 		char *treename = contents.s + pos ;
 		
-		if(!stralloc_cats(&tree,treename)) retstralloc(111,"main") ;
-		if(!stralloc_0(&tree)) retstralloc(111,"main") ;
+		if(!stralloc_cats(&tree,treename)) log_die_nomem("stralloc") ;
+		if(!stralloc_0(&tree)) log_die_nomem("stralloc") ;
 		
 		r = tree_sethome(&tree,base.s,owner) ;
-		if (r < 0 || !r) strerr_diefu2sys(111,"find tree: ", tree.s) ;
+		if (r < 0 || !r) log_dieusys(LOG_EXIT_SYS,"find tree: ", tree.s) ;
 	
 		if (!tree_get_permissions(tree.s,owner))
-			strerr_dief2x(110,"You're not allowed to use the tree: ",tree.s) ;
+			log_die(LOG_EXIT_USER,"You're not allowed to use the tree: ",tree.s) ;
 		/* we need to make an ugly check here, a tree might be empty.
 		 * 66-init will not complain about this but doit function will do.
 		 * So, we need to scan the tree before trying to start any service from it.
 		 * This check is a temporary one because the tree dependencies feature
 		 * will come on a near future and it will change this default behavior */
 		size_t newlen = tree.len ;
-		if (!stralloc_cats(&tree,SS_SVDIRS SS_SVC)) retstralloc(111,"main") ;
-		if (!stralloc_0(&tree)) retstralloc(111,"main") ;
+		if (!stralloc_cats(&tree,SS_SVDIRS SS_SVC)) log_die_nomem("stralloc") ;
+		if (!stralloc_0(&tree)) log_die_nomem("stralloc") ;
 		
-		if (!sastr_dir_get(&ugly,tree.s,"",S_IFDIR)) strerr_diefu2x(111,"get classic services from: ",tree.s) ;
+		if (!sastr_dir_get(&ugly,tree.s,"",S_IFDIR)) log_dieu(LOG_EXIT_SYS,"get classic services from: ",tree.s) ;
 		if (!ugly.len)
 		{
 			tree.len = newlen ;
 			ugly.len = 0 ;
-			if (!stralloc_cats(&tree,SS_SVDIRS SS_DB SS_SRC)) retstralloc(111,"main") ;
-			if (!stralloc_0(&tree)) retstralloc(111,"main") ;
-			if (!sastr_dir_get(&ugly,tree.s,SS_MASTER+1,S_IFDIR)) strerr_diefu2sys(111,"get rc services from: ",tree.s) ;
+			if (!stralloc_cats(&tree,SS_SVDIRS SS_DB SS_SRC)) log_die_nomem("stralloc") ;
+			if (!stralloc_0(&tree)) log_die_nomem("stralloc") ;
+			if (!sastr_dir_get(&ugly,tree.s,SS_MASTER+1,S_IFDIR)) log_dieusys(LOG_EXIT_SYS,"get rc services from: ",tree.s) ;
 			if (!ugly.len)
 			{
-				strerr_warni3x("empty tree: ",treename," -- nothing to do") ;
+				log_info("empty tree: ",treename," -- nothing to do") ;
 				goto end ;
 			}
 		}
@@ -334,18 +333,18 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			
 			pid = child_spawn0(newargv[0],newargv,envp) ;
 			if (waitpid_nointr(pid,&wstat, 0) < 0)
-				strerr_diefu2sys(111,"wait for ",newargv[0]) ;
+				log_dieusys(LOG_EXIT_SYS,"wait for ",newargv[0]) ;
 			
 			if (wstat)
-				strerr_diefu2x(111,"initiate services of tree: ",treename) ;
+				log_dieu(LOG_EXIT_SYS,"initiate services of tree: ",treename) ;
 			
-			VERBO3 strerr_warnt2x("reload scandir: ",scandir.s) ;
+			log_trace("reload scandir: ",scandir.s) ;
 			if (scandir_send_signal(scandir.s,"an") <= 0) 
-				strerr_diefu2sys(111,"reload scandir: ",scandir.s) ;
+				log_dieusys(LOG_EXIT_SYS,"reload scandir: ",scandir.s) ;
 				
 		}
 		
-		if (!doit(tree.s,treename,live.s,what,owner,envp)) strerr_diefu3x(111,(what) ? "start" : "stop" , " services of tree: ",treename) ;
+		if (!doit(tree.s,treename,live.s,what,owner,envp)) log_dieu(LOG_EXIT_SYS,(what) ? "start" : "stop" , " services of tree: ",treename) ;
 	}
 	end:
 		if (shut)

@@ -18,7 +18,7 @@
 #include <sys/types.h>
 #include <string.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/types.h>
 
 #include <skalibs/types.h>
@@ -50,7 +50,7 @@ int tree_find_current(stralloc *tree, char const *base,uid_t owner)
 	if(r <= 0) return 0 ; 
 	r = sarealpath(tree,sa) ;
 	if (r < 0 ) return 0 ; 
-	if (!stralloc_0(tree)) retstralloc(0,"find_current") ;
+	if (!stralloc_0(tree)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	tree->len--;
 	return 1 ;
 }

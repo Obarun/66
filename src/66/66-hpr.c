@@ -24,7 +24,8 @@
 #include <utmpx.h>
 #include <sys/reboot.h>
 
-#include <skalibs/strerr2.h>
+#include <oblibs/log.h>
+
 #include <skalibs/sgetopt.h>
 #include <skalibs/sig.h>
 #include <skalibs/tai.h>
@@ -69,7 +70,7 @@ static inline void info_help (void)
 "	-W: do not send a wall message\n"
 ;
 	if (buffer_putsflush(buffer_1, help) < 0)
-		strerr_diefu1sys(111, "write to stdout") ;
+		log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 int main (int argc, char const *const *argv)
 {
@@ -97,31 +98,31 @@ int main (int argc, char const *const *argv)
 				case 'w' : dowtmp = 2 ; break ;
 				case 'W' : dowall = 0 ; break ;
 				case 'b' : banner = l.arg ; break ;
-				default : strerr_dieusage(100,USAGE) ;
+				default :  log_usage(USAGE) ;
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
 	if (!banner) banner = HPR_WALL_BANNER ;
-	if (live && live[0] != '/') strerr_dief3x(110,"live: ",live," must be an absolute path") ;
+	if (live && live[0] != '/') log_die(LOG_EXIT_USER,"live: ",live," must be an absolute path") ;
 	else live = SS_LIVE ;
 	if (!what)
-		strerr_dief1x(110, "one of the -h, -p or -r options must be given") ;
+		log_die(LOG_EXIT_USER, "one of the -h, -p or -r options must be given") ;
 
 	if (geteuid())
 	{
 		errno = EPERM ;
-		strerr_dief1sys(110, "nice try, peon") ;
+		log_diesys(LOG_EXIT_USER, "nice try, peon") ;
 	}
 
 	if (force)
 	{
 		sync() ;
 		reboot(what == 3 ? RB_AUTOBOOT : what == 2 ? RB_POWER_OFF : RB_HALT_SYSTEM) ;
-			strerr_diefu1sys(111, "reboot()") ;
+			log_dieusys(LOG_EXIT_SYS, "reboot()") ;
 	}
 	
-	if (!tain_now_g()) strerr_warnw1sys("get current time") ;
+	if (!tain_now_g()) log_warnsys("get current time") ;
 	if (dowtmp)
 	{
 		struct utmpx utx =
@@ -136,7 +137,7 @@ int main (int argc, char const *const *argv)
 		if (gethostname(utx.ut_host, UT_HOSTSIZE) < 0)
 		{
 			utx.ut_host[0] = 0 ;
-			strerr_warnwu1sys("gethostname") ;
+			log_warnusys("gethostname") ;
 		}
 		else utx.ut_host[UT_HOSTSIZE - 1] = 0 ;
 
@@ -145,13 +146,13 @@ int main (int argc, char const *const *argv)
 	{
 		struct timeval tv ;
 		if (!timeval_from_tain(&tv, &STAMP))
-			strerr_warnwu1sys("timeval_from_tain") ;
+			log_warnusys("timeval_from_tain") ;
 		utx.ut_tv.tv_sec = tv.tv_sec ;
 		utx.ut_tv.tv_usec = tv.tv_usec ;
 	}
 #else
 	if (!timeval_from_tain(&utx.ut_tv, &STAMP))
-		strerr_warnwu1sys("timeval_from_tain") ;
+		log_warnusys("timeval_from_tain") ;
 #endif
 
 		updwtmpx(_PATH_WTMP, &utx) ;
@@ -165,7 +166,7 @@ int main (int argc, char const *const *argv)
 		memcpy(tlive + livelen,INITCTL,INITCTL_LEN) ;
 		tlive[livelen + INITCTL_LEN] = 0 ;
 		if (!hpr_shutdown(tlive,what, &tain_zero, 0))
-			strerr_diefu1sys(111, "notify 66-shutdownd") ;
+			log_dieusys(LOG_EXIT_SYS, "notify 66-shutdownd") ;
 	}
 	return 0 ;
 }

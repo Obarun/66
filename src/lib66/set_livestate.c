@@ -16,7 +16,7 @@
 
 #include <stddef.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
@@ -35,10 +35,10 @@ int set_livestate(stralloc *livestate,uid_t owner)
 	size_t ownerlen = uid_fmt(ownerpack,owner) ;
 	ownerpack[ownerlen] = 0 ;
 	
-	if (!stralloc_cats(livestate,SS_STATE + 1)) retstralloc(0,"set_livestate") ;
-	if (!stralloc_cats(livestate,"/")) retstralloc(0,"set_livestate") ;
-	if (!stralloc_cats(livestate,ownerpack)) retstralloc(0,"set_livestate") ;
-	if (!stralloc_0(livestate)) retstralloc(0,"set_livestate") ;
+	if (!stralloc_cats(livestate,SS_STATE + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	if (!stralloc_cats(livestate,"/")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	if (!stralloc_cats(livestate,ownerpack)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	if (!stralloc_0(livestate)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	livestate->len--;
 	return 1 ;
 }

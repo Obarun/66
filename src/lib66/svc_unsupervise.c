@@ -16,7 +16,7 @@
 
 #include <string.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 
 #include <skalibs/genalloc.h>
 #include <skalibs/stralloc.h>
@@ -36,23 +36,23 @@ int svc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *cons
 	
 	if (!svc_send(info,ga,sig,envp))
 	{
-		VERBO1 strerr_warnwu1x("stop services") ;
+		log_warnu("stop services") ;
 		goto err ;
 	}
 	
 	for (; i < genalloc_len(ss_resolve_t,ga) ; i++) 
 	{
 		char const *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
-		VERBO2 strerr_warni2x("delete directory service: ",string + genalloc_s(ss_resolve_t,ga)[i].runat) ;
+		log_trace("delete directory service: ",string + genalloc_s(ss_resolve_t,ga)[i].runat) ;
 		if (rm_rf(string + genalloc_s(ss_resolve_t,ga)[i].runat) < 0)
 		{
-			VERBO1 strerr_warnwu2sys("delete: ",string + genalloc_s(ss_resolve_t,ga)[i].runat) ;
+			log_warnusys("delete: ",string + genalloc_s(ss_resolve_t,ga)[i].runat) ;
 			goto err ;
 		}
 	}
 	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
 	{
-		strerr_warnwu1sys("set revolve pointer to source") ;
+		log_warnusys("set revolve pointer to source") ;
 		goto err ;
 	}
 	for (i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
@@ -64,9 +64,9 @@ int svc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *cons
 		// remove the resolve/state file if the service is disabled
 		if (!pres->disen)
 		{				
-			VERBO2 strerr_warni2x("Delete resolve file of: ",name) ;
+			log_trace("Delete resolve file of: ",name) ;
 			ss_resolve_rmfile(sares.s,name) ;
-			VERBO2 strerr_warni2x("Delete state file of: ",name) ;
+			log_trace("Delete state file of: ",name) ;
 			ss_state_rmfile(state,name) ;
 		}
 		else
@@ -76,14 +76,14 @@ int svc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *cons
 	//		ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
 			ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
 			ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
-			VERBO2 strerr_warni2x("Write state file of: ",name) ;
+			log_trace("Write state file of: ",name) ;
 			if (!ss_state_write(&sta,state,name))
 			{
-				VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
+				log_warnusys("write state file of: ",name) ;
 				goto err ;
 			}
 		}
-		VERBO1 strerr_warni2x("Unsupervised successfully: ",name) ;
+		log_info("Unsupervised successfully: ",name) ;
 	}
 	stralloc_free(&sares) ;
 	return 1 ;

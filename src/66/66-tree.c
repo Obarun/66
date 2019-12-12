@@ -19,7 +19,7 @@
 //#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
 #include <oblibs/files.h>
@@ -45,7 +45,6 @@
 
 #define USAGE "66-tree [ -h ] [ -v verbosity ] [ -l ] [ -n|R ] [ -a|d ] [ -c ] [ -E|D ] [ -U ] [ -C clone ] tree" 
 
-unsigned int VERBOSITY = 1 ;
 static stralloc reslive = STRALLOC_ZERO ;
 static char const *cleantree = 0 ;
 
@@ -70,35 +69,36 @@ static inline void info_help (void)
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
-    strerr_diefu1sys(111, "write to stdout") ;
+    log_dieusys(111,"write to stdout") ;
 }
 
-static void cleanup(char const *tree){
-	VERBO3 strerr_warnt3x("removing ",tree," ...") ;
-	rm_rf(tree) ;
+static void cleanup(void)
+{
+	if (cleantree)
+	{
+		log_trace("removing ",cleantree,"...") ;
+		rm_rf(cleantree) ;
+	}
 }
 
-static void auto_string(char *string,char const *str,size_t baselen)
+static void auto_string(char *strings,char const *str,size_t baselen)
 {
 	size_t slen = strlen(str) ;
-	memcpy(string + baselen,str,slen) ;
-	string[baselen+slen] = 0 ;
+	memcpy(strings + baselen,str,slen) ;
+	strings[baselen+slen] = 0 ;
 }
 
 static void auto_dir(char const *dst,mode_t mode)
 {
-	VERBO3 strerr_warnt2x("create directory: ",dst) ;
+	log_trace("create directory: ",dst) ;
 	if (!dir_create_parent(dst,mode))
-	{
-		if (cleantree) cleanup(cleantree) ;
-		strerr_diefu2sys(111,"create directory: ",dst) ;	
-	}
+		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"create directory: ",dst) ;	
 }
 
-static void auto_create(char *string,char const *str,size_t baselen,mode_t mode)
+static void auto_create(char *strings,char const *str,size_t baselen,mode_t mode)
 {
-	auto_string(string,str,baselen) ;
-	auto_dir(string,mode) ;
+	auto_string(strings,str,baselen) ;
+	auto_dir(strings,mode) ;
 }
 
 static void auto_check(char *dst,char const *str,size_t baselen,mode_t mode)
@@ -114,12 +114,12 @@ static void auto_check_one(char *dst,mode_t mode)
 
 static void inline auto_stralloc(stralloc *sa,char const *str)
 {
-	if (!stralloc_cats(sa,str)) strerr_diefu1sys(111,"append stralloc") ;
+	if (!stralloc_cats(sa,str)) log_die_nomem("stralloc") ;
 }
 
 static void inline auto_stralloc0(stralloc *sa)
 {
-	if (!stralloc_0(sa)) strerr_diefu1sys(111,"append stralloc") ;
+	if (!stralloc_0(sa)) log_die_nomem("stralloc") ;
 	sa->len-- ;
 }
 
@@ -154,7 +154,7 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t own
 		size_t extralen ;
 		stralloc extra = STRALLOC_ZERO ;
 		if (!set_ownerhome(&extra,owner))
-			strerr_diefu1sys(111,"set home directory") ;
+			log_dieusys(LOG_EXIT_SYS,"set home directory") ;
 		
 		extralen = extra.len ;
 		auto_stralloc_0(&extra,SS_LOGGER_USERDIR) ;
@@ -176,15 +176,15 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t own
 	{
 		auto_string(dst,SS_SYSTEM,baselen) ;
 		if(!file_create_empty(dst,SS_STATE + 1,0644))
-			strerr_diefu3sys(111,"create ",dst,SS_STATE) ;
+			log_dieusys(LOG_EXIT_SYS,"create ",dst,SS_STATE) ;
 	}
 	auto_string(dst,"/",baselen + SS_SYSTEM_LEN) ;
 	auto_string(dst,tree,baselen + SS_SYSTEM_LEN + 1) ;
 	r = scan_mode(dst,S_IFDIR) ;
-	if (r == -1) strerr_dief2x(111,"invalid directory: ",dst) ;
+	if (r == -1) log_die(LOG_EXIT_SYS,"invalid directory: ",dst) ;
 	/** we have one, keep it*/
-	if (!stralloc_cats(dstree,dst)) retstralloc(0,"sanitize_tree") ;
-	if (!stralloc_0(dstree)) retstralloc(0,"sanitize_tree") ;
+	if (!stralloc_cats(dstree,dst)) log_die_nomem("stralloc") ;
+	if (!stralloc_0(dstree)) log_die_nomem("stralloc") ;
 	
 	if (!r) return 0 ;
 	
@@ -219,12 +219,11 @@ void create_tree(char const *tree,char const *treename)
 	auto_create(dst,SS_SVC,newlen,0755) ;
 	auto_create(dst,SS_RESOLVE,newlen,0755) ;
 	dst[newlen] = 0 ;
-	VERBO3 strerr_warnt1x("write resolve file of inner bundle") ;
+	log_trace("write resolve file of inner bundle") ;
 	if (!ss_resolve_write(&res,dst,SS_MASTER+1))
 	{
 		ss_resolve_free(&res) ;
-		cleanup(cleantree) ;
-		strerr_diefu1sys(111,"write resolve file of inner bundle") ;
+		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"write resolve file of inner bundle") ;
 	}
 	ss_resolve_free(&res) ;
 	
@@ -237,21 +236,15 @@ void create_tree(char const *tree,char const *treename)
 
 	auto_string(dstsym,dst,0) ;
 	auto_string(dstsym,SS_SVC,newlen) ;
-	VERBO3 strerr_warnt4x("point symlink: ",sym," to ",dstsym) ;
+	log_trace("point symlink: ",sym," to ",dstsym) ;
 	if (symlink(dstsym,sym) < 0)
-	{
-		cleanup(cleantree) ;
-		strerr_diefu2sys(111,"symlink: ", sym) ;
-	}
-	
+		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"symlink: ", sym) ;
+		
 	auto_string(sym,SS_SYM_DB,newlen + 1) ;
 	auto_string(dstsym,SS_DB,newlen) ;
-	VERBO3 strerr_warnt4x("point symlink: ",sym," to ",dstsym) ;
+	log_trace("point symlink: ",sym," to ",dstsym) ;
 	if (symlink(dstsym,sym) < 0)
-	{
-		cleanup(cleantree) ;
-		strerr_diefu2sys(111,"symlink: ", sym) ;
-	}
+		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"symlink: ", sym) ;
 
 	auto_string(dst,SS_DB,newlen) ;
 	newlen = newlen + SS_DB_LEN ;
@@ -261,20 +254,15 @@ void create_tree(char const *tree,char const *treename)
 	auto_create(dst,SS_MASTER,newlen,0755) ;
 	auto_string(dst,SS_MASTER,newlen) ;
 	newlen = newlen + SS_MASTER_LEN ;
-	VERBO3 strerr_warnt3x("create file: ",dst,"/contents") ;
+	log_trace("create file: ",dst,"/contents") ;
 	if (!file_create_empty(dst,"contents",0644))
-	{
-		cleanup(cleantree) ;
-		strerr_diefu3sys(111,"create ",dst,"/contents") ;
-	}
-
+		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"create: ",dst,"/contents") ;
+	
 	auto_string(dst,"/type",newlen) ;
-	VERBO3 strerr_warnt2x("create file: ",dst) ;
+	log_trace("create file:",dst) ;
 	if(!openwritenclose_unsafe(dst,"bundle\n",7))
-	{
-		cleanup(cleantree) ;
-		strerr_diefu2sys(111,"write ",dst) ;
-	}
+		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"write: ",dst) ;
+	
 	
 }
 
@@ -297,12 +285,9 @@ void create_backupdir(char const *base, char const *treename)
 	r = scan_mode(treetmp,S_IFDIR) ;
 	if (r || (r == -1))
 	{
-		VERBO3 strerr_warnt2x("remove existing backup: ",treetmp) ;
+		log_trace("remove existing backup: ",treetmp) ;
 		if (rm_rf(treetmp) < 0)
-		{
-			cleanup(cleantree) ;
-			strerr_diefu2sys(111,"remove: ",treetmp) ;
-		}
+			log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"remove: ",treetmp) ;
 	}
 	if (!r)	auto_dir(treetmp,0755) ;
 }
@@ -330,13 +315,13 @@ int set_rules(char const *tree,uid_t *uids, size_t uidn,unsigned int what)
 		{
 			uint32_pack(pack,uids[i+1]) ;
 			pack[uint_fmt(pack,uids[i+1])] = 0 ;
-			VERBO3 strerr_warnt4x("create file : ",pack," at ",tmp) ;
+			log_trace("create file: ",pack," at ",tmp) ;
 			if(!file_create_empty(tmp,pack,0644) && errno != EEXIST)
 			{
-				VERBO3 strerr_warnwu4sys("create file : ",pack," at ",tmp) ;
+				log_warnusys("create file: ",pack," at ",tmp) ;
 				return 0 ;
 			}
-			VERBO3 strerr_warnt4x("user: ",pack," is allowed for tree: ",tree) ;
+			log_trace("user: ",pack," is allowed for tree: ",tree) ;
 		}
 		return 1 ;
 	}
@@ -352,11 +337,11 @@ int set_rules(char const *tree,uid_t *uids, size_t uidn,unsigned int what)
 			memcpy(tmp + treelen + SS_RULES_LEN,"/",1) ;
 			memcpy(tmp + treelen + SS_RULES_LEN + 1,pack,uint_fmt(pack,uids[i+1])) ;
 			tmp[treelen + SS_RULES_LEN + 1 + uint_fmt(pack,uids[i + 1])] = 0 ;
-			VERBO3 strerr_warnt2x("unlink: ",tmp) ;
+			log_trace("unlink: ",tmp) ;
 			r = unlink(tmp) ;
 			if (r == -1) return 0 ;
 		}
-		VERBO3 strerr_warnt4x("user: ",pack," is denied for tree: ",tree) ;
+		log_trace("user: ",pack," is denied for tree: ",tree) ;
 	}
 	return 1 ;
 }
@@ -381,15 +366,15 @@ void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid
 
 	auto_stralloc(&scandir,live->s) ;
 	r = set_livescan(&scandir,owner) ;
-	if (!r) strerr_diefu1sys(111,"set livescan directory") ;
+	if (!r) log_dieusys(LOG_EXIT_SYS,"set livescan directory") ;
 		
 	auto_stralloc(&livestate,live->s) ;
 	r = set_livestate(&livestate,owner) ;
-	if (!r) strerr_diefu1sys(111,"set livestate directory") ;
+	if (!r) log_dieusys(LOG_EXIT_SYS,"set livestate directory") ;
 	
 	auto_stralloc(&livetree,live->s) ;
 	r = set_livetree(&livetree,owner) ;
-	if (!r) strerr_diefu1sys(111,"set livetree directory") ;
+	if (!r) log_dieusys(LOG_EXIT_SYS,"set livetree directory") ;
 	auto_stralloc(&livetree,"/") ;
 	newlen = livetree.len ;
 	auto_stralloc0(&livetree) ;
@@ -399,11 +384,11 @@ void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid
 	auto_stralloc0(&livestate) ;
 	/** works begin */
 	if (scan_mode(livestate.s,S_IFDIR)) 
-		if (!sastr_dir_get(&list,livestate.s,SS_LIVETREE_INIT,S_IFREG)) strerr_diefu2x(111,"get service list at: ",livestate.s) ;
+		if (!sastr_dir_get(&list,livestate.s,SS_LIVETREE_INIT,S_IFREG)) log_dieusys(LOG_EXIT_SYS,"get service list at: ",livestate.s) ;
 	
 	if (!list.len) 
 	{ 
-		VERBO1 strerr_warni2x("Not supervised: ",livestate.s) ;
+		log_warn("Not supervised: ",livestate.s) ;
 		return ;
 	}
 	
@@ -431,10 +416,10 @@ void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid
 						
 		pid = child_spawn0(newargv[0],newargv,envp) ;
 		if (waitpid_nointr(pid,&wstat, 0) < 0)
-			VERBO3 strerr_warnwu2sys("wait for ",newargv[0]) ;
+			log_dieusys(LOG_EXIT_SYS,"wait for: ",newargv[0]) ;
 		/** we don't want to die here, we try we can do to stop correctly
 		 * service list, in any case we want to unsupervise */
-		if (wstat) VERBO3 strerr_warnwu1sys("stop services") ;
+		if (wstat) log_dieusys(LOG_EXIT_SYS,"stop services") ;
 	}	
 	
 	if (db_find_compiled_state(livetree.s,treename) >=0)
@@ -444,7 +429,7 @@ void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid
 		auto_stralloc(&livetree,treename) ;
 		auto_stralloc(&livetree,SS_SVDIRS) ;
 		auto_stralloc0(&livetree) ;
-		if (!sastr_dir_get(&list,livetree.s,"",S_IFDIR)) strerr_diefu2x(111,"get service list at: ",livetree.s) ;
+		if (!sastr_dir_get(&list,livetree.s,"",S_IFDIR)) log_dieusys(LOG_EXIT_SYS,"get service list at: ",livetree.s) ;
 		livetree.len = newlen ;
 		auto_stralloc(&livetree,treename) ;
 		auto_stralloc0(&livetree) ;
@@ -454,10 +439,10 @@ void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid
 			s6rc_servicedir_unsupervise(livetree.s,prefix,list.s + i,0) ;
 			
 		r = sarealpath(&realsym,livetree.s) ;
-		if (r < 0 ) strerr_diefu2sys(111,"find realpath of: ",livetree.s) ; 
+		if (r < 0 ) log_dieusys(LOG_EXIT_SYS,"find realpath of: ",livetree.s) ; 
 		auto_stralloc0(&realsym) ;
-		if (rm_rf(realsym.s) < 0) strerr_diefu2sys(111,"remove ", realsym.s) ;
-		if (rm_rf(livetree.s) < 0) strerr_diefu2sys(111,"remove ", livetree.s) ;
+		if (rm_rf(realsym.s) < 0) log_dieusys(LOG_EXIT_SYS,"remove: ", realsym.s) ;
+		if (rm_rf(livetree.s) < 0) log_dieusys(LOG_EXIT_SYS,"remove: ", livetree.s) ;
 		livetree.len = newlen ;
 		auto_stralloc(&livetree,treename) ;
 		auto_stralloc0(&livetree) ;
@@ -465,12 +450,12 @@ void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid
 		unlink_void(livetree.s) ;
 	}
 		
-	if (scandir_send_signal(scandir.s,"an") <= 0) strerr_diefu2sys(111,"reload scandir: ",scandir.s) ;
+	if (scandir_send_signal(scandir.s,"an") <= 0) log_dieusys(LOG_EXIT_SYS,"reload scandir: ",scandir.s) ;
 	/** remove /run/66/state/uid/treename directory */
-	VERBO2 strerr_warni3x("delete ",livestate.s," ..." ) ;
-	if (rm_rf(livestate.s) < 0) strerr_diefu2sys(111,"delete ",livestate.s) ;
+	log_trace("delete: ",livestate.s,"..." ) ;
+	if (rm_rf(livestate.s) < 0) log_dieusys(LOG_EXIT_SYS,"delete ",livestate.s) ;
 	
-	VERBO1 strerr_warni2x("Unsupervised successfully tree: ",treename) ;
+	log_info("Unsupervised successfully tree: ",treename) ;
 	
 	stralloc_free(&scandir) ; 
 	stralloc_free(&livestate) ; 
@@ -509,137 +494,132 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			
 			int opt = getopt_args(argc,argv, "hv:l:na:d:cEDRC:U", &l) ;
 			if (opt == -1) break ;
-			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
+			if (opt == -2) log_dieusys(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
 			{
 				case 'h' : info_help(); return 0 ;
-				case 'v' : if (!uint0_scan(l.arg, &VERBOSITY)) exitusage(USAGE) ; break ;
-				case 'l' : 	if (!stralloc_cats(&live,l.arg)) retstralloc(111,"main") ;
-							if (!stralloc_0(&live)) retstralloc(111,"main") ;
+				case 'v' : if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
+				case 'l' : 	if (!stralloc_cats(&live,l.arg)) log_die_nomem("stralloc") ;
+							if (!stralloc_0(&live)) log_die_nomem("stralloc") ;
 							break ;
 				case 'n' : create = 1 ; break ;
-				case 'a' : if (!scan_uidlist_wdelim(l.arg,auids,',')) exitusage(USAGE) ; 
+				case 'a' : if (!scan_uidlist_wdelim(l.arg,auids,',')) log_usage(USAGE) ; 
 						   auidn = auids[0] ;
 						   allow = 1 ;
 						   break ;
-				case 'd' : if (!scan_uidlist_wdelim(l.arg,duids,',')) exitusage(USAGE) ; 
+				case 'd' : if (!scan_uidlist_wdelim(l.arg,duids,',')) log_usage(USAGE) ; 
 						   duidn = duids[0] ;
 						   deny = 1 ;
 						   break ;
 				case 'c' : current = 1 ; break ;
-				case 'E' : enable = 1 ; if (disable) exitusage(USAGE) ; break ;
-				case 'D' : disable = 1 ; if (enable) exitusage (USAGE) ; break ;
-				case 'R' : remove = 1 ; if (create) exitusage(USAGE) ; break ;
-				case 'C' : if (!stralloc_cats(&clone,l.arg)) retstralloc(111,"main") ;
-						   if (!stralloc_0(&clone)) retstralloc(111,"main") ;
+				case 'E' : enable = 1 ; if (disable) log_usage(USAGE) ; break ;
+				case 'D' : disable = 1 ; if (enable) log_usage (USAGE) ; break ;
+				case 'R' : remove = 1 ; if (create) log_usage(USAGE) ; break ;
+				case 'C' : if (!stralloc_cats(&clone,l.arg)) log_die_nomem("stralloc") ;
+						   if (!stralloc_0(&clone)) log_die_nomem("stralloc") ;
 						   snap = 1 ;
 						   break ;
-				case 'U' : unsupervise = 1 ; if (create) exitusage(USAGE) ; break ;
-				default : exitusage(USAGE) ; 
+				case 'U' : unsupervise = 1 ; if (create)log_usage(USAGE) ; break ;
+				default : log_usage(USAGE) ; 
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
 	
-	if (argc != 1) exitusage(USAGE) ;
+	if (argc != 1) log_usage(USAGE) ;
 	
 	tree = argv[0] ;
 	owner = MYUID ;
 		
-	if (!set_ownersysdir(&base, owner)) strerr_diefu1sys(111, "set owner directory") ;
+	if (!set_ownersysdir(&base, owner)) log_dieusys(LOG_EXIT_SYS,"set owner directory") ;
 	
 	r = set_livedir(&live) ;
-	if (!r) exitstralloc("main:livedir") ;
-	if(r < 0) strerr_dief3x(111,"livedir: ",live.s," must be an absolute path") ;
+	if (!r) log_die_nomem("stralloc") ;
+	if(r < 0) log_dieu(LOG_EXIT_SYS,"livedir: ",live.s," must be an absolute path") ;
 	
-	VERBO2 strerr_warni3x("sanitize ",tree," ..." ) ;
+	log_trace("sanitize ",tree,"..." ) ;
 	r = sanitize_tree(&dstree,base.s,tree,owner) ;
 	
 	if(!r && create)
 	{
 		/** set cleanup */
 		cleantree = dstree.s ;
-		VERBO2 strerr_warni3x("creating ",dstree.s," ..." ) ;
+		log_trace("creating: ",dstree.s,"..." ) ;
 		create_tree(dstree.s,tree) ;
 		
-		VERBO2 strerr_warni3x("creating backup directory for ", tree," ...") ;
+		log_trace("creating backup directory for: ", tree,"...") ;
 		create_backupdir(base.s,tree) ;
 		/** unset cleanup */
 		cleantree = 0 ;
 		
-		VERBO2 strerr_warni3x("set permissions rules for ",dstree.s," ..." ) ;
+		log_trace("set permissions rules for: ",dstree.s,"..." ) ;
 		if (!set_rules(dstree.s,auids,auidn,1))//1 allow
-		{
-			cleanup(dstree.s) ;
-			strerr_diefu1x(111,"set permissions access") ;
-		}
-		
+			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"set permissions access") ;
+				
 		size_t dblen = dstree.len - 1 ;
 		char newdb[dblen + SS_SVDIRS_LEN + 1] ;
 		auto_string(newdb,dstree.s,0) ;
 		auto_string(newdb,SS_SVDIRS,dblen) ;
 	
-		VERBO2 strerr_warni5x("compile ",newdb,"/db/",tree," ..." ) ;
+		log_trace("compile: ",newdb,"/db/",tree,"..." ) ;
 		if (!db_compile(newdb,dstree.s,tree,envp))
-		{
-			cleanup(dstree.s) ;
-			strerr_diefu4x(111,"compile ",newdb,"/db/",tree) ;
-		}
+			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"compile ",newdb,"/db/",tree) ;
+	
 		r = 1 ;
 		create = 0 ;
-		VERBO1 strerr_warni2x("Created successfully tree: ",tree) ;
+		log_info("Created successfully tree: ",tree) ;
 		
 	}
 	
-	if ((!r && !create) || (!r && enable)) strerr_diefu2x(111,"find tree: ",dstree.s) ;
-	if (r && create) strerr_diefu3x(110,"create ",dstree.s,": already exist") ;
+	if ((!r && !create) || (!r && enable)) log_dieusys(LOG_EXIT_SYS,"find tree: ",dstree.s) ;
+	if (r && create) log_dieu(LOG_EXIT_USER,"create: ",dstree.s,": already exist") ;
 
 	if (enable)
 	{
-		VERBO2 strerr_warni3x("enable ",dstree.s," ..." ) ;
+		log_trace("enable: ",dstree.s,"..." ) ;
 		r  = tree_cmd_state(VERBOSITY,"-a",tree) ;
-		if (!r) strerr_diefu6x(111,"add: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
+		if (!r) log_dieusys(LOG_EXIT_SYS,"add: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
 		else if (r == 1) 
 		{
-			VERBO1 strerr_warni2x("Enabled successfully tree: ",tree) ;
+			log_info("Enabled successfully tree: ",tree) ;
 		}
-		else VERBO1 strerr_warni2x("Already enabled tree: ",tree) ;
+		else log_info("Already enabled tree: ",tree) ;
 	}
 	
 	if (disable)
 	{
-		VERBO2 strerr_warni3x("disable ",dstree.s," ..." ) ;
+		log_trace("disable: ",dstree.s,"..." ) ;
 		r  = tree_cmd_state(VERBOSITY,"-d",tree) ;
-		if (!r) strerr_diefu6x(111,"remove: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
+		if (!r) log_dieusys(LOG_EXIT_SYS,"remove: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
 		else if (r == 1)
 		{
-			VERBO1 strerr_warni2x("Disabled successfully tree: ",tree) ;
+			log_info("Disabled successfully tree: ",tree) ;
 		}
-		else VERBO1 strerr_warni2x("Already disabled tree: ",tree) ;
+		else log_info("Already disabled tree: ",tree) ;
 	}
 	
 	if (auidn)
 	{
-		VERBO2 strerr_warni3x("set allowed user for tree: ",dstree.s," ..." ) ;
-		if (!set_rules(dstree.s,auids,auidn,1))	strerr_diefu1x(111,"set permissions access") ;
+		log_trace("set allowed user for tree: ",dstree.s,"..." ) ;
+		if (!set_rules(dstree.s,auids,auidn,1))	log_dieu(LOG_EXIT_SYS,"set permissions access") ;
 	}	
 	if (duidn)
 	{
-		VERBO2 strerr_warni3x("set denied user for tree: ",dstree.s," ..." ) ;
-		if (!set_rules(dstree.s,duids,duidn,0))	strerr_diefu1x(111,"set permissions access") ;
+		log_trace("set denied user for tree: ",dstree.s,"..." ) ;
+		if (!set_rules(dstree.s,duids,duidn,0))	log_dieu(LOG_EXIT_SYS,"set permissions access") ;
 	}
 	if(current)
 	{
-		VERBO2 strerr_warni3x("make ",dstree.s," as default ..." ) ;
-		if (!tree_switch_current(base.s,tree)) strerr_diefu3sys(111,"set ",dstree.s," as default") ;
-		VERBO1 strerr_warni3x("Set successfully ",tree," as default") ;
+		log_trace("make: ",dstree.s," as default ..." ) ;
+		if (!tree_switch_current(base.s,tree)) log_dieusys(LOG_EXIT_SYS,"set: ",dstree.s," as default") ;
+		log_info("Set successfully: ",tree," as default") ;
 	}
 	if (unsupervise) tree_unsupervise(&live,dstree.s,tree,owner,envp) ;
 	
 	if (remove)
 	{
-		VERBO2 strerr_warni3x("delete ",dstree.s," ..." ) ;
-		if (rm_rf(dstree.s) < 0) strerr_diefu2sys(111,"delete ", dstree.s) ;
+		log_trace("delete: ",dstree.s,"..." ) ;
+		if (rm_rf(dstree.s) < 0) log_dieusys(LOG_EXIT_SYS,"delete: ", dstree.s) ;
 				
 		size_t treelen = strlen(tree) ;
 		size_t baselen = base.len ;
@@ -653,14 +633,14 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		r = scan_mode(treetmp,S_IFDIR) ;
 		if (r || (r < 0))
 		{
-			VERBO2 strerr_warni3x("delete backup of tree ",treetmp," ...") ;
-			if (rm_rf(treetmp) < 0)	strerr_diefu2sys(111,"delete: ",treetmp) ;
+			log_trace("delete backup of tree: ",treetmp,"...") ;
+			if (rm_rf(treetmp) < 0)	log_dieusys(LOG_EXIT_SYS,"delete: ",treetmp) ;
 		}
-		VERBO2 strerr_warni6x("disable: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
+		log_trace("disable: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
 		if (!tree_cmd_state(VERBOSITY,"-d",tree))
-			strerr_diefu6x(111,"disable: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
+			log_dieu(LOG_EXIT_SYS,"disable: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
 		
-		VERBO1 strerr_warni2x("Deleted successfully: ",tree) ;
+		log_info("Deleted successfully: ",tree) ;
 	}
 	
 	if (snap)
@@ -673,10 +653,10 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		
 		auto_stralloc_0(&dstree,clone.s) ;		
 		r = scan_mode(dstree.s,S_IFDIR) ;
-		if ((r < 0) || r) strerr_dief2x(111,dstree.s,": already exist") ; 
-		VERBO2 strerr_warni5x("clone ",dstree.s," as ",tmp," ..." ) ;
-		if (!hiercopy(tmp,dstree.s)) strerr_diefu4sys(111,"copy: ",dstree.s," at: ",clone.s) ;
-		VERBO1 strerr_warni4x("Cloned successfully: ",tree," to ",clone.s) ;
+		if ((r < 0) || r) log_die(LOG_EXIT_SYS,dstree.s,": already exist") ; 
+		log_trace("clone: ",dstree.s," as ",tmp,"..." ) ;
+		if (!hiercopy(tmp,dstree.s)) log_dieusys(LOG_EXIT_SYS,"copy: ",dstree.s," at: ",clone.s) ;
+		log_info("Cloned successfully: ",tree," to ",clone.s) ;
 	}
 	stralloc_free(&reslive) ;
 	stralloc_free(&base) ;

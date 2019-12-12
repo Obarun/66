@@ -20,7 +20,7 @@
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/sastr.h>
 
 #include <skalibs/stralloc.h>
@@ -37,21 +37,21 @@ int parse_service_check_enabled(ssexec_t *info, char const *svname,uint8_t force
 	int ret = 1 ;
 	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
 	{
-		VERBO3 strerr_warnwu1sys("set revolve pointer to source") ;
+		log_warnusys("set revolve pointer to source") ;
 		goto err ;	
 	} 
 	if (ss_resolve_check(sares.s,svname))
 	{
 		if (!ss_resolve_read(&res,sares.s,svname)) 
 		{
-			VERBO3 strerr_warnwu2sys("read resolve file of: ",svname) ;
+			log_warnusys("read resolve file of: ",svname) ;
 			goto err ;
 		}
 		if (res.disen)
 		{
 			(*exist) = 1 ;
 			if (!force) { 
-				VERBO1 strerr_warnw3x("Ignoring: ",svname," service: already enabled") ;
+				log_info("Ignoring: ",svname," service: already enabled") ;
 				ret = 2 ;
 				goto freed ;
 			}
@@ -105,18 +105,18 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_befo
 			newsv.len = 0 ;
 			if (sv_before->cname.itype != BUNDLE)
 			{
-				VERBO3 strerr_warni4x("Service : ",sv, " depends on : ",deps.s+id) ;
-			}else VERBO3 strerr_warni5x("Bundle : ",sv, " contents : ",deps.s+id," as service") ;
+				log_trace("Service : ",sv, " depends on : ",deps.s+id) ;
+			}else log_trace("Bundle : ",sv, " contents : ",deps.s+id," as service") ;
 			dname = deps.s + id ;
 			if (!ss_resolve_src_path(&newsv,dname,info))
 			{
-				VERBO3 strerr_warnwu2x("resolve source path of: ",dname) ;
+				log_warnu("resolve source path of: ",dname) ;
 				goto err ;
 			}
 			if (!parse_service_before(info,parsed_list,newsv.s,nbsv,sasv,force,&exist)) goto err ;
 		}
 	}
-	else VERBO3 strerr_warni2x(sv,": haven't dependencies") ;
+	else log_trace(sv,": haven't dependencies") ;
 	stralloc_free(&newsv) ;
 	return 1 ;
 	err:
@@ -145,20 +145,16 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list, char const *sv,un
 
 	insta = instance_check(svname) ;
 	if (!insta) 
-	{
-		VERBO3 strerr_warnw2x("invalid instance name: ",svname) ;
-		return 0 ;
-	}
+		log_warn_return(LOG_EXIT_ZERO, "invalid instance name: ",svname) ;
+
 	if (insta > 0)
 	{
 		if (!instance_create(sasv,svname,SS_INSTANCE,svsrc,insta))
-		{
-			VERBO3 strerr_warnwu2x("create instance service: ",svname) ;
-			return 0 ;
-		}
+			log_warn_return(LOG_EXIT_ZERO,"create instance service: ",svname) ;
+		
 		/** ensure that we have an empty line at the end of the string*/
-		if (!stralloc_cats(sasv,"\n")) retstralloc(0,"parse_service_before") ;
-		if (!stralloc_0(sasv)) retstralloc(0,"parse_service_before") ;
+		if (!stralloc_cats(sasv,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		if (!stralloc_0(sasv)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}else if (!read_svfile(sasv,svname,svsrc)) return 0 ;
 	
 	memcpy(svpath,svsrc,svsrclen) ;
@@ -167,7 +163,7 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list, char const *sv,un
 	
 	if (sastr_cmp(parsed_list,svpath) >= 0)
 	{
-		VERBO2 strerr_warni2x(sv,": already added") ;
+		log_trace(sv,": already added") ;
 		sasv->len = 0 ;
 		sv_alltype_free(&sv_before) ;
 		goto freed ;
@@ -188,7 +184,7 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list, char const *sv,un
 		if (!instance_splitname(&sainsta,svname,insta,0)) goto err ;
 		if (sastr_find(&name,sainsta.s) == -1)
 		{
-			strerr_warnw2x("invalid instantiated service name: ", keep.s + sv_before.cname.name) ;
+			log_warn("invalid instantiated service name: ", keep.s + sv_before.cname.name) ;
 			goto err ;
 		}
 		stralloc_free(&sainsta) ;

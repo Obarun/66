@@ -16,9 +16,10 @@
  * All credits goes to Laurent Bercot <ska-remove-this-if-you-are-not-a-bot@skarnet.org>
  * */
  
+#include <oblibs/log.h>
+
 #include <skalibs/sgetopt.h>
 #include <skalibs/buffer.h>
-#include <skalibs/strerr2.h>
 
 #define USAGE "66-echo [ -h ] [ -n ] [ -s sep ] args..."
 
@@ -33,7 +34,7 @@ static inline void info_help (void)
 "	-s: use as character separator\n"
 ;
 	if (buffer_putsflush(buffer_1, help) < 0)
-		strerr_diefu1sys(111, "write to stdout") ;
+		log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
 int main (int argc, char const *const *argv)
@@ -52,7 +53,7 @@ int main (int argc, char const *const *argv)
 				case 'h': info_help() ; return 0 ;
 				case 'n': donl = 0 ; break ;
 				case 's': sep = *l.arg ; break ;
-				default : strerr_dieusage(100, USAGE) ;
+				default : log_usage(USAGE) ;
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
@@ -65,5 +66,5 @@ int main (int argc, char const *const *argv)
 	if (!buffer_flush(buffer_1small)) goto err ;
 	return 0 ;
 	err:
-		strerr_diefu1sys(111, "write to stdout") ;
+		log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }

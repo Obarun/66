@@ -19,7 +19,7 @@
 #include <sys/types.h>
 #include <string.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 
 #include <skalibs/types.h>
 #include <skalibs/djbunix.h>
@@ -63,14 +63,10 @@ int db_update(char const *newdb, ssexec_t *info,char const *const *envp)
 		
 	pid = child_spawn0(newargv[0],newargv,envp) ;
 	if (waitpid_nointr(pid,&wstat, 0) < 0)
-	{
-		strerr_warnwu2sys("wait for ",newargv[0]) ;
-		return 0 ;
-	}
+		log_warnusys_return(LOG_EXIT_ZERO,"wait for ",newargv[0]) ;
+	
 	if (wstat)
-	{
-		VERBO3 strerr_warnwu4x("update: ",newlive," to ",db) ;
-		return 0 ;
-	}
+		log_warnusys_return(LOG_EXIT_ZERO,"update: ",newlive," to ",db) ;
+	
 	return 1 ;
 }

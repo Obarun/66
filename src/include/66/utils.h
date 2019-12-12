@@ -18,17 +18,13 @@
 #include <sys/types.h>
 #include <unistd.h> //getuid
 
+#include <oblibs/log.h>
+
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 
 #include <66/ssexec.h>
 #include <66/resolve.h>
-
-extern unsigned int VERBOSITY ;
-
-#define VERBO1 if(VERBOSITY >= 1) 
-#define VERBO2 if(VERBOSITY >= 2) 
-#define VERBO3 if(VERBOSITY >= 3) 
 
 #define MYUID getuid()
 #define YOURUID(passto,owner) youruid(passto,owner)

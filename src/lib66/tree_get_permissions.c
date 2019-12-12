@@ -17,7 +17,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <oblibs/error2.h>
 #include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>

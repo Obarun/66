@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
@@ -59,31 +59,31 @@ int rc_init(ssexec_t *info, char const *const *envp)
 	unsigned int m = 0 ;
 	
 	gid_t gidowner ;
-	if (!yourgid(&gidowner,info->owner)){ VERBO1 strerr_warnwu1sys("set gid") ; goto err ; }
+	if (!yourgid(&gidowner,info->owner)){ log_warnusys("set gid") ; goto err ; }
 	
 	r = scan_mode(info->livetree.s,S_IFDIR) ;
-	if (r < 0){ VERBO1 strerr_warnw2x(info->livetree.s," conflicted format") ; goto err ; }
+	if (r < 0){ log_warn(info->livetree.s," conflicted format") ; goto err ; }
 	if (!r)
 	{
-		VERBO2 strerr_warni2x("create directory: ",info->livetree.s) ;
+		log_trace("create directory: ",info->livetree.s) ;
 		r = dir_create(info->livetree.s,0700) ;
-		if (!r){ VERBO1 strerr_warnwu2sys("create directory: ",info->livetree.s) ; goto err ; }
-		VERBO2 strerr_warni2x("chown directory: ",info->livetree.s) ;
-		if (chown(info->livetree.s,info->owner,gidowner) < 0){ VERBO1 strerr_warnwu2sys("chown directory: ",info->livetree.s) ; goto err ; }
+		if (!r){ log_warnusys("create directory: ",info->livetree.s) ; goto err ; }
+		log_trace("chown directory: ",info->livetree.s) ;
+		if (chown(info->livetree.s,info->owner,gidowner) < 0){ log_warnusys("chown directory: ",info->livetree.s) ; goto err ; }
 	}
 	
 	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))		
-		{ VERBO1 strerr_warnwu1x("set revolve pointer to source") ; goto err ; }
+		{ log_warnu("set revolve pointer to source") ; goto err ; }
 	
-	if (!ss_resolve_check(sares.s,SS_MASTER +1)) { VERBO1 strerr_warnwu1x("find inner bundle -- please make a bug report") ; goto err ; }
-	if (!ss_resolve_read(&res,sares.s,SS_MASTER + 1)) { VERBO1 strerr_warnwu1sys("read resolve file of inner bundle") ; goto err ; }
+	if (!ss_resolve_check(sares.s,SS_MASTER +1)) { log_warnu("find inner bundle -- please make a bug report") ; goto err ; }
+	if (!ss_resolve_read(&res,sares.s,SS_MASTER + 1)) { log_warnusys("read resolve file of inner bundle") ; goto err ; }
 	if (!res.ndeps)
 	{
-		VERBO1 strerr_warni2x("Initialization aborted -- no atomic services into tree: ",info->treename.s) ;
+		log_info("Initialization aborted -- no atomic services into tree: ",info->treename.s) ;
 		empty = 1 ;
 		goto end ;
 	}
-	if (!ss_resolve_create_live(info)) { VERBO1 strerr_warnwu1sys("create live state") ; goto err ; }
+	if (!ss_resolve_create_live(info)) { log_warnusys("create live state") ; goto err ; }
 	
 	memcpy(svdir,info->tree.s,info->tree.len) ;
 	memcpy(svdir + info->tree.len ,SS_SVDIRS ,SS_SVDIRS_LEN) ;
@@ -116,23 +116,23 @@ int rc_init(ssexec_t *info, char const *const *envp)
 	newargv[m++] = info->scandir.s ;
 	newargv[m++] = 0 ;
 			
-	VERBO3 strerr_warni3x("initiate db of tree: ",info->treename.s," ...") ;
+	log_trace("initiate db of tree: ",info->treename.s," ...") ;
 			
 	pid = child_spawn0(newargv[0],newargv,envp) ;
 	if (waitpid_nointr(pid,&wstat, 0) < 0) 
-		{ strerr_warnwu2sys("wait for ",newargv[0]) ; goto err ; }
+		{ log_warnusys("wait for ",newargv[0]) ; goto err ; }
 				
-	if (wstat) { VERBO1 strerr_warnwu2x("init db of tree: ",info->treename.s) ; goto err ; }
+	if (wstat) { log_warnu("init db of tree: ",info->treename.s) ; goto err ; }
 	
-	if (!sastr_clean_string(&sasvc,res.sa.s + res.deps)) { VERBO1 strerr_warnwu1sys("clean dependencies of inner bundle") ; goto err ; }
+	if (!sastr_clean_string(&sasvc,res.sa.s + res.deps)) { log_warnusys("clean dependencies of inner bundle") ; goto err ; }
 	
 	for (; pos < sasvc.len ; pos += strlen(sasvc.s + pos) +1)
 	{
 		char *name = sasvc.s + pos ;
 		ss_resolve_t tmp = RESOLVE_ZERO ;
-		if (!ss_resolve_check(sares.s,name)){ VERBO1 strerr_warnw2sys("unknown service: ",name) ; goto err ; }
-		if (!ss_resolve_read(&tmp,sares.s,name)) { VERBO1 strerr_warnwu2sys("read resolve file of: ",name) ; goto err ; }
-		if (!ss_resolve_add_deps(&gares,&tmp,sares.s)) { VERBO1 strerr_warnwu2sys("resolve dependencies of: ",name) ; goto err ; }
+		if (!ss_resolve_check(sares.s,name)){ log_warnsys("unknown service: ",name) ; goto err ; }
+		if (!ss_resolve_read(&tmp,sares.s,name)) { log_warnusys("read resolve file of: ",name) ; goto err ; }
+		if (!ss_resolve_add_deps(&gares,&tmp,sares.s)) { log_warnusys("resolve dependencies of: ",name) ; goto err ; }
 		ss_resolve_free(&tmp) ;
 	}
 
@@ -142,13 +142,13 @@ int rc_init(ssexec_t *info, char const *const *envp)
 		char const *name = string + genalloc_s(ss_resolve_t,&gares)[pos].name  ;
 		char const *state = string + genalloc_s(ss_resolve_t,&gares)[pos].state  ;
 		
-		VERBO2 strerr_warni2x("Write state file of: ",name) ;
+		log_trace("Write state file of: ",name) ;
 		if (!ss_state_write(&sta,state,name))
 		{
-			VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
+			log_warnusys("write state file of: ",name) ;
 			goto err ;
 		}
-		VERBO1 strerr_warni2x("Initialized successfully: ",name) ;
+		log_info("Initialized successfully: ",name) ;
 	}
 	
 	end:

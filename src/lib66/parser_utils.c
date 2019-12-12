@@ -26,7 +26,7 @@
 #include <oblibs/bytes.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/mill.h>
 #include <oblibs/environ.h>
@@ -228,7 +228,7 @@ int key_get_range(genalloc *ga, section_t *sasection,int *svtype)
 				nocheck.mandatory = OPTS ;
 				section_setsa(i,&psasection,sasection) ;
 				if (!stralloc_cats(&nocheck.val,psasection->s+1)) goto err ;//+1 remove the first '\n'
-				if (!environ_get_clean_env(&nocheck.val)) { VERBO3 strerr_warnwu2x("parse section: ",get_keybyid(i)) ; goto err ; }
+				if (!environ_get_clean_env(&nocheck.val)) { log_warnu("parse section: ",get_keybyid(i)) ; goto err ; }
 				if (!stralloc_cats(&nocheck.val,"\n") ||
 				!stralloc_0(&nocheck.val)) goto err ;
 				nocheck.val.len-- ;
@@ -269,7 +269,7 @@ int key_get_range(genalloc *ga, section_t *sasection,int *svtype)
 								case QUOTE:
 									if (!sastr_get_double_quote(&nocheck.val))
 									{
-										VERBO3 parse_err(6,&nocheck) ;
+										parse_err(6,&nocheck) ;
 										goto err ;
 									}
 									if (!stralloc_0(&nocheck.val)) goto err ;
@@ -277,12 +277,12 @@ int key_get_range(genalloc *ga, section_t *sasection,int *svtype)
 								case BRACKET:
 									if (!parse_bracket(&nocheck.val,&pos))
 									{
-										VERBO3 parse_err(6,&nocheck) ;
+										parse_err(6,&nocheck) ;
 										goto err ;
 									}
 									if (nocheck.val.len == 1) 
 									{
-										VERBO3 parse_err(9,&nocheck) ;
+										parse_err(9,&nocheck) ;
 										goto err ;
 									}
 									break ;
@@ -291,12 +291,12 @@ int key_get_range(genalloc *ga, section_t *sasection,int *svtype)
 								case SLASH:
 									if (!parse_line(&nocheck.val,&pos))
 									{
-										VERBO3 parse_err(7,&nocheck) ;
+										parse_err(7,&nocheck) ;
 										goto err ;
 									}
 									if (nocheck.val.len == 1) 
 									{
-										VERBO3 parse_err(9,&nocheck) ;
+										parse_err(9,&nocheck) ;
 										goto err ;
 									}
 									if (!i && !j) (*svtype) = get_enumbyid(nocheck.val.s,key_enum_el) ;
@@ -310,7 +310,7 @@ int key_get_range(genalloc *ga, section_t *sasection,int *svtype)
 					}			 
 					if (!found && r >=0) 
 					{ 
-						VERBO3 strerr_warnw4x("unknown key: ",sakey.s," : in section: ",get_keybyid(sasection->idx[i])) ; 
+						log_warn("unknown key: ",sakey.s," : in section: ",get_keybyid(sasection->idx[i])) ; 
 						keynocheck_free(&nocheck) ;
 						goto err ; 
 					}
@@ -355,10 +355,8 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 				}
 			}					
 			if ((!count) && (countidsec))
-			{
-				VERBO3 strerr_warnw4x("mandatory key: ",list[idsec].list[idkey].name," not found on section: ",get_keybyid(idsec)) ;
-				return 0 ;
-			}
+				log_warn_return(LOG_EXIT_ZERO,"mandatory key: ",list[idsec].list[idkey].name," not found on section: ",get_keybyid(idsec)) ;
+
 			break ;
 		case CUSTOM:
 			for (unsigned int j = 0;j < genalloc_len(keynocheck,nocheck);j++)
@@ -383,10 +381,7 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 			if ((!count) && (countidsec) && bkey>=0)
 			{
 				if (obstr_equal(genalloc_s(keynocheck,nocheck)[bkey].val.s,get_keybyid(CUSTOM)))
-				{
-					VERBO3 strerr_warnw5x("custom build asked on section: ",get_keybyid(idsec)," -- key: ",list[idsec].list[idkey].name," must be set") ;
-					return 0 ;
-				}
+					log_warn_return(LOG_EXIT_ZERO,"custom build asked on section: ",get_keybyid(idsec)," -- key: ",list[idsec].list[idkey].name," must be set") ;
 			}
 			break ;
 		case BUNDLE:
@@ -409,10 +404,7 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 			if ((!count) && (countidsec) && bkey>=0)
 			{
 				if (obstr_equal(genalloc_s(keynocheck,nocheck)[bkey].val.s,get_keybyid(BUNDLE)))
-				{
-					VERBO3 strerr_warnw1x("bundle type detected -- key @contents must be set") ;
-					return 0 ;
-				}
+					log_warn_return(LOG_EXIT_ZERO,"bundle type detected -- key @contents must be set") ;
 			}
 			break ;
 		/** only pass through here to check if flags env was asked
@@ -435,16 +427,11 @@ int get_mandatory(genalloc *nocheck,int idsec,int idkey)
 			if (bkey >= 0)
 			{
 				if (!sastr_clean_string(&sa,genalloc_s(keynocheck,nocheck)[bkey].val.s))
-				{
-					VERBO3 strerr_warnwu2x("clean value of: ",sa.s) ;
-					return 0 ;
-				}
+					log_warnu_return(LOG_EXIT_ZERO,"clean value of: ",sa.s) ;
+
 				r = sastr_cmp(&sa,get_keybyid(ENVIR)) ;	
 				if ((r >= 0) && (!count))
-				{
-					VERBO3 strerr_warnw1x("options env was asked -- section environment must be set") ;
-					return 0 ;
-				}
+					log_warn_return(LOG_EXIT_ZERO,"options env was asked -- section environment must be set") ;
 			}
 			break ;
 		default: break ;
@@ -528,10 +515,8 @@ int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service)
 				break ;
 			case SKIP:
 				break ;
-			default:
-				VERBO3 strerr_warnw1x("unknown action") ;
-				return 0 ;
-			}
+			default: log_warn_return(LOG_EXIT_ZERO,"unknown action") ;
+		}
 	}
 	
 	return 1 ;
@@ -554,11 +539,11 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			break ;
 		case NAME:
 			service->cname.name = keep.len ;
-			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_common:NAME") ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			break ;
 		case DESCRIPTION:
 			service->cname.description = keep.len ;
-			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_common:DESCRIPTION") ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			break ;
 		case OPTIONS:
 			if (!get_clean_val(nocheck)) return 0 ;
@@ -596,10 +581,7 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 				if (!owner)
 				{
 					if (sastr_find(&nocheck->val,"root") == -1)
-					{
-						VERBO3 strerr_warnwu3x("use service: ",keep.s+service->cname.name," -- permission denied") ;
-						return 0 ;
-					}
+						log_warnu_return(LOG_EXIT_ZERO,"use service: ",keep.s+service->cname.name," -- permission denied") ;
 				}
 				/** special case, we don't know which user want to use
 				 * the service, we need a general name to allow all user
@@ -610,7 +592,7 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 					if (pos == (size_t)p) continue ;
 					if (!scan_uidlist(chval + pos,(uid_t *)service->user))
 					{
-						VERBO3 parse_err(0,nocheck) ;
+						parse_err(0,nocheck) ;
 						return 0 ;
 					}
 				}
@@ -622,10 +604,7 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 						if (service->user[i] == owner) e = 1 ;
 					
 					if (!e)
-					{
-						VERBO3 strerr_warnwu3x("use service: ",keep.s+service->cname.name," -- permission denied") ;
-						return 0 ;
-					}
+						log_warnu_return(LOG_EXIT_ZERO,"use service: ",keep.s+service->cname.name," -- permission denied") ;
 				}
 			}
 			break ;
@@ -638,36 +617,32 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 					char *name = chval + pos ;
 					size_t namelen =  strlen(chval + pos) ;
 					service->hiercopy[idx+1] = keep.len ;
-					if (!stralloc_catb(&keep,name,namelen + 1)) retstralloc(0,"parse_common:HIERCOPY") ;
+					if (!stralloc_catb(&keep,name,namelen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 					service->hiercopy[0] = ++idx ;
 				}
 			}
 			break ;
 		case DEPENDS:
 			if ((service->cname.itype == CLASSIC) || (service->cname.itype == BUNDLE))
-			{
-				VERBO3 strerr_warnw4x("key: ",get_keybyid(nocheck->idkey),": is not valid for type ",get_keybyid(service->cname.itype)) ;
-				return 0 ;
-			}
+				log_warn_return(LOG_EXIT_ZERO,"key: ",get_keybyid(nocheck->idkey),": is not valid for type ",get_keybyid(service->cname.itype)) ;
+				
 			if (!get_clean_val(nocheck)) return 0 ;
 			service->cname.idga = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos)+1)
 			{
-				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) retstralloc(0,"parse_common:DEPENDS") ;
+				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 				service->cname.nga++ ;
 			}
 			break ;
 		case CONTENTS:
 			if (service->cname.itype != BUNDLE)
-			{
-				VERBO3 strerr_warnw4x("key: ",get_keybyid(nocheck->idkey),": is not valid for type ",get_keybyid(service->cname.itype)) ;
-				return 0 ;
-			}
+				log_warn_return(LOG_EXIT_ZERO,"key: ",get_keybyid(nocheck->idkey),": is not valid for type ",get_keybyid(service->cname.itype)) ;
+
 			if (!get_clean_val(nocheck)) return 0 ;
 			service->cname.idga = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos) + 1)
 			{
-				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) retstralloc(0,"parse_common:CONTENTS") ;
+				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 				service->cname.nga++ ;
 			}
 			break ;
@@ -685,27 +660,21 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			break ;
 		case ENVAL:
 			if (!environ_clean_nline(&nocheck->val))
-			{
-				VERBO3 strerr_warnwu2x("clean environment value: ",chval) ;
-				return 0 ;
-			}
+				log_warnu_return(LOG_EXIT_ZERO,"clean environment value: ",chval) ;
+			
 			if (!stralloc_cats(&nocheck->val,"\n")) return 0 ;
 			if (!stralloc_copy(&service->saenv,&nocheck->val))
-			{
-				VERBO3 strerr_warnwu2x("store environment value: ",chval) ;
-				return 0 ;
-			}
+				log_warnu_return(LOG_EXIT_ZERO,"store environment value: ",chval) ;
 			break ;
 		case SIGNAL:
 			if (!sig0_scan(chval,&service->signal))
 			{
-				VERBO3 parse_err(3,nocheck) ;
+				parse_err(3,nocheck) ;
 				return 0 ;
 			}
 			break ;
-		default:
-			VERBO3 strerr_warnw2x("unknown key: ",get_keybyid(nocheck->idkey)) ;
-			return 0 ;
+		default: log_warn_return(LOG_EXIT_ZERO,"unknown key: ",get_keybyid(nocheck->idkey)) ;
+			
 	}
 	
 	return 1 ;
@@ -727,24 +696,22 @@ int keep_runfinish(sv_exec *exec,keynocheck *nocheck)
 		case RUNAS:
 			if (!check_valid_runas(nocheck)) return 0 ;
 			exec->runas = keep.len ;
-			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_runfinish:RUNAS") ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			break ;
 		case SHEBANG:
 			if (chval[0] != '/')
 			{
-				VERBO3 parse_err(4,nocheck) ;
+				parse_err(4,nocheck) ;
 				return 0 ;
 			}
 			exec->shebang = keep.len ;
-			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_runfinish:SHEBANG") ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			break ;
 		case EXEC:
 			exec->exec = keep.len ;
-			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_runfinish:EXEC") ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			break ;
-		default:
-			VERBO3 strerr_warnw2x("unknown key: ",get_keybyid(nocheck->idkey)) ;
-			return 0 ;
+		default: log_warn_return(LOG_EXIT_ZERO,"unknown key: ",get_keybyid(nocheck->idkey)) ;
 	}
 	return 1 ;
 }
@@ -767,7 +734,7 @@ int keep_logger(sv_execlog *log,keynocheck *nocheck)
 			log->idga = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos) + 1)
 			{
-				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) retstralloc(0,"parse_logger:DEPENDS") ;
+				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 				log->nga++ ;
 			}
 			break ;
@@ -784,11 +751,11 @@ int keep_logger(sv_execlog *log,keynocheck *nocheck)
 		case DESTINATION:
 			if (chval[0] != '/')
 			{
-				VERBO3 parse_err(4,nocheck) ;
+				parse_err(4,nocheck) ;
 				return 0 ;
 			}
 			log->destination = keep.len ;
-			if (!stralloc_catb(&keep,chval,*chlen + 1)) retstralloc(0,"parse_logger:DESTINATION") ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			break ;
 		case BACKUP:
 			if (!get_uint(nocheck,&log->backup)) return 0 ;
@@ -801,9 +768,7 @@ int keep_logger(sv_execlog *log,keynocheck *nocheck)
 			if (!r) return 0 ;
 			log->timestamp = r ;
 			break ;
-		default:
-			VERBO3 strerr_warnw2x("unknown key: ",get_keybyid(nocheck->idkey)) ;
-			return 0 ;
+		default: log_warn_return(LOG_EXIT_ZERO,"unknown key: ",get_keybyid(nocheck->idkey)) ;
 	}
 	return 1 ;
 }
@@ -823,24 +788,19 @@ int read_svfile(stralloc *sasv,char const *name,char const *src)
 	memcpy(svtmp + srclen + 1, name, namelen) ;
 	svtmp[srclen + 1 + namelen] = 0 ;
 	
-	VERBO3 strerr_warni4x("Read service file of : ",name," from: ",src) ;
+	log_trace("Read service file of : ",name," from: ",src) ;
 	
 	size_t filesize=file_get_size(svtmp) ;
 	if (!filesize)
-	{
-		VERBO3 strerr_warnw2x(svtmp," is empty") ;
-		return 0 ;
-	}
+		log_warn_return(LOG_EXIT_ZERO,svtmp," is empty") ;
 	
 	r = openreadfileclose(svtmp,sasv,filesize) ;
 	if(!r)
-	{
-		VERBO3 strerr_warnwu2sys("open ", svtmp) ;
-		return 0 ;
-	}
+		log_warnusys_return(LOG_EXIT_ZERO,"open ", svtmp) ;
+
 	/** ensure that we have an empty line at the end of the string*/
-	if (!stralloc_cats(sasv,"\n")) retstralloc(0,"read_svfile") ;
-	if (!stralloc_0(sasv)) retstralloc(0,"read_svfile") ;
+	if (!stralloc_cats(sasv,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	if (!stralloc_0(sasv)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	
 	return 1 ;
 }
@@ -852,11 +812,11 @@ int add_pipe(sv_alltype *sv, stralloc *sa)
 	stralloc tmp = STRALLOC_ZERO ;
 
 	sv->pipeline = sa->len ;
-	if (!stralloc_cats(&tmp,SS_PIPE_NAME)) retstralloc(0,"add_pipe") ;
-	if (!stralloc_cats(&tmp,prodname)) retstralloc(0,"add_pipe") ;
-	if (!stralloc_0(&tmp)) retstralloc(0,"add_pipe") ;
+	if (!stralloc_cats(&tmp,SS_PIPE_NAME)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	if (!stralloc_cats(&tmp,prodname)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	if (!stralloc_0(&tmp)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	
-	if (!stralloc_catb(sa,tmp.s,tmp.len+1)) retstralloc(0,"add_pipe") ;
+	if (!stralloc_catb(sa,tmp.s,tmp.len+1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	
 	stralloc_free(&tmp) ;
 	
@@ -984,7 +944,7 @@ int get_clean_val(keynocheck *ch)
 {
 	if (!sastr_clean_element(&ch->val))
 	{
-		VERBO3 parse_err(8,ch) ;
+		parse_err(8,ch) ;
 		return 0 ;
 	}
 	return 1 ;
@@ -995,7 +955,7 @@ int get_enum(char const *string, keynocheck *ch)
 	int r = get_enumbyid(string,key_enum_el) ;
 	if (r == -1) 
 	{
-		VERBO3 parse_err(0,ch) ;
+		parse_err(0,ch) ;
 		return 0 ;
 	}
 	return r ;
@@ -1010,7 +970,7 @@ int get_timeout(keynocheck *ch,uint32_t *ui)
 	else if (ch->idkey == T_DOWN) time = 3 ;
 	if (scan_timeout(ch->val.s,ui,time) == -1)
 	{
-		VERBO3 parse_err(3,ch) ;
+		parse_err(3,ch) ;
 		return 0 ;
 	}
 	return 1 ;
@@ -1020,7 +980,7 @@ int get_uint(keynocheck *ch,uint32_t *ui)
 {
 	if (!uint32_scan(ch->val.s,ui))
 	{
-		VERBO3 parse_err(3,ch) ;
+		parse_err(3,ch) ;
 		return 0 ;
 	}
 	return 1 ;
@@ -1032,7 +992,7 @@ int check_valid_runas(keynocheck *ch)
 	struct passwd *pw = getpwnam(ch->val.s);
 	if (pw == NULL && errno)
 	{
-		VERBO3 parse_err(0,ch) ;
+		parse_err(0,ch) ;
 		return 0 ;
 	} 
 	return 1 ;
@@ -1045,37 +1005,37 @@ void parse_err(int ierr,keynocheck *check)
 	switch(ierr)
 	{
 		case 0: 
-			strerr_warnw4x("invalid value for key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			log_warn("invalid value for key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 1:
-			strerr_warnw4x("multiple definition of key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			log_warn("multiple definition of key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 2:
-			strerr_warnw4x("same value for key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			log_warn("same value for key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 3:
-			strerr_warnw4x("key: ",get_keybyid(idkey),": must be an integrer value in section: ",get_keybyid(idsec)) ;
+			log_warn("key: ",get_keybyid(idkey),": must be an integrer value in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 4:
-			strerr_warnw4x("key: ",get_keybyid(idkey),": must be an absolute path in section: ",get_keybyid(idsec)) ;
+			log_warn("key: ",get_keybyid(idkey),": must be an absolute path in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 5:
-			strerr_warnw4x("key: ",get_keybyid(idkey),": must be set in section: ",get_keybyid(idsec)) ;
+			log_warn("key: ",get_keybyid(idkey),": must be set in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 6:
-			strerr_warnw4x("invalid format of key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			log_warn("invalid format of key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 7:
-			strerr_warnwu4x("parse key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			log_warnu("parse key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 8:
-			strerr_warnwu4x("clean value of key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			log_warnu("clean value of key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
 			break ;
 		case 9:
-			strerr_warnw4x("empty value of key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			log_warn("empty value of key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
 			break ;
 		default:
-			strerr_warnw1x("unknown parse_err number") ;
+			log_warn("unknown parse_err number") ;
 			break ;
 	}
 }

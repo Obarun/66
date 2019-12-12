@@ -12,11 +12,9 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <skalibs/strerr2.h>
+#include <oblibs/log.h>
 
 #include <66/ssexec.h>
-
-unsigned int VERBOSITY = 1 ;
 
 int main(int argc, char const *const *argv,char const *const *envp)
 {

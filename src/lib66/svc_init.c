@@ -18,7 +18,7 @@
 #include <stdlib.h>
 //#include <stdio.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/sastr.h>
@@ -57,7 +57,7 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 	if (!ftrigr_startf(&fifo, &deadline, &STAMP))
 		goto err ;
 	
-	if (!ss_resolve_create_live(info)) { VERBO1 strerr_warnwu1sys("create live state") ; goto err ; }
+	if (!ss_resolve_create_live(info)) { log_warnusys("create live state") ; goto err ; }
 	
 	for (i = 0 ; i < genalloc_len(ss_resolve_t,ga); i++) 
 	{
@@ -67,11 +67,11 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 		char *state = string + genalloc_s(ss_resolve_t,ga)[i].state ;
 		if (s6_svc_ok(string + genalloc_s(ss_resolve_t,ga)[i].runat))
 		{
-			VERBO1 strerr_warni3x("Initialization aborted -- ",name," already initialized") ;
-			VERBO2 strerr_warni2x("Write state file of: ",name) ;
+			log_info("Initialization aborted -- ",name," already initialized") ;
+			log_trace("Write state file of: ",name) ;
 			if (!ss_state_write(&sta,state,name))
 			{
-				VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
+				log_warnusys("write state file of: ",name) ;
 				goto err ;
 			}
 			continue ;
@@ -93,15 +93,15 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 		memcpy(svscan,string + genalloc_s(ss_resolve_t,ga)[i].runat,svscanlen) ;
 		svscan[svscanlen] = 0 ;
 		
-		VERBO3 strerr_warnt2x("init service: ", string + genalloc_s(ss_resolve_t,ga)[i].name) ;
+		log_trace("init service: ", string + genalloc_s(ss_resolve_t,ga)[i].name) ;
 		/** if logger was created do not pass here to avoid to erase
 		 * the fifo of the logger*/
 		if (!scan_mode(svscan,S_IFDIR))
 		{
-			VERBO3 strerr_warnt4x("copy: ",svsrc, " to ", svscan) ;
+			log_trace("copy: ",svsrc, " to ", svscan) ;
 			if (!hiercopy(svsrc,svscan))
 			{
-				VERBO3 strerr_warnwu4sys("copy: ",svsrc," to: ",svscan) ;
+				log_warnusys("copy: ",svsrc," to: ",svscan) ;
 				goto err ;
 			}
 		}
@@ -119,10 +119,10 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 			memcpy(tmp,svsrc,tmplen) ;
 			memcpy(tmp + tmplen,"/log",4) ;
 			tmp[tmplen + 4] = 0 ;
-			VERBO3 strerr_warnt4x("copy: ",tmp, " to ", svscan) ;
+			log_trace("copy: ",tmp, " to ", svscan) ;
 			if (!hiercopy(tmp,svscan))
 			{
-				VERBO3 strerr_warnwu4sys("copy: ",tmp," to: ",svscan) ;
+				log_warnusys("copy: ",tmp," to: ",svscan) ;
 				goto err ;
 			}
 		}
@@ -133,51 +133,51 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 		{
 			if (!sastr_add_string(&sadown,svscan))
 			{
-				VERBO3 strerr_warnwu3x("add: ",svscan," to genalloc") ;
+				log_warnusys("add: ",svscan," to genalloc") ;
 				goto err ;
 			}
 		}
 		
-		VERBO3 strerr_warnt2x("create file: ",svscan) ;
+		log_trace("create file: ",svscan) ;
 		if (!touch(svscan))
 		{
-			VERBO3 strerr_warnwu2sys("create file: ",svscan) ;
+			log_warnusys("create file: ",svscan) ;
 			goto err ;
 		}
 		memcpy(svscan + svscanlen, "/event", 6) ;
 		svscan[svscanlen + 6] = 0 ;	
-		VERBO3 strerr_warnt2x("create fifo: ",svscan) ;
+		log_trace("create fifo: ",svscan) ;
 		if (!ftrigw_fifodir_make(svscan, gid, 0))
 		{
-			VERBO3 strerr_warnwu2sys("create fifo: ",svscan) ;
+			log_warnusys("create fifo: ",svscan) ;
 			goto err ;
 		}
-		VERBO3 strerr_warnt2x("subcribe to fifo: ",svscan) ;
+		log_trace("subcribe to fifo: ",svscan) ;
 		/** unsubscribe automatically, options is 0 */
 		id = ftrigr_subscribe_g(&fifo, svscan, "s", 0, &deadline) ;
 		if (!id)
 		{
-			VERBO3 strerr_warnwu2x("subcribe to fifo: ",svscan) ;
+			log_warnusys("subcribe to fifo: ",svscan) ;
 			goto err ;
 		}
 		if (!genalloc_append(uint16_t, &ids, &id)) goto err ;
 	}
 	if (genalloc_len(uint16_t,&ids))
 	{
-		VERBO3 strerr_warnt2x("reload scandir: ",info->scandir.s) ;
+		log_trace("reload scandir: ",info->scandir.s) ;
 		if (scandir_send_signal(info->scandir.s,"an") <= 0) 
 		{
-			VERBO3 strerr_warnwu2sys("reload scandir: ",info->scandir.s) ;
+			log_warnusys("reload scandir: ",info->scandir.s) ;
 			goto err ;
 		}
 	
-		VERBO3 strerr_warnt1x("waiting for events on fifo") ;
+		log_trace("waiting for events on fifo") ;
 		if (ftrigr_wait_and_g(&fifo, genalloc_s(uint16_t, &ids), genalloc_len(uint16_t, &ids), &deadline) < 0)
 				goto err ;
 	
 		for (pos = 0 ; pos < sadown.len; pos += strlen(sadown.s + pos) + 1)
 		{
-			VERBO3 strerr_warnt2x("Delete down file at: ",sadown.s + pos) ;
+			log_warnusys("Delete down file at: ",sadown.s + pos) ;
 			if (unlink(sadown.s + pos) < 0 && errno != ENOENT) goto err ;
 		}
 	
@@ -187,13 +187,13 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 			char const *name = string + genalloc_s(ss_resolve_t,ga)[pos].name  ;
 			char const *state = string + genalloc_s(ss_resolve_t,ga)[pos].state  ;
 			
-			VERBO2 strerr_warni2x("Write state file of: ",name) ;
+			log_trace("Write state file of: ",name) ;
 			if (!ss_state_write(&sta,state,name))
 			{
-				VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
+				log_warnusys("write state file of: ",name) ;
 				goto err ;
 			}
-			VERBO1 strerr_warni2x("Initialized successfully: ",name) ;
+			log_info("Initialized successfully: ",name) ;
 		}
 	}
 	ftrigr_end(&fifo) ;

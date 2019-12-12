@@ -21,7 +21,7 @@
 //#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/directory.h>
 #include <oblibs/types.h>
 #include <oblibs/files.h>
@@ -65,7 +65,6 @@ static char TMPENV[MAXENV+1] ;
 static char const *skel = SS_SKEL_DIR ;
 static char const *log_user = SS_LOGGER_RUNNER ;
 static unsigned int BOOT = 0 ;
-unsigned int VERBOSITY = 1 ;
 unsigned int NOTIF = 0 ;
 
 #define USAGE "66-scandir [ -h ] [ -v verbosity ] [ -b ] [ -l live ] [ -d notif ] [ -t rescan ] [ -L log_user ] [ -s skel ] [ -e environment ] [ -c | u | r ] owner"
@@ -91,17 +90,17 @@ static inline void info_help (void)
 ;
 
 	if (buffer_putsflush(buffer_1, help) < 0)
-		strerr_diefu1sys(111, "write to stdout") ;
+		log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
 void scandir_up(char const *scandir, unsigned int timeout, char const *const *envp)
 {
 	int r ;
 	r = scandir_ok(scandir) ;
-	if (r < 0) strerr_diefu2sys(111, "check: ", scandir) ;
+	if (r < 0) log_dieusys(LOG_EXIT_SYS, "check: ", scandir) ;
 	if (r)
 	{
-		VERBO2 strerr_warni3x("scandir: ",scandir," already running") ;
+		log_trace("scandir: ",scandir," already running") ;
 		return ;
 	}
 	
@@ -131,42 +130,42 @@ void scandir_up(char const *scandir, unsigned int timeout, char const *const *en
 
 static void inline auto_chown(char const *str)
 {
-	VERBO3 strerr_warnt6x("chown directory: ",str," to: ",OWNERSTR,":",GIDSTR) ;
+	log_trace("chown directory: ",str," to: ",OWNERSTR,":",GIDSTR) ;
 	if (chown(str,OWNER,GIDOWNER) < 0)
-		strerr_diefu2sys(111,"chown: ",str) ;
+		log_dieusys(LOG_EXIT_SYS,"chown: ",str) ;
 }
 
 static void inline auto_dir(char const *str,mode_t mode)
 {
-	VERBO3 strerr_warnt2x("create directory: ",str) ;
+	log_trace("create directory: ",str) ;
 	if (!dir_create(str,mode)) 
-		strerr_diefu2sys(111,"create directory: ",str) ;
+		log_dieusys(LOG_EXIT_SYS,"create directory: ",str) ;
 }
 
 static void inline auto_chmod(char const *str,mode_t mode)
 {
 	//VERBO3 strerr_warnt2x("chmod: ",str) ;
 	if (chmod(str,mode) < 0)
-		strerr_diefu2sys(111,"chmod: ",str) ;
+		log_dieusys(LOG_EXIT_SYS,"chmod: ",str) ;
 }
 
 static void inline auto_file(char const *dst,char const *file,char const *contents,size_t conlen)
 {
-	VERBO3 strerr_warnt4x("write file: ",dst,"/",file) ;
+	log_trace("write file: ",dst,"/",file) ;
 	if (!file_write_unsafe(dst,file,contents,conlen))
-		strerr_diefu4sys(111,"write file: ",dst,"/",file) ;
+		log_dieusys(LOG_EXIT_SYS,"write file: ",dst,"/",file) ;
 }
 
 static void inline auto_stralloc(stralloc *sa,char const *str)
 {
-	if (!stralloc_cats(sa,str)) strerr_diefu1sys(111,"append stralloc") ;
+	if (!stralloc_cats(sa,str)) log_dieusys(LOG_EXIT_SYS,"append stralloc") ;
 }
 
 static void inline auto_check(char const *str,mode_t check,mode_t type,mode_t perm,int what)
 {
 	int r ;
 	r = scan_mode(str,check) ;
-	if (r < 0) { errno = EEXIST ; strerr_dief2sys(111,"conflicting format of: ",str) ; }
+	if (r < 0) { errno = EEXIST ; log_diesys(LOG_EXIT_SYS,"conflicting format of: ",str) ; }
 	if (!r)
 	{
 		auto_dir(str,type) ;
@@ -179,12 +178,12 @@ static void inline auto_fifo(char const *str)
 {
 	int r ;
 	r = scan_mode(str,S_IFIFO) ;
-	if (r < 0) { errno = EEXIST ; strerr_dief2sys(111,"conflicting format of: ",str) ; }
+	if (r < 0) { errno = EEXIST ; log_diesys(LOG_EXIT_SYS,"conflicting format of: ",str) ; }
 	if (!r)
 	{
-		VERBO3 strerr_warnt2x("create fifo: ",str) ;
+		log_trace("create fifo: ",str) ;
 		if (mkfifo(str, 0600) < 0) 
-			strerr_diefu2sys(111,"create fifo: ",str) ;
+			log_dieusys(LOG_EXIT_SYS,"create fifo: ",str) ;
 	}
 }
 static void inline auto_rm(char const *str)
@@ -193,14 +192,14 @@ static void inline auto_rm(char const *str)
 	r = scan_mode(str,S_IFDIR) ;
 	if (r > 0)
 	{
-		VERBO1 strerr_warni3x("removing ",str," ...") ;
-		if (rm_rf(str) < 0) strerr_diefu2sys(111,"remove: ",str) ;
+		log_info("removing: ",str,"...") ;
+		if (rm_rf(str) < 0) log_dieusys(LOG_EXIT_SYS,"remove: ",str) ;
 	}
 }
 static void inline log_perm(char const *str,uid_t *uid,gid_t *gid)
 {
-	if (!youruid(uid,str)) strerr_diefu2sys(111,"set uid of: ",str) ;
-	if (!yourgid(gid,*uid)) strerr_diefu2sys(111,"set gid of: ",str) ;
+	if (!youruid(uid,str)) log_dieusys(LOG_EXIT_SYS,"set uid of: ",str) ;
+	if (!yourgid(gid,*uid)) log_dieusys(LOG_EXIT_SYS,"set gid of: ",str) ;
 }
 
 static void inline auto_addlive(stralloc *sa,char const *live, char const *str)
@@ -269,12 +268,12 @@ void write_bootlog(char const *live, char const *scandir)
 	path[livelen + 3] = '/' ;
 	memcpy(path + livelen + 4,OWNERSTR,ownerlen) ;
 	path[livelen + 4 + ownerlen] = 0 ;
-	VERBO3 strerr_warnt2x("create directory: ",path) ;
+	log_trace("create directory: ",path) ;
 	r = dir_create_parent(path,02750) ;
-	if (!r) strerr_diefu2sys(111,"create: ",path) ;
+	if (!r) log_dieusys(LOG_EXIT_SYS,"create: ",path) ;
 	log_perm(log_user,&uid,&gid) ;
 	if (chown(path,uid,gid) < 0)
-		strerr_diefu2sys(111,"chown: ",path) ;
+		log_dieusys(LOG_EXIT_SYS,"chown: ",path) ;
 	auto_chmod(path,02755) ;
 
 	/** make run file */
@@ -428,7 +427,7 @@ void create_scandir(char const *live, char const *scandir)
 		"/crash", "/finish", "/SIGHUP", "/SIGINT",
 		"/SIGQUIT", "/SIGTERM", "/SIGUSR1", "/SIGUSR2"
 	 } ;
-	VERBO2 strerr_warni1x("write control file... ") ;
+	log_trace("write control file... ") ;
 	for (int i = 0 ; i < 8; i++)
 		write_control(scandir,live,file[i],i) ;
 
@@ -491,77 +490,77 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		{
 			int opt = getopt_args(argc,argv, ">hv:bl:d:t:s:e:cruL:", &l) ;
 			if (opt == -1) break ;
-			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
+			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
 			{
 				case 'h' : info_help(); return 0 ;
-				case 'v' : if (!uint0_scan(l.arg, &VERBOSITY)) exitusage(USAGE) ; break ;
+				case 'v' : if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
 				case 'b' : BOOT = 1 ; break ;
-				case 'l' : if(!stralloc_cats(&live,l.arg)) retstralloc(111,"main") ;
-						   if(!stralloc_0(&live)) retstralloc(111,"main") ;
+				case 'l' : if(!stralloc_cats(&live,l.arg)) log_die_nomem("stralloc") ;
+						   if(!stralloc_0(&live)) log_die_nomem("stralloc") ;
 						   break ;
-				case 'd' : if (!uint0_scan(l.arg, &NOTIF)) exitusage(USAGE) ;
-						   if (NOTIF < 3) strerr_dief1x(110, "notification fd must be 3 or more") ;
-						   if (fcntl(NOTIF, F_GETFD) < 0) strerr_dief1sys(110, "invalid notification fd") ;
+				case 'd' : if (!uint0_scan(l.arg, &NOTIF)) log_usage(USAGE) ;
+						   if (NOTIF < 3) log_die(LOG_EXIT_USER, "notification fd must be 3 or more") ;
+						   if (fcntl(NOTIF, F_GETFD) < 0) log_diesys(LOG_EXIT_USER, "invalid notification fd") ;
 						   break ;
 				case 't' : if (!uint0_scan(l.arg, &rescan)) break ;
 				case 's' : skel = l.arg ; break ;
-				case 'e' : if(!stralloc_cats(&envdir,l.arg)) retstralloc(111,"main") ;
-						   if(!stralloc_0(&envdir)) retstralloc(111,"main") ;
+				case 'e' : if(!stralloc_cats(&envdir,l.arg)) log_die_nomem("stralloc") ;
+						   if(!stralloc_0(&envdir)) log_die_nomem("stralloc") ;
 						   break ;
-				case 'c' : create = 1 ; if (remove) exitusage(USAGE) ; break ;
-				case 'r' : remove = 1 ; if (create) exitusage(USAGE) ; break ;
-				case 'u' : up = 1 ; if (remove) exitusage(USAGE) ; break ;
+				case 'c' : create = 1 ; if (remove) log_usage(USAGE) ; break ;
+				case 'r' : remove = 1 ; if (create) log_usage(USAGE) ; break ;
+				case 'u' : up = 1 ; if (remove) log_usage(USAGE) ; break ;
 				case 'L' : log_user = l.arg ; break ;
-				default : exitusage(USAGE) ; 
+				default :  log_usage(USAGE) ; 
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
 	
 	if (!argc) OWNER = MYUID ;
-	else if (!youruid(&OWNER,argv[0])) strerr_diefu2sys(111,"set uid of: ",argv[0]) ;
+	else if (!youruid(&OWNER,argv[0])) log_dieusys(LOG_EXIT_SYS,"set uid of: ",argv[0]) ;
 		
 	if (BOOT && NOTIF) NOTIF = 0 ;
-	if (BOOT && OWNER) strerr_dief1x(110,"-b options can be set only with root") ; 
+	if (BOOT && OWNER) log_die(LOG_EXIT_USER,"-b options can be set only with root") ; 
 	OWNERSTR[uid_fmt(OWNERSTR,OWNER)] = 0 ;
 	
-	if (!yourgid(&GIDOWNER,OWNER)) strerr_diefu2sys(111,"set gid of: ",OWNERSTR) ;
+	if (!yourgid(&GIDOWNER,OWNER)) log_dieusys(LOG_EXIT_SYS,"set gid of: ",OWNERSTR) ;
 	GIDSTR[gid_fmt(GIDSTR,GIDOWNER)] = 0 ; 
 		
 	/** live -> /run/66/ */
 	r = set_livedir(&live) ;
-	if (r < 0) strerr_dief3x(110,"live: ",live.s," must be an absolute path") ;
-	if (!r) strerr_diefu1sys(111,"set live directory") ;
+	if (r < 0) log_die(LOG_EXIT_USER,"live: ",live.s," must be an absolute path") ;
+	if (!r) log_dieusys(LOG_EXIT_SYS,"set live directory") ;
 	
-	if (!stralloc_copy(&scandir,&live)) retstralloc(111,"main") ;
+	if (!stralloc_copy(&scandir,&live)) log_die_nomem("stralloc") ;
 		
 	/** scandir -> /run/66/scandir/ */
 	r = set_livescan(&scandir,OWNER) ;
-	if (r < 0) strerr_dief3x(110,"scandir: ", scandir.s, " must be an absolute path") ;
-	if (!r) strerr_diefu1sys(111,"set scandir directory") ;
+	if (r < 0) log_die(LOG_EXIT_USER,"scandir: ", scandir.s, " must be an absolute path") ;
+	if (!r) log_dieusys(LOG_EXIT_SYS,"set scandir directory") ;
 		
 	if (BOOT && skel[0] != '/')
-		strerr_dief3x(110, "rc.shutdown: ",skel," must be an absolute path") ;
+		log_die(LOG_EXIT_USER, "rc.shutdown: ",skel," must be an absolute path") ;
 	
 	if (envdir.len)
 	{
 		if (envdir.s[0] != '/')
-			strerr_dief3x(110,"environment: ",envdir.s," must be an absolute path") ;
+			log_die(LOG_EXIT_USER,"environment: ",envdir.s," must be an absolute path") ;
 		
-		if (!environ_get_envfile_n_merge(envdir.s,envp,newenv,TMPENV)) strerr_diefu2x(111,"build environment with: ",envdir.s) ;
+		if (!environ_get_envfile_n_merge(envdir.s,envp,newenv,TMPENV)) log_dieusys(LOG_EXIT_SYS,"build environment with: ",envdir.s) ;
 		genv = newenv ;
 	}
 	else genv = envp ;
 	
 	r = scan_mode(scandir.s, S_IFDIR) ;
-	if (r < 0) strerr_dief3x(111,"scandir: ",scandir.s," exist with unkown mode") ;
-	if (!r && !create && !remove) strerr_dief3x(110,"scandir: ",scandir.s," doesn't exist") ;
+	if (r < 0) log_die(LOG_EXIT_SYS,"scandir: ",scandir.s," exist with unkown mode") ;
+	if (!r && !create && !remove) log_die(LOG_EXIT_USER,"scandir: ",scandir.s," doesn't exist") ;
 	if (!r && create)
 	{
-		VERBO2 strerr_warni3x("sanitize ",live.s," ...") ;
+		log_trace("sanitize ",live.s," ...") ;
 		sanitize_live(live.s) ;
-		VERBO2 strerr_warni3x("create scandir ",scandir.s," ...") ;
+		log_trace("create scandir ",scandir.s," ...") ;
 		create_scandir(live.s, scandir.s) ;
 	}
 	/**swap to char [] to be able to freed stralloc*/
@@ -570,25 +569,25 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	ownerscan[scandir.len] = 0 ;
 	if (r && create)
 	{
-		VERBO1 strerr_warni3x("scandir: ",scandir.s," already exist, keep it") ;
+		log_info("scandir: ",scandir.s," already exist, keep it") ;
 		goto end ;
 	}
  	
  	r = scandir_ok(scandir.s) ;
-	if (r < 0) strerr_diefu2sys(111, "check: ", scandir.s) ;
-	if (r && remove) strerr_diefu3x(110,"remove: ",scandir.s,": is running")  ;
+	if (r < 0) log_dieusys(LOG_EXIT_SYS, "check: ", scandir.s) ;
+	if (r && remove) log_dieu(LOG_EXIT_USER,"remove: ",scandir.s,": is running")  ;
 	if (remove)
 	{
 		auto_rm(scandir.s) ;
 		/** /run/66/tree/uid */
-		if (!stralloc_copy(&scandir,&live)) retstralloc(111,"main") ;
+		if (!stralloc_copy(&scandir,&live)) log_die_nomem("stralloc") ;
 		r = set_livetree(&scandir,OWNER) ;
-		if (!r) strerr_diefu1sys(111,"set livetree directory") ;
+		if (!r) log_dieusys(LOG_EXIT_SYS,"set livetree directory") ;
 		auto_rm(scandir.s) ;
-		if (!stralloc_copy(&scandir,&live)) retstralloc(111,"main") ;
+		if (!stralloc_copy(&scandir,&live)) log_die_nomem("stralloc") ;
 		/** run/66/state/uid */
 		r = set_livestate(&scandir,OWNER) ;
-		if (!r) strerr_diefu1sys(111,"set livestate directory") ;
+		if (!r) log_dieusys(LOG_EXIT_SYS,"set livestate directory") ;
 		auto_rm(scandir.s) ;
 	}
 	end:

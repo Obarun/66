@@ -17,7 +17,8 @@
 
 #include <sys/stat.h>
 #include <stdlib.h>
-#include <oblibs/error2.h>
+
+#include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
 
@@ -72,29 +73,21 @@ int backup_make_new(ssexec_t *info, unsigned int type)
 	r = scan_mode(back,S_IFDIR) ;
 	if (r || (r < 0))
 	{
-		VERBO3 strerr_warnt2x("rm directory: ", back) ;
+		log_trace("rm directory: ", back) ;
 		if (rm_rf(back) < 0)
-		{
-			VERBO3 strerr_warnwu2sys("remove: ",back) ;
-			return 0 ;
-		}
+			log_warnusys_return(LOG_EXIT_ZERO,"remove: ",back) ;
+		
 		r = 0 ;
 	}
 	if (!r)
 	{
-		VERBO3 strerr_warnt2x("create directory: ", back) ;
+		log_trace("create directory: ", back) ;
 		if (!dir_create(back,0755))
-		{
-			VERBO3 strerr_warnwu2sys("create directory: ",back) ;
-			return 0 ;
-		}
+			log_warnusys_return(LOG_EXIT_ZERO,"create directory: ",back) ;
 	}
-	VERBO3 strerr_warnt4x("copy: ",src," to: ", back) ;
+	log_trace("copy: ",src," to: ", back) ;
 	if (!hiercopy(src, back))
-	{
-		VERBO3 strerr_warnwu4sys("copy: ",src," to ",back) ;
-		return 0 ;
-	}
+		log_warnusys_return(LOG_EXIT_ZERO,"copy: ",src," to ",back) ;
 	
 	memcpy(src + newsrc,SS_RESOLVE,SS_RESOLVE_LEN) ;
 	src[newsrc + SS_RESOLVE_LEN] = 0 ;
@@ -105,29 +98,21 @@ int backup_make_new(ssexec_t *info, unsigned int type)
 	r = scan_mode(back,S_IFDIR) ;
 	if (r || (r < 0))
 	{
-		VERBO3 strerr_warnt2x("rm directory: ", back) ;
+		log_trace("rm directory: ", back) ;
 		if (rm_rf(back) < 0)
-		{
-			VERBO3 strerr_warnwu2sys("remove: ",back) ;
-			return 0 ;
-		}
+			log_warnusys_return(LOG_EXIT_ZERO,"remove: ",back) ;
+		
 		r = 0 ;
 	}
 	if (!r)
 	{
-		VERBO3 strerr_warnt2x("create directory: ", back) ;
+		log_trace("create directory: ", back) ;
 		if (!dir_create(back,0755))
-		{
-			VERBO3 strerr_warnwu2sys("create directory: ",back) ;
-			return 0 ;
-		}
+			log_warnusys_return(LOG_EXIT_ZERO,"create directory: ",back) ;
 	}
-	VERBO3 strerr_warnt4x("copy: ",src," to: ", back) ;
+	log_trace("copy: ",src," to: ", back) ;
 	if (!hiercopy(src, back))
-	{
-		VERBO3 strerr_warnwu4sys("copy: ",src," to ",back) ;
-		return 0 ;
-	}
-	
+		log_warnusys_return(LOG_EXIT_ZERO,"copy: ",src," to ",back) ;
+			
 	return 1 ;
 }

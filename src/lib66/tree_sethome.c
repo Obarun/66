@@ -20,7 +20,7 @@
 #include <sys/types.h>
 
 #include <oblibs/types.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 
 #include <skalibs/stralloc.h>
 
@@ -40,10 +40,10 @@ int tree_sethome(stralloc *tree, char const *base,uid_t owner)
 		memcpy(treename,tree->s,tree->len) ;
 		treename[tree->len] = 0 ;
 		tree->len = 0 ;
-		if (!stralloc_cats(tree,base)) retstralloc(0,"main") ;
-		if (!stralloc_cats(tree,SS_SYSTEM "/")) retstralloc(0,"main") ;
-		if (!stralloc_cats(tree,treename)) retstralloc(0,"main") ;
-		if (!stralloc_0(tree)) retstralloc(0,"main") ;
+		if (!stralloc_cats(tree,base) ||
+		!stralloc_cats(tree,SS_SYSTEM "/") || 
+		!stralloc_cats(tree,treename) ||
+		!stralloc_0(tree)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		r = scan_mode(tree->s,S_IFDIR) ;
 		if (r < 0) errno = EEXIST ;
 		if (r != 1) return 0 ;

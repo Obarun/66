@@ -17,7 +17,7 @@
 #include <sys/stat.h>
 
 #include <oblibs/obgetopt.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/files.h>
@@ -49,7 +49,7 @@ int tree_state(int argc, char const *const *argv)
 		{
 			int opt = getopt_args(argc,argv, "v:sad", &l) ;
 			if (opt == -1) break ;
-			if (opt == -2){ strerr_warnw1x("options must be set first") ; return 0 ; }
+			if (opt == -2) log_warn_return(LOG_EXIT_ZERO,"options must be set first") ;
 			switch (opt)
 			{
 				case 'v' :  if (!uint0_scan(l.arg, &verbosity)) return 0 ;  break ;
@@ -72,7 +72,7 @@ int tree_state(int argc, char const *const *argv)
 	
 	if (!set_ownersysdir(&base,owner))
 	{
-		VERBO3 strerr_warnwu1sys("set owner directory") ;
+		log_warnusys("set owner directory") ;
 		stralloc_free(&base) ;
 		stralloc_free(&contents) ;
 		return 0 ;
@@ -89,7 +89,7 @@ int tree_state(int argc, char const *const *argv)
 	if (r == -1) { errno = EEXIST ; goto out ; }
 	if (!r)
 	{
-		VERBO3 strerr_warnwu2sys("find: ",state) ;
+		log_warnusys("find: ",state) ;
 		goto out ;
 	}
 	
@@ -97,7 +97,7 @@ int tree_state(int argc, char const *const *argv)
 	r = openreadfileclose(state,&contents,statesize) ;
 	if(!r)
 	{
-		VERBO3 strerr_warnwu2sys("open: ", state) ;
+		log_warnusys("open: ", state) ;
 		goto out ;
 	}
 	
@@ -113,14 +113,14 @@ int tree_state(int argc, char const *const *argv)
 			fd = open_append(state) ;
 			if (fd < 0)
 			{
-				VERBO3 strerr_warnwu2sys("open: ",state) ;
+				log_warnusys("open: ",state) ;
 				goto out ;
 			}
 			r = write(fd, tree,treelen);
 			r = write(fd, "\n",1);
 			if (r < 0)
 			{
-				VERBO3 strerr_warnwu5sys("write: ",state," with ", tree," as content") ;
+				log_warnusys("write: ",state," with ", tree," as content") ;
 				fd_close(fd) ;
 				goto out ;
 			}
@@ -141,7 +141,7 @@ int tree_state(int argc, char const *const *argv)
 			fd = open_trunc(state) ;
 			if (fd < 0)
 			{
-				VERBO3 strerr_warnwu2sys("open_trunc ", state) ;
+				log_warnusys("open_trunc ", state) ;
 				goto out ;
 			}
 	
@@ -154,14 +154,14 @@ int tree_state(int argc, char const *const *argv)
 				r = write(fd, name,namelen);
 				if (r < 0)
 				{
-					VERBO3 strerr_warnwu5sys("write: ",state," with ", name," as content") ;
+					log_warnusys("write: ",state," with ", name," as content") ;
 					fd_close(fd) ;
 					goto out ;
 				}
 				r = write(fd, "\n",1);
 				if (r < 0)
 				{
-					VERBO3 strerr_warnwu5sys("write: ",state," with ", name," as content") ;
+					log_warnusys("write: ",state," with ", name," as content") ;
 					fd_close(fd) ;
 					goto out ;
 				}
@@ -203,7 +203,7 @@ int tree_cmd_state(unsigned int verbosity,char const *cmd, char const *tree)
 	
 	if (!sastr_clean_string(&opts,cmd))
 	{
-		VERBO3 strerr_warnwu2x("clean: ",cmd) ;
+		log_warnu("clean: ",cmd) ;
 		stralloc_free(&opts) ;
 		return 0 ;
 	}

@@ -17,7 +17,7 @@
 #include <string.h>
 
 #include <oblibs/string.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/directory.h>
 #include <oblibs/types.h>
 
@@ -33,15 +33,15 @@ void err(unsigned int *e, unsigned int msg,char const *resolve,char const *swap,
 {
 	switch (msg)
 	{
-		case 0: strerr_warnwu1x("set revolve pointer to source") ;
+		case 0: log_warnu("set revolve pointer to source") ;
 				break ;
-		case 1: strerr_warnwu1x("set revolve pointer to backup") ;
+		case 1: log_warnu("set revolve pointer to backup") ;
 				break ;
-		case 2: strerr_warnwu4sys("copy : ",svdir," to ", resolve) ;
+		case 2: log_warnu("copy : ",svdir," to ", resolve) ;
 				break ;
-		case 3: strerr_warnwu2sys("remove directory: ", svdir) ;
+		case 3: log_warnu("remove directory: ", svdir) ;
 				break ;
-		case 4: strerr_warnwu1x("set revolve pointer to live") ;
+		case 4: log_warnu("set revolve pointer to live") ;
 				break ;
 		default: break ;
 	}
@@ -120,8 +120,8 @@ int tree_copy_tmp(char const *workdir, ssexec_t *info)
 			goto err ;
 		}
 		saresolve.len--;
-		if (!stralloc_cats(&saresolve,SS_RESOLVE)) retstralloc(0,"tree_copy_tmp") ;
-		if (!stralloc_0(&saresolve)) retstralloc(0,"tree_copy_tmp") ;
+		if (!stralloc_cats(&saresolve,SS_RESOLVE)) log_warnsys_return(LOG_EXIT_ZERO,"tree_copy_tmp") ;
+		if (!stralloc_0(&saresolve)) log_warnsys_return(LOG_EXIT_ZERO,"tree_copy_tmp") ;
 		
 		if (!ss_resolve_pointo(&swap,info,SS_NOTYPE,SS_RESOLVE_BACK))
 		{
@@ -129,8 +129,8 @@ int tree_copy_tmp(char const *workdir, ssexec_t *info)
 			goto err ;
 		}
 		swap.len--;
-		if (!stralloc_cats(&swap,SS_RESOLVE)) retstralloc(0,"tree_copy_tmp") ;	
-		if (!stralloc_0(&swap)) retstralloc(0,"tree_copy_tmp") ;
+		if (!stralloc_cats(&swap,SS_RESOLVE)) log_warnsys_return(LOG_EXIT_ZERO,"tree_copy_tmp") ;	
+		if (!stralloc_0(&swap)) log_warnsys_return(LOG_EXIT_ZERO,"tree_copy_tmp") ;
 		if (!hiercopy(swap.s,saresolve.s))
 		{
 			err(&e,2,saresolve.s,swap.s,svdir) ;

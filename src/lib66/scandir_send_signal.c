@@ -16,7 +16,7 @@
 
 #include <stddef.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 
 #include <s6/s6-supervise.h>
 
@@ -34,18 +34,15 @@ int scandir_send_signal(char const *scandir,char const *signal)
 		datalen++ ;
 	}	
 	if (datalen >= DATASIZE)
-	{
-		VERBO3 strerr_warnw2x("too many command to send to: ",scandir) ;
-		return 0 ;
-	}
+		log_warn_return(LOG_EXIT_ZERO,"too many command to send to: ",scandir) ;
 	
 	switch (s6_svc_writectl(scandir, S6_SVSCAN_CTLDIR, data, datalen))
 	{
-		case -1: VERBO3 strerr_warnwu2sys("control: ", scandir) ; 
+		case -1: log_warnusys("control: ", scandir) ; 
 				return 0 ;
-		case -2: VERBO3 strerr_warnw3sys("something is wrong with the ", scandir, "/" S6_SVSCAN_CTLDIR " directory. errno reported") ; 
+		case -2: log_warnsys("something is wrong with the ", scandir, "/" S6_SVSCAN_CTLDIR " directory. errno reported") ; 
 				return 0 ;
-		case 0: VERBO3 strerr_warnwu3x("control: ", scandir, ": supervisor not listening") ;
+		case 0: log_warnu("control: ", scandir, ": supervisor not listening") ;
 				return 0 ;
 	}
 

@@ -16,7 +16,7 @@
 
 #include <stddef.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
@@ -35,9 +35,9 @@ int set_livetree(stralloc *livetree,uid_t owner)
 	size_t ownerlen = uid_fmt(ownerpack,owner) ;
 	ownerpack[ownerlen] = 0 ;
 	
-	if (!stralloc_cats(livetree,SS_TREE "/")) retstralloc(0,"set_livetree") ;
-	if (!stralloc_cats(livetree,ownerpack)) retstralloc(0,"set_livetree") ;
-	if (!stralloc_0(livetree)) retstralloc(0,"set_livetree") ;
+	if (!stralloc_cats(livetree,SS_TREE "/")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	if (!stralloc_cats(livetree,ownerpack)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	if (!stralloc_0(livetree)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	livetree->len--;
 	return 1 ;
 }

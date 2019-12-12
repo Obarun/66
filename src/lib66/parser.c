@@ -17,7 +17,7 @@
 #include <stdint.h>
 //#include <stdio.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 #include <oblibs/obgetopt.h>
@@ -26,7 +26,6 @@
 #include <skalibs/buffer.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
-#include <skalibs/strerr2.h>
 #include <skalibs/types.h>
 #include <skalibs/djbunix.h>
 #include <66/enum.h>
@@ -44,27 +43,27 @@ int parser(sv_alltype *service,stralloc *src,char const *svname)
 	
 	r = section_get_range(&sasection,src) ;
 	if (r <= 0){
-		strerr_warnwu2x("parse section of service file: ",svname) ;
+		log_warnu("parse section of service file: ",svname) ;
 		goto err ;
 	}
 	if (!sasection.idx[MAIN])
 	{
-		VERBO1 strerr_warnw2x("missing section [main] in service file: ", svname) ;
+		log_warn("missing section [main] in service file: ", svname) ;
 		goto err ;
 	}
 	if (!key_get_range(&ganocheck,&sasection,&svtype)) goto err ;
 	if (svtype < 0)
 	{
-		VERBO1 strerr_warnw4x("invalid value for key: ",get_keybyid(TYPE)," in service file: ",svname) ;
+		log_warn("invalid value for key: ",get_keybyid(TYPE)," in service file: ",svname) ;
 		goto err ;
 	}
 	if (svtype != BUNDLE && !sasection.idx[START])
 	{
-		VERBO1 strerr_warnw2x("missing section [start] in service file: ", svname) ;
+		log_warn("missing section [start] in service file: ", svname) ;
 		goto err ;
 	}
 	if (!genalloc_len(keynocheck,&ganocheck)){
-		VERBO1 strerr_warnw2x("empty service file: ",svname) ;
+		log_warn("empty service file: ",svname) ;
 		goto err ;
 	}
 	for (i = 0;i < genalloc_len(keynocheck,&ganocheck);i++)
@@ -74,7 +73,7 @@ int parser(sv_alltype *service,stralloc *src,char const *svname)
 		{
 			if (!get_mandatory(&ganocheck,idsec,j))
 			{
-				VERBO1 strerr_warnw2x("mandatory key is missing in service file: ",svname) ; 
+				log_warn("mandatory key is missing in service file: ",svname) ; 
 				goto err ;
 			}
 		}
@@ -83,7 +82,7 @@ int parser(sv_alltype *service,stralloc *src,char const *svname)
 	{
 		if (!nocheck_toservice(&(genalloc_s(keynocheck,&ganocheck)[i]),svtype,service))
 		{ 
-			VERBO1 strerr_warnwu2x("keep information of service file: ",svname) ;
+			log_warnu("keep information of service file: ",svname) ;
 			goto err ;
 		}
 	}
@@ -91,7 +90,7 @@ int parser(sv_alltype *service,stralloc *src,char const *svname)
 	{
 		if (!add_pipe(service, &deps))
 		{
-			VERBO1 strerr_warnwu2x("add pipe: ", keep.s+service->cname.name) ;
+			log_warnu("add pipe: ", keep.s+service->cname.name) ;
 			goto err ;
 		} 
 	}

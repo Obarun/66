@@ -21,7 +21,7 @@
 //#include <stdlib.h>
 
 #include <oblibs/obgetopt.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/string.h>
 
 #include <skalibs/types.h>
@@ -64,8 +64,8 @@ static int read_file (char const *file, char *buf, size_t n)
 	ssize_t r = openreadnclose_nb(file, buf, n) ;
 	if (r < 0)
 	{
-		if (errno != ENOENT) VERBO3 strerr_warnwu2sys("open: ", file) ;
-		return 0 ;
+		if (errno != ENOENT) 
+			log_warnusys_return(LOG_EXIT_ZERO,"open: ", file) ;
 	}
 	buf[byte_chr(buf, r, '\n')] = 0 ;
 	return 1 ;
@@ -76,10 +76,8 @@ static int read_uint (char const *file, unsigned int *fd)
 	char buf[UINT_FMT + 1] ;
 	if (!read_file(file, buf, UINT_FMT)) return 0 ;
 	if (!uint0_scan(buf, fd))
-	{
-		VERBO3 strerr_warnw2x("invalid: ", file) ;
-		return 0 ;
-	}
+		log_warn_return(LOG_EXIT_ZERO,"invalid: ", file) ;
+	
 	return 1 ;
 }
 
@@ -90,10 +88,8 @@ int handle_signal_svc(ss_resolve_sig_t *sv_signal)
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	char *sv = sv_signal->res.sa.s + sv_signal->res.runat ;
 	if (!s6_svstatus_read(sv,&status))
-	{ 
-		VERBO3 strerr_warnwu2sys("read status of: ",sv) ;
-		return 0 ;
-	}
+		log_warnusys_return(LOG_EXIT_ZERO,"read status of: ",sv) ;
+
 	sv_signal->pid = status.pid ;
 	
 	if (WIFSIGNALED(status.wstat) && !WEXITSTATUS(status.wstat) && (WTERMSIG(status.wstat) == 15 )) return 1 ;
@@ -188,9 +184,7 @@ int handle_case(stralloc *sa, ss_resolve_sig_t *svc)
 			case DEAD:	return 2 ; 
 			case DONE:	return 1 ; 
 			case PERM:	return 3 ; 
-			default:
-						VERBO3 strerr_warnw1x("invalid state, make a bug report");
-						return 2 ; 
+			default:	log_warn_return(2,"invalid state, make a bug report") ; 
 		}
 	}
 	return err ;
@@ -230,12 +224,9 @@ static void write_state(ss_resolve_sig_t *svc)
 	ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
 	ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 //	ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
-	VERBO2 strerr_warni2x("Write state file of: ",sv) ;
+	log_trace("Write state file of: ",sv) ;
 	if (!ss_state_write(&sta,state,sv))
-	{
-		VERBO1 strerr_warnwu2sys("write state file of: ",sv) ;
-	}
-	
+		log_warnusys("write state file of: ",sv) ;
 }
 
 static int announce(ss_resolve_sig_t *svc)
@@ -256,20 +247,20 @@ static int announce(ss_resolve_sig_t *svc)
 	}
 	switch(r)
 	{
-		case 0: VERBO1 strerr_warni4x(sv," is ",(svc->sig > 3) ? "down" : "up"," but not notified by the daemon itself") ; 
+		case 0: log_info(sv," is ",(svc->sig > 3) ? "down" : "up"," but not notified by the daemon itself") ; 
 				break ;
-		case 1: VERBO1 strerr_warni4x(sv,": ",(svc->sig > 3) ? "stopped" : (svc->sig == 2 || svc->sig == 3) ? "reloaded" : "started"," successfully") ;
+		case 1: log_info(sv,": ",(svc->sig > 3) ? "stopped" : (svc->sig == 2 || svc->sig == 3) ? "reloaded" : "started"," successfully") ;
 				break ;
-		case 2: VERBO1 strerr_warnwu2x((svc->sig > 3) ? "stop " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start ", sv) ; 
+		case 2: log_info((svc->sig > 3) ? "stop " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start ", sv) ; 
 				break ;
-		case 3: VERBO1 strerr_warnw3x(sv," report permanent failure -- unable to ",(svc->sig > 1) ? "stop" : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start") ;
+		case 3: log_info(sv," report permanent failure -- unable to ",(svc->sig > 1) ? "stop" : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start") ;
 				break ;
-		case 4: VERBO1 strerr_warnwu3x((svc->sig > 3) ? "stop: " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start: ",sv, ": number of try exceeded") ;
+		case 4: log_info((svc->sig > 3) ? "stop: " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start: ",sv, ": number of try exceeded") ;
 				break ;
-		case 5: VERBO1 strerr_warnwu3x((svc->sig > 3) ? "stop: " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start: ",sv, ": time out reached") ;
+		case 5: log_info((svc->sig > 3) ? "stop: " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start: ",sv, ": time out reached") ;
 				break ;
 		case-1: 
-		default:VERBO1 strerr_warnw3x("unexpected data in state file of: ",sv," -- please make a bug report") ;
+		default:log_warn("unexpected data in state file of: ",sv," -- please make a bug report") ;
 				break ;
 	}		
 	return r ;
@@ -288,7 +279,7 @@ static int handle_signal_pipe(genalloc *gakeep)
 	{
 		switch (selfpipe_read())
 		{
-			case -1 : strerr_warnwu1sys("selfpipe_read") ; return 0 ;
+			case -1 : log_warnusys_return(LOG_EXIT_ZERO,"selfpipe_read") ;
 			case 0 : goto end ;
 			case SIGCHLD:
 				for (;;)
@@ -298,7 +289,7 @@ static int handle_signal_pipe(genalloc *gakeep)
 					pid_t r = wait_nohang(&wstat) ;
 					if (r < 0)
 						if (errno = ECHILD) break ;
-						else strerr_diefu1sys(111,"wait for children") ;
+						else log_dieusys(LOG_EXIT_SYS,"wait for children") ;
 					else if (!r) break ;
 					for (; j < npids ; j++) if (pidindex[j].pid == r) break ;
 					if (j < npids)
@@ -319,10 +310,10 @@ static int handle_signal_pipe(genalloc *gakeep)
 				break ;
 			case SIGTERM: 		
 			case SIGINT: 		
-					VERBO2 strerr_warnw1x("received SIGINT, aborting service transition") ;
+					log_warn("received SIGINT, aborting service transition") ;
 					kill_all() ;
 					break ;
-			default : strerr_warn1x("unexpected data in selfpipe") ; 
+			default : log_warn("unexpected data in selfpipe") ; 
 		}
 	}
 	end:
@@ -366,12 +357,12 @@ static void svc_listen(unsigned int nsv,tain_t *deadline)
 	while(j)
 	{
 		r = iopause_g(&x, 1, deadline) ;
-		if (r < 0) strerr_dief1sys(111,"listen iopause") ;
-		else if (!r) strerr_dief1x(111,"listen time out") ;
+		if (r < 0) log_diesys(LOG_EXIT_SYS,"listen iopause") ;
+		else if (!r) log_die(LOG_EXIT_SYS,"listen time out") ;
 		if (x.revents & IOPAUSE_READ)  
 		{	
 			i = 0 ;
-			if (ftrigr_update(&fifo) < 0) strerr_diefu1sys(111,"update fifo") ;
+			if (ftrigr_update(&fifo) < 0) log_dieusys(LOG_EXIT_SYS,"update fifo") ;
 			for (;i < nsv;i++)
 			{
 				if (did[i]) continue ;
@@ -382,7 +373,7 @@ static void svc_listen(unsigned int nsv,tain_t *deadline)
 				{ svc_listen_less(5,state,did,&j,i) ; continue ; }
 				sa.len = 0 ;
 				r = ftrigr_checksa(&fifo,svc->ids, &sa) ;
-				if (r < 0) strerr_diefu1sys(111,"check fifo") ; 
+				if (r < 0) log_dieusys(LOG_EXIT_SYS,"check fifo") ; 
 				else if (r)
 				{
 					(*ndeath)-- ;
@@ -404,7 +395,7 @@ static int svc_writectl(ss_resolve_sig_t *svc)
 	int r ;
 	char *sv = svc->res.sa.s + svc->res.runat ;
 	size_t siglen = strlen(svc->sigtosend) ;
-	VERBO2 strerr_warnt6x("send signal: ",svc->sigtosend," to: ", sv,"/",S6_SUPERVISE_CTLDIR) ;
+	log_trace("send signal: ",svc->sigtosend," to: ", sv,"/",S6_SUPERVISE_CTLDIR) ;
 	r = s6_svc_writectl(sv, S6_SUPERVISE_CTLDIR, svc->sigtosend, siglen) ;
 	if (r == -1) return 111 ;
 	else if (r == -2) return 100 ;
@@ -454,8 +445,8 @@ int doit (int spfd, genalloc *gakeep, tain_t *deadline)
 	while (npids)
 	{
 		int r = iopause_g(&x,1,deadline) ;
-		if (r < 0) strerr_diefu1sys(111,"iopause") ;
-		if (!r) strerr_dief1x(111,"time out") ;
+		if (r < 0) log_dieusys(LOG_EXIT_SYS,"iopause") ;
+		if (!r) log_diesys(LOG_EXIT_SYS,"time out") ;
 		if (!handle_signal_pipe(gakeep)) exitcode = 0 ;
 	}
 	return exitcode ;
@@ -494,42 +485,42 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		{
 			int opt = getopt_args(argc,argv, "n:urdXK", &l) ;
 			if (opt == -1) break ;
-			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
+			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
 			{
-				case 'n' :	if (!uint0_scan(l.arg, &death)) exitusage(usage_svctl) ; break ;
-				case 'u' :	if (SIGNAL > 0) exitusage(usage_svctl) ; SIGNAL = SIGUP ; sig ="u" ; break ;
-				case 'r' :	if (SIGNAL > 0) exitusage(usage_svctl) ; SIGNAL = SIGR ; sig = "r" ; break ;
-				case 'd' : 	if (SIGNAL > 0) exitusage(usage_svctl) ; SIGNAL = SIGDOWN ; sig = "d" ; break ;
-				case 'X' :	if (SIGNAL > 0) exitusage(usage_svctl) ; SIGNAL = SIGX ; sig = "xd" ; break ;
-				case 'K' :	if (SIGNAL > 0) exitusage(usage_svctl) ; SIGNAL = SIGRDOWN ; sig = "kd" ; break ;
+				case 'n' :	if (!uint0_scan(l.arg, &death)) log_usage(usage_svctl) ; break ;
+				case 'u' :	if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGUP ; sig ="u" ; break ;
+				case 'r' :	if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGR ; sig = "r" ; break ;
+				case 'd' : 	if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGDOWN ; sig = "d" ; break ;
+				case 'X' :	if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGX ; sig = "xd" ; break ;
+				case 'K' :	if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGRDOWN ; sig = "kd" ; break ;
 				
-				default : exitusage(usage_svctl) ; 
+				default : log_usage(usage_svctl) ; 
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
 	
-	if (argc < 1 || (SIGNAL < 0)) exitusage(usage_svctl) ;
+	if (argc < 1 || (SIGNAL < 0)) log_usage(usage_svctl) ;
 	if (info->timeout) tsv = info->timeout ;
-	if ((scandir_ok(info->scandir.s)) !=1 ) strerr_dief3sys(111,"scandir: ", info->scandir.s," is not running") ;
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) strerr_diefu1sys(111,"set revolve pointer to source") ;
+	if ((scandir_ok(info->scandir.s)) !=1 ) log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
+	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) log_dieusys(LOG_EXIT_SYS,"set revolve pointer to source") ;
 	if (SIGNAL > SIGR) reverse = 1 ;
 	for(;*argv;argv++)
 	{
 		char const *name = *argv ;
 		int logname = 0 ;
 		logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-		if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(111,"unknown service: ",name) ;
-		if (!ss_resolve_read(&res,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
-		if (res.type >= BUNDLE) strerr_dief3x(111,name," has type ",get_keybyid(res.type)) ;
+		if (!ss_resolve_check(sares.s,name)) log_diesys(LOG_EXIT_SYS,"unknown service: ",name) ;
+		if (!ss_resolve_read(&res,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
+		if (res.type >= BUNDLE) log_die(LOG_EXIT_SYS,name," has type ",get_keybyid(res.type)) ;
 		if (SIGNAL == SIGR && logname < 0) reverse = 1 ;
-		if (!ss_resolve_graph_build(&graph,&res,sares.s,reverse)) strerr_diefu1sys(111,"build services graph") ;
+		if (!ss_resolve_graph_build(&graph,&res,sares.s,reverse)) log_dieusys(LOG_EXIT_SYS,"build services graph") ;
 	}
 	
 	r = ss_resolve_graph_publish(&graph,reverse) ;
-	if (r < 0) strerr_dief1x(111,"cyclic dependencies detected") ;
-	if (!r) strerr_diefu1sys(111,"publish service graph") ;
+	if (r < 0) log_die(LOG_EXIT_SYS,"cyclic dependencies detected") ;
+	if (!r) log_dieusys(LOG_EXIT_SYS,"publish service graph") ;
 
 	for(unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&graph.sorted) ; i++)
 	{
@@ -541,20 +532,20 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		size_t svoklen = strlen(svok) ;
 		char file[svoklen + SS_NOTIFICATION_LEN + 1 + 1] ;
 		memcpy(file,svok,svoklen) ;
-		if (!ss_state_check(state,string + sv_signal.res.name)) strerr_dief2x(111,"unitialized service: ",string + sv_signal.res.name) ;
-		if (!ss_state_read(&sta,state,string + sv_signal.res.name)) strerr_diefu2sys(111,"read state of: ",string + sv_signal.res.name) ;
-		if (sta.init) strerr_dief2x(111,"unitialized service: ",string + sv_signal.res.name) ;
-		if (!s6_svstatus_read(svok,&status)) strerr_diefu2sys(111,"read status of: ",svok) ;
+		if (!ss_state_check(state,string + sv_signal.res.name)) log_die(LOG_EXIT_SYS,"unitialized service: ",string + sv_signal.res.name) ;
+		if (!ss_state_read(&sta,state,string + sv_signal.res.name)) log_dieusys(LOG_EXIT_SYS,"read state of: ",string + sv_signal.res.name) ;
+		if (sta.init) log_die(LOG_EXIT_SYS,"unitialized service: ",string + sv_signal.res.name) ;
+		if (!s6_svstatus_read(svok,&status)) log_dieusys(LOG_EXIT_SYS,"read status of: ",svok) ;
 		isup = status.pid && !status.flagfinishing ;
 						
 		if (isup && (SIGNAL == SIGUP))
 		{
-			VERBO1 strerr_warni2x("Already up: ",string + sv_signal.res.name) ;
+			log_info("Already up: ",string + sv_signal.res.name) ;
 			continue ;
 		}
 		else if (!isup && (SIGNAL >= SIGDOWN))
 		{
-			VERBO1 strerr_warni2x("Already down: ",string + sv_signal.res.name) ;
+			log_info("Already down: ",string + sv_signal.res.name) ;
 			continue ;
 		}
 		/** special on reload signal, if the process is down
@@ -572,12 +563,12 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		e = errno ;
 		errno = 0 ;
 		
-		if (access(file, F_OK) < 0 && errno != ENOENT) 
-			strerr_warnw1sys("conflicting format of file: " SS_NOTIFICATION) ;
+		if (access(file, F_OK) < 0 && errno != ENOENT)
+			log_warnsys("conflicting format of file: " SS_NOTIFICATION) ;
 		else if (errno != ENOENT)
 		{
 			
-			if (!read_uint(file,&sv_signal.notify)) strerr_diefu2sys(111,"read: ",file) ;
+			if (!read_uint(file,&sv_signal.notify)) log_dieusys(LOG_EXIT_SYS,"read: ",file) ;
 			if (SIGNAL == SIGUP)
 			{ sv_signal.sig = SIGRUP ; sv_signal.sigtosend = "uwU" ; }
 			else if (SIGNAL == SIGR)
@@ -592,13 +583,13 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			file[svoklen + SS_MAXDEATHTALLY_LEN + 1] = 0 ;
 			errno = 0 ;
 			if (access(file, F_OK) < 0)
-				if (errno != ENOENT) strerr_diefu2sys(111, "access ", file) ;
+				if (errno != ENOENT) log_dieusys(LOG_EXIT_SYS, "access ", file) ;
 			
 			if (errno == ENOENT)
 				sv_signal.ndeath = DEATHSV ;
 			else
 			{
-				if (!read_uint(file,&sv_signal.ndeath)) strerr_diefu2sys(111,"read: ",file) ;
+				if (!read_uint(file,&sv_signal.ndeath)) log_dieusys(LOG_EXIT_SYS,"read: ",file) ;
 			}
 		}
 		else sv_signal.ndeath = death ;
@@ -624,7 +615,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			memcpy(file + svoklen,tm, tmlen) ;
 			file[svoklen + tmlen] = 0 ;
 			if (access(file, F_OK) < 0)
-				if (errno != ENOENT) strerr_diefu2sys(111, "access ", file) ;
+				if (errno != ENOENT) log_dieusys(LOG_EXIT_SYS, "access ", file) ;
 			
 			if (errno == ENOENT)
 			{
@@ -633,7 +624,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			}
 			else
 			{
-				if (!read_uint(file,&t)) strerr_diefu2sys(111,"read: ",file) ;
+				if (!read_uint(file,&t)) log_dieusys(LOG_EXIT_SYS,"read: ",file) ;
 				{	
 					tain_from_millisecs(&sv_signal.deadline, t) ;
 					tsv_g += t ;
@@ -641,7 +632,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			}
 		}
 		errno = e ;
-		if (!genalloc_append(ss_resolve_sig_t,&gakeep,&sv_signal)) strerr_diefu2sys(111,"append services selection with: ",string + sv_signal.res.name) ;
+		if (!genalloc_append(ss_resolve_sig_t,&gakeep,&sv_signal)) log_dieusys(LOG_EXIT_SYS,"append services selection with: ",string + sv_signal.res.name) ;
 	}
 	/** nothing to do */
 	if (!genalloc_len(ss_resolve_sig_t,&gakeep)) goto finish ;
@@ -652,13 +643,13 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 	tain_add_g(&ttmain,&ttmain) ;
 
 	int spfd = selfpipe_init() ;
-	if (spfd < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
-	if (selfpipe_trap(SIGCHLD) < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
-	if (selfpipe_trap(SIGINT) < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
-	if (selfpipe_trap(SIGTERM) < 0) strerr_diefu1sys(111, "selfpipe_trap") ;
-	if (sig_ignore(SIGPIPE) < 0) strerr_diefu1sys(111,"ignore SIGPIPE") ;
+	if (spfd < 0) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
+	if (selfpipe_trap(SIGCHLD) < 0) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
+	if (selfpipe_trap(SIGINT) < 0) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
+	if (selfpipe_trap(SIGTERM) < 0) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
+	if (sig_ignore(SIGPIPE) < 0) log_dieusys(LOG_EXIT_SYS,"ignore SIGPIPE") ;
 	
-	if (!svc_init_pipe(&fifo,&gakeep,&ttmain)) strerr_diefu1x(111,"init pipe") ;
+	if (!svc_init_pipe(&fifo,&gakeep,&ttmain)) log_dieu(LOG_EXIT_SYS,"init pipe") ;
 		
 	ret = doit(spfd,&gakeep,&ttmain) ;
 	

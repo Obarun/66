@@ -16,7 +16,7 @@
 
 #include <stddef.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
@@ -35,9 +35,9 @@ int set_livescan(stralloc *scandir,uid_t owner)
 	size_t ownerlen = uid_fmt(ownerpack,owner) ;
 	ownerpack[ownerlen] = 0 ;
 	
-	if (!stralloc_cats(scandir,SS_SCANDIR "/")) retstralloc(0,"set_livescan") ;
-	if (!stralloc_cats(scandir,ownerpack)) retstralloc(0,"set_livescan") ;
-	if (!stralloc_0(scandir)) retstralloc(0,"set_livescan") ;
+	if (!stralloc_cats(scandir,SS_SCANDIR "/")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	if (!stralloc_cats(scandir,ownerpack)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	if (!stralloc_0(scandir)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	scandir->len--;
 	return 1 ;
 }

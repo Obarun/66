@@ -15,7 +15,7 @@
 #include <wchar.h>
 
 #include <oblibs/string.h>
-#include <oblibs/display.h>
+#include <oblibs/log.h>
 
 #include <66/enum.h>
 #include <66/resolve.h>
@@ -25,10 +25,6 @@
 #define SS_INFO_H
 
 #define INFO_FIELD_MAXLEN 30
-
-set_color_t *info_color ;
-extern set_color_t use_color ;
-extern set_color_t no_color ;
 
 typedef struct depth_s depth_t ;
 struct depth_s

@@ -28,6 +28,7 @@
 
 #include <oblibs/environ.h>
 #include <oblibs/files.h>
+#include <oblibs/log.h>
 
 #include <skalibs/posixplz.h>
 #include <skalibs/uint32.h>
@@ -35,7 +36,6 @@
 #include <skalibs/allreadwrite.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/buffer.h>
-#include <skalibs/strerr2.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/sig.h>
 #include <skalibs/tai.h>
@@ -75,7 +75,7 @@ static inline void info_help (void)
 ;
 
 	if (buffer_putsflush(buffer_1, help) < 0)
-		strerr_diefu1sys(111, "write to stdout") ;
+		log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
 struct at_s
@@ -119,8 +119,8 @@ static void parse_conf(char const *confile,char *rcshut,char const *key)
 	stralloc src = STRALLOC_ZERO ;
 	size_t filesize = file_get_size(confile) ;
 	r = openreadfileclose(confile,&src,filesize) ;
-	if(!r) strerr_diefu2sys(111,"open configuration file: ",confile) ; 
-	if (!stralloc_0(&src)) strerr_diefu1sys(111,"append stralloc configuration file") ;
+	if(!r) log_dieusys(LOG_EXIT_SYS,"open configuration file: ",confile) ; 
+	if (!stralloc_0(&src)) log_dieusys(LOG_EXIT_SYS,"append stralloc configuration file") ;
 	
 	if (environ_get_val_of_key(&src,key))
 	{
@@ -144,19 +144,19 @@ static inline void run_rcshut (char const *const *envp)
 	{
 		int wstat ;
 		char fmt[UINT_FMT] ;
-		if (wait_pid(pid, &wstat) == -1) strerr_diefu1sys(111, "waitpid") ;
+		if (wait_pid(pid, &wstat) == -1) log_dieusys(LOG_EXIT_SYS, "waitpid") ;
 		if (WIFSIGNALED(wstat))
 		{
 			fmt[uint_fmt(fmt, WTERMSIG(wstat))] = 0 ;
-			strerr_warnw3x(rcshut, " was killed by signal ", fmt) ;
+			log_warn(rcshut, " was killed by signal ", fmt) ;
 		}
 		else if (WEXITSTATUS(wstat))
 		{
 			fmt[uint_fmt(fmt, WEXITSTATUS(wstat))] = 0 ;
-			strerr_warnw3x(rcshut, " exited ", fmt) ;
+			log_warn(rcshut, " exited ", fmt) ;
 		}
 	}
-	else strerr_warnwu2sys("spawn ", rcshut) ;
+	else log_warnusys("spawn ", rcshut) ;
 }
 
 static inline void prepare_shutdown (buffer *b, tain_t *deadline, unsigned int *grace_time)
@@ -164,8 +164,8 @@ static inline void prepare_shutdown (buffer *b, tain_t *deadline, unsigned int *
 	uint32_t u ;
 	char pack[TAIN_PACK + 4] ;
 	ssize_t r = sanitize_read(buffer_get(b, pack, TAIN_PACK + 4)) ;
-	if (r == -1) strerr_diefu1sys(111, "read from pipe") ;
-	if (r < TAIN_PACK + 4) strerr_dief1x(101, "bad shutdown protocol") ;
+	if (r == -1) log_dieusys(LOG_EXIT_SYS, "read from pipe") ;
+	if (r < TAIN_PACK + 4) log_dieusys(101, "bad shutdown protocol") ;
 	tain_unpack(pack, deadline) ;
 	tain_add_g(deadline,deadline) ;
 	uint32_unpack_big(pack + TAIN_PACK, &u) ;
@@ -178,7 +178,7 @@ static inline void handle_fifo (buffer *b, char *what, tain_t *deadline, unsigne
 	{
 		char c ;
 		ssize_t r = sanitize_read(buffer_get(b, &c, 1)) ;
-		if (r == -1) strerr_diefu1sys(111, "read from pipe") ;
+		if (r == -1) log_dieusys(LOG_EXIT_SYS, "read from pipe") ;
 		else if (!r) break ;
 		switch (c)
 		{
@@ -196,7 +196,7 @@ static inline void handle_fifo (buffer *b, char *what, tain_t *deadline, unsigne
 			default :
 				{
 					char s[2] = { c, 0 } ;
-					strerr_warnw2x("unknown command: ", s) ;
+					log_warn("unknown command: ", s) ;
 				}
 				break ;
 		}
@@ -215,7 +215,7 @@ static inline void prepare_stage4 (char what)
 	parse_conf(confile,shutfinal,"RCSHUTDOWNFINAL") ;
 	unlink_void(STAGE4_FILE ".new") ;
 	fd = open_excl(STAGE4_FILE ".new") ;
-	if (fd == -1) strerr_diefu3sys(111, "open ", STAGE4_FILE ".new", " for writing") ;
+	if (fd == -1) log_dieusys(LOG_EXIT_SYS, "open ", STAGE4_FILE ".new", " for writing") ;
 	buffer_init(&b, &buffer_write, fd, buf, 512) ;
 
 	if (buffer_puts(&b,
@@ -227,11 +227,11 @@ static inline void prepare_stage4 (char what)
 		|| buffer_puts(&b," }\n" 
 		SS_BINPREFIX "66-hpr -f -") < 0
 		|| buffer_put(&b, &what, 1) < 0
-		|| buffer_putsflush(&b, "\n") < 0) strerr_diefu2sys(111, "write to ", STAGE4_FILE ".new") ;
-	if (fchmod(fd, S_IRWXU) == -1) strerr_diefu2sys(111, "fchmod ", STAGE4_FILE ".new") ;
+		|| buffer_putsflush(&b, "\n") < 0) log_dieusys(LOG_EXIT_SYS, "write to ", STAGE4_FILE ".new") ;
+	if (fchmod(fd, S_IRWXU) == -1) log_dieusys(LOG_EXIT_SYS, "fchmod ", STAGE4_FILE ".new") ;
 	fd_close(fd) ;
 	if (rename(STAGE4_FILE ".new", STAGE4_FILE) == -1) 
-		strerr_diefu4sys(111, "rename ", STAGE4_FILE ".new", " to ", STAGE4_FILE) ;
+		log_dieusys(LOG_EXIT_SYS, "rename ", STAGE4_FILE ".new", " to ", STAGE4_FILE) ;
 }
 
 static inline void unsupervise_tree (void)
@@ -251,9 +251,9 @@ static inline void unsupervise_tree (void)
 	newlen = livelen + SS_SCANDIR_LEN + 4 ;
 	DIR *dir = opendir(tmp) ;
 	int fdd ;
-	if (!dir) strerr_diefu2sys(111, "opendir: ",tmp) ;
+	if (!dir)log_dieusys(LOG_EXIT_SYS, "opendir: ",tmp) ;
 	fdd = dirfd(dir) ;
-	if (fdd == -1) strerr_diefu2sys(111, "dir_fd: ",tmp) ;
+	if (fdd == -1) log_dieusys(LOG_EXIT_SYS, "dir_fd: ",tmp) ;
 	for (;;)
 	{
 		char const *const *p = except ;
@@ -273,7 +273,7 @@ static inline void unsupervise_tree (void)
 			memcpy(fn + newlen + DOTPREFIXLEN + dlen, DOTSUFFIX, DOTSUFFIXLEN + 1) ;
 			if (mkrenametemp(fdd, d->d_name, fn + newlen) == -1)
 			{
-				strerr_warnwu5sys("rename ",tmp, d->d_name, " to something based on ", fn) ;
+				log_warnusys("rename ",tmp, d->d_name, " to something based on ", fn) ;
 				unlinkat(fdd, d->d_name, 0) ;
 				/* if it still fails, too bad, it will restart in stage 4 and race */
 			}
@@ -281,7 +281,7 @@ static inline void unsupervise_tree (void)
 		}
 	}
 	dir_close(dir) ;
-	if (errno) strerr_diefu2sys(111, "readdir: ",tmp) ;
+	if (errno) log_dieusys(LOG_EXIT_SYS, "readdir: ",tmp) ;
 }
 
 int main (int argc, char const *const *argv, char const *const *envp)
@@ -305,14 +305,14 @@ int main (int argc, char const *const *argv, char const *const *envp)
 				case 'h' : info_help(); return 0 ;
 				case 'l' : live = l.arg ; break ;
 				case 's' : conf = l.arg ; break ;
-				case 'g' : if (!uint0_scan(l.arg, &grace_time)) strerr_dieusage(100,USAGE) ; break ;
-				default : strerr_dieusage(100,USAGE) ;
+				case 'g' : if (!uint0_scan(l.arg, &grace_time)) log_usage(USAGE) ; break ;
+				default : log_usage(USAGE) ;
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
-	if (conf[0] != '/') strerr_dief3x(110, "skeleton: ",conf," must be an absolute path") ;
-	if (live && live[0] != '/') strerr_dief3x(110,"live: ",live," must be an absolute path") ;
+	if (conf[0] != '/') log_dieusys(LOG_EXIT_USER, "skeleton: ",conf," must be an absolute path") ;
+	if (live && live[0] != '/') log_die(LOG_EXIT_USER,"live: ",live," must be an absolute path") ;
 	else live = SS_LIVE ;
 	if (grace_time > 300000) grace_time = 300000 ;
 
@@ -320,17 +320,17 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	{
 		char const *stage4_argv[2] = { "./" STAGE4_FILE, 0 } ;
 		execve(stage4_argv[0], (char **)stage4_argv, (char *const *)envp) ;
-		if (errno != ENOENT) strerr_warnwu2sys("exec ", stage4_argv[0]) ;
+		if (errno != ENOENT) log_warnusys("exec ", stage4_argv[0]) ;
 	}
 
 	fdr = open_read(SHUTDOWND_FIFO) ;
 	if (fdr == -1 || coe(fdr) == -1)
-		strerr_diefu3sys(111, "open ", SHUTDOWND_FIFO, " for reading") ;
+		log_dieusys(LOG_EXIT_SYS, "open ", SHUTDOWND_FIFO, " for reading") ;
 	fdw = open_write(SHUTDOWND_FIFO) ;
 	if (fdw == -1 || coe(fdw) == -1)
-		strerr_diefu3sys(111, "open ", SHUTDOWND_FIFO, " for writing") ;
+		log_dieusys(LOG_EXIT_SYS, "open ", SHUTDOWND_FIFO, " for writing") ;
 	if (sig_ignore(SIGPIPE) == -1)
-		strerr_diefu1sys(111, "sig_ignore SIGPIPE") ;
+		log_dieusys(LOG_EXIT_SYS, "sig_ignore SIGPIPE") ;
 	buffer_init(&b, &buffer_read, fdr, buf, 64) ;
 	tain_now_set_stopwatch_g() ;
 	tain_add_g(&deadline, &tain_infinite_relative) ;
@@ -339,7 +339,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	{
 		iopause_fd x = { .fd = fdr, .events = IOPAUSE_READ } ;
 		int r = iopause_g(&x, 1, &deadline) ;
-		if (r == -1) strerr_diefu1sys(111, "iopause") ;
+		if (r == -1) log_dieusys(LOG_EXIT_SYS, "iopause") ;
 		if (!r)
 		{
 			run_rcshut(envp) ;
@@ -356,17 +356,18 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	fd_close(fdr) ;
 	fd_close(1) ;
 	if (open("/dev/console", O_WRONLY) != 1)
-		strerr_diefu1sys(111, "open /dev/console for writing") ;
-	if (fd_copy(2, 1) == -1) strerr_warnwu1sys("fd_copy") ;
-
+		log_dieusys(LOG_EXIT_SYS, "open /dev/console for writing") ;
+	if (fd_copy(2, 1) == -1) log_warnusys("fd_copy") ;
 
 	/* The end is coming! */
-
 	prepare_stage4(what) ;
 	unsupervise_tree() ;
 	sync() ;
-	if (sig_ignore(SIGTERM) == -1) strerr_warnwu1sys("sig_ignore SIGTERM") ;
-		strerr_warni1x("sending all processes the TERM signal...") ;
+	
+	if (sig_ignore(SIGTERM) == -1) log_warnusys("sig_ignore SIGTERM") ;
+	
+	log_info("sending all processes the TERM signal...") ;
+	
 	kill(-1, SIGTERM) ;
 	kill(-1, SIGCONT) ;
 	tain_from_millisecs(&deadline, grace_time) ;
@@ -374,8 +375,11 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	tain_add_g(&deadline, &deadline) ;
 	deepsleepuntil_g(&deadline) ;
 	sync() ;
-	strerr_warni1x("sending all processes the KILL signal...") ;
+	
+	log_info("sending all processes the KILL signal...") ;
+	
 	kill(-1, SIGKILL) ;
+	
 	return 0 ;
 }
 	

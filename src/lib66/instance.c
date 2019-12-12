@@ -16,7 +16,7 @@
 
 #include <string.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
@@ -75,11 +75,11 @@ int instance_create(stralloc *sasv,char const *svname, char const *regex, char c
 	copy = svname + tlen ;
 
 	if (!file_readputsa(&tmp,src,template)) {
-		VERBO3 strerr_warnwu3sys("open: ",src,template) ;
+		log_warnusys("open: ",src,template) ;
 		goto err ;
 	}
 	if (!sastr_replace_all(&tmp,regex,copy)){
-		VERBO3 strerr_warnwu3x("replace instance character at: ",src,template) ;
+		log_warnusys("replace instance character at: ",src,template) ;
 		goto err ;
 	}
 	if (!stralloc_copy(sasv,&tmp)) goto err ;

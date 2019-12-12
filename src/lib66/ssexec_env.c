@@ -17,7 +17,7 @@
 #include <stdlib.h>//getenv
 
 #include <oblibs/obgetopt.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 
@@ -50,45 +50,45 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 		{
 			int opt = getopt_args(argc,argv, ">Ld:r:e", &l) ;
 			if (opt == -1) break ;
-			if (opt == -2) strerr_dief1x(110,"options must be set first") ;
+			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
 			{
-				case 'L' : 	if (replace) exitusage(usage_env) ; list = 1 ; break ;
+				case 'L' : 	if (replace) log_usage(usage_env) ; list = 1 ; break ;
 				case 'd' :	src = l.arg ; break ;
 				case 'r' :	if (!stralloc_cats(&var,l.arg) ||
 							!stralloc_cats(&var,"\n") ||
-							!stralloc_0(&var)) retstralloc(111,"main") ; 
+							!stralloc_0(&var)) log_die_nomem("stralloc") ; 
 							replace = 1 ; break ;
-				case 'e' :	if (replace) exitusage(usage_env) ; 
+				case 'e' :	if (replace) log_usage(usage_env) ; 
 							edit = 1 ;
 							break ;
-				default : exitusage(usage_env) ; 
+				default : 	log_usage(usage_env) ; 
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
-	if (argc < 1) exitusage(usage_env) ;
+	if (argc < 1) log_usage(usage_env) ;
 	sv = argv[0] ;
-	if (!env_resolve_conf(&sasrc,info->owner)) strerr_diefu1sys(111,"get path of the configuration file") ;
+	if (!env_resolve_conf(&sasrc,info->owner)) log_dieusys(LOG_EXIT_SYS,"get path of the configuration file") ;
 	if (!src) src = sasrc.s ;
-	if (!file_readputsa(&salist,src,sv)) strerr_diefu3sys(111,"read: ",src,sv) ;
+	if (!file_readputsa(&salist,src,sv))log_dieusys(LOG_EXIT_SYS,"read: ",src,sv) ;
 	if (list)
 	{
 		if (buffer_putsflush(buffer_1, salist.s) < 0)
-			strerr_diefu1sys(111, "write to stdout") ;
+			log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 		goto freed ;
 	}
 	else if (replace)
 	{
 		if (!env_merge_conf(src,sv,&salist,&var,replace)) 
-			strerr_diefu2x(111,"merge environment file with: ",var.s) ;
+			log_dieu(LOG_EXIT_SYS,"merge environment file with: ",var.s) ;
 	}
 	else if (edit)
 	{
 		size_t svlen = strlen(sv) ;
 		char t[sasrc.len + svlen + 1] ;
 		editor = getenv("EDITOR") ;
-		if (!editor) strerr_diefu1sys(111,"get EDITOR") ;
+		if (!editor) log_dieusys(LOG_EXIT_SYS,"get EDITOR") ;
 		memcpy(t,sasrc.s,sasrc.len) ;
 		memcpy(t + sasrc.len,sv,svlen) ;
 		t[sasrc.len + svlen] = 0 ;

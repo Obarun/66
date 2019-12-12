@@ -18,7 +18,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include <oblibs/error2.h>
+//#include <oblibs/log.h>
 #include <oblibs/directory.h>
 #include <oblibs/types.h>
 

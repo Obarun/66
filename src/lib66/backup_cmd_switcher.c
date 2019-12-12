@@ -17,7 +17,7 @@
 #include <sys/stat.h>
 
 #include <oblibs/obgetopt.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/sastr.h>
@@ -55,7 +55,7 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 		{
 			int opt = getopt_args(argc,argv, "v:t:s:b", &l) ;
 			if (opt == -1) break ;
-			if (opt == -2){ strerr_warnw1x("options must be set first") ; return -1 ; }
+			if (opt == -2) log_warn_return(LOG_EXIT_LESSONE,"options must be set first") ;
 			switch (opt)
 			{
 				case 'v' :  if (!uint0_scan(l.arg, &verbosity)) return -1 ;  break ;
@@ -72,10 +72,8 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 	if ((!change && !back) || !type) return -1 ;
 
 	if (type < CLASSIC || type > ONESHOT)
-	{
-		VERBO3 strerr_warnw1x("unknown type for backup_switcher") ;
-		return -1 ;
-	}
+		log_warn_return(LOG_EXIT_LESSONE,"unknown type for backup_switcher") ;
+	
 	tree = *argv ;
 	size_t treelen = strlen(tree) ;
 
@@ -107,18 +105,14 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 	{
 		if(lstat(sym,&st) < 0) return -1 ;
 		if(!(S_ISLNK(st.st_mode))) 
-		{
-			VERBO3 strerr_warnwu2x("find symlink: ",sym) ;
-			return -1 ;
-		}
+			log_warn_return(LOG_EXIT_LESSONE,"find symlink: ",sym) ;
+	
 		stralloc symreal = STRALLOC_ZERO ;
 		
 		r = sarealpath(&symreal,sym) ;
 		if (r < 0)
-		{
-			VERBO3 strerr_warnwu2sys("retrieve real path from: ",sym) ;
-			return -1 ;
-		}
+			log_warnusys_return(LOG_EXIT_LESSONE,"retrieve real path from: ",sym) ;
+	
 		char *b = NULL ;
 		b = memmem(symreal.s,symreal.len,SS_BACKUP,SS_BACKUP_LEN) ;
 		
@@ -174,27 +168,17 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 		if (what >= 0)
 		{
 			if (unlink(sym) < 0)
-			{
-				VERBO3 strerr_warnwu2sys("remove symlink: ", sym) ;
-				return -1 ;
-			}
+				log_warnusys_return(LOG_EXIT_LESSONE,"remove symlink: ", sym) ;
 		}
 		if (what)
 		{
-			
 			if (symlink(dstback,sym) < 0)
-			{
-				VERBO3 strerr_warnwu2sys("symlink: ", dstback) ;
-				return -1 ;
-			}	
+				log_warnusys_return(LOG_EXIT_LESSONE,"symlink: ", dstback) ;
 		}
 		if (!what)
 		{
 			if (symlink(dstsrc,sym) < 0)
-			{
-				VERBO3 strerr_warnwu2sys("symlink: ", psrc) ;
-				return -1 ;
-			}
+				log_warnusys_return(LOG_EXIT_LESSONE,"symlink: ", psrc) ;
 		}	
 	}
 	
@@ -208,10 +192,8 @@ int backup_cmd_switcher(unsigned int verbosity,char const *cmd,ssexec_t *info)
 	stralloc opts = STRALLOC_ZERO ;
 	
 	if (!sastr_clean_string(&opts,cmd))
-	{
-		VERBO3 strerr_warnwu2x("clean: ",cmd) ;
-		return -1 ;
-	}
+		log_warnu_return(LOG_EXIT_LESSONE,"clean: ",cmd) ;
+	
 	int newopts = 5 + sastr_len(&opts) ;
 	char const *newargv[newopts] ;
 	unsigned int m = 0 ;

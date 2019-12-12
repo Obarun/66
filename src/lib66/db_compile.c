@@ -21,7 +21,7 @@
 #include <sys/types.h>
 
 #include <oblibs/string.h>
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/types.h>
 
 #include <skalibs/types.h>
@@ -53,10 +53,7 @@ int db_compile(char const *workdir, char const *tree, char const *treename, char
 	if (r)
 	{
 		if (rm_rf(dest) < 0)
-		{
-			VERBO3 strerr_warnwu2sys("remove ", dest) ;
-			return 0 ;
-		}
+			log_warnusys_return(LOG_EXIT_ZERO,"remove: ", dest) ;
 	}
 				
 	char const *newargv[7] ;
@@ -74,15 +71,10 @@ int db_compile(char const *workdir, char const *tree, char const *treename, char
 	
 	pid = child_spawn0(newargv[0],newargv,envp) ;
 	if (waitpid_nointr(pid,&wstat, 0) < 0)
-	{
-		VERBO3 strerr_warnwu2sys("wait for ",newargv[0]) ;
-		return 0 ;
-	}
+		log_warnusys_return(LOG_EXIT_ZERO,"wait for: ",newargv[0]) ;
+		
 	if (wstat)
-	{
-		VERBO3 strerr_warnwu2x("compile: ",dest) ;
-		return 0 ;
-	}
-	
+		log_warnusys_return(LOG_EXIT_ZERO,"compile: ",dest) ;
+		
 	return 1 ;
 }

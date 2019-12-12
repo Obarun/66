@@ -13,7 +13,7 @@
  */
 
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 
 #include <string.h>
 
@@ -43,45 +43,38 @@ int svc_switch_to(ssexec_t *info,unsigned int where)
 	
 	r = backup_cmd_switcher(VERBOSITY,cmd,info) ;
 	if (r < 0)
-	{
-		VERBO3 strerr_warnwu2sys("find origin of svc service for: ",info->treename.s) ;
-		return 0 ;
-	}
+		log_warnusys_return(LOG_EXIT_ZERO,"find origin of svc service for: ",info->treename.s) ;
+	
 	// point to origin
 	if (!r && where)
 	{
-		VERBO3 strerr_warnt2x("make a backup of svc service for: ",info->treename.s) ;
+		log_trace("make a backup of svc service for: ",info->treename.s) ;
 		if (!backup_make_new(info,CLASSIC))
-		{
-			VERBO3 strerr_warnwu2sys("make a backup of svc service for: ",info->treename.s) ;
-			return 0 ;
-		}
-		VERBO3 strerr_warnt3x("switch svc symlink of tree: ",info->treename.s," to backup") ;
+			log_warnusys_return(LOG_EXIT_ZERO,"make a backup of svc service for: ",info->treename.s) ;
+		
+		log_trace("switch svc symlink of tree: ",info->treename.s," to backup") ;
 		memcpy(cmd + cmdlen," -s1",4) ;
 		cmd[cmdlen + 4] = 0 ;
 		r = backup_cmd_switcher(VERBOSITY,cmd,info) ;
 		if (r < 0)
 		{
-			VERBO3 strerr_warnwu3sys("switch svc symlink of tree: ",info->treename.s," to backup") ;
+			log_warnusys("switch svc symlink of tree: ",info->treename.s," to backup") ;
 		}
 	}
 	else if (r > 0 && !where)
 	{
-		VERBO3 strerr_warnt3x("switch svc symlink of tree: ",info->treename.s," to source") ;
+		log_trace("switch svc symlink of tree: ",info->treename.s," to source") ;
 		memcpy(cmd + cmdlen," -s0",4) ;
 		cmd[cmdlen + 4] = 0 ;
 		r = backup_cmd_switcher(VERBOSITY,cmd,info) ;
 		if (r < 0)
 		{
-			VERBO3 strerr_warnwu3sys("switch svc symlink of tree: ",info->treename.s," to source") ;
+			log_warnusys("switch svc symlink of tree: ",info->treename.s," to source") ;
 		}
 		
-		VERBO3 strerr_warnt2x("make a backup of svc service for: ",info->treename.s) ;
+		log_trace("make a backup of svc service for: ",info->treename.s) ;
 		if (!backup_make_new(info,CLASSIC))
-		{
-			VERBO3 strerr_warnwu2sys("make a backup of svc service for: ",info->treename.s) ;
-			return 0 ;
-		}
+			log_warnusys_return(LOG_EXIT_ZERO,"make a backup of svc service for: ",info->treename.s) ;
 	}
 	return 1 ;
 }

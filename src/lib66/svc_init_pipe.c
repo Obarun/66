@@ -16,7 +16,7 @@
 
 #include <string.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 
 #include <skalibs/genalloc.h>
 #include <skalibs/stralloc.h>
@@ -36,7 +36,7 @@ int svc_init_pipe(ftrigr_t *fifo,genalloc *gasv,tain_t *deadline)
 	ss_resolve_sig_t *svc ;
 	
 	if (!ftrigr_startf_g(fifo, deadline))
-		VERBO3 { strerr_warnwu1sys("initiate fifo") ; return 0 ; }
+		log_warnusys_return(LOG_EXIT_ZERO,"initiate fifo") ;
 		
 	for (; i < genalloc_len(ss_resolve_sig_t,gasv) ; i++)
 	{
@@ -48,22 +48,14 @@ int svc_init_pipe(ftrigr_t *fifo,genalloc *gasv,tain_t *deadline)
 		memcpy(svfifo + scanlen, "/event",6) ;
 		svfifo[scanlen + 6] = 0 ;
 	
-		VERBO3 strerr_warnt2x("clean up fifo: ", svfifo) ;
+		log_trace("clean up fifo: ", svfifo) ;
 		if (!ftrigw_clean (svok))
-		{
-			VERBO3 strerr_warnwu2sys("clean up fifo: ", svfifo) ;
-			return 0 ;
-		}
-	
-		VERBO3 strerr_warnt2x("subcribe to fifo: ",svfifo) ;
+			log_warnusys_return(LOG_EXIT_ZERO,"clean up fifo: ", svfifo) ;
+			
+		log_trace("subcribe to fifo: ",svfifo) ;
 		svc->ids = ftrigr_subscribe_g(fifo, svfifo, "[DuUdOxs]", FTRIGR_REPEAT, deadline) ;
 		if (!svc->ids)
-		{
-			VERBO3 strerr_warnwu2sys("subcribe to fifo: ",svfifo) ;
-			goto end ;
-		}
+			log_warnusys_return(LOG_EXIT_ZERO,"subcribe to fifo: ",svfifo) ;
 	}
 	return 1 ;
-	end:
-		return 0 ;
 }

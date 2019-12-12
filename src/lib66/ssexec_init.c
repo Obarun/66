@@ -17,7 +17,7 @@
 #include <unistd.h>//chown
 #include <stdio.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 #include <oblibs/types.h>//scan_mode
 #include <oblibs/directory.h>
 #include <oblibs/sastr.h>
@@ -50,33 +50,33 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	classic = db = earlier = 0 ;
 	
 	gid_t gidowner ;
-	if (!yourgid(&gidowner,info->owner)) strerr_diefu1sys(111,"set gid") ;
+	if (!yourgid(&gidowner,info->owner)) log_dieusys(LOG_EXIT_SYS,"set gid") ;
 	
-	if (argc != 2) exitusage(usage_init) ;
+	if (argc != 2) log_usage(usage_init) ;
 	if (*argv[1] == 'c') classic = 1 ;
 	else if (*argv[1] == 'd') db = 1 ;
 	else if (*argv[1] == 'b') classic = db = 1 ;
-	else strerr_dief2x(110,"uknow command: ",argv[1]) ;
+	else log_die(LOG_EXIT_USER,"uknow command: ",argv[1]) ;
 	
 	if (!tree_get_permissions(info->tree.s,info->owner))
-		strerr_dief2x(110,"You're not allowed to use the tree: ",info->tree.s) ;
+		log_die(LOG_EXIT_USER,"You're not allowed to use the tree: ",info->tree.s) ;
 		
 	r = scan_mode(info->scandir.s,S_IFDIR) ;
-	if (r < 0) strerr_dief2x(111,info->scandir.s," conflicted format") ;
-	if (!r) strerr_dief3x(110,"scandir: ",info->scandir.s," doesn't exist") ;
+	if (r < 0) log_die(LOG_EXIT_SYS,info->scandir.s," conflicted format") ;
+	if (!r) log_die(LOG_EXIT_USER,"scandir: ",info->scandir.s," doesn't exist") ;
 		
 	r = scandir_ok(info->scandir.s) ;
 	if (r != 1) earlier = 1 ; 
 
 	r = scan_mode(info->livetree.s,S_IFDIR) ;
-	if (r < 0) strerr_dief2x(111,info->livetree.s," conflicted format") ;
+	if (r < 0) log_die(LOG_EXIT_SYS,info->livetree.s," conflicted format") ;
 	if (!r)
 	{
-		VERBO2 strerr_warni2x("create directory: ",info->livetree.s) ;
+		log_trace("create directory: ",info->livetree.s) ;
 		r = dir_create(info->livetree.s,0700) ;
-		if (!r) strerr_diefu2sys(111,"create directory: ",info->livetree.s) ;
-		VERBO2 strerr_warni2x("chown directory: ",info->livetree.s) ;
-		if (chown(info->livetree.s,info->owner,gidowner) < 0) strerr_diefu2sys(111,"chown directory: ",info->livetree.s) ;
+		if (!r) log_dieusys(LOG_EXIT_SYS,"create directory: ",info->livetree.s) ;
+		log_trace("chown directory: ",info->livetree.s) ;
+		if (chown(info->livetree.s,info->owner,gidowner) < 0) log_dieusys(LOG_EXIT_SYS,"chown directory: ",info->livetree.s) ;
 	}
 	
 	size_t dirlen ;
@@ -90,23 +90,23 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 	/** svc already initiated? */
 	if (classic)
 	{
-		if (!sastr_dir_get(&sasvc,svdir,"",S_IFDIR)) strerr_diefu2x(111,"get classic services from: ",svdir) ;
+		if (!sastr_dir_get(&sasvc,svdir,"",S_IFDIR)) log_dieusys(LOG_EXIT_SYS,"get classic services from: ",svdir) ;
 		if (!sasvc.len)
 		{
-			VERBO1 strerr_warni2x("Initialization aborted -- no classic services into tree: ",info->treename.s) ;
+			log_info("Initialization aborted -- no classic services into tree: ",info->treename.s) ;
 			goto follow ;
 		}
 		
 		if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) 
-			strerr_diefu1x(111,"set revolve pointer to source") ;
+			log_dieu(LOG_EXIT_SYS,"set revolve pointer to source") ;
 		
 		for (i = 0;i < sasvc.len; i += strlen(sasvc.s + i) + 1)
 		{
 			char *name = sasvc.s + i ;
 			ss_resolve_t tmp = RESOLVE_ZERO ;
-			if (!ss_resolve_check(sares.s,name)) strerr_dief2sys(110,"unknown service: ",name) ;
-			if (!ss_resolve_read(&tmp,sares.s,name)) strerr_diefu2sys(111,"read resolve file of: ",name) ;
-			if (!ss_resolve_add_deps(&gares,&tmp,sares.s)) strerr_diefu2sys(111,"resolve dependencies of: ",name) ;	
+			if (!ss_resolve_check(sares.s,name)) log_diesys(LOG_EXIT_USER,"unknown service: ",name) ;
+			if (!ss_resolve_read(&tmp,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
+			if (!ss_resolve_add_deps(&gares,&tmp,sares.s)) log_dieusys(LOG_EXIT_SYS,"resolve dependencies of: ",name) ;	
 			ss_resolve_free(&tmp) ;
 		}
 		
@@ -114,11 +114,11 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 		{
 			/** reverse to start first the logger */
 			genalloc_reverse(ss_resolve_t,&gares) ;
-			if (!svc_init(info,svdir,&gares)) strerr_diefu2x(111,"initiate service of tree: ",info->treename.s) ;
+			if (!svc_init(info,svdir,&gares)) log_dieu(LOG_EXIT_SYS,"initiate service of tree: ",info->treename.s) ;
 		}
 		else
 		{
-			if (!ss_resolve_create_live(info)) strerr_diefu1sys(111,"create live state") ;
+			if (!ss_resolve_create_live(info)) log_dieusys(LOG_EXIT_SYS,"create live state") ;
 			for (i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
 			{
 				logname = 0 ;
@@ -132,14 +132,14 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 				tocopy[dirlen] = '/' ;
 				memcpy(tocopy + dirlen + 1, name, namelen) ;
 				tocopy[dirlen + 1 + namelen] = 0 ;
-				if (!hiercopy(tocopy,string + genalloc_s(ss_resolve_t,&gares)[i].runat)) strerr_diefu4sys(111,"copy earlier service: ",tocopy," to: ",string + genalloc_s(ss_resolve_t,&gares)[i].runat) ;
+				if (!hiercopy(tocopy,string + genalloc_s(ss_resolve_t,&gares)[i].runat)) log_dieusys(LOG_EXIT_SYS,"copy earlier service: ",tocopy," to: ",string + genalloc_s(ss_resolve_t,&gares)[i].runat) ;
 				ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
 				ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 	//			ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
 				ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_UNKNOWN) ;
 				ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_UNKNOWN) ;
-				if (!ss_state_write(&sta,string + genalloc_s(ss_resolve_t,&gares)[i].state,name)) strerr_diefu2sys(111,"write state file of: ",name) ;
-				VERBO1 strerr_warni2x("Initialized successfully: ", logname < 0 ? name : string + genalloc_s(ss_resolve_t,&gares)[i].logreal) ;
+				if (!ss_state_write(&sta,string + genalloc_s(ss_resolve_t,&gares)[i].state,name)) log_dieusys(LOG_EXIT_SYS,"write state file of: ",name) ;
+				log_info("Initialized successfully: ", logname < 0 ? name : string + genalloc_s(ss_resolve_t,&gares)[i].logreal) ;
 			}
 		}
 	}
@@ -158,13 +158,13 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 		{
 			if (db_ok(info->livetree.s,info->treename.s))
 			{
-				VERBO1 strerr_warni3x("db of tree: ",info->treename.s," already initialized") ;
+				log_warn("db of tree: ",info->treename.s," already initialized") ;
 				goto end ;
 			}
-		}else strerr_dief3x(110,"scandir: ",info->scandir.s," is not running") ;
+		}else log_die(LOG_EXIT_USER,"scandir: ",info->scandir.s," is not running") ;
 	}else goto end ;
 	
-	if (!rc_init(info,envp)) strerr_diefu2sys(111,"initiate db of tree: ",info->treename.s) ;
+	if (!rc_init(info,envp)) log_dieusys(LOG_EXIT_SYS,"initiate db of tree: ",info->treename.s) ;
 	
 	end:
 	return 0 ;

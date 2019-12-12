@@ -16,7 +16,7 @@
 
 #include <string.h>
 
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 
 #include <skalibs/tai.h>
 #include <skalibs/genalloc.h>
@@ -60,7 +60,7 @@ int rc_manage(ssexec_t *info,genalloc *ga)
 	
 	if (!ss_resolve_pointo(&sares,info,LONGRUN,SS_RESOLVE_SRC))
 	{
-		strerr_warnwu1sys("set revolve pointer to source") ;
+		log_warnusys("set revolve pointer to source") ;
 		goto err ;
 	}
 	sares.len--;
@@ -92,7 +92,7 @@ int rc_manage(ssexec_t *info,genalloc *ga)
 		r = s6rc_servicedir_manage_g(live, prefix, &deadline) ;
 		if (!r)
 		{
-			VERBO1 strerr_warnwu3sys("supervise service directories in ", live, "/servicedirs") ;
+			log_warnusys("supervise service directories in ", live, "/servicedirs") ;
 			goto err ;
 		}
 	}
@@ -101,13 +101,13 @@ int rc_manage(ssexec_t *info,genalloc *ga)
 		char const *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
 		char const *name = string + genalloc_s(ss_resolve_t,ga)[i].name  ;
 		char const *state = string + genalloc_s(ss_resolve_t,ga)[i].state ;
-		VERBO2 strerr_warni2x("Write state file of: ",name) ;
+		log_trace("Write state file of: ",name) ;
 		if (!ss_state_write(&sta,state,name))
 		{
-			VERBO1 strerr_warnwu2sys("write state file of: ",name) ;
+			log_warnusys("write state file of: ",name) ;
 			goto err ;
 		}
-		VERBO1 strerr_warni2x("Initialized successfully: ",name) ;
+		log_info("Initialized successfully: ",name) ;
 	}
 	
 	stralloc_free(&sares) ;

@@ -14,7 +14,7 @@
  
 #include <66/utils.h>
  
-#include <oblibs/error2.h>
+#include <oblibs/log.h>
 
 #include <skalibs/stralloc.h>
 
@@ -29,14 +29,14 @@ int set_livedir(stralloc *live)
 		if (live->s[live->len - 2] != '/')
 		{
 			live->len-- ;
-			if (!stralloc_cats(live,"/")) retstralloc(0,"set_livedir") ;
-			if (!stralloc_0(live)) retstralloc(0,"set_livedir") ;
+			if (!stralloc_cats(live,"/")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+			if (!stralloc_0(live)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		}
 	}
 	else
 	{
-		if (!stralloc_cats(live,SS_LIVE)) retstralloc(0,"set_livedir") ;
-		if (!stralloc_0(live)) retstralloc(0,"set_livedir") ;
+		if (!stralloc_cats(live,SS_LIVE)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		if (!stralloc_0(live)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}
 	live->len--;
 	return 1 ;
