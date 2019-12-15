@@ -34,7 +34,7 @@ int db_find_compiled_state(char const *livetree, char const *treename)
 		
 	struct stat st ;
 	
-	char current[treelen + 1 + namelen + 8 + 1] ;
+	char current[treelen + 1 + namelen + 9 + 1] ;
 	memcpy(current, livetree, treelen) ;
 	current[treelen] = '/' ;
 	memcpy(current + treelen + 1, treename,namelen) ;

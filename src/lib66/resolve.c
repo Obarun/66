@@ -516,7 +516,7 @@ int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst,ssexec_t *info)
 	
 	char *string = sv->sa.s ;
 	size_t svlen = strlen(string + sv->name) ;
-	char descrip[svlen + 7] ;
+	char descrip[svlen + 7 + 1] ;
 	memcpy(descrip,string + sv->name,svlen) ;
 	memcpy(descrip + svlen," logger",7) ;
 	descrip[svlen + 7] = 0 ;
