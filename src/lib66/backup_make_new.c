@@ -16,7 +16,7 @@
 #include <66/db.h>
 
 #include <sys/stat.h>
-#include <stdlib.h>
+#include <stddef.h>
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
