@@ -134,6 +134,7 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t own
 	
 	ssize_t r ;
 	size_t baselen = strlen(base) ;
+	size_t treelen = strlen(tree) ;
 	char dst[baselen + SS_SYSTEM_LEN + 1 + treelen + 1] ;
 	auto_string(dst,base,0) ;
 			
