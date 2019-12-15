@@ -57,7 +57,7 @@ ALL_BINS := $(LIBEXEC_TARGETS) $(BIN_TARGETS)
 ALL_LIBS := $(SHARED_LIBS) $(STATIC_LIBS) $(INTERNAL_LIBS)
 ALL_INCLUDES := $(wildcard src/include/$(package)/*.h)
 ALL_MAN := $(wildcard doc/man/*.[1-8].scd)
-INSTALL_DIR := $(skel) $(system_dir) $(system_log) $(service_system) $(service_adm) $(service_admconf)
+#INSTALL_DIR := $(skel) $(system_dir) $(system_log) $(service_system) $(service_adm) $(service_admconf)
 INSTALL_DATA += init.conf
 INSTALL_MAN := $(wildcard doc/man/*.[1-8])
 INSTALL_HTML := $(wildcard doc/html/*.html)
@@ -90,7 +90,7 @@ ifneq ($(strip $(ALL_BINS)$(SHARED_LIBS)),)
 	exec $(STRIP) -R .note -R .comment -R .note.GNU-stack $(ALL_BINS) $(SHARED_LIBS)
 endif
 
-install: install-dynlib install-libexec install-bin install-lib install-include install-data install-dir install-conf
+install: install-dynlib install-libexec install-bin install-lib install-include install-data install-conf
 install-dynlib: $(SHARED_LIBS:lib%.so.xyzzy=$(DESTDIR)$(dynlibdir)/lib%.so)
 install-libexec: $(LIBEXEC_TARGETS:%=$(DESTDIR)$(libexecdir)/%)
 install-bin: $(BIN_TARGETS:%=$(DESTDIR)$(bindir)/%)
