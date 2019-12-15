@@ -76,7 +76,7 @@ static void cleanup(void)
 {
 	if (cleantree)
 	{
-		log_trace("removing ",cleantree,"...") ;
+		log_trace("removing: ",cleantree,"...") ;
 		rm_rf(cleantree) ;
 	}
 }
@@ -134,7 +134,7 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t own
 	
 	ssize_t r ;
 	size_t baselen = strlen(base) ;
-	char dst[baselen + SS_SYSTEM_LEN + 1] ;
+	char dst[baselen + SS_SYSTEM_LEN + 1 + treelen + 1] ;
 	auto_string(dst,base,0) ;
 			
 	/** base is /var/lib/66 or $HOME/.66*/
@@ -157,6 +157,10 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t own
 			log_dieusys(LOG_EXIT_SYS,"set home directory") ;
 		
 		extralen = extra.len ;
+		auto_stralloc(&extra,SS_USER_DIR) ;
+		auto_stralloc_0(&extra,SS_SYSTEM) ;
+		auto_check_one(extra.s,0755) ;
+		extra.len = extralen ;
 		auto_stralloc_0(&extra,SS_LOGGER_USERDIR) ;
 		auto_check_one(extra.s,0755) ;
 		extra.len = extralen ;
@@ -273,7 +277,7 @@ void create_backupdir(char const *base, char const *treename)
 	size_t baselen = strlen(base) - 1 ;//remove the last slash
 	size_t treenamelen = strlen(treename) ;
 
-	char treetmp[baselen + 1 + SS_SYSTEM_LEN + SS_BACKUP_LEN + treenamelen + 1 + 1] ;
+	char treetmp[baselen + 1 + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treenamelen + 1] ;
 	
 	auto_string(treetmp,base,0) ;
 	auto_string(treetmp,"/",baselen) ;
