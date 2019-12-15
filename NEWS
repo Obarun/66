@@ -1,5 +1,12 @@
 Changelog for 66
 
+In 0.2.3.1
+----------
+    
+    - Bugs fix: bad allocation memory
+    - Makefile: remove creation of empty directories. 66-tree will check
+    all directories and create it if it missing.
+    
 In 0.2.3.0
 ----------
     
