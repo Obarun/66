@@ -62,7 +62,7 @@ int rc_init(ssexec_t *info, char const *const *envp)
 	if (!yourgid(&gidowner,info->owner)){ log_warnusys("set gid") ; goto err ; }
 	
 	r = scan_mode(info->livetree.s,S_IFDIR) ;
-	if (r < 0){ log_warn(info->livetree.s," conflicted format") ; goto err ; }
+	if (r == -1) { errno = EEXIST ; log_warnsys("conflicting format of: ",info->livetree.s) ; goto err ; }
 	if (!r)
 	{
 		log_trace("create directory: ",info->livetree.s) ;
