@@ -5,7 +5,7 @@
 
 # SYNOPSIS
 
-66-boot [ *-h* ] [ *-s* _skel_ ] [ *-m* ] [ *-c* ] [ *-l* _log_user_ ] [ *-e* _environment_ ] [ *-d* _dev_ ] [ *-b* _banner_ ]
+66-boot [ *-h* ] [ *-s* _skel_ ] [ *-m* ] [ *-l* _log_user_ ] [ *-e* _environment_ ] [ *-d* _dev_ ] [ *-b* _banner_ ]
 
 # DESCRIPTION
 
@@ -29,9 +29,6 @@
 	skeleton file if it already mounted and mount a tmpfs on it. By default, 
 	the _LIVE_ basename is mounted if it not already a valid mountpoint. 
 	Otherwise without the *-m* option, it does nothing.
-
-*-c*
-	Enable the CTRL-ALT-DEL combination key ability.
 
 *-l* _log_user_
 	The catch-all logger will run as the _log_user_ user. Default is *%%s6log_user%%*.

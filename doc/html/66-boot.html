@@ -24,7 +24,7 @@
 <h2>Interface</h2>
 
 	<pre>
-	66-boot [ -h ] [ -s <em>skel</em> ] [ -m ] [ -c ] [ -l <em>log_user</em> ] [ -e environment ] [ -d <em>dev</em> ] [ -b <em>banner</em> ]
+	66-boot [ -h ] [ -s <em>skel</em> ] [ -m ] [ -l <em>log_user</em> ] [ -e environment ] [ -d <em>dev</em> ] [ -b <em>banner</em> ]
 	</pre>
 
 	<p>
@@ -47,9 +47,6 @@
 			By default, the <em>LIVE</em> basename is mounted if it not already a valid mountpoint. Otherwise without the <tt>-m</tt> option, it does nothing.
 		</li>
 			 
-		<li> 
-			<tt><b>-c</b></tt> : enable the CTRL-ALT-DEL combination key ability.
-		</li>
 		<li> 
 			<tt><b>-l <em>log_user</em></b></tt> : the catch&#8209;all logger will run as <em>log_user</em>. Default is <tt>%%s6log_user%%</tt>. The default can also be changed at compile-time by	passing the <tt>&#8209;&#8209;with&#8209;s6&#8209;log&#8209;user=<em>user</em></tt> option to <tt>./configure</tt>.
 		</li>

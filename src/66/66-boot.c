@@ -57,7 +57,7 @@ static char confile[MAXENV+1] ;
 static char const *const *genv = 0 ;
 static int fdin ;
 
-#define USAGE "66-boot [ -h ] [ -m ] [ -c ] [ -s skel ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]"
+#define USAGE "66-boot [ -h ] [ -m ] [ -s skel ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]"
 
 static void sulogin(char const *msg,char const *arg)
 {
@@ -85,7 +85,6 @@ static inline void info_help (void)
 "options :\n"
 "	-h: print this help\n" 
 "	-m: mount parent live directory\n"
-"	-c: enable CTRL-ALT-DEL feature\n"
 "	-l: run catch-all logger as log_user user\n"
 "	-s: skeleton directory\n"
 "	-e: environment directory or file\n"
@@ -230,7 +229,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	unsigned int r , tmpfs = 0 ;
 	size_t bannerlen, livelen ;
 	pid_t pid ;
-	int opened = 0, cad = 0 ;
+	int opened = 0 ;
 	char verbo[UINT_FMT] ;
 	cver = verbo ;
 	stralloc envmodifs = STRALLOC_ZERO ;
@@ -241,14 +240,13 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hmcs:e:d:b:l:", &l) ;
+			int opt = getopt_args(argc,argv, ">hms:e:d:b:l:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) sulogin("options must be set first","") ;
 			switch (opt)
 			{
 				case 'h' : info_help(); return 0 ;
 				case 'm' : tmpfs = 1 ; break ;
-				case 'c' : cad = 1 ; break ;
 				case 's' : skel = l.arg ; break ;
 				case 'e' : envdir = l.arg ; break ;
 				case 'd' : slashdev = l.arg ; break ;
@@ -361,8 +359,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		pid = fork() ;
 		if (pid == -1) sulogin("fork: ",rcinit) ;
 		if (!pid) run_stage2(newenvp, 2, envmodifs.s,envmodifs.len) ;
-		if (cad)
-			if (reboot(RB_DISABLE_CAD) == -1) sulogin("trap ctrl-alt-del","") ;
+		if (reboot(RB_DISABLE_CAD) == -1) log_warnu("trap ctrl-alt-del","") ;
 		if (fd_copy(2, 1) == -1) sulogin("copy stderr to stdout","") ;
 		fd_close(fdin) ;
 		xpathexec_r(newargv, newenvp, 2, envmodifs.s, envmodifs.len) ;
