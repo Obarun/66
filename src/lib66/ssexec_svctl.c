@@ -87,12 +87,13 @@ int handle_signal_svc(ss_resolve_sig_t *sv_signal)
 {
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	char *sv = sv_signal->res.sa.s + sv_signal->res.runat ;
+	
 	if (!s6_svstatus_read(sv,&status))
 		log_warnusys_return(LOG_EXIT_ZERO,"read status of: ",sv) ;
 
 	sv_signal->pid = status.pid ;
 	
-	if (WIFSIGNALED(status.wstat) && !WEXITSTATUS(status.wstat) && (WTERMSIG(status.wstat) == 15 )) return 1 ;
+	if (WIFSIGNALED(status.wstat) && !WEXITSTATUS(status.wstat)) return 1 ;// && (WTERMSIG(status.wstat) == 15 )) return 1 ;
 	if (!WIFSIGNALED(status.wstat) && !WEXITSTATUS(status.wstat)) return 1 ;
 	else return 0 ;
 }
@@ -163,12 +164,14 @@ int handle_case(stralloc *sa, ss_resolve_sig_t *svc)
 	int p, h, err ;
 	unsigned int state, i = 0 ;
 	state = svc->sig ;
+	
 	err = 2 ;
 
 	for (;i < sa->len ; i++)
 	{
 		p = chtenum[(unsigned char)sa->s[i]] ;
 		unsigned char action = actions[state][p] ;
+		
 		switch (action)
 		{
 			case GOTIT:
@@ -251,13 +254,13 @@ static int announce(ss_resolve_sig_t *svc)
 				break ;
 		case 1: log_info(sv,": ",(svc->sig > 3) ? "stopped" : (svc->sig == 2 || svc->sig == 3) ? "reloaded" : "started"," successfully") ;
 				break ;
-		case 2: log_info((svc->sig > 3) ? "stop " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start ", sv) ; 
+		case 2: log_info("unable to ",(svc->sig > 3) ? "stop " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start ", sv) ; 
 				break ;
 		case 3: log_info(sv," report permanent failure -- unable to ",(svc->sig > 1) ? "stop" : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start") ;
 				break ;
-		case 4: log_info((svc->sig > 3) ? "stop: " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start: ",sv, ": number of try exceeded") ;
+		case 4: log_info("unable to ",(svc->sig > 3) ? "stop: " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start: ",sv, ": number of try exceeded") ;
 				break ;
-		case 5: log_info((svc->sig > 3) ? "stop: " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start: ",sv, ": time out reached") ;
+		case 5: log_info("unable to ",(svc->sig > 3) ? "stop: " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start: ",sv, ": time out reached") ;
 				break ;
 		case-1: 
 		default:log_warn("unexpected data in state file of: ",sv," -- please make a bug report") ;
