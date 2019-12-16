@@ -21,7 +21,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <errno.h>
-//#include <stdio.h>
+#include <stdio.h>
 
 #include <oblibs/bytes.h>
 #include <oblibs/string.h>
@@ -928,6 +928,7 @@ int key_get_next_id(stralloc *sa, char const *string,size_t *pos)
 		if (r == -1) goto err ;
 		if (!stralloc_0(&kp)) goto err ;
 		id = get_enumbyid(kp.s,key_enum_el) ;
+		if (id == -1 && kp.len > 1) log_warn("unknown key: ",kp.s,": at parenthesis parse") ;
 	}
 	newpos = get_rlen_until(string,')',newpos) ;
 	if (newpos == -1) goto err ;
