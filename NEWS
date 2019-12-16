@@ -1,5 +1,11 @@
 Changelog for 66
 
+In 0.2.3.2
+----------
+    
+    - Fix bad annoucement at 66-svctl
+    - Warn in case of bad key at parenthesis parsing process
+    
 In 0.2.3.1
 ----------
     
