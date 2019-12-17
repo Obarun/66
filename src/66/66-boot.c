@@ -359,7 +359,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		pid = fork() ;
 		if (pid == -1) sulogin("fork: ",rcinit) ;
 		if (!pid) run_stage2(newenvp, 2, envmodifs.s,envmodifs.len) ;
-		if (reboot(RB_DISABLE_CAD) == -1) log_warnu("trap ctrl-alt-del","") ;
+		if (reboot(RB_DISABLE_CAD) == -1) log_warnusys("trap ctrl-alt-del","") ;
 		if (fd_copy(2, 1) == -1) sulogin("copy stderr to stdout","") ;
 		fd_close(fdin) ;
 		xpathexec_r(newargv, newenvp, 2, envmodifs.s, envmodifs.len) ;

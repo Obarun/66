@@ -499,7 +499,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			
 			int opt = getopt_args(argc,argv, "hv:l:na:d:cEDRC:U", &l) ;
 			if (opt == -1) break ;
-			if (opt == -2) log_dieusys(LOG_EXIT_USER,"options must be set first") ;
+			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
 			{
 				case 'h' : info_help(); return 0 ;
