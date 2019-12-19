@@ -61,7 +61,8 @@ static void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv)
 	size_t i = 0, len = list->len ;
 	
 	stralloc sasv = STRALLOC_ZERO ;
-	stralloc tmp = STRALLOC_ZERO ;
+	stralloc parsed_list = STRALLOC_ZERO ;
+	stralloc opts_deps_list = STRALLOC_ZERO ;
 	
 	for (;i < len; i += strlen(list->s + i) + 1)
 	{
@@ -73,11 +74,12 @@ static void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv)
 		r = parse_service_check_enabled(info,svname,FORCE,&exist) ;
 		if (!r) log_dieu(LOG_EXIT_SYS,"check enabled service: ",svname) ;
 		if (r == 2) continue ;
-		if (!parse_service_before(info,&tmp,name,nbsv,&sasv,FORCE,&exist))
+		if (!parse_service_before(info,&parsed_list,&opts_deps_list,name,nbsv,&sasv,FORCE,&exist))
 			log_dieu(LOG_EXIT_SYS,"parse service file: ",svname,": or its dependencies") ;
 	}
 	stralloc_free(&sasv) ;
-	stralloc_free(&tmp) ;	
+	stralloc_free(&parsed_list) ;
+	stralloc_free(&opts_deps_list) ;
 }
 
 int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)

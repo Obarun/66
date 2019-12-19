@@ -33,6 +33,7 @@ enum key_enum_e
 	DESCRIPTION ,
 	CONTENTS ,
 	DEPENDS ,
+	OPTSDEPS ,
 	OPTIONS ,
 	NOTIFY ,
 	USER ,
@@ -120,6 +121,7 @@ static key_description_t const main_section_list[] =
 	{ .name = "@name", .expected = LINE, .mandatory = OPTS },
 	{ .name = "@description", .expected = QUOTE, .mandatory = OPTS },
 	{ .name = "@depends", .expected = BRACKET, .mandatory = OPTS },
+	{ .name = "@optsdepends", .expected = BRACKET, .mandatory = OPTS },
 	{ .name = "@contents", .expected = BRACKET, .mandatory = BUNDLE },
 	{ .name = "@options", .expected = BRACKET, .mandatory = OPTS },
 	{ .name = "@flags", .expected = BRACKET, .mandatory = OPTS },
@@ -166,7 +168,7 @@ static key_description_t const environment_section_list[] =
 	{ .name = 0 }
 } ;
 
-static int const total_list_el[6] = { 17, 5, 5, 12, 2, 0 } ;
+static int const total_list_el[6] = { 18, 5, 5, 12, 2, 0 } ;
 
 static key_all_t const total_list[] =
 {

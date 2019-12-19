@@ -634,6 +634,17 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 				service->cname.nga++ ;
 			}
 			break ;
+		case OPTSDEPS:
+			if ((service->cname.itype == CLASSIC) || (service->cname.itype == BUNDLE))
+				log_warn_return(LOG_EXIT_ZERO,"key: ",get_keybyid(nocheck->idkey),": is not valid for type ",get_keybyid(service->cname.itype)) ;
+			if (!get_clean_val(nocheck)) return 0 ;
+			service->cname.idopts = deps.len ;
+			for (;pos < *chlen; pos += strlen(chval + pos)+1)
+			{
+				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+				service->cname.nopts++ ;
+			}
+			break ;
 		case CONTENTS:
 			if (service->cname.itype != BUNDLE)
 				log_warn_return(LOG_EXIT_ZERO,"key: ",get_keybyid(nocheck->idkey),": is not valid for type ",get_keybyid(service->cname.itype)) ;

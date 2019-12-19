@@ -92,7 +92,7 @@ int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *se
 		return 0 ;
 }
 
-int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force)
+int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force)
 {
 	uint8_t exist = 0 ;
 	char *dname = 0 ;
@@ -113,7 +113,7 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_befo
 				log_warnu("resolve source path of: ",dname) ;
 				goto err ;
 			}
-			if (!parse_service_before(info,parsed_list,newsv.s,nbsv,sasv,force,&exist)) goto err ;
+			if (!parse_service_before(info,parsed_list,opts_deps_list,newsv.s,nbsv,sasv,force,&exist)) goto err ;
 		}
 	}
 	else log_trace(sv,": haven't dependencies") ;
@@ -124,7 +124,70 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list, sv_alltype *sv_befo
 		return 0 ;
 }
 
-int parse_service_before(ssexec_t *info,stralloc *parsed_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t *exist)
+int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force)
+{
+	stralloc newsv = STRALLOC_ZERO ;
+	size_t pos = 0 , baselen = strlen(info->base.s) + SS_SYSTEM_LEN ;
+	uint8_t exist = 0, found = 0 ;
+	char *optname = 0 ;
+	char btmp[baselen + 1] ;
+	auto_strings(btmp,info->base.s,SS_SYSTEM) ;
+
+	// only pass here for the first time
+	if (!opts_deps_list->len)
+	{
+		if (!sastr_dir_get(opts_deps_list, btmp,SS_BACKUP + 1, S_IFDIR)) log_warnusys_return(LOG_EXIT_ZERO,"get list of tree at: ",btmp) ;
+	}
+	if (sv_before->cname.nopts)
+	{
+		// may have no tree yet
+		if (opts_deps_list->len)
+		{
+			size_t id = sv_before->cname.idopts, nid = sv_before->cname.nopts ;
+			for (;nid; id += strlen(deps.s + id) + 1, nid--)
+			{
+
+				newsv.len = 0 ;
+				optname = deps.s + id ;
+
+				for(pos = 0 ; pos < opts_deps_list->len ; pos += strlen(opts_deps_list->s + pos) +1 )
+				{
+					found = 0 ;
+					char *tree = opts_deps_list->s + pos ;
+					size_t treelen = strlen(tree) ;
+					char tmp[baselen + 1 + treelen + SS_SVDIRS_LEN + 1] ;
+					auto_strings(tmp,btmp,"/",tree,SS_SVDIRS) ;
+
+					// already added on a tree
+					if (ss_resolve_check(tmp,optname))
+					{
+						found = 1 ;
+						log_trace("optional service dependency: ",optname," is already enabled at tree: ",btmp,"/",tree) ;
+						break ;
+					}
+				}
+				if (!found)
+				{
+					if (!ss_resolve_src_path(&newsv,optname,info))
+					{
+						log_warnu_return(LOG_EXIT_ZERO,"resolve source path of: ",optname) ;
+						goto err ;
+					}
+					if (!parse_service_before(info,parsed_list,opts_deps_list,newsv.s,nbsv,sasv,force,&exist))
+						goto err ;
+				}
+			}
+		}
+	}
+
+	stralloc_free(&newsv) ;
+	return 1 ;
+	err:
+		stralloc_free(&newsv) ;
+		return 0 ;
+}
+
+int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t *exist)
 {
 	
 	int r, insta ;
@@ -204,8 +267,10 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list, char const *sv,un
 	if (!parse_add_service(parsed_list,&sv_before,svpath,nbsv,info->owner)) return 0 ;
 	
 	if ((sv_before.cname.itype > CLASSIC && force > 1) || !(*exist))
-		if (!parse_service_deps(info,parsed_list,&sv_before,sv,nbsv,sasv,force)) return 0 ;
-	
+	{
+		if (!parse_service_deps(info,parsed_list,opts_deps_list,&sv_before,sv,nbsv,sasv,force)) return 0 ;
+		if (!parse_service_opts_deps(info,parsed_list,opts_deps_list,&sv_before,sv,nbsv,sasv,force)) return 0 ;
+	}
 	freed:
 	return 1 ;
 }
