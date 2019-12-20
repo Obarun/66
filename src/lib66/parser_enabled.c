@@ -154,6 +154,7 @@ int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_
 				{
 					found = 0 ;
 					char *tree = opts_deps_list->s + pos ;
+					if (obstr_equal(tree,info->treename.s)) continue ; 
 					size_t treelen = strlen(tree) ;
 					char tmp[baselen + 1 + treelen + SS_SVDIRS_LEN + 1] ;
 					auto_strings(tmp,btmp,"/",tree,SS_SVDIRS) ;
