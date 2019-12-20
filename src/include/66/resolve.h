@@ -47,6 +47,7 @@ struct ss_resolve_s
 	uint32_t logassoc ;
 	uint32_t dstlog ;
 	uint32_t deps ;
+	uint32_t optsdeps ; //optional dependencies
 	uint32_t src ;	//frontend source
 	uint32_t srconf ; //configuration file source
 	uint32_t live ; //run/66
@@ -59,10 +60,11 @@ struct ss_resolve_s
 	
 	uint32_t type ;
 	uint32_t ndeps ;
+	uint32_t noptsdeps ;
 	uint32_t down ;
 	uint32_t disen ;//disable->0,enable->1
 } ;
-#define RESOLVE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
 /** Graph struct */
 typedef struct ss_resolve_graph_ndeps_s ss_resolve_graph_ndeps_t ;
