@@ -192,11 +192,12 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *opts_dep
 	
 	int r, insta ;
 	size_t svlen = strlen(sv), svsrclen, svnamelen ;
-	char svname[svlen + 1], svsrc[svlen + 1], svpath[svlen + 1] ;
+	char svname[svlen + 1], svsrc[svlen + 1] ; 
 	if (!basename(svname,sv)) return 0 ;
 	if (!dirname(svsrc,sv)) return 0 ;
 	svsrclen = strlen(svsrc) ;
 	svnamelen = strlen(svname) ;
+	char svpath[svsrclen + svnamelen + 1] ;
 	if (scan_mode(sv,S_IFDIR) == 1) return 1 ;
 		
 	r = parse_service_check_enabled(info,svname,force,exist) ;
@@ -231,7 +232,7 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *opts_dep
 		sv_alltype_free(&sv_before) ;
 		goto freed ;
 	}
-		
+
 	if (!parser(&sv_before,sasv,svname)) return 0 ;
 	
 	/** keep the name set by user
