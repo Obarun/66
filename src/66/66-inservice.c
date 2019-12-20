@@ -63,6 +63,7 @@ static void info_display_description(char const *field, ss_resolve_t *res) ;
 static void info_display_source(char const *field, ss_resolve_t *res) ;
 static void info_display_live(char const *field, ss_resolve_t *res) ;
 static void info_display_deps(char const *field, ss_resolve_t *res) ;
+static void info_display_optsdeps(char const *field, ss_resolve_t *res) ;
 static void info_display_start(char const *field, ss_resolve_t *res) ;
 static void info_display_stop(char const *field, ss_resolve_t *res) ;
 static void info_display_envat(char const *field, ss_resolve_t *res) ;
@@ -83,17 +84,18 @@ info_opts_map_t const opts_sv_table[] =
 	{ .str = "source", .svfunc = &info_display_source, .id = 5 },
 	{ .str = "live", .svfunc = &info_display_live, .id = 6 },
 	{ .str = "depends", .svfunc = &info_display_deps, .id = 7 },
-	{ .str = "start", .svfunc = &info_display_start, .id = 8 },
-	{ .str = "stop", .svfunc = &info_display_stop, .id = 9 },
-	{ .str = "envat", .svfunc = &info_display_envat, .id = 10 },
-	{ .str = "envfile", .svfunc = &info_display_envfile, .id = 11 },
-	{ .str = "logname", .svfunc = &info_display_logname, .id = 12 },
-	{ .str = "logdst", .svfunc = &info_display_logdst, .id = 13 },
-	{ .str = "logfile", .svfunc = &info_display_logfile, .id = 14 },
+	{ .str = "optsdepends", .svfunc = &info_display_optsdeps, .id = 8 },
+	{ .str = "start", .svfunc = &info_display_start, .id = 9 },
+	{ .str = "stop", .svfunc = &info_display_stop, .id = 10 },
+	{ .str = "envat", .svfunc = &info_display_envat, .id = 11 },
+	{ .str = "envfile", .svfunc = &info_display_envfile, .id = 12 },
+	{ .str = "logname", .svfunc = &info_display_logname, .id = 13 },
+	{ .str = "logdst", .svfunc = &info_display_logdst, .id = 14 },
+	{ .str = "logfile", .svfunc = &info_display_logfile, .id = 15 },
 	{ .str = 0, .svfunc = 0, .id = -1 }
 } ;
 
-#define MAXOPTS 16
+#define MAXOPTS 17
 #define checkopts(n) if (n >= MAXOPTS) strerr_dief1x(100, "too many options")
 #define DELIM ','
 
@@ -125,6 +127,7 @@ static inline void info_help (void)
 "	source: displays the source of the service's frontend file\n"
 "	live: displays the service's live directory\n"
 "	depends: displays the service's dependencies\n"
+"	optsdepends: displays the service's optional dependencies\n"
 "	start: displays the service's start script\n"
 "	stop: displays the service's stop script\n"
 "	envat: displays the source of the environment file\n"
@@ -313,6 +316,33 @@ static void info_display_deps(char const *field, ss_resolve_t *res)
 			if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning," no dependencies",log_color->off))
 				log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 		}
+		
+	freed:
+		stralloc_free(&salist) ;
+}
+
+static void info_display_optsdeps(char const *field, ss_resolve_t *res)
+{
+	stralloc salist = STRALLOC_ZERO ;
+	
+	info_display_field_name(field) ;
+	
+	if (!res->noptsdeps) goto empty ;
+	
+
+	if (!bprintf(buffer_1,"%s"," ")) 
+		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+	if (!sastr_clean_string(&salist,res->sa.s + res->optsdeps)) 
+		log_dieu(LOG_EXIT_SYS,"build dependencies list") ;
+	if (REVERSE)
+		if (!sastr_reverse(&salist))
+				log_dieu(LOG_EXIT_SYS,"reverse dependencies list") ;
+	info_display_list(field,&salist) ;
+	goto freed ;
+	
+	empty:
+		if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning," no optional dependencies",log_color->off))
+			log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 		
 	freed:
 		stralloc_free(&salist) ;
@@ -549,6 +579,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		"Source",
 		"Live",
 		"Depends on",
+		"Optional depends" ,
 		"Start script",
 		"Stop script",
 		"Environment source",
