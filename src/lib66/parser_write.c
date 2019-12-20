@@ -60,7 +60,7 @@ int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, uint8_t f
 		if (ss_resolve_check(workdir,name)) 
 		{
 			if (!ss_resolve_read(&res,workdir,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
-			if (res.type != type && res.disen) log_dieusys(LOG_EXIT_SYS,"Detection of incompatible type format for: ",name," -- current: ",get_keybyid(type)," previous: ",get_keybyid(res.type)) ;
+			if (res.type != type && res.disen) log_die(LOG_EXIT_SYS,"Detection of incompatible type format for: ",name," -- current: ",get_keybyid(type)," previous: ",get_keybyid(res.type)) ;
 		}
 		ss_resolve_free(&res) ;
 	}
