@@ -57,32 +57,32 @@ enum key_enum_e
 	TIMESTP ,
 	ENVAL ,
 	//Service type
-	CLASSIC, // = 31
+	CLASSIC, // = 33
 	BUNDLE ,
 	LONGRUN ,
 	ONESHOT ,
 	//Key expected
-	LINE , // = 35
+	LINE , // = 37
 	BRACKET ,
 	UINT ,
 	SLASH ,
 	QUOTE ,
 	KEYVAL ,
 	//Options
-	LOGGER , // = 36
+	LOGGER , // = 43
 	PIPELINE ,
 	//Flags
-	DOWN , // = 44
+	DOWN , // = 45
 	NOSETSID ,
 	ENVIR ,
 	//Build
-	AUTO , // = 45
+	AUTO , // = 48
 	CUSTOM ,
 	//Mandatory
-	NEED , // = 49
+	NEED , // = 50
 	OPTS ,
 	//Time
-	TAI , // = 50
+	TAI , // = 52
 	ISO ,
 	NONE ,
 	ENDOFKEY
