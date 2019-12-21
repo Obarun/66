@@ -39,6 +39,7 @@
 #include <66/resolve.h>
 
 static unsigned int REVERSE = 0 ;
+static unsigned int NOFIELD = 1 ;
 unsigned int MAXDEPTH = 1 ;
 static unsigned int GRAPH = 0 ;
 static uid_t OWNER ;
@@ -71,7 +72,7 @@ info_opts_map_t const opts_tree_table[] =
 #define checkopts(n) if (n >= MAXOPTS) log_die(100, "too many options")
 #define DELIM ','
 
-#define USAGE "66-intree [ -h ] [ -v verbosity ] [ -l live ] [ -c ] [ -o name,init,enabled,... ] [ -g ] [ -d depth ] [ -r ] tree"
+#define USAGE "66-intree [ -h ] [ -v verbosity ] [ -l live ] [ -c ] [ -n ] [ -o name,init,enabled,... ] [ -g ] [ -d depth ] [ -r ] tree"
 
 static inline void info_help (void)
 {
@@ -83,6 +84,7 @@ static inline void info_help (void)
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n"
 "	-c: use color\n"
+"	-n: do not display the field name\n"
 "	-o: comma separated list of field to display\n"
 "	-g: displays the contents field as graph\n"
 "	-d: limit the depth of the contents field recursion\n"
@@ -138,8 +140,8 @@ static int info_cmpnsort(stralloc *sa)
 
 static void info_display_name(char const *field, char const *treename)
 {
-	info_display_field_name(field) ;
-	if (!bprintf(buffer_1," %s",treename)) 
+	if (NOFIELD) info_display_field_name(field) ;
+	if (!bprintf(buffer_1,"%s",treename)) 
 		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 	if (buffer_putsflush(buffer_1,"\n") == -1) 
 		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
@@ -161,8 +163,8 @@ static void info_display_init(char const *field,char const *treename)
 	!stralloc_0(&live)) log_die_nomem("stralloc") ;
 	if (!access(live.s, F_OK)) init = 1 ;
 
-	info_display_field_name(field) ;
-	if (!bprintf(buffer_1," %s%s%s",init ? log_color->valid : log_color->warning, init ? "yes":"no",log_color->off)) 
+	if (NOFIELD) info_display_field_name(field) ;
+	if (!bprintf(buffer_1,"%s%s%s",init ? log_color->valid : log_color->warning, init ? "yes":"no",log_color->off)) 
 		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 	
 	if (buffer_putsflush(buffer_1,"\n") == -1) 
@@ -181,8 +183,8 @@ static void info_display_current(char const *field,char const *treename)
 		if (!basename(name,sacurr.s)) log_dieu(LOG_EXIT_SYS,"basename of: ",sacurr.s) ;
 		current = obstr_equal(treename,name) ;
 	}
-	info_display_field_name(field) ;
-	if (!bprintf(buffer_1," %s%s%s", current ? log_color->blink : log_color->warning, current ? "yes":"no",log_color->off))
+	if (NOFIELD) info_display_field_name(field) ;
+	if (!bprintf(buffer_1,"%s%s%s", current ? log_color->blink : log_color->warning, current ? "yes":"no",log_color->off))
 		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 	
 	if (buffer_putsflush(buffer_1,"\n") == -1) 
@@ -194,8 +196,8 @@ static void info_display_current(char const *field,char const *treename)
 static void info_display_enabled(char const *field,char const *treename)
 {
 	int enabled = tree_cmd_state(VERBOSITY,"-s",treename) ;
-	info_display_field_name(field) ;
-	if (!bprintf(buffer_1," %s%s%s",enabled == 1 ? log_color->valid : log_color->warning, enabled == 1 ? "yes":"no",log_color->off)) 
+	if (NOFIELD) info_display_field_name(field) ;
+	if (!bprintf(buffer_1,"%s%s%s",enabled == 1 ? log_color->valid : log_color->warning, enabled == 1 ? "yes":"no",log_color->off)) 
 		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 	
 	if (buffer_putsflush(buffer_1,"\n") == -1) 
@@ -249,7 +251,8 @@ static void info_display_contents(char const *field, char const *treename)
 	
 	info_get_graph_src(&graph,tmp,0) ;
 	
-	padding = info_display_field_name(field) ;
+	if (NOFIELD) padding = info_display_field_name(field) ;
+	else { field = 0 ; padding = 0 ; }
 	
 	if (!genalloc_len(ss_resolve_t,&graph.name)) goto empty ;
 	
@@ -266,7 +269,7 @@ static void info_display_contents(char const *field, char const *treename)
 		
 	if (GRAPH)
 	{
-		if (!bprintf(buffer_1," %s\n","/")) 
+		if (!bprintf(buffer_1,"%s\n","/")) 
 			log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 		size_t el = sastr_len(&salist) ;
 		if (!sastr_rebuild_in_oneline(&salist)) log_dieu(LOG_EXIT_SYS,"rebuild dependencies list") ;
@@ -279,8 +282,8 @@ static void info_display_contents(char const *field, char const *treename)
 	}
 	else
 	{
-		if (!bprintf(buffer_1,"%s"," ")) 
-			log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+		//if (!bprintf(buffer_1,"%s"," ")) 
+			//log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 		if (REVERSE) 
 			if (!sastr_reverse(&salist))
 				log_dieusys(LOG_EXIT_SYS,"reverse dependencies list") ;
@@ -290,14 +293,14 @@ static void info_display_contents(char const *field, char const *treename)
 	empty:
 		if (GRAPH)
 		{
-			if (!bprintf(buffer_1," %s\n","/")) 
+			if (!bprintf(buffer_1,"%s\n","/")) 
 				log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-			if (!bprintf(buffer_1,"%*s%s%s",padding,"",STYLE->last," empty tree")) 
+			if (!bprintf(buffer_1,"%*s%s%s",padding,"",STYLE->last,"None")) 
 				log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 		}
 		else
 		{
-			if (!bprintf(buffer_1,"%s"," empty tree")) 
+			if (!bprintf(buffer_1,"%s","None")) 
 				log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 		}
 		if (buffer_putsflush(buffer_1,"\n") == -1)
@@ -380,7 +383,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:co:grd:l:", &l) ;
+			int opt = getopt_args(argc,argv, ">hv:cno:grd:l:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
@@ -388,6 +391,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 				case 'h' : 	info_help(); return 0 ;
 				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
 				case 'c' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
+				case 'n' :	NOFIELD = 0 ; break ;
 				case 'o' : 	legacy = 0 ; info_parse_options(l.arg,what) ; break ;
 				case 'g' :	GRAPH = 1 ; break ;
 				case 'r' : 	REVERSE = 1 ; break ;

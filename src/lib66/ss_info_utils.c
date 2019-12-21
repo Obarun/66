@@ -123,7 +123,7 @@ size_t info_display_field_name(char const *field)
 	if(field)
 	{
 		len = info_length_from_wchar(field) + 1 ;
-		if (!bprintf(buffer_1,"%s%s%s", log_color->info, field, log_color->off)) log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+		if (!bprintf(buffer_1,"%s%s%s ", log_color->info, field, log_color->off)) log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 	}
 	return len ;
 }
@@ -177,15 +177,13 @@ void info_display_nline(char const *field,char const *str)
 		cp.len = 0 ;
 		if (!stralloc_cats(&cp,tmp.s + pos) ||
 		!stralloc_0(&cp)) log_die_nomem("stralloc") ;
-		if (!pos)
+		if (field) 
 		{
-			if (!bprintf(buffer_1,"%s"," "))
-				log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-		}
-		else
-		{
-			if (!bprintf(buffer_1,"%*s",padding,""))
-				log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+			if (pos)
+			{
+				if (!bprintf(buffer_1,"%*s",padding,""))
+					log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+			}
 		}
 		info_display_list(field,&cp) ;
 	}
