@@ -188,6 +188,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		default: break ;
 	}	
 	sv_alltype_free(&service) ;
+	stralloc_free(&keep) ;
+	stralloc_free(&deps) ;
 	stralloc_free(&src) ;
 	stralloc_free(&dst) ;
 	return 0 ;
