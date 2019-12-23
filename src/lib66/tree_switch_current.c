@@ -15,15 +15,15 @@
 #include <66/tree.h>
  
 #include <sys/types.h>
-#include <string.h>
-#include <sys/stat.h>
+#include <stddef.h>
 
-//#include <oblibs/log.h>
+#include <oblibs/string.h>
 #include <oblibs/directory.h>
 #include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
+#include <skalibs/unix-transactional.h>
 
 #include <66/config.h>
 #include <66/constants.h>
@@ -41,22 +41,14 @@ int tree_switch_current(char const *base, char const *treename)
 	packlen = uint_fmt(pack,MYUID) ;
 	pack[packlen] = 0 ;
 	char dst[baselen + SS_TREE_CURRENT_LEN + 1 + packlen + treelen + 2 + 1] ;
-	struct stat st ;
-		
-	memcpy(dst,base,baselen) ;
-	memcpy(dst + baselen,SS_SYSTEM,SS_SYSTEM_LEN) ;
-	dst[baselen + SS_SYSTEM_LEN] = '/' ;
-	memcpy(dst + baselen + SS_SYSTEM_LEN + 1,treename,treelen) ;
-	dst[baselen + SS_SYSTEM_LEN + 1 + treelen] = 0 ;
+	
+	auto_strings(dst,base,SS_SYSTEM,"/",treename) ;
 
 	r = scan_mode(dst,S_IFDIR) ;
 	if (r <= 0) return 0 ;
-
-	memcpy(dst + baselen,SS_TREE_CURRENT,SS_TREE_CURRENT_LEN) ;
-	dst[baselen + SS_TREE_CURRENT_LEN] = '/' ;
-	memcpy(dst + baselen + SS_TREE_CURRENT_LEN + 1, pack, packlen) ;
+	
+	auto_string_from(dst,baselen,SS_TREE_CURRENT,"/",pack) ;
 	newlen = baselen + SS_TREE_CURRENT_LEN + 1 + packlen ;
-	dst[newlen] = 0 ;
 	
 	r = scan_mode(dst,S_IFDIR) ;
 	if (!r){
@@ -65,26 +57,11 @@ int tree_switch_current(char const *base, char const *treename)
 	if(r == -1) return 0 ;
 	
 	char current[newlen + 1 + SS_TREE_CURRENT_LEN + 1] ;
-	memcpy(current,dst,newlen) ;
-	current[newlen] = '/' ;
-	memcpy(current + newlen + 1, SS_TREE_CURRENT, SS_TREE_CURRENT_LEN) ;
-	current[newlen + 1 + SS_TREE_CURRENT_LEN] = 0 ;
-	 
-	memcpy(dst + baselen,SS_SYSTEM,SS_SYSTEM_LEN) ;
-	memcpy(dst + baselen + SS_SYSTEM_LEN,"/",1) ;
-	memcpy(dst + baselen + SS_SYSTEM_LEN + 1,treename,treelen) ;
-	dst[baselen + SS_SYSTEM_LEN + 1 + treelen] = 0 ;
-
-	if(lstat(current,&st)<0) r = 0 ;
-	if(!(S_ISLNK(st.st_mode)))
-	{
-		r = -1 ;
-	}else r = 1 ;
-	if(r>0){
-		r = unlink(current) ;
-		if (r<0) return 0 ;
-	}
-	if (symlink(dst, current) < 0) return 0 ;
 	
+	auto_strings(current,dst,"/",SS_TREE_CURRENT) ;
+	auto_string_from(dst,baselen,SS_SYSTEM,"/",treename) ;
+
+	if (!atomic_symlink(dst, current,"tree_switch_current")) return 0 ;
+
 	return 1 ;
 }
