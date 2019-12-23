@@ -424,7 +424,7 @@ void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid
 			log_dieusys(LOG_EXIT_SYS,"wait for: ",newargv[0]) ;
 		/** we don't want to die here, we try we can do to stop correctly
 		 * service list, in any case we want to unsupervise */
-		if (wstat) log_dieusys(LOG_EXIT_SYS,"stop services") ;
+		if (wstat) log_warnusys("stop services") ;
 	}	
 	
 	if (db_find_compiled_state(livetree.s,treename) >=0)
@@ -476,10 +476,10 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	uid_t owner ;
 	
 	size_t auidn = 0 ;
-	uid_t auids[256] ;
+	uid_t auids[256] = { 0 } ;
 	
 	size_t duidn = 0 ;
-	uid_t duids[256] ;
+	uid_t duids[256] = { 0 } ;
 		
 	char const *tree = NULL ;
 	
