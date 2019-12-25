@@ -16,6 +16,7 @@
 #include <locale.h>
 #include <langinfo.h>
 #include <sys/types.h>
+#include <sys/unistd.h>
 #include <wchar.h>
 #include <unistd.h>
 //#include <stdio.h>
