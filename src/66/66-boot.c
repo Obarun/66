@@ -202,7 +202,7 @@ static inline void run_cmdline(char const *const *newargv, char const *const *en
 {
 	pid_t pid ;
 	int wstat ;
-	pid = child_spawn0(newargv[0],newargv,envp) ; ;
+	pid = child_spawn0(newargv[0],newargv,envp) ;
 	if (waitpid_nointr(pid,&wstat, 0) < 0)
 		sulogin("wait for: ",newargv[0]) ;
 	if (wstat) sulogin(msg,arg) ;
