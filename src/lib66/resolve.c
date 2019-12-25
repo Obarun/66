@@ -117,7 +117,7 @@ int ss_resolve_src_path(stralloc *sasrc,char const *sv, ssexec_t *info)
 {
 	int r ;
 	char const *src = 0 ;
-	int found = 0 ;
+	int found = 0, err = -1 ;
 	stralloc home = STRALLOC_ZERO ;
 	if (!info->owner) src = SS_SERVICE_ADMDIR ;
 	else
@@ -130,27 +130,27 @@ int ss_resolve_src_path(stralloc *sasrc,char const *sv, ssexec_t *info)
 	}
 	
 	r = ss_resolve_src(sasrc,sv,src,&found) ;
-	if (r < 0){ log_warnusys("parse source directory: ",src) ; goto err ; }
+	if (r == -1){ log_warnusys("parse source directory: ",src) ; goto err ; }
 	if (!r)
 	{
 		found = 0 ;
 		src = SS_SERVICE_ADMDIR ;
 		r = ss_resolve_src(sasrc,sv,src,&found) ;
-		if (r < 0) { log_warnusys("parse source directory: ",src) ; goto err ; }
+		if (r == -1) { log_warnusys("parse source directory: ",src) ; goto err ; }
 		if (!r)
 		{
 			found = 0 ;
 			src = SS_SERVICE_SYSDIR ;
 			r = ss_resolve_src(sasrc,sv,src,&found) ;
-			if (r < 0) { log_warnusys("parse source directory: ",src) ; goto err ; }
-			if (!r) { log_warn("unknown service: ",sv) ; goto err ; }
+			if (r == -1) { log_warnusys("parse source directory: ",src) ; goto err ; }
+			if (!r) { log_warnu("find service: ",sv) ; err = 0 ; goto err ; }
 		}
 	}
 	stralloc_free(&home) ;
 	return 1 ;
 	err:
 		stralloc_free(&home) ;
-		return 0 ;
+		return err ;
 }
 
 int ss_resolve_service_isdir(char const *dir, char const *name)
