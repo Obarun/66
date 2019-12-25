@@ -98,6 +98,7 @@ void freed_parser(void)
 //	genalloc_free(unsigned int,&gadeps) ;
 	for (unsigned int i = 0 ; i < genalloc_len(sv_alltype,&gasv) ; i++)
 		sv_alltype_free(&genalloc_s(sv_alltype,&gasv)[i]) ;
+	genalloc_free(sv_alltype,&gasv) ;
 }
 /**********************************
  *		Mill utilities
