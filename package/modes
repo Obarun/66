@@ -18,6 +18,7 @@
 66-shutdown		    0755
 66-shutdownd	    0755
 66-hpr			    0755
+66-update		    0755
 66-umountall    	0755
 66-echo 			0755
 halt    			0755

@@ -24,7 +24,7 @@ src/66/66-hpr.o src/66/66-hpr.lo: src/66/66-hpr.c src/include/66/config.h src/in
 src/66/66-info.o src/66/66-info.lo: src/66/66-info.c
 src/66/66-init.o src/66/66-init.lo: src/66/66-init.c src/include/66/ssexec.h
 src/66/66-inservice.o src/66/66-inservice.lo: src/66/66-inservice.c src/include/66/constants.h src/include/66/enum.h src/include/66/environ.h src/include/66/info.h src/include/66/resolve.h src/include/66/tree.h src/include/66/utils.h
-src/66/66-intree.o src/66/66-intree.lo: src/66/66-intree.c src/include/66/constants.h src/include/66/enum.h src/include/66/info.h src/include/66/resolve.h src/include/66/tree.h src/include/66/utils.h
+src/66/66-intree.o src/66/66-intree.lo: src/66/66-intree.c src/include/66/backup.h src/include/66/constants.h src/include/66/enum.h src/include/66/info.h src/include/66/resolve.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-parser.o src/66/66-parser.lo: src/66/66-parser.c src/include/66/constants.h src/include/66/parser.h src/include/66/utils.h
 src/66/66-scanctl.o src/66/66-scanctl.lo: src/66/66-scanctl.c src/include/66/utils.h
 src/66/66-scandir.o src/66/66-scandir.lo: src/66/66-scandir.c src/include/66/config.h src/include/66/constants.h src/include/66/environ.h src/include/66/utils.h
@@ -34,6 +34,7 @@ src/66/66-start.o src/66/66-start.lo: src/66/66-start.c src/include/66/ssexec.h
 src/66/66-stop.o src/66/66-stop.lo: src/66/66-stop.c src/include/66/ssexec.h
 src/66/66-svctl.o src/66/66-svctl.lo: src/66/66-svctl.c src/include/66/ssexec.h
 src/66/66-tree.o src/66/66-tree.lo: src/66/66-tree.c src/include/66/config.h src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/resolve.h src/include/66/state.h src/include/66/tree.h src/include/66/utils.h
+src/66/66-update.o src/66/66-update.lo: src/66/66-update.c src/include/66/backup.h src/include/66/constants.h src/include/66/db.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
 src/extra-tools/66-echo.o src/extra-tools/66-echo.lo: src/extra-tools/66-echo.c
 src/extra-tools/66-umountall.o src/extra-tools/66-umountall.lo: src/extra-tools/66-umountall.c
 src/lib66/backup_cmd_switcher.o src/lib66/backup_cmd_switcher.lo: src/lib66/backup_cmd_switcher.c src/include/66/constants.h src/include/66/enum.h src/include/66/ssexec.h src/include/66/utils.h
@@ -70,6 +71,7 @@ src/lib66/set_livetree.o src/lib66/set_livetree.lo: src/lib66/set_livetree.c src
 src/lib66/set_ownerhome.o src/lib66/set_ownerhome.lo: src/lib66/set_ownerhome.c src/include/66/config.h src/include/66/utils.h
 src/lib66/set_ownersysdir.o src/lib66/set_ownersysdir.lo: src/lib66/set_ownersysdir.c src/include/66/config.h src/include/66/utils.h
 src/lib66/ss_info_utils.o src/lib66/ss_info_utils.lo: src/lib66/ss_info_utils.c src/include/66/info.h src/include/66/resolve.h
+src/lib66/ssexec_backup.o src/lib66/ssexec_backup.lo: src/lib66/ssexec_backup.c src/include/66/ssexec.h
 src/lib66/ssexec_dbctl.o src/lib66/ssexec_dbctl.lo: src/lib66/ssexec_dbctl.c src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/state.h src/include/66/utils.h
 src/lib66/ssexec_disable.o src/lib66/ssexec_disable.lo: src/lib66/ssexec_disable.c src/include/66/constants.h src/include/66/db.h src/include/66/resolve.h src/include/66/state.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
 src/lib66/ssexec_enable.o src/lib66/ssexec_enable.lo: src/lib66/ssexec_enable.c src/include/66/constants.h src/include/66/db.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
@@ -93,6 +95,7 @@ src/lib66/tree_copy.o src/lib66/tree_copy.lo: src/lib66/tree_copy.c src/include/
 src/lib66/tree_copy_tmp.o src/lib66/tree_copy_tmp.lo: src/lib66/tree_copy_tmp.c src/include/66/constants.h src/include/66/enum.h src/include/66/ssexec.h src/include/66/tree.h src/include/66/utils.h
 src/lib66/tree_find_current.o src/lib66/tree_find_current.lo: src/lib66/tree_find_current.c src/include/66/constants.h src/include/66/utils.h
 src/lib66/tree_get_permissions.o src/lib66/tree_get_permissions.lo: src/lib66/tree_get_permissions.c src/include/66/constants.h src/include/66/utils.h
+src/lib66/tree_is_current.o src/lib66/tree_is_current.lo: src/lib66/tree_is_current.c src/include/66/constants.h src/include/66/utils.h
 src/lib66/tree_sethome.o src/lib66/tree_sethome.lo: src/lib66/tree_sethome.c src/include/66/constants.h src/include/66/tree.h
 src/lib66/tree_setname.o src/lib66/tree_setname.lo: src/lib66/tree_setname.c src/include/66/tree.h
 src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree_switch_current.c src/include/66/config.h src/include/66/constants.h src/include/66/tree.h src/include/66/utils.h
@@ -137,6 +140,8 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-svctl: src/66/66-svctl.o ${LIB66} -ls6 -loblibs -lskarnet
 66-tree: EXTRA_LIBS := ${SPAWN_LIB}
 66-tree: src/66/66-tree.o ${LIB66} -ls6rc -ls6 -loblibs -lskarnet
+66-update: EXTRA_LIBS :=
+66-update: src/66/66-update.o ${LIB66} -ls6rc -ls6 -loblibs -lskarnet
 66-echo: EXTRA_LIBS :=
 66-echo: src/extra-tools/66-echo.o -loblibs -lskarnet 
 66-umountall: EXTRA_LIBS :=
