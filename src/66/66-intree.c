@@ -37,6 +37,7 @@
 #include <66/tree.h>
 #include <66/enum.h>
 #include <66/resolve.h>
+#include <66/backup.h>
 
 static unsigned int REVERSE = 0 ;
 static unsigned int NOFIELD = 1 ;
@@ -55,6 +56,8 @@ static void info_display_name(char const *field,char const *treename) ;
 static void info_display_init(char const *field,char const *treename) ;
 static void info_display_enabled(char const *field,char const *treename) ;
 static void info_display_current(char const *field,char const *treename) ;
+static void info_display_allow(char const *field,char const *treename) ;
+static void info_display_symlink(char const *field,char const *treename) ;
 static void info_display_contents(char const *field,char const *treename) ;
 ss_resolve_graph_style *STYLE = &graph_default ;
 
@@ -64,11 +67,13 @@ info_opts_map_t const opts_tree_table[] =
 	{ .str = "init", .func = &info_display_init, .id = 1 },
 	{ .str = "enabled", .func = &info_display_enabled, .id = 2 },
 	{ .str = "current", .func = &info_display_current, .id = 3 },
-	{ .str = "contents", .func = &info_display_contents, .id = 4 },
+	{ .str = "allowed", .func = &info_display_allow, .id = 4 },
+	{ .str = "symlinks", .func = &info_display_symlink, .id = 5 },
+	{ .str = "contents", .func = &info_display_contents, .id = 6 },
 	{ .str = 0, .func = 0, .id = -1 }
 } ;
 
-#define MAXOPTS 6
+#define MAXOPTS 8
 #define checkopts(n) if (n >= MAXOPTS) log_die(100, "too many options")
 #define DELIM ','
 
@@ -96,6 +101,8 @@ static inline void info_help (void)
 "	init: displays a boolean value of the initialization state\n"
 "	enabled: displays a boolean value of the enable state\n"
 "	current: displays a boolean value of the current state\n"
+"	allowed: displays a list of allowed user to use the tree\n"
+"	symlink: displays the target of tree's symlinks\n"
 "	contents: displays the contents of the tree\n"
 "\n"
 ;
@@ -179,7 +186,7 @@ static void info_display_current(char const *field,char const *treename)
 	
 	if (tree_find_current(&sacurr,base.s,OWNER))
 	{
-		char name[sacurr.len] ;
+		char name[sacurr.len + 1] ;//be paranoid +1
 		if (!basename(name,sacurr.s)) log_dieu(LOG_EXIT_SYS,"basename of: ",sacurr.s) ;
 		current = obstr_equal(treename,name) ;
 	}
@@ -229,6 +236,74 @@ static void info_get_graph_src(ss_resolve_graph_t *graph,char const *src,unsigne
 	
 	stralloc_free(&sa) ;
 	ss_resolve_free(&res) ;
+}
+
+static void info_display_allow(char const *field, char const *treename)
+{
+	if (NOFIELD) info_display_field_name(field) ;
+	size_t treenamelen = strlen(treename) , pos ;
+	stralloc sa = STRALLOC_ZERO ;
+	stralloc salist = STRALLOC_ZERO ;
+	char tmp[src.len + treenamelen + SS_RULES_LEN + 1 ] ;
+	// force to close the string
+	auto_strings(tmp,src.s) ;
+	auto_string_from(tmp,src.len,treename,SS_RULES) ;
+	
+	if (!sastr_dir_get(&sa,tmp,"",S_IFREG))
+		log_dieusys(LOG_EXIT_SYS,"get permissions of tree at: ",tmp) ;
+	
+	for (pos = 0 ;pos < sa.len; pos += strlen(sa.s + pos) + 1)
+	{
+		char *suid = sa.s + pos ;
+		uid_t uid = 0 ;
+		if (!uid0_scan(suid, &uid))
+			log_dieusys(LOG_EXIT_SYS,"get uid of: ",suid) ;
+		if (pos) 
+			if (!stralloc_cats(&salist," ")) log_die_nomem("stralloc") ;
+		if (!get_namebyuid(uid,&salist))
+			log_dieusys(LOG_EXIT_SYS,"get name of uid: ",suid) ;
+	}
+	if (!stralloc_0(&salist)) log_die_nomem("stralloc") ;
+	if (!sastr_rebuild_in_oneline(&salist)) log_dieu(LOG_EXIT_SYS,"rebuild list: ",salist.s) ;
+	if (!stralloc_0(&salist)) log_die_nomem("stralloc") ;
+	info_display_list(field,&salist) ;
+	
+	stralloc_free(&sa) ;
+	stralloc_free(&salist) ;
+}
+
+static void info_display_symlink(char const *field, char const *treename)
+{
+	if (NOFIELD) info_display_field_name(field) ;
+	ssexec_t info = SSEXEC_ZERO ;
+	if (!auto_stra(&info.treename,treename)) log_die_nomem("stralloc") ;
+	if (!auto_stra(&info.base,base.s)) log_die_nomem("stralloc") ;
+	int db, svc ;
+	size_t typelen ;
+	char type[UINT_FMT] ;
+	typelen = uint_fmt(type, BUNDLE) ;
+	type[typelen] = 0 ;
+	
+	char cmd[typelen + 6 + 1] ;
+	
+	auto_strings(cmd,"-t",type," -b") ;
+	db = backup_cmd_switcher(VERBOSITY,cmd,&info) ;
+	if (db < 0) log_dieusys(LOG_EXIT_SYS,"find realpath of symlink for db of tree: ",info.treename.s) ;
+	
+	typelen = uint_fmt(type, CLASSIC) ;
+	type[typelen] = 0 ;
+		
+	auto_strings(cmd,"-t",type," -b") ;
+	svc = backup_cmd_switcher(VERBOSITY,cmd,&info) ;
+	if (svc < 0) log_dieusys(LOG_EXIT_SYS,"find realpath of symlink for svc of tree: ",info.treename.s) ;
+
+	if (!bprintf(buffer_1,"%s%s%s%s%s%s%s%s", "svc->",!svc ? log_color->valid : log_color->warning , !svc ? "source" : "backup",log_color->off, " db->", !db ? log_color->valid : log_color->warning, !db ? "source" : "backup", log_color->off)) 
+		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+	
+	if (buffer_putsflush(buffer_1,"\n") == -1) 
+		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+	
+	ssexec_free(&info) ;	
 }
 
 static void info_display_contents(char const *field, char const *treename)
@@ -372,6 +447,8 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		"Initialized",
 		"Enabled",
 		"Current",
+		"Allowed",
+		"Symlinks",
 		"Contents" } ;
 	
 	
@@ -478,7 +555,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		}
 	}
 
-	if (buffer_putsflush(buffer_1,"\n") == -1) 
+	if (buffer_flush(buffer_1) == -1) 
 		log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 	
 		
