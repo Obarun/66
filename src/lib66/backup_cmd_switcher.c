@@ -25,6 +25,7 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/unix-transactional.h>
 
 #include <66/utils.h>
 #include <66/constants.h>
@@ -165,20 +166,15 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 		memcpy(dstback + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen, pback,pbacklen) ;
 		dstback[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen + pbacklen] = 0 ;
 		
-		if (what >= 0)
-		{
-			if (unlink(sym) < 0)
-				log_warnusys_return(LOG_EXIT_LESSONE,"remove symlink: ", sym) ;
-		}
 		if (what)
 		{
-			if (symlink(dstback,sym) < 0)
+			if (!atomic_symlink(dstback, sym,"backup_switcher"))
 				log_warnusys_return(LOG_EXIT_LESSONE,"symlink: ", dstback) ;
 		}
 		if (!what)
 		{
-			if (symlink(dstsrc,sym) < 0)
-				log_warnusys_return(LOG_EXIT_LESSONE,"symlink: ", psrc) ;
+			if (!atomic_symlink(dstsrc, sym,"backup_switcher"))
+				log_warnusys_return(LOG_EXIT_LESSONE,"symlink: ", dstsrc) ;
 		}	
 	}
 	
