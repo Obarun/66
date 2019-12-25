@@ -71,7 +71,6 @@ src/lib66/set_livetree.o src/lib66/set_livetree.lo: src/lib66/set_livetree.c src
 src/lib66/set_ownerhome.o src/lib66/set_ownerhome.lo: src/lib66/set_ownerhome.c src/include/66/config.h src/include/66/utils.h
 src/lib66/set_ownersysdir.o src/lib66/set_ownersysdir.lo: src/lib66/set_ownersysdir.c src/include/66/config.h src/include/66/utils.h
 src/lib66/ss_info_utils.o src/lib66/ss_info_utils.lo: src/lib66/ss_info_utils.c src/include/66/info.h src/include/66/resolve.h
-src/lib66/ssexec_backup.o src/lib66/ssexec_backup.lo: src/lib66/ssexec_backup.c src/include/66/ssexec.h
 src/lib66/ssexec_dbctl.o src/lib66/ssexec_dbctl.lo: src/lib66/ssexec_dbctl.c src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/state.h src/include/66/utils.h
 src/lib66/ssexec_disable.o src/lib66/ssexec_disable.lo: src/lib66/ssexec_disable.c src/include/66/constants.h src/include/66/db.h src/include/66/resolve.h src/include/66/state.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
 src/lib66/ssexec_enable.o src/lib66/ssexec_enable.lo: src/lib66/ssexec_enable.c src/include/66/constants.h src/include/66/db.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
@@ -95,7 +94,6 @@ src/lib66/tree_copy.o src/lib66/tree_copy.lo: src/lib66/tree_copy.c src/include/
 src/lib66/tree_copy_tmp.o src/lib66/tree_copy_tmp.lo: src/lib66/tree_copy_tmp.c src/include/66/constants.h src/include/66/enum.h src/include/66/ssexec.h src/include/66/tree.h src/include/66/utils.h
 src/lib66/tree_find_current.o src/lib66/tree_find_current.lo: src/lib66/tree_find_current.c src/include/66/constants.h src/include/66/utils.h
 src/lib66/tree_get_permissions.o src/lib66/tree_get_permissions.lo: src/lib66/tree_get_permissions.c src/include/66/constants.h src/include/66/utils.h
-src/lib66/tree_is_current.o src/lib66/tree_is_current.lo: src/lib66/tree_is_current.c src/include/66/constants.h src/include/66/utils.h
 src/lib66/tree_sethome.o src/lib66/tree_sethome.lo: src/lib66/tree_sethome.c src/include/66/constants.h src/include/66/tree.h
 src/lib66/tree_setname.o src/lib66/tree_setname.lo: src/lib66/tree_setname.c src/include/66/tree.h
 src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree_switch_current.c src/include/66/config.h src/include/66/constants.h src/include/66/tree.h src/include/66/utils.h
