@@ -51,10 +51,12 @@ static void cleanup(void)
 
 static void check_identifier(char const *name)
 {
-	if (!memcmp(name,SS_MASTER+1,6)) log_die(LOG_EXIT_USER,"service: ",name,": starts with reserved prefix") ;
+	int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
+	if (logname > 0) log_die(LOG_EXIT_USER,"service: ",name,": ends with reserved suffix -log") ;
+	if (!memcmp(name,SS_MASTER+1,6)) log_die(LOG_EXIT_USER,"service: ",name,": starts with reserved prefix Master") ;
 }
 
-static void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv)
+void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORCE)
 {
 	int r ;
 	uint8_t exist = 0 ;
@@ -80,6 +82,35 @@ static void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv)
 	stralloc_free(&sasv) ;
 	stralloc_free(&parsed_list) ;
 	stralloc_free(&opts_deps_list) ;
+}
+
+void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun,char const *workdir, genalloc *gasv,ssexec_t *info,uint8_t FORCE,uint8_t CONF)
+{
+	int r ;
+
+	for (unsigned int i = 0; i < genalloc_len(sv_alltype,gasv); i++)
+	{
+		sv_alltype_ref sv = &genalloc_s(sv_alltype,gasv)[i] ;
+		char *name = keep.s + sv->cname.name ;
+		r = write_services(info,sv, workdir,FORCE,CONF) ;
+		if (!r)
+			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write service: ",name) ;
+
+		if (r > 1) continue ; //service already added
+
+		log_trace("write resolve file of: ",name) ;
+		if (!ss_resolve_setnwrite(sv,info,workdir))
+			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write revolve file for: ",name) ;
+
+		log_trace("Service written successfully: ", name) ;
+		if (sastr_cmp(tostart,name) == -1)
+		{
+			if (sv->cname.itype == CLASSIC) (*nclassic)++ ;
+			else (*nlongrun)++ ;
+			if (!sastr_add_string(tostart,name))
+				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"stralloc") ;
+		}
+	}
 }
 
 int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
@@ -126,37 +157,15 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	for(;*argv;argv++)
 	{
 		check_identifier(*argv) ;
-		if (!ss_resolve_src_path(&sasrc,*argv,info)) log_dieu(LOG_EXIT_SYS,"resolve source path of: ",*argv) ;
+		if (ss_resolve_src_path(&sasrc,*argv,info) < 1) log_dieu(LOG_EXIT_SYS,"resolve source path of: ",*argv) ;
 	}
 
-	start_parser(&sasrc,info,&nbsv) ;
+	start_parser(&sasrc,info,&nbsv,FORCE) ;
 	
 	if (!tree_copy(&workdir,info->tree.s,info->treename.s)) log_dieusys(LOG_EXIT_SYS,"create tmp working directory") ;
-
-	for (unsigned int i = 0; i < genalloc_len(sv_alltype,&gasv); i++)
-	{
-		sv_alltype_ref sv = &genalloc_s(sv_alltype,&gasv)[i] ;
-		char *name = keep.s + sv->cname.name ;
-		r = write_services(info,sv, workdir.s,FORCE,CONF) ;
-		if (!r)
-			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write service: ",name) ;
-		
-		if (r > 1) continue ; //service already added
-		
-		log_trace("write resolve file of: ",name) ;
-		if (!ss_resolve_setnwrite(sv,info,workdir.s))
-			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write revolve file for: ",name) ;
-		
-		log_trace("Service written successfully: ", name) ;
-		if (sastr_cmp(&tostart,name) == -1)
-		{
-			if (sv->cname.itype == CLASSIC) nclassic++ ;
-			else nlongrun++ ;
-			if (!sastr_add_string(&tostart,name))
-				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"stralloc") ;
-		}
-	}
 	
+	start_write(&tostart,&nclassic,&nlongrun,workdir.s,&gasv,info,FORCE,CONF) ;
+
 	if (nclassic)
 	{
 		if (!svc_switch_to(info,SS_SWBACK))

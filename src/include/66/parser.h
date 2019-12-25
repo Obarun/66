@@ -255,6 +255,7 @@ extern void keynocheck_free(keynocheck *nocheck) ;
 extern void section_free(section_t *sec) ;
 extern void freed_parser(void) ;
 /** enable phase */
+extern void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORCE) ;
 extern int parser(sv_alltype *service,stralloc *src,char const *svname) ;
 extern int parse_service_check_enabled(ssexec_t *info, char const *svname,uint8_t force,uint8_t *exist) ;
 extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, stralloc *opts_deps_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t *exist) ;
@@ -273,6 +274,7 @@ extern int keep_logger(sv_execlog *log,keynocheck *nocheck) ;
 /** helper */
 extern int add_pipe(sv_alltype *sv, stralloc *sa) ;
 /** write */
+extern void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun,char const *workdir, genalloc *gasv,ssexec_t *info,uint8_t FORCE,uint8_t CONF) ;
 extern int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, uint8_t force,uint8_t conf) ;
 extern int write_classic(sv_alltype *sv, char const *dst, uint8_t force, uint8_t conf) ;
 extern int write_longrun(sv_alltype *sv,char const *dst, uint8_t force, uint8_t conf) ;
