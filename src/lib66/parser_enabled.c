@@ -51,7 +51,7 @@ int parse_service_check_enabled(ssexec_t *info, char const *svname,uint8_t force
 		{
 			(*exist) = 1 ;
 			if (!force) { 
-				log_info("Ignoring: ",svname," service: already enabled") ;
+				log_warn("Ignoring: ",svname," service: already enabled") ;
 				ret = 2 ;
 				goto freed ;
 			}
@@ -94,6 +94,7 @@ int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *se
 
 int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force)
 {
+	int r ;
 	uint8_t exist = 0 ;
 	char *dname = 0 ;
 	stralloc newsv = STRALLOC_ZERO ;
@@ -108,11 +109,9 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_
 				log_trace("Service : ",sv, " depends on : ",deps.s+id) ;
 			}else log_trace("Bundle : ",sv, " contents : ",deps.s+id," as service") ;
 			dname = deps.s + id ;
-			if (!ss_resolve_src_path(&newsv,dname,info))
-			{
-				log_warnu("resolve source path of: ",dname) ;
-				goto err ;
-			}
+			r = ss_resolve_src_path(&newsv,dname,info) ;
+			if (r < 1) goto err ;//don't warn here, the ss_revolve_src_path already warn user
+
 			if (!parse_service_before(info,parsed_list,opts_deps_list,newsv.s,nbsv,sasv,force,&exist)) goto err ;
 		}
 	}
@@ -126,6 +125,7 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_
 
 int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force)
 {
+	int r ;
 	stralloc newsv = STRALLOC_ZERO ;
 	size_t pos = 0 , baselen = strlen(info->base.s) + SS_SYSTEM_LEN ;
 	uint8_t exist = 0, found = 0 ;
@@ -169,13 +169,19 @@ int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_
 				}
 				if (!found)
 				{
-					if (!ss_resolve_src_path(&newsv,optname,info))
-					{
-						log_warnu_return(LOG_EXIT_ZERO,"resolve source path of: ",optname) ;
-						goto err ;
+					// -1 mean system error. If the service doesn't exist it return 0
+					r = ss_resolve_src_path(&newsv,optname,info) ;
+					if (r == -1) {
+						goto err ; //don't warn here, the ss_revolve_src_path already warn user
 					}
-					if (!parse_service_before(info,parsed_list,opts_deps_list,newsv.s,nbsv,sasv,force,&exist))
-						goto err ;
+					else if (!r) {
+						log_warn("optional service dependency: ",optname," was not found") ;
+					}
+					// be paranoid with the else if
+					else if (r == 1) {
+						if (!parse_service_before(info,parsed_list,opts_deps_list,newsv.s,nbsv,sasv,force,&exist))
+							goto err ;
+					}
 				}
 			}
 		}
