@@ -75,8 +75,9 @@ int db_switch_to(ssexec_t *info, char const *const *envp,unsigned int where)
 			if (!backup_realpath_sym(&db,info,LONGRUN))
 			{
 				log_warnusys("find path of db: ",db.s) ;
+				goto err ;
 			}
-			log_trace("update ",info->livetree.s," to ",db.s) ;
+			log_trace("update ",info->livetree.s,"/",info->treename.s," to ",db.s) ;
 			if (!db_update(db.s, info,envp))
 			{	
 				log_trace("rollback db service: ", info->treename.s) ;
@@ -110,7 +111,7 @@ int db_switch_to(ssexec_t *info, char const *const *envp,unsigned int where)
 				log_warnusys("find path of db: ",db.s) ;
 				goto err ;
 			}
-			log_trace("update ",info->livetree.s," to ",db.s) ;
+			log_trace("update ",info->livetree.s,"/",info->treename.s," to ",db.s) ;
 			if (!db_update(db.s, info,envp))
 			{	
 				log_trace("rollback db: ", info->treename.s) ;
