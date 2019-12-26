@@ -127,7 +127,8 @@ int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_
 {
 	int r ;
 	stralloc newsv = STRALLOC_ZERO ;
-
+	ss_resolve_t res = RESOLVE_ZERO ;
+	
 	size_t pos = 0 , baselen = strlen(info->base.s) + SS_SYSTEM_LEN ;
 	uint8_t exist = 0, found = 0, ext = 0 ;
 	char *optname = 0 ;
@@ -171,9 +172,13 @@ int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_
 					// already added on a tree
 					if (ss_resolve_check(tmp,optname))
 					{
-						found = 1 ;
-						log_trace(ext ? "external" : "optional"," service dependency: ",optname," is already enabled at tree: ",btmp,"/",tree) ;
-						break ;
+						if (!ss_resolve_read(&res,tmp,optname)) log_warnusys_return(LOG_EXIT_ZERO,"read resolve file of: ",optname) ;
+						if (res.disen)
+						{
+							found = 1 ;
+							log_trace(ext ? "external" : "optional"," service dependency: ",optname," is already enabled at tree: ",btmp,"/",tree) ;
+							break ;
+						}
 					}
 				}
 				if (!found)
@@ -199,6 +204,7 @@ int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_
 	}
 
 	stralloc_free(&newsv) ;
+	ss_resolve_free(&res) ;
 	return 1 ;
 	err:
 		stralloc_free(&newsv) ;
