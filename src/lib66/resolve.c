@@ -362,6 +362,7 @@ int ss_resolve_pack(stralloc *sa, ss_resolve_t *res)
 	!ss_resolve_add_uint32(sa,res->dstlog) ||
 	!ss_resolve_add_uint32(sa,res->deps) ||
 	!ss_resolve_add_uint32(sa,res->optsdeps) ||
+	!ss_resolve_add_uint32(sa,res->extdeps) ||
 	!ss_resolve_add_uint32(sa,res->src) ||
 	!ss_resolve_add_uint32(sa,res->srconf) ||
 	!ss_resolve_add_uint32(sa,res->live) ||
@@ -374,6 +375,7 @@ int ss_resolve_pack(stralloc *sa, ss_resolve_t *res)
 	!ss_resolve_add_uint32(sa,res->type) ||
 	!ss_resolve_add_uint32(sa,res->ndeps) ||
 	!ss_resolve_add_uint32(sa,res->noptsdeps) ||
+	!ss_resolve_add_uint32(sa,res->nextdeps) ||
 	!ss_resolve_add_uint32(sa,res->down) || 
 	!ss_resolve_add_uint32(sa,res->disen)) return 0 ;
 	
@@ -444,6 +446,8 @@ int ss_resolve_read(ss_resolve_t *res, char const *src, char const *name)
 	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->optsdeps) ;
 	global += 4 ;
+	uint32_unpack_big(sa.s + global,&res->extdeps) ;
+	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->src) ;
 	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->srconf) ;
@@ -469,6 +473,8 @@ int ss_resolve_read(ss_resolve_t *res, char const *src, char const *name)
 	uint32_unpack_big(sa.s + global,&res->ndeps) ;
 	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->noptsdeps) ;
+	global += 4 ;
+	uint32_unpack_big(sa.s + global,&res->nextdeps) ;
 	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->down) ;
 	global += 4 ;
@@ -582,6 +588,7 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	stralloc destlog = STRALLOC_ZERO ;
 	stralloc ndeps = STRALLOC_ZERO ;
 	stralloc opt_deps = STRALLOC_ZERO ;
+	stralloc ext_deps = STRALLOC_ZERO ;
 
 	ss_state_t sta = STATE_ZERO ;
 	ss_resolve_t res = RESOLVE_ZERO ;
@@ -620,6 +627,7 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	res.type = services->cname.itype ;
 	res.ndeps = services->cname.nga ;
 	res.noptsdeps = services->cname.nopts ;
+	res.nextdeps = services->cname.next ;
 	if (services->flags[0])	res.down = 1 ;
 	res.disen = 1 ;
 
@@ -680,7 +688,18 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		if (!stralloc_0(&opt_deps)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		res.optsdeps = ss_resolve_add_string(&res,opt_deps.s) ;
 	}
-	
+	if (res.nextdeps)
+	{
+		size_t id = services->cname.idext, nid = res.nextdeps ;
+		for (;nid; id += strlen(deps.s + id) + 1, nid--)
+		{
+			if (!stralloc_catb(&ext_deps,deps.s + id,strlen(deps.s + id)) ||
+			!stralloc_catb(&ext_deps," ",1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		}
+		ext_deps.len-- ;
+		if (!stralloc_0(&ext_deps)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		res.extdeps = ss_resolve_add_string(&res,ext_deps.s) ;
+	}
 	if (services->opts[0])
 	{
 		memcpy(logname,name,namelen) ;
@@ -701,7 +720,7 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		if (!stralloc_catb(&ndeps," ",1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		if (!stralloc_cats(&ndeps,res.sa.s + res.logger)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		if (!stralloc_0(&ndeps)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-		res.deps = ss_resolve_add_string(&res,ndeps.s) ;	
+		res.deps = ss_resolve_add_string(&res,ndeps.s) ;
 		if (res.type == CLASSIC) res.ndeps = 1 ;
 		else if (res.type == LONGRUN) res.ndeps += 1 ;
 		// destination of the logger
@@ -739,6 +758,7 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	
 	ss_resolve_free(&res) ;
 	stralloc_free(&opt_deps) ;
+	stralloc_free(&ext_deps) ;
 	stralloc_free(&ndeps) ;
 	stralloc_free(&destlog) ;
 	return 1 ;
@@ -746,6 +766,7 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	err:
 		ss_resolve_free(&res) ;
 		stralloc_free(&opt_deps) ;
+		stralloc_free(&ext_deps) ;
 		stralloc_free(&ndeps) ;
 		stralloc_free(&destlog) ;
 		return 0 ;
@@ -776,6 +797,7 @@ int ss_resolve_copy(ss_resolve_t *dst,ss_resolve_t *res)
 	dst->dstlog = res->dstlog ;
 	dst->deps = res->deps ;
 	dst->optsdeps = res->optsdeps ;
+	dst->extdeps = res->extdeps ;
 	dst->src = res->src ;
 	dst->srconf = res->srconf ;
 	dst->live = res->live ;
@@ -788,6 +810,7 @@ int ss_resolve_copy(ss_resolve_t *dst,ss_resolve_t *res)
 	dst->type = res->type ;
 	dst->ndeps = res->ndeps ;
 	dst->noptsdeps = res->noptsdeps ;
+	dst->nextdeps = res->nextdeps ;
 	dst->down = res->down ;
 	dst->disen = res->disen ;
 	
