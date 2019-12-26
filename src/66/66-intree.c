@@ -24,6 +24,7 @@
 #include <oblibs/obgetopt.h>
 #include <oblibs/types.h>
 #include <oblibs/string.h>
+#include <oblibs/files.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
@@ -54,6 +55,7 @@ static wchar_t const field_suffix[] = L" :" ;
 static char fields[ENDOFKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
 static void info_display_name(char const *field,char const *treename) ;
 static void info_display_init(char const *field,char const *treename) ;
+static void info_display_order(char const *field,char const *treename) ;
 static void info_display_enabled(char const *field,char const *treename) ;
 static void info_display_current(char const *field,char const *treename) ;
 static void info_display_allow(char const *field,char const *treename) ;
@@ -66,14 +68,15 @@ info_opts_map_t const opts_tree_table[] =
 	{ .str = "name", .func = &info_display_name, .id = 0 },
 	{ .str = "init", .func = &info_display_init, .id = 1 },
 	{ .str = "enabled", .func = &info_display_enabled, .id = 2 },
-	{ .str = "current", .func = &info_display_current, .id = 3 },
-	{ .str = "allowed", .func = &info_display_allow, .id = 4 },
-	{ .str = "symlinks", .func = &info_display_symlink, .id = 5 },
-	{ .str = "contents", .func = &info_display_contents, .id = 6 },
+	{ .str = "start", .func = &info_display_order, .id = 3 },
+	{ .str = "current", .func = &info_display_current, .id = 4 },
+	{ .str = "allowed", .func = &info_display_allow, .id = 5 },
+	{ .str = "symlinks", .func = &info_display_symlink, .id = 6 },
+	{ .str = "contents", .func = &info_display_contents, .id = 7},
 	{ .str = 0, .func = 0, .id = -1 }
 } ;
 
-#define MAXOPTS 8
+#define MAXOPTS 9
 #define checkopts(n) if (n >= MAXOPTS) log_die(100, "too many options")
 #define DELIM ','
 
@@ -100,6 +103,7 @@ static inline void info_help (void)
 "	name: displays the name of the tree\n"
 "	init: displays a boolean value of the initialization state\n"
 "	enabled: displays a boolean value of the enable state\n"
+"	start: displays a list of tree started before\n"
 "	current: displays a boolean value of the current state\n"
 "	allowed: displays a list of allowed user to use the tree\n"
 "	symlink: displays the target of tree's symlinks\n"
@@ -211,6 +215,46 @@ static void info_display_enabled(char const *field,char const *treename)
 		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 }
 
+static void info_display_order(char const *field,char const *treename)
+{
+	int r ;
+	size_t pos = 0 ;
+	stralloc contents = STRALLOC_ZERO ;
+	stralloc tmp = STRALLOC_ZERO ;
+	if (NOFIELD) info_display_field_name(field) ;
+	int enabled = tree_cmd_state(VERBOSITY,"-s",treename) ;
+	
+	r = file_readputsa(&tmp,src.s,SS_STATE + 1) ;
+	if(!r) log_dieusys(LOG_EXIT_SYS,"open: ", src.s,SS_STATE) ;
+	
+	if (tmp.len && enabled == 1)
+	{
+		if (!sastr_rebuild_in_oneline(&tmp) ||
+		!sastr_clean_element(&tmp))
+			log_dieusys(LOG_EXIT_SYS,"rebuilt state list") ;
+		for (pos = 0 ;pos < tmp.len; pos += strlen(tmp.s + pos) + 1)
+		{
+			char *name = tmp.s + pos ;
+			if (obstr_equal(name,treename)) break ;
+			if (!sastr_add_string(&contents,name))
+				log_dieusys(LOG_EXIT_SYS,"rebuilt state list") ;
+		}
+	}
+	if (contents.len) {
+		 info_display_list(field,&contents) ;
+	}
+	else
+	{
+		if (!bprintf(buffer_1,"%s%s%s",log_color->warning,"None",log_color->off)) 
+			log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+	
+		if (buffer_putsflush(buffer_1,"\n") == -1) 
+			log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+	}
+	stralloc_free(&contents) ;
+	stralloc_free(&tmp) ;
+}
+
 static void info_get_graph_src(ss_resolve_graph_t *graph,char const *src,unsigned int reverse)
 {
 	
@@ -320,10 +364,6 @@ static void info_display_contents(char const *field, char const *treename)
 	memcpy(tmp + src.len + treenamelen,SS_SVDIRS,SS_SVDIRS_LEN) ;
 	tmp[src.len + treenamelen + SS_SVDIRS_LEN] = 0 ;
 	
-	/*if (!stralloc_cats(&src,treename) ||
-	!stralloc_cats(&src,SS_SVDIRS) ||
-	!stralloc_0(&src)) exitstralloc("display_contains") ;*/
-	
 	info_get_graph_src(&graph,tmp,0) ;
 	
 	if (NOFIELD) padding = info_display_field_name(field) ;
@@ -357,8 +397,6 @@ static void info_display_contents(char const *field, char const *treename)
 	}
 	else
 	{
-		//if (!bprintf(buffer_1,"%s"," ")) 
-			//log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 		if (REVERSE) 
 			if (!sastr_reverse(&salist))
 				log_dieusys(LOG_EXIT_SYS,"reverse dependencies list") ;
@@ -446,6 +484,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		"Name",
 		"Initialized",
 		"Enabled",
+		"Starts after",
 		"Current",
 		"Allowed",
 		"Symlinks",
