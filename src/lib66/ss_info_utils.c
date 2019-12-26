@@ -151,7 +151,7 @@ void info_display_list(char const *field, stralloc *list)
 		} 
 		else if (cols != padding)
 		{
-			if (buffer_puts(buffer_1,"  ") == -1) goto err ;
+			if (buffer_puts(buffer_1," ") == -1) goto err ;
 			cols += 2 ;
 		}
 		if (!bprintf(buffer_1,"%s",str)) goto err ;
