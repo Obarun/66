@@ -34,6 +34,7 @@ enum key_enum_e
 	CONTENTS ,
 	DEPENDS ,
 	OPTSDEPS ,
+	EXTDEPS ,
 	OPTIONS ,
 	NOTIFY ,
 	USER ,
@@ -57,32 +58,32 @@ enum key_enum_e
 	TIMESTP ,
 	ENVAL ,
 	//Service type
-	CLASSIC, // = 33
+	CLASSIC, // = 34
 	BUNDLE ,
 	LONGRUN ,
 	ONESHOT ,
 	//Key expected
-	LINE , // = 37
+	LINE , // = 38
 	BRACKET ,
 	UINT ,
 	SLASH ,
 	QUOTE ,
 	KEYVAL ,
 	//Options
-	LOGGER , // = 43
+	LOGGER , // = 44
 	PIPELINE ,
 	//Flags
-	DOWN , // = 45
+	DOWN , // = 46
 	NOSETSID ,
 	ENVIR ,
 	//Build
-	AUTO , // = 48
+	AUTO , // = 49
 	CUSTOM ,
 	//Mandatory
-	NEED , // = 50
+	NEED , // = 51
 	OPTS ,
 	//Time
-	TAI , // = 52
+	TAI , // = 53
 	ISO ,
 	NONE ,
 	ENDOFKEY
@@ -122,6 +123,7 @@ static key_description_t const main_section_list[] =
 	{ .name = "@description", .expected = QUOTE, .mandatory = OPTS },
 	{ .name = "@depends", .expected = BRACKET, .mandatory = OPTS },
 	{ .name = "@optsdepends", .expected = BRACKET, .mandatory = OPTS },
+	{ .name = "@extdepends", .expected = BRACKET, .mandatory = OPTS },
 	{ .name = "@contents", .expected = BRACKET, .mandatory = BUNDLE },
 	{ .name = "@options", .expected = BRACKET, .mandatory = OPTS },
 	{ .name = "@flags", .expected = BRACKET, .mandatory = OPTS },
@@ -168,7 +170,7 @@ static key_description_t const environment_section_list[] =
 	{ .name = 0 }
 } ;
 
-static int const total_list_el[6] = { 18, 5, 5, 12, 2, 0 } ;
+static int const total_list_el[6] = { 19, 5, 5, 12, 2, 0 } ;
 
 static key_all_t const total_list[] =
 {

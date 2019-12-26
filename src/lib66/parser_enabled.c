@@ -92,7 +92,7 @@ int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *se
 		return 0 ;
 }
 
-int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force)
+int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force)
 {
 	int r ;
 	uint8_t exist = 0 ;
@@ -112,7 +112,7 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_
 			r = ss_resolve_src_path(&newsv,dname,info) ;
 			if (r < 1) goto err ;//don't warn here, the ss_revolve_src_path already warn user
 
-			if (!parse_service_before(info,parsed_list,opts_deps_list,newsv.s,nbsv,sasv,force,&exist)) goto err ;
+			if (!parse_service_before(info,parsed_list,tree_list,newsv.s,nbsv,sasv,force,&exist)) goto err ;
 		}
 	}
 	else log_trace(sv,": haven't dependencies") ;
@@ -123,37 +123,46 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_
 		return 0 ;
 }
 
-int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force)
+int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force, uint8_t mandatory)
 {
 	int r ;
 	stralloc newsv = STRALLOC_ZERO ;
+
 	size_t pos = 0 , baselen = strlen(info->base.s) + SS_SYSTEM_LEN ;
-	uint8_t exist = 0, found = 0 ;
+	uint8_t exist = 0, found = 0, ext = 0 ;
 	char *optname = 0 ;
 	char btmp[baselen + 1] ;
 	auto_strings(btmp,info->base.s,SS_SYSTEM) ;
-
-	// only pass here for the first time
-	if (!opts_deps_list->len)
-	{
-		if (!sastr_dir_get(opts_deps_list, btmp,SS_BACKUP + 1, S_IFDIR)) log_warnusys_return(LOG_EXIT_ZERO,"get list of tree at: ",btmp) ;
+	
+	unsigned int idref = sv_before->cname.idopts ;
+	unsigned int nref = sv_before->cname.nopts ;
+	if (mandatory == EXTDEPS) {
+		idref = sv_before->cname.idext ;
+		nref = sv_before->cname.next ;
+		ext = 1 ;
 	}
-	if (sv_before->cname.nopts)
+	// only pass here for the first time
+	if (!tree_list->len)
+	{
+		if (!sastr_dir_get(tree_list, btmp,SS_BACKUP + 1, S_IFDIR)) log_warnusys_return(LOG_EXIT_ZERO,"get list of tree at: ",btmp) ;
+	}
+
+	if (nref)
 	{
 		// may have no tree yet
-		if (opts_deps_list->len)
+		if (tree_list->len)
 		{
-			size_t id = sv_before->cname.idopts, nid = sv_before->cname.nopts ;
+			size_t id = idref, nid = nref ;
 			for (;nid; id += strlen(deps.s + id) + 1, nid--)
 			{
 
 				newsv.len = 0 ;
 				optname = deps.s + id ;
 
-				for(pos = 0 ; pos < opts_deps_list->len ; pos += strlen(opts_deps_list->s + pos) +1 )
+				for(pos = 0 ; pos < tree_list->len ; pos += strlen(tree_list->s + pos) +1 )
 				{
 					found = 0 ;
-					char *tree = opts_deps_list->s + pos ;
+					char *tree = tree_list->s + pos ;
 					if (obstr_equal(tree,info->treename.s)) continue ; 
 					size_t treelen = strlen(tree) ;
 					char tmp[baselen + 1 + treelen + SS_SVDIRS_LEN + 1] ;
@@ -163,7 +172,7 @@ int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_
 					if (ss_resolve_check(tmp,optname))
 					{
 						found = 1 ;
-						log_trace("optional service dependency: ",optname," is already enabled at tree: ",btmp,"/",tree) ;
+						log_trace(ext ? "external" : "optional"," service dependency: ",optname," is already enabled at tree: ",btmp,"/",tree) ;
 						break ;
 					}
 				}
@@ -175,12 +184,14 @@ int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_
 						goto err ; //don't warn here, the ss_revolve_src_path already warn user
 					}
 					else if (!r) {
-						log_warn("optional service dependency: ",optname," was not found") ;
+						if (ext) goto err ;
 					}
 					// be paranoid with the else if
 					else if (r == 1) {
-						if (!parse_service_before(info,parsed_list,opts_deps_list,newsv.s,nbsv,sasv,force,&exist))
+						if (!parse_service_before(info,parsed_list,tree_list,newsv.s,nbsv,sasv,force,&exist))
 							goto err ;
+						// we only keep the first found on optsdepends
+						if (!ext) break ;
 					}
 				}
 			}
@@ -194,7 +205,7 @@ int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_
 		return 0 ;
 }
 
-int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t *exist)
+int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t *exist)
 {
 	
 	int r, insta ;
@@ -276,8 +287,9 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *opts_dep
 	
 	if ((sv_before.cname.itype > CLASSIC && force > 1) || !(*exist))
 	{
-		if (!parse_service_deps(info,parsed_list,opts_deps_list,&sv_before,sv,nbsv,sasv,force)) return 0 ;
-		if (!parse_service_opts_deps(info,parsed_list,opts_deps_list,&sv_before,sv,nbsv,sasv,force)) return 0 ;
+		if (!parse_service_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force)) return 0 ;
+		if (!parse_service_opts_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,OPTSDEPS)) return 0 ;
+		if (!parse_service_opts_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,EXTDEPS)) return 0 ;
 	}
 	freed:
 	return 1 ;

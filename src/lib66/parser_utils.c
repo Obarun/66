@@ -46,7 +46,6 @@
 
 stralloc keep = STRALLOC_ZERO ;//sv_alltype data
 stralloc deps = STRALLOC_ZERO ;//sv_name depends
-//genalloc gadeps = GENALLOC_ZERO ;//unsigned int, pos in deps
 genalloc gasv = GENALLOC_ZERO ;//sv_alltype general
 
 /**********************************
@@ -95,7 +94,6 @@ void freed_parser(void)
 {
 	stralloc_free(&keep) ;
 	stralloc_free(&deps) ;
-//	genalloc_free(unsigned int,&gadeps) ;
 	for (unsigned int i = 0 ; i < genalloc_len(sv_alltype,&gasv) ; i++)
 		sv_alltype_free(&genalloc_s(sv_alltype,&gasv)[i]) ;
 	genalloc_free(sv_alltype,&gasv) ;
@@ -644,6 +642,17 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			{
 				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 				service->cname.nopts++ ;
+			}
+			break ;
+		case EXTDEPS:
+			if ((service->cname.itype == CLASSIC) || (service->cname.itype == BUNDLE))
+				log_warn_return(LOG_EXIT_ZERO,"key: ",get_keybyid(nocheck->idkey),": is not valid for type ",get_keybyid(service->cname.itype)) ;
+			if (!get_clean_val(nocheck)) return 0 ;
+			service->cname.idext = deps.len ;
+			for (;pos < *chlen; pos += strlen(chval + pos)+1)
+			{
+				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+				service->cname.next++ ;
 			}
 			break ;
 		case CONTENTS:

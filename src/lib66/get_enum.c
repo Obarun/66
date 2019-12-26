@@ -32,6 +32,7 @@ char const *get_keybyid(key_enum_t key)
 			(key == CONTENTS ) ? "@contents" :
 			(key == DEPENDS ) ? "@depends" :
 			(key == OPTSDEPS ) ? "@optsdepends" :
+			(key == EXTDEPS ) ? "@extdepends" :
 			(key == OPTIONS ) ? "@options" :
 			(key == NOTIFY ) ? "@notify" :
 			(key == USER ) ? "@user" :

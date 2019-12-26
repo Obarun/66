@@ -108,6 +108,8 @@ struct sv_name_s
 	unsigned int nga ; //number or deps in genalloc gadeps->depends field
 	unsigned int idopts ;// pos in genalloc gadeps -> optional depends
 	unsigned int nopts ; // number of optinal depends in genalloc gadeps->optional depends
+	unsigned int idext ;// pos in genalloc gadeps -> external depends
+	unsigned int next ; // number of optinal depends in genalloc gadeps->external depends
 	unsigned int logname ; //pos in keep
 	unsigned int dstlog ; //pos in keep
 } ;
@@ -191,8 +193,10 @@ struct sv_alltype_s
 	0 ,\
 	0 ,\
 	0 ,\
-	0,\
-	0,\
+	0 ,\
+	0 ,\
+	0 ,\
+	0 ,\
 	0 \
 }
 						
@@ -260,7 +264,7 @@ extern int parser(sv_alltype *service,stralloc *src,char const *svname) ;
 extern int parse_service_check_enabled(ssexec_t *info, char const *svname,uint8_t force,uint8_t *exist) ;
 extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, stralloc *opts_deps_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t *exist) ;
 extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, stralloc *opts_deps_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force) ;
-extern int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force) ;
+extern int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t mandatory) ;
 extern int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner) ;
 /** split */
 extern int section_get_range(section_t *sasection,stralloc *src) ;
