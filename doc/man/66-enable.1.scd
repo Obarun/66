@@ -32,10 +32,10 @@ Multiple _services_ can be enabled by seperating their names with a space.
 	Prints this help.
 
 *-v* _verbosity_
-	Increases/decreases the verbosity of the command.
-	- *1* : (Default) Only print error messages.
-	- *2* : Also print warning messages.
-	- *3* : Also print tracing messages.
+	Increases/decreases the verbosity of the command.++
+	- *1* : (Default) Only print error messages.++
+	- *2* : Also print warning messages.++
+	- *3* : Also print tracing messages.++
 	- *4* : Also print debugging messages.
 
 *-l* _live_

@@ -23,7 +23,7 @@
 
 <h2>Interface </h2>
 	<pre>
-	66-inservice [ -h ] [ -v verbosity ] [ -c ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -t tree ] [ -p nline ] service
+	66-inservice [ -h ] [ -v verbosity ] [ -c ] [ -n ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -t tree ] [ -p nline ] <em>service</em>
 	</pre>
 
 <h2>Options </h2>
@@ -42,6 +42,9 @@
     </li>
         <li> 
 			<tt>-c&nbsp;</tt>&nbsp;: enable colorization.
+		</li>
+        <li> 
+			<tt>-n&nbsp;</tt>&nbsp;: do not display the field name.
 		</li>
 		<li> 
 			<tt>-o&nbsp;</tt>&nbsp;: comma separated list of fields to display. If this option is not passed, <tt>66-inservice</tt> will display all fields.
@@ -92,6 +95,12 @@
             <tt>depends</tt>&nbsp;: displays the <em>service's</em> dependencies.
         </li>
         <li>
+            <tt>optsdepends</tt>&nbsp;: displays the <em>service's</em> optional dependencies.
+        </li>
+        <li>
+            <tt>extdepends</tt>&nbsp;: displays the <em>service's</em> external dependencies.
+        </li>
+        <li>
             <tt>start</tt>&nbsp;: displays the <em>service's</em> start script.
         </li>
         <li>
@@ -128,13 +137,15 @@
     Live               : %%livedir%%/tree/0/boot/servicedirs/00
     Depends on         : system-hostname  mount-run  populate-run  mount-tmp  populate-tmp  mount-proc  mount-sys
                          populate-sys  mount-dev  mount-pts  mount-shm  populate-dev  mount-cgroups
-    Start script       : nothing to display
-    Stop script        : nothing to display
-    Environment source : environment was not set
-    Environment file   : environment was not set
-    Log name           : logger doesn't exist
-    Log destination    : logger doesn't exist
-    Log file           : logger doesn't exist
+    Optional depends   : None
+    External depends   : None
+    Start script       : None
+    Stop script        : None
+    Environment source : None
+    Environment file   : None
+    Log name           : None
+    Log destination    : None
+    Log file           : None
 	</pre>
 	</p>
 	<p>

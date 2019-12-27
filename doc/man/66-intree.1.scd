@@ -6,7 +6,7 @@
 
 # SYNOPSYS
 
-66-intree [ *-h* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-c* ] [ *-o* name,init,enabled,... ] [ *-g* ] [ *-d* _depth_ ] [ *-r* ] _tree_
+66-intree [ *-h* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-c* ] [ *-n* ] [ *-o* name,init,enabled,... ] [ *-g* ] [ *-d* _depth_ ] [ *-r* ] _tree_
 
 # DESCRIPTION
 
@@ -21,7 +21,7 @@
 	Increases/decreases the verbosity of the command.++
 	*1* : (Default) Only prints error messages.++
 	*2* : Also prints warning messages.++
-	*3* : Also prints tracing messages.
+	*3* : Also prints tracing messages.++
 	*4* : Also prints debugging messages.
 
 *-l* _live_
@@ -33,6 +33,9 @@
 
 *-c*
 	enable colorization.
+
+*-n*
+	do not display the field name.
 
 *-o*
 	comma separated list of fields to display. If this option is not passed,
@@ -62,8 +65,17 @@
 *enabled*
 	Displays a boolean value of the enable state.
 
+*start*
+	Displays the list of the tree(s) started before.
+
 *current*
 	Displays a boolean value of the current state.
+
+*allowed*
+	Displays the list of allowed user to use the _tree_.
+
+*symlinks*
+	Displays the target of the _tree_'s symlinks.
 
 *contains*
 	Displays the contents of the _tree_.
@@ -75,21 +87,24 @@ displays the following where *boot* is the tree used to properly boot
 the machine:
 
 ```
-Name        : boot
-Initialized : yes
-Enabled     : no
-Current     : no
-Contains    : tty12  system-hostname  mount-run  populate-run  mount-tmp
-              populate-tmp  mount-proc  mount-sys  populate-sys  mount-dev
-              mount-pts  mount-shm  populate-dev  mount-cgroups  00
-              modules-kernel  udevd  udevadm  devices-crypttab
-              system-hwclock  system-random  modules-system  system-sysctl
-              system-fontnkey  devices-dmraid  devices-btrfs  devices-lvm
-              devices-zfs  system-Devices  mount-swap  all-Mount
-              system-fsck  mount-fstab  all-System  mount-rw  local-iptables
-              local-ip6tables  local-loop  local-sethostname  local-time
-              local-authfiles  local-tmpfiles  local-rc  local-dmesg  all-Local
-              all-Runtime  All
+Name         : boot
+Initialized  : yes
+Enabled      : no
+Starts after : None
+Allowed      : root
+Symlinks     : svc->source db->source
+Current      : no
+Contains     : tty12  system-hostname  mount-run  populate-run  mount-tmp
+               populate-tmp  mount-proc  mount-sys  populate-sys  mount-dev
+               mount-pts  mount-shm  populate-dev  mount-cgroups  00
+               modules-kernel  udevd  udevadm  devices-crypttab
+               system-hwclock  system-random  modules-system  system-sysctl
+               system-fontnkey  devices-dmraid  devices-btrfs  devices-lvm
+               devices-zfs  system-Devices  mount-swap  all-Mount
+               system-fsck  mount-fstab  all-System  mount-rw  local-iptables
+               local-ip6tables  local-loop  local-sethostname  local-time
+               local-authfiles  local-tmpfiles  local-rc  local-dmesg  all-Local
+               all-Runtime  All
 ```
 
 The field *name* gives you the name of the _tree_.
@@ -98,8 +113,20 @@ The field *Initialized* tells you if the _tree_ was initialized with "66-init" t
 
 The field *Enabled* reveals the state of the tree -- see "66-tree -E".
 
+The field *Starts after* reveals the start process order if the _tree_ is enabled,
+meaning which _tree_ is started before the current one.
+
 The field *Current* tells you if the _tree_ is the current one or not -- see
 "66-tree -c".
+
+The field *Allowed* gives you a list of user(s) allowed to handle the 
+_tree_ -- see "66-tree -[a|b]".
+
+The field *Symlinks* tells you if the current live state point to the 
+*source* or the *backup* of the _tree_. Every use of  "66-enable" tool 
+create a automatic *backup* of the _tree_ for *classic*,*bundle* or *atomic* 
+service(s). A symlink pointing to *backup* mean that you have enabled a service
+without starting it. Right after a boot, each tree should point to *source*.
 
 The field *Contains* gives you a list of all services enabled in the _tree_.
 

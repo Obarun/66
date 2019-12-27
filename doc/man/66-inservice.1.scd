@@ -6,7 +6,7 @@
 
 # SYNOPSYS
 
-66-inservice [ *-h* ] [ *-v* _verbosity_ ] [ *-c* ] [ *-o* _name,intree,enabled,..._ ] [ *-g* ] [ *-d* _depth_ ] [ *-r* ] [ *-t* _tree_ ] [ *-p* _nline_ ] _service_
+66-inservice [ *-h* ] [ *-v* _verbosity_ ] [ *-c* ] -[ *-n* ] [ *-o* _name,intree,enabled,..._ ] [ *-g* ] [ *-d* _depth_ ] [ *-r* ] [ *-t* _tree_ ] [ *-p* _nline_ ] _service_
 
 # DESCRIPTION
 
@@ -21,11 +21,14 @@
 	Increases/decreases the verbosity of the command.++
 	*1* : (Default) Only prints error messages.++
 	*2* : Also prints warning messages.++
-	*3* : Also prints tracing messages.
+	*3* : Also prints tracing messages.++
 	*4* : Also prints debugging messages.
 
 *-c*
 	enable colorization.
+
+*-n*
+	do not display the field name.
 
 *-o*
 	comma separated list of fields to display. If this option is not passed,
@@ -74,6 +77,12 @@
 *depends*
 	Displays the _service_'s dependencies.
 
+*optsdepends*
+	Displays the _service_'s optional dependencies.
+
+*extdepends*
+	Displays the _service_'s external dependencies.
+
 *start*
 	Displays the _service_'s start script.
 
@@ -112,13 +121,15 @@ Depends on         : system-hostname  mount-run  populate-run  mount-tmp
                      populate-tmp  mount-proc  mount-sys  populate-sys
                      mount-dev  mount-pts  mount-shm  populate-dev
                      mount-cgroups
-Start script       : nothing to display
-Stop script        : nothing to display
-Environment source : environment was not set
-Environment file   : environment was not set
-Log name           : logger doesn't exist
-Log destination    : logger doesn't exist
-Log file           : logger doesn't exist
+Optional depends   : None
+External depends   : None
+Start script       : None
+Stop script        : None
+Environment source : None
+Environment file   : None
+Log name           : None
+Log destination    : None
+Log file           : None
     
 ```
 

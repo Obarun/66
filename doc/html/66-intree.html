@@ -24,7 +24,7 @@
 <h2>Interface </h2>
 
 	<pre>
-	66-intree [ -h ] [ -v verbosity ] [ -l live ] [ -c ] [ -o name,init,enabled,... ] [ -g ] [ -d depth ] [ -r ] tree
+	66-intree [ -h ] [ -v verbosity ] [ -l live ] [ -c ] [ -n ] [ -o name,init,enabled,... ] [ -g ] [ -d depth ] [ -r ] <em>tree</em>
 	</pre>
 
 <h2>Options </h2>
@@ -49,6 +49,9 @@
 		</li>
 		<li> 
 			<tt>-c&nbsp;</tt>&nbsp;: enable colorization.
+		</li>
+		<li> 
+			<tt>-n&nbsp;</tt>&nbsp;: do not display the field name.
 		</li>
 		<li> 
 			<tt>-o&nbsp;</tt>&nbsp;: comma separated list of fields to display. If this option is not passed, <tt>66-intree</tt> will display all fields.
@@ -77,7 +80,16 @@
             <tt>enabled</tt>&nbsp;: displays a boolean value of the enable state.
         </li>
         <li>
+            <tt>start</tt>&nbsp;: displays the list of tree(s) started before.
+        </li>
+        <li>
             <tt>current</tt>&nbsp;: displays a boolean value of the current state.
+        </li>
+        <li>
+            <tt>allowed</tt>&nbsp;: displays the list of allowed user to use the <em>tree</em>.
+        </li>
+        <li>
+            <tt>symlinks</tt>&nbsp;: displays the target of <em>tree</em>'s symlinks.
         </li>
         <li>
             <tt>contains</tt>&nbsp;: displays the contents of the <em>tree</em>.
@@ -89,17 +101,20 @@
 	<p>The command <tt>66-intree boot</tt>, run as root user, on <em>Obarun's</em> default system displays the following where <em>boot</em>
 	is the tree used to properly boot the machine:
 	<pre>   
-    Name        : boot
-    Initialized : yes
-    Enabled     : no
-    Current     : no
-    Contains    : tty12  system-hostname  mount-run  populate-run  mount-tmp  populate-tmp  mount-proc  mount-sys
-                  populate-sys  mount-dev  mount-pts  mount-shm  populate-dev  mount-cgroups  00  modules-kernel  udevd
-                  udevadm  devices-crypttab  system-hwclock  system-random  modules-system  system-sysctl
-                  system-fontnkey  devices-dmraid  devices-btrfs  devices-lvm  devices-zfs  system-Devices  mount-swap
-                  all-Mount  system-fsck  mount-fstab  all-System  mount-rw  local-iptables  local-ip6tables  local-loop
-                  local-sethostname  local-time  local-authfiles  local-tmpfiles  local-rc  local-dmesg  all-Local
-                  all-Runtime  All
+    Name         : boot
+    Initialized  : yes
+    Enabled      : no
+    Starts after : None
+    Current      : no
+    Allowed      : root
+    Symlinks     : svc->source db->source
+    Contains     : tty12  system-hostname  mount-run  populate-run  mount-tmp  populate-tmp  mount-proc  mount-sys
+                   populate-sys  mount-dev  mount-pts  mount-shm  populate-dev  mount-cgroups  00  modules-kernel  udevd
+                   udevadm  devices-crypttab  system-hwclock  system-random  modules-system  system-sysctl
+                   system-fontnkey  devices-dmraid  devices-btrfs  devices-lvm  devices-zfs  system-Devices  mount-swap
+                   all-Mount  system-fsck  mount-fstab  all-System  mount-rw  local-iptables  local-ip6tables  local-loop
+                   local-sethostname  local-time  local-authfiles  local-tmpfiles  local-rc  local-dmesg  all-Local
+                   all-Runtime  All
 
 	</pre>
 	</p>
@@ -113,7 +128,19 @@
         The field <tt><em>Enabled</em></tt> reveals the state of the tree&mdash;see <tt><a href="66-tree.html">66-tree -E</a></tt>.
     </p>
     <p>
+        The field <tt><em>Starts after</em></tt> reveals the start process order if the <em>tree</em> is enabled, meaning which <em>tree</em> is started before the current one.
+    </p>
+    <p>
         The field <tt><em>Current</em></tt> tells you if the <em>tree</em> is the current one or not&mdash;see <tt><a href="66-tree.html">66-tree -c</a></tt>.
+    </p>
+    <p>
+        The field <tt><em>Allowed</em></tt> gives you a list of user(s) allowed to handle the <em>tree</em>&mdash;see <tt><a href="66-tree.html">66-tree -[a|b]</a></tt>.
+    </p>
+    <p>
+        The field <tt><em>Symlinks</em></tt> tells you if the current live state point to the <tt>source</tt> or the <tt>backup</tt> of the <em>tree</em>. 
+        Every use of  <tt><a href="66-enable.html">66-enable</a></tt> tool create a automatic backup of the <em>tree</em> 
+        for <tt>classic</tt>,<tt>bundle</tt> or <tt>atomic</tt> service(s). A symlink pointing to <tt>backup</tt> mean that you have enabled a service
+        without starting it. Right after a boot, each tree should point to <tt>source</tt>.
     </p>
     <p>
         The field <tt><em>Contains</em></tt> gives you a list of all services enabled in the <em>tree</em>.

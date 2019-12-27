@@ -26,7 +26,7 @@ explicitely set then the user of the current process will be used instead.
 	Increases/decreases the verbosity of the command.++
 	*1* : (Default) Only print error messages.++
 	*2* : Also print warning messages.++
-	*3* : Also print tracing messages.
+	*3* : Also print tracing messages.++
 	*4* : Also print debugging messages.
 
 *-b*

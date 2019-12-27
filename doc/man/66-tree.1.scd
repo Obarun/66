@@ -13,7 +13,7 @@
 *66-tree* will dynamically handle a set of any kind of services in _tree_.
 The _tree_ will be handled for the user running the process.
 Any _tree_ is completely independent from another. If you want to know what trees
-are currently available on the system use *66-info*(1) tool.
+are currently available on the system use *66-intree*(1) tool.
 
 # OPTIONS
 
@@ -21,10 +21,10 @@ are currently available on the system use *66-info*(1) tool.
 	Prints this help.
 
 *-v* _verbosity_
-	Increases/decreases the verbosity of the command.
-	*1* : (Default) Only print error messages.
-	*2* : Also print warning messages.
-	*3* : Also print tracing messages.
+	Increases/decreases the verbosity of the command.++
+	*1* : (Default) Only print error messages.++
+	*2* : Also print warning messages.++
+	*3* : Also print tracing messages.++
 	*4* : Also print debugging messages.
 
 *-l* _live_
@@ -57,7 +57,7 @@ are currently available on the system use *66-info*(1) tool.
 	The majority of commands in the 66 tools suite have a *-t* option to specify
 	the _tree_ to use.
 	By setting _tree_ as the current one all other 66 tools will use it by
-	default. You can see which _tree_ is the current one with the *66-info*(1) tool.
+	default. You can see which _tree_ is the current one with the *66-intree*(1) tool.
 
 *-E*
 	Enables _tree_. This allows the *66-all*(1) tool to know which tree needs to

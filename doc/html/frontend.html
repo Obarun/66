@@ -16,7 +16,7 @@
 <h1>The frontend service file</h1>
 
 	<p>
-		The <a href="https://skarnet.org/software/s6">s6</a> and <a href="https://skarnet.org/software/s6">s6-rc</a> programs each handle and use several kinds of services and different files. It is quite complex to understand and manage the relationship between all those files and services. If you're interested in the details you should read <a href="https://skarnet.org/software/s6/servicedir.html">the documentation for the s6 servicedir</a> and also about <a href="https://wiki.obarun.org/doku.php?id=s6services"><em>classic</em></a>, <a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html"> <em>oneshot</em>, <em>longrun</em> and <em>bundle</em> services</a> on Obarun. The frontend service file of 66 tools allows you to deal with all these different services in a centralized manner in one single place.
+		The <a href="https://skarnet.org/software/s6">s6</a> and <a href="https://skarnet.org/software/s6">s6-rc</a> programs each handle and use several kinds of services and different files. It is quite complex to understand and manage the relationship between all those files and services. If you're interested in the details you should read <a href="https://skarnet.org/software/s6/servicedir.html">the documentation for the s6 servicedir</a> and also about <a href="https://wiki.obarun.org/doku.php?id=s6services"><em>classic</em></a>, <a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html"> <em>oneshot</em>, <em>longrun</em> (also called <em>atomic</em> services) and <em>bundle</em> services</a> on Obarun. The frontend service file of 66 tools allows you to deal with all these different services in a centralized manner in one single place.
 		<br>
 		By default 66 tools expects to find any service files in <tt>%%service_system%%</tt> although this can be changed at compile time by passing the <tt>--with-service-path=<em>DIR</em></tt> option to <tt>./configure.</tt>
 	</p>
@@ -37,7 +37,6 @@
 
 	<pre>   [main]
    @type = classic
-   @name = ntpd
    @description = "ntpd daemon"
    @user = ( root )
    @options = ( log env )
@@ -290,7 +289,7 @@ MYVALUE</pre>
  <h5>Corresponds to the file "<em>dependencies</em>" of s6-rc programs.</h5>
  <p>Declare dependencies of the service.</p>
  <p><tt>mandatory</tt> : no&#8212;this field has no effect if the 
- type of the service is "classic"</em>.</p>
+ type of the service is <em>classic</em>.</p>
  <p><tt>syntax</tt> : bracket</p>
  <p><tt>valid values</tt> :</p>
   <ul>
@@ -314,6 +313,82 @@ MYVALUE</pre>
    </li>
    
  </ul>
+ 
+ <li><h4>@optsdepends</h4></li>
+ <h5>Without equivalent, this key is unique to 66 tools.</h5>
+ <p>Declare optional dependencies of the service.</p>
+ <p><tt>mandatory</tt> : no&#8212;this field has no effect if the 
+ type of the service is <em>classic</em> or <em>bundle</em>.</p>
+ <p><tt>syntax</tt> : bracket</p>
+ <p><tt>valid values</tt> :</p>
+  <ul>
+   <li>The <em>name</em> of any valid service with type 
+	<tt>bundle</tt>, <tt>longrun</tt> or <tt>oneshot</tt>. Services of type <tt>classic</tt>
+	are not allowed.
+	A service declared as optional dependencies is not mandatory. 
+	The parser will look at all trees if the corresponding service is
+	already enabled:
+		<ul>
+			<li>If It the case, it warn the user and do nothing.</li> 
+			<li>If not, it tries to	find the corresponding frontend file.
+				<ul>
+					<li>If the frontend service file is found, it enable it.</li>
+					<li>If it not found it, it warn the user and do nothing</li>
+				</ul>
+			</li>
+		</ul>
+	</li>
+</ul>
+	<p>The <em>order is of importance</em> (!). The first service found
+	will be used and the parse process of the field will be stopped.
+	So, you can considere @optsdepends field as: 
+	"enable one on this service or none".
+	</p>
+	<p>
+	We talk about enable process here. The start process will not take care
+	about optional dependencies. If fooA on treeA have an optional dependency fooB which is
+	declared on treeB, it's the responsability of the sysadmin to start first
+	treeB then treeA. <tt><a href="66-intree.html">66-intree</a></tt> give you
+	the order of the start with the field <tt>Start after</tt>.
+   </p>
+
+ <li><h4>@extdepends</h4></li>
+ <h5>Without equivalent, this key is unique to 66 tools.</h5>
+ <p>Declare external dependencies of the service.</p>
+ <p><tt>mandatory</tt> : no&#8212;this field has no effect if the 
+ type of the service is <em>classic</em> or <em>bundle</em>.</p>
+ <p><tt>syntax</tt> : bracket</p>
+ <p><tt>valid values</tt> :</p>
+   <ul>
+   <li>The <em>name</em> of any valid service with type 
+	<tt>bundle</tt>, <tt>longrun</tt> or <tt>oneshot</tt>. Services of type <tt>classic</tt>
+	are not allowed.
+	A service declared as external dependencies is mandatory. 
+	The parser will look at all trees if the corresponding service is
+	already enabled:
+		<ul>
+			<li>If It the case, it warn the user and do nothing.</li> 
+			<li>If not, it tries to	find the corresponding frontend file.
+				<ul>
+					<li>If the frontend service file is found, it enable it.</li>
+					<li>If it not found it, the process is stopped and 
+                    <a href="66-enable.html">66-enable</a> exit 111.</li>
+				</ul>
+			</li>
+		</ul>
+	<br>
+	This process is made for all services declared in the field.
+	</li>
+</ul>
+	<br>
+	<p>So, you can considere @extdepends field as: 
+	"enable the service if it not already declared on a tree".
+	</p>
+	<p>We talk about enable process here. The start process will not take care
+	about external dependencies. If fooA on treeA have an external dependency fooB which is
+	declared on treeB, it's the responsability of the sysadmin to start first
+	treeB then treeA. <tt><a href="66-intree.html">66-intree</a></tt> give you
+	the order of the start with the field <tt>Start after</tt>.</p>
  
  <br><hr style="border: 1px dashed #000000">
 
@@ -857,6 +932,8 @@ for it in your <tt>@execute</tt> field.</p>
     @name = 
     @description = ""
     @depends = ()
+    @optsdepends = ()
+    @extdepends = ()
     @contents = ()
     @options = ( log env pipeline )
     @flags = ( down nosetsid )
