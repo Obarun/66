@@ -103,10 +103,10 @@ static inline void info_help (void)
 "	name: displays the name of the tree\n"
 "	init: displays a boolean value of the initialization state\n"
 "	enabled: displays a boolean value of the enable state\n"
-"	start: displays a list of tree started before\n"
+"	start: displays the list of tree(s) started before\n"
 "	current: displays a boolean value of the current state\n"
 "	allowed: displays a list of allowed user to use the tree\n"
-"	symlink: displays the target of tree's symlinks\n"
+"	symlinks: displays the target of tree's symlinks\n"
 "	contents: displays the contents of the tree\n"
 "\n"
 ;
@@ -292,7 +292,7 @@ static void info_display_allow(char const *field, char const *treename)
 	// force to close the string
 	auto_strings(tmp,src.s) ;
 	auto_string_from(tmp,src.len,treename,SS_RULES) ;
-	
+
 	if (!sastr_dir_get(&sa,tmp,"",S_IFREG))
 		log_dieusys(LOG_EXIT_SYS,"get permissions of tree at: ",tmp) ;
 	
@@ -564,10 +564,11 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	if (treename)
 	{
 		
-		if (!stralloc_cats(&src,treename) ||
-		!stralloc_0(&src)) log_die_nomem("stralloc") ;
+		if (!auto_stra(&src,treename)) log_die_nomem("stralloc") ;
 		if (!scan_mode(src.s,S_IFDIR)) log_dieusys(LOG_EXIT_SYS,"find tree: ", src.s) ;
 		src.len = newlen ;
+		if (!stralloc_0(&src)) log_die_nomem("stralloc") ;
+		src.len-- ;
 		info_display_all(treename,what) ;		
 	}
 	else
