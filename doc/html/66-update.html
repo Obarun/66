@@ -18,11 +18,11 @@
 <h1>66-update</h1>
 
 	<p>
-        66-update is a program that is normally used very rarely: when the 
-        66 package is upgraded or downgraded, some services are currently managed, 
-        different tree as declared and the inner format has changed. This program transitions
-        a complete tree and a live directory using a database with the old 66 format (the one being replaced) 
-        so that it uses a database with the new 66 format and rebuild the tree.
+        66-update is a program that is used very rarely, when 66 is revised and is either upgraded or downgraded.  
+        When 66 is replaced by a different edition some services, managed by one or more trees, may be different 
+        than when declared, and trees and services will have to adopt the 66 change. This program transitions
+        a complete tree, and its live directory, using a database with the previous 66 format (the one being replaced) 
+        so that it uses a database with the new 66 format, and rebuild the tree so it conforms with the changes.
         
     </p>
     <p>
@@ -35,7 +35,8 @@
 	66-udpate [ -h ] [ -v <em>verbosity</em> ] [ -c ] [ -l <em>live</em> ] <em>tree</em>
 	</pre>
     <p>
-        If no tree is given, all trees of the owner of the process will be processed.
+        If no tree is given, all trees of the owner (root or user) of the process will be processed.
+        In the case of user owned trees 66-update must run separately for each user.
     </p>
     
 <h2>Options</h2>
@@ -48,14 +49,14 @@
 	 <li>
         <tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
         the verbosity of the command. 
-        <tt>1(Default)</tt>: Only print error messages. 
-        <tt>2</tt>: Also print warning messages. 
-        <tt>3</tt>: Also print tracing messages.
-        <tt>4</tt>: Also print debugging messages.
+        <tt>1(Default)</tt>: Only prints error messages. 
+        <tt>2</tt>: Also prints warning messages. 
+        <tt>3</tt>: Also prints tracing messages.
+        <tt>4</tt>: Also prints debugging messages.
     </li>
 
 		<li>
-			<tt><b>&#8209;l&nbsp;<em>live</em></b></tt> : an absolute path. Send the signal to a <em>scandir</em> at <em>live</em>. Default is <tt>%%livedir%%</tt>. The default can also be changed at compile time by passing the <tt>&#8209;&#8209;livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem.
+			<tt><b>&#8209;l&nbsp;<em>live</em></b></tt> : an absolute path. Sends the signal to a <em>scandir</em> at <em>live</em>. Default is <tt>%%livedir%%</tt>. The default can also be changed at compiling time by passing the <tt>&#8209;&#8209;livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem.
 		</li>
 
 		<li> 
@@ -68,8 +69,8 @@
 <ul>
     <li>
         It determines if the tree is already initialized. In such case, it
-        make a copy of the current database on a temporary directory and
-        switch the database to it.
+        makes a copy of the current database on a temporary directory and
+        switches the database to it.
     </li>
     <li>
         It saves the current state of the tree (current,enabled,...).
@@ -79,25 +80,25 @@
     </li>
     <li>
         It creates the tree with <tt><a href="66-tree.html">66-tree -n(cEa)</a></tt> command, 
-        options depending of the saved state.
+        reproducing the options of the saved state.
     </li>
     <li>
         It enables the service(s) previously declared on the <em>tree</em>.
     </li>
     <li>
-        It switch the current database to the newly created by the enable process.
+        It switches the current database to the newly created database by the "enable" process.
     </li>
 </ul>
 <p>
-At the end of the process, the tree and the live state has not changed. Services already is use
-are not stopped or restarted during the transition process and match exactly the same state
-before and after the process.
+At the end of the process, the tree and the live state has not changed. Services already in use
+are not stopped or restarted during the transition process, and match exactly the same state
+before and after the process.  A complex and tedious process in the past is now completed with one command.
 </p>
 <p>
-It try to be safe as possible and exit 111 is a problem occurs. In any case 
+It tries to be as safe as possible and exit 111 if a problem occurs. In any case 
 on upgrade/downgrade time, 66 tools will not work properly if the transition 
-is not made smoothly even by the sysadmin itself. So, We prefer to cratch instead of
-leaving an inconsistent state and let the sysadmin correct the things.
+is not made smoothly even by the sysadmin itself. So, we prefer to crash instead of
+leaving an inconsistent state and let the sysadmin trying to correct things.
 </p>
 </body>
 </html>
