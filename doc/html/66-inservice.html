@@ -36,30 +36,31 @@
         <tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
         the verbosity of the command. 
         <tt>1(Default)</tt>: Only print error messages. 
-        <tt>2</tt>: Also print warning messages. 
-        <tt>3</tt>: Also print tracing messages.
-        <tt>4</tt>: Also print debugging messages.
+        <tt>2</tt>: Also prints warning messages. 
+        <tt>3</tt>: Also prints tracing messages.
+        <tt>4</tt>: Also prints debugging messages.
     </li>
         <li> 
 			<tt>-c&nbsp;</tt>&nbsp;: enable colorization.
 		</li>
         <li> 
-			<tt>-n&nbsp;</tt>&nbsp;: do not display the field name.
+			<tt>-n&nbsp;</tt>&nbsp;: do not display the field name(s) specified.
 		</li>
 		<li> 
 			<tt>-o&nbsp;</tt>&nbsp;: comma separated list of fields to display. If this option is not passed, <tt>66-inservice</tt> will display all fields.
 		</li>
 		<li>
-			<tt>-g&nbsp;</tt>&nbsp;: shows the dependency list of the <em>service</em> as a graph instead of a list.
+			<tt>-g&nbsp;</tt>&nbsp;: shows the dependency list of the <em>service</em> as a hierarchical graph instead of a list.
 		</li>
         <li> 
-			<tt>-d&nbsp;<em>depth</em>&nbsp;</tt>&nbsp;: limits the depth of the dependency list visualisation; defaults is 1. This implies <tt>-g</tt> option.
+			<tt>-d&nbsp;<em>depth</em>&nbsp;</tt>&nbsp;: limits the depth of the dependency list visualisation; default is 1. This implies <tt>-g</tt> option.
 		</li>
         <li>
 			<tt>-r&nbsp;</tt>&nbsp;: shows the dependency list of <em>services</em> in reverse mode.
 		</li>
          <li> 
-			<tt>-t&nbsp;<em>tree</em>&nbsp;</tt>&nbsp;: only searches the <em>service</em> at the specified <em>tree</em>.
+			<tt>-t&nbsp;<em>tree</em>&nbsp;</tt>&nbsp;: only searches the <em>service</em> at the specified <em>tree</em>,
+            when the same service may be enabled in more trees.
 		</li>
 
         <li>
@@ -128,24 +129,24 @@
 	
 	<p>The command <tt>66-inservice 00</tt> run as root user on <em>Obarun's</em> default system, displays the following, where <em>00</em> is a service contained in the tree <em>boot</em>:
 	<pre>   
-    Name               : 00
-    In tree            : boot
-    Status             : enabled, nothing to display
-    Type               : bundle
-    Description        : Set the hostname and mount filesystem
-    Source             : %%service_system%%/boot/mount/00
-    Live               : %%livedir%%/tree/0/boot/servicedirs/00
-    Depends on         : system-hostname  mount-run  populate-run  mount-tmp  populate-tmp  mount-proc  mount-sys
-                         populate-sys  mount-dev  mount-pts  mount-shm  populate-dev  mount-cgroups
-    Optional depends   : None
-    External depends   : None
-    Start script       : None
-    Stop script        : None
-    Environment source : None
-    Environment file   : None
-    Log name           : None
-    Log destination    : None
-    Log file           : None
+    Name                  : 00
+    In tree               : boot
+    Status                : enabled, nothing to display
+    Type                  : bundle
+    Description           : Set the hostname and mount filesystem
+    Source                : %%service_system%%/boot/mount/00
+    Live                  : %%livedir%%/tree/0/boot/servicedirs/00
+    Dependencies          : system-hostname  mount-run  populate-run  mount-tmp  populate-tmp  mount-proc  mount-sys
+                            populate-sys  mount-dev  mount-pts  mount-shm  populate-dev  mount-cgroups
+    Optional dependencies : None
+    External dependencies : None
+    Start script          : None
+    Stop script           : None
+    Environment source    : None
+    Environment file      : None
+    Log name              : None
+    Log destination       : None
+    Log file              : None
 	</pre>
 	</p>
 	<p>
@@ -156,7 +157,7 @@
     <p>You can display the status and 'depends on' field and only these fields of a service using the command <tt>66-inservice -o status,depends -g connmand</tt> where the dependency list is diplayed as a graph:
     <pre>
     Status             : enabled, up (pid 938) 34652 seconds
-    Depends on         : /
+    Dependencies       : /
                          ├─(933,Enabled,longrun) dbus
                          └─(929,Enabled,longrun) connmand-log
     </pre>
