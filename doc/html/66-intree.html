@@ -37,9 +37,9 @@
         <tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
         the verbosity of the command. 
         <tt>1(Default)</tt>: Only print error messages. 
-        <tt>2</tt>: Also print warning messages. 
-        <tt>3</tt>: Also print tracing messages.
-        <tt>4</tt>: Also print debugging messages.
+        <tt>2</tt>: Also prints warning messages. 
+        <tt>3</tt>: Also prints tracing messages.
+        <tt>4</tt>: Also prints debugging messages.
     </li>
 		<li> 
 			<tt>-l&nbsp;<em>live</em>&nbsp;</tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>%%livedir%%</tt>. The default can 
@@ -51,7 +51,7 @@
 			<tt>-c&nbsp;</tt>&nbsp;: enable colorization.
 		</li>
 		<li> 
-			<tt>-n&nbsp;</tt>&nbsp;: do not display the field name.
+			<tt>-n&nbsp;</tt>&nbsp;: do not display the field name(s) specified.
 		</li>
 		<li> 
 			<tt>-o&nbsp;</tt>&nbsp;: comma separated list of fields to display. If this option is not passed, <tt>66-intree</tt> will display all fields.
@@ -92,7 +92,7 @@
             <tt>symlinks</tt>&nbsp;: displays the target of <em>tree</em>'s symlinks.
         </li>
         <li>
-            <tt>contains</tt>&nbsp;: displays the contents of the <em>tree</em>.
+            <tt>contents</tt>&nbsp;: displays the contents of the <em>tree</em>.
         </li>
     
     </ul>
@@ -146,9 +146,9 @@
         The field <tt><em>Contains</em></tt> gives you a list of all services enabled in the <em>tree</em>.
     </p>
     
-    <p>You can display the contents list as a graph and only these fields using the command <tt>66-intree -o contains -g boot</tt>:
+    <p>You can display the contents list as a graph and only these fields using the command <tt>66-intree -o contents -g boot</tt>:
     <pre>
-    Contains    : /
+    Contents    : /
                   ├─(253,Enabled,classic) tty12
                   ├─(0,Enabled,oneshot) system-hostname
                   ├─(0,Enabled,oneshot) mount-run
