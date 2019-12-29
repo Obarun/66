@@ -18,15 +18,15 @@
 <h1>66-update</h1>
 
 	<p>
-        66-update is a program that is used very rarely, when 66 is revised and is either upgraded or downgraded.  
-        When 66 is replaced by a different edition some services, managed by one or more trees, may be different 
-        than when declared, and trees and services will have to adopt the 66 change. This program transitions
-        a complete tree, and its live directory, using a database with the previous 66 format (the one being replaced) 
-        so that it uses a database with the new 66 format, and rebuild the tree so it conforms with the changes.
+        66-update is a program that should be used  rarely. At upgrade/downgrade time, the inner file format
+        used to retrieve informations of tree,service database currently in use, can differ between two versions.
+        In this case, service databases and trees need to be rebuild to match the new format.The 66-update program makes 
+        a complete transition of trees and the live directory using a old 66 format (the one being replaced) with the new 
+        66 format.
         
     </p>
     <p>
-        The point is to ensure a smooth transition between different versions of 66 without needing a reboot. 
+        The goal is to ensure a smooth transition between different versions of 66 without needing a reboot. 
     </p>
     
 <h2>Interface</h2>
@@ -91,14 +91,14 @@
 </ul>
 <p>
 At the end of the process, the tree and the live state has not changed. Services already in use
-are not stopped or restarted during the transition process, and match exactly the same state
-before and after the process.  A complex and tedious process in the past is now completed with one command.
+are not stopped or restarted during the transition process and match exactly the same state
+before and after the process.
 </p>
 <p>
-It tries to be as safe as possible and exit 111 if a problem occurs. In any case 
+It tries to be safe as possible and exits 111 if a problem occurs. In any case 
 on upgrade/downgrade time, 66 tools will not work properly if the transition 
-is not made smoothly even by the sysadmin itself. So, we prefer to crash instead of
-leaving an inconsistent state and let the sysadmin trying to correct things.
+is not made smoothly even by the sysadmin itself. So, We prefer to crash instead of
+leaving an inconsistent state and let the sysadmin correct the things.
 </p>
 </body>
 </html>

@@ -328,28 +328,28 @@ MYVALUE</pre>
 	A service declared as optional dependencies is not mandatory. 
 	The parser will look at all trees if the corresponding service is
 	already enabled:
-		<ul>
-			<li>If It the case, it warn the user and do nothing.</li> 
-			<li>If not, it tries to	find the corresponding frontend file.
+	<ul>
+			<li>If enabled, it will warn the user and do nothing.</li> 
+			<li>If not, it will try to find the corresponding frontend file.
 				<ul>
-					<li>If the frontend service file is found, it enable it.</li>
-					<li>If it not found it, it warn the user and do nothing</li>
+					<li>If the frontend service file is found, it will enable it.</li>
+					<li>If it is not found, it will warn the user and do nothing.</li>
 				</ul>
 			</li>
 		</ul>
 	</li>
 </ul>
-	<p>The <em>order is of importance</em> (!). The first service found
+	<p>The <em>order is important</em> (!). The first service found
 	will be used and the parse process of the field will be stopped.
 	So, you can considere @optsdepends field as: 
 	"enable one on this service or none".
 	</p>
 	<p>
-	We talk about enable process here. The start process will not take care
-	about optional dependencies. If fooA on treeA have an optional dependency fooB which is
-	declared on treeB, it's the responsability of the sysadmin to start first
-	treeB then treeA. <tt><a href="66-intree.html">66-intree</a></tt> give you
-	the order of the start with the field <tt>Start after</tt>.
+	@optsdepends only affects the enable process. The start process will not consider
+	optional dependencies. If fooA on treeA has an optional dependency fooB which is
+	declared on treeB, it's the responsibility of the sysadmin to start first
+	treeB then treeA. <tt><a href="66-intree.html">66-intree</a></tt> can give you
+	the start order with the field <tt>Start after</tt>.
    </p>
 
  <li><h4>@extdepends</h4></li>
@@ -363,16 +363,16 @@ MYVALUE</pre>
    <li>The <em>name</em> of any valid service with type 
 	<tt>bundle</tt>, <tt>longrun</tt> or <tt>oneshot</tt>. Services of type <tt>classic</tt>
 	are not allowed.
-	A service declared as external dependencies is mandatory. 
-	The parser will look at all trees if the corresponding service is
+	A service declared as an external dependencies is mandatory. 
+	The parser will search through all trees whether the corresponding service is
 	already enabled:
 		<ul>
-			<li>If It the case, it warn the user and do nothing.</li> 
-			<li>If not, it tries to	find the corresponding frontend file.
+			<li>If enabled, it will warn the user and do nothing.</li> 
+			<li>If not, it will try to find the corresponding frontend file.
 				<ul>
-					<li>If the frontend service file is found, it enable it.</li>
-					<li>If it not found it, the process is stopped and 
-                    <a href="66-enable.html">66-enable</a> exit 111.</li>
+					<li>If the frontend service file is found, it will enable it.</li>
+					<li>If  not, the process is stopped and 
+                    <a href="66-enable.html">66-enable</a> exits 111.</li>
 				</ul>
 			</li>
 		</ul>
@@ -381,14 +381,14 @@ MYVALUE</pre>
 	</li>
 </ul>
 	<br>
-	<p>So, you can considere @extdepends field as: 
-	"enable the service if it not already declared on a tree".
+	<p>So, you can consider @extdepends field as: 
+	"enable the service if it is not already declared on a tree".
 	</p>
-	<p>We talk about enable process here. The start process will not take care
-	about external dependencies. If fooA on treeA have an external dependency fooB which is
-	declared on treeB, it's the responsability of the sysadmin to start first
-	treeB then treeA. <tt><a href="66-intree.html">66-intree</a></tt> give you
-	the order of the start with the field <tt>Start after</tt>.</p>
+<p>@extdepends only affects the enable process. The start process will not consider
+	external dependencies. If fooA on treeA has an external dependency fooB which is
+	declared on treeB, it's the responsibility of the sysadmin to start first
+	treeB then treeA. <tt><a href="66-intree.html">66-intree</a></tt> will give you
+	the start order with the field <tt>Start after</tt>.</p>
  
  <br><hr style="border: 1px dashed #000000">
 
