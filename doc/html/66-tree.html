@@ -27,10 +27,10 @@
 	</pre>
 
 	<p>
-      66-tree will dynamically handle a set of any kind of services in <em>tree</em>. 
-      The <em>tree</em> will be handled for the user running the process.
+      66-tree will create, destroy, or modify a <em>tree</em> which dynamically handles services.
+      66-tree will handle the <em>tree</em> only for the user running the process (root/user).
       Any <em>tree</em> is completely independent from another. If you 
-      want to know what trees are currently available on the system use
+      want to know what trees are currently available on the system use the
       <tt><a href="66-intree.html">66-intree</a></tt> tool.
     </p>
 
@@ -43,14 +43,14 @@
 		<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
 		the verbosity of the command. 
         <tt>1(Default)</tt>: Only print error messages. 
-        <tt>2</tt>: Also print warning messages. 
-		<tt>3</tt>: Also print tracing messages.
-		<tt>4</tt>: Also print debugging messages.
+        <tt>2</tt>: Also prints warning messages. 
+		<tt>3</tt>: Also prints tracing messages.
+		<tt>4</tt>: Also prints debugging messages.
 	 </li>
 	 <li>
-		<tt><b>-l <em>live</em></b></tt> : an absolute path. It used 
+		<tt><b>-l <em>live</em></b></tt> : an absolute path. It is used 
 		in conjunction with <tt>-U</tt> and <tt>-R</tt> options to specify the live 
-		directory place of <em>tree</em>. It has no effects otherwise. 
+		directory location of a <em>tree</em>. It has no effect otherwise. 
 		Default is <tt>%%livedir%%</tt>.
 		The default can also be changed at compile-time by	passing the 
 		<tt>&#8209;&#8209;livedir=<em>live</em></tt> option to <tt>./configure</tt>. 
@@ -67,7 +67,7 @@
 	 </li>
 	 
 	 <li> 
-		<tt>-d&nbsp;<em>user</em></tt>&nbsp;: denies <em>user</em> to deal with the given
+		<tt>-d&nbsp;<em>user</em></tt>&nbsp;: denies <em>user</em> to deal with the specified
 		<em>tree</em>. Must match an existing username on the system. Several users can be denied by separating their names with a comma.&mdash;Useful to revoke access that has been given before with -a.
 	</li>
 	 
@@ -85,7 +85,7 @@
 	 </li>
 	 
 	 <li> 
-		<tt>-D&nbsp;</tt>&nbsp;: disables <em>tree</em>. The strict
+		<tt>-D&nbsp;</tt>&nbsp;: disables <em>tree</em>. The exact
 		opposite of the <tt>-E</tt> option.  	
 	 </li>	 
 	 
@@ -137,7 +137,9 @@
 	<h4>When enabling a service</h4>
 
 	<p>By enabling a service its corresponding frontend service file is parsed and the result
-	written to a sub directory of the trees path called <tt>servicedirs/svc</tt> for <tt><em>'classic'</em></tt> services and <tt>servicedirs/db/source</tt> for <tt><em>'bundle'</em></tt> or <tt><em>'atomic'</em></tt> services.</p>
+	written to a sub directory of the tree's path called <tt>servicedirs/svc</tt> 
+    for <tt><em>'classic'</em></tt> services and <tt>servicedirs/db/source</tt> 
+    for <tt><em>'bundle'</em></tt> or <tt><em>'atomic'</em></tt> services.</p>
 
 	<p>As an example for root the resulting files would, by default, be found at <tt>%%system_dir%%/system/<em>tree</em>/servicedirs/svc</tt>
 	for services of type <tt><em>'classic'</em></tt> and at <tt>%%system_dir%%/system/<em>tree</em>/servicedirs/db/source</tt> 
