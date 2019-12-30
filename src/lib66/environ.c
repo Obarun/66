@@ -84,9 +84,11 @@ int env_merge_conf(char const *dst,char const *file,stralloc *srclist,stralloc *
 			if (force) 
 			{
 				if (!environ_get_val_of_key(&sval,mkey.s) ||
-				!environ_get_val_of_key(&mval,mkey.s) ||
-				!sastr_replace(&result,sval.s,mval.s)) goto err ;
-				stralloc_0(&result) ;
+				!environ_get_val_of_key(&mval,mkey.s)) goto err ;
+				// avoid loop in case of same value
+				if (!strcmp(sval.s,mval.s)) break ;
+				if (!sastr_replace(&result,sval.s,mval.s) ||
+				!stralloc_0(&result)) goto err ;
 				result.len-- ;
 			}
 		}
