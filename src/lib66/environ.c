@@ -107,7 +107,8 @@ int env_merge_conf(char const *dst,char const *file,stralloc *srclist,stralloc *
 		}
 		else
 		{
-			if (!auto_stra(&result,"\n",modifs->s+fakepos,strlen(modifs->s + fakepos))) goto err ;	
+			if (!stralloc_cats(&result,"\n") ||
+			!stralloc_catb(&result,modifs->s+fakepos,strlen(modifs->s + fakepos))) goto err ;	
 		}
 		
 	}

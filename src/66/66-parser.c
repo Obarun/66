@@ -24,6 +24,7 @@
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
 #include <oblibs/string.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/buffer.h>
 #include <skalibs/stralloc.h>
@@ -71,7 +72,7 @@ static void check_dir(char const *dir,uint8_t force,int main)
 
 int main(int argc, char const *const *argv,char const *const *envp)
 {
-	int r ;
+	int r, ista ;
 	stralloc src = STRALLOC_ZERO ;
 	stralloc dst = STRALLOC_ZERO ;
 	stralloc insta = STRALLOC_ZERO ;
@@ -128,11 +129,11 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	check_dir(dir,force,0) ;
 	if (!stralloc_cats(&insta,name) ||
 	!stralloc_0(&insta)) log_die_nomem("stralloc") ;
-	r = instance_check(insta.s) ;
-	if (!r) log_die(LOG_EXIT_SYS,"invalid instance name: ",insta.s) ;
-	if (r > 0)
+	ista = instance_check(insta.s) ;
+	if (!ista) log_die(LOG_EXIT_SYS,"invalid instance name: ",insta.s) ;
+	if (ista > 0)
 	{
-		if (!instance_create(&src,insta.s,SS_INSTANCE,srcdir,r))
+		if (!instance_create(&src,insta.s,SS_INSTANCE,srcdir,ista))
 			log_dieu(LOG_EXIT_SYS,"create instance service: ",name) ;
 		memcpy(name,insta.s,insta.len) ;
 		name[insta.len] = 0 ;
@@ -152,6 +153,26 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	srcdirlen = strlen(srcdir) ;
 	service.src = keep.len ;
 	if (!stralloc_catb(&keep,srcdir,srcdirlen + 1)) log_die_nomem("stralloc") ;
+	/**quick fix
+	 * WIP on parser this will change soon*/
+	if (ista > 0 && service.cname.name >= 0 )
+	{
+		stralloc sainsta = STRALLOC_ZERO ;
+		stralloc saname = STRALLOC_ZERO ;
+		if (!stralloc_cats(&saname,keep.s + service.cname.name)) log_die_nomem("stralloc") ;
+		
+		if (!instance_splitname(&sainsta,name,ista,0)) log_dieu(LOG_EXIT_SYS,"split instance name: ",name) ;
+		if (sastr_find(&saname,sainsta.s) == -1)
+			log_die(LOG_EXIT_USER,"invalid instantiated service name: ", keep.s + service.cname.name) ;
+			
+		stralloc_free(&sainsta) ;
+		stralloc_free(&saname) ;
+	}
+	else
+	{
+		service.cname.name = keep.len ;
+		if (!stralloc_catb(&keep,name,namelen + 1)) log_die_nomem("stralloc") ;
+	}
 	/* save and prepare environment file */
 	if (service.opts[2])
 	{
