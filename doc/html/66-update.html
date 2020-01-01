@@ -20,7 +20,7 @@
 	<p>
         66-update is a program that should be used  rarely. At upgrade/downgrade time, the inner file format
         used to retrieve informations of tree,service database currently in use, can differ between two versions.
-        In this case, service databases and trees need to be rebuild to match the new format.The 66-update program makes 
+        In this case, service databases and trees need to be rebuild to match the new format. The 66-update program makes 
         a complete transition of trees and the live directory using a old 66 format (the one being replaced) with the new 
         66 format.
         
@@ -56,7 +56,13 @@
     </li>
 
 		<li>
-			<tt><b>&#8209;l&nbsp;<em>live</em></b></tt> : an absolute path. Sends the signal to a <em>scandir</em> at <em>live</em>. Default is <tt>%%livedir%%</tt>. The default can also be changed at compiling time by passing the <tt>&#8209;&#8209;livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem.
+			<tt><b>&#8209;l&nbsp;<em>live</em></b></tt> : an absolute path. 
+            Sends the signal to a <em>scandir</em> at <em>live</em>. 
+            Default is <tt>%%livedir%%</tt>. The default can also be 
+            changed at compiling time by passing the 
+            <tt>&#8209;&#8209;livedir=<em>live</em></tt> option to 
+            <tt>./configure</tt>. Should be available within a writable 
+            filesystem - likely a RAM filesystem.
 		</li>
 
 		<li> 

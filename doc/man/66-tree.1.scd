@@ -10,10 +10,10 @@
 
 # DESCRIPTION
 
-*66-tree* will dynamically handle a set of any kind of services in _tree_.
-The _tree_ will be handled for the user running the process.
-Any _tree_ is completely independent from another. If you want to know what trees
-are currently available on the system use *66-intree*(1) tool.
+*66-tree* will create, destroy, or modify a _tree_ which dynamically handles services.
+*66-tree* will handle the _tree_ only for the user running the process (root/user).
+Any _tree_ is completely independent from another. If you want to know 
+what trees are currently available on the system use the *66-intree*(1) tool.
 
 # OPTIONS
 
@@ -22,14 +22,14 @@ are currently available on the system use *66-intree*(1) tool.
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++
-	*1* : (Default) Only print error messages.++
-	*2* : Also print warning messages.++
-	*3* : Also print tracing messages.++
-	*4* : Also print debugging messages.
+	*1* : (Default) Only prints error messages.++
+	*2* : Also prints warning messages.++
+	*3* : Also prints tracing messages.++
+	*4* : Also prints debugging messages.
 
 *-l* _live_
-	An absolute path. It used in conjunction with *-U* and *-R* options 
-	to specify the live	directory place of _tree_. It has no effects otherwise.
+	An absolute path. It is used in conjunction with *-U* and *-R* options 
+	to specify the live	directory location of a _tree_. It has no effects otherwise.
 	Default is *%%livedir%%*. The default can also be changed at compile-time
 	by passing the \--livedir=_live_ option to *./configure*. Should be under
 	a writable filesystem - likely a RAM filesystem.
@@ -48,7 +48,7 @@ are currently available on the system use *66-intree*(1) tool.
 	database at compilation time.
 
 *-d* _user_
-	Denies _user_ to deal with the given _tree_. Must match an existing username
+	Denies _user_ to deal with the specified _tree_. Must match an existing username
 	on the system. Several users can be denied by separating their names with a
 	comma. Useful to revoke access that has been given before with *-a*.
 
@@ -65,7 +65,7 @@ are currently available on the system use *66-intree*(1) tool.
 	started when you use the *66-all*(1) tool.
 
 *-D*
-	Disables _tree_. The strict opposite of the *-E* option.
+	Disables _tree_. The exact opposite of the *-E* option.
 
 *-R*
 	Deletes _tree_. Can not be *undone*. This will completely remove the given
@@ -115,7 +115,7 @@ for any regular user.
 ## WHEN ENABLING A SERVICE
 
 By enabling a service its corresponding frontend service file is parsed and the
-result written to a sub directory of the trees path called *servicedirs/svc* for
+result written to a sub directory of the tree's path called *servicedirs/svc* for
 _classic_ services and *servicedirs/db/source* for _bundle_ or _atomic_ services.
 
 As an example for root the resulting files would, by default, be found at

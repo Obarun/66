@@ -229,21 +229,21 @@ Valid _key_ names:
 	A service declared as optional dependencies is not mandatory.
 	The parser will look at all trees if the corresponding service is
 	already enabled:++
-		If It the case, it warn the user and do nothing.++
-		If not, it tries to	find the corresponding frontend file.++
-			If the frontend service file is found, it enable it.++
-			If it not found it, it warn the user and do nothing.
+		If enabled, it will warn the user and do nothing.++
+		If not, it will try to find the corresponding frontend file.++
+			If the frontend service file is found, it will enable it.++
+			If it not found it, it will warn the user and do nothing.
 
 	The *order* is of importance. The first service found will be used 
 	and the parse process of the field will be stopped.
 	So, you can considere *@optsdepends* field as: 
 	"enable one on this service or none".
-	
-	We talk about enable process here. The start process will not take care
-	about optional dependencies. If fooA on treeA have an optional dependency fooB which is
-	declared on treeB, it's the responsability of the sysadmin to start first
-	treeB then treeA. *66-intree* give you
-	the order of the start with the field *Start after*.
+
+	@optsdepends only affects the enable process. The start process will
+	consider optional dependencies. If fooA on treeA have an optional 
+	dependency fooB which is declared on treeB, it's the responsability 
+	of the sysadmin to start first treeB then treeA. *66-intree* can give
+	you	the start order with the field *Start after*.
 
 *@extdepends*++
 	Declare external dependencies of the service.++
@@ -254,23 +254,23 @@ Valid _key_ names:
 		*oneshot*. Services of type *classic* are not allowed.
 
 	A service declared as external dependencies is mandatory.
-	The parser will look at all trees if the corresponding service is
+	The parser will search through all trees whether the corresponding service is
 	already enabled:++
-		If It the case, it warn the user and do nothing.++
-		If not, it tries to	find the corresponding frontend file.++
-			If the frontend service file is found, it enable it.++
-			If it not found it, the process is stopped and *66-enable* exit 111.
+		If enabled, it will warn the user and do nothing.++
+		If not, it will try to find the corresponding frontend file.++
+			If the frontend service file is found, it will enable it.++
+			If not, the process is stopped and *66-enable* exit 111.
 
 	This process is made for all services declared in the field.
 
 	So, you can considere @extdepends field as: 
 	"enable the service if it not already declared on a tree".
 	
-	We talk about enable process here. The start process will not take care
-	about external dependencies. If fooA on treeA have an external dependency fooB which is
-	declared on treeB, it's the responsability of the sysadmin to start first
-	treeB then treeA. *66-intree* give you
-	the order of the start with the field *Start after*.
+	@extdepends only affects the enable process. The start process will not consider
+	external dependencies. If fooA on treeA has an external dependency fooB which is
+	declared on treeB, it's the responsibility of the sysadmin to start first
+	treeB then treeA. *66-intree* will give you
+	the start order with the field *Start after*.
 
 *@contents*++
 	Declare the contents of a bundle service.++

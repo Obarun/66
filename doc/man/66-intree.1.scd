@@ -35,7 +35,7 @@
 	enable colorization.
 
 *-n*
-	do not display the field name.
+	do not display the field name(s) specified.
 
 *-o*
 	comma separated list of fields to display. If this option is not passed,
@@ -77,7 +77,7 @@
 *symlinks*
 	Displays the target of the _tree_'s symlinks.
 
-*contains*
+*contents*
 	Displays the contents of the _tree_.
 
 # COMMAND AND OUTPUT EXAMPLE
@@ -131,10 +131,10 @@ without starting it. Right after a boot, each tree should point to *source*.
 The field *Contains* gives you a list of all services enabled in the _tree_.
 
 You can display the contents list as a graph and only these fields using 
-the command "66-intree -o contains -g boot":
+the command "66-intree -o contents -g boot":
 
 ```
-Contains    : /
+Contents    : /
               ├─(253,Enabled,classic) tty12
               ├─(0,Enabled,oneshot) system-hostname
               ├─(0,Enabled,oneshot) mount-run
