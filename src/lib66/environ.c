@@ -19,6 +19,7 @@
 #include <oblibs/environ.h>
 #include <oblibs/sastr.h>
 #include <oblibs/files.h>
+#include <oblibs/string.h>
 
 #include <skalibs/stralloc.h>
 
@@ -78,7 +79,7 @@ int env_merge_conf(char const *dst,char const *file,stralloc *srclist,stralloc *
 		!stralloc_copy(&mval,modifs) ||
 		!stralloc_copy(&sval,srclist)) goto err ;
 		
-		if (!environ_get_key_nclean(&mkey,&pos)) { printf("pass err") ; goto err ; }
+		if (!environ_get_key_nclean(&mkey,&pos)) goto err ;
 		mkey.len-- ;
 		
 		if (!auto_stra(&mkey,"=")) goto err ;
