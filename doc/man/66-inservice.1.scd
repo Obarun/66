@@ -46,7 +46,7 @@
 
 *-t* _tree_
 	only searches the _service_ at the specified _tree_, when the same 
-    service may be enabled in more trees.
+	service may be enabled in more trees.
 
 *-p* _nline_
 	prints the _nline_ last lines from the log file of the _service_.
