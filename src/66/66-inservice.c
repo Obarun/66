@@ -103,7 +103,7 @@ info_opts_map_t const opts_sv_table[] =
 #define checkopts(n) if (n >= MAXOPTS) strerr_dief1x(100, "too many options")
 #define DELIM ','
 
-#define USAGE "66-inservice [ -h ] [ -v verbosity ] [ -c ] [ -n ] [ -o name,instree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -t tree ] [ -p nline ] service"
+#define USAGE "66-inservice [ -h ] [ -v verbosity ] [ -c ] [ -n ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -t tree ] [ -p nline ] service"
 
 static inline void info_help (void)
 {
