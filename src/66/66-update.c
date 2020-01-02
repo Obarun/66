@@ -259,15 +259,34 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		char tmp[systemlen + SS_BACKUP_LEN + info.treename.len + SS_SVDIRS_LEN + SS_DB_LEN + 1] ;
 		char current[info.livetree.len + 1 + info.treename.len + 9 + 1] ;
 		
+		log_info("save state of tree: ", info.treename.s) ;
+		if (tree_is_current(info.base.s,info.treename.s,info.owner))
+		{
+			log_trace("tree: ",info.treename.s," is marked current") ;
+			auto_string_from(tree_opts_create,optslen,"c") ;
+			optslen +=1 ;
+		}
+		if (tree_is_enabled(info.treename.s) == 1)
+		{
+			log_trace("tree: ",info.treename.s," is marked enabled") ;
+			auto_string_from(tree_opts_create,optslen,"E") ;
+			optslen +=1 ;
+		}
+		
+		tree_allowed(&allow,info.base.s,info.treename.s) ;
+		
+		log_info("save service(s) list of tree: ", info.treename.s) ;
+		tree_contents(&contents,info.tree.s,&info) ;
+		
 		dbok = db_ok(info.livetree.s, info.treename.s) ;
-						
+		
 		if (dbok)
 		{
 			fdir = 0 ;
 			
 			log_trace("find current source of live db: ",info.livetree.s,"/",info.treename.s) ;
 			r = db_find_compiled_state(info.livetree.s,info.treename.s) ;
-			if (r == -1) log_die_nclean(LOG_EXIT_SYS,&cleanup,"inconsistent state of: ",info.livetree.s) ;
+			if (r == -1) log_die(LOG_EXIT_SYS,"inconsistent state of: ",info.livetree.s) ;
 			if (r == 1) {
 				auto_strings(tmp,system,SS_BACKUP + 1,"/",info.treename.s,SS_DB) ;
 			}
@@ -288,40 +307,22 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			log_info("update ",info.livetree.s,"/",info.treename.s," to: ",new) ;
 			
 			if (!atomic_symlink(new, current, PROG))
-				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"update: ",current," to: ", new) ;
+				log_dieusys(LOG_EXIT_SYS,"update: ",current," to: ", new) ;
 		
 		}
-		log_info("save state of tree: ", info.treename.s) ;
-		if (tree_is_current(info.base.s,info.treename.s,info.owner))
-		{
-			log_trace("tree: ",info.treename.s," is marked current") ;
-			auto_string_from(tree_opts_create,optslen,"c") ;
-			optslen +=1 ;
-		}
-		if (tree_is_enabled(info.treename.s) == 1)
-		{
-			log_trace("tree: ",info.treename.s," is marked enabled") ;
-			auto_string_from(tree_opts_create,optslen,"E") ;
-			optslen +=1 ;
-		}
-		
-		tree_allowed(&allow,info.base.s,info.treename.s) ;
-		
-		log_info("save service(s) list of tree: ", info.treename.s) ;
-		tree_contents(&contents,info.tree.s,&info) ;
 		
 		/** finally we can destroy the tree and recreate it*/
 		// destroy
 		{
 			char const *t[] = { "-l", info.live.s, "-R", info.treename.s } ;
 			if (!run_cmdline(SS_EXTBINPREFIX "66-tree",t,4,envp))
-				log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"delete tree: ", info.treename.s) ;
+				log_dieu(LOG_EXIT_SYS,"delete tree: ", info.treename.s) ;
 		}
 		//create
 		{
 			char const *t[] = { "-l", info.live.s, tree_opts_create,"-a",allow.s, info.treename.s } ;
 			if (!run_cmdline(SS_EXTBINPREFIX "66-tree",t,6,envp))
-				log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"create tree: ", info.treename.s) ;
+				log_dieu(LOG_EXIT_SYS,"create tree: ", info.treename.s) ;
 		}
 		/* we must reimplement the enable process instead of
 		 * using directly 66-enable. The 66-enable program will use
@@ -345,22 +346,21 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
 				r = ss_resolve_graph_src(&graph,tmp,0,1) ;
 				if (!r)
-					log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"resolve source of graph for tree: ",info.treename.s) ;
+					log_dieu(LOG_EXIT_SYS,"resolve source of graph for tree: ",info.treename.s) ;
 				
 				r = ss_resolve_graph_publish(&graph,0) ;
 				if (r <= 0) 
 				{
-					cleanup() ;
 					if (r < 0) log_die(LOG_EXIT_USER,"cyclic graph detected") ;
 					log_dieusys(LOG_EXIT_SYS,"publish service graph") ;
 				}
 				
 				if (!ss_resolve_write_master(&info,&graph,tmp,0))
-					log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"update inner bundle") ;
+					log_dieusys(LOG_EXIT_SYS,"update inner bundle") ;
 				
 				ss_resolve_graph_free(&graph) ;
 				if (!db_compile(tmp,info.tree.s,info.treename.s,envp))
-					log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"compile ",tmp,"/",info.treename.s) ;
+					log_dieu(LOG_EXIT_SYS,"compile ",tmp,"/",info.treename.s) ;
 			}
 			stralloc_free(&tostart) ;
 			freed_parser() ;
@@ -378,7 +378,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			 * We prefer to die in this case instead of leaving an
 			 * inconsistent state. */
 			if (!db_update(tmp,&info,envp))
-				log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"update: ",info.livetree.s,"/",info.treename.s," to: ", tmp,"/",info.treename.s) ;
+				log_dieu(LOG_EXIT_SYS,"update: ",info.livetree.s,"/",info.treename.s," to: ", tmp,"/",info.treename.s) ;
 		}
 
 		cleanup() ;	
