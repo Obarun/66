@@ -24,6 +24,7 @@
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
 #include <oblibs/string.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/buffer.h>
 #include <skalibs/stralloc.h>
@@ -71,7 +72,7 @@ static void check_dir(char const *dir,uint8_t force,int main)
 
 int main(int argc, char const *const *argv,char const *const *envp)
 {
-	int r ;
+	int r, ista ;
 	stralloc src = STRALLOC_ZERO ;
 	stralloc dst = STRALLOC_ZERO ;
 	stralloc insta = STRALLOC_ZERO ;
@@ -126,28 +127,28 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	}
 	if (!dirname(srcdir,sv)) log_dieu(LOG_EXIT_SYS,"set directory name") ;
 	check_dir(dir,force,0) ;
+
+	if (!read_svfile(&src,name,srcdir)) log_dieusys(LOG_EXIT_SYS,"open: ",sv) ;
+	if (!get_svtype(&service,src.s)) log_dieu(LOG_EXIT_SYS,"enable to get the type of: ",sv) ;
 	if (!stralloc_cats(&insta,name) ||
 	!stralloc_0(&insta)) log_die_nomem("stralloc") ;
-	r = instance_check(insta.s) ;
-	if (!r) log_die(LOG_EXIT_SYS,"invalid instance name: ",insta.s) ;
-	if (r > 0)
+	ista = instance_check(insta.s) ;
+	if (!ista) log_die(LOG_EXIT_SYS,"invalid instance name: ",insta.s) ;
+	if (ista > 0)
 	{
-		if (!instance_create(&src,insta.s,SS_INSTANCE,srcdir,r))
+		if (!instance_create(&src,insta.s,SS_INSTANCE,ista))
 			log_dieu(LOG_EXIT_SYS,"create instance service: ",name) ;
 		memcpy(name,insta.s,insta.len) ;
 		name[insta.len] = 0 ;
 		
 	}
-	else if (!read_svfile(&src,name,srcdir)) log_dieusys(LOG_EXIT_SYS,"open: ",sv) ;
-		
 	log_info("Parsing service file: ", sv) ;
-	if (!parser(&service,&src,sv)) log_dieu(LOG_EXIT_SYS,"parse service file: ",sv) ;
+	if (!parser(&service,&src,sv,service.cname.itype)) log_dieu(LOG_EXIT_SYS,"parse service file: ",sv) ;
 	if (!stralloc_cats(&dst,dir) ||
 	!stralloc_cats(&dst,"/") ||
 	!stralloc_cats(&dst,name) ||
 	!stralloc_0(&dst)) log_die_nomem("stralloc") ;
 	check_dir(dst.s,force,1) ;
-	log_info("Write service file: ", name," at: ",dst.s) ;
 	type = service.cname.itype ;
 	srcdirlen = strlen(srcdir) ;
 	service.src = keep.len ;
@@ -155,6 +156,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	/* save and prepare environment file */
 	if (service.opts[2])
 	{
+		
 		stralloc conf = STRALLOC_ZERO ;
 		if (!stralloc_catb(&conf,dst.s,dst.len-1) ||
 		!stralloc_cats(&conf,"/env/") || 
@@ -167,21 +169,48 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (!stralloc_catb(&keep,conf.s,conf.len + 1)) log_die_nomem("stralloc") ;
 		stralloc_free(&conf) ;
 	}
+	if (ista > 0 && service.cname.name >= 0 )
+	{
+		stralloc sainsta = STRALLOC_ZERO ;
+		stralloc saname = STRALLOC_ZERO ;
+		if (!stralloc_cats(&saname,keep.s + service.cname.name)) goto err ;
+		
+		if (!instance_splitname(&sainsta,name,ista,0)) goto err ;
+		if (sastr_find(&saname,sainsta.s) == -1)
+		{
+			log_warn("invalid instantiated service name: ", keep.s + service.cname.name) ;
+			goto err ;
+		}
+		stralloc_free(&sainsta) ;
+		stralloc_free(&saname) ;
+		goto swtch ;
+		err:
+			stralloc_free(&sainsta) ;
+			stralloc_free(&saname) ;
+			return 0 ;
+	}
+	else
+	{
+		service.cname.name = keep.len ;
+		if (!stralloc_catb(&keep,name,namelen + 1)) return 0 ;
+	}
+	
+	swtch:
 	switch(type)
 	{
-		case CLASSIC:
+		case TYPE_CLASSIC:
 			if (!write_classic(&service, dst.s, force, conf))
 				log_dieu(LOG_EXIT_SYS,"write: ",name) ;
 			break ;
-		case LONGRUN:
+		case TYPE_LONGRUN:
 			if (!write_longrun(&service, dst.s, force, conf))
 				log_dieu(LOG_EXIT_SYS,"write: ",name) ;
 			break ;
-		case ONESHOT:
+		case TYPE_ONESHOT:
 			if (!write_oneshot(&service, dst.s, conf))
 				log_dieu(LOG_EXIT_SYS,"write: ",name) ;
 			break ;
-		case BUNDLE:
+		case TYPE_BUNDLE:
 			if (!write_bundle(&service, dst.s))
 				log_dieu(LOG_EXIT_SYS,"write: ",name) ;
 			break ;
