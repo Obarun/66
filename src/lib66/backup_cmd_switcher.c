@@ -72,7 +72,7 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 	if (argc < 1) return -1 ;
 	if ((!change && !back) || !type) return -1 ;
 
-	if (type < CLASSIC || type > ONESHOT)
+	if (type < TYPE_CLASSIC || type > TYPE_ONESHOT)
 		log_warn_return(LOG_EXIT_LESSONE,"unknown type for backup_switcher") ;
 	
 	tree = *argv ;
@@ -82,7 +82,7 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 	//base.len-- ;
 	size_t psymlen ;
 	char *psym = NULL ;
-	if (type == CLASSIC)
+	if (type == TYPE_CLASSIC)
 	{
 		psym = SS_SYM_SVC ;
 		psymlen = SS_SYM_SVC_LEN ;
@@ -130,7 +130,7 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 		char *psrc = NULL ;
 		char *pback = NULL ;
 		
-		if (type == CLASSIC)
+		if (type == TYPE_CLASSIC)
 		{
 			psrc = SS_SVC ;
 			psrclen = SS_SVC_LEN ;

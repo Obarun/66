@@ -31,7 +31,7 @@ int svc_switch_to(ssexec_t *info,unsigned int where)
 	int r ;
 	
 	char type[UINT_FMT] ;
-	size_t typelen = uint_fmt(type, CLASSIC) ;
+	size_t typelen = uint_fmt(type, TYPE_CLASSIC) ;
 	type[typelen] = 0 ;
 	size_t cmdlen ;
 	char cmd[typelen + 6 + 1] ;
@@ -49,7 +49,7 @@ int svc_switch_to(ssexec_t *info,unsigned int where)
 	if (!r && where)
 	{
 		log_trace("make a backup of svc service for: ",info->treename.s) ;
-		if (!backup_make_new(info,CLASSIC))
+		if (!backup_make_new(info,TYPE_CLASSIC))
 			log_warnusys_return(LOG_EXIT_ZERO,"make a backup of svc service for: ",info->treename.s) ;
 		
 		log_trace("switch svc symlink of tree: ",info->treename.s," to backup") ;
@@ -73,7 +73,7 @@ int svc_switch_to(ssexec_t *info,unsigned int where)
 		}
 		
 		log_trace("make a backup of svc service for: ",info->treename.s) ;
-		if (!backup_make_new(info,CLASSIC))
+		if (!backup_make_new(info,TYPE_CLASSIC))
 			log_warnusys_return(LOG_EXIT_ZERO,"make a backup of svc service for: ",info->treename.s) ;
 	}
 	return 1 ;

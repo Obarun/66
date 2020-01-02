@@ -195,7 +195,7 @@ void info_graph_display(ss_resolve_t *res, depth_t *depth, int last, int padding
 {
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	char *name = res->sa.s + res->name ;
-	if (res->type == CLASSIC || res->type == LONGRUN)
+	if (res->type == TYPE_CLASSIC || res->type == TYPE_LONGRUN)
 	{
 		s6_svstatus_read(res->sa.s + res->runat ,&status) ;
 	}
@@ -216,7 +216,7 @@ void info_graph_display(ss_resolve_t *res, depth_t *depth, int last, int padding
 		depth = depth->next ;
 	} 
 	
-	if (!bprintf(buffer_1,"%*s%*s%s(%s%i%s,%s%s%s,%s) %s",level == 1 ? padding : 0,"", style->indent * (depth->level - level), "", tip, status.pid ? log_color->valid : log_color->off,status.pid ? status.pid : 0,log_color->off, res->disen ? log_color->off : log_color->error, res->disen ? "Enabled" : "Disabled",log_color->off,get_keybyid(res->type), name)) return ;
+	if (!bprintf(buffer_1,"%*s%*s%s(%s%i%s,%s%s%s,%s) %s",level == 1 ? padding : 0,"", style->indent * (depth->level - level), "", tip, status.pid ? log_color->valid : log_color->off,status.pid ? status.pid : 0,log_color->off, res->disen ? log_color->off : log_color->error, res->disen ? "Enabled" : "Disabled",log_color->off,get_key_by_enum(ENUM_TYPE,res->type), name)) return ;
 
 	if (buffer_putsflush(buffer_1,"\n") < 0) return ; 
 }

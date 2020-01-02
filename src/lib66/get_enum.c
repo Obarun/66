@@ -14,100 +14,168 @@
 
 #include <66/enum.h>
 
-#include <sys/types.h>
+#include <stddef.h>
 #include <oblibs/string.h>
 
-char const *get_keybyid(key_enum_t key)
-{
-			//Section
-	return	(key == MAIN) ? "main" :
-			(key == START) ? "start" :
-			(key == STOP) ? "stop" :
-			(key == LOG) ? "logger" :
-			(key == ENV) ? "environment" :
-			//Main
-			(key == TYPE ) ? "@type" :
-			(key == NAME ) ? "@name" :
-			(key == DESCRIPTION ) ? "@description" :
-			(key == CONTENTS ) ? "@contents" :
-			(key == DEPENDS ) ? "@depends" :
-			(key == OPTSDEPS ) ? "@optsdepends" :
-			(key == EXTDEPS ) ? "@extdepends" :
-			(key == OPTIONS ) ? "@options" :
-			(key == NOTIFY ) ? "@notify" :
-			(key == USER ) ? "@user" :
-			(key == BUILD ) ? "@build" :
-			(key == SIGNAL) ? "@down-signal" :
-			(key == FLAGS ) ? "@flags" :
-			(key == RUNAS ) ? "@runas" :
-			(key == SHEBANG ) ? "@shebang" :
-			(key == T_FINISH ) ? "@timeout-finish" :
-			(key == T_KILL ) ? "@timeout-kill" :
-			(key == T_UP ) ? "@timeout-up" :
-			(key == T_DOWN ) ? "@timeout-down" :
-			(key == DEATH) ? "@maxdeath" :
-			(key == HIERCOPY) ? "@hiercopy" :
-			(key == EXEC ) ? "@execute" :
-			(key == DESTINATION ) ? "@destination" :
-			(key == BACKUP ) ? "@backup" :
-			(key == MAXSIZE ) ? "@maxsize" :
-			(key == TIMESTP ) ? "@timestamp" :
-			//Service type	
-			(key == CLASSIC ) ? "classic" :
-			(key == BUNDLE ) ? "bundle" :
-			(key == LONGRUN ) ? "longrun" :
-			(key == ONESHOT ) ? "oneshot" :
-			//Key expected
-			(key == LINE ) ? "line" :
-			(key == BRACKET ) ? "bracket" :
-			(key == UINT ) ? "uint" :
-			(key == SLASH ) ? "slash" :
-			(key == QUOTE ) ? "quote" :
-			//Options
-			(key == LOGGER ) ? "log" :
-			(key == ENVIR ) ? "env" :
-			(key == HIERCOPY ) ? "hiercopy" :
-			(key == PIPELINE ) ? "pipeline" :
-			//Flags
-			(key == DOWN ) ? "down" :
-			(key == NOSETSID ) ? "nosetsid" :
-			//Build
-			(key == AUTO ) ? "auto" :
-			(key == CUSTOM ) ? "custom" :
-			//Mandatory
-			(key == NEED ) ? "need" :
-			(key == OPTS ) ? "opts" :
-			//Time
-			(key == TAI ) ? "tai" :
-			(key == ISO ) ? "iso" :
-			(key == NONE ) ? "none" :
-			//logger
-			(key == PRODUCER ) ? "producer-for" :
-			(key == CONSUMER ) ? "consumer-for" :
-			"unknown" ;
-}
+char const *enum_str_section[] = {
+	"main" ,
+	"start" ,
+	"stop" ,
+	"logger" ,
+	"environment" ,
+	0
+} ;
 
-ssize_t get_enumbyid(char const *str, key_enum_t key_el)
+char const *enum_str_key[] = {
+	"@type" ,
+	"@name" ,
+	"@description" ,
+	"@contents" ,
+	"@depends" ,
+	"@optsdepends" ,
+	"@extdepends" ,
+	"@options" ,
+	"@notify" ,
+	"@user" ,
+	"@build" ,
+	"@down-signal" ,
+	"@flags" ,
+	"@runas" ,
+	"@shebang" ,
+	"@timeout-finish" ,
+	"@timeout-kill" ,
+	"@timeout-up" ,
+	"@timeout-down" ,
+	"@maxdeath" ,
+	"@hiercopy" ,
+	"@execute" ,
+	"@destination" ,
+	"@backup" ,
+	"@maxsize" ,
+	"@timestamp" ,
+	"@enval" ,
+	0
+} ;
+
+char const *enum_str_type[] = {
+	"modules" ,
+	"classic" ,
+	"bundle" ,
+	"longrun" ,
+	"oneshot" ,
+	0
+} ;
+
+char const *enum_str_expected[] = {
+	"line" ,
+	"bracket" ,
+	"uint" ,
+	"slash" ,
+	"quote" ,
+	"keyval" ,
+	0
+} ;
+
+char const *enum_str_opts[] = {
+	"log" ,
+	"env" ,
+	"hiercopy" ,
+	"pipeline" ,
+	0
+} ;
+
+char const *enum_str_flags[] = {
+	"down" ,
+	"nosetsid" ,
+	0
+} ;
+
+char const *enum_str_build[] = {
+	"auto" ,
+	"custom" ,
+	0
+} ;
+
+char const *enum_str_mandatory[] = {
+	"need" ,
+	"opts" ,
+	"bundle" ,
+	"custom" ,
+	0
+} ;
+
+char const *enum_str_time[] = {
+	"tai" ,
+	"iso" ,
+	"none" ,
+	0
+} ;
+
+char const *enum_str_logopts[] = {
+	"producer-for" ,
+	"consumer-for" ,
+	"pipeline-name" ,
+	0
+} ;
+
+enum_all_enum_t enum_all[] = {
+
+	[ENUM_SECTION] = { .enum_all = SECTION_ENDOFKEY - ENUM_START, .str = enum_str_section } ,
+	[ENUM_KEY] = { .enum_all = KEY_ENDOFKEY - ENUM_START, .str = enum_str_key } ,
+	[ENUM_TYPE] = { .enum_all = TYPE_ENDOFKEY - ENUM_START, .str = enum_str_type } ,
+	[ENUM_EXPECTED] = { .enum_all = EXPECT_ENDOFKEY - ENUM_START, .str = enum_str_expected } ,
+	[ENUM_OPTS] = { .enum_all = OPTS_ENDOFKEY- ENUM_START , .str = enum_str_opts } ,
+	[ENUM_FLAGS] = { .enum_all = FLAGS_ENDOFKEY - ENUM_START , .str = enum_str_flags } ,
+	[ENUM_BUILD] = { .enum_all = BUILD_ENDOFKEY - ENUM_START , .str = enum_str_build } ,
+	[ENUM_MANDATORY] = { .enum_all = MANDATORY_ENDOFKEY - ENUM_START , .str = enum_str_mandatory } ,
+	[ENUM_TIME] = { .enum_all = TIME_ENDOFKEY - ENUM_START , .str = enum_str_time } ,
+	[ENUM_LOGOPTS] = { .enum_all = LOGOPTS_ENDOFKEY - ENUM_START , .str = enum_str_logopts } ,
+	[ENUM_ENDOFKEY] = { 0 }
+
+} ;
+
+unsigned char const actions[SECTION_ENDOFKEY][TYPE_ENDOFKEY] = {
+	// MODULES		>CLASSIC,			BUNDLE,			LONGRUN,			ONESHOT
+    { ACTION_SKIP,	ACTION_COMMON,		ACTION_COMMON,	ACTION_COMMON,		ACTION_COMMON }, // main
+    { ACTION_SKIP,	ACTION_EXECRUN, 	ACTION_SKIP,	ACTION_EXECRUN, 	ACTION_EXECUP }, // start
+    { ACTION_SKIP,	ACTION_EXECFINISH, 	ACTION_SKIP,	ACTION_EXECFINISH,	ACTION_EXECDOWN }, // stop
+    { ACTION_SKIP,	ACTION_EXECLOG,		ACTION_SKIP,	ACTION_EXECLOG, 	ACTION_SKIP }, // log
+    { ACTION_SKIP,	ACTION_ENVIRON, 	ACTION_SKIP,	ACTION_ENVIRON, 	ACTION_ENVIRON }, // env
+} ;
+
+unsigned char const states[SECTION_ENDOFKEY][TYPE_ENDOFKEY] = {
+	// MODULES		CLASSIC,		BUNDLE,			LONGRUN,		ONESHOT
+    { ACTION_SKIP,	SECTION_START,	ACTION_SKIP,	SECTION_START,	SECTION_START }, // main
+    { ACTION_SKIP,	SECTION_STOP,	ACTION_SKIP,	SECTION_STOP,	SECTION_STOP }, // start
+    { ACTION_SKIP,	SECTION_LOG,	ACTION_SKIP,	SECTION_LOG,	SECTION_LOG }, // stop
+    { ACTION_SKIP,	SECTION_ENV,	ACTION_SKIP,	SECTION_ENV,	SECTION_ENV }, // log
+    { ACTION_SKIP,	ACTION_SKIP,	ACTION_SKIP,	ACTION_SKIP,	ACTION_SKIP }, // env
+} ;
+
+ssize_t get_enum_by_key_one(char const *str, int const e)
 {
-	key_enum_t i = 0 ;
-	
-	for (;i<key_el;i++)
-		if(obstr_equal(str,get_keybyid(i)))	return i ;
-		
+	int i = 0 ;
+	enum_all_enum_t *key = enum_all ;
+	for(; i < key[e].enum_all;i++)
+		if(obstr_equal(str,key[e].str[i]))
+			return i ;
+
 	return -1 ;
 }
 
+ssize_t get_enum_by_key(char const *str)
+{
+	int i = 0, ret ;
+	
+	for (;i<ENUM_ENDOFKEY;i++)
+	{
+		ret = get_enum_by_key_one(str,i) ;
+		if (ret >= 0) return ret ;
+	}
+	return -1 ;
+}
 
-int const key_enum_el = ENDOFKEY - MAIN ;	
-int const key_enum_section_el = TYPE - MAIN ;
-
-int const key_enum_main_el = CLASSIC - TYPE ;
-int const key_enum_svtype_el = LINE - CLASSIC ;
-int const key_enum_expect_el = LOGGER - LINE ;
-int const key_enum_options_el = DOWN - LOGGER ;
-int const key_enum_flags_el = AUTO - DOWN ;
-int const key_enum_build_el = NEED - AUTO ;
-int const key_enum_mandatory_el = TAI - NEED ;
-int const key_enum_time_el = PRODUCER - TAI ;
-int const key_enum_logger_el = ENDOFKEY - PRODUCER ;
-
+char const *get_key_by_enum(int const e, int const key)
+{
+	return enum_all[e].str[key] ;
+}

@@ -55,7 +55,7 @@ static unsigned int nlog = 20 ;
 static stralloc src = STRALLOC_ZERO ;
 
 static wchar_t const field_suffix[] = L" :" ;
-static char fields[ENDOFKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
+static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
 static void info_display_string(char const *str) ;
 static void info_display_name(char const *field, ss_resolve_t *res) ;
 static void info_display_intree(char const *field, ss_resolve_t *res) ;
@@ -209,7 +209,7 @@ static void info_get_status(ss_resolve_t *res)
 	pid_t pid ;
 	
 		
-	if (res->type == CLASSIC || res->type == LONGRUN)
+	if (res->type == TYPE_CLASSIC || res->type == TYPE_LONGRUN)
 	{
 		r = s6_svc_ok(res->sa.s + res->runat) ;
 		if (r != 1)
@@ -257,7 +257,7 @@ static void info_display_status(char const *field,ss_resolve_t *res)
 static void info_display_type(char const *field,ss_resolve_t *res)
 {
 	if (NOFIELD) info_display_field_name(field) ;
-	info_display_string(get_keybyid(res->type)) ;
+	info_display_string(get_key_by_enum(ENUM_TYPE,res->type)) ;
 }
 
 static void info_display_description(char const *field,ss_resolve_t *res)
@@ -455,7 +455,7 @@ static void info_display_envfile(char const *field,ss_resolve_t *res)
 static void info_display_logname(char const *field,ss_resolve_t *res)
 {
 	if (NOFIELD) info_display_field_name(field) ;
-	if (res->type == CLASSIC || res->type == LONGRUN) 
+	if (res->type == TYPE_CLASSIC || res->type == TYPE_LONGRUN) 
 	{
 		if (res->logger)
 		{
@@ -474,7 +474,7 @@ static void info_display_logname(char const *field,ss_resolve_t *res)
 static void info_display_logdst(char const *field,ss_resolve_t *res)
 {
 	if (NOFIELD) info_display_field_name(field) ;
-	if (res->type == CLASSIC || res->type == LONGRUN) 
+	if (res->type == TYPE_CLASSIC || res->type == TYPE_LONGRUN) 
 	{
 		if (res->logger)
 		{
@@ -493,7 +493,7 @@ static void info_display_logdst(char const *field,ss_resolve_t *res)
 static void info_display_logfile(char const *field,ss_resolve_t *res)
 {
 	if (NOFIELD) info_display_field_name(field) ;
-	if (res->type == CLASSIC || res->type == LONGRUN) 
+	if (res->type == TYPE_CLASSIC || res->type == TYPE_LONGRUN) 
 	{
 		if (res->logger)
 		{

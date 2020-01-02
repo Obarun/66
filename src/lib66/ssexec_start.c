@@ -49,7 +49,7 @@ int svc_sanitize(ssexec_t *info, char const *const *envp)
 	unsigned int reverse = 0 ;
 	int r ;
 	stralloc sares = STRALLOC_ZERO ;
-	if (!ss_resolve_pointo(&sares,info,CLASSIC,SS_RESOLVE_SRC))		
+	if (!ss_resolve_pointo(&sares,info,TYPE_CLASSIC,SS_RESOLVE_SRC))
 	{
 		log_warnu("set revolve pointer to source") ;
 		goto err;
@@ -284,7 +284,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 		if (sta.init){ reload = 0 ; init = 1 ; }
 		
 		append:		
-		if (pres->type == CLASSIC)
+		if (pres->type == TYPE_CLASSIC)
 		{
 			if (reload)
 			{

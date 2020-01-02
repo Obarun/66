@@ -104,7 +104,7 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list,
 		for (;nid; id += strlen(deps.s + id) + 1, nid--)
 		{
 			newsv.len = 0 ;
-			if (sv_before->cname.itype != BUNDLE)
+			if (sv_before->cname.itype != TYPE_BUNDLE)
 			{
 				log_trace("Service : ",sv, " depends on : ",deps.s+id) ;
 			}else log_trace("Bundle : ",sv, " contents : ",deps.s+id," as service") ;
@@ -137,7 +137,7 @@ int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_
 	
 	unsigned int idref = sv_before->cname.idopts ;
 	unsigned int nref = sv_before->cname.nopts ;
-	if (mandatory == EXTDEPS) {
+	if (mandatory == KEY_EXTDEPS) {
 		idref = sv_before->cname.idext ;
 		nref = sv_before->cname.next ;
 		ext = 1 ;
@@ -231,19 +231,24 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	sv_alltype sv_before = SV_ALLTYPE_ZERO ;
 	sasv->len = 0 ;
 
+	if (!read_svfile(sasv,svname,svsrc)) return 0 ;
+
+	if (!get_svtype(&sv_before,sasv->s)) 
+		log_warn_return (LOG_EXIT_ZERO,"invalid value for key: ",get_key_by_enum(ENUM_KEY,KEY_TYPE)," in service file: ",svsrc,"/",svname) ;
+
 	insta = instance_check(svname) ;
 	if (!insta) 
 		log_warn_return(LOG_EXIT_ZERO, "invalid instance name: ",svname) ;
 
 	if (insta > 0)
 	{
-		if (!instance_create(sasv,svname,SS_INSTANCE,svsrc,insta))
+		if (!instance_create(sasv,svname,SS_INSTANCE,insta))
 			log_warn_return(LOG_EXIT_ZERO,"create instance service: ",svname) ;
 		
 		/** ensure that we have an empty line at the end of the string*/
 		if (!stralloc_cats(sasv,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		if (!stralloc_0(sasv)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-	}else if (!read_svfile(sasv,svname,svsrc)) return 0 ;
+	}
 	
 	memcpy(svpath,svsrc,svsrclen) ;
 	memcpy(svpath + svsrclen,svname,svnamelen) ;
@@ -257,7 +262,7 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 		goto freed ;
 	}
 
-	if (!parser(&sv_before,sasv,svname)) return 0 ;
+	if (!parser(&sv_before,sasv,svname,sv_before.cname.itype)) return 0 ;
 	
 	/** keep the name set by user
 	 * uniquely for instantiated service
@@ -291,11 +296,11 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	add:
 	if (!parse_add_service(parsed_list,&sv_before,svpath,nbsv,info->owner)) return 0 ;
 	
-	if ((sv_before.cname.itype > CLASSIC && force > 1) || !(*exist))
+	if ((sv_before.cname.itype > TYPE_CLASSIC && force > 1) || !(*exist))
 	{
 		if (!parse_service_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force)) return 0 ;
-		if (!parse_service_opts_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,OPTSDEPS)) return 0 ;
-		if (!parse_service_opts_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,EXTDEPS)) return 0 ;
+		if (!parse_service_opts_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,KEY_OPTSDEPS)) return 0 ;
+		if (!parse_service_opts_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,KEY_EXTDEPS)) return 0 ;
 	}
 	freed:
 	return 1 ;

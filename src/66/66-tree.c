@@ -213,7 +213,7 @@ void create_tree(char const *tree,char const *treename)
 	res.description = ss_resolve_add_string(&res,"inner bundle - do not use it") ;
 	res.tree = ss_resolve_add_string(&res,dst) ;
 	res.treename = ss_resolve_add_string(&res,treename) ;
-	res.type = BUNDLE ;
+	res.type = TYPE_BUNDLE ;
 	res.disen = 1 ;
 	
 	auto_create(dst,SS_SVDIRS,newlen,0755) ;

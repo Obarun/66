@@ -52,7 +52,7 @@ static stralloc live = STRALLOC_ZERO ;
 static stralloc src = STRALLOC_ZERO ;
 
 static wchar_t const field_suffix[] = L" :" ;
-static char fields[ENDOFKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
+static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
 static void info_display_name(char const *field,char const *treename) ;
 static void info_display_init(char const *field,char const *treename) ;
 static void info_display_order(char const *field,char const *treename) ;
@@ -325,7 +325,7 @@ static void info_display_symlink(char const *field, char const *treename)
 	int db, svc ;
 	size_t typelen ;
 	char type[UINT_FMT] ;
-	typelen = uint_fmt(type, BUNDLE) ;
+	typelen = uint_fmt(type, TYPE_BUNDLE) ;
 	type[typelen] = 0 ;
 	
 	char cmd[typelen + 6 + 1] ;
@@ -334,7 +334,7 @@ static void info_display_symlink(char const *field, char const *treename)
 	db = backup_cmd_switcher(VERBOSITY,cmd,&info) ;
 	if (db < 0) log_dieusys(LOG_EXIT_SYS,"find realpath of symlink for db of tree: ",info.treename.s) ;
 	
-	typelen = uint_fmt(type, CLASSIC) ;
+	typelen = uint_fmt(type, TYPE_CLASSIC) ;
 	type[typelen] = 0 ;
 		
 	auto_strings(cmd,"-t",type," -b") ;

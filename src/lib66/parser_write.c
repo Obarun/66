@@ -60,7 +60,7 @@ int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, uint8_t f
 		if (ss_resolve_check(workdir,name)) 
 		{
 			if (!ss_resolve_read(&res,workdir,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
-			if (res.type != type && res.disen) log_die(LOG_EXIT_SYS,"Detection of incompatible type format for: ",name," -- current: ",get_keybyid(type)," previous: ",get_keybyid(res.type)) ;
+			if (res.type != type && res.disen) log_die(LOG_EXIT_SYS,"Detection of incompatible type format for: ",name," -- current: ",get_key_by_enum(ENUM_TYPE,type)," previous: ",get_key_by_enum(ENUM_TYPE,res.type)) ;
 		}
 		ss_resolve_free(&res) ;
 	}
@@ -70,7 +70,7 @@ int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, uint8_t f
 	memcpy(wname,workdir,workdirlen) ;
 	wnamelen = workdirlen ;
 	
-	if (type == CLASSIC)
+	if (type == TYPE_CLASSIC)
 	{
 		memcpy(wname + wnamelen, SS_SVC, SS_SVC_LEN) ;
 		memcpy(wname + wnamelen + SS_SVC_LEN, "/", 1) ;
@@ -111,27 +111,27 @@ int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, uint8_t f
 	
 	switch(type)
 	{
-		case CLASSIC:
+		case TYPE_CLASSIC:
 			if (!write_classic(sv, wname, force, conf))
 				log_warnu_return(LOG_EXIT_ZERO,"write: ",wname) ;
 			
 			break ;
-		case LONGRUN:
+		case TYPE_LONGRUN:
 			if (!write_longrun(sv, wname, force, conf))
 				log_warnu_return(LOG_EXIT_ZERO,"write: ",wname) ;
 
 			break ;
-		case ONESHOT:
+		case TYPE_ONESHOT:
 			if (!write_oneshot(sv, wname, conf))
 				log_warnu_return(LOG_EXIT_ZERO,"write: ",wname) ;
 
 			break ;
-		case BUNDLE:
+		case TYPE_BUNDLE:
 			if (!write_bundle(sv, wname))
 				log_warnu_return(LOG_EXIT_ZERO,"write: ",wname) ;
 
 			break ;
-		default: log_warn_return(LOG_EXIT_ZERO,"unkown type: ", get_keybyid(sv->cname.itype)) ;
+		default: log_warn_return(LOG_EXIT_ZERO,"unkown type: ", get_key_by_enum(ENUM_TYPE,sv->cname.itype)) ;
 	}
 		
 	return 1 ;
@@ -322,7 +322,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			log_warnu_return(LOG_EXIT_ZERO,"write: ",ddst.s,"/dependencies") ;
 	}
 	
-	if (sv->cname.itype > CLASSIC)
+	if (sv->cname.itype > TYPE_CLASSIC)
 	{
 		if (!file_write_unsafe(ddst.s,"type","longrun",7))
 			log_warnusys_return(LOG_EXIT_ZERO,"write: ",ddst.s,"/type") ;
@@ -331,11 +331,11 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 	/**logger section may not be set
 	 * pick auto by default*/
 	if (!logbuild)
-		logbuild=AUTO ; 
+		logbuild=BUILD_AUTO ; 
 	
 	switch(logbuild)
 	{
-		case AUTO:
+		case BUILD_AUTO:
 			/** uid */
 			if (!stralloc_cats(&shebang, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n") || 
 			!stralloc_0(&shebang)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
@@ -369,8 +369,8 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			}
 			if (!stralloc_0(&destlog)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			
-			if (log->timestamp == ISO) timestamp = "T" ;
-			else if (log->timestamp == NONE) timestamp = "" ;
+			if (log->timestamp == TIME_ISO) timestamp = "T" ;
+			else if (log->timestamp == TIME_NONE) timestamp = "" ;
 			
 			if (log->backup > 0)
 			{
@@ -394,7 +394,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			!stralloc_cats(&exec,S6_BINPREFIX "s6-log -d3 " "n") ||
 			!stralloc_cats(&exec,pback) ||
 			!stralloc_cats(&exec," ")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-			if (log->timestamp < NONE) 
+			if (log->timestamp < TIME_NONE) 
 			{
 				if (!stralloc_cats(&exec,timestamp) ||
 				!stralloc_cats(&exec," ")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
@@ -413,7 +413,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			if (!file_write_unsafe(ddst.s,SS_NOTIFICATION,"3\n",2))
 				log_warnusys_return(LOG_EXIT_ZERO,"write: ",ddst.s,"/" SS_NOTIFICATION) ;
 				
-			if (sv->cname.itype == CLASSIC)
+			if (sv->cname.itype == TYPE_CLASSIC)
 			{
 				ddst.len-- ;
 				if (!stralloc_cats(&ddst,"/run") ||
@@ -423,11 +423,11 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 					log_warnusys_return(LOG_EXIT_ZERO,"chmod ", ddst.s) ;
 			}
 			break;
-		case CUSTOM:
+		case BUILD_CUSTOM:
 			if (!write_exec(sv, &log->run,"run",ddst.s,mode))
 				log_warnu_return(LOG_EXIT_ZERO,"write: ",ddst.s,"/run") ;
 			break;
-		default: log_warn_return(LOG_EXIT_ZERO,"unknown build value: ",get_keybyid(logbuild)) ;	
+		default: log_warn_return(LOG_EXIT_ZERO,"unknown build value: ",get_key_by_enum(ENUM_BUILD,logbuild)) ;	
 	}
 		
 	r = scan_mode(destlog.s,S_IFDIR) ;
@@ -476,12 +476,12 @@ int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char
 	char pipefile[consdstlen + 1 + consnamelen + 1 + 1] ;
 	
 	/**producer-for*/
-	if (!file_write_unsafe(consfile,get_keybyid(CONSUMER),prodname,strlen(prodname))) 
-		log_warnu_return(LOG_EXIT_ZERO,"write: ",consfile,get_keybyid(CONSUMER)) ;
+	if (!file_write_unsafe(consfile,get_key_by_enum(ENUM_LOGOPTS,LOGOPTS_CONSUMER),prodname,strlen(prodname))) 
+		log_warnu_return(LOG_EXIT_ZERO,"write: ",consfile,get_key_by_enum(ENUM_LOGOPTS,LOGOPTS_CONSUMER)) ;
 	
 	/**consumer-for*/
-	if (!file_write_unsafe(prodfile,get_keybyid(PRODUCER),consname,strlen(consname)))
-		log_warnu_return(LOG_EXIT_ZERO,"write: ",prodfile,get_keybyid(PRODUCER)) ;
+	if (!file_write_unsafe(prodfile,get_key_by_enum(ENUM_LOGOPTS,LOGOPTS_PRODUCER),consname,strlen(consname)))
+		log_warnu_return(LOG_EXIT_ZERO,"write: ",prodfile,get_key_by_enum(ENUM_LOGOPTS,LOGOPTS_PRODUCER)) ;
 
 	/**pipeline**/
 	if (sv->opts[1]) 
@@ -496,8 +496,8 @@ int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char
 		
 		memcpy(pipename,deps.s+sv->pipeline,len) ;
 		pipename[len] = 0 ;
-		if (!file_write_unsafe(pipefile,PIPELINE_NAME,pipename,len))
-			log_warnu_return(LOG_EXIT_ZERO,"write: ",pipefile,PIPELINE_NAME) ;
+		if (!file_write_unsafe(pipefile,get_key_by_enum(ENUM_LOGOPTS,LOGOPTS_PIPE),pipename,len))
+			log_warnu_return(LOG_EXIT_ZERO,"write: ",pipefile,get_key_by_enum(ENUM_LOGOPTS,LOGOPTS_PIPE)) ;
 	}	
 	
 	return 1 ;
@@ -552,9 +552,9 @@ int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 		
 	}
 	/** type file*/
-	if (sv->cname.itype > CLASSIC)
+	if (sv->cname.itype > TYPE_CLASSIC)
 	{
-		if (!file_write_unsafe(dst,"type",get_keybyid(sv->cname.itype),strlen(get_keybyid(sv->cname.itype))))
+		if (!file_write_unsafe(dst,"type",get_key_by_enum(ENUM_TYPE,sv->cname.itype),strlen(get_key_by_enum(ENUM_TYPE,sv->cname.itype))))
 			log_warnusys_return(LOG_EXIT_ZERO,"write type file") ;
 	}
 	/** max-death-tally */
@@ -592,6 +592,7 @@ int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 			stralloc salist = STRALLOC_ZERO ;
 			//merge config from upstream to sysadmin
 			if (!file_readputsa(&salist,dst,name)) log_warnusys_return(LOG_EXIT_ZERO,"read: ",dst,name) ;
+
 			if (!env_merge_conf(dst,name,&salist,&sv->saenv,conf))
 				log_warnu_return(LOG_EXIT_ZERO,"merge environment file") ;
 
@@ -649,7 +650,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 	
 	switch (exec->build)
 	{
-		case AUTO:
+		case BUILD_AUTO:
 			/** uid */
 			if ((!owner && exec->runas))
 			{
@@ -658,7 +659,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 				!stralloc_cats(&ui,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			}
 			/** environment */
-			if (sv->opts[2] && (exec->build == AUTO))
+			if (sv->opts[2] && (exec->build == BUILD_AUTO))
 			{
 				if (!stralloc_cats(&env,SS_BINPREFIX "execl-envfile ") ||
 				!stralloc_cats(&env,keep.s + sv->srconf) || 
@@ -666,13 +667,13 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 				!stralloc_cats(&env,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			}
 			/** shebang */
-			if (type != ONESHOT)
+			if (type != TYPE_ONESHOT)
 			{
 				if (!stralloc_cats(&shebang, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			}
 			break ;
-		case CUSTOM:
-			if (type != ONESHOT)
+		case BUILD_CUSTOM:
+			if (type != TYPE_ONESHOT)
 			{
 				if (!stralloc_cats(&shebang, "#!") ||
 				!stralloc_cats(&shebang, keep.s+exec->shebang) || 
@@ -684,7 +685,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 				!stralloc_cats(&shebang," \"")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			}
 			break ;
-		default: log_warn(LOG_EXIT_ZERO,"unknown ", get_keybyid(exec->build)," build type") ;
+		default: log_warn(LOG_EXIT_ZERO,"unknown ", get_key_by_enum(ENUM_BUILD,exec->build)," build type") ;
 			break ;
 	}
 	/** close uid */
@@ -695,7 +696,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 	if (!stralloc_0(&shebang)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	/** close command */
 	if (!stralloc_cats(&runuser, keep.s+exec->exec)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-	if ((type == ONESHOT) && (exec->build == CUSTOM))
+	if ((type == TYPE_ONESHOT) && (exec->build == BUILD_CUSTOM))
 	{
 		if (!stralloc_cats(&runuser," \"")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}
@@ -704,7 +705,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 	
 	/** build the file*/	
 	if (!stralloc_cats(&execute,shebang.s)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-	if (exec->build == AUTO)
+	if (exec->build == BUILD_AUTO)
 	{
 		if (!stralloc_cats(&execute,EXECLINE_BINPREFIX "fdmove -c 2 1\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}

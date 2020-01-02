@@ -189,7 +189,7 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 		if (UNSUP) unsup = 1 ;
 		if (sta.unsupervise) unsup = 1 ;
 		append:		
-		if (pres->type == CLASSIC)
+		if (pres->type == TYPE_CLASSIC)
 		{
 			if (unsup)
 			{

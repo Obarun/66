@@ -57,7 +57,7 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 		goto err ;
 	}
 	if (!stralloc_cats(&dst,src)) goto err ;
-	if (cp.type == CLASSIC)
+	if (cp.type == TYPE_CLASSIC)
 	{
 		if (!stralloc_cats(&dst,SS_SVC)) goto err ;
 	}
@@ -199,7 +199,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 		if (!svc_remove(&tostop,pres,workdir.s,info))
 			log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"remove",name," directory service") ;
 		
-		if (res.type == CLASSIC) nclassic++ ;
+		if (res.type == TYPE_CLASSIC) nclassic++ ;
 		else nlongrun++ ;
 		
 	}

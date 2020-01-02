@@ -105,7 +105,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 		log_trace("Service written successfully: ", name) ;
 		if (sastr_cmp(tostart,name) == -1)
 		{
-			if (sv->cname.itype == CLASSIC) (*nclassic)++ ;
+			if (sv->cname.itype == TYPE_CLASSIC) (*nclassic)++ ;
 			else (*nlongrun)++ ;
 			if (!sastr_add_string(tostart,name))
 				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"stralloc") ;

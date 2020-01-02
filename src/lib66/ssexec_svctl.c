@@ -98,7 +98,7 @@ int handle_signal_svc(ss_resolve_sig_t *sv_signal)
 	else return 0 ;
 }
 
-static unsigned char const actions[9][9] = 
+static unsigned char const svctl_actions[9][9] =
 {
  //signal receive:
  //  c->u		U		r/u		R/U		d		D		x		O		s						
@@ -170,7 +170,7 @@ int handle_case(stralloc *sa, ss_resolve_sig_t *svc)
 	for (;i < sa->len ; i++)
 	{
 		p = chtenum[(unsigned char)sa->s[i]] ;
-		unsigned char action = actions[state][p] ;
+		unsigned char action = svctl_actions[state][p] ;
 		
 		switch (action)
 		{
@@ -516,7 +516,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 		if (!ss_resolve_check(sares.s,name)) log_diesys(LOG_EXIT_SYS,"unknown service: ",name) ;
 		if (!ss_resolve_read(&res,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
-		if (res.type >= BUNDLE) log_die(LOG_EXIT_SYS,name," has type ",get_keybyid(res.type)) ;
+		if (res.type >= TYPE_BUNDLE) log_die(LOG_EXIT_SYS,name," has type ",get_key_by_enum(ENUM_TYPE,res.type)) ;
 		if (SIGNAL == SIGR && logname < 0) reverse = 1 ;
 		if (!ss_resolve_graph_build(&graph,&res,sares.s,reverse)) log_dieusys(LOG_EXIT_SYS,"build services graph") ;
 	}

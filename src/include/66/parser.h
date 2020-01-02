@@ -36,19 +36,6 @@ extern stralloc deps ;
 //extern genalloc gadeps ;
 extern genalloc gasv ;
 
-typedef enum actions_e actions_t, *actions_t_ref ;
-enum actions_e
-{
-	COMMON = 0 ,
-	EXECRUN ,
-	EXECFINISH ,
-	EXECLOG ,
-	EXECUP ,
-	EXECDOWN,
-	ENVIRON,
-	SKIP
-} ;
-
 /**struct for run and finish file*/
 typedef struct sv_exec_s sv_exec,*sv_exec_ref ;
 struct sv_exec_s
@@ -260,7 +247,7 @@ extern void section_free(section_t *sec) ;
 extern void freed_parser(void) ;
 /** enable phase */
 extern void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORCE) ;
-extern int parser(sv_alltype *service,stralloc *src,char const *svname) ;
+extern int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype) ;
 extern int parse_service_check_enabled(ssexec_t *info, char const *svname,uint8_t force,uint8_t *exist) ;
 extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, stralloc *opts_deps_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t *exist) ;
 extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, stralloc *opts_deps_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force) ;
@@ -268,7 +255,7 @@ extern int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc
 extern int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner) ;
 /** split */
 extern int section_get_range(section_t *sasection,stralloc *src) ;
-extern int key_get_range(genalloc *ga, section_t *sasection,int *svtype) ;
+extern int key_get_range(genalloc *ga, section_t *sasection) ;
 extern int get_mandatory(genalloc *nocheck,int idsec,int idkey) ;
 extern int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service) ;
 /** store */

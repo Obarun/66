@@ -96,7 +96,7 @@ int ss_resolve_pointo(stralloc *sa,ssexec_t *info,unsigned int type, unsigned in
 	
 	if (type && where)
 	{
-		if (type == CLASSIC)
+		if (type == TYPE_CLASSIC)
 		{
 			if (!stralloc_cats(&tmp,SS_SVC)) goto err ;
 		}
@@ -536,7 +536,7 @@ int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst,ssexec_t *info)
 	size_t runlen = strlen(string + sv->runat) ;
 	char live[runlen + 4 + 1] ;
 	memcpy(live,string + sv->runat,runlen) ;
-	if (sv->type >= BUNDLE)
+	if (sv->type >= TYPE_BUNDLE)
 	{
 		memcpy(live + runlen,"-log",4)  ;
 	}else memcpy(live + runlen,"/log",4)  ;
@@ -631,7 +631,7 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	if (services->flags[0])	res.down = 1 ;
 	res.disen = 1 ;
 
-	if (res.type == CLASSIC)
+	if (res.type == TYPE_CLASSIC)
 	{
 		
 		memcpy(stmp,info->scandir.s,info->scandir.len) ;
@@ -640,7 +640,7 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		stmp[info->scandir.len + 1 + namelen] = 0 ;
 		res.runat = ss_resolve_add_string(&res,stmp) ;
 	}
-	else if (res.type >= BUNDLE)
+	else if (res.type >= TYPE_BUNDLE)
 	{
 		memcpy(stmp,info->livetree.s,info->livetree.len) ;
 		stmp[info->livetree.len] = '/' ;
@@ -707,7 +707,7 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		logname[namelen + SS_LOG_SUFFIX_LEN] = 0 ;
 	
 		memcpy(logreal,name,namelen) ;
-		if (res.type == CLASSIC)
+		if (res.type == TYPE_CLASSIC)
 		{
 			memcpy(logreal + namelen,"/log",SS_LOG_SUFFIX_LEN) ;
 		}
@@ -721,8 +721,8 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		if (!stralloc_cats(&ndeps,res.sa.s + res.logger)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		if (!stralloc_0(&ndeps)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		res.deps = ss_resolve_add_string(&res,ndeps.s) ;
-		if (res.type == CLASSIC) res.ndeps = 1 ;
-		else if (res.type == LONGRUN) res.ndeps += 1 ;
+		if (res.type == TYPE_CLASSIC) res.ndeps = 1 ;
+		else if (res.type == TYPE_LONGRUN) res.ndeps += 1 ;
 		// destination of the logger
 		if (!services->type.classic_longrun.log.destination)
 		{	
@@ -880,7 +880,7 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 	memcpy(s + srclen,SS_RESOLVE,SS_RESOLVE_LEN) ;
 	s[srclen + SS_RESOLVE_LEN] = 0 ;
 
-	if (res->type == CLASSIC) type = 0 ;
+	if (res->type == TYPE_CLASSIC) type = 0 ;
 	else type = 1 ;
 	
 	if (!sastr_dir_get(&nsv,s,SS_MASTER+1,S_IFREG)) goto err ;
@@ -889,7 +889,7 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 	{
 		if (!ss_resolve_append(tokeep,res)) goto err ;
 	}
-	if (res->type == BUNDLE && res->ndeps)
+	if (res->type == TYPE_BUNDLE && res->ndeps)
 	{
 		if (!sastr_clean_string(&tmp,res->sa.s + res->deps)) goto err ;
 		ss_resolve_t dres = RESOLVE_ZERO ;
@@ -917,7 +917,7 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 		
 		if (!ss_resolve_read(&dres,src,dname)) goto err ;
 		
-		if (dres.type == CLASSIC) dtype = 0 ;
+		if (dres.type == TYPE_CLASSIC) dtype = 0 ;
 		else dtype = 1 ;
 				
 		if (ss_state_check(dres.sa.s + dres.state,dname))
@@ -926,10 +926,10 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 			if (dtype != type || (!dres.disen && !sta.unsupervise)){ ss_resolve_free(&dres) ; continue ; }
 		}
 		else if (dtype != type || (!dres.disen)){ ss_resolve_free(&dres) ; continue ; }
-		if (dres.type == BUNDLE && !dres.ndeps){ ss_resolve_free(&dres) ; continue ; }
+		if (dres.type == TYPE_BUNDLE && !dres.ndeps){ ss_resolve_free(&dres) ; continue ; }
 		if (!ss_resolve_cmp(tokeep,dname))
 		{
-			if (dres.ndeps)// || (dres.type == BUNDLE && dres.ndeps) || )
+			if (dres.ndeps)// || (dres.type == TYPE_BUNDLE && dres.ndeps) || )
 			{
 				if (!sastr_clean_string(&tmp,dres.sa.s + dres.deps)) goto err ;
 				for (c = 0 ; c < tmp.len ; c += strlen(tmp.s + c) + 1)
@@ -1147,7 +1147,7 @@ int ss_resolve_write_master(ssexec_t *info,ss_resolve_graph_t *graph,char const 
 	res.treename = ss_resolve_add_string(&res,info->treename.s) ;
 	res.tree = ss_resolve_add_string(&res,info->tree.s) ;
 	res.live = ss_resolve_add_string(&res,info->live.s) ;
-	res.type = BUNDLE ;
+	res.type = TYPE_BUNDLE ;
 	res.deps = ss_resolve_add_string(&res,inres.s) ;
 	res.ndeps = genalloc_len(ss_resolve_t,&graph->sorted) ;
 	res.runat = ss_resolve_add_string(&res,runat) ;
