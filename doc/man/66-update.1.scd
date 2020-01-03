@@ -6,7 +6,7 @@
 
 # SYNOPSYS
 
-66-scandir [ *-h* ] [ *-v* _verbosity_ ] [* -c* ] [ *-l* _live_ ]  _tree_
+66-update [ *-h* ] [ *-v* _verbosity_ ] [* -c* ] [ *-l* _live_ ] [ *-d* ]  _tree_
 
 # DESCRIPTION
 
@@ -40,6 +40,12 @@ without needing a reboot.
 	The default can also be changed at compile-time by passing the
 	\--livedir=_live_ option to *./configure*. Should be under a writable
 	filesystem - likely a RAM filesystem.
+
+*-d*
+	dry run. Performs operation without modify the current state of the 
+	system. All command's output will be prefixed by "dry run do: " 
+	sentence. It's a good idea to first use this option before performing 
+	a real update.
 
 If no _tree_ is given, all trees of the owner (root or user) of the 
 process will be processed. In the case of user owned trees *66-update*

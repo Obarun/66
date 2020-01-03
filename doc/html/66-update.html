@@ -32,7 +32,7 @@
 <h2>Interface</h2>
 
 	<pre>
-	66-udpate [ -h ] [ -v <em>verbosity</em> ] [ -c ] [ -l <em>live</em> ] <em>tree</em>
+	66-udpate [ -h ] [ -v <em>verbosity</em> ] [ -c ] [ -l <em>live</em> ] [ -d ] <em>tree</em>
 	</pre>
     <p>
         If no tree is given, all trees of the owner (root or user) of the process will be processed.
@@ -68,18 +68,25 @@
 		<li> 
 			<tt>-c&nbsp;</tt>&nbsp;: enable colorization.
 		</li>
-	</ul>
+       	<li> 
+			<tt>-d&nbsp;</tt>&nbsp;: dry run. Performs operation without 
+            modify the current state of the system. All command's output will 
+            be prefixed by "dry run do: " sentence. It's a good idea to 
+            first use this option before performing a real update. 
+		</li>
+	
+    </ul>
 
 <h2>Transition process</h2>
 
 <ul>
     <li>
+        It saves the current state of the tree (current,enabled,...).
+    </li>
+    <li>
         It determines if the tree is already initialized. In such case, it
         makes a copy of the current database on a temporary directory and
         switches the database to it.
-    </li>
-    <li>
-        It saves the current state of the tree (current,enabled,...).
     </li>
     <li>
         It destroys the tree with <tt><a href="66-tree.html">66-tree -R</a></tt> command. 

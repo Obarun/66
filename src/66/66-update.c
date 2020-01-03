@@ -222,7 +222,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		if (!satree.len)
 		{
-			log_info("No trees exist yet -- Nothing to do") ;
+			log_info(DRYRUN ? drun : "","No trees exist yet -- Nothing to do") ;
 			goto exit ;
 		}
 	}
@@ -364,9 +364,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				if (!tree_copy(&WORKDIR,info.tree.s,info.treename.s)) 
 					log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"create tmp working directory") ;
 	
-	//			fdir = dir_create_tmp(&WORKDIR,"/tmp",info.treename.s) ;
-	//			if (!fdir) log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"create temporary directory") ;
-				
 				auto_strings(tmp,WORKDIR.s) ;
 			}
 			start_parser(&contents,&info,&nbsv,DRYRUN ? 1 : 0) ;
