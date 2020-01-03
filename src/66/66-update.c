@@ -68,7 +68,7 @@ static void cleanup(void)
 	if (WORKDIR.len)
 	{
 		log_trace(DRYRUN ? drun : "","delete temporary directory: ",WORKDIR.s) ;
-		rm_rf(WORKDIR.s) ;
+	//	rm_rf(WORKDIR.s) ;
 	}
 	errno = e ;
 }
@@ -361,10 +361,20 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			else
 			{
 				WORKDIR.len = 0 ;
+				log_trace(drun,"copy: ", info.tree.s,SS_SVDIRS," to a temporary directory") ;
 				if (!tree_copy(&WORKDIR,info.tree.s,info.treename.s)) 
 					log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"create tmp working directory") ;
-	
-				auto_strings(tmp,WORKDIR.s) ;
+				/* we need to remove the contain of .resolve directory
+				 * The write process will try to read it and obviously it
+				 * get a wrong information*/
+				auto_strings(tmp,WORKDIR.s,SS_RESOLVE) ;
+				log_trace(drun,"remove directory: ", tmp) ;
+				if (rm_rf(tmp) < 0) log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"remove: ",tmp) ;
+				log_trace(drun,"create directory: ", tmp) ;
+				if (!dir_create_parent(tmp,0755))
+					log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"create directory: ",tmp) ;
+				auto_string_from(tmp,0,WORKDIR.s) ;
+				
 			}
 			start_parser(&contents,&info,&nbsv,DRYRUN ? 1 : 0) ;
 			start_write(&tostart,&nclassic,&nlongrun,tmp,&gasv,&info,DRYRUN ? 1 : 0,0) ;
