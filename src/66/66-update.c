@@ -68,7 +68,7 @@ static void cleanup(void)
 	if (WORKDIR.len)
 	{
 		log_trace(DRYRUN ? drun : "","delete temporary directory: ",WORKDIR.s) ;
-	//	rm_rf(WORKDIR.s) ;
+		rm_rf(WORKDIR.s) ;
 	}
 	errno = e ;
 }
