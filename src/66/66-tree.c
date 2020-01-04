@@ -336,14 +336,16 @@ int set_rules(char const *tree,uid_t *uids, size_t uidn,unsigned int what)
 		if (MYUID == uids[i+1]) continue ;
 		uint32_pack(pack,uids[i+1]) ;
 		pack[uint_fmt(pack,uids[i+1])] = 0 ;
+		char ut[treelen + SS_RULES_LEN + 1 + uint_fmt(pack,uids[i+1]) + 1] ;
 		r = dir_search(tmp,pack,S_IFREG) ;
 		if (r)
 		{
-			memcpy(tmp + treelen + SS_RULES_LEN,"/",1) ;
-			memcpy(tmp + treelen + SS_RULES_LEN + 1,pack,uint_fmt(pack,uids[i+1])) ;
-			tmp[treelen + SS_RULES_LEN + 1 + uint_fmt(pack,uids[i + 1])] = 0 ;
-			log_trace("unlink: ",tmp) ;
-			r = unlink(tmp) ;
+			memcpy(ut,tmp,treelen + SS_RULES_LEN) ;
+			memcpy(ut + treelen + SS_RULES_LEN,"/",1) ;
+			memcpy(ut + treelen + SS_RULES_LEN + 1,pack,uint_fmt(pack,uids[i+1])) ;
+			ut[treelen + SS_RULES_LEN + 1 + uint_fmt(pack,uids[i + 1])] = 0 ;
+			log_trace("unlink: ",ut) ;
+			r = unlink(ut) ;
 			if (r == -1) return 0 ;
 		}
 		log_trace("user: ",pack," is denied for tree: ",tree) ;
