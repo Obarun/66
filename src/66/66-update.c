@@ -132,8 +132,8 @@ void tree_contents(stralloc *list,char const *tree,ssexec_t *info)
 		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get source svc service file of: ",tree) ;
 
 	auto_string_from(solve,newlen,SS_DB,SS_SRC) ;
-	
-	if (!sastr_dir_get(&sa,solve,SS_MASTER + 1,S_IFREG))
+
+	if (!sastr_dir_get(&sa,solve,SS_MASTER + 1,S_IFDIR))
 		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get source of atomic service file of: ",tree) ;
 	
 	for (pos = 0 ;pos < sa.len; pos += strlen(sa.s + pos) + 1)
@@ -416,8 +416,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		
 		if (dbok)
 		{
-			log_info(DRYRUN ? drun : "","update db: ",info.livetree.s,"/",info.treename.s, " to: ",tmp,"/",info.treename.s) ;
 			auto_strings(tmp,system,info.treename.s,SS_SVDIRS,SS_DB) ;
+			log_info(DRYRUN ? drun : "","update db: ",info.livetree.s,"/",info.treename.s, " to: ",tmp,"/",info.treename.s) ;
 			/* Be paranoid here and use db_update instead of atomic_symlink.
 			 * db_update() allow to make a running test and to see
 			 * if the db match exactly the same state.
