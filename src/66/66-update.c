@@ -123,12 +123,18 @@ void tree_allowed(stralloc *list,char const *base, char const *treename)
 void tree_contents(stralloc *list,char const *tree,ssexec_t *info)
 {
 	stralloc sa = STRALLOC_ZERO ;
-	size_t treelen = strlen(tree), pos ;
-	char solve[treelen + SS_SVDIRS_LEN + SS_RESOLVE_LEN + 1] ;
-	auto_strings(solve,tree,SS_SVDIRS,SS_RESOLVE) ;
+	size_t treelen = strlen(tree), pos, newlen ;
+	char solve[treelen + SS_SVDIRS_LEN + SS_DB_LEN + SS_SRC_LEN + 1] ;
+	newlen = treelen + SS_SVDIRS_LEN ;
+	auto_strings(solve,tree,SS_SVDIRS,SS_SVC) ;
+	
+	if (!sastr_dir_get(&sa,solve,"",S_IFDIR))
+		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get source svc service file of: ",tree) ;
+
+	auto_string_from(solve,newlen,SS_DB,SS_SRC) ;
 	
 	if (!sastr_dir_get(&sa,solve,SS_MASTER + 1,S_IFREG))
-		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get source service file of: ",tree) ;
+		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get source of atomic service file of: ",tree) ;
 	
 	for (pos = 0 ;pos < sa.len; pos += strlen(sa.s + pos) + 1)
 	{
