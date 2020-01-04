@@ -201,7 +201,7 @@ void create_tree(char const *tree,char const *treename)
 	size_t newlen = 0 ;
 	size_t treelen = strlen(tree) ;
 		
-	char dst[treelen + SS_DB_LEN + SS_SRC_LEN + 13 + 1] ;
+	char dst[treelen + SS_SVDIRS_LEN + SS_DB_LEN + SS_SRC_LEN + 16 + 1] ;
 	ss_resolve_t res = RESOLVE_ZERO ;
 	ss_resolve_init(&res) ;
 	
@@ -264,7 +264,7 @@ void create_tree(char const *tree,char const *treename)
 		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"create: ",dst,"/contents") ;
 	
 	auto_string(dst,"/type",newlen) ;
-	log_trace("create file:",dst) ;
+	log_trace("create file: ",dst) ;
 	if(!openwritenclose_unsafe(dst,"bundle\n",7))
 		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"write: ",dst) ;
 	
