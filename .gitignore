@@ -1,6 +1,7 @@
 *.o
 *.lo
 *.a.*
+*.so.*
 .deps/
 /66-all
 /66-boot
