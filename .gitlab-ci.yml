@@ -3,7 +3,7 @@ image: obarun/base:latest
 before_script:
   - pacman -Syu --noconfirm
   - pacman -S autoconf automake binutils bison file flex gcc gettext git grep groff libtool m4 make patch pkgconf texinfo which --noconfirm
-  - pacman -S skalibs execline oblibs s6 s6-rc scdoc --noconfirm
+  - pacman -S scdoc --noconfirm
   - ./build_toolchain.sh
 
 test:

@@ -13,7 +13,7 @@ build_skalibs() {
 	cd skalibs
 	git checkout tags/"${skalibs_tag}"
 	./configure \
-		--prefix=/usr/bin \
+		--prefix=/usr \
 		--with-default-path=/usr/bin \
 		--enable-shared
 	
