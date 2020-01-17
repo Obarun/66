@@ -6,8 +6,8 @@ before_script:
   - pacman -S skalibs execline oblibs s6 s6-rc scdoc --noconfirm
   - ./build_toolchain.sh
 
-merge:
-  stage: merge
+test:
+  stage: test
   script:
   - ./configure --bindir=/usr/bin --with-system-dir=/usr/lib/66/service
   - make
