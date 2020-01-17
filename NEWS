@@ -1,5 +1,37 @@
 Changelog for 66
 
+In 0.2.4.0
+----------
+    
+    - Bugs fix: Bad memory allocation.
+    
+    - Enable again RB_DISABLE_CAD but don't crash if its not available
+    and warn user
+    
+    - Add @optsdepends and @extdepends field at [main] section:
+        - @optsdepends can be considere as: "enable one on this service 
+        or none"
+        - @extdepends can be considere as: "enable the service if it is 
+        not already declared on a tree"
+    
+    - 66-in{tree,service}: 
+        - in case of empty value the tools return None
+        - add -n option: this avoids to display the name of the field.
+        - add field at 66-intree:
+            - start: displays the list of tree(s) started before
+            - allowed: displays a list of allowed user to use the tree
+            - symlinks: displays the target of tree's symlinks
+        - add field at 66-inservice:
+            - optsdepends: displays the service's optional dependencies
+            - extdepends: displays the service's external dependencies
+    
+    - 66-shutdown skeleton: be safier and check if options are past
+    
+    - New tool:
+        - 66-update: The 66-update program makes a complete transition 
+        of trees and the live directory using a old 66 format 
+        (the one being replaced) with the new 66 format.
+
 In 0.2.3.2
 ----------
     
