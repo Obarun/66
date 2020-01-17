@@ -39,6 +39,7 @@ build_execline() {
 	cd ..
 }
 
+## s6
 build_s6() {
 
 	git clone https://github.com/skarnet/s6
@@ -54,6 +55,7 @@ build_s6() {
 	cd ..
 }
 
+## s6-rc
 build_s6_rc() {
 	git clone https://github.com/skarnet/s6-rc
 	cd s6-rc
@@ -68,6 +70,7 @@ build_s6_rc() {
 	cd ..
 }
 
+## oblibs
 build_oblibs() {
 	
 	git clone https://framagit.org/obarun/oblibs
@@ -86,6 +89,7 @@ _run() {
 		exit 1
 	fi
 }
+
 ## do it
 _run build_skalibs
 _run build_execline
