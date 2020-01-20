@@ -301,7 +301,7 @@ MYVALUE</pre>
 	<pre>@depends=(fooA fooB fooC)</pre>
 	It is unnecessary to manually define chained sets of dependencies.
 	The parser will properly handle this for you. For example,
-	if fooA depends on fooB&#8212;no matter the underlying implementation of fooB,
+	if fooA depends on fooB&#8212;no matter what the underlying implementation of fooB is,
 	and although the current implementation of fooB depends on fooC&#8212;you should 
 	just put fooB in the <tt>@depends</tt> key field of fooA. When starting the set,
 	66-enable will parse and enable fooA, fooB and fooC and 66-start will start 
@@ -705,7 +705,7 @@ and the <tt>@timeout-finish</tt> and <tt>@timeout-kill</tt> key
 fields from <tt><a href="#main">[main]</a> </tt>. These are also valid keys 
 for <tt>[logger]</tt> and behave the same way they do in the other sections 
 but they can not be specified except for the <strong>mandatory</strong> key 
-<tt>@build</tt>&#8212;see <a href="logex">example</a> below. 
+<tt>@build</tt>&#8212;see <a href="#logex">example</a> below. 
 In such case the default behaviour for those key are apply.</p>
 <p>Furthermore there are some keys specific to the log.</p>
 
@@ -782,7 +782,7 @@ same behaviour. -->
 	 the time and two spaces after the time, before being processed by 
 	 the next action directive.</p></li>
   </ul>
-  <p id="#logex">The following are two possible examples for the <tt>[logger]</tt> section definition.</p>
+  <p id="logex">The following are two possible examples for the <tt>[logger]</tt> section definition.</p>
   <pre>    [logger]
     @build = auto
     @runas = user
