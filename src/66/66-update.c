@@ -217,7 +217,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	if (!set_ownersysdir(&info.base,info.owner)) log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-	char system[info.base.len + SS_SYSTEM_LEN + 1] ;
+	char system[info.base.len + SS_SYSTEM_LEN + 2] ;
 	auto_strings(system,info.base.s,SS_SYSTEM,"/") ;
 	systemlen = info.base.len + SS_SYSTEM_LEN + 1 ;
 	
