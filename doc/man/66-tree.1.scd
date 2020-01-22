@@ -6,7 +6,7 @@
 
 # SYNOPSYS
 
-66-tree [ *-h* ] [ *-v* _verbosity_ ] [ -l ] [ *-n* | *-R* ] [ *-a* | *-d* ] [ *-c* _clone_ ] [ *-E* | *-D* ] [ *-U* ] [ *-C* ] _tree_
+66-tree [ *-h* ] [ *-v* _verbosity_ ] [ -l ] [ *-n* | *-R* ] [ *-a* | *-d* ] [ *-c* _clone_ ] [ *-S* _after_tree_ ] [ *-E* | *-D* ] [ *-U* ] [ *-C* ] _tree_
 
 # DESCRIPTION
 
@@ -58,6 +58,11 @@ what trees are currently available on the system use the *66-intree*(1) tool.
 	the _tree_ to use.
 	By setting _tree_ as the current one all other 66 tools will use it by
 	default. You can see which _tree_ is the current one with the *66-intree*(1) tool.
+
+*-S*
+	Start the _tree_ after _after_tree_. This tell to *66-all*(1) the specific
+	order to apply at start process. _after_tree_ must be already enabled.
+	You can combine this options directly with the *-E* option at creation time.
 
 *-E*
 	Enables _tree_. This allows the *66-all*(1) tool to know which tree needs to
