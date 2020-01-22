@@ -60,9 +60,9 @@ what trees are currently available on the system use the *66-intree*(1) tool.
 	default. You can see which _tree_ is the current one with the *66-intree*(1) tool.
 
 *-S*
-	Start the _tree_ after _after_tree_. This tell to *66-all*(1) the specific
-	order to apply at start process. _after_tree_ must be already enabled.
-	You can combine this options directly with the *-E* option at creation time.
+	Start the _tree_ after _after_tree_. This tells *66-all*(1) the specific
+	order to apply at start process. _after_tree_ and _tree_ must be already enabled.
+	You can combine this options directly with the *-E* option at tree creation time.
 
 *-E*
 	Enables _tree_. This allows the *66-all*(1) tool to know which tree needs to
