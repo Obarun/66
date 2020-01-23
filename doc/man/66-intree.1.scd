@@ -54,7 +54,7 @@
 	If _tree_ is not specified *66-intree* will display information about all
 	available trees for the current owner of the process.
 
-## VALID FIELD FOR -g OPTION
+## VALID FIELDS FOR -o OPTION
 
 *name*
 	Displays the name of the _tree_.

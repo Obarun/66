@@ -52,7 +52,7 @@
 	prints the _nline_ last lines from the log file of the _service_.
 	Default is 20.
 
-## VALID FIELD FOR -g OPTION
+## VALID FIELDS FOR -o OPTION
 
 *name*
 	Displays the name of the _service_.
