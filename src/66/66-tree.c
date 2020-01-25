@@ -16,7 +16,7 @@
 
 #include <string.h>
 #include <sys/stat.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
