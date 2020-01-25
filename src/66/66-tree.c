@@ -43,7 +43,7 @@
 #include <s6-rc/s6rc-servicedir.h>
 #include <s6-rc/s6rc-constants.h>
 
-#define USAGE "66-tree [ -h ] [ -v verbosity ] [ -l ] [ -n|R ] [ -a|d ] [ -c ] [ -S after_tree ] [ -E|D ] [ -U ] [ -C clone ] tree" 
+#define USAGE "66-tree [ -h ] [ -v verbosity ] [ -l ] [ -n|R ] [ -a|d ] [ -c ] [ -S after_tree ] [ -E|D ] [ -U ] [ -C clone ] tree"
 
 static stralloc reslive = STRALLOC_ZERO ;
 static char const *cleantree = 0 ;
@@ -61,7 +61,7 @@ static inline void info_help (void)
 "	-a: allow user(s) at tree\n"
 "	-d: deny user(s) at tree\n"
 "	-c: set tree as default\n"
-"	-S: start the tree after after_tree\n"  
+"	-S: start the tree after after_tree\n"
 "	-E: enable the tree\n"
 "	-D: disable the tree\n"
 "	-R: remove the tree\n"
@@ -491,9 +491,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc dstree = STRALLOC_ZERO ;
 	stralloc clone = STRALLOC_ZERO ;
 	stralloc live = STRALLOC_ZERO ;
-		
+
 	current = create = allow = deny = enable = disable = remove = snap = unsupervise = 0 ;
-	
+
 	PROG = "66-tree" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
@@ -668,7 +668,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (!hiercopy(tmp,dstree.s)) log_dieusys(LOG_EXIT_SYS,"copy: ",dstree.s," at: ",clone.s) ;
 		log_info("Cloned successfully: ",tree," to ",clone.s) ;
 	}
-	
+
 	if (after_tree)
 	{
 		stralloc contents = STRALLOC_ZERO ;
@@ -676,42 +676,40 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		size_t baselen = base.len, pos = 0 ;
 		char ste[baselen + SS_SYSTEM_LEN + 1] ;
 		auto_strings(ste,base.s,SS_SYSTEM) ;
-		
+
 		int enabled = tree_cmd_state(VERBOSITY,"-s",tree) ;
 		if (enabled != 1)
 			log_die(LOG_EXIT_USER,"tree: ",tree," is not enabled") ;
-		
+
 		enabled = tree_cmd_state(VERBOSITY,"-s",after_tree) ;
 		if (enabled != 1)
 			log_die(LOG_EXIT_USER,"tree: ",after_tree," is not enabled") ;
-		
+
 		r  = tree_cmd_state(VERBOSITY,"-d",tree) ;
 		if (!r) log_dieusys(LOG_EXIT_SYS,"disable: ",tree," at: ",ste,SS_STATE) ;
-		
+
 		r = file_readputsa(&tmp,ste,SS_STATE + 1) ;
 		if(!r) log_dieusys(LOG_EXIT_SYS,"open: ", ste,SS_STATE) ;
-		
+
 		if (!sastr_rebuild_in_oneline(&tmp) ||
 		!sastr_clean_element(&tmp))
 			log_dieusys(LOG_EXIT_SYS,"rebuilt state list") ;
-			
+
 		for (pos = 0 ;pos < tmp.len; pos += strlen(tmp.s + pos) + 1)
 		{
 			char *name = tmp.s + pos ;
-		
+
 			if (!auto_stra(&contents,name,"\n"))
 				log_dieusys(LOG_EXIT_SYS,"rebuilt state list") ;
-			
+
 			if (obstr_equal(name,after_tree))
 			{
 				if (!auto_stra(&contents,tree,"\n"))
 				log_dieusys(LOG_EXIT_SYS,"rebuilt state list") ;
 			}
-			
 		}
 		if (!file_write_unsafe(ste,SS_STATE + 1,contents.s,contents.len))
 			log_dieusys(LOG_EXIT_ZERO,"write: ",ste,SS_STATE) ;
-		
 	}
 	stralloc_free(&reslive) ;
 	stralloc_free(&live) ;
@@ -719,6 +717,5 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc_free(&dstree) ;
 	stralloc_free(&clone) ;
 
-	
 	return 0 ;
 }
