@@ -1,5 +1,13 @@
 Changelog for 66
 
+
+In 0.2.5.0
+----------
+    
+    - Bugs Fix: Bad memory allocation
+    - 66-tree: add -S option which allow to order the start tree process
+    even after it creation.
+    
 In 0.2.4.1
 ----------
     
