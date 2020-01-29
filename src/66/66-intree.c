@@ -92,7 +92,7 @@ static inline void info_help (void)
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n"
 "	-c: use color\n"
-"	-n: do not display the field name\n"
+"	-n: do not display the names of fields\n"
 "	-o: comma separated list of field to display\n"
 "	-g: displays the contents field as graph\n"
 "	-d: limit the depth of the contents field recursion\n"
