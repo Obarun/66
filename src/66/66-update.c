@@ -1,7 +1,7 @@
 /* 
  * 66-update.c
  * 
- * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
  * 
  * All rights reserved.
  * 
@@ -38,10 +38,11 @@
 #include <66/resolve.h>
 #include <66/parser.h>
 
-#define USAGE "66-update [ -h ] [ -c ] [ -v verbosity ] [ -l live ] tree(s)"
+#define USAGE "66-update [ -h ] [ -c ] [ -v verbosity ] [ -l live ] [ -d ] tree(s)"
 
 static stralloc WORKDIR = STRALLOC_ZERO ;
-
+static uint8_t DRYRUN = 0 ;
+static char *drun = "dry run do: " ;
 static inline void info_help (void)
 {
   static char const *help =
@@ -52,6 +53,7 @@ static inline void info_help (void)
 "	-c: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n"
+"	-d: dry run\n"
 "\n"
 "if no tree is given, all trees will be processed.\n"
 ;
@@ -65,7 +67,7 @@ static void cleanup(void)
 	int e = errno ;
 	if (WORKDIR.len)
 	{
-		log_trace("delete temporary directory: ",WORKDIR.s) ;
+		log_trace(DRYRUN ? drun : "","delete temporary directory: ",WORKDIR.s) ;
 		rm_rf(WORKDIR.s) ;
 	}
 	errno = e ;
@@ -114,26 +116,32 @@ void tree_allowed(stralloc *list,char const *base, char const *treename)
 			log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get name of uid: ",suid) ;
 	}
 	if (!stralloc_0(list)) log_die_nomem_nclean(&cleanup,"stralloc") ;
-	log_trace("allowed user(s) for tree: ",treename," are: ",list->s) ;
+	log_trace(DRYRUN ? drun : "","allowed user(s) for tree: ",treename," are: ",list->s) ;
 	stralloc_free(&sa) ;
 }
 
 void tree_contents(stralloc *list,char const *tree,ssexec_t *info)
 {
 	stralloc sa = STRALLOC_ZERO ;
-	size_t treelen = strlen(tree), pos ;
-	char solve[treelen + SS_SVDIRS_LEN + SS_RESOLVE_LEN + 1] ;
-	auto_strings(solve,tree,SS_SVDIRS,SS_RESOLVE) ;
+	size_t treelen = strlen(tree), pos, newlen ;
+	char solve[treelen + SS_SVDIRS_LEN + SS_DB_LEN + SS_SRC_LEN + 1] ;
+	newlen = treelen + SS_SVDIRS_LEN ;
+	auto_strings(solve,tree,SS_SVDIRS,SS_SVC) ;
 	
-	if (!sastr_dir_get(&sa,solve,SS_MASTER + 1,S_IFREG))
-		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get source service file of: ",tree) ;
+	if (!sastr_dir_get(&sa,solve,"",S_IFDIR))
+		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get source svc service file of: ",tree) ;
+
+	auto_string_from(solve,newlen,SS_DB,SS_SRC) ;
+
+	if (!sastr_dir_get(&sa,solve,SS_MASTER + 1,S_IFDIR))
+		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get source of atomic service file of: ",tree) ;
 	
 	for (pos = 0 ;pos < sa.len; pos += strlen(sa.s + pos) + 1)
 	{
 		char *name = sa.s + pos ;
 		int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 		if (logname > 0) continue ;
-		log_trace("tree: ",info->treename.s," contain service: ",name) ;
+		log_trace(DRYRUN ? drun : "","tree: ",info->treename.s," contain service: ",name) ;
 		if (ss_resolve_src_path(list,name,info) < 1) 
 			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"resolve source path of: ",name) ;
 	
@@ -187,7 +195,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		subgetopt_t l = SUBGETOPT_ZERO ;
 		for (;;)
 		{
-			int opt = subgetopt_r(argc,argv, "hv:l:c", &l) ;
+			int opt = subgetopt_r(argc,argv, "hv:l:cd", &l) ;
 			
 			if (opt == -1) break ;
 			switch (opt)
@@ -198,6 +206,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 							if (!stralloc_0(&info.live)) log_die_nomem("stralloc") ;
 							break ;
 				case 'c' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
+				case 'd' :  DRYRUN = 1 ; break ;
 				default	:	log_usage(USAGE) ; 
 			}
 		}
@@ -208,7 +217,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	if (!set_ownersysdir(&info.base,info.owner)) log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-	char system[info.base.len + SS_SYSTEM_LEN + 1] ;
+	char system[info.base.len + SS_SYSTEM_LEN + 2] ;
 	auto_strings(system,info.base.s,SS_SYSTEM,"/") ;
 	systemlen = info.base.len + SS_SYSTEM_LEN + 1 ;
 	
@@ -219,7 +228,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		if (!satree.len)
 		{
-			log_info("No trees exist yet -- Nothing to do") ;
+			log_info(DRYRUN ? drun : "","No trees exist yet -- Nothing to do") ;
 			goto exit ;
 		}
 	}
@@ -259,25 +268,44 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		char tmp[systemlen + SS_BACKUP_LEN + info.treename.len + SS_SVDIRS_LEN + SS_DB_LEN + 1] ;
 		char current[info.livetree.len + 1 + info.treename.len + 9 + 1] ;
 		
+		log_info(DRYRUN ? drun : "","save state of tree: ", info.treename.s) ;
+		if (tree_is_current(info.base.s,info.treename.s,info.owner))
+		{
+			log_trace(DRYRUN ? drun : "","tree: ",info.treename.s," is marked current") ;
+			auto_string_from(tree_opts_create,optslen,"c") ;
+			optslen +=1 ;
+		}
+		if (tree_is_enabled(info.treename.s) == 1)
+		{
+			log_trace(DRYRUN ? drun : "","tree: ",info.treename.s," is marked enabled") ;
+			auto_string_from(tree_opts_create,optslen,"E") ;
+			optslen +=1 ;
+		}
+		
+		tree_allowed(&allow,info.base.s,info.treename.s) ;
+		
+		log_info(DRYRUN ? drun : "","save service(s) list of tree: ", info.treename.s) ;
+		tree_contents(&contents,info.tree.s,&info) ;
+		
 		dbok = db_ok(info.livetree.s, info.treename.s) ;
-						
+		
 		if (dbok)
 		{
 			fdir = 0 ;
 			
-			log_trace("find current source of live db: ",info.livetree.s,"/",info.treename.s) ;
+			log_trace(DRYRUN ? drun : "","find current source of live db: ",info.livetree.s,"/",info.treename.s) ;
 			r = db_find_compiled_state(info.livetree.s,info.treename.s) ;
-			if (r == -1) log_die_nclean(LOG_EXIT_SYS,&cleanup,"inconsistent state of: ",info.livetree.s) ;
+			if (r == -1) log_die(LOG_EXIT_SYS,"inconsistent state of: ",info.livetree.s) ;
 			if (r == 1) {
 				auto_strings(tmp,system,SS_BACKUP + 1,"/",info.treename.s,SS_DB) ;
 			}
 			else auto_strings(tmp,system,info.treename.s,SS_SVDIRS,SS_DB) ;
 
-			log_trace("created temporary directory at: /tmp") ;
+			log_trace(DRYRUN ? drun : "","created temporary directory at: /tmp") ;
 			fdir = dir_create_tmp(&WORKDIR,"/tmp",info.treename.s) ;
 			if (!fdir) log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"create temporary directory") ;
 			
-			log_trace("copy contents of: ",tmp," to: ",WORKDIR.s) ;
+			log_trace(DRYRUN ? drun : "","copy contents of: ",tmp," to: ",WORKDIR.s) ;
 			if (!hiercopy(tmp,fdir)) log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"copy: ",tmp," to: ",WORKDIR.s) ;
 			
 			char new[WORKDIR.len + 1 + info.treename.len + 1] ;
@@ -285,43 +313,41 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			auto_strings(current,info.livetree.s,"/",info.treename.s,"/compiled") ;
 			auto_strings(new,WORKDIR.s,"/",info.treename.s) ;
 			
-			log_info("update ",info.livetree.s,"/",info.treename.s," to: ",new) ;
+			log_info(DRYRUN ? drun : "","update ",info.livetree.s,"/",info.treename.s," to: ",new) ;
 			
-			if (!atomic_symlink(new, current, PROG))
-				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"update: ",current," to: ", new) ;
+			if (!DRYRUN)
+				if (!atomic_symlink(new, current, PROG))
+					log_dieusys(LOG_EXIT_SYS,"update: ",current," to: ", new) ;
 		
+			if (DRYRUN) cleanup() ;
 		}
-		log_info("save state of tree: ", info.treename.s) ;
-		if (tree_is_current(info.base.s,info.treename.s,info.owner))
-		{
-			log_trace("tree: ",info.treename.s," is marked current") ;
-			auto_string_from(tree_opts_create,optslen,"c") ;
-			optslen +=1 ;
-		}
-		if (tree_is_enabled(info.treename.s) == 1)
-		{
-			log_trace("tree: ",info.treename.s," is marked enabled") ;
-			auto_string_from(tree_opts_create,optslen,"E") ;
-			optslen +=1 ;
-		}
-		
-		tree_allowed(&allow,info.base.s,info.treename.s) ;
-		
-		log_info("save service(s) list of tree: ", info.treename.s) ;
-		tree_contents(&contents,info.tree.s,&info) ;
 		
 		/** finally we can destroy the tree and recreate it*/
 		// destroy
 		{
 			char const *t[] = { "-l", info.live.s, "-R", info.treename.s } ;
-			if (!run_cmdline(SS_EXTBINPREFIX "66-tree",t,4,envp))
-				log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"delete tree: ", info.treename.s) ;
+			if (DRYRUN)
+			{
+				log_info(drun,"66-tree -l ",info.live.s," -R ",info.treename.s) ; 
+			}
+			else
+			{
+				if (!run_cmdline(SS_EXTBINPREFIX "66-tree",t,4,envp))
+					log_dieu(LOG_EXIT_SYS,"delete tree: ", info.treename.s) ;
+			}
 		}
 		//create
 		{
 			char const *t[] = { "-l", info.live.s, tree_opts_create,"-a",allow.s, info.treename.s } ;
-			if (!run_cmdline(SS_EXTBINPREFIX "66-tree",t,6,envp))
-				log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"create tree: ", info.treename.s) ;
+			if (DRYRUN)
+			{
+				log_info(drun,"66-tree -l ",info.live.s," ",tree_opts_create," -a ",allow.s," ",info.treename.s) ; 
+			}
+			else
+			{
+				if (!run_cmdline(SS_EXTBINPREFIX "66-tree",t,6,envp))
+					log_dieu(LOG_EXIT_SYS,"create tree: ", info.treename.s) ;
+			}
 		}
 		/* we must reimplement the enable process instead of
 		 * using directly 66-enable. The 66-enable program will use
@@ -333,10 +359,31 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (contents.len)
 		{
 			stralloc tostart = STRALLOC_ZERO ;
-			log_info("enable service(s) of tree: ",info.treename.s) ;
-			auto_strings(tmp,system,info.treename.s,SS_SVDIRS) ;
-			start_parser(&contents,&info,&nbsv,0) ;
-			start_write(&tostart,&nclassic,&nlongrun,tmp,&gasv,&info,0,0) ;
+			log_info(DRYRUN ? drun : "","enable service(s) of tree: ",info.treename.s) ;
+			if (!DRYRUN)
+			{
+				auto_strings(tmp,system,info.treename.s,SS_SVDIRS) ;
+			}
+			else
+			{
+				WORKDIR.len = 0 ;
+				log_trace(drun,"copy: ", info.tree.s,SS_SVDIRS," to a temporary directory") ;
+				if (!tree_copy(&WORKDIR,info.tree.s,info.treename.s)) 
+					log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"create tmp working directory") ;
+				/* we need to remove the contain of .resolve directory
+				 * The write process will try to read it and obviously it
+				 * get a wrong information*/
+				auto_strings(tmp,WORKDIR.s,SS_RESOLVE) ;
+				log_trace(drun,"remove directory: ", tmp) ;
+				if (rm_rf(tmp) < 0) log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"remove: ",tmp) ;
+				log_trace(drun,"create directory: ", tmp) ;
+				if (!dir_create_parent(tmp,0755))
+					log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"create directory: ",tmp) ;
+				auto_string_from(tmp,0,WORKDIR.s) ;
+				
+			}
+			start_parser(&contents,&info,&nbsv,DRYRUN ? 1 : 0) ;
+			start_write(&tostart,&nclassic,&nlongrun,tmp,&gasv,&info,DRYRUN ? 1 : 0,0) ;
 			/** we don't care about nclassic. Classic service are copies
 			 * of original and we retrieve the original at the end of the
 			 * process*/
@@ -345,22 +392,21 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
 				r = ss_resolve_graph_src(&graph,tmp,0,1) ;
 				if (!r)
-					log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"resolve source of graph for tree: ",info.treename.s) ;
+					log_dieu(LOG_EXIT_SYS,"resolve source of graph for tree: ",info.treename.s) ;
 				
 				r = ss_resolve_graph_publish(&graph,0) ;
 				if (r <= 0) 
 				{
-					cleanup() ;
 					if (r < 0) log_die(LOG_EXIT_USER,"cyclic graph detected") ;
 					log_dieusys(LOG_EXIT_SYS,"publish service graph") ;
 				}
 				
 				if (!ss_resolve_write_master(&info,&graph,tmp,0))
-					log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"update inner bundle") ;
+					log_dieusys(LOG_EXIT_SYS,"update inner bundle") ;
 				
 				ss_resolve_graph_free(&graph) ;
 				if (!db_compile(tmp,info.tree.s,info.treename.s,envp))
-					log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"compile ",tmp,"/",info.treename.s) ;
+					log_dieu(LOG_EXIT_SYS,"compile ",tmp,"/",info.treename.s) ;
 			}
 			stralloc_free(&tostart) ;
 			freed_parser() ;
@@ -370,20 +416,21 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		
 		if (dbok)
 		{
-			log_info("update db: ",info.livetree.s,"/",info.treename.s, " to: ",tmp,"/",info.treename.s) ;
 			auto_strings(tmp,system,info.treename.s,SS_SVDIRS,SS_DB) ;
+			log_info(DRYRUN ? drun : "","update db: ",info.livetree.s,"/",info.treename.s, " to: ",tmp,"/",info.treename.s) ;
 			/* Be paranoid here and use db_update instead of atomic_symlink.
 			 * db_update() allow to make a running test and to see
 			 * if the db match exactly the same state.
 			 * We prefer to die in this case instead of leaving an
 			 * inconsistent state. */
-			if (!db_update(tmp,&info,envp))
-				log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"update: ",info.livetree.s,"/",info.treename.s," to: ", tmp,"/",info.treename.s) ;
+			if (!DRYRUN)
+				if (!db_update(tmp,&info,envp))
+					log_dieu(LOG_EXIT_SYS,"update: ",info.livetree.s,"/",info.treename.s," to: ", tmp,"/",info.treename.s) ;
 		}
 
 		cleanup() ;	
 		
-		log_info("tree: ",info.treename.s," updated successfully") ;
+		log_info(DRYRUN ? drun : "","tree: ",info.treename.s," updated successfully") ;
 	}
 	exit:
 	stralloc_free(&satree) ;

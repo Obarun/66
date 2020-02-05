@@ -133,7 +133,7 @@ tryflag () {
 tryldflag () {
   echo "Checking whether linker accepts $2 ..."
   echo "typedef int x;" > "$tmpc"
-  if $CC_AUTO $CFLAGS_AUTO $CFLAGS $CFLAGS_POST $LDFLAGS_AUTO $LDFLAGS $LDFLAGS_POST -nostdlib "$2" -o /dev/null "$tmpc" >/dev/null 2>&1 ; then
+  if $CC_AUTO $CPPFLAGS_AUTO $CPPFLAGS $CPPFLAGS_POST $CFLAGS_AUTO $CFLAGS $CFLAGS_POST "$2" -c -o /dev/null "$tmpc" >/dev/null 2>&1 ; then
     echo "  ... yes"
     eval "$1=\"\${$1} \$2\""
     eval "$1=\${$1# }"
@@ -423,11 +423,11 @@ if [ "x$target" != "x$(cat $sysdeps/target)" ] ; then
   exit 1
 fi
 
-if ! test -z "$PKG_CONFIG" && command -v $PKG_CONFIG > /dev/null ; then
-    pkg_config=$PKG_CONFIG
-else
-    pkg_config=${cross}pkg-config
-fi
+#if ! test -z "$PKG_CONFIG" && command -v $PKG_CONFIG > /dev/null ; then
+#    pkg_config=$PKG_CONFIG
+#else
+#    pkg_config=${cross}pkg-config
+#fi
 
 spawn_lib=$(cat $sysdeps/spawn.lib)
 socket_lib=$(cat $sysdeps/socket.lib)
@@ -530,7 +530,7 @@ SYSCLOCK_LIB := ${sysclock_lib}
 TIMER_LIB := ${timer_lib}
 UTIL_LIB := ${util_lib}
 
-CC := ${CC_AUTO}
+CC := $CC_AUTO
 CPPFLAGS_AUTO := $CPPFLAGS_AUTO
 CPPFLAGS := $CPPFLAGS $CPPFLAGS_POST
 CFLAGS_AUTO := $CFLAGS_AUTO
@@ -539,7 +539,7 @@ LDFLAGS_AUTO := $LDFLAGS_AUTO
 LDFLAGS := $LDFLAGS $LDFLAGS_POST
 LDFLAGS_SHARED := $LDFLAGS_SHARED
 LDFLAGS_NOSHARED := $LDFLAGS_NOSHARED
-CROSS_COMPILE := ${cross}
+CROSS_COMPILE := $cross
 
 vpath lib%.a$vpaths
 vpath lib%.so$vpathd

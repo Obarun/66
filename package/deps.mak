@@ -21,7 +21,6 @@ src/66/66-disable.o src/66/66-disable.lo: src/66/66-disable.c src/include/66/sse
 src/66/66-enable.o src/66/66-enable.lo: src/66/66-enable.c src/include/66/ssexec.h
 src/66/66-env.o src/66/66-env.lo: src/66/66-env.c src/include/66/ssexec.h
 src/66/66-hpr.o src/66/66-hpr.lo: src/66/66-hpr.c src/include/66/config.h src/include/66/hpr.h
-src/66/66-info.o src/66/66-info.lo: src/66/66-info.c
 src/66/66-init.o src/66/66-init.lo: src/66/66-init.c src/include/66/ssexec.h
 src/66/66-inservice.o src/66/66-inservice.lo: src/66/66-inservice.c src/include/66/constants.h src/include/66/enum.h src/include/66/environ.h src/include/66/info.h src/include/66/resolve.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-intree.o src/66/66-intree.lo: src/66/66-intree.c src/include/66/backup.h src/include/66/constants.h src/include/66/enum.h src/include/66/info.h src/include/66/resolve.h src/include/66/tree.h src/include/66/utils.h

@@ -1,7 +1,7 @@
 /* 
  * environ.c
  * 
- * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
  * 
  * All rights reserved.
  * 
@@ -19,6 +19,7 @@
 #include <oblibs/environ.h>
 #include <oblibs/sastr.h>
 #include <oblibs/files.h>
+#include <oblibs/string.h>
 
 #include <skalibs/stralloc.h>
 
@@ -70,36 +71,49 @@ int env_merge_conf(char const *dst,char const *file,stralloc *srclist,stralloc *
 			
 	for (;pos < modifs->len; pos += strlen(modifs->s + pos) + 1)
 	{
+		
 		fakepos = pos ;
 		sval.len = mkey.len = mval.len = 0 ;
+		
 		if (!stralloc_copy(&mkey,modifs) ||
 		!stralloc_copy(&mval,modifs) ||
 		!stralloc_copy(&sval,srclist)) goto err ;
-				
-		if (!environ_get_key_nclean(&mkey,&pos)) goto err ;
 		
+		if (!environ_get_key_nclean(&mkey,&pos)) goto err ;
+		mkey.len-- ;
+		
+		if (!auto_stra(&mkey,"=")) goto err ;
 		r = sastr_find(srclist,mkey.s) ;
 		if (r >= 0)
 		{
 			if (force) 
 			{
-				if (!environ_get_val_of_key(&sval,mkey.s) ||
-				!environ_get_val_of_key(&mval,mkey.s) ||
-				!sastr_replace(&result,sval.s,mval.s)) goto err ;
+				if (!environ_get_val_of_key(&sval,mkey.s)) goto err ;// ||
+				if (!environ_get_val_of_key(&mval,mkey.s)) goto err ;
+				//remove 0
+				sval.len-- ;
+				mval.len-- ;
+				r = sastr_find(&result,mkey.s) ;
+				char tmp[result.len + 1] ;
+				auto_strings(tmp,result.s) ;
+				size_t mlen = r + mkey.len + (mval.len < sval.len ? mval.len : sval.len) ;
+				size_t add = sval.len > mval.len ? (sval.len - mval.len) : 0 ;
+				result.len = r + mkey.len ;
 				stralloc_0(&result) ;
 				result.len-- ;
+				if (!auto_stra(&result,mval.s,tmp + mlen + add)) goto err ;
 			}
+			continue ;
 		}
 		else
 		{
 			if (!stralloc_cats(&result,"\n") ||
 			!stralloc_catb(&result,modifs->s+fakepos,strlen(modifs->s + fakepos))) goto err ;	
-		
 		}
+		
 	}
-	if (!stralloc_cats(&result,"\n") ||
-	!stralloc_0(&result)) goto err ;
-	result.len-- ;
+	if (!auto_stra(&result,"\n")) goto err ;
+	
 	if (!file_write_unsafe(dst,file,result.s,result.len)) goto err ;
 	
 	stralloc_free(&result) ;

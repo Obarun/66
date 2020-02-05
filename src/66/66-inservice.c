@@ -1,7 +1,7 @@
 /* 
  * 66-inservice.c
  * 
- * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
  * 
  * All rights reserved.
  * 
@@ -16,7 +16,6 @@
 #include <locale.h>
 #include <langinfo.h>
 #include <sys/types.h>
-#include <sys/unistd.h>
 #include <wchar.h>
 #include <unistd.h>
 //#include <stdio.h>
@@ -103,7 +102,7 @@ info_opts_map_t const opts_sv_table[] =
 #define checkopts(n) if (n >= MAXOPTS) strerr_dief1x(100, "too many options")
 #define DELIM ','
 
-#define USAGE "66-inservice [ -h ] [ -v verbosity ] [ -c ] [ -n ] [ -o name,instree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -t tree ] [ -p nline ] service"
+#define USAGE "66-inservice [ -h ] [ -v verbosity ] [ -c ] [ -n ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -t tree ] [ -p nline ] service"
 
 static inline void info_help (void)
 {

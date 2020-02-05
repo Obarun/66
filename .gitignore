@@ -1,6 +1,7 @@
 *.o
 *.lo
 *.a.*
+*.so.*
 .deps/
 /66-all
 /66-boot
@@ -26,6 +27,7 @@
 /66-which
 /66-writenv
 /66-getenv
+/66-update
 /execl-envfile
 /execl-subuidgid
 /config.mak

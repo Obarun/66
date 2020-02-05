@@ -1,7 +1,7 @@
 /* 
  * 66-all.c
  * 
- * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
  * 
  * All rights reserved.
  * 
@@ -311,7 +311,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			if (!ugly.len)
 			{
 				log_info("empty tree: ",treename," -- nothing to do") ;
-				goto end ;
+				continue ;
 			}
 		}
 		if (what)

@@ -28,14 +28,14 @@
 	enable colorization.
 
 *-n*
-	do not display the field name.
+	do not display the field name(s) specified.
 
 *-o*
 	comma separated list of fields to display. If this option is not passed,
 	*66-inservice* will display all fields.
 
 *-g*
-	shows the dependency list of the _service_ as a graph instead of a list.
+	shows the dependency list of the _service_ as a hierarchical graph instead of a list.
 
 *-d* _depth_
 	Limits the depth of the dependency list visualisation; default is 1.
@@ -45,13 +45,14 @@
 	Shows the dependency list of _service_ in reverse mode.
 
 *-t* _tree_
-	only searches the _service_ at the specified _tree_.
+	only searches the _service_ at the specified _tree_, when the same 
+	service may be enabled in more trees.
 
 *-p* _nline_
 	prints the _nline_ last lines from the log file of the _service_.
 	Default is 20.
 
-## VALID FIELD FOR -g OPTION
+## VALID FIELDS FOR -o OPTION
 
 *name*
 	Displays the name of the _service_.
@@ -110,26 +111,26 @@ The command "66-inservice 00" run as root user on _Obarun_'s default system
 displays the following, where *00* is a service contained in the tree *boot*:
 
 ```
-Name               : 00
-In tree            : boot
-Status             : enabled, nothing to display
-Type               : bundle
-Description        : Set the hostname and mount filesystem
-Source             : %%service_packager%%/boot/mount/00
-Live               : %%livedir%%/tree/0/boot/servicedirs/00
-Depends on         : system-hostname  mount-run  populate-run  mount-tmp
-                     populate-tmp  mount-proc  mount-sys  populate-sys
-                     mount-dev  mount-pts  mount-shm  populate-dev
-                     mount-cgroups
-Optional depends   : None
-External depends   : None
-Start script       : None
-Stop script        : None
-Environment source : None
-Environment file   : None
-Log name           : None
-Log destination    : None
-Log file           : None
+Name                  : 00
+In tree               : boot
+Status                : enabled, nothing to display
+Type                  : bundle
+Description           : Set the hostname and mount filesystem
+Source                : %%service_packager%%/boot/mount/00
+Live                  : %%livedir%%/tree/0/boot/servicedirs/00
+Dependencies          : system-hostname  mount-run  populate-run  mount-tmp
+                        populate-tmp  mount-proc  mount-sys  populate-sys
+                        mount-dev  mount-pts  mount-shm  populate-dev
+                        mount-cgroups
+Optional dependencies : None
+External dependencies : None
+Start script          : None
+Stop script           : None
+Environment source    : None
+Environment file      : None
+Log name              : None
+Log destination       : None
+Log file              : None
     
 ```
 
@@ -144,7 +145,7 @@ where the dependency list is diplayed as a graph:
 
 ```
 Status             : enabled, up (pid 938) 34652 seconds
-Depends on         : /
+Dependencies       : /
                      ├─(933,Enabled,longrun) dbus
                      └─(929,Enabled,longrun) connmand-log
 

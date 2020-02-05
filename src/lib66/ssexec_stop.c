@@ -1,7 +1,7 @@
 /* 
  * ssexec_stop.c
  * 
- * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
  * 
  * All rights reserved.
  * 
@@ -222,10 +222,10 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 	{
 		log_trace("stop atomic services ...") ;
 		if (!rc_down(info,envp))
-			log_dieusys(LOG_EXIT_SYS,"stop atomic services") ;
+			log_dieu(LOG_EXIT_SYS,"stop atomic services") ;
 		log_trace("switch atomic services of: ",info->treename.s," to source") ;
 		if (!db_switch_to(info,envp,SS_SWSRC))
-			log_dieusys(LOG_EXIT_SYS,"switch",info->livetree.s,"/",info->treename.s," to source") ;
+			log_dieu(LOG_EXIT_SYS,"switch",info->livetree.s,"/",info->treename.s," to source") ;
 
 	}
 	
@@ -234,17 +234,17 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 	{
 		log_trace("stop classic services ...") ;
 		if (!svc_down(info,envp))
-			log_dieusys(LOG_EXIT_SYS,"stop classic services") ;
+			log_dieu(LOG_EXIT_SYS,"stop classic services") ;
 		log_trace("switch classic services of: ",info->treename.s," to source") ;
 		if (!svc_switch_to(info,SS_SWSRC))
-			log_dieusys(LOG_EXIT_SYS,"switch classic service of: ",info->treename.s," to source") ;
+			log_dieu(LOG_EXIT_SYS,"switch classic service of: ",info->treename.s," to source") ;
 	}
 
 	if (UNSUP)
 	{
 		log_trace("send signal -an to scandir: ",info->scandir.s) ;
 		if (scandir_send_signal(info->scandir.s,"an") <= 0)
-			log_dieusys(LOG_EXIT_SYS,"send signal to scandir: ", info->scandir.s) ;
+			log_dieu(LOG_EXIT_SYS,"send signal to scandir: ", info->scandir.s) ;
 	}
 	stralloc_free(&sares) ;
 	ss_resolve_free(&res) ;

@@ -1,7 +1,7 @@
 /* 
  * 66-parser.c
  * 
- * Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
  * 
  * All rights reserved.
  * 
@@ -153,6 +153,26 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	srcdirlen = strlen(srcdir) ;
 	service.src = keep.len ;
 	if (!stralloc_catb(&keep,srcdir,srcdirlen + 1)) log_die_nomem("stralloc") ;
+	/**quick fix
+	 * WIP on parser this will change soon*/
+	if (ista > 0 && service.cname.name >= 0 )
+	{
+		stralloc sainsta = STRALLOC_ZERO ;
+		stralloc saname = STRALLOC_ZERO ;
+		if (!stralloc_cats(&saname,keep.s + service.cname.name)) log_die_nomem("stralloc") ;
+		
+		if (!instance_splitname(&sainsta,name,ista,0)) log_dieu(LOG_EXIT_SYS,"split instance name: ",name) ;
+		if (sastr_find(&saname,sainsta.s) == -1)
+			log_die(LOG_EXIT_USER,"invalid instantiated service name: ", keep.s + service.cname.name) ;
+			
+		stralloc_free(&sainsta) ;
+		stralloc_free(&saname) ;
+	}
+	else
+	{
+		service.cname.name = keep.len ;
+		if (!stralloc_catb(&keep,name,namelen + 1)) log_die_nomem("stralloc") ;
+	}
 	/* save and prepare environment file */
 	if (service.opts[2])
 	{
