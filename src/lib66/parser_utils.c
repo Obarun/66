@@ -1006,26 +1006,6 @@ int check_valid_runas(keynocheck *ch)
 	return 1 ;
 }
 
-int get_svtype(sv_alltype *sv_before, char const *contents)
-{
-	stralloc sa = STRALLOC_ZERO ;
-
-	if (!auto_stra(&sa,contents)) goto err ;
-
-	if (!environ_get_val_of_key(&sa,get_key_by_enum(ENUM_KEY,KEY_TYPE))) goto err ;
-
-	if (!sastr_clean_element(&sa)) goto err ;
-	sv_before->cname.itype = get_enum_by_key(sa.s) ;
-
-	if (sv_before->cname.itype == -1) goto err ;
-
-	stralloc_free(&sa) ;
-	return 1 ;
-	err:
-		stralloc_free(&sa) ;
-		return 0 ;
-}
-
 void parse_err(int ierr,keynocheck *check)
 {
 	int idsec = check->idsec ;
