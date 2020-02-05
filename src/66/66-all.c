@@ -311,7 +311,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			if (!ugly.len)
 			{
 				log_info("empty tree: ",treename," -- nothing to do") ;
-				goto end ;
+				continue ;
 			}
 		}
 		if (what)
