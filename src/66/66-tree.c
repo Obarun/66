@@ -673,6 +673,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	{
 		stralloc contents = STRALLOC_ZERO ;
 		stralloc tmp = STRALLOC_ZERO ;
+		int befirst = obstr_equal(tree,after_tree) ;
 		size_t baselen = base.len, pos = 0 ;
 		char ste[baselen + SS_SYSTEM_LEN + 1] ;
 		auto_strings(ste,base.s,SS_SYSTEM) ;
@@ -698,7 +699,14 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		for (pos = 0 ;pos < tmp.len; pos += strlen(tmp.s + pos) + 1)
 		{
 			char *name = tmp.s + pos ;
-
+			
+			/* e.g 66-tree -S root root -> meaning root need to
+			 * be the first to start */
+			if ((befirst) && (pos == 0))
+			{
+				if (!auto_stra(&contents,tree,"\n"))
+					log_dieusys(LOG_EXIT_SYS,"set: ",tree," as first tree to start") ;
+			}
 			if (!auto_stra(&contents,name,"\n"))
 				log_dieusys(LOG_EXIT_SYS,"rebuilt state list") ;
 
