@@ -49,6 +49,7 @@ int svc_sanitize(ssexec_t *info, char const *const *envp)
 	unsigned int reverse = 0 ;
 	int r ;
 	stralloc sares = STRALLOC_ZERO ;
+
 	if (!ss_resolve_pointo(&sares,info,TYPE_CLASSIC,SS_RESOLVE_SRC))
 	{
 		log_warnu("set revolve pointer to source") ;

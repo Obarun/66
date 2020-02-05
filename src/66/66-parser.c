@@ -142,7 +142,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		name[insta.len] = 0 ;
 		
 	}
-	log_info("Parsing service file: ", sv) ;
+
 	if (!parser(&service,&src,sv,service.cname.itype)) log_dieu(LOG_EXIT_SYS,"parse service file: ",sv) ;
 	if (!stralloc_cats(&dst,dir) ||
 	!stralloc_cats(&dst,"/") ||

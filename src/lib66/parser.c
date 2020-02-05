@@ -61,6 +61,7 @@ int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype)
 		log_warn("empty service file: ",svname) ;
 		goto err ;
 	}
+
 	for (i = 0;i < genalloc_len(keynocheck,&ganocheck);i++)
 	{
 		uint32_t idsec = genalloc_s(keynocheck,&ganocheck)[i].idsec ;
@@ -73,6 +74,7 @@ int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype)
 			}
 		}
 	}
+
 	for (i = 0;i < genalloc_len(keynocheck,&ganocheck);i++)
 	{
 		if (!nocheck_toservice(&(genalloc_s(keynocheck,&ganocheck)[i]),svtype,service))
@@ -81,6 +83,7 @@ int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype)
 			goto err ;
 		}
 	}
+
 	if ((service->opts[1]) && (svtype == TYPE_LONGRUN))
 	{
 		if (!add_pipe(service, &deps))
