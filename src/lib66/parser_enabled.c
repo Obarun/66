@@ -22,6 +22,7 @@
 #include <oblibs/directory.h>
 #include <oblibs/log.h>
 #include <oblibs/sastr.h>
+#include <oblibs/environ.h>
 
 #include <skalibs/stralloc.h>
 
@@ -211,6 +212,26 @@ int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_
 		return 0 ;
 }
 
+int get_svtype(sv_alltype *sv_before, char const *contents)
+{
+	stralloc sa = STRALLOC_ZERO ;
+
+	if (!auto_stra(&sa,contents)) goto err ;
+
+	if (!environ_get_val_of_key(&sa,get_key_by_enum(ENUM_KEY,KEY_TYPE))) goto err ;
+
+	if (!sastr_clean_element(&sa)) goto err ;
+	sv_before->cname.itype = get_enum_by_key(sa.s) ;
+
+	if (sv_before->cname.itype == -1) goto err ;
+
+	stralloc_free(&sa) ;
+	return 1 ;
+	err:
+		stralloc_free(&sa) ;
+		return 0 ;
+}
+
 int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t *exist)
 {
 	
@@ -223,11 +244,11 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	svnamelen = strlen(svname) ;
 	char svpath[svsrclen + svnamelen + 1] ;
 	if (scan_mode(sv,S_IFDIR) == 1) return 1 ;
-		
+
 	r = parse_service_check_enabled(info,svname,force,exist) ;
 	if (r == 2) goto freed ;
 	else if (!r) return 0 ;
-	
+
 	sv_alltype sv_before = SV_ALLTYPE_ZERO ;
 	sasv->len = 0 ;
 
@@ -235,7 +256,7 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 
 	if (!get_svtype(&sv_before,sasv->s)) 
 		log_warn_return (LOG_EXIT_ZERO,"invalid value for key: ",get_key_by_enum(ENUM_KEY,KEY_TYPE)," in service file: ",svsrc,"/",svname) ;
-
+	
 	insta = instance_check(svname) ;
 	if (!insta) 
 		log_warn_return(LOG_EXIT_ZERO, "invalid instance name: ",svname) ;
@@ -249,11 +270,11 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 		if (!stralloc_cats(sasv,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		if (!stralloc_0(sasv)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}
-	
+
 	memcpy(svpath,svsrc,svsrclen) ;
 	memcpy(svpath + svsrclen,svname,svnamelen) ;
 	svpath[svsrclen + svnamelen] = 0 ;
-	
+
 	if (sastr_cmp(parsed_list,svpath) >= 0)
 	{
 		log_trace(sv,": already added") ;
@@ -263,11 +284,11 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	}
 
 	if (!parser(&sv_before,sasv,svname,sv_before.cname.itype)) return 0 ;
-	
+
 	/** keep the name set by user
 	 * uniquely for instantiated service
 	 * The name must contain the template string */
-	
+
 	if (insta > 0 && sv_before.cname.name >= 0 )
 	{
 		stralloc sainsta = STRALLOC_ZERO ;
@@ -295,7 +316,7 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	}
 	add:
 	if (!parse_add_service(parsed_list,&sv_before,svpath,nbsv,info->owner)) return 0 ;
-	
+
 	if ((sv_before.cname.itype > TYPE_CLASSIC && force > 1) || !(*exist))
 	{
 		if (!parse_service_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force)) return 0 ;
