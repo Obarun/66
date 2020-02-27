@@ -57,7 +57,6 @@ ALL_BINS := $(LIBEXEC_TARGETS) $(BIN_TARGETS)
 ALL_LIBS := $(SHARED_LIBS) $(STATIC_LIBS) $(INTERNAL_LIBS)
 ALL_INCLUDES := $(wildcard src/include/$(package)/*.h)
 ALL_MAN := $(wildcard doc/man/*.[1-8].scd)
-#INSTALL_DIR := $(skel) $(system_dir) $(system_log) $(service_system) $(service_adm) $(service_admconf)
 INSTALL_DATA += init.conf
 INSTALL_MAN := $(wildcard doc/man/*.[1-8])
 INSTALL_HTML := $(wildcard doc/html/*.html)
@@ -82,7 +81,7 @@ tgz: distclean
 	tar -zpcv --owner=0 --group=0 --numeric-owner --exclude=.git* -f /tmp/$$package-$$version.tar.gz $$package-$$version && \
 	exec rm -rf /tmp/$$package-$$version
 
-strip: $(ALL_LIBS) $(ALL_BINS) $(ALL_DIR)
+strip: $(ALL_LIBS) $(ALL_BINS)
 ifneq ($(strip $(STATIC_LIBS)),)
 	exec $(STRIP) -x -R .note -R .comment -R .note.GNU-stack $(STATIC_LIBS)
 endif
@@ -98,12 +97,7 @@ install-lib: $(STATIC_LIBS:lib%.a.xyzzy=$(DESTDIR)$(libdir)/lib%.a)
 install-include: $(ALL_INCLUDES:src/include/$(package)/%.h=$(DESTDIR)$(includedir)/$(package)/%.h)
 install-data: $(INSTALL_DATA:skel/%=$(DESTDIR)$(skel)/%)
 install-conf: $(INSTALL_CONF:skel/%=$(DESTDIR)$(sysconfdir)/66/%)
-
-install-dir: $(INSTALL_DIR:/%=$(DESTDIR)/%)
 install-html: $(INSTALL_HTML:doc/html/%.html=$(DESTDIR)$(datarootdir)/doc/$(package)/%.html)
-
-$(DESTDIR)/%:
-	install -d -m755 $@ 
 	
 ifneq ($(exthome),)
 
@@ -159,10 +153,9 @@ $(DESTDIR)$(skel)/%: skel/%
 			-e "s/@LIVEDIR@/$(subst /,\/,$(livedir))/g" \
 			-e "s/@SKEL@/$(subst /,\/,$(skel))/g" $< > $@
 	
-$(DESTDIR)$(dynlibdir)/lib%.so: lib%.so.xyzzy
+$(DESTDIR)$(dynlibdir)/lib%.so $(DESTDIR)$(dynlibdir)/lib%.so.$(version_M): lib%.so.xyzzy
 	$(INSTALL) -D -m 755 $< $@.$(version) && \
-	$(INSTALL) -l $(@F).$(version) $@.$(version_m) && \
-	$(INSTALL) -l $(@F).$(version_m) $@.$(version_M) && \
+	$(INSTALL) -l $(@F).$(version) $@.$(version_M) && \
 	exec $(INSTALL) -l $(@F).$(version_M) $@
 
 $(DESTDIR)$(libexecdir)/% $(DESTDIR)$(bindir)/%: % package/modes
