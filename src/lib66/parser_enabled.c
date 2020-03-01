@@ -104,6 +104,7 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list,
 		for (;nid; id += strlen(deps.s + id) + 1, nid--)
 		{
 			newsv.len = 0 ;
+			exist = 0 ;
 			if (sv_before->cname.itype != BUNDLE)
 			{
 				log_trace("Service : ",sv, " depends on : ",deps.s+id) ;
