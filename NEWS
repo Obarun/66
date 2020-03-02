@@ -1,5 +1,10 @@
 Changelog for 66
 
+In 0.2.5.2
+----------
+
+    - Fix build: Remove bytes.h oblibs header file
+    
 In 0.2.5.1
 ----------
     
