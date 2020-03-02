@@ -47,6 +47,7 @@
 #include <execline/config.h>
 
 #include <s6/s6-supervise.h>
+#include <s6/config.h>
 
 #include <66/config.h>
 #include <66/constants.h>
@@ -59,8 +60,10 @@
 #define SHUTDOWND_FIFO "fifo"
 static char const *conf = SS_SKEL_DIR ;
 static char const *live = 0 ;
+static int inns = 0 ;
+static int nologger = 0 ;
 
-#define USAGE "66-shutdownd [ -h ] [ -l live ] [ -s skel ] [ -g gracetime ]"
+#define USAGE "66-shutdownd [ -h ] [ -l live ] [ -s skel ] [ -g gracetime ] [ -C ] [ -B ]"
 
 static inline void info_help (void)
 {
@@ -72,10 +75,23 @@ static inline void info_help (void)
 "	-l: live directory\n"
 "	-s: skeleton directory\n"
 "	-g: grace time between the SIGTERM and the SIGKILL\n"
+"	-C: the system is running inside a container\n"
+"	-B: the catch-all logger do not exist\n"
 ;
 
 	if (buffer_putsflush(buffer_1, help) < 0)
 		log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+}
+
+static void restore_console (void)
+{
+	if (!inns && !nologger)
+	{
+		fd_close(1) ;
+		if (open("/dev/console", O_WRONLY) != 1)
+			log_dieusys(LOG_EXIT_SYS,"open /dev/console for writing") ;
+		if (fd_copy(2, 1) < 0) log_warnusys("fd_copy") ;
+	}
 }
 
 struct at_s
@@ -217,17 +233,40 @@ static inline void prepare_stage4 (char what)
 	fd = open_excl(STAGE4_FILE ".new") ;
 	if (fd == -1) log_dieusys(LOG_EXIT_SYS, "open ", STAGE4_FILE ".new", " for writing") ;
 	buffer_init(&b, &buffer_write, fd, buf, 512) ;
-
-	if (buffer_puts(&b,
-		"#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n\n"
-		EXECLINE_EXTBINPREFIX "foreground { "
-		SS_BINPREFIX "66-umountall }\n"
-		EXECLINE_EXTBINPREFIX "foreground { ") < 0
-		|| buffer_put(&b,shutfinal,strlen(shutfinal)) < 0
-		|| buffer_puts(&b," }\n" 
-		SS_BINPREFIX "66-hpr -f -") < 0
-		|| buffer_put(&b, &what, 1) < 0
-		|| buffer_putsflush(&b, "\n") < 0) log_dieusys(LOG_EXIT_SYS, "write to ", STAGE4_FILE ".new") ;
+	
+	if (inns)
+	{
+		if (buffer_puts(&b,
+			"#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n\n"
+			EXECLINE_EXTBINPREFIX "foreground { "
+			S6_EXTBINPREFIX "s6-svc -Ox -- . }\n"
+			EXECLINE_EXTBINPREFIX "background\n{\n  ") < 0
+			
+			|| (!nologger && buffer_puts(&b,
+			EXECLINE_EXTBINPREFIX "foreground { "
+			S6_EXTBINPREFIX "s6-svc -Xh -- " live) < 0
+			|| buffer_puts(&b,SS_BOOT_LOG " }\n  ") < 0)
+			
+			|| buffer_puts(&b, S6_EXTBINPREFIX "66-scanctl ") < 0
+			|| buffer_puts(&b, "-l ") < 0
+			|| buffer_puts(&b, live) < 0
+			|| buffer_put(&b, what == 'h' ? "s" : &what, 1) < 0
+			|| buffer_putsflush(&b, "b\n}\n") < 0)
+			log_dieusys(LOG_EXIST_SYS, "write to ", STAGE4_FILE ".new") ;
+	}
+	else
+	{
+		if (buffer_puts(&b,
+			"#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n\n"
+			EXECLINE_EXTBINPREFIX "foreground { "
+			SS_BINPREFIX "66-umountall }\n"
+			EXECLINE_EXTBINPREFIX "foreground { ") < 0
+			|| buffer_put(&b,shutfinal,strlen(shutfinal)) < 0
+			|| buffer_puts(&b," }\n" 
+			SS_BINPREFIX "66-hpr -f -") < 0
+			|| buffer_put(&b, &what, 1) < 0
+			|| buffer_putsflush(&b, "\n") < 0) log_dieusys(LOG_EXIT_SYS, "write to ", STAGE4_FILE ".new") ;
+	}
 	if (fchmod(fd, S_IRWXU) == -1) log_dieusys(LOG_EXIT_SYS, "fchmod ", STAGE4_FILE ".new") ;
 	fd_close(fd) ;
 	if (rename(STAGE4_FILE ".new", STAGE4_FILE) == -1) 
@@ -236,10 +275,10 @@ static inline void prepare_stage4 (char what)
 
 static inline void unsupervise_tree (void)
 {
-	static char const *except[] =
+	char const *except[3] =
 	{
-		SS_SCANDIR SS_LOG_SUFFIX,
 		"66-shutdownd",
+		nologger ? 0 : SS_SCANDIR SS_LOG_SUFFIX,
 		0
 	} ;
 	size_t livelen = strlen(live) ;
@@ -251,7 +290,7 @@ static inline void unsupervise_tree (void)
 	newlen = livelen + SS_SCANDIR_LEN + 4 ;
 	DIR *dir = opendir(tmp) ;
 	int fdd ;
-	if (!dir)log_dieusys(LOG_EXIT_SYS, "opendir: ",tmp) ;
+	if (!dir) log_dieusys(LOG_EXIT_SYS, "opendir: ",tmp) ;
 	fdd = dirfd(dir) ;
 	if (fdd == -1) log_dieusys(LOG_EXIT_SYS, "dir_fd: ",tmp) ;
 	for (;;)
@@ -286,11 +325,11 @@ static inline void unsupervise_tree (void)
 
 int main (int argc, char const *const *argv, char const *const *envp)
 {
-	char what = 'S' ;
 	unsigned int grace_time = 3000 ;
 	tain_t deadline ;
 	int fdr, fdw ;
 	buffer b ;
+	char what = 'S' ;
 	char buf[64] ;
 	
 	PROG = "66-shutdownd" ;
@@ -298,7 +337,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 		subgetopt_t l = SUBGETOPT_ZERO ;
 		for (;;)
 		{
-			int opt = subgetopt_r(argc, argv, "hl:s:g:", &l) ;
+			int opt = subgetopt_r(argc, argv, "hl:s:g:CB", &l) ;
 			if (opt == -1) break ;
 			switch (opt)
 			{
@@ -306,6 +345,8 @@ int main (int argc, char const *const *argv, char const *const *envp)
 				case 'l' : live = l.arg ; break ;
 				case 's' : conf = l.arg ; break ;
 				case 'g' : if (!uint0_scan(l.arg, &grace_time)) log_usage(USAGE) ; break ;
+				case 'C' : inns = 1 ; break ;
+				case 'B' : nologger = 1 ; break ;
 				default : log_usage(USAGE) ;
 			}
 		}
@@ -319,6 +360,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	/* if we're in stage 4, exec it immediately */
 	{
 		char const *stage4_argv[2] = { "./" STAGE4_FILE, 0 } ;
+		restore_console() ;
 		execve(stage4_argv[0], (char **)stage4_argv, (char *const *)envp) ;
 		if (errno != ENOENT) log_warnusys("exec ", stage4_argv[0]) ;
 	}
@@ -355,18 +397,19 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	fd_close(fdw) ;
 	fd_close(fdr) ;
 	fd_close(1) ;
-	if (open("/dev/console", O_WRONLY) != 1)
-		log_dieusys(LOG_EXIT_SYS, "open /dev/console for writing") ;
-	if (fd_copy(2, 1) == -1) log_warnusys("fd_copy") ;
+	restore_console() ;
 
 	/* The end is coming! */
 	prepare_stage4(what) ;
 	unsupervise_tree() ;
-	sync() ;
 	
 	if (sig_ignore(SIGTERM) == -1) log_warnusys("sig_ignore SIGTERM") ;
 	
-	log_info("sending all processes the TERM signal...") ;
+	if (!inns)
+	{
+		sync() ;
+		log_info("sending all processes the TERM signal...") ;
+	}
 	
 	kill(-1, SIGTERM) ;
 	kill(-1, SIGCONT) ;
@@ -374,9 +417,12 @@ int main (int argc, char const *const *argv, char const *const *envp)
 	tain_now_g() ;
 	tain_add_g(&deadline, &deadline) ;
 	deepsleepuntil_g(&deadline) ;
-	sync() ;
 	
-	log_info("sending all processes the KILL signal...") ;
+	if (!inns)
+	{
+		sync() ;
+		log_info("sending all processes the KILL signal...") ;
+	}
 	
 	kill(-1, SIGKILL) ;
 	
