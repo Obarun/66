@@ -61,6 +61,7 @@ int main (int argc, char const *const *argv)
 		errno = 0 ;
 		p = getmntent(fp) ;
 		if (!p) break ;
+		if (!strcmp(p->mnt_dir,tmpdir)) continue ;
 		for (; i < EXCLUDEN ; i++)
 		{
 			if (!strcmp(p->mnt_type, exclude_type[i]))
@@ -69,8 +70,7 @@ int main (int argc, char const *const *argv)
 				break ;
 			}
 		}
-		if ((i < EXCLUDEN && got[i] == 1) || !strcmp(p->mnt_dir,tmpdir))
-			continue ;
+		if (i < EXCLUDEN && got[i] == 1) continue ;
 		if (line >= MAXLINES)
 			log_die(100, "too many mount points") ;
 		mountpoints[line++] = sa.len ;
