@@ -51,6 +51,7 @@
 #define TERM 5
 #define USR1 6
 #define USR2 7
+#define PWR 8
 
 #define SIGSIZE 64
 #define AUTO_CRTE_CHW 1
@@ -358,6 +359,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
 	}
 	switch(file)
 	{
+		case PWR:
 		case USR1:
 			if (BOOT)
 			{
@@ -425,10 +427,11 @@ void create_scandir(char const *live, char const *scandir)
 	char const *const file[] = 
 	{ 
 		"/crash", "/finish", "/SIGHUP", "/SIGINT",
-		"/SIGQUIT", "/SIGTERM", "/SIGUSR1", "/SIGUSR2"
+		"/SIGQUIT", "/SIGTERM", "/SIGUSR1", "/SIGUSR2",
+		"/SIGPWR"
 	 } ;
 	log_trace("write control file... ") ;
-	for (int i = 0 ; i < 8; i++)
+	for (int i = 0 ; i < 9; i++)
 		write_control(scandir,live,file[i],i) ;
 
 	if (BOOT)
