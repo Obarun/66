@@ -47,7 +47,7 @@
 #define _PATH_WTMP "/dev/null/wtmp"
 #endif
 
-#define USAGE "66-hpr [ -H ] [ -l live ] [ -b banner ] [ -f ] [ -h | -p | -r ] [ -d | -w ] [ -W ]"
+#define USAGE "66-hpr [ -H ] [ -l live ] [ -b banner ] [ -f ] [ -h | -p | -r ] [ -n ] [ -d | -w ] [ -W ]"
 
 char const *banner = 0 ;
 char const *live = 0 ;
@@ -78,13 +78,14 @@ int main (int argc, char const *const *argv)
 	int force = 0 ;
 	int dowtmp = 1 ;
 	int dowall = 1 ;
+	int dosync = 1 ;
 	
 	PROG = "66-hpr" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
 		for (;;)
 		{
-			int opt = subgetopt_r(argc, argv, "Hl:hprfdwWb:", &l) ;
+			int opt = subgetopt_r(argc, argv, "Hl:hprfdwWb:n", &l) ;
 			if (opt == -1) break ;
 			switch (opt)
 			{
@@ -97,6 +98,7 @@ int main (int argc, char const *const *argv)
 				case 'd' : dowtmp = 0 ; break ;
 				case 'w' : dowtmp = 2 ; break ;
 				case 'W' : dowall = 0 ; break ;
+				case 'n' : dosync = 0 ; break ;
 				case 'b' : banner = l.arg ; break ;
 				default :  log_usage(USAGE) ;
 			}
@@ -117,7 +119,7 @@ int main (int argc, char const *const *argv)
 
 	if (force)
 	{
-		sync() ;
+		if (dosync) sync() ;
 		reboot(what == 3 ? RB_AUTOBOOT : what == 2 ? RB_POWER_OFF : RB_HALT_SYSTEM) ;
 			log_dieusys(LOG_EXIT_SYS, "reboot()") ;
 	}
