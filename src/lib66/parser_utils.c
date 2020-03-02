@@ -23,7 +23,6 @@
 #include <errno.h>
 #include <stdio.h>
 
-#include <oblibs/bytes.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 #include <oblibs/log.h>
