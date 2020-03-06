@@ -68,6 +68,7 @@ what trees are currently available on the system use the *66-intree*(1) tool.
 	Enables _tree_. This allows the *66-all*(1) tool to know which tree needs to
 	be started. If the given _tree_ is enabled, all services in that tree will be
 	started when you use the *66-all*(1) tool.
+	*Note*: If *after_tree* and *tree* have the same name, then this *tree* will be the very first tree to start.
 
 *-D*
 	Disables _tree_. The exact opposite of the *-E* option.
