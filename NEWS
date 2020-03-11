@@ -1,5 +1,18 @@
 Changelog for 66
 
+In 0.2.5.2
+----------
+
+    - Fix build: Remove bytes.h oblibs header file
+    
+In 0.2.5.1
+----------
+    
+    - Bugs fix
+    - 66-tree -S options: if after_tree and tree have the same name,
+    tree is considered as the very first tree to start.
+    - 66-unmountall: do not umount SS_LIVE
+    - Add SIGPWR control file at creation of .s6-svscan directory
 
 In 0.2.5.0
 ----------

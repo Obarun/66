@@ -42,7 +42,6 @@
 
 static unsigned int REVERSE = 0 ;
 static unsigned int NOFIELD = 1 ;
-unsigned int MAXDEPTH = 1 ;
 static unsigned int GRAPH = 0 ;
 static uid_t OWNER ;
 static char OWNERSTR[UID_FMT] ;

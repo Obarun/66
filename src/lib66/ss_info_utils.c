@@ -31,6 +31,8 @@
 
 #include <66/resolve.h>
 
+unsigned int MAXDEPTH = 1 ;
+
 ss_resolve_graph_style graph_utf8 = {
 	UTF_VR UTF_H,
 	UTF_UR UTF_H,

@@ -21,9 +21,8 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <errno.h>
-#include <stdio.h>
+//#include <stdio.h>
 
-#include <oblibs/bytes.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 #include <oblibs/log.h>
@@ -614,6 +613,8 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			service->cname.idga = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos)+1)
 			{
+				/* allow to comment a service */
+				if (chval[pos] == '#') continue ;
 				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 				service->cname.nga++ ;
 			}
@@ -625,6 +626,8 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			service->cname.idopts = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos)+1)
 			{
+				/* allow to comment a service */
+				if (chval[pos] == '#') continue ;
 				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 				service->cname.nopts++ ;
 			}
@@ -636,6 +639,8 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			service->cname.idext = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos)+1)
 			{
+				/* allow to comment a service */
+				if (chval[pos] == '#') continue ;
 				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 				service->cname.next++ ;
 			}
@@ -648,6 +653,8 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			service->cname.idga = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos) + 1)
 			{
+				/* allow to comment a service */
+				if (chval[pos] == '#') continue ;
 				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 				service->cname.nga++ ;
 			}

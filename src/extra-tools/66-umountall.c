@@ -23,9 +23,12 @@
 #include <sys/mount.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/skamisc.h>
+
+#include <66/config.h>
 
 #define MAXLINES 99
 
@@ -35,16 +38,20 @@ static char const *exclude_type[EXCLUDEN] = { "devtmpfs", "proc", "sysfs" } ;
 
 int main (int argc, char const *const *argv)
 {
-	size_t mountpoints[MAXLINES] ;
+	size_t mountpoints[MAXLINES], tmplen = strlen(SS_LIVE), len = 0 ;
+	char tmpdir[tmplen + 1] ;
+	dirname(tmpdir,SS_LIVE) ;
+	len = strlen(tmpdir) ;
+	if (tmpdir[len-1] == '/')
+		tmpdir[len-1] = 0 ;
 	unsigned int got[EXCLUDEN] = { 0, 0, 0 } ;
 	stralloc sa = STRALLOC_ZERO ;
 	unsigned int line = 0 ;
-	FILE *fp ;
+	FILE *fp = setmntent("/proc/mounts", "r") ;
 	int e = 0 ;
 	
-	PROG = "s6-linux-init-umountall" ;
+	PROG = "66-umountall" ;
 
-	fp = setmntent("/proc/mounts", "r") ;
 	if (!fp) log_dieusys(LOG_EXIT_SYS, "open /proc/mounts") ;
 
 	for (;;)
@@ -54,6 +61,7 @@ int main (int argc, char const *const *argv)
 		errno = 0 ;
 		p = getmntent(fp) ;
 		if (!p) break ;
+		if (!strcmp(p->mnt_dir,tmpdir)) continue ;
 		for (; i < EXCLUDEN ; i++)
 		{
 			if (!strcmp(p->mnt_type, exclude_type[i]))
