@@ -743,7 +743,7 @@ int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char c
 		!stralloc_cats(&contents,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}
 	
-	if (contents.len)
+	//if (contents.len)
 	{
 		if (!file_write_unsafe(dst,filename,contents.s,contents.len))
 		{
