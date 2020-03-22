@@ -177,7 +177,7 @@ static void info_display_init(char const *field,char const *treename)
 	if (!bprintf(buffer_1,"%s%s%s",init ? log_color->valid : log_color->warning, init ? "yes":"no",log_color->off)) 
 		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 	
-	if (buffer_putsflush(buffer_1,"\n") == -1) 
+	if (buffer_putsflush(buffer_1,"\n") == -1)
 		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
 }
@@ -190,7 +190,7 @@ static void info_display_current(char const *field,char const *treename)
 	if (tree_find_current(&sacurr,base.s,OWNER))
 	{
 		char name[sacurr.len + 1] ;//be paranoid +1
-		if (!basename(name,sacurr.s)) log_dieu(LOG_EXIT_SYS,"basename of: ",sacurr.s) ;
+		if (!ob_basename(name,sacurr.s)) log_dieu(LOG_EXIT_SYS,"basename of: ",sacurr.s) ;
 		current = obstr_equal(treename,name) ;
 	}
 	if (NOFIELD) info_display_field_name(field) ;
@@ -321,7 +321,7 @@ static void info_display_symlink(char const *field, char const *treename)
 	ssexec_t info = SSEXEC_ZERO ;
 	if (!auto_stra(&info.treename,treename)) log_die_nomem("stralloc") ;
 	if (!auto_stra(&info.base,base.s)) log_die_nomem("stralloc") ;
-	int db, svc ;
+	int db , svc ;
 	size_t typelen ;
 	char type[UINT_FMT] ;
 	typelen = uint_fmt(type, TYPE_BUNDLE) ;
@@ -331,14 +331,14 @@ static void info_display_symlink(char const *field, char const *treename)
 	
 	auto_strings(cmd,"-t",type," -b") ;
 	db = backup_cmd_switcher(VERBOSITY,cmd,&info) ;
-	if (db < 0) log_dieusys(LOG_EXIT_SYS,"find realpath of symlink for db of tree: ",info.treename.s) ;
+	if (db < 0) log_dieu(LOG_EXIT_SYS,"find realpath of symlink for db of tree: ",info.treename.s) ;
 	
 	typelen = uint_fmt(type, TYPE_CLASSIC) ;
 	type[typelen] = 0 ;
 		
 	auto_strings(cmd,"-t",type," -b") ;
 	svc = backup_cmd_switcher(VERBOSITY,cmd,&info) ;
-	if (svc < 0) log_dieusys(LOG_EXIT_SYS,"find realpath of symlink for svc of tree: ",info.treename.s) ;
+	if (svc < 0) log_dieu(LOG_EXIT_SYS,"find realpath of symlink for svc of tree: ",info.treename.s) ;
 
 	if (!bprintf(buffer_1,"%s%s%s%s%s%s%s%s", "svc->",!svc ? log_color->valid : log_color->warning , !svc ? "source" : "backup",log_color->off, " db->", !db ? log_color->valid : log_color->warning, !db ? "source" : "backup", log_color->off)) 
 		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
