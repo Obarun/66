@@ -43,7 +43,7 @@
 #include <s6-rc/s6rc-servicedir.h>
 #include <s6-rc/s6rc-constants.h>
 
-#define USAGE "66-tree [ -h ] [ -v verbosity ] [ -l ] [ -n|R ] [ -a|d ] [ -c ] [ -S after_tree ] [ -E|D ] [ -U ] [ -C clone ] tree"
+#define USAGE "66-tree [ -h ] [ -z ] [ -v verbosity ] [ -l ] [ -n|R ] [ -a|d ] [ -c ] [ -S after_tree ] [ -E|D ] [ -U ] [ -C clone ] tree"
 
 static stralloc reslive = STRALLOC_ZERO ;
 static char const *cleantree = 0 ;
@@ -55,6 +55,7 @@ static inline void info_help (void)
 "\n"
 "options :\n"
 "	-h: print this help\n"
+"	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n"
 "	-n: create a new empty tree\n"
@@ -150,6 +151,8 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t own
 		auto_check_one(SS_SERVICE_SYSDIR,0755) ;
 		auto_check_one(SS_SERVICE_ADMDIR,0755) ;
 		auto_check_one(SS_SERVICE_ADMCONFDIR,0755) ;
+		auto_check_one(SS_MODULE_SYSDIR,0755) ;
+		auto_check_one(SS_MODULE_ADMDIR,0755) ;
 	}
 	else
 	{
@@ -170,6 +173,8 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t own
 		auto_check_one(extra.s,0755) ;
 		extra.len = extralen ;
 		auto_stralloc_0(&extra,SS_SERVICE_USERCONFDIR) ;
+		extra.len = extralen ;
+		auto_stralloc_0(&extra,SS_MODULE_USERDIR) ;
 		auto_check_one(extra.s,0755) ;
 		stralloc_free(&extra) ;
 	}
@@ -492,6 +497,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc clone = STRALLOC_ZERO ;
 	stralloc live = STRALLOC_ZERO ;
 
+	log_color = &log_color_disable ;
+
 	current = create = allow = deny = enable = disable = remove = snap = unsupervise = 0 ;
 
 	PROG = "66-tree" ;
@@ -501,7 +508,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		for (;;)
 		{
 			
-			int opt = getopt_args(argc,argv, "hv:l:na:d:cS:EDRC:U", &l) ;
+			int opt = getopt_args(argc,argv, "hv:l:na:d:cS:EDRC:Uz", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
@@ -530,6 +537,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 						   snap = 1 ;
 						   break ;
 				case 'U' : unsupervise = 1 ; if (create)log_usage(USAGE) ; break ;
+				case 'z' : log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
 				default : log_usage(USAGE) ; 
 			}
 		}
