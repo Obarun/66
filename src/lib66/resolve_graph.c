@@ -187,7 +187,11 @@ int ss_resolve_graph_src(ss_resolve_graph_t *graph, char const *dir, unsigned in
 		char *name = sa.s + pos ;
 		if (!ss_resolve_check(dir,name)) goto err ;
 		if (!ss_resolve_read(&res,dir,name)) goto err ;
-		if (!ss_resolve_graph_build(graph,&res,dir,reverse)) goto err ;
+		if (!ss_resolve_graph_build(graph,&res,dir,reverse))
+		{
+			log_warnu("resolve dependencies of service: ",name) ;
+			goto err ;
+		 }
 	}
 	
 	stralloc_free(&sa) ;
