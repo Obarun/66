@@ -23,12 +23,14 @@ char const *enum_str_section[] = {
 	"stop" ,
 	"logger" ,
 	"environment" ,
+	"regex" ,
 	0
 } ;
 
-char const *enum_str_key[] = {
+char const *enum_str_key_section_main[] = {
 	"@type" ,
 	"@name" ,
+	"@version" ,
 	"@description" ,
 	"@contents" ,
 	"@depends" ,
@@ -37,32 +39,60 @@ char const *enum_str_key[] = {
 	"@options" ,
 	"@notify" ,
 	"@user" ,
-	"@build" ,
-	"@down-signal" ,
-	"@flags" ,
-	"@runas" ,
-	"@shebang" ,
 	"@timeout-finish" ,
 	"@timeout-kill" ,
 	"@timeout-up" ,
 	"@timeout-down" ,
 	"@maxdeath" ,
 	"@hiercopy" ,
+	"@down-signal" ,
+	"@flags" ,
+	0
+} ;
+
+
+char const *enum_str_key_section_startstop[] = {
+	"@build" ,
+	"@runas" ,
+	"@shebang" ,
+	"@execute" ,
+	0
+} ;
+
+char const *enum_str_key_section_logger[] = {
+	"@build" ,
+	"@runas" ,
+	"@shebang" ,
 	"@execute" ,
 	"@destination" ,
 	"@backup" ,
 	"@maxsize" ,
 	"@timestamp" ,
-	"@enval" ,
+	"@timeout-finish" ,
+	"@timeout-kill" ,
+	"@depends" ,
+	0
+} ;
+
+char const *enum_str_key_section_environ[] = {
+	"@none" ,
+	0
+} ;
+
+char const *enum_str_key_section_regex[] = {
+	"@configure" ,
+	"@directories" ,
+	"@files" ,
+	"@infiles" ,
 	0
 } ;
 
 char const *enum_str_type[] = {
-	"modules" ,
 	"classic" ,
 	"bundle" ,
 	"longrun" ,
 	"oneshot" ,
+	"module" ,
 	0
 } ;
 
@@ -121,7 +151,11 @@ char const *enum_str_logopts[] = {
 enum_all_enum_t enum_all[] = {
 
 	[ENUM_SECTION] = { .enum_all = SECTION_ENDOFKEY - ENUM_START, .str = enum_str_section } ,
-	[ENUM_KEY] = { .enum_all = KEY_ENDOFKEY - ENUM_START, .str = enum_str_key } ,
+	[ENUM_KEY_SECTION_MAIN] = { .enum_all = KEY_MAIN_ENDOFKEY - ENUM_START, .str = enum_str_key_section_main } ,
+	[ENUM_KEY_SECTION_STARTSTOP] = { .enum_all = KEY_STARTSTOP_ENDOFKEY - ENUM_START, .str = enum_str_key_section_startstop } ,
+	[ENUM_KEY_SECTION_LOGGER] = { .enum_all = KEY_LOGGER_ENDOFKEY - ENUM_START, .str = enum_str_key_section_logger } ,
+	[ENUM_KEY_SECTION_ENVIRON] = { .enum_all = KEY_ENVIRON_ENDOFKEY - ENUM_START, .str = enum_str_key_section_environ } ,
+	[ENUM_KEY_SECTION_REGEX] = { .enum_all = KEY_REGEX_ENDOFKEY - ENUM_START, .str = enum_str_key_section_regex } ,
 	[ENUM_TYPE] = { .enum_all = TYPE_ENDOFKEY - ENUM_START, .str = enum_str_type } ,
 	[ENUM_EXPECTED] = { .enum_all = EXPECT_ENDOFKEY - ENUM_START, .str = enum_str_expected } ,
 	[ENUM_OPTS] = { .enum_all = OPTS_ENDOFKEY- ENUM_START , .str = enum_str_opts } ,
@@ -136,21 +170,23 @@ enum_all_enum_t enum_all[] = {
 
 unsigned char const actions[SECTION_ENDOFKEY][TYPE_ENDOFKEY] = {
 
-	// MODULES		>CLASSIC,			BUNDLE,			LONGRUN,			ONESHOT
-    { ACTION_SKIP,	ACTION_COMMON,		ACTION_COMMON,	ACTION_COMMON,		ACTION_COMMON }, // main
-    { ACTION_SKIP,	ACTION_EXECRUN, 	ACTION_SKIP,	ACTION_EXECRUN, 	ACTION_EXECUP }, // start
-    { ACTION_SKIP,	ACTION_EXECFINISH, 	ACTION_SKIP,	ACTION_EXECFINISH,	ACTION_EXECDOWN }, // stop
-    { ACTION_SKIP,	ACTION_EXECLOG,		ACTION_SKIP,	ACTION_EXECLOG, 	ACTION_SKIP }, // log
-    { ACTION_SKIP,	ACTION_ENVIRON, 	ACTION_SKIP,	ACTION_ENVIRON, 	ACTION_ENVIRON }, // env
+	// CLASSIC,				BUNDLE,				LONGRUN,			ONESHOT				MODULES
+    { ACTION_COMMON,		ACTION_COMMON,		ACTION_COMMON,		ACTION_COMMON,		ACTION_COMMON }, // main
+    { ACTION_EXECRUN, 		ACTION_SKIP,		ACTION_EXECRUN,		ACTION_EXECUP,		ACTION_SKIP }, // start
+    { ACTION_EXECFINISH,	ACTION_SKIP,		ACTION_EXECFINISH,	ACTION_EXECDOWN,	ACTION_SKIP }, // stop
+    { ACTION_EXECLOG,		ACTION_SKIP,		ACTION_EXECLOG, 	ACTION_SKIP,		ACTION_SKIP }, // log
+    { ACTION_ENVIRON, 		ACTION_SKIP,		ACTION_ENVIRON, 	ACTION_ENVIRON,		ACTION_SKIP }, // env
+    { ACTION_SKIP, 			ACTION_SKIP,		ACTION_SKIP,	 	ACTION_SKIP,		ACTION_REGEX }, // regex
 } ;
 
 unsigned char const states[SECTION_ENDOFKEY][TYPE_ENDOFKEY] = {
-	// MODULES		CLASSIC,		BUNDLE,			LONGRUN,		ONESHOT
-    { ACTION_SKIP,	SECTION_START,	ACTION_SKIP,	SECTION_START,	SECTION_START }, // main
-    { ACTION_SKIP,	SECTION_STOP,	ACTION_SKIP,	SECTION_STOP,	SECTION_STOP }, // start
-    { ACTION_SKIP,	SECTION_LOG,	ACTION_SKIP,	SECTION_LOG,	SECTION_LOG }, // stop
-    { ACTION_SKIP,	SECTION_ENV,	ACTION_SKIP,	SECTION_ENV,	SECTION_ENV }, // log
-    { ACTION_SKIP,	ACTION_SKIP,	ACTION_SKIP,	ACTION_SKIP,	ACTION_SKIP }, // env
+	// CLASSIC,			BUNDLE,			LONGRUN,		ONESHOT			MODULES
+    { SECTION_START,	ACTION_SKIP,	SECTION_START,	SECTION_START,	SECTION_REGEX }, // main
+    { SECTION_STOP,		ACTION_SKIP,	SECTION_STOP,	SECTION_STOP,	ACTION_SKIP }, // start
+    { SECTION_LOG,		ACTION_SKIP,	SECTION_LOG,	ACTION_SKIP,	ACTION_SKIP }, // stop
+    { SECTION_ENV,		ACTION_SKIP,	SECTION_ENV,	SECTION_ENV,	ACTION_SKIP }, // log
+    { ACTION_SKIP,		ACTION_SKIP,	ACTION_SKIP,	ACTION_SKIP,	ACTION_SKIP }, // env
+    { ACTION_SKIP,		ACTION_SKIP,	ACTION_SKIP,	ACTION_SKIP,	ACTION_SKIP }, // regex
 } ;
 
 ssize_t get_enum_by_key_one(char const *str, int const e)
