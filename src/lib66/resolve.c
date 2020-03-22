@@ -53,7 +53,7 @@ void ss_resolve_init(ss_resolve_t *res)
 	ss_resolve_add_string(res,"") ;
 }
 
-int ss_resolve_pointo(stralloc *sa,ssexec_t *info,unsigned int type, unsigned int where)
+int ss_resolve_pointo(stralloc *sa,ssexec_t *info,int type, unsigned int where)
 {
 	stralloc tmp = STRALLOC_ZERO ;
 	
@@ -94,7 +94,7 @@ int ss_resolve_pointo(stralloc *sa,ssexec_t *info,unsigned int type, unsigned in
 		!stralloc_cats(&tmp,SS_SVDIRS)) goto err ;
 	}
 	
-	if (type && where)
+	if (type >= 0 && where)
 	{
 		if (type == TYPE_CLASSIC)
 		{
@@ -113,18 +113,80 @@ int ss_resolve_pointo(stralloc *sa,ssexec_t *info,unsigned int type, unsigned in
 		return 0 ;
 }
 
-int ss_resolve_src_path(stralloc *sasrc,char const *sv, ssexec_t *info)
+/* @sdir -> service dir
+ * @mdir -> module dir */
+int ss_resolve_module_path(stralloc *sdir, stralloc *mdir, char const *sv, uid_t owner)
+{
+	int r, insta ;
+	stralloc sainsta = STRALLOC_ZERO ;
+	stralloc mhome = STRALLOC_ZERO ; // module user dir
+	stralloc shome = STRALLOC_ZERO ; // service user dir
+	char const *src = 0 ;
+	char const *dest = 0 ;
+	
+	insta = instance_check(sv) ;
+	instance_splitname(&sainsta,sv,insta,SS_INSTANCE_TEMPLATE) ;
+	
+	if (!owner)
+	{
+		src = SS_MODULE_ADMDIR ;
+		dest = SS_SERVICE_ADMDIR ;
+	}
+	else
+	{	
+		if (!set_ownerhome(&mhome,owner)) log_warnusys_return(LOG_EXIT_ZERO,"set home directory") ;
+		if (!stralloc_cats(&mhome,SS_MODULE_USERDIR)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		if (!stralloc_0(&mhome)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		mhome.len-- ;
+		src = mhome.s ;
+		
+		if (!set_ownerhome(&shome,owner)) log_warnusys_return(LOG_EXIT_ZERO,"set home directory") ;
+		if (!stralloc_cats(&shome,SS_SERVICE_USERDIR)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		if (!stralloc_0(&shome)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		shome.len-- ;
+		dest = shome.s ;
+	
+	}
+	if (!auto_stra(mdir,src,sainsta.s)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	r = scan_mode(mdir->s,S_IFDIR) ;
+	if (!r || r == -1)
+	{
+		mdir->len = 0 ;
+		src = SS_MODULE_ADMDIR ;
+		dest = SS_SERVICE_ADMDIR ;
+		if (!auto_stra(mdir,src,sainsta.s)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		r = scan_mode(mdir->s,S_IFDIR) ;
+		if (!r || r == -1)
+		{
+			mdir->len = 0 ;
+			src = SS_MODULE_SYSDIR ;
+			dest = SS_SERVICE_SYSDIR ;
+			if (!auto_stra(mdir,src,sainsta.s)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+			r = scan_mode(mdir->s,S_IFDIR) ;
+			if (!r || r == -1) log_warnu_return(LOG_EXIT_ZERO,"find module: ",sv) ;
+		}
+		
+	}
+	if (!auto_stra(sdir,dest,sv)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	
+	stralloc_free(&sainsta) ;
+	stralloc_free(&mhome) ;
+	stralloc_free(&shome) ;
+	return 1 ;
+}
+
+int ss_resolve_src_path(stralloc *sasrc,char const *sv, uid_t owner)
 {
 	int r ;
 	char const *src = 0 ;
 	int found = 0, err = -1 ;
 	stralloc home = STRALLOC_ZERO ;
-	if (!info->owner) src = SS_SERVICE_ADMDIR ;
+	if (!owner) src = SS_SERVICE_ADMDIR ;
 	else
 	{	
-		if (!set_ownerhome(&home,info->owner)){ log_warnusys("set home directory") ; goto err ; }
-		if (!stralloc_cats(&home,SS_SERVICE_USERDIR)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-		if (!stralloc_0(&home)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		if (!set_ownerhome(&home,owner)) { log_warnusys("set home directory") ; goto err ; }
+		if (!stralloc_cats(&home,SS_SERVICE_USERDIR)) { log_warnsys("stralloc") ; goto err ; }
+		if (!stralloc_0(&home)) { log_warnsys("stralloc") ; goto err ; }
 		home.len-- ;
 		src = home.s ;
 	}
@@ -163,7 +225,7 @@ int ss_resolve_service_isdir(char const *dir, char const *name)
 	memcpy(t + dirlen + 1, name, namelen) ;
 	t[dirlen + 1 + namelen] = 0 ;
 	int r = scan_mode(t,S_IFREG) ;
-	if (!basename(t,dir)) return -1 ;
+	if (!ob_basename(t,dir)) return -1 ;
 	if (!strcmp(t,name) && r) return 1 ;
 	return 0 ;
 }
@@ -217,7 +279,7 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found
 		
 		if (insta > 0)
 		{	
-			if (!instance_splitname(&sainsta,name,insta,0)) goto errdir ;
+			if (!instance_splitname(&sainsta,name,insta,SS_INSTANCE_TEMPLATE)) goto errdir ;
 			obr = obstr_equal(sainsta.s,d->d_name) ;
 		}
 				
@@ -356,6 +418,7 @@ int ss_resolve_pack(stralloc *sa, ss_resolve_t *res)
 	if (!stralloc_catb(sa,res->sa.s,res->sa.len)) return 0 ;
 	if(!ss_resolve_add_uint32(sa,res->name) ||
 	!ss_resolve_add_uint32(sa,res->description) ||
+	!ss_resolve_add_uint32(sa,res->version) ||
 	!ss_resolve_add_uint32(sa,res->logger) ||
 	!ss_resolve_add_uint32(sa,res->logreal) ||
 	!ss_resolve_add_uint32(sa,res->logassoc) ||
@@ -433,6 +496,8 @@ int ss_resolve_read(ss_resolve_t *res, char const *src, char const *name)
 	uint32_unpack_big(sa.s + global,&res->name) ;
 	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->description) ;
+	global += 4 ;
+	uint32_unpack_big(sa.s + global,&res->version) ;
 	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->logger) ;
 	global += 4 ;
@@ -518,67 +583,6 @@ int ss_resolve_check(char const *src, char const *name)
 	return 1 ;
 }
 
-int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst,ssexec_t *info)
-{
-	if (!sv->logger) return 1 ;
-	
-	ss_state_t sta = STATE_ZERO ;
-	ss_resolve_t res = RESOLVE_ZERO ;
-	ss_resolve_init(&res) ;
-	
-	char *string = sv->sa.s ;
-	size_t svlen = strlen(string + sv->name) ;
-	char descrip[svlen + 7 + 1] ;
-	memcpy(descrip,string + sv->name,svlen) ;
-	memcpy(descrip + svlen," logger",7) ;
-	descrip[svlen + 7] = 0 ;
-	
-	size_t runlen = strlen(string + sv->runat) ;
-	char live[runlen + 4 + 1] ;
-	memcpy(live,string + sv->runat,runlen) ;
-	if (sv->type >= TYPE_BUNDLE)
-	{
-		memcpy(live + runlen,"-log",4)  ;
-	}else memcpy(live + runlen,"/log",4)  ;
-	live[runlen + 4] = 0 ;
-	
-	res.name = ss_resolve_add_string(&res,string + sv->logger) ;
-	res.description = ss_resolve_add_string(&res,descrip) ;
-	res.logreal = ss_resolve_add_string(&res,string + sv->logreal) ;
-	res.logassoc = ss_resolve_add_string(&res,string + sv->name) ;
-	res.dstlog = ss_resolve_add_string(&res,string + sv->dstlog) ;
-	res.live = ss_resolve_add_string(&res,string + sv->live) ;
-	res.runat = ss_resolve_add_string(&res,live) ;
-	res.tree = ss_resolve_add_string(&res,string + sv->tree) ;
-	res.treename = ss_resolve_add_string(&res,string + sv->treename) ;
-	res.state = ss_resolve_add_string(&res,string + sv->state) ;
-	res.src = ss_resolve_add_string(&res,string + sv->src) ;
-	res.type = sv->type ;
-	res.down = sv->down ;
-	res.disen = sv->disen ;
-	
-	if (ss_state_check(string + sv->state,string + sv->logger))
-	{
-		if (!ss_state_read(&sta,string + sv->state,string + sv->logger)) { log_warnusys("read state file of: ",string + sv->logger) ; goto err ; }
-		if (!sta.init)
-			ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_TRUE) ;
-		ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-		ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
-		if (!ss_state_write(&sta,string + sv->state,string + sv->logger)){ log_warnusys("write state file of: ",string + sv->logger) ; goto err ; }
-	}
-	
-	if (!ss_resolve_write(&res,dst,res.sa.s + res.name))
-	{
-		log_warnusys("write resolve file: ",dst,SS_RESOLVE,"/",res.sa.s + res.name) ;
-		goto err ;
-	}
-	ss_resolve_free(&res) ;
-	return 1 ;
-	err:
-		ss_resolve_free(&res) ;
-		return 0 ;
-}
-
 int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 {
 	char ownerstr[UID_FMT] ;
@@ -613,6 +617,9 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	
 	res.name = ss_resolve_add_string(&res,name) ;
 	res.description = ss_resolve_add_string(&res,keep.s + services->cname.description) ;
+	/*** temporary check here, version is not mandatory yet */
+	if (services->cname.version >= 0)
+		res.version = ss_resolve_add_string(&res,keep.s + services->cname.version) ;
 	res.tree = ss_resolve_add_string(&res,info->tree.s) ;
 	res.treename = ss_resolve_add_string(&res,info->treename.s) ;
 	res.live = ss_resolve_add_string(&res,info->live.s) ;
@@ -620,9 +627,9 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	res.src = ss_resolve_add_string(&res,keep.s + services->src) ;
 	if (services->srconf)
 		res.srconf = ss_resolve_add_string(&res,keep.s + services->srconf) ;
-	if (services->type.classic_longrun.run.exec)
+	if (services->type.classic_longrun.run.exec >= 0)
 		res.exec_run = ss_resolve_add_string(&res,keep.s + services->type.classic_longrun.run.exec) ;
-	if (services->type.classic_longrun.finish.exec)
+	if (services->type.classic_longrun.finish.exec >= 0)
 		res.exec_finish = ss_resolve_add_string(&res,keep.s + services->type.classic_longrun.finish.exec) ;
 	res.type = services->cname.itype ;
 	res.ndeps = services->cname.nga ;
@@ -702,29 +709,8 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	}
 	if (services->opts[0])
 	{
-		memcpy(logname,name,namelen) ;
-		memcpy(logname + namelen,SS_LOG_SUFFIX,SS_LOG_SUFFIX_LEN) ;
-		logname[namelen + SS_LOG_SUFFIX_LEN] = 0 ;
-	
-		memcpy(logreal,name,namelen) ;
-		if (res.type == TYPE_CLASSIC)
-		{
-			memcpy(logreal + namelen,"/log",SS_LOG_SUFFIX_LEN) ;
-		}
-		else memcpy(logreal + namelen,"-log",SS_LOG_SUFFIX_LEN) ;
-		logreal[namelen + SS_LOG_SUFFIX_LEN] = 0 ;
-		
-		res.logger = ss_resolve_add_string(&res,logname) ;
-		res.logreal = ss_resolve_add_string(&res,logreal) ;
-		if (ndeps.len) ndeps.len--;
-		if (!stralloc_catb(&ndeps," ",1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-		if (!stralloc_cats(&ndeps,res.sa.s + res.logger)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-		if (!stralloc_0(&ndeps)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-		res.deps = ss_resolve_add_string(&res,ndeps.s) ;
-		if (res.type == TYPE_CLASSIC) res.ndeps = 1 ;
-		else if (res.type == TYPE_LONGRUN) res.ndeps += 1 ;
 		// destination of the logger
-		if (!services->type.classic_longrun.log.destination)
+		if (services->type.classic_longrun.log.destination < 0)
 		{	
 			if(info->owner > 0)
 			{	
@@ -747,7 +733,32 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		
 		res.dstlog = ss_resolve_add_string(&res,destlog.s) ;
 		
-		if (!ss_resolve_setlognwrite(&res,dst,info)) goto err ;
+		if ((res.type == TYPE_CLASSIC) || (res.type == TYPE_LONGRUN))
+		{
+			memcpy(logname,name,namelen) ;
+			memcpy(logname + namelen,SS_LOG_SUFFIX,SS_LOG_SUFFIX_LEN) ;
+			logname[namelen + SS_LOG_SUFFIX_LEN] = 0 ;
+		
+			memcpy(logreal,name,namelen) ;
+			if (res.type == TYPE_CLASSIC)
+			{
+				memcpy(logreal + namelen,"/log",SS_LOG_SUFFIX_LEN) ;
+			}
+			else memcpy(logreal + namelen,"-log",SS_LOG_SUFFIX_LEN) ;
+			logreal[namelen + SS_LOG_SUFFIX_LEN] = 0 ;
+			
+			res.logger = ss_resolve_add_string(&res,logname) ;
+			res.logreal = ss_resolve_add_string(&res,logreal) ;
+			if (ndeps.len) ndeps.len--;
+			if (!stralloc_catb(&ndeps," ",1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+			if (!stralloc_cats(&ndeps,res.sa.s + res.logger)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+			if (!stralloc_0(&ndeps)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+			res.deps = ss_resolve_add_string(&res,ndeps.s) ;
+			if (res.type == TYPE_CLASSIC) res.ndeps = 1 ;
+			else if (res.type == TYPE_LONGRUN) res.ndeps += 1 ;
+		
+			if (!ss_resolve_setlognwrite(&res,dst,info)) goto err ;
+		}
 	}
 	/** may on workdir so a copy with made to source, write it SIMPLE */
 	if (!ss_resolve_write(&res,dst,res.sa.s + res.name))
@@ -772,6 +783,70 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		return 0 ;
 }
 
+int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst,ssexec_t *info)
+{
+	if (!sv->logger) return 1 ;
+	
+	ss_state_t sta = STATE_ZERO ;
+	ss_resolve_t res = RESOLVE_ZERO ;
+	ss_resolve_init(&res) ;
+	
+	char *string = sv->sa.s ;
+	size_t svlen = strlen(string + sv->name) ;
+	char descrip[svlen + 7 + 1] ;
+	memcpy(descrip,string + sv->name,svlen) ;
+	memcpy(descrip + svlen," logger",7) ;
+	descrip[svlen + 7] = 0 ;
+	
+	size_t runlen = strlen(string + sv->runat) ;
+	char live[runlen + 4 + 1] ;
+	memcpy(live,string + sv->runat,runlen) ;
+	if (sv->type >= TYPE_BUNDLE)
+	{
+		memcpy(live + runlen,"-log",4)  ;
+	}else memcpy(live + runlen,"/log",4)  ;
+	live[runlen + 4] = 0 ;
+	
+	res.name = ss_resolve_add_string(&res,string + sv->logger) ;
+	res.description = ss_resolve_add_string(&res,descrip) ;
+	/*** temporary check here, version is not mandatory yet */
+	if (sv->version > 0)
+		res.version = ss_resolve_add_string(&res,string + sv->version) ;
+	res.logreal = ss_resolve_add_string(&res,string + sv->logreal) ;
+	res.logassoc = ss_resolve_add_string(&res,string + sv->name) ;
+	res.dstlog = ss_resolve_add_string(&res,string + sv->dstlog) ;
+	res.live = ss_resolve_add_string(&res,string + sv->live) ;
+	res.runat = ss_resolve_add_string(&res,live) ;
+	res.tree = ss_resolve_add_string(&res,string + sv->tree) ;
+	res.treename = ss_resolve_add_string(&res,string + sv->treename) ;
+	res.state = ss_resolve_add_string(&res,string + sv->state) ;
+	res.src = ss_resolve_add_string(&res,string + sv->src) ;
+	res.type = sv->type ;
+	res.down = sv->down ;
+	res.disen = sv->disen ;
+	
+	if (ss_state_check(string + sv->state,string + sv->logger))
+	{
+		if (!ss_state_read(&sta,string + sv->state,string + sv->logger)) { log_warnusys("read state file of: ",string + sv->logger) ; goto err ; }
+		if (!sta.init)
+			ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_TRUE) ;
+		ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+		ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+		if (!ss_state_write(&sta,string + sv->state,string + sv->logger)){ log_warnusys("write state file of: ",string + sv->logger) ; goto err ; }
+	}
+	
+	if (!ss_resolve_write(&res,dst,res.sa.s + res.name))
+	{
+		log_warnusys("write resolve file: ",dst,SS_RESOLVE,"/",res.sa.s + res.name) ;
+		goto err ;
+	}
+	ss_resolve_free(&res) ;
+	return 1 ;
+	err:
+		ss_resolve_free(&res) ;
+		return 0 ;
+}
+
 int ss_resolve_cmp(genalloc *ga,char const *name)
 {
 	unsigned int i = 0 ;
@@ -791,6 +866,7 @@ int ss_resolve_copy(ss_resolve_t *dst,ss_resolve_t *res)
 	if (!stralloc_catb(&dst->sa,res->sa.s,len)) return 0 ;
 	dst->name = res->name ;
 	dst->description = res->description ;
+	dst->version = res->version ;
 	dst->logger = res->logger ;
 	dst->logreal = res->logreal ;
 	dst->logassoc = res->logassoc ;
@@ -889,7 +965,7 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 	{
 		if (!ss_resolve_append(tokeep,res)) goto err ;
 	}
-	if (res->type == TYPE_BUNDLE && res->ndeps)
+	if ((res->type == TYPE_BUNDLE || res->type == TYPE_MODULE) && res->ndeps)
 	{
 		if (!sastr_clean_string(&tmp,res->sa.s + res->deps)) goto err ;
 		ss_resolve_t dres = RESOLVE_ZERO ;
