@@ -33,18 +33,16 @@
 
 extern stralloc keep ;
 extern stralloc deps ;
-//extern genalloc gadeps ;
 extern genalloc gasv ;
 
 /**struct for run and finish file*/
 typedef struct sv_exec_s sv_exec,*sv_exec_ref ;
 struct sv_exec_s
 {
-	/**build=45->auto,build=46->custom*/
 	int build ;
-	unsigned int runas ;
-	unsigned int shebang ;
-	unsigned int exec ;
+	int runas ;
+	int shebang ;
+	int exec ;
 } ;
 
 typedef struct sv_execlog_s sv_execlog,*sv_execlog_ref ;
@@ -54,13 +52,13 @@ struct sv_execlog_s
 	/**timeout[0]->kill,timeout[1]->finish
 	 * kill[0][X] enabled,kill[0][0] not enabled*/
 	uint32_t timeout[2][UINT_FMT] ;
-	unsigned int destination ;
+	int destination ;
 	uint32_t backup ;
 	uint32_t maxsize ;
 	/**timestamp=50->tai,timestamp=51->iso,52->none*/
 	int timestamp ;
-	unsigned int idga ; //pos in genalloc gadeps
-	unsigned int nga ; //len of idga in genalloc gadeps
+	int idga ; //pos in stralloc deps
+	unsigned int nga ; //number of deps in stralloc deps
 } ;
 
 typedef struct sv_classic_longrun_s sv_classic_longrun,*sv_classic_ref ;
@@ -76,30 +74,47 @@ struct sv_oneshot_s
 {
 	sv_exec up ;
 	sv_exec down ;
+	sv_execlog log ;
 } ;
 
-typedef union sv_type_u sv_type_t,*sv_type_t_ref ;
-union sv_type_u
+typedef struct sv_module_s sv_module,*sv_module_ref ;
+struct sv_module_s
+{
+	int configure ;
+	int iddir ; // pos in stralloc keep -> @directories
+	unsigned int ndir ; //number of regex directories in stralloc keep -> @directories
+	int idfiles ; // pos in stralloc keep -> @files
+	unsigned int nfiles ; //number of regex files in stralloc keep -> @files
+	int start_infiles ; // pos in stralloc keep of the start of the string -> @infiles
+	int end_infiles ; // pos in stralloc keep of the end of the string -> @infiles
+} ;
+
+typedef struct sv_type_s sv_type_t,*sv_type_t_ref ;
+struct sv_type_s
 {
 	sv_classic_longrun classic_longrun ;
 	sv_oneshot oneshot ;
+	sv_module module ;
 } ;
 
 typedef struct sv_name_s sv_name_t, *sv_name_t_ref ;
 struct sv_name_s
 {
-	int itype ;/**int type =30->classic,31->bundle,32->longrun,33->oneshot*/
-	int name ;//pos in keep
-	unsigned int description ;//pos in keep
-	unsigned int idga ; //pos in genalloc gadeps-> depends field
-	unsigned int nga ; //number or deps in genalloc gadeps->depends field
-	unsigned int idopts ;// pos in genalloc gadeps -> optional depends
-	unsigned int nopts ; // number of optinal depends in genalloc gadeps->optional depends
-	unsigned int idext ;// pos in genalloc gadeps -> external depends
-	unsigned int next ; // number of optinal depends in genalloc gadeps->external depends
-	unsigned int logname ; //pos in keep
-	unsigned int dstlog ; //pos in keep
+	int itype ; //servcie type: classic->bundle->longrun->oneshot->modules
+	int name ; //pos in keep
+	int description ; //pos in keep
+	int version ; // pos in keep
+	int idga ; //pos in stralloc deps -> @depends or @contents
+	unsigned int nga ; //number or deps in stralloc deps -> @depends or @contents
+	int idopts ; // pos in stralloc deps -> @optsdepends
+	unsigned int nopts ; // number of optional depends in stralloc deps-> @optsdepends
+	int idext ; // pos in stralloc deps -> @extdepends
+	unsigned int next ; // number of optinal depends in stralloc deps -> @extdepends
+	int logname ; //pos in keep
+	int dstlog ; //pos in keep
 } ;
+
+
 typedef struct sv_alltype_s sv_alltype,*sv_alltype_ref ;
 struct sv_alltype_s
 {
@@ -111,7 +126,7 @@ struct sv_alltype_s
 	/**0->no notification*/
 	/**flags[0]->down,flags[1]->nosetsid,
 	 * down[1] enabled,down[0] not enabled*/
-	int flags[2] ;
+	unsigned int flags[2] ;
 	uint32_t notification ;
 	/** array of uid_t
 	 * the first element of the table
@@ -130,7 +145,7 @@ struct sv_alltype_s
 	 * dir/file to copy e.g hiercopy[0]=3->3 dir/file to copy */
 	uint32_t hiercopy[24] ; //dir/file to copy
 	int signal ;//down-signal file
-	unsigned int pipeline ; //pos in deps
+	int pipeline ; //pos in deps
 	stralloc saenv ;
 	/* path of the environment file, this is only concern the write 
 	 * process, the read process could be different if conf/sysadmin/service
@@ -141,21 +156,21 @@ struct sv_alltype_s
 
 #define SV_EXEC_ZERO \
 { \
-	0 ,\
-	0 ,\
-	0 ,\
-	0 \
+	-1 ,\
+	-1 ,\
+	-1 ,\
+	-1 \
 }
 
 #define SV_EXECLOG_ZERO \
 { \
 	SV_EXEC_ZERO,\
 	{ { 0 } } ,\
+	-1 ,\
 	0 ,\
 	0 ,\
-	0 ,\
-	0,\
-	0,\
+	-1 ,\
+	-1 ,\
 	0 \
 }
 
@@ -169,27 +184,47 @@ struct sv_alltype_s
 #define SV_ONESHOT_ZERO \
 { \
 	SV_EXEC_ZERO,\
-	SV_EXEC_ZERO \
+	SV_EXEC_ZERO, \
+	SV_EXECLOG_ZERO \
+}
+
+#define SV_TYPE_ZERO \
+{ \
+	SV_CLASSIC_LONGRUN_ZERO ,\
+	SV_ONESHOT_ZERO , \
+	SV_MODULE_ZERO \
+}
+
+#define SV_MODULE_ZERO \
+{ \
+	-1 ,\
+	-1 ,\
+	0 ,\
+	-1 ,\
+	0 ,\
+	-1 ,\
+	-1 \
 }
 
 #define SV_NAME_ZERO \
 { \
 	-1 ,\
 	-1 ,\
+	-1 ,\
+	-1 ,\
+	-1 ,\
 	0 ,\
+	-1 ,\
 	0 ,\
+	-1 ,\
 	0 ,\
-	0 ,\
-	0 ,\
-	0 ,\
-	0 ,\
-	0 ,\
-	0 \
+	-1 ,\
+	-1 \
 }
 						
 #define SV_ALLTYPE_ZERO \
 { \
-	{ SV_CLASSIC_LONGRUN_ZERO } ,\
+	SV_TYPE_ZERO ,\
 	SV_NAME_ZERO ,\
 	{ 0 } ,\
 	{ 0 } ,\
@@ -199,8 +234,8 @@ struct sv_alltype_s
 	0 , \
 	0 , \
 	{ 0 } , \
-	0 , \
-	0 , \
+	-1 , \
+	-1 , \
 	STRALLOC_ZERO , \
 	0 \
 }
@@ -214,11 +249,10 @@ struct keynocheck_s
 	int idsec ;
 	int idkey ;
 	int expected ;
-	int mandatory ;
 	stralloc val ;
 	
 } ;
-#define KEYNOCHECK_ZERO { .idsec = -1, .idkey = -1, .expected = -1, .mandatory = -1, .val = STRALLOC_ZERO }
+#define KEYNOCHECK_ZERO { .idsec = -1, .idkey = -1, .expected = -1, .val = STRALLOC_ZERO }
 extern keynocheck const keynocheck_zero ;//set in sv_alltype_zero.c
 
 typedef struct section_s section_t,*section_t_ref ;
@@ -229,7 +263,8 @@ struct section_s
 	stralloc stop ;
 	stralloc logger ;
 	stralloc environment ;
-	uint32_t idx[5] ; //[0] == 0 -> no, [0] == 1-> yes
+	stralloc regex ;
+	uint32_t idx[6] ; //[0] == 0 -> no, [0] == 1-> yes
 	char const *file ;
 } ;
 #define SECTION_ZERO { .main = STRALLOC_ZERO , \
@@ -237,6 +272,7 @@ struct section_s
 						.stop = STRALLOC_ZERO , \
 						.logger = STRALLOC_ZERO , \
 						.environment = STRALLOC_ZERO , \
+						.regex = STRALLOC_ZERO , \
 						.idx = { 0 } , \
 						.file = 0 }
 
@@ -248,8 +284,8 @@ extern void freed_parser(void) ;
 /** enable phase */
 extern void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORCE) ;
 extern int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype) ;
-extern int parse_service_check_enabled(ssexec_t *info, char const *svname,uint8_t force,uint8_t *exist) ;
-extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, stralloc *opts_deps_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t *exist) ;
+extern int parse_service_check_enabled(char const *tree_directory, char const *svname,uint8_t force,uint8_t *exist) ;
+extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, stralloc *opts_deps_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force) ;
 extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, stralloc *opts_deps_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force) ;
 extern int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t mandatory) ;
 extern int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner) ;
@@ -257,17 +293,19 @@ extern int get_svtype(sv_alltype *sv_before, char const *contents) ;
 /** split */
 extern int section_get_range(section_t *sasection,stralloc *src) ;
 extern int key_get_range(genalloc *ga, section_t *sasection) ;
-extern int get_mandatory(genalloc *nocheck,int idsec,int idkey) ;
+extern int check_mandatory(sv_alltype *service, section_t *sasection) ;
 extern int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service) ;
 /** store */
 extern int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype) ;
 extern int keep_runfinish(sv_exec *exec,keynocheck *nocheck) ;
 extern int keep_logger(sv_execlog *log,keynocheck *nocheck) ;
+extern int keep_environ(sv_alltype *service,keynocheck *nocheck) ;
+extern int keep_regex(sv_module *module,keynocheck *nocheck) ;
 /** helper */
 extern int add_pipe(sv_alltype *sv, stralloc *sa) ;
 /** write */
 extern void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun,char const *workdir, genalloc *gasv,ssexec_t *info,uint8_t FORCE,uint8_t CONF) ;
-extern int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, uint8_t force,uint8_t conf) ;
+extern int write_services(sv_alltype *sv, char const *workdir, uint8_t force,uint8_t conf) ;
 extern int write_classic(sv_alltype *sv, char const *dst, uint8_t force, uint8_t conf) ;
 extern int write_longrun(sv_alltype *sv,char const *dst, uint8_t force, uint8_t conf) ;
 extern int write_oneshot(sv_alltype *sv,char const *dst, uint8_t conf) ;
@@ -279,5 +317,11 @@ extern int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char c
 extern int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char const *proddst,char const *consdst) ;
 extern int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename) ;
 extern int write_env(char const *name,stralloc *sa,char const *dst) ;
-
+extern int write_oneshot_logger(stralloc *destlog, sv_alltype *sv) ;
+/** module */
+extern int parse_module(sv_alltype *sv_before,char const *svname,uid_t owner,uint8_t force) ;
+extern int regex_get_file_name(char *filename,char const *str) ;
+extern int regex_get_replace(char *replace, char const *str) ;
+extern int regex_get_regex(char *regex, char const *str) ;
+extern int regex_replace(int id,unsigned int nid, char const *sdir,mode_t mode) ;
 #endif
