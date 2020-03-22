@@ -60,6 +60,7 @@ static void info_display_intree(char const *field, ss_resolve_t *res) ;
 static void info_display_status(char const *field, ss_resolve_t *res) ;
 static void info_display_type(char const *field, ss_resolve_t *res) ;
 static void info_display_description(char const *field, ss_resolve_t *res) ;
+static void info_display_version(char const *field, ss_resolve_t *res) ;
 static void info_display_source(char const *field, ss_resolve_t *res) ;
 static void info_display_live(char const *field, ss_resolve_t *res) ;
 static void info_display_deps(char const *field, ss_resolve_t *res) ;
@@ -78,26 +79,27 @@ ss_resolve_graph_style *STYLE = &graph_default ;
 info_opts_map_t const opts_sv_table[] =
 {
 	{ .str = "name", .svfunc = &info_display_name, .id = 0 },
-	{ .str = "intree", .svfunc = &info_display_intree, .id = 1 },
-	{ .str = "status", .svfunc = &info_display_status, .id = 2 },
-	{ .str = "type", .svfunc = &info_display_type, .id = 3 },
-	{ .str = "description", .svfunc = &info_display_description, .id = 4 },
-	{ .str = "source", .svfunc = &info_display_source, .id = 5 },
-	{ .str = "live", .svfunc = &info_display_live, .id = 6 },
-	{ .str = "depends", .svfunc = &info_display_deps, .id = 7 },
-	{ .str = "optsdepends", .svfunc = &info_display_optsdeps, .id = 8 },
-	{ .str = "extdepends", .svfunc = &info_display_extdeps, .id = 9 },
-	{ .str = "start", .svfunc = &info_display_start, .id = 10 },
-	{ .str = "stop", .svfunc = &info_display_stop, .id = 11 },
-	{ .str = "envat", .svfunc = &info_display_envat, .id = 12 },
-	{ .str = "envfile", .svfunc = &info_display_envfile, .id = 13 },
-	{ .str = "logname", .svfunc = &info_display_logname, .id = 14 },
-	{ .str = "logdst", .svfunc = &info_display_logdst, .id = 15 },
-	{ .str = "logfile", .svfunc = &info_display_logfile, .id = 16 },
+	{ .str = "version", .svfunc = &info_display_version, .id = 1 },
+	{ .str = "intree", .svfunc = &info_display_intree, .id = 2 },
+	{ .str = "status", .svfunc = &info_display_status, .id = 3 },
+	{ .str = "type", .svfunc = &info_display_type, .id = 4 },
+	{ .str = "description", .svfunc = &info_display_description, .id = 5 },
+	{ .str = "source", .svfunc = &info_display_source, .id = 6 },
+	{ .str = "live", .svfunc = &info_display_live, .id = 7 },
+	{ .str = "depends", .svfunc = &info_display_deps, .id = 8 },
+	{ .str = "optsdepends", .svfunc = &info_display_optsdeps, .id = 9 },
+	{ .str = "extdepends", .svfunc = &info_display_extdeps, .id = 10 },
+	{ .str = "start", .svfunc = &info_display_start, .id = 11 },
+	{ .str = "stop", .svfunc = &info_display_stop, .id = 12 },
+	{ .str = "envat", .svfunc = &info_display_envat, .id = 13 },
+	{ .str = "envfile", .svfunc = &info_display_envfile, .id = 14 },
+	{ .str = "logname", .svfunc = &info_display_logname, .id = 15 },
+	{ .str = "logdst", .svfunc = &info_display_logdst, .id = 16 },
+	{ .str = "logfile", .svfunc = &info_display_logfile, .id = 17 },
 	{ .str = 0, .svfunc = 0, .id = -1 }
 } ;
 
-#define MAXOPTS 18
+#define MAXOPTS 19
 #define checkopts(n) if (n >= MAXOPTS) strerr_dief1x(100, "too many options")
 #define DELIM ','
 
@@ -123,6 +125,7 @@ static inline void info_help (void)
 "valid field for -o options are:\n"
 "\n"
 "	name: displays the name\n"
+"	version: displays the version of the service\n"
 "	intree: displays the service's tree name\n"
 "	status: displays the status\n"
 "	type: displays the service type\n"
@@ -192,6 +195,21 @@ static void info_display_name(char const *field, ss_resolve_t *res)
 {
 	if (NOFIELD) info_display_field_name(field) ;
 	info_display_string(res->sa.s + res->name) ;
+}
+
+static void info_display_version(char const *field,ss_resolve_t *res)
+{
+	if (NOFIELD) info_display_field_name(field) ;
+	/** tempory check here, it not mandatory for the moment*/
+	if (res->version > 0)
+	{
+		info_display_string(res->sa.s + res->version) ;
+	}
+	else
+	{
+		if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
+			log_dieusys(LOG_EXIT_SYS,"write to stdout") ; 
+	}
 }
 
 static void info_display_intree(char const *field,ss_resolve_t *res)
@@ -298,8 +316,6 @@ static void info_display_deps(char const *field, ss_resolve_t *res)
 	}
 	else
 	{
-		//if (!bprintf(buffer_1,"%s"," ")) 
-		//	log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 		if (!sastr_clean_string(&salist,res->sa.s + res->deps)) 
 			log_dieu(LOG_EXIT_SYS,"build dependencies list") ;
 		if (REVERSE)
@@ -472,9 +488,9 @@ static void info_display_logname(char const *field,ss_resolve_t *res)
 static void info_display_logdst(char const *field,ss_resolve_t *res)
 {
 	if (NOFIELD) info_display_field_name(field) ;
-	if (res->type == TYPE_CLASSIC || res->type == TYPE_LONGRUN) 
+	if (res->type != TYPE_BUNDLE || res->type != TYPE_MODULE) 
 	{
-		if (res->logger)
+		if (res->logger || (res->type == TYPE_ONESHOT && res->dstlog))
 		{
 			info_display_string(res->sa.s + res->dstlog) ;
 		}
@@ -491,9 +507,9 @@ static void info_display_logdst(char const *field,ss_resolve_t *res)
 static void info_display_logfile(char const *field,ss_resolve_t *res)
 {
 	if (NOFIELD) info_display_field_name(field) ;
-	if (res->type == TYPE_CLASSIC || res->type == TYPE_LONGRUN) 
+	if (res->type != TYPE_BUNDLE || res->type != TYPE_MODULE) 
 	{
-		if (res->logger)
+		if (res->logger || (res->type == TYPE_ONESHOT && res->dstlog))
 		{
 			if (nlog)
 			{
@@ -504,7 +520,6 @@ static void info_display_logfile(char const *field,ss_resolve_t *res)
 				memcpy(scan,res->sa.s + res->dstlog,dstlen) ;
 				memcpy(scan + dstlen,"/current",8) ;
 				scan[dstlen + 8] = 0 ;
-				
 				int r = scan_mode(scan,S_IFREG) ;
 				if (r < 0) { errno = EEXIST ; log_diesys(LOG_EXIT_SYS,"conflicting format of: ",scan) ; }
 				if (!r)
@@ -515,7 +530,7 @@ static void info_display_logfile(char const *field,ss_resolve_t *res)
 				else
 				{
 					if (!file_readputsa(&log,res->sa.s + res->dstlog,"current")) log_dieusys(LOG_EXIT_SYS,"read log file of: ",res->sa.s + res->name) ;
-					if (log.len < 10) 
+					if (log.len < 10 && res->type != TYPE_ONESHOT) 
 					{
 						if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off)) goto err ;
 					}
@@ -604,6 +619,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	
 	char buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
 		"Name",
+		"Version" ,
 		"In tree",
 		"Status",
 		"Type",
