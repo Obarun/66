@@ -53,11 +53,15 @@ int instance_splitname(stralloc *sa,char const *name,int len,int what)
 	
 	sa->len = 0 ;
 	if (!what)
+	{
 		if (!stralloc_cats(sa,template) ||
 		!stralloc_0(sa)) return 0 ;
+	}
 	else
+	{
 		if (!stralloc_catb(sa,copy,strlen(copy)) ||
 		!stralloc_0(sa)) return 0 ;
+	}
 	return 1 ;
 }
 
@@ -67,10 +71,6 @@ int instance_create(stralloc *sasv,char const *svname, char const *regex, int le
 	size_t tlen = len + 1 ;
 		
 	stralloc tmp = STRALLOC_ZERO ;	
-	
-	char template[tlen + 1] ;
-	memcpy(template,svname,tlen) ;
-	template[tlen] = 0 ;
 	
 	if (!auto_stra(&tmp,sasv->s)) goto err ;
 
