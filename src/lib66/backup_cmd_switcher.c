@@ -42,13 +42,14 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 	uint32_t what = -1 ;
 	int r ;
 	struct stat st ;
-	
+
 	char const *tree = NULL ;
-			
+	
 	verbosity = 1 ;
-	
-	change =  back = type = 0 ;
-	
+
+	change = back = 0 ;
+	type = -1 ; 
+
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
 
@@ -70,11 +71,11 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 	}
 
 	if (argc < 1) return -1 ;
-	if ((!change && !back) || !type) return -1 ;
+	if ((!change && !back) || type < 0) return -1 ;
 
 	if (type < TYPE_CLASSIC || type > TYPE_ONESHOT)
 		log_warn_return(LOG_EXIT_LESSONE,"unknown type for backup_switcher") ;
-	
+
 	tree = *argv ;
 	size_t treelen = strlen(tree) ;
 
@@ -106,20 +107,21 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 	{
 		if(lstat(sym,&st) < 0) return -1 ;
 		if(!(S_ISLNK(st.st_mode))) 
-			log_warn_return(LOG_EXIT_LESSONE,"find symlink: ",sym) ;
-	
+			log_warnusys_return(LOG_EXIT_LESSONE,"find symlink: ",sym) ;
+
 		stralloc symreal = STRALLOC_ZERO ;
-		
+
 		r = sarealpath(&symreal,sym) ;
 		if (r < 0)
 			log_warnusys_return(LOG_EXIT_LESSONE,"retrieve real path from: ",sym) ;
-	
+
 		char *b = NULL ;
 		b = memmem(symreal.s,symreal.len,SS_BACKUP,SS_BACKUP_LEN) ;
-		
+
 		stralloc_free(&symreal) ;
+
 		if (!b) return SS_SWSRC ;
-		
+
 		return SS_SWBACK ;
 	}
 
@@ -186,29 +188,29 @@ int backup_cmd_switcher(unsigned int verbosity,char const *cmd,ssexec_t *info)
 	int r ;
 	size_t pos = 0 ;
 	stralloc opts = STRALLOC_ZERO ;
-	
+
 	if (!sastr_clean_string(&opts,cmd))
 		log_warnu_return(LOG_EXIT_LESSONE,"clean: ",cmd) ;
-	
+
 	int newopts = 5 + sastr_len(&opts) ;
 	char const *newargv[newopts] ;
 	unsigned int m = 0 ;
 	char fmt[UINT_FMT] ;
 	fmt[uint_fmt(fmt, verbosity)] = 0 ;
-	
+
 	newargv[m++] = "backup_switcher" ;
 	newargv[m++] = "-v" ;
 	newargv[m++] = fmt ;
-	
+
 	for (;pos < opts.len; pos += strlen(opts.s + pos) + 1)
 		newargv[m++] = opts.s + pos ;
-		
+
 	newargv[m++] = info->treename.s ;
 	newargv[m++] = 0 ;
-	
+
 	r = backup_switcher(newopts,newargv,info) ;
 
 	stralloc_free(&opts) ;
-	
+
 	return r ;
 }
