@@ -13,7 +13,7 @@
  */
  
 #include <string.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
@@ -248,7 +248,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 	for (;*argv;argv++)
 	{
 		char const *name = *argv ;
-		if (!ss_resolve_check(sares.s,name)) log_die(LOG_EXIT_USER,name," is not enabled") ;
+		if (!ss_resolve_check(sares.s,name)) log_info_return(LOG_EXIT_ZERO,name," is not enabled") ;
 		if (!ss_resolve_read(&res,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
 		if (!ss_resolve_append(&gares,&res)) log_dieusys(LOG_EXIT_SYS,"append services selection with: ",name) ;
 	}
