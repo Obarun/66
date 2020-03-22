@@ -35,23 +35,29 @@ Fine tuning of the installation directories:
 
   --with-system-dir=DIR            66 tools system working directory [/var/lib/66]
   --with-system-service=DIR        system service frontend directory [DATAROOTDIR/66/service]
+  --with-system-module=DIR         system module directory [DATAROOTDIR/66/module]
   
   --with-sysadmin-service=DIR      sysadmin service frontend directory [SYSDIR/66/service]
   --with-sysadmin-service-conf=DIR sysadmin service configuration file directory [SYSDIR/66/conf]
+  
+  --with-sysadmin-module=DIR       sysadmin module directory [SYSDIR/66/module]
   
   --with-user-dir=DIR              66 tools user working directory [.66]
   --with-user-log=DIR              user service log directory [.66/log]
   --with-user-service=DIR          user service directory [.66/service]
   --with-user-service-conf=DIR     user service configuration directory [.66/conf]
   
+  --with-user-module=DIR          user module directory [.66/module]
+  
  Do not set an absolute path but a \$HOME relative path for --with-user-dir,  
- --with-user-log, --with-user-service, --with-user-service-conf. The \$HOME prefix 
- will be appened at the pathname automatically in function of the user.
+ --with-user-log, --with-user-service, --with-user-service-conf and --with-user-module.
+ The \$HOME prefix will be appened at the pathname automatically in function of the user.
  For example , by default the final path for --with-user-dir will be \$HOME/.66.
  
  --with-system-service and --with-sysadmin-service directory must be two differents path.
  For example do not set --with-sysadmin-service=/etc/66/service/sysadmin with system service   
  --with-system-service=/etc/66/service.
+ Apply the same rule for --with-system-module and --with-sysadmin-module options.
  
 Dependencies:
   --with-sysdeps=DIR               use sysdeps in DIR [PREFIX/lib/skalibs/sysdeps]
@@ -176,10 +182,13 @@ system_dir='/var/lib/66'
 system_log='/var/log/66'
 s6log_user='root'
 service_system='$datarootdir/66/service'
+module_system='$datarootdir/66/module'
 service_adm='$sysconfdir/66/service'
+module_adm='$sysconfdir/66/module'
 service_admconf='$sysconfdir/66/conf'
 user_dir='.66'
 service_user='.66/service'
+module_user='.66/module'
 service_userconf='.66/conf'
 user_log='.66/log'
 sysdeps='$prefix/lib/skalibs/sysdeps'
@@ -222,10 +231,13 @@ for arg ; do
     --with-system-log=*) system_log=${arg#*=} ;;
     --with-s6-log-user=*) s6log_user=${arg#*=} ;;
     --with-system-service=*) service_system=${arg#*=} ;;
+    --with-system-module=*) module_system=${arg#*=} ;;
     --with-sysadmin-service=*) service_adm=${arg#*=} ;;
+    --with-sysadmin-module=*) module_adm=${arg#*=} ;;
     --with-sysadmin-service-conf=*) service_admconf=${arg#*=} ;;
     --with-user-dir=*) user_dir=${arg#*=} ;;
     --with-user-service=*) service_user=${arg#*=} ;;
+    --with-user-module=*) module_user=${arg#*=} ;;
     --with-user-service-conf=*) service_userconf=${arg#*=} ;;
     --with-user-log=*) user_log=${arg#*=} ;;
     --with-sysdeps=*) sysdeps=${arg#*=} manualsysdeps=true ;;
@@ -277,6 +289,9 @@ if test -z "$sysconfdir" ; then
   if test "$service_adm" = '$sysconfdir/66/service' ; then
 	service_adm = '$sysconfdir/66/service'
   fi
+  if test "$module_adm" = '$sysconfdir/66/module' ; then
+	service_adm = '$sysconfdir/66/module'
+  fi
   if test "$service_admconf" = '$sysconfdir/66/conf' ; then
 	service_admconf = '$sysconfdir/66/conf'
   fi
@@ -289,21 +304,21 @@ fi
 stripdir prefix
 for i in exec_prefix dynlibdir libexecdir bindir libdir includedir sysconfdir \
 		datarootdir mandir shebangdir livedir skel system_dir system_log \
-		service_system service_adm service_admconf sproot sysdeps ; do
+		service_system module_system service_adm module_adm service_admconf sproot sysdeps ; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
 done
 
 stripdir datarootdir
-for i in service_system mandir; do
+for i in service_system module_system mandir; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
 done
 
 stripdir sysconfdir
-for i in service_adm service_admconf skel; do
+for i in service_adm module_adm service_admconf skel; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
@@ -345,7 +360,9 @@ if $slashpackage ; then
   system_dir=${home}/${system_dir}
   system_log=${datarootdir}/${system_log}
   service_system=${home}/${service_system}
+  module_system=${home}/${module_system}
   service_adm=${home}/${sysconfdir}/${service_adm}
+  module_adm=${home}/${sysconfdir}/${module_adm}
   service_admconf=${home}/${sysconfdir}/${service_admconf}
   if $shebangisdefault ; then
     shebangdir=${extbinprefix}
@@ -506,10 +523,13 @@ system_dir := $system_dir
 system_log := $system_log
 s6log_user := $s6log_user
 service_system := $service_system
+module_system := $module_system
 service_adm := $service_adm
+module_adm := $module_adm
 service_admconf := $service_admconf
 user_dir := $user_dir
 service_user := $service_user
+module_user := $module_user
 service_userconf := $service_userconf
 user_log := $user_log
 sysdeps := $sysdeps
@@ -567,7 +587,7 @@ echo "Creating src/include/${package}/config.h..."
 mkdir -p -m 0755 src/include/${package}
 exec 3>&1 1> src/include/${package}/config.h
 cat <<EOF
-/* Copyright (c) 2018-2019 Eric Vidal <eric@obarun.org>
+/* Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
 All rights reserved.*/
 
 /* ISC license. */
@@ -586,6 +606,8 @@ All rights reserved.*/
 #define ${package_macro_name}_SERVICE_SYSDIR "$service_system/"
 #define ${package_macro_name}_SERVICE_ADMDIR "$service_adm/"
 #define ${package_macro_name}_SERVICE_ADMCONFDIR "$service_admconf/"
+#define ${package_macro_name}_MODULE_SYSDIR "$module_system/"
+#define ${package_macro_name}_MODULE_ADMDIR "$module_adm/"
 
 /** Do not use absolute path but a \$HOME relative path
  * The /home/name_of_user prefix will be automatically added to the pathname */
@@ -593,6 +615,7 @@ All rights reserved.*/
 #define ${package_macro_name}_LOGGER_USERDIR "$user_log/"
 #define ${package_macro_name}_SERVICE_USERDIR "$service_user/"
 #define ${package_macro_name}_SERVICE_USERCONFDIR "$service_userconf/"
+#define ${package_macro_name}_MODULE_USERDIR "$module_user/"
 
 EOF
 if $slashpackage ; then
