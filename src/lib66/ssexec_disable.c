@@ -145,7 +145,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 	genalloc gares = GENALLOC_ZERO ; //ss_resolve_t
 	ss_resolve_t res = RESOLVE_ZERO ;
 	ss_resolve_t_ref pres ;
-	
+
 	r = nclassic = nlongrun = stop = logname = 0 ;
 	
 	{
@@ -172,7 +172,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 	for (;*argv;argv++)
 	{
 		char const *name = *argv ;
-		if (!ss_resolve_check(workdir.s,name)) log_die_nclean(LOG_EXIT_USER,&cleanup,name," is not enabled") ;
+		if (!ss_resolve_check(workdir.s,name)) log_info_nclean_return(LOG_EXIT_ZERO,&cleanup,name," is not enabled") ;
 		if (!ss_resolve_read(&res,workdir.s,name)) log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of: ",name) ;
 		if (!ss_resolve_append(&gares,&res)) log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"append services selection with: ",name) ;
 	}
@@ -197,7 +197,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 			continue ;
 		}
 		if (!svc_remove(&tostop,pres,workdir.s,info))
-			log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"remove",name," directory service") ;
+			log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"remove service: ",name) ;
 		
 		if (res.type == TYPE_CLASSIC) nclassic++ ;
 		else nlongrun++ ;

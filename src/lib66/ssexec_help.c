@@ -14,13 +14,14 @@
 
 #include <66/ssexec.h>
 
-char const *usage_enable = "66-enable [ -h help ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -f|F ] [ -c|C ] [ -S ] service(s)" ;
+char const *usage_enable = "66-enable [ -h ] [ -z ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -f|F ] [ -c|C ] [ -S ] service(s)" ;
 
 char const *help_enable =
 "66-enable <options> service(s)\n"
 "\n"
 "options :\n"
-"	-h: print this help\n" 
+"	-h: print this help\n"
+"	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n"
 "	-t: name of the tree to use\n"
@@ -31,13 +32,14 @@ char const *help_enable =
 "	-S: enable and start the service\n"
 ;
 
-char const *usage_dbctl = "66-dbctl [ -h ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -u | d | r ] service(s)" ;
+char const *usage_dbctl = "66-dbctl [ -h ] [ -z ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -u | d | r ] service(s)" ;
 
 char const *help_dbctl =
 "66-dbctl <options> tree\n"
 "\n"
 "options :\n"
 "	-h: print this help\n" 
+"	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-T: timeout\n"
 "	-l: live directory\n"
@@ -47,38 +49,41 @@ char const *help_dbctl =
 "	-r: reload service\n"
 ;
 
-char const *usage_disable = "66-disable [ -h help ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -S ] service(s)" ;
+char const *usage_disable = "66-disable [ -h ] [ -z ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -S ] service(s)" ;
 
 char const *help_disable =
 "66-disable <options> service(s)\n"
 "\n"
 "options :\n"
-"	-h: print this help\n" 
+"	-h: print this help\n"
+"	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n"
 "	-t: name of the tree to use\n"
 "	-S: disable and stop the service\n"
 ;
 
-char const *usage_init = "66-init [ -h ] [ -v verbosity ] [ -l live ] [ -t tree ] classic|database|both" ;
+char const *usage_init = "66-init [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -t tree ] classic|database|both" ;
 
 char const *help_init =
 "66-init <options> classic|database|both\n"
 "\n"
 "options :\n"
-"	-h: print this help\n" 
+"	-h: print this help\n"
+"	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n" 
 "	-t: name of the tree to use\n"
 ;
 
-char const *usage_start = "66-start [ -h ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -r | R ] service(s)" ;
+char const *usage_start = "66-start [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -r | R ] service(s)" ;
 
 char const *help_start =
 "66-start <options> service(s)\n"
 "\n"
 "options :\n"
-"	-h: print this help\n" 
+"	-h: print this help\n"
+"	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n"
 "	-t: tree to use\n"
@@ -87,13 +92,14 @@ char const *help_start =
 "	-R: reload service(s) file(s) and the service(s) itself\n"
 ;
 
-char const *usage_stop = "66-stop [ -h ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -u ] [ -X ] [ -K ] service(s)" ;
+char const *usage_stop = "66-stop [ -h ] [ -z ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -u ] [ -X ] [ -K ] service(s)" ;
 
 char const *help_stop =
 "66-stop <options> service(s)\n"
 "\n"
 "options :\n"
-"	-h: print this help\n" 
+"	-h: print this help\n"
+"	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n"
 "	-T: timeout\n"
@@ -103,13 +109,14 @@ char const *help_stop =
 "	-K: kill the service(s) and keep it down\n"
 ;
 
-char const *usage_svctl = "66-svctl [ -h ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -n death ] [ -u | d | r | K | X ] service(s)" ;
+char const *usage_svctl = "66-svctl [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -n death ] [ -u | d | r | K | X ] service(s)" ;
 
 char const *help_svctl =
 "66-svctl <options> tree\n"
 "\n"
 "options :\n"
-"	-h: print this help\n" 
+"	-h: print this help\n"
+"	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n"
 "	-t: tree to use\n"
@@ -122,13 +129,14 @@ char const *help_svctl =
 "	-K: kill the service(s) and keep it down\n"
 ;
 
-char const *usage_env = "66-env [ -h ] [ -v verbosity ] [ -t tree ] [ -d dir ] [ -L ] [ -e ] [ -r key=value ] service" ;
+char const *usage_env = "66-env [ -h ] [ -z ] [ -v verbosity ] [ -t tree ] [ -d dir ] [ -L ] [ -e ] [ -r key=value ] service" ;
 
 char const *help_env =
 "66-env <options> service\n"
 "\n"
 "options :\n"
-"	-h: print this help\n" 
+"	-h: print this help\n"
+"	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-t: tree to use\n"
 "	-L: list environment variable of service\n"

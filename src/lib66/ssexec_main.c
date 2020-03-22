@@ -75,13 +75,15 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
 	int n = 0 ;
 	char const *nargv[argc + 1] ;
 	
+	log_color = &log_color_disable ;
+	
 	nargv[n++] = "fake_name" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
 		int f = 0 ;
 		for (;;)
 		{
-			int opt = subgetopt_r(argc,argv, "hv:l:t:T:", &l) ;
+			int opt = subgetopt_r(argc,argv, "hv:l:t:T:z", &l) ;
 			
 			if (opt == -1) break ;
 			switch (opt)
@@ -95,6 +97,7 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
 							if(!stralloc_0(&info->tree)) log_die_nomem("stralloc") ;
 							break ;
 				case 'T' :	if (!uint0_scan(l.arg, &info->timeout)) log_usage(info->usage) ; break ;
+				case 'z' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
 				default	:	for (int i = 0 ; i < n ; i++)
 							{						
 								if (!argv[l.ind]) log_usage(info->usage) ;
