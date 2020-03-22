@@ -40,7 +40,7 @@ int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype)
 	section_t sasection = SECTION_ZERO ;
 	genalloc ganocheck = GENALLOC_ZERO ;
 	sasection.file = svname ;
-	
+
 	r = section_get_range(&sasection,src) ;
 	if (r <= 0){
 		log_warnu("parse section of service file: ",svname) ;
@@ -51,7 +51,8 @@ int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype)
 		log_warn("missing section [main] in service file: ", svname) ;
 		goto err ;
 	}
-	if (svtype != TYPE_BUNDLE && !sasection.idx[SECTION_START])
+
+	if ((svtype != TYPE_BUNDLE && svtype != TYPE_MODULE) && !sasection.idx[SECTION_START])
 	{
 		log_warn("missing section [start] in service file: ", svname) ;
 		goto err ;
@@ -64,25 +65,14 @@ int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype)
 
 	for (i = 0;i < genalloc_len(keynocheck,&ganocheck);i++)
 	{
-		uint32_t idsec = genalloc_s(keynocheck,&ganocheck)[i].idsec ;
-		for (unsigned int j = 0;j < total_list_el[idsec] && *total_list[idsec].list[j].name;j++)
-		{
-			if (!get_mandatory(&ganocheck,idsec,j))
-			{
-				log_warn("mandatory key is missing in service file: ",svname) ; 
-				goto err ;
-			}
-		}
-	}
-
-	for (i = 0;i < genalloc_len(keynocheck,&ganocheck);i++)
-	{
 		if (!nocheck_toservice(&(genalloc_s(keynocheck,&ganocheck)[i]),svtype,service))
 		{ 
 			log_warnu("keep information of service file: ",svname) ;
 			goto err ;
 		}
 	}
+
+	if (!check_mandatory(service,&sasection)) goto err ;
 
 	if ((service->opts[1]) && (svtype == TYPE_LONGRUN))
 	{
@@ -92,7 +82,7 @@ int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype)
 			goto err ;
 		} 
 	}
-	
+
 	section_free(&sasection) ;
 	genalloc_deepfree(keynocheck,&ganocheck,keynocheck_free) ;
 	return 1 ;
