@@ -81,7 +81,7 @@ int tree_is_current(char const *base,char const *treename,uid_t owner)
 	if (tree_find_current(&sacurr,base,owner))
 	{
 		char name[sacurr.len + 1] ;
-		if (!basename(name,sacurr.s)) log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"basename of: ",sacurr.s) ;
+		if (!ob_basename(name,sacurr.s)) log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"basename of: ",sacurr.s) ;
 		current = obstr_equal(treename,name) ;
 	}
 	stralloc_free(&sacurr) ;
@@ -142,7 +142,7 @@ void tree_contents(stralloc *list,char const *tree,ssexec_t *info)
 		int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 		if (logname > 0) continue ;
 		log_trace(DRYRUN ? drun : "","tree: ",info->treename.s," contain service: ",name) ;
-		if (ss_resolve_src_path(list,name,info) < 1) 
+		if (ss_resolve_src_path(list,name,info->owner) < 1)
 			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"resolve source path of: ",name) ;
 	
 	}
@@ -182,14 +182,14 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	size_t systemlen, optslen = 5, pos, len ;
 	char tree_opts_create[optslen] ;
 	char *fdir = 0 ;
-	
+
 	log_color = &log_color_disable ;
-	
+
 	stralloc satree = STRALLOC_ZERO ;
 	stralloc allow = STRALLOC_ZERO ;
 	stralloc contents = STRALLOC_ZERO ;
 	ssexec_t info = SSEXEC_ZERO ;
-	
+
 	PROG = "66-update" ;	
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
@@ -382,8 +382,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				auto_string_from(tmp,0,WORKDIR.s) ;
 				
 			}
-			start_parser(&contents,&info,&nbsv,DRYRUN ? 1 : 0) ;
-			start_write(&tostart,&nclassic,&nlongrun,tmp,&gasv,&info,DRYRUN ? 1 : 0,0) ;
+
+			start_parser(&contents,&info,&nbsv,1) ;
+			start_write(&tostart,&nclassic,&nlongrun,tmp,&gasv,&info,1,0) ;
 			/** we don't care about nclassic. Classic service are copies
 			 * of original and we retrieve the original at the end of the
 			 * process*/
