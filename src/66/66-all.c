@@ -36,7 +36,7 @@
 
 static unsigned int DEADLINE = 0 ;
 unsigned int trc = 0 ;
-#define USAGE "66-all [ -h ] [ -v verbosity ] [ -f ] [ -T timeout ] [ -l live ] [ -t tree ] up/down"
+#define USAGE "66-all [ -h ] [ -z ] [ -v verbosity ] [ -f ] [ -T timeout ] [ -l live ] [ -t tree ] up/down"
 
 static inline void info_help (void)
 {
@@ -44,7 +44,8 @@ static inline void info_help (void)
 "66-all <options> up/down\n"
 "\n"
 "options :\n"
-"	-h: print this help\n" 
+"	-h: print this help\n"
+"	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-T: timeout\n"
 "	-l: live directory\n"
@@ -156,6 +157,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	size_t statesize, statelen, pos = 0 ;
 	char const *treename = NULL ;
 	
+	log_color = &log_color_disable ;
+	
 	stralloc base = STRALLOC_ZERO ;
 	stralloc scandir = STRALLOC_ZERO ;
 	stralloc livetree = STRALLOC_ZERO ;
@@ -172,7 +175,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:l:T:t:f", &l) ;
+			int opt = getopt_args(argc,argv, ">hv:l:T:t:fz", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
@@ -185,6 +188,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 'T' :	if (!uint0_scan(l.arg, &DEADLINE)) log_usage(USAGE) ; break ;
 				case 't' : 	treename = l.arg ; break ;
 				case 'f' : 	shut = 1 ; break ;
+				case 'z' : 	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
 				default : 	log_usage(USAGE) ; 
 			}
 		}
