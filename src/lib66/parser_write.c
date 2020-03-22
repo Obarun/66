@@ -46,7 +46,7 @@
 /** @Return 0 on fail
  * @Return 1 on success
  * @Return 2 if the service is ignored */
-int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, uint8_t force, uint8_t conf)
+int write_services(sv_alltype *sv, char const *workdir, uint8_t force, uint8_t conf)
 {
 	int r ;
 	
@@ -126,6 +126,7 @@ int write_services(ssexec_t *info,sv_alltype *sv, char const *workdir, uint8_t f
 				log_warnu_return(LOG_EXIT_ZERO,"write: ",wname) ;
 
 			break ;
+		case TYPE_MODULE:
 		case TYPE_BUNDLE:
 			if (!write_bundle(sv, wname))
 				log_warnu_return(LOG_EXIT_ZERO,"write: ",wname) ;
@@ -148,7 +149,7 @@ int write_classic(sv_alltype *sv, char const *dst, uint8_t force,uint8_t conf)
 		log_warnu_return(LOG_EXIT_ZERO,"write: ",dst,"/run") ;
 
 	/** finish file*/
-	if (sv->type.classic_longrun.finish.exec) 
+	if (sv->type.classic_longrun.finish.exec >= 0) 
 	{	
 		if (!write_exec(sv, &sv->type.classic_longrun.finish,"finish",dst,0755))
 			log_warnu_return(LOG_EXIT_ZERO,"write: ",dst,"/finish") ;
@@ -181,7 +182,7 @@ int write_longrun(sv_alltype *sv,char const *dst, uint8_t force, uint8_t conf)
 		log_warnu_return(LOG_EXIT_ZERO,"write: ",dst,"/run") ;
 
 	/**finish file*/
-	if (sv->type.classic_longrun.finish.exec) 
+	if (sv->type.classic_longrun.finish.exec >= 0) 
 	{
 		
 		if (!write_exec(sv, &sv->type.classic_longrun.finish,"finish",dst,0644))
@@ -215,7 +216,6 @@ int write_longrun(sv_alltype *sv,char const *dst, uint8_t force, uint8_t conf)
 
 int write_oneshot(sv_alltype *sv,char const *dst,uint8_t conf)
 {
-	
 	if (!write_common(sv, dst,conf))
 		log_warnu_return(LOG_EXIT_ZERO,"write common files") ;
 
@@ -224,12 +224,13 @@ int write_oneshot(sv_alltype *sv,char const *dst,uint8_t conf)
 		log_warnu_return(LOG_EXIT_ZERO,"write: ",dst,"/up") ;
 
 	/** down file*/
-	if (sv->type.oneshot.down.exec) 
+	if (sv->type.oneshot.down.exec >= 0) 
 	{	
 		if (!write_exec(sv, &sv->type.oneshot.down,"down",dst,0644))
 			log_warnu_return(LOG_EXIT_ZERO,"write: ",dst,"/down") ;
 	}
 	
+	/** dependencies */
 	if (!write_dependencies(sv->cname.nga,sv->cname.idga, dst, "dependencies"))
 		log_warnu_return(LOG_EXIT_ZERO,"write: ",dst,"/dependencies") ;
 		
@@ -256,11 +257,12 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 	
 	uid_t log_uid ;
 	gid_t log_gid ;
+	uid_t owner = MYUID ;
 	char *time = 0 ;
 	char *pmax = 0 ;
 	char *pback = 0 ;
 	char *timestamp = "t" ;
-	char *logrunner = log->run.runas ? keep.s + log->run.runas : SS_LOGGER_RUNNER ;
+	char *logrunner = log->run.runas >=0 ? keep.s + log->run.runas : SS_LOGGER_RUNNER ;
 	char max[UINT32_FMT] ;
 	char back[UINT32_FMT] ;
 	char const *userhome ;
@@ -271,12 +273,14 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 	stralloc ui = STRALLOC_ZERO ;
 	stralloc exec = STRALLOC_ZERO ;
 	stralloc destlog = STRALLOC_ZERO ;
-		
+	
+	/** destination of the temporary directory e.g
+	 * /tmp/test:mrNoe5/db/source/service-log */
 	if(!stralloc_cats(&ddst,dst) ||
 	!stralloc_cats(&ddst,"/") || 
 	!stralloc_cats(&ddst,name) || 
 	!stralloc_0(&ddst)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-
+	
 	r = scan_mode(ddst.s,S_IFDIR) ;
 	if (r && force)
 	{
@@ -298,7 +302,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			log_warnusys_return(LOG_EXIT_ZERO,"create ",ddst.s," directory") ;
 	}
 	
-	userhome = get_userhome(MYUID) ;
+	userhome = get_userhome(owner) ;
 
 	/**timeout family*/
 	for (uint32_t i = 0; i < 2;i++)
@@ -316,7 +320,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 		
 	}
 	/** dependencies*/
-	if (log->nga)
+	if (log->nga > 0)
 	{
 		if (!write_dependencies(log->nga,log->idga,ddst.s,"dependencies"))
 			log_warnu_return(LOG_EXIT_ZERO,"write: ",ddst.s,"/dependencies") ;
@@ -330,7 +334,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 	
 	/**logger section may not be set
 	 * pick auto by default*/
-	if (!logbuild)
+	if (logbuild < 0)
 		logbuild=BUILD_AUTO ; 
 	
 	switch(logbuild)
@@ -339,7 +343,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			/** uid */
 			if (!stralloc_cats(&shebang, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n") || 
 			!stralloc_0(&shebang)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-			if ((!MYUID))
+			if (!owner)
 			{
 				if (!stralloc_cats(&ui,S6_BINPREFIX "s6-setuidgid ") ||
 				!stralloc_cats(&ui,logrunner)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
@@ -347,9 +351,9 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			if (!stralloc_cats(&ui,"\n") ||
 			!stralloc_0(&ui)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			/** destination */		
-			if (!log->destination)
+			if (log->destination < 0)
 			{	
-				if(MYUID > 0)
+				if(owner > 0)
 				{	
 				
 					if (!stralloc_cats(&destlog,userhome) ||
@@ -438,7 +442,7 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 	if (!dir_create_parent(destlog.s,0755))
 		log_warnusys_return(LOG_EXIT_ZERO,"create log directory: ",destlog.s) ;
 
-	if ((!MYUID))
+	if (!owner)
 	{
 		if (!youruid(&log_uid,logrunner) ||
 		!yourgid(&log_gid,log_uid))
@@ -484,7 +488,7 @@ int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char
 		log_warnu_return(LOG_EXIT_ZERO,"write: ",prodfile,get_key_by_enum(ENUM_LOGOPTS,LOGOPTS_PRODUCER)) ;
 
 	/**pipeline**/
-	if (sv->opts[1]) 
+	if (sv->opts[1] > 0) 
 	{
 		size_t len = strlen(deps.s+sv->pipeline) ;
 		char pipename[len + 1] ;
@@ -513,20 +517,20 @@ int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 	size_t srclen = strlen(src) ;
 	size_t namelen = strlen(name) ;
 	/**down file*/
-	if (sv->flags[0])
+	if (sv->flags[0] > 0)
 	{
 		if (!file_create_empty(dst,"down",0644))
 			log_warnusys_return(LOG_EXIT_ZERO,"create down file") ;
 	}
 	/**nosetsid file*/
-	if (sv->flags[1])
+	if (sv->flags[1] > 0)
 	{
 		if (!file_create_empty(dst,"nosetsid",0644))
 			log_warnusys_return(LOG_EXIT_ZERO,"create nosetsid file") ;
 	}
 	
 	/**notification-fd*/
-	if (sv->notification)
+	if (sv->notification > 0)
 	{
 		if (!write_uint(dst,"notification-fd", sv->notification))
 			log_warnu_return(LOG_EXIT_ZERO,"write notification file") ;
@@ -534,7 +538,7 @@ int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 	/**timeout family*/
 	for (uint32_t i = 0; i < 4;i++)
 	{
-		if (sv->timeout[i][0])
+		if (sv->timeout[i][0] > 0)
 		{
 			
 			if (!i)
@@ -558,19 +562,19 @@ int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 			log_warnusys_return(LOG_EXIT_ZERO,"write type file") ;
 	}
 	/** max-death-tally */
-	if (sv->death)
+	if (sv->death > 0)
 	{
 		if (!write_uint(dst, "max-death-tally", sv->death))
 			log_warnu_return(LOG_EXIT_ZERO,"write max-death-tally file") ;
 	}
 	/**down-signal*/
-	if (sv->signal)
+	if (sv->signal > 0)
 	{
 		if (!write_uint(dst,"down-signal", sv->signal))
 			log_warnu_return(LOG_EXIT_ZERO,"write down-signal file") ;
 	}
 	/** environment */
-	if (sv->opts[2])
+	if (sv->opts[2] > 0)
 	{
 		char *dst = keep.s + sv->srconf ;
 		size_t dlen ;
@@ -647,12 +651,28 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 	stralloc env = STRALLOC_ZERO ;
 	stralloc runuser = STRALLOC_ZERO ;
 	stralloc execute = STRALLOC_ZERO ;
+	stralloc destlog_oneshot = STRALLOC_ZERO ;
 	
+	/** prepare oneshot logger */
+	if (!write_oneshot_logger(&destlog_oneshot,sv)) return 0 ;
+	
+	if (type == TYPE_ONESHOT)
+	{
+		if (!stralloc_cats(&shebang,EXECLINE_BINPREFIX "fdmove -c 2 1\n"))
+			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		
+		if (sv->opts[0])
+		{
+			if (!stralloc_cats(&shebang,"redirfd -w 1 ") ||
+			!stralloc_cats(&shebang,destlog_oneshot.s) ||
+			!stralloc_cats(&shebang,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		}
+	}
 	switch (exec->build)
 	{
 		case BUILD_AUTO:
 			/** uid */
-			if ((!owner && exec->runas))
+			if (!owner && (exec->runas >= 0))
 			{
 				if (!stralloc_cats(&ui,S6_BINPREFIX "s6-setuidgid ") ||
 				!stralloc_cats(&ui,keep.s + exec->runas) || 
@@ -705,14 +725,14 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 	
 	/** build the file*/	
 	if (!stralloc_cats(&execute,shebang.s)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-	if (exec->build == BUILD_AUTO)
+	if ((exec->build == BUILD_AUTO) && (sv->cname.itype != TYPE_ONESHOT))
 	{
 		if (!stralloc_cats(&execute,EXECLINE_BINPREFIX "fdmove -c 2 1\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}
 	if (!stralloc_cats(&execute,env.s) ||
 	!stralloc_cats(&execute,ui.s) || 
 	!stralloc_cats(&execute,runuser.s)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-
+	
 	memcpy(write,dst,dstlen) ;
 	write[dstlen] = '/' ;
 	memcpy(write + dstlen + 1, file, filelen) ;
@@ -731,6 +751,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 	stralloc_free(&env) ;
 	stralloc_free(&runuser) ;
 	stralloc_free(&execute) ;
+	stralloc_free(&destlog_oneshot) ;
 	return 1 ;	
 }
 
@@ -743,8 +764,8 @@ int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char c
 		if (!stralloc_cats(&contents,deps.s + id) ||
 		!stralloc_cats(&contents,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}
-	
-	//if (contents.len)
+	/** file contents for a bundle must be present even if it's an empty one */
+	if (contents.len || obstr_equal(filename,SS_CONTENTS))
 	{
 		if (!file_write_unsafe(dst,filename,contents.s,contents.len))
 		{
@@ -787,3 +808,63 @@ int write_env(char const *name, stralloc *sa,char const *dst)
 	return 1 ;
 }
 
+int write_oneshot_logger(stralloc *destlog, sv_alltype *sv)
+{
+	if (sv->opts[0])
+	{
+		int r ;
+		uid_t owner = MYUID ;
+		size_t len ;
+		char const *userhome ;
+		char *svname = keep.s + sv->cname.name ;
+
+		userhome = get_userhome(owner) ;
+
+		//if (sv->type.oneshot.log.destination < 0)
+		{	
+			if(owner > 0)
+			{	
+				if (!auto_stra(destlog,userhome,"/",SS_LOGGER_USERDIR,svname))
+					log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+			}
+			else
+			{
+				if (!auto_stra(destlog,SS_LOGGER_SYSDIR,svname))
+					log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+			}
+		}
+		/** Section logger has no effect with oneshot
+		 * this implementation is for the future
+		 * 
+		else
+		{
+			if (!auto_stra(&destlog,keep.s+log->destination))
+				log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		}
+		*/
+		r = scan_mode(destlog->s,S_IFDIR) ;
+		if (r == -1)
+			log_warn_return(LOG_EXIT_ZERO,"log directory: ", destlog->s,": already exist with a different mode") ;
+
+		if (!dir_create_parent(destlog->s,0755))
+			log_warnusys_return(LOG_EXIT_ZERO,"create log directory: ",destlog->s) ;
+		
+		len = destlog->len ;
+		if (!auto_stra(destlog,"/current"))
+			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		
+		r = scan_mode(destlog->s,S_IFREG) ;
+		if (!r)
+		{
+			destlog->s[len] = 0 ;
+			destlog->len = len ;
+			if (!file_write_unsafe(destlog->s,"current","",0))
+				log_warnusys_return(LOG_EXIT_ZERO,"write: ",destlog->s,"/current") ;
+
+			if (!auto_stra(destlog,"/current"))
+				log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		}
+	}
+	
+	return 1 ;
+}
