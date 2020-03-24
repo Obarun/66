@@ -15,7 +15,7 @@
 #include <66/parser.h>
 
 #include <string.h>
-//#include <stdio.h>
+#include <stdio.h> //rename
 
 #include <oblibs/string.h>
 #include <oblibs/types.h>
