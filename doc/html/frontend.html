@@ -18,7 +18,7 @@
 	<p>
 		The <a href="https://skarnet.org/software/s6">s6</a> and <a href="https://skarnet.org/software/s6">s6-rc</a> programs each handle and use several kinds of services and different files. It is quite complex to understand and manage the relationship between all those files and services. If you're interested in the details you should read <a href="https://skarnet.org/software/s6/servicedir.html">the documentation for the s6 servicedir</a> and also about <a href="https://skarnet.org/software/s6/servicedir.html"><em>classic</em></a>, <a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html"> <em>oneshot</em>, <em>longrun</em> (also called <em>atomic</em> services), <em>bundle</em></a> and <a href="#module"><em>module</em></a> services on Obarun. The frontend service file of 66 tools allows you to deal with all these different services in a centralized manner in one single place.
 		<br>
-		By default 66 tools expects to find any service files in <tt>%%service_system%%</tt> although this can be changed at compile time by passing the <tt>--with-service-path=<em>DIR</em></tt> option to <tt>./configure.</tt>
+		By default 66 tools expects to find any service files in <tt>%%service_system%%</tt> and <tt>%%service_adm%%</tt> for root user. For regular users, *$HOME/%%service_user%%</tt> will take priority over the previous ones. Although this can be changed at compile time by passing the <tt>--with-system-service=<em>DIR</em></tt>, <tt>--with-sysadmin-service=<em>DIR</em></tt> and <tt>--with-user-service=<em>DIR</em></tt>option to <tt>./configure.</tt>
 	</p>
 
 	<p>
@@ -127,10 +127,12 @@
 		</li>
 		<p>Valid syntax:</p>
 		<ul>
-			<pre>@description = " some awesome description "</pre>
+			<pre>@description = "some awesome description"</pre>
 			<pre>@description="some awesome description"</pre>
 		</ul>(!) Invalid syntax:<p></p>
 		<ul>
+            <pre>@description=
+"some awesome description"</pre>
 			<pre>@description = "line break inside a double-quote<br>is not allowed"</pre>
 		</ul>
 
@@ -249,6 +251,7 @@ MYKEY=MYVALUE</pre>
    <li><tt>bundle</tt> : declares the service as <tt>bundle</tt> service.</li>
    <li><tt>longrun</tt> : declares the service as <tt>longrun</tt> service.</li>
    <li><tt>oneshot</tt> : declares the service as <tt>oneshot</tt> service.</li>
+   <li><tt>module</tt> : declares the service as <tt>module</tt> service.</li>
    </ul>
  <p><em><tt><strong>Note:</strong></tt></em> If you don't care about dependencies between services or if you don't need
    specific tasks to get done before running the daemon, "classic" is the best pick.</p><br>
@@ -645,15 +648,9 @@ MYKEY=MYVALUE</pre>
  <p><tt>syntax</tt> : bracket</p>
  <p><tt>valid values</tt> :</p>
   <ul>
-   <!-- Is the following correct by your definition? (I tried to make it easier to understand but am only 90% sure if I understood it well to begin with) -->
    <li>Any file or subdirectory in the services main directory that do not by default form part of the service itself. If the frontend service file was to be found at /etc/66/service/foo/foo and /etc/66/service/foo contains an additional subdirectory "data" and a file named "scripts", use
    <pre>@hiercopy=(data scripts)</pre>
    to copy these to the service directory destination.</li>
-   <!-- I think there should be an anchor here to the definition of "service directory destionation" -->
-   <!-- What if the frontend file was at /etc/66/service/foo instead? Will it behave the same? -->
-   <!-- Is the copy recursive? Meaning that ../service/foo/data/sub/sub will also get copied? -->
-
-
    </ul>
 </ul>
 
@@ -759,10 +756,6 @@ but they can not be specified except for the <strong>mandatory</strong> key
 In such case the default behaviour for those key are apply.</p>
 <p>Furthermore there are some keys specific to the log.</p>
 
-<!-- the logger is a service as any another service so the key @build,@runas, @timeout-finish as exactly the same behaviour. So yes by default
-the run file for the logger will be written in execlineb script, the runas if it's set will be run s6-log with the given user  and so on... EXACTLY the
-same behaviour. -->
-
 <h3>Valid <em>key</em> names:</h3>
 
 <ul>
@@ -853,7 +846,7 @@ same behaviour. -->
 <p>This section is <em>optional</em>.</p>
 <p>It will only have an effect when the value <tt>env</tt> is added to the
 <tt>@options</tt> key in the <tt>[main]</tt> section.</p>
-<p>A file named <em>key</em> with the <em>value</em> as contain will be
+<p>A file contained the <em>key=value</em> pair(s) will be
 created by default at %%service_admconf%%/name_of_service directory. The default can also be changed at compile-time by 
   passing the <tt>--with-sysadmin-service-conf=<em>DIR</em></tt> option to <tt>./configure</tt>.</p>
 
@@ -892,7 +885,7 @@ created by default at %%service_admconf%%/name_of_service directory. The default
 
 <p>This section is <em>optional</em>.</p>
 <p>It will only have an effect when the service is a <tt><a href="#module">module</a></tt> type.</p>
-<p>You can use the '@I' string as key field. It will replaced by the 
+<p>You can use the '@I' string as key field. It will be replaced by the 
 <tt><a href="#module">module</a></tt> name as you do for instantiated service before applying the
 regex section.</p>
 <h3>Valid <em>key</em> names:</h3>
@@ -915,12 +908,12 @@ regex section.</p>
  <p><tt>syntax</tt> : pair inside bracket</p>
  <p><tt>valid value</tt> :</p>
   <ul>
-   <p>Any key=value pair where key is the regex to search on the 
-   directory name and value the replacement of that regex. For example:</p>
+   <p>Any key=value pair where <em>key</em> is the regex to search on the 
+   directory name and <em>value</em> the replacement of that regex. For example:</p>
    <pre>
    @directories = ( DM=sddm TRACKER=consolekit )
     </pre>
-    <p>Where the module directory contains two sub-directories named use-DM and by-TRACKER directories. Its will be renamed as use-sddm and 
+    <p>Where the module directory contains two sub-directories named use-DM and by-TRACKER directories. It will be renamed as use-sddm and 
     by-consolekit respectively.</p>
   </ul>
 
@@ -944,11 +937,11 @@ regex section.</p>
  <p><tt>syntax</tt> : colon</p>
  <p><tt>valid value</tt> :</p>
   <ul>
-   <p>Any valid filename between the double colon with any key=value pair where
-   key is the regex to search inside the file and value the replacement 
+   <p>Any valid filename between the double colon with any <em>key=value</em> pair where
+   <em>key</em> is the regex to search inside the file and <em>value</em> the replacement 
    of that regex. The double colon <b>must</b> be present but the name between it
-   can be omitted. In that case, the key=value pair will be apply to 
-   all files contained on the module directories and to all key (regex) 
+   can be omitted. In that case, the <em>key=value</em> pair will apply to 
+   all files contained on the module directories and to all keys (regex) 
    found inside the same file.For example:</p>
     <pre>
     @infiles = ( :mount-tmp:args=-o noexec
@@ -959,10 +952,10 @@ regex section.</p>
     </li>
     <li>
         It opens the file named mount-tmp, search for the args regex
-        and replace it by the value of the regex.
+        and replaces it by the value of the regex.
     </li>
     <li>
-        It opens all files found on the module directory and replace
+        It opens all files found on the module directory and replaces
         all regex 'user' found by the name of the module in each file.
     </li>
   </ul>
@@ -1061,13 +1054,13 @@ for it in your <tt>@execute</tt> field.</p>
 <h2 id="module">Module service creation</h2>
 
     <p>A module can be considered as an <tt><a href="#instance">instantiated</a></tt> 
-    service. It works as the same way concerning the frontend file but 
-    allows to configure a set of differents kind of services before executing 
+    service. It works as the same way as a service frontend file but 
+    allows to configure a set of different kind of services before executing 
     the enable process. Also, the set of the services can be configured 
-    with the conjonction of a script called <tt>configure</tt> which it can be 
+    with the conjunction of a script called <tt>configure</tt> which it can be 
     made on any language.</p>
 
-    <p>A module is define with two elements: an instantiated frontend service 
+    <p>A module is defined with two elements: an instantiated frontend service 
     file at %%service_system%% and a directory at %%service_module%%. 
     The name of the frontend and the name of the directory <b>must</b> be the same. 
     For example if the frontend is named foo@, the directory of the module
@@ -1082,7 +1075,7 @@ for it in your <tt>@execute</tt> field.</p>
     language of your choice as long as you define a correct <tt>shebang</tt>.</p>
     
     <p>The <tt>configure</tt> script is launched after the parse of the 
-    frontend file meaning all regex on directories and files is already made.</p>
+    frontend file meaning all regex on directories and files are already made.</p>
     
     <h3>A word about the <a href="#main">[main]</a> section with the module type</h3>
     <p>The valid field in section <a href="#main">[main]</a> are:</p>

@@ -6,10 +6,21 @@ The service file format for 66
 
 # SYNTAX
 
+The *s6* and *s6-rc* programs each handle and use several kinds of services
+and different files. It is quite complex to understand and manage the 
+relationship between all those files and services. If you're interested 
+in the details you should read the documentation for the s6 servicedir 
+and also about _classic_,_oneshot_,_longrun_ (also called _atomic_ services), 
+_bundle_ and _module_(see module below) services on Obarun. 
+The frontend service file of 66 tools allows you to deal with all these 
+different services in a centralized manner in one single place.
+
 By default *66* tools expect to find any service file in
-*%%service_packager%%* and *%%service_sys%%* for root user. For the non
-root users, *$HOME/%%service_userconf%%* will take priority over the previous
-ones.
+*%%service_system%%* and *%%service_adm%%* for root user. For the non
+root users, *$HOME/%%service_user%%* will take priority over the previous
+ones. Although this can be changed at compile time by passing the
+*--with-system-service=*_DIR_, *--with-sysadmin-service=*_DIR_ and 
+*--with-user-service=*_DIR_ option to *./configure*.
 
 The frontend service file has a format of INI with a specific syntax on the key
 field. 
@@ -33,7 +44,7 @@ can read the file as fast as possible.
 
 ## SECTIONS
 
-ll sections need to be declared with the name written between square brackets
+All sections need to be declared with the name written between square brackets
 *[]* and must be of lowercase letters *only*. This means that special
 characters, uppercase letters and numbers are not allowed in the name of a
 section. An _entire_ section can be commented out by placing
@@ -52,7 +63,53 @@ The frontend service file allows the following section names:
 - [stop]
 - [logger]
 - [environment]
+- [regex]
 
+Although a section can be mandatory not all of its key fields must be necessarily so.
+
+## SYNTAX LEGEND
+
+The _value_ of a _key_ is parsed in a specific format depending on the key.
+The following is a break down of how to write these syntax:
+
+- *inline*
+	An inline _value_. Must be in the same line with its corresponding _key_.
+
+	Valid syntax:
+```
+@type = classic
+@type=classic
+```
+
+	Invalid syntax:
+```
+@type=
+classic
+```
+
+- *quotes*
+	A _value_ between double-quotes. Must be on the same line with its 
+	corresponding _key_.
+
+	Valid syntax:
+```
+@description = "some awesome description"
+@description="some awesome description"
+```
+
+	Invalid syntax:
+```
+@description=
+"some awesome description"
+@description = "line break inside a double quote
+is not allowed"
+```
+
+- *bracket*
+	Multiple _values_ between parentheses'()'. Values need to be separated
+	with a space. A line break can be used instead.
+
+	Valid syntax:
 ```
 @depends=(fooA fooB fooC)
 @depends=(
@@ -121,6 +178,27 @@ MYKEY=
 MYVALUE
 ```
 
+- *colon*
+	A _value_ between double colons followed by a _pair_ syntax. Must be one
+	by line.
+
+	Valid syntax:
+```
+::key=value
+:filename:key=value
+```
+
+	Invalid syntax:
+```
+::MYKEY=
+MYVALUE
+
+::
+MYKEY=MYVALUE
+
+::key=value :filename:anotherkey=anothervalue
+```
+
 ## [main]
 
 This section is *mandatory*.
@@ -128,14 +206,15 @@ This section is *mandatory*.
 Valid _key_ names:
 
 *@type*++
-	Declare the type of the service.++
+	Declare the type of the service.++ 
 	_mandatory_: *yes*++
 	_syntax_: *inline*++
 	_valid values_:++
 		*classic*, declares the service as _classic_.++
 		*bundle*, declares the service as _bundle_ service.++
 		*longrun*, declares the service as _longrun_ service.++
-		*oneshot*, declares the service as _oneshot_ service.
+		*oneshot*, declares the service as _oneshot_ service.++
+		*module*, declares the service as _module_ service.
 
 	Corresponds to the file *type* of s6-rc programs.
 
@@ -162,8 +241,17 @@ Valid _key_ names:
 
 	is not for a frontend service file named tty@.
 
-	Corresponds to the _name_ of the service directory of s6 and s6-rc
+	Corresponds to the _name_ of the service directory of *s6* and *s6-rc*
 	programs.
+
+*@version*++
+	Version number of the service.++
+	_mandatory_: *yes*++
+	_syntax_: *inline*++
+    _valid values_:++
+		Any valid number
+
+	Without equivalent, this key is unique to *66* tools.
 
 *@description*++
 	A short description of the service.++
@@ -171,6 +259,8 @@ Valid _key_ names:
 	_syntax_: *quote*++
 	_valid values_:++
 		Anything you want.
+
+	Without equivalent, this key is unique to *66* tools.
 
 *@user*++
 	Declare the permissions of the service.++
@@ -188,15 +278,16 @@ Valid _key_ names:
 	If you don't declare *root* in this field, you will _not_ be able
 	to use the service even with root privileges.
 
-	Without equivalent, this key is unique to 66 tools.
+	Without equivalent, this key is unique to *66* tools.
 
 *@depends*++
 	Declare dependencies of the service.++
-	_mandatory_: *no*.++
+	_mandatory_: *no*. This field has no effect if the type++
+	of the service is _classic_ or _bundle_.
 	_syntax_: *bracket*++
 	_valid values_:++
-		The _name_ of any valid service with type *bundle*, *longrun* or++
-		*oneshot*. Services of type *classic* are not allowed.
+		The _name_ of any valid service with type *bundle*, *longrun*,++
+		*oneshot* or *module*. Services of type *classic* are not allowed.
 
 	The order is of importance. If fooA depends on fooB and fooB
 	depends on fooC the order needs to be: 
@@ -216,15 +307,21 @@ Valid _key_ names:
 	Beware though that if fooA depends on fooC, you need to add both fooB
 	and fooC to the dependencies of fooA.
 
-	Corresponds to the file *dependencies* of s6-rc programs.
+	A service can be commented out by placing the number sign '#' at the
+	begin of the name like this:
+
+	@depends = ( fooA #fooB fooC )
+
+	Corresponds to the file *dependencies* of *s6-rc* programs.
 
 *@optsdepends*++
 	Declare optional dependencies of the service.++
-	_mandatory_: *no*.++
+	_mandatory_: *no*. This field has no effect if the type++
+	of the service is _classic_ or _bundle_.
 	_syntax_: *bracket*++
 	_valid values_:++
-		The _name_ of any valid service with type *bundle*, *longrun* or++
-		*oneshot*. Services of type *classic* are not allowed.
+		The _name_ of any valid service with type *bundle*, *longrun*,++
+		*oneshot* or *module*. Services of type *classic* are not allowed.
 
 	A service declared as optional dependencies is not mandatory.
 	The parser will look at all trees if the corresponding service is
@@ -245,9 +342,17 @@ Valid _key_ names:
 	of the sysadmin to start first treeB then treeA. *66-intree* can give
 	you	the start order with the field *Start after*.
 
+	A service can be commented out by placing the number sign '#' at the
+	begin of the name like this:
+
+	@optsdepends = ( fooA #fooB fooC )
+
+	Without equivalent, this key is unique to *66* tools.
+
 *@extdepends*++
 	Declare external dependencies of the service.++
-	_mandatory_: *no*.++
+	_mandatory_: *no*. This field has no effect if the type++
+	of the service is _classic_ or _bundle_.
 	_syntax_: *bracket*++
 	_valid values_:++
 		The _name_ of any valid service with type *bundle*, *longrun* or++
@@ -272,16 +377,23 @@ Valid _key_ names:
 	treeB then treeA. *66-intree* will give you
 	the start order with the field *Start after*.
 
+	A service can be commented out by placing the number sign '#' at the
+	begin of the name like this:
+
+	@extdepends = ( fooA #fooB fooC )
+
+	Without equivalent, this key is unique to *66* tools.
+
 *@contents*++
 	Declare the contents of a bundle service.++
-	_mandatory_: *yes* for services of type *bundle*; _Optional_ for++
-		services of type *oneshot* or *longrun*.++
+	_mandatory_: *yes* for services of type *bundle*.++
+	Not allowed for all other services type.++
 	_syntax_: *bracket*++
 	_valid values_:++
 		The name of any valid service of type *bundle*, *longrun* or++
 		*oneshot*. Services of type *classic* are not allowed.
 
-	Corresponds to the file *contents* of s6-rc programs.
+	Corresponds to the file *contents* of *s6-rc* programs.
 
 *@options*++
 	_mandatory_: *no*++
@@ -306,7 +418,7 @@ Valid _key_ names:
 			process group as the supervisor of the service (s6-supervise).++
 			Without this file the service will have its own process group and++
 			is started as a session leader.++
-			Corresponds to the file *nosetsid* of s6-rc and s6 programs.++
+			Corresponds to the file *nosetsid* of *s6-rc* and *s6* programs.++
 		*down*++
 			This will create the file *down*.++
 			Once this file was created the default state of the service++
@@ -314,7 +426,7 @@ Valid _key_ names:
 			automatically be started until it receives a *66-start*(1)++
 			command. Without this file the default state of the service++
 			will be *up* and started automatically.++
-			Corresponds to the file *down* of s6-rc and s6 programs.
+			Corresponds to the file *down* of *s6-rc* and *s6* programs.
 
 *@notify*++
 	_mandatory_: *no*++
@@ -333,7 +445,7 @@ Valid _key_ names:
 	broadcast readiness, i.e. any *66-svctl -U* process will be
 	triggered.
 
-	Corresponds to the file *notification-fd* of s6-rc programs.
+	Corresponds to the file *notification-fd* of *s6-rc* programs.
 
 *@timeout-finish*++
 	_mandatory_: *no*++
@@ -348,7 +460,7 @@ Valid _key_ names:
 	are killed if they're still alive after 5 seconds. A value of
 	*0* allows finish scripts to run forever.
 
-	Corresponds to the file *timeout-finish* of s6-rc and s6 programs.
+	Corresponds to the file *timeout-finish* of *s6-rc* and *s6* programs.
 
 *@timeout-kill*++
 	_mandatory_: *no*++
@@ -366,7 +478,7 @@ Valid _key_ names:
 	then the service is never forcibly killed (unless, of course, a
 	*s6-svc -k* command is sent).
 
-	Corresponds to the file *timeout-kill* of s6-rc and s6 programs.
+	Corresponds to the file *timeout-kill* of *s6-rc* and *s6* programs.
 
 *@timeout-up*++
 	_mandatory_: *no*++
@@ -383,7 +495,7 @@ Valid _key_ names:
 	wait for the service to start until the *maxdeath* is reached. Without
 	this file a _value_ of *3000* (3 seconds) will be taken by default.
 
-	Corresponds to the file *timeout-up* of s6-rc programs.
+	Corresponds to the file *timeout-up* of *s6-rc* programs.
 
 *@timeout-down*++
 	_mandatory_: *no*++
@@ -400,7 +512,7 @@ Valid _key_ names:
 	until the *maxdeath* is reached. Without this file a _value_ of *3000* (3
 	seconds) will be taken by default.
 
-	Corresponds to the file *timeout-down* of s6-rc programs.
+	Corresponds to the file *timeout-down* of *s6-rc* programs.
 
 *@maxdeath*++
 	_mandatory_: *no*++
@@ -416,7 +528,7 @@ Valid _key_ names:
 	Tracking death events is useful, for example, when throttling service
 	restarts. The _value_ cannot be greater than *4096*. Without this file a default of *3* is used.
 
-	Corresponds to the file *max-death-tally* of s6-rc and s6 programs.
+	Corresponds to the file *max-death-tally* of *s6-rc* and *s6* programs.
 
 *@down-signal*++
 	_mandatory_: *no*++
@@ -428,7 +540,7 @@ Valid _key_ names:
 	supervised process when a *66-start -r* or *66-stop* command is used.
 	If the file does not exist SIGTERM will be used by default.
 
-	Corresponds to the file *down-signal* of s6-rc and s6 programs.
+	Corresponds to the file *down-signal* of *s6-rc* and *s6* programs.
 
 *@hiercopy*
 	Copy the corresponding name to the service directory destination.
@@ -436,14 +548,14 @@ Valid _key_ names:
 	_syntax_: *bracket*
 	_valid values_:
 		Any elements name at the directory frontend service file. If the
-		frontend service file found at %%service_packager%%/foo/foo where
-		directory %%service_packager%%foo contains
-		%%service_packager%%/foo/data as directory and
-		%%service_packager%%/foo/scripts, use @hiercopy=(data scripts) to copy
+		frontend service file found at %%service_system%%/foo/foo where
+		directory %%service_system%%foo contains
+		%%service_system%%/foo/data as directory and
+		%%service_system%%/foo/scripts, use @hiercopy=(data scripts) to copy
 		the directory data and the file scripts to the service directoy
 		destination.
 
-	Without equivalent, this key is unique to 66 tools.</h5>
+	Without equivalent, this key is unique to *66* tools.</h5>
 
 ## [start]
 
@@ -463,7 +575,7 @@ Valid _key_ names:
 			The corresponding file to start the service will be written++
 			in the language set in the *@shebang* key _value_.
 
-	Without equivalent, this key is unique to 66 tools.
+	Without equivalent, this key is unique to *66* tools.
 
 *@runas*++
 	_mandatory_: *no*++
@@ -477,7 +589,7 @@ Valid _key_ names:
 	over priviliges to a user. Only root can pass on privileges. This field has
 	*no effect* for other use cases.
 
-	Without equivalent, this key is unique to 66 tools.
+	Without equivalent, this key is unique to *66* tools.
 
 *@shebang*++
 	_mandatory_: *yes* if the *@build* key is set to *custom*.++
@@ -488,7 +600,7 @@ Valid _key_ names:
 	This will set the language that will be used to read and write the
 	*@execute* key _value_.
 
-	Without equivalent, this key is unique to 66 tools.
+	Without equivalent, this key is unique to *66* tools.
 
 *@execute*++
 	_mandatory_: *yes*++
@@ -500,8 +612,10 @@ Valid _key_ names:
 	It's the responsability of the author to make sure that the content of
 	this field is correct.
 
-	Corresponds to the file *run* for a *classic* or *longrun* service and to the file *up* for a *oneshot* service.
+	Corresponds to the file *run* for a *classic* or *longrun* service 
+	and to the file *up* for a *oneshot* service.
 
+	Without equivalent, this key is unique to *66* tools.
 
 ## [stop]
 
@@ -521,7 +635,7 @@ fields from *[start]*/*[stop]* and the *@timeout-finish* and *@timeout-kill*
 key fields from *[main]*. These are also valid keys for *[logger]* and behave
 the same way they do in the other sections but they can not be specified except
 for the *mandatory* key *@build*; see examples below. 
-In such case the default behaviour for those key are applied.
+In such case the default behaviour for those key are apply.
 Furthermore there are some keys specific to the log.
 
 Valid _key_ names:++
@@ -543,7 +657,7 @@ Valid _key_ names:++
 	*--with-system-logpath=*_DIR_ option for root and
 	*--with-user-logpath=*_DIR_ for a user to *./configure*.
 
-	Without equivalent, this key is unique to 66 tools.
+	Without equivalent, this key is unique to *66* tools.
 
 *@backup*++
 	_mandatory_: *no*++
@@ -555,7 +669,7 @@ Valid _key_ names:++
 	The next log to be saved will replace the oldest file present.
 	By default 3 files are kept.
 
-	Without equivalent, this key is unique to 66 tools.
+	Without equivalent, this key is unique to *66* tools.
 
 *@maxsize*++
 	mandatory_: *no*++
@@ -566,7 +680,7 @@ Valid _key_ names:++
 	A new log file will be created every time the current one approaches
 	_value_ bytes. By default, filesize is *1000000*; it cannot be set lower than *4096* or higher than *268435455*.
 
-	Without equivalent, this key is unique to 66 tools.
+	Without equivalent, this key is unique to *66* tools.
 
 *@timestamp*++
 	mandatory_	: *no*++
@@ -582,16 +696,16 @@ Valid _key_ names:++
 			the time and two spaces after the time, before being processed by++
 			the next action directive.
 
-	Without equivalent, this key is unique to 66 tools.
+	Without equivalent, this key is unique to *66* tools.
 
 ## [environment]
 
 This section is *optional*.
 It will only have an effect when the value *env* is added to the *@options* key
 in the *[main]* section.
-A file named _key_ with _value_ written in it will be created by default at
-*%%service_sysconf%%/name_of_daemon* directory. The default can also be
-changed at compile-time by passing the *--with-service-path=*_DIR_ option to
+A file contained the *key=value* pair(s) will be created by default at
+*%%service_admconf%%/name_of_service* directory. The default can also be
+changed at compile-time by passing the *--with-sysadmin-service-conf=*_DIR_ option to
 *./configure*.
 
 Valid _key_ names:
@@ -623,9 +737,76 @@ Any *key=value* pair:++
 	not need to be present in the general environment variable of the
 	service. 
 
-	Without equivalent, this key is unique to 66 tools.
+	Without equivalent, this key is unique to *66* tools.
 
-A word about the *@execute* key:
+## [regex]
+
+This section is *optional*.
+It will only have an effect when the service is a _module_ type.
+You can use the '@I' string as key field. It will be replaced by the _module_
+name as you do for instantiated service fefore applying the regex section.
+
+Valid _key_ names:
+
+*@configure*++
+	_mandatory_: *no*++
+	_syntax_: *quotes*++
+	_valid value_:++
+		You can define any arguments to pass to the module's configure script.
+
+	Without equivalent, this key is unique to *66* tools.
+
+*@directories*++
+	_mandatory_: *no*++
+	_syntax_: *pair* inside *bracket*++
+	_valid value_:++
+		Any _key=value_ pair where _key_ is the regex to search on the++
+		directory name and _value_ the replacement of that regex. For example:
+
+```
+	@directories = ( DM=sddm TRACKER=consolekit )
+```
+
+	Where the module directory contains two sub-directories named use-DM
+	and by-TRACKER directories. It will be renamed as use-sddm and by-consolekit
+	respectively.
+
+	Without equivalent, this key is unique to *66* tools.
+
+*@files*++
+	_mandatory_: *no*++
+	_syntax_: *pair* inside *quotes*++
+	_valid value_:++
+		Reacts exactly as *@directories* field but on filename instead of++
+		directories name.
+
+	Without equivalent, this key is unique to *66* tools.
+
+*@infiles*++
+	_mandatory_: *no*++
+	_syntax_: *colon*++
+	_valid value_:++
+		Any valid filename between the double colon with any _key=value_++
+		where _key_ is the regex to search inside the file and _value_ the++
+		replacement of that regex. The double colon *must* be present but++
+		the name between it can be omitted. In that case, the _key=value_++
+		pair will apply to all files contained on the module directories and++
+		to all keys (regex) found inside the same file. For example:
+
+```
+    @infiles = ( :mount-tmp:args=-o noexec 
+    ::user=@I )
+```
+
+	It replaces first the term @I by the name of the module.
+
+	It opens the file named mount-tmp, search for the args regex and replaces
+	it by the value of the regex.
+
+	It opens all files found on the module directory and replaces all regex
+	'user' found by the name of the module in each file.
+
+# A word about the *@execute* key:
 
 	As described above the *@execute* key can be written in any language as
 	long as you define the key *@build* as *custom* and the *@shebang* key to
@@ -637,7 +818,7 @@ A word about the *@execute* key:
     @shebang = "/usr/bin/bash"
     @execute = ( 
         echo "This script displays available services"
-        for i in $(ls %%service_packager%%); do
+        for i in $(ls %%service_system%%); do
             echo "daemon : ${i} is available"
         done
     )
@@ -649,7 +830,7 @@ A word about the *@execute* key:
 ```
     #!/usr/bin/bash
     echo "This script displays available services"
-    for i in $(ls %%service_packager%%); do
+    for i in $(ls %%service_system%%); do
         echo "daemon : ${i} is available"
     done
 ```
@@ -700,8 +881,8 @@ differences exist:
 ## FILE NAME
 
 ```
-%%service_packager%%/dhcpcd
-%%service_packager%%/very_long_name
+%%service_system%%/dhcpcd
+%%service_system%%/very_long_name
 ```
 
 ## FILE CONTENT
@@ -750,6 +931,45 @@ Contents:
 @build = auto
 @execute = ( agetty -J 38400 tty1 } )
 ```
+# MODULE SERVICE CREATION
+
+A module can be considered as an instantiated service. It works as the 
+same way as a service frontend file but allows to configure a set of 
+different kind of services before executing the enable process. Also, 
+the set of the services can be configured with the conjunction of a 
+script called _configure_ which it can be made on any language.
+
+A module is defined with two elements: an instantiated frontend service
+file at %%service_system%% and a directory at %%service_module%%. 
+The name of the frontend and the name of the directory *must* be the same. 
+For example if the frontend is named foo@, the directory of the module
+must be foo@.
+
+The module directory can contain a sub-directory named _.configure_
+with an *executable* file script named _configure_ inside. For example,
+foo@/.configure/configure. The sub-directory *must* be named _.configure_
+and the file script *must* be named _configure_.
+
+It's up to you to write the _configure_ script file with the language 
+of your choice as long as you define a correct _shebang_.
+
+The _configure_ script is launched after the parse of the frontend file 
+meaning all regex on directories and files are already made.
+
+## A word about the *[main]* section with the module type.
+
+The valid field in section *[main]* are:++
+	@type++
+	@description++
+	@name++
+	@version++
+	@user++
+	@depends++
+	@optsdepends++
+	@extdepends++
+	@hiercopy
+
+All other fields from *[main]* section are not allowed.
 
 ## PROTOTYPE
 
