@@ -125,14 +125,15 @@ $(DESTDIR)$(datarootdir)/doc/$(package)/%.html: doc/html/%.html
 		-e 's,%%system_dir%%,$(system_dir),g' \
 		-e 's,%%system_log%%,$(system_log),g' \
 		-e 's,%%service_system%%,$(service_system),g' \
+		-e 's,%%service_module%%,$(module_system),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \
 		-e 's,%%service_user%%,$(service_user),g' \
 		-e 's,%%service_userconf%%,$(service_userconf),g' \
-		-e 's,%%skel%%,$(skel),g' \
-        -e 's,%%s6log_user%%,$(s6log_user),g' \
-		-e 's,%%user_log%%,$(user_log),g' $< > $@
+		-e 's,%%user_log%%,$(user_log),g' \
+		-e 's,%%s6log_user%%,$(s6log_user),g' \
+		-e 's,%%skel%%,$(skel),g' $< > $@
 		
 		
 $(DESTDIR)$(sysconfdir)/66/%: skel/%
@@ -193,17 +194,19 @@ man: $(ALL_MAN:%.scd=%)
 
 %: %.scd
 	sed -e 's,%%livedir%%,$(livedir),' \
-		-e 's,%%system_dir%%,$(system_dir),' \
-		-e 's,%%user_dir%%,$(user_dir),' \
-		-e 's,%%service_sysconf%%,$(service_admconf),' \
-		-e 's,%%service_userconf%%,$(service_userconf),' \
-		-e 's,%%service_packager%%,$(service_system),g' \
-		-e 's,%%user_log%%,$(user_log),' \
-		-e 's,%%service_sys%%,$(service_adm),' \
-		-e 's,%%system_log%%,$(system_log),' \
-		-e 's,%%sysconfdir%%,$(skel),' \
+        -e 's,%%sysconfdir%%,$(skel),' \
+        -e 's,%%system_dir%%,$(system_dir),' \
+        -e 's,%%system_log%%,$(system_log),' \
+        -e 's,%%service_system%%,$(service_system),g' \
+        -e 's,%%module_system%%,$(module_system),g' \
+        -e 's,%%service_adm%%,$(service_adm),' \
+        -e 's,%%service_admconf%%,$(service_admconf),' \
+        -e 's,%%user_dir%%,$(user_dir),' \
+        -e 's,%%service_user%%,$(service_user),' \
+        -e 's,%%service_userconf%%,$(service_userconf),' \
+        -e 's,%%user_log%%,$(user_log),' \
         -e 's,%%s6log_user%%,$(s6log_user),' \
-		-e 's,%%service_user%%,$(service_user),' $@.scd | scdoc > $@
+        -e 's,%%skel%%,$(skel),g' $@.scd | scdoc > $@
 	
 install-man:
 	for i in 1 5 8 ; do \
