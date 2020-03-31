@@ -103,7 +103,7 @@ info_opts_map_t const opts_sv_table[] =
 #define checkopts(n) if (n >= MAXOPTS) strerr_dief1x(100, "too many options")
 #define DELIM ','
 
-#define USAGE "66-inservice [ -h ] [ -v verbosity ] [ -c ] [ -n ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -t tree ] [ -p nline ] service"
+#define USAGE "66-inservice [ -h ] [ -z ] [ -v verbosity ] [ -n ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -t tree ] [ -p nline ] service"
 
 static inline void info_help (void)
 {
@@ -112,8 +112,8 @@ static inline void info_help (void)
 "\n"
 "options :\n"
 "	-h: print this help\n"
-"	-v: increase/decrease verbosity\n"
 "	-c: use color\n"
+"	-v: increase/decrease verbosity\n"
 "	-n: do not display the field name\n"
 "	-o: comma separated list of field to display\n"
 "	-g: displays the contents field as graph\n"
@@ -643,14 +643,14 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:cno:grd:t:p:", &l) ;
+			int opt = getopt_args(argc,argv, ">hzv:cno:grd:t:p:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
 			{
 				case 'h' : 	info_help(); return 0 ;
 				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
-				case 'c' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
+				case 'z' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
 				case 'n' :	NOFIELD = 0 ; break ;
 				case 'o' : 	legacy = 0 ; info_parse_options(l.arg,what) ; break ;
 				case 'g' :	GRAPH = 1 ; break ;
@@ -658,6 +658,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 				case 'd' : 	if (!uint0_scan(l.arg, &MAXDEPTH)) log_usage(USAGE) ; break ;
 				case 't' : 	tname = l.arg ; break ;
 				case 'p' : 	if (!uint0_scan(l.arg, &nlog)) log_usage(USAGE) ; break ;
+				case 'c' :	log_die(LOG_EXIT_SYS,"deprecated option -- please use -z instead") ;
 				default :   log_usage(USAGE) ; 
 			}
 		}

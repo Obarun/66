@@ -38,7 +38,7 @@
 #include <66/resolve.h>
 #include <66/parser.h>
 
-#define USAGE "66-update [ -h ] [ -c ] [ -v verbosity ] [ -l live ] [ -d ] tree(s)"
+#define USAGE "66-update [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -d ] tree(s)"
 
 static stralloc WORKDIR = STRALLOC_ZERO ;
 static uint8_t DRYRUN = 0 ;
@@ -50,7 +50,7 @@ static inline void info_help (void)
 "\n"
 "options :\n"
 "	-h: print this help\n"
-"	-c: use color\n"
+"	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n"
 "	-d: dry run\n"
@@ -195,7 +195,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		subgetopt_t l = SUBGETOPT_ZERO ;
 		for (;;)
 		{
-			int opt = subgetopt_r(argc,argv, "hv:l:cd", &l) ;
+			int opt = subgetopt_r(argc,argv, "hzv:l:dc", &l) ;
 			
 			if (opt == -1) break ;
 			switch (opt)
@@ -205,8 +205,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 'l' : 	if (!stralloc_cats(&info.live,l.arg)) log_die_nomem("stralloc") ;
 							if (!stralloc_0(&info.live)) log_die_nomem("stralloc") ;
 							break ;
-				case 'c' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
+				case 'z' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
 				case 'd' :  DRYRUN = 1 ; break ;
+				case 'c' :	log_die(LOG_EXIT_SYS,"deprecated option -- please use -z instead") ;
 				default	:	log_usage(USAGE) ; 
 			}
 		}

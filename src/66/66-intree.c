@@ -79,7 +79,7 @@ info_opts_map_t const opts_tree_table[] =
 #define checkopts(n) if (n >= MAXOPTS) log_die(100, "too many options")
 #define DELIM ','
 
-#define USAGE "66-intree [ -h ] [ -v verbosity ] [ -l live ] [ -c ] [ -n ] [ -o name,init,enabled,... ] [ -g ] [ -d depth ] [ -r ] tree"
+#define USAGE "66-intree [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -n ] [ -o name,init,enabled,... ] [ -g ] [ -d depth ] [ -r ] tree"
 
 static inline void info_help (void)
 {
@@ -88,9 +88,9 @@ static inline void info_help (void)
 "\n"
 "options :\n"
 "	-h: print this help\n"
+"	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n"
-"	-c: use color\n"
 "	-n: do not display the names of fields\n"
 "	-o: comma separated list of field to display\n"
 "	-g: displays the contents field as graph\n"
@@ -498,14 +498,14 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:cno:grd:l:", &l) ;
+			int opt = getopt_args(argc,argv, ">hzv:no:grd:l:c", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
 			{
 				case 'h' : 	info_help(); return 0 ;
 				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
-				case 'c' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
+				case 'z' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
 				case 'n' :	NOFIELD = 0 ; break ;
 				case 'o' : 	legacy = 0 ; info_parse_options(l.arg,what) ; break ;
 				case 'g' :	GRAPH = 1 ; break ;
@@ -514,6 +514,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 				case 'l' : 	if (!stralloc_cats(&live,l.arg)) log_usage(USAGE) ;
 							if (!stralloc_0(&live)) log_usage(USAGE) ;
 							break ;
+				case 'c' :	log_die(LOG_EXIT_SYS,"deprecated option -- please use -z instead") ;
 				default : 	log_usage(USAGE) ; 
 			}
 		}
