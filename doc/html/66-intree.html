@@ -24,15 +24,14 @@
 <h2>Interface </h2>
 
 	<pre>
-	66-intree [ -h ] [ -v verbosity ] [ -l live ] [ -c ] [ -n ] [ -o name,init,enabled,... ] [ -g ] [ -d depth ] [ -r ] <em>tree</em>
+	66-intree [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -n ] [ -o name,init,enabled,... ] [ -g ] [ -d depth ] [ -r ] <em>tree</em>
 	</pre>
 
 <h2>Options </h2>
 
 	<ul>
-		<li> 
-			<tt>-h&nbsp;</tt>&nbsp;: prints this help.
-		</li>
+		<li> <tt>-h&nbsp;</tt>&nbsp;: prints this help.</li>
+        <li> <tt>-z&nbsp;</tt>&nbsp;: use color.</li>
 	 <li>
         <tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
         the verbosity of the command. 
@@ -46,9 +45,6 @@
 			also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
 			option to <tt>./configure</tt>. An existing absolute path is expected and
 			should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
-		</li>
-		<li> 
-			<tt>-c&nbsp;</tt>&nbsp;: enable colorization.
 		</li>
 		<li> 
 			<tt>-n&nbsp;</tt>&nbsp;: do not display the field name(s) specified.

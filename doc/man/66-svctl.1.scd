@@ -6,7 +6,7 @@
 
 # SYNOPSYS
 
-66-svctl [ *-h* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] [ *-T* _timeout_ ] [ *-n* _death_ ] [ *-u* | *-d* | *-r* | *-K* | *-X* ] _service..._
+66-svctl [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] [ *-T* _timeout_ ] [ *-n* _death_ ] [ *-u* | *-d* | *-r* | *-K* | *-X* ] _service..._
 
 # DESCRIPTION
 
@@ -23,6 +23,9 @@ The command is sent to the _selection_ asynchronously.
 
 *-h*
 	Prints this help.
+
+*-z*
+	use color.
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++

@@ -6,7 +6,7 @@
 
 # SYNOPSIS
 
-66-disable [ *-h* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] [ *-S* ] _service_...
+66-disable [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] [ *-S* ] _service_...
 
 # DESCRIPTION
 
@@ -29,6 +29,9 @@ recursively until all dependencies are disabled.
 
 *-h*
 	Prints this help.
+
+*-z*
+	use color.
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++

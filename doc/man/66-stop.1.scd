@@ -6,7 +6,7 @@
 
 # SYNOPSYS
 
-66-stop [ *-h* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] [ *-T* _timeout_ ] [ *-u* ] [ *-X* ] [ *-K* ] _service..._
+66-stop [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] [ *-T* _timeout_ ] [ *-u* ] [ *-X* ] [ *-K* ] _service..._
 
 # DESCRIPTION
 
@@ -20,6 +20,9 @@ Multiple _services_ can be stopped by seperating their names with a space.
 
 *-h*
 	Prints this help.
+
+*-z*
+	use color.
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++

@@ -16,7 +16,7 @@
 <h1>The frontend service file</h1>
 
 	<p>
-		The <a href="https://skarnet.org/software/s6">s6</a> and <a href="https://skarnet.org/software/s6">s6-rc</a> programs each handle and use several kinds of services and different files. It is quite complex to understand and manage the relationship between all those files and services. If you're interested in the details you should read <a href="https://skarnet.org/software/s6/servicedir.html">the documentation for the s6 servicedir</a> and also about <a href="https://skarnet.org/software/s6/servicedir.html"><em>classic</em></a>, <a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html"> <em>oneshot</em>, <em>longrun</em> (also called <em>atomic</em> services), <em>bundle</em></a> and <em>module</em> services on Obarun. The frontend service file of 66 tools allows you to deal with all these different services in a centralized manner in one single place.
+		The <a href="https://skarnet.org/software/s6">s6</a> and <a href="https://skarnet.org/software/s6">s6-rc</a> programs each handle and use several kinds of services and different files. It is quite complex to understand and manage the relationship between all those files and services. If you're interested in the details you should read <a href="https://skarnet.org/software/s6/servicedir.html">the documentation for the s6 servicedir</a> and also about <a href="https://skarnet.org/software/s6/servicedir.html"><em>classic</em></a>, <a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html"> <em>oneshot</em>, <em>longrun</em> (also called <em>atomic</em> services), <em>bundle</em></a> and <a href="#module"><em>module</em></a> services on Obarun. The frontend service file of 66 tools allows you to deal with all these different services in a centralized manner in one single place.
 		<br>
 		By default 66 tools expects to find any service files in <tt>%%service_system%%</tt> although this can be changed at compile time by passing the <tt>--with-service-path=<em>DIR</em></tt> option to <tt>./configure.</tt>
 	</p>
@@ -254,7 +254,7 @@ MYKEY=MYVALUE</pre>
    specific tasks to get done before running the daemon, "classic" is the best pick.</p><br>
  
  <br><hr style="border: 1px dashed #000000">
-
+ 
  <li><h4>@name</h4></li>
  <h5>Corresponds to the <em>name of the service directory</em> of s6 and s6-rc programs.</h5>
  <p>Name of the service.</p>
@@ -273,6 +273,18 @@ MYKEY=MYVALUE</pre>
        <pre>@name = mine-@I</pre>
        <p>is not for a frontend service file named tty@.</p>
    </li>
+  </ul>
+ 
+ <br><hr style="border: 1px dashed #000000">
+
+ <li><h4>@version</h4></li>
+ <h5>Without equivalent, this key is unique to 66 tools.</h5>
+ <p>Version number of the service.</p>
+ <p><tt>mandatory</tt> : yes (!)</p>
+ <p><tt>syntax</tt> : inline</p>
+ <p><tt>valid values</tt> :</p>
+  <ul>
+    <li>Any valid number</li>
   </ul>
  
  <br><hr style="border: 1px dashed #000000">
@@ -316,7 +328,7 @@ MYKEY=MYVALUE</pre>
  <p><tt>valid values</tt> :</p>
   <ul>
    <li>The <em>name</em> of any valid service with type 
-	<tt>bundle</tt>, <tt>longrun</tt> or <tt>oneshot</tt>. Services of type <tt>classic</tt>
+	<tt>bundle</tt>, <tt>longrun</tt>, <tt>oneshot</tt> or <tt>module</tt>. Services of type <tt>classic</tt>
 	are not allowed.
 	<br>The <em>order is of importance</em> (!). If fooA depends on fooB and fooB
 	depends on fooC the order needs to be: 
@@ -335,6 +347,11 @@ MYKEY=MYVALUE</pre>
    </li>
    
  </ul>
+ <p>A service can be commented out by placing the number sign '#' at the
+    begin of the name like this:</p>
+    <pre>@depends = ( fooA #fooB fooC)</pre>
+ 
+ <br><hr style="border: 1px dashed #000000">
  
  <li><h4>@optsdepends</h4></li>
  <h5>Without equivalent, this key is unique to 66 tools.</h5>
@@ -345,7 +362,7 @@ MYKEY=MYVALUE</pre>
  <p><tt>valid values</tt> :</p>
   <ul>
    <li>The <em>name</em> of any valid service with type 
-	<tt>bundle</tt>, <tt>longrun</tt> or <tt>oneshot</tt>. Services of type <tt>classic</tt>
+	<tt>bundle</tt>, <tt>longrun</tt>, <tt>oneshot</tt> or <tt>module</tt>. Services of type <tt>classic</tt>
 	are not allowed.
 	A service declared as optional dependencies is not mandatory. 
 	The parser will look at all trees if the corresponding service is
@@ -373,6 +390,11 @@ MYKEY=MYVALUE</pre>
 	treeB then treeA. <tt><a href="66-intree.html">66-intree</a></tt> can give you
 	the start order with the field <tt>Start after</tt>.
    </p>
+    <p>A service can be commented out by placing the number sign '#' at the
+    begin of the name like this:</p>
+    <pre>@optsdepends = ( fooA #fooB fooC)</pre>
+
+<br><hr style="border: 1px dashed #000000">
 
  <li><h4>@extdepends</h4></li>
  <h5>Without equivalent, this key is unique to 66 tools.</h5>
@@ -383,7 +405,7 @@ MYKEY=MYVALUE</pre>
  <p><tt>valid values</tt> :</p>
    <ul>
    <li>The <em>name</em> of any valid service with type 
-	<tt>bundle</tt>, <tt>longrun</tt> or <tt>oneshot</tt>. Services of type <tt>classic</tt>
+	<tt>bundle</tt>, <tt>longrun</tt>, <tt>oneshot</tt> or <tt>module</tt>. Services of type <tt>classic</tt>
 	are not allowed.
 	A service declared as an external dependencies is mandatory. 
 	The parser will search through all trees whether the corresponding service is
@@ -411,22 +433,28 @@ MYKEY=MYVALUE</pre>
 	declared on treeB, it's the responsibility of the sysadmin to start first
 	treeB then treeA. <tt><a href="66-intree.html">66-intree</a></tt> will give you
 	the start order with the field <tt>Start after</tt>.</p>
- 
+    
+     <p>A service can be commented out by placing the number sign '#' at the
+    begin of the name like this:</p>
+    <pre>@extdepends = ( fooA #fooB fooC)</pre>
+    
  <br><hr style="border: 1px dashed #000000">
 
  <li><h4>@contents</h4></li>
  <h5>Corresponds to the file "<em>contents</em>" of s6-rc programs.</h5>
  <p>Declare the contents of a bundle service.</p>
  <p><tt>mandatory</tt> : yes (!)&#8212;for services of type <tt>bundle</tt>.
- <em>Optional</em> for services of type <tt>oneshot</tt> or <tt>longrun</tt>.
- No effect at all for services of type <tt>classic</tt>.</p>
+ Not allowed for all other services type.</p>
  <p><tt>syntax</tt> : bracket</p>
  <p><tt>valid values</tt> :</p>
   <ul>
-   <li>The name of any valid service of type <tt>bundle</tt>, <tt>longrun</tt> or <tt>oneshot</tt>. Services of type <tt>classic</tt>
+   <li>The name of any valid service of type <tt>bundle</tt>, <tt>longrun</tt>, <tt>oneshot</tt> or <tt>module</tt>. Services of type <tt>classic</tt>
 	are not allowed.
    </li>
   </ul>
+   <p>A service can be commented out by placing the number sign '#' at the
+    begin of the name like this:</p>
+    <pre>@contents = ( fooA #fooB fooC)</pre>
  
  <br><hr style="border: 1px dashed #000000">
 
@@ -753,8 +781,8 @@ same behaviour. -->
    <li>Any valid path on the system.</li>
    <p>The directory where to save the log file. This directory is automatically created.
    The current user of the process needs to have sufficient permissions on the destination directory 
-   to be able to create it. The default directory is <tt>/var/log/66/servicename</tt> for <tt>root</tt> and
-  <tt>$HOME/.66/log/servicename</tt> for any regular user. The default can also be changed at compile-time by 
+   to be able to create it. The default directory is <tt>%%system_log%%/servicename</tt> for <tt>root</tt> and
+  <tt>$HOME/%%user_log%%/servicename</tt> for any regular user. The default can also be changed at compile-time by 
   passing the <tt>--with-system-logpath=<em>DIR</em></tt> option 
   for root and <tt>--with-user-logpath=<em>DIR</em></tt> for a user to <tt>./configure.</tt></p>
   </ul>
@@ -1030,31 +1058,64 @@ for it in your <tt>@execute</tt> field.</p>
 	</p>
 <br><hr>
 
-<h2 id="module">Module service file creation</h2>
+<h2 id="module">Module service creation</h2>
 
     <p>A module can be considered as an <tt><a href="#instance">instantiated</a></tt> 
     service. It works as the same way concerning the frontend file but 
-    allow to configure a set of differents kind of services before executing 
+    allows to configure a set of differents kind of services before executing 
     the enable process. Also, the set of the services can be configured 
     with the conjonction of a script called <tt>configure</tt> which it can be 
     made on any language.</p>
 
     <p>A module is define with two elements: an instantiated frontend service 
     file at %%service_system%% and a directory at %%service_module%%. 
-    The name of the frontend and the directory <b>must</b> be the same. 
+    The name of the frontend and the name of the directory <b>must</b> be the same. 
     For example if the frontend is named foo@, the directory of the module
     must be foo@.</p>
     
     <p>The module directory can contain a sub-directory named <tt>.configure</tt> 
     with an <b>executable</b> file script named <tt>configure</tt> inside. For example,
     foo@/.configure/configure. The sub-directory <b>must</b> be named
-    <tt>.configure</tt> and the file scripts <b>must</b> be named <tt>configure</tt>.</p>
+    <tt>.configure</tt> and the file script <b>must</b> be named <tt>configure</tt>.</p>
     
     <p>It's up to you to write the <tt>configure</tt> script file with the
     language of your choice as long as you define a correct <tt>shebang</tt>.</p>
     
     <p>The <tt>configure</tt> script is launched after the parse of the 
     frontend file meaning all regex on directories and files is already made.</p>
+    
+    <h3>A word about the <a href="#main">[main]</a> section with the module type</h3>
+    <p>The valid field in section <a href="#main">[main]</a> are:</p>
+    <ul>
+        <li>
+            @type
+        </li>
+        <li>
+            @description
+        </li>
+        <li>
+            @name
+        </li>
+        <li>
+            @version
+        </li>
+        <li>
+            @user
+        </li>
+        <li>
+            @depends
+        </li>
+        <li>
+            @optsdepends
+        </li>
+        <li>
+            @extdepends
+        </li>
+        <li>
+            @hiercopy
+        </li>
+    </ul>
+    <p>All other fields from <a href="#main">[main]</a> section are not allowed.</p>
 <br><hr>
 
 <h2 id="proto">Prototype of a frontend file</h2>

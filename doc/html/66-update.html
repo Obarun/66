@@ -32,7 +32,7 @@
 <h2>Interface</h2>
 
 	<pre>
-	66-udpate [ -h ] [ -v <em>verbosity</em> ] [ -c ] [ -l <em>live</em> ] [ -d ] <em>tree</em>
+	66-udpate [ -h ] [ -z ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -d ] <em>tree</em>
 	</pre>
     <p>
         If no tree is given, all trees of the owner (root or user) of the process will be processed.
@@ -42,10 +42,8 @@
 <h2>Options</h2>
 
 	<ul>
-		<li>
-			<tt><b>-h</b></tt> : print this help.
-		</li>
-
+		<li> <tt>-h&nbsp;</tt>&nbsp;: print this help.</li>
+        <li> <tt>-z&nbsp;</tt>&nbsp;: use color. </li>
 	 <li>
         <tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
         the verbosity of the command. 
@@ -66,9 +64,6 @@
 		</li>
 
 		<li> 
-			<tt>-c&nbsp;</tt>&nbsp;: enable colorization.
-		</li>
-       	<li> 
 			<tt>-d&nbsp;</tt>&nbsp;: dry run. Performs operation without 
             modify the current state of the system. All command's output will 
             be prefixed by "dry run do: " sentence. It's a good idea to 

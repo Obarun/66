@@ -6,7 +6,7 @@
 
 # SYNOPSIS
 
-66-parser [ *-h* ] [ *-v* _verbosity_ ] [ *-f* ] [ *-c* | *-C* ] _service destination_
+66-parser [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-f* ] [ *-c* | *-C* ] _service destination_
 
 # DESCRIPTION
 
@@ -20,6 +20,9 @@ An absolute path is expected for _service_ and _destination_.
 
 *-h*
 	Prints this help.
+
+*-z*
+	use color.
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++
@@ -43,7 +46,7 @@ An absolute path is expected for _service_ and _destination_.
 key of the given frontend file. This tool is maily intended for debugging 
 purpose and to see the result of a parsing process before actually enabling 
 the service on the system. This tool use the exact same parser as *66-enable* 
-which by default writes the configuration file to *%%service_sysconf%%*/_service_name_. 
+which by default writes the configuration file to *%%service_admconf%%*/_service_name_. 
 That's mean that a corresponding file will be overwritten. To avoid this, 
 it writes the configuration file at _destination/env/_ directory and adjust 
 the resulting *run/finish* file to match the configuration file path.

@@ -6,7 +6,7 @@
 
 # SYNOPSYS
 
-66-tree [ *-h* ] [ *-v* _verbosity_ ] [ -l ] [ *-n* | *-R* ] [ *-a* | *-d* ] [ *-c* _clone_ ] [ *-S* _after_tree_ ] [ *-E* | *-D* ] [ *-U* ] [ *-C* ] _tree_
+66-tree [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ -l ] [ *-n* | *-R* ] [ *-a* | *-d* ] [ *-c* _clone_ ] [ *-S* _after_tree_ ] [ *-E* | *-D* ] [ *-U* ] [ *-C* ] _tree_
 
 # DESCRIPTION
 
@@ -19,6 +19,9 @@ what trees are currently available on the system use the *66-intree*(1) tool.
 
 *-h*
 	Prints this help.
+
+*-z*
+	use color.
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++
