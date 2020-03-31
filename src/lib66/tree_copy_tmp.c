@@ -65,12 +65,12 @@ int tree_copy_tmp(char const *workdir, ssexec_t *info)
 	/** svc */
 	if (rm_rf(svdir) < 0)
 	{
-		if (!ss_resolve_pointo(&saresolve,info,CLASSIC,SS_RESOLVE_SRC))
+		if (!ss_resolve_pointo(&saresolve,info,TYPE_CLASSIC,SS_RESOLVE_SRC))
 		{
 			err(&e,0,saresolve.s,swap.s,svdir) ;
 			goto err ;
 		}
-		if (!ss_resolve_pointo(&swap,info,CLASSIC,SS_RESOLVE_BACK))
+		if (!ss_resolve_pointo(&swap,info,TYPE_CLASSIC,SS_RESOLVE_BACK))
 		{
 			err(&e,1,saresolve.s,swap.s,svdir) ;
 			goto err ;
@@ -89,12 +89,12 @@ int tree_copy_tmp(char const *workdir, ssexec_t *info)
 	svdir[svdirlen + SS_DB_LEN] = 0 ;
 	if (rm_rf(svdir) < 0)
 	{
-		if (!ss_resolve_pointo(&saresolve,info,LONGRUN,SS_RESOLVE_SRC))
+		if (!ss_resolve_pointo(&saresolve,info,TYPE_LONGRUN,SS_RESOLVE_SRC))
 		{
 			err(&e,0,saresolve.s,swap.s,svdir) ;
 			goto err ;
 		}
-		if (!ss_resolve_pointo(&swap,info,LONGRUN,SS_RESOLVE_BACK))
+		if (!ss_resolve_pointo(&swap,info,TYPE_LONGRUN,SS_RESOLVE_BACK))
 		{
 			err(&e,1,saresolve.s,swap.s,svdir) ;
 			goto err ;

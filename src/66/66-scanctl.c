@@ -24,7 +24,7 @@
 
 #define SIGSIZE 64
 
-#define USAGE "66-scanctl [ -h ] [ -v verbosity ] [ -l live ] [ -o owner ] signal"
+#define USAGE "66-scanctl [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -o owner ] signal"
 
 static inline void info_help (void)
 {
@@ -33,6 +33,7 @@ static inline void info_help (void)
 "\n"
 "options :\n"
 "	-h: print this help\n" 
+"	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n"
 "	-o: handle scandir of owner\n"
@@ -111,14 +112,16 @@ int main(int argc, char const *const *argv)
 	uid_t owner = MYUID ;
 	char const *signal ;
 	stralloc scandir = STRALLOC_ZERO ;
-		
+	
+	log_color = &log_color_disable ;
+	
 	PROG = "66-scanctl" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:l:o:", &l) ;
+			int opt = getopt_args(argc,argv, ">hv:l:o:z", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
@@ -132,6 +135,7 @@ int main(int argc, char const *const *argv)
 						if (MYUID) log_die(LOG_EXIT_USER, "only root can use -o options") ;
 						else if (!youruid(&owner,l.arg)) log_dieusys(LOG_EXIT_SYS,"get uid of: ",l.arg) ;
 						break ;
+				case 'z' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
 				default : log_usage(USAGE) ; 
 			}
 		}

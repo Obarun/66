@@ -40,7 +40,7 @@ int main (int argc, char const *const *argv)
 {
 	size_t mountpoints[MAXLINES], tmplen = strlen(SS_LIVE), len = 0 ;
 	char tmpdir[tmplen + 1] ;
-	dirname(tmpdir,SS_LIVE) ;
+	ob_dirname(tmpdir,SS_LIVE) ;
 	len = strlen(tmpdir) ;
 	if (tmpdir[len-1] == '/')
 		tmpdir[len-1] = 0 ;

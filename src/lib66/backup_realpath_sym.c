@@ -33,7 +33,7 @@ int backup_realpath_sym(stralloc *sa, ssexec_t *info,unsigned int type)
 	size_t typelen ;
 	char *ptype = 0 ;
 	
-	if (type == CLASSIC)
+	if (type == TYPE_CLASSIC)
 	{
 		ptype = SS_SYM_SVC ;
 		typelen = SS_SYM_SVC_LEN;

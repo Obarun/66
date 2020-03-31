@@ -33,51 +33,36 @@
 #include <66/parser.h>
 
 
-int parser(sv_alltype *service,stralloc *src,char const *svname)
+int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype)
 {
-	int r , svtype = -1 ;
+	int r ;
 	size_t i = 0 ;
 	section_t sasection = SECTION_ZERO ;
 	genalloc ganocheck = GENALLOC_ZERO ;
 	sasection.file = svname ;
-	
+
 	r = section_get_range(&sasection,src) ;
 	if (r <= 0){
 		log_warnu("parse section of service file: ",svname) ;
 		goto err ;
 	}
-	if (!sasection.idx[MAIN])
+	if (!sasection.idx[SECTION_MAIN])
 	{
 		log_warn("missing section [main] in service file: ", svname) ;
 		goto err ;
 	}
-	if (!key_get_range(&ganocheck,&sasection,&svtype)) goto err ;
-	if (svtype < 0)
-	{
-		log_warn("invalid value for key: ",get_keybyid(TYPE)," in service file: ",svname) ;
-		goto err ;
-	}
-	if (svtype != BUNDLE && !sasection.idx[START])
+
+	if ((svtype != TYPE_BUNDLE && svtype != TYPE_MODULE) && !sasection.idx[SECTION_START])
 	{
 		log_warn("missing section [start] in service file: ", svname) ;
 		goto err ;
 	}
+	if (!key_get_range(&ganocheck,&sasection)) goto err ;
 	if (!genalloc_len(keynocheck,&ganocheck)){
 		log_warn("empty service file: ",svname) ;
 		goto err ;
 	}
-	for (i = 0;i < genalloc_len(keynocheck,&ganocheck);i++)
-	{
-		uint32_t idsec = genalloc_s(keynocheck,&ganocheck)[i].idsec ;
-		for (unsigned int j = 0;j < total_list_el[idsec] && total_list[idsec].list > 0;j++)
-		{
-			if (!get_mandatory(&ganocheck,idsec,j))
-			{
-				log_warn("mandatory key is missing in service file: ",svname) ; 
-				goto err ;
-			}
-		}
-	}
+
 	for (i = 0;i < genalloc_len(keynocheck,&ganocheck);i++)
 	{
 		if (!nocheck_toservice(&(genalloc_s(keynocheck,&ganocheck)[i]),svtype,service))
@@ -86,7 +71,10 @@ int parser(sv_alltype *service,stralloc *src,char const *svname)
 			goto err ;
 		}
 	}
-	if ((service->opts[1]) && (svtype == LONGRUN))
+
+	if (!check_mandatory(service,&sasection)) goto err ;
+
+	if ((service->opts[1]) && (svtype == TYPE_LONGRUN))
 	{
 		if (!add_pipe(service, &deps))
 		{
@@ -94,7 +82,7 @@ int parser(sv_alltype *service,stralloc *src,char const *svname)
 			goto err ;
 		} 
 	}
-	
+
 	section_free(&sasection) ;
 	genalloc_deepfree(keynocheck,&ganocheck,keynocheck_free) ;
 	return 1 ;

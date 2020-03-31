@@ -6,7 +6,7 @@
 
 # SYNOPSYS
 
-66-scandir [ *-h* ] [ *-v* _verbosity_ ] [ *-b* ] [ *-l* _live_ ] [* -t* _rescan_ ] [ *-L* _log_user_ ] [ *-s* _skel_ ] [ *-e* _environment_ ] [ *-c* | *-r* | *-u* ] _owner_
+66-scandir [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-b* ] [ *-l* _live_ ] [* -t* _rescan_ ] [ *-L* _log_user_ ] [ *-s* _skel_ ] [ *-e* _environment_ ] [ *-c* | *-r* | *-u* ] _owner_
 
 # DESCRIPTION
 
@@ -21,6 +21,9 @@ explicitely set then the user of the current process will be used instead.
 
 *-h*
 	Prints this help.
+
+*-z*
+	use color.
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++
@@ -56,7 +59,7 @@ explicitely set then the user of the current process will be used instead.
 *-s* _skel_
 	An absolute path. Directory  containing _skeleton_ files. This option is
 	not meant to be used directly even with root. *66-boot*(8) program calls it
-	at during the boot process.
+	at during the boot process. Default is %%skel%%.
 
 *-L* _log_user_
 	Will run as the catch-all logger as _log_user_ user. Default is *%%s6log_user%%*.

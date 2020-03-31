@@ -157,7 +157,7 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 	for (;*argv;argv++)
 	{
 		char const *name = *argv ;
-		if (!ss_resolve_check(sares.s,name)) log_die(LOG_EXIT_USER,name," is not enabled") ;
+		if (!ss_resolve_check(sares.s,name)) log_info_return(LOG_EXIT_ZERO,name," is not enabled") ;
 		if (!ss_resolve_read(&res,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
 		if (!ss_resolve_append(&gares,&res)) log_dieusys(LOG_EXIT_SYS,"append resolve file of: ",name) ;
 	}
@@ -189,7 +189,7 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 		if (UNSUP) unsup = 1 ;
 		if (sta.unsupervise) unsup = 1 ;
 		append:		
-		if (pres->type == CLASSIC)
+		if (pres->type == TYPE_CLASSIC)
 		{
 			if (unsup)
 			{

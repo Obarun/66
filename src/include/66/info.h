@@ -25,6 +25,7 @@
 #define SS_INFO_H
 
 #define INFO_FIELD_MAXLEN 30
+#define INFO_NKEY 100
 
 typedef struct depth_s depth_t ;
 struct depth_s

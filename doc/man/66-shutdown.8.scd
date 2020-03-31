@@ -49,8 +49,8 @@ _time_ must follow the following format: [ *now* | [+]_mins_ | _hh_:_mm_ ]
 
 *-a*
 	Access control. The shutdown sequence will only be launched if one of the
-	users listed in */etc/shutdown.allow* is currently logged in (as tracked by
-	utmp). */etc/shutdown.allow* is a text file which accepts one user per
+	users listed in *%%skel%%/shutdown.allow* is currently logged in (as tracked by
+	utmp). *%%skel%%/shutdown.allow* is a text file which accepts one user per
 	line. Lines starting with *#* are comments.
 
 *-t* _sec_
@@ -87,7 +87,7 @@ _time_ must follow the following format: [ *now* | [+]_mins_ | _hh_:_mm_ ]
 
 - The *66-shutdown* binary is not meant to be called directly. It shuold
   always be referenced by the *shutdown* _skeloton_ file installed by default
-  at *%%sysconfdir%%* directory. The binary *should be copied or symlinked* by
+  at *%%skel%%* directory. The binary *should be copied or symlinked* by
   the administrator into the binary directory of your system.
 
 - *-f* and *-F* options are only accepted for compatibility. LSB says they are

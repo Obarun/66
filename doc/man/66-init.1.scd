@@ -5,7 +5,7 @@
 
 # SYNOPSYS
 
-66-init [ *-h* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] *classic* | *database* | *both*
+66-init [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] *classic* | *database* | *both*
 
 # DESCRIPTION
 
@@ -19,6 +19,9 @@ Administrators should invoke *66-init* only once.
 
 *-h*
 	Prints this help.
+
+*-z*
+	use color.
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++

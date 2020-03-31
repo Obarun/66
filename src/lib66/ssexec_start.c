@@ -13,7 +13,7 @@
  */
  
 #include <string.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
@@ -49,7 +49,8 @@ int svc_sanitize(ssexec_t *info, char const *const *envp)
 	unsigned int reverse = 0 ;
 	int r ;
 	stralloc sares = STRALLOC_ZERO ;
-	if (!ss_resolve_pointo(&sares,info,CLASSIC,SS_RESOLVE_SRC))		
+
+	if (!ss_resolve_pointo(&sares,info,TYPE_CLASSIC,SS_RESOLVE_SRC))
 	{
 		log_warnu("set revolve pointer to source") ;
 		goto err;
@@ -247,7 +248,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 	for (;*argv;argv++)
 	{
 		char const *name = *argv ;
-		if (!ss_resolve_check(sares.s,name)) log_die(LOG_EXIT_USER,name," is not enabled") ;
+		if (!ss_resolve_check(sares.s,name)) log_info_return(LOG_EXIT_ZERO,name," is not enabled") ;
 		if (!ss_resolve_read(&res,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
 		if (!ss_resolve_append(&gares,&res)) log_dieusys(LOG_EXIT_SYS,"append services selection with: ",name) ;
 	}
@@ -284,7 +285,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 		if (sta.init){ reload = 0 ; init = 1 ; }
 		
 		append:		
-		if (pres->type == CLASSIC)
+		if (pres->type == TYPE_CLASSIC)
 		{
 			if (reload)
 			{

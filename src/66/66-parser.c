@@ -34,7 +34,7 @@
 #include <66/parser.h>
 #include <66/constants.h>
 
-#define USAGE "66-parser [ -h ] [ -v verbosity ] [ -f ] [ -c|C ] service destination"
+#define USAGE "66-parser [ -h ] [ -z ] [ -v verbosity ] [ -f ] [ -c|C ] service destination"
 
 static inline void info_help (void)
 {
@@ -42,7 +42,8 @@ static inline void info_help (void)
 "66-parser <options> service destination\n"
 "\n"
 "options :\n"
-"	-h: print this help\n" 
+"	-h: print this help\n"
+"	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-f: force to overwrite existing destination\n"
 "	-c: merge it environment configuration file from frontend file\n"
@@ -82,15 +83,18 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	char const *sv  ;
 	char name[4095+1] ;
 	char srcdir[4095+1] ;
-	int type ;
+	unsigned int type ;
 	uint8_t force = 0 , conf = 0 ;
+
+	log_color = &log_color_disable ;
+
 	PROG = "66-parser" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:fcC", &l) ;
+			int opt = getopt_args(argc,argv, ">hv:fcCz", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
@@ -100,6 +104,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 'f' : 	force = 1 ; break ;
 				case 'c' : 	if (conf) log_usage(USAGE) ; conf = 1 ; break ;
 				case 'C' : 	if (conf) log_usage(USAGE) ; conf = 2 ; break ;
+				case 'z' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
 				default : 	log_usage(USAGE) ; 
 			}
 		}
@@ -110,11 +115,15 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	sv = argv[0] ;
 	dir = argv[1] ;
+
 	if (dir[0] != '/') log_die(LOG_EXIT_USER, "directory: ",dir," must be an absolute path") ;
 	if (sv[0] != '/') log_die(LOG_EXIT_USER, "service: ",sv," must be an absolute path") ;
-	if (!basename(name,sv)) log_dieu(LOG_EXIT_SYS,"set name");
+
+	if (!ob_basename(name,sv)) log_dieu(LOG_EXIT_SYS,"set name");
+
 	size_t svlen = strlen(sv) ;
 	size_t namelen = strlen(name) ;
+
 	char tmp[svlen + 1 + namelen + 1] ;
 	r = scan_mode(sv,S_IFDIR) ;
 	if (r > 0)
@@ -125,33 +134,43 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		tmp[svlen + 1 + namelen] = 0 ;
 		sv = tmp ;
 	}
-	if (!dirname(srcdir,sv)) log_dieu(LOG_EXIT_SYS,"set directory name") ;
+
+	if (!ob_dirname(srcdir,sv)) log_dieu(LOG_EXIT_SYS,"set directory name") ;
+
 	check_dir(dir,force,0) ;
-	if (!stralloc_cats(&insta,name) ||
-	!stralloc_0(&insta)) log_die_nomem("stralloc") ;
+
+	if (!auto_stra(&insta,name)) log_die_nomem("stralloc") ;
+
 	ista = instance_check(insta.s) ;
 	if (!ista) log_die(LOG_EXIT_SYS,"invalid instance name: ",insta.s) ;
 	if (ista > 0)
 	{
-		if (!instance_create(&src,insta.s,SS_INSTANCE,srcdir,ista))
+		if (!instance_splitname(&insta,name,ista,SS_INSTANCE_TEMPLATE)) log_dieu(LOG_EXIT_SYS,"split instance name of: ",name) ;
+	}
+
+	if (!read_svfile(&src,insta.s,srcdir)) log_dieusys(LOG_EXIT_SYS,"open: ",sv) ;
+
+	if (!get_svtype(&service,src.s)) log_dieu(LOG_EXIT_SYS,"get service type of: ",sv) ;
+
+	if (ista > 0)
+	{
+		if (!instance_create(&src,name,SS_INSTANCE,ista))
 			log_dieu(LOG_EXIT_SYS,"create instance service: ",name) ;
 		memcpy(name,insta.s,insta.len) ;
 		name[insta.len] = 0 ;
 		
 	}
-	else if (!read_svfile(&src,name,srcdir)) log_dieusys(LOG_EXIT_SYS,"open: ",sv) ;
-		
-	log_info("Parsing service file: ", sv) ;
-	if (!parser(&service,&src,sv)) log_dieu(LOG_EXIT_SYS,"parse service file: ",sv) ;
-	if (!stralloc_cats(&dst,dir) ||
-	!stralloc_cats(&dst,"/") ||
-	!stralloc_cats(&dst,name) ||
-	!stralloc_0(&dst)) log_die_nomem("stralloc") ;
+	
+	if (!parser(&service,&src,sv,service.cname.itype)) log_dieu(LOG_EXIT_SYS,"parse service file: ",sv) ;
+
+	if (!auto_stra(&dst,dir,"/",name)) log_die_nomem("stralloc") ;
+
 	check_dir(dst.s,force,1) ;
-	log_info("Write service file: ", name," at: ",dst.s) ;
+
 	type = service.cname.itype ;
 	srcdirlen = strlen(srcdir) ;
 	service.src = keep.len ;
+
 	if (!stralloc_catb(&keep,srcdir,srcdirlen + 1)) log_die_nomem("stralloc") ;
 	/**quick fix
 	 * WIP on parser this will change soon*/
@@ -161,7 +180,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		stralloc saname = STRALLOC_ZERO ;
 		if (!stralloc_cats(&saname,keep.s + service.cname.name)) log_die_nomem("stralloc") ;
 		
-		if (!instance_splitname(&sainsta,name,ista,0)) log_dieu(LOG_EXIT_SYS,"split instance name: ",name) ;
+		if (!instance_splitname(&sainsta,name,ista,SS_INSTANCE_TEMPLATE)) log_dieu(LOG_EXIT_SYS,"split instance name: ",name) ;
 		if (sastr_find(&saname,sainsta.s) == -1)
 			log_die(LOG_EXIT_USER,"invalid instantiated service name: ", keep.s + service.cname.name) ;
 			
@@ -173,9 +192,11 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		service.cname.name = keep.len ;
 		if (!stralloc_catb(&keep,name,namelen + 1)) log_die_nomem("stralloc") ;
 	}
+
 	/* save and prepare environment file */
 	if (service.opts[2])
 	{
+		
 		stralloc conf = STRALLOC_ZERO ;
 		if (!stralloc_catb(&conf,dst.s,dst.len-1) ||
 		!stralloc_cats(&conf,"/env/") || 
@@ -188,31 +209,37 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (!stralloc_catb(&keep,conf.s,conf.len + 1)) log_die_nomem("stralloc") ;
 		stralloc_free(&conf) ;
 	}
+
 	switch(type)
 	{
-		case CLASSIC:
+		case TYPE_CLASSIC:
 			if (!write_classic(&service, dst.s, force, conf))
 				log_dieu(LOG_EXIT_SYS,"write: ",name) ;
 			break ;
-		case LONGRUN:
+		case TYPE_LONGRUN:
 			if (!write_longrun(&service, dst.s, force, conf))
 				log_dieu(LOG_EXIT_SYS,"write: ",name) ;
 			break ;
-		case ONESHOT:
+		case TYPE_ONESHOT:
 			if (!write_oneshot(&service, dst.s, conf))
 				log_dieu(LOG_EXIT_SYS,"write: ",name) ;
 			break ;
-		case BUNDLE:
+		case TYPE_MODULE:
+		case TYPE_BUNDLE:
 			if (!write_bundle(&service, dst.s))
 				log_dieu(LOG_EXIT_SYS,"write: ",name) ;
 			break ;
 		default: break ;
-	}	
+	}
+
+	log_info("Written successfully: ",name, " at: ",dir) ;
+
 	sv_alltype_free(&service) ;
 	stralloc_free(&keep) ;
 	stralloc_free(&deps) ;
 	stralloc_free(&src) ;
 	stralloc_free(&dst) ;
+
 	return 0 ;
 	
 }

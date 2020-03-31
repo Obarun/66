@@ -6,7 +6,7 @@
 
 # SYNOPSYS
 
-66-intree [ *-h* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-c* ] [ *-n* ] [ *-o* name,init,enabled,... ] [ *-g* ] [ *-d* _depth_ ] [ *-r* ] _tree_
+66-intree [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-n* ] [ *-o* name,init,enabled,... ] [ *-g* ] [ *-d* _depth_ ] [ *-r* ] _tree_
 
 # DESCRIPTION
 
@@ -16,6 +16,9 @@
 
 *-h*
 	Prints this help.
+
+*-z*
+	use color.
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++
@@ -30,9 +33,6 @@
 	compile time by passing the --livedir=_live_ option to *./configure*. An
 	existing absolute path is expected and should be within a writable
 	filesystem - likely a RAM filesystem. See *66-scandir*(1).
-
-*-c*
-	enable colorization.
 
 *-n*
 	do not display the field name(s) specified.

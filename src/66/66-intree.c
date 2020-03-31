@@ -42,7 +42,6 @@
 
 static unsigned int REVERSE = 0 ;
 static unsigned int NOFIELD = 1 ;
-unsigned int MAXDEPTH = 1 ;
 static unsigned int GRAPH = 0 ;
 static uid_t OWNER ;
 static char OWNERSTR[UID_FMT] ;
@@ -52,7 +51,7 @@ static stralloc live = STRALLOC_ZERO ;
 static stralloc src = STRALLOC_ZERO ;
 
 static wchar_t const field_suffix[] = L" :" ;
-static char fields[ENDOFKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
+static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
 static void info_display_name(char const *field,char const *treename) ;
 static void info_display_init(char const *field,char const *treename) ;
 static void info_display_order(char const *field,char const *treename) ;
@@ -80,7 +79,7 @@ info_opts_map_t const opts_tree_table[] =
 #define checkopts(n) if (n >= MAXOPTS) log_die(100, "too many options")
 #define DELIM ','
 
-#define USAGE "66-intree [ -h ] [ -v verbosity ] [ -l live ] [ -c ] [ -n ] [ -o name,init,enabled,... ] [ -g ] [ -d depth ] [ -r ] tree"
+#define USAGE "66-intree [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -n ] [ -o name,init,enabled,... ] [ -g ] [ -d depth ] [ -r ] tree"
 
 static inline void info_help (void)
 {
@@ -89,9 +88,9 @@ static inline void info_help (void)
 "\n"
 "options :\n"
 "	-h: print this help\n"
+"	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-l: live directory\n"
-"	-c: use color\n"
 "	-n: do not display the names of fields\n"
 "	-o: comma separated list of field to display\n"
 "	-g: displays the contents field as graph\n"
@@ -178,7 +177,7 @@ static void info_display_init(char const *field,char const *treename)
 	if (!bprintf(buffer_1,"%s%s%s",init ? log_color->valid : log_color->warning, init ? "yes":"no",log_color->off)) 
 		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 	
-	if (buffer_putsflush(buffer_1,"\n") == -1) 
+	if (buffer_putsflush(buffer_1,"\n") == -1)
 		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
 }
@@ -191,7 +190,7 @@ static void info_display_current(char const *field,char const *treename)
 	if (tree_find_current(&sacurr,base.s,OWNER))
 	{
 		char name[sacurr.len + 1] ;//be paranoid +1
-		if (!basename(name,sacurr.s)) log_dieu(LOG_EXIT_SYS,"basename of: ",sacurr.s) ;
+		if (!ob_basename(name,sacurr.s)) log_dieu(LOG_EXIT_SYS,"basename of: ",sacurr.s) ;
 		current = obstr_equal(treename,name) ;
 	}
 	if (NOFIELD) info_display_field_name(field) ;
@@ -322,24 +321,24 @@ static void info_display_symlink(char const *field, char const *treename)
 	ssexec_t info = SSEXEC_ZERO ;
 	if (!auto_stra(&info.treename,treename)) log_die_nomem("stralloc") ;
 	if (!auto_stra(&info.base,base.s)) log_die_nomem("stralloc") ;
-	int db, svc ;
+	int db , svc ;
 	size_t typelen ;
 	char type[UINT_FMT] ;
-	typelen = uint_fmt(type, BUNDLE) ;
+	typelen = uint_fmt(type, TYPE_BUNDLE) ;
 	type[typelen] = 0 ;
 	
 	char cmd[typelen + 6 + 1] ;
 	
 	auto_strings(cmd,"-t",type," -b") ;
 	db = backup_cmd_switcher(VERBOSITY,cmd,&info) ;
-	if (db < 0) log_dieusys(LOG_EXIT_SYS,"find realpath of symlink for db of tree: ",info.treename.s) ;
+	if (db < 0) log_dieu(LOG_EXIT_SYS,"find realpath of symlink for db of tree: ",info.treename.s) ;
 	
-	typelen = uint_fmt(type, CLASSIC) ;
+	typelen = uint_fmt(type, TYPE_CLASSIC) ;
 	type[typelen] = 0 ;
 		
 	auto_strings(cmd,"-t",type," -b") ;
 	svc = backup_cmd_switcher(VERBOSITY,cmd,&info) ;
-	if (svc < 0) log_dieusys(LOG_EXIT_SYS,"find realpath of symlink for svc of tree: ",info.treename.s) ;
+	if (svc < 0) log_dieu(LOG_EXIT_SYS,"find realpath of symlink for svc of tree: ",info.treename.s) ;
 
 	if (!bprintf(buffer_1,"%s%s%s%s%s%s%s%s", "svc->",!svc ? log_color->valid : log_color->warning , !svc ? "source" : "backup",log_color->off, " db->", !db ? log_color->valid : log_color->warning, !db ? "source" : "backup", log_color->off)) 
 		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
@@ -499,14 +498,14 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:cno:grd:l:", &l) ;
+			int opt = getopt_args(argc,argv, ">hzv:no:grd:l:c", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
 			{
 				case 'h' : 	info_help(); return 0 ;
 				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
-				case 'c' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
+				case 'z' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
 				case 'n' :	NOFIELD = 0 ; break ;
 				case 'o' : 	legacy = 0 ; info_parse_options(l.arg,what) ; break ;
 				case 'g' :	GRAPH = 1 ; break ;
@@ -515,6 +514,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 				case 'l' : 	if (!stralloc_cats(&live,l.arg)) log_usage(USAGE) ;
 							if (!stralloc_0(&live)) log_usage(USAGE) ;
 							break ;
+				case 'c' :	log_die(LOG_EXIT_SYS,"deprecated option -- please use -z instead") ;
 				default : 	log_usage(USAGE) ; 
 			}
 		}

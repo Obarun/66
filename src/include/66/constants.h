@@ -25,6 +25,8 @@
 #define SS_TREE_CURRENT_LEN (sizeof SS_TREE_CURRENT - 1)
 #define SS_SERVICE "service"
 #define SS_SERVICE_LEN (sizeof SS_SERVICE - 1)
+#define SS_MODULE "module"
+#define SS_MODULE_LEN (sizeof SS_MODULE - 1)
 #define SS_SCANDIR "scandir"
 #define SS_SCANDIR_LEN (sizeof SS_SCANDIR - 1)
 #define SS_TREE "tree"
@@ -113,4 +115,6 @@
 
 /** Instance */
 #define SS_INSTANCE "@I"
+#define SS_INSTANCE_TEMPLATE 0
+#define SS_INSTANCE_NAME 1
 #endif

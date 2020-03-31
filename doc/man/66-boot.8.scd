@@ -17,9 +17,9 @@
 	Prints this help.
 
 *-s* _skel_
-	Path of the skeleton files. By default this will be *%%sysconfdir%%*.
+	Path of the skeleton files. By default this will be *%%skel%%*.
 	The default can also be changed at compile time by passing the
-	*--sysconfdir=*_DIR_ option to *./configure*. This directory *must*
+	*--with-skeleton=*_DIR_ option to *./configure*. This directory *must*
 	contains the necessaries skeleton files to properly boot the machine, without it the system *will not boot*. _skel_ must be an absolute path.
 
 *-m*
@@ -105,7 +105,7 @@ not arrive.
 
 Skeleton files are mandatories and must exist on your system to be able to boot
 and shutdown the machine properly. By default those files are installed at
-*%%sysconfdir%%*. Use the *--sysconfdir=*_DIR_ option at compile time to change
+*%%skel%%*. Use the *--with-skeleton=*_DIR_ option at compile time to change
 it.
 
 - *init*++
@@ -142,19 +142,19 @@ name of the _tree_ to start. This _tree_ should contain a set of
 	  _stage2_ will start all other kind of service defined into it. It's the
 	  responsability of the administrator to correctly set this tree.
 
-	- *RCINIT=*_/etc/66/rc.init_++
+	- *RCINIT=*%%skel%%/rc.init_++
 This file is launched at the end of the _stage1_ and run as _stage2_.
 	  It call *66-init*(1) to iniatiate all service of _TREE_ except
 	  'classic' which are already initiated on the _stage1_ than invoke
 	  *66-dbctl*(1) to bring up the services. An absolute path is expected as
 	  value pointing to the name of the file to run.
 
-	- *RCSHUTDOWN=*/etc/66/rc.shutdown_++
+	- *RCSHUTDOWN=*%%skel%%/rc.shutdown_++
 This is launched when a shutdown is requested also called _stage3_. It invoke
 	  *66-all*(1) to bring down all services of _TREE_. An absolute path is
 	  expected as value pointing to the name of the file to run.
 
-	- *RCSHUTDOWNFINAL=*/etc/66/rc.shutdown_++
+	- *RCSHUTDOWNFINAL=*%%skel%%/rc.shutdown_++
 This file will be run at the very end of the shutdown procedure, after 
       all processes have been killed and all filesystems have been unmounted,
       just before the system is rebooted or the power turned off.
@@ -168,7 +168,7 @@ Ask at *s6-svscan* to perform a scan every _RESCAN_ milliseconds. It should
 	  be 0 at _stage1_ but its here just in case. It is strongly discouraged to
 	  set _RESCAN_ to a positive value under 500.
 
-	- *ISHELL=*_/etc/66/ishell_++
+	- *ISHELL=*%%skel%%/ishell_++
 Run _ISHELL_ in case of _stage2_ crash. This file try to run a *sulogin*. An
 	  absolute path is expected as value pointing to the name of the file to run.
 

@@ -6,7 +6,7 @@
 
 # SYNOPSIS
 
-66-all [ *-h* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-T* _timeout_ ] [ *-f* ] [ *-t* _tree_ ] *up* | *down*
+66-all [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-T* _timeout_ ] [ *-f* ] [ *-t* _tree_ ] *up* | *down*
 
 # DESCRIPTION
 
@@ -18,6 +18,9 @@ It is a safe wrapper around *66-start(1)* and *66-stop*(1).
 
 *-h*
 	Prints this help.
+
+*-z*
+	use color.
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++

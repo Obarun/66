@@ -15,7 +15,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
-//#include <stdio.h>
+#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
@@ -58,26 +58,17 @@ static void check_identifier(char const *name)
 
 void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORCE)
 {
-	int r ;
-	uint8_t exist = 0 ;
 	size_t i = 0, len = list->len ;
-	
+
 	stralloc sasv = STRALLOC_ZERO ;
 	stralloc parsed_list = STRALLOC_ZERO ;
 	stralloc tree_list = STRALLOC_ZERO ;
-	
+		
 	for (;i < len; i += strlen(list->s + i) + 1)
 	{
-		exist = 0 ;
-		char *name = list->s+i ;
-		size_t namelen = strlen(name) ;
-		char svname[namelen + 1] ;
-		if (!basename(svname,name)) log_dieusys(LOG_EXIT_SYS,"get basename of: ", svname) ;
-		r = parse_service_check_enabled(info,svname,FORCE,&exist) ;
-		if (!r) log_dieu(LOG_EXIT_SYS,"check enabled service: ",svname) ;
-		if (r == 2) continue ;
-		if (!parse_service_before(info,&parsed_list,&tree_list,name,nbsv,&sasv,FORCE,&exist))
-			log_dieu(LOG_EXIT_SYS,"parse service file: ",svname,": or its dependencies") ;
+		char *name = list->s + i ;
+		if (!parse_service_before(info,&parsed_list,&tree_list,name,nbsv,&sasv,FORCE))
+			log_dieu(LOG_EXIT_SYS,"parse service file: ",name,": or its dependencies") ;
 	}
 	stralloc_free(&sasv) ;
 	stralloc_free(&parsed_list) ;
@@ -92,7 +83,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 	{
 		sv_alltype_ref sv = &genalloc_s(sv_alltype,gasv)[i] ;
 		char *name = keep.s + sv->cname.name ;
-		r = write_services(info,sv, workdir,FORCE,CONF) ;
+		r = write_services(sv, workdir,FORCE,CONF) ;
 		if (!r)
 			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write service: ",name) ;
 
@@ -105,7 +96,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 		log_trace("Service written successfully: ", name) ;
 		if (sastr_cmp(tostart,name) == -1)
 		{
-			if (sv->cname.itype == CLASSIC) (*nclassic)++ ;
+			if (sv->cname.itype == TYPE_CLASSIC) (*nclassic)++ ;
 			else (*nlongrun)++ ;
 			if (!sastr_add_string(tostart,name))
 				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"stralloc") ;
@@ -157,7 +148,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	for(;*argv;argv++)
 	{
 		check_identifier(*argv) ;
-		if (ss_resolve_src_path(&sasrc,*argv,info) < 1) log_dieu(LOG_EXIT_SYS,"resolve source path of: ",*argv) ;
+		if (ss_resolve_src_path(&sasrc,*argv,info->owner) < 1) log_dieu(LOG_EXIT_SYS,"resolve source path of: ",*argv) ;
 	}
 
 	start_parser(&sasrc,info,&nbsv,FORCE) ;

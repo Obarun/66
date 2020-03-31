@@ -47,5 +47,6 @@ extern int read_svfile(stralloc *sasv,char const *name,char const *src) ;
 extern int instance_check(char const *svname) ;
 extern int instance_splitname(stralloc *sa,char const *name,int len,int what) ;
 //extern int instance_change_name(stralloc *sa,char const *template,char const *copy) ;
-extern int instance_create(stralloc *sasv,char const *svname, char const *regex, char const *src, int len) ;
+extern int instance_create(stralloc *sasv,char const *svname, char const *regex, int len) ;
+
 #endif

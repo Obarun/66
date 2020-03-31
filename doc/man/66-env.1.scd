@@ -7,12 +7,12 @@ on the options passed.
 
 # SYNOPSIS
 
-66-env [ *-h* ] [ *-v* _verbosity_ ] [ *-t* _tree_ ] [ *-d* _dir_ ] [ *-L* ] [ *-r* _key=value_ ] _service_
+66-env [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-t* _tree_ ] [ *-d* _dir_ ] [ *-L* ] [ *-r* _key=value_ ] _service_
 
 # DESCRIPTION
 
 *66-env* open and read the configuration file of _service_ find at
-*%%service_sysconf%%* by default.
+*%%service_admconf%%* by default.
 
 It display the contain of the file or replace a _key=value_ pair if requested.
 
@@ -20,6 +20,9 @@ It display the contain of the file or replace a _key=value_ pair if requested.
 
 *-h*
 	Prints this help.
+
+*-z*
+	use color.
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++

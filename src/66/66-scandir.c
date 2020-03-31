@@ -68,7 +68,7 @@ static char const *log_user = SS_LOGGER_RUNNER ;
 static unsigned int BOOT = 0 ;
 unsigned int NOTIF = 0 ;
 
-#define USAGE "66-scandir [ -h ] [ -v verbosity ] [ -b ] [ -l live ] [ -d notif ] [ -t rescan ] [ -L log_user ] [ -s skel ] [ -e environment ] [ -c | u | r ] owner"
+#define USAGE "66-scandir [ -h ] [ -z ] [ -v verbosity ] [ -b ] [ -l live ] [ -d notif ] [ -t rescan ] [ -L log_user ] [ -s skel ] [ -e environment ] [ -c | u | r ] owner"
 
 static inline void info_help (void)
 {
@@ -76,7 +76,8 @@ static inline void info_help (void)
 "66-scandir <options> owner\n"
 "\n"
 "options :\n"
-"	-h: print this help\n" 
+"	-h: print this help\n"
+"	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-b: create scandir for a boot process\n"
 "	-l: live directory\n"
@@ -483,6 +484,8 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	char const *newenv[MAXENV+1] ;
 	char const *const *genv = 0 ;
 	
+	log_color = &log_color_disable ;
+	
 	up = rescan = create = remove = 0 ;
 	
 	PROG = "66-scandir" ;
@@ -491,12 +494,13 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">hv:bl:d:t:s:e:cruL:", &l) ;
+			int opt = getopt_args(argc,argv, ">hzv:bl:d:t:s:e:cruL:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
 			{
 				case 'h' : info_help(); return 0 ;
+				case 'z' : log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
 				case 'v' : if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
 				case 'b' : BOOT = 1 ; break ;
 				case 'l' : if(!stralloc_cats(&live,l.arg)) log_die_nomem("stralloc") ;

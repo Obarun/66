@@ -17,7 +17,7 @@ It is not meant to be called directly by the user. This program is a modified co
   they are told to trigger the shutdown procedure.
 
 - When it receives a command to shut down, *66-shutdownd* parses the _skel_
-  file _rc.init_ define by default at *%%sysconfdir%%* directory and reads the
+  file _rc.init_ define by default at *%%skel%%* directory and reads the
   value of *RCSHUTDOWN* variable to be able to spawns the _rc.shutdown_ script.
 
 - When said script exits, *66-shutdownd* kills all processes with a
@@ -42,7 +42,7 @@ It is not meant to be called directly by the user. This program is a modified co
 
 *-s* _skel_
 	An abdolute path. Directory of the skeleton file _rc.init_. Default is
-	*%%sysconfdir%%*.
+	*%%skel%%*.
 
 *-g* _gracetime_
 	Specify a grace time between the SIGTERM and the SIGKILLin milliseconds if

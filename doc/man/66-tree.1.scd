@@ -6,7 +6,7 @@
 
 # SYNOPSYS
 
-66-tree [ *-h* ] [ *-v* _verbosity_ ] [ -l ] [ *-n* | *-R* ] [ *-a* | *-d* ] [ *-c* _clone_ ] [ *-S* _after_tree_ ] [ *-E* | *-D* ] [ *-U* ] [ *-C* ] _tree_
+66-tree [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ -l ] [ *-n* | *-R* ] [ *-a* | *-d* ] [ *-c* _clone_ ] [ *-S* _after_tree_ ] [ *-E* | *-D* ] [ *-U* ] [ *-C* ] _tree_
 
 # DESCRIPTION
 
@@ -19,6 +19,9 @@ what trees are currently available on the system use the *66-intree*(1) tool.
 
 *-h*
 	Prints this help.
+
+*-z*
+	use color.
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++
@@ -68,6 +71,7 @@ what trees are currently available on the system use the *66-intree*(1) tool.
 	Enables _tree_. This allows the *66-all*(1) tool to know which tree needs to
 	be started. If the given _tree_ is enabled, all services in that tree will be
 	started when you use the *66-all*(1) tool.
+	*Note*: If *after_tree* and *tree* have the same name, then this *tree* will be the very first tree to start.
 
 *-D*
 	Disables _tree_. The exact opposite of the *-E* option.

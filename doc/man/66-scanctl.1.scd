@@ -6,7 +6,7 @@
 
 # SYNOPSIS
 
-66-scanctl [ *-h* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-o* _owner_ ] _signal_
+66-scanctl [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-o* _owner_ ] _signal_
 
 # DESCRIPTION
 
@@ -21,6 +21,9 @@ the current process will be used instead.
 
 *-h*
 	Prints this help.
+
+*-z*
+	use color.
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++

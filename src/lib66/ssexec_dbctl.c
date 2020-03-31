@@ -57,7 +57,7 @@ static void rebuild_list(ss_resolve_graph_t *graph,ssexec_t *info, int what)
 		if (sta.init) log_die(LOG_EXIT_SYS,"unitialized service: ",name) ;
 		
 		int type = genalloc_s(ss_resolve_t,&graph->sorted)[i].type ;
-		if (type == LONGRUN && genalloc_s(ss_resolve_t,&graph->sorted)[i].disen)
+		if (type == TYPE_LONGRUN && genalloc_s(ss_resolve_t,&graph->sorted)[i].disen)
 		{
 			if (!s6_svstatus_read(runat,&status)) log_dieusys(LOG_EXIT_SYS,"read status of: ",runat) ;
 			isup = status.pid && !status.flagfinishing ;
@@ -113,7 +113,7 @@ static int check_status(genalloc *gares,ssexec_t *info,int signal)
 		/** do not touch the Master resolve file*/
 		if (obstr_equal(name,SS_MASTER + 1)) continue ;
 		/** only check longrun service */
-		if (pres->type == LONGRUN)
+		if (pres->type == TYPE_LONGRUN)
 		{	
 			if (!s6_svstatus_read(pres->sa.s + pres->runat,&status)) log_dieusys(LOG_EXIT_SYS,"read status of: ",pres->sa.s + pres->runat) ;
 			else if (up)
@@ -151,7 +151,7 @@ static int check_status(genalloc *gares,ssexec_t *info,int signal)
 		ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
 		ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 	//	ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
-		if (pres->type == BUNDLE || pres->type == ONESHOT)
+		if (pres->type == TYPE_BUNDLE || pres->type == TYPE_ONESHOT)
 		{
 			if (up) ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
 			else ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
@@ -278,7 +278,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			char const *name = *argv ;
 			if (!ss_resolve_check(sares.s,name)) log_diesys(LOG_EXIT_SYS,"unknown service: ",name) ;
 			if (!ss_resolve_read(&res,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
-			if (res.type == CLASSIC) log_die(LOG_EXIT_SYS,name," has type classic") ;
+			if (res.type == TYPE_CLASSIC) log_die(LOG_EXIT_SYS,name," has type classic") ;
 			if (!ss_resolve_append(&gares,&res)) log_dieusys(LOG_EXIT_SYS,"append services selection with: ", name) ;
 		}
 	}

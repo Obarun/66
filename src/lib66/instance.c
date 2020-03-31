@@ -53,37 +53,36 @@ int instance_splitname(stralloc *sa,char const *name,int len,int what)
 	
 	sa->len = 0 ;
 	if (!what)
+	{
 		if (!stralloc_cats(sa,template) ||
 		!stralloc_0(sa)) return 0 ;
+	}
 	else
+	{
 		if (!stralloc_catb(sa,copy,strlen(copy)) ||
 		!stralloc_0(sa)) return 0 ;
+	}
 	return 1 ;
 }
 
-int instance_create(stralloc *sasv,char const *svname, char const *regex, char const *src, int len)
+int instance_create(stralloc *sasv,char const *svname, char const *regex, int len)
 {
 	char const *copy ;
 	size_t tlen = len + 1 ;
 		
 	stralloc tmp = STRALLOC_ZERO ;	
 	
-	char template[tlen + 1] ;
-	memcpy(template,svname,tlen) ;
-	template[tlen] = 0 ;
-	
+	if (!auto_stra(&tmp,sasv->s)) goto err ;
+
 	copy = svname + tlen ;
 
-	if (!file_readputsa(&tmp,src,template)) {
-		log_warnusys("open: ",src,template) ;
-		goto err ;
-	}
 	if (!sastr_replace_all(&tmp,regex,copy)){
-		log_warnusys("replace instance character at: ",src,template) ;
+		log_warnusys("replace instance character for service: ",svname) ;
 		goto err ;
 	}
 	if (!stralloc_copy(sasv,&tmp)) goto err ;
 	stralloc_free(&tmp) ;
+
 	return 1 ;
 	err:
 		stralloc_free(&tmp) ;

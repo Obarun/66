@@ -39,7 +39,7 @@ int backup_make_new(ssexec_t *info, unsigned int type)
 	size_t typelen ;
 	char *ptype = NULL ;
 	
-	if (type == CLASSIC)
+	if (type == TYPE_CLASSIC)
 	{
 		ptype = SS_SVC ;
 		typelen = SS_SVC_LEN ;

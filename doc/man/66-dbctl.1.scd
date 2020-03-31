@@ -6,7 +6,7 @@
 
 # SYNOPSIS
 
-66-dbctl [ *-h* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] [ *-T* _timeout_ ] [ *-u* | *d* | *r* ] _service(s)_
+66-dbctl [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] [ *-T* _timeout_ ] [ *-u* | *d* | *r* ] _service(s)_
 
 # DESCRIPTION
 
@@ -25,6 +25,9 @@ given _tree_.
 
 *-h*
 	Prints this help.
+
+*-z*
+	use color.
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++

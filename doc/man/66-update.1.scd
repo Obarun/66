@@ -6,7 +6,7 @@
 
 # SYNOPSYS
 
-66-update [ *-h* ] [ *-v* _verbosity_ ] [* -c* ] [ *-l* _live_ ] [ *-d* ]  _tree_
+66-update [ *-h* ] [*-z* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-d* ]  _tree_
 
 # DESCRIPTION
 
@@ -25,15 +25,15 @@ without needing a reboot.
 *-h*
 	Prints this help.
 
+*-z*
+	use color
+
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++
 	*1* : (Default) Only prints error messages.++
 	*2* : Also prints warning messages.++
 	*3* : Also prints tracing messages.++
 	*4* : Also prints debugging messages.
-
-*-c*
-	enable colorization
 
 *-l* _live_
 	An absolute path. Create the scandir at _live_. Default is *%%livedir%%*.

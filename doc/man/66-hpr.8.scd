@@ -14,7 +14,7 @@
 hardware shutdown with the *-f* option.
 
 It is normally invoked through *halt*, *poweroff* or *reboot* wrappers
-installed by default at *%%sysconfdir%%*.
+installed by default at *%%skel%%*.
 
 This program is a modified copy of *s6-linux-init-hpr* program.
 

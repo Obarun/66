@@ -35,7 +35,7 @@ int db_switch_to(ssexec_t *info, char const *const *envp,unsigned int where)
 	
 	stralloc db = STRALLOC_ZERO ;
 	char type[UINT_FMT] ;
-	size_t typelen = uint_fmt(type, BUNDLE) ;
+	size_t typelen = uint_fmt(type, TYPE_BUNDLE) ;
 	type[typelen] = 0 ;
 	
 	size_t cmdlen ;
@@ -56,7 +56,7 @@ int db_switch_to(ssexec_t *info, char const *const *envp,unsigned int where)
 	if (!r && where)
 	{
 		log_trace("make a backup of db service for: ",info->treename.s) ;
-		if (!backup_make_new(info,LONGRUN))
+		if (!backup_make_new(info,TYPE_LONGRUN))
 		{
 			log_warnusys("make a backup of db service for: ",info->treename.s) ;
 			goto err ;
@@ -72,7 +72,7 @@ int db_switch_to(ssexec_t *info, char const *const *envp,unsigned int where)
 		}
 		if (db_ok(info->livetree.s, info->treename.s))
 		{
-			if (!backup_realpath_sym(&db,info,LONGRUN))
+			if (!backup_realpath_sym(&db,info,TYPE_LONGRUN))
 			{
 				log_warnusys("find path of db: ",db.s) ;
 				goto err ;
@@ -106,7 +106,7 @@ int db_switch_to(ssexec_t *info, char const *const *envp,unsigned int where)
 		
 		if (db_ok(info->livetree.s,info->treename.s))
 		{
-			if (!backup_realpath_sym(&db,info,LONGRUN))
+			if (!backup_realpath_sym(&db,info,TYPE_LONGRUN))
 			{
 				log_warnusys("find path of db: ",db.s) ;
 				goto err ;
@@ -126,7 +126,7 @@ int db_switch_to(ssexec_t *info, char const *const *envp,unsigned int where)
 			}
 		}
 		log_trace("make a backup of db service for: ",info->treename.s) ;
-		if (!backup_make_new(info,LONGRUN))
+		if (!backup_make_new(info,TYPE_LONGRUN))
 		{
 			log_warnusys("make a backup of db service for: ",info->treename.s) ;
 			goto err ;

@@ -21,9 +21,8 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <errno.h>
-#include <stdio.h>
+//#include <stdio.h>
 
-#include <oblibs/bytes.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 #include <oblibs/log.h>
@@ -153,7 +152,7 @@ int section_get_range(section_t *sasection,stralloc *src)
 		if(secname.len && n)
 		{
 			skip = section_get_skip(cp.s,pos,MILL_GET_SECTION_NAME.inner.nline) ;
-			id = get_enumbyid(secname.s,key_enum_section_el) ;
+			id = get_enum_by_key(secname.s) ;
 			section_setsa(id,&psasection,sasection) ;
 			if (skip) sasection->idx[id] = 1 ;
 		}
@@ -204,7 +203,7 @@ int section_get_range(section_t *sasection,stralloc *src)
 		return 0 ;
 }
 
-int key_get_range(genalloc *ga, section_t *sasection,int *svtype)
+int key_get_range(genalloc *ga, section_t *sasection)
 {	
 	int r ;
 	size_t pos = 0, fakepos = 0 ;
@@ -213,26 +212,24 @@ int key_get_range(genalloc *ga, section_t *sasection,int *svtype)
 	stralloc_ref psasection ;
 	key_all_t const *list = total_list ;
 							
-	for (int i = 0 ; i < key_enum_section_el ; i++)
+	for (int i = 0 ; i < SECTION_ENDOFKEY ; i++)
 	{	
 		if (sasection->idx[i])
 		{
-			if (i == ENV)
+			if (i == SECTION_ENV)
 			{	
 				pos = 0 ;	
 				keynocheck nocheck = KEYNOCHECK_ZERO ;
 				nocheck.idsec = i ;
-				nocheck.idkey = ENVAL ;
-				nocheck.expected = KEYVAL ;
-				nocheck.mandatory = OPTS ;
+				nocheck.idkey = KEY_ENVIRON_ENVAL ;
+				nocheck.expected = EXPECT_KEYVAL ;
 				section_setsa(i,&psasection,sasection) ;
 				if (!stralloc_cats(&nocheck.val,psasection->s+1)) goto err ;//+1 remove the first '\n'
-				if (!environ_get_clean_env(&nocheck.val)) { log_warnu("parse section: ",get_keybyid(i)) ; goto err ; }
+				if (!environ_get_clean_env(&nocheck.val)) { log_warnu("parse section: ",get_key_by_enum(ENUM_SECTION,i)) ; goto err ; }
 				if (!stralloc_cats(&nocheck.val,"\n") ||
 				!stralloc_0(&nocheck.val)) goto err ;
 				nocheck.val.len-- ;
-				
-				
+
 				if (!genalloc_append(keynocheck,ga,&nocheck)) goto err ;
 			} 
 			else
@@ -256,16 +253,15 @@ int key_get_range(genalloc *ga, section_t *sasection,int *svtype)
 					for (int j = 0 ; j < total_list_el[i]; j++)
 					{
 						found = 0 ;
-						if (list[i].list[j].name && obstr_equal(sakey.s,list[i].list[j].name))
+						if (*list[i].list[j].name && obstr_equal(sakey.s,*list[i].list[j].name))
 						{
 							nocheck.idsec = i ;
-							nocheck.idkey = get_enumbyid(sakey.s,key_enum_el) ;
+							nocheck.idkey = list[i].list[j].id ;
 							nocheck.expected = list[i].list[j].expected ;
-							nocheck.mandatory = list[i].list[j].mandatory ;
 							found = 1 ;
 							switch(list[i].list[j].expected)
 							{
-								case QUOTE:
+								case EXPECT_QUOTE:
 									if (!sastr_get_double_quote(&nocheck.val))
 									{
 										parse_err(6,&nocheck) ;
@@ -273,7 +269,7 @@ int key_get_range(genalloc *ga, section_t *sasection,int *svtype)
 									}
 									if (!stralloc_0(&nocheck.val)) goto err ;
 									break ;
-								case BRACKET:
+								case EXPECT_BRACKET:
 									if (!parse_bracket(&nocheck.val,&pos))
 									{
 										parse_err(6,&nocheck) ;
@@ -285,9 +281,9 @@ int key_get_range(genalloc *ga, section_t *sasection,int *svtype)
 										goto err ;
 									}
 									break ;
-								case LINE:
-								case UINT:
-								case SLASH:
+								case EXPECT_LINE:
+								case EXPECT_UINT:
+								case EXPECT_SLASH:
 									if (!parse_line(&nocheck.val,&pos))
 									{
 										parse_err(7,&nocheck) ;
@@ -298,7 +294,6 @@ int key_get_range(genalloc *ga, section_t *sasection,int *svtype)
 										parse_err(9,&nocheck) ;
 										goto err ;
 									}
-									if (!i && !j) (*svtype) = get_enumbyid(nocheck.val.s,key_enum_el) ;
 									break ;
 								default:
 									return 0 ;
@@ -309,7 +304,7 @@ int key_get_range(genalloc *ga, section_t *sasection,int *svtype)
 					}			 
 					if (!found && r >=0) 
 					{ 
-						log_warn("unknown key: ",sakey.s," : in section: ",get_keybyid(sasection->idx[i])) ; 
+						log_warn("unknown key: ",sakey.s," : in section: ",get_key_by_enum(ENUM_SECTION,i)) ; 
 						keynocheck_free(&nocheck) ;
 						goto err ; 
 					}
@@ -325,194 +320,154 @@ int key_get_range(genalloc *ga, section_t *sasection,int *svtype)
 		return 0 ;
 }
 
-int get_mandatory(genalloc *nocheck,int idsec,int idkey)
+int check_mandatory(sv_alltype *service, section_t *sasection)
 {
-	int count, bkey, r, countidsec ;
-	
-	key_all_t const *list = total_list ;
-	
-	stralloc sa = STRALLOC_ZERO ;
-	
-	r = -1 ;
-	count = 0 ;
-	bkey = -1 ;
-	countidsec = 0 ;
+	if (service->cname.description < 0)
+		log_warn_return(LOG_EXIT_ZERO,"key @description at section [start] must be set") ;
 
-	switch(list[idsec].list[idkey].mandatory){
+	if (!service->user[0])
+		log_warn_return(LOG_EXIT_ZERO,"key @user at section [start] must be set") ;
+	
+	/** just warn here about the @version field to let the time to implement
+	 * it inside all already existing service.
+	 * It will be mandatory when 66-backup will be incorporated. */
+	if (service->cname.version < 0)
+		log_warn("key @version at section [start] is missing -- it will be mandatory in the near future") ;
+	
+	if (service->opts[2] && !sasection->idx[SECTION_ENV])
+		log_warn_return(LOG_EXIT_ZERO,"options env was asked -- section environment must be set") ;
 		
-		case NEED:
-			for (unsigned int j = 0;j < genalloc_len(keynocheck,nocheck);j++)
-			{
-				if (genalloc_s(keynocheck,nocheck)[j].idsec == idsec)
-				{
-					countidsec++ ;
-					if (genalloc_s(keynocheck,nocheck)[j].idkey == get_enumbyid(list[idsec].list[idkey].name,key_enum_el))
-					{
-						count++ ;
-						break ;
-					}
-				}
-			}					
-			if ((!count) && (countidsec))
-				log_warn_return(LOG_EXIT_ZERO,"mandatory key: ",list[idsec].list[idkey].name," not found on section: ",get_keybyid(idsec)) ;
-
+	switch (service->cname.itype)
+	{
+		case TYPE_BUNDLE:
+			if (service->cname.idga < 0)
+				log_warn_return(LOG_EXIT_ZERO,"bundle type detected -- key @contents must be set") ;
 			break ;
-		case CUSTOM:
-			for (unsigned int j = 0;j < genalloc_len(keynocheck,nocheck);j++)
+		case TYPE_ONESHOT:
+			if (service->type.oneshot.up.build < 0)
+				log_warn_return(LOG_EXIT_ZERO,"key @build at section [start] must be set") ;
+			
+			if ((service->type.oneshot.up.build == BUILD_CUSTOM) && (service->type.oneshot.up.shebang < 0))
+					log_warn_return(LOG_EXIT_ZERO,"custom build asked on section [start] -- key @shebang must be set") ;
+			
+			if (service->type.oneshot.up.exec < 0)
+					log_warn_return(LOG_EXIT_ZERO,"key @execute at section [start] must be set") ;
+
+			if (sasection->idx[SECTION_STOP])
 			{
-				
-				if (genalloc_s(keynocheck,nocheck)[j].idsec == idsec)
-				{
-					countidsec++ ;
-					if (genalloc_s(keynocheck,nocheck)[j].idkey == BUILD)
-					{
-						bkey = j ;
-						
-					}
+				if (service->type.oneshot.down.build < 0)
+					log_warn_return(LOG_EXIT_ZERO,"key @build at section [stop] must be set") ;
+				if ((service->type.oneshot.down.build == BUILD_CUSTOM) && (service->type.oneshot.down.shebang < 0))
+					log_warn_return(LOG_EXIT_ZERO,"custom build asked on section [stop] -- key @shebang must be set") ;
+				if (service->type.oneshot.down.exec < 0)
+					log_warn_return(LOG_EXIT_ZERO,"key @execute at section [stop] must be set") ;
+			}
+			break ;
+		case TYPE_CLASSIC:
+		case TYPE_LONGRUN:
+			if (service->type.classic_longrun.run.build < 0)
+				log_warn_return(LOG_EXIT_ZERO,"key @build at section [start] must be set") ;
+			
+			if ((service->type.classic_longrun.run.build == BUILD_CUSTOM) && (service->type.classic_longrun.run.shebang < 0))
+					log_warn_return(LOG_EXIT_ZERO,"custom build asked on section [start] -- key @shebang must be set") ;
+			
+			if (service->type.classic_longrun.run.exec < 0)
+					log_warn_return(LOG_EXIT_ZERO,"key @execute at section [start] must be set") ;
+
+			if (sasection->idx[SECTION_STOP])
+			{
+				if (service->type.classic_longrun.finish.build < 0)
+					log_warn_return(LOG_EXIT_ZERO,"key @build at section [stop] must be set") ;
+				if ((service->type.classic_longrun.finish.build == BUILD_CUSTOM) && (service->type.classic_longrun.finish.shebang < 0))
+					log_warn_return(LOG_EXIT_ZERO,"custom build asked on section [stop] -- key @shebang must be set") ;
+				if (service->type.classic_longrun.finish.exec < 0)
+					log_warn_return(LOG_EXIT_ZERO,"key @execute at section [stop] must be set") ;
+			}
+			if (sasection->idx[SECTION_LOG])
+			{
+				if (service->type.classic_longrun.log.run.build < 0)
+					log_warn_return(LOG_EXIT_ZERO,"key @build at section [logger] must be set") ;
 					
-					if (genalloc_s(keynocheck,nocheck)[j].idkey == get_enumbyid(list[idsec].list[idkey].name,key_enum_el))
-					{
-						count++ ;
-						break ;
-					}
-				}
-			}
-			if ((!count) && (countidsec) && bkey>=0)
-			{
-				if (obstr_equal(genalloc_s(keynocheck,nocheck)[bkey].val.s,get_keybyid(CUSTOM)))
-					log_warn_return(LOG_EXIT_ZERO,"custom build asked on section: ",get_keybyid(idsec)," -- key: ",list[idsec].list[idkey].name," must be set") ;
-			}
-			break ;
-		case BUNDLE:
-			for (unsigned int j = 0;j < genalloc_len(keynocheck,nocheck);j++)
-			{
-				if (genalloc_s(keynocheck,nocheck)[j].idsec == idsec)
+				if (service->type.classic_longrun.log.run.build == BUILD_CUSTOM) 
 				{
-					countidsec++ ;
-					if (genalloc_s(keynocheck,nocheck)[j].idkey == TYPE)
-					{
-						bkey = j;
-						
-					}
-					if (genalloc_s(keynocheck,nocheck)[j].idkey == get_enumbyid(list[idsec].list[idkey].name,key_enum_el))
-					{
-						count++ ;
-					}
+					if (service->type.classic_longrun.log.run.shebang < 0)
+						log_warn_return(LOG_EXIT_ZERO,"custom build asked on section [logger] -- key @shebang must be set") ;
+					if (service->type.classic_longrun.log.run.exec < 0)
+						log_warn_return(LOG_EXIT_ZERO,"custom build asked on section [logger] -- key @execute must be set") ;
+					if (service->type.classic_longrun.log.destination < 0)
+						log_warn_return(LOG_EXIT_ZERO,"custom build asked on section [logger] -- key @destination must be set") ;
 				}
-			}
-			if ((!count) && (countidsec) && bkey>=0)
-			{
-				if (obstr_equal(genalloc_s(keynocheck,nocheck)[bkey].val.s,get_keybyid(BUNDLE)))
-					log_warn_return(LOG_EXIT_ZERO,"bundle type detected -- key @contents must be set") ;
-			}
+			}	
 			break ;
-		/** only pass through here to check if flags env was asked
-		 * and the corresponding section exist*/	
-		case OPTS:
-			for (unsigned int j = 0;j < genalloc_len(keynocheck,nocheck);j++)
-			{
-				
-				if (genalloc_s(keynocheck,nocheck)[j].idsec == ENV)
-					count++ ;
-				
-				if (genalloc_s(keynocheck,nocheck)[j].idsec == MAIN) 
-				{
-					if (genalloc_s(keynocheck,nocheck)[j].idkey == OPTIONS)
-					{
-						bkey = j;						
-					}
-				}
-			}
-			if (bkey >= 0)
-			{
-				if (!sastr_clean_string(&sa,genalloc_s(keynocheck,nocheck)[bkey].val.s))
-					log_warnu_return(LOG_EXIT_ZERO,"clean value of: ",sa.s) ;
-
-				r = sastr_cmp(&sa,get_keybyid(ENVIR)) ;	
-				if ((r >= 0) && (!count))
-					log_warn_return(LOG_EXIT_ZERO,"options env was asked -- section environment must be set") ;
-			}
+		case TYPE_MODULE:
+			/*if (!sasection->idx[SECTION_REGEX])
+				log_warn_return(LOG_EXIT_ZERO,"section [regex] must be set") ;
+			if (service->type.module.iddir < 0)
+				log_warn_return(LOG_EXIT_ZERO,"key @directories at section [regex] must be set") ;
+			if (service->type.module.idfiles < 0)
+				log_warn_return(LOG_EXIT_ZERO,"key @files at section [regex] must be set") ;
+			if (service->type.module.start_infiles < 0)
+				log_warn_return(LOG_EXIT_ZERO,"key @infiles at section [regex] must be set") ;*/
 			break ;
+		/** really nothing to do here */
 		default: break ;
 	}
-			
-	stralloc_free(&sa) ;
 	return 1 ;
 }
 
 int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service)
 {
-	static unsigned char const actions[5][4] = {
-	 //c->CLASSIC,		BUNDLE,	LONGRUN,	ONESHOT 
-	    { COMMON,		COMMON,	COMMON,		COMMON }, // main
-	    { EXECRUN, 		SKIP,	EXECRUN, 	EXECUP }, // start
-	    { EXECFINISH, 	SKIP,	EXECFINISH, EXECDOWN }, // stop
-	    { EXECLOG,		SKIP,	EXECLOG, 	SKIP }, // log
-	    { ENVIRON, 		SKIP,	ENVIRON, 	ENVIRON }, // env
-	} ;
-	static unsigned char const states[5][4] = {
-	 //c->CLASSIC,	BUNDLE,	LONGRUN,	ONESHOT
-	    { START,	SKIP,	START,	START }, // main
-	    { STOP,		SKIP,	STOP,	STOP }, // start
-	    { LOG,		SKIP,	LOG,	LOG }, // stop
-	    { ENV,		SKIP,	ENV,	ENV }, // log
-	    { SKIP,		SKIP,	SKIP,  	SKIP }, // env
-	     
-	} ;
-	int  p ;
-	p = svtype ;
-	int state = 0 ;
+	int p = svtype ;
+	int ste = 0 ;
 	
-	while (state < 6)
+	while (ste < 7)
 	{
-	    unsigned int c = p - CLASSIC; 
-	    unsigned int action = actions[state][c] ;
-	    state = states[state][c] ;
-
-	    switch (action) {
-			case COMMON:
-				if (!nocheck->idsec)
+	    unsigned int action = actions[ste][p] ;
+	    
+	    ste = states[ste][p] ;
+		
+		  switch (action) {
+			case ACTION_COMMON:
+				if (nocheck->idsec == SECTION_MAIN)
 					if (!keep_common(service,nocheck,svtype))
 						return 0 ;
-				
 				break ;
-			case EXECRUN:
-				if (nocheck->idsec == 1)
+			case ACTION_EXECRUN:
+				if (nocheck->idsec == SECTION_START)
 					if (!keep_runfinish(&service->type.classic_longrun.run,nocheck))
 						return 0 ;
-					 
 				break ;
-			case EXECFINISH:
-				if (nocheck->idsec == 2)
+			case ACTION_EXECFINISH:
+				if (nocheck->idsec == SECTION_STOP)
 					if (!keep_runfinish(&service->type.classic_longrun.finish,nocheck))
 						return 0 ;
-				 
 				break ;
-			case EXECLOG:
-				if (nocheck->idsec == 3)
+			case ACTION_EXECLOG:
+				if (nocheck->idsec == SECTION_LOG)
 					if (!keep_logger(&service->type.classic_longrun.log,nocheck))
 						return 0 ;
-				 
 				break ;
-			case EXECUP:
-				if (nocheck->idsec == 1)
+			case ACTION_EXECUP:
+				if (nocheck->idsec == SECTION_START)
 					if (!keep_runfinish(&service->type.oneshot.up,nocheck))
-						return 0 ;
-				 
+						return 0 ; 
 				break ;
-			case EXECDOWN:
-				if (nocheck->idsec == 2)
+			case ACTION_EXECDOWN:
+				if (nocheck->idsec == SECTION_STOP)
 					if (!keep_runfinish(&service->type.oneshot.down,nocheck))
 						return 0 ;
-				 
 				break ;
-			case ENVIRON:
-				if (nocheck->idsec == 4)
-					if (!keep_common(service,nocheck,svtype))
+			case ACTION_ENVIRON:
+				if (nocheck->idsec == SECTION_ENV)
+					if (!keep_environ(service,nocheck))
 						return 0 ;
-				
 				break ;
-			case SKIP:
+			case ACTION_REGEX:
+				if (nocheck->idsec == SECTION_REGEX)
+					if (!keep_regex(&service->type.module,nocheck))
+						return 0 ;
+				break ;
+			case ACTION_SKIP:
 				break ;
 			default: log_warn_return(LOG_EXIT_ZERO,"unknown action") ;
 		}
@@ -529,58 +484,63 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 	int r = 0 ;
 	size_t pos = 0, *chlen = &nocheck->val.len ;
 	char *chval = nocheck->val.s ;
-	
+
 	switch(nocheck->idkey){
-		case TYPE:
+		case KEY_MAIN_TYPE:
 			r = get_enum(chval,nocheck) ;
-			if (!r) return 0 ;
+			if (r == -1) return 0 ;
 			service->cname.itype = r ;
 			break ;
-		case NAME:
+		case KEY_MAIN_NAME:
 			service->cname.name = keep.len ;
 			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			break ;
-		case DESCRIPTION:
+		case KEY_MAIN_DESCRIPTION:
 			service->cname.description = keep.len ;
 			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			break ;
-		case OPTIONS:
+		case KEY_MAIN_VERSION:
+			service->cname.version = keep.len ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+			break ;
+		case KEY_MAIN_OPTIONS:
 			if (!get_clean_val(nocheck)) return 0 ;
 			for (;pos < *chlen; pos += strlen(chval + pos)+1)
 			{
 				r = get_enum(chval + pos,nocheck) ;
-				if (!r) return 0 ;
-				if (svtype == CLASSIC || svtype == LONGRUN)
+				if (r == -1) return 0 ;
+				if (svtype != TYPE_BUNDLE || svtype != TYPE_MODULE)
 				{
-					if (r == LOGGER)
+					if (r == OPTS_LOGGER)
 						service->opts[0] = 1 ;/**0 means not enabled*/
-					else if (svtype == LONGRUN && r == PIPELINE)
+					else if (svtype == TYPE_LONGRUN && r == OPTS_PIPELINE)
 						service->opts[1] = 1 ;
 				}
-				if (r == ENVIR)
+				if (r == OPTS_ENVIR)
 					service->opts[2] = 1 ;
 			}
 			break ;
-		case FLAGS:
+		case KEY_MAIN_FLAGS:
 			if (!get_clean_val(nocheck)) return 0 ;
 			for (;pos < *chlen; pos += strlen(chval + pos)+1)
 			{
 				r = get_enum(chval + pos,nocheck) ;
-				if (!r) return 0 ;
-				if (r == DOWN) 
+				if (r == -1) return 0 ;
+				if (r == FLAGS_DOWN) 
 					service->flags[0] = 1 ;/**0 means not enabled*/				
-				if (r == NOSETSID)
+				if (r == FLAGS_NOSETSID)
 					service->flags[1] = 1 ;
 			}
 			break ;
-		case USER:
+		case KEY_MAIN_USER:
 			if (!get_clean_val(nocheck)) return 0 ;
 			{
+				
 				uid_t owner = MYUID ;
 				if (!owner)
 				{
 					if (sastr_find(&nocheck->val,"root") == -1)
-						log_warnu_return(LOG_EXIT_ZERO,"use service: ",keep.s+service->cname.name," -- permission denied") ;
+						log_warnu_return(LOG_EXIT_ZERO,"use the service -- permission denied") ;
 				}
 				/** special case, we don't know which user want to use
 				 * the service, we need a general name to allow all user
@@ -588,7 +548,17 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 				ssize_t p = sastr_cmp(&nocheck->val,"user") ;
 				for (;pos < *chlen; pos += strlen(chval + pos)+1)
 				{
-					if (pos == (size_t)p) continue ;
+					if (pos == (size_t)p) 
+					{ 
+						struct passwd *pw = getpwuid(owner);
+						if (!pw)
+						{
+							if (!errno) errno = ESRCH ;
+							log_warnu_return(LOG_EXIT_ZERO,"get user name") ;
+						}
+						scan_uidlist(pw->pw_name,(uid_t *)service->user) ;
+						continue ; 
+					}
 					if (!scan_uidlist(chval + pos,(uid_t *)service->user))
 					{
 						parse_err(0,nocheck) ;
@@ -603,11 +573,11 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 						if (service->user[i] == owner) e = 1 ;
 					
 					if (!e)
-						log_warnu_return(LOG_EXIT_ZERO,"use service: ",keep.s+service->cname.name," -- permission denied") ;
+						log_warnu_return(LOG_EXIT_ZERO,"use the service -- permission denied") ;
 				}
 			}
 			break ;
-		case HIERCOPY:
+		case KEY_MAIN_HIERCOPY:
 			if (!get_clean_val(nocheck)) return 0 ;
 			{
 				unsigned int idx = 0 ;
@@ -621,80 +591,80 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 				}
 			}
 			break ;
-		case DEPENDS:
-			if ((service->cname.itype == CLASSIC) || (service->cname.itype == BUNDLE))
-				log_warn_return(LOG_EXIT_ZERO,"key: ",get_keybyid(nocheck->idkey),": is not valid for type ",get_keybyid(service->cname.itype)) ;
+		case KEY_MAIN_DEPENDS:
+			if ((service->cname.itype == TYPE_CLASSIC) || (service->cname.itype == TYPE_BUNDLE))
+				log_warn_return(LOG_EXIT_ZERO,"key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,nocheck->idkey),": is not valid for type ",get_key_by_enum(ENUM_TYPE,service->cname.itype)) ;
 				
 			if (!get_clean_val(nocheck)) return 0 ;
 			service->cname.idga = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos)+1)
 			{
+				/* allow to comment a service */
+				if (chval[pos] == '#') continue ;
 				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 				service->cname.nga++ ;
 			}
 			break ;
-		case OPTSDEPS:
-			if ((service->cname.itype == CLASSIC) || (service->cname.itype == BUNDLE))
-				log_warn_return(LOG_EXIT_ZERO,"key: ",get_keybyid(nocheck->idkey),": is not valid for type ",get_keybyid(service->cname.itype)) ;
+		case KEY_MAIN_OPTSDEPS:
+			if ((service->cname.itype == TYPE_CLASSIC) || (service->cname.itype == TYPE_BUNDLE))
+				log_warn_return(LOG_EXIT_ZERO,"key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,nocheck->idkey),": is not valid for type ",get_key_by_enum(ENUM_TYPE,service->cname.itype)) ;
 			if (!get_clean_val(nocheck)) return 0 ;
 			service->cname.idopts = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos)+1)
 			{
+				/* allow to comment a service */
+				if (chval[pos] == '#') continue ;
 				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 				service->cname.nopts++ ;
 			}
 			break ;
-		case EXTDEPS:
-			if ((service->cname.itype == CLASSIC) || (service->cname.itype == BUNDLE))
-				log_warn_return(LOG_EXIT_ZERO,"key: ",get_keybyid(nocheck->idkey),": is not valid for type ",get_keybyid(service->cname.itype)) ;
+		case KEY_MAIN_EXTDEPS:
+			if ((service->cname.itype == TYPE_CLASSIC) || (service->cname.itype == TYPE_BUNDLE))
+				log_warn_return(LOG_EXIT_ZERO,"key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,nocheck->idkey),": is not valid for type ",get_key_by_enum(ENUM_TYPE,service->cname.itype)) ;
 			if (!get_clean_val(nocheck)) return 0 ;
 			service->cname.idext = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos)+1)
 			{
+				/* allow to comment a service */
+				if (chval[pos] == '#') continue ;
 				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 				service->cname.next++ ;
 			}
 			break ;
-		case CONTENTS:
-			if (service->cname.itype != BUNDLE)
-				log_warn_return(LOG_EXIT_ZERO,"key: ",get_keybyid(nocheck->idkey),": is not valid for type ",get_keybyid(service->cname.itype)) ;
+		case KEY_MAIN_CONTENTS:
+			if (service->cname.itype != TYPE_BUNDLE)
+				log_warn_return(LOG_EXIT_ZERO,"key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,nocheck->idkey),": is not valid for type ",get_key_by_enum(ENUM_TYPE,service->cname.itype)) ;
 
 			if (!get_clean_val(nocheck)) return 0 ;
 			service->cname.idga = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos) + 1)
 			{
+				/* allow to comment a service */
+				if (chval[pos] == '#') continue ;
 				if (!stralloc_catb(&deps,chval + pos,strlen(chval + pos) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 				service->cname.nga++ ;
 			}
 			break ;
-		case T_KILL:
-		case T_FINISH:
-		case T_UP:
-		case T_DOWN:
+		case KEY_MAIN_T_KILL:
+		case KEY_MAIN_T_FINISH:
+		case KEY_MAIN_T_UP:
+		case KEY_MAIN_T_DOWN:
 			if (!get_timeout(nocheck,(uint32_t *)service->timeout)) return 0 ;
 			break ;
-		case DEATH:
+		case KEY_MAIN_DEATH:
 			if (!get_uint(nocheck,&service->death)) return 0 ;
 			break ;
-		case NOTIFY:
+		case KEY_MAIN_NOTIFY:
 			if (!get_uint(nocheck,&service->notification)) return 0 ;
 			break ;
-		case ENVAL:
-			if (!environ_clean_nline(&nocheck->val))
-				log_warnu_return(LOG_EXIT_ZERO,"clean environment value: ",chval) ;
-			
-			if (!stralloc_cats(&nocheck->val,"\n")) return 0 ;
-			if (!stralloc_copy(&service->saenv,&nocheck->val))
-				log_warnu_return(LOG_EXIT_ZERO,"store environment value: ",chval) ;
-			break ;
-		case SIGNAL:
+		case KEY_MAIN_SIGNAL:
 			if (!sig0_scan(chval,&service->signal))
 			{
 				parse_err(3,nocheck) ;
 				return 0 ;
 			}
 			break ;
-		default: log_warn_return(LOG_EXIT_ZERO,"unknown key: ",get_keybyid(nocheck->idkey)) ;
+		default: log_warn_return(LOG_EXIT_ZERO,"unknown key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,nocheck->idkey)) ;
 			
 	}
 	
@@ -706,20 +676,20 @@ int keep_runfinish(sv_exec *exec,keynocheck *nocheck)
 	int r = 0 ;
 	size_t *chlen = &nocheck->val.len ;
 	char *chval = nocheck->val.s ;
-		
+	
 	switch(nocheck->idkey)
 	{
-		case BUILD:
+		case KEY_STARTSTOP_BUILD:
 			r = get_enum(chval,nocheck) ;
-			if (!r) return 0 ;
+			if (r == -1) return 0 ;
 			exec->build = r ;
 			break ;
-		case RUNAS:
+		case KEY_STARTSTOP_RUNAS:
 			if (!check_valid_runas(nocheck)) return 0 ;
 			exec->runas = keep.len ;
 			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			break ;
-		case SHEBANG:
+		case KEY_STARTSTOP_SHEBANG:
 			if (chval[0] != '/')
 			{
 				parse_err(4,nocheck) ;
@@ -728,11 +698,11 @@ int keep_runfinish(sv_exec *exec,keynocheck *nocheck)
 			exec->shebang = keep.len ;
 			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			break ;
-		case EXEC:
+		case KEY_STARTSTOP_EXEC:
 			exec->exec = keep.len ;
 			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			break ;
-		default: log_warn_return(LOG_EXIT_ZERO,"unknown key: ",get_keybyid(nocheck->idkey)) ;
+		default: log_warn_return(LOG_EXIT_ZERO,"unknown key: ",get_key_by_enum(ENUM_KEY_SECTION_STARTSTOP,nocheck->idkey)) ;
 	}
 	return 1 ;
 }
@@ -744,13 +714,13 @@ int keep_logger(sv_execlog *log,keynocheck *nocheck)
 	char *chval = nocheck->val.s ;
 
 	switch(nocheck->idkey){
-		case BUILD:
+		case KEY_LOGGER_BUILD:
 			if (!keep_runfinish(&log->run,nocheck)) return 0 ;
 			break ;
-		case RUNAS:
+		case KEY_LOGGER_RUNAS:
 			if (!keep_runfinish(&log->run,nocheck)) return 0 ;
 			break ;
-		case DEPENDS:
+		case KEY_LOGGER_DEPENDS:
 			if (!get_clean_val(nocheck)) return 0 ;
 			log->idga = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos) + 1)
@@ -759,17 +729,17 @@ int keep_logger(sv_execlog *log,keynocheck *nocheck)
 				log->nga++ ;
 			}
 			break ;
-		case SHEBANG:
+		case KEY_LOGGER_SHEBANG:
 			if (!keep_runfinish(&log->run,nocheck)) return 0 ;
 			break ;
-		case EXEC:
+		case KEY_LOGGER_EXEC:
 			if (!keep_runfinish(&log->run,nocheck)) return 0 ;
 			break ;
-		case T_KILL:
-		case T_FINISH:
+		case KEY_LOGGER_T_KILL:
+		case KEY_LOGGER_T_FINISH:
 			if (!get_timeout(nocheck,(uint32_t *)log->timeout)) return 0 ;
 			break ;
-		case DESTINATION:
+		case KEY_LOGGER_DESTINATION:
 			if (chval[0] != '/')
 			{
 				parse_err(4,nocheck) ;
@@ -778,18 +748,91 @@ int keep_logger(sv_execlog *log,keynocheck *nocheck)
 			log->destination = keep.len ;
 			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			break ;
-		case BACKUP:
+		case KEY_LOGGER_BACKUP:
 			if (!get_uint(nocheck,&log->backup)) return 0 ;
 			break ;
-		case MAXSIZE:
+		case KEY_LOGGER_MAXSIZE:
 			if (!get_uint(nocheck,&log->maxsize)) return 0 ;
 			break ;
-		case TIMESTP:
+		case KEY_LOGGER_TIMESTP:
 			r = get_enum(chval,nocheck) ;
-			if (!r) return 0 ;
+			if (r == -1) return 0 ;
 			log->timestamp = r ;
 			break ;
-		default: log_warn_return(LOG_EXIT_ZERO,"unknown key: ",get_keybyid(nocheck->idkey)) ;
+		default: log_warn_return(LOG_EXIT_ZERO,"unknown key: ",get_key_by_enum(ENUM_KEY_SECTION_LOGGER,nocheck->idkey)) ;
+	}
+	return 1 ;
+}
+
+int keep_environ(sv_alltype *service,keynocheck *nocheck)
+{
+	char *chval = nocheck->val.s ;
+	
+	switch(nocheck->idkey){
+		case KEY_ENVIRON_ENVAL:
+			if (!environ_clean_nline(&nocheck->val))
+				log_warnu_return(LOG_EXIT_ZERO,"clean environment value: ",chval) ;
+			
+			if (!stralloc_cats(&nocheck->val,"\n")) return 0 ;
+			if (!stralloc_copy(&service->saenv,&nocheck->val))
+				log_warnu_return(LOG_EXIT_ZERO,"store environment value: ",chval) ;
+			break ;
+		default: log_warn_return(LOG_EXIT_ZERO,"unknown key: ",get_key_by_enum(ENUM_KEY_SECTION_ENVIRON,nocheck->idkey)) ;
+	}
+	return 1 ;
+}
+
+int keep_regex(sv_module *module,keynocheck *nocheck)
+{
+	size_t pos = 0, *chlen = &nocheck->val.len ;
+	char *chval = nocheck->val.s ;
+	
+	switch(nocheck->idkey){
+		case KEY_REGEX_CONFIGURE:
+			module->configure = keep.len ;
+			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+			break ;
+		case KEY_REGEX_DIRECTORIES:
+			if (!get_clean_val(nocheck)) return 0 ;
+			module->iddir = keep.len ;
+			for (;pos < *chlen; pos += strlen(chval + pos) + 1)
+			{
+				/* allow to comment a service */
+				if (chval[pos] == '#') continue ;
+				if (!stralloc_catb(&keep,chval + pos,strlen(chval + pos) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+				module->ndir++ ;
+			}
+			break ;
+		case KEY_REGEX_FILES:
+			if (!get_clean_val(nocheck)) return 0 ;
+			module->idfiles = keep.len ;
+			for (;pos < *chlen; pos += strlen(chval + pos) + 1)
+			{
+				/* allow to comment a service */
+				if (chval[pos] == '#') continue ;
+				if (!stralloc_catb(&keep,chval + pos,strlen(chval + pos) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+				module->nfiles++ ;
+			}
+			break ;
+		case KEY_REGEX_INFILES:
+			if (!environ_get_clean_env(&nocheck->val))
+				log_warnu_return(LOG_EXIT_ZERO,"clean key ",get_key_by_enum(ENUM_KEY_SECTION_REGEX,nocheck->idkey)," field") ;
+			if (!environ_clean_nline(&nocheck->val))
+				log_warnu_return(LOG_EXIT_ZERO,"clean lines of key ",get_key_by_enum(ENUM_KEY_SECTION_REGEX,nocheck->idkey)," field") ;
+			if (!stralloc_0(&nocheck->val))
+				log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;	
+	
+			if (!sastr_split_string_in_nline(&nocheck->val))
+				log_warnu_return(LOG_EXIT_SYS,"split lines of key ",get_key_by_enum(ENUM_KEY_SECTION_REGEX,nocheck->idkey)," field") ;
+			
+			module->start_infiles = keep.len ;
+			for (;pos < *chlen; pos += strlen(chval + pos) + 1)
+				if (!stralloc_catb(&keep,chval + pos,strlen(chval + pos) + 1)) 
+					log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+				
+			module->end_infiles = keep.len ;
+			break ;
+		default: log_warn_return(LOG_EXIT_ZERO,"unknown key: ",get_key_by_enum(ENUM_KEY_SECTION_REGEX,nocheck->idkey)) ;
 	}
 	return 1 ;
 }
@@ -809,7 +852,7 @@ int read_svfile(stralloc *sasv,char const *name,char const *src)
 	memcpy(svtmp + srclen + 1, name, namelen) ;
 	svtmp[srclen + 1 + namelen] = 0 ;
 	
-	log_trace("Read service file of : ",name," from: ",src) ;
+	log_trace("Read service file of: ",src,name) ;
 	
 	size_t filesize=file_get_size(svtmp) ;
 	if (!filesize)
@@ -883,11 +926,12 @@ void section_setsa(int id, stralloc_ref *p,section_t *sa)
 {
 	switch(id)
 	{
-		case MAIN: *p = &sa->main ; break ;
-		case START: *p = &sa->start ; break ;
-		case STOP: *p = &sa->stop ; break ;
-		case LOG: *p = &sa->logger ; break ;
-		case ENV: *p = &sa->environment ; break ;
+		case SECTION_MAIN: *p = &sa->main ; break ;
+		case SECTION_START: *p = &sa->start ; break ;
+		case SECTION_STOP: *p = &sa->stop ; break ;
+		case SECTION_LOG: *p = &sa->logger ; break ;
+		case SECTION_ENV: *p = &sa->environment ; break ;
+		case SECTION_REGEX: *p = &sa->regex ; break ;
 		default: break ;
 	}
 }
@@ -909,9 +953,9 @@ int section_get_skip(char const *s,size_t pos,int nline)
 	return 1 ;
 }
 
-int section_get_id(stralloc *secname, char const *string,size_t *pos,int *id)
+int section_get_id(stralloc *secname, char const *str,size_t *pos,int *id)
 {
-	size_t len = strlen(string) ;
+	size_t len = strlen(str) ;
 	size_t newpos = 0 ;
 	(*id) = -1 ;
 
@@ -919,42 +963,42 @@ int section_get_id(stralloc *secname, char const *string,size_t *pos,int *id)
 	{
 		secname->len = 0 ;
 		newpos = 0 ;
-		if (mill_element(secname,string+(*pos),&MILL_GET_SECTION_NAME,&newpos) == -1) return 0 ;
+		if (mill_element(secname,str+(*pos),&MILL_GET_SECTION_NAME,&newpos) == -1) return 0 ;
 		if (secname->len)
 		{
 			if (!stralloc_0(secname)) return 0 ;
-			(*id) = get_enumbyid(secname->s,key_enum_section_el) ;
+			(*id) = get_enum_by_key(secname->s) ;
 		}
 		(*pos) += newpos ;
 	}
 	return 1 ;
 }
 
-int key_get_next_id(stralloc *sa, char const *string,size_t *pos)
+int key_get_next_id(stralloc *sa, char const *str,size_t *pos)
 {
-	if (!string) return 0 ;
+	if (!str) return 0 ;
 	int r = 0 ;
-	size_t newpos = 0, len = strlen(string) ;
+	size_t newpos = 0, len = strlen(str) ;
 	stralloc kp = STRALLOC_ZERO ;
 	wild_zero_all(&MILL_GET_AROBASE_KEY) ;
 	wild_zero_all(&MILL_FIRST_BRACKET) ;
 	int id = -1 ;
-	r = mill_element(&kp,string,&MILL_FIRST_BRACKET,&newpos) ;
+	r = mill_element(&kp,str,&MILL_FIRST_BRACKET,&newpos) ;
 	if (r == -1 || !r) goto err ;
 	*pos = newpos ;
 	while (id == -1 && newpos < len)
 	{
 		kp.len = 0 ;
-		r = mill_element(&kp,string,&MILL_GET_AROBASE_KEY,&newpos) ;
+		r = mill_element(&kp,str,&MILL_GET_AROBASE_KEY,&newpos) ;
 		if (r == -1) goto err ;
 		if (!stralloc_0(&kp)) goto err ;
-		id = get_enumbyid(kp.s,key_enum_el) ;
+		id = get_enum_by_key(kp.s) ;
 		//May confusing in case of instantiated service
 		//if (id == -1 && kp.len > 1) log_warn("unknown key: ",kp.s,": at parenthesis parse") ;
 	}
-	newpos = get_rlen_until(string,')',newpos) ;
+	newpos = get_rlen_until(str,')',newpos) ;
 	if (newpos == -1) goto err ;
-	if (!stralloc_catb(sa,string+*pos,newpos - *pos)) goto err ;
+	if (!stralloc_catb(sa,str+*pos,newpos - *pos)) goto err ;
 	*pos = newpos + 1 ; //+1 remove the last ')'
 	stralloc_free(&kp) ;
 	return 1 ;
@@ -973,13 +1017,13 @@ int get_clean_val(keynocheck *ch)
 	return 1 ;
 }
 
-int get_enum(char const *string, keynocheck *ch)
+int get_enum(char const *str, keynocheck *ch)
 {
-	int r = get_enumbyid(string,key_enum_el) ;
+	int r = get_enum_by_key(str) ;
 	if (r == -1) 
 	{
 		parse_err(0,ch) ;
-		return 0 ;
+		return -1 ;
 	}
 	return r ;
 }
@@ -987,10 +1031,10 @@ int get_enum(char const *string, keynocheck *ch)
 int get_timeout(keynocheck *ch,uint32_t *ui)
 {
 	int time = 0 ;
-	if (ch->idkey == T_KILL) time = 0 ;
-	else if (ch->idkey == T_FINISH) time = 1 ;
-	else if (ch->idkey == T_UP) time = 2 ;
-	else if (ch->idkey == T_DOWN) time = 3 ;
+	if ((ch->idkey == KEY_MAIN_T_KILL) || (ch->idkey == KEY_LOGGER_T_KILL)) time = 0 ;
+	else if ((ch->idkey == KEY_MAIN_T_FINISH) || (ch->idkey == KEY_LOGGER_T_FINISH)) time = 1 ;
+	else if (ch->idkey == KEY_MAIN_T_UP) time = 2 ;
+	else if (ch->idkey == KEY_MAIN_T_DOWN) time = 3 ;
 	if (scan_timeout(ch->val.s,ui,time) == -1)
 	{
 		parse_err(3,ch) ;
@@ -1025,40 +1069,65 @@ void parse_err(int ierr,keynocheck *check)
 {
 	int idsec = check->idsec ;
 	int idkey = check->idkey ;
+	char const *section = get_key_by_enum(ENUM_SECTION,idsec) ;
+	/* start stop enum are the same, enum_all must increase by one to match
+	 * the correct list */
+	char const *key = get_key_by_enum(idsec < 2 ? idsec + 1 : idsec,idkey) ;
+	
 	switch(ierr)
 	{
 		case 0: 
-			log_warn("invalid value for key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			log_warn("invalid value for key: ",key,": in section: ",section) ;
 			break ;
 		case 1:
-			log_warn("multiple definition of key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			log_warn("multiple definition of key: ",key,": in section: ",section) ;
 			break ;
 		case 2:
-			log_warn("same value for key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			log_warn("same value for key: ",key,": in section: ",section) ;
 			break ;
 		case 3:
-			log_warn("key: ",get_keybyid(idkey),": must be an integrer value in section: ",get_keybyid(idsec)) ;
+			log_warn("key: ",key,": must be an integrer value in section: ",section) ;
 			break ;
 		case 4:
-			log_warn("key: ",get_keybyid(idkey),": must be an absolute path in section: ",get_keybyid(idsec)) ;
+			log_warn("key: ",key,": must be an absolute path in section: ",section) ;
 			break ;
 		case 5:
-			log_warn("key: ",get_keybyid(idkey),": must be set in section: ",get_keybyid(idsec)) ;
+			log_warn("key: ",key,": must be set in section: ",section) ;
 			break ;
 		case 6:
-			log_warn("invalid format of key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			log_warn("invalid format of key: ",key,": in section: ",section) ;
 			break ;
 		case 7:
-			log_warnu("parse key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			log_warnu("parse key: ",key,": in section: ",section) ;
 			break ;
 		case 8:
-			log_warnu("clean value of key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			log_warnu("clean value of key: ",key,": in section: ",section) ;
 			break ;
 		case 9:
-			log_warn("empty value of key: ",get_keybyid(idkey),": in section: ",get_keybyid(idsec)) ;
+			log_warn("empty value of key: ",key,": in section: ",section) ;
 			break ;
 		default:
 			log_warn("unknown parse_err number") ;
 			break ;
 	}
+}
+
+int get_svtype(sv_alltype *sv_before, char const *contents)
+{
+	stralloc sa = STRALLOC_ZERO ;
+
+	if (!auto_stra(&sa,contents)) goto err ;
+
+	if (!environ_get_val_of_key(&sa,get_key_by_enum(ENUM_KEY_SECTION_MAIN,KEY_MAIN_TYPE))) goto err ;
+
+	if (!sastr_clean_element(&sa)) goto err ;
+	sv_before->cname.itype = get_enum_by_key(sa.s) ;
+
+	if (sv_before->cname.itype == -1) goto err ;
+
+	stralloc_free(&sa) ;
+	return 1 ;
+	err:
+		stralloc_free(&sa) ;
+		return 0 ;
 }

@@ -6,7 +6,7 @@
 
 # SYNOPSYS
 
-66-start [ *-h* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] [ *-T* _timeout_ ] [ *-r* | *-R* ] _service..._
+66-start [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] [ *-T* _timeout_ ] [ *-r* | *-R* ] _service..._
 
 # DESCRIPTION
 
@@ -21,6 +21,9 @@ Multiple _services_ can be started by seperating their names with a space.
 
 *-h*
 	Prints this help.
+
+*-z*
+	use color.
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++

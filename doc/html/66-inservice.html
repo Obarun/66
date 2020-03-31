@@ -23,7 +23,7 @@
 
 <h2>Interface </h2>
 	<pre>
-	66-inservice [ -h ] [ -v verbosity ] [ -c ] [ -n ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -t tree ] [ -p nline ] <em>service</em>
+	66-inservice [ -h ] [ -z ] [ -v verbosity ] [ -n ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -t tree ] [ -p nline ] <em>service</em>
 	</pre>
 
 <h2>Options </h2>
@@ -32,7 +32,10 @@
 		<li> 
 			<tt>-h&nbsp;</tt>&nbsp;: prints this help.
 		</li>
-	 <li>
+        <li> 
+			<tt>-z&nbsp;</tt>&nbsp;: use color.
+		</li>
+     <li>
         <tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
         the verbosity of the command. 
         <tt>1(Default)</tt>: Only print error messages. 
@@ -40,9 +43,6 @@
         <tt>3</tt>: Also prints tracing messages.
         <tt>4</tt>: Also prints debugging messages.
     </li>
-        <li> 
-			<tt>-c&nbsp;</tt>&nbsp;: enable colorization.
-		</li>
         <li> 
 			<tt>-n&nbsp;</tt>&nbsp;: do not display the field name(s) specified.
 		</li>

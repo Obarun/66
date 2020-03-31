@@ -23,7 +23,7 @@
     
 <h2> Interface </h2>
 	<pre>
-	66-tree [ -h ] [ -v <em>verbosity</em> ] [ -l ] [ -n|R ] [ -a|d ] [ -c ] [ -S <em>after_tree</em> ] [ -E|D ] [ -U ] [ -C <em>clone</em> ] <em>tree</em>
+	66-tree [ -h ] [ -z ] [ -v <em>verbosity</em> ] [ -l ] [ -n|R ] [ -a|d ] [ -c ] [ -S <em>after_tree</em> ] [ -E|D ] [ -U ] [ -C <em>clone</em> ] <em>tree</em>
 	</pre>
 
 	<p>
@@ -38,7 +38,7 @@
 
 	<ul>
 	 <li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
-	 
+	 <li> <tt>-z&nbsp;</tt>&nbsp;: use color.</li>
 	 <li>
 		<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
 		the verbosity of the command. 
@@ -82,8 +82,8 @@
 		<tt>-S&nbsp;<em>after_tree</em></tt>&nbsp;: Start the <em>tree</em> after <em>after_tree</em>. 
         This tells <a href="66-all.html">66-all</a> the specific order in which the start process is applied.
         <em>after_tree</em> and <em>tree</em> must be already enabled. You can combine this options directly 
-        with the <tt>-E</tt> option at tree creation time. <b>Note</b>: If <em>after_tree</em> and <em>tree</em>
-        have the same name, <em>tree</em> is considered at the very first tree to start.
+        with the <tt>-E</tt> option at tree creation time.
+        <b>Note</b>: If <em>after_tree</em> and <em>tree</em> have the same name, this <em>tree</em> will be the very first tree to start.
 	 </li>
      
 	 <li> 

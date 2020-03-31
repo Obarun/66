@@ -6,7 +6,7 @@
 
 # SYNOPSYS
 
-66-inservice [ *-h* ] [ *-v* _verbosity_ ] [ *-c* ] -[ *-n* ] [ *-o* _name,intree,enabled,..._ ] [ *-g* ] [ *-d* _depth_ ] [ *-r* ] [ *-t* _tree_ ] [ *-p* _nline_ ] _service_
+66-inservice [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-n* ] [ *-o* _name,intree,enabled,..._ ] [ *-g* ] [ *-d* _depth_ ] [ *-r* ] [ *-t* _tree_ ] [ *-p* _nline_ ] _service_
 
 # DESCRIPTION
 
@@ -17,15 +17,15 @@
 *-h*
 	Prints this help.
 
+*-z*
+	use color.
+
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++
 	*1* : (Default) Only prints error messages.++
 	*2* : Also prints warning messages.++
 	*3* : Also prints tracing messages.++
 	*4* : Also prints debugging messages.
-
-*-c*
-	enable colorization.
 
 *-n*
 	do not display the field name(s) specified.
@@ -116,7 +116,7 @@ In tree               : boot
 Status                : enabled, nothing to display
 Type                  : bundle
 Description           : Set the hostname and mount filesystem
-Source                : %%service_packager%%/boot/mount/00
+Source                : %%service_system%%/boot/mount/00
 Live                  : %%livedir%%/tree/0/boot/servicedirs/00
 Dependencies          : system-hostname  mount-run  populate-run  mount-tmp
                         populate-tmp  mount-proc  mount-sys  populate-sys

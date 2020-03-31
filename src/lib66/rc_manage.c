@@ -58,7 +58,7 @@ int rc_manage(ssexec_t *info,genalloc *ga)
 	memcpy(live + info->livetree.len + 1,info->treename.s,info->treename.len) ;
 	live[info->livetree.len + 1 + info->treename.len] = 0 ;
 	
-	if (!ss_resolve_pointo(&sares,info,LONGRUN,SS_RESOLVE_SRC))
+	if (!ss_resolve_pointo(&sares,info,TYPE_LONGRUN,SS_RESOLVE_SRC))
 	{
 		log_warnusys("set revolve pointer to source") ;
 		goto err ;
@@ -77,7 +77,7 @@ int rc_manage(ssexec_t *info,genalloc *ga)
 		char const *runat = string + genalloc_s(ss_resolve_t,ga)[i].runat ;
 		int type = genalloc_s(ss_resolve_t,ga)[i].type ;
 		//do not try to copy a bundle or oneshot, this is already done.
-		if (type != LONGRUN) continue ;
+		if (type != TYPE_LONGRUN) continue ;
 		sares.len = newlen ;
 		if (!stralloc_cats(&sares,name)) goto err ;
 		if (!stralloc_0(&sares)) goto err ;

@@ -6,14 +6,14 @@
 
 # SYNOPSIS
 
-66-enable [ *-h* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] [ *-f|F* ] [ *-c|C* ] [ *-S* ] _service_...
+66-enable [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] [ *-f|F* ] [ *-c|C* ] [ *-S* ] _service_...
 
 # DESCRIPTION
 
 *66-enable* expects to find a corresponding _frontend service file_ (see
 *66-frontend*(5)), a _directory name_ or a  _service instance_, by default at
-*%%service_sys%%* or *%%service_packager%%* in this order of precedence for
-root user and *%%service_user%%*, *%%service_sys%%* or *%%service_packager%%*
+*%%service_adm%%* or *%%service_system%%* in this order of precedence for
+root user and *%%service_user%%*, *%%service_adm%%* or *%%service_system%%*
 in this order of precedence for a normal user. The default path can be changed
 at compile time by passing the --with-sys-service=_DIR_, \--with-packager-service=_DIR_ and --with-user-service=_DIR_ to
 *./configure.*
@@ -30,6 +30,9 @@ Multiple _services_ can be enabled by seperating their names with a space.
 
 *-h*
 	Prints this help.
+
+*-z*
+	use color.
 
 *-v* _verbosity_
 	Increases/decreases the verbosity of the command.++
@@ -79,7 +82,7 @@ This works recursively until all necessary dependencies are enabled.
 # DIRECTORY NAME AS SERVICE
 
 When choosing to make a directory be recognised as service the path of the
-directory must exist by default at *%%service_sys%%*, *%%service_packager%%*
+directory must exist by default at *%%service_adm%%*, *%%service_system%%*
 or *$HOME/%%service_user%%* depending of the owner of the process.
 All _service_ files found in this directory will be enabled. This process
 is done recursively if a sub-directory is found till it not found other
@@ -115,7 +118,7 @@ frontend service file.
 ## SERVICE CONFIGURATION FILE
 
 If the *[environment]* section is set on the frontend service file, the parse
-result process can be found by default at *%%service_sysconf%%* for the root
+result process can be found by default at *%%service_admconf%%* for the root
 user and *$HOME/%%service_userconf%%* for a normal user. The default path can
 be changed at compile time by passing the --with-sys-service-conf=_DIR_ for the
 root user and --with-user-service-conf=_DIR_ for a normal user.
