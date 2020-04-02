@@ -284,11 +284,9 @@ int parse_module(sv_alltype *sv_before,char const *svname,uid_t owner,uint8_t fo
 		size_t clen = sv_before->type.module.configure > 0 ? 1 : 0 ;
 		char const *newargv[2 + clen] ;
 		unsigned int m = 0 ;
-		/** only overwrite the PWD variable
-		 * Bash do not respect this, it set
-		 * automatically the PWD variable. */
-
-		if (setenv("PWD",tmp.s,1) < 0) log_warnusys_return(LOG_EXIT_SYS,"set pwd environment variable") ;
+		char pwd[sdir.len + 12] ;
+		auto_strings(pwd,sdir.s,"/.configure") ;
+		if (chdir(pwd) < 0) log_warnusys_return(LOG_EXIT_ZERO,"chdir to: ",pwd) ;
 
 		newargv[m++] = tmp.s ;
 		if (sv_before->type.module.configure > 0)
