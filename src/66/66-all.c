@@ -284,7 +284,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	for (;pos < contents.len; pos += strlen(contents.s + pos) + 1)
 	{
 		tree.len = 0 ;
-		
+		ugly.len = 0 ;
+
 		char *treename = contents.s + pos ;
 		
 		if(!stralloc_cats(&tree,treename)) log_die_nomem("stralloc") ;
@@ -292,7 +293,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		
 		r = tree_sethome(&tree,base.s,owner) ;
 		if (r < 0 || !r) log_dieusys(LOG_EXIT_SYS,"find tree: ", tree.s) ;
-	
+
 		if (!tree_get_permissions(tree.s,owner))
 			log_die(LOG_EXIT_USER,"You're not allowed to use the tree: ",tree.s) ;
 		/* we need to make an ugly check here, a tree might be empty.
@@ -305,6 +306,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (!stralloc_0(&tree)) log_die_nomem("stralloc") ;
 		
 		if (!sastr_dir_get(&ugly,tree.s,"",S_IFDIR)) log_dieu(LOG_EXIT_SYS,"get classic services from: ",tree.s) ;
+
 		if (!ugly.len)
 		{
 			tree.len = newlen ;
