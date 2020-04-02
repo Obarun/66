@@ -1080,11 +1080,9 @@ int ss_resolve_create_live(ssexec_t *info)
 	if (!yourgid(&gidowner,info->owner)) return 0 ;
 	stralloc sares = STRALLOC_ZERO ;
 	stralloc ressrc = STRALLOC_ZERO ;
-	
-	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) goto err ;
-	
-	if (!stralloc_copy(&ressrc,&sares)) goto err ; 
-			
+
+	if (!ss_resolve_pointo(&ressrc,info,SS_NOTYPE,SS_RESOLVE_SRC)) goto err ;
+
 	if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_STATE)) goto err ;
 	r = scan_mode(sares.s,S_IFDIR) ;
 	if (r < 0) goto err ;
