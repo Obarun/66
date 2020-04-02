@@ -16,7 +16,7 @@
 
 #include <string.h>
 #include <stdio.h> //rename
-#include <stdlib.h> //setenv
+#include <unistd.h> //chdir
 
 #include <oblibs/string.h>
 #include <oblibs/types.h>
