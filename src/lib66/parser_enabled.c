@@ -48,13 +48,12 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	svsrclen = strlen(svsrc) ;
 	svnamelen = strlen(svname) ;
 	char svpath[svsrclen + svnamelen + 1] ;
-	if (scan_mode(sv,S_IFDIR) == 1) return 1 ;
 	char tree[info->tree.len + SS_SVDIRS_LEN + 1] ;
 	auto_strings(tree,info->tree.s,SS_SVDIRS) ;
 	
 	int r = parse_service_check_enabled(tree,svname,force,&exist) ;
 	if (!r) goto freed ;
-		
+
 	sv_alltype sv_before = SV_ALLTYPE_ZERO ;
 	sasv->len = 0 ;
 
@@ -74,6 +73,10 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	
 	if (!get_svtype(&sv_before,sasv->s)) 
 		log_warn_return (LOG_EXIT_ZERO,"invalid value for key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,KEY_MAIN_TYPE)," in service file: ",svsrc,svname) ;
+	
+	/** contain of directory should be listed by ss_resolve_src_path
+	 * execpt for module type */
+	if (scan_mode(sv,S_IFDIR) == 1 && sv_before.cname.itype != TYPE_MODULE) return 1 ;
 	
 	if (insta > 0)
 	{
@@ -97,7 +100,7 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 		goto freed ;
 	}
 	if (!parser(&sv_before,sasv,svname,sv_before.cname.itype)) return 0 ;
-
+	
 	/** keep the name set by user
 	 * uniquely for instantiated service
 	 * The name must contain the template string */
@@ -173,8 +176,8 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	if ((sv_before.cname.itype > TYPE_CLASSIC && force > 1) || !exist)
 	{
 		if (!parse_service_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force)) return 0 ;
-		if (!parse_service_opts_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,KEY_MAIN_OPTSDEPS)) return 0 ;
 		if (!parse_service_opts_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,KEY_MAIN_EXTDEPS)) return 0 ;
+		if (!parse_service_opts_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,KEY_MAIN_OPTSDEPS)) return 0 ;
 	}
 	freed:
 	return 1 ;
@@ -225,7 +228,7 @@ int parse_module(sv_alltype *sv_before,char const *svname,uid_t owner,uint8_t fo
 	}
 	
 	/** regex file content */
-	if (!sastr_dir_get_recursive(&list,sdir.s,".configure",S_IFREG)) 
+	if (!sastr_dir_get_recursive(&list,sdir.s,"",S_IFREG)) 
 		log_warnusys_return(LOG_EXIT_ZERO,"get file(s) of module: ",svname) ;
 	
 	pos = sv_before->type.module.start_infiles, len = sv_before->type.module.end_infiles ;
@@ -381,17 +384,16 @@ int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_
 	stralloc newsv = STRALLOC_ZERO ;
 		
 	size_t pos = 0 , baselen = strlen(info->base.s) + SS_SYSTEM_LEN ;
-	uint8_t found = 0, ext = 0 ;
+	uint8_t found = 0, ext = mandatory == KEY_MAIN_EXTDEPS ? 1 : 0 ;
 	char *optname = 0 ;
 	char btmp[baselen + 1] ;
 	auto_strings(btmp,info->base.s,SS_SYSTEM) ;
 	
 	int idref = sv_before->cname.idopts ;
 	unsigned int nref = sv_before->cname.nopts ;
-	if (mandatory == KEY_MAIN_EXTDEPS) {
+	if (ext) {
 		idref = sv_before->cname.idext ;
 		nref = sv_before->cname.next ;
-		ext = 1 ;
 	}
 	// only pass here for the first time
 	if (!tree_list->len)
@@ -568,7 +570,7 @@ int regex_replace(int id,unsigned int nid, char const *sdir,mode_t mode)
 	stralloc list = STRALLOC_ZERO ;
 	stralloc tmp = STRALLOC_ZERO ;
 	size_t pos = id, len = nid, in ;
-	if (!sastr_dir_get_recursive(&list,sdir,".configure",mode)) 
+	if (!sastr_dir_get_recursive(&list,sdir,"",mode)) 
 		log_warnusys_return(LOG_EXIT_ZERO,"get content of: ",sdir) ;
 		
 	pos = id, len = nid ;
