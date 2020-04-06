@@ -332,7 +332,7 @@ int check_mandatory(sv_alltype *service, section_t *sasection)
 	 * it inside all already existing service.
 	 * It will be mandatory when 66-backup will be incorporated. */
 	if (service->cname.version < 0)
-		log_warn("key @version at section [start] is missing -- it will be mandatory in the near future") ;
+		log_warn("key @version at section [main] is missing -- it will be mandatory in the near future") ;
 	
 	if (service->opts[2] && !sasection->idx[SECTION_ENV])
 		log_warn_return(LOG_EXIT_ZERO,"options env was asked -- section environment must be set") ;
