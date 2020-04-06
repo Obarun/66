@@ -153,6 +153,7 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t own
 		auto_check_one(SS_SERVICE_ADMCONFDIR,0755) ;
 		auto_check_one(SS_MODULE_SYSDIR,0755) ;
 		auto_check_one(SS_MODULE_ADMDIR,0755) ;
+		auto_check_one(SS_SCRIPT_SYSDIR,0755) ;
 	}
 	else
 	{
@@ -175,6 +176,9 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t own
 		auto_stralloc_0(&extra,SS_SERVICE_USERCONFDIR) ;
 		extra.len = extralen ;
 		auto_stralloc_0(&extra,SS_MODULE_USERDIR) ;
+		auto_check_one(extra.s,0755) ;
+		extra.len = extralen ;
+		auto_stralloc_0(&extra,SS_SCRIPT_USERDIR) ;
 		auto_check_one(extra.s,0755) ;
 		stralloc_free(&extra) ;
 	}
