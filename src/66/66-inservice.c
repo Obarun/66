@@ -42,6 +42,7 @@
 #include <66/enum.h>
 #include <66/resolve.h>
 #include <66/environ.h>
+#include <66/state.h>
 
 #include <s6/s6-supervise.h>
 
@@ -223,8 +224,8 @@ static void info_get_status(ss_resolve_t *res)
 	int r ;
 	int wstat ;
 	pid_t pid ;
-	
-		
+	ss_state_t sta = STATE_ZERO ;
+	int warn_color = 0 ;
 	if (res->type == TYPE_CLASSIC || res->type == TYPE_LONGRUN)
 	{
 		r = s6_svc_ok(res->sa.s + res->runat) ;
@@ -250,7 +251,33 @@ static void info_get_status(ss_resolve_t *res)
 	}
 	else
 	{
-		if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
+		char *ste = res->sa.s + res->state ;
+		char *name = res->sa.s + res->name ;
+		char *status = 0 ;
+		if (!ss_state_check(ste,name))
+		{
+			status = "unitialized" ;
+			goto dis ;
+		}
+		
+		if (!ss_state_read(&sta,ste,name))
+			log_dieusys(LOG_EXIT_SYS,"read state of: ",name) ;
+		
+		if (sta.init) {
+			status = "unitialized" ;
+		}
+		else if (!sta.state)
+		{
+			status = "down" ;
+			warn_color = 1 ;
+		}
+		else if (sta.state)
+		{
+			status = "up" ;
+			warn_color = 2 ;
+		}
+		dis:
+		if (!bprintf(buffer_1,"%s%s%s\n",warn_color > 1 ? log_color->valid : warn_color ? log_color->error : log_color->warning,status,log_color->off))
 			log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 	}
 }
