@@ -127,6 +127,8 @@ int write_services(sv_alltype *sv, char const *workdir, uint8_t force, uint8_t c
 
 			break ;
 		case TYPE_MODULE:
+			if (!write_common(sv,wname,conf))
+				log_warnu_return(LOG_EXIT_ZERO,"write common files") ;
 		case TYPE_BUNDLE:
 			if (!write_bundle(sv, wname))
 				log_warnu_return(LOG_EXIT_ZERO,"write: ",wname) ;
@@ -261,7 +263,8 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 	char *time = 0 ;
 	char *pmax = 0 ;
 	char *pback = 0 ;
-	char *timestamp = "t" ;
+	char *timestamp = 0 ;
+	int itimestamp = SS_LOGGER_TIMESTAMP ;
 	char *logrunner = log->run.runas >=0 ? keep.s + log->run.runas : SS_LOGGER_RUNNER ;
 	char max[UINT32_FMT] ;
 	char back[UINT32_FMT] ;
@@ -373,9 +376,9 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			}
 			if (!stralloc_0(&destlog)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			
-			if (log->timestamp == TIME_ISO) timestamp = "T" ;
-			else if (log->timestamp == TIME_NONE) timestamp = "" ;
-			
+			if (log->timestamp >= 0) timestamp = log->timestamp == TIME_NONE ? "" : log->timestamp == TIME_ISO ? "T" : "t" ;
+			else timestamp = itimestamp == TIME_NONE ? "" : itimestamp == TIME_ISO ? "T" : "t" ;
+
 			if (log->backup > 0)
 			{
 				back[uint32_fmt(back,log->backup)] = 0 ;
@@ -511,11 +514,9 @@ int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 {
 	int r ;
 	char *time = NULL ;
-	char *name = keep.s + sv->cname.name ;
 	char *src = keep.s + sv->src ;
 	size_t dstlen = strlen(dst) ;
 	size_t srclen = strlen(src) ;
-	size_t namelen = strlen(name) ;
 	/**down file*/
 	if (sv->flags[0] > 0)
 	{
@@ -576,32 +577,19 @@ int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 	/** environment */
 	if (sv->opts[2] > 0)
 	{
+		stralloc tmp = STRALLOC_ZERO ;
 		char *dst = keep.s + sv->srconf ;
-		size_t dlen ;
-		dlen = strlen(dst) ;
-		char copy[dlen + namelen + 1] ;
-		memcpy(copy,dst,dlen) ;
-		memcpy(copy + dlen, name,namelen) ;
-		copy[dlen + namelen] = 0 ;
-		// copy config file from upstream in sysadmin
-		r = scan_mode(copy,S_IFREG) ;
-		if (!r || conf > 1)
-		{
-			copy[dlen] = 0 ;
-			if (!write_env(name,&sv->saenv,copy))
+		char *name = keep.s + sv->cname.name ;
+
+		r = env_compute(&tmp,sv,conf) ;
+		if (!r)	log_warnu_return(LOG_EXIT_ZERO,"compute environment") ;
+		/** env_compute return 2 if we need
+		 * to write the file */
+		if (r == 2) {
+			if (!write_env(name,&tmp,dst))
 				log_warnu_return(LOG_EXIT_ZERO,"write environment") ;
 		}
-		else if (conf == 1)
-		{
-			stralloc salist = STRALLOC_ZERO ;
-			//merge config from upstream to sysadmin
-			if (!file_readputsa(&salist,dst,name)) log_warnusys_return(LOG_EXIT_ZERO,"read: ",dst,name) ;
-
-			if (!env_merge_conf(dst,name,&salist,&sv->saenv,conf))
-				log_warnu_return(LOG_EXIT_ZERO,"merge environment file") ;
-
-			stralloc_free(&salist) ;
-		}
+		stralloc_free(&tmp) ;
 	}
 	/** hierarchy copy */
 	if (sv->hiercopy[0])
@@ -794,7 +782,7 @@ int write_uint(char const *dst, char const *name, uint32_t ui)
 int write_env(char const *name, stralloc *sa,char const *dst)
 {
 	int r ;
-			
+
 	r = scan_mode(dst,S_IFDIR) ;
 	if (r < 0)
 		log_warnsys_return(LOG_EXIT_ZERO," invalid environment directory: ",dst) ;

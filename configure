@@ -32,7 +32,8 @@ Fine tuning of the installation directories:
   --with-skeleton=DIR              skeleton files directory installation [SYSDIR/66]				
   --with-system-log=DIR            system service log directory [/var/log/66]
   --with-s6-log-user=USER          user for running s6-log program [root]
-
+  --with-s6-log-timestamp          default timestamp for s6-log program [tai]
+  
   --with-system-dir=DIR            66 tools system working directory [/var/lib/66]
   --with-system-service=DIR        system service frontend directory [DATAROOTDIR/66/service]
   --with-system-module=DIR         system module directory [DATAROOTDIR/66/module]
@@ -59,6 +60,8 @@ Fine tuning of the installation directories:
  For example do not set --with-sysadmin-service=/etc/66/service/sysadmin with system service   
  --with-system-service=/etc/66/service.
  Apply the same rule for --with-system-module and --with-sysadmin-module options.
+ 
+ Valid value for --with-s6-log-timestamp are tai,iso,none.
  
 Dependencies:
   --with-sysdeps=DIR               use sysdeps in DIR [PREFIX/lib/skalibs/sysdeps]
@@ -182,6 +185,7 @@ skel='$sysconfdir/66'
 system_dir='/var/lib/66'
 system_log='/var/log/66'
 s6log_user='root'
+s6log_timestamp='0'
 service_system='$datarootdir/66/service'
 module_system='$datarootdir/66/module'
 script_system='$datarootdir/66/script'
@@ -233,6 +237,7 @@ for arg ; do
     --with-system-dir=*) system_dir=${arg#*=} ;;
     --with-system-log=*) system_log=${arg#*=} ;;
     --with-s6-log-user=*) s6log_user=${arg#*=} ;;
+    --with-s6-log-timestamp=*) s6log_timestamp=${arg#*=} ;;
     --with-system-service=*) service_system=${arg#*=} ;;
     --with-system-module=*) module_system=${arg#*=} ;;
     --with-system-script=*) script_system=${arg#*=} ;;
@@ -328,6 +333,17 @@ for i in service_adm module_adm service_admconf skel; do
   eval $i=$tmp
   stripdir $i
 done
+
+# check valid s6-log timestamp
+if [ $s6log_timestamp == "tai" ]; then
+    s6log_timestamp='0'
+elif [ $s6log_timestamp == "iso" ]; then
+    s6log_timestamp='1'
+elif [ $s6log_timestamp == "none" ]; then
+    s6log_timestamp='2'
+else 
+    fail "$0: invalid timestamp value -- valid value are: tai,iso or none"
+fi
 
 # Get usable temp filenames
 i=0
@@ -528,6 +544,7 @@ skel := $skel
 system_dir := $system_dir
 system_log := $system_log
 s6log_user := $s6log_user
+s6log_timestamp := $s6log_timestamp
 service_system := $service_system
 module_system := $module_system
 script_system := $script_system
@@ -611,6 +628,7 @@ All rights reserved.*/
 #define ${package_macro_name}_SKEL_DIR "$sysconfdir/66/"
 #define ${package_macro_name}_LOGGER_SYSDIR "$system_log/"
 #define ${package_macro_name}_LOGGER_RUNNER "$s6log_user"
+#define ${package_macro_name}_LOGGER_TIMESTAMP $s6log_timestamp
 #define ${package_macro_name}_SERVICE_SYSDIR "$service_system/"
 #define ${package_macro_name}_SERVICE_ADMDIR "$service_adm/"
 #define ${package_macro_name}_SERVICE_ADMCONFDIR "$service_admconf/"
