@@ -67,7 +67,7 @@ void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORC
 	for (;i < len; i += strlen(list->s + i) + 1)
 	{
 		char *name = list->s + i ;
-		if (!parse_service_before(info,&parsed_list,&tree_list,name,nbsv,&sasv,FORCE))
+		if (!parse_service_before(info,&parsed_list,&tree_list,name,nbsv,&sasv,FORCE,CONF))
 			log_dieu(LOG_EXIT_SYS,"parse service file: ",name,": or its dependencies") ;
 	}
 	stralloc_free(&sasv) ;
@@ -83,12 +83,13 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 	{
 		sv_alltype_ref sv = &genalloc_s(sv_alltype,gasv)[i] ;
 		char *name = keep.s + sv->cname.name ;
+		
 		r = write_services(sv, workdir,FORCE,CONF) ;
 		if (!r)
 			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write service: ",name) ;
 
 		if (r > 1) continue ; //service already added
-
+		
 		log_trace("write resolve file of: ",name) ;
 		if (!ss_resolve_setnwrite(sv,info,workdir))
 			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write revolve file for: ",name) ;
@@ -125,7 +126,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">cCfFS", &l) ;
+			int opt = getopt_args(argc,argv, ">cmCfFS", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
@@ -135,7 +136,8 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 				case 'F' : 	if (FORCE) log_usage(usage_enable) ; 
 							FORCE = 2 ; break ;
 				case 'c' :	if (CONF) log_usage(usage_enable) ; CONF = 1 ; break ;
-				case 'C' :	if (CONF) log_usage(usage_enable) ; CONF = 2 ; break ;
+				case 'm' :	if (CONF) log_usage(usage_enable) ; CONF = 2 ; break ;
+				case 'C' :	if (CONF) log_usage(usage_enable) ; CONF = 3 ; break ;
 				case 'S' :	start = 1 ;	break ;
 				default : 	log_usage(usage_enable) ; 
 			}
