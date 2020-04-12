@@ -15,6 +15,7 @@ hpr_wall.o
 instance.o
 parser.o
 parser_enabled.o
+parser_module.o
 parser_utils.o
 parser_write.o
 rc_init.o

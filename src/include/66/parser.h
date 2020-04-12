@@ -55,7 +55,6 @@ struct sv_execlog_s
 	int destination ;
 	uint32_t backup ;
 	uint32_t maxsize ;
-	/**timestamp=50->tai,timestamp=51->iso,52->none*/
 	int timestamp ;
 	int idga ; //pos in stralloc deps
 	unsigned int nga ; //number of deps in stralloc deps
@@ -285,9 +284,9 @@ extern void freed_parser(void) ;
 extern void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORCE) ;
 extern int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype) ;
 extern int parse_service_check_enabled(char const *tree_directory, char const *svname,uint8_t force,uint8_t *exist) ;
-extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, stralloc *opts_deps_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force) ;
-extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, stralloc *opts_deps_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force) ;
-extern int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t mandatory) ;
+extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, stralloc *opts_deps_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf) ;
+extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, stralloc *opts_deps_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf) ;
+extern int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf,uint8_t mandatory) ;
 extern int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner) ;
 extern int get_svtype(sv_alltype *sv_before, char const *contents) ;
 /** split */
@@ -319,7 +318,7 @@ extern int write_dependencies(unsigned int nga,unsigned int idga,char const *dst
 extern int write_env(char const *name,stralloc *sa,char const *dst) ;
 extern int write_oneshot_logger(stralloc *destlog, sv_alltype *sv) ;
 /** module */
-extern int parse_module(sv_alltype *sv_before,char const *svname,uid_t owner,uint8_t force) ;
+extern int parse_module(stralloc *svclassic,sv_alltype *sv_before,char const *svname,uid_t owner,uint8_t force,uint8_t conf) ;
 extern int regex_get_file_name(char *filename,char const *str) ;
 extern int regex_get_replace(char *replace, char const *str) ;
 extern int regex_get_regex(char *regex, char const *str) ;
