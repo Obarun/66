@@ -614,7 +614,7 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	memcpy(state + livelen + SS_STATE_LEN + 1 + ownerlen + 1,info->treename.s,info->treename.len) ;
 	state[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len] = 0 ;
 	
-	
+	res.type = services->cname.itype ;
 	res.name = ss_resolve_add_string(&res,name) ;
 	res.description = ss_resolve_add_string(&res,keep.s + services->cname.description) ;
 	/*** temporary check here, version is not mandatory yet */
@@ -627,17 +627,26 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	res.src = ss_resolve_add_string(&res,keep.s + services->src) ;
 	if (services->srconf)
 		res.srconf = ss_resolve_add_string(&res,keep.s + services->srconf) ;
-	if (services->type.classic_longrun.run.exec >= 0)
-		res.exec_run = ss_resolve_add_string(&res,keep.s + services->type.classic_longrun.run.exec) ;
-	if (services->type.classic_longrun.finish.exec >= 0)
-		res.exec_finish = ss_resolve_add_string(&res,keep.s + services->type.classic_longrun.finish.exec) ;
-	res.type = services->cname.itype ;
+	if (res.type == TYPE_ONESHOT)
+	{
+		if (services->type.oneshot.up.exec >= 0)
+			res.exec_run = ss_resolve_add_string(&res,keep.s + services->type.oneshot.up.exec) ;
+		if (services->type.oneshot.down.exec >= 0)
+			res.exec_run = ss_resolve_add_string(&res,keep.s + services->type.oneshot.down.exec) ;
+	}
+	if (res.type == TYPE_CLASSIC || res.type == TYPE_LONGRUN)
+	{
+		if (services->type.classic_longrun.run.exec >= 0)
+			res.exec_run = ss_resolve_add_string(&res,keep.s + services->type.classic_longrun.run.exec) ;
+		if (services->type.oneshot.down.exec >= 0)
+			res.exec_run = ss_resolve_add_string(&res,keep.s + services->type.classic_longrun.finish.exec) ;
+	}
+	
 	res.ndeps = services->cname.nga ;
 	res.noptsdeps = services->cname.nopts ;
 	res.nextdeps = services->cname.next ;
 	if (services->flags[0])	res.down = 1 ;
 	res.disen = 1 ;
-
 	if (res.type == TYPE_CLASSIC)
 	{
 		
@@ -807,6 +816,7 @@ int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst,ssexec_t *info)
 	}else memcpy(live + runlen,"/log",4)  ;
 	live[runlen + 4] = 0 ;
 	
+	res.type = sv->type ;
 	res.name = ss_resolve_add_string(&res,string + sv->logger) ;
 	res.description = ss_resolve_add_string(&res,descrip) ;
 	/*** temporary check here, version is not mandatory yet */
@@ -821,7 +831,6 @@ int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst,ssexec_t *info)
 	res.treename = ss_resolve_add_string(&res,string + sv->treename) ;
 	res.state = ss_resolve_add_string(&res,string + sv->state) ;
 	res.src = ss_resolve_add_string(&res,string + sv->src) ;
-	res.type = sv->type ;
 	res.down = sv->down ;
 	res.disen = sv->disen ;
 	
