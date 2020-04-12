@@ -36,7 +36,7 @@
 int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
 	int list = 0, replace = 0 , edit = 0 ;
-	stralloc conf = STRALLOC_ZERO ;
+	stralloc result = STRALLOC_ZERO ;
 	stralloc var = STRALLOC_ZERO ;
 	stralloc salist = STRALLOC_ZERO ;
 	stralloc sasrc = STRALLOC_ZERO ;
@@ -58,7 +58,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 				case 'r' :	if (!stralloc_cats(&var,l.arg) ||
 							!stralloc_cats(&var,"\n") ||
 							!stralloc_0(&var)) log_die_nomem("stralloc") ; 
-							replace = 1 ; break ;
+							replace = 2 ; break ;
 				case 'e' :	if (replace) log_usage(usage_env) ; 
 							edit = 1 ;
 							break ;
@@ -80,7 +80,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 	}
 	else if (replace)
 	{
-		if (!env_merge_conf(src,sv,&salist,&var,replace)) 
+		if (!env_merge_conf(&result,&salist,&var,replace)) 
 			log_dieu(LOG_EXIT_SYS,"merge environment file with: ",var.s) ;
 	}
 	else if (edit)
@@ -96,7 +96,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 		xpathexec_run (newarg[0],newarg,envp) ;
 	}
 	freed:
-		stralloc_free(&conf) ;
+		stralloc_free(&result) ;
 		stralloc_free(&sasrc) ;
 		stralloc_free(&var) ;
 		stralloc_free(&salist) ;
