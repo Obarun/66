@@ -74,7 +74,7 @@ int db_compile(char const *workdir, char const *tree, char const *treename, char
 		log_warnusys_return(LOG_EXIT_ZERO,"wait for: ",newargv[0]) ;
 		
 	if (wstat)
-		log_warnusys_return(LOG_EXIT_ZERO,"compile: ",dest) ;
+		log_warnu_return(LOG_EXIT_ZERO,"compile: ",dest) ;
 		
 	return 1 ;
 }
