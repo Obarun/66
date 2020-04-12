@@ -270,8 +270,8 @@ enum actions_e
 	ACTION_SKIP
 } ;
 
-extern unsigned char const actions[SECTION_ENDOFKEY][TYPE_ENDOFKEY] ;
-extern unsigned char const states[SECTION_ENDOFKEY][TYPE_ENDOFKEY] ;
+//extern unsigned char const actions[SECTION_ENDOFKEY][TYPE_ENDOFKEY] ;
+//extern unsigned char const states[SECTION_ENDOFKEY][TYPE_ENDOFKEY] ;
 
 typedef struct key_description_s key_description_t ;
 struct key_description_s

@@ -41,6 +41,7 @@
 #include <66/config.h>
 #include <66/constants.h>
 #include <66/enum.h>
+#include <66/environ.h> //env_clean_with_comment
 #include <66/utils.h>//MYUID
 
 stralloc keep = STRALLOC_ZERO ;//sv_alltype data
@@ -225,11 +226,10 @@ int key_get_range(genalloc *ga, section_t *sasection)
 				nocheck.expected = EXPECT_KEYVAL ;
 				section_setsa(i,&psasection,sasection) ;
 				if (!stralloc_cats(&nocheck.val,psasection->s+1)) goto err ;//+1 remove the first '\n'
-				if (!environ_get_clean_env(&nocheck.val)) { log_warnu("parse section: ",get_key_by_enum(ENUM_SECTION,i)) ; goto err ; }
 				if (!stralloc_cats(&nocheck.val,"\n") ||
 				!stralloc_0(&nocheck.val)) goto err ;
 				nocheck.val.len-- ;
-
+				
 				if (!genalloc_append(keynocheck,ga,&nocheck)) goto err ;
 			} 
 			else
@@ -420,13 +420,35 @@ int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service)
 	int p = svtype ;
 	int ste = 0 ;
 	
-	while (ste < 7)
-	{
+	unsigned char const actions[SECTION_ENDOFKEY][TYPE_ENDOFKEY] = {
+		// CLASSIC,				BUNDLE,				LONGRUN,			ONESHOT				MODULES
+		{ ACTION_COMMON,		ACTION_COMMON,		ACTION_COMMON,		ACTION_COMMON,		ACTION_COMMON }, // main
+		{ ACTION_EXECRUN, 		ACTION_SKIP,		ACTION_EXECRUN,		ACTION_EXECUP,		ACTION_SKIP }, // start
+		{ ACTION_EXECFINISH,	ACTION_SKIP,		ACTION_EXECFINISH,	ACTION_EXECDOWN,	ACTION_SKIP }, // stop
+		{ ACTION_EXECLOG,		ACTION_SKIP,		ACTION_EXECLOG, 	ACTION_SKIP,		ACTION_SKIP }, // log
+		{ ACTION_ENVIRON, 		ACTION_SKIP,		ACTION_ENVIRON, 	ACTION_ENVIRON,		ACTION_ENVIRON }, // env
+		{ ACTION_SKIP, 			ACTION_SKIP,		ACTION_SKIP,	 	ACTION_SKIP,		ACTION_REGEX } // regex
+	} ;
+
+	unsigned char const states[ACTION_SKIP + 1][TYPE_ENDOFKEY] = {
+		// CLASSIC,			BUNDLE,			LONGRUN,		ONESHOT			MODULES
+		{ SECTION_START,	ACTION_SKIP,	SECTION_START,	SECTION_START,	SECTION_REGEX }, // action_common
+		{ SECTION_STOP,		ACTION_SKIP,	SECTION_STOP,	ACTION_SKIP,	ACTION_SKIP }, // action_execrun
+		{ SECTION_LOG,		ACTION_SKIP,	SECTION_LOG,	ACTION_SKIP,	ACTION_SKIP }, // action_execfinish
+		{ SECTION_ENV,		ACTION_SKIP,	SECTION_ENV,	ACTION_SKIP,	ACTION_SKIP }, // action_log
+		{ ACTION_SKIP,		ACTION_SKIP,	ACTION_SKIP,	SECTION_STOP,	ACTION_SKIP }, // action_execup
+		{ ACTION_SKIP,		ACTION_SKIP,	ACTION_SKIP,	SECTION_ENV,	ACTION_SKIP }, // action_execdown
+		{ ACTION_SKIP,		ACTION_SKIP,	ACTION_SKIP,	ACTION_SKIP,	ACTION_SKIP }, // action_environ
+		{ ACTION_SKIP,		ACTION_SKIP,	ACTION_SKIP,	ACTION_SKIP,	SECTION_ENV }, // action_regex
+		{ ACTION_SKIP,		ACTION_SKIP,	ACTION_SKIP,	ACTION_SKIP,	ACTION_SKIP } // action_skip
+	} ;
+
+	while (ste < 8)
+	{	
 	    unsigned int action = actions[ste][p] ;
-	    
-	    ste = states[ste][p] ;
+		ste = states[action][p] ;
 		
-		  switch (action) {
+		switch (action) {
 			case ACTION_COMMON:
 				if (nocheck->idsec == SECTION_MAIN)
 					if (!keep_common(service,nocheck,svtype))
@@ -766,19 +788,17 @@ int keep_logger(sv_execlog *log,keynocheck *nocheck)
 
 int keep_environ(sv_alltype *service,keynocheck *nocheck)
 {
-	char *chval = nocheck->val.s ;
-	
+	stralloc tmp = STRALLOC_ZERO ;
 	switch(nocheck->idkey){
 		case KEY_ENVIRON_ENVAL:
-			if (!environ_clean_nline(&nocheck->val))
-				log_warnu_return(LOG_EXIT_ZERO,"clean environment value: ",chval) ;
-			
-			if (!stralloc_cats(&nocheck->val,"\n")) return 0 ;
-			if (!stralloc_copy(&service->saenv,&nocheck->val))
-				log_warnu_return(LOG_EXIT_ZERO,"store environment value: ",chval) ;
+			if (!env_clean_with_comment(&nocheck->val))
+				log_warnu_return(LOG_EXIT_ZERO,"clean environment value") ;
+			if (!auto_stra(&service->saenv,nocheck->val.s))
+				log_warnu_return(LOG_EXIT_ZERO,"store environment value") ;
 			break ;
 		default: log_warn_return(LOG_EXIT_ZERO,"unknown key: ",get_key_by_enum(ENUM_KEY_SECTION_ENVIRON,nocheck->idkey)) ;
 	}
+	stralloc_free(&tmp) ;
 	return 1 ;
 }
 
