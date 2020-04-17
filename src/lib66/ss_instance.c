@@ -1,5 +1,5 @@
 /* 
- * instance.c
+ * ss_instance.c
  * 
  * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
  * 

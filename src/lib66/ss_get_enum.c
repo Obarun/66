@@ -1,5 +1,5 @@
 /* 
- * get_enum.c
+ * ss_get_enum.c
  * 
  * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
  * 

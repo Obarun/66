@@ -1,5 +1,5 @@
 /* 
- * environ.c
+ * ss_environ.c
  * 
  * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
  * 

@@ -1,5 +1,5 @@
 /* 
- * state.c
+ * ss_state.c
  * 
  * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
  * 
