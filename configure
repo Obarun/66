@@ -32,7 +32,7 @@ Fine tuning of the installation directories:
   --with-skeleton=DIR              skeleton files directory installation [SYSDIR/66]				
   --with-system-log=DIR            system service log directory [/var/log/66]
   --with-s6-log-user=USER          user for running s6-log program [root]
-  --with-s6-log-timestamp          default timestamp for s6-log program [tai]
+  --with-s6-log-timestamp=FORMAT   default timestamp for s6-log program [tai]
   
   --with-system-dir=DIR            66 tools system working directory [/var/lib/66]
   --with-system-service=DIR        system service frontend directory [DATAROOTDIR/66/service]
@@ -61,7 +61,7 @@ Fine tuning of the installation directories:
  --with-system-service=/etc/66/service.
  Apply the same rule for --with-system-module and --with-sysadmin-module options.
  
- Valid value for --with-s6-log-timestamp are tai,iso,none.
+ Valid FORMAT for --with-s6-log-timestamp are tai,iso,none.
  
 Dependencies:
   --with-sysdeps=DIR               use sysdeps in DIR [PREFIX/lib/skalibs/sysdeps]
