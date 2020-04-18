@@ -37,13 +37,14 @@
 #include <66/constants.h>
 #include <66/environ.h>
 
+/* @sv -> name of the service to parse with the path of the frontend file
+ * source */
 int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf)
 {
 	log_trace("start parse process of service: ",sv) ;
 	int insta ;
 	uint8_t exist = 0 ;
 	size_t svlen = strlen(sv), svsrclen, svnamelen ;
-	stralloc svclassic = STRALLOC_ZERO ;
 	char svname[svlen + 1], svsrc[svlen + 1] ; 
 	if (!ob_basename(svname,sv)) log_warnu_return(LOG_EXIT_ZERO,"get basename of: ",sv) ;
 	if (!ob_dirname(svsrc,sv)) log_warnu_return(LOG_EXIT_ZERO,"get dirname of: ",sv) ;
@@ -54,7 +55,7 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	auto_strings(tree,info->tree.s,SS_SVDIRS) ;
 	
 	int r = parse_service_check_enabled(tree,svname,force,&exist) ;
-	if (!r) goto freed ;
+	if (!r) goto end ;
 
 	sv_alltype sv_before = SV_ALLTYPE_ZERO ;
 	sasv->len = 0 ;
@@ -68,10 +69,14 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	{
 		stralloc tmp = STRALLOC_ZERO ;
 		instance_splitname(&tmp,svname,insta,SS_INSTANCE_TEMPLATE) ;
+		log_trace("read service file of: ",svsrc,tmp.s) ;
 		if (!read_svfile(sasv,tmp.s,svsrc)) return 0 ;
 		stralloc_free(&tmp) ;
 	}	
-	else if (!read_svfile(sasv,svname,svsrc)) return 0 ;
+	else {
+		log_trace("read service file of: ",svsrc,svname) ;
+		if (!read_svfile(sasv,svname,svsrc)) return 0 ;
+	}
 	
 	if (!get_svtype(&sv_before,sasv->s)) 
 		log_warn_return (LOG_EXIT_ZERO,"invalid value for key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,KEY_MAIN_TYPE)," in service file: ",svsrc,svname) ;
@@ -99,7 +104,7 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 		log_warn("Ignoring: ",sv," service: already parsed") ;
 		sasv->len = 0 ;
 		sv_alltype_free(&sv_before) ;
-		goto freed ;
+		goto end ;
 	}
 	if (!parser(&sv_before,sasv,svname,sv_before.cname.itype)) return 0 ;
 	
@@ -136,8 +141,8 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	
 	if (sv_before.cname.itype == TYPE_MODULE)
 	{
-		svclassic.len = 0 ;
-		r = parse_module(&svclassic,&sv_before,svname,info->owner,force,conf) ;
+		
+		r = parse_module(&sv_before,info,parsed_list,tree_list,svname,nbsv,sasv,force,conf) ;
 		if (!r) return 0 ;
 		else if (r == 2)
 		{
@@ -156,18 +161,8 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 			if (ssexec_disable(m,newargv,(const char *const *)environ,info)) 
 				log_warnu_return(LOG_EXIT_ZERO,"disable module: ",svname) ;	
 		}
-		deps:
-		if (svclassic.len)
-		{
-			size_t pos = 0 ;
-			for (; pos < svclassic.len ; pos += strlen(svclassic.s + pos) + 1)
-			{
-				char *sv = svclassic.s + pos ;
-				if (!parse_service_before(info,parsed_list,tree_list,sv,nbsv,sasv,force,conf)) return 0 ;
-			}
-		}
 	}
-
+	deps:
 	if (!parse_add_service(parsed_list,&sv_before,svpath,nbsv,info->owner)) return 0 ;
 	
 	if ((sv_before.cname.itype > TYPE_CLASSIC && force > 1) || !exist)
@@ -176,8 +171,7 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 		if (!parse_service_opts_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,conf,KEY_MAIN_EXTDEPS)) return 0 ;
 		if (!parse_service_opts_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,conf,KEY_MAIN_OPTSDEPS)) return 0 ;
 	}
-	freed:
-		stralloc_free(&svclassic) ;
+	end:
 	return 1 ;
 }
 
