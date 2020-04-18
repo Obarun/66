@@ -1,5 +1,5 @@
 /* 
- * resolve_graph.c
+ * ss_resolve_graph.c
  * 
  * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
  * 
@@ -64,7 +64,8 @@ int ss_resolve_dfs(ss_resolve_graph_t *graph, unsigned int idx, visit *c,unsigne
 			} 
 		}
 		c[idx] = SS_BLACK ;
-		genalloc_insertb(ss_resolve_t, &graph->sorted, 0, &genalloc_s(ss_resolve_t,&graph->name)[idx],1) ; 
+		if (!genalloc_insertb(ss_resolve_t, &graph->sorted, 0, &genalloc_s(ss_resolve_t,&graph->name)[idx],1))
+			log_warnusys_return(LOG_EXIT_SYS,"genalloc") ;
 	}
 	end:
 	return cycle ;
@@ -77,10 +78,10 @@ int ss_resolve_graph_sort(ss_resolve_graph_t *graph)
 	unsigned int i, ename = 0, edeps = 0 ;
 	for (i = 0 ; i < len; i++) c[i] = SS_WHITE ;
 	if (!len) return 0 ;
-
+	
 	for (i = 0 ; i < len ; i++)
 	{
-		if (c[i] == SS_WHITE && ss_resolve_dfs(graph,genalloc_s(ss_resolve_graph_ndeps_t,&graph->cp)[i].idx,c,&ename,&edeps))
+		if ((c[i] == SS_WHITE) && ss_resolve_dfs(graph,genalloc_s(ss_resolve_graph_ndeps_t,&graph->cp)[i].idx,c,&ename,&edeps))
 		{
 			int data = genalloc_s(uint32_t,&genalloc_s(ss_resolve_graph_ndeps_t,&graph->cp)[ename].ndeps)[edeps] ;
 			char *name = genalloc_s(ss_resolve_t,&graph->name)[ename].sa.s + genalloc_s(ss_resolve_t,&graph->name)[ename].name ;
@@ -88,13 +89,13 @@ int ss_resolve_graph_sort(ss_resolve_graph_t *graph)
 			log_warn_return(LOG_EXIT_LESSONE,"resolution of : ",name,": encountered a cycle involving service: ",deps) ;
 		}
 	}
-	
+
 	return 1 ;
 }
 
 int ss_resolve_graph_publish(ss_resolve_graph_t *graph,unsigned int reverse)
 {
-	int ret = 0 ;
+	int r, ret = 0 ;
 	size_t a = 0 , b = 0 ;
 	stralloc sa = STRALLOC_ZERO ;
 
@@ -110,13 +111,14 @@ int ss_resolve_graph_publish(ss_resolve_graph_t *graph,unsigned int reverse)
 			for (b = 0 ; b < sa.len ; b += strlen(sa.s + b) + 1)
 			{
 				char *deps = sa.s + b ;
-				int r = ss_resolve_search(&graph->name,deps) ;
+				r = ss_resolve_search(&graph->name,deps) ;
 				if (r >= 0)
 				{
 					if (!genalloc_append(uint32_t,&rescp.ndeps,&r)) goto err ;
 				}else continue ;
 			}
 		}
+		
 		if (!genalloc_append(ss_resolve_graph_ndeps_t,&graph->cp,&rescp)) goto err ;
 	}
 		
@@ -134,7 +136,7 @@ int ss_resolve_graph_build(ss_resolve_graph_t *graph,ss_resolve_t *res,char cons
 {
 	char *string = res->sa.s ;
 	char *name = string + res->name ;
-		
+
 	int r = ss_resolve_search(&graph->name,name) ;
 	if (r < 0)
 	{
