@@ -111,6 +111,10 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 				log_warnusys("write resolve file of: ",name) ;
 				goto err ;
 			}
+			if (!ss_state_read(&sta,state,name)) {
+				log_warnusys("read state of: ",name) ;
+				goto err ;
+			}
 			ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
 			ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 			ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_TRUE) ;

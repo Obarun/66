@@ -17,7 +17,7 @@
 #include <stdint.h>
 #include <stdlib.h>//realpath
 #include <sys/types.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <oblibs/types.h>
 #include <oblibs/log.h>
