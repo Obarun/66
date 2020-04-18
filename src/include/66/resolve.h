@@ -47,9 +47,10 @@ struct ss_resolve_s
 	uint32_t logreal ;
 	uint32_t logassoc ;
 	uint32_t dstlog ;
-	uint32_t deps ;
+	uint32_t deps ; // for module -> list of s6-rc service
 	uint32_t optsdeps ; //optional dependencies
 	uint32_t extdeps ; //external dependencies
+	uint32_t contents ; // module -> list of s6-rc and s6 service 
 	uint32_t src ;	//frontend source
 	uint32_t srconf ; //configuration file source
 	uint32_t live ; //run/66
@@ -64,10 +65,11 @@ struct ss_resolve_s
 	uint32_t ndeps ;
 	uint32_t noptsdeps ;
 	uint32_t nextdeps ;
+	uint32_t ncontents ;
 	uint32_t down ;
 	uint32_t disen ;//disable->0,enable->1
 } ;
-#define RESOLVE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
 /** Graph struct */
 typedef struct ss_resolve_graph_ndeps_s ss_resolve_graph_ndeps_t ;
@@ -123,6 +125,7 @@ extern int ss_resolve_create_live(ssexec_t *info) ;
 extern int ss_resolve_search(genalloc *ga,char const *name) ;
 extern int ss_resolve_check_insrc(ssexec_t *info, char const *name) ;
 extern int ss_resolve_write_master(ssexec_t *info,ss_resolve_graph_t *graph,char const *dir, unsigned int reverse) ;
+extern int ss_resolve_sort_bytype(genalloc *gares,stralloc *list,char const *src) ;
 
 /** Graph function */
 extern void ss_resolve_graph_ndeps_free(ss_resolve_graph_ndeps_t *graph) ;
