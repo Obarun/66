@@ -13,8 +13,8 @@
  */
  
 #include <string.h>
-//#include <stdio.h>
 #include <stdlib.h>//getenv
+#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
@@ -40,7 +40,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 	stralloc var = STRALLOC_ZERO ;
 	stralloc salist = STRALLOC_ZERO ;
 	stralloc sasrc = STRALLOC_ZERO ;
-	
+
 	char const *sv = 0, *src = 0, *editor ;
 
 	{
@@ -56,7 +56,6 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 				case 'L' : 	if (replace) log_usage(usage_env) ; list = 1 ; break ;
 				case 'd' :	src = l.arg ; break ;
 				case 'r' :	if (!stralloc_cats(&var,l.arg) ||
-							!stralloc_cats(&var,"\n") ||
 							!stralloc_0(&var)) log_die_nomem("stralloc") ; 
 							replace = 2 ; break ;
 				case 'e' :	if (replace) log_usage(usage_env) ; 
@@ -82,6 +81,9 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 	{
 		if (!env_merge_conf(&result,&salist,&var,replace)) 
 			log_dieu(LOG_EXIT_SYS,"merge environment file with: ",var.s) ;
+
+		if (!file_write_unsafe(src,sv,result.s,result.len))
+			log_dieusys(LOG_EXIT_SYS,"create file: ",src,sv) ;
 	}
 	else if (edit)
 	{
