@@ -39,25 +39,18 @@
 
 /** return 1 if all good
  * return 0 on crash
- * return 2 on already enabled */
-int parse_module(stralloc *svclassic,sv_alltype *sv_before,char const *svname,uid_t owner,uint8_t force,uint8_t conf)
+ * return 2 on already enabled 
+ * @svname do not contents the path of the frontend file*/
+int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *svname,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf)
 {
 	log_trace("start parse process of module: ",svname) ;
-	int r, insta, err = 1 ;
-	size_t in = 0 , pos = 0, inlen = 0 ;
+	int r, err = 1 ;
+	size_t in = 0 , pos = 0, inlen = 0, id, nid ;
 	stralloc sdir = STRALLOC_ZERO ; // service dir
 	stralloc list = STRALLOC_ZERO ;
 	stralloc tmp = STRALLOC_ZERO ;
-	stralloc sainsta = STRALLOC_ZERO ; // SS_INSTANCE_NAME
-	stralloc satype = STRALLOC_ZERO ; // keep information of module service
-	genalloc galist = GENALLOC_ZERO ; // module_type_t
 		
-	if (!ss_resolve_module_path(&sdir,&tmp,svname,owner)) return 0 ;
-	
-	/** keep instance name */
-	insta = instance_check(svname) ;
-	if (!instance_splitname(&sainsta,svname,insta,SS_INSTANCE_NAME))
-		log_warnu_return(LOG_EXIT_ZERO,"get instance name") ;
+	if (!ss_resolve_module_path(&sdir,&tmp,svname,info->owner)) return 0 ;
 	
 	r = scan_mode(sdir.s,S_IFDIR) ;
 	if (r < 0) { errno = EEXIST ; log_warnusys_return(LOG_EXIT_ZERO,"conflicting format of: ",sdir.s) ; }
@@ -90,7 +83,6 @@ int parse_module(stralloc *svclassic,sv_alltype *sv_before,char const *svname,ui
 	for (in = 0 ; in < list.len; in += strlen(list.s + in) + 1)
 	{
 		tmp.len = 0 ;
-		sv_alltype m_type = SV_ALLTYPE_ZERO ;
 		char *str = list.s + in ;
 		size_t len = strlen(str) ;
 		char bname[len + 1] ;
@@ -98,6 +90,7 @@ int parse_module(stralloc *svclassic,sv_alltype *sv_before,char const *svname,ui
 		if (!ob_basename(bname,str)) log_warnu_return(LOG_EXIT_ZERO,"get basename of: ",str) ;
 		if (!ob_dirname(dname,str)) log_warnu_return(LOG_EXIT_ZERO,"get dirname of: ",str) ;
 		
+		log_trace("read service file of: ",dname,bname) ;
 		if (!read_svfile(&tmp,bname,dname)) log_warnusys_return(LOG_EXIT_ZERO,"read file: ",str) ;
 
 		pos = sv_before->type.module.start_infiles, inlen = sv_before->type.module.end_infiles ;
@@ -129,17 +122,6 @@ int parse_module(stralloc *svclassic,sv_alltype *sv_before,char const *svname,ui
 					log_warnusys_return(LOG_EXIT_ZERO,"write: ",dname,"/","filename") ;
 			}
 		}
-	
-		/** keep information of the service */
-		m_type.cname.name = satype.len ;
-		if (!stralloc_catb(&satype,bname,strlen(bname) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-		m_type.src = satype.len ;
-		if (!stralloc_catb(&satype,dname,strlen(dname) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-		if (!get_svtype(&m_type,tmp.s))
-			log_warn_return (LOG_EXIT_ZERO,"invalid value for key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,KEY_MAIN_TYPE)," in service file: ",dname,"/",bname) ;
-				
-		if (!genalloc_append(sv_alltype,&galist,&m_type))
-			log_warnsys_return(LOG_EXIT_ZERO,"genalloc") ;
 	}
 	
 	/* regex directories name */
@@ -207,61 +189,64 @@ int parse_module(stralloc *svclassic,sv_alltype *sv_before,char const *svname,ui
 	}
 	make_deps:
 	/** get all services */
+	tmp.len = 0 ;
 	list.len = 0 ;
 	if (!sastr_dir_get_recursive(&list,sdir.s,".configure",S_IFREG)) 
 		log_warnusys_return(LOG_EXIT_ZERO,"get file(s) of module: ",svname) ;
-
+	
+	sdir.len = 0 ;
+	
 	/** remake the deps field */
-	size_t id = sv_before->cname.idga, nid = sv_before->cname.nga ;
-	sv_before->cname.idga = deps.len ;
-	sv_before->cname.nga = 0 ;
-	for (;nid; id += strlen(deps.s + id) + 1, nid--)
-	{
-		char *name = deps.s + id ;
-		if (!stralloc_catb(&deps,name,strlen(deps.s + id) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ; ;
-		sv_before->cname.nga++ ;
-	}
-	/*** change name for instantiated service
-	 * remove classic service from the list 
-	 * and add service to the stralloc deps.
-	 * The genalloc was built before the configure script.
-	 * Some services was removed. So we need to compare with
-	 * the effective @list to match exactly our needs */
-	for (size_t i = 0; i < genalloc_len(sv_alltype,&galist); i++)
-	{
-		sv_alltype_ref sv = &genalloc_s(sv_alltype,&galist)[i] ;
-		char *name = satype.s + sv->cname.name ;
-		char *src = satype.s + sv->src ;
-		size_t namelen = strlen(name), srclen = strlen(src) ;
-		char tmp[namelen + srclen + 1] ;
-		auto_strings(tmp,src,name) ;
-		if (sv->cname.itype == TYPE_CLASSIC)
-		{
-			if (!sastr_add_string(svclassic,tmp))
-				log_warnu_return(LOG_EXIT_ZERO,"store classic service: ",tmp) ;
-			continue ;
-		}
-		
-		if (sastr_find(&list,name) < 0) continue ;
-
-		insta = get_len_until(name,'@') ;
-		if (insta > 0)
-		{
-			insta++ ; // keep '@'
-			auto_string_from(name,insta,sainsta.s) ;
-		}
-		if (!stralloc_catb(&deps,name,strlen(name) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-		sv_before->cname.nga++ ;
+	id = sv_before->cname.idga, nid = sv_before->cname.nga ;
+	for (;nid; id += strlen(deps.s + id) + 1, nid--) {
+		if (!stralloc_catb(&tmp,deps.s + id,strlen(deps.s + id) + 1)) 
+			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ; ;
+		if (!stralloc_catb(&sdir,deps.s + id,strlen(deps.s + id) + 1)) 
+			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ; ;
 	}
 	
+	/** parse all services contained into the modules */
+	for (pos = 0 ; pos < list.len ; pos += strlen(list.s + pos) + 1)
+	{
+		int svtype ;
+		char *sv = list.s + pos ;
+		
+		size_t len = strlen(sv) ;
+		char bname[len + 1] ;
+		if (!ob_basename(bname,sv))
+			log_warnu_return(LOG_EXIT_ZERO,"find basename of: ",sv) ;
+		
+		if (!parse_service_before(info,parsed_list,tree_list,sv,nbsv,sasv,force,conf))
+			log_warnu_return(LOG_EXIT_ZERO,"parse: ",sv," from module: ",svname) ;
+
+		svtype = get_svtype_from_file(sv) ;
+		if (svtype == -1) log_warnu_return(LOG_EXIT_ZERO,"get svtype of: ",sv) ;
+
+		if (!stralloc_catb(&sdir,bname,strlen(bname) + 1))
+			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+		if (svtype != TYPE_CLASSIC)
+			if (!stralloc_catb(&tmp,bname,strlen(bname) + 1)) 
+				log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	}
+	sv_before->cname.idga = deps.len ;
+	sv_before->cname.nga = 0 ;
+	for (pos = 0 ;pos < tmp.len ; pos += strlen(tmp.s + pos) + 1)
+	{
+		stralloc_catb(&deps,tmp.s + pos,strlen(tmp.s + pos) + 1) ;
+		sv_before->cname.nga++ ;
+	}
+
+	sv_before->cname.idcontents = deps.len ;
+	for (pos = 0 ;pos < sdir.len ; pos += strlen(sdir.s + pos) + 1)
+	{
+		stralloc_catb(&deps,sdir.s + pos,strlen(sdir.s + pos) + 1) ;
+		sv_before->cname.ncontents++ ;
+
+	}
 	stralloc_free(&sdir) ;
 	stralloc_free(&list) ;
 	stralloc_free(&tmp) ;
-	stralloc_free(&sainsta) ;
-	
-	for (size_t i = 0 ; i < genalloc_len(sv_alltype,&galist) ; i++)
-		sv_alltype_free(&genalloc_s(sv_alltype,&galist)[i]) ;
-	genalloc_free(sv_alltype,&galist) ;
 	
 	return err ;
 }
