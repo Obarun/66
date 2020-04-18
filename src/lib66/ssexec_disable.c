@@ -19,6 +19,7 @@
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
@@ -139,8 +140,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 {
 	int r, logname ;
 	unsigned int nlongrun, nclassic, stop ;
-	
-	
+
 	genalloc tostop = GENALLOC_ZERO ;//ss_resolve_t
 	genalloc gares = GENALLOC_ZERO ; //ss_resolve_t
 	ss_resolve_t res = RESOLVE_ZERO ;
@@ -174,9 +174,18 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 		char const *name = *argv ;
 		if (!ss_resolve_check(workdir.s,name)) log_info_nclean_return(LOG_EXIT_ZERO,&cleanup,name," is not enabled") ;
 		if (!ss_resolve_read(&res,workdir.s,name)) log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of: ",name) ;
-		if (!ss_resolve_append(&gares,&res)) log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"append services selection with: ",name) ;
+		if (res.type == TYPE_MODULE)
+		{
+			if (!module_in_cmdline(&gares,&res,workdir.s))
+				log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"add dependencies of module: ",name) ;
+		}
+		else
+		{
+			if (!ss_resolve_append(&gares,&res)) 
+				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"append services selection with: ",name) ;
+		}
 	}
-	
+
 	for(unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
 	{
 		pres = &genalloc_s(ss_resolve_t,&gares)[i] ;

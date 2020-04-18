@@ -159,7 +159,16 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 		char const *name = *argv ;
 		if (!ss_resolve_check(sares.s,name)) log_info_return(LOG_EXIT_ZERO,name," is not enabled") ;
 		if (!ss_resolve_read(&res,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
-		if (!ss_resolve_append(&gares,&res)) log_dieusys(LOG_EXIT_SYS,"append resolve file of: ",name) ;
+		if (res.type == TYPE_MODULE)
+		{
+			if (!module_in_cmdline(&gares,&res,sares.s))
+				log_dieu(LOG_EXIT_SYS,"add dependencies of module: ",name) ;
+		}
+		else 
+		{
+			if (!ss_resolve_append(&gares,&res)) 
+				log_dieusys(LOG_EXIT_SYS,"append resolve file of: ",name) ;
+		}
 	}
 	
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
