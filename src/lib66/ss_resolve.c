@@ -1,5 +1,5 @@
 /* 
- * resolve.c
+ * ss_resolve.c
  * 
  * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
  * 
@@ -17,7 +17,7 @@
 #include <stdint.h>
 #include <stdlib.h>//realpath
 #include <sys/types.h>
-//#include <stdio.h>
+#include <stdio.h>
 
 #include <oblibs/types.h>
 #include <oblibs/log.h>
@@ -426,6 +426,7 @@ int ss_resolve_pack(stralloc *sa, ss_resolve_t *res)
 	!ss_resolve_add_uint32(sa,res->deps) ||
 	!ss_resolve_add_uint32(sa,res->optsdeps) ||
 	!ss_resolve_add_uint32(sa,res->extdeps) ||
+	!ss_resolve_add_uint32(sa,res->contents) ||
 	!ss_resolve_add_uint32(sa,res->src) ||
 	!ss_resolve_add_uint32(sa,res->srconf) ||
 	!ss_resolve_add_uint32(sa,res->live) ||
@@ -439,6 +440,7 @@ int ss_resolve_pack(stralloc *sa, ss_resolve_t *res)
 	!ss_resolve_add_uint32(sa,res->ndeps) ||
 	!ss_resolve_add_uint32(sa,res->noptsdeps) ||
 	!ss_resolve_add_uint32(sa,res->nextdeps) ||
+	!ss_resolve_add_uint32(sa,res->ncontents) ||
 	!ss_resolve_add_uint32(sa,res->down) || 
 	!ss_resolve_add_uint32(sa,res->disen)) return 0 ;
 	
@@ -513,6 +515,8 @@ int ss_resolve_read(ss_resolve_t *res, char const *src, char const *name)
 	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->extdeps) ;
 	global += 4 ;
+	uint32_unpack_big(sa.s + global,&res->contents) ;
+	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->src) ;
 	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->srconf) ;
@@ -540,6 +544,8 @@ int ss_resolve_read(ss_resolve_t *res, char const *src, char const *name)
 	uint32_unpack_big(sa.s + global,&res->noptsdeps) ;
 	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->nextdeps) ;
+	global += 4 ;
+	uint32_unpack_big(sa.s + global,&res->ncontents) ;
 	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->down) ;
 	global += 4 ;
@@ -586,14 +592,13 @@ int ss_resolve_check(char const *src, char const *name)
 int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 {
 	char ownerstr[UID_FMT] ;
-	size_t ownerlen = uid_fmt(ownerstr,info->owner) ;
+	size_t ownerlen = uid_fmt(ownerstr,info->owner), id, nid ;
 	ownerstr[ownerlen] = 0 ;
 	
 	stralloc destlog = STRALLOC_ZERO ;
 	stralloc ndeps = STRALLOC_ZERO ;
-	stralloc opt_deps = STRALLOC_ZERO ;
-	stralloc ext_deps = STRALLOC_ZERO ;
-
+	stralloc other_deps = STRALLOC_ZERO ;
+	
 	ss_state_t sta = STATE_ZERO ;
 	ss_resolve_t res = RESOLVE_ZERO ;
 	ss_resolve_init(&res) ;
@@ -645,6 +650,7 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	res.ndeps = services->cname.nga ;
 	res.noptsdeps = services->cname.nopts ;
 	res.nextdeps = services->cname.next ;
+	res.ncontents = services->cname.ncontents ;
 	if (services->flags[0])	res.down = 1 ;
 	res.disen = 1 ;
 	if (res.type == TYPE_CLASSIC)
@@ -678,10 +684,9 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		if (!ss_state_write(&sta,res.sa.s + res.state,name)){ log_warnusys("write state file of: ",name) ; goto err ; }
 	}
 
-	
 	if (res.ndeps)
 	{
-		size_t id = services->cname.idga, nid = res.ndeps ;
+		id = services->cname.idga, nid = res.ndeps ;
 		for (;nid; id += strlen(deps.s + id) + 1, nid--)
 		{
 			if (!stralloc_catb(&ndeps,deps.s + id,strlen(deps.s + id)) ||
@@ -691,31 +696,48 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		if (!stralloc_0(&ndeps)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		res.deps = ss_resolve_add_string(&res,ndeps.s) ;
 	}
-	
+
 	if (res.noptsdeps)
 	{
-		size_t id = services->cname.idopts, nid = res.noptsdeps ;
+		id = services->cname.idopts, nid = res.noptsdeps ;
 		for (;nid; id += strlen(deps.s + id) + 1, nid--)
 		{
-			if (!stralloc_catb(&opt_deps,deps.s + id,strlen(deps.s + id)) ||
-			!stralloc_catb(&opt_deps," ",1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+			if (!stralloc_catb(&other_deps,deps.s + id,strlen(deps.s + id)) ||
+			!stralloc_catb(&other_deps," ",1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		}
-		opt_deps.len-- ;
-		if (!stralloc_0(&opt_deps)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-		res.optsdeps = ss_resolve_add_string(&res,opt_deps.s) ;
+		other_deps.len-- ;
+		if (!stralloc_0(&other_deps)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		res.optsdeps = ss_resolve_add_string(&res,other_deps.s) ;
 	}
+
 	if (res.nextdeps)
 	{
-		size_t id = services->cname.idext, nid = res.nextdeps ;
+		other_deps.len = 0 ;
+		id = services->cname.idext, nid = res.nextdeps ;
 		for (;nid; id += strlen(deps.s + id) + 1, nid--)
 		{
-			if (!stralloc_catb(&ext_deps,deps.s + id,strlen(deps.s + id)) ||
-			!stralloc_catb(&ext_deps," ",1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+			if (!stralloc_catb(&other_deps,deps.s + id,strlen(deps.s + id)) ||
+			!stralloc_catb(&other_deps," ",1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		}
-		ext_deps.len-- ;
-		if (!stralloc_0(&ext_deps)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-		res.extdeps = ss_resolve_add_string(&res,ext_deps.s) ;
+		other_deps.len-- ;
+		if (!stralloc_0(&other_deps)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		res.extdeps = ss_resolve_add_string(&res,other_deps.s) ;
 	}
+
+	if (res.ncontents)
+	{
+		other_deps.len = 0 ;
+		id = services->cname.idcontents, nid = res.ncontents ;
+		for (;nid; id += strlen(deps.s + id) + 1, nid--)
+		{
+			if (!stralloc_catb(&other_deps,deps.s + id,strlen(deps.s + id)) ||
+			!stralloc_catb(&other_deps," ",1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		}
+		other_deps.len-- ;
+		if (!stralloc_0(&other_deps)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		res.contents = ss_resolve_add_string(&res,other_deps.s) ;
+	}
+
 	if (services->opts[0])
 	{
 		// destination of the logger
@@ -769,7 +791,7 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 			if (!ss_resolve_setlognwrite(&res,dst,info)) goto err ;
 		}
 	}
-	/** may on workdir so a copy with made to source, write it SIMPLE */
+	
 	if (!ss_resolve_write(&res,dst,res.sa.s + res.name))
 	{
 		log_warnusys("write resolve file: ",dst,SS_RESOLVE,"/",res.sa.s + res.name) ;
@@ -777,17 +799,15 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	}
 	
 	ss_resolve_free(&res) ;
-	stralloc_free(&opt_deps) ;
-	stralloc_free(&ext_deps) ;
 	stralloc_free(&ndeps) ;
+	stralloc_free(&other_deps) ;
 	stralloc_free(&destlog) ;
 	return 1 ;
 	
 	err:
 		ss_resolve_free(&res) ;
-		stralloc_free(&opt_deps) ;
-		stralloc_free(&ext_deps) ;
 		stralloc_free(&ndeps) ;
+		stralloc_free(&other_deps) ;
 		stralloc_free(&destlog) ;
 		return 0 ;
 }
@@ -883,6 +903,7 @@ int ss_resolve_copy(ss_resolve_t *dst,ss_resolve_t *res)
 	dst->deps = res->deps ;
 	dst->optsdeps = res->optsdeps ;
 	dst->extdeps = res->extdeps ;
+	dst->contents = res->contents ;
 	dst->src = res->src ;
 	dst->srconf = res->srconf ;
 	dst->live = res->live ;
@@ -896,6 +917,7 @@ int ss_resolve_copy(ss_resolve_t *dst,ss_resolve_t *res)
 	dst->ndeps = res->ndeps ;
 	dst->noptsdeps = res->noptsdeps ;
 	dst->nextdeps = res->nextdeps ;
+	dst->ncontents = res->ncontents ;
 	dst->down = res->down ;
 	dst->disen = res->disen ;
 	
@@ -940,7 +962,7 @@ int ss_resolve_add_deps(genalloc *tokeep,ss_resolve_t *res, char const *src)
 			if (!ss_resolve_cmp(tokeep,dname))
 			{
 				if (!ss_resolve_append(tokeep,&dres)) goto err ;
-			}
+			}			
 			ss_resolve_free(&dres) ;
 		}
 	}
@@ -1250,4 +1272,49 @@ int ss_resolve_write_master(ssexec_t *info,ss_resolve_graph_t *graph,char const 
 		stralloc_free(&inres) ;
 		stralloc_free(&gain) ;
 		return 0 ;
+}
+
+int ss_resolve_sort_bytype(genalloc *gares,stralloc *list,char const *src)
+{
+	size_t pos = 0 ;
+	ss_resolve_t res = RESOLVE_ZERO ;
+	
+	/** search for classic first */
+	for (pos = 0 ;pos < list->len; pos += strlen(list->s + pos) + 1)
+	{
+		char *name = list->s + pos ;
+		if (!ss_resolve_read(&res,src,name))
+			log_warnu_return(LOG_EXIT_ZERO,"read resolve file of: ",name) ;
+		if (res.type == TYPE_CLASSIC)
+			if (ss_resolve_search(gares,name) == -1)
+				if (!ss_resolve_append(gares,&res))
+					log_warnu_return(LOG_EXIT_ZERO,"append genalloc") ;
+	}
+	
+	/** second pass for module */
+	for (pos = 0 ;pos < list->len; pos += strlen(list->s + pos) + 1)
+	{
+		char *name = list->s + pos ;
+		if (!ss_resolve_read(&res,src,name))
+			log_warnu_return(LOG_EXIT_ZERO,"read resolve file of: ",name) ;
+		if (res.type == TYPE_MODULE)
+			if (ss_resolve_search(gares,name) == -1)
+				if (!ss_resolve_append(gares,&res))
+					log_warnu_return(LOG_EXIT_ZERO,"append genalloc") ;
+	}
+
+	/** finally add s6-rc services */
+	for (pos = 0 ;pos < list->len; pos += strlen(list->s + pos) + 1)
+	{
+		char *name = list->s + pos ;
+		if (!ss_resolve_read(&res,src,name))
+			log_warnu_return(LOG_EXIT_ZERO,"read resolve file of: ",name) ;
+		if (res.type != TYPE_CLASSIC && res.type != TYPE_MODULE)
+			if (ss_resolve_search(gares,name) == -1)
+				if (!ss_resolve_append(gares,&res))
+					log_warnu_return(LOG_EXIT_ZERO,"append genalloc") ;
+	}
+	
+	ss_resolve_free(&res) ;
+	return 1 ;
 }
