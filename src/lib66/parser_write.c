@@ -651,7 +651,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 		
 		if (sv->opts[0])
 		{
-			if (!stralloc_cats(&shebang,"redirfd -w 1 ") ||
+			if (!stralloc_cats(&shebang,"redirfd -a 1 ") ||
 			!stralloc_cats(&shebang,destlog_oneshot.s) ||
 			!stralloc_cats(&shebang,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		}
