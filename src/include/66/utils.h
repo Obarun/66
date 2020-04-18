@@ -31,22 +31,24 @@
 #define MYGID getgid()
 #define YOURGID(passto,owner) yourgid(passto,owner)
 
-/** get_uidgid.c */
-extern int youruid(uid_t *passto,char const *owner) ;
-extern int yourgid(gid_t *passto,uid_t owner) ;
-extern char const *get_userhome(uid_t myuid) ;
-extern int set_ownerhome(stralloc *base,uid_t owner) ;
-extern int set_ownersysdir(stralloc *base,uid_t owner) ;
+/** ss_utils.c file */
 extern int scandir_ok (char const *dir) ;
 extern int scandir_send_signal(char const *scandir,char const *signal) ;
+extern char const *get_userhome(uid_t myuid) ;
+extern int youruid(uid_t *passto,char const *owner) ;
+extern int yourgid(gid_t *passto,uid_t owner) ;
 extern int set_livedir(stralloc *live) ;
 extern int set_livescan(stralloc *live,uid_t owner) ;
 extern int set_livetree(stralloc *live,uid_t owner) ;
 extern int set_livestate(stralloc *live,uid_t owner) ;
+extern int set_ownerhome(stralloc *base,uid_t owner) ;
+extern int set_ownersysdir(stralloc *base,uid_t owner) ;
 extern int read_svfile(stralloc *sasv,char const *name,char const *src) ;
+extern int module_in_cmdline(genalloc *gares, ss_resolve_t *res, char const *dir) ;
+
+/** ss_instance.c file */
 extern int instance_check(char const *svname) ;
 extern int instance_splitname(stralloc *sa,char const *name,int len,int what) ;
-//extern int instance_change_name(stralloc *sa,char const *template,char const *copy) ;
 extern int instance_create(stralloc *sasv,char const *svname, char const *regex, int len) ;
 
 #endif
