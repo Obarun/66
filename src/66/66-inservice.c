@@ -323,28 +323,68 @@ static void info_display_live(char const *field,ss_resolve_t *res)
 
 static void info_display_deps(char const *field, ss_resolve_t *res)
 {
-	size_t padding = 1 ;
-	
+	int r ;
+	size_t padding = 1, pos = 0, el ;
+	ss_resolve_t gres = RESOLVE_ZERO ;
+	ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
 	stralloc salist = STRALLOC_ZERO ;
-	
+	genalloc gares = GENALLOC_ZERO ;
+
 	if (NOFIELD) padding = info_display_field_name(field) ;
 	else { field = 0 ; padding = 0 ; }
-	
+
 	if (!res->ndeps) goto empty ;
+
+	if (res->type == TYPE_MODULE)
+	{
+		if (!sastr_clean_string(&salist,res->sa.s + res->contents))
+			log_dieu(LOG_EXIT_SYS,"rebuild dependencies list") ;
+
+		if (!ss_resolve_sort_bytype(&gares,&salist,src.s))
+			log_dieu(LOG_EXIT_SYS,"sort list by type") ;
+
+		for (pos = 0 ; pos < genalloc_len(ss_resolve_t,&gares) ; pos++)
+			if (!ss_resolve_graph_build(&graph,&genalloc_s(ss_resolve_t,&gares)[pos],src.s,REVERSE))
+				log_dieu(LOG_EXIT_SYS,"build the graph from: ",src.s) ;
+
+		r = ss_resolve_graph_publish(&graph,0) ;
+		if (r < 0) log_die(LOG_EXIT_USER,"cyclic graph detected") ;
+		else if (!r) log_dieusys(LOG_EXIT_SYS,"publish service graph") ;
+
+		salist.len = 0 ;
+		for (pos = 0 ; pos < genalloc_len(ss_resolve_t,&graph.sorted) ; pos++)
+		{
+			char *string = genalloc_s(ss_resolve_t,&graph.sorted)[pos].sa.s ;
+			char *name = string + genalloc_s(ss_resolve_t,&graph.sorted)[pos].name ;
+			if (!stralloc_catb(&salist,name,strlen(name)+1)) log_die_nomem("stralloc") ;
+		}
+		genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
+		ss_resolve_graph_free(&graph) ;
+	}
+	else {
+		if (!sastr_clean_string(&salist,res->sa.s + res->deps))
+			log_dieu(LOG_EXIT_SYS,"rebuild dependencies list") ;
+	}
 	
 	if (GRAPH)
 	{
 		if (!bprintf(buffer_1,"%s\n","/")) 
 			log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 	
-		if (!info_graph_init(res,src.s,REVERSE, padding, STYLE))
-			log_dieu(LOG_EXIT_SYS,"display graph of: ",res->sa.s + res->name) ;
+		el = sastr_len(&salist) ;
+		if (!sastr_rebuild_in_oneline(&salist)) log_dieu(LOG_EXIT_SYS,"rebuild dependencies list") ;
+
+		ss_resolve_init(&gres) ;
+		gres.ndeps = el ;
+		gres.deps = ss_resolve_add_string(&gres,salist.s) ;
+
+		if (!info_graph_init(&gres,src.s,REVERSE, padding, STYLE))
+			log_dieu(LOG_EXIT_SYS,"display graph of: ",gres.sa.s + gres.name) ;
+
 		goto freed ;
 	}
 	else
 	{
-		if (!sastr_clean_string(&salist,res->sa.s + res->deps)) 
-			log_dieu(LOG_EXIT_SYS,"build dependencies list") ;
 		if (REVERSE)
 			if (!sastr_reverse(&salist))
 				log_dieu(LOG_EXIT_SYS,"reverse dependencies list") ;
@@ -366,6 +406,7 @@ static void info_display_deps(char const *field, ss_resolve_t *res)
 		}
 		
 	freed:
+		ss_resolve_free(&gres) ;
 		stralloc_free(&salist) ;
 }
 
