@@ -46,7 +46,8 @@ static inline void info_help (void)
 "	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-f: force to overwrite existing destination\n"
-"	-c: merge it environment configuration file from frontend file\n"
+"	-c: only appends new key=value pairs at environment configuration file from frontend file\n"
+"	-m: appends new key=value and merge existing one at environment configuration file from frontend file\n"
 "	-C: overwrite it environment configuration file from frontend file\n"
 ;
 
@@ -103,7 +104,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 'v' : 	if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
 				case 'f' : 	force = 1 ; break ;
 				case 'c' : 	if (conf) log_usage(USAGE) ; conf = 1 ; break ;
-				case 'C' : 	if (conf) log_usage(USAGE) ; conf = 2 ; break ;
+				case 'm' :	if (conf) log_usage(USAGE) ; CONF = 2 ; break ;
+				case 'C' : 	if (conf) log_usage(USAGE) ; conf = 3 ; break ;
 				case 'z' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
 				default : 	log_usage(USAGE) ; 
 			}
