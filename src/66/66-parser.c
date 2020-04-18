@@ -14,9 +14,9 @@
  
 #include <stddef.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <errno.h>
 #include <stdint.h>
+//#include <stdio.h>
 
 #include <oblibs/log.h>
 #include <oblibs/files.h>
@@ -73,12 +73,12 @@ static void check_dir(char const *dir,uint8_t force,int main)
 
 int main(int argc, char const *const *argv,char const *const *envp)
 {
-	int r, ista ;
+	int ista ;
 	stralloc src = STRALLOC_ZERO ;
 	stralloc dst = STRALLOC_ZERO ;
 	stralloc insta = STRALLOC_ZERO ;
 	sv_alltype service = SV_ALLTYPE_ZERO ;
-	size_t srcdirlen ;
+	size_t srcdirlen, namelen ;
 	char const *dir ;
 	char const *sv  ;
 	char name[4095+1] ;
@@ -121,19 +121,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 	if (!ob_basename(name,sv)) log_dieu(LOG_EXIT_SYS,"set name");
 
-	size_t svlen = strlen(sv) ;
-	size_t namelen = strlen(name) ;
-
-	char tmp[svlen + 1 + namelen + 1] ;
-	r = scan_mode(sv,S_IFDIR) ;
-	if (r > 0)
-	{
-		memcpy(tmp,sv,svlen) ;
-		tmp[svlen] = '/' ;
-		memcpy(tmp + svlen + 1, name,namelen) ;
-		tmp[svlen + 1 + namelen] = 0 ;
-		sv = tmp ;
-	}
+	namelen = strlen(name) ;
 
 	if (!ob_dirname(srcdir,sv)) log_dieu(LOG_EXIT_SYS,"set directory name") ;
 
@@ -143,11 +131,13 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 	ista = instance_check(insta.s) ;
 	if (!ista) log_die(LOG_EXIT_SYS,"invalid instance name: ",insta.s) ;
+
 	if (ista > 0)
 	{
 		if (!instance_splitname(&insta,name,ista,SS_INSTANCE_TEMPLATE)) log_dieu(LOG_EXIT_SYS,"split instance name of: ",name) ;
 	}
-
+	
+	log_trace("read service file of: ",srcdir,insta.s) ;
 	if (!read_svfile(&src,insta.s,srcdir)) log_dieusys(LOG_EXIT_SYS,"open: ",sv) ;
 
 	if (!get_svtype(&service,src.s)) log_dieu(LOG_EXIT_SYS,"get service type of: ",sv) ;
