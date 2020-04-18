@@ -30,6 +30,7 @@
 #include <s6/s6-supervise.h>
 
 #include <66/resolve.h>
+#include <66/state.h>
 
 unsigned int MAXDEPTH = 1 ;
 
@@ -195,30 +196,75 @@ void info_display_nline(char const *field,char const *str)
 
 void info_graph_display(ss_resolve_t *res, depth_t *depth, int last, int padding, ss_resolve_graph_style *style)
 {
+	int level = 1 ;
+	char str_pid[UINT_FMT] ;
+	uint8_t pid_color = 0 ;
+	const char *tip = "" ;
+	char *ppid ;
+	ss_state_t sta = STATE_ZERO ;
 	s6_svstatus_t status = S6_SVSTATUS_ZERO ;
 	char *name = res->sa.s + res->name ;
+
 	if (res->type == TYPE_CLASSIC || res->type == TYPE_LONGRUN)
 	{
 		s6_svstatus_read(res->sa.s + res->runat ,&status) ;
+		pid_color = !status.pid ? 1 : 2 ;
+		str_pid[uint_fmt(str_pid, status.pid)] = 0 ;
+		ppid = &str_pid[0] ;
 	}
-	else status.pid = 0 ;	
-	
-	const char *tip = "" ;
-	int level = 1 ;
-	
+	else
+	{
+		char *ste = res->sa.s + res->state ;
+		char *name = res->sa.s + res->name ;
+		if (!ss_state_check(ste,name))
+		{
+			ppid = "unitialized" ;
+			goto dis ;
+		}
+
+		if (!ss_state_read(&sta,ste,name))
+			log_dieusys(LOG_EXIT_SYS,"read state of: ",name) ;
+
+		if (sta.init) {
+			ppid = "unitialized" ;
+		}
+		else if (!sta.state)
+		{
+			ppid = "down" ;
+			pid_color = 1 ;
+		}
+		else if (sta.state)
+		{
+			ppid = "up" ;
+			pid_color = 2 ;
+		}
+	}
+	dis:
+
 	tip = last ? style->last : style->tip ;
-	
+
 	while(depth->prev)
 		depth = depth->prev ;
-		
+
 	while(depth->next)
 	{
 		if (!bprintf(buffer_1,"%*s%-*s",style->indent * (depth->level - level) + (level == 1 ? padding : 0), "", style->indent, style->limb)) return ;
 		level = depth->level + 1 ;
 		depth = depth->next ;
 	} 
-	
-	if (!bprintf(buffer_1,"%*s%*s%s(%s%i%s,%s%s%s,%s) %s",level == 1 ? padding : 0,"", style->indent * (depth->level - level), "", tip, status.pid ? log_color->valid : log_color->off,status.pid ? status.pid : 0,log_color->off, res->disen ? log_color->off : log_color->error, res->disen ? "Enabled" : "Disabled",log_color->off,get_key_by_enum(ENUM_TYPE,res->type), name)) return ;
+
+	if (!bprintf(buffer_1,"%*s%*s%s(%s%s%s,%s%s%s,%s) %s", \
+				level == 1 ? padding : 0,"", \
+				style->indent * (depth->level - level), "", \
+				tip, \
+				pid_color > 1 ? log_color->valid : pid_color ? log_color->error : log_color->warning, \
+				ppid, \
+				log_color->off, \
+				res->disen ? log_color->off : log_color->error, \
+				res->disen ? "Enabled" : "Disabled", \
+				log_color->off, \
+				get_key_by_enum(ENUM_TYPE,res->type), \
+				name)) return ;
 
 	if (buffer_putsflush(buffer_1,"\n") < 0) return ; 
 }
