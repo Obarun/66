@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <wchar.h>
 #include <unistd.h>//access
+#include <stdio.h>
 
 #include <oblibs/sastr.h>
 #include <oblibs/log.h>
@@ -256,29 +257,28 @@ static void info_display_order(char const *field,char const *treename)
 
 static void info_get_graph_src(ss_resolve_graph_t *graph,char const *src,unsigned int reverse)
 {
-	
 	size_t srclen = strlen(src), pos ;
+
 	stralloc sa = STRALLOC_ZERO ;
-	ss_resolve_t res = RESOLVE_ZERO ;
+	genalloc gares = GENALLOC_ZERO ;
+
 	char solve[srclen + SS_RESOLVE_LEN + 1] ;
 	memcpy(solve,src,srclen) ;
 	memcpy(solve + srclen, SS_RESOLVE,SS_RESOLVE_LEN) ;
 	solve[srclen + SS_RESOLVE_LEN] = 0 ;
-	
-	if (!sastr_dir_get(&sa,solve,"",S_IFREG))
+
+	if (!sastr_dir_get(&sa,solve,SS_MASTER+1,S_IFREG))
 		log_dieusys(LOG_EXIT_SYS,"get source service file at: ",solve) ;
-	
-	for (pos = 0 ;pos < sa.len; pos += strlen(sa.s + pos) + 1)
-	{
-		char *name = sa.s + pos ;
-		if (!ss_resolve_read(&res,src,name))
-			log_dieu(LOG_EXIT_SYS,"read resolve file of: ",name) ;
-		if (!ss_resolve_graph_build(graph,&res,src,reverse)) 
-			log_dieu(LOG_EXIT_SYS,"build the graph from: ",src) ; 
-	}
-	
+
+	if (!ss_resolve_sort_bytype(&gares,&sa,src))
+		log_dieu(LOG_EXIT_SYS,"sort list by type") ;
+
+	for (pos = 0 ; pos < genalloc_len(ss_resolve_t,&gares) ; pos++)
+		if (!ss_resolve_graph_build(graph,&genalloc_s(ss_resolve_t,&gares)[pos],src,reverse))
+				log_dieu(LOG_EXIT_SYS,"build the graph from: ",src) ;
+
+	genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
 	stralloc_free(&sa) ;
-	ss_resolve_free(&res) ;
 }
 
 static void info_display_allow(char const *field, char const *treename)
