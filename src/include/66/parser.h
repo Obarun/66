@@ -103,14 +103,16 @@ struct sv_name_s
 	int name ; //pos in keep
 	int description ; //pos in keep
 	int version ; // pos in keep
-	int idga ; //pos in stralloc deps -> @depends or @contents
-	unsigned int nga ; //number or deps in stralloc deps -> @depends or @contents
+	int idga ; //pos in stralloc deps -> @depends
+	unsigned int nga ; //number or deps in stralloc deps -> @depends
 	int idopts ; // pos in stralloc deps -> @optsdepends
 	unsigned int nopts ; // number of optional depends in stralloc deps-> @optsdepends
 	int idext ; // pos in stralloc deps -> @extdepends
 	unsigned int next ; // number of optinal depends in stralloc deps -> @extdepends
 	int logname ; //pos in keep
 	int dstlog ; //pos in keep
+	int idcontents ; // pos in stralloc deps -> @contents
+	unsigned int ncontents ; // number of service inside a bundle
 } ;
 
 
@@ -155,81 +157,83 @@ struct sv_alltype_s
 
 #define SV_EXEC_ZERO \
 { \
-	-1 ,\
-	-1 ,\
-	-1 ,\
+	-1 , \
+	-1 , \
+	-1 , \
 	-1 \
 }
 
 #define SV_EXECLOG_ZERO \
 { \
-	SV_EXEC_ZERO,\
-	{ { 0 } } ,\
-	-1 ,\
-	0 ,\
-	0 ,\
-	-1 ,\
-	-1 ,\
+	SV_EXEC_ZERO, \
+	{ { 0 } } , \
+	-1 , \
+	0 , \
+	0 , \
+	-1 , \
+	-1 , \
 	0 \
 }
 
 #define SV_CLASSIC_LONGRUN_ZERO \
 { \
-	SV_EXEC_ZERO,\
+	SV_EXEC_ZERO, \
 	SV_EXEC_ZERO, \
 	SV_EXECLOG_ZERO \
 }
 
 #define SV_ONESHOT_ZERO \
 { \
-	SV_EXEC_ZERO,\
+	SV_EXEC_ZERO, \
 	SV_EXEC_ZERO, \
 	SV_EXECLOG_ZERO \
 }
 
 #define SV_TYPE_ZERO \
 { \
-	SV_CLASSIC_LONGRUN_ZERO ,\
+	SV_CLASSIC_LONGRUN_ZERO , \
 	SV_ONESHOT_ZERO , \
 	SV_MODULE_ZERO \
 }
 
 #define SV_MODULE_ZERO \
 { \
-	-1 ,\
-	-1 ,\
-	0 ,\
-	-1 ,\
-	0 ,\
-	-1 ,\
+	-1 , \
+	-1 , \
+	0 , \
+	-1 , \
+	0 , \
+	-1 , \
 	-1 \
 }
 
 #define SV_NAME_ZERO \
 { \
-	-1 ,\
-	-1 ,\
-	-1 ,\
-	-1 ,\
-	-1 ,\
-	0 ,\
-	-1 ,\
-	0 ,\
-	-1 ,\
-	0 ,\
-	-1 ,\
-	-1 \
+	-1 , \
+	-1 , \
+	-1 , \
+	-1 , \
+	-1 , \
+	0 , \
+	-1 , \
+	0 , \
+	-1 , \
+	0 , \
+	-1 , \
+	-1 , \
+	-1 , \
+	0 \
 }
 						
 #define SV_ALLTYPE_ZERO \
 { \
-	SV_TYPE_ZERO ,\
-	SV_NAME_ZERO ,\
-	{ 0 } ,\
-	{ 0 } ,\
+	SV_TYPE_ZERO , \
+	SV_NAME_ZERO , \
+	{ 0 } , \
+	{ 0 } , \
 	0 , \
 	{ 0 } , \
-	{ { 0 } } ,\
+	{ { 0 } } , \
 	0 , \
 	0 , \
 	{ 0 } , \
@@ -289,6 +293,7 @@ extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, stralloc *op
 extern int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf,uint8_t mandatory) ;
 extern int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner) ;
 extern int get_svtype(sv_alltype *sv_before, char const *contents) ;
+extern int get_svtype_from_file(char const *file) ;
 /** split */
 extern int section_get_range(section_t *sasection,stralloc *src) ;
 extern int key_get_range(genalloc *ga, section_t *sasection) ;
@@ -318,7 +323,7 @@ extern int write_dependencies(unsigned int nga,unsigned int idga,char const *dst
 extern int write_env(char const *name,stralloc *sa,char const *dst) ;
 extern int write_oneshot_logger(stralloc *destlog, sv_alltype *sv) ;
 /** module */
-extern int parse_module(stralloc *svclassic,sv_alltype *sv_before,char const *svname,uid_t owner,uint8_t force,uint8_t conf) ;
+extern int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *svname,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf) ;
 extern int regex_get_file_name(char *filename,char const *str) ;
 extern int regex_get_replace(char *replace, char const *str) ;
 extern int regex_get_regex(char *regex, char const *str) ;

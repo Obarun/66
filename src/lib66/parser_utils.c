@@ -860,35 +860,6 @@ int keep_regex(sv_module *module,keynocheck *nocheck)
 /**********************************
  *		helper function
  * *******************************/
-int read_svfile(stralloc *sasv,char const *name,char const *src)
-{
-	int r ; 
-	size_t srclen = strlen(src) ;
-	size_t namelen = strlen(name) ;
-	
-	char svtmp[srclen + 1 + namelen + 1] ;
-	memcpy(svtmp,src,srclen) ;
-	svtmp[srclen] = '/' ;
-	memcpy(svtmp + srclen + 1, name, namelen) ;
-	svtmp[srclen + 1 + namelen] = 0 ;
-	
-	log_trace("Read service file of: ",src,name) ;
-	
-	size_t filesize=file_get_size(svtmp) ;
-	if (!filesize)
-		log_warn_return(LOG_EXIT_ZERO,svtmp," is empty") ;
-	
-	r = openreadfileclose(svtmp,sasv,filesize) ;
-	if(!r)
-		log_warnusys_return(LOG_EXIT_ZERO,"open ", svtmp) ;
-
-	/** ensure that we have an empty line at the end of the string*/
-	if (!stralloc_cats(sasv,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-	if (!stralloc_0(sasv)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-	
-	return 1 ;
-}
-
 int add_pipe(sv_alltype *sv, stralloc *sa)
 {
 	char *prodname = keep.s+sv->cname.name ;
@@ -1151,3 +1122,28 @@ int get_svtype(sv_alltype *sv_before, char const *contents)
 		stralloc_free(&sa) ;
 		return 0 ;
 }
+
+int get_svtype_from_file(char const *file)
+{
+	stralloc tmp = STRALLOC_ZERO ;
+	int svtype = -1 ;
+	size_t len = strlen(file) ;
+	char bname[len + 1] ;
+	char dname[len + 1] ;
+	if (!ob_basename(bname,file)) goto err ;
+	if (!ob_dirname(dname,file)) goto err ;
+	
+	log_trace("read service file of: ",dname,bname) ;
+	if (!read_svfile(&tmp,bname,dname)) goto err ;
+
+	if (!environ_get_val_of_key(&tmp,get_key_by_enum(ENUM_KEY_SECTION_MAIN,KEY_MAIN_TYPE))) goto err ;
+
+	if (!sastr_clean_element(&tmp)) goto err ;
+	svtype = get_enum_by_key(tmp.s) ;
+
+	err:
+	stralloc_free(&tmp) ;
+	return svtype ;
+}
+
+
