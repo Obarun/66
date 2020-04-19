@@ -104,7 +104,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				case 'v' : 	if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
 				case 'f' : 	force = 1 ; break ;
 				case 'c' : 	if (conf) log_usage(USAGE) ; conf = 1 ; break ;
-				case 'm' :	if (conf) log_usage(USAGE) ; CONF = 2 ; break ;
+				case 'm' :	if (conf) log_usage(USAGE) ; conf = 2 ; break ;
 				case 'C' : 	if (conf) log_usage(USAGE) ; conf = 3 ; break ;
 				case 'z' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
 				default : 	log_usage(USAGE) ; 
@@ -217,6 +217,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				log_dieu(LOG_EXIT_SYS,"write: ",name) ;
 			break ;
 		case TYPE_MODULE:
+			if (!write_common(&service,dst.s, conf))
+				log_warnu_return(LOG_EXIT_ZERO,"write common files") ;
 		case TYPE_BUNDLE:
 			if (!write_bundle(&service, dst.s))
 				log_dieu(LOG_EXIT_SYS,"write: ",name) ;
