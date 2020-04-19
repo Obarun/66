@@ -526,6 +526,9 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			break ;
 		case KEY_MAIN_OPTIONS:
+			if (service->cname.itype == TYPE_BUNDLE)
+				log_warn_return(LOG_EXIT_ZERO,"key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,nocheck->idkey),": is not valid for type ",get_key_by_enum(ENUM_TYPE,service->cname.itype)) ;
+
 			if (!get_clean_val(nocheck)) return 0 ;
 			for (;pos < *chlen; pos += strlen(chval + pos)+1)
 			{
@@ -543,6 +546,9 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			}
 			break ;
 		case KEY_MAIN_FLAGS:
+			if (service->cname.itype == TYPE_BUNDLE || service->cname.itype == TYPE_MODULE)
+				log_warn_return(LOG_EXIT_ZERO,"key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,nocheck->idkey),": is not valid for type ",get_key_by_enum(ENUM_TYPE,service->cname.itype)) ;
+
 			if (!get_clean_val(nocheck)) return 0 ;
 			for (;pos < *chlen; pos += strlen(chval + pos)+1)
 			{
@@ -557,7 +563,6 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 		case KEY_MAIN_USER:
 			if (!get_clean_val(nocheck)) return 0 ;
 			{
-				
 				uid_t owner = MYUID ;
 				if (!owner)
 				{
@@ -600,6 +605,9 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			}
 			break ;
 		case KEY_MAIN_HIERCOPY:
+			if (service->cname.itype == TYPE_BUNDLE)
+				log_warn_return(LOG_EXIT_ZERO,"key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,nocheck->idkey),": is not valid for type ",get_key_by_enum(ENUM_TYPE,service->cname.itype)) ;
+
 			if (!get_clean_val(nocheck)) return 0 ;
 			{
 				unsigned int idx = 0 ;
@@ -616,7 +624,7 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 		case KEY_MAIN_DEPENDS:
 			if ((service->cname.itype == TYPE_CLASSIC) || (service->cname.itype == TYPE_BUNDLE))
 				log_warn_return(LOG_EXIT_ZERO,"key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,nocheck->idkey),": is not valid for type ",get_key_by_enum(ENUM_TYPE,service->cname.itype)) ;
-				
+
 			if (!get_clean_val(nocheck)) return 0 ;
 			service->cname.idga = deps.len ;
 			for (;pos < *chlen; pos += strlen(chval + pos)+1)
@@ -671,15 +679,27 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 		case KEY_MAIN_T_FINISH:
 		case KEY_MAIN_T_UP:
 		case KEY_MAIN_T_DOWN:
+			if (service->cname.itype == TYPE_BUNDLE || service->cname.itype == TYPE_MODULE)
+				log_warn_return(LOG_EXIT_ZERO,"key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,nocheck->idkey),": is not valid for type ",get_key_by_enum(ENUM_TYPE,service->cname.itype)) ;
+
 			if (!get_timeout(nocheck,(uint32_t *)service->timeout)) return 0 ;
 			break ;
 		case KEY_MAIN_DEATH:
+			if (service->cname.itype == TYPE_BUNDLE || service->cname.itype == TYPE_MODULE)
+				log_warn_return(LOG_EXIT_ZERO,"key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,nocheck->idkey),": is not valid for type ",get_key_by_enum(ENUM_TYPE,service->cname.itype)) ;
+
 			if (!get_uint(nocheck,&service->death)) return 0 ;
 			break ;
 		case KEY_MAIN_NOTIFY:
+			if (service->cname.itype == TYPE_BUNDLE || service->cname.itype == TYPE_MODULE)
+				log_warn_return(LOG_EXIT_ZERO,"key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,nocheck->idkey),": is not valid for type ",get_key_by_enum(ENUM_TYPE,service->cname.itype)) ;
+
 			if (!get_uint(nocheck,&service->notification)) return 0 ;
 			break ;
 		case KEY_MAIN_SIGNAL:
+			if (service->cname.itype == TYPE_BUNDLE || service->cname.itype == TYPE_MODULE)
+				log_warn_return(LOG_EXIT_ZERO,"key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,nocheck->idkey),": is not valid for type ",get_key_by_enum(ENUM_TYPE,service->cname.itype)) ;
+
 			if (!sig0_scan(chval,&service->signal))
 			{
 				parse_err(3,nocheck) ;
