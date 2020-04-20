@@ -23,7 +23,7 @@
 
 <h2> Interface </h2>
 	<pre>
-	66-enable [ -h ] [ -z ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -f|F ] [ -c|C ] [ -S ] <em>service(s)</em>
+	66-enable [ -h ] [ -z ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -f|F ] [ -c|m|C ] [ -S ] <em>service(s)</em>
 	</pre>
 
 	<p>
@@ -68,12 +68,14 @@
 			<tt>-F&nbsp;</tt>&nbsp;: same as <tt>-f</tt> but also reenables it dependencies.
 		</li>
 		<li> 
-			<tt>-c&nbsp;</tt>&nbsp;: merge it environment configuration file from <em>frontend</em> file.
+			<tt>-c&nbsp;</tt>&nbsp;: only appends new <tt>key=value</tt> pairs at environment configuration file from <em>frontend</em> file.
+		</li>
+        <li> 
+			<tt>-m&nbsp;</tt>&nbsp;: appends new <tt>key=value</tt> and merge existing one at environment configuration file from <em>frontend</em> file.
 		</li>
 		<li> 
 			<tt>-C&nbsp;</tt>&nbsp;: overwrite it environment configuration file from <em>frontend</em> file.
 		</li>
-		
 		<li> 
 			<tt>-S&nbsp;</tt>&nbsp;: starts the <em>service</em> on the fly directly after enabling it. If the state of the <em>service</em> is already up, this option
 			will have no effect unless the <tt>-f</tt> option is used to reload it.

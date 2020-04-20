@@ -16,7 +16,7 @@
 <h1>The frontend service file</h1>
 
 	<p>
-		The <a href="https://skarnet.org/software/s6">s6</a> and <a href="https://skarnet.org/software/s6">s6-rc</a> programs each handle and use several kinds of services and different files. It is quite complex to understand and manage the relationship between all those files and services. If you're interested in the details you should read <a href="https://skarnet.org/software/s6/servicedir.html">the documentation for the s6 servicedir</a> and also about <a href="https://skarnet.org/software/s6/servicedir.html"><em>classic</em></a>, <a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html"> <em>oneshot</em>, <em>longrun</em> (also called <em>atomic</em> services), <em>bundle</em></a> and <a href="#module"><em>module</em></a> services on Obarun. The frontend service file of 66 tools allows you to deal with all these different services in a centralized manner in one single place.
+		The <a href="https://skarnet.org/software/s6">s6</a> and <a href="https://skarnet.org/software/s6">s6-rc</a> programs each handle and use several kinds of services and different files. It is quite complex to understand and manage the relationship between all those files and services. If you're interested in the details you should read <a href="https://skarnet.org/software/s6/servicedir.html">the documentation for the s6 servicedir</a> and also about <a href="https://skarnet.org/software/s6/servicedir.html"><em>classic</em></a>, <a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html"> <em>oneshot</em>, <em>longrun</em> (also called <em>atomic</em> services), <em>bundle</em></a> and <a href="#module"><em>module</em></a> services. The frontend service file of 66 tools allows you to deal with all these different services in a centralized manner in one single place.
 		<br>
 		By default 66 tools expects to find any service files in <tt>%%service_system%%</tt> and <tt>%%service_adm%%</tt> for root user. For regular users, *$HOME/%%service_user%%</tt> will take priority over the previous ones. Although this can be changed at compile time by passing the <tt>--with-system-service=<em>DIR</em></tt>, <tt>--with-sysadmin-service=<em>DIR</em></tt> and <tt>--with-user-service=<em>DIR</em></tt>option to <tt>./configure.</tt>
 	</p>
@@ -30,14 +30,15 @@
 
 <h3>File name examples</h3>
 
-	<pre>/etc/66/service/dhcpcd</pre>
-	<pre>/etc/66/service/very_long_name</pre>
+	<pre>%%service_system%%/dhcpcd</pre>
+	<pre>%%service_system%%/very_long_name</pre>
 
-<h3>File content examples</h3>
+<h3>File content example</h3>
 
 	<pre>   [main]
    @type = classic
    @description = "ntpd daemon"
+   @version = 0.1.0
    @user = ( root )
    @options = ( log env )
 
@@ -1117,6 +1118,7 @@ for it in your <tt>@execute</tt> field.</p>
     [main]
     @type = classic,bundle,longrun,oneshot,module
     @name = 
+    @version =
     @description = ""
     @depends = ()
     @optsdepends = ()
@@ -1164,8 +1166,8 @@ for it in your <tt>@execute</tt> field.</p>
     
     [regex]
     @configure="arguments to pass to configure script"
-    @directories=(key=value)
-    @files=(key=value)
+    @directories=(key=value key=value)
+    @files=(key=value key=value)
     @infiles=(:filename:key=value ::key=value)
     </pre>
 </body></html>

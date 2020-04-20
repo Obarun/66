@@ -6,7 +6,7 @@
 
 # SYNOPSIS
 
-66-parser [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-f* ] [ *-c* | *-C* ] _service destination_
+66-parser [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-f* ] [ *-c* | *-m* | *-C* ] _service destination_
 
 # DESCRIPTION
 
@@ -35,14 +35,18 @@ An absolute path is expected for _service_ and _destination_.
 	Force. Owerwrite an existing parsing result at _destination_.
 
 *-c*
-	merge it environment configuration file from frontend file.
+	only appends new _key=value_ pairs at environment configuration file from _frontend_ file.
+
+*-m*
+	appends new _key=value_ and merge existing one at environment configuration file from _frontend_ file.
 
 *-C*
-	overwrite it environment configuration file from frontend file.
+	overwrite it environment configuration file from _frontend_ file.
 
 # NOTES
 
-*66-parser* will not try to read and parse any services declared under *@depends* 
+*66-parser* will not try to read and parse any services declared under *@contents*,
+*@depends*,*@optsdepends* or *@extdepends* even for a service _module_ type.
 key of the given frontend file. This tool is maily intended for debugging 
 purpose and to see the result of a parsing process before actually enabling 
 the service on the system. This tool use the exact same parser as *66-enable* 

@@ -6,7 +6,7 @@
 
 # SYNOPSIS
 
-66-enable [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] [ *-f|F* ] [ *-c|C* ] [ *-S* ] _service_...
+66-enable [ *-h* ] [ *-z* ] [ *-v* _verbosity_ ] [ *-l* _live_ ] [ *-t* _tree_ ] [ *-f|F* ] [ *-c|*m*|C* ] [ *-S* ] _service_...
 
 # DESCRIPTION
 
@@ -60,10 +60,13 @@ Multiple _services_ can be enabled by seperating their names with a space.
 	Same as *-f* but also reenables it dependencies.
 	
 *-c*
-	merge it environment configuration file from frontend file.
+	only appends new _key=value_ pairs at environment configuration file from _frontend_ file.
+
+*-m*
+	appends new _key=value_ and merge existing one at environment configuration file from _frontend_ file.
 
 *-C*
-	overwrite it environment configuration file from frontend file.
+	overwrite it environment configuration file from _frontend_ file.
 
 *-S*
 	Starts the _service_ on the fly directly after enabling it. If the state of

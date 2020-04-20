@@ -11,7 +11,7 @@ and different files. It is quite complex to understand and manage the
 relationship between all those files and services. If you're interested 
 in the details you should read the documentation for the s6 servicedir 
 and also about _classic_,_oneshot_,_longrun_ (also called _atomic_ services), 
-_bundle_ and _module_(see module below) services on Obarun. 
+_bundle_ and _module_(see module below) services. 
 The frontend service file of 66 tools allows you to deal with all these 
 different services in a centralized manner in one single place.
 
@@ -30,6 +30,33 @@ have any extension or prefix.
 The file is made of _sections_ which can contain one or more _key value_ pairs
 where the _key_ name can contain special characters like *-* (_hyphen_) or
 *\_* (_low line_) except the character *@* (_commercial at_) which is reserved.
+
+## File name examples
+
+```
+%%service_system%%/dhcpcd
+%%service_system%%/very_long_name
+```
+
+## File content example
+
+```
+[main]
+@type = classic
+@description = "ntpd daemon"
+@version = 0.1.0
+@user = ( root )
+@options = ( log env )
+
+[start]
+@build = auto
+@execute = ( foreground { mkdir -p  -m 0755 ${RUNDIR} } 
+execl-cmdline -s { ntpd ${CMD_ARGS} } )
+
+[environment]
+dir_run=!/run/openntpd
+cmd_args=!-d -s
+```
 
 The parser will not accept any empty _value_. If a _key_ is set, the _value_
 cannot be empty. Comments are allowed using the number sign *#*. Empty lines
@@ -978,6 +1005,7 @@ This prototype contain all valid *section* with all valid _key_*=*_value_ pair.
 [main]
 @type = classic,bundle,longrun,oneshot
 @name = 
+@version =
 @description = ""
 @depends = ()
 @optsdepends = ()
@@ -1022,4 +1050,10 @@ This prototype contain all valid *section* with all valid _key_*=*_value_ pair.
 [environment]
 MYKEY=!myvalue
 ANOTHERKEY=!antohervalue
+
+[regex]
+@configure="arguments to pass to configure script"
+@directories=(key=value key=value)
+@files=(key=value key=value)
+@infiles=(:filename:key=value ::key=value)
 ```
