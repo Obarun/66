@@ -18,7 +18,7 @@
 #include <sys/types.h>
 #include <wchar.h>
 #include <unistd.h>
-//#include <stdio.h>
+#include <stdio.h>
 
 #include <oblibs/sastr.h>
 #include <oblibs/log.h>
@@ -162,7 +162,7 @@ char *print_nlog(char *str, int n)
 	char *target_pos = NULL;   
 	
 	r = get_rlen_until(str,delim,slen) ;
-	
+
 	target_pos = str + r ; 
 
 	if (target_pos == NULL) return NULL; 
@@ -598,6 +598,8 @@ static void info_display_logfile(char const *field,ss_resolve_t *res)
 				else
 				{
 					if (!file_readputsa(&log,res->sa.s + res->dstlog,"current")) log_dieusys(LOG_EXIT_SYS,"read log file of: ",res->sa.s + res->name) ;
+					log.len-- ;
+					if (!auto_stra(&log,"\n")) log_dieusys(LOG_EXIT_SYS,"append newline") ;
 					if (log.len < 10 && res->type != TYPE_ONESHOT) 
 					{
 						if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off)) goto err ;
