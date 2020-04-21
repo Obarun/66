@@ -1,4 +1,4 @@
-[![GitLabl Build Status](https://framagit.org/Obarun/66/badges/master/pipeline.svg)
+![GitLabl Build Status](https://framagit.org/Obarun/66/badges/master/pipeline.svg)
 
 66 - Helpers tools around S6 supervision suite
 ==============================================
@@ -15,6 +15,10 @@ Examples of what can be achieved by assembling different programs provided by 66
 * Easy change of service configuration.
 * Automatic logger creation.
 * Service Notification.
+* Organizes service as a `tree`.
+* Easy view of service status.
+* User service declaration.
+* Automatic dependencies service chain.
 * ...
 
 66 works on mechanisms not on policies. It can be compiled with `glibc` or `musl`.
@@ -57,7 +61,7 @@ Frontend service file
 
 ### Boot service file
 
-The boot sequence can be a tedious task to accomplish. A **portable** and **complete** set of service can be found at [here](https://framagit.org/obarun/boot-66serv).
+The boot sequence can be a tedious task to accomplish. A **portable** and **complete** set of service can be found [here](https://framagit.org/obarun/boot-66serv).
 This set of service work out of the box and highly configurable to suit needs of the distributions.
 POC was made on `Gentoo`, `Funtoo`, `Devuan`, `Void`, `Adelie`, `Arch`.
 
@@ -70,3 +74,64 @@ You can find several examples for common daemon [here](https://framagit.org/pkg/
 By default, 66 use [execline](http://skarnet.org/software/execline) as scripting language.
 [66-tools](https://framagit.org/obarun/66-tools) provide some additonal tools to help you on this task.
 Some are specific to `execline` where other can be used on classic shell.
+
+Examples of common use
+----------------------
+
+Note: all 66 tools can be run as `root` or `regular user`.
+
+Creates a new tree called `root`:
+
+```
+66-tree -n root
+```
+
+Enables the tree at boot time:
+```
+66-tree -E root
+```
+
+Enables a service inside a specific tree:
+```
+66-enable -t root dhcpcd tty@tty1 tty@tty2
+```
+
+Disables a service from a specific tree:
+```
+66-disable -t root dhcpcd
+```
+
+Starts a service:
+```
+66-start dhcpcd
+```
+
+Stops a service:
+```
+66-stop dhcpcd
+```
+
+View the status of a service:
+```
+66-inservice dhcpcd
+```
+
+View a specific fields of the service(name,status and the contain of the associated log file):
+```
+66-inservice -o name,status,logfile dhcpcd
+```
+
+View all services contained on a tree:
+```
+66-intree root
+```
+
+Starts all services in one pass for a specific tree:
+```
+66-all -t root up
+```
+
+Stops all services in one pass for a specific tree:
+```
+66-all -t root down
+```
