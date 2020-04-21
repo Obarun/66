@@ -20,9 +20,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 
-#include <oblibs/oblist.h>
 #include <oblibs/mill.h>
-
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
