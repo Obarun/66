@@ -22,7 +22,9 @@ src/66/66-enable.o src/66/66-enable.lo: src/66/66-enable.c src/include/66/ssexec
 src/66/66-env.o src/66/66-env.lo: src/66/66-env.c src/include/66/ssexec.h
 src/66/66-hpr.o src/66/66-hpr.lo: src/66/66-hpr.c src/include/66/config.h src/include/66/hpr.h
 src/66/66-init.o src/66/66-init.lo: src/66/66-init.c src/include/66/ssexec.h
+src/66/66-inresolve.o src/66/66-inresolve.lo: src/66/66-inresolve.c src/include/66/constants.h src/include/66/info.h src/include/66/resolve.h src/include/66/utils.h
 src/66/66-inservice.o src/66/66-inservice.lo: src/66/66-inservice.c src/include/66/constants.h src/include/66/enum.h src/include/66/environ.h src/include/66/info.h src/include/66/resolve.h src/include/66/state.h src/include/66/tree.h src/include/66/utils.h
+src/66/66-instate.o src/66/66-instate.lo: src/66/66-instate.c src/include/66/constants.h src/include/66/info.h src/include/66/resolve.h src/include/66/state.h src/include/66/utils.h
 src/66/66-intree.o src/66/66-intree.lo: src/66/66-intree.c src/include/66/backup.h src/include/66/constants.h src/include/66/enum.h src/include/66/info.h src/include/66/resolve.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-parser.o src/66/66-parser.lo: src/66/66-parser.c src/include/66/constants.h src/include/66/parser.h src/include/66/utils.h
 src/66/66-scanctl.o src/66/66-scanctl.lo: src/66/66-scanctl.c src/include/66/utils.h
@@ -106,8 +108,12 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-info: src/66/66-info.o ${LIB66} -ls6 -loblibs -lskarnet
 66-init: EXTRA_LIBS :=
 66-init: src/66/66-init.o ${LIB66} -ls6 -loblibs -lskarnet
+66-inresolve: EXTRA_LIBS :=
+66-inresolve: src/66/66-inresolve.o ${LIB66} -loblibs -lskarnet
 66-inservice: EXTRA_LIBS := ${SPAWN_LIB}
 66-inservice: src/66/66-inservice.o ${LIB66} -ls6 -loblibs -lskarnet
+66-instate: EXTRA_LIBS :=
+66-instate: src/66/66-instate.o ${LIB66} -loblibs -lskarnet
 66-intree: EXTRA_LIBS :=
 66-intree: src/66/66-intree.o ${LIB66} -ls6 -loblibs -lskarnet
 66-parser: EXTRA_LIBS :=

@@ -12,7 +12,9 @@ BIN_TARGETS := \
 66-svctl \
 66-all \
 66-intree \
+66-inresolve \
 66-inservice \
+66-instate \
 66-env \
 66-boot \
 66-shutdown \

@@ -11,7 +11,9 @@
 66-svctl		    0755
 66-all			    0755
 66-intree           0755
+66-inresolve        0755
 66-inservice        0755
+66-instate          0755
 66-env			    0755
 66-boot			    0755
 66-shutdown		    0755
