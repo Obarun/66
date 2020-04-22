@@ -113,7 +113,7 @@ static inline void info_help (void)
 "\n"
 "options :\n"
 "	-h: print this help\n"
-"	-c: use color\n"
+"	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-n: do not display the field name\n"
 "	-o: comma separated list of field to display\n"
