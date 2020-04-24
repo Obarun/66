@@ -59,10 +59,10 @@
 			<tt><b>-f&nbsp;</b></tt>&nbsp;: force. Owerwrite an existing parsing result at <em>destination</em>.
 		</li>
 		<li> 
-			<tt>-c&nbsp;</tt>&nbsp;: only appends new <tt>key=value</tt> pairs at environment configuration file from <em>frontend</em> file.
+			<tt>-c&nbsp;</tt>&nbsp;: only appends new <tt>key=value</tt> pairs to the environment configuration file from <em>frontend</em> file.
 		</li>
         <li> 
-			<tt>-m&nbsp;</tt>&nbsp;: appends new <tt>key=value</tt> and merge existing one at environment configuration file from <em>frontend</em> file.
+			<tt>-m&nbsp;</tt>&nbsp;: appends new <tt>key=value</tt> and merges existing one to the environment configuration file from <em>frontend</em> file.
 		</li>
 		<li> 
 			<tt>-C&nbsp;</tt>&nbsp;: overwrite it environment configuration file from <em>frontend</em> file.
@@ -82,7 +82,7 @@
         which by default writes the configuration file to 
         <tt>%%service_admconf%%/<em>service_name</em></tt>. As a consequence 
         any corresponding existing file will be overwritten. To avoid this, 
-        it writes the configuration file at <em>destination/env/</em> directory 
+        it writes the configuration file to the <em>destination/env/</em> directory 
         and adjust the resulting <tt>run/finish</tt> file to match the 
         configuration file path.
 	</p>

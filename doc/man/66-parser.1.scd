@@ -35,10 +35,10 @@ An absolute path is expected for _service_ and _destination_.
 	Force. Owerwrite an existing parsing result at _destination_.
 
 *-c*
-	only appends new _key=value_ pairs at environment configuration file from _frontend_ file.
+	only appends new _key=value_ pairs to the environment configuration file from the _frontend_ file.
 
 *-m*
-	appends new _key=value_ and merge existing one at environment configuration file from _frontend_ file.
+	appends new _key=value_ and merges existing one to the environment configuration file from _frontend_ file.
 
 *-C*
 	overwrite it environment configuration file from _frontend_ file.
@@ -52,5 +52,5 @@ purpose and to see the result of a parsing process before actually enabling
 the service on the system. This tool use the exact same parser as *66-enable* 
 which by default writes the configuration file to *%%service_admconf%%*/_service_name_. 
 That's mean that a corresponding file will be overwritten. To avoid this, 
-it writes the configuration file at _destination/env/_ directory and adjust 
+it writes the configuration file to the _destination/env/_ directory and adjust 
 the resulting *run/finish* file to match the configuration file path.

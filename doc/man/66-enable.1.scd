@@ -57,16 +57,16 @@ Multiple _services_ can be enabled by seperating their names with a space.
 	will run again the process from the start and overwrite all existing files.
 
 *-F*
-	Same as *-f* but also reenables it dependencies.
+	Same as *-f* but also reenables its dependencies.
 	
 *-c*
-	only appends new _key=value_ pairs at environment configuration file from _frontend_ file.
+	only appends new _key=value_ pairs to the environment configuration file of the _frontend_ file.
 
 *-m*
-	appends new _key=value_ and merge existing one at environment configuration file from _frontend_ file.
+	appends new _key=value_ and merges existing one to the environment configuration file from _frontend_ file.
 
 *-C*
-	overwrite it environment configuration file from _frontend_ file.
+	overwrites its environment configuration file from _frontend_ file.
 
 *-S*
 	Starts the _service_ on the fly directly after enabling it. If the state of
