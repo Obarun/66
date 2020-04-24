@@ -15,7 +15,7 @@ Examples of what can be achieved by assembling different programs provided by 66
 * Easy change of service configuration.
 * Automatic logger creation.
 * Service Notification.
-* Organizes service as a `tree`.
+* Organizes services as a `tree`.
 * Easy view of service status.
 * User service declaration.
 * Automatic dependencies service chain.
