@@ -44,12 +44,18 @@
 int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *svname,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf)
 {
 	log_trace("start parse process of module: ",svname) ;
-	int r, err = 1 ;
+	int r, err = 1, insta ;
 	size_t in = 0 , pos = 0, inlen = 0, id, nid ;
 	stralloc sdir = STRALLOC_ZERO ; // service dir
 	stralloc list = STRALLOC_ZERO ;
 	stralloc tmp = STRALLOC_ZERO ;
-		
+	stralloc svinsta = STRALLOC_ZERO ;
+	
+	/** should be always right */
+	insta = instance_check(svname) ;
+	if (!instance_splitname(&svinsta,svname,insta,SS_INSTANCE_NAME))
+		log_warnu_return(LOG_EXIT_ZERO,"get instance name of: ",svname);
+	
 	if (!ss_resolve_module_path(&sdir,&tmp,svname,info->owner)) return 0 ;
 	
 	r = scan_mode(sdir.s,S_IFDIR) ;
@@ -208,25 +214,39 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 	/** parse all services contained into the modules */
 	for (pos = 0 ; pos < list.len ; pos += strlen(list.s + pos) + 1)
 	{
-		int svtype ;
+		int svtype, insta ;
 		char *sv = list.s + pos ;
-		
 		size_t len = strlen(sv) ;
 		char bname[len + 1] ;
+		char *pbname = bname ;
+		
 		if (!ob_basename(bname,sv))
 			log_warnu_return(LOG_EXIT_ZERO,"find basename of: ",sv) ;
 		
+		char tinsta[len + svinsta.len + 1] ;
+		char bname_insta[len + svinsta.len + 1] ;
+		insta = get_len_until(bname,'@') ;
+		if (insta > 0)
+		{
+			
+			auto_strings(tinsta,sv,svinsta.s) ;
+			sv = tinsta ;
+			auto_strings(bname_insta,bname,svinsta.s) ;
+			pbname = bname_insta ;
+		}
+			
 		if (!parse_service_before(info,parsed_list,tree_list,sv,nbsv,sasv,force,conf))
 			log_warnu_return(LOG_EXIT_ZERO,"parse: ",sv," from module: ",svname) ;
-
-		svtype = get_svtype_from_file(sv) ;
+		
+		/** always use the original name -> list.s + pos */
+		svtype = get_svtype_from_file(list.s + pos) ;
 		if (svtype == -1) log_warnu_return(LOG_EXIT_ZERO,"get svtype of: ",sv) ;
 
-		if (!stralloc_catb(&sdir,bname,strlen(bname) + 1))
+		if (!stralloc_catb(&sdir,pbname,strlen(pbname) + 1))
 			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 
 		if (svtype != TYPE_CLASSIC)
-			if (!stralloc_catb(&tmp,bname,strlen(bname) + 1)) 
+			if (!stralloc_catb(&tmp,pbname,strlen(pbname) + 1)) 
 				log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}
 	sv_before->cname.idga = deps.len ;
@@ -242,11 +262,13 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 	{
 		stralloc_catb(&deps,sdir.s + pos,strlen(sdir.s + pos) + 1) ;
 		sv_before->cname.ncontents++ ;
-
 	}
+	
+		
 	stralloc_free(&sdir) ;
 	stralloc_free(&list) ;
 	stralloc_free(&tmp) ;
+	stralloc_free(&svinsta) ;
 	
 	return err ;
 }
