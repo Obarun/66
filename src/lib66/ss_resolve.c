@@ -637,14 +637,14 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 		if (services->type.oneshot.up.exec >= 0)
 			res.exec_run = ss_resolve_add_string(&res,keep.s + services->type.oneshot.up.exec) ;
 		if (services->type.oneshot.down.exec >= 0)
-			res.exec_run = ss_resolve_add_string(&res,keep.s + services->type.oneshot.down.exec) ;
+			res.exec_finish = ss_resolve_add_string(&res,keep.s + services->type.oneshot.down.exec) ;
 	}
 	if (res.type == TYPE_CLASSIC || res.type == TYPE_LONGRUN)
 	{
 		if (services->type.classic_longrun.run.exec >= 0)
 			res.exec_run = ss_resolve_add_string(&res,keep.s + services->type.classic_longrun.run.exec) ;
-		if (services->type.oneshot.down.exec >= 0)
-			res.exec_run = ss_resolve_add_string(&res,keep.s + services->type.classic_longrun.finish.exec) ;
+		if (services->type.classic_longrun.finish.exec >= 0)
+			res.exec_finish = ss_resolve_add_string(&res,keep.s + services->type.classic_longrun.finish.exec) ;
 	}
 	
 	res.ndeps = services->cname.nga ;
