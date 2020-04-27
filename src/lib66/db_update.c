@@ -66,7 +66,7 @@ int db_update(char const *newdb, ssexec_t *info,char const *const *envp)
 		log_warnusys_return(LOG_EXIT_ZERO,"wait for ",newargv[0]) ;
 	
 	if (wstat)
-		log_warnusys_return(LOG_EXIT_ZERO,"update: ",newlive," to ",db) ;
+		log_warnu_return(LOG_EXIT_ZERO,"update: ",newlive," to ",db) ;
 	
 	return 1 ;
 }
