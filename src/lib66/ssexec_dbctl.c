@@ -75,7 +75,7 @@ static void rebuild_list(ss_resolve_graph_t *graph,ssexec_t *info, int what)
 		}
 		else
 		{ 
-			if (!sta.state && what)
+			if (!sta.state && what || !genalloc_s(ss_resolve_t,&graph->sorted)[i].disen)
 			{
 				log_info("Already down: ",name) ;
 				continue ;
