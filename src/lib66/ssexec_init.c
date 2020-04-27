@@ -93,7 +93,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 		if (!sastr_dir_get(&sasvc,svdir,"",S_IFDIR)) log_dieusys(LOG_EXIT_SYS,"get classic services from: ",svdir) ;
 		if (!sasvc.len)
 		{
-			log_info("Initialization aborted -- no classic services into tree: ",info->treename.s) ;
+			log_info("Initialization report: no classic services into tree: ",info->treename.s) ;
 			goto follow ;
 		}
 		

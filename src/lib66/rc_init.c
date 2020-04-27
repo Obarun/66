@@ -79,7 +79,7 @@ int rc_init(ssexec_t *info, char const *const *envp)
 	if (!ss_resolve_read(&res,sares.s,SS_MASTER + 1)) { log_warnusys("read resolve file of inner bundle") ; goto err ; }
 	if (!res.ndeps)
 	{
-		log_info("Initialization aborted -- no atomic services into tree: ",info->treename.s) ;
+		log_info("Initialization: no atomic services into tree: ",info->treename.s) ;
 		empty = 1 ;
 		goto end ;
 	}
