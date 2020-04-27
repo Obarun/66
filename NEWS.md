@@ -40,7 +40,7 @@
         This field is currently not mandatory to let the time to adapt the existing service files on your system, but it **will be mandatory** on a future release.
 
 
-- *66-in{service,tree}* display now *up*,*down* or *unintialized* on status and graph dependencies field for *oneshot*, *longrun*, *module* service. This allow us to know if e.g an *oneshot* is currently *up* or *down*.
+- *66-in{service,tree}* display now *up*,*down* or *unintialized* on status and graph dependencies field for *oneshot*, *bundle*, *module* service. This allow us to know if e.g an *oneshot* is currently *up* or *down*.
 
 - *--with-s6-log-timestamp* flag was added on the *configure* script to set the default output date format for a logger at the compile time. See `configure --help` command.
 
