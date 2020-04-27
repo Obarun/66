@@ -201,7 +201,7 @@ int main(int argc, char const *const *argv)
 	
 	ste = res.sa.s + res.state ;
 	
-	if (!ss_state_check(ste,svname)) log_dieusys(111,"unitialized: ",svname) ;
+	if (!ss_state_check(ste,svname)) log_diesys(111,"unitialized service: ",svname) ;
 	if (!ss_state_read(&sta,ste,svname)) log_dieusys(111,"read state file of: ",ste,"/",svname) ;
 	
 	info_display_string(fields[5],svname) ;
