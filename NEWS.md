@@ -1,7 +1,8 @@
 # Changelog for 66
 
 # In 0.2.6.0
-----------
+------------
+
 - Bugs fix
 
 - Adapt to skalibs v2.9.2.1
@@ -15,6 +16,7 @@
 - Adapt to oblibs v0.0.6.0
 
 - Add **-z** to all tools to enable colorization:
+    
     - *66-in{service,tree}* and *66-update* tools change the *-c* option to *-z* option to be consistent between all tools.
 
 
@@ -22,43 +24,45 @@
 
 - *Frontend* service file change:
     
-    - The field `@type` accept a new kind of service called *module*. A *module* can be considered as an instantiated service. It works as the same way as a service *frontend* file but allows to configure a set of different kind of services before executing the enable process. Also, the set of the services can be configured with the conjunction of a script called `configure` which it can be made on any language.
-    *module* also come with a new section named `[regex]` which contain the following field:
+    - The field `@type` accepts a new kind of service called *module*. A *module* can be considered as an instantiated service. It works the same way as a service *frontend* file but allows to configure a set of different kind of services before executing the enable process. Also, the set of the services can be configured with the conjunction of a script called `configure` which can be written on any language.
+    
+    - *module* also comes with a new section named `[regex]` which contains the following field:
         - `@configure`
         - `@directories`
         - `@files`
         - `@infiles`
     
-        Please see the *frontend* documentation for futher informations.
+        Please see the *frontend* documentation for futher information.
     
-    - Allow to comment a service inside *@contents*, *@depends*, *@optdepends*, *@extdepends* field with the '#' character. The service name **must** begins by `#` character to be a valid:
+    - Allow adding comments to a service inside *@contents*, *@depends*, *@optdepends*, *@extdepends* field with the `#` character. The service name **must** begins by `#` character without any space between the `#` and the name of the service to be correctly commented:
     
         ````
         @depends = ( foo #bar fooB )
         ````
-    - Add @version field:
-        This field is currently not mandatory to let the time to adapt the existing service files on your system, but it **will be mandatory** on a future release.
+    
+    - Add `@version` field:
+        This field is currently not mandatory to allow time to adapt the existing service files on your system, but it **will be mandatory** in a future release.
 
 
-- *66-in{service,tree}* display now *up*,*down* or *unintialized* on status and graph dependencies field for *oneshot*, *bundle*, *module* service. This allow us to know if e.g an *oneshot* is currently *up* or *down*.
+- *66-in{service,tree}* display now *up*,*down* or *unintialized* on status and graph dependencies field for *oneshot*, *bundle*, *module* services. This allows us to know if e.g an *oneshot* service is currently *up* or *down*.
 
 - *--with-s6-log-timestamp* flag was added on the *configure* script to set the default output date format for a logger at the compile time. See `configure --help` command.
 
-- *66-enable* accept now the new options **-m**. This option reacts as the same as the **-c** option for new *key=value* pair but overwrite the change of the admin on existing *key=value* pair. A *key=value* pair which doesn't exist on the frontend file remains untouched.
+- *66-enable* now accepts the new option **-m**. This option reacts the same as the **-c** option for new *key=value* pair but overwrites the change of the admin on existing *key=value* pair. A *key=value* pair which doesn't exist on the frontend file remains untouched.
 
-- *Oneshot* accept now the option *log* at field `@options`. This allow a *oneshot* to have his own logger. As any other service the log file can be see with *66-inservice* tool. The log destination can be controlled by the `@destination` field at the `[logger]` section. Default is set at compile time be the *--with-system-log* or *--with-user-log* flag.
+- *Oneshot* now accepts the option *log* at the field `@options`. This allows a *oneshot* to have its own logger. As any other service the log file can be seen with the *66-inservice* tool. The log destination can be controlled by the `@destination` field at the `[logger]` section. Default is set at compile time by the *--with-system-log* or *--with-user-log* flag.
 
 - New debug tools:
-    - *66-inresolve*: This tool allow to read the contain of the `resolve` file.
-    - *66-instate*: This tool allow to read the contain of the `state` file.
+    - *66-inresolve*: This tool allows to read the contents of the `resolve` file.
+    - *66-instate*: This tool allows to read the contents of the `state` file.
 
 # In 0.2.5.2
-----------
+------------
 
 - Fix build: Remove bytes.h oblibs header file
 
 # In 0.2.5.1
-----------
+------------
 
 - Bugs fix
 
@@ -69,19 +73,19 @@
 - Add SIGPWR control file at creation of .s6-svscan directory
 
 # In 0.2.5.0
-----------
+------------
     
 - Bugs Fix: Bad memory allocation
 
-- 66-tree: add -S option which allow to order the start tree process even after it creation.
+- 66-tree: add -S option which allows to order the start tree process even after it creation.
 
 # In 0.2.4.1
-----------
+------------
     
 - Hot fix: fix html documentation
 
 # In 0.2.4.0
-----------
+------------
 
 - Bugs fix: Bad memory allocation.
 
@@ -120,21 +124,21 @@
         - 66-update: The 66-update program makes a complete transition of trees and the live directory using a old 66 format (the one being replaced) with the new 66 format.
 
 # In 0.2.3.2
-----------
+------------
 
 - Fix bad annoucement at 66-svctl
 
 - Warn in case of bad key at parenthesis parsing process
     
 # In 0.2.3.1
-----------
+------------
 
 - Bugs fix: bad allocation memory
 
 - Makefile: remove creation of empty directories. 66-tree will check all directories and create it if it missing.
     
 # In 0.2.3.0
-----------
+------------
 
 - Adapt to oblibs 0.0.4.0
 
@@ -151,21 +155,21 @@
 - Doc typo fix        
     
 # In 0.2.2.2
-----------
+------------
 
 - Adapt to skalibs 2.9.1.0
 
 - Remove insta_? deprecated function
     
 # In 0.2.2.1
-----------
+------------
 
 - Typo fix at html documentation
 
 - Fix 66-intree without options
 
 # In 0.2.2.0
-----------
+------------
 
 - Bugs fix: Always check the existing of the 66 heart directories
 
@@ -176,17 +180,17 @@
     - 66-inservice give informations about services
 
 # In 0.2.1.2
-----------
+------------
 
 - Hot fix: fix 66-info graph display.
     
 # In 0.2.1.1
-----------
+------------
 
 - Hot fix: fix the build of the service dependencies graph.
 
 # In 0.2.1.0
-----------
+------------
 
 - Bugs fix.
 
@@ -212,12 +216,12 @@ In 0.2.0.4
 - Add -d feature to 66-scandir 
 
 # In 0.2.0.3
-----------
+------------
 
 - 66-parser: Fix write of configuration file, add -c|C features 
 	
 # In 0.2.0.2
-----------
+------------
 
 - Fix the written of user configuration file 
 
@@ -226,7 +230,7 @@ In 0.2.0.4
 - Add -l features to 66-tree, rewrite tree_unsupervise function
 	
 # In 0.2.0.0
-----------
+------------
 
 - New tools:
     
@@ -273,14 +277,14 @@ In 0.2.0.4
 - Bugs fix
 
 # In 0.1.0.1
-----------
+------------
 
 - Bugs fix
 
 - Add 66-getenv,66-writenv and 66-gnwenv extra-tools
 	
 # In 0.1.0.0
-----------
+------------
 	
 - Logger for nested tree at scandir creation time is disabled.
 
@@ -297,7 +301,7 @@ In 0.2.0.4
 - Fix 66-info, add -c option.
 
 # In 0.0.2.2
-----------
+------------
 
 - Hot fix, do not stop an empty db.
 
@@ -307,7 +311,7 @@ In 0.0.2.1
 - Hot fix, do not append inner bundle with empty word.
 	
 # In 0.0.2.0
-----------
+------------
 
 - Bugs fix.
 
@@ -320,6 +324,6 @@ In 0.0.2.1
 - Respect /etc/66/sysadmin/service even for user.
 
 # In 0.0.1.1
---------
+------------
 
 - Bugs fix at rc_init function.
