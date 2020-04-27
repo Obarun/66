@@ -13,7 +13,9 @@
 /66-enable
 /66-info
 /66-init
+/66-inresolve
 /66-inservice
+/66-instate
 /66-intree
 /66-scandir
 /66-scanctl
