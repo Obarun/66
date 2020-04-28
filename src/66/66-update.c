@@ -224,6 +224,14 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	
 	if (!argc)
 	{
+		if (info.owner)
+		{
+			/** check if user system dir already exist */
+			if (!scan_mode(info.base.s,S_IFDIR)) {
+				log_info(DRYRUN ? drun : "","No trees exist yet -- Nothing to do") ;
+				goto exit ;
+			}
+		}
 		if (!sastr_dir_get(&satree,system,SS_BACKUP + 1,S_IFDIR))
 			log_dieusys(LOG_EXIT_SYS,"get list of trees at: ",system) ;
 

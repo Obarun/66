@@ -350,10 +350,8 @@ fi
 
 ## logger notification
 if $s6log_notify; then
-    echo disable notify
     s6log_notify='0'
 else
-    echo enable notify
     s6log_notify='1'
 fi
 
