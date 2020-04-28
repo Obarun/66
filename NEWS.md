@@ -2,19 +2,21 @@
 
 ---
 
-# In 0.2.6.0
+# In 0.3.0.0
+
+This is a ***Major release***, you need to update your *trees* with *66-update* tool.
 
 - Bugs fix
 
-- Adapt to skalibs v2.9.2.1
+- [skalibs](https://skarnet.org/software/skalibs) dependency bumped to **2.9.2.1**
 
-- Adapt to execline v2.6.0.1
+- [exeline](https://skarnet.org/software/execline) dependency bumped to **2.6.0.1**
 
-- Adapt to s6 v2.9.1.0
+- [s6](https://skarnet.org/software/s6) dependency bumped to **2.9.1.0**
 
-- Adapt to s6-rc v0.5.1.2
+- [s6-rc](https://skarnet.org/software/s6-rc) dependency bumped to **0.5.1.2**
 
-- Adapt to oblibs v0.0.6.0
+- [oblibs](https://framagit.org/oblibs) dependency bumped to **0.0.6.0**
 
 - Add **-z** to all tools to enable colorization:
     
@@ -44,10 +46,9 @@
     - Add `@version` field:
         This field is currently not mandatory to allow time to adapt the existing service files on your system, but it **will be mandatory** in a future release.
 
+    - Comments in the `[environment]` section is now kept at parsing process and written to the final service configuration file. This is useful to explain the use of a variable without the need to look on the executable script.
 
 - *66-in{service,tree}* display now *up*,*down* or *unintialized* on status and graph dependencies field for *oneshot*, *bundle*, *module* services. This allows us to know if e.g an *oneshot* service is currently *up* or *down*.
-
-- *--with-s6-log-timestamp* flag was added on the *configure* script to set the default output date format for a logger at the compile time. See `configure --help` command.
 
 - *66-enable* now accepts the new option **-m**. This option reacts the same as the **-c** option for new *key=value* pair but overwrites the change of the admin on existing *key=value* pair. A *key=value* pair which doesn't exist on the frontend file remains untouched.
 
@@ -58,6 +59,12 @@
     - *66-instate*: This tool allows to read the contents of the `state` file.
 
 - *--disable-s6-log-notification* was added on the *configure* script to disable logger's [readiness notification](https://skarnet.org/software/s6/notifywhenup.html). By default it use the file descriptor number 3.
+
+- *--with-s6-log-timestamp* flag was added on the *configure* script to set the default output date format for a logger at the compile time. See `configure --help` command.
+
+- *--with-system-module*, *--with-sysadmin-module*, *--with-user-module* flags was added on the *configure* script to set the default *system*, *sysadmin* and *user* module directory respectively. 
+
+- *--with-system-script*, *--with-user-script* flags was added on the *configure* script to set the default *system* and *user* script directory respectively.
 
 ----
 
