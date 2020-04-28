@@ -398,7 +398,11 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 			if (!stralloc_cats(&exec,shebang.s) || 
 			!stralloc_cats(&exec,EXECLINE_BINPREFIX "fdmove -c 2 1\n") ||
 			!stralloc_cats(&exec,ui.s) ||
-			!stralloc_cats(&exec,S6_BINPREFIX "s6-log -d3 " "n") ||
+			!stralloc_cats(&exec,S6_BINPREFIX "s6-log ")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+			if (SS_LOGGER_NOTIFY)
+				if (!stralloc_cats(&exec,"-d3 ")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+			if (!stralloc_cats(&exec,"n") ||
 			!stralloc_cats(&exec,pback) ||
 			!stralloc_cats(&exec," ")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			if (log->timestamp < TIME_NONE) 
@@ -417,8 +421,9 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 				log_warnusys_return(LOG_EXIT_ZERO,"write: ",ddst.s,"/run") ;
 				
 			/** notification fd */
-			if (!file_write_unsafe(ddst.s,SS_NOTIFICATION,"3\n",2))
-				log_warnusys_return(LOG_EXIT_ZERO,"write: ",ddst.s,"/" SS_NOTIFICATION) ;
+			if (SS_LOGGER_NOTIFY)
+				if (!file_write_unsafe(ddst.s,SS_NOTIFICATION,"3\n",2))
+					log_warnusys_return(LOG_EXIT_ZERO,"write: ",ddst.s,"/" SS_NOTIFICATION) ;
 				
 			if (sv->cname.itype == TYPE_CLASSIC)
 			{

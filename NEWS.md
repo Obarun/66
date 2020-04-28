@@ -1,7 +1,8 @@
 # Changelog for 66
 
+---
+
 # In 0.2.6.0
-------------
 
 - Bugs fix
 
@@ -34,7 +35,7 @@
     
         Please see the *frontend* documentation for futher information.
     
-    - Allow adding comments to a service inside *@contents*, *@depends*, *@optdepends*, *@extdepends* field with the `#` character. The service name **must** begins by `#` character without any space between the `#` and the name of the service to be correctly commented:
+    -  Allow commenting out of a service inside *@contents*, *@depends*, *@optdepends*, *@extdepends* field with the `#` character. The service name **must** begin with a `#` character without any space between the `#` and the name of the service, so it can be ignored.
     
         ````
         @depends = ( foo #bar fooB )
@@ -56,13 +57,19 @@
     - *66-inresolve*: This tool allows to read the contents of the `resolve` file.
     - *66-instate*: This tool allows to read the contents of the `state` file.
 
+- *--disable-s6-log-notification* was added on the *configure* script to disable logger's [readiness notification](https://skarnet.org/software/s6/notifywhenup.html). By default it use the file descriptor number 3.
+
+----
+
 # In 0.2.5.2
-------------
+
 
 - Fix build: Remove bytes.h oblibs header file
 
+
+----
+
 # In 0.2.5.1
-------------
 
 - Bugs fix
 
@@ -72,20 +79,24 @@
 
 - Add SIGPWR control file at creation of .s6-svscan directory
 
+-----
+
 # In 0.2.5.0
-------------
+
     
 - Bugs Fix: Bad memory allocation
 
 - 66-tree: add -S option which allows to order the start tree process even after it creation.
 
+----
+
 # In 0.2.4.1
-------------
     
 - Hot fix: fix html documentation
 
+---
+
 # In 0.2.4.0
-------------
 
 - Bugs fix: Bad memory allocation.
 
@@ -123,22 +134,25 @@
         
         - 66-update: The 66-update program makes a complete transition of trees and the live directory using a old 66 format (the one being replaced) with the new 66 format.
 
+---
+
 # In 0.2.3.2
-------------
 
 - Fix bad annoucement at 66-svctl
 
 - Warn in case of bad key at parenthesis parsing process
+
+---
     
 # In 0.2.3.1
-------------
 
 - Bugs fix: bad allocation memory
 
 - Makefile: remove creation of empty directories. 66-tree will check all directories and create it if it missing.
+
+---
     
 # In 0.2.3.0
-------------
 
 - Adapt to oblibs 0.0.4.0
 
@@ -153,23 +167,26 @@
     - allow verbosity to 4 to display debug message
 
 - Doc typo fix        
+
+---
     
 # In 0.2.2.2
-------------
 
 - Adapt to skalibs 2.9.1.0
 
 - Remove insta_? deprecated function
+
+---
     
 # In 0.2.2.1
-------------
 
 - Typo fix at html documentation
 
 - Fix 66-intree without options
 
+---
+
 # In 0.2.2.0
-------------
 
 - Bugs fix: Always check the existing of the 66 heart directories
 
@@ -179,18 +196,21 @@
     
     - 66-inservice give informations about services
 
+---
+
 # In 0.2.1.2
-------------
 
 - Hot fix: fix 66-info graph display.
+
+---
     
 # In 0.2.1.1
-------------
 
 - Hot fix: fix the build of the service dependencies graph.
 
+---
+
 # In 0.2.1.0
-------------
 
 - Bugs fix.
 
@@ -203,9 +223,10 @@
 - Extra tools has removed and provided as an independent programs at ttps://framagit.org/Obarun/66-tools.git except for 66-echo and 66-unmountall program which are a dependent part of 66.
 
 - The account to run the s6-log program at the associate service logger can be set at compilation time by the --with-s6-log-user=USER options. The default is root. Obviously, the @runas field at the [logger] section overwritte it. This options set the account to run the uncaught-logs too. Also, this option can be overwritten with the '-l' option at 66-boot invocation and the '-L' option at 66-scandir invocation. 
+
+---
     
 In 0.2.0.4
-----------
 
 - Bugs fix on memory allocation
 
@@ -215,22 +236,25 @@ In 0.2.0.4
 
 - Add -d feature to 66-scandir 
 
+---
+
 # In 0.2.0.3
-------------
 
 - 66-parser: Fix write of configuration file, add -c|C features 
+
+---
 	
 # In 0.2.0.2
-------------
 
 - Fix the written of user configuration file 
 
 - Fix oneshot and bundle status check
 
 - Add -l features to 66-tree, rewrite tree_unsupervise function
+
+---
 	
 # In 0.2.0.0
-------------
 
 - New tools:
     
@@ -276,16 +300,18 @@ In 0.2.0.4
 
 - Bugs fix
 
+---
+
 # In 0.1.0.1
-------------
 
 - Bugs fix
 
 - Add 66-getenv,66-writenv and 66-gnwenv extra-tools
+
+---
 	
 # In 0.1.0.0
-------------
-	
+
 - Logger for nested tree at scandir creation time is disabled.
 
 - Pass graph function to new ss_resolve_graph_? function.
@@ -300,18 +326,21 @@ In 0.2.0.4
 
 - Fix 66-info, add -c option.
 
+---
+
 # In 0.0.2.2
-------------
 
 - Hot fix, do not stop an empty db.
 
+---
+
 In 0.0.2.1
-----------
 	
 - Hot fix, do not append inner bundle with empty word.
+
+---
 	
 # In 0.0.2.0
-------------
 
 - Bugs fix.
 
@@ -323,7 +352,8 @@ In 0.0.2.1
 
 - Respect /etc/66/sysadmin/service even for user.
 
+---
+
 # In 0.0.1.1
-------------
 
 - Bugs fix at rc_init function.
