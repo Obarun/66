@@ -280,14 +280,17 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		}
 		else redir_fd() ;
 	}
-			
+	/** Down process? reverse in that case to respect tree start order*/
+	if (!what)
+		if (!sastr_reverse(&contents)) log_dieu(LOG_EXIT_SYS,"reserve tree order") ;
+
 	for (;pos < contents.len; pos += strlen(contents.s + pos) + 1)
 	{
 		tree.len = 0 ;
 		ugly.len = 0 ;
 
 		char *treename = contents.s + pos ;
-		
+
 		if(!stralloc_cats(&tree,treename)) log_die_nomem("stralloc") ;
 		if(!stralloc_0(&tree)) log_die_nomem("stralloc") ;
 		
