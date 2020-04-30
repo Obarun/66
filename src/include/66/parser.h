@@ -288,7 +288,7 @@ extern int parser(sv_alltype *service,stralloc *src,char const *svname,int svtyp
 extern int parse_service_check_enabled(char const *tree_directory, char const *svname,uint8_t force,uint8_t *exist) ;
 extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, stralloc *opts_deps_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf) ;
 extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, stralloc *opts_deps_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf) ;
-extern int parse_service_opts_deps(ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf,uint8_t mandatory) ;
+extern int parse_service_opts_deps(stralloc *rebuild,ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf,uint8_t mandatory) ;
 extern int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner) ;
 extern int get_svtype(sv_alltype *sv_before, char const *contents) ;
 extern int get_svtype_from_file(char const *file) ;
