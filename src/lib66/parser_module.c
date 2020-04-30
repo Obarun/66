@@ -206,9 +206,9 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 	id = sv_before->cname.idga, nid = sv_before->cname.nga ;
 	for (;nid; id += strlen(deps.s + id) + 1, nid--) {
 		if (!stralloc_catb(&tmp,deps.s + id,strlen(deps.s + id) + 1)) 
-			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ; ;
+			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		if (!stralloc_catb(&sdir,deps.s + id,strlen(deps.s + id) + 1)) 
-			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ; ;
+			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}
 	
 	/** parse all services contained into the modules */
