@@ -1,5 +1,47 @@
 # Changelog for 66
 
+## Upgrade/downgrade instructions
+
+Upgrading/downgrading between versions may the need of the *66-update* tool use. In that case the
+release note specifies it.
+To do so, first upgrade/downgrade the 66 package. Then make a *dry-run* using the **-d**
+option of the 66-update tool:
+
+```
+# 66-update -d
+```
+
+You **should not have any error messages** before going further. If you gets an
+error message, please fix it first.
+If you do not have any idea of what to do to fix the issue, reverse your previous
+installation and consider to ask for help on the [66 mailing list](https://obarun.org/mailman/listinfo/66_obarun.org).
+
+The *dry-run* option do not changes anything on your system, you need now
+to really update your system:
+
+```
+# 66-update
+```
+
+This same process and command uses need to be done with your regular user.
+
+See the *66-update* documentation page for further information.
+
+---
+
+# In 0.3.0.1
+
+- Fix `@optsdepends` and `@extdepends` behavior:
+    These two fields now respect correctly the start order of the service's dependencies.
+
+- *66-inservice* change:
+    The field `Optional dependencies` and `External dependencies` displays now the name of the tree where the service is currently enabled after the `:` colon mark if any:
+
+    ````
+    External dependencies : dbus-session@obarun:base gvfsd:desktop
+    Optional dependencies : picom@obarun:desktop
+    ````
+
 ---
 
 # In 0.3.0.0
