@@ -52,6 +52,7 @@ static unsigned int GRAPH = 0 ;
 static char const *const *ENVP ;
 static unsigned int nlog = 20 ;
 static stralloc src = STRALLOC_ZERO ;
+static stralloc home = STRALLOC_ZERO ;// /var/lib/66/system or ${HOME}/system
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -88,8 +89,8 @@ info_opts_map_t const opts_sv_table[] =
 	{ .str = "source", .svfunc = &info_display_source, .id = 6 },
 	{ .str = "live", .svfunc = &info_display_live, .id = 7 },
 	{ .str = "depends", .svfunc = &info_display_deps, .id = 8 },
-	{ .str = "optsdepends", .svfunc = &info_display_optsdeps, .id = 9 },
-	{ .str = "extdepends", .svfunc = &info_display_extdeps, .id = 10 },
+	{ .str = "extdepends", .svfunc = &info_display_extdeps, .id = 9 },
+	{ .str = "optsdepends", .svfunc = &info_display_optsdeps, .id = 10 },
 	{ .str = "start", .svfunc = &info_display_start, .id = 11 },
 	{ .str = "stop", .svfunc = &info_display_stop, .id = 12 },
 	{ .str = "envat", .svfunc = &info_display_envat, .id = 13 },
@@ -134,8 +135,8 @@ static inline void info_help (void)
 "	source: displays the source of the service's frontend file\n"
 "	live: displays the service's live directory\n"
 "	depends: displays the service's dependencies\n"
-"	optsdepends: displays the service's optional dependencies\n"
 "	extdepends: displays the service's external dependencies\n"
+"	optsdepends: displays the service's optional dependencies\n"
 "	start: displays the service's start script\n"
 "	stop: displays the service's stop script\n"
 "	envat: displays the source of the environment file\n"
@@ -410,27 +411,83 @@ static void info_display_deps(char const *field, ss_resolve_t *res)
 		stralloc_free(&salist) ;
 }
 
+static void info_display_with_source_tree(stralloc *list,ss_resolve_t *res)
+{
+	size_t pos = 0, lpos = 0, newlen = 0 ;
+	stralloc svlist = STRALLOC_ZERO ;
+	stralloc ntree = STRALLOC_ZERO ;
+	stralloc src = STRALLOC_ZERO ;
+	stralloc tmp = STRALLOC_ZERO ;
+	char *treename = 0 ;
+			
+	if (!auto_stra(&src,home.s)) log_die_nomem("stralloc") ;
+	newlen = src.len ;
+
+	if (!sastr_dir_get(&ntree,home.s,SS_BACKUP + 1,S_IFDIR))
+		log_dieu(LOG_EXIT_SYS,"get list of trees of: ",home.s) ;
+
+	for (pos = 0 ; pos < ntree.len ; pos += strlen(ntree.s + pos) + 1)
+	{
+		svlist.len = 0 ;
+		src.len = newlen ;
+		treename = ntree.s + pos ;
+
+		if (!auto_stra(&src,treename,SS_SVDIRS,SS_RESOLVE)) 
+			log_die_nomem("stralloc") ;
+		
+		if (!sastr_dir_get(&svlist,src.s,SS_MASTER + 1,S_IFREG))
+			log_dieu(LOG_EXIT_SYS,"get contents of tree: ",src.s) ;
+
+		for (lpos = 0 ; lpos < list->len ; lpos += strlen(list->s + lpos) + 1)
+		{
+			char *name = list->s + lpos ;
+			if (sastr_cmp(&svlist,name) >= 0)
+			{
+				if (!stralloc_cats(&tmp,name) ||
+				!stralloc_cats(&tmp,":") ||
+				!stralloc_catb(&tmp,treename,strlen(treename) +1))
+					log_die_nomem("stralloc") ;
+			}
+		}
+	}
+
+	list->len = 0 ;
+	for (pos = 0 ; pos < tmp.len ; pos += strlen(tmp.s + pos) + 1)
+		if (!stralloc_catb(list,tmp.s + pos,strlen(tmp.s + pos) + 1))
+			log_die_nomem("stralloc") ;
+
+	stralloc_free (&svlist) ;
+	stralloc_free (&ntree) ;
+	stralloc_free (&src) ;
+	stralloc_free (&tmp) ;
+}
+
 static void info_display_optsdeps(char const *field, ss_resolve_t *res)
 {
 	stralloc salist = STRALLOC_ZERO ;
-	
+
 	if (NOFIELD) info_display_field_name(field) ;
 	else field = 0 ;
-	
+
 	if (!res->noptsdeps) goto empty ;
-	
+
 	if (!sastr_clean_string(&salist,res->sa.s + res->optsdeps)) 
 		log_dieu(LOG_EXIT_SYS,"build dependencies list") ;
+
+	info_display_with_source_tree(&salist,res) ;
+
 	if (REVERSE)
 		if (!sastr_reverse(&salist))
 				log_dieu(LOG_EXIT_SYS,"reverse dependencies list") ;
+
 	info_display_list(field,&salist) ;
+
 	goto freed ;
-	
+
 	empty:
 		if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
 			log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-		
+
 	freed:
 		stralloc_free(&salist) ;
 }
@@ -438,24 +495,29 @@ static void info_display_optsdeps(char const *field, ss_resolve_t *res)
 static void info_display_extdeps(char const *field, ss_resolve_t *res)
 {
 	stralloc salist = STRALLOC_ZERO ;
-	
+
 	if (NOFIELD) info_display_field_name(field) ;
 	else field = 0 ;
-	
+
 	if (!res->nextdeps) goto empty ;
-	
+
 	if (!sastr_clean_string(&salist,res->sa.s + res->extdeps)) 
 		log_dieu(LOG_EXIT_SYS,"build dependencies list") ;
+
+	info_display_with_source_tree(&salist,res) ;
+
 	if (REVERSE)
 		if (!sastr_reverse(&salist))
 				log_dieu(LOG_EXIT_SYS,"reverse dependencies list") ;
+
 	info_display_list(field,&salist) ;
+
 	goto freed ;
-	
+
 	empty:
 		if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
 			log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-		
+
 	freed:
 		stralloc_free(&salist) ;
 }
@@ -697,8 +759,8 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		"Source",
 		"Live",
 		"Dependencies",
-		"Optional dependencies" ,
 		"External dependencies" ,
+		"Optional dependencies" ,
 		"Start script",
 		"Stop script",
 		"Environment source",
@@ -763,7 +825,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	if (!stralloc_cats(&src,SS_SYSTEM) ||
 	!stralloc_0(&src)) log_die_nomem("stralloc") ;
 	src.len-- ;
-	
+		
 	if (!scan_mode(src.s,S_IFDIR))
 	{
 		log_info("no tree exist yet") ;
@@ -772,6 +834,8 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	
 	if (!stralloc_cats(&src,"/")) log_die_nomem("stralloc") ;
 	newlen = src.len ;
+	if (!stralloc_copy(&home,&src) ||
+	!stralloc_0(&home)) log_die_nomem("stralloc") ;
 	
 	if (!tname)
 	{	
@@ -839,6 +903,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	freed:
 	ss_resolve_free(&res) ;
 	stralloc_free(&src) ;
+	stralloc_free(&home) ;
 	stralloc_free(&satree) ;
 		
 	return 0 ;

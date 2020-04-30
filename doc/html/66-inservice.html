@@ -96,10 +96,10 @@
             <tt>depends</tt>&nbsp;: displays the <em>service's</em> dependencies.
         </li>
         <li>
-            <tt>optsdepends</tt>&nbsp;: displays the <em>service's</em> optional dependencies.
+            <tt>extdepends</tt>&nbsp;: displays the <em>service's</em> external dependencies.
         </li>
         <li>
-            <tt>extdepends</tt>&nbsp;: displays the <em>service's</em> external dependencies.
+            <tt>optsdepends</tt>&nbsp;: displays the <em>service's</em> optional dependencies.
         </li>
         <li>
             <tt>start</tt>&nbsp;: displays the <em>service's</em> start script.
@@ -138,8 +138,8 @@
     Live                  : %%livedir%%/tree/0/boot/servicedirs/00
     Dependencies          : system-hostname  mount-run  populate-run  mount-tmp  populate-tmp  mount-proc  mount-sys
                             populate-sys  mount-dev  mount-pts  mount-shm  populate-dev  mount-cgroups
-    Optional dependencies : None
     External dependencies : None
+    Optional dependencies : None
     Start script          : None
     Stop script           : None
     Environment source    : None
@@ -149,6 +149,14 @@
     Log file              : None
 	</pre>
 	</p>
+    <br>
+    <p>
+        <b>Note</b>: the <em>Optional dependencies</em> and <em>External dependencies</em> also displays the name of the tree where the service is currently enabled after the <tt>colon(:)</tt> mark if any:
+    <pre>
+    External dependencies : dbus-session@obarun:base gvfsd:desktop
+    Optional dependencies : picom@obarun:desktop
+    </pre>
+    </p>
 	<p>
 		By default the dependency graph is rendered in the order of execution. In this example the <em>'oneshot' system-hostname</em> is the first executed
 		service and <em>'oneshot' mount-cgroups</em> is the last one when it finishes. You can reverse the rendered order with the <tt>-r</tt> option.</p>

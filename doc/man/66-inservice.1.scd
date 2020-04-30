@@ -78,11 +78,11 @@
 *depends*
 	Displays the _service_'s dependencies.
 
-*optsdepends*
-	Displays the _service_'s optional dependencies.
-
 *extdepends*
 	Displays the _service_'s external dependencies.
+
+*optsdepends*
+	Displays the _service_'s optional dependencies.
 
 *start*
 	Displays the _service_'s start script.
@@ -122,8 +122,8 @@ Dependencies          : system-hostname  mount-run  populate-run  mount-tmp
                         populate-tmp  mount-proc  mount-sys  populate-sys
                         mount-dev  mount-pts  mount-shm  populate-dev
                         mount-cgroups
-Optional dependencies : None
 External dependencies : None
+Optional dependencies : None
 Start script          : None
 Stop script           : None
 Environment source    : None
@@ -131,7 +131,16 @@ Environment file      : None
 Log name              : None
 Log destination       : None
 Log file              : None
-    
+
+
+```
+*Note*: the *Optional dependencies* and *External dependencies* also displays 
+the name of the tree where the service is currently enabled after the *colon(:)* mark if any:
+
+```
+External dependencies : dbus-session@obarun:base gvfsd:desktop
+Optional dependencies : picom@obarun:desktop
+
 ```
 
 By default the dependency graph is rendered in the order of execution. In 
