@@ -174,6 +174,7 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t own
 		auto_check_one(extra.s,0755) ;
 		extra.len = extralen ;
 		auto_stralloc_0(&extra,SS_SERVICE_USERCONFDIR) ;
+		auto_check_one(extra.s,0755) ;
 		extra.len = extralen ;
 		auto_stralloc_0(&extra,SS_MODULE_USERDIR) ;
 		auto_check_one(extra.s,0755) ;
