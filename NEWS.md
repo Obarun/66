@@ -29,6 +29,14 @@ See the *66-update* documentation page for further information.
 
 ---
 
+# In 0.3.0.2
+
+- Fix check and installation of user configuration file directory.
+
+- Add missing *66-inresovle* and 66-instate* documentation.
+
+---
+
 # In 0.3.0.1
 
 - Fix `@optsdepends` and `@extdepends` behavior:
