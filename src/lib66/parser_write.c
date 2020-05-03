@@ -649,9 +649,6 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 	stralloc execute = STRALLOC_ZERO ;
 	stralloc destlog_oneshot = STRALLOC_ZERO ;
 	
-	/** prepare oneshot logger */
-	if (!write_oneshot_logger(&destlog_oneshot,sv)) return 0 ;
-	
 	if (type == TYPE_ONESHOT)
 	{
 		if (!stralloc_cats(&shebang,EXECLINE_BINPREFIX "fdmove -c 2 1\n"))
@@ -659,6 +656,9 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 		
 		if (sv->opts[0])
 		{
+			/** prepare oneshot logger */
+			if (!write_oneshot_logger(&destlog_oneshot,sv)) return 0 ;
+
 			if (!stralloc_cats(&shebang,"redirfd -a 1 ") ||
 			!stralloc_cats(&shebang,destlog_oneshot.s) ||
 			!stralloc_cats(&shebang,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
