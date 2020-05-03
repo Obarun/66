@@ -1,0 +1,49 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>The 66 Suite: 66-instate</title>
+    <meta name="Description" content="Detailed documentation for the 66-instate command which is part of the 66 software suite" />
+    <meta name="Keywords" content="66 command 66-instate scandir supervision supervise set service information debug state" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">66</a><br />
+<a href="//obarun.org/">www.obarun.org</a>
+</p>
+
+<h1>66-instate</h1>
+
+	<p>
+      This command displays the contents of the service's state file.
+    </p>
+
+<h2>Interface </h2>
+	<pre>
+	66-instate [ -h ] [ -z ] [ -t tree ] [ -l ]  <em>service</em>
+	</pre>
+    <p>
+        66-instate displays the contents of the <em>service</em>'s state file. This file are used internally by the 66 tools to know runtime <em>service</em> information. This tool is purely a debug tool used by developers.
+    </p>
+<h2>Options </h2>
+
+	<ul>
+		<li> 
+			<tt>-h&nbsp;</tt>&nbsp;: prints this help.
+		</li>
+        <li> 
+			<tt>-z&nbsp;</tt>&nbsp;: use color.
+		</li>
+        <li> 
+			<tt>-t&nbsp;<em>tree</em>&nbsp;</tt>&nbsp;: only searches the <em>service</em> at the specified <em>tree</em>,
+            when the same service may be enabled in more trees.
+		</li>
+        <li> 
+			<tt>-l&nbsp;</tt>&nbsp;: displays the contents of the associated logger's state file if any.
+		</li>
+	</ul>
+</body>
+</html>
