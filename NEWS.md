@@ -2,28 +2,28 @@
 
 ## Upgrade/downgrade instructions
 
-Upgrading/downgrading between versions may the need of the *66-update* tool use. In that case the
-release note specifies it.
-To do so, first upgrade/downgrade the 66 package. Then make a *dry-run* using the **-d**
+Upgrading/downgrading between major versions may require the use of the 66 tool *66-update*. In each case the
+release note will specify it.
+To update, first upgrade/downgrade the 66 package. Then make a *dry-run* using the **-d**
 option of the 66-update tool:
 
 ```
 # 66-update -d
 ```
 
-You **should not have any error messages** before going further. If you gets an
+You **should not have any error messages** before going further. If you get an
 error message, please fix it first.
 If you do not have any idea of what to do to fix the issue, reverse your previous
-installation and consider to ask for help on the [66 mailing list](https://obarun.org/mailman/listinfo/66_obarun.org).
+installation and consider asking for help on the [66 mailing list](https://obarun.org/mailman/listinfo/66_obarun.org).
 
-The *dry-run* option do not changes anything on your system, you need now
+The *dry-run* option *-d* does not change anything on your system, you need 
 to really update your system:
 
 ```
 # 66-update
 ```
 
-This same process and command uses need to be done with your regular user.
+This same process and command use needs to be done by (or as) each regular user.
 
 See the *66-update* documentation page for further information.
 
@@ -31,7 +31,7 @@ See the *66-update* documentation page for further information.
 
 # In 0.3.0.3
 
-- Hot fix: Avoids to overwritte current file
+- Hot fix: Avoids overwriting the current file
 
 ---
 
