@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cd `dirname "$0"`
+cd $(dirname "$0") || exit 1
 . package/info
 
 usage () {
@@ -21,7 +21,7 @@ Fine tuning of the installation directories:
   --dynlibdir=DIR                  shared library files [PREFIX/lib]
   --bindir=BINDIR                  user executables [EPREFIX/bin]
   --libexecdir=DIR                 package-scoped executables [EPREFIX/libexec]
-  --libdir=DIR                     static library files [PREFIX/lib/$package]
+  --libdir=DIR                     static library files [PREFIX/lib/66]
   --includedir=DIR                 C header files [PREFIX/include]
   --sysconfdir=SYSDIR              global configuration files [/etc]
   --datarootdir=DATAROOTDIR        read-only architecture-independent data root [PREFIX/share]
@@ -300,16 +300,16 @@ fi
 # Add /etc/66 in the default case
 if test -z "$sysconfdir" ; then
   if test "$service_adm" = '$sysconfdir/66/service' ; then
-	service_adm = '$sysconfdir/66/service'
+	service_adm='$sysconfdir/66/service'
   fi
   if test "$module_adm" = '$sysconfdir/66/module' ; then
-	service_adm = '$sysconfdir/66/module'
+	service_adm='$sysconfdir/66/module'
   fi
   if test "$service_admconf" = '$sysconfdir/66/conf' ; then
-	service_admconf = '$sysconfdir/66/conf'
+	service_admconf='$sysconfdir/66/conf'
   fi
   if test "$skel" = '$sysconfdir/66' ; then
-	skel = '$sysconfdir/66'
+	skel='$sysconfdir/66'
   fi
 fi
 
@@ -338,11 +338,11 @@ for i in service_adm module_adm service_admconf skel; do
 done
 
 # check valid s6-log timestamp
-if [ $s6log_timestamp == "tai" ]; then
+if [ $s6log_timestamp = "tai" ]; then
     s6log_timestamp='0'
-elif [ $s6log_timestamp == "iso" ]; then
+elif [ $s6log_timestamp = "iso" ]; then
     s6log_timestamp='1'
-elif [ $s6log_timestamp == "none" ]; then
+elif [ $s6log_timestamp = "none" ]; then
     s6log_timestamp='2'
 else 
     fail "$0: invalid timestamp value -- valid value are: tai,iso or none"
@@ -359,7 +359,7 @@ fi
 i=0
 set -C
 while : ; do
-  i=$(($i+1))
+  i=$((i+1))
   tmpc="./tmp-configure-$$-$PPID-$i.c"
   tmpe="./tmp-configure-$$-$PPID-$i.tmp"
   2>|/dev/null > "$tmpc" && break
@@ -425,7 +425,7 @@ fi
 echo "Checking for C compiler..."
 trycc ${CC}
 if test -n "$CC_AUTO" ; then
-  b=`basename "$CC"`
+  b=$(basename "$CC")
   adjust_cross=false
   if test "$b" != "$CC" ; then
     adjust_cross=true
@@ -435,7 +435,7 @@ if test -n "$CC_AUTO" ; then
     if test "$b" = "${b##$cross}" ; then
       echo "$0: warning: compiler $CC is declared as a cross-compiler for target $target but does not start with prefix ${cross}" 1>&2
     elif $adjust_cross ; then
-      cross=`dirname "$CC"`/"$cross"
+      cross=$(dirname "$CC")/"$cross"
     fi
   fi
 fi
