@@ -1,4 +1,4 @@
-title: The 66 Suite: 66-all
+title: The 66 Suite: 66-
 author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)

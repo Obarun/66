@@ -32,11 +32,11 @@ Examples of what can be achieved by assembling different programs provided by *6
 
 ### Requirements
 
-Please refer to the INSTALL.md file for details.
+Please refer to the [INSTALL.md](https://framagit.org/Obarun/66) file for details.
 
 ### Licensing
 
-*66* is free software. It is available under the `ISC` license.
+*66* is free software. It is available under the [ISC license](http://opensource.org/licenses/ISC).
 
 ---
 
