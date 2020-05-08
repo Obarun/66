@@ -22,12 +22,12 @@ for i in ${man1}; do
 done
 
 for i in ${man5}; do
-    lowdown -s -Tman doc/${i}.md -o doc/man/man5/${i}.5 
-    var=$(head -n1 < doc/man/man5/${i}.5)
+    lowdown -s -Tman doc/"${i}".md -o doc/man/man5/"${i}".5 
+    var=$(head -n1 < doc/man/man5/"${i}".5)
     var=$(printf '%s' "$var" | tr '7' '5')
     var="${var} \"\" \"File Formats Manual\""
-    sed -i "s!^.TH.*!${var}!" doc/man/man5/${i}.5
-    sed -i '2,5d' doc/man/man5/${i}.5
+    sed -i "s!^.TH.*!${var}!" doc/man/man5/"${i}".5
+    sed -i '2,5d' doc/man/man5/"${i}".5
 done
 
 for i in ${man8}; do
