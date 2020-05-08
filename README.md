@@ -1,7 +1,7 @@
 ![GitLabl Build Status](https://framagit.org/Obarun/66/badges/master/pipeline.svg)
 
 66 - Helpers tools around S6 supervision suite
-==============================================
+===
 
 Sixty-six is a collection of system tools built around [s6](http://skarnet.org/software/s6) and [s6-rc](http://skarnet.org/software/s6-rc) created to make the implementation and manipulation of service files on your machine easier. 
 It is meant to be a toolbox for the declaration, implementation and administration of services where seperate programs can be joined to achieve powerful functionality with small amounts of code.
@@ -26,7 +26,7 @@ Examples of what can be achieved by assembling different programs provided by 66
 Installation
 ------------
 
-See the INSTALL file.
+See the INSTALL.md file.
 
 Documentation
 -------------
