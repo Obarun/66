@@ -10,7 +10,7 @@ Build Instructions
 - s6 version 2.9.1.0 or later: http://skarnet.org/software/s6/
 - s6-rc version 0.5.1.2 or later: http://skarnet.org/software/s6-rc/
 - oblibs version 0.0.6.0 or later: https://framagit.org/Obarun/oblibs/
-- scdoc version 1.9.4 or later for man pages: https://git.sr.ht/~sircmpwn/scdoc
+- lowdown version 0.6.4 or later for man and html pages: https://kristaps.bsd.lv/lowdown/
   
 This software will install on any operating system that implements POSIX.1-2008, available at [opengroup](http://pubs.opengroup.org/onlinepubs/9699919799/)
 

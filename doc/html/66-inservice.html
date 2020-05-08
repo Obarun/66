@@ -1,135 +1,84 @@
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta http-equiv="Content-Language" content="en" />
-    <title>The 66 Suite: 66-inservice</title>
-    <meta name="Description" content="Detailed documentation for the 66-inservice command which is part of the 66 software suite" />
-    <meta name="Keywords" content="66 command 66-inservice scandir supervision supervise set service information" />
-    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
-  </head>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="date" content="2020-05-08" scheme="YYYY-MM-DD" />
+<meta name="author" content="Eric Vidal &lt;eric@obarun.org&gt;" />
+<title>The 66 Suite: 66-inservice</title>
+</head>
 <body>
 
-<p>
-<a href="index.html">66</a><br />
-<a href="//obarun.org/">www.obarun.org</a>
-</p>
+<p><a href="index.html">66</a></p>
 
-<h1>66-inservice</h1>
+<p><a href="https://web.obarun.org">obarun.org</a></p>
 
-	<p>
-      This command displays information about services.
-    </p>
+<h1 id="66-inservice">66-inservice</h1>
 
-<h2>Interface </h2>
-	<pre>
-	66-inservice [ -h ] [ -z ] [ -v verbosity ] [ -n ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -t tree ] [ -p nline ] <em>service</em>
-	</pre>
+<p>This command displays information about services.</p>
 
-<h2>Options </h2>
+<h2 id="Interface">Interface</h2>
 
-	<ul>
-		<li> 
-			<tt>-h&nbsp;</tt>&nbsp;: prints this help.
-		</li>
-        <li> 
-			<tt>-z&nbsp;</tt>&nbsp;: use color.
-		</li>
-     <li>
-        <tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
-        the verbosity of the command. 
-        <tt>1(Default)</tt>: Only print error messages. 
-        <tt>2</tt>: Also prints warning messages. 
-        <tt>3</tt>: Also prints tracing messages.
-        <tt>4</tt>: Also prints debugging messages.
-    </li>
-        <li> 
-			<tt>-n&nbsp;</tt>&nbsp;: do not display the field name(s) specified.
-		</li>
-		<li> 
-			<tt>-o&nbsp;</tt>&nbsp;: comma separated list of fields to display. If this option is not passed, <tt>66-inservice</tt> will display all fields.
-		</li>
-		<li>
-			<tt>-g&nbsp;</tt>&nbsp;: shows the dependency list of the <em>service</em> as a hierarchical graph instead of a list.
-		</li>
-        <li> 
-			<tt>-d&nbsp;<em>depth</em>&nbsp;</tt>&nbsp;: limits the depth of the dependency list visualisation; default is 1. This implies <tt>-g</tt> option.
-		</li>
-        <li>
-			<tt>-r&nbsp;</tt>&nbsp;: shows the dependency list of <em>services</em> in reverse mode.
-		</li>
-         <li> 
-			<tt>-t&nbsp;<em>tree</em>&nbsp;</tt>&nbsp;: only searches the <em>service</em> at the specified <em>tree</em>,
-            when the same service may be enabled in more trees.
-		</li>
+<pre><code>    66-inservice [ -h ] [ -z ] [ -v verbosity ] [ -n ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -t tree ] [ -p nline ] service
+</code></pre>
 
-        <li>
-			<tt>-p&nbsp;<em>n lines</em>&nbsp;</tt>&nbsp;: prints the <em>n</em> last lines from the log file of the <em>service</em>. Default is 20.
-		</li>
+<h2 id="Exit%20codes">Exit codes</h2>
 
-	</ul>
-<h2>Valid fields for <tt>-o</tt> options</h2>
+<ul>
+<li><em>0</em> success</li>
+<li><em>100</em> wrong usage</li>
+<li><em>111</em> system call failed</li>
+</ul>
 
-    <ul>
-        <li>
-            <tt>name</tt>&nbsp;: displays the name of the <em>service</em>.
-        </li>
-        <li>
-            <tt>intree</tt>&nbsp;: displays the <em>service's</em> tree name.
-        </li>
-        <li>
-            <tt>status</tt>&nbsp;: displays the status.
-        </li>
-        <li>
-            <tt>type</tt>&nbsp;: displays the <em>service</em> type.
-        </li>
-        <li>
-            <tt>description</tt>&nbsp;: displays the description.
-        </li>
-        <li>
-            <tt>source</tt>&nbsp;: displays the source of the <em>service's</em> frontend file.
-        </li>
-        <li>
-            <tt>live</tt>&nbsp;: displays the <em>service's</em> live directory.
-        </li>
-        <li>
-            <tt>depends</tt>&nbsp;: displays the <em>service's</em> dependencies.
-        </li>
-        <li>
-            <tt>extdepends</tt>&nbsp;: displays the <em>service's</em> external dependencies.
-        </li>
-        <li>
-            <tt>optsdepends</tt>&nbsp;: displays the <em>service's</em> optional dependencies.
-        </li>
-        <li>
-            <tt>start</tt>&nbsp;: displays the <em>service's</em> start script.
-        </li>
-        <li>
-            <tt>stop</tt>&nbsp;: displays the <em>service's</em> stop script.
-        </li>
-        <li>
-            <tt>envat</tt>&nbsp;: displays the source of the environment file.
-        </li>
-        <li>
-            <tt>envfile</tt>&nbsp;: displays the contents of the environment file.
-        </li>
-        <li>
-            <tt>logname</tt>&nbsp;: displays the logger's name.
-        </li>
-        <li>
-            <tt>logdst</tt>&nbsp;: displays the logger's destination.
-        </li>
-        <li>
-            <tt>logfile</tt>&nbsp;: displays the contents of the log file.
-        </li>
-    
-    </ul>
-	
-<h2>Command and output examples</h2>
-	
-	<p>The command <tt>66-inservice 00</tt> run as root user on <em>Obarun's</em> default system, displays the following, where <em>00</em> is a service contained in the tree <em>boot</em>:
-	<pre>   
-    Name                  : 00
+<h2 id="Options">Options</h2>
+
+<ul>
+<li><p><strong>-h</strong> : prints this help.</p></li>
+<li><p><strong>-z</strong> : use color.</p></li>
+<li><p><strong>-v</strong> <em>verbosity</em> : increases/decreases the verbosity of the command.</p>
+
+<ul>
+<li><em>1</em> : only print error messages. This is the default.</li>
+<li><em>2</em> : also print warning messages.</li>
+<li><em>3</em> : also print tracing messages.</li>
+<li><em>4</em> : also print debugging messages.</li>
+</ul></li>
+<li><p><strong>-n</strong> : do not display the field name(s) specified.</p></li>
+<li><p><strong>-o</strong> : comma separated list of fields to display. If this option is not passed, <em>66-inservice</em> will display all fields.</p></li>
+<li><p><strong>-g</strong> : shows the dependency list of the <em>service</em> as a hierarchical graph instead of a list.</p></li>
+<li><p><strong>-d</strong> <em>depth</em> : limits the depth of the dependency list visualisation; default is 1. This implies <strong>-g</strong> option. </p></li>
+<li><p><strong>-r</strong> : shows the dependency list of <em>services</em> in reverse mode.</p></li>
+<li><p><strong>-t</strong> <em>tree</em> : only searches the <em>service</em> at the specified <em>tree</em>, when the same service may be enabled in more trees.</p></li>
+<li><p><strong>-p</strong> <em>nline</em> : prints the <em>nline</em> last lines from the log file of the <em>service</em>. Default is 20. </p></li>
+</ul>
+
+<h2 id="Valid%20fields%20for%20-o%20options">Valid fields for -o options</h2>
+
+<ul>
+<li><em>name</em> : displays the name of the <em>service</em>.</li>
+<li><em>intree</em> : displays the <em>service</em>&#8217;s tree name.</li>
+<li><em>status</em> : displays the status.</li>
+<li><em>type</em> : displays the <em>service</em> type.</li>
+<li><em>description</em> : displays the description.</li>
+<li><em>source</em> : displays the source of the <em>service</em>&#8217;s <a href="frontend.html">frontend</a> file.</li>
+<li><em>live</em> : displays the <em>service</em>&#8217;s live directory.</li>
+<li><em>depends</em> : displays the <em>service</em>&#8217;s dependencies.</li>
+<li><em>extdepends</em> : displays the <em>service</em>&#8217;s external dependencies.</li>
+<li><em>optsdepends</em> : displays the <em>service</em>&#8217;s optional dependencies.</li>
+<li><em>start</em> : displays the <em>service</em>&#8217;s start script.</li>
+<li><em>stop</em> : displays the <em>service</em>&#8217;s stop script.</li>
+<li><em>envat</em> : displays the source of the environment file.</li>
+<li><em>envfile</em> : displays the contents of the environment file.</li>
+<li><em>logname</em> : displays the logger&#8217;s name.</li>
+<li><em>logdst</em> : displays the logger&#8217;s destination.</li>
+<li><em>logfile</em> : displays the contents of the log file.</li>
+</ul>
+
+<h2 id="Command%20and%20output%20examples">Command and output examples</h2>
+
+<p>The command <code>66-inservice 00</code> run as root user on <a href="https://web.obarun.org">Obarun</a>&#8217;s default system, displays the following, where <em>00</em> is a service contained in the tree boot: </p>
+
+<pre><code>    Name                  : 00
     In tree               : boot
     Status                : enabled, nothing to display
     Type                  : bundle
@@ -147,35 +96,31 @@
     Log name              : None
     Log destination       : None
     Log file              : None
-	</pre>
-	</p>
-    <br>
-    <p>
-        <b>Note</b>: the <em>Optional dependencies</em> and <em>External dependencies</em> also displays the name of the tree where the service is currently enabled after the <tt>colon(:)</tt> mark if any:
-    <pre>
-    External dependencies : dbus-session@obarun:base gvfsd:desktop
+</code></pre>
+
+<p><strong><em>Note</em></strong>: the <em>Optional dependencies</em> and <em>External dependencies</em> also displays the name of the tree where the service is currently enabled after the <code>colon(:)</code> mark if any:</p>
+
+<pre><code>    External dependencies : dbus-session@obarun:base gvfsd:desktop
     Optional dependencies : picom@obarun:desktop
-    </pre>
-    </p>
-	<p>
-		By default the dependency graph is rendered in the order of execution. In this example the <em>'oneshot' system-hostname</em> is the first executed
-		service and <em>'oneshot' mount-cgroups</em> is the last one when it finishes. You can reverse the rendered order with the <tt>-r</tt> option.</p>
-	</p>
-	
-    <p>You can display the status and 'depends on' field and only these fields of a service using the command <tt>66-inservice -o status,depends -g connmand</tt> where the dependency list is diplayed as a graph:
-    <pre>
-    Status             : enabled, up (pid 938) 34652 seconds
+</code></pre>
+
+<p>By default the dependency graph is rendered in the order of execution. In this example the <code>oneshot</code> system-hostname is the first executed service and <code>oneshot</code> <em>mount-cgroups</em> is the last one when it finishes. You can reverse the rendered order with the <strong>-r</strong> option.</p>
+
+<p>You can display the <em>status</em> and <em>depends on</em> field and only these fields of a <em>service</em> using the command <code>66-inservice -o status,depends -g &lt;service&gt;</code> connmand where the dependency list is diplayed as a graph:</p>
+
+<pre><code>    Status             : enabled, up (pid 938) 34652 seconds
     Dependencies       : /
                          ├─(933,Enabled,longrun) dbus
                          └─(929,Enabled,longrun) connmand-log
-    </pre>
-    <p>You can display the status,log file and log destination and only these fields of a service using the command <tt>66-inservice -o status,logdst,logfile -g dbus</tt>:
-    <pre>
-    Status             : enabled, up (pid 933) 34852 seconds, ready 34852 seconds
+</code></pre>
+
+<p>You can display the status,log file and log destination and only these fields of a service using the command <code>66-inservice -o status,logdst,logfile -g dbus</code>:</p>
+
+<pre><code>    Status             : enabled, up (pid 933) 34852 seconds, ready 34852 seconds
     Log destination    : %%system_log%%/dbus
     Log file           :
-    2019-10-03 16:16:05.246991500  dbus-daemon[933]: [system] Rejected send message, 4 matched rules; type="method_call", sender=":1.3" (uid=1000 pid=1226 comm="connman-gtk --tray ") interface="net.connman.Technology" member="Scan" error name="(unset)" requested_reply="0" destination=":1.0" (uid=0 pid=938 comm="connmand -n --nobacktrace --nodnsproxy ")
-    2019-10-03 16:16:35.256146500  dbus-daemon[933]: [system] Rejected send message, 4 matched rules; type="method_call", sender=":1.3" (uid=1000 pid=1226 comm="connman-gtk --tray ") interface="net.connman.Technology" member="Scan" error name="(unset)" requested_reply="0" destination=":1.0" (uid=0 pid=938 comm="connmand -n --nobacktrace --nodnsproxy ")
-    </pre>
+    2019-10-03 16:16:05.246991500  dbus-daemon[933]: [system] Rejected send message, 4 matched rules; type=&quot;method_call&quot;, sender=&quot;:1.3&quot; (uid=1000 pid=1226 comm=&quot;connman-gtk --tray &quot;) interface=&quot;net.connman.Technology&quot; member=&quot;Scan&quot; error name=&quot;(unset)&quot; requested_reply=&quot;0&quot; destination=&quot;:1.0&quot; (uid=0 pid=938 comm=&quot;connmand -n --nobacktrace --nodnsproxy &quot;)
+    2019-10-03 16:16:35.256146500  dbus-daemon[933]: [system] Rejected send message, 4 matched rules; type=&quot;method_call&quot;, sender=&quot;:1.3&quot; (uid=1000 pid=1226 comm=&quot;connman-gtk --tray &quot;) interface=&quot;net.connman.Technology&quot; member=&quot;Scan&quot; error name=&quot;(unset)&quot; requested_reply=&quot;0&quot; destination=&quot;:1.0&quot; (uid=0 pid=938 comm=&quot;connmand -n --nobacktrace --nodnsproxy &quot;)
+</code></pre>
 </body>
 </html>

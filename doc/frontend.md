@@ -538,7 +538,7 @@ This section is *mandatory*. (!)
 
     * Any valid number.
 
-    This will create the file *timeout-kill*. Once this file was created and the value is not `0`, then on reception of a [66-stop](66-stop.html) command—which sends a `SIGTERM` and a `SIGCONT` to the service—a timeout of value milliseconds is set. If the service is still not dead after *value* milliseconds it will receive a `SIGKILL`. If the file does not exist, or contains 0 or an invalid value, then the service is never forcibly killed (unless, of course, a [s6-svc -k](https://skarnet.org/software/s6/s6-svc) command is sent).
+    This will create the file *timeout-kill*. Once this file was created and the value is not `0`, then on reception of a [66-stop](66-stop.html) command—which sends a `SIGTERM` and a `SIGCONT` to the service—a timeout of value milliseconds is set. If the service is still not dead after *value* milliseconds it will receive a `SIGKILL`. If the file does not exist, or contains 0 or an invalid value, then the service is never forcibly killed (unless, of course, a [s6-svc -k](https://skarnet.org/software/s6/s6-svc.html) command is sent).
 
     ---
     
@@ -670,6 +670,8 @@ This section is *mandatory*. (!)
 
     **Note**: (!) The service needs to be first started with root if you want to hand over priviliges to a user. Only root can pass on privileges. This field has no effect for other use cases.
 
+    ---
+    
 - @shebang
   
     *Without equivalent, this key is unique to 66 tools*.
@@ -683,7 +685,9 @@ This section is *mandatory*. (!)
     * A valid path to an interpreter installed on your system.
 
     This will set the language that will be used to read and write the *@execute* key value.
-
+    
+    ---
+    
 - @execute
   
     *Corresponds to the file run for a classic or longrun service and to the file up for a oneshot service*.

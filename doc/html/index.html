@@ -1,143 +1,109 @@
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta http-equiv="Content-Language" content="en" />
-    <title>66 - obarun tools build around s6 supervision suite</title>
-    <meta name="Description" content="66 - obarun tools build around s6 supervision suite" />
-    <meta name="Keywords" content="66 unix administration root pipe eric vidal obarun supervision frontend" />
-    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
-  </head>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="date" content="2020-05-08" scheme="YYYY-MM-DD" />
+<meta name="author" content="Eric Vidal &lt;eric@obarun.org&gt;" />
+<title>The 66 Suite: index</title>
+</head>
 <body>
 
-<p>
-<a href="//web.obarun.org/software">Software</a><br/>
-<a href="//obarun.org/">obarun.org</a>
-</p>
+<p><a href="https://web.obarun.org/software">Software</a></p>
 
-<h1><br> What is 66? </h1>
+<p><a href="https://web.obarun.org">obarun.org</a></p>
 
-	<p>
-		Sixty-six is a collection of system tools built around 
-		<a href="http://skarnet.org/software/s6">s6</a> and 
-		<a href="http://skarnet.org/software/s6-rc">s6-rc</a> created to 
-		make the implementation and manipulation of service files on your 
-		machine easier. It is meant to be a toolbox for the declaration, 
-		implementation and administration of services where seperate programs 
-		can be joined to achieve powerful functionality with small amounts of code.
-	</p>
+<h1 id="What%20is%2066?">What is 66?</h1>
 
-	<p>
-		Examples of what can be achieved by assembling different programs provided by 66:
-	</p>
+<p>Sixty-six is a collection of system tools built around <a href="https://skarnet.org/software/s6">s6</a> and <a href="https://skarnet.org/software/s6-rc">s6-rc</a> created to make the implementation and manipulation of service files on your machine easier. It is meant to be a toolbox for the declaration, implementation and administration of services where seperate programs can be joined to achieve powerful functionality with small amounts of code.</p>
 
-	<ul>
-		<li> Frontend service files declaration. </li>
-		<li> Easy creation of a scandir. </li>
-		<li> Nested supervision tree. </li>
-		<li> Instance service file creation. </li>
-		<li> Multiple directories service file declaration(packager,sysadmin,user). </li>
-		<li> Easy change of service configuration. </li>
-		<li> Automatic logger creation. </li>
-		<li> Service Notification. </li>
-		<li> Organizes services as a <em>tree</em>. </li>
-		<li> Easy view of service status. </li>
-		<li> User service declaration. </li>
-		<li> Automatic dependencies service chain. </li>
-		<li> ...</li>
-	</ul>
+<p>Examples of what can be achieved by assembling different programs provided by <em>66</em>:</p>
 
-	<p>
-		<strong>Note</strong>: This documentation tries to be complete 
-		and self-contained. However, if you have never heard of s6 or 
-		s6-rc you might be confused at first. Please refer to the 
-		<a href="https://skarnet.org/software/">skarnet</a> documentation 
-		if in doubt. 
-	</p>
+<ul>
+<li><p>Frontend service files declaration.</p></li>
+<li><p>Easy creation of a scandir.</p></li>
+<li><p>Nested supervision tree.</p></li>
+<li><p>Instance service file creation.</p></li>
+<li><p>Multiple directories service file declaration(packager,sysadmin,user).</p></li>
+<li><p>Easy change of service configuration.</p></li>
+<li><p>Automatic logger creation.</p></li>
+<li><p>Service Notification.</p></li>
+<li><p>Organizes services as a tree.</p></li>
+<li><p>Easy view of service status.</p></li>
+<li><p>User service declaration.</p></li>
+<li><p>Automatic dependencies service chain.</p></li>
+<li><p>&#8230;</p></li>
+</ul>
 
-<h2> Installation </h2>
+<p><strong>Note</strong>: This documentation tries to be complete and self-contained. However, if you have never heard of <a href="https://skarnet.org/software/s6">s6</a> and/or <a href="https://skarnet.org/software/s6-rc">s6-rc</a> you might be confused at first. Please refer to the skarnet documentation if in doubt.</p>
 
-	<h3> Requirements </h3>
-	<p>
-		Please refer to the <a href="https://framagit.org/Obarun/66">INSTALL</a> file for details.
-	</p>
+<h2 id="Installation">Installation</h2>
 
-	<h3> Licensing </h3>
+<h3 id="Requirements">Requirements</h3>
 
-	<p>
-		66 is free software. It is available under the
-		<a href="http://opensource.org/licenses/ISC">ISC license</a>.
-	</p>
+<p>Please refer to the INSTALL.md file for details.</p>
 
-<hr />
+<h3 id="Licensing">Licensing</h3>
 
+<p><em>66</em> is free software. It is available under the <code>ISC</code> license.</p>
 
-<h2> Commands </h2>
+<hr/>
 
-	<h3> Admin tools </h3>
+<h2 id="Commands">Commands</h2>
 
-	<ul>
-		<li><a href="66-boot.html"><tt>66-boot</tt></a></li>
-		<li><a href="66-scandir.html"><tt>66-scandir</tt></a></li>
-		<li><a href="66-scanctl.html"><tt>66-scanctl</tt></a></li>
-		<li><a href="66-init.html"><tt>66-init</tt></a></li>
-		<li><a href="66-svctl.html"><tt>66-svctl</tt></a></li>
-		<li><a href="66-dbctl.html"><tt>66-dbctl</tt></a></li>
-		<li><a href="66-hpr.html"><tt>66-hpr</tt></a></li>
-		<li><a href="66-shutdownd.html"><tt>66-shutdownd</tt></a></li>
-		<li><a href="66-update.html"><tt>66-update</tt></a></li>
-	</ul>
-    
-    <h3> Debug tools </h3>
-    
-    <ul>
-        <li><a href="66-parser.html"><tt>66-parser</tt></a></li>
-        <li><a href="66-inresolve.html"><tt>66-inresolve</tt></a></li>
-        <li><a href="66-instate.html"><tt>66-instate</tt></a></li>
-	</ul>
-    
-    <h3> User tools </h3>
+<h3 id="Debug%20tools">Debug tools</h3>
 
-	<ul>
-		<li><a href="frontend.html"><tt>frontend</a> <em>(service file)</em></tt></li>
-		<li><a href="66-all.html"><tt>66-all</tt></a></li>
-		<li><a href="66-tree.html"><tt>66-tree</tt></a></li>
-		<li><a href="66-enable.html"><tt>66-enable</tt></a></li>
-		<li><a href="66-disable.html"><tt>66-disable</tt></a></li>
-		<li><a href="66-start.html"><tt>66-start</tt></a></li>
-		<li><a href="66-stop.html"><tt>66-stop</tt></a></li>
-        <li><a href="66-intree.html"><tt>66-intree</tt></a></li>
-        <li><a href="66-inservice.html"><tt>66-inservice</tt></a></li>
-		<li><a href="66-env.html"><tt>66-env</tt></a></li>
-		<li><a href="66-shutdown.html"><tt>66-shutdown</tt></a></li>
-	</ul>
-	
-	<h3> Extra tools </h3>
-	
-	<ul>
-		<li><a href="66-echo.html"><tt>66-echo</tt></a></li>
-        <li><a href="66-umountall.html"><tt>66-umountall</tt></a></li>
-	</ul>
+<ul>
+<li><a href="66-parser.html">66-parser</a></li>
+<li><a href="66-inresolve.html">66-inresolve</a></li>
+<li><a href="66-state.html">66-state</a></li>
+</ul>
 
-<h2> Why is 66 necessary? </h2>
+<h3 id="Admin%20tools">Admin tools</h3>
 
-	<p>
-		Implementation and handling of service files based on s6 and s6-rc can be complex and difficult to understand. This led to the creation of the 66 tools.
-	</p>
+<ul>
+<li><a href="66-boot.html">66-boot</a></li>
+<li><a href="66-scandir.html">66-scandir</a></li>
+<li><a href="66-scanctl.html">66-scanctl</a></li>
+<li><a href="66-init.html">66-init</a></li>
+<li><a href="66-svctl.html">66-svctl</a></li>
+<li><a href="66-dbctl.html">66-dbctl</a></li>
+<li><a href="66-hpr.html">66-hpr</a></li>
+<li><a href="66-shutdownd.html">66-shutdownd</a></li>
+<li><a href="66-update.html">66-update</a></li>
+</ul>
 
-	<h3> Why the name </h3>
+<h3 id="User%20tools">User tools</h3>
 
-	<p>
-		66 is the result of the combination of the former s<strong>6</strong> and s<strong>6</strong>-rc.<br>
-		It is a lot faster and easier to write and remember when writing. 
-		Apart from that it is a nice command prefix to have. 
-		It identifies the origin of the software and it's short.
-	</p>
+<ul>
+<li><a href="frontend.html">frontend (service file)</a></li>
+<li><a href="66-all.html">66-all</a></li>
+<li><a href="66-tree.html">66-tree</a></li>
+<li><a href="66-enable.html">66-enable</a></li>
+<li><a href="66-disable.html">66-disable</a></li>
+<li><a href="66-start.html">66-start</a></li>
+<li><a href="66-stop.html">66-stop</a></li>
+<li><a href="66-intree.html">66-intree</a></li>
+<li><a href="66-inservice.html">66-inservice</a></li>
+<li><a href="66-env.html">66-env</a></li>
+<li><a href="66-shutdown.html">66-shutdown</a></li>
+</ul>
 
-	<p>
-		Expect more use of the <tt>66-</tt> prefix in future obarun.org 
-		software releases and please avoid using it for your own projects.
-	</p>
+<h3 id="Extra%20tools">Extra tools</h3>
 
+<ul>
+<li><a href="66-echo.html">66-echo</a></li>
+<li><a href="66-umountall.html">66-umountall</a></li>
+</ul>
+
+<h2 id="Why%20is%2066%20necessary?">Why is 66 necessary?</h2>
+
+<p>Implementation and handling of service files based on <a href="https://skarnet.org/software/s6">s6</a> and <a href="https://skarnet.org/software/s6-rc">s6-rc</a> can be complex and difficult to understand. This led to the creation of the 66 tools.
+Why the name</p>
+
+<p><em>66</em> is the result of the combination of the former <a href="https://skarnet.org/software/s6">s6</a> and <a href="https://skarnet.org/software/s6-rc">s6-rc</a>.
+It is a lot faster and easier to write and remember when writing. Apart from that it is a nice command prefix to have. It identifies the origin of the software and it&#8217;s short.</p>
+
+<p>Expect more use of the <em>66-</em> prefix in future obarun.org software releases and please avoid using it for your own projects. </p>
 </body>
 </html>

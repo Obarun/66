@@ -92,9 +92,9 @@ If this process fails then as a result *66-start* fails too and exits with code 
 
 - *66-start* gathers the bundle and/or atomic service(s) passed as argument in a list called *selection*.
 
-- The command first makes a backup of the services database live within the given tree and switches to the backup with the help of [s6-rc-update](https://skarnet.org/software/s6-rc-update).
+- The command first makes a backup of the services database live within the given tree and switches to the backup with the help of [s6-rc-update](https://skarnet.org/software/s6-rc/s6-rc-update.html).
 
-- It then compiles the services database of the given *tree* from source with the help of [s6-rc-compile](https://skarnet.org/software/s6-rc-compile).
+- It then compiles the services database of the given *tree* from source with the help of [s6-rc-compile](https://skarnet.org/software/s6-rc/s6-rc-compile.html).
 
 - Next it switches from the services database *live* of the given *tree* to this newly compiled database after which it then sends a `66-dbctl -v verbosity -T timeout -l live -t tree -d selection`.
 

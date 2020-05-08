@@ -1,123 +1,85 @@
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta http-equiv="Content-Language" content="en" />
-    <title>The 66 Suite: 66-stop</title>
-    <meta name="Description" content="Detailed documentation for the 66-stop command which is part of the 66 software suite" />
-    <meta name="Keywords" content="66 command 66-stop service supervision supervise stop service" />
-    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
-  </head>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="date" content="2020-05-08" scheme="YYYY-MM-DD" />
+<meta name="author" content="Eric Vidal &lt;eric@obarun.org&gt;" />
+<title>The 66 Suite: 66-stop</title>
+</head>
 <body>
 
-<p>
-<a href="index.html">66</a><br />
-<a href="//obarun.org/">www.obarun.org</a>
-</p>
+<p><a href="index.html">66</a></p>
 
-<h1>66-stop</h1>
+<p><a href="https://web.obarun.org">obarun.org</a></p>
 
-	<p>
-      This command stops one ore more <em>services</em> defined in <em>tree</em>.
-    </p>
+<h1 id="66-stop">66-stop</h1>
 
-<h2> Interface </h2>
-	<pre>
-	66-stop [ -h ] [ -z ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -T <em>timeout</em> ] [ -u ] [ -X ] [ -K ] <em>service(s)</em>
-	</pre>
+<p>This command stops one ore more <em>services</em> defined in <em>tree</em>.</p>
 
-	<p>
-      The <em>service</em> to be stopped is expected to be enabled inside the given <em>tree</em> and started inside an already running <em>scandir</em>. 
-      If the state of the <em>service</em> is already down <tt>66-stop</tt> does nothing.
-      Generally speaking this command is the strict opposite of <tt><a href="66-start.html">66-start</a></tt>.</p>
-    <p>Multiple <em>services</em> can be stopped by seperating their names with a space.</p>
+<h2 id="Interface">Interface</h2>
 
-<h2> Options </h2>
+<pre><code>    66-stop [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -u ] [ -X ] [ -K ] service(s)
+</code></pre>
 
-	<ul>
-	 <li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
-	 <li> <tt>-z&nbsp;</tt>&nbsp;: use color.</li>
-	 <li>
-        <tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
-        the verbosity of the command. 
-        <tt>1(Default)</tt>: Only print error messages. 
-        <tt>2</tt>: Also print warning messages. 
-        <tt>3</tt>: Also print tracing messages.
-        <tt>4</tt>: Also print debugging messages.
-    </li>
-	 
-	 <li> 
-		<tt>-l&nbsp;<em>live</em>&nbsp;</tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>%%livedir%%</tt>. The default can 
-		also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
-		option to <tt>./configure</tt>. An existing absolute path is expected and
-		should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
-	 </li>
-	 <li> 
-		<tt>-t&nbsp;<em>tree</em>&nbsp;</tt>&nbsp;: stops <em>service</em> in
-		the given <em>tree</em>. This option is mandatory
-		except if a tree was marked as 'current'&mdash;see <a href="66-tree.html"><tt>66-tree</tt></a>.
-	 </li>
-	 
-	 <li> 
-		<tt>-T&nbsp;<em>timeout</em>&nbsp;</tt></tt>&nbsp;: specifies a timeout (in milliseconds)
-		after which <tt>66-stop</tt> will exit 111 with an error message if the service still hasn't reached the up state;
-		defaults to 1000. 
-	</li>
-	 
-	<li> 
-		<tt>-u&nbsp;</tt>&nbsp;: unsupervise the <em>service</em>.
-		Remove the <em>service</em> directory from the <em>scandir</em> at the end of the stop process. This option only applies to services of type <tt><em>'classic'</em></tt>.
-	 </li>	 
-	<li> 
-		<tt>-X&nbsp;</tt>&nbsp;: exit. The supervisor of the service will exit too. This command should normally never be used on a working system.
-	 </li>
-	 <li> 
-		<tt>-K&nbsp;</tt>&nbsp;: sends a SIGKILL to the <em>service</em> and keep it down.
-	 </li>		
-	</ul>
-<h2 id="dependencies">Dependency handling</h2>
-<p>For <em>services</em> of type <tt><em>'bundle'</em></tt>, <tt><em>'longrun'</em></tt> or <tt><em>'oneshot'</em></tt> any existing dependency chain will be resolved automatically.
-It is unnecessary to manually define chained sets of dependencies. If FooA has a declared dependency on another service with the name FooB then FooB will be automatically considered and stopped first when stopping FooA.
-This works recursively until all dependencies are stopped.</p>
+<p>The <em>service</em> to be stopped is expected to be enabled inside the given <em>tree</em> and started inside an already running <a href="66-scandir.html">scandir</a>. If the state of the service is already down <em>66-stop</em> does nothing. Generally speaking this command is the strict opposite of <em>66-start</em>.</p>
 
-<h2>Classic service transitions</h2>
+<p>Multiple <em>services</em> can be stopped by seperating their names with a space.</p>
 
-	<p>
-		<ul>
-			<li>
-				<tt>66-stop</tt> gathers the classic service(s) passed as argument in a list called <em>selection</em>.
-			</li>
-			<li>
-				The <em>selection</em> is then inspected and searched for any logger that may be associated with the passed <em>service(s)</em>.
-				If any such instruction was found the corresponding logger will be added to the <em>selection</em> as well.
-			</li>
-			<li>
-				The command continues issueing <tt>66-svctl -v <em>verbosity</em> -T <em>timeout</em> -l <em>live</em> -t <em>tree</em> -D <em>selection</em></tt> 
-				and waits for the resulting exit code.
-			</li>
-			<li>
-				Finally the <em>service</em> directory is removed from the <em>scandir</em>.
-			</li>
-		</ul>
-	</p>
-<p>If any one of these processes fails then as a result <tt>66-stop</tt> fails too and exits with code 111.</p>
-<h2>Bundle, longrun, oneshot transitions</h2>
-	<p>The process for these service types is very similar to that of classic services except for the automated command that adapts accordingly.
-		<ul>
-			<li>
-				<tt>66-stop</tt> gathers the bundle, longrun and/or oneshot service(s) passed as argument in a list called <em>selection</em>.
-			</li>
-			<li>
-				The <em>selection</em> is then inspected and searched for any logger that may be associated with the passed <em>service(s)</em>. 
-				If any such instruction was found the corresponding logger will be added to the <em>selection</em> as well.
-			</li>
-			<li>
-				Finally the command issues <tt>66-dbctl -v <em>verbosity</em> -T <em>timeout</em> -l <em>live</em> -t <em>tree</em> -d <em>selection</em></tt> 
-				and waits for the resulting exit code.
-			</li>
-		</ul>
-	</p>
-<p>If any one of these processes fails then as a result <tt>66-stop</tt> fails too and exits with code 111.</p>
+<h2 id="Exit%20codes">Exit codes</h2>
 
+<ul>
+<li><em>0</em> success</li>
+<li><em>100</em> wrong usage</li>
+<li><em>111</em> system call failed</li>
+</ul>
+
+<h2 id="Options">Options</h2>
+
+<ul>
+<li><p><strong>-h</strong> : prints this help.</p></li>
+<li><p><strong>-z</strong> : use color.</p></li>
+<li><p><strong>-v</strong> <em>verbosity</em> : increases/decreases the verbosity of the command.</p>
+
+<ul>
+<li><em>1</em> : only print error messages. This is the default.</li>
+<li><em>2</em> : also print warning messages.</li>
+<li><em>3</em> : also print tracing messages.</li>
+<li><em>4</em> : also print debugging messages.</li>
+</ul></li>
+<li><p><strong>-l</strong> <em>live</em> : changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <code>%%livedir%%</code>. The default can also be changed at compile time by passing the <code>--livedir=live</code> option to <code>./configure</code>. An existing absolute path is expected and should be within a writable filesystem - likely a RAM filesystem—see <a href="66-scandir.html">66-scandir</a>.</p></li>
+<li><p><strong>-t</strong> : handles the <em>selection</em> of the given <em>tree</em>. This option is mandatory except if a tree was marked as &#8216;current&#39;—see <a href="66-tree.html">66-tree</a>.</p></li>
+<li><p><strong>-T</strong> <em>timeout</em> : specifies a timeout (in milliseconds) after which <em>66-stop</em> will exit <code>111</code> with an error message if the <em>service</em> still hasn&#8217;t reached the up state. By default, the timeout is <code>1000</code>.</p></li>
+<li><p><strong>-u</strong> : unsupervise the <em>service</em>. Remove the service directory from the <a href="66-scandir.html">scandir</a> at the end of the stop process.</p></li>
+<li><p><strong>-X</strong> : exit. The supervisor of the service will exit too. This command should normally never be used on a working system.</p></li>
+<li><p><strong>-K</strong> : sends a <code>SIGKILL</code> to the service and keep it down. </p></li>
+</ul>
+
+<h2 id="Dependencies%20handling">Dependencies handling</h2>
+
+<p>In case of <code>bundle</code>, <code>atomic</code> or <code>module</code> any existing dependency chain will be resolved automatically. It is unnecessary to manually define chained sets of dependencies. If FooA has a declared dependency on another service with the name FooB then FooB will be automatically considered and stopped first when stopping FooA. This works recursively until all dependencies are stopped.</p>
+
+<h2 id="Classic%20service%20transitions">Classic service transitions</h2>
+
+<ul>
+<li><p><em>66-stop</em> gathers the classic <em>service</em>(s) passed as argument in a list called <em>selection</em>.</p></li>
+<li><p>The selection is then inspected and searched for any logger that may be associated with the passed <em>service</em>(s). If any such instruction was found the corresponding logger will be added to the <em>selection</em> as well.</p></li>
+<li><p>The command continues issueing <code>66-svctl -v verbosity -T timeout -l live -t tree -D selection</code> and waits for the resulting exit code.</p></li>
+<li><p>Finally the <em>service</em> directory is removed from the <a href="66-scandir.html">scandir</a>.</p></li>
+</ul>
+
+<p>If any one of these processes fails then as a result <em>66-stop</em> fails too and exits with code <code>111</code>.</p>
+
+<h2 id="Bundle,%20atomic%20and%20module%20transitions">Bundle, atomic and module transitions</h2>
+
+<p>The process for these <em>service</em> types is very similar to that of <code>classic</code> services except for the automated command that adapts accordingly.</p>
+
+<ul>
+<li><p>66-stop gathers the <code>bundle</code>, <code>atomic</code> and <code>module</code> service(s) passed as argument in a list called <em>selection</em>.</p></li>
+<li><p>The selection is then inspected and searched for any logger that may be associated with the passed <em>service</em>(s). If any such instruction was found the corresponding logger will be added to the selection as well.</p></li>
+<li><p>Finally the command issues <code>66-dbctl -v verbosity -T timeout -l live -t tree -d selection</code> and waits for the resulting exit code.</p></li>
+</ul>
+
+<p>If any one of these processes fails then as a result <em>66-stop</em> fails too and exits with code <code>111</code>.</p>
 </body>
 </html>

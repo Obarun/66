@@ -1,93 +1,76 @@
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta http-equiv="Content-Language" content="en" />
-    <title>The 66 Suite: 66-scanctl</title>
-    <meta name="Description" content="Detailed documentation for the 66-scanctl command which is part of the 66 software suite" />
-    <meta name="Keywords" content="66 command 66-scanctl scandir supervision supervise svscan creation live" />
-    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
-  </head>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="date" content="2020-05-08" scheme="YYYY-MM-DD" />
+<meta name="author" content="Eric Vidal &lt;eric@obarun.org&gt;" />
+<title>The 66 Suite: 66-scanctl</title>
+</head>
 <body>
 
-<p>
-<a href="index.html">66</a><br />
-<a href="//obarun.org/">www.obarun.org</a>
-</p>
+<p><a href="index.html">66</a></p>
 
-<h1>66-scanctl</h1>
+<p><a href="https://web.obarun.org">obarun.org</a></p>
 
-	<p>
-      Sends a <em>signal</em> to a <em>scandir</em>. Safe wrapper around <a href="https://skarnet.org/software/s6/s6-svscanctl.html">s6&#8209;svscanctl</a>.
-    </p>
+<h1 id="66-scanctl">66-scanctl</h1>
 
-<h2>Interface</h2>
+<p>Sends a <em>signal</em> to a scandir. Safe wrapper around <a href="https://skarnet.org/software/s6/s6-svscanctl.html">s6‑svscanctl</a>. </p>
 
-	<pre>
-	66-scanctl [ -h ] [ -z ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -o <em>owner</em> ] signal
-	</pre>
+<h2 id="Interface">Interface</h2>
 
-	<p>
-		This program sends a <em>signal</em> to an already running <a href="66-scandir.html">scandir</a> at <em>live</em> where by default <em>live</em> is at <tt>/run/66</tt> or the resulting path provided by the <tt>&#8209;l</tt> option. If <tt><em>owner</em></tt> is not explicitely set with <tt>&#8209;o</tt> then the user of the current process will be used instead.
-	</p>
+<pre><code>    66-scanctl [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -o owner ] signal
+</code></pre>
 
-<h2>Options</h2>
+<p>This program sends a <em>signal</em> to an already running <a href="scandir.html">scandir</a> at <em>live</em> where by default <em>live</em> is at <code>%%livedir%%</code> or the resulting path provided by the <strong>‑l</strong> option. If owner is not explicitely set with <strong>‑o</strong> then the user of the current process will be used instead.</p>
 
-	<ul>
-		<li> <tt>-h&nbsp;</tt>&nbsp;: print this help.</li>
-        <li> <tt>-z&nbsp;</tt>&nbsp;: use color.</li>
-	 <li>
-        <tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
-        the verbosity of the command. 
-        <tt>1(Default)</tt>: Only print error messages. 
-        <tt>2</tt>: Also print warning messages. 
-        <tt>3</tt>: Also print tracing messages.
-        <tt>4</tt>: Also print debugging messages.
-    </li>
+<h2 id="Exit%20codes">Exit codes</h2>
 
-		<li>
-			<tt><b>&#8209;l&nbsp;<em>live</em></b></tt> : an absolute path. Send the signal to a <em>scandir</em> at <em>live</em>. Default is <tt>%%livedir%%</tt>. The default can also be changed at compile time by passing the <tt>&#8209;&#8209;livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem.
-		</li>
+<ul>
+<li><em>0</em> success</li>
+<li><em>100</em> wrong usage</li>
+<li><em>111</em> system call failed</li>
+</ul>
 
-		<li>
-			<tt><b>-o&nbsp;<em>owner</em></b></tt> : send the signal to a <em>scandir</em> owned by <em>owner</em> instead of the current owner of the process. <em>owner</em> needs adecuate permissions to deal with the <em>scandir</em>.
-		</li>
-	</ul>
+<h2 id="Options">Options</h2>
 
-<h2 id=signals>Signals</h2>
+<ul>
+<li><p><strong>-h</strong> : prints this help.</p></li>
+<li><p><strong>-z</strong> : use color.</p></li>
+<li><p><strong>-v</strong> <em>verbosity</em> : increases/decreases the verbosity of the command.</p>
 
-	<p>
-		Any signal accepted by <tt><em>s6&#8209;svscanctl</em></tt> can be passed but without the dash '&#8209;' character. As a result if you wanted to send a <tt><em>&#8209;t</em></tt> signal, you need to use: <tt><em>66&#8209;scanctl&nbsp;t</em></tt>. Further a series of commands is also accepted in the same way: <tt><em>66&#8209;scanctl&nbsp;st</em></tt>. A few convenient keywords were added to avoid having to remember basic and useful commands:
-	</p>
+<ul>
+<li><em>1</em> : only print error messages. This is the default.</li>
+<li><em>2</em> : also print warning messages.</li>
+<li><em>3</em> : also print tracing messages.</li>
+<li><em>4</em> : also print debugging messages.</li>
+</ul></li>
+<li><p><strong>-l</strong> <em>live</em> : changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <code>%%livedir%%</code>. The default can also be changed at compile time by passing the <code>--livedir=live</code> option to <code>./configure</code>. An existing absolute path is expected and should be within a writable filesystem - likely a RAM filesystem—see <a href="66-scandir.html">66-scandir</a>.</p></li>
+<li><p><strong>-o</strong> <em>owner</em> : send the <em>signal</em> to a <a href="66-scandir.html">scandir</a> owned by <em>owner</em> instead of the current owner of the process. <em>owner</em> needs adecuate permissions to deal with the scandir.</p></li>
+</ul>
 
-	<ul>
-		<li>
-			<tt><b>reload&nbsp;&nbsp;&nbsp;&nbsp;</b></tt>=<tt>&nbsp;<em>&#8209;an</em></tt>
-		</li>
-		<li>
-			<tt><b>interrupt&nbsp;</b></tt>=<tt><em>&nbsp;&#8209;i</em></tt>
-		</li>
-		<li>
-			<tt><b>quit&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b></tt>=<tt>&nbsp;<em>&#8209;q</em></tt>
-		</li>
-		<li>
-			<tt><b>halt&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b></tt>=<tt>&nbsp;<em>&#8209;0</em></tt>
-		</li>
-		<li>
-			<tt><b>reboot&nbsp;&nbsp;&nbsp;&nbsp;</b></tt>=<tt>&nbsp;<em>&#8209;6</em></tt>
-		</li>
-		<li>
-			<tt><b>poweroff&nbsp;&nbsp;</b></tt>=<tt>&nbsp;<em>&#8209;7</em></tt>
-		</li>
-	</ul>
-	</p>
+<h2 id="Signal">Signal</h2>
 
-<h2>Usage examples</h2>
+<p>Any signal accepted by <a href="https://skarnet.org/software/s6/s6-svscanctl.html">s6‑svscanctl</a> can be passed but without the dash <code>‑</code> character. As a result if you wanted to send a <strong>‑t</strong> signal, you need to use: <code>66‑scanctl t</code>. Further a series of commands is also accepted in the same way: <code>66‑scanctl st</code>. A few convenient keywords were added to avoid having to remember basic and useful commands:</p>
 
-	<pre>   66-scanctl reload</pre>
-	<p>
-		Updates the process supervision tree to exactly match the services listed in <tt>scandir</tt>.<br>This command is strictly equal to:
-	</p>
-	<pre>   s6-svscanctl -an /service</pre>
+<ul>
+<li><em>reload</em>    = ‑an</li>
+<li><em>interrupt</em> = ‑i</li>
+<li><em>quit</em>      = ‑q</li>
+<li><em>halt</em>      = ‑0</li>
+<li><em>reboot</em>    = ‑6</li>
+<li><em>poweroff</em>  = ‑7</li>
+</ul>
+
+<h2 id="Usage%20examples">Usage examples</h2>
+
+<pre><code>    66-scanctl reload
+</code></pre>
+
+<p>Updates the process supervision tree to exactly match the services listed in <a href="66-scandir.html">scandir</a>.
+This command is strictly equal to:</p>
+
+<pre><code>    s6-svscanctl -an /path_to_scandir
+</code></pre>
 </body>
 </html>

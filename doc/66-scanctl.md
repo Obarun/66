@@ -7,7 +7,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # 66-scanctl
 
-Sends a *signal* to a scandir. Safe wrapper around [s6‑svscanctl](https://skarnet.org/software/s6-svscanctl). 
+Sends a *signal* to a scandir. Safe wrapper around [s6‑svscanctl](https://skarnet.org/software/s6/s6-svscanctl.html). 
 
 ## Interface
 
@@ -41,7 +41,7 @@ This program sends a *signal* to an already running [scandir](scandir.html) at *
 
 ## Signal
 
-Any signal accepted by [s6‑svscanctl](https://skarnet.org/software/s6-svscanctl) can be passed but without the dash `‑` character. As a result if you wanted to send a **‑t** signal, you need to use: `66‑scanctl t`. Further a series of commands is also accepted in the same way: `66‑scanctl st`. A few convenient keywords were added to avoid having to remember basic and useful commands:
+Any signal accepted by [s6‑svscanctl](https://skarnet.org/software/s6/s6-svscanctl.html) can be passed but without the dash `‑` character. As a result if you wanted to send a **‑t** signal, you need to use: `66‑scanctl t`. Further a series of commands is also accepted in the same way: `66‑scanctl st`. A few convenient keywords were added to avoid having to remember basic and useful commands:
 
 - *reload*    = ‑an
 - *interrupt* = ‑i

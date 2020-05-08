@@ -1,108 +1,89 @@
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta http-equiv="Content-Language" content="en" />
-    <title>The 66 Suite: 66-enable</title>
-    <meta name="Description" content="Detailed documentation for the 66-enable command which is part of the 66 software suite" />
-    <meta name="Keywords" content="66 command 66-enable service supervision supervise enable service parse boot" />
-    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
-  </head>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="date" content="2020-05-08" scheme="YYYY-MM-DD" />
+<meta name="author" content="Eric Vidal &lt;eric@obarun.org&gt;" />
+<title>The 66 Suite: 66-enable</title>
+</head>
 <body>
 
-<p>
-<a href="index.html">66</a><br />
-<a href="//obarun.org/">www.obarun.org</a>
-</p>
+<p><a href="index.html">66</a></p>
 
-<h1>66-enable</h1>
+<p><a href="https://web.obarun.org">obarun.org</a></p>
 
-	<p>
-      This command enables one ore more services inside a given <em>tree</em>.
-    </p>
+<h1 id="66-enable">66-enable</h1>
 
-<h2> Interface </h2>
-	<pre>
-	66-enable [ -h ] [ -z ] [ -v <em>verbosity</em> ] [ -l <em>live</em> ] [ -t <em>tree</em> ] [ -f|F ] [ -c|m|C ] [ -S ] <em>service(s)</em>
-	</pre>
+<p>This command enables one ore more services inside a given <em>tree</em>.</p>
 
-	<p>
-      This tool expects to find a corresponding <a href="frontend.html">frontend service file</a>, a directory name (see <a href="#directory">below</a>) or a  <em>service</em> instance (see <a href="#instance">below</a>), by default at <tt>%%service_adm%%</tt> or <tt>%%service_system%%</tt> in this order of precedence for root user and <tt>$HOME/%%service_user%%</tt>,<tt>%%service_adm%%</tt> or <tt>%%service_system%%</tt> in this order of precedence for a normal user. The default path can be changed at compile time 
-      by passing the <tt>--with-system-service=<em>DIR</em></tt>, <tt>--with-sysadmin-service=<em>DIR</em></tt> and <tt>--with-user-service=<em>DIR</em></tt> to 
-      <tt>./configure.</tt> It will run a parser on the frontend service file and write the result to the directory of the given <em>tree</em>&mdash;see <a href="66-tree.html">66-tree</a>. The <em>service</em> will then be available in the given 
-      <em>tree</em> for the next boot depending on the state of the
-      <em>tree</em>. The targeted service(s) can also be started on the fly when enabling it with the <tt>-S</tt> option.
-    </p>
-    <p>Multiple <em>services</em> can be enabled by seperating their names with a space.</p>
+<h2 id="Interface">Interface</h2>
 
-<h2> Options </h2>
+<pre><code>    66-enable [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -f|F ] [ -c|m|C ] [ -S ] service(s)
+</code></pre>
 
-	<ul>
-		<li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
-		<li> <tt>-z&nbsp;</tt>&nbsp;: use color.</li>
-	 <li>
-        <tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
-        the verbosity of the command. 
-        <tt>1(Default)</tt>: Only print error messages. 
-        <tt>2</tt>: Also print warning messages. 
-        <tt>3</tt>: Also print tracing messages.
-        <tt>4</tt>: Also print debugging messages.
-    </li>
-		
-		<li> 
-			<tt>-l&nbsp;<em>live</em></tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>%%livedir%%</tt>. The default can 
-			also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
-			option to <tt>./configure</tt>. An existing absolute path is expected and
-			should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
-		</li>
-		<li> 
-			<tt>-t&nbsp;<em>tree</em></tt>&nbsp;: specifies the <em>tree</em> used to store
-			the parsed <em>service</em> file. This option is mandatory
-			except if a tree was marked as 'current'&mdash;see <a href="66-tree.html"><tt>66-tree</tt></a>.
-		</li>
-		 
-		<li> 
-			<tt>-f&nbsp;</tt>&nbsp;: reenables an already enabled <em>service</em> with the given options. This option will run again the process from the start and overwrite all existing files.
-		</li>
-		<li> 
-			<tt>-F&nbsp;</tt>&nbsp;: same as <tt>-f</tt> but also reenables its dependencies.
-		</li>
-		<li> 
-			<tt>-c&nbsp;</tt>&nbsp;: only appends new <tt>key=value</tt> pairs to the environment configuration file of the <em>frontend</em> file.
-		</li>
-        <li> 
-			<tt>-m&nbsp;</tt>&nbsp;: appends new <tt>key=value</tt> and merges existing one to the environment configuration file from <em>frontend</em> file.
-		</li>
-		<li> 
-			<tt>-C&nbsp;</tt>&nbsp;: overwrites its environment configuration file from <em>frontend</em> file.
-		</li>
-		<li> 
-			<tt>-S&nbsp;</tt>&nbsp;: starts the <em>service</em> on the fly directly after enabling it. If the state of the <em>service</em> is already up, this option
-			will have no effect unless the <tt>-f</tt> option is used to reload it.
-		 </li>	 
+<p>This tool expects to find a corresponding <a href="frontend.html">frontend service file</a>, a directory name (see <a href="#Directory%20name%20as%20service">directory</a>) or a <em>service</em> instance (see <a href="#Instantiated%20service">instance</a>), by default at <code>%%service_adm%%</code> or <code>%%service_system%%</code> in this order of precedence for root user and <code>$HOME/%%service_user%%</code>, <code>%%service_adm%%</code> or <code>%%service_system%%</code> in this order of precedence for a normal user. The default path can be changed at compile time by passing the <code>--with-system-service=DIR</code>, <code>--with-sysadmin-service=DIR</code> and <code>--with-user-service=DIR</code> to <code>./configure</code>. It will run a parser on the frontend service file and write the result to the directory of the given <em>tree</em>—see <a href="66-tree.html">66-tree</a>. The <em>service</em> will then be available in the given <em>tree</em> for the next boot depending on the state of the <em>tree</em>. The targeted service(s) can also be started on the fly when enabling it with the <strong>-S</strong> option.</p>
 
-	</ul>
-<h2 id="dependencies">Dependency handling</h2>
-<p>For <em>services</em> of type <tt><em>'bundle'</em></tt> or <tt><em>'atomic'</em></tt> any existing dependency chain will be automatically resolved.
-It is unnecessary to manually define chained sets of dependencies. If FooA has a declared dependency on another service with the name FooB then FooB will be automatically enabled too when enabling FooA.
-This works recursively until all necessary dependencies are enabled.</p>
+<p>Multiple <em>services</em> can be enabled by seperating their names with a space.</p>
 
-<h2 id="directory">Directory name as <em>service</em></h2>
+<h2 id="Exit%20codes">Exit codes</h2>
 
-	<p>When choosing to make a directory be recognised as service the path of the directory must exist by default at <tt>%%service_adm%%</tt>, <tt>%%service_system%%</tt> or <tt>$HOME/%%service_user%%</tt> depending of the owner of the process and the option given at compile time. All <em>service</em> files found in this directory will be enabled. This process is done recursively if a sub-directory is found till it not found other directories into the sub one. The directory can contain a mixed set of <tt><em>bundle</em></tt>, <tt><em>atomic</em></tt> services where some of those depend on each other. The directory option is not limited to these types though. Any available service type can be part of the set.</p>
-	<p>A good example is a set of services for the boot process. To achieve 
-	this specific task a large number of <tt><em>oneshot</em></tt> services is used along with some <tt><em>classic</em></tt> 
-	services.</p>
-	<p>The parser automatically resolves any existing dependency chain for the processed <em>services</em> just as it would for any regular service.</p>
-	<p>(!) This option and its mechanics can be subject to change in future releases of the 66-enable tool.</p>
+<ul>
+<li><em>0</em> success</li>
+<li><em>100</em> wrong usage</li>
+<li><em>111</em> system call failed</li>
+</ul>
 
-<h2 id="instance">Instanced <em>service</em></h2>
-	<p>An instanced <em>service</em> name from a service template can be passed as argument where the name of the <em>service</em> must end with a '@' (commercial at).
-	&mdash;see <a href="frontend.html#instance"><tt>frontend service file</tt></a>.</p>
-	<p>(!) The name of the template must be declared first immediately followed by the instance name as shown in the following example :
-	<pre>    66-enable tty@tty1</pre></p>
-	<p>Also an instanced <em>service</em> can be declared on the <em>@depends</em> field of the frontend service file.</p>
-<h2 id="configuration"><em>Service</em> configuration file</h2>
-	<p>If the <a href="frontend.html#environment">environment</a> section is set on the frontend service file, the parse result process can be found by default at <tt>%%service_admconf%%</tt> for the root user and <tt>$HOME/%%service_userconf%%</tt> for a normal user. The default path can be changed at compile time by passing the <tt>--with-sysadmin-service-conf=<em>DIR</em></tt> for the root user and <tt>--with-user-service-conf=<em>DIR</em></tt> for a normal user.</p>
+<h2 id="Options">Options</h2>
+
+<ul>
+<li><p><strong>-h</strong> : prints this help.</p></li>
+<li><p><strong>-z</strong> : use color.</p></li>
+<li><p><strong>-v</strong> <em>verbosity</em> : increases/decreases the verbosity of the command.</p>
+
+<ul>
+<li><em>1</em> : only print error messages. This is the default.</li>
+<li><em>2</em> : also print warning messages.</li>
+<li><em>3</em> : also print tracing messages.</li>
+<li><em>4</em> : also print debugging messages.</li>
+</ul></li>
+<li><p><strong>-l</strong> <em>live</em> : changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <code>%%livedir%%</code>. The default can also be changed at compile time by passing the <code>--livedir=live</code> option to <code>./configure</code>. An existing absolute path is expected and should be within a writable filesystem - likely a RAM filesystem—see <a href="66-scandir.html">66-scandir</a>.</p></li>
+<li><p><strong>-t</strong> : handles the <em>selection</em> of the given <em>tree</em>. This option is mandatory except if a tree was marked as &#8216;current&#39;—see <a href="66-tree.html">66-tree</a>.</p></li>
+<li><p><strong>-f</strong> : reenables an already enabled <em>service</em> with the given options. This option will run again the process from the start and overwrite all existing files.</p></li>
+<li><p><strong>-F</strong> : same as <strong>-f</strong> but also reenables its dependencies. </p></li>
+<li><p><strong>-c</strong> : only appends new <code>key=value</code> pairs to the environment configuration file of the <em>frontend</em> file.</p></li>
+<li><p><strong>-m</strong> : appends new <code>key=value</code> and merges existing one to the environment configuration file from <em>frontend</em> file.</p></li>
+<li><p><strong>-C</strong> : overwrites its environment configuration file from <em>frontend</em> file.</p></li>
+<li><p><strong>-S</strong> : starts the <em>service</em> on the fly directly after enabling it. If the state of the <em>service</em> is already up, this option will have no effect unless the <strong>-f</strong> option is used to reload it.</p></li>
+</ul>
+
+<h2 id="Dependency%20handling">Dependency handling</h2>
+
+<p>For <em>services</em> of type <code>bundle</code> or <code>atomic</code> any existing dependency chain will be automatically resolved. It is unnecessary to manually define chained sets of dependencies. If FooA has a declared dependency on another service with the name FooB then FooB will be automatically enabled too when enabling FooA. This works recursively until all necessary dependencies are enabled.</p>
+
+<h2 id="Directory%20name%20as%20service">Directory name as service</h2>
+
+<p>When choosing to make a directory be recognised as service the path of the directory must exist by default at <code>%%service_adm%%</code>, <code>%%service_system%%</code> or <code>$HOME/%%service_user%%</code> depending of the owner of the process and the option given at compile time. All <em>service</em> files found in this directory will be enabled. This process is done recursively if a sub-directory is found till it not found other directories into the sub one. The directory can contain a mixed set of <code>bundle</code>, <code>atomic</code> services where some of those depend on each other. The directory option is not limited to these types though. Any available service type can be part of the set.</p>
+
+<p>A good example is a set of services for the boot process. To achieve this specific task a large number of <code>oneshot</code> services is used along with some <code>classic</code> services.</p>
+
+<p>The parser automatically resolves any existing dependency chain for the processed <em>services</em> just as it would for any regular service.</p>
+
+<p><strong>(!)</strong> This option and its mechanics can be subject to change in future releases of the <em>66-enable</em> tool.</p>
+
+<h2 id="Instantiated%20service">Instantiated service</h2>
+
+<p>An instanced <em>service</em> name from a service template can be passed as argument where the name of the <em>service</em> must end with a <code>@</code> (commercial at).—see <a href="frontend.html">frontend service file</a>.</p>
+
+<p><strong>(!)</strong> The name of the template must be declared first immediately followed by the instance name as shown in the following example:</p>
+
+<pre><code>66-enable tty@tty1
+</code></pre>
+
+<p>Also an instanced <em>service</em> can be declared on the <code>@depends</code> field of the <a href="frontend.html">frontend service file</a>.</p>
+
+<h2 id="Service%20configuration%20file">Service configuration file</h2>
+
+<p>If the <a href="frontend.html#Section:%20%5Benvironment%5D">environment</a> section is set on the frontend service file, the parse result process can be found by default at <code>%%service_admconf%%</code> for the root user <code>$HOME/%%service_userconf%%</code> for a normal user. The default path can be changed at compile time by passing the <code>--with-sysadmin-service-conf=DIR</code> for the root user and <code>--with-user-service-conf=DIR</code> for a normal user.</p>
 </body>
 </html>

@@ -89,5 +89,5 @@ As an example for root the resulting files would, by default, be found at `%%sys
 
 When you ask to start all *services* of the currently enabled tree at once with the [66-all](66-all.html) tool, the directory `%%system_dir%%/system/tree/servicedirs/svc` is opened and the command will start any *service* found inside of that directory.
 
-For *services* of type `bundle` and `atomic`, instead of opening the directory `%%system_dir%%/system/tree/servicedirs/db/source`, the corresponding compiled database found at `%%system_dir%%/system/tree/servicedirs/db/tree` is used. The database found at this location is the result of an automatic use of the command [s6-rc-compile](https://skarnet.org/software/s6-rc-compile) when enabling such a *service*. 
+For *services* of type `bundle` and `atomic`, instead of opening the directory `%%system_dir%%/system/tree/servicedirs/db/source`, the corresponding compiled database found at `%%system_dir%%/system/tree/servicedirs/db/tree` is used. The database found at this location is the result of an automatic use of the command [s6-rc-compile](https://skarnet.org/software/s6-rc/s6-rc-compile.html) when enabling such a *service*. 
 

@@ -1,133 +1,73 @@
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta http-equiv="Content-Language" content="en" />
-    <title>The 66 Suite: 66-shutdown</title>
-    <meta name="Description" content="Detailed documentation for the 66-shutdown command which is part of the 66 software suite" />
-    <meta name="Keywords" content="66 command 66-shutdown service supervision supervise handles system shutdown reboot poweroff halt" />
-    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
-  </head>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="date" content="2020-05-08" scheme="YYYY-MM-DD" />
+<meta name="author" content="Eric Vidal &lt;eric@obarun.org&gt;" />
+<title>The 66 Suite: 66-shutdown</title>
+</head>
 <body>
 
-<p>
-	<a href="index.html">66</a><br />
-	<a href="//obarun.org/">www.obarun.org</a>
-</p>
+<p><a href="index.html">66</a></p>
 
-<h1>66-shutdown</h1>
-	<p>
-		Triggers the system shutdown procedure. It is normally invoked as <tt>shutdown</tt> at your binary system directory. This program is a modified copy of <a href="https://skarnet.org/software/s6-linux-init/s6-linux-init-shutdown.html">s6-linux-init-shutdown</a>.
-	</p>
+<p><a href="https://web.obarun.org">obarun.org</a></p>
 
-<h2>Interface </h2>
+<h1 id="66-shutdown">66-shutdown</h1>
 
-	<pre>
-	66-shutdown [ -H ] [ -l live ] [ -h | -p | -r | -k ] [ -a ] [ -t <em>sec</em> ] [ -f | -F ] <em>time</em> [ <em>message</em> ]
-     66-shutdown -c [ <em>message</em> ]
-	</pre>
+<p>Triggers the system shutdown procedure. It is normally invoked as shutdown at your binary system directory. This program is a modified copy of <a href="https://skarnet.org/software/s6-linux-init/s6-linux-init-shutdown.html">s6-linux-init-shutdown</a>.</p>
 
-	<ul>
-		<li>
-			Will cancel a pending shutdown if <tt>-c</tt> is passed.
-		</li>
+<h2 id="Interface">Interface</h2>
 
-		<li>
-			Else plans the shutdown procedure at time <em>time</em>.
-		</li>
+<pre><code>    66-shutdown [ -H ] [ -l live ] [ -h | -p | -r | -k ] [ -a ] [ -t sec ] [ -f | -F ] time [ message ]
+    66-shutdown -c [ message ]
+</code></pre>
 
-		<li>
-			If a <em>message</em> argument has been given it is broadcast to all logged in users as tracked by utmp.
-		</li>
+<ul>
+<li>Will cancel a pending shutdown if <em>-c</em> is passed.</li>
+<li>Else plans the shutdown procedure at time time.</li>
+<li>If a message argument has been given it is broadcast to all logged in users as tracked by utmp.</li>
+<li>Exits with <code>0</code>. The shutdown procedure happens asynchronously.</li>
+</ul>
 
-		<li>
-			Exits with <tt>0</tt>. The shutdown procedure happens asynchronously.
-		</li>
-	</ul>
+<p>The <em>66-shutdown</em> program abides to the standards of the LSB-3.0.0 <a href="http://refspecs.linuxbase.org/LSB_3.0.0/LSB-PDA/LSB-PDA/shutdown.html">shutdown</a> interface.</p>
 
-	<p>
-		The <tt>66-shutdown</tt> program abides to the standards of the LSB-3.0.0 <a href="http://refspecs.linuxbase.org/LSB_3.0.0/LSB-PDA/LSB-PDA/shutdown.html">shutdown</a> interface.
-	</p>
+<p><em>time</em> must be one of these formats: <code>[ now | [+]mins | hh:mm ]</code> where:</p>
 
-	<p>
-		<em>time</em> must be one of these formats: <tt>[&nbsp;now&nbsp;|&nbsp;[+]mins&nbsp;|&nbsp;hh:mm&nbsp;]</tt> where:
-	</p>
+<ul>
+<li><p><em>now</em> : triggers the shutdown sequence immediately.</p></li>
+<li><p><em>mins</em> or <em>+mins</em> : relative time; triggers the shutdown sequence after <em>mins</em> minutes.</p></li>
+<li><p><em>hh:mm</em> : absolute time; triggers the shutdown sequence when the time <em>hh:mm</em> occurs. If that time has passed for the current day, it will wait for the next day. <em>hh</em> can have 1 or 2 digits; <em>mm</em> must have 2 digits.</p></li>
+</ul>
 
-	<ul>
-		<li>
-			<tt><b>now</b></tt> : triggers the shutdown sequence immediately.
-		</li>
+<h2 id="Exit%20codes">Exit codes</h2>
 
-		<li>
-			<tt><b>mins</b></tt> or <tt><b>+mins</b></tt> : relative time; triggers the shutdown sequence after <em>mins</em> minutes.
-		</li>
+<ul>
+<li><em>0</em> success</li>
+<li><em>100</em> wrong usage</li>
+<li><em>111</em> system call failed</li>
+</ul>
 
-		<li>
-			<tt><b>hh:mm</b></tt> : absolute time; triggers the shutdown sequence when the time <em>hh</em>:<em>mm</em> occurs. If that time has passed for the current day, it will wait for the next day. <em>hh</em> can have 1 or 2 digits; <em>mm</em> must have 2 digits.
-		</li>
-	</ul>
+<h2 id="Options">Options</h2>
 
-<h2>Options</h2>
+<ul>
+<li><p><strong>-H</strong> : prints this help.</p></li>
+<li><p><strong>-l</strong> <em>live</em> : changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <code>%%livedir%%</code>. The default can also be changed at compile time by passing the <code>--livedir=live</code> option to <code>./configure</code>. An existing absolute path is expected and should be within a writable filesystem - likely a RAM filesystem—see <a href="66-scandir.html">66-scandir</a>.</p></li>
+<li><p><strong>-a</strong> : access control. The shutdown sequence will only be launched if one of the users listed in <code>%%skel%%/shutdown.allow</code> is currently logged in (as tracked by utmp). <code>%%skel%%/shutdown.allow</code> is a text file which accepts one user per line. Lines starting with <code>#</code> are commented out.</p></li>
+<li><p><strong>-t</strong> <em>sec</em> : have a &#8220;grace time&#8221; period of sec seconds between the <code>SIGTERM</code> and the <code>SIGKILL</code> at the end of the shutdown sequence when it is time to kill all processes (allows processes to receive <code>SIGTERM</code> to exit cleanly). Default is <code>3</code> seconds.</p></li>
+<li><p><strong>-k</strong> : do not shut down; send a warning message to all logged in users.</p></li>
+<li><p><strong>-h</strong> : halt the system at the end of the shutdown sequence.</p></li>
+<li><p><strong>-p</strong> : power off the system at the end of the shutdown sequence. This option is provided as an extension it is not required by the LSB interface.</p></li>
+<li><p><strong>-r</strong> : reboot the system at the end of the shutdown sequence.</p></li>
+<li><p><strong>-f</strong> : ignored.</p></li>
+<li><p><strong>-F</strong> : ignored.</p></li>
+<li><p><strong>-c</strong> : cancel a planned shutdown. Can only cancel the effect of a previous call to <em>shutdown</em> with a time argument that was not <em>now</em>. This cannot be used to interrupt a shutdown sequence that has already started. </p></li>
+</ul>
 
-	<ul>
-		<li>
-			<!-- uppercase H is non-standard to the rest of 66 -->
-			<!-- I see why you'd want to keep -h/-p/-r together but it's a strange situation. How do other programs handle this? -->
-			<tt><b>-H</b></tt> : print this help.
-		</li>
+<h2 id="Notes">Notes</h2>
 
-		<li>
-			<tt><b>-l <em>live</em></b></tt> : an absolute path; directory to use. <tt>66-shutdown</tt> sends a signal to the listening pipe of the <a href="66-shutdownd.html">66-shutdownd</a> service at <tt><em>live</em>/scandir/0/shutdownd/fifo</tt>. Default is <tt>%%livedir%%</tt>. The default can also be changed at compile-time by passing the <tt>--livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem.
-		</li>
+<p>The <em>66-shutdown</em> binary is not meant to be called directly. It should always be referenced by the shutdown skeleton file installed by default at <code>%%skel%%</code>. The binary <strong>should be copied</strong> or <strong>symlinked</strong> into the binary directory of the system.</p>
 
-		<li>
-			<tt><b>-a</b></tt> : access control. The shutdown sequence will only be launched if one of the users listed in <tt>%%skel%%/shutdown.allow</tt> is currently logged in (as tracked by utmp). <tt>%%skel%%/shutdown.allow</tt> is a text file which accepts one user per line. Lines starting with <tt>#</tt> are commented out.
-		</li>
-
-		<li>
-			<tt><b>-t <em>sec</em></b></tt> : have a "grace time" period of <em>sec</em> seconds between the SIGTERM and the SIGKILL at the end of the shutdown sequence when it is time to kill all processes (allows processes to receive SIGTERM to exit cleanly). Default is 3 seconds.
-		</li>
-
-		<li>
-			<tt><b>-k</b></tt> : do not shut down; send a warning <em>message</em> to all logged in users.
-		</li>
-
-		<li>
-			<tt><b>-h</b></tt> : halt the system at the end of the shutdown sequence.
-		</li>
-
-		<li>
-			<tt><b>-p</b></tt> : power off the system at the end of the shutdown sequence. This option is provided as an extension it is not required by the LSB interface.
-		</li>
-
-		<li>
-			<tt><b>-r</b></tt> : reboot the system at the end of the shutdown sequence.
-		</li>
-
-		<li>
-			<tt><b>-f</b></tt> : ignored. 
-		</li>
-
-		<li>
-			<tt><b>-F</b></tt> : ignored. 
-		</li>
-
-		<li>
-			<tt><b>-c</b></tt> : cancel a planned shutdown. Can only cancel the effect of a previous call to <tt>shutdown</tt> with a <em>time</em> argument that was not <tt>now</tt>. This cannot be used to interrupt a shutdown sequence that has already started.
-		</li>
-	</ul>
-
-<h2>Notes</h2>
-
-	<ul>
-		<li> 
-			The <tt>66-shutdown</tt> binary is not meant to be called directly. It should always be referenced by the <tt>shutdown</tt> <em>skeleton</em> file installed by default at <tt>%%skel%%</tt>. The binary <b>should be copied or symlinked</b> into the binary directory of the system.
-		</li>
-
-		<li>
-			The <tt>-f</tt> and <tt>-F</tt> exist for compatibility reasons. The LSB sepcification says they are used to advise the system to skip or enforce a <tt>fsck</tt> after rebooting. But they are only advisory and for decades now systems have used other methods of evaluating whether they should perform filesystem checks so these options are largely obsolete nowadays.
-		</li>
-	</ul>
-
+<p>The <strong>-f</strong> and <strong>-F</strong> exist for compatibility reasons. The LSB sepcification says they are used to advise the system to skip or enforce a <code>fsck</code> after rebooting. But they are only advisory and for decades now systems have used other methods of evaluating whether they should perform filesystem checks so these options are largely obsolete nowadays.</p>
 </body>
 </html>

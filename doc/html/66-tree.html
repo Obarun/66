@@ -1,168 +1,94 @@
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta http-equiv="Content-Language" content="en" />
-    <title>The 66 Suite: 66-tree</title>
-    <meta name="Description" content="Detailed documentation for the 66-tree command which is part of the 66 software suite" />
-    <meta name="Keywords" content="66 command 66-tree scandir supervision supervise set service creation" />
-    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
-  </head>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="date" content="2020-05-08" scheme="YYYY-MM-DD" />
+<meta name="author" content="Eric Vidal &lt;eric@obarun.org&gt;" />
+<title>The 66 Suite: 66-tree</title>
+</head>
 <body>
 
-<p>
-<a href="index.html">66</a><br />
-<a href="//obarun.org/">www.obarun.org</a>
-</p>
+<p><a href="index.html">66</a></p>
 
-<h1>66-tree</h1>
+<p><a href="https://web.obarun.org">obarun.org</a></p>
 
-	<p>
-      This command handles a directory containing a set of services.
-    </p>
-    
-<h2> Interface </h2>
-	<pre>
-	66-tree [ -h ] [ -z ] [ -v <em>verbosity</em> ] [ -l ] [ -n|R ] [ -a|d ] [ -c ] [ -S <em>after_tree</em> ] [ -E|D ] [ -U ] [ -C <em>clone</em> ] <em>tree</em>
-	</pre>
+<h1 id="66-tree">66-tree</h1>
 
-	<p>
-      66-tree will create, destroy, or modify a <em>tree</em> which dynamically handles services.
-      66-tree will handle the <em>tree</em> only for the user running the process (root/user).
-      Any <em>tree</em> is completely independent from another. If you 
-      want to know what trees are currently available on the system use the
-      <tt><a href="66-intree.html">66-intree</a></tt> tool.
-    </p>
+<p>This command handles a directory containing a set of <em>services</em>.</p>
 
-<h2> Options </h2>
+<h2 id="Interface">Interface</h2>
 
-	<ul>
-	 <li> <tt>-h&nbsp;</tt>&nbsp;: prints this help. </li>
-	 <li> <tt>-z&nbsp;</tt>&nbsp;: use color.</li>
-	 <li>
-		<tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
-		the verbosity of the command. 
-        <tt>1(Default)</tt>: Only print error messages. 
-        <tt>2</tt>: Also prints warning messages. 
-		<tt>3</tt>: Also prints tracing messages.
-		<tt>4</tt>: Also prints debugging messages.
-	 </li>
-	 <li>
-		<tt><b>-l <em>live</em></b></tt> : an absolute path. It is used 
-		in conjunction with <tt>-U</tt> and <tt>-R</tt> options to specify the live 
-		directory location of a <em>tree</em>. It has no effect otherwise. 
-		Default is <tt>%%livedir%%</tt>.
-		The default can also be changed at compile-time by	passing the 
-		<tt>&#8209;&#8209;livedir=<em>live</em></tt> option to <tt>./configure</tt>. 
-		Should be available within a writable filesystem - likely a RAM filesystem.
-	</li>
-	 <li>
-		<tt>-n&nbsp;</tt>&nbsp;: creates a new empty <em>tree</em>. The new <em>tree</em>
-		must not exist on the system.
-	 </li>
-	 <li> 
-		<tt>-a&nbsp;<em>user</em></tt>&nbsp;: allows <em>user</em> to deal with the given <em>tree</em>. Must match an existing username on the system. Several users can be allowed by separating their names with a comma.
-		Any <em>user</em> not explicitly allowed is automatically denied for the given <em>tree</em>.
-		By default the user issuing the command is automatically allowed when the <em>tree</em> is created.&mdash;This option sets the UID and GID of the service database at compilation time.
-	 </li>
-	 
-	 <li> 
-		<tt>-d&nbsp;<em>user</em></tt>&nbsp;: denies <em>user</em> to deal with the specified
-		<em>tree</em>. Must match an existing username on the system. Several users can be denied by separating their names with a comma.&mdash;Useful to revoke access that has been given before with -a.
-	</li>
-	 
-	 <li>
-		<tt>-c&nbsp;</tt>&nbsp;: makes <em>tree</em> the current tree to use by default with other 66 tools. The majority of commands
-		in the 66 tools suite have a <tt>-t</tt> option to specify the <em>tree</em> to use. By setting
-		<em>tree</em> as the current one all other 66 tools will use it by default. You can see which
-		<em>tree</em> is the current one with the <tt><a href="66-intree.html">66-intree</a></tt> tool.
-	 </li>
-	 
-     <li> 
-		<tt>-S&nbsp;<em>after_tree</em></tt>&nbsp;: Start the <em>tree</em> after <em>after_tree</em>. 
-        This tells <a href="66-all.html">66-all</a> the specific order in which the start process is applied.
-        <em>after_tree</em> and <em>tree</em> must be already enabled. You can combine this options directly 
-        with the <tt>-E</tt> option at tree creation time.
-        <b>Note</b>: If <em>after_tree</em> and <em>tree</em> have the same name, this <em>tree</em> will be the very first tree to start.
-	 </li>
-     
-	 <li> 
-		<tt>-E&nbsp;</tt>&nbsp;: enables <em>tree</em>. This allows the <tt><a href="66-all.html">66-all</a></tt> tool to know which tree 
-		needs to be started. If the given <em>tree</em> is enabled, all services in that tree 
-		will be started when you use the <tt>66-all</tt> tool.  	
-	 </li>
-	 
-	 <li> 
-		<tt>-D&nbsp;</tt>&nbsp;: disables <em>tree</em>. The exact
-		opposite of the <tt>-E</tt> option.  	
-	 </li>	 
-	 
-	 <li> 
-		<tt>-R&nbsp;</tt>&nbsp;: deletes <em>tree</em>. Can not be undone! This will completely remove the given tree
-		from the system! You will not be able
-		to retrieve any information of the deleted <em>tree</em> after deleting it. Services currently running on <em>tree</em> will be <strong>not</strong> bringed down before remove it. To do so, use the <tt>-U</tt> option
-		in conjonction e.g. <tt><em>66-tree -UR <em>tree</em></em></tt>.
-	 </li>
-	  <li> 
-		<tt>-U&nbsp;</tt>&nbsp;: unsupervise <em>tree</em>. Bring down all services contained into the <em>tree</em> and remove the corresponding directory of the service from the scandir.
-	 </li>
-	 <!-- Rather just say "delete" right away. Shortcuts not always need to be explained with the literal word. It may cause the user to not read further and misinterpret the command as not critical. -->
-	 
-	 <li> 
-		<tt>-C&nbsp;<em>clone</em></tt>&nbsp;: makes a strict copy of <em>tree</em>
-		named <em>clone</em>. Useful to create a backup of <em>tree</em> or
-		to start a new tree from an existing one. <em>clone</em> must not exist 
-		on the system.
-	 </li>
-	</ul>
+<pre><code>    66-tree [ -h ] [ -z ] [ -v verbosity ] [ -l ] [ -n|R ] [ -a|d ] [ -c ] [ -S after_tree ] [ -E|D ] [ -U ] [ -C clone ] tree
+</code></pre>
 
-<h2>Why trees?</h2>
+<p><em>66-tree</em> will create, destroy, or modify a tree which dynamically handles <em>services</em>. <em>66-tree</em> will handle the tree only for the user running the process (root/user). Any <em>tree</em> is completely independent from another. If you want to know what trees are currently available on the system use the <a href="66-intree.html">66-intree</a> tool. </p>
 
-	<p>The usefulness of having several trees with different services can be explained with a simplified example.</p>
-	<pre>
-    Tree1 contains dhcpcd & ntpd
-    Tree2 contains cups & nfs
-    Tree3 contains xorg, notification-daemon, gvfsd & dbus
-	</pre>
-	When you boot your machine and want to use it from console only, you don't care about xorg or cups, you only care about a working internet connection. So at the base you only have Tree1 enabled. At every boot this tree and all its services will now be automatically started.
-	Then you need to print something but for this, you also need to start the nfs daemon because your document is on some other server. Normally you would need to start cups then start nfs. Using the concept of trees you start Tree2 and everything is available. When you have finished printing your awesome document instead of stopping the needed services one by one you simply stop the whole Tree2 and all its containing services are stopped automatically.
-	This doesn't stop here. Now you want to see a video, you need a running X server and probably several other services. Tree3 was designed just for that.
+<h2 id="Exit%20codes">Exit codes</h2>
 
-<h2> Directories and files </h2>
+<ul>
+<li><em>0</em> success</li>
+<li><em>100</em> wrong usage</li>
+<li><em>111</em> system call failed</li>
+</ul>
 
-	<p><strong>(!) Caution:</strong> AVOID 
-	manipulating manually any directories and sub directories and their containing files of a <em>tree</em>. CORRUPTION and ERRORS may occur by doing so. The following details can help better understand the mechanics of the 66 tools. Nevertheless <strong>the 66 suite manages these paths dynamically</strong> and its tools like <tt>66-enable, 66-disable, 66-start, 66-dbctl etc.</tt> will automatically search these directories to find information about a required service.</p>
+<h2 id="Options">Options</h2>
 
-	<h4>At creation time</h4>
+<ul>
+<li><p><strong>-h</strong> : prints this help.</p></li>
+<li><p><strong>-z</strong> : use color.</p></li>
+<li><p><strong>-v</strong> <em>verbosity</em> : increases/decreases the verbosity of the command.</p>
 
-	<p>When creating a new tree, by default it will be created at 
-	<tt>%%system_dir%%/system/<em>tree</em></tt> for root and at <tt>$HOME/%%user_dir%%/system/<em>tree</em></tt>
-	for any regular user.<br>
-	The base name of the directory, namely <tt>%%system_dir%%/</tt> and <tt>$HOME/%%user_dir%%/</tt> can be changed
-	at compile time by passing the <tt>--with-system-dir=<em>DIR</em></tt> option 
-	for root and the <tt>--with-user-dir=<em>DIR</em></tt> option for any regular user to <tt>./configure.</tt></p>
+<ul>
+<li><em>1</em> : only print error messages. This is the default.</li>
+<li><em>2</em> : also print warning messages.</li>
+<li><em>3</em> : also print tracing messages.</li>
+<li><em>4</em> : also print debugging messages.</li>
+</ul></li>
+<li><p><strong>-l</strong> <em>live</em> : changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <code>%%livedir%%</code>. The default can also be changed at compile time by passing the <code>--livedir=live</code> option to <code>./configure</code>. An existing absolute path is expected and should be within a writable filesystem - likely a RAM filesystem—see <a href="66-scandir.html">66-scandir</a>.</p></li>
+<li><p><strong>-n</strong> : creates a new empty <em>tree</em>. The new <em>tree</em> <strong><em>must</em></strong> not exist on the system. </p></li>
+<li><p><strong>-a</strong> <em>user</em> : allows <em>user</em> to deal with the given <em>tree</em>. <strong><em>Must</em></strong> match an existing username on the system. Several users can be allowed by separating their names with a comma. Any <em>user</em> not explicitly allowed is automatically denied for the given <em>tree</em>. By default the <em>user</em> issuing the command is automatically allowed when the tree is created.—This option sets the UID and GID of the service database at compilation time.</p></li>
+<li><p><strong>-d</strong> <em>user</em> : denies <em>user</em> to deal with the specified <em>tree</em>. <strong><em>Must</em></strong> match an existing username on the system. Several users can be denied by separating their names with a comma.—Useful to revoke access that has been given before with <strong>-a</strong>.</p></li>
+<li><p><strong>-c</strong> : makes tree the current <em>tree</em> to use by default with other <em>66</em> tools. The majority of commands in the <em>66</em> tools suite have a <strong>-t</strong> option to specify the <em>tree</em> to use. By setting <em>tree</em> as the current one all other <em>66</em> tools will use it by default. You can see which <em>tree</em> is the current one with the <a href="66-intree.html">66-intree</a> tool.</p></li>
+<li><p><strong>-S</strong> <em>after_tree</em> : Start the <em>tree</em> <strong>after</strong> <em>after_tree</em>. This tells <a href="66-all.html">66-all</a> the specific order in which the start process is applied. <em>after_tree</em> and <em>tree</em> <strong><em>must</em></strong> be already enabled. You can combine this options directly with the <strong>-E</strong> option at <em>tree</em> creation time. <strong>Note</strong>: If <em>after_tree</em> and <em>tree</em> have the same name, this <em>tree</em> will be the very first tree to start.</p></li>
+<li><p><strong>-E</strong> : enables <em>tree</em>. This allows the <a href="66-all.html">66-all</a> tool to know which <em>tree</em> needs to be started. If the given <em>tree</em> is enabled, all <em>services</em> in that <em>tree</em> will be started when you use the <a href="66-all.html">66-all</a> tool.</p></li>
+<li><p><strong>-D</strong> : disables <em>tree</em>. The exact opposite of the <strong>-E</strong> option.</p></li>
+<li><p><strong>-R</strong> : deletes <em>tree</em>. <strong><em>Can not be undone!</em></strong> This will completely remove the given <em>tree</em> from the system! You will not be able to retrieve any information of the deleted <em>tree</em> after deleting it. Services currently running on tree will be not bringed down before remove it. To do so, use the <strong>-U</strong> option in conjonction e.g. <code>66-tree -UR tree</code>.</p></li>
+<li><p><strong>-U</strong> : unsupervise <em>tree</em>. Bring down all <em>services</em> contained into the <em>tree</em> and remove the corresponding directory of the <em>service</em> from the <a href="66-scandir.html">scandir</a>.</p></li>
+<li><p><strong>-C</strong> <em>clone</em> : makes a strict copy of <em>tree</em> named clone. Clone <strong>must not</strong> exist on the system. </p></li>
+</ul>
 
-	<h4>When enabling a service</h4>
+<h2 id="Why%20trees?">Why trees?</h2>
 
-	<p>By enabling a service its corresponding frontend service file is parsed and the result
-	written to a sub directory of the tree's path called <tt>servicedirs/svc</tt> 
-    for <tt><em>'classic'</em></tt> services and <tt>servicedirs/db/source</tt> 
-    for <tt><em>'bundle'</em></tt> or <tt><em>'atomic'</em></tt> services.</p>
+<p>The usefulness of having several trees with different services can be explained with a simplified example.</p>
 
-	<p>As an example for root the resulting files would, by default, be found at <tt>%%system_dir%%/system/<em>tree</em>/servicedirs/svc</tt>
-	for services of type <tt><em>'classic'</em></tt> and at <tt>%%system_dir%%/system/<em>tree</em>/servicedirs/db/source</tt> 
-	for any service of type <tt><em>'bundle'</em></tt> or <tt><em>'atomic'</em></tt>.</p>
-	
-	<h4>When enabling a whole tree</h4>
+<pre><code>    Tree1 contains dhcpcd &amp; ntpd
+    Tree2 contains cups &amp; nfs
+    Tree3 contains xorg, notification-daemon, gvfsd &amp; dbus
+</code></pre>
 
-	<p>When you ask to start all services of the currently enabled <em>tree</em> at once with the 
-	<tt><a href="66-all.html">66-all</a></tt> tool, the directory 
-	<tt>%%system_dir%%/system/<em>tree</em>/servicedirs/svc</tt> is opened and the command will start any service found inside of that directory.</p>
+<p>When you boot your machine and want to use it from console only, you don&#8217;t care about xorg or cups, you only care about a working internet connection. So at the base you only have Tree1 enabled. At every boot this tree and all its services will now be automatically started. Then you need to print something but for this, you also need to start the nfs daemon because your document is on some other server. Normally you would need to start cups then start nfs. Using the concept of trees you start Tree2 and everything is available. When you have finished printing your awesome document instead of stopping the needed services one by one you simply stop the whole Tree2 and all its containing services are stopped automatically. This doesn&#8217;t stop here. Now you want to see a video, you need a running X server and probably several other services. Tree3 was designed just for that.</p>
 
-	<p>For services of type <tt><em>bundle</em></tt> and <tt><em>atomic</em></tt>, instead of opening the directory <tt>%%system_dir%%/system/<em>tree</em>/servicedirs/db/source</tt>, 
-	the corresponding compiled database found at 
-	<tt>%%system_dir%%/system/<em>tree</em>/servicedirs/db/<em>tree</em></tt> is used. The 
-	database found at this location is the result of an automatic use of the command <tt><a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html">s6-rc-compile</a></tt> when enabling such a service.
-	</p>
+<h2 id="Directories%20and%20files">Directories and files</h2>
+
+<p><strong><em>(!) Caution</em></strong>: <strong>AVOID</strong> manipulating manually any directories and sub directories and their containing files of a <em>tree</em>. <strong>CORRUPTION</strong> and <strong>ERRORS</strong> may occur by doing so. The following details can help better understand the mechanics of the <em>66</em> tools. Nevertheless the <em>66</em> suite manages these paths dynamically and its tools like <a href="66-enable.html">66-enable</a>, <a href="66-disable.html">66-disable</a>, <a href="66-start.html">66-start</a>, <a href="66-dbctl.html">66-dbctl</a> etc. will automatically search these directories to find information about a required <em>service</em>.</p>
+
+<h3 id="At%20creation%20time">At creation time</h3>
+
+<p>When creating a new <em>tree</em>, by default it will be created at <code>%%system_dir%%/system/tree</code> for root and at <code>$HOME/%%user_dir%%/system/tree</code> for any regular user.</p>
+
+<p>The base name of the directory, namely <code>%%system_dir%%/</code> and <code>$HOME/%%user_dir%%/</code> can be changed at compile time by passing the <code>--with-system-dir=DIR</code> option for root and the <code>--with-user-dir=DIR</code> option for any regular user to <code>./configure</code>.</p>
+
+<h3 id="When%20enabling%20a%20service">When enabling a service</h3>
+
+<p>By enabling a <em>service</em> its corresponding <a href="frontend.html">frontend</a> service file is parsed and the result written to a sub directory of the <em>tree</em>&#8217;s path called <code>servicedirs/svc</code> for <code>classic</code> services and <code>servicedirs/db/source</code> for <code>bundle</code> or <code>atomic</code> <em>services</em>.</p>
+
+<p>As an example for root the resulting files would, by default, be found at <code>%%system_dir%%/system/tree/servicedirs/svc</code> for services of type <code>classic</code> and at <code>%%system_dir%%/system/tree/servicedirs/db/source</code> for any service of type <code>bundle</code> or <code>atomic</code>.</p>
+
+<h3 id="When%20enabling%20a%20whole%20tree">When enabling a whole tree</h3>
+
+<p>When you ask to start all <em>services</em> of the currently enabled tree at once with the <a href="66-all.html">66-all</a> tool, the directory <code>%%system_dir%%/system/tree/servicedirs/svc</code> is opened and the command will start any <em>service</em> found inside of that directory.</p>
+
+<p>For <em>services</em> of type <code>bundle</code> and <code>atomic</code>, instead of opening the directory <code>%%system_dir%%/system/tree/servicedirs/db/source</code>, the corresponding compiled database found at <code>%%system_dir%%/system/tree/servicedirs/db/tree</code> is used. The database found at this location is the result of an automatic use of the command <a href="https://skarnet.org/software/s6-rc/s6-rc-compile.html">s6-rc-compile</a> when enabling such a <em>service</em>. </p>
 </body>
 </html>

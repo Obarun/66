@@ -7,7 +7,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # 66-shutdownd
 
-The daemon that manages the shutdown procedure for a [66-boot](66-boot.html) installation. It is not meant to be called directly. This program is a modified copy of [s6-linux-init-shudownd](https://skarnet.org/software/s6-linux-init-shutdownd). 
+The daemon that manages the shutdown procedure for a [66-boot](66-boot.html) installation. It is not meant to be called directly. This program is a modified copy of [s6-linux-init-shudownd](https://skarnet.org/software/s6-linux-init/s6-linux-init-shutdownd.html). 
 
 ## Interface
 

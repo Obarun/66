@@ -1,150 +1,110 @@
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta http-equiv="Content-Language" content="en" />
-    <title>The 66 Suite: 66-intree</title>
-    <meta name="Description" content="Detailed documentation for the 66-intree command which is part of the 66 software suite" />
-    <meta name="Keywords" content="66 command 66-intree scandir supervision supervise set tree information" />
-    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
-  </head>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="date" content="2020-05-08" scheme="YYYY-MM-DD" />
+<meta name="author" content="Eric Vidal &lt;eric@obarun.org&gt;" />
+<title>The 66 Suite: 66-intree</title>
+</head>
 <body>
 
-<p>
-<a href="index.html">66</a><br />
-<a href="//obarun.org/">www.obarun.org</a>
-</p>
+<p><a href="index.html">66</a></p>
 
-<h1>66-intree</h1>
+<p><a href="https://web.obarun.org">obarun.org</a></p>
 
-	<p>
-      This command displays information about trees.
-    </p>
+<h1 id="66-intree">66-intree</h1>
 
-<h2>Interface </h2>
+<p>This command displays information about trees.</p>
 
-	<pre>
-	66-intree [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -n ] [ -o name,init,enabled,... ] [ -g ] [ -d depth ] [ -r ] <em>tree</em>
-	</pre>
+<h2 id="Interface">Interface</h2>
 
-<h2>Options </h2>
+<pre><code>    66-intree [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -n ] [ -o name,init,enabled,... ] [ -g ] [ -d depth ] [ -r ] tree
+</code></pre>
 
-	<ul>
-		<li> <tt>-h&nbsp;</tt>&nbsp;: prints this help.</li>
-        <li> <tt>-z&nbsp;</tt>&nbsp;: use color.</li>
-	 <li>
-        <tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
-        the verbosity of the command. 
-        <tt>1(Default)</tt>: Only print error messages. 
-        <tt>2</tt>: Also prints warning messages. 
-        <tt>3</tt>: Also prints tracing messages.
-        <tt>4</tt>: Also prints debugging messages.
-    </li>
-		<li> 
-			<tt>-l&nbsp;<em>live</em>&nbsp;</tt>&nbsp;: changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <tt>%%livedir%%</tt>. The default can 
-			also be changed at compile time by passing the <tt>--livedir=<em>live</em></tt>
-			option to <tt>./configure</tt>. An existing absolute path is expected and
-			should be within a writable filesystem - likely a RAM filesystem&mdash;see <tt><a href="66-scandir.html">66-scandir</a></tt>.
-		</li>
-		<li> 
-			<tt>-n&nbsp;</tt>&nbsp;: do not display the field name(s) specified.
-		</li>
-		<li> 
-			<tt>-o&nbsp;</tt>&nbsp;: comma separated list of fields to display. If this option is not passed, <tt>66-intree</tt> will display all fields.
-		</li>
-        <li>
-			<tt>-g&nbsp;</tt>&nbsp;: shows the dependency list of <em>tree</em> as a graph instead of list.
-		</li>
-       	<li> 
-			<tt>-d&nbsp;<em>depth</em>&nbsp;</tt>&nbsp;: limits the depth of the dependency list visualisation; defaults to 1. This is implies <tt>-g</tt> options.
-		</li>
-        <li>
-			<tt>-r&nbsp;</tt>&nbsp;: shows the dependency list of <em>tree</em> in reverse mode.
-		</li> 
-		<p>(!) If <em>tree</em> is not specified <tt>66-intree</tt> will display information about all available trees for the current owner of the process.</p>
-	</ul>
-<h2>Valid fields for <tt>-o</tt> options</h2>
+<h2 id="Exit%20codes">Exit codes</h2>
 
-    <ul>
-        <li>
-            <tt>name</tt>&nbsp;: displays the name of the <em>tree</em>.
-        </li>
-        <li>
-            <tt>init</tt>&nbsp;: displays a boolean value of the initialization state.
-        </li>
-        <li>
-            <tt>enabled</tt>&nbsp;: displays a boolean value of the enable state.
-        </li>
-        <li>
-            <tt>start</tt>&nbsp;: displays the list of tree(s) started before.
-        </li>
-        <li>
-            <tt>current</tt>&nbsp;: displays a boolean value of the current state.
-        </li>
-        <li>
-            <tt>allowed</tt>&nbsp;: displays the list of allowed user to use the <em>tree</em>.
-        </li>
-        <li>
-            <tt>symlinks</tt>&nbsp;: displays the target of <em>tree</em>'s symlinks.
-        </li>
-        <li>
-            <tt>contents</tt>&nbsp;: displays the contents of the <em>tree</em>.
-        </li>
-    
-    </ul>
-<h2>Command and output examples</h2>
-	
-	<p>The command <tt>66-intree boot</tt>, run as root user, on <em>Obarun's</em> default system displays the following where <em>boot</em>
-	is the tree used to properly boot the machine:
-	<pre>   
-    Name         : boot
+<ul>
+<li><em>0</em> success</li>
+<li><em>100</em> wrong usage</li>
+<li><em>111</em> system call failed</li>
+</ul>
+
+<h2 id="Options">Options</h2>
+
+<ul>
+<li><p><strong>-h</strong> : prints this help.</p></li>
+<li><p><strong>-z</strong> : use color.</p></li>
+<li><p><strong>-v</strong> <em>verbosity</em> : increases/decreases the verbosity of the command.</p>
+
+<ul>
+<li><em>1</em> : only print error messages. This is the default.</li>
+<li><em>2</em> : also print warning messages.</li>
+<li><em>3</em> : also print tracing messages.</li>
+<li><em>4</em> : also print debugging messages.</li>
+</ul></li>
+<li><p><strong>-l</strong> <em>live</em> : changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <code>%%livedir%%</code>. The default can also be changed at compile time by passing the <code>--livedir=live</code> option to <code>./configure</code>. An existing absolute path is expected and should be within a writable filesystem - likely a RAM filesystem—see <a href="66-scandir.html">66-scandir</a>.</p></li>
+<li><p><strong>-n</strong> : do not display the field name(s) specified.</p></li>
+<li><p><strong>-o</strong> : comma separated list of fields to display. If this option is not passed, <em>66-intree</em> will display all fields.</p></li>
+<li><p><strong>-g</strong> : shows the dependency list of the <em>service</em> as a hierarchical graph instead of a list.</p></li>
+<li><p><strong>-d</strong> <em>depth</em> : limits the depth of the dependency list visualisation; default is 1. This implies <strong>-g</strong> option. </p></li>
+<li><p><strong>-r</strong> : shows the dependency list of <em>tree</em> in reverse mode.</p></li>
+</ul>
+
+<p><strong><em>(!)</em></strong> If tree is not specified <em>66-intree</em> will display information about all available trees for the current owner of the process.</p>
+
+<h2 id="Valid%20fields%20for%20-o%20options">Valid fields for -o options</h2>
+
+<ul>
+<li><em>name</em> : displays the name of the <em>tree</em>.</li>
+<li><em>init</em> : displays a boolean value of the initialization state.</li>
+<li><em>enabled</em> : displays a boolean value of the enable state.</li>
+<li><em>start</em> : displays the list of <em>tree</em>(s) started before.</li>
+<li><em>current</em> : displays a boolean value of the current state.</li>
+<li><em>allowed</em> : displays the list of allowed user to use the <em>tree</em>.</li>
+<li><em>symlinks</em> : displays the target of <em>tree</em>&#8217;s symlinks.</li>
+<li><em>contents</em> : displays the contents of the <em>tree</em>.</li>
+</ul>
+
+<h2 id="Command%20and%20output%20examples">Command and output examples</h2>
+
+<p>The command <code>66-intree boot</code>, run as root user, on <a href="https://web.obarun.org">Obarun</a>&#8217;s default system displays the following where <em>boot</em> is the tree used to properly boot the machine:</p>
+
+<pre><code>    Name         : boot
     Initialized  : yes
     Enabled      : no
     Starts after : None
     Current      : no
     Allowed      : root
-    Symlinks     : svc->source db->source
-    Contains     : tty12  system-hostname  mount-run  populate-run  mount-tmp  populate-tmp  mount-proc  mount-sys
+    Symlinks     : svc-&gt;source db-&gt;source
+    Contents     : tty12  system-hostname  mount-run  populate-run  mount-tmp  populate-tmp  mount-proc  mount-sys
                    populate-sys  mount-dev  mount-pts  mount-shm  populate-dev  mount-cgroups  00  modules-kernel  udevd
                    udevadm  devices-crypttab  system-hwclock  system-random  modules-system  system-sysctl
                    system-fontnkey  devices-dmraid  devices-btrfs  devices-lvm  devices-zfs  system-Devices  mount-swap
                    all-Mount  system-fsck  mount-fstab  all-System  mount-rw  local-iptables  local-ip6tables  local-loop
                    local-sethostname  local-time  local-authfiles  local-tmpfiles  local-rc  local-dmesg  all-Local
                    all-Runtime  All
+</code></pre>
 
-	</pre>
-	</p>
-	<p> 
-        The field <tt><em>name</em></tt> gives you the name of the <em>tree</em>.
-    </p>
-    <p>
-        The field <tt><em>Initialized</em></tt> tells you if the <tree>tree</tree> was initialized with <tt><a href="66-init.html">66-init</a></tt> tool.
-    </p>
-    <p>
-        The field <tt><em>Enabled</em></tt> reveals the state of the tree&mdash;see <tt><a href="66-tree.html">66-tree -E</a></tt>.
-    </p>
-    <p>
-        The field <tt><em>Starts after</em></tt> reveals the start process order if the <em>tree</em> is enabled, meaning which <em>tree</em> is started before the current one.
-    </p>
-    <p>
-        The field <tt><em>Current</em></tt> tells you if the <em>tree</em> is the current one or not&mdash;see <tt><a href="66-tree.html">66-tree -c</a></tt>.
-    </p>
-    <p>
-        The field <tt><em>Allowed</em></tt> gives you a list of user(s) allowed to handle the <em>tree</em>&mdash;see <tt><a href="66-tree.html">66-tree -[a|b]</a></tt>.
-    </p>
-    <p>
-        The field <tt><em>Symlinks</em></tt> tells you if the current live state point to the <tt>source</tt> or the <tt>backup</tt> of the <em>tree</em>. 
-        Every use of  <tt><a href="66-enable.html">66-enable</a></tt> tool create a automatic backup of the <em>tree</em> 
-        for <tt>classic</tt>,<tt>bundle</tt> or <tt>atomic</tt> service(s). A symlink pointing to <tt>backup</tt> mean that you have enabled a service
-        without starting it. Right after a boot, each tree should point to <tt>source</tt>.
-    </p>
-    <p>
-        The field <tt><em>Contains</em></tt> gives you a list of all services enabled in the <em>tree</em>.
-    </p>
-    
-    <p>You can display the contents list as a graph and only these fields using the command <tt>66-intree -o contents -g boot</tt>:
-    <pre>
-    Contents    : /
+<p>The field <em>name</em> gives you the name of the tree.</p>
+
+<p>The field <em>Initialized</em> tells you if the tree was initialized with <a href="66-init.html">66-init</a> tool.</p>
+
+<p>The field <em>Enabled</em> reveals the state of the tree—see <a href="66-tree.html">66-tree -E</a>.</p>
+
+<p>The field <em>Starts after</em> reveals the start process order if the <em>tree</em> is enabled, meaning which <em>tree</em> is started before the current one.</p>
+
+<p>The field <em>Current</em> tells you if the tree is the current one or not—see <a href="66-tree.html">66-tree -c</a>.</p>
+
+<p>The field <em>Allowed</em> gives you a list of user(s) allowed to handle the tree—see <a href="66-tree.html">66-tree -a|b</a>.</p>
+
+<p>The field <em>Symlinks</em> tells you if the current live state point to the <em>source</em> or the <em>backup</em> of the <em>tree</em>. Every use of <a href="66-enable.html">66-enable</a> tool create a automatic backup of the tree for <code>classic</code>,<code>bundle</code> or <code>atomic</code> service(s). A symlink pointing to <em>backup</em> mean that you have enabled a service without starting it. Right after a boot, each tree should point to <em>source</em>.</p>
+
+<p>The field <em>Contents</em> gives you a list of all services enabled in the <em>tree</em>.</p>
+
+<p>You can display the contents list as a graph and only these fields using the command <code>66-intree -o contents -g boot</code>: </p>
+
+<pre><code>    Contents    : /
                   ├─(253,Enabled,classic) tty12
                   ├─(0,Enabled,oneshot) system-hostname
                   ├─(0,Enabled,oneshot) mount-run
@@ -192,18 +152,15 @@
                   ├─(0,Enabled,bundle) all-Local
                   ├─(0,Enabled,oneshot) all-Runtime
                   └─(0,Enabled,bundle) All
-    </pre>
-    <p>
-        For each service the first field found between '()' parentheses is the corresponding pid of the service, 
-        the second one is the state of the service, and next to it is the type of the service, separated by commas, and finally the name of the service is displayed after the parenthesis ')'.
-	</p>
-	<p>
-		By default the dependency graph is rendered in the order of execution. In this example the <em>'classic' tty12</em> is the first executed
-		service and <em>'bundle' All</em> is the last before it finishes. You can reverse the rendered order with the <tt>-r</tt> option.</p>
-	</p>
-	<p>You can display the name and current field and only these fields for each tree using the command <tt>66-intree -o name,current</tt>:
-    <pre>
-    Name        : boot
+</code></pre>
+
+<p>For each service the first field found between <code>()</code> parentheses is the corresponding pid of the service, the second one is the state of the service, and next to it is the type of the service, separated by commas, and finally the name of the service is displayed after the parenthesis <code>)</code>.</p>
+
+<p>By default the dependency graph is rendered in the order of execution. In this example the <code>classic</code> <em>tty12</em> is the first executed service and <code>bundle</code> <em>All</em> is the last before it finishes. You can reverse the rendered order with the <strong>-r</strong> option.</p>
+
+<p>You can display the name and current field and only these fields for each tree using the command <code>66-intree -o name,current</code>:</p>
+
+<pre><code>    Name        : boot
     Current     : no
 
     Name        : docker
@@ -217,7 +174,6 @@
 
     Name        : user
     Current     : no
-    </pre>
-    </p>
- </body>
+</code></pre>
+</body>
 </html>

@@ -110,7 +110,7 @@ Skeleton files are mandatory and must exist on your system to be able to boot an
 
     * `UMASK=0022` : sets the value of the initial file umask for all starting processes in octal.
 
-    * `RESCAN=0` : forces [s6-svscan]()https://skarnet.org/software/s6/s6-svscan.html) to perform a scan every *RESCAN* milliseconds. This is an overload function mostly for debugging. It should be 0 during *stage1*. It is strongly discouraged to set *RESCAN* to a positive value smaller than 500.
+    * `RESCAN=0` : forces [s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) to perform a scan every *RESCAN* milliseconds. This is an overload function mostly for debugging. It should be 0 during *stage1*. It is strongly discouraged to set *RESCAN* to a positive value smaller than 500.
     
     * `ISHELL=%%skel%%/ishell` : an absolute path. Gets called in case *stage2* crashes. This file will try to run a *sulogin*.
 

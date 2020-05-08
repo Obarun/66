@@ -59,7 +59,7 @@ Multiple *services* can be handled by separating their names with a space. *66�
 
 ## s6-svc corresponding signal
 
-The *66‑svctl* signals correspond to [s6‑svc](https://skarnet.org/software/s6-svc) in the following manner:
+The *66‑svctl* signals correspond to [s6‑svc](https://skarnet.org/software/s6/s6-svc.html) in the following manner:
 
 - *-u*  = -u
 - *-U*  = -uwU
@@ -71,6 +71,6 @@ The *66‑svctl* signals correspond to [s6‑svc](https://skarnet.org/software/s
 
 ## Notes
 
-You can also send a signal in a similar fashion to a `classic` or `longrun` service with the [s6‑svc](https://skarnet.org/software/s6-svc)  tool which has the philosophy "launch and forget" which unlike *66‑svctl* does not care for the exit status of the service when a signal is sent.
+You can also send a signal in a similar fashion to a `classic` or `longrun` service with the [s6‑svc](https://skarnet.org/software/s6/s6-svc.html)  tool which has the philosophy "launch and forget" which unlike *66‑svctl* does not care for the exit status of the service when a signal is sent.
 
 As an extra convenience the **-n** option allows to deal directly with *max-death-tally* from the command line even if it was not specified explicitely in the services [frontend](frontend.html) file and no corresponding file exists.

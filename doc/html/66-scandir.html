@@ -1,199 +1,115 @@
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta http-equiv="Content-Language" content="en" />
-    <title>The 66 Suite: 66-scandir</title>
-    <meta name="Description" content="Detailed documentation for the 66-scandir command which is part of the 66 software suite" />
-    <meta name="Keywords" content="66 command 66-scandir scandir supervision supervise svscan creation live" />
-    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
-  </head>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="date" content="2020-05-08" scheme="YYYY-MM-DD" />
+<meta name="author" content="Eric Vidal &lt;eric@obarun.org&gt;" />
+<title>The 66 Suite: 66-scandir</title>
+</head>
 <body>
 
-<p>
-<a href="index.html">66</a><br />
-<a href="//obarun.org/">www.obarun.org</a>
-</p>
+<p><a href="index.html">66</a></p>
 
-<h1>66-scandir</h1>
+<p><a href="https://web.obarun.org">obarun.org</a></p>
 
-	<p>
-		Handles the <tt><em>scandir</em></tt> for a given user. Designed to be either root or a branch of the <em>supervision tree</em>.
-	</p>
+<h1 id="66-scandir">66-scandir</h1>
 
-<h2> Interface </h2>
-	<pre>
-	66-scandir [ -h ] [ -z ] [ -v <em>verbosity</em> ] [ -b ] [ -l <em>live</em> ] [ -d notif ][ -t <em>rescan</em> ] [ -L <em>log_user</em> ] [ -s <em>skel</em> ] [ -e <em>environment</em> ] [ -c | r | u ] owner
-	</pre>
+<p>Handles the <em>scandir</em> for a given user. Designed to be either root or a branch of the supervision tree.</p>
 
-	<p>
-		This program creates or starts the <tt><em>scandir</em></tt> (directory containing a collection of <a href="https://skarnet.org/software/s6/s6-supervise.html">s6&#8209;supervise processes</a>) for the given <tt><em>owner</em></tt> depending on the provided options. Note that <tt><em>owner</em></tt> can be any valid user on the system. However, the given user must have sufficient permissions to create the necessary directories at its location. That is <tt>%%livedir%%</tt> by default or the resulting path provided by the <tt>&#8209;l</tt> option. If <tt><em>owner</em></tt> is not explicitely set then the user of the current process will be used instead.
-	</p>
-	
-<h2>Options</h2>
+<h2 id="Interface">Interface</h2>
 
-	<ul>
-		<li> <tt>-h&nbsp;</tt>&nbsp;: print this help.</li>
-        <li> <tt>-z&nbsp;</tt>&nbsp;: use color.</li>
-	 <li>
-        <tt>-v&nbsp;<em>verbosity</em>&nbsp;</tt>: increases/decreases 
-        the verbosity of the command. 
-        <tt>1(Default)</tt>: Only print error messages. 
-        <tt>2</tt>: Also print warning messages. 
-        <tt>3</tt>: Also print tracing messages.
-        <tt>4</tt>: Also print debugging messages.
-    </li>
+<pre><code>    66-scandir [ -h ] [ -z ] [ -v verbosity ] [ -b ] [ -l live ] [ -d notif ][ -t rescan ] [ -L log_user ] [ -s skel ] [ -e environment ] [ -c | r | u ] owner
+</code></pre>
 
-		<li>
-			<tt><b>-b</b></tt> : create specific files for boot. Only the root user can use this option. It is not meant to be used directly even with root. <a href="66-boot.html">66&#8209;boot</a> calls it during the boot process.
-		</li>
+<p>This program creates or starts the <em>scandir</em> (directory containing a collection of s6‑supervise processes) for the given <em>owner</em> depending on the provided options. Note that <em>owner</em> can be any valid user on the system. However, the given user must have sufficient permissions to create the necessary directories at its location. That is <code>%%livedir%%</code> by default or the resulting path provided by the <strong>‑l</strong> option. If <em>owner</em> is not explicitely set then the user of the current process will be used instead. </p>
 
-		<li>
-			<tt><b>-l <em>live</em></b></tt> : an absolute path. create the <tt><em>scandir</em></tt> at <em>live</em>. Default is <tt>%%livedir%%</tt>. The default can also be changed at compile-time by	passing the <tt>&#8209;&#8209;livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem.
-		</li>
-		<li>
-			<tt><b>-d <em>notif</em></b></tt> : notify readiness on file descriptor notif. When <tt><em>scandir</em></tt> is ready to accept commands from <a href="66-scanctl.html">66&#8209;scanctl</a>, it will write a newline to <tt>notif</tt>. <tt>notif</tt> cannot be lesser than 3. By default, no notification is sent. If <tt>-b</tt> is set, this option have no effects.
-		</li>
-		<li>
-			<tt><b>-t <em>rescan</em></b></tt> : perform a scan every <tt><em>rescan</em></tt> milliseconds. If <tt><em>rescan</em></tt> is set to <tty>0</tty> (the default), automatic scans are never performed after the first one and s6&#8209;svscan will only detect new services by issuing either <tt><em>66&#8209;scanctl reload</em></tt> or <tt><em><a href="https://skarnet.org/software/s6/s6-svscanctl.html">s6&#8209;svscanctl &#8209;a</a></em></tt>. It is <em>strongly</em> discouraged to set <tt><em>rescan</em></tt> to a positive value under 500.
-		</li>
+<h2 id="Exit%20codes">Exit codes</h2>
 
-		<li>
-			<tt><b>-s <em>skel</em></b></tt> : an absolute path. Directory containing <em>skeleton</em> files. This option is not meant to be used directly even with root. <a href="66-boot.html">66&#8209;boot</a> calls it during the boot process. Default is <tt>%%skel%%</tt>.
-		</li>
+<ul>
+<li><em>0</em> success</li>
+<li><em>100</em> wrong usage</li>
+<li><em>111</em> system call failed</li>
+</ul>
 
-		<li>
-			<tt><b>-L <em>log_user</em></b></tt> : will run the catch-all logger as <em>log_user</em>. Default is <tt>%%s6log_user%%</tt>. The default can also be changed at compile-time by	passing the <tt>&#8209;&#8209;with&#8209;s6&#8209;log&#8209;user=<em>user</em></tt> option to <tt>./configure</tt>.
-		</li>
+<h2 id="Options">Options</h2>
 
-		<li>
-			<tt><b>-e <em>environment</em></b></tt> : an absolute path. Merge the current environment variables of <tt><em>scandir</em></tt> with variables found in this directory. Any file in <tt><em>environment</em></tt> not beginning with a dot and not containing the '=' character will be read and parsed.
-		</li>
+<ul>
+<li><p><strong>-h</strong> : prints this help.</p></li>
+<li><p><strong>-z</strong> : use color.</p></li>
+<li><p><strong>-v</strong> <em>verbosity</em> : increases/decreases the verbosity of the command.</p>
 
-		<li>
-			<tt><b>-c</b></tt> : create the neccessary directories at <em>live</em>. Must be executed once with this option before being able to use <tt><em>&#8209;u</em></tt>.
-		</li>
+<ul>
+<li><em>1</em> : only print error messages. This is the default.</li>
+<li><em>2</em> : also print warning messages.</li>
+<li><em>3</em> : also print tracing messages.</li>
+<li><em>4</em> : also print debugging messages.</li>
+</ul></li>
+<li><p><strong>-b</strong> : create specific files for boot. Only the root user can use this option. It is not meant to be used directly even with root. <a href="66%E2%80%91boot.html">66-boot</a> calls it during the boot process.</p></li>
+<li><p><strong>-l</strong> <em>live</em> : changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <code>%%livedir%%</code>. The default can also be changed at compile time by passing the <code>--livedir=live</code> option to <code>./configure</code>. An existing absolute path is expected and should be within a writable filesystem - likely a RAM filesystem—see <a href="66-scandir.html">66-scandir</a>.</p></li>
+<li><p><strong>-d</strong> <em>notif</em> : notify readiness on file descriptor notif. When <em>scandir</em> is ready to accept commands from <a href="66-scanctl.html">66‑scanctl</a>, it will write a newline to <em>notif</em>. <em>notif</em> <strong>cannot be</strong> lesser than <code>3</code>. By default, no notification is sent. If <strong>-b</strong> is set, this option have no effects.</p></li>
+<li><p><strong>-t</strong> <em>rescan</em> : perform a scan every <em>rescan</em> milliseconds. If <em>rescan</em> is set to 0 (the default), automatic scans are never performed after the first one and <a href="https://skarnet.org/software/s6/s6-svscan.html">s6‑svscan</a> will only detect new services by issuing either <a href="66-scanctl.html">66‑scanctl</a> reload or <a href="https://skarnet.org/software/s6/s6-svscanctl.html">s6‑svscanctl -a</a>. It is <strong>strongly</strong> discouraged to set rescan to a positive value under <code>500</code>.</p></li>
+<li><p><strong>-s</strong> <em>skel</em> : an absolute path. Directory containing <em>skeleton</em> files. This option is not meant to be used directly even with root. <a href="66-boot.html">66‑boot</a> calls it during the boot process. Default is <code>%%skel%%</code>.</p></li>
+<li><p><strong>-L</strong> <em>log_user</em> : will run the <code>catch-all</code> logger as <em>log_user</em>. Default is <code>%%s6log_user%%</code>. The default can also be changed at compile-time by passing the <code>‑‑with‑s6‑log‑user=user</code> option to <code>./configure</code>.</p></li>
+<li><p><strong>-e</strong> <em>environment</em> : an absolute path. Merge the current environment variables of <em>scandir</em> with variables found in this directory. Any file in environment not beginning with a dot and not containing the <code>=</code> character will be read and parsed.</p></li>
+<li><p><strong>-c</strong> : create the neccessary directories at <em>live</em>. <strong><em>Must be</em></strong> executed once with this option before being able to use <strong>‑u</strong>.</p></li>
+<li><p><strong>-r</strong> : remove the <em>scandir</em> directory at <em>live</em>. If it was already started with <strong>‑u</strong> it <strong><em>must</em></strong> first be stopped sending a signal with <a href="66-scanctl.html">66‑scanctl quit</a> or similar.</p></li>
+<li><p><strong>-u</strong> : start the <em>scandir</em> directory at <em>live</em> calling <a href="https://skarnet.org/software/s6/s6-svscan.html">s6‑svscan</a>.</p></li>
+</ul>
 
-		<li>
-			<tt><b>-r</b></tt>: remove the <tt><em>scandir</em></tt> directory at <em>live</em>. If it was already started with <tt><em>&#8209;u</em></tt> it must first be stopped sending a signal with <a href="66-scanctl"><tt><em>66&#8209;scanctl quit</em></tt></a> or similar.
-		</li>
+<h2 id="Scandir%20creation%20process">Scandir creation process</h2>
 
-		<li>
-			<tt><b>-u</b></tt> : start the <tt><em>scandir</em></tt> directory at <em>live</em> calling <a href="https://skarnet.org/software/s6/s6-svscan.html">s6&#8209;svscan</a>.
-		</li>
-	</ul>
-	 
-<h2>Scandir creation process</h2>
+<p>When creating the <em>scandir</em> with the <strong>‑c</strong> option various files and directories will be created at the <em>live</em> directory for the given <em>owner</em>.</p>
 
-	<p>
-		When creating the <tt><em>scandir</em></tt> with the <tt>&#8209;c</tt> option various files and directories will be created at the <tt><em>live</em></tt> directory for the given <tt><em>owner</em></tt>.
-	</p>
+<p>If created with the user root, you will find the following in <code>%%livedir%%</code> (the directory created by default if <strong>‑l</strong> is not passed and 0 being the corresponding UID for the root user):</p>
 
-	<p>
-		If created with the user <tt>root</tt>, you will find the following in <tt>/run/66</tt> (the directory created by default if <tt>&#8209;l</tt> is not passed and <tt>0</tt> being the corresponding UID for the root user):
-	</p>
+<ul>
+<li><p><em>%%livedir%%/scandir/0</em> : stores all longrun proccesses (commonly known as daemons) started by root.</p></li>
+<li><p><em>%%livedir%%/tree/0</em> : stores any <a href="https://skarnet.org/software/s6-rc">s6‑rc</a> service database started by root.</p></li>
+<li><p><em>%%livedir%%/log/0</em> : stores the <code>catch-all</code> logger when the <em>scandir</em> is created for a boot procedure with the <strong>‑b</strong> option.</p></li>
+<li><p><em>%%livedir%%/state/0</em> : stores internal <em>66</em> ecosystem files.</p></li>
+</ul>
 
-	<ul>
-		<li>
-			<tt>%%livedir%%/scandir/0</tt> : stores all longrun proccesses 
-			(commonly known as daemons) started by <tt>root</tt>.
-		</li>
+<p>If the <em>scandir</em> was created with a regular user you will find the following in <code>%%livedir%%</code>
+(Default directories if <strong>‑l</strong> is not passed and 1000 being the UID for the user):</p>
 
-		<li>
-			<tt>%%livedir%%/tree/0</tt> : stores any s6&#8209;rc service 
-			database started by <tt>root</tt>.
-		</li>
+<ul>
+<li><p><em>%%livedir%%/scandir/1000</em></p></li>
+<li><p><em>%%livedir%%/tree/1000</em></p></li>
+<li><p><em>%%livedir%%/state/1000</em></p></li>
+</ul>
 
-		<li>
-			<tt>%%livedir%%/log/0</tt> : stores the catch-all logger 
-			when the <tt><em>scandir</em></tt> is created for a boot procedure with the <tt>&#8209;b</tt> option.
-		</li>
+<p>If a <em>scandir</em> already existed at the default location for the given user it will prevent its creation when calling <code>66‑scandir ‑c</code>. If you wanted to create a different scandir for the same owner at the same live location you must delete it first with <strong>‑r</strong>.</p>
 
-		<li>
-			<tt>%%livedir%%/state/0</tt> : stores internal 66 ecosystem files.
-		</li>
-	</ul>
+<h2 id="Environment%20configuration">Environment configuration</h2>
 
-	<p>
-		If the scandir was created with a regular user you will find the following in <tt>%%livedir%%</tt><br>(Default directories if <tt>&#8209;l</tt> is not passed and <tt>1000</tt> being the UID for the user):
-	</p>
+<p>You can modify environment variables when starting the <em>scandir</em> with the <strong>‑e</strong> option. This option expects to find a valid absolute path to a directory containing one or more files where the format is the classic <code>key=value</code> pair. Each file found will be read and parsed.</p>
 
-	<ul>
-		<li>
-			<tt>%%livedir%%/scandir/1000</tt>
-		</li>
+<p>Any service launched on the <em>scandir</em> will inherit the environment variables of the scandir. A specific global <code>key=value</code> pair inherited by all service can be set using this option.</p>
 
-		<li>
-			<tt>%%livedir%%/tree/1000</tt>
-		</li>
+<h3 id="Limits">Limits</h3>
 
-		<li>
-			<tt>%%livedir%%/state/1000</tt>
-		</li>
-	</ul>
+<p>The mentioned environment directory <strong><em>can not</em></strong> exceed more than <code>100</code> files. Each file can not contain more than <code>4095</code> bytes or more than <code>50</code> <code>key=value</code> pairs.</p>
 
-	<p>
-		If a <tt><em>scandir</em></tt> already existed at the default location for the given user it will prevent its creation when calling <tt>66&#8209;scandir&nbsp;&#8209;c</tt>. If you wanted to create a different <tt><em>scandir</em></tt> for the same <tt><em>owner</em></tt> at the same <em>live</em> location you must delete it first with <tt>&#8209;r</tt>.
-	</p>
+<h2 id="Scandir%20removal%20process">Scandir removal process</h2>
 
-<h2>Environment configuration</h2>
+<p>When using the <strong>‑r</strong> option to delete the <em>scandir</em> of a given user some directories of the <em>scandir</em> may not be removed if another user accesses them. In our previous example where we created a <em>scandir</em> for root with UID <code>0</code> and a regular user with the UID <code>1000</code> this would imply the following:</p>
 
-	<p>
-		You can modify environment variables when starting the <tt><em>scandir</em></tt> with the <tt>&#8209;e</tt> option. This option expects to find a valid absolute path to a directory containing one or more files where the format is the classic <em>key=value</em> pair. Each file found will be read and parsed.
-	</p>
+<ul>
+<li><p><em>%%livedir%%/scandir/0</em> # will be deleted</p></li>
+<li><p><em>%%livedir%%/tree/0</em>    # will be deleted</p></li>
+<li><p><em>%%livedir%%/log/0</em>     # will be deleted</p></li>
+<li><p><em>%%livedir%%/state/0</em>   # will be deleted</p></li>
+</ul>
 
-	<p>
-		Any longrun process launched on the scandir will inherit the environment variables of the scandir. A specific global <em>key=value</em> pair inherited by all daemons can be set using this option.
-	</p>
+<p>The <em>live</em> directory of the root user (in this example and by default <code>%%livedir%%</code>) will not be removed because another user (the one from our example) can still use it. In fact <em>66‑scandir</em> will only remove the subdirectories of the corresponding UID of the <em>owner</em> while the <em>live</em> root directory is not touched. If <em>live</em> was created on a RAM filesystem as suggested the deletion happens on the next reboot.</p>
 
-<h4>Limits</h4>
+<p><strong>Note</strong>: A running <em>scandir</em> can not be removed. It needs to be stopped first with <a href="66%E2%80%91scanctl.html">66-scanctl</a> quit or similar to be able to remove it. </p>
 
-	<p>
-		The mentioned environment directory can not exceed more than 100 files. Each file can not contain more than 4095 bytes or more than 50 <em>key=value</em> pairs.
-	</p>
+<h2 id="Boot%20specification">Boot specification</h2>
 
-<h2>Scandir removal process</h2>
+<p>The <strong>-b</strong> and <strong>-s</strong> option are called by <a href="66-boot.html">66-boot</a>. <strong>‑b</strong> will create .s6‑svscan control files (see <a href="https://skarnet.org/software/s6/s6-svscan.html">s6‑svscan</a> interface documentation) specifically for stage1 (PID1 process). This special <em>scandir</em> is controlled by the safe wrappers <code>halt</code>, <code>poweroff</code>, <code>reboot</code>, <code>shutdown</code> provided with <em>66</em> tools. The <a href="66%E2%80%91shutdownd.html">66-shutdownd</a> daemon which controls the shutdown request will be created automatically at the correct location. Further this specific task needs to read the skeleton file <code>init.conf</code> containing the <em>live</em> directory location which is the purpose of the <strong>‑s</strong> option.</p>
 
-	<p>
-		When using the <tt>&#8209;r</tt> option to delete the scandir of a given user some directories of the scandir may not be removed if another user accesses them. In our previous example where we created a scandir for root with UID <tt>0</tt> and a regular user with the UID <tt>1000</tt> this would imply the following:
-	</p>
-
-	<ul>
-		<li>
-			<tt>%%livedir%%/scandir/0 # will be deleted</tt>
-		</li>
-
-		<li>
-			<tt>%%livedir%%/tree/0 &nbsp;&nbsp;&nbsp;# will be deleted</tt>
-		</li>
-
-		<li>
-			<tt>%%livedir%%/log/0 &nbsp;&nbsp;&nbsp;&nbsp;# will be deleted</tt>
-		</li>
-
-		<li>
-			<tt>%%livedir%%/state/0 &nbsp;&nbsp;# will be deleted</tt>
-		</li>
-	</ul>
-
-	<p>
-		The <tt><em>live</em></tt> directory of the <tt>root</tt> user (in this example and by default <tt>%%livedir%%</tt>) will <b>not</b> be removed because another user (the one from our example) can still use it. In fact <tt>66&#8209;scandir</tt> will only remove the subdirectories of the corresponding UID of the <tt><em>owner</em></tt> while the <tt><em>live</em></tt> root directory is not touched. If <tt><em>live</em></tt> was created on a RAM filesystem as suggested the deletion happens on the next reboot.
-	</p>
-
-	<p>
-		<strong>Note</strong>&nbsp;: A running scandir can not be removed. 
-		It needs to be stopped first with <a href="66-scanctl.html"><tt>66&#8209;scanctl quit</tt></a> or similar to 
-		be able to remove it.
-	</p>
-
-<h2>Boot specification</h2>
-
-	<p>
-		The <tt>-b</tt> and <tt>-s</tt> option are called by <a href="66-boot.html">66-boot</a>. <tt>&#8209;b</tt> will create .s6&#8209;svscan control files (see <a href="https://skarnet.org/software/s6/s6-svscan.html">s6&#8209;svscan</a> interface documentation) specifically for <em>stage1</em> (PID1 process). This special <em>scandir</em> is controlled by the safe wrappers <em>halt</em>, <em>poweroff</em>, <em>reboot</em>, <em>shutdown</em> provided with <em>66</em> tools. The <a href="66-shutdownd.html"><em>66&#8209;shutdownd</em></a> daemon which controls the shutdown request will be created automatically at the correct location. Further this specific task needs to read the <em>skeleton</em> file <em>init.conf</em> containing the <em>live</em> directory location which is the purpose of the <tt>&#8209;s</tt> option.
-	</p>
-
-	<p>
-		The <em>live</em> directory for the boot process requires writable directories. In order to accommodate for read&#8209;only root filesystems there needs to be a tmpfs mounted before <a href="https://skarnet.org/software/s6/s6-svscan.html">s6&#8209;svscan</a> can be run.
-	</p>
+<p>The <em>live</em> directory for the boot process requires writable directories. In order to accommodate for read‑only root filesystems there needs to be a tmpfs mounted before <a href="https://skarnet.org/software/s6/s6-svscan.html">s6‑svscan</a> can be run. </p>
 </body>
 </html>

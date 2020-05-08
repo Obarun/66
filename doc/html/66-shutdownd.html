@@ -1,77 +1,53 @@
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta http-equiv="Content-Language" content="en" />
-    <title>The 66 Suite: 66-shutdownd</title>
-    <meta name="Description" content="Detailed documentation for the 66-shutdownd command which is part of the 66 software suite" />
-    <meta name="Keywords" content="66 command 66-shutdownd service supervision supervise handles system shutdown reboot poweroff halt" />
-    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
-  </head>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="date" content="2020-05-08" scheme="YYYY-MM-DD" />
+<meta name="author" content="Eric Vidal &lt;eric@obarun.org&gt;" />
+<title>The 66 Suite: 66-shutdownd</title>
+</head>
 <body>
 
-<p>
-	<a href="index.html">66</a><br />
-	<a href="//obarun.org/">www.obarun.org</a>
-</p>
+<p><a href="index.html">66</a></p>
 
-<h1>66-shutdownd</h1>
+<p><a href="https://web.obarun.org">obarun.org</a></p>
 
-	<p>
-		The daemon that manages the shutdown procedure for a <a href="66-boot.html">66-boot</a> installation. It is not meant to be called
-		directly. This program is a modified copy of <a href="https://skarnet.org/software/s6-linux-init/s6-linux-init-shutdownd.html">s6-linux-init-shudownd</a>.
-	</p>
+<h1 id="66-shutdownd">66-shutdownd</h1>
 
-	<h2>Interface</h2>
+<p>The daemon that manages the shutdown procedure for a <a href="66-boot.html">66-boot</a> installation. It is not meant to be called directly. This program is a modified copy of <a href="https://skarnet.org/software/s6-linux-init/s6-linux-init-shutdownd.html">s6-linux-init-shudownd</a>. </p>
 
-	<pre>
-	66-shutdownd [ -h ] [ -l live ] [ -s skel ] [ -g gracetime ]
-	</pre>
+<h2 id="Interface">Interface</h2>
 
-	<ul>
-		<li>
-			<tt>66-shutdownd</tt> opens the <tt><em>live</em>/scandir/0/shutdownd/fifo</tt> pipe and listens to it. Programs such as <a href="66-shutdown.html">66-shutdown</a> send their commands to this pipe when they are told to trigger the shutdown procedure.
-		</li>
+<pre><code>    66-shutdownd [ -h ] [ -l live ] [ -s skel ] [ -g gracetime ]
+</code></pre>
 
-		<li>
-			When it receives a command to shut down <tt>66-shutdownd</tt> parses the <em>skel</em> file <em>rc.init</em>&mdash;defined by default at <em>%%skel%%</em> directory&mdash; and reads the value of <em>RCSHUTDOWN</em> to be able to spawn the <em>rc.shutdown</em> script. 
-		</li>
+<ul>
+<li><p>66-shutdownd opens the <code>%%livedir%%/scandir/0/shutdownd/fifo</code> pipe and listens to it. Programs such as <a href="66-shutdown.html">66-shutdown</a> send their commands to this pipe when they are told to trigger the shutdown procedure.</p></li>
+<li><p>When it receives a command to shut down <em>66-shutdownd</em> parses the skel file <code>rc.init</code>—defined by default at <code>%%skel%%</code> directory— and reads the value of <code>RCSHUTDOWN</code> to be able to spawn the <code>rc.shutdown</code> script.</p></li>
+<li><p>When said script exits <em>66-shutdownd</em> kills all processes first with a <code>SIGTERM</code> then, after the grace time specified by the shutdown command, with a <code>SIGKILL</code>.</p></li>
+<li><p>It then runs an automatically generated script called <code>stage4</code> which unmounts all file systems and halts, powers off or reboots the machine.</p></li>
+</ul>
 
-		<li>
-			When said script exits <tt>66-shutdownd</tt> kills all
-			processes first with a SIGTERM then, after the grace time specified by the shutdown command, with a SIGKILL.
-		</li>
+<h2 id="Exit%20codes">Exit codes</h2>
 
-		<li>
-			It then runs an automatically generated script called <em>stage4</em> which unmounts all file systems and halts, powers off or reboots the machine.
-		</li>
-	</ul>
+<ul>
+<li><em>0</em> success</li>
+<li><em>100</em> wrong usage</li>
+<li><em>111</em> system call failed</li>
+</ul>
 
-<h2>Options</h2>
+<h2 id="Options">Options</h2>
 
-	<ul>
-		<li>
-			<tt>-h</tt> : print this help.
-		</li>
+<ul>
+<li><p><strong>-h</strong> : prints this help.</p></li>
+<li><p><strong>-l</strong> <em>live</em> : changes the supervision directory of <em>service</em> to <em>live</em>. By default this will be <code>%%livedir%%</code>. The default can also be changed at compile time by passing the <code>--livedir=live</code> option to <code>./configure</code>. An existing absolute path is expected and should be within a writable filesystem - likely a RAM filesystem—see <a href="66-scandir.html">66-scandir</a>.</p></li>
+<li><p><strong>-s</strong> <em>skel</em> : an absolute path; directory of the skeleton file <code>rc.init</code>. Default is <code>%%skel%%</code>.</p></li>
+<li><p><strong>-g</strong> <em>gracetime</em> : specify a grace time between the <code>SIGTERM</code> and the <code>SIGKILL</code> in milliseconds if the shutdown command does not provide one. Defaults to <code>3000</code>.</p></li>
+</ul>
 
-		<li>
-			<tt>-l <em>live</em></tt> : an absolute path; directory to use. By default <tt>66-shutdownd</tt> will listen to signals from <tt>66&#8209;shutdown</tt> at <tt><em>live</em>/scandir/0/shutdown/fifo where <em>live</em></tt> defaults to <tt>%%livedir%%</tt>. Can also be changed at compile time by passing the <tt>&#8209;&#8209;livedir=<em>live</em></tt> option to <tt>./configure</tt>. Should be available within a writable filesystem - likely a RAM filesystem.
-		</li>
-		<li>
-			<tt>-s <em>skel</em></tt> : an absolute path; directory of the skeleton file <em>rc.init</em>. Default is <tt>%%skel%%</tt>.
-		</li>
-		<li>
-			<tt>-g <em>gracetime</em></tt> : specify a grace time between the SIGTERM and the SIGKILL in milliseconds if the shutdown command
-			does not provide one. Defaults to 3000.
-		</li>
-	</ul>
+<h2 id="Note">Note</h2>
 
-<h2>Note</h2>
-
-	<ul>
-		<li>
-			The <a href="66-shutdownd.html">66-shutdownd</a> binary is not meant to be called directly. It is automatically generated by a <a href="66-scandir">66&#8209;scandir</a> program invocation</a>.
-		</li>
-	</ul>
+<p>The <em>66-shutdownd</em> binary is not meant to be called directly. It is automatically generated by a <a href="66%E2%80%91scandir.html">66-scandir</a> program invocation.</p>
 </body>
 </html>

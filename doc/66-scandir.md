@@ -41,7 +41,7 @@ This program creates or starts the *scandir* (directory containing a collection 
 
 - **-d** *notif* : notify readiness on file descriptor notif. When *scandir* is ready to accept commands from [66‑scanctl](66-scanctl.html), it will write a newline to *notif*. *notif* **cannot be** lesser than `3`. By default, no notification is sent. If **-b** is set, this option have no effects.
 
-- **-t** *rescan* : perform a scan every *rescan* milliseconds. If *rescan* is set to 0 (the default), automatic scans are never performed after the first one and [s6‑svscan](https://skarnet.org/software/s6-svscan) will only detect new services by issuing either [66‑scanctl](66-scanctl.html) reload or [s6‑svscanctl -a](https://skarnet.org/software/s6-svscanctl). It is **strongly** discouraged to set rescan to a positive value under `500`.
+- **-t** *rescan* : perform a scan every *rescan* milliseconds. If *rescan* is set to 0 (the default), automatic scans are never performed after the first one and [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) will only detect new services by issuing either [66‑scanctl](66-scanctl.html) reload or [s6‑svscanctl -a](https://skarnet.org/software/s6/s6-svscanctl.html). It is **strongly** discouraged to set rescan to a positive value under `500`.
 
 - **-s** *skel* : an absolute path. Directory containing *skeleton* files. This option is not meant to be used directly even with root. [66‑boot](66-boot.html) calls it during the boot process. Default is `%%skel%%`.
 
@@ -53,7 +53,7 @@ This program creates or starts the *scandir* (directory containing a collection 
 
 - **-r** : remove the *scandir* directory at *live*. If it was already started with **‑u** it ***must*** first be stopped sending a signal with [66‑scanctl quit](66-scanctl.html) or similar.
 
-- **-u** : start the *scandir* directory at *live* calling [s6‑svscan](https://skarnet.org/software/s6-svscan).
+- **-u** : start the *scandir* directory at *live* calling [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html).
 
 ## Scandir creation process
 
@@ -108,6 +108,6 @@ The *live* directory of the root user (in this example and by default `%%livedir
 
 ## Boot specification
 
-The **-b** and **-s** option are called by [66-boot](66-boot.html). **‑b** will create .s6‑svscan control files (see [s6‑svscan](https://skarnet.org/software/s6-svscan.html) interface documentation) specifically for stage1 (PID1 process). This special *scandir* is controlled by the safe wrappers `halt`, `poweroff`, `reboot`, `shutdown` provided with *66* tools. The [66-shutdownd](66‑shutdownd.html) daemon which controls the shutdown request will be created automatically at the correct location. Further this specific task needs to read the skeleton file `init.conf` containing the *live* directory location which is the purpose of the **‑s** option.
+The **-b** and **-s** option are called by [66-boot](66-boot.html). **‑b** will create .s6‑svscan control files (see [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) interface documentation) specifically for stage1 (PID1 process). This special *scandir* is controlled by the safe wrappers `halt`, `poweroff`, `reboot`, `shutdown` provided with *66* tools. The [66-shutdownd](66‑shutdownd.html) daemon which controls the shutdown request will be created automatically at the correct location. Further this specific task needs to read the skeleton file `init.conf` containing the *live* directory location which is the purpose of the **‑s** option.
 
-The *live* directory for the boot process requires writable directories. In order to accommodate for read‑only root filesystems there needs to be a tmpfs mounted before [s6‑svscan](https://skarnet.org/software/s6-svscan) can be run. 
+The *live* directory for the boot process requires writable directories. In order to accommodate for read‑only root filesystems there needs to be a tmpfs mounted before [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) can be run. 

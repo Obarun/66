@@ -7,7 +7,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # 66-shutdown
 
-Triggers the system shutdown procedure. It is normally invoked as shutdown at your binary system directory. This program is a modified copy of [s6-linux-init-shutdown](https://skarnet.org/software/s6-linux-init-shutdown).
+Triggers the system shutdown procedure. It is normally invoked as shutdown at your binary system directory. This program is a modified copy of [s6-linux-init-shutdown](https://skarnet.org/software/s6-linux-init/s6-linux-init-shutdown.html).
 
 ## Interface
 
