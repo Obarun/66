@@ -731,6 +731,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		}
 		if (!file_write_unsafe(ste,SS_STATE + 1,contents.s,contents.len))
 			log_dieusys(LOG_EXIT_ZERO,"write: ",ste,SS_STATE) ;
+		log_info("Ordered successfully tree: ",tree," starts after tree: ",after_tree) ;
 	}
 	stralloc_free(&reslive) ;
 	stralloc_free(&live) ;
