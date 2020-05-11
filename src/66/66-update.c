@@ -21,6 +21,7 @@
 #include <oblibs/sastr.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
+#include <oblibs/files.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/buffer.h>
@@ -188,6 +189,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc satree = STRALLOC_ZERO ;
 	stralloc allow = STRALLOC_ZERO ;
 	stralloc contents = STRALLOC_ZERO ;
+	stralloc tree_enabled = STRALLOC_ZERO ;
 	ssexec_t info = SSEXEC_ZERO ;
 
 	PROG = "66-update" ;	
@@ -257,7 +259,10 @@ int main(int argc, char const *const *argv,char const *const *envp)
 				log_die_nomem("stralloc") ;
 		}
 	}
-	
+	/** keep start order of trees */
+	if (!file_readputsa(&tree_enabled,system,"state"))
+		log_dieusys(LOG_EXIT_SYS,"read contents of file: ",system,"state") ;
+
 	len = satree.len ;
 	for (pos = 0 ; pos < len; pos += strlen(satree.s + pos) + 1)
 	{
@@ -358,6 +363,28 @@ int main(int argc, char const *const *argv,char const *const *envp)
 					log_dieu(LOG_EXIT_SYS,"create tree: ", info.treename.s) ;
 			}
 		}
+		// reorganize the trees start order
+		if (tree_enabled.len)
+		{
+			if (!sastr_split_string_in_nline(&tree_enabled))
+				log_dieu(LOG_EXIT_SYS,"split elements") ;
+			unsigned int enabled ;
+			ssize_t r = sastr_find_element_byname(&tree_enabled,info.treename.s,&enabled) ;
+			if (r >= 0)
+			{
+				char *after_tree = tree_enabled.s + sastr_find_element_byid(&tree_enabled,!enabled ? enabled : enabled - 1) ;
+				char const *t[] = { "-S", after_tree, info.treename.s } ;
+				if (DRYRUN)
+				{
+					log_info(drun,"66-tree -S ",after_tree," ",info.treename.s) ; 
+				}
+				else
+				{
+					if (!run_cmdline(SS_EXTBINPREFIX "66-tree",t,3,envp))
+						log_dieu(LOG_EXIT_SYS,"orders the start order of tree: ", info.treename.s) ;
+				}
+			}
+		}
 		/* we must reimplement the enable process instead of
 		 * using directly 66-enable. The 66-enable program will use
 		 * is own workdir with an empty tree. At call of db_update(),
@@ -447,6 +474,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc_free(&allow) ;
 	stralloc_free(&WORKDIR) ;
 	stralloc_free(&contents) ;
+	stralloc_free(&tree_enabled) ;
 	ssexec_free(&info) ;
 	return 0 ;
 	
