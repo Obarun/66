@@ -57,8 +57,11 @@ ALL_BINS := $(LIBEXEC_TARGETS) $(BIN_TARGETS)
 ALL_LIBS := $(SHARED_LIBS) $(STATIC_LIBS) $(INTERNAL_LIBS)
 ALL_INCLUDES := $(wildcard src/include/$(package)/*.h)
 INSTALL_DATA += init.conf
+LOWDOWN := $(shell type -p lowdown)
+ifdef LOWDOWN
 GENERATE_HTML := $(shell doc/make-html.sh)
 GENERATE_MAN := $(shell doc/make-man.sh)
+endif
 INSTALL_HTML := $(wildcard doc/html/*.html)
 INSTALL_MAN := $(wildcard doc/man/*/*)
 INSTALL_DATA := skel/halt skel/init skel/ishell skel/poweroff skel/rc.init \
@@ -190,7 +193,7 @@ $(DESTDIR)$(mandir)/man8/%.8: doc/man/man8/%.8
 		-e 's,%%user_log%%,$(user_log),g' \
 		-e 's,%%s6log_user%%,$(s6log_user),g' \
 		-e 's,%%skel%%,$(skel),g' $< > $@
-		
+
 $(DESTDIR)$(sysconfdir)/66/%: skel/%
 	exec $(INSTALL) -D -m 644 $< $@ 
 	grep -- ^$(@F) < package/modes | { read name mode owner && \
