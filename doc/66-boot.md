@@ -29,13 +29,13 @@ This program performs some early preparations, spawns a process that will run th
 
 - **-s** *skel* : an absolute path. Directory that holds skeleton files. By default this will be `%%skel%%`. The default can also be changed at compile time by passing the `--with-skeleton=DIR` option to `./configure`. This directory ***must*** contain the necessary skeleton files to properly boot the machine, without it the system **will not boot**.
 
-- **-m** : umount the basename of the *LIVE* directory set into the *init.conf* skeleton file if it already mounted and mount a tmpfs on it. By default, the *LIVE* basename is mounted if it not already a valid mountpoint. Otherwise without the **-m** option, it does nothing.
+- **-m** : umount the basename of the *LIVE* directory set into the *init.conf* skeleton file, if it is already mounted, and mounts a tmpfs on it. By default, the *LIVE* basename is mounted if it is not already a valid mountpoint. Otherwise without the **-m** option, it does nothing.
 
 - **-l** *log_user* : the `catch-all` logger will run as *log_user*. Default is `%%s6log_user%%`. The default can also be changed at compile-time by passing the `--with-s6-log-user=user` option to `./configure`.
 
 - **-e** *environment* : an absolute path. *stage 1 init* empties its environment before spawning the `rc.init` skeleton file and executing into [66-scandir](66-scandir.html) in order to prevent kernel environment variables from leaking into the process tree. The *PATH* variable is the only variable set for the environment. If you want to define additional environment variables then use this option. Behaves the same as [66-scandir -e](66-scandir.html).
 
-- **-d** *dev* : mount a devtmpfs on *dev*. By default, no such mount is performed - it is assumed that a devtmpfs is automounted on `/dev` at boot time by the kernel or an initramfs.
+- **-d** *dev* : mounts a devtmpfs on *dev*. By default, no such mount is performed - it is assumed that a devtmpfs is automounted on `/dev` at boot time by the kernel or an initramfs.
 
 - **-b** *banner* : prints banner to */dev/console* at the start of the stage 1 init process. Defaults to:
 `[Starts stage1 process ...]`
@@ -58,7 +58,7 @@ When booting a system, *66-boot* performs the following operations:
 
 - It uses `/dev/null` as its stdin (instead of `/dev/console`). Although stdout and stderr still use `/dev/console` for now.
 
-- It checks if the *LIVE* basename is a valid mountpoint and if so mounts it. If requested, it unmounts if the *LIVE* basename is a valid mountpoint and performs a mount.
+- It checks if the *LIVE* basename is a valid mountpoint, and if so it mounts it. If requested, it unmounts if the *LIVE* basename is a valid mountpoint and performs a mount.
 
 - It creates the *LIVE* directory invocating [66-scandir -v VERBOSITY -l LIVE -b -c -s skel](66-scandir.html) plus **-L user_log** if requested.
 
@@ -70,7 +70,7 @@ When booting a system, *66-boot* performs the following operations:
 
 - It forks a child, also called *stage2*.
     
-    * The child blocks until the `catch-all` logger runs.
+    * The child is blocked until the `catch-all` logger runs.
     
     * The child starts any service of tree *TREE*.
     
@@ -84,7 +84,7 @@ When booting a system, *66-boot* performs the following operations:
     
     * The child then execs into `rc.init`
 
-In the unusual event that any of the above processes fails *66-boot* will try to launch a single-user login namely *sulogin* to provide a means to repair the system.
+In the unusual event that any of the above processes fail, *66-boot* will try to launch a single-user login namely *sulogin* to provide the means to repair the system.
 
 ## Skeleton files
 
@@ -120,7 +120,7 @@ Skeleton files are mandatory and must exist on your system to be able to boot an
     
     * `66-dbctl -v${VERBOSITY} -l ${LIVE} -t ${TREE} -u` will bring up all `bundle` and `atomic` services inside of *TREE*.
     
-    * If any of these two commands fails the *ISHELL* file is called to provide a means of repair.
+    * If any of these two commands fail the *ISHELL* file is called to provide the means for repair.
 
 - `rc.shutdown` : this file is called at shudown when the administrator requests the `shutdown`, `halt`, `poweroff` or `reboot` command. It invokes a single command:
     
