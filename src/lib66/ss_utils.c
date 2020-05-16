@@ -282,11 +282,10 @@ int read_svfile(stralloc *sasv,char const *name,char const *src)
 	size_t srclen = strlen(src) ;
 	size_t namelen = strlen(name) ;
 	
-	char svtmp[srclen + 1 + namelen + 1] ;
+	char svtmp[srclen + namelen + 1] ;
 	memcpy(svtmp,src,srclen) ;
-	svtmp[srclen] = '/' ;
-	memcpy(svtmp + srclen + 1, name, namelen) ;
-	svtmp[srclen + 1 + namelen] = 0 ;
+	memcpy(svtmp + srclen, name, namelen) ;
+	svtmp[srclen + namelen] = 0 ;
 	
 	size_t filesize=file_get_size(svtmp) ;
 	if (!filesize)
