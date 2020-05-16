@@ -17,7 +17,6 @@
 #include <stdint.h>
 #include <stdlib.h>//realpath
 #include <sys/types.h>
-//#include <stdio.h>
 
 #include <oblibs/types.h>
 #include <oblibs/log.h>
@@ -1021,7 +1020,6 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 		char *dname = nsv.s + b ;
 		if (obstr_equal(name,dname)) { ss_resolve_free(&dres) ; continue ; }
 		if (!ss_resolve_check(src,dname)) goto err ;
-		
 		if (!ss_resolve_read(&dres,src,dname)) goto err ;
 		
 		if (dres.type == TYPE_CLASSIC) dtype = 0 ;
@@ -1034,11 +1032,22 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 		}
 		else if (dtype != type || (!dres.disen)){ ss_resolve_free(&dres) ; continue ; }
 		if (dres.type == TYPE_BUNDLE && !dres.ndeps){ ss_resolve_free(&dres) ; continue ; }
+
 		if (!ss_resolve_cmp(tokeep,dname))
 		{
 			if (dres.ndeps)// || (dres.type == TYPE_BUNDLE && dres.ndeps) || )
 			{
 				if (!sastr_clean_string(&tmp,dres.sa.s + dres.deps)) goto err ;
+				/** we must check every service inside the module to not add as
+				 * rdeps a service declared inside the module.
+				 * eg. 
+				 * module boot@system declare tty-rc@tty1
+				 * we don't want boot@system as rdeps of tty-rc@tty1 but only
+				 * service inside the module as rdeps of tty-rc@tty1 */
+				if (dres.type == TYPE_MODULE)
+					for (c = 0 ; c < tmp.len ; c += strlen(tmp.s + c) + 1)
+						if (obstr_equal(name,tmp.s + c)) goto skip ;
+
 				for (c = 0 ; c < tmp.len ; c += strlen(tmp.s + c) + 1)
 				{
 					if (obstr_equal(name,tmp.s + c))
@@ -1048,10 +1057,10 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 						ss_resolve_free(&dres) ;
 						break ;
 					}
-					 
 				}
 			}
 		}
+		skip:
 		ss_resolve_free(&dres) ;
 	}
 	
