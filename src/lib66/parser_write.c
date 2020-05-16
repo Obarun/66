@@ -603,16 +603,21 @@ int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 		for (uint32_t i = 0 ; i < sv->hiercopy[0] ; i++)
 		{
 			char *what = keep.s + sv->hiercopy[i+1] ;
-			size_t whatlen = strlen(what), dirlen = 0 ;
-
+			size_t whatlen = strlen(what) ;
+			char tmp[4095 + 1] ;
 			char basedir[srclen + 1] ;
 			if (!ob_dirname(basedir,src))
 				log_warnu_return(LOG_EXIT_ZERO,"get dirname of: ",src) ;
 
-			dirlen = strlen(basedir) ;
-
-			char tmp[dirlen + 1 + whatlen + 1] ;
-			auto_strings(tmp,basedir,what) ;
+			if (what[0] == '/' || what[0] == '.')
+			{
+				if (!dir_beabsolute(tmp,what))
+					log_warnusys_return(LOG_EXIT_ZERO,"find absolute path of: ",what) ;
+			}
+			else
+			{
+				auto_strings(tmp,basedir,what) ;
+			}
 
 			char dtmp[dstlen + 1 + whatlen] ;
 			auto_strings(dtmp,dst,"/",what) ;
