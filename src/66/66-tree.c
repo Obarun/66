@@ -16,7 +16,6 @@
 
 #include <string.h>
 #include <sys/stat.h>
-//#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
@@ -705,32 +704,47 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		r = file_readputsa(&tmp,ste,SS_STATE + 1) ;
 		if(!r) log_dieusys(LOG_EXIT_SYS,"open: ", ste,SS_STATE) ;
 
-		if (!sastr_rebuild_in_oneline(&tmp) ||
-		!sastr_clean_element(&tmp))
-			log_dieusys(LOG_EXIT_SYS,"rebuilt state list") ;
+		/** if you have only one tree enabled, the state file will be
+		 * empty because we disable it before reading the file(see line 702).
+		 * This will make a crash at sastr_? call.
+		 * So write directly the name of the tree at state file. */
 
-		for (pos = 0 ;pos < tmp.len; pos += strlen(tmp.s + pos) + 1)
+		if (tmp.len)
 		{
-			char *name = tmp.s + pos ;
-			
-			/* e.g 66-tree -S root root -> meaning root need to
-			 * be the first to start */
-			if ((befirst) && (pos == 0))
-			{
-				if (!auto_stra(&contents,tree,"\n"))
-					log_dieusys(LOG_EXIT_SYS,"set: ",tree," as first tree to start") ;
-			}
-			if (!auto_stra(&contents,name,"\n"))
-				log_dieusys(LOG_EXIT_SYS,"rebuilt state list") ;
+			if (!sastr_rebuild_in_oneline(&tmp) ||
+			!sastr_clean_element(&tmp))
+				log_dieu(LOG_EXIT_SYS,"rebuild state list") ;
 
-			if (obstr_equal(name,after_tree))
+			for (pos = 0 ;pos < tmp.len; pos += strlen(tmp.s + pos) + 1)
 			{
-				if (!auto_stra(&contents,tree,"\n"))
-				log_dieusys(LOG_EXIT_SYS,"rebuilt state list") ;
+				char *name = tmp.s + pos ;
+
+				/* e.g 66-tree -S root root -> meaning root need to
+				 * be the first to start */
+				if ((befirst) && (pos == 0))
+				{
+					if (!auto_stra(&contents,tree,"\n"))
+						log_dieusys(LOG_EXIT_SYS,"stralloc") ;
+				}
+				if (!auto_stra(&contents,name,"\n"))
+					log_dieusys(LOG_EXIT_SYS,"stralloc") ;
+
+				if (obstr_equal(name,after_tree))
+				{
+					if (!auto_stra(&contents,tree,"\n"))
+						log_dieusys(LOG_EXIT_SYS,"stralloc") ;
+				}
 			}
 		}
+		else
+		{
+			if (!auto_stra(&contents,tree,"\n"))
+				log_dieusys(LOG_EXIT_SYS,"stralloc") ;
+		}
+
 		if (!file_write_unsafe(ste,SS_STATE + 1,contents.s,contents.len))
 			log_dieusys(LOG_EXIT_ZERO,"write: ",ste,SS_STATE) ;
+
 		log_info("Ordered successfully tree: ",tree," starts after tree: ",after_tree) ;
 	}
 	stralloc_free(&reslive) ;
