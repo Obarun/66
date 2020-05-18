@@ -255,7 +255,7 @@ int write_bundle(sv_alltype *sv, char const *dst)
 int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, mode_t mode, uint8_t force)
 {
 	int r ;
-	int logbuild = log->run.build ;
+	int logbuild = log->run.build < 0 ? BUILD_AUTO : log->run.build ;
 	
 	uid_t log_uid ;
 	gid_t log_gid ;
@@ -334,11 +334,6 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 		if (!file_write_unsafe(ddst.s,"type","longrun",7))
 			log_warnusys_return(LOG_EXIT_ZERO,"write: ",ddst.s,"/type") ;
 	}
-	
-	/**logger section may not be set
-	 * pick auto by default*/
-	if (logbuild < 0)
-		logbuild=BUILD_AUTO ; 
 	
 	switch(logbuild)
 	{
@@ -640,6 +635,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 {
 	
 	unsigned int type = sv->cname.itype ;
+	int build = exec->build < 0 ? BUILD_AUTO : exec->build ;
 	char *name = keep.s+sv->cname.name ;
 	uid_t owner = MYUID ;
 	size_t filelen = strlen(file) ;
@@ -669,7 +665,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 			!stralloc_cats(&shebang,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		}
 	}
-	switch (exec->build)
+	switch (build)
 	{
 		case BUILD_AUTO:
 			/** uid */
@@ -680,7 +676,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 				!stralloc_cats(&ui,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			}
 			/** environment */
-			if (sv->opts[2] && (exec->build == BUILD_AUTO))
+			if (sv->opts[2] && (build == BUILD_AUTO))
 			{
 				if (!stralloc_cats(&env,SS_BINPREFIX "execl-envfile ") ||
 				!stralloc_cats(&env,keep.s + sv->srconf) || 
@@ -706,7 +702,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 				!stralloc_cats(&shebang," \"")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			}
 			break ;
-		default: log_warn(LOG_EXIT_ZERO,"unknown ", get_key_by_enum(ENUM_BUILD,exec->build)," build type") ;
+		default: log_warn(LOG_EXIT_ZERO,"unknown ", get_key_by_enum(ENUM_BUILD,build)," build type") ;
 			break ;
 	}
 	/** close uid */
@@ -717,7 +713,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 	if (!stralloc_0(&shebang)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	/** close command */
 	if (!stralloc_cats(&runuser, keep.s+exec->exec)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-	if ((type == TYPE_ONESHOT) && (exec->build == BUILD_CUSTOM))
+	if ((type == TYPE_ONESHOT) && (build == BUILD_CUSTOM))
 	{
 		if (!stralloc_cats(&runuser," \"")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}
@@ -726,7 +722,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 	
 	/** build the file*/	
 	if (!stralloc_cats(&execute,shebang.s)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-	if ((exec->build == BUILD_AUTO) && (sv->cname.itype != TYPE_ONESHOT))
+	if ((build == BUILD_AUTO) && (sv->cname.itype != TYPE_ONESHOT))
 	{
 		if (!stralloc_cats(&execute,EXECLINE_BINPREFIX "fdmove -c 2 1\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}

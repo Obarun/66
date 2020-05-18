@@ -634,13 +634,13 @@ This section is *mandatory*. (!)
     
     *Without equivalent, this key is unique to 66 tools*.
 
-    mandatory : yes (!)
+    mandatory : no
 
     syntax : inline
 
     valid value :
         
-    * auto : creates the service script file as [execline](https://skarnet.org/software/execline) script.
+    * auto : creates the service script file as [execline](https://skarnet.org/software/execline) script. This is the **default**.
 
     The corresponding file to start the service will automatically be written in [execline](https://skarnet.org/software/execline) format with the *@execute* key value.
         
@@ -931,6 +931,8 @@ You can use the `@I` string as key field. It will be replaced by the `module` na
     * It opens the file named mount-tmp, search for the args regex and replaces it by the value of the regex.
     * It opens all files found on the module directory and replaces all regex 'user' found by the name of the module in each file.
 
+    ---
+
 - @addservices
 
     *Without equivalent, this key is unique to 66 tools*.
@@ -1058,7 +1060,7 @@ This prototype contain all valid section with all valid `key=value` pair.
     ANOTHERKEY=!antohervalue
     
     [regex]
-    @configure = "arguments to pass to configure script"
+    @configure = "arguments to pass to the configure script"
     @directories = ( key=value key=value )
     @files = ( key=value key=value )
     @infiles = ( :filename:key=value ::key=value )

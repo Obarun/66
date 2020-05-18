@@ -344,9 +344,6 @@ int check_mandatory(sv_alltype *service, section_t *sasection)
 				log_warn_return(LOG_EXIT_ZERO,"bundle type detected -- key @contents must be set") ;
 			break ;
 		case TYPE_ONESHOT:
-			if (service->type.oneshot.up.build < 0)
-				log_warn_return(LOG_EXIT_ZERO,"key @build at section [start] must be set") ;
-			
 			if ((service->type.oneshot.up.build == BUILD_CUSTOM) && (service->type.oneshot.up.shebang < 0))
 					log_warn_return(LOG_EXIT_ZERO,"custom build asked on section [start] -- key @shebang must be set") ;
 			
@@ -365,9 +362,6 @@ int check_mandatory(sv_alltype *service, section_t *sasection)
 			break ;
 		case TYPE_CLASSIC:
 		case TYPE_LONGRUN:
-			if (service->type.classic_longrun.run.build < 0)
-				log_warn_return(LOG_EXIT_ZERO,"key @build at section [start] must be set") ;
-			
 			if ((service->type.classic_longrun.run.build == BUILD_CUSTOM) && (service->type.classic_longrun.run.shebang < 0))
 					log_warn_return(LOG_EXIT_ZERO,"custom build asked on section [start] -- key @shebang must be set") ;
 			
@@ -385,9 +379,6 @@ int check_mandatory(sv_alltype *service, section_t *sasection)
 			}
 			if (sasection->idx[SECTION_LOG])
 			{
-				if (service->type.classic_longrun.log.run.build < 0)
-					log_warn_return(LOG_EXIT_ZERO,"key @build at section [logger] must be set") ;
-					
 				if (service->type.classic_longrun.log.run.build == BUILD_CUSTOM) 
 				{
 					if (service->type.classic_longrun.log.run.shebang < 0)
