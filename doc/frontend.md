@@ -358,7 +358,7 @@ This section is *mandatory*. (!)
         @depends=(fooA fooB fooC )
     ````
     
-    It is unnecessary to manually define chained sets of dependencies. The parser will properly handle this for you. For example, if fooA depends on fooB—no matter what the underlying implementation of fooB is, and although the current implementation of fooB depends on fooC—you should just put fooB in the @depends key field of fooA. When starting the set, [66-enable](66-enable.html) will parse and enable fooA, fooB and fooC and [66-start](66-start.html) will start fooC first, then fooB, then fooA. If the underlying implementation of fooB changes at any moment and does not depend on fooC anymore, you will just have to modify the *@depends* field for fooB. Beware though that if fooA depends on fooC, you need to add both fooB and fooC to the dependencies of fooA.
+    It is unnecessary to manually define chained sets of dependencies. The parser will properly handle this for you. For example, if fooA depends on fooB, (no matter what the underlying implementation of fooB is, and although the current implementation of fooB depends on fooC) you should just put fooB in the @depends key field of fooA. When starting the set, [66-enable](66-enable.html) will parse and enable fooA, fooB and fooC and [66-start](66-start.html) will start fooC first, then fooB, then fooA. If the underlying implementation of fooB changes at any moment, and does not depend on fooC anymore, you will just have to modify the *@depends* field for fooB. Beware though that if fooA depends on fooC, you need to add both fooB and fooC to the dependencies of fooA.
 
     A service can be commented out by placing the number sign `#` at the begin of the name like this:
         
