@@ -4,7 +4,7 @@ man1='66-all 66-dbctl 66-disable 66-echo 66-enable 66-env 66-init 66-inresolve 6
 
 man8='66-boot 66-hpr 66-shutdown 66-shutdownd 66-umountall'
 
-man5='frontend'
+man5='frontend instantiated-service module-service'
 
 for i in 1 5 8;do
     if [ ! -d doc/man/man${i} ]; then

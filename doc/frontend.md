@@ -355,7 +355,7 @@ This section is *mandatory*. (!)
     The order is of **importance** (!). If fooA depends on fooB and fooB depends on fooC the order needs to be:
     
     ````
-        @depends=(fooA fooB fooC)
+        @depends=(fooA fooB fooC )
     ````
     
     It is unnecessary to manually define chained sets of dependencies. The parser will properly handle this for you. For example, if fooA depends on fooB—no matter what the underlying implementation of fooB is, and although the current implementation of fooB depends on fooC—you should just put fooB in the @depends key field of fooA. When starting the set, [66-enable](66-enable.html) will parse and enable fooA, fooB and fooC and [66-start](66-start.html) will start fooC first, then fooB, then fooA. If the underlying implementation of fooB changes at any moment and does not depend on fooC anymore, you will just have to modify the *@depends* field for fooB. Beware though that if fooA depends on fooC, you need to add both fooB and fooC to the dependencies of fooA.
@@ -363,7 +363,7 @@ This section is *mandatory*. (!)
     A service can be commented out by placing the number sign `#` at the begin of the name like this:
         
     ````
-        @depends = ( fooA #fooB fooC)
+        @depends = ( fooA #fooB fooC )
     ````
 
     ---
@@ -393,7 +393,7 @@ This section is *mandatory*. (!)
     A service can be commented out by placing the number sign `#` at the begin of the name like this:
         
     ````
-        @optsdepends = ( fooA #fooB fooC)
+        @optsdepends = ( fooA #fooB fooC )
     ````
 
     ---
@@ -426,7 +426,7 @@ This section is *mandatory*. (!)
     A service can be commented out by placing the number sign `#` at the begin of the name like this:
     
     ````
-        @extdepends = ( fooA #fooB fooC)
+        @extdepends = ( fooA #fooB fooC )
     ````
     
     ---
@@ -610,7 +610,7 @@ This section is *mandatory*. (!)
 
     *Without equivalent, this key is unique to 66 tools*.
 
-    Copy subdirectories and files on the fly to the main service destination.
+    Verbatim copy directories and files on the fly to the main service destination.
 
     mandatory : no
 
@@ -618,14 +618,10 @@ This section is *mandatory*. (!)
 
     valid values :
 
-    * Any file or subdirectory in the services main directory that do not by default form part of the service itself. If the frontend service file was to be found at `/etc/66/service/foo/foo` and `/etc/66/service/foo` contains an additional subdirectory *data* and a file named *scripts*, use
+    * Any files or directories. It accepts *absolute* or *relative* path. 
     
-    ````
-        @hiercopy=(data scripts)
-    ````
+        **Note** : 66 version must be higher than 0.3.0.1.
     
-    to copy these to the service directory destination.
-
 ---
 
 ## Section: [start]
@@ -859,7 +855,7 @@ A file contained the `key=value` pair(s) will be created by default at `%%servic
 
 This section is *optional*.
 
-It will only have an effect when the service is a `module` type.
+It will only have an effect when the service is a `module` type—see the section [Module service creation](module-service.html).
 
 You can use the `@I` string as key field. It will be replaced by the `module` name as you do for instantiated service before applying the regex section.
 
@@ -935,6 +931,25 @@ You can use the `@I` string as key field. It will be replaced by the `module` na
     * It opens the file named mount-tmp, search for the args regex and replaces it by the value of the regex.
     * It opens all files found on the module directory and replaces all regex 'user' found by the name of the module in each file.
 
+- @addservices
+
+    *Without equivalent, this key is unique to 66 tools*.
+
+    mandatory : no
+
+    syntax : bracket
+
+    valid value :
+
+    * The name of any valid service with type `bundle`, `longrun`, `oneshot` or `module`. The corresponding frontend file **must** exist on your system. 
+
+    A service can be commented out by placing the number sign `#` at the begin of the name like this:
+        
+    ````
+        @addservices = ( fooA #fooB fooC )
+    ````
+
+
 ---
 
 ## A word about the @execute key
@@ -985,75 +1000,6 @@ Moreover, for `oneshot` type the *@shebang* needs to contain the interpreter opt
 Finally you need to take care about how you define your environment variable in the section [[environment]](frontend.html#Section: [environment]). When setting *@build* to auto the parser will also take care about the `!` character if you use it. This character will have no **effect** in the case of custom.
 
 This same behavior applies to the [[logger]](frontend.html#Section: [logger]) section. The fields *@destination*, *@backup*, *@maxsize* and *@timestamp* will have **no effect** in a custom case. You need to explicitly define the program to use the logger and the options for it in your *@execute* field.
-
----
-
-## Instantiated service file creation
-
-An *instantiated* service file is of the same syntax as decribed in this document for any other service. It can be any *type* of service. However some differences exist :
-
-- the name of the file needs to be appended with an `@` (commercial at) character.
-- every value replaced in an instance file needs to be written with `@I`.
-
-Example :
-
-```
-    File name : tty@
-   
-    Contents :
-    
-    [main]
-    @type = classic
-    @description = "Launch @I"
-    @user = ( root )
-    
-    [start]
-    @build = auto
-    @execute = ( agetty -J 38400 @I } )
-```
-
-By using [66-enable tty@tty1](66-enable.html), the resulting file will then be:
-
-```
-    [main]
-    @type = classic
-    @description = "Launch tty1"
-    @user = ( root )
-    
-    [start]
-    @build = auto
-    @execute = ( agetty -J 38400 tty1 } )
-```
-
----
-
-## Module service creation
-
-A module can be considered as an [instantiated](frontend.html#Instantiated service file creation) service. It works as the same way as a service frontend file but allows to configure a set of different kind of services before executing the enable process. Also, the set of the services can be configured with the conjunction of a script called *configure* which it can be made on any language.
-
-A module is defined with two elements: an instantiated frontend service file at `%%service_system%%` and a directory at `%%service_module%%`. The name of the frontend and the name of the directory **must** be the same. For example if the frontend is named foo@, the directory of the module must be foo@.
-
-The module directory can contain a sub-directory named *.configure* with an **executable** file script named configure inside. For example, foo@/.configure/configure. The sub-directory **must** be named *.configure* and the file script **must** be named *configure*.
-
-It's up to you to write the configure script file with the language of your choice as long as you define a correct *shebang*.
-
-The *configure* script is launched after the parse of the frontend file meaning all regex on directories and files are already made.
-
-### A word about the [[main]](frontend.html#Section: [main]) section with the module type
-
-The valid field in section [[main]](frontend.html#Section: [main]) are:
-
-- @type
-- @description
-- @name
-- @version
-- @user
-- @depends
-- @optsdepends
-- @extdepends
-- @hiercopy
-
-All other fields from [[main]](frontend.html#Section: [main]) section are not allowed.
 
 ---
 
@@ -1112,8 +1058,9 @@ This prototype contain all valid section with all valid `key=value` pair.
     ANOTHERKEY=!antohervalue
     
     [regex]
-    @configure="arguments to pass to configure script"
-    @directories=(key=value key=value)
-    @files=(key=value key=value)
-    @infiles=(:filename:key=value ::key=value)
+    @configure = "arguments to pass to configure script"
+    @directories = ( key=value key=value )
+    @files = ( key=value key=value )
+    @infiles = ( :filename:key=value ::key=value )
+    @addservices = ()
 ```

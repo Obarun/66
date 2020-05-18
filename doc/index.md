@@ -62,7 +62,9 @@ Please refer to the [INSTALL.md](https://framagit.org/Obarun/66) file for detail
 
 ### User tools
 
-- [frontend (service file)](frontend.html)
+- [frontend service file](frontend.html)
+- [instantiated service file](instantiated-service.html)
+- [module service creation](module-service.html)
 - [66-all](66-all.html)
 - [66-tree](66-tree.html)
 - [66-enable](66-enable.html)
