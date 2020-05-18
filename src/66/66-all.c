@@ -129,7 +129,7 @@ int doit(char const *tree,char const *treename,char const *live, unsigned int wh
 		return 0 ;
 }
 
-static void redir_fd(void)  
+static void all_redir_fd(void)  
 {
 	int fd ;
 	while((fd = open("/dev/tty",O_RDWR|O_NOCTTY)) >= 0)
@@ -278,7 +278,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 			goto end ;
 			
 		}
-		else redir_fd() ;
+		else all_redir_fd() ;
 	}
 	/** Down process? reverse in that case to respect tree start order*/
 	if (!what)
