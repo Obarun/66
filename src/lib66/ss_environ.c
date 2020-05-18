@@ -14,7 +14,6 @@
 
 #include <sys/types.h>
 #include <string.h>
-//#include <stdio.h>
 
 #include <oblibs/environ.h>
 #include <oblibs/sastr.h>
