@@ -80,7 +80,7 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	
 	if (insta > 0)
 	{
-		if (!instance_create(sasv,svname,SS_INSTANCE,insta))
+		if (!instance_create(sasv,svname,SS_INSTANCE_REGEX,insta))
 			log_warn_return(LOG_EXIT_ZERO,"create instance service: ",svname) ;
 		
 		/** ensure that we have an empty line at the end of the string*/
@@ -160,8 +160,9 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 		if ((sv_before.cname.itype > TYPE_CLASSIC && force > 1) || !exist)
 		{
 			stralloc rebuild = STRALLOC_ZERO ;
-
-			if (!parse_service_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,conf)) return 0 ;
+			/** Module have already parsed its deps, don't make it twice */
+			if (sv_before.cname.itype != TYPE_MODULE)
+				if (!parse_service_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,conf)) return 0 ;
 			if (!parse_service_opts_deps(&rebuild,info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,conf,KEY_MAIN_EXTDEPS)) return 0 ;
 			if (!parse_service_opts_deps(&rebuild,info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,conf,KEY_MAIN_OPTSDEPS)) return 0 ;
 

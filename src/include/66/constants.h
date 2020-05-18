@@ -114,7 +114,9 @@
 #define SS_BOOT_SHUTDOWND_LEN (sizeof SS_BOOT_SHUTDOWND - 1)
 
 /** Instance */
-#define SS_INSTANCE "@I"
+#define SS_INSTANCE_DIR "/instance"
+#define SS_INSTANCE_DIR_LEN (sizeof SS_INSTANCE_DIR - 1)
+#define SS_INSTANCE_REGEX "@I"
 #define SS_INSTANCE_TEMPLATE 0
 #define SS_INSTANCE_NAME 1
 #endif

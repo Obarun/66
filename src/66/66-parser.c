@@ -146,7 +146,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 	if (ista > 0)
 	{
-		if (!instance_create(&src,name,SS_INSTANCE,ista))
+		if (!instance_create(&src,name,SS_INSTANCE_REGEX,ista))
 			log_dieu(LOG_EXIT_SYS,"create instance service: ",name) ;
 		memcpy(name,insta.s,insta.len) ;
 		name[insta.len] = 0 ;
