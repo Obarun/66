@@ -22,6 +22,7 @@
 #include <66/enum.h>
 #include <66/environ.h>
 #include <66/hpr.h>
+#include <66/info.h>
 #include <66/parser.h>
 #include <66/rc.h>
 #include <66/resolve.h>
