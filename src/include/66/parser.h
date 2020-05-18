@@ -84,6 +84,8 @@ struct sv_module_s
 	unsigned int nfiles ; //number of regex files in stralloc keep -> @files
 	int start_infiles ; // pos in stralloc keep of the start of the string -> @infiles
 	int end_infiles ; // pos in stralloc keep of the end of the string -> @infiles
+	int idaddservices ; // pos in stralloc keep -> @addservices
+	unsigned int naddservices ; // number of addon services in stralloc keep > @addservices
 } ;
 
 typedef struct sv_type_s sv_type_t,*sv_type_t_ref ;
@@ -102,7 +104,7 @@ struct sv_name_s
 	int description ; //pos in keep
 	int version ; // pos in keep
 	int idga ; //pos in stralloc deps -> @depends
-	unsigned int nga ; //number or deps in stralloc deps -> @depends
+	unsigned int nga ; //number of deps in stralloc deps -> @depends
 	int idopts ; // pos in stralloc deps -> @optsdepends
 	unsigned int nopts ; // number of optional depends in stralloc deps-> @optsdepends
 	int idext ; // pos in stralloc deps -> @extdepends
@@ -202,7 +204,9 @@ struct sv_alltype_s
 	-1 , \
 	0 , \
 	-1 , \
-	-1 \
+	-1 , \
+	-1 , \
+	0 \
 }
 
 #define SV_NAME_ZERO \
@@ -325,5 +329,7 @@ extern int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_li
 extern int regex_get_file_name(char *filename,char const *str) ;
 extern int regex_get_replace(char *replace, char const *str) ;
 extern int regex_get_regex(char *regex, char const *str) ;
-extern int regex_replace(int id,unsigned int nid, char const *sdir,mode_t mode) ;
+extern int regex_replace(stralloc *list,sv_alltype *sv_before,char const *svname) ;
+extern int regex_rename(stralloc *list, int id, unsigned int nid, char const *sdir) ;
+extern int regex_configure(sv_alltype *sv_before,char const *module_dir,char const *module_name, uint8_t conf) ;
 #endif

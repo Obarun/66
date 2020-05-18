@@ -84,6 +84,7 @@ char const *enum_str_key_section_regex[] = {
 	"@directories" ,
 	"@files" ,
 	"@infiles" ,
+	"@addservices" ,
 	0
 } ;
 

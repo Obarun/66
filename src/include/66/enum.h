@@ -126,6 +126,7 @@ enum enum_key_section_regex_e
 	KEY_REGEX_DIRECTORIES ,
 	KEY_REGEX_FILES ,
 	KEY_REGEX_INFILES ,
+	KEY_REGEX_ADDSERVICES ,
 	KEY_REGEX_ENDOFKEY
 } ;
 
@@ -348,6 +349,7 @@ static key_description_t const regex_section_list[] =
 	{ .name = &enum_str_key_section_regex[KEY_REGEX_DIRECTORIES], .id = KEY_REGEX_DIRECTORIES, .expected = EXPECT_BRACKET },
 	{ .name = &enum_str_key_section_regex[KEY_REGEX_FILES], .id = KEY_REGEX_FILES, .expected = EXPECT_BRACKET },
 	{ .name = &enum_str_key_section_regex[KEY_REGEX_INFILES], .id = KEY_REGEX_INFILES, .expected = EXPECT_BRACKET },
+	{ .name = &enum_str_key_section_regex[KEY_REGEX_ADDSERVICES], .id = KEY_REGEX_ADDSERVICES, .expected = EXPECT_BRACKET },
 	{ .name = &enum_str_key_section_regex[KEY_REGEX_ENDOFKEY] }
 } ;
 

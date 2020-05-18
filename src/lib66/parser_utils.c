@@ -872,6 +872,17 @@ int keep_regex(sv_module *module,keynocheck *nocheck)
 				
 			module->end_infiles = keep.len ;
 			break ;
+		case KEY_REGEX_ADDSERVICES:
+			if (!get_clean_val(nocheck)) return 0 ;
+			module->idaddservices = keep.len ;
+			for (;pos < *chlen; pos += strlen(chval + pos) + 1)
+			{
+				/* allow to comment a service */
+				if (chval[pos] == '#') continue ;
+				if (!stralloc_catb(&keep,chval + pos,strlen(chval + pos) + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+				module->naddservices++ ;
+			}
+			break ;
 		default: log_warn_return(LOG_EXIT_ZERO,"unknown key: ",get_key_by_enum(ENUM_KEY_SECTION_REGEX,nocheck->idkey)) ;
 	}
 	return 1 ;
