@@ -300,7 +300,23 @@ This section is *mandatory*. (!)
 
     valid values :
 
-    * Any valid number
+    * Any valid version number under the form `digit.digit.digit`.
+        
+        For example, the following is valid:
+        
+        ````
+            @version = 0.1.0
+        ````
+        
+        where:
+        
+        ````
+            @version = 0.1.0.1
+            @version = 0.1
+            @version = 0.1.rc1
+        ````
+        
+        is not. 
     
     ---
 

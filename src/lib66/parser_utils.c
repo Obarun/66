@@ -514,6 +514,9 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			break ;
 		case KEY_MAIN_VERSION:
 			service->cname.version = keep.len ;
+			r = version_scan(&nocheck->val,chval,2) ;
+			if (r == -1) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+			if (!r) { parse_err(0,nocheck) ; return 0 ; }
 			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			break ;
 		case KEY_MAIN_OPTIONS:
