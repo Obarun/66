@@ -997,13 +997,15 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 	}
 	if ((res->type == TYPE_BUNDLE || res->type == TYPE_MODULE) && res->ndeps)
 	{
-		if (!sastr_clean_string(&tmp,res->sa.s + res->deps)) goto err ;
+		uint32_t deps = res->type == TYPE_MODULE ? res->contents : res->deps ;
+		if (!sastr_clean_string(&tmp,res->sa.s + deps)) goto err ;
 		ss_resolve_t dres = RESOLVE_ZERO ;
 		for (; a < tmp.len ; a += strlen(tmp.s + a) + 1)
 		{	
 			char *name = tmp.s + a ;
 			if (!ss_resolve_check(src,name)) goto err ; 
 			if (!ss_resolve_read(&dres,src,name)) goto err ;
+			if (dres.type == TYPE_CLASSIC) continue ;
 			if (!ss_resolve_cmp(tokeep,name))
 			{
 				if (!ss_resolve_append(tokeep,&dres)) goto err ;
