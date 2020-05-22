@@ -140,7 +140,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	}
 	
 	log_trace("read service file of: ",srcdir,insta.s) ;
-	if (!read_svfile(&src,insta.s,srcdir)) log_dieusys(LOG_EXIT_SYS,"open: ",sv) ;
+	if (read_svfile(&src,insta.s,srcdir) <= 0) log_dieusys(LOG_EXIT_SYS,"open: ",sv) ;
 
 	if (!get_svtype(&service,src.s)) log_dieu(LOG_EXIT_SYS,"get service type of: ",sv) ;
 

@@ -23,6 +23,7 @@
 #include <oblibs/log.h>
 #include <oblibs/files.h>
 #include <oblibs/sastr.h>
+#include <oblibs/string.h>
 
 #include <skalibs/genalloc.h>
 #include <skalibs/stralloc.h>
@@ -289,7 +290,7 @@ int read_svfile(stralloc *sasv,char const *name,char const *src)
 	
 	size_t filesize=file_get_size(svtmp) ;
 	if (!filesize)
-		log_warn_return(LOG_EXIT_ZERO,svtmp," is empty") ;
+		log_warn_return(LOG_EXIT_LESSONE,svtmp," is empty") ;
 	
 	r = openreadfileclose(svtmp,sasv,filesize) ;
 	if(!r)
@@ -309,9 +310,11 @@ int module_in_cmdline(genalloc *gares, ss_resolve_t *res, char const *dir)
 	
 	if (!ss_resolve_append(gares,res)) goto err ;
 	
-	if (!sastr_clean_string(&tmp,res->sa.s + res->contents))
-		goto err ;
-
+	if (res->contents)
+	{
+		if (!sastr_clean_string(&tmp,res->sa.s + res->contents))
+			goto err ;
+	}
 	for (; pos < tmp.len ; pos += strlen(tmp.s + pos) + 1)
 	{
 		char *name = tmp.s + pos ;
@@ -325,6 +328,62 @@ int module_in_cmdline(genalloc *gares, ss_resolve_t *res, char const *dir)
 	return 1 ;
 	err:
 		stralloc_free(&tmp) ;
+		return 0 ;
+}
+
+int module_search_service(char const *src, genalloc *gares, char const *name,uint8_t *found, char module_name[255])
+{
+	size_t srclen = strlen(src), pos = 0, deps = 0 ;
+	stralloc list = STRALLOC_ZERO ;
+	stralloc tmp = STRALLOC_ZERO ;
+	ss_resolve_t res = RESOLVE_ZERO ;
+
+	char t[srclen + SS_RESOLVE_LEN + 1] ;
+	auto_strings(t,src,SS_RESOLVE) ;
+
+	if (!sastr_dir_get(&list,t,SS_MASTER+1,S_IFREG)) goto err ;
+
+	for (;pos < list.len ; pos += strlen(list.s + pos) + 1)
+	{
+		char *dname = list.s + pos ;
+		if (!ss_resolve_read(&res,src,dname)) goto err ;
+		if (res.type == TYPE_MODULE && res.contents)
+		{
+			if (!sastr_clean_string(&tmp,res.sa.s + res.contents)) goto err ;
+			for (deps = 0 ; deps < tmp.len ; deps += strlen(tmp.s + deps) + 1)
+			{
+				if (!strcmp(name,tmp.s + deps))
+				{
+					(*found)++ ;
+					if (strlen(dname) > 255) log_1_warn_return(LOG_EXIT_ZERO,"module name too long") ;
+					auto_strings(module_name,dname) ;
+					goto end ;
+				}
+			}
+		}
+	}
+	end:
+	/** search if the service is on the commandline
+	 * if not we crash */
+	for(pos = 0 ; pos < genalloc_len(ss_resolve_t,gares) ; pos++)
+	{
+		ss_resolve_t_ref pres = &genalloc_s(ss_resolve_t,gares)[pos] ;
+		char *string = pres->sa.s ;
+		char  *name = string + pres->name ;
+		if (!strcmp(name,module_name)) {
+			(*found) = 0 ;
+			break ;
+		}
+	}
+
+	stralloc_free(&list) ;
+	stralloc_free(&tmp) ;
+	ss_resolve_free(&res) ;
+	return 1 ;
+	err:
+		stralloc_free(&list) ;
+		stralloc_free(&tmp) ;
+		ss_resolve_free(&res) ;
 		return 0 ;
 }
 

@@ -45,7 +45,7 @@ extern int set_ownerhome(stralloc *base,uid_t owner) ;
 extern int set_ownersysdir(stralloc *base,uid_t owner) ;
 extern int read_svfile(stralloc *sasv,char const *name,char const *src) ;
 extern int module_in_cmdline(genalloc *gares, ss_resolve_t *res, char const *dir) ;
-
+extern int module_search_service(char const *src, genalloc *gares, char const *name,uint8_t *found, char module_name[256]) ;
 /** ss_instance.c file */
 extern int instance_check(char const *svname) ;
 extern int instance_splitname(stralloc *sa,char const *name,int len,int what) ;

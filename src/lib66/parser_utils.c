@@ -1159,7 +1159,7 @@ int get_svtype_from_file(char const *file)
 	if (!ob_dirname(dname,file)) goto err ;
 	
 	log_trace("read service file of: ",dname,bname) ;
-	if (!read_svfile(&tmp,bname,dname)) goto err ;
+	if (read_svfile(&tmp,bname,dname) <= 0) goto err ;
 
 	if (!environ_get_val_of_key(&tmp,get_key_by_enum(ENUM_KEY_SECTION_MAIN,KEY_MAIN_TYPE))) goto err ;
 
