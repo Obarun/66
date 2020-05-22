@@ -15,7 +15,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
-#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
@@ -63,11 +62,11 @@ void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORC
 	stralloc sasv = STRALLOC_ZERO ;
 	stralloc parsed_list = STRALLOC_ZERO ;
 	stralloc tree_list = STRALLOC_ZERO ;
-		
+	uint8_t disable_module = 1 ;
 	for (;i < len; i += strlen(list->s + i) + 1)
 	{
 		char *name = list->s + i ;
-		if (!parse_service_before(info,&parsed_list,&tree_list,name,nbsv,&sasv,FORCE,CONF))
+		if (!parse_service_before(info,&parsed_list,&tree_list,name,nbsv,&sasv,FORCE,CONF,disable_module))
 			log_dieu(LOG_EXIT_SYS,"parse service file: ",name,": or its dependencies") ;
 	}
 	stralloc_free(&sasv) ;
@@ -83,7 +82,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 	{
 		sv_alltype_ref sv = &genalloc_s(sv_alltype,gasv)[i] ;
 		char *name = keep.s + sv->cname.name ;
-		
+
 		r = write_services(sv, workdir,FORCE,CONF) ;
 		if (!r)
 			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write service: ",name) ;
@@ -115,7 +114,6 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	size_t pos = 0 ;
 	unsigned int nbsv, nlongrun, nclassic, start ;
 	
-	//stralloc home = STRALLOC_ZERO ;
 	stralloc sasrc = STRALLOC_ZERO ;
 	stralloc tostart = STRALLOC_ZERO ;
 	
@@ -200,7 +198,6 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	/** parser allocation*/
 	freed_parser() ;
 	/** inner allocation */
-	//stralloc_free(&home) ;
 	stralloc_free(&workdir) ;
 	stralloc_free(&sasrc) ;
 		
