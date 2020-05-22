@@ -14,7 +14,6 @@
  
 #include <string.h>
 #include <errno.h>
-//#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
@@ -195,6 +194,13 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 		pres = &genalloc_s(ss_resolve_t,&gares)[i] ;
 		char *string = pres->sa.s ;
 		char  *name = string + pres->name ;
+		uint8_t found = 0 ;
+		char module_name[256] ;
+
+		if (!module_search_service(workdir.s,&gares,name,&found,module_name))
+			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"search in module") ;
+		if (found) log_die_nclean(LOG_EXIT_USER,&cleanup,name," is a part of: ",module_name," module -- it's not allowed to disable it alone") ;
+
 		logname = 0 ;
 		if (obstr_equal(name,SS_MASTER + 1))
 			log_die_nclean(LOG_EXIT_USER,&cleanup,"nice try peon") ;
