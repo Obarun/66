@@ -557,7 +557,8 @@ int main(int argc, char const *const *argv, char const *const *envp)
 		if (envdir.s[0] != '/')
 			log_die(LOG_EXIT_USER,"environment: ",envdir.s," must be an absolute path") ;
 		
-		if (!environ_get_envfile_n_merge(envdir.s,envp,newenv,TMPENV)) log_dieusys(LOG_EXIT_SYS,"build environment with: ",envdir.s) ;
+		r = environ_get_envfile_n_merge(envdir.s,envp,newenv,TMPENV) ;
+		if (r <= 0 && r != -8){ environ_get_envfile_error(r,envdir.s) ; log_dieusys(LOG_EXIT_SYS,"build environment with: ",envdir.s) ; }
 		genv = newenv ;
 	}
 	else genv = envp ;
