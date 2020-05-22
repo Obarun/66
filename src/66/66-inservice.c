@@ -660,6 +660,9 @@ static void info_display_logfile(char const *field,ss_resolve_t *res)
 				else
 				{
 					if (!file_readputsa(&log,res->sa.s + res->dstlog,"current")) log_dieusys(LOG_EXIT_SYS,"read log file of: ",res->sa.s + res->name) ;
+					/* we don't need to freed stralloc
+					 * file_readputsa do it if the file is empty*/
+					if (!log.len) goto empty ;
 					log.len-- ;
 					if (!auto_stra(&log,"\n")) log_dieusys(LOG_EXIT_SYS,"append newline") ;
 					if (log.len < 10 && res->type != TYPE_ONESHOT) 
