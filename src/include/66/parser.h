@@ -151,7 +151,12 @@ struct sv_alltype_s
 	/* path of the environment file, this is only concern the write 
 	 * process, the read process could be different if conf/sysadmin/service
 	 * exist */
-	uint32_t srconf ; 
+	uint32_t srconf ;
+	/** set the CONF variable for each service.
+	 * useful in case of module. We do not overwrite
+	 * the configuration of the module but we overwrite
+	 * the configuration of each service inside a module */
+	uint8_t overwrite_conf ;
 						
 } ;
 
@@ -242,6 +247,7 @@ struct sv_alltype_s
 	-1 , \
 	-1 , \
 	STRALLOC_ZERO , \
+	0 , \
 	0 \
 }
 
@@ -290,10 +296,10 @@ extern void freed_parser(void) ;
 extern void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORCE) ;
 extern int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype) ;
 extern int parse_service_check_enabled(char const *tree_directory, char const *svname,uint8_t force,uint8_t *exist) ;
-extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, stralloc *opts_deps_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf) ;
+extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, stralloc *opts_deps_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf,uint8_t disable_module) ;
 extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, stralloc *opts_deps_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf) ;
 extern int parse_service_opts_deps(stralloc *rebuild,ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf,uint8_t mandatory) ;
-extern int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner) ;
+extern int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner,uint8_t conf) ;
 extern int get_svtype(sv_alltype *sv_before, char const *contents) ;
 extern int get_svtype_from_file(char const *file) ;
 /** split */
@@ -331,5 +337,5 @@ extern int regex_get_replace(char *replace, char const *str) ;
 extern int regex_get_regex(char *regex, char const *str) ;
 extern int regex_replace(stralloc *list,sv_alltype *sv_before,char const *svname) ;
 extern int regex_rename(stralloc *list, int id, unsigned int nid, char const *sdir) ;
-extern int regex_configure(sv_alltype *sv_before,char const *module_dir,char const *module_name, uint8_t conf) ;
+extern int regex_configure(sv_alltype *sv_before,ssexec_t *info, char const *module_dir,char const *module_name, uint8_t conf) ;
 #endif

@@ -580,7 +580,7 @@ int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 		stralloc tmp = STRALLOC_ZERO ;
 		char *dst = keep.s + sv->srconf ;
 		char *name = keep.s + sv->cname.name ;
-
+		conf = sv->overwrite_conf ;
 		r = env_compute(&tmp,sv,conf) ;
 		if (!r)	log_warnu_return(LOG_EXIT_ZERO,"compute environment") ;
 		/** env_compute return 2 if we need

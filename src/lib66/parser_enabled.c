@@ -32,7 +32,7 @@
 
 /* @sv -> name of the service to parse with 
  * the path of the frontend file source */
-int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf)
+int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf,uint8_t disable_module)
 {
 	log_trace("start parse process of service: ",sv) ;
 	int insta ;
@@ -63,12 +63,12 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 		stralloc tmp = STRALLOC_ZERO ;
 		instance_splitname(&tmp,svname,insta,SS_INSTANCE_TEMPLATE) ;
 		log_trace("read service file of: ",svsrc,tmp.s) ;
-		if (!read_svfile(sasv,tmp.s,svsrc)) return 0 ;
+		if (read_svfile(sasv,tmp.s,svsrc) <= 0) return 0 ;
 		stralloc_free(&tmp) ;
 	}	
 	else {
 		log_trace("read service file of: ",svsrc,svname) ;
-		if (!read_svfile(sasv,svname,svsrc)) return 0 ;
+		if (read_svfile(sasv,svname,svsrc) <= 0) return 0 ;
 	}
 	
 	if (!get_svtype(&sv_before,sasv->s)) 
@@ -134,7 +134,6 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	
 	if (sv_before.cname.itype == TYPE_MODULE)
 	{
-		
 		r = parse_module(&sv_before,info,parsed_list,tree_list,svname,nbsv,sasv,force,conf) ;
 		if (!r) return 0 ;
 		else if (r == 2)
@@ -143,16 +142,19 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 			sv_alltype_free(&sv_before) ;
 			goto deps ;
 		}
-		if (force > 1 && exist)
+
 		{
-			char const *newargv[4] ;
-			unsigned int m = 0 ;
-			
-			newargv[m++] = "fake_name" ;
-			newargv[m++] = svname ;
-			newargv[m++] = 0 ;
-			if (ssexec_disable(m,newargv,(const char *const *)environ,info)) 
-				log_warnu_return(LOG_EXIT_ZERO,"disable module: ",svname) ;	
+			if (force > 1 && exist && disable_module)
+			{
+				char const *newargv[4] ;
+				unsigned int m = 0 ;
+
+				newargv[m++] = "fake_name" ;
+				newargv[m++] = svname ;
+				newargv[m++] = 0 ;
+				if (ssexec_disable(m,newargv,(const char *const *)environ,info))
+					log_warnu_return(LOG_EXIT_ZERO,"disable module: ",svname) ;
+			}
 		}
 	}
 	deps:
@@ -197,7 +199,7 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 			}
 			stralloc_free(&rebuild) ;
 		}
-		if (!parse_add_service(parsed_list,&sv_before,svpath,nbsv,info->owner)) return 0 ;
+		if (!parse_add_service(parsed_list,&sv_before,svpath,nbsv,info->owner,conf)) return 0 ;
 	}
 	end:
 	return 1 ;
@@ -223,7 +225,7 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list,
 			r = ss_resolve_src_path(&newsv,dname,info->owner) ;
 			if (r < 1) goto err ;//don't warn here, the ss_revolve_src_path already warn user
 
-			if (!parse_service_before(info,parsed_list,tree_list,newsv.s,nbsv,sasv,force,conf)) goto err ;
+			if (!parse_service_before(info,parsed_list,tree_list,newsv.s,nbsv,sasv,force,conf,0)) goto err ;
 		}
 	}
 	else log_trace(sv,": haven't dependencies") ;
@@ -297,7 +299,7 @@ int parse_service_opts_deps(stralloc *rebuild,ssexec_t *info,stralloc *parsed_li
 					}
 					// be paranoid with the else if
 					else if (r == 1) {
-						if (!parse_service_before(info,parsed_list,tree_list,newsv.s,nbsv,sasv,force,conf))
+						if (!parse_service_before(info,parsed_list,tree_list,newsv.s,nbsv,sasv,force,conf,0))
 							goto err ;
 
 						// add the new deps
@@ -347,27 +349,29 @@ int parse_service_check_enabled(char const *tree,char const *svname,uint8_t forc
 		return 0 ;
 }
 
-int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner)
+int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner,uint8_t conf)
 {
-	stralloc conf = STRALLOC_ZERO ;
+	stralloc saconf = STRALLOC_ZERO ;
 	size_t svlen = strlen(service) ;
+	// keep overwrite_conf
+	sv_before->overwrite_conf = conf ;
 	// keep source of the frontend file
 	sv_before->src = keep.len ;
 	if (!stralloc_catb(&keep,service,svlen + 1)) goto err ;
 	// keep source of the configuration file
 	if (sv_before->opts[2])
 	{
-		if (!env_resolve_conf(&conf,owner)) goto err ;
+		if (!env_resolve_conf(&saconf,owner)) goto err ;
 		sv_before->srconf = keep.len ;
-		if (!stralloc_catb(&keep,conf.s,conf.len + 1)) goto err ;
+		if (!stralloc_catb(&keep,saconf.s,saconf.len + 1)) goto err ;
 	}
 	// keep service on current list
 	if (!stralloc_catb(parsed_list,service,svlen + 1)) goto err ;
 	if (!genalloc_append(sv_alltype,&gasv,sv_before)) goto err ;
 	(*nbsv)++ ;
-	stralloc_free(&conf) ;
+	stralloc_free(&saconf) ;
 	return 1 ;
 	err:
-		stralloc_free(&conf) ;
+		stralloc_free(&saconf) ;
 		return 0 ;
 }
