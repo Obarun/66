@@ -48,55 +48,72 @@
 #define SS_MODULE_SERVICE_INSTANCE "/service@"
 #define SS_MODULE_SERVICE_INSTANCE_LEN (sizeof SS_MODULE_SERVICE_INSTANCE - 1)
 
-static int check_dir(char const *src,char const *dir,char const *dst)
+static int check_dir(char const *src,char const *dir)
 {
 	int r ;
 	size_t srclen = strlen(src) ;
 	size_t dirlen = strlen(dir) ;
-	size_t dstlen = strlen(dst) ;
 
 	char tsrc[srclen + dirlen + 1] ;
 	auto_strings(tsrc,src,dir) ;
-
-	char tdst[dstlen + dirlen + 1] ;
-	auto_strings(tdst,dst,dir) ;
 
 	r = scan_mode(tsrc,S_IFDIR) ;
 	if (r < 0) { errno = EEXIST ; log_warnusys_return(LOG_EXIT_ZERO,"conflicting format of: ",tsrc) ; }
 	if (!r)
 	{
-		if (!dir_create_parent(tdst,0755))
-			log_warnusys_return(LOG_EXIT_ZERO,"create directory: ",tdst) ;
+		if (!dir_create_parent(tsrc,0755))
+			log_warnusys_return(LOG_EXIT_ZERO,"create directory: ",tsrc) ;
 	}
 	return 1 ;
 }
 
-/** return 1 if all good
- * return 0 on crash
+static int get_list(stralloc *list, stralloc *sdir,size_t len, char const *svname, mode_t mode)
+{
+	sdir->len = len ;
+	if (!auto_stra(sdir,SS_MODULE_SERVICE)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+	if (!sastr_dir_get_recursive(list,sdir->s,"",mode))
+		log_warnusys_return(LOG_EXIT_ZERO,"get file(s) of module: ",svname) ;
+
+	sdir->len = len ;
+
+	if (!auto_stra(sdir,SS_MODULE_SERVICE_INSTANCE)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+	if (!sastr_dir_get_recursive(list,sdir->s,"",mode))
+		log_warnusys_return(LOG_EXIT_ZERO,"get file(s) of module: ",svname) ;
+
+	return 1 ;
+}
+
+/** return 1 on success
+ * return 0 on failure
  * return 2 on already enabled 
  * @svname do not contents the path of the frontend file*/
 int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *svname,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf)
 {
 	log_trace("start parse process of module: ",svname) ;
-	int r, err = 1, insta ;
-	size_t pos = 0, id, nid, newlen ;
+	int r, err = 1, insta = -1, svtype = -1, from_ext_insta = 0 ;
+	size_t pos = 0, id, nid, newlen, ndeps ;
 	stralloc sdir = STRALLOC_ZERO ; // service dir
 	stralloc list = STRALLOC_ZERO ;
 	stralloc tmp = STRALLOC_ZERO ;
 	stralloc moduleinsta = STRALLOC_ZERO ;
 	stralloc addonsv = STRALLOC_ZERO ;
 	
-	/** should be always right */
+	/** should be always right,
+	 * be paranoid and check it */
 	insta = instance_check(svname) ;
-	if (!instance_splitname(&moduleinsta,svname,insta,SS_INSTANCE_NAME))
-		log_warnu_return(LOG_EXIT_ZERO,"get instance name of: ",svname);
+	if (insta <= 0)
+		log_warn_return(LOG_EXIT_ZERO,"invalid module instance name: ",svname);
 	
 	if (!ss_resolve_module_path(&sdir,&tmp,svname,info->owner)) return 0 ;
 	
-	/** check mandatory directories: configure, service, service@ */
-	if (!check_dir(tmp.s,SS_MODULE_CONFIG_DIR,sdir.s)) return 0 ;
-	if (!check_dir(tmp.s,SS_MODULE_SERVICE,sdir.s)) return 0 ;
-	if (!check_dir(tmp.s,SS_MODULE_SERVICE_INSTANCE,sdir.s)) return 0 ;
+	/** check mandatory directories:
+	 * module/module_name, module/module_name/{configure,service,service@} */
+	if (!check_dir(tmp.s,"")) return 0 ;
+	if (!check_dir(tmp.s,SS_MODULE_CONFIG_DIR)) return 0 ;
+	if (!check_dir(tmp.s,SS_MODULE_SERVICE)) return 0 ;
+	if (!check_dir(tmp.s,SS_MODULE_SERVICE_INSTANCE)) return 0 ;
 
 	newlen = sdir.len ;
 
@@ -126,60 +143,25 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 		if (!hiercopy(tmp.s,sdir.s))
 			log_warnusys_return(LOG_EXIT_ZERO,"copy: ",tmp.s," to: ",sdir.s) ;
 	}
-	
-	/** This following is redundant, but the order here
-	 * is important and cannot be mixed */
 
 	/** regex file content */
-	if (!auto_stra(&sdir,SS_MODULE_SERVICE)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	list.len = 0 ;
 
-	if (!sastr_dir_get_recursive(&list,sdir.s,"",S_IFREG))
-		log_warnusys_return(LOG_EXIT_ZERO,"get file(s) of module: ",svname) ;
-
-	sdir.len = newlen ;
-	if (!auto_stra(&sdir,SS_MODULE_SERVICE_INSTANCE)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-
-	if (!sastr_dir_get_recursive(&list,sdir.s,"",S_IFREG))
-		log_warnusys_return(LOG_EXIT_ZERO,"get file(s) of module: ",svname) ;
-
+	if (!get_list(&list,&sdir,newlen,svname,S_IFREG)) return 0 ;
 	if (!regex_replace(&list,sv_before,svname)) return 0 ;
 
 	/* regex directories name */
-	sdir.len = newlen ;
-	list.len = 0 ;
-
-	if (!auto_stra(&sdir,SS_MODULE_SERVICE)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-
-	if (!sastr_dir_get_recursive(&list,sdir.s,"",S_IFDIR))
-		log_warnusys_return(LOG_EXIT_ZERO,"get file(s) of module: ",svname) ;
-
-	sdir.len = newlen ;
-	if (!auto_stra(&sdir,SS_MODULE_SERVICE_INSTANCE)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-
-	if (!sastr_dir_get_recursive(&list,sdir.s,"",S_IFDIR))
-		log_warnusys_return(LOG_EXIT_ZERO,"get file(s) of module: ",svname) ;
-
+	if (!get_list(&list,&sdir,newlen,svname,S_IFDIR)) return 0 ;
 	if (!regex_rename(&list,sv_before->type.module.iddir,sv_before->type.module.ndir,sdir.s)) return 0 ;
 
 	/* regex files name */
-	sdir.len = newlen ;
 	list.len = 0 ;
 
-	if (!auto_stra(&sdir,SS_MODULE_SERVICE)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-
-	if (!sastr_dir_get_recursive(&list,sdir.s,"",S_IFREG))
-		log_warnusys_return(LOG_EXIT_ZERO,"get file(s) of module: ",svname) ;
-
-	sdir.len = newlen ;
-	if (!auto_stra(&sdir,SS_MODULE_SERVICE_INSTANCE)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-
-	if (!sastr_dir_get_recursive(&list,sdir.s,"",S_IFREG))
-		log_warnusys_return(LOG_EXIT_ZERO,"get file(s) of module: ",svname) ;
-
+	if (!get_list(&list,&sdir,newlen,svname,S_IFREG)) return 0 ;
 	if (!regex_rename(&list,sv_before->type.module.idfiles,sv_before->type.module.nfiles,sdir.s)) return 0 ;
 
 	/* launch configure script */
-	if (!regex_configure(sv_before,permanent_sdir,svname,conf)) return 0 ;
+	if (!regex_configure(sv_before,info,permanent_sdir,svname,conf)) return 0 ;
 
 	make_deps:
 	/** get all services */
@@ -223,61 +205,51 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 	/** parse all services of the modules */
 	for (pos = 0 ; pos < list.len ; pos += strlen(list.s + pos) + 1)
 	{
-		int svtype, insta ;
+		insta = 0, svtype = -1 , from_ext_insta = 0 ;
 		char *sv = list.s + pos ;
 		size_t len = strlen(sv) ;
 		char bname[len + 1] ;
 		char *pbname = bname ;
-		ssize_t from_ext_insta = 0 ;
 		addonsv.len = 0 ;
 
 		if (!ob_basename(bname,sv))
 			log_warnu_return(LOG_EXIT_ZERO,"find basename of: ",sv) ;
 
-		char bname_insta[len + moduleinsta.len + 1] ;
-		insta = get_len_until(bname,'@') ;
+		insta = instance_check(bname) ;
+		if (!insta) log_warn_return(LOG_EXIT_ZERO,"invalid instance name: ",sv) ;
 		if (insta > 0)
 		{
-			/** respect a complete instance name*/
-			if (instance_check(bname))
-			{
-				/** we can't know the origine of the instance
-				 * search first at service@ directory, if it not found
-				 * pass through the classic ss_resolve_src_path() function */
-				pbname = bname ;
-				int found = 0 ;
-				size_t len = strlen(permanent_sdir) ;
-				char tmp[len + SS_MODULE_SERVICE_INSTANCE_LEN + 1] ;
-				auto_strings(tmp,permanent_sdir,SS_MODULE_SERVICE_INSTANCE) ;
-				r = ss_resolve_src(&addonsv,sv,tmp,&found) ;
-				if (r == -1) log_warnusys_return(LOG_EXIT_ZERO,"parse source directory: ",tmp) ;
-				if (!r)
-				{
-					if (ss_resolve_src_path(&addonsv,pbname,info->owner) < 1)
-						log_warnu_return(LOG_EXIT_ZERO,"resolve source path of: ",pbname) ;
+			/** we can't know the origin of the instance
+			 * search first at service@ directory, if it not found
+			 * pass through the classic ss_resolve_src_path() function */
+			pbname = bname ;
+			int found = 0 ;
+			size_t len = strlen(permanent_sdir) ;
+			char tmp[len + SS_MODULE_SERVICE_INSTANCE_LEN + 2] ;
+			auto_strings(tmp,permanent_sdir,SS_MODULE_SERVICE_INSTANCE,"/") ;
 
-					from_ext_insta = get_rlen_until(addonsv.s,'@',addonsv.len) + 1 ;
-				}
-				sv = addonsv.s ;
-			}
-			else
+			r = ss_resolve_src(&addonsv,pbname,tmp,&found) ;
+			if (r == -1) log_warnusys_return(LOG_EXIT_ZERO,"parse source directory: ",tmp) ;
+			if (!r)
 			{
-				auto_strings(bname_insta,bname,moduleinsta.s) ;
-				pbname = bname_insta ;
-				if (!auto_stra(&addonsv,permanent_sdir,SS_MODULE_SERVICE_INSTANCE,"/",pbname))
-					log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-				sv = addonsv.s ;
+				if (ss_resolve_src_path(&addonsv,pbname,info->owner) < 1)
+					log_warnu_return(LOG_EXIT_ZERO,"resolve source path of: ",pbname) ;
 			}
+			from_ext_insta++ ;
+			sv = addonsv.s ;
 			len = strlen(sv) ;
 		}
-
-		if (!parse_service_before(info,parsed_list,tree_list,sv,nbsv,sasv,force,conf))
+		/** merge configuration file from upstream for each service
+		* inside the module*/
+		conf = 2 ;
+		if (!parse_service_before(info,parsed_list,tree_list,sv,nbsv,sasv,force,conf,0))
 			log_warnu_return(LOG_EXIT_ZERO,"parse: ",sv," from module: ",svname) ;
 
 		char ext_insta[len + 1] ;
 		if (from_ext_insta) {
 			size_t len = strlen(sv) ;
-			size_t newlen = len - (len - from_ext_insta) ;
+			r = get_rlen_until(sv,'@',len) + 1 ;
+			size_t newlen = len - (len - r) ;
 			auto_strings(ext_insta,sv) ;
 			ext_insta[newlen] = 0 ;
 			sv = ext_insta ;
@@ -293,6 +265,21 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 			if (!stralloc_catb(&tmp,pbname,strlen(pbname) + 1)) 
 				log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}
+	/** we want all service contained into the module including
+	 * the deps of the service */
+	for (ndeps = 0; ndeps < genalloc_len(sv_alltype,&gasv); ndeps++)
+	{
+		sv_alltype_ref service = &genalloc_s(sv_alltype,&gasv)[ndeps] ;
+
+		int id = service->cname.itype == TYPE_MODULE ? service->cname.idcontents : service->cname.idga ;
+		unsigned int nid = service->cname.itype == TYPE_MODULE ? service->cname.ncontents : service->cname.nga ;
+		for (;nid; id += strlen(deps.s + id) + 1, nid--)
+		{
+			if (sastr_cmp(&sdir,deps.s + id) == -1)
+				if (!stralloc_catb(&sdir,deps.s + id,strlen(deps.s + id) + 1))
+					log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		}
+	}
 	sv_before->cname.idga = deps.len ;
 	sv_before->cname.nga = 0 ;
 	for (pos = 0 ;pos < tmp.len ; pos += strlen(tmp.s + pos) + 1)
@@ -307,6 +294,7 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 		stralloc_catb(&deps,sdir.s + pos,strlen(sdir.s + pos) + 1) ;
 		sv_before->cname.ncontents++ ;
 	}
+
 	tmp.len = 0 ;
 	if (!auto_stra(&tmp,permanent_sdir,SS_MODULE_CONFIG_DIR))
 		log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
@@ -472,7 +460,7 @@ int regex_rename(stralloc *list, int id, unsigned int nid, char const *sdir)
 	return 1 ;
 }
 
-int regex_configure(sv_alltype *sv_before,char const *module_dir,char const *module_name,uint8_t conf)
+int regex_configure(sv_alltype *sv_before,ssexec_t *info, char const *module_dir,char const *module_name,uint8_t conf)
 {
 	int wstat, r ;
 	pid_t pid ;
@@ -493,6 +481,36 @@ int regex_configure(sv_alltype *sv_before,char const *module_dir,char const *mod
 	r = scan_mode(config_script,S_IFREG) ;
 	if (r > 0)
 	{
+		/** export ssexec_t info value on the environment */
+		{
+			char owner[UID_FMT];
+			owner[uid_fmt(owner,info->owner)] = 0 ;
+			oenv.len = 0 ;
+			char verbo[UINT_FMT];
+			verbo[uid_fmt(verbo,VERBOSITY)] = 0 ;
+			oenv.len = 0 ;
+			auto_stra(&env,"MOD_NAME=",module_name,"\n") ;
+			auto_stra(&env,"MOD_BASE=",info->base.s,"\n") ;
+			auto_stra(&env,"MOD_LIVE=",info->live.s,"\n") ;
+			auto_stra(&env,"MOD_TREE=",info->tree.s,"\n") ;
+			auto_stra(&env,"MOD_SCANDIR=",info->scandir.s,"\n") ;
+			auto_stra(&env,"MOD_TREENAME=",info->treename.s,"\n") ;
+			auto_stra(&env,"MOD_OWNER=",owner,"\n") ;
+			auto_stra(&env,"MOD_VERBOSITY=",verbo,"\n") ;
+			auto_stra(&env,"MOD_MODULE_DIR=",module_dir,"\n") ;
+			auto_stra(&env,"MOD_SKEL_DIR=",SS_SKEL_DIR,"\n") ;
+			auto_stra(&env,"MOD_SERVICE_SYSDIR=",SS_SERVICE_SYSDIR,"\n") ;
+			auto_stra(&env,"MOD_SERVICE_ADMDIR=",SS_SERVICE_ADMDIR,"\n") ;
+			auto_stra(&env,"MOD_SERVICE_ADMCONFDIR=",SS_SERVICE_ADMCONFDIR,"\n") ;
+			auto_stra(&env,"MOD_MODULE_SYSDIR=",SS_MODULE_SYSDIR,"\n") ;
+			auto_stra(&env,"MOD_MODULE_ADMDIR=",SS_MODULE_ADMDIR,"\n") ;
+			auto_stra(&env,"MOD_SCRIPT_SYSDIR=",SS_SCRIPT_SYSDIR,"\n") ;
+			auto_stra(&env,"MOD_USER_DIR=",SS_USER_DIR,"\n") ;
+			auto_stra(&env,"MOD_SERVICE_USERDIR=",SS_SERVICE_USERDIR,"\n") ;
+			auto_stra(&env,"MOD_SERVICE_USERCONFDIR=",SS_SERVICE_USERCONFDIR,"\n") ;
+			auto_stra(&env,"MOD_MODULE_USERDIR=",SS_MODULE_USERDIR,"\n") ;
+			auto_stra(&env,"MOD_SCRIPT_USERDIR=",SS_SCRIPT_USERDIR,"\n") ;
+		}
 		/** environment is not mandatory */
 		if (sv_before->opts[2] > 0)
 		{
@@ -501,16 +519,18 @@ int regex_configure(sv_alltype *sv_before,char const *module_dir,char const *mod
 			* env_compute return 2 in case of need to write */
 			r = env_compute(&oenv,sv_before,conf) ;
 			if (!r) log_warnu_return(LOG_EXIT_ZERO,"compute environment") ;
-			if (!stralloc_0(&oenv)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
 			/** prepare for the environment merge */
-
-			if (!environ_clean_envfile(&env,&oenv))
-				log_warnu_return(LOG_EXIT_ZERO,"prepare environment") ;
-			if (!stralloc_0(&oenv)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-
-			if (!sastr_split_string_in_nline(&env))
-				log_warnu_return(LOG_EXIT_ZERO,"rebuild environment") ;
+			if (oenv.len) {
+				if (!environ_clean_envfile(&env,&oenv))
+					log_warnu_return(LOG_EXIT_ZERO,"prepare environment") ;
+				if (!stralloc_0(&env)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+				env.len-- ;
+			}
 		}
+		if (!sastr_split_string_in_nline(&env))
+			log_warnu_return(LOG_EXIT_ZERO,"rebuild environment") ;
+
 		n = env_len((const char *const *)environ) + 1 + byte_count(env.s,env.len,'\0') ;
 		char const *newenv[n + 1] ;
 		if (!env_merge (newenv, n ,(const char *const *)environ,env_len((const char *const *)environ),env.s, env.len))
