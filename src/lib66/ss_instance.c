@@ -77,7 +77,7 @@ int instance_create(stralloc *sasv,char const *svname, char const *regex, int le
 	copy = svname + tlen ;
 
 	if (!sastr_replace_all(&tmp,regex,copy)){
-		log_warnusys("replace instance character for service: ",svname) ;
+		log_warnu("replace instance character for service: ",svname) ;
 		goto err ;
 	}
 	if (!stralloc_copy(sasv,&tmp)) goto err ;
