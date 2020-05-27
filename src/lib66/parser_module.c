@@ -215,6 +215,10 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 		if (!ob_basename(bname,sv))
 			log_warnu_return(LOG_EXIT_ZERO,"find basename of: ",sv) ;
 
+		/** detect cyclic call. Sub-module cannot call it itself*/
+		if (!strcmp(svname,bname))
+			log_warn_return(LOG_EXIT_ZERO,"cyclic call detected -- ",svname," call ",bname) ;
+
 		insta = instance_check(bname) ;
 		if (!insta) log_warn_return(LOG_EXIT_ZERO,"invalid instance name: ",sv) ;
 		if (insta > 0)
@@ -450,7 +454,7 @@ int regex_rename(stralloc *list, int id, unsigned int nid, char const *sdir)
 			if (!obstr_equal(str,new))
 			{
 				log_trace("rename: ",str," to: ",new) ;
-				if (rename(str,new) < 0) 
+				if (rename(str,new) == -1)
 					log_warnusys_return(LOG_EXIT_ZERO,"rename: ",str," to: ",new) ;
 			}
 		}
