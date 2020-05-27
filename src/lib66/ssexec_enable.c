@@ -81,14 +81,18 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 	for (unsigned int i = 0; i < genalloc_len(sv_alltype,gasv); i++)
 	{
 		sv_alltype_ref sv = &genalloc_s(sv_alltype,gasv)[i] ;
-		char *name = keep.s + sv->cname.name ;
+		char *name ;
 
 		r = write_services(sv, workdir,FORCE,CONF) ;
 		if (!r)
 			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write service: ",name) ;
 
 		if (r > 1) continue ; //service already added
-		
+
+		/** only read name after the write_services process.
+		 * it change the sv_alltype appending the real_exec element */
+		name = keep.s + sv->cname.name ;
+
 		log_trace("write resolve file of: ",name) ;
 		if (!ss_resolve_setnwrite(sv,info,workdir))
 			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write revolve file for: ",name) ;

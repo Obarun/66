@@ -14,12 +14,12 @@
  
 #include <string.h>
 #include <stdlib.h>//getenv
-#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
+#include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
@@ -32,10 +32,11 @@
 #include <66/config.h>
 #include <66/parser.h>
 #include <66/environ.h>
+#include <66/constants.h>
 
 int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
-	int list = 0, replace = 0 , edit = 0 ;
+	int r, list = 0, replace = 0 , edit = 0 ;
 	stralloc result = STRALLOC_ZERO ;
 	stralloc var = STRALLOC_ZERO ;
 	stralloc salist = STRALLOC_ZERO ;
@@ -68,9 +69,19 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 	}
 	if (argc < 1) log_usage(usage_env) ;
 	sv = argv[0] ;
-	if (!env_resolve_conf(&sasrc,info->owner)) log_dieusys(LOG_EXIT_SYS,"get path of the configuration file") ;
-	if (!src) src = sasrc.s ;
-	if (!file_readputsa(&salist,src,sv))log_dieusys(LOG_EXIT_SYS,"read: ",src,sv) ;
+	if (!env_resolve_conf(&sasrc,sv,info->owner)) log_dieusys(LOG_EXIT_SYS,"get path of the configuration file") ;
+	r = scan_mode(sasrc.s,S_IFDIR) ;
+	if (r == -1 || !r) log_dieu(LOG_EXIT_USER,"find configuration file of: ",sv) ;
+	if (!src) {
+		stralloc salink = STRALLOC_ZERO ;
+		if (!auto_stra(&sasrc,SS_SYM_VERSION)) log_die_nomem("stralloc") ;
+		if (sareadlink(&salink,sasrc.s) == -1) log_dieusys(LOG_EXIT_SYS,"readlink: ",sasrc.s) ;
+		if (!stralloc_0(&salink) ||
+		!stralloc_copy(&sasrc,&salink)) log_die_nomem("stralloc") ;
+		src = sasrc.s ;
+		stralloc_free(&salink) ;
+	}
+	if (!file_readputsa_g(&salist,src))log_dieusys(LOG_EXIT_SYS,"read: ",src) ;
 	if (list)
 	{
 		if (buffer_putsflush(buffer_1, salist.s) < 0)
@@ -82,19 +93,14 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 		if (!env_merge_conf(&result,&salist,&var,replace)) 
 			log_dieu(LOG_EXIT_SYS,"merge environment file with: ",var.s) ;
 
-		if (!file_write_unsafe(src,sv,result.s,result.len))
+		if (!openwritenclose_unsafe(src,result.s,result.len))
 			log_dieusys(LOG_EXIT_SYS,"create file: ",src,sv) ;
 	}
 	else if (edit)
 	{
-		size_t svlen = strlen(sv) ;
-		char t[sasrc.len + svlen + 1] ;
 		editor = getenv("EDITOR") ;
 		if (!editor) log_dieusys(LOG_EXIT_SYS,"get EDITOR") ;
-		memcpy(t,sasrc.s,sasrc.len) ;
-		memcpy(t + sasrc.len,sv,svlen) ;
-		t[sasrc.len + svlen] = 0 ;
-		char const *const newarg[3] = { editor, t, 0 } ;
+		char const *const newarg[3] = { editor, src, 0 } ;
 		xpathexec_run (newarg[0],newarg,envp) ;
 	}
 	freed:

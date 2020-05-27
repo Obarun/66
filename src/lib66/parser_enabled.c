@@ -15,6 +15,7 @@
 #include <66/parser.h>
 
 #include <string.h>
+//#include <stdio.h>
 
 #include <oblibs/string.h>
 #include <oblibs/types.h>
@@ -361,7 +362,7 @@ int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *se
 	// keep source of the configuration file
 	if (sv_before->opts[2])
 	{
-		if (!env_resolve_conf(&saconf,owner)) goto err ;
+		if (!env_resolve_conf(&saconf,keep.s + sv_before->cname.name,owner)) goto err ;
 		sv_before->srconf = keep.len ;
 		if (!stralloc_catb(&keep,saconf.s,saconf.len + 1)) goto err ;
 	}

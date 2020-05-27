@@ -14,20 +14,25 @@
 
 #include <sys/types.h>
 #include <string.h>
+#include <stdio.h>//rename
+#include <errno.h>
 
 #include <oblibs/environ.h>
 #include <oblibs/sastr.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
+#include <oblibs/directory.h>
+#include <skalibs/unix-transactional.h>//atomic_symlink
 
 #include <skalibs/stralloc.h>
+#include <skalibs/djbunix.h>//rm_rf
 
 #include <66/constants.h>
 #include <66/utils.h>
 #include <66/environ.h>
 
-int env_resolve_conf(stralloc *env, uid_t owner)
+int env_resolve_conf(stralloc *env,char const *svname, uid_t owner)
 {
 	if (!owner)
 	{
@@ -37,7 +42,8 @@ int env_resolve_conf(stralloc *env, uid_t owner)
 	{
 		if (!set_ownerhome(env,owner)) return 0 ;
 		if (!stralloc_cats(env,SS_SERVICE_USERCONFDIR)) return 0 ;
-	}	
+	}
+	if (!stralloc_cats(env,svname)) return 0 ;
 	if (!stralloc_0(env)) return 0 ;
 	env->len-- ;
 	return 1 ;
@@ -139,6 +145,52 @@ int env_merge_conf(stralloc *result,stralloc *srclist,stralloc *modifs,uint8_t c
 		stralloc_free(&val) ;
 		return 0 ;
 }
+
+int env_make_symlink(stralloc *dst,sv_alltype *sv)
+{
+	/** dst-> e.g /etc/66/conf/<service_name> */
+	int r ;
+	uint8_t format = 0 ;
+	char *version = sv->cname.version >= 0 ? keep.s + sv->cname.version : 0 ;
+	char sym_version[dst->len + SS_SYM_VERSION_LEN + 1] ;
+	auto_strings(sym_version,dst->s,SS_SYM_VERSION) ;
+
+	char old[dst->len + 5] ;//.old
+	r = scan_mode(dst->s, S_IFDIR) ;
+	/** enforce to pass to new format*/
+	if (r == -1) {
+		auto_strings(old,dst->s,".old") ;
+		if (rename(dst->s,old) == -1)
+			log_warnusys_return(LOG_EXIT_ZERO,"rename: ",dst->s," to: ",old) ;
+		format = 1 ;
+		r = 0 ;
+	}
+	if (version)
+		if (!auto_stra(dst,"/",version))
+			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+	if (!dir_create_parent(dst->s,0755))
+			log_warnsys_return(LOG_EXIT_ZERO,"create directory: ",dst->s) ;
+
+	if (!auto_stra(dst,"/",keep.s + sv->cname.name))
+			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+	/** atomic_symlink check if exist
+	 * if it doesn't exist, it create it*/
+	if (!atomic_symlink(dst->s,sym_version,"env_compute"))
+		log_warnu_return(LOG_EXIT_ZERO,"symlink: ",sym_version," to: ",dst->s) ;
+
+	if (format)
+	{
+		if (rename(old,dst->s) == -1)
+			log_warnusys_return(LOG_EXIT_ZERO,"rename: ",old," to: ",dst->s) ;
+		if (rm_rf(old) == -1)
+			log_warnusys_return(LOG_EXIT_ZERO,"remove: ",old) ;
+	}
+
+	return 1 ;
+}
+
 /* @Return 0 on crash
  * @Return 1 if no need to write
  * @Return 2 if need to write 
@@ -148,18 +200,15 @@ int env_merge_conf(stralloc *result,stralloc *srclist,stralloc *modifs,uint8_t c
 int env_compute(stralloc *result,sv_alltype *sv, uint8_t conf)
 {
 	int r, write = 1 ;
-	size_t newlen = 0 ;
 	char *name = keep.s + sv->cname.name ;
 	stralloc dst = STRALLOC_ZERO ;
 	stralloc salist = STRALLOC_ZERO ;
 	
-	if (!env_resolve_conf(&dst,MYUID))
+	if (!env_resolve_conf(&dst,name,MYUID))
 		log_warnu_return(LOG_EXIT_ZERO,"resolve source of configuration file") ;
 
-	newlen = dst.len ;
-	if (!auto_stra(&dst,name))
-		log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-	
+	if (!env_make_symlink(&dst,sv)) return 0 ;
+
 	r = scan_mode(dst.s,S_IFREG) ;
 	if (!r || conf > 2)
 	{ 
@@ -171,7 +220,7 @@ int env_compute(stralloc *result,sv_alltype *sv, uint8_t conf)
 	}
 	else if (conf > 0)
 	{
-		dst.s[newlen] = 0 ;
+		dst.s[dst.len - strlen(name)] = 0 ;
 		if (!file_readputsa(&salist,dst.s,name)) 
 			log_warnusys_return(LOG_EXIT_ZERO,"read: ",dst.s,name) ;
 
@@ -181,7 +230,8 @@ int env_compute(stralloc *result,sv_alltype *sv, uint8_t conf)
 		write = 2 ;
 		goto freed ;
 	}
-	dst.s[newlen] = 0 ;
+	dst.s[dst.len - strlen(name)] = 0 ;
+
 	if (!file_readputsa(result,dst.s,name)) 
 		log_warnusys_return(LOG_EXIT_ZERO,"read: ",dst.s,name) ;
 	

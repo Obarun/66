@@ -18,7 +18,6 @@
 #include <sys/types.h>
 #include <wchar.h>
 #include <unistd.h>
-#include <stdio.h>
 
 #include <oblibs/sastr.h>
 #include <oblibs/log.h>
@@ -556,24 +555,21 @@ static void info_display_stop(char const *field,ss_resolve_t *res)
 static void info_display_envat(char const *field,ss_resolve_t *res)
 {
 	if (NOFIELD) info_display_field_name(field) ;
-	char *name = res->sa.s + res->name ;
+	stralloc salink = STRALLOC_ZERO ;
+
 	if (!res->srconf) goto empty ;
 	{
-		char *src = res->sa.s + res->srconf ;
-		size_t srclen = strlen(src) ;
-		size_t namelen = strlen(name) ;
-		char tmp[namelen + srclen + 1] ;
-		memcpy(tmp,src,srclen) ;
-		tmp[srclen] = '/' ;
-		memcpy(tmp + srclen,name,namelen) ;
-		tmp[srclen + namelen] = 0 ;
-		info_display_string(tmp) ;
-		return ;
+		info_display_string(res->sa.s + res->srconf) ;
+		goto freed ;
 	}
 	empty:
-	
+
 	if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
 		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+
+	freed:
+		stralloc_free(&salink) ;
+		return ;
 }
 
 static void info_display_envfile(char const *field,ss_resolve_t *res)
@@ -581,19 +577,57 @@ static void info_display_envfile(char const *field,ss_resolve_t *res)
 	if (NOFIELD) info_display_field_name(field) ;
 	else field = 0 ;
 	
+	stralloc sa = STRALLOC_ZERO ;
+	stralloc salink = STRALLOC_ZERO ;
+	stralloc list = STRALLOC_ZERO ;
+
 	if (!res->srconf) goto empty ;
 	{
-		stralloc sa = STRALLOC_ZERO ;
-		char *name = res->sa.s + res->name ;
 		char *src = res->sa.s + res->srconf ;
-		if (!file_readputsa(&sa,src,name)) log_dieusys(LOG_EXIT_SYS,"read environment file") ;
-		info_display_nline(field,sa.s) ;
-		stralloc_free(&sa) ;
-		return ;
+		if (res->version > 0)
+		{
+			stralloc list = STRALLOC_ZERO ;
+			size_t pos = 0 ;
+			if (!sastr_dir_get_recursive(&list,src,"",S_IFREG))
+				log_dieusys(LOG_EXIT_SYS,"get list of environment file from: ",src) ;
+
+			for (;pos < list.len ; pos += strlen(list.s + pos) + 1)
+			{
+				sa.len = 0 ;
+				if (!file_readputsa_g(&sa,list.s + pos))
+					log_dieusys(LOG_EXIT_SYS,"read environment file") ;
+				if (pos)
+				{
+					if (NOFIELD) {
+						size_t padding = info_length_from_wchar(field) + 1 ;
+						if (!bprintf(buffer_1,"%*s",padding,""))
+							log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+					}
+					info_display_nline(field,sa.s) ;
+				}
+				else info_display_nline(field,sa.s) ;
+			}
+			goto freed ;
+		}
+		else
+		{
+			if (!auto_stra(&salink,src,"/",res->sa.s + res->name))
+				log_die_nomem("stralloc") ;
+			if (!file_readputsa_g(&sa,salink.s))
+				log_dieusys(LOG_EXIT_SYS,"read environment file") ;
+			info_display_nline(field,sa.s) ;
+		}
+		goto freed ;
 	}
 	empty:
+
 	if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
 		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+
+	freed:
+		stralloc_free(&sa) ;
+		stralloc_free(&list) ;
+		stralloc_free(&salink) ;
 }
 
 static void info_display_logname(char const *field,ss_resolve_t *res)

@@ -141,7 +141,7 @@ char const *help_env =
 "	-v: increase/decrease verbosity\n"
 "	-t: tree to use\n"
 "	-L: list environment variable of service\n"
-"	-d: directory of configuration service file\n"
+"	-d: path of the configuration service file\n"
 "	-r: replace the value of the key\n"
 "	-e: edit the file with EDITOR\n"
 ;
