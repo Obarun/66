@@ -434,7 +434,11 @@ int ss_resolve_pack(stralloc *sa, ss_resolve_t *res)
 	!ss_resolve_add_uint32(sa,res->treename) ||
 	!ss_resolve_add_uint32(sa,res->state) ||
 	!ss_resolve_add_uint32(sa,res->exec_run) ||
+	!ss_resolve_add_uint32(sa,res->exec_log_run) ||
+	!ss_resolve_add_uint32(sa,res->real_exec_run) ||
+	!ss_resolve_add_uint32(sa,res->real_exec_log_run) ||
 	!ss_resolve_add_uint32(sa,res->exec_finish) ||
+	!ss_resolve_add_uint32(sa,res->real_exec_finish) ||
 	!ss_resolve_add_uint32(sa,res->type) ||
 	!ss_resolve_add_uint32(sa,res->ndeps) ||
 	!ss_resolve_add_uint32(sa,res->noptsdeps) ||
@@ -533,7 +537,15 @@ int ss_resolve_read(ss_resolve_t *res, char const *src, char const *name)
 	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->exec_run) ;
 	global += 4 ;
+	uint32_unpack_big(sa.s + global,&res->exec_log_run) ;
+	global += 4 ;
+	uint32_unpack_big(sa.s + global,&res->real_exec_run) ;
+	global += 4 ;
+	uint32_unpack_big(sa.s + global,&res->real_exec_log_run) ;
+	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->exec_finish) ;
+	global += 4 ;
+	uint32_unpack_big(sa.s + global,&res->real_exec_finish) ;
 	
 	global += 4 ;
 	uint32_unpack_big(sa.s + global,&res->type) ;
@@ -629,21 +641,52 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	res.live = ss_resolve_add_string(&res,info->live.s) ;
 	res.state = ss_resolve_add_string(&res,state) ;
 	res.src = ss_resolve_add_string(&res,keep.s + services->src) ;
-	if (services->srconf)
-		res.srconf = ss_resolve_add_string(&res,keep.s + services->srconf) ;
+	if (services->srconf > 0)
+	{
+		stralloc salink = STRALLOC_ZERO ;
+		char *dst = keep.s + services->srconf ;
+		size_t dstlen = strlen(dst) ;
+		char tdst[dstlen + SS_SYM_VERSION_LEN + 1] ;
+
+		auto_strings(tdst,dst,SS_SYM_VERSION) ;
+
+		if (sareadlink(&salink, tdst) == -1)
+			log_warnusys_return(LOG_EXIT_ZERO,"read link of: ",tdst) ;
+
+		salink.len -= namelen + 1 ;//1 remove trailing slash
+
+		if (!stralloc_0(&salink))
+			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+		res.srconf = ss_resolve_add_string(&res,salink.s) ;
+
+		stralloc_free(&salink) ;
+	}
 	if (res.type == TYPE_ONESHOT)
 	{
 		if (services->type.oneshot.up.exec >= 0)
+		{
 			res.exec_run = ss_resolve_add_string(&res,keep.s + services->type.oneshot.up.exec) ;
+			res.real_exec_run = ss_resolve_add_string(&res,keep.s + services->type.oneshot.up.real_exec) ;
+		}
 		if (services->type.oneshot.down.exec >= 0)
+		{
 			res.exec_finish = ss_resolve_add_string(&res,keep.s + services->type.oneshot.down.exec) ;
+			res.real_exec_finish = ss_resolve_add_string(&res,keep.s + services->type.oneshot.down.real_exec) ;
+		}
 	}
 	if (res.type == TYPE_CLASSIC || res.type == TYPE_LONGRUN)
 	{
 		if (services->type.classic_longrun.run.exec >= 0)
+		{
 			res.exec_run = ss_resolve_add_string(&res,keep.s + services->type.classic_longrun.run.exec) ;
+			res.real_exec_run = ss_resolve_add_string(&res,keep.s + services->type.classic_longrun.run.real_exec) ;
+		}
 		if (services->type.classic_longrun.finish.exec >= 0)
+		{
 			res.exec_finish = ss_resolve_add_string(&res,keep.s + services->type.classic_longrun.finish.exec) ;
+			res.real_exec_finish = ss_resolve_add_string(&res,keep.s + services->type.classic_longrun.finish.real_exec) ;
+		}
 	}
 	
 	res.ndeps = services->cname.nga ;
@@ -654,7 +697,6 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	res.disen = 1 ;
 	if (res.type == TYPE_CLASSIC)
 	{
-		
 		memcpy(stmp,info->scandir.s,info->scandir.len) ;
 		stmp[info->scandir.len] = '/' ;
 		memcpy(stmp + info->scandir.len + 1,name,namelen) ;
@@ -786,7 +828,13 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 			res.deps = ss_resolve_add_string(&res,ndeps.s) ;
 			if (res.type == TYPE_CLASSIC) res.ndeps = 1 ;
 			else if (res.type == TYPE_LONGRUN) res.ndeps += 1 ;
-		
+
+			if (services->type.classic_longrun.log.run.exec >= 0)
+				res.exec_log_run = ss_resolve_add_string(&res,keep.s + services->type.classic_longrun.log.run.exec) ;
+
+			if (services->type.classic_longrun.log.run.real_exec >= 0)
+				res.real_exec_log_run = ss_resolve_add_string(&res,keep.s + services->type.classic_longrun.log.run.real_exec) ;
+
 			if (!ss_resolve_setlognwrite(&res,dst,info)) goto err ;
 		}
 	}
@@ -852,7 +900,11 @@ int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst,ssexec_t *info)
 	res.src = ss_resolve_add_string(&res,string + sv->src) ;
 	res.down = sv->down ;
 	res.disen = sv->disen ;
-	
+	if (sv->exec_log_run >= 0)
+		res.exec_log_run = ss_resolve_add_string(&res,string + sv->exec_log_run) ;
+	if (sv->real_exec_log_run >= 0)
+		res.real_exec_log_run = ss_resolve_add_string(&res,string + sv->real_exec_log_run) ;
+
 	if (ss_state_check(string + sv->state,string + sv->logger))
 	{
 		if (!ss_state_read(&sta,string + sv->state,string + sv->logger)) { log_warnusys("read state file of: ",string + sv->logger) ; goto err ; }
@@ -911,7 +963,11 @@ int ss_resolve_copy(ss_resolve_t *dst,ss_resolve_t *res)
 	dst->treename = res->treename ;
 	dst->state = res->state ;
 	dst->exec_run = res->exec_run ;
+	dst->exec_log_run = res->exec_log_run ;
+	dst->real_exec_run = res->real_exec_run ;
+	dst->real_exec_log_run = res->real_exec_log_run ;
 	dst->exec_finish = res->exec_finish ;
+	dst->real_exec_finish = res->real_exec_finish ;
 	dst->type = res->type ;
 	dst->ndeps = res->ndeps ;
 	dst->noptsdeps = res->noptsdeps ;

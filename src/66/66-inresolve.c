@@ -31,7 +31,7 @@
 #include <66/utils.h>
 #include <66/constants.h>
 
-#define MAXOPTS 28
+#define MAXOPTS 30
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -119,7 +119,9 @@ int main(int argc, char const *const *argv)
 		"Treename",
 		"State",
 		"Exec_run" ,
+		"Real_exec_run" ,
 		"Exec_finish" ,
+		"Real_exec_finish" ,
 		"Type" ,
 		"Ndeps" ,
 		"Noptsdeps" ,
@@ -238,14 +240,16 @@ int main(int argc, char const *const *argv)
 	info_display_string(fields[16],res.sa.s + res.treename) ;
 	info_display_string(fields[17],res.sa.s + res.state) ;
 	info_display_string(fields[18],res.sa.s + res.exec_run) ;
-	info_display_string(fields[19],res.sa.s + res.exec_finish) ;
-	info_display_int(fields[20],res.type) ;
-	info_display_int(fields[21],res.ndeps) ;
-	info_display_int(fields[22],res.noptsdeps) ;
-	info_display_int(fields[23],res.nextdeps) ;
-	info_display_int(fields[24],res.ncontents) ;
-	info_display_int(fields[25],res.down) ;
-	info_display_int(fields[26],res.disen) ;
+	info_display_string(fields[19],res.sa.s + res.real_exec_run) ;
+	info_display_string(fields[20],res.sa.s + res.exec_finish) ;
+	info_display_string(fields[21],res.sa.s + res.real_exec_finish) ;
+	info_display_int(fields[22],res.type) ;
+	info_display_int(fields[23],res.ndeps) ;
+	info_display_int(fields[24],res.noptsdeps) ;
+	info_display_int(fields[25],res.nextdeps) ;
+	info_display_int(fields[26],res.ncontents) ;
+	info_display_int(fields[27],res.down) ;
+	info_display_int(fields[28],res.disen) ;
 	
 	if (res.logger && logger)
 	{
@@ -254,7 +258,7 @@ int main(int argc, char const *const *argv)
 		if (buffer_putsflush(buffer_1,"\n") == -1)
 			log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 		
-		info_display_string(fields[27],res.sa.s + res.logreal) ;
+		info_display_string(fields[29],res.sa.s + res.logreal) ;
 		info_display_string(fields[0],lres.sa.s + lres.name) ;
 		info_display_string(fields[1],lres.sa.s + lres.description) ;
 		info_display_string(fields[2],lres.sa.s + lres.version) ;
@@ -270,12 +274,12 @@ int main(int argc, char const *const *argv)
 		info_display_string(fields[15],lres.sa.s + lres.tree) ;
 		info_display_string(fields[16],lres.sa.s + lres.treename) ;
 		info_display_string(fields[17],lres.sa.s + lres.state) ;
-		info_display_string(fields[18],lres.sa.s + lres.exec_run) ;
-		info_display_string(fields[19],lres.sa.s + lres.exec_finish) ;
-		info_display_int(fields[20],lres.type) ;
-		info_display_int(fields[21],lres.ndeps) ;
-		info_display_int(fields[25],lres.down) ;
-		info_display_int(fields[26],lres.disen) ;
+		info_display_string(fields[18],lres.sa.s + lres.exec_log_run) ;
+		info_display_string(fields[19],lres.sa.s + lres.real_exec_log_run) ;
+		info_display_int(fields[22],lres.type) ;
+		info_display_int(fields[23],lres.ndeps) ;
+		info_display_int(fields[27],lres.down) ;
+		info_display_int(fields[28],lres.disen) ;
 	}
 
 	freed:

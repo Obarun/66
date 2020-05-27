@@ -59,7 +59,11 @@ struct ss_resolve_s
 	uint32_t treename ;
 	uint32_t state ; //run/66/state/uid/treename/
 	uint32_t exec_run ;
+	uint32_t exec_log_run ;
+	uint32_t real_exec_run ;
+	uint32_t real_exec_log_run ;
 	uint32_t exec_finish ;
+	uint32_t real_exec_finish ;
 	
 	uint32_t type ;
 	uint32_t ndeps ;
@@ -69,7 +73,7 @@ struct ss_resolve_s
 	uint32_t down ;
 	uint32_t disen ;//disable->0,enable->1
 } ;
-#define RESOLVE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
 /** Graph struct */
 typedef struct ss_resolve_graph_ndeps_s ss_resolve_graph_ndeps_t ;

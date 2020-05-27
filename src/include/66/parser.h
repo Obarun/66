@@ -41,6 +41,7 @@ struct sv_exec_s
 	int runas ;
 	int shebang ;
 	int exec ;
+	int real_exec ;
 } ;
 
 typedef struct sv_execlog_s sv_execlog,*sv_execlog_ref ;
@@ -162,6 +163,7 @@ struct sv_alltype_s
 
 #define SV_EXEC_ZERO \
 { \
+	-1 , \
 	-1 , \
 	-1 , \
 	-1 , \
