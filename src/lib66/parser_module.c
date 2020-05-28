@@ -369,6 +369,7 @@ int regex_get_regex(char *regex, char const *str)
 
 int regex_replace(stralloc *list,sv_alltype *sv_before,char const *svname)
 {
+	int r ;
 	size_t in = 0, pos, inlen ;
 
 	stralloc tmp = STRALLOC_ZERO ;
@@ -384,8 +385,10 @@ int regex_replace(stralloc *list,sv_alltype *sv_before,char const *svname)
 		if (!ob_dirname(dname,str)) log_warnu_return(LOG_EXIT_ZERO,"get dirname of: ",str) ;
 
 		log_trace("read service file of: ",dname,bname) ;
-		if (!read_svfile(&tmp,bname,dname)) log_warnusys_return(LOG_EXIT_ZERO,"read file: ",str) ;
-
+		r = read_svfile(&tmp,bname,dname) ;
+		if (!r) log_warnusys_return(LOG_EXIT_ZERO,"read file: ",str) ;
+		if (r == -1) goto freed ;
+		
 		pos = sv_before->type.module.start_infiles, inlen = sv_before->type.module.end_infiles ;
 		for (; pos < inlen ; pos += strlen(keep.s + pos) + 1)
 		{
@@ -416,6 +419,7 @@ int regex_replace(stralloc *list,sv_alltype *sv_before,char const *svname)
 			}
 		}
 	}
+	freed:
 	stralloc_free(&tmp) ;
 
 	return 1 ;
