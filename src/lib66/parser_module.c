@@ -387,7 +387,7 @@ int regex_replace(stralloc *list,sv_alltype *sv_before,char const *svname)
 		log_trace("read service file of: ",dname,bname) ;
 		r = read_svfile(&tmp,bname,dname) ;
 		if (!r) log_warnusys_return(LOG_EXIT_ZERO,"read file: ",str) ;
-		if (r == -1) goto freed ;
+		if (r == -1) continue ;
 		
 		pos = sv_before->type.module.start_infiles, inlen = sv_before->type.module.end_infiles ;
 		for (; pos < inlen ; pos += strlen(keep.s + pos) + 1)
