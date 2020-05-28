@@ -419,7 +419,6 @@ int regex_replace(stralloc *list,sv_alltype *sv_before,char const *svname)
 			}
 		}
 	}
-	freed:
 	stralloc_free(&tmp) ;
 
 	return 1 ;
