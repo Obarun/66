@@ -128,71 +128,95 @@ endif
 
 $(DESTDIR)$(datarootdir)/doc/$(package)/%.html: doc/html/%.html
 	$(INSTALL) -D -m 644 $< $@ && \
-	sed -e 's,%%livedir%%,$(livedir),g' \
-		-e 's,%%sysconfdir%%,$(skel),g' \
+	sed -e 's,%%shebangdir%%,$(shebangdir),g' \
+		-e 's,%%skel%%,$(skel),g' \
+        -e 's,%%livedir%%,$(livedir),g' \
 		-e 's,%%system_dir%%,$(system_dir),g' \
 		-e 's,%%system_log%%,$(system_log),g' \
+		-e 's,%%s6log_user%%,$(s6log_user),g' \
+		-e 's,%%s6log_timestamp%%,$(s6log_timestamp),g' \
+		-e 's,%%s6log_notify%%,$(s6log_notify),g' \
 		-e 's,%%service_system%%,$(service_system),g' \
-		-e 's,%%service_module%%,$(module_system),g' \
+		-e 's,%%module_system%%,$(module_system),g' \
+		-e 's,%%script_system%%,$(script_system),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
+		-e 's,%%module_adm%%,$(module_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \
 		-e 's,%%service_user%%,$(service_user),g' \
+		-e 's,%%module_user%%,$(module_user),g' \
+		-e 's,%%script_user%%,$(script_user),g' \
 		-e 's,%%service_userconf%%,$(service_userconf),g' \
-		-e 's,%%user_log%%,$(user_log),g' \
-		-e 's,%%s6log_user%%,$(s6log_user),g' \
-		-e 's,%%skel%%,$(skel),g' $< > $@
+		-e 's,%%user_log%%,$(user_log),g' $< > $@
 
 $(DESTDIR)$(mandir)/man1/%.1: doc/man/man1/%.1
 	$(INSTALL) -D -m 644 $< $@ && \
-	sed -e 's,%%livedir%%,$(livedir),g' \
-		-e 's,%%sysconfdir%%,$(skel),g' \
+	sed -e 's,%%shebangdir%%,$(shebangdir),g' \
+		-e 's,%%skel%%,$(skel),g' \
+        -e 's,%%livedir%%,$(livedir),g' \
 		-e 's,%%system_dir%%,$(system_dir),g' \
 		-e 's,%%system_log%%,$(system_log),g' \
+		-e 's,%%s6log_user%%,$(s6log_user),g' \
+		-e 's,%%s6log_timestamp%%,$(s6log_timestamp),g' \
+		-e 's,%%s6log_notify%%,$(s6log_notify),g' \
 		-e 's,%%service_system%%,$(service_system),g' \
-		-e 's,%%service_module%%,$(module_system),g' \
+		-e 's,%%module_system%%,$(module_system),g' \
+		-e 's,%%script_system%%,$(script_system),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
+		-e 's,%%module_adm%%,$(module_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \
 		-e 's,%%service_user%%,$(service_user),g' \
+		-e 's,%%module_user%%,$(module_user),g' \
+		-e 's,%%script_user%%,$(script_user),g' \
 		-e 's,%%service_userconf%%,$(service_userconf),g' \
-		-e 's,%%user_log%%,$(user_log),g' \
-		-e 's,%%s6log_user%%,$(s6log_user),g' \
-		-e 's,%%skel%%,$(skel),g' $< > $@
+		-e 's,%%user_log%%,$(user_log),g' $< > $@
 
 $(DESTDIR)$(mandir)/man5/%.5: doc/man/man5/%.5
 	$(INSTALL) -D -m 644 $< $@ && \
-	sed -e 's,%%livedir%%,$(livedir),g' \
-		-e 's,%%sysconfdir%%,$(skel),g' \
+	sed -e 's,%%shebangdir%%,$(shebangdir),g' \
+		-e 's,%%skel%%,$(skel),g' \
+        -e 's,%%livedir%%,$(livedir),g' \
 		-e 's,%%system_dir%%,$(system_dir),g' \
 		-e 's,%%system_log%%,$(system_log),g' \
+		-e 's,%%s6log_user%%,$(s6log_user),g' \
+		-e 's,%%s6log_timestamp%%,$(s6log_timestamp),g' \
+		-e 's,%%s6log_notify%%,$(s6log_notify),g' \
 		-e 's,%%service_system%%,$(service_system),g' \
-		-e 's,%%service_module%%,$(module_system),g' \
+		-e 's,%%module_system%%,$(module_system),g' \
+		-e 's,%%script_system%%,$(script_system),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
+		-e 's,%%module_adm%%,$(module_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \
 		-e 's,%%service_user%%,$(service_user),g' \
+		-e 's,%%module_user%%,$(module_user),g' \
+		-e 's,%%script_user%%,$(script_user),g' \
 		-e 's,%%service_userconf%%,$(service_userconf),g' \
-		-e 's,%%user_log%%,$(user_log),g' \
-		-e 's,%%s6log_user%%,$(s6log_user),g' \
-		-e 's,%%skel%%,$(skel),g' $< > $@
+		-e 's,%%user_log%%,$(user_log),g' $< > $@
 
 $(DESTDIR)$(mandir)/man8/%.8: doc/man/man8/%.8
 	$(INSTALL) -D -m 644 $< $@ && \
-	sed -e 's,%%livedir%%,$(livedir),g' \
-		-e 's,%%sysconfdir%%,$(skel),g' \
+	sed -e 's,%%shebangdir%%,$(shebangdir),g' \
+		-e 's,%%skel%%,$(skel),g' \
+        -e 's,%%livedir%%,$(livedir),g' \
 		-e 's,%%system_dir%%,$(system_dir),g' \
 		-e 's,%%system_log%%,$(system_log),g' \
+		-e 's,%%s6log_user%%,$(s6log_user),g' \
+		-e 's,%%s6log_timestamp%%,$(s6log_timestamp),g' \
+		-e 's,%%s6log_notify%%,$(s6log_notify),g' \
 		-e 's,%%service_system%%,$(service_system),g' \
-		-e 's,%%service_module%%,$(module_system),g' \
+		-e 's,%%module_system%%,$(module_system),g' \
+		-e 's,%%script_system%%,$(script_system),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
+		-e 's,%%module_adm%%,$(module_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \
 		-e 's,%%service_user%%,$(service_user),g' \
+		-e 's,%%module_user%%,$(module_user),g' \
+		-e 's,%%script_user%%,$(script_user),g' \
 		-e 's,%%service_userconf%%,$(service_userconf),g' \
-		-e 's,%%user_log%%,$(user_log),g' \
-		-e 's,%%s6log_user%%,$(s6log_user),g' \
-		-e 's,%%skel%%,$(skel),g' $< > $@
+		-e 's,%%user_log%%,$(user_log),g' $< > $@
 
 $(DESTDIR)$(sysconfdir)/66/%: skel/%
 	exec $(INSTALL) -D -m 644 $< $@ 
