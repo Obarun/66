@@ -63,7 +63,7 @@ All sections need to be declared with the name written between square brackets `
 - [[main]](frontend.html#Section: [main])
 - [[start]](frontend.html#Section: [start])
 - [[stop]](frontend.html#Section: [stop])
-- [[logger]](frontend.html#Section: [logger)
+- [[logger]](frontend.html#Section: [logger])
 - [[environment]](frontend.html#Section: [environment])
 - [[regex]](frontend.html#Section: [regex])
 
@@ -730,7 +730,7 @@ This section is *optional*.
 
 The value *log* must be added to the *@options* key in the [[main]](frontend.html#Section: [main]) section for [[logger]](frontend.html#Section: [logger]) to have any effect.
 
-This section extends the *@build*, *@runas*, *@shebang* and *@execute* key fields from [[start]](frontend.html#Section: [start])/[[stop]](frontend.html#Section: [stop]) and the *@timeout-finish* and *@timeout-kill* key fields from [[main]](frontend.html#Section: [main]) . These are also valid keys for [[logger]](frontend.html#Section: [logger]) and behave the same way they do in the other sections but they can not be specified except for the mandatory key *@build*—see example below. In such case the default behaviour for those key are apply.
+This section extends the *@build*, *@runas*, *@shebang* and *@execute* key fields from [[start]](frontend.html#Section: [start]) and the *@timeout-finish* and *@timeout-kill* key fields from [[main]](frontend.html#Section: [main]) . These are also valid keys for [[logger]](frontend.html#Section: [logger]) and behave the same way they do in the other sections but they can not be specified except for the mandatory key *@build*—see example below. In such case the default behaviour for those key are apply.
 
 Furthermore there are some keys specific to the log.
 
