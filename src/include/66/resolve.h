@@ -106,7 +106,7 @@ extern void ss_resolve_init(ss_resolve_t *res) ;
 extern void ss_resolve_free(ss_resolve_t *res) ;
 
 extern int ss_resolve_pointo(stralloc *sa,ssexec_t *info,int type, unsigned int where) ;
-extern int ss_resolve_src_path(stralloc *sasrc,char const *sv, uid_t owner) ;
+extern int ss_resolve_src_path(stralloc *sasrc,char const *sv, uid_t owner,char const *directory_forced) ;
 extern int ss_resolve_module_path(stralloc *sdir, stralloc *mdir, char const *sv, uid_t owner) ;
 extern int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found) ;
 extern int ss_resolve_service_isdir(char const *dir, char const *name) ;
@@ -130,7 +130,8 @@ extern int ss_resolve_search(genalloc *ga,char const *name) ;
 extern int ss_resolve_check_insrc(ssexec_t *info, char const *name) ;
 extern int ss_resolve_write_master(ssexec_t *info,ss_resolve_graph_t *graph,char const *dir, unsigned int reverse) ;
 extern int ss_resolve_sort_bytype(genalloc *gares,stralloc *list,char const *src) ;
-
+extern int ss_resolve_cmp_service_basedir(char const *dir) ;
+extern int ss_resolve_sort_directory_first(stralloc *sort, char const *src) ;
 /** Graph function */
 extern void ss_resolve_graph_ndeps_free(ss_resolve_graph_ndeps_t *graph) ;
 extern void ss_resolve_graph_free(ss_resolve_graph_t *graph) ;
