@@ -53,6 +53,8 @@ static void check_identifier(char const *name)
 	int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 	if (logname > 0) log_die(LOG_EXIT_USER,"service: ",name,": ends with reserved suffix -log") ;
 	if (!memcmp(name,SS_MASTER+1,6)) log_die(LOG_EXIT_USER,"service: ",name,": starts with reserved prefix Master") ;
+	if (!strcmp(name,SS_SERVICE)) log_die(LOG_EXIT_USER,"service as service name is a reserved name") ;
+	if (!strcmp(name,"service@")) log_die(LOG_EXIT_USER,"service@ as service name is a reserved name") ;
 }
 
 void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORCE)
@@ -66,7 +68,7 @@ void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORC
 	for (;i < len; i += strlen(list->s + i) + 1)
 	{
 		char *name = list->s + i ;
-		if (!parse_service_before(info,&parsed_list,&tree_list,name,nbsv,&sasv,FORCE,CONF,disable_module))
+		if (!parse_service_before(info,&parsed_list,&tree_list,name,nbsv,&sasv,FORCE,CONF,disable_module,0))
 			log_dieu(LOG_EXIT_SYS,"parse service file: ",name,": or its dependencies") ;
 	}
 	stralloc_free(&sasv) ;
@@ -140,7 +142,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 				case 'c' :	if (CONF) log_usage(usage_enable) ; CONF = 1 ; break ;
 				case 'm' :	if (CONF) log_usage(usage_enable) ; CONF = 2 ; break ;
 				case 'C' :	if (CONF) log_usage(usage_enable) ; CONF = 3 ; break ;
-				case 'S' :	start = 1 ;	break ;
+				case 'S' :	start = 1 ; break ;
 				default : 	log_usage(usage_enable) ; 
 			}
 		}
@@ -152,7 +154,21 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 	for(;*argv;argv++)
 	{
 		check_identifier(*argv) ;
-		if (ss_resolve_src_path(&sasrc,*argv,info->owner) < 1) log_dieu(LOG_EXIT_SYS,"resolve source path of: ",*argv) ;
+		size_t len = strlen(*argv) ;
+		char const *sv = 0 ;
+		char const *directory_forced = 0 ;
+		char bname[len + 1] ;
+		char dname[len + 1] ;
+
+		if (argv[0][0] == '/') {
+			if (!ob_dirname(dname,*argv))
+				log_dieu(LOG_EXIT_SYS,"get dirname of: ",*argv) ;
+			if (!ob_basename(bname,*argv)) log_dieu(LOG_EXIT_SYS,"get dirname of: ",*argv) ;
+			sv = bname ;
+			directory_forced = dname ;
+		} else  sv = *argv ;
+
+		if (ss_resolve_src_path(&sasrc,sv,info->owner,!directory_forced ? 0 : directory_forced) < 1) log_dieu(LOG_EXIT_SYS,"resolve source path of: ",*argv) ;
 	}
 
 	start_parser(&sasrc,info,&nbsv,FORCE) ;
