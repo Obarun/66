@@ -15,7 +15,6 @@
 #include <66/parser.h>
 
 #include <string.h>
-//#include <stdio.h>
 
 #include <oblibs/string.h>
 #include <oblibs/types.h>
@@ -33,7 +32,7 @@
 
 /* @sv -> name of the service to parse with 
  * the path of the frontend file source */
-int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf,uint8_t disable_module)
+int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf,uint8_t disable_module,char const *directory_forced)
 {
 	log_trace("start parse process of service: ",sv) ;
 	int insta ;
@@ -47,7 +46,7 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	char svpath[svsrclen + svnamelen + 1] ;
 	char tree[info->tree.len + SS_SVDIRS_LEN + 1] ;
 	auto_strings(tree,info->tree.s,SS_SVDIRS) ;
-	
+
 	int r = parse_service_check_enabled(tree,svname,force,&exist) ;
 	if (!r) goto end ;
 
@@ -71,47 +70,22 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 		log_trace("read service file of: ",svsrc,svname) ;
 		if (read_svfile(sasv,svname,svsrc) <= 0) return 0 ;
 	}
-	
+
 	if (!get_svtype(&sv_before,sasv->s)) 
 		log_warn_return (LOG_EXIT_ZERO,"invalid value for key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,KEY_MAIN_TYPE)," in service file: ",svsrc,svname) ;
-	
-	/** contents of directory should be listed by ss_resolve_src_path
-	 * execpt for module type */
-	if (scan_mode(sv,S_IFDIR) == 1 && sv_before.cname.itype != TYPE_MODULE) return 1 ;
-	
-	if (insta > 0)
-	{
-		if (!instance_create(sasv,svname,SS_INSTANCE_REGEX,insta))
-			log_warn_return(LOG_EXIT_ZERO,"create instance service: ",svname) ;
-		
-		/** ensure that we have an empty line at the end of the string*/
-		if (!stralloc_cats(sasv,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-		if (!stralloc_0(sasv)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-	}
 
-	memcpy(svpath,svsrc,svsrclen) ;
-	memcpy(svpath + svsrclen,svname,svnamelen) ;
-	svpath[svsrclen + svnamelen] = 0 ;
+	if (!get_svname(&sv_before,sasv->s))
+		log_warn_return(LOG_EXIT_ZERO,"invalid value for key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,KEY_MAIN_NAME)," in service file: ",svsrc,svname) ;
 
-	if (sastr_cmp(parsed_list,svpath) >= 0)
-	{
-		log_warn("Ignoring: ",sv," service: already parsed") ;
-		sasv->len = 0 ;
-		sv_alltype_free(&sv_before) ;
-		goto end ;
-	}
-	if (!parser(&sv_before,sasv,svname,sv_before.cname.itype)) return 0 ;
-	
 	/** keep the name set by user
 	 * uniquely for instantiated service
 	 * The name must contain the template string */
-
 	if (insta > 0 && sv_before.cname.name >= 0 )
 	{
 		stralloc sainsta = STRALLOC_ZERO ;
 		stralloc name = STRALLOC_ZERO ;
 		if (!stralloc_cats(&name,keep.s + sv_before.cname.name)) goto err ;
-		
+
 		if (!instance_splitname(&sainsta,svname,insta,SS_INSTANCE_TEMPLATE)) goto err ;
 		if (sastr_find(&name,sainsta.s) == -1)
 		{
@@ -131,8 +105,37 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 		sv_before.cname.name = keep.len ;
 		if (!stralloc_catb(&keep,svname,svnamelen + 1)) return 0 ;
 	}
+
+	/** contents of directory should be listed by ss_resolve_src_path
+	 * execpt for module type */
+	if (scan_mode(sv,S_IFDIR) == 1 && sv_before.cname.itype != TYPE_MODULE) return 1 ;
+
+	if (insta > 0)
+	{
+		if (!instance_create(sasv,svname,SS_INSTANCE_REGEX,insta))
+			log_warn_return(LOG_EXIT_ZERO,"create instance service: ",svname) ;
+
+		/** ensure that we have an empty line at the end of the string*/
+		if (!stralloc_cats(sasv,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		if (!stralloc_0(sasv)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	}
+
+	memcpy(svpath,svsrc,svsrclen) ;
+	memcpy(svpath + svsrclen,svname,svnamelen) ;
+	svpath[svsrclen + svnamelen] = 0 ;
+
+	if (sastr_cmp(parsed_list,svpath) >= 0)
+	{
+		log_warn("Ignoring: ",sv," service: already parsed") ;
+		sasv->len = 0 ;
+		sv_alltype_free(&sv_before) ;
+		goto end ;
+	}
+
+	if (!parser(&sv_before,sasv,svname,sv_before.cname.itype)) return 0 ;
+
 	add:
-	
+
 	if (sv_before.cname.itype == TYPE_MODULE)
 	{
 		r = parse_module(&sv_before,info,parsed_list,tree_list,svname,nbsv,sasv,force,conf) ;
@@ -165,9 +168,9 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 			stralloc rebuild = STRALLOC_ZERO ;
 			/** Module have already parsed its deps, don't make it twice */
 			if (sv_before.cname.itype != TYPE_MODULE)
-				if (!parse_service_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,conf)) return 0 ;
-			if (!parse_service_opts_deps(&rebuild,info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,conf,KEY_MAIN_EXTDEPS)) return 0 ;
-			if (!parse_service_opts_deps(&rebuild,info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,conf,KEY_MAIN_OPTSDEPS)) return 0 ;
+				if (!parse_service_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,conf,directory_forced)) return 0 ;
+			if (!parse_service_opts_deps(&rebuild,info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,conf,KEY_MAIN_EXTDEPS,directory_forced)) return 0 ;
+			if (!parse_service_opts_deps(&rebuild,info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,conf,KEY_MAIN_OPTSDEPS,directory_forced)) return 0 ;
 
 			if (rebuild.len)
 			{
@@ -206,7 +209,7 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	return 1 ;
 }
 
-int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf)
+int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf,char const *directory_forced)
 {
 	int r ;
 	char *dname = 0 ;
@@ -223,10 +226,10 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list,
 				log_trace("service: ",sv, " depends on: ",deps.s+id) ;
 			}else log_trace("bundle: ",sv, " contents: ",deps.s+id," as service") ;
 			dname = deps.s + id ;
-			r = ss_resolve_src_path(&newsv,dname,info->owner) ;
+			r = ss_resolve_src_path(&newsv,dname,info->owner,directory_forced) ;
 			if (r < 1) goto err ;//don't warn here, the ss_revolve_src_path already warn user
 
-			if (!parse_service_before(info,parsed_list,tree_list,newsv.s,nbsv,sasv,force,conf,0)) goto err ;
+			if (!parse_service_before(info,parsed_list,tree_list,newsv.s,nbsv,sasv,force,conf,0,directory_forced)) goto err ;
 		}
 	}
 	else log_trace(sv,": haven't dependencies") ;
@@ -237,7 +240,7 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list,
 		return 0 ;
 }
 
-int parse_service_opts_deps(stralloc *rebuild,ssexec_t *info,stralloc *parsed_list,stralloc *tree_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf, uint8_t mandatory)
+int parse_service_opts_deps(stralloc *rebuild,ssexec_t *info,stralloc *parsed_list,stralloc *tree_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf, uint8_t mandatory,char const *directory_forced)
 {
 	int r ;
 	stralloc newsv = STRALLOC_ZERO ;
@@ -291,7 +294,7 @@ int parse_service_opts_deps(stralloc *rebuild,ssexec_t *info,stralloc *parsed_li
 				if (!found)
 				{
 					// -1 mean system error. If the service doesn't exist it return 0
-					r = ss_resolve_src_path(&newsv,optname,info->owner) ;
+					r = ss_resolve_src_path(&newsv,optname,info->owner,directory_forced) ;
 					if (r == -1) {
 						goto err ; //don't warn here, the ss_revolve_src_path already warn user
 					}
@@ -300,7 +303,7 @@ int parse_service_opts_deps(stralloc *rebuild,ssexec_t *info,stralloc *parsed_li
 					}
 					// be paranoid with the else if
 					else if (r == 1) {
-						if (!parse_service_before(info,parsed_list,tree_list,newsv.s,nbsv,sasv,force,conf,0))
+						if (!parse_service_before(info,parsed_list,tree_list,newsv.s,nbsv,sasv,force,conf,0,directory_forced))
 							goto err ;
 
 						// add the new deps
@@ -359,13 +362,6 @@ int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *se
 	// keep source of the frontend file
 	sv_before->src = keep.len ;
 	if (!stralloc_catb(&keep,service,svlen + 1)) goto err ;
-	// keep source of the configuration file
-	if (sv_before->opts[2])
-	{
-		if (!env_resolve_conf(&saconf,keep.s + sv_before->cname.name,owner)) goto err ;
-		sv_before->srconf = keep.len ;
-		if (!stralloc_catb(&keep,saconf.s,saconf.len + 1)) goto err ;
-	}
 	// keep service on current list
 	if (!stralloc_catb(parsed_list,service,svlen + 1)) goto err ;
 	if (!genalloc_append(sv_alltype,&gasv,sv_before)) goto err ;

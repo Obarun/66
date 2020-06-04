@@ -117,8 +117,8 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 
 	newlen = sdir.len ;
 
-	char permanent_sdir[sdir.len + 1] ;
-	auto_strings(permanent_sdir,sdir.s) ;
+	char permanent_sdir[sdir.len + 2] ;
+	auto_strings(permanent_sdir,sdir.s,"/") ;
 
 	r = scan_mode(sdir.s,S_IFDIR) ;
 	if (r < 0) { errno = EEXIST ; log_warnusys_return(LOG_EXIT_ZERO,"conflicting format of: ",sdir.s) ; }
@@ -168,7 +168,7 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 	tmp.len = 0 ;
 	list.len = 0 ;
 
-	if (!auto_stra(&tmp,permanent_sdir,SS_MODULE_SERVICE))
+	if (!auto_stra(&tmp,permanent_sdir,SS_MODULE_SERVICE + 1))
 		log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 
 	if (!sastr_dir_get_recursive(&list,tmp.s,"",S_IFREG))
@@ -181,7 +181,7 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 		for (;nid; id += strlen(keep.s + id) + 1, nid--)
 		{
 			char *name = keep.s + id ;
-			if (ss_resolve_src_path(&list,name,info->owner) < 1)
+			if (ss_resolve_src_path(&list,name,info->owner,0) < 1)
 					log_warnu_return(LOG_EXIT_ZERO,"resolve source path of: ",name) ;
 		}
 	}
@@ -194,7 +194,7 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 	for (;nid; id += strlen(deps.s + id) + 1, nid--) {
 		/** incoporate the @deps inside the list to parse,
 		 * this avoid to make it twice at parsed_enabled() */
-		if (ss_resolve_src_path(&list,deps.s + id,info->owner) < 1)
+		if (ss_resolve_src_path(&list,deps.s + id,info->owner,0) < 1)
 			log_warnu_return(LOG_EXIT_ZERO,"resolve source path of: ",deps.s + id) ;
 		if (!stralloc_catb(&tmp,deps.s + id,strlen(deps.s + id) + 1)) 
 			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
@@ -226,17 +226,19 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 			/** we can't know the origin of the instance
 			 * search first at service@ directory, if it not found
 			 * pass through the classic ss_resolve_src_path() function */
+
 			pbname = bname ;
 			int found = 0 ;
 			size_t len = strlen(permanent_sdir) ;
 			char tmp[len + SS_MODULE_SERVICE_INSTANCE_LEN + 2] ;
-			auto_strings(tmp,permanent_sdir,SS_MODULE_SERVICE_INSTANCE,"/") ;
+			auto_strings(tmp,permanent_sdir,SS_MODULE_SERVICE_INSTANCE + 1,"/") ;
 
 			r = ss_resolve_src(&addonsv,pbname,tmp,&found) ;
+
 			if (r == -1) log_warnusys_return(LOG_EXIT_ZERO,"parse source directory: ",tmp) ;
 			if (!r)
 			{
-				if (ss_resolve_src_path(&addonsv,pbname,info->owner) < 1)
+				if (ss_resolve_src_path(&addonsv,pbname,info->owner,0) < 1)
 					log_warnu_return(LOG_EXIT_ZERO,"resolve source path of: ",pbname) ;
 			}
 			from_ext_insta++ ;
@@ -246,7 +248,7 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 		/** merge configuration file from upstream for each service
 		* inside the module*/
 		conf = 2 ;
-		if (!parse_service_before(info,parsed_list,tree_list,sv,nbsv,sasv,force,conf,0))
+		if (!parse_service_before(info,parsed_list,tree_list,sv,nbsv,sasv,force,conf,0,permanent_sdir))
 			log_warnu_return(LOG_EXIT_ZERO,"parse: ",sv," from module: ",svname) ;
 
 		char ext_insta[len + 1] ;
@@ -300,7 +302,7 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 	}
 
 	tmp.len = 0 ;
-	if (!auto_stra(&tmp,permanent_sdir,SS_MODULE_CONFIG_DIR))
+	if (!auto_stra(&tmp,permanent_sdir,SS_MODULE_CONFIG_DIR + 1))
 		log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	if (rm_rf(tmp.s) < 0)
 		log_warnusys_return(LOG_EXIT_ZERO,"remove: ",tmp.s) ;
@@ -480,10 +482,10 @@ int regex_configure(sv_alltype *sv_before,ssexec_t *info, char const *module_dir
 	unsigned int m = 0 ;
 
 	char pwd[module_dirlen + SS_MODULE_CONFIG_DIR_LEN + 1] ;
-	auto_strings(pwd,module_dir,SS_MODULE_CONFIG_DIR) ;
+	auto_strings(pwd,module_dir,SS_MODULE_CONFIG_DIR + 1) ;
 
 	char config_script[module_dirlen + SS_MODULE_CONFIG_DIR_LEN + 1 + SS_MODULE_CONFIG_SCRIPT_LEN + 1] ;
-	auto_strings(config_script,module_dir,SS_MODULE_CONFIG_DIR,"/",SS_MODULE_CONFIG_SCRIPT) ;
+	auto_strings(config_script,module_dir,SS_MODULE_CONFIG_DIR + 1,"/",SS_MODULE_CONFIG_SCRIPT) ;
 
 	r = scan_mode(config_script,S_IFREG) ;
 	if (r > 0)
@@ -492,10 +494,8 @@ int regex_configure(sv_alltype *sv_before,ssexec_t *info, char const *module_dir
 		{
 			char owner[UID_FMT];
 			owner[uid_fmt(owner,info->owner)] = 0 ;
-			oenv.len = 0 ;
 			char verbo[UINT_FMT];
 			verbo[uid_fmt(verbo,VERBOSITY)] = 0 ;
-			oenv.len = 0 ;
 			auto_stra(&env,"MOD_NAME=",module_name,"\n") ;
 			auto_stra(&env,"MOD_BASE=",info->base.s,"\n") ;
 			auto_stra(&env,"MOD_LIVE=",info->live.s,"\n") ;
