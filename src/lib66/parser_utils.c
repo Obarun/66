@@ -21,7 +21,6 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <errno.h>
-//#include <stdio.h>
 
 #include <oblibs/string.h>
 #include <oblibs/files.h>
@@ -98,6 +97,7 @@ void freed_parser(void)
 		sv_alltype_free(&genalloc_s(sv_alltype,&gasv)[i]) ;
 	genalloc_free(sv_alltype,&gasv) ;
 }
+
 /**********************************
  *		Mill utilities
  * *******************************/
@@ -505,8 +505,7 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			service->cname.itype = r ;
 			break ;
 		case KEY_MAIN_NAME:
-			service->cname.name = keep.len ;
-			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+			/** name is already parsed */
 			break ;
 		case KEY_MAIN_DESCRIPTION:
 			service->cname.description = keep.len ;
@@ -536,7 +535,20 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 						service->opts[1] = 1 ;
 				}
 				if (r == OPTS_ENVIR)
+				{
+					stralloc saconf = STRALLOC_ZERO ;
+					if (!env_resolve_conf(&saconf,keep.s + service->cname.name,MYUID)) {
+						stralloc_free(&saconf) ;
+						return 0 ;
+					}
+					service->srconf = keep.len ;
+					if (!stralloc_catb(&keep,saconf.s,saconf.len + 1)) {
+						stralloc_free(&saconf) ;
+						return 0 ;
+					}
 					service->opts[2] = 1 ;
+					stralloc_free(&saconf) ;
+				}
 			}
 			break ;
 		case KEY_MAIN_FLAGS:
@@ -1171,4 +1183,27 @@ int get_svtype_from_file(char const *file)
 	return svtype ;
 }
 
+int get_svname(sv_alltype *sv_before,char const *contents)
+{
+	int r ;
+	stralloc sa = STRALLOC_ZERO ;
 
+	if (!auto_stra(&sa,contents)) goto err ;
+	/** @name only exist on instantiated service if any */
+	r = sastr_find(&sa,get_key_by_enum(ENUM_KEY_SECTION_MAIN,KEY_MAIN_NAME)) ;
+	if (r == -1) { sv_before->cname.name == -1 ; goto freed ; }
+
+	if (!environ_get_val_of_key(&sa,get_key_by_enum(ENUM_KEY_SECTION_MAIN,KEY_MAIN_NAME))) goto err ;
+
+	if (!sastr_clean_element(&sa)) goto err ;
+	sv_before->cname.name = get_enum_by_key(sa.s) ;
+
+	if (sv_before->cname.name == -1) goto err ;
+
+	freed:
+	stralloc_free(&sa) ;
+	return 1 ;
+	err:
+		stralloc_free(&sa) ;
+		return 0 ;
+}
