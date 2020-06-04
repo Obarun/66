@@ -16,7 +16,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <stdint.h>
-//#include <stdio.h>
 
 #include <oblibs/log.h>
 #include <oblibs/files.h>
@@ -112,9 +111,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
-	
+
 	if (argc < 2) log_usage(USAGE) ;
-	
+
 	sv = argv[0] ;
 	dir = argv[1] ;
 
@@ -138,7 +137,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	{
 		if (!instance_splitname(&insta,name,ista,SS_INSTANCE_TEMPLATE)) log_dieu(LOG_EXIT_SYS,"split instance name of: ",name) ;
 	}
-	
+
 	log_trace("read service file of: ",srcdir,insta.s) ;
 	if (read_svfile(&src,insta.s,srcdir) <= 0) log_dieusys(LOG_EXIT_SYS,"open: ",sv) ;
 
@@ -148,11 +147,32 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	{
 		if (!instance_create(&src,name,SS_INSTANCE_REGEX,ista))
 			log_dieu(LOG_EXIT_SYS,"create instance service: ",name) ;
-		memcpy(name,insta.s,insta.len) ;
-		name[insta.len] = 0 ;
-		
 	}
-	
+
+	if (!get_svname(&service,src.s)) log_dieu(LOG_EXIT_SYS,"get name of service: ",sv) ;
+
+	/** keep the name set by user
+	 * uniquely for instantiated service
+	 * The name must contain the template string */
+	if (ista > 0 && service.cname.name >= 0 )
+	{
+		stralloc sainsta = STRALLOC_ZERO ;
+		stralloc saname = STRALLOC_ZERO ;
+		if (!stralloc_cats(&saname,keep.s + service.cname.name)) log_die_nomem("stralloc") ;
+		
+		if (!instance_splitname(&sainsta,name,ista,SS_INSTANCE_TEMPLATE)) log_dieu(LOG_EXIT_SYS,"split instance name") ;
+		if (sastr_find(&saname,sainsta.s) == -1)
+			log_die(LOG_EXIT_USER,"invalid instantiated service name: ", keep.s + service.cname.name) ;
+
+		stralloc_free(&sainsta) ;
+		stralloc_free(&saname) ;
+	}
+	else
+	{
+		service.cname.name = keep.len ;
+		if (!stralloc_catb(&keep,name,namelen + 1)) log_die_nomem("stralloc") ;
+	}
+
 	if (!parser(&service,&src,sv,service.cname.itype)) log_dieu(LOG_EXIT_SYS,"parse service file: ",sv) ;
 
 	if (!auto_stra(&dst,dir,"/",name)) log_die_nomem("stralloc") ;
@@ -164,34 +184,14 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	service.src = keep.len ;
 
 	if (!stralloc_catb(&keep,srcdir,srcdirlen + 1)) log_die_nomem("stralloc") ;
-	/**quick fix
-	 * WIP on parser this will change soon*/
-	if (ista > 0 && service.cname.name >= 0 )
-	{
-		stralloc sainsta = STRALLOC_ZERO ;
-		stralloc saname = STRALLOC_ZERO ;
-		if (!stralloc_cats(&saname,keep.s + service.cname.name)) log_die_nomem("stralloc") ;
-		
-		if (!instance_splitname(&sainsta,name,ista,SS_INSTANCE_TEMPLATE)) log_dieu(LOG_EXIT_SYS,"split instance name: ",name) ;
-		if (sastr_find(&saname,sainsta.s) == -1)
-			log_die(LOG_EXIT_USER,"invalid instantiated service name: ", keep.s + service.cname.name) ;
-			
-		stralloc_free(&sainsta) ;
-		stralloc_free(&saname) ;
-	}
-	else
-	{
-		service.cname.name = keep.len ;
-		if (!stralloc_catb(&keep,name,namelen + 1)) log_die_nomem("stralloc") ;
-	}
 
 	/* save and prepare environment file */
 	if (service.opts[2])
 	{
 		
 		stralloc conf = STRALLOC_ZERO ;
-		if (!stralloc_catb(&conf,dst.s,dst.len-1) ||
-		!stralloc_cats(&conf,"/env/") || 
+		if (!stralloc_catb(&conf,dst.s,dst.len) ||
+		!stralloc_cats(&conf,"/env") ||
 		!stralloc_0(&conf)) log_die_nomem("stralloc") ;
 		if (!scan_mode(conf.s,S_IFDIR))
 		{
@@ -235,5 +235,4 @@ int main(int argc, char const *const *argv,char const *const *envp)
 	stralloc_free(&dst) ;
 
 	return 0 ;
-	
 }
