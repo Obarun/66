@@ -125,7 +125,7 @@ int ss_resolve_module_path(stralloc *sdir, stralloc *mdir, char const *sv, uid_t
 	
 	insta = instance_check(sv) ;
 	instance_splitname(&sainsta,sv,insta,SS_INSTANCE_TEMPLATE) ;
-	
+
 	if (!owner)
 	{
 		src = SS_MODULE_ADMDIR ;
@@ -174,37 +174,48 @@ int ss_resolve_module_path(stralloc *sdir, stralloc *mdir, char const *sv, uid_t
 	return 1 ;
 }
 
-int ss_resolve_src_path(stralloc *sasrc,char const *sv, uid_t owner)
+int ss_resolve_src_path(stralloc *sasrc,char const *sv, uid_t owner,char const *directory_forced)
 {
 	int r ;
 	char const *src = 0 ;
 	int found = 0, err = -1 ;
 	stralloc home = STRALLOC_ZERO ;
-	if (!owner) src = SS_SERVICE_ADMDIR ;
-	else
-	{	
-		if (!set_ownerhome(&home,owner)) { log_warnusys("set home directory") ; goto err ; }
-		if (!stralloc_cats(&home,SS_SERVICE_USERDIR)) { log_warnsys("stralloc") ; goto err ; }
-		if (!stralloc_0(&home)) { log_warnsys("stralloc") ; goto err ; }
-		home.len-- ;
-		src = home.s ;
-	}
-	
-	r = ss_resolve_src(sasrc,sv,src,&found) ;
-	if (r == -1){ log_warnusys("parse source directory: ",src) ; goto err ; }
-	if (!r)
+	if (directory_forced)
 	{
-		found = 0 ;
-		src = SS_SERVICE_ADMDIR ;
+		if (!ss_resolve_cmp_service_basedir(directory_forced)) { log_warn("invalid base service directory: ",directory_forced) ; goto err ; }
+		src = directory_forced ;
 		r = ss_resolve_src(sasrc,sv,src,&found) ;
-		if (r == -1) { log_warnusys("parse source directory: ",src) ; goto err ; }
+		if (r == -1){ log_warnusys("parse source directory: ",src) ; goto err ; }
+		if (!r) { log_warnu("find service: ",sv) ; err = 0 ; goto err ; }
+	}
+	else
+	{
+		if (!owner) src = SS_SERVICE_ADMDIR ;
+		else
+		{
+			if (!set_ownerhome(&home,owner)) { log_warnusys("set home directory") ; goto err ; }
+			if (!stralloc_cats(&home,SS_SERVICE_USERDIR)) { log_warnsys("stralloc") ; goto err ; }
+			if (!stralloc_0(&home)) { log_warnsys("stralloc") ; goto err ; }
+			home.len-- ;
+			src = home.s ;
+		}
+
+		r = ss_resolve_src(sasrc,sv,src,&found) ;
+		if (r == -1){ log_warnusys("parse source directory: ",src) ; goto err ; }
 		if (!r)
 		{
 			found = 0 ;
-			src = SS_SERVICE_SYSDIR ;
+			src = SS_SERVICE_ADMDIR ;
 			r = ss_resolve_src(sasrc,sv,src,&found) ;
 			if (r == -1) { log_warnusys("parse source directory: ",src) ; goto err ; }
-			if (!r) { log_warnu("find service: ",sv) ; err = 0 ; goto err ; }
+			if (!r)
+			{
+				found = 0 ;
+				src = SS_SERVICE_SYSDIR ;
+				r = ss_resolve_src(sasrc,sv,src,&found) ;
+				if (r == -1) { log_warnusys("parse source directory: ",src) ; goto err ; }
+				if (!r) { log_warnu("find service: ",sv) ; err = 0 ; goto err ; }
+			}
 		}
 	}
 	stralloc_free(&home) ;
@@ -214,165 +225,113 @@ int ss_resolve_src_path(stralloc *sasrc,char const *sv, uid_t owner)
 		return err ;
 }
 
-int ss_resolve_service_isdir(char const *dir, char const *name)
-{
-	size_t dirlen = strlen(dir) ;
-	size_t namelen = strlen(name) ;
-	char t[dirlen + 1 + namelen + 1] ;
-	memcpy(t,dir,dirlen) ;
-	t[dirlen] = '/' ;
-	memcpy(t + dirlen + 1, name, namelen) ;
-	t[dirlen + 1 + namelen] = 0 ;
-	int r = scan_mode(t,S_IFREG) ;
-	if (!ob_basename(t,dir)) return -1 ;
-	if (!strcmp(t,name) && r) return 1 ;
-	return 0 ;
-}
-
 int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found)
 {
-	int fdsrc, obr, insta, r ;
-	size_t i, len, namelen = strlen(name), srclen = strlen(src) ;
+	int r, obr, insta ;
+	size_t i, len, namelen = strlen(name), srclen = strlen(src), pos = 0 ;
 	stralloc sainsta = STRALLOC_ZERO ;
-	stralloc subdir = STRALLOC_ZERO ;
 	stralloc satmp = STRALLOC_ZERO ;
-	
-	DIR *dir = opendir(src) ;
-	if (!dir)
-	{
-		log_warnusys("open : ", src) ;
-		goto errstra ;
-	}
-	fdsrc = dir_fd(dir) ;
+	stralloc sort = STRALLOC_ZERO ;
 
-	for (;;)
+	if (!ss_resolve_sort_directory_first(&sort,src))
+	{
+		log_warnu("sort directory: ",src) ;
+		goto err ;
+	}
+
+	for (; pos < sort.len ; pos += strlen(sort.s + pos) + 1)
     {
-		struct stat st ;
-		direntry *d ;
-		d = readdir(dir) ;
-		if (!d) break ;
-		if (d->d_name[0] == '.')
-		if (((d->d_name[1] == '.') && !d->d_name[2]) || !d->d_name[1])
-			continue ;
-		
-		if (stat_at(fdsrc, d->d_name, &st) < 0)
+		char *dname = sort.s + pos ;
+		size_t dnamelen = strlen(dname) ;
+		char bname[dnamelen + 1] ;
+
+		if (!ob_basename(bname,dname)) goto err ;
+
+		if (scan_mode(dname,S_IFDIR) > 0)
 		{
-			log_warnusys("stat ", src, d->d_name) ;
-			goto errdir ;
-		}
-		
-		if (S_ISDIR(st.st_mode))
-		{
-			if (!stralloc_cats(&subdir,src)) goto errdir ;
-			if (!stralloc_cats(&subdir,d->d_name)) goto errdir ;
-			if (!stralloc_cats(&subdir,"/")) goto errdir ;
-			if (!stralloc_0(&subdir)) goto errdir ;
-			*found = ss_resolve_src(sasrc,name,subdir.s,found) ;
-			subdir.len = 0 ;
-			if (*found < 0) goto errdir ;
+			*found = ss_resolve_src(sasrc,name,dname,found) ;
+			if (*found < 0) goto err ;
 		}
 		obr = 0 ;
 		insta = 0 ;
-		obr = obstr_equal(name,d->d_name) ;
+		obr = obstr_equal(name,bname) ;
 		insta = instance_check(name) ;
-		
+
 		if (insta > 0)
 		{	
-			if (!instance_splitname(&sainsta,name,insta,SS_INSTANCE_TEMPLATE)) goto errdir ;
-			obr = obstr_equal(sainsta.s,d->d_name) ;
+			if (!instance_splitname(&sainsta,name,insta,SS_INSTANCE_TEMPLATE)) goto err ;
+			obr = obstr_equal(sainsta.s,bname) ;
 		}
-				
+
 		if (obr)
 		{
 			*found = 1 ;
-			if (stat_at(fdsrc, d->d_name, &st) < 0)
+			if (scan_mode(dname,S_IFDIR) > 0)
 			{
-				log_warnusys("stat ", src, d->d_name) ;
-				goto errdir ;
-			}
-
-			if (S_ISDIR(st.st_mode))
-			{
-				if (!stralloc_cats(&subdir,src)) goto errstra ;
-				if (!stralloc_cats(&subdir,d->d_name)) goto errdir ;
-				if (!stralloc_0(&subdir)) goto errdir ;
-				int rd = ss_resolve_service_isdir(subdir.s,d->d_name) ;
-				if (rd == -1) goto errdir ;
+				int rd = ss_resolve_service_isdir(dname,bname) ;
+				if (rd == -1) goto err ;
 				if (!rd)
-					r = sastr_dir_get(&satmp,subdir.s,"",S_IFREG|S_IFDIR) ;
-				else r = sastr_dir_get(&satmp,subdir.s,"",S_IFREG) ;
+					r = sastr_dir_get(&satmp,dname,"",S_IFREG|S_IFDIR) ;
+				else r = sastr_dir_get(&satmp,dname,"",S_IFREG) ;
 				if (!r)
 				{
-					log_warnusys("get services from directory: ",subdir.s) ;
-					goto errdir ;
+					log_warnusys("get services from directory: ",dname) ;
+					goto err ;
 				}
 				i = 0, len = satmp.len ;
-				subdir.len-- ;
+
 				for (;i < len; i += strlen(satmp.s + i) + 1)
 				{
 					size_t tlen = strlen(satmp.s+i) ;
-					char t[subdir.len + 1 + tlen + 2];
-					memcpy(t,subdir.s,subdir.len) ;
-					t[subdir.len] ='/' ;
-					memcpy(t + subdir.len + 1,satmp.s+i,tlen) ;
-					t[subdir.len + 1 + tlen] = '/' ;
-					t[subdir.len + 1 + tlen + 1] = 0 ;
-						
+					char t[dnamelen + 1 + tlen + 2];
+
+					auto_strings(t,dname,"/",satmp.s + i,"/") ;
+
 					r = scan_mode(t,S_IFDIR) ;
 					if (r == 1)
 					{
-						t[subdir.len + 1] = 0 ;
+						t[dnamelen + 1] = 0 ;
 						*found = ss_resolve_src(sasrc,satmp.s+i,t,found) ;
-						if (*found < 0) goto errdir ;
+						if (*found < 0) goto err ;
 					}
 					else
 					{
-						char t[subdir.len + 1 + tlen + 1] ;
-						memcpy(t,subdir.s,subdir.len) ;
-						t[subdir.len] = '/' ;
-						memcpy(t + subdir.len + 1, satmp.s+i, tlen) ;
-						t[subdir.len + 1 + tlen] = 0 ;
+						char t[dnamelen + tlen + 1] ;
+						auto_strings(t,dname,satmp.s + i) ;
 						if (sastr_cmp(sasrc,t) == -1)
 						{
-							if (!stralloc_cats(sasrc,subdir.s)) goto errdir ;
-							if (!stralloc_cats(sasrc,"/")) goto errdir ;
-							if (!stralloc_catb(sasrc,satmp.s+i,tlen+1)) goto errdir ;
+							if (!stralloc_cats(sasrc,dname)) goto err ;
+							if (!stralloc_catb(sasrc,satmp.s+i,tlen+1)) goto err ;
 						}
 					}
 				}
-				stralloc_free(&subdir) ;
 				break ;
 			}
-			else if(S_ISREG(st.st_mode))
+			else if (scan_mode(dname,S_IFREG) > 0)
 			{
 				char t[srclen + namelen + 1] ;
-				memcpy(t,src,srclen) ;
-				memcpy(t + srclen, name, namelen) ;
-				t[srclen + namelen] = 0 ;
+				auto_strings(t,src,name) ;
 				if (sastr_cmp(sasrc,t) == -1)
 				{
-					if (!stralloc_cats(sasrc,src)) goto errdir ;
-					if (!stralloc_catb(sasrc,name,namelen+1)) goto errdir ;
+					if (!stralloc_cats(sasrc,src)) goto err ;
+					if (!stralloc_catb(sasrc,name,namelen+1)) goto err ;
 				}
 				break ;
 			}
-			else goto errdir ;
+			else goto err ;
 		}
 	}
-	
-	dir_close(dir) ;
-	stralloc_free(&subdir) ;
+
 	stralloc_free(&sainsta) ;
 	stralloc_free(&satmp) ;
+	stralloc_free(&sort) ;
 
 	return (*found) ;
 
-	errdir:
-		dir_close(dir) ;
-	errstra:
-		stralloc_free(&subdir) ;
+	err:
 		stralloc_free(&sainsta) ;
 		stralloc_free(&satmp) ;
+		stralloc_free(&sort) ;
 		return -1 ;
 }
 
@@ -1384,4 +1343,120 @@ int ss_resolve_sort_bytype(genalloc *gares,stralloc *list,char const *src)
 	
 	ss_resolve_free(&res) ;
 	return 1 ;
+}
+
+int ss_resolve_cmp_service_basedir(char const *dir)
+{
+	/** directory_forced can be 0, so nothing to do */
+	if (!dir) return 1 ;
+	size_t len = strlen(dir) ;
+	uid_t owner = MYUID ;
+	stralloc home = STRALLOC_ZERO ;
+
+	char system[len + 1] ;
+	char adm[len + 1] ;
+	char user[len + 1] ;
+
+	if (owner)
+	{
+		if (!set_ownerhome(&home,owner)) { log_warnusys("set home directory") ; goto err ; }
+		if (!auto_stra(&home,SS_SERVICE_USERDIR)) { log_warnsys("stralloc") ; goto err ; }
+		auto_strings(user,dir) ;
+		user[strlen(home.s)] = 0 ;
+	}
+
+	if (len < strlen(SS_SERVICE_SYSDIR))
+		if (len < strlen(SS_SERVICE_ADMDIR))
+			if (owner) {
+				if (len < strlen(home.s))
+					goto err ;
+			} else goto err ;
+
+	auto_strings(system,dir) ;
+	auto_strings(adm,dir) ;
+
+	system[strlen(SS_SERVICE_SYSDIR)] = 0 ;
+	adm[strlen(SS_SERVICE_ADMDIR)] = 0 ;
+
+	if (strcmp(SS_SERVICE_SYSDIR,system))
+		if (strcmp(SS_SERVICE_ADMDIR,adm))
+			if (owner) {
+				if (strcmp(home.s,user))
+					goto err ;
+			} else goto err ;
+
+	stralloc_free(&home) ;
+	return 1 ;
+	err:
+		stralloc_free(&home) ;
+		return 0 ;
+}
+
+int ss_resolve_service_isdir(char const *dir, char const *name)
+{
+	size_t dirlen = strlen(dir) ;
+	size_t namelen = strlen(name) ;
+	char t[dirlen + 1 + namelen + 1] ;
+	memcpy(t,dir,dirlen) ;
+	t[dirlen] = '/' ;
+	memcpy(t + dirlen + 1, name, namelen) ;
+	t[dirlen + 1 + namelen] = 0 ;
+	int r = scan_mode(t,S_IFREG) ;
+	if (!ob_basename(t,dir)) return -1 ;
+	if (!strcmp(t,name) && r) return 1 ;
+	return 0 ;
+}
+
+int ss_resolve_sort_directory_first(stralloc *sort, char const *src)
+{
+	int fdsrc ;
+	stralloc tmp = STRALLOC_ZERO ;
+
+	DIR *dir = opendir(src) ;
+	if (!dir)
+	{
+		log_warnusys("open : ", src) ;
+		goto errstra ;
+	}
+	fdsrc = dir_fd(dir) ;
+
+	for (;;)
+    {
+		tmp.len = 0 ;
+		struct stat st ;
+		direntry *d ;
+		d = readdir(dir) ;
+		if (!d) break ;
+		if (d->d_name[0] == '.')
+		if (((d->d_name[1] == '.') && !d->d_name[2]) || !d->d_name[1])
+			continue ;
+
+		if (stat_at(fdsrc, d->d_name, &st) < 0)
+		{
+			log_warnusys("stat ", src, d->d_name) ;
+			goto errdir ;
+		}
+
+		if (S_ISREG(st.st_mode))
+		{
+			if (!auto_stra(&tmp,src,d->d_name)) goto errdir ;
+			if (!stralloc_insertb(sort,0,tmp.s,strlen(tmp.s) + 1)) goto errdir ;
+		}
+		else if(S_ISDIR(st.st_mode))
+		{
+			if (!auto_stra(&tmp,src,d->d_name,"/")) goto errdir ;
+			if (!stralloc_insertb(sort,sort->len,tmp.s,strlen(tmp.s) + 1)) goto errdir ;
+		}
+	}
+
+	dir_close(dir) ;
+	stralloc_free(&tmp) ;
+
+	return 1 ;
+
+	errdir:
+		dir_close(dir) ;
+	errstra:
+		stralloc_free(&tmp) ;
+		return 0 ;
 }
