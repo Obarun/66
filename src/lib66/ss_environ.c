@@ -203,9 +203,9 @@ int env_compute(stralloc *result,sv_alltype *sv, uint8_t conf)
 	char *name = keep.s + sv->cname.name ;
 	stralloc dst = STRALLOC_ZERO ;
 	stralloc salist = STRALLOC_ZERO ;
-	
-	if (!env_resolve_conf(&dst,name,MYUID))
-		log_warnu_return(LOG_EXIT_ZERO,"resolve source of configuration file") ;
+
+	if (!auto_stra(&dst,keep.s + sv->srconf))
+		log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
 
 	if (!env_make_symlink(&dst,sv)) return 0 ;
 
