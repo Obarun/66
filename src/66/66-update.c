@@ -143,7 +143,7 @@ void tree_contents(stralloc *list,char const *tree,ssexec_t *info)
 		int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 		if (logname > 0) continue ;
 		log_trace(DRYRUN ? drun : "","tree: ",info->treename.s," contain service: ",name) ;
-		if (ss_resolve_src_path(list,name,info->owner) < 1)
+		if (ss_resolve_src_path(list,name,info->owner,0) < 1)
 			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"resolve source path of: ",name) ;
 	
 	}
