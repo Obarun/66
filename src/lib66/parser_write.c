@@ -203,6 +203,9 @@ int write_longrun(sv_alltype *sv,char const *dst, uint8_t force, uint8_t conf)
 		if (!write_logger(sv, &sv->type.classic_longrun.log,logname,dstlog,0644,force)) 
 			log_warnu_return(LOG_EXIT_ZERO,"write: ",dstlog,"/",logname) ;
 
+		/** write_logger change the sv_alltype appending the real_exec log element */
+		name = keep.s+sv->cname.name ;
+
 		if (!write_consprod(sv,name,logname,dst,dstlog))
 			log_warnu_return(LOG_EXIT_ZERO,"write consumer/producer files") ;
 	}
