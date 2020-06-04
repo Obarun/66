@@ -298,12 +298,13 @@ extern void freed_parser(void) ;
 extern void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORCE) ;
 extern int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype) ;
 extern int parse_service_check_enabled(char const *tree_directory, char const *svname,uint8_t force,uint8_t *exist) ;
-extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, stralloc *opts_deps_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf,uint8_t disable_module) ;
-extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, stralloc *opts_deps_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf) ;
-extern int parse_service_opts_deps(stralloc *rebuild,ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf,uint8_t mandatory) ;
+extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, stralloc *opts_deps_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf,uint8_t disable_module,char const *directory_forced) ;
+extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, stralloc *opts_deps_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf,char const *directory_forced) ;
+extern int parse_service_opts_deps(stralloc *rebuild,ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf,uint8_t mandatory,char const *directory_forced) ;
 extern int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner,uint8_t conf) ;
 extern int get_svtype(sv_alltype *sv_before, char const *contents) ;
 extern int get_svtype_from_file(char const *file) ;
+extern int get_svname(sv_alltype *sv_before,char const *contents) ;
 /** split */
 extern int section_get_range(section_t *sasection,stralloc *src) ;
 extern int key_get_range(genalloc *ga, section_t *sasection) ;
