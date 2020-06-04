@@ -131,7 +131,7 @@ extern int ss_resolve_check_insrc(ssexec_t *info, char const *name) ;
 extern int ss_resolve_write_master(ssexec_t *info,ss_resolve_graph_t *graph,char const *dir, unsigned int reverse) ;
 extern int ss_resolve_sort_bytype(genalloc *gares,stralloc *list,char const *src) ;
 extern int ss_resolve_cmp_service_basedir(char const *dir) ;
-extern int ss_resolve_sort_directory_first(stralloc *sort, char const *src) ;
+extern int ss_resolve_sort_byfile_first(stralloc *sort, char const *src) ;
 /** Graph function */
 extern void ss_resolve_graph_ndeps_free(ss_resolve_graph_ndeps_t *graph) ;
 extern void ss_resolve_graph_free(ss_resolve_graph_t *graph) ;

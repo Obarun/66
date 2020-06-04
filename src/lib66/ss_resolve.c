@@ -233,7 +233,7 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found
 	stralloc satmp = STRALLOC_ZERO ;
 	stralloc sort = STRALLOC_ZERO ;
 
-	if (!ss_resolve_sort_directory_first(&sort,src))
+	if (!ss_resolve_sort_byfile_first(&sort,src))
 	{
 		log_warnu("sort directory: ",src) ;
 		goto err ;
@@ -1407,7 +1407,7 @@ int ss_resolve_service_isdir(char const *dir, char const *name)
 	return 0 ;
 }
 
-int ss_resolve_sort_directory_first(stralloc *sort, char const *src)
+int ss_resolve_sort_byfile_first(stralloc *sort, char const *src)
 {
 	int fdsrc ;
 	stralloc tmp = STRALLOC_ZERO ;
