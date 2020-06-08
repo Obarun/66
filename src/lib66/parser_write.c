@@ -677,19 +677,6 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 	stralloc runuser = STRALLOC_ZERO ;
 	stralloc execute = STRALLOC_ZERO ;
 	stralloc destlog_oneshot = STRALLOC_ZERO ;
-	stralloc salink = STRALLOC_ZERO ;
-
-	if (sv->opts[2])
-	{
-		if (!auto_stra(&env,keep.s + sv->srconf,SS_SYM_VERSION))
-			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-		if (sareadlink(&salink,env.s) == -1)
-			log_warnsys_return(LOG_EXIT_ZERO,"readlink: ",env.s) ;
-		if (!stralloc_0(&salink))
-			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-		salink.len-- ;
-		env.len = 0 ;
-	}
 	
 	if (type == TYPE_ONESHOT)
 	{
@@ -720,7 +707,8 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 			if (sv->opts[2] && (build == BUILD_AUTO))
 			{
 				if (!stralloc_cats(&env,SS_BINPREFIX "execl-envfile ") ||
-				!stralloc_cats(&env,salink.s) ||
+				!stralloc_cats(&env,keep.s + sv->srconf) ||
+				!stralloc_cats(&env,SS_SYM_VERSION) ||
 				!stralloc_cats(&env,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			}
 			/** shebang */
