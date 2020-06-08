@@ -418,7 +418,7 @@ static void info_display_with_source_tree(stralloc *list,ss_resolve_t *res)
 	stralloc src = STRALLOC_ZERO ;
 	stralloc tmp = STRALLOC_ZERO ;
 	char *treename = 0 ;
-			
+
 	if (!auto_stra(&src,home.s)) log_die_nomem("stralloc") ;
 	newlen = src.len ;
 
@@ -433,7 +433,7 @@ static void info_display_with_source_tree(stralloc *list,ss_resolve_t *res)
 
 		if (!auto_stra(&src,treename,SS_SVDIRS,SS_RESOLVE)) 
 			log_die_nomem("stralloc") ;
-		
+
 		if (!sastr_dir_get(&svlist,src.s,SS_MASTER + 1,S_IFREG))
 			log_dieu(LOG_EXIT_SYS,"get contents of tree: ",src.s) ;
 
@@ -559,7 +559,27 @@ static void info_display_envat(char const *field,ss_resolve_t *res)
 
 	if (!res->srconf) goto empty ;
 	{
-		info_display_string(res->sa.s + res->srconf) ;
+		stralloc salink = STRALLOC_ZERO ;
+		char *src = res->sa.s + res->srconf ;
+		char *name = res->sa.s + res->name ;
+
+		size_t srclen = strlen(src), namelen = strlen(name) ;
+		char sym[srclen + SS_SYM_VERSION_LEN + 1] ;
+
+		auto_strings(sym,src,SS_SYM_VERSION) ;
+
+		if (sareadlink(&salink, sym) == -1)
+			log_dieusys(LOG_EXIT_SYS,"read link of: ",sym) ;
+
+		salink.len -= namelen + 1 ;//1 remove trailing slash
+
+		if (!stralloc_0(&salink))
+			log_die_nomem("stralloc") ;
+
+		info_display_string(salink.s) ;
+
+		stralloc_free(&salink) ;
+
 		goto freed ;
 	}
 	empty:
@@ -569,65 +589,71 @@ static void info_display_envat(char const *field,ss_resolve_t *res)
 
 	freed:
 		stralloc_free(&salink) ;
-		return ;
 }
 
 static void info_display_envfile(char const *field,ss_resolve_t *res)
 {
 	if (NOFIELD) info_display_field_name(field) ;
 	else field = 0 ;
-	
+
+	size_t pos = 0 ;
 	stralloc sa = STRALLOC_ZERO ;
 	stralloc salink = STRALLOC_ZERO ;
 	stralloc list = STRALLOC_ZERO ;
 
-	if (!res->srconf) goto empty ;
+	if (res->srconf)
 	{
 		char *src = res->sa.s + res->srconf ;
-		if (res->version > 0)
-		{
-			stralloc list = STRALLOC_ZERO ;
-			size_t pos = 0 ;
-			if (!sastr_dir_get_recursive(&list,src,"",S_IFREG))
-				log_dieusys(LOG_EXIT_SYS,"get list of environment file from: ",src) ;
+		char *name = res->sa.s + res->name ;
+		size_t srclen = strlen(src), namelen = strlen(name), newlen ;
+		char sym[srclen + SS_SYM_VERSION_LEN + 1] ;
 
-			for (;pos < list.len ; pos += strlen(list.s + pos) + 1)
-			{
-				sa.len = 0 ;
-				if (!file_readputsa_g(&sa,list.s + pos))
-					log_dieusys(LOG_EXIT_SYS,"read environment file") ;
-				if (pos)
-				{
-					if (NOFIELD) {
-						size_t padding = info_length_from_wchar(field) + 1 ;
-						if (!bprintf(buffer_1,"%*s",padding,""))
-							log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-					}
-					info_display_nline(field,sa.s) ;
-				}
-				else info_display_nline(field,sa.s) ;
-			}
-			goto freed ;
-		}
-		else
+		auto_strings(sym,src,SS_SYM_VERSION) ;
+
+		if (sareadlink(&salink, sym) == -1)
+			log_dieusys(LOG_EXIT_SYS,"read link of: ",sym) ;
+
+		salink.len -= namelen + 1 ;//1 remove trailing slash
+
+		if (!stralloc_0(&salink))
+			log_dieusys(LOG_EXIT_SYS,"stralloc") ;
+
+		newlen = salink.len - 1 ;
+
+		if (!sastr_dir_get(&list,salink.s,"",S_IFREG))
+			log_dieusys(LOG_EXIT_SYS,"get list of environment file from: ",src) ;
+
+		for (;pos < list.len ; pos += strlen(list.s + pos) + 1)
 		{
-			if (!auto_stra(&salink,src,"/",res->sa.s + res->name))
-				log_die_nomem("stralloc") ;
+			sa.len = 0 ;
+			salink.len = newlen ;
+			if (!stralloc_cats(&salink,"/") ||
+			!stralloc_cats(&salink,list.s + pos) ||
+			!stralloc_0(&salink)) log_die_nomem("stralloc") ;
+
 			if (!file_readputsa_g(&sa,salink.s))
 				log_dieusys(LOG_EXIT_SYS,"read environment file") ;
-			info_display_nline(field,sa.s) ;
+			if (pos)
+			{
+				if (NOFIELD) {
+					size_t padding = info_length_from_wchar(field) + 1 ;
+					if (!bprintf(buffer_1,"%*s",padding,""))
+						log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+				}
+				info_display_nline(field,sa.s) ;
+			}
+			else info_display_nline(field,sa.s) ;
 		}
-		goto freed ;
 	}
-	empty:
+	else
+	{
+		if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
+			log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+	}
 
-	if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
-		log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-
-	freed:
-		stralloc_free(&sa) ;
-		stralloc_free(&list) ;
-		stralloc_free(&salink) ;
+	stralloc_free(&sa) ;
+	stralloc_free(&list) ;
+	stralloc_free(&salink) ;
 }
 
 static void info_display_logname(char const *field,ss_resolve_t *res)
@@ -766,7 +792,6 @@ int main(int argc, char const *const *argv, char const *const *envp)
 {
 	unsigned int legacy = 1 ;
 	int found = 0 ;
-	size_t pos, newlen ;
 	int what[MAXOPTS] = { 0 } ;
 	
 	uid_t owner ;
@@ -857,77 +882,21 @@ int main(int argc, char const *const *argv, char const *const *envp)
 	if(!str_diff(nl_langinfo(CODESET), "UTF-8")) {
 		STYLE = &graph_utf8;
 	}
-	
-	if (!set_ownersysdir(&src,owner)) log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
-	if (!stralloc_cats(&src,SS_SYSTEM) ||
-	!stralloc_0(&src)) log_die_nomem("stralloc") ;
-	src.len-- ;
-		
-	if (!scan_mode(src.s,S_IFDIR))
-	{
+	if (!set_ownersysdir(&home,owner)) log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
+	if (!auto_stra(&home,SS_SYSTEM,"/")) log_die_nomem("stralloc") ;
+
+	found = ss_resolve_svtree(&src,svname,tname) ;
+
+	if (found == -1) log_dieu(LOG_EXIT_SYS,"resolve tree source of sv: ",svname) ;
+	else if (!found) {
 		log_info("no tree exist yet") ;
 		goto freed ;
 	}
-	
-	if (!stralloc_cats(&src,"/")) log_die_nomem("stralloc") ;
-	newlen = src.len ;
-	if (!stralloc_copy(&home,&src) ||
-	!stralloc_0(&home)) log_die_nomem("stralloc") ;
-	
-	if (!tname)
-	{	
-		stralloc tmp = STRALLOC_ZERO ;
-		if (!stralloc_0(&src) ||
-		!stralloc_copy(&tmp,&src)) log_die_nomem("stralloc") ;
-		
-		if (!sastr_dir_get(&satree, src.s,SS_BACKUP+1, S_IFDIR)) 
-			log_dieu(LOG_EXIT_SYS,"get tree from directory: ",src.s) ;
-		
-		if (satree.len)
-		{
-			for(pos = 0 ; pos < satree.len ; pos += strlen(satree.s + pos) + 1)
-			{
-				tmp.len = newlen ;
-				char *name = satree.s + pos ;
-				
-				if (!stralloc_cats(&tmp,name) ||
-				!stralloc_cats(&tmp,SS_SVDIRS) ||
-				!stralloc_0(&tmp)) log_die_nomem("stralloc") ;
-				if (ss_resolve_check(tmp.s,svname))
-				{
-					if (!found)
-						if (!stralloc_copy(&src,&tmp)) log_die_nomem("stralloc") ;
-					found++ ;
-				}
-			}
-		}
-		else 
-		{
-			if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning," None",log_color->off))
-				log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-			if (buffer_putsflush(buffer_1,"\n") < 0)
-				log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-		}
-		stralloc_free(&tmp) ;
-	}
-	else
-	{
-		if (!stralloc_cats(&src,tname) ||
-		!stralloc_cats(&src,SS_SVDIRS) ||
-		!stralloc_0(&src)) log_die_nomem("stralloc") ;
-		if (ss_resolve_check(src.s,svname)) found++;
-	}
-
-	if (!found)
-	{
-		log_die(LOG_EXIT_SYS,"unknown service: ",svname) ;
-	
-	}
-	else if (found > 1)
-	{
+	else if (found > 2) {
 		log_die(LOG_EXIT_SYS,svname," is set on different tree -- please use -t options") ;
 	}
-	
+	else if (found == 1) log_die(LOG_EXIT_SYS,"unknown service: ",svname) ;
+
 	if (!ss_resolve_read(&res,src.s,svname)) 
 		log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",svname) ;
 	
