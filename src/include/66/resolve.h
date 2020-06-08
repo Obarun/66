@@ -132,6 +132,7 @@ extern int ss_resolve_write_master(ssexec_t *info,ss_resolve_graph_t *graph,char
 extern int ss_resolve_sort_bytype(genalloc *gares,stralloc *list,char const *src) ;
 extern int ss_resolve_cmp_service_basedir(char const *dir) ;
 extern int ss_resolve_sort_byfile_first(stralloc *sort, char const *src) ;
+extern int ss_resolve_svtree(stralloc *svtree,char const *svname,char const *tree) ;
 /** Graph function */
 extern void ss_resolve_graph_ndeps_free(ss_resolve_graph_ndeps_t *graph) ;
 extern void ss_resolve_graph_free(ss_resolve_graph_t *graph) ;

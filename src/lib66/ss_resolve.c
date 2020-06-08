@@ -601,26 +601,8 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 	res.state = ss_resolve_add_string(&res,state) ;
 	res.src = ss_resolve_add_string(&res,keep.s + services->src) ;
 	if (services->srconf > 0)
-	{
-		stralloc salink = STRALLOC_ZERO ;
-		char *dst = keep.s + services->srconf ;
-		size_t dstlen = strlen(dst) ;
-		char tdst[dstlen + SS_SYM_VERSION_LEN + 1] ;
+		res.srconf = ss_resolve_add_string(&res,keep.s + services->srconf) ;
 
-		auto_strings(tdst,dst,SS_SYM_VERSION) ;
-
-		if (sareadlink(&salink, tdst) == -1)
-			log_warnusys_return(LOG_EXIT_ZERO,"read link of: ",tdst) ;
-
-		salink.len -= namelen + 1 ;//1 remove trailing slash
-
-		if (!stralloc_0(&salink))
-			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-
-		res.srconf = ss_resolve_add_string(&res,salink.s) ;
-
-		stralloc_free(&salink) ;
-	}
 	if (res.type == TYPE_ONESHOT)
 	{
 		if (services->type.oneshot.up.exec >= 0)
@@ -1459,4 +1441,76 @@ int ss_resolve_sort_byfile_first(stralloc *sort, char const *src)
 	errstra:
 		stralloc_free(&tmp) ;
 		return 0 ;
+}
+
+/** @Return -1 system error
+ * @Return 0 no tree exist yet
+ * @Return 1 svname doesn't exist
+ * @Return > 2, service exist on different tree */
+int ss_resolve_svtree(stralloc *svtree,char const *svname,char const *tree)
+{
+	uint8_t found = 1, copied = 0 ;
+	stralloc satree = STRALLOC_ZERO ;
+	stralloc tmp = STRALLOC_ZERO ;
+	char ownerstr[UID_FMT] ;
+	uid_t owner = getuid() ;
+	size_t ownerlen = uid_fmt(ownerstr,owner), pos, newlen ;
+
+	ownerstr[ownerlen] = 0 ;
+
+	if (!set_ownersysdir(svtree,owner)) { log_warnusys("set owner directory") ; goto err ; }
+	if (!auto_stra(svtree,SS_SYSTEM)) goto err ;
+
+	if (!scan_mode(svtree->s,S_IFDIR))
+	{
+		found = 0 ;
+		goto freed ;
+	}
+
+	if (!auto_stra(svtree,"/")) goto err ;
+	newlen = svtree->len ;
+
+	if (!stralloc_0(svtree) ||
+	!stralloc_copy(&tmp,svtree)) goto err ;
+
+	if (!sastr_dir_get(&satree, svtree->s,SS_BACKUP + 1, S_IFDIR)) {
+		log_warnu("get tree from directory: ",svtree->s) ;
+		goto err ;
+	}
+
+	if (satree.len)
+	{
+		for(pos = 0 ; pos < satree.len ; pos += strlen(satree.s + pos) + 1)
+		{
+			tmp.len = newlen ;
+			char *name = satree.s + pos ;
+
+			if (!auto_stra(&tmp,name,SS_SVDIRS)) goto err ;
+			if (ss_resolve_check(tmp.s,svname))
+			{
+				if (!tree || (tree && !strcmp(name,tree))){
+					if (!stralloc_copy(svtree,&tmp)) goto err ;
+					copied = 1 ;
+				}
+				found++ ;
+			}
+		}
+	}
+	else
+	{
+		found = 0 ;
+		goto freed ;
+	}
+
+	if (found > 2 && tree) found = 2 ;
+	if (!copied) found = 1 ;
+
+	freed:
+	stralloc_free(&satree) ;
+	stralloc_free(&tmp) ;
+	return found ;
+	err:
+		stralloc_free(&satree) ;
+		stralloc_free(&tmp) ;
+		return -1 ;
 }
