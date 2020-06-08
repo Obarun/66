@@ -36,13 +36,14 @@
 
 int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
-	int r, list = 0, replace = 0 , edit = 0 ;
+	int r, list = 0, replace = 0 , edit = 0, current = 0 ;
 	stralloc result = STRALLOC_ZERO ;
 	stralloc var = STRALLOC_ZERO ;
 	stralloc salist = STRALLOC_ZERO ;
 	stralloc sasrc = STRALLOC_ZERO ;
+	ss_resolve_t res = RESOLVE_ZERO ;
 
-	char const *sv = 0, *src = 0, *editor ;
+	char const *sv = 0, *src = 0, *treename = 0, *editor ;
 
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
@@ -69,18 +70,36 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 	}
 	if (argc < 1) log_usage(usage_env) ;
 	sv = argv[0] ;
-	if (!env_resolve_conf(&sasrc,sv,info->owner)) log_dieusys(LOG_EXIT_SYS,"get path of the configuration file") ;
-	r = scan_mode(sasrc.s,S_IFDIR) ;
-	if (r == -1 || !r) log_dieu(LOG_EXIT_USER,"find configuration file of: ",sv) ;
-	if (!src) {
+
+	treename = !info->opt_tree ? 0 : info->treename.s ;
+
+	if (!src)
+	{
 		stralloc salink = STRALLOC_ZERO ;
-		if (!auto_stra(&sasrc,SS_SYM_VERSION)) log_die_nomem("stralloc") ;
+		r = ss_resolve_svtree(&sasrc,sv,treename) ;
+		if (r == -1) log_dieu(LOG_EXIT_SYS,"resolve tree source of sv: ",sv) ;
+		else if (!r) {
+			log_info("no tree exist yet") ;
+			goto freed ;
+		}
+		else if (r > 2) {
+			log_die(LOG_EXIT_SYS,sv," is set on different tree -- please use -t options") ;
+		}
+		else if (r == 1) log_die(LOG_EXIT_SYS,"unknown service: ",sv," in tree: ", info->treename.s) ;
+
+		if (!ss_resolve_read(&res,sasrc.s,sv))
+			log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",sv) ;
+
+		sasrc.len = 0 ;
+
+		if (!auto_stra(&sasrc,res.sa.s + res.srconf,SS_SYM_VERSION)) log_die_nomem("stralloc") ;
 		if (sareadlink(&salink,sasrc.s) == -1) log_dieusys(LOG_EXIT_SYS,"readlink: ",sasrc.s) ;
 		if (!stralloc_0(&salink) ||
 		!stralloc_copy(&sasrc,&salink)) log_die_nomem("stralloc") ;
 		src = sasrc.s ;
 		stralloc_free(&salink) ;
 	}
+
 	if (!file_readputsa_g(&salist,src))log_dieusys(LOG_EXIT_SYS,"read: ",src) ;
 	if (list)
 	{
@@ -99,7 +118,11 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 	else if (edit)
 	{
 		editor = getenv("EDITOR") ;
-		if (!editor) log_dieusys(LOG_EXIT_SYS,"get EDITOR") ;
+		if (!*editor || !editor) {
+			editor = getenv("SUDO_USER") ;
+			if (editor) log_dieu(LOG_EXIT_SYS,"get EDITOR with sudo command -- please try to use the -E sudo option e.g sudo -E 66-env <option> <service>") ;
+			else log_dieusys(LOG_EXIT_SYS,"get EDITOR") ;
+		}
 		char const *const newarg[3] = { editor, src, 0 } ;
 		xpathexec_run (newarg[0],newarg,envp) ;
 	}
@@ -108,5 +131,6 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 		stralloc_free(&sasrc) ;
 		stralloc_free(&var) ;
 		stralloc_free(&salist) ;
+		ss_resolve_free(&res) ;
 	return 0 ;
 }
