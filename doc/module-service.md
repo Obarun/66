@@ -103,6 +103,7 @@ At launch of the script `configure`, [66-enable](66-enable.html) pass the follow
 - `MOD_TREENAME`: name of the tree.
 - `MOD_OWNER`: numerical UID value of the owner of the process.
 - `MOD_VERBOSITY`: verbosity level passed to [66-enable](66-enable.html).
+- `MOD_COLOR`: color state passed to [66-enable](66-enable.html). `MOD_COLOR=0` means color disabled where `MOD_COLOR=1` means color enabled.
 - `MOD_MODULE_DIR`: `%%module_system%%/<module_name>` or `%%module_adm%%/<module_name>` or  `$HOME/%%module_user%%/<module_name>` depending of the owner of the process and the location of the service frontend file.
 - `MOD_SKEL_DIR`: `%%skel%%`
 - `MOD_SERVICE_SYSDIR`: `%%service_system%%`

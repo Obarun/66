@@ -85,6 +85,39 @@ static int get_list(stralloc *list, stralloc *sdir,size_t len, char const *svnam
 	return 1 ;
 }
 
+static int rebuild_list(sv_alltype *sv_before,stralloc *list,stralloc *sv_all_type, stralloc *module_service)
+{
+	size_t pos, id, did, nid, dnid ;
+	sv_alltype_ref sv ;
+	id = sv_before->cname.idga, nid = sv_before->cname.nga ;
+	for (;nid; id += strlen(deps.s + id) + 1, nid--)
+	{
+		char *deps_name = deps.s + id ;
+		for (pos = 0 ; pos < genalloc_len(sv_alltype,&gasv) ; pos++)
+		{
+			sv = &genalloc_s(sv_alltype,&gasv)[pos] ;
+			int type = sv->cname.itype == TYPE_MODULE ? 1 : 0 ;
+			char *n = keep.s + sv->cname.name ;
+			if (!strcmp(n,deps_name))
+			{
+				if (!stralloc_catb(list,keep.s + sv->src,strlen(keep.s + sv->src) + 1)) return 0 ;
+				if (!sv->cname.nga) continue ;
+				did = type ? sv->cname.idcontents : sv->cname.idga, dnid = type ? sv->cname.ncontents : sv->cname.nga ;
+				for (;dnid; did += strlen(deps.s + did) + 1, dnid--)
+				{
+					if (sastr_cmp(list,deps.s + did) >= 0) continue ;
+					if (!rebuild_list(sv,list,sv_all_type,module_service))
+						log_warnu(LOG_EXIT_ZERO,"rebuild dependencies list of: ",deps.s + did) ;
+				}
+			}
+		}
+		if (!stralloc_catb(sv_all_type,deps_name,strlen(deps_name) + 1)) return 0 ;
+		if (!stralloc_catb(module_service,deps_name,strlen(deps_name) + 1)) return 0 ;
+	}
+
+	return 1 ;
+}
+
 /** return 1 on success
  * return 0 on failure
  * return 2 on already enabled 
@@ -93,7 +126,7 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 {
 	log_trace("start parse process of module: ",svname) ;
 	int r, err = 1, insta = -1, svtype = -1, from_ext_insta = 0 ;
-	size_t pos = 0, id, nid, newlen, ndeps ;
+	size_t pos = 0, id, nid, newlen ;
 	stralloc sdir = STRALLOC_ZERO ; // service dir
 	stralloc list = STRALLOC_ZERO ;
 	stralloc tmp = STRALLOC_ZERO ;
@@ -164,13 +197,14 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 	if (!regex_configure(sv_before,info,permanent_sdir,svname,conf)) return 0 ;
 
 	make_deps:
-	/** get all services */
+
 	tmp.len = 0 ;
 	list.len = 0 ;
 
 	if (!auto_stra(&tmp,permanent_sdir,SS_MODULE_SERVICE + 1))
 		log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 
+	/** get all services */
 	if (!sastr_dir_get_recursive(&list,tmp.s,"",S_IFREG))
 		log_warnusys_return(LOG_EXIT_ZERO,"get file(s) of module: ",svname) ;
 
@@ -189,18 +223,12 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 	tmp.len = 0 ;
 	sdir.len = 0 ;
 
-	/** remake the deps field */
-	id = sv_before->cname.idga, nid = sv_before->cname.nga ;
-	for (;nid; id += strlen(deps.s + id) + 1, nid--) {
-		/** incoporate the @deps inside the list to parse,
-		 * this avoid to make it twice at parsed_enabled() */
-		if (ss_resolve_src_path(&list,deps.s + id,info->owner,0) < 1)
-			log_warnu_return(LOG_EXIT_ZERO,"resolve source path of: ",deps.s + id) ;
-		if (!stralloc_catb(&tmp,deps.s + id,strlen(deps.s + id) + 1)) 
-			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-		if (!stralloc_catb(&sdir,deps.s + id,strlen(deps.s + id) + 1)) 
-			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-	}
+	/** remake the deps field
+	 * incoporate the module service deps inside the list to parse
+	 * and each dependency of each module service dependency.
+	 * Do it recursively. */
+	if (!rebuild_list(sv_before,&list,&tmp,&sdir))
+		log_warnu(LOG_EXIT_ZERO,"rebuild dependencies list of; ",svname) ;
 
 	/** parse all services of the modules */
 	for (pos = 0 ; pos < list.len ; pos += strlen(list.s + pos) + 1)
@@ -209,11 +237,13 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 		char *sv = list.s + pos ;
 		size_t len = strlen(sv) ;
 		char bname[len + 1] ;
-		char *pbname = bname ;
+		char *pbname = 0 ;
 		addonsv.len = 0 ;
 
 		if (!ob_basename(bname,sv))
 			log_warnu_return(LOG_EXIT_ZERO,"find basename of: ",sv) ;
+
+		pbname = bname ;
 
 		/** detect cyclic call. Sub-module cannot call it itself*/
 		if (!strcmp(svname,bname))
@@ -223,9 +253,9 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 		if (!insta) log_warn_return(LOG_EXIT_ZERO,"invalid instance name: ",sv) ;
 		if (insta > 0)
 		{
-			/** we can't know the origin of the instance
-			 * search first at service@ directory, if it not found
-			 * pass through the classic ss_resolve_src_path() function */
+			/** we can't know the origin of the instanciated service.
+			 * Search first at service@ directory, if it not found
+			 * pass through the classic ss_resolve_src_path() */
 
 			pbname = bname ;
 			int found = 0 ;
@@ -245,9 +275,7 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 			sv = addonsv.s ;
 			len = strlen(sv) ;
 		}
-		/** merge configuration file from upstream for each service
-		* inside the module*/
-		conf = 2 ;
+
 		if (!parse_service_before(info,parsed_list,tree_list,sv,nbsv,sasv,force,conf,0,permanent_sdir))
 			log_warnu_return(LOG_EXIT_ZERO,"parse: ",sv," from module: ",svname) ;
 
@@ -260,6 +288,32 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 			ext_insta[newlen] = 0 ;
 			sv = ext_insta ;
 		}
+		/** we want the configuration file for each service inside
+		 * the configuration directory of the module.*/
+		char *version = keep.s + sv_before->cname.version ;
+		{
+			stralloc tmpenv = STRALLOC_ZERO ;
+			if (!env_resolve_conf(&tmpenv,svname,info->owner))
+				log_warnu_return(LOG_EXIT_ZERO,"get path of the configuration file") ;
+			if (!auto_stra(&tmpenv,"/")) log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
+
+			for (size_t pos = 0 ; pos < genalloc_len(sv_alltype,&gasv);pos++)
+			{
+				if (!genalloc_s(sv_alltype,&gasv)[pos].opts[2]) continue ;
+				char *n = keep.s + genalloc_s(sv_alltype,&gasv)[pos].cname.name ;
+
+				if (!strcmp(n,bname))
+				{
+					genalloc_s(sv_alltype,&gasv)[pos].srconf = keep.len ;
+					if (!auto_stra(&tmpenv,version,"/",bname)) log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
+
+					if (!stralloc_catb(&keep,tmpenv.s,strlen(tmpenv.s) + 1))
+						log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
+					break ;
+				}
+			}
+			stralloc_free(&tmpenv) ;
+		}
 
 		svtype = get_svtype_from_file(sv) ;
 		if (svtype == -1) log_warnu_return(LOG_EXIT_ZERO,"get svtype of: ",sv) ;
@@ -271,21 +325,7 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 			if (!stralloc_catb(&tmp,pbname,strlen(pbname) + 1)) 
 				log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}
-	/** we want all service contained into the module including
-	 * the deps of the service */
-	for (ndeps = 0; ndeps < genalloc_len(sv_alltype,&gasv); ndeps++)
-	{
-		sv_alltype_ref service = &genalloc_s(sv_alltype,&gasv)[ndeps] ;
 
-		int id = service->cname.itype == TYPE_MODULE ? service->cname.idcontents : service->cname.idga ;
-		unsigned int nid = service->cname.itype == TYPE_MODULE ? service->cname.ncontents : service->cname.nga ;
-		for (;nid; id += strlen(deps.s + id) + 1, nid--)
-		{
-			if (sastr_cmp(&sdir,deps.s + id) == -1)
-				if (!stralloc_catb(&sdir,deps.s + id,strlen(deps.s + id) + 1))
-					log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-		}
-	}
 	sv_before->cname.idga = deps.len ;
 	sv_before->cname.nga = 0 ;
 	for (pos = 0 ;pos < tmp.len ; pos += strlen(tmp.s + pos) + 1)
@@ -503,6 +543,7 @@ int regex_configure(sv_alltype *sv_before,ssexec_t *info, char const *module_dir
 			auto_stra(&env,"MOD_SCANDIR=",info->scandir.s,"\n") ;
 			auto_stra(&env,"MOD_TREENAME=",info->treename.s,"\n") ;
 			auto_stra(&env,"MOD_OWNER=",owner,"\n") ;
+			auto_stra(&env,"MOD_COLOR=",info->opt_color ? "1" : "0","\n") ;
 			auto_stra(&env,"MOD_VERBOSITY=",verbo,"\n") ;
 			auto_stra(&env,"MOD_MODULE_DIR=",module_dir,"\n") ;
 			auto_stra(&env,"MOD_SKEL_DIR=",SS_SKEL_DIR,"\n") ;
