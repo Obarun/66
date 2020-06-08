@@ -88,16 +88,24 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
 			if (opt == -1) break ;
 			switch (opt)
 			{
-				case 'h' : 	info_help(info->help); return 0 ;
-				case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(info->usage) ; break ;
-				case 'l' : 	if (!stralloc_cats(&info->live,l.arg)) log_die_nomem("stralloc") ;
+				case 'h' :	info_help(info->help); return 0 ;
+				case 'v' :	if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(info->usage) ;
+							info->opt_verbo = 1 ;
+							break ;
+				case 'l' :	if (!stralloc_cats(&info->live,l.arg)) log_die_nomem("stralloc") ;
 							if (!stralloc_0(&info->live)) log_die_nomem("stralloc") ;
+							info->opt_live = 1 ;
 							break ;
-				case 't' : 	if(!stralloc_cats(&info->tree,l.arg)) log_die_nomem("stralloc") ;
+				case 't' :	if(!stralloc_cats(&info->tree,l.arg)) log_die_nomem("stralloc") ;
 							if(!stralloc_0(&info->tree)) log_die_nomem("stralloc") ;
+							info->opt_tree = 1 ;
 							break ;
-				case 'T' :	if (!uint0_scan(l.arg, &info->timeout)) log_usage(info->usage) ; break ;
-				case 'z' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
+				case 'T' :	if (!uint0_scan(l.arg, &info->timeout)) log_usage(info->usage) ;
+							info->opt_timeout = 1 ;
+							break ;
+				case 'z' :	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ;
+							info->opt_color = 1 ;
+							break ;
 				default	:	for (int i = 0 ; i < n ; i++)
 							{						
 								if (!argv[l.ind]) log_usage(info->usage) ;

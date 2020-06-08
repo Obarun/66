@@ -33,6 +33,12 @@ struct ssexec_s
 	char const *prog ;
 	char const *help ;
 	char const *usage ;
+	// argument passed or not at commandline 0->no,1->yes
+	uint8_t opt_verbo ;
+	uint8_t opt_live ;
+	uint8_t opt_tree ;
+	uint8_t opt_timeout ;
+	uint8_t opt_color ;
 } ;
 
 #define SSEXEC_ZERO { 	.base = STRALLOC_ZERO , \
@@ -46,7 +52,12 @@ struct ssexec_s
 						.timeout = 0 , \
 						.prog = 0 , \
 						.help = 0 , \
-						.usage = 0 }
+						.usage = 0 , \
+						.opt_verbo = 0 , \
+						.opt_live = 0 , \
+						.opt_tree = 0 , \
+						.opt_timeout = 0 , \
+						.opt_color = 0 }
 
 typedef int ssexec_func_t(int, char const *const *argv, char const *const *envp, ssexec_t *info) ;
 typedef ssexec_func_t *ssexec_func_t_ref ;
