@@ -36,14 +36,14 @@
 
 int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
-	int r, list = 0, replace = 0 , edit = 0, current = 0 ;
+	int r, list = 0, replace = 0 , edit = 0 ;
 	stralloc result = STRALLOC_ZERO ;
 	stralloc var = STRALLOC_ZERO ;
 	stralloc salist = STRALLOC_ZERO ;
 	stralloc sasrc = STRALLOC_ZERO ;
 	ss_resolve_t res = RESOLVE_ZERO ;
 
-	char const *sv = 0, *src = 0, *treename = 0, *editor ;
+	char const *sv = 0, *src = 0, *treename = 0, *editor = 0 ;
 
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
@@ -118,7 +118,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 	else if (edit)
 	{
 		editor = getenv("EDITOR") ;
-		if (!*editor || !editor) {
+		if (!editor) {
 			editor = getenv("SUDO_USER") ;
 			if (editor) log_dieu(LOG_EXIT_SYS,"get EDITOR with sudo command -- please try to use the -E sudo option e.g sudo -E 66-env <option> <service>") ;
 			else log_dieusys(LOG_EXIT_SYS,"get EDITOR") ;
