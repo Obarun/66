@@ -7,7 +7,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # 66-enable
 
-This command enables one ore more services and/or modules inside a given *tree*.
+This command enables one ore more services inside a given *tree*.
 
 ## Interface
 

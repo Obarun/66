@@ -252,7 +252,7 @@ This section is *mandatory*. (!)
     * bundle : declares the service as a bundle service.  
     * longrun : declares the service as a longrun service.
     * oneshot : declares the service as a oneshot service.
-    * module : declares the service as a module.
+    * module : declares the service as a module service.
 
     **Note**: If you don't care about dependencies between services or if you don't need specific tasks or alternative configuration to get the daemon running, "classic" is the best pick.
     
@@ -786,7 +786,7 @@ Furthermore there are some keys specific to the log.
     
     * Any valid number.
 
-    A new log file will be created every time the current one approaches *value* bytes. By default, filesize is `1000000`; it cannot be set between `4096` and `268435455`.
+    A new log file will be created every time the current one approaches *value* bytes. By default, filesize is `1000000`; it cannot be set lower than `4096` or higher than `268435455`.
 
     ---
     
