@@ -9,7 +9,7 @@ author: Eric Vidal <eric@obarun.org>
 
 A module can be considered as an [instantiated](instantiated-service.html) service. It works the same way as a service frontend file but allows the user/admin to configure a set of different kind of services before executing the enable process. Also, the set of services can be configured with the conjunction of a script called *configure* which can be made in any language.
 
-This allows one to pre-configure a set of services for special tasks without knowing the exact target of the module. The best example is the module for booting a machine. Each machine is different and the set of services needed to be adaptable as much as possible for different kinds of machines or boot; e.g booting a container.
+This allows one to pre-configure a set of parameters or other services for special tasks without knowing the exact target of the module. The best example is the module for booting a machine. Each machine is different and the set of services need to be adaptable as much as possible for different kinds of machines during boot; e.g booting a container.
 
 A module is defined with two elements:
 
@@ -21,15 +21,15 @@ The name of the frontend and the name of the directory **must** be the same. For
 
 ## Frontend file
 
-The [instantiated frontend service](instantiated-service.html) is written as any other instantiated service with it own specification—see the section [[regex]](frontend.html#Section: [regex]).
+The [instantiated frontend service](instantiated-service.html) is written as any other instantiated service with its own specification—see the section [[regex]](frontend.html#Section: [regex]).
 
 ## Module directory
 
 The module directory can contain three sub-direcotories:
 
-- *configure* : This directory can contain an **executable** file script named configure. For example, `%%module_system%%/foo@/configure/configure`. The sub-directory **must** be named *configure* and the file script **must** be named *configure*. This file **is not** mandatory. The [66-enable](66-enable.html) process will detect if the file exist and it run it if it's the case. It's up to you to write the configure script file with the language of your choice as long as you define a correct *shebang*.
+- *configure* : This directory can contain an **executable** file script named configure. For example, `%%module_system%%/foo@/configure/configure`. The sub-directory **must** be named *configure* and the file script **must** be named *configure*. This file **is not** mandatory. The [66-enable](66-enable.html) process will detect if the file exists and it runs it if it's the case. It's up to you to write the *configure* script file with the language of your choice as long as you define a correct *shebang*.
 
-	Also, this directory can contain any files or directories that you need to configure your module. It's the responsability of the module creator to properly use or dispatch files or directories found inside the *configure* directory with the help of the *configure* script or at module installation phase. [66-enable](66-enable.html) will not handle any other file than the *configure* script for you. 
+	Also, this directory can contain any files or directories that you need to configure your module. It's the responsability of the module creator to properly use or dispatch files or directories found inside the *configure* directory with the help of the *configure* script or during the module installation phase. [66-enable](66-enable.html) will not handle any other file than the *configure* script for you. 
 
 	**Note** : The *configure* script is launched after the parsing of the frontend file, meaning all regex operations on directories and files are already made.
 
@@ -93,7 +93,7 @@ When you do `66-enable foo@system`:
 
 ### Environment variable passed to the script `configure`
 
-At launch of the script `configure`, [66-enable](66-enable.html) pass the following variables to the environment:
+At launch of the script `configure`, [66-enable](66-enable.html) passes the following variables to the environment:
 
 - `MOD_NAME`: name of the module.
 - `MOD_BASE`: `%%system_dir%%/system` for root, `$HOME/%%user_dir%%/system` for regular user.
