@@ -120,7 +120,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 		editor = getenv("EDITOR") ;
 		if (!editor) {
 			editor = getenv("SUDO_USER") ;
-			if (editor) log_dieu(LOG_EXIT_SYS,"get EDITOR with sudo command -- please try to use the -E sudo option e.g sudo -E 66-env <option> <service>") ;
+			if (editor) log_dieu(LOG_EXIT_SYS,"get EDITOR with sudo command -- please try to use the -E sudo option e.g. sudo -E 66-env -e <service>") ;
 			else log_dieusys(LOG_EXIT_SYS,"get EDITOR") ;
 		}
 		char const *const newarg[3] = { editor, src, 0 } ;
