@@ -7,7 +7,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # 66-enable
 
-This command enables one ore more services inside a given *tree*.
+This command enables one ore more services and/or modules inside a given *tree*.
 
 ## Interface
 
@@ -61,13 +61,13 @@ For *services* of type `bundle` or `atomic` any existing dependency chain will b
 
 ## Directory name as service
 
-When choosing to make a directory be recognised as service the path of the directory must exist by default at `%%service_adm%%`, `%%service_system%%` or `$HOME/%%service_user%%` depending of the owner of the process and the option given at compile time. All *service* files found in this directory will be enabled. This process is done recursively if a sub-directory is found till it not found other directories into the sub one. The directory can contain a mixed set of `bundle`, `atomic` services where some of those depend on each other. The directory option is not limited to these types though. Any available service type can be part of the set.
+When choosing to make a directory to be recognised as service the path of the directory must exist by default at `%%service_adm%%`, `%%service_system%%` or `$HOME/%%service_user%%` depending of the owner of the process and the option given at compile time. All *service* files found in this directory will be enabled. This process is done recursively if a sub-directory is found till it not found other directories into the sub one. The directory can contain a mixed set of `bundle`, `atomic` services where some of those depend on each other. The directory option is not limited to these types though. Any available service type can be part of the set.
 
 A good example is a set of services for the boot process. To achieve this specific task a large number of `oneshot` services is used along with some `classic` services.
 
 The parser automatically resolves any existing dependency chain for the processed *services* just as it would for any regular service.
 
-**(!)** This option and its mechanics can be subject to change in future releases of the *66-enable* tool.
+**(!)** This option and its mechanisms can be subject to change in future releases of the *66-enable* tool.
 
 ## Instantiated service
 
@@ -83,4 +83,4 @@ Also an instanced *service* can be declared on the `@depends` field of the [fron
 
 ## Service configuration file
 
-If the [environment](frontend.html#Section: [environment]) section is set on the frontend service file, the parse result process can be found by default at `%%service_admconf%%` for the root user `$HOME/%%service_userconf%%` for a normal user. The default path can be changed at compile time by passing the `--with-sysadmin-service-conf=DIR` for the root user and `--with-user-service-conf=DIR` for a normal user.
+If the [environment](frontend.html#Section: [environment]) section is set on the frontend service file, the parse result process can be found by default at `%%service_admconf%%` for root, `$HOME/%%service_userconf%%` for a user. The default path can be changed at compile time by passing the `--with-sysadmin-service-conf=DIR` for root and `--with-user-service-conf=DIR` for a user.
