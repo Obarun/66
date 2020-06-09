@@ -7,9 +7,9 @@ author: Eric Vidal <eric@obarun.org>
 
 # The frontend service file
 
-The [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc) programs each handle and use several kinds of services and different files. It is quite complex to understand and manage the relationship between all those files and services. If you're interested in the details you should read [the documentation for the s6 servicedir](https://skarnet.org/software/s6/servicedir.html) and also about [classic](https://skarnet.org/software/s6/servicedir.html), [oneshot, longrun (also called atomic services),bundle](https://skarnet.org/software/s6-rc/s6-rc-compile.html) and [module](frontend.html#Module service creation) services. The frontend service file of 66 tools allows you to deal with all these different services in a centralized manner in one single place.
+The [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc) programs each handle and use several kinds of services and different files. It is quite complex to understand and manage the relationship between all those files and services. If you're interested in the details you should read [the documentation for the s6 servicedir](https://skarnet.org/software/s6/servicedir.html) and also about [classic](https://skarnet.org/software/s6/servicedir.html), [oneshot, longrun (also called atomic services),bundle](https://skarnet.org/software/s6-rc/s6-rc-compile.html) and [module](frontend.html#Module service creation) services. The frontend service file of 66 tools allows you to deal with all these different services in a centralized manner and in one single location.
 
-By default *66* tools expects to find any service files in `%%service_system%%` and `%%service_adm%%` for root user. For regular users, `$HOME/%%service_user%%` will take priority over the previous ones. Although this can be changed at compile time by passing the `--with-system-service=DIR`, `--with-sysadmin-service=DIR` and `--with-user-service=DIRoption` to `./configure`.
+By default *66* tools expects to find service files in `%%service_system%%` and `%%service_adm%%` for root user. For regular users, `$HOME/%%service_user%%` will take priority over the previous ones. Although this can be changed at compile time by passing the `--with-system-service=DIR`, `--with-sysadmin-service=DIR` and `--with-user-service=DIRoption` to `./configure`.
 
 The frontend service file has a format of INI with a specific syntax on the key field. The name of the file usually corresponds to the name of the daemon and does not have any extension or prefix.
 
@@ -48,7 +48,7 @@ The parser will **not** accept an empty value. If a *key* is set then the *value
 
 *Key* names are **case sensitive** and can not be modified. Most names should be specific enough to avoid confusion.
 
-The sections can be declared in any order but as a good practice the `[main]` section should be declared first. That way the parser can read the file as fast as possible. 
+The sections can be declared in any order but as a good practice the `[main]` section should be declared first. This way the parser can read the file as fast as possible. 
 
 ## Sections
 
@@ -249,12 +249,13 @@ This section is *mandatory*. (!)
     valid values :
 
     * classic : declares the service as classic.
-    * bundle : declares the service as bundle service.  
-    * longrun : declares the service as longrun service.
-    * oneshot : declares the service as oneshot service.
-    * module : declares the service as module service.
+    * bundle : declares the service as a bundle service.  
+    * longrun : declares the service as a longrun service.
+    * oneshot : declares the service as a oneshot service.
+    * module : declares the service as a module.
 
-    **Note**: If you don't care about dependencies between services or if you don't need specific tasks to get done before running the daemon, "classic" is the best pick.
+    **Note**: If you don't care about dependencies between services or if you don't need specific tasks or alternative configuration to get the daemon running, "classic" is the best pick.
+    
 
     ---
 
@@ -453,7 +454,7 @@ This section is *mandatory*. (!)
 
     Declare the contents of a bundle service.
 
-    mandatory : yes (!)—for services of type `bundle`. Not allowed for all other services type.
+    mandatory : yes (!)—for services of type `bundle`. Not allowed for all other service types.
 
     syntax : bracket
 
@@ -479,7 +480,7 @@ This section is *mandatory*. (!)
 
     valid values :
 
-    * log : automatically create a logger for the service. The behavior of the logger can be adjusted in the corresponding section—see [[logger]](frontend.html#Section: [logger]).
+    * log : automatically create a logger for the service. The behavior of the logger can be configured in the corresponding section—see [[logger]](frontend.html#Section: [logger]).
     * env : enable the use of the [[environment]](frontend.html#Section: [environment]) section for the service.
     pipeline : automatically create a pipeline between the service and the logger. For more information read the [s6-rc](https://skarnet.org/software/s6-rc) documentation.
 
@@ -522,7 +523,7 @@ This section is *mandatory*. (!)
 
     * Any valid number.
 
-    This will create the file *notification-fd*. Once this file was created the service supports [readiness notification](https://skarnet.org/software/s6/notifywhenup.html). The value equals the number of the file descriptor that the service writes its readiness notification to. (For instance, it should be 1 if the daemon is [s6-ipcserverd](https://skarnet.org/software/s6/s6-ipcserverd.html) run with the -1 option.) When the service is started or restarted and this file is present and contains a valid descriptor number, [66-start](66-start.html) will wait for the notification from the service and broadcast readiness, i.e. any `66-svctl -U` process will be triggered.
+    This will create the file *notification-fd*. Once this file is created the service supports [readiness notification](https://skarnet.org/software/s6/notifywhenup.html). The value equals the number of the file descriptor that the service writes its readiness notification to. (For instance, it should be 1 if the daemon is [s6-ipcserverd](https://skarnet.org/software/s6/s6-ipcserverd.html) run with the -1 option.) When the service is started or restarted and this file is present and contains a valid descriptor number, [66-start](66-start.html) will wait for the notification from the service and broadcast its readiness, i.e. any `66-svctl -U` process will be triggered.
 
     ---
 
@@ -538,7 +539,7 @@ This section is *mandatory*. (!)
 
     * Any valid number.
 
-    This will create the file *timeout-finish*. Once this file was created the value will equal the number of milliseconds after which the *./finish* script—if it exists—will be killed with a `SIGKILL`. The default is `5000`; finish scripts are killed if they're still alive after `5` seconds. A value of `0` allows finish scripts to run forever.
+    This will create the file *timeout-finish*. Once this file is created the value will equal the number of milliseconds after which the *./finish* script—if it exists—will be killed with a `SIGKILL`. The default is `5000`; finish scripts are killed if they're still alive after `5` seconds. A value of `0` allows finish scripts to run forever.
 
     ---
 
@@ -554,7 +555,7 @@ This section is *mandatory*. (!)
 
     * Any valid number.
 
-    This will create the file *timeout-kill*. Once this file was created and the value is not `0`, then on reception of a [66-stop](66-stop.html) command—which sends a `SIGTERM` and a `SIGCONT` to the service—a timeout of value milliseconds is set. If the service is still not dead after *value* milliseconds it will receive a `SIGKILL`. If the file does not exist, or contains 0 or an invalid value, then the service is never forcibly killed (unless, of course, a [s6-svc -k](https://skarnet.org/software/s6/s6-svc.html) command is sent).
+    This will create the file *timeout-kill*. Once this file is created and the value is not `0`, then on reception of a [66-stop](66-stop.html) command—which sends a `SIGTERM` and a `SIGCONT` to the service — a timeout of value in milliseconds is set. If the service is still not dead, after *value* in milliseconds, it will receive a `SIGKILL`. If the file does not exist, or contains 0, or an invalid value, then the service is never forcibly killed (unless, of course, a [s6-svc -k](https://skarnet.org/software/s6/s6-svc.html) command is issued).
 
     ---
     
@@ -570,7 +571,7 @@ This section is *mandatory*. (!)
 
     * Any valid number.
 
-    This will create the file *timeout-up*. Once this file was created the *value* will equal the maximum number of milliseconds that [66-start](66-start.html) will wait for successful completion of the service start. If starting the service takes longer than this value, [66-start](66-start.html) will declare the transition a failure. If the value is `0`, no timeout is defined and [66-start](66-start.html) will wait for the service to start until the *maxdeath* is reached. Without this file a value of `3000` (`3` seconds) will be taken by default.
+    This will create the file *timeout-up*. Once this file is created the *value* will equal the maximum number of milliseconds that [66-start](66-start.html) will wait for successful completion of the service start. If starting the service takes longer than this value, [66-start](66-start.html) will declare the transition a failure. If the value is `0`, no timeout is defined and [66-start](66-start.html) will wait for the service to start until the *maxdeath* is reached. Without this file a value of `3000` (`3` seconds) will be used by default.
 
     ---
     
@@ -586,7 +587,7 @@ This section is *mandatory*. (!)
 
     * Any valid number.
 
-    This will create the file *timeout-down*. Once this file was created the value will equal the maximum number of milliseconds [66-stop](66-stop.html) will wait for successful completion of the service stop. If starting the service takes longer than this value, [66-stop](66-stop.html) will declare the transition a failure. If the value is `0`, no timeout is defined and [66-stop](66-stop.html) will wait for the service to start until the *maxdeath* is reached. Without this file a value of `3000` (`3` seconds) will be taken by default.
+    This will create the file *timeout-down*. Once this file is created the value will equal the maximum number of milliseconds [66-stop](66-stop.html) will wait for successful completion of the service stop. If starting the service takes longer than this value, [66-stop](66-stop.html) will declare the transition a failure. If the value is `0`, no timeout is defined and [66-stop](66-stop.html) will wait for the service to start until the *maxdeath* is reached. Without this file a value of `3000` (`3` seconds) will be used by default.
 
     ---
     
@@ -753,7 +754,7 @@ Furthermore there are some keys specific to the log.
     
     * Any valid path on the system.
 
-    The directory where to save the log file. This directory is automatically created. The current user of the process needs to have sufficient permissions on the destination directory to be able to create it. The default directory is `%%system_log%%/service_name` for root and `$HOME/%%user_log%%/service_name` for any regular user. The default can also be changed at compile-time by passing the `--with-system-logpath=DIR` option for root and `--with-user-logpath=DIR` for a user to `./configure`.
+    The directory where the log file is saved. This directory is automatically created. The current user of the process needs to have sufficient permissions on the destination directory to be able to create it. The default directory is `%%system_log%%/service_name` for root and `$HOME/%%user_log%%/service_name` for any user. The default can also be changed at compile-time by passing the `--with-system-logpath=DIR` option for root and `--with-user-logpath=DIR` for a user to `./configure`.
     
     ---
     
@@ -785,7 +786,7 @@ Furthermore there are some keys specific to the log.
     
     * Any valid number.
 
-    A new log file will be created every time the current one approaches *value* bytes. By default, filesize is `1000000`; it cannot be set lower than `4096` or higher than `268435455`.
+    A new log file will be created every time the current one approaches *value* bytes. By default, filesize is `1000000`; it cannot be set between `4096` and `268435455`.
 
     ---
     
