@@ -7,7 +7,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # 66-enable
 
-This command enables one ore more services inside a given *tree*.
+This command enables one or more services inside a given *tree*.
 
 ## Interface
 
@@ -79,7 +79,7 @@ An instanced *service* name from a service template can be passed as argument wh
 66-enable tty@tty1
 ```
 
-Also an instanced *service* can be declared on the `@depends` field of the [frontend service file](frontend.html).
+Also instanced *services* can be declared on the `@depends` field of the [frontend service file](frontend.html).
 
 ## Service configuration file
 
