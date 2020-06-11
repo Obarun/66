@@ -61,7 +61,7 @@ Frontend service file
 
 ### Boot service file
 
-The boot sequence can be a tedious task to accomplish. A **portable** and **complete** set of service can be found [here](https://framagit.org/obarun/boot-66serv).
+The boot sequence can be a tedious task to accomplish. A **portable** and **complete** set of service can be found [here](https://framagit.org/pkg/obmods/boot-66serv).
 This set of service work out of the box and highly configurable to suit needs of the distributions.
 POC was made on `Gentoo`, `Funtoo`, `Devuan`, `Void`, `Adelie`, `Arch`.
 
