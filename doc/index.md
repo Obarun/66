@@ -80,6 +80,7 @@ Please refer to the [INSTALL.md](https://framagit.org/Obarun/66) file for detail
 
 - [66-echo](66-echo.html)
 - [66-umountall](66-umountall.html)
+- [execl-envfile](execl-envfile.html)
 
 ## Why is 66 necessary?
 
