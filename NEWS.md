@@ -29,6 +29,55 @@ See the *66-update* documentation page for further information.
 
 ---
 
+# In 0.4.0.0
+
+This is a ***Major release***, you need to update your *trees* with *66-update* tool.
+
+- new extra-tools:
+    - execl-envfile: this tool come from [66-tools](https://framagit.org/obarun/66-tools.git) software and was incorporated inside the 66 software.
+        - It parses now all files found at a directory by alphabetical order.
+
+- Documentation is now written in markdown format. Lowdown software it necessary to build in html and manpages format.
+
+- Bugs fix:
+
+    - *66-update*: respect the tree start order.
+    - *66-tree*: fix behavior when we have only one tree enabled.
+    - *66-inservice*: do not crash in case of empty log file.
+    - Fix reverse dependencies search for a service with type `module`.
+    - Respect timestamp format given at compile time for the uncaught-logs.
+    - Accept empty environment file.
+
+- Configuration service files: These files is now automatically versioned in function of the field `@version` declared on the frontend service file e.g. `/etc/66/conf/<service>/version/<file>`. A symlink called `version` is created or updated at `/etc/66/conf/<service>/version`. This symlink point to the configuration file currently in use.
+Also, you can now write and save your own configuration file for a service inside the configuration service directory. All files found on that directory will be parsed and exported to the environment of the service at start time. The parse process is made on alphabetical order.
+
+- `@hiercopy` field accept now relative path.
+
+- `@build` field is no longer mandatory. If it not set, `auto` is the default.
+
+- `@version` field **must** be in the form digit.digit.digit e.g. 0.10.2.
+
+- `module` service type:
+
+    - General code improvement and evolve.
+    - Add `@addservices` field at `[regex]` section.
+    - Disabling a service contained inside a module is not possible. This break entirely the module operation.
+    - Sub module directories is no longer mandatory. *66-enable* will create it if it doesn't exist.
+    - *66-enable* export some variable environment at configure script runtime-see modules-service documentation page.
+    - Fix cyclic dependency: a module cannot call it itself.
+    - Redesign of the inner directories structure: instantiated service service **must** be define at `service@/` sub-directory where other type go to `service/` sub-directory. `.configure/` is now named `configure`.
+    - All configuration files for each service contained inside the module is written inside the versioned directory of the module e.g. `/etc/66/conf/<module>/<version>/<service>/<service_version>/file`. This allows to have multiple module using a same service with a specific configuration for each service.
+
+- *66-inresolve*: add field Real_exec_run,Real_exec_finish for the service and logger associated to display the exact contain of the `run/up` and `finish/down` files respectively.
+
+- *66-enable*: The absolute path of the frontend service can also be set but **must** contain the primary path of the path define at compile time by --with-system-service or --with-sysadm-service or --with-user-service e.g. `/etc/66/service/lamp/httpd`.
+
+- *66-env*:
+    - General code improvement.
+    - Follow the change about the versioned configuration service file.
+
+---
+
 # In 0.3.0.3
 
 - Hot fix: Avoids overwriting the current file
