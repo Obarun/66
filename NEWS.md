@@ -29,6 +29,12 @@ See the *66-update* documentation page for further information.
 
 ---
 
+# In 0.4.0.1
+
+- Hot fix: `@build` is no longer mandatory even for `[stop]` section.
+
+---
+
 # In 0.4.0.0
 
 This is a ***Major release***, you need to update your *trees* with *66-update* tool.
