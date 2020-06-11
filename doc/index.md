@@ -46,7 +46,7 @@ Please refer to the [INSTALL.md](https://framagit.org/Obarun/66) file for detail
 
 - [66-parser](66-parser.html)
 - [66-inresolve](66-inresolve.html)
-- [66-state](66-state.html)
+- [66-instate](66-instate.html)
 
 ### Admin tools
 
