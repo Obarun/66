@@ -22,6 +22,7 @@ BIN_TARGETS := \
 66-hpr \
 66-update \
 66-umountall \
-66-echo
+66-echo \
+execl-envfile
 
 LIB_DEFS := 66=66

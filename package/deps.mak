@@ -38,6 +38,7 @@ src/66/66-tree.o src/66/66-tree.lo: src/66/66-tree.c src/include/66/config.h src
 src/66/66-update.o src/66/66-update.lo: src/66/66-update.c src/include/66/backup.h src/include/66/constants.h src/include/66/db.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
 src/extra-tools/66-echo.o src/extra-tools/66-echo.lo: src/extra-tools/66-echo.c
 src/extra-tools/66-umountall.o src/extra-tools/66-umountall.lo: src/extra-tools/66-umountall.c src/include/66/config.h
+src/extra-tools/execl-envfile.o src/extra-tools/execl-envfile.lo: src/extra-tools/execl-envfile.c
 src/lib66/backup_cmd_switcher.o src/lib66/backup_cmd_switcher.lo: src/lib66/backup_cmd_switcher.c src/include/66/constants.h src/include/66/enum.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/backup_make_new.o src/lib66/backup_make_new.lo: src/lib66/backup_make_new.c src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/tree.h src/include/66/utils.h
 src/lib66/backup_realpath_sym.o src/lib66/backup_realpath_sym.lo: src/lib66/backup_realpath_sym.c src/include/66/constants.h src/include/66/enum.h src/include/66/ssexec.h src/include/66/utils.h
@@ -68,7 +69,7 @@ src/lib66/ss_utils.o src/lib66/ss_utils.lo: src/lib66/ss_utils.c src/include/66/
 src/lib66/ssexec_dbctl.o src/lib66/ssexec_dbctl.lo: src/lib66/ssexec_dbctl.c src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/state.h src/include/66/utils.h
 src/lib66/ssexec_disable.o src/lib66/ssexec_disable.lo: src/lib66/ssexec_disable.c src/include/66/constants.h src/include/66/db.h src/include/66/resolve.h src/include/66/state.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
 src/lib66/ssexec_enable.o src/lib66/ssexec_enable.lo: src/lib66/ssexec_enable.c src/include/66/constants.h src/include/66/db.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
-src/lib66/ssexec_env.o src/lib66/ssexec_env.lo: src/lib66/ssexec_env.c src/include/66/config.h src/include/66/environ.h src/include/66/parser.h src/include/66/ssexec.h src/include/66/utils.h
+src/lib66/ssexec_env.o src/lib66/ssexec_env.lo: src/lib66/ssexec_env.c src/include/66/config.h src/include/66/constants.h src/include/66/environ.h src/include/66/parser.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/ssexec_free.o src/lib66/ssexec_free.lo: src/lib66/ssexec_free.c src/include/66/ssexec.h
 src/lib66/ssexec_help.o src/lib66/ssexec_help.lo: src/lib66/ssexec_help.c src/include/66/ssexec.h
 src/lib66/ssexec_init.o src/lib66/ssexec_init.lo: src/lib66/ssexec_init.c src/include/66/constants.h src/include/66/db.h src/include/66/rc.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/state.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
@@ -140,6 +141,8 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-echo: src/extra-tools/66-echo.o -loblibs -lskarnet 
 66-umountall: EXTRA_LIBS :=
 66-umountall: src/extra-tools/66-umountall.o -loblibs -lskarnet
+execl-envfile: EXTRA_LIBS :=
+execl-envfile: src/extra-tools/execl-envfile.o ${LIBEXECLINE} -loblibs -lexecline -lskarnet 
 ifeq ($(strip $(STATIC_LIBS_ARE_PIC)),)
 lib66.a.xyzzy: src/lib66/backup_cmd_switcher.o src/lib66/backup_make_new.o src/lib66/backup_realpath_sym.o src/lib66/db_compile.o src/lib66/db_find_compiled_state.o src/lib66/db_ok.o src/lib66/db_switch_to.o src/lib66/db_update.o src/lib66/hpr_shutdown.o src/lib66/hpr_wall.o src/lib66/parser.o src/lib66/parser_enabled.o src/lib66/parser_module.o src/lib66/parser_utils.o src/lib66/parser_write.o src/lib66/rc_init.o src/lib66/rc_manage.o src/lib66/rc_send.o src/lib66/rc_unsupervise.o src/lib66/ss_environ.o src/lib66/ss_get_enum.o src/lib66/ss_info_utils.o src/lib66/ss_instance.o src/lib66/ss_resolve.o src/lib66/ss_resolve_graph.o src/lib66/ss_state.o src/lib66/ss_utils.o src/lib66/ssexec_dbctl.o src/lib66/ssexec_enable.o src/lib66/ssexec_env.o src/lib66/ssexec_disable.o src/lib66/ssexec_free.o src/lib66/ssexec_help.o src/lib66/ssexec_init.o src/lib66/ssexec_main.o src/lib66/ssexec_start.o src/lib66/ssexec_stop.o src/lib66/ssexec_svctl.o src/lib66/svc_init.o src/lib66/svc_init_pipe.o src/lib66/svc_send.o src/lib66/svc_switch_to.o src/lib66/svc_unsupervise.o src/lib66/tree_cmd_state.o src/lib66/tree_copy.o src/lib66/tree_copy_tmp.o src/lib66/tree_find_current.o src/lib66/tree_get_permissions.o src/lib66/tree_sethome.o src/lib66/tree_setname.o src/lib66/tree_switch_current.o
 else
