@@ -352,8 +352,6 @@ int check_mandatory(sv_alltype *service, section_t *sasection)
 
 			if (sasection->idx[SECTION_STOP])
 			{
-				if (service->type.oneshot.down.build < 0)
-					log_warn_return(LOG_EXIT_ZERO,"key @build at section [stop] must be set") ;
 				if ((service->type.oneshot.down.build == BUILD_CUSTOM) && (service->type.oneshot.down.shebang < 0))
 					log_warn_return(LOG_EXIT_ZERO,"custom build asked on section [stop] -- key @shebang must be set") ;
 				if (service->type.oneshot.down.exec < 0)
@@ -370,8 +368,6 @@ int check_mandatory(sv_alltype *service, section_t *sasection)
 
 			if (sasection->idx[SECTION_STOP])
 			{
-				if (service->type.classic_longrun.finish.build < 0)
-					log_warn_return(LOG_EXIT_ZERO,"key @build at section [stop] must be set") ;
 				if ((service->type.classic_longrun.finish.build == BUILD_CUSTOM) && (service->type.classic_longrun.finish.shebang < 0))
 					log_warn_return(LOG_EXIT_ZERO,"custom build asked on section [stop] -- key @shebang must be set") ;
 				if (service->type.classic_longrun.finish.exec < 0)
