@@ -86,9 +86,16 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 		char *name ;
 
 		r = write_services(sv, workdir,FORCE,CONF) ;
-		if (!r)
-			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write service: ",name) ;
-
+		if (!r) 
+		{
+			/** reimplement cleanup() here, it called by 66-update which
+			 * not define the workdir stralloc. In case of crash we get
+			 * a segmentation fault cause of the empty stralloc. */
+			int e = errno ;
+			rm_rf(workdir) ;
+			errno = e ;
+			log_dieu(LOG_EXIT_SYS,"write service: ",name) ;
+		}
 		if (r > 1) continue ; //service already added
 
 		/** only read name after the write_services process.
@@ -97,15 +104,24 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 
 		log_trace("write resolve file of: ",name) ;
 		if (!ss_resolve_setnwrite(sv,info,workdir))
-			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write revolve file for: ",name) ;
-
+		{
+			int e = errno ;
+			rm_rf(workdir) ;
+			errno = e ;
+			log_dieu(LOG_EXIT_SYS,"write revolve file for: ",name) ;
+		}
 		log_trace("Service written successfully: ", name) ;
 		if (sastr_cmp(tostart,name) == -1)
 		{
 			if (sv->cname.itype == TYPE_CLASSIC) (*nclassic)++ ;
 			else (*nlongrun)++ ;
 			if (!sastr_add_string(tostart,name))
-				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"stralloc") ;
+			{
+				int e = errno ;
+				rm_rf(workdir) ;
+				errno = e ;
+				log_die_nomem("stralloc") ;
+			}
 		}
 	}
 }
