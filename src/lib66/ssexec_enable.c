@@ -86,7 +86,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 		char *name ;
 
 		r = write_services(sv, workdir,FORCE,CONF) ;
-		if (!r) 
+		if (!r)
 		{
 			/** reimplement cleanup() here, it called by 66-update which
 			 * not define the workdir stralloc. In case of crash we get

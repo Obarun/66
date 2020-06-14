@@ -21,6 +21,4 @@ if -n {
 
 if { 66-echo -- "rc.init: fatal: please see the log at ${LIVE}/log/0/current" }
 
-foreground { ${ISHELL} }
-
 exit 111
