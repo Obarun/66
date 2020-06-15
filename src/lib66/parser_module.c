@@ -111,8 +111,10 @@ static int rebuild_list(sv_alltype *sv_before,stralloc *list,stralloc *sv_all_ty
 				}
 			}
 		}
-		if (!stralloc_catb(sv_all_type,deps_name,strlen(deps_name) + 1)) return 0 ;
-		if (!stralloc_catb(module_service,deps_name,strlen(deps_name) + 1)) return 0 ;
+		if (sastr_cmp(sv_all_type,deps_name) == -1)
+			if (!stralloc_catb(sv_all_type,deps_name,strlen(deps_name) + 1)) return 0 ;
+		if (sastr_cmp(module_service,deps_name) == -1)
+			if (!stralloc_catb(module_service,deps_name,strlen(deps_name) + 1)) return 0 ;
 	}
 
 	return 1 ;
@@ -122,10 +124,11 @@ static int rebuild_list(sv_alltype *sv_before,stralloc *list,stralloc *sv_all_ty
  * return 0 on failure
  * return 2 on already enabled 
  * @svname do not contents the path of the frontend file*/
+
 int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *svname,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf)
 {
 	log_trace("start parse process of module: ",svname) ;
-	int r, err = 1, insta = -1, svtype = -1, from_ext_insta = 0 ;
+	int r, err = 1, insta = -1, svtype = -1, from_ext_insta = 0, already_parsed = 0 ;
 	size_t pos = 0, id, nid, newlen ;
 	stralloc sdir = STRALLOC_ZERO ; // service dir
 	stralloc list = STRALLOC_ZERO ;
@@ -233,12 +236,26 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 	/** parse all services of the modules */
 	for (pos = 0 ; pos < list.len ; pos += strlen(list.s + pos) + 1)
 	{
-		insta = 0, svtype = -1 , from_ext_insta = 0 ;
+		insta = 0, svtype = -1 , from_ext_insta = 0 , already_parsed = 0 ;
 		char *sv = list.s + pos ;
 		size_t len = strlen(sv) ;
 		char bname[len + 1] ;
 		char *pbname = 0 ;
+
 		addonsv.len = 0 ;
+
+		if (sastr_cmp(parsed_list,sv) >= 0)
+		{
+			/** already parsed ? */
+			size_t idx = 0 ;
+			for (; idx < genalloc_len(sv_alltype,&gasv) ; idx++)
+			{
+				char *name = keep.s + genalloc_s(sv_alltype,&gasv)[idx].src ;
+				if (!strcmp(name,sv)) sv = name ;
+				break ;
+			}
+			already_parsed = 1 ;
+		}
 
 		if (!ob_basename(bname,sv))
 			log_warnu_return(LOG_EXIT_ZERO,"find basename of: ",sv) ;
@@ -258,26 +275,30 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 			 * pass through the classic ss_resolve_src_path() */
 
 			pbname = bname ;
-			int found = 0 ;
-			size_t len = strlen(permanent_sdir) ;
-			char tmp[len + SS_MODULE_SERVICE_INSTANCE_LEN + 2] ;
-			auto_strings(tmp,permanent_sdir,SS_MODULE_SERVICE_INSTANCE + 1,"/") ;
-
-			r = ss_resolve_src(&addonsv,pbname,tmp,&found) ;
-
-			if (r == -1) log_warnusys_return(LOG_EXIT_ZERO,"parse source directory: ",tmp) ;
-			if (!r)
+			if (!already_parsed)
 			{
-				if (ss_resolve_src_path(&addonsv,pbname,info->owner,0) < 1)
-					log_warnu_return(LOG_EXIT_ZERO,"resolve source path of: ",pbname) ;
+				int found = 0 ;
+				size_t l = strlen(permanent_sdir) ;
+				char tmp[l + SS_MODULE_SERVICE_INSTANCE_LEN + 2] ;
+				auto_strings(tmp,permanent_sdir,SS_MODULE_SERVICE_INSTANCE + 1,"/") ;
+
+				r = ss_resolve_src(&addonsv,pbname,tmp,&found) ;
+
+				if (r == -1) log_warnusys_return(LOG_EXIT_ZERO,"parse source directory: ",tmp) ;
+				if (!r)
+				{
+					if (ss_resolve_src_path(&addonsv,pbname,info->owner,0) < 1)
+						log_warnu_return(LOG_EXIT_ZERO,"resolve source path of: ",pbname) ;
+				}
+				sv = addonsv.s ;
 			}
 			from_ext_insta++ ;
-			sv = addonsv.s ;
 			len = strlen(sv) ;
 		}
 
-		if (!parse_service_before(info,parsed_list,tree_list,sv,nbsv,sasv,force,conf,0,permanent_sdir))
-			log_warnu_return(LOG_EXIT_ZERO,"parse: ",sv," from module: ",svname) ;
+		if (!already_parsed)
+			if (!parse_service_before(info,parsed_list,tree_list,sv,nbsv,sasv,force,conf,0,permanent_sdir))
+				log_warnu_return(LOG_EXIT_ZERO,"parse: ",sv," from module: ",svname) ;
 
 		char ext_insta[len + 1] ;
 		if (from_ext_insta) {
@@ -288,6 +309,7 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 			ext_insta[newlen] = 0 ;
 			sv = ext_insta ;
 		}
+
 		/** we want the configuration file for each service inside
 		 * the configuration directory of the module.*/
 		char *version = keep.s + sv_before->cname.version ;
