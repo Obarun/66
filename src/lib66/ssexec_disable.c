@@ -204,38 +204,36 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 		logname = 0 ;
 		if (obstr_equal(name,SS_MASTER + 1))
 			log_die_nclean(LOG_EXIT_USER,&cleanup,"nice try peon") ;
-		
+
 		logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 		if (logname > 0 && (!ss_resolve_cmp(&gares,string + pres->logassoc)))
 			log_die_nclean(LOG_EXIT_USER,&cleanup,"logger detected - disabling is not allowed") ;
-				
+
 		if (!pres->disen)
 		{
 			log_info(name,": is already disabled") ;
-			ss_resolve_free(&res) ;
 			continue ;
 		}
 		if (!svc_remove(&tostop,pres,workdir.s,info))
 			log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"remove service: ",name) ;
-		
-		if (res.type == TYPE_CLASSIC) nclassic++ ;
+
+		if (pres->type == TYPE_CLASSIC) nclassic++ ;
 		else nlongrun++ ;
-		
 	}
-	
+
 	if (nclassic)
 	{
 		if (!svc_switch_to(info,SS_SWBACK)) 
 			log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"switch classic service to backup") ;		
 	}
-	
+
 	if (nlongrun)
 	{	
 		ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
 		r = ss_resolve_graph_src(&graph,workdir.s,0,1) ;
 		if (!r)
 			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"resolve source of graph for tree: ",info->treename.s) ;
-			
+
 		r= ss_resolve_graph_publish(&graph,0) ;
 		if (r <= 0) 
 		{
@@ -245,7 +243,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 		}
 		if (!ss_resolve_write_master(info,&graph,workdir.s,1))
 			log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"update inner bundle") ;
-		
+
 		ss_resolve_graph_free(&graph) ;
 		if (!db_compile(workdir.s,info->tree.s, info->treename.s,envp))
 			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"compile ",workdir.s,"/",info->treename.s) ; 
@@ -254,42 +252,42 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 		if (!db_switch_to(info,envp,SS_SWBACK))
 			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"switch ",info->treename.s," to backup") ;		
 	}
-	
+
 	if (!tree_copy_tmp(workdir.s,info))
 		log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"copy: ",workdir.s," to: ", info->tree.s) ;
-		
+
 	cleanup() ;
-		
+
 	stralloc_free(&workdir) ;
 	ss_resolve_free(&res) ;
 	genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
-		
+
 	for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&tostop); i++)
 		log_info("Disabled successfully: ",genalloc_s(ss_resolve_t,&tostop)[i].sa.s + genalloc_s(ss_resolve_t,&tostop)[i].name) ;
-			
+
 	if (stop && genalloc_len(ss_resolve_t,&tostop))
 	{
 		int nargc = 3 + genalloc_len(ss_resolve_t,&tostop) ;
 		char const *newargv[nargc] ;
 		unsigned int m = 0 ;
-		
+
 		newargv[m++] = "fake_name" ;
 		newargv[m++] = "-u" ;
-		
+
 		for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&tostop); i++)
 			newargv[m++] = genalloc_s(ss_resolve_t,&tostop)[i].sa.s + genalloc_s(ss_resolve_t,&tostop)[i].name ;
-		
+
 		newargv[m++] = 0 ;
-		
+
 		if (ssexec_stop(nargc,newargv,envp,info))
 		{
 			genalloc_deepfree(ss_resolve_t,&tostop,ss_resolve_free) ;
 			return 111 ;
 		}
 	}
-	
+
 	genalloc_deepfree(ss_resolve_t,&tostop,ss_resolve_free) ;
-		
+
 	return 0 ;		
 }
 	
