@@ -31,16 +31,19 @@
 #include <66/environ.h>
 
 /* @sv -> name of the service to parse with 
- * the path of the frontend file source */
+ * the path of the frontend file source
+ * @Return 0 on fail
+ * @Return on success
+ * @Return 2 -> already parsed */
 int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf,uint8_t disable_module,char const *directory_forced)
 {
 	log_trace("start parse process of service: ",sv) ;
 
 	if (sastr_cmp(parsed_list,sv) >= 0)
 	{
-		log_warn("Ignoring: ",sv," service: already parsed") ;
+		log_warn("ignoring: ",sv," service: already parsed") ;
 		sasv->len = 0 ;
-		return 1 ;
+		return 2 ;
 	}
 
 	int insta ;
@@ -167,8 +170,8 @@ int parse_service_all_deps(ssexec_t *info,stralloc *parsed_list, stralloc *tree_
 	stralloc rebuild = STRALLOC_ZERO ;
 
 	if (!parse_service_deps(info,parsed_list,tree_list,sv_before,sv,nbsv,sasv,force,conf,directory_forced)) return 0 ;
-	if (!parse_service_opts_deps(&rebuild,info,parsed_list,tree_list,sv_before,sv,nbsv,sasv,force,conf,KEY_MAIN_EXTDEPS,directory_forced)) return 0 ;
-	if (!parse_service_opts_deps(&rebuild,info,parsed_list,tree_list,sv_before,sv,nbsv,sasv,force,conf,KEY_MAIN_OPTSDEPS,directory_forced)) return 0 ;
+	if (!parse_service_opts_deps(&rebuild,info,parsed_list,tree_list,sv_before,sv,nbsv,sasv,force,conf,KEY_MAIN_EXTDEPS,0)) return 0 ;
+	if (!parse_service_opts_deps(&rebuild,info,parsed_list,tree_list,sv_before,sv,nbsv,sasv,force,conf,KEY_MAIN_OPTSDEPS,0)) return 0 ;
 
 	if (rebuild.len)
 	{
@@ -347,12 +350,13 @@ int parse_service_check_enabled(char const *tree,char const *svname,uint8_t forc
 
 	return 1 ;
 	found:
-		log_info("Ignoring: ",svname," service: already enabled") ;
+		log_info("ignoring: ",svname," service: already enabled") ;
 		return 0 ;
 }
 
 int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner,uint8_t conf)
 {
+	log_info("add service: ",service) ;
 	stralloc saconf = STRALLOC_ZERO ;
 	size_t svlen = strlen(service) ;
 	// keep overwrite_conf
