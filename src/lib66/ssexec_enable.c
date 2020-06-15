@@ -20,6 +20,7 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/sastr.h>
+#include <oblibs/files.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
@@ -79,7 +80,7 @@ void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORC
 void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun,char const *workdir, genalloc *gasv,ssexec_t *info,uint8_t FORCE,uint8_t CONF)
 {
 	int r ;
-
+	stralloc module = STRALLOC_ZERO ;
 	for (unsigned int i = 0; i < genalloc_len(sv_alltype,gasv); i++)
 	{
 		sv_alltype_ref sv = &genalloc_s(sv_alltype,gasv)[i] ;
@@ -110,7 +111,6 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 			errno = e ;
 			log_dieu(LOG_EXIT_SYS,"write revolve file for: ",name) ;
 		}
-		log_trace("Service written successfully: ", name) ;
 		if (sastr_cmp(tostart,name) == -1)
 		{
 			if (sv->cname.itype == TYPE_CLASSIC) (*nclassic)++ ;
@@ -123,7 +123,122 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 				log_die_nomem("stralloc") ;
 			}
 		}
+
+		log_trace("Service written successfully: ", name) ;
+
+		if (sv->cname.itype == TYPE_MODULE)
+			stralloc_catb(&module,name,strlen(name) + 1) ;
 	}
+
+	if (module.len)
+	{
+		/** we need to rewrite the contents file of each module
+		 * in the good order. we cannot make this before here because
+		 * we need the resolve file for each services*/
+		int r ;
+		size_t pos = 0, gpos = 0 ;
+		size_t workdirlen = strlen(workdir) ;
+		ss_resolve_t res = RESOLVE_ZERO ;
+		stralloc salist = STRALLOC_ZERO ;
+		genalloc gamodule = GENALLOC_ZERO ;
+		ss_resolve_graph_t mgraph = RESOLVE_GRAPH_ZERO ;
+		char *name = 0 ;
+		char *err_msg = 0 ;
+
+		for (;pos < module.len ; pos += strlen(module.s + pos) + 1)
+		{
+			salist.len = 0 ;
+			name = module.s + pos ;
+			size_t namelen = strlen(name) ;
+			char dst[workdirlen + SS_DB_LEN + SS_SRC_LEN + 1 + namelen + 1];
+			auto_strings(dst,workdir,SS_DB,SS_SRC,"/",name) ;
+
+			if (!ss_resolve_read(&res,workdir,name))
+			{
+				err_msg = "read resolve file of: " ;
+				goto err ;
+			}
+
+			if (!sastr_clean_string(&salist,res.sa.s + res.contents))
+			{
+				err_msg = "rebuild dependencies list of: " ;
+				goto err ;
+			}
+
+			for (gpos = 0 ; gpos < salist.len ; gpos += strlen(salist.s + gpos) + 1)
+			{
+				if (!ss_resolve_read(&res,workdir,salist.s + gpos))
+				{
+					err_msg = "read resolve file of: " ;
+					goto err ;
+				}
+				if (res.type != TYPE_CLASSIC)
+				{
+					if (ss_resolve_search(&gamodule,name) == -1)
+					{
+						if (!ss_resolve_append(&gamodule,&res))
+						{
+							err_msg = "append genalloc with: " ;
+							goto err ;
+						}
+					}
+				}
+			}
+
+			for (gpos = 0 ; gpos < genalloc_len(ss_resolve_t,&gamodule) ; gpos++)
+			{
+				if (!ss_resolve_graph_build(&mgraph,&genalloc_s(ss_resolve_t,&gamodule)[gpos],workdir,0))
+				{
+					err_msg = "build the graph of: " ;
+					goto err ;
+				}
+			}
+
+			r = ss_resolve_graph_publish(&mgraph,0) ;
+			if (r < 0) {
+				err_msg = "publish graph -- cyclic graph detected in: " ;
+				goto err ;
+			}
+			else if (!r)
+			{
+				err_msg = "publish service graph of: " ;
+				goto err ;
+			}
+
+			salist.len = 0 ;
+			for (gpos = 0 ; gpos < genalloc_len(ss_resolve_t,&mgraph.sorted) ; gpos++)
+			{
+				char *string = genalloc_s(ss_resolve_t,&mgraph.sorted)[gpos].sa.s ;
+				char *name = string + genalloc_s(ss_resolve_t,&mgraph.sorted)[gpos].name ;
+				if (!auto_stra(&salist,name,"\n"))
+				{
+					err_msg = "append stralloc for: " ;
+					goto err ;
+				}
+			}
+
+			/** finally write it */
+			if (!file_write_unsafe(dst,SS_CONTENTS,salist.s,salist.len))
+			{
+				err_msg = "create contents file of: "  ;
+				goto err ;
+			}
+
+			genalloc_deepfree(ss_resolve_t,&gamodule,ss_resolve_free) ;
+			ss_resolve_graph_free(&mgraph) ;
+		}
+		return ;
+		err:
+			genalloc_deepfree(ss_resolve_t,&gamodule,ss_resolve_free) ;
+			ss_resolve_graph_free(&mgraph) ;
+			ss_resolve_free(&res) ;
+			stralloc_free(&salist) ;
+			int e = errno ;
+			rm_rf(workdir) ;
+			errno = e ;
+			log_dieu(LOG_EXIT_SYS,err_msg,name) ;
+	}
+	stralloc_free(&module) ;
 }
 
 int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
