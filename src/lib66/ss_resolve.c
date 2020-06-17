@@ -1488,6 +1488,7 @@ int ss_resolve_svtree(stralloc *svtree,char const *svname,char const *tree)
 			if (!auto_stra(&tmp,name,SS_SVDIRS)) goto err ;
 			if (ss_resolve_check(tmp.s,svname))
 			{
+				svtree->len = 0 ;
 				if (!tree || (tree && !strcmp(name,tree))){
 					if (!stralloc_copy(svtree,&tmp)) goto err ;
 					copied = 1 ;
@@ -1504,7 +1505,7 @@ int ss_resolve_svtree(stralloc *svtree,char const *svname,char const *tree)
 
 	if (found > 2 && tree) found = 2 ;
 	if (!copied) found = 1 ;
-
+	if (!stralloc_0(svtree)) goto err ;
 	freed:
 	stralloc_free(&satree) ;
 	stralloc_free(&tmp) ;
