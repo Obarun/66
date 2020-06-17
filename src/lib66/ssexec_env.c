@@ -33,6 +33,7 @@
 #include <66/parser.h>
 #include <66/environ.h>
 #include <66/constants.h>
+#include <66/resolve.h>
 
 int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
@@ -85,7 +86,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 		else if (r > 2) {
 			log_die(LOG_EXIT_SYS,sv," is set on different tree -- please use -t options") ;
 		}
-		else if (r == 1) log_die(LOG_EXIT_SYS,"unknown service: ",sv," in tree: ", info->treename.s) ;
+		else if (r == 1) log_die(LOG_EXIT_SYS,"unknown service: ",sv, !info->opt_tree ? " in current tree: " : " in tree: ", info->treename.s) ;
 
 		if (!ss_resolve_read(&res,sasrc.s,sv))
 			log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",sv) ;
@@ -100,7 +101,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 		stralloc_free(&salink) ;
 	}
 
-	if (!file_readputsa_g(&salist,src))log_dieusys(LOG_EXIT_SYS,"read: ",src) ;
+	if (!file_readputsa_g(&salist,src)) log_dieusys(LOG_EXIT_SYS,"read: ",src) ;
 	if (list)
 	{
 		if (buffer_putsflush(buffer_1, salist.s) < 0)
@@ -114,6 +115,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 
 		if (!openwritenclose_unsafe(src,result.s,result.len))
 			log_dieusys(LOG_EXIT_SYS,"create file: ",src,sv) ;
+		goto freed ;
 	}
 	else if (edit)
 	{
