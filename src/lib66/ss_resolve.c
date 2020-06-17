@@ -1470,11 +1470,11 @@ int ss_resolve_svtree(stralloc *svtree,char const *svname,char const *tree)
 	if (!auto_stra(svtree,"/")) goto err ;
 	newlen = svtree->len ;
 
-	if (!stralloc_0(svtree) ||
-	!stralloc_copy(&tmp,svtree)) goto err ;
+	//if (!stralloc_0(svtree) ||
+	if (!stralloc_copy(&tmp,svtree)) goto err ;
 
 	if (!sastr_dir_get(&satree, svtree->s,SS_BACKUP + 1, S_IFDIR)) {
-		log_warnu("get tree from directory: ",svtree->s) ;
+		log_warnu("get list of trees from directory: ",svtree->s) ;
 		goto err ;
 	}
 
