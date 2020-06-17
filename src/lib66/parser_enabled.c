@@ -356,7 +356,7 @@ int parse_service_check_enabled(char const *tree,char const *svname,uint8_t forc
 
 int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner,uint8_t conf)
 {
-	log_info("add service: ",service) ;
+	log_trace("add service: ",service) ;
 	stralloc saconf = STRALLOC_ZERO ;
 	size_t svlen = strlen(service) ;
 	// keep overwrite_conf
