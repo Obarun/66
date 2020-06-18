@@ -58,7 +58,7 @@ static inline void info_help (void)
 static void info_display_string(char const *field,char const *str)
 {
 	info_display_field_name(field) ;
-	
+
 	if (!*str)
 	{
 		if (!bprintf(buffer_1,"%s%s",log_color->warning,"None"))
@@ -79,17 +79,14 @@ static void info_display_int(char const *field,unsigned int id)
 	char ival[UINT_FMT] ;
 	ival[uint_fmt(ival,id)] = 0 ;
 	str = ival ;
-	
+
 	info_display_string(field,str) ;		
 }
 
 int main(int argc, char const *const *argv) 
 {
-	size_t newlen = 0, pos = 0 ;
 	int found = 0 ;
 	uint8_t logger = 0 ;
-	uid_t owner ;
-	char ownerstr[UID_FMT] ;
 	ss_resolve_t res = RESOLVE_ZERO ;
 	stralloc satree = STRALLOC_ZERO ;
 	stralloc src = STRALLOC_ZERO ;
@@ -98,9 +95,9 @@ int main(int argc, char const *const *argv)
 	char const *tname = 0 ;
 	char const *svname = 0 ;
 	char const *ste = 0 ;
-	
+
 	log_color = &log_color_disable ;
-	
+
 	char buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
 		"Reload",
 		"Init",
@@ -109,7 +106,7 @@ int main(int argc, char const *const *argv)
 		"Pid",
 		"Name" ,
 		"Real logger name" } ;
-	
+
 	PROG = "66-instate" ;
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
@@ -130,96 +127,46 @@ int main(int argc, char const *const *argv)
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
-	
+
 	if (!argc) log_usage(USAGE) ;
 	svname = *argv ;
-		
-	owner = getuid() ;
-	size_t ownerlen = uid_fmt(ownerstr,owner) ;
-	ownerstr[ownerlen] = 0 ;
-		
-	if (!set_ownersysdir(&src,owner)) log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
-	if (!auto_stra(&src,SS_SYSTEM)) log_die_nomem("stralloc") ;
-	
-	if (!scan_mode(src.s,S_IFDIR))
-	{
+
+	found = ss_resolve_svtree(&src,svname,tname) ;
+	if (found == -1) log_dieu(LOG_EXIT_SYS,"resolve tree source of sv: ",svname) ;
+	else if (!found) {
 		log_info("no tree exist yet") ;
 		goto freed ;
 	}
-	
-	if (!auto_stra(&src,"/")) log_die_nomem("stralloc") ;
-	newlen = src.len ;
-	
-	if (!tname)
-	{	
-		if (!stralloc_0(&src) ||
-		!stralloc_copy(&tmp,&src)) log_die_nomem("stralloc") ;
-		
-		if (!sastr_dir_get(&satree, src.s,SS_BACKUP+1, S_IFDIR)) 
-			log_dieu(LOG_EXIT_SYS,"get tree from directory: ",src.s) ;
-		
-		if (satree.len)
-		{
-			for(pos = 0 ; pos < satree.len ; pos += strlen(satree.s + pos) + 1)
-			{
-				tmp.len = newlen ;
-				char *name = satree.s + pos ;
-				
-				if (!auto_stra(&tmp,name,SS_SVDIRS)) log_die_nomem("stralloc") ;
-				if (ss_resolve_check(tmp.s,svname))
-				{
-					if (!found)
-						if (!stralloc_copy(&src,&tmp)) log_die_nomem("stralloc") ;
-					found++ ;
-				}
-			}
-		}
-		else 
-		{
-			log_info("no tree exist yet") ;
-			goto freed ;
-		}
-	}
-	else
-	{
-		if (!auto_stra(&src,tname,SS_SVDIRS)) log_die_nomem("stralloc") ;
-		if (ss_resolve_check(src.s,svname)) found++;
-	}
-
-	if (!found)
-	{
-		log_die(LOG_EXIT_SYS,"unknown service: ",svname) ;
-	
-	}
-	else if (found > 1)
-	{
+	else if (found > 2) {
 		log_die(LOG_EXIT_SYS,svname," is set on different tree -- please use -t options") ;
 	}
+	else if (found == 1) log_die(LOG_EXIT_SYS,"unknown service: ",svname) ;
+
 	if (!ss_resolve_read(&res,src.s,svname)) log_dieusys(111,"read resolve file of: ",src.s,"/.resolve/",svname) ;
-	
+
 	info_field_align(buf,fields,field_suffix,MAXOPTS) ;
-	
+
 	ste = res.sa.s + res.state ;
-	
+
 	if (!ss_state_check(ste,svname)) log_diesys(111,"unitialized service: ",svname) ;
 	if (!ss_state_read(&sta,ste,svname)) log_dieusys(111,"read state file of: ",ste,"/",svname) ;
-	
+
 	info_display_string(fields[5],svname) ;
 	info_display_int(fields[0],sta.reload) ;
 	info_display_int(fields[1],sta.init) ;
 	info_display_int(fields[2],sta.unsupervise) ;
 	info_display_int(fields[3],sta.state) ;
 	info_display_int(fields[4],sta.pid) ;
-	
+
 	if (res.logger && logger)
 	{
 		svname = res.sa.s + res.logger ;
 		if (!ss_state_check(ste,svname)) log_dieusys(111,"unitialized: ",svname) ;
 		if (!ss_state_read(&sta,ste,svname)) log_dieusys(111,"read state file of: ",ste,"/",svname) ;
-		
+
 		if (buffer_putsflush(buffer_1,"\n") == -1)
 			log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-		
+
 		info_display_string(fields[6],res.sa.s + res.logreal) ;
 		info_display_int(fields[0],sta.reload) ;
 		info_display_int(fields[1],sta.init) ;

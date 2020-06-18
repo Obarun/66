@@ -84,11 +84,8 @@ static void info_display_int(char const *field,unsigned int id)
 
 int main(int argc, char const *const *argv) 
 {
-	size_t newlen = 0, pos = 0 ;
 	int found = 0 ;
 	uint8_t logger = 0 ;
-	uid_t owner ;
-	char ownerstr[UID_FMT] ;
 	ss_resolve_t res = RESOLVE_ZERO ;
 	ss_resolve_t lres = RESOLVE_ZERO ;
 	stralloc satree = STRALLOC_ZERO ;
@@ -154,74 +151,21 @@ int main(int argc, char const *const *argv)
 	
 	if (!argc) log_usage(USAGE) ;
 	svname = *argv ;
-		
-	owner = getuid() ;
-	size_t ownerlen = uid_fmt(ownerstr,owner) ;
-	ownerstr[ownerlen] = 0 ;
-		
-	if (!set_ownersysdir(&src,owner)) log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
-	if (!auto_stra(&src,SS_SYSTEM)) log_die_nomem("stralloc") ;
-	
-	if (!scan_mode(src.s,S_IFDIR))
-	{
+
+	found = ss_resolve_svtree(&src,svname,tname) ;
+	if (found == -1) log_dieu(LOG_EXIT_SYS,"resolve tree source of sv: ",svname) ;
+	else if (!found) {
 		log_info("no tree exist yet") ;
 		goto freed ;
 	}
-	
-	if (!auto_stra(&src,"/")) log_die_nomem("stralloc") ;
-	newlen = src.len ;
-	
-	if (!tname)
-	{	
-		if (!stralloc_0(&src) ||
-		!stralloc_copy(&tmp,&src)) log_die_nomem("stralloc") ;
-		
-		if (!sastr_dir_get(&satree, src.s,SS_BACKUP+1, S_IFDIR)) 
-			log_dieu(LOG_EXIT_SYS,"get tree from directory: ",src.s) ;
-		
-		if (satree.len)
-		{
-			for(pos = 0 ; pos < satree.len ; pos += strlen(satree.s + pos) + 1)
-			{
-				tmp.len = newlen ;
-				char *name = satree.s + pos ;
-				
-				if (!auto_stra(&tmp,name,SS_SVDIRS)) log_die_nomem("stralloc") ;
-				if (ss_resolve_check(tmp.s,svname))
-				{
-					src.len = 0 ;
-					if (!found)
-						if (!stralloc_copy(&src,&tmp)) log_die_nomem("stralloc") ;
-					found++ ;
-				}
-			}
-		}
-		else 
-		{
-			log_info("no tree exist yet") ;
-			goto freed ;
-		}
-	}
-	else
-	{
-		if (!auto_stra(&src,tname,SS_SVDIRS)) log_die_nomem("stralloc") ;
-		if (ss_resolve_check(src.s,svname)) found++;
-	}
-
-	if (!found)
-	{
-		log_die(LOG_EXIT_SYS,"unknown service: ",svname) ;
-	
-	}
-	else if (found > 1)
-	{
+	else if (found > 2) {
 		log_die(LOG_EXIT_SYS,svname," is set on different tree -- please use -t options") ;
 	}
-	if (!stralloc_0(&src)) log_die_nomem("stralloc") ;
-	
-	info_field_align(buf,fields,field_suffix,MAXOPTS) ;
-	
+	else if (found == 1) log_die(LOG_EXIT_SYS,"unknown service: ",svname) ;
+
 	if (!ss_resolve_read(&res,src.s,svname)) log_dieusys(111,"read resolve file") ;
+
+	info_field_align(buf,fields,field_suffix,MAXOPTS) ;
 
 	info_display_string(fields[0],res.sa.s + res.name) ;
 	info_display_string(fields[1],res.sa.s + res.description) ;
