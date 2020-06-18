@@ -189,6 +189,7 @@ int main(int argc, char const *const *argv)
 				if (!auto_stra(&tmp,name,SS_SVDIRS)) log_die_nomem("stralloc") ;
 				if (ss_resolve_check(tmp.s,svname))
 				{
+					src.len = 0 ;
 					if (!found)
 						if (!stralloc_copy(&src,&tmp)) log_die_nomem("stralloc") ;
 					found++ ;
@@ -216,6 +217,7 @@ int main(int argc, char const *const *argv)
 	{
 		log_die(LOG_EXIT_SYS,svname," is set on different tree -- please use -t options") ;
 	}
+	if (!stralloc_0(&src)) log_die_nomem("stralloc") ;
 	
 	info_field_align(buf,fields,field_suffix,MAXOPTS) ;
 	
