@@ -1470,7 +1470,6 @@ int ss_resolve_svtree(stralloc *svtree,char const *svname,char const *tree)
 	if (!auto_stra(svtree,"/")) goto err ;
 	newlen = svtree->len ;
 
-	//if (!stralloc_0(svtree) ||
 	if (!stralloc_copy(&tmp,svtree)) goto err ;
 
 	if (!sastr_dir_get(&satree, svtree->s,SS_BACKUP + 1, S_IFDIR)) {
@@ -1488,8 +1487,8 @@ int ss_resolve_svtree(stralloc *svtree,char const *svname,char const *tree)
 			if (!auto_stra(&tmp,name,SS_SVDIRS)) goto err ;
 			if (ss_resolve_check(tmp.s,svname))
 			{
-				svtree->len = 0 ;
 				if (!tree || (tree && !strcmp(name,tree))){
+					svtree->len = 0 ;
 					if (!stralloc_copy(svtree,&tmp)) goto err ;
 					copied = 1 ;
 				}
