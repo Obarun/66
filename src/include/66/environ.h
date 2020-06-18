@@ -19,6 +19,8 @@
 
 #include <skalibs/stralloc.h>
 
+#include <66/parser.h>
+
 extern int env_resolve_conf(stralloc *env,char const *svname,uid_t owner) ;
 extern int env_merge_conf(stralloc *result,stralloc *srclist,stralloc *modifs,uint8_t conf) ;
 extern int env_clean_with_comment(stralloc *sa) ;
