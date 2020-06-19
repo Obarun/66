@@ -139,6 +139,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 		size_t pos = 0, gpos = 0 ;
 		size_t workdirlen = strlen(workdir) ;
 		ss_resolve_t res = RESOLVE_ZERO ;
+		ss_resolve_t dres = RESOLVE_ZERO ;
 		stralloc salist = STRALLOC_ZERO ;
 		genalloc gamodule = GENALLOC_ZERO ;
 		ss_resolve_graph_t mgraph = RESOLVE_GRAPH_ZERO ;
@@ -167,16 +168,17 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 
 			for (gpos = 0 ; gpos < salist.len ; gpos += strlen(salist.s + gpos) + 1)
 			{
-				if (!ss_resolve_read(&res,workdir,salist.s + gpos))
+				if (!ss_resolve_read(&dres,workdir,salist.s + gpos))
 				{
 					err_msg = "read resolve file of: " ;
 					goto err ;
 				}
-				if (res.type != TYPE_CLASSIC)
+
+				if (dres.type != TYPE_CLASSIC)
 				{
 					if (ss_resolve_search(&gamodule,name) == -1)
 					{
-						if (!ss_resolve_append(&gamodule,&res))
+						if (!ss_resolve_append(&gamodule,&dres))
 						{
 							err_msg = "append genalloc with: " ;
 							goto err ;
@@ -232,6 +234,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 			genalloc_deepfree(ss_resolve_t,&gamodule,ss_resolve_free) ;
 			ss_resolve_graph_free(&mgraph) ;
 			ss_resolve_free(&res) ;
+			ss_resolve_free(&dres) ;
 			stralloc_free(&salist) ;
 			int e = errno ;
 			rm_rf(workdir) ;
