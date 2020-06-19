@@ -21,6 +21,10 @@
 #include <skalibs/genalloc.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
+#include <skalibs/cdb.h>
+#include <skalibs/cdb_make.h>
+#include <skalibs/gccattributes.h>
+
 #include <66/ssexec.h>
 #include <66/parser.h>
 
@@ -112,7 +116,7 @@ extern int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int
 extern int ss_resolve_service_isdir(char const *dir, char const *name) ;
 extern int ss_resolve_add_uint32(stralloc *sa, uint32_t data) ;
 extern uint32_t ss_resolve_add_string(ss_resolve_t *res,char const *data) ;
-extern int ss_resolve_pack(stralloc *sa,ss_resolve_t *res) ;
+extern int ss_resolve_pack(stralloc *sa,ss_resolve_t *res) gccattr_deprecated ;
 extern int ss_resolve_write(ss_resolve_t *res,char const *dst,char const *name) ;
 extern int ss_resolve_read(ss_resolve_t *res,char const *src,char const *name) ;
 extern int ss_resolve_check(char const *src, char const *name) ;
@@ -142,5 +146,11 @@ extern int ss_resolve_graph_build(ss_resolve_graph_t *graph,ss_resolve_t *res,ch
 extern int ss_resolve_graph_sort(ss_resolve_graph_t *graph) ;
 extern int ss_resolve_dfs(ss_resolve_graph_t *graph, unsigned int idx, visit *c,unsigned int *ename,unsigned int *edeps) ;
 extern int ss_resolve_graph_publish(ss_resolve_graph_t *graph,unsigned int reverse) ;
+/** cdb */
+extern int ss_resolve_read_cdb(ss_resolve_t *dres, char const *name) ;
+extern int ss_resolve_write_cdb(ss_resolve_t *res, char const *dst, char const *name) ;
+extern int ss_resolve_add_cdb(struct cdb_make *c,char const *key,char const *data) ;
+extern int ss_resolve_add_cdb_uint(struct cdb_make *c, char const *key,uint32_t data) ;
+extern int ss_resolve_find_cdb(stralloc *result, cdb_t *c,char const *key) ;
 
 #endif

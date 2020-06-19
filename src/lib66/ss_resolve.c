@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include <stdlib.h>//realpath
 #include <sys/types.h>
+#include <stdio.h> //rename
 
 #include <oblibs/types.h>
 #include <oblibs/log.h>
@@ -30,6 +31,8 @@
 #include <skalibs/direntry.h>
 #include <skalibs/unix-transactional.h>
 #include <skalibs/diuint32.h>
+#include <skalibs/cdb_make.h>
+#include <skalibs/cdb.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
@@ -362,11 +365,11 @@ uint32_t ss_resolve_add_string(ss_resolve_t *res, char const *data)
 	uint32_t baselen = res->sa.len ;
 	if (!data)
 	{
-		if (!stralloc_catb(&res->sa,"",1)) log_dieusys(LOG_EXIT_SYS,"stralloc:resolve_add_string") ;
+		if (!stralloc_catb(&res->sa,"",1)) log_warnusys_return(LOG_EXIT_LESSONE,"stralloc") ;
 		return baselen ;
 	}
 	size_t datalen = strlen(data) ;
-	if (!stralloc_catb(&res->sa,data,datalen + 1)) log_dieusys(LOG_EXIT_SYS,"stralloc:resolve_add_string") ;
+	if (!stralloc_catb(&res->sa,data,datalen + 1)) log_warnusys_return(LOG_EXIT_LESSONE,"stralloc") ;
 	return baselen ;
 }
 
@@ -412,123 +415,31 @@ int ss_resolve_pack(stralloc *sa, ss_resolve_t *res)
 int ss_resolve_write(ss_resolve_t *res, char const *dst, char const *name)
 {
 	
-	stralloc sa = STRALLOC_ZERO ;
+	//stralloc sa = STRALLOC_ZERO ;
 	
 	size_t dstlen = strlen(dst) ;
 	size_t namelen = strlen(name) ;
 	
 	char tmp[dstlen + SS_RESOLVE_LEN + 1 + namelen + 1] ;
-	memcpy(tmp,dst,dstlen) ;
-	memcpy(tmp + dstlen, SS_RESOLVE, SS_RESOLVE_LEN) ;
-	tmp[dstlen + SS_RESOLVE_LEN] = '/' ;
-	memcpy(tmp + dstlen + SS_RESOLVE_LEN + 1, name, namelen) ;
-	tmp[dstlen + SS_RESOLVE_LEN + 1 + namelen] = 0 ;
-	
-	if (!ss_resolve_pack(&sa,res)) goto err ;
-	if (!openwritenclose_unsafe(tmp,sa.s,sa.len)) goto err ;
-	
-	stralloc_free(&sa) ;
+	auto_strings(tmp,dst,SS_RESOLVE,"/") ;
+
+	if (!ss_resolve_write_cdb(res,tmp,name)) return 0 ;
+
 	return 1 ;
-	
-	err:
-		stralloc_free(&sa) ;
-		return 0 ;
 }
 
 int ss_resolve_read(ss_resolve_t *res, char const *src, char const *name)
 {
-	stralloc sa = STRALLOC_ZERO ;
+	//stralloc sa = STRALLOC_ZERO ;
 	size_t srclen = strlen(src) ;
 	size_t namelen = strlen(name) ;
 	
 	char tmp[srclen + SS_RESOLVE_LEN + 1 + namelen + 1] ;
-	memcpy(tmp,src,srclen) ;
-	memcpy(tmp + srclen, SS_RESOLVE, SS_RESOLVE_LEN) ;
-	tmp[srclen + SS_RESOLVE_LEN] = '/' ;
-	memcpy(tmp + srclen + SS_RESOLVE_LEN + 1, name, namelen) ;
-	tmp[srclen + SS_RESOLVE_LEN + 1 + namelen] = 0 ;
+	auto_strings(tmp,src,SS_RESOLVE,"/",name) ;
 
-	size_t global = 0 ;
-	size_t filen = file_get_size(tmp) ;
-	int r = openreadfileclose(tmp,&sa,filen) ;
-	if (r < 0) goto end ;
+	if (!ss_resolve_read_cdb(res,tmp)) return 0 ;
 
-	uint32_unpack_big(sa.s,&res->salen) ;
-	global += 4 ;
-	stralloc_copyb(&res->sa,sa.s+global,res->salen) ;
-	global += res->sa.len ;
-	uint32_unpack_big(sa.s + global,&res->name) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->description) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->version) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->logger) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->logreal) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->logassoc) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->dstlog) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->deps) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->optsdeps) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->extdeps) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->contents) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->src) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->srconf) ;
-	
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->live) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->runat) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->tree) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->treename) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->state) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->exec_run) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->exec_log_run) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->real_exec_run) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->real_exec_log_run) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->exec_finish) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->real_exec_finish) ;
-	
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->type) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->ndeps) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->noptsdeps) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->nextdeps) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->ncontents) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->down) ;
-	global += 4 ;
-	uint32_unpack_big(sa.s + global,&res->disen) ;
-	
-	stralloc_0(&res->sa) ;
-	stralloc_free(&sa) ;
-	
-	return 1 ;	
-	
-	end :
-		stralloc_free(&sa) ;
-		return 0 ;
+	return 1 ;
 }
 
 int ss_resolve_check_insrc(ssexec_t *info, char const *name)
@@ -779,7 +690,7 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 			if (!ss_resolve_setlognwrite(&res,dst,info)) goto err ;
 		}
 	}
-	
+
 	if (!ss_resolve_write(&res,dst,res.sa.s + res.name))
 	{
 		log_warnusys("write resolve file: ",dst,SS_RESOLVE,"/",res.sa.s + res.name) ;
@@ -882,6 +793,7 @@ int ss_resolve_cmp(genalloc *ga,char const *name)
 	
 int ss_resolve_copy(ss_resolve_t *dst,ss_resolve_t *res)
 {
+	ss_resolve_free(dst) ;
 	size_t len = res->sa.len - 1 ;
 	dst->salen = res->salen ;
 	if (!stralloc_catb(&dst->sa,res->sa.s,len)) return 0 ;
@@ -941,7 +853,7 @@ int ss_resolve_add_deps(genalloc *tokeep,ss_resolve_t *res, char const *src)
 	char *deps = res->sa.s + res->deps ;
 	if (!ss_resolve_cmp(tokeep,name) && (!obstr_equal(name,SS_MASTER+1)))
 		if (!ss_resolve_append(tokeep,res)) goto err ;
-		
+
 	if (res->ndeps)
 	{
 		if (!sastr_clean_string(&tmp,deps)) return 0 ;
@@ -1513,4 +1425,357 @@ int ss_resolve_svtree(stralloc *svtree,char const *svname,char const *tree)
 		stralloc_free(&satree) ;
 		stralloc_free(&tmp) ;
 		return -1 ;
+}
+
+int ss_resolve_add_cdb_uint(struct cdb_make *c, char const *key,uint32_t data)
+{
+	char pack[4] ;
+	size_t klen = strlen(key) ;
+
+	uint32_pack_big(pack, data) ;
+	if (cdb_make_add(c,key,klen,pack,4) < 0)
+		log_warnsys_return(LOG_EXIT_ZERO,"cdb_make_add: ",key) ;
+
+	return 1 ;
+}
+
+int ss_resolve_add_cdb(struct cdb_make *c,char const *key,char const *data)
+{
+	size_t klen = strlen(key) ;
+	size_t dlen = strlen(data) ;
+
+	if (cdb_make_add(c,key,klen,dlen ? data : 0,dlen) < 0)
+		log_warnsys_return(LOG_EXIT_ZERO,"cdb_make_add: ",key) ;
+
+	return 1 ;
+}
+
+int ss_resolve_write_cdb(ss_resolve_t *res, char const *dst, char const *name)
+{
+	int fd ;
+	size_t dstlen = strlen(dst), namelen = strlen(name);
+	struct cdb_make c = CDB_MAKE_ZERO ;
+	char tfile[dstlen + 1 + namelen + namelen + 9] ;
+	char dfile[dstlen + 1 + namelen + 1] ;
+
+	char *str = res->sa.s ;
+
+	auto_strings(dfile,dst,"/",name) ;
+
+	auto_strings(tfile,dst,"/",name,":",name,":","XXXXXX") ;
+
+	fd = mkstemp(tfile) ;
+	if (fd < 0 || ndelay_off(fd)) {
+		log_warnusys("mkstemp: ", tfile) ;
+		goto err_fd ;
+	}
+
+	if (cdb_make_start(&c, fd) < 0) {
+		log_warnusys("cdb_make_start") ;
+		goto err ;
+	}
+
+	/* name */
+	if (!ss_resolve_add_cdb(&c,"name",str + res->name) ||
+
+	/* description */
+	!ss_resolve_add_cdb(&c,"description",str + res->description) ||
+
+	/* version */
+	!ss_resolve_add_cdb(&c,"version",str + res->version) ||
+
+	/* logger */
+	!ss_resolve_add_cdb(&c,"logger",str + res->logger) ||
+
+	/* logreal */
+	!ss_resolve_add_cdb(&c,"logreal",str + res->logreal) ||
+
+	/* logassoc */
+	!ss_resolve_add_cdb(&c,"logassoc",str + res->logassoc) ||
+
+	/* dstlog */
+	!ss_resolve_add_cdb(&c,"dstlog",str + res->dstlog) ||
+
+	/* deps */
+	!ss_resolve_add_cdb(&c,"deps",str + res->deps) ||
+
+	/* optsdeps */
+	!ss_resolve_add_cdb(&c,"optsdeps",str + res->optsdeps) ||
+
+	/* extdeps */
+	!ss_resolve_add_cdb(&c,"extdeps",str + res->extdeps) ||
+
+	/* contents */
+	!ss_resolve_add_cdb(&c,"contents",str + res->contents) ||
+
+	/* src */
+	!ss_resolve_add_cdb(&c,"src",str + res->src) ||
+
+	/* srconf */
+	!ss_resolve_add_cdb(&c,"srconf",str + res->srconf) ||
+
+	/* live */
+	!ss_resolve_add_cdb(&c,"live",str + res->live) ||
+
+	/* runat */
+	!ss_resolve_add_cdb(&c,"runat",str + res->runat) ||
+
+	/* tree */
+	!ss_resolve_add_cdb(&c,"tree",str + res->tree) ||
+
+	/* treename */
+	!ss_resolve_add_cdb(&c,"treename",str + res->treename) ||
+
+	/* dstlog */
+	!ss_resolve_add_cdb(&c,"dstlog",str + res->dstlog) ||
+
+	/* state */
+	!ss_resolve_add_cdb(&c,"state",str + res->state) ||
+
+	/* exec_run */
+	!ss_resolve_add_cdb(&c,"exec_run",str + res->exec_run) ||
+
+	/* exec_log_run */
+	!ss_resolve_add_cdb(&c,"exec_log_run",str + res->exec_log_run) ||
+
+	/* real_exec_run */
+	!ss_resolve_add_cdb(&c,"real_exec_run",str + res->real_exec_run) ||
+
+	/* real_exec_log_run */
+	!ss_resolve_add_cdb(&c,"real_exec_log_run",str + res->real_exec_log_run) ||
+
+	/* exec_finish */
+	!ss_resolve_add_cdb(&c,"exec_finish",str + res->exec_finish) ||
+
+	/* real_exec_finish */
+	!ss_resolve_add_cdb(&c,"real_exec_finish",str + res->real_exec_finish) ||
+
+	/* type */
+	!ss_resolve_add_cdb_uint(&c,"type",res->type) ||
+
+	/* ndeps */
+	!ss_resolve_add_cdb_uint(&c,"ndeps",res->ndeps) ||
+
+	/* noptsdeps */
+	!ss_resolve_add_cdb_uint(&c,"noptsdeps",res->noptsdeps) ||
+
+	/* nextdeps */
+	!ss_resolve_add_cdb_uint(&c,"nextdeps",res->nextdeps) ||
+
+	/* ncontents */
+	!ss_resolve_add_cdb_uint(&c,"ncontents",res->ncontents) ||
+
+	/* down */
+	!ss_resolve_add_cdb_uint(&c,"down",res->down) ||
+
+	/* disen */
+	!ss_resolve_add_cdb_uint(&c,"disen",res->disen)) goto err ;
+
+	if (cdb_make_finish(&c) < 0 || fsync(fd) < 0) {
+		log_warnusys("write to: ", tfile) ;
+		goto err ;
+	}
+
+	close(fd) ;
+
+	if (rename(tfile, dfile) < 0) {
+		log_warnusys("rename ", tfile, " to ", dfile) ;
+		goto err_fd ;
+	}
+
+	return 1 ;
+
+	err:
+		close(fd) ;
+	err_fd:
+		unlink_void(tfile) ;
+		return 0 ;
+}
+
+int ss_resolve_find_cdb(stralloc *result, cdb_t *c,char const *key)
+{
+	uint32_t x = 0 ;
+	size_t klen = strlen(key) ;
+
+	result->len = 0 ;
+
+	int r = cdb_find(c, key, klen) ;
+	if (r == -1) log_warnusys_return(LOG_EXIT_LESSONE,"search on cdb key: ",key) ;
+	if (!r) log_warnusys_return(LOG_EXIT_ZERO,"unknown key on cdb: ",key) ;
+	{
+		char pack[cdb_datalen(c) + 1] ;
+
+		if (cdb_read(c, pack, cdb_datalen(c),cdb_datapos(c)) < 0)
+			log_warnusys_return(LOG_EXIT_LESSONE,"read on cdb value of key: ",key) ;
+
+		pack[cdb_datalen(c)] = 0 ;
+		uint32_unpack_big(pack, &x) ;
+
+		if (!auto_stra(result,pack)) log_warnusys_return(LOG_EXIT_LESSONE,"stralloc") ;
+	}
+
+	return x ;
+}
+
+int ss_resolve_read_cdb(ss_resolve_t *dres, char const *name)
+{
+	int fd ;
+	uint32_t x ;
+
+	cdb_t c = CDB_ZERO ;
+	stralloc tmp = STRALLOC_ZERO ;
+	ss_resolve_t res = RESOLVE_ZERO ;
+
+	fd = open_readb(name) ;
+	if (fd < 0) {
+		log_warnusys("open: ",name) ;
+		goto err_fd ;
+	}
+	if (!cdb_init_map(&c, fd, 1)) {
+		log_warnusys("cdb_init: ", name) ;
+		goto err ;
+	}
+
+	ss_resolve_init(&res) ;
+
+	/* name */
+	ss_resolve_find_cdb(&tmp,&c,"name") ;
+	res.name = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* description */
+	ss_resolve_find_cdb(&tmp,&c,"description") ;
+	res.description = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* version */
+	ss_resolve_find_cdb(&tmp,&c,"version") ;
+	res.version = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* logger */
+	ss_resolve_find_cdb(&tmp,&c,"logger") ;
+	res.logger = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* logreal */
+	ss_resolve_find_cdb(&tmp,&c,"logreal") ;
+	res.logreal = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* logassoc */
+	ss_resolve_find_cdb(&tmp,&c,"logassoc") ;
+	res.logassoc = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* dstlog */
+	ss_resolve_find_cdb(&tmp,&c,"dstlog") ;
+	res.dstlog = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* deps */
+	ss_resolve_find_cdb(&tmp,&c,"deps") ;
+	res.deps = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* optsdeps */
+	ss_resolve_find_cdb(&tmp,&c,"optsdeps") ;
+	res.optsdeps = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* extdeps */
+	ss_resolve_find_cdb(&tmp,&c,"extdeps") ;
+	res.extdeps = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* contents */
+	ss_resolve_find_cdb(&tmp,&c,"contents") ;
+	res.contents = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* src */
+	ss_resolve_find_cdb(&tmp,&c,"src") ;
+	res.src = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* srconf */
+	ss_resolve_find_cdb(&tmp,&c,"srconf") ;
+	res.srconf = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* live */
+	ss_resolve_find_cdb(&tmp,&c,"live") ;
+	res.live = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* runat */
+	ss_resolve_find_cdb(&tmp,&c,"runat") ;
+	res.runat = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* tree */
+	ss_resolve_find_cdb(&tmp,&c,"tree") ;
+	res.tree = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* treename */
+	ss_resolve_find_cdb(&tmp,&c,"treename") ;
+	res.treename = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* state */
+	ss_resolve_find_cdb(&tmp,&c,"state") ;
+	res.state = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* exec_run */
+	ss_resolve_find_cdb(&tmp,&c,"exec_run") ;
+	res.exec_run = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* exec_log_run */
+	ss_resolve_find_cdb(&tmp,&c,"exec_log_run") ;
+	res.exec_log_run = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* real_exec_run */
+	ss_resolve_find_cdb(&tmp,&c,"real_exec_run") ;
+	res.real_exec_run = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* real_exec_log_run */
+	ss_resolve_find_cdb(&tmp,&c,"real_exec_log_run") ;
+	res.real_exec_log_run = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* exec_finish */
+	ss_resolve_find_cdb(&tmp,&c,"exec_finish") ;
+	res.exec_finish = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* real_exec_finish */
+	ss_resolve_find_cdb(&tmp,&c,"real_exec_finish") ;
+	res.real_exec_finish = tmp.len ? ss_resolve_add_string(&res,tmp.s) : 0 ;
+
+	/* type */
+	x = ss_resolve_find_cdb(&tmp,&c,"type") ;
+	res.type = x ;
+
+	/* ndeps */
+	x = ss_resolve_find_cdb(&tmp,&c,"ndeps") ;
+	res.ndeps = x ;
+
+	/* noptsdeps */
+	x =ss_resolve_find_cdb(&tmp,&c,"noptsdeps") ;
+	res.noptsdeps = x ;
+
+	/* nextdeps */
+	x = ss_resolve_find_cdb(&tmp,&c,"nextdeps") ;
+	res.nextdeps = x ;
+
+	/* ncontents */
+	x = ss_resolve_find_cdb(&tmp,&c,"ncontents") ;
+	res.ncontents = x ;
+
+	/* down */
+	x = ss_resolve_find_cdb(&tmp,&c,"down") ;
+	res.down = x ;
+
+	/* disen */
+	x = ss_resolve_find_cdb(&tmp,&c,"disen") ;
+	res.disen = x ;
+
+	if (!ss_resolve_copy(dres,&res)) goto err ;
+
+	close(fd) ;
+	cdb_free(&c) ;
+	ss_resolve_free(&res) ;
+	stralloc_free(&tmp) ;
+
+	return 1 ;
+
+	err:
+		close(fd) ;
+	err_fd:
+		cdb_free(&c) ;
+		ss_resolve_free(&res) ;
+		stralloc_free(&tmp) ;
+		return 0 ;
 }
