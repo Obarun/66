@@ -142,15 +142,24 @@ int ss_resolve_graph_build(ss_resolve_graph_t *graph,ss_resolve_t *res,char cons
 	{
 		if (!obstr_equal(name,SS_MASTER+1))
 		{
-			if(!ss_resolve_append(&graph->name,res)) goto err ;
+			if(!ss_resolve_append(&graph->name,res)) {
+				log_warnu("append: ", name) ;
+				goto err ;
+			}
 		}		
 		if (!reverse)
 		{
-			if (!ss_resolve_add_deps(&graph->name,res,src)) goto err ;
+			if (!ss_resolve_add_deps(&graph->name,res,src)) {
+				log_warnu("add dependencies of: ", name) ;
+				goto err ;
+			}
 		}
 		else
 		{ 
-			if (!ss_resolve_add_rdeps(&graph->name,res,src)) goto err ;
+			if (!ss_resolve_add_rdeps(&graph->name,res,src)) {
+				log_warnu("add reverse dependencies of: ", name) ;
+				goto err ;
+			}
 		}
 	}
 		
