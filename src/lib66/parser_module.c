@@ -340,12 +340,14 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 		svtype = get_svtype_from_file(sv) ;
 		if (svtype == -1) log_warnu_return(LOG_EXIT_ZERO,"get svtype of: ",sv) ;
 
-		if (!stralloc_catb(&sdir,pbname,strlen(pbname) + 1))
-			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-
-		if (svtype != TYPE_CLASSIC)
-			if (!stralloc_catb(&tmp,pbname,strlen(pbname) + 1)) 
+		if (sastr_cmp(&sdir,pbname) == -1)
+			if (!stralloc_catb(&sdir,pbname,strlen(pbname) + 1))
 				log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+		if (sastr_cmp(&tmp,pbname) == -1)
+			if (svtype != TYPE_CLASSIC)
+				if (!stralloc_catb(&tmp,pbname,strlen(pbname) + 1))
+					log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}
 
 	sv_before->cname.idga = deps.len ;
