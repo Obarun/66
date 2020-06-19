@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -122,7 +123,7 @@ void tree_allowed(stralloc *list,char const *base, char const *treename)
 	stralloc_free(&sa) ;
 }
 
-static uint8_t tree_contents_format(char const *tree)
+static int tree_contents_format(char const *tree)
 {
 	/** even on empty tree Master bundle is always present.
 	 * Check its format. Cdb format allow to retrieve all information
@@ -150,18 +151,18 @@ static uint8_t tree_contents_format(char const *tree)
 	fd_close(fd) ;
 	cdb_free(&c) ;
 	errno = e ;
-	return (uint8_t)r ;
+	return r ;
 }
 
 void tree_contents(stralloc *list,char const *tree,ssexec_t *info)
 {
-	uint8_t format = tree_contents_format(tree) ;
+	int format = tree_contents_format(tree) ;
 	
 	size_t treelen = strlen(tree), pos, newlen ;
 	stralloc sa = STRALLOC_ZERO ;
 	char solve[treelen + SS_SVDIRS_LEN + SS_RESOLVE_LEN + SS_DB_LEN + SS_SRC_LEN + 1] ;
 
-	if (format)
+	if (format == 1)
 	{
 		ss_resolve_t res = RESOLVE_ZERO ;
 		auto_strings(solve,tree,SS_SVDIRS,SS_RESOLVE) ;
