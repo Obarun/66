@@ -43,7 +43,7 @@ Lists or replaces an environment variable of a service depending on the options 
 
 - **-L** : list defined environment variables for service.
 
-- **-e** : edit the configuration file with `EDITOR` set in your system environment
+- **-e** : edit the configuration file with `EDITOR` set in your system environment. This is the default option if **-L** or **-r** was not passed.
 
 - **-r** *key=value* : override an existing `key=value` pair with the given one. The `key=value` needs to be single quoted in case of multiple arguments.
 

@@ -72,6 +72,8 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 	if (argc < 1) log_usage(usage_env) ;
 	sv = argv[0] ;
 
+	if (!list && !replace && !edit) edit = 1 ;
+
 	treename = !info->opt_tree ? 0 : info->treename.s ;
 
 	if (!src)
