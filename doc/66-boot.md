@@ -90,7 +90,7 @@ In the unusual event that any of the above processes fail, *66-boot* will try to
 
 Skeleton files are mandatory and must exist on your system to be able to boot and shutdown the machine properly. By default those files are installed at `%%skel%%`. Use the `--with-skeleton=DIR` option at compile time to change it.
 
-- `init` : the *66-boot* binary is not meant to be called directly or be linked to the binary directory because it takes command line options. Therefore the `init` skeleton file is used to pass any options to *66-boot. By default *66-boot* is launched with **-m** options. This file ***should be copied*** by the administrator into the binary directory of your system.
+- `init` : the *66-boot* binary is not meant to be called directly or be linked to the binary directory because it takes command line options. Therefore the `init` skeleton file is used to pass any options to *66-boot. By default *66-boot* is launched without options. This file ***should be copied*** by the administrator into the binary directory of your system.
 
 - `init.conf` : this file contains a set of `key=value` pairs. ***All*** keys are mandatory where the name of the key ***must not*** be changed. This is the file available to a user to configure the boot process. By default:
     
@@ -112,7 +112,7 @@ Skeleton files are mandatory and must exist on your system to be able to boot an
 
     * `RESCAN=0` : forces [s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) to perform a scan every *RESCAN* milliseconds. This is an overload function mostly for debugging. It should be 0 during *stage1*. It is strongly discouraged to set *RESCAN* to a positive value smaller than 500.
     
-    * `ISHELL=%%skel%%/ishell` : an absolute path. Gets called in case *stage2* crashes. This file will try to run a *sulogin*.
+    * `ISHELL=%%skel%%/ishell` : an absolute path. Gets called in case *stage2* crashes if define by the administrator at the `rc.init` file.
 
 - `rc.init` : this file is called by the child of *66-boot* to process *stage2*. It invokes two commands:
     
@@ -120,13 +120,11 @@ Skeleton files are mandatory and must exist on your system to be able to boot an
     
     * `66-dbctl -v${VERBOSITY} -l ${LIVE} -t ${TREE} -u` will bring up all `bundle` and `atomic` services inside of *TREE*.
     
-    * If any of these two commands fail the *ISHELL* file is called to provide the means for repair.
+    * If any of these two commands fail a warning message is sent to sdtout. It's the responsability of the administrator to call or not the `ishell` file.
 
 - `rc.shutdown` : this file is called at shudown when the administrator requests the `shutdown`, `halt`, `poweroff` or `reboot` command. It invokes a single command:
     
     * `66-all -v${VERBOSITY} -l ${LIVE} -t ${TREE} -f down` to bring down all *services* for all *trees* marked as enabled.
-    
-    * `ishell` : this file is called by `rc.init` in case *stage2* crashes. It will try to run *sulogin* to provide a means of repair.
     
 The following skeleton files are called to execute their corresponding power related functions and are safe wrappers that accept their corresponding command options. They **should be copied or symlinked** to the binary directory of the system.
 
@@ -137,3 +135,13 @@ The following skeleton files are called to execute their corresponding power rel
 - `reboot` : wraps [66-hpr -r](66-hpr.html). Terminates all processes and instructs a warm boot.
 
 - `shutdown` : wraps [66-shutdown](66-shutdown.html). Like `poweroff` but also runs scripts to bring the system down in a sane way including user notification.
+
+- `ishell` : this file will try to run *sulogin* to provide a means of repair.
+
+## Kernel command line
+
+Any valid `key=value` pair set at the `init.conf` skeleton file can be passed on the kernel command line as parameter:
+
+```
+    BOOT_IMAGE=../vmlinuz-linux root=/dev/sda3 ro vga=895 initrd=../intel-ucode.img,../initramfs-linux.img TREE=boot
+```

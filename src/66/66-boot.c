@@ -56,6 +56,9 @@ static char ttree[MAXENV+1] ;
 static char confile[MAXENV+1] ;
 static char const *const *genv = 0 ;
 static int fdin ;
+static char const *proc_cmdline="/proc/cmdline" ;
+
+#define MAXBUF 1024*64*2
 
 #define USAGE "66-boot [ -h ] [ -m ] [ -s skel ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]"
 
@@ -95,6 +98,67 @@ static inline void info_help (void)
  if (buffer_putsflush(buffer_1, help) < 0) sulogin("","") ;
 }
 
+static int read_line(stralloc *dst, char const *line) 
+{
+	char b[MAXBUF] ;
+	int fd ;
+	unsigned int n = 0, m = MAXBUF ;
+
+	fd = open(line, O_RDONLY) ;
+	if (fd == -1) return 0 ;
+
+	for(;;)
+	{
+		ssize_t r = read(fd,b+n,m-n);
+		if (r == -1)
+		{
+			if (errno == EINTR) continue ;
+			break ;
+		}
+		n += r ;
+		// buffer is full
+		if (n == m)
+		{
+			--n ;
+			break ;
+		}
+		// end of file
+		if (r == 0) break ;
+	}
+	close(fd) ;
+
+	if(n)
+	{
+		int i = n ;
+		// remove trailing zeroes
+		while (i && b[i-1] == '\0') --i ;
+		while (i--)
+			if (b[i] == '\n' || b[i] == '\0') b[i] = ' ' ;
+		
+		if (b[n-1] == ' ') b[n-1] = '\0' ;
+	}
+	b[n] = '\0';
+
+	if (!stralloc_cats(dst,b) ||
+		!stralloc_0(dst)) sulogin("close stralloc",dst->s) ;
+ 	return n ;
+}
+
+static int get_value(stralloc *val,char const *key)
+{
+	if (!environ_get_val_of_key(val,key)) return 0 ;
+	/** value may be empty, in this case we use the default one */
+	if (!sastr_clean_element(val)) 
+	{	
+		log_warnu("get value of: ",key," -- keeps the default") ;
+		return 0 ;
+	}
+	if (!sastr_rebuild_in_oneline(val)) sulogin("rebuild line of value: ",val->s) ;
+	if (!stralloc_0(val)) sulogin("append stralloc of value: ",val->s) ;
+	
+	return 1 ;
+}
+
 static void parse_conf(void)
 {
 	static char const *valid[] = 
@@ -102,6 +166,7 @@ static void parse_conf(void)
 	int r ;
 	unsigned int j = 0 ;
 	stralloc src = STRALLOC_ZERO ;
+	stralloc cmdline = STRALLOC_ZERO ;
 	stralloc val = STRALLOC_ZERO ;
 	if (skel[0] != '/') sulogin("skeleton directory must be an aboslute path: ",skel) ;
 	size_t skelen = strlen(skel) ;
@@ -110,22 +175,38 @@ static void parse_conf(void)
 	memcpy(confile + skelen + 1, SS_BOOT_CONF, SS_BOOT_CONF_LEN) ;
 	confile[skelen + 1 + SS_BOOT_CONF_LEN] = 0 ;
 	size_t filesize=file_get_size(confile) ;
+	/** skeleton file */
 	r = openreadfileclose(confile,&src,filesize) ;
 	if(!r) sulogin("open configuration file: ",confile) ; 
 	if (!stralloc_0(&src)) sulogin("append stralloc of file: ",confile) ;
-	
+
+	/** /proc/cmdline */
+	if (!read_line(&cmdline,proc_cmdline)) {
+		/** we don't want to die here */
+		log_warnu("read: ",proc_cmdline) ;
+		cmdline.len = 0 ;
+	} 
+	if (!sastr_split_element_in_nline(&cmdline)) {
+		log_warnu("split: ",proc_cmdline) ;
+		cmdline.len = 0 ;
+	}
 	for (char const *const *p = valid;*p;p++,j++)
 	{
-		if (!stralloc_copy(&val,&src)) sulogin("copy stralloc of file: ",confile) ;
-		if (!environ_get_val_of_key(&val,*p)) continue ;
-		/** value may be empty, in this case we use the default one */
-		if (!sastr_clean_element(&val)) 
-		{	
-			log_warnu("get value of: ",*p," -- keeps the default") ;
-			continue ;
+		/** try first to read from /proc/cmdline.
+		 * If the key is not found, try to read the skeleton file.
+		 * Finally keep the default value if we cannot get a correct
+		 * key=value pair */
+		if (cmdline.len > 0) {
+			if (!stralloc_copy(&val,&cmdline)) sulogin("copy stralloc of file: ",proc_cmdline) ;
 		}
-		if (!sastr_rebuild_in_oneline(&val)) sulogin("rebuild line of value: ",val.s) ;
-		if (!stralloc_0(&val)) sulogin("append stralloc of value: ",val.s) ;
+		else if (!stralloc_copy(&val,&src)) sulogin("copy stralloc of file: ",confile) ;
+		
+		if (!get_value(&val,*p) && cmdline.len > 0)
+		{
+			if (!stralloc_copy(&val,&src)) sulogin("copy stralloc of file: ",confile) ;
+			if (!get_value(&val,*p)) continue ;
+		}
+		else continue ;
 		
 		switch (j)
 		{
@@ -156,6 +237,7 @@ static void parse_conf(void)
 		
 	}
 	stralloc_free(&val) ;
+	stralloc_free(&cmdline) ;
 	stralloc_free(&src) ;
 }
 
