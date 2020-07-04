@@ -1,10 +1,8 @@
 #!@EXECLINE_SHEBANGPREFIX@/execlineb -S0
 
-## It's the responsability of the sysadmin to properly define
-## the configuration file. By default /etc/66/init.conf or
-## instructed by 66-boot via the -s option(see 66-boot documentation).
-
-execl-envfile ${1}
+importas -iu VERBOSITY VERBOSITY
+importas -iu TREE TREE
+importas -iu LIVE LIVE
 
 ## By default the output goes to the uncaught-logs at
 ## /run/66/log/0/current

@@ -120,7 +120,7 @@ Skeleton files are mandatory and must exist on your system to be able to boot an
     
     * `66-dbctl -v${VERBOSITY} -l ${LIVE} -t ${TREE} -u` will bring up all `bundle` and `atomic` services inside of *TREE*.
     
-    * If any of these two commands fail a warning message is sent to sdtout. It's the responsability of the administrator to call or not the `ishell` file.
+    * If any of these two commands fail a warning message is sent to sdtout. It is the responsibility of the administrator to call or not the `ishell` file.
 
 - `rc.shutdown` : this file is called at shudown when the administrator requests the `shutdown`, `halt`, `poweroff` or `reboot` command. It invokes a single command:
     
