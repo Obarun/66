@@ -117,7 +117,7 @@ int ss_resolve_pointo(stralloc *sa,ssexec_t *info,int type, unsigned int where)
 
 /* @sdir -> service dir
  * @mdir -> module dir */
-int ss_resolve_module_path(stralloc *sdir, stralloc *mdir, char const *sv, uid_t owner)
+int ss_resolve_module_path(stralloc *sdir, stralloc *mdir, char const *sv,char const *frontend_src, uid_t owner)
 {
 	int r, insta ;
 	stralloc sainsta = STRALLOC_ZERO ;
@@ -132,7 +132,7 @@ int ss_resolve_module_path(stralloc *sdir, stralloc *mdir, char const *sv, uid_t
 	if (!owner)
 	{
 		src = SS_MODULE_ADMDIR ;
-		dest = SS_SERVICE_ADMDIR ;
+		dest = frontend_src ;
 	}
 	else
 	{	
@@ -155,14 +155,12 @@ int ss_resolve_module_path(stralloc *sdir, stralloc *mdir, char const *sv, uid_t
 	{
 		mdir->len = 0 ;
 		src = SS_MODULE_ADMDIR ;
-		dest = SS_SERVICE_ADMDIR ;
 		if (!auto_stra(mdir,src,sainsta.s)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		r = scan_mode(mdir->s,S_IFDIR) ;
 		if (!r || r == -1)
 		{
 			mdir->len = 0 ;
 			src = SS_MODULE_SYSDIR ;
-			dest = SS_SERVICE_SYSDIR ;
 			if (!auto_stra(mdir,src,sainsta.s)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			r = scan_mode(mdir->s,S_IFDIR) ;
 			if (!r || r == -1) log_warnu_return(LOG_EXIT_ZERO,"find module: ",sv) ;
@@ -1241,7 +1239,7 @@ int ss_resolve_sort_bytype(genalloc *gares,stralloc *list,char const *src)
 
 int ss_resolve_cmp_service_basedir(char const *dir)
 {
-	/** directory_forced can be 0, so nothing to do */
+	/** dir can be 0, so nothing to do */
 	if (!dir) return 1 ;
 	size_t len = strlen(dir) ;
 	uid_t owner = MYUID ;
