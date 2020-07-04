@@ -81,6 +81,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 {
 	int r ;
 	stralloc module = STRALLOC_ZERO ;
+
 	for (unsigned int i = 0; i < genalloc_len(sv_alltype,gasv); i++)
 	{
 		sv_alltype_ref sv = &genalloc_s(sv_alltype,gasv)[i] ;
@@ -95,6 +96,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 			int e = errno ;
 			rm_rf(workdir) ;
 			errno = e ;
+			name = keep.s + sv->cname.name ;
 			log_dieu(LOG_EXIT_SYS,"write service: ",name) ;
 		}
 		if (r > 1) continue ; //service already added
@@ -229,6 +231,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 			genalloc_deepfree(ss_resolve_t,&gamodule,ss_resolve_free) ;
 			ss_resolve_graph_free(&mgraph) ;
 		}
+		stralloc_free(&module) ;
 		return ;
 		err:
 			genalloc_deepfree(ss_resolve_t,&gamodule,ss_resolve_free) ;
