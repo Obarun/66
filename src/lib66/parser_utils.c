@@ -328,11 +328,8 @@ int check_mandatory(sv_alltype *service, section_t *sasection)
 	if (!service->user[0])
 		log_warn_return(LOG_EXIT_ZERO,"key @user at section [start] must be set") ;
 	
-	/** just warn here about the @version field to let the time to implement
-	 * it inside all already existing service.
-	 * It will be mandatory when 66-backup will be incorporated. */
 	if (service->cname.version < 0)
-		log_warn("key @version at section [main] is missing -- it will be mandatory on the near future") ;
+		log_warn_return(LOG_EXIT_ZERO,"key @version at section [main] must be set") ;
 	
 	if (service->opts[2] && !sasection->idx[SECTION_ENV])
 		log_warn_return(LOG_EXIT_ZERO,"options env was asked -- section environment must be set") ;
@@ -485,6 +482,7 @@ int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service)
 	return 1 ;
 }
 
+
 /**********************************
  *		store
  * *******************************/
@@ -509,7 +507,7 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 			break ;
 		case KEY_MAIN_VERSION:
 			service->cname.version = keep.len ;
-			r = version_scan(&nocheck->val,chval,2) ;
+			r = version_scan(&nocheck->val,chval,SS_CONFIG_VERSION_NDOT) ;
 			if (r == -1) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			if (!r) { parse_err(0,nocheck) ; return 0 ; }
 			if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
