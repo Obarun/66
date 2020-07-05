@@ -591,11 +591,10 @@ int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 	{
 		stralloc tmp = STRALLOC_ZERO ;
 		stralloc salink = STRALLOC_ZERO ;
-		size_t dstlen, namelen ;
+		size_t dstlen ;
 		char *dst = keep.s + sv->srconf ;
 		char *name = keep.s + sv->cname.name ;
 		dstlen = strlen(dst) ;
-		namelen = strlen(name) ;
 
 		char tdst[dstlen + SS_SYM_VERSION_LEN + 1] ;
 		auto_strings(tdst,dst,SS_SYM_VERSION) ;
@@ -609,7 +608,6 @@ int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 		if (sareadlink(&salink, tdst) == -1)
 			log_warnusys_return(LOG_EXIT_ZERO,"read link of: ",tdst) ;
 
-		salink.len -= namelen + 1 ;//1 remove trailing slash
 		if (!stralloc_0(&salink))
 			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 
@@ -832,10 +830,10 @@ int write_env(char const *name, stralloc *sa,char const *dst)
 
 	r = scan_mode(dst,S_IFDIR) ;
 	if (r < 0)
-		log_warnsys_return(LOG_EXIT_ZERO," invalid environment directory: ",dst) ;
+		log_warn_return(LOG_EXIT_ZERO," conflicting format of the environment directory: ",dst) ;
 	else if (!r)
 	{
-		log_warnsys_return(LOG_EXIT_ZERO,dst," service environment directory doesn't exist") ;
+		log_warnusys_return(LOG_EXIT_ZERO,"find environment directory: ",dst) ;
 	}
 	if (!file_write_unsafe(dst,name,sa->s,sa->len))
 		log_warnusys_return(LOG_EXIT_ZERO,"create file: ",dst,"/",name) ;

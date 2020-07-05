@@ -561,17 +561,14 @@ static void info_display_envat(char const *field,ss_resolve_t *res)
 	{
 		stralloc salink = STRALLOC_ZERO ;
 		char *src = res->sa.s + res->srconf ;
-		char *name = res->sa.s + res->name ;
 
-		size_t srclen = strlen(src), namelen = strlen(name) ;
+		size_t srclen = strlen(src) ;
 		char sym[srclen + SS_SYM_VERSION_LEN + 1] ;
 
 		auto_strings(sym,src,SS_SYM_VERSION) ;
 
 		if (sareadlink(&salink, sym) == -1)
 			log_dieusys(LOG_EXIT_SYS,"read link of: ",sym) ;
-
-		salink.len -= namelen + 1 ;//1 remove trailing slash
 
 		if (!stralloc_0(&salink))
 			log_die_nomem("stralloc") ;
@@ -604,16 +601,13 @@ static void info_display_envfile(char const *field,ss_resolve_t *res)
 	if (res->srconf)
 	{
 		char *src = res->sa.s + res->srconf ;
-		char *name = res->sa.s + res->name ;
-		size_t srclen = strlen(src), namelen = strlen(name), newlen ;
+		size_t srclen = strlen(src), newlen ;
 		char sym[srclen + SS_SYM_VERSION_LEN + 1] ;
 
 		auto_strings(sym,src,SS_SYM_VERSION) ;
 
 		if (sareadlink(&salink, sym) == -1)
 			log_dieusys(LOG_EXIT_SYS,"read link of: ",sym) ;
-
-		salink.len -= namelen + 1 ;//1 remove trailing slash
 
 		if (!stralloc_0(&salink))
 			log_dieusys(LOG_EXIT_SYS,"stralloc") ;
