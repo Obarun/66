@@ -111,7 +111,7 @@ extern void ss_resolve_free(ss_resolve_t *res) ;
 
 extern int ss_resolve_pointo(stralloc *sa,ssexec_t *info,int type, unsigned int where) ;
 extern int ss_resolve_src_path(stralloc *sasrc,char const *sv, uid_t owner,char const *directory_forced) ;
-extern int ss_resolve_module_path(stralloc *sdir, stralloc *mdir, char const *sv, uid_t owner) ;
+extern int ss_resolve_module_path(stralloc *sdir, stralloc *mdir, char const *sv,char const *src_frontend, uid_t owner) ;
 extern int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found) ;
 extern int ss_resolve_service_isdir(char const *dir, char const *name) ;
 extern int ss_resolve_add_uint32(stralloc *sa, uint32_t data) ;

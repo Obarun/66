@@ -125,7 +125,7 @@ static int rebuild_list(sv_alltype *sv_before,stralloc *list,stralloc *sv_all_ty
  * return 2 on already enabled 
  * @svname do not contents the path of the frontend file*/
 
-int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *svname,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf)
+int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *svname,char const *src_frontend,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf)
 {
 	log_trace("start parse process of module: ",svname) ;
 	int r, err = 1, insta = -1, svtype = -1, from_ext_insta = 0, already_parsed = 0 ;
@@ -142,8 +142,8 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 	if (insta <= 0)
 		log_warn_return(LOG_EXIT_ZERO,"invalid module instance name: ",svname);
 	
-	if (!ss_resolve_module_path(&sdir,&tmp,svname,info->owner)) return 0 ;
-	
+	if (!ss_resolve_module_path(&sdir,&tmp,svname,src_frontend,info->owner)) return 0 ;
+
 	/** check mandatory directories:
 	 * module/module_name, module/module_name/{configure,service,service@} */
 	if (!check_dir(tmp.s,"")) return 0 ;

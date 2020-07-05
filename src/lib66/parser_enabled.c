@@ -138,12 +138,11 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 
 	if (sv_before.cname.itype == TYPE_MODULE)
 	{
-		r = parse_module(&sv_before,info,parsed_list,tree_list,svname,nbsv,sasv,force,conf) ;
+		r = parse_module(&sv_before,info,parsed_list,tree_list,svname,svsrc,nbsv,sasv,force,conf) ;
 		if (!r) return 0 ;
 		else if (r == 2)
 		{
 			sasv->len = 0 ;
-			sv_alltype_free(&sv_before) ;
 			goto add ;
 		}
 

@@ -335,7 +335,7 @@ extern int write_dependencies(unsigned int nga,unsigned int idga,char const *dst
 extern int write_env(char const *name,stralloc *sa,char const *dst) ;
 extern int write_oneshot_logger(stralloc *destlog, sv_alltype *sv) ;
 /** module */
-extern int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *svname,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf) ;
+extern int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *svname,char const *src_frontend,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf) ;
 extern int regex_get_file_name(char *filename,char const *str) ;
 extern int regex_get_replace(char *replace, char const *str) ;
 extern int regex_get_regex(char *regex, char const *str) ;
