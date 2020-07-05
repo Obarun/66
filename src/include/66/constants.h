@@ -95,6 +95,7 @@
 #define SS_SYM_VERSION "/version"
 #define SS_SYM_VERSION_LEN (sizeof SS_SYM_VERSION - 1)
 
+#define SS_CONFIG_VERSION_NDOT 2
 /** boot */
 #define SS_BOOT_CONF "init.conf"
 #define SS_BOOT_CONF_LEN (sizeof SS_BOOT_CONF - 1)
