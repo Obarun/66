@@ -126,7 +126,7 @@ int main(int argc, char const *const *argv)
 		"Ncontents" ,
 		"Down" ,
 		"Disen",
-		"Real logger name" } ;
+		"Real_logger_name" } ;
 
 	PROG = "66-inresolve" ;
 	{

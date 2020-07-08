@@ -105,7 +105,7 @@ int main(int argc, char const *const *argv)
 		"State",
 		"Pid",
 		"Name" ,
-		"Real logger name" } ;
+		"Real_logger_name" } ;
 
 	PROG = "66-instate" ;
 	{
