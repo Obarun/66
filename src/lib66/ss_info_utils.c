@@ -21,7 +21,7 @@
 
 #include <string.h>
 #include <sys/types.h> //ssize_t
-#include <stdio.h>
+
 #include <oblibs/sastr.h>
 #include <oblibs/log.h>
 
@@ -73,33 +73,34 @@ int info_getcols_fd(int fd)
 
 void info_field_align (char buf[][INFO_FIELD_MAXLEN],char fields[][INFO_FIELD_MAXLEN],wchar_t const field_suffix[],size_t buflen)
 {
-	size_t i = 0, maxlen = 0, wlen[buflen] ;
+	size_t a = 0, b = 0, maxlen = 0, wlen[buflen], len = INFO_FIELD_MAXLEN+nb_el(field_suffix) ;
 	
 	int maxcol = 0, wcol[buflen] ;
 	
-	wchar_t wbuf[buflen][INFO_FIELD_MAXLEN+nb_el(field_suffix)] ;
+	wchar_t wbuf[buflen][len] ;
+
+	for(a = 0; a < buflen; a++)
+		for (b = 0; b < len; b++)
+			wbuf[a][b] = 0 ;
 	
-	for(i = 0; i < buflen; i++)
-		wbuf[i][0] = 0 ;
-	
-	for(i = 0; i < buflen; i++)
+	for(a = 0; a < buflen; a++)
 	{
-		wlen[i] = mbstowcs(wbuf[i], buf[i], strlen(buf[i]) + 1) ;
-		wcol[i] = wcswidth(wbuf[i], wlen[i]) ;
-		if(wcol[i] > maxcol) {
-			maxcol = wcol[i] ;
+		wlen[a] = mbstowcs(wbuf[a], buf[a], strlen(buf[a]) + 1) ;
+		wcol[a] = wcswidth(wbuf[a], wlen[a]) ;
+		if(wcol[a] > maxcol) {
+			maxcol = wcol[a] ;
 		}
-		if(wlen[i] > maxlen) {
-			maxlen = wlen[i] ;
+		if(wlen[a] > maxlen) {
+			maxlen = wlen[a] ;
 		}
 	}
 
-	for(i = 0; i < buflen; i++)
+	for(a = 0; a < buflen; a++)
 	{
-		size_t padlen = maxcol - wcol[i] ;
-		wmemset(wbuf[i] + wlen[i], L' ', padlen) ;
-		wmemcpy(wbuf[i] + wlen[i] + padlen, field_suffix, nb_el(field_suffix)) ;
-		wcstombs(fields[i], wbuf[i], sizeof(wbuf[i])) ;
+		size_t padlen = maxcol - wcol[a] ;
+		wmemset(wbuf[a] + wlen[a], L' ', padlen) ;
+		wmemcpy(wbuf[a] + wlen[a] + padlen, field_suffix, nb_el(field_suffix)) ;
+		wcstombs(fields[a], wbuf[a], sizeof(wbuf[a])) ;
 	}
 }
 
