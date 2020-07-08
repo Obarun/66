@@ -16,11 +16,12 @@
 
 #include <unistd.h>
 #include <sys/ioctl.h>
-#include <wchar.h>
 #include <stdlib.h>
+#include <wchar.h>
+
 #include <string.h>
 #include <sys/types.h> //ssize_t
-
+#include <stdio.h>
 #include <oblibs/sastr.h>
 #include <oblibs/log.h>
 
@@ -72,18 +73,15 @@ int info_getcols_fd(int fd)
 
 void info_field_align (char buf[][INFO_FIELD_MAXLEN],char fields[][INFO_FIELD_MAXLEN],wchar_t const field_suffix[],size_t buflen)
 {
-	unsigned int i ;
+	size_t i = 0, maxlen = 0, wlen[buflen] ;
 	
-	size_t maxlen = 0 ;
+	int maxcol = 0, wcol[buflen] ;
 	
-	int maxcol = 0 ;
+	wchar_t wbuf[buflen][INFO_FIELD_MAXLEN+nb_el(field_suffix)] ;
 	
-	static wchar_t wbuf[][INFO_FIELD_MAXLEN+nb_el(field_suffix)] = {{ 0 }} ;
+	for(i = 0; i < buflen; i++)
+		wbuf[i][0] = 0 ;
 	
-	size_t wlen[buflen] ;
-	
-	int wcol[buflen] ;
-
 	for(i = 0; i < buflen; i++)
 	{
 		wlen[i] = mbstowcs(wbuf[i], buf[i], strlen(buf[i]) + 1) ;
