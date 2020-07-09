@@ -97,7 +97,9 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 
 		if (!auto_stra(&sasrc,res.sa.s + res.srconf,SS_SYM_VERSION)) log_die_nomem("stralloc") ;
 		if (sareadlink(&salink,sasrc.s) == -1) log_dieusys(LOG_EXIT_SYS,"readlink: ",sasrc.s) ;
-		if (!auto_stra(&salink,"/",sv) ||
+		if (!stralloc_cats(&salink,"/") ||
+		!stralloc_cats(&salink,sv) ||
+		!stralloc_0(&salink) ||
 		!stralloc_copy(&sasrc,&salink)) log_die_nomem("stralloc") ;
 		src = sasrc.s ;
 		stralloc_free(&salink) ;
