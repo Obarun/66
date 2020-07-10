@@ -148,38 +148,46 @@ int env_merge_conf(stralloc *result,stralloc *srclist,stralloc *modifs,uint8_t c
 
 /** @Return 0 on fail
  * @Return 1 on success
- * @Return 2 if symlink was updated */
+ * @Return 2 if symlink was updated and old version > new version
+ * @Return 3 if symlink was updated and old version < new version */
 int env_make_symlink(stralloc *dst,stralloc *old_dst,sv_alltype *sv,uint8_t conf)
 {
 	/** dst-> e.g /etc/66/conf/<service_name> */
 	int r ;
+	size_t dstlen = dst->len ;
 	uint8_t format = 0, update_symlink = 0, write = 0 ;
 	struct stat st ;
+	stralloc saversion = STRALLOC_ZERO ;
 	char *name = keep.s + sv->cname.name ;
 	char *version = keep.s + sv->cname.version ;
+	char old[dst->len + 5] ;//.old
+	char dori[dst->len + 1] ;
+	char dname[dst->len + 1] ;
+	char current_version[dst->len + 1] ;
 	char sym_version[dst->len + SS_SYM_VERSION_LEN + 1] ;
 	auto_strings(sym_version,dst->s,SS_SYM_VERSION) ;
 
-	char old[dst->len + 5] ;//.old
+	/** dst -> /etc/66/conf/<service> */
+	auto_strings(dori,dst->s) ;
+
 	r = scan_mode(dst->s, S_IFDIR) ;
 	/** enforce to pass to new format*/
 	if (r == -1) {
+		/** last time to pass to the new format. 0.6.0.0 or higher
+		 * version will remove this check */
 		auto_strings(old,dst->s,".old") ;
 		if (rename(dst->s,old) == -1)
 			log_warnusys_return(LOG_EXIT_ZERO,"rename: ",dst->s," to: ",old) ;
 		format = 1 ;
 	}
 
-	if (!auto_stra(dst,"/",version))
-		log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-	/** first activation of the service. The symlink doesn't exist yet */
+	/** first activation of the service. The symlink doesn't exist yet.
+	 * In that case we create it else we check if it point to a file or
+	 * a directory. File means old format, in this case we enforce to pass
+	 * to the new one. */
 	r = lstat(sym_version,&st) ;
 	if (S_ISLNK(st.st_mode))
 	{
-		stralloc saversion = STRALLOC_ZERO ;
-		char dname[dst->len + 1] ;
-		char bname[dst->len + 1] ;
-
 		if (sarealpath(&saversion,sym_version) == -1)
 			log_warn_return(LOG_EXIT_ZERO,"sarealpath of: ",sym_version) ;
 
@@ -194,7 +202,7 @@ int env_make_symlink(stralloc *dst,stralloc *old_dst,sv_alltype *sv,uint8_t conf
 			if (!auto_stra(&saversion,dname))
 				log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
 
-			if (!ob_basename(bname,dname))
+			if (!ob_basename(current_version,dname))
 				log_warn_return(LOG_EXIT_ZERO,"get basename of: ",dname) ;
 
 			/** old format->point to a file instead of the directory,
@@ -205,47 +213,85 @@ int env_make_symlink(stralloc *dst,stralloc *old_dst,sv_alltype *sv,uint8_t conf
 		else
 		{
 			/** /etc/66/conf/service/version */
-			if (!ob_basename(bname,saversion.s))
+			if (!ob_basename(current_version,saversion.s))
 				log_warn_return(LOG_EXIT_ZERO,"get basename of: ",saversion.s) ;
 		}
-		/** it doesn't exist yet */
-		if (!r)
-		{
-			if (conf)
-			{
-				update_symlink = 1 ;
-				if (!auto_stra(old_dst,saversion.s))
-					log_warnusys_return(LOG_EXIT_ZERO,"stralloc") ;
-			}
-			else
-			{
-				log_1_warn("configuration file version differ --  current: ",bname," new: ",version) ;
-			}
-			write = 1 ;
-			goto create ;
-		}
-		/** The version is now mandatory and we need to enforce the use of the new format.
-		 * We broke the compatibility with old 66 version but we need to go ahead. */
-		r = version_scan(&saversion,bname,SS_CONFIG_VERSION_NDOT) ;
-		if (!r || r == -1)
-		{
-			/** old format meaning /etc/66/conf/service/confile
-			 * we consider it as old version */
-			update_symlink = 1 ;
+		/** keep the path of the current symlink. env_compute need it
+		 * to compare the two files. */
+		if (sarealpath(old_dst,sym_version) == -1)
+			log_warn_return(LOG_EXIT_ZERO,"sarealpath of: ",sym_version) ;
+	}
+	else
+	{
+		/** doesn't exist. First use of the service */
+		update_symlink = 3 ;
+		write = 1 ;
+		if (!auto_stra(dst,"/",version))
+			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+		goto create ;
+	}
+
+	/** 0.4.0.1 and previous 66 version doesn't set @version field as
+	 * mandatory field. We need to check if we have a previous format. */
+	r = version_scan(&saversion,current_version,SS_CONFIG_VERSION_NDOT) ;
+	if (r == -1) log_warnu_return(LOG_EXIT_ZERO,"get version of: ",saversion.s) ;
+	if (!r)
+	{
+		/** old format meaning /etc/66/conf/service/confile
+		 * we consider it as old version */
+		if (!auto_stra(dst,"/",current_version))
+			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+		if (!atomic_symlink(dst->s,sym_version,"env_compute"))
+			log_warnu_return(LOG_EXIT_ZERO,"symlink: ",sym_version," to: ",dst->s) ;
+	}
+
+	r = version_cmp(current_version,version,SS_CONFIG_VERSION_NDOT) ;
+	if (r == -2) log_warn_return(LOG_EXIT_ZERO,"compare version: ",current_version," vs: ",version) ;
+	if (r == -1 || r == 1)
+	{
+		if (conf) {
+			update_symlink = r == 1 ? 2 : 3 ;
+			if (r == 1 && conf < 3)
+				log_1_warn("merging configuration file to a previous version is not allowed -- keeps as it") ;
+
+			dst->len = dstlen ;
+			if (!auto_stra(dst,"/",version))
+				log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		}
 		else
 		{
-			r = version_cmp(bname,version,SS_CONFIG_VERSION_NDOT) ;
-			if (r == -2) log_warn_return(LOG_EXIT_ZERO,"compare version: ",bname," vs: ",version) ;
-			if (r == -1 || r > 0)
-			{
-				if (conf) update_symlink = 1 ;
-				else log_1_warn("configuration file version differ --  current: ",bname," new: ",version) ;
-			}
+			log_1_warn("configuration file version differ --  current: ",current_version," new: ",version) ;
+			dst->len = dstlen ;
+			if (!auto_stra(dst,SS_SYM_VERSION))
+				log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 		}
-		stralloc_free(&saversion) ;
 	}
-	else update_symlink = 1 ;
+	else
+	{
+		/** version is the same keep the previous symlink */
+		dst->len = dstlen ;
+		if (!auto_stra(dst,SS_SYM_VERSION))
+			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	}
+
+	saversion.len = 0 ;
+	if (!auto_stra(&saversion,dori,"/",version,"/",name))
+		log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
+
+	r = scan_mode(saversion.s,S_IFREG) ;
+	if (!r)
+	{
+		/** New version doesn't exist yet, we create it even
+		 * if the symlink is not updated */
+		saversion.len = 0 ;
+		if (!auto_stra(&saversion,dori,"/",version))
+			log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
+		if (!dir_create_parent(saversion.s,0755))
+			log_warnsys_return(LOG_EXIT_ZERO,"create directory: ",saversion.s) ;
+		if (!write_env(name,&sv->saenv,saversion.s))
+			log_warnu_return(LOG_EXIT_ZERO,"write environment at: ",saversion.s) ;
+	}
 
 	create:
 	if (!dir_create_parent(dst->s,0755))
@@ -261,6 +307,7 @@ int env_make_symlink(stralloc *dst,stralloc *old_dst,sv_alltype *sv,uint8_t conf
 		if (!write_env(name,&sv->saenv,dst->s))
 			log_warnu_return(LOG_EXIT_ZERO,"write environment at: ",dst->s) ;
 
+	/** last time guys! */
 	if (format)
 	{
 		char tmp[dst->len + 1 + strlen(name) + 1] ;
@@ -272,7 +319,8 @@ int env_make_symlink(stralloc *dst,stralloc *old_dst,sv_alltype *sv,uint8_t conf
 			log_warnusys_return(LOG_EXIT_ZERO,"remove: ",old) ;
 	}
 
-	return update_symlink ? 2 : 1 ;
+	stralloc_free(&saversion) ;
+	return update_symlink ? update_symlink : 1 ;
 }
 
 /* @Return 0 on crash
@@ -310,7 +358,7 @@ int env_compute(stralloc *result,sv_alltype *sv, uint8_t conf)
 	}
 	else if (conf > 0)
 	{
-		if (symlink_updated && old_dst.len)
+		if ((symlink_updated == 3) && old_dst.len)
 		{
 			if (!auto_stra(&old_dst,"/",keep.s + sv->cname.name))
 				log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
@@ -323,6 +371,7 @@ int env_compute(stralloc *result,sv_alltype *sv, uint8_t conf)
 			if (!file_readputsa_g(&salist,dst.s))
 				log_warnusys_return(LOG_EXIT_ZERO,"read: ",dst.s) ;
 		}
+
 		//merge config from upstream to sysadmin
 		if (!env_merge_conf(result,&salist,&sv->saenv,conf))
 			log_warnu_return(LOG_EXIT_ZERO,"merge environment file") ;
