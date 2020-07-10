@@ -77,7 +77,7 @@ info_opts_map_t const opts_tree_table[] =
 } ;
 
 #define MAXOPTS 9
-#define checkopts(n) if (n >= MAXOPTS) log_die(100, "too many options")
+#define checkopts(n) if (n >= MAXOPTS) log_die(LOG_EXIT_USER, "too many options")
 #define DELIM ','
 
 #define USAGE "66-intree [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -n ] [ -o name,init,enabled,... ] [ -g ] [ -d depth ] [ -r ] tree"

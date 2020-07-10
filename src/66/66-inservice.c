@@ -101,7 +101,7 @@ info_opts_map_t const opts_sv_table[] =
 } ;
 
 #define MAXOPTS 19
-#define checkopts(n) if (n >= MAXOPTS) strerr_dief1x(100, "too many options")
+#define checkopts(n) if (n >= MAXOPTS) log_die(LOG_EXIT_USER, "too many options")
 #define DELIM ','
 
 #define USAGE "66-inservice [ -h ] [ -z ] [ -v verbosity ] [ -n ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -t tree ] [ -p nline ] service"
