@@ -592,6 +592,26 @@ int regex_configure(sv_alltype *sv_before,ssexec_t *info, char const *module_dir
 			r = env_compute(&oenv,sv_before,conf) ;
 			if (!r) log_warnu_return(LOG_EXIT_ZERO,"compute environment") ;
 
+			if (r == 2)
+			{
+				stralloc salink = STRALLOC_ZERO ;
+				char *dst = keep.s + sv_before->srconf ;
+				char *name = keep.s + sv_before->cname.name ;
+				size_t dstlen = strlen(dst) ;
+				char tdst[dstlen + SS_SYM_VERSION_LEN + 1] ;
+				auto_strings(tdst,dst,SS_SYM_VERSION) ;
+
+				if (sareadlink(&salink, tdst) == -1)
+					log_warnusys_return(LOG_EXIT_ZERO,"read link of: ",tdst) ;
+
+				if (!stralloc_0(&salink))
+					log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+				if (!write_env(name,&oenv,salink.s))
+					log_warnu_return(LOG_EXIT_ZERO,"write environment") ;
+
+				stralloc_free(&salink) ;
+			}
 			/** prepare for the environment merge */
 			if (oenv.len) {
 				if (!environ_clean_envfile(&env,&oenv))

@@ -587,7 +587,9 @@ int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 			log_warnu_return(LOG_EXIT_ZERO,"write down-signal file") ;
 	}
 	/** environment */
-	if (sv->opts[2] > 0)
+	/** do not pass through here if the service is a module type.
+	 * the environment file was already written */
+	if (sv->opts[2] > 0 && sv->cname.itype != TYPE_MODULE)
 	{
 		stralloc tmp = STRALLOC_ZERO ;
 		stralloc salink = STRALLOC_ZERO ;
