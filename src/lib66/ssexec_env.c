@@ -26,6 +26,7 @@
 #include <skalibs/buffer.h>
 #include <skalibs/diuint32.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/unix-transactional.h>//atomic_symlink
 
 #include <66/ssexec.h>
 #include <66/utils.h>
@@ -35,14 +36,28 @@
 #include <66/constants.h>
 #include <66/resolve.h>
 
+enum tasks_e
+{
+	T_UNSET = 0 ,
+	T_EDIT ,
+	T_LIST ,
+	T_REPLACE ,
+	T_SWITCH ,
+	T_IMPORT
+} ;
+
 int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
-	int r, list = 0, replace = 0 , edit = 0 ;
-	stralloc result = STRALLOC_ZERO ;
-	stralloc var = STRALLOC_ZERO ;
-	stralloc salist = STRALLOC_ZERO ;
+	int r ;
+
+	stralloc satmp = STRALLOC_ZERO ;
 	stralloc sasrc = STRALLOC_ZERO ;
+	stralloc saversion = STRALLOC_ZERO ;
+	stralloc savar = STRALLOC_ZERO ;
+	stralloc salist = STRALLOC_ZERO ;
 	ss_resolve_t res = RESOLVE_ZERO ;
+
+	uint8_t todo = T_UNSET ;
 
 	char const *sv = 0, *src = 0, *treename = 0, *editor = 0 ;
 
@@ -51,18 +66,24 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">Ld:r:e", &l) ;
+			int opt = getopt_args(argc,argv, ">Ld:r:es:", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
 			{
-				case 'L' : 	if (replace) log_usage(usage_env) ; list = 1 ; break ;
+				case 'L' : 	if (todo != T_UNSET) log_usage(usage_env) ;
+							todo = T_LIST ; break ;
 				case 'd' :	src = l.arg ; break ;
-				case 'r' :	if (!stralloc_cats(&var,l.arg) ||
-							!stralloc_0(&var)) log_die_nomem("stralloc") ; 
-							replace = 2 ; break ;
-				case 'e' :	if (replace) log_usage(usage_env) ; 
-							edit = 1 ;
+				case 'r' :	if (!stralloc_cats(&savar,l.arg) ||
+							!stralloc_0(&savar)) log_die_nomem("stralloc") ; 
+							if (todo != T_UNSET) log_usage(usage_env) ;
+							todo = T_REPLACE ; break ;
+				case 'e' :	break ;
+				case 's' :	if (todo != T_UNSET) log_usage(usage_env) ;
+							todo = T_SWITCH ;
+							r = version_scan(&saversion,l.arg,SS_CONFIG_VERSION_NDOT) ;
+							if (r == -1) log_die_nomem("stralloc") ;
+							if (!r) log_die(LOG_EXIT_USER,"invalid version format") ;
 							break ;
 				default : 	log_usage(usage_env) ; 
 			}
@@ -72,7 +93,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 	if (argc < 1) log_usage(usage_env) ;
 	sv = argv[0] ;
 
-	if (!list && !replace && !edit) edit = 1 ;
+	if (todo == T_UNSET) todo = T_EDIT ;
 
 	treename = !info->opt_tree ? 0 : info->treename.s ;
 
@@ -106,37 +127,59 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 	}
 
 	if (!file_readputsa_g(&salist,src)) log_dieusys(LOG_EXIT_SYS,"read: ",src) ;
-	if (list)
-	{
-		if (buffer_putsflush(buffer_1, salist.s) < 0)
-			log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
-		goto freed ;
-	}
-	else if (replace)
-	{
-		if (!env_merge_conf(&result,&salist,&var,replace)) 
-			log_dieu(LOG_EXIT_SYS,"merge environment file with: ",var.s) ;
 
-		if (!openwritenclose_unsafe(src,result.s,result.len))
-			log_dieusys(LOG_EXIT_SYS,"create file: ",src,sv) ;
-		goto freed ;
-	}
-	else if (edit)
+	satmp.len = 0 ;
+
+	switch(todo)
 	{
-		editor = getenv("EDITOR") ;
-		if (!editor) {
-			editor = getenv("SUDO_USER") ;
-			if (editor) log_dieu(LOG_EXIT_SYS,"get EDITOR with sudo command -- please try to use the -E sudo option e.g. sudo -E 66-env -e <service>") ;
-			else log_dieusys(LOG_EXIT_SYS,"get EDITOR") ;
-		}
-		char const *const newarg[3] = { editor, src, 0 } ;
-		xpathexec_run (newarg[0],newarg,envp) ;
+		case T_LIST:
+			if (buffer_putsflush(buffer_1, salist.s) < 0)
+				log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+			break ;
+		case T_REPLACE:
+			if (!env_merge_conf(&satmp,&salist,&savar,2))
+				log_dieu(LOG_EXIT_SYS,"merge environment file with: ",savar.s) ;
+			if (!openwritenclose_unsafe(src,satmp.s,satmp.len))
+				log_dieusys(LOG_EXIT_SYS,"create file: ",src,sv) ;
+			break ;
+		case T_EDIT:
+			editor = getenv("EDITOR") ;
+			if (!editor) {
+				editor = getenv("SUDO_USER") ;
+				if (editor) log_dieu(LOG_EXIT_SYS,"get EDITOR with sudo command -- please try to use the -E sudo option e.g. sudo -E 66-env -e <service>") ;
+				else log_dieusys(LOG_EXIT_SYS,"get EDITOR") ;
+			}
+			char const *const newarg[3] = { editor, src, 0 } ;
+			xpathexec_run (newarg[0],newarg,envp) ;
+			break ;
+		/** Can't happen */
+		case T_SWITCH:
+			{
+				size_t conflen = strlen(res.sa.s + res.srconf) ;  
+				char sym[conflen + SS_SYM_VERSION_LEN + 1] ;
+				auto_strings(sym,res.sa.s + res.srconf,SS_SYM_VERSION) ;
+			
+				if (!stralloc_inserts(&saversion,0,"/") ||
+				!stralloc_inserts(&saversion,0,res.sa.s + res.srconf) ||
+				!stralloc_0(&saversion))
+					log_die_nomem("stralloc") ;
+				r = scan_mode(saversion.s,S_IFDIR) ;
+				if (r == -1 || !r) log_dieusys(LOG_EXIT_USER,"find the versioned directory: ",saversion.s) ; 
+
+				if (!atomic_symlink(saversion.s,sym,"ssexec_env"))
+					log_warnu_return(LOG_EXIT_ZERO,"symlink: ",sym," to: ",saversion.s) ;
+			}
+			break ;
+		default: break ;
 	}
+
 	freed:
-		stralloc_free(&result) ;
+		stralloc_free(&satmp) ;
 		stralloc_free(&sasrc) ;
-		stralloc_free(&var) ;
+		stralloc_free(&saversion) ;
+		stralloc_free(&savar) ;
 		stralloc_free(&salist) ;
 		ss_resolve_free(&res) ;
+
 	return 0 ;
 }
