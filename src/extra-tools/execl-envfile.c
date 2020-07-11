@@ -49,10 +49,10 @@ static inline void info_help (void)
     log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
-void clean_n_unexport(stralloc *modifs, stralloc *dst, stralloc *src)
+void clean_n_unexport(stralloc *modifs, stralloc *dst, stralloc *src,char const *file)
 {
-	if (!environ_clean_envfile(modifs,src)) log_dieu(LOG_EXIT_SYS,"prepare modified environment of: ",src->s) ;
-	if (!sastr_split_string_in_nline(modifs)) log_dieu(LOG_EXIT_SYS,"build environment line of: ",src->s) ;
+	if (!environ_clean_envfile(modifs,src)) log_dieu(LOG_EXIT_SYS,"prepare modified environment of: ",file) ;
+	if (!sastr_split_string_in_nline(modifs)) log_dieu(LOG_EXIT_SYS,"build environment line of: ",file) ;
 	if (!stralloc_cats(dst,src->s)) log_die_nomem("stralloc") ;
 }
 
@@ -162,7 +162,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 			}
 		}
 		if (!file_readputsa(&src,path,file)) log_dieusys(LOG_EXIT_SYS,"read file: ",path,file) ;
-		clean_n_unexport(&modifs,&dst,&src) ;
+		clean_n_unexport(&modifs,&dst,&src,file) ;
 		nvar = environ_get_num_of_line(&src) ;
 		if (nvar == -1) log_dieusys(LOG_EXIT_SYS,"get number of line of:",path,toparse.s+pos) ;
 		if (nvar > MAXVAR) log_dieusys(LOG_EXIT_SYS,"to many variables in file: ",path,toparse.s+pos) ;
@@ -175,7 +175,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 		{
 			src.len = 0 ;
 			if (!file_readputsa(&src,path,toparse.s+pos)) log_dieusys(LOG_EXIT_SYS,"read file: ",path,toparse.s+pos) ;
-			clean_n_unexport(&modifs,&dst,&src) ;
+			clean_n_unexport(&modifs,&dst,&src,toparse.s+pos) ;
 			nvar = environ_get_num_of_line(&src) ;
 			if (nvar == -1) log_dieusys(LOG_EXIT_SYS,"get number of line of:",path,toparse.s+pos) ;
 			if (nvar > MAXVAR) log_die(LOG_EXIT_SYS,"to many variables in file: ",path,toparse.s+pos) ;
