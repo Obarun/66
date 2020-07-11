@@ -130,7 +130,7 @@ char const *help_svctl =
 "	-K: kill the service(s) and keep it down\n"
 ;
 
-char const *usage_env = "66-env [ -h ] [ -z ] [ -v verbosity ] [ -t tree ] [ -d dir ] [ -L ] [ -e ] [ -r key=value ] [ -s version ] [ -i src_version,dst_version ] service" ;
+char const *usage_env = "66-env [ -h ] [ -z ] [ -v verbosity ] [ -t tree ] [ -c version ] [ -s version ] [ -V|L ] [ -r key=value ] [ -i src,dst ] [ -e ] service" ;
 
 char const *help_env =
 "66-env <options> service\n"
@@ -140,10 +140,11 @@ char const *help_env =
 "	-z: use color\n"
 "	-v: increase/decrease verbosity\n"
 "	-t: tree to use\n"
-"	-L: list environment variable of service\n"
-"	-d: absolute path to the configuration service file\n"
+"	-c: set version as default\n"
+"	-s: specifies the version to handle\n"
+"	-V: lists available versioned configuration directories of the service\n"
+"	-L: lists the environment variables of the service\n"
 "	-r: replace the value of the key\n"
+"	-i: import configuration files from src version to dst version\n"
 "	-e: edit the file with EDITOR\n"
-"	-s: switch configuration symlink to version\n"
-"	-i: import configuration files from src_version to dst_version\n"
 ;
