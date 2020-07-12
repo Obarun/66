@@ -23,8 +23,8 @@
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
-#include <skalibs/unix-transactional.h>//atomic_symlink
 
+#include <skalibs/unix-transactional.h>//atomic_symlink
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>//rm_rf
 
@@ -431,5 +431,15 @@ int env_clean_with_comment(stralloc *sa)
 	stralloc_free(&tmp) ;
 	stralloc_free(&final) ;
 	
+	return 1 ;
+}
+
+int env_find_current_version(stralloc *sa,char const *svconf)
+{
+	size_t svconflen = strlen(svconf) ;
+	char tmp[svconflen + SS_SYM_VERSION_LEN + 1] ;
+	auto_strings(tmp,svconf,SS_SYM_VERSION) ;
+	if (sareadlink(sa,tmp) == -1) log_warnusys_return(LOG_EXIT_ZERO,"readlink: ",tmp) ;
+	if (!stralloc_0(sa)) log_warnusys_return(LOG_EXIT_ZERO,"stralloc") ;
 	return 1 ;
 }

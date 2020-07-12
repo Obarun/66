@@ -56,7 +56,7 @@ static void check_version(stralloc *sa, char const *version)
 	int r ;
 	r = version_scan(sa,version,SS_CONFIG_VERSION_NDOT) ;
 	if (r == -1) log_die_nomem("stralloc") ;
-	if (!r) log_die(LOG_EXIT_USER,"invalid version format") ;
+	if (!r) log_die(LOG_EXIT_USER,"invalid version format: ",version) ;
 }
 
 static void append_version(stralloc *saversion, char const *svconf, char const *version)
@@ -79,13 +79,9 @@ static void append_version(stralloc *saversion, char const *svconf, char const *
 static uint8_t check_current_version(char const *svconf,char const *version)
 {
 	stralloc sa = STRALLOC_ZERO ;
-	size_t svconflen = strlen(svconf) ;
-	char tmp[svconflen + SS_SYM_VERSION_LEN + 1] ;
-	auto_strings(tmp,svconf,SS_SYM_VERSION) ;
-	if (sareadlink(&sa,tmp) == -1) log_dieusys(LOG_EXIT_SYS,"readlink: ",sa.s) ;
-	if (!stralloc_0(&sa)) log_die_nomem("stralloc") ;
+	if (!env_find_current_version(&sa,svconf)) log_dieu(LOG_EXIT_SYS,"find current version") ;
 	char bname[sa.len + 1] ;
-	if (!ob_basename(bname,sa.s)) log_dieu(LOG_EXIT_SYS,"get current version") ;
+	if (!ob_basename(bname,sa.s)) log_dieu(LOG_EXIT_SYS,"get basename of: ",sa.s) ;
 	stralloc_free(&sa) ;
 	return !version_cmp(bname,version,SS_CONFIG_VERSION_NDOT) ? 1 : 0 ;
 }
@@ -108,7 +104,8 @@ static void do_import(char const *svname, char const *svconf, char const *versio
 	size_t pos = 0 ;
 	stralloc salist = STRALLOC_ZERO ;
 	stralloc sasrc = STRALLOC_ZERO ;
-	stralloc sadst = STRALLOC_ZERO ;
+	stralloc src_ver = STRALLOC_ZERO ;
+	stralloc dst_ver = STRALLOC_ZERO ;
 	
 	char *src_version = 0 ;
 	char *dst_version = 0 ;
@@ -124,22 +121,28 @@ static void do_import(char const *svname, char const *svconf, char const *versio
 		else dst_version = sasrc.s + pos ;
 	}
 	
-	append_version(&sasrc,svconf,src_version) ;
-	append_version(&sadst,svconf,dst_version) ;
+	if (!version_cmp(src_version,dst_version,SS_CONFIG_VERSION_NDOT))
+	{
+		log_1_warn("import asked on same version -- nothing to do") ;
+		return ;
+	}
+
+	append_version(&src_ver,svconf,src_version) ;
+	append_version(&dst_ver,svconf,dst_version) ;
 	
-	if (!sastr_dir_get(&salist,sasrc.s,svname,S_IFREG))
-		log_dieu(LOG_EXIT_SYS,"get configuration file from directory: ",sasrc.s) ;
+	if (!sastr_dir_get(&salist,src_ver.s,svname,S_IFREG))
+		log_dieu(LOG_EXIT_SYS,"get configuration file from directory: ",src_ver.s) ;
 	
 	for (pos = 0 ; pos < salist.len; pos += strlen(salist.s + pos) + 1)
 	{
 		char *name = salist.s + pos ;
 		size_t namelen = strlen(name) ;
 		
-		char s[sasrc.len + 1 + namelen + 1] ;
-		auto_strings(s,sasrc.s,"/",name) ;
+		char s[src_ver.len + 1 + namelen + 1] ;
+		auto_strings(s,src_ver.s,"/",name) ;
 		
-		char d[sadst.len + 1 + namelen + 1] ;
-		auto_strings(d,sadst.s,"/",name) ;
+		char d[dst_ver.len + 1 + namelen + 1] ;
+		auto_strings(d,dst_ver.s,"/",name) ;
 		
 		if (lstat(s, &st) < 0) log_dieusys(LOG_EXIT_SYS,"stat: ",s) ;
 		log_info("copy: ",s," to: ",d) ;
@@ -147,7 +150,8 @@ static void do_import(char const *svname, char const *svconf, char const *versio
 	}
 
 	stralloc_free(&sasrc) ;
-	stralloc_free(&sadst) ;
+	stralloc_free(&src_ver) ;
+	stralloc_free(&dst_ver) ;
 	stralloc_free(&salist) ;
 }
 
