@@ -439,7 +439,7 @@ int env_find_current_version(stralloc *sa,char const *svconf)
 	size_t svconflen = strlen(svconf) ;
 	char tmp[svconflen + SS_SYM_VERSION_LEN + 1] ;
 	auto_strings(tmp,svconf,SS_SYM_VERSION) ;
-	if (sareadlink(sa,tmp) == -1) log_warnusys_return(LOG_EXIT_ZERO,"readlink: ",tmp) ;
+	if (sareadlink(sa,tmp) == -1) return 0 ;
 	if (!stralloc_0(sa)) log_warnusys_return(LOG_EXIT_ZERO,"stralloc") ;
 	return 1 ;
 }

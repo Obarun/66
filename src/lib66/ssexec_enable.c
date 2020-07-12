@@ -34,6 +34,7 @@
 #include <66/svc.h>
 #include <66/resolve.h>
 #include <66/ssexec.h>
+#include <66/environ.h>
 
 static stralloc workdir = STRALLOC_ZERO ;
 /** force == 1, only rewrite the service
@@ -41,6 +42,8 @@ static stralloc workdir = STRALLOC_ZERO ;
 static uint8_t FORCE = 0 ;
 /** rewrite configuration file */
 static uint8_t CONF = 0 ;
+/** import configuration file from previous version */
+static uint8_t IMPORT = 0 ;
 
 static void cleanup(void)
 {
@@ -69,7 +72,7 @@ void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORC
 	for (;i < len; i += strlen(list->s + i) + 1)
 	{
 		char *name = list->s + i ;
-		if (!parse_service_before(info,&parsed_list,&tree_list,name,nbsv,&sasv,FORCE,CONF,disable_module,0))
+		if (!parse_service_before(info,&parsed_list,&tree_list,name,nbsv,&sasv,FORCE,CONF,IMPORT,disable_module,0))
 			log_dieu(LOG_EXIT_SYS,"parse service file: ",name,": or its dependencies") ;
 	}
 	stralloc_free(&sasv) ;
@@ -81,12 +84,58 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 {
 	int r ;
 	stralloc module = STRALLOC_ZERO ;
+	stralloc version = STRALLOC_ZERO ;
 
 	for (unsigned int i = 0; i < genalloc_len(sv_alltype,gasv); i++)
 	{
 		sv_alltype_ref sv = &genalloc_s(sv_alltype,gasv)[i] ;
 		char *name ;
+		uint8_t importless = 1 ;
 
+		/** sv->opts[2], service may not contains environmnent section.
+		 * Module is already made, do pass through it twice. */
+		if ((IMPORT) && (sv->opts[2] > 0) && (sv->cname.itype != TYPE_MODULE))
+		{
+			version.len = 0 ;
+			r = env_find_current_version(&version,keep.s + sv->srconf) ;
+			/** not a fatal error, the previous version may not exist
+			 * at the first activation of the service. Anyway, warn the user */
+			if (!r)
+			{
+				log_warn("import asked but cannot find the previous version for service: ",keep.s + sv->cname.name) ;
+				importless = 0 ;
+			}
+			else
+			{
+				char bname[version.len + 1] ;
+				if (!ob_basename(bname,version.s))
+				{
+					/** reimplement cleanup() here, it called by 66-update which
+					 * not define the workdir stralloc. In case of crash we get
+					 * a segmentation fault cause of the empty stralloc. */
+					int e = errno ;
+					rm_rf(workdir) ;
+					errno = e ;
+					name = keep.s + sv->cname.name ;
+					log_dieu(LOG_EXIT_SYS,"get basename of: ",version.s) ;
+				}
+				r = version_cmp(bname,keep.s + sv->cname.version,SS_CONFIG_VERSION_NDOT) ;
+				if (!r) { importless = 0 ; }
+				else
+				{
+					version.len = 0 ;
+					if (!auto_stra(&version,bname,",",keep.s + sv->cname.version))
+					{
+						int e = errno ;
+						rm_rf(workdir) ;
+						errno = e ;
+						name = keep.s + sv->cname.name ;
+						log_die_nomem("stralloc") ;
+					}
+				}
+			}
+		}
+		else importless = 0 ;
 		r = write_services(sv, workdir,FORCE,CONF) ;
 		if (!r)
 		{
@@ -104,6 +153,35 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 		/** only read name after the write_services process.
 		 * it change the sv_alltype appending the real_exec element */
 		name = keep.s + sv->cname.name ;
+
+		if (IMPORT && importless)
+		{
+			int wstat, nargc = 9 + (info->opt_color ? 1 : 0) ;
+			unsigned int m = 0 ;
+			pid_t pid ;
+			char const *newargv[nargc] ;
+			char fmt[UINT_FMT] ;
+			fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
+
+			newargv[m++] = SS_BINPREFIX "66-env" ;
+			newargv[m++] = "-v" ;
+			newargv[m++] = fmt ;
+			if (info->opt_color)
+				newargv[m++] = "-z" ;
+			newargv[m++] = "-t" ;
+			newargv[m++] = info->treename.s ;
+			newargv[m++] = "-i" ;
+			newargv[m++] = version.s ;
+			newargv[m++] = name ;
+			newargv[m++] = 0 ;
+
+			pid = child_spawn0(newargv[0],newargv,(char const *const *)environ) ;
+			if (waitpid_nointr(pid,&wstat, 0) < 0)
+				log_warnu("wait for: ",newargv[0]) ;
+
+			if (wstat)
+				log_warnu("import previous configuration files") ;
+		}
 
 		log_trace("write resolve file of: ",name) ;
 		if (!ss_resolve_setnwrite(sv,info,workdir))
@@ -232,6 +310,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 			ss_resolve_graph_free(&mgraph) ;
 		}
 		stralloc_free(&module) ;
+		stralloc_free(&version) ;
 		return ;
 		err:
 			genalloc_deepfree(ss_resolve_t,&gamodule,ss_resolve_free) ;
@@ -245,13 +324,13 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 			log_dieu(LOG_EXIT_SYS,err_msg,name) ;
 	}
 	stralloc_free(&module) ;
+	stralloc_free(&version) ;
 }
 
 int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
 	// be sure that the global var are set correctly
-	FORCE = 0 ;
-	CONF = 0 ;
+	FORCE = CONF = IMPORT = 0 ;
 	
 	int r ;
 	size_t pos = 0 ;
@@ -267,7 +346,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">cmCfFS", &l) ;
+			int opt = getopt_args(argc,argv, ">cmCfFSi", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
@@ -279,6 +358,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 				case 'c' :	if (CONF) log_usage(usage_enable) ; CONF = 1 ; break ;
 				case 'm' :	if (CONF) log_usage(usage_enable) ; CONF = 2 ; break ;
 				case 'C' :	if (CONF) log_usage(usage_enable) ; CONF = 3 ; break ;
+				case 'i' :	IMPORT = 1 ; break ;
 				case 'S' :	start = 1 ; break ;
 				default : 	log_usage(usage_enable) ; 
 			}

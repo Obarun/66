@@ -14,7 +14,7 @@
 
 #include <66/ssexec.h>
 
-char const *usage_enable = "66-enable [ -h ] [ -z ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -f|F ] [ -c|m|C ] [ -S ] service(s)" ;
+char const *usage_enable = "66-enable [ -h ] [ -z ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -f|F ] [ -c|m|C ] [ -i ] [ -S ] service(s)" ;
 
 char const *help_enable =
 "66-enable <options> service(s)\n"
@@ -30,6 +30,7 @@ char const *help_enable =
 "	-c: only appends new key=value pairs at environment configuration file from frontend file\n"
 "	-m: appends new key=value and merge existing one at environment configuration file from frontend file\n"
 "	-C: overwrite it environment configuration file from frontend file\n"
+"	-i: import extra configuration files from previous version\n"
 "	-S: enable and start the service\n"
 ;
 

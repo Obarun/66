@@ -35,7 +35,7 @@
  * @Return 0 on fail
  * @Return on success
  * @Return 2 -> already parsed */
-int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf,uint8_t disable_module,char const *directory_forced)
+int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf,uint8_t import,uint8_t disable_module,char const *directory_forced)
 {
 	log_trace("start parse process of service: ",sv) ;
 
@@ -134,11 +134,11 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	if (!parser(&sv_before,sasv,svname,sv_before.cname.itype)) return 0 ;
 
 	if ((sv_before.cname.itype > TYPE_CLASSIC && force > 1) || !exist)
-		if (!parse_service_all_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,conf,directory_forced)) return 0 ;
+		if (!parse_service_all_deps(info,parsed_list,tree_list,&sv_before,sv,nbsv,sasv,force,conf,import,directory_forced)) return 0 ;
 
 	if (sv_before.cname.itype == TYPE_MODULE)
 	{
-		r = parse_module(&sv_before,info,parsed_list,tree_list,svname,svsrc,nbsv,sasv,force,conf) ;
+		r = parse_module(&sv_before,info,parsed_list,tree_list,svname,svsrc,nbsv,sasv,force,conf,import) ;
 		if (!r) return 0 ;
 		else if (r == 2)
 		{
@@ -164,13 +164,13 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	return 1 ;
 }
 
-int parse_service_all_deps(ssexec_t *info,stralloc *parsed_list, stralloc *tree_list, sv_alltype *sv_before,char const *sv, unsigned int *nbsv,stralloc *sasv,uint8_t force, uint8_t conf,char const *directory_forced)
+int parse_service_all_deps(ssexec_t *info,stralloc *parsed_list, stralloc *tree_list, sv_alltype *sv_before,char const *sv, unsigned int *nbsv,stralloc *sasv,uint8_t force, uint8_t conf,uint8_t import,char const *directory_forced)
 {
 	stralloc rebuild = STRALLOC_ZERO ;
 
-	if (!parse_service_deps(info,parsed_list,tree_list,sv_before,sv,nbsv,sasv,force,conf,directory_forced)) return 0 ;
-	if (!parse_service_opts_deps(&rebuild,info,parsed_list,tree_list,sv_before,sv,nbsv,sasv,force,conf,KEY_MAIN_EXTDEPS,0)) return 0 ;
-	if (!parse_service_opts_deps(&rebuild,info,parsed_list,tree_list,sv_before,sv,nbsv,sasv,force,conf,KEY_MAIN_OPTSDEPS,0)) return 0 ;
+	if (!parse_service_deps(info,parsed_list,tree_list,sv_before,sv,nbsv,sasv,force,conf,import,directory_forced)) return 0 ;
+	if (!parse_service_opts_deps(&rebuild,info,parsed_list,tree_list,sv_before,sv,nbsv,sasv,force,conf,import,KEY_MAIN_EXTDEPS,0)) return 0 ;
+	if (!parse_service_opts_deps(&rebuild,info,parsed_list,tree_list,sv_before,sv,nbsv,sasv,force,conf,import,KEY_MAIN_OPTSDEPS,0)) return 0 ;
 
 	if (rebuild.len)
 	{
@@ -209,7 +209,7 @@ int parse_service_all_deps(ssexec_t *info,stralloc *parsed_list, stralloc *tree_
 	return 1 ;
 }
 
-int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf,char const *directory_forced)
+int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf,uint8_t import,char const *directory_forced)
 {
 	int r ;
 	char *dname = 0 ;
@@ -229,7 +229,7 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list,
 			r = ss_resolve_src_path(&newsv,dname,info->owner,directory_forced) ;
 			if (r < 1) goto err ;//don't warn here, the ss_revolve_src_path already warn user
 
-			if (!parse_service_before(info,parsed_list,tree_list,newsv.s,nbsv,sasv,force,conf,0,directory_forced)) goto err ;
+			if (!parse_service_before(info,parsed_list,tree_list,newsv.s,nbsv,sasv,force,conf,import,0,directory_forced)) goto err ;
 		}
 	}
 	else log_trace(sv,": haven't dependencies") ;
@@ -240,7 +240,7 @@ int parse_service_deps(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list,
 		return 0 ;
 }
 
-int parse_service_opts_deps(stralloc *rebuild,ssexec_t *info,stralloc *parsed_list,stralloc *tree_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf, uint8_t mandatory,char const *directory_forced)
+int parse_service_opts_deps(stralloc *rebuild,ssexec_t *info,stralloc *parsed_list,stralloc *tree_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf,uint8_t import, uint8_t mandatory,char const *directory_forced)
 {
 	int r ;
 	stralloc newsv = STRALLOC_ZERO ;
@@ -303,7 +303,7 @@ int parse_service_opts_deps(stralloc *rebuild,ssexec_t *info,stralloc *parsed_li
 					}
 					// be paranoid with the else if
 					else if (r == 1) {
-						if (!parse_service_before(info,parsed_list,tree_list,newsv.s,nbsv,sasv,force,conf,0,directory_forced))
+						if (!parse_service_before(info,parsed_list,tree_list,newsv.s,nbsv,sasv,force,conf,import,0,directory_forced))
 							goto err ;
 
 						// add the new deps

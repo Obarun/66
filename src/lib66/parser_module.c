@@ -125,7 +125,7 @@ static int rebuild_list(sv_alltype *sv_before,stralloc *list,stralloc *sv_all_ty
  * return 2 on already enabled 
  * @svname do not contents the path of the frontend file*/
 
-int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *svname,char const *src_frontend,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf)
+int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *svname,char const *src_frontend,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf,uint8_t import)
 {
 	log_trace("start parse process of module: ",svname) ;
 	int r, err = 1, insta = -1, svtype = -1, from_ext_insta = 0, already_parsed = 0 ;
@@ -197,7 +197,7 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 	if (!regex_rename(&list,sv_before->type.module.idfiles,sv_before->type.module.nfiles,sdir.s)) return 0 ;
 
 	/* launch configure script */
-	if (!regex_configure(sv_before,info,permanent_sdir,svname,conf)) return 0 ;
+	if (!regex_configure(sv_before,info,permanent_sdir,svname,conf,import)) return 0 ;
 
 	make_deps:
 
@@ -297,7 +297,7 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 		}
 
 		if (!already_parsed)
-			if (!parse_service_before(info,parsed_list,tree_list,sv,nbsv,sasv,force,conf,0,permanent_sdir))
+			if (!parse_service_before(info,parsed_list,tree_list,sv,nbsv,sasv,force,conf,import,0,permanent_sdir))
 				log_warnu_return(LOG_EXIT_ZERO,"parse: ",sv," from module: ",svname) ;
 
 		char ext_insta[len + 1] ;
@@ -533,14 +533,17 @@ int regex_rename(stralloc *list, int id, unsigned int nid, char const *sdir)
 	return 1 ;
 }
 
-int regex_configure(sv_alltype *sv_before,ssexec_t *info, char const *module_dir,char const *module_name,uint8_t conf)
+int regex_configure(sv_alltype *sv_before,ssexec_t *info, char const *module_dir,char const *module_name,uint8_t conf,uint8_t import)
 {
 	int wstat, r ;
 	pid_t pid ;
 	size_t clen = sv_before->type.module.configure > 0 ? 1 : 0 ;
 	size_t module_dirlen = strlen(module_dir), n ;
+	size_t pos = 0 ;
 	stralloc oenv = STRALLOC_ZERO ;
 	stralloc env = STRALLOC_ZERO ;
+	stralloc version = STRALLOC_ZERO ;
+	stralloc salink = STRALLOC_ZERO ;
 
 	char const *newargv[2 + clen] ;
 	unsigned int m = 0 ;
@@ -586,32 +589,89 @@ int regex_configure(sv_alltype *sv_before,ssexec_t *info, char const *module_dir
 		/** environment is not mandatory */
 		if (sv_before->opts[2] > 0)
 		{
-			/** sv_before->srconf is not set yet
-			* we don't care, env_compute will find it.
-			* env_compute return 2 in case of need to write */
+			char *dst = keep.s + sv_before->srconf ;
+			char *name = keep.s + sv_before->cname.name ;
+			size_t dstlen = strlen(dst) ;
+			char tdst[dstlen + SS_SYM_VERSION_LEN + 1] ;
+			auto_strings(tdst,dst,SS_SYM_VERSION) ;
+			uint8_t importless = 1 ;
+
+			if (import)
+			{
+				r = env_find_current_version(&version,keep.s + sv_before->srconf) ;
+				/** not a fatal error, the previous version may not exist
+				 * at the first activation of the service. Anyway, warn the user */
+				if (!r)
+				{
+					log_warn("import asked but cannot find the previous version for service: ",name) ;
+					importless = 0 ;
+				}
+				else
+				{
+					char bname[version.len + 1] ;
+					if (!ob_basename(bname,version.s))
+						log_warnu_return(LOG_EXIT_ZERO,"get basename of: ",version.s) ;
+
+					r = version_cmp(bname,keep.s + sv_before->cname.version,SS_CONFIG_VERSION_NDOT) ;
+					if (!r) { importless = 0 ; }
+					else
+					{
+						version.len = 0 ;
+						if (!auto_stra(&version,bname,",",keep.s + sv_before->cname.version))
+							log_warnu_return(LOG_EXIT_ZERO,"stralloc") ;
+					}
+				}
+			}
+			/** env_compute return 2 in case if we need to write the file */
 			r = env_compute(&oenv,sv_before,conf) ;
 			if (!r) log_warnu_return(LOG_EXIT_ZERO,"compute environment") ;
 
+			if (sareadlink(&salink, tdst) == -1)
+				log_warnusys_return(LOG_EXIT_ZERO,"read link of: ",tdst) ;
+
+			if (!stralloc_0(&salink))
+				log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
 			if (r == 2)
 			{
-				stralloc salink = STRALLOC_ZERO ;
-				char *dst = keep.s + sv_before->srconf ;
-				char *name = keep.s + sv_before->cname.name ;
-				size_t dstlen = strlen(dst) ;
-				char tdst[dstlen + SS_SYM_VERSION_LEN + 1] ;
-				auto_strings(tdst,dst,SS_SYM_VERSION) ;
-
-				if (sareadlink(&salink, tdst) == -1)
-					log_warnusys_return(LOG_EXIT_ZERO,"read link of: ",tdst) ;
-
-				if (!stralloc_0(&salink))
-					log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-
 				if (!write_env(name,&oenv,salink.s))
 					log_warnu_return(LOG_EXIT_ZERO,"write environment") ;
-
-				stralloc_free(&salink) ;
 			}
+			if (import && importless)
+			{
+				int nargc = 9 + (info->opt_color ? 1 : 0) ;
+				char const *newargv[nargc] ;
+				char fmt[UINT_FMT] ;
+				fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
+
+				newargv[m++] = SS_BINPREFIX "66-env" ;
+				newargv[m++] = "-v" ;
+				newargv[m++] = fmt ;
+				if (info->opt_color)
+					newargv[m++] = "-z" ;
+				newargv[m++] = "-t" ;
+				newargv[m++] = info->treename.s ;
+				newargv[m++] = "-i" ;
+				newargv[m++] = version.s ;
+				newargv[m++] = name ;
+				newargv[m++] = 0 ;
+
+				pid = child_spawn0(newargv[0],newargv,(char const *const *)environ) ;
+				if (waitpid_nointr(pid,&wstat, 0) < 0)
+					log_warnu("wait for: ",newargv[0]) ;
+
+				if (wstat)
+					log_warnu("import previous configuration files") ;
+			}
+			/** Reads all file from the directory */
+			version.len = 0 ;
+			if (!sastr_dir_get(&version,salink.s,name,S_IFREG))
+				log_warnu_return(LOG_EXIT_ZERO,"get environment files from: ",salink.s) ;
+
+			for (; pos < version.len ; pos += strlen(version.s) + 1)
+				if (!file_readputsa(&oenv,salink.s,version.s + pos))
+					log_warnusys(LOG_EXIT_ZERO,"read file: ",salink.s,"/",version.s + pos) ;
+
 			/** prepare for the environment merge */
 			if (oenv.len) {
 				if (!environ_clean_envfile(&env,&oenv))
@@ -629,7 +689,7 @@ int regex_configure(sv_alltype *sv_before,ssexec_t *info, char const *module_dir
 			log_warnusys_return(LOG_EXIT_ZERO,"build environment") ;
 
 		if (chdir(pwd) < 0) log_warnusys_return(LOG_EXIT_ZERO,"chdir to: ",pwd) ;
-
+		m = 0 ;
 		newargv[m++] = config_script ;
 		if (sv_before->type.module.configure > 0)
 			newargv[m++] = keep.s + sv_before->type.module.configure ;
@@ -642,6 +702,8 @@ int regex_configure(sv_alltype *sv_before,ssexec_t *info, char const *module_dir
 	}
 	stralloc_free(&oenv) ;
 	stralloc_free(&env) ;
+	stralloc_free(&version) ;
+	stralloc_free(&salink) ;
 
 	return 1 ;
 }
