@@ -378,8 +378,6 @@ int check_mandatory(sv_alltype *service, section_t *sasection)
 						log_warn_return(LOG_EXIT_ZERO,"custom build asked on section [logger] -- key @shebang must be set") ;
 					if (service->type.classic_longrun.log.run.exec < 0)
 						log_warn_return(LOG_EXIT_ZERO,"custom build asked on section [logger] -- key @execute must be set") ;
-					if (service->type.classic_longrun.log.destination < 0)
-						log_warn_return(LOG_EXIT_ZERO,"custom build asked on section [logger] -- key @destination must be set") ;
 				}
 			}	
 			break ;
