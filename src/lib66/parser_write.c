@@ -41,7 +41,6 @@
 #include <s6/config.h>//S6_BINPREFIX
 #include <execline/config.h>//EXECLINE_BINPREFIX
 
-
 /** @Return 0 on fail
  * @Return 1 on success
  * @Return 2 if the service is ignored */
@@ -379,16 +378,14 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 				back[uint32_fmt(back,log->backup)] = 0 ;
 				pback = back ;
 			}
-			else
-				pback = "3" ;
+			else pback = "3" ;
 			
 			if (log->maxsize > 0)
 			{
 				max[uint32_fmt(max,log->maxsize)] = 0 ;
 				pmax = max ;
 			}
-			else
-				pmax = "1000000" ;
+			else pmax = "1000000" ;
 			
 			if (!stralloc_cats(&exec,shebang.s) || 
 			!stralloc_cats(&exec,EXECLINE_BINPREFIX "fdmove -c 2 1\n") ||
@@ -433,21 +430,26 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 		case BUILD_CUSTOM:
 			if (!write_exec(sv, &log->run,"run",ddst.s,mode))
 				log_warnu_return(LOG_EXIT_ZERO,"write: ",ddst.s,"/run") ;
+			if (log->destination >= 0)
+				if (!stralloc_cats(&destlog,keep.s+log->destination) ||
+				!stralloc_0(&destlog))
+					log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 			break;
 		default: log_warn_return(LOG_EXIT_ZERO,"unknown build value: ",get_key_by_enum(ENUM_BUILD,logbuild)) ;	
 	}
-		
-	r = scan_mode(destlog.s,S_IFDIR) ;
-	if (r == -1)
-		log_warn_return(LOG_EXIT_ZERO,"log directory: ", destlog.s,": already exist with a different mode") ;
+	if (destlog.len)
+	{
+		r = scan_mode(destlog.s,S_IFDIR) ;
+		if (r == -1)
+			log_warn_return(LOG_EXIT_ZERO,"log directory: ", destlog.s,": already exist with a different mode") ;
 
-	if (!dir_create_parent(destlog.s,0755))
-		log_warnusys_return(LOG_EXIT_ZERO,"create log directory: ",destlog.s) ;
-
+		if (!dir_create_parent(destlog.s,0755))
+			log_warnusys_return(LOG_EXIT_ZERO,"create log directory: ",destlog.s) ;
+	}
 	/** redefine the logrunner, write_exec change the sv_alltype struct*/
 	logrunner = log->run.runas >=0 ? keep.s + log->run.runas : SS_LOGGER_RUNNER ;
 
-	if (!owner)
+	if (!owner && (log->run.build == BUILD_AUTO))
 	{
 		if (!youruid(&log_uid,logrunner) ||
 		!yourgid(&log_gid,log_uid))
