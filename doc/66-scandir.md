@@ -37,7 +37,7 @@ This program creates or starts the *scandir* (directory containing a collection 
 
 - **-b** : create specific files for boot. Only the root user can use this option. It is not meant to be used directly even with root. [66-boot](66‑boot.html) calls it during the boot process.
 
-- **-l** *live* : changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable filesystem - likely a RAM filesystem—see [66-scandir](66-scandir.html).
+- **-l** *live* : changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem.
 
 - **-d** *notif* : notify readiness on file descriptor notif. When *scandir* is ready to accept commands from [66‑scanctl](66-scanctl.html), it will write a newline to *notif*. *notif* **cannot be** lesser than `3`. By default, no notification is sent. If **-b** is set, this option have no effects.
 
