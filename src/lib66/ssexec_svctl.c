@@ -105,10 +105,10 @@ static unsigned char const svctl_actions[9][9] =
 																				//signal wanted
     { GOTIT,	DONE,	GOTIT,	DONE,	DEAD,	DEAD,	PERM,	PERM,	UKNOW },// SIGUP 
     { WAIT,		GOTIT,	WAIT,	GOTIT,	DEAD,	DEAD,	PERM,	PERM,	UKNOW },// SIGRUP
-    { GOTIT,	DONE,	GOTIT,	DONE,	WAIT,	WAIT,	PERM,	PERM,	UKNOW },// SIGR
+    { DONE,		DONE,	GOTIT,	DONE,	WAIT,	WAIT,	PERM,	PERM,	UKNOW },// SIGR
     { WAIT,		GOTIT,	WAIT,	GOTIT,	WAIT,	WAIT,	PERM,	PERM,	UKNOW },// SIGRR
-    { DEAD,		DEAD,	DEAD,	DEAD,	GOTIT,	DONE,	PERM,	PERM,	UKNOW },// SIGDOWN
-    { DEAD,		DEAD,	DEAD,	DEAD,	WAIT,	GOTIT,	PERM,	PERM,	UKNOW },// SIGRDOWN
+    { DEAD,		DEAD,	WAIT,	DEAD,	GOTIT,	DONE,	PERM,	PERM,	UKNOW },// SIGDOWN
+    { DEAD,		DEAD,	WAIT,	DEAD,	WAIT,	GOTIT,	PERM,	PERM,	UKNOW },// SIGRDOWN
     { DEAD,		DEAD,	DEAD,	DEAD,	WAIT,	WAIT,	DONE,	WAIT, 	DONE },// SIGX
     { WAIT,		WAIT,	WAIT,	WAIT,	WAIT,	WAIT,	PERM,	GOTIT, 	UKNOW },// SIGO
     { UKNOW,	UKNOW,	UKNOW,	UKNOW,	UKNOW,	UKNOW,	UKNOW,	UKNOW, 	DONE },	// SIGSUP
@@ -154,7 +154,7 @@ static const uint8_t chtenum[128] =
  * The notication-fd file is used as the original one. If the file 
  * exist and the SIGNAL is u , we change SIGNAL to U.
  */
- 	
+
 /**@Return 0 on success
  * @Return 1 on if signal is not complete (e.g. want U receive only u)
  * @Return 2 on fail
@@ -171,7 +171,7 @@ int handle_case(stralloc *sa, ss_resolve_sig_t *svc)
 	{
 		p = chtenum[(unsigned char)sa->s[i]] ;
 		unsigned char action = svctl_actions[state][p] ;
-		
+
 		switch (action)
 		{
 			case GOTIT:
@@ -551,7 +551,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			log_info("Already down: ",string + sv_signal.res.name) ;
 			continue ;
 		}
-		/** special on reload signal, if the process is down
+		/** special case on reload signal, if the process is down
 		 * simply bring it up */
 		else if (!isup && (SIGNAL == SIGR))
 		{
