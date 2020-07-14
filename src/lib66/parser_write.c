@@ -250,7 +250,7 @@ int write_bundle(sv_alltype *sv, char const *dst)
 		
 	return 1 ;
 }
-
+#include <stdio.h>
 int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, mode_t mode, uint8_t force)
 {
 	int r ;
@@ -449,12 +449,13 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 	/** redefine the logrunner, write_exec change the sv_alltype struct*/
 	logrunner = log->run.runas >=0 ? keep.s + log->run.runas : SS_LOGGER_RUNNER ;
 
-	if (!owner && (log->run.build == BUILD_AUTO))
+	if (!owner && ((log->run.build == BUILD_AUTO) || (log->run.build < 0))) // log->run.build may not set
 	{
+		printf("destlog::%s\n",destlog.s) ;
 		if (!youruid(&log_uid,logrunner) ||
 		!yourgid(&log_gid,log_uid))
 			log_warnusys_return(LOG_EXIT_ZERO,"get uid and gid of: ",logrunner) ;
-	
+		printf("destlog::%i->%i\n",log_uid,log_gid) ;
 		if (chown(destlog.s,log_uid,log_gid) == -1)
 			log_warnusys_return(LOG_EXIT_ZERO,"chown: ",destlog.s) ;
 	}
