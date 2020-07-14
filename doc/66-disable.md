@@ -39,7 +39,7 @@ Multiple *services* can be disabled by seperating their names with a space.
 
 - **-t** : handles the *selection* of the given *tree*. This option is mandatory except if a tree was marked as 'current'—see [66-tree](66-tree.html).
 
-- **-S** : starts the *service* on the fly directly after enabling it. If the state of the *service* is already up, this option will have no effect unless the **-f** option is used to reload it.
+- **-S** : stops the *service* on the fly directly after enabling it. If the state of the *service* is already up, this option will have no effect unless the **-f** option is used to reload it.
 
 ## Dependencies handling
 
