@@ -35,7 +35,7 @@ Any enabled *tree*—see [66-tree -E](66-tree.html)—or a specific one passed w
     * *3* : also print tracing messages.
     * *4* : also print debugging messages.
 
-- **-l** *live* : changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable filesystem - likely a RAM filesystem—see [66-scandir](66-scandir.html).
+- **-l** *live* : changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66-scandir](66-scandir.html).
 
 - **-T** *timeout* : specifies a general timeout (in milliseconds) passed to [66-start](66-start.html) or [66-stop](66-stop.html). By default the timeout is set to 0 (infinite).
 

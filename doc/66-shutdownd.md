@@ -33,7 +33,7 @@ The daemon that manages the shutdown procedure for a [66-boot](66-boot.html) ins
 
 - **-h** : prints this help.
 
-- **-l** *live* : changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable filesystem - likely a RAM filesystem—see [66-scandir](66-scandir.html).
+- **-l** *live* : changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66-scandir](66-scandir.html).
 
 - **-s** *skel* : an absolute path; directory of the skeleton file `rc.init`. Default is `%%skel%%`.
 

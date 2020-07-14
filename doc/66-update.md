@@ -37,7 +37,7 @@ If no *tree* is given, all trees of the owner (root or user) of the process will
     * *3* : also print tracing messages.
     * *4* : also print debugging messages.
 
-- **-l** *live* : changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable filesystem - likely a RAM filesystem—see [66-scandir](66-scandir.html).
+- **-l** *live* : changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66-scandir](66-scandir.html).
 
 - **-d** : dry run. Performs operation without modify the current state of the system. All command's output will be prefixed by `dry run do:` sentence. It's a good idea to first use this option before performing a real update. 
 
