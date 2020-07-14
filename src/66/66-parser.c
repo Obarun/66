@@ -33,7 +33,7 @@
 #include <66/parser.h>
 #include <66/constants.h>
 
-#define USAGE "66-parser [ -h ] [ -z ] [ -v verbosity ] [ -f ] [ -c|C ] service destination"
+#define USAGE "66-parser [ -h ] [ -z ] [ -v verbosity ] [ -f ] [ -c|m|C ] service destination"
 
 static inline void info_help (void)
 {
