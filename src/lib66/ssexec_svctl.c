@@ -254,13 +254,13 @@ static int announce(ss_resolve_sig_t *svc)
 				break ;
 		case 1: log_info(sv,": ",(svc->sig > 3) ? "stopped" : (svc->sig == 2 || svc->sig == 3) ? "reloaded" : "started"," successfully") ;
 				break ;
-		case 2: log_info("unable to ",(svc->sig > 3) ? "stop " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start ", sv) ; 
+		case 2: log_1_warn("unable to ",(svc->sig > 3) ? "stop " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start ", sv) ;
 				break ;
-		case 3: log_info(sv," report permanent failure -- unable to ",(svc->sig > 1) ? "stop" : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start") ;
+		case 3: log_1_warn(sv," report permanent failure -- unable to ",(svc->sig > 1) ? "stop" : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start") ;
 				break ;
-		case 4: log_info("unable to ",(svc->sig > 3) ? "stop: " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start: ",sv, ": number of try exceeded") ;
+		case 4: log_1_warn("unable to ",(svc->sig > 3) ? "stop: " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start: ",sv, ": number of try exceeded") ;
 				break ;
-		case 5: log_info("unable to ",(svc->sig > 3) ? "stop: " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start: ",sv, ": time out reached") ;
+		case 5: log_1_warn("unable to ",(svc->sig > 3) ? "stop: " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start: ",sv, ": time out reached") ;
 				break ;
 		case-1: 
 		default:log_warn("unexpected data in state file of: ",sv," -- please make a bug report") ;
@@ -486,7 +486,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, "n:urdXK", &l) ;
+			int opt = getopt_args(argc,argv, "n:urRdXK", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
@@ -494,6 +494,8 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 				case 'n' :	if (!uint0_scan(l.arg, &death)) log_usage(usage_svctl) ; break ;
 				case 'u' :	if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGUP ; sig ="u" ; break ;
 				case 'r' :	if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGR ; sig = "r" ; break ;
+				/** -R is an inner signal and need to come from 66-start.s6-svc do not understand it*/
+				case 'R' :	if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGRR ; sig = "r" ; break ;
 				case 'd' : 	if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGDOWN ; sig = "d" ; break ;
 				case 'X' :	if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGX ; sig = "xd" ; break ;
 				case 'K' :	if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGRDOWN ; sig = "kd" ; break ;
@@ -532,6 +534,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		char *string = sv_signal.res.sa.s ;
 		char *svok = string + sv_signal.res.runat ;
 		char *state = string + sv_signal.res.state ;
+
 		size_t svoklen = strlen(svok) ;
 		char file[svoklen + SS_NOTIFICATION_LEN + 1 + 1] ;
 		memcpy(file,svok,svoklen) ;
@@ -553,7 +556,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 		}
 		/** special case on reload signal, if the process is down
 		 * simply bring it up */
-		else if (!isup && (SIGNAL == SIGR))
+		else if (!isup && ((SIGNAL == SIGR) || (SIGNAL == SIGRR)))
 		{
 			sig = "u" ;
 			SIGNAL = SIGUP ;
@@ -574,7 +577,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 			if (!read_uint(file,&sv_signal.notify)) log_dieusys(LOG_EXIT_SYS,"read: ",file) ;
 			if (SIGNAL == SIGUP)
 			{ sv_signal.sig = SIGRUP ; sv_signal.sigtosend = "uwU" ; }
-			else if (SIGNAL == SIGR)
+			else if (SIGNAL == SIGR || SIGNAL == SIGRR)
 			{ sv_signal.sig = SIGRR ; sv_signal.sigtosend = "rwR" ; }
 			else if (SIGNAL == SIGDOWN)
 			{ sv_signal.sig = SIGRDOWN ; sv_signal.sigtosend = "dwD" ; }

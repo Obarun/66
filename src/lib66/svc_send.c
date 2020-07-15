@@ -31,7 +31,7 @@ int svc_send(ssexec_t *info,genalloc *ga,char const *sig,char const *const *envp
 	newargv[m++] = "fake_name" ;
 	newargv[m++] = sig ;
 	
-	for (; i < genalloc_len(ss_resolve_t,ga) ; i++) 
+	for (; i < genalloc_len(ss_resolve_t,ga) ; i++)
 		newargv[m++] = genalloc_s(ss_resolve_t,ga)[i].sa.s + genalloc_s(ss_resolve_t,ga)[i].name ;
 	
 	newargv[m++] = 0 ;

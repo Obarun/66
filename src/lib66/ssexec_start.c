@@ -336,8 +336,17 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
 		if(!svc_sanitize(info,envp)) 
 			log_dieu(LOG_EXIT_SYS,"sanitize classic services list") ;
 		log_trace("start classic services list ...") ;
-		if (!svc_send(info,&nclassic,SIG,envp))
-			log_dieu(LOG_EXIT_SYS,"start classic services list") ;
+		{
+			/** In case of -R asked by user, svc service will be unsupervised.
+			 * In this case the log will be started directly by the service (log is
+			 * a part of the service directory A.K.A. service/log).
+			 * So we need to make a distinction for 66-svctl between -r and -R to avoid
+			 * to start the logger before the service itself because the resolution of
+			 * the graph will append the service log. */
+			if (RELOAD == 2) SIG = "-R" ;
+			if (!svc_send(info,&nclassic,SIG,envp))
+				log_dieu(LOG_EXIT_SYS,"start classic services list") ;
+		}
 		log_trace("switch classic service list of: ",info->treename.s," to source") ;
 		if (!svc_switch_to(info,SS_SWSRC))
 			log_dieu(LOG_EXIT_SYS,"switch classic service list of: ",info->treename.s," to source") ;
