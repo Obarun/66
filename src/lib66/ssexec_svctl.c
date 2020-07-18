@@ -495,7 +495,11 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 				case 'u' :	if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGUP ; sig ="u" ; break ;
 				case 'r' :	if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGR ; sig = "r" ; break ;
 				/** -R is an inner signal and need to come from 66-start.s6-svc do not understand it*/
-				case 'R' :	if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGRR ; sig = "r" ; break ;
+				case 'R' :	
+							if (!strcmp(info->prog,"66-svctl")) log_usage(usage_svctl) ;
+							if (SIGNAL > 0) log_usage(usage_svctl) ; 
+							SIGNAL = SIGRR ; sig = "r" ; 
+							break ;
 				case 'd' : 	if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGDOWN ; sig = "d" ; break ;
 				case 'X' :	if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGX ; sig = "xd" ; break ;
 				case 'K' :	if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGRDOWN ; sig = "kd" ; break ;
