@@ -29,6 +29,54 @@ See the *66-update* documentation page for further information.
 
 ---
 
+# In 0.5.0.0
+
+This is a ***Major release***, you need to update your *trees* with *66-update* tool. If you jump from a previous version than 0.4.0.1, the *66-update* will not work.In this case, you need to rebuild your trees manually. 
+Also, a downgrade to the previous version will not work due of the new format of the resolve inner files.
+
+- Adapt to oblibs v0.1.0.0
+
+- Pass the write of the resolve files to a `CDB` format. From that point the `66-update` will be no longer mandatory even at major version release.
+
+- Adapt `66-update` to the new `CDB` format if available.
+
+- Bugs fix:
+    - Write the dependencies at `contents` file for a module in the good order and avoid multiple same name.
+    - *66-update*:
+        - Get the correct exit status at tree contents process.
+        - Fix segmentation fault when a crash occur at enable time.
+    - Compilation `configure` script improvements and bugs fix.
+    - Fix the location of the modules directory service at enable time. The place of the module frontend file determine the place of the result process for the service module directory.
+    - Fix creation of the logger directory when field `@build` is not set.
+    - Fix **-r** signal and **-R** signal behavior at *66-start* tool.
+
+- The `rc.init` skeleton file do not launch anymore the `ISHELL` script at the crash of the stage2. It's the responsability of the sysadmin to deal with this error at his convenient.
+
+- `@destination` field in section `[logger]` is no longer mandatory at the use of `@build` with value `custom`.
+
+- *66-env*:
+    - **-e** is now the default option.
+    - **-L** displays now all `key=value` pair from all files found at the configuration directory.
+    new options:
+        - **-c**: changes the current symlink to the specified version.
+        - **-V**: displays available version.
+        - **-i**: import extra configuration file from a version to an another.
+        - **-s**: handle a specific version for command **-L|V|e|r**.
+
+- All `key=value` pair from `init.conf` skeleton file can be now passed at kernel command line. Also, variables from `init.conf` is now passed to the `rc.init` skeleton file as arguments.
+
+- `@version` field is now **mandatory**.
+
+- The version symlink of the configuration file point now to the configuration directory instead of the configuration file. This is allow to overwrite a same `key=value` with the write of an extra configuration file instead of changing the upstream file.
+
+- *66-in{resolve,state}*: field `Real logger name` name is renamed `Real_logger_name`.
+
+- *66-enable*:
+    - Allow to use a different version of the configuration file than the frontend service file if any of -c/m/C is providen.
+    new option:
+        - **-i**: import extra configuration files from previous version.
+---
+
 # In 0.4.0.1
 
 - Hot fix: `@build` is no longer mandatory even for `[stop]` section.
