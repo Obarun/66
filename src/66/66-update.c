@@ -179,9 +179,10 @@ void tree_contents(stralloc *list,char const *tree,ssexec_t *info)
 
 			if (!ss_resolve_read(&res,solve,name))
 				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of: ",solve,"/",name) ;
-
-			if (!stralloc_catb(list,res.sa.s + res.src,strlen(res.sa.s + res.src) + 1))
-				log_diesys_nclean(LOG_EXIT_SYS,&cleanup,"stralloc") ;
+			
+			if (res.disen)
+				if (!stralloc_catb(list,res.sa.s + res.src,strlen(res.sa.s + res.src) + 1))
+					log_diesys_nclean(LOG_EXIT_SYS,&cleanup,"stralloc") ;
 
 			log_trace(DRYRUN ? drun : "","tree: ",info->treename.s," contain service: ",res.sa.s + res.src) ;
 		}
