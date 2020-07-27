@@ -162,7 +162,6 @@ int env_make_symlink(stralloc *dst,stralloc *old_dst,sv_alltype *sv,uint8_t conf
 	char *version = keep.s + sv->cname.version ;
 	char old[dst->len + 5] ;//.old
 	char dori[dst->len + 1] ;
-	char dname[dst->len + 1] ;
 	char current_version[dst->len + 1] ;
 	char sym_version[dst->len + SS_SYM_VERSION_LEN + 1] ;
 	auto_strings(sym_version,dst->s,SS_SYM_VERSION) ;
@@ -173,7 +172,7 @@ int env_make_symlink(stralloc *dst,stralloc *old_dst,sv_alltype *sv,uint8_t conf
 	r = scan_mode(dst->s, S_IFDIR) ;
 	/** enforce to pass to new format*/
 	if (r == -1) {
-		/** last time to pass to the new format. 0.6.0.0 or higher
+		/** last chance to pass to the new format. 0.6.0.0 or higher
 		 * version will remove this check */
 		auto_strings(old,dst->s,".old") ;
 		if (rename(dst->s,old) == -1)
@@ -191,24 +190,30 @@ int env_make_symlink(stralloc *dst,stralloc *old_dst,sv_alltype *sv,uint8_t conf
 		if (sarealpath(&saversion,sym_version) == -1)
 			log_warn_return(LOG_EXIT_ZERO,"sarealpath of: ",sym_version) ;
 
+		char dname[saversion.len + 1] ;
+
 		r = scan_mode(saversion.s,S_IFREG) ;
 		if (r > 0)
 		{
 			/** /etc/66/conf/service/version/confile */
 			if (!ob_dirname(dname,saversion.s))
 				log_warn_return(LOG_EXIT_ZERO,"get basename of: ",saversion.s) ;
-			dname[strlen(dname) -1] = 0 ;
+			dname[strlen(dname) - 1] = 0 ;
 			saversion.len = 0 ;
 			if (!auto_stra(&saversion,dname))
 				log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
 
 			if (!ob_basename(current_version,dname))
 				log_warn_return(LOG_EXIT_ZERO,"get basename of: ",dname) ;
-
-			/** old format->point to a file instead of the directory,
-			 * enforce to pass to new one */
-			if (!atomic_symlink(dst->s,sym_version,"env_compute"))
-				log_warnu_return(LOG_EXIT_ZERO,"symlink: ",sym_version," to: ",dst->s) ;
+			
+			{
+				char tmp[dst->len + strlen(current_version) + 2] ;
+				auto_strings(tmp,dst->s,"/",current_version) ;
+				/** old format->point to a file instead of the directory,
+				* enforce to pass to new one */
+				if (!atomic_symlink(tmp,sym_version,"env_compute"))
+					log_warnu_return(LOG_EXIT_ZERO,"symlink: ",sym_version," to: ",dst->s) ;
+			}
 		}
 		else
 		{
@@ -274,7 +279,7 @@ int env_make_symlink(stralloc *dst,stralloc *old_dst,sv_alltype *sv,uint8_t conf
 		if (!auto_stra(dst,SS_SYM_VERSION))
 			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}
-
+printf("dori:2:%s\n",dori) ;
 	saversion.len = 0 ;
 	if (!auto_stra(&saversion,dori,"/",version,"/",name))
 		log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
@@ -285,6 +290,7 @@ int env_make_symlink(stralloc *dst,stralloc *old_dst,sv_alltype *sv,uint8_t conf
 		/** New version doesn't exist yet, we create it even
 		 * if the symlink is not updated */
 		saversion.len = 0 ;
+		printf("dori::%s\n",dori) ;
 		if (!auto_stra(&saversion,dori,"/",version))
 			log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
 		if (!dir_create_parent(saversion.s,0755))
