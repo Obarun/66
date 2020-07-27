@@ -279,7 +279,7 @@ int env_make_symlink(stralloc *dst,stralloc *old_dst,sv_alltype *sv,uint8_t conf
 		if (!auto_stra(dst,SS_SYM_VERSION))
 			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}
-printf("dori:2:%s\n",dori) ;
+
 	saversion.len = 0 ;
 	if (!auto_stra(&saversion,dori,"/",version,"/",name))
 		log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
@@ -290,7 +290,7 @@ printf("dori:2:%s\n",dori) ;
 		/** New version doesn't exist yet, we create it even
 		 * if the symlink is not updated */
 		saversion.len = 0 ;
-		printf("dori::%s\n",dori) ;
+
 		if (!auto_stra(&saversion,dori,"/",version))
 			log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
 		if (!dir_create_parent(saversion.s,0755))
