@@ -311,17 +311,49 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 		}
 
 		/** we want the configuration file for each service inside
-		 * the configuration directory of the module.*/
+		 * the configuration directory of the module.
+		 * In case of sub-module, we skip it.
+		 * Also, we skip every dependencies of the sub-module,
+		 * each module contain is own services.*/
 		char *version = keep.s + sv_before->cname.version ;
 		{
 			stralloc tmpenv = STRALLOC_ZERO ;
+			/** 512 is the maximum of services set by default
+			 * that can be supervised by s6-svscan. It should be large
+			 * enough for the majority of the case */
+			size_t pos, spos, id, nid, idmodule[512] = { 0 } ;
+			sv_alltype_ref svref ;
+
 			if (!env_resolve_conf(&tmpenv,svname,info->owner))
 				log_warnu_return(LOG_EXIT_ZERO,"get path of the configuration file") ;
+
 			if (!auto_stra(&tmpenv,"/")) log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
 
-			for (size_t pos = 0 ; pos < genalloc_len(sv_alltype,&gasv);pos++)
+			/** search first for all sub-modules */
+			for (pos = 0 ; pos < genalloc_len(sv_alltype,&gasv);pos++)
 			{
-				if (!genalloc_s(sv_alltype,&gasv)[pos].opts[2]) continue ;
+				if (genalloc_s(sv_alltype,&gasv)[pos].cname.itype == TYPE_MODULE)
+				{
+					idmodule[pos] = 1 ;
+
+					svref = &genalloc_s(sv_alltype,&gasv)[pos] ;
+
+					id = svref->cname.idcontents, nid = svref->cname.ncontents ;
+					for (;nid; id += strlen(deps.s + id) + 1, nid--)
+					{
+						char *name = deps.s + id ;
+
+						for (spos = 0 ; spos < genalloc_len(sv_alltype,&gasv);spos++)
+							if (!strcmp(name,keep.s + genalloc_s(sv_alltype,&gasv)[spos].cname.name))
+								idmodule[spos] = 1 ;
+					}
+				}
+			}
+
+			for (pos = 0 ; pos < genalloc_len(sv_alltype,&gasv);pos++)
+			{
+				if (!genalloc_s(sv_alltype,&gasv)[pos].opts[2] ||
+				idmodule[pos]) continue ;
 				char *n = keep.s + genalloc_s(sv_alltype,&gasv)[pos].cname.name ;
 
 				if (!strcmp(n,bname))
