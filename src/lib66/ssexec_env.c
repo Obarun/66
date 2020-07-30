@@ -229,6 +229,11 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 	if (!ss_resolve_read(&res,sasrc.s,sv))
 		log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",sv) ;
 
+	if (!res.srconf) {
+		log_1_warn(sv," do not have configuration file") ;
+		goto freed ;
+	}
+
 	svconf = res.sa.s + res.srconf ;
 	sasrc.len = 0 ;
 	
@@ -274,6 +279,10 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 				log_dieu(LOG_EXIT_SYS,"get versioned directory of: ",svconf) ;
 			for (pos = 0 ; pos < satmp.len; pos += strlen(satmp.s + pos) + 1)
 			{
+				if (buffer_puts(buffer_1, svconf) < 0)
+					log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+				if (buffer_puts(buffer_1, "/") < 0)
+					log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 				if (buffer_puts(buffer_1, satmp.s + pos) < 0)
 					log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 				if (check_current_version(svconf,satmp.s + pos))
