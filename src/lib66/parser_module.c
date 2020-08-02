@@ -313,14 +313,14 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 		/** we want the configuration file for each service inside
 		 * the configuration directory of the module.
 		 * In case of sub-module, we skip it.
-		 * Also, we skip every dependencies of the sub-module,
-		 * each module contain is own services.*/
+		 * Also, we skip every dependency of the sub-module,
+		 * each module contains its own services.*/
 		char *version = keep.s + sv_before->cname.version ;
 		{
 			stralloc tmpenv = STRALLOC_ZERO ;
 			/** 512 is the maximum of services set by default
 			 * that can be supervised by s6-svscan. It should be large
-			 * enough for the majority of the case */
+			 * enough for the majority of the cases */
 			size_t pos, spos, id, nid, idmodule[512] = { 0 } ;
 			sv_alltype_ref svref ;
 
