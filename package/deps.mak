@@ -69,7 +69,7 @@ src/lib66/ss_state.o src/lib66/ss_state.lo: src/lib66/ss_state.c src/include/66/
 src/lib66/ss_utils.o src/lib66/ss_utils.lo: src/lib66/ss_utils.c src/include/66/config.h src/include/66/constants.h src/include/66/parser.h src/include/66/resolve.h src/include/66/utils.h
 src/lib66/ssexec_dbctl.o src/lib66/ssexec_dbctl.lo: src/lib66/ssexec_dbctl.c src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/state.h src/include/66/utils.h
 src/lib66/ssexec_disable.o src/lib66/ssexec_disable.lo: src/lib66/ssexec_disable.c src/include/66/constants.h src/include/66/db.h src/include/66/resolve.h src/include/66/state.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
-src/lib66/ssexec_enable.o src/lib66/ssexec_enable.lo: src/lib66/ssexec_enable.c src/include/66/constants.h src/include/66/db.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
+src/lib66/ssexec_enable.o src/lib66/ssexec_enable.lo: src/lib66/ssexec_enable.c src/include/66/constants.h src/include/66/db.h src/include/66/environ.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
 src/lib66/ssexec_env.o src/lib66/ssexec_env.lo: src/lib66/ssexec_env.c src/include/66/config.h src/include/66/constants.h src/include/66/environ.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/ssexec_free.o src/lib66/ssexec_free.lo: src/lib66/ssexec_free.c src/include/66/ssexec.h
 src/lib66/ssexec_help.o src/lib66/ssexec_help.lo: src/lib66/ssexec_help.c src/include/66/ssexec.h
