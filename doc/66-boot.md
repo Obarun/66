@@ -21,7 +21,7 @@ This program performs some early preparations, spawns a process that will run th
 
 ## Exit codes
 
-*66-boot* never exits. It spawns the *rc.init* script and execs into [66‑scandir](66-scandir.html) which runs forever until the machine stops or reboots.
+*66-boot* never exits. It spawns the `rc.init` script and execs into [66‑scandir](66-scandir.html) which runs forever until the machine stops or reboots.
 
 ## Options
 
@@ -143,5 +143,5 @@ The following skeleton files are called to execute their corresponding power rel
 Any valid `key=value` pair set at the `init.conf` skeleton file can be passed on the kernel command line as parameter:
 
 ```
-    BOOT_IMAGE=../vmlinuz-linux root=/dev/sda3 ro vga=895 initrd=../intel-ucode.img,../initramfs-linux.img TREE=boot
+    BOOT_IMAGE=../vmlinuz-linux root=/dev/sda3 ro vga=895 initrd=../intel-ucode.img,../initramfs-linux.img TREE=boot VERBOSITY=4
 ```

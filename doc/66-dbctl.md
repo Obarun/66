@@ -16,11 +16,11 @@ This command is used to control an already supervised *service* in *live* define
 ```
 *66-dbctl* expects to find an already supervised *service* in *live* defined in the given *tree* and an already running *scandir*.
 
-**(!)** This tool **only** deals with **'bundle'** and **'atomic'** services—for *'classic'* services see [66-svctl](66-svctl.html).
+**(!)** This tool **only** deals with `bundle`, `module` and `atomic` services—for `classic` services see [66-svctl](66-svctl.html).
 
 Multiple *services* can be handled by separating their names with a space. *66-dbctl* gathers the services passed as argument in a list called *selection*.
 
-If *service* is not given, *66-dbctl* deals with all **'atomic'** services of the given *tree*.
+If *service* is not given, *66-dbctl* deals with all `bundle`, `module` and `atomic` services of the given *tree*.
 
 ## Exit codes
 

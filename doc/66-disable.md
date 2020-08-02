@@ -43,4 +43,4 @@ Multiple *services* can be disabled by seperating their names with a space.
 
 ## Dependencies handling
 
-In case of `'bundle'` or `'atomic'` services, any dependency chain will be automatically resolved. It is unnecessary to manually define chained sets of dependencies. If FooA has a declared dependency on FooB, FooB will be automatically disabled as well when disabling FooA. This will run recursively until all dependencies are disabled.
+In case of `bundle`, `module` or `'atomic'` services, any dependency chain will be automatically resolved. It is unnecessary to manually define chained sets of dependencies. If FooA has a declared dependency on FooB, FooB will be automatically disabled as well when disabling FooA. This will run recursively until all dependencies are disabled.

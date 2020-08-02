@@ -248,11 +248,11 @@ This section is *mandatory*. (!)
 
     valid values :
 
-    * classic : declares the service as classic.
-    * bundle : declares the service as a bundle service.  
-    * longrun : declares the service as a longrun service.
-    * oneshot : declares the service as a oneshot service.
-    * module : declares the service as a module service.
+    * classic : declares the service as a `classic` service.
+    * bundle : declares the service as a `bundle` service.  
+    * longrun : declares the service as a `longrun` service.
+    * oneshot : declares the service as a `oneshot` service.
+    * module : declares the service as a `module` service.
 
     **Note**: If you don't care about dependencies between services or if you don't need specific tasks or alternative configuration to get the daemon running, "classic" is the best pick.
     

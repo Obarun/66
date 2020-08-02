@@ -59,7 +59,7 @@ Multiple *services* can be enabled by seperating their names with a space.
 
 ## Dependency handling
 
-For *services* of type `bundle` or `atomic` any existing dependency chain will be automatically resolved. It is unnecessary to manually define chained sets of dependencies. If FooA has a declared dependency on another service with the name FooB then FooB will be automatically enabled too when enabling FooA. This works recursively until all necessary dependencies are enabled.
+For *services* of type `bundle`, `module` or `atomic` any existing dependency chain will be automatically resolved. It is unnecessary to manually define chained sets of dependencies. If FooA has a declared dependency on another service with the name FooB then FooB will be automatically enabled too when enabling FooA. This works recursively until all necessary dependencies are enabled.
 
 ## Directory name as service
 
