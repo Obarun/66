@@ -200,12 +200,35 @@ int env_make_symlink(stralloc *dst,stralloc *old_dst,sv_alltype *sv,uint8_t conf
 				log_warn_return(LOG_EXIT_ZERO,"get basename of: ",saversion.s) ;
 			dname[strlen(dname) - 1] = 0 ;
 			saversion.len = 0 ;
+			/** user may have updated the service which contain the @version field
+			 * without enable it again. In that case we have the format
+			 * /etc/66/conf/service and version directory doesn't exist.
+			 * So, dst->s and dname are equal*/
+			if (!strcmp(dst->s,dname)) {
+
+				char tmp[dst->len + 1 + strlen(version) + 1 + strlen(name) + 1] ;
+				auto_strings(tmp,dst->s,"/",version) ;
+
+				char dtmp[dst->len + 1 + strlen(name) + 1] ;
+				auto_strings(dtmp,dst->s,"/",name) ;
+
+				if (!dir_create_parent(tmp,0755))
+					log_warnsys_return(LOG_EXIT_ZERO,"create directory: ",tmp) ;
+
+				auto_strings(tmp,dst->s,"/",version,"/",name) ;
+
+				if (rename(dtmp,tmp) == -1)
+					log_warnusys_return(LOG_EXIT_ZERO,"rename: ",dtmp," to: ",tmp) ;
+
+				auto_strings(dname,dst->s,"/",version) ;
+			}
+
 			if (!auto_stra(&saversion,dname))
 				log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
 
 			if (!ob_basename(current_version,dname))
 				log_warn_return(LOG_EXIT_ZERO,"get basename of: ",dname) ;
-			
+
 			{
 				char tmp[dst->len + strlen(current_version) + 2] ;
 				auto_strings(tmp,dst->s,"/",current_version) ;
