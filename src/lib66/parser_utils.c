@@ -138,7 +138,7 @@ int section_get_range(section_t *sasection,stralloc *src)
 	size_t pos = 0, start = 0 ;
 	int r, n = 0, id = -1, skip = 0 ;
 	stralloc secname = STRALLOC_ZERO ;
-	stralloc_ref psasection ;
+	stralloc_ref psasection = 0 ;
 	stralloc cp = STRALLOC_ZERO ;
 	/** be clean */
 	wild_zero_all(&MILL_GET_LINE) ;
