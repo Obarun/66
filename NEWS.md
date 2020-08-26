@@ -29,6 +29,15 @@ See the *66-update* documentation page for further information.
 
 ---
 
+# In 0.5.0.1
+
+- Bugs fix:
+    - Handle old service format where the version directory doesn't exist. This is last release handling this case.
+    - *66-tree*:
+        Remove the live tree state directory in any case even if the directory is empty.
+
+---
+
 # In 0.5.0.0
 
 This is a ***Major release***, you need to update your *trees* with *66-update* tool. If you skip from a version earlier than 0.4.0.1, the *66-update* will not work. In this case, you need to reconstruct your trees manually. 
