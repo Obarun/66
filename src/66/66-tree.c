@@ -405,8 +405,11 @@ void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid
 	
 	if (!list.len) 
 	{ 
-		log_warn("Not supervised: ",livestate.s) ;
-		return ;
+		/** No service to unsupervise but we need to
+		 * delete the livestate anyway*/
+		log_warn("No service to unsupervise: ",livestate.s) ;
+		/** pass through s6rc_servicedir_unsupervise just in case */
+		goto follow ;
 	}
 	
 	{ 
@@ -439,6 +442,7 @@ void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid
 		if (wstat) log_warnusys("stop services") ;
 	}	
 	
+	follow:
 	if (db_find_compiled_state(livetree.s,treename) >=0)
 	{	
 		list.len = 0 ;
