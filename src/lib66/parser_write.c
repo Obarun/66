@@ -24,6 +24,7 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/types.h>
 #include <skalibs/bytestr.h>
@@ -670,6 +671,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 	uid_t owner = MYUID ;
 	size_t filelen = strlen(file) ;
 	size_t dstlen = strlen(dst) ;
+	uint8_t runas_replace = str_contain(keep.s + exec->exec,SS_EXECUTE_RUNAS) ;
 	char write[dstlen + 1 + filelen + 1] ;
 	
 	stralloc home = STRALLOC_ZERO ;
@@ -756,9 +758,16 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 	{
 		if (!stralloc_cats(&execute,EXECLINE_BINPREFIX "fdmove -c 2 1\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	}
-	if (!stralloc_cats(&execute,env.s) ||
-	!stralloc_cats(&execute,ui.s) || 
-	!stralloc_cats(&execute,runuser.s)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	if (!stralloc_cats(&execute,env.s)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	/** parse the execute field and replace all %RUNAS% string*/
+	if (runas_replace && (!owner && (exec->runas >= 0))) {
+		if (!sastr_replace_all(&runuser,SS_EXECUTE_RUNAS,ui.s))
+			log_warnusys_return(LOG_EXIT_ZERO,"replace ",SS_EXECUTE_RUNAS) ;
+	}
+	else {
+		if (!stralloc_cats(&execute,ui.s)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+	}
+	if (!stralloc_cats(&execute,runuser.s)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 	
 	memcpy(write,dst,dstlen) ;
 	write[dstlen] = '/' ;
