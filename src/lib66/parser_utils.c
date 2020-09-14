@@ -1075,15 +1075,89 @@ int get_uint(keynocheck *ch,uint32_t *ui)
 
 int check_valid_runas(keynocheck *ch)
 {
-	errno = 0 ;
-	struct passwd *pw = getpwnam(ch->val.s);
-	if (pw == NULL && errno)
-	{
-		parse_err(0,ch) ;
-		return 0 ;
-	} 
+	size_t len = strlen(ch->val.s) ;
+	char file[len + 1] ;
+	auto_strings(file,ch->val.s) ;
+
+	char *colon ;
+	colon = strchr(file,':') ;
+
+	if (colon) {
+
+		*colon = 0 ;
+
+		uid_t uid ;
+		gid_t gid ;
+		size_t uid_strlen ;
+		size_t gid_strlen ;
+		static char uid_str[UID_FMT] ;
+		static char gid_str[GID_FMT] ;
+
+		/** on format :gid, get the uid of
+		 * the owner of the process */
+		if (!*file) {
+
+			uid = getuid() ;
+
+		}
+		else {
+
+			if (get_uidbyname(file,&uid) == -1) {
+				parse_err(0,ch) ;
+				return 0 ;
+			}
+
+		}
+		uid_strlen = uid_fmt(uid_str,uid) ;
+		uid_str[uid_strlen] = 0 ;
+
+		/** on format uid:, get the gid of
+		 * the owner of the process */
+		if (!*(colon + 1)) {
+
+			if (!yourgid(&gid,uid)) {
+				parse_err(0,ch) ;
+				return 0 ;
+			}
+
+		}
+		else {
+
+			if (get_gidbygroup(colon + 1,&gid) == -1) {
+				parse_err(0,ch) ;
+				return 0 ;
+			}
+
+		}
+		gid_strlen = gid_fmt(gid_str,gid) ;
+		gid_str[gid_strlen] = 0 ;
+
+		ch->val.len = 0 ;
+		if (!auto_stra(&ch->val,uid_str,":",gid_str))
+			log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+	}
+	else {
+
+		int e = errno ;
+		errno = 0 ;
+
+		struct passwd *pw = getpwnam(ch->val.s);
+
+		if (!pw) {
+
+			if (!errno) errno = ESRCH ;
+			parse_err(0,ch) ;
+			return 0 ;
+		}
+
+		errno = e ;
+
+	}
+
 	return 1 ;
 }
+
 
 void parse_err(int ierr,keynocheck *check)
 {
