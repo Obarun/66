@@ -14,6 +14,7 @@
  
 #include <string.h>
 #include <errno.h>
+#include <stdint.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
@@ -33,6 +34,7 @@
 #include <66/utils.h>
 
 static stralloc workdir = STRALLOC_ZERO ;
+static uint8_t FORCE = 0 ;
 
 static void cleanup(void)
 {
@@ -62,21 +64,31 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 		if (!stralloc_cats(&dst,SS_SVC)) goto err ;
 	}
 	else if (!stralloc_cats(&dst,SS_DB SS_SRC)) goto err ;
+
 	if (!stralloc_cats(&dst,"/")) goto err ;
+
 	newlen = dst.len ;
 
-	if (!ss_resolve_add_rdeps(&rdeps,&cp,src))
+	if (!FORCE)
 	{
-		log_warnusys("resolve recursive dependencies of: ",name) ;
-		goto err ;
-	}
-	ss_resolve_free(&cp) ;
+		if (!ss_resolve_add_rdeps(&rdeps,&cp,src))
+		{
+			log_warnusys("resolve recursive dependencies of: ",name) ;
+			goto err ;
+		}
 	
-	if (!ss_resolve_add_logger(&rdeps,src))
-	{
-		log_warnusys("resolve logger") ;
-		goto err ;
+		if (!ss_resolve_add_logger(&rdeps,src))
+		{
+			log_warnusys("resolve logger") ;
+			goto err ;
+		}
 	}
+	else
+	{
+		if (!ss_resolve_append(&rdeps,&cp)) goto err ;
+	}
+
+	ss_resolve_free(&cp) ;
 
 	for (;i < genalloc_len(ss_resolve_t,&rdeps) ; i++)
 	{
@@ -142,26 +154,27 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 int ssexec_disable(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
 	int r, logname ;
-	unsigned int nlongrun, nclassic, stop ;
+	unsigned int nlongrun, nclassic, stop, force ;
 
 	genalloc tostop = GENALLOC_ZERO ;//ss_resolve_t
 	genalloc gares = GENALLOC_ZERO ; //ss_resolve_t
 	ss_resolve_t res = RESOLVE_ZERO ;
 	ss_resolve_t_ref pres ;
 
-	r = nclassic = nlongrun = stop = logname = 0 ;
+	r = nclassic = nlongrun = stop = logname = force = 0 ;
 	
 	{
 		subgetopt_t l = SUBGETOPT_ZERO ;
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">S", &l) ;
+			int opt = getopt_args(argc,argv, ">SF", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
 			{
-				case 'S' :	stop = 1 ;	break ;
+				case 'S' :	if (FORCE) log_usage(usage_disable) ; stop = 1 ; break ;
+				case 'F' :	if (stop) log_usage(usage_disable) ; FORCE = 1 ; break ;
 				default : 	log_usage(usage_disable) ; 
 			}
 		}
@@ -194,12 +207,21 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 		pres = &genalloc_s(ss_resolve_t,&gares)[i] ;
 		char *string = pres->sa.s ;
 		char  *name = string + pres->name ;
+		char *state = string + pres->state ;
 		uint8_t found = 0 ;
 		char module_name[256] ;
+		
+		/** The force options can be only used if the service is not marked initialized.
+		 * This option should only be used when we have a inconsistent state between 
+		 * the /var/lib/66/system/<tree>/servicedirs/* and /var/lib/66/system/<tree>/.resolve
+		 * directory meaning a service which is not present in the compiled db but its resolve file
+		 * exist.*/
+		if (FORCE && ss_state_check(state,name))
+			log_die_nclean(LOG_EXIT_USER,&cleanup,name," is marked initialized -- it's not allowed to force to disable it") ;
 
 		if (!module_search_service(workdir.s,&gares,name,&found,module_name))
 			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"search in module") ;
-		if (found) log_die_nclean(LOG_EXIT_USER,&cleanup,name," is a part of: ",module_name," module -- it's not allowed to disable it alone") ;
+		if (found && !FORCE) log_die_nclean(LOG_EXIT_USER,&cleanup,name," is a part of: ",module_name," module -- it's not allowed to disable it alone") ;
 
 		logname = 0 ;
 		if (obstr_equal(name,SS_MASTER + 1))
@@ -209,7 +231,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 		if (logname > 0 && (!ss_resolve_cmp(&gares,string + pres->logassoc)))
 			log_die_nclean(LOG_EXIT_USER,&cleanup,"logger detected - disabling is not allowed") ;
 
-		if (!pres->disen)
+		if (!pres->disen && !FORCE)
 		{
 			log_info(name,": is already disabled") ;
 			continue ;
