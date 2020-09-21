@@ -2,10 +2,14 @@
 
 ## Upgrade/downgrade instructions
 
-Upgrading/downgrading between major versions may require the use of the 66 tool *66-update*. In each case the
+***Warning***
+From the version `v0.5.0.0` this procedure is **no longer mandatory** even on major release. `66-update` can now be consider as a convenient tool to rebuild your tree automatically instead of doing it manually.
+
+
+Upgrading/downgrading between major versions may require the use of the 66 tool `66-update`. In each case the
 release note will specify it.
 To update, first upgrade/downgrade the 66 package. Then make a *dry-run* using the **-d**
-option of the 66-update tool:
+option of the `66-update` tool:
 
 ```
 # 66-update -d
@@ -25,8 +29,19 @@ to really update your system:
 
 This same process and command use needs to be done by (or as) each regular user.
 
-See the *66-update* documentation page for further information.
+See the `66-update` documentation page for further information.
 
+---
+
+# In 0.5.1.0
+
+- Bugs fix:
+    - Avoid to parse twice a service coming from a service of type module.
+
+- *66-disable*:
+    new options:
+        - **-F**: forces the *service* to be disabled even if it's already marked disabled. See the `66-disable` documentation page for further information.
+        
 ---
 
 # In 0.5.0.1
@@ -82,9 +97,8 @@ Downgrading to a previous version will not work either, due to the new format of
 
 - *66-enable*:
     - Allow the use of a different version of a configuration file than the frontend service file, if any of -c/m/C options are used.
-
--   new option:
-    - **-i**: import extra configuration files from a previous version.
+    new option:
+        - **-i**: import extra configuration files from a previous version.
 
 ---
 
