@@ -41,7 +41,7 @@ Multiple *services* can be disabled by seperating their names with a space.
 
 - **-S** : stops the *service* on the fly directly after enabling it. If the state of the *service* is already up, this option will have no effect unless the **-f** option is used to reload it.
 
-- **-F** : forces the *service* to be disabled even if it's already marked disabled. The *service* **must** be marked uninitialized —see [66-intree](66-intree.html). The dependency of the *service* is **not** handled except for its associated logger. Also, this option cannot be used for a logger service. This option should only be used when a inconsistent state exist between the actual contain of the compiled service database and the display of the contents of a tree with the [66-intree](66-intree.html) command. For example, if you disable a service and a power failure occur, the service will be marked uninitialized and disabled at the next boot inside your tree. In this case use this option to cleanup your tree.
+- **-F** : forces the *service* to be disabled even if it's already marked disabled. The *service* **must** be marked uninitialized —see [66-intree](66-intree.html). The dependency of the *service* is **not** handled except for its associated logger. Also, this option cannot be used for a logger service. This option should only be used when an inconsistent state exist between the actual contents of the compiled service database and the display of the contents of a tree with the [66-intree](66-intree.html) command. For example, if you disable a service and a power failure occur, the service will be marked uninitialized and disabled at the next boot inside your tree. In this case use this option to cleanup your tree.
 
 ## Dependencies handling
 
