@@ -782,39 +782,42 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		char src_resolve_backup[clone_backup_len + SS_RESOLVE_LEN + 1] ;
 		auto_strings(src_resolve_backup,clone_backup,SS_RESOLVE) ;
 
-		// main and backup can differs,so rebuild the list
 		salist.len = 0 ;
-		if (!sastr_dir_get(&salist,src_resolve_backup,"",S_IFREG))
-			log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get resolve file at: ",src_resolve_backup) ;
 
-		for (pos = 0 ; pos < salist.len ; pos += strlen(salist.s + pos) + 1)
+		/** main and backup can differs,so rebuild the list
+		 * Also, a backup directory can be empty, check it first */
+		r = scan_mode(src_resolve_backup,S_IFDIR) ;
+		if (r == 1)
 		{
-			char *name = salist.s + pos ;
+			if (!sastr_dir_get(&salist,src_resolve_backup,"",S_IFREG))
+				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get resolve file at: ",src_resolve_backup) ;
 
-			if (!ss_resolve_read(&res,clone_backup,name))
-				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of: ",src_resolve_backup,"/",name) ;
+			for (pos = 0 ; pos < salist.len ; pos += strlen(salist.s + pos) + 1)
+			{
+				char *name = salist.s + pos ;
 
-			tree_modify_resolve(&res,SS_RESOLVE_ENUM_RUNAT,tree,clone.s) ;
-			tree_modify_resolve(&res,SS_RESOLVE_ENUM_TREENAME,tree,clone.s) ;
-			tree_modify_resolve(&res,SS_RESOLVE_ENUM_TREE,tree,clone.s) ;
-			tree_modify_resolve(&res,SS_RESOLVE_ENUM_STATE,tree,clone.s) ;
+				if (!ss_resolve_read(&res,clone_backup,name))
+					log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of: ",src_resolve_backup,"/",name) ;
 
-			if (!ss_resolve_write(&res,clone_backup,name))
-				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"write resolve file of: ",src_resolve,"/",name) ;
+				tree_modify_resolve(&res,SS_RESOLVE_ENUM_RUNAT,tree,clone.s) ;
+				tree_modify_resolve(&res,SS_RESOLVE_ENUM_TREENAME,tree,clone.s) ;
+				tree_modify_resolve(&res,SS_RESOLVE_ENUM_TREE,tree,clone.s) ;
+				tree_modify_resolve(&res,SS_RESOLVE_ENUM_STATE,tree,clone.s) ;
+
+				if (!ss_resolve_write(&res,clone_backup,name))
+					log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"write resolve file of: ",src_resolve,"/",name) ;
+			}
+			// rename db
+			char clone_db_backup_old[clone_backup_len + SS_DB_LEN + 1 + treelen + 1] ;
+			auto_strings(clone_db_backup_old,clone_backup,SS_DB,"/",tree) ;
+
+			char clone_db_backup_new[clone_backup_len + SS_DB_LEN + 1 + clone.len + 1] ;
+			auto_strings(clone_db_backup_new,clone_backup,SS_DB,"/",clone.s) ;
+
+			log_trace("rename tree backup db: ",tree," as: ",clone.s,"..." ) ;
+			if (rename(clone_db_backup_old,clone_db_backup_new) == -1)
+				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"rename: ",clone_db_backup_old," to: ",clone_db_backup_new) ;
 		}
-		// rename db
-		char clone_db_backup_old[clone_backup_len + SS_DB_LEN + 1 + treelen + 1] ;
-		auto_strings(clone_db_backup_old,clone_backup,SS_DB,"/",tree) ;
-
-		char clone_db_backup_new[clone_backup_len + SS_DB_LEN + 1 + clone.len + 1] ;
-		auto_strings(clone_db_backup_new,clone_backup,SS_DB,"/",clone.s) ;
-
-		log_trace("rename tree backup db: ",tree," as: ",clone.s,"..." ) ;
-		if (rename(clone_db_backup_old,clone_db_backup_new) == -1)
-			log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"rename: ",clone_db_backup_old," to: ",clone_db_backup_new) ;
-
-		// disable it by default
-		tree_enable_disable(base.s,clone_target,clone.s,0) ;
 
 		stralloc_free(&salist) ;
 		ss_resolve_free(&res) ;

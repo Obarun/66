@@ -370,8 +370,8 @@ int module_search_service(char const *src, genalloc *gares, char const *name,uin
 	for(pos = 0 ; pos < genalloc_len(ss_resolve_t,gares) ; pos++)
 	{
 		ss_resolve_t_ref pres = &genalloc_s(ss_resolve_t,gares)[pos] ;
-		char *string = pres->sa.s ;
-		char  *name = string + pres->name ;
+		char *str = pres->sa.s ;
+		char *name = str + pres->name ;
 		if (!strcmp(name,module_name)) {
 			(*found) = 0 ;
 			break ;
