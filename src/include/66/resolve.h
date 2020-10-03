@@ -79,6 +79,51 @@ struct ss_resolve_s
 } ;
 #define RESOLVE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
+typedef enum ss_resolve_enum_e ss_resolve_enum_t, *ss_resolve_enum_t_ref;
+enum ss_resolve_enum_e
+{
+	SS_RESOLVE_ENUM_NAME = 0,
+	SS_RESOLVE_ENUM_DESCRIPTION,
+	SS_RESOLVE_ENUM_VERSION,
+	SS_RESOLVE_ENUM_LOGGER,
+	SS_RESOLVE_ENUM_LOGREAL,
+	SS_RESOLVE_ENUM_LOGASSOC,
+	SS_RESOLVE_ENUM_DSTLOG,
+	SS_RESOLVE_ENUM_DEPS,
+	SS_RESOLVE_ENUM_OPTSDEPS,
+	SS_RESOLVE_ENUM_EXTDEPS,
+	SS_RESOLVE_ENUM_CONTENTS,
+	SS_RESOLVE_ENUM_SRC,
+	SS_RESOLVE_ENUM_SRCONF,
+	SS_RESOLVE_ENUM_LIVE,
+	SS_RESOLVE_ENUM_RUNAT,
+	SS_RESOLVE_ENUM_TREE,
+	SS_RESOLVE_ENUM_TREENAME,
+	SS_RESOLVE_ENUM_STATE,
+	SS_RESOLVE_ENUM_EXEC_RUN,
+	SS_RESOLVE_ENUM_EXEC_LOG_RUN,
+	SS_RESOLVE_ENUM_REAL_EXEC_RUN,
+	SS_RESOLVE_ENUM_REAL_EXEC_LOG_RUN,
+	SS_RESOLVE_ENUM_EXEC_FINISH,
+	SS_RESOLVE_ENUM_REAL_EXEC_FINISH,
+	SS_RESOLVE_ENUM_TYPE,
+	SS_RESOLVE_ENUM_NDEPS,
+	SS_RESOLVE_ENUM_NOPTSDEPS,
+	SS_RESOLVE_ENUM_NEXTDEPS,
+	SS_RESOLVE_ENUM_NCONTENTS,
+	SS_RESOLVE_ENUM_DOWN,
+	SS_RESOLVE_ENUM_DISEN,
+	SS_RESOLVE_ENUM_ENDOFKEY
+} ;
+
+typedef struct ss_resolve_field_table_s ss_resolve_field_table_t, *ss_resolve_field_table_t_ref ;
+struct ss_resolve_field_table_s
+{
+	char *field ;
+} ;
+
+extern ss_resolve_field_table_t ss_resolve_field_table[] ;
+
 /** Graph struct */
 typedef struct ss_resolve_graph_ndeps_s ss_resolve_graph_ndeps_t ;
 struct ss_resolve_graph_ndeps_s
@@ -137,6 +182,9 @@ extern int ss_resolve_sort_bytype(genalloc *gares,stralloc *list,char const *src
 extern int ss_resolve_cmp_service_basedir(char const *dir) ;
 extern int ss_resolve_sort_byfile_first(stralloc *sort, char const *src) ;
 extern int ss_resolve_svtree(stralloc *svtree,char const *svname,char const *tree) ;
+extern int ss_resolve_modify_field(ss_resolve_t *res, ss_resolve_enum_t field, char const *data) ;
+extern int ss_resolve_put_field_to_sa(stralloc *sa,ss_resolve_t *res, ss_resolve_enum_t field) ;
+
 /** Graph function */
 extern void ss_resolve_graph_ndeps_free(ss_resolve_graph_ndeps_t *graph) ;
 extern void ss_resolve_graph_free(ss_resolve_graph_t *graph) ;

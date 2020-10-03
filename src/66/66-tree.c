@@ -15,7 +15,9 @@
 #include <66/tree.h>
 
 #include <string.h>
+#include <stdint.h>//uintx_t
 #include <sys/stat.h>
+#include <stdio.h>//rename
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
@@ -307,8 +309,12 @@ void create_backupdir(char const *base, char const *treename)
 	if (!r)	auto_dir(treetmp,0755) ;
 }
 
-int set_rules(char const *tree,uid_t *uids, size_t uidn,unsigned int what) 
+/** @what -> 0 deny
+ * @what -> 1 allow */
+void set_rules(char const *tree,uid_t *uids, size_t uidn,uint8_t what)
 {
+	log_trace("set ", !what ? "denied" : "allowed"," user for tree: ",tree,"..." ) ;
+
 	int r ;
 	size_t treelen = strlen(tree) ;
 	
@@ -332,13 +338,11 @@ int set_rules(char const *tree,uid_t *uids, size_t uidn,unsigned int what)
 			pack[uint_fmt(pack,uids[i+1])] = 0 ;
 			log_trace("create file: ",pack," at ",tmp) ;
 			if(!file_create_empty(tmp,pack,0644) && errno != EEXIST)
-			{
-				log_warnusys("create file: ",pack," at ",tmp) ;
-				return 0 ;
-			}
+				log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"set permissions access") ;
+
 			log_trace("user: ",pack," is allowed for tree: ",tree) ;
 		}
-		return 1 ;
+		return ;
 	}
 	//else deny
 	for (size_t i = 0 ; i < uidn ; i++)
@@ -356,11 +360,11 @@ int set_rules(char const *tree,uid_t *uids, size_t uidn,unsigned int what)
 		{
 			log_trace("unlink: ",ut) ;
 			r = unlink(ut) ;
-			if (r == -1) return 0 ;
+			if (r == -1)
+				log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"set permissions access") ;
 		}
 		log_trace("user: ",pack," is denied for tree: ",tree) ;
 	}
-	return 1 ;
 }
 
 void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid_t owner,char const *const *envp)
@@ -485,21 +489,94 @@ void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid
 	stralloc_free(&realsym) ;  
 }
 
+/** @action -> 0 disable
+ * @action -> 1 enable */
+void tree_enable_disable(char const *base, char const *dst, char const *tree,uint8_t action)
+{
+	int r ;
+	log_trace(!action ? "disable " : "enable ",dst,"...") ;
+	r  = tree_cmd_state(VERBOSITY,!action ? "-d" : "-a", tree) ;
+	if (!r) log_dieusys(LOG_EXIT_SYS,!action ? "disable: " : "enable: ",dst," at: ",base,SS_SYSTEM,SS_STATE) ;
+	else if (r == 1)
+	{
+		log_info(!action ? "Disabled" : "Enabled"," successfully tree: ",tree) ;
+	}
+	else log_info("Already ",!action ? "disabled" : "enabled"," tree: ",tree) ;
+
+}
+
+void tree_modify_resolve(ss_resolve_t *res,ss_resolve_enum_t field,char const *regex,char const *by)
+{
+	stralloc sa = STRALLOC_ZERO ;
+	ss_resolve_t modif = RESOLVE_ZERO ;
+
+	log_trace("modify field: ",ss_resolve_field_table[field].field," of service: ",res->sa.s + res->name) ;
+
+	if (!ss_resolve_copy(&modif,res))
+		log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"copy resolve file of: ", res->sa.s + res->name) ;
+
+	if (!ss_resolve_put_field_to_sa(&sa,&modif, field))
+		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get copy field: ",ss_resolve_field_table[field].field) ;
+
+	if (sa.len)
+		if (!sastr_replace(&sa,regex,by))
+			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"replace field: ",ss_resolve_field_table[field].field) ;
+
+	if (!ss_resolve_modify_field(&modif,field,sa.s))
+		log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"modify field: ",ss_resolve_field_table[field].field) ;
+
+	if (!ss_resolve_copy(res,&modif))
+		log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"copy resolve file of: ",res->sa.s + res->name) ;
+
+	stralloc_free(&sa) ;
+
+	ss_resolve_free(&modif) ;
+}
+
+void tree_remove(char const *base,char const *dst,char const *tree)
+{
+		log_trace("delete: ",dst,"..." ) ;
+
+		int r ;
+
+		if (rm_rf(dst) < 0) log_dieusys(LOG_EXIT_SYS,"delete: ", dst) ;
+
+		size_t treelen = strlen(tree) ;
+		size_t baselen = strlen(base) ;
+		char treetmp[baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen  + 1] ;
+		auto_string(treetmp,base,0) ;
+		auto_string(treetmp,SS_SYSTEM,baselen) ;
+		auto_string(treetmp,SS_BACKUP,baselen + SS_SYSTEM_LEN) ;
+		auto_string(treetmp,"/",baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN) ;
+		auto_string(treetmp,tree,baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1) ;
+
+		r = scan_mode(treetmp,S_IFDIR) ;
+		if (r || (r < 0))
+		{
+			log_trace("delete backup of tree: ",treetmp,"...") ;
+			if (rm_rf(treetmp) < 0)	log_dieusys(LOG_EXIT_SYS,"delete: ",treetmp) ;
+		}
+
+		tree_enable_disable(base,dst,tree,0) ;
+
+		log_info("Deleted successfully: ",tree) ;
+}
+
 int main(int argc, char const *const *argv,char const *const *envp)
 {
 	int r, current, create, allow, deny, enable, disable, remove, snap, unsupervise ;
-	
+
 	uid_t owner ;
-	
+
 	size_t auidn = 0 ;
 	uid_t auids[256] = { 0 } ;
-	
+
 	size_t duidn = 0 ;
 	uid_t duids[256] = { 0 } ;
-		
+
 	char const *tree = 0 ;
 	char const *after_tree = 0 ;
-	
+
 	stralloc base = STRALLOC_ZERO ;
 	stralloc dstree = STRALLOC_ZERO ;
 	stralloc clone = STRALLOC_ZERO ;
@@ -515,173 +592,233 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
 		for (;;)
 		{
-			
 			int opt = getopt_args(argc,argv, "hv:l:na:d:cS:EDRC:Uz", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
 			{
-				case 'h' : info_help(); return 0 ;
-				case 'v' : if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
+				case 'h' : 	info_help(); return 0 ;
+				case 'v' : 	if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
 				case 'l' : 	if (!stralloc_cats(&live,l.arg)) log_die_nomem("stralloc") ;
 							if (!stralloc_0(&live)) log_die_nomem("stralloc") ;
 							break ;
-				case 'n' : create = 1 ; break ;
-				case 'a' : if (!scan_uidlist_wdelim(l.arg,auids,',')) log_usage(USAGE) ; 
-						   auidn = auids[0] ;
-						   allow = 1 ;
-						   break ;
-				case 'd' : if (!scan_uidlist_wdelim(l.arg,duids,',')) log_usage(USAGE) ; 
-						   duidn = duids[0] ;
-						   deny = 1 ;
-						   break ;
-				case 'c' : current = 1 ; break ;
-				case 'S' : after_tree = l.arg ; break ;
-				case 'E' : enable = 1 ; if (disable) log_usage(USAGE) ; break ;
-				case 'D' : disable = 1 ; if (enable) log_usage (USAGE) ; break ;
-				case 'R' : remove = 1 ; if (create) log_usage(USAGE) ; break ;
-				case 'C' : if (!stralloc_cats(&clone,l.arg)) log_die_nomem("stralloc") ;
-						   if (!stralloc_0(&clone)) log_die_nomem("stralloc") ;
-						   snap = 1 ;
-						   break ;
-				case 'U' : unsupervise = 1 ; if (create)log_usage(USAGE) ; break ;
-				case 'z' : log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
-				default : log_usage(USAGE) ; 
+				case 'n' : 	create = 1 ; break ;
+				case 'a' : 	if (!scan_uidlist_wdelim(l.arg,auids,',')) log_usage(USAGE) ;
+							auidn = auids[0] ;
+							allow = 1 ;
+							break ;
+				case 'd' : 	if (!scan_uidlist_wdelim(l.arg,duids,',')) log_usage(USAGE) ;
+							duidn = duids[0] ;
+							deny = 1 ;
+							break ;
+				case 'c' : 	current = 1 ; break ;
+				case 'S' : 	after_tree = l.arg ; break ;
+				case 'E' : 	enable = 1 ; if (disable) log_usage(USAGE) ; break ;
+				case 'D' : 	disable = 1 ; if (enable) log_usage (USAGE) ; break ;
+				case 'R' : 	remove = 1 ; if (create) log_usage(USAGE) ; break ;
+				case 'C' : 	if (remove) log_usage(USAGE) ;
+							if (!stralloc_cats(&clone,l.arg)) log_die_nomem("stralloc") ;
+							if (!stralloc_0(&clone)) log_die_nomem("stralloc") ;
+							snap = 1 ;
+							break ;
+				case 'U' : 	unsupervise = 1 ; if (create)log_usage(USAGE) ; break ;
+				case 'z' : 	log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
+				default : 	log_usage(USAGE) ;
 			}
 		}
 		argc -= l.ind ; argv += l.ind ;
 	}
-	
+
 	if (argc != 1) log_usage(USAGE) ;
-	
+
 	tree = argv[0] ;
 	owner = MYUID ;
-		
+
 	if (!set_ownersysdir(&base, owner)) log_dieusys(LOG_EXIT_SYS,"set owner directory") ;
-	
+
 	r = set_livedir(&live) ;
 	if (!r) log_die_nomem("stralloc") ;
 	if(r < 0) log_dieu(LOG_EXIT_SYS,"livedir: ",live.s," must be an absolute path") ;
-	
+
 	log_trace("sanitize ",tree,"..." ) ;
 	r = sanitize_tree(&dstree,base.s,tree,owner) ;
-	
+
 	if(!r && create)
 	{
 		/** set cleanup */
 		cleantree = dstree.s ;
 		log_trace("creating: ",dstree.s,"..." ) ;
 		create_tree(dstree.s,tree) ;
-		
+
 		log_trace("creating backup directory for: ", tree,"...") ;
 		create_backupdir(base.s,tree) ;
 		/** unset cleanup */
 		cleantree = 0 ;
-		
+
 		log_trace("set permissions rules for: ",dstree.s,"..." ) ;
-		if (!set_rules(dstree.s,auids,auidn,1))//1 allow
-			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"set permissions access") ;
-				
+			set_rules(dstree.s,auids,auidn,1) ;
+
 		size_t dblen = dstree.len - 1 ;
 		char newdb[dblen + SS_SVDIRS_LEN + 1] ;
 		auto_string(newdb,dstree.s,0) ;
 		auto_string(newdb,SS_SVDIRS,dblen) ;
-	
+
 		log_trace("compile: ",newdb,"/db/",tree,"..." ) ;
 		if (!db_compile(newdb,dstree.s,tree,envp))
 			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"compile ",newdb,"/db/",tree) ;
-	
+
 		r = 1 ;
 		create = 0 ;
 		log_info("Created successfully tree: ",tree) ;
-		
 	}
-	
+
 	if ((!r && !create) || (!r && enable)) log_dieusys(LOG_EXIT_SYS,"find tree: ",dstree.s) ;
 	if (r && create) log_dieu(LOG_EXIT_USER,"create: ",dstree.s,": already exist") ;
 
 	if (enable)
-	{
-		log_trace("enable: ",dstree.s,"..." ) ;
-		r  = tree_cmd_state(VERBOSITY,"-a",tree) ;
-		if (!r) log_dieusys(LOG_EXIT_SYS,"enable: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
-		else if (r == 1) 
-		{
-			log_info("Enabled successfully tree: ",tree) ;
-		}
-		else log_info("Already enabled tree: ",tree) ;
-	}
-	
+		tree_enable_disable(base.s,dstree.s,tree,1) ;
+
 	if (disable)
-	{
-		log_trace("disable: ",dstree.s,"..." ) ;
-		r  = tree_cmd_state(VERBOSITY,"-d",tree) ;
-		if (!r) log_dieusys(LOG_EXIT_SYS,"disable: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
-		else if (r == 1)
-		{
-			log_info("Disabled successfully tree: ",tree) ;
-		}
-		else log_info("Already disabled tree: ",tree) ;
-	}
-	
+		tree_enable_disable(base.s,dstree.s,tree,0) ;
+
 	if (auidn)
-	{
-		log_trace("set allowed user for tree: ",dstree.s,"..." ) ;
-		if (!set_rules(dstree.s,auids,auidn,1))	log_dieu(LOG_EXIT_SYS,"set permissions access") ;
-	}	
+		set_rules(dstree.s,auids,auidn,1) ;
+
 	if (duidn)
-	{
-		log_trace("set denied user for tree: ",dstree.s,"..." ) ;
-		if (!set_rules(dstree.s,duids,duidn,0))	log_dieu(LOG_EXIT_SYS,"set permissions access") ;
-	}
+		set_rules(dstree.s,duids,duidn,0) ;
+
 	if(current)
 	{
 		log_trace("make: ",dstree.s," as default ..." ) ;
 		if (!tree_switch_current(base.s,tree)) log_dieusys(LOG_EXIT_SYS,"set: ",dstree.s," as default") ;
 		log_info("Set successfully: ",tree," as default") ;
 	}
-	if (unsupervise) tree_unsupervise(&live,dstree.s,tree,owner,envp) ;
-	
+
+	if (unsupervise)
+		tree_unsupervise(&live,dstree.s,tree,owner,envp) ;
+
 	if (remove)
-	{
-		log_trace("delete: ",dstree.s,"..." ) ;
-		if (rm_rf(dstree.s) < 0) log_dieusys(LOG_EXIT_SYS,"delete: ", dstree.s) ;
-				
-		size_t treelen = strlen(tree) ;
-		size_t baselen = base.len ;
-		char treetmp[baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen  + 1] ;
-		auto_string(treetmp,base.s,0) ;
-		auto_string(treetmp,SS_SYSTEM,baselen) ;
-		auto_string(treetmp,SS_BACKUP,baselen + SS_SYSTEM_LEN) ;
-		auto_string(treetmp,"/",baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN) ;
-		auto_string(treetmp,tree,baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1) ;
-	
-		r = scan_mode(treetmp,S_IFDIR) ;
-		if (r || (r < 0))
-		{
-			log_trace("delete backup of tree: ",treetmp,"...") ;
-			if (rm_rf(treetmp) < 0)	log_dieusys(LOG_EXIT_SYS,"delete: ",treetmp) ;
-		}
-		log_trace("disable: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
-		if (!tree_cmd_state(VERBOSITY,"-d",tree))
-			log_dieu(LOG_EXIT_SYS,"disable: ",dstree.s," at: ",base.s,SS_SYSTEM,SS_STATE) ;
-		
-		log_info("Deleted successfully: ",tree) ;
-	}
-	
+		tree_remove(base.s,dstree.s,tree) ;
+
 	if (snap)
 	{
-		char tmp[dstree.len + 1] ;
-		auto_string(tmp,dstree.s,0) ;
-	
-		r  = get_rlen_until(dstree.s,'/',dstree.len) ;
-		dstree.len = r + 1;
-		
-		auto_stralloc_0(&dstree,clone.s) ;		
-		r = scan_mode(dstree.s,S_IFDIR) ;
-		if ((r < 0) || r) log_die(LOG_EXIT_SYS,dstree.s,": already exist") ; 
-		log_trace("clone: ",dstree.s," as ",tmp,"..." ) ;
-		if (!hiercopy(tmp,dstree.s)) log_dieusys(LOG_EXIT_SYS,"copy: ",dstree.s," at: ",clone.s) ;
+		stralloc salist = STRALLOC_ZERO ;
+		ss_resolve_t res = RESOLVE_ZERO ;
+
+		size_t syslen = base.len + SS_SYSTEM_LEN ;
+		size_t treelen = strlen(tree) ;
+		size_t pos = 0 ;
+
+		char system[syslen + 1] ;
+		auto_strings(system,base.s,SS_SYSTEM) ;
+
+		size_t clone_target_len = syslen + 1 + clone.len ;
+		char clone_target[clone_target_len + 1] ;
+		auto_strings(clone_target,system,"/",clone.s) ;
+
+		r = scan_mode(clone_target,S_IFDIR) ;
+		if ((r < 0) || r) log_die(LOG_EXIT_SYS,clone_target,": already exist") ;
+
+		// clone main directory
+		log_trace("clone: ",tree," as: ",clone.s,"..." ) ;
+		if (!hiercopy(dstree.s,clone_target))
+			log_dieusys(LOG_EXIT_SYS,"copy: ",dstree.s," to: ",clone_target) ;
+
+		// clone backup directory
+		size_t clone_backup_len = syslen + SS_BACKUP_LEN + 1 + clone.len ;
+		char clone_backup[clone_backup_len + 1] ;
+		auto_strings(clone_backup,system,SS_BACKUP,"/",clone.s) ;
+
+		char tree_backup[syslen + SS_BACKUP_LEN + 1 + treelen + 1] ;
+		auto_strings(tree_backup,system,SS_BACKUP,"/",tree) ;
+
+		/* make cleantree pointing to the clone to be able to remove it
+		 * in case of crach */
+		cleantree = clone_target ;
+
+		log_trace("clone backup of: ",tree," as: ",clone.s,"..." ) ;
+		if (!hiercopy(tree_backup,clone_backup))
+			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"copy: ",tree_backup," to: ",clone_backup) ;
+
+		// modify the resolve file to match the new name
+		// main directory first
+		char src_resolve[clone_target_len + SS_SVDIRS_LEN + SS_RESOLVE_LEN + 1] ;
+		auto_strings(src_resolve,clone_target,SS_SVDIRS,SS_RESOLVE) ;
+
+		if (!sastr_dir_get(&salist,src_resolve,"",S_IFREG))
+			log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get resolve file at: ",src_resolve) ;
+
+		char clone_res[clone_target_len + SS_SVDIRS_LEN + 1] ;
+		auto_strings(clone_res,clone_target,SS_SVDIRS) ;
+
+		for (;pos < salist.len ; pos += strlen(salist.s + pos) + 1)
+		{
+			char *name = salist.s + pos ;
+
+			if (!ss_resolve_read(&res,clone_res,name))
+				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of: ",src_resolve,"/",name) ;
+
+			tree_modify_resolve(&res,SS_RESOLVE_ENUM_RUNAT,tree,clone.s) ;
+			tree_modify_resolve(&res,SS_RESOLVE_ENUM_TREENAME,tree,clone.s) ;
+			tree_modify_resolve(&res,SS_RESOLVE_ENUM_TREE,tree,clone.s) ;
+			tree_modify_resolve(&res,SS_RESOLVE_ENUM_STATE,tree,clone.s) ;
+
+			if (!ss_resolve_write(&res,clone_res,name))
+				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"write resolve file of: ",src_resolve,"/",name) ;
+		}
+
+		// rename db
+		char clone_db_old[clone_target_len + SS_SVDIRS_LEN + SS_DB_LEN + 1 + treelen + 1] ;
+		auto_strings(clone_db_old,clone_target,SS_SVDIRS,SS_DB,"/",tree) ;
+
+		char clone_db_new[clone_target_len + SS_SVDIRS_LEN + SS_DB_LEN + 1 + clone.len + 1] ;
+		auto_strings(clone_db_new,clone_target,SS_SVDIRS,SS_DB,"/",clone.s) ;
+
+		log_trace("rename tree db: ",tree," as: ",clone.s,"..." ) ;
+		if (rename(clone_db_old,clone_db_new) == -1)
+			log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"rename: ",clone_db_old," to: ",clone_db_new) ;
+
+		// backup directory
+		char src_resolve_backup[clone_backup_len + SS_RESOLVE_LEN + 1] ;
+		auto_strings(src_resolve_backup,clone_backup,SS_RESOLVE) ;
+
+		// main and backup can differs,so rebuild the list
+		salist.len = 0 ;
+		if (!sastr_dir_get(&salist,src_resolve_backup,"",S_IFREG))
+			log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get resolve file at: ",src_resolve_backup) ;
+
+		for (pos = 0 ; pos < salist.len ; pos += strlen(salist.s + pos) + 1)
+		{
+			char *name = salist.s + pos ;
+
+			if (!ss_resolve_read(&res,clone_backup,name))
+				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of: ",src_resolve_backup,"/",name) ;
+
+			tree_modify_resolve(&res,SS_RESOLVE_ENUM_RUNAT,tree,clone.s) ;
+			tree_modify_resolve(&res,SS_RESOLVE_ENUM_TREENAME,tree,clone.s) ;
+			tree_modify_resolve(&res,SS_RESOLVE_ENUM_TREE,tree,clone.s) ;
+			tree_modify_resolve(&res,SS_RESOLVE_ENUM_STATE,tree,clone.s) ;
+
+			if (!ss_resolve_write(&res,clone_backup,name))
+				log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"write resolve file of: ",src_resolve,"/",name) ;
+		}
+		// rename db
+		char clone_db_backup_old[clone_backup_len + SS_DB_LEN + 1 + treelen + 1] ;
+		auto_strings(clone_db_backup_old,clone_backup,SS_DB,"/",tree) ;
+
+		char clone_db_backup_new[clone_backup_len + SS_DB_LEN + 1 + clone.len + 1] ;
+		auto_strings(clone_db_backup_new,clone_backup,SS_DB,"/",clone.s) ;
+
+		log_trace("rename tree backup db: ",tree," as: ",clone.s,"..." ) ;
+		if (rename(clone_db_backup_old,clone_db_backup_new) == -1)
+			log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"rename: ",clone_db_backup_old," to: ",clone_db_backup_new) ;
+
+		// disable it by default
+		tree_enable_disable(base.s,clone_target,clone.s,0) ;
+
+		stralloc_free(&salist) ;
+		ss_resolve_free(&res) ;
+
 		log_info("Cloned successfully: ",tree," to ",clone.s) ;
 	}
 
@@ -709,7 +846,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if(!r) log_dieusys(LOG_EXIT_SYS,"open: ", ste,SS_STATE) ;
 
 		/** if you have only one tree enabled, the state file will be
-		 * empty because we disable it before reading the file(see line 702).
+		 * empty because we disable it before reading the file(see line 803).
 		 * This will make a crash at sastr_? call.
 		 * So write directly the name of the tree at state file. */
 
@@ -749,8 +886,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
 		if (!file_write_unsafe(ste,SS_STATE + 1,contents.s,contents.len))
 			log_dieusys(LOG_EXIT_ZERO,"write: ",ste,SS_STATE) ;
 
-		log_info("Ordered successfully tree: ",tree," starts after tree: ",after_tree) ;
+		log_info("Ordered successfully: ",tree," starts after tree: ",after_tree) ;
 	}
+
 	stralloc_free(&reslive) ;
 	stralloc_free(&live) ;
 	stralloc_free(&base) ;

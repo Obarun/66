@@ -44,6 +44,42 @@
 
 #include <s6/s6-supervise.h>
 
+ss_resolve_field_table_t ss_resolve_field_table[] = {
+
+	[SS_RESOLVE_ENUM_NAME] = { .field = "name" },
+	[SS_RESOLVE_ENUM_DESCRIPTION] = { .field = "description" },
+	[SS_RESOLVE_ENUM_VERSION] = { .field = "version" },
+	[SS_RESOLVE_ENUM_LOGGER] = { .field = "logger" },
+	[SS_RESOLVE_ENUM_LOGREAL] = { .field = "logreal" },
+	[SS_RESOLVE_ENUM_LOGASSOC] = { .field = "logassoc" },
+	[SS_RESOLVE_ENUM_DSTLOG] = { .field = "dstlog" },
+	[SS_RESOLVE_ENUM_DEPS] = { .field = "deps" },
+	[SS_RESOLVE_ENUM_OPTSDEPS] = { .field = "optsdeps" },
+	[SS_RESOLVE_ENUM_EXTDEPS] = { .field = "extdeps" },
+	[SS_RESOLVE_ENUM_CONTENTS] = { .field = "contents" },
+	[SS_RESOLVE_ENUM_SRC] = { .field = "src" },
+	[SS_RESOLVE_ENUM_SRCONF] = { .field = "srconf" },
+	[SS_RESOLVE_ENUM_LIVE] = { .field = "live" },
+	[SS_RESOLVE_ENUM_RUNAT] = { .field = "runat" },
+	[SS_RESOLVE_ENUM_TREE] = { .field = "tree" },
+	[SS_RESOLVE_ENUM_TREENAME] = { .field = "treename" },
+	[SS_RESOLVE_ENUM_STATE] = { .field = "state" },
+	[SS_RESOLVE_ENUM_EXEC_RUN] = { .field = "exec_run" },
+	[SS_RESOLVE_ENUM_EXEC_LOG_RUN] = { .field = "exec_log_run" },
+	[SS_RESOLVE_ENUM_REAL_EXEC_RUN] = { .field = "real_exec_run" },
+	[SS_RESOLVE_ENUM_REAL_EXEC_LOG_RUN] = { .field = "real_exec_log_run" },
+	[SS_RESOLVE_ENUM_EXEC_FINISH] = { .field = "exec_finish" },
+	[SS_RESOLVE_ENUM_REAL_EXEC_FINISH] = { .field = "real_exec_finish" },
+	[SS_RESOLVE_ENUM_TYPE] = { .field = "type" },
+	[SS_RESOLVE_ENUM_NDEPS] = { .field = "ndeps" },
+	[SS_RESOLVE_ENUM_NOPTSDEPS] = { .field = "noptsdeps" },
+	[SS_RESOLVE_ENUM_NEXTDEPS] = { .field = "nextdeps" },
+	[SS_RESOLVE_ENUM_NCONTENTS] = { .field = "ncontents" },
+	[SS_RESOLVE_ENUM_DOWN] = { .field = "down" },
+	[SS_RESOLVE_ENUM_DISEN] = { .field = "disen" },
+	[SS_RESOLVE_ENUM_ENDOFKEY] = { .field = 0 }
+} ;
+
 void ss_resolve_free(ss_resolve_t *res)
 {
 	stralloc_free(&res->sa) ;
@@ -412,9 +448,6 @@ int ss_resolve_pack(stralloc *sa, ss_resolve_t *res)
 
 int ss_resolve_write(ss_resolve_t *res, char const *dst, char const *name)
 {
-	
-	//stralloc sa = STRALLOC_ZERO ;
-	
 	size_t dstlen = strlen(dst) ;
 	size_t namelen = strlen(name) ;
 	
@@ -428,7 +461,6 @@ int ss_resolve_write(ss_resolve_t *res, char const *dst, char const *name)
 
 int ss_resolve_read(ss_resolve_t *res, char const *src, char const *name)
 {
-	//stralloc sa = STRALLOC_ZERO ;
 	size_t srclen = strlen(src) ;
 	size_t namelen = strlen(name) ;
 	
@@ -1776,4 +1808,288 @@ int ss_resolve_read_cdb(ss_resolve_t *dres, char const *name)
 		ss_resolve_free(&res) ;
 		stralloc_free(&tmp) ;
 		return 0 ;
+}
+
+int ss_resolve_modify_field(ss_resolve_t *res, ss_resolve_enum_t field, char const *data)
+{
+	uint32_t ifield ;
+
+	switch(field)
+	{
+		case SS_RESOLVE_ENUM_NAME:
+			res->name = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_DESCRIPTION:
+			res->description = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_VERSION:
+			res->version = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_LOGGER:
+			res->logger = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_LOGREAL:
+			res->logreal = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_LOGASSOC:
+			res->logassoc = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_DSTLOG:
+			res->dstlog = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_DEPS:
+			res->deps = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_OPTSDEPS:
+			res->optsdeps = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_EXTDEPS:
+			res->extdeps = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_CONTENTS:
+			res->contents = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_SRC:
+			res->src = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_SRCONF:
+			res->srconf = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_LIVE:
+			res->live = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_RUNAT:
+			res->runat = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_TREE:
+			res->tree = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_TREENAME:
+			res->treename = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_STATE:
+			res->state = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_EXEC_RUN:
+			res->exec_run = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_EXEC_LOG_RUN:
+			res->exec_log_run = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_REAL_EXEC_RUN:
+			res->real_exec_run = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_REAL_EXEC_LOG_RUN:
+			res->real_exec_log_run = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_EXEC_FINISH:
+			res->exec_finish = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_REAL_EXEC_FINISH:
+			res->real_exec_finish = ss_resolve_add_string(res,data) ;
+			break ;
+
+		case SS_RESOLVE_ENUM_TYPE:
+			if (!uint0_scan(data, &ifield)) return 0 ;
+			res->type = ifield ;
+			break ;
+
+		case SS_RESOLVE_ENUM_NDEPS:
+			if (!uint0_scan(data, &ifield)) return 0 ;
+			res->ndeps = ifield ;
+			break ;
+
+		case SS_RESOLVE_ENUM_NOPTSDEPS:
+			if (!uint0_scan(data, &ifield)) return 0 ;
+			res->noptsdeps = ifield ;
+			break ;
+
+		case SS_RESOLVE_ENUM_NEXTDEPS:
+			if (!uint0_scan(data, &ifield)) return 0 ;
+			res->nextdeps = ifield ;
+			break ;
+
+		case SS_RESOLVE_ENUM_NCONTENTS:
+			if (!uint0_scan(data, &ifield)) return 0 ;
+			res->ncontents = ifield ;
+			break ;
+
+		case SS_RESOLVE_ENUM_DOWN:
+			if (!uint0_scan(data, &ifield)) return 0 ;
+			res->down = ifield ;
+			break ;
+
+		case SS_RESOLVE_ENUM_DISEN:
+			if (!uint0_scan(data, &ifield)) return 0 ;
+			res->disen = ifield ;
+			break ;
+
+		default:
+			break ;
+	}
+	return 1 ;
+}
+
+int ss_resolve_put_field_to_sa(stralloc *sa,ss_resolve_t *res, ss_resolve_enum_t field)
+{
+
+	uint32_t ifield ;
+
+	switch(field)
+	{
+		case SS_RESOLVE_ENUM_NAME:
+			ifield = res->name ;
+			break ;
+
+		case SS_RESOLVE_ENUM_DESCRIPTION:
+			ifield = res->description ;
+			break ;
+
+		case SS_RESOLVE_ENUM_VERSION:
+			ifield = res->version ;
+			break ;
+
+		case SS_RESOLVE_ENUM_LOGGER:
+			ifield = res->logger ;
+			break ;
+
+		case SS_RESOLVE_ENUM_LOGREAL:
+			ifield = res->logreal ;
+			break ;
+
+		case SS_RESOLVE_ENUM_LOGASSOC:
+			ifield = res->logassoc ;
+			break ;
+
+		case SS_RESOLVE_ENUM_DSTLOG:
+			ifield = res->dstlog ;
+			break ;
+
+		case SS_RESOLVE_ENUM_DEPS:
+			ifield = res->deps ;
+			break ;
+
+		case SS_RESOLVE_ENUM_OPTSDEPS:
+			ifield = res->optsdeps ;
+			break ;
+
+		case SS_RESOLVE_ENUM_EXTDEPS:
+			ifield = res->extdeps ;
+			break ;
+
+		case SS_RESOLVE_ENUM_CONTENTS:
+			ifield = res->contents ;
+			break ;
+
+		case SS_RESOLVE_ENUM_SRC:
+			ifield = res->src ;
+			break ;
+
+		case SS_RESOLVE_ENUM_SRCONF:
+			ifield = res->srconf ;
+			break ;
+
+		case SS_RESOLVE_ENUM_LIVE:
+			ifield = res->live ;
+			break ;
+
+		case SS_RESOLVE_ENUM_RUNAT:
+			ifield = res->runat ;
+			break ;
+
+		case SS_RESOLVE_ENUM_TREE:
+			ifield = res->tree ;
+			break ;
+
+		case SS_RESOLVE_ENUM_TREENAME:
+			ifield = res->treename ;
+			break ;
+
+		case SS_RESOLVE_ENUM_STATE:
+			ifield = res->state ;
+			break ;
+
+		case SS_RESOLVE_ENUM_EXEC_RUN:
+			ifield = res->exec_run ;
+			break ;
+
+		case SS_RESOLVE_ENUM_EXEC_LOG_RUN:
+			ifield = res->exec_log_run ;
+			break ;
+
+		case SS_RESOLVE_ENUM_REAL_EXEC_RUN:
+			ifield = res->real_exec_run ;
+			break ;
+
+		case SS_RESOLVE_ENUM_REAL_EXEC_LOG_RUN:
+			ifield = res->real_exec_log_run ;
+			break ;
+
+		case SS_RESOLVE_ENUM_EXEC_FINISH:
+			ifield = res->exec_finish ;
+			break ;
+
+		case SS_RESOLVE_ENUM_REAL_EXEC_FINISH:
+			ifield = res->real_exec_finish ;
+			break ;
+
+		case SS_RESOLVE_ENUM_TYPE:
+			ifield = res->type ;
+			break ;
+
+		case SS_RESOLVE_ENUM_NDEPS:
+			ifield = res->ndeps ;
+			break ;
+
+		case SS_RESOLVE_ENUM_NOPTSDEPS:
+			ifield = res->noptsdeps ;
+			break ;
+
+		case SS_RESOLVE_ENUM_NEXTDEPS:
+			ifield = res->nextdeps ;
+			break ;
+
+		case SS_RESOLVE_ENUM_NCONTENTS:
+			ifield = res->ncontents ;
+			break ;
+
+		case SS_RESOLVE_ENUM_DOWN:
+			ifield = res->down ;
+			break ;
+
+		case SS_RESOLVE_ENUM_DISEN:
+			ifield = res->disen ;
+			break ;
+
+		default:
+			return 0 ;
+	}
+
+	if (!auto_stra(sa,res->sa.s + ifield))
+		return 0 ;
+
+	return 1 ;
 }
