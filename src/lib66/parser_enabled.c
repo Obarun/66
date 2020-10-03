@@ -33,7 +33,7 @@
 /* @sv -> name of the service to parse with 
  * the path of the frontend file source
  * @Return 0 on fail
- * @Return on success
+ * @Return 1 on success
  * @Return 2 -> already parsed */
 int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf,uint8_t import,uint8_t disable_module,char const *directory_forced)
 {
@@ -58,7 +58,7 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
 	auto_strings(tree,info->tree.s,SS_SVDIRS) ;
 
 	int r = parse_service_check_enabled(tree,svname,force,&exist) ;
-	if (!r) { sasv->len = 0 ; return 1 ; }
+	if (!r) { sasv->len = 0 ; return 2 ; }
 
 	sv_alltype sv_before = SV_ALLTYPE_ZERO ;
 	sasv->len = 0 ;

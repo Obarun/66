@@ -76,16 +76,16 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 			log_warnusys("resolve recursive dependencies of: ",name) ;
 			goto err ;
 		}
-	
-		if (!ss_resolve_add_logger(&rdeps,src))
-		{
-			log_warnusys("resolve logger") ;
-			goto err ;
-		}
 	}
 	else
 	{
 		if (!ss_resolve_append(&rdeps,&cp)) goto err ;
+	}
+
+	if (!ss_resolve_add_logger(&rdeps,src))
+	{
+		log_warnusys("resolve logger") ;
+		goto err ;
 	}
 
 	ss_resolve_free(&cp) ;

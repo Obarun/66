@@ -856,14 +856,24 @@ A file contained the `key=value` pair(s) will be created by default at `%%servic
         cmd_args=-d -s
     ````
     
-    The `!` character can be put in front of the value like this :
+    The `!` character can be put in front of the value. **Do not** put space between the exclamation mark and the value.
     
+    For example, the following is valid:
+        
     ````
         [environment]
         dir_run=!/run/openntpd
-        cmd_args=!-d -s
+        cmd_args = !-d -s
+    ````       
+    where:
+        
     ````
-    
+        [environment]
+        dir_run=! /run/openntpd
+        cmd_args = ! -d -s
+    ````
+    is not.
+
     This will explicitly **not** set the value of the key for the runtime process but only at the start of the service. In this example the `key=value` pair passed to the command line does not need to be present in the general environment variable of the service.
 
 ---

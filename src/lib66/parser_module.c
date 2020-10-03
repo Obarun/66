@@ -251,8 +251,12 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
 			for (; idx < genalloc_len(sv_alltype,&gasv) ; idx++)
 			{
 				char *name = keep.s + genalloc_s(sv_alltype,&gasv)[idx].src ;
-				if (!strcmp(name,sv)) sv = name ;
-				break ;
+
+				if (!strcmp(name,sv))
+				{
+					sv = name ;
+					break ;
+				}
 			}
 			already_parsed = 1 ;
 		}
