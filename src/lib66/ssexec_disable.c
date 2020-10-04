@@ -35,6 +35,7 @@
 
 static stralloc workdir = STRALLOC_ZERO ;
 static uint8_t FORCE = 0 ;
+static uint8_t REMOVE = 0 ;
 
 static void cleanup(void)
 {
@@ -93,9 +94,9 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 	for (;i < genalloc_len(ss_resolve_t,&rdeps) ; i++)
 	{
 		ss_resolve_t_ref pres = &genalloc_s(ss_resolve_t,&rdeps)[i] ;
-		char *string = pres->sa.s ;
-		char *name = string + pres->name ;
-		char *state = string + pres->state ;
+		char *str = pres->sa.s ;
+		char *name = str + pres->name ;
+		char *ste = str + pres->state ;
 		dst.len = newlen ;
 		if (!stralloc_cats(&dst,name)) goto err ;
 		if (!stralloc_0(&dst)) goto err ;
@@ -107,8 +108,21 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 			goto err ;
 		}
 		/** service was not initialized */
-		if (!ss_state_check(state,name))
+		if (!ss_state_check(ste,name))
 		{
+			if (REMOVE)
+			{
+				// remove configuration file
+				log_trace("Delete configuration file of: ",name) ;
+				if (rm_rf(str + pres->srconf) == -1)
+					log_warnusys("remove configuration file of: ",name) ;
+
+				// remove the logger directory
+				log_trace("Delete logger directory of: ",name) ;
+				if (rm_rf(str + pres->dstlog) == -1)
+					log_warnusys("remove logger directory of: ",name) ;
+			}
+
 			log_trace("Delete resolve file of: ",name) ;
 			ss_resolve_rmfile(src,name) ;
 		}
@@ -122,7 +136,7 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 				log_warnusys("write resolve file of: ",name) ;
 				goto err ;
 			}
-			if (!ss_state_read(&sta,state,name)) {
+			if (!ss_state_read(&sta,ste,name)) {
 				log_warnusys("read state of: ",name) ;
 				goto err ;
 			}
@@ -130,7 +144,7 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 			ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
 			ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_TRUE) ;
 			log_trace("Write state file of: ",name) ;
-			if (!ss_state_write(&sta,state,name))
+			if (!ss_state_write(&sta,ste,name))
 			{
 				log_warnusys("write state file of: ",name) ;
 				goto err ;
@@ -168,13 +182,14 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 
 		for (;;)
 		{
-			int opt = getopt_args(argc,argv, ">SF", &l) ;
+			int opt = getopt_args(argc,argv, ">SFR", &l) ;
 			if (opt == -1) break ;
 			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 			switch (opt)
 			{
 				case 'S' :	if (FORCE) log_usage(usage_disable) ; stop = 1 ; break ;
 				case 'F' :	if (stop) log_usage(usage_disable) ; FORCE = 1 ; break ;
+				case 'R' :	if (stop) log_usage(usage_disable) ; REMOVE = 1 ; break ;
 				default : 	log_usage(usage_disable) ; 
 			}
 		}
@@ -183,13 +198,27 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 	
 	if (argc < 1) log_usage(usage_disable) ;
 
-	if (!tree_copy(&workdir,info->tree.s,info->treename.s)) log_dieusys(LOG_EXIT_SYS,"create tmp working directory") ;
+	if (!tree_copy(&workdir,info->tree.s,info->treename.s))
+		log_dieusys(LOG_EXIT_SYS,"create tmp working directory") ;
 	
 	for (;*argv;argv++)
 	{
 		char const *name = *argv ;
-		if (!ss_resolve_check(workdir.s,name)) log_info_nclean_return(LOG_EXIT_ZERO,&cleanup,name," is not enabled") ;
-		if (!ss_resolve_read(&res,workdir.s,name)) log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of: ",name) ;
+		if (!ss_resolve_check(workdir.s,name))
+			log_info_nclean_return(LOG_EXIT_ZERO,&cleanup,name," is not enabled") ;
+
+		if (!ss_resolve_read(&res,workdir.s,name))
+			log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of: ",name) ;
+
+		if (REMOVE)
+		{
+			stralloc sa = STRALLOC_ZERO ;
+			r = ss_resolve_svtree(&sa,name,0) ;
+			if (r > 2)
+				log_dieu_nclean(LOG_EXIT_SYS,&cleanup,name," is set on different tree -- -R options is not allowed") ;
+			stralloc_free(&sa) ;
+		}
+
 		if (res.type == TYPE_MODULE)
 		{
 			if (!module_in_cmdline(&gares,&res,workdir.s))
@@ -213,15 +242,21 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 		
 		/** The force options can be only used if the service is not marked initialized.
 		 * This option should only be used when we have a inconsistent state between 
-		 * the /var/lib/66/system/<tree>/servicedirs/* and /var/lib/66/system/<tree>/.resolve
+		 * the /var/lib/66/system/<tree>/servicedirs/ and /var/lib/66/system/<tree>/.resolve
 		 * directory meaning a service which is not present in the compiled db but its resolve file
-		 * exist.*/
-		if (FORCE && ss_state_check(state,name))
-			log_die_nclean(LOG_EXIT_USER,&cleanup,name," is marked initialized -- it's not allowed to force to disable it") ;
+		 * exist.
+		 * Also, the remove option can be only used if the service is not marked initialized too.*/
+		if ((FORCE || REMOVE) && ss_state_check(state,name))
+			log_die_nclean(LOG_EXIT_USER,&cleanup,name," is marked initialized -- ",FORCE ? "-F" : "-R"," is not allowed") ;
 
 		if (!module_search_service(workdir.s,&gares,name,&found,module_name))
 			log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"search in module") ;
-		if (found && !FORCE) log_die_nclean(LOG_EXIT_USER,&cleanup,name," is a part of: ",module_name," module -- it's not allowed to disable it alone") ;
+
+		if (found && !FORCE)
+			log_die_nclean(LOG_EXIT_USER,&cleanup,name," is a part of: ",module_name," module -- it's not allowed to disable it alone") ;
+
+		if (found && REMOVE)
+			log_die_nclean(LOG_EXIT_USER,&cleanup,name," is a part of: ",module_name," module -- -R options is not allowed") ;
 
 		logname = 0 ;
 		if (obstr_equal(name,SS_MASTER + 1))
