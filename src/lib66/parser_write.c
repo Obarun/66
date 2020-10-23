@@ -671,7 +671,7 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 	uid_t owner = MYUID ;
 	size_t filelen = strlen(file) ;
 	size_t dstlen = strlen(dst) ;
-	uint8_t runas_replace = str_contain(keep.s + exec->exec,SS_EXECUTE_RUNAS) ;
+	int runas_replace = str_contain(keep.s + exec->exec,SS_EXECUTE_RUNAS) ;
 	char write[dstlen + 1 + filelen + 1] ;
 	
 	stralloc home = STRALLOC_ZERO ;
