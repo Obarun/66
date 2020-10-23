@@ -22,6 +22,7 @@
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/sastr.h>
+#include <oblibs/environ.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
@@ -155,6 +156,48 @@ static void do_import(char const *svname, char const *svconf, char const *versio
 	stralloc_free(&salist) ;
 }
 
+static void replace_value_of_key(stralloc *srclist,char const *key)
+{
+	stralloc sakey = STRALLOC_ZERO ;
+
+	size_t pos = 0 ;
+
+	int start = -1 ,end = -1 ;
+
+	if (!auto_stra(&sakey,key))
+		log_die_nomem("stralloc") ;
+
+	if (!environ_get_key_nclean(&sakey,&pos))
+		log_die(LOG_EXIT_SYS,"invalid format at key: ",key) ;
+
+	sakey.len-- ;
+
+	if (!auto_stra(&sakey,"="))
+		log_die_nomem("stralloc") ;
+
+	start = sastr_find(srclist,sakey.s) ;
+	if (start == -1) log_1_warnu_return(LOG_EXIT_ZERO,"find key: ",sakey.s) ;
+
+	end = get_len_until(srclist->s + start,'\n') ;
+
+	if (end == -1)
+		log_dieu(LOG_EXIT_SYS,"find end of line") ;
+
+	sakey.len = 0 ;
+
+	if (!stralloc_catb(&sakey,srclist->s + start,end ) ||
+	!stralloc_0(&sakey))
+		log_die_nomem("stralloc") ;
+
+	if (!strcmp(sakey.s,key))
+		return ;
+
+	if (!sastr_replace(srclist,sakey.s,key))
+		log_dieu(LOG_EXIT_SYS,"replace: ",sakey.s," by: ",key) ;
+
+	stralloc_free(&sakey) ;
+}
+
 int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
 	int r ;
@@ -191,10 +234,10 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 				case 'L' : 	if (todo != T_UNSET) log_usage(usage_env) ;
 							todo = T_LIST ;
 							break ;
-				case 'd' :	log_1_warn("-d: deprecated option") ; _exit(0) ;
-				case 'r' :	if (!stralloc_cats(&savar,l.arg) ||
-							!stralloc_0(&savar)) log_die_nomem("stralloc") ;
-							if (todo != T_UNSET) log_usage(usage_env) ;
+				case 'd' :	log_1_warn("-d: deprecated option") ; goto freed ;
+				case 'r' :	if (!sastr_add_string(&savar,l.arg))
+								log_die_nomem("stralloc") ;
+							if (todo != T_UNSET && todo != T_REPLACE) log_usage(usage_env) ;
 							todo = T_REPLACE ;
 							break ;
 				case 'e' :	if (todo != T_UNSET) log_usage(usage_env) ;
@@ -305,13 +348,18 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 			}
 			break ;
 		case T_REPLACE:
+
 			if (!file_readputsa(&salist,src,sv)) log_dieusys(LOG_EXIT_SYS,"read: ",src,"/",sv) ;
-			if (!env_merge_conf(&satmp,&salist,&savar,2))
-				log_dieu(LOG_EXIT_SYS,"merge environment file with: ",savar.s) ;
-			salist.len = 0 ;
-			if (!auto_stra(&salist,src,"/",sv)) log_die_nomem("stralloc") ;
-			if (!openwritenclose_unsafe(salist.s,satmp.s,satmp.len))
-				log_dieusys(LOG_EXIT_SYS,"write file: ",sasrc.s) ;
+
+			FOREACH_SASTR(&savar,pos) {
+
+				char *key = savar.s + pos ;
+
+				replace_value_of_key(&salist,key) ;
+			}
+			if (!auto_stra(&satmp,src,"/",sv)) log_die_nomem("stralloc") ;
+			if (!openwritenclose_unsafe(satmp.s,salist.s,salist.len - 1))
+				log_dieusys(LOG_EXIT_SYS,"write file: ",satmp.s) ;
 			break ;
 		case T_EDIT:
 			salist.len = 0 ;

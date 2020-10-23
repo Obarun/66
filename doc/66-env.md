@@ -47,7 +47,7 @@ Handles an environment file and variable of a service depending on the options p
         0.2.0
         0.1.4 current
     ````
-- **-r** *key=value* : override an existing `key=value` pair with the given one. The `key=value` needs to be single quoted in case of multiple arguments.
+- **-r** *key=value* : override an existing `key=value` pair with the given one. The `key=value` needs to be single quoted in case of multiple arguments.This option can be specified multiple times.
 
 - **-L** : lists defined environment variables for the *service*. It do the same for all files found at the configuration directory.
 
@@ -78,5 +78,5 @@ Handles an environment file and variable of a service depending on the options p
 Removing a *key* from the environment after the use can be handled by using an exclamation mark `!` at the begin of the value: 
 
 ```
-    66-env -r CMD_ARGS='!-c /etc/nginx/nginx.conf -g "daemon off;"'
+    66-env -r 'CMD_ARGS=!-c /etc/nginx/nginx.conf -g "daemon off;"'
 ```
