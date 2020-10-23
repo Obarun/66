@@ -108,7 +108,6 @@ static inline void info_help (void)
 "	allowed: displays a list of allowed user to use the tree\n"
 "	symlinks: displays the target of tree's symlinks\n"
 "	contents: displays the contents of the tree\n"
-"\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)

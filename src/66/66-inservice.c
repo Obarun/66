@@ -143,7 +143,6 @@ static inline void info_help (void)
 "	logname: displays the logger's name\n"
 "	logdst: displays the logger's destination\n"
 "	logfile: displays the contents of the log file\n"
-"\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)

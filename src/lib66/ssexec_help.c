@@ -26,7 +26,7 @@ char const *help_enable =
 "	-l: live directory\n"
 "	-t: name of the tree to use\n"
 "	-f: force to overwrite the service(s)\n"
-"	-F: force to overwrite the service(s) and it dependencies\n"
+"	-F: force to overwrite the service(s) and its dependencies\n"
 "	-c: only appends new key=value pairs at environment configuration file from frontend file\n"
 "	-m: appends new key=value and merge existing one at environment configuration file from frontend file\n"
 "	-C: overwrite it environment configuration file from frontend file\n"
