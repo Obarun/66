@@ -51,7 +51,7 @@ char const *help_dbctl =
 "	-r: reload service\n"
 ;
 
-char const *usage_disable = "66-disable [ -h ] [ -z ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -S ] [ -F ] service(s)" ;
+char const *usage_disable = "66-disable [ -h ] [ -z ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -S ] [ -F ] [ -R ] service(s)" ;
 
 char const *help_disable =
 "66-disable <options> service(s)\n"
@@ -64,6 +64,7 @@ char const *help_disable =
 "	-t: name of the tree to use\n"
 "	-S: disable and stop the service\n"
 "	-F: forces to disable the service\n"
+"	-R: disable the service and remove its configuration and logger files\n"
 ;
 
 char const *usage_init = "66-init [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -t tree ] classic|database|both" ;
