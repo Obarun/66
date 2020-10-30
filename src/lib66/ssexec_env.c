@@ -176,7 +176,10 @@ static void replace_value_of_key(stralloc *srclist,char const *key)
 		log_die_nomem("stralloc") ;
 
 	start = sastr_find(srclist,sakey.s) ;
-	if (start == -1) log_1_warnu_return(LOG_EXIT_ZERO,"find key: ",sakey.s) ;
+	if (start == -1) {
+		log_1_warnu("find key: ",sakey.s) ;
+		return ;
+	}
 
 	end = get_len_until(srclist->s + start,'\n') ;
 
