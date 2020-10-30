@@ -213,7 +213,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 		
 		/** The force options can be only used if the service is not marked initialized.
 		 * This option should only be used when we have a inconsistent state between 
-		 * the /var/lib/66/system/<tree>/servicedirs/* and /var/lib/66/system/<tree>/.resolve
+		 * the /var/lib/66/system/<tree>/servicedirs/ and /var/lib/66/system/<tree>/.resolve
 		 * directory meaning a service which is not present in the compiled db but its resolve file
 		 * exist.*/
 		if (FORCE && ss_state_check(state,name))
