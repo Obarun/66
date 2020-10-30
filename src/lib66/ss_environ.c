@@ -185,7 +185,7 @@ int env_make_symlink(stralloc *dst,stralloc *old_dst,sv_alltype *sv,uint8_t conf
 	 * a directory. File means old format, in this case we enforce to pass
 	 * to the new one. */
 	r = lstat(sym_version,&st) ;
-	if (S_ISLNK(st.st_mode))
+	if (S_ISLNK(st.st_mode) && !r)
 	{
 		if (sarealpath(&saversion,sym_version) == -1)
 			log_warn_return(LOG_EXIT_ZERO,"sarealpath of: ",sym_version) ;
