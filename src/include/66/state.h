@@ -1,17 +1,17 @@
-/* 
+/*
  * state.h
- * 
+ *
  * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
- * 
+ *
  * All rights reserved.
- * 
+ *
  * This file is part of Obarun. It is subject to the license terms in
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file./
  */
- 
+
 #ifndef SS_STATE_H
 #define SS_STATE_H
 
@@ -32,11 +32,11 @@
 typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;
 struct ss_state_s
 {
-	uint32_t reload ;
-	uint32_t init ;
-	uint32_t unsupervise ;
-	uint32_t state ;//0 down,1 up, 2 earlier
-	uint64_t pid ;
+    uint32_t reload ;
+    uint32_t init ;
+    uint32_t unsupervise ;
+    uint32_t state ;//0 down,1 up, 2 earlier
+    uint64_t pid ;
 } ;
 #define STATE_ZERO { 0,0,0,0,0 }
 #define SS_STATE_SIZE 24
@@ -49,5 +49,5 @@ extern int ss_state_write(ss_state_t *sta,char const *dst,char const *name) ;
 extern int ss_state_read(ss_state_t *sta,char const *src,char const *name) ;
 extern int ss_state_check(char const *src, char const *name) ;
 extern void ss_state_setflag(ss_state_t *sta,int flags,int flags_val) ;
-
+extern int ss_state_check_flags(char const *src, char const *name,int flags) ;
 #endif
