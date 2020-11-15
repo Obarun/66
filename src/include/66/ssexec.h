@@ -1,17 +1,17 @@
-/* 
+/*
  * ssexec.h
- * 
+ *
  * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
- * 
+ *
  * All rights reserved.
- * 
+ *
  * This file is part of Obarun. It is subject to the license terms in
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file./
  */
- 
+
 #ifndef SS_SSEXEC_H
 #define SS_SSEXEC_H
 
@@ -21,43 +21,43 @@
 typedef struct ssexec_s ssexec_t , *ssexec_t_ref ;
 struct ssexec_s
 {
-	stralloc base ;
-	stralloc live ;
-	stralloc tree ;
-	stralloc livetree ;
-	stralloc scandir ;
-	stralloc treename ;
-	int treeallow ; //1 yes , 0 no
-	uid_t owner ;
-	uint32_t timeout ;
-	char const *prog ;
-	char const *help ;
-	char const *usage ;
-	// argument passed or not at commandline 0->no,1->yes
-	uint8_t opt_verbo ;
-	uint8_t opt_live ;
-	uint8_t opt_tree ;
-	uint8_t opt_timeout ;
-	uint8_t opt_color ;
+    stralloc base ;
+    stralloc live ;
+    stralloc tree ;
+    stralloc livetree ;
+    stralloc scandir ;
+    stralloc treename ;
+    int treeallow ; //1 yes , 0 no
+    uid_t owner ;
+    uint32_t timeout ;
+    char const *prog ;
+    char const *help ;
+    char const *usage ;
+    // argument passed or not at commandline 0->no,1->yes
+    uint8_t opt_verbo ;
+    uint8_t opt_live ;
+    uint8_t opt_tree ;
+    uint8_t opt_timeout ;
+    uint8_t opt_color ;
 } ;
 
-#define SSEXEC_ZERO { 	.base = STRALLOC_ZERO , \
-						.live = STRALLOC_ZERO , \
-						.tree = STRALLOC_ZERO , \
-						.livetree = STRALLOC_ZERO , \
-						.scandir = STRALLOC_ZERO , \
-						.treename = STRALLOC_ZERO , \
-						.treeallow = 0 , \
-						.owner = 0 , \
-						.timeout = 0 , \
-						.prog = 0 , \
-						.help = 0 , \
-						.usage = 0 , \
-						.opt_verbo = 0 , \
-						.opt_live = 0 , \
-						.opt_tree = 0 , \
-						.opt_timeout = 0 , \
-						.opt_color = 0 }
+#define SSEXEC_ZERO {   .base = STRALLOC_ZERO , \
+                        .live = STRALLOC_ZERO , \
+                        .tree = STRALLOC_ZERO , \
+                        .livetree = STRALLOC_ZERO , \
+                        .scandir = STRALLOC_ZERO , \
+                        .treename = STRALLOC_ZERO , \
+                        .treeallow = 0 , \
+                        .owner = 0 , \
+                        .timeout = 0 , \
+                        .prog = 0 , \
+                        .help = 0 , \
+                        .usage = 0 , \
+                        .opt_verbo = 0 , \
+                        .opt_live = 0 , \
+                        .opt_tree = 0 , \
+                        .opt_timeout = 0 , \
+                        .opt_color = 0 }
 
 typedef int ssexec_func_t(int, char const *const *argv, char const *const *envp, ssexec_t *info) ;
 typedef ssexec_func_t *ssexec_func_t_ref ;

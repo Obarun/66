@@ -1,10 +1,10 @@
-/* 
+/*
  * hpr.h
- * 
+ *
  * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
- * 
+ *
  * All rights reserved.
- * 
+ *
  * This file is part of Obarun. It is subject to the license terms in
  * the LICENSE file found in the top-level directory of this
  * distribution.
@@ -15,7 +15,7 @@
  * coming from skarnet software at https://skarnet.org/software/s6-linux-init.
  * All credits goes to Laurent Bercot <ska-remove-this-if-you-are-not-a-bot@skarnet.org>
  * */
- 
+
 #ifndef SS_HPR_H
 #define SS_HPR_H
 
