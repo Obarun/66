@@ -47,7 +47,7 @@ int all_doit(ssexec_t *info, unsigned int what, char const *const *envp)
     ownerstr[ownerlen] = 0 ;
 
     char src[info->live.len + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len + 1 + SS_LIVETREE_INIT_LEN + 1] ;
-    auto_strings(src,info->live.s,SS_STATE,"/",ownerstr,"/",info->treename.s,SS_LIVETREE_INIT) ;
+    auto_strings(src,info->live.s,SS_STATE,"/",ownerstr,"/",info->treename.s,"/",SS_LIVETREE_INIT) ;
 
     r = scan_mode(src,S_IFREG) ;
     if (r == -1) log_die(LOG_EXIT_SYS,src," conflicted format") ;
@@ -163,7 +163,7 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp,ssexec_
     if ((scandir_ok(info->scandir.s)) <= 0) log_die(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
 
     char ste[info->base.len + SS_SYSTEM_LEN + SS_STATE_LEN + 1] ;
-    auto_strings(info->base.s,SS_SYSTEM,SS_STATE) ;
+    auto_strings(ste,info->base.s,SS_SYSTEM,SS_STATE) ;
 
     r = scan_mode(ste,S_IFREG) ;
     if (r < 0) log_die(LOG_EXIT_SYS,"conflict format for: ",ste) ;
