@@ -32,7 +32,7 @@ void set_ssinfo(ssexec_t *info)
 
     if (!set_ownersysdir(&info->base,info->owner)) log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-    if (info->skip_opt_tree) {
+    if (!info->skip_opt_tree) {
 
         r = tree_sethome(&info->tree,info->base.s,info->owner) ;
         if (r < 0) log_dieu(LOG_EXIT_USER,"find the current tree. You must use -t options") ;
