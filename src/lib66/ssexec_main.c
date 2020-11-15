@@ -32,16 +32,19 @@ void set_ssinfo(ssexec_t *info)
 
     if (!set_ownersysdir(&info->base,info->owner)) log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-    r = tree_sethome(&info->tree,info->base.s,info->owner) ;
-    if (r < 0) log_dieu(LOG_EXIT_USER,"find the current tree. You must use -t options") ;
-    if (!r) log_dieusys(LOG_EXIT_SYS,"find tree: ", info->tree.s) ;
+    if (info->skip_opt_tree) {
 
-    r = tree_setname(&info->treename,info->tree.s) ;
-    if (r < 0) log_dieu(LOG_EXIT_SYS,"set the tree name") ;
+        r = tree_sethome(&info->tree,info->base.s,info->owner) ;
+        if (r < 0) log_dieu(LOG_EXIT_USER,"find the current tree. You must use -t options") ;
+        if (!r) log_dieusys(LOG_EXIT_SYS,"find tree: ", info->tree.s) ;
 
-    if (!tree_get_permissions(info->tree.s,info->owner))
-        log_die(LOG_EXIT_USER,"You're not allowed to use the tree: ",info->tree.s) ;
-    else info->treeallow = 1 ;
+        r = tree_setname(&info->treename,info->tree.s) ;
+        if (r < 0) log_dieu(LOG_EXIT_SYS,"set the tree name") ;
+
+        if (!tree_get_permissions(info->tree.s,info->owner))
+            log_die(LOG_EXIT_USER,"You're not allowed to use the tree: ",info->tree.s) ;
+        else info->treeallow = 1 ;
+    }
 
     r = set_livedir(&info->live) ;
     if (!r) log_die_nomem("stralloc") ;
@@ -95,6 +98,7 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
                 case 't' :  if(!stralloc_cats(&info->tree,l.arg)) log_die_nomem("stralloc") ;
                             if(!stralloc_0(&info->tree)) log_die_nomem("stralloc") ;
                             info->opt_tree = 1 ;
+                            info->skip_opt_tree = 0 ;
                             break ;
                 case 'T' :  if (!uint0_scan(l.arg, &info->timeout)) log_usage(info->usage) ;
                             info->opt_timeout = 1 ;

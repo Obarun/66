@@ -151,3 +151,19 @@ char const *help_env =
 "   -i: import configuration files from src version to dst version\n"
 "   -e: edit the file with EDITOR\n"
 ;
+
+char const *usage_all = "66-all [ -h ] [ -z ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -f ] [ -U ] up/down" ;
+
+char const *help_all =
+"66-all <options> up/down\n"
+"\n"
+"options :\n"
+"   -h: print this help\n"
+"   -z: use color\n"
+"   -v: increase/decrease verbosity\n"
+"   -T: timeout\n"
+"   -l: live directory\n"
+"   -t: tree to use\n"
+"   -f: fork the process\n"
+"   -U: unsupervise the tree\n"
+;

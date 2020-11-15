@@ -25,6 +25,7 @@ ss_resolve.o
 ss_resolve_graph.o
 ss_state.o
 ss_utils.o
+ssexec_all.o
 ssexec_dbctl.o
 ssexec_enable.o
 ssexec_env.o

@@ -39,6 +39,8 @@ struct ssexec_s
     uint8_t opt_tree ;
     uint8_t opt_timeout ;
     uint8_t opt_color ;
+    // skip option definition 0->no,1-yes
+    uint8_t skip_opt_tree ; // tree,treename, treeallow and the permissions for the tree will be not set
 } ;
 
 #define SSEXEC_ZERO {   .base = STRALLOC_ZERO , \
@@ -57,9 +59,10 @@ struct ssexec_s
                         .opt_live = 0 , \
                         .opt_tree = 0 , \
                         .opt_timeout = 0 , \
-                        .opt_color = 0 }
+                        .opt_color = 0 , \
+                        .skip_opt_tree = 0 }
 
-typedef int ssexec_func_t(int, char const *const *argv, char const *const *envp, ssexec_t *info) ;
+typedef int ssexec_func_t(int argc, char const *const *argv, char const *const *envp, ssexec_t *info) ;
 typedef ssexec_func_t *ssexec_func_t_ref ;
 
 extern void ssexec_free(ssexec_t *info) ;
@@ -74,6 +77,7 @@ extern ssexec_func_t ssexec_stop ;
 extern ssexec_func_t ssexec_svctl ;
 extern ssexec_func_t ssexec_dbctl ;
 extern ssexec_func_t ssexec_env ;
+extern ssexec_func_t ssexec_all ;
 
 extern char const *usage_enable ;
 extern char const *help_enable ;
@@ -91,6 +95,8 @@ extern char const *usage_init ;
 extern char const *help_init ;
 extern char const *usage_env ;
 extern char const *help_env ;
+extern char const *usage_all ;
+extern char const *help_all ;
 
 extern int ssexec_main(int argc, char const *const *argv, char const *const *envp,ssexec_func_t *func,ssexec_t *info) ;
 
