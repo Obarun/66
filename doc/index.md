@@ -38,6 +38,10 @@ Please refer to the [INSTALL.md](https://framagit.org/Obarun/66) file for detail
 
 *66* is free software. It is available under the [ISC license](http://opensource.org/licenses/ISC).
 
+### Upgrade
+
+See [changes](upgrade.html) between version.
+
 ---
 
 ## Commands
@@ -90,4 +94,4 @@ Why the name
 *66* is the result of the combination of the former [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc).
 It is a lot faster and easier to write and remember when writing. Apart from that it is a nice command prefix to have. It identifies the origin of the software and it's short.
 
-Expect more use of the *66-* prefix in future obarun.org software releases and please avoid using it for your own projects. 
+Expect more use of the *66-* prefix in future obarun.org software releases and please avoid using it for your own projects.

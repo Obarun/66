@@ -59,10 +59,10 @@ ALL_INCLUDES := $(wildcard src/include/$(package)/*.h)
 INSTALL_DATA += init.conf
 LOWDOWN := $(shell type -p lowdown)
 ifdef LOWDOWN
-GENERATE_HTML := $(shell doc/make-html.sh)
+GENERATE_HTML := $(shell doc/make-html.sh $(version))
 GENERATE_MAN := $(shell doc/make-man.sh)
 endif
-INSTALL_HTML := $(wildcard doc/html/*.html)
+INSTALL_HTML := $(wildcard doc/$(version)/html/*.html)
 INSTALL_MAN := $(wildcard doc/man/*/*)
 INSTALL_DATA := skel/halt skel/init skel/ishell skel/poweroff skel/rc.init \
 	skel/rc.shutdown skel/reboot skel/shutdown skel/rc.shutdown.final
@@ -101,7 +101,7 @@ install-lib: $(STATIC_LIBS:lib%.a.xyzzy=$(DESTDIR)$(libdir)/lib%.a)
 install-include: $(ALL_INCLUDES:src/include/$(package)/%.h=$(DESTDIR)$(includedir)/$(package)/%.h)
 install-data: $(INSTALL_DATA:skel/%=$(DESTDIR)$(skel)/%)
 install-conf: $(INSTALL_CONF:skel/%=$(DESTDIR)$(sysconfdir)/66/%)
-install-html: $(INSTALL_HTML:doc/html/%.html=$(DESTDIR)$(datarootdir)/doc/$(package)/%.html)
+install-html: $(INSTALL_HTML:doc/$(version)/html/%.html=$(DESTDIR)$(datarootdir)/doc/$(package)/$(version)/%.html)
 install-man: install-man1 install-man5 install-man8
 install-man1: $(INSTALL_MAN:doc/man/man1/%.1=$(DESTDIR)$(mandir)/man1/%.1)
 install-man5: $(INSTALL_MAN:doc/man/man5/%.5=$(DESTDIR)$(mandir)/man5/%.5)
@@ -126,7 +126,7 @@ $(DESTDIR)$(sproot)/library.so/lib%.so.$(version_M): $(DESTDIR)$(dynlibdir)/lib%
 
 endif
 
-$(DESTDIR)$(datarootdir)/doc/$(package)/%.html: doc/html/%.html
+$(DESTDIR)$(datarootdir)/doc/$(package)/$(version)/%.html: doc/$(version)/html/%.html
 	$(INSTALL) -D -m 644 $< $@ && \
 	sed -e 's,%%shebangdir%%,$(shebangdir),g' \
 		-e 's,%%skel%%,$(skel),g' \
@@ -219,15 +219,15 @@ $(DESTDIR)$(mandir)/man8/%.8: doc/man/man8/%.8
 		-e 's,%%user_log%%,$(user_log),g' $< > $@
 
 $(DESTDIR)$(sysconfdir)/66/%: skel/%
-	exec $(INSTALL) -D -m 644 $< $@ 
+	exec $(INSTALL) -D -m 644 $< $@
 	grep -- ^$(@F) < package/modes | { read name mode owner && \
 	if [ x$$owner != x ] ; then chown -- $$owner $@ ; fi && \
 	chmod $$mode $@ ; } && \
 	exec sed -e "s/@LIVEDIR@/$(subst /,\/,$(livedir))/g" \
 			-e "s/@SKEL@/$(subst /,\/,$(skel))/g" $< > $@
 
-$(DESTDIR)$(skel)/%: skel/% 
-	exec $(INSTALL) -D -m 644 $< $@ 
+$(DESTDIR)$(skel)/%: skel/%
+	exec $(INSTALL) -D -m 644 $< $@
 	grep -- ^$(@F) < package/modes | { read name mode owner && \
 	if [ x$$owner != x ] ; then chown -- $$owner $@ ; fi && \
 	chmod $$mode $@ ; } && \
@@ -235,7 +235,7 @@ $(DESTDIR)$(skel)/%: skel/%
 			-e "s/@EXECLINE_SHEBANGPREFIX@/$(subst /,\/,$(shebangdir))/g" \
 			-e "s/@LIVEDIR@/$(subst /,\/,$(livedir))/g" \
 			-e "s/@SKEL@/$(subst /,\/,$(skel))/g" $< > $@
-	
+
 $(DESTDIR)$(dynlibdir)/lib%.so $(DESTDIR)$(dynlibdir)/lib%.so.$(version_M): lib%.so.xyzzy
 	$(INSTALL) -D -m 755 $< $@.$(version) && \
 	$(INSTALL) -l $(@F).$(version) $@.$(version_M) && \
