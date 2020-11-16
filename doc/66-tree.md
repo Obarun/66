@@ -15,7 +15,7 @@ This command handles a directory containing a set of *services*.
     66-tree [ -h ] [ -z ] [ -v verbosity ] [ -l ] [ -n|R ] [ -a|d ] [ -c ] [ -S after_tree ] [ -E|D ] [ -U ] [ -C clone ] tree
 ```
 
-*66-tree* will create, destroy, or modify a tree which dynamically handles *services*. *66-tree* will handle the tree only for the user running the process (root/user). Any *tree* is completely independent from another. If you want to know what trees are currently available on the system use the [66-intree](66-intree.html) tool. 
+*66-tree* will create, destroy, or modify a tree which dynamically handles *services*. *66-tree* will handle the tree only for the user running the process (root/user). Any *tree* is completely independent from another. If you want to know what trees are currently available on the system use the [66-intree](66-intree.html) tool.
 
 ## Exit codes
 
@@ -37,7 +37,7 @@ This command handles a directory containing a set of *services*.
 
 - **-l** *live* : changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66-scandir](66-scandir.html).
 
-- **-n** : creates a new empty *tree*. The new *tree* ***must*** not exist on the system. 
+- **-n** : creates a new empty *tree*. The new *tree* ***must*** not exist on the system.
 
 - **-a** *user* : allows *user* to deal with the given *tree*. ***Must*** match an existing username on the system. Several users can be allowed by separating their names with a comma. Any *user* not explicitly allowed is automatically denied for the given *tree*. By default the *user* issuing the command is automatically allowed when the tree is created.—This option sets the UID and GID of the service database at compilation time.
 
@@ -53,9 +53,9 @@ This command handles a directory containing a set of *services*.
 
 - **-R** : deletes *tree*. ***Can not be undone!*** This will completely remove the given *tree* from the system! You will not be able to retrieve any information of the deleted *tree* after deleting it. Services currently running on tree will be not bringed down before remove it. To do so, use the **-U** option in conjonction e.g. `66-tree -UR tree`.
 
-- **-U** : unsupervise *tree*. Bring down all *services* contained into the *tree* and remove the corresponding directory of the *service* from the [scandir](66-scandir.html).
+- **-U** : deprecated option. Use [66-all unsupervise](66-all.html) instead.
 
-- **-C** *clone* : makes a strict copy of *tree* named clone. Clone **must not** exist on the system. 
+- **-C** *clone* : makes a strict copy of *tree* named clone. Clone **must not** exist on the system.
 
 ## Why trees?
 
@@ -89,5 +89,5 @@ As an example for root the resulting files would, by default, be found at `%%sys
 
 When you ask to start all *services* of the currently enabled tree at once with the [66-all](66-all.html) tool, the directory `%%system_dir%%/system/tree/servicedirs/svc` is opened and the command will start any *service* found inside of that directory.
 
-For *services* of type `bundle`,`module` and `atomic`, instead of opening the directory `%%system_dir%%/system/tree/servicedirs/db/source`, the corresponding compiled database found at `%%system_dir%%/system/tree/servicedirs/db/tree` is used. The database found at this location is the result of an automatic use of the command [s6-rc-compile](https://skarnet.org/software/s6-rc/s6-rc-compile.html) when enabling such a *service*. 
+For *services* of type `bundle`,`module` and `atomic`, instead of opening the directory `%%system_dir%%/system/tree/servicedirs/db/source`, the corresponding compiled database found at `%%system_dir%%/system/tree/servicedirs/db/tree` is used. The database found at this location is the result of an automatic use of the command [s6-rc-compile](https://skarnet.org/software/s6-rc/s6-rc-compile.html) when enabling such a *service*.
 

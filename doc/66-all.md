@@ -12,7 +12,7 @@ This command handles all *services* for any *tree* defined for the current user 
 ## Interface
 
 ```
-    66-all [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -f ] [ -t tree ] up|down
+    66-all [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -f ] [ -t tree ] up|down|unsupervise
 ```
 
 Any enabled *tree*—see [66-tree -E](66-tree.html)—or a specific one passed with the **-t** option, and an already running *scandir* will be processed. It is a safe wrapper around [66-start](66-start.html) and [66-stop](66-stop.html).
@@ -46,6 +46,8 @@ Any enabled *tree*—see [66-tree -E](66-tree.html)—or a specific one passed w
 - **up** : sends an *up* signal to every *service* inside any *tree* processed by the command.
 
 - **down** : sends a *down* signal to every *service* inside any *tree* processed by the command.
+
+- **unsupervise** : Bring down all *services* contained into the *tree* and remove the corresponding directory of the *service* from the [scandir](66-scandir.html).
 
 ## Initialization phase
 

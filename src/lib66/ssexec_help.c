@@ -152,10 +152,10 @@ char const *help_env =
 "   -e: edit the file with EDITOR\n"
 ;
 
-char const *usage_all = "66-all [ -h ] [ -z ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -f ] [ -U ] up/down/unsupervise" ;
+char const *usage_all = "66-all [ -h ] [ -z ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -f ] [ -U ] up|down|unsupervise" ;
 
 char const *help_all =
-"66-all <options> up/down/unsupervise\n"
+"66-all <options> up|down|unsupervise\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
