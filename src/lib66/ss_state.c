@@ -135,9 +135,11 @@ void ss_state_setflag(ss_state_t *sta,int flags,int flags_val)
 
 int ss_state_check_flags(char const *src, char const *name,int flags)
 {
-    /** unitialized at all,so all flag == 0 */
+    /** unitialized at all, all flags == 0.
+     * Return -1 to make a distinction between
+     * file absent and flag == 0. */
     if (!ss_state_check(src,name))
-        return 0 ;
+        return -1 ;
 
     ss_state_t sta = STATE_ZERO ;
 

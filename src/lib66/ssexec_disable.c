@@ -108,30 +108,12 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
             log_warnusys("delete source service file: ",dst.s) ;
             goto err ;
         }
-        /** service was not initialized */
+        /** r == -1 means the state file is not present,
+         * r > 0 means service need to be initialized,
+         * so not initialized at all.*/
         r = ss_state_check_flags(ste,name,SS_FLAGS_INIT) ;
-        if (r  == -1)
-            log_warnu("read state file of: ",name) ;
 
-        if (r > 0)
-        {
-            if (REMOVE)
-            {
-                // remove configuration file
-                log_trace("Delete configuration file of: ",name) ;
-                if (rm_rf(str + pres->srconf) == -1)
-                    log_warnusys("remove configuration file of: ",name) ;
-
-                // remove the logger directory
-                log_trace("Delete logger directory of: ",name) ;
-                if (rm_rf(str + pres->dstlog) == -1)
-                    log_warnusys("remove logger directory of: ",name) ;
-            }
-
-            log_trace("Delete resolve file of: ",name) ;
-            ss_resolve_rmfile(src,name) ;
-        }
-        else
+        if (!r)
         {
             /** modify the resolve file for 66-stop*/
             pres->disen = 0 ;
@@ -154,6 +136,24 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
                 log_warnusys("write state file of: ",name) ;
                 goto err ;
             }
+        }
+        else
+        {
+           if (REMOVE)
+            {
+                // remove configuration file
+                log_trace("Delete configuration file of: ",name) ;
+                if (rm_rf(str + pres->srconf) == -1)
+                    log_warnusys("remove configuration file of: ",name) ;
+
+                // remove the logger directory
+                log_trace("Delete logger directory of: ",name) ;
+                if (rm_rf(str + pres->dstlog) == -1)
+                    log_warnusys("remove logger directory of: ",name) ;
+            }
+
+            log_trace("Delete resolve file of: ",name) ;
+            ss_resolve_rmfile(src,name) ;
         }
         if (!ss_resolve_cmp(tostop,name))
             if (!ss_resolve_append(tostop,pres)) goto err ;
