@@ -125,8 +125,4 @@
 #define SS_INSTANCE_TEMPLATE 0
 #define SS_INSTANCE_NAME 1
 
-/** Execute field */
-#define SS_EXECUTE_RUNAS "%RUNAS%"
-#define SS_EXECUTE_RUNAS_LEN (sizeof SS_EXECUTE_RUNAS - 1)
-
 #endif
