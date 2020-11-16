@@ -621,7 +621,10 @@ int main(int argc, char const *const *argv,char const *const *envp)
                             if (!stralloc_0(&clone)) log_die_nomem("stralloc") ;
                             snap = 1 ;
                             break ;
-                case 'U' :  unsupervise = 1 ; if (create)log_usage(USAGE) ; break ;
+                case 'U' :  unsupervise = 1 ;
+                            if (create)log_usage(USAGE) ;
+                            log_1_warn("deprecated option -- please use 66-all unsupervise instead") ;
+                            break ;
                 case 'z' :  log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
                 default :   log_usage(USAGE) ;
             }

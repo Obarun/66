@@ -19,6 +19,7 @@
 #include <sys/ioctl.h>
 #include <stdint.h>//uint8_t
 #include <stddef.h>//size_t
+#include <stdlib.h>//realpath
 
 #include <oblibs/string.h>
 #include <oblibs/types.h>
@@ -35,6 +36,9 @@
 #include <66/constants.h>
 #include <66/tree.h>
 #include <66/utils.h>//scandir_ok
+#include <66/db.h>
+
+#include <s6-rc/s6rc-servicedir.h>
 
 int all_doit(ssexec_t *info, unsigned int what, char const *const *envp)
 {
@@ -58,7 +62,7 @@ int all_doit(ssexec_t *info, unsigned int what, char const *const *envp)
 
     src[info->live.len + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len] = 0 ;
 
-    if (!sastr_dir_get(&salist,src,"init",S_IFREG))
+    if (!sastr_dir_get(&salist,src,SS_LIVETREE_INIT,S_IFREG))
         log_dieusys(LOG_EXIT_SYS,"get contents of directory: ",src) ;
 
     if (salist.len)
@@ -77,7 +81,7 @@ int all_doit(ssexec_t *info, unsigned int what, char const *const *envp)
 
         newargv[m++] = 0 ;
 
-        if (what) {
+        if (!what) {
 
             if (ssexec_start(nargc,newargv,envp,info))
                 goto err ;
@@ -122,11 +126,76 @@ static void all_redir_fd(void)
     umask(022) ;
 }
 
+void tree_unsupervise(ssexec_t *info, char const *const *envp)
+{
+    size_t newlen = info->livetree.len + 1, pos = 0 ;
+
+    char ownerstr[UID_FMT] ;
+    size_t ownerlen = uid_fmt(ownerstr,info->owner) ;
+    ownerstr[ownerlen] = 0 ;
+
+    stralloc salist = STRALLOC_ZERO ;
+
+    /** set what we need */
+    char prefix[info->treename.len + 2] ;
+    auto_strings(prefix,info->treename.s,"-") ;
+
+    char livestate[info->live.len + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len + 1 + SS_LIVETREE_INIT_LEN + 1 + info->treename.len + 1] ;
+    auto_strings(livestate,info->live.s,SS_STATE,"/",ownerstr,"/",info->treename.s,"/",SS_LIVETREE_INIT,"/",info->treename.s) ;
+
+    /** bring down service */
+    if (!all_doit(info,0,envp))
+        log_warnusys("stop services") ;
+
+    if (db_find_compiled_state(info->livetree.s,info->treename.s) >=0)
+    {
+        salist.len = 0 ;
+        char livetree[newlen + info->treename.len + SS_SVDIRS_LEN + 1] ;
+        auto_strings(livetree,info->livetree.s,"/",info->treename.s,SS_SVDIRS) ;
+
+        if (!sastr_dir_get(&salist,livetree,"",S_IFDIR)) log_dieusys(LOG_EXIT_SYS,"get service list at: ",livetree) ;
+
+        livetree[newlen + info->treename.len] = 0 ;
+
+        pos = 0 ;
+        FOREACH_SASTR(&salist,pos) {
+
+            s6rc_servicedir_unsupervise(livetree,prefix,salist.s + pos,0) ;
+        }
+
+        char *realsym = realpath(livetree, 0) ;
+        if (!realsym)
+            log_dieusys(LOG_EXIT_SYS,"find realpath of: ",livetree) ;
+
+        if (rm_rf(realsym) == -1)
+            log_dieusys(LOG_EXIT_SYS,"remove: ", realsym) ;
+
+        free(realsym) ;
+
+        if (rm_rf(livetree) == -1)
+            log_dieusys(LOG_EXIT_SYS,"remove: ", livetree) ;
+
+        /** remove the symlink itself */
+        unlink_void(livetree) ;
+    }
+
+    if (scandir_send_signal(info->scandir.s,"an") <= 0)
+        log_dieusys(LOG_EXIT_SYS,"reload scandir: ",info->scandir.s) ;
+
+    /** remove /run/66/state/uid/treename directory */
+    log_trace("delete: ",livestate,"..." ) ;
+    if (rm_rf(livestate) < 0)
+        log_dieusys(LOG_EXIT_SYS,"delete ",livestate) ;
+
+    log_info("Unsupervised successfully tree: ",info->treename.s) ;
+
+    stralloc_free(&salist) ;
+}
+
 int ssexec_all(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
 
-    int r, what = 1, shut = 0, fd ;
-    uint8_t unsupervise = 0 ;
+    int r, what = 0, shut = 0, fd ;
 
     size_t statesize, pos = 0 ;
 
@@ -137,14 +206,12 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp,ssexec_
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, ">fU", &l) ;
+            int opt = getopt_args(argc,argv, ">f", &l) ;
             if (opt == -1) break ;
             if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
             switch (opt)
             {
                 case 'f' :  shut = 1 ; break ;
-                case 'U' :  unsupervise = 1 ;
-                            break ;
                 default :   log_usage(usage_all) ;
             }
         }
@@ -153,10 +220,10 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp,ssexec_
 
     if (argc != 1) log_usage(usage_all) ;
 
-    if (*argv[0] == 'u')
+    if (*argv[0] == 'd')
         what = 1 ;
-    else if (*argv[0] == 'd')
-        what = 0 ;
+    else if (*argv[0] == 'u')
+        what = 2 ;
     else
         log_usage(usage_all) ;
 
@@ -172,8 +239,8 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp,ssexec_
     /** only one tree?*/
     if (info->treename.len)
     {
-        if (!stralloc_cats(&contents,info->treename.s))log_dieu(LOG_EXIT_SYS,"add: ", info->treename.s," as tree to start") ;
-        if (!stralloc_0(&contents)) log_die_nomem("stralloc") ;
+        if (!auto_stra(&contents,info->treename.s))
+            log_die_nomem("stralloc") ;
     }
     else
     {
@@ -214,8 +281,8 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp,ssexec_
         else all_redir_fd() ;
     }
 
-    /** Down process? reverse in that case to respect tree start order*/
-    if (!what)
+    /** Down/unsupervise process? reverse in that case to respect tree start order*/
+    if (what)
         if (!sastr_reverse(&contents)) log_dieu(LOG_EXIT_SYS,"reserve tree order") ;
 
     FOREACH_SASTR(&contents,pos) {
@@ -236,7 +303,7 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp,ssexec_
         if (!tree_get_permissions(info->tree.s,info->owner))
             log_die(LOG_EXIT_USER,"You're not allowed to use the tree: ",info->tree.s) ;
 
-        if (what)
+        if (!what)
         {
             int nargc = 3 ;
             char const *newargv[nargc] ;
@@ -253,8 +320,16 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp,ssexec_
             if (scandir_send_signal(info->scandir.s,"an") <= 0)
                 log_dieusys(LOG_EXIT_SYS,"reload scandir: ",info->scandir.s) ;
         }
-        if (!all_doit(info,what,envp))
-            log_dieu(LOG_EXIT_SYS,(what) ? "start" : "stop" , " services of tree: ",info->treename.s) ;
+
+        if (what == 1) {
+
+            if (!all_doit(info,what,envp))
+                log_dieu(LOG_EXIT_SYS,(what) ? "start" : "stop" , " services of tree: ",info->treename.s) ;
+
+        } else {
+
+            tree_unsupervise(info,envp) ;
+        }
     }
     end:
         if (shut)

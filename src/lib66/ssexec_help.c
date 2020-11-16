@@ -152,7 +152,7 @@ char const *help_env =
 "   -e: edit the file with EDITOR\n"
 ;
 
-char const *usage_all = "66-all [ -h ] [ -z ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -f ] [ -U ] up/down" ;
+char const *usage_all = "66-all [ -h ] [ -z ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -f ] [ -U ] up/down/unsupervise" ;
 
 char const *help_all =
 "66-all <options> up/down\n"
@@ -165,5 +165,4 @@ char const *help_all =
 "   -l: live directory\n"
 "   -t: tree to use\n"
 "   -f: fork the process\n"
-"   -U: unsupervise the tree\n"
 ;
