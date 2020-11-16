@@ -42,24 +42,26 @@ static inline void info_help (void)
  if (buffer_putsflush(buffer_1, help) < 0)
     log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
+
 static inline unsigned int lookup (char const *const *table, char const *signal)
 {
-  unsigned int i = 0 ;
-  for (; table[i] ; i++) if (!strcmp(signal, table[i])) break ;
-  return i ;
+    unsigned int i = 0 ;
+    for (; table[i] ; i++) if (!strcmp(signal, table[i])) break ;
+    return i ;
 }
+
 static inline unsigned int parse_signal (char const *signal)
 {
-  static char const *const signal_table[] =
-  {
-    "reload",
-    "interrupt",
-    "quit",
-    "halt",
-    "reboot",
-    "poweroff",
-    0
-  } ;
+    static char const *const signal_table[] =
+    {
+        "reload",
+        "interrupt",
+        "quit",
+        "halt",
+        "reboot",
+        "poweroff",
+        0
+    } ;
   unsigned int i = lookup(signal_table, signal) ;
   if (!signal_table[i]) i = 7 ;
   return i ;
