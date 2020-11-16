@@ -40,6 +40,27 @@
 
 #include <s6-rc/s6rc-servicedir.h>
 
+static inline unsigned int lookup (char const *const *table, char const *signal)
+{
+    unsigned int i = 0 ;
+    for (; table[i] ; i++) if (!strcmp(signal, table[i])) break ;
+    return i ;
+}
+
+static inline unsigned int parse_signal (char const *signal)
+{
+    static char const *const signal_table[] =
+    {
+        "up"
+        "down",
+        "unsupervise",
+        0
+    } ;
+  unsigned int i = lookup(signal_table, signal) ;
+  if (!signal_table[i]) log_usage(usage_all) ;
+  return i ;
+}
+
 int all_doit(ssexec_t *info, unsigned int what, char const *const *envp)
 {
     int r ;
@@ -68,11 +89,14 @@ int all_doit(ssexec_t *info, unsigned int what, char const *const *envp)
     if (salist.len)
     {
         size_t pos = 0, len = sastr_len(&salist) ;
-        int nargc = 2 + len + 1 ;
+        int n = what == 2 ? 3 : 2 ;
+        int nargc = n + len ;
         char const *newargv[nargc] ;
         unsigned int m = 0 ;
 
         newargv[m++] = "fake_name" ;
+        if (what == 2)
+            newargv[m++] = "-u" ;
 
         FOREACH_SASTR(&salist,pos) {
 
@@ -126,7 +150,7 @@ static void all_redir_fd(void)
     umask(022) ;
 }
 
-void tree_unsupervise(ssexec_t *info, char const *const *envp)
+void tree_unsupervise(ssexec_t *info, char const *const *envp,int what)
 {
     size_t newlen = info->livetree.len + 1, pos = 0 ;
 
@@ -140,11 +164,11 @@ void tree_unsupervise(ssexec_t *info, char const *const *envp)
     char prefix[info->treename.len + 2] ;
     auto_strings(prefix,info->treename.s,"-") ;
 
-    char livestate[info->live.len + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len + 1 + SS_LIVETREE_INIT_LEN + 1 + info->treename.len + 1] ;
-    auto_strings(livestate,info->live.s,SS_STATE,"/",ownerstr,"/",info->treename.s,"/",SS_LIVETREE_INIT,"/",info->treename.s) ;
+    char livestate[info->live.len + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len + 1] ;
+    auto_strings(livestate,info->live.s,SS_STATE + 1,"/",ownerstr,"/",info->treename.s) ;
 
     /** bring down service */
-    if (!all_doit(info,0,envp))
+    if (!all_doit(info,what,envp))
         log_warnusys("stop services") ;
 
     if (db_find_compiled_state(info->livetree.s,info->treename.s) >=0)
@@ -195,7 +219,7 @@ void tree_unsupervise(ssexec_t *info, char const *const *envp)
 int ssexec_all(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
 
-    int r, what = 0, shut = 0, fd ;
+    int r, what, shut = 0, fd ;
 
     size_t statesize, pos = 0 ;
 
@@ -220,14 +244,10 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp,ssexec_
 
     if (argc != 1) log_usage(usage_all) ;
 
-    if (*argv[0] == 'd')
-        what = 1 ;
-    else if (*argv[0] == 'u')
-        what = 2 ;
-    else
-        log_usage(usage_all) ;
+    what = parse_signal(*argv) ;
 
-    if ((scandir_ok(info->scandir.s)) <= 0) log_die(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
+    if ((scandir_ok(info->scandir.s)) <= 0)
+        log_die(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
 
     char ste[info->base.len + SS_SYSTEM_LEN + SS_STATE_LEN + 1] ;
     auto_strings(ste,info->base.s,SS_SYSTEM,SS_STATE) ;
@@ -321,14 +341,14 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp,ssexec_
                 log_dieusys(LOG_EXIT_SYS,"reload scandir: ",info->scandir.s) ;
         }
 
-        if (what == 1) {
+        if (what < 2) {
 
             if (!all_doit(info,what,envp))
                 log_dieu(LOG_EXIT_SYS,(what) ? "start" : "stop" , " services of tree: ",info->treename.s) ;
 
         } else {
 
-            tree_unsupervise(info,envp) ;
+            tree_unsupervise(info,envp,what) ;
         }
     }
     end:
