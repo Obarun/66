@@ -150,7 +150,7 @@ static void all_redir_fd(void)
     umask(022) ;
 }
 
-void tree_unsupervise(ssexec_t *info, char const *const *envp,int what)
+void all_unsupervise(ssexec_t *info, char const *const *envp,int what)
 {
     size_t newlen = info->livetree.len + 1, pos = 0 ;
 
@@ -348,7 +348,7 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp,ssexec_
 
         } else {
 
-            tree_unsupervise(info,envp,what) ;
+            all_unsupervise(info,envp,what) ;
         }
     }
     end:
