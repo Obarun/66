@@ -255,9 +255,6 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 
             r = ss_state_check_flags(state,name,SS_FLAGS_INIT) ;
 
-            if (r == -1)
-                log_dieu_nclean(LOG_EXIT_USER,&cleanup,"read state file of: ",name) ;
-
             if (!r)
                 log_die_nclean(LOG_EXIT_USER,&cleanup,name," is marked initialized -- ",FORCE ? "-F" : "-R"," is not allowed") ;
         }
