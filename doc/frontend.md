@@ -494,9 +494,17 @@ This section is *mandatory*. (!)
 
     valid values :
 
-    * log : automatically create a logger for the service. The behavior of the logger can be configured in the corresponding section—see [[logger]](frontend.html#Section: [logger]).
+    * log : automatically create a logger for the service. This is **default**. The logger will be created even if this options is not specified. If you want to avoid the creation of the logger, prefix the options with an exclamation mark:
+
+        ````
+            @options = ( !log )
+        ````
+
+        The behavior of the logger can be configured in the corresponding section—see [[logger]](frontend.html#Section: [logger]).
+
     * env : enable the use of the [[environment]](frontend.html#Section: [environment]) section for the service.
-    pipeline : automatically create a pipeline between the service and the logger. For more information read the [s6-rc](https://skarnet.org/software/s6-rc) documentation.
+
+    * pipeline : automatically create a pipeline between the service and the logger. For more information read the [s6-rc](https://skarnet.org/software/s6-rc) documentation.
 
     **Note**: The funnel feature of pipelining is not implemented yet.
 
@@ -673,11 +681,11 @@ This section is *mandatory*. (!)
 
     * auto : creates the service script file as [execline](https://skarnet.org/software/execline) script. This is the **default**.
 
-    The corresponding file to start the service will automatically be written in [execline](https://skarnet.org/software/execline) format with the *@execute* key value.
+        The corresponding file to start the service will automatically be written in [execline](https://skarnet.org/software/execline) format with the *@execute* key value.
 
     * custom : creates the service script file in the language set in the *@shebang* key value.
 
-    The corresponding file to start the service will be written in the language set in the *@shebang* key value.
+        The corresponding file to start the service will be written in the language set in the *@shebang* key value.
 
     ---
 
@@ -748,7 +756,7 @@ This section is *mandatory*. (!)
 
 This section is *optional*.
 
-This section is exactly the same as [[start]](frontend.html#Section: [start]) and shares the same keys. With the exception that it will only be considered when creating the file *finish* for a `classic` or `longrun` service and when creating the file *down* for a `oneshot` service to create its content.
+This section is exactly the same as [[start]](frontend.html#Section: [start]) and shares the same keys. With the exception that it will handle the stop process of the service.
 
 ---
 
@@ -756,7 +764,7 @@ This section is exactly the same as [[start]](frontend.html#Section: [start]) an
 
 This section is *optional*.
 
-The value *log* must be added to the *@options* key in the [[main]](frontend.html#Section: [main]) section for [[logger]](frontend.html#Section: [logger]) to have any effect.
+It will only have effects if value *log* was **not** prefixed by an exclamation mark to the *@options* key in the [[main]](frontend.html#Section: [main]) section.
 
 This section extends the *@build*, *@runas*, *@shebang* and *@execute* key fields from [[start]](frontend.html#Section: [start]) and the *@timeout-finish* and *@timeout-kill* key fields from [[main]](frontend.html#Section: [main]) . These are also valid keys for [[logger]](frontend.html#Section: [logger]) and behave the same way they do in the other sections but they can not be specified except for the mandatory key *@build*—see example below. In such case the default behaviour for those key are apply.
 
@@ -858,7 +866,7 @@ Furthermore there are some keys specific to the log.
 
 This section is *optional*.
 
-It will only have an effect when the value env is added to the *@options* key in the [[main]](frontend.html#Section: [main]) section.
+It will only have an effect when the value *env* is added to the *@options* key in the [[main]](frontend.html#Section: [main]) section.
 
 A file contained the `key=value` pair(s) will be created by default at `%%service_admconf%%/name_of_service` directory. The default can also be changed at compile-time by passing the `--with-sysadmin-service-conf=DIR` option to `./configure`.
 
