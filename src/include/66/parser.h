@@ -238,7 +238,7 @@ struct sv_alltype_s
 { \
     SV_TYPE_ZERO , \
     SV_NAME_ZERO , \
-    { 0 } , \
+    { 1,0,0 } , \
     { 0 } , \
     0 , \
     { 0 } , \

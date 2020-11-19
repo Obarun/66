@@ -517,13 +517,17 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
             if (!get_clean_val(nocheck)) return 0 ;
             for (;pos < *chlen; pos += strlen(chval + pos)+1)
             {
-                r = get_enum(chval + pos,nocheck) ;
+                uint8_t reverse = chval[pos] == '!' ? 1 : 0 ;
+
+                r = get_enum(chval + pos + reverse,nocheck) ;
                 if (r == -1) return 0 ;
                 if (svtype != TYPE_BUNDLE || svtype != TYPE_MODULE)
                 {
-                    if (r == OPTS_LOGGER)
-                        service->opts[0] = 1 ;/**0 means not enabled*/
-                    else if (svtype == TYPE_LONGRUN && r == OPTS_PIPELINE)
+                    /** set a logger by default */
+                    if (reverse)
+                        service->opts[0] = 0 ;/**0 means not enabled, 1 by default*/
+
+                    if (svtype == TYPE_LONGRUN && r == OPTS_PIPELINE)
                         service->opts[1] = 1 ;
                 }
                 if (r == OPTS_ENVIR)
