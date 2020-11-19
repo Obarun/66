@@ -51,7 +51,7 @@ static inline unsigned int parse_signal (char const *signal)
 {
     static char const *const signal_table[] =
     {
-        "up"
+        "up",
         "down",
         "unsupervise",
         0
