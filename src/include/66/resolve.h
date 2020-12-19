@@ -159,7 +159,7 @@ extern int ss_resolve_src_path(stralloc *sasrc,char const *sv, uid_t owner,char 
 extern int ss_resolve_module_path(stralloc *sdir, stralloc *mdir, char const *sv,char const *src_frontend, uid_t owner) ;
 extern int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found) ;
 extern int ss_resolve_service_isdir(char const *dir, char const *name) ;
-extern uint32_t ss_resolve_add_string(ss_resolve_t *res,char const *data) ;
+extern ssize_t ss_resolve_add_string(ss_resolve_t *res,char const *data) ;
 extern int ss_resolve_write(ss_resolve_t *res,char const *dst,char const *name) ;
 extern int ss_resolve_read(ss_resolve_t *res,char const *src,char const *name) ;
 extern int ss_resolve_check(char const *src, char const *name) ;
