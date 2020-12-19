@@ -387,9 +387,9 @@ void ss_resolve_rmfile(char const *src,char const *name)
     unlink_void(tmp) ;
 }
 
-uint32_t ss_resolve_add_string(ss_resolve_t *res, char const *data)
+ssize_t ss_resolve_add_string(ss_resolve_t *res, char const *data)
 {
-    uint32_t baselen = res->sa.len ;
+    ssize_t baselen = res->sa.len ;
     if (!data)
     {
         if (!stralloc_catb(&res->sa,"",1)) log_warnusys_return(LOG_EXIT_LESSONE,"stralloc") ;
