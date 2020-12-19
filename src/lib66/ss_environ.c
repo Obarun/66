@@ -450,6 +450,9 @@ int env_clean_with_comment(stralloc *sa)
                 log_warnu_return(LOG_EXIT_ZERO,"rebuild environment line") ;
         }
 
+        if (!stralloc_0(&tmp))
+            log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
+
         if (!auto_stra(&final,start,tmp.s,end))
             log_warn_return(LOG_EXIT_ZERO,"append stralloc") ;
     }
