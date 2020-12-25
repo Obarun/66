@@ -53,7 +53,7 @@ void clean_n_unexport(stralloc *modifs, stralloc *dst, stralloc *src,char const 
 {
     if (!environ_clean_envfile(modifs,src)) log_dieu(LOG_EXIT_SYS,"prepare modified environment of: ",file) ;
     if (!sastr_split_string_in_nline(modifs)) log_dieu(LOG_EXIT_SYS,"build environment line of: ",file) ;
-    if (!stralloc_cats(dst,src->s)) log_die_nomem("stralloc") ;
+    if (!auto_stra(dst,src->s,"\n")) log_die_nomem("stralloc") ;
 }
 
 static int cmpnsort(stralloc *sa)
