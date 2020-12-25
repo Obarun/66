@@ -1,5 +1,5 @@
 /*
- * 66-state.c
+ * 66-instate.c
  *
  * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
  *

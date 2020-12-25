@@ -26,15 +26,15 @@ Fine tuning of the installation directories:
   --sysconfdir=SYSDIR              global configuration files [/etc]
   --datarootdir=DATAROOTDIR        read-only architecture-independent data root [PREFIX/share]
   --mandir=DIR                     man documentation [$datarootdir/man]
-  
+
   --shebangdir=DIR                 absolute path for execline #\! invocations [BINDIR]
   --livedir=DIR                    default live directory [/run/66]
-  --with-skeleton=DIR              skeleton files directory installation [SYSDIR/66]				
+  --with-skeleton=DIR              skeleton files directory installation [SYSDIR/66]
   --with-system-log=DIR            system service log directory [/var/log/66]
   --with-s6-log-user=USER          user for running s6-log program [root]
   --with-s6-log-timestamp=FORMAT   default timestamp for s6-log program [tai]
   --disable-s6-log-notification    disable s6-log notification [enabled]
-  
+
   --with-system-dir=DIR            66 tools system working directory [/var/lib/66]
   --with-system-service=DIR        system service frontend directory [DATAROOTDIR/66/service]
   --with-system-module=DIR         system module directory [DATAROOTDIR/66/module]
@@ -43,33 +43,33 @@ Fine tuning of the installation directories:
   --with-sysadmin-service=DIR      sysadmin service frontend directory [SYSDIR/66/service]
   --with-sysadmin-service-conf=DIR sysadmin service configuration file directory [SYSDIR/66/conf]
   --with-sysadmin-module=DIR       sysadmin module directory [SYSDIR/66/module]
-  
+
   --with-user-dir=DIR              66 tools user working directory [.66]
   --with-user-log=DIR              user service log directory [.66/log]
   --with-user-service=DIR          user service directory [.66/service]
   --with-user-service-conf=DIR     user service configuration directory [.66/conf]
   --with-user-module=DIR           user module directory [.66/module]
   --with-user-script=DIR           user script directory [.66/script]
-  
- Do not set an absolute path but a \$HOME relative path for --with-user-dir,  
+
+ Do not set an absolute path but a \$HOME relative path for --with-user-dir,
  --with-user-log, --with-user-service, --with-user-service-conf, --with-user-module
  and --with-user-script.
  The \$HOME prefix will be appened at the pathname automatically in function of the user.
  For example , by default the final path for --with-user-dir will be \$HOME/.66.
- 
+
  --with-system-service and --with-sysadmin-service directory must be two differents path.
- For example do not set --with-sysadmin-service=/etc/66/service/sysadmin with system service   
+ For example do not set --with-sysadmin-service=/etc/66/service/sysadmin with system service
  --with-system-service=/etc/66/service.
  Apply the same rule for --with-system-module and --with-sysadmin-module options.
- 
+
  Valid FORMAT for --with-s6-log-timestamp are tai,iso,none.
- 
+
 Dependencies:
   --with-sysdeps=DIR               use sysdeps in DIR [PREFIX/lib/skalibs/sysdeps]
   --with-include=DIR               add DIR to the list of searched directories for headers
   --with-lib=DIR                   add DIR to the list of searched directories for static libraries
   --with-dynlib=DIR                add DIR to the list of searched directories for shared libraries
- 
+
 Optional features:
   --enable-shared                  build shared libraries [disabled]
   --disable-static                 do not build static libraries [enabled]
@@ -79,7 +79,7 @@ Optional features:
   --enable-slashpackage[=ROOT]     assume /package installation at ROOT [disabled]
   --enable-absolute-paths          do not rely on PATH to access this package's binaries,
                                    hardcode absolute BINDIR/foobar paths instead [disabled]
-  
+
   If no --prefix option is given, by default sysdeps will be fetched from
   /usr/lib/skalibs/sysdeps.
 
@@ -300,24 +300,24 @@ fi
 # Add /etc/66 in the default case
 if test -z "$sysconfdir" ; then
   if test "$service_adm" = '$sysconfdir/66/service' ; then
-	service_adm='$sysconfdir/66/service'
+    service_adm='$sysconfdir/66/service'
   fi
   if test "$module_adm" = '$sysconfdir/66/module' ; then
-	service_adm='$sysconfdir/66/module'
+    service_adm='$sysconfdir/66/module'
   fi
   if test "$service_admconf" = '$sysconfdir/66/conf' ; then
-	service_admconf='$sysconfdir/66/conf'
+    service_admconf='$sysconfdir/66/conf'
   fi
   if test "$skel" = '$sysconfdir/66' ; then
-	skel='$sysconfdir/66'
+    skel='$sysconfdir/66'
   fi
 fi
 
 # Expand installation directories
 stripdir prefix
 for i in exec_prefix dynlibdir libexecdir bindir libdir includedir sysconfdir \
-		datarootdir mandir shebangdir livedir skel system_dir system_log \
-		service_system module_system script_system service_adm module_adm service_admconf sproot sysdeps ; do
+        datarootdir mandir shebangdir livedir skel system_dir system_log \
+        service_system module_system script_system service_adm module_adm service_admconf sproot sysdeps ; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
@@ -344,7 +344,7 @@ elif [ $s6log_timestamp = "iso" ]; then
     s6log_timestamp='1'
 elif [ $s6log_timestamp = "none" ]; then
     s6log_timestamp='2'
-else 
+else
     fail "$0: invalid timestamp value -- valid value are: tai,iso or none"
 fi
 
@@ -525,7 +525,7 @@ if test -z "$vpaths" ; then
     base=$(basename $dep)
     vpaths="$vpaths /usr/lib/$base"
     addlibspath="$addlibspath -L/usr/lib/$base"
-  done < package/deps-build  
+  done < package/deps-build
 fi
 
 echo "Creating config.mak..."

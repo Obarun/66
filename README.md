@@ -3,11 +3,11 @@
 66 - Helpers tools around S6 supervision suite
 ===
 
-Sixty-six is a collection of system tools built around [s6](http://skarnet.org/software/s6) and [s6-rc](http://skarnet.org/software/s6-rc) created to make the implementation and manipulation of service files on your machine easier. 
+Sixty-six is a collection of system tools built around [s6](http://skarnet.org/software/s6) and [s6-rc](http://skarnet.org/software/s6-rc) created to make the implementation and manipulation of service files on your machine easier.
 It is meant to be a toolbox for the declaration, implementation and administration of services where seperate programs can be joined to achieve powerful functionality with small amounts of code.
-	
+
 Examples of what can be achieved by assembling different programs provided by 66:
-* Frontend service files declaration. 
+* Frontend service files declaration.
 * Easy creation of a scandir.
 * Nested supervision tree.
 * Instance service file creation.
@@ -22,7 +22,7 @@ Examples of what can be achieved by assembling different programs provided by 66
 * ...
 
 66 works on mechanisms not on policies. It can be compiled with `glibc` or `musl`.
- 
+
 Installation
 ------------
 
