@@ -616,8 +616,11 @@ static void info_display_envfile(char const *field,ss_resolve_t *res)
         if (!sastr_dir_get(&list,salink.s,"",S_IFREG))
             log_dieusys(LOG_EXIT_SYS,"get list of environment file from: ",src) ;
 
-        for (;pos < list.len ; pos += strlen(list.s + pos) + 1)
-        {
+        if (!sastr_sort(&list))
+            log_dieu(LOG_EXIT_SYS,"sort environment file name") ;
+
+        FOREACH_SASTR(&list,pos) {
+
             sa.len = 0 ;
             salink.len = newlen ;
             if (!stralloc_cats(&salink,"/") ||
@@ -626,6 +629,19 @@ static void info_display_envfile(char const *field,ss_resolve_t *res)
 
             if (!file_readputsa_g(&sa,salink.s))
                 log_dieusys(LOG_EXIT_SYS,"read environment file") ;
+
+            if (NOFIELD) {
+
+
+                char *m = "environment variables from: " ;
+                size_t mlen = strlen(m) ;
+                char msg[mlen + salink.len + 2] ;
+                auto_strings(msg,m,salink.s,"\n") ;
+                if (!stralloc_inserts(&sa,0,msg) ||
+                !stralloc_0(&sa))
+                    log_die_nomem("stralloc") ;
+            }
+
             if (pos)
             {
                 if (NOFIELD) {
@@ -636,6 +652,9 @@ static void info_display_envfile(char const *field,ss_resolve_t *res)
                 info_display_nline(field,sa.s) ;
             }
             else info_display_nline(field,sa.s) ;
+
+            if (!bprintf(buffer_1,"%s","\n"))
+                log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
         }
     }
     else
