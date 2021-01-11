@@ -526,7 +526,6 @@ int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char
 
 int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 {
-    int r ;
     char *time = NULL ;
     char *src = keep.s + sv->src ;
     size_t dstlen = strlen(dst) ;
@@ -593,34 +592,19 @@ int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
      * the environment file was already written */
     if (sv->opts[2] > 0 && sv->cname.itype != TYPE_MODULE)
     {
-        stralloc tmp = STRALLOC_ZERO ;
-        stralloc salink = STRALLOC_ZERO ;
-        size_t dstlen ;
-        char *dst = keep.s + sv->srconf ;
-        char *name = keep.s + sv->cname.name ;
-        dstlen = strlen(dst) ;
+        stralloc dst = STRALLOC_ZERO ;
+        stralloc contents = STRALLOC_ZERO ;
+        stralloc name = STRALLOC_ZERO ;
 
-        char tdst[dstlen + SS_SYM_VERSION_LEN + 1] ;
-        auto_strings(tdst,dst,SS_SYM_VERSION) ;
+        if (!env_prepare_for_write(&name,&dst,&contents,sv,conf))
+            return 0 ;
 
-        conf = sv->overwrite_conf ;
-        /** env_compute return 2 if we need
-         * to write the file */
-        r = env_compute(&tmp,sv,conf) ;
-        if (!r) log_warnu_return(LOG_EXIT_ZERO,"compute environment") ;
+        if (!write_env(name.s,contents.s,dst.s))
+            log_warnu_return(LOG_EXIT_ZERO,"write environment") ;
 
-        if (sareadlink(&salink, tdst) == -1)
-            log_warnusys_return(LOG_EXIT_ZERO,"read link of: ",tdst) ;
-
-        if (!stralloc_0(&salink))
-            log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-
-        if (r == 2) {
-            if (!write_env(name,&tmp,salink.s))
-                log_warnu_return(LOG_EXIT_ZERO,"write environment") ;
-        }
-        stralloc_free(&tmp) ;
-        stralloc_free(&salink) ;
+        stralloc_free(&dst) ;
+        stralloc_free(&contents) ;
+        stralloc_free(&name) ;
     }
     /** hierarchy copy */
     if (sv->hiercopy[0])
@@ -829,18 +813,20 @@ int write_uint(char const *dst, char const *name, uint32_t ui)
     return 1 ;
 }
 
-int write_env(char const *name, stralloc *sa,char const *dst)
+int write_env(char const *name, char const *contents,char const *dst)
 {
+    log_flow() ;
+
     int r ;
+    size_t contents_len = strlen(contents) ;
 
     r = scan_mode(dst,S_IFDIR) ;
     if (r < 0)
         log_warn_return(LOG_EXIT_ZERO," conflicting format of the environment directory: ",dst) ;
     else if (!r)
-    {
         log_warnusys_return(LOG_EXIT_ZERO,"find environment directory: ",dst) ;
-    }
-    if (!file_write_unsafe(dst,name,sa->s,sa->len))
+
+    if (!file_write_unsafe(dst,name,contents,contents_len))
         log_warnusys_return(LOG_EXIT_ZERO,"create file: ",dst,"/",name) ;
 
     return 1 ;

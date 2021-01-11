@@ -14,7 +14,7 @@
 
 #include <string.h>
 #include <stdlib.h>//getenv
-#include <unistd.h>//_exit
+#include <unistd.h>//_exit,access
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
@@ -52,31 +52,6 @@ enum tasks_e
 #define checkopts(n) if (n >= MAXOPTS) log_die(LOG_EXIT_USER, "too many versions number")
 #define DELIM ','
 
-static void check_version(stralloc *sa, char const *version)
-{
-    int r ;
-    r = version_scan(sa,version,SS_CONFIG_VERSION_NDOT) ;
-    if (r == -1) log_die_nomem("stralloc") ;
-    if (!r) log_die(LOG_EXIT_USER,"invalid version format: ",version) ;
-}
-
-static void append_version(stralloc *saversion, char const *svconf, char const *version)
-{
-    int r ;
-    stralloc sa = STRALLOC_ZERO ;
-
-    check_version(&sa,version) ;
-
-    saversion->len = 0 ;
-
-    if (!auto_stra(saversion,svconf,"/",sa.s)) log_die_nomem("stralloc") ;
-
-    r = scan_mode(saversion->s,S_IFDIR) ;
-    if (r == -1 || !r) log_dieusys(LOG_EXIT_USER,"find the versioned directory: ",saversion->s) ;
-
-    stralloc_free(&sa) ;
-}
-
 static uint8_t check_current_version(char const *svconf,char const *version)
 {
     stralloc sa = STRALLOC_ZERO ;
@@ -99,61 +74,30 @@ static void run_editor(char const *src, char const *const *envp)
     xpathexec_run (newarg[0],newarg,envp) ;
 }
 
-static void do_import(char const *svname, char const *svconf, char const *version)
+static void do_import(char const *svname, char const *svconf, char const *version, int svtype)
 {
-    struct stat st ;
     size_t pos = 0 ;
-    stralloc salist = STRALLOC_ZERO ;
     stralloc sasrc = STRALLOC_ZERO ;
-    stralloc src_ver = STRALLOC_ZERO ;
-    stralloc dst_ver = STRALLOC_ZERO ;
 
     char *src_version = 0 ;
     char *dst_version = 0 ;
 
-    if (!sastr_clean_string_wdelim(&sasrc,version,DELIM)) log_dieu(LOG_EXIT_SYS,"clean string: ",version) ;
+    if (!sastr_clean_string_wdelim(&sasrc,version,DELIM))
+        log_dieu(LOG_EXIT_SYS,"clean string: ",version) ;
 
     unsigned int n = sastr_len(&sasrc) ;
     checkopts(n) ;
 
-    for (;pos < sasrc.len; pos += strlen(sasrc.s + pos) + 1)
-    {
+    FOREACH_SASTR(&sasrc,pos) {
+
         if (!pos) src_version = sasrc.s + pos ;
         else dst_version = sasrc.s + pos ;
     }
 
-    if (!version_cmp(src_version,dst_version,SS_CONFIG_VERSION_NDOT))
-    {
-        log_1_warn("import asked on same version -- nothing to do") ;
-        return ;
-    }
-
-    append_version(&src_ver,svconf,src_version) ;
-    append_version(&dst_ver,svconf,dst_version) ;
-
-    if (!sastr_dir_get(&salist,src_ver.s,svname,S_IFREG))
-        log_dieu(LOG_EXIT_SYS,"get configuration file from directory: ",src_ver.s) ;
-
-    for (pos = 0 ; pos < salist.len; pos += strlen(salist.s + pos) + 1)
-    {
-        char *name = salist.s + pos ;
-        size_t namelen = strlen(name) ;
-
-        char s[src_ver.len + 1 + namelen + 1] ;
-        auto_strings(s,src_ver.s,"/",name) ;
-
-        char d[dst_ver.len + 1 + namelen + 1] ;
-        auto_strings(d,dst_ver.s,"/",name) ;
-
-        if (lstat(s, &st) < 0) log_dieusys(LOG_EXIT_SYS,"stat: ",s) ;
-        log_info("copy: ",s," to: ",d) ;
-        if (!filecopy_unsafe(s, d, st.st_mode)) log_dieusys(LOG_EXIT_SYS,"copy: ", s," to: ",d) ;
-    }
+    if (!env_import_version_file(svname,svconf,src_version,dst_version,svtype))
+        log_dieu(LOG_EXIT_SYS,"import configuration file from version: ",src_version," to version: ",dst_version) ;
 
     stralloc_free(&sasrc) ;
-    stralloc_free(&src_ver) ;
-    stralloc_free(&dst_ver) ;
-    stralloc_free(&salist) ;
 }
 
 static void replace_value_of_key(stralloc *srclist,char const *key)
@@ -227,28 +171,62 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
             if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
             switch (opt)
             {
-                case 'c' :  check_version(&saversion,l.arg) ;
-                            break ;
-                case 's' :  check_version(&eversion,l.arg) ;
-                            break ;
-                case 'V' :  if (todo != T_UNSET) log_usage(usage_env) ;
-                            todo = T_VLIST ;
-                            break ;
-                case 'L' :  if (todo != T_UNSET) log_usage(usage_env) ;
-                            todo = T_LIST ;
-                            break ;
-                case 'd' :  log_1_warn("-d: deprecated option") ; goto freed ;
-                case 'r' :  if (!sastr_add_string(&savar,l.arg))
-                                log_die_nomem("stralloc") ;
-                            if (todo != T_UNSET && todo != T_REPLACE) log_usage(usage_env) ;
-                            todo = T_REPLACE ;
-                            break ;
-                case 'e' :  if (todo != T_UNSET) log_usage(usage_env) ;
-                            todo = T_EDIT ;
-                            break ;
-                case 'i' :  import = l.arg ;
-                            break ;
-                default :   log_usage(usage_env) ;
+                case 'c' :
+
+                        if (env_check_version(&saversion,l.arg) <= 0)
+                            log_dieu(LOG_EXIT_SYS,"check version format") ;
+
+                        break ;
+
+                case 's' :
+
+                        if (env_check_version(&eversion,l.arg) <= 0)
+                            log_dieu(LOG_EXIT_SYS,"check version format") ;
+
+                        break ;
+
+                case 'V' :
+
+                        if (todo != T_UNSET) log_usage(usage_env) ;
+                        todo = T_VLIST ;
+
+                        break ;
+                case 'L' :
+
+                        if (todo != T_UNSET) log_usage(usage_env) ;
+                        todo = T_LIST ;
+
+                        break ;
+                case 'd' :
+
+                        log_1_warn("-d: deprecated option") ; goto freed ;
+
+                case 'r' :
+
+                        if (!sastr_add_string(&savar,l.arg))
+                            log_die_nomem("stralloc") ;
+
+                        if (todo != T_UNSET && todo != T_REPLACE) log_usage(usage_env) ;
+                        todo = T_REPLACE ;
+
+                        break ;
+
+                case 'e' :
+
+                        if (todo != T_UNSET) log_usage(usage_env) ;
+                        todo = T_EDIT ;
+
+                        break ;
+
+                case 'i' :
+
+                        import = l.arg ;
+
+                        break ;
+
+                default :
+
+                    log_usage(usage_env) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
@@ -289,22 +267,26 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
         char sym[conflen + SS_SYM_VERSION_LEN + 1] ;
         auto_strings(sym,svconf,SS_SYM_VERSION) ;
 
-        append_version(&saversion,svconf,saversion.s) ;
+        if (!env_append_version(&saversion,svconf,saversion.s))
+            log_dieu(LOG_EXIT_ZERO,"append version") ;
 
         r = scan_mode(saversion.s,S_IFDIR) ;
         if (r == -1 || !r) log_dieusys(LOG_EXIT_USER,"find the versioned directory: ",saversion.s) ;
 
         if (!atomic_symlink(saversion.s,sym,"ssexec_env"))
             log_warnu_return(LOG_EXIT_ZERO,"symlink: ",sym," to: ",saversion.s) ;
+
         log_info("symlink switched successfully to version: ",saversion.s) ;
     }
 
     if (import)
-        do_import(sv,svconf,import) ;
+        do_import(sv,svconf,import,res.type) ;
 
     if (eversion.len)
     {
-        append_version(&sasrc,svconf,eversion.s) ;
+        if (!env_append_version(&sasrc,svconf,eversion.s))
+            log_dieu(LOG_EXIT_SYS,"append version") ;
+
         src = sasrc.s ;
     }
     else
@@ -321,6 +303,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
     switch(todo)
     {
         case T_VLIST:
+
             if (!sastr_dir_get(&satmp,svconf,SS_SYM_VERSION + 1,S_IFDIR))
                 log_dieu(LOG_EXIT_SYS,"get versioned directory of: ",svconf) ;
             for (pos = 0 ; pos < satmp.len; pos += strlen(satmp.s + pos) + 1)
@@ -338,7 +321,9 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
                     log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
             }
             break ;
+
         case T_LIST:
+
             if (!sastr_dir_get(&satmp,src,SS_SYM_VERSION + 1,S_IFREG))
                 log_dieu(LOG_EXIT_SYS,"get versioned directory at: ",src) ;
             for (pos = 0 ; pos < satmp.len; pos += strlen(satmp.s + pos) + 1)
@@ -350,6 +335,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
                 log_info("contents of file: ",src,"/",name,"\n",salist.s) ;
             }
             break ;
+
         case T_REPLACE:
 
             if (!file_readputsa(&salist,src,sv)) log_dieusys(LOG_EXIT_SYS,"read: ",src,"/",sv) ;
@@ -364,11 +350,45 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
             if (!openwritenclose_unsafe(satmp.s,salist.s,salist.len - 1))
                 log_dieusys(LOG_EXIT_SYS,"write file: ",satmp.s) ;
             break ;
+
         case T_EDIT:
-            salist.len = 0 ;
-            if (!auto_stra(&salist,src,"/",sv)) log_die_nomem("stralloc") ;
-            src = salist.s ;
-            run_editor(src,envp) ;
+
+            {
+                size_t srclen = strlen(src), svlen = strlen(sv) ;
+                int r ;
+                char tsrc[srclen + 1 + svlen +1] ;
+
+                auto_strings(tsrc,src,"/",sv) ;
+
+                errno = 0 ;
+                if (access(tsrc, F_OK) < 0) {
+
+                    if (errno == ENOENT) {
+
+                        salist.len = 0 ;
+                        stralloc sa = STRALLOC_ZERO ;
+
+                        if (!auto_stra(&salist,src,"/.",sv))
+                            log_die_nomem("stralloc") ;
+
+                        if (!file_readputsa_g(&sa,salist.s))
+                            log_dieusys(LOG_EXIT_SYS,"read environment file from: ",salist.s) ;
+
+                        r = str_contain(sa.s,"[ENDWARN]") ;
+                        if (r == -1)
+                            log_die(LOG_EXIT_SYS,"invalid upstream configuration file! Do you have modified it? Tries to enable it again.") ;
+
+                        if (!write_env(sv,sa.s + r,src))
+                            log_dieusys(LOG_EXIT_SYS,"copy: ",salist.s," to: ",tsrc);
+
+                        stralloc_free(&sa) ;
+                    }
+                    else
+                        log_diesys(LOG_EXIT_SYS,"conflicting format of file: ",tsrc) ;
+
+                }
+                run_editor(tsrc,envp) ;
+            }
         /** Can't happens */
         default: break ;
     }

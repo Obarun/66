@@ -42,11 +42,13 @@ static stralloc workdir = STRALLOC_ZERO ;
 static uint8_t FORCE = 0 ;
 /** rewrite configuration file */
 static uint8_t CONF = 0 ;
-/** import configuration file from previous version */
-static uint8_t IMPORT = 0 ;
 
 static void cleanup(void)
 {
+    log_flow() ;
+
+    if (!workdir.len)
+        return ;
     int e = errno ;
     rm_rf(workdir.s) ;
     errno = e ;
@@ -54,6 +56,8 @@ static void cleanup(void)
 
 static void check_identifier(char const *name)
 {
+    log_flow() ;
+
     int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
     if (logname > 0) log_die(LOG_EXIT_USER,"service: ",name,": ends with reserved suffix -log") ;
     if (!memcmp(name,SS_MASTER+1,6)) log_die(LOG_EXIT_USER,"service: ",name,": starts with reserved prefix Master") ;
@@ -61,18 +65,22 @@ static void check_identifier(char const *name)
     if (!strcmp(name,"service@")) log_die(LOG_EXIT_USER,"service@ as service name is a reserved name") ;
 }
 
-void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORCE)
+void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t force)
 {
-    size_t i = 0, len = list->len ;
+    log_flow() ;
+
+    size_t i = 0 ;
 
     stralloc sasv = STRALLOC_ZERO ;
     stralloc parsed_list = STRALLOC_ZERO ;
     stralloc tree_list = STRALLOC_ZERO ;
     uint8_t disable_module = 1 ;
-    for (;i < len; i += strlen(list->s + i) + 1)
-    {
+
+    FOREACH_SASTR(list,i) {
+
         char *name = list->s + i ;
-        if (!parse_service_before(info,&parsed_list,&tree_list,name,nbsv,&sasv,FORCE,CONF,IMPORT,disable_module,0))
+
+        if (!parse_service_before(info,&parsed_list,&tree_list,name,nbsv,&sasv,force,CONF,disable_module,0))
             log_dieu(LOG_EXIT_SYS,"parse service file: ",name,": or its dependencies") ;
     }
     stralloc_free(&sasv) ;
@@ -82,6 +90,8 @@ void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORC
 
 void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun,char const *workdir, genalloc *gasv,ssexec_t *info,uint8_t FORCE,uint8_t CONF)
 {
+    log_flow() ;
+
     int r ;
     stralloc module = STRALLOC_ZERO ;
     stralloc version = STRALLOC_ZERO ;
@@ -90,118 +100,27 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
     {
         sv_alltype_ref sv = &genalloc_s(sv_alltype,gasv)[i] ;
         char *name ;
-        uint8_t importless = 1 ;
 
-        /** sv->opts[2], service may not contains environmnent section.
-         * Module is already made, do pass through it twice. */
-        if ((IMPORT) && (sv->opts[2] > 0) && (sv->cname.itype != TYPE_MODULE))
-        {
-            version.len = 0 ;
-            r = env_find_current_version(&version,keep.s + sv->srconf) ;
-            /** not a fatal error, the previous version may not exist
-             * at the first activation of the service. Anyway, warn the user */
-            if (!r)
-            {
-                log_warn("import asked but cannot find the previous version for service: ",keep.s + sv->cname.name) ;
-                importless = 0 ;
-            }
-            else
-            {
-                char bname[version.len + 1] ;
-                if (!ob_basename(bname,version.s))
-                {
-                    /** reimplement cleanup() here, it called by 66-update which
-                     * not define the workdir stralloc. In case of crash we get
-                     * a segmentation fault cause of the empty stralloc. */
-                    int e = errno ;
-                    rm_rf(workdir) ;
-                    errno = e ;
-                    name = keep.s + sv->cname.name ;
-                    log_dieu(LOG_EXIT_SYS,"get basename of: ",version.s) ;
-                }
-                r = version_cmp(bname,keep.s + sv->cname.version,SS_CONFIG_VERSION_NDOT) ;
-                if (!r) { importless = 0 ; }
-                else
-                {
-                    version.len = 0 ;
-                    if (!auto_stra(&version,bname,",",keep.s + sv->cname.version))
-                    {
-                        int e = errno ;
-                        rm_rf(workdir) ;
-                        errno = e ;
-                        name = keep.s + sv->cname.name ;
-                        log_die_nomem("stralloc") ;
-                    }
-                }
-            }
-        }
-        else importless = 0 ;
         r = write_services(sv, workdir,FORCE,CONF) ;
         if (!r)
-        {
-            /** reimplement cleanup() here, it called by 66-update which
-             * not define the workdir stralloc. In case of crash we get
-             * a segmentation fault cause of the empty stralloc. */
-            int e = errno ;
-            rm_rf(workdir) ;
-            errno = e ;
-            name = keep.s + sv->cname.name ;
-            log_dieu(LOG_EXIT_SYS,"write service: ",name) ;
-        }
+            log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write service: ",name) ;
+
         if (r > 1) continue ; //service already added
 
         /** only read name after the write_services process.
          * it change the sv_alltype appending the real_exec element */
         name = keep.s + sv->cname.name ;
 
-        if (IMPORT && importless)
-        {
-            int wstat, nargc = 9 + (info->opt_color ? 1 : 0) ;
-            unsigned int m = 0 ;
-            pid_t pid ;
-            char const *newargv[nargc] ;
-            char fmt[UINT_FMT] ;
-            fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
-
-            newargv[m++] = SS_BINPREFIX "66-env" ;
-            newargv[m++] = "-v" ;
-            newargv[m++] = fmt ;
-            if (info->opt_color)
-                newargv[m++] = "-z" ;
-            newargv[m++] = "-t" ;
-            newargv[m++] = info->treename.s ;
-            newargv[m++] = "-i" ;
-            newargv[m++] = version.s ;
-            newargv[m++] = name ;
-            newargv[m++] = 0 ;
-
-            pid = child_spawn0(newargv[0],newargv,(char const *const *)environ) ;
-            if (waitpid_nointr(pid,&wstat, 0) < 0)
-                log_warnu("wait for: ",newargv[0]) ;
-
-            if (wstat)
-                log_warnu("import previous configuration files") ;
-        }
-
         log_trace("write resolve file of: ",name) ;
         if (!ss_resolve_setnwrite(sv,info,workdir))
-        {
-            int e = errno ;
-            rm_rf(workdir) ;
-            errno = e ;
-            log_dieu(LOG_EXIT_SYS,"write revolve file for: ",name) ;
-        }
+            log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write revolve file for: ",name) ;
+
         if (sastr_cmp(tostart,name) == -1)
         {
             if (sv->cname.itype == TYPE_CLASSIC) (*nclassic)++ ;
             else (*nlongrun)++ ;
             if (!sastr_add_string(tostart,name))
-            {
-                int e = errno ;
-                rm_rf(workdir) ;
-                errno = e ;
-                log_die_nomem("stralloc") ;
-            }
+                log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"stralloc") ;
         }
 
         log_trace("Service written successfully: ", name) ;
@@ -226,42 +145,42 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
         char *name = 0 ;
         char *err_msg = 0 ;
 
-        for (;pos < module.len ; pos += strlen(module.s + pos) + 1)
-        {
+        FOREACH_SASTR(&module, pos) {
+
             salist.len = 0 ;
             name = module.s + pos ;
             size_t namelen = strlen(name) ;
             char dst[workdirlen + SS_DB_LEN + SS_SRC_LEN + 1 + namelen + 1];
             auto_strings(dst,workdir,SS_DB,SS_SRC,"/",name) ;
 
-            if (!ss_resolve_read(&res,workdir,name))
-            {
+            if (!ss_resolve_read(&res,workdir,name)) {
                 err_msg = "read resolve file of: " ;
                 goto err ;
             }
 
-            if (!sastr_clean_string(&salist,res.sa.s + res.contents))
-            {
+            if (!sastr_clean_string(&salist,res.sa.s + res.contents)) {
                 err_msg = "rebuild dependencies list of: " ;
                 goto err ;
             }
 
-            for (gpos = 0 ; gpos < salist.len ; gpos += strlen(salist.s + gpos) + 1)
             {
-                if (!ss_resolve_read(&dres,workdir,salist.s + gpos))
-                {
-                    err_msg = "read resolve file of: " ;
-                    goto err ;
-                }
+                gpos = 0 ;
+                FOREACH_SASTR(&salist,gpos) {
 
-                if (dres.type != TYPE_CLASSIC)
-                {
-                    if (ss_resolve_search(&gamodule,name) == -1)
+                    if (!ss_resolve_read(&dres,workdir,salist.s + gpos)) {
+                        err_msg = "read resolve file of: " ;
+                        goto err ;
+                    }
+
+                    if (dres.type != TYPE_CLASSIC)
                     {
-                        if (!ss_resolve_append(&gamodule,&dres))
+                        if (ss_resolve_search(&gamodule,name) == -1)
                         {
-                            err_msg = "append genalloc with: " ;
-                            goto err ;
+                            if (!ss_resolve_append(&gamodule,&dres))
+                            {
+                                err_msg = "append genalloc with: " ;
+                                goto err ;
+                            }
                         }
                     }
                 }
@@ -309,19 +228,18 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
             genalloc_deepfree(ss_resolve_t,&gamodule,ss_resolve_free) ;
             ss_resolve_graph_free(&mgraph) ;
         }
+
         stralloc_free(&module) ;
         stralloc_free(&version) ;
         return ;
+
         err:
             genalloc_deepfree(ss_resolve_t,&gamodule,ss_resolve_free) ;
             ss_resolve_graph_free(&mgraph) ;
             ss_resolve_free(&res) ;
             ss_resolve_free(&dres) ;
             stralloc_free(&salist) ;
-            int e = errno ;
-            rm_rf(workdir) ;
-            errno = e ;
-            log_dieu(LOG_EXIT_SYS,err_msg,name) ;
+            log_dieu_nclean(LOG_EXIT_SYS,&cleanup,err_msg,name) ;
     }
     stralloc_free(&module) ;
     stralloc_free(&version) ;
@@ -330,7 +248,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
     // be sure that the global var are set correctly
-    FORCE = CONF = IMPORT = 0 ;
+    FORCE = CONF = 0 ;
 
     int r ;
     size_t pos = 0 ;
@@ -346,7 +264,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, ">cmCfFSi", &l) ;
+            int opt = getopt_args(argc,argv, ">cmCfFSiI", &l) ;
             if (opt == -1) break ;
             if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
             switch (opt)
@@ -355,10 +273,11 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
                             FORCE = 1 ; break ;
                 case 'F' :  if (FORCE) log_usage(usage_enable) ;
                             FORCE = 2 ; break ;
-                case 'c' :  if (CONF) log_usage(usage_enable) ; CONF = 1 ; break ;
-                case 'm' :  if (CONF) log_usage(usage_enable) ; CONF = 2 ; break ;
-                case 'C' :  if (CONF) log_usage(usage_enable) ; CONF = 3 ; break ;
-                case 'i' :  IMPORT = 1 ; break ;
+                case 'c' :  log_1_warn("deprecated option -- ignoring") ; break ;
+                case 'm' :  log_1_warn("deprecated option -- ignoring") ; break ;
+                case 'C' :  log_1_warn("deprecated option -- ignoring") ; break ;
+                case 'i' :  log_1_warn("deprecated option -- ignoring") ; break ;
+                case 'I' :  CONF = 1 ; break ;
                 case 'S' :  start = 1 ; break ;
                 default :   log_usage(usage_enable) ;
             }
@@ -380,7 +299,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
         if (argv[0][0] == '/') {
             if (!ob_dirname(dname,*argv))
                 log_dieu(LOG_EXIT_SYS,"get dirname of: ",*argv) ;
-            if (!ob_basename(bname,*argv)) log_dieu(LOG_EXIT_SYS,"get dirname of: ",*argv) ;
+            if (!ob_basename(bname,*argv)) log_dieu(LOG_EXIT_SYS,"get basename of: ",*argv) ;
             sv = bname ;
             directory_forced = dname ;
         } else  sv = *argv ;
