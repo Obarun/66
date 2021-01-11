@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <oblibs/directory.h>
+#include <oblibs/log.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>

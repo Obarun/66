@@ -15,7 +15,10 @@
 #include <66/enum.h>
 
 #include <stddef.h>
+
 #include <oblibs/string.h>
+
+#include <oblibs/log.h>
 
 char const *enum_str_section[] = {
     "main" ,

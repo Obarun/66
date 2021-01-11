@@ -19,6 +19,8 @@
 #include <string.h>
 #include <utmpx.h>
 
+#include <oblibs/log.h>
+
 #include <skalibs/posixishard.h>
 #include <skalibs/allreadwrite.h>
 #include <skalibs/djbunix.h>

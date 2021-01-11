@@ -18,6 +18,7 @@
 #include <sys/types.h>//ssize
 
 #include <oblibs/string.h>
+#include <oblibs/log.h>
 
 #include <skalibs/stralloc.h>
 

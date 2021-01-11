@@ -18,6 +18,8 @@
 
 #include <stdint.h>
 
+#include <oblibs/log.h>
+
 #include <skalibs/uint32.h>
 #include <skalibs/tai.h>
 

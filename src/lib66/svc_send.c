@@ -16,6 +16,8 @@
 
 #include <stddef.h>
 
+#include <oblibs/log.h>
+
 #include <skalibs/genalloc.h>
 
 #include <66/resolve.h>

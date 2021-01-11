@@ -18,6 +18,7 @@
 #include <stdio.h>
 
 #include <oblibs/types.h>
+#include <oblibs/log.h>
 
 #include <skalibs/posixplz.h>
 #include <skalibs/uint32.h>
