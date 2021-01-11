@@ -33,7 +33,7 @@
 #include <66/parser.h>
 #include <66/constants.h>
 
-#define USAGE "66-parser [ -h ] [ -z ] [ -v verbosity ] [ -f ] [ -c|m|C ] service destination"
+#define USAGE "66-parser [ -h ] [ -z ] [ -v verbosity ] [ -f ] [ -I ] service destination"
 
 static inline void info_help (void)
 {
@@ -45,9 +45,7 @@ static inline void info_help (void)
 "   -z: use color\n"
 "   -v: increase/decrease verbosity\n"
 "   -f: force to overwrite existing destination\n"
-"   -c: only appends new key=value pairs at environment configuration file from frontend file\n"
-"   -m: appends new key=value and merge existing one at environment configuration file from frontend file\n"
-"   -C: overwrite it environment configuration file from frontend file\n"
+"   -I: do not import modified configuration files from previous version\n"
 ;
 
  if (buffer_putsflush(buffer_1, help) < 0)
@@ -104,9 +102,10 @@ int main(int argc, char const *const *argv,char const *const *envp)
                 case 'h' :  info_help(); return 0 ;
                 case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
                 case 'f' :  force = 1 ; break ;
-                case 'c' :  if (conf) log_usage(USAGE) ; conf = 1 ; break ;
-                case 'm' :  if (conf) log_usage(USAGE) ; conf = 2 ; break ;
-                case 'C' :  if (conf) log_usage(USAGE) ; conf = 3 ; break ;
+                case 'c' :  log_1_warn("deprecated option -- ignoring") ; break ;
+                case 'm' :  log_1_warn("deprecated option -- ignoring") ; break ;
+                case 'C' :  log_1_warn("deprecated option -- ignoring") ; break ;
+                case 'I' :  conf = 1 ; break ;
                 case 'z' :  log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
                 default :   log_usage(USAGE) ;
             }
