@@ -34,6 +34,8 @@
 
 int tree_state(int argc, char const *const *argv)
 {
+    log_flow() ;
+
     int r, fd,skip = -1 ;
     unsigned int add, del, sch, verbosity, err ;
     size_t statesize = 0, treelen, statelen, pos = 0 ;
@@ -197,6 +199,8 @@ int tree_state(int argc, char const *const *argv)
 
 int tree_cmd_state(unsigned int verbosity,char const *cmd, char const *tree)
 {
+    log_flow() ;
+
     int r ;
     size_t pos = 0 ;
     stralloc opts = STRALLOC_ZERO ;

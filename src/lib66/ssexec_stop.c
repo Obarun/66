@@ -41,6 +41,8 @@ static ss_resolve_graph_t graph_rc = RESOLVE_GRAPH_ZERO ;
 
 int svc_down(ssexec_t *info, char const *const *envp)
 {
+    log_flow() ;
+
     unsigned int reverse = 1 ;
     int r ;
 
@@ -76,6 +78,8 @@ int svc_down(ssexec_t *info, char const *const *envp)
 
 int rc_down(ssexec_t *info, char const *const *envp)
 {
+    log_flow() ;
+
     unsigned int reverse = 1 ;
     int r ;
 

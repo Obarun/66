@@ -20,6 +20,8 @@
 
 int db_ok(char const *livetree, char const *treename)
 {
+    log_flow() ;
+
     size_t treelen = strlen(livetree) ;
     size_t namelen = strlen(treename) ;
 

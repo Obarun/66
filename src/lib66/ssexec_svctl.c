@@ -61,6 +61,8 @@ static unsigned int npids = 0 ;
 
 static int read_file (char const *file, char *buf, size_t n)
 {
+    log_flow() ;
+
     ssize_t r = openreadnclose_nb(file, buf, n) ;
     if (r < 0)
     {
@@ -73,6 +75,8 @@ static int read_file (char const *file, char *buf, size_t n)
 
 static int read_uint (char const *file, unsigned int *fd)
 {
+    log_flow() ;
+
     char buf[UINT_FMT + 1] ;
     if (!read_file(file, buf, UINT_FMT)) return 0 ;
     if (!uint0_scan(buf, fd))
@@ -85,6 +89,8 @@ static int read_uint (char const *file, unsigned int *fd)
  * @Return 1 on success */
 int handle_signal_svc(ss_resolve_sig_t *sv_signal)
 {
+    log_flow() ;
+
     s6_svstatus_t status = S6_SVSTATUS_ZERO ;
     char *sv = sv_signal->res.sa.s + sv_signal->res.runat ;
 
@@ -161,6 +167,8 @@ static const uint8_t chtenum[128] =
  * @Return 3 for PERMANENT failure */
 int handle_case(stralloc *sa, ss_resolve_sig_t *svc)
 {
+    log_flow() ;
+
     int p, h, err ;
     unsigned int state, i = 0 ;
     state = svc->sig ;
@@ -195,6 +203,8 @@ int handle_case(stralloc *sa, ss_resolve_sig_t *svc)
 
 static void write_state(ss_resolve_sig_t *svc)
 {
+    log_flow() ;
+
     ss_state_t sta = STATE_ZERO ;
     char const *state = svc->res.sa.s + svc->res.state ;
     char const *sv = svc->res.sa.s + svc->res.name ;
@@ -234,6 +244,8 @@ static void write_state(ss_resolve_sig_t *svc)
 
 static int announce(ss_resolve_sig_t *svc)
 {
+    log_flow() ;
+
     int r = svc->state ;
     char *sv = svc->res.sa.s + svc->res.name ;
     /** special case time out reached or number execeeded,
@@ -271,12 +283,16 @@ static int announce(ss_resolve_sig_t *svc)
 
 static inline void kill_all (void)
 {
+    log_flow() ;
+
     unsigned int j = npids ;
     while (j--) kill(pidindex[j].pid, SIGTERM) ;
 }
 
 static int handle_signal_pipe(genalloc *gakeep)
 {
+    log_flow() ;
+
     int ok = 1 ;
     for (;;)
     {
@@ -325,6 +341,8 @@ static int handle_signal_pipe(genalloc *gakeep)
 }
 static int compute_timeout(tain_t *start,tain_t *tsv)
 {
+    log_flow() ;
+
     tain_t now,tpass ;
     tain_now_g() ;
     tain_copynow(&now) ;
@@ -335,12 +353,16 @@ static int compute_timeout(tain_t *start,tain_t *tsv)
 
 static void svc_listen_less(int state_val, int *state,unsigned int *did,unsigned int *loop,unsigned int pos)
 {
+    log_flow() ;
+
     (*state) = state_val ;
     did[pos] = 1 ;
     (*loop)--;
 }
 static void svc_listen(unsigned int nsv,tain_t *deadline)
 {
+    log_flow() ;
+
     int r ;
     tain_t start ;
     stralloc sa = STRALLOC_ZERO ;
@@ -395,6 +417,8 @@ static void svc_listen(unsigned int nsv,tain_t *deadline)
  * @return 99 supervisor not listening */
 static int svc_writectl(ss_resolve_sig_t *svc)
 {
+    log_flow() ;
+
     int r ;
     char *sv = svc->res.sa.s + svc->res.runat ;
     size_t siglen = strlen(svc->sigtosend) ;
@@ -408,6 +432,8 @@ static int svc_writectl(ss_resolve_sig_t *svc)
 
 static void svc_async(unsigned int i,unsigned int nsv)
 {
+    log_flow() ;
+
     int r ;
     pid_t pid ;
     pid = fork() ;
@@ -425,6 +451,8 @@ static void svc_async(unsigned int i,unsigned int nsv)
 
 int doit (int spfd, genalloc *gakeep, tain_t *deadline)
 {
+    log_flow() ;
+
     iopause_fd x = { .fd = spfd, .events = IOPAUSE_READ } ;
     unsigned int nsv = genalloc_len(ss_resolve_sig_t,gakeep) ;
     unsigned int i = 0 ;
@@ -457,7 +485,6 @@ int doit (int spfd, genalloc *gakeep, tain_t *deadline)
 
 int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
-
     // be sure that the global var are set correctly
     SV_DEADLINE = 3000 ;
     DEATHSV = 5 ;

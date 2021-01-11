@@ -73,6 +73,8 @@ int info_getcols_fd(int fd)
 
 void info_field_align (char buf[][INFO_FIELD_MAXLEN],char fields[][INFO_FIELD_MAXLEN],wchar_t const field_suffix[],size_t buflen)
 {
+    log_flow() ;
+
     size_t a = 0, b = 0, maxlen = 0, wlen[buflen], len = INFO_FIELD_MAXLEN+nb_el(field_suffix) ;
 
     int maxcol = 0, wcol[buflen] ;
@@ -106,6 +108,8 @@ void info_field_align (char buf[][INFO_FIELD_MAXLEN],char fields[][INFO_FIELD_MA
 
 size_t info_length_from_wchar(char const *str)
 {
+    log_flow() ;
+
     ssize_t len ;
     wchar_t *wcstr ;
     if(!str || !str[0]) return 0 ;
@@ -121,6 +125,8 @@ size_t info_length_from_wchar(char const *str)
 
 size_t info_display_field_name(char const *field)
 {
+    log_flow() ;
+
     size_t len = 0 ;
     if(field)
     {
@@ -132,6 +138,8 @@ size_t info_display_field_name(char const *field)
 
 void info_display_list(char const *field, stralloc *list)
 {
+    log_flow() ;
+
     size_t a = 0 , b, cols, padding = 0, slen = 0 ;
 
     unsigned short maxcols = info_getcols_fd(1) ;
@@ -168,6 +176,8 @@ void info_display_list(char const *field, stralloc *list)
 
 void info_display_nline(char const *field,char const *str)
 {
+    log_flow() ;
+
     size_t pos = 0, padding = info_length_from_wchar(field) + 1 ;
     stralloc tmp = STRALLOC_ZERO ;
     stralloc cp = STRALLOC_ZERO ;
@@ -195,6 +205,8 @@ void info_display_nline(char const *field,char const *str)
 
 void info_graph_display(ss_resolve_t *res, depth_t *depth, int last, int padding, ss_resolve_graph_style *style)
 {
+    log_flow() ;
+
     int level = 1 ;
     char str_pid[UINT_FMT] ;
     uint8_t pid_color = 0 ;
@@ -270,6 +282,8 @@ void info_graph_display(ss_resolve_t *res, depth_t *depth, int last, int padding
 
 int info_walk(ss_resolve_t *res,char const *src,int reverse, depth_t *depth, int padding, ss_resolve_graph_style *style)
 {
+    log_flow() ;
+
     size_t pos = 0, idx = 0 ;
     stralloc sadeps = STRALLOC_ZERO ;
     ss_resolve_t dres = RESOLVE_ZERO ;
@@ -328,6 +342,8 @@ int info_walk(ss_resolve_t *res,char const *src,int reverse, depth_t *depth, int
 
 int info_graph_init (ss_resolve_t *res,char const *src,unsigned int reverse, int padding, ss_resolve_graph_style *style)
 {
+    log_flow() ;
+
     depth_t d = {
         NULL,
         NULL,

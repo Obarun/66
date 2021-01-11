@@ -41,6 +41,8 @@
  * @Return 0 on fail */
 int rc_init(ssexec_t *info, char const *const *envp)
 {
+    log_flow() ;
+
     int r, wstat, empty = 0 ;
     pid_t pid ;
     size_t pos = 0 ;

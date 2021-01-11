@@ -22,6 +22,8 @@ ssexec_t const ssexec_zero = SSEXEC_ZERO ;
 
 void ssexec_free(ssexec_t *info)
 {
+    log_flow() ;
+
     stralloc_free(&info->base) ;
     stralloc_free(&info->live) ;
     stralloc_free(&info->tree) ;

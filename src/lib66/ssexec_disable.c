@@ -39,6 +39,8 @@ static uint8_t REMOVE = 0 ;
 
 static void cleanup(void)
 {
+    log_flow() ;
+
     int e = errno ;
     rm_rf(workdir.s) ;
     errno = e ;
@@ -46,6 +48,8 @@ static void cleanup(void)
 
 int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *info)
 {
+    log_flow() ;
+
     unsigned int i = 0 ;
     int r ;
     genalloc rdeps = GENALLOC_ZERO ;

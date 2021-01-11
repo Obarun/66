@@ -70,18 +70,24 @@ int parse_bracket(stralloc *sa,size_t *pos) ;
 
 void sv_alltype_free(sv_alltype *sv)
 {
+    log_flow() ;
+
     stralloc_free(&sv->saenv) ;
     *&sv->saenv = stralloc_zero ;
 }
 
 void keynocheck_free(keynocheck *nocheck)
 {
+    log_flow() ;
+
     stralloc_free(&nocheck->val) ;
     *nocheck = keynocheck_zero ;
 }
 
 void section_free(section_t *sec)
 {
+    log_flow() ;
+
     stralloc_free(&sec->main) ;
     stralloc_free(&sec->start) ;
     stralloc_free(&sec->stop) ;
@@ -91,6 +97,8 @@ void section_free(section_t *sec)
 
 void freed_parser(void)
 {
+    log_flow() ;
+
     stralloc_free(&keep) ;
     stralloc_free(&deps) ;
     for (unsigned int i = 0 ; i < genalloc_len(sv_alltype,&gasv) ; i++)
@@ -134,6 +142,8 @@ parse_mill_t MILL_GET_SECTION_NAME = \
 
 int section_get_range(section_t *sasection,stralloc *src)
 {
+    log_flow() ;
+
     if (!src->len) return 0 ;
     size_t pos = 0, start = 0 ;
     int r, n = 0, id = -1, skip = 0 ;
@@ -206,6 +216,8 @@ int section_get_range(section_t *sasection,stralloc *src)
 
 int key_get_range(genalloc *ga, section_t *sasection)
 {
+    log_flow() ;
+
     int r ;
     size_t pos = 0, fakepos = 0 ;
     uint8_t found = 0 ;
@@ -322,6 +334,8 @@ int key_get_range(genalloc *ga, section_t *sasection)
 
 int check_mandatory(sv_alltype *service, section_t *sasection)
 {
+    log_flow() ;
+
     if (service->cname.description < 0)
         log_warn_return(LOG_EXIT_ZERO,"key @description at section [start] must be set") ;
 
@@ -399,6 +413,8 @@ int check_mandatory(sv_alltype *service, section_t *sasection)
 
 int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service)
 {
+    log_flow() ;
+
     int p = svtype ;
     int ste = 0 ;
 
@@ -486,6 +502,8 @@ int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service)
  * *******************************/
 int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 {
+    log_flow() ;
+
     int r = 0 ;
     size_t pos = 0, *chlen = &nocheck->val.len ;
     char *chval = nocheck->val.s ;
@@ -717,6 +735,8 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
 
 int keep_runfinish(sv_exec *exec,keynocheck *nocheck)
 {
+    log_flow() ;
+
     int r = 0 ;
     size_t *chlen = &nocheck->val.len ;
     char *chval = nocheck->val.s ;
@@ -753,6 +773,8 @@ int keep_runfinish(sv_exec *exec,keynocheck *nocheck)
 
 int keep_logger(sv_execlog *log,keynocheck *nocheck)
 {
+    log_flow() ;
+
     int r ;
     size_t pos = 0, *chlen = &nocheck->val.len ;
     char *chval = nocheck->val.s ;
@@ -810,6 +832,8 @@ int keep_logger(sv_execlog *log,keynocheck *nocheck)
 
 int keep_environ(sv_alltype *service,keynocheck *nocheck)
 {
+    log_flow() ;
+
     stralloc tmp = STRALLOC_ZERO ;
     switch(nocheck->idkey){
         case KEY_ENVIRON_ENVAL:
@@ -826,6 +850,8 @@ int keep_environ(sv_alltype *service,keynocheck *nocheck)
 
 int keep_regex(sv_module *module,keynocheck *nocheck)
 {
+    log_flow() ;
+
     size_t pos = 0, *chlen = &nocheck->val.len ;
     char *chval = nocheck->val.s ;
 
@@ -895,6 +921,8 @@ int keep_regex(sv_module *module,keynocheck *nocheck)
  * *******************************/
 int add_pipe(sv_alltype *sv, stralloc *sa)
 {
+    log_flow() ;
+
     char *prodname = keep.s+sv->cname.name ;
 
     stralloc tmp = STRALLOC_ZERO ;
@@ -913,6 +941,8 @@ int add_pipe(sv_alltype *sv, stralloc *sa)
 
 int parse_line(stralloc *sa, size_t *pos)
 {
+    log_flow() ;
+
     if (!sa->len) return 0 ;
     int r = 0 ;
     size_t newpos = 0 ;
@@ -932,6 +962,8 @@ int parse_line(stralloc *sa, size_t *pos)
 
 int parse_bracket(stralloc *sa,size_t *pos)
 {
+    log_flow() ;
+
     if (!sa->len) return 0 ;
     size_t newpos = 0 ;
     stralloc kp = STRALLOC_ZERO ;
@@ -948,6 +980,8 @@ int parse_bracket(stralloc *sa,size_t *pos)
 
 void section_setsa(int id, stralloc_ref *p,section_t *sa)
 {
+    log_flow() ;
+
     switch(id)
     {
         case SECTION_MAIN: *p = &sa->main ; break ;
@@ -962,6 +996,8 @@ void section_setsa(int id, stralloc_ref *p,section_t *sa)
 
 int section_get_skip(char const *s,size_t pos,int nline)
 {
+    log_flow() ;
+
     ssize_t r = -1 ;
     if (nline == 1)
     {
@@ -979,6 +1015,8 @@ int section_get_skip(char const *s,size_t pos,int nline)
 
 int section_get_id(stralloc *secname, char const *str,size_t *pos,int *id)
 {
+    log_flow() ;
+
     size_t len = strlen(str) ;
     size_t newpos = 0 ;
     (*id) = -1 ;
@@ -1000,6 +1038,8 @@ int section_get_id(stralloc *secname, char const *str,size_t *pos,int *id)
 
 int key_get_next_id(stralloc *sa, char const *str,size_t *pos)
 {
+    log_flow() ;
+
     if (!str) return 0 ;
     int r = 0 ;
     size_t newpos = 0, len = strlen(str) ;
@@ -1033,6 +1073,8 @@ int key_get_next_id(stralloc *sa, char const *str,size_t *pos)
 
 int get_clean_val(keynocheck *ch)
 {
+    log_flow() ;
+
     if (!sastr_clean_element(&ch->val))
     {
         parse_err(8,ch) ;
@@ -1043,6 +1085,8 @@ int get_clean_val(keynocheck *ch)
 
 int get_enum(char const *str, keynocheck *ch)
 {
+    log_flow() ;
+
     int r = get_enum_by_key(str) ;
     if (r == -1)
     {
@@ -1054,6 +1098,8 @@ int get_enum(char const *str, keynocheck *ch)
 
 int get_timeout(keynocheck *ch,uint32_t *ui)
 {
+    log_flow() ;
+
     int time = 0 ;
     if ((ch->idkey == KEY_MAIN_T_KILL) || (ch->idkey == KEY_LOGGER_T_KILL)) time = 0 ;
     else if ((ch->idkey == KEY_MAIN_T_FINISH) || (ch->idkey == KEY_LOGGER_T_FINISH)) time = 1 ;
@@ -1069,6 +1115,8 @@ int get_timeout(keynocheck *ch,uint32_t *ui)
 
 int get_uint(keynocheck *ch,uint32_t *ui)
 {
+    log_flow() ;
+
     if (!uint32_scan(ch->val.s,ui))
     {
         parse_err(3,ch) ;
@@ -1079,6 +1127,8 @@ int get_uint(keynocheck *ch,uint32_t *ui)
 
 int check_valid_runas(keynocheck *ch)
 {
+    log_flow() ;
+
     size_t len = strlen(ch->val.s) ;
     char file[len + 1] ;
     auto_strings(file,ch->val.s) ;
@@ -1165,6 +1215,8 @@ int check_valid_runas(keynocheck *ch)
 
 void parse_err(int ierr,keynocheck *check)
 {
+    log_flow() ;
+
     int idsec = check->idsec ;
     int idkey = check->idkey ;
     char const *section = get_key_by_enum(ENUM_SECTION,idsec) ;
@@ -1212,6 +1264,8 @@ void parse_err(int ierr,keynocheck *check)
 
 int get_svtype(sv_alltype *sv_before, char const *contents)
 {
+    log_flow() ;
+
     stralloc sa = STRALLOC_ZERO ;
 
     if (!auto_stra(&sa,contents)) goto err ;
@@ -1232,6 +1286,8 @@ int get_svtype(sv_alltype *sv_before, char const *contents)
 
 int get_svtype_from_file(char const *file)
 {
+    log_flow() ;
+
     stralloc tmp = STRALLOC_ZERO ;
     int svtype = -1 ;
     size_t len = strlen(file) ;
@@ -1255,6 +1311,8 @@ int get_svtype_from_file(char const *file)
 
 int get_svname(sv_alltype *sv_before,char const *contents)
 {
+    log_flow() ;
+
     int r ;
     stralloc sa = STRALLOC_ZERO ;
 

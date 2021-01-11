@@ -28,6 +28,8 @@
  * -1->not initiated */
 int db_find_compiled_state(char const *livetree, char const *treename)
 {
+    log_flow() ;
+
     int r ;
     size_t treelen = strlen(livetree) ;
     size_t namelen = strlen(treename) ;

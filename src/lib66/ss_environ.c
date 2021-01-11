@@ -144,6 +144,8 @@ int env_compute(stralloc *result,sv_alltype *sv, uint8_t conf)
 
 int env_clean_with_comment(stralloc *sa)
 {
+    log_flow() ;
+
     ssize_t pos = 0, r ;
     char *end = 0, *start = 0 ;
     stralloc final = STRALLOC_ZERO ;

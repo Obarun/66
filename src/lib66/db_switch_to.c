@@ -31,6 +31,8 @@
  * 0-> ori */
 int db_switch_to(ssexec_t *info, char const *const *envp,unsigned int where)
 {
+    log_flow() ;
+
     int r ;
 
     stralloc db = STRALLOC_ZERO ;

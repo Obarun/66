@@ -27,6 +27,8 @@
 
 int tree_get_permissions(char const *tree,uid_t owner)
 {
+    log_flow() ;
+
     ssize_t r ;
     size_t treelen = strlen(tree) ;
     char pack[UID_FMT] ;

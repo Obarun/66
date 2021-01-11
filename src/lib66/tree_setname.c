@@ -23,6 +23,8 @@
 
 char tree_setname(stralloc *sa,char const *tree)
 {
+    log_flow() ;
+
     size_t tlen = strlen(tree) ;
     ssize_t treelen = get_rlen_until(tree,'/',tlen) ;
     if (treelen <= 0) return 0 ;

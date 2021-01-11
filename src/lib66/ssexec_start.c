@@ -46,6 +46,8 @@ static ss_resolve_graph_t graph_reload_rc = RESOLVE_GRAPH_ZERO ;
 
 int svc_sanitize(ssexec_t *info, char const *const *envp)
 {
+    log_flow() ;
+
     unsigned int reverse = 0 ;
     int r ;
     stralloc sares = STRALLOC_ZERO ;
@@ -105,6 +107,8 @@ int svc_sanitize(ssexec_t *info, char const *const *envp)
 
 int rc_sanitize(ssexec_t *info, char const *const *envp)
 {
+    log_flow() ;
+
     int r, reverse = 1, done = 0 ;
     stralloc sares = STRALLOC_ZERO ;
 
@@ -183,6 +187,8 @@ int rc_sanitize(ssexec_t *info, char const *const *envp)
 
 int rc_start(ssexec_t *info,genalloc *ga,char const *signal,char const *const *envp)
 {
+    log_flow() ;
+
     char const *sig ;
     if (RELOAD >= 1) sig = "-r" ;
     else sig = "-u" ;

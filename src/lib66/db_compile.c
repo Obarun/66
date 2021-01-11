@@ -32,6 +32,8 @@
 
 int db_compile(char const *workdir, char const *tree, char const *treename, char const *const *envp)
 {
+    log_flow() ;
+
     int wstat, r ;
     pid_t pid ;
     size_t wlen = strlen(workdir), treelen = strlen(treename) ;

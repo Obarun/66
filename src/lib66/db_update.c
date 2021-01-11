@@ -29,6 +29,7 @@
 
 int db_update(char const *newdb, ssexec_t *info,char const *const *envp)
 {
+    log_flow() ;
 
     pid_t pid ;
     int wstat ;

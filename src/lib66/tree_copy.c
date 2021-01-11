@@ -25,6 +25,8 @@
 
 int tree_copy(stralloc *dir, char const *tree,char const *treename)
 {
+    log_flow() ;
+
     char *fdir = 0 ;
     size_t treelen = strlen(tree) ;
     char tmp[treelen + SS_SVDIRS_LEN + 1] ;

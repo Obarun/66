@@ -78,6 +78,8 @@ static inline void info_help (void)
 
 static inline void add_one_day (struct tm *tm)
 {
+    log_flow() ;
+
     tm->tm_isdst = -1 ;
     if (tm->tm_mday++ < 31) return ;
     tm->tm_mday = 1 ;
@@ -88,6 +90,8 @@ static inline void add_one_day (struct tm *tm)
 
 static inline void parse_hourmin (tain_t *when, char const *s)
 {
+    log_flow() ;
+
     tai_t taithen ;
     struct tm tmthen ;
     unsigned int hour, minute ;
@@ -117,6 +121,8 @@ static inline void parse_hourmin (tain_t *when, char const *s)
 
 static void parse_mins (tain_t *when, char const *s)
 {
+    log_flow() ;
+
     unsigned int mins ;
     if (!uint0_scan(s, &mins)) log_usage(USAGE) ;
     tain_addsec_g(when, mins * 60) ;
@@ -124,6 +130,8 @@ static void parse_mins (tain_t *when, char const *s)
 
 static inline void parse_time (tain_t *when, char const *s)
 {
+    log_flow() ;
+
     if (!strcmp(s, "now")) tain_copynow(when) ;
     else if (s[0] == '+') parse_mins(when, s+1) ;
     else if (strchr(s, ':')) parse_hourmin(when, s) ;
@@ -135,6 +143,8 @@ static inline void parse_time (tain_t *when, char const *s)
 
 static inline unsigned char cclass (unsigned char c)
 {
+    log_flow() ;
+
     switch (c)
     {
         case 0 : return 0 ;
@@ -146,6 +156,8 @@ static inline unsigned char cclass (unsigned char c)
 
 static inline unsigned int parse_authorized_users (char *buf, char const **users, unsigned int max)
 {
+    log_flow() ;
+
     static unsigned char const table[3][4] =
     {
         { 0x03, 0x00, 0x01, 0x12 },
@@ -179,6 +191,8 @@ static inline unsigned int parse_authorized_users (char *buf, char const **users
 
 static inline int match_users_with_utmp (char const *const *users, unsigned int n)
 {
+    log_flow() ;
+
     setutxent() ;
     for (;;)
     {
@@ -199,6 +213,8 @@ static inline int match_users_with_utmp (char const *const *users, unsigned int 
 
 static inline void access_control (void)
 {
+    log_flow() ;
+
     char buf[AC_BUFSIZE] ;
     char const *users[AC_MAX] ;
     unsigned int n ;

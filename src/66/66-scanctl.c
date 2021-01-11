@@ -45,6 +45,8 @@ static inline void info_help (void)
 
 static inline unsigned int lookup (char const *const *table, char const *signal)
 {
+    log_flow() ;
+
     unsigned int i = 0 ;
     for (; table[i] ; i++) if (!strcmp(signal, table[i])) break ;
     return i ;
@@ -52,6 +54,8 @@ static inline unsigned int lookup (char const *const *table, char const *signal)
 
 static inline unsigned int parse_signal (char const *signal)
 {
+    log_flow() ;
+
     static char const *const signal_table[] =
     {
         "reload",
@@ -69,6 +73,8 @@ static inline unsigned int parse_signal (char const *signal)
 
 int send_signal(char const *scandir, char const *signal)
 {
+    log_flow() ;
+
     unsigned int sig = 5 ;
     size_t siglen = strlen(signal) ;
     char csig[SIGSIZE + 1] ;

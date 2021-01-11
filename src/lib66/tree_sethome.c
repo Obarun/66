@@ -28,6 +28,8 @@
 
 int tree_sethome(stralloc *tree, char const *base,uid_t owner)
 {
+    log_flow() ;
+
     int r ;
 
     if (!tree->len)

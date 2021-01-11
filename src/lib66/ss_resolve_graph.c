@@ -30,11 +30,15 @@
 
 void ss_resolve_graph_ndeps_free(ss_resolve_graph_ndeps_t *graph)
 {
+    log_flow() ;
+
     genalloc_free(uint32_t,&graph->ndeps) ;
 }
 
 void ss_resolve_graph_free(ss_resolve_graph_t *graph)
 {
+    log_flow() ;
+
     genalloc_deepfree(ss_resolve_t,&graph->name,ss_resolve_free) ;
     genalloc_deepfree(ss_resolve_graph_ndeps_t,&graph->cp,ss_resolve_graph_ndeps_free) ;
     genalloc_free(ss_resolve_t,&graph->sorted) ;
@@ -42,6 +46,8 @@ void ss_resolve_graph_free(ss_resolve_graph_t *graph)
 
 int ss_resolve_dfs(ss_resolve_graph_t *graph, unsigned int idx, visit *c,unsigned int *ename,unsigned int *edeps)
 {
+    log_flow() ;
+
     int cycle = 0 ;
     unsigned int i, data ;
     unsigned int len = genalloc_len(uint32_t,&genalloc_s(ss_resolve_graph_ndeps_t,&graph->cp)[idx].ndeps) ;
@@ -73,6 +79,8 @@ int ss_resolve_dfs(ss_resolve_graph_t *graph, unsigned int idx, visit *c,unsigne
 
 int ss_resolve_graph_sort(ss_resolve_graph_t *graph)
 {
+    log_flow() ;
+
     unsigned int len = genalloc_len(ss_resolve_graph_ndeps_t,&graph->cp) ;
     visit c[len] ;
     unsigned int i, ename = 0, edeps = 0 ;
@@ -95,6 +103,8 @@ int ss_resolve_graph_sort(ss_resolve_graph_t *graph)
 
 int ss_resolve_graph_publish(ss_resolve_graph_t *graph,unsigned int reverse)
 {
+    log_flow() ;
+
     int r, ret = 0 ;
     size_t a = 0 , b = 0 ;
     stralloc sa = STRALLOC_ZERO ;
@@ -134,6 +144,8 @@ int ss_resolve_graph_publish(ss_resolve_graph_t *graph,unsigned int reverse)
 
 int ss_resolve_graph_build(ss_resolve_graph_t *graph,ss_resolve_t *res,char const *src,unsigned int reverse)
 {
+    log_flow() ;
+
     char *string = res->sa.s ;
     char *name = string + res->name ;
 
@@ -173,6 +185,8 @@ int ss_resolve_graph_build(ss_resolve_graph_t *graph,ss_resolve_t *res,char cons
  * @Return 0 on fail*/
 int ss_resolve_graph_src(ss_resolve_graph_t *graph, char const *dir, unsigned int reverse, unsigned int what)
 {
+    log_flow() ;
+
     stralloc sa = STRALLOC_ZERO ;
     ss_resolve_t res = RESOLVE_ZERO ;
     size_t dirlen = strlen(dir), pos = 0 ;

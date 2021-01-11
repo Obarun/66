@@ -50,6 +50,8 @@ void err(unsigned int *e, unsigned int msg,char const *resolve,char const *swap,
 
 int tree_copy_tmp(char const *workdir, ssexec_t *info)
 {
+    log_flow() ;
+
     stralloc saresolve = STRALLOC_ZERO ;
     stralloc swap = STRALLOC_ZERO ;
     unsigned int e = 1 ;

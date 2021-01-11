@@ -82,17 +82,23 @@ ss_resolve_field_table_t ss_resolve_field_table[] = {
 
 void ss_resolve_free(ss_resolve_t *res)
 {
+    log_flow() ;
+
     stralloc_free(&res->sa) ;
 }
 
 void ss_resolve_init(ss_resolve_t *res)
 {
+    log_flow() ;
+
     res->sa.len = 0 ;
     ss_resolve_add_string(res,"") ;
 }
 
 int ss_resolve_pointo(stralloc *sa,ssexec_t *info,int type, unsigned int where)
 {
+    log_flow() ;
+
     stralloc tmp = STRALLOC_ZERO ;
 
     char ownerstr[UID_FMT] ;
@@ -155,6 +161,8 @@ int ss_resolve_pointo(stralloc *sa,ssexec_t *info,int type, unsigned int where)
  * @mdir -> module dir */
 int ss_resolve_module_path(stralloc *sdir, stralloc *mdir, char const *sv,char const *frontend_src, uid_t owner)
 {
+    log_flow() ;
+
     int r, insta ;
     stralloc sainsta = STRALLOC_ZERO ;
     stralloc mhome = STRALLOC_ZERO ; // module user dir
@@ -213,6 +221,8 @@ int ss_resolve_module_path(stralloc *sdir, stralloc *mdir, char const *sv,char c
 
 int ss_resolve_src_path(stralloc *sasrc,char const *sv, uid_t owner,char const *directory_forced)
 {
+    log_flow() ;
+
     int r ;
     char const *src = 0 ;
     int found = 0, err = -1 ;
@@ -264,6 +274,8 @@ int ss_resolve_src_path(stralloc *sasrc,char const *sv, uid_t owner,char const *
 
 int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found)
 {
+    log_flow() ;
+
     int r, obr, insta ;
     size_t i, len, namelen = strlen(name), srclen = strlen(src), pos = 0 ;
     stralloc sainsta = STRALLOC_ZERO ;
@@ -374,6 +386,8 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found
 
 void ss_resolve_rmfile(char const *src,char const *name)
 {
+    log_flow() ;
+
     size_t srclen = strlen(src) ;
     size_t namelen = strlen(name) ;
 
@@ -389,6 +403,8 @@ void ss_resolve_rmfile(char const *src,char const *name)
 
 ssize_t ss_resolve_add_string(ss_resolve_t *res, char const *data)
 {
+    log_flow() ;
+
     ssize_t baselen = res->sa.len ;
     if (!data)
     {
@@ -402,6 +418,8 @@ ssize_t ss_resolve_add_string(ss_resolve_t *res, char const *data)
 
 int ss_resolve_write(ss_resolve_t *res, char const *dst, char const *name)
 {
+    log_flow() ;
+
     size_t dstlen = strlen(dst) ;
     size_t namelen = strlen(name) ;
 
@@ -415,6 +433,8 @@ int ss_resolve_write(ss_resolve_t *res, char const *dst, char const *name)
 
 int ss_resolve_read(ss_resolve_t *res, char const *src, char const *name)
 {
+    log_flow() ;
+
     size_t srclen = strlen(src) ;
     size_t namelen = strlen(name) ;
 
@@ -428,6 +448,8 @@ int ss_resolve_read(ss_resolve_t *res, char const *src, char const *name)
 
 int ss_resolve_check_insrc(ssexec_t *info, char const *name)
 {
+    log_flow() ;
+
     stralloc sares = STRALLOC_ZERO ;
     if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) goto err ;
     if (!ss_resolve_check(sares.s,name)) goto err ;
@@ -440,6 +462,8 @@ int ss_resolve_check_insrc(ssexec_t *info, char const *name)
 
 int ss_resolve_check(char const *src, char const *name)
 {
+    log_flow() ;
+
     int r ;
     size_t srclen = strlen(src) ;
     size_t namelen = strlen(name) ;
@@ -456,6 +480,8 @@ int ss_resolve_check(char const *src, char const *name)
 
 int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 {
+    log_flow() ;
+
     char ownerstr[UID_FMT] ;
     size_t ownerlen = uid_fmt(ownerstr,info->owner), id, nid ;
     ownerstr[ownerlen] = 0 ;
@@ -699,6 +725,8 @@ int ss_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst)
 
 int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst,ssexec_t *info)
 {
+    log_flow() ;
+
     if (!sv->logger) return 1 ;
 
     ss_state_t sta = STATE_ZERO ;
@@ -767,6 +795,8 @@ int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst,ssexec_t *info)
 
 int ss_resolve_cmp(genalloc *ga,char const *name)
 {
+    log_flow() ;
+
     unsigned int i = 0 ;
     for (;i < genalloc_len(ss_resolve_t,ga) ; i++)
     {
@@ -779,6 +809,8 @@ int ss_resolve_cmp(genalloc *ga,char const *name)
 
 int ss_resolve_copy(ss_resolve_t *dst,ss_resolve_t *res)
 {
+    log_flow() ;
+
     ss_resolve_free(dst) ;
     size_t len = res->sa.len - 1 ;
     dst->salen = res->salen ;
@@ -821,6 +853,8 @@ int ss_resolve_copy(ss_resolve_t *dst,ss_resolve_t *res)
 
 int ss_resolve_append(genalloc *ga,ss_resolve_t *res)
 {
+    log_flow() ;
+
     ss_resolve_t cp = RESOLVE_ZERO ;
     if (!ss_resolve_copy(&cp,res)) goto err ;
     if (!genalloc_append(ss_resolve_t,ga,&cp)) goto err ;
@@ -832,6 +866,8 @@ int ss_resolve_append(genalloc *ga,ss_resolve_t *res)
 
 int ss_resolve_add_deps(genalloc *tokeep,ss_resolve_t *res, char const *src)
 {
+    log_flow() ;
+
     size_t pos = 0 ;
     stralloc tmp = STRALLOC_ZERO ;
 
@@ -869,6 +905,8 @@ int ss_resolve_add_deps(genalloc *tokeep,ss_resolve_t *res, char const *src)
 
 int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 {
+    log_flow() ;
+
     int type ;
     stralloc tmp = STRALLOC_ZERO ;
     stralloc nsv = STRALLOC_ZERO ;
@@ -972,6 +1010,8 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
 
 int ss_resolve_add_logger(genalloc *ga,char const *src)
 {
+    log_flow() ;
+
     size_t i = 0 ;
     genalloc gatmp = GENALLOC_ZERO ;
 
@@ -1012,6 +1052,8 @@ int ss_resolve_add_logger(genalloc *ga,char const *src)
 
 int ss_resolve_create_live(ssexec_t *info)
 {
+    log_flow() ;
+
     int r ;
     gid_t gidowner ;
     if (!yourgid(&gidowner,info->owner)) return 0 ;
@@ -1061,6 +1103,8 @@ int ss_resolve_create_live(ssexec_t *info)
 
 int ss_resolve_search(genalloc *ga,char const *name)
 {
+    log_flow() ;
+
     unsigned int i = 0 ;
     for (; i < genalloc_len(ss_resolve_t,ga) ; i++)
     {
@@ -1072,6 +1116,8 @@ int ss_resolve_search(genalloc *ga,char const *name)
 
 int ss_resolve_write_master(ssexec_t *info,ss_resolve_graph_t *graph,char const *dir, unsigned int reverse)
 {
+    log_flow() ;
+
     int r ;
     size_t i = 0 ;
     char ownerstr[UID_FMT] ;
@@ -1182,6 +1228,8 @@ int ss_resolve_write_master(ssexec_t *info,ss_resolve_graph_t *graph,char const 
 
 int ss_resolve_sort_bytype(genalloc *gares,stralloc *list,char const *src)
 {
+    log_flow() ;
+
     size_t pos = 0 ;
     ss_resolve_t res = RESOLVE_ZERO ;
 
@@ -1227,6 +1275,8 @@ int ss_resolve_sort_bytype(genalloc *gares,stralloc *list,char const *src)
 
 int ss_resolve_cmp_service_basedir(char const *dir)
 {
+    log_flow() ;
+
     /** dir can be 0, so nothing to do */
     if (!dir) return 1 ;
     size_t len = strlen(dir) ;
@@ -1274,6 +1324,8 @@ int ss_resolve_cmp_service_basedir(char const *dir)
 
 int ss_resolve_service_isdir(char const *dir, char const *name)
 {
+    log_flow() ;
+
     size_t dirlen = strlen(dir) ;
     size_t namelen = strlen(name) ;
     char t[dirlen + 1 + namelen + 1] ;
@@ -1289,6 +1341,8 @@ int ss_resolve_service_isdir(char const *dir, char const *name)
 
 int ss_resolve_sort_byfile_first(stralloc *sort, char const *src)
 {
+    log_flow() ;
+
     int fdsrc ;
     stralloc tmp = STRALLOC_ZERO ;
 
@@ -1347,6 +1401,8 @@ int ss_resolve_sort_byfile_first(stralloc *sort, char const *src)
  * @Return > 2, service exist on different tree */
 int ss_resolve_svtree(stralloc *svtree,char const *svname,char const *tree)
 {
+    log_flow() ;
+
     uint8_t found = 1, copied = 0 ;
     stralloc satree = STRALLOC_ZERO ;
     stralloc tmp = STRALLOC_ZERO ;
@@ -1415,6 +1471,8 @@ int ss_resolve_svtree(stralloc *svtree,char const *svname,char const *tree)
 
 int ss_resolve_add_cdb_uint(struct cdb_make *c, char const *key,uint32_t data)
 {
+    log_flow() ;
+
     char pack[4] ;
     size_t klen = strlen(key) ;
 
@@ -1427,6 +1485,8 @@ int ss_resolve_add_cdb_uint(struct cdb_make *c, char const *key,uint32_t data)
 
 int ss_resolve_add_cdb(struct cdb_make *c,char const *key,char const *data)
 {
+    log_flow() ;
+
     size_t klen = strlen(key) ;
     size_t dlen = strlen(data) ;
 
@@ -1438,6 +1498,8 @@ int ss_resolve_add_cdb(struct cdb_make *c,char const *key,char const *data)
 
 int ss_resolve_write_cdb(ss_resolve_t *res, char const *dst, char const *name)
 {
+    log_flow() ;
+
     int fd ;
     size_t dstlen = strlen(dst), namelen = strlen(name);
     struct cdb_make c = CDB_MAKE_ZERO ;
@@ -1580,6 +1642,8 @@ int ss_resolve_write_cdb(ss_resolve_t *res, char const *dst, char const *name)
 
 int ss_resolve_find_cdb(stralloc *result, cdb_t *c,char const *key)
 {
+    log_flow() ;
+
     uint32_t x = 0 ;
     size_t klen = strlen(key) ;
 
@@ -1605,6 +1669,8 @@ int ss_resolve_find_cdb(stralloc *result, cdb_t *c,char const *key)
 
 int ss_resolve_read_cdb(ss_resolve_t *dres, char const *name)
 {
+    log_flow() ;
+
     int fd ;
     uint32_t x ;
 
@@ -1768,6 +1834,8 @@ int ss_resolve_read_cdb(ss_resolve_t *dres, char const *name)
 
 int ss_resolve_modify_field(ss_resolve_t *res, ss_resolve_enum_t field, char const *data)
 {
+    log_flow() ;
+
     uint32_t ifield ;
 
     switch(field)
@@ -1911,6 +1979,7 @@ int ss_resolve_modify_field(ss_resolve_t *res, ss_resolve_enum_t field, char con
 
 int ss_resolve_put_field_to_sa(stralloc *sa,ss_resolve_t *res, ss_resolve_enum_t field)
 {
+    log_flow() ;
 
     uint32_t ifield ;
 

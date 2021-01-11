@@ -25,6 +25,8 @@
 
 int hpr_shutdown (char const *live, unsigned int what, tain_t const *when, unsigned int grace)
 {
+    log_flow() ;
+
     char pack[5 + TAIN_PACK] = { "Shpr"[what] } ;
     tain_pack(pack+1, when) ;
     uint32_pack_big(pack + 1 + TAIN_PACK, (uint32_t)grace) ;

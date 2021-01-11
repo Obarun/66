@@ -101,6 +101,8 @@ static inline void info_help (void)
 
 static int read_line(stralloc *dst, char const *line)
 {
+    log_flow() ;
+
     char b[MAXBUF] ;
     int fd ;
     unsigned int n = 0, m = MAXBUF ;
@@ -147,6 +149,8 @@ static int read_line(stralloc *dst, char const *line)
 
 static int get_value(stralloc *val,char const *key)
 {
+    log_flow() ;
+
     if (!environ_get_val_of_key(val,key)) return 0 ;
     /** value may be empty, in this case we use the default one */
     if (!sastr_clean_element(val))
@@ -162,6 +166,8 @@ static int get_value(stralloc *val,char const *key)
 
 static void parse_conf(void)
 {
+    log_flow() ;
+
     static char const *valid[] =
     { "VERBOSITY", "PATH", "LIVE", "TREE", "RCINIT", "UMASK", "RESCAN", 0 } ;
     int r ;
@@ -283,6 +289,8 @@ static void parse_conf(void)
 
 static int is_mnt(char const *str)
 {
+    log_flow() ;
+
     struct stat st;
     size_t slen = strlen(str) ;
     int is_not_mnt = 0 ;
@@ -302,6 +310,8 @@ static int is_mnt(char const *str)
 
 static void split_tmpfs(char *dst,char *str)
 {
+    log_flow() ;
+
     size_t len = get_len_until(str+1,'/') ;
     len++ ;
     memcpy(dst,str,len) ;
@@ -310,6 +320,8 @@ static void split_tmpfs(char *dst,char *str)
 
 static inline void run_stage2 (char const *const *envp, size_t envlen, char const *modifs, size_t modiflen)
 {
+    log_flow() ;
+
     size_t pos = 0 ;
     char const *newargv[3] = { rcinit, confile, 0 } ;
     setsid() ;
@@ -332,6 +344,8 @@ static inline void run_stage2 (char const *const *envp, size_t envlen, char cons
 
 static inline void run_cmdline(char const *const *newargv, char const *const *envp, char const *msg,char const *arg)
 {
+    log_flow() ;
+
     pid_t pid ;
     int wstat ;
     pid = child_spawn0(newargv[0],newargv,envp) ;
@@ -342,6 +356,7 @@ static inline void run_cmdline(char const *const *newargv, char const *const *en
 
 static inline void make_cmdline(char const *prog,char const **add,int len,char const *msg,char const *arg,char const *const *envp)
 {
+    log_flow() ;
 
     int m = 6 + len, i = 0, n = 0 ;
     char const *newargv[m] ;

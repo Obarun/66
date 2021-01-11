@@ -42,6 +42,8 @@
 
 static inline unsigned int lookup (char const *const *table, char const *signal)
 {
+    log_flow() ;
+
     unsigned int i = 0 ;
     for (; table[i] ; i++) if (!strcmp(signal, table[i])) break ;
     return i ;
@@ -49,6 +51,8 @@ static inline unsigned int lookup (char const *const *table, char const *signal)
 
 static inline unsigned int parse_signal (char const *signal)
 {
+    log_flow() ;
+
     static char const *const signal_table[] =
     {
         "up",
@@ -63,6 +67,8 @@ static inline unsigned int parse_signal (char const *signal)
 
 int all_doit(ssexec_t *info, unsigned int what, char const *const *envp)
 {
+    log_flow() ;
+
     int r ;
 
     stralloc salist = STRALLOC_ZERO ;
@@ -129,6 +135,8 @@ int all_doit(ssexec_t *info, unsigned int what, char const *const *envp)
 
 static void all_redir_fd(void)
 {
+    log_flow() ;
+
     int fd ;
     while((fd = open("/dev/tty",O_RDWR|O_NOCTTY)) >= 0)
     {
@@ -152,6 +160,8 @@ static void all_redir_fd(void)
 
 void all_unsupervise(ssexec_t *info, char const *const *envp,int what)
 {
+    log_flow() ;
+
     size_t newlen = info->livetree.len + 1, pos = 0 ;
 
     char ownerstr[UID_FMT] ;

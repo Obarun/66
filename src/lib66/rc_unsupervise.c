@@ -33,6 +33,8 @@
 
 int rc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *const *envp)
 {
+    log_flow() ;
+
     size_t i = 0 ;
     ss_resolve_t_ref pres ;
     stralloc sares = STRALLOC_ZERO ;

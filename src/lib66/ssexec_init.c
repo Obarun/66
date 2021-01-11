@@ -39,6 +39,8 @@
 
 int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
+    log_flow() ;
+
     int r, db, classic, earlier ;
     ssize_t i = 0, logname = 0 ;
     genalloc gares = GENALLOC_ZERO ; //ss_resolve_t type

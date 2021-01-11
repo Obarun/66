@@ -28,6 +28,8 @@
 
 void ss_state_rmfile(char const *src,char const *name)
 {
+    log_flow() ;
+
     size_t srclen = strlen(src) ;
     size_t namelen = strlen(name) ;
 
@@ -42,6 +44,8 @@ void ss_state_rmfile(char const *src,char const *name)
 
 void ss_state_pack(char *pack, ss_state_t *sta)
 {
+    log_flow() ;
+
     uint32_pack_big(pack,sta->reload) ;
     uint32_pack_big(pack+4,sta->init) ;
     uint32_pack_big(pack+8,sta->unsupervise) ;
@@ -51,6 +55,8 @@ void ss_state_pack(char *pack, ss_state_t *sta)
 
 void ss_state_unpack(char *pack,ss_state_t *sta)
 {
+    log_flow() ;
+
     uint32_t reload ;
     uint32_t init ;
     uint32_t unsupervise ;
@@ -71,6 +77,8 @@ void ss_state_unpack(char *pack,ss_state_t *sta)
 
 int ss_state_write(ss_state_t *sta, char const *dst, char const *name)
 {
+    log_flow() ;
+
     char pack[SS_STATE_SIZE] ;
     size_t dstlen = strlen(dst) ;
     size_t namelen = strlen(name) ;
@@ -89,6 +97,8 @@ int ss_state_write(ss_state_t *sta, char const *dst, char const *name)
 
 int ss_state_read(ss_state_t *sta, char const *src, char const *name)
 {
+    log_flow() ;
+
     char pack[SS_STATE_SIZE] ;
     size_t srclen = strlen(src) ;
     size_t namelen = strlen(name) ;
@@ -107,6 +117,8 @@ int ss_state_read(ss_state_t *sta, char const *src, char const *name)
 
 int ss_state_check(char const *src, char const *name)
 {
+    log_flow() ;
+
     int r ;
     size_t srclen = strlen(src) ;
     size_t namelen = strlen(name) ;
@@ -122,6 +134,8 @@ int ss_state_check(char const *src, char const *name)
 
 void ss_state_setflag(ss_state_t *sta,int flags,int flags_val)
 {
+    log_flow() ;
+
     switch (flags)
     {
         case SS_FLAGS_RELOAD: sta->reload = flags_val ; break ;
@@ -135,6 +149,8 @@ void ss_state_setflag(ss_state_t *sta,int flags,int flags_val)
 
 int ss_state_check_flags(char const *src, char const *name,int flags)
 {
+    log_flow() ;
+
     /** unitialized at all, all flags == 0.
      * Return -1 to make a distinction between
      * file absent and flag == 0. */

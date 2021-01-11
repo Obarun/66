@@ -29,6 +29,8 @@
 
 int backup_realpath_sym(stralloc *sa, ssexec_t *info,unsigned int type)
 {
+    log_flow() ;
+
     ssize_t r ;
     size_t typelen ;
     char *ptype = 0 ;

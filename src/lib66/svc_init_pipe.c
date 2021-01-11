@@ -32,6 +32,8 @@
 
 int svc_init_pipe(ftrigr_t *fifo,genalloc *gasv,tain_t *deadline)
 {
+    log_flow() ;
+
     size_t i = 0 ;
     ss_resolve_sig_t *svc ;
 

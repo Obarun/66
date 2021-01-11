@@ -77,6 +77,8 @@ static inline void info_help (void)
 
 static void cleanup(void)
 {
+    log_flow() ;
+
     if (cleantree)
     {
         log_trace("removing: ",cleantree,"...") ;
@@ -86,6 +88,8 @@ static void cleanup(void)
 
 static void auto_string(char *strings,char const *str,size_t baselen)
 {
+    log_flow() ;
+
     size_t slen = strlen(str) ;
     memcpy(strings + baselen,str,slen) ;
     strings[baselen+slen] = 0 ;
@@ -93,6 +97,8 @@ static void auto_string(char *strings,char const *str,size_t baselen)
 
 static void auto_dir(char const *dst,mode_t mode)
 {
+    log_flow() ;
+
     log_trace("create directory: ",dst) ;
     if (!dir_create_parent(dst,mode))
         log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"create directory: ",dst) ;
@@ -100,40 +106,53 @@ static void auto_dir(char const *dst,mode_t mode)
 
 static void auto_create(char *strings,char const *str,size_t baselen,mode_t mode)
 {
+    log_flow() ;
+
     auto_string(strings,str,baselen) ;
     auto_dir(strings,mode) ;
 }
 
 static void auto_check(char *dst,char const *str,size_t baselen,mode_t mode)
 {
+    log_flow() ;
+
     auto_string(dst,str,baselen) ;
     if (!scan_mode(dst,mode)) auto_dir(dst,0755) ;
 }
 
 static void auto_check_one(char *dst,mode_t mode)
 {
+    log_flow() ;
+
     if (!scan_mode(dst,mode)) auto_dir(dst,0755) ;
 }
 
 static void inline auto_stralloc(stralloc *sa,char const *str)
 {
+    log_flow() ;
+
     if (!stralloc_cats(sa,str)) log_die_nomem("stralloc") ;
 }
 
 static void inline auto_stralloc0(stralloc *sa)
 {
+    log_flow() ;
+
     if (!stralloc_0(sa)) log_die_nomem("stralloc") ;
     sa->len-- ;
 }
 
 static void inline auto_stralloc_0(stralloc *sa,char const *str)
 {
+    log_flow() ;
+
     auto_stralloc(sa,str) ;
     auto_stralloc0(sa) ;
 }
 
 int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t owner)
 {
+    log_flow() ;
 
     ssize_t r ;
     size_t baselen = strlen(base) ;
@@ -210,6 +229,8 @@ int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t own
 
 void create_tree(char const *tree,char const *treename)
 {
+    log_flow() ;
+
     size_t newlen = 0 ;
     size_t treelen = strlen(tree) ;
 
@@ -285,6 +306,8 @@ void create_tree(char const *tree,char const *treename)
 
 void create_backupdir(char const *base, char const *treename)
 {
+    log_flow() ;
+
     int r ;
 
     size_t baselen = strlen(base) - 1 ;//remove the last slash
@@ -313,6 +336,8 @@ void create_backupdir(char const *base, char const *treename)
  * @what -> 1 allow */
 void set_rules(char const *tree,uid_t *uids, size_t uidn,uint8_t what)
 {
+    log_flow() ;
+
     log_trace("set ", !what ? "denied" : "allowed"," user for tree: ",tree,"..." ) ;
 
     int r ;
@@ -369,6 +394,8 @@ void set_rules(char const *tree,uid_t *uids, size_t uidn,uint8_t what)
 
 void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid_t owner,char const *const *envp)
 {
+    log_flow() ;
+
     int r, wstat ;
     pid_t pid ;
     size_t treenamelen = strlen(treename) ;
@@ -493,6 +520,8 @@ void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid
  * @action -> 1 enable */
 void tree_enable_disable(char const *base, char const *dst, char const *tree,uint8_t action)
 {
+    log_flow() ;
+
     int r ;
     log_trace(!action ? "disable " : "enable ",dst,"...") ;
     r  = tree_cmd_state(VERBOSITY,!action ? "-d" : "-a", tree) ;
@@ -507,6 +536,8 @@ void tree_enable_disable(char const *base, char const *dst, char const *tree,uin
 
 void tree_modify_resolve(ss_resolve_t *res,ss_resolve_enum_t field,char const *regex,char const *by)
 {
+    log_flow() ;
+
     stralloc sa = STRALLOC_ZERO ;
     ss_resolve_t modif = RESOLVE_ZERO ;
 
@@ -535,31 +566,33 @@ void tree_modify_resolve(ss_resolve_t *res,ss_resolve_enum_t field,char const *r
 
 void tree_remove(char const *base,char const *dst,char const *tree)
 {
-        log_trace("delete: ",dst,"..." ) ;
+    log_flow() ;
 
-        int r ;
+    log_trace("delete: ",dst,"..." ) ;
 
-        if (rm_rf(dst) < 0) log_dieusys(LOG_EXIT_SYS,"delete: ", dst) ;
+    int r ;
 
-        size_t treelen = strlen(tree) ;
-        size_t baselen = strlen(base) ;
-        char treetmp[baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen  + 1] ;
-        auto_string(treetmp,base,0) ;
-        auto_string(treetmp,SS_SYSTEM,baselen) ;
-        auto_string(treetmp,SS_BACKUP,baselen + SS_SYSTEM_LEN) ;
-        auto_string(treetmp,"/",baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN) ;
-        auto_string(treetmp,tree,baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1) ;
+    if (rm_rf(dst) < 0) log_dieusys(LOG_EXIT_SYS,"delete: ", dst) ;
 
-        r = scan_mode(treetmp,S_IFDIR) ;
-        if (r || (r < 0))
-        {
-            log_trace("delete backup of tree: ",treetmp,"...") ;
-            if (rm_rf(treetmp) < 0) log_dieusys(LOG_EXIT_SYS,"delete: ",treetmp) ;
-        }
+    size_t treelen = strlen(tree) ;
+    size_t baselen = strlen(base) ;
+    char treetmp[baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen  + 1] ;
+    auto_string(treetmp,base,0) ;
+    auto_string(treetmp,SS_SYSTEM,baselen) ;
+    auto_string(treetmp,SS_BACKUP,baselen + SS_SYSTEM_LEN) ;
+    auto_string(treetmp,"/",baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN) ;
+    auto_string(treetmp,tree,baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1) ;
 
-        tree_enable_disable(base,dst,tree,0) ;
+    r = scan_mode(treetmp,S_IFDIR) ;
+    if (r || (r < 0))
+    {
+        log_trace("delete backup of tree: ",treetmp,"...") ;
+        if (rm_rf(treetmp) < 0) log_dieusys(LOG_EXIT_SYS,"delete: ",treetmp) ;
+    }
 
-        log_info("Deleted successfully: ",tree) ;
+    tree_enable_disable(base,dst,tree,0) ;
+
+    log_info("Deleted successfully: ",tree) ;
 }
 
 int main(int argc, char const *const *argv,char const *const *envp)

@@ -32,6 +32,8 @@
 
 int instance_check(char const *svname)
 {
+    log_flow() ;
+
     int r ;
     r = get_len_until(svname,'@') ;
     // avoid empty value after the instance template name
@@ -42,6 +44,8 @@ int instance_check(char const *svname)
 
 int instance_splitname(stralloc *sa,char const *name,int len,int what)
 {
+    log_flow() ;
+
     char const *copy ;
     size_t tlen = len + 1 ;
 
@@ -67,6 +71,8 @@ int instance_splitname(stralloc *sa,char const *name,int len,int what)
 
 int instance_create(stralloc *sasv,char const *svname, char const *regex, int len)
 {
+    log_flow() ;
+
     char const *copy ;
     size_t tlen = len + 1 ;
 

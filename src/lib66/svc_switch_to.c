@@ -28,6 +28,8 @@
  * 0-> ori */
 int svc_switch_to(ssexec_t *info,unsigned int where)
 {
+    log_flow() ;
+
     int r ;
 
     char type[UINT_FMT] ;

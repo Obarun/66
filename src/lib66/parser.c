@@ -35,6 +35,8 @@
 
 int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype)
 {
+    log_flow() ;
+
     int r ;
     size_t i = 0 ;
     section_t sasection = SECTION_ZERO ;

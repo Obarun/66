@@ -171,6 +171,8 @@ enum_all_enum_t enum_all[] = {
 
 ssize_t get_enum_by_key_one(char const *str, int const e)
 {
+    log_flow() ;
+
     int i = 0 ;
     enum_all_enum_t *key = enum_all ;
     for(; i < key[e].enum_all;i++)
@@ -182,6 +184,8 @@ ssize_t get_enum_by_key_one(char const *str, int const e)
 
 ssize_t get_enum_by_key(char const *str)
 {
+    log_flow() ;
+
     int i = 0, ret ;
 
     for (;i<ENUM_ENDOFKEY;i++)
@@ -194,5 +198,7 @@ ssize_t get_enum_by_key(char const *str)
 
 char const *get_key_by_enum(int const e, int const key)
 {
+    log_flow() ;
+
     return enum_all[e].str[key] ;
 }

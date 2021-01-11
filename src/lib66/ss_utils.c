@@ -50,6 +50,8 @@ ss_resolve_t const ss_resolve_zero = RESOLVE_ZERO ;
  * a scandir directory instead of a service directory */
 int scandir_ok (char const *dir)
 {
+    log_flow() ;
+
     size_t dirlen = strlen(dir) ;
     int fd ;
     char fn[dirlen + 1 + strlen(S6_SVSCAN_CTLDIR) + 9 + 1] ;
@@ -70,6 +72,8 @@ int scandir_ok (char const *dir)
 
 int scandir_send_signal(char const *scandir,char const *signal)
 {
+    log_flow() ;
+
     char data[DATASIZE] ;
     size_t datalen = 0 ;
 
@@ -97,6 +101,8 @@ int scandir_send_signal(char const *scandir,char const *signal)
 
 char const *get_userhome(uid_t myuid)
 {
+    log_flow() ;
+
     char const *user_home = NULL ;
     struct passwd *st = getpwuid(myuid) ;
     int e = errno ;
@@ -115,6 +121,8 @@ char const *get_userhome(uid_t myuid)
 
 int youruid(uid_t *passto,char const *owner)
 {
+    log_flow() ;
+
     int e ;
     e = errno ;
     errno = 0 ;
@@ -132,6 +140,8 @@ int youruid(uid_t *passto,char const *owner)
 
 int yourgid(gid_t *passto,uid_t owner)
 {
+    log_flow() ;
+
     int e ;
     e = errno ;
     errno = 0 ;
@@ -149,6 +159,7 @@ int yourgid(gid_t *passto,uid_t owner)
 
 int set_livedir(stralloc *live)
 {
+    log_flow() ;
 
     if (live->len)
     {
@@ -171,6 +182,8 @@ int set_livedir(stralloc *live)
 
 int set_livescan(stralloc *scandir,uid_t owner)
 {
+    log_flow() ;
+
     int r ;
     char ownerpack[UID_FMT] ;
 
@@ -190,6 +203,8 @@ int set_livescan(stralloc *scandir,uid_t owner)
 
 int set_livetree(stralloc *livetree,uid_t owner)
 {
+    log_flow() ;
+
     int r ;
     char ownerpack[UID_FMT] ;
 
@@ -209,6 +224,8 @@ int set_livetree(stralloc *livetree,uid_t owner)
 
 int set_livestate(stralloc *livestate,uid_t owner)
 {
+    log_flow() ;
+
     int r ;
     char ownerpack[UID_FMT] ;
 
@@ -229,6 +246,8 @@ int set_livestate(stralloc *livestate,uid_t owner)
 
 int set_ownerhome(stralloc *base,uid_t owner)
 {
+    log_flow() ;
+
     char const *user_home = 0 ;
     int e = errno ;
     struct passwd *st = getpwuid(owner) ;
@@ -251,6 +270,8 @@ int set_ownerhome(stralloc *base,uid_t owner)
 
 int set_ownersysdir(stralloc *base, uid_t owner)
 {
+    log_flow() ;
+
     char const *user_home = NULL ;
     int e = errno ;
     struct passwd *st = getpwuid(owner) ;
@@ -281,6 +302,8 @@ int set_ownersysdir(stralloc *base, uid_t owner)
 
 int read_svfile(stralloc *sasv,char const *name,char const *src)
 {
+    log_flow() ;
+
     int r ;
     size_t srclen = strlen(src) ;
     size_t namelen = strlen(name) ;
@@ -307,6 +330,8 @@ int read_svfile(stralloc *sasv,char const *name,char const *src)
 
 int module_in_cmdline(genalloc *gares, ss_resolve_t *res, char const *dir)
 {
+    log_flow() ;
+
     stralloc tmp = STRALLOC_ZERO ;
     size_t pos = 0 ;
 
@@ -335,6 +360,8 @@ int module_in_cmdline(genalloc *gares, ss_resolve_t *res, char const *dir)
 
 int module_search_service(char const *src, genalloc *gares, char const *name,uint8_t *found, char module_name[255])
 {
+    log_flow() ;
+
     size_t srclen = strlen(src), pos = 0, deps = 0 ;
     stralloc list = STRALLOC_ZERO ;
     stralloc tmp = STRALLOC_ZERO ;

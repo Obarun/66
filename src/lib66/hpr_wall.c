@@ -31,6 +31,8 @@
 
 void hpr_wall (char const *s)
 {
+    log_flow() ;
+
     size_t n = strlen(s) ;
     char tty[10 + UT_LINESIZE] = "/dev/" ;
     char msg[n+1] ;

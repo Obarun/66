@@ -41,6 +41,8 @@ static unsigned int DEADLINE = 0 ;
 
 static void rebuild_list(ss_resolve_graph_t *graph,ssexec_t *info, int what)
 {
+    log_flow() ;
+
     int isup ;
     s6_svstatus_t status = S6_SVSTATUS_ZERO ;
     genalloc gatmp = GENALLOC_ZERO ;
@@ -97,6 +99,8 @@ static void rebuild_list(ss_resolve_graph_t *graph,ssexec_t *info, int what)
  * signal > 1 -> down*/
 static int check_status(genalloc *gares,ssexec_t *info,int signal)
 {
+    log_flow() ;
+
     int reload = 0 , up = 0 , ret = 0 ;
 
     s6_svstatus_t status = S6_SVSTATUS_ZERO ;
@@ -169,6 +173,8 @@ static int check_status(genalloc *gares,ssexec_t *info,int signal)
 }
 static pid_t send(genalloc *gasv, char const *livetree, char const *signal,char const *const *envp)
 {
+    log_flow() ;
+
     tain_t deadline ;
     tain_from_millisecs(&deadline, DEADLINE) ;
 

@@ -29,6 +29,8 @@
 
 int tree_find_current(stralloc *tree, char const *base,uid_t owner)
 {
+    log_flow() ;
+
     ssize_t r ;
     size_t baselen = strlen(base) ;
     char pack[UID_FMT] ;

@@ -85,6 +85,8 @@ static inline void info_help (void)
 
 static void restore_console (void)
 {
+    log_flow() ;
+
     if (!inns && !nologger)
     {
         fd_close(1) ;
@@ -102,6 +104,8 @@ struct at_s
 
 static int renametemp (char const *s, mode_t mode, void *data)
 {
+    log_flow() ;
+
     struct at_s *at = data ;
     (void)mode ;
     return renameat(at->fd, at->name, at->fd, s) ;
@@ -109,12 +113,16 @@ static int renametemp (char const *s, mode_t mode, void *data)
 
 static int mkrenametemp (int fd, char const *src, char *dst)
 {
+    log_flow() ;
+
     struct at_s at = { .fd = fd, .name = src } ;
     return mkfiletemp(dst, &renametemp, 0700, &at) ;
 }
 
 ssize_t file_get_size(const char* filename)
 {
+    log_flow() ;
+
     struct stat st;
     errno = 0 ;
     if (stat(filename, &st) == -1) return -1 ;
@@ -123,6 +131,8 @@ ssize_t file_get_size(const char* filename)
 
 static inline void auto_conf(char *confile,size_t conflen)
 {
+    log_flow() ;
+
     memcpy(confile,conf,conflen) ;
     confile[conflen] = '/' ;
     memcpy(confile + conflen + 1, SS_BOOT_CONF, SS_BOOT_CONF_LEN) ;
@@ -131,6 +141,8 @@ static inline void auto_conf(char *confile,size_t conflen)
 
 static void parse_conf(char const *confile,char *rcshut,char const *key)
 {
+    log_flow() ;
+
     int r ;
     stralloc src = STRALLOC_ZERO ;
     size_t filesize = file_get_size(confile) ;
@@ -148,6 +160,8 @@ static void parse_conf(char const *confile,char *rcshut,char const *key)
 
 static inline void run_rcshut (char const *const *envp)
 {
+    log_flow() ;
+
     pid_t pid ;
     size_t conflen = strlen(conf) ;
     char rcshut[4096] ;
@@ -177,6 +191,8 @@ static inline void run_rcshut (char const *const *envp)
 
 static inline void prepare_shutdown (buffer *b, tain_t *deadline, unsigned int *grace_time)
 {
+    log_flow() ;
+
     uint32_t u ;
     char pack[TAIN_PACK + 4] ;
     ssize_t r = sanitize_read(buffer_get(b, pack, TAIN_PACK + 4)) ;
@@ -190,6 +206,8 @@ static inline void prepare_shutdown (buffer *b, tain_t *deadline, unsigned int *
 
 static inline void handle_fifo (buffer *b, char *what, tain_t *deadline, unsigned int *grace_time)
 {
+    log_flow() ;
+
     for (;;)
     {
         char c ;
@@ -221,6 +239,8 @@ static inline void handle_fifo (buffer *b, char *what, tain_t *deadline, unsigne
 
 static inline void prepare_stage4 (char what)
 {
+    log_flow() ;
+
     buffer b ;
     int fd ;
     char buf[512] ;
@@ -276,6 +296,8 @@ static inline void prepare_stage4 (char what)
 
 static inline void unsupervise_tree (void)
 {
+    log_flow() ;
+
     char const *except[3] =
     {
         "66-shutdownd",

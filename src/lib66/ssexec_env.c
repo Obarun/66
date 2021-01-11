@@ -54,6 +54,8 @@ enum tasks_e
 
 static uint8_t check_current_version(char const *svconf,char const *version)
 {
+    log_flow() ;
+
     stralloc sa = STRALLOC_ZERO ;
     if (!env_find_current_version(&sa,svconf)) log_dieu(LOG_EXIT_SYS,"find current version") ;
     char bname[sa.len + 1] ;
@@ -64,6 +66,8 @@ static uint8_t check_current_version(char const *svconf,char const *version)
 
 static void run_editor(char const *src, char const *const *envp)
 {
+    log_flow() ;
+
     char *editor = getenv("EDITOR") ;
     if (!editor) {
         editor = getenv("SUDO_USER") ;
@@ -76,6 +80,8 @@ static void run_editor(char const *src, char const *const *envp)
 
 static void do_import(char const *svname, char const *svconf, char const *version, int svtype)
 {
+    log_flow() ;
+
     size_t pos = 0 ;
     stralloc sasrc = STRALLOC_ZERO ;
 
@@ -102,6 +108,8 @@ static void do_import(char const *svname, char const *svconf, char const *versio
 
 static void replace_value_of_key(stralloc *srclist,char const *key)
 {
+    log_flow() ;
+
     stralloc sakey = STRALLOC_ZERO ;
 
     size_t pos = 0 ;

@@ -32,6 +32,8 @@
 // force: 0->check, 1->remove and create
 int backup_make_new(ssexec_t *info, unsigned int type)
 {
+    log_flow() ;
+
     int r ;
 
     size_t newsrc ;

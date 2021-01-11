@@ -26,6 +26,8 @@
 
 void set_ssinfo(ssexec_t *info)
 {
+    log_flow() ;
+
     int r ;
 
     info->owner = MYUID ;
@@ -64,12 +66,16 @@ void set_ssinfo(ssexec_t *info)
 
 static inline void info_help (char const *help)
 {
+    log_flow() ;
+
     if (buffer_putsflush(buffer_1, help) < 0)
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
 int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec_func_t *func, ssexec_t *info)
 {
+    log_flow() ;
+
     int r ;
     int n = 0 ;
     char const *nargv[argc + 1] ;

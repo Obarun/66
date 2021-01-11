@@ -67,6 +67,8 @@ static inline void info_help (void)
 
 static void cleanup(void)
 {
+    log_flow() ;
+
     int e = errno ;
     if (WORKDIR.len)
     {
@@ -78,6 +80,8 @@ static void cleanup(void)
 
 int tree_is_current(char const *base,char const *treename,uid_t owner)
 {
+    log_flow() ;
+
     stralloc sacurr = STRALLOC_ZERO ;
     int current = 0 ;
 
@@ -93,11 +97,15 @@ int tree_is_current(char const *base,char const *treename,uid_t owner)
 
 int tree_is_enabled(char const *treename)
 {
+    log_flow() ;
+
     return tree_cmd_state(VERBOSITY,"-s",treename) ;
 }
 
 void tree_allowed(stralloc *list,char const *base, char const *treename)
 {
+    log_flow() ;
+
     stralloc sa = STRALLOC_ZERO ;
     size_t treenamelen = strlen(treename), baselen = strlen(base), pos ;
     char tmp[baselen + SS_SYSTEM_LEN + 1 + treenamelen + SS_RULES_LEN + 1] ;
@@ -125,6 +133,8 @@ void tree_allowed(stralloc *list,char const *base, char const *treename)
 
 static int tree_contents_format(char const *tree)
 {
+    log_flow() ;
+
     /** even on empty tree Master bundle is always present.
      * Check its format. Cdb format allow to retrieve all information
      * of the service whatever the 66 version whereas ss_resolve_src_path
@@ -156,6 +166,8 @@ static int tree_contents_format(char const *tree)
 
 void tree_contents(stralloc *list,char const *tree,ssexec_t *info)
 {
+    log_flow() ;
+
     int format = tree_contents_format(tree) ;
 
     size_t treelen = strlen(tree), pos, newlen ;
@@ -216,6 +228,8 @@ void tree_contents(stralloc *list,char const *tree,ssexec_t *info)
 
 static int run_cmdline(char const *prog,char const **add,int len,char const *const *envp)
 {
+    log_flow() ;
+
     pid_t pid ;
     int wstat ;
 

@@ -40,6 +40,8 @@
 
 int svc_init(ssexec_t *info,char const *src, genalloc *ga)
 {
+    log_flow() ;
+
     size_t namelen, srclen, svscanlen, tmplen, pos, i ;
     ssize_t logname ;
     gid_t gid = getgid() ;

@@ -36,6 +36,8 @@
  * @Return 0 on fail */
 int rc_manage(ssexec_t *info,genalloc *ga)
 {
+    log_flow() ;
+
     int r ;
     ss_state_t sta = STATE_ZERO ;
     stralloc sares = STRALLOC_ZERO ;

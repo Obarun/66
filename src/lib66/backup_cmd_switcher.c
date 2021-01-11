@@ -185,6 +185,8 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 
 int backup_cmd_switcher(unsigned int verbosity,char const *cmd,ssexec_t *info)
 {
+    log_flow() ;
+
     int r ;
     size_t pos = 0 ;
     stralloc opts = STRALLOC_ZERO ;

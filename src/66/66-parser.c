@@ -56,6 +56,8 @@ static inline void info_help (void)
 
 static void check_dir(char const *dir,uint8_t force,int main)
 {
+    log_flow() ;
+
     int r ;
 
     r = scan_mode(dir,S_IFDIR) ;

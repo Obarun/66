@@ -46,6 +46,8 @@
  * @Return 2 if the service is ignored */
 int write_services(sv_alltype *sv, char const *workdir, uint8_t force, uint8_t conf)
 {
+    log_flow() ;
+
     int r ;
 
     size_t workdirlen = strlen(workdir) ;
@@ -140,6 +142,8 @@ int write_services(sv_alltype *sv, char const *workdir, uint8_t force, uint8_t c
 
 int write_classic(sv_alltype *sv, char const *dst, uint8_t force,uint8_t conf)
 {
+    log_flow() ;
+
     /**notification,timeout, ...*/
     if (!write_common(sv, dst, conf))
         log_warnu_return(LOG_EXIT_ZERO,"write common files") ;
@@ -166,6 +170,8 @@ int write_classic(sv_alltype *sv, char const *dst, uint8_t force,uint8_t conf)
 
 int write_longrun(sv_alltype *sv,char const *dst, uint8_t force, uint8_t conf)
 {
+    log_flow() ;
+
     /**notification,timeout ...*/
     if (!write_common(sv, dst,conf))
         log_warnu_return(LOG_EXIT_ZERO,"write common files") ;
@@ -217,6 +223,8 @@ int write_longrun(sv_alltype *sv,char const *dst, uint8_t force, uint8_t conf)
 
 int write_oneshot(sv_alltype *sv,char const *dst,uint8_t conf)
 {
+    log_flow() ;
+
     if (!write_common(sv, dst,conf))
         log_warnu_return(LOG_EXIT_ZERO,"write common files") ;
 
@@ -240,6 +248,8 @@ int write_oneshot(sv_alltype *sv,char const *dst,uint8_t conf)
 
 int write_bundle(sv_alltype *sv, char const *dst)
 {
+    log_flow() ;
+
     /** type file*/
     if (!file_write_unsafe(dst,"type","bundle",6))
         log_warnu_return(LOG_EXIT_ZERO,"write: ",dst,"/type") ;
@@ -253,6 +263,8 @@ int write_bundle(sv_alltype *sv, char const *dst)
 
 int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *dst, mode_t mode, uint8_t force)
 {
+    log_flow() ;
+
     int r ;
     int logbuild = log->run.build < 0 ? BUILD_AUTO : log->run.build ;
 
@@ -480,6 +492,8 @@ int write_logger(sv_alltype *sv, sv_execlog *log,char const *name, char const *d
 
 int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char const *proddst,char const *consdst)
 {
+    log_flow() ;
+
     size_t consdstlen = strlen(consdst) ;
     size_t consnamelen = strlen(consname) ;
     size_t proddstlen = strlen(proddst) ;
@@ -526,6 +540,8 @@ int write_consprod(sv_alltype *sv,char const *prodname,char const *consname,char
 
 int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 {
+    log_flow() ;
+
     char *time = NULL ;
     char *src = keep.s + sv->src ;
     size_t dstlen = strlen(dst) ;
@@ -648,6 +664,7 @@ int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
 
 int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mode_t mode)
 {
+    log_flow() ;
 
     unsigned int type = sv->cname.itype ;
     int build = exec->build < 0 ? BUILD_AUTO : exec->build ;
@@ -779,6 +796,8 @@ int write_exec(sv_alltype *sv, sv_exec *exec,char const *file,char const *dst,mo
 
 int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename)
 {
+    log_flow() ;
+
     stralloc contents = STRALLOC_ZERO ;
     size_t id = idga, nid = nga ;
     for (;nid; id += strlen(deps.s + id) + 1, nid--)
@@ -805,6 +824,8 @@ int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char c
 
 int write_uint(char const *dst, char const *name, uint32_t ui)
 {
+    log_flow() ;
+
     char number[UINT32_FMT] ;
 
     if (!file_write_unsafe(dst,name,number,uint32_fmt(number,ui)))
@@ -815,6 +836,8 @@ int write_uint(char const *dst, char const *name, uint32_t ui)
 
 int write_env(char const *name, char const *contents,char const *dst)
 {
+    log_flow() ;
+
     log_flow() ;
 
     int r ;
@@ -834,6 +857,8 @@ int write_env(char const *name, char const *contents,char const *dst)
 
 int write_oneshot_logger(stralloc *destlog, sv_alltype *sv)
 {
+    log_flow() ;
+
     if (sv->opts[0])
     {
         int r ;
