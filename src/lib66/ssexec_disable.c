@@ -150,6 +150,15 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
                 log_trace("Delete logger directory of: ",name) ;
                 if (rm_rf(str + pres->dstlog) == -1)
                     log_warnusys("remove logger directory of: ",name) ;
+
+                if (pres->type == TYPE_MODULE) {
+
+                    // remove service source file
+                    log_trace("Delete service file of: ",name) ;
+                    if (rm_rf(str + pres->src) == -1)
+                        log_warnusys("remove configuration file of: ",name) ;
+                }
+
             }
 
             log_trace("Delete resolve file of: ",name) ;
