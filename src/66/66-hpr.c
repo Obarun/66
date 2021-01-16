@@ -65,6 +65,7 @@ static inline void info_help (void)
 "   -h: halt the system\n"
 "   -p: poweroff the system\n"
 "   -r: reboot the system\n"
+"   -n: do not sync\n"
 "   -d: do not write wtmp shutdown entry\n"
 "   -w: only write wtmp shutdown entry\n"
 "   -W: do not send a wall message\n"
