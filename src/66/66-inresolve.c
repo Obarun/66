@@ -40,7 +40,9 @@ static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
 
 static inline void info_help (void)
 {
-  static char const *help =
+    DEFAULT_MSG = 0 ;
+
+    static char const *help =
 "\n"
 "options :\n"
 "   -h: print this help\n"

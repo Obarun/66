@@ -45,11 +45,12 @@
 static stralloc WORKDIR = STRALLOC_ZERO ;
 static uint8_t DRYRUN = 0 ;
 static char *drun = "dry run do: " ;
+
 static inline void info_help (void)
 {
     DEFAULT_MSG = 0 ;
 
-  static char const *help =
+    static char const *help =
 "\n"
 "options :\n"
 "   -h: print this help\n"

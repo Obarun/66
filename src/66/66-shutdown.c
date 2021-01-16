@@ -54,7 +54,9 @@ static char const *live = 0 ;
 
 static inline void info_help (void)
 {
-  static char const *help =
+    DEFAULT_MSG = 0 ;
+
+    static char const *help =
 "\n"
 "options :\n"
 "   -H: print this help\n"
