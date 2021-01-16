@@ -37,8 +37,6 @@
 
 #include <s6/s6-supervise.h>
 
-#define DATASIZE 64 //scandir_send_signal
-
 sv_alltype const sv_alltype_zero = SV_ALLTYPE_ZERO ;
 sv_name_t const sv_name_zero = SV_NAME_ZERO ;
 keynocheck const keynocheck_zero = KEYNOCHECK_ZERO ;
@@ -74,17 +72,12 @@ int scandir_send_signal(char const *scandir,char const *signal)
 {
     log_flow() ;
 
-    char data[DATASIZE] ;
+    size_t idlen = strlen(signal) ;
+    char data[idlen + 1] ;
     size_t datalen = 0 ;
 
-    size_t id = strlen(signal) ;
-    while (datalen < id)
-    {
+    for (; datalen < idlen ; datalen++)
         data[datalen] = signal[datalen] ;
-        datalen++ ;
-    }
-    if (datalen >= DATASIZE)
-        log_warn_return(LOG_EXIT_ZERO,"too many command to send to: ",scandir) ;
 
     switch (s6_svc_writectl(scandir, S6_SVSCAN_CTLDIR, data, datalen))
     {
