@@ -111,12 +111,21 @@
 #define SS_BOOT_RCSHUTDOWNFINAL_LEN (sizeof SS_BOOT_RCSHUTDOWNFINAL -1)
 #define SS_BOOT_UMASK 0022
 #define SS_BOOT_RESCAN 0
+#define SS_BOOT_CATCH_LOG 1
 #define SS_BOOT_LOG "scandir/0/scandir-log"
 #define SS_BOOT_LOG_LEN (sizeof SS_BOOT_LOG - 1)
 #define SS_BOOT_LOGFIFO "scandir/0/scandir-log/fifo"
 #define SS_BOOT_LOGFIFO_LEN (sizeof SS_BOOT_LOGFIFO - 1)
 #define SS_BOOT_SHUTDOWND "66-shutdownd"
 #define SS_BOOT_SHUTDOWND_LEN (sizeof SS_BOOT_SHUTDOWND - 1)
+/** container */
+#define SS_BOOT_CONTAINER 0
+#define SS_BOOT_RCINIT_CONTAINER "rc.init.container"
+#define SS_BOOT_RCINIT_CONTAINER_LEN (sizeof SS_BOOT_RCINIT_CONTAINER - 1)
+#define SS_BOOT_CONTAINER_DIR "scandir/container"
+#define SS_BOOT_CONTAINER_DIR_LEN (sizeof SS_BOOT_CONTAINER_DIR - 1)
+#define SS_BOOT_CONTAINER_HALTCMD "halt"
+#define SS_BOOT_CONTAINER_HALTCMD_LEN (sizeof SS_BOOT_CONTAINER_HALTCMD - 1)
 
 /** Instance */
 #define SS_INSTANCE_DIR "/instance"
