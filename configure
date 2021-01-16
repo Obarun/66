@@ -623,7 +623,7 @@ echo "Creating src/include/${package}/config.h..."
 mkdir -p -m 0755 src/include/${package}
 exec 3>&1 1> src/include/${package}/config.h
 cat <<EOF
-/* Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
+/* Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
 All rights reserved.*/
 
 /* ISC license. */
