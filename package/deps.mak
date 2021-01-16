@@ -29,7 +29,7 @@ src/66/66-instate.o src/66/66-instate.lo: src/66/66-instate.c src/include/66/con
 src/66/66-intree.o src/66/66-intree.lo: src/66/66-intree.c src/include/66/backup.h src/include/66/constants.h src/include/66/enum.h src/include/66/info.h src/include/66/resolve.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-parser.o src/66/66-parser.lo: src/66/66-parser.c src/include/66/constants.h src/include/66/parser.h src/include/66/utils.h
 src/66/66-scanctl.o src/66/66-scanctl.lo: src/66/66-scanctl.c src/include/66/utils.h
-src/66/66-scandir.o src/66/66-scandir.lo: src/66/66-scandir.c src/include/66/config.h src/include/66/constants.h src/include/66/environ.h src/include/66/utils.h
+src/66/66-scandir.o src/66/66-scandir.lo: src/66/66-scandir.c src/include/66/config.h src/include/66/constants.h src/include/66/utils.h
 src/66/66-shutdown.o src/66/66-shutdown.lo: src/66/66-shutdown.c src/include/66/config.h src/include/66/hpr.h
 src/66/66-shutdownd.o src/66/66-shutdownd.lo: src/66/66-shutdownd.c src/include/66/config.h src/include/66/constants.h
 src/66/66-start.o src/66/66-start.lo: src/66/66-start.c src/include/66/ssexec.h
@@ -38,6 +38,7 @@ src/66/66-svctl.o src/66/66-svctl.lo: src/66/66-svctl.c src/include/66/ssexec.h
 src/66/66-tree.o src/66/66-tree.lo: src/66/66-tree.c src/include/66/config.h src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/resolve.h src/include/66/state.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-update.o src/66/66-update.lo: src/66/66-update.c src/include/66/backup.h src/include/66/constants.h src/include/66/db.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
 src/extra-tools/66-echo.o src/extra-tools/66-echo.lo: src/extra-tools/66-echo.c
+src/extra-tools/66-nuke.o src/extra-tools/66-nuke.lo: src/extra-tools/66-nuke.c
 src/extra-tools/66-umountall.o src/extra-tools/66-umountall.lo: src/extra-tools/66-umountall.c src/include/66/config.h
 src/extra-tools/execl-envfile.o src/extra-tools/execl-envfile.lo: src/extra-tools/execl-envfile.c
 src/lib66/backup_cmd_switcher.o src/lib66/backup_cmd_switcher.lo: src/lib66/backup_cmd_switcher.c src/include/66/constants.h src/include/66/enum.h src/include/66/ssexec.h src/include/66/utils.h
@@ -141,6 +142,8 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-update: src/66/66-update.o ${LIB66}
 66-echo: EXTRA_LIBS := -loblibs -lskarnet
 66-echo: src/extra-tools/66-echo.o 
+66-nuke: EXTRA_LIBS :=
+66-nuke: src/extra-tools/66-nuke.o 
 66-umountall: EXTRA_LIBS := -loblibs -lskarnet
 66-umountall: src/extra-tools/66-umountall.o
 execl-envfile: EXTRA_LIBS := -loblibs -lexecline -lskarnet
