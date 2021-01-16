@@ -552,12 +552,6 @@ int write_common(sv_alltype *sv, char const *dst,uint8_t conf)
         if (!file_create_empty(dst,"down",0644))
             log_warnusys_return(LOG_EXIT_ZERO,"create down file") ;
     }
-    /**nosetsid file*/
-    if (sv->flags[1] > 0)
-    {
-        if (!file_create_empty(dst,"nosetsid",0644))
-            log_warnusys_return(LOG_EXIT_ZERO,"create nosetsid file") ;
-    }
 
     /**notification-fd*/
     if (sv->notification > 0)

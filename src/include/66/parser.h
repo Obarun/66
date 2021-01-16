@@ -126,9 +126,9 @@ struct sv_alltype_s
      * logger[1] enabled,logger[0] not enabled*/
     unsigned int opts[3] ;
     /**0->no notification*/
-    /**flags[0]->down,flags[1]->nosetsid,
+    /**flags[0]->down
      * down[1] enabled,down[0] not enabled*/
-    unsigned int flags[2] ;
+    unsigned int flags[1] ;
     uint32_t notification ;
     /** array of uid_t
      * the first element of the table
