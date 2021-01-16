@@ -63,7 +63,7 @@ static char const *live = 0 ;
 static int inns = 0 ;
 static int nologger = 0 ;
 
-#define USAGE "66-shutdownd [ -h ] [ -l live ] [ -s skel ] [ -g gracetime ] [ -C ] [ -B ]"
+#define USAGE "66-shutdownd [ -h ] [ -l live ] [ -s skel ] [ -g gracetime ] [ -B ] [ -c ]"
 
 static inline void info_help (void)
 {
@@ -75,8 +75,8 @@ static inline void info_help (void)
 "   -l: live directory\n"
 "   -s: skeleton directory\n"
 "   -g: grace time between the SIGTERM and the SIGKILL\n"
-"   -C: the system is running inside a container\n"
-"   -B: the catch-all logger do not exist\n"
+"   -B: the system is running inside a container\n"
+"   -c: the catch-all logger do not exist\n"
 ;
 
     if (buffer_putsflush(buffer_1, help) < 0)
@@ -259,12 +259,12 @@ static inline void prepare_stage4 (char what)
         if (buffer_puts(&b,
             "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n\n"
             EXECLINE_EXTBINPREFIX "foreground { "
-            S6_EXTBINPREFIX "s6-svc -Ox -- . }\n"
+            S6_EXTBINPREFIX "s6-svc -x -- . }\n"
             EXECLINE_EXTBINPREFIX "background\n{\n  ") < 0
 
             || (!nologger && buffer_puts(&b,
             EXECLINE_EXTBINPREFIX "foreground { "
-            S6_EXTBINPREFIX "s6-svc -Xh -- ") < 0
+            S6_EXTBINPREFIX "s6-svc -xc -- ") < 0
             || buffer_puts(&b,live) < 0
             || buffer_puts(&b,SS_BOOT_LOG " }\n  ") < 0)
 
@@ -368,8 +368,8 @@ int main (int argc, char const *const *argv, char const *const *envp)
                 case 'l' : live = l.arg ; break ;
                 case 's' : conf = l.arg ; break ;
                 case 'g' : if (!uint0_scan(l.arg, &grace_time)) log_usage(USAGE) ; break ;
-                case 'C' : inns = 1 ; break ;
-                case 'B' : nologger = 1 ; break ;
+                case 'B' : inns = 1 ; break ;
+                case 'c' : nologger = 1 ; break ;
                 default : log_usage(USAGE) ;
             }
         }
