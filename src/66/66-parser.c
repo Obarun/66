@@ -25,7 +25,6 @@
 #include <oblibs/string.h>
 #include <oblibs/sastr.h>
 
-#include <skalibs/buffer.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 
@@ -38,7 +37,6 @@
 static inline void info_help (void)
 {
   static char const *help =
-"66-parser <options> service destination\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -48,8 +46,7 @@ static inline void info_help (void)
 "   -I: do not import modified configuration files from previous version\n"
 ;
 
- if (buffer_putsflush(buffer_1, help) < 0)
-    log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+    log_info(USAGE,"\n",help) ;
 }
 
 static void check_dir(char const *dir,uint8_t force,int main)

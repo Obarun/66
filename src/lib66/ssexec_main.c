@@ -16,7 +16,6 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 
-#include <skalibs/buffer.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/types.h>
 
@@ -64,12 +63,13 @@ void set_ssinfo(ssexec_t *info)
     if(r < 0) log_die(LOG_EXIT_SYS,"scandir: ",info->scandir.s," must be an absolute path") ;
 }
 
-static inline void info_help (char const *help)
+static inline void info_help (char const *help,char const *usage)
 {
     log_flow() ;
 
-    if (buffer_putsflush(buffer_1, help) < 0)
-        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+    DEFAULT_MSG = 0 ;
+
+    log_info(usage,"\n",help) ;
 }
 
 int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec_func_t *func, ssexec_t *info)
@@ -93,7 +93,7 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
             if (opt == -1) break ;
             switch (opt)
             {
-                case 'h' :  info_help(info->help); return 0 ;
+                case 'h' :  info_help(info->help,info->usage); return 0 ;
                 case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(info->usage) ;
                             info->opt_verbo = 1 ;
                             break ;

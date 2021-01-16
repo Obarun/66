@@ -30,7 +30,6 @@
 #include <skalibs/sig.h>
 #include <skalibs/tai.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/buffer.h>
 
 #include <66/hpr.h>
 #include <66/config.h>
@@ -55,7 +54,6 @@ char const *live = 0 ;
 static inline void info_help (void)
 {
   static char const *help =
-"66-hpr <options>\n"
 "\n"
 "options :\n"
 "   -H: print this help\n"
@@ -70,9 +68,10 @@ static inline void info_help (void)
 "   -w: only write wtmp shutdown entry\n"
 "   -W: do not send a wall message\n"
 ;
-    if (buffer_putsflush(buffer_1, help) < 0)
-        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+
+    log_info(USAGE,"\n",help) ;
 }
+
 int main (int argc, char const *const *argv)
 {
     int what = 0 ;

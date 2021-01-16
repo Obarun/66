@@ -85,7 +85,6 @@ info_opts_map_t const opts_tree_table[] =
 static inline void info_help (void)
 {
   static char const *help =
-"66-intree <options> tree \n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -110,8 +109,7 @@ static inline void info_help (void)
 "   contents: displays the contents of the tree\n"
 ;
 
- if (buffer_putsflush(buffer_1, help) < 0)
-    log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+    log_info(USAGE,"\n",help) ;
 }
 
 static int info_cmpnsort(stralloc *sa)

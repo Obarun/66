@@ -35,7 +35,6 @@
 #include <skalibs/types.h>
 #include <skalibs/allreadwrite.h>
 #include <skalibs/bytestr.h>
-#include <skalibs/buffer.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/sig.h>
 #include <skalibs/tai.h>
@@ -68,7 +67,6 @@ static int nologger = 0 ;
 static inline void info_help (void)
 {
   static char const *help =
-"66-shutdownd <options>\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -79,8 +77,7 @@ static inline void info_help (void)
 "   -c: the catch-all logger do not exist\n"
 ;
 
-    if (buffer_putsflush(buffer_1, help) < 0)
-        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+    log_info(USAGE,"\n",help) ;
 }
 
 static void restore_console (void)

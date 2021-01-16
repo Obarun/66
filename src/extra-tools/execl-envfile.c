@@ -38,15 +38,13 @@
 static inline void info_help (void)
 {
   static char const *help =
-"execl-envfile <options> src prog\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
 "   -l: loose\n"
 ;
 
- if (buffer_putsflush(buffer_1, help) < 0)
-    log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+    log_info(USAGE,"\n",help) ;
 }
 
 void clean_n_unexport(stralloc *modifs, stralloc *dst, stralloc *src,char const *file)

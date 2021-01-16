@@ -26,15 +26,14 @@
 static inline void info_help (void)
 {
   static char const *help =
-"66-echo <options> args\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
 "   -n: do not output a trailing newline\n"
 "   -s: use as character separator\n"
 ;
-    if (buffer_putsflush(buffer_1, help) < 0)
-        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+
+    log_info(USAGE,"\n",help) ;
 }
 
 int main (int argc, char const *const *argv)

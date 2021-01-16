@@ -20,7 +20,6 @@
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
 
-#include <skalibs/buffer.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
 #include <skalibs/djbunix.h>
@@ -36,7 +35,6 @@ static char TMPENV[MAXENV + 1] ;
 static inline void info_help (void)
 {
   static char const *help =
-"66-scanctl <options> signal\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -49,8 +47,7 @@ static inline void info_help (void)
 "   -o: handles scandir of owner\n"
 ;
 
- if (buffer_putsflush(buffer_1, help) < 0)
-    log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+    log_info(USAGE,"\n",help) ;
 }
 
 static inline unsigned int lookup (char const *const *table, char const *signal)

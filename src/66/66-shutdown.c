@@ -55,7 +55,6 @@ static char const *live = 0 ;
 static inline void info_help (void)
 {
   static char const *help =
-"66-shutdown <options> time [message] or 66-shutdown -c [ message ]\n"
 "\n"
 "options :\n"
 "   -H: print this help\n"
@@ -71,9 +70,10 @@ static inline void info_help (void)
 "   -t: grace time between the SIGTERM and the SIGKILL\n"
 "   -c: cancel planned shutdown\n"
 ;
-    if (buffer_putsflush(buffer_1, help) < 0)
-        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+
+    log_info(USAGE,"\n",help) ;
 }
+
 /* shutdown 01:23: date/time format parsing */
 
 static inline void add_one_day (struct tm *tm)

@@ -21,10 +21,10 @@
 #include <oblibs/obgetopt.h>
 #include <oblibs/types.h>
 
-#include <skalibs/buffer.h>
 #include <skalibs/types.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/lolstdio.h>
+#include <skalibs/buffer.h>
 
 #include <66/resolve.h>
 #include <66/info.h>
@@ -42,7 +42,6 @@ static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
 static inline void info_help (void)
 {
   static char const *help =
-"66-instate <options> service \n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -51,8 +50,7 @@ static inline void info_help (void)
 "   -l: prints information of the associated logger if exist\n"
 ;
 
- if (buffer_putsflush(buffer_1, help) < 0)
-    log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+    log_info(USAGE,"\n",help) ;
 }
 
 static void info_display_string(char const *field,char const *str)

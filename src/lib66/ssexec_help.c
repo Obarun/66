@@ -17,7 +17,6 @@
 char const *usage_enable = "66-enable [ -h ] [ -z ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -f|F ] [ -I ] [ -S ] service(s)" ;
 
 char const *help_enable =
-"66-enable <options> service(s)\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -34,7 +33,6 @@ char const *help_enable =
 char const *usage_dbctl = "66-dbctl [ -h ] [ -z ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -u | d | r ] service(s)" ;
 
 char const *help_dbctl =
-"66-dbctl <options> tree\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -51,7 +49,6 @@ char const *help_dbctl =
 char const *usage_disable = "66-disable [ -h ] [ -z ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -S ] [ -F ] [ -R ] service(s)" ;
 
 char const *help_disable =
-"66-disable <options> service(s)\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -67,7 +64,6 @@ char const *help_disable =
 char const *usage_init = "66-init [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -t tree ] classic|database|both" ;
 
 char const *help_init =
-"66-init <options> classic|database|both\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -80,7 +76,6 @@ char const *help_init =
 char const *usage_start = "66-start [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -r | R ] service(s)" ;
 
 char const *help_start =
-"66-start <options> service(s)\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -96,7 +91,6 @@ char const *help_start =
 char const *usage_stop = "66-stop [ -h ] [ -z ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -u ] [ -X ] [ -K ] service(s)" ;
 
 char const *help_stop =
-"66-stop <options> service(s)\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -113,7 +107,6 @@ char const *help_stop =
 char const *usage_svctl = "66-svctl [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -n death ] [ -u | d | r | K | X ] service(s)" ;
 
 char const *help_svctl =
-"66-svctl <options> tree\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -133,7 +126,6 @@ char const *help_svctl =
 char const *usage_env = "66-env [ -h ] [ -z ] [ -v verbosity ] [ -t tree ] [ -c version ] [ -s version ] [ -V|L ] [ -r key=value ] [ -i src,dst ] [ -e ] service" ;
 
 char const *help_env =
-"66-env <options> service\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -152,7 +144,6 @@ char const *help_env =
 char const *usage_all = "66-all [ -h ] [ -z ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -f ] up|down|unsupervise" ;
 
 char const *help_all =
-"66-all <options> up|down|unsupervise\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"

@@ -33,7 +33,6 @@
 #include <oblibs/environ.h>
 #include <oblibs/sastr.h>
 
-#include <skalibs/buffer.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
@@ -94,7 +93,6 @@ static void sulogin(char const *msg,char const *arg)
 static inline void info_help (void)
 {
   static char const *help =
-"66-boot <options>\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -107,7 +105,7 @@ static inline void info_help (void)
 "   -b: banner to display\n"
 ;
 
- if (buffer_putsflush(buffer_1, help) < 0) sulogin("","") ;
+    log_info(USAGE,"\n",help) ;
 }
 
 static int read_line(stralloc *dst, char const *line)

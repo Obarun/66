@@ -31,8 +31,8 @@
 #include <skalibs/genalloc.h>
 #include <skalibs/lolstdio.h>
 #include <skalibs/bytestr.h>
-#include <skalibs/buffer.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/buffer.h>
 
 #include <66/info.h>
 #include <66/utils.h>
@@ -109,7 +109,6 @@ info_opts_map_t const opts_sv_table[] =
 static inline void info_help (void)
 {
   static char const *help =
-"66-inservice <options> service \n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -145,8 +144,7 @@ static inline void info_help (void)
 "   logfile: displays the contents of the log file\n"
 ;
 
- if (buffer_putsflush(buffer_1, help) < 0)
-    log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+    log_info(USAGE,"\n",help) ;
 }
 
 char *print_nlog(char *str, int n)

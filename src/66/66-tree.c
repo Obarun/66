@@ -29,7 +29,6 @@
 
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/buffer.h>
 #include <skalibs/bytestr.h>//byte_count
 
 #include <66/config.h>
@@ -52,7 +51,6 @@ static char const *cleantree = 0 ;
 static inline void info_help (void)
 {
   static char const *help =
-"66-tree <options> tree\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -71,8 +69,7 @@ static inline void info_help (void)
 "   -U: unsupervise the tree\n"
 ;
 
- if (buffer_putsflush(buffer_1, help) < 0)
-    log_dieusys(111,"write to stdout") ;
+    log_info(USAGE,"\n",help) ;
 }
 
 static void cleanup(void)

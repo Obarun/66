@@ -26,7 +26,6 @@
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
 
-#include <skalibs/buffer.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/types.h>
@@ -71,7 +70,6 @@ static unsigned int CATCH_LOG = SS_BOOT_CATCH_LOG ;
 static inline void info_help (void)
 {
   static char const *help =
-"66-scandir <options> create|remove\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -86,8 +84,7 @@ static inline void info_help (void)
 "   -o: handles owner scandir\n"
 ;
 
-    if (buffer_putsflush(buffer_1, help) < 0)
-        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+    log_info(USAGE,"\n",help) ;
 }
 
 static inline unsigned int lookup (char const *const *table, char const *signal)

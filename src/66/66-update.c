@@ -25,7 +25,6 @@
 #include <oblibs/files.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/buffer.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/unix-transactional.h>
@@ -48,8 +47,9 @@ static uint8_t DRYRUN = 0 ;
 static char *drun = "dry run do: " ;
 static inline void info_help (void)
 {
+    DEFAULT_MSG = 0 ;
+
   static char const *help =
-"66-update <options> tree(s)\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
@@ -61,8 +61,7 @@ static inline void info_help (void)
 "if no tree is given, all trees will be processed.\n"
 ;
 
- if (buffer_putsflush(buffer_1, help) < 0)
-    log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+    log_info(USAGE,"\n",help) ;
 }
 
 static void cleanup(void)
