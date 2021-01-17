@@ -37,7 +37,7 @@ Handles an environment file and variable of a service depending on the options p
 
 - **-t** : handles the *selection* of the given *tree*. This option is mandatory except if a tree was marked as 'current'—see [66-tree](66-tree.html).
 
-- **-c** *version* : makes *version* as the current one to use by default. If the service is already running, you need to restart the *service* to apply the change by the command e.g. `66-start -r <service>`. 
+- **-c** *version* : makes *version* as the current one to use by default. If the service is already running, you need to restart the *service* to apply the change by the command e.g. `66-start -r <service>`.
 
 - **-s** *version* : specifies the version to handles with the options **-V**, **-L**, **-r** and **-e** instead of using the current one.
 
@@ -53,29 +53,29 @@ Handles an environment file and variable of a service depending on the options p
 
 - **-i** *src,dst* : imports configuration file from *src* version to *dst* version. The *src* version and *dst* version need to be separated by a comma without space before and after it. It **do not import** the configuration written by the `66-enable` process but only deal with extra configuration files written by the sysadmin.
 
-- **-e** : edit the configuration file with `EDITOR` set in your system environment. This is the default option if neither option is passed. If you use this option with a `sudo` command, you need to specify the `-E` option at sudo call—see [examples](66-env.html#Usage examples).
+- **-e** : edit the configuration file with `EDITOR` set in your system environment. This is the default option if neither option is passed. If you use this option with a `sudo` command, you need to specify the `-E` option at sudo call—see [examples](66-env.html#Usage examples). Note: the upstream file (meaning the one prefixed with a dot) is **never** touched. A copy of the upstream file is copied (if it doesn't exist yet) and the *66-env* tool modifies that file.(see [Service configuration file](service-configuration-file) for further information).
 
 ## Usage examples
 
 ```
     66-env -L ntpd
 
-    66-env -r CMD_ARGS=-d 
+    66-env -r CMD_ARGS=-d
 
     66-env -r CMD_ARGS='-c /etc/nginx/nginx.conf -g "daemon off;"'
-    
+
     66-env -i 0.1.6,0.1.7 nginx
-    
+
     66-env -V ntpd
-    
+
     sudo -E 66-env -e ntpd
-    
+
     66-env -s 0.1.6 ntpd
 ```
 
 ## Notes
 
-Removing a *key* from the environment after the use can be handled by using an exclamation mark `!` at the begin of the value: 
+Removing a *key* from the environment after the use can be handled by using an exclamation mark `!` at the begin of the value:
 
 ```
     66-env -r 'CMD_ARGS=!-c /etc/nginx/nginx.conf -g "daemon off;"'

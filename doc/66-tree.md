@@ -12,7 +12,7 @@ This command handles a directory containing a set of *services*.
 ## Interface
 
 ```
-    66-tree [ -h ] [ -z ] [ -v verbosity ] [ -l ] [ -n|R ] [ -a|d ] [ -c ] [ -S after_tree ] [ -E|D ] [ -U ] [ -C clone ] tree
+    66-tree [ -h ] [ -z ] [ -v verbosity ] [ -l ] [ -n|R ] [ -a|d ] [ -c ] [ -S after_tree ] [ -E|D ] [ -C clone ] tree
 ```
 
 *66-tree* will create, destroy, or modify a tree which dynamically handles *services*. *66-tree* will handle the tree only for the user running the process (root/user). Any *tree* is completely independent from another. If you want to know what trees are currently available on the system use the [66-intree](66-intree.html) tool.
@@ -52,8 +52,6 @@ This command handles a directory containing a set of *services*.
 - **-D** : disables *tree*. The exact opposite of the **-E** option.
 
 - **-R** : deletes *tree*. ***Can not be undone!*** This will completely remove the given *tree* from the system! You will not be able to retrieve any information of the deleted *tree* after deleting it. Services currently running on tree will be not bringed down before remove it. To do so, use the **-U** option in conjonction e.g. `66-tree -UR tree`.
-
-- **-U** : deprecated option. Use [66-all unsupervise](66-all.html) instead.
 
 - **-C** *clone* : makes a strict copy of *tree* named clone. Clone **must not** exist on the system.
 
