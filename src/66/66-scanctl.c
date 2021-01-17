@@ -171,7 +171,7 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
 
     //log_info("Starts scandir ",scandir," ...") ;
     //xexec_ae(newup[0], newup, envp) ;
-    xpathexec_run(newup[0], newup, envp) ;
+    xexec_ae(newup[0], newup, envp) ;
 }
 
 int main(int argc, char const *const *argv, char const *const *envp)

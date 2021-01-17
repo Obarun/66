@@ -469,8 +469,7 @@ static inline void run_stage2 (char const *const *envp, size_t envlen, char cons
     char t[tlen + 1] ;
     auto_strings(t,sacmdline.s) ;
     stralloc_free(&sacmdline) ;
-    //xmexec_fm(newargv, envp, envlen, t, tlen) ;
-    xpathexec_r(newargv, envp, envlen, t, tlen) ;
+    xmexec_fm(newargv, envp, envlen, t, tlen) ;
 }
 
 static inline void run_cmdline(char const *const *newargv, char const *const *envp, char const *msg,char const *arg)
@@ -755,7 +754,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
         }
 
         close(fdin) ;
-       // xmexec_fm(newargv, newenvp, 1, envmodifs.s, envmodifs.len) ;
-        xpathexec_r(newargv, newenvp, 1, envmodifs.s, envmodifs.len) ;
+        xmexec_fm(newargv, newenvp, 1, envmodifs.s, envmodifs.len) ;
+
     }
 }

@@ -146,7 +146,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
     if (!r && insist) log_dieusys(LOG_EXIT_SYS,"get file from: ",path) ;
     else if ((!r && !insist) || !toparse.len)
     {
-        xpathexec_run(argv[0],argv,envp) ;
+        xexec_ae(argv[0],argv,envp) ;
     }
     if (file)
     {
@@ -156,7 +156,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
             if (insist) log_dieu(LOG_EXIT_SYS,"find: ",path,file) ;
             else
             {
-                xpathexec_run(argv[0],argv,envp) ;
+                xexec_ae(argv[0],argv,envp) ;
             }
         }
         if (!file_readputsa(&src,path,file)) log_dieusys(LOG_EXIT_SYS,"read file: ",path,file) ;
@@ -232,5 +232,5 @@ int main (int argc, char const *const *argv, char const *const *envp)
     if (!env_make (v, r ,dst.s, dst.len)) log_dieusys(LOG_EXIT_SYS,"make environment") ;
     v[r] = 0 ;
 
-    pathexec_r (v, newenv, env_len(newenv),info.modifs.s,info.modifs.len) ;
+    mexec_fm (v, newenv, env_len(newenv),info.modifs.s,info.modifs.len) ;
 }

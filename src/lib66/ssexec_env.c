@@ -75,7 +75,7 @@ static void run_editor(char const *src, char const *const *envp)
         else log_dieusys(LOG_EXIT_SYS,"get EDITOR") ;
     }
     char const *const newarg[3] = { editor, src, 0 } ;
-    xpathexec_run (newarg[0],newarg,envp) ;
+    xexec_ae (newarg[0],newarg,envp) ;
 }
 
 static void do_import(char const *svname, char const *svconf, char const *version, int svtype)
