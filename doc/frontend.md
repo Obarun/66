@@ -520,12 +520,6 @@ This section is *mandatory*. (!)
 
     valid values :
 
-    * nosetsid : Corresponds to the file *nosetsid* of [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc) programs
-
-    This will create the file nosetsid
-
-    Once this file was created the service will be run in the same process group as the supervisor of the service ([s6-supervise](https://skarnet.org/software/s6/s6-supervise.html)). Without this file the service will have its own process group and is started as a session leader.
-
     * down : Corresponds to the file *down* of [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc) programs.
     This will create the file down
 

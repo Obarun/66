@@ -7,12 +7,12 @@ author: Eric Vidal <eric@obarun.org>
 
 # 66-shutdownd
 
-The daemon that manages the shutdown procedure for a [66-boot](66-boot.html) installation. It is not meant to be called directly. This program is a modified copy of [s6-linux-init-shudownd](https://skarnet.org/software/s6-linux-init/s6-linux-init-shutdownd.html). 
+The daemon that manages the shutdown procedure for a [66-boot](66-boot.html) installation. It is not meant to be called directly. This program is a modified copy of [s6-linux-init-shudownd](https://skarnet.org/software/s6-linux-init/s6-linux-init-shutdownd.html).
 
 ## Interface
 
 ```
-    66-shutdownd [ -h ] [ -l live ] [ -s skel ] [ -g gracetime ]
+    66-shutdownd [ -h ] [ -l live ] [ -s skel ] [ -g gracetime ] [ -B ] [ -c ]
 ```
 
 - 66-shutdownd opens the `%%livedir%%/scandir/0/shutdownd/fifo` pipe and listens to it. Programs such as [66-shutdown](66-shutdown.html) send their commands to this pipe when they are told to trigger the shutdown procedure.
@@ -38,6 +38,10 @@ The daemon that manages the shutdown procedure for a [66-boot](66-boot.html) ins
 - **-s** *skel* : an absolute path; directory of the skeleton file `rc.init`. Default is `%%skel%%`.
 
 - **-g** *gracetime* : specify a grace time between the `SIGTERM` and the `SIGKILL` in milliseconds if the shutdown command does not provide one. Defaults to `3000`.
+
+- **-B** : inform the shutdown daemon that it is running in a container. This changes the nature of *stage 4*, since exiting a container is slightly different from rebooting a real machine (in particular, pid 1 has to exit, and great care must be given not to leave any zombie hanging around).
+
+- **-c** : inform the shutdown daemon that no catch-all logger is running. This also changes the shutdown procedure slightly, since some operations are specific to the existence of a catch-all logger.
 
 ## Note
 

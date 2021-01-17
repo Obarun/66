@@ -12,7 +12,7 @@ Parses a [frontend](frontend.html) service file and writes the result to a direc
 ## Interface
 
 ```
-    66-parser [ -h ] [ -z ] [ -v verbosity ] [ -f ] [ -c|m|C ] service destination
+    66-parser [ -h ] [ -z ] [ -v verbosity ] [ -f ] [ -I ] service destination
 ```
 
 
@@ -20,7 +20,7 @@ Parses a [frontend](frontend.html) service file and writes the result to a direc
 - Runs a parser on the file.
 - Writes the parsing result to the *destination* directory.
 
-An absolute path is expected for either *service* and *destination*. 
+An absolute path is expected for either *service* and *destination*.
 
 ## Exit codes
 
@@ -44,12 +44,8 @@ An absolute path is expected for either *service* and *destination*.
 
 - **-f** : force. Owerwrite an existing parsing result at *destination*.
 
-- **-c** : only appends new `key=value` pairs to the environment configuration file from [frontend](frontend.html) file.
-
-- **-m** : appends new `key=value` and merges existing one to the environment configuration file from [frontend](frontend.html) file.
-
-- **-C** : overwrite it environment configuration file from [frontend](frontend.html) file.
+- **-I** : do not imports modified configuration files from the previous version used. Refer to [Service configuration file](service-configuration-file.html) for further information.
 
 ## Notes
 
-*66-parser* will not try to read and parse any services declared under the `@contents`, `@depends`, `@optsdepends` or `@extdepends` key of the given [frontend](frontend.html) file even for a service `module` type. This tool is mainly intended for debugging purposes and to see the result of a parsing process before actually enabling the service on the system. The tool uses the exact same parser as [66‑enable](66-enable.html) which by default writes the configuration file to `%%service_admconf%%/service_name`. As a consequence any corresponding existing file will be overwritten. To avoid this, it writes the configuration file to the *destination/env/* directory and adjust the resulting *run/finish* file to match the configuration file path. 
+*66-parser* will not try to read and parse any services declared under the `@contents`, `@depends`, `@optsdepends` or `@extdepends` key of the given [frontend](frontend.html) file even for a service `module` type. This tool is mainly intended for debugging purposes and to see the result of a parsing process before actually enabling the service on the system. The tool uses the exact same parser as [66‑enable](66-enable.html) which by default writes the configuration file to `%%service_admconf%%/service_name`. As a consequence any corresponding existing file will be overwritten. To avoid this, it writes the configuration file to the *destination/env/* directory and adjust the resulting *run/finish* file to match the configuration file path.

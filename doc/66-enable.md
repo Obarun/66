@@ -12,7 +12,7 @@ This command enables one or more services inside a given *tree*.
 ## Interface
 
 ```
-    66-enable [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -f|F ] [ -c|m|C ] [ -i ] [ -S ] service(s)
+    66-enable [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -f|F ] [ -I ] [ -S ] service(s)
 ```
 
 This tool expects to find a corresponding [frontend service file](frontend.html), a directory name (see [directory](#Directory name as service)) or a *service* instance (see [instance](#Instantiated service)), by default at `%%service_adm%%` or `%%service_system%%` in this order of precedence for root user and `$HOME/%%service_user%%`, `%%service_adm%%` or `%%service_system%%` in this order of precedence for a normal user. The default path can be changed at compile time by passing the `--with-system-service=DIR`, `--with-sysadmin-service=DIR` and `--with-user-service=DIR` to `./configure`. It will run a parser on the frontend service file and write the result to the directory of the given *tree*—see [66-tree](66-tree.html). The *service* will then be available in the given *tree* for the next boot depending on the state of the *tree*. The targeted service(s) can also be started on the fly when enabling it with the **-S** option.
@@ -45,15 +45,9 @@ Multiple *services* can be enabled by seperating their names with a space.
 
 - **-f** : reenables an already enabled *service* with the given options. This option will run again the process from the start and overwrite all existing files.
 
-- **-F** : same as **-f** but also reenables its dependencies. 
+- **-F** : same as **-f** but also reenables its dependencies.
 
-- **-c** : only appends new `key=value` pairs to the environment configuration file of the *frontend* file.
-
-- **-m** : appends new `key=value` and merges existing one to the environment configuration file from *frontend* file.
-
-- **-C** : overwrites its environment configuration file from *frontend* file.
-
-- **-i** : imports extra configuration files from the previous version used. This is a convenient option which call `66-env -t <tree> -i previous,current <service>` command. Refer to [66-env](66-env.html) for further information.
+- **-I** : do not imports modified configuration files from the previous version used. Refer to [Service configuration file](service-configuration-file.html) for further information.
 
 - **-S** : starts the *service* on the fly directly after enabling it. If the state of the *service* is already up, this option will have no effect unless the **-f** option is used to reload it.
 

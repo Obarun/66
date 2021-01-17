@@ -8,11 +8,11 @@ author: Eric Vidal <eric@obarun.org>
 # 66-hpr
 
 Triggers the software shutdown procedure. Performs an immediate hardware shutdown with the **‑f** option. It is normally invoked by `halt`, `poweroff` or `reboot` wrappers installed by default at `%%skel%%`. This program is a modified copy of [s6-linux-init-hpr](https://skarnet.org/software/s6-linux-init/s6-linux-init-hpr.html).
-	
+
 ## Interface
 
 ```
-    66-hpr [ -H ] [ -l live ] [ -b banner ] [ -f ] [ -h | -p | -r ] [ -d | -w ] [ -W ]
+    66-hpr [ -H ] [ -l live ] [ -b banner ] [ -f ] [ -h | -p | -r ] [ -n ] [ -d | -w ] [ -W ]
 ```
 
 - If the **-f** option is passed the system is stopped or rebooted immediately without properly cleaning up.
@@ -42,13 +42,15 @@ This is the traditional sysvinit interface for the `halt`, `poweroff` and `reboo
 The system is going down NOW!
 ```
 
-- **-f** : force. The command will not trigger a clean shutdown procedure; it will only sync the filesystems then tell the kernel to immediately `halt`, `poweroff` and `reboot`. This should be the last step in the lifetime cycle of the machine. 
+- **-f** : force. The command will not trigger a clean shutdown procedure; it will only sync the filesystems then tell the kernel to immediately `halt`, `poweroff` and `reboot`. This should be the last step in the lifetime cycle of the machine.
 
 - **-h** : halt. The system will be shut down but the power will remain connected.
 
 - **-p** : poweroff. Like halt but the power will also be turned off.
 
 - **-r** : reboot. The system will initialize a warm boot without disconnecting power.
+
+- **-n** : Do not call [sync()](https://pubs.opengroup.org/onlinepubs/9699919799/functions/sync.html) before the hardware shutdown. The default is to sync, just in case. This option is only relevant when combined with **-f**; without it, it has no effect.
 
 - **-d** : Do not write a wtmp shutdown entry—see [utmp,wtmp and btmp](https://en.wikipedia.org/wiki/Utmp).
 
