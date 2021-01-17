@@ -3,6 +3,8 @@ author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)
 
+[Software](https://web.obarun.org/software)
+
 [obarun.org](https://web.obarun.org)
 
 # 66-disable
@@ -13,7 +15,7 @@ author: Eric Vidal <eric@obarun.org>
     66-disable [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -S ] [ -F ] [ -R ] service(s)
 ```
 
-This tool expects to find an already enabled *service* inside the given *tree*. The targeted service(s) can also be stopped on the fly when disabling it with the **-S** option. Generally speaking this command is the strict opposite of the [66-enable](66-enable.html) tool. 
+This tool expects to find an already enabled *service* inside the given *tree*. The targeted service(s) can also be stopped on the fly when disabling it with the **-S** option. Generally speaking this command is the strict opposite of the [66-enable](66-enable.html) tool.
 
 Multiple *services* can be disabled by seperating their names with a space.
 

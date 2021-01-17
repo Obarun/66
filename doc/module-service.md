@@ -3,6 +3,8 @@ author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)
 
+[Software](https://web.obarun.org/software)
+
 [obarun.org](https://web.obarun.org)
 
 # Module service creation
@@ -13,7 +15,7 @@ This allows one to pre-configure a set of parameters or other services for speci
 
 A module is defined with two elements:
 
-- an [instantiated frontend service](instantiated-service.html) file at `%%service_system%%` 
+- an [instantiated frontend service](instantiated-service.html) file at `%%service_system%%`
 
 - a directory at `%%module_system%%`.
 
@@ -29,9 +31,9 @@ The module directory can contain three sub-direcotories:
 
 - *configure* : This directory can contain an **executable** file script named configure. For example, `%%module_system%%/foo@/configure/configure`. The sub-directory **must** be named *configure* and the file script **must** be named *configure*. This file **is not** mandatory. The [66-enable](66-enable.html) process will detect if the file exists and it runs it if it's the case. It's up to you to write the *configure* script file with the language of your choice as long as you define a correct *shebang*.
 
-	Also, this directory can contain any files or directories that you need to configure your module. It's the responsability of the module creator to properly use or dispatch files or directories found inside the *configure* directory with the help of the *configure* script or during the module installation phase. [66-enable](66-enable.html) will not handle any other file than the *configure* script for you. 
+    Also, this directory can contain any files or directories that you need to configure your module. It's the responsability of the module creator to properly use or dispatch files or directories found inside the *configure* directory with the help of the *configure* script or during the module installation phase. [66-enable](66-enable.html) will not handle any other file than the *configure* script for you.
 
-	**Note** : The *configure* script is launched after the parsing of the frontend file, meaning all regex operations on directories and files are already made.
+    **Note** : The *configure* script is launched after the parsing of the frontend file, meaning all regex operations on directories and files are already made.
 
 - *service* : This directory can contain any frontend files for any kind of service ***except*** instantiated frontend service files. Also, this directory can contain sub-directories containing another frontend service files. This can be done recursively.
 
@@ -75,7 +77,7 @@ When you do `66-enable foo@system`:
 
 - It verbatim copies the `%%module_system%%/foo@` directory to `%%service_system%%/foo@system`. If the frontend file was found at `%%service_adm%%/foo@` the module, it is copied to `%%service_adm%%/foo@system`, and if the frontend file was found at `$HOME/%%service_user%%/foo@`, the module is copied to `$HOME/%%service_user%%/foo@system`.
 
-	**Note** : if the module already exists and the **-F** was not passed to [66-enable](66-enable.html), the configuration of the modules is skipped. If The **-F** was passed to [66-enable](66-enable.html) the corresponding `%%service_system%%/foo@system` directory is erased and the verbatim copy is made.
+    **Note** : if the module already exists and the **-F** was not passed to [66-enable](66-enable.html), the configuration of the modules is skipped. If The **-F** was passed to [66-enable](66-enable.html) the corresponding `%%service_system%%/foo@system` directory is erased and the verbatim copy is made.
 
 - It reads all frontend file found at `%%service_system%%/foo@system/service` and `%%service_system%%/foo@system/service@` and applies the regex defined with `@infiles` field.
 
@@ -89,7 +91,7 @@ When you do `66-enable foo@system`:
 
 - It reads and parses all frontend service files found at `%%service_system%%/foo@system/service` and `%%service_system%%/foo@system/service@`, as any `66-enable <service>` service process.
 
-- It disables the service `foo@system` if it already exists, and finally finishes the enabling process, like any other service. 
+- It disables the service `foo@system` if it already exists, and finally finishes the enabling process, like any other service.
 
 ### Environment variable passed to the script `configure`
 

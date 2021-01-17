@@ -3,6 +3,8 @@ author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)
 
+[Software](https://web.obarun.org/software)
+
 [obarun.org](https://web.obarun.org)
 
 # 66-inservice
@@ -39,13 +41,13 @@ This command displays information about services.
 
 - **-g** : shows the dependency list of the *service* as a hierarchical graph instead of a list.
 
-- **-d** *depth* : limits the depth of the dependency list visualisation; default is 1. This implies **-g** option. 
+- **-d** *depth* : limits the depth of the dependency list visualisation; default is 1. This implies **-g** option.
 
 - **-r** : shows the dependency list of *services* in reverse mode.
 
 - **-t** *tree* : only searches the *service* at the specified *tree*, when the same service may be enabled in more trees.
 
-- **-p** *nline* : prints the *nline* last lines from the log file of the *service*. Default is 20. 
+- **-p** *nline* : prints the *nline* last lines from the log file of the *service*. Default is 20.
 
 ## Valid fields for -o options
 
@@ -69,7 +71,7 @@ This command displays information about services.
 
 ## Command and output examples
 
-The command `66-inservice 00` run as root user on [Obarun](https://web.obarun.org)'s default system, displays the following, where *00* is a service contained in the tree boot: 
+The command `66-inservice 00` run as root user on [Obarun](https://web.obarun.org)'s default system, displays the following, where *00* is a service contained in the tree boot:
 
 ```
     Name                  : 00

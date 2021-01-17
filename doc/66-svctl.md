@@ -3,6 +3,8 @@ author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)
 
+[Software](https://web.obarun.org/software)
+
 [obarun.org](https://web.obarun.org)
 
 # 66-svctl
@@ -19,7 +21,7 @@ This tool expects to find an already supervised *service* at *live* defined in t
 
 ***(!)*** This tool only deals with `classic` services—see [66‑dbctl](66-dbctl.html) for other types of services.
 
-Multiple *services* can be handled by separating their names with a space. *66‑svctl* gathers each of these services in a list called *selection*. The command is sent to the *selection* asynchronously. 
+Multiple *services* can be handled by separating their names with a space. *66‑svctl* gathers each of these services in a list called *selection*. The command is sent to the *selection* asynchronously.
 
 ## Exit codes
 
@@ -55,7 +57,7 @@ Multiple *services* can be handled by separating their names with a space. *66�
 
 - **-X** : exit; the supervisor of the *service* will exit too. This command should normally never be used on a working system.
 
-- **-K** : send a SIGKILL to *service* and keep it down. 
+- **-K** : send a SIGKILL to *service* and keep it down.
 
 ## s6-svc corresponding signal
 
