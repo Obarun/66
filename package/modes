@@ -27,9 +27,9 @@ execl-envfile       0755
 halt                0755
 init                0755
 init.conf           0644
-ishell              0755
 poweroff            0755
 rc.init             0755
+rc.init.container   0755
 rc.shutdown         0755
 rc.shutdown.final   0755
 reboot              0755

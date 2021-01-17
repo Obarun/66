@@ -64,7 +64,7 @@ GENERATE_MAN := $(shell doc/make-man.sh)
 endif
 INSTALL_HTML := $(wildcard doc/$(version)/html/*.html)
 INSTALL_MAN := $(wildcard doc/man/*/*)
-INSTALL_DATA := skel/halt skel/init skel/ishell skel/poweroff skel/rc.init \
+INSTALL_DATA := skel/halt skel/init skel/poweroff skel/rc.init skel/rc.init.container \
 	skel/rc.shutdown skel/reboot skel/shutdown skel/rc.shutdown.final
 INSTALL_CONF := skel/init.conf
 
@@ -269,6 +269,6 @@ lib%.a.xyzzy:
 lib%.so.xyzzy:
 	exec $(CC) -o $@ $(CFLAGS_ALL) $(CFLAGS_SHARED) $(LDFLAGS_ALL) $(LDFLAGS_SHARED) -Wl,-soname,$(patsubst lib%.so.xyzzy,lib%.so.$(version_M),$@) $^ $(EXTRA_LIBS) $(LDLIBS)
 
-.PHONY: it all clean distclean tgz strip install install-dynlib install-bin install-lib install-include install-man install-html
+.PHONY: it all clean distclean tgz strip install install-dynlib install-libexec install-bin install-lib install-include install-data install-conf install-html install-man
 
 .DELETE_ON_ERROR:
