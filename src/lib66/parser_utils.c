@@ -841,6 +841,26 @@ int keep_environ(sv_alltype *service,keynocheck *nocheck)
                 log_warnu_return(LOG_EXIT_ZERO,"clean environment value") ;
             if (!auto_stra(&service->saenv,nocheck->val.s))
                 log_warnu_return(LOG_EXIT_ZERO,"store environment value") ;
+            {
+                /** The declaration of the [environment] automatically add
+                 * the @options=(env) */
+                if (!service->opts[2]) {
+
+                    stralloc saconf = STRALLOC_ZERO ;
+                    if (!env_resolve_conf(&saconf,keep.s + service->cname.name,MYUID)) {
+                        stralloc_free(&saconf) ;
+                        return 0 ;
+                    }
+                    service->srconf = keep.len ;
+                    if (!stralloc_catb(&keep,saconf.s,saconf.len + 1)) {
+                        stralloc_free(&saconf) ;
+                        return 0 ;
+                    }
+                    service->opts[2] = 1 ;
+                    stralloc_free(&saconf) ;
+                }
+            }
+            ;
             break ;
         default: log_warn_return(LOG_EXIT_ZERO,"unknown key: ",get_key_by_enum(ENUM_KEY_SECTION_ENVIRON,nocheck->idkey)) ;
     }
