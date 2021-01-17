@@ -504,7 +504,7 @@ This section is *mandatory*. (!)
 
         The behavior of the logger can be configured in the corresponding section—see [[logger]](frontend.html#Section: [logger]).
 
-    * env : enable the use of the [[environment]](frontend.html#Section: [environment]) section for the service.
+    * env : enable the use of the [[environment]](frontend.html#Section: [environment]) section for the service. In this case, the [[environment]](frontend.html#Section: [environment]) ***must*** be define. If the [[environment]](frontend.html#Section: [environment]) is defined, this options is automatically added.
 
     * pipeline : automatically create a pipeline between the service and the logger. For more information read the [s6-rc](https://skarnet.org/software/s6-rc) documentation.
 
@@ -862,7 +862,7 @@ Furthermore there are some keys specific to the log.
 
 This section is *optional*.
 
-It will only have an effect when the value *env* is added to the *@options* key in the [[main]](frontend.html#Section: [main]) section.
+The definition of this section automatically add the value *env" at the *@options* key in the [[main]](frontend.html#Section: [main]) section.
 
 A file contained the `key=value` pair(s) will be created by default at `%%service_admconf%%/name_of_service` directory. The default can also be changed at compile-time by passing the `--with-sysadmin-service-conf=DIR` option to `./configure`.
 
