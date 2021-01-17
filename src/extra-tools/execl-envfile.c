@@ -30,6 +30,7 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/env.h>
 #include <skalibs/sgetopt.h>
+#include <skalibs/exec.h>
 
 #include <execline/execline.h>
 

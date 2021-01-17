@@ -30,6 +30,7 @@
 #include <skalibs/diuint32.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/unix-transactional.h>//atomic_symlink
+#include <skalibs/exec.h>
 
 #include <66/ssexec.h>
 #include <66/utils.h>

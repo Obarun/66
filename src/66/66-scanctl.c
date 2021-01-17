@@ -23,6 +23,7 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/exec.h>
 
 #include <s6/config.h>
 
@@ -170,7 +171,6 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
     newup[m++] = 0 ;
 
     //log_info("Starts scandir ",scandir," ...") ;
-    //xexec_ae(newup[0], newup, envp) ;
     xexec_ae(newup[0], newup, envp) ;
 }
 

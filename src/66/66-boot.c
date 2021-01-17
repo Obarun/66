@@ -36,6 +36,7 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
+#include <skalibs/exec.h>
 
 #include <66/config.h>
 #include <66/constants.h>

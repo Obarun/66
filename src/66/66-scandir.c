@@ -31,6 +31,7 @@
 #include <skalibs/types.h>
 #include <skalibs/env.h>
 #include <skalibs/bytestr.h>//byte_count
+#include <skalibs/exec.h>
 
 #include <s6/config.h>
 #include <execline/config.h>
