@@ -446,7 +446,7 @@ static inline void run_stage2 (char const *const *envp, size_t envlen, char cons
 
     setsid() ;
 
-    if (catch_log) {
+    if (!catch_log) {
 
         close(notifpipe[1]) ;
         wait_for_notif(notifpipe[0]) ;
@@ -468,8 +468,10 @@ static inline void run_stage2 (char const *const *envp, size_t envlen, char cons
 
     size_t tlen = sacmdline.len ;
     char t[tlen + 1] ;
-    auto_strings(t,sacmdline.s) ;
+    memcpy(t,sacmdline.s,tlen) ;
+    t[tlen] = 0 ;
     stralloc_free(&sacmdline) ;
+
     xmexec_fm(newargv, envp, envlen, t, tlen) ;
 }
 
