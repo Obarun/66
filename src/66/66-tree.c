@@ -30,6 +30,7 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/bytestr.h>//byte_count
+#include <skalibs/posixplz.h>//unlink_void
 
 #include <66/config.h>
 #include <66/utils.h>

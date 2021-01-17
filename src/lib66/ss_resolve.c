@@ -33,6 +33,7 @@
 #include <skalibs/diuint32.h>
 #include <skalibs/cdb_make.h>
 #include <skalibs/cdb.h>
+#include <skalibs/posixplz.h>//unlink_void
 
 #include <66/constants.h>
 #include <66/utils.h>
