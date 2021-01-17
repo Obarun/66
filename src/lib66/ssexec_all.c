@@ -31,6 +31,7 @@
 #include <skalibs/types.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/posixplz.h>
 
 #include <66/ssexec.h>
 #include <66/constants.h>
