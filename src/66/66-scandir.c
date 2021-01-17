@@ -669,7 +669,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
         remove = 1 ;
     }
 
-    if (BOOT && OWNER)
+    if (BOOT && OWNER && !CONTAINER)
         log_die(LOG_EXIT_USER,"-b options can be set only with root") ;
 
     OWNERSTR[uid_fmt(OWNERSTR,OWNER)] = 0 ;
