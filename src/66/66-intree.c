@@ -114,40 +114,6 @@ static inline void info_help (void)
     log_info(USAGE,"\n",help) ;
 }
 
-static int info_cmpnsort(stralloc *sa)
-{
-    size_t pos = 0 ;
-    if (!sa->len) return 0 ;
-    size_t salen = sa->len ;
-    size_t nel = sastr_len(sa), idx = 0, a = 0, b = 0 ;
-    char names[nel][4096] ;
-    char tmp[4096] ;
-
-    for (; pos < salen && idx < nel ; pos += strlen(sa->s + pos) + 1,idx++)
-    {
-        memcpy(names[idx],sa->s + pos,strlen(sa->s + pos)) ;
-        names[idx][strlen(sa->s+pos)] = 0 ;
-    }
-    for (; a < nel - 1 ; a++)
-    {
-        for (b = a + 1 ; b < idx ; b++)
-        {
-            if (strcmp(names[a],names[b]) > 0)
-            {
-                strcpy(tmp,names[a]) ;
-                strcpy(names[a],names[b]);
-                strcpy(names[b],tmp);
-            }
-        }
-    }
-    sa->len = 0 ;
-    for (a = 0 ; a < nel ; a++)
-    {
-        if (!sastr_add_string(sa,names[a])) return 0 ;
-    }
-    return 1 ;
-}
-
 static void info_display_name(char const *field, char const *treename)
 {
     if (NOFIELD) info_display_field_name(field) ;
@@ -434,6 +400,25 @@ static void info_display_all(char const *treename,int *what)
 
 }
 
+static void info_sort_enabled_notenabled(stralloc *satree,stralloc *enabled,stralloc *not_enabled)
+{
+    size_t pos = 0 ;
+
+    FOREACH_SASTR(satree,pos) {
+
+        char *ename = satree->s + pos ;
+
+        if (sastr_cmp(enabled,ename) == -1)
+            if (!sastr_add_string(not_enabled,ename))
+                log_die_nomem("stralloc") ;
+    }
+
+    if (not_enabled->len)
+        if (!sastr_sort(not_enabled))
+            log_dieu(LOG_EXIT_SYS,"sort not enabled tree list") ;
+
+}
+
 static void info_parse_options(char const *str,int *what)
 {
     size_t pos = 0 ;
@@ -497,7 +482,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, ">hzv:no:grd:l:c", &l) ;
+            int opt = getopt_args(argc,argv, ">hzv:no:grd:l:", &l) ;
             if (opt == -1) break ;
             if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
             switch (opt)
@@ -513,7 +498,6 @@ int main(int argc, char const *const *argv, char const *const *envp)
                 case 'l' :  if (!stralloc_cats(&live,l.arg)) log_usage(USAGE) ;
                             if (!stralloc_0(&live)) log_usage(USAGE) ;
                             break ;
-                case 'c' :  log_die(LOG_EXIT_SYS,"deprecated option -- please use -z instead") ;
                 default :   log_usage(USAGE) ;
             }
         }
@@ -574,18 +558,49 @@ int main(int argc, char const *const *argv, char const *const *envp)
     {
         if (!stralloc_0(&src)) log_die_nomem("stralloc") ;
         if (!sastr_dir_get(&satree, src.s,SS_BACKUP + 1, S_IFDIR)) log_dieusys(LOG_EXIT_SYS,"get list of tree at: ",src.s) ;
-        if (satree.len)
-        {
-            if (!info_cmpnsort(&satree)) log_dieu(LOG_EXIT_SYS,"sort list of tree") ;
-            for(pos = 0 ; pos < satree.len ; pos += strlen(satree.s + pos) +1 )
+
+
+        if (satree.len) {
+
+            stralloc enabled = STRALLOC_ZERO ;
+            stralloc not_enabled = STRALLOC_ZERO ;
+
+            if (!file_readputsa(&enabled,src.s,"state"))
+                log_dieusys(LOG_EXIT_SYS,"read contents of file: ",src.s,"/state") ;
+
+            if (!sastr_split_string_in_nline(&enabled))
+                log_dieu(LOG_EXIT_SYS,"rebuild enabled tree list") ;
+
+            info_sort_enabled_notenabled(&satree,&enabled,&not_enabled) ;
+
             {
-                src.len = newlen ;
-                live.len = livelen ;
-                char *name = satree.s + pos ;
-                info_display_all(name,what) ;
-                if (buffer_puts(buffer_1,"\n") == -1)
-                    log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+                pos = 0 ;
+                FOREACH_SASTR(&not_enabled,pos) {
+
+                    src.len = newlen ;
+                    live.len = livelen ;
+                    char *name = not_enabled.s + pos ;
+                    info_display_all(name,what) ;
+                    if (buffer_puts(buffer_1,"\n") == -1)
+                        log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+                }
             }
+
+            {
+                pos = 0 ;
+                FOREACH_SASTR(&enabled,pos) {
+
+                    src.len = newlen ;
+                    live.len = livelen ;
+                    char *name = enabled.s + pos ;
+                    info_display_all(name,what) ;
+                    if (buffer_puts(buffer_1,"\n") == -1)
+                        log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+                }
+            }
+
+            stralloc_free(&enabled) ;
+            stralloc_free(&not_enabled) ;
         }
         else
         {
@@ -603,6 +618,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
     stralloc_free(&live) ;
     stralloc_free(&src) ;
     stralloc_free(&satree) ;
+
 
     return 0 ;
 }
