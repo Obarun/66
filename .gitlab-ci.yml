@@ -11,7 +11,7 @@ test:
   - ./configure --bindir=/usr/bin --shebangdir=/usr/bin
   - make
   - make install DESTDIR=gitlab-ci
-   
+
   only:
   - merge_requests
 
@@ -23,11 +23,11 @@ build:
   - make
   - make
   - make install DESTDIR=gitlab-ci
-  
+
   retry:
     max: 2
-    
+
   only:
     refs:
       - master
-    
+

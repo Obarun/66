@@ -1,10 +1,10 @@
-/* 
+/*
  * 66-scandir.c
- * 
- * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
- * 
+ *
+ * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
+ *
  * All rights reserved.
- * 
+ *
  * This file is part of Obarun. It is subject to the license terms in
  * the LICENSE file found in the top-level directory of this
  * distribution.
@@ -16,9 +16,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <sys/stat.h>
-//#include <stdio.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
@@ -28,12 +26,12 @@
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
 
-#include <skalibs/buffer.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/types.h>
 #include <skalibs/env.h>
 #include <skalibs/bytestr.h>//byte_count
+#include <skalibs/exec.h>
 
 #include <s6/config.h>
 #include <execline/config.h>
@@ -41,19 +39,18 @@
 #include <66/config.h>
 #include <66/utils.h>
 #include <66/constants.h>
-#include <66/environ.h>
+
 
 #define CRASH 0
 #define FINISH 1
-#define HUP 2
-#define INT 3
-#define QUIT 4
-#define TERM 5
-#define USR1 6
-#define USR2 7
-#define PWR 8
+#define INT 2
+#define QUIT 3
+#define TERM 4
+#define USR1 5
+#define USR2 6
+#define PWR 7
+#define WINCH 8
 
-#define SIGSIZE 64
 #define AUTO_CRTE_CHW 1
 #define AUTO_CRTE_CHW_CHM 2
 #define PERM1777 S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO
@@ -62,550 +59,691 @@ static uid_t OWNER ;
 static char OWNERSTR[UID_FMT] ;
 static gid_t GIDOWNER ;
 static char GIDSTR[GID_FMT] ;
-static char TMPENV[MAXENV+1] ;
+
 static char const *skel = SS_SKEL_DIR ;
 static char const *log_user = SS_LOGGER_RUNNER ;
 static unsigned int BOOT = 0 ;
-unsigned int NOTIF = 0 ;
+static unsigned int CONTAINER = SS_BOOT_CONTAINER ;
+static unsigned int CATCH_LOG = SS_BOOT_CATCH_LOG ;
 
-#define USAGE "66-scandir [ -h ] [ -z ] [ -v verbosity ] [ -b ] [ -l live ] [ -d notif ] [ -t rescan ] [ -L log_user ] [ -s skel ] [ -e environment ] [ -c | u | r ] owner"
+#define USAGE "66-scandir [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -b|B ] [ -c ] [ -L log_user ] [ -s skel ] [ -o owner ] create|remove"
 
 static inline void info_help (void)
 {
-  static char const *help =
-"66-scandir <options> owner\n"
+    DEFAULT_MSG = 0 ;
+
+    static char const *help =
 "\n"
 "options :\n"
-"	-h: print this help\n"
-"	-z: use color\n"
-"	-v: increase/decrease verbosity\n"
-"	-b: create scandir for a boot process\n"
-"	-l: live directory\n"
-"	-d: notify readiness on file descriptor\n"
-"	-t: rescan scandir every milliseconds\n"
-"	-L: run catch-all logger as log_user user\n"
-"	-s: skeleton directory\n"
-"	-e: directory environment\n"
-"	-c: create scandir\n"
-"	-r: remove scandir\n"
-"	-u: bring up scandir\n"
+"   -h: print this help\n"
+"   -z: use color\n"
+"   -v: increase/decrease verbosity\n"
+"   -l: live directory\n"
+"   -b: create scandir for a boot process\n"
+"   -B: create scandir for a boot process inside a container\n"
+"   -c: do not catch log\n"
+"   -L: run catch-all logger as log_user user\n"
+"   -s: skeleton directory\n"
+"   -o: handles owner scandir\n"
 ;
 
-	if (buffer_putsflush(buffer_1, help) < 0)
-		log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+    log_info(USAGE,"\n",help) ;
 }
 
-void scandir_up(char const *scandir, unsigned int timeout, char const *const *envp)
+static inline unsigned int lookup (char const *const *table, char const *signal)
 {
-	int r ;
-	r = scandir_ok(scandir) ;
-	if (r < 0) log_dieusys(LOG_EXIT_SYS, "check: ", scandir) ;
-	if (r)
-	{
-		log_trace("scandir: ",scandir," already running") ;
-		return ;
-	}
-	
-	unsigned int no = NOTIF ? 2 : 0 ;
-	char const *newup[6 + no] ;
-	unsigned int m = 0 ;
-	char fmt[UINT_FMT] ;
-	fmt[uint_fmt(fmt, timeout)] = 0 ;
-	char notif[UINT_FMT] ;
-	notif[uint_fmt(notif, NOTIF)] = 0 ;
+    log_flow() ;
 
-	newup[m++] = S6_BINPREFIX "s6-svscan" ;
-	if (no) {
-		newup[m++] = "-d" ;
-		newup[m++] = notif ;
-	}
-	newup[m++] = "-st" ;
-	newup[m++] = fmt ;
-	newup[m++] = "--" ;
-	newup[m++] = scandir ;
-	newup[m++] = 0 ;
-	/** in case of boot process, the redirection of the uncaught-log
-	 * will block the fd, so , do not sends anything
-	 * VERBO2 strerr_warni3x("Starts scandir ",scandir," ...") ; */
-	xpathexec_run (newup[0], newup, envp) ;
+    unsigned int i = 0 ;
+    for (; table[i] ; i++) if (!strcmp(signal, table[i])) break ;
+    return i ;
+}
+
+static inline unsigned int parse_command (char const *command)
+{
+    log_flow() ;
+
+    static char const *const command_table[] =
+    {
+        "create",
+        "remove",
+        0
+    } ;
+  unsigned int i = lookup(command_table, command) ;
+  if (!command_table[i]) i = 3 ;
+  return i ;
 }
 
 static void inline auto_chown(char const *str)
 {
-	log_trace("chown directory: ",str," to: ",OWNERSTR,":",GIDSTR) ;
-	if (chown(str,OWNER,GIDOWNER) < 0)
-		log_dieusys(LOG_EXIT_SYS,"chown: ",str) ;
+    log_flow() ;
+
+    log_trace("chown directory: ",str," to: ",OWNERSTR,":",GIDSTR) ;
+    if (chown(str,OWNER,GIDOWNER) < 0)
+        log_dieusys(LOG_EXIT_SYS,"chown: ",str) ;
 }
 
 static void inline auto_dir(char const *str,mode_t mode)
 {
-	log_trace("create directory: ",str) ;
-	if (!dir_create(str,mode)) 
-		log_dieusys(LOG_EXIT_SYS,"create directory: ",str) ;
+    log_flow() ;
+
+    log_trace("create directory: ",str) ;
+    if (!dir_create_parent(str,mode))
+        log_dieusys(LOG_EXIT_SYS,"create directory: ",str) ;
 }
 
 static void inline auto_chmod(char const *str,mode_t mode)
 {
-	//VERBO3 strerr_warnt2x("chmod: ",str) ;
-	if (chmod(str,mode) < 0)
-		log_dieusys(LOG_EXIT_SYS,"chmod: ",str) ;
+    log_flow() ;
+
+    if (chmod(str,mode) < 0)
+        log_dieusys(LOG_EXIT_SYS,"chmod: ",str) ;
 }
 
 static void inline auto_file(char const *dst,char const *file,char const *contents,size_t conlen)
 {
-	log_trace("write file: ",dst,"/",file) ;
-	if (!file_write_unsafe(dst,file,contents,conlen))
-		log_dieusys(LOG_EXIT_SYS,"write file: ",dst,"/",file) ;
+    log_flow() ;
+
+    log_trace("write file: ",dst,"/",file) ;
+    if (!file_write_unsafe(dst,file,contents,conlen))
+        log_dieusys(LOG_EXIT_SYS,"write file: ",dst,"/",file) ;
 }
 
-static void inline auto_stralloc(stralloc *sa,char const *str)
+static void inline auto_check(char const *str,mode_t type,mode_t perm,int what)
 {
-	if (!stralloc_cats(sa,str)) log_dieusys(LOG_EXIT_SYS,"append stralloc") ;
-}
+    log_flow() ;
 
-static void inline auto_check(char const *str,mode_t check,mode_t type,mode_t perm,int what)
-{
-	int r ;
-	r = scan_mode(str,check) ;
-	if (r < 0) { errno = EEXIST ; log_diesys(LOG_EXIT_SYS,"conflicting format of: ",str) ; }
-	if (!r)
-	{
-		auto_dir(str,type) ;
-		if (what > 0) auto_chown(str) ;
-		if (what > 1) auto_chmod(str,perm) ;
-	}
+    int r ;
+    r = scan_mode(str,S_IFDIR) ;
+    if (r < 0) { errno = EEXIST ; log_diesys(LOG_EXIT_SYS,"conflicting format of: ",str) ; }
+    if (!r)
+    {
+        auto_dir(str,type) ;
+        if (what > 0) auto_chown(str) ;
+        if (what > 1) auto_chmod(str,perm) ;
+    }
 }
 
 static void inline auto_fifo(char const *str)
 {
-	int r ;
-	r = scan_mode(str,S_IFIFO) ;
-	if (r < 0) { errno = EEXIST ; log_diesys(LOG_EXIT_SYS,"conflicting format of: ",str) ; }
-	if (!r)
-	{
-		log_trace("create fifo: ",str) ;
-		if (mkfifo(str, 0600) < 0) 
-			log_dieusys(LOG_EXIT_SYS,"create fifo: ",str) ;
-	}
-}
-static void inline auto_rm(char const *str)
-{
-	int r ;
-	r = scan_mode(str,S_IFDIR) ;
-	if (r > 0)
-	{
-		log_info("removing: ",str,"...") ;
-		if (rm_rf(str) < 0) log_dieusys(LOG_EXIT_SYS,"remove: ",str) ;
-	}
-}
-static void inline log_perm(char const *str,uid_t *uid,gid_t *gid)
-{
-	if (!youruid(uid,str)) log_dieusys(LOG_EXIT_SYS,"set uid of: ",str) ;
-	if (!yourgid(gid,*uid)) log_dieusys(LOG_EXIT_SYS,"set gid of: ",str) ;
+    log_flow() ;
+
+    int r ;
+    r = scan_mode(str,S_IFIFO) ;
+    if (r < 0) { errno = EEXIST ; log_diesys(LOG_EXIT_SYS,"conflicting format of: ",str) ; }
+    if (!r)
+    {
+        log_trace("create fifo: ",str) ;
+        if (mkfifo(str, 0600) < 0)
+            log_dieusys(LOG_EXIT_SYS,"create fifo: ",str) ;
+    }
 }
 
-static void inline auto_addlive(stralloc *sa,char const *live, char const *str)
+static void inline auto_rm(char const *str)
 {
-	auto_stralloc(sa,live) ;
-	auto_stralloc(sa,str) ;
+    log_flow() ;
+
+    int r ;
+    r = scan_mode(str,S_IFDIR) ;
+    if (r > 0)
+    {
+        log_info("removing: ",str,"...") ;
+        if (rm_rf(str) < 0) log_dieusys(LOG_EXIT_SYS,"remove: ",str) ;
+    }
+}
+
+static void inline log_perm(char const *str,uid_t *uid,gid_t *gid)
+{
+    log_flow() ;
+
+    if (!youruid(uid,str)) log_dieusys(LOG_EXIT_SYS,"set uid of: ",str) ;
+    if (!yourgid(gid,*uid)) log_dieusys(LOG_EXIT_SYS,"set gid of: ",str) ;
+}
+
+void shebang(stralloc *sa,char const *opts)
+{
+    if (!auto_stra(sa, "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb ",opts,"\n"))
+        log_die_nomem("stralloc") ;
+
+}
+
+void append_shutdown(stralloc *sa,char const *live, char const *opts)
+{
+    if (!auto_stra(sa,SS_BINPREFIX "66-shutdown ",opts))
+        log_die_nomem("stralloc") ;
+
+    if (!CONTAINER)
+        if (!auto_stra(sa," -a"))
+            log_die_nomem("stralloc") ;
+
+    if (!auto_stra(sa," -l ",live," -- now\n"))
+        log_die_nomem("stralloc") ;
+
 }
 
 void write_shutdownd(char const *live, char const *scandir)
 {
-	stralloc run = STRALLOC_ZERO ;
-	size_t scandirlen = strlen(scandir) ;
-	char shut[scandirlen + 1 + SS_BOOT_SHUTDOWND_LEN + 5 + 1] ;
-	memcpy(shut,scandir,scandirlen) ;
-	shut[scandirlen] = '/' ;
-	memcpy(shut + scandirlen + 1,SS_BOOT_SHUTDOWND,SS_BOOT_SHUTDOWND_LEN) ;	
-	shut[scandirlen + 1 + SS_BOOT_SHUTDOWND_LEN] = 0 ;	
-	auto_check(shut,S_IFDIR,0755,0755,AUTO_CRTE_CHW_CHM) ;
-	memcpy(shut + scandirlen + 1 + SS_BOOT_SHUTDOWND_LEN,"/fifo",5) ;
-	shut[scandirlen + 1 + SS_BOOT_SHUTDOWND_LEN + 5] = 0 ;
-	auto_fifo(shut) ;
-	auto_stralloc(&run, 
-		"#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n" \
-		SS_BINPREFIX "66-shutdownd -l ") ;
-	auto_stralloc(&run,live) ;
-	auto_stralloc(&run," -s ") ;
-	auto_stralloc(&run,skel) ;
-	auto_stralloc(&run," -g 3000\n") ;
-	shut[scandirlen + 1 + SS_BOOT_SHUTDOWND_LEN] = 0 ;
-	auto_file(shut,"run",run.s,run.len) ;
-	memcpy(shut + scandirlen + 1 + SS_BOOT_SHUTDOWND_LEN,"/run",4) ;
-	shut[scandirlen + 1 + SS_BOOT_SHUTDOWND_LEN + 4] = 0 ;
-	auto_chmod(shut,0755) ;
-	stralloc_free(&run) ;
+    log_flow() ;
+
+    stralloc run = STRALLOC_ZERO ;
+    size_t scandirlen = strlen(scandir) ;
+    char shut[scandirlen + 1 + SS_BOOT_SHUTDOWND_LEN + 5 + 1] ;
+
+    auto_strings(shut,scandir,"/",SS_BOOT_SHUTDOWND) ;
+
+    auto_check(shut,0755,0755,AUTO_CRTE_CHW_CHM) ;
+
+    auto_strings(shut + scandirlen + 1 + SS_BOOT_SHUTDOWND_LEN,"/fifo") ;
+
+    auto_fifo(shut) ;
+
+    shebang(&run,"-P") ;
+    if (!auto_stra(&run,
+        SS_BINPREFIX "66-shutdownd -l ",
+        live," -s ",skel," -g 3000"))
+            log_die_nomem("stralloc") ;
+
+    if (CONTAINER)
+        if (!auto_stra(&run," -B"))
+            log_die_nomem("stralloc") ;
+
+    if (!CATCH_LOG)
+        if (!auto_stra(&run," -c"))
+            log_die_nomem("stralloc") ;
+
+    if (!auto_stra(&run,"\n"))
+        log_die_nomem("stralloc") ;
+
+    shut[scandirlen + 1 + SS_BOOT_SHUTDOWND_LEN] = 0 ;
+
+    auto_file(shut,"run",run.s,run.len) ;
+
+    auto_strings(shut + scandirlen + 1 + SS_BOOT_SHUTDOWND_LEN,"/run") ;
+
+    auto_chmod(shut,0755) ;
+
+    stralloc_free(&run) ;
 }
 
-void write_bootlog(char const *live, char const *scandir) 
+void write_bootlog(char const *live, char const *scandir)
 {
-	int r ;
-	uid_t uid ;
-	gid_t gid ;
-	size_t livelen = strlen(live) ;
-	size_t scandirlen = strlen(scandir) ;
-	size_t ownerlen = uid_fmt(OWNERSTR,OWNER) ;
- 	size_t loglen ;
-	char path[livelen + 4 + ownerlen + 1] ;
-	char logdir[scandirlen + SS_SCANDIR_LEN + SS_LOG_SUFFIX_LEN + 1 + 5 + 1] ;
-	
-	stralloc run = STRALLOC_ZERO ;
-	/** run/66/scandir/uid_name/scandir-log */
-	memcpy(logdir,scandir,scandirlen) ;
-	memcpy(logdir + scandirlen,"/" SS_SCANDIR SS_LOG_SUFFIX,SS_SCANDIR_LEN + SS_LOG_SUFFIX_LEN + 1) ;
-	loglen = scandirlen + SS_SCANDIR_LEN + SS_LOG_SUFFIX_LEN + 1 ; 
-	logdir[loglen] = 0 ;
-	auto_check(logdir,S_IFDIR,0755,0,AUTO_CRTE_CHW) ;
-	
-	/** make the fifo*/
-	memcpy(logdir + loglen, "/fifo", 5) ;
-	logdir[loglen + 5] = 0 ;
-	auto_fifo(logdir) ;
-		
-	/** set the log path for the run file
-	 * /run/66/log*/
-	memcpy(path,live,livelen) ;
-	memcpy(path+livelen,"log",3) ;
-	path[livelen + 3] = '/' ;
-	memcpy(path + livelen + 4,OWNERSTR,ownerlen) ;
-	path[livelen + 4 + ownerlen] = 0 ;
-	log_trace("create directory: ",path) ;
-	r = dir_create_parent(path,02750) ;
-	if (!r) log_dieusys(LOG_EXIT_SYS,"create: ",path) ;
-	log_perm(log_user,&uid,&gid) ;
-	if (chown(path,uid,gid) < 0)
-		log_dieusys(LOG_EXIT_SYS,"chown: ",path) ;
-	auto_chmod(path,02755) ;
+    log_flow() ;
 
-	/** make run file */
-	auto_stralloc(&run, 
-		"#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n" \
-		EXECLINE_BINPREFIX "redirfd -w 2 /dev/console\n" \
-		EXECLINE_BINPREFIX "redirfd -w 1 /dev/null\n" \
-		EXECLINE_BINPREFIX "redirfd -rnb 0 fifo\n" \
-		S6_BINPREFIX "s6-setuidgid ") ;
-	auto_stralloc(&run,log_user) ;
-	auto_stralloc(&run,"\n" S6_BINPREFIX "s6-log -bpd3 -- 1") ;
-	if (SS_LOGGER_TIMESTAMP < TIME_NONE)
-		auto_stralloc(&run,SS_LOGGER_TIMESTAMP == TIME_ISO ? " T " : " t ") ;
-	auto_stralloc(&run,path) ;
-	auto_stralloc(&run,"\n") ;
-	
-	logdir[loglen] = 0 ;
-	
-	auto_file(logdir,"run",run.s,run.len) ;
-	auto_file(logdir,"notification-fd","3\n",2) ;
-	
-	memcpy(logdir + loglen,"/run",4) ;
-	logdir[loglen + 4] = 0 ;	
-	auto_chmod(logdir,0755) ;
-	
-	stralloc_free(&run) ;
+    int r ;
+    uid_t uid ;
+    gid_t gid ;
+    size_t livelen = strlen(live) ;
+    size_t scandirlen = strlen(scandir) ;
+    size_t ownerlen = uid_fmt(OWNERSTR,OWNER) ;
+    size_t loglen ;
+    char path[livelen + 4 + ownerlen + 1] ;
+    char logdir[scandirlen + SS_SCANDIR_LEN + SS_LOG_SUFFIX_LEN + 1 + 5 + 1] ;
+
+    stralloc run = STRALLOC_ZERO ;
+    /** run/66/scandir/uid_name/scandir-log */
+    auto_strings(logdir,scandir,"/" SS_SCANDIR SS_LOG_SUFFIX) ;
+
+    loglen = scandirlen + SS_SCANDIR_LEN + SS_LOG_SUFFIX_LEN + 1 ;
+
+    auto_check(logdir,0755,0,AUTO_CRTE_CHW) ;
+
+    /** make the fifo*/
+    auto_strings(logdir + loglen, "/fifo") ;
+
+    auto_fifo(logdir) ;
+
+    /** set the log path for the run file
+     * /run/66/log*/
+    auto_strings(path,live,"log/",OWNERSTR) ;
+
+    log_trace("create directory: ",path) ;
+    r = dir_create_parent(path,02750) ;
+    if (!r)
+        log_dieusys(LOG_EXIT_SYS,"create: ",path) ;
+
+    log_perm(log_user,&uid,&gid) ;
+
+    if (chown(path,uid,gid) < 0)
+        log_dieusys(LOG_EXIT_SYS,"chown: ",path) ;
+
+    auto_chmod(path,02755) ;
+
+    /** make run file */
+    shebang(&run,"-P") ;
+    if (CONTAINER) {
+
+        if (!auto_stra(&run,EXECLINE_BINPREFIX "fdmove -c 1 2\n"))
+            log_die_nomem("stralloc") ;
+
+    } else {
+
+        if (!auto_stra(&run,
+            EXECLINE_BINPREFIX "redirfd -w 1 /dev/null\n"))
+                log_die_nomem("stralloc") ;
+    }
+
+    if (!auto_stra(&run,
+            EXECLINE_BINPREFIX "redirfd -rnb 0 fifo\n" \
+            S6_BINPREFIX "s6-setuidgid ",
+            log_user,
+            "\n" S6_BINPREFIX "s6-log -bpd3 -- 1"))
+                log_die_nomem("stralloc") ;
+
+    if (SS_LOGGER_TIMESTAMP < TIME_NONE)
+        if (!auto_stra(&run,SS_LOGGER_TIMESTAMP == TIME_ISO ? " T " : " t "))
+            log_die_nomem("stralloc") ;
+
+    if (!auto_stra(&run,path,"\n"))
+        log_die_nomem("stralloc") ;
+
+    logdir[loglen] = 0 ;
+
+    auto_file(logdir,"run",run.s,run.len) ;
+    auto_file(logdir,"notification-fd","3\n",2) ;
+
+    auto_strings(logdir + loglen,"/run") ;
+
+    auto_chmod(logdir,0755) ;
+
+    stralloc_free(&run) ;
 }
 
 void write_control(char const *scandir,char const *live, char const *filename, int file)
 {
-	size_t scandirlen = strlen(scandir) ;
-	size_t filen = strlen(filename) ;
-	char mode[scandirlen + SS_SVSCAN_LOG_LEN + filen + 1] ;
-	stralloc sa = STRALLOC_ZERO ;
+    log_flow() ;
 
-	/** shebang */
-	auto_stralloc(&sa, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n") ;
-	
-	if (file == FINISH)
-	{
-		if (BOOT)
-		{
-			auto_stralloc(&sa,
-				EXECLINE_BINPREFIX "redirfd -w 1 /dev/console\n" \
-				EXECLINE_BINPREFIX "fdmove -c 2 1\n" \
-				EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-echo -- \"scandir ") ;
-			auto_stralloc(&sa,scandir) ;
-			auto_stralloc(&sa,
-				" exited. Rebooting.\" }\n" \
-				SS_BINPREFIX "66-hpr -r -f -l ") ;
-			auto_addlive(&sa,live,"\n") ;
-		}
-		else
-		{
-			auto_stralloc(&sa,SS_BINPREFIX "66-echo -- \"scandir ") ;
-			auto_stralloc(&sa, scandir) ;
-			auto_stralloc(&sa, " shutted down...\"\n") ;
-		}
-		goto write ;
-	}
-	
-	if (file == CRASH)
-	{
-		auto_stralloc(&sa,
-			EXECLINE_BINPREFIX "redirfd -w 1 /dev/console\n" \
-			EXECLINE_BINPREFIX "fdmove -c 2 1\n" \
-			EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-echo -- \"scandir ") ;
-		auto_stralloc(&sa,scandir) ;
-		auto_stralloc(&sa, " crashed.") ;
-		if (BOOT)
-		{
-			auto_stralloc(&sa,
-				" Rebooting.\" }\n" \
-				SS_BINPREFIX "66-hpr -r -f -l ") ;
-			auto_addlive(&sa,live,"\n") ;
-		}
-		else auto_stralloc(&sa,"\" }\n") ;
-		goto write ;
-	}
-	if (!BOOT)
-	{
-		auto_stralloc(&sa, EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-all -v3 -l ") ;
-		auto_addlive(&sa,live," down }\n") ;
-	}
-	switch(file)
-	{
-		case PWR:
-		case USR1:
-			if (BOOT)
-			{
-				auto_stralloc(&sa,SS_BINPREFIX "66-shutdown -a -p -l ") ;
-				auto_addlive(&sa,live," -- now\n") ;
-			}
-			break ;
-		case USR2: 
-			if (BOOT)
-			{
-				auto_stralloc(&sa,SS_BINPREFIX "66-shutdown -a -h -l ") ;
-				auto_addlive(&sa,live," -- now\n") ;
-			}
-			break ;
-		case TERM:
-			if (!BOOT)
-			{
-				auto_stralloc(&sa, S6_BINPREFIX "66-scanctl -l ") ;
-				auto_addlive(&sa,live," t\n") ;
-			}
-			break ;
-		case QUIT:
-			if (!BOOT) auto_stralloc(&sa, SS_BINPREFIX "66-scanctl quit\n") ;
-			break ;
-		case INT:
-			if (BOOT)
-			{
-				auto_stralloc(&sa,SS_BINPREFIX "66-shutdown -a -r -l ") ;
-				auto_addlive(&sa,live," -- now\n") ;
-			}
-			break ;
-		case HUP:
-			break ;
-		default:
-			break ;
-	}
-	
-	write:
-		memcpy(mode,scandir,scandirlen) ;
-		memcpy(mode + scandirlen, SS_SVSCAN_LOG, SS_SVSCAN_LOG_LEN) ;
-		mode[scandirlen + SS_SVSCAN_LOG_LEN ] = 0 ;
-		auto_file(mode,filename+1,sa.s,sa.len) ;	
-		memcpy(mode + scandirlen + SS_SVSCAN_LOG_LEN,filename,filen) ;
-		mode[scandirlen + SS_SVSCAN_LOG_LEN + filen] = 0 ;
-		auto_chmod(mode,0755) ;
-			
-	stralloc_free(&sa) ;
+    size_t scandirlen = strlen(scandir) ;
+    size_t filen = strlen(filename) ;
+    char mode[scandirlen + SS_SVSCAN_LOG_LEN + filen + 1] ;
+    stralloc sa = STRALLOC_ZERO ;
+
+    shebang(&sa,"-P") ;
+
+    if (file == FINISH)
+    {
+        if (CONTAINER) {
+
+            if (!auto_stra(&sa,
+                SS_BINPREFIX "execl-envfile ",live, SS_BOOT_CONTAINER_DIR "/",OWNERSTR,"\n" \
+                EXECLINE_BINPREFIX "fdclose 1\n" \
+                EXECLINE_BINPREFIX "fdclose 2\n" \
+                EXECLINE_BINPREFIX "wait { }\n" \
+                EXECLINE_BINPREFIX "foreground {\n" \
+                SS_BINPREFIX "66-hpr -f -n -${HALTCODE} -l ",live," \n}\n" \
+                EXECLINE_BINPREFIX "exit ${EXITCODE}\n"))
+                    log_die_nomem("stralloc") ;
+
+        } else if (BOOT) {
+
+            if (!auto_stra(&sa,
+                EXECLINE_BINPREFIX "redirfd -w 2 /dev/console\n" \
+                EXECLINE_BINPREFIX "fdmove -c 1 2\n" \
+                EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-echo -- \"scandir ",
+                scandir," exited. Rebooting.\" }\n" \
+                SS_BINPREFIX "66-hpr -r -f -l ",
+                live,"\n"))
+                    log_die_nomem("stralloc") ;
+
+        } else {
+
+            if (!auto_stra(&sa,
+                SS_BINPREFIX "66-echo -- \"scandir ",
+                scandir," shutted down...\"\n"))
+                    log_die_nomem("stralloc") ;
+        }
+        goto write ;
+    }
+
+    if (file == CRASH)
+    {
+
+        if (CONTAINER) {
+
+            if (!auto_stra(&sa,
+                EXECLINE_BINPREFIX "foreground {\n" \
+                EXECLINE_BINPREFIX "fdmove -c 1 2\n" \
+                SS_BINPREFIX "66-echo \"scandir crashed. Killing everythings and exiting.\"\n}\n" \
+                EXECLINE_BINPREFIX "foreground {\n" \
+                EXECLINE_BINPREFIX "66-nuke\n}\n" \
+                EXECLINE_BINPREFIX "wait { }\n" \
+                SS_BINPREFIX "66-hpr -f -n -p -l ",live,"\n"))
+                    log_die_nomem("stralloc") ;
+        }
+        else {
+
+            if (!auto_stra(&sa,
+                EXECLINE_BINPREFIX "redirfd -w 2 /dev/console\n" \
+                EXECLINE_BINPREFIX "fdmove -c 1 2\n" \
+                EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-echo -- \"scandir ",
+                scandir, " crashed."))
+                    log_die_nomem("stralloc") ;
+
+            if (BOOT) {
+
+                if (!auto_stra(&sa,
+                    " Rebooting.\" }\n" \
+                    SS_BINPREFIX "66-hpr -r -f -l ",
+                    live,"\n"))
+                        log_die_nomem("stralloc") ;
+
+            } else if (!auto_stra(&sa,"\" }\n"))
+                log_die_nomem("stralloc") ;
+        }
+
+        goto write ;
+    }
+    if (!BOOT) {
+
+        if (!auto_stra(&sa,
+            EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-all -v3 -l ",
+            live," unsupervise }\n"))
+                log_die_nomem("stralloc") ;
+
+    }
+
+    switch(file)
+    {
+        case PWR:
+        case USR1:
+
+            if (BOOT)
+                append_shutdown(&sa,live,"-p") ;
+
+            break ;
+        case USR2:
+
+            if (BOOT)
+                append_shutdown(&sa,live,"-h") ;
+
+            break ;
+        case TERM:
+            if (!BOOT)
+                if (!auto_stra(&sa, SS_BINPREFIX "66-scanctl -l ",live," stop\n"))
+                    log_die_nomem("stralloc") ;
+
+            break ;
+        case QUIT:
+
+            if (!BOOT)
+                if (!auto_stra(&sa, SS_BINPREFIX "66-scanctl -l ",live," quit\n"))
+                    log_die_nomem("stralloc") ;
+
+            break ;
+
+        case INT:
+
+            if (BOOT)
+                append_shutdown(&sa,live,"-r") ;
+
+            break ;
+
+        case WINCH:
+            break ;
+
+        default:
+            break ;
+    }
+
+    write:
+        auto_strings(mode,scandir,SS_SVSCAN_LOG) ;
+
+        auto_file(mode,filename+1,sa.s,sa.len) ;
+
+        auto_strings(mode + scandirlen + SS_SVSCAN_LOG_LEN, filename) ;
+
+        auto_chmod(mode,0755) ;
+
+    stralloc_free(&sa) ;
 }
 
 void create_scandir(char const *live, char const *scandir)
 {
-	size_t scanlen = strlen(scandir) ;
-	char tmp[scanlen + 11 + 1] ;
-	
-	/** run/66/scandir/<uid> */	
-	memcpy(tmp,scandir,scanlen) ;
-	tmp[scanlen] = 0 ;
-	auto_check(tmp,S_IFDIR,0755,0,AUTO_CRTE_CHW) ;
-	
-	/** run/66/scandir/name/.svscan */
-	memcpy(tmp + scanlen, SS_SVSCAN_LOG, SS_SVSCAN_LOG_LEN) ;
-	tmp[scanlen + SS_SVSCAN_LOG_LEN] = 0 ;
-	auto_check(tmp,S_IFDIR,0755,0,AUTO_CRTE_CHW) ;
-	
-	char const *const file[] = 
-	{ 
-		"/crash", "/finish", "/SIGHUP", "/SIGINT",
-		"/SIGQUIT", "/SIGTERM", "/SIGUSR1", "/SIGUSR2",
-		"/SIGPWR"
-	 } ;
-	log_trace("write control file... ") ;
-	for (int i = 0 ; i < 9; i++)
-		write_control(scandir,live,file[i],i) ;
+    log_flow() ;
 
-	if (BOOT)
-	{
-		write_bootlog(live, scandir) ;
-		write_shutdownd(live, scandir) ;
-	}
+    size_t scanlen = strlen(scandir) ;
+    char tmp[scanlen + 11 + 1] ;
+
+    /** run/66/scandir/<uid> */
+    auto_strings(tmp,scandir) ;
+
+    auto_check(tmp,0755,0,AUTO_CRTE_CHW) ;
+
+    /** run/66/scandir/name/.svscan */
+    auto_strings(tmp + scanlen, SS_SVSCAN_LOG) ;
+
+    auto_check(tmp,0755,0,AUTO_CRTE_CHW) ;
+
+    char const *const file[] =
+    {
+        "/crash", "/finish", "/SIGINT",
+        "/SIGQUIT", "/SIGTERM", "/SIGUSR1", "/SIGUSR2",
+        "/SIGPWR", "/SIGWINCH"
+     } ;
+    log_trace("write control file... ") ;
+    for (int i = 0 ; i < 9; i++)
+        write_control(scandir,live,file[i],i) ;
+
+    if (BOOT)
+    {
+        if (CATCH_LOG)
+            write_bootlog(live, scandir) ;
+
+        write_shutdownd(live, scandir) ;
+    }
 }
 
 void sanitize_live(char const *live)
 {
-	size_t livelen = strlen(live) ;	
-	char tmp[livelen + SS_SCANDIR_LEN + 1] ;
-	
-	/** run/66 */
-	auto_check(live,S_IFDIR,0755,0,AUTO_CRTE_CHW) ;
-	
-	/** run/66/scandir */
-	memcpy(tmp,live,livelen) ;
-	memcpy(tmp + livelen,SS_SCANDIR,SS_SCANDIR_LEN) ;
-	tmp[livelen + SS_SCANDIR_LEN] = 0 ;
-	auto_check(tmp,S_IFDIR,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
-		
-	/** run/66/tree */
-	memcpy(tmp + livelen,SS_TREE,SS_TREE_LEN) ;
-	tmp[livelen + SS_TREE_LEN] = 0  ;
-	auto_check(tmp,S_IFDIR,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
+    log_flow() ;
 
-	/** run/66/log */
-	memcpy(tmp + livelen,SS_LOG,SS_LOG_LEN) ;
-	tmp[livelen + SS_LOG_LEN] = 0  ;
-	auto_check(tmp,S_IFDIR,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
-	
-	/** /run/66/state*/
-	memcpy(tmp + livelen,SS_STATE+1,SS_STATE_LEN-1) ;
-	tmp[livelen + SS_STATE_LEN-1] = 0  ;
-	auto_check(tmp,S_IFDIR,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
+    size_t livelen = strlen(live) ;
+    char tmp[livelen + SS_BOOT_CONTAINER_DIR_LEN + 1] ;
+
+    /** run/66 */
+    auto_check(live,0755,0,AUTO_CRTE_CHW) ;
+
+    /** run/66/scandir */
+    auto_strings(tmp,live,SS_SCANDIR) ;
+    auto_check(tmp,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
+
+    if (CONTAINER) {
+        /** run/66/container */
+        auto_strings(tmp + livelen,SS_BOOT_CONTAINER_DIR,"/",OWNERSTR) ;
+        auto_check(tmp,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
+        auto_file(tmp,SS_BOOT_CONTAINER_HALTCMD,"EXITCODE=0\nHALTCODE=p\n",22) ;
+    }
+
+    /** run/66/tree */
+    auto_strings(tmp + livelen,SS_TREE) ;
+    auto_check(tmp,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
+
+    /** run/66/log */
+    auto_strings(tmp + livelen,SS_LOG) ;
+    auto_check(tmp,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
+
+    /** /run/66/state*/
+    auto_strings(tmp + livelen,SS_STATE + 1) ;
+    auto_check(tmp,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
 }
 
 int main(int argc, char const *const *argv, char const *const *envp)
 {
-	int r ;
-	unsigned int up, rescan, create, remove ;
-	
-	stralloc live = STRALLOC_ZERO ;
-	stralloc scandir = STRALLOC_ZERO ;
-	stralloc envdir = STRALLOC_ZERO ;
-	
-	char const *newenv[MAXENV+1] ;
-	char const *const *genv = 0 ;
-	
-	log_color = &log_color_disable ;
-	
-	up = rescan = create = remove = 0 ;
-	
-	PROG = "66-scandir" ;
-	{
-		subgetopt_t l = SUBGETOPT_ZERO ;
+    int r ;
+    unsigned int cmd, create, remove ;
 
-		for (;;)
-		{
-			int opt = getopt_args(argc,argv, ">hzv:bl:d:t:s:e:cruL:", &l) ;
-			if (opt == -1) break ;
-			if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
-			switch (opt)
-			{
-				case 'h' : info_help(); return 0 ;
-				case 'z' : log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
-				case 'v' : if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
-				case 'b' : BOOT = 1 ; break ;
-				case 'l' : if(!stralloc_cats(&live,l.arg)) log_die_nomem("stralloc") ;
-						   if(!stralloc_0(&live)) log_die_nomem("stralloc") ;
-						   break ;
-				case 'd' : if (!uint0_scan(l.arg, &NOTIF)) log_usage(USAGE) ;
-						   if (NOTIF < 3) log_die(LOG_EXIT_USER, "notification fd must be 3 or more") ;
-						   if (fcntl(NOTIF, F_GETFD) < 0) log_diesys(LOG_EXIT_USER, "invalid notification fd") ;
-						   break ;
-				case 't' : if (!uint0_scan(l.arg, &rescan)) break ;
-				case 's' : skel = l.arg ; break ;
-				case 'e' : if(!stralloc_cats(&envdir,l.arg)) log_die_nomem("stralloc") ;
-						   if(!stralloc_0(&envdir)) log_die_nomem("stralloc") ;
-						   break ;
-				case 'c' : create = 1 ; if (remove) log_usage(USAGE) ; break ;
-				case 'r' : remove = 1 ; if (create) log_usage(USAGE) ; break ;
-				case 'u' : up = 1 ; if (remove) log_usage(USAGE) ; break ;
-				case 'L' : log_user = l.arg ; break ;
-				default :  log_usage(USAGE) ; 
-			}
-		}
-		argc -= l.ind ; argv += l.ind ;
-	}
-	
-	if (!argc) OWNER = MYUID ;
-	else if (!youruid(&OWNER,argv[0])) log_dieusys(LOG_EXIT_SYS,"set uid of: ",argv[0]) ;
-		
-	if (BOOT && NOTIF) NOTIF = 0 ;
-	if (BOOT && OWNER) log_die(LOG_EXIT_USER,"-b options can be set only with root") ; 
-	OWNERSTR[uid_fmt(OWNERSTR,OWNER)] = 0 ;
-	
-	if (!yourgid(&GIDOWNER,OWNER)) log_dieusys(LOG_EXIT_SYS,"set gid of: ",OWNERSTR) ;
-	GIDSTR[gid_fmt(GIDSTR,GIDOWNER)] = 0 ; 
-		
-	/** live -> /run/66/ */
-	r = set_livedir(&live) ;
-	if (r < 0) log_die(LOG_EXIT_USER,"live: ",live.s," must be an absolute path") ;
-	if (!r) log_dieusys(LOG_EXIT_SYS,"set live directory") ;
-	
-	if (!stralloc_copy(&scandir,&live)) log_die_nomem("stralloc") ;
-		
-	/** scandir -> /run/66/scandir/ */
-	r = set_livescan(&scandir,OWNER) ;
-	if (r < 0) log_die(LOG_EXIT_USER,"scandir: ", scandir.s, " must be an absolute path") ;
-	if (!r) log_dieusys(LOG_EXIT_SYS,"set scandir directory") ;
-		
-	if (BOOT && skel[0] != '/')
-		log_die(LOG_EXIT_USER, "rc.shutdown: ",skel," must be an absolute path") ;
-	
-	if (envdir.len)
-	{
-		if (envdir.s[0] != '/')
-			log_die(LOG_EXIT_USER,"environment: ",envdir.s," must be an absolute path") ;
-		
-		r = environ_get_envfile_n_merge(envdir.s,envp,newenv,TMPENV) ;
-		if (r <= 0 && r != -8){ environ_get_envfile_error(r,envdir.s) ; log_dieusys(LOG_EXIT_SYS,"build environment with: ",envdir.s) ; }
-		genv = newenv ;
-	}
-	else genv = envp ;
-	
-	r = scan_mode(scandir.s, S_IFDIR) ;
-	if (r < 0) log_die(LOG_EXIT_SYS,"scandir: ",scandir.s," exist with unkown mode") ;
-	if (!r && !create && !remove) log_die(LOG_EXIT_USER,"scandir: ",scandir.s," doesn't exist") ;
-	if (!r && create)
-	{
-		log_trace("sanitize ",live.s," ...") ;
-		sanitize_live(live.s) ;
-		log_trace("create scandir ",scandir.s," ...") ;
-		create_scandir(live.s, scandir.s) ;
-	}
-	/**swap to char [] to be able to freed stralloc*/
-	char ownerscan[scandir.len + 1] ;
-	memcpy(ownerscan,scandir.s,scandir.len) ;
-	ownerscan[scandir.len] = 0 ;
-	if (r && create)
-	{
-		log_info("scandir: ",scandir.s," already exist, keep it") ;
-		goto end ;
-	}
- 	
- 	r = scandir_ok(scandir.s) ;
-	if (r < 0) log_dieusys(LOG_EXIT_SYS, "check: ", scandir.s) ;
-	if (r && remove) log_dieu(LOG_EXIT_USER,"remove: ",scandir.s,": is running")  ;
-	if (remove)
-	{
-		auto_rm(scandir.s) ;
-		/** /run/66/tree/uid */
-		if (!stralloc_copy(&scandir,&live)) log_die_nomem("stralloc") ;
-		r = set_livetree(&scandir,OWNER) ;
-		if (!r) log_dieusys(LOG_EXIT_SYS,"set livetree directory") ;
-		auto_rm(scandir.s) ;
-		if (!stralloc_copy(&scandir,&live)) log_die_nomem("stralloc") ;
-		/** run/66/state/uid */
-		r = set_livestate(&scandir,OWNER) ;
-		if (!r) log_dieusys(LOG_EXIT_SYS,"set livestate directory") ;
-		auto_rm(scandir.s) ;
-	}
-	end:
-	stralloc_free(&scandir) ;
-	stralloc_free(&live) ;
-	stralloc_free(&envdir) ;
-	
-	if (up) scandir_up(ownerscan,rescan,genv) ;
-		
-	return 0 ;
+    stralloc live = STRALLOC_ZERO ;
+    stralloc scandir = STRALLOC_ZERO ;
+
+    log_color = &log_color_disable ;
+
+    cmd = create = remove = 0 ;
+
+    OWNER = MYUID ;
+
+    PROG = "66-scandir" ;
+    {
+        subgetopt_t l = SUBGETOPT_ZERO ;
+
+        for (;;)
+        {
+            int opt = getopt_args(argc,argv, ">hzv:bl:s:o:L:cB", &l) ;
+            if (opt == -1) break ;
+            if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
+            switch (opt)
+            {
+                case 'h' :
+
+                    info_help() ;
+                    return 0 ;
+
+                case 'z' :
+
+                    log_color = !isatty(1) ? &log_color_disable : &log_color_enable ;
+                    break ;
+
+                case 'v' :
+
+                    if (!uint0_scan(l.arg, &VERBOSITY))
+                        log_usage(USAGE) ;
+                    break ;
+
+                case 'b' :
+
+                    BOOT = 1 ;
+                    break ;
+
+                case 'B' :
+
+                    CONTAINER = 1 ;
+                    BOOT = 1 ;
+                    break ;
+
+                case 'l' :
+
+                    if (!stralloc_cats(&live,l.arg) ||
+                    !stralloc_0(&live))
+                        log_die_nomem("stralloc") ;
+
+                    break ;
+
+                case 's' :
+
+                    skel = l.arg ;
+                    break ;
+
+                case 'o' :
+
+                    if (MYUID)
+                        log_die(LOG_EXIT_USER, "only root can use -o option") ;
+
+                    if (!youruid(&OWNER,l.arg))
+                        log_dieusys(LOG_EXIT_SYS,"get uid of: ",l.arg) ;
+
+                case 'c' :
+
+                    CATCH_LOG = 0 ;
+                    break ;
+
+                case 'L' :
+
+                    log_user = l.arg ;
+                    break ;
+
+                default :
+
+                    log_usage(USAGE) ;
+            }
+        }
+        argc -= l.ind ; argv += l.ind ;
+    }
+
+    if (!argc)
+        log_usage(USAGE) ;
+
+    cmd = parse_command(argv[0]) ;
+
+    if (cmd == 3) {
+        log_usage(USAGE) ;
+    } else if (!cmd) {
+        create = 1 ;
+    } else  {
+        remove = 1 ;
+    }
+
+    if (BOOT && OWNER && !CONTAINER)
+        log_die(LOG_EXIT_USER,"-b options can be set only with root") ;
+
+    OWNERSTR[uid_fmt(OWNERSTR,OWNER)] = 0 ;
+
+    if (!yourgid(&GIDOWNER,OWNER))
+        log_dieusys(LOG_EXIT_SYS,"set gid of: ",OWNERSTR) ;
+
+    GIDSTR[gid_fmt(GIDSTR,GIDOWNER)] = 0 ;
+
+    /** live -> /run/66/ */
+    r = set_livedir(&live) ;
+    if (r < 0) log_die(LOG_EXIT_USER,"live: ",live.s," must be an absolute path") ;
+    if (!r) log_dieusys(LOG_EXIT_SYS,"set live directory") ;
+
+    if (!stralloc_copy(&scandir,&live)) log_die_nomem("stralloc") ;
+
+    /** scandir -> /run/66/scandir/ */
+    r = set_livescan(&scandir,OWNER) ;
+    if (r < 0) log_die(LOG_EXIT_USER,"scandir: ", scandir.s, " must be an absolute path") ;
+    if (!r) log_dieusys(LOG_EXIT_SYS,"set scandir directory") ;
+
+    if (BOOT && skel[0] != '/')
+        log_die(LOG_EXIT_USER, "rc.shutdown: ",skel," must be an absolute path") ;
+
+    r = scan_mode(scandir.s, S_IFDIR) ;
+    if (r < 0) log_die(LOG_EXIT_SYS,"scandir: ",scandir.s," exist with unkown mode") ;
+    if (!r && !create && !remove) log_die(LOG_EXIT_USER,"scandir: ",scandir.s," doesn't exist") ;
+    if (!r && create)
+    {
+        log_trace("sanitize ",live.s," ...") ;
+        sanitize_live(live.s) ;
+        log_info ("create scandir ",scandir.s," ...") ;
+        create_scandir(live.s, scandir.s) ;
+    }
+
+    if (r && create)
+    {
+        log_info("scandir: ",scandir.s," already exist, keep it") ;
+        goto end ;
+    }
+
+    r = scandir_ok(scandir.s) ;
+    if (r < 0) log_dieusys(LOG_EXIT_SYS, "check: ", scandir.s) ;
+    if (r && remove) log_dieu(LOG_EXIT_USER,"remove: ",scandir.s,": is running")  ;
+    if (remove)
+    {
+        /** /run/66/scandir/0 */
+        auto_rm(scandir.s) ;
+
+        if (CONTAINER) {
+            /** /run/66/scandir/container */
+            if (!stralloc_copy(&scandir,&live)) log_die_nomem("stralloc") ;
+            if (!auto_stra(&scandir,SS_BOOT_CONTAINER_DIR,"/",OWNERSTR))
+                log_die_nomem("stralloc") ;
+            auto_rm(scandir.s) ;
+        }
+
+        /** /run/66/tree/uid */
+        if (!stralloc_copy(&scandir,&live)) log_die_nomem("stralloc") ;
+        r = set_livetree(&scandir,OWNER) ;
+        if (!r) log_dieusys(LOG_EXIT_SYS,"set livetree directory") ;
+        auto_rm(scandir.s) ;
+
+        /** run/66/state/uid */
+        if (!stralloc_copy(&scandir,&live)) log_die_nomem("stralloc") ;
+        r = set_livestate(&scandir,OWNER) ;
+        if (!r) log_dieusys(LOG_EXIT_SYS,"set livestate directory") ;
+        auto_rm(scandir.s) ;
+    }
+
+    end:
+    stralloc_free(&scandir) ;
+    stralloc_free(&live) ;
+
+    return 0 ;
 }

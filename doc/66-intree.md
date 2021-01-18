@@ -3,6 +3,8 @@ author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)
 
+[Software](https://web.obarun.org/software)
+
 [obarun.org](https://web.obarun.org)
 
 # 66-intree
@@ -41,11 +43,11 @@ This command displays information about trees.
 
 - **-g** : shows the dependency list of the *service* as a hierarchical graph instead of a list.
 
-- **-d** *depth* : limits the depth of the dependency list visualisation; default is 1. This implies **-g** option. 
+- **-d** *depth* : limits the depth of the dependency list visualisation; default is 1. This implies **-g** option.
 
 - **-r** : shows the dependency list of *tree* in reverse mode.
 
-***(!)*** If tree is not specified *66-intree* will display information about all available trees for the current owner of the process.
+***(!)*** If tree is not specified *66-intree* will display information about all available trees for the current owner of the process. In this case, It displays first the trees which is not marked enabled in alphabetical order then the trees marked enabled in start order.
 
 ## Valid fields for -o options
 
@@ -95,7 +97,7 @@ The field *Symlinks* tells you if the current live state point to the *source* o
 
 The field *Contents* gives you a list of all services enabled in the *tree*.
 
-You can display the contents list as a graph and only these fields using the command `66-intree -o contents -g boot`: 
+You can display the contents list as a graph and only these fields using the command `66-intree -o contents -g boot`:
 
 ```
     Contents    : /
@@ -125,10 +127,10 @@ You can display the contents list as a graph and only these fields using the com
                   ├─(0,Enabled,oneshot) system-fontnkey
                   ├─(0,Enabled,oneshot) devices-dmraid
                   ├─(0,Enabled,oneshot) devices-btrfs
-                  ├─(0,Enabled,oneshot) devices-lvm 
+                  ├─(0,Enabled,oneshot) devices-lvm
                   ├─(0,Enabled,oneshot) devices-zfs
                   ├─(0,Enabled,bundle) system-Devices
-                  ├─(0,Enabled,oneshot) mount-swap 
+                  ├─(0,Enabled,oneshot) mount-swap
                   ├─(0,Enabled,bundle) all-Mount
                   ├─(0,Enabled,oneshot) system-fsck
                   ├─(0,Enabled,oneshot) mount-fstab
@@ -140,7 +142,7 @@ You can display the contents list as a graph and only these fields using the com
                   ├─(0,Enabled,oneshot) local-sethostname
                   ├─(0,Enabled,oneshot) local-time
                   ├─(0,Enabled,oneshot) local-authfiles
-                  ├─(0,Enabled,oneshot) local-tmpfiles  
+                  ├─(0,Enabled,oneshot) local-tmpfiles
                   ├─(0,Enabled,oneshot) local-rc
                   ├─(0,Enabled,oneshot) local-dmesg
                   ├─(0,Enabled,bundle) all-Local

@@ -1,7 +1,7 @@
 /*
  * ss_environ.c
  *
- * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
  * All rights reserved.
  *
@@ -13,9 +13,11 @@
  */
 
 #include <sys/types.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdio.h>//rename
 #include <errno.h>
+#include <sys/stat.h>
 
 #include <oblibs/environ.h>
 #include <oblibs/sastr.h>
@@ -31,9 +33,12 @@
 #include <66/constants.h>
 #include <66/utils.h>
 #include <66/environ.h>
+#include <66/enum.h>
 
 int env_resolve_conf(stralloc *env,char const *svname, uid_t owner)
 {
+    log_flow() ;
+
     if (!owner)
     {
         if (!stralloc_cats(env,SS_SERVICE_ADMCONFDIR)) return 0 ;
@@ -43,384 +48,104 @@ int env_resolve_conf(stralloc *env,char const *svname, uid_t owner)
         if (!set_ownerhome(env,owner)) return 0 ;
         if (!stralloc_cats(env,SS_SERVICE_USERCONFDIR)) return 0 ;
     }
-    if (!stralloc_cats(env,svname)) return 0 ;
-    if (!stralloc_0(env)) return 0 ;
-    env->len-- ;
+    if (!auto_stra(env,svname)) return 0 ;
     return 1 ;
 }
 
-int env_merge_conf(stralloc *result,stralloc *srclist,stralloc *modifs,uint8_t conf)
+int env_make_symlink(sv_alltype *sv)
 {
-    int r, comment ;
-    size_t pos = 0 ;
-    char *end = 0 ;
-    stralloc user = STRALLOC_ZERO ;
-    stralloc key = STRALLOC_ZERO ;
-    stralloc val = STRALLOC_ZERO ;
+    log_flow() ;
 
-    if (!auto_stra(&user,"\n## diff from upstream ##\n")) goto err ;
-
-    /** User can empty the file and the function
-     * fail. In that case we rewrite the file entirely */
-    if (!env_clean_with_comment(srclist)) {
-        if (!auto_stra(result,modifs->s)) goto err ;
-        goto freed ;
-    }
-
-    if (!env_clean_with_comment(modifs)) goto err ;
-
-    if (!sastr_split_string_in_nline(modifs) ||
-    !sastr_split_string_in_nline(srclist)) goto err ;
-
-    for (;pos < modifs->len; pos += strlen(modifs->s + pos) + 1)
-    {
-        comment = modifs->s[pos] == '#' ? 1 : 0 ;
-        key.len = 0 ;
-        char *line = modifs->s + pos ;
-
-        /** keep a empty line between key=value pair and a comment */
-        end = get_len_until(line,'=') < 0 ? "\n" : "\n\n" ;
-
-        if (comment)
-        {
-            if (!auto_stra(result,line,end)) goto err ;
-            continue ;
-        }
-        if (!stralloc_copy(&key,modifs)) goto err ;
-        if (!environ_get_key_nclean(&key,&pos)) goto err ;
-        key.len-- ;
-        if (!auto_stra(&key,"=")) goto err ;
-        r = sastr_find(srclist,key.s) ;
-        if (r >= 0)
-        {
-            /** apply change from upstream */
-            if (conf > 1)
-            {
-                if (!auto_stra(result,"\n",line,"\n\n")) goto err ;
-                continue ;
-            }
-            /** keep user change */
-            else
-            {
-                if (!stralloc_copy(&val,srclist)) goto err ;
-                if (!environ_get_val_of_key(&val,key.s)) goto err ;
-                if (!auto_stra(result,"\n",key.s,val.s,"\n\n")) goto err ;
-                continue ;
-            }
-        }
-
-        if (!auto_stra(result,"\n",line,end)) goto err ;
-    }
-    /** search for a key added by user */
-    for (pos = 0 ; pos < srclist->len ; pos += strlen(srclist->s + pos) + 1)
-    {
-        comment = srclist->s[pos] == '#' ? 1 : 0 ;
-        key.len = 0 ;
-        char *line = srclist->s + pos ;
-
-        if (comment) continue ;
-
-        if (!stralloc_copy(&key,srclist)) goto err ;
-        if (!environ_get_key_nclean(&key,&pos)) goto err ;
-        key.len-- ;
-        if (!auto_stra(&key,"=")) goto err ;
-        r = sastr_find(modifs,key.s) ;
-        if (r >= 0) continue ;
-
-        if (!auto_stra(&user,line,"\n")) goto err ;
-    }
-
-    if (user.len > 26)
-        if (!auto_stra(result,user.s)) goto err ;
-
-    freed:
-
-    stralloc_free(&user) ;
-    stralloc_free(&key) ;
-    stralloc_free(&val) ;
-    return 1 ;
-    err:
-        stralloc_free(&user) ;
-        stralloc_free(&key) ;
-        stralloc_free(&val) ;
-        return 0 ;
-}
-
-/** @Return 0 on fail
- * @Return 1 on success
- * @Return 2 if symlink was updated and old version > new version
- * @Return 3 if symlink was updated and old version < new version */
-int env_make_symlink(stralloc *dst,stralloc *old_dst,sv_alltype *sv,uint8_t conf)
-{
-    /** dst-> e.g /etc/66/conf/<service_name> */
-    int r ;
-    size_t dstlen = dst->len ;
-    uint8_t format = 0, update_symlink = 0, write = 0 ;
-    struct stat st ;
-    stralloc saversion = STRALLOC_ZERO ;
-    char *name = keep.s + sv->cname.name ;
+    /** svconf-> /etc/66/conf/<service_name> */
+    char *svconf = keep.s + sv->srconf ;
     char *version = keep.s + sv->cname.version ;
-    char old[dst->len + 5] ;//.old
-    char dori[dst->len + 1] ;
-    char current_version[dst->len + 1] ;
-    char sym_version[dst->len + SS_SYM_VERSION_LEN + 1] ;
-    auto_strings(sym_version,dst->s,SS_SYM_VERSION) ;
+    size_t version_len = strlen(version), svconf_len = strlen(svconf) ;
+    char sym_version[svconf_len + SS_SYM_VERSION_LEN + 1] ;
 
-    /** dst -> /etc/66/conf/<service> */
-    auto_strings(dori,dst->s) ;
+    char dst[svconf_len + 1 + version_len + 1] ;
 
-    r = scan_mode(dst->s, S_IFDIR) ;
-    /** enforce to pass to new format*/
-    if (r == -1) {
-        /** last chance to pass to the new format. 0.6.0.0 or higher
-         * version will remove this check */
-        auto_strings(old,dst->s,".old") ;
-        if (rename(dst->s,old) == -1)
-            log_warnusys_return(LOG_EXIT_ZERO,"rename: ",dst->s," to: ",old) ;
-        format = 1 ;
-    }
+    auto_strings(dst,svconf,"/",version) ;
 
-    /** first activation of the service. The symlink doesn't exist yet.
-     * In that case we create it else we check if it point to a file or
-     * a directory. File means old format, in this case we enforce to pass
-     * to the new one. */
-    r = lstat(sym_version,&st) ;
-    if (S_ISLNK(st.st_mode) && !r)
-    {
-        if (sarealpath(&saversion,sym_version) == -1)
-            log_warn_return(LOG_EXIT_ZERO,"sarealpath of: ",sym_version) ;
+    auto_strings(sym_version,svconf,SS_SYM_VERSION) ;
 
-        char dname[saversion.len + 1] ;
-
-        r = scan_mode(saversion.s,S_IFREG) ;
-        if (r > 0)
-        {
-            /** /etc/66/conf/service/version/confile */
-            if (!ob_dirname(dname,saversion.s))
-                log_warn_return(LOG_EXIT_ZERO,"get basename of: ",saversion.s) ;
-            dname[strlen(dname) - 1] = 0 ;
-            saversion.len = 0 ;
-            /** user may have updated the service which contain the @version field
-             * without enable it again. In that case we have the format
-             * /etc/66/conf/service and version directory doesn't exist.
-             * So, dst->s and dname are equal*/
-            if (!strcmp(dst->s,dname)) {
-
-                char tmp[dst->len + 1 + strlen(version) + 1 + strlen(name) + 1] ;
-                auto_strings(tmp,dst->s,"/",version) ;
-
-                char dtmp[dst->len + 1 + strlen(name) + 1] ;
-                auto_strings(dtmp,dst->s,"/",name) ;
-
-                if (!dir_create_parent(tmp,0755))
-                    log_warnsys_return(LOG_EXIT_ZERO,"create directory: ",tmp) ;
-
-                auto_strings(tmp,dst->s,"/",version,"/",name) ;
-
-                if (rename(dtmp,tmp) == -1)
-                    log_warnusys_return(LOG_EXIT_ZERO,"rename: ",dtmp," to: ",tmp) ;
-
-                auto_strings(dname,dst->s,"/",version) ;
-            }
-
-            if (!auto_stra(&saversion,dname))
-                log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
-
-            if (!ob_basename(current_version,dname))
-                log_warn_return(LOG_EXIT_ZERO,"get basename of: ",dname) ;
-
-            {
-                char tmp[dst->len + strlen(current_version) + 2] ;
-                auto_strings(tmp,dst->s,"/",current_version) ;
-                /** old format->point to a file instead of the directory,
-                * enforce to pass to new one */
-                if (!atomic_symlink(tmp,sym_version,"env_compute"))
-                    log_warnu_return(LOG_EXIT_ZERO,"symlink: ",sym_version," to: ",dst->s) ;
-            }
-        }
-        else
-        {
-            /** /etc/66/conf/service/version */
-            if (!ob_basename(current_version,saversion.s))
-                log_warn_return(LOG_EXIT_ZERO,"get basename of: ",saversion.s) ;
-        }
-        /** keep the path of the current symlink. env_compute need it
-         * to compare the two files. */
-        if (sarealpath(old_dst,sym_version) == -1)
-            log_warn_return(LOG_EXIT_ZERO,"sarealpath of: ",sym_version) ;
-    }
-    else
-    {
-        /** doesn't exist. First use of the service */
-        update_symlink = 3 ;
-        write = 1 ;
-        if (!auto_stra(dst,"/",version))
-            log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-        goto create ;
-    }
-
-    /** 0.4.0.1 and previous 66 version doesn't set @version field as
-     * mandatory field. We need to check if we have a previous format. */
-    r = version_scan(&saversion,current_version,SS_CONFIG_VERSION_NDOT) ;
-    if (r == -1) log_warnu_return(LOG_EXIT_ZERO,"get version of: ",saversion.s) ;
-    if (!r)
-    {
-        /** old format meaning /etc/66/conf/service/confile
-         * we consider it as old version */
-        if (!auto_stra(dst,"/",current_version))
-            log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-
-        if (!atomic_symlink(dst->s,sym_version,"env_compute"))
-            log_warnu_return(LOG_EXIT_ZERO,"symlink: ",sym_version," to: ",dst->s) ;
-    }
-
-    r = version_cmp(current_version,version,SS_CONFIG_VERSION_NDOT) ;
-    if (r == -2) log_warn_return(LOG_EXIT_ZERO,"compare version: ",current_version," vs: ",version) ;
-    if (r == -1 || r == 1)
-    {
-        if (conf) {
-            update_symlink = r == 1 ? 2 : 3 ;
-            if (r == 1 && conf < 3)
-                log_1_warn("merging configuration file to a previous version is not allowed -- keeps as it") ;
-
-            dst->len = dstlen ;
-            if (!auto_stra(dst,"/",version))
-                log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-        }
-        else
-        {
-            log_1_warn("configuration file version differ --  current: ",current_version," new: ",version) ;
-            dst->len = dstlen ;
-            if (!auto_stra(dst,SS_SYM_VERSION))
-                log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-        }
-    }
-    else
-    {
-        /** version is the same keep the previous symlink */
-        dst->len = dstlen ;
-        if (!auto_stra(dst,SS_SYM_VERSION))
-            log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-    }
-
-    saversion.len = 0 ;
-    if (!auto_stra(&saversion,dori,"/",version,"/",name))
-        log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
-
-    r = scan_mode(saversion.s,S_IFREG) ;
-    if (!r)
-    {
-        /** New version doesn't exist yet, we create it even
-         * if the symlink is not updated */
-        saversion.len = 0 ;
-
-        if (!auto_stra(&saversion,dori,"/",version))
-            log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
-        if (!dir_create_parent(saversion.s,0755))
-            log_warnsys_return(LOG_EXIT_ZERO,"create directory: ",saversion.s) ;
-        if (!write_env(name,&sv->saenv,saversion.s))
-            log_warnu_return(LOG_EXIT_ZERO,"write environment at: ",saversion.s) ;
-    }
-
-    create:
-    if (!dir_create_parent(dst->s,0755))
-        log_warnsys_return(LOG_EXIT_ZERO,"create directory: ",dst->s) ;
+    if (!dir_create_parent(dst,0755))
+        log_warnsys_return(LOG_EXIT_ZERO,"create directory: ",dst) ;
 
     /** atomic_symlink check if exist
      * if it doesn't exist, it create it*/
-    if (update_symlink)
-        if (!atomic_symlink(dst->s,sym_version,"env_compute"))
-            log_warnu_return(LOG_EXIT_ZERO,"symlink: ",sym_version," to: ",dst->s) ;
+    if (!atomic_symlink(dst,sym_version,"env_compute"))
+        log_warnu_return(LOG_EXIT_ZERO,"symlink: ",sym_version," to: ",dst) ;
 
-    if (write)
-        if (!write_env(name,&sv->saenv,dst->s))
-            log_warnu_return(LOG_EXIT_ZERO,"write environment at: ",dst->s) ;
-
-    /** last time guys! */
-    if (format)
-    {
-        char tmp[dst->len + 1 + strlen(name) + 1] ;
-        auto_strings(tmp,dst->s,"/",name) ;
-
-        if (rename(old,tmp) == -1)
-            log_warnusys_return(LOG_EXIT_ZERO,"rename: ",old," to: ",tmp) ;
-        if (rm_rf(old) == -1)
-            log_warnusys_return(LOG_EXIT_ZERO,"remove: ",old) ;
-    }
-
-    stralloc_free(&saversion) ;
-    return update_symlink ? update_symlink : 1 ;
+    return 1 ;
 }
 
-/* @Return 0 on crash
- * @Return 1 if no need to write
- * @Return 2 if need to write
- * it appends @result with the user file if
- * conf = 0 otherwise it appends @result with
- * the upstream file modified by env_merge_conf function*/
 int env_compute(stralloc *result,sv_alltype *sv, uint8_t conf)
 {
-    int r, write = 1 ;
-    uint8_t symlink_updated = 0 ;
-    stralloc dst = STRALLOC_ZERO ;
-    stralloc old_dst = STRALLOC_ZERO ;
-    stralloc salist = STRALLOC_ZERO ;
+    log_flow() ;
 
-    if (!auto_stra(&dst,keep.s + sv->srconf))
-        log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
+    int r ;
+    char *version = keep.s + sv->cname.version ;
+    char *svconf = keep.s + sv->srconf ;
+    char *name = keep.s + sv->cname.name ;
+    size_t svconf_len = strlen(svconf), version_len = strlen(version) ;
+    char src[svconf_len + 1 + version_len + 1] ;
 
-    symlink_updated = env_make_symlink(&dst,&old_dst,sv,conf) ;
-    if (!symlink_updated) return 0 ;
+    auto_strings(src,svconf,"/",version) ;
 
-    if (!auto_stra(&dst,"/",keep.s + sv->cname.name))
-        log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
+    /** previous version, this is the current version before
+     * the switch with env_make_symlink() */
+    stralloc pversion = STRALLOC_ZERO ;
+    // future version, the one which we want
+    stralloc fversion = STRALLOC_ZERO ;
 
-    /** dst-> /etc/66/conf/service/version/confile */
-    r = scan_mode(dst.s,S_IFREG) ;
-    if (!r || conf > 2)
-    {
-        // copy config file from upstream in sysadmin
-        if (!stralloc_copy(result,&sv->saenv))
-            log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-        write = 2 ;
-        goto freed ;
+    /** store current configure file version before the switch
+     * of the symlink with the env_make_symlink() function */
+    r = env_find_current_version(&pversion,svconf) ;
+
+    if (r == -1)
+        log_warnu_return(LOG_EXIT_ZERO,"find previous configuration file version") ;
+
+    if(!env_make_symlink(sv))
+        return 0 ;
+
+    /** !r means that previous version doesn't exist, no need to import anything */
+    if (r && !conf) {
+
+        r = env_find_current_version(&fversion,svconf) ;
+        /** should never happen, the env_make_symlink() die in case of error */
+        if (r <= 0)
+            log_warnu_return(LOG_EXIT_ZERO,"find current configuration file version") ;
+
+        char pv[pversion.len + 1] ;
+        char fv[fversion.len + 1] ;
+
+        if (!ob_basename(pv,pversion.s))
+            log_warnu_return(LOG_EXIT_ZERO,"get basename of: ",pversion.s) ;
+
+        if (!ob_basename(fv,fversion.s))
+            log_warnu_return(LOG_EXIT_ZERO,"get basename of: ",fversion.s) ;
+
+        if (!env_import_version_file(name,svconf,pv,fv,sv->cname.itype))
+            return 0 ;
+
     }
-    else if (conf > 0)
-    {
-        if ((symlink_updated == 3) && old_dst.len)
-        {
-            if (!auto_stra(&old_dst,"/",keep.s + sv->cname.name))
-                log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
 
-            if (!file_readputsa_g(&salist,old_dst.s))
-                log_warnusys_return(LOG_EXIT_ZERO,"read: ",old_dst.s) ;
-        }
-        else
-        {
-            if (!file_readputsa_g(&salist,dst.s))
-                log_warnusys_return(LOG_EXIT_ZERO,"read: ",dst.s) ;
-        }
+    if (!auto_stra(result, \
+    "## [STARTWARN]\n## DO NOT MODIFY THIS FILE, IT OVERWRITTEN AT UPGRADE TIME.\n## Uses \'66-env ", \
+    name,"\' command instead.\n## Or make a copy of this file at ",src,"/",name, \
+    " and modify it.\n## [ENDWARN]\n",sv->saenv.s))
+        log_warnu_return(LOG_EXIT_ZERO,"stralloc") ;
 
-        //merge config from upstream to sysadmin
-        if (!env_merge_conf(result,&salist,&sv->saenv,conf))
-            log_warnu_return(LOG_EXIT_ZERO,"merge environment file") ;
-        write = 2 ;
-        goto freed ;
-    }
+    stralloc_free(&pversion) ;
+    stralloc_free(&fversion) ;
 
-    if (!file_readputsa_g(result,dst.s))
-        log_warnusys_return(LOG_EXIT_ZERO,"read: ",dst.s) ;
-
-    freed:
-    stralloc_free(&dst) ;
-    stralloc_free(&old_dst) ;
-    stralloc_free(&salist) ;
-
-    return write ;
+    return 1 ;
 }
 
 int env_clean_with_comment(stralloc *sa)
 {
+    log_flow() ;
+
     ssize_t pos = 0, r ;
     char *end = 0, *start = 0 ;
     stralloc final = STRALLOC_ZERO ;
@@ -449,12 +174,9 @@ int env_clean_with_comment(stralloc *sa)
             if (!environ_rebuild_line(&tmp))
                 log_warnu_return(LOG_EXIT_ZERO,"rebuild environment line") ;
         }
-
-        if (!stralloc_0(&tmp))
+        if (!stralloc_0(&tmp) ||
+        !auto_stra(&final,start,tmp.s,end))
             log_warn_return(LOG_EXIT_ZERO,"stralloc") ;
-
-        if (!auto_stra(&final,start,tmp.s,end))
-            log_warn_return(LOG_EXIT_ZERO,"append stralloc") ;
     }
     sa->len = 0 ;
     if (!auto_stra(sa,final.s))
@@ -466,12 +188,190 @@ int env_clean_with_comment(stralloc *sa)
     return 1 ;
 }
 
+int env_prepare_for_write(stralloc *name, stralloc *dst, stralloc *contents, sv_alltype *sv,uint8_t conf)
+{
+    log_flow() ;
+
+    char *svconf = keep.s + sv->srconf ;
+    size_t svconf_len = strlen(svconf) ;
+    char sym[svconf_len + SS_SYM_VERSION_LEN + 1] ;
+
+    auto_strings(sym,svconf,SS_SYM_VERSION) ;
+
+    if (!env_compute(contents,sv,conf))
+        log_warnu_return(LOG_EXIT_ZERO,"compute environment") ;
+
+    if (sareadlink(dst, sym) == -1)
+        log_warnusys_return(LOG_EXIT_ZERO,"read link of: ",sym) ;
+
+    if (!stralloc_0(dst))
+        log_warnusys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+    if (!auto_stra(name,".",keep.s + sv->cname.name))
+        log_warnusys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+    return 1 ;
+}
+
 int env_find_current_version(stralloc *sa,char const *svconf)
 {
+    log_flow() ;
+
     size_t svconflen = strlen(svconf) ;
+    struct stat st ;
     char tmp[svconflen + SS_SYM_VERSION_LEN + 1] ;
+
     auto_strings(tmp,svconf,SS_SYM_VERSION) ;
-    if (sareadlink(sa,tmp) == -1) return 0 ;
-    if (!stralloc_0(sa)) log_warnusys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+    /** symlink may no exist yet e.g first activation of the service */
+    if (lstat(tmp,&st) == -1)
+        return 0 ;
+
+    if (sareadlink(sa,tmp) == -1)
+        return -1 ;
+
+    if (!stralloc_0(sa))
+        log_warnusys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+    return 1 ;
+}
+
+int env_check_version(stralloc *sa, char const *version)
+{
+    log_flow() ;
+
+    int r ;
+
+    r = version_scan(sa,version,SS_CONFIG_VERSION_NDOT) ;
+
+    if (r == -1)
+        log_warnusys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+    if (!r)
+        log_warn_return(LOG_EXIT_ZERO,"invalid version format: ",version) ;
+
+    return 1 ;
+}
+
+int env_append_version(stralloc *saversion, char const *svconf, char const *version)
+{
+    log_flow() ;
+
+    int r ;
+
+    stralloc sa = STRALLOC_ZERO ;
+
+    if (!env_check_version(&sa,version))
+        return 0 ;
+
+    if (!auto_stra(saversion,svconf,"/",sa.s))
+        log_warnusys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+    r = scan_mode(saversion->s,S_IFDIR) ;
+    if (r == -1 || !r)
+        log_warnusys_return(LOG_EXIT_ZERO,"find the versioned directory: ",saversion->s) ;
+
+    stralloc_free(&sa) ;
+
+    return 1 ;
+}
+
+int env_import_version_file(char const *svname, char const *svconf, char const *sversion, char const *dversion, int svtype)
+{
+    log_flow() ;
+
+    int r ;
+    struct stat st ;
+    size_t pos = 0, svname_len= strlen(svname) ;
+    stralloc salist = STRALLOC_ZERO ;
+    stralloc src_ver = STRALLOC_ZERO ;
+    stralloc dst_ver = STRALLOC_ZERO ;
+
+    char svname_dot[svname_len + 1 + 1] ;
+
+    auto_strings(svname_dot,".",svname) ;
+
+    r = version_cmp(sversion,dversion,SS_CONFIG_VERSION_NDOT) ;
+
+    if (!r) {
+
+        log_warn_return(LOG_EXIT_ONE,"same configuration file version for: ",svname," -- nothing to import") ;
+        goto freed ;
+    }
+
+    if (r == -2)
+        log_warn_return(LOG_EXIT_ZERO,"compare ",svname," version: ",sversion," vs: ",dversion) ;
+
+    if (r == 1) {
+
+        log_warn_return(LOG_EXIT_ONE,"configuration file version regression for ",svname," -- ignoring configuration file version importation") ;
+        goto freed ;
+    }
+
+    if (!env_append_version(&src_ver,svconf,sversion) ||
+    !env_append_version(&dst_ver,svconf,dversion))
+        return 0 ;
+
+    if (!sastr_dir_get(&salist,src_ver.s,svname_dot,S_IFREG))
+        log_warnusys_return(LOG_EXIT_ZERO,"get configuration file from directory: ",src_ver.s) ;
+
+    FOREACH_SASTR(&salist,pos) {
+
+        char *name = salist.s + pos ;
+        size_t namelen = strlen(name) ;
+
+        char s[src_ver.len + 1 + namelen + 1] ;
+        auto_strings(s,src_ver.s,"/",name) ;
+
+        char d[dst_ver.len + 1 + namelen + 1] ;
+        auto_strings(d,dst_ver.s,"/",name) ;
+
+        if (lstat(s, &st) < 0)
+            log_warnusys_return(LOG_EXIT_ZERO,"stat: ",s) ;
+
+        log_info("imports ",svname," configuration file from: ",s," to: ",d) ;
+
+        if (!filecopy_unsafe(s, d, st.st_mode))
+            log_warnusys_return(LOG_EXIT_ZERO,"copy: ", s," to: ",d) ;
+    }
+
+    /** A module type can have multiple sub-modules. Copy these directories
+     * to keep trace of previous configuration file for a sub-module.
+     * If we don't copy these directories, when the sub-module is parsed
+     * the previous configuration doesn't exist and so this function do not
+     * import anything */
+
+    if (svtype == TYPE_MODULE) {
+
+        salist.len = 0 ;
+        pos = 0 ;
+
+        if (!sastr_dir_get(&salist,src_ver.s,"",S_IFDIR))
+            log_warnusys_return(LOG_EXIT_ZERO,"get configuration directories from directory: ",src_ver.s) ;
+
+        FOREACH_SASTR(&salist,pos) {
+
+            char *name = salist.s + pos ;
+            size_t namelen = strlen(name) ;
+
+            char s[src_ver.len + 1 + namelen + 1] ;
+            auto_strings(s,src_ver.s,"/",name) ;
+
+            char d[dst_ver.len + 1 + namelen + 1] ;
+            auto_strings(d,dst_ver.s,"/",name) ;
+
+            log_info("imports ",svname," configuration file from: ",s," to: ",d) ;
+
+            if (!hiercopy(s,d))
+                log_warnusys_return(LOG_EXIT_ZERO,"copy: ",s," to: ",d) ;
+        }
+
+    }
+
+    freed:
+    stralloc_free(&src_ver) ;
+    stralloc_free(&dst_ver) ;
+    stralloc_free(&salist) ;
+
     return 1 ;
 }

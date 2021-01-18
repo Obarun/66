@@ -1,10 +1,10 @@
-/* 
+/*
  * svc_send.c
- * 
- * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
- * 
+ *
+ * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
+ *
  * All rights reserved.
- * 
+ *
  * This file is part of Obarun. It is subject to the license terms in
  * the LICENSE file found in the top-level directory of this
  * distribution.
@@ -16,6 +16,8 @@
 
 #include <stddef.h>
 
+#include <oblibs/log.h>
+
 #include <skalibs/genalloc.h>
 
 #include <66/resolve.h>
@@ -23,21 +25,23 @@
 
 int svc_send(ssexec_t *info,genalloc *ga,char const *sig,char const *const *envp)
 {
-	size_t i = 0 ;
-	int nargc = 3 + genalloc_len(ss_resolve_t,ga) ;
-	char const *newargv[nargc] ;
-	unsigned int m = 0 ;
+    log_flow() ;
 
-	newargv[m++] = "fake_name" ;
-	newargv[m++] = sig ;
-	
-	for (; i < genalloc_len(ss_resolve_t,ga) ; i++)
-		newargv[m++] = genalloc_s(ss_resolve_t,ga)[i].sa.s + genalloc_s(ss_resolve_t,ga)[i].name ;
-	
-	newargv[m++] = 0 ;
+    size_t i = 0 ;
+    int nargc = 3 + genalloc_len(ss_resolve_t,ga) ;
+    char const *newargv[nargc] ;
+    unsigned int m = 0 ;
 
-	if (ssexec_svctl(nargc,newargv,envp,info))
-		return 0 ;
-	
-	return 1 ;
+    newargv[m++] = "fake_name" ;
+    newargv[m++] = sig ;
+
+    for (; i < genalloc_len(ss_resolve_t,ga) ; i++)
+        newargv[m++] = genalloc_s(ss_resolve_t,ga)[i].sa.s + genalloc_s(ss_resolve_t,ga)[i].name ;
+
+    newargv[m++] = 0 ;
+
+    if (ssexec_svctl(nargc,newargv,envp,info))
+        return 0 ;
+
+    return 1 ;
 }

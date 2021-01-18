@@ -3,6 +3,8 @@ author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)
 
+[Software](https://web.obarun.org/software)
+
 [obarun.org](https://web.obarun.org)
 
 # 66-shutdown
@@ -61,7 +63,7 @@ The *66-shutdown* program abides to the standards of the LSB-3.0.0 [shutdown](ht
 
 - **-F** : ignored.
 
-- **-c** : cancel a planned shutdown. Can only cancel the effect of a previous call to *shutdown* with a time argument that was not *now*. This cannot be used to interrupt a shutdown sequence that has already started. 
+- **-c** : cancel a planned shutdown. Can only cancel the effect of a previous call to *shutdown* with a time argument that was not *now*. This cannot be used to interrupt a shutdown sequence that has already started.
 
 ## Notes
 

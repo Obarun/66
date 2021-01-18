@@ -37,6 +37,7 @@
 /66-envfile
 /66-echo
 /66-umountall
+/66-nuke
 /src/include/66/config.h
 /doc/man
 /doc/html

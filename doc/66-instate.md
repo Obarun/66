@@ -3,11 +3,13 @@ author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)
 
+[Software](https://web.obarun.org/software)
+
 [obarun.org](https://web.obarun.org)
 
 # 66-instate
 
-This command displays the contents of the service's *state* file. 
+This command displays the contents of the service's *state* file.
 
 ## Interface
 
@@ -31,4 +33,4 @@ This command displays the contents of the service's *state* file.
 
 - **-t** *tree* : only searches the service at the specified *tree*, when the same service may be enabled in more trees.
 
-- **-l** : displays the contents of the associated logger's *state* file if any. 
+- **-l** : displays the contents of the associated logger's *state* file if any.

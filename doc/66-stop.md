@@ -3,6 +3,8 @@ author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)
 
+[Software](https://web.obarun.org/software)
+
 [obarun.org](https://web.obarun.org)
 
 # 66-stop
@@ -47,7 +49,7 @@ Multiple *services* can be stopped by seperating their names with a space.
 
 - **-X** : exit. The supervisor of the service will exit too. This command should normally never be used on a working system.
 
-- **-K** : sends a `SIGKILL` to the service and keep it down. 
+- **-K** : sends a `SIGKILL` to the service and keep it down.
 
 ## Dependencies handling
 

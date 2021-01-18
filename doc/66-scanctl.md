@@ -3,16 +3,18 @@ author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)
 
+[Software](https://web.obarun.org/software)
+
 [obarun.org](https://web.obarun.org)
 
 # 66-scanctl
 
-Sends a *signal* to a scandir. Safe wrapper around [s6‑svscanctl](https://skarnet.org/software/s6/s6-svscanctl.html). 
+Sends a *signal* to a scandir. Safe wrapper around [s6‑svscanctl](https://skarnet.org/software/s6/s6-svscanctl.html).
 
 ## Interface
 
 ```
-    66-scanctl [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -o owner ] signal
+    66-scanctl [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -d notif ] [ -t rescan ] [ -o owner ] start|stop|reload|quit|nuke|zombies or any s6-svscanctl options.
 ```
 
 This program sends a *signal* to an already running [scandir](scandir.html) at *live* where by default *live* is at `%%livedir%%` or the resulting path provided by the **‑l** option. If owner is not explicitely set with **‑o** then the user of the current process will be used instead.
@@ -36,6 +38,10 @@ This program sends a *signal* to an already running [scandir](scandir.html) at *
     * *4* : also print debugging messages.
 
 - **-l** *live* : changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66-scandir](66-scandir.html).
+
+- **-d** *notif* : notify readiness on file descriptor notif. When *scandir* is ready to accept commands from [66‑scanctl](66-scanctl.html), it will write a newline to *notif*. *notif* **cannot be** lesser than `3`. By default, no notification is sent. If **-b** is set, this option have no effects.
+
+- **-t** *rescan* : perform a scan every *rescan* milliseconds. If *rescan* is set to 0 (the default), automatic scans are never performed after the first one and [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) will only detect new services by issuing either [66‑scanctl](66-scanctl.html) reload or [s6‑svscanctl -a](https://skarnet.org/software/s6/s6-svscanctl.html). It is **strongly** discouraged to set rescan to a positive value under `500`.
 
 - **-o** *owner* : send the *signal* to a [scandir](66-scandir.html) owned by *owner* instead of the current owner of the process. *owner* needs adecuate permissions to deal with the scandir.
 
@@ -62,3 +68,7 @@ This command is strictly equal to:
 ```
     s6-svscanctl -an /path_to_scandir
 ```
+
+
+
+- **-u** : start the *scandir* directory at *live* calling [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html).

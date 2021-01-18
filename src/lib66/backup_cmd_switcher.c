@@ -1,10 +1,10 @@
-/* 
+/*
  * backup_cmd_switcher.c
- * 
- * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
- * 
+ *
+ * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
+ *
  * All rights reserved.
- * 
+ *
  * This file is part of Obarun. It is subject to the license terms in
  * the LICENSE file found in the top-level directory of this
  * distribution.
@@ -38,179 +38,181 @@
 // for -s: -s0 -> origin, -s1 -> backup ;
 int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
 {
-	unsigned int change, back, verbosity, type ;
-	uint32_t what = -1 ;
-	int r ;
-	struct stat st ;
+    unsigned int change, back, verbosity, type ;
+    uint32_t what = -1 ;
+    int r ;
+    struct stat st ;
 
-	char const *tree = NULL ;
-	
-	verbosity = 1 ;
+    char const *tree = NULL ;
 
-	change = back = 0 ;
-	type = -1 ; 
+    verbosity = 1 ;
 
-	{
-		subgetopt_t l = SUBGETOPT_ZERO ;
+    change = back = 0 ;
+    type = -1 ;
 
-		for (;;)
-		{
-			int opt = getopt_args(argc,argv, "v:t:s:b", &l) ;
-			if (opt == -1) break ;
-			if (opt == -2) log_warn_return(LOG_EXIT_LESSONE,"options must be set first") ;
-			switch (opt)
-			{
-				case 'v' :  if (!uint0_scan(l.arg, &verbosity)) return -1 ;  break ;
-				case 't' :	if (!uint0_scan(l.arg, &type)) return -1 ; break ;
-				case 's' : 	change = 1 ; if (!uint0_scan(l.arg, &what)) return -1 ; break ;
-				case 'b' :	back = 1 ; break ;
-				default : 	return -1 ; 
-			}
-		}
-		argc -= l.ind ; argv += l.ind ;
-	}
+    {
+        subgetopt_t l = SUBGETOPT_ZERO ;
 
-	if (argc < 1) return -1 ;
-	if ((!change && !back) || type < 0) return -1 ;
+        for (;;)
+        {
+            int opt = getopt_args(argc,argv, "v:t:s:b", &l) ;
+            if (opt == -1) break ;
+            if (opt == -2) log_warn_return(LOG_EXIT_LESSONE,"options must be set first") ;
+            switch (opt)
+            {
+                case 'v' :  if (!uint0_scan(l.arg, &verbosity)) return -1 ;  break ;
+                case 't' :  if (!uint0_scan(l.arg, &type)) return -1 ; break ;
+                case 's' :  change = 1 ; if (!uint0_scan(l.arg, &what)) return -1 ; break ;
+                case 'b' :  back = 1 ; break ;
+                default :   return -1 ;
+            }
+        }
+        argc -= l.ind ; argv += l.ind ;
+    }
 
-	if (type < TYPE_CLASSIC || type > TYPE_ONESHOT)
-		log_warn_return(LOG_EXIT_LESSONE,"unknown type for backup_switcher") ;
+    if (argc < 1) return -1 ;
+    if ((!change && !back) || type < 0) return -1 ;
 
-	tree = *argv ;
-	size_t treelen = strlen(tree) ;
+    if (type < TYPE_CLASSIC || type > TYPE_ONESHOT)
+        log_warn_return(LOG_EXIT_LESSONE,"unknown type for backup_switcher") ;
 
-	/** $HOME/66/system/tree/servicedirs */
-	//base.len-- ;
-	size_t psymlen ;
-	char *psym = NULL ;
-	if (type == TYPE_CLASSIC)
-	{
-		psym = SS_SYM_SVC ;
-		psymlen = SS_SYM_SVC_LEN ;
-	}
-	else
-	{
-		psym = SS_SYM_DB ;
-		psymlen = SS_SYM_DB_LEN ;
-	}
-	char sym[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 + psymlen + 1] ;
-	memcpy(sym,info->base.s,info->base.len) ;
-	memcpy(sym + info->base.len, SS_SYSTEM,SS_SYSTEM_LEN) ;
-	sym[info->base.len + SS_SYSTEM_LEN] = '/' ;
-	memcpy(sym + info->base.len + SS_SYSTEM_LEN + 1, tree, treelen) ;
-	memcpy(sym + info->base.len + SS_SYSTEM_LEN + 1 + treelen, SS_SVDIRS, SS_SVDIRS_LEN) ;
-	sym[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN] = '/' ;
-	memcpy(sym + info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 ,psym,psymlen) ;
-	sym[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 + psymlen] = 0 ;
-	
-	if (back)
-	{
-		if(lstat(sym,&st) < 0) return -1 ;
-		if(!(S_ISLNK(st.st_mode))) 
-			log_warnusys_return(LOG_EXIT_LESSONE,"find symlink: ",sym) ;
+    tree = *argv ;
+    size_t treelen = strlen(tree) ;
 
-		stralloc symreal = STRALLOC_ZERO ;
+    /** $HOME/66/system/tree/servicedirs */
+    //base.len-- ;
+    size_t psymlen ;
+    char *psym = NULL ;
+    if (type == TYPE_CLASSIC)
+    {
+        psym = SS_SYM_SVC ;
+        psymlen = SS_SYM_SVC_LEN ;
+    }
+    else
+    {
+        psym = SS_SYM_DB ;
+        psymlen = SS_SYM_DB_LEN ;
+    }
+    char sym[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 + psymlen + 1] ;
+    memcpy(sym,info->base.s,info->base.len) ;
+    memcpy(sym + info->base.len, SS_SYSTEM,SS_SYSTEM_LEN) ;
+    sym[info->base.len + SS_SYSTEM_LEN] = '/' ;
+    memcpy(sym + info->base.len + SS_SYSTEM_LEN + 1, tree, treelen) ;
+    memcpy(sym + info->base.len + SS_SYSTEM_LEN + 1 + treelen, SS_SVDIRS, SS_SVDIRS_LEN) ;
+    sym[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN] = '/' ;
+    memcpy(sym + info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 ,psym,psymlen) ;
+    sym[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 + psymlen] = 0 ;
 
-		r = sarealpath(&symreal,sym) ;
-		if (r < 0)
-			log_warnusys_return(LOG_EXIT_LESSONE,"retrieve real path from: ",sym) ;
+    if (back)
+    {
+        if(lstat(sym,&st) < 0) return -1 ;
+        if(!(S_ISLNK(st.st_mode)))
+            log_warnusys_return(LOG_EXIT_LESSONE,"find symlink: ",sym) ;
 
-		char *b = NULL ;
-		b = memmem(symreal.s,symreal.len,SS_BACKUP,SS_BACKUP_LEN) ;
+        stralloc symreal = STRALLOC_ZERO ;
 
-		stralloc_free(&symreal) ;
+        r = sarealpath(&symreal,sym) ;
+        if (r < 0)
+            log_warnusys_return(LOG_EXIT_LESSONE,"retrieve real path from: ",sym) ;
 
-		if (!b) return SS_SWSRC ;
+        char *b = NULL ;
+        b = memmem(symreal.s,symreal.len,SS_BACKUP,SS_BACKUP_LEN) ;
 
-		return SS_SWBACK ;
-	}
+        stralloc_free(&symreal) ;
 
-	if (change)
-	{
-		size_t psrclen ;
-		size_t pbacklen ;
-		char *psrc = NULL ;
-		char *pback = NULL ;
-		
-		if (type == TYPE_CLASSIC)
-		{
-			psrc = SS_SVC ;
-			psrclen = SS_SVC_LEN ;
-			
-			pback = SS_SVC ;
-			pbacklen = SS_SVC_LEN ;
-		}
-		else
-		{
-			psrc = SS_DB ;
-			psrclen = SS_DB_LEN ;
-			
-			pback = SS_DB ;
-			pbacklen = SS_DB_LEN ;
-		}
-	
-		char dstsrc[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + psrclen + 1] ;
-		char dstback[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen + pbacklen + 1] ;
-			
-		memcpy(dstsrc, info->base.s, info->base.len) ;
-		memcpy(dstsrc + info->base.len, SS_SYSTEM, SS_SYSTEM_LEN) ;
-		dstsrc[info->base.len + SS_SYSTEM_LEN] = '/' ;
-		memcpy(dstsrc + info->base.len + SS_SYSTEM_LEN + 1, tree, treelen) ;
-		memcpy(dstsrc + info->base.len + SS_SYSTEM_LEN + 1 + treelen, SS_SVDIRS,SS_SVDIRS_LEN) ;
-		memcpy(dstsrc + info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN,psrc,psrclen) ;
-		dstsrc[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + psrclen] = 0 ;
-					
-		memcpy(dstback, info->base.s, info->base.len) ;
-		memcpy(dstback + info->base.len, SS_SYSTEM, SS_SYSTEM_LEN) ;
-		memcpy(dstback + info->base.len + SS_SYSTEM_LEN, SS_BACKUP, strlen(SS_BACKUP)) ;
-		dstback[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN] = '/' ;
-		memcpy(dstback + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1, tree, treelen) ;
-		memcpy(dstback + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen, pback,pbacklen) ;
-		dstback[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen + pbacklen] = 0 ;
-		
-		if (what)
-		{
-			if (!atomic_symlink(dstback, sym,"backup_switcher"))
-				log_warnusys_return(LOG_EXIT_LESSONE,"symlink: ", dstback) ;
-		}
-		if (!what)
-		{
-			if (!atomic_symlink(dstsrc, sym,"backup_switcher"))
-				log_warnusys_return(LOG_EXIT_LESSONE,"symlink: ", dstsrc) ;
-		}	
-	}
-	
-	return 1 ;		
+        if (!b) return SS_SWSRC ;
+
+        return SS_SWBACK ;
+    }
+
+    if (change)
+    {
+        size_t psrclen ;
+        size_t pbacklen ;
+        char *psrc = NULL ;
+        char *pback = NULL ;
+
+        if (type == TYPE_CLASSIC)
+        {
+            psrc = SS_SVC ;
+            psrclen = SS_SVC_LEN ;
+
+            pback = SS_SVC ;
+            pbacklen = SS_SVC_LEN ;
+        }
+        else
+        {
+            psrc = SS_DB ;
+            psrclen = SS_DB_LEN ;
+
+            pback = SS_DB ;
+            pbacklen = SS_DB_LEN ;
+        }
+
+        char dstsrc[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + psrclen + 1] ;
+        char dstback[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen + pbacklen + 1] ;
+
+        memcpy(dstsrc, info->base.s, info->base.len) ;
+        memcpy(dstsrc + info->base.len, SS_SYSTEM, SS_SYSTEM_LEN) ;
+        dstsrc[info->base.len + SS_SYSTEM_LEN] = '/' ;
+        memcpy(dstsrc + info->base.len + SS_SYSTEM_LEN + 1, tree, treelen) ;
+        memcpy(dstsrc + info->base.len + SS_SYSTEM_LEN + 1 + treelen, SS_SVDIRS,SS_SVDIRS_LEN) ;
+        memcpy(dstsrc + info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN,psrc,psrclen) ;
+        dstsrc[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + psrclen] = 0 ;
+
+        memcpy(dstback, info->base.s, info->base.len) ;
+        memcpy(dstback + info->base.len, SS_SYSTEM, SS_SYSTEM_LEN) ;
+        memcpy(dstback + info->base.len + SS_SYSTEM_LEN, SS_BACKUP, strlen(SS_BACKUP)) ;
+        dstback[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN] = '/' ;
+        memcpy(dstback + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1, tree, treelen) ;
+        memcpy(dstback + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen, pback,pbacklen) ;
+        dstback[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen + pbacklen] = 0 ;
+
+        if (what)
+        {
+            if (!atomic_symlink(dstback, sym,"backup_switcher"))
+                log_warnusys_return(LOG_EXIT_LESSONE,"symlink: ", dstback) ;
+        }
+        if (!what)
+        {
+            if (!atomic_symlink(dstsrc, sym,"backup_switcher"))
+                log_warnusys_return(LOG_EXIT_LESSONE,"symlink: ", dstsrc) ;
+        }
+    }
+
+    return 1 ;
 }
-	
+
 int backup_cmd_switcher(unsigned int verbosity,char const *cmd,ssexec_t *info)
-{	
-	int r ;
-	size_t pos = 0 ;
-	stralloc opts = STRALLOC_ZERO ;
+{
+    log_flow() ;
 
-	if (!sastr_clean_string(&opts,cmd))
-		log_warnu_return(LOG_EXIT_LESSONE,"clean: ",cmd) ;
+    int r ;
+    size_t pos = 0 ;
+    stralloc opts = STRALLOC_ZERO ;
 
-	int newopts = 5 + sastr_len(&opts) ;
-	char const *newargv[newopts] ;
-	unsigned int m = 0 ;
-	char fmt[UINT_FMT] ;
-	fmt[uint_fmt(fmt, verbosity)] = 0 ;
+    if (!sastr_clean_string(&opts,cmd))
+        log_warnu_return(LOG_EXIT_LESSONE,"clean: ",cmd) ;
 
-	newargv[m++] = "backup_switcher" ;
-	newargv[m++] = "-v" ;
-	newargv[m++] = fmt ;
+    int newopts = 5 + sastr_len(&opts) ;
+    char const *newargv[newopts] ;
+    unsigned int m = 0 ;
+    char fmt[UINT_FMT] ;
+    fmt[uint_fmt(fmt, verbosity)] = 0 ;
 
-	for (;pos < opts.len; pos += strlen(opts.s + pos) + 1)
-		newargv[m++] = opts.s + pos ;
+    newargv[m++] = "backup_switcher" ;
+    newargv[m++] = "-v" ;
+    newargv[m++] = fmt ;
 
-	newargv[m++] = info->treename.s ;
-	newargv[m++] = 0 ;
+    for (;pos < opts.len; pos += strlen(opts.s + pos) + 1)
+        newargv[m++] = opts.s + pos ;
 
-	r = backup_switcher(newopts,newargv,info) ;
+    newargv[m++] = info->treename.s ;
+    newargv[m++] = 0 ;
 
-	stralloc_free(&opts) ;
+    r = backup_switcher(newopts,newargv,info) ;
 
-	return r ;
+    stralloc_free(&opts) ;
+
+    return r ;
 }

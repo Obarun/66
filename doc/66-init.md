@@ -3,11 +3,13 @@ author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)
 
+[Software](https://web.obarun.org/software)
+
 [obarun.org](https://web.obarun.org)
 
 # 66-init
 
-This command initiates services from a given *tree* at a *live* directory. 
+This command initiates services from a given *tree* at a *live* directory.
 
 ## Interface
 
@@ -39,11 +41,11 @@ This tool expects to find an already created [scandir](66-scandir.html) director
 
 ## Arguments
 
-- **classic** : only initiate all `classic` services from *tree* at *live* location. 
+- **classic** : only initiate all `classic` services from *tree* at *live* location.
 
-- **datatabe** : only initiate all `bundle` and `atomic` services from *tree* at *live* location. 
+- **datatabe** : only initiate all `bundle` and `atomic` services from *tree* at *live* location.
 
-- **both** : initiate all `classic` services and all `bundle` and `atomic` services from *tree* at *live* location. 
+- **both** : initiate all `classic` services and all `bundle` and `atomic` services from *tree* at *live* location.
 
 
 ## Initialization process

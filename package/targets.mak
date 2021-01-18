@@ -23,6 +23,7 @@ BIN_TARGETS := \
 66-update \
 66-umountall \
 66-echo \
-execl-envfile
+execl-envfile \
+66-nuke
 
 LIB_DEFS := 66=66

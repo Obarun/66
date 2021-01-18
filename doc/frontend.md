@@ -3,6 +3,8 @@ author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)
 
+[Software](https://web.obarun.org/software)
+
 [obarun.org](https://web.obarun.org)
 
 # The frontend service file
@@ -36,7 +38,7 @@ You can find a prototype with all valid section and all valid `key=value` pair a
 
     [start]
     @build = auto
-    @execute = ( foreground { mkdir -p  -m 0755 ${RUNDIR} } 
+    @execute = ( foreground { mkdir -p  -m 0755 ${RUNDIR} }
     execl-cmdline -s { ntpd ${CMD_ARGS} } )
 
     [environment]
@@ -48,11 +50,11 @@ The parser will **not** accept an empty value. If a *key* is set then the *value
 
 *Key* names are **case sensitive** and can not be modified. Most names should be specific enough to avoid confusion.
 
-The sections can be declared in any order but as a good practice the `[main]` section should be declared first. This way the parser can read the file as fast as possible. 
+The sections can be declared in any order but as a good practice the `[main]` section should be declared first. This way the parser can read the file as fast as possible.
 
 ## Sections
 
-All sections need to be declared with the name written between square brackets `[]` and must be of lowercase letters **only**. This means that special characters, uppercase letters and numbers are not allowed in the name of a section. An entire section can be commented out by placing the number sign `#` in front of the opening square bracket like this: 
+All sections need to be declared with the name written between square brackets `[]` and must be of lowercase letters **only**. This means that special characters, uppercase letters and numbers are not allowed in the name of a section. An entire section can be commented out by placing the number sign `#` in front of the opening square bracket like this:
 
 ```
     #[stop]
@@ -78,34 +80,34 @@ The *value* of a *key* is parsed in a specific format depending on the key. The 
 - *inline* : An inline *value*. **Must** be on the same line with its corresponding *key*.
 
    * Valid syntax:
-    
+
         ````
         @type = classic
 
         @type=classic
         ````
-    
+
     * **(!)** Invalid syntax:
-        
+
         ````
         @type=
         classic
         ````
-    
+
     ----
 
 - *quotes* : A *value* between double-quotes. **Must** be on the same line with its corresponding *key*.
 
     * Valid syntax:
-    
+
         ````
         @description = "some awesome description"
 
         @description="some awesome description"
         ````
-    
+
     * **(!)** Invalid syntax:
-        
+
         ````
         @description=
         "some awesome description"
@@ -113,13 +115,13 @@ The *value* of a *key* is parsed in a specific format depending on the key. The 
         @description = "line break inside a double-quote
         is not allowed"
         ````
-    
+
     ----
 
 - *brackets* : Multiple *values* between parentheses `()`. Values need to be separated with a space. A line break can be used instead.
 
     * Valid syntax:
-    
+
         ````
         @depends = ( fooA fooB fooC )
 
@@ -131,64 +133,64 @@ The *value* of a *key* is parsed in a specific format depending on the key. The 
         fooC
         )
 
-        @depends= 
+        @depends=
         (
         fooA
         fooB
         fooC
         )
         ````
-    
+
     * **(!)** Invalid syntax:
-        
+
         ````
         @depends = (fooAfooBfooC)
         ````
-    
+
     ----
 
 - *uint* : A positive whole number. **Must** be on the same line with its corresponding *key*.
 
     * Valid syntax:
-    
+
         ````
         @notify = 3
 
         @notify=3
         ````
-    
+
     * **(!)** Invalid syntax:
-        
+
         ````
         @notify=
         3
         ````
-    
+
     ----
 
 - *path* : An absolute path beginning with a forward slash `/`. **Must** be on the same line with its corresponding *key*.
 
     * Valid syntax:
-    
-        ````
-        @destination = /etc/66 
 
-        @destination=/etc/66 
         ````
-    
+        @destination = /etc/66
+
+        @destination=/etc/66
+        ````
+
     * **(!)** Invalid syntax:
-        
+
         ````
         @destination=/a/very/
         long/path
         ````
-    
+
     ----
 
 - *pair* : same as *inline*.
 
     * Valid syntax:
-    
+
         ````
         MYKEY = MYVALUE
 
@@ -196,28 +198,28 @@ The *value* of a *key* is parsed in a specific format depending on the key. The 
 
         anotherkey=where_value=/can_contain/equal/Character
         ````
-    
+
     * **(!)** Invalid syntax:
-        
+
         ````
         MYKEY=
         MYVALUE
         ````
-    
+
     ----
-    
+
 - *colon* : A value between double colons followed by a *pair* syntax. **Must** be one by line.
 
     * Valid syntax:
-    
+
         ````
         ::key=value
 
         :filename:key=value
         ````
-    
+
     * **(!)** Invalid syntax:
-        
+
         ````
        ::MYKEY=
         MYVALUE
@@ -227,7 +229,21 @@ The *value* of a *key* is parsed in a specific format depending on the key. The 
 
         ::key=value :filename:anotherkey=anothervalue
         ````
-    
+- *simple-colon* : A values separated by a colon. **Must** be on the same line with its corresponding *key*.
+
+    * Valid syntax:
+
+        ````
+        @runas = 1000:19
+        ````
+
+    * **(!)** Invalid syntax:
+
+        ````
+        @runas = 1000:
+        19
+        ````
+
 ----
 
 ## Section: [main]
@@ -237,7 +253,7 @@ This section is *mandatory*. (!)
 ### Valid *key* names:
 
 - @type
-    
+
     *Corresponds to the file type of [s6-rc](https://skarnet.org/software/s6-rc) programs*.
 
     Declare the type of the service.
@@ -249,18 +265,18 @@ This section is *mandatory*. (!)
     valid values :
 
     * classic : declares the service as a `classic` service.
-    * bundle : declares the service as a `bundle` service.  
+    * bundle : declares the service as a `bundle` service.
     * longrun : declares the service as a `longrun` service.
     * oneshot : declares the service as a `oneshot` service.
     * module : declares the service as a `module` service.
 
     **Note**: If you don't care about dependencies between services or if you don't need specific tasks or alternative configuration to get the daemon running, "classic" is the best pick.
-    
+
 
     ---
 
 - @name
-    
+
     *Corresponds to the name of the service directory of [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc) programs*.
 
     Name of the service.
@@ -274,23 +290,23 @@ This section is *mandatory*. (!)
     * This field has no effect except for instantiated services. In such case the name must contain the complete name of the frontend service file.
 
         For example, the following is valid:
-        
+
         ````
             @name = tty@mine-@I
         ````
-        
+
         where:
-        
+
         ````
             @name = mine-@I
         ````
-        
+
         is not for a frontend service file named tty@.
 
     ---
 
 - @version
-    
+
     *Without equivalent, this key is unique to 66 tools*.
 
     Version number of the service.
@@ -302,27 +318,27 @@ This section is *mandatory*. (!)
     valid values :
 
     * Any valid version number under the form `digit.digit.digit`.
-        
+
         For example, the following is valid:
-        
+
         ````
             @version = 0.1.0
         ````
-        
+
         where:
-        
+
         ````
             @version = 0.1.0.1
             @version = 0.1
             @version = 0.1.rc1
         ````
-        
-        is not. 
-    
+
+        is not.
+
     ---
 
 - @description
-    
+
     *Without equivalent, this key is unique to 66 tools*.
 
     A short description of the service.
@@ -350,7 +366,7 @@ This section is *mandatory*. (!)
     valid values :
 
     * Any valid user of the system. If you don't know in advance the name of the user who will deal with the service, you can use the term `user`. In that case every user of the system will be able to deal with the service.
-    
+
     (!) Be aware that root is not automatically added. If you don't declare root in this field, you will not be able to use the service even with root privileges.
 
     ---
@@ -368,23 +384,23 @@ This section is *mandatory*. (!)
     valid values :
 
     * The name of any valid service with type `bundle`, `longrun`, `oneshot` or `module`. Services of type `classic` are not allowed.
-    
+
     The order is of **importance** (!). If fooA depends on fooB and fooB depends on fooC the order needs to be:
-    
+
     ````
         @depends=(fooA fooB fooC )
     ````
-    
+
     It is unnecessary to manually define chained sets of dependencies. The parser will properly handle this for you. For example, if fooA depends on fooB, (no matter what the underlying implementation of fooB is, and although the current implementation of fooB depends on fooC) you should just put fooB in the @depends key field of fooA. When starting the set, [66-enable](66-enable.html) will parse and enable fooA, fooB and fooC and [66-start](66-start.html) will start fooC first, then fooB, then fooA. If the underlying implementation of fooB changes at any moment, and does not depend on fooC anymore, you will just have to modify the *@depends* field for fooB. Beware though that if fooA depends on fooC, you need to add both fooB and fooC to the dependencies of fooA.
 
     A service can be commented out by placing the number sign `#` at the begin of the name like this:
-        
+
     ````
         @depends = ( fooA #fooB fooC )
     ````
 
     ---
-    
+
 - @optsdepends
 
     *Without equivalent, this key is unique to 66 tools*.
@@ -408,7 +424,7 @@ This section is *mandatory*. (!)
     @optsdepends only affects the enable process. The start process will not consider optional dependencies. If fooA on treeA has an optional dependency fooB which is declared on treeB, it's the responsibility of the sysadmin to start first treeB then treeA. [66-intree](66-intree.html) can give you the start order with the field `Start after`.
 
     A service can be commented out by placing the number sign `#` at the begin of the name like this:
-        
+
     ````
         @optsdepends = ( fooA #fooB fooC )
     ````
@@ -441,13 +457,13 @@ This section is *mandatory*. (!)
     *@extdepends* only affects the enable process. The start process will not consider external dependencies. If fooA on treeA has an external dependency fooB which is declared on treeB, it's the responsibility of the sysadmin to start first treeB then treeA. [66-intree](66-intree.html) will give you the start order with the field `Start after`.
 
     A service can be commented out by placing the number sign `#` at the begin of the name like this:
-    
+
     ````
         @extdepends = ( fooA #fooB fooC )
     ````
-    
+
     ---
-    
+
 - @contents
 
     *Corresponds to the file contents of [s6-rc](https://skarnet.org/software/s6-rc) programs*.
@@ -463,15 +479,15 @@ This section is *mandatory*. (!)
     * The name of any valid service of type `bundle`, `longrun`, `oneshot` or `module`. Services of type `classic` are not allowed.
 
     A service can be commented out by placing the number sign `#` at the begin of the name like this:
-    
+
     ````
         @contents = ( fooA #fooB fooC)
     ````
-    
+
     ---
-    
+
 - @options
-    
+
     *Without equivalent, this key is unique to 66 tools*.
 
     mandatory : no
@@ -480,16 +496,24 @@ This section is *mandatory*. (!)
 
     valid values :
 
-    * log : automatically create a logger for the service. The behavior of the logger can be configured in the corresponding section—see [[logger]](frontend.html#Section: [logger]).
-    * env : enable the use of the [[environment]](frontend.html#Section: [environment]) section for the service.
-    pipeline : automatically create a pipeline between the service and the logger. For more information read the [s6-rc](https://skarnet.org/software/s6-rc) documentation.
+    * log : automatically create a logger for the service. This is **default**. The logger will be created even if this options is not specified. If you want to avoid the creation of the logger, prefix the options with an exclamation mark:
+
+        ````
+            @options = ( !log )
+        ````
+
+        The behavior of the logger can be configured in the corresponding section—see [[logger]](frontend.html#Section: [logger]).
+
+    * env : enable the use of the [[environment]](frontend.html#Section: [environment]) section for the service. In this case, the [[environment]](frontend.html#Section: [environment]) ***must*** be defined. If the [[environment]](frontend.html#Section: [environment]) is defined, this option is automatically added.
+
+    * pipeline : automatically create a pipeline between the service and the logger. For more information read the [s6-rc](https://skarnet.org/software/s6-rc) documentation.
 
     **Note**: The funnel feature of pipelining is not implemented yet.
-    
+
     ---
-    
+
 - @flags
-    
+
     *Without equivalent, this key is unique to 66 tools*.
 
     mandatory : no
@@ -498,23 +522,17 @@ This section is *mandatory*. (!)
 
     valid values :
 
-    * nosetsid : Corresponds to the file *nosetsid* of [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc) programs
-
-    This will create the file nosetsid
-
-    Once this file was created the service will be run in the same process group as the supervisor of the service ([s6-supervise](https://skarnet.org/software/s6/s6-supervise.html)). Without this file the service will have its own process group and is started as a session leader.
-    
     * down : Corresponds to the file *down* of [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc) programs.
     This will create the file down
 
     Once this file was created the default state of the service will be considered down, not up: the service will not automatically be started until it receives a [66-start](66-start.html) command. Without this file the default state of the service will be up and started automatically.
 
     ---
-    
+
 - @notify
-    
+
     *Corresponds to the file notification-fd of [s6-rc](https://skarnet.org/software/s6-rc) programs*.
-    
+
     mandatory : no
 
     syntax : uint
@@ -528,7 +546,7 @@ This section is *mandatory*. (!)
     ---
 
 - @timeout-finish
-    
+
     *Corresponds to the file timeout-finish of [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc) programs*.
 
     mandatory : no
@@ -558,7 +576,7 @@ This section is *mandatory*. (!)
     This will create the file *timeout-kill*. Once this file is created and the value is not `0`, then on reception of a [66-stop](66-stop.html) command—which sends a `SIGTERM` and a `SIGCONT` to the service — a timeout of value in milliseconds is set. If the service is still not dead, after *value* in milliseconds, it will receive a `SIGKILL`. If the file does not exist, or contains 0, or an invalid value, then the service is never forcibly killed (unless, of course, a [s6-svc -k](https://skarnet.org/software/s6/s6-svc.html) command is issued).
 
     ---
-    
+
 - @timeout-up
 
     *Corresponds to the file timeout-up of [s6-rc](https://skarnet.org/software/s6-rc) programs*.
@@ -574,7 +592,7 @@ This section is *mandatory*. (!)
     This will create the file *timeout-up*. Once this file is created the *value* will equal the maximum number of milliseconds that [66-start](66-start.html) will wait for successful completion of the service start. If starting the service takes longer than this value, [66-start](66-start.html) will declare the transition a failure. If the value is `0`, no timeout is defined and [66-start](66-start.html) will wait for the service to start until the *maxdeath* is reached. Without this file a value of `3000` (`3` seconds) will be used by default.
 
     ---
-    
+
 - @timeout-down
 
     *Corresponds to the file timeout-down of [s6-rc](https://skarnet.org/software/s6-rc) programs*.
@@ -590,9 +608,9 @@ This section is *mandatory*. (!)
     This will create the file *timeout-down*. Once this file is created the value will equal the maximum number of milliseconds [66-stop](66-stop.html) will wait for successful completion of the service stop. If starting the service takes longer than this value, [66-stop](66-stop.html) will declare the transition a failure. If the value is `0`, no timeout is defined and [66-stop](66-stop.html) will wait for the service to start until the *maxdeath* is reached. Without this file a value of `3000` (`3` seconds) will be used by default.
 
     ---
-    
+
 - @maxdeath
-    
+
     *Corresponds to the file max-death-tally of [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc) programs.
 
     mandatory : no
@@ -606,9 +624,9 @@ This section is *mandatory*. (!)
     This will create the file *max-death-tally*. Once this file was created the value will equal the maximum number of service death events that the supervisor will keep track of. If the service dies more than this number of times, the oldest event will be forgotten and the transition ([66-start](66-start.html) or [66-stop](66-stop.html)) will be declared as failed. Tracking death events is useful, for example, when throttling service restarts. The value cannot be greater than 4096. Without this file a default of 3 is used.
 
     ---
-    
+
 - @down-signal
-    
+
     *Corresponds to the file "down-signal" of [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc) programs*.
 
     mandatory : no
@@ -622,7 +640,7 @@ This section is *mandatory*. (!)
     This will create the file *down-signal* which is used to kill the supervised process when a [66-start -r](66-start.html) or [66-stop](66-stop.html) command is used. If the file does not exist `SIGTERM` will be used by default.
 
     ---
-    
+
 - @hiercopy
 
     *Without equivalent, this key is unique to 66 tools*.
@@ -635,10 +653,10 @@ This section is *mandatory*. (!)
 
     valid values :
 
-    * Any files or directories. It accepts *absolute* or *relative* path. 
-    
+    * Any files or directories. It accepts *absolute* or *relative* path.
+
         **Note** : 66 version must be higher than 0.3.0.1.
-    
+
 ---
 
 ## Section: [start]
@@ -648,7 +666,7 @@ This section is *mandatory*. (!)
 ### Valid *key* names:
 
 - @build
-    
+
     *Without equivalent, this key is unique to 66 tools*.
 
     mandatory : no
@@ -656,37 +674,50 @@ This section is *mandatory*. (!)
     syntax : inline
 
     valid value :
-        
+
     * auto : creates the service script file as [execline](https://skarnet.org/software/execline) script. This is the **default**.
 
-    The corresponding file to start the service will automatically be written in [execline](https://skarnet.org/software/execline) format with the *@execute* key value.
-        
+        The corresponding file to start the service will automatically be written in [execline](https://skarnet.org/software/execline) format with the *@execute* key value.
+
     * custom : creates the service script file in the language set in the *@shebang* key value.
 
-    The corresponding file to start the service will be written in the language set in the *@shebang* key value.
+        The corresponding file to start the service will be written in the language set in the *@shebang* key value.
 
     ---
 
 - @runas
-  
+
     *Without equivalent, this key is unique to 66 tools*.
 
     mandatory : no
 
-    syntax : inline
+    syntax : inline,simple-colon
 
     valid value :
-    
-    * Any valid user set on the system
 
-    This will pass the privileges of the service to the given user before starting the last command of the service.
+    * Any valid user name set on the system or valid uid:gid number.
+
+    ````
+        @runas = oblive
+
+        @runas = 1000:19
+
+        if uid is not specified, the uid of the owner of the process is pick by default
+        @runas = :19
+
+        if gid is not specified, the gid of the owner of the process is pick by default
+        @runas = 1000:
+
+    ````
+
+    This will pass the privileges of the service to the given user before starting the run script of the service.
 
     **Note**: (!) The service needs to be first started with root if you want to hand over priviliges to a user. Only root can pass on privileges. This field has no effect for other use cases.
 
     ---
-    
+
 - @shebang
-  
+
     *Without equivalent, this key is unique to 66 tools*.
 
     mandatory : yes (!)—if the *@build* key is set to custom.
@@ -694,15 +725,15 @@ This section is *mandatory*. (!)
     syntax : quotes, path
 
     valid value :
-        
+
     * A valid path to an interpreter installed on your system.
 
     This will set the language that will be used to read and write the *@execute* key value.
-    
+
     ---
-    
+
 - @execute
-  
+
     *Corresponds to the file run for a classic or longrun service and to the file up for a oneshot service*.
 
     mandatory : yes (!)
@@ -710,7 +741,7 @@ This section is *mandatory*. (!)
     syntax : bracket
 
     valid value :
-       
+
     * The command to execute when starting the service.
 
     **Note**: The field will be used as is. No changes will be applied at all. It's the responsability of the author to make sure that the content of this field is correct.
@@ -721,7 +752,7 @@ This section is *mandatory*. (!)
 
 This section is *optional*.
 
-This section is exactly the same as [[start]](frontend.html#Section: [start]) and shares the same keys. With the exception that it will only be considered when creating the file *finish* for a `classic` or `longrun` service and when creating the file *down* for a `oneshot` service to create its content.
+This section is exactly the same as [[start]](frontend.html#Section: [start]) and shares the same keys. With the exception that it will handle the stop process of the service.
 
 ---
 
@@ -729,7 +760,7 @@ This section is exactly the same as [[start]](frontend.html#Section: [start]) an
 
 This section is *optional*.
 
-The value *log* must be added to the *@options* key in the [[main]](frontend.html#Section: [main]) section for [[logger]](frontend.html#Section: [logger]) to have any effect.
+It will only have effects if value *log* was **not** prefixed by an exclamation mark to the *@options* key in the [[main]](frontend.html#Section: [main]) section.
 
 This section extends the *@build*, *@runas*, *@shebang* and *@execute* key fields from [[start]](frontend.html#Section: [start]) and the *@timeout-finish* and *@timeout-kill* key fields from [[main]](frontend.html#Section: [main]) . These are also valid keys for [[logger]](frontend.html#Section: [logger]) and behave the same way they do in the other sections but they can not be specified except for the mandatory key *@build*—see example below. In such case the default behaviour for those key are apply.
 
@@ -743,7 +774,7 @@ Furthermore there are some keys specific to the log.
     ---
 
 - @destination
-  
+
     *Without equivalent, this key is unique to 66 tools*.
 
     mandatory : no
@@ -751,15 +782,15 @@ Furthermore there are some keys specific to the log.
     syntax : path
 
     valid value :
-    
+
     * Any valid path on the system.
 
     The directory where the log file is saved. This directory is automatically created. The current user of the process needs to have sufficient permissions on the destination directory to be able to create it. The default directory is `%%system_log%%/service_name` for root and `$HOME/%%user_log%%/service_name` for any user. The default can also be changed at compile-time by passing the `--with-system-logpath=DIR` option for root and `--with-user-logpath=DIR` for a user to `./configure`.
-    
+
     ---
-    
+
 - @backup
-    
+
     Without equivalent, this key is unique to 66 tools.
 
     mandatory : no
@@ -767,13 +798,13 @@ Furthermore there are some keys specific to the log.
     syntax : uint
 
     valid value :
-    
+
     * Any valid number.
 
     The log directory will keep *value* files. The next log to be saved will replace the oldest file present. By default `3` files are kept.
-    
+
     ---
-    
+
 - @maxsize
 
     *Without equivalent, this key is unique to 66 tools*.
@@ -783,13 +814,13 @@ Furthermore there are some keys specific to the log.
     syntax : uint
 
     valid value :
-    
+
     * Any valid number.
 
     A new log file will be created every time the current one approaches *value* bytes. By default, filesize is `1000000`; it cannot be set lower than `4096` or higher than `268435455`.
 
     ---
-    
+
 - @timestamp
 
     *Without equivalent, this key is unique to 66 tools*.
@@ -799,11 +830,11 @@ Furthermore there are some keys specific to the log.
     syntax : inline
 
     valid value :
-        
+
     * tai
 
     The logged line will be preceded by a TAI64N timestamp (and a space) before being processed by the next action directive.
-    
+
     * iso
 
     The selected line will be preceded by a ISO 8601 timestamp for combined date and time representing local time according to the systems timezone, with a space (not a `T`) between the date and the time and two spaces after the time, before being processed by the next action directive.
@@ -831,15 +862,15 @@ Furthermore there are some keys specific to the log.
 
 This section is *optional*.
 
-It will only have an effect when the value env is added to the *@options* key in the [[main]](frontend.html#Section: [main]) section.
+The definition of this section automatically adds the value *env" at the *@options* key in the [[main]](frontend.html#Section: [main]) section.
 
-A file contained the `key=value` pair(s) will be created by default at `%%service_admconf%%/name_of_service` directory. The default can also be changed at compile-time by passing the `--with-sysadmin-service-conf=DIR` option to `./configure`.
+A file containing the `key=value` pair(s) will be created by default at `%%service_admconf%%/name_of_service` directory. The default can also be changed at compile-time by passing the `--with-sysadmin-service-conf=DIR` option to `./configure`.
 
 ### Valid *key* names:
 
 
 - Any `key=value` pair
-  
+
     *Without equivalent, this key is unique to 66 tools*.
 
     mandatory : no
@@ -849,24 +880,24 @@ A file contained the `key=value` pair(s) will be created by default at `%%servic
     valid value :
 
     * You can define any variables that you want to add to the environment of the service. For example:
-    
+
     ````
         [environment]
         dir_run=/run/openntpd
         cmd_args=-d -s
     ````
-    
+
     The `!` character can be put in front of the value. **Do not** put space between the exclamation mark and the value.
-    
+
     For example, the following is valid:
-        
+
     ````
         [environment]
         dir_run=!/run/openntpd
         cmd_args = !-d -s
-    ````       
+    ````
     where:
-        
+
     ````
         [environment]
         dir_run=! /run/openntpd
@@ -890,7 +921,7 @@ You can use the `@I` string as key field. It will be replaced by the `module` na
 
 
 - @configure
-  
+
     *Without equivalent, this key is unique to 66 tools*.
 
     mandatory : no
@@ -900,11 +931,11 @@ You can use the `@I` string as key field. It will be replaced by the `module` na
     valid value :
 
     * You can define any arguments to pass to the module's configure script.
-    
+
     ---
 
 - @directories
-  
+
     *Without equivalent, this key is unique to 66 tools*.
 
     mandatory : no
@@ -914,7 +945,7 @@ You can use the `@I` string as key field. It will be replaced by the `module` na
     valid value :
 
     * Any `key=value` pair where key is the regex to search on the directory name and value the replacement of that regex. For example:
-    
+
     ````
         @directories = ( DM=sddm TRACKER=consolekit )
     ````
@@ -922,9 +953,9 @@ You can use the `@I` string as key field. It will be replaced by the `module` na
     Where the module directory contains two sub-directories named use-DM and by-TRACKER directories. It will be renamed as use-sddm and by-consolekit respectively.
 
     ---
-    
+
 - @files
-    
+
     *Without equivalent, this key is unique to 66 tools*.
 
     mandatory : no
@@ -938,7 +969,7 @@ You can use the `@I` string as key field. It will be replaced by the `module` na
     ---
 
 - @infiles
-  
+
     *Without equivalent, this key is unique to 66 tools*.
 
     mandatory : no
@@ -952,7 +983,7 @@ You can use the `@I` string as key field. It will be replaced by the `module` na
     ````
     @infiles = ( :mount-tmp:args=-o noexec
     ::user=@I )
-    ````        
+    ````
 
     * It replaces first the term `@I` by the name of the module.
     * It opens the file named mount-tmp, search for the args regex and replaces it by the value of the regex.
@@ -970,10 +1001,10 @@ You can use the `@I` string as key field. It will be replaced by the `module` na
 
     valid value :
 
-    * The name of any valid service with type `bundle`, `longrun`, `oneshot` or `module`. The corresponding frontend file **must** exist on your system. 
+    * The name of any valid service with type `bundle`, `longrun`, `oneshot` or `module`. The corresponding frontend file **must** exist on your system.
 
     A service can be commented out by placing the number sign `#` at the begin of the name like this:
-        
+
     ````
         @addservices = ( fooA #fooB fooC )
     ````
@@ -988,7 +1019,7 @@ As described above the *@execute* key can be written in any language as long as 
 ```
     @build = custom
     @shebang = "/usr/bin/bash"
-    @execute = ( 
+    @execute = (
         echo "This script displays available services"
         for i in $(ls %%service_system%%); do
             echo "daemon : ${i} is available"
@@ -1039,7 +1070,7 @@ This prototype contain all valid section with all valid `key=value` pair.
 ```
     [main]
     @type = classic,bundle,longrun,oneshot,module
-    @name = 
+    @name =
     @version =
     @description = ""
     @depends = ()
@@ -1047,45 +1078,45 @@ This prototype contain all valid section with all valid `key=value` pair.
     @extdepends = ()
     @contents = ()
     @options = ( log env pipeline )
-    @flags = ( down nosetsid )
-    @notify = 
+    @flags = ( down )
+    @notify =
     @user = ()
     @timeout-finish =
     @timeout-kill =
     @timeout-up =
     @timeout-down =
-    @maxdeath = 
+    @maxdeath =
     @down-signal =
     @hiercopy = ()
-    
+
     [start]
     @build = auto,custom
-    @runas = 
+    @runas =
     @shebang = "/path"
     @execute = ()
-    
+
     [stop]
     @build = auto,custom
-    @runas = 
+    @runas =
     @shebang = "/path"
     @execute = ()
-    
+
     [logger]
     @build = auto,custom
-    @runas = 
+    @runas =
     @shebang = "/path"
     @destination = /path
-    @backup = 
-    @maxsize = 
-    @timestamp = 
-    @timeout-finish = 
+    @backup =
+    @maxsize =
+    @timestamp =
+    @timeout-finish =
     @timeout-kill =
     @execute = ()
-    
+
     [environment]
     mykey=myvalue
     ANOTHERKEY=!antohervalue
-    
+
     [regex]
     @configure = "arguments to pass to the configure script"
     @directories = ( key=value key=value )

@@ -1,17 +1,17 @@
-/* 
+/*
  * constants.h
- * 
- * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
- * 
+ *
+ * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
+ *
  * All rights reserved.
- * 
+ *
  * This file is part of Obarun. It is subject to the license terms in
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file./
  */
- 
+
 #ifndef SS_CONSTANTS_H
 #define SS_CONSTANTS_H
 
@@ -111,12 +111,21 @@
 #define SS_BOOT_RCSHUTDOWNFINAL_LEN (sizeof SS_BOOT_RCSHUTDOWNFINAL -1)
 #define SS_BOOT_UMASK 0022
 #define SS_BOOT_RESCAN 0
+#define SS_BOOT_CATCH_LOG 1
 #define SS_BOOT_LOG "scandir/0/scandir-log"
 #define SS_BOOT_LOG_LEN (sizeof SS_BOOT_LOG - 1)
 #define SS_BOOT_LOGFIFO "scandir/0/scandir-log/fifo"
 #define SS_BOOT_LOGFIFO_LEN (sizeof SS_BOOT_LOGFIFO - 1)
 #define SS_BOOT_SHUTDOWND "66-shutdownd"
 #define SS_BOOT_SHUTDOWND_LEN (sizeof SS_BOOT_SHUTDOWND - 1)
+/** container */
+#define SS_BOOT_CONTAINER 0
+#define SS_BOOT_RCINIT_CONTAINER "rc.init.container"
+#define SS_BOOT_RCINIT_CONTAINER_LEN (sizeof SS_BOOT_RCINIT_CONTAINER - 1)
+#define SS_BOOT_CONTAINER_DIR "scandir/container"
+#define SS_BOOT_CONTAINER_DIR_LEN (sizeof SS_BOOT_CONTAINER_DIR - 1)
+#define SS_BOOT_CONTAINER_HALTCMD "halt"
+#define SS_BOOT_CONTAINER_HALTCMD_LEN (sizeof SS_BOOT_CONTAINER_HALTCMD - 1)
 
 /** Instance */
 #define SS_INSTANCE_DIR "/instance"
@@ -124,4 +133,5 @@
 #define SS_INSTANCE_REGEX "@I"
 #define SS_INSTANCE_TEMPLATE 0
 #define SS_INSTANCE_NAME 1
+
 #endif

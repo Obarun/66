@@ -1,17 +1,17 @@
-/* 
+/*
  * parser.c
- * 
- * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
- * 
+ *
+ * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
+ *
  * All rights reserved.
- * 
+ *
  * This file is part of Obarun. It is subject to the license terms in
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file./
  */
- 
+
 #include <string.h>
 #include <stdint.h>
 #include <stdint.h>
@@ -35,61 +35,63 @@
 
 int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype)
 {
-	int r ;
-	size_t i = 0 ;
-	section_t sasection = SECTION_ZERO ;
-	genalloc ganocheck = GENALLOC_ZERO ;
-	sasection.file = svname ;
+    log_flow() ;
 
-	r = section_get_range(&sasection,src) ;
-	if (r <= 0){
-		log_warnu("parse section of service file: ",svname) ;
-		goto err ;
-	}
-	if (!sasection.idx[SECTION_MAIN])
-	{
-		log_warn("missing section [main] in service file: ", svname) ;
-		goto err ;
-	}
+    int r ;
+    size_t i = 0 ;
+    section_t sasection = SECTION_ZERO ;
+    genalloc ganocheck = GENALLOC_ZERO ;
+    sasection.file = svname ;
 
-	if ((svtype != TYPE_BUNDLE && svtype != TYPE_MODULE) && !sasection.idx[SECTION_START])
-	{
-		log_warn("missing section [start] in service file: ", svname) ;
-		goto err ;
-	}
-	if (!key_get_range(&ganocheck,&sasection)) goto err ;
-	if (!genalloc_len(keynocheck,&ganocheck)){
-		log_warn("empty service file: ",svname) ;
-		goto err ;
-	}
+    r = section_get_range(&sasection,src) ;
+    if (r <= 0){
+        log_warnu("parse section of service file: ",svname) ;
+        goto err ;
+    }
+    if (!sasection.idx[SECTION_MAIN])
+    {
+        log_warn("missing section [main] in service file: ", svname) ;
+        goto err ;
+    }
 
-	for (i = 0;i < genalloc_len(keynocheck,&ganocheck);i++)
-	{
-		if (!nocheck_toservice(&(genalloc_s(keynocheck,&ganocheck)[i]),svtype,service))
-		{ 
-			log_warnu("keep information of service file: ",svname) ;
-			goto err ;
-		}
-	}
+    if ((svtype != TYPE_BUNDLE && svtype != TYPE_MODULE) && !sasection.idx[SECTION_START])
+    {
+        log_warn("missing section [start] in service file: ", svname) ;
+        goto err ;
+    }
+    if (!key_get_range(&ganocheck,&sasection)) goto err ;
+    if (!genalloc_len(keynocheck,&ganocheck)){
+        log_warn("empty service file: ",svname) ;
+        goto err ;
+    }
 
-	if (!check_mandatory(service,&sasection)) goto err ;
+    for (i = 0;i < genalloc_len(keynocheck,&ganocheck);i++)
+    {
+        if (!nocheck_toservice(&(genalloc_s(keynocheck,&ganocheck)[i]),svtype,service))
+        {
+            log_warnu("keep information of service file: ",svname) ;
+            goto err ;
+        }
+    }
 
-	if ((service->opts[1]) && (svtype == TYPE_LONGRUN))
-	{
-		if (!add_pipe(service, &deps))
-		{
-			log_warnu("add pipe: ", keep.s+service->cname.name) ;
-			goto err ;
-		} 
-	}
+    if (!check_mandatory(service,&sasection)) goto err ;
 
-	section_free(&sasection) ;
-	genalloc_deepfree(keynocheck,&ganocheck,keynocheck_free) ;
-	return 1 ;
-	err:
-		section_free(&sasection) ;
-		genalloc_deepfree(keynocheck,&ganocheck,keynocheck_free) ;
-		return 0 ;
+    if ((service->opts[1]) && (svtype == TYPE_LONGRUN))
+    {
+        if (!add_pipe(service, &deps))
+        {
+            log_warnu("add pipe: ", keep.s+service->cname.name) ;
+            goto err ;
+        }
+    }
+
+    section_free(&sasection) ;
+    genalloc_deepfree(keynocheck,&ganocheck,keynocheck_free) ;
+    return 1 ;
+    err:
+        section_free(&sasection) ;
+        genalloc_deepfree(keynocheck,&ganocheck,keynocheck_free) ;
+        return 0 ;
 }
 
 

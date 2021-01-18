@@ -1,10 +1,10 @@
-/* 
+/*
  * info.h
- * 
- * Copyright (c) 2018-2020 Eric Vidal <eric@obarun.org>
- * 
+ *
+ * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
+ *
  * All rights reserved.
- * 
+ *
  * This file is part of Obarun. It is subject to the license terms in
  * the LICENSE file found in the top-level directory of this
  * distribution.
@@ -20,7 +20,7 @@
 #include <66/enum.h>
 #include <66/resolve.h>
 
- 
+
 #ifndef SS_INFO_H
 #define SS_INFO_H
 
@@ -30,9 +30,9 @@
 typedef struct depth_s depth_t ;
 struct depth_s
 {
-	depth_t *prev ;
-	depth_t *next ;
-	int level ;
+    depth_t *prev ;
+    depth_t *next ;
+    int level ;
 } ;
 
 typedef void info_opts_func_t (char const *field,char const *treename) ;
@@ -43,10 +43,10 @@ typedef info_opts_svfunc_t *info_opts_svfunc_t_ref ;
 typedef struct info_opts_map_s info_opts_map_t ;
 struct info_opts_map_s
 {
-	char const *str ;
-	info_opts_func_t *func ;
-	info_opts_svfunc_t *svfunc ;
-	unsigned int id ;
+    char const *str ;
+    info_opts_func_t *func ;
+    info_opts_svfunc_t *svfunc ;
+    unsigned int id ;
 } ;
 
 #define UTF_V   "\342\224\202"  /* U+2502, Vertical line drawing char */
@@ -57,14 +57,14 @@ struct info_opts_map_s
 typedef struct ss_resolve_graph_style_s ss_resolve_graph_style ;
 struct ss_resolve_graph_style_s
 {
-	const char *tip;
-	const char *last;
-	const char *limb;
-	int indent;
+    const char *tip;
+    const char *last;
+    const char *limb;
+    int indent;
 } ;
 
 extern unsigned int MAXDEPTH ;
-extern ss_resolve_graph_style *STYLE ; 
+extern ss_resolve_graph_style *STYLE ;
 extern ss_resolve_graph_style graph_utf8 ;
 extern ss_resolve_graph_style graph_default ;
 

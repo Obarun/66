@@ -3,6 +3,8 @@ author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)
 
+[Software](https://web.obarun.org/software)
+
 [obarun.org](https://web.obarun.org)
 
 # Instantiated service file creation
@@ -16,14 +18,14 @@ Example :
 
 ```
     File name : tty@
-   
+
     Contents :
-    
+
     [main]
     @type = classic
     @description = "Launch @I"
     @user = ( root )
-    
+
     [start]
     @build = auto
     @execute = ( agetty -J 38400 @I } )
@@ -36,7 +38,7 @@ By using [66-enable tty@tty1](66-enable.html), the resulting file will then be:
     @type = classic
     @description = "Launch tty1"
     @user = ( root )
-    
+
     [start]
     @build = auto
     @execute = ( agetty -J 38400 tty1 } )
