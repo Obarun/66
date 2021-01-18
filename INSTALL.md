@@ -5,11 +5,11 @@ Build Instructions
 
 - A POSIX-compliant C development environment
 - GNU make version 3.81 or later
-- skalibs version 2.9.2.1 or later: http://skarnet.org/software/skalibs/
-- execline version 2.6.0.2 or later: http://skarnet.org/software/execline/
-- s6 version 2.9.1.0 or later: http://skarnet.org/software/s6/
-- s6-rc version 0.5.1.2 or later: http://skarnet.org/software/s6-rc/
-- oblibs version 0.0.9.0 or later: https://framagit.org/Obarun/oblibs/
+- skalibs version 2.10.0.0 or later: http://skarnet.org/software/skalibs/
+- execline version 2.7.0.0 or later: http://skarnet.org/software/execline/
+- s6 version 2.10.0.0 or later: http://skarnet.org/software/s6/
+- s6-rc version 0.5.2.1 or later: http://skarnet.org/software/s6-rc/
+- oblibs version 0.1.2.0 or later: https://framagit.org/Obarun/oblibs/
 - lowdown version 0.6.4 or later for man and html pages: https://kristaps.bsd.lv/lowdown/
 
 This software will install on any operating system that implements POSIX.1-2008, available at [opengroup](http://pubs.opengroup.org/onlinepubs/9699919799/).

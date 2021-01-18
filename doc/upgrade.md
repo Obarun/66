@@ -42,6 +42,98 @@ See the `66-update` documentation page for further information.
 
 ---
 
+# In 0.6.1.0
+
+- Adapt to skalibs 2.10.0.0
+
+- Adapt to execline 2.7.0.0
+
+- Adapt to s6 2.10.0.0
+
+- Adapt to s6-rc 0.5.2.1
+
+- Adapt to oblibs 0.1.2.0
+
+- Bugs fix:
+    - 66-tee -c: check if backup is empty.
+    - parse_module: avoid infinite loop at dependencies resolution on sub-module.
+    - 66-disable: do not crash if the service is not enabled at state check.
+    - execl-envfile: fix parse process for a configuration file.
+
+- *66-disable*:
+    - new options:
+        - **-R**: removes configuration files and logger directory of the service. So, no components of the service is kept.
+
+- *66-env*:
+    - **-r** can be passed multiple time
+
+- *66-tree*:
+    - **-U** option is now deprecated and passed to *66-all*.
+
+- *66-all*:
+    - new argument:
+        - *unsupervise*: unsupervise all services of a tree. This argument replace the `66-tree -U` command.
+
+- *66-inservice*:
+    - It displays the absolute path of the file at `Environment file` field.
+    - The **-c** option is now no longer available.
+
+- *66-update*:
+    - the **-c** option is now no longer available.
+
+- *66-env*:
+    - the **-d** option is now no longer available.
+
+- *66-enable*:
+    - the -c|m|C|i is now deprecated. The configuration file is handled automatically (see [Service configuration file](service-configuration-file.html) for further information.)
+    - **-I**: new options to avoid the copy of a modified configuration file.
+
+- *66-parser*:
+    - deprecated the -c|m|C to follow changes about the *66-enable* tool.
+
+- *66-scandir*: the ***interface change***.
+    - The *owner* argument is now an option(**-o**) and the arguments are *create|remove*.
+    - The *up* option is passed to *66-scanctl*.
+    - New options:
+        - **-B**: specifies to create a scandir for a container. In this case, a `/run/66/scandir/container/halt` file is created(see [66-boot](66-boot.hmtl) for further information).
+        - **-c**: do not set the `catch-all` logger.
+
+- *skeleton file*: (see [66-boot](66-boot.hmtl) for further information).
+    - *init.conf*:
+        - New variables:
+            - *CONTAINER*: specifies to boot inside a container.
+            - *RCINIT_CONTAINER*: absolute path to the init file used to boot inside a container.
+            - *CATCHLOG*: create or not the `catch-all` logger.
+        - Variable removed:
+            - *ISHELL*.
+    - *rc.init.container*: file used in case of boot inside a container.
+    - *ishell*: not longer available.
+
+- *66-scanctl*: the ***interface change***.
+    - arguments signal are now: *start|stop|reload|nuke|zombies*.
+    - New options: this two options are only valid for a *start* signal.
+        - **-d**: file descriptor to use for readiness notification.
+        - **-t**: perform a scan every rescan milliseconds.
+- *66-boot*:
+    - New option:
+        - **-z**: to use color
+
+- *66-shutdownd*:
+    - swicth **-B** and **-C** (which is renamed to -c) to be consistent with the *66-scandir* tool.
+
+- frontend:
+    - **nosetsid** value at `@flags` key is deprecated and have no effects if it defined.
+    - new format for the `@options` key:
+        - **log**: the logger is automatically created even if the value **log** is not set. If you don't want a logger at all prefix the value *log* with an exclamation mark as it: `!log`.
+        - **env**: if the environment section is defined, the **env** value is not mandatory. Also, the old behavior is always valid: if the **env** value is set, the `[envrionment]` must be set.
+
+- html documentation: documentation is now versionned.
+
+- New tool:
+    - *66-nuke*: this tool is a strict copy of the [s6-linux-init-nuke] (https://skarnet.org/software/s6-linux-init/s6-linux-init-nuke.html) tool.
+
+---
+
 # In 0.5.1.0
 
 - Bugs fix:
