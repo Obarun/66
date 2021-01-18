@@ -214,7 +214,7 @@ void all_unsupervise(ssexec_t *info, char const *const *envp,int what)
         unlink_void(livetree) ;
     }
 
-    if (scandir_send_signal(info->scandir.s,"an") <= 0)
+    if (scandir_send_signal(info->scandir.s,"h") <= 0)
         log_dieusys(LOG_EXIT_SYS,"reload scandir: ",info->scandir.s) ;
 
     /** remove /run/66/state/uid/treename directory */
@@ -348,7 +348,7 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp,ssexec_
                 log_dieu(LOG_EXIT_SYS,"initiate services of tree: ",info->treename.s) ;
 
             log_trace("reload scandir: ",info->scandir.s) ;
-            if (scandir_send_signal(info->scandir.s,"an") <= 0)
+            if (scandir_send_signal(info->scandir.s,"h") <= 0)
                 log_dieusys(LOG_EXIT_SYS,"reload scandir: ",info->scandir.s) ;
         }
 

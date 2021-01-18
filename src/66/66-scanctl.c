@@ -106,9 +106,8 @@ static int send_signal(char const *scandir, char const *signal)
 
             case 2:
 
-                csig[0] = 'a' ;
-                csig[1] = 'n' ;
-                csig[2] = 0 ;
+                csig[0] = 'h' ;
+                csig[1] = 0 ;
                 break ;
 
             case 3:

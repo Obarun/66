@@ -167,7 +167,7 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
     if (genalloc_len(uint16_t,&ids))
     {
         log_trace("reload scandir: ",info->scandir.s) ;
-        if (scandir_send_signal(info->scandir.s,"an") <= 0)
+        if (scandir_send_signal(info->scandir.s,"h") <= 0)
         {
             log_warnusys("reload scandir: ",info->scandir.s) ;
             goto err ;

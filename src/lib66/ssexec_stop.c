@@ -256,7 +256,7 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
     if (UNSUP)
     {
         log_trace("send signal -an to scandir: ",info->scandir.s) ;
-        if (scandir_send_signal(info->scandir.s,"an") <= 0)
+        if (scandir_send_signal(info->scandir.s,"h") <= 0)
             log_dieu(LOG_EXIT_SYS,"send signal to scandir: ", info->scandir.s) ;
     }
     stralloc_free(&sares) ;

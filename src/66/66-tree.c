@@ -44,7 +44,7 @@
 #include <s6-rc/s6rc-servicedir.h>
 #include <s6-rc/s6rc-constants.h>
 
-#define USAGE "66-tree [ -h ] [ -z ] [ -v verbosity ] [ -l ] [ -n|R ] [ -a|d ] [ -c ] [ -S after_tree ] [ -E|D ] [ -U ] [ -C clone ] tree"
+#define USAGE "66-tree [ -h ] [ -z ] [ -v verbosity ] [ -l ] [ -n|R ] [ -a|d ] [ -c ] [ -S after_tree ] [ -E|D ] [ -C clone ] tree"
 
 static stralloc reslive = STRALLOC_ZERO ;
 static char const *cleantree = 0 ;
@@ -69,7 +69,6 @@ static inline void info_help (void)
 "   -D: disable the tree\n"
 "   -R: remove the tree\n"
 "   -C: clone the tree\n"
-"   -U: unsupervise the tree\n"
 ;
 
     log_info(USAGE,"\n",help) ;
@@ -502,7 +501,7 @@ void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid
         unlink_void(livetree.s) ;
     }
 
-    if (scandir_send_signal(scandir.s,"an") <= 0) log_dieusys(LOG_EXIT_SYS,"reload scandir: ",scandir.s) ;
+    if (scandir_send_signal(scandir.s,"h") <= 0) log_dieusys(LOG_EXIT_SYS,"reload scandir: ",scandir.s) ;
     /** remove /run/66/state/uid/treename directory */
     log_trace("delete: ",livestate.s,"..." ) ;
     if (rm_rf(livestate.s) < 0) log_dieusys(LOG_EXIT_SYS,"delete ",livestate.s) ;
