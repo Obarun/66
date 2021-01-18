@@ -864,7 +864,6 @@ int main(int argc, char const *const *argv, char const *const *envp)
                 case 'd' :  if (!uint0_scan(l.arg, &MAXDEPTH)) log_usage(USAGE) ; break ;
                 case 't' :  tname = l.arg ; break ;
                 case 'p' :  if (!uint0_scan(l.arg, &nlog)) log_usage(USAGE) ; break ;
-                case 'c' :  log_die(LOG_EXIT_SYS,"deprecated option -- please use -z instead") ;
                 default :   log_usage(USAGE) ;
             }
         }
