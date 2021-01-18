@@ -274,7 +274,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
         subgetopt_t l = SUBGETOPT_ZERO ;
         for (;;)
         {
-            int opt = subgetopt_r(argc,argv, "hzv:l:dc", &l) ;
+            int opt = subgetopt_r(argc,argv, "hzv:l:d", &l) ;
 
             if (opt == -1) break ;
             switch (opt)
@@ -286,7 +286,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
                             break ;
                 case 'z' :  log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
                 case 'd' :  DRYRUN = 1 ; break ;
-                case 'c' :  log_die(LOG_EXIT_SYS,"deprecated option -- please use -z instead") ;
                 default :   log_usage(USAGE) ;
             }
         }

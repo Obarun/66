@@ -819,7 +819,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
         salist.len = 0 ;
 
-        /** main and backup can differs,so rebuild the list
+        /** main and backup can be different,so rebuild the list
          * Also, a backup directory can be empty, check it first */
         r = scan_mode(src_resolve_backup,S_IFDIR) ;
         if (r == 1)

@@ -175,7 +175,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, ">c:s:VLd:r:ei:", &l) ;
+            int opt = getopt_args(argc,argv, ">c:s:VLr:ei:", &l) ;
             if (opt == -1) break ;
             if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
             switch (opt)
@@ -206,9 +206,6 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
                         todo = T_LIST ;
 
                         break ;
-                case 'd' :
-
-                        log_1_warn("-d: deprecated option") ; goto freed ;
 
                 case 'r' :
 
