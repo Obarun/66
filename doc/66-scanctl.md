@@ -14,7 +14,7 @@ Sends a *signal* to a scandir. Safe wrapper around [s6‑svscanctl](https://skar
 ## Interface
 
 ```
-    66-scanctl [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -d notif ] [ -t rescan ] [ -o owner ] signal
+    66-scanctl [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -d notif ] [ -t rescan ] [ -o owner ] start|stop|reload|quit|nuke|zombies or any s6-svscanctl options.
 ```
 
 This program sends a *signal* to an already running [scandir](scandir.html) at *live* where by default *live* is at `%%livedir%%` or the resulting path provided by the **‑l** option. If owner is not explicitely set with **‑o** then the user of the current process will be used instead.
