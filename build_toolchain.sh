@@ -1,17 +1,30 @@
 #!/bin/sh
 
-skalibs_tag="v2.9.2.1"
-execline_tag="v2.6.0.1"
-s6_tag="v2.9.1.0"
-s6_rc_tag="v0.5.1.2"
-oblibs_tag="v0.1.0.0"
+tag=0
+
+if [ "$1" == "commit" ]; then
+    tag=1
+fi
+
+skalibs_tag="v2.10.0.0"
+execline_tag="v2.7.0.0"
+s6_tag="v2.10.0.0"
+s6_rc_tag="v0.5.2.1"
+oblibs_tag="v0.1.2.0"
+
+check_tag(){
+
+    if ((tag)); then
+        git checkout tags/"${1}"
+    fi
+}
 
 ## skalibs
 build_skalibs() {
 
     git clone https://github.com/skarnet/skalibs
     cd skalibs
-    git checkout tags/"${skalibs_tag}"
+    check_tag "${skalibs_tag}"
     ./configure \
         --prefix=/usr \
         --with-default-path=/usr/bin \
@@ -26,7 +39,7 @@ build_execline() {
 
     git clone https://github.com/skarnet/execline
     cd execline
-    git checkout tags/"${execline_tag}"
+    check_tag "${execline_tag}"
     ./configure \
         --prefix=/usr \
         --libexecdir=/usr/libexec \
@@ -44,7 +57,7 @@ build_s6() {
 
     git clone https://github.com/skarnet/s6
     cd s6
-    git checkout tags/"${s6_tag}"
+    check_tag "${s6_tag}"
     ./configure \
         --prefix=/usr \
         --bindir=/usr/bin \
@@ -59,7 +72,7 @@ build_s6() {
 build_s6_rc() {
     git clone https://github.com/skarnet/s6-rc
     cd s6-rc
-    git checkout tags/"${s6_rc_tag}"
+    check_tag "${s6_rc_tag}"
     ./configure \
         --prefix=/usr \
         --bindir=/usr/bin \
@@ -75,6 +88,7 @@ build_oblibs() {
 
     git clone https://framagit.org/obarun/oblibs
     cd oblibs
+    check_tag "${oblibs_tag}"
     ./configure \
         --enable-shared
 
