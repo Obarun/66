@@ -47,7 +47,7 @@ This command displays information about trees.
 
 - **-r** : shows the dependency list of *tree* in reverse mode.
 
-***(!)*** If tree is not specified *66-intree* will display information about all available trees for the current owner of the process.
+***(!)*** If tree is not specified *66-intree* will display information about all available trees for the current owner of the process. In this case, It displays first the trees which is not marked enabled in alphabetical order then the trees marked enabled in start order.
 
 ## Valid fields for -o options
 
