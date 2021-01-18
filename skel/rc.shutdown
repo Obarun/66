@@ -14,6 +14,6 @@ execl-envfile ${1}
 
 if {
     if { 66-echo -- "[Starts rc.shutdown...]" }
-    66-all -v${VERBOSITY} -l ${LIVE} -t ${TREE} -f unsupervise
+    66-all -v${VERBOSITY} -l ${LIVE} -t ${TREE} -f down
 }
 66-echo -- "[rc.shutdown completed successfully]"
