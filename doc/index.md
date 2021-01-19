@@ -63,6 +63,7 @@ See [changes](upgrade.html) between version.
 - [66-hpr](66-hpr.html)
 - [66-shutdownd](66-shutdownd.html)
 - [66-update](66-update.html)
+- [66-nuke](66-nuke.html)
 
 ### User tools
 

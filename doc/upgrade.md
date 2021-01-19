@@ -94,6 +94,7 @@ See the `66-update` documentation page for further information.
 - *66-scandir*: the ***interface change***.
     - The *owner* argument is now an option(**-o**) and the arguments are *create|remove*.
     - The *up* option is passed to *66-scanctl*.
+    - The **-e** option is passed to *66-scanctl*.
     - New options:
         - **-B**: specifies to create a scandir for a container. In this case, a `/run/66/scandir/container/halt` file is created(see [66-boot](66-boot.hmtl) for further information).
         - **-c**: do not set the `catch-all` logger.
