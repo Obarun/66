@@ -42,7 +42,7 @@ See the `66-update` documentation page for further information.
 
 ---
 
-# In 0.6.1.0
+# In 0.6.0.0
 
 - Adapt to skalibs 2.10.0.0
 
