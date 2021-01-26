@@ -11,6 +11,7 @@ Build Instructions
 - s6-rc version 0.5.2.1 or later: http://skarnet.org/software/s6-rc/
 - oblibs version 0.1.2.0 or later: https://framagit.org/Obarun/oblibs/
 - lowdown version 0.6.4 or later for man and html pages: https://kristaps.bsd.lv/lowdown/
+- linux-api-headers 5.8 or later: https://www.gnu.org/software/libc (only for linux system)
 
 This software will install on any operating system that implements POSIX.1-2008, available at [opengroup](http://pubs.opengroup.org/onlinepubs/9699919799/).
 
