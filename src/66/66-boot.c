@@ -46,7 +46,7 @@ static unsigned int rescan = SS_BOOT_RESCAN ;
 static unsigned int container = SS_BOOT_CONTAINER ;
 static unsigned int catch_log = SS_BOOT_CATCH_LOG ;
 static char const *skel = SS_SKEL_DIR ;
-static char *live = SS_LIVE ;
+static char const *live = SS_LIVE ;
 static char const *path = SS_BOOT_PATH ;
 static char const *tree = SS_BOOT_TREE ;
 static char const *rcinit = SS_SKEL_DIR SS_BOOT_RCINIT ;
@@ -174,13 +174,13 @@ static int get_value(stralloc *val,char const *key)
     return 1 ;
 }
 
-static inline void string_to_table(char *table,char const *pointer,char const *str, uint8_t empty)
+static inline void string_to_table(char *table,char const **pointer,char const *str, uint8_t empty)
 {
     log_flow() ;
 
     if (!empty) {
         auto_strings(table,str) ;
-        pointer = table ;
+        *pointer = table ;
     }
 }
 
@@ -265,7 +265,7 @@ static void parse_conf(void)
 
             case 1:
 
-                string_to_table(tpath,path,val.s,empty) ;
+                string_to_table(tpath,&path,val.s,empty) ;
 
                 if (!auto_stra(&sacmdline,"PATH=",path,"\n"))
                     sulogin("append environment stralloc with key: PATH=",path) ;
@@ -273,7 +273,7 @@ static void parse_conf(void)
 
             case 2:
 
-                string_to_table(tlive,live,val.s,empty) ;
+                string_to_table(tlive,&live,val.s,empty) ;
 
                 if (live[0] != '/')
                     sulogin ("LIVE must be an absolute path",live) ;
@@ -284,7 +284,7 @@ static void parse_conf(void)
 
             case 3:
 
-                string_to_table(ttree,tree,val.s,empty) ;
+                string_to_table(ttree,&tree,val.s,empty) ;
 
                 if (!auto_stra(&sacmdline,"TREE=",tree,"\n"))
                     sulogin("append environment stralloc with key: TREE=",tree) ;
@@ -292,7 +292,7 @@ static void parse_conf(void)
 
             case 4:
 
-                string_to_table(trcinit,rcinit,val.s,empty) ;
+                string_to_table(trcinit,&rcinit,val.s,empty) ;
 
                 if (rcinit[0] != '/')
                     sulogin ("RCINIT must be an absolute path: ",rcinit) ;
@@ -344,7 +344,7 @@ static void parse_conf(void)
 
             case 9:
 
-                string_to_table(trcinit_container,rcinit_container,val.s,empty) ;
+                string_to_table(trcinit_container,&rcinit_container,val.s,empty) ;
 
                 if (rcinit_container[0] != '/')
                     sulogin ("RCINIT_CONTAINER must be an absolute path: ",rcinit_container) ;
@@ -416,7 +416,7 @@ static int is_mnt(char const *str)
     return is_not_mnt ? 0 : 1 ;
 }
 
-static void split_tmpfs(char *dst,char *str)
+static void split_tmpfs(char *dst,char const *str)
 {
     log_flow() ;
 
