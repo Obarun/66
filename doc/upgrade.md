@@ -42,6 +42,15 @@ See the `66-update` documentation page for further information.
 
 ---
 
+# In 0.6.0.1
+
+- Bugs fix:
+    - Respect variables value from kernel command line.
+    - Fix release number at upgrade.html file.
+    - Fix string lenght at regex replacement time.
+
+---
+
 # In 0.6.0.0
 
 - Adapt to skalibs 2.10.0.0
