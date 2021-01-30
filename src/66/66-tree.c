@@ -548,9 +548,15 @@ void tree_modify_resolve(ss_resolve_t *res,ss_resolve_enum_t field,char const *r
     if (!ss_resolve_put_field_to_sa(&sa,&modif, field))
         log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get copy field: ",ss_resolve_field_table[field].field) ;
 
-    if (sa.len)
+    if (sa.len) {
         if (!sastr_replace(&sa,regex,by))
             log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"replace field: ",ss_resolve_field_table[field].field) ;
+
+        if (!stralloc_0(&sa))
+            log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"stralloc") ;
+
+        sa.len-- ;
+	}
 
     if (!ss_resolve_modify_field(&modif,field,sa.s))
         log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"modify field: ",ss_resolve_field_table[field].field) ;

@@ -151,6 +151,11 @@ static void replace_value_of_key(stralloc *srclist,char const *key)
     if (!sastr_replace(srclist,sakey.s,key))
         log_dieu(LOG_EXIT_SYS,"replace: ",sakey.s," by: ",key) ;
 
+    if (!stralloc_0(srclist))
+        log_die_nomem("stralloc") ;
+
+	srclist->len-- ;
+
     stralloc_free(&sakey) ;
 }
 
@@ -353,7 +358,8 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
                 replace_value_of_key(&salist,key) ;
             }
             if (!auto_stra(&satmp,src,"/",sv)) log_die_nomem("stralloc") ;
-            if (!openwritenclose_unsafe(satmp.s,salist.s,salist.len - 1))
+
+            if (!openwritenclose_unsafe(satmp.s,salist.s,salist.len))
                 log_dieusys(LOG_EXIT_SYS,"write file: ",satmp.s) ;
             break ;
 

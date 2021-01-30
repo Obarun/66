@@ -38,7 +38,6 @@
 #include <66/constants.h>
 #include <66/environ.h>
 
-
 #define SS_MODULE_CONFIG_DIR "/configure"
 #define SS_MODULE_CONFIG_DIR_LEN (sizeof SS_MODULE_CONFIG_DIR - 1)
 #define SS_MODULE_CONFIG_SCRIPT "configure"
@@ -536,7 +535,13 @@ int regex_replace(stralloc *list,sv_alltype *sv_before,char const *svname)
 
             if (obstr_equal(bname,filename) || all)
             {
-                if (!sastr_replace_all(&tmp,replace,regex)) log_warnu_return(LOG_EXIT_ZERO,"replace: ",replace," by: ", regex," in file: ",str) ;
+                if (!sastr_replace_all(&tmp,replace,regex))
+                    log_warnu_return(LOG_EXIT_ZERO,"replace: ",replace," by: ", regex," in file: ",str) ;
+
+                if (!stralloc_0(&tmp))
+                    log_warnusys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+                tmp.len-- ;
 
                 if (!file_write_unsafe(dname,bname,tmp.s,tmp.len))
                     log_warnusys_return(LOG_EXIT_ZERO,"write: ",dname,"/","filename") ;
@@ -576,7 +581,12 @@ int regex_rename(stralloc *list, int id, unsigned int nid, char const *sdir)
             if (!sabasename(&tmp,str,len)) log_warnusys_return(LOG_EXIT_ZERO,"get basename of: ",str) ;
             if (!stralloc_0(&tmp)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 
-            if (!sastr_replace(&tmp,replace,regex)) log_warnu_return(LOG_EXIT_ZERO,"replace: ",replace," by: ", regex," in file: ",str) ;
+            if (!sastr_replace(&tmp,replace,regex))
+                log_warnu_return(LOG_EXIT_ZERO,"replace: ",replace," by: ", regex," in file: ",str) ;
+
+            if (!stralloc_0(&tmp))
+                log_warnu_return(LOG_EXIT_ZERO,"stralloc") ;
+
             char new[len + tmp.len + 1] ;
             auto_strings(new,dname,tmp.s) ;
             /** do not try to rename the same directory */
