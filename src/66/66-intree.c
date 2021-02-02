@@ -447,7 +447,7 @@ static void info_parse_options(char const *str,int *what)
 
     stralloc_free(&sa) ;
 }
-
+#include <stdio.h>
 int main(int argc, char const *const *argv, char const *const *envp)
 {
     unsigned int legacy = 1 ;
@@ -568,8 +568,12 @@ int main(int argc, char const *const *argv, char const *const *envp)
             if (!file_readputsa(&enabled,src.s,"state"))
                 log_dieusys(LOG_EXIT_SYS,"read contents of file: ",src.s,"/state") ;
 
-            if (!sastr_split_string_in_nline(&enabled))
-                log_dieu(LOG_EXIT_SYS,"rebuild enabled tree list") ;
+            /** May not have enabled tree yet */
+            if (enabled.len) {
+
+                if (!sastr_split_string_in_nline(&enabled))
+                    log_dieu(LOG_EXIT_SYS,"rebuild enabled tree list") ;
+            }
 
             info_sort_enabled_notenabled(&satree,&enabled,&not_enabled) ;
 
