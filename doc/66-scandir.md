@@ -14,7 +14,7 @@ Handles the *scandir* for a given user. Designed to be either root or a branch o
 ## Interface
 
 ```
-    66-scandir [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -b|B ] [ -c ] [ -L log_user ] [ -s skel ] [ -e environment ] [ -o owner ] create|remove
+    66-scandir [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -b|B ] [ -c ] [ -L log_user ] [ -s skel ] [ -o owner ] create|remove
 ```
 
 This program creates or remove the *scandir* (directory containing a collection of s6‑supervise processes) for the current owner of the proccess depending on the provided options.
@@ -52,8 +52,6 @@ This program creates or remove the *scandir* (directory containing a collection 
 - **-s** *skel* : an absolute path. Directory containing *skeleton* files. This option is not meant to be used directly even with root. [66‑boot](66-boot.html) calls it during the boot process. Default is `%%skel%%`.
 
 - **-L** *log_user* : will run the `catch-all` logger as *log_user*. Default is `%%s6log_user%%`. The default can also be changed at compile-time by passing the `‑‑with‑s6‑log‑user=user` option to `./configure`.
-
-- **-e** *environment* : an absolute path. Merge the current environment variables of *scandir* with variables found in this directory. Any file in environment not beginning with a dot and not containing the `=` character will be read and parsed.
 
 - **-o** *owner* : handles the *scandir* for the given *owner*. Only the root user can use this option. Note that *owner* can be any valid user on the system. However, the given user must have sufficient permissions to create the necessary directories at its location. That is `%%livedir%%` by default or the resulting path provided by the **‑l** option.
 

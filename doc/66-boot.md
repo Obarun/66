@@ -9,7 +9,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # 66-boot
 
-Meant to be run as pid 1 as a *stage1* init. Performs the necessary early system preparation and execs into [66‑scandir](66-scandir.html).
+Meant to be run as pid 1 as a *stage1* init. Performs the necessary early system preparation and execs into [66‑scanctl start](66-scanctl.html).
 
 ## Interface
 
@@ -19,11 +19,11 @@ Meant to be run as pid 1 as a *stage1* init. Performs the necessary early system
 ```
 
 
-This program performs some early preparations, spawns a process that will run the `rc.init` script and then execs into [66‑scandir](66-scandir.html).
+This program performs some early preparations, spawns a process that will run the `rc.init` script and then execs into [66‑scanctl start](66-scanctl.html).
 
 ## Exit codes
 
-*66-boot* never exits. It spawns the `rc.init` script and execs into [66‑scandir](66-scandir.html) which runs forever until the machine stops or reboots.
+*66-boot* never exits. It spawns the `rc.init` script and execs into [66‑scanctl start](66-scanctl.html) which runs forever until the machine stops or reboots.
 
 ## Options
 
@@ -35,7 +35,7 @@ This program performs some early preparations, spawns a process that will run th
 
 - **-l** *log_user* : the `catch-all` logger will run as *log_user*. Default is `%%s6log_user%%`. The default can also be changed at compile-time by passing the `--with-s6-log-user=user` option to `./configure`.
 
-- **-e** *environment* : an absolute path. *stage 1 init* empties its environment before spawning the `rc.init` skeleton file and executing into [66-scandir](66-scandir.html) in order to prevent kernel environment variables from leaking into the process tree. The *PATH* variable is the only variable set for the environment. If you want to define additional environment variables then use this option. Behaves the same as [66-scandir -e](66-scandir.html).
+- **-e** *environment* : an absolute path. *stage 1 init* empties its environment before spawning the `rc.init` skeleton file and executing into [66-scanctl start](66-scanctl.html) in order to prevent kernel environment variables from leaking into the process tree. The *PATH* variable is the only variable set for the environment. If you want to define additional environment variables then use this option. Behaves the same as [66-scanctl -e](66-scanctl.html).
 
 - **-d** *dev* : mounts a devtmpfs on *dev*. By default, no such mount is performed - it is assumed that a devtmpfs is automounted on `/dev` at boot time by the kernel or an initramfs.
 
@@ -62,13 +62,13 @@ When booting a system, *66-boot* performs the following operations:
 
 - It checks if the *LIVE* basename is a valid mountpoint, and if so it mounts it. If requested, it unmounts if the *LIVE* basename is a valid mountpoint and performs a mount.
 
-- It creates the *LIVE* directory invocating [66-scandir -v VERBOSITY -l LIVE -b -c -s skel](66-scandir.html) plus **-L user_log** if requested.
+- It creates the *LIVE* directory invocating [66-scandir -v VERBOSITY -l LIVE -b -c -s skel create](66-scandir.html) plus **-L user_log** if requested.
 
 - It initiates the early services of *TREE* invocating [66-init -v VERBOSITY -l LIVE -t TREE classic](66-init.html).
 
 - It reads the initial environment from *environment* if requested.
 
-- It performs "the fifo trick" where it redirects its stdout to the `catch-all` logger's fifo without blocking before the `catch-all` logger is even up (because it's a service that will be spawned a bit later, when [66-scandir](66-scandir.html) is executed).
+- It performs "the fifo trick" where it redirects its stdout to the `catch-all` logger's fifo without blocking before the `catch-all` logger is even up (because it's a service that will be spawned a bit later, when [66-scanctl start](66-scanctl.html) is executed).
 
 - It forks a child, also called *stage2*.
 
@@ -80,9 +80,9 @@ When booting a system, *66-boot* performs the following operations:
 
 - It also makes the catch-all logger's fifo its stderr.
 
-- It execs into [66-scandir -v VERBOSITY -l LIVE -u](66-scandir.html) with `LIVE/scandir/0` (default `%%livedir%%/scandir/0`) as its scandir.
+- It execs into [66-scanctl -v VERBOSITY -l LIVE start](66-scanctl.html) with `LIVE/scandir/0` (default `%%livedir%%/scandir/0`) as its scandir.
 
-    * [66-scandir](66-scandir.html) transitions into [s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) which spawns the early services that are defined in *TREE* where one of those services is `scandir-log`, which is the `catch-all` logger. Once this service is up *66-boot*'s child *stage2* unblocks.
+    * [66-scanctl start](66-scanctl.html) transitions into [s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) which spawns the early services that are defined in *TREE* where one of those services is `scandir-log`, which is the `catch-all` logger. Once this service is up *66-boot*'s child *stage2* unblocks.
 
     * The child then execs into `rc.init`
 
