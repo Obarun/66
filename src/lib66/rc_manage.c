@@ -92,7 +92,7 @@ int rc_manage(ssexec_t *info,genalloc *ga)
     if (!r)
     {
         r = s6rc_servicedir_manage_g(live, prefix, &deadline) ;
-        if (!r)
+        if (r == -1)
         {
             log_warnusys("supervise service directories in ", live, "/servicedirs") ;
             goto err ;
