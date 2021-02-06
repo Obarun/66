@@ -436,7 +436,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
 
         if (!auto_stra(&sa,
             EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-all -v3 -l ",
-            live," stop }\n"))
+            live," down }\n"))
                 log_die_nomem("stralloc") ;
 
     }
