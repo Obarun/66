@@ -24,6 +24,8 @@
 #include <skalibs/types.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/exec.h>
+#include <skalibs/env.h>
+#include <skalibs/bytestr.h>
 
 #include <s6/config.h>
 
@@ -46,7 +48,7 @@ static inline void info_help (void)
 "   -l: live directory\n"
 "   -d: notify readiness on file descriptor\n"
 "   -t: rescan scandir every milliseconds\n"
-"   -e: directory environment\n"
+"   -e: environment directory\n"
 "   -o: handles scandir of owner\n"
 ;
 
@@ -280,11 +282,24 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     if (envdir.len)
     {
+        stralloc modifs = STRALLOC_ZERO ;
         if (envdir.s[0] != '/')
             log_die(LOG_EXIT_USER,"environment: ",envdir.s," must be an absolute path") ;
 
-        r = environ_get_envfile_n_merge(envdir.s,envp,newenv,TMPENV) ;
-        if (r <= 0 && r != -8){ environ_get_envfile_error(r,envdir.s) ; log_dieusys(LOG_EXIT_SYS,"build environment with: ",envdir.s) ; }
+        if (!environ_clean_envfile_unexport(&modifs,envdir.s))
+            log_dieu(LOG_EXIT_SYS,"clean environment file of: ",envdir.s) ;
+
+        size_t envlen = env_len(envp) ;
+        size_t n = env_len(envp) + 1 + byte_count(modifs.s,modifs.len,'\0') ;
+        size_t mlen = modifs.len ;
+        memcpy(TMPENV,modifs.s,mlen) ;
+        TMPENV[mlen] = 0 ;
+
+        if (!env_merge(newenv, n, envp, envlen, TMPENV, mlen))
+            log_dieu(LOG_EXIT_SYS,"merge environment") ;
+
+        stralloc_free(&modifs) ;
+
         genv = newenv ;
     }
     else genv = envp ;

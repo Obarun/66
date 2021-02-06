@@ -447,7 +447,7 @@ static void info_parse_options(char const *str,int *what)
 
     stralloc_free(&sa) ;
 }
-#include <stdio.h>
+
 int main(int argc, char const *const *argv, char const *const *envp)
 {
     unsigned int legacy = 1 ;

@@ -693,9 +693,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
     }
 
     if (envdir) {
-        int e = environ_get_envfile(&envmodifs,envdir) ;
-        if (e <= 0 && e != -8){ environ_get_envfile_error(e,envdir) ; sulogin("","") ; }
-        if (!sastr_split_string_in_nline(&envmodifs)) sulogin("rebuild environment: ",envdir) ;
+        if (!environ_clean_envfile_unexport(&envmodifs,envdir))
+            sulogin("prepare environment from: ",envdir) ;
     }
 
     if (catch_log)

@@ -611,7 +611,6 @@ int regex_configure(sv_alltype *sv_before,ssexec_t *info, char const *module_dir
     pid_t pid ;
     size_t clen = sv_before->type.module.configure > 0 ? 1 : 0 ;
     size_t module_dirlen = strlen(module_dir), n ;
-    size_t pos = 0 ;
 
     stralloc env = STRALLOC_ZERO ;
 
@@ -663,7 +662,6 @@ int regex_configure(sv_alltype *sv_before,ssexec_t *info, char const *module_dir
         {
             stralloc oenv = STRALLOC_ZERO ;
             stralloc name = STRALLOC_ZERO ;
-            stralloc version = STRALLOC_ZERO ;
             stralloc dst = STRALLOC_ZERO ;
 
             if (!env_prepare_for_write(&name,&dst,&oenv,sv_before,conf))
@@ -673,26 +671,14 @@ int regex_configure(sv_alltype *sv_before,ssexec_t *info, char const *module_dir
                 log_warnu_return(LOG_EXIT_ZERO,"write environment") ;
 
             /** Reads all file from the directory */
-            if (!sastr_dir_get(&version,dst.s,name.s,S_IFREG))
-                log_warnu_return(LOG_EXIT_ZERO,"get environment files from: ",dst.s) ;
-
-            FOREACH_SASTR(&version,pos)
-                if (!file_readputsa(&oenv,dst.s,version.s + pos))
-                    log_warnusys(LOG_EXIT_ZERO,"read file: ",dst.s,"/",version.s + pos) ;
-
-            /** prepare the environment for the merge process */
-            if (oenv.len) {
-                if (!environ_clean_envfile(&env,&oenv))
-                    log_warnu_return(LOG_EXIT_ZERO,"prepare environment") ;
-                if (!stralloc_0(&env)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-                env.len-- ;
-            }
+            if (!environ_clean_envfile(&env,dst.s))
+                log_warnu_return(LOG_EXIT_ZERO,"prepare environment") ;
 
             stralloc_free(&name) ;
             stralloc_free(&oenv) ;
-            stralloc_free(&version) ;
             stralloc_free(&dst) ;
         }
+
         if (!sastr_split_string_in_nline(&env))
             log_warnu_return(LOG_EXIT_ZERO,"rebuild environment") ;
 
