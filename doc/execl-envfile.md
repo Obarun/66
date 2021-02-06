@@ -14,7 +14,7 @@ A mix of [s6-envdir](https://skarnet.org/software/s6/s6-envdir.html) and [import
 ## Interface
 
 ```
-	execl-envfile [ -h ] [ -l ] src prog
+    execl-envfile [ -h ] [ -v verbosity ] [ -l ] src prog
 ```
 This tool expects to find a regular file or a directory in *src* containing one or multiple `key=value` pair(s). It will parse that file, import the `key=value` and then exec the given *prog* with the modified environment. In case of directory for each file found it apply the same process. *src* can be an absolute or a relative path.
 
@@ -41,6 +41,12 @@ This tool expects to find a regular file or a directory in *src* containing one 
 
 - **-h** : prints this help.
 
+- **-v** *verbosity* : increases/decreases the verbosity of the command.
+    * *1* : only print error messages. This is the default.
+    * *2* : also print warning messages.
+    * *3* : also print tracing messages.
+    * *4* : also print debugging messages.
+
 - **-l** : loose; do nothing and execute *prog* directly if *src* does not contain any regular file(s) or *src* does not exist.
 
 ## File syntax
@@ -50,33 +56,33 @@ Whitespace is permitted before and after *key*, and before or after *value*. Quo
 
 Empty lines or lines containing only whitespace are ignored. Lines beginning with `#` (also after whitespace) are ignored and typically used for comments. Comments are not possible at the end of lines: `key = value # comment` is not a valid comment.
 
-If val begin by a `!` character: `key=!value` the key will be removed from the environment after the substitution. 
+If val begin by a `!` character: `key=!value` the key will be removed from the environment after the substitution.
 
 ## Usage example
 
 ```
-	#!/usr/bin/execlineb -P
-	fdmove -c 2 1
-	execl-envfile %%service_admconf%%/ntpd
-	foreground { mkdir -p  -m 0755 ${RUNDIR} } 
-	execl-cmdline -s { ntpd ${CMD_ARGS} }
-	
+    #!/usr/bin/execlineb -P
+    fdmove -c 2 1
+    execl-envfile %%service_admconf%%/ntpd
+    foreground { mkdir -p  -m 0755 ${RUNDIR} }
+    execl-cmdline -s { ntpd ${CMD_ARGS} }
+
 ```
 
 The equivalent with s6-envdir and importas would be:
 
 ```
-	#!/usr/bin/execlineb -P
-	fdmove -c 2 1
-	s6-envdir %%service_admconf%%
-	importas -u RUNDIR RUNDIR
-	importas -u CMD_ARGS CMD_ARGS
-	foreground { mkdir -p  -m 0755 ${RUNDIR} } 
-	execl-cmdline -s { ntpd ${CMD_ARGS} }
+    #!/usr/bin/execlineb -P
+    fdmove -c 2 1
+    s6-envdir %%service_admconf%%
+    importas -u RUNDIR RUNDIR
+    importas -u CMD_ARGS CMD_ARGS
+    foreground { mkdir -p  -m 0755 ${RUNDIR} }
+    execl-cmdline -s { ntpd ${CMD_ARGS} }
 ```
 
-where `%%service_admconf%%` contains two named files `RUNDIR` and `CMD_ARGS` written with `/run/openntpd` and `-d -s` respectively. 
+where `%%service_admconf%%` contains two named files `RUNDIR` and `CMD_ARGS` written with `/run/openntpd` and `-d -s` respectively.
 
 ## Limits
 
-*src* can not exceed more than `100` files. Each file can not contain more than `4095` bytes or more than `50` `key=value` pairs. 
+*src* can not exceed more than `100` files. Each file can not contain more than `8191` bytes or more than `50` `key=value` pairs.

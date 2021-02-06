@@ -34,7 +34,7 @@
 
 #include <execline/execline.h>
 
-#define USAGE "execl-envfile [ -h ] [ -l ] src prog"
+#define USAGE "execl-envfile [ -h ] [ -v verbosity ] [ -l ] src prog"
 
 static inline void info_help (void)
 {
@@ -42,63 +42,22 @@ static inline void info_help (void)
 "\n"
 "options :\n"
 "   -h: print this help\n"
+"   -v: increase/decrease verbosity\n"
 "   -l: loose\n"
 ;
 
     log_info(USAGE,"\n",help) ;
 }
 
-void clean_n_unexport(stralloc *modifs, stralloc *dst, stralloc *src,char const *file)
-{
-    if (!environ_clean_envfile(modifs,src)) log_dieu(LOG_EXIT_SYS,"prepare modified environment of: ",file) ;
-    if (!sastr_split_string_in_nline(modifs)) log_dieu(LOG_EXIT_SYS,"build environment line of: ",file) ;
-    if (!auto_stra(dst,src->s,"\n")) log_die_nomem("stralloc") ;
-}
-
-static int cmpnsort(stralloc *sa)
-{
-    size_t pos = 0 ;
-    if (!sa->len) return 0 ;
-    size_t salen = sa->len ;
-    size_t nel = sastr_len(sa), idx = 0, a = 0, b = 0 ;
-    char names[nel][MAXENV + 1] ;
-    char tmp[MAXENV + 1] ;
-
-    for (; pos < salen && idx < nel ; pos += strlen(sa->s + pos) + 1,idx++)
-    {
-        memcpy(names[idx],sa->s + pos,strlen(sa->s + pos)) ;
-        names[idx][strlen(sa->s+pos)] = 0 ;
-    }
-    for (; a < nel - 1 ; a++)
-    {
-        for (b = a + 1 ; b < idx ; b++)
-        {
-            if (strcmp(names[a],names[b]) > 0)
-            {
-                strcpy(tmp,names[a]) ;
-                strcpy(names[a],names[b]);
-                strcpy(names[b],tmp);
-            }
-        }
-    }
-    sa->len = 0 ;
-    for (a = 0 ; a < nel ; a++)
-    {
-        if (!sastr_add_string(sa,names[a])) return 0 ;
-    }
-    return 1 ;
-}
-
 int main (int argc, char const *const *argv, char const *const *envp)
 {
-    int r = 0, unexport = 0, insist = 1, nvar = 0 ;
-    size_t pos = 0 ;
+    int r = 0, unexport = 0, insist = 1 ;
+    size_t pos = 0, nvar = 0 ;
     char const *path = 0, *file = 0 ;
     char tpath[MAXENV + 1], tfile[MAXENV+1] ;
-    stralloc src = STRALLOC_ZERO ;
+    stralloc again = STRALLOC_ZERO ;
     stralloc modifs = STRALLOC_ZERO ;
     stralloc dst = STRALLOC_ZERO ;
-    stralloc toparse = STRALLOC_ZERO ;
     stralloc key = STRALLOC_ZERO ;
     stralloc val = STRALLOC_ZERO ;
 
@@ -110,11 +69,12 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
         for (;;)
         {
-            int opt = subgetopt_r(argc,argv, "hl", &l) ;
+            int opt = subgetopt_r(argc,argv, "hv:l", &l) ;
             if (opt == -1) break ;
             switch (opt)
             {
                 case 'h' :  info_help(); return 0 ;
+                case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
                 case 'l' :  insist = 0 ; break ;
                 default :   log_usage(USAGE) ;
             }
@@ -128,59 +88,106 @@ int main (int argc, char const *const *argv, char const *const *envp)
     argc--;
 
     r = scan_mode(path,S_IFREG) ;
-    if (r > 0)
-    {
-        if (!ob_basename(tfile,path)) log_dieu(LOG_EXIT_SYS,"get file name of: ",path) ;
+    if (r > 0) {
+        if (!ob_basename(tfile,path))
+            log_dieu(LOG_EXIT_SYS,"get file name of: ",path) ;
+
         file = tfile ;
-        if (!ob_dirname(tpath,path)) log_dieu(LOG_EXIT_SYS,"get parent path of: ",path) ;
+
+        if (!ob_dirname(tpath,path))
+            log_dieu(LOG_EXIT_SYS,"get parent path of: ",path) ;
+
         path = tpath ;
+    }
+
+    if (!r) {
+
+        if (insist) {
+
+            log_dieu(LOG_EXIT_SYS,"get file from: ",path) ;
+
+        } else {
+
+            log_warn("get file from: ",path) ;
+            xexec_ae(argv[0],argv,envp) ;
+        }
     }
 
     if (path[0] == '.')
     {
-        if (!dir_beabsolute(tpath,path) && insist)
-            log_dieusys(LOG_EXIT_SYS,"find absolute path of: ",path) ;
-        path = tpath ;
-    }
+        if (!dir_beabsolute(tpath,path)) {
 
-    r = sastr_dir_get(&toparse,path,"",S_IFREG) ;
-    if (!r && insist) log_dieusys(LOG_EXIT_SYS,"get file from: ",path) ;
-    else if ((!r && !insist) || !toparse.len)
-    {
-        xexec_ae(argv[0],argv,envp) ;
-    }
-    if (file)
-    {
-        ssize_t r = sastr_cmp(&toparse,file) ;
-        if (r < 0)
-        {
-            if (insist) log_dieu(LOG_EXIT_SYS,"find: ",path,file) ;
-            else
-            {
+            if (insist) {
+
+                log_dieusys(LOG_EXIT_SYS,"find relative path: ",path) ;
+
+            } else {
+
+                log_warn("find relative path: ",path) ;
                 xexec_ae(argv[0],argv,envp) ;
             }
         }
-        if (!file_readputsa(&src,path,file)) log_dieusys(LOG_EXIT_SYS,"read file: ",path,file) ;
-        clean_n_unexport(&modifs,&dst,&src,file) ;
-        nvar = environ_get_num_of_line(&src) ;
-        if (nvar == -1) log_dieusys(LOG_EXIT_SYS,"get number of line of:",path,toparse.s+pos) ;
-        if (nvar > MAXVAR) log_dieusys(LOG_EXIT_SYS,"to many variables in file: ",path,toparse.s+pos) ;
+        path = tpath ;
+    }
+
+    if (file)
+    {
+        if (!file_readputsa(&again,path,file)) {
+
+            if (insist) {
+
+                log_dieusys(LOG_EXIT_SYS,"read file: ",path,file) ;
+
+            } else {
+
+                log_warn("read file: ",path,file) ;
+                xexec_ae(argv[0],argv,envp) ;
+            }
+        }
+
+        if (!environ_get_clean_env(&again) ||
+            !environ_remove_unexport(&modifs,&again))
+                log_dieu(LOG_EXIT_SYS,"prepare modified environment of: ",file) ;
+
+        modifs.len-- ;
+
+        if (!sastr_split_string_in_nline(&modifs))
+            log_dieu(LOG_EXIT_SYS,"build environment line of: ",file) ;
+
+        if (!auto_stra(&dst,again.s,"\n"))
+            log_die_nomem("stralloc") ;
+
+        nvar = sastr_nelement(&again) ;
+        if (nvar > MAXVAR) log_dieusys(LOG_EXIT_SYS,"to many variables in file: ",path,file) ;
+
+        if (again.len > MAXENV)
+            log_die(LOG_EXIT_SYS,"environment string too long") ;
     }
     else
     {
-        if (sastr_nelement(&toparse) > MAXFILE) log_die(LOG_EXIT_SYS,"to many file to parse in: ",path) ;
-        if (!cmpnsort(&toparse)) log_dieu(LOG_EXIT_SYS,"sort environment file list from: ",path) ;
-        for (;pos < toparse.len; pos += strlen(toparse.s + pos) + 1)
-        {
-            src.len = 0 ;
-            if (!file_readputsa(&src,path,toparse.s+pos)) log_dieusys(LOG_EXIT_SYS,"read file: ",path,toparse.s+pos) ;
-            clean_n_unexport(&modifs,&dst,&src,toparse.s+pos) ;
-            nvar = environ_get_num_of_line(&src) ;
-            if (nvar == -1) log_dieusys(LOG_EXIT_SYS,"get number of line of:",path,toparse.s+pos) ;
-            if (nvar > MAXVAR) log_die(LOG_EXIT_SYS,"to many variables in file: ",path,toparse.s+pos) ;
+        if (!environ_clean_envfile(&modifs,path)) {
+
+            if (insist) {
+
+                log_dieu(LOG_EXIT_SYS,"clean environment file of: ",path) ;
+
+            } else {
+                log_warn("clean environment file of: ",path) ;
+                xexec_ae(argv[0],argv,envp) ;
+            }
         }
+
+        if (!stralloc_copy(&dst,&modifs))
+               log_die_nomem("stralloc") ;
+
+        if (!environ_remove_unexport(&modifs,&modifs))
+            log_dieu(LOG_EXIT_SYS,"remove exclamation mark from environment variables") ;
+
+        if (!sastr_split_string_in_nline(&modifs))
+            log_dieu(LOG_EXIT_SYS,"build environment line") ;
     }
-    stralloc_free(&src) ;
+
+    stralloc_free(&again) ;
 
     /** be able to freed the stralloc before existing */
     char tmp[modifs.len+1] ;
@@ -188,15 +195,16 @@ int main (int argc, char const *const *argv, char const *const *envp)
     tmp[modifs.len] = 0 ;
 
     size_t n = env_len(envp) + 1 + byte_count(modifs.s,modifs.len,'\0') ;
-    if (n > MAXENV) log_die(LOG_EXIT_SYS,"environment string too long") ;
     char const *newenv[n + 1] ;
     if (!env_merge (newenv, n ,envp,env_len(envp),tmp, modifs.len)) log_dieusys(LOG_EXIT_SYS,"build environment") ;
 
-    if (!sastr_split_string_in_nline(&dst)) log_dieusys(LOG_EXIT_SYS,"split line") ;
+    if (!sastr_split_string_in_nline(&dst))
+        log_dieusys(LOG_EXIT_SYS,"split line") ;
+
     pos = 0 ;
 
-    while (pos < dst.len)
-    {
+    while (pos < dst.len) {
+
         unexport = 0 ;
         key.len = val.len = 0 ;
         if (!stralloc_copy(&key,&dst) ||
@@ -212,6 +220,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
             uval = val.s+1 ;
             unexport = 1 ;
         }
+
         if(sastr_cmp(&info.vars,key.s) == -1)
             if (!environ_substitute(key.s,uval,&info,newenv,unexport))
                 log_dieu(LOG_EXIT_SYS,"substitute value of: ",key.s," by: ",uval) ;
