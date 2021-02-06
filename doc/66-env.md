@@ -14,10 +14,12 @@ Handles an environment file and variable of a service depending on the options p
 ## Interface
 
 ```
-    66-env [ -h ] [ -z ] [ -v verbosity ] [ -t tree ] [ -c version ] [ -s version ] [ -V|L ] [ -r key=value ] [ -i src,dst ] [ -e ] service
+    66-env [ -h ] [ -z ] [ -v verbosity ] [ -t tree ] [ -c version ] [ -s version ] [ -V|L ] [ -r key=value ] [ -i src,dst ] [ -e editor ] service
 ```
 
 - This program allows to handle the configuration file of *service* found by default at `%%service_admconf%%/<service>`. Depending of the options passed, you can displays the contents of the file, see the current version used, edits the configuration file and so on.
+
+The edition of the configuration file is the **default** option if neither option is passed.
 
 ## Exit codes
 
@@ -55,7 +57,7 @@ Handles an environment file and variable of a service depending on the options p
 
 - **-i** *src,dst* : imports configuration file from *src* version to *dst* version. The *src* version and *dst* version need to be separated by a comma without space before and after it. It **do not import** the configuration written by the `66-enable` process but only deal with extra configuration files written by the sysadmin.
 
-- **-e** : edit the configuration file with `EDITOR` set in your system environment. This is the default option if neither option is passed. If you use this option with a `sudo` command, you need to specify the `-E` option at sudo call—see [examples](66-env.html#Usage examples). Note: the upstream file (meaning the one prefixed with a dot) is **never** touched. A copy of the upstream file is copied (if it doesn't exist yet) and the *66-env* tool modifies that file.(see [Service configuration file](service-configuration-file) for further information).
+- **-e** *editor*: edit the configuration file with *editor*. If you don't specify this option, it try to found the `EDITOR` variable from the environment variable. Note: the upstream file (meaning the one prefixed with a dot) is **never** touched. A copy of the upstream file is copied (if it doesn't exist yet) and the *66-env* tool modifies that file.(see [Service configuration file](service-configuration-file) for further information).
 
 ## Usage examples
 
@@ -70,7 +72,7 @@ Handles an environment file and variable of a service depending on the options p
 
     66-env -V ntpd
 
-    sudo -E 66-env -e ntpd
+    sudo 66-env -e nano ntpd
 
     66-env -s 0.1.6 ntpd
 ```

@@ -40,6 +40,8 @@
 #include <66/constants.h>
 #include <66/resolve.h>
 
+static char const *EDITOR = 0 ;
+
 enum tasks_e
 {
     T_UNSET = 0 ,
@@ -69,13 +71,16 @@ static void run_editor(char const *src, char const *const *envp)
 {
     log_flow() ;
 
-    char *editor = getenv("EDITOR") ;
-    if (!editor) {
-        editor = getenv("SUDO_USER") ;
-        if (editor) log_dieu(LOG_EXIT_SYS,"get EDITOR with sudo command -- please try to use the -E sudo option e.g. sudo -E 66-env -e <service>") ;
-        else log_dieusys(LOG_EXIT_SYS,"get EDITOR") ;
+    if (!EDITOR) {
+
+        EDITOR = getenv("EDITOR") ;
+
+        if (!EDITOR) {
+
+            log_die(LOG_EXIT_SYS,"EDITOR is not set at the environment variable -- please use the -e option to specify the editor to use e.g. 66-env -e nano <service>.") ;
+        }
     }
-    char const *const newarg[3] = { editor, src, 0 } ;
+    char const *const newarg[3] = { EDITOR, src, 0 } ;
     xexec_ae (newarg[0],newarg,envp) ;
 }
 
@@ -154,7 +159,7 @@ static void replace_value_of_key(stralloc *srclist,char const *key)
     if (!stralloc_0(srclist))
         log_die_nomem("stralloc") ;
 
-	srclist->len-- ;
+    srclist->len-- ;
 
     stralloc_free(&sakey) ;
 }
@@ -180,7 +185,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, ">c:s:VLr:ei:", &l) ;
+            int opt = getopt_args(argc,argv, ">c:s:VLr:e:i:", &l) ;
             if (opt == -1) break ;
             if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
             switch (opt)
@@ -224,9 +229,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 
                 case 'e' :
 
-                        if (todo != T_UNSET) log_usage(usage_env) ;
-                        todo = T_EDIT ;
-
+                        EDITOR = l.arg ;
                         break ;
 
                 case 'i' :

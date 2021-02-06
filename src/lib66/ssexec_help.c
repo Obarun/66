@@ -123,7 +123,7 @@ char const *help_svctl =
 "   -K: kill the service(s) and keep it down\n"
 ;
 
-char const *usage_env = "66-env [ -h ] [ -z ] [ -v verbosity ] [ -t tree ] [ -c version ] [ -s version ] [ -V|L ] [ -r key=value ] [ -i src,dst ] [ -e ] service" ;
+char const *usage_env = "66-env [ -h ] [ -z ] [ -v verbosity ] [ -t tree ] [ -c version ] [ -s version ] [ -V|L ] [ -r key=value ] [ -i src,dst ] [ -e editor ] service" ;
 
 char const *help_env =
 "\n"
@@ -138,7 +138,7 @@ char const *help_env =
 "   -L: lists the environment variables of the service\n"
 "   -r: replace the value of the key\n"
 "   -i: import configuration files from src version to dst version\n"
-"   -e: edit the file with EDITOR\n"
+"   -e: edit the file with editor\n"
 ;
 
 char const *usage_all = "66-all [ -h ] [ -z ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -f ] up|down|unsupervise" ;
