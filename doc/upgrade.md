@@ -42,6 +42,27 @@ See the `66-update` documentation page for further information.
 
 ---
 
+# In 0.6.1.0
+
+- Bugs fix:
+    - Avoid to crash if no tree is enabled yet.
+    - Documentation fix.
+    - Handle correctly the return value of s6_rc_servicedir_manage.
+    - Fix `66-all` command at s6-svscan control file of a regular user scandir creation.
+    - Handle correctly a same(or commented) `key=value` pair on multiple service configuration file.
+
+- *execl-envfile*:
+    - new option:
+        - **-v**: allows verbosity changes.
+    - Bug fix:
+        - Handle correctly a same(or commented) `key=value` pair on multiple service configuration file.
+
+- *66-env*:
+    - new option:
+        - **-e** *editor*: Allows to choose the editor to use for the edition of the configuration file.
+
+---
+
 # In 0.6.0.1
 
 - Bugs fix:

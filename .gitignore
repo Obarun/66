@@ -39,6 +39,5 @@
 /66-umountall
 /66-nuke
 /src/include/66/config.h
-/doc/man
-/doc/html
+/doc/*/
 TODO
