@@ -674,6 +674,9 @@ int regex_configure(sv_alltype *sv_before,ssexec_t *info, char const *module_dir
             if (!environ_clean_envfile(&env,dst.s))
                 log_warnu_return(LOG_EXIT_ZERO,"prepare environment") ;
 
+            if (!environ_remove_unexport(&env,&env))
+                log_warnu_return(LOG_EXIT_ZERO,"remove exclamation mark from environment variables") ;
+
             stralloc_free(&name) ;
             stralloc_free(&oenv) ;
             stralloc_free(&dst) ;
