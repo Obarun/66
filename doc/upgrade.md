@@ -42,6 +42,13 @@ See the `66-update` documentation page for further information.
 
 ---
 
+# In 0.6.1.1
+
+- Bugs fix:
+    - remove the exclamation mark from variable at module parse time before passing it to the script configure
+
+---
+
 # In 0.6.1.0
 
 - Bugs fix:
