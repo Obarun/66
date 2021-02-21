@@ -54,7 +54,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
     gid_t gidowner ;
     if (!yourgid(&gidowner,info->owner)) log_dieusys(LOG_EXIT_SYS,"set gid") ;
 
-    if (!argc) log_usage(usage_init) ;
+    if (argc <= 1) log_usage(usage_init) ;
     if (*argv[1] == 'c') classic = 1 ;
     else if (*argv[1] == 'd') db = 1 ;
     else if (*argv[1] == 'b') classic = db = 1 ;
