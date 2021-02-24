@@ -603,7 +603,11 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
                             if (!errno) errno = ESRCH ;
                             log_warnu_return(LOG_EXIT_ZERO,"get user name") ;
                         }
-                        scan_uidlist(pw->pw_name,(uid_t *)service->user) ;
+                        if (!scan_uidlist(pw->pw_name,(uid_t *)service->user)) {
+
+                            parse_err(0,nocheck) ;
+                            return 0 ;
+                        }
                         continue ;
                     }
                     if (!scan_uidlist(chval + pos,(uid_t *)service->user))
