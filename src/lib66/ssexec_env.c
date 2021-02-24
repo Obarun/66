@@ -67,9 +67,16 @@ static uint8_t check_current_version(char const *svconf,char const *version)
     return !version_cmp(bname,version,SS_CONFIG_VERSION_NDOT) ? 1 : 0 ;
 }
 
-static void run_editor(char const *src, char const *const *envp)
+static void run_editor(char const *src, char const *sv, char const *const *envp)
 {
     log_flow() ;
+
+    size_t srclen = strlen(src), svlen = strlen(sv) ;
+    char tsrc[srclen + 1 + svlen + 1] ;
+
+    auto_strings(tsrc,src,"/",sv) ;
+
+    log_info(src,"->",sv,"->",tsrc) ;
 
     if (!EDITOR) {
 
@@ -80,7 +87,7 @@ static void run_editor(char const *src, char const *const *envp)
             log_die(LOG_EXIT_SYS,"EDITOR is not set at the environment variable -- please use the -e option to specify the editor to use e.g. 66-env -e nano <service>.") ;
         }
     }
-    char const *const newarg[3] = { EDITOR, src, 0 } ;
+    char const *const newarg[3] = { EDITOR, tsrc, 0 } ;
     xexec_ae (newarg[0],newarg,envp) ;
 }
 
@@ -162,6 +169,40 @@ static void replace_value_of_key(stralloc *srclist,char const *key)
     srclist->len-- ;
 
     stralloc_free(&sakey) ;
+}
+
+static void write_user_env_file(char const *src, char const *sv)
+{
+    size_t srclen = strlen(src), svlen = strlen(sv) ;
+    int r ;
+    stralloc sa = STRALLOC_ZERO ;
+    char tsrc[srclen + 2 + svlen + 1] ;
+
+    auto_strings(tsrc,src,"/",sv) ;
+
+    errno = 0 ;
+
+    if (access(tsrc, F_OK) < 0) {
+
+        if (errno == ENOENT) {
+
+            auto_strings(tsrc,src,"/.",sv) ;
+
+            if (!file_readputsa_g(&sa,tsrc))
+                log_dieusys(LOG_EXIT_SYS,"read environment file from: ",tsrc) ;
+
+            r = str_contain(sa.s,"[ENDWARN]") ;
+            if (r == -1)
+                log_die(LOG_EXIT_SYS,"invalid upstream configuration file! Do you have modified it? Tries to enable the service again.") ;
+
+            if (!write_env(sv,sa.s + r,src))
+                log_dieusys(LOG_EXIT_SYS,"write: ",src,"/",sv);
+        }
+        else
+            log_diesys(LOG_EXIT_SYS,"conflicting format of file: ",tsrc) ;
+    }
+
+    stralloc_free(&sa) ;
 }
 
 int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
@@ -352,7 +393,13 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 
         case T_REPLACE:
 
-            if (!file_readputsa(&salist,src,sv)) log_dieusys(LOG_EXIT_SYS,"read: ",src,"/",sv) ;
+            /** the user configuration file may not exist yet
+             * We read the upstream file if it's the case and write
+             * the change to the user file */
+            write_user_env_file(src,sv) ;
+
+            if (!file_readputsa(&salist,src,sv))
+                log_dieusys(LOG_EXIT_SYS,"read: ",src,"/",sv) ;
 
             FOREACH_SASTR(&savar,pos) {
 
@@ -368,42 +415,10 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 
         case T_EDIT:
 
-            {
-                size_t srclen = strlen(src), svlen = strlen(sv) ;
-                int r ;
-                char tsrc[srclen + 1 + svlen +1] ;
+            write_user_env_file(src,sv) ;
 
-                auto_strings(tsrc,src,"/",sv) ;
+            run_editor(src, sv, envp) ;
 
-                errno = 0 ;
-                if (access(tsrc, F_OK) < 0) {
-
-                    if (errno == ENOENT) {
-
-                        salist.len = 0 ;
-                        stralloc sa = STRALLOC_ZERO ;
-
-                        if (!auto_stra(&salist,src,"/.",sv))
-                            log_die_nomem("stralloc") ;
-
-                        if (!file_readputsa_g(&sa,salist.s))
-                            log_dieusys(LOG_EXIT_SYS,"read environment file from: ",salist.s) ;
-
-                        r = str_contain(sa.s,"[ENDWARN]") ;
-                        if (r == -1)
-                            log_die(LOG_EXIT_SYS,"invalid upstream configuration file! Do you have modified it? Tries to enable it again.") ;
-
-                        if (!write_env(sv,sa.s + r,src))
-                            log_dieusys(LOG_EXIT_SYS,"copy: ",salist.s," to: ",tsrc);
-
-                        stralloc_free(&sa) ;
-                    }
-                    else
-                        log_diesys(LOG_EXIT_SYS,"conflicting format of file: ",tsrc) ;
-
-                }
-                run_editor(tsrc,envp) ;
-            }
         /** Can't happens */
         default: break ;
     }
