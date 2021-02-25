@@ -166,7 +166,7 @@ char *print_nlog(char *str, int n)
 
     if (target_pos == NULL) return NULL;
 
-    while (ndelim < n)
+    while (ndelim <= n)
     {
         while (str < target_pos && *target_pos != delim)
             --target_pos;
