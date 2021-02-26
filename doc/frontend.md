@@ -1065,14 +1065,24 @@ This same behavior applies to the [[logger]](frontend.html#Section: [logger]) se
 
 ## Prototype of a frontend file
 
-This prototype contain all valid section with all valid `key=value` pair.
+The minimal template is:
 
 ```
     [main]
     @type = classic,bundle,longrun,oneshot,module
-    @name =
     @version =
     @description = ""
+    @user = ()
+
+    [start]
+    @execute = ()
+```
+
+This prototype contain all valid section with all valid `key=value` pair.
+
+```
+    [main]
+
     @depends = ()
     @optsdepends = ()
     @extdepends = ()
