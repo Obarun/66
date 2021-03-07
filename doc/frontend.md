@@ -34,12 +34,12 @@ You can find a prototype with all valid section and all valid `key=value` pair a
     @description = "ntpd daemon"
     @version = 0.1.0
     @user = ( root )
-    @options = ( log env )
 
     [start]
-    @build = auto
-    @execute = ( foreground { mkdir -p  -m 0755 ${RUNDIR} }
-    execl-cmdline -s { ntpd ${CMD_ARGS} } )
+    @execute = (
+        foreground { mkdir -p  -m 0755 ${RUNDIR} }
+        execl-cmdline -s { ntpd ${CMD_ARGS} }
+    )
 
     [environment]
     dir_run=!/run/openntpd
