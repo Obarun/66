@@ -9,36 +9,24 @@ author: Eric Vidal <eric@obarun.org>
 
 # Changelog for 66
 
-## Upgrade/downgrade instructions
+---
 
-***Warning***
-From the version `v0.5.0.0` this procedure is **no longer mandatory** even on major release. `66-update` can now be consider as a convenient tool to rebuild your tree automatically instead of doing it manually.
+# In 0.6.1.2
 
+- Bugs fix:
+    - Avoid segmentation fault if 66-init is used without arguments. Thanks Timothy Murphy.
+    - Fix the build of man pages.
+    - Documentation fix.
 
-Upgrading/downgrading between major versions may require the use of the 66 tool `66-update`. In each case the
-release note will specify it.
-To update, first upgrade/downgrade the 66 package. Then make a *dry-run* using the **-d**
-option of the `66-update` tool:
+- 66-env:
+    - Bug fix:
+        - Create the user configuration file at **-r** option if it doesn't exist yet.
+        - Fix **-c** option.
 
-```
-# 66-update -d
-```
-
-You **should not have any error messages** before going further. If you get an
-error message, please fix it first.
-If you do not have any idea of what to do to fix the issue, reverse your previous
-installation and consider asking for help on the [66 mailing list](https://obarun.org/mailman/listinfo/66_obarun.org).
-
-The *dry-run* option *-d* does not change anything on your system, you need
-to really update your system:
-
-```
-# 66-update
-```
-
-This same process and command use needs to be done by (or as) each regular user.
-
-See the `66-update` documentation page for further information.
+- 66-inservice
+    - Do not output warn message from upstream configuration file at contents display.
+    - Bug fix:
+        - Respect the number passed by **-p** options.
 
 ---
 
