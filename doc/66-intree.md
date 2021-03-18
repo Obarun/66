@@ -91,7 +91,7 @@ The field *Starts after* reveals the start process order if the *tree* is enable
 
 The field *Current* tells you if the tree is the current one or not—see [66-tree -c](66-tree.html).
 
-The field *Allowed* gives you a list of user(s) allowed to handle the tree—see [66-tree -a|b](66-tree.html).
+The field *Allowed* gives you a list of user(s) allowed to handle the tree—see [66-tree -a|d](66-tree.html).
 
 The field *Symlinks* tells you if the current live state point to the *source* or the *backup* of the *tree*. Every use of [66-enable](66-enable.html) tool create a automatic backup of the tree for `classic`,`bundle` or `atomic` service(s). A symlink pointing to *backup* mean that you have enabled a service without starting it. Right after a boot, each tree should point to *source*.
 

@@ -53,7 +53,7 @@ This command handles a directory containing a set of *services*.
 
 - **-D** : disables *tree*. The exact opposite of the **-E** option.  The *tree* remains as is, but can only be started manually with [66-all](66-all.html).
 
-- **-R** : deletes *tree*. ***Can not be undone!*** This will completely remove the given *tree* from the system! You will not be able to retrieve any information of the deleted *tree* after deleting it. Services currently running on tree will not be brought down before removing it. To do so, use the **-U** option in conjonction e.g. `66-tree -UR tree`.
+- **-R** : deletes *tree*. ***Can not be undone!*** This will completely remove the given *tree* from the system! You will not be able to retrieve any information of the deleted *tree* after deleting it. Services currently running on tree will not be brought down before removing it. To do so, use the [66-all unsupervise](66-all.html) command then remove the tree.
 
 - **-C** *clone* : makes a strict copy of *tree* named clone. Clone **must not** exist on the system.
 
