@@ -57,7 +57,7 @@ The edition of the configuration file is the **default** option if neither optio
 
 - **-i** *src,dst* : imports configuration file from *src* version to *dst* version. The *src* version and *dst* version need to be separated by a comma without space before and after it. It **do not import** the configuration written by the `66-enable` process but only deal with extra configuration files written by the sysadmin.
 
-- **-e** *editor*: edit the configuration file with *editor*. If you don't specify this option, it try to found the `EDITOR` variable from the environment variable. Note: the upstream file (meaning the one prefixed with a dot) is **never** touched. A copy of the upstream file is copied (if it doesn't exist yet) and the *66-env* tool modifies that file.(see [Service configuration file](service-configuration-file) for further information).
+- **-e** *editor*: edit the configuration file with *editor*. If you don't specify this option, it try to found the `EDITOR` variable from the environment variable. Note: the upstream file (meaning the one prefixed with a dot) is **never** touched. A copy of the upstream file is copied (if it doesn't exist yet) and the *66-env* tool modifies that file.(see [Service configuration file](service-configuration-file.html) for further information).
 
 ## Usage examples
 
