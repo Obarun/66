@@ -70,6 +70,7 @@ See [changes](upgrade.html) between version.
 - [frontend service file](frontend.html)
 - [instantiated service file](instantiated-service.html)
 - [module service creation](module-service.html)
+- [Service configuration file](service-configuration-file.html)
 - [66-all](66-all.html)
 - [66-tree](66-tree.html)
 - [66-enable](66-enable.html)
