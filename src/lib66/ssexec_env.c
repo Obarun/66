@@ -226,7 +226,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, ">c:s:VLr:e:i:", &l) ;
+            int opt = getopt_args(argc,argv, ">" OPTS_ENV, &l) ;
             if (opt == -1) break ;
             if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
             switch (opt)

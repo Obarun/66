@@ -72,6 +72,28 @@ static inline void info_help (char const *help,char const *usage)
     log_info(usage,"\n",help) ;
 }
 
+static inline void append_opts(char *opts,size_t baselen, ssexec_func_t *func)
+{
+    if ((*func) == &ssexec_init)
+        auto_strings(opts + baselen,OPTS_INIT) ;
+    else if ((*func) == &ssexec_enable)
+        auto_strings(opts + baselen,OPTS_ENABLE) ;
+    else if ((*func) == &ssexec_disable)
+        auto_strings(opts + baselen,OPTS_DISABLE) ;
+    else if ((*func) == &ssexec_start)
+        auto_strings(opts + baselen,OPTS_START) ;
+    else if ((*func) == &ssexec_stop)
+        auto_strings(opts + baselen,OPTS_STOP) ;
+    else if ((*func) == &ssexec_svctl)
+        auto_strings(opts + baselen,OPTS_SVCTL) ;
+    else if ((*func) == &ssexec_dbctl)
+        auto_strings(opts + baselen,OPTS_DBCTL) ;
+    else if ((*func) == &ssexec_env)
+        auto_strings(opts + baselen,OPTS_ENV) ;
+    else if ((*func) == &ssexec_all)
+        auto_strings(opts + baselen,OPTS_ALL) ;
+}
+
 int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec_func_t *func, ssexec_t *info)
 {
     log_flow() ;
@@ -82,13 +104,22 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
 
     log_color = &log_color_disable ;
 
+    /** 30 options should be large enough */
+    char opts[30] ;
+    char const *main = "hv:l:t:T:z" ;
+    size_t mainlen = strlen(main) ;
+
+    auto_strings(opts,main) ;
+
+    append_opts(opts,mainlen,func) ;
+
     nargv[n++] = "fake_name" ;
     {
         subgetopt_t l = SUBGETOPT_ZERO ;
         int f = 0 ;
         for (;;)
         {
-            int opt = subgetopt_r(argc,argv, "hv:l:t:T:z", &l) ;
+            int opt = subgetopt_r(argc,argv, opts, &l) ;
 
             if (opt == -1) break ;
             switch (opt)

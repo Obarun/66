@@ -98,6 +98,25 @@ extern char const *help_env ;
 extern char const *usage_all ;
 extern char const *help_all ;
 
+#define OPTS_INIT "cdb"
+#define OPTS_INIT_LEN (sizeof OPTS_INIT - 1)
+#define OPTS_ENABLE "cmCfFSiI"
+#define OPTS_ENABLE_LEN (sizeof OPTS_ENABLE - 1)
+#define OPTS_DISABLE "SFR"
+#define OPTS_DISABLE_LEN (sizeof OPTS_DISABLE - 1)
+#define OPTS_START "rR"
+#define OPTS_START_LEN (sizeof OPTS_START - 1)
+#define OPTS_STOP "uXK"
+#define OPTS_STOP_LEN (sizeof OPTS_STOP - 1)
+#define OPTS_SVCTL "n:urRdXK"
+#define OPTS_SVCTL_LEN (sizeof OPTS_SVCTL - 1)
+#define OPTS_DBCTL "udr"
+#define OPTS_DBCTL_LEN (sizeof OPTS_DBCTL - 1)
+#define OPTS_ENV "c:s:VLr:e:i:"
+#define OPTS_ENV_LEN (sizeof OPTS_ENV - 1)
+#define OPTS_ALL "f"
+#define OPTS_ALL_LEN (sizeof OPTS_ALL - 1)
+
 extern int ssexec_main(int argc, char const *const *argv, char const *const *envp,ssexec_func_t *func,ssexec_t *info) ;
 
 #endif

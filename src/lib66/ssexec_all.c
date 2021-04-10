@@ -241,7 +241,7 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp,ssexec_
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, ">f", &l) ;
+            int opt = getopt_args(argc,argv, ">" OPTS_ALL, &l) ;
             if (opt == -1) break ;
             if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
             switch (opt)

@@ -513,7 +513,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, "n:urRdXK", &l) ;
+            int opt = getopt_args(argc,argv, OPTS_SVCTL, &l) ;
             if (opt == -1) break ;
             if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
             switch (opt)
