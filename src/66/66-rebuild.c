@@ -1,5 +1,5 @@
 /*
- * 66-update.c
+ * 66-rebuild.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -40,7 +40,7 @@
 #include <66/resolve.h>
 #include <66/parser.h>
 
-#define USAGE "66-update [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -d ] tree(s)"
+#define USAGE "66-rebuild [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -d ] tree(s)"
 
 static stralloc WORKDIR = STRALLOC_ZERO ;
 static uint8_t DRYRUN = 0 ;
@@ -269,7 +269,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
     stralloc tree_enabled = STRALLOC_ZERO ;
     ssexec_t info = SSEXEC_ZERO ;
 
-    PROG = "66-update" ;
+    PROG = "66-rebuild" ;
     {
         subgetopt_t l = SUBGETOPT_ZERO ;
         for (;;)
@@ -543,7 +543,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
         cleanup() ;
 
-        log_info(DRYRUN ? drun : "","tree: ",info.treename.s," updated successfully") ;
+        log_info(DRYRUN ? drun : "","tree: ",info.treename.s," rebuild successfully") ;
     }
     exit:
     stralloc_free(&satree) ;

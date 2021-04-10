@@ -29,7 +29,7 @@
 /66-which
 /66-writenv
 /66-getenv
-/66-update
+/66-rebuild
 /execl-envfile
 /execl-subuidgid
 /config.mak

@@ -28,6 +28,7 @@ src/66/66-inservice.o src/66/66-inservice.lo: src/66/66-inservice.c src/include/
 src/66/66-instate.o src/66/66-instate.lo: src/66/66-instate.c src/include/66/constants.h src/include/66/info.h src/include/66/resolve.h src/include/66/state.h src/include/66/utils.h
 src/66/66-intree.o src/66/66-intree.lo: src/66/66-intree.c src/include/66/backup.h src/include/66/constants.h src/include/66/enum.h src/include/66/info.h src/include/66/resolve.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-parser.o src/66/66-parser.lo: src/66/66-parser.c src/include/66/constants.h src/include/66/parser.h src/include/66/utils.h
+src/66/66-rebuild.o src/66/66-rebuild.lo: src/66/66-rebuild.c src/include/66/backup.h src/include/66/constants.h src/include/66/db.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-scanctl.o src/66/66-scanctl.lo: src/66/66-scanctl.c src/include/66/utils.h
 src/66/66-scandir.o src/66/66-scandir.lo: src/66/66-scandir.c src/include/66/config.h src/include/66/constants.h src/include/66/utils.h
 src/66/66-shutdown.o src/66/66-shutdown.lo: src/66/66-shutdown.c src/include/66/config.h src/include/66/hpr.h
@@ -36,7 +37,6 @@ src/66/66-start.o src/66/66-start.lo: src/66/66-start.c src/include/66/ssexec.h
 src/66/66-stop.o src/66/66-stop.lo: src/66/66-stop.c src/include/66/ssexec.h
 src/66/66-svctl.o src/66/66-svctl.lo: src/66/66-svctl.c src/include/66/ssexec.h
 src/66/66-tree.o src/66/66-tree.lo: src/66/66-tree.c src/include/66/config.h src/include/66/constants.h src/include/66/db.h src/include/66/enum.h src/include/66/resolve.h src/include/66/state.h src/include/66/tree.h src/include/66/utils.h
-src/66/66-update.o src/66/66-update.lo: src/66/66-update.c src/include/66/backup.h src/include/66/constants.h src/include/66/db.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/svc.h src/include/66/tree.h src/include/66/utils.h
 src/extra-tools/66-echo.o src/extra-tools/66-echo.lo: src/extra-tools/66-echo.c
 src/extra-tools/66-nuke.o src/extra-tools/66-nuke.lo: src/extra-tools/66-nuke.c
 src/extra-tools/66-umountall.o src/extra-tools/66-umountall.lo: src/extra-tools/66-umountall.c src/include/66/config.h
@@ -104,13 +104,13 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-disable: src/66/66-disable.o ${LIB66} 
 66-enable: EXTRA_LIBS := -ls6rc -ls6 -loblibs -lskarnet
 66-enable: src/66/66-enable.o ${LIB66}
-66-env: EXTRA_LIBS := -loblibs -lskarnet
+66-env: EXTRA_LIBS := -ls6rc -ls6 -loblibs -lskarnet
 66-env: src/66/66-env.o ${LIB66}  
 66-hpr: EXTRA_LIBS := -loblibs -lskarnet ${SYSCLOCK_LIB} ${SOCKET_LIB}
 66-hpr: src/66/66-hpr.o ${LIB66} ${LIBUTMPS} 
 66-info: EXTRA_LIBS := -ls6 -loblibs -lskarnet
 66-info: src/66/66-info.o ${LIB66}
-66-init: EXTRA_LIBS := -ls6 -loblibs -lskarnet
+66-init: EXTRA_LIBS := -ls6rc -ls6 -loblibs -lskarnet
 66-init: src/66/66-init.o ${LIB66}
 66-inresolve: EXTRA_LIBS := -loblibs -lskarnet
 66-inresolve: src/66/66-inresolve.o ${LIB66}
@@ -122,6 +122,8 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-intree: src/66/66-intree.o ${LIB66}
 66-parser: EXTRA_LIBS := -loblibs -lskarnet
 66-parser: src/66/66-parser.o ${LIB66}
+66-rebuild: EXTRA_LIBS := -ls6rc -ls6 -loblibs -lskarnet
+66-rebuild: src/66/66-rebuild.o ${LIB66}
 66-scanctl: EXTRA_LIBS := -ls6 -loblibs -lskarnet
 66-scanctl: src/66/66-scanctl.o ${LIB66}
 66-scandir: EXTRA_LIBS := -ls6 -loblibs -lskarnet
@@ -134,12 +136,10 @@ src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree
 66-start: src/66/66-start.o ${LIB66}
 66-stop: EXTRA_LIBS := -ls6rc -ls6 -loblibs -lskarnet
 66-stop: src/66/66-stop.o ${LIB66}
-66-svctl: EXTRA_LIBS := -ls6 -loblibs -lskarnet ${SYSCLOCK_LIB}
+66-svctl: EXTRA_LIBS := -ls6rc -ls6 -loblibs -lskarnet ${SYSCLOCK_LIB}
 66-svctl: src/66/66-svctl.o ${LIB66}
 66-tree: EXTRA_LIBS := -ls6rc -ls6 -loblibs -lskarnet ${SPAWN_LIB}
 66-tree: src/66/66-tree.o ${LIB66}
-66-update: EXTRA_LIBS := -ls6rc -ls6 -loblibs -lskarnet
-66-update: src/66/66-update.o ${LIB66}
 66-echo: EXTRA_LIBS := -loblibs -lskarnet
 66-echo: src/extra-tools/66-echo.o 
 66-nuke: EXTRA_LIBS :=
