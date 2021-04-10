@@ -917,7 +917,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     found = ss_resolve_svtree(&src,svname,tname) ;
 
-    if (found == -1) log_dieu(LOG_EXIT_SYS,"resolve tree source of sv: ",svname) ;
+    if (found == -1) log_dieu(LOG_EXIT_SYS,"resolve tree source of service: ",svname) ;
     else if (!found) {
         log_info("no tree exist yet") ;
         goto freed ;
