@@ -391,130 +391,6 @@ void set_rules(char const *tree,uid_t *uids, size_t uidn,uint8_t what)
     }
 }
 
-void tree_unsupervise(stralloc *live, char const *tree, char const *treename,uid_t owner,char const *const *envp)
-{
-    log_flow() ;
-
-    int r, wstat ;
-    pid_t pid ;
-    size_t treenamelen = strlen(treename) ;
-    size_t newlen ;
-
-    stralloc scandir = STRALLOC_ZERO ;
-    stralloc livestate = STRALLOC_ZERO ;
-    stralloc livetree = STRALLOC_ZERO ;
-    stralloc list = STRALLOC_ZERO ;
-    stralloc realsym = STRALLOC_ZERO ;
-
-    /** set what we need */
-    char prefix[treenamelen + 2] ;
-    auto_string(prefix,treename,0) ;
-    auto_string(prefix,"-",treenamelen) ;
-
-    auto_stralloc(&scandir,live->s) ;
-    r = set_livescan(&scandir,owner) ;
-    if (!r) log_dieusys(LOG_EXIT_SYS,"set livescan directory") ;
-
-    auto_stralloc(&livestate,live->s) ;
-    r = set_livestate(&livestate,owner) ;
-    if (!r) log_dieusys(LOG_EXIT_SYS,"set livestate directory") ;
-
-    auto_stralloc(&livetree,live->s) ;
-    r = set_livetree(&livetree,owner) ;
-    if (!r) log_dieusys(LOG_EXIT_SYS,"set livetree directory") ;
-    auto_stralloc(&livetree,"/") ;
-    newlen = livetree.len ;
-    auto_stralloc0(&livetree) ;
-
-    auto_stralloc(&livestate,"/") ;
-    auto_stralloc(&livestate,treename) ;
-    auto_stralloc0(&livestate) ;
-    /** works begin */
-    if (scan_mode(livestate.s,S_IFDIR))
-        if (!sastr_dir_get(&list,livestate.s,SS_LIVETREE_INIT,S_IFREG)) log_dieusys(LOG_EXIT_SYS,"get service list at: ",livestate.s) ;
-
-    if (!list.len)
-    {
-        /** No service to unsupervise but we need to
-         * delete the livestate anyway*/
-        log_warn("No service to unsupervise: ",livestate.s) ;
-        /** pass through s6rc_servicedir_unsupervise just in case */
-        goto follow ;
-    }
-
-    {
-        size_t i = 0, len = sastr_len(&list) ;
-        char const *newargv[9 + len + 1] ;
-        unsigned int m = 0 ;
-        char fmt[UINT_FMT] ;
-        fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
-
-        newargv[m++] = SS_BINPREFIX "66-stop" ;
-        newargv[m++] = "-v" ;
-        newargv[m++] = fmt ;
-        newargv[m++] = "-l" ;
-        newargv[m++] = live->s ;
-        newargv[m++] = "-t" ;
-        newargv[m++] = treename ;
-        newargv[m++] = "-u" ;
-
-        len = list.len ;
-        for (;i < len; i += strlen(list.s + i) + 1)
-            newargv[m++] = list.s+i ;
-
-        newargv[m++] = 0 ;
-
-        pid = child_spawn0(newargv[0],newargv,envp) ;
-        if (waitpid_nointr(pid,&wstat, 0) < 0)
-            log_dieusys(LOG_EXIT_SYS,"wait for: ",newargv[0]) ;
-        /** we don't want to die here, we try we can do to stop correctly
-         * service list, in any case we want to unsupervise */
-        if (wstat) log_warnusys("stop services") ;
-    }
-
-    follow:
-    if (db_find_compiled_state(livetree.s,treename) >=0)
-    {
-        list.len = 0 ;
-        livetree.len = newlen ;
-        auto_stralloc(&livetree,treename) ;
-        auto_stralloc(&livetree,SS_SVDIRS) ;
-        auto_stralloc0(&livetree) ;
-        if (!sastr_dir_get(&list,livetree.s,"",S_IFDIR)) log_dieusys(LOG_EXIT_SYS,"get service list at: ",livetree.s) ;
-        livetree.len = newlen ;
-        auto_stralloc(&livetree,treename) ;
-        auto_stralloc0(&livetree) ;
-
-        size_t i = 0, len = list.len ;
-        for (;i < len; i += strlen(list.s + i) + 1)
-            s6rc_servicedir_unsupervise(livetree.s,prefix,list.s + i,0) ;
-
-        r = sarealpath(&realsym,livetree.s) ;
-        if (r < 0 ) log_dieusys(LOG_EXIT_SYS,"find realpath of: ",livetree.s) ;
-        auto_stralloc0(&realsym) ;
-        if (rm_rf(realsym.s) < 0) log_dieusys(LOG_EXIT_SYS,"remove: ", realsym.s) ;
-        if (rm_rf(livetree.s) < 0) log_dieusys(LOG_EXIT_SYS,"remove: ", livetree.s) ;
-        livetree.len = newlen ;
-        auto_stralloc(&livetree,treename) ;
-        auto_stralloc0(&livetree) ;
-        /** remove the symlink itself */
-        unlink_void(livetree.s) ;
-    }
-
-    if (scandir_send_signal(scandir.s,"h") <= 0) log_dieusys(LOG_EXIT_SYS,"reload scandir: ",scandir.s) ;
-    /** remove /run/66/state/uid/treename directory */
-    log_trace("delete: ",livestate.s,"..." ) ;
-    if (rm_rf(livestate.s) < 0) log_dieusys(LOG_EXIT_SYS,"delete ",livestate.s) ;
-
-    log_info("Unsupervised successfully tree: ",treename) ;
-
-    stralloc_free(&scandir) ;
-    stralloc_free(&livestate) ;
-    stralloc_free(&livetree) ;
-    stralloc_free(&list) ;
-    stralloc_free(&realsym) ;
-}
-
 /** @action -> 0 disable
  * @action -> 1 enable */
 void tree_enable_disable(char const *base, char const *dst, char const *tree,uint8_t action)
@@ -556,7 +432,7 @@ void tree_modify_resolve(ss_resolve_t *res,ss_resolve_enum_t field,char const *r
             log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"stralloc") ;
 
         sa.len-- ;
-	}
+    }
 
     if (!ss_resolve_modify_field(&modif,field,sa.s))
         log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"modify field: ",ss_resolve_field_table[field].field) ;
@@ -602,7 +478,7 @@ void tree_remove(char const *base,char const *dst,char const *tree)
 
 int main(int argc, char const *const *argv,char const *const *envp)
 {
-    int r, current, create, allow, deny, enable, disable, remove, snap, unsupervise ;
+    int r, current, create, allow, deny, enable, disable, remove, snap ;
 
     uid_t owner ;
 
@@ -622,7 +498,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
     log_color = &log_color_disable ;
 
-    current = create = allow = deny = enable = disable = remove = snap = unsupervise = 0 ;
+    current = create = allow = deny = enable = disable = remove = snap = 0 ;
 
     PROG = "66-tree" ;
     {
@@ -630,7 +506,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, "hv:l:na:d:cS:EDRC:Uz", &l) ;
+            int opt = getopt_args(argc,argv, "hv:l:na:d:cS:EDRC:z", &l) ;
             if (opt == -1) break ;
             if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
             switch (opt)
@@ -658,10 +534,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
                             if (!stralloc_cats(&clone,l.arg)) log_die_nomem("stralloc") ;
                             if (!stralloc_0(&clone)) log_die_nomem("stralloc") ;
                             snap = 1 ;
-                            break ;
-                case 'U' :  unsupervise = 1 ;
-                            if (create)log_usage(USAGE) ;
-                            log_1_warn("deprecated option -- please use 66-all unsupervise instead") ;
                             break ;
                 case 'z' :  log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
                 default :   log_usage(USAGE) ;
@@ -734,9 +606,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
         if (!tree_switch_current(base.s,tree)) log_dieusys(LOG_EXIT_SYS,"set: ",dstree.s," as default") ;
         log_info("Set successfully: ",tree," as default") ;
     }
-
-    if (unsupervise)
-        tree_unsupervise(&live,dstree.s,tree,owner,envp) ;
 
     if (remove)
         tree_remove(base.s,dstree.s,tree) ;
