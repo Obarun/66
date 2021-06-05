@@ -680,7 +680,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
     tain_add_g(&ttmain,&ttmain) ;
 
     int spfd = selfpipe_init() ;
-    if (spfd < 0) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
+    if (spfd < 0) log_dieusys(LOG_EXIT_SYS, "selfpipe_init") ;
     if (selfpipe_trap(SIGCHLD) < 0) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
     if (selfpipe_trap(SIGINT) < 0) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
     if (selfpipe_trap(SIGTERM) < 0) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
