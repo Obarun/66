@@ -351,7 +351,7 @@ int module_in_cmdline(genalloc *gares, ss_resolve_t *res, char const *dir)
         return 0 ;
 }
 
-int module_search_service(char const *src, genalloc *gares, char const *name,uint8_t *found, char module_name[255])
+int module_search_service(char const *src, genalloc *gares, char const *name,uint8_t *found, char module_name[256])
 {
     log_flow() ;
 
