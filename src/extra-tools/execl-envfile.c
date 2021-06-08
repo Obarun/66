@@ -49,6 +49,142 @@ static inline void info_help (void)
     log_info(USAGE,"\n",help) ;
 }
 
+void parse_env_var(stralloc *result, stralloc *modifs, char const *line) ;
+
+void substitute_env_var(stralloc *result, stralloc *modifs, char const *mkey, char const *key, char const *regex)
+{
+    stralloc tmp = STRALLOC_ZERO ;
+
+    if (!stralloc_copy(&tmp, result) ||
+        !stralloc_0(&tmp))
+            log_die_nomem("stralloc") ;
+
+    if (!sastr_rebuild_in_nline(&tmp) ||
+        !stralloc_0(&tmp))
+            log_dieu(LOG_EXIT_SYS,"rebuild line") ;
+
+    char *by = getenv(key) ;
+
+    if (!by) {
+
+            /** check if key and mkey are the same
+             * variable to avoid a variable calling itself.
+             * we accept e.g ${PATH}=${PATH} only if PATH
+             * is set on the environnement */
+             if (!strcmp(mkey,key))
+                log_die(LOG_EXIT_USER,"recursive call of variable: ",regex) ;
+
+            /** if the key doesn't exist we let
+             * the variable as it A.K.A. ${VAR}  */
+            if (!environ_get_val_of_key(&tmp, key))
+                return ;
+
+            if (!stralloc_0(&tmp))
+                log_die_nomem("stralloc") ;
+
+            by = tmp.s ;
+    }
+
+    /** recursive call at variable definition.
+     * parse first the recursive variable*/
+    if (str_contain(by,"${") >= 0) {
+
+        char tmp[strlen(key) + 1 + strlen(by) + 1] ;
+        auto_strings(tmp,key,"=",by) ;
+
+        parse_env_var(result, modifs, tmp) ;
+    }
+
+    if (!sastr_replace_all(result, regex, by))
+        log_dieu(LOG_EXIT_SYS,"replace: ", regex, "by: ", by) ;
+
+
+    stralloc_free(&tmp) ;
+}
+
+void parse_env_var(stralloc *result, stralloc *modifs, char const *line)
+{
+        stralloc subs = STRALLOC_ZERO ;
+
+        size_t spos = 0, pos = 0 ;
+
+        /** be sure to deal with key=value */
+        spos = get_sep_before(line,'=','\n') ;
+        if (spos<= 0)
+            log_dieu(LOG_EXIT_SYS,"get value from line: ", line) ;
+
+        spos++ ; //remove the = character
+
+        /** master key -- see comment at substitute_env_var */
+        char mkey[spos + 1] ;
+        memcpy(mkey,line,spos - 1) ;
+        mkey[spos - 1] = 0 ;
+
+        if (!auto_stra(&subs, line + spos))
+            log_die_nomem("stralloc") ;
+
+        if (!sastr_split_element_in_nline(&subs) ||
+            !stralloc_0(&subs))
+                log_dieu(LOG_EXIT_SYS,"split line") ;
+
+        {
+            FOREACH_SASTR(&subs, pos) {
+
+                char *line = subs.s + pos ;
+                size_t len = strlen(line) ;
+                char key[len + 1] ;
+
+                ssize_t rstart = 0 ;
+
+                /** deal with multiple ${} on the
+                 * same line */
+                while (rstart < len) {
+
+                    ssize_t r = get_len_until(line + rstart, '$') ;
+
+                    if (r == -1)
+                        break ;
+
+                    rstart += r ;
+
+                    ssize_t start = rstart + 1 ;
+
+                    if (line[start] == '{') {
+
+                        ssize_t rend = get_len_until(line + start , '}') ;
+
+                        if (rend == -1) {
+                            log_warn("unmatched { at line: ", line) ;
+                            return ;
+                        }
+
+                        ssize_t end = rend - 1 ;
+                        start++ ;
+
+                        memcpy(key, line + start, end) ;
+                        key[end] = 0 ;
+
+                        char regex[rend + 3] ;
+                        memcpy(regex,line + rstart, rend + 2) ;
+                        regex[rend + 2] = 0 ;
+
+                        substitute_env_var(result, modifs, mkey, key, regex) ;
+
+                        rstart += rstart + rend + 2 ;
+
+                    } else {
+
+                        log_warn("ignoring variable at line: ", line," -- missing {}" ) ;
+                        rstart += rstart + 1 ;
+                        return ;
+                    }
+                }
+            }
+        }
+
+    stralloc_free(&subs) ;
+}
+
 int main (int argc, char const *const *argv, char const *const *envp)
 {
     int r = 0, unexport = 0, insist = 1 ;
@@ -188,6 +324,29 @@ int main (int argc, char const *const *argv, char const *const *envp)
     }
 
     stralloc_free(&again) ;
+
+    {
+        stralloc result = STRALLOC_ZERO ;
+        size_t pos = 0 ;
+
+        if (!stralloc_copy(&result, &modifs) ||
+            !stralloc_0(&result))
+                log_die_nomem("stralloc") ;
+
+        FOREACH_SASTR(&modifs, pos)
+
+            parse_env_var(&result, &modifs, modifs.s + pos) ;
+
+
+        if (!sastr_split_string_in_nline(&result) ||
+            !stralloc_0(&result))
+                log_dieu(LOG_EXIT_SYS,"split string") ;
+
+        if (!stralloc_copy(&modifs, &result))
+            log_die_nomem("stralloc") ;
+
+        stralloc_free(&result) ;
+    }
 
     /** be able to freed the stralloc before existing */
     char tmp[modifs.len+1] ;
