@@ -576,8 +576,6 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
                 if (r == -1) return 0 ;
                 if (r == FLAGS_DOWN)
                     service->flags[0] = 1 ;/**0 means not enabled*/
-                if (r == FLAGS_NOSETSID)
-                    log_warn("deprecated file nosetsid -- ignoring") ;
             }
             break ;
         case KEY_MAIN_USER:

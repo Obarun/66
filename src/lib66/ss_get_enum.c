@@ -120,7 +120,6 @@ char const *enum_str_opts[] = {
 
 char const *enum_str_flags[] = {
     "down" ,
-    "nosetsid" ,
     0
 } ;
 

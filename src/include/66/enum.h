@@ -194,7 +194,6 @@ typedef enum enum_flags_e enum_flags_t, *enum_flags_t_ref ;
 enum enum_flags_e
 {
     FLAGS_DOWN = 0 ,
-    FLAGS_NOSETSID ,
     FLAGS_ENDOFKEY
 } ;
 
