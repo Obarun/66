@@ -100,7 +100,7 @@ extern char const *help_all ;
 
 #define OPTS_INIT "cdb"
 #define OPTS_INIT_LEN (sizeof OPTS_INIT - 1)
-#define OPTS_ENABLE "cmCfFSiI"
+#define OPTS_ENABLE "fFSI"
 #define OPTS_ENABLE_LEN (sizeof OPTS_ENABLE - 1)
 #define OPTS_DISABLE "SFR"
 #define OPTS_DISABLE_LEN (sizeof OPTS_DISABLE - 1)

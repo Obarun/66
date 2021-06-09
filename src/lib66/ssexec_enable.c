@@ -273,10 +273,6 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
                             FORCE = 1 ; break ;
                 case 'F' :  if (FORCE) log_usage(usage_enable) ;
                             FORCE = 2 ; break ;
-                case 'c' :  log_1_warn("deprecated option -- ignoring") ; break ;
-                case 'm' :  log_1_warn("deprecated option -- ignoring") ; break ;
-                case 'C' :  log_1_warn("deprecated option -- ignoring") ; break ;
-                case 'i' :  log_1_warn("deprecated option -- ignoring") ; break ;
                 case 'I' :  CONF = 1 ; break ;
                 case 'S' :  start = 1 ; break ;
                 default :   log_usage(usage_enable) ;
