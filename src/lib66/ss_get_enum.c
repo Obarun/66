@@ -32,7 +32,6 @@ char const *enum_str_section[] = {
 
 char const *enum_str_key_section_main[] = {
     "@type" ,
-    "@name" ,
     "@version" ,
     "@description" ,
     "@contents" ,

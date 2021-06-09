@@ -86,39 +86,10 @@ int parse_service_before(ssexec_t *info,stralloc *parsed_list,stralloc *tree_lis
     if (!get_svtype(&sv_before,sasv->s))
         log_warn_return (LOG_EXIT_ZERO,"invalid value for key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,KEY_MAIN_TYPE)," in service file: ",svsrc,svname) ;
 
-    if (!get_svname(&sv_before,sasv->s))
-        log_warn_return(LOG_EXIT_ZERO,"invalid value for key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,KEY_MAIN_NAME)," in service file: ",svsrc,svname) ;
 
-    /** keep the name set by user
-     * uniquely for instantiated service
-     * The name must contain the template string */
-    if (insta > 0 && sv_before.cname.name >= 0 )
-    {
-        stralloc sainsta = STRALLOC_ZERO ;
-        stralloc name = STRALLOC_ZERO ;
-        if (!stralloc_cats(&name,keep.s + sv_before.cname.name)) goto err ;
+    sv_before.cname.name = keep.len ;
+    if (!stralloc_catb(&keep,svname,svnamelen + 1)) return 0 ;
 
-        if (!instance_splitname(&sainsta,svname,insta,SS_INSTANCE_TEMPLATE)) goto err ;
-        if (sastr_find(&name,sainsta.s) == -1)
-        {
-            log_warn("invalid instantiated service name: ", keep.s + sv_before.cname.name) ;
-            goto err ;
-        }
-        stralloc_free(&sainsta) ;
-        stralloc_free(&name) ;
-        goto follow ;
-        err:
-            stralloc_free(&sainsta) ;
-            stralloc_free(&name) ;
-            return 0 ;
-    }
-    else
-    {
-        sv_before.cname.name = keep.len ;
-        if (!stralloc_catb(&keep,svname,svnamelen + 1)) return 0 ;
-    }
-
-    follow:
     /** contents of directory should be listed by ss_resolve_src_path
      * execpt for module type */
     if (scan_mode(sv,S_IFDIR) == 1 && sv_before.cname.itype != TYPE_MODULE) return 1 ;

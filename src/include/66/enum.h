@@ -56,7 +56,6 @@ typedef enum enum_key_section_main_e enum_key_section_main_t, *enum_key_section_
 enum enum_key_section_main_e
 {
     KEY_MAIN_TYPE = 0 ,
-    KEY_MAIN_NAME ,
     KEY_MAIN_VERSION ,
     KEY_MAIN_DESCRIPTION ,
     KEY_MAIN_CONTENTS ,
@@ -74,6 +73,7 @@ enum enum_key_section_main_e
     KEY_MAIN_HIERCOPY ,
     KEY_MAIN_SIGNAL ,
     KEY_MAIN_FLAGS ,
+    KEY_MAIN_INTREE ,
     KEY_MAIN_ENDOFKEY
 } ;
 
@@ -290,7 +290,6 @@ struct key_all_s
 static key_description_t const main_section_list[] =
 {
     { .name = &enum_str_key_section_main[KEY_MAIN_TYPE], .id = KEY_MAIN_TYPE, .expected = EXPECT_LINE },
-    { .name = &enum_str_key_section_main[KEY_MAIN_NAME], .id = KEY_MAIN_NAME, .expected = EXPECT_LINE },
     { .name = &enum_str_key_section_main[KEY_MAIN_VERSION], .id = KEY_MAIN_VERSION, .expected = EXPECT_LINE },
     { .name = &enum_str_key_section_main[KEY_MAIN_DESCRIPTION], .id = KEY_MAIN_DESCRIPTION, .expected = EXPECT_QUOTE },
     { .name = &enum_str_key_section_main[KEY_MAIN_DEPENDS], .id = KEY_MAIN_DEPENDS, .expected = EXPECT_BRACKET },

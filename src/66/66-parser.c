@@ -149,29 +149,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
             log_dieu(LOG_EXIT_SYS,"create instance service: ",name) ;
     }
 
-    if (!get_svname(&service,src.s)) log_dieu(LOG_EXIT_SYS,"get name of service: ",sv) ;
-
-    /** keep the name set by user
-     * uniquely for instantiated service
-     * The name must contain the template string */
-    if (ista > 0 && service.cname.name >= 0 )
-    {
-        stralloc sainsta = STRALLOC_ZERO ;
-        stralloc saname = STRALLOC_ZERO ;
-        if (!stralloc_cats(&saname,keep.s + service.cname.name)) log_die_nomem("stralloc") ;
-
-        if (!instance_splitname(&sainsta,name,ista,SS_INSTANCE_TEMPLATE)) log_dieu(LOG_EXIT_SYS,"split instance name") ;
-        if (sastr_find(&saname,sainsta.s) == -1)
-            log_die(LOG_EXIT_USER,"invalid instantiated service name: ", keep.s + service.cname.name) ;
-
-        stralloc_free(&sainsta) ;
-        stralloc_free(&saname) ;
-    }
-    else
-    {
-        service.cname.name = keep.len ;
-        if (!stralloc_catb(&keep,name,namelen + 1)) log_die_nomem("stralloc") ;
-    }
+    service.cname.name = keep.len ;
+    if (!stralloc_catb(&keep,name,namelen + 1)) log_die_nomem("stralloc") ;
 
     if (!parser(&service,&src,sv,service.cname.itype)) log_dieu(LOG_EXIT_SYS,"parse service file: ",sv) ;
 

@@ -289,11 +289,12 @@ struct section_s
                         .idx = { 0 } , \
                         .file = 0 }
 
-/** freed */
+/** freed and cleanup*/
 extern void sv_alltype_free(sv_alltype *sv) ;
 extern void keynocheck_free(keynocheck *nocheck) ;
 extern void section_free(section_t *sec) ;
 extern void freed_parser(void) ;
+extern void ssexec_enable_cleanup(void) ;
 /** enable phase */
 extern void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORCE) ;
 extern int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype) ;
@@ -305,7 +306,7 @@ extern int parse_service_opts_deps(stralloc *rebuild,ssexec_t *info,stralloc *pa
 extern int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner,uint8_t conf) ;
 extern int get_svtype(sv_alltype *sv_before, char const *contents) ;
 extern int get_svtype_from_file(char const *file) ;
-extern int get_svname(sv_alltype *sv_before,char const *contents) ;
+
 /** split */
 extern int section_get_range(section_t *sasection,stralloc *src) ;
 extern int key_get_range(genalloc *ga, section_t *sasection) ;

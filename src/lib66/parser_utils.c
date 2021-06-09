@@ -514,9 +514,6 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
             if (r == -1) return 0 ;
             service->cname.itype = r ;
             break ;
-        case KEY_MAIN_NAME:
-            /** name is already parsed */
-            break ;
         case KEY_MAIN_DESCRIPTION:
             service->cname.description = keep.len ;
             if (!stralloc_catb(&keep,chval,*chlen + 1)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
@@ -1329,31 +1326,4 @@ int get_svtype_from_file(char const *file)
     err:
     stralloc_free(&tmp) ;
     return svtype ;
-}
-
-int get_svname(sv_alltype *sv_before,char const *contents)
-{
-    log_flow() ;
-
-    int r ;
-    stralloc sa = STRALLOC_ZERO ;
-
-    if (!auto_stra(&sa,contents)) goto err ;
-    /** @name only exist on instantiated service if any */
-    r = sastr_find(&sa,get_key_by_enum(ENUM_KEY_SECTION_MAIN,KEY_MAIN_NAME)) ;
-    if (r == -1) { sv_before->cname.name == -1 ; goto freed ; }
-
-    if (!environ_get_val_of_key(&sa,get_key_by_enum(ENUM_KEY_SECTION_MAIN,KEY_MAIN_NAME))) goto err ;
-
-    if (!sastr_clean_element(&sa)) goto err ;
-    sv_before->cname.name = get_enum_by_key(sa.s) ;
-
-    if (sv_before->cname.name == -1) goto err ;
-
-    freed:
-    stralloc_free(&sa) ;
-    return 1 ;
-    err:
-        stralloc_free(&sa) ;
-        return 0 ;
 }
