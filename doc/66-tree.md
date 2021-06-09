@@ -14,7 +14,7 @@ This command handles a directory containing a set of *services*.
 ## Interface
 
 ```
-    66-tree [ -h ] [ -z ] [ -v verbosity ] [ -l ] [ -n|R ] [ -a|d ] [ -c ] [ -S after_tree ] [ -E|D ] [ -C clone ] tree
+    66-tree [ -h ] [ -z ] [ -v verbosity ] [ -n|R ] [ -a|d ] [ -c ] [ -S after_tree ] [ -E|D ] [ -C clone ] tree
 ```
 
 *66-tree* will create, destroy, or modify a tree which dynamically handles *services*. *66-tree* will handle the tree only for the user running the process (root/user). Any *tree* is completely independent from another. If you want to know what trees are currently available on the system use the [66-intree](66-intree.html) tool.
@@ -36,8 +36,6 @@ This command handles a directory containing a set of *services*.
     * *2* : also print warning messages.
     * *3* : also print tracing messages.
     * *4* : also print debugging messages.
-
-- **-l** *live* : changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66-scandir](66-scandir.html).
 
 - **-n** : creates a new empty *tree*. The new *tree* ***must*** not exist on the system.
 
@@ -67,7 +65,7 @@ The usefulness of having several trees with different services can be explained 
     Tree3 contains xorg, notification-daemon, gvfsd & dbus
 ```
 
-When you boot your machine and want to use it from console only, you don't care about xorg or cups, you only care about a working internet connection. So at the base you only have Tree1 enabled. At every boot this tree and all its services will now be automatically started. Then you need to print something but for this, you also need to start the nfs daemon because your document is on another server. Normally you would need to start cups then star nfs. Using the concept of trees you start Tree2 and everything is available. When you have finished printing your document,  instead of stopping the needed services one by one you simply stop Tree2, and all its containing services are stopped automatically. This doesn't stop here. Now you want to see a video, you need a running X server and probably several other services. Tree3 was designed just for that.
+When you boot your machine and want to use it from console only, you don't care about xorg or cups, you only care about a working internet connection. So at the base you only have Tree1 enabled. At every boot this tree and all its services will now be automatically started. Then you need to print something but for this, you also need to start the nfs daemon because your document is on another server. Normally you would need to start cups then start nfs. Using the concept of trees you start Tree2 and everything is available. When you have finished printing your document,  instead of stopping the needed services one by one you simply stop Tree2, and all its containing services are stopped automatically. This doesn't stop here. Now you want to see a video, you need a running X server and probably several other services. Tree3 was designed just for that.
 
 ## Directories and files
 

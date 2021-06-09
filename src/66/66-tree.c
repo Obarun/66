@@ -44,9 +44,8 @@
 #include <s6-rc/s6rc-servicedir.h>
 #include <s6-rc/s6rc-constants.h>
 
-#define USAGE "66-tree [ -h ] [ -z ] [ -v verbosity ] [ -l ] [ -n|R ] [ -a|d ] [ -c ] [ -S after_tree ] [ -E|D ] [ -C clone ] tree"
+#define USAGE "66-tree [ -h ] [ -z ] [ -v verbosity ] [ -n|R ] [ -a|d ] [ -c ] [ -S after_tree ] [ -E|D ] [ -C clone ] tree"
 
-static stralloc reslive = STRALLOC_ZERO ;
 static char const *cleantree = 0 ;
 
 static inline void info_help (void)
@@ -59,7 +58,6 @@ static inline void info_help (void)
 "   -h: print this help\n"
 "   -z: use color\n"
 "   -v: increase/decrease verbosity\n"
-"   -l: live directory\n"
 "   -n: create a new empty tree\n"
 "   -a: allow user(s) at tree\n"
 "   -d: deny user(s) at tree\n"
@@ -494,7 +492,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
     stralloc base = STRALLOC_ZERO ;
     stralloc dstree = STRALLOC_ZERO ;
     stralloc clone = STRALLOC_ZERO ;
-    stralloc live = STRALLOC_ZERO ;
 
     log_color = &log_color_disable ;
 
@@ -506,16 +503,13 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, "hv:l:na:d:cS:EDRC:z", &l) ;
+            int opt = getopt_args(argc,argv, "hv:na:d:cS:EDRC:z", &l) ;
             if (opt == -1) break ;
             if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
             switch (opt)
             {
                 case 'h' :  info_help(); return 0 ;
                 case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
-                case 'l' :  if (!stralloc_cats(&live,l.arg)) log_die_nomem("stralloc") ;
-                            if (!stralloc_0(&live)) log_die_nomem("stralloc") ;
-                            break ;
                 case 'n' :  create = 1 ; break ;
                 case 'a' :  if (!scan_uidlist_wdelim(l.arg,auids,',')) log_usage(USAGE) ;
                             auidn = auids[0] ;
@@ -548,10 +542,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
     owner = MYUID ;
 
     if (!set_ownersysdir(&base, owner)) log_dieusys(LOG_EXIT_SYS,"set owner directory") ;
-
-    r = set_livedir(&live) ;
-    if (!r) log_die_nomem("stralloc") ;
-    if(r < 0) log_dieu(LOG_EXIT_SYS,"livedir: ",live.s," must be an absolute path") ;
 
     log_trace("sanitize ",tree,"..." ) ;
     r = sanitize_tree(&dstree,base.s,tree,owner) ;
@@ -802,8 +792,6 @@ int main(int argc, char const *const *argv,char const *const *envp)
         log_info("Ordered successfully: ",tree," starts after tree: ",after_tree) ;
     }
 
-    stralloc_free(&reslive) ;
-    stralloc_free(&live) ;
     stralloc_free(&base) ;
     stralloc_free(&dstree) ;
     stralloc_free(&clone) ;
