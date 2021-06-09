@@ -73,7 +73,6 @@ enum enum_key_section_main_e
     KEY_MAIN_HIERCOPY ,
     KEY_MAIN_SIGNAL ,
     KEY_MAIN_FLAGS ,
-    KEY_MAIN_INTREE ,
     KEY_MAIN_ENDOFKEY
 } ;
 
