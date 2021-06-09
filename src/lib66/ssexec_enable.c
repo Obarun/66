@@ -43,7 +43,7 @@ static uint8_t FORCE = 0 ;
 /** rewrite configuration file */
 static uint8_t CONF = 0 ;
 
-static void cleanup(void)
+void ssexec_enable_cleanup(void)
 {
     log_flow() ;
 
@@ -103,7 +103,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 
         r = write_services(sv, workdir,FORCE,CONF) ;
         if (!r)
-            log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write service: ",name) ;
+            log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"write service: ",name) ;
 
         if (r > 1) continue ; //service already added
 
@@ -113,14 +113,14 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 
         log_trace("write resolve file of: ",name) ;
         if (!ss_resolve_setnwrite(sv,info,workdir))
-            log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"write revolve file for: ",name) ;
+            log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"write revolve file for: ",name) ;
 
         if (sastr_cmp(tostart,name) == -1)
         {
             if (sv->cname.itype == TYPE_CLASSIC) (*nclassic)++ ;
             else (*nlongrun)++ ;
             if (!sastr_add_string(tostart,name))
-                log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"stralloc") ;
+                log_dieusys_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"stralloc") ;
         }
 
         log_trace("Service written successfully: ", name) ;
@@ -239,7 +239,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
             ss_resolve_free(&res) ;
             ss_resolve_free(&dres) ;
             stralloc_free(&salist) ;
-            log_dieu_nclean(LOG_EXIT_SYS,&cleanup,err_msg,name) ;
+            log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,err_msg,name) ;
     }
     stralloc_free(&module) ;
     stralloc_free(&version) ;
@@ -312,7 +312,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
     if (nclassic)
     {
         if (!svc_switch_to(info,SS_SWBACK))
-            log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"switch ",info->treename.s," to backup") ;
+            log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"switch ",info->treename.s," to backup") ;
     }
 
     if(nlongrun)
@@ -320,32 +320,32 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
         ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
         r = ss_resolve_graph_src(&graph,workdir.s,0,1) ;
         if (!r)
-            log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"resolve source of graph for tree: ",info->treename.s) ;
+            log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"resolve source of graph for tree: ",info->treename.s) ;
 
         r = ss_resolve_graph_publish(&graph,0) ;
         if (r <= 0)
         {
-            cleanup() ;
+            ssexec_enable_cleanup() ;
             if (r < 0) log_die(LOG_EXIT_USER,"cyclic graph detected") ;
             log_dieusys(LOG_EXIT_SYS,"publish service graph") ;
         }
         if (!ss_resolve_write_master(info,&graph,workdir.s,0))
-            log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"update inner bundle") ;
+            log_dieusys_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"update inner bundle") ;
 
         ss_resolve_graph_free(&graph) ;
         if (!db_compile(workdir.s,info->tree.s,info->treename.s,envp))
-            log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"compile ",workdir.s,"/",info->treename.s) ;
+            log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"compile ",workdir.s,"/",info->treename.s) ;
 
         /** this is an important part, we call s6-rc-update here */
         if (!db_switch_to(info,envp,SS_SWBACK))
-            log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"switch ",info->treename.s," to backup") ;
+            log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"switch ",info->treename.s," to backup") ;
     }
 
     if (!tree_copy_tmp(workdir.s,info))
-        log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"copy: ",workdir.s," to: ", info->tree.s) ;
+        log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"copy: ",workdir.s," to: ", info->tree.s) ;
 
 
-    cleanup() ;
+    ssexec_enable_cleanup() ;
 
     /** parser allocation*/
     freed_parser() ;
