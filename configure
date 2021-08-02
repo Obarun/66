@@ -636,7 +636,7 @@ All rights reserved.*/
 #define ${package_macro_name}_VERSION "$version"
 #define ${package_macro_name}_LIVE "$livedir/"
 #define ${package_macro_name}_SYSTEM_DIR "$system_dir/"
-#define ${package_macro_name}_SKEL_DIR "$sysconfdir/66/"
+#define ${package_macro_name}_SKEL_DIR "$skel/"
 #define ${package_macro_name}_LOGGER_SYSDIR "$system_log/"
 #define ${package_macro_name}_LOGGER_RUNNER "$s6log_user"
 #define ${package_macro_name}_LOGGER_TIMESTAMP $s6log_timestamp
