@@ -65,8 +65,7 @@ endif
 INSTALL_HTML := $(wildcard doc/$(version)/html/*.html)
 INSTALL_MAN := $(wildcard doc/man/*/*)
 INSTALL_DATA := skel/halt skel/init skel/poweroff skel/rc.init skel/rc.init.container \
-	skel/rc.shutdown skel/reboot skel/shutdown skel/rc.shutdown.final
-INSTALL_CONF := skel/init.conf
+	skel/rc.shutdown skel/reboot skel/shutdown skel/rc.shutdown.final skel/init.conf
 
 all: $(ALL_LIBS) $(ALL_BINS) $(ALL_INCLUDES)
 
@@ -87,10 +86,10 @@ tgz: distclean
 
 strip: $(ALL_LIBS) $(ALL_BINS)
 ifneq ($(strip $(STATIC_LIBS)),)
-	exec $(STRIP) -x -R .note -R .comment -R .note.GNU-stack $(STATIC_LIBS)
+	exec $(STRIP) -x -R .note -R .comment $(STATIC_LIBS)
 endif
 ifneq ($(strip $(ALL_BINS)$(SHARED_LIBS)),)
-	exec $(STRIP) -R .note -R .comment -R .note.GNU-stack $(ALL_BINS) $(SHARED_LIBS)
+	exec $(STRIP) -R .note -R .comment $(ALL_BINS) $(SHARED_LIBS)
 endif
 
 install: install-dynlib install-libexec install-bin install-lib install-include install-data install-conf install-html install-man
@@ -100,7 +99,6 @@ install-bin: $(BIN_TARGETS:%=$(DESTDIR)$(bindir)/%)
 install-lib: $(STATIC_LIBS:lib%.a.xyzzy=$(DESTDIR)$(libdir)/lib%.a)
 install-include: $(ALL_INCLUDES:src/include/$(package)/%.h=$(DESTDIR)$(includedir)/$(package)/%.h)
 install-data: $(INSTALL_DATA:skel/%=$(DESTDIR)$(skel)/%)
-install-conf: $(INSTALL_CONF:skel/%=$(DESTDIR)$(sysconfdir)/66/%)
 install-html: $(INSTALL_HTML:doc/$(version)/html/%.html=$(DESTDIR)$(datarootdir)/doc/$(package)/$(version)/%.html)
 install-man: install-man1 install-man5 install-man8
 install-man1: $(INSTALL_MAN:doc/man/man1/%.1=$(DESTDIR)$(mandir)/man1/%.1)
@@ -218,14 +216,6 @@ $(DESTDIR)$(mandir)/man8/%.8: doc/man/man8/%.8
 		-e 's,%%service_userconf%%,$(service_userconf),g' \
 		-e 's,%%user_log%%,$(user_log),g' $< > $@
 
-$(DESTDIR)$(sysconfdir)/66/%: skel/%
-	exec $(INSTALL) -D -m 644 $< $@
-	grep -- ^$(@F) < package/modes | { read name mode owner && \
-	if [ x$$owner != x ] ; then chown -- $$owner $@ ; fi && \
-	chmod $$mode $@ ; } && \
-	exec sed -e "s/@LIVEDIR@/$(subst /,\/,$(livedir))/g" \
-			-e "s/@SKEL@/$(subst /,\/,$(skel))/g" $< > $@
-
 $(DESTDIR)$(skel)/%: skel/%
 	exec $(INSTALL) -D -m 644 $< $@
 	grep -- ^$(@F) < package/modes | { read name mode owner && \
@@ -269,6 +259,6 @@ lib%.a.xyzzy:
 lib%.so.xyzzy:
 	exec $(CC) -o $@ $(CFLAGS_ALL) $(CFLAGS_SHARED) $(LDFLAGS_ALL) $(LDFLAGS_SHARED) -Wl,-soname,$(patsubst lib%.so.xyzzy,lib%.so.$(version_M),$@) $^ $(EXTRA_LIBS) $(LDLIBS)
 
-.PHONY: it all clean distclean tgz strip install install-dynlib install-libexec install-bin install-lib install-include install-data install-conf install-html install-man
+.PHONY: it all clean distclean tgz strip install install-dynlib install-libexec install-bin install-lib install-include install-data install-html install-man
 
 .DELETE_ON_ERROR:

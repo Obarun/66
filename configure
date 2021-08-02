@@ -130,7 +130,7 @@ stripdir () {
 tryflag () {
   echo "Checking whether compiler accepts $2 ..."
   echo "typedef int x;" > "$tmpc"
-  if $CC_AUTO $CPPFLAGS_AUTO $CPPFLAGS $CPPFLAGS_POST $CFLAGS_AUTO $CFLAGS $CFLAGS_POST "$2" -c -o /dev/null "$tmpc" >/dev/null 2>&1 ; then
+  if $CC_AUTO $CPPFLAGS_AUTO $CPPFLAGS $CPPFLAGS_POST $CFLAGS_AUTO $CFLAGS $CFLAGS_POST "$2" -c -o "$tmpo" "$tmpc" >/dev/null 2>&1 ; then
     echo "  ... yes"
     eval "$1=\"\${$1} \$2\""
     eval "$1=\${$1# }"
@@ -144,7 +144,7 @@ tryflag () {
 tryldflag () {
   echo "Checking whether linker accepts $2 ..."
   echo "typedef int x;" > "$tmpc"
-  if $CC_AUTO $CFLAGS_AUTO $CFLAGS $CFLAGS_POST $LDFLAGS_AUTO $LDFLAGS $LDFLAGS_POST -nostdlib "$2" -o /dev/null "$tmpc" >/dev/null 2>&1 ; then
+  if $CC_AUTO $CFLAGS_AUTO $CFLAGS $CFLAGS_POST $LDFLAGS_AUTO $LDFLAGS $LDFLAGS_POST -nostdlib "$2" -o "$tmpe" "$tmpc" >/dev/null 2>&1 ; then
     echo "  ... yes"
     eval "$1=\"\${$1} \$2\""
     eval "$1=\${$1# }"
@@ -361,13 +361,15 @@ set -C
 while : ; do
   i=$((i+1))
   tmpc="./tmp-configure-$$-$PPID-$i.c"
+  tmpo="./tmp-configure-$$-$PPID-$i.o"
   tmpe="./tmp-configure-$$-$PPID-$i.tmp"
   2>|/dev/null > "$tmpc" && break
+  2>|/dev/null > "$tmpo" && break
   2>|/dev/null > "$tmpe" && break
   test "$i" -gt 50 && fail "$0: cannot create temporary files"
 done
 set +C
-trap 'rm -f "$tmpc" "$tmpe"' EXIT ABRT INT QUIT TERM HUP
+trap 'rm -f "$tmpc" "$tmpo" "$tmpe"' EXIT ABRT INT QUIT TERM HUP
 
 # Set slashpackage values
 if $slashpackage ; then
@@ -446,7 +448,7 @@ test -n "$CC_AUTO" || { echo "$0: cannot find a C compiler" ; exit 1 ; }
 echo "  ... $CC_AUTO"
 echo "Checking whether C compiler works... "
 echo "typedef int x;" > "$tmpc"
-if $CC_AUTO $CPPFLAGS_AUTO $CPPFLAGS $CPPFLAGS_POST $CFLAGS_AUTO $CFLAGS $CFLAGS_POST -c -o /dev/null "$tmpc" 2>"$tmpe" ; then
+if $CC_AUTO $CPPFLAGS_AUTO $CPPFLAGS $CPPFLAGS_POST $CFLAGS_AUTO $CFLAGS $CFLAGS_POST -c -o "$tmpo" "$tmpc" 2>"$tmpe" ; then
   echo "  ... yes"
 else
   echo "  ... no. Compiler output follows:"
@@ -487,7 +489,6 @@ tryflag CFLAGS -fomit-frame-pointer
 tryflag CFLAGS_AUTO -fno-exceptions
 tryflag CFLAGS_AUTO -fno-unwind-tables
 tryflag CFLAGS_AUTO -fno-asynchronous-unwind-tables
-tryflag CFLAGS_AUTO -Wa,--noexecstack
 tryflag CFLAGS -fno-stack-protector
 tryflag CPPFLAGS_AUTO -Werror=implicit-function-declaration
 tryflag CPPFLAGS_AUTO -Werror=implicit-int
@@ -497,7 +498,6 @@ tryflag CPPFLAGS_AUTO -Wno-unused-value
 tryflag CPPFLAGS_AUTO -Wno-parentheses
 tryflag CFLAGS_AUTO -ffunction-sections
 tryflag CFLAGS_AUTO -fdata-sections
-
 tryldflag LDFLAGS_AUTO -Wl,--sort-section=alignment
 tryldflag LDFLAGS_AUTO -Wl,--sort-common
 
@@ -636,7 +636,7 @@ All rights reserved.*/
 #define ${package_macro_name}_VERSION "$version"
 #define ${package_macro_name}_LIVE "$livedir/"
 #define ${package_macro_name}_SYSTEM_DIR "$system_dir/"
-#define ${package_macro_name}_SKEL_DIR "$sysconfdir/66/"
+#define ${package_macro_name}_SKEL_DIR "$skel/"
 #define ${package_macro_name}_LOGGER_SYSDIR "$system_log/"
 #define ${package_macro_name}_LOGGER_RUNNER "$s6log_user"
 #define ${package_macro_name}_LOGGER_TIMESTAMP $s6log_timestamp
