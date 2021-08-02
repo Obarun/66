@@ -45,9 +45,9 @@ Contact information
 * Web site:
   https://web.obarun.org/
 
-* IRC Channel:
-  Network: `chat.freenode.net`
-  Channel : `#obarun`
+* XMPP Channel:
+  obarun@muc.syntazia.org
+  
 
 Supports the project
 ---------------------
