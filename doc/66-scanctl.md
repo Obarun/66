@@ -71,4 +71,4 @@ This command is strictly equal to:
     s6-svscanctl -an /path_to_scandir
 ```
 
-- **-u** : start the *scandir* directory at *live* calling [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html).
+[s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html).
