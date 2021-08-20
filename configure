@@ -76,9 +76,6 @@ Optional features:
   --disable-allstatic              do not prefer linking against static libraries [enabled]
   --enable-static-libc             make entirely static binaries [disabled]
   --disable-all-pic                do not build static libraries as PIC [enabled]
-  --enable-slashpackage[=ROOT]     assume /package installation at ROOT [disabled]
-  --enable-absolute-paths          do not rely on PATH to access this package's binaries,
-                                   hardcode absolute BINDIR/foobar paths instead [disabled]
 
   If no --prefix option is given, by default sysdeps will be fetched from
   /usr/lib/skalibs/sysdeps.
@@ -93,67 +90,68 @@ exit 0
 # generally not a good idea to use echo.
 # See http://www.etalabs.net/sh_tricks.html
 echo () {
-  IFS=" "
-  printf %s\\n "$*"
+    IFS=" "
+    printf %s\\n "$*"
 }
 
 quote () {
-  tr '\n' ' ' <<EOF | grep '^[-[:alnum:]_=,./:]* $' >/dev/null 2>&1 && { echo "$1" ; return 0 ; }
+    tr '\n' ' ' <<EOF | grep '^[-[:alnum:]_=,./:]* $' >/dev/null 2>&1 && { echo "$1" ; return 0 ; }
 $1
 EOF
-  echo "$1" | sed -e "s/'/'\\\\''/g" -e "1s/^/'/" -e "\$s/\$/'/" -e "s#^'\([-[:alnum:]_,./:]*\)=\(.*\)\$#\1='\2#" -e "s|\*/|* /|g"
+    echo "$1" | sed -e "s/'/'\\\\''/g" -e "1s/^/'/" -e "\$s/\$/'/" -e "s#^'\([-[:alnum:]_,./:]*\)=\(.*\)\$#\1='\2#" -e "s|\*/|* /|g"
 }
 
 fail () {
-  echo "$*"
-  exit 1
+    echo "$*"
+    exit 1
 }
 
 fnmatch () {
-  eval "case \"\$2\" in $1) return 0 ;; *) return 1 ;; esac"
+    eval "case \"\$2\" in $1) return 0 ;; *) return 1 ;; esac"
 }
 
 cmdexists () {
-  type "$1" >/dev/null 2>&1
+    type "$1" >/dev/null 2>&1
 }
 
 trycc () {
-  test -z "$CC_AUTO" && cmdexists "$1" && CC_AUTO="$*"
+    test -z "$CC_AUTO" && cmdexists "$1" && CC_AUTO="$*"
 }
 
 stripdir () {
-  while eval "fnmatch '*/' \"\${$1}\"" ; do
-    eval "$1=\${$1%/}"
-  done
+    while eval "fnmatch '*/' \"\${$1}\"" ; do
+        eval "$1=\${$1%/}"
+    done
 }
 
 tryflag () {
-  echo "Checking whether compiler accepts $2 ..."
-  echo "typedef int x;" > "$tmpc"
-  if $CC_AUTO $CPPFLAGS_AUTO $CPPFLAGS $CPPFLAGS_POST $CFLAGS_AUTO $CFLAGS $CFLAGS_POST "$2" -c -o "$tmpo" "$tmpc" >/dev/null 2>&1 ; then
-    echo "  ... yes"
-    eval "$1=\"\${$1} \$2\""
-    eval "$1=\${$1# }"
-    return 0
-  else
-    echo "  ... no"
-    return 1
-  fi
+    echo "Checking whether compiler accepts $2 ..."
+    echo "typedef int x;" > "$tmpc"
+    if $CC_AUTO $CPPFLAGS_AUTO $CPPFLAGS $CPPFLAGS_POST $CFLAGS_AUTO $CFLAGS $CFLAGS_POST "$2" -c -o "$tmpo" "$tmpc" >/dev/null 2>&1 ; then
+        echo "  ... yes"
+        eval "$1=\"\${$1} \$2\""
+        eval "$1=\${$1# }"
+        return 0
+    else
+        echo "  ... no"
+        return 1
+    fi
 }
 
 tryldflag () {
-  echo "Checking whether linker accepts $2 ..."
-  echo "typedef int x;" > "$tmpc"
-  if $CC_AUTO $CFLAGS_AUTO $CFLAGS $CFLAGS_POST $LDFLAGS_AUTO $LDFLAGS $LDFLAGS_POST -nostdlib "$2" -o "$tmpe" "$tmpc" >/dev/null 2>&1 ; then
-    echo "  ... yes"
-    eval "$1=\"\${$1} \$2\""
-    eval "$1=\${$1# }"
-    return 0
-  else
-    echo "  ... no"
-    return 1
-  fi
+    echo "Checking whether linker accepts $2 ..."
+    echo "typedef int x;" > "$tmpc"
+    if $CC_AUTO $CFLAGS_AUTO $CFLAGS $CFLAGS_POST $LDFLAGS_AUTO $LDFLAGS $LDFLAGS_POST -nostdlib "$2" -o "$tmpe" "$tmpc" >/dev/null 2>&1 ; then
+        echo "  ... yes"
+        eval "$1=\"\${$1} \$2\""
+        eval "$1=\${$1# }"
+        return 0
+    else
+        echo "  ... no"
+        return 1
+    fi
 }
+
 
 
 # Actual script
@@ -205,11 +203,6 @@ manualsysdeps=false
 shared=false
 static=true
 allpic=true
-slashpackage=false
-abspath=false
-sproot=
-home=
-exthome=
 allstatic=true
 evenmorestatic=false
 addincpath=''
@@ -267,11 +260,6 @@ for arg ; do
     --disable-static-libc|--enable-static-libc=no) evenmorestatic=false ;;
     --enable-all-pic|--enable-all-pic=yes) allpic=true ;;
     --disable-all-pic|--enable-all-pic=no) allpic=false ;;
-    --enable-slashpackage=*) sproot=${arg#*=} ; slashpackage=true ; ;;
-    --enable-slashpackage) sproot= ; slashpackage=true ;;
-    --disable-slashpackage) sproot= ; slashpackage=false ;;
-    --enable-absolute-paths|--enable-absolute-paths=yes) abspath=true ;;
-    --disable-absolute-paths|--enable-absolute-paths=no) abspath=false ;;
     --enable-*|--disable-*|--with-*|--without-*|--*dir=*) ;;
     --host=*|--target=*) target=${arg#*=} ;;
     --build=*) build=${arg#*=} ;;
@@ -317,7 +305,7 @@ fi
 stripdir prefix
 for i in exec_prefix dynlibdir libexecdir bindir libdir includedir sysconfdir \
         datarootdir mandir shebangdir livedir skel system_dir system_log \
-        service_system module_system script_system service_adm module_adm service_admconf sproot sysdeps ; do
+        service_system module_system script_system service_adm module_adm service_admconf sysdeps ; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
@@ -368,54 +356,9 @@ while : ; do
   2>|/dev/null > "$tmpe" && break
   test "$i" -gt 50 && fail "$0: cannot create temporary files"
 done
+
 set +C
 trap 'rm -f "$tmpc" "$tmpo" "$tmpe"' EXIT ABRT INT QUIT TERM HUP
-
-# Set slashpackage values
-if $slashpackage ; then
-  home=${sproot}/package/${category}/${package}-${version}
-  exthome=${sproot}/package/${category}/${package}
-  if $manualsysdeps ; then
-    :
-  else
-    sysdeps=${sproot}/package/prog/skalibs/sysdeps
-  fi
-  extbinprefix=${exthome}/command
-  dynlibdir=${home}/library.so
-  bindir=${home}/command
-  libdir=${home}/library
-  libexecdir=$bindir
-  includedir=${home}/include
-  sysconfdir=${home}/etc
-  datarootdir=${home}/data
-  mandir=${dataroodir}/doc/man
-  skel=${skel}
-  system_dir=${home}/${system_dir}
-  system_log=${datarootdir}/${system_log}
-  service_system=${home}/${service_system}
-  module_system=${home}/${module_system}
-  script_system=${home}/${script_system}
-  service_adm=${home}/${sysconfdir}/${service_adm}
-  module_adm=${home}/${sysconfdir}/${module_adm}
-  service_admconf=${home}/${sysconfdir}/${service_admconf}
-  if $shebangisdefault ; then
-    shebangdir=${extbinprefix}
-  fi
-  while read dep condvar ; do
-    if test -n "$condvar" ; then
-      eval "cond=$condvar"
-    else
-      cond=true
-    fi
-    if $cond ; then
-      addincpath="$addincpath -I${sproot}${dep}/include"
-      vpaths="$vpaths ${sproot}${dep}/library"
-      addlibspath="$addlibspath -L${sproot}${dep}/library"
-      vpathd="$vpathd ${sproot}${dep}/library.so"
-      addlibdpath="$addlibdpath -L${sproot}${dep}/library.so"
-    fi
-  done < package/deps-build
-fi
 
 # Find a C compiler to use
 if test -n "$target" && test x${build} != x${target} ; then
@@ -498,6 +441,8 @@ tryflag CPPFLAGS_AUTO -Wno-unused-value
 tryflag CPPFLAGS_AUTO -Wno-parentheses
 tryflag CFLAGS_AUTO -ffunction-sections
 tryflag CFLAGS_AUTO -fdata-sections
+
+tryldflag LDFLAGS_AUTO -Wl,--as-needed
 tryldflag LDFLAGS_AUTO -Wl,--sort-section=alignment
 tryldflag LDFLAGS_AUTO -Wl,--sort-common
 
@@ -569,11 +514,8 @@ script_user := $script_user
 service_userconf := $service_userconf
 user_log := $user_log
 sysdeps := $sysdeps
-slashpackage := $slashpackage
-sproot := $sproot
 version := $version
-home := $home
-exthome := $exthome
+
 SPAWN_LIB := ${spawn_lib}
 SOCKET_LIB := ${socket_lib}
 SYSCLOCK_LIB := ${sysclock_lib}
@@ -658,19 +600,10 @@ All rights reserved.*/
 #define ${package_macro_name}_SCRIPT_USERDIR "$script_user/"
 
 EOF
-if $slashpackage ; then
-  echo "#define ${package_macro_name}_BINPREFIX \"$bindir/\""
-  echo "#define ${package_macro_name}_EXTBINPREFIX \"$extbinprefix/\""
-  echo "#define ${package_macro_name}_EXTLIBEXECPREFIX \"$extbinprefix/\""
-elif $abspath ; then
-  echo "#define ${package_macro_name}_BINPREFIX \"$bindir/\""
-  echo "#define ${package_macro_name}_EXTBINPREFIX \"$bindir/\""
-  echo "#define ${package_macro_name}_EXTLIBEXECPREFIX \"$libexecdir/\""
-else
-  echo "#define ${package_macro_name}_BINPREFIX \"\""
-  echo "#define ${package_macro_name}_EXTBINPREFIX \"\""
-  echo "#define ${package_macro_name}_EXTLIBEXECPREFIX \"$libexecdir/\""
-fi
+
+echo "#define ${package_macro_name}_BINPREFIX \"\""
+echo "#define ${package_macro_name}_EXTBINPREFIX \"\""
+echo "#define ${package_macro_name}_EXTLIBEXECPREFIX \"$libexecdir/\""
 echo "#define ${package_macro_name}_LIBEXECPREFIX \"$libexecdir/\""
 echo "#define ${package_macro_name}_EXECLINE_SHEBANGPREFIX \"$shebangdir/\""
 echo
