@@ -44,6 +44,11 @@
 
 #ifndef _PATH_WTMP
 #define _PATH_WTMP "/dev/null/wtmp"
+# ifdef WTMPX_FILE
+#  define _PATH_WTMP WTMPX_FILE
+# else
+#  define _PATH_WTMP "/var/log/wtmp"
+# endif
 #endif
 
 #define USAGE "66-hpr [ -H ] [ -l live ] [ -b banner ] [ -f ] [ -h | -p | -r ] [ -n ] [ -d | -w ] [ -W ]"
