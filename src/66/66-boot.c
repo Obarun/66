@@ -663,7 +663,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
     if (setenv("PATH", path, 1) == -1) sulogin("set initial PATH: ",path) ;
     /** create scandir */
     {
-        ncatch = !catch_log ? 1 : 0 ;
+        size_t ncatch = !catch_log ? 1 : 0 ;
         size_t nargc = 6 + ncatch ;
         unsigned int m = 0 ;
 
