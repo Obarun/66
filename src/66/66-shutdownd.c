@@ -157,7 +157,7 @@ static void parse_conf(char const *confile,char *rcshut,char const *key)
     stralloc_free(&src) ;
 }
 
-static inline void run_rcshut (char const *const *envp)
+static inline void run_rcshut (void)
 {
     log_flow() ;
 
@@ -168,7 +168,7 @@ static inline void run_rcshut (char const *const *envp)
     auto_conf(confile,conflen) ;
     parse_conf(confile,rcshut,"RCSHUTDOWN") ;
     char const *rcshut_argv[3] = { rcshut, confile, 0 } ;
-    pid = child_spawn0(rcshut_argv[0], rcshut_argv, envp) ;
+    pid = child_spawn0(rcshut_argv[0], rcshut_argv,(char const *const *)environ) ;
     if (pid)
     {
         int wstat ;
@@ -270,8 +270,7 @@ static inline void prepare_stage4 (char what)
             || buffer_puts(&b, S6_EXTBINPREFIX "66-scanctl ") < 0
             || buffer_puts(&b, "-l ") < 0
             || buffer_puts(&b, live) < 0
-            || buffer_put(&b, what == 'h' ? "s" : &what, 1) < 0
-            || buffer_putsflush(&b, "b\n}\n") < 0)
+            || buffer_putsflush(&b, " b\n}\n") < 0)
             log_dieusys(LOG_EXIT_SYS, "write to ", STAGE4_FILE ".new") ;
     }
     else
@@ -345,7 +344,7 @@ static inline void unsupervise_tree (void)
     if (errno) log_dieusys(LOG_EXIT_SYS, "readdir: ",tmp) ;
 }
 
-int main (int argc, char const *const *argv, char const *const *envp)
+int main (int argc, char const *const *argv)
 {
     unsigned int grace_time = 3000 ;
     tain_t deadline ;
@@ -382,9 +381,36 @@ int main (int argc, char const *const *argv, char const *const *envp)
     /* if we're in stage 4, exec it immediately */
     {
         char const *stage4_argv[2] = { "./" STAGE4_FILE, 0 } ;
-        restore_console() ;
-        execve(stage4_argv[0], (char **)stage4_argv, (char *const *)envp) ;
-        if (errno != ENOENT) log_warnusys("exec ", stage4_argv[0]) ;
+
+        if (!inns && !nologger) {
+
+            int fd[2] ;
+            int e ;
+            fd[0] = fcntl(1, F_DUPFD_CLOEXEC, 0) ;
+
+            if (fd[0] < 0)
+                log_dieusys(LOG_EXIT_SYS, "dup stdout") ;
+
+            fd[1] = fcntl(2, F_DUPFD_CLOEXEC, 0) ;
+
+            if (fd[1] < 0)
+                log_dieusys(LOG_EXIT_SYS, "dup stderr") ;
+
+            restore_console() ;
+
+            execv(stage4_argv[0], (char **)stage4_argv) ;
+
+            e = errno ;
+            if (fd_move2(1, fd[0], 2, fd[1]) < 0)
+                log_warnusys("restore fds") ;
+            errno = e ;
+
+        } else {
+
+            execv(stage4_argv[0], (char **)stage4_argv) ;
+            if (errno != ENOENT)
+                log_warnusys("exec ", stage4_argv[0]) ;
+        }
     }
 
     fdr = open_read(SHUTDOWND_FIFO) ;
@@ -406,7 +432,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         if (r == -1) log_dieusys(LOG_EXIT_SYS, "iopause") ;
         if (!r)
         {
-            run_rcshut(envp) ;
+            run_rcshut() ;
             tain_now_g() ;
             if (what != 'S') break ;
             tain_add_g(&deadline, &tain_infinite_relative) ;
@@ -419,7 +445,8 @@ int main (int argc, char const *const *argv, char const *const *envp)
     fd_close(fdw) ;
     fd_close(fdr) ;
     fd_close(1) ;
-    restore_console() ;
+    if (!inns && !nologger)
+        restore_console() ;
 
     /* The end is coming! */
     prepare_stage4(what) ;

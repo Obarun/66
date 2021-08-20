@@ -11,6 +11,24 @@ author: Eric Vidal <eric@obarun.org>
 
 ---
 
+# In 0.6.1.3
+
+- Adapt to skalibs 2.10.0.3.
+
+- Adapt to execline 2.8.0.1.
+
+- Adapt to s6 2.10.0.3.
+
+- Adapt to s6-rc 0.5.2.2.
+
+- Bugs Fix:
+    - 66-boot: fix call of 66-scandir -c option.
+    - configure script: fix installation of skel/init.conf file.
+
+- Configure script: remove the slashpackage convention.
+
+---
+
 # In 0.6.1.2
 
 - Bugs fix:
