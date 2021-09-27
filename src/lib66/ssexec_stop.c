@@ -133,7 +133,7 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
     cl = rc = sigopt = 0 ;
 
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {

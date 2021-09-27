@@ -90,11 +90,11 @@ static inline void add_one_day (struct tm *tm)
     tm->tm_year++ ;
 }
 
-static inline void parse_hourmin (tain_t *when, char const *s)
+static inline void parse_hourmin (tain *when, char const *s)
 {
     log_flow() ;
 
-    tai_t taithen ;
+    tai taithen ;
     struct tm tmthen ;
     unsigned int hour, minute ;
     size_t len = uint_scan(s, &hour) ;
@@ -110,18 +110,18 @@ static inline void parse_hourmin (tain_t *when, char const *s)
     tmthen.tm_min = minute ;
     tmthen.tm_sec = 0 ;
     if (!tai_from_localtm(&taithen, &tmthen))
-        log_dieusys(LOG_EXIT_SYS, "assemble broken-down time into tain_t") ;
+        log_dieusys(LOG_EXIT_SYS, "assemble broken-down time into tain") ;
     if (tai_less(&taithen, tain_secp(&STAMP)))
     {
         add_one_day(&tmthen) ;
         if (!tai_from_localtm(&taithen, &tmthen))
-            log_dieusys(LOG_EXIT_SYS, "assemble broken-down time into tain_t") ;
+            log_dieusys(LOG_EXIT_SYS, "assemble broken-down time into tain") ;
     }
     when->sec = taithen ;
     when->nano = 0 ;
 }
 
-static void parse_mins (tain_t *when, char const *s)
+static void parse_mins (tain *when, char const *s)
 {
     log_flow() ;
 
@@ -130,7 +130,7 @@ static void parse_mins (tain_t *when, char const *s)
     tain_addsec_g(when, mins * 60) ;
 }
 
-static inline void parse_time (tain_t *when, char const *s)
+static inline void parse_time (tain *when, char const *s)
 {
     log_flow() ;
 
@@ -253,11 +253,12 @@ int main (int argc, char const *const *argv)
     int what = 0 ;
     int doactl = 0 ;
     int docancel = 0 ;
-    tain_t when ;
+    tain when ;
 
     PROG = "66-shutdown" ;
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
+
         for (;;)
         {
             int opt = subgetopt_r(argc, argv, "v:Hl:hprkafFct:", &l) ;

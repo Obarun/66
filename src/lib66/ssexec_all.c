@@ -237,7 +237,7 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp,ssexec_
     stralloc contents = STRALLOC_ZERO ;
 
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {

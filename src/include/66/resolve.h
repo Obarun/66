@@ -22,7 +22,7 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
 #include <skalibs/cdb.h>
-#include <skalibs/cdb_make.h>
+#include <skalibs/cdbmake.h>
 #include <skalibs/gccattributes.h>
 
 #include <66/ssexec.h>
@@ -195,8 +195,8 @@ extern int ss_resolve_graph_publish(ss_resolve_graph_t *graph,unsigned int rever
 /** cdb */
 extern int ss_resolve_read_cdb(ss_resolve_t *dres, char const *name) ;
 extern int ss_resolve_write_cdb(ss_resolve_t *res, char const *dst, char const *name) ;
-extern int ss_resolve_add_cdb(struct cdb_make *c,char const *key,char const *data) ;
-extern int ss_resolve_add_cdb_uint(struct cdb_make *c, char const *key,uint32_t data) ;
-extern int ss_resolve_find_cdb(stralloc *result, cdb_t *c,char const *key) ;
+extern int ss_resolve_add_cdb(cdbmaker *c,char const *key,char const *data) ;
+extern int ss_resolve_add_cdb_uint(cdbmaker *c, char const *key,uint32_t data) ;
+extern int ss_resolve_find_cdb(stralloc *result, cdb const *c,char const *key) ;
 
 #endif

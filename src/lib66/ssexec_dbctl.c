@@ -26,7 +26,7 @@
 #include <skalibs/genalloc.h>
 #include <skalibs/djbunix.h>
 
-#include <s6/s6-supervise.h>
+#include <s6/supervise.h>
 #include <s6-rc/config.h>
 
 #include <66/constants.h>
@@ -175,7 +175,7 @@ static pid_t send(genalloc *gasv, char const *livetree, char const *signal,char 
 {
     log_flow() ;
 
-    tain_t deadline ;
+    tain deadline ;
     tain_from_millisecs(&deadline, DEADLINE) ;
 
     tain_now_g() ;
@@ -232,7 +232,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 
     //PROG = "66-dbctl" ;
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {

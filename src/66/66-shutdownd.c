@@ -45,7 +45,7 @@
 
 #include <execline/config.h>
 
-#include <s6/s6-supervise.h>
+#include <s6/supervise.h>
 #include <s6/config.h>
 
 #include <66/config.h>
@@ -188,7 +188,7 @@ static inline void run_rcshut (void)
     else log_warnusys("spawn ", rcshut) ;
 }
 
-static inline void prepare_shutdown (buffer *b, tain_t *deadline, unsigned int *grace_time)
+static inline void prepare_shutdown (buffer *b, tain *deadline, unsigned int *grace_time)
 {
     log_flow() ;
 
@@ -203,7 +203,7 @@ static inline void prepare_shutdown (buffer *b, tain_t *deadline, unsigned int *
     if (u && u <= 300000) *grace_time = u ;
 }
 
-static inline void handle_fifo (buffer *b, char *what, tain_t *deadline, unsigned int *grace_time)
+static inline void handle_fifo (buffer *b, char *what, tain *deadline, unsigned int *grace_time)
 {
     log_flow() ;
 
@@ -347,7 +347,7 @@ static inline void unsupervise_tree (void)
 int main (int argc, char const *const *argv)
 {
     unsigned int grace_time = 3000 ;
-    tain_t deadline ;
+    tain deadline ;
     int fdr, fdw ;
     buffer b ;
     char what = 'S' ;
@@ -355,7 +355,8 @@ int main (int argc, char const *const *argv)
 
     PROG = "66-shutdownd" ;
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
+
         for (;;)
         {
             int opt = subgetopt_r(argc, argv, "hl:s:g:CB", &l) ;
@@ -419,7 +420,7 @@ int main (int argc, char const *const *argv)
     fdw = open_write(SHUTDOWND_FIFO) ;
     if (fdw == -1 || coe(fdw) == -1)
         log_dieusys(LOG_EXIT_SYS, "open ", SHUTDOWND_FIFO, " for writing") ;
-    if (sig_ignore(SIGPIPE) == -1)
+    if (!sig_ignore(SIGPIPE))
         log_dieusys(LOG_EXIT_SYS, "sig_ignore SIGPIPE") ;
     buffer_init(&b, &buffer_read, fdr, buf, 64) ;
     tain_now_set_stopwatch_g() ;
@@ -452,7 +453,7 @@ int main (int argc, char const *const *argv)
     prepare_stage4(what) ;
     unsupervise_tree() ;
 
-    if (sig_ignore(SIGTERM) == -1) log_warnusys("sig_ignore SIGTERM") ;
+    if (!sig_ignore(SIGTERM)) log_warnusys("sig_ignore SIGTERM") ;
 
     if (!inns)
     {

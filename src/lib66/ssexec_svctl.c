@@ -34,7 +34,7 @@
 #include <skalibs/tai.h>
 #include <skalibs/sig.h>//sig_ignore
 
-#include <s6/s6-supervise.h>//s6_svstatus_t
+#include <s6/supervise.h>//s6_svstatus_t
 #include <s6/ftrigr.h>
 
 
@@ -339,11 +339,11 @@ static int handle_signal_pipe(genalloc *gakeep)
     return ok ;
 
 }
-static int compute_timeout(tain_t *start,tain_t *tsv)
+static int compute_timeout(tain *start,tain *tsv)
 {
     log_flow() ;
 
-    tain_t now,tpass ;
+    tain now,tpass ;
     tain_now_g() ;
     tain_copynow(&now) ;
     tain_sub(&tpass,&now,start) ;
@@ -359,12 +359,12 @@ static void svc_listen_less(int state_val, int *state,unsigned int *did,unsigned
     did[pos] = 1 ;
     (*loop)--;
 }
-static void svc_listen(unsigned int nsv,tain_t *deadline)
+static void svc_listen(unsigned int nsv,tain *deadline)
 {
     log_flow() ;
 
     int r ;
-    tain_t start ;
+    tain start ;
     stralloc sa = STRALLOC_ZERO ;
     iopause_fd x = { .fd = ftrigr_fd(&fifo), .events = IOPAUSE_READ } ;
     ss_resolve_sig_t_ref svc ;
@@ -449,7 +449,7 @@ static void svc_async(unsigned int i,unsigned int nsv)
     return ;
 }
 
-int doit (int spfd, genalloc *gakeep, tain_t *deadline)
+int doit (int spfd, genalloc *gakeep, tain *deadline)
 {
     log_flow() ;
 
@@ -492,7 +492,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
     int e, isup, r, ret = 1 ;
     unsigned int death, tsv, reverse, tsv_g ;
     int SIGNAL = -1 ;
-    tain_t ttmain ;
+    tain ttmain ;
 
     genalloc gakeep = GENALLOC_ZERO ; //type ss_resolve_sig
     stralloc sares = STRALLOC_ZERO ;
@@ -509,7 +509,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 
     //PROG = "66-svctl" ;
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {
@@ -631,7 +631,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
         }
         else sv_signal.ndeath = death ;
 
-        tain_t tcheck ;
+        tain tcheck ;
         tain_from_millisecs(&tcheck,tsv) ;
         int check = tain_to_millisecs(&tcheck) ;
         if (check > 0)
@@ -681,10 +681,10 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
 
     int spfd = selfpipe_init() ;
     if (spfd < 0) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
-    if (selfpipe_trap(SIGCHLD) < 0) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
-    if (selfpipe_trap(SIGINT) < 0) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
-    if (selfpipe_trap(SIGTERM) < 0) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
-    if (sig_ignore(SIGPIPE) < 0) log_dieusys(LOG_EXIT_SYS,"ignore SIGPIPE") ;
+    if (!selfpipe_trap(SIGCHLD)) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
+    if (!selfpipe_trap(SIGINT)) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
+    if (!selfpipe_trap(SIGTERM)) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
+    if (!sig_ignore(SIGPIPE)) log_dieusys(LOG_EXIT_SYS,"ignore SIGPIPE") ;
 
     if (!svc_init_pipe(&fifo,&gakeep,&ttmain)) log_dieu(LOG_EXIT_SYS,"init pipe") ;
 

@@ -35,7 +35,7 @@
 #include <66/resolve.h>
 #include <66/parser.h>
 
-#include <s6/s6-supervise.h>
+#include <s6/supervise.h>
 
 sv_alltype const sv_alltype_zero = SV_ALLTYPE_ZERO ;
 sv_name_t const sv_name_zero = SV_NAME_ZERO ;

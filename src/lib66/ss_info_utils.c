@@ -28,7 +28,7 @@
 #include <skalibs/buffer.h>
 #include <skalibs/lolstdio.h>
 
-#include <s6/s6-supervise.h>
+#include <s6/supervise.h>
 
 #include <66/resolve.h>
 #include <66/state.h>

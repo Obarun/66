@@ -43,7 +43,7 @@
 #include <66/environ.h>
 #include <66/state.h>
 
-#include <s6/s6-supervise.h>
+#include <s6/supervise.h>
 
 static unsigned int REVERSE = 0 ;
 static unsigned int NOFIELD = 1 ;
@@ -864,7 +864,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     PROG = "66-inservice" ;
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {

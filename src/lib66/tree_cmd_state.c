@@ -45,7 +45,7 @@ int tree_state(int argc, char const *const *argv)
     verbosity = 1 ;
     add = del = sch = err = 0 ;
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {

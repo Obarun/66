@@ -40,7 +40,7 @@
 #include <66/state.h>
 #include <66/resolve.h>
 
-#include <s6/s6-supervise.h>
+#include <s6/supervise.h>
 #include <s6-rc/s6rc-servicedir.h>
 #include <s6-rc/s6rc-constants.h>
 
@@ -556,7 +556,7 @@ void tree_modify_resolve(ss_resolve_t *res,ss_resolve_enum_t field,char const *r
             log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"stralloc") ;
 
         sa.len-- ;
-	}
+    }
 
     if (!ss_resolve_modify_field(&modif,field,sa.s))
         log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"modify field: ",ss_resolve_field_table[field].field) ;
@@ -626,7 +626,7 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
     PROG = "66-tree" ;
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {

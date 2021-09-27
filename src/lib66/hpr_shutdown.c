@@ -25,7 +25,7 @@
 
 #include <66/hpr.h>
 
-int hpr_shutdown (char const *live, unsigned int what, tain_t const *when, unsigned int grace)
+int hpr_shutdown (char const *live, unsigned int what, tain const *when, unsigned int grace)
 {
     log_flow() ;
 

@@ -51,7 +51,7 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
     type = -1 ;
 
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {

@@ -131,39 +131,6 @@ void tree_allowed(stralloc *list,char const *base, char const *treename)
     stralloc_free(&sa) ;
 }
 
-static int tree_contents_format(char const *tree)
-{
-    log_flow() ;
-
-    /** even on empty tree Master bundle is always present.
-     * Check its format. Cdb format allow to retrieve all information
-     * of the service whatever the 66 version whereas ss_resolve_src_path
-     * may cause troubles with module if multiple same module was enabled.
-     * So, check the validity of the cdb format and use it if we can.*/
-    int r = 1, e = errno, fd ;
-    size_t treelen = strlen(tree) ;
-    cdb_t c = CDB_ZERO ;
-    char d[treelen + SS_SVDIRS_LEN + SS_RESOLVE_LEN + SS_MASTER_LEN + 1] ;
-    auto_strings(d,tree,SS_SVDIRS,SS_RESOLVE,SS_MASTER) ;
-
-    fd = open_readb(d) ;
-    if (fd < 0)
-        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"open: ",d) ;
-
-    if (!cdb_init_map(&c, fd, 1))
-        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"cdb_init: ", d) ;
-
-    errno = 0 ;
-    r = cdb_find(&c, "name", 4) ;
-    if (r == -1 && errno == EPROTO) r == 0 ;
-    else r = 1 ;
-
-    fd_close(fd) ;
-    cdb_free(&c) ;
-    errno = e ;
-    return r ;
-}
-
 void tree_contents(stralloc *list,char const *tree,ssexec_t *info)
 {
     log_flow() ;
@@ -174,55 +141,29 @@ void tree_contents(stralloc *list,char const *tree,ssexec_t *info)
     stralloc sa = STRALLOC_ZERO ;
     char solve[treelen + SS_SVDIRS_LEN + SS_RESOLVE_LEN + SS_DB_LEN + SS_SRC_LEN + 1] ;
 
-    if (format == 1)
+    ss_resolve_t res = RESOLVE_ZERO ;
+    auto_strings(solve,tree,SS_SVDIRS,SS_RESOLVE) ;
+    if (!sastr_dir_get(&sa,solve,SS_MASTER + 1,S_IFREG))
+        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get the service resolve files of: ",tree) ;
+
+    auto_strings(solve,tree,SS_SVDIRS) ;
+
+    for (pos = 0 ;pos < sa.len; pos += strlen(sa.s + pos) + 1)
     {
-        ss_resolve_t res = RESOLVE_ZERO ;
-        auto_strings(solve,tree,SS_SVDIRS,SS_RESOLVE) ;
-        if (!sastr_dir_get(&sa,solve,SS_MASTER + 1,S_IFREG))
-            log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get the service resolve files of: ",tree) ;
+        char *name = sa.s + pos ;
+        int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
+        if (logname > 0) continue ;
 
-        auto_strings(solve,tree,SS_SVDIRS) ;
+        if (!ss_resolve_read(&res,solve,name))
+            log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of: ",solve,"/",name) ;
 
-        for (pos = 0 ;pos < sa.len; pos += strlen(sa.s + pos) + 1)
-        {
-            char *name = sa.s + pos ;
-            int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-            if (logname > 0) continue ;
+        if (res.disen)
+            if (!stralloc_catb(list,res.sa.s + res.src,strlen(res.sa.s + res.src) + 1))
+                log_diesys_nclean(LOG_EXIT_SYS,&cleanup,"stralloc") ;
 
-            if (!ss_resolve_read(&res,solve,name))
-                log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of: ",solve,"/",name) ;
-
-            if (res.disen)
-                if (!stralloc_catb(list,res.sa.s + res.src,strlen(res.sa.s + res.src) + 1))
-                    log_diesys_nclean(LOG_EXIT_SYS,&cleanup,"stralloc") ;
-
-            log_trace(DRYRUN ? drun : "","tree: ",info->treename.s," contain service: ",res.sa.s + res.src) ;
-        }
+        log_trace(DRYRUN ? drun : "","tree: ",info->treename.s," contain service: ",res.sa.s + res.src) ;
     }
-    else
-    {
-        newlen = treelen + SS_SVDIRS_LEN ;
-        auto_strings(solve,tree,SS_SVDIRS,SS_SVC) ;
 
-        if (!sastr_dir_get(&sa,solve,"",S_IFDIR))
-            log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get the source svc service files of: ",tree) ;
-
-        auto_string_from(solve,newlen,SS_DB,SS_SRC) ;
-
-        if (!sastr_dir_get(&sa,solve,SS_MASTER + 1,S_IFDIR))
-            log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get source of atomic service files of: ",tree) ;
-
-        for (pos = 0 ;pos < sa.len; pos += strlen(sa.s + pos) + 1)
-        {
-            char *name = sa.s + pos ;
-            int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-            if (logname > 0) continue ;
-            log_trace(DRYRUN ? drun : "","tree: ",info->treename.s," contain service: ",name) ;
-            if (ss_resolve_src_path(list,name,info->owner,0) < 1)
-                log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"resolve source path of: ",name) ;
-
-        }
-    }
     stralloc_free(&sa) ;
 }
 
@@ -271,7 +212,8 @@ int main(int argc, char const *const *argv,char const *const *envp)
 
     PROG = "66-update" ;
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
+
         for (;;)
         {
             int opt = subgetopt_r(argc,argv, "hzv:l:d", &l) ;
