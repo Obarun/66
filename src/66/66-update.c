@@ -135,9 +135,7 @@ void tree_contents(stralloc *list,char const *tree,ssexec_t *info)
 {
     log_flow() ;
 
-    int format = tree_contents_format(tree) ;
-
-    size_t treelen = strlen(tree), pos, newlen ;
+    size_t treelen = strlen(tree), pos ;
     stralloc sa = STRALLOC_ZERO ;
     char solve[treelen + SS_SVDIRS_LEN + SS_RESOLVE_LEN + SS_DB_LEN + SS_SRC_LEN + 1] ;
 
