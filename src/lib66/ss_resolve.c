@@ -1658,15 +1658,17 @@ int ss_resolve_find_cdb(stralloc *result, cdb const *c,char const *key)
     if (!r)
         log_warnusys_return(LOG_EXIT_ZERO,"unknown cdb key: ",key) ;
 
-    if (!cdata.len)
-        log_warnusys_return(LOG_EXIT_ZERO,"empty value of cdb key: ",key) ;
+    char pack[cdata.len + 1] ;
+    memcpy(pack,cdata.s, cdata.len) ;
+    pack[cdata.len] = 0 ;
 
-    if (!auto_stra(result,cdata.s))
+    uint32_unpack_big(pack, &x) ;
+
+    if (!auto_stra(result,pack))
         log_warnusys_return(LOG_EXIT_LESSONE,"stralloc") ;
 
-    uint32_unpack_big(cdata.s, &x) ;
-
     return x ;
+
 }
 
 int ss_resolve_read_cdb(ss_resolve_t *dres, char const *name)
