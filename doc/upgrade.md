@@ -11,6 +11,22 @@ author: Eric Vidal <eric@obarun.org>
 
 ---
 
+# In 0.6.2.0
+
+- **WARNING**: `66-update` is no longer compatible with 66 version under 0.5.0.0.
+
+- Adapt to skalibs 2.11.0.0
+
+- Adapt to execline 2.8.1.0
+
+- Adapt to s6 2.11.0.0
+
+- Adapt to s6-rc 0.5.2.3
+
+- Adapt to oblibs 0.1.4.0
+
+---
+
 # In 0.6.1.3
 
 - Adapt to skalibs 2.10.0.3.
