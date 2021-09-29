@@ -201,7 +201,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
     PROG = "execl-envfile" ;
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {

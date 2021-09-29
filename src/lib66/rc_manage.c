@@ -43,7 +43,7 @@ int rc_manage(ssexec_t *info,genalloc *ga)
     stralloc sares = STRALLOC_ZERO ;
     size_t newlen ;
 
-    tain_t deadline ;
+    tain deadline ;
     if (info->timeout) tain_from_millisecs(&deadline, info->timeout) ;
     else deadline = tain_infinite_relative ;
     tain_now_g() ;

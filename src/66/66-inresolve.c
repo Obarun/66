@@ -130,7 +130,7 @@ int main(int argc, char const *const *argv)
 
     PROG = "66-inresolve" ;
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {

@@ -196,7 +196,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
     r = nclassic = nlongrun = stop = logname = force = 0 ;
 
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {

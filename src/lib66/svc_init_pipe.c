@@ -24,13 +24,13 @@
 
 #include <s6/ftrigr.h>
 #include <s6/ftrigw.h>
-#include <s6/s6-supervise.h>
+#include <s6/supervise.h>
 
 #include <66/utils.h>
 #include <66/resolve.h>
 
 
-int svc_init_pipe(ftrigr_t *fifo,genalloc *gasv,tain_t *deadline)
+int svc_init_pipe(ftrigr_t *fifo,genalloc *gasv,tain *deadline)
 {
     log_flow() ;
 

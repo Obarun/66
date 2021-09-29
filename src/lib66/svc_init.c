@@ -28,7 +28,7 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/posixplz.h>//touch
 
-#include <s6/s6-supervise.h>
+#include <s6/supervise.h>
 #include <s6/ftrigr.h>
 #include <s6/ftrigw.h>
 
@@ -52,7 +52,7 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
     genalloc ids = GENALLOC_ZERO ; // uint16_t
     ss_state_t sta = STATE_ZERO ;
 
-    tain_t deadline ;
+    tain deadline ;
     tain_now_set_stopwatch_g() ;
     tain_addsec(&deadline,&STAMP,2) ;
 

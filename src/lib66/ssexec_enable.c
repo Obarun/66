@@ -260,7 +260,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
     r = nbsv = nclassic = nlongrun = start = 0 ;
 
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {

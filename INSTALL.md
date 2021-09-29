@@ -5,11 +5,11 @@ Build Instructions
 
 - A POSIX-compliant C development environment
 - GNU make version 3.81 or later
-- skalibs version 2.10.0.3: http://skarnet.org/software/skalibs/
-- execline version 2.8.0.1: http://skarnet.org/software/execline/
-- s6 version 2.10.0.3: http://skarnet.org/software/s6/
-- s6-rc version 0.5.2.2: http://skarnet.org/software/s6-rc/
-- oblibs version 0.1.3.0: https://framagit.org/Obarun/oblibs/
+- skalibs version 2.11.0.0: http://skarnet.org/software/skalibs/
+- execline version 2.8.1.0: http://skarnet.org/software/execline/
+- s6 version 2.11.0.0: http://skarnet.org/software/s6/
+- s6-rc version 0.5.2.3: http://skarnet.org/software/s6-rc/
+- oblibs version 0.1.4.0: https://framagit.org/Obarun/oblibs/
 - lowdown version 0.6.4 or later for man and html pages: https://kristaps.bsd.lv/lowdown/
 - linux-api-headers 5.8 or later: https://www.gnu.org/software/libc (only for linux system)
 

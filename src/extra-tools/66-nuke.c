@@ -42,7 +42,7 @@ int main (int argc, char const *const *argv)
 {
 
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {

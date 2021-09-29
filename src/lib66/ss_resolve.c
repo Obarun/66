@@ -31,7 +31,7 @@
 #include <skalibs/direntry.h>
 #include <skalibs/unix-transactional.h>
 #include <skalibs/diuint32.h>
-#include <skalibs/cdb_make.h>
+#include <skalibs/cdbmake.h>
 #include <skalibs/cdb.h>
 #include <skalibs/posixplz.h>//unlink_void
 
@@ -43,7 +43,7 @@
 #include <66/ssexec.h>
 #include <66/state.h>
 
-#include <s6/s6-supervise.h>
+#include <s6/supervise.h>
 
 ss_resolve_field_table_t ss_resolve_field_table[] = {
 
@@ -1470,7 +1470,7 @@ int ss_resolve_svtree(stralloc *svtree,char const *svname,char const *tree)
         return -1 ;
 }
 
-int ss_resolve_add_cdb_uint(struct cdb_make *c, char const *key,uint32_t data)
+int ss_resolve_add_cdb_uint(cdbmaker *c, char const *key,uint32_t data)
 {
     log_flow() ;
 
@@ -1478,20 +1478,20 @@ int ss_resolve_add_cdb_uint(struct cdb_make *c, char const *key,uint32_t data)
     size_t klen = strlen(key) ;
 
     uint32_pack_big(pack, data) ;
-    if (cdb_make_add(c,key,klen,pack,4) < 0)
+    if (!cdbmake_add(c,key,klen,pack,4))
         log_warnsys_return(LOG_EXIT_ZERO,"cdb_make_add: ",key) ;
 
     return 1 ;
 }
 
-int ss_resolve_add_cdb(struct cdb_make *c,char const *key,char const *data)
+int ss_resolve_add_cdb(cdbmaker *c,char const *key,char const *data)
 {
     log_flow() ;
 
     size_t klen = strlen(key) ;
     size_t dlen = strlen(data) ;
 
-    if (cdb_make_add(c,key,klen,dlen ? data : 0,dlen) < 0)
+    if (!cdbmake_add(c,key,klen,dlen ? data : 0,dlen))
         log_warnsys_return(LOG_EXIT_ZERO,"cdb_make_add: ",key) ;
 
     return 1 ;
@@ -1503,7 +1503,7 @@ int ss_resolve_write_cdb(ss_resolve_t *res, char const *dst, char const *name)
 
     int fd ;
     size_t dstlen = strlen(dst), namelen = strlen(name);
-    struct cdb_make c = CDB_MAKE_ZERO ;
+    cdbmaker c = CDBMAKER_ZERO ;
     char tfile[dstlen + 1 + namelen + namelen + 9] ;
     char dfile[dstlen + 1 + namelen + 1] ;
 
@@ -1519,8 +1519,8 @@ int ss_resolve_write_cdb(ss_resolve_t *res, char const *dst, char const *name)
         goto err_fd ;
     }
 
-    if (cdb_make_start(&c, fd) < 0) {
-        log_warnusys("cdb_make_start") ;
+    if (!cdbmake_start(&c, fd)) {
+        log_warnusys("cdbmake_start") ;
         goto err ;
     }
 
@@ -1620,7 +1620,7 @@ int ss_resolve_write_cdb(ss_resolve_t *res, char const *dst, char const *name)
     /* disen */
     !ss_resolve_add_cdb_uint(&c,"disen",res->disen)) goto err ;
 
-    if (cdb_make_finish(&c) < 0 || fsync(fd) < 0) {
+    if (!cdbmake_finish(&c) || fsync(fd) < 0) {
         log_warnusys("write to: ", tfile) ;
         goto err ;
     }
@@ -1641,31 +1641,34 @@ int ss_resolve_write_cdb(ss_resolve_t *res, char const *dst, char const *name)
         return 0 ;
 }
 
-int ss_resolve_find_cdb(stralloc *result, cdb_t *c,char const *key)
+int ss_resolve_find_cdb(stralloc *result, cdb const *c,char const *key)
 {
     log_flow() ;
 
     uint32_t x = 0 ;
     size_t klen = strlen(key) ;
+    cdb_data cdata ;
 
     result->len = 0 ;
 
-    int r = cdb_find(c, key, klen) ;
-    if (r == -1) log_warnusys_return(LOG_EXIT_LESSONE,"search on cdb key: ",key) ;
-    if (!r) log_warnusys_return(LOG_EXIT_ZERO,"unknown key on cdb: ",key) ;
-    {
-        char pack[cdb_datalen(c) + 1] ;
+    int r = cdb_find(c, &cdata, key, klen) ;
+    if (r == -1)
+        log_warnusys_return(LOG_EXIT_LESSONE,"search on cdb key: ",key) ;
 
-        if (cdb_read(c, pack, cdb_datalen(c),cdb_datapos(c)) < 0)
-            log_warnusys_return(LOG_EXIT_LESSONE,"read on cdb value of key: ",key) ;
+    if (!r)
+        log_warnusys_return(LOG_EXIT_ZERO,"unknown cdb key: ",key) ;
 
-        pack[cdb_datalen(c)] = 0 ;
-        uint32_unpack_big(pack, &x) ;
+    char pack[cdata.len + 1] ;
+    memcpy(pack,cdata.s, cdata.len) ;
+    pack[cdata.len] = 0 ;
 
-        if (!auto_stra(result,pack)) log_warnusys_return(LOG_EXIT_LESSONE,"stralloc") ;
-    }
+    uint32_unpack_big(pack, &x) ;
+
+    if (!auto_stra(result,pack))
+        log_warnusys_return(LOG_EXIT_LESSONE,"stralloc") ;
 
     return x ;
+
 }
 
 int ss_resolve_read_cdb(ss_resolve_t *dres, char const *name)
@@ -1675,7 +1678,7 @@ int ss_resolve_read_cdb(ss_resolve_t *dres, char const *name)
     int fd ;
     uint32_t x ;
 
-    cdb_t c = CDB_ZERO ;
+    cdb c = CDB_ZERO ;
     stralloc tmp = STRALLOC_ZERO ;
     ss_resolve_t res = RESOLVE_ZERO ;
 
@@ -1684,7 +1687,7 @@ int ss_resolve_read_cdb(ss_resolve_t *dres, char const *name)
         log_warnusys("open: ",name) ;
         goto err_fd ;
     }
-    if (!cdb_init_map(&c, fd, 1)) {
+    if (!cdb_init_fromfd(&c, fd)) {
         log_warnusys("cdb_init: ", name) ;
         goto err ;
     }
@@ -1796,7 +1799,7 @@ int ss_resolve_read_cdb(ss_resolve_t *dres, char const *name)
     res.ndeps = x ;
 
     /* noptsdeps */
-    x =ss_resolve_find_cdb(&tmp,&c,"noptsdeps") ;
+    x = ss_resolve_find_cdb(&tmp,&c,"noptsdeps") ;
     res.noptsdeps = x ;
 
     /* nextdeps */

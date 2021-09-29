@@ -222,7 +222,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
     char const *sv = 0, *svconf = 0, *src = 0, *treename = 0, *import = 0 ;
 
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {

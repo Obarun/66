@@ -10,7 +10,7 @@ test:
   script:
   - ./configure --bindir=/usr/bin --shebangdir=/usr/bin
   - make
-  - make install DESTDIR=gitlab-ci
+  - make DESTDIR=gitlab-ci install
 
   only:
   - merge_requests
@@ -21,11 +21,7 @@ build:
   script:
   - ./configure --bindir=/usr/bin --shebangdir=/usr/bin
   - make
-  - make
-  - make install DESTDIR=gitlab-ci
-
-  retry:
-    max: 2
+  - make DESTDIR=gitlab-ci install
 
   only:
     refs:

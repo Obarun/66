@@ -115,7 +115,8 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
 
     nargv[n++] = "fake_name" ;
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
+
         int f = 0 ;
         for (;;)
         {

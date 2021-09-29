@@ -224,7 +224,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
     cl = rc = logname = 0  ;
 
     {
-        subgetopt_t l = SUBGETOPT_ZERO ;
+        subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {
