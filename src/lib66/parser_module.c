@@ -75,14 +75,14 @@ static int get_list(stralloc *list, stralloc *sdir,size_t len, char const *svnam
     sdir->len = len ;
     if (!auto_stra(sdir,SS_MODULE_SERVICE)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 
-    if (!sastr_dir_get_recursive(list,sdir->s,"",mode))
+    if (!sastr_dir_get_recursive(list,sdir->s,"",mode, 0))
         log_warnusys_return(LOG_EXIT_ZERO,"get file(s) of module: ",svname) ;
 
     sdir->len = len ;
 
     if (!auto_stra(sdir,SS_MODULE_SERVICE_INSTANCE)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 
-    if (!sastr_dir_get_recursive(list,sdir->s,"",mode))
+    if (!sastr_dir_get_recursive(list,sdir->s,"",mode, 0))
         log_warnusys_return(LOG_EXIT_ZERO,"get file(s) of module: ",svname) ;
 
     return 1 ;
@@ -220,7 +220,7 @@ int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stra
         log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 
     /** get all services */
-    if (!sastr_dir_get_recursive(&list,tmp.s,"",S_IFREG))
+    if (!sastr_dir_get_recursive(&list,tmp.s,"",S_IFREG, 0))
         log_warnusys_return(LOG_EXIT_ZERO,"get file(s) of module: ",svname) ;
 
     /** add addon service */
