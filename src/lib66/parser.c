@@ -17,19 +17,13 @@
 #include <stdint.h>
 //#include <stdio.h>
 
-#include <oblibs/log.h>
-#include <oblibs/string.h>
-#include <oblibs/files.h>
-#include <oblibs/obgetopt.h>
-#include <oblibs/mill.h>
+#include <stddef.h>
 
-#include <skalibs/buffer.h>
-#include <skalibs/stralloc.h>
+#include <oblibs/log.h>
+
 #include <skalibs/genalloc.h>
-#include <skalibs/types.h>
-#include <skalibs/djbunix.h>
+
 #include <66/enum.h>
-#include <66/utils.h>
 #include <66/parser.h>
 
 
