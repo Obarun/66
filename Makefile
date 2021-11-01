@@ -105,25 +105,6 @@ install-man1: $(INSTALL_MAN:doc/man/man1/%.1=$(DESTDIR)$(mandir)/man1/%.1)
 install-man5: $(INSTALL_MAN:doc/man/man5/%.5=$(DESTDIR)$(mandir)/man5/%.5)
 install-man8: $(INSTALL_MAN:doc/man/man8/%.8=$(DESTDIR)$(mandir)/man8/%.8)
 
-ifneq ($(exthome),)
-
-$(DESTDIR)$(exthome): $(DESTDIR)$(home)
-	exec $(INSTALL) -l $(notdir $(home)) $(DESTDIR)$(exthome)
-
-update: $(DESTDIR)$(exthome)
-
-global-links: $(DESTDIR)$(exthome) $(SHARED_LIBS:lib%.so.xyzzy=$(DESTDIR)$(sproot)/library.so/lib%.so.$(version_M)) $(BIN_TARGETS:%=$(DESTDIR)$(sproot)/command/%)
-
-$(DESTDIR)$(sproot)/command/%: $(DESTDIR)$(home)/command/%
-	exec $(INSTALL) -D -l ..$(subst $(sproot),,$(exthome))/command/$(<F) $@
-
-$(DESTDIR)$(sproot)/library.so/lib%.so.$(version_M): $(DESTDIR)$(dynlibdir)/lib%.so.$(version_M)
-	exec $(INSTALL) -D -l ..$(subst $(sproot),,$(exthome))/library.so/$(<F) $@
-
-.PHONY: update global-links
-
-endif
-
 $(DESTDIR)$(datarootdir)/doc/$(package)/$(version)/%.html: doc/$(version)/html/%.html
 	$(INSTALL) -D -m 644 $< $@ && \
 	sed -e 's,%%shebangdir%%,$(shebangdir),g' \
