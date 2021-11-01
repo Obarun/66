@@ -162,15 +162,6 @@ char const *enum_str_seed[] = {
     "current" ,
     "group" ,
     "services" ,
-    /**
-     *
-     *
-     * rajouter owner qui correspond detenteur de la commande lancer
-     * cela permet de faire la difference entre allow et deny list
-     * et le vrai propriétaire de l'arbre
-     *
-     *
-     * */
     0
 } ;
 
