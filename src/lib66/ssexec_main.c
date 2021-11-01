@@ -22,8 +22,25 @@
 #include <66/ssexec.h>
 #include <66/utils.h>
 #include <66/tree.h>
+#include <66/constants.h>
 
-void set_ssinfo(ssexec_t *info)
+int ssexec_set_treeinfo(ssexec_t *info)
+{
+    log_flow() ;
+
+    int r = tree_sethome(info) ;
+    if (r <= 0) goto out ;
+
+    if (!tree_get_permissions(info->tree.s,info->owner))
+        r = -4 ;
+
+    info->treeallow = 1 ;
+
+    out:
+    return r ;
+}
+
+void ssexec_set_info(ssexec_t *info)
 {
     log_flow() ;
 
@@ -35,16 +52,13 @@ void set_ssinfo(ssexec_t *info)
 
     if (!info->skip_opt_tree) {
 
-        r = tree_sethome(&info->tree,info->base.s,info->owner) ;
-        if (r < 0) log_dieu(LOG_EXIT_USER,"find the current tree. You must use -t options") ;
-        if (!r) log_dieusys(LOG_EXIT_SYS,"find tree: ", info->tree.s) ;
+        r = ssexec_set_treeinfo(info) ;
+        if (r == -4) log_die(LOG_EXIT_USER,"You're not allowed to use the tree: ",info->tree.s) ;
+        if (r == -3) log_dieu(LOG_EXIT_USER,"find the current tree. You must use the -t options") ;
+        if (r == -2) log_dieu(LOG_EXIT_USER,"set the tree name") ;
+        if (r == -1) log_dieu(LOG_EXIT_USER,"parse seed file") ;
+        if (!r) log_dieusys(LOG_EXIT_SYS,"find tree: ", info->treename.s) ;
 
-        r = tree_setname(&info->treename,info->tree.s) ;
-        if (r < 0) log_dieu(LOG_EXIT_SYS,"set the tree name") ;
-
-        if (!tree_get_permissions(info->tree.s,info->owner))
-            log_die(LOG_EXIT_USER,"You're not allowed to use the tree: ",info->tree.s) ;
-        else info->treeallow = 1 ;
     }
 
     r = set_livedir(&info->live) ;
@@ -92,14 +106,15 @@ static inline void append_opts(char *opts,size_t baselen, ssexec_func_t *func)
         auto_strings(opts + baselen,OPTS_ENV) ;
     else if ((*func) == &ssexec_all)
         auto_strings(opts + baselen,OPTS_ALL) ;
+    else if ((*func) == &ssexec_tree)
+        auto_strings(opts + baselen,OPTS_TREE) ;
 }
 
 int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec_func_t *func, ssexec_t *info)
 {
     log_flow() ;
 
-    int r ;
-    int n = 0 ;
+    int r, n = 0, i = 0 ;
     char const *nargv[argc + 1] ;
 
     log_color = &log_color_disable ;
@@ -129,12 +144,10 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
                 case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(info->usage) ;
                             info->opt_verbo = 1 ;
                             break ;
-                case 'l' :  if (!stralloc_cats(&info->live,l.arg)) log_die_nomem("stralloc") ;
-                            if (!stralloc_0(&info->live)) log_die_nomem("stralloc") ;
+                case 'l' :  if (!auto_stra(&info->live,l.arg)) log_die_nomem("stralloc") ;
                             info->opt_live = 1 ;
                             break ;
-                case 't' :  if(!stralloc_cats(&info->tree,l.arg)) log_die_nomem("stralloc") ;
-                            if(!stralloc_0(&info->tree)) log_die_nomem("stralloc") ;
+                case 't' :  if(!auto_stra(&info->treename,l.arg)) log_die_nomem("stralloc") ;
                             info->opt_tree = 1 ;
                             info->skip_opt_tree = 0 ;
                             break ;
@@ -144,22 +157,48 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
                 case 'z' :  log_color = !isatty(1) ? &log_color_disable : &log_color_enable ;
                             info->opt_color = 1 ;
                             break ;
-                default :   for (int i = 0 ; i < n ; i++)
-                            {
-                                if (!argv[l.ind]) log_usage(info->usage) ;
-                                if (obstr_equal(nargv[i],argv[l.ind]))
-                                    f = 1 ;
+                default :
+                            for (i = 0 ; i < n ; i++) {
+
+                                if (!argv[l.ind])
+                                    log_usage(info->usage) ;
+
+                                if (l.arg) {
+
+                                    if (!strcmp(nargv[i],argv[l.ind - 2]) || !strcmp(nargv[i],l.arg))
+                                        f = 1 ;
+
+                                } else {
+
+                                    if (!strcmp(nargv[i],argv[l.ind]))
+                                        f = 1 ;
+                                }
                             }
-                            if (!f) nargv[n++] = argv[l.ind] ;
+
+                            if (!f) {
+
+                                if (l.arg) {
+                                    // distinction between e.g -enano and -e nano
+                                    if (argv[l.ind - 1][0] != '-')
+                                        nargv[n++] = argv[l.ind - 2] ;
+
+                                    nargv[n++] = argv[l.ind - 1] ;
+
+                                } else {
+
+                                    nargv[n++] = argv[l.ind] ;
+                                }
+                            }
                             f = 0 ;
                             break ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
-    set_ssinfo(info) ;
 
-    for (int i = 0 ; i < argc ; i++ , argv++)
+    ssexec_set_info(info) ;
+
+    for (i = 0 ; i < argc ; i++ , argv++)
         nargv[n++] = *argv ;
 
     nargv[n] = 0 ;
