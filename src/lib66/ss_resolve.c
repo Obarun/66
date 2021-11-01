@@ -100,61 +100,47 @@ int ss_resolve_pointo(stralloc *sa,ssexec_t *info,int type, unsigned int where)
 {
     log_flow() ;
 
-    stralloc tmp = STRALLOC_ZERO ;
+    sa->len = 0 ;
 
     char ownerstr[UID_FMT] ;
     size_t ownerlen = uid_fmt(ownerstr,info->owner) ;
     ownerstr[ownerlen] = 0 ;
 
-    if (where == SS_RESOLVE_STATE)
-    {
-        if (!stralloc_catb(&tmp,info->live.s,info->live.len - 1) ||
-        !stralloc_cats(&tmp,SS_STATE) ||
-        !stralloc_cats(&tmp,"/") ||
-        !stralloc_cats(&tmp,ownerstr) ||
-        !stralloc_cats(&tmp,"/") ||
-        !stralloc_cats(&tmp,info->treename.s)) goto err ;
-    }
-    else if (where == SS_RESOLVE_SRC)
-    {
-        if (!stralloc_cats(&tmp,info->tree.s) ||
-        !stralloc_cats(&tmp,SS_SVDIRS)) goto err ;
-    }
-    else if (where == SS_RESOLVE_BACK)
-    {
-        if (!stralloc_cats(&tmp,info->base.s) ||
-        !stralloc_cats(&tmp,SS_SYSTEM) ||
-        !stralloc_cats(&tmp,SS_BACKUP) ||
-        !stralloc_cats(&tmp,"/") ||
-        !stralloc_cats(&tmp,info->treename.s)) goto err ;
-    }
-    else if (where == SS_RESOLVE_LIVE)
-    {
-        if (!stralloc_catb(&tmp,info->live.s,info->live.len - 1) ||
-        !stralloc_cats(&tmp,SS_STATE) ||
-        !stralloc_cats(&tmp,"/") ||
-        !stralloc_cats(&tmp,ownerstr) ||
-        !stralloc_cats(&tmp,"/") ||
-        !stralloc_cats(&tmp,info->treename.s) ||
-        !stralloc_cats(&tmp,SS_SVDIRS)) goto err ;
+    if (where == SS_RESOLVE_STATE) {
+
+        if (!auto_stra(sa, info->live.s, SS_STATE + 1, "/", ownerstr, "/", info->treename.s))
+            goto err ;
+
+    } else if (where == SS_RESOLVE_SRC) {
+
+        if (!auto_stra(sa, info->tree.s, SS_SVDIRS))
+            goto err ;
+
+    } else if (where == SS_RESOLVE_BACK) {
+
+        if (!auto_stra(sa, info->base.s, SS_SYSTEM, SS_BACKUP, "/", info->treename.s))
+            goto err ;
+
+    } else if (where == SS_RESOLVE_LIVE) {
+
+        if (!auto_stra(sa, info->live.s, SS_STATE + 1, "/", ownerstr, "/", info->treename.s, SS_SVDIRS))
+            goto err ;
     }
 
-    if (type >= 0 && where)
-    {
-        if (type == TYPE_CLASSIC)
-        {
-            if (!stralloc_cats(&tmp,SS_SVC)) goto err ;
-        }
-        else if (!stralloc_cats(&tmp,SS_DB)) goto err ;
-    }
-    if (!stralloc_0(&tmp) ||
-    !stralloc_copy(sa,&tmp)) goto err ;
+    if (type >= 0 && where) {
 
-    stralloc_free(&tmp) ;
+        if (type == TYPE_CLASSIC) {
+
+            if (!auto_stra(sa, SS_SVC))
+                goto err ;
+
+        } else if (!auto_stra(sa, SS_DB))
+            goto err ;
+    }
+
     return 1 ;
 
     err:
-        stralloc_free(&tmp) ;
         return 0 ;
 }
 
@@ -1399,19 +1385,18 @@ int ss_resolve_sort_byfile_first(stralloc *sort, char const *src)
 /** @Return -1 system error
  * @Return 0 no tree exist yet
  * @Return 1 svname doesn't exist
+ * @Return 2 on success
  * @Return > 2, service exist on different tree */
 int ss_resolve_svtree(stralloc *svtree,char const *svname,char const *tree)
 {
     log_flow() ;
 
     uint8_t found = 1, copied = 0 ;
+    uid_t owner = getuid() ;
+    size_t pos, newlen ;
     stralloc satree = STRALLOC_ZERO ;
     stralloc tmp = STRALLOC_ZERO ;
-    char ownerstr[UID_FMT] ;
-    uid_t owner = getuid() ;
-    size_t ownerlen = uid_fmt(ownerstr,owner), pos, newlen ;
 
-    ownerstr[ownerlen] = 0 ;
 
     if (!set_ownersysdir(svtree,owner)) { log_warnusys("set owner directory") ; goto err ; }
     if (!auto_stra(svtree,SS_SYSTEM)) goto err ;
