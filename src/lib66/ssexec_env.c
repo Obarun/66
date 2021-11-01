@@ -76,8 +76,6 @@ static void run_editor(char const *src, char const *sv, char const *const *envp)
 
     auto_strings(tsrc,src,"/",sv) ;
 
-    log_info(src,"->",sv,"->",tsrc) ;
-
     if (!EDITOR) {
 
         EDITOR = getenv("EDITOR") ;
@@ -229,6 +227,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
             int opt = getopt_args(argc,argv, ">" OPTS_ENV, &l) ;
             if (opt == -1) break ;
             if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
+
             switch (opt)
             {
                 case 'c' :
