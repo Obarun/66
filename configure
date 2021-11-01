@@ -29,6 +29,7 @@ Fine tuning of the installation directories:
 
   --shebangdir=DIR                 absolute path for execline #\! invocations [BINDIR]
   --livedir=DIR                    default live directory [/run/66]
+  --max-svscan-service=NUMBER      default maximum number of service handled by s6-svscan [500]
   --with-skeleton=DIR              skeleton files directory installation [SYSDIR/66]
   --with-system-log=DIR            system service log directory [/var/log/66]
   --with-s6-log-user=USER          user for running s6-log program [root]
@@ -39,10 +40,12 @@ Fine tuning of the installation directories:
   --with-system-service=DIR        system service frontend directory [DATAROOTDIR/66/service]
   --with-system-module=DIR         system module directory [DATAROOTDIR/66/module]
   --with-system-script=DIR         system script directory [DATAROOTDIR/66/script]
+  --with-system-seed=DIR           system trees default configuration[DATAROOTDIR/66/seed]
 
   --with-sysadmin-service=DIR      sysadmin service frontend directory [SYSDIR/66/service]
   --with-sysadmin-service-conf=DIR sysadmin service configuration file directory [SYSDIR/66/conf]
   --with-sysadmin-module=DIR       sysadmin module directory [SYSDIR/66/module]
+  --with-sysadmin-seed=DIR         sysadmin trees default configuration[SYSDIR/66/seed]
 
   --with-user-dir=DIR              66 tools user working directory [.66]
   --with-user-log=DIR              user service log directory [.66/log]
@@ -50,10 +53,11 @@ Fine tuning of the installation directories:
   --with-user-service-conf=DIR     user service configuration directory [.66/conf]
   --with-user-module=DIR           user module directory [.66/module]
   --with-user-script=DIR           user script directory [.66/script]
+  --with-user-seed=DIR             user trees default configuration [.66/seed]
 
  Do not set an absolute path but a \$HOME relative path for --with-user-dir,
- --with-user-log, --with-user-service, --with-user-service-conf, --with-user-module
- and --with-user-script.
+ --with-user-log, --with-user-service, --with-user-service-conf, --with-user-module,
+ --with-user-script and --with-user-seed.
  The \$HOME prefix will be appened at the pathname automatically in function of the user.
  For example , by default the final path for --with-user-dir will be \$HOME/.66.
 
@@ -180,6 +184,7 @@ datarootdir='$prefix/share'
 mandir='$datarootdir/man'
 shebangdir='$bindir'
 livedir='/run/66'
+max_service='500'
 skel='$sysconfdir/66'
 system_dir='/var/lib/66'
 system_log='/var/log/66'
@@ -189,15 +194,18 @@ s6log_notify=false
 service_system='$datarootdir/66/service'
 module_system='$datarootdir/66/module'
 script_system='$datarootdir/66/script'
+seed_system='$datarootdir/66/seed'
 service_adm='$sysconfdir/66/service'
 module_adm='$sysconfdir/66/module'
 service_admconf='$sysconfdir/66/conf'
+seed_adm='$sysconfdir/66/seed'
 user_dir='.66'
 service_user='.66/service'
 module_user='.66/module'
 script_user='.66/script'
 service_userconf='.66/conf'
 user_log='.66/log'
+seed_user='.66/seed'
 sysdeps='$prefix/lib/skalibs/sysdeps'
 manualsysdeps=false
 shared=false
@@ -228,6 +236,7 @@ for arg ; do
     --mandir=*) mandir=${arg#*=} ;;
     --shebangdir=*) shebangisdefault=false ; shebangdir=${arg#*=} ;;
     --livedir=*) livedir=${arg#*=} ;;
+    --max-svscan-service=*) max_service=${arg#*=} ;;
     --with-skeleton=*) skel=${arg#*=} ;;
     --with-system-dir=*) system_dir=${arg#*=} ;;
     --with-system-log=*) system_log=${arg#*=} ;;
@@ -237,15 +246,18 @@ for arg ; do
     --with-system-service=*) service_system=${arg#*=} ;;
     --with-system-module=*) module_system=${arg#*=} ;;
     --with-system-script=*) script_system=${arg#*=} ;;
+    --with-system-seed=*) seed_system=${arg#*=} ;;
     --with-sysadmin-service=*) service_adm=${arg#*=} ;;
     --with-sysadmin-module=*) module_adm=${arg#*=} ;;
     --with-sysadmin-service-conf=*) service_admconf=${arg#*=} ;;
+    --with-sysadmin-seed=*) seed_adm=${arg#*=} ;;
     --with-user-dir=*) user_dir=${arg#*=} ;;
     --with-user-service=*) service_user=${arg#*=} ;;
     --with-user-module=*) module_user=${arg#*=} ;;
     --with-user-script=*) script_user=${arg#*=} ;;
     --with-user-service-conf=*) service_userconf=${arg#*=} ;;
     --with-user-log=*) user_log=${arg#*=} ;;
+    --with-user-seed=*) seed_user=${arg#*=} ;;
     --with-sysdeps=*) sysdeps=${arg#*=} manualsysdeps=true ;;
     --with-include=*) var=${arg#*=} ; stripdir var ; addincpath="$addincpath -I$var" ;;
     --with-lib=*) var=${arg#*=} ; stripdir var ; addlibspath="$addlibspath -L$var" ; vpaths="$vpaths $var" ;;
@@ -299,6 +311,9 @@ if test -z "$sysconfdir" ; then
   if test "$skel" = '$sysconfdir/66' ; then
     skel='$sysconfdir/66'
   fi
+  if test "$seed_adm" = '$sysconfdir/66/seed' ; then
+    seed_adm='$sysconfdir/66/seed'
+  fi
 fi
 
 # Expand installation directories
@@ -312,14 +327,14 @@ for i in exec_prefix dynlibdir libexecdir bindir libdir includedir sysconfdir \
 done
 
 stripdir datarootdir
-for i in service_system module_system script_system mandir; do
+for i in service_system module_system script_system seed_system mandir; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
 done
 
 stripdir sysconfdir
-for i in service_adm module_adm service_admconf skel; do
+for i in service_adm module_adm service_admconf seed_adm skel; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
@@ -333,7 +348,17 @@ elif [ $s6log_timestamp = "iso" ]; then
 elif [ $s6log_timestamp = "none" ]; then
     s6log_timestamp='2'
 else
-    fail "$0: invalid timestamp value -- valid value are: tai,iso or none"
+    fail "$0: invalid --with-s6-log-timestamp value -- valid value are: tai, iso or none"
+fi
+
+# check valid max_service
+case $max_service in
+    ''|*[!0-9]*) fail "$0: invalid number for --max-svscan-service" ;;
+    *) break ;;
+esac
+
+if [ $max_service -lt 2 ]; then
+    fail "$0: lower limit for --max-svscan-service is 2"
 fi
 
 ## logger notification
@@ -495,6 +520,7 @@ shebangdir := $shebangdir
 datarootdir := $datarootdir
 mandir := $mandir
 livedir := $livedir
+max_service := $max_service
 skel := $skel
 system_dir := $system_dir
 system_log := $system_log
@@ -504,15 +530,18 @@ s6log_notify := $s6log_notify
 service_system := $service_system
 module_system := $module_system
 script_system := $script_system
+seed_system := $seed_system
 service_adm := $service_adm
 module_adm := $module_adm
 service_admconf := $service_admconf
+seed_adm := $seed_adm
 user_dir := $user_dir
 service_user := $service_user
 module_user := $module_user
 script_user := $script_user
 service_userconf := $service_userconf
 user_log := $user_log
+seed_user := $seed_user
 sysdeps := $sysdeps
 version := $version
 
@@ -577,6 +606,7 @@ All rights reserved.*/
 
 #define ${package_macro_name}_VERSION "$version"
 #define ${package_macro_name}_LIVE "$livedir/"
+#define ${package_macro_name}_MAX_SERVICE $max_service
 #define ${package_macro_name}_SYSTEM_DIR "$system_dir/"
 #define ${package_macro_name}_SKEL_DIR "$skel/"
 #define ${package_macro_name}_LOGGER_SYSDIR "$system_log/"
@@ -589,15 +619,18 @@ All rights reserved.*/
 #define ${package_macro_name}_MODULE_SYSDIR "$module_system/"
 #define ${package_macro_name}_MODULE_ADMDIR "$module_adm/"
 #define ${package_macro_name}_SCRIPT_SYSDIR "$script_system/"
+#define ${package_macro_name}_SEED_SYSDIR "$seed_system/"
+#define ${package_macro_name}_SEED_ADMDIR "$seed_adm/"
 
 /** Do not use absolute path but a \$HOME relative path
- * The /home/name_of_user prefix will be automatically added to the pathname */
+ * The /home/<user> prefix will be automatically added to the pathname */
 #define ${package_macro_name}_USER_DIR "$user_dir/"
 #define ${package_macro_name}_LOGGER_USERDIR "$user_log/"
 #define ${package_macro_name}_SERVICE_USERDIR "$service_user/"
 #define ${package_macro_name}_SERVICE_USERCONFDIR "$service_userconf/"
 #define ${package_macro_name}_MODULE_USERDIR "$module_user/"
 #define ${package_macro_name}_SCRIPT_USERDIR "$script_user/"
+#define ${package_macro_name}_SEED_USERDIR "$seed_user/"
 
 EOF
 
