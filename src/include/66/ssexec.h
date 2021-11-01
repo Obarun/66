@@ -40,7 +40,7 @@ struct ssexec_s
     uint8_t opt_timeout ;
     uint8_t opt_color ;
     // skip option definition 0->no,1-yes
-    uint8_t skip_opt_tree ; // tree,treename, treeallow and the permissions for the tree will be not set
+    uint8_t skip_opt_tree ; // tree,treename, treeallow will not be set. Also, trees permissions is not checked.
 } ;
 
 #define SSEXEC_ZERO {   .base = STRALLOC_ZERO , \
@@ -78,6 +78,7 @@ extern ssexec_func_t ssexec_svctl ;
 extern ssexec_func_t ssexec_dbctl ;
 extern ssexec_func_t ssexec_env ;
 extern ssexec_func_t ssexec_all ;
+extern ssexec_func_t ssexec_tree ;
 
 extern char const *usage_enable ;
 extern char const *help_enable ;
@@ -97,6 +98,8 @@ extern char const *usage_env ;
 extern char const *help_env ;
 extern char const *usage_all ;
 extern char const *help_all ;
+extern char const *usage_tree ;
+extern char const *help_tree ;
 
 #define OPTS_INIT "cdb"
 #define OPTS_INIT_LEN (sizeof OPTS_INIT - 1)
@@ -116,7 +119,11 @@ extern char const *help_all ;
 #define OPTS_ENV_LEN (sizeof OPTS_ENV - 1)
 #define OPTS_ALL "f"
 #define OPTS_ALL_LEN (sizeof OPTS_ALL - 1)
+#define OPTS_TREE "na:d:cS:EDRC:"
+#define OPTS_TREE_LEN (sizeof OPTS_TREE - 1)
 
 extern int ssexec_main(int argc, char const *const *argv, char const *const *envp,ssexec_func_t *func,ssexec_t *info) ;
+extern void ssexec_set_info(ssexec_t *info) ;
+extern int ssexec_set_treeinfo(ssexec_t *info) ;
 
 #endif

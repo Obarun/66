@@ -154,3 +154,28 @@ char const *help_all =
 "   -t: tree to use\n"
 "   -f: fork the process\n"
 ;
+
+char const *usage_tree = "66-tree [ -h ] [ -z ] [ -v verbosity ] [ -n|R ] [ -a|d ] [ -c ] [ -o depends=:requiredby= ] [ -E|D ] [ -C clone ] tree" ;
+
+char const *help_tree =
+"\n"
+"options :\n"
+"   -h: print this help\n"
+"   -z: use color\n"
+"   -v: increase/decrease verbosity\n"
+"   -n: create a new empty tree\n"
+"   -R: remove the tree\n"
+"   -a: allow user(s) at tree\n"
+"   -d: deny user(s) at tree\n"
+"   -c: set tree as default\n"
+"   -o: colon separated list of dependencies\n"
+"   -E: enable the tree\n"
+"   -D: disable the tree\n"
+"   -C: clone the tree\n"
+
+"\n"
+"valid fields for -o options are:\n"
+"\n"
+"   depends=: comma separated list of dependencies for tree\n"
+"   requiredby=: comma separated list of trees required by tree\n"
+;
