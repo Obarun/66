@@ -496,7 +496,6 @@ int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service)
     return 1 ;
 }
 
-
 /**********************************
  *      store
  * *******************************/
@@ -615,9 +614,12 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
                 if (p == -1 && owner)
                 {
                     int e = 0 ;
-                    for (int i = 1; i < nb+1; i++)
-                        if (service->user[i] == owner) e = 1 ;
-
+                    for (int i = 1; i < nb+1; i++) {
+                        if (service->user[i] == owner) {
+                            e = 1 ;
+                            break ;
+                        }
+                    }
                     if (!e)
                         log_warnu_return(LOG_EXIT_ZERO,"use the service -- permission denied") ;
                 }
@@ -724,6 +726,11 @@ int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype)
                 parse_err(3,nocheck) ;
                 return 0 ;
             }
+            break ;
+        case KEY_MAIN_INTREE:
+            service->cname.intree = keep.len ;
+            if (!stralloc_catb(&keep,chval,*chlen + 1))
+                log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
             break ;
         default: log_warn_return(LOG_EXIT_ZERO,"unknown key: ",get_key_by_enum(ENUM_KEY_SECTION_MAIN,nocheck->idkey)) ;
 
@@ -1231,7 +1238,6 @@ int check_valid_runas(keynocheck *ch)
     return 1 ;
 }
 
-
 void parse_err(int ierr,keynocheck *check)
 {
     log_flow() ;
@@ -1326,4 +1332,33 @@ int get_svtype_from_file(char const *file)
     err:
     stralloc_free(&tmp) ;
     return svtype ;
+}
+
+int get_svintree(sv_alltype *sv_before, char const *contents)
+{
+    log_flow() ;
+
+    int r ;
+    stralloc sa = STRALLOC_ZERO ;
+
+    if (!auto_stra(&sa,contents)) goto err ;
+
+    /** @intree may not exist */
+    r = sastr_find(&sa,get_key_by_enum(ENUM_KEY_SECTION_MAIN,KEY_MAIN_INTREE)) ;
+    if (r == -1) { sv_before->cname.intree == -1 ; goto freed ; }
+
+    if (!environ_get_val_of_key(&sa,get_key_by_enum(ENUM_KEY_SECTION_MAIN,KEY_MAIN_INTREE))) goto err ;
+
+    if (!sastr_clean_element(&sa)) goto err ;
+
+    sv_before->cname.intree = keep.len ;
+    if (!sastr_add_string(&keep, sa.s))
+        goto err ;
+
+    freed:
+    stralloc_free(&sa) ;
+    return 1 ;
+    err:
+        stralloc_free(&sa) ;
+        return 0 ;
 }

@@ -35,6 +35,7 @@ enum enum_main_e
     ENUM_MANDATORY ,
     ENUM_TIME ,
     ENUM_LOGOPTS ,
+    ENUM_SEED ,
     ENUM_ENDOFKEY
 } ;
 
@@ -73,6 +74,7 @@ enum enum_key_section_main_e
     KEY_MAIN_HIERCOPY ,
     KEY_MAIN_SIGNAL ,
     KEY_MAIN_FLAGS ,
+    KEY_MAIN_INTREE ,
     KEY_MAIN_ENDOFKEY
 } ;
 
@@ -242,6 +244,22 @@ enum enum_logopts_e
 
 extern char const *enum_str_logopts[] ;
 
+typedef enum enum_seed_e enum_seed_t, *enum_seed_t_ref ;
+enum enum_seed_e
+{
+
+    SEED_DEPENDS = 0 ,
+    SEED_REQUIREDBY ,
+    SEED_ENABLE ,
+    SEED_ALLOW ,
+    SEED_DENY ,
+    SEED_CURRENT ,
+    SEED_GROUP ,
+    SEED_SERVICES ,
+    SEED_ENDOFKEY
+
+} ;
+
 
 typedef struct enum_all_enum_s enum_all_enum_t, *enum_all_enum_t_ref ;
 struct enum_all_enum_s
@@ -249,6 +267,8 @@ struct enum_all_enum_s
     unsigned int const enum_all ;
     char const **str ;
 } ;
+
+
 
 extern ssize_t get_enum_by_key_one(char const *str, int const e) ;
 extern ssize_t get_enum_by_key(char const *str) ;
@@ -291,12 +311,11 @@ static key_description_t const main_section_list[] =
     { .name = &enum_str_key_section_main[KEY_MAIN_TYPE], .id = KEY_MAIN_TYPE, .expected = EXPECT_LINE },
     { .name = &enum_str_key_section_main[KEY_MAIN_VERSION], .id = KEY_MAIN_VERSION, .expected = EXPECT_LINE },
     { .name = &enum_str_key_section_main[KEY_MAIN_DESCRIPTION], .id = KEY_MAIN_DESCRIPTION, .expected = EXPECT_QUOTE },
+    { .name = &enum_str_key_section_main[KEY_MAIN_CONTENTS], .id = KEY_MAIN_CONTENTS, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_main[KEY_MAIN_DEPENDS], .id = KEY_MAIN_DEPENDS, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_main[KEY_MAIN_OPTSDEPS], .id = KEY_MAIN_OPTSDEPS, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_main[KEY_MAIN_EXTDEPS], .id = KEY_MAIN_EXTDEPS, .expected = EXPECT_BRACKET },
-    { .name = &enum_str_key_section_main[KEY_MAIN_CONTENTS], .id = KEY_MAIN_CONTENTS, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_main[KEY_MAIN_OPTIONS], .id = KEY_MAIN_OPTIONS, .expected = EXPECT_BRACKET },
-    { .name = &enum_str_key_section_main[KEY_MAIN_FLAGS], .id = KEY_MAIN_FLAGS, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_main[KEY_MAIN_NOTIFY], .id = KEY_MAIN_NOTIFY, .expected = EXPECT_UINT },
     { .name = &enum_str_key_section_main[KEY_MAIN_USER], .id = KEY_MAIN_USER, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_main[KEY_MAIN_T_FINISH], .id = KEY_MAIN_T_FINISH, .expected = EXPECT_UINT },
@@ -304,8 +323,10 @@ static key_description_t const main_section_list[] =
     { .name = &enum_str_key_section_main[KEY_MAIN_T_UP], .id = KEY_MAIN_T_UP, .expected = EXPECT_UINT },
     { .name = &enum_str_key_section_main[KEY_MAIN_T_DOWN], .id = KEY_MAIN_T_DOWN, .expected = EXPECT_UINT },
     { .name = &enum_str_key_section_main[KEY_MAIN_DEATH], .id = KEY_MAIN_DEATH, .expected = EXPECT_UINT },
-    { .name = &enum_str_key_section_main[KEY_MAIN_SIGNAL], .id = KEY_MAIN_SIGNAL, .expected = EXPECT_UINT },
     { .name = &enum_str_key_section_main[KEY_MAIN_HIERCOPY], .id = KEY_MAIN_HIERCOPY, .expected = EXPECT_BRACKET },
+    { .name = &enum_str_key_section_main[KEY_MAIN_SIGNAL], .id = KEY_MAIN_SIGNAL, .expected = EXPECT_UINT },
+    { .name = &enum_str_key_section_main[KEY_MAIN_FLAGS], .id = KEY_MAIN_FLAGS, .expected = EXPECT_BRACKET },
+    { .name = &enum_str_key_section_main[KEY_MAIN_INTREE], .id = KEY_MAIN_INTREE, .expected = EXPECT_LINE },
     { .name = &enum_str_key_section_main[KEY_MAIN_ENDOFKEY] }
 } ;
 

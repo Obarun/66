@@ -275,36 +275,6 @@ This section is *mandatory*. (!)
 
     ---
 
-- @name
-
-    *Corresponds to the name of the service directory of [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc) programs*.
-
-    Name of the service.
-
-    mandatory : no
-
-    syntax : inline
-
-    valid values :
-
-    * This field has no effect except for instantiated services. In such case the name must contain the complete name of the frontend service file.
-
-        For example, the following is valid:
-
-        ````
-            @name = tty@mine-@I
-        ````
-
-        where:
-
-        ````
-            @name = mine-@I
-        ````
-
-        is not for a frontend service file named tty@.
-
-    ---
-
 - @version
 
     *Without equivalent, this key is unique to 66 tools*.
@@ -656,6 +626,24 @@ This section is *mandatory*. (!)
     * Any files or directories. It accepts *absolute* or *relative* path.
 
         **Note** : 66 version must be higher than 0.3.0.1.
+
+- @intree
+
+    *Without equivalent, this key is unique to 66 tools*.
+
+    mandatory : no
+
+    syntax : inline
+
+    valid values :
+
+    * Any valid seed file name.
+
+    The service will automatically be activated at the tree name set in the *@intree* key value.
+
+    **Note** : The corresponding seed file *must* exist on your system to be effective.
+
+    ---
 
 ---
 
@@ -1082,7 +1070,9 @@ This prototype contain all valid section with all valid `key=value` pair.
 
 ```
     [main]
-
+    @type = classic,longrun,bundle,module
+    @description = ""
+    @version = 0.0.0
     @depends = ()
     @optsdepends = ()
     @extdepends = ()
@@ -1098,6 +1088,7 @@ This prototype contain all valid section with all valid `key=value` pair.
     @maxdeath =
     @down-signal =
     @hiercopy = ()
+    @intree =
 
     [start]
     @build = auto,custom

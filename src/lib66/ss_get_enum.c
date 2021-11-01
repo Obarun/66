@@ -49,6 +49,7 @@ char const *enum_str_key_section_main[] = {
     "@hiercopy" ,
     "@down-signal" ,
     "@flags" ,
+    "@intree" ,
     0
 } ;
 
@@ -145,8 +146,31 @@ char const *enum_str_time[] = {
 
 char const *enum_str_logopts[] = {
     "producer-for" ,
+
     "consumer-for" ,
     "pipeline-name" ,
+    0
+} ;
+
+char const *enum_str_seed[] = {
+
+    "depends" ,
+    "requiredby" ,
+    "enable" ,
+    "allow" ,
+    "deny" ,
+    "current" ,
+    "group" ,
+    "services" ,
+    /**
+     *
+     *
+     * rajouter owner qui correspond detenteur de la commande lancer
+     * cela permet de faire la difference entre allow et deny list
+     * et le vrai propriétaire de l'arbre
+     *
+     *
+     * */
     0
 } ;
 
@@ -166,6 +190,7 @@ enum_all_enum_t enum_all[] = {
     [ENUM_MANDATORY] = { .enum_all = MANDATORY_ENDOFKEY - ENUM_START , .str = enum_str_mandatory } ,
     [ENUM_TIME] = { .enum_all = TIME_ENDOFKEY - ENUM_START , .str = enum_str_time } ,
     [ENUM_LOGOPTS] = { .enum_all = LOGOPTS_ENDOFKEY - ENUM_START , .str = enum_str_logopts } ,
+    [ENUM_SEED] = { .enum_all = SEED_ENDOFKEY - ENUM_START , .str = enum_str_seed } ,
     [ENUM_ENDOFKEY] = { 0 }
 
 } ;
