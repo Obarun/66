@@ -99,7 +99,7 @@ static inline void info_help (void)
 "   -d: limit the depth of the contents field recursion\n"
 "   -r: reverse the contents field\n"
 "\n"
-"valid field for -o options are:\n"
+"valid fields for -o options are:\n"
 "\n"
 "   name: displays the name of the tree\n"
 "   init: displays a boolean value of the initialization state\n"
