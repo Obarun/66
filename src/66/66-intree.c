@@ -226,13 +226,14 @@ static void info_get_graph_src(ss_resolve_graph_t *graph,char const *src,unsigne
 
     stralloc sa = STRALLOC_ZERO ;
     genalloc gares = GENALLOC_ZERO ;
+    char const *exclude[2] = { SS_MASTER + 1, 0 } ;
 
     char solve[srclen + SS_RESOLVE_LEN + 1] ;
     memcpy(solve,src,srclen) ;
     memcpy(solve + srclen, SS_RESOLVE,SS_RESOLVE_LEN) ;
     solve[srclen + SS_RESOLVE_LEN] = 0 ;
 
-    if (!sastr_dir_get(&sa,solve,SS_MASTER+1,S_IFREG))
+    if (!sastr_dir_get(&sa,solve,exclude,S_IFREG))
         log_dieusys(LOG_EXIT_SYS,"get source service file at: ",solve) ;
 
     if (!ss_resolve_sort_bytype(&gares,&sa,src))
@@ -252,12 +253,14 @@ static void info_display_allow(char const *field, char const *treename)
     size_t treenamelen = strlen(treename) , pos ;
     stralloc sa = STRALLOC_ZERO ;
     stralloc salist = STRALLOC_ZERO ;
+    char const *exclude[1] = { 0 } ;
+
     char tmp[src.len + treenamelen + SS_RULES_LEN + 1 ] ;
     // force to close the string
     auto_strings(tmp,src.s) ;
     auto_string_from(tmp,src.len,treename,SS_RULES) ;
 
-    if (!sastr_dir_get(&sa,tmp,"",S_IFREG))
+    if (!sastr_dir_get(&sa,tmp,exclude,S_IFREG))
         log_dieusys(LOG_EXIT_SYS,"get permissions of tree at: ",tmp) ;
 
     for (pos = 0 ;pos < sa.len; pos += strlen(sa.s + pos) + 1)
@@ -556,8 +559,9 @@ int main(int argc, char const *const *argv, char const *const *envp)
     }
     else
     {
+        char const *exclude[3] = { SS_BACKUP + 1, SS_RESOLVE + 1, 0 } ;
         if (!stralloc_0(&src)) log_die_nomem("stralloc") ;
-        if (!sastr_dir_get(&satree, src.s,SS_BACKUP + 1, S_IFDIR)) log_dieusys(LOG_EXIT_SYS,"get list of tree at: ",src.s) ;
+        if (!sastr_dir_get(&satree, src.s,exclude, S_IFDIR)) log_dieusys(LOG_EXIT_SYS,"get list of tree at: ",src.s) ;
 
 
         if (satree.len) {
