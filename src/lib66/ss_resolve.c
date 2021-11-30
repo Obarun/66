@@ -268,6 +268,7 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found
     stralloc sainsta = STRALLOC_ZERO ;
     stralloc satmp = STRALLOC_ZERO ;
     stralloc sort = STRALLOC_ZERO ;
+    char const *exclude[1] = { 0 } ;
 
     if (!ss_resolve_sort_byfile_first(&sort,src))
     {
@@ -307,8 +308,8 @@ int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found
                 int rd = ss_resolve_service_isdir(dname,bname) ;
                 if (rd == -1) goto err ;
                 if (!rd)
-                    r = sastr_dir_get(&satmp,dname,"",S_IFREG|S_IFDIR) ;
-                else r = sastr_dir_get(&satmp,dname,"",S_IFREG) ;
+                    r = sastr_dir_get(&satmp,dname,exclude,S_IFREG|S_IFDIR) ;
+                else r = sastr_dir_get(&satmp,dname,exclude,S_IFREG) ;
                 if (!r)
                 {
                     log_warnusys("get services from directory: ",dname) ;
@@ -433,6 +434,12 @@ int ss_resolve_read(ss_resolve_t *res, char const *src, char const *name)
     return 1 ;
 }
 
+/** not used
+ *
+ *
+ *
+ *
+ *
 int ss_resolve_check_insrc(ssexec_t *info, char const *name)
 {
     log_flow() ;
@@ -446,6 +453,9 @@ int ss_resolve_check_insrc(ssexec_t *info, char const *name)
         stralloc_free(&sares) ;
         return 0 ;
 }
+*
+*
+*/
 
 int ss_resolve_check(char const *src, char const *name)
 {
@@ -789,7 +799,7 @@ int ss_resolve_cmp(genalloc *ga,char const *name)
     {
         char *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
         char *s = string + genalloc_s(ss_resolve_t,ga)[i].name ;
-        if (obstr_equal(name,s)) return 1 ;
+        if (!strcmp(name,s)) return 1 ;
     }
     return 0 ;
 }
@@ -898,6 +908,7 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
     stralloc tmp = STRALLOC_ZERO ;
     stralloc nsv = STRALLOC_ZERO ;
     ss_state_t sta = STATE_ZERO ;
+    char const *exclude[2] = { SS_MASTER + 1, 0 } ;
 
     char *name = res->sa.s + res->name ;
     size_t srclen = strlen(src), a = 0, b = 0, c = 0 ;
@@ -909,7 +920,7 @@ int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src)
     if (res->type == TYPE_CLASSIC) type = 0 ;
     else type = 1 ;
 
-    if (!sastr_dir_get(&nsv,s,SS_MASTER+1,S_IFREG)) goto err ;
+    if (!sastr_dir_get(&nsv,s,exclude,S_IFREG)) goto err ;
 
     if (!ss_resolve_cmp(tokeep,name) && (!obstr_equal(name,SS_MASTER+1)))
     {
@@ -1396,7 +1407,7 @@ int ss_resolve_svtree(stralloc *svtree,char const *svname,char const *tree)
     size_t pos, newlen ;
     stralloc satree = STRALLOC_ZERO ;
     stralloc tmp = STRALLOC_ZERO ;
-
+    char const *exclude[3] = { SS_BACKUP + 1, SS_RESOLVE + 1, 0 } ;
 
     if (!set_ownersysdir(svtree,owner)) { log_warnusys("set owner directory") ; goto err ; }
     if (!auto_stra(svtree,SS_SYSTEM)) goto err ;
@@ -1412,7 +1423,7 @@ int ss_resolve_svtree(stralloc *svtree,char const *svname,char const *tree)
 
     if (!stralloc_copy(&tmp,svtree)) goto err ;
 
-    if (!sastr_dir_get(&satree, svtree->s,SS_BACKUP + 1, S_IFDIR)) {
+    if (!sastr_dir_get(&satree, svtree->s,exclude, S_IFDIR)) {
         log_warnu("get list of trees from directory: ",svtree->s) ;
         goto err ;
     }

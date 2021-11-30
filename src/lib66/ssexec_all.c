@@ -73,6 +73,7 @@ int all_doit(ssexec_t *info, unsigned int what, char const *const *envp)
     int r ;
 
     stralloc salist = STRALLOC_ZERO ;
+    char const *exclude[2] = { SS_LIVETREE_INIT, 0 } ;
 
     char ownerstr[UID_FMT] ;
     size_t ownerlen = uid_fmt(ownerstr,info->owner) ;
@@ -90,7 +91,7 @@ int all_doit(ssexec_t *info, unsigned int what, char const *const *envp)
 
     src[info->live.len + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len] = 0 ;
 
-    if (!sastr_dir_get(&salist,src,SS_LIVETREE_INIT,S_IFREG))
+    if (!sastr_dir_get(&salist,src,exclude,S_IFREG))
         log_dieusys(LOG_EXIT_SYS,"get contents of directory: ",src) ;
 
     if (salist.len)
@@ -164,6 +165,7 @@ void all_unsupervise(ssexec_t *info, char const *const *envp,int what)
     log_flow() ;
 
     size_t newlen = info->livetree.len + 1, pos = 0 ;
+    char const *exclude[1] = { 0 } ;
 
     char ownerstr[UID_FMT] ;
     size_t ownerlen = uid_fmt(ownerstr,info->owner) ;
@@ -188,7 +190,7 @@ void all_unsupervise(ssexec_t *info, char const *const *envp,int what)
         char livetree[newlen + info->treename.len + SS_SVDIRS_LEN + 1] ;
         auto_strings(livetree,info->livetree.s,"/",info->treename.s,SS_SVDIRS) ;
 
-        if (!sastr_dir_get(&salist,livetree,"",S_IFDIR)) log_dieusys(LOG_EXIT_SYS,"get service list at: ",livetree) ;
+        if (!sastr_dir_get(&salist,livetree,exclude,S_IFDIR)) log_dieusys(LOG_EXIT_SYS,"get service list at: ",livetree) ;
 
         livetree[newlen + info->treename.len] = 0 ;
 
@@ -327,9 +329,30 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp,ssexec_
 
         if (!auto_stra(&info->tree,contents.s + pos))
             log_die_nomem("stralloc") ;
-
-        r = tree_sethome(&info->tree,info->base.s,info->owner) ;
-        if (r < 0 || !r) log_dieusys(LOG_EXIT_SYS,"find tree: ", info->treename.s) ;
+        /**
+         *
+         *
+         *
+         *
+         *
+         *
+         *
+         * Attention ici avec le nouveau format de tree_sethome()
+         *
+         *
+         *
+         *
+         *
+         *
+         *
+         *
+         *
+         *
+         *
+         *
+         * */
+        r = tree_sethome(info) ;
+        if (r <= 0) log_dieusys(LOG_EXIT_SYS,"find tree: ", info->treename.s) ;
 
         if (!tree_get_permissions(info->tree.s,info->owner))
             log_die(LOG_EXIT_USER,"You're not allowed to use the tree: ",info->tree.s) ;
