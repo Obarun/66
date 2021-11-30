@@ -20,7 +20,6 @@ BIN_TARGETS := \
 66-shutdown \
 66-shutdownd \
 66-hpr \
-66-rebuild \
 66-umountall \
 66-echo \
 execl-envfile \
