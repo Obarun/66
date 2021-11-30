@@ -155,7 +155,7 @@ char const *help_all =
 "   -f: fork the process\n"
 ;
 
-char const *usage_tree = "66-tree [ -h ] [ -z ] [ -v verbosity ] [ -n|R ] [ -a|d ] [ -c ] [ -o depends=:requiredby= ] [ -E|D ] [ -C clone ] tree" ;
+char const *usage_tree = "66-tree [ -h ] [ -z ] [ -v verbosity ] [ -n|R ] [ -a|d ] [ -c ] [ -o depends=:requiredby=:rename= ] [ -E|D ] [ -C clone ] tree" ;
 
 char const *help_tree =
 "\n"
@@ -178,4 +178,5 @@ char const *help_tree =
 "\n"
 "   depends=: comma separated list of dependencies for tree\n"
 "   requiredby=: comma separated list of trees required by tree\n"
+"   rename=: rename tree with as rename\n"
 ;
