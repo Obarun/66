@@ -26,6 +26,11 @@ int main(int argc, char const *const *argv,char const *const *envp)
     info.help = help_enable ;
     info.usage = usage_enable ;
 
+    /** The tree can be define by the frontend service file
+     * with the field @intree. So, avoid to crash at call of
+     * the tree_sethome() function. */
+    info.skip_opt_tree = 1 ;
+
     return ssexec_main(argc,argv,envp,&ssexec_enable,&info) ;
 }
 
