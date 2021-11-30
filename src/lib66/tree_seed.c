@@ -60,11 +60,11 @@ static ssize_t tree_seed_get_key(char *table,char const *str)
     return pos ;
 }
 
-int tree_seed_parse_file(ss_tree_seed_t *seed, char const *seedpath)
+int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 {
     log_flow() ;
 
-    int r ;
+    int r, e = 0 ;
 
     stralloc sa = STRALLOC_ZERO ;
     size_t pos = 0 ;
@@ -192,7 +192,7 @@ int tree_seed_parse_file(ss_tree_seed_t *seed, char const *seedpath)
                 seed->nopts++ ;
 
                 break ;
-
+            /*
             case SEED_SERVICES :
                 {
                     stralloc sv = STRALLOC_ZERO ;
@@ -212,7 +212,7 @@ int tree_seed_parse_file(ss_tree_seed_t *seed, char const *seedpath)
 
                     break ;
                 }
-
+            */
             default :
 
                 log_warn("unknown key: ", key, " -- ignoring") ;
@@ -221,11 +221,10 @@ int tree_seed_parse_file(ss_tree_seed_t *seed, char const *seedpath)
 
     }
 
-    stralloc_free(&sa) ;
-    return 1 ;
+    e = 1 ;
     err:
         stralloc_free(&sa) ;
-        return 0 ;
+        return e ;
 }
 
 /** @Return -1 bad format e.g want REG get DIR
@@ -310,16 +309,17 @@ int tree_seed_isvalid(char const *seed)
     return e ;
 }
 
-int tree_seed_ismandatory(ss_tree_seed_t *seed, uint8_t check_service)
+int tree_seed_ismandatory(tree_seed_t *seed, uint8_t check_service)
 {
     log_flow() ;
 
+    int e = 0 ;
     uid_t uid = getuid() ;
-    size_t pos = 0 ;
+    //size_t pos = 0 ;
     stralloc sv = STRALLOC_ZERO ;
 
     char *group = saseed.s + seed->group ;
-    char *service = saseed.s + seed->services ;
+    //char *service = saseed.s + seed->services ;
 
     if (!uid && (!strcmp(group, "user"))) {
 
@@ -337,7 +337,7 @@ int tree_seed_ismandatory(ss_tree_seed_t *seed, uint8_t check_service)
         log_warn("enable was asked for a tree on group boot -- ignoring enable request") ;
         seed->enabled = 0 ;
     }
-
+    /**
     if (check_service) {
 
         stralloc sasrc = STRALLOC_ZERO ;
@@ -354,7 +354,7 @@ int tree_seed_ismandatory(ss_tree_seed_t *seed, uint8_t check_service)
 
             char *s = sv.s + pos ;
 
-            /** ss_resolve_src already warn user */
+            // ss_resolve_src already warn user
             if (!ss_resolve_src_path(&sasrc,s, uid, 0)) {
 
                 stralloc_free(&sasrc) ;
@@ -364,21 +364,18 @@ int tree_seed_ismandatory(ss_tree_seed_t *seed, uint8_t check_service)
 
         stralloc_free(&sasrc) ;
     }
-
-    stralloc_free(&sv) ;
-    return 1 ;
+    */
+    e = 1 ;
     err:
         stralloc_free(&sv) ;
-        return 0 ;
+        return e ;
 }
 
-/** Return 0 on fail
- * Return 1 if tree need to be created
- * Return 2 if tree already exist */
-int tree_seed_setseed(ss_tree_seed_t *seed, char const *treename, uint8_t check_service)
+int tree_seed_setseed(tree_seed_t *seed, char const *treename, uint8_t check_service)
 {
     log_flow() ;
 
+    int e = 0 ;
     stralloc src = STRALLOC_ZERO ;
 
     if (!tree_seed_resolve_path(&src, treename))
@@ -392,9 +389,8 @@ int tree_seed_setseed(ss_tree_seed_t *seed, char const *treename, uint8_t check_
         !tree_seed_ismandatory(seed, check_service))
             goto err ;
 
-    stralloc_free(&src) ;
-    return 1 ;
+    e = 1 ;
     err:
         stralloc_free(&src) ;
-        return 0 ;
+        return e ;
 }
