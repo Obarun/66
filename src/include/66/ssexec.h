@@ -119,7 +119,7 @@ extern char const *help_tree ;
 #define OPTS_ENV_LEN (sizeof OPTS_ENV - 1)
 #define OPTS_ALL "f"
 #define OPTS_ALL_LEN (sizeof OPTS_ALL - 1)
-#define OPTS_TREE "na:d:cS:EDRC:"
+#define OPTS_TREE "na:d:cS:EDRC:o:"
 #define OPTS_TREE_LEN (sizeof OPTS_TREE - 1)
 
 extern int ssexec_main(int argc, char const *const *argv, char const *const *envp,ssexec_func_t *func,ssexec_t *info) ;
