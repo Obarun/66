@@ -314,7 +314,8 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
     !env_append_version(&dst_ver,svconf,dversion))
         return 0 ;
 
-    if (!sastr_dir_get(&salist,src_ver.s,svname_dot,S_IFREG))
+    char const *exclude[2] = { svname_dot, 0 } ;
+    if (!sastr_dir_get(&salist,src_ver.s,exclude,S_IFREG))
         log_warnusys_return(LOG_EXIT_ZERO,"get configuration file from directory: ",src_ver.s) ;
 
     FOREACH_SASTR(&salist,pos) {
@@ -348,7 +349,8 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
         salist.len = 0 ;
         pos = 0 ;
 
-        if (!sastr_dir_get(&salist,src_ver.s,"",S_IFDIR))
+        char const *exclude[1] = { 0 } ;
+        if (!sastr_dir_get(&salist,src_ver.s,exclude,S_IFDIR))
             log_warnusys_return(LOG_EXIT_ZERO,"get configuration directories from directory: ",src_ver.s) ;
 
         FOREACH_SASTR(&salist,pos) {

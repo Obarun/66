@@ -357,9 +357,11 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
     switch(todo)
     {
         case T_VLIST:
-
-            if (!sastr_dir_get(&satmp,svconf,SS_SYM_VERSION + 1,S_IFDIR))
-                log_dieu(LOG_EXIT_SYS,"get versioned directory of: ",svconf) ;
+            {
+                char const *exclude[2] = { SS_SYM_VERSION + 1, 0 } ;
+                if (!sastr_dir_get(&satmp,svconf,exclude,S_IFDIR))
+                    log_dieu(LOG_EXIT_SYS,"get versioned directory of: ",svconf) ;
+            }
             for (pos = 0 ; pos < satmp.len; pos += strlen(satmp.s + pos) + 1)
             {
                 if (buffer_puts(buffer_1, svconf) < 0)
@@ -377,9 +379,11 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
             break ;
 
         case T_LIST:
-
-            if (!sastr_dir_get(&satmp,src,SS_SYM_VERSION + 1,S_IFREG))
-                log_dieu(LOG_EXIT_SYS,"get versioned directory at: ",src) ;
+            {
+                char const *exclude[2] = { SS_SYM_VERSION + 1, 0 } ;
+                if (!sastr_dir_get(&satmp,src,exclude,S_IFREG))
+                    log_dieu(LOG_EXIT_SYS,"get versioned directory at: ",src) ;
+            }
             for (pos = 0 ; pos < satmp.len; pos += strlen(satmp.s + pos) + 1)
             {
                 salist.len = 0 ;

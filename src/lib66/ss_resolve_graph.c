@@ -190,6 +190,7 @@ int ss_resolve_graph_src(ss_resolve_graph_t *graph, char const *dir, unsigned in
     stralloc sa = STRALLOC_ZERO ;
     ss_resolve_t res = RESOLVE_ZERO ;
     size_t dirlen = strlen(dir), pos = 0 ;
+    char const *exclude[2] = { 0 } ;
 
     char solve[dirlen + SS_DB_LEN + SS_SRC_LEN + 1] ;
     memcpy(solve,dir,dirlen) ;
@@ -198,14 +199,16 @@ int ss_resolve_graph_src(ss_resolve_graph_t *graph, char const *dir, unsigned in
     {
         memcpy(solve + dirlen, SS_SVC, SS_SVC_LEN) ;
         solve[dirlen + SS_SVC_LEN] = 0 ;
-        if (!sastr_dir_get(&sa,solve,"",S_IFDIR)) goto err ;
+        if (!sastr_dir_get(&sa,solve,exclude,S_IFDIR)) goto err ;
     }
     if (what)
     {
         memcpy(solve + dirlen, SS_DB, SS_DB_LEN) ;
         memcpy(solve + dirlen + SS_DB_LEN, SS_SRC, SS_SRC_LEN) ;
         solve[dirlen + SS_DB_LEN + SS_SRC_LEN] = 0 ;
-        if (!sastr_dir_get(&sa,solve,SS_MASTER + 1,S_IFDIR)) goto err ;
+        exclude[0] = SS_MASTER + 1 ;
+        exclude[1] = 0 ;
+        if (!sastr_dir_get(&sa,solve,exclude,S_IFDIR)) goto err ;
     }
     for (;pos < sa.len; pos += strlen(sa.s + pos) + 1)
     {

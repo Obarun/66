@@ -1,5 +1,5 @@
 /*
- * ss_service.c
+ * service.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -40,6 +40,7 @@ int service_isenabled(char const *sv)
     ss_resolve_t res = RESOLVE_ZERO ;
     size_t newlen = 0, pos = 0 ;
     int e = -1 ;
+    char const *exclude[3] = { SS_BACKUP + 1, SS_RESOLVE + 1, 0 } ;
 
     if (!set_ownersysdir(&sa, getuid())) {
 
@@ -60,7 +61,7 @@ int service_isenabled(char const *sv)
     newlen = sa.len + SS_SYSTEM_LEN + 1 ;
     sa.len = 0 ;
 
-    if (!sastr_dir_get(&sa, tmp, SS_BACKUP + 1, S_IFDIR)) {
+    if (!sastr_dir_get(&sa, tmp, exclude, S_IFDIR)) {
 
         log_warnu("get list of trees from: ", tmp) ;
         goto freed ;
@@ -116,6 +117,7 @@ int service_isenabledat(stralloc *tree, char const *sv)
     ss_resolve_t res = RESOLVE_ZERO ;
     size_t newlen = 0, pos = 0 ;
     int e = -1 ;
+    char const *exclude[3] = { SS_BACKUP + 1, SS_RESOLVE + 1, 0 } ;
 
     if (!set_ownersysdir(&sa, getuid())) {
 
@@ -136,7 +138,7 @@ int service_isenabledat(stralloc *tree, char const *sv)
     newlen = sa.len + SS_SYSTEM_LEN + 1 ;
     sa.len = 0 ;
 
-    if (!sastr_dir_get(&sa, tmp, SS_BACKUP + 1, S_IFDIR)) {
+    if (!sastr_dir_get(&sa, tmp, exclude, S_IFDIR)) {
 
         log_warnu("get list of trees from: ", tmp) ;
         goto freed ;

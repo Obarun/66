@@ -359,11 +359,12 @@ int module_search_service(char const *src, genalloc *gares, char const *name,uin
     stralloc list = STRALLOC_ZERO ;
     stralloc tmp = STRALLOC_ZERO ;
     ss_resolve_t res = RESOLVE_ZERO ;
+    char const *exclude[2] = { SS_MASTER + 1, 0 } ;
 
     char t[srclen + SS_RESOLVE_LEN + 1] ;
     auto_strings(t,src,SS_RESOLVE) ;
 
-    if (!sastr_dir_get(&list,t,SS_MASTER+1,S_IFREG)) goto err ;
+    if (!sastr_dir_get(&list,t,exclude,S_IFREG)) goto err ;
 
     for (;pos < list.len ; pos += strlen(list.s + pos) + 1)
     {

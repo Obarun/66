@@ -48,6 +48,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
     stralloc sasvc = STRALLOC_ZERO ;
     ss_resolve_t res = RESOLVE_ZERO ;
     ss_state_t sta = STATE_ZERO ;
+    char const *exclude[1] = { 0 } ;
 
     classic = db = earlier = 0 ;
 
@@ -92,7 +93,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
     /** svc already initiated? */
     if (classic)
     {
-        if (!sastr_dir_get(&sasvc,svdir,"",S_IFDIR)) log_dieusys(LOG_EXIT_SYS,"get classic services from: ",svdir) ;
+        if (!sastr_dir_get(&sasvc,svdir,exclude,S_IFDIR)) log_dieusys(LOG_EXIT_SYS,"get classic services from: ",svdir) ;
         if (!sasvc.len)
         {
             log_info("Initialization report: no classic services into tree: ",info->treename.s) ;
