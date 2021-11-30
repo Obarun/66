@@ -16,6 +16,8 @@
 #include <stdint.h>
 #include <errno.h>
 
+#include <stdio.h>
+
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -35,8 +37,11 @@
 #include <66/resolve.h>
 #include <66/ssexec.h>
 #include <66/environ.h>
+#include <66/service.h>
 
 static stralloc workdir = STRALLOC_ZERO ;
+stralloc PARSED_LIST = STRALLOC_ZERO ;
+
 /** force == 1, only rewrite the service
  * force == 2, rewrite the service and it dependencies*/
 static uint8_t FORCE = 0 ;
@@ -60,35 +65,76 @@ static void check_identifier(char const *name)
 
     int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
     if (logname > 0) log_die(LOG_EXIT_USER,"service: ",name,": ends with reserved suffix -log") ;
-    if (!memcmp(name,SS_MASTER+1,6)) log_die(LOG_EXIT_USER,"service: ",name,": starts with reserved prefix Master") ;
+    if (!memcmp(name, SS_MASTER + 1, 6)) log_die(LOG_EXIT_USER,"service: ",name,": starts with reserved prefix Master") ;
     if (!strcmp(name,SS_SERVICE)) log_die(LOG_EXIT_USER,"service as service name is a reserved name") ;
     if (!strcmp(name,"service@")) log_die(LOG_EXIT_USER,"service@ as service name is a reserved name") ;
 }
 
-void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t force)
+void start_parser(char const *sv, ssexec_t *info, uint8_t disable_module, char const *directory_forced)
 {
     log_flow() ;
 
-    size_t i = 0 ;
+    size_t pos = 0 ;
 
-    stralloc sasv = STRALLOC_ZERO ;
     stralloc parsed_list = STRALLOC_ZERO ;
-    stralloc tree_list = STRALLOC_ZERO ;
-    uint8_t disable_module = 1 ;
 
-    FOREACH_SASTR(list,i) {
+    char *name = 0 ;
+    int r ;
 
-        char *name = list->s + i ;
+    r = parse_service(sv, &parsed_list, info, FORCE, CONF) ;
+    if (!r)
+        log_dieu(LOG_EXIT_SYS, "parse service file: ",name,": or its dependencies") ;
 
-        if (!parse_service_before(info,&parsed_list,&tree_list,name,nbsv,&sasv,force,CONF,disable_module,0))
-            log_dieu(LOG_EXIT_SYS,"parse service file: ",name,": or its dependencies") ;
+    // already enabled
+    if (r == 2)
+        goto freed ;
+
+    // parse deps
+    pos = 0 ;
+    for (; pos < genalloc_len(sv_alltype, &gasv) ; pos ++) {
+
+        sv_alltype_ref sv = &genalloc_s(sv_alltype,&gasv)[pos] ;
+
+        name = keep.s + sv->cname.name ;
+
+        int exist = service_isenabled(name) ;
+
+        if (sv->cname.itype != TYPE_CLASSIC) {
+
+            if (FORCE > 1 || !exist) {
+
+                if (!parse_service_alldeps(sv, info, &parsed_list, FORCE, directory_forced))
+                    log_dieu(LOG_EXIT_SYS, "parse dependencies of: ", name) ;
+
+                if (sv->cname.itype == TYPE_MODULE) {
+
+                    r = parse_module(sv, info, &parsed_list, FORCE) ;
+                    if (!r)
+                        log_dieu(LOG_EXIT_SYS, "parse module: ", name) ;
+
+                    else if (r == 2)
+                        continue ;
+
+                    if ((FORCE > 1) && (exist > 0) && disable_module) {
+
+                        char const *newargv[4] ;
+                        unsigned int m = 0 ;
+
+                        newargv[m++] = "fake_name" ;
+                        newargv[m++] = name ;
+                        newargv[m++] = 0 ;
+                        if (ssexec_disable(m, newargv, (char const *const *)environ, info))
+                            log_dieu(LOG_EXIT_SYS, "disable module: ", name) ;
+                    }
+                }
+            }
+        }
     }
-    stralloc_free(&sasv) ;
+    freed:
     stralloc_free(&parsed_list) ;
-    stralloc_free(&tree_list) ;
 }
 
-void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun,char const *workdir, genalloc *gasv,ssexec_t *info,uint8_t FORCE,uint8_t CONF)
+void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun,char const *workdir, genalloc *gasv,ssexec_t *info)
 {
     log_flow() ;
 
@@ -300,14 +346,24 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
             directory_forced = dname ;
         } else  sv = *argv ;
 
-        if (ss_resolve_src_path(&sasrc,sv,info->owner,!directory_forced ? 0 : directory_forced) < 1) log_dieu(LOG_EXIT_SYS,"resolve source path of: ",*argv) ;
+        if (ss_resolve_src_path(&sasrc,sv,info->owner,!directory_forced ? 0 : directory_forced) < 1)
+            log_dieu(LOG_EXIT_SYS,"resolve source path of: ",*argv) ;
     }
 
-    start_parser(&sasrc,info,&nbsv,FORCE) ;
+    FOREACH_SASTR(&sasrc, pos)
+        start_parser(sasrc.s + pos, info, 1, 0) ;
 
+    /**
+     *
+     *
+     * ATTENTION si -t ne pas passait alors info->tree et info->treename.s
+     * n'est pas definie
+     *
+     *
+     * */
     if (!tree_copy(&workdir,info->tree.s,info->treename.s)) log_dieusys(LOG_EXIT_SYS,"create tmp working directory") ;
 
-    start_write(&tostart,&nclassic,&nlongrun,workdir.s,&gasv,info,FORCE,CONF) ;
+    start_write(&tostart,&nclassic,&nlongrun,workdir.s,&gasv,info) ;
 
     if (nclassic)
     {
@@ -353,7 +409,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
     stralloc_free(&workdir) ;
     stralloc_free(&sasrc) ;
 
-    for (; pos < tostart.len; pos += strlen(tostart.s + pos) + 1)
+    for (pos = 0 ; pos < tostart.len; pos += strlen(tostart.s + pos) + 1)
         log_info("Enabled successfully: ", tostart.s + pos) ;
 
     if (start && tostart.len)

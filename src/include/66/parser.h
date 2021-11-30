@@ -104,6 +104,7 @@ struct sv_name_s
     int name ; //pos in keep
     int description ; //pos in keep
     int version ; // pos in keep
+    int intree ; // pos in keep
     int idga ; //pos in stralloc deps -> @depends
     unsigned int nga ; //number of deps in stralloc deps -> @depends
     int idopts ; // pos in stralloc deps -> @optsdepends
@@ -223,6 +224,7 @@ struct sv_alltype_s
     -1 , \
     -1 , \
     -1 , \
+    -1 , \
     0 , \
     -1 , \
     0 , \
@@ -295,33 +297,36 @@ extern void keynocheck_free(keynocheck *nocheck) ;
 extern void section_free(section_t *sec) ;
 extern void freed_parser(void) ;
 extern void ssexec_enable_cleanup(void) ;
+
 /** enable phase */
-extern void start_parser(stralloc *list,ssexec_t *info, unsigned int *nbsv,uint8_t FORCE) ;
+extern void start_parser(char const *sv, ssexec_t *info, uint8_t disable_module, char const *directory_forced) ;
+extern int parse_service(char const *sv, stralloc *parsed_list, ssexec_t *info, uint8_t force, uint8_t conf) ;
+int parse_service_alldeps(sv_alltype *alltype, ssexec_t *info, stralloc *parsed_list, uint8_t force, char const *directory_forced) ;
+extern int parse_service_deps(sv_alltype *alltype, ssexec_t *info, stralloc *parsed_list, uint8_t force, char const *directory_forced) ;
+extern int parse_service_optsdeps(stralloc *rebuild, sv_alltype *alltype, ssexec_t *info, stralloc *parsed_list, uint8_t force, uint8_t field, char const *directory_forced) ;
 extern int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype) ;
-extern int parse_service_check_enabled(char const *tree_directory, char const *svname,uint8_t force,uint8_t *exist) ;
-extern int parse_service_before(ssexec_t *info, stralloc *parsed_list, stralloc *opts_deps_list, char const *sv,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf,uint8_t disable_module,char const *directory_forced) ;
-extern int parse_service_all_deps(ssexec_t *info,stralloc *parsed_list, stralloc *tree_list, sv_alltype *sv_before,char const *sv, unsigned int *nbsv,stralloc *sasv,uint8_t force, uint8_t conf,char const *directory_forced) ;
-extern int parse_service_deps(ssexec_t *info,stralloc *parsed_list, stralloc *opts_deps_list, sv_alltype *sv_before, char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf,char const *directory_forced) ;
-extern int parse_service_opts_deps(stralloc *rebuild,ssexec_t *info,stralloc *parsed_list,stralloc *opts_deps_list,sv_alltype *sv_before,char const *sv,unsigned int *nbsv,stralloc *sasv,uint8_t force,uint8_t conf,uint8_t mandatory,char const *directory_forced) ;
-extern int parse_add_service(stralloc *parsed_list,sv_alltype *sv_before,char const *service,unsigned int *nbsv,uid_t owner,uint8_t conf) ;
-extern int get_svtype(sv_alltype *sv_before, char const *contents) ;
-extern int get_svtype_from_file(char const *file) ;
 
 /** split */
 extern int section_get_range(section_t *sasection,stralloc *src) ;
 extern int key_get_range(genalloc *ga, section_t *sasection) ;
 extern int check_mandatory(sv_alltype *service, section_t *sasection) ;
-extern int nocheck_toservice(keynocheck *nocheck,int svtype, sv_alltype *service) ;
+extern int nocheck_toservice(keynocheck *nocheck, int svtype, sv_alltype *service) ;
+
 /** store */
 extern int keep_common(sv_alltype *service,keynocheck *nocheck,int svtype) ;
 extern int keep_runfinish(sv_exec *exec,keynocheck *nocheck) ;
 extern int keep_logger(sv_execlog *log,keynocheck *nocheck) ;
 extern int keep_environ(sv_alltype *service,keynocheck *nocheck) ;
 extern int keep_regex(sv_module *module,keynocheck *nocheck) ;
+
 /** helper */
+extern int get_svtype(sv_alltype *sv_before, char const *contents) ;
+extern int get_svtype_from_file(char const *file) ;
+extern int get_svintree(sv_alltype *sv_before, char const *contents) ;
 extern int add_pipe(sv_alltype *sv, stralloc *sa) ;
+
 /** write */
-extern void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun,char const *workdir, genalloc *gasv,ssexec_t *info,uint8_t FORCE,uint8_t CONF) ;
+extern void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun,char const *workdir, genalloc *gasv,ssexec_t *info) ;
 extern int write_services(sv_alltype *sv, char const *workdir, uint8_t force,uint8_t conf) ;
 extern int write_classic(sv_alltype *sv, char const *dst, uint8_t force, uint8_t conf) ;
 extern int write_longrun(sv_alltype *sv,char const *dst, uint8_t force, uint8_t conf) ;
@@ -335,8 +340,9 @@ extern int write_consprod(sv_alltype *sv,char const *prodname,char const *consna
 extern int write_dependencies(unsigned int nga,unsigned int idga,char const *dst,char const *filename) ;
 extern int write_env(char const *name,char const *contents,char const *dst) ;
 extern int write_oneshot_logger(stralloc *destlog, sv_alltype *sv) ;
+
 /** module */
-extern int parse_module(sv_alltype *sv_before,ssexec_t *info,stralloc *parsed_list,stralloc *tree_list, char const *svname,char const *src_frontend,unsigned int *nbsv, stralloc *sasv,uint8_t force,uint8_t conf) ;
+extern int parse_module(sv_alltype *alltype, ssexec_t *info, stralloc *parsed_list, uint8_t force) ;
 extern int regex_get_file_name(char *filename,char const *str) ;
 extern int regex_get_replace(char *replace, char const *str) ;
 extern int regex_get_regex(char *regex, char const *str) ;
