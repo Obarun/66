@@ -129,8 +129,8 @@ int ss_state_check(char const *src, char const *name)
     memcpy(tmp + srclen + 1, name, namelen) ;
     tmp[srclen + 1 + namelen] = 0 ;
     r = scan_mode(tmp,S_IFREG) ;
-    if (!r || r < 0) return 0 ;
-    else return 1 ;
+    if (r <= 0) return 0 ;
+    return 1 ;
 }
 
 void ss_state_setflag(ss_state_t *sta,int flags,int flags_val)
