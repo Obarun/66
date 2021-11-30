@@ -27,6 +27,7 @@
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/sastr.h>
+#include <oblibs/graph.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
@@ -50,9 +51,6 @@
  *
  *
  *
- *
- * create > option by default
- *
  * -o depends=boot,system:requiredby=graphics
  *
  * depends/requiredby automatically enable the trees found at field except for boot
@@ -62,11 +60,48 @@
  * -G for groups
  *
  *
- * -a user,root. Actuellement user n'est pas compris.faire comme dans le parser_utils.
- *
  * */
+#define TREE_COLON_DELIM ':'
+#define TREE_COMMA_DELIM ','
+#define TREE_MAXOPTS 4
+#define tree_checkopts(n) if (n >= TREE_MAXOPTS) log_die(LOG_EXIT_USER, "too many -o options")
+stralloc TREE_SAOPTS = STRALLOC_ZERO ;
 
 static char const *cleantree = 0 ;
+static graph_t GRAPH = GRAPH_ZERO ;
+
+typedef struct tree_opts_map_s tree_opts_map_t ;
+struct tree_opts_map_s
+{
+    char const *str ;
+    int const id ;
+} ;
+
+typedef enum enum_tree_opts_e enum_tree_opts_t, *enum_tree_opts_t_ref ;
+enum enum_ns_opts_e
+{
+    TREE_OPTS_DEPENDS = 0,
+    TREE_OPTS_REQUIREDBY,
+    TREE_OPTS_RENAME,
+    TREE_OPTS_ENDOFKEY
+} ;
+
+tree_opts_map_t const tree_opts_table[] =
+{
+    { .str = "depends", .id = TREE_OPTS_DEPENDS },
+    { .str = "requiredby", .id = TREE_OPTS_REQUIREDBY },
+    { .str = "rename", .id = TREE_OPTS_RENAME },
+    { .str = 0 }
+} ;
+
+typedef struct tree_opts_s tree_opts_t, *tree_opts_t_ref ;
+struct tree_opts_s
+{
+    int depends ; //index of depends at TREE_SAOPTS
+    int requiredby ; //index of requiredby at TREE_SAOPTS
+    int rename ; //index of rename at TREE_SAOPTS
+} ;
+#define TREE_OPTS_ZERO { -1, -1, -1 }
 
 static void cleanup(void)
 {
@@ -117,7 +152,24 @@ static void inline auto_stralloc(stralloc *sa,char const *str)
         log_die_nomem("stralloc") ;
 }
 
-//int sanitize_tree(stralloc *dstree, char const *base, char const *tree,uid_t owner)
+static ssize_t tree_get_key(char *table,char const *str)
+{
+    ssize_t pos = -1 ;
+
+    pos = get_len_until(str,'=') ;
+
+    if (pos == -1)
+        return -1 ;
+
+    auto_strings(table,str) ;
+
+    table[pos] = 0 ;
+
+    pos++ ; // remove '='
+
+    return pos ;
+}
+
 int sanitize_tree(ssexec_t *info, char const *tree)
 {
     log_flow() ;
@@ -127,7 +179,7 @@ int sanitize_tree(ssexec_t *info, char const *tree)
     size_t treelen = strlen(tree) ;
     uid_t log_uid ;
     gid_t log_gid ;
-    char dst[baselen + SS_SYSTEM_LEN + 1 + treelen + 1] ;
+    char dst[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1 + treelen + 1] ;
     auto_strings(dst,info->base.s, SS_SYSTEM) ;
 
     /** base is /var/lib/66 or $HOME/.66*/
@@ -136,6 +188,9 @@ int sanitize_tree(ssexec_t *info, char const *tree)
     auto_check(dst) ;
     /** create extra directory for service part */
     if (!info->owner) {
+
+        auto_strings(dst,info->base.s, SS_SYSTEM, SS_RESOLVE) ;
+        auto_check(dst) ;
 
         auto_check(SS_LOGGER_SYSDIR) ;
 
@@ -193,6 +248,9 @@ int sanitize_tree(ssexec_t *info, char const *tree)
 
         stralloc_free(&extra) ;
     }
+
+    auto_strings(dst,info->base.s, SS_SYSTEM, SS_RESOLVE) ;
+    auto_check(dst) ;
 
     auto_strings(dst + baselen, SS_TREE_CURRENT) ;
     auto_check(dst) ;
@@ -324,7 +382,7 @@ void create_backupdir(ssexec_t *info)
         auto_dir(treetmp,0755) ;
 }
 
-void parse_uild_list(uid_t *uids, char const *str)
+void parse_uid_list(uid_t *uids, char const *str)
 {
     size_t pos = 0 ;
     stralloc sa = STRALLOC_ZERO ;
@@ -517,9 +575,107 @@ void tree_remove(ssexec_t *info)
     log_info("Deleted successfully: ",tree) ;
 }
 
-
 #include <stdio.h>
 
+static void tree_parse_depends(char const *treename, char const *str)
+{
+    size_t pos = 0 ;
+    char *sv = 0 ;
+    stralloc sa = STRALLOC_ZERO ;
+
+    if (!sastr_clean_string_wdelim(&sa, str, TREE_COMMA_DELIM))
+        log_dieu(LOG_EXIT_SYS,"clean sub options") ;
+
+    FOREACH_SASTR(&sa, pos) {
+
+        sv = sa.s + pos ;
+
+        if (!graph_vertex_add(&GRAPH, sv))
+            log_die(LOG_EXIT_SYS,"add vertex: ", sv) ;
+
+        if (!graph_edge_add_g(&GRAPH, treename, sv))
+            log_die(LOG_EXIT_SYS,"add edge: ", sv, " to vertex: ", treename) ;
+
+    }
+    stralloc_free(&sa) ;
+}
+
+static void tree_parse_options(tree_opts_t *opts, char const *str)
+{
+
+    size_t pos = 0, len = 0 ;
+    ssize_t r ;
+    char *line = 0, *key = 0, *val = 0 ;
+    tree_opts_map_t const *t ;
+
+    stralloc sa = STRALLOC_ZERO ;
+
+    if (!sastr_clean_string_wdelim(&sa,str,TREE_COLON_DELIM))
+        log_dieu(LOG_EXIT_SYS,"clean options") ;
+
+    unsigned int n = sastr_len(&sa), nopts = 0 , old ;
+
+    tree_checkopts(n) ;
+
+    FOREACH_SASTR(&sa, pos) {
+
+        line = sa.s + pos ;
+        t = tree_opts_table ;
+        old = nopts ;
+
+        for (; t->str ; t++) {
+
+            len = strlen(line) ;
+            char tmp[len + 1] ;
+
+            r = tree_get_key(tmp,line) ;
+            if (r == -1)
+                log_die(LOG_EXIT_USER,"invalid key: ", line) ;
+
+            key = tmp ;
+            val = line + r ;
+
+            if (!strcmp(key, t->str)) {
+
+                switch(t->id) {
+
+                    case TREE_OPTS_DEPENDS :
+
+                            opts->depends = TREE_SAOPTS.len ;
+                            if (!sastr_add_string(&TREE_SAOPTS, val))
+                                log_dienomem("stralloc") ;
+
+                            break ;
+
+                    case TREE_OPTS_REQUIREDBY :
+
+                            opts->requiredby = TREE_SAOPTS.len ;
+                            if (!sastr_add_string(&TREE_SAOPTS, val))
+                                log_dienomem("stralloc") ;
+
+                        break ;
+
+                    case TREE_OPTS_RENAME:
+
+                            opts->rename = TREE_SAOPTS.len ;
+                            if (!sastr_add_string(&TREE_SAOPTS, val))
+                                log_dienomem("stralloc") ;
+
+                        break ;
+
+                    default :
+
+                        break ;
+                }
+                nopts++ ;
+            }
+        }
+
+        if (old == nopts)
+            log_die(LOG_EXIT_SYS,"invalid option: ",line) ;
+    }
+    stralloc_free(&sa) ;
+}
 
 int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
 {
@@ -530,6 +686,8 @@ int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec
     char const *tree, *after_tree = 0 ;
 
     stralloc clone = STRALLOC_ZERO ;
+    tree_seed_t seed = TREE_SEED_ZERO ;
+    tree_opts_t opts = TREE_OPTS_ZERO ;
 
     current = create = allow = deny = enable = disable = remove = snap = 0 ;
 
@@ -545,10 +703,10 @@ int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec
             {
 
                 case 'n' :  create = 1 ; break ;
-                case 'a' :  parse_uild_list(auids, l.arg) ;
+                case 'a' :  parse_uid_list(auids, l.arg) ;
                             allow = 1 ;
                             break ;
-                case 'd' :  parse_uild_list(duids, l.arg) ;
+                case 'd' :  parse_uid_list(duids, l.arg) ;
                             deny = 1 ;
                             break ;
                 case 'c' :  current = 1 ; break ;
@@ -560,6 +718,8 @@ int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec
                             if (!auto_stra(&clone,l.arg)) log_die_nomem("stralloc") ;
                             snap = 1 ;
                             break ;
+                case 'o' :  tree_parse_options(&opts, l.arg) ;
+                            break ;
                 default :   log_usage(usage_tree) ;
             }
         }
@@ -569,7 +729,7 @@ int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec
     if (argc < 1) log_usage(usage_tree) ;
 
     // make create the default option
-    if (!current && !create && !allow && !deny && !enable && !disable && !remove && !snap)
+    if (!current && !create && !allow && !deny && !enable && !disable && !remove && !snap && (opt.rename >= 0))
         create = 1 ;
 
     info->treename.len = 0 ;
@@ -581,9 +741,14 @@ int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec
     log_trace("sanitize ",tree,"..." ) ;
     r = sanitize_tree(info,tree) ;
 
+    if (!graph_vertex_add(&GRAPH, tree))
+        log_dieu(LOG_EXIT_SYS,"add vertex: ",tree) ;
+
+    if (opts.depends >= 0)
+        tree_parse_depends(tree, TREE_SAOPTS.s + opts.depends) ;
+
     if(!r && create) {
 
-        ss_tree_seed_t seed = TREE_SEED_ZERO ;
         /** set cleanup */
         cleantree = info->tree.s ;
         log_trace("checking seed file: ",tree,"..." ) ;
@@ -593,27 +758,43 @@ int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec
             if (!tree_seed_setseed(&seed, tree, 0))
                 log_dieu_nclean(LOG_EXIT_SYS, &cleanup, "parse seed file: ", tree) ;
 
+            if (seed.depends) {
+
+                tree_parse_depends(tree, saseed.s + seed.depends) ;
+
+            }
+
+            if (seed.requiredby) {
+
+            }
+
             if (seed.enabled)
                 enable = 1 ;
 
-            if (seed.current)
-                current = 1 ;
-
             if (seed.allow > 0) {
 
-                parse_uild_list(auids, saseed.s + seed.allow) ;
+                parse_uid_list(auids, saseed.s + seed.allow) ;
 
                 allow = 1 ;
             }
 
             if (seed.deny > 0) {
 
-                parse_uild_list(duids, saseed.s + seed.deny) ;
+                parse_uid_list(duids, saseed.s + seed.deny) ;
 
                 deny = 1 ;
             }
+
+            if (seed.current)
+                current = 1 ;
+
+            if (seed.group) {
+
+            }
+
+            //if (seed.services)
         }
-        tree_seed_free();
+
 
         log_trace("creating: ",info->tree.s,"..." ) ;
         create_tree(info) ;
@@ -642,8 +823,35 @@ int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec
     if ((!r && !create) || (!r && enable)) log_dieusys(LOG_EXIT_SYS,"find tree: ",info->tree.s) ;
     if (r && create) log_dieu(LOG_EXIT_USER,"create: ",info->tree.s,": already exist") ;
 
-    if (enable)
+
+
+    if (enable) {
+        /**
+         *
+         *
+         * Also, check if depends of the tree are enabled.
+         *
+         *
+         *
+         * */
+
+
+        if (!graph_matrix_build(&GRAPH))
+            log_dieu(LOG_EXIT_SYS,"build the graph") ;
+
+        if (!graph_matrix_analyze_cycle(&GRAPH))
+            log_die(LOG_EXIT_SYS,"found cycle") ;
+
+        if (!graph_matrix_sort(&GRAPH))
+            log_dieu(LOG_EXIT_SYS,"sort the graph") ;
+
+        graph_show_matrix(&GRAPH) ;
+
+        for (unsigned int i = 0 ; i < GRAPH.sort_count ; i++)
+            printf("%s\n",GRAPH.data.s + genalloc_s(graph_hash_t,&GRAPH.hash)[GRAPH.sort[i]].vertex) ;
         tree_enable_disable(info,1) ;
+
+    }
 
     if (disable)
         tree_enable_disable(info,0) ;
@@ -657,7 +865,10 @@ int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec
     if(current) {
 
         log_trace("make: ",info->tree.s," as default ..." ) ;
-        if (!tree_switch_current(info->base.s,tree)) log_dieusys(LOG_EXIT_SYS,"set: ",info->tree.s," as default") ;
+
+        if (!tree_switch_current(info->base.s,tree))
+            log_dieusys(LOG_EXIT_SYS,"set: ",info->tree.s," as default") ;
+
         log_info("Set successfully: ",tree," as default") ;
     }
 
@@ -668,6 +879,7 @@ int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec
 
         stralloc salist = STRALLOC_ZERO ;
         ss_resolve_t res = RESOLVE_ZERO ;
+        char const *exclude[1] = { 0 } ;
 
         size_t syslen = info->base.len + SS_SYSTEM_LEN ;
         size_t treelen = info->treename.len ;
@@ -709,7 +921,7 @@ int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec
         char src_resolve[clone_target_len + SS_SVDIRS_LEN + SS_RESOLVE_LEN + 1] ;
         auto_strings(src_resolve,clone_target,SS_SVDIRS,SS_RESOLVE) ;
 
-        if (!sastr_dir_get(&salist,src_resolve,"",S_IFREG))
+        if (!sastr_dir_get(&salist,src_resolve,exclude,S_IFREG))
             log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get resolve file at: ",src_resolve) ;
 
         char clone_res[clone_target_len + SS_SVDIRS_LEN + 1] ;
@@ -753,7 +965,7 @@ int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec
         r = scan_mode(src_resolve_backup,S_IFDIR) ;
         if (r == 1) {
 
-            if (!sastr_dir_get(&salist,src_resolve_backup,"",S_IFREG))
+            if (!sastr_dir_get(&salist,src_resolve_backup,exclude,S_IFREG))
                 log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get resolve file at: ",src_resolve_backup) ;
 
             pos = 0 ;
@@ -859,6 +1071,9 @@ int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec
     }
 
     stralloc_free(&clone) ;
+    stralloc_free(&TREE_SAOPTS) ;
+    graph_free_all(&GRAPH) ;
+    tree_seed_free();
 
     return 0 ;
 }
