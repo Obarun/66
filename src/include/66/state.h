@@ -42,12 +42,13 @@ struct ss_state_s
 #define SS_STATE_SIZE 24
 extern ss_state_t const ss_state_zero ;
 
-extern void ss_state_rmfile(char const *src,char const *name) ;
-extern void ss_state_pack(char *pack,ss_state_t *sta) ;
-extern void ss_state_unpack(char *pack,ss_state_t *sta) ;
-extern int ss_state_write(ss_state_t *sta,char const *dst,char const *name) ;
-extern int ss_state_read(ss_state_t *sta,char const *src,char const *name) ;
-extern int ss_state_check(char const *src, char const *name) ;
-extern void ss_state_setflag(ss_state_t *sta,int flags,int flags_val) ;
-extern int ss_state_check_flags(char const *src, char const *name,int flags) ;
+extern void state_rmfile(char const *src,char const *name) ;
+extern void state_pack(char *pack,ss_state_t *sta) ;
+extern void state_unpack(char *pack,ss_state_t *sta) ;
+extern int state_write(ss_state_t *sta,char const *dst,char const *name) ;
+extern int state_read(ss_state_t *sta,char const *src,char const *name) ;
+extern int state_check(char const *src, char const *name) ;
+extern void state_setflag(ss_state_t *sta,int flags,int flags_val) ;
+extern int state_check_flags(char const *src, char const *name,int flags) ;
+
 #endif
