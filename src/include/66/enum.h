@@ -15,7 +15,8 @@
 #ifndef SS_ENUM_H
 #define SS_ENUM_H
 
-#include <sys/types.h>
+#include <sys/types.h> //ssize_t
+
 #define ENUM_START 0
 
 typedef enum enum_main_e enum_main_t, *enum_main_t_ref ;
@@ -132,24 +133,6 @@ enum enum_key_section_regex_e
 } ;
 
 extern char const *enum_str_key_section_regex[] ;
-
-/* prepare for the near future
-typedef enum enum_key_section_cgroups_e enum_key_section_cgroups_t, *enum_key_section_cgroups_t_ref ;
-enum enum_key_section_cgroups_e
-{
-
-} ;
-
-extern char const *enum_str_key_section_cgroups[] ;
-
-typedef enum enum_key_section_namespaces_e enum_key_section_namespaces_t, *enum_key_section_namespaces_t_ref ;
-enum enum_key_section_namespaces_e
-{
-
-} ;
-
-extern char const enum_str_key_section_namespaces[] ;
-*/
 
 typedef enum enum_type_e enum_type_t, *enum_type_t_ref ;
 enum enum_type_e
