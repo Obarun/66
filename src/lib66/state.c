@@ -1,5 +1,5 @@
 /*
- * ss_state.c
+ * state.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -27,7 +27,7 @@
 
 #include <66/state.h>
 
-void ss_state_rmfile(char const *src,char const *name)
+void state_rmfile(char const *src,char const *name)
 {
     log_flow() ;
 
@@ -43,7 +43,7 @@ void ss_state_rmfile(char const *src,char const *name)
     unlink_void(tmp) ;
 }
 
-void ss_state_pack(char *pack, ss_state_t *sta)
+void state_pack(char *pack, ss_state_t *sta)
 {
     log_flow() ;
 
@@ -54,7 +54,7 @@ void ss_state_pack(char *pack, ss_state_t *sta)
     uint64_pack_big(pack+16,sta->pid) ;
 }
 
-void ss_state_unpack(char *pack,ss_state_t *sta)
+void state_unpack(char *pack,ss_state_t *sta)
 {
     log_flow() ;
 
@@ -76,7 +76,7 @@ void ss_state_unpack(char *pack,ss_state_t *sta)
     sta->pid = pid ;
 }
 
-int ss_state_write(ss_state_t *sta, char const *dst, char const *name)
+int state_write(ss_state_t *sta, char const *dst, char const *name)
 {
     log_flow() ;
 
@@ -90,13 +90,13 @@ int ss_state_write(ss_state_t *sta, char const *dst, char const *name)
     memcpy(tmp + dstlen + 1, name, namelen) ;
     tmp[dstlen + 1 + namelen] = 0 ;
 
-    ss_state_pack(pack,sta) ;
+    state_pack(pack,sta) ;
     if (!openwritenclose_unsafe(tmp,pack,SS_STATE_SIZE)) return 0 ;
 
     return 1 ;
 }
 
-int ss_state_read(ss_state_t *sta, char const *src, char const *name)
+int state_read(ss_state_t *sta, char const *src, char const *name)
 {
     log_flow() ;
 
@@ -111,12 +111,12 @@ int ss_state_read(ss_state_t *sta, char const *src, char const *name)
     tmp[srclen + 1 + namelen] = 0 ;
 
     if (openreadnclose(tmp, pack, SS_STATE_SIZE) < SS_STATE_SIZE) return 0 ;
-    ss_state_unpack(pack, sta) ;
+    state_unpack(pack, sta) ;
 
     return 1 ;
 }
 
-int ss_state_check(char const *src, char const *name)
+int state_check(char const *src, char const *name)
 {
     log_flow() ;
 
@@ -133,7 +133,7 @@ int ss_state_check(char const *src, char const *name)
     return 1 ;
 }
 
-void ss_state_setflag(ss_state_t *sta,int flags,int flags_val)
+void state_setflag(ss_state_t *sta,int flags,int flags_val)
 {
     log_flow() ;
 
@@ -148,19 +148,19 @@ void ss_state_setflag(ss_state_t *sta,int flags,int flags_val)
     }
 }
 
-int ss_state_check_flags(char const *src, char const *name,int flags)
+int state_check_flags(char const *src, char const *name,int flags)
 {
     log_flow() ;
 
     /** unitialized at all, all flags == 0.
      * Return -1 to make a distinction between
      * file absent and flag == 0. */
-    if (!ss_state_check(src,name))
+    if (!state_check(src,name))
         return -1 ;
 
     ss_state_t sta = STATE_ZERO ;
 
-    if (!ss_state_read(&sta,src,name))
+    if (!state_read(&sta,src,name))
         // should not happen
         return -1 ;
 

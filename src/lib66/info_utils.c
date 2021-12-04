@@ -1,5 +1,5 @@
 /*
- * ss_info_utils.c
+ * info_utils.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -203,7 +203,7 @@ void info_display_nline(char const *field,char const *str)
     stralloc_free(&cp) ;
 }
 
-void info_graph_display(ss_resolve_t *res, depth_t *depth, int last, int padding, ss_resolve_graph_style *style)
+void info_graph_display(resolve_service_t *res, depth_t *depth, int last, int padding, ss_resolve_graph_style *style)
 {
     log_flow() ;
 
@@ -227,13 +227,13 @@ void info_graph_display(ss_resolve_t *res, depth_t *depth, int last, int padding
     {
         char *ste = res->sa.s + res->state ;
         char *name = res->sa.s + res->name ;
-        if (!ss_state_check(ste,name))
+        if (!state_check(ste,name))
         {
             ppid = "unitialized" ;
             goto dis ;
         }
 
-        if (!ss_state_read(&sta,ste,name))
+        if (!state_read(&sta,ste,name))
             log_dieusys(LOG_EXIT_SYS,"read state of: ",name) ;
 
         if (sta.init) {
@@ -280,14 +280,14 @@ void info_graph_display(ss_resolve_t *res, depth_t *depth, int last, int padding
     if (buffer_putsflush(buffer_1,"\n") < 0) return ;
 }
 
-int info_walk(ss_resolve_t *res,char const *src,int reverse, depth_t *depth, int padding, ss_resolve_graph_style *style)
+int info_walk(resolve_service_t *res,char const *src,int reverse, depth_t *depth, int padding, ss_resolve_graph_style *style)
 {
     log_flow() ;
 
     size_t pos = 0, idx = 0 ;
     stralloc sadeps = STRALLOC_ZERO ;
-    ss_resolve_t dres = RESOLVE_ZERO ;
-
+    resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &dres) ;
     if((!res->ndeps) || (depth->level > MAXDEPTH))
         goto freed ;
 
@@ -299,8 +299,8 @@ int info_walk(ss_resolve_t *res,char const *src,int reverse, depth_t *depth, int
         int last =  idx + 1 < res->ndeps  ? 0 : 1 ;
         char *name = sadeps.s + pos ;
 
-        if (!ss_resolve_check(src,name)) goto err ;
-        if (!ss_resolve_read(&dres,src,name)) goto err ;
+        if (!resolve_check(src,name)) goto err ;
+        if (!resolve_read(wres,src,name)) goto err ;
 
         info_graph_display(&dres, depth, last,padding,style) ;
 
@@ -331,16 +331,16 @@ int info_walk(ss_resolve_t *res,char const *src,int reverse, depth_t *depth, int
         }
     }
     freed:
-    ss_resolve_free(&dres) ;
+    resolve_free(wres) ;
     stralloc_free(&sadeps) ;
     return 1 ;
     err:
-        ss_resolve_free(&dres) ;
+        resolve_free(wres) ;
         stralloc_free(&sadeps) ;
         return 0 ;
 }
 
-int info_graph_init (ss_resolve_t *res,char const *src,unsigned int reverse, int padding, ss_resolve_graph_style *style)
+int info_graph_init (resolve_service_t *res,char const *src,unsigned int reverse, int padding, ss_resolve_graph_style *style)
 {
     log_flow() ;
 

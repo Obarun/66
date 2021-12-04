@@ -1,5 +1,5 @@
 /*
- * ss_instance.c
+ * instance.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -27,8 +27,6 @@
 #include <skalibs/djbunix.h>
 
 #include <66/enum.h>
-
-/** New functions */
 
 int instance_check(char const *svname)
 {
