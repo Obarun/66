@@ -18,12 +18,38 @@
 #include <sys/types.h>
 
 #include <skalibs/stralloc.h>
+#include <skalibs/cdb.h>
+#include <skalibs/cdbmake.h>
+
 #include <66/ssexec.h>
+
+#define TREE_STRUCT 1
+
+typedef struct resolve_tree_s resolve_tree_t, *resolve_tree_t_ref ;
+struct resolve_tree_s
+{
+    uint32_t salen ;
+    stralloc sa ;
+
+    uint32_t name ;
+    uint32_t depends ;
+    uint32_t requiredby ;
+    uint32_t allow ;
+    uint32_t contents ;
+
+    uint32_t ndepends ;
+    uint32_t nrequiredby ;
+    uint32_t ncontents ;
+    uint32_t current ;//no->0, yes->1
+    uint32_t init ;//not initialized->0, initialized->1
+    uint32_t disen ;//disable->0, enable->1
+} ;
+#define RESOLVE_TREE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0 }
 
 extern stralloc saseed ;
 
-typedef struct ss_tree_seed_s ss_tree_seed_t, ss_tree_seed_t_ref ;
-struct ss_tree_seed_s
+typedef struct tree_seed_s tree_seed_t, tree_seed_t_ref ;
+struct tree_seed_s
 {
     int name ;
     int depends ;
@@ -37,7 +63,6 @@ struct ss_tree_seed_s
     uint8_t nopts ;
 
 } ;
-
 #define TREE_SEED_ZERO { -1, -1, -1, 0, -1, -1, 0, -1, -1, 0 }
 
 extern int tree_cmd_state(unsigned int verbosity,char const *cmd,char const *tree) ;
@@ -65,8 +90,24 @@ extern int tree_switch_current(char const *base, char const *tree) ;
 
 extern int tree_isvalid(ssexec_t *info) ;
 
-// seed
+/**
+ *
+ * Resolve API
+ *
+ * */
+
+extern int tree_read_cdb(cdb *c, resolve_tree_t *tres) ;
+extern int tree_write_cdb(cdbmaker *c, resolve_tree_t *tres) ;
+extern int tree_resolve_copy(resolve_tree_t *dst, resolve_tree_t *tres) ;
+
+/**
+ *
+ * Seed API
+ *
+ * */
+
 extern void tree_seed_free(void) ;
-extern int tree_seed_setseed(ss_tree_seed_t *seed, char const *treename, uint8_t check_service) ;
+extern int tree_seed_setseed(tree_seed_t *seed, char const *treename, uint8_t check_service) ;
 extern int tree_seed_isvalid(char const *seed) ;
+
 #endif
