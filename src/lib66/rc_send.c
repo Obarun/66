@@ -28,15 +28,15 @@ int rc_send(ssexec_t *info,genalloc *ga,char const *sig,char const *const *envp)
     log_flow() ;
 
     size_t i = 0 ;
-    int nargc = 3 + genalloc_len(ss_resolve_t,ga) ;
+    int nargc = 3 + genalloc_len(resolve_service_t,ga) ;
     char const *newargv[nargc] ;
     unsigned int m = 0 ;
 
     newargv[m++] = "fake_name" ;
     newargv[m++] = sig ;
 
-    for (; i < genalloc_len(ss_resolve_t,ga) ; i++)
-        newargv[m++] = genalloc_s(ss_resolve_t,ga)[i].sa.s + genalloc_s(ss_resolve_t,ga)[i].name ;
+    for (; i < genalloc_len(resolve_service_t,ga) ; i++)
+        newargv[m++] = genalloc_s(resolve_service_t,ga)[i].sa.s + genalloc_s(resolve_service_t,ga)[i].name ;
 
     newargv[m++] = 0 ;
 

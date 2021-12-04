@@ -44,6 +44,7 @@
 #include <66/ssexec.h>
 #include <66/resolve.h>
 #include <66/state.h>
+#include <66/service.h>
 
 unsigned int SV_DEADLINE = 3000 ;
 unsigned int DEATHSV = 5 ;
@@ -212,33 +213,33 @@ static void write_state(ss_resolve_sig_t *svc)
     {
         if (svc->state <= 1)
         {
-            ss_state_setflag(&sta,SS_FLAGS_PID,svc->pid) ;
-            ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
+            state_setflag(&sta,SS_FLAGS_PID,svc->pid) ;
+            state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
         }
         else
         {
-            ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
-            ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
+            state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+            state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
         }
     }
     else
     {
         if (svc->state <=1)
         {
-            ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
-            ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
+            state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+            state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
         }
         else
         {
-            ss_state_setflag(&sta,SS_FLAGS_PID,svc->pid) ;
-            ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
+            state_setflag(&sta,SS_FLAGS_PID,svc->pid) ;
+            state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
         }
     }
-    ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-    ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-//  ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+    state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+    state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+//  state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
     log_trace("Write state file of: ",sv) ;
-    if (!ss_state_write(&sta,state,sv))
+    if (!state_write(&sta,state,sv))
         log_warnusys("write state file of: ",sv) ;
 }
 
@@ -497,7 +498,8 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
     genalloc gakeep = GENALLOC_ZERO ; //type ss_resolve_sig
     stralloc sares = STRALLOC_ZERO ;
     ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
-    ss_resolve_t res = RESOLVE_ZERO ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
     ss_state_t sta = STATE_ZERO ;
 
     char *sig = 0 ;
@@ -540,15 +542,15 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
     if (argc < 1 || (SIGNAL < 0)) log_usage(usage_svctl) ;
     if (info->timeout) tsv = info->timeout ;
     if ((scandir_ok(info->scandir.s)) !=1 ) log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
-    if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) log_dieusys(LOG_EXIT_SYS,"set revolve pointer to source") ;
+    if (!sa_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) log_dieusys(LOG_EXIT_SYS,"set revolve pointer to source") ;
     if (SIGNAL > SIGR) reverse = 1 ;
     for(;*argv;argv++)
     {
         char const *name = *argv ;
         int logname = 0 ;
         logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-        if (!ss_resolve_check(sares.s,name)) log_diesys(LOG_EXIT_SYS,"unknown service: ",name) ;
-        if (!ss_resolve_read(&res,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
+        if (!resolve_check(sares.s,name)) log_diesys(LOG_EXIT_SYS,"unknown service: ",name) ;
+        if (!resolve_read(wres,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
         if (res.type >= TYPE_BUNDLE) log_die(LOG_EXIT_SYS,name," has type ",get_key_by_enum(ENUM_TYPE,res.type)) ;
         if (SIGNAL == SIGR && logname < 0) reverse = 1 ;
         if (!ss_resolve_graph_build(&graph,&res,sares.s,reverse)) log_dieusys(LOG_EXIT_SYS,"build services graph") ;
@@ -558,10 +560,10 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
     if (r < 0) log_die(LOG_EXIT_SYS,"cyclic dependencies detected") ;
     if (!r) log_dieusys(LOG_EXIT_SYS,"publish service graph") ;
 
-    for(unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&graph.sorted) ; i++)
+    for(unsigned int i = 0 ; i < genalloc_len(resolve_service_t,&graph.sorted) ; i++)
     {
         ss_resolve_sig_t sv_signal = RESOLVE_SIG_ZERO ;
-        sv_signal.res = genalloc_s(ss_resolve_t,&graph.sorted)[i] ;
+        sv_signal.res = genalloc_s(resolve_service_t,&graph.sorted)[i] ;
         char *string = sv_signal.res.sa.s ;
         char *svok = string + sv_signal.res.runat ;
         char *state = string + sv_signal.res.state ;
@@ -569,8 +571,8 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
         size_t svoklen = strlen(svok) ;
         char file[svoklen + SS_NOTIFICATION_LEN + 1 + 1] ;
         memcpy(file,svok,svoklen) ;
-        if (!ss_state_check(state,string + sv_signal.res.name)) log_die(LOG_EXIT_SYS,"unitialized service: ",string + sv_signal.res.name) ;
-        if (!ss_state_read(&sta,state,string + sv_signal.res.name)) log_dieusys(LOG_EXIT_SYS,"read state of: ",string + sv_signal.res.name) ;
+        if (!state_check(state,string + sv_signal.res.name)) log_die(LOG_EXIT_SYS,"unitialized service: ",string + sv_signal.res.name) ;
+        if (!state_read(&sta,state,string + sv_signal.res.name)) log_dieusys(LOG_EXIT_SYS,"read state of: ",string + sv_signal.res.name) ;
         if (sta.init) log_die(LOG_EXIT_SYS,"unitialized service: ",string + sv_signal.res.name) ;
         if (!s6_svstatus_read(svok,&status)) log_dieusys(LOG_EXIT_SYS,"read status of: ",svok) ;
         isup = status.pid && !status.flagfinishing ;
@@ -696,7 +698,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
         stralloc_free(&sares) ;
         ss_resolve_graph_free(&graph) ;
         genalloc_free(ss_resolve_sig_t,&gakeep) ;
-        ss_resolve_free(&res) ;
+        resolve_free(wres) ;
 
     return (!ret) ? 111 : 0 ;
 }

@@ -18,7 +18,7 @@
 #include <oblibs/log.h>
 
 #include <66/enum.h>
-#include <66/resolve.h>
+#include <66/service.h>
 
 
 #ifndef SS_INFO_H
@@ -37,7 +37,7 @@ struct depth_s
 
 typedef void info_opts_func_t (char const *field,char const *treename) ;
 typedef info_opts_func_t *info_opts_func_t_ref ;
-typedef void info_opts_svfunc_t (char const *field,ss_resolve_t *res) ;
+typedef void info_opts_svfunc_t (char const *field,resolve_service_t *res) ;
 typedef info_opts_svfunc_t *info_opts_svfunc_t_ref ;
 
 typedef struct info_opts_map_s info_opts_map_t ;
@@ -71,9 +71,9 @@ extern ss_resolve_graph_style graph_default ;
 extern void info_field_align (char buf[][INFO_FIELD_MAXLEN],char fields[][INFO_FIELD_MAXLEN],wchar_t const field_suffix[],size_t buflen) ;
 extern int info_getcols_fd(int fd) ;
 extern size_t info_length_from_wchar(char const *str) ;
-extern void info_graph_display(ss_resolve_t *res, depth_t *depth, int last,int padding, ss_resolve_graph_style *style) ;
-extern int info_graph_init (ss_resolve_t *res,char const *src,unsigned int reverse, int padding, ss_resolve_graph_style *style) ;
-extern int info_walk(ss_resolve_t *res,char const *src,int reverse, depth_t *depth, int padding, ss_resolve_graph_style *style) ;
+extern void info_graph_display(resolve_service_t *res, depth_t *depth, int last,int padding, ss_resolve_graph_style *style) ;
+extern int info_graph_init (resolve_service_t *res,char const *src,unsigned int reverse, int padding, ss_resolve_graph_style *style) ;
+extern int info_walk(resolve_service_t *res,char const *src,int reverse, depth_t *depth, int padding, ss_resolve_graph_style *style) ;
 extern size_t info_display_field_name(char const *field) ;
 extern void info_display_list(char const *field, stralloc *list) ;
 extern void info_display_nline(char const *field,char const *str) ;

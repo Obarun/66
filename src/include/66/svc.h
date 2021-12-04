@@ -20,13 +20,13 @@
 #include <skalibs/genalloc.h>
 #include <s6/ftrigr.h>
 
-#include <66/resolve.h>
+#include <66/service.h>
 #include <66/ssexec.h>
 
 typedef struct ss_resolve_sig_s ss_resolve_sig_t, *ss_resolve_sig_t_ref ;
 struct ss_resolve_sig_s
 {
-    ss_resolve_t res ;
+    resolve_service_t res ;
     unsigned int notify ;
     unsigned int ndeath;
     tain deadline ;
@@ -39,7 +39,7 @@ struct ss_resolve_sig_s
 
 #define RESOLVE_SIG_ZERO \
 { \
-    .res = RESOLVE_ZERO, \
+    .res = RESOLVE_SERVICE_ZERO, \
     .notify = 0, \
     .ndeath = 3, \
     .deadline = TAIN_ZERO, \

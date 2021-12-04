@@ -86,8 +86,10 @@ int main(int argc, char const *const *argv)
 {
     int found = 0 ;
     uint8_t logger = 0 ;
-    ss_resolve_t res = RESOLVE_ZERO ;
-    ss_resolve_t lres = RESOLVE_ZERO ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_service_t lres = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref lwres = resolve_set_struct(SERVICE_STRUCT, &lres) ;
     stralloc satree = STRALLOC_ZERO ;
     stralloc src = STRALLOC_ZERO ;
     stralloc tmp = STRALLOC_ZERO ;
@@ -152,7 +154,7 @@ int main(int argc, char const *const *argv)
     if (!argc) log_usage(USAGE) ;
     svname = *argv ;
 
-    found = ss_resolve_svtree(&src,svname,tname) ;
+    found = service_resolve_svtree(&src,svname,tname) ;
     if (found == -1) log_dieu(LOG_EXIT_SYS,"resolve tree source of sv: ",svname) ;
     else if (!found) {
         log_info("no tree exist yet") ;
@@ -163,7 +165,7 @@ int main(int argc, char const *const *argv)
     }
     else if (found == 1) log_die(LOG_EXIT_SYS,"unknown service: ",svname) ;
 
-    if (!ss_resolve_read(&res,src.s,svname)) log_dieusys(111,"read resolve file") ;
+    if (!resolve_read(wres,src.s,svname)) log_dieusys(111,"read resolve file") ;
 
     info_field_align(buf,fields,field_suffix,MAXOPTS) ;
 
@@ -199,7 +201,7 @@ int main(int argc, char const *const *argv)
 
     if (res.logger && logger)
     {
-        if (!ss_resolve_read(&lres,src.s,res.sa.s + res.logger)) log_dieusys(111,"read resolve file of: ",res.sa.s + res.logger) ;
+        if (!resolve_read(lwres,src.s,res.sa.s + res.logger)) log_dieusys(111,"read resolve file of: ",res.sa.s + res.logger) ;
 
         if (buffer_putsflush(buffer_1,"\n") == -1)
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
@@ -229,8 +231,8 @@ int main(int argc, char const *const *argv)
     }
 
     freed:
-    ss_resolve_free(&res) ;
-    ss_resolve_free(&lres) ;
+    resolve_free(wres) ;
+    resolve_free(lwres) ;
     stralloc_free(&satree) ;
     stralloc_free(&src) ;
     stralloc_free(&tmp) ;

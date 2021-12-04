@@ -178,7 +178,7 @@ int parse_module(sv_alltype *alltype, ssexec_t *info, stralloc *parsed_list, uin
 
     minsta = insta ;
 
-    if (!ss_resolve_module_path(&sdir, &tmp, sv, src, info->owner))
+    if (!module_path(&sdir, &tmp, sv, src, info->owner))
         log_dieu(LOG_EXIT_SYS,"resolve source of module: ",sv);
 
     /** check mandatory directories:
@@ -256,7 +256,7 @@ int parse_module(sv_alltype *alltype, ssexec_t *info, stralloc *parsed_list, uin
         for (; nid ; id += strlen(keep.s + id) + 1, nid--) {
 
             char *name = keep.s + id ;
-            if (ss_resolve_src_path(&list, name, info->owner,0) < 1)
+            if (service_frontend_path(&list, name, info->owner,0) < 1)
                     log_die(LOG_EXIT_SYS, "resolve source path of: ", name) ;
         }
     }
@@ -314,22 +314,21 @@ int parse_module(sv_alltype *alltype, ssexec_t *info, stralloc *parsed_list, uin
 
             /** we can't know the origin of the instanciated service.
              * Search first at service@ directory, if it not found
-             * pass through the classic ss_resolve_src_path() */
+             * pass through the classic service_frontend_path() */
 
             pbname = bname ;
             if (!already_parsed) {
 
-                int found = 0 ;
                 size_t l = strlen(permanent_sdir) ;
                 char tmp[l + SS_MODULE_SERVICE_INSTANCE_LEN + 2] ;
                 auto_strings(tmp, permanent_sdir, SS_MODULE_SERVICE_INSTANCE + 1, "/") ;
 
-                r = ss_resolve_src(&addonsv, pbname, tmp, &found) ;
+                r = service_frontend_src(&addonsv, pbname, tmp) ;
 
                 if (r == -1) log_dieusys(LOG_EXIT_SYS,"parse source directory: ", tmp) ;
                 if (!r) {
 
-                    if (ss_resolve_src_path(&addonsv, pbname, info->owner, 0) < 1)
+                    if (service_frontend_path(&addonsv, pbname, info->owner, 0) < 1)
                         log_dieu(LOG_EXIT_SYS,"resolve source path of: ", pbname) ;
                 }
                 svname = addonsv.s ;

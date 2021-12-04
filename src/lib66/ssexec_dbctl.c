@@ -36,6 +36,7 @@
 #include <66/resolve.h>
 #include <66/ssexec.h>
 #include <66/state.h>
+#include <66/service.h>
 
 static unsigned int DEADLINE = 0 ;
 
@@ -48,18 +49,18 @@ static void rebuild_list(ss_resolve_graph_t *graph,ssexec_t *info, int what)
     genalloc gatmp = GENALLOC_ZERO ;
     ss_state_t sta = STATE_ZERO ;
 
-    for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&graph->sorted) ; i++)
+    for (unsigned int i = 0 ; i < genalloc_len(resolve_service_t,&graph->sorted) ; i++)
     {
-        char *string = genalloc_s(ss_resolve_t,&graph->sorted)[i].sa.s ;
-        char *name = string + genalloc_s(ss_resolve_t,&graph->sorted)[i].name ;
-        char *runat = string + genalloc_s(ss_resolve_t,&graph->sorted)[i].runat ;
-        char *state = string + genalloc_s(ss_resolve_t,&graph->sorted)[i].state ;
-        if (!ss_state_check(state,name)) log_die(LOG_EXIT_SYS,"unitialized service: ",name) ;
-        if (!ss_state_read(&sta,state,name)) log_dieusys(LOG_EXIT_SYS,"read state of: ",name) ;
+        char *string = genalloc_s(resolve_service_t,&graph->sorted)[i].sa.s ;
+        char *name = string + genalloc_s(resolve_service_t,&graph->sorted)[i].name ;
+        char *runat = string + genalloc_s(resolve_service_t,&graph->sorted)[i].runat ;
+        char *state = string + genalloc_s(resolve_service_t,&graph->sorted)[i].state ;
+        if (!state_check(state,name)) log_die(LOG_EXIT_SYS,"unitialized service: ",name) ;
+        if (!state_read(&sta,state,name)) log_dieusys(LOG_EXIT_SYS,"read state of: ",name) ;
         if (sta.init) log_die(LOG_EXIT_SYS,"unitialized service: ",name) ;
 
-        int type = genalloc_s(ss_resolve_t,&graph->sorted)[i].type ;
-        if (type == TYPE_LONGRUN && genalloc_s(ss_resolve_t,&graph->sorted)[i].disen)
+        int type = genalloc_s(resolve_service_t,&graph->sorted)[i].type ;
+        if (type == TYPE_LONGRUN && genalloc_s(resolve_service_t,&graph->sorted)[i].disen)
         {
             if (!s6_svstatus_read(runat,&status)) log_dieusys(LOG_EXIT_SYS,"read status of: ",runat) ;
             isup = status.pid && !status.flagfinishing ;
@@ -77,7 +78,7 @@ static void rebuild_list(ss_resolve_graph_t *graph,ssexec_t *info, int what)
         }
         else
         {
-            if (!sta.state && what || !genalloc_s(ss_resolve_t,&graph->sorted)[i].disen)
+            if (!sta.state && what || !genalloc_s(resolve_service_t,&graph->sorted)[i].disen)
             {
                 log_info("Already down: ",name) ;
                 continue ;
@@ -88,10 +89,10 @@ static void rebuild_list(ss_resolve_graph_t *graph,ssexec_t *info, int what)
                 continue ;
             }
         }
-        genalloc_append(ss_resolve_t,&gatmp,&genalloc_s(ss_resolve_t,&graph->sorted)[i]) ;
+        genalloc_append(resolve_service_t,&gatmp,&genalloc_s(resolve_service_t,&graph->sorted)[i]) ;
     }
-    genalloc_copy(ss_resolve_t,&graph->sorted,&gatmp) ;
-    genalloc_free(ss_resolve_t,&gatmp) ;
+    genalloc_copy(resolve_service_t,&graph->sorted,&gatmp) ;
+    genalloc_free(resolve_service_t,&gatmp) ;
 }
 
 /* signal = 0 -> reload
@@ -108,10 +109,10 @@ static int check_status(genalloc *gares,ssexec_t *info,int signal)
     if (!signal) reload = 1 ;
     else if (signal == 1) up = 1 ;
 
-    for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,gares) ; i++)
+    for (unsigned int i = 0 ; i < genalloc_len(resolve_service_t,gares) ; i++)
     {
         int nret = 0 ;
-        ss_resolve_t_ref pres = &genalloc_s(ss_resolve_t,gares)[i] ;
+        resolve_service_t_ref pres = &genalloc_s(resolve_service_t,gares)[i] ;
         char const *name = pres->sa.s + pres->name ;
         char const *state = pres->sa.s + pres->state ;
         /** do not touch the Master resolve file*/
@@ -124,44 +125,44 @@ static int check_status(genalloc *gares,ssexec_t *info,int signal)
             {
                 if ((!WEXITSTATUS(status.wstat) && !WIFSIGNALED(status.wstat)) || (WIFSIGNALED(status.wstat) && !WEXITSTATUS(status.wstat) && (WTERMSIG(status.wstat) == 15 )))
                 {
-                    ss_state_setflag(&sta,SS_FLAGS_PID,status.pid) ;
-                    ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
+                    state_setflag(&sta,SS_FLAGS_PID,status.pid) ;
+                    state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
                 }
                 else
                 {
                     log_warnu("start: ",name) ;
                     nret = 1 ;
-                    ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
-                    ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
+                    state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+                    state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
                 }
             }
             else
             {
                 if ((!WEXITSTATUS(status.wstat) && !WIFSIGNALED(status.wstat)) || (WIFSIGNALED(status.wstat) && !WEXITSTATUS(status.wstat) && (WTERMSIG(status.wstat) == 15 )))
                 {
-                    ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
-                    ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
+                    state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+                    state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
                 }
                 else
                 {
                     log_warnu("stop: ",name) ;
-                    ss_state_setflag(&sta,SS_FLAGS_PID,status.pid) ;
-                    ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
+                    state_setflag(&sta,SS_FLAGS_PID,status.pid) ;
+                    state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
                     nret = 1 ;
                 }
             }
         }
         if (nret) ret = 111 ;
-        ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-        ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-    //  ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+        state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+        state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+    //  state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
         if (pres->type == TYPE_BUNDLE || pres->type == TYPE_ONESHOT)
         {
-            if (up) ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
-            else ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
+            if (up) state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
+            else state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
         }
         log_trace("Write state file of: ",name) ;
-        if (!ss_state_write(&sta,state,name))
+        if (!state_write(&sta,state,name))
         {
             log_warnusys("write state file of: ",name) ;
             ret = 111 ;
@@ -181,7 +182,7 @@ static pid_t send(genalloc *gasv, char const *livetree, char const *signal,char 
     tain_now_g() ;
     tain_add_g(&deadline, &deadline) ;
 
-    char const *newargv[10 + genalloc_len(ss_resolve_t,gasv)] ;
+    char const *newargv[10 + genalloc_len(resolve_service_t,gasv)] ;
     unsigned int m = 0 ;
     char fmt[UINT_FMT] ;
     fmt[uint_fmt(fmt, VERBOSITY)] = 0 ;
@@ -199,8 +200,8 @@ static pid_t send(genalloc *gasv, char const *livetree, char const *signal,char 
     newargv[m++] = signal ;
     newargv[m++] = "change" ;
 
-    for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,gasv); i++)
-        newargv[m++] = genalloc_s(ss_resolve_t,gasv)[i].sa.s + genalloc_s(ss_resolve_t,gasv)[i].name  ;
+    for (unsigned int i = 0 ; i < genalloc_len(resolve_service_t,gasv); i++)
+        newargv[m++] = genalloc_s(resolve_service_t,gasv)[i].sa.s + genalloc_s(resolve_service_t,gasv)[i].name  ;
 
     newargv[m++] = 0 ;
 
@@ -222,11 +223,12 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
     char *signal = 0 ;
     char *mainsv = SS_MASTER + 1 ;
 
-    genalloc gares = GENALLOC_ZERO ; //ss_resolve_t
+    genalloc gares = GENALLOC_ZERO ; //resolve_service_t
     stralloc tmp = STRALLOC_ZERO ;
     stralloc sares = STRALLOC_ZERO ;
     ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
-    ss_resolve_t res = RESOLVE_ZERO ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
 
     up = down = reload = ret = reverse = 0 ;
 
@@ -258,21 +260,21 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
     }
     else signal = "-u" ;
 
-    if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) log_dieusys(LOG_EXIT_SYS,"set revolve pointer to source") ;
+    if (!sa_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) log_dieusys(LOG_EXIT_SYS,"set revolve pointer to source") ;
 
     if (argc < 1)
     {
 
-        if (!ss_resolve_check(sares.s,mainsv)) log_diesys(LOG_EXIT_SYS,"inner bundle doesn't exit -- please make a bug report") ;
-        if (!ss_resolve_read(&res,sares.s,mainsv)) log_dieusys(LOG_EXIT_SYS,"read resolve file of inner bundle") ;
+        if (!resolve_check(sares.s,mainsv)) log_diesys(LOG_EXIT_SYS,"inner bundle doesn't exit -- please make a bug report") ;
+        if (!resolve_read(wres,sares.s,mainsv)) log_dieusys(LOG_EXIT_SYS,"read resolve file of inner bundle") ;
         if (res.ndeps)
         {
-            if (!ss_resolve_append(&gares,&res)) log_dieusys(LOG_EXIT_SYS,"append services selection with inner bundle") ;
+            if (!resolve_append(&gares,wres)) log_dieusys(LOG_EXIT_SYS,"append services selection with inner bundle") ;
         }
         else
         {
             log_info("nothing to do") ;
-            ss_resolve_free(&res) ;
+            resolve_free(wres) ;
             goto freed ;
         }
 
@@ -282,10 +284,10 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
         for(;*argv;argv++)
         {
             char const *name = *argv ;
-            if (!ss_resolve_check(sares.s,name)) log_diesys(LOG_EXIT_SYS,"unknown service: ",name) ;
-            if (!ss_resolve_read(&res,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
+            if (!resolve_check(sares.s,name)) log_diesys(LOG_EXIT_SYS,"unknown service: ",name) ;
+            if (!resolve_read(wres,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
             if (res.type == TYPE_CLASSIC) log_die(LOG_EXIT_SYS,name," has type classic") ;
-            if (!ss_resolve_append(&gares,&res)) log_dieusys(LOG_EXIT_SYS,"append services selection with: ", name) ;
+            if (!resolve_append(&gares,wres)) log_dieusys(LOG_EXIT_SYS,"append services selection with: ", name) ;
         }
     }
 
@@ -300,9 +302,9 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
     if (reload)
     {
         reverse = 1 ;
-        for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
+        for (unsigned int i = 0 ; i < genalloc_len(resolve_service_t,&gares) ; i++)
         {
-            if (!ss_resolve_graph_build(&graph,&genalloc_s(ss_resolve_t,&gares)[i],sares.s,reverse)) log_dieusys(LOG_EXIT_SYS,"build services graph") ;
+            if (!ss_resolve_graph_build(&graph,&genalloc_s(resolve_service_t,&gares)[i],sares.s,reverse)) log_dieusys(LOG_EXIT_SYS,"build services graph") ;
         }
         r = ss_resolve_graph_publish(&graph,reverse) ;
         if (r < 0) log_die(LOG_EXIT_SYS,"cyclic dependencies detected") ;
@@ -325,15 +327,15 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
     if (down) reverse = 1 ;
     else reverse = 0 ;
 
-    for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
+    for (unsigned int i = 0 ; i < genalloc_len(resolve_service_t,&gares) ; i++)
     {
         int ireverse = reverse ;
-        int logname = get_rstrlen_until(genalloc_s(ss_resolve_t,&gares)[i].sa.s + genalloc_s(ss_resolve_t,&gares)[i].name,SS_LOG_SUFFIX) ;
-        if (logname > 0 && (!ss_resolve_cmp(&gares,genalloc_s(ss_resolve_t,&gares)[i].sa.s + genalloc_s(ss_resolve_t,&gares)[i].logassoc)) && down)
+        int logname = get_rstrlen_until(genalloc_s(resolve_service_t,&gares)[i].sa.s + genalloc_s(resolve_service_t,&gares)[i].name,SS_LOG_SUFFIX) ;
+        if (logname > 0 && (!resolve_cmp(&gares,genalloc_s(resolve_service_t,&gares)[i].sa.s + genalloc_s(resolve_service_t,&gares)[i].logassoc, SERVICE_STRUCT)) && down)
             ireverse = 1  ;
 
         if (reload) ireverse = 1 ;
-        if (!ss_resolve_graph_build(&graph,&genalloc_s(ss_resolve_t,&gares)[i],sares.s,ireverse)) log_dieusys(LOG_EXIT_SYS,"build services graph") ;
+        if (!ss_resolve_graph_build(&graph,&genalloc_s(resolve_service_t,&gares)[i],sares.s,ireverse)) log_dieusys(LOG_EXIT_SYS,"build services graph") ;
     }
     r = ss_resolve_graph_publish(&graph,reverse) ;
     if (r < 0) log_die(LOG_EXIT_SYS,"cyclic dependencies detected") ;
@@ -354,8 +356,8 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
     stralloc_free(&tmp) ;
     stralloc_free(&sares) ;
     ss_resolve_graph_free(&graph) ;
-    ss_resolve_free(&res) ;
-    genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
+    resolve_free(wres) ;
+    resolve_deep_free(SERVICE_STRUCT, &gares) ;
 
     return ret ;
 }

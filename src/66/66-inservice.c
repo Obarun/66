@@ -56,25 +56,25 @@ static stralloc home = STRALLOC_ZERO ;// /var/lib/66/system or ${HOME}/system
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
 static void info_display_string(char const *str) ;
-static void info_display_name(char const *field, ss_resolve_t *res) ;
-static void info_display_intree(char const *field, ss_resolve_t *res) ;
-static void info_display_status(char const *field, ss_resolve_t *res) ;
-static void info_display_type(char const *field, ss_resolve_t *res) ;
-static void info_display_description(char const *field, ss_resolve_t *res) ;
-static void info_display_version(char const *field, ss_resolve_t *res) ;
-static void info_display_source(char const *field, ss_resolve_t *res) ;
-static void info_display_live(char const *field, ss_resolve_t *res) ;
-static void info_display_deps(char const *field, ss_resolve_t *res) ;
-static void info_display_requiredby(char const *field, ss_resolve_t *res) ;
-static void info_display_optsdeps(char const *field, ss_resolve_t *res) ;
-static void info_display_extdeps(char const *field, ss_resolve_t *res) ;
-static void info_display_start(char const *field, ss_resolve_t *res) ;
-static void info_display_stop(char const *field, ss_resolve_t *res) ;
-static void info_display_envat(char const *field, ss_resolve_t *res) ;
-static void info_display_envfile(char const *field, ss_resolve_t *res) ;
-static void info_display_logname(char const *field, ss_resolve_t *res) ;
-static void info_display_logdst(char const *field, ss_resolve_t *res) ;
-static void info_display_logfile(char const *field, ss_resolve_t *res) ;
+static void info_display_name(char const *field, resolve_service_t *res) ;
+static void info_display_intree(char const *field, resolve_service_t *res) ;
+static void info_display_status(char const *field, resolve_service_t *res) ;
+static void info_display_type(char const *field, resolve_service_t *res) ;
+static void info_display_description(char const *field, resolve_service_t *res) ;
+static void info_display_version(char const *field, resolve_service_t *res) ;
+static void info_display_source(char const *field, resolve_service_t *res) ;
+static void info_display_live(char const *field, resolve_service_t *res) ;
+static void info_display_deps(char const *field, resolve_service_t *res) ;
+static void info_display_requiredby(char const *field, resolve_service_t *res) ;
+static void info_display_optsdeps(char const *field, resolve_service_t *res) ;
+static void info_display_extdeps(char const *field, resolve_service_t *res) ;
+static void info_display_start(char const *field, resolve_service_t *res) ;
+static void info_display_stop(char const *field, resolve_service_t *res) ;
+static void info_display_envat(char const *field, resolve_service_t *res) ;
+static void info_display_envfile(char const *field, resolve_service_t *res) ;
+static void info_display_logname(char const *field, resolve_service_t *res) ;
+static void info_display_logdst(char const *field, resolve_service_t *res) ;
+static void info_display_logfile(char const *field, resolve_service_t *res) ;
 
 ss_resolve_graph_style *STYLE = &graph_default ;
 
@@ -87,8 +87,6 @@ ss_resolve_graph_style *STYLE = &graph_default ;
 
 
 
-#include <oblibs/graph.h>
-
 
 
 
@@ -100,9 +98,10 @@ typedef ss_info_graph_func *ss_info_graph_func_t_ref ;
 int ss_info_graph_display_service(char const *name, char const *obj)
 {
     stralloc tree = STRALLOC_ZERO ;
-    ss_resolve_t res = RESOLVE_ZERO ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
 
-    int r = ss_resolve_svtree(&tree, name, obj), err = 0 ;
+    int r = service_resolve_svtree(&tree, name, obj), err = 0 ;
 
     if (r != 2) {
         if (r == 1)
@@ -113,10 +112,10 @@ int ss_info_graph_display_service(char const *name, char const *obj)
         goto freed ;
     }
 
-    if (!ss_resolve_check(tree.s, name))
+    if (!resolve_check(tree.s, name))
         goto freed ;
 
-    if (!ss_resolve_read(&res, tree.s, name))
+    if (!resolve_read(wres, tree.s, name))
         goto freed ;
 
     char str_pid[UINT_FMT] ;
@@ -136,13 +135,13 @@ int ss_info_graph_display_service(char const *name, char const *obj)
 
         char *ste = res.sa.s + res.state ;
         char *name = res.sa.s + res.name ;
-        if (!ss_state_check(ste,name)) {
+        if (!state_check(ste,name)) {
 
             ppid = "unitialized" ;
             goto dis ;
         }
 
-        if (!ss_state_read(&sta,ste,name)) {
+        if (!state_read(&sta,ste,name)) {
 
             log_warnu("read state of: ",name) ;
             goto freed ;
@@ -184,7 +183,7 @@ int ss_info_graph_display_service(char const *name, char const *obj)
     err = 1 ;
 
     freed:
-        ss_resolve_free(&res) ;
+        resolve_free(wres) ;
         stralloc_free(&tree) ;
 
     return err ;
@@ -544,13 +543,13 @@ static void info_display_string(char const *str)
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 }
 
-static void info_display_name(char const *field, ss_resolve_t *res)
+static void info_display_name(char const *field, resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     info_display_string(res->sa.s + res->name) ;
 }
 
-static void info_display_version(char const *field,ss_resolve_t *res)
+static void info_display_version(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     /** tempory check here, it not mandatory for the moment*/
@@ -565,13 +564,13 @@ static void info_display_version(char const *field,ss_resolve_t *res)
     }
 }
 
-static void info_display_intree(char const *field,ss_resolve_t *res)
+static void info_display_intree(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     info_display_string(res->sa.s + res->treename) ;
 }
 
-static void info_get_status(ss_resolve_t *res)
+static void info_get_status(resolve_service_t *res)
 {
     int r ;
     int wstat ;
@@ -606,13 +605,13 @@ static void info_get_status(ss_resolve_t *res)
         char *ste = res->sa.s + res->state ;
         char *name = res->sa.s + res->name ;
         char *status = 0 ;
-        if (!ss_state_check(ste,name))
+        if (!state_check(ste,name))
         {
             status = "unitialized" ;
             goto dis ;
         }
 
-        if (!ss_state_read(&sta,ste,name))
+        if (!state_read(&sta,ste,name))
             log_dieusys(LOG_EXIT_SYS,"read state of: ",name) ;
 
         if (sta.init) {
@@ -634,7 +633,7 @@ static void info_get_status(ss_resolve_t *res)
     }
 }
 
-static void info_display_status(char const *field,ss_resolve_t *res)
+static void info_display_status(char const *field,resolve_service_t *res)
 {
 
     if (NOFIELD) info_display_field_name(field) ;
@@ -649,25 +648,25 @@ static void info_display_status(char const *field,ss_resolve_t *res)
 
 }
 
-static void info_display_type(char const *field,ss_resolve_t *res)
+static void info_display_type(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     info_display_string(get_key_by_enum(ENUM_TYPE,res->type)) ;
 }
 
-static void info_display_description(char const *field,ss_resolve_t *res)
+static void info_display_description(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     info_display_string(res->sa.s + res->description) ;
 }
 
-static void info_display_source(char const *field,ss_resolve_t *res)
+static void info_display_source(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     info_display_string(res->sa.s + res->src) ;
 }
 
-static void info_display_live(char const *field,ss_resolve_t *res)
+static void info_display_live(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     info_display_string(res->sa.s + res->runat) ;
@@ -722,9 +721,9 @@ void ss_graph_matrix_add_classic(graph_t *g, genalloc *gares)
     size_t pos = 0, bpos = 0, ccount = 0 ;
     size_t cl[SS_MAX_SERVICE] ;
 
-    for (; pos < genalloc_len(ss_resolve_t, gares) ; pos++) {
+    for (; pos < genalloc_len(resolve_service_t, gares) ; pos++) {
 
-        ss_resolve_t_ref res = &genalloc_s(ss_resolve_t, gares)[pos] ;
+        resolve_service_t_ref res = &genalloc_s(resolve_service_t, gares)[pos] ;
 
         if (res->type == TYPE_CLASSIC) {
 
@@ -737,8 +736,8 @@ void ss_graph_matrix_add_classic(graph_t *g, genalloc *gares)
 
         for (pos = 0 ; pos < ccount ; pos++)  {
 
-            char *str = genalloc_s(ss_resolve_t, gares)[cl[pos]].sa.s ;
-            char *sv = str + genalloc_s(ss_resolve_t, gares)[cl[pos]].name ;
+            char *str = genalloc_s(resolve_service_t, gares)[cl[pos]].sa.s ;
+            char *sv = str + genalloc_s(resolve_service_t, gares)[cl[pos]].name ;
 
             graph_array_reverse(g->sort, g->sort_count) ;
 
@@ -746,8 +745,8 @@ void ss_graph_matrix_add_classic(graph_t *g, genalloc *gares)
 
                 char *service = g->data.s + genalloc_s(graph_hash_t,&g->hash)[g->sort[bpos]].vertex ;
 
-                int idx = ss_resolve_search(gares, service) ;
-                if (genalloc_s(ss_resolve_t, gares)[idx].type == TYPE_CLASSIC ||
+                int idx = resolve_search(gares, service, SERVICE_STRUCT) ;
+                if (genalloc_s(resolve_service_t, gares)[idx].type == TYPE_CLASSIC ||
                     !strcmp(service, sv))
                         continue ;
 
@@ -783,8 +782,10 @@ int ss_tree_get_sv_resolve(genalloc *gares, char const *dir, uint8_t what)
     log_flow() ;
 
     stralloc sa = STRALLOC_ZERO ;
-    ss_resolve_t res = RESOLVE_ZERO ;
-    ss_resolve_t reslog = RESOLVE_ZERO ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_service_t reslog = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wreslog = resolve_set_struct(SERVICE_STRUCT, &reslog) ;
 
     int e = 0 ;
     size_t dirlen = strlen(dir), pos = 0 ;
@@ -801,29 +802,29 @@ int ss_tree_get_sv_resolve(genalloc *gares, char const *dir, uint8_t what)
 
         char *name = sa.s + pos ;
 
-        if (!ss_resolve_check(dir,name))
+        if (!resolve_check(dir,name))
             goto err ;
 
-        if (!ss_resolve_read(&res,dir,name))
+        if (!resolve_read(wres,dir,name))
             goto err ;
 
-        if (ss_resolve_search(gares,name) == -1) {
+        if (resolve_search(gares,name, SERVICE_STRUCT) == -1) {
 
             if ((!what || what == 2) && (res.type == TYPE_CLASSIC)) {
 
                 if (res.logger) {
 
-                    if (!ss_resolve_read(&reslog, dir, res.sa.s + res.logger))
+                    if (!resolve_read(wreslog, dir, res.sa.s + res.logger))
                         goto err ;
 
-                    if (ss_resolve_search(gares,res.sa.s + res.logger) == -1) {
+                    if (resolve_search(gares,res.sa.s + res.logger, SERVICE_STRUCT) == -1) {
 
-                        if (!ss_resolve_append(gares,&reslog))
+                        if (!resolve_append(gares,wreslog))
                             goto err ;
                     }
                 }
 
-                if (!ss_resolve_append(gares,&res))
+                if (!resolve_append(gares,wres))
                     goto err ;
 
                 continue ;
@@ -831,7 +832,7 @@ int ss_tree_get_sv_resolve(genalloc *gares, char const *dir, uint8_t what)
 
             if (what) {
 
-                if (!ss_resolve_append(gares,&res))
+                if (!resolve_append(gares,wres))
                     goto err ;
             }
         }
@@ -840,8 +841,8 @@ int ss_tree_get_sv_resolve(genalloc *gares, char const *dir, uint8_t what)
     e = 1 ;
     err:
         stralloc_free(&sa) ;
-        ss_resolve_free(&res) ;
-        ss_resolve_free(&reslog) ;
+        resolve_free(wres) ;
+        resolve_free(wreslog) ;
         return e ;
 }
 
@@ -860,14 +861,14 @@ static void ss_graph_matrix_build_bytree(graph_t *g, char const *tree, uint8_t w
     if (!ss_tree_get_sv_resolve(&gares, src, what))
         log_dieu(LOG_EXIT_SYS,"get resolve files of tree: ", tree) ;
 
-    if (genalloc_len(ss_resolve_t, &gares) >= SS_MAX_SERVICE)
+    if (genalloc_len(resolve_service_t, &gares) >= SS_MAX_SERVICE)
         log_die(LOG_EXIT_SYS, "too many services to handle") ;
 
     pos = 0 ;
 
-    for (; pos < genalloc_len(ss_resolve_t, &gares) ; pos++) {
+    for (; pos < genalloc_len(resolve_service_t, &gares) ; pos++) {
 
-        ss_resolve_t_ref res = &genalloc_s(ss_resolve_t, &gares)[pos] ;
+        resolve_service_t_ref res = &genalloc_s(resolve_service_t, &gares)[pos] ;
 
         char *str = res->sa.s ;
 
@@ -915,7 +916,7 @@ static void ss_graph_matrix_build_bytree(graph_t *g, char const *tree, uint8_t w
 
 
 
-static void info_display_requiredby(char const *field, ss_resolve_t *res)
+static void info_display_requiredby(char const *field, resolve_service_t *res)
 {
     size_t padding = 1 ;
     int r ;
@@ -989,7 +990,7 @@ static void info_display_requiredby(char const *field, ss_resolve_t *res)
         }
 }
 
-static void info_display_deps(char const *field, ss_resolve_t *res)
+static void info_display_deps(char const *field, resolve_service_t *res)
 {
     int r ;
     size_t padding = 1 ;
@@ -1059,7 +1060,7 @@ static void info_display_deps(char const *field, ss_resolve_t *res)
         stralloc_free(&deps) ;
 }
 
-static void info_display_with_source_tree(stralloc *list,ss_resolve_t *res)
+static void info_display_with_source_tree(stralloc *list,resolve_service_t *res)
 {
     size_t pos = 0, lpos = 0, newlen = 0 ;
     stralloc svlist = STRALLOC_ZERO ;
@@ -1114,7 +1115,7 @@ static void info_display_with_source_tree(stralloc *list,ss_resolve_t *res)
     stralloc_free (&tmp) ;
 }
 
-static void info_display_optsdeps(char const *field, ss_resolve_t *res)
+static void info_display_optsdeps(char const *field, resolve_service_t *res)
 {
     stralloc salist = STRALLOC_ZERO ;
 
@@ -1144,7 +1145,7 @@ static void info_display_optsdeps(char const *field, ss_resolve_t *res)
         stralloc_free(&salist) ;
 }
 
-static void info_display_extdeps(char const *field, ss_resolve_t *res)
+static void info_display_extdeps(char const *field, resolve_service_t *res)
 {
     stralloc salist = STRALLOC_ZERO ;
 
@@ -1174,7 +1175,7 @@ static void info_display_extdeps(char const *field, ss_resolve_t *res)
         stralloc_free(&salist) ;
 }
 
-static void info_display_start(char const *field,ss_resolve_t *res)
+static void info_display_start(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     else field = 0 ;
@@ -1189,7 +1190,7 @@ static void info_display_start(char const *field,ss_resolve_t *res)
     }
 }
 
-static void info_display_stop(char const *field,ss_resolve_t *res)
+static void info_display_stop(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     else field = 0 ;
@@ -1205,7 +1206,7 @@ static void info_display_stop(char const *field,ss_resolve_t *res)
 
 }
 
-static void info_display_envat(char const *field,ss_resolve_t *res)
+static void info_display_envat(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     stralloc salink = STRALLOC_ZERO ;
@@ -1241,7 +1242,7 @@ static void info_display_envat(char const *field,ss_resolve_t *res)
         stralloc_free(&salink) ;
 }
 
-static void info_display_envfile(char const *field,ss_resolve_t *res)
+static void info_display_envfile(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     else field = 0 ;
@@ -1342,7 +1343,7 @@ static void info_display_envfile(char const *field,ss_resolve_t *res)
     stralloc_free(&salink) ;
 }
 
-static void info_display_logname(char const *field,ss_resolve_t *res)
+static void info_display_logname(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     if (res->type == TYPE_CLASSIC || res->type == TYPE_LONGRUN)
@@ -1361,7 +1362,7 @@ static void info_display_logname(char const *field,ss_resolve_t *res)
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 }
 
-static void info_display_logdst(char const *field,ss_resolve_t *res)
+static void info_display_logdst(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     if (res->type != TYPE_BUNDLE || res->type != TYPE_MODULE)
@@ -1380,7 +1381,7 @@ static void info_display_logdst(char const *field,ss_resolve_t *res)
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 }
 
-static void info_display_logfile(char const *field,ss_resolve_t *res)
+static void info_display_logfile(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     if (res->type != TYPE_BUNDLE || res->type != TYPE_MODULE)
@@ -1436,7 +1437,7 @@ static void info_display_logfile(char const *field,ss_resolve_t *res)
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 }
 
-static void info_display_all(ss_resolve_t *res,int *what)
+static void info_display_all(resolve_service_t *res,int *what)
 {
 
     unsigned int i = 0 ;
@@ -1483,7 +1484,8 @@ int main(int argc, char const *const *argv, char const *const *envp)
     uid_t owner ;
     char ownerstr[UID_FMT] ;
 
-    ss_resolve_t res = RESOLVE_ZERO ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
     stralloc satree = STRALLOC_ZERO ;
 
     log_color = &log_color_disable ;
@@ -1571,7 +1573,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
     if (!set_ownersysdir(&home,owner)) log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
     if (!auto_stra(&home,SS_SYSTEM,"/")) log_die_nomem("stralloc") ;
 
-    found = ss_resolve_svtree(&src,svname,tname) ;
+    found = service_resolve_svtree(&src,svname,tname) ;
 
     if (found == -1) log_dieu(LOG_EXIT_SYS,"resolve tree source of service: ",svname) ;
     else if (!found) {
@@ -1583,7 +1585,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
     }
     else if (found == 1) log_die(LOG_EXIT_SYS,"unknown service: ",svname) ;
 
-    if (!ss_resolve_read(&res,src.s,svname))
+    if (!resolve_read(wres,src.s,svname))
         log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",svname) ;
 
     info_display_all(&res,what) ;
@@ -1593,7 +1595,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
 
     freed:
-    ss_resolve_free(&res) ;
+    resolve_free(wres) ;
     stralloc_free(&src) ;
     stralloc_free(&home) ;
     stralloc_free(&satree) ;

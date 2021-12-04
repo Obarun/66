@@ -43,10 +43,9 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 
     int r, db, classic, earlier ;
     ssize_t i = 0, logname = 0 ;
-    genalloc gares = GENALLOC_ZERO ; //ss_resolve_t type
+    genalloc gares = GENALLOC_ZERO ; //resolve_service_t type
     stralloc sares = STRALLOC_ZERO ;
     stralloc sasvc = STRALLOC_ZERO ;
-    ss_resolve_t res = RESOLVE_ZERO ;
     ss_state_t sta = STATE_ZERO ;
     char const *exclude[1] = { 0 } ;
 
@@ -100,49 +99,50 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
             goto follow ;
         }
 
-        if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
+        if (!sa_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
             log_dieu(LOG_EXIT_SYS,"set revolve pointer to source") ;
 
         for (i = 0;i < sasvc.len; i += strlen(sasvc.s + i) + 1)
         {
             char *name = sasvc.s + i ;
-            ss_resolve_t tmp = RESOLVE_ZERO ;
-            if (!ss_resolve_check(sares.s,name)) log_diesys(LOG_EXIT_USER,"unknown service: ",name) ;
-            if (!ss_resolve_read(&tmp,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
-            if (!ss_resolve_add_deps(&gares,&tmp,sares.s)) log_dieusys(LOG_EXIT_SYS,"resolve dependencies of: ",name) ;
-            ss_resolve_free(&tmp) ;
+            resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+            resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+            if (!resolve_check(sares.s,name)) log_diesys(LOG_EXIT_USER,"unknown service: ",name) ;
+            if (!resolve_read(wres,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
+            if (!service_resolve_add_deps(&gares,&res,sares.s)) log_dieusys(LOG_EXIT_SYS,"resolve dependencies of: ",name) ;
+            resolve_free(wres) ;
         }
 
         if (!earlier)
         {
             /** reverse to start first the logger */
-            genalloc_reverse(ss_resolve_t,&gares) ;
+            genalloc_reverse(resolve_service_t,&gares) ;
             if (!svc_init(info,svdir,&gares)) log_dieu(LOG_EXIT_SYS,"initiate service of tree: ",info->treename.s) ;
         }
         else
         {
-            if (!ss_resolve_create_live(info)) log_dieusys(LOG_EXIT_SYS,"create live state") ;
-            for (i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
+            if (!create_live(info)) log_dieusys(LOG_EXIT_SYS,"create live state") ;
+            for (i = 0 ; i < genalloc_len(resolve_service_t,&gares) ; i++)
             {
                 logname = 0 ;
-                char *string = genalloc_s(ss_resolve_t,&gares)[i].sa.s ;
-                char *name = string + genalloc_s(ss_resolve_t,&gares)[i].name ;
+                char *string = genalloc_s(resolve_service_t,&gares)[i].sa.s ;
+                char *name = string + genalloc_s(resolve_service_t,&gares)[i].name ;
                 size_t namelen = strlen(name) ;
                 logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-                if (logname > 0) name = string + genalloc_s(ss_resolve_t,&gares)[i].logassoc ;
+                if (logname > 0) name = string + genalloc_s(resolve_service_t,&gares)[i].logassoc ;
                 char tocopy[dirlen + 1 + namelen + 1] ;
                 memcpy(tocopy,svdir,dirlen) ;
                 tocopy[dirlen] = '/' ;
                 memcpy(tocopy + dirlen + 1, name, namelen) ;
                 tocopy[dirlen + 1 + namelen] = 0 ;
-                if (!hiercopy(tocopy,string + genalloc_s(ss_resolve_t,&gares)[i].runat)) log_dieusys(LOG_EXIT_SYS,"copy earlier service: ",tocopy," to: ",string + genalloc_s(ss_resolve_t,&gares)[i].runat) ;
-                ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-                ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-    //          ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
-                ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_UNKNOWN) ;
-                ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_UNKNOWN) ;
-                if (!ss_state_write(&sta,string + genalloc_s(ss_resolve_t,&gares)[i].state,name)) log_dieusys(LOG_EXIT_SYS,"write state file of: ",name) ;
-                log_info("Initialized successfully: ", logname < 0 ? name : string + genalloc_s(ss_resolve_t,&gares)[i].logreal) ;
+                if (!hiercopy(tocopy,string + genalloc_s(resolve_service_t,&gares)[i].runat)) log_dieusys(LOG_EXIT_SYS,"copy earlier service: ",tocopy," to: ",string + genalloc_s(resolve_service_t,&gares)[i].runat) ;
+                state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+                state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+    //          state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+                state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_UNKNOWN) ;
+                state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_UNKNOWN) ;
+                if (!state_write(&sta,string + genalloc_s(resolve_service_t,&gares)[i].state,name)) log_dieusys(LOG_EXIT_SYS,"write state file of: ",name) ;
+                log_info("Initialized successfully: ", logname < 0 ? name : string + genalloc_s(resolve_service_t,&gares)[i].logreal) ;
             }
         }
     }
@@ -151,8 +151,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 
     stralloc_free(&sares) ;
     stralloc_free(&sasvc) ;
-    ss_resolve_free(&res) ;
-    genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
+    resolve_deep_free(SERVICE_STRUCT, &gares) ;
 
     /** db already initiated? */
     if (db)

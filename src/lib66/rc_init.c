@@ -33,6 +33,7 @@
 #include <66/constants.h>
 #include <66/utils.h>
 #include <66/state.h>
+#include <66/service.h>
 
 #include <s6-rc/config.h>
 
@@ -43,15 +44,16 @@ int rc_init(ssexec_t *info, char const *const *envp)
 {
     log_flow() ;
 
-    int r, wstat, empty = 0 ;
+    int r, wstat, empty = 0, e = 0 ;
     pid_t pid ;
     size_t pos = 0 ;
 
     ss_state_t sta = STATE_ZERO ;
     stralloc sares = STRALLOC_ZERO ;
-    ss_resolve_t res = RESOLVE_ZERO ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
     stralloc sasvc = STRALLOC_ZERO ;
-    genalloc gares = GENALLOC_ZERO ; //ss_resolve_t type
+    genalloc gares = GENALLOC_ZERO ; //resolve_service_t type
 
     char svdir[info->tree.len + SS_SVDIRS_LEN + SS_DB_LEN + 1 + info->treename.len + 1] ;
     char ltree[info->livetree.len + 1 + info->treename.len + 1] ;
@@ -74,18 +76,18 @@ int rc_init(ssexec_t *info, char const *const *envp)
         if (chown(info->livetree.s,info->owner,gidowner) < 0){ log_warnusys("chown directory: ",info->livetree.s) ; goto err ; }
     }
 
-    if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
+    if (!sa_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
         { log_warnu("set revolve pointer to source") ; goto err ; }
 
-    if (!ss_resolve_check(sares.s,SS_MASTER +1)) { log_warnu("find inner bundle -- please make a bug report") ; goto err ; }
-    if (!ss_resolve_read(&res,sares.s,SS_MASTER + 1)) { log_warnusys("read resolve file of inner bundle") ; goto err ; }
+    if (!resolve_check(sares.s,SS_MASTER +1)) { log_warnu("find inner bundle -- please make a bug report") ; goto err ; }
+    if (!resolve_read(wres,sares.s,SS_MASTER + 1)) { log_warnusys("read resolve file of inner bundle") ; goto err ; }
     if (!res.ndeps)
     {
         log_info("Initialization: no atomic services into tree: ",info->treename.s) ;
         empty = 1 ;
         goto end ;
     }
-    if (!ss_resolve_create_live(info)) { log_warnusys("create live state") ; goto err ; }
+    if (!create_live(info)) { log_warnusys("create live state") ; goto err ; }
 
     memcpy(svdir,info->tree.s,info->tree.len) ;
     memcpy(svdir + info->tree.len ,SS_SVDIRS ,SS_SVDIRS_LEN) ;
@@ -131,21 +133,22 @@ int rc_init(ssexec_t *info, char const *const *envp)
     for (; pos < sasvc.len ; pos += strlen(sasvc.s + pos) +1)
     {
         char *name = sasvc.s + pos ;
-        ss_resolve_t tmp = RESOLVE_ZERO ;
-        if (!ss_resolve_check(sares.s,name)){ log_warnsys("unknown service: ",name) ; goto err ; }
-        if (!ss_resolve_read(&tmp,sares.s,name)) { log_warnusys("read resolve file of: ",name) ; goto err ; }
-        if (!ss_resolve_add_deps(&gares,&tmp,sares.s)) { log_warnusys("resolve dependencies of: ",name) ; goto err ; }
-        ss_resolve_free(&tmp) ;
+        resolve_service_t tmp = RESOLVE_SERVICE_ZERO ;
+        resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &tmp) ;
+        if (!resolve_check(sares.s,name)){ log_warnsys("unknown service: ",name) ; goto err ; }
+        if (!resolve_read(wres,sares.s,name)) { log_warnusys("read resolve file of: ",name) ; goto err ; }
+        if (!service_resolve_add_deps(&gares,&tmp,sares.s)) { log_warnusys("resolve dependencies of: ",name) ; goto err ; }
+        resolve_free(wres) ;
     }
 
-    for (pos = 0 ; pos < genalloc_len(ss_resolve_t,&gares) ; pos++)
+    for (pos = 0 ; pos < genalloc_len(resolve_service_t,&gares) ; pos++)
     {
-        char const *string = genalloc_s(ss_resolve_t,&gares)[pos].sa.s ;
-        char const *name = string + genalloc_s(ss_resolve_t,&gares)[pos].name  ;
-        char const *state = string + genalloc_s(ss_resolve_t,&gares)[pos].state  ;
+        char const *string = genalloc_s(resolve_service_t,&gares)[pos].sa.s ;
+        char const *name = string + genalloc_s(resolve_service_t,&gares)[pos].name  ;
+        char const *state = string + genalloc_s(resolve_service_t,&gares)[pos].state  ;
 
         log_trace("Write state file of: ",name) ;
-        if (!ss_state_write(&sta,state,name))
+        if (!state_write(&sta,state,name))
         {
             log_warnusys("write state file of: ",name) ;
             goto err ;
@@ -154,16 +157,13 @@ int rc_init(ssexec_t *info, char const *const *envp)
     }
 
     end:
-    genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
-    stralloc_free(&sasvc) ;
-    ss_resolve_free(&res) ;
-    stralloc_free(&sares) ;
-    return empty ? 2 : 1 ;
+
+    e = empty ? 2 : 1 ;
 
     err:
-        genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
+        resolve_deep_free(SERVICE_STRUCT, &gares) ;
         stralloc_free(&sasvc) ;
-        ss_resolve_free(&res) ;
+        resolve_free(wres) ;
         stralloc_free(&sares) ;
-        return 0 ;
+        return e ;
 }

@@ -15,6 +15,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
@@ -32,6 +33,7 @@
 #include <66/svc.h>
 #include <66/state.h>
 #include <66/utils.h>
+#include <66/service.h>
 
 static stralloc workdir = STRALLOC_ZERO ;
 static uint8_t FORCE = 0 ;
@@ -46,20 +48,21 @@ static void cleanup(void)
     errno = e ;
 }
 
-int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *info)
+int svc_remove(genalloc *tostop,resolve_service_t *res, char const *src,ssexec_t *info)
 {
     log_flow() ;
 
     unsigned int i = 0 ;
-    int r ;
+    int r, e = 0 ;
     genalloc rdeps = GENALLOC_ZERO ;
     stralloc dst = STRALLOC_ZERO ;
-    ss_resolve_t cp = RESOLVE_ZERO ;
+    resolve_service_t cp = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &cp) ;
     ss_state_t sta = STATE_ZERO ;
 
     size_t newlen ;
     char *name = res->sa.s + res->name ;
-    if (!ss_resolve_copy(&cp,res))
+    if (!service_resolve_copy(&cp,res))
     {
         log_warnusys("copy resolve file") ;
         goto err ;
@@ -77,7 +80,7 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
 
     if (!FORCE)
     {
-        if (!ss_resolve_add_rdeps(&rdeps,&cp,src))
+        if (!service_resolve_add_rdeps(&rdeps,&cp,src))
         {
             log_warnusys("resolve recursive dependencies of: ",name) ;
             goto err ;
@@ -85,20 +88,21 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
     }
     else
     {
-        if (!ss_resolve_append(&rdeps,&cp)) goto err ;
+        if (!resolve_append(&rdeps,wres)) goto err ;
     }
 
-    if (!ss_resolve_add_logger(&rdeps,src))
+    if (!service_resolve_add_logger(&rdeps,src))
     {
         log_warnusys("resolve logger") ;
         goto err ;
     }
 
-    ss_resolve_free(&cp) ;
+    resolve_free(wres) ;
 
-    for (;i < genalloc_len(ss_resolve_t,&rdeps) ; i++)
+    for (;i < genalloc_len(resolve_service_t,&rdeps) ; i++)
     {
-        ss_resolve_t_ref pres = &genalloc_s(ss_resolve_t,&rdeps)[i] ;
+        resolve_service_t_ref pres = &genalloc_s(resolve_service_t,&rdeps)[i] ;
+        resolve_wrapper_t_ref dwres = resolve_set_struct(SERVICE_STRUCT, pres) ;
         char *str = pres->sa.s ;
         char *name = str + pres->name ;
         char *ste = str + pres->state ;
@@ -115,27 +119,27 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
         /** r == -1 means the state file is not present,
          * r > 0 means service need to be initialized,
          * so not initialized at all.*/
-        r = ss_state_check_flags(ste,name,SS_FLAGS_INIT) ;
+        r = state_check_flags(ste,name,SS_FLAGS_INIT) ;
 
         if (!r)
         {
             /** modify the resolve file for 66-stop*/
             pres->disen = 0 ;
             log_trace("Write resolve file of: ",name) ;
-            if (!ss_resolve_write(pres,src,name))
+            if (!resolve_write(dwres,src,name))
             {
                 log_warnusys("write resolve file of: ",name) ;
                 goto err ;
             }
-            if (!ss_state_read(&sta,ste,name)) {
+            if (!state_read(&sta,ste,name)) {
                 log_warnusys("read state of: ",name) ;
                 goto err ;
             }
-            ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-            ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-            ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_TRUE) ;
+            state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+            state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
+            state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_TRUE) ;
             log_trace("Write state file of: ",name) ;
-            if (!ss_state_write(&sta,ste,name))
+            if (!state_write(&sta,ste,name))
             {
                 log_warnusys("write state file of: ",name) ;
                 goto err ;
@@ -166,21 +170,21 @@ int svc_remove(genalloc *tostop,ss_resolve_t *res, char const *src,ssexec_t *inf
             }
 
             log_trace("Delete resolve file of: ",name) ;
-            ss_resolve_rmfile(src,name) ;
+            resolve_rmfile(src,name) ;
         }
-        if (!ss_resolve_cmp(tostop,name))
-            if (!ss_resolve_append(tostop,pres)) goto err ;
+        if (!resolve_cmp(tostop, name, SERVICE_STRUCT))
+            if (!resolve_append(tostop,wres)) goto err ;
+
+        free(dwres) ;
     }
 
-    genalloc_deepfree(ss_resolve_t,&rdeps,ss_resolve_free) ;
-    stralloc_free(&dst) ;
-    return 1 ;
+    e = 1 ;
 
     err:
-        ss_resolve_free(&cp) ;
-        genalloc_deepfree(ss_resolve_t,&rdeps,ss_resolve_free) ;
+        resolve_free(wres) ;
+        resolve_deep_free(SERVICE_STRUCT, &rdeps) ;
         stralloc_free(&dst) ;
-        return 0 ;
+        return e ;
 }
 
 int ssexec_disable(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
@@ -188,10 +192,11 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
     int r, logname ;
     unsigned int nlongrun, nclassic, stop, force ;
 
-    genalloc tostop = GENALLOC_ZERO ;//ss_resolve_t
-    genalloc gares = GENALLOC_ZERO ; //ss_resolve_t
-    ss_resolve_t res = RESOLVE_ZERO ;
-    ss_resolve_t_ref pres ;
+    genalloc tostop = GENALLOC_ZERO ;//resolve_service_t
+    genalloc gares = GENALLOC_ZERO ; //resolve_service_t
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_service_t_ref pres ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
 
     r = nclassic = nlongrun = stop = logname = force = 0 ;
 
@@ -222,16 +227,16 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
     for (;*argv;argv++)
     {
         char const *name = *argv ;
-        if (!ss_resolve_check(workdir.s,name))
+        if (!resolve_check(workdir.s,name))
             log_info_nclean_return(LOG_EXIT_ZERO,&cleanup,name," is not enabled") ;
 
-        if (!ss_resolve_read(&res,workdir.s,name))
+        if (!resolve_read(wres,workdir.s,name))
             log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of: ",name) ;
 
         if (REMOVE)
         {
             stralloc sa = STRALLOC_ZERO ;
-            r = ss_resolve_svtree(&sa,name,0) ;
+            r = service_resolve_svtree(&sa,name,0) ;
             if (r > 2)
                 log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"use -R option -- ",name," is set on different tree") ;
             stralloc_free(&sa) ;
@@ -244,14 +249,14 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
         }
         else
         {
-            if (!ss_resolve_append(&gares,&res))
+            if (!resolve_append(&gares,wres))
                 log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"append services selection with: ",name) ;
         }
     }
 
-    for(unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
+    for(unsigned int i = 0 ; i < genalloc_len(resolve_service_t,&gares) ; i++)
     {
-        pres = &genalloc_s(ss_resolve_t,&gares)[i] ;
+        pres = &genalloc_s(resolve_service_t,&gares)[i] ;
         char *string = pres->sa.s ;
         char  *name = string + pres->name ;
         char *state = string + pres->state ;
@@ -266,7 +271,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
          * Also, the remove option can be only used if the service is not marked initialized too.*/
         if (FORCE || REMOVE) {
 
-            r = ss_state_check_flags(state,name,SS_FLAGS_INIT) ;
+            r = state_check_flags(state,name,SS_FLAGS_INIT) ;
 
             if (!r)
                 log_die_nclean(LOG_EXIT_USER,&cleanup,name," is marked initialized -- ",FORCE ? "-F" : "-R"," is not allowed") ;
@@ -286,7 +291,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
             log_die_nclean(LOG_EXIT_USER,&cleanup,"nice try peon") ;
 
         logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-        if (logname > 0 && (!ss_resolve_cmp(&gares,string + pres->logassoc)))
+        if (logname > 0 && (!resolve_cmp(&gares, string + pres->logassoc, SERVICE_STRUCT)))
             log_die_nclean(LOG_EXIT_USER,&cleanup,"logger detected - disabling is not allowed") ;
 
         if (!pres->disen && !FORCE)
@@ -321,7 +326,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
             if (r < 0) log_die(LOG_EXIT_USER,"cyclic graph detected") ;
             log_dieusys(LOG_EXIT_SYS,"publish service graph") ;
         }
-        if (!ss_resolve_write_master(info,&graph,workdir.s,1))
+        if (!service_resolve_write_master(info,&graph,workdir.s,1))
             log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"update inner bundle") ;
 
         ss_resolve_graph_free(&graph) ;
@@ -339,34 +344,34 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
     cleanup() ;
 
     stralloc_free(&workdir) ;
-    ss_resolve_free(&res) ;
-    genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
+    resolve_free(wres) ;
+    resolve_deep_free(SERVICE_STRUCT, &gares) ;
 
-    for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&tostop); i++)
-        log_info("Disabled successfully: ",genalloc_s(ss_resolve_t,&tostop)[i].sa.s + genalloc_s(ss_resolve_t,&tostop)[i].name) ;
+    for (unsigned int i = 0 ; i < genalloc_len(resolve_service_t,&tostop); i++)
+        log_info("Disabled successfully: ",genalloc_s(resolve_service_t,&tostop)[i].sa.s + genalloc_s(resolve_service_t,&tostop)[i].name) ;
 
-    if (stop && genalloc_len(ss_resolve_t,&tostop))
+    if (stop && genalloc_len(resolve_service_t,&tostop))
     {
-        int nargc = 3 + genalloc_len(ss_resolve_t,&tostop) ;
+        int nargc = 3 + genalloc_len(resolve_service_t,&tostop) ;
         char const *newargv[nargc] ;
         unsigned int m = 0 ;
 
         newargv[m++] = "fake_name" ;
         newargv[m++] = "-u" ;
 
-        for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&tostop); i++)
-            newargv[m++] = genalloc_s(ss_resolve_t,&tostop)[i].sa.s + genalloc_s(ss_resolve_t,&tostop)[i].name ;
+        for (unsigned int i = 0 ; i < genalloc_len(resolve_service_t,&tostop); i++)
+            newargv[m++] = genalloc_s(resolve_service_t,&tostop)[i].sa.s + genalloc_s(resolve_service_t,&tostop)[i].name ;
 
         newargv[m++] = 0 ;
 
         if (ssexec_stop(nargc,newargv,envp,info))
         {
-            genalloc_deepfree(ss_resolve_t,&tostop,ss_resolve_free) ;
+            resolve_deep_free(SERVICE_STRUCT, &tostop) ;
             return 111 ;
         }
     }
 
-    genalloc_deepfree(ss_resolve_t,&tostop,ss_resolve_free) ;
+    resolve_deep_free(SERVICE_STRUCT, &tostop) ;
 
     return 0 ;
 }

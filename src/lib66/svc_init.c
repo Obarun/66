@@ -59,19 +59,19 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
     if (!ftrigr_startf(&fifo, &deadline, &STAMP))
         goto err ;
 
-    if (!ss_resolve_create_live(info)) { log_warnusys("create live state") ; goto err ; }
+    if (!create_live(info)) { log_warnusys("create live state") ; goto err ; }
 
-    for (i = 0 ; i < genalloc_len(ss_resolve_t,ga); i++)
+    for (i = 0 ; i < genalloc_len(resolve_service_t,ga); i++)
     {
         logname = 0 ;
-        char *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
-        char *name = string + genalloc_s(ss_resolve_t,ga)[i].name ;
-        char *state = string + genalloc_s(ss_resolve_t,ga)[i].state ;
-        if (s6_svc_ok(string + genalloc_s(ss_resolve_t,ga)[i].runat))
+        char *string = genalloc_s(resolve_service_t,ga)[i].sa.s ;
+        char *name = string + genalloc_s(resolve_service_t,ga)[i].name ;
+        char *state = string + genalloc_s(resolve_service_t,ga)[i].state ;
+        if (s6_svc_ok(string + genalloc_s(resolve_service_t,ga)[i].runat))
         {
             log_info("Initialization aborted -- ",name," already initialized") ;
             log_trace("Write state file of: ",name) ;
-            if (!ss_state_write(&sta,state,name))
+            if (!state_write(&sta,state,name))
             {
                 log_warnusys("write state file of: ",name) ;
                 goto err ;
@@ -79,7 +79,7 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
             continue ;
         }
         logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-        if (logname > 0) name = string + genalloc_s(ss_resolve_t,ga)[i].logassoc ;
+        if (logname > 0) name = string + genalloc_s(resolve_service_t,ga)[i].logassoc ;
 
         namelen = strlen(name) ;
         srclen = strlen(src) ;
@@ -89,13 +89,13 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
         memcpy(svsrc + srclen + 1,name,namelen) ;
         svsrc[srclen + 1 + namelen] = 0 ;
 
-        if (logname > 0) svscanlen = strlen(string + genalloc_s(ss_resolve_t,ga)[i].runat) - SS_LOG_SUFFIX_LEN ;
-        else svscanlen = strlen(string + genalloc_s(ss_resolve_t,ga)[i].runat) ;
+        if (logname > 0) svscanlen = strlen(string + genalloc_s(resolve_service_t,ga)[i].runat) - SS_LOG_SUFFIX_LEN ;
+        else svscanlen = strlen(string + genalloc_s(resolve_service_t,ga)[i].runat) ;
         char svscan[svscanlen + 6 + 1] ;
-        memcpy(svscan,string + genalloc_s(ss_resolve_t,ga)[i].runat,svscanlen) ;
+        memcpy(svscan,string + genalloc_s(resolve_service_t,ga)[i].runat,svscanlen) ;
         svscan[svscanlen] = 0 ;
 
-        log_trace("init service: ", string + genalloc_s(ss_resolve_t,ga)[i].name) ;
+        log_trace("init service: ", string + genalloc_s(resolve_service_t,ga)[i].name) ;
         /** if logger was created do not pass here to avoid to erase
          * the fifo of the logger*/
         if (!scan_mode(svscan,S_IFDIR))
@@ -109,8 +109,8 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
         }
 
         /** if logger you need to copy again the real path */
-        svscanlen = strlen(string + genalloc_s(ss_resolve_t,ga)[i].runat) ;
-        memcpy(svscan,string + genalloc_s(ss_resolve_t,ga)[i].runat,svscanlen) ;
+        svscanlen = strlen(string + genalloc_s(resolve_service_t,ga)[i].runat) ;
+        memcpy(svscan,string + genalloc_s(resolve_service_t,ga)[i].runat,svscanlen) ;
         svscan[svscanlen] = 0 ;
         /** if logger and the reload was asked the folder xxx/log doesn't exist
          * check it and create again if doesn't exist */
@@ -131,7 +131,7 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
         memcpy(svscan + svscanlen, "/down", 5) ;
         svscan[svscanlen + 5] = 0 ;
 
-        if (!genalloc_s(ss_resolve_t,ga)[i].down)
+        if (!genalloc_s(resolve_service_t,ga)[i].down)
         {
             if (!sastr_add_string(&sadown,svscan))
             {
@@ -183,14 +183,14 @@ int svc_init(ssexec_t *info,char const *src, genalloc *ga)
             if (unlink(sadown.s + pos) < 0 && errno != ENOENT) goto err ;
         }
 
-        for (pos = 0 ; pos < genalloc_len(ss_resolve_t,ga) ; pos++)
+        for (pos = 0 ; pos < genalloc_len(resolve_service_t,ga) ; pos++)
         {
-            char const *string = genalloc_s(ss_resolve_t,ga)[pos].sa.s ;
-            char const *name = string + genalloc_s(ss_resolve_t,ga)[pos].name  ;
-            char const *state = string + genalloc_s(ss_resolve_t,ga)[pos].state  ;
+            char const *string = genalloc_s(resolve_service_t,ga)[pos].sa.s ;
+            char const *name = string + genalloc_s(resolve_service_t,ga)[pos].name  ;
+            char const *state = string + genalloc_s(resolve_service_t,ga)[pos].state  ;
 
             log_trace("Write state file of: ",name) ;
-            if (!ss_state_write(&sta,state,name))
+            if (!state_write(&sta,state,name))
             {
                 log_warnusys("write state file of: ",name) ;
                 goto err ;

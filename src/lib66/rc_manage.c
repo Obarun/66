@@ -60,7 +60,7 @@ int rc_manage(ssexec_t *info,genalloc *ga)
     memcpy(live + info->livetree.len + 1,info->treename.s,info->treename.len) ;
     live[info->livetree.len + 1 + info->treename.len] = 0 ;
 
-    if (!ss_resolve_pointo(&sares,info,TYPE_LONGRUN,SS_RESOLVE_SRC))
+    if (!sa_pointo(&sares,info,TYPE_LONGRUN,SS_RESOLVE_SRC))
     {
         log_warnusys("set revolve pointer to source") ;
         goto err ;
@@ -72,12 +72,12 @@ int rc_manage(ssexec_t *info,genalloc *ga)
     if (!stralloc_cats(&sares,SS_SVDIRS)) goto err ;
     if (!stralloc_cats(&sares,"/")) goto err ;
     newlen = sares.len ;
-    for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
+    for (unsigned int i = 0 ; i < genalloc_len(resolve_service_t,ga) ; i++)
     {
-        char const *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
-        char const *name = string + genalloc_s(ss_resolve_t,ga)[i].name  ;
-        char const *runat = string + genalloc_s(ss_resolve_t,ga)[i].runat ;
-        int type = genalloc_s(ss_resolve_t,ga)[i].type ;
+        char const *string = genalloc_s(resolve_service_t,ga)[i].sa.s ;
+        char const *name = string + genalloc_s(resolve_service_t,ga)[i].name  ;
+        char const *runat = string + genalloc_s(resolve_service_t,ga)[i].runat ;
+        int type = genalloc_s(resolve_service_t,ga)[i].type ;
         //do not try to copy a bundle or oneshot, this is already done.
         if (type != TYPE_LONGRUN) continue ;
         sares.len = newlen ;
@@ -98,13 +98,13 @@ int rc_manage(ssexec_t *info,genalloc *ga)
             goto err ;
         }
     }
-    for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
+    for (unsigned int i = 0 ; i < genalloc_len(resolve_service_t,ga) ; i++)
     {
-        char const *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
-        char const *name = string + genalloc_s(ss_resolve_t,ga)[i].name  ;
-        char const *state = string + genalloc_s(ss_resolve_t,ga)[i].state ;
+        char const *string = genalloc_s(resolve_service_t,ga)[i].sa.s ;
+        char const *name = string + genalloc_s(resolve_service_t,ga)[i].name  ;
+        char const *state = string + genalloc_s(resolve_service_t,ga)[i].state ;
         log_trace("Write state file of: ",name) ;
-        if (!ss_state_write(&sta,state,name))
+        if (!state_write(&sta,state,name))
         {
             log_warnusys("write state file of: ",name) ;
             goto err ;

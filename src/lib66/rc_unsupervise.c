@@ -36,7 +36,7 @@ int rc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *const
     log_flow() ;
 
     size_t i = 0 ;
-    ss_resolve_t_ref pres ;
+    resolve_service_t_ref pres ;
     stralloc sares = STRALLOC_ZERO ;
     ss_state_t sta = STATE_ZERO ;
 
@@ -63,22 +63,22 @@ int rc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *const
         goto err ;
     }
 
-    for (; i < genalloc_len(ss_resolve_t,ga) ; i++)
+    for (; i < genalloc_len(resolve_service_t,ga) ; i++)
     {
-        char const *string = genalloc_s(ss_resolve_t,ga)[i].sa.s ;
-        char const *name = string + genalloc_s(ss_resolve_t,ga)[i].name ;
-        log_trace("delete directory service: ",string + genalloc_s(ss_resolve_t,ga)[i].runat) ;
+        char const *string = genalloc_s(resolve_service_t,ga)[i].sa.s ;
+        char const *name = string + genalloc_s(resolve_service_t,ga)[i].name ;
+        log_trace("delete directory service: ",string + genalloc_s(resolve_service_t,ga)[i].runat) ;
         s6rc_servicedir_unsupervise(live,prefix,name,0) ;
-        if (rm_rf(string + genalloc_s(ss_resolve_t,ga)[i].runat) < 0) goto err ;
+        if (rm_rf(string + genalloc_s(resolve_service_t,ga)[i].runat) < 0) goto err ;
     }
-    if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
+    if (!sa_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
     {
         log_warnusys("set revolve pointer to source") ;
         goto err ;
     }
-    for (i = 0 ; i < genalloc_len(ss_resolve_t,ga) ; i++)
+    for (i = 0 ; i < genalloc_len(resolve_service_t,ga) ; i++)
     {
-        pres = &genalloc_s(ss_resolve_t,ga)[i] ;
+        pres = &genalloc_s(resolve_service_t,ga)[i] ;
         char const *string = pres->sa.s ;
         char const *name = string + pres->name  ;
         char const *state = string + pres->state ;
@@ -86,19 +86,19 @@ int rc_unsupervise(ssexec_t *info,genalloc *ga,char const *sig,char const *const
         if (!pres->disen)
         {
             log_trace("Delete resolve file of: ",name) ;
-            ss_resolve_rmfile(sares.s,name) ;
+            resolve_rmfile(sares.s,name) ;
             log_trace("Delete state file of: ",name) ;
-            ss_state_rmfile(state,name) ;
+            state_rmfile(state,name) ;
         }
         else
         {
-            ss_state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-            ss_state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
-    //      ss_state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
-            ss_state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
-            ss_state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
+            state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
+            state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_TRUE) ;
+    //      state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
+            state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
+            state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
             log_trace("Write state file of: ",name) ;
-            if (!ss_state_write(&sta,state,name))
+            if (!state_write(&sta,state,name))
             {
                 log_warnusys("write state file of: ",name) ;
                 goto err ;

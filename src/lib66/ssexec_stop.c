@@ -28,6 +28,7 @@
 #include <66/rc.h>
 #include <66/ssexec.h>
 #include <66/resolve.h>
+#include <66/service.h>
 #include <66/state.h>
 
 static unsigned int DEADLINE = 0 ;
@@ -46,7 +47,7 @@ int svc_down(ssexec_t *info, char const *const *envp)
     unsigned int reverse = 1 ;
     int r ;
 
-    if (genalloc_len(ss_resolve_t,&graph_unsup_cl.name))
+    if (genalloc_len(resolve_service_t,&graph_unsup_cl.name))
     {
         UNSUP = 1 ;
         r = ss_resolve_graph_publish(&graph_unsup_cl,reverse) ;
@@ -83,7 +84,7 @@ int rc_down(ssexec_t *info, char const *const *envp)
     unsigned int reverse = 1 ;
     int r ;
 
-    if (genalloc_len(ss_resolve_t,&graph_unsup_rc.name))
+    if (genalloc_len(resolve_service_t,&graph_unsup_rc.name))
     {
         UNSUP = 1 ;
         r = ss_resolve_graph_publish(&graph_unsup_rc,reverse) ;
@@ -125,9 +126,10 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 
     int cl, rc, sigopt ;
     stralloc sares = STRALLOC_ZERO ;
-    genalloc gares = GENALLOC_ZERO ; //ss_resolve_t
-    ss_resolve_t_ref pres ;
-    ss_resolve_t res = RESOLVE_ZERO ;
+    genalloc gares = GENALLOC_ZERO ; //resolve_service_t
+    resolve_service_t_ref pres ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
     ss_state_t sta = STATE_ZERO ;
 
     cl = rc = sigopt = 0 ;
@@ -156,13 +158,13 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 
     if ((scandir_ok(info->scandir.s)) !=1 ) log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
 
-    if (!ss_resolve_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) log_dieusys(LOG_EXIT_SYS,"set revolve pointer to source") ;
+    if (!sa_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) log_dieusys(LOG_EXIT_SYS,"set revolve pointer to source") ;
 
     for (;*argv;argv++)
     {
         char const *name = *argv ;
-        if (!ss_resolve_check(sares.s,name)) log_info_return(LOG_EXIT_ZERO,name," is not enabled") ;
-        if (!ss_resolve_read(&res,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
+        if (!resolve_check(sares.s,name)) log_info_return(LOG_EXIT_ZERO,name," is not enabled") ;
+        if (!resolve_read(wres,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
         if (res.type == TYPE_MODULE)
         {
             if (!module_in_cmdline(&gares,&res,sares.s))
@@ -170,21 +172,21 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
         }
         else
         {
-            if (!ss_resolve_append(&gares,&res))
+            if (!resolve_append(&gares,wres))
                 log_dieusys(LOG_EXIT_SYS,"append resolve file of: ",name) ;
         }
     }
 
-    for (unsigned int i = 0 ; i < genalloc_len(ss_resolve_t,&gares) ; i++)
+    for (unsigned int i = 0 ; i < genalloc_len(resolve_service_t,&gares) ; i++)
     {
         int unsup = 0 , reverse = 1 ;
-        pres = &genalloc_s(ss_resolve_t,&gares)[i] ;
+        pres = &genalloc_s(resolve_service_t,&gares)[i] ;
         char const *string = pres->sa.s ;
         char const *name = string + pres->name ;
         char const *state = string + pres->state ;
 
-        if (!ss_state_check(state,name)) log_die(LOG_EXIT_USER,name," : is not initialized") ;
-        else if (!ss_state_read(&sta,state,name)) log_dieusys(LOG_EXIT_SYS,"read state file of: ",name) ;
+        if (!state_check(state,name)) log_die(LOG_EXIT_USER,name," : is not initialized") ;
+        else if (!state_read(&sta,state,name)) log_dieusys(LOG_EXIT_SYS,"read state file of: ",name) ;
 
         int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
 
@@ -195,7 +197,7 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
         }
 
         /** logger cannot be unsupervised alone */
-        if (logname > 0 && (!ss_resolve_cmp(&gares,string + pres->logassoc)))
+        if (logname > 0 && (!resolve_cmp(&gares,string + pres->logassoc, SERVICE_STRUCT)))
         {
             if (UNSUP) log_die(LOG_EXIT_SYS,"logger detected - unsupervise request is not allowed") ;
         }
@@ -206,12 +208,12 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
         {
             if (unsup)
             {
-                if (!ss_resolve_graph_build(&graph_unsup_cl,&genalloc_s(ss_resolve_t,&gares)[i],sares.s,reverse))
+                if (!ss_resolve_graph_build(&graph_unsup_cl,&genalloc_s(resolve_service_t,&gares)[i],sares.s,reverse))
                     log_dieusys(LOG_EXIT_SYS,"build services graph") ;
-                if (!ss_resolve_add_logger(&graph_unsup_cl.name,sares.s))
+                if (!service_resolve_add_logger(&graph_unsup_cl.name,sares.s))
                     log_dieusys(LOG_EXIT_SYS,"append service selection with logger") ;
             }
-            if (!ss_resolve_graph_build(&graph_cl,&genalloc_s(ss_resolve_t,&gares)[i],sares.s,reverse))
+            if (!ss_resolve_graph_build(&graph_cl,&genalloc_s(resolve_service_t,&gares)[i],sares.s,reverse))
                 log_dieusys(LOG_EXIT_SYS,"build services graph") ;
             cl++ ;
         }
@@ -219,12 +221,12 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
         {
             if (unsup)
             {
-                if (!ss_resolve_graph_build(&graph_unsup_rc,&genalloc_s(ss_resolve_t,&gares)[i],sares.s,reverse))
+                if (!ss_resolve_graph_build(&graph_unsup_rc,&genalloc_s(resolve_service_t,&gares)[i],sares.s,reverse))
                     log_dieusys(LOG_EXIT_SYS,"build services graph") ;
-                if (!ss_resolve_add_logger(&graph_unsup_rc.name,sares.s))
+                if (!service_resolve_add_logger(&graph_unsup_rc.name,sares.s))
                     log_dieusys(LOG_EXIT_SYS,"append service selection with logger") ;
             }
-            if (!ss_resolve_graph_build(&graph_rc,&genalloc_s(ss_resolve_t,&gares)[i],sares.s,reverse))
+            if (!ss_resolve_graph_build(&graph_rc,&genalloc_s(resolve_service_t,&gares)[i],sares.s,reverse))
                 log_dieusys(LOG_EXIT_SYS,"build services graph") ;
             rc++;
         }
@@ -260,8 +262,8 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
             log_dieu(LOG_EXIT_SYS,"send signal to scandir: ", info->scandir.s) ;
     }
     stralloc_free(&sares) ;
-    ss_resolve_free(&res) ;
-    genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
+    resolve_free(wres) ;
+    resolve_deep_free(SERVICE_STRUCT, &gares) ;
 
     return 0 ;
 }

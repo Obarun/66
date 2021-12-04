@@ -40,6 +40,7 @@
 #include <66/db.h>
 #include <66/enum.h>
 #include <66/state.h>
+#include <66/service.h>
 #include <66/resolve.h>
 
 #include <s6/supervise.h>
@@ -288,16 +289,17 @@ void create_tree(ssexec_t *info)
     char const *tree = info->tree.s, *treename = info->treename.s ;
 
     char dst[treelen + SS_SVDIRS_LEN + SS_DB_LEN + SS_SRC_LEN + 16 + 1] ;
-    ss_resolve_t res = RESOLVE_ZERO ;
-    ss_resolve_init(&res) ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_init(wres) ;
 
     auto_strings(dst, tree) ;
     newlen = treelen ;
 
-    res.name = ss_resolve_add_string(&res,SS_MASTER+1) ;
-    res.description = ss_resolve_add_string(&res,"inner bundle - do not use it") ;
-    res.tree = ss_resolve_add_string(&res,dst) ;
-    res.treename = ss_resolve_add_string(&res,treename) ;
+    res.name = resolve_add_string(wres,SS_MASTER+1) ;
+    res.description = resolve_add_string(wres,"inner bundle - do not use it") ;
+    res.tree = resolve_add_string(wres,dst) ;
+    res.treename = resolve_add_string(wres,treename) ;
     res.type = TYPE_BUNDLE ;
     res.disen = 1 ;
 
@@ -310,12 +312,12 @@ void create_tree(ssexec_t *info)
     auto_create(dst, SS_RESOLVE, newlen) ;
     dst[newlen] = 0 ;
     log_trace("write resolve file of inner bundle") ;
-    if (!ss_resolve_write(&res,dst,SS_MASTER+1)) {
+    if (!resolve_write(wres,dst,SS_MASTER+1)) {
 
-        ss_resolve_free(&res) ;
+        resolve_free(wres) ;
         log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"write resolve file of inner bundle") ;
     }
-    ss_resolve_free(&res) ;
+    resolve_free(wres) ;
 
     char sym[newlen + 1 + SS_SYM_SVC_LEN + 1] ;
     char dstsym[newlen + SS_SVC_LEN + 1] ;
@@ -509,24 +511,25 @@ void tree_enable_disable(ssexec_t *info, uint8_t action)
 
 }
 
-void tree_modify_resolve(ss_resolve_t *res,ss_resolve_enum_t field,char const *regex,char const *by)
+void tree_modify_resolve(resolve_service_t *res, resolve_service_enum_t field,char const *regex,char const *by)
 {
     log_flow() ;
 
     stralloc sa = STRALLOC_ZERO ;
-    ss_resolve_t modif = RESOLVE_ZERO ;
+    resolve_service_t modif = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &modif) ;
 
-    log_trace("modify field: ",ss_resolve_field_table[field].field," of service: ",res->sa.s + res->name) ;
+    log_trace("modify field: ", resolve_service_field_table[field].field," of service: ",res->sa.s + res->name) ;
 
-    if (!ss_resolve_copy(&modif,res))
+    if (!service_resolve_copy(&modif,res))
         log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"copy resolve file of: ", res->sa.s + res->name) ;
 
-    if (!ss_resolve_put_field_to_sa(&sa,&modif, field))
-        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get copy of field: ",ss_resolve_field_table[field].field) ;
+    if (!service_resolve_field_to_sa(&sa,&modif, field))
+        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get copy of field: ",resolve_service_field_table[field].field) ;
 
     if (sa.len) {
         if (!sastr_replace(&sa,regex,by))
-            log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"replace field: ",ss_resolve_field_table[field].field) ;
+            log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"replace field: ",resolve_service_field_table[field].field) ;
 
         if (!stralloc_0(&sa))
             log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"stralloc") ;
@@ -534,15 +537,15 @@ void tree_modify_resolve(ss_resolve_t *res,ss_resolve_enum_t field,char const *r
         sa.len-- ;
     }
 
-    if (!ss_resolve_modify_field(&modif,field,sa.s))
-        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"modify field: ",ss_resolve_field_table[field].field) ;
+    if (!service_resolve_modify_field(&modif,field,sa.s))
+        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"modify field: ",resolve_service_field_table[field].field) ;
 
-    if (!ss_resolve_copy(res,&modif))
+    if (!service_resolve_copy(res,&modif))
         log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"copy resolve file of: ",res->sa.s + res->name) ;
 
     stralloc_free(&sa) ;
 
-    ss_resolve_free(&modif) ;
+    resolve_free(wres) ;
 }
 
 void tree_remove(ssexec_t *info)
@@ -643,7 +646,7 @@ static void tree_parse_options(tree_opts_t *opts, char const *str)
 
                             opts->depends = TREE_SAOPTS.len ;
                             if (!sastr_add_string(&TREE_SAOPTS, val))
-                                log_dienomem("stralloc") ;
+                                log_die_nomem("stralloc") ;
 
                             break ;
 
@@ -651,7 +654,7 @@ static void tree_parse_options(tree_opts_t *opts, char const *str)
 
                             opts->requiredby = TREE_SAOPTS.len ;
                             if (!sastr_add_string(&TREE_SAOPTS, val))
-                                log_dienomem("stralloc") ;
+                                log_die_nomem("stralloc") ;
 
                         break ;
 
@@ -659,7 +662,7 @@ static void tree_parse_options(tree_opts_t *opts, char const *str)
 
                             opts->rename = TREE_SAOPTS.len ;
                             if (!sastr_add_string(&TREE_SAOPTS, val))
-                                log_dienomem("stralloc") ;
+                                log_die_nomem("stralloc") ;
 
                         break ;
 
@@ -729,7 +732,7 @@ int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec
     if (argc < 1) log_usage(usage_tree) ;
 
     // make create the default option
-    if (!current && !create && !allow && !deny && !enable && !disable && !remove && !snap && (opt.rename >= 0))
+    if (!current && !create && !allow && !deny && !enable && !disable && !remove && !snap && (opts.rename >= 0))
         create = 1 ;
 
     info->treename.len = 0 ;
@@ -878,7 +881,8 @@ int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec
     if (snap) {
 
         stralloc salist = STRALLOC_ZERO ;
-        ss_resolve_t res = RESOLVE_ZERO ;
+        resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+        resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
         char const *exclude[1] = { 0 } ;
 
         size_t syslen = info->base.len + SS_SYSTEM_LEN ;
@@ -931,15 +935,15 @@ int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec
 
             char *name = salist.s + pos ;
 
-            if (!ss_resolve_read(&res,clone_res,name))
+            if (!resolve_read(wres,clone_res,name))
                 log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of: ",src_resolve,"/",name) ;
 
-            tree_modify_resolve(&res,SS_RESOLVE_ENUM_RUNAT,tree,clone.s) ;
-            tree_modify_resolve(&res,SS_RESOLVE_ENUM_TREENAME,tree,clone.s) ;
-            tree_modify_resolve(&res,SS_RESOLVE_ENUM_TREE,tree,clone.s) ;
-            tree_modify_resolve(&res,SS_RESOLVE_ENUM_STATE,tree,clone.s) ;
+            tree_modify_resolve(&res,SERVICE_ENUM_RUNAT,tree,clone.s) ;
+            tree_modify_resolve(&res,SERVICE_ENUM_TREENAME,tree,clone.s) ;
+            tree_modify_resolve(&res,SERVICE_ENUM_TREE,tree,clone.s) ;
+            tree_modify_resolve(&res,SERVICE_ENUM_STATE,tree,clone.s) ;
 
-            if (!ss_resolve_write(&res,clone_res,name))
+            if (!resolve_write(wres,clone_res,name))
                 log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"write resolve file of: ",src_resolve,"/",name) ;
         }
 
@@ -973,15 +977,15 @@ int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec
 
                 char *name = salist.s + pos ;
 
-                if (!ss_resolve_read(&res,clone_backup,name))
+                if (!resolve_read(wres,clone_backup,name))
                     log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of: ",src_resolve_backup,"/",name) ;
 
-                tree_modify_resolve(&res,SS_RESOLVE_ENUM_RUNAT,tree,clone.s) ;
-                tree_modify_resolve(&res,SS_RESOLVE_ENUM_TREENAME,tree,clone.s) ;
-                tree_modify_resolve(&res,SS_RESOLVE_ENUM_TREE,tree,clone.s) ;
-                tree_modify_resolve(&res,SS_RESOLVE_ENUM_STATE,tree,clone.s) ;
+                tree_modify_resolve(&res,SERVICE_ENUM_RUNAT,tree,clone.s) ;
+                tree_modify_resolve(&res,SERVICE_ENUM_TREENAME,tree,clone.s) ;
+                tree_modify_resolve(&res,SERVICE_ENUM_TREE,tree,clone.s) ;
+                tree_modify_resolve(&res,SERVICE_ENUM_STATE,tree,clone.s) ;
 
-                if (!ss_resolve_write(&res,clone_backup,name))
+                if (!resolve_write(wres,clone_backup,name))
                     log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"write resolve file of: ",src_resolve,"/",name) ;
             }
             // rename db
@@ -997,7 +1001,7 @@ int ssexec_tree(int argc, char const *const *argv,char const *const *envp,ssexec
         }
 
         stralloc_free(&salist) ;
-        ss_resolve_free(&res) ;
+        resolve_free(wres) ;
 
         log_info("Cloned successfully: ",tree," to ",clone.s) ;
     }

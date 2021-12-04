@@ -213,7 +213,8 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
     stralloc eversion = STRALLOC_ZERO ;
     stralloc savar = STRALLOC_ZERO ;
     stralloc salist = STRALLOC_ZERO ;
-    ss_resolve_t res = RESOLVE_ZERO ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
 
     uint8_t todo = T_UNSET ;
 
@@ -293,7 +294,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 
     treename = !info->opt_tree ? 0 : info->treename.s ;
 
-    r = ss_resolve_svtree(&sasrc,sv,treename) ;
+    r = service_resolve_svtree(&sasrc,sv,treename) ;
     if (r == -1) log_dieu(LOG_EXIT_SYS,"resolve tree source of sv: ",sv) ;
     else if (!r) {
         log_info("no tree exist yet") ;
@@ -304,7 +305,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
     }
     else if (r == 1) log_die(LOG_EXIT_SYS,"unknown service: ",sv, !info->opt_tree ? " in current tree: " : " in tree: ", info->treename.s) ;
 
-    if (!ss_resolve_read(&res,sasrc.s,sv))
+    if (!resolve_read(wres,sasrc.s,sv))
         log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",sv) ;
 
     if (!res.srconf) {
@@ -433,7 +434,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
         stralloc_free(&eversion) ;
         stralloc_free(&savar) ;
         stralloc_free(&salist) ;
-        ss_resolve_free(&res) ;
+        resolve_free(wres) ;
 
     return 0 ;
 }

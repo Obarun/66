@@ -209,7 +209,7 @@ int parse_service(char const *sv, stralloc *parsed_list, ssexec_t *info, uint8_t
     if (!get_svtype(&alltype, frontend.s))
         log_die(LOG_EXIT_USER, "invalid value for key: ", get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_TYPE), " at frontend service: ", sv) ;
 
-    /** contents of directory should be listed by ss_resolve_src_path
+    /** contents of directory should be listed by service_frontend_path
      * except for module type */
     if (scan_mode(sv,S_IFDIR) == 1 && alltype.cname.itype != TYPE_MODULE)
         goto freed ;
@@ -252,7 +252,7 @@ int parse_service_deps(sv_alltype *alltype, ssexec_t *info, stralloc *parsed_lis
 
             } else log_trace("bundle: ", keep.s + alltype->cname.name, " contents: ", deps.s + id," as service") ;
 
-            r = ss_resolve_src_path(&sa, deps.s + id, info->owner, directory_forced) ;
+            r = service_frontend_path(&sa, deps.s + id, info->owner, directory_forced) ;
             if (r < 1) goto err ;//don't warn here, the ss_revolve_src_path do it
 
             if (!parse_service(sa.s, parsed_list, info, force, alltype->overwrite_conf))
@@ -303,7 +303,7 @@ int parse_service_optsdeps(stralloc *rebuild, sv_alltype *alltype, ssexec_t *inf
                     continue ;
             }
 
-            r = ss_resolve_src_path(&sa, deps.s + id, info->owner, directory_forced) ;
+            r = service_frontend_path(&sa, deps.s + id, info->owner, directory_forced) ;
             if (r == -1)
                 goto err ;
 

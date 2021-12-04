@@ -354,8 +354,8 @@ int tree_seed_ismandatory(tree_seed_t *seed, uint8_t check_service)
 
             char *s = sv.s + pos ;
 
-            // ss_resolve_src already warn user
-            if (!ss_resolve_src_path(&sasrc,s, uid, 0)) {
+            // service_frontend_src already warn user
+            if (!service_frontend_path(&sasrc,s, uid, 0)) {
 
                 stralloc_free(&sasrc) ;
                 goto err ;

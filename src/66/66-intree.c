@@ -39,6 +39,7 @@
 #include <66/tree.h>
 #include <66/enum.h>
 #include <66/resolve.h>
+#include <66/service.h>
 #include <66/backup.h>
 
 static unsigned int REVERSE = 0 ;
@@ -236,14 +237,14 @@ static void info_get_graph_src(ss_resolve_graph_t *graph,char const *src,unsigne
     if (!sastr_dir_get(&sa,solve,exclude,S_IFREG))
         log_dieusys(LOG_EXIT_SYS,"get source service file at: ",solve) ;
 
-    if (!ss_resolve_sort_bytype(&gares,&sa,src))
+    if (!service_resolve_sort_bytype(&gares,&sa,src))
         log_dieu(LOG_EXIT_SYS,"sort list by type") ;
 
-    for (pos = 0 ; pos < genalloc_len(ss_resolve_t,&gares) ; pos++)
-        if (!ss_resolve_graph_build(graph,&genalloc_s(ss_resolve_t,&gares)[pos],src,reverse))
+    for (pos = 0 ; pos < genalloc_len(resolve_service_t,&gares) ; pos++)
+        if (!ss_resolve_graph_build(graph,&genalloc_s(resolve_service_t,&gares)[pos],src,reverse))
                 log_dieu(LOG_EXIT_SYS,"build the graph from: ",src) ;
 
-    genalloc_deepfree(ss_resolve_t,&gares,ss_resolve_free) ;
+    resolve_deep_free(SERVICE_STRUCT, &gares) ;
     stralloc_free(&sa) ;
 }
 
@@ -321,7 +322,8 @@ static void info_display_contents(char const *field, char const *treename)
 {
     int r ;
     size_t padding = 1, treenamelen = strlen(treename) ;
-    ss_resolve_t res = RESOLVE_ZERO ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT,&res) ;
     ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
     stralloc salist = STRALLOC_ZERO ;
 
@@ -336,16 +338,16 @@ static void info_display_contents(char const *field, char const *treename)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    if (!genalloc_len(ss_resolve_t,&graph.name)) goto empty ;
+    if (!genalloc_len(resolve_service_t,&graph.name)) goto empty ;
 
     r = ss_resolve_graph_publish(&graph,0) ;
     if (r < 0) log_die(LOG_EXIT_USER,"cyclic graph detected at tree: ", treename) ;
     else if (!r) log_dieusys(LOG_EXIT_SYS,"publish service graph of tree: ",treename) ;
 
-    for (size_t i = 0 ; i < genalloc_len(ss_resolve_t,&graph.sorted) ; i++)
+    for (size_t i = 0 ; i < genalloc_len(resolve_service_t,&graph.sorted) ; i++)
     {
-        char *string = genalloc_s(ss_resolve_t,&graph.sorted)[i].sa.s ;
-        char *name = string + genalloc_s(ss_resolve_t,&graph.sorted)[i].name ;
+        char *string = genalloc_s(resolve_service_t,&graph.sorted)[i].sa.s ;
+        char *name = string + genalloc_s(resolve_service_t,&graph.sorted)[i].name ;
         if (!stralloc_catb(&salist,name,strlen(name)+1)) log_die_nomem("stralloc") ;
     }
 
@@ -355,9 +357,9 @@ static void info_display_contents(char const *field, char const *treename)
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
         size_t el = sastr_len(&salist) ;
         if (!sastr_rebuild_in_oneline(&salist)) log_dieu(LOG_EXIT_SYS,"rebuild dependencies list") ;
-        ss_resolve_init(&res) ;
+        resolve_init(wres) ;
         res.ndeps = el ;
-        res.deps = ss_resolve_add_string(&res,salist.s) ;
+        res.deps = resolve_add_string(wres,salist.s) ;
         if (!info_graph_init(&res,tmp,REVERSE, padding, STYLE))
             log_die(LOG_EXIT_SYS,"display graph of: ",treename) ;
         goto freed ;
@@ -386,7 +388,7 @@ static void info_display_contents(char const *field, char const *treename)
         if (buffer_putsflush(buffer_1,"\n") == -1)
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
     freed:
-        ss_resolve_free(&res) ;
+        resolve_free(wres) ;
         ss_resolve_graph_free(&graph) ;
         stralloc_free(&salist) ;
 }

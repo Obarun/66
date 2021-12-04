@@ -39,6 +39,7 @@
 #include <66/environ.h>
 #include <66/service.h>
 
+
 static stralloc workdir = STRALLOC_ZERO ;
 stralloc PARSED_LIST = STRALLOC_ZERO ;
 
@@ -158,7 +159,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
         name = keep.s + sv->cname.name ;
 
         log_trace("write resolve file of: ",name) ;
-        if (!ss_resolve_setnwrite(sv,info,workdir))
+        if (!service_resolve_setnwrite(sv,info,workdir))
             log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"write revolve file for: ",name) ;
 
         if (sastr_cmp(tostart,name) == -1)
@@ -183,8 +184,10 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
         int r ;
         size_t pos = 0, gpos = 0 ;
         size_t workdirlen = strlen(workdir) ;
-        ss_resolve_t res = RESOLVE_ZERO ;
-        ss_resolve_t dres = RESOLVE_ZERO ;
+        resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+        resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
+        resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+        resolve_wrapper_t_ref dwres = resolve_set_struct(SERVICE_STRUCT, &dres) ;
         stralloc salist = STRALLOC_ZERO ;
         genalloc gamodule = GENALLOC_ZERO ;
         ss_resolve_graph_t mgraph = RESOLVE_GRAPH_ZERO ;
@@ -199,7 +202,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
             char dst[workdirlen + SS_DB_LEN + SS_SRC_LEN + 1 + namelen + 1];
             auto_strings(dst,workdir,SS_DB,SS_SRC,"/",name) ;
 
-            if (!ss_resolve_read(&res,workdir,name)) {
+            if (!resolve_read(wres,workdir,name)) {
                 err_msg = "read resolve file of: " ;
                 goto err ;
             }
@@ -213,16 +216,16 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
                 gpos = 0 ;
                 FOREACH_SASTR(&salist,gpos) {
 
-                    if (!ss_resolve_read(&dres,workdir,salist.s + gpos)) {
+                    if (!resolve_read(dwres,workdir,salist.s + gpos)) {
                         err_msg = "read resolve file of: " ;
                         goto err ;
                     }
 
                     if (dres.type != TYPE_CLASSIC)
                     {
-                        if (ss_resolve_search(&gamodule,name) == -1)
+                        if (resolve_search(&gamodule, name, SERVICE_STRUCT) == -1)
                         {
-                            if (!ss_resolve_append(&gamodule,&dres))
+                            if (!resolve_append(&gamodule,dwres))
                             {
                                 err_msg = "append genalloc with: " ;
                                 goto err ;
@@ -232,9 +235,9 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
                 }
             }
 
-            for (gpos = 0 ; gpos < genalloc_len(ss_resolve_t,&gamodule) ; gpos++)
+            for (gpos = 0 ; gpos < genalloc_len(resolve_service_t,&gamodule) ; gpos++)
             {
-                if (!ss_resolve_graph_build(&mgraph,&genalloc_s(ss_resolve_t,&gamodule)[gpos],workdir,0))
+                if (!ss_resolve_graph_build(&mgraph,&genalloc_s(resolve_service_t,&gamodule)[gpos],workdir,0))
                 {
                     err_msg = "build the graph of: " ;
                     goto err ;
@@ -253,10 +256,10 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
             }
 
             salist.len = 0 ;
-            for (gpos = 0 ; gpos < genalloc_len(ss_resolve_t,&mgraph.sorted) ; gpos++)
+            for (gpos = 0 ; gpos < genalloc_len(resolve_service_t,&mgraph.sorted) ; gpos++)
             {
-                char *string = genalloc_s(ss_resolve_t,&mgraph.sorted)[gpos].sa.s ;
-                char *name = string + genalloc_s(ss_resolve_t,&mgraph.sorted)[gpos].name ;
+                char *string = genalloc_s(resolve_service_t,&mgraph.sorted)[gpos].sa.s ;
+                char *name = string + genalloc_s(resolve_service_t,&mgraph.sorted)[gpos].name ;
                 if (!auto_stra(&salist,name,"\n"))
                 {
                     err_msg = "append stralloc for: " ;
@@ -271,7 +274,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
                 goto err ;
             }
 
-            genalloc_deepfree(ss_resolve_t,&gamodule,ss_resolve_free) ;
+            resolve_deep_free(SERVICE_STRUCT, &gamodule) ;
             ss_resolve_graph_free(&mgraph) ;
         }
 
@@ -280,10 +283,10 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
         return ;
 
         err:
-            genalloc_deepfree(ss_resolve_t,&gamodule,ss_resolve_free) ;
+            resolve_deep_free(SERVICE_STRUCT, &gamodule) ;
             ss_resolve_graph_free(&mgraph) ;
-            ss_resolve_free(&res) ;
-            ss_resolve_free(&dres) ;
+            resolve_free(wres) ;
+            resolve_free(dwres) ;
             stralloc_free(&salist) ;
             log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,err_msg,name) ;
     }
@@ -346,7 +349,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
             directory_forced = dname ;
         } else  sv = *argv ;
 
-        if (ss_resolve_src_path(&sasrc,sv,info->owner,!directory_forced ? 0 : directory_forced) < 1)
+        if (service_frontend_path(&sasrc,sv,info->owner,!directory_forced ? 0 : directory_forced) < 1)
             log_dieu(LOG_EXIT_SYS,"resolve source path of: ",*argv) ;
     }
 
@@ -385,7 +388,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
             if (r < 0) log_die(LOG_EXIT_USER,"cyclic graph detected") ;
             log_dieusys(LOG_EXIT_SYS,"publish service graph") ;
         }
-        if (!ss_resolve_write_master(info,&graph,workdir.s,0))
+        if (!service_resolve_write_master(info,&graph,workdir.s,0))
             log_dieusys_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"update inner bundle") ;
 
         ss_resolve_graph_free(&graph) ;

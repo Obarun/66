@@ -16,6 +16,7 @@
 
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
@@ -27,6 +28,7 @@
 
 #include <66/constants.h>
 #include <66/utils.h>
+#include <66/service.h>
 
 void ss_resolve_graph_ndeps_free(ss_resolve_graph_ndeps_t *graph)
 {
@@ -39,9 +41,9 @@ void ss_resolve_graph_free(ss_resolve_graph_t *graph)
 {
     log_flow() ;
 
-    genalloc_deepfree(ss_resolve_t,&graph->name,ss_resolve_free) ;
+    resolve_deep_free(SERVICE_STRUCT, &graph->name) ;
     genalloc_deepfree(ss_resolve_graph_ndeps_t,&graph->cp,ss_resolve_graph_ndeps_free) ;
-    genalloc_free(ss_resolve_t,&graph->sorted) ;
+    genalloc_free(resolve_service_t,&graph->sorted) ;
 }
 
 int ss_resolve_dfs(ss_resolve_graph_t *graph, unsigned int idx, visit *c,unsigned int *ename,unsigned int *edeps)
@@ -70,7 +72,7 @@ int ss_resolve_dfs(ss_resolve_graph_t *graph, unsigned int idx, visit *c,unsigne
             }
         }
         c[idx] = SS_BLACK ;
-        if (!genalloc_insertb(ss_resolve_t, &graph->sorted, 0, &genalloc_s(ss_resolve_t,&graph->name)[idx],1))
+        if (!genalloc_insertb(resolve_service_t, &graph->sorted, 0, &genalloc_s(resolve_service_t,&graph->name)[idx],1))
             log_warnusys_return(LOG_EXIT_SYS,"genalloc") ;
     }
     end:
@@ -92,8 +94,8 @@ int ss_resolve_graph_sort(ss_resolve_graph_t *graph)
         if ((c[i] == SS_WHITE) && ss_resolve_dfs(graph,genalloc_s(ss_resolve_graph_ndeps_t,&graph->cp)[i].idx,c,&ename,&edeps))
         {
             int data = genalloc_s(uint32_t,&genalloc_s(ss_resolve_graph_ndeps_t,&graph->cp)[ename].ndeps)[edeps] ;
-            char *name = genalloc_s(ss_resolve_t,&graph->name)[ename].sa.s + genalloc_s(ss_resolve_t,&graph->name)[ename].name ;
-            char *deps = genalloc_s(ss_resolve_t,&graph->name)[data].sa.s + genalloc_s(ss_resolve_t,&graph->name)[data].name ;
+            char *name = genalloc_s(resolve_service_t,&graph->name)[ename].sa.s + genalloc_s(resolve_service_t,&graph->name)[ename].name ;
+            char *deps = genalloc_s(resolve_service_t,&graph->name)[data].sa.s + genalloc_s(resolve_service_t,&graph->name)[data].name ;
             log_warn_return(LOG_EXIT_LESSONE,"resolution of : ",name,": encountered a cycle involving service: ",deps) ;
         }
     }
@@ -109,19 +111,19 @@ int ss_resolve_graph_publish(ss_resolve_graph_t *graph,unsigned int reverse)
     size_t a = 0 , b = 0 ;
     stralloc sa = STRALLOC_ZERO ;
 
-    for (; a < genalloc_len(ss_resolve_t,&graph->name) ; a++)
+    for (; a < genalloc_len(resolve_service_t,&graph->name) ; a++)
     {
         ss_resolve_graph_ndeps_t rescp = RESOLVE_GRAPH_NDEPS_ZERO ;
         rescp.idx = a ;
 
-        if (genalloc_s(ss_resolve_t,&graph->name)[a].ndeps)
+        if (genalloc_s(resolve_service_t,&graph->name)[a].ndeps)
         {
             sa.len = 0 ;
-            if (!sastr_clean_string(&sa, genalloc_s(ss_resolve_t,&graph->name)[a].sa.s +  genalloc_s(ss_resolve_t,&graph->name)[a].deps)) goto err ;
+            if (!sastr_clean_string(&sa, genalloc_s(resolve_service_t,&graph->name)[a].sa.s +  genalloc_s(resolve_service_t,&graph->name)[a].deps)) goto err ;
             for (b = 0 ; b < sa.len ; b += strlen(sa.s + b) + 1)
             {
                 char *deps = sa.s + b ;
-                r = ss_resolve_search(&graph->name,deps) ;
+                r = resolve_search(&graph->name,deps, SERVICE_STRUCT) ;
                 if (r >= 0)
                 {
                     if (!genalloc_append(uint32_t,&rescp.ndeps,&r)) goto err ;
@@ -133,7 +135,7 @@ int ss_resolve_graph_publish(ss_resolve_graph_t *graph,unsigned int reverse)
     }
 
     if (ss_resolve_graph_sort(graph) < 0) { ret = -1 ; goto err ; }
-    if (!reverse) genalloc_reverse(ss_resolve_t,&graph->sorted) ;
+    if (!reverse) genalloc_reverse(resolve_service_t,&graph->sorted) ;
 
     stralloc_free(&sa) ;
     return 1 ;
@@ -142,42 +144,45 @@ int ss_resolve_graph_publish(ss_resolve_graph_t *graph,unsigned int reverse)
         return ret ;
 }
 
-int ss_resolve_graph_build(ss_resolve_graph_t *graph,ss_resolve_t *res,char const *src,unsigned int reverse)
+int ss_resolve_graph_build(ss_resolve_graph_t *graph,resolve_service_t *res,char const *src,unsigned int reverse)
 {
     log_flow() ;
 
+    int r, e = 0 ;
     char *string = res->sa.s ;
     char *name = string + res->name ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, res) ;
 
-    int r = ss_resolve_search(&graph->name,name) ;
+    r = resolve_search(&graph->name, name, SERVICE_STRUCT) ;
     if (r < 0)
     {
         if (!obstr_equal(name,SS_MASTER+1))
         {
-            if(!ss_resolve_append(&graph->name,res)) {
+            if(!resolve_append(&graph->name,wres)) {
                 log_warnu("append: ", name) ;
                 goto err ;
             }
         }
         if (!reverse)
         {
-            if (!ss_resolve_add_deps(&graph->name,res,src)) {
+            if (!service_resolve_add_deps(&graph->name,res,src)) {
                 log_warnu("add dependencies of: ", name) ;
                 goto err ;
             }
         }
         else
         {
-            if (!ss_resolve_add_rdeps(&graph->name,res,src)) {
+            if (!service_resolve_add_rdeps(&graph->name,res,src)) {
                 log_warnu("add reverse dependencies of: ", name) ;
                 goto err ;
             }
         }
     }
 
-    return 1 ;
+    e = 1 ;
     err:
-        return 0 ;
+        free(wres) ;
+        return e ;
 }
 /** what = 0 -> only classic
  * what = 1 -> only atomic
@@ -188,7 +193,8 @@ int ss_resolve_graph_src(ss_resolve_graph_t *graph, char const *dir, unsigned in
     log_flow() ;
 
     stralloc sa = STRALLOC_ZERO ;
-    ss_resolve_t res = RESOLVE_ZERO ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
     size_t dirlen = strlen(dir), pos = 0 ;
     char const *exclude[2] = { 0 } ;
 
@@ -213,8 +219,8 @@ int ss_resolve_graph_src(ss_resolve_graph_t *graph, char const *dir, unsigned in
     for (;pos < sa.len; pos += strlen(sa.s + pos) + 1)
     {
         char *name = sa.s + pos ;
-        if (!ss_resolve_check(dir,name)) goto err ;
-        if (!ss_resolve_read(&res,dir,name)) goto err ;
+        if (!resolve_check(dir,name)) goto err ;
+        if (!resolve_read(wres,dir,name)) goto err ;
         if (!ss_resolve_graph_build(graph,&res,dir,reverse))
         {
             log_warnu("resolve dependencies of service: ",name) ;
@@ -223,10 +229,10 @@ int ss_resolve_graph_src(ss_resolve_graph_t *graph, char const *dir, unsigned in
     }
 
     stralloc_free(&sa) ;
-    ss_resolve_free(&res) ;
+    resolve_free(wres) ;
     return 1 ;
     err:
         stralloc_free(&sa) ;
-        ss_resolve_free(&res) ;
+        resolve_free(wres) ;
         return 0 ;
 }

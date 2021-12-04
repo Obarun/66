@@ -56,13 +56,14 @@ int write_services(sv_alltype *sv, char const *workdir, uint8_t force, uint8_t c
     int type = sv->cname.itype ;
 
     {
-        ss_resolve_t res = RESOLVE_ZERO ;
-        if (ss_resolve_check(workdir,name))
+        resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+        resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+        if (resolve_check(workdir,name))
         {
-            if (!ss_resolve_read(&res,workdir,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
+            if (!resolve_read(wres,workdir,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
             if (res.type != type && res.disen) log_die(LOG_EXIT_SYS,"Detection of incompatible type format for: ",name," -- current: ",get_key_by_enum(ENUM_TYPE,type)," previous: ",get_key_by_enum(ENUM_TYPE,res.type)) ;
         }
-        ss_resolve_free(&res) ;
+        resolve_free(wres) ;
     }
 
     size_t wnamelen ;

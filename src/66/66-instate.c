@@ -87,7 +87,8 @@ int main(int argc, char const *const *argv)
 {
     int found = 0 ;
     uint8_t logger = 0 ;
-    ss_resolve_t res = RESOLVE_ZERO ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
     stralloc satree = STRALLOC_ZERO ;
     stralloc src = STRALLOC_ZERO ;
     stralloc tmp = STRALLOC_ZERO ;
@@ -131,7 +132,7 @@ int main(int argc, char const *const *argv)
     if (!argc) log_usage(USAGE) ;
     svname = *argv ;
 
-    found = ss_resolve_svtree(&src,svname,tname) ;
+    found = service_resolve_svtree(&src,svname,tname) ;
     if (found == -1) log_dieu(LOG_EXIT_SYS,"resolve tree source of sv: ",svname) ;
     else if (!found) {
         log_info("no tree exist yet") ;
@@ -142,14 +143,14 @@ int main(int argc, char const *const *argv)
     }
     else if (found == 1) log_die(LOG_EXIT_SYS,"unknown service: ",svname) ;
 
-    if (!ss_resolve_read(&res,src.s,svname)) log_dieusys(111,"read resolve file of: ",src.s,"/.resolve/",svname) ;
+    if (!resolve_read(wres,src.s,svname)) log_dieusys(111,"read resolve file of: ",src.s,"/.resolve/",svname) ;
 
     info_field_align(buf,fields,field_suffix,MAXOPTS) ;
 
     ste = res.sa.s + res.state ;
 
-    if (!ss_state_check(ste,svname)) log_diesys(111,"unitialized service: ",svname) ;
-    if (!ss_state_read(&sta,ste,svname)) log_dieusys(111,"read state file of: ",ste,"/",svname) ;
+    if (!state_check(ste,svname)) log_diesys(111,"unitialized service: ",svname) ;
+    if (!state_read(&sta,ste,svname)) log_dieusys(111,"read state file of: ",ste,"/",svname) ;
 
     info_display_string(fields[5],svname) ;
     info_display_int(fields[0],sta.reload) ;
@@ -161,8 +162,8 @@ int main(int argc, char const *const *argv)
     if (res.logger && logger)
     {
         svname = res.sa.s + res.logger ;
-        if (!ss_state_check(ste,svname)) log_dieusys(111,"unitialized: ",svname) ;
-        if (!ss_state_read(&sta,ste,svname)) log_dieusys(111,"read state file of: ",ste,"/",svname) ;
+        if (!state_check(ste,svname)) log_dieusys(111,"unitialized: ",svname) ;
+        if (!state_read(&sta,ste,svname)) log_dieusys(111,"read state file of: ",ste,"/",svname) ;
 
         if (buffer_putsflush(buffer_1,"\n") == -1)
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
@@ -177,7 +178,7 @@ int main(int argc, char const *const *argv)
     }
 
     freed:
-    ss_resolve_free(&res) ;
+    resolve_free(wres) ;
     stralloc_free(&satree) ;
     stralloc_free(&src) ;
     stralloc_free(&tmp) ;
