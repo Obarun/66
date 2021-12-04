@@ -12,9 +12,6 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <66/tree.h>
-#include <66/db.h>
-
 #include <sys/stat.h>
 #include <stddef.h>
 
@@ -26,8 +23,10 @@
 #include <skalibs/djbunix.h>
 
 #include <66/constants.h>
-#include <66/utils.h>
 #include <66/enum.h>
+#include <66/resolve.h>
+#include <66/tree.h>
+#include <66/db.h>
 
 // force: 0->check, 1->remove and create
 int backup_make_new(ssexec_t *info, unsigned int type)

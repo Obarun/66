@@ -12,27 +12,24 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <errno.h>
 #include <string.h>
+#include <stdint.h>
 #include <sys/stat.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/types.h>
 #include <oblibs/sastr.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/unix-transactional.h>
+#include <skalibs/unix-transactional.h>//atomic_symlink
 
-#include <66/utils.h>
 #include <66/constants.h>
 #include <66/enum.h>
 #include <66/ssexec.h>
 
-//#include <stdio.h>
 //USAGE "backup_switcher [ -v verbosity ] [ -t type ] [ -b backup ] [ -s switch ] tree"
 // for -b: return 0 if point to original source, return 1 if point to backup
 // for -s: -s0 -> origin, -s1 -> backup ;
