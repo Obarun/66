@@ -39,21 +39,14 @@ int db_compile(char const *workdir, char const *tree, char const *treename, char
     size_t wlen = strlen(workdir), treelen = strlen(treename) ;
 
     char dest[wlen + SS_DB_LEN + 1 + treelen + 1] ;
-    memcpy(dest,workdir,wlen) ;
-    memcpy(dest + wlen,SS_DB,SS_DB_LEN) ;
-    dest[wlen + SS_DB_LEN] = '/' ;
-    memcpy(dest + wlen + SS_DB_LEN + 1,treename,treelen) ;
-    dest[wlen + SS_DB_LEN + 1 + treelen] = 0 ;
+    auto_strings(dest, workdir, SS_DB, "/", treename) ;
 
     char src[wlen + SS_DB_LEN + SS_SRC_LEN + 1] ;
-    memcpy(src,workdir,wlen) ;
-    memcpy(src + wlen,SS_DB,SS_DB_LEN) ;
-    memcpy(src + wlen + SS_DB_LEN,SS_SRC,SS_SRC_LEN) ;
-    src[wlen + SS_DB_LEN + SS_SRC_LEN] = 0 ;
+    auto_strings(src, workdir, SS_DB, SS_SRC)
 
     r = scan_mode(dest,S_IFDIR) ;
-    if (r)
-    {
+    if (r) {
+
         if (rm_rf(dest) < 0)
             log_warnusys_return(LOG_EXIT_ZERO,"remove: ", dest) ;
     }

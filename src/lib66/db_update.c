@@ -35,18 +35,11 @@ int db_update(char const *newdb, ssexec_t *info,char const *const *envp)
     int wstat ;
     size_t newdblen = strlen(newdb) ;
 
-
     char db[newdblen + 1 + info->treename.len + 1] ;
-    memcpy(db, newdb, newdblen) ;
-    memcpy(db + newdblen, "/", 1) ;
-    memcpy(db + newdblen + 1, info->treename.s, info->treename.len) ;
-    db[newdblen + 1 + info->treename.len] = 0 ;
+    auto_strings(db, newdb, "/", info->treename.s) ;
 
     char newlive[info->livetree.len + 1 + info->treename.len + 1] ;
-    memcpy(newlive, info->livetree.s,info->livetree.len) ;
-    memcpy(newlive + info->livetree.len , "/", 1) ;
-    memcpy(newlive + info->livetree.len + 1, info->treename.s,info->treename.len) ;
-    newlive[info->livetree.len + 1 + info->treename.len] = 0 ;
+    auto_strings(newlive, info->livetree.s, "/", info->treename.s) ;
 
     char const *newargv[10] ;
     unsigned int m = 0 ;

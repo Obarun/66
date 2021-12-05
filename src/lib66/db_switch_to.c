@@ -33,7 +33,7 @@ int db_switch_to(ssexec_t *info, char const *const *envp,unsigned int where)
 {
     log_flow() ;
 
-    int r ;
+    int r, e = 0 ;
 
     stralloc db = STRALLOC_ZERO ;
     char type[UINT_FMT] ;
@@ -135,10 +135,9 @@ int db_switch_to(ssexec_t *info, char const *const *envp,unsigned int where)
         }
     }
 
-    stralloc_free(&db) ;
-    return 1 ;
+    e = 1 ;
 
     err:
         stralloc_free(&db) ;
-        return 0 ;
+        return e ;
 }

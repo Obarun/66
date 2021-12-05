@@ -31,17 +31,12 @@ int db_find_compiled_state(char const *livetree, char const *treename)
     log_flow() ;
 
     int r ;
-    size_t treelen = strlen(livetree) ;
-    size_t namelen = strlen(treename) ;
+    size_t treelen = strlen(livetree), namelen = strlen(treename) ;
 
     struct stat st ;
 
     char current[treelen + 1 + namelen + 9 + 1] ;
-    memcpy(current, livetree, treelen) ;
-    current[treelen] = '/' ;
-    memcpy(current + treelen + 1, treename,namelen) ;
-    memcpy(current + treelen + 1 + namelen, "/compiled", 9) ;
-    current[treelen + 1 + namelen + 9] = 0 ;
+    auto_strings(current, livetree, "/", treename, "/compiled") ;
 
     if(lstat(current,&st) < 0) return -1 ;
     if(!(S_ISLNK(st.st_mode)))
@@ -50,11 +45,12 @@ int db_find_compiled_state(char const *livetree, char const *treename)
     stralloc symreal = STRALLOC_ZERO ;
 
     r = sarealpath(&symreal,current) ;
-    if (r < 0 )
-    {
+    if (r < 0 ) {
+
         stralloc_free(&symreal) ;
         log_warnu_return(LOG_EXIT_LESSONE,"find real path: ",current) ;
     }
+
     char *b = NULL ;
     b = memmem(symreal.s,symreal.len,SS_BACKUP,SS_BACKUP_LEN) ;
 

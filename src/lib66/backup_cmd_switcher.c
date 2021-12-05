@@ -80,28 +80,20 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
     //base.len-- ;
     size_t psymlen ;
     char *psym = NULL ;
-    if (type == TYPE_CLASSIC)
-    {
+    if (type == TYPE_CLASSIC) {
         psym = SS_SYM_SVC ;
         psymlen = SS_SYM_SVC_LEN ;
-    }
-    else
-    {
+
+    } else {
         psym = SS_SYM_DB ;
         psymlen = SS_SYM_DB_LEN ;
     }
-    char sym[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 + psymlen + 1] ;
-    memcpy(sym,info->base.s,info->base.len) ;
-    memcpy(sym + info->base.len, SS_SYSTEM,SS_SYSTEM_LEN) ;
-    sym[info->base.len + SS_SYSTEM_LEN] = '/' ;
-    memcpy(sym + info->base.len + SS_SYSTEM_LEN + 1, tree, treelen) ;
-    memcpy(sym + info->base.len + SS_SYSTEM_LEN + 1 + treelen, SS_SVDIRS, SS_SVDIRS_LEN) ;
-    sym[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN] = '/' ;
-    memcpy(sym + info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 ,psym,psymlen) ;
-    sym[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 + psymlen] = 0 ;
 
-    if (back)
-    {
+    char sym[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 + psymlen + 1] ;
+    auto_strings(sym, info->base.s, SS_SYSTEM, "/", tree, SS_SVDIRS, "/", psym) ;
+
+    if (back) {
+
         if(lstat(sym,&st) < 0) return -1 ;
         if(!(S_ISLNK(st.st_mode)))
             log_warnusys_return(LOG_EXIT_LESSONE,"find symlink: ",sym) ;
@@ -122,23 +114,22 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
         return SS_SWBACK ;
     }
 
-    if (change)
-    {
+    if (change) {
+
         size_t psrclen ;
         size_t pbacklen ;
         char *psrc = NULL ;
         char *pback = NULL ;
 
-        if (type == TYPE_CLASSIC)
-        {
+        if (type == TYPE_CLASSIC) {
             psrc = SS_SVC ;
             psrclen = SS_SVC_LEN ;
 
             pback = SS_SVC ;
             pbacklen = SS_SVC_LEN ;
-        }
-        else
-        {
+
+        } else {
+
             psrc = SS_DB ;
             psrclen = SS_DB_LEN ;
 
@@ -149,29 +140,18 @@ int backup_switcher(int argc, char const *const *argv,ssexec_t *info)
         char dstsrc[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + psrclen + 1] ;
         char dstback[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen + pbacklen + 1] ;
 
-        memcpy(dstsrc, info->base.s, info->base.len) ;
-        memcpy(dstsrc + info->base.len, SS_SYSTEM, SS_SYSTEM_LEN) ;
-        dstsrc[info->base.len + SS_SYSTEM_LEN] = '/' ;
-        memcpy(dstsrc + info->base.len + SS_SYSTEM_LEN + 1, tree, treelen) ;
-        memcpy(dstsrc + info->base.len + SS_SYSTEM_LEN + 1 + treelen, SS_SVDIRS,SS_SVDIRS_LEN) ;
-        memcpy(dstsrc + info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN,psrc,psrclen) ;
-        dstsrc[info->base.len + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + psrclen] = 0 ;
+        auto_strings(dstsrc, info->base.s, SS_SYSTEM, "/", tree, SS_SVDIRS, psrc) ;
 
-        memcpy(dstback, info->base.s, info->base.len) ;
-        memcpy(dstback + info->base.len, SS_SYSTEM, SS_SYSTEM_LEN) ;
-        memcpy(dstback + info->base.len + SS_SYSTEM_LEN, SS_BACKUP, strlen(SS_BACKUP)) ;
-        dstback[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN] = '/' ;
-        memcpy(dstback + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1, tree, treelen) ;
-        memcpy(dstback + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen, pback,pbacklen) ;
-        dstback[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treelen + pbacklen] = 0 ;
+        auto_strings(dstback, info->base.s, SS_SYSTEM, SS_BACKUP, "/", tree, pback) ;
 
-        if (what)
-        {
+        if (what) {
+
             if (!atomic_symlink(dstback, sym,"backup_switcher"))
                 log_warnusys_return(LOG_EXIT_LESSONE,"symlink: ", dstback) ;
         }
-        if (!what)
-        {
+
+        if (!what) {
+
             if (!atomic_symlink(dstsrc, sym,"backup_switcher"))
                 log_warnusys_return(LOG_EXIT_LESSONE,"symlink: ", dstsrc) ;
         }
@@ -201,7 +181,7 @@ int backup_cmd_switcher(unsigned int verbosity,char const *cmd,ssexec_t *info)
     newargv[m++] = "-v" ;
     newargv[m++] = fmt ;
 
-    for (;pos < opts.len; pos += strlen(opts.s + pos) + 1)
+    FOREACH_SASTR(&opts, pos)
         newargv[m++] = opts.s + pos ;
 
     newargv[m++] = info->treename.s ;

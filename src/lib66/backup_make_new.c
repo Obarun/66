@@ -35,57 +35,45 @@ int backup_make_new(ssexec_t *info, unsigned int type)
 
     int r ;
 
-    size_t newsrc ;
-    size_t newback ;
-    size_t typelen ;
+    size_t newsrc, newback, typelen ;
     char *ptype = NULL ;
 
-    if (type == TYPE_CLASSIC)
-    {
+    if (type == TYPE_CLASSIC) {
+
         ptype = SS_SVC ;
         typelen = SS_SVC_LEN ;
-    }
-    else
-    {
+
+    } else {
+
         ptype = SS_DB ;
         typelen = SS_DB_LEN ;
     }
 
     char src[info->base.len + SS_SYSTEM_LEN + 1 + info->treename.len + SS_SVDIRS_LEN + SS_RESOLVE_LEN + 1] ;
-    memcpy(src,info->base.s,info->base.len) ;
-    memcpy(src + info->base.len, SS_SYSTEM, SS_SYSTEM_LEN) ;
-    src[info->base.len + SS_SYSTEM_LEN] = '/' ;
-    memcpy(src + info->base.len + SS_SYSTEM_LEN + 1,info->treename.s,info->treename.len) ;
-    memcpy(src+ info->base.len + SS_SYSTEM_LEN + 1 + info->treename.len,SS_SVDIRS, SS_SVDIRS_LEN) ;
+    auto_strings(src, info->base.s, SS_SYSTEM, "/", info->treename.s, SS_SVDIRS, ptype)
     newsrc = info->base.len + SS_SYSTEM_LEN + 1 + info->treename.len + SS_SVDIRS_LEN ;
-    memcpy(src+ info->base.len + SS_SYSTEM_LEN + 1 + info->treename.len + SS_SVDIRS_LEN, ptype,typelen) ;
-    src[info->base.len + SS_SYSTEM_LEN + 1 + info->treename.len + SS_SVDIRS_LEN +  typelen] = 0 ;
 
     char back[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + info->treename.len + SS_RESOLVE_LEN + 1] ;
-    memcpy(back, info->base.s, info->base.len) ;
-    memcpy(back + info->base.len, SS_SYSTEM, SS_SYSTEM_LEN) ;
-    memcpy(back + info->base.len + SS_SYSTEM_LEN, SS_BACKUP, SS_BACKUP_LEN) ;
-    back[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN] = '/' ;
-    memcpy(back + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1, info->treename.s, info->treename.len) ;
+    auto_strings(back, info->base.s, SS_SYSTEM, SS_BACKUP, "/", info->treename.s, ptype) ;
     newback = info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + info->treename.len ;
-    memcpy(back + info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + info->treename.len, ptype,typelen) ;
-    back[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + info->treename.len + typelen] = 0 ;
 
     r = scan_mode(back,S_IFDIR) ;
-    if (r || (r < 0))
-    {
+    if (r || (r < 0)) {
+
         log_trace("rm directory: ", back) ;
         if (rm_rf(back) < 0)
             log_warnusys_return(LOG_EXIT_ZERO,"remove: ",back) ;
 
         r = 0 ;
     }
-    if (!r)
-    {
+
+    if (!r) {
+
         log_trace("create directory: ", back) ;
         if (!dir_create(back,0755))
             log_warnusys_return(LOG_EXIT_ZERO,"create directory: ",back) ;
     }
+
     log_trace("copy: ",src," to: ", back) ;
     if (!hiercopy(src, back))
         log_warnusys_return(LOG_EXIT_ZERO,"copy: ",src," to ",back) ;
@@ -97,20 +85,22 @@ int backup_make_new(ssexec_t *info, unsigned int type)
     back[newback + SS_RESOLVE_LEN] = 0 ;
 
     r = scan_mode(back,S_IFDIR) ;
-    if (r || (r < 0))
-    {
+    if (r || (r < 0)) {
+
         log_trace("rm directory: ", back) ;
         if (rm_rf(back) < 0)
             log_warnusys_return(LOG_EXIT_ZERO,"remove: ",back) ;
 
         r = 0 ;
     }
-    if (!r)
-    {
+
+    if (!r) {
+
         log_trace("create directory: ", back) ;
         if (!dir_create(back,0755))
             log_warnusys_return(LOG_EXIT_ZERO,"create directory: ",back) ;
     }
+
     log_trace("copy: ",src," to: ", back) ;
     if (!hiercopy(src, back))
         log_warnusys_return(LOG_EXIT_ZERO,"copy: ",src," to ",back) ;

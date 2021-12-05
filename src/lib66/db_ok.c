@@ -24,18 +24,16 @@ int db_ok(char const *livetree, char const *treename)
 {
     log_flow() ;
 
-    size_t treelen = strlen(livetree) ;
-    size_t namelen = strlen(treename) ;
+    size_t treelen = strlen(livetree), namelen = strlen(treename) ;
 
     struct stat st ;
 
     char sym[treelen + 1 + namelen + 1] ;
-    memcpy(sym, livetree, treelen) ;
-    sym[treelen] = '/' ;
-    memcpy(sym + treelen + 1, treename,namelen) ;
-    sym[treelen + 1 + namelen] = 0 ;
+    auto_strings(sym, livetree, "/", treename) ;
 
-    if(lstat(sym,&st) < 0) return 0 ;
+    if(lstat(sym,&st) < 0)
+        return 0 ;
+
     if(!(S_ISLNK(st.st_mode)))
         return 0 ;
 
