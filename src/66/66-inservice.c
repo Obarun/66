@@ -25,6 +25,7 @@
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 #include <oblibs/directory.h>
+#include <oblibs/graph.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
@@ -42,6 +43,7 @@
 #include <66/resolve.h>
 #include <66/environ.h>
 #include <66/state.h>
+#include <66/service.h>
 
 #include <s6/supervise.h>
 
@@ -225,6 +227,17 @@ int ss_info_graph_display(char const *name, char const *obj, ss_info_graph_func 
     return 1 ;
 }
 
+
+
+
+
+
+
+
+
+
+
+
 /** make a list of edge ordered by start order
  * Return the number of edge on success
  * Return -1 on fail */
@@ -234,20 +247,27 @@ int ss_info_walk_edge(stralloc *sa, graph_t *g, char const *name, uint8_t requir
     size_t pos = 0 ;
     int count = -1 ;
 
-    stralloc tmp = STRALLOC_ZERO ;
-    stralloc vertex = STRALLOC_ZERO ;
     graph_t gc = GRAPH_ZERO ;
 
-    count = graph_matrix_get_edge_g(&vertex, g, name, requiredby) ;
+    sa->len = 0 ;
+    count = graph_matrix_get_edge_g(sa, g, name, requiredby) ;
 
-    if (count <= 0) {
+    size_t len = sa->len ;
+    char vertex[len + 1] ;
+
+    if (count < 0) {
         count = 0 ;
         goto freed ;
     }
 
-    FOREACH_SASTR(&vertex, pos) {
+    sastr_to_char(vertex,sa) ;
+    count = -1 ;
 
-        char *ename = vertex.s + pos ;
+    for (; pos < len ; pos += strlen(vertex + pos) + 1) {
+
+        sa->len = 0 ;
+
+        char *ename = vertex + pos ;
 
         if (!graph_vertex_add(&gc, ename)) {
 
@@ -255,12 +275,10 @@ int ss_info_walk_edge(stralloc *sa, graph_t *g, char const *name, uint8_t requir
             goto freed ;
         }
 
-        sa->len = 0 ;
-
         unsigned int c = graph_matrix_get_edge_g(sa, g, ename, requiredby) ;
 
         if (c == -1)
-            { count = -1 ; goto freed ; }
+            goto freed ;
 
         {
             size_t bpos = 0 ;
@@ -282,9 +300,6 @@ int ss_info_walk_edge(stralloc *sa, graph_t *g, char const *name, uint8_t requir
                 }
             }
         }
-
-        if (!sastr_add_string(&tmp, ename))
-            { count = -1 ; goto freed ; } ;
     }
 
     if (!graph_matrix_build(&gc)) {
@@ -294,33 +309,36 @@ int ss_info_walk_edge(stralloc *sa, graph_t *g, char const *name, uint8_t requir
     }
 
     if (!graph_matrix_analyze_cycle(&gc)) {
+
         log_warnu("found cycle") ;
         goto freed ;
     }
+
     if (!graph_matrix_sort(&gc)) {
 
         log_warnu("sort the matrix") ;
         goto freed ;
     }
 
-    count = sa->len = pos = 0 ;
+
+    sa->len = pos = 0 ;
 
     for(; pos < gc.sort_count ; pos++) {
 
         char *name = gc.data.s + genalloc_s(graph_hash_t,&gc.hash)[gc.sort[pos]].vertex ;
 
-        if (sastr_find(&tmp, name) >= 0) {
-            count++ ;
-            if (!sastr_add_string(sa, name))
-                { count = -1 ; goto freed ; }
+        if (!sastr_add_string(sa, name)) {
+
+            log_warnu("add string") ;
+            goto freed ;
         }
+
     }
 
-    freed:
-        stralloc_free(&vertex) ;
-        stralloc_free(&tmp) ;
-        graph_free_all(&gc) ;
+    count = gc.sort_count ;
 
+    freed:
+        graph_free_all(&gc) ;
         return count ;
 }
 
@@ -328,42 +346,43 @@ int ss_info_walk(graph_t *g, char const *name, char const *obj, ss_info_graph_fu
 {
     log_flow() ;
 
-    uint8_t e = 0 ;
+    int e = 0, idx = 0 ;
+    size_t pos = 0, len ;
 
     if ((unsigned int) depth->level > MAXDEPTH)
         return 1 ;
 
-    stralloc vertex = STRALLOC_ZERO ;
-    stralloc edge = STRALLOC_ZERO ;
+    stralloc sa = STRALLOC_ZERO ;
 
-    int count = ss_info_walk_edge(&vertex, g, name, requiredby) ;
+    int count = ss_info_walk_edge(&sa, g, name, requiredby) ;
+
+    len = sa.len ;
+    char vertex[len + 1] ;
 
     if (count == -1) goto err ;
 
-    if (!vertex.len)
+    if (!sa.len)
         goto freed ;
 
-    size_t pos = 0 ;
-    int idx = 0;
-
     if (reverse)
-        if (!sastr_reverse(&vertex))
+        if (!sastr_reverse(&sa))
             goto err ;
 
-    for (; pos < vertex.len ; pos += strlen(vertex.s + pos) + 1, idx++ ) {
+    sastr_to_char(vertex, &sa) ;
 
+    for (; pos < len ; pos += strlen(vertex + pos) + 1, idx++ ) {
+
+        sa.len = 0 ;
         int last =  idx + 1 < count  ? 0 : 1 ;
-        char *name = vertex.s + pos ;
+        char *name = vertex + pos ;
 
         if (!ss_info_graph_display(name, obj, func, depth, last, padding, style))
             goto err ;
 
-        edge.len = 0 ;
-
-        if (ss_info_walk_edge(&edge, g, name, requiredby) == -1)
+        if (ss_info_walk_edge(&sa, g, name, requiredby) == -1)
             goto err ;
 
-        if (edge.len)
+        if (sa.len)
         {
             depth_t d =
             {
@@ -395,8 +414,7 @@ int ss_info_walk(graph_t *g, char const *name, char const *obj, ss_info_graph_fu
         e = 1 ;
 
     err:
-        stralloc_free(&vertex) ;
-        stralloc_free(&edge) ;
+        stralloc_free(&sa) ;
 
     return e ;
 
@@ -738,7 +756,7 @@ void ss_graph_matrix_add_classic(graph_t *g, genalloc *gares)
 
             char *str = genalloc_s(resolve_service_t, gares)[cl[pos]].sa.s ;
             char *sv = str + genalloc_s(resolve_service_t, gares)[cl[pos]].name ;
-
+printf("sv::%s\n",sv) ;
             graph_array_reverse(g->sort, g->sort_count) ;
 
             for (bpos = 0 ; bpos < g->sort_count ; bpos++) {
@@ -906,9 +924,6 @@ static void ss_graph_matrix_build_bytree(graph_t *g, char const *tree, uint8_t w
 
     if (!graph_matrix_sort(g))
         log_dieu(LOG_EXIT_SYS,"sort the graph") ;
-
-    if (!what || what == 2)
-        ss_graph_matrix_add_classic(g, &gares) ;
 
     stralloc_free(&services) ;
     stralloc_free(&deps) ;

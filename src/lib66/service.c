@@ -205,19 +205,23 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src)
     log_flow() ;
 
     int  insta, equal = 0, e = -1, r = 0, found = 0 ;
-    stralloc tmp = STRALLOC_ZERO ;
-    stralloc sort = STRALLOC_ZERO ;
+    stralloc sa = STRALLOC_ZERO ;
     size_t pos = 0, dpos = 0 ;
 
     char const *exclude[1] = { 0 } ;
 
-    if (!sastr_dir_get_recursive(&sort, src, exclude, S_IFREG|S_IFDIR, 1))
+    if (!sastr_dir_get_recursive(&sa, src, exclude, S_IFREG|S_IFDIR, 1)) {
+        stralloc_free(&sa) ;
         goto err ;
+    }
+    size_t len = sort.len ;
+    char tmp[len + 1] ;
+    sastr_to_char(tmp, &sa)
 
+    for (; pos < len ; pos += strlen(tmp + pos) + 1) {
 
-    FOREACH_SASTR(&sort, pos) {
-
-        char *dname = sort.s + pos ;
+        sa.len = 0 ;
+        char *dname = tmp + pos ;
 
         struct stat st ;
         /** use stat instead of lstat to accept symlink */
@@ -236,10 +240,10 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src)
 
         if (insta > 0) {
 
-            if (!instance_splitname(&tmp, bname, insta, SS_INSTANCE_TEMPLATE))
+            if (!instance_splitname(&sa, bname, insta, SS_INSTANCE_TEMPLATE))
                 goto err ;
 
-            equal = strcmp(tmp.s,bname) ;
+            equal = strcmp(sa.s,bname) ;
         }
 
         if (!equal) {
@@ -268,19 +272,19 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src)
                 if (!rd) {
                     /** user ask to deal which each frontend file
                      * inside the directory */
-                    tmp.len = 0 ;
+                    sa.len = 0 ;
 
-                    if (!sastr_dir_get_recursive(&tmp, dname, exclude, S_IFREG|S_IFDIR, 0))
+                    if (!sastr_dir_get_recursive(&sa, dname, exclude, S_IFREG|S_IFDIR, 0))
                         goto err ;
 
                     /** directory may be empty. */
-                    if (!tmp.len)
+                    if (!sa.len)
                         found = 0 ;
 
                     dpos = 0 ;
-                    FOREACH_SASTR(&tmp, dpos) {
+                    FOREACH_SASTR(&sa, dpos) {
 
-                        r = service_frontend_src(sasrc, tmp.s + dpos, dname) ;
+                        r = service_frontend_src(sasrc, sa.s + dpos, dname) ;
                         if (r < 0)
                             /** system error */
                             goto err ;
@@ -299,8 +303,7 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src)
     e = found ;
 
     err:
-        stralloc_free(&tmp) ;
-        stralloc_free(&sort) ;
+        stralloc_free(&sa) ;
         return e ;
 }
 

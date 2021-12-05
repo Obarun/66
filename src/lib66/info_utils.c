@@ -178,29 +178,36 @@ void info_display_nline(char const *field,char const *str)
 {
     log_flow() ;
 
-    size_t pos = 0, padding = info_length_from_wchar(field) + 1 ;
-    stralloc tmp = STRALLOC_ZERO ;
-    stralloc cp = STRALLOC_ZERO ;
-    if (!stralloc_cats(&tmp,str) ||
-    !stralloc_0(&tmp)) log_die_nomem("stralloc") ;
-    if (!sastr_split_string_in_nline(&tmp)) log_dieu(LOG_EXIT_SYS,"split string in nline") ;
-    for (;pos < tmp.len ; pos += strlen(tmp.s + pos) + 1)
-    {
-        cp.len = 0 ;
-        if (!stralloc_cats(&cp,tmp.s + pos) ||
-        !stralloc_0(&cp)) log_die_nomem("stralloc") ;
-        if (field)
-        {
-            if (pos)
-            {
+    size_t pos = 0, padding = info_length_from_wchar(field) + 1, len ;
+
+    stralloc sa = STRALLOC_ZERO ;
+
+    if (!auto_stra(&sa, str))
+        log_die_nomem("stralloc") ;
+
+    if (!sastr_split_string_in_nline(&sa))
+        log_dieu(LOG_EXIT_SYS,"split string in nline") ;
+
+    len = sa.len ;
+    char tmp[sa.len + 1] ;
+    sastr_to_char(tmp, &sa) ;
+
+    for (;pos < len ; pos += strlen(tmp + pos) + 1) {
+
+        sa.len = 0 ;
+
+        if (!auto_stra(&sa,tmp + pos))
+            log_die_nomem("stralloc") ;
+
+        if (field) {
+            if (pos) {
                 if (!bprintf(buffer_1,"%*s",padding,""))
                     log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
             }
         }
-        info_display_list(field,&cp) ;
+        info_display_list(field,&sa) ;
     }
-    stralloc_free(&tmp) ;
-    stralloc_free(&cp) ;
+    stralloc_free(&sa) ;
 }
 
 void info_graph_display(resolve_service_t *res, depth_t *depth, int last, int padding, ss_resolve_graph_style *style)
