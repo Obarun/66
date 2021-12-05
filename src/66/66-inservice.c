@@ -45,6 +45,7 @@
 #include <66/environ.h>
 #include <66/state.h>
 #include <66/service.h>
+#include <66/graph.h>
 
 #include <s6/supervise.h>
 
@@ -87,356 +88,6 @@ info_graph_style *STYLE = &graph_default ;
 
 
 #include <stdio.h>// a effacer
-
-
-
-
-
-
-
-
-
-
-int ss_info_graph_display_service(char const *name, char const *obj)
-{
-    stralloc tree = STRALLOC_ZERO ;
-    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
-
-    int r = service_intree(&tree, name, obj), err = 0 ;
-
-    if (r != 2) {
-        if (r == 1)
-            log_warnu("find: ", name, " at tree: ", !obj ? tree.s : obj) ;
-        if (r > 2)
-            log_1_warn(name, " is set on different tree -- please use -t options") ;
-
-        goto freed ;
-    }
-
-    if (!resolve_check(tree.s, name))
-        goto freed ;
-
-    if (!resolve_read(wres, tree.s, name))
-        goto freed ;
-
-    char str_pid[UINT_FMT] ;
-    uint8_t pid_color = 0 ;
-    char *ppid ;
-    ss_state_t sta = STATE_ZERO ;
-    s6_svstatus_t status = S6_SVSTATUS_ZERO ;
-
-    if (res.type == TYPE_CLASSIC || res.type == TYPE_LONGRUN) {
-
-        s6_svstatus_read(res.sa.s + res.runat ,&status) ;
-        pid_color = !status.pid ? 1 : 2 ;
-        str_pid[uint_fmt(str_pid, status.pid)] = 0 ;
-        ppid = &str_pid[0] ;
-
-    } else {
-
-        char *ste = res.sa.s + res.state ;
-        char *name = res.sa.s + res.name ;
-        if (!state_check(ste,name)) {
-
-            ppid = "unitialized" ;
-            goto dis ;
-        }
-
-        if (!state_read(&sta,ste,name)) {
-
-            log_warnu("read state of: ",name) ;
-            goto freed ;
-        }
-        if (sta.init) {
-
-            ppid = "unitialized" ;
-            goto dis ;
-
-        } else if (!sta.state) {
-
-            ppid = "down" ;
-            pid_color = 1 ;
-
-        } else if (sta.state) {
-
-            ppid = "up" ;
-            pid_color = 2 ;
-        }
-    }
-
-    dis:
-
-    if (!bprintf(buffer_1,"(%s%s%s,%s%s%s,%s) %s", \
-
-                pid_color > 1 ? log_color->valid : pid_color ? log_color->error : log_color->warning, \
-                ppid, \
-                log_color->off, \
-
-                res.disen ? log_color->off : log_color->error, \
-                res.disen ? "Enabled" : "Disabled", \
-                log_color->off, \
-
-                get_key_by_enum(ENUM_TYPE,res.type), \
-
-                name))
-                    goto freed ;
-
-    err = 1 ;
-
-    freed:
-        resolve_free(wres) ;
-        stralloc_free(&tree) ;
-
-    return err ;
-
-}
-
-int ss_info_graph_display(char const *name, char const *obj, info_graph_func *func, depth_t *depth, int last, int padding, info_graph_style *style)
-{
-    log_flow() ;
-
-    int level = 1 ;
-
-    const char *tip = "" ;
-
-    tip = last ? style->last : style->tip ;
-
-    while(depth->prev)
-        depth = depth->prev ;
-
-    while(depth->next)
-    {
-        if (!bprintf(buffer_1,"%*s%-*s",style->indent * (depth->level - level) + (level == 1 ? padding : 0), "", style->indent, style->limb))
-            return 0 ;
-
-        level = depth->level + 1 ;
-        depth = depth->next ;
-    }
-
-    if (!bprintf(buffer_1,"%*s%*s%s", \
-                level == 1 ? padding : 0,"", \
-                style->indent * (depth->level - level), "", \
-                tip)) return 0 ;
-
-    int r = (*func)(name, obj) ;
-    if (!r) return 0 ;
-    if (buffer_putsflush(buffer_1,"\n") < 0)
-        return 0 ;
-
-    return 1 ;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-/** make a list of edge ordered by start order
- * Return the number of edge on success
- * Return -1 on fail */
-int ss_info_walk_edge(stralloc *sa, graph_t *g, char const *name, uint8_t requiredby)
-{
-
-    size_t pos = 0 ;
-    int count = -1 ;
-
-    graph_t gc = GRAPH_ZERO ;
-
-    sa->len = 0 ;
-    count = graph_matrix_get_edge_g(sa, g, name, requiredby) ;
-
-    size_t len = sa->len ;
-    char vertex[len + 1] ;
-
-    if (count < 0) {
-        count = 0 ;
-        goto freed ;
-    }
-
-    sastr_to_char(vertex,sa) ;
-    count = -1 ;
-
-    for (; pos < len ; pos += strlen(vertex + pos) + 1) {
-
-        sa->len = 0 ;
-
-        char *ename = vertex + pos ;
-
-        if (!graph_vertex_add(&gc, ename)) {
-
-            log_warnu("add vertex: ",ename) ;
-            goto freed ;
-        }
-
-        unsigned int c = graph_matrix_get_edge_g(sa, g, ename, requiredby) ;
-
-        if (c == -1)
-            goto freed ;
-
-        {
-            size_t bpos = 0 ;
-
-            FOREACH_SASTR(sa, bpos) {
-
-                char *edge = sa->s + bpos ;
-
-                if (!graph_vertex_add_with_edge(&gc, ename, edge)) {
-
-                    log_warnu("add edge: ",ename," to vertex: ", edge) ;
-                    goto freed ;
-                }
-
-                if (!graph_vertex_add(&gc, edge)) {
-
-                    log_warnu("add vertex: ",edge) ;
-                    goto freed ;
-                }
-            }
-        }
-    }
-
-    if (!graph_matrix_build(&gc)) {
-
-        log_warnu("build the matrix") ;
-        goto freed ;
-    }
-
-    if (!graph_matrix_analyze_cycle(&gc)) {
-
-        log_warnu("found cycle") ;
-        goto freed ;
-    }
-
-    if (!graph_matrix_sort(&gc)) {
-
-        log_warnu("sort the matrix") ;
-        goto freed ;
-    }
-
-
-    sa->len = pos = 0 ;
-
-    for(; pos < gc.sort_count ; pos++) {
-
-        char *name = gc.data.s + genalloc_s(graph_hash_t,&gc.hash)[gc.sort[pos]].vertex ;
-
-        if (!sastr_add_string(sa, name)) {
-
-            log_warnu("add string") ;
-            goto freed ;
-        }
-
-    }
-
-    count = gc.sort_count ;
-
-    freed:
-        graph_free_all(&gc) ;
-        return count ;
-}
-
-int ss_info_walk(graph_t *g, char const *name, char const *obj, info_graph_func *func, uint8_t requiredby, uint8_t reverse, depth_t *depth, int padding, info_graph_style *style)
-{
-    log_flow() ;
-
-    int e = 0, idx = 0 ;
-    size_t pos = 0, len ;
-
-    if ((unsigned int) depth->level > MAXDEPTH)
-        return 1 ;
-
-    stralloc sa = STRALLOC_ZERO ;
-
-    int count = ss_info_walk_edge(&sa, g, name, requiredby) ;
-
-    len = sa.len ;
-    char vertex[len + 1] ;
-
-    if (count == -1) goto err ;
-
-    if (!sa.len)
-        goto freed ;
-
-    if (reverse)
-        if (!sastr_reverse(&sa))
-            goto err ;
-
-    sastr_to_char(vertex, &sa) ;
-
-    for (; pos < len ; pos += strlen(vertex + pos) + 1, idx++ ) {
-
-        sa.len = 0 ;
-        int last =  idx + 1 < count  ? 0 : 1 ;
-        char *name = vertex + pos ;
-
-        if (!ss_info_graph_display(name, obj, func, depth, last, padding, style))
-            goto err ;
-
-        if (ss_info_walk_edge(&sa, g, name, requiredby) == -1)
-            goto err ;
-
-        if (sa.len)
-        {
-            depth_t d =
-            {
-                depth,
-                NULL,
-                depth->level + 1
-            } ;
-            depth->next = &d;
-
-            if(last)
-            {
-                if(depth->prev)
-                {
-                    depth->prev->next = &d;
-                    d.prev = depth->prev;
-                    depth = &d;
-
-                }
-                else
-                    d.prev = NULL;
-            }
-            if (!ss_info_walk(g, name, obj, func, requiredby, reverse, &d, padding, style))
-                goto err ;
-            depth->next = NULL ;
-        }
-    }
-
-    freed:
-        e = 1 ;
-
-    err:
-        stralloc_free(&sa) ;
-
-    return e ;
-
-}
-
-depth_t ss_info_graph_init(void)
-{
-    log_flow() ;
-
-    depth_t d = {
-        NULL,
-        NULL,
-        1
-    } ;
-
-    return d ;
-}
-
-
-
-
-
 
 
 
@@ -712,26 +363,7 @@ int graph_service_compute_deps(stralloc *deps, char const *str)
 }
 */
 
-int graph_service_add_deps(graph_t *g, char const *service, char const *sdeps)
-{
-    stralloc deps = STRALLOC_ZERO ;
-    uint8_t e = 0 ;
-    if (!sastr_clean_string(&deps,sdeps)) {
-        log_warnu("rebuild dependencies list") ;
-        goto freed ;
-    }
 
-    if (!graph_vertex_add_with_nedge(g, service, &deps)) {
-        log_warnu("add edges at vertex: ", service) ;
-        goto freed ;
-    }
-
-    e = 1 ;
-    freed:
-    stralloc_free(&deps) ;
-
-    return e ;
-}
 
 
 void ss_graph_matrix_add_classic(graph_t *g, genalloc *gares)
@@ -864,69 +496,6 @@ int ss_tree_get_sv_resolve(genalloc *gares, char const *dir, uint8_t what)
         return e ;
 }
 
-/** @tree: absolute path of the tree*/
-static void ss_graph_matrix_build_bytree(graph_t *g, char const *tree, uint8_t what)
-{
-    stralloc services = STRALLOC_ZERO ;
-    stralloc deps = STRALLOC_ZERO ;
-    genalloc gares = GENALLOC_ZERO ;
-
-    size_t treelen = strlen(tree), pos = 0 ;
-    char src[treelen + SS_SVDIRS_LEN + 1] ;
-
-    auto_strings(src, tree, SS_SVDIRS) ;
-
-    if (!ss_tree_get_sv_resolve(&gares, src, what))
-        log_dieu(LOG_EXIT_SYS,"get resolve files of tree: ", tree) ;
-
-    if (genalloc_len(resolve_service_t, &gares) >= SS_MAX_SERVICE)
-        log_die(LOG_EXIT_SYS, "too many services to handle") ;
-
-    pos = 0 ;
-
-    for (; pos < genalloc_len(resolve_service_t, &gares) ; pos++) {
-
-        resolve_service_t_ref res = &genalloc_s(resolve_service_t, &gares)[pos] ;
-
-        char *str = res->sa.s ;
-
-        char *service = str + res->name ;
-
-        if (!graph_vertex_add(g, service))
-            log_dieu(LOG_EXIT_SYS,"add vertex: ", service) ;
-
-        deps.len = 0 ;
-
-        if (res->ndeps > 0) {
-
-            if (res->type == TYPE_MODULE || res->type == TYPE_BUNDLE) {
-
-                uint32_t tdeps = res->type == TYPE_MODULE ? what > 1 ? res->contents : res->deps : res->deps ;
-
-                if (!graph_service_add_deps(g, service, str + tdeps))
-                    log_dieu(LOG_EXIT_ZERO,"add dependencies of service: ",service) ;
-
-            } else {
-
-                if (!graph_service_add_deps(g, service,str + res->deps))
-                    log_dieu(LOG_EXIT_ZERO,"add dependencies of service: ",service) ;
-
-            }
-        }
-    }
-
-    if (!graph_matrix_build(g))
-        log_dieu(LOG_EXIT_SYS,"build the graph") ;
-
-    if (!graph_matrix_analyze_cycle(g))
-        log_die(LOG_EXIT_SYS,"found cycle") ;
-
-    if (!graph_matrix_sort(g))
-        log_dieu(LOG_EXIT_SYS,"sort the graph") ;
-
-    stralloc_free(&services) ;
-    stralloc_free(&deps) ;
-}
 
 
 
@@ -939,22 +508,15 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    /**
-     *
-     *
-     * ATTENTION A LA SORTIE D ERREUR
-     *
-     * */
-
-    ss_graph_matrix_build_bytree(&graph, res->sa.s + res->tree, 2) ;
-
+    if (!graph_service_build_bytree(&graph, res->sa.s + res->tree, 2))
+        log_dieu(LOG_EXIT_SYS,"build the graph dependencies") ;
 
     unsigned int list[graph.mlen] ;
 
     int count = graph_matrix_get_requiredby(list, &graph, res->sa.s + res->name , 0) ;
 
     if (count == -1)
-        log_dieu(LOG_EXIT_SYS,"get requiredby for service: ", res->sa.s + res->name) ;
+        log_dieu(LOG_EXIT_SYS,"get the requiredby list for service: ", res->sa.s + res->name) ;
 
     if (!count) goto empty ;
 
@@ -963,26 +525,26 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
         if (!bprintf(buffer_1,"%s\n","/"))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
-        depth_t d = ss_info_graph_init() ;
+        depth_t d = info_graph_init() ;
 
-        if (!ss_info_walk(&graph, res->sa.s + res->name, res->sa.s + res->treename, &ss_info_graph_display_service, 1, REVERSE, &d, padding, STYLE))
-            log_dieu(LOG_EXIT_SYS,"display the requiredby graphic") ;
+        if (!info_walk(&graph, res->sa.s + res->name, res->sa.s + res->treename, &info_graph_display_service, 1, REVERSE, &d, padding, STYLE))
+            log_dieu(LOG_EXIT_SYS,"display the requiredby list") ;
 
         return ;
 
     } else {
 
         deps.len = 0 ;
-        r = ss_info_walk_edge(&deps,&graph, res->sa.s + res->name, 1) ;
+        r = graph_matrix_get_edge_g_sorted(&deps,&graph, res->sa.s + res->name, 1) ;
         if (r == -1)
-            log_dieu(LOG_EXIT_SYS, "get requiredby list") ;
+            log_dieu(LOG_EXIT_SYS, "get the requiredby list") ;
 
         if (!r)
             goto empty ;
 
         if (REVERSE)
             if (!sastr_reverse(&deps))
-                log_dieu(LOG_EXIT_SYS,"reverse dependencies list") ;
+                log_dieu(LOG_EXIT_SYS,"reverse the requiredby list") ;
 
         info_display_list(field,&deps) ;
 
@@ -1015,14 +577,15 @@ static void info_display_deps(char const *field, resolve_service_t *res)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    ss_graph_matrix_build_bytree(&graph, res->sa.s + res->tree, 2) ;
+    if (!graph_service_build_bytree(&graph, res->sa.s + res->tree, 2))
+        log_dieu(LOG_EXIT_SYS,"build the graph dependencies") ;
 
     unsigned int list[graph.mlen] ;
 
     int count = graph_matrix_get_edge(list, &graph, res->sa.s + res->name , 0) ;
 
     if (count == -1)
-        log_dieu(LOG_EXIT_SYS,"get requiredby for service: ", res->sa.s + res->name) ;
+        log_dieu(LOG_EXIT_SYS,"get the dependencies list for service: ", res->sa.s + res->name) ;
 
     if (!count) goto empty ;
 
@@ -1031,26 +594,26 @@ static void info_display_deps(char const *field, resolve_service_t *res)
         if (!bprintf(buffer_1,"%s\n","/"))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
-        depth_t d = ss_info_graph_init() ;
+        depth_t d = info_graph_init() ;
 
-        if (!ss_info_walk(&graph, res->sa.s + res->name, res->sa.s + res->treename, &ss_info_graph_display_service, 0, REVERSE, &d, padding, STYLE))
-            log_dieu(LOG_EXIT_SYS,"display the dependencies graphic") ;
+        if (!info_walk(&graph, res->sa.s + res->name, res->sa.s + res->treename, &info_graph_display_service, 0, REVERSE, &d, padding, STYLE))
+            log_dieu(LOG_EXIT_SYS,"display the dependencies list") ;
 
         goto freed ;
     }
     else
     {
-        deps.len = 0 ;
-        r = ss_info_walk_edge(&deps,&graph, res->sa.s + res->name, 0) ;
+        r = graph_matrix_get_edge_g_sorted(&deps,&graph, res->sa.s + res->name, 0) ;
         if (r == -1)
-            log_dieu(LOG_EXIT_SYS, "get requiredby list") ;
+            log_dieu(LOG_EXIT_SYS, "get the dependencies list") ;
 
         if (!r)
             goto empty ;
 
         if (REVERSE)
             if (!sastr_reverse(&deps))
-                log_dieu(LOG_EXIT_SYS,"reverse dependencies list") ;
+                log_dieu(LOG_EXIT_SYS,"reverse the dependencies list") ;
+
         info_display_list(field,&deps) ;
 
         goto freed ;
