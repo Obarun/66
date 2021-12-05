@@ -42,7 +42,7 @@ int db_compile(char const *workdir, char const *tree, char const *treename, char
     auto_strings(dest, workdir, SS_DB, "/", treename) ;
 
     char src[wlen + SS_DB_LEN + SS_SRC_LEN + 1] ;
-    auto_strings(src, workdir, SS_DB, SS_SRC)
+    auto_strings(src, workdir, SS_DB, SS_SRC) ;
 
     r = scan_mode(dest,S_IFDIR) ;
     if (r) {

@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>

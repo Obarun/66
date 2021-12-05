@@ -18,6 +18,7 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
+#include <oblibs/string.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
@@ -35,22 +36,21 @@ int backup_make_new(ssexec_t *info, unsigned int type)
 
     int r ;
 
-    size_t newsrc, newback, typelen ;
+    size_t newsrc, newback ;
     char *ptype = NULL ;
 
     if (type == TYPE_CLASSIC) {
 
         ptype = SS_SVC ;
-        typelen = SS_SVC_LEN ;
 
     } else {
 
         ptype = SS_DB ;
-        typelen = SS_DB_LEN ;
+
     }
 
     char src[info->base.len + SS_SYSTEM_LEN + 1 + info->treename.len + SS_SVDIRS_LEN + SS_RESOLVE_LEN + 1] ;
-    auto_strings(src, info->base.s, SS_SYSTEM, "/", info->treename.s, SS_SVDIRS, ptype)
+    auto_strings(src, info->base.s, SS_SYSTEM, "/", info->treename.s, SS_SVDIRS, ptype) ;
     newsrc = info->base.len + SS_SYSTEM_LEN + 1 + info->treename.len + SS_SVDIRS_LEN ;
 
     char back[info->base.len + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + info->treename.len + SS_RESOLVE_LEN + 1] ;

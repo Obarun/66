@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 
 #include <skalibs/types.h>
 #include <skalibs/djbunix.h>

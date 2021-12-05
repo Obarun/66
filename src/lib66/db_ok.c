@@ -17,6 +17,7 @@
 #include <sys/types.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 
 #include <66/constants.h>
 
