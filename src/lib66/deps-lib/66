@@ -8,6 +8,7 @@ db_switch_to.o
 db_update.o
 enum.o
 environ.o
+graph.o
 hpr_shutdown.o
 hpr_wall.o
 info_utils.o

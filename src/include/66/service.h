@@ -179,9 +179,7 @@ extern int service_resolve_add_logger(genalloc *ga,char const *src) ;
 /** Graph function */
 extern void ss_resolve_graph_ndeps_free(ss_resolve_graph_ndeps_t *graph) ;
 extern void ss_resolve_graph_free(ss_resolve_graph_t *graph) ;
-
 extern int ss_resolve_graph_src(ss_resolve_graph_t *graph, char const *dir, unsigned int reverse, unsigned int what) ;
-
 extern int ss_resolve_graph_build(ss_resolve_graph_t *graph,resolve_service_t *res,char const *src,unsigned int reverse) ;
 extern int ss_resolve_graph_sort(ss_resolve_graph_t *graph) ;
 extern int ss_resolve_dfs(ss_resolve_graph_t *graph, unsigned int idx, visit *c,unsigned int *ename,unsigned int *edeps) ;
