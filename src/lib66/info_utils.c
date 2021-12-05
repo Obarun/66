@@ -24,6 +24,7 @@
 
 #include <oblibs/sastr.h>
 #include <oblibs/log.h>
+#include <oblibs/graph.h>
 
 #include <skalibs/buffer.h>
 #include <skalibs/lolstdio.h>
@@ -210,54 +211,123 @@ void info_display_nline(char const *field,char const *str)
     stralloc_free(&sa) ;
 }
 
-void info_graph_display(resolve_service_t *res, depth_t *depth, int last, int padding, info_graph_style *style)
+depth_t info_graph_init(void)
 {
     log_flow() ;
 
-    int level = 1 ;
+    depth_t d = {
+        NULL,
+        NULL,
+        1
+    } ;
+
+    return d ;
+}
+
+int info_graph_display_service(char const *name, char const *obj)
+{
+    log_flow() ;
+
+    stralloc tree = STRALLOC_ZERO ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+
+    int r = service_intree(&tree, name, obj), err = 0 ;
+
+    if (r != 2) {
+        if (r == 1)
+            log_warnu("find: ", name, " at tree: ", !obj ? tree.s : obj) ;
+        if (r > 2)
+            log_1_warn(name, " is set on different tree -- please use -t options") ;
+
+        goto freed ;
+    }
+
+    if (!resolve_check(tree.s, name))
+        goto freed ;
+
+    if (!resolve_read(wres, tree.s, name))
+        goto freed ;
+
     char str_pid[UINT_FMT] ;
     uint8_t pid_color = 0 ;
-    const char *tip = "" ;
     char *ppid ;
     ss_state_t sta = STATE_ZERO ;
     s6_svstatus_t status = S6_SVSTATUS_ZERO ;
-    char *name = res->sa.s + res->name ;
 
-    if (res->type == TYPE_CLASSIC || res->type == TYPE_LONGRUN)
-    {
-        s6_svstatus_read(res->sa.s + res->runat ,&status) ;
+    if (res.type == TYPE_CLASSIC || res.type == TYPE_LONGRUN) {
+
+        s6_svstatus_read(res.sa.s + res.runat ,&status) ;
         pid_color = !status.pid ? 1 : 2 ;
         str_pid[uint_fmt(str_pid, status.pid)] = 0 ;
         ppid = &str_pid[0] ;
-    }
-    else
-    {
-        char *ste = res->sa.s + res->state ;
-        char *name = res->sa.s + res->name ;
-        if (!state_check(ste,name))
-        {
+
+    } else {
+
+        char *ste = res.sa.s + res.state ;
+        char *name = res.sa.s + res.name ;
+        if (!state_check(ste,name)) {
+
             ppid = "unitialized" ;
             goto dis ;
         }
 
-        if (!state_read(&sta,ste,name))
-            log_dieusys(LOG_EXIT_SYS,"read state of: ",name) ;
+        if (!state_read(&sta,ste,name)) {
 
-        if (sta.init) {
-            ppid = "unitialized" ;
+            log_warnu("read state of: ",name) ;
+            goto freed ;
         }
-        else if (!sta.state)
-        {
+        if (sta.init) {
+
+            ppid = "unitialized" ;
+            goto dis ;
+
+        } else if (!sta.state) {
+
             ppid = "down" ;
             pid_color = 1 ;
-        }
-        else if (sta.state)
-        {
+
+        } else if (sta.state) {
+
             ppid = "up" ;
             pid_color = 2 ;
         }
     }
+
     dis:
+
+    if (!bprintf(buffer_1,"(%s%s%s,%s%s%s,%s) %s", \
+
+                pid_color > 1 ? log_color->valid : pid_color ? log_color->error : log_color->warning, \
+                ppid, \
+                log_color->off, \
+
+                res.disen ? log_color->off : log_color->error, \
+                res.disen ? "Enabled" : "Disabled", \
+                log_color->off, \
+
+                get_key_by_enum(ENUM_TYPE,res.type), \
+
+                name))
+                    goto freed ;
+
+    err = 1 ;
+
+    freed:
+        resolve_free(wres) ;
+        stralloc_free(&tree) ;
+
+    return err ;
+
+}
+
+int info_graph_display(char const *name, char const *obj, info_graph_func *func, depth_t *depth, int last, int padding, info_graph_style *style)
+{
+    log_flow() ;
+
+    int level = 1 ;
+
+    const char *tip = "" ;
 
     tip = last ? style->last : style->tip ;
 
@@ -266,52 +336,80 @@ void info_graph_display(resolve_service_t *res, depth_t *depth, int last, int pa
 
     while(depth->next)
     {
-        if (!bprintf(buffer_1,"%*s%-*s",style->indent * (depth->level - level) + (level == 1 ? padding : 0), "", style->indent, style->limb)) return ;
+        if (!bprintf(buffer_1,"%*s%-*s",style->indent * (depth->level - level) + (level == 1 ? padding : 0), "", style->indent, style->limb))
+            return 0 ;
+
         level = depth->level + 1 ;
         depth = depth->next ;
     }
 
-    if (!bprintf(buffer_1,"%*s%*s%s(%s%s%s,%s%s%s,%s) %s", \
+    if (!bprintf(buffer_1,"%*s%*s%s", \
                 level == 1 ? padding : 0,"", \
                 style->indent * (depth->level - level), "", \
-                tip, \
-                pid_color > 1 ? log_color->valid : pid_color ? log_color->error : log_color->warning, \
-                ppid, \
-                log_color->off, \
-                res->disen ? log_color->off : log_color->error, \
-                res->disen ? "Enabled" : "Disabled", \
-                log_color->off, \
-                get_key_by_enum(ENUM_TYPE,res->type), \
-                name)) return ;
+                tip)) return 0 ;
 
-    if (buffer_putsflush(buffer_1,"\n") < 0) return ;
+    int r = (*func)(name, obj) ;
+    if (!r) return 0 ;
+    if (buffer_putsflush(buffer_1,"\n") < 0)
+        return 0 ;
+
+    return 1 ;
 }
 
-int info_walk(resolve_service_t *res,char const *src,int reverse, depth_t *depth, int padding, info_graph_style *style)
+int info_walk(graph_t *g, char const *name, char const *obj, info_graph_func *func, uint8_t requiredby, uint8_t reverse, depth_t *depth, int padding, info_graph_style *style)
 {
     log_flow() ;
 
-    size_t pos = 0, idx = 0 ;
-    stralloc sadeps = STRALLOC_ZERO ;
-    resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &dres) ;
-    if((!res->ndeps) || (depth->level > MAXDEPTH))
+    int e = 0, idx = 0, count ;
+    size_t pos = 0, len ;
+
+    if ((unsigned int) depth->level > MAXDEPTH)
+        return 1 ;
+
+    stralloc sa = STRALLOC_ZERO ;
+
+    if (!name) {
+        if (!graph_matrix_sort_tosa(&sa, g)) {
+            stralloc_free(&sa) ;
+            return e ;
+        }
+        count = sastr_len(&sa) ;
+
+    } else {
+
+        count = graph_matrix_get_edge_g_sorted(&sa, g, name, requiredby) ;
+
+        if (count == -1) {
+            stralloc_free(&sa) ;
+            return e ;
+        }
+    }
+
+    len = sa.len ;
+    char vertex[len + 1] ;
+
+    if (!sa.len)
         goto freed ;
 
-    if (!sastr_clean_string(&sadeps,res->sa.s + res->deps)) goto err ;
-    if (reverse) sastr_reverse(&sadeps) ;
+    if (reverse)
+        if (!sastr_reverse(&sa))
+            goto err ;
 
-    for(; pos < sadeps.len ; pos += strlen(sadeps.s + pos) + 1,idx++ )
-    {
-        int last =  idx + 1 < res->ndeps  ? 0 : 1 ;
-        char *name = sadeps.s + pos ;
+    sastr_to_char(vertex, &sa) ;
 
-        if (!resolve_check(src,name)) goto err ;
-        if (!resolve_read(wres,src,name)) goto err ;
+    for (; pos < len ; pos += strlen(vertex + pos) + 1, idx++ ) {
 
-        info_graph_display(&dres, depth, last,padding,style) ;
+        sa.len = 0 ;
+        int last =  idx + 1 < count  ? 0 : 1 ;
+        char *name = vertex + pos ;
 
-        if (dres.ndeps)
+        if (!info_graph_display(name, obj, func, depth, last, padding, style))
+            goto err ;
+
+        if (graph_matrix_get_edge_g_sorted(&sa, g, name, requiredby) == -1)
+            goto err ;
+
+        if (sa.len)
         {
             depth_t d =
             {
@@ -333,31 +431,19 @@ int info_walk(resolve_service_t *res,char const *src,int reverse, depth_t *depth
                 else
                     d.prev = NULL;
             }
-            if (!info_walk(&dres, src, reverse, &d, padding, style)) goto err;
-            depth->next = NULL;
+            if (!info_walk(g, name, obj, func, requiredby, reverse, &d, padding, style))
+                goto err ;
+            depth->next = NULL ;
         }
     }
+
     freed:
-    resolve_free(wres) ;
-    stralloc_free(&sadeps) ;
-    return 1 ;
+        e = 1 ;
+
     err:
-        resolve_free(wres) ;
-        stralloc_free(&sadeps) ;
-        return 0 ;
+        stralloc_free(&sa) ;
+
+    return e ;
+
 }
 
-int info_graph_init (resolve_service_t *res,char const *src,unsigned int reverse, int padding, info_graph_style *style)
-{
-    log_flow() ;
-
-    depth_t d = {
-        NULL,
-        NULL,
-        1
-    } ;
-
-    if(!info_walk(res,src,reverse,&d,padding,style)) return 0 ;
-
-    return 1 ;
-}

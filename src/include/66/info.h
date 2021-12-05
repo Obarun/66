@@ -16,6 +16,7 @@
 
 #include <oblibs/string.h>
 #include <oblibs/log.h>
+#include <oblibs/graph.h>
 
 #include <66/enum.h>
 #include <66/service.h>
@@ -71,14 +72,17 @@ extern info_graph_style *STYLE ;
 extern info_graph_style graph_utf8 ;
 extern info_graph_style graph_default ;
 
-
-extern void info_field_align (char buf[][INFO_FIELD_MAXLEN],char fields[][INFO_FIELD_MAXLEN],wchar_t const field_suffix[],size_t buflen) ;
 extern int info_getcols_fd(int fd) ;
+extern void info_field_align (char buf[][INFO_FIELD_MAXLEN],char fields[][INFO_FIELD_MAXLEN],wchar_t const field_suffix[],size_t buflen) ;
 extern size_t info_length_from_wchar(char const *str) ;
-extern void info_graph_display(resolve_service_t *res, depth_t *depth, int last,int padding, info_graph_style *style) ;
-extern int info_graph_init (resolve_service_t *res,char const *src,unsigned int reverse, int padding, info_graph_style *style) ;
-extern int info_walk(resolve_service_t *res,char const *src,int reverse, depth_t *depth, int padding, info_graph_style *style) ;
 extern size_t info_display_field_name(char const *field) ;
 extern void info_display_list(char const *field, stralloc *list) ;
 extern void info_display_nline(char const *field,char const *str) ;
+
+extern depth_t info_graph_init(void) ;
+extern int info_graph_display_service(char const *name, char const *obj) ;
+extern int info_graph_display(char const *name, char const *obj, info_graph_func *func, depth_t *depth, int last, int padding, info_graph_style *style) ;
+
+extern int info_walk(graph_t *g, char const *name, char const *obj, info_graph_func *func, uint8_t requiredby, uint8_t reverse, depth_t *depth, int padding, info_graph_style *style) ;
+
 #endif
