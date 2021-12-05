@@ -340,32 +340,12 @@ static void info_display_live(char const *field,resolve_service_t *res)
     if (NOFIELD) info_display_field_name(field) ;
     info_display_string(res->sa.s + res->runat) ;
 }
-
-
-/*
-int graph_service_compute_deps(stralloc *deps, char const *str)
-{
-    stralloc tmp = STRALLOC_ZERO ;
-    size_t pos = 0 ;
-
-    if (!sastr_clean_string(&tmp,str))
-        log_warnu_return(LOG_EXIT_ZERO,"rebuild dependencies list") ;
-
-    FOREACH_SASTR(&tmp,pos) {
-
-            if (!sastr_add_string(deps, tmp.s + pos))
-                return 0 ;
-    }
-
-    stralloc_free(&tmp) ;
-
-    return 1 ;
-}
-*/
-
-
-
-
+/**
+ *
+ *
+ * bugged function
+ *
+ *
 void ss_graph_matrix_add_classic(graph_t *g, genalloc *gares)
 {
     size_t pos = 0, bpos = 0, ccount = 0 ;
@@ -388,7 +368,7 @@ void ss_graph_matrix_add_classic(graph_t *g, genalloc *gares)
 
             char *str = genalloc_s(resolve_service_t, gares)[cl[pos]].sa.s ;
             char *sv = str + genalloc_s(resolve_service_t, gares)[cl[pos]].name ;
-printf("sv::%s\n",sv) ;
+
             graph_array_reverse(g->sort, g->sort_count) ;
 
             for (bpos = 0 ; bpos < g->sort_count ; bpos++) {
@@ -420,84 +400,7 @@ printf("sv::%s\n",sv) ;
     }
 
 }
-
-/** what = 0 -> only classic
- * what = 1 -> only atomic
- * what = 2 -> both
- * @Return 0 on fail
- *
- * This function append the logger to @gares is case of classic service. */
-int ss_tree_get_sv_resolve(genalloc *gares, char const *dir, uint8_t what)
-{
-    log_flow() ;
-
-    stralloc sa = STRALLOC_ZERO ;
-    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
-    resolve_service_t reslog = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wreslog = resolve_set_struct(SERVICE_STRUCT, &reslog) ;
-
-    int e = 0 ;
-    size_t dirlen = strlen(dir), pos = 0 ;
-
-    char solve[dirlen + SS_RESOLVE_LEN + 1] ;
-
-    auto_strings(solve, dir, SS_RESOLVE) ;
-
-    char const *exclude[2] = { SS_MASTER + 1, 0 } ;
-    if (!sastr_dir_get(&sa,solve,exclude,S_IFREG))
-        goto err ;
-
-    FOREACH_SASTR(&sa, pos) {
-
-        char *name = sa.s + pos ;
-
-        if (!resolve_check(dir,name))
-            goto err ;
-
-        if (!resolve_read(wres,dir,name))
-            goto err ;
-
-        if (resolve_search(gares,name, SERVICE_STRUCT) == -1) {
-
-            if ((!what || what == 2) && (res.type == TYPE_CLASSIC)) {
-
-                if (res.logger) {
-
-                    if (!resolve_read(wreslog, dir, res.sa.s + res.logger))
-                        goto err ;
-
-                    if (resolve_search(gares,res.sa.s + res.logger, SERVICE_STRUCT) == -1) {
-
-                        if (!resolve_append(gares,wreslog))
-                            goto err ;
-                    }
-                }
-
-                if (!resolve_append(gares,wres))
-                    goto err ;
-
-                continue ;
-            }
-
-            if (what) {
-
-                if (!resolve_append(gares,wres))
-                    goto err ;
-            }
-        }
-    }
-
-    e = 1 ;
-    err:
-        stralloc_free(&sa) ;
-        resolve_free(wres) ;
-        resolve_free(wreslog) ;
-        return e ;
-}
-
-
-
+*/
 
 static void info_display_requiredby(char const *field, resolve_service_t *res)
 {
@@ -530,7 +433,7 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
         if (!info_walk(&graph, res->sa.s + res->name, res->sa.s + res->treename, &info_graph_display_service, 1, REVERSE, &d, padding, STYLE))
             log_dieu(LOG_EXIT_SYS,"display the requiredby list") ;
 
-        return ;
+        goto freed ;
 
     } else {
 
@@ -548,7 +451,7 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
 
         info_display_list(field,&deps) ;
 
-        return ;
+        goto freed ;
     }
 
     empty:
@@ -564,6 +467,8 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
             if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
         }
+    freed:
+        graph_free_all(&graph) ;
 }
 
 static void info_display_deps(char const *field, resolve_service_t *res)
@@ -634,6 +539,7 @@ static void info_display_deps(char const *field, resolve_service_t *res)
         }
 
     freed:
+        graph_free_all(&graph) ;
         stralloc_free(&deps) ;
 }
 

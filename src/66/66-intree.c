@@ -222,33 +222,6 @@ static void info_display_order(char const *field,char const *treename)
     stralloc_free(&tmp) ;
 }
 
-static void info_get_graph_src(ss_resolve_graph_t *graph,char const *src,unsigned int reverse)
-{
-    size_t srclen = strlen(src), pos ;
-
-    stralloc sa = STRALLOC_ZERO ;
-    genalloc gares = GENALLOC_ZERO ;
-    char const *exclude[2] = { SS_MASTER + 1, 0 } ;
-
-    char solve[srclen + SS_RESOLVE_LEN + 1] ;
-    memcpy(solve,src,srclen) ;
-    memcpy(solve + srclen, SS_RESOLVE,SS_RESOLVE_LEN) ;
-    solve[srclen + SS_RESOLVE_LEN] = 0 ;
-
-    if (!sastr_dir_get(&sa,solve,exclude,S_IFREG))
-        log_dieusys(LOG_EXIT_SYS,"get source service file at: ",solve) ;
-
-    if (!service_resolve_sort_bytype(&gares,&sa,src))
-        log_dieu(LOG_EXIT_SYS,"sort list by type") ;
-
-    for (pos = 0 ; pos < genalloc_len(resolve_service_t,&gares) ; pos++)
-        if (!ss_resolve_graph_build(graph,&genalloc_s(resolve_service_t,&gares)[pos],src,reverse))
-                log_dieu(LOG_EXIT_SYS,"build the graph from: ",src) ;
-
-    resolve_deep_free(SERVICE_STRUCT, &gares) ;
-    stralloc_free(&sa) ;
-}
-
 static void info_display_allow(char const *field, char const *treename)
 {
     if (NOFIELD) info_display_field_name(field) ;
@@ -321,7 +294,7 @@ static void info_display_symlink(char const *field, char const *treename)
 
 static void info_display_contents(char const *field, char const *treename)
 {
-    int r ;
+
     size_t padding = 1, treenamelen = strlen(treename) ;
     graph_t graph = GRAPH_ZERO ;
     stralloc sa = STRALLOC_ZERO ;
@@ -336,7 +309,8 @@ static void info_display_contents(char const *field, char const *treename)
     if (!graph_service_build_bytree(&graph, tmp, 2))
         log_dieu(LOG_EXIT_SYS,"build the graph dependencies") ;
 
-    graph_matrix_sort_tosa(&sa, &graph) ;
+    if (!graph_matrix_sort_tosa(&sa, &graph))
+        log_dieu(LOG_EXIT_SYS, "get the dependencies list") ;
 
     if (!sa.len) goto empty ;
 
@@ -354,18 +328,11 @@ static void info_display_contents(char const *field, char const *treename)
     }
     else
     {
-        r = graph_matrix_sort_tosa(&deps,&graph) ;
-        if (!r)
-            log_dieu(LOG_EXIT_SYS, "get the dependencies list") ;
-
-        if (!deps.len)
-            goto empty ;
-
         if (REVERSE)
-            if (!sastr_reverse(&deps))
+            if (!sastr_reverse(&sa))
                 log_dieu(LOG_EXIT_SYS,"reverse the dependencies list") ;
 
-        info_display_list(field,&deps) ;
+        info_display_list(field,&sa) ;
 
         goto freed ;
     }
@@ -385,10 +352,8 @@ static void info_display_contents(char const *field, char const *treename)
         }
 
     freed:
-        stralloc_free(&deps) ;
-
-
-
+        graph_free_all(&graph) ;
+        stralloc_free(&sa) ;
 }
 
 static void info_display_all(char const *treename,int *what)
