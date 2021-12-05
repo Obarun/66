@@ -41,6 +41,7 @@
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/backup.h>
+#include <66/graph.h>
 
 static unsigned int REVERSE = 0 ;
 static unsigned int NOFIELD = 1 ;
@@ -322,54 +323,50 @@ static void info_display_contents(char const *field, char const *treename)
 {
     int r ;
     size_t padding = 1, treenamelen = strlen(treename) ;
-    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT,&res) ;
-    ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
-    stralloc salist = STRALLOC_ZERO ;
+    graph_t graph = GRAPH_ZERO ;
+    stralloc sa = STRALLOC_ZERO ;
 
     char tmp[src.len + treenamelen + SS_SVDIRS_LEN + 1] ;
-    memcpy(tmp,src.s,src.len) ;
-    memcpy(tmp + src.len,treename,treenamelen) ;
-    memcpy(tmp + src.len + treenamelen,SS_SVDIRS,SS_SVDIRS_LEN) ;
-    tmp[src.len + treenamelen + SS_SVDIRS_LEN] = 0 ;
-
-    info_get_graph_src(&graph,tmp,0) ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    if (!genalloc_len(resolve_service_t,&graph.name)) goto empty ;
+    auto_strings(tmp, src.s, treename) ;
 
-    r = ss_resolve_graph_publish(&graph,0) ;
-    if (r < 0) log_die(LOG_EXIT_USER,"cyclic graph detected at tree: ", treename) ;
-    else if (!r) log_dieusys(LOG_EXIT_SYS,"publish service graph of tree: ",treename) ;
+    if (!graph_service_build_bytree(&graph, tmp, 2))
+        log_dieu(LOG_EXIT_SYS,"build the graph dependencies") ;
 
-    for (size_t i = 0 ; i < genalloc_len(resolve_service_t,&graph.sorted) ; i++)
-    {
-        char *string = genalloc_s(resolve_service_t,&graph.sorted)[i].sa.s ;
-        char *name = string + genalloc_s(resolve_service_t,&graph.sorted)[i].name ;
-        if (!stralloc_catb(&salist,name,strlen(name)+1)) log_die_nomem("stralloc") ;
-    }
+    graph_matrix_sort_tosa(&sa, &graph) ;
+
+    if (!sa.len) goto empty ;
 
     if (GRAPH)
     {
         if (!bprintf(buffer_1,"%s\n","/"))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-        size_t el = sastr_len(&salist) ;
-        if (!sastr_rebuild_in_oneline(&salist)) log_dieu(LOG_EXIT_SYS,"rebuild dependencies list") ;
-        resolve_init(wres) ;
-        res.ndeps = el ;
-        res.deps = resolve_add_string(wres,salist.s) ;
-        if (!info_graph_init(&res,tmp,REVERSE, padding, STYLE))
-            log_die(LOG_EXIT_SYS,"display graph of: ",treename) ;
+
+        depth_t d = info_graph_init() ;
+
+        if (!info_walk(&graph, 0, treename, &info_graph_display_service, 0, REVERSE, &d, padding, STYLE))
+            log_dieu(LOG_EXIT_SYS,"display the graph dependencies") ;
+
         goto freed ;
     }
     else
     {
+        r = graph_matrix_sort_tosa(&deps,&graph) ;
+        if (!r)
+            log_dieu(LOG_EXIT_SYS, "get the dependencies list") ;
+
+        if (!deps.len)
+            goto empty ;
+
         if (REVERSE)
-            if (!sastr_reverse(&salist))
-                log_dieusys(LOG_EXIT_SYS,"reverse dependencies list") ;
-        info_display_list(field,&salist) ;
+            if (!sastr_reverse(&deps))
+                log_dieu(LOG_EXIT_SYS,"reverse the dependencies list") ;
+
+        info_display_list(field,&deps) ;
+
         goto freed ;
     }
     empty:
@@ -377,20 +374,21 @@ static void info_display_contents(char const *field, char const *treename)
         {
             if (!bprintf(buffer_1,"%s\n","/"))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-            if (!bprintf(buffer_1,"%*s%s%s",padding,"",STYLE->last,"None"))
+
+            if (!bprintf(buffer_1,"%*s%s%s%s%s\n",padding, "", STYLE->last, log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
         }
         else
         {
-            if (!bprintf(buffer_1,"%s","None"))
+            if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
         }
-        if (buffer_putsflush(buffer_1,"\n") == -1)
-            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+
     freed:
-        resolve_free(wres) ;
-        ss_resolve_graph_free(&graph) ;
-        stralloc_free(&salist) ;
+        stralloc_free(&deps) ;
+
+
+
 }
 
 static void info_display_all(char const *treename,int *what)
