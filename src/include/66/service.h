@@ -147,6 +147,7 @@ extern int service_frontend_src(stralloc *sasrc, char const *name, char const *s
 extern int service_frontend_path(stralloc *sasrc,char const *sv, uid_t owner,char const *directory_forced) ;
 extern int service_endof_dir(char const *dir, char const *name) ;
 extern int service_cmp_basedir(char const *dir) ;
+extern int service_intree(stralloc *svtree, char const *svname, char const *tree) ;
 
 /**
  *
@@ -158,7 +159,6 @@ extern int service_read_cdb(cdb *c, resolve_service_t *res) ;
 extern int service_write_cdb(cdbmaker *c, resolve_service_t *sres) ;
 extern int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res) ;
 extern int service_resolve_sort_bytype(genalloc *gares, stralloc *list, char const *src) ;
-extern int service_resolve_svtree(stralloc *svtree, char const *svname, char const *tree) ;
 extern int service_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst) ;
 extern int service_resolve_setlognwrite(resolve_service_t *sv, char const *dst) ;
 extern int service_resolve_write_master(ssexec_t *info, ss_resolve_graph_t *graph, char const *dir, unsigned int reverse) ;

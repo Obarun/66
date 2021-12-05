@@ -27,6 +27,9 @@
 #define INFO_FIELD_MAXLEN 30
 #define INFO_NKEY 100
 
+typedef int info_graph_func(char const *name, char const *obj) ;
+typedef info_graph_func *info_graph_func_t_ref ;
+
 typedef struct depth_s depth_t ;
 struct depth_s
 {
@@ -54,8 +57,8 @@ struct info_opts_map_s
 #define UTF_H   "\342\224\200"  /* U+2500, Horizontal */
 #define UTF_UR  "\342\224\224"  /* U+2514, Up and right */
 
-typedef struct ss_resolve_graph_style_s ss_resolve_graph_style ;
-struct ss_resolve_graph_style_s
+typedef struct info_graph_style_s info_graph_style ;
+struct info_graph_style_s
 {
     const char *tip;
     const char *last;
@@ -64,16 +67,17 @@ struct ss_resolve_graph_style_s
 } ;
 
 extern unsigned int MAXDEPTH ;
-extern ss_resolve_graph_style *STYLE ;
-extern ss_resolve_graph_style graph_utf8 ;
-extern ss_resolve_graph_style graph_default ;
+extern info_graph_style *STYLE ;
+extern info_graph_style graph_utf8 ;
+extern info_graph_style graph_default ;
+
 
 extern void info_field_align (char buf[][INFO_FIELD_MAXLEN],char fields[][INFO_FIELD_MAXLEN],wchar_t const field_suffix[],size_t buflen) ;
 extern int info_getcols_fd(int fd) ;
 extern size_t info_length_from_wchar(char const *str) ;
-extern void info_graph_display(resolve_service_t *res, depth_t *depth, int last,int padding, ss_resolve_graph_style *style) ;
-extern int info_graph_init (resolve_service_t *res,char const *src,unsigned int reverse, int padding, ss_resolve_graph_style *style) ;
-extern int info_walk(resolve_service_t *res,char const *src,int reverse, depth_t *depth, int padding, ss_resolve_graph_style *style) ;
+extern void info_graph_display(resolve_service_t *res, depth_t *depth, int last,int padding, info_graph_style *style) ;
+extern int info_graph_init (resolve_service_t *res,char const *src,unsigned int reverse, int padding, info_graph_style *style) ;
+extern int info_walk(resolve_service_t *res,char const *src,int reverse, depth_t *depth, int padding, info_graph_style *style) ;
 extern size_t info_display_field_name(char const *field) ;
 extern void info_display_list(char const *field, stralloc *list) ;
 extern void info_display_nline(char const *field,char const *str) ;

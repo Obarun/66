@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <wchar.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include <oblibs/sastr.h>
 #include <oblibs/log.h>
@@ -78,12 +79,12 @@ static void info_display_logname(char const *field, resolve_service_t *res) ;
 static void info_display_logdst(char const *field, resolve_service_t *res) ;
 static void info_display_logfile(char const *field, resolve_service_t *res) ;
 
-ss_resolve_graph_style *STYLE = &graph_default ;
+info_graph_style *STYLE = &graph_default ;
 
 
 
 
-#include <stdlib.h> //a garder
+
 
 #include <stdio.h>// a effacer
 
@@ -94,8 +95,7 @@ ss_resolve_graph_style *STYLE = &graph_default ;
 
 
 
-typedef int ss_info_graph_func(char const *name, char const *obj) ;
-typedef ss_info_graph_func *ss_info_graph_func_t_ref ;
+
 
 int ss_info_graph_display_service(char const *name, char const *obj)
 {
@@ -103,7 +103,7 @@ int ss_info_graph_display_service(char const *name, char const *obj)
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
 
-    int r = service_resolve_svtree(&tree, name, obj), err = 0 ;
+    int r = service_intree(&tree, name, obj), err = 0 ;
 
     if (r != 2) {
         if (r == 1)
@@ -192,7 +192,7 @@ int ss_info_graph_display_service(char const *name, char const *obj)
 
 }
 
-int ss_info_graph_display(char const *name, char const *obj, ss_info_graph_func *func, depth_t *depth, int last, int padding, ss_resolve_graph_style *style)
+int ss_info_graph_display(char const *name, char const *obj, info_graph_func *func, depth_t *depth, int last, int padding, info_graph_style *style)
 {
     log_flow() ;
 
@@ -342,7 +342,7 @@ int ss_info_walk_edge(stralloc *sa, graph_t *g, char const *name, uint8_t requir
         return count ;
 }
 
-int ss_info_walk(graph_t *g, char const *name, char const *obj, ss_info_graph_func *func, uint8_t requiredby, uint8_t reverse, depth_t *depth, int padding, ss_resolve_graph_style *style)
+int ss_info_walk(graph_t *g, char const *name, char const *obj, info_graph_func *func, uint8_t requiredby, uint8_t reverse, depth_t *depth, int padding, info_graph_style *style)
 {
     log_flow() ;
 
@@ -914,7 +914,6 @@ static void ss_graph_matrix_build_bytree(graph_t *g, char const *tree, uint8_t w
             }
         }
     }
-
 
     if (!graph_matrix_build(g))
         log_dieu(LOG_EXIT_SYS,"build the graph") ;
@@ -1588,7 +1587,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
     if (!set_ownersysdir(&home,owner)) log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
     if (!auto_stra(&home,SS_SYSTEM,"/")) log_die_nomem("stralloc") ;
 
-    found = service_resolve_svtree(&src,svname,tname) ;
+    found = service_intree(&src,svname,tname) ;
 
     if (found == -1) log_dieu(LOG_EXIT_SYS,"resolve tree source of service: ",svname) ;
     else if (!found) {

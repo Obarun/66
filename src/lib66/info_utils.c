@@ -35,14 +35,14 @@
 
 unsigned int MAXDEPTH = 1 ;
 
-ss_resolve_graph_style graph_utf8 = {
+info_graph_style graph_utf8 = {
     UTF_VR UTF_H,
     UTF_UR UTF_H,
     UTF_V " ",
     2
 } ;
 
-ss_resolve_graph_style graph_default = {
+info_graph_style graph_default = {
     "|-",
     "`-",
     "|",
@@ -210,7 +210,7 @@ void info_display_nline(char const *field,char const *str)
     stralloc_free(&sa) ;
 }
 
-void info_graph_display(resolve_service_t *res, depth_t *depth, int last, int padding, ss_resolve_graph_style *style)
+void info_graph_display(resolve_service_t *res, depth_t *depth, int last, int padding, info_graph_style *style)
 {
     log_flow() ;
 
@@ -287,7 +287,7 @@ void info_graph_display(resolve_service_t *res, depth_t *depth, int last, int pa
     if (buffer_putsflush(buffer_1,"\n") < 0) return ;
 }
 
-int info_walk(resolve_service_t *res,char const *src,int reverse, depth_t *depth, int padding, ss_resolve_graph_style *style)
+int info_walk(resolve_service_t *res,char const *src,int reverse, depth_t *depth, int padding, info_graph_style *style)
 {
     log_flow() ;
 
@@ -347,7 +347,7 @@ int info_walk(resolve_service_t *res,char const *src,int reverse, depth_t *depth
         return 0 ;
 }
 
-int info_graph_init (resolve_service_t *res,char const *src,unsigned int reverse, int padding, ss_resolve_graph_style *style)
+int info_graph_init (resolve_service_t *res,char const *src,unsigned int reverse, int padding, info_graph_style *style)
 {
     log_flow() ;
 

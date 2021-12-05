@@ -132,7 +132,7 @@ int main(int argc, char const *const *argv)
     if (!argc) log_usage(USAGE) ;
     svname = *argv ;
 
-    found = service_resolve_svtree(&src,svname,tname) ;
+    found = service_intree(&src,svname,tname) ;
     if (found == -1) log_dieu(LOG_EXIT_SYS,"resolve tree source of sv: ",svname) ;
     else if (!found) {
         log_info("no tree exist yet") ;

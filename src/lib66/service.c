@@ -212,11 +212,11 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src)
 
     if (!sastr_dir_get_recursive(&sa, src, exclude, S_IFREG|S_IFDIR, 1)) {
         stralloc_free(&sa) ;
-        goto err ;
+        return e ;
     }
-    size_t len = sort.len ;
+    size_t len = sa.len ;
     char tmp[len + 1] ;
-    sastr_to_char(tmp, &sa)
+    sastr_to_char(tmp, &sa) ;
 
     for (; pos < len ; pos += strlen(tmp + pos) + 1) {
 
@@ -834,7 +834,7 @@ int service_resolve_sort_bytype(genalloc *gares, stralloc *list, char const *src
  * @Return 1 svname doesn't exist
  * @Return 2 on success
  * @Return > 2, service exist on different tree */
-int service_resolve_svtree(stralloc *svtree, char const *svname, char const *tree)
+int service_intree(stralloc *svtree, char const *svname, char const *tree)
 {
     log_flow() ;
 

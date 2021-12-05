@@ -62,7 +62,7 @@ static void info_display_current(char const *field,char const *treename) ;
 static void info_display_allow(char const *field,char const *treename) ;
 static void info_display_symlink(char const *field,char const *treename) ;
 static void info_display_contents(char const *field,char const *treename) ;
-ss_resolve_graph_style *STYLE = &graph_default ;
+info_graph_style *STYLE = &graph_default ;
 
 info_opts_map_t const opts_tree_table[] =
 {

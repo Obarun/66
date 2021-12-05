@@ -294,7 +294,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 
     treename = !info->opt_tree ? 0 : info->treename.s ;
 
-    r = service_resolve_svtree(&sasrc,sv,treename) ;
+    r = service_intree(&sasrc,sv,treename) ;
     if (r == -1) log_dieu(LOG_EXIT_SYS,"resolve tree source of sv: ",sv) ;
     else if (!r) {
         log_info("no tree exist yet") ;

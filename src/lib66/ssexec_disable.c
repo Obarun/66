@@ -236,7 +236,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
         if (REMOVE)
         {
             stralloc sa = STRALLOC_ZERO ;
-            r = service_resolve_svtree(&sa,name,0) ;
+            r = service_intree(&sa,name,0) ;
             if (r > 2)
                 log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"use -R option -- ",name," is set on different tree") ;
             stralloc_free(&sa) ;
