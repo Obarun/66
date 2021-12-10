@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <stdarg.h>
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
@@ -32,6 +33,7 @@
 #include <skalibs/env.h>
 #include <skalibs/bytestr.h>//byte_count
 #include <skalibs/exec.h>
+#include <skalibs/buffer.h>
 
 #include <s6/config.h>
 #include <execline/config.h>
@@ -39,7 +41,6 @@
 #include <66/config.h>
 #include <66/utils.h>
 #include <66/constants.h>
-
 
 #define CRASH 0
 #define FINISH 1
@@ -65,6 +66,9 @@ static char const *log_user = SS_LOGGER_RUNNER ;
 static unsigned int BOOT = 0 ;
 static unsigned int CONTAINER = SS_BOOT_CONTAINER ;
 static unsigned int CATCH_LOG = SS_BOOT_CATCH_LOG ;
+static size_t compute_buf_size(char const *str,...) ;
+static size_t CONFIG_STR_LEN = 0 ;
+static int BUF_FD ; // general buffer fd
 
 #define USAGE "66-scandir [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -b|B ] [ -c ] [ -L log_user ] [ -s skel ] [ -o owner ] create|remove"
 
@@ -200,32 +204,83 @@ static void inline log_perm(char const *str,uid_t *uid,gid_t *gid)
     if (!yourgid(gid,*uid)) log_dieusys(LOG_EXIT_SYS,"set gid of: ",str) ;
 }
 
-void shebang(stralloc *sa,char const *opts)
+void inline shebang(buffer *b, char const *opts)
 {
-    if (!auto_stra(sa, "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb ",opts,"\n"))
-        log_die_nomem("stralloc") ;
+    log_flow() ;
+
+    if (!auto_buf(b, "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb ",opts,"\n"))
+        log_die_nomem("buffer") ;
+}
+
+void append_shutdown(buffer *b, char const *live, char const *opts)
+{
+    log_flow() ;
+
+    if (!auto_buf(b,SS_BINPREFIX "66-shutdown ",opts))
+        log_die_nomem("buffer") ;
+
+    if (!CONTAINER)
+        if (!auto_buf(b," -a"))
+            log_die_nomem("buffer") ;
+
+    if (!auto_buf(b," -l ",live," -- now\n"))
+        log_die_nomem("buffer") ;
 
 }
 
-void append_shutdown(stralloc *sa,char const *live, char const *opts)
+static size_t compute_buf_size(char const *str,...)
 {
-    if (!auto_stra(sa,SS_BINPREFIX "66-shutdown ",opts))
-        log_die_nomem("stralloc") ;
 
-    if (!CONTAINER)
-        if (!auto_stra(sa," -a"))
-            log_die_nomem("stralloc") ;
+    va_list alist ;
+    va_start(alist,str) ;
+    size_t len = 0 ;
 
-    if (!auto_stra(sa," -l ",live," -- now\n"))
-        log_die_nomem("stralloc") ;
+    while (str != 0) {
+        len += strlen(str) ;
+        str = va_arg(alist, char const *) ;
+    }
+    va_end(alist) ;
 
+    return len ;
+}
+
+static buffer init_buffer(char const *dst, char const *file, size_t len)
+{
+    log_flow() ;
+
+    int fd ;
+    buffer b ;
+
+    size_t dstlen = strlen(dst), filen = strlen(file) ;
+    char w[dstlen + 1 + filen + 1] ;
+    char buf[len + 1] ;
+    auto_strings(w, dst, "/", file) ;
+
+    fd = open_trunc(w) ;
+
+    if (fd < 0  || ndelay_off(fd) < 0)
+        log_die(LOG_EXIT_SYS,"open trunc") ;
+
+    buffer_init(&b,&fd_writev, fd, buf, len) ;
+
+    return b ;
+}
+
+void write_to_bufnclose(buffer *b, char const *dst, char const *file)
+{
+    if (!buffer_flush(b))
+        log_dieusys(LOG_EXIT_SYS, "write to: ", dst, "/", file) ;
+
+    fd_close(BUF_FD) ;
 }
 
 void write_shutdownd(char const *live, char const *scandir)
 {
     log_flow() ;
 
-    stralloc run = STRALLOC_ZERO ;
+    buffer b ;
+    size_t blen = compute_buf_size(live, skel, 0) ;
+    blen += 500 + CONFIG_STR_LEN ;
     size_t scandirlen = strlen(scandir) ;
     char shut[scandirlen + 1 + SS_BOOT_SHUTDOWND_LEN + 5 + 1] ;
 
@@ -237,32 +292,32 @@ void write_shutdownd(char const *live, char const *scandir)
 
     auto_fifo(shut) ;
 
-    shebang(&run,"-P") ;
-    if (!auto_stra(&run,
-        SS_BINPREFIX "66-shutdownd -l ",
-        live," -s ",skel," -g 3000"))
-            log_die_nomem("stralloc") ;
-
-    if (CONTAINER)
-        if (!auto_stra(&run," -B"))
-            log_die_nomem("stralloc") ;
-
-    if (!CATCH_LOG)
-        if (!auto_stra(&run," -c"))
-            log_die_nomem("stralloc") ;
-
-    if (!auto_stra(&run,"\n"))
-        log_die_nomem("stralloc") ;
-
     shut[scandirlen + 1 + SS_BOOT_SHUTDOWND_LEN] = 0 ;
 
-    auto_file(shut,"run",run.s,run.len) ;
+    b = init_buffer(shut, "run", blen) ;
+
+    shebang(&b, "-P") ;
+    if (!auto_buf(&b,
+        SS_BINPREFIX "66-shutdownd -l ",
+        live," -s ",skel," -g 3000"))
+            log_die_nomem("buffer") ;
+
+    if (CONTAINER)
+        if (!auto_buf(&b," -B"))
+            log_die_nomem("buffer") ;
+
+    if (!CATCH_LOG)
+        if (!auto_buf(&b," -c"))
+            log_die_nomem("buffer") ;
+
+    if (!auto_buf(&b,"\n"))
+        log_die_nomem("buffer") ;
+
+    write_to_bufnclose(&b, shut, "run") ;
 
     auto_strings(shut + scandirlen + 1 + SS_BOOT_SHUTDOWND_LEN,"/run") ;
 
     auto_chmod(shut,0755) ;
-
-    stralloc_free(&run) ;
 }
 
 void write_bootlog(char const *live, char const *scandir)
@@ -272,14 +327,11 @@ void write_bootlog(char const *live, char const *scandir)
     int r ;
     uid_t uid ;
     gid_t gid ;
-    size_t livelen = strlen(live) ;
-    size_t scandirlen = strlen(scandir) ;
-    size_t ownerlen = uid_fmt(OWNERSTR,OWNER) ;
-    size_t loglen ;
+    size_t livelen = strlen(live), scandirlen = strlen(scandir), ownerlen = uid_fmt(OWNERSTR,OWNER), loglen = 0, blen = 0 ;
+    buffer b ;
     char path[livelen + 4 + ownerlen + 1] ;
     char logdir[scandirlen + SS_SCANDIR_LEN + SS_LOG_SUFFIX_LEN + 1 + 5 + 1] ;
 
-    stralloc run = STRALLOC_ZERO ;
     /** run/66/scandir/uid_name/scandir-log */
     auto_strings(logdir,scandir,"/" SS_SCANDIR SS_LOG_SUFFIX) ;
 
@@ -308,62 +360,71 @@ void write_bootlog(char const *live, char const *scandir)
 
     auto_chmod(path,02755) ;
 
+    logdir[loglen] = 0 ;
+
+    blen = compute_buf_size(live, logdir, log_user, path, 0) ;
+    blen += 500 + CONFIG_STR_LEN;
+    b = init_buffer(logdir, "run", blen) ;
+
     /** make run file */
-    shebang(&run,"-P") ;
+    shebang(&b,"-P") ;
     if (CONTAINER) {
 
-        if (!auto_stra(&run,EXECLINE_BINPREFIX "fdmove -c 1 2\n"))
-            log_die_nomem("stralloc") ;
+        if (!auto_buf(&b,EXECLINE_BINPREFIX "fdmove -c 1 2\n"))
+            log_die_nomem("buffer") ;
 
     } else {
 
-        if (!auto_stra(&run,
+        if (!auto_buf(&b,
             EXECLINE_BINPREFIX "redirfd -w 1 /dev/null\n"))
-                log_die_nomem("stralloc") ;
+                log_die_nomem("buffer") ;
     }
 
-    if (!auto_stra(&run,
+    if (!auto_buf(&b,
             EXECLINE_BINPREFIX "redirfd -rnb 0 fifo\n" \
             S6_BINPREFIX "s6-setuidgid ",
             log_user,
             "\n" S6_BINPREFIX "s6-log -bpd3 -- 1"))
-                log_die_nomem("stralloc") ;
+                log_die_nomem("buffer") ;
 
     if (SS_LOGGER_TIMESTAMP < TIME_NONE)
-        if (!auto_stra(&run,SS_LOGGER_TIMESTAMP == TIME_ISO ? " T " : " t "))
-            log_die_nomem("stralloc") ;
+        if (!auto_buf(&b, SS_LOGGER_TIMESTAMP == TIME_ISO ? " T " : " t "))
+            log_die_nomem("buffer") ;
 
-    if (!auto_stra(&run,path,"\n"))
-        log_die_nomem("stralloc") ;
+    if (!auto_buf(&b,path,"\n"))
+        log_die_nomem("buffer") ;
 
-    logdir[loglen] = 0 ;
+    write_to_bufnclose(&b, logdir, "run") ;
 
-    auto_file(logdir,"run",run.s,run.len) ;
     auto_file(logdir,"notification-fd","3\n",2) ;
 
     auto_strings(logdir + loglen,"/run") ;
 
     auto_chmod(logdir,0755) ;
-
-    stralloc_free(&run) ;
 }
 
 void write_control(char const *scandir,char const *live, char const *filename, int file)
 {
     log_flow() ;
 
-    size_t scandirlen = strlen(scandir) ;
-    size_t filen = strlen(filename) ;
+    buffer b ;
+    size_t scandirlen = strlen(scandir), filen = strlen(filename), blen = 0 ;
     char mode[scandirlen + SS_SVSCAN_LOG_LEN + filen + 1] ;
-    stralloc sa = STRALLOC_ZERO ;
 
-    shebang(&sa,"-P") ;
+    auto_strings(mode,scandir,SS_SVSCAN_LOG) ;
+
+    blen = compute_buf_size(live, scandir, 0) ;
+    blen += 500 + CONFIG_STR_LEN ;
+
+    b = init_buffer(mode, filename + 1, blen) ;
+
+    shebang(&b,"-P") ;
 
     if (file == FINISH)
     {
         if (CONTAINER) {
 
-            if (!auto_stra(&sa,
+            if (!auto_buf(&b,
                 SS_BINPREFIX "execl-envfile ",live, SS_BOOT_CONTAINER_DIR "/",OWNERSTR,"\n" \
                 EXECLINE_BINPREFIX "fdclose 1\n" \
                 EXECLINE_BINPREFIX "fdclose 2\n" \
@@ -371,25 +432,25 @@ void write_control(char const *scandir,char const *live, char const *filename, i
                 EXECLINE_BINPREFIX "foreground {\n" \
                 SS_BINPREFIX "66-hpr -f -n -${HALTCODE} -l ",live," \n}\n" \
                 EXECLINE_BINPREFIX "exit ${EXITCODE}\n"))
-                    log_die_nomem("stralloc") ;
+                    log_die_nomem("buffer") ;
 
         } else if (BOOT) {
 
-            if (!auto_stra(&sa,
+            if (!auto_buf(&b,
                 EXECLINE_BINPREFIX "redirfd -w 2 /dev/console\n" \
                 EXECLINE_BINPREFIX "fdmove -c 1 2\n" \
                 EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-echo -- \"scandir ",
                 scandir," exited. Rebooting.\" }\n" \
                 SS_BINPREFIX "66-hpr -r -f -l ",
                 live,"\n"))
-                    log_die_nomem("stralloc") ;
+                    log_die_nomem("buffer") ;
 
         } else {
 
-            if (!auto_stra(&sa,
+            if (!auto_buf(&b,
                 SS_BINPREFIX "66-echo -- \"scandir ",
                 scandir," shutted down...\"\n"))
-                    log_die_nomem("stralloc") ;
+                    log_die_nomem("buffer") ;
         }
         goto write ;
     }
@@ -399,7 +460,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
 
         if (CONTAINER) {
 
-            if (!auto_stra(&sa,
+            if (!auto_buf(&b,
                 EXECLINE_BINPREFIX "foreground {\n" \
                 EXECLINE_BINPREFIX "fdmove -c 1 2\n" \
                 SS_BINPREFIX "66-echo \"scandir crashed. Killing everythings and exiting.\"\n}\n" \
@@ -407,37 +468,37 @@ void write_control(char const *scandir,char const *live, char const *filename, i
                 EXECLINE_BINPREFIX "66-nuke\n}\n" \
                 EXECLINE_BINPREFIX "wait { }\n" \
                 SS_BINPREFIX "66-hpr -f -n -p -l ",live,"\n"))
-                    log_die_nomem("stralloc") ;
+                    log_die_nomem("buffer") ;
         }
         else {
 
-            if (!auto_stra(&sa,
+            if (!auto_buf(&b,
                 EXECLINE_BINPREFIX "redirfd -w 2 /dev/console\n" \
                 EXECLINE_BINPREFIX "fdmove -c 1 2\n" \
                 EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-echo -- \"scandir ",
                 scandir, " crashed."))
-                    log_die_nomem("stralloc") ;
+                    log_die_nomem("buffer") ;
 
             if (BOOT) {
 
-                if (!auto_stra(&sa,
+                if (!auto_buf(&b,
                     " Rebooting.\" }\n" \
                     SS_BINPREFIX "66-hpr -r -f -l ",
                     live,"\n"))
-                        log_die_nomem("stralloc") ;
+                        log_die_nomem("buffer") ;
 
-            } else if (!auto_stra(&sa,"\" }\n"))
-                log_die_nomem("stralloc") ;
+            } else if (!auto_buf(&b,"\" }\n"))
+                log_die_nomem("buffer") ;
         }
 
         goto write ;
     }
     if (!BOOT) {
 
-        if (!auto_stra(&sa,
+        if (!auto_buf(&b,
             EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-all -v3 -l ",
             live," down }\n"))
-                log_die_nomem("stralloc") ;
+                log_die_nomem("buffer") ;
 
     }
 
@@ -447,33 +508,33 @@ void write_control(char const *scandir,char const *live, char const *filename, i
         case USR1:
 
             if (BOOT)
-                append_shutdown(&sa,live,"-p") ;
+                append_shutdown(&b,live,"-p") ;
 
             break ;
         case USR2:
 
             if (BOOT)
-                append_shutdown(&sa,live,"-h") ;
+                append_shutdown(&b,live,"-h") ;
 
             break ;
         case TERM:
             if (!BOOT)
-                if (!auto_stra(&sa, SS_BINPREFIX "66-scanctl -l ",live," stop\n"))
-                    log_die_nomem("stralloc") ;
+                if (!auto_buf(&b, SS_BINPREFIX "66-scanctl -l ",live," stop\n"))
+                    log_die_nomem("buffer") ;
 
             break ;
         case QUIT:
 
             if (!BOOT)
-                if (!auto_stra(&sa, SS_BINPREFIX "66-scanctl -l ",live," quit\n"))
-                    log_die_nomem("stralloc") ;
+                if (!auto_buf(&b, SS_BINPREFIX "66-scanctl -l ",live," quit\n"))
+                    log_die_nomem("buffer") ;
 
             break ;
 
         case INT:
 
             if (BOOT)
-                append_shutdown(&sa,live,"-r") ;
+                append_shutdown(&b,live,"-r") ;
 
             break ;
 
@@ -485,15 +546,12 @@ void write_control(char const *scandir,char const *live, char const *filename, i
     }
 
     write:
-        auto_strings(mode,scandir,SS_SVSCAN_LOG) ;
 
-        auto_file(mode,filename+1,sa.s,sa.len) ;
+        write_to_bufnclose(&b, mode, filename + 1) ;
 
         auto_strings(mode + scandirlen + SS_SVSCAN_LOG_LEN, filename) ;
 
         auto_chmod(mode,0755) ;
-
-    stralloc_free(&sa) ;
 }
 
 void create_scandir(char const *live, char const *scandir)
@@ -575,6 +633,8 @@ int main(int argc, char const *const *argv, char const *const *envp)
     stralloc scandir = STRALLOC_ZERO ;
 
     log_color = &log_color_disable ;
+
+    CONFIG_STR_LEN = compute_buf_size(SS_BINPREFIX, SS_EXTBINPREFIX, SS_EXTLIBEXECPREFIX, SS_LIBEXECPREFIX, SS_EXECLINE_SHEBANGPREFIX, 0) ;
 
     cmd = create = remove = 0 ;
 
