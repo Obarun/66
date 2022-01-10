@@ -33,13 +33,9 @@
 #include <66/utils.h>
 #include <66/config.h>
 
-stralloc saseed = STRALLOC_ZERO ;
-
-void tree_seed_free(void)
+void tree_seed_free(tree_seed_t *seed)
 {
-
-    stralloc_free(&saseed) ;
-
+    stralloc_free(&seed->sa) ;
 }
 
 static ssize_t tree_seed_get_key(char *table,char const *str)
@@ -121,8 +117,8 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 
             case SEED_DEPENDS :
 
-                seed->depends = saseed.len ;
-                if (!sastr_add_string(&saseed, val))
+                seed->depends = seed->sa.len ;
+                if (!sastr_add_string(&seed->sa, val))
                     goto err ;
 
                 seed->nopts++ ;
@@ -131,8 +127,8 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 
             case SEED_REQUIREDBY :
 
-                seed->requiredby = saseed.len ;
-                if (!sastr_add_string(&saseed, val))
+                seed->requiredby = seed->sa.len ;
+                if (!sastr_add_string(&seed->sa, val))
                     goto err ;
 
                 seed->nopts++ ;
@@ -142,7 +138,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
             case SEED_ENABLE :
 
                 if (!strcmp(val,"true") || !strcmp(val,"True"))
-                    seed->enabled = 1 ;
+                    seed->disen = 1 ;
 
                 seed->nopts++ ;
 
@@ -150,8 +146,8 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 
             case SEED_ALLOW :
 
-                seed->allow = saseed.len ;
-                if (!sastr_add_string(&saseed, val))
+                seed->allow = seed->sa.len ;
+                if (!sastr_add_string(&seed->sa, val))
                     goto err ;
 
                 seed->nopts++ ;
@@ -160,8 +156,8 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 
             case SEED_DENY :
 
-                seed->deny = saseed.len ;
-                if (!sastr_add_string(&saseed, val))
+                seed->deny = seed->sa.len ;
+                if (!sastr_add_string(&seed->sa, val))
                     goto err ;
 
                 seed->nopts++ ;
@@ -177,46 +173,26 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 
                 break ;
 
-            case SEED_GROUP :
+            case SEED_GROUPS :
 
-                if (strcmp(val,"boot") && strcmp(val,"admin") && strcmp(val,"user")) {
+                if (strcmp(val,TREE_GROUPS_BOOT) && strcmp(val,TREE_GROUPS_ADM) && strcmp(val,TREE_GROUPS_USER)) {
 
                     log_warn("invalid group: ", val) ;
                     goto err ;
                 }
 
-                seed->group = saseed.len ;
-                if (!sastr_add_string(&saseed, val))
+                seed->groups = seed->sa.len ;
+                if (!sastr_add_string(&seed->sa, val))
                     goto err ;
 
                 seed->nopts++ ;
 
                 break ;
-            /*
-            case SEED_SERVICES :
-                {
-                    stralloc sv = STRALLOC_ZERO ;
 
-                    if (!sastr_clean_string_wdelim(&sv, val, ',') ||
-                        !sastr_rebuild_in_oneline(&sv)) {
-
-                            log_warnu("clean service list") ;
-                            goto err ;
-                    }
-
-                    seed->services = saseed.len ;
-                    if (!sastr_add_string(&saseed, sv.s))
-                        goto err ;
-
-                    seed->nopts++ ;
-
-                    break ;
-                }
-            */
             default :
 
                 log_warn("unknown key: ", key, " -- ignoring") ;
-                break ;
+                goto err ;
         }
 
     }
@@ -233,6 +209,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 static int tree_seed_file_isvalid(char const *seedpath, char const *treename)
 {
     log_flow() ;
+
     int r ;
     size_t slen = strlen(seedpath), tlen = strlen(treename) ;
     char seed[slen + tlen + 1] ;
@@ -309,7 +286,7 @@ int tree_seed_isvalid(char const *seed)
     return e ;
 }
 
-int tree_seed_ismandatory(tree_seed_t *seed, uint8_t check_service)
+int tree_seed_ismandatory(tree_seed_t *seed, uint8_t check_contents)
 {
     log_flow() ;
 
@@ -318,53 +295,25 @@ int tree_seed_ismandatory(tree_seed_t *seed, uint8_t check_service)
     //size_t pos = 0 ;
     stralloc sv = STRALLOC_ZERO ;
 
-    char *group = saseed.s + seed->group ;
-    //char *service = saseed.s + seed->services ;
+    char *groups = seed->sa.s + seed->groups ;
 
-    if (!uid && (!strcmp(group, "user"))) {
+    if (!uid && (!strcmp(groups, TREE_GROUPS_USER))) {
 
         log_warn("Only regular user can use this seed") ;
         goto err ;
 
-    } else if (uid && (!strcmp(group, "root"))) {
+    } else if (uid && (strcmp(groups, TREE_GROUPS_USER))) {
 
-        log_warn("Only root user can use this seed") ;
+        log_warn("Only root user can use seed: ", seed->sa.s + seed->name) ;
         goto err ;
     }
 
-    if (!strcmp(saseed.s + seed->name , "boot") && seed->enabled) {
+    if (!strcmp(groups, TREE_GROUPS_BOOT) && seed->disen) {
 
-        log_warn("enable was asked for a tree on group boot -- ignoring enable request") ;
-        seed->enabled = 0 ;
+        log_1_warn("enable was asked for a tree on group boot -- ignoring enable request") ;
+        seed->disen = 0 ;
     }
-    /**
-    if (check_service) {
 
-        stralloc sasrc = STRALLOC_ZERO ;
-
-        if (!stralloc_cats(&sv, service) ||
-            !sastr_clean_element(&sv)) {
-
-                log_warnu("clean service list") ;
-                stralloc_free(&sasrc) ;
-                goto err ;
-        }
-
-        FOREACH_SASTR(&sv, pos) {
-
-            char *s = sv.s + pos ;
-
-            // service_frontend_src already warn user
-            if (!service_frontend_path(&sasrc,s, uid, 0)) {
-
-                stralloc_free(&sasrc) ;
-                goto err ;
-            }
-        }
-
-        stralloc_free(&sasrc) ;
-    }
-    */
     e = 1 ;
     err:
         stralloc_free(&sv) ;
@@ -381,8 +330,8 @@ int tree_seed_setseed(tree_seed_t *seed, char const *treename, uint8_t check_ser
     if (!tree_seed_resolve_path(&src, treename))
         goto err ;
 
-    seed->name = saseed.len ;
-    if (!sastr_add_string(&saseed, treename))
+    seed->name = seed->sa.len ;
+    if (!sastr_add_string(&seed->sa, treename))
         goto err ;
 
     if (!tree_seed_parse_file(seed, src.s) ||
