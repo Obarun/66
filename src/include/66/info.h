@@ -80,9 +80,9 @@ extern void info_display_list(char const *field, stralloc *list) ;
 extern void info_display_nline(char const *field,char const *str) ;
 
 extern depth_t info_graph_init(void) ;
-extern int info_graph_display_service(char const *name, char const *obj) ;
-extern int info_graph_display(char const *name, char const *obj, info_graph_func *func, depth_t *depth, int last, int padding, info_graph_style *style) ;
-
 extern int info_walk(graph_t *g, char const *name, char const *obj, info_graph_func *func, uint8_t requiredby, uint8_t reverse, depth_t *depth, int padding, info_graph_style *style) ;
+extern int info_graph_display(char const *name, char const *obj, info_graph_func *func, depth_t *depth, int last, int padding, info_graph_style *style) ;
+extern int info_graph_display_service(char const *name, char const *obj) ;
+extern int info_graph_display_tree(char const *name, char const *obj) ;
 
 #endif
