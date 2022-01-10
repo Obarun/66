@@ -155,7 +155,7 @@ char const *help_all =
 "   -f: fork the process\n"
 ;
 
-char const *usage_tree = "66-tree [ -h ] [ -z ] [ -v verbosity ] [ -n|R ] [ -a|d ] [ -c ] [ -o depends=:requiredby=:rename= ] [ -E|D ] [ -C clone ] tree" ;
+char const *usage_tree = "66-tree [ -h ] [ -z ] [ -v verbosity ] [ -c ] [ -o depends=:... ] [ -E|D ] [ -R ] tree" ;
 
 char const *help_tree =
 "\n"
@@ -163,20 +163,20 @@ char const *help_tree =
 "   -h: print this help\n"
 "   -z: use color\n"
 "   -v: increase/decrease verbosity\n"
-"   -n: create a new empty tree\n"
-"   -R: remove the tree\n"
-"   -a: allow user(s) at tree\n"
-"   -d: deny user(s) at tree\n"
 "   -c: set tree as default\n"
-"   -o: colon separated list of dependencies\n"
+"   -o: colon separated list of options\n"
 "   -E: enable the tree\n"
 "   -D: disable the tree\n"
-"   -C: clone the tree\n"
+"   -R: remove the tree\n"
 
 "\n"
 "valid fields for -o options are:\n"
 "\n"
-"   depends=: comma separated list of dependencies for tree\n"
-"   requiredby=: comma separated list of trees required by tree\n"
-"   rename=: rename tree with as rename\n"
+"   depends=: comma separated list of dependencies for tree or none\n"
+"   requiredby=: comma separated list of trees required by tree or none\n"
+"   groups=: add tree to the specified groups\n"
+"   allow=: comma separated list of account to allow at tree\n"
+"   deny=: comma separated list of account to deny at tree\n"
+"   clone=: make a clone of tree\n"
+"   noseed: do not use seed file to build the tree\n"
 ;
