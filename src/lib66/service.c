@@ -51,7 +51,7 @@ int service_isenabled(char const *sv)
 
     stralloc sa = STRALLOC_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     size_t newlen = 0, pos = 0 ;
     int e = -1 ;
     char const *exclude[3] = { SS_BACKUP + 1, SS_RESOLVE + 1, 0 } ;
@@ -129,7 +129,7 @@ int service_isenabledat(stralloc *tree, char const *sv)
 
     stralloc sa = STRALLOC_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     size_t newlen = 0, pos = 0 ;
     int e = -1 ;
     char const *exclude[3] = { SS_BACKUP + 1, SS_RESOLVE + 1, 0 } ;
@@ -442,7 +442,8 @@ resolve_service_field_table_t resolve_service_field_table[] = {
     [SERVICE_ENUM_LOGREAL] = { .field = "logreal" },
     [SERVICE_ENUM_LOGASSOC] = { .field = "logassoc" },
     [SERVICE_ENUM_DSTLOG] = { .field = "dstlog" },
-    [SERVICE_ENUM_DEPS] = { .field = "deps" },
+    [SERVICE_ENUM_DEPENDS] = { .field = "depends" },
+    [SERVICE_ENUM_REQUIREDBY] = { .field = "requiredby" },
     [SERVICE_ENUM_OPTSDEPS] = { .field = "optsdeps" },
     [SERVICE_ENUM_EXTDEPS] = { .field = "extdeps" },
     [SERVICE_ENUM_CONTENTS] = { .field = "contents" },
@@ -460,7 +461,8 @@ resolve_service_field_table_t resolve_service_field_table[] = {
     [SERVICE_ENUM_EXEC_FINISH] = { .field = "exec_finish" },
     [SERVICE_ENUM_REAL_EXEC_FINISH] = { .field = "real_exec_finish" },
     [SERVICE_ENUM_TYPE] = { .field = "type" },
-    [SERVICE_ENUM_NDEPS] = { .field = "ndeps" },
+    [SERVICE_ENUM_NDEPENDS] = { .field = "ndepends" },
+    [SERVICE_ENUM_NREQUIREDBY] = { .field = "nrequiredby" },
     [SERVICE_ENUM_NOPTSDEPS] = { .field = "noptsdeps" },
     [SERVICE_ENUM_NEXTDEPS] = { .field = "nextdeps" },
     [SERVICE_ENUM_NCONTENTS] = { .field = "ncontents" },
@@ -477,7 +479,7 @@ int service_read_cdb(cdb *c, resolve_service_t *res)
     resolve_wrapper_t_ref wres ;
     uint32_t x ;
 
-    wres = resolve_set_struct(SERVICE_STRUCT, res) ;
+    wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     /* name */
     resolve_find_cdb(&tmp,c,"name") ;
@@ -507,9 +509,13 @@ int service_read_cdb(cdb *c, resolve_service_t *res)
     resolve_find_cdb(&tmp,c,"dstlog") ;
     res->dstlog = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
 
-    /* deps */
-    resolve_find_cdb(&tmp,c,"deps") ;
-    res->deps = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
+    /* depends */
+    resolve_find_cdb(&tmp,c,"depends") ;
+    res->depends = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
+
+    /* requiredby */
+    resolve_find_cdb(&tmp,c,"requiredby") ;
+    res->requiredby = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
 
     /* optsdeps */
     resolve_find_cdb(&tmp,c,"optsdeps") ;
@@ -579,9 +585,13 @@ int service_read_cdb(cdb *c, resolve_service_t *res)
     x = resolve_find_cdb(&tmp,c,"type") ;
     res->type = x ;
 
-    /* ndeps */
-    x = resolve_find_cdb(&tmp,c,"ndeps") ;
-    res->ndeps = x ;
+    /* ndepends */
+    x = resolve_find_cdb(&tmp,c,"ndepends") ;
+    res->ndepends = x ;
+
+    /* nrequiredby */
+    x = resolve_find_cdb(&tmp,c,"nrequiredby") ;
+    res->nrequiredby = x ;
 
     /* noptsdeps */
     x = resolve_find_cdb(&tmp,c,"noptsdeps") ;
@@ -637,8 +647,11 @@ int service_write_cdb(cdbmaker *c, resolve_service_t *sres)
     /* dstlog */
     !resolve_add_cdb(c,"dstlog",str + sres->dstlog) ||
 
+    /* depends */
+    !resolve_add_cdb(c,"depends",str + sres->depends) ||
+
     /* deps */
-    !resolve_add_cdb(c,"deps",str + sres->deps) ||
+    !resolve_add_cdb(c,"requiredby",str + sres->requiredby) ||
 
     /* optsdeps */
     !resolve_add_cdb(c,"optsdeps",str + sres->optsdeps) ||
@@ -694,8 +707,11 @@ int service_write_cdb(cdbmaker *c, resolve_service_t *sres)
     /* type */
     !resolve_add_cdb_uint(c,"type",sres->type) ||
 
+    /* ndepends */
+    !resolve_add_cdb_uint(c,"ndepends",sres->ndepends) ||
+
     /* ndeps */
-    !resolve_add_cdb_uint(c,"ndeps",sres->ndeps) ||
+    !resolve_add_cdb_uint(c,"ndeps",sres->nrequiredby) ||
 
     /* noptsdeps */
     !resolve_add_cdb_uint(c,"noptsdeps",sres->noptsdeps) ||
@@ -735,7 +751,8 @@ int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res)
     dst->logreal = res->logreal ;
     dst->logassoc = res->logassoc ;
     dst->dstlog = res->dstlog ;
-    dst->deps = res->deps ;
+    dst->depends = res->depends ;
+    dst->requiredby = res->requiredby ;
     dst->optsdeps = res->optsdeps ;
     dst->extdeps = res->extdeps ;
     dst->contents = res->contents ;
@@ -753,7 +770,8 @@ int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res)
     dst->exec_finish = res->exec_finish ;
     dst->real_exec_finish = res->real_exec_finish ;
     dst->type = res->type ;
-    dst->ndeps = res->ndeps ;
+    dst->ndepends = res->ndepends ;
+    dst->nrequiredby = res->nrequiredby ;
     dst->noptsdeps = res->noptsdeps ;
     dst->nextdeps = res->nextdeps ;
     dst->ncontents = res->ncontents ;
@@ -763,49 +781,51 @@ int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res)
     return 1 ;
 }
 
-int service_resolve_sort_bytype(genalloc *gares, stralloc *list, char const *src)
+int service_resolve_sort_bytype(stralloc *list, char const *src)
 {
     log_flow() ;
 
-    size_t pos = 0 ;
+    size_t pos = 0, len = list->len ;
     int e = 0 ;
+
+    char tmp[len + 1] ;
+
+    sastr_to_char(tmp, list) ;
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
     size_t classic_list = 0, module_list = 0 ;
 
-    FOREACH_SASTR(list, pos) {
+    list->len = 0 ;
 
-        char *name = list->s + pos ;
+    for (; pos < len ; pos += strlen(tmp + pos) + 1) {
 
-        resolve_service_t cp = RESOLVE_SERVICE_ZERO ;
+        size_t nlen = strlen(tmp + pos) + 1 ;
+        char *name = tmp + pos ;
 
         if (!resolve_read(wres, src, name))
             log_warnu_return(LOG_EXIT_ZERO,"read resolve file of: ", src, name) ;
-
-        if (!service_resolve_copy(&cp, &res))
-            goto err ;
 
         switch (res.type) {
 
             case TYPE_CLASSIC:
 
-                if (!genalloc_insertb(resolve_service_t, gares, 0, &cp, 1))
+                if (!stralloc_insertb(list, 0, name, strlen(name) + 1))
                     goto err ;
 
-                classic_list++ ;
+                classic_list += nlen  ;
                 module_list = classic_list ;
 
                 break ;
 
             case TYPE_MODULE:
 
-                if (!genalloc_insertb(resolve_service_t, gares, classic_list, &cp, 1))
+                if (!stralloc_insertb(list, classic_list, name, strlen(name) + 1))
                     goto err ;
 
-                module_list++ ;
+                module_list += nlen ;
 
                 break ;
 
@@ -813,7 +833,7 @@ int service_resolve_sort_bytype(genalloc *gares, stralloc *list, char const *src
             case TYPE_LONGRUN:
             case TYPE_ONESHOT:
 
-                if (!genalloc_insertb(resolve_service_t, gares, module_list, &cp, 1))
+                if (!stralloc_insertb(list, module_list, name, strlen(name) + 1))
                     goto err ;
 
                 break ;
@@ -918,7 +938,7 @@ int service_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *
 
     ss_state_t sta = STATE_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
     resolve_init(wres) ;
 
@@ -975,7 +995,7 @@ int service_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *
         }
     }
 
-    res.ndeps = services->cname.nga ;
+    res.ndepends = services->cname.nga ;
     res.noptsdeps = services->cname.nopts ;
     res.nextdeps = services->cname.next ;
     res.ncontents = services->cname.ncontents ;
@@ -1023,9 +1043,9 @@ int service_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *
         }
     }
 
-    if (res.ndeps)
+    if (res.ndepends)
     {
-        id = services->cname.idga, nid = res.ndeps ;
+        id = services->cname.idga, nid = res.ndepends ;
         for (;nid; id += strlen(deps.s + id) + 1, nid--) {
 
             if (!stralloc_catb(&ndeps,deps.s + id,strlen(deps.s + id)) ||
@@ -1041,7 +1061,7 @@ int service_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *
             goto err ;
         }
 
-        res.deps = resolve_add_string(wres,ndeps.s) ;
+        res.depends = resolve_add_string(wres,ndeps.s) ;
     }
 
     if (res.noptsdeps)
@@ -1162,15 +1182,15 @@ int service_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *
                     goto err ;
                 }
 
-            res.deps = resolve_add_string(wres,ndeps.s) ;
+            res.depends = resolve_add_string(wres,ndeps.s) ;
 
             if (res.type == TYPE_CLASSIC) {
 
-                res.ndeps = 1 ;
+                res.ndepends = 1 ;
 
             } else if (res.type == TYPE_LONGRUN) {
 
-                res.ndeps += 1 ;
+                res.ndepends += 1 ;
             }
 
             if (services->type.classic_longrun.log.run.exec >= 0)
@@ -1210,7 +1230,7 @@ int service_resolve_setlognwrite(resolve_service_t *sv, char const *dst)
     ss_state_t sta = STATE_ZERO ;
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
     resolve_init(wres) ;
 
@@ -1232,7 +1252,7 @@ int service_resolve_setlognwrite(resolve_service_t *sv, char const *dst)
 
     res.type = sv->type ;
     res.name = resolve_add_string(wres,str + sv->logger) ;
-    res.description = resolve_add_string(wres,descrip) ;
+    res.description = resolve_add_string(wres,str + sv->description) ;
     res.version = resolve_add_string(wres,str + sv->version) ;
     res.logreal = resolve_add_string(wres,str + sv->logreal) ;
     res.logassoc = resolve_add_string(wres,str + sv->name) ;
@@ -1291,7 +1311,7 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
     uint32_t ifield ;
     int e = 0 ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     switch(field) {
 
@@ -1323,8 +1343,12 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
             res->dstlog = resolve_add_string(wres,data) ;
             break ;
 
-        case SERVICE_ENUM_DEPS:
-            res->deps = resolve_add_string(wres,data) ;
+        case SERVICE_ENUM_DEPENDS:
+            res->depends = resolve_add_string(wres,data) ;
+            break ;
+
+        case SERVICE_ENUM_REQUIREDBY:
+            res->requiredby = resolve_add_string(wres,data) ;
             break ;
 
         case SERVICE_ENUM_OPTSDEPS:
@@ -1396,9 +1420,14 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
             res->type = ifield ;
             break ;
 
-        case SERVICE_ENUM_NDEPS:
+        case SERVICE_ENUM_NDEPENDS:
             if (!uint0_scan(data, &ifield)) goto err ;
-            res->ndeps = ifield ;
+            res->ndepends = ifield ;
+            break ;
+
+        case SERVICE_ENUM_NREQUIREDBY:
+            if (!uint0_scan(data, &ifield)) goto err ;
+            res->nrequiredby = ifield ;
             break ;
 
         case SERVICE_ENUM_NOPTSDEPS:
@@ -1474,8 +1503,12 @@ int service_resolve_field_to_sa(stralloc *sa, resolve_service_t *res, resolve_se
             ifield = res->dstlog ;
             break ;
 
-        case SERVICE_ENUM_DEPS:
-            ifield = res->deps ;
+        case SERVICE_ENUM_DEPENDS:
+            ifield = res->depends ;
+            break ;
+
+        case SERVICE_ENUM_REQUIREDBY:
+            ifield = res->requiredby ;
             break ;
 
         case SERVICE_ENUM_OPTSDEPS:
@@ -1546,8 +1579,12 @@ int service_resolve_field_to_sa(stralloc *sa, resolve_service_t *res, resolve_se
             ifield = res->type ;
             break ;
 
-        case SERVICE_ENUM_NDEPS:
-            ifield = res->ndeps ;
+        case SERVICE_ENUM_NDEPENDS:
+            ifield = res->ndepends ;
+            break ;
+
+        case SERVICE_ENUM_NREQUIREDBY:
+            ifield = res->nrequiredby ;
             break ;
 
         case SERVICE_ENUM_NOPTSDEPS:
@@ -1587,28 +1624,28 @@ int service_resolve_add_deps(genalloc *tokeep, resolve_service_t *res, char cons
     int e = 0 ;
     size_t pos = 0 ;
     stralloc tmp = STRALLOC_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     char *name = res->sa.s + res->name ;
-    char *deps = res->sa.s + res->deps ;
-    if (!resolve_cmp(tokeep, name, SERVICE_STRUCT) && (!obstr_equal(name,SS_MASTER+1)))
+    char *deps = res->sa.s + res->depends ;
+    if (!resolve_cmp(tokeep, name, DATA_SERVICE) && (!obstr_equal(name,SS_MASTER+1)))
         if (!resolve_append(tokeep,wres)) goto err ;
 
-    if (res->ndeps)
+    if (res->ndepends)
     {
         if (!sastr_clean_string(&tmp,deps)) return 0 ;
         for (;pos < tmp.len ; pos += strlen(tmp.s + pos) + 1)
         {
             resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
-            resolve_wrapper_t_ref dwres = resolve_set_struct(SERVICE_STRUCT, &dres) ;
+            resolve_wrapper_t_ref dwres = resolve_set_struct(DATA_SERVICE, &dres) ;
             char *dname = tmp.s + pos ;
             if (!resolve_check(src,dname)) goto err ;
             if (!resolve_read(dwres,src,dname)) goto err ;
-            if (dres.ndeps && !resolve_cmp(tokeep, dname, SERVICE_STRUCT))
+            if (dres.ndepends && !resolve_cmp(tokeep, dname, DATA_SERVICE))
             {
                 if (!service_resolve_add_deps(tokeep,&dres,src)) goto err ;
             }
-            if (!resolve_cmp(tokeep, dname, SERVICE_STRUCT))
+            if (!resolve_cmp(tokeep, dname, DATA_SERVICE))
             {
                 if (!resolve_append(tokeep,dwres)) goto err ;
             }
@@ -1632,7 +1669,7 @@ int service_resolve_add_rdeps(genalloc *tokeep, resolve_service_t *res, char con
     stralloc tmp = STRALLOC_ZERO ;
     stralloc nsv = STRALLOC_ZERO ;
     ss_state_t sta = STATE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     char const *exclude[2] = { SS_MASTER + 1, 0 } ;
 
     char *name = res->sa.s + res->name ;
@@ -1647,23 +1684,23 @@ int service_resolve_add_rdeps(genalloc *tokeep, resolve_service_t *res, char con
 
     if (!sastr_dir_get(&nsv,s,exclude,S_IFREG)) goto err ;
 
-    if (!resolve_cmp(tokeep, name, SERVICE_STRUCT) && (!obstr_equal(name,SS_MASTER+1)))
+    if (!resolve_cmp(tokeep, name, DATA_SERVICE) && (!obstr_equal(name,SS_MASTER+1)))
     {
         if (!resolve_append(tokeep,wres)) goto err ;
     }
-    if ((res->type == TYPE_BUNDLE || res->type == TYPE_MODULE) && res->ndeps)
+    if ((res->type == TYPE_BUNDLE || res->type == TYPE_MODULE) && res->ndepends)
     {
-        uint32_t deps = res->type == TYPE_MODULE ? res->contents : res->deps ;
+        uint32_t deps = res->type == TYPE_MODULE ? res->contents : res->depends ;
         if (!sastr_clean_string(&tmp,res->sa.s + deps)) goto err ;
         resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
-        resolve_wrapper_t_ref dwres = resolve_set_struct(SERVICE_STRUCT, &dres) ;
+        resolve_wrapper_t_ref dwres = resolve_set_struct(DATA_SERVICE, &dres) ;
         for (; a < tmp.len ; a += strlen(tmp.s + a) + 1)
         {
             char *name = tmp.s + a ;
             if (!resolve_check(src,name)) goto err ;
             if (!resolve_read(dwres,src,name)) goto err ;
             if (dres.type == TYPE_CLASSIC) continue ;
-            if (!resolve_cmp(tokeep, name, SERVICE_STRUCT))
+            if (!resolve_cmp(tokeep, name, DATA_SERVICE))
             {
                 if (!resolve_append(tokeep,dwres)) goto err ;
                 if (!service_resolve_add_rdeps(tokeep,&dres,src)) goto err ;
@@ -1676,7 +1713,7 @@ int service_resolve_add_rdeps(genalloc *tokeep, resolve_service_t *res, char con
         int dtype = 0 ;
         tmp.len = 0 ;
         resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
-        resolve_wrapper_t_ref dwres = resolve_set_struct(SERVICE_STRUCT, &dres) ;
+        resolve_wrapper_t_ref dwres = resolve_set_struct(DATA_SERVICE, &dres) ;
         char *dname = nsv.s + b ;
         if (obstr_equal(name,dname)) { resolve_free(wres) ; continue ; }
         if (!resolve_check(src,dname)) goto err ;
@@ -1691,13 +1728,13 @@ int service_resolve_add_rdeps(genalloc *tokeep, resolve_service_t *res, char con
             if (dtype != type || (!dres.disen && !sta.unsupervise)){ resolve_free(dwres) ; continue ; }
         }
         else if (dtype != type || (!dres.disen)){ resolve_free(dwres) ; continue ; }
-        if (dres.type == TYPE_BUNDLE && !dres.ndeps){ resolve_free(dwres) ; continue ; }
+        if (dres.type == TYPE_BUNDLE && !dres.ndepends){ resolve_free(dwres) ; continue ; }
 
-        if (!resolve_cmp(tokeep, dname, SERVICE_STRUCT))
+        if (!resolve_cmp(tokeep, dname, DATA_SERVICE))
         {
-            if (dres.ndeps)// || (dres.type == TYPE_BUNDLE && dres.ndeps) || )
+            if (dres.ndepends)// || (dres.type == TYPE_BUNDLE && dres.ndepends) || )
             {
-                if (!sastr_clean_string(&tmp,dres.sa.s + dres.deps)) goto err ;
+                if (!sastr_clean_string(&tmp,dres.sa.s + dres.depends)) goto err ;
                 /** we must check every service inside the module to not add as
                  * rdeps a service declared inside the module.
                  * eg.
@@ -1743,14 +1780,14 @@ int service_resolve_add_logger(genalloc *ga,char const *src)
     for (; i < genalloc_len(resolve_service_t,ga) ; i++)
     {
         resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-        resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
         resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
-        resolve_wrapper_t_ref dwres = resolve_set_struct(SERVICE_STRUCT, &dres) ;
+        resolve_wrapper_t_ref dwres = resolve_set_struct(DATA_SERVICE, &dres) ;
         if (!service_resolve_copy(&res,&genalloc_s(resolve_service_t,ga)[i])) goto err ;
 
         char *string = res.sa.s ;
         char *name = string + res.name ;
-        if (!resolve_cmp(&gatmp, name, SERVICE_STRUCT))
+        if (!resolve_cmp(&gatmp, name, DATA_SERVICE))
         {
             if (!resolve_append(&gatmp,wres))
                 goto err ;
@@ -1760,21 +1797,53 @@ int service_resolve_add_logger(genalloc *ga,char const *src)
                 if (!resolve_check(src,string + res.logger)) goto err ;
                 if (!resolve_read(dwres,src,string + res.logger))
                     goto err ;
-                if (!resolve_cmp(&gatmp, string + res.logger, SERVICE_STRUCT))
+                if (!resolve_cmp(&gatmp, string + res.logger, DATA_SERVICE))
                     if (!resolve_append(&gatmp,dwres)) goto err ;
             }
         }
         resolve_free(wres) ;
         resolve_free(dwres) ;
     }
-    resolve_deep_free(SERVICE_STRUCT, ga) ;
+    resolve_deep_free(DATA_SERVICE, ga) ;
     if (!genalloc_copy(resolve_service_t,ga,&gatmp)) goto err ;
 
     e = 1 ;
 
     err:
         genalloc_free(resolve_service_t,&gatmp) ;
-        resolve_deep_free(SERVICE_STRUCT, &gatmp) ;
+        resolve_deep_free(DATA_SERVICE, &gatmp) ;
+        return e ;
+}
+
+int service_resolve_create_master(char const *base, char const *treename)
+{
+    int e = 0 ;
+    size_t baselen = strlen(base), treelen = strlen(treename) ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    char dst[baselen + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1] ;
+
+    auto_strings(dst, base, SS_SYSTEM, "/", treename) ;
+
+    resolve_init(wres) ;
+
+    res.name = resolve_add_string(wres, SS_MASTER + 1) ;
+    res.description = resolve_add_string(wres, "inner bundle - do not use it") ;
+    res.tree = resolve_add_string(wres, dst) ;
+    res.treename = resolve_add_string(wres, treename) ;
+    res.type = TYPE_BUNDLE ;
+    res.disen = 1 ;
+
+    auto_strings(dst + baselen + SS_SYSTEM_LEN + 1 + treelen, SS_SVDIRS) ;
+
+    log_trace("write resolve file of inner bundle") ;
+    if (!resolve_write(wres, dst, SS_MASTER + 1))
+        goto err ;
+
+    e = 1 ;
+
+    err:
+        resolve_free(wres) ;
         return e ;
 }
 
@@ -1792,7 +1861,7 @@ int service_resolve_write_master(ssexec_t *info, ss_resolve_graph_t *graph,char 
     stralloc inres = STRALLOC_ZERO ;
     stralloc gain = STRALLOC_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
     size_t dirlen = strlen(dir) ;
 
@@ -1853,8 +1922,8 @@ int service_resolve_write_master(ssexec_t *info, ss_resolve_graph_t *graph,char 
     res.tree = resolve_add_string(wres,info->tree.s) ;
     res.live = resolve_add_string(wres,info->live.s) ;
     res.type = TYPE_BUNDLE ;
-    res.deps = resolve_add_string(wres,inres.s) ;
-    res.ndeps = genalloc_len(resolve_service_t,&graph->sorted) ;
+    res.depends = resolve_add_string(wres,inres.s) ;
+    res.ndepends = genalloc_len(resolve_service_t,&graph->sorted) ;
     res.runat = resolve_add_string(wres,runat) ;
     res.state = resolve_add_string(wres,state) ;
 

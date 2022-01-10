@@ -53,7 +53,7 @@ enum visit_e
 } ;
 
 
-#define SERVICE_STRUCT 0
+#define DATA_SERVICE 0
 
 typedef struct resolve_service_s resolve_service_t, *resolve_service_t_ref ;
 struct resolve_service_s
@@ -68,7 +68,8 @@ struct resolve_service_s
     uint32_t logreal ;
     uint32_t logassoc ;
     uint32_t dstlog ;
-    uint32_t deps ; // for module -> list of s6-rc service
+    uint32_t depends ; // for module -> list of s6-rc service
+    uint32_t requiredby ;
     uint32_t optsdeps ; //optional dependencies
     uint32_t extdeps ; //external dependencies
     uint32_t contents ; // module -> list of s6-rc and s6 service
@@ -87,14 +88,15 @@ struct resolve_service_s
     uint32_t real_exec_finish ;
 
     uint32_t type ;
-    uint32_t ndeps ;
+    uint32_t ndepends ;
+    uint32_t nrequiredby ;
     uint32_t noptsdeps ;
     uint32_t nextdeps ;
     uint32_t ncontents ;
     uint32_t down ;
     uint32_t disen ;//disable->0,enable->1
 } ;
-#define RESOLVE_SERVICE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_SERVICE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
 typedef enum resolve_service_enum_e resolve_service_enum_t, *resolve_service_enum_t_ref;
 enum resolve_service_enum_e
@@ -106,7 +108,8 @@ enum resolve_service_enum_e
     SERVICE_ENUM_LOGREAL,
     SERVICE_ENUM_LOGASSOC,
     SERVICE_ENUM_DSTLOG,
-    SERVICE_ENUM_DEPS,
+    SERVICE_ENUM_DEPENDS,
+    SERVICE_ENUM_REQUIREDBY,
     SERVICE_ENUM_OPTSDEPS,
     SERVICE_ENUM_EXTDEPS,
     SERVICE_ENUM_CONTENTS,
@@ -124,7 +127,8 @@ enum resolve_service_enum_e
     SERVICE_ENUM_EXEC_FINISH,
     SERVICE_ENUM_REAL_EXEC_FINISH,
     SERVICE_ENUM_TYPE,
-    SERVICE_ENUM_NDEPS,
+    SERVICE_ENUM_NDEPENDS,
+    SERVICE_ENUM_NREQUIREDBY,
     SERVICE_ENUM_NOPTSDEPS,
     SERVICE_ENUM_NEXTDEPS,
     SERVICE_ENUM_NCONTENTS,
@@ -158,12 +162,13 @@ extern int service_intree(stralloc *svtree, char const *svname, char const *tree
 extern int service_read_cdb(cdb *c, resolve_service_t *res) ;
 extern int service_write_cdb(cdbmaker *c, resolve_service_t *sres) ;
 extern int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res) ;
-extern int service_resolve_sort_bytype(genalloc *gares, stralloc *list, char const *src) ;
+extern int service_resolve_sort_bytype(stralloc *list, char const *src) ;
 extern int service_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst) ;
 extern int service_resolve_setlognwrite(resolve_service_t *sv, char const *dst) ;
+extern int service_resolve_create_master(char const *base, char const *treename) ;
 extern int service_resolve_write_master(ssexec_t *info, ss_resolve_graph_t *graph, char const *dir, unsigned int reverse) ;
 extern int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t field, char const *data) ;
-extern int service_resolve_field_to_sa(stralloc *sa, resolve_service_t *res, resolve_service_enum_t field) ;
+extern int service_resolve_field_tosa(stralloc *sa, resolve_service_t *res, resolve_service_enum_t field) ;
 /**
  *
  * obsolete function
@@ -176,7 +181,7 @@ extern int service_resolve_add_logger(genalloc *ga,char const *src) ;
 
 
 
-/** Graph function */
+/** obsolete Graph function */
 extern void ss_resolve_graph_ndeps_free(ss_resolve_graph_ndeps_t *graph) ;
 extern void ss_resolve_graph_free(ss_resolve_graph_t *graph) ;
 extern int ss_resolve_graph_src(ss_resolve_graph_t *graph, char const *dir, unsigned int reverse, unsigned int what) ;
