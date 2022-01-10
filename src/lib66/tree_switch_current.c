@@ -28,6 +28,7 @@
 #include <66/config.h>
 #include <66/constants.h>
 #include <66/utils.h>
+#include <66/resolve.h>
 
 
 int tree_switch_current(char const *base, char const *treename)
@@ -35,14 +36,14 @@ int tree_switch_current(char const *base, char const *treename)
     log_flow() ;
 
     ssize_t r ;
+    size_t baselen = strlen(base), treelen = strlen(treename), newlen = 0, packlen = 0 ;
+    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
     char pack[UID_FMT] ;
-    size_t baselen = strlen(base) ;
-    size_t treelen = strlen(treename) ;
-    size_t newlen ;
-    size_t packlen ;
+    char dst[baselen + SS_TREE_CURRENT_LEN + 1 + packlen + treelen + 2 + 1] ;
+
     packlen = uint_fmt(pack,MYUID) ;
     pack[packlen] = 0 ;
-    char dst[baselen + SS_TREE_CURRENT_LEN + 1 + packlen + treelen + 2 + 1] ;
 
     auto_strings(dst,base,SS_SYSTEM,"/",treename) ;
 
@@ -64,6 +65,11 @@ int tree_switch_current(char const *base, char const *treename)
     auto_string_from(dst,baselen,SS_SYSTEM,"/",treename) ;
 
     if (!atomic_symlink(dst, current,"tree_switch_current")) return 0 ;
+
+    if (!resolve_modify_field_g(wres, base, SS_MASTER + 1, TREE_ENUM_CURRENT,  treename))
+        log_warnu_return(LOG_EXIT_ZERO, "modify field: ", resolve_tree_field_table[TREE_ENUM_CURRENT].field," of tree: ", SS_MASTER + 1, " with value: ", treename) ;
+
+    resolve_free(wres) ;
 
     return 1 ;
 }
