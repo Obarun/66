@@ -51,7 +51,7 @@ int rc_init(ssexec_t *info, char const *const *envp)
     ss_state_t sta = STATE_ZERO ;
     stralloc sares = STRALLOC_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     stralloc sasvc = STRALLOC_ZERO ;
     genalloc gares = GENALLOC_ZERO ; //resolve_service_t type
 
@@ -81,7 +81,7 @@ int rc_init(ssexec_t *info, char const *const *envp)
 
     if (!resolve_check(sares.s,SS_MASTER +1)) { log_warnu("find inner bundle -- please make a bug report") ; goto err ; }
     if (!resolve_read(wres,sares.s,SS_MASTER + 1)) { log_warnusys("read resolve file of inner bundle") ; goto err ; }
-    if (!res.ndeps)
+    if (!res.ndepends)
     {
         log_info("Initialization: no atomic services into tree: ",info->treename.s) ;
         empty = 1 ;
@@ -128,13 +128,13 @@ int rc_init(ssexec_t *info, char const *const *envp)
 
     if (wstat) { log_warnu("init db of tree: ",info->treename.s) ; goto err ; }
 
-    if (!sastr_clean_string(&sasvc,res.sa.s + res.deps)) { log_warnusys("clean dependencies of inner bundle") ; goto err ; }
+    if (!sastr_clean_string(&sasvc,res.sa.s + res.depends)) { log_warnusys("clean dependencies of inner bundle") ; goto err ; }
 
     for (; pos < sasvc.len ; pos += strlen(sasvc.s + pos) +1)
     {
         char *name = sasvc.s + pos ;
         resolve_service_t tmp = RESOLVE_SERVICE_ZERO ;
-        resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &tmp) ;
+        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &tmp) ;
         if (!resolve_check(sares.s,name)){ log_warnsys("unknown service: ",name) ; goto err ; }
         if (!resolve_read(wres,sares.s,name)) { log_warnusys("read resolve file of: ",name) ; goto err ; }
         if (!service_resolve_add_deps(&gares,&tmp,sares.s)) { log_warnusys("resolve dependencies of: ",name) ; goto err ; }
@@ -161,7 +161,7 @@ int rc_init(ssexec_t *info, char const *const *envp)
     e = empty ? 2 : 1 ;
 
     err:
-        resolve_deep_free(SERVICE_STRUCT, &gares) ;
+        resolve_deep_free(DATA_SERVICE, &gares) ;
         stralloc_free(&sasvc) ;
         resolve_free(wres) ;
         stralloc_free(&sares) ;
