@@ -16,6 +16,7 @@
 
 #include <string.h>
 
+#include <oblibs/string.h>
 #include <oblibs/directory.h>
 #include <oblibs/log.h>
 
@@ -31,9 +32,7 @@ int tree_copy(stralloc *dir, char const *tree,char const *treename)
     char *fdir = 0 ;
     size_t treelen = strlen(tree) ;
     char tmp[treelen + SS_SVDIRS_LEN + 1] ;
-    memcpy(tmp,tree,treelen) ;
-    memcpy(tmp + treelen,SS_SVDIRS,SS_SVDIRS_LEN) ;
-    tmp[treelen + SS_SVDIRS_LEN] = 0 ;
+    auto_strings(tmp, tree, SS_SVDIRS) ;
 
     fdir = dir_create_tmp(dir,"/tmp",treename) ;
     if (!fdir) return 0 ;
