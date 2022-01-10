@@ -45,12 +45,11 @@ svc_init_pipe.o
 svc_send.o
 svc_switch_to.o
 svc_unsupervise.o
+tree.o
 tree_cmd_state.o
 tree_copy.o
 tree_copy_tmp.o
-tree_find_current.o
 tree_get_permissions.o
-tree_isvalid.o
 tree_resolve.o
 tree_seed.o
 tree_sethome.o
