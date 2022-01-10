@@ -237,8 +237,8 @@ enum enum_seed_e
     SEED_ALLOW ,
     SEED_DENY ,
     SEED_CURRENT ,
-    SEED_GROUP ,
-    SEED_SERVICES ,
+    SEED_GROUPS ,
+    SEED_CONTENTS ,
     SEED_ENDOFKEY
 
 } ;

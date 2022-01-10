@@ -160,8 +160,8 @@ char const *enum_str_seed[] = {
     "allow" ,
     "deny" ,
     "current" ,
-    "group" ,
-    "services" ,
+    "groups" ,
+    "contents" ,
     0
 } ;
 
