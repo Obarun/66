@@ -57,7 +57,7 @@ int write_services(sv_alltype *sv, char const *workdir, uint8_t force, uint8_t c
 
     {
         resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-        resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
         if (resolve_check(workdir,name))
         {
             if (!resolve_read(wres,workdir,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;

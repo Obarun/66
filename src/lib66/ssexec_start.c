@@ -220,7 +220,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
     genalloc gares = GENALLOC_ZERO ; //resolve_service_t
     resolve_service_t_ref pres ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     ss_state_t sta = STATE_ZERO ;
 
     cl = rc = logname = 0  ;
@@ -279,7 +279,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
         int reload = 0 ;
         int reverse = 0 ;
         pres = &genalloc_s(resolve_service_t,&gares)[i] ;
-        resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, pres) ;
+        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, pres) ;
         char *string = pres->sa.s ;
         char *name = string + pres->name ;
         logname = 0 ;
@@ -296,7 +296,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
             log_die(LOG_EXIT_USER,"service: ",name," was disabled, you can only stop it") ;
 
         logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-        if (logname > 0 && (!resolve_cmp(&gares, string + pres->logassoc, SERVICE_STRUCT)))
+        if (logname > 0 && (!resolve_cmp(&gares, string + pres->logassoc, DATA_SERVICE)))
         {
             if (RELOAD > 1) log_die(LOG_EXIT_SYS,"-R signal is not allowed to a logger") ;
             if (sta.init) reverse = 1 ;
@@ -364,7 +364,7 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
         if (!svc_switch_to(info,SS_SWSRC))
             log_dieu(LOG_EXIT_SYS,"switch classic service list of: ",info->treename.s," to source") ;
 
-        resolve_deep_free(SERVICE_STRUCT, &nclassic) ;
+        resolve_deep_free(DATA_SERVICE, &nclassic) ;
     }
     if (rc)
     {
@@ -380,11 +380,11 @@ int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexe
             if (!db_switch_to(info,envp,SS_SWSRC))
                 log_dieu(LOG_EXIT_SYS,"switch atomic services list of: ",info->treename.s," to source") ;
         }
-        resolve_deep_free(SERVICE_STRUCT, &nrc) ;
+        resolve_deep_free(DATA_SERVICE, &nrc) ;
     }
     stralloc_free(&sares) ;
     stralloc_free(&sasta) ;
-    resolve_deep_free(SERVICE_STRUCT, &gares) ;
+    resolve_deep_free(DATA_SERVICE, &gares) ;
     resolve_free(wres) ;
 
     return 0 ;

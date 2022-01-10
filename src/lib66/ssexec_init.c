@@ -106,7 +106,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
         {
             char *name = sasvc.s + i ;
             resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-            resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+            resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
             if (!resolve_check(sares.s,name)) log_diesys(LOG_EXIT_USER,"unknown service: ",name) ;
             if (!resolve_read(wres,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
             if (!service_resolve_add_deps(&gares,&res,sares.s)) log_dieusys(LOG_EXIT_SYS,"resolve dependencies of: ",name) ;
@@ -151,7 +151,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 
     stralloc_free(&sares) ;
     stralloc_free(&sasvc) ;
-    resolve_deep_free(SERVICE_STRUCT, &gares) ;
+    resolve_deep_free(DATA_SERVICE, &gares) ;
 
     /** db already initiated? */
     if (db)

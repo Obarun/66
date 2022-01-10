@@ -88,7 +88,7 @@ int main(int argc, char const *const *argv)
     int found = 0 ;
     uint8_t logger = 0 ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     stralloc satree = STRALLOC_ZERO ;
     stralloc src = STRALLOC_ZERO ;
     stralloc tmp = STRALLOC_ZERO ;

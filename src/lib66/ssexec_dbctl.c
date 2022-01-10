@@ -228,7 +228,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
     stralloc sares = STRALLOC_ZERO ;
     ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
     up = down = reload = ret = reverse = 0 ;
 
@@ -267,7 +267,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
 
         if (!resolve_check(sares.s,mainsv)) log_diesys(LOG_EXIT_SYS,"inner bundle doesn't exit -- please make a bug report") ;
         if (!resolve_read(wres,sares.s,mainsv)) log_dieusys(LOG_EXIT_SYS,"read resolve file of inner bundle") ;
-        if (res.ndeps)
+        if (res.ndepends)
         {
             if (!resolve_append(&gares,wres)) log_dieusys(LOG_EXIT_SYS,"append services selection with inner bundle") ;
         }
@@ -331,7 +331,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
     {
         int ireverse = reverse ;
         int logname = get_rstrlen_until(genalloc_s(resolve_service_t,&gares)[i].sa.s + genalloc_s(resolve_service_t,&gares)[i].name,SS_LOG_SUFFIX) ;
-        if (logname > 0 && (!resolve_cmp(&gares,genalloc_s(resolve_service_t,&gares)[i].sa.s + genalloc_s(resolve_service_t,&gares)[i].logassoc, SERVICE_STRUCT)) && down)
+        if (logname > 0 && (!resolve_cmp(&gares,genalloc_s(resolve_service_t,&gares)[i].sa.s + genalloc_s(resolve_service_t,&gares)[i].logassoc, DATA_SERVICE)) && down)
             ireverse = 1  ;
 
         if (reload) ireverse = 1 ;
@@ -357,7 +357,7 @@ int ssexec_dbctl(int argc, char const *const *argv,char const *const *envp,ssexe
     stralloc_free(&sares) ;
     ss_resolve_graph_free(&graph) ;
     resolve_free(wres) ;
-    resolve_deep_free(SERVICE_STRUCT, &gares) ;
+    resolve_deep_free(DATA_SERVICE, &gares) ;
 
     return ret ;
 }

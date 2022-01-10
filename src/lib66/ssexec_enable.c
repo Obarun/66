@@ -65,8 +65,8 @@ static void check_identifier(char const *name)
     log_flow() ;
 
     int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-    if (logname > 0) log_die(LOG_EXIT_USER,"service: ",name,": ends with reserved suffix -log") ;
-    if (!memcmp(name, SS_MASTER + 1, 6)) log_die(LOG_EXIT_USER,"service: ",name,": starts with reserved prefix Master") ;
+    if (logname > 0) log_die(LOG_EXIT_USER,"service name: ",name,": ends with reserved suffix -log") ;
+    if (!memcmp(name, SS_MASTER + 1, 6)) log_die(LOG_EXIT_USER,"service name: ",name,": starts with reserved prefix Master") ;
     if (!strcmp(name,SS_SERVICE)) log_die(LOG_EXIT_USER,"service as service name is a reserved name") ;
     if (!strcmp(name,"service@")) log_die(LOG_EXIT_USER,"service@ as service name is a reserved name") ;
 }
@@ -186,8 +186,8 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
         size_t workdirlen = strlen(workdir) ;
         resolve_service_t res = RESOLVE_SERVICE_ZERO ;
         resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
-        resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
-        resolve_wrapper_t_ref dwres = resolve_set_struct(SERVICE_STRUCT, &dres) ;
+        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+        resolve_wrapper_t_ref dwres = resolve_set_struct(DATA_SERVICE, &dres) ;
         stralloc salist = STRALLOC_ZERO ;
         genalloc gamodule = GENALLOC_ZERO ;
         ss_resolve_graph_t mgraph = RESOLVE_GRAPH_ZERO ;
@@ -223,7 +223,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
 
                     if (dres.type != TYPE_CLASSIC)
                     {
-                        if (resolve_search(&gamodule, name, SERVICE_STRUCT) == -1)
+                        if (resolve_search(&gamodule, name, DATA_SERVICE) == -1)
                         {
                             if (!resolve_append(&gamodule,dwres))
                             {
@@ -274,7 +274,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
                 goto err ;
             }
 
-            resolve_deep_free(SERVICE_STRUCT, &gamodule) ;
+            resolve_deep_free(DATA_SERVICE, &gamodule) ;
             ss_resolve_graph_free(&mgraph) ;
         }
 
@@ -283,7 +283,7 @@ void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun
         return ;
 
         err:
-            resolve_deep_free(SERVICE_STRUCT, &gamodule) ;
+            resolve_deep_free(DATA_SERVICE, &gamodule) ;
             ss_resolve_graph_free(&mgraph) ;
             resolve_free(wres) ;
             resolve_free(dwres) ;

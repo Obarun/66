@@ -499,7 +499,7 @@ int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexe
     stralloc sares = STRALLOC_ZERO ;
     ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     ss_state_t sta = STATE_ZERO ;
 
     char *sig = 0 ;

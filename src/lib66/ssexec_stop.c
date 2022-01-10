@@ -129,7 +129,7 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
     genalloc gares = GENALLOC_ZERO ; //resolve_service_t
     resolve_service_t_ref pres ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     ss_state_t sta = STATE_ZERO ;
 
     cl = rc = sigopt = 0 ;
@@ -192,12 +192,12 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
 
         if (obstr_equal(name,SS_MASTER + 1))
         {
-            if (pres->ndeps) goto append ;
+            if (pres->ndepends) goto append ;
             else continue ;
         }
 
         /** logger cannot be unsupervised alone */
-        if (logname > 0 && (!resolve_cmp(&gares,string + pres->logassoc, SERVICE_STRUCT)))
+        if (logname > 0 && (!resolve_cmp(&gares,string + pres->logassoc, DATA_SERVICE)))
         {
             if (UNSUP) log_die(LOG_EXIT_SYS,"logger detected - unsupervise request is not allowed") ;
         }
@@ -263,7 +263,7 @@ int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec
     }
     stralloc_free(&sares) ;
     resolve_free(wres) ;
-    resolve_deep_free(SERVICE_STRUCT, &gares) ;
+    resolve_deep_free(DATA_SERVICE, &gares) ;
 
     return 0 ;
 }

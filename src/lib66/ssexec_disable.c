@@ -57,7 +57,7 @@ int svc_remove(genalloc *tostop,resolve_service_t *res, char const *src,ssexec_t
     genalloc rdeps = GENALLOC_ZERO ;
     stralloc dst = STRALLOC_ZERO ;
     resolve_service_t cp = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &cp) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &cp) ;
     ss_state_t sta = STATE_ZERO ;
 
     size_t newlen ;
@@ -102,7 +102,7 @@ int svc_remove(genalloc *tostop,resolve_service_t *res, char const *src,ssexec_t
     for (;i < genalloc_len(resolve_service_t,&rdeps) ; i++)
     {
         resolve_service_t_ref pres = &genalloc_s(resolve_service_t,&rdeps)[i] ;
-        resolve_wrapper_t_ref dwres = resolve_set_struct(SERVICE_STRUCT, pres) ;
+        resolve_wrapper_t_ref dwres = resolve_set_struct(DATA_SERVICE, pres) ;
         char *str = pres->sa.s ;
         char *name = str + pres->name ;
         char *ste = str + pres->state ;
@@ -172,7 +172,7 @@ int svc_remove(genalloc *tostop,resolve_service_t *res, char const *src,ssexec_t
             log_trace("Delete resolve file of: ",name) ;
             resolve_rmfile(src,name) ;
         }
-        if (!resolve_cmp(tostop, name, SERVICE_STRUCT))
+        if (!resolve_cmp(tostop, name, DATA_SERVICE))
             if (!resolve_append(tostop,wres)) goto err ;
 
         free(dwres) ;
@@ -182,7 +182,7 @@ int svc_remove(genalloc *tostop,resolve_service_t *res, char const *src,ssexec_t
 
     err:
         resolve_free(wres) ;
-        resolve_deep_free(SERVICE_STRUCT, &rdeps) ;
+        resolve_deep_free(DATA_SERVICE, &rdeps) ;
         stralloc_free(&dst) ;
         return e ;
 }
@@ -196,7 +196,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
     genalloc gares = GENALLOC_ZERO ; //resolve_service_t
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_service_t_ref pres ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
     r = nclassic = nlongrun = stop = logname = force = 0 ;
 
@@ -291,7 +291,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
             log_die_nclean(LOG_EXIT_USER,&cleanup,"nice try peon") ;
 
         logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-        if (logname > 0 && (!resolve_cmp(&gares, string + pres->logassoc, SERVICE_STRUCT)))
+        if (logname > 0 && (!resolve_cmp(&gares, string + pres->logassoc, DATA_SERVICE)))
             log_die_nclean(LOG_EXIT_USER,&cleanup,"logger detected - disabling is not allowed") ;
 
         if (!pres->disen && !FORCE)
@@ -345,7 +345,7 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 
     stralloc_free(&workdir) ;
     resolve_free(wres) ;
-    resolve_deep_free(SERVICE_STRUCT, &gares) ;
+    resolve_deep_free(DATA_SERVICE, &gares) ;
 
     for (unsigned int i = 0 ; i < genalloc_len(resolve_service_t,&tostop); i++)
         log_info("Disabled successfully: ",genalloc_s(resolve_service_t,&tostop)[i].sa.s + genalloc_s(resolve_service_t,&tostop)[i].name) ;
@@ -366,12 +366,12 @@ int ssexec_disable(int argc, char const *const *argv,char const *const *envp,sse
 
         if (ssexec_stop(nargc,newargv,envp,info))
         {
-            resolve_deep_free(SERVICE_STRUCT, &tostop) ;
+            resolve_deep_free(DATA_SERVICE, &tostop) ;
             return 111 ;
         }
     }
 
-    resolve_deep_free(SERVICE_STRUCT, &tostop) ;
+    resolve_deep_free(DATA_SERVICE, &tostop) ;
 
     return 0 ;
 }

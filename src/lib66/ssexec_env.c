@@ -214,7 +214,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
     stralloc savar = STRALLOC_ZERO ;
     stralloc salist = STRALLOC_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
     uint8_t todo = T_UNSET ;
 

@@ -332,7 +332,7 @@ int module_in_cmdline(genalloc *gares, resolve_service_t *res, char const *dir)
     int e = 0 ;
     stralloc tmp = STRALLOC_ZERO ;
     size_t pos = 0 ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     if (!resolve_append(gares,wres)) goto err ;
 
@@ -347,7 +347,7 @@ int module_in_cmdline(genalloc *gares, resolve_service_t *res, char const *dir)
         if (!resolve_check(dir,name)) goto err ;
         if (!resolve_read(wres,dir,name)) goto err ;
         if (res->type == TYPE_CLASSIC)
-            if (resolve_search(gares,name, SERVICE_STRUCT) < 0)
+            if (resolve_search(gares,name, DATA_SERVICE) < 0)
                 if (!resolve_append(gares,wres)) goto err ;
     }
 
@@ -368,7 +368,7 @@ int module_search_service(char const *src, genalloc *gares, char const *name,uin
     stralloc list = STRALLOC_ZERO ;
     stralloc tmp = STRALLOC_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     char const *exclude[2] = { SS_MASTER + 1, 0 } ;
 
     char t[srclen + SS_RESOLVE_LEN + 1] ;

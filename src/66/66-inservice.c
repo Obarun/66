@@ -340,67 +340,6 @@ static void info_display_live(char const *field,resolve_service_t *res)
     if (NOFIELD) info_display_field_name(field) ;
     info_display_string(res->sa.s + res->runat) ;
 }
-/**
- *
- *
- * bugged function
- *
- *
-void ss_graph_matrix_add_classic(graph_t *g, genalloc *gares)
-{
-    size_t pos = 0, bpos = 0, ccount = 0 ;
-    size_t cl[SS_MAX_SERVICE] ;
-
-    for (; pos < genalloc_len(resolve_service_t, gares) ; pos++) {
-
-        resolve_service_t_ref res = &genalloc_s(resolve_service_t, gares)[pos] ;
-
-        if (res->type == TYPE_CLASSIC) {
-
-            cl[ccount++] = pos ;
-
-        }
-    }
-
-    if (ccount) {
-
-        for (pos = 0 ; pos < ccount ; pos++)  {
-
-            char *str = genalloc_s(resolve_service_t, gares)[cl[pos]].sa.s ;
-            char *sv = str + genalloc_s(resolve_service_t, gares)[cl[pos]].name ;
-
-            graph_array_reverse(g->sort, g->sort_count) ;
-
-            for (bpos = 0 ; bpos < g->sort_count ; bpos++) {
-
-                char *service = g->data.s + genalloc_s(graph_hash_t,&g->hash)[g->sort[bpos]].vertex ;
-
-                int idx = resolve_search(gares, service, SERVICE_STRUCT) ;
-                if (genalloc_s(resolve_service_t, gares)[idx].type == TYPE_CLASSIC ||
-                    !strcmp(service, sv))
-                        continue ;
-
-                if (!graph_edge_add_g(g, service, sv))
-                    log_die(LOG_EXIT_SYS,"add edge: ", sv, " at vertex: ", service) ;
-
-                graph_free_matrix(g) ;
-                graph_free_sort(g) ;
-
-                if (!graph_matrix_build(g)) {
-                    graph_free_all(g) ;
-                    log_dieu(LOG_EXIT_SYS,"build the graph") ;
-                }
-
-                if (!graph_matrix_analyze_cycle(g))
-                    log_die(LOG_EXIT_SYS,"found cycle") ;
-            }
-
-            graph_array_reverse(g->sort, g->sort_count) ;
-        }
-    }
-
-}
-*/
 
 static void info_display_requiredby(char const *field, resolve_service_t *res)
 {
@@ -411,7 +350,7 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    if (!graph_service_build_bytree(&graph, res->sa.s + res->tree, 2))
+    if (!graph_build_service_bytree(&graph, res->sa.s + res->tree, 2))
         log_dieu(LOG_EXIT_SYS,"build the graph dependencies") ;
 
     unsigned int list[graph.mlen] ;
@@ -482,7 +421,7 @@ static void info_display_deps(char const *field, resolve_service_t *res)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    if (!graph_service_build_bytree(&graph, res->sa.s + res->tree, 2))
+    if (!graph_build_service_bytree(&graph, res->sa.s + res->tree, 2))
         log_dieu(LOG_EXIT_SYS,"build the graph dependencies") ;
 
     unsigned int list[graph.mlen] ;
@@ -968,7 +907,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
     char ownerstr[UID_FMT] ;
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     stralloc satree = STRALLOC_ZERO ;
 
     log_color = &log_color_disable ;

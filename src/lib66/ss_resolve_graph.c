@@ -41,7 +41,7 @@ void ss_resolve_graph_free(ss_resolve_graph_t *graph)
 {
     log_flow() ;
 
-    resolve_deep_free(SERVICE_STRUCT, &graph->name) ;
+    resolve_deep_free(DATA_SERVICE, &graph->name) ;
     genalloc_deepfree(ss_resolve_graph_ndeps_t,&graph->cp,ss_resolve_graph_ndeps_free) ;
     genalloc_free(resolve_service_t,&graph->sorted) ;
 }
@@ -116,14 +116,14 @@ int ss_resolve_graph_publish(ss_resolve_graph_t *graph,unsigned int reverse)
         ss_resolve_graph_ndeps_t rescp = RESOLVE_GRAPH_NDEPS_ZERO ;
         rescp.idx = a ;
 
-        if (genalloc_s(resolve_service_t,&graph->name)[a].ndeps)
+        if (genalloc_s(resolve_service_t,&graph->name)[a].ndepends)
         {
             sa.len = 0 ;
-            if (!sastr_clean_string(&sa, genalloc_s(resolve_service_t,&graph->name)[a].sa.s +  genalloc_s(resolve_service_t,&graph->name)[a].deps)) goto err ;
+            if (!sastr_clean_string(&sa, genalloc_s(resolve_service_t,&graph->name)[a].sa.s +  genalloc_s(resolve_service_t,&graph->name)[a].depends)) goto err ;
             for (b = 0 ; b < sa.len ; b += strlen(sa.s + b) + 1)
             {
                 char *deps = sa.s + b ;
-                r = resolve_search(&graph->name,deps, SERVICE_STRUCT) ;
+                r = resolve_search(&graph->name,deps, DATA_SERVICE) ;
                 if (r >= 0)
                 {
                     if (!genalloc_append(uint32_t,&rescp.ndeps,&r)) goto err ;
@@ -151,9 +151,9 @@ int ss_resolve_graph_build(ss_resolve_graph_t *graph,resolve_service_t *res,char
     int r, e = 0 ;
     char *string = res->sa.s ;
     char *name = string + res->name ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-    r = resolve_search(&graph->name, name, SERVICE_STRUCT) ;
+    r = resolve_search(&graph->name, name, DATA_SERVICE) ;
     if (r < 0)
     {
         if (!obstr_equal(name,SS_MASTER+1))
@@ -194,7 +194,7 @@ int ss_resolve_graph_src(ss_resolve_graph_t *graph, char const *dir, unsigned in
 
     stralloc sa = STRALLOC_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(SERVICE_STRUCT, &res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     size_t dirlen = strlen(dir), pos = 0 ;
     char const *exclude[2] = { 0 } ;
 
