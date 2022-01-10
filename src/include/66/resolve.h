@@ -48,11 +48,12 @@ struct resolve_wrapper_s
     void *obj ;
 } ;
 
+#ifndef RESOLVE_SET_SAWRES
 #define RESOLVE_SET_SAWRES(wres) \
     stralloc_ref sawres = 0 ; \
-    if (wres->type == SERVICE_STRUCT) sawres = (&((resolve_service_t *)wres->obj)->sa) ; \
-    else if (wres->type == TREE_STRUCT) sawres = (&((resolve_tree_t *)wres->obj)->sa) ;
-
+    if (wres->type == DATA_SERVICE) sawres = (&((resolve_service_t *)wres->obj)->sa) ; \
+    else if (wres->type == DATA_TREE) sawres = (&((resolve_tree_t *)wres->obj)->sa) ;
+#endif
 /**
  *
  * General API
@@ -69,7 +70,8 @@ extern int resolve_search(genalloc *ga, char const *name, uint8_t type) ;
 extern int resolve_cmp(genalloc *ga, char const *name, uint8_t type) ;
 extern void resolve_rmfile(char const *src,char const *name) ;
 extern ssize_t resolve_add_string(resolve_wrapper_t *wres, char const *data) ;
-
+extern int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *by) ;
+extern int resolve_modify_field_g(resolve_wrapper_t_ref wres, char const *base, char const *element, uint8_t field, char const *value) ;
 /**
  *
  * Freed

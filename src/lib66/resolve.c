@@ -22,6 +22,7 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
@@ -34,6 +35,8 @@
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/tree.h>
+#include <66/constants.h>
+#include <66/graph.h>
 
 /**
  *
@@ -51,6 +54,7 @@ resolve_wrapper_t *resolve_set_struct(uint8_t type, void *s)
     wres->type = type ;
     return wres ;
 } ;
+
 
 int resolve_init(resolve_wrapper_t *wres)
 {
@@ -119,7 +123,7 @@ int resolve_append(genalloc *ga, resolve_wrapper_t *wres)
 
     int e = 0 ;
 
-    if (wres->type == SERVICE_STRUCT) {
+    if (wres->type == DATA_SERVICE) {
 
         resolve_service_t cp = RESOLVE_SERVICE_ZERO ;
         if (!service_resolve_copy(&cp, ((resolve_service_t *)wres->obj)))
@@ -128,7 +132,7 @@ int resolve_append(genalloc *ga, resolve_wrapper_t *wres)
         if (!genalloc_append(resolve_service_t, ga, &cp))
             goto err ;
 
-    } else if (wres->type == TREE_STRUCT) {
+    } else if (wres->type == DATA_TREE) {
 
         resolve_tree_t cp = RESOLVE_TREE_ZERO ;
         if (!tree_resolve_copy(&cp, ((resolve_tree_t *)wres->obj)))
@@ -150,7 +154,7 @@ int resolve_search(genalloc *ga, char const *name, uint8_t type)
 
     size_t len, pos = 0 ;
 
-    if (type == SERVICE_STRUCT) {
+    if (type == DATA_SERVICE) {
 
         len = genalloc_len(resolve_service_t, ga) ;
 
@@ -161,7 +165,7 @@ int resolve_search(genalloc *ga, char const *name, uint8_t type)
                 return pos ;
         }
 
-    } else if (type == TREE_STRUCT) {
+    } else if (type == DATA_TREE) {
 
         len = genalloc_len(resolve_tree_t, ga) ;
 
@@ -182,7 +186,7 @@ int resolve_cmp(genalloc *ga, char const *name, uint8_t type)
 
     size_t len, pos = 0 ;
 
-    if (type == SERVICE_STRUCT) {
+    if (type == DATA_SERVICE) {
 
         len = genalloc_len(resolve_service_t, ga) ;
 
@@ -194,7 +198,7 @@ int resolve_cmp(genalloc *ga, char const *name, uint8_t type)
                 return 1 ;
         }
 
-    } else if (type == TREE_STRUCT) {
+    } else if (type == DATA_TREE) {
 
         len = genalloc_len(resolve_tree_t, ga) ;
 
@@ -247,6 +251,84 @@ ssize_t resolve_add_string(resolve_wrapper_t *wres, char const *data)
     return baselen ;
 }
 
+int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *by)
+{
+    log_flow() ;
+
+    int e = 0 ;
+
+    resolve_wrapper_t_ref mwres = 0 ;
+
+    if (wres->type == DATA_SERVICE) {
+
+        resolve_service_t_ref res = (resolve_service_t *)wres->obj  ;
+        mwres = resolve_set_struct(DATA_SERVICE, res) ;
+
+        log_trace("modify field ", resolve_service_field_table[field].field," of service ", res->sa.s + res->name, " with value: ", by) ;
+
+        if (!service_resolve_modify_field(res, field, by))
+            goto err ;
+
+    } else if (wres-> type == DATA_TREE) {
+
+        resolve_tree_t_ref res = (resolve_tree_t *)wres->obj  ;
+        mwres = resolve_set_struct(DATA_TREE, res) ;
+
+        log_trace("modify field ", resolve_tree_field_table[field].field," of tree ", res->sa.s + res->name, " with value: ", by) ;
+
+        if (!tree_resolve_modify_field(res, field, by))
+            goto err ;
+
+    }
+    e = 1 ;
+    err:
+        free(mwres) ;
+        return e ;
+}
+
+int resolve_modify_field_g(resolve_wrapper_t_ref wres, char const *base, char const *element, uint8_t field, char const *value)
+{
+
+    log_flow() ;
+
+    size_t baselen = strlen(base), tot = 0, treelen = 0 ;
+    char *treename = 0 ;
+
+    if (wres->type == DATA_SERVICE) {
+
+        treelen = strlen(((resolve_service_t *)wres->obj)->sa.s + ((resolve_service_t *)wres->obj)->treename) ;
+        tot = baselen + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 ;
+
+    } else {
+
+        tot = baselen + SS_SYSTEM_LEN + 1 ;
+    }
+
+    char solve[tot] ;
+
+    if (wres->type == DATA_SERVICE) {
+
+        treename = ((resolve_service_t *)wres->obj)->sa.s + ((resolve_service_t *)wres->obj)->treename ;
+        auto_strings(solve, base, SS_SYSTEM, "/", treename, SS_SVDIRS) ;
+
+    } else {
+
+        auto_strings(solve, base, SS_SYSTEM) ;
+    }
+
+    if (!resolve_read(wres, solve, element))
+        log_warnusys_return(LOG_EXIT_ZERO, "read resolve file of: ", solve, "/", element) ;
+
+    if (!resolve_modify_field(wres, field, value))
+        log_warnusys_return(LOG_EXIT_ZERO, "modify resolve file of: ", solve, "/", element) ;
+
+    if (!resolve_write(wres, solve, element))
+        log_warnusys_return(LOG_EXIT_ZERO, "write resolve file of :", solve, "/", element) ;
+
+    return 1 ;
+
+}
+
 /**
  *
  * FREED
@@ -270,14 +352,14 @@ void resolve_deep_free(uint8_t type, genalloc *g)
 
     size_t pos = 0 ;
 
-    if (type == SERVICE_STRUCT) {
+    if (type == DATA_SERVICE) {
 
         for (; pos < genalloc_len(resolve_service_t, g) ; pos++)
             stralloc_free(&genalloc_s(resolve_service_t, g)[pos].sa) ;
 
         genalloc_free(resolve_service_t, g) ;
 
-    } else if (type == TREE_STRUCT) {
+    } else if (type == DATA_TREE) {
 
         for (; pos < genalloc_len(resolve_tree_t, g) ; pos++)
             stralloc_free(&genalloc_s(resolve_tree_t, g)[pos].sa) ;
@@ -311,12 +393,12 @@ int resolve_read_cdb(resolve_wrapper_t *wres, char const *name)
         goto err ;
     }
 
-    if (wres->type == SERVICE_STRUCT) {
+    if (wres->type == DATA_SERVICE) {
 
         if (!service_read_cdb(&c, ((resolve_service_t *)wres->obj)))
             goto err ;
 
-    } else if (wres->type == TREE_STRUCT){
+    } else if (wres->type == DATA_TREE){
 
         if (!tree_read_cdb(&c, ((resolve_tree_t *)wres->obj)))
             goto err ;
@@ -357,12 +439,12 @@ int resolve_write_cdb(resolve_wrapper_t *wres, char const *dst, char const *name
         goto err ;
     }
 
-    if (wres->type == SERVICE_STRUCT) {
+    if (wres->type == DATA_SERVICE) {
 
         if (!service_write_cdb(&c, ((resolve_service_t *)wres->obj)))
             goto err ;
 
-    } else if (wres->type == TREE_STRUCT) {
+    } else if (wres->type == DATA_TREE) {
 
         if (!tree_write_cdb(&c, ((resolve_tree_t *)wres->obj)))
             goto err ;
@@ -432,7 +514,7 @@ int resolve_find_cdb(stralloc *result, cdb const *c, char const *key)
         log_warnusys_return(LOG_EXIT_LESSONE,"search on cdb key: ",key) ;
 
     if (!r)
-        log_warnusys_return(LOG_EXIT_ZERO,"unknown cdb key: ",key) ;
+        log_warn_return(LOG_EXIT_ZERO,"unknown cdb key: ",key) ;
 
     char pack[cdata.len + 1] ;
     memcpy(pack,cdata.s, cdata.len) ;
@@ -445,5 +527,4 @@ int resolve_find_cdb(stralloc *result, cdb const *c, char const *key)
 
     return x ;
 }
-
 
