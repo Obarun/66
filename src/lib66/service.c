@@ -433,7 +433,7 @@ int service_cmp_basedir(char const *dir)
  *
  * */
 
-resolve_service_field_table_t resolve_service_field_table[] = {
+resolve_field_table_t resolve_service_field_table[] = {
 
     [SERVICE_ENUM_NAME] = { .field = "name" },
     [SERVICE_ENUM_DESCRIPTION] = { .field = "description" },

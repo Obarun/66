@@ -24,6 +24,7 @@
 
 #include <66/parser.h>
 #include <66/ssexec.h>
+#include <66/resolve.h>
 
 
 /** Graph struct */
@@ -51,9 +52,6 @@ enum visit_e
     SS_GRAY,
     SS_BLACK
 } ;
-
-
-#define DATA_SERVICE 0
 
 typedef struct resolve_service_s resolve_service_t, *resolve_service_t_ref ;
 struct resolve_service_s
@@ -137,13 +135,7 @@ enum resolve_service_enum_e
     SERVICE_ENUM_ENDOFKEY
 } ;
 
-typedef struct resolve_service_field_table_s resolve_service_field_table_t, *resolve_service_field_table_t_ref ;
-struct resolve_service_field_table_s
-{
-    char *field ;
-} ;
-
-extern resolve_service_field_table_t resolve_service_field_table[] ;
+extern resolve_field_table_t resolve_service_field_table[] ;
 
 extern int service_isenabled(char const *sv) ;
 extern int service_isenabledat(stralloc *tree, char const *sv) ;

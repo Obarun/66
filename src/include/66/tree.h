@@ -16,6 +16,7 @@
 #define SS_TREE_H
 
 #include <sys/types.h>
+#include <stdint.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/cdb.h>
@@ -24,9 +25,6 @@
 #include <66/ssexec.h>
 #include <66/resolve.h>
 
-
-#define DATA_TREE 1
-#define DATA_TREE_MASTER 2
 #define TREE_GROUPS_BOOT "boot"
 #define TREE_GROUPS_BOOT_LEN (sizeof TREE_GROUPS_BOOT - 1)
 #define TREE_GROUPS_ADM "admin"
@@ -77,14 +75,6 @@ enum resolve_tree_enum_e
     TREE_ENUM_ENDOFKEY
 } ;
 
-typedef struct resolve_tree_field_table_s resolve_tree_field_table_t, *resolve_tree_field_table_t_ref ;
-struct resolve_tree_field_table_s
-{
-    char *field ;
-} ;
-
-extern resolve_tree_field_table_t resolve_tree_field_table[] ;
-
 typedef struct resolve_tree_master_s resolve_tree_master_t, *resolve_tree_master_t_ref ;
 struct resolve_tree_master_s
 {
@@ -112,7 +102,8 @@ enum resolve_tree_master_enum_e
     TREE_ENUM_MASTER_ENDOFKEY
 } ;
 
-extern resolve_tree_field_table_t resolve_tree_master_field_table[] ;
+extern resolve_field_table_t resolve_tree_field_table[] ;
+extern resolve_field_table_t resolve_tree_master_field_table[] ;
 
 typedef struct tree_seed_s tree_seed_t, tree_seed_t_ref ;
 struct tree_seed_s

@@ -31,7 +31,7 @@
 #include <66/graph.h>
 
 
-resolve_tree_field_table_t resolve_tree_field_table[] = {
+resolve_field_table_t resolve_tree_field_table[] = {
 
     [TREE_ENUM_NAME] = { .field = "name" },
     [TREE_ENUM_DEPENDS] = { .field = "depends" },
@@ -49,7 +49,7 @@ resolve_tree_field_table_t resolve_tree_field_table[] = {
     [TREE_ENUM_ENDOFKEY] = { .field = 0 }
 } ;
 
-resolve_tree_field_table_t resolve_tree_master_field_table[] = {
+resolve_field_table_t resolve_tree_master_field_table[] = {
 
     [TREE_ENUM_MASTER_NAME] = { .field = "name" },
     [TREE_ENUM_MASTER_ALLOW] = { .field = "allow" },
