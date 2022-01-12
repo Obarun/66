@@ -141,6 +141,15 @@ int resolve_append(genalloc *ga, resolve_wrapper_t *wres)
         if (!genalloc_append(resolve_tree_t, ga, &cp))
             goto err ;
 
+    } else if (wres->type == DATA_TREE_MASTER) {
+
+            resolve_tree_master_t cp = RESOLVE_TREE_MASTER_ZERO ;
+
+            if (!tree_resolve_master_copy(&cp, ((resolve_tree_master_t *)wres->obj)))
+                goto err ;
+
+            if (!genalloc_append(resolve_tree_master_t, ga, &cp))
+                goto err ;
     }
 
     e = 1 ;
@@ -269,7 +278,7 @@ int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *
         if (!service_resolve_modify_field(res, field, by))
             goto err ;
 
-    } else if (wres-> type == DATA_TREE) {
+    } else if (wres->type == DATA_TREE) {
 
         resolve_tree_t_ref res = (resolve_tree_t *)wres->obj  ;
         mwres = resolve_set_struct(DATA_TREE, res) ;
@@ -279,7 +288,17 @@ int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *
         if (!tree_resolve_modify_field(res, field, by))
             goto err ;
 
+    } else if (wres->type == DATA_TREE_MASTER) {
+
+        resolve_tree_master_t_ref res = (resolve_tree_master_t *)wres->obj  ;
+        mwres = resolve_set_struct(DATA_TREE_MASTER, res) ;
+
+        log_trace("modify field ", resolve_tree_master_field_table[field].field," of inner resolve file of trees with value: ", by) ;
+
+        if (!tree_resolve_master_modify_field(res, field, by))
+            goto err ;
     }
+
     e = 1 ;
     err:
         free(mwres) ;
@@ -291,27 +310,23 @@ int resolve_modify_field_g(resolve_wrapper_t_ref wres, char const *base, char co
 
     log_flow() ;
 
-    size_t baselen = strlen(base), tot = 0, treelen = 0 ;
+    size_t baselen = strlen(base), tot = baselen + SS_SYSTEM_LEN + 1, treelen = 0 ;
     char *treename = 0 ;
 
     if (wres->type == DATA_SERVICE) {
+        treename = ((resolve_service_t *)wres->obj)->sa.s + ((resolve_service_t *)wres->obj)->treename ;
+        treelen = strlen(treename) ;
+        tot += treelen + SS_SVDIRS_LEN + 1 ;
 
-        treelen = strlen(((resolve_service_t *)wres->obj)->sa.s + ((resolve_service_t *)wres->obj)->treename) ;
-        tot = baselen + SS_SYSTEM_LEN + 1 + treelen + SS_SVDIRS_LEN + 1 ;
-
-    } else {
-
-        tot = baselen + SS_SYSTEM_LEN + 1 ;
     }
 
     char solve[tot] ;
 
     if (wres->type == DATA_SERVICE) {
 
-        treename = ((resolve_service_t *)wres->obj)->sa.s + ((resolve_service_t *)wres->obj)->treename ;
         auto_strings(solve, base, SS_SYSTEM, "/", treename, SS_SVDIRS) ;
 
-    } else {
+    } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
 
         auto_strings(solve, base, SS_SYSTEM) ;
     }
@@ -365,6 +380,13 @@ void resolve_deep_free(uint8_t type, genalloc *g)
             stralloc_free(&genalloc_s(resolve_tree_t, g)[pos].sa) ;
 
          genalloc_free(resolve_tree_t, g) ;
+
+    } else if (type == DATA_TREE_MASTER) {
+
+        for (; pos < genalloc_len(resolve_tree_master_t, g) ; pos++)
+            stralloc_free(&genalloc_s(resolve_tree_master_t, g)[pos].sa) ;
+
+         genalloc_free(resolve_tree_master_t, g) ;
     }
 
 }
@@ -403,6 +425,10 @@ int resolve_read_cdb(resolve_wrapper_t *wres, char const *name)
         if (!tree_read_cdb(&c, ((resolve_tree_t *)wres->obj)))
             goto err ;
 
+    } else if (wres->type == DATA_TREE_MASTER) {
+
+        if (!tree_read_master_cdb(&c, ((resolve_tree_master_t *)wres->obj)))
+            goto err ;
     }
 
     e = 1 ;
@@ -447,6 +473,11 @@ int resolve_write_cdb(resolve_wrapper_t *wres, char const *dst, char const *name
     } else if (wres->type == DATA_TREE) {
 
         if (!tree_write_cdb(&c, ((resolve_tree_t *)wres->obj)))
+            goto err ;
+
+    } else if (wres->type == DATA_TREE_MASTER) {
+
+        if (!tree_write_master_cdb(&c, ((resolve_tree_master_t *)wres->obj)))
             goto err ;
 
     }

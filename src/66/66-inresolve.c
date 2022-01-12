@@ -301,6 +301,8 @@ int main(int argc, char const *const *argv)
 
     } else {
 
+        uint8_t master = 0 ;
+
         char tree_buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
             "Name",
             "Depends" ,
@@ -319,8 +321,19 @@ int main(int argc, char const *const *argv)
             "Disen",
             "Nenabled" } ;
 
+        resolve_wrapper_t_ref wres = 0 ;
         resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+        resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
+
+        if (!strcmp(svname, SS_MASTER + 1)) {
+
+            master = 1 ;
+            wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+
+        } else {
+
+            wres = resolve_set_struct(DATA_TREE, &tres) ;
+        }
 
         if (!set_ownersysdir(&src, getuid()))
             log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
@@ -340,22 +353,30 @@ int main(int argc, char const *const *argv)
 
         info_field_align(tree_buf,fields,field_suffix,MAXOPTS) ;
 
-        info_display_string(fields[0],tres.sa.s + tres.name) ;
-        info_display_string(fields[1],tres.sa.s + tres.depends) ;
-        info_display_string(fields[2],tres.sa.s + tres.requiredby) ;
-        info_display_string(fields[3],tres.sa.s + tres.allow) ;
-        info_display_string(fields[4],tres.sa.s + tres.groups) ;
-        info_display_string(fields[5],tres.sa.s + tres.contents) ;
-        info_display_string(fields[6],tres.sa.s + tres.enabled) ;
-        info_display_string(fields[7],tres.sa.s + tres.current) ;
-        info_display_int(fields[8],tres.ndepends) ;
-        info_display_int(fields[9],tres.nrequiredby) ;
-        info_display_int(fields[10],tres.nallow) ;
-        info_display_int(fields[11],tres.ngroups) ;
-        info_display_int(fields[12],tres.ncontents) ;
-        info_display_int(fields[13],tres.init) ;
-        info_display_int(fields[14],tres.disen) ;
-        info_display_int(fields[15],tres.nenabled) ;
+        if (!master) {
+
+            info_display_string(fields[0],tres.sa.s + tres.name) ;
+            info_display_string(fields[1],tres.sa.s + tres.depends) ;
+            info_display_string(fields[2],tres.sa.s + tres.requiredby) ;
+            info_display_string(fields[3],tres.sa.s + tres.allow) ;
+            info_display_string(fields[4],tres.sa.s + tres.groups) ;
+            info_display_string(fields[5],tres.sa.s + tres.contents) ;
+            info_display_int(fields[8],tres.ndepends) ;
+            info_display_int(fields[9],tres.nrequiredby) ;
+            info_display_int(fields[10],tres.nallow) ;
+            info_display_int(fields[11],tres.ngroups) ;
+            info_display_int(fields[12],tres.ncontents) ;
+            info_display_int(fields[13],tres.init) ;
+            info_display_int(fields[14],tres.disen) ;
+
+        } else {
+
+            info_display_string(fields[0],mres.sa.s + mres.name) ;
+            info_display_string(fields[3],mres.sa.s + mres.allow) ;
+            info_display_string(fields[6],mres.sa.s + mres.enabled) ;
+            info_display_string(fields[7],mres.sa.s + mres.current) ;
+            info_display_int(fields[15],mres.nenabled) ;
+        }
 
         resolve_free(wres) ;
 

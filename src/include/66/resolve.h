@@ -52,7 +52,8 @@ struct resolve_wrapper_s
 #define RESOLVE_SET_SAWRES(wres) \
     stralloc_ref sawres = 0 ; \
     if (wres->type == DATA_SERVICE) sawres = (&((resolve_service_t *)wres->obj)->sa) ; \
-    else if (wres->type == DATA_TREE) sawres = (&((resolve_tree_t *)wres->obj)->sa) ;
+    else if (wres->type == DATA_TREE) sawres = (&((resolve_tree_t *)wres->obj)->sa) ; \
+    else if (wres->type == DATA_TREE_MASTER) sawres = (&((resolve_tree_master_t *)wres->obj)->sa) ;
 #endif
 /**
  *

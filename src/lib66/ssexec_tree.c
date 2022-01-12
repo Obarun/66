@@ -300,12 +300,12 @@ void sanitize_system(ssexec_t *info)
     auto_strings(dst + baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN, SS_MASTER) ;
 
     if (!scan_mode(dst, S_IFREG))
-        if (!tree_resolve_create_master(info->base.s, info->owner))
+        if (!tree_resolve_master_create(info->base.s, info->owner))
             log_dieu(LOG_EXIT_SYS, "write resolve file of inner tree") ;
 
     auto_strings(dst + baselen, SS_TREE_CURRENT) ;
     auto_check(dst) ;
-    auto_strings(dst + baselen,SS_SYSTEM, SS_BACKUP) ;
+    auto_strings(dst + baselen, SS_SYSTEM, SS_BACKUP) ;
     auto_check(dst) ;
 }
 
@@ -633,7 +633,7 @@ void create_tree(ssexec_t *info)
     auto_create(dst, SS_RESOLVE, newlen) ;
     dst[newlen] = 0 ;
 
-    if (!service_resolve_create_master(info->base.s, info->treename.s))
+    if (!service_resolve_master_create(info->base.s, info->treename.s))
         log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"write resolve file of inner bundle") ;
 
     auto_strings(sym,dst, "/", SS_SYM_SVC) ;
@@ -810,28 +810,28 @@ void tree_master_enable_disable(char const *base, char const *treename, uint8_t 
 
     size_t pos = 0, nb = 0, baselen = strlen(base), len = 0 ;
     stralloc sa = STRALLOC_ZERO ;
-    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
     char solve[baselen + SS_SYSTEM_LEN + 1] ;
 
     log_trace(!action ? "disable" : "enable"," tree: ", treename, " from: ", SS_MASTER + 1) ;
 
     auto_strings(solve, base, SS_SYSTEM) ;
 
-    if (!resolve_read(wres, solve, SS_MASTER))
-        log_dieusys(LOG_EXIT_SYS, "read resolve file of inner tree") ;
+    if (!resolve_read(wres, solve, SS_MASTER + 1))
+        log_dieusys(LOG_EXIT_SYS, "read inner resolve file of trees") ;
 
-    if (!tres.nenabled && action) {
-        if (!resolve_modify_field(wres, TREE_ENUM_ENABLED, treename))
-            log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", SS_MASTER + 1) ;
+    if (!mres.nenabled && action) {
+        if (!resolve_modify_field(wres, TREE_ENUM_MASTER_ENABLED, treename))
+            log_dieusys(LOG_EXIT_SYS, "modify inner resolve file of trees") ;
 
-        tres.nenabled = 1 ;
+        mres.nenabled = 1 ;
         goto write ;
     }
 
-    if (tres.nenabled) {
+    if (mres.nenabled) {
 
-        if (!sastr_clean_string(&sa, tres.sa.s + tres.enabled))
+        if (!sastr_clean_string(&sa, mres.sa.s + mres.enabled))
             log_dieu(LOG_EXIT_SYS, "clean string") ;
 
         len = sa.len ;
@@ -867,15 +867,15 @@ void tree_master_enable_disable(char const *base, char const *treename, uint8_t 
         if (!stralloc_0(&sa))
             log_die_nomem("stralloc") ;
 
-        if (!resolve_modify_field(wres, TREE_ENUM_ENABLED, sa.s))
+        if (!resolve_modify_field(wres, TREE_ENUM_MASTER_ENABLED, sa.s))
             log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", SS_MASTER + 1) ;
 
-        tres.nenabled = nb ;
+        mres.nenabled = nb ;
     }
 
     write:
         if (!resolve_write(wres, solve, SS_MASTER + 1))
-            log_dieusys(LOG_EXIT_SYS, "read resolve file of inner tree") ;
+            log_dieusys(LOG_EXIT_SYS, "write inner resolve file of trees") ;
 
         resolve_free(wres) ;
         stralloc_free(&sa) ;
@@ -1316,7 +1316,7 @@ void tree_clone(char const *clone, ssexec_t *info)
 
     int r ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
+    resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     stralloc sa = STRALLOC_ZERO ;
     char const *exclude[1] = { 0 } ;
@@ -1441,19 +1441,19 @@ void tree_clone(char const *clone, ssexec_t *info)
 
     resolve_free(wres) ;
 
-    wres = resolve_set_struct(DATA_TREE, &tres) ;
+    wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
 
     if (!resolve_read(wres, system, info->treename.s))
-        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of: ", system, "/", info->treename.s) ;
+        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read inner resolve file of trees") ;
 
-    if (!resolve_modify_field(wres, TREE_ENUM_ENABLED, 0) ||
-        !resolve_modify_field(wres, TREE_ENUM_NAME, clone))
-            log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", clone) ;
+    if (!resolve_modify_field(wres, TREE_ENUM_MASTER_ENABLED, 0) ||
+        !resolve_modify_field(wres, TREE_ENUM_MASTER_NAME, clone))
+            log_dieusys(LOG_EXIT_SYS, "modify inner resolve file of trees") ;
 
-    tres.disen = 0 ;
+    mres.nenabled = 0 ;
 
     if (!resolve_write(wres, system, clone))
-        log_dieusys_nclean(LOG_EXIT_SYS, &cleanup, "write resolve file of: ", system, "/", clone) ;
+        log_dieusys_nclean(LOG_EXIT_SYS, &cleanup, "write inner resolve file of trees") ;
 
     resolve_free(wres) ;
 
