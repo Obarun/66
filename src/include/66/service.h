@@ -165,8 +165,8 @@ extern int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res) 
 extern int service_resolve_sort_bytype(stralloc *list, char const *src) ;
 extern int service_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst) ;
 extern int service_resolve_setlognwrite(resolve_service_t *sv, char const *dst) ;
-extern int service_resolve_create_master(char const *base, char const *treename) ;
-extern int service_resolve_write_master(ssexec_t *info, ss_resolve_graph_t *graph, char const *dir, unsigned int reverse) ;
+extern int service_resolve_master_create(char const *base, char const *treename) ;
+extern int service_resolve_master_write(ssexec_t *info, ss_resolve_graph_t *graph, char const *dir, unsigned int reverse) ;
 extern int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t field, char const *data) ;
 extern int service_resolve_field_tosa(stralloc *sa, resolve_service_t *res, resolve_service_enum_t field) ;
 /**

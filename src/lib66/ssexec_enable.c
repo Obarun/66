@@ -388,7 +388,7 @@ int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssex
             if (r < 0) log_die(LOG_EXIT_USER,"cyclic graph detected") ;
             log_dieusys(LOG_EXIT_SYS,"publish service graph") ;
         }
-        if (!service_resolve_write_master(info,&graph,workdir.s,0))
+        if (!service_resolve_master_write(info,&graph,workdir.s,0))
             log_dieusys_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"update inner bundle") ;
 
         ss_resolve_graph_free(&graph) ;

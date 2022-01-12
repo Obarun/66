@@ -1815,7 +1815,7 @@ int service_resolve_add_logger(genalloc *ga,char const *src)
         return e ;
 }
 
-int service_resolve_create_master(char const *base, char const *treename)
+int service_resolve_master_create(char const *base, char const *treename)
 {
     int e = 0 ;
     size_t baselen = strlen(base), treelen = strlen(treename) ;
@@ -1847,7 +1847,7 @@ int service_resolve_create_master(char const *base, char const *treename)
         return e ;
 }
 
-int service_resolve_write_master(ssexec_t *info, ss_resolve_graph_t *graph,char const *dir, unsigned int reverse)
+int service_resolve_master_write(ssexec_t *info, ss_resolve_graph_t *graph,char const *dir, unsigned int reverse)
 {
     log_flow() ;
 
