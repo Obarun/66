@@ -21,6 +21,7 @@
 #include <skalibs/genalloc.h>
 
 #include <66/resolve.h>
+#include <66/service.h>
 #include <66/ssexec.h>
 
 int rc_send(ssexec_t *info,genalloc *ga,char const *sig,char const *const *envp)

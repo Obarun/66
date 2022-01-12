@@ -27,6 +27,8 @@
 #include <skalibs/buffer.h>
 
 #include <66/resolve.h>
+#include <66/tree.h>
+#include <66/service.h>
 #include <66/info.h>
 #include <66/utils.h>
 #include <66/constants.h>
