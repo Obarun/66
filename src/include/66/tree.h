@@ -142,7 +142,7 @@ extern int tree_isvalid(char const *base, char const *treename) ;
 /** Append @tree with the name of the current tree
  * @Return 1 on success
  * @Return 0 on fail */
-extern int tree_find_current(stralloc *tree, char const *base, uid_t owner) ;
+extern int tree_find_current(stralloc *tree, char const *base) ;
 
 /** @Return 1 on success
  * @Return 0 if not valid
@@ -169,14 +169,6 @@ extern int tree_state(int argc, char const *const *argv) ;
 extern int tree_copy(stralloc *dir, char const *tree,char const *treename) ;
 
 extern int tree_copy_tmp(char const *workdir, ssexec_t *info) ;
-
-/** Set the tree to use as current for 66 tools
- * This is avoid to use the -t options for all 66 tools
- * Search on @base the directory current and append @tree
- * with the path.
- * @Return 1 on success
- * @Return 0 on fail */
-extern int tree_find_current(stralloc *tree, char const *base, uid_t owner) ;
 
 extern int tree_get_permissions(char const *tree, uid_t owner) ;
 

@@ -46,7 +46,7 @@ int tree_sethome(ssexec_t *info)
 
     if (!info->treename.len) {
 
-        if (!tree_find_current(&info->tree, base, owner))
+        if (!tree_find_current(&info->tree, base))
             return -3 ;
 
         if (!tree_setname(&info->treename,info->tree.s))

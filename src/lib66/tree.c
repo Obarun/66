@@ -50,35 +50,28 @@ int tree_isvalid(char const *base, char const *treename)
     return 1 ;
 }
 
-int tree_find_current(stralloc *tree, char const *base, uid_t owner)
+int tree_find_current(stralloc *tree, char const *base)
 {
     log_flow() ;
 
-    ssize_t r ;
+    int e = 0 ;
     size_t baselen = strlen(base) ;
-    char pack[UID_FMT] ;
+    resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+    char t[baselen + SS_SYSTEM_LEN + 1] ;
 
-    uint32_pack(pack,owner) ;
-    size_t packlen = uint_fmt(pack,owner) ;
-    pack[packlen] = 0 ;
+    auto_strings(t, base, SS_SYSTEM) ;
 
-    char t[baselen + SS_TREE_CURRENT_LEN + 1 + packlen + 1 + SS_TREE_CURRENT_LEN + 1] ;
-    auto_strings(t, base, SS_TREE_CURRENT, "/", pack, "/", SS_TREE_CURRENT) ;
+    if (!resolve_read(wres, t, SS_MASTER + 1))
+        goto err ;
 
-    r = scan_mode(t,S_IFDIR) ;
-    if(r <= 0)
-        return 0 ;
+    if (!auto_stra(tree, base, SS_SYSTEM, "/", mres.sa.s + mres.current))
+        goto err ;
 
-    r = sarealpath(tree,t) ;
-    if (r < 0 )
-        return 0 ;
-
-    if (!stralloc_0(tree))
-        return 0 ;
-
-    tree->len--;
-
-    return 1 ;
+    e = 1 ;
+    err:
+        resolve_free(wres) ;
+        return e ;
 }
 
 int tree_iscurrent(char const *base, char const *treename)
@@ -87,8 +80,8 @@ int tree_iscurrent(char const *base, char const *treename)
 
     int e = -1 ;
     size_t baselen = strlen(base) ;
-    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
     char t[baselen + SS_SYSTEM_LEN + 1] ;
 
     auto_strings(t, base, SS_SYSTEM) ;
@@ -96,7 +89,7 @@ int tree_iscurrent(char const *base, char const *treename)
     if (!resolve_read(wres, t, SS_MASTER + 1))
         goto err ;
 
-    if (!strcmp(tres.sa.s + tres.current, treename))
+    if (!strcmp(mres.sa.s + mres.current, treename))
         e = 1 ;
     else
         e = 0 ;
@@ -135,8 +128,8 @@ int tree_isenabled(char const *base, char const *treename)
     int e = -1 ;
     size_t baselen = strlen(base), pos = 0 ;
     stralloc sa = STRALLOC_ZERO ;
-    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
     char solve[baselen + SS_SYSTEM_LEN + 1] ;
 
     auto_strings(solve, base, SS_SYSTEM) ;
@@ -144,9 +137,9 @@ int tree_isenabled(char const *base, char const *treename)
     if (!resolve_read(wres, solve, SS_MASTER + 1))
         goto err ;
 
-    if (tres.nenabled) {
+    if (mres.nenabled) {
 
-        if (!sastr_clean_string(&sa, tres.sa.s + tres.enabled))
+        if (!sastr_clean_string(&sa, mres.sa.s + mres.enabled))
             goto err ;
 
         e = 0 ;

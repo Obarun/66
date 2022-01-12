@@ -15,59 +15,25 @@
 #include <66/tree.h>
 
 #include <sys/types.h>
-#include <stddef.h>
+#include <string.h>
 
 #include <oblibs/string.h>
-#include <oblibs/directory.h>
-#include <oblibs/types.h>
+#include <oblibs/log.h>
 
-#include <skalibs/stralloc.h>
-#include <skalibs/types.h>
-#include <skalibs/unix-transactional.h>
-
-#include <66/config.h>
 #include <66/constants.h>
-#include <66/utils.h>
 #include <66/resolve.h>
-
 
 int tree_switch_current(char const *base, char const *treename)
 {
     log_flow() ;
 
     ssize_t r ;
-    size_t baselen = strlen(base), treelen = strlen(treename), newlen = 0, packlen = 0 ;
-    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
-    char pack[UID_FMT] ;
-    char dst[baselen + SS_TREE_CURRENT_LEN + 1 + packlen + treelen + 2 + 1] ;
+    size_t baselen = strlen(base), treelen = strlen(treename) ;
+    resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
 
-    packlen = uint_fmt(pack,MYUID) ;
-    pack[packlen] = 0 ;
-
-    auto_strings(dst,base,SS_SYSTEM,"/",treename) ;
-
-    r = scan_mode(dst,S_IFDIR) ;
-    if (r <= 0) return 0 ;
-
-    auto_string_from(dst,baselen,SS_TREE_CURRENT,"/",pack) ;
-    newlen = baselen + SS_TREE_CURRENT_LEN + 1 + packlen ;
-
-    r = scan_mode(dst,S_IFDIR) ;
-    if (!r){
-        if (!dir_create_parent(dst,0755)) return 0 ;
-    }
-    if(r == -1) return 0 ;
-
-    char current[newlen + 1 + SS_TREE_CURRENT_LEN + 1] ;
-
-    auto_strings(current,dst,"/",SS_TREE_CURRENT) ;
-    auto_string_from(dst,baselen,SS_SYSTEM,"/",treename) ;
-
-    if (!atomic_symlink(dst, current,"tree_switch_current")) return 0 ;
-
-    if (!resolve_modify_field_g(wres, base, SS_MASTER + 1, TREE_ENUM_CURRENT,  treename))
-        log_warnu_return(LOG_EXIT_ZERO, "modify field: ", resolve_tree_field_table[TREE_ENUM_CURRENT].field," of tree: ", SS_MASTER + 1, " with value: ", treename) ;
+    if (!resolve_modify_field_g(wres, base, SS_MASTER + 1, TREE_ENUM_MASTER_CURRENT,  treename))
+        log_warnu_return(LOG_EXIT_ZERO, "modify field: ", resolve_tree_master_field_table[TREE_ENUM_MASTER_CURRENT].field," of inner resolve file with value: ", treename) ;
 
     resolve_free(wres) ;
 
