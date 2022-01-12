@@ -11,8 +11,8 @@ src/include/66/hpr.h: src/include/66/constants.h
 src/include/66/info.h: src/include/66/enum.h src/include/66/service.h
 src/include/66/parser.h: src/include/66/enum.h src/include/66/ssexec.h
 src/include/66/rc.h: src/include/66/ssexec.h
-src/include/66/resolve.h: src/include/66/parser.h src/include/66/service.h src/include/66/ssexec.h src/include/66/tree.h
-src/include/66/service.h: src/include/66/parser.h src/include/66/ssexec.h
+src/include/66/resolve.h: src/include/66/parser.h src/include/66/ssexec.h
+src/include/66/service.h: src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h
 src/include/66/svc.h: src/include/66/service.h src/include/66/ssexec.h
 src/include/66/tree.h: src/include/66/resolve.h src/include/66/ssexec.h
 src/include/66/utils.h: src/include/66/service.h src/include/66/ssexec.h
@@ -24,7 +24,7 @@ src/66/66-enable.o src/66/66-enable.lo: src/66/66-enable.c src/include/66/ssexec
 src/66/66-env.o src/66/66-env.lo: src/66/66-env.c src/include/66/ssexec.h
 src/66/66-hpr.o src/66/66-hpr.lo: src/66/66-hpr.c src/include/66/config.h src/include/66/hpr.h
 src/66/66-init.o src/66/66-init.lo: src/66/66-init.c src/include/66/ssexec.h
-src/66/66-inresolve.o src/66/66-inresolve.lo: src/66/66-inresolve.c src/include/66/constants.h src/include/66/info.h src/include/66/resolve.h src/include/66/utils.h
+src/66/66-inresolve.o src/66/66-inresolve.lo: src/66/66-inresolve.c src/include/66/constants.h src/include/66/info.h src/include/66/resolve.h src/include/66/service.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-inservice.o src/66/66-inservice.lo: src/66/66-inservice.c src/include/66/constants.h src/include/66/enum.h src/include/66/environ.h src/include/66/graph.h src/include/66/info.h src/include/66/resolve.h src/include/66/service.h src/include/66/state.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-instate.o src/66/66-instate.lo: src/66/66-instate.c src/include/66/constants.h src/include/66/info.h src/include/66/resolve.h src/include/66/state.h src/include/66/utils.h
 src/66/66-intree.o src/66/66-intree.lo: src/66/66-intree.c src/include/66/backup.h src/include/66/constants.h src/include/66/enum.h src/include/66/graph.h src/include/66/info.h src/include/66/resolve.h src/include/66/service.h src/include/66/tree.h src/include/66/utils.h
@@ -51,10 +51,10 @@ src/lib66/db_switch_to.o src/lib66/db_switch_to.lo: src/lib66/db_switch_to.c src
 src/lib66/db_update.o src/lib66/db_update.lo: src/lib66/db_update.c src/include/66/db.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/enum.o src/lib66/enum.lo: src/lib66/enum.c src/include/66/enum.h
 src/lib66/environ.o src/lib66/environ.lo: src/lib66/environ.c src/include/66/constants.h src/include/66/enum.h src/include/66/environ.h src/include/66/utils.h
-src/lib66/graph.o src/lib66/graph.lo: src/lib66/graph.c src/include/66/constants.h src/include/66/enum.h src/include/66/graph.h src/include/66/resolve.h src/include/66/service.h
+src/lib66/graph.o src/lib66/graph.lo: src/lib66/graph.c src/include/66/constants.h src/include/66/enum.h src/include/66/graph.h src/include/66/resolve.h src/include/66/service.h src/include/66/tree.h
 src/lib66/hpr_shutdown.o src/lib66/hpr_shutdown.lo: src/lib66/hpr_shutdown.c src/include/66/hpr.h
 src/lib66/hpr_wall.o src/lib66/hpr_wall.lo: src/lib66/hpr_wall.c src/include/66/hpr.h
-src/lib66/info_utils.o src/lib66/info_utils.lo: src/lib66/info_utils.c src/include/66/constants.h src/include/66/info.h src/include/66/resolve.h src/include/66/state.h src/include/66/utils.h
+src/lib66/info_utils.o src/lib66/info_utils.lo: src/lib66/info_utils.c src/include/66/constants.h src/include/66/info.h src/include/66/resolve.h src/include/66/state.h src/include/66/tree.h src/include/66/utils.h
 src/lib66/instance.o src/lib66/instance.lo: src/lib66/instance.c src/include/66/enum.h src/include/66/utils.h
 src/lib66/parse_module.o src/lib66/parse_module.lo: src/lib66/parse_module.c src/include/66/constants.h src/include/66/environ.h src/include/66/parser.h src/include/66/resolve.h src/include/66/utils.h
 src/lib66/parse_service.o src/lib66/parse_service.lo: src/lib66/parse_service.c src/include/66/constants.h src/include/66/parser.h src/include/66/service.h src/include/66/ssexec.h src/include/66/tree.h src/include/66/utils.h
@@ -63,7 +63,7 @@ src/lib66/parser_utils.o src/lib66/parser_utils.lo: src/lib66/parser_utils.c src
 src/lib66/parser_write.o src/lib66/parser_write.lo: src/lib66/parser_write.c src/include/66/constants.h src/include/66/enum.h src/include/66/environ.h src/include/66/parser.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/rc_init.o src/lib66/rc_init.lo: src/lib66/rc_init.c src/include/66/constants.h src/include/66/rc.h src/include/66/resolve.h src/include/66/service.h src/include/66/ssexec.h src/include/66/state.h src/include/66/utils.h
 src/lib66/rc_manage.o src/lib66/rc_manage.lo: src/lib66/rc_manage.c src/include/66/constants.h src/include/66/db.h src/include/66/rc.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/state.h src/include/66/utils.h
-src/lib66/rc_send.o src/lib66/rc_send.lo: src/lib66/rc_send.c src/include/66/rc.h src/include/66/resolve.h src/include/66/ssexec.h
+src/lib66/rc_send.o src/lib66/rc_send.lo: src/lib66/rc_send.c src/include/66/rc.h src/include/66/resolve.h src/include/66/service.h src/include/66/ssexec.h
 src/lib66/rc_unsupervise.o src/lib66/rc_unsupervise.lo: src/lib66/rc_unsupervise.c src/include/66/constants.h src/include/66/db.h src/include/66/rc.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/state.h src/include/66/utils.h
 src/lib66/resolve.o src/lib66/resolve.lo: src/lib66/resolve.c src/include/66/constants.h src/include/66/graph.h src/include/66/resolve.h src/include/66/service.h src/include/66/tree.h
 src/lib66/service.o src/lib66/service.lo: src/lib66/service.c src/include/66/constants.h src/include/66/enum.h src/include/66/parser.h src/include/66/resolve.h src/include/66/service.h src/include/66/ssexec.h src/include/66/state.h src/include/66/utils.h
@@ -96,7 +96,7 @@ src/lib66/tree_resolve.o src/lib66/tree_resolve.lo: src/lib66/tree_resolve.c src
 src/lib66/tree_seed.o src/lib66/tree_seed.lo: src/lib66/tree_seed.c src/include/66/config.h src/include/66/enum.h src/include/66/tree.h src/include/66/utils.h
 src/lib66/tree_sethome.o src/lib66/tree_sethome.lo: src/lib66/tree_sethome.c src/include/66/constants.h src/include/66/ssexec.h src/include/66/tree.h
 src/lib66/tree_setname.o src/lib66/tree_setname.lo: src/lib66/tree_setname.c src/include/66/tree.h
-src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree_switch_current.c src/include/66/config.h src/include/66/constants.h src/include/66/resolve.h src/include/66/tree.h src/include/66/utils.h
+src/lib66/tree_switch_current.o src/lib66/tree_switch_current.lo: src/lib66/tree_switch_current.c src/include/66/constants.h src/include/66/resolve.h src/include/66/tree.h
 src/lib66/utils.o src/lib66/utils.lo: src/lib66/utils.c src/include/66/config.h src/include/66/constants.h src/include/66/parser.h src/include/66/resolve.h src/include/66/service.h src/include/66/utils.h
 
 66-all: EXTRA_LIBS := -ls6rc -ls6 -loblibs -lskarnet
