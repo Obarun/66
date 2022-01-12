@@ -27,8 +27,6 @@ int tree_switch_current(char const *base, char const *treename)
 {
     log_flow() ;
 
-    ssize_t r ;
-    size_t baselen = strlen(base), treelen = strlen(treename) ;
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
 

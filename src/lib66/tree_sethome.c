@@ -40,7 +40,6 @@ int tree_sethome(ssexec_t *info)
     log_flow() ;
 
     char const *base = info->base.s ;
-    uid_t owner = info->owner ;
 
     int r ;
 
