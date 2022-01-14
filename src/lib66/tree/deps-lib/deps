@@ -1,5 +1,6 @@
 tree.o
 tree_cmd_state.o
+tree_copy.o
 tree_copy_tmp.o
 tree_get_permissions.o
 tree_resolve.o
