@@ -1,0 +1,6 @@
+instance.o
+-ls6rc
+-ls6
+-loblibs
+-lexecline
+-lskarnet

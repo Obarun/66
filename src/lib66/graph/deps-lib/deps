@@ -1,0 +1,7 @@
+graph.o
+ss_resolve_graph.o
+-ls6rc
+-ls6
+-loblibs
+-lexecline
+-lskarnet

@@ -1,0 +1,9 @@
+rc_init.o
+rc_manage.o
+rc_send.o
+rc_unsupervise.o
+-ls6rc
+-ls6
+-loblibs
+-lexecline
+-lskarnet

@@ -1,0 +1,10 @@
+svc_init.o
+svc_init_pipe.o
+svc_send.o
+svc_switch.o
+svc_unsupervise.o
+-ls6rc
+-ls6
+-loblibs
+-lexecline
+-lskarnet
