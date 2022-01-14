@@ -103,47 +103,4 @@ extern int resolve_add_cdb(cdbmaker *c, char const *key, char const *data) ;
 extern int resolve_add_cdb_uint(cdbmaker *c, char const *key, uint32_t data) ;
 extern int resolve_find_cdb(stralloc *result, cdb const *c, char const *key) ;
 
-/*
-extern ss_resolve_t const ss_resolve_zero ;
-extern void ss_resolve_init(ss_resolve_t *res) ;
-extern void ss_resolve_free(ss_resolve_t *res) ;
-
-extern int ss_resolve_pointo(stralloc *sa,ssexec_t *info,int type, unsigned int where) ;
-extern int ss_resolve_src_path(stralloc *sasrc,char const *sv, uid_t owner,char const *directory_forced) ;
-extern int ss_resolve_module_path(stralloc *sdir, stralloc *mdir, char const *sv,char const *src_frontend, uid_t owner) ;
-extern int ss_resolve_src(stralloc *sasrc, char const *name, char const *src,int *found) ;
-extern int ss_resolve_service_isdir(char const *dir, char const *name) ;
-extern ssize_t ss_resolve_add_string(ss_resolve_t *res,char const *data) ;
-extern int ss_resolve_write(ss_resolve_t *res,char const *dst,char const *name) ;
-extern int ss_resolve_read(ss_resolve_t *res,char const *src,char const *name) ;
-extern int ss_resolve_check(char const *src, char const *name) ;
-extern int ss_resolve_setnwrite(sv_alltype *services,ssexec_t *info,char const *dst) ;
-extern int ss_resolve_setlognwrite(ss_resolve_t *sv, char const *dst,ssexec_t *info) ;
-extern void ss_resolve_rmfile(char const *src,char const *name) ;
-extern int ss_resolve_cmp(genalloc *ga,char const *name) ;
-extern int ss_resolve_add_deps(genalloc *tokeep,ss_resolve_t *res, char const *src) ;
-extern int ss_resolve_add_rdeps(genalloc *tokeep, ss_resolve_t *res, char const *src) ;
-extern int ss_resolve_add_logger(genalloc *ga,char const *src) ;
-extern int ss_resolve_copy(ss_resolve_t *dst,ss_resolve_t *res) ;
-extern int ss_resolve_append(genalloc *ga,ss_resolve_t *res) ;
-extern int ss_resolve_create_live(ssexec_t *info) ;
-extern int ss_resolve_search(genalloc *ga,char const *name) ;
-extern int ss_resolve_check_insrc(ssexec_t *info, char const *name) ;
-extern int ss_resolve_write_master(ssexec_t *info,ss_resolve_graph_t *graph,char const *dir, unsigned int reverse) ;
-extern int ss_resolve_sort_bytype(genalloc *gares,stralloc *list,char const *src) ;
-extern int ss_resolve_cmp_service_basedir(char const *dir) ;
-extern int ss_resolve_sort_byfile_first(stralloc *sort, char const *src) ;
-extern int ss_resolve_svtree(stralloc *svtree,char const *svname,char const *tree) ;
-extern int ss_resolve_modify_field(ss_resolve_t *res, ss_resolve_enum_t field, char const *data) ;
-extern int ss_resolve_put_field_to_sa(stralloc *sa,ss_resolve_t *res, ss_resolve_enum_t field) ;
-*/
-
-/** cdb
-extern int ss_resolve_read_cdb(ss_resolve_t *dres, char const *name) ;
-extern int ss_resolve_write_cdb(ss_resolve_t *res, char const *dst, char const *name) ;
-extern int ss_resolve_add_cdb(cdbmaker *c,char const *key,char const *data) ;
-extern int ss_resolve_add_cdb_uint(cdbmaker *c, char const *key,uint32_t data) ;
-extern int ss_resolve_find_cdb(stralloc *result, cdb const *c,char const *key) ;
-*/
-
 #endif
