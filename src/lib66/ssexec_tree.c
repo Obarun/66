@@ -885,7 +885,7 @@ void tree_enable_disable_deps(graph_t *g,char const *base, char const *treename,
 {
     log_flow() ;
 
-    size_t pos = 0 ;
+    size_t pos = 0, element = 0 ;
     stralloc sa = STRALLOC_ZERO ;
 
     if (graph_matrix_get_edge_g(&sa, g, treename, action ? 0 : 1) < 0)
@@ -900,14 +900,15 @@ void tree_enable_disable_deps(graph_t *g,char const *base, char const *treename,
 
         FOREACH_SASTR(&sa, pos) {
 
-            if (v[pos] == SS_WHITE) {
+            if (v[element] == SS_WHITE) {
 
                 char *name = sa.s + pos ;
 
                 tree_enable_disable(g, base, name, action) ;
 
-                v[pos] = SS_GRAY ;
+                v[element] = SS_GRAY ;
             }
+            element++ ;
         }
     }
 
@@ -968,7 +969,7 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
 
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
-    size_t pos = 0, len = 0, nb = 0, baselen = strlen(base) ;
+    size_t pos = 0, len = 0, nb = 0, baselen = strlen(base), element = 0 ;
     uint8_t ewhat = !requiredby ? TREE_ENUM_DEPENDS : TREE_ENUM_REQUIREDBY ;
     uint8_t nwhat = !requiredby ? TREE_ENUM_NDEPENDS : TREE_ENUM_NREQUIREDBY ;
     stralloc sa = STRALLOC_ZERO ;
@@ -995,9 +996,9 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
 
         sa.len = 0 ;
 
-        for(; pos < len ; pos += strlen(t + pos) + 1) {
+        for(; pos < len ; pos += strlen(t + pos) + 1, element++) {
 
-            if (v[pos] == SS_WHITE) {
+            if (v[element] == SS_WHITE) {
 
                 char *name = t + pos ;
 
@@ -1010,7 +1011,7 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
 
                     if (deps) {
                         if (!strcmp(name, deps)) {
-                            v[pos] = SS_GRAY ;
+                            v[element] = SS_GRAY ;
                             continue ;
                         }
                     }
@@ -1021,7 +1022,7 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
                     nb++ ;
                 }
 
-                v[pos] = SS_GRAY ;
+                v[element] = SS_GRAY ;
             }
         }
     }
@@ -1070,7 +1071,7 @@ void tree_depends_requiredby_deps(graph_t *g, char const *base, char const *tree
 {
     log_flow() ;
 
-    size_t baselen = strlen(base), pos = 0, len = 0 ;
+    size_t baselen = strlen(base), pos = 0, len = 0, element = 0 ;
     stralloc sa = STRALLOC_ZERO ;
     char solve[baselen + SS_SYSTEM_LEN + 1] ;
 
@@ -1089,15 +1090,15 @@ void tree_depends_requiredby_deps(graph_t *g, char const *base, char const *tree
 
     sastr_to_char(t, &sa) ;
 
-    for(; pos < len ; pos += strlen(t + pos) + 1) {
+    for(; pos < len ; pos += strlen(t + pos) + 1, element++) {
 
-        if (v[pos] == SS_WHITE) {
+        if (v[element] == SS_WHITE) {
 
             char *name = t + pos ;
 
             tree_depends_requiredby(g, base, name, !requiredby, none, deps) ;
 
-            v[pos] = SS_GRAY ;
+            v[element] = SS_GRAY ;
         }
     }
 
@@ -1201,8 +1202,6 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
                 if (!sastr_remove_element(&sa, pack))
                     log_dieu(LOG_EXIT_SYS, "remove: ", pack, " from list") ;
 
-                for (size_t poss = 0 ; poss < len ; poss += strlen(sa.s + pos) + 1)
-                    printf("    name::%s\n",sa.s + poss) ;
                 tres.nallow-- ;
 
                 log_trace("unlink: ",ut) ;
