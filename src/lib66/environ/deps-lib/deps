@@ -1,6 +1,15 @@
-environ.o
+env_append_version.o
+env_check_version.o
+env_clean_with_comment.o
+env_compute.o
+env_find_current_version.o
+env_import_version_file.o
+env_make_symlink.o
+env_prepare_for_write.o
+env_resolve_conf.o
 -ls6rc
 -ls6
 -loblibs
 -lexecline
 -lskarnet
+
