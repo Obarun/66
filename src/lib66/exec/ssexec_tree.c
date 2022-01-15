@@ -1580,7 +1580,7 @@ int ssexec_tree(int argc, char const *const *argv, char const *const *envp, ssex
     if (!r && what.remove)
         log_dieusys(LOG_EXIT_SYS,"find tree: ", info->treename.s) ;
 
-    if (!graph_build(&graph, info->base.s, info->treename.s, DATA_TREE))
+    if (!graph_build_g(&graph, info->base.s, info->treename.s, DATA_TREE))
         log_dieu(LOG_EXIT_SYS,"build the graph") ;
 
     if (what.remove) {
