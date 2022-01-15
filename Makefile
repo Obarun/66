@@ -70,7 +70,7 @@ INSTALL_DATA := skel/halt skel/init skel/poweroff skel/rc.init skel/rc.init.cont
 all: $(ALL_LIBS) $(ALL_BINS) $(ALL_INCLUDES)
 
 clean:
-	@exec rm -f $(ALL_LIBS) $(ALL_BINS) $(wildcard src/*/*.o src/*/*.lo) \
+	@exec rm -f $(ALL_LIBS) $(ALL_BINS) $(wildcard src/*/*.o src/*/*.lo src/*/*/*.o src/*/*/*.lo) \
 	$(INSTALL_MAN) $(INSTALL_HTML) $(EXTRA_TARGETS)
 
 distclean: clean
