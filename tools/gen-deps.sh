@@ -94,15 +94,16 @@ deps_lib(){
     local dir=${1} libs deps
 
     for file in $(ls -1 ${dir}) ; do
-
         for sfile in $(ls -1 ${dir}/${file}/deps-lib) ; do
             while read dep ; do
-                if echo $dep | grep -q -e ^-l -e '^\${.*_LIB}' ; then
-                    if ! check_elements "$dep" "$libs"; then
-                        libs="$libs $dep"
+                if [ ! -z "$dep" ]; then
+                    if echo $dep | grep -q -e ^-l -e '^\${.*_LIB}' ; then
+                        if ! check_elements "$dep" "$libs"; then
+                            libs="$libs $dep"
+                        fi
+                    else
+                        deps="$deps ${dir}/${file}/$dep"
                     fi
-                else
-                    deps="$deps ${dir}/${file}/$dep"
                 fi
             done < ${dir}/${file}/deps-lib/${sfile}
         done
