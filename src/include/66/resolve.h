@@ -20,14 +20,10 @@
 
 #include <skalibs/genalloc.h>
 #include <skalibs/stralloc.h>
-#include <skalibs/types.h>
 #include <skalibs/cdb.h>
 #include <skalibs/cdbmake.h>
-#include <skalibs/gccattributes.h>
 
-#include <66/ssexec.h>
-#include <66/parser.h>
-
+#include <66/graph.h>
 
 #define SS_RESOLVE "/.resolve"
 #define SS_RESOLVE_LEN (sizeof SS_RESOLVE - 1)
@@ -38,10 +34,6 @@
 #define SS_NOTYPE -1
 #define SS_SIMPLE 0
 #define SS_DOUBLE 1
-
-#define DATA_SERVICE 0
-#define DATA_TREE 1
-#define DATA_TREE_MASTER 2
 
 typedef struct resolve_wrapper_s resolve_wrapper_t, *resolve_wrapper_t_ref ;
 struct resolve_wrapper_s

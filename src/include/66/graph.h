@@ -19,8 +19,13 @@
 
 #include <oblibs/graph.h>
 
-extern int graph_add_deps(graph_t *g, char const *vertex, char const *edge, uint8_t requiredby) ;
-extern int graph_build(graph_t *g,char const *base, char const *treename, uint8_t what) ;
+#define DATA_SERVICE 0
+#define DATA_TREE 1
+#define DATA_TREE_MASTER 2
+
+extern int graph_build_g(graph_t *g, char const *base, char const *treename, uint8_t data_type) ;
+extern int graph_build_tree(graph_t *g,char const *base) ;
 extern int graph_build_service_bytree(graph_t *g, char const *tree, uint8_t what) ;
+extern int graph_add_deps(graph_t *g, char const *vertex, char const *edge, uint8_t requiredby) ;
 
 #endif
