@@ -24,6 +24,7 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/cdbmake.h>
 #include <skalibs/cdb.h>
+#include <skalibs/types.h>//UINT_FMT
 
 #include <66/tree.h>
 #include <66/resolve.h>
@@ -294,67 +295,75 @@ int tree_resolve_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree_enu
 {
     log_flow() ;
 
-    uint32_t ifield ;
+    char fmt[UINT32_FMT] ;
+    char const *str = 0 ;
 
     switch(field) {
 
         case TREE_ENUM_NAME:
-            ifield = tres->name ;
+            str = tres->sa.s + tres->name ;
             break ;
 
         case TREE_ENUM_DEPENDS:
-            ifield = tres->depends ;
+            str = tres->sa.s + tres->depends ;
             break ;
 
         case TREE_ENUM_REQUIREDBY:
-            ifield = tres->requiredby ;
+            str = tres->sa.s + tres->requiredby ;
             break ;
 
         case TREE_ENUM_ALLOW:
-            ifield = tres->allow ;
+            str = tres->sa.s + tres->allow ;
             break ;
 
         case TREE_ENUM_GROUPS:
-            ifield = tres->groups ;
+            str = tres->sa.s + tres->groups ;
             break ;
 
         case TREE_ENUM_CONTENTS:
-            ifield = tres->contents ;
+            str = tres->sa.s + tres->contents ;
             break ;
 
         case TREE_ENUM_NDEPENDS:
-            ifield = tres->ndepends ;
+            fmt[uint32_fmt(fmt,tres->ndepends)] = 0 ;
+            str = fmt ;
             break ;
 
         case TREE_ENUM_NREQUIREDBY:
-            ifield = tres->nrequiredby ;
+            fmt[uint32_fmt(fmt,tres->nrequiredby)] = 0 ;
+            str = fmt ;
             break ;
 
         case TREE_ENUM_NALLOW:
-            ifield = tres->nallow ;
+            fmt[uint32_fmt(fmt,tres->nallow)] = 0 ;
+            str = fmt ;
             break ;
 
         case TREE_ENUM_NGROUPS:
-            ifield = tres->ngroups ;
+            fmt[uint32_fmt(fmt,tres->ngroups)] = 0 ;
+            str = fmt ;
             break ;
 
         case TREE_ENUM_NCONTENTS:
-            ifield = tres->ncontents ;
+            fmt[uint32_fmt(fmt,tres->ncontents)] = 0 ;
+            str = fmt ;
             break ;
 
         case TREE_ENUM_INIT:
-            ifield = tres->init ;
+            fmt[uint32_fmt(fmt,tres->init)] = 0 ;
+            str = fmt ;
             break ;
 
         case TREE_ENUM_DISEN:
-            ifield = tres->disen ;
+            fmt[uint32_fmt(fmt,tres->disen)] = 0 ;
+            str = fmt ;
             break ;
 
         default:
             return 0 ;
     }
 
-    if (!auto_stra(sa,tres->sa.s + ifield))
+    if (!auto_stra(sa,str))
         return 0 ;
 
     return 1 ;
@@ -528,35 +537,37 @@ int tree_resolve_master_field_tosa(stralloc *sa, resolve_tree_master_t *mres, re
 {
     log_flow() ;
 
-    uint32_t ifield ;
+    char fmt[UINT32_FMT] ;
+    char const *str = 0 ;
 
     switch(field) {
 
         case TREE_ENUM_MASTER_NAME:
-            ifield = mres->name ;
+            mres->sa.s + mres->name ;
             break ;
 
         case TREE_ENUM_MASTER_ALLOW:
-            ifield = mres->name ;
+            mres->sa.s + mres->name ;
             break ;
 
         case TREE_ENUM_MASTER_ENABLED:
-            ifield = mres->enabled ;
+            mres->sa.s + mres->enabled ;
             break ;
 
         case TREE_ENUM_MASTER_CURRENT:
-            ifield = mres->current ;
+            mres->sa.s + mres->current ;
             break ;
 
         case TREE_ENUM_MASTER_NENABLED:
-            ifield = mres->nenabled ;
+            fmt[uint32_fmt(fmt,mres->nenabled)] = 0 ;
+            str = fmt ;
             break ;
 
         default:
             return 0 ;
     }
 
-    if (!auto_stra(sa,mres->sa.s + ifield))
+    if (!auto_stra(sa,str))
         return 0 ;
 
     return 1 ;
