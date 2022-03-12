@@ -19,7 +19,7 @@
 
 #include <66/tree.h>
 
-static ssize_t tree_seed_get_key(char *table,char const *str)
+ssize_t tree_seed_get_key(char *table,char const *str)
 {
     log_flow() ;
 

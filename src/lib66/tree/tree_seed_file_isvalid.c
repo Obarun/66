@@ -23,7 +23,7 @@
 /** @Return -1 bad format e.g want REG get DIR
  * @Return  0 fail
  * @Return success */
-static int tree_seed_file_isvalid(char const *seedpath, char const *treename)
+int tree_seed_file_isvalid(char const *seedpath, char const *treename)
 {
     log_flow() ;
 
