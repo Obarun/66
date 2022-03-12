@@ -12,22 +12,16 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <66/tree.h>
-
 #include <string.h>
-#include <sys/stat.h>
 #include <errno.h>
-#include <sys/types.h>
 
-#include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/environ.h> //char const **environ ;
 
-#include <skalibs/stralloc.h>
-
 #include <66/constants.h>
 #include <66/ssexec.h>
+#include <66/tree.h>
 
 /**
  * @Return -3 > unable to find current

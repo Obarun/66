@@ -43,13 +43,13 @@ struct resolve_tree_s
     uint32_t requiredby ;
     uint32_t allow ;
     uint32_t groups ;
-    uint32_t contents ;
+    uint32_t contents ;//not used
 
     uint32_t ndepends ;
     uint32_t nrequiredby ;
     uint32_t nallow ;
     uint32_t ngroups ; //not really useful for now, we accept only one group
-    uint32_t ncontents ;
+    uint32_t ncontents ; //not used
 
     uint32_t init ;//not initialized->0, initialized->1
     uint32_t disen ;//disable->0, enable->1
@@ -141,8 +141,9 @@ extern int tree_find_current(stralloc *tree, char const *base) ;
 extern int tree_iscurrent(char const *base, char const *treename) ;
 
 /** @Return 1 on success
- * @Return 0 on fail */
-extern int tree_isinitialized(char const *live, char const *treename, uid_t owner) ;
+ * @Return 0 on fail
+ * @Return -1 on system error */
+extern int tree_isinitialized(char const *base, char const *treename) ;
 
 /** @Return 1 on success
  * @Return 0 if not valid
@@ -178,15 +179,15 @@ extern int tree_switch_current(char const *base, char const *tree) ;
  * */
 
 /** tree */
-extern int tree_read_cdb(cdb *c, resolve_tree_t *tres) ;
-extern int tree_write_cdb(cdbmaker *c, resolve_tree_t *tres) ;
+extern int tree_resolve_read_cdb(cdb *c, resolve_tree_t *tres) ;
+extern int tree_resolve_write_cdb(cdbmaker *c, resolve_tree_t *tres) ;
 extern int tree_resolve_copy(resolve_tree_t *dst, resolve_tree_t *tres) ;
 extern int tree_resolve_modify_field(resolve_tree_t *tres, uint8_t field, char const *data) ;
 extern int tree_resolve_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree_enum_t field) ;
 
 /** Master */
-extern int tree_read_master_cdb(cdb *c, resolve_tree_master_t *mres) ;
-extern int tree_write_master_cdb(cdbmaker *c, resolve_tree_master_t *mres) ;
+extern int tree_resolve_read_master_cdb(cdb *c, resolve_tree_master_t *mres) ;
+extern int tree_resolve_write_master_cdb(cdbmaker *c, resolve_tree_master_t *mres) ;
 extern int tree_resolve_master_create(char const *base, uid_t owner) ;
 extern int tree_resolve_master_copy(resolve_tree_master_t *dst, resolve_tree_master_t *mres) ;
 extern int tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint8_t field, char const *data) ;
@@ -197,9 +198,14 @@ extern int tree_resolve_master_field_tosa(stralloc *sa, resolve_tree_master_t *m
  * Seed API
  *
  * */
-
+extern int tree_seed_file_isvalid(char const *seedpath, char const *treename) ;
 extern void tree_seed_free(tree_seed_t *seed) ;
-extern int tree_seed_setseed(tree_seed_t *seed, char const *treename, uint8_t check_contents) ;
+extern int tree_seed_get_group_permissions(tree_seed_t *seed, uint8_t check_contents) ;
+extern ssize_t tree_seed_get_key(char *table,char const *str) ;
 extern int tree_seed_isvalid(char const *seed) ;
+extern int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath) ;
+extern int tree_seed_resolve_path(stralloc *sa, char const *seed) ;
+extern int tree_seed_setseed(tree_seed_t *seed, char const *treename, uint8_t check_contents) ;
+
 
 #endif

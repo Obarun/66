@@ -1,5 +1,5 @@
 /*
- * tree_switch_current.c
+ * tree_find_current.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -12,23 +12,37 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <oblibs/log.h>
+#include <string.h>
 
-#include <66/constants.h>
+#include <oblibs/log.h>
+#include <oblibs/string.h>
+
+#include <skalibs/stralloc.h>
+
 #include <66/resolve.h>
 #include <66/tree.h>
+#include <66/constants.h>
 
-int tree_switch_current(char const *base, char const *treename)
+int tree_find_current(stralloc *tree, char const *base)
 {
     log_flow() ;
 
+    int e = 0 ;
+    size_t baselen = strlen(base) ;
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+    char t[baselen + SS_SYSTEM_LEN + 1] ;
 
-    if (!resolve_modify_field_g(wres, base, SS_MASTER + 1, TREE_ENUM_MASTER_CURRENT,  treename))
-        log_warnu_return(LOG_EXIT_ZERO, "modify field: ", resolve_tree_master_field_table[TREE_ENUM_MASTER_CURRENT].field," of inner resolve file with value: ", treename) ;
+    auto_strings(t, base, SS_SYSTEM) ;
 
-    resolve_free(wres) ;
+    if (!resolve_read(wres, t, SS_MASTER + 1))
+        goto err ;
 
-    return 1 ;
+    if (!auto_stra(tree, base, SS_SYSTEM, "/", mres.sa.s + mres.current))
+        goto err ;
+
+    e = 1 ;
+    err:
+        resolve_free(wres) ;
+        return e ;
 }

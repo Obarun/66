@@ -1,5 +1,5 @@
 /*
- * tree_copy.c
+ * tree_isvalid.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -12,31 +12,27 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <66/tree.h>
-
 #include <string.h>
 
-#include <oblibs/string.h>
-#include <oblibs/directory.h>
 #include <oblibs/log.h>
-
-#include <skalibs/djbunix.h>
+#include <oblibs/string.h>
 
 #include <66/constants.h>
 
-int tree_copy(stralloc *dir, char const *tree,char const *treename)
+int tree_isvalid(char const *base, char const *treename)
 {
     log_flow() ;
 
-    char *fdir = 0 ;
-    size_t treelen = strlen(tree) ;
-    char tmp[treelen + SS_SVDIRS_LEN + 1] ;
-    auto_strings(tmp, tree, SS_SVDIRS) ;
+    int r ;
+    size_t baselen = strlen(base), treelen = strlen(treename) ;
+    char t[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1 + treelen + 1] ;
+    auto_strings(t, base, SS_SYSTEM, SS_RESOLVE, "/", treename) ;
 
-    fdir = dir_create_tmp(dir,"/tmp",treename) ;
-    if (!fdir) return 0 ;
-
-    if (!hiercopy(tmp,fdir)) return 0 ;
+    r = scan_mode(t, S_IFREG) ;
+    if (r < 0)
+        return -1 ;
+    else if (!r)
+        return 0 ;
 
     return 1 ;
 }

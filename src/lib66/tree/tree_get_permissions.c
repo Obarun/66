@@ -15,15 +15,13 @@
 #include <66/utils.h>
 
 #include <sys/types.h>
-#include <sys/stat.h>
 
 #include <oblibs/types.h>
+#include <oblibs/string.h>
 
-#include <skalibs/stralloc.h>
 #include <skalibs/types.h>
 
 #include <66/constants.h>
-#include <66/utils.h>
 
 int tree_get_permissions(char const *tree,uid_t owner)
 {
@@ -38,11 +36,7 @@ int tree_get_permissions(char const *tree,uid_t owner)
 
     char tmp[treelen + SS_RULES_LEN + 1 + packlen + 1] ;
 
-    memcpy(tmp,tree,treelen) ;
-    memcpy(tmp + treelen,SS_RULES,SS_RULES_LEN) ;
-    tmp[treelen + SS_RULES_LEN] = '/' ;
-    memcpy(tmp + treelen + SS_RULES_LEN + 1, pack,packlen) ;
-    tmp[treelen + SS_RULES_LEN + 1 + packlen] = 0 ;
+    auto_strings(tmp, tree, SS_RULES, "/", pack) ;
 
     r = scan_mode(tmp,S_IFREG) ;
     if (r != 1) return 0 ;
