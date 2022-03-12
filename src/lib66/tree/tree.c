@@ -99,26 +99,29 @@ int tree_iscurrent(char const *base, char const *treename)
         return e ;
 }
 
-int tree_isinitialized(char const *live, char const *treename, uid_t owner)
+int tree_isinitialized(char const *base, char const *treename)
 {
     log_flow() ;
 
-    int init = 0 ;
+    int e = -1 ;
+    size_t baselen = strlen(base) ;
+    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    char solve[baselen + SS_SYSTEM_LEN + 1] ;
 
-    size_t livelen = strlen(live), treelen = strlen(treename) ;
+    auto_strings(solve, base, SS_SYSTEM) ;
 
-    char pack[UID_FMT] ;
-    uint32_pack(pack,owner) ;
-    size_t packlen = uint_fmt(pack,owner) ;
-    pack[packlen] = 0 ;
+    if (!resolve_read(wres, solve, treename))
+        goto err ;
 
-    char t[livelen + SS_STATE_LEN + 1 + packlen + 1 + treelen + 6] ;
-    auto_strings(t, live, SS_STATE + 1, "/", pack, "/", treename, "/init") ;
+    if (tres.init)
+        e = 1 ;
+    else
+        e = 0 ;
 
-    if (!access(t, F_OK))
-        init = 1 ;
-
-    return init ;
+    err:
+        resolve_free(wres) ;
+        return e ;
 }
 
 int tree_isenabled(char const *base, char const *treename)
