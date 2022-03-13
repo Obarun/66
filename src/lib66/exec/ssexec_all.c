@@ -106,7 +106,7 @@ static inline unsigned int parse_signal (char const *signal)
     return i ;
 }
 
-static void redir_fd(void)
+static void all_redir_fd(void)
 {
     log_flow() ;
 
@@ -267,7 +267,7 @@ static int unsupervise(ssexec_t *info, int what)
     auto_strings(livestate, info->live.s, SS_STATE + 1, "/", ownerstr, "/", info->treename.s) ;
 
     /** bring down service */
-    if (all_doit(info, info->treename.s, what))
+    if (doit(info, info->treename.s, what))
         log_warnusys("stop services") ;
 
     if (db_find_compiled_state(info->livetree.s, info->treename.s) >=0) {
@@ -643,7 +643,7 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp, ssexec
 
         if (!pid) {
 
-            redir_fd() ;
+            all_redir_fd() ;
 
         } else {
 
