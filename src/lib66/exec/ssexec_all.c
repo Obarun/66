@@ -46,7 +46,6 @@
 
 #include <s6-rc/s6rc-servicedir.h>
 
-
 #define FLAGS_STARTING 1 // starting not really up
 #define FLAGS_STOPPING 2 // stopping not really down
 #define FLAGS_UP 3 // really up
@@ -56,7 +55,6 @@
 #define FLAGS_FATAL 7 // process crashed
 #define FLAGS_EXITED 8 // process exited
 
-
 /** return 1 if set, else 0*/
 #define FLAGS_ISSET(has, want) \
         ((~(has) & (want)) == 0)
@@ -65,14 +63,14 @@ typedef struct pidvertex_s pidvertex_t, *pidvertex_t_ref ;
 struct pidvertex_s
 {
     pid_t pid ;
+    int pipe[2] ;
     unsigned int vertex ; // id at graph_hash_t struct
     uint8_t state ;
     int nedge ;
     unsigned int *edge ; // array of id at graph_hash_t struct
 } ;
-#define PIDINDEX_ZERO { 0, 0, 0, 0, 0 }
+#define PIDINDEX_ZERO { 0, { 0, 0 }, 0, 0, 0, 0 }
 
-//static pidvertex_t *apidvertex ;
 static pidvertex_t *apidvertex ;
 static unsigned int napid = 0 ;
 static unsigned int npid = 0 ;
@@ -132,7 +130,6 @@ static void all_redir_fd(void)
 
     umask(022) ;
 }
-
 
 static int doit(ssexec_t *info, char const *treename, unsigned int what)
 {
@@ -342,6 +339,16 @@ static void pidvertex_free(pidvertex_t *pidv)
     free(pidv->edge) ;
 }
 
+static void pidvertex_array_free(pidvertex_t *apidv,  unsigned int len)
+{
+    log_flow() ;
+
+    size_t pos = 0 ;
+
+    for(; pos < len ; pos++)
+        pidvertex_free(&apidv[pos]) ;
+}
+
 static void pidvertex_init_array(pidvertex_t *apidvertex, graph_t *g, unsigned int *list, unsigned int count, ssexec_t *info, uint8_t requiredby)
 {
     log_flow() ;
@@ -376,18 +383,8 @@ static void pidvertex_init_array(pidvertex_t *apidvertex, graph_t *g, unsigned i
             pidv.state |= FLAGS_DOWN ;
 
         apidvertex[pos] = pidv ;
+
     }
-
-}
-
-static void pidvertex_array_free(pidvertex_t *apidv,  unsigned int len)
-{
-    log_flow() ;
-
-    size_t pos = 0 ;
-
-    for(; pos < len ; pos++)
-        pidvertex_free(&apidv[pos]) ;
 
 }
 
@@ -404,73 +401,6 @@ static int pidvertex_get_id(pidvertex_t *apidv, unsigned int id)
     return -1 ;
 }
 
-static void async_deps(unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph)
-{
-    log_flow() ;
-
-    unsigned int pos = 0 ;
-
-    while (apidvertex[i].nedge) {
-        /** TODO: the pidvertex_get_id() function make a loop
-         * through the apidvertex array to find the corresponding
-         * index of the edge at the apidvertex array.
-         * This is clearly a waste of time and need to be optimized. */
-        unsigned int id = pidvertex_get_id(apidvertex, apidvertex[i].edge[pos]) ;
-
-        if (id < 0)
-            log_dieu(LOG_EXIT_SYS, "get apidvertex id -- please make a bug report") ;
-
-        async(id, what, info, graph) ;
-        apidvertex[i].nedge-- ;
-        pos++ ;
-    }
-
-
-}
-
-static void async(unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph)
-{
-    /**
-     * @i: apidvertex array index
-     * */
-
-    log_flow() ;
-
-    int r ;
-    pid_t pid ;
-
-    char *treename = graph->data.s + genalloc_s(graph_hash_t,&graph->hash)[apidvertex[i].vertex].vertex ;
-
-    if (FLAGS_ISSET(apidvertex[i].state, flag) && !FLAGS_ISSET(apidvertex[i].state, flag_run)) {
-
-        apidvertex[i].state |= flag_run ;
-        apidvertex[i].state |= FLAGS_BLOCK ;
-
-        pid = fork() ;
-
-        if (pid < 0)
-            log_dieusys(LOG_EXIT_SYS, "fork") ;
-
-        if (!pid) {
-
-            if (apidvertex[i].nedge)
-                async_deps(i, what, info, graph) ;
-
-            r = doit(info, treename, what) ;
-            _exit(r) ;
-
-        }
-
-        apidvertex[npid++].pid = pid ;
-
-     } else {
-
-         log_trace("skipping: ", treename, " -- already ", what ? "down" : "up") ;
-     }
-
-    return ;
-}
-
 static inline void kill_all (void)
 {
     log_flow() ;
@@ -479,7 +409,7 @@ static inline void kill_all (void)
     while (j--) kill(apidvertex[j].pid, SIGKILL) ;
 }
 
-static int handle_signal(pidvertex_t *apidvertex, unsigned int what)
+static int handle_signal(pidvertex_t *apidv, unsigned int what)
 {
     log_flow() ;
 
@@ -509,32 +439,39 @@ static int handle_signal(pidvertex_t *apidvertex, unsigned int what)
 
                     } else if (!r) break ;
 
-                    for (; j < npid ; j++)
-                        if (apidvertex[j].pid == r)
+                    for (; j < napid ; j++)
+                        if (apidv[j].pid == r)
                             break ;
 
-                    if (j < npid) {
+                    if (j < napid) {
 
                         unsigned int i = j ;
-                        apidvertex[j] = apidvertex[--npid] ;
+
                         if (!WIFSIGNALED(wstat) && !WEXITSTATUS(wstat)) {
 
-                            apidvertex[i].state = 0 ;
+                            apidv[i].state = 0 ;
                             if (what)
-                                apidvertex[i].state = FLAGS_UP ;
+                                apidv[i].state = FLAGS_UP ;
                             else
-                                apidvertex[i].state = FLAGS_DOWN ;
+                                apidv[i].state = FLAGS_DOWN ;
 
-                            apidvertex[i].state |= FLAGS_UNBLOCK ;
+                            close(apidv[i].pipe[0]) ;
+
+                            npid-- ;
 
                         } else {
 
                             ok = 0 ;
-                            apidvertex[i].state = 0 ;
+
+                            apidv[i].state = 0 ;
                             if (what)
-                                apidvertex[i].state = FLAGS_DOWN ;
+                                apidv[i].state = FLAGS_DOWN ;
                             else
-                                apidvertex[i].state = FLAGS_UP ;
+                                apidv[i].state = FLAGS_UP ;
+
+                            close(apidv[i].pipe[0]) ;
+
+                            npid-- ;
                         }
                     }
                 }
@@ -547,7 +484,108 @@ static int handle_signal(pidvertex_t *apidvertex, unsigned int what)
             default : log_die(LOG_EXIT_SYS, "unexpected data in selfpipe") ;
         }
     }
+
     return ok ;
+}
+
+static int async_deps(unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph)
+{
+    log_flow() ;
+
+    int e = 0 ;
+    unsigned int pos = 0 ;
+    char trigger = 0 ;
+
+    while (apidvertex[i].nedge) {
+
+        /** TODO: the pidvertex_get_id() function make a loop
+         * through the apidvertex array to find the corresponding
+         * index of the edge at the apidvertex array.
+         * This is clearly a waste of time and need to be optimized. */
+        unsigned int id = pidvertex_get_id(apidvertex, apidvertex[i].edge[pos]) ;
+
+        if (id < 0)
+            log_dieu(LOG_EXIT_SYS, "get apidvertex id -- please make a bug report") ;
+
+        /** block until we receive a signal from the dependencies
+         * which is launched first */
+        fd_read(apidvertex[id].pipe[0], (char *)&trigger, 1) ;
+        close(apidvertex[id].pipe[0]) ;
+
+        if (trigger) {
+
+            if (trigger == (what ? 'd' : 'u'))
+                async(id, what, info, graph) ;
+            else
+                goto err ;
+        }
+
+        apidvertex[i].nedge-- ;
+        pos++ ;
+    }
+
+    e = 1 ;
+    err:
+        return e ;
+}
+
+static void async(unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph)
+{
+    /**
+     * @i: apidvertex array index
+     * */
+
+    log_flow() ;
+
+    int r ;
+    pid_t pid ;
+
+    char *treename = graph->data.s + genalloc_s(graph_hash_t,&graph->hash)[apidvertex[i].vertex].vertex ;
+
+    if (FLAGS_ISSET(apidvertex[i].state, flag) && !FLAGS_ISSET(apidvertex[i].state, flag_run)) {
+
+        apidvertex[i].state |= flag_run ;
+
+        if (pipe(apidvertex[i].pipe) < 0)
+            log_dieusys(LOG_EXIT_ZERO,"pipe") ;
+
+        pid = fork() ;
+
+        if (pid < 0)
+            log_dieusys(LOG_EXIT_SYS, "fork") ;
+
+        if (!pid) {
+
+            close(apidvertex[i].pipe[0]) ;
+
+            if (apidvertex[i].nedge)
+                if (!async_deps(i, what, info, graph))
+                    log_dieu(LOG_EXIT_SYS,"start tree: ", treename) ;
+
+            r = doit(info, treename, what) ;
+
+            char event = r ? 'd' : 'u' ;
+
+            fd_write(apidvertex[i].pipe[1], (char *)&event, 1) ;
+
+            close(apidvertex[i].pipe[1]) ;
+
+            selfpipe_finish() ;
+
+            _exit(r) ;
+
+        }
+
+        close(apidvertex[i].pipe[1]) ;
+
+        apidvertex[i].pid = pid ;
+
+    } else {
+
+        log_trace("skipping: ", treename, " -- already ", what ? "down" : "up") ;
+    }
+
+    return ;
 }
 
 static int waitit(int spfd, pidvertex_t *apidv, graph_t *graph, unsigned int what, tain *deadline, ssexec_t *info)
@@ -557,6 +595,7 @@ static int waitit(int spfd, pidvertex_t *apidv, graph_t *graph, unsigned int wha
     int r ;
     pidvertex_t apidvertextable[napid] ;
     apidvertex = apidvertextable ;
+    npid = napid ;
 
     for (; pos < napid ; pos++)
         apidvertex[pos] = apidv[pos] ;
@@ -574,6 +613,7 @@ static int waitit(int spfd, pidvertex_t *apidv, graph_t *graph, unsigned int wha
         if (!handle_signal(apidvertex, what))
             e = 0 ;
     }
+
     return e ;
 }
 
@@ -722,7 +762,6 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp, ssexec
 
         graph_free_all(&graph) ;
         pidvertex_array_free(apidv, napid) ;
-
 
     return (!r) ? 111 : 0 ;
 }
