@@ -16,8 +16,10 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/types.h>
 
 #include <66/constants.h>
+#include <66/resolve.h>
 
 int tree_isvalid(char const *base, char const *treename)
 {

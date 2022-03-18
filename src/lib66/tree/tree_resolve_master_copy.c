@@ -14,6 +14,8 @@
 
 #include <stddef.h>
 
+#include <oblibs/log.h>
+
 #include <skalibs/stralloc.h>
 
 #include <66/tree.h>

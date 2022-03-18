@@ -15,6 +15,8 @@
 #include <stdint.h>
 #include <stdlib.h>//free
 
+#include <oblibs/log.h>
+
 #include <skalibs/stralloc.h>
 #include <skalibs/cdb.h>
 

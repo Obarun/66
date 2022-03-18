@@ -15,6 +15,7 @@
 #include <stddef.h>
 
 #include <oblibs/string.h>
+#include <oblibs/log.h>
 
 #include <skalibs/stralloc.h>
 
