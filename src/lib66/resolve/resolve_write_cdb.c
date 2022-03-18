@@ -62,12 +62,12 @@ int resolve_write_cdb(resolve_wrapper_t *wres, char const *dst, char const *name
 
     } else if (wres->type == DATA_TREE) {
 
-        if (!tree_write_cdb(&c, ((resolve_tree_t *)wres->obj)))
+        if (!tree_resolve_write_cdb(&c, ((resolve_tree_t *)wres->obj)))
             goto err ;
 
     } else if (wres->type == DATA_TREE_MASTER) {
 
-        if (!tree_write_master_cdb(&c, ((resolve_tree_master_t *)wres->obj)))
+        if (!tree_resolve_write_master_cdb(&c, ((resolve_tree_master_t *)wres->obj)))
             goto err ;
 
     }
