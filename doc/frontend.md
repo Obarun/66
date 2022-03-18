@@ -827,6 +827,10 @@ Furthermore there are some keys specific to the log.
 
     The selected line will be preceded by a ISO 8601 timestamp for combined date and time representing local time according to the systems timezone, with a space (not a `T`) between the date and the time and two spaces after the time, before being processed by the next action directive.
 
+    * none
+
+    The logged line will not be preceded by any timestamp.
+
     The following are two possible examples for the [[logger]](frontend.html#Section: [logger]) section definition.
 
     ````
