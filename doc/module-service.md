@@ -27,7 +27,7 @@ The [instantiated frontend service](instantiated-service.html) is written as any
 
 ## Module directory
 
-The module directory can contain three sub-direcotories:
+The module directory can contain three sub-directories:
 
 - *configure* : This directory can contain an **executable** file script named configure. For example, `%%module_system%%/foo@/configure/configure`. The sub-directory **must** be named *configure* and the file script **must** be named *configure*. This file **is not** mandatory. The [66-enable](66-enable.html) process will detect if the file exists and it runs it if it's the case. It's up to you to write the *configure* script file with the language of your choice as long as you define a correct *shebang*.
 
