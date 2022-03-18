@@ -21,7 +21,7 @@
 
 #include <66/tree.h>
 
-int tree_seed_get_group_permissions(tree_seed_t *seed, uint8_t check_contents)
+int tree_seed_get_group_permissions(tree_seed_t *seed)
 {
     log_flow() ;
 

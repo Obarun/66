@@ -200,12 +200,12 @@ extern int tree_resolve_master_field_tosa(stralloc *sa, resolve_tree_master_t *m
  * */
 extern int tree_seed_file_isvalid(char const *seedpath, char const *treename) ;
 extern void tree_seed_free(tree_seed_t *seed) ;
-extern int tree_seed_get_group_permissions(tree_seed_t *seed, uint8_t check_contents) ;
+extern int tree_seed_get_group_permissions(tree_seed_t *seed) ;
 extern ssize_t tree_seed_get_key(char *table,char const *str) ;
 extern int tree_seed_isvalid(char const *seed) ;
 extern int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath) ;
 extern int tree_seed_resolve_path(stralloc *sa, char const *seed) ;
-extern int tree_seed_setseed(tree_seed_t *seed, char const *treename, uint8_t check_contents) ;
+extern int tree_seed_setseed(tree_seed_t *seed, char const *treename) ;
 
 
 #endif
