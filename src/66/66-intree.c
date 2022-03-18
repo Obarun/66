@@ -137,7 +137,8 @@ static void info_display_init(char const *field,char const *treename)
     if (!r) log_die_nomem("stralloc") ;
     if (r == -1) log_die(LOG_EXIT_SYS,"live: ",live.s," must be an absolute path") ;
 
-    init = tree_isinitialized(live.s, treename, OWNER) ;
+    init = tree_isinitialized(base.s, treename) ;
+    if (init == -1) log_dieu(LOG_EXIT_SYS, "resolve file of tree: ", treename) ;
 
     if (NOFIELD) info_display_field_name(field) ;
     if (!bprintf(buffer_1,"%s%s%s",init ? log_color->valid : log_color->warning, init ? "yes":"no",log_color->off))
@@ -189,7 +190,7 @@ static void info_display_depends(char const *field, char const *treename)
     if (!graph_build_g(&graph, base.s, treename, DATA_TREE))
         log_dieu(LOG_EXIT_SYS,"build the graph") ;
 
-    r = graph_matrix_get_edge_g_sorted(&sa, &graph, treename, 0) ;
+    r = graph_matrix_get_edge_g_sorted_sa(&sa, &graph, treename, 0) ;
     if (r < 0)
         log_dieu(LOG_EXIT_SYS, "get the dependencies list") ;
 
@@ -250,7 +251,7 @@ static void info_display_requiredby(char const *field, char const *treename)
     if (!graph_build_g(&graph, base.s, treename, DATA_TREE))
         log_dieu(LOG_EXIT_SYS,"build the graph") ;
 
-    r = graph_matrix_get_edge_g_sorted(&sa, &graph, treename, 1) ;
+    r = graph_matrix_get_edge_g_sorted_sa(&sa, &graph, treename, 1) ;
     if (r < 0)
         log_dieu(LOG_EXIT_SYS, "get the dependencies list") ;
 

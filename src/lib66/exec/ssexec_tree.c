@@ -576,7 +576,7 @@ void tree_parse_seed(char const *treename, tree_seed_t *seed, tree_what_t *what)
 
     if (tree_seed_isvalid(treename)) {
 
-        if (!tree_seed_setseed(seed, treename, 0))
+        if (!tree_seed_setseed(seed, treename))
             log_dieu_nclean(LOG_EXIT_SYS, &cleanup, "parse seed file: ", treename) ;
 
         if (seed->depends)
@@ -785,10 +785,14 @@ void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what, char const *cons
     if (!resolve_write(wres, solve, info->treename.s))
         log_dieu_nclean(LOG_EXIT_SYS, &cleanup, "write resolve file: ", solve, SS_RESOLVE, "/", info->treename.s) ;
 
-    if (what->depends)
+    /** check of the seed.sa.len: if the seed file is not parse at this point
+     * the seed.sa.s + seed.depends is empty which produce a segmentation fault
+     * when the -o options is passed at commandline. We have already passed
+     * through the tree_parse_options_depends anyway when it's the case */
+    if (what->depends && seed.sa.len)
         tree_parse_options_depends(g, info, seed.sa.s + seed.depends, 0, what) ;
 
-    if (what->requiredby)
+    if (what->requiredby && seed.sa.len)
         tree_parse_options_depends(g, info, seed.sa.s + seed.requiredby, 1, what) ;
 
     resolve_free(wres) ;
@@ -888,7 +892,7 @@ void tree_enable_disable_deps(graph_t *g,char const *base, char const *treename,
     size_t pos = 0, element = 0 ;
     stralloc sa = STRALLOC_ZERO ;
 
-    if (graph_matrix_get_edge_g(&sa, g, treename, action ? 0 : 1) < 0)
+    if (graph_matrix_get_edge_g_sa(&sa, g, treename, action ? 0 : 1) < 0)
         log_dieu(LOG_EXIT_SYS, "get ", action ? "dependencies" : "required by" ," of: ", treename) ;
 
     size_t len = sastr_nelement(&sa) ;
@@ -980,7 +984,7 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
 
     auto_strings(solve, base, SS_SYSTEM) ;
 
-    if (graph_matrix_get_edge_g_sorted(&sa, g, treename, requiredby) < 0)
+    if (graph_matrix_get_edge_g_sorted_sa(&sa, g, treename, requiredby) < 0)
         log_dieu(LOG_EXIT_SYS,"get sorted ", requiredby ? "required by" : "dependency", " list of tree: ", treename) ;
 
     size_t vlen = sastr_nelement(&sa) ;
@@ -1075,7 +1079,7 @@ void tree_depends_requiredby_deps(graph_t *g, char const *base, char const *tree
     stralloc sa = STRALLOC_ZERO ;
     char solve[baselen + SS_SYSTEM_LEN + 1] ;
 
-    if (graph_matrix_get_edge_g_sorted(&sa, g, treename, requiredby) < 0)
+    if (graph_matrix_get_edge_g_sorted_sa(&sa, g, treename, requiredby) < 0)
         log_dieu(LOG_EXIT_SYS,"get sorted ", requiredby ? "required by" : "dependency", " list of tree: ", treename) ;
 
     size_t vlen = sastr_nelement(&sa) ;

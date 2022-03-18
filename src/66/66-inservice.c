@@ -377,7 +377,7 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
     } else {
 
         deps.len = 0 ;
-        r = graph_matrix_get_edge_g_sorted(&deps,&graph, res->sa.s + res->name, 1) ;
+        r = graph_matrix_get_edge_g_sorted_sa(&deps,&graph, res->sa.s + res->name, 1) ;
         if (r == -1)
             log_dieu(LOG_EXIT_SYS, "get the requiredby list") ;
 
@@ -447,7 +447,7 @@ static void info_display_deps(char const *field, resolve_service_t *res)
     }
     else
     {
-        r = graph_matrix_get_edge_g_sorted(&deps,&graph, res->sa.s + res->name, 0) ;
+        r = graph_matrix_get_edge_g_sorted_sa(&deps,&graph, res->sa.s + res->name, 0) ;
         if (r == -1)
             log_dieu(LOG_EXIT_SYS, "get the dependencies list") ;
 
