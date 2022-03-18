@@ -478,7 +478,7 @@ int doit (int spfd, genalloc *gakeep, tain *deadline)
     {
         int r = iopause_g(&x,1,deadline) ;
         if (r < 0) log_dieusys(LOG_EXIT_SYS,"iopause") ;
-        if (!r) log_diesys(LOG_EXIT_SYS,"time out") ;
+        if (!r) log_die(LOG_EXIT_SYS,"time out") ;
         if (!handle_signal_pipe(gakeep)) exitcode = 0 ;
     }
     return exitcode ;
