@@ -59,7 +59,7 @@ int tree_sethome(ssexec_t *info)
             /** Tree doesn't exist yet.
              * Let see if we have a seed/<name> to create it,
              * but only if we come from the 66-enable tool. */
-            if (!strcmp(info->prog, "66-enable"))
+            if (strcmp(info->prog, "66-enable"))
                 return 0 ;
 
             if (!tree_seed_isvalid(info->treename.s))
