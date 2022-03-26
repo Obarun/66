@@ -26,6 +26,9 @@
 #include <66/enum.h>
 #include <66/parser.h>
 
+sv_alltype const sv_alltype_zero = SV_ALLTYPE_ZERO ;
+sv_name_t const sv_name_zero = SV_NAME_ZERO ;
+keynocheck const keynocheck_zero = KEYNOCHECK_ZERO ;
 
 int parser(sv_alltype *service,stralloc *src,char const *svname,int svtype)
 {
