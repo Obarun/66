@@ -489,14 +489,14 @@ static int pidvertex_get_id(pidvertex_t *apidv, unsigned int id)
     return -1 ;
 }
 
-static void pidvertex_init_fifo(pidvertex_t *apidv, graph_t *graph, tain *deadline)
+static void pidvertex_init_fifo(pidvertex_t *apidv, graph_t *graph,  ssexec_t *info, tain *deadline)
 {
     log_flow() ;
 
     unsigned int pos = 0 ;
     gid_t gid ;
 
-    if (!yourgid(&gid,getuid()))
+    if (!yourgid(&gid,info->owner))
         log_dieusys(LOG_EXIT_SYS, "get gid") ;
 
     if (!ftrigr_startf_g(&FIFO, deadline))
@@ -737,7 +737,7 @@ static int waitit(pidvertex_t *apidv, unsigned int what, graph_t *graph, tain *d
         !sig_altignore(SIGPIPE))
             log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
 
-    pidvertex_init_fifo(apidv, graph, deadline) ;
+    pidvertex_init_fifo(apidv, graph, info, deadline) ;
 
     for (pos = 0 ; pos < napid ; pos++)
         apidvertex[pos] = apidv[pos] ;
