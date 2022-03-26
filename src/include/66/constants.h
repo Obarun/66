@@ -96,6 +96,9 @@
 #define SS_SYM_VERSION_LEN (sizeof SS_SYM_VERSION - 1)
 
 #define SS_CONFIG_VERSION_NDOT 2
+
+#define SS_EVENTDIR "/event"
+#define SS_EVENTDIR_LEN (sizeof SS_EVENTDIR - 1)
 /** boot */
 #define SS_BOOT_CONF "init.conf"
 #define SS_BOOT_CONF_LEN (sizeof SS_BOOT_CONF - 1)
