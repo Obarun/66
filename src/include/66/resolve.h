@@ -64,9 +64,11 @@ struct resolve_field_table_s
 
 extern resolve_wrapper_t *resolve_set_struct(uint8_t type, void *s) ;
 extern int resolve_init(resolve_wrapper_t *wres) ;
-extern int resolve_read(resolve_wrapper_t *wres, char const *src, char const *name) ;
-extern int resolve_write(resolve_wrapper_t *wres, char const *dst, char const *name) ;
 extern int resolve_check(char const *src, char const *name) ;
+extern int resolve_read(resolve_wrapper_t *wres, char const *src, char const *name) ;
+/* convenient API: do a resolve_check then a resolve_read */
+extern int resolve_read_g(resolve_wrapper_t *wres, char const *src, char const *name) ;
+extern int resolve_write(resolve_wrapper_t *wres, char const *dst, char const *name) ;
 extern int resolve_append(genalloc *ga, resolve_wrapper_t *wres) ;
 extern int resolve_search(genalloc *ga, char const *name, uint8_t type) ;
 extern int resolve_cmp(genalloc *ga, char const *name, uint8_t type) ;
