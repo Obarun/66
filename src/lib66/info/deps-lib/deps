@@ -1,4 +1,14 @@
-info_utils.o
+info_display_field_name.o
+info_display_list.o
+info_display_nline.o
+info_field_align.o
+info_getcols_fd.o
+info_graph_display.o
+info_graph_display_service.o
+info_graph_display_tree.o
+info_graph_init.o
+info_length_from_wchar.o
+info_walk.o
 -ls6rc
 -ls6
 -loblibs
