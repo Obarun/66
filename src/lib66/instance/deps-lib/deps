@@ -1,4 +1,6 @@
-instance.o
+instance_check.o
+instance_create.o
+instance_splitname.o
 -ls6rc
 -ls6
 -loblibs

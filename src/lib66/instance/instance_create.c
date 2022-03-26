@@ -1,5 +1,5 @@
 /*
- * instance.c
+ * instance_create.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -12,60 +12,15 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <66/utils.h>
-
-#include <string.h>
+#include <stddef.h>
 
 #include <oblibs/log.h>
-#include <oblibs/files.h>
 #include <oblibs/string.h>
-#include <oblibs/directory.h>
-#include <oblibs/environ.h>
 #include <oblibs/sastr.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/djbunix.h>
 
-#include <66/enum.h>
-
-int instance_check(char const *svname)
-{
-    log_flow() ;
-
-    int r ;
-    r = get_len_until(svname,'@') ;
-    // avoid empty value after the instance template name
-    if (strlen(svname+r) <= 1 && r > 0) return 0 ;
-
-    return r ;
-}
-
-int instance_splitname(stralloc *sa,char const *name,int len,int what)
-{
-    log_flow() ;
-
-    char const *copy ;
-    size_t tlen = len + 1 ;
-
-    char template[tlen + 1] ;
-    memcpy(template,name,tlen) ;
-    template[tlen] = 0 ;
-
-    copy = name + tlen ;
-
-    sa->len = 0 ;
-    if (!what)
-    {
-        if (!stralloc_cats(sa,template) ||
-        !stralloc_0(sa)) return 0 ;
-    }
-    else
-    {
-        if (!stralloc_catb(sa,copy,strlen(copy)) ||
-        !stralloc_0(sa)) return 0 ;
-    }
-    return 1 ;
-}
+#include <66/utils.h>
 
 int instance_create(stralloc *sasv,char const *svname, char const *regex, int len)
 {
