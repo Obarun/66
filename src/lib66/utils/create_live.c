@@ -35,8 +35,6 @@ int create_live(ssexec_t *info)
 
     int r ;
 
-    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
     char ownerstr[UID_FMT] ;
     size_t ownerlen = uid_fmt(ownerstr,info->owner) ;
     size_t stelen = info->live.len + SS_STATE_LEN + 1 + ownerlen + 1 + info->treename.len ;

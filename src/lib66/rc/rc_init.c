@@ -76,6 +76,8 @@ int rc_init(ssexec_t *info, char const *const *envp)
         if (chown(info->livetree.s,info->owner,gidowner) < 0){ log_warnusys("chown directory: ",info->livetree.s) ; goto err ; }
     }
 
+    if (!create_live(info)) { log_warnusys("create live state") ; goto err ; }
+
     if (!sa_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
         { log_warnu("set revolve pointer to source") ; goto err ; }
 
@@ -87,7 +89,7 @@ int rc_init(ssexec_t *info, char const *const *envp)
         empty = 1 ;
         goto end ;
     }
-    if (!create_live(info)) { log_warnusys("create live state") ; goto err ; }
+
 
     memcpy(svdir,info->tree.s,info->tree.len) ;
     memcpy(svdir + info->tree.len ,SS_SVDIRS ,SS_SVDIRS_LEN) ;

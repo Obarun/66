@@ -52,7 +52,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
     classic = db = earlier = 0 ;
 
     gid_t gidowner ;
-    if (!yourgid(&gidowner,info->owner)) log_dieusys(LOG_EXIT_SYS,"set gid") ;
+    if (!yourgid(&gidowner,info->owner)) log_dieusys(LOG_EXIT_SYS,"get gid") ;
 
     if (argc <= 1) log_usage(usage_init) ;
     if (*argv[1] == 'c') classic = 1 ;
@@ -83,18 +83,20 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
 
     size_t dirlen ;
     char svdir[info->tree.len + SS_SVDIRS_LEN + SS_SVC_LEN + 1] ;
-    memcpy(svdir,info->tree.s,info->tree.len) ;
-    memcpy(svdir + info->tree.len ,SS_SVDIRS ,SS_SVDIRS_LEN) ;
-    memcpy(svdir + info->tree.len + SS_SVDIRS_LEN, SS_SVC ,SS_SVC_LEN) ;
+
+    auto_strings(svdir, info->tree.s, SS_SVDIRS, SS_SVC) ;
+
     dirlen = info->tree.len + SS_SVDIRS_LEN + SS_SVC_LEN ;
-    svdir[dirlen] = 0 ;
+
+    if (!create_live(info)) log_dieusys(LOG_EXIT_SYS,"create live state") ;
 
     /** svc already initiated? */
-    if (classic)
-    {
-        if (!sastr_dir_get(&sasvc,svdir,exclude,S_IFDIR)) log_dieusys(LOG_EXIT_SYS,"get classic services from: ",svdir) ;
-        if (!sasvc.len)
-        {
+    if (classic) {
+
+        if (!sastr_dir_get(&sasvc,svdir,exclude,S_IFDIR))
+            log_dieusys(LOG_EXIT_SYS,"get classic services from: ",svdir) ;
+
+        if (!sasvc.len) {
             log_info("Initialization report: no classic services into tree: ",info->treename.s) ;
             goto follow ;
         }
@@ -102,8 +104,7 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
         if (!sa_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
             log_dieu(LOG_EXIT_SYS,"set revolve pointer to source") ;
 
-        for (i = 0;i < sasvc.len; i += strlen(sasvc.s + i) + 1)
-        {
+        for (i = 0;i < sasvc.len; i += strlen(sasvc.s + i) + 1) {
             char *name = sasvc.s + i ;
             resolve_service_t res = RESOLVE_SERVICE_ZERO ;
             resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
@@ -113,17 +114,16 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
             resolve_free(wres) ;
         }
 
-        if (!earlier)
-        {
+        if (!earlier) {
             /** reverse to start first the logger */
             genalloc_reverse(resolve_service_t,&gares) ;
             if (!svc_init(info,svdir,&gares)) log_dieu(LOG_EXIT_SYS,"initiate service of tree: ",info->treename.s) ;
-        }
-        else
-        {
-            if (!create_live(info)) log_dieusys(LOG_EXIT_SYS,"create live state") ;
-            for (i = 0 ; i < genalloc_len(resolve_service_t,&gares) ; i++)
-            {
+
+        } else {
+
+
+            for (i = 0 ; i < genalloc_len(resolve_service_t,&gares) ; i++) {
+
                 logname = 0 ;
                 char *string = genalloc_s(resolve_service_t,&gares)[i].sa.s ;
                 char *name = string + genalloc_s(resolve_service_t,&gares)[i].name ;
@@ -131,14 +131,10 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
                 logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
                 if (logname > 0) name = string + genalloc_s(resolve_service_t,&gares)[i].logassoc ;
                 char tocopy[dirlen + 1 + namelen + 1] ;
-                memcpy(tocopy,svdir,dirlen) ;
-                tocopy[dirlen] = '/' ;
-                memcpy(tocopy + dirlen + 1, name, namelen) ;
-                tocopy[dirlen + 1 + namelen] = 0 ;
+                auto_strings(tocopy, svdir, "/", name) ;
                 if (!hiercopy(tocopy,string + genalloc_s(resolve_service_t,&gares)[i].runat)) log_dieusys(LOG_EXIT_SYS,"copy earlier service: ",tocopy," to: ",string + genalloc_s(resolve_service_t,&gares)[i].runat) ;
                 state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
                 state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-    //          state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
                 state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_UNKNOWN) ;
                 state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_UNKNOWN) ;
                 if (!state_write(&sta,string + genalloc_s(resolve_service_t,&gares)[i].state,name)) log_dieusys(LOG_EXIT_SYS,"write state file of: ",name) ;
@@ -154,12 +150,9 @@ int ssexec_init(int argc, char const *const *argv,char const *const *envp,ssexec
     resolve_deep_free(DATA_SERVICE, &gares) ;
 
     /** db already initiated? */
-    if (db)
-    {
-        if (!earlier)
-        {
-            if (db_ok(info->livetree.s,info->treename.s))
-            {
+    if (db) {
+        if (!earlier) {
+            if (db_ok(info->livetree.s,info->treename.s)) {
                 log_warn("db of tree: ",info->treename.s," already initialized") ;
                 goto end ;
             }
