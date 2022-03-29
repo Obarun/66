@@ -301,7 +301,7 @@ void sanitize_system(ssexec_t *info)
 
     if (!scan_mode(dst, S_IFREG))
         if (!tree_resolve_master_create(info->base.s, info->owner))
-            log_dieu(LOG_EXIT_SYS, "write resolve file of inner tree") ;
+            log_dieu(LOG_EXIT_SYS, "write Master resolve file of trees") ;
 
     auto_strings(dst + baselen, SS_TREE_CURRENT) ;
     auto_check(dst) ;
@@ -634,7 +634,7 @@ void create_tree(ssexec_t *info)
     dst[newlen] = 0 ;
 
     if (!service_resolve_master_create(info->base.s, info->treename.s))
-        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"write resolve file of inner bundle") ;
+        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"write Master resolve file of services") ;
 
     auto_strings(sym,dst, "/", SS_SYM_SVC) ;
     auto_strings(dstsym, dst, SS_SVC) ;
@@ -736,6 +736,48 @@ void create_backupdir(char const *base, char const *treename)
     auto_dir(tmp,0755) ;
 }
 
+void tree_master_modify_contents(char const *base, char const *treename)
+{
+    stralloc sa = STRALLOC_ZERO ;
+    resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+    size_t baselen = strlen(base) ;
+    char solve[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1] ;
+
+    char const *exclude[2] = { SS_MASTER + 1, 0 } ;
+
+    log_trace("modify field contents of resolve Master of file of trees") ;
+
+    auto_strings(solve, base, SS_SYSTEM, SS_RESOLVE) ;
+
+    if (!sastr_dir_get(&sa, solve, exclude, S_IFREG))
+        log_dieu_nclean(LOG_EXIT_SYS, &cleanup,"get resolve file of tree: ", treename) ;
+
+    size_t ncontents = sastr_nelement(&sa) ;
+
+    if (ncontents)
+        if (!sastr_rebuild_in_oneline(&sa))
+            log_dieu_nclean(LOG_EXIT_SYS, &cleanup, "rebuild stralloc") ;
+
+    solve[baselen + SS_SYSTEM_LEN] = 0 ;
+
+    if (!resolve_read(wres, solve, SS_MASTER + 1))
+        log_dieusys(LOG_EXIT_SYS, "read resolve Master file of trees") ;
+
+    mres.ncontents = (uint32_t)ncontents ;
+
+    if (ncontents)
+        mres.contents = resolve_add_string(wres, sa.s) ;
+    else
+        mres.contents = resolve_add_string(wres, "") ;
+
+    if (!resolve_write(wres, solve, SS_MASTER + 1))
+        log_dieusys(LOG_EXIT_SYS, "write resolve Master file of trees") ;
+
+    stralloc_free(&sa) ;
+    resolve_free(wres) ;
+}
+
 void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what, char const *const *envp)
 {
     log_flow() ;
@@ -743,7 +785,7 @@ void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what, char const *cons
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
     tree_seed_t seed = TREE_SEED_ZERO ;
-    char solve[info->base.len + SS_SYSTEM_LEN + 1] ;
+    char solve[info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1] ;
 
     auto_strings(solve, info->base.s, SS_SYSTEM) ;
 
@@ -794,6 +836,8 @@ void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what, char const *cons
 
     if (what->requiredby && seed.sa.len)
         tree_parse_options_depends(g, info, seed.sa.s + seed.requiredby, 1, what) ;
+
+    tree_master_modify_contents(info->base.s, info->treename.s) ;
 
     resolve_free(wres) ;
     tree_seed_free(&seed) ;
@@ -945,9 +989,6 @@ void tree_enable_disable(graph_t *g, char const *base, char const *treename, uin
         }
 
         auto_strings(solve, base, SS_SYSTEM) ;
-
-        if (!resolve_read(wres, solve, treename))
-            log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", solve, "/", treename) ;
 
         if (!resolve_modify_field_g(wres, base, treename, TREE_ENUM_DISEN, !action ? "0" : "1"))
             log_dieu(LOG_EXIT_SYS, "modify field: ", resolve_tree_field_table[TREE_ENUM_DISEN].field," of tree: ", treename, " with value: ", !action ? "0" : "1") ;
@@ -1297,6 +1338,8 @@ void tree_remove(graph_t *g, char const *base, char const *treename)
 
     }
 
+    tree_master_modify_contents(base, treename) ;
+
     resolve_free(wres) ;
 
     log_info("Deleted successfully: ", treename) ;
@@ -1584,7 +1627,7 @@ int ssexec_tree(int argc, char const *const *argv, char const *const *envp, ssex
     if (!r && what.remove)
         log_dieusys(LOG_EXIT_SYS,"find tree: ", info->treename.s) ;
 
-    if (!graph_build_g(&graph, info->base.s, info->treename.s, DATA_TREE))
+    if (!graph_build_g(&graph, info->base.s, info->treename.s, DATA_TREE, 0))
         log_dieu(LOG_EXIT_SYS,"build the graph") ;
 
     if (what.remove) {
