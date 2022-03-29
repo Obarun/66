@@ -32,7 +32,8 @@ int resolve_modify_field_g(resolve_wrapper_t_ref wres, char const *base, char co
 
     size_t baselen = strlen(base), tot = baselen + SS_SYSTEM_LEN + 1, treelen = 0 ;
     char *treename = 0 ;
-
+    /** The master is at the same as any service on that tree.
+     * Use the same wres type for service Master*/
     if (wres->type == DATA_SERVICE) {
         treename = ((resolve_service_t *)wres->obj)->sa.s + ((resolve_service_t *)wres->obj)->treename ;
         treelen = strlen(treename) ;
@@ -42,7 +43,7 @@ int resolve_modify_field_g(resolve_wrapper_t_ref wres, char const *base, char co
 
     char solve[tot] ;
 
-    if (wres->type == DATA_SERVICE) {
+    if (wres->type == DATA_SERVICE || wres->type == DATA_SERVICE_MASTER) {
 
         auto_strings(solve, base, SS_SYSTEM, "/", treename, SS_SVDIRS) ;
 

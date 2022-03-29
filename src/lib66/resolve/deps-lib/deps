@@ -7,11 +7,14 @@ resolve_cmp.o
 resolve_deep_free.o
 resolve_find_cdb.o
 resolve_free.o
+resolve_get_field_tosa.o
+resolve_get_field_tosa_g.o
 resolve_init.o
 resolve_modify_field.o
 resolve_modify_field_g.o
 resolve_read.o
 resolve_read_cdb.o
+resolve_read_g.o
 resolve_rmfile.o
 resolve_search.o
 resolve_set_struct.o

@@ -38,6 +38,13 @@ void resolve_deep_free(uint8_t type, genalloc *g)
 
         genalloc_free(resolve_service_t, g) ;
 
+    } else if (type == DATA_SERVICE_MASTER) {
+
+        for (; pos < genalloc_len(resolve_service_master_t, g) ; pos++)
+            stralloc_free(&genalloc_s(resolve_service_master_t, g)[pos].sa) ;
+
+        genalloc_free(resolve_service_master_t, g) ;
+
     } else if (type == DATA_TREE) {
 
         for (; pos < genalloc_len(resolve_tree_t, g) ; pos++)

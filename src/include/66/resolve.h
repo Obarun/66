@@ -46,6 +46,7 @@ struct resolve_wrapper_s
 #define RESOLVE_SET_SAWRES(wres) \
     stralloc_ref sawres = 0 ; \
     if (wres->type == DATA_SERVICE) sawres = (&((resolve_service_t *)wres->obj)->sa) ; \
+    else if (wres->type == DATA_SERVICE_MASTER) sawres = (&((resolve_service_master_t *)wres->obj)->sa) ; \
     else if (wres->type == DATA_TREE) sawres = (&((resolve_tree_t *)wres->obj)->sa) ; \
     else if (wres->type == DATA_TREE_MASTER) sawres = (&((resolve_tree_master_t *)wres->obj)->sa) ;
 #endif
@@ -74,6 +75,8 @@ extern int resolve_search(genalloc *ga, char const *name, uint8_t type) ;
 extern int resolve_cmp(genalloc *ga, char const *name, uint8_t type) ;
 extern void resolve_rmfile(char const *src,char const *name) ;
 extern ssize_t resolve_add_string(resolve_wrapper_t *wres, char const *data) ;
+extern int resolve_get_field_tosa_g(stralloc *sa, char const *base, char const *treename, char const *element, uint8_t data_type, uint8_t field) ;
+extern int resolve_get_field_tosa(stralloc *sa, resolve_wrapper_t_ref wres, uint8_t field) ;
 extern int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *by) ;
 extern int resolve_modify_field_g(resolve_wrapper_t_ref wres, char const *base, char const *element, uint8_t field, char const *value) ;
 /**

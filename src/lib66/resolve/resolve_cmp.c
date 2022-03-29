@@ -42,6 +42,18 @@ int resolve_cmp(genalloc *ga, char const *name, uint8_t type)
                 return 1 ;
         }
 
+    } else if (type == DATA_SERVICE_MASTER) {
+
+        len = genalloc_len(resolve_service_master_t, ga) ;
+
+        for (;pos < len ; pos++) {
+
+            char *str = genalloc_s(resolve_service_master_t, ga)[pos].sa.s ;
+            char *s = str + genalloc_s(resolve_service_master_t, ga)[pos].name ;
+            if (!strcmp(name,s))
+                return 1 ;
+        }
+
     } else if (type == DATA_TREE) {
 
         len = genalloc_len(resolve_tree_t, ga) ;
@@ -50,6 +62,18 @@ int resolve_cmp(genalloc *ga, char const *name, uint8_t type)
 
             char *str = genalloc_s(resolve_tree_t, ga)[pos].sa.s ;
             char *s = str + genalloc_s(resolve_tree_t, ga)[pos].name ;
+            if (!strcmp(name,s))
+                return 1 ;
+        }
+
+    } else if (type == DATA_TREE_MASTER) {
+
+        len = genalloc_len(resolve_tree_master_t, ga) ;
+
+        for (;pos < len ; pos++) {
+
+            char *str = genalloc_s(resolve_tree_master_t, ga)[pos].sa.s ;
+            char *s = str + genalloc_s(resolve_tree_master_t, ga)[pos].name ;
             if (!strcmp(name,s))
                 return 1 ;
         }

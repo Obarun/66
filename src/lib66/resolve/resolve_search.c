@@ -41,6 +41,17 @@ int resolve_search(genalloc *ga, char const *name, uint8_t type)
                 return pos ;
         }
 
+    } else if (type == DATA_SERVICE_MASTER) {
+
+        len = genalloc_len(resolve_service_master_t, ga) ;
+
+        for (;pos < len ; pos++) {
+
+            char *s = genalloc_s(resolve_service_master_t,ga)[pos].sa.s + genalloc_s(resolve_service_master_t,ga)[pos].name ;
+            if (!strcmp(name,s))
+                return pos ;
+        }
+
     } else if (type == DATA_TREE) {
 
         len = genalloc_len(resolve_tree_t, ga) ;

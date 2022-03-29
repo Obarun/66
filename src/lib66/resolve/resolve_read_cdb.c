@@ -44,7 +44,12 @@ int resolve_read_cdb(resolve_wrapper_t *wres, char const *name)
 
     if (wres->type == DATA_SERVICE) {
 
-        if (!service_read_cdb(&c, ((resolve_service_t *)wres->obj)))
+        if (!service_resolve_read_cdb(&c, ((resolve_service_t *)wres->obj)))
+            goto err ;
+
+    } else if (wres->type == DATA_SERVICE_MASTER) {
+
+        if (!service_resolve_master_read_cdb(&c, ((resolve_service_master_t *)wres->obj)))
             goto err ;
 
     } else if (wres->type == DATA_TREE){
@@ -54,7 +59,7 @@ int resolve_read_cdb(resolve_wrapper_t *wres, char const *name)
 
     } else if (wres->type == DATA_TREE_MASTER) {
 
-        if (!tree_resolve_read_master_cdb(&c, ((resolve_tree_master_t *)wres->obj)))
+        if (!tree_resolve_master_read_cdb(&c, ((resolve_tree_master_t *)wres->obj)))
             goto err ;
     }
 

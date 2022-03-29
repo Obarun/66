@@ -36,6 +36,15 @@ int resolve_append(genalloc *ga, resolve_wrapper_t *wres)
         if (!genalloc_append(resolve_service_t, ga, &cp))
             goto err ;
 
+    } else if (wres->type == DATA_SERVICE_MASTER) {
+
+        resolve_service_master_t cp = RESOLVE_SERVICE_MASTER_ZERO ;
+        if (!service_resolve_master_copy(&cp, ((resolve_service_master_t *)wres->obj)))
+            goto err ;
+
+        if (!genalloc_append(resolve_service_master_t, ga, &cp))
+            goto err ;
+
     } else if (wres->type == DATA_TREE) {
 
         resolve_tree_t cp = RESOLVE_TREE_ZERO ;

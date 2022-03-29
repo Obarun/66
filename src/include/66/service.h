@@ -26,6 +26,14 @@
 #include <66/ssexec.h>
 #include <66/resolve.h>
 
+/**
+ *
+ *
+ * obsolete functions
+ *
+ *
+ *
+ * */
 
 /** Graph struct */
 typedef struct ss_resolve_graph_ndeps_s ss_resolve_graph_ndeps_t ;
@@ -52,6 +60,9 @@ enum visit_e
     SS_GRAY,
     SS_BLACK
 } ;
+
+#define DATA_SERVICE 0
+#define DATA_SERVICE_MASTER 3
 
 typedef struct resolve_service_s resolve_service_t, *resolve_service_t_ref ;
 struct resolve_service_s
@@ -135,7 +146,48 @@ enum resolve_service_enum_e
     SERVICE_ENUM_ENDOFKEY
 } ;
 
+typedef struct resolve_service_master_s resolve_service_master_t, *resolve_service_master_t_ref ;
+struct resolve_service_master_s
+{
+    uint32_t salen ;
+    stralloc sa ;
+
+    uint32_t name ;
+
+    uint32_t classic ;
+    uint32_t bundle ;
+    uint32_t longrun ;
+    uint32_t oneshot ;
+    uint32_t module ;
+
+    uint32_t nclassic ;
+    uint32_t nbundle ;
+    uint32_t nlongrun ;
+    uint32_t noneshot ;
+    uint32_t nmodule ;
+
+} ;
+#define RESOLVE_SERVICE_MASTER_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0 }
+
+typedef enum resolve_service_master_enum_e resolve_service_master_enum_t, *resolve_service_master_enum_t_ref;
+enum resolve_service_master_enum_e
+{
+    SERVICE_ENUM_MASTER_NAME = 0,
+    SERVICE_ENUM_MASTER_CLASSIC,
+    SERVICE_ENUM_MASTER_BUNDLE,
+    SERVICE_ENUM_MASTER_LONGRUN,
+    SERVICE_ENUM_MASTER_ONESHOT,
+    SERVICE_ENUM_MASTER_MODULE,
+    SERVICE_ENUM_MASTER_NCLASSIC,
+    SERVICE_ENUM_MASTER_NBUNDLE,
+    SERVICE_ENUM_MASTER_NLONGRUN,
+    SERVICE_ENUM_MASTER_NONESHOT,
+    SERVICE_ENUM_MASTER_NMODULE,
+    SERVICE_ENUM_MASTER_ENDOFKEY
+} ;
+
 extern resolve_field_table_t resolve_service_field_table[] ;
+extern resolve_field_table_t resolve_service_master_field_table[] ;
 
 extern int service_isenabled(char const *sv) ;
 extern int service_isenabledat(stralloc *tree, char const *sv) ;
@@ -151,22 +203,32 @@ extern int service_intree(stralloc *svtree, char const *svname, char const *tree
  *
  * */
 
-extern int service_read_cdb(cdb *c, resolve_service_t *res) ;
-extern int service_write_cdb(cdbmaker *c, resolve_service_t *sres) ;
+/** Service */
 extern int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res) ;
-extern int service_resolve_sort_bytype(stralloc *list, char const *src) ;
-extern int service_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst) ;
-extern int service_resolve_setlognwrite(resolve_service_t *sv, char const *dst) ;
-extern int service_resolve_master_create(char const *base, char const *treename) ;
-extern int service_resolve_master_write(ssexec_t *info, ss_resolve_graph_t *graph, char const *dir, unsigned int reverse) ;
+extern int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve_service_enum_t field) ;
 extern int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t field, char const *data) ;
-extern int service_resolve_field_tosa(stralloc *sa, resolve_service_t *res, resolve_service_enum_t field) ;
+extern int service_resolve_read_cdb(cdb *c, resolve_service_t *res) ;
+extern int service_resolve_setlognwrite(resolve_service_t *sv, char const *dst) ;
+extern int service_resolve_setnwrite(sv_alltype *services, ssexec_t *info, char const *dst) ;
+extern int service_resolve_sort_bytype(stralloc *list, char const *src) ;
+extern int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres) ;
+
+/** Master */
+extern int service_resolve_master_copy(resolve_service_master_t *dst, resolve_service_master_t *mres) ;
+extern int service_resolve_master_create(char const *base, char const *treename) ;
+extern int service_resolve_master_get_field_tosa(stralloc *sa, resolve_service_master_t *mres, resolve_service_master_enum_t field) ;
+extern int service_resolve_master_modify_field(resolve_service_master_t *mres, uint8_t field, char const *data) ;
+extern int service_resolve_master_read_cdb(cdb *c, resolve_service_master_t *tres) ;
+extern int service_resolve_master_write(graph_t *graph, char const *dest) ;
+extern int service_resolve_master_write_cdb(cdbmaker *c, resolve_service_master_t *mres) ;
+
 /**
+ *
  *
  * obsolete function
  *
- *
  * */
+
 extern int service_resolve_add_deps(genalloc *tokeep, resolve_service_t *res, char const *src) ;
 extern int service_resolve_add_rdeps(genalloc *tokeep, resolve_service_t *res, char const *src) ;
 extern int service_resolve_add_logger(genalloc *ga,char const *src) ;

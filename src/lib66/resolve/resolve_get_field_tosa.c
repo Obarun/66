@@ -1,5 +1,5 @@
 /*
- * resolve_modify_field.c
+ * resolve_get_field_tosa.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -12,22 +12,24 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
 
 #include <oblibs/log.h>
 
-#include <66/resolve.h>
-#include <66/service.h>
-#include <66/tree.h>
-#include <66/graph.h>
+#include <skalibs/stralloc.h>
 
-int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *by)
+#include <66/resolve.h>
+#include <66/tree.h>
+#include <66/service.h>
+#include <66/constants.h>
+
+int resolve_get_field_tosa(stralloc *sa, resolve_wrapper_t_ref wres, uint8_t field)
 {
     log_flow() ;
 
     int e = 0 ;
-
     resolve_wrapper_t_ref mwres = 0 ;
 
     if (wres->type == DATA_SERVICE) {
@@ -35,9 +37,7 @@ int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *
         resolve_service_t_ref res = (resolve_service_t *)wres->obj  ;
         mwres = resolve_set_struct(DATA_SERVICE, res) ;
 
-        log_trace("modify field ", resolve_service_field_table[field].field," of service ", res->sa.s + res->name, " with value: ", by) ;
-
-        if (!service_resolve_modify_field(res, field, by))
+        if (!service_resolve_get_field_tosa(sa, res, field))
             goto err ;
 
     } else if (wres->type == DATA_SERVICE_MASTER) {
@@ -45,9 +45,7 @@ int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *
         resolve_service_master_t_ref res = (resolve_service_master_t *)wres->obj  ;
         mwres = resolve_set_struct(DATA_SERVICE_MASTER, res) ;
 
-        log_trace("modify field ", resolve_service_master_field_table[field].field," of resolve Master file of services with value: ", by) ;
-
-        if (!service_resolve_master_modify_field(res, field, by))
+        if (!service_resolve_master_get_field_tosa(sa, res, field))
             goto err ;
 
     } else if (wres->type == DATA_TREE) {
@@ -55,9 +53,7 @@ int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *
         resolve_tree_t_ref res = (resolve_tree_t *)wres->obj  ;
         mwres = resolve_set_struct(DATA_TREE, res) ;
 
-        log_trace("modify field ", resolve_tree_field_table[field].field," of tree ", res->sa.s + res->name, " with value: ", by) ;
-
-        if (!tree_resolve_modify_field(res, field, by))
+        if (!tree_resolve_get_field_tosa(sa, res, field))
             goto err ;
 
     } else if (wres->type == DATA_TREE_MASTER) {
@@ -65,9 +61,7 @@ int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *
         resolve_tree_master_t_ref res = (resolve_tree_master_t *)wres->obj  ;
         mwres = resolve_set_struct(DATA_TREE_MASTER, res) ;
 
-        log_trace("modify field ", resolve_tree_master_field_table[field].field," of resolve Master file of trees with value: ", by) ;
-
-        if (!tree_resolve_master_modify_field(res, field, by))
+        if (!tree_resolve_master_get_field_tosa(sa, res, field))
             goto err ;
     }
 
@@ -75,4 +69,5 @@ int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *
     err:
         free(mwres) ;
         return e ;
+
 }
