@@ -28,7 +28,9 @@ resolve_field_table_t resolve_tree_master_field_table[] = {
     [TREE_ENUM_MASTER_ALLOW] = { .field = "allow" },
     [TREE_ENUM_MASTER_ENABLED] = { .field = "enabled" },
     [TREE_ENUM_MASTER_CURRENT] = { .field = "current" },
+    [TREE_ENUM_MASTER_CONTENTS] = { .field = "contents" },
     [TREE_ENUM_MASTER_NENABLED] = { .field = "nenabled" },
+    [TREE_ENUM_MASTER_NCONTENTS] = { .field = "ncontents" },
     [TREE_ENUM_MASTER_ENDOFKEY] = { .field = 0 }
 } ;
 
@@ -59,9 +61,18 @@ int tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint8_t field,
             mres->current = resolve_add_string(wres,data) ;
             break ;
 
+        case TREE_ENUM_MASTER_CONTENTS:
+            mres->contents = resolve_add_string(wres,data) ;
+            break ;
+
         case TREE_ENUM_MASTER_NENABLED:
             if (!uint0_scan(data, &ifield)) goto err ;
             mres->nenabled = ifield ;
+            break ;
+
+        case TREE_ENUM_MASTER_NCONTENTS:
+            if (!uint0_scan(data, &ifield)) goto err ;
+            mres->ncontents = ifield ;
             break ;
 
         default:

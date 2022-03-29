@@ -37,7 +37,9 @@ int tree_resolve_master_copy(resolve_tree_master_t *dst, resolve_tree_master_t *
     dst->allow = mres->allow ;
     dst->enabled = mres->enabled ;
     dst->current = mres->current ;
+    dst->current = mres->contents ;
     dst->nenabled = mres->nenabled ;
+    dst->nenabled = mres->ncontents ;
 
     return 1 ;
 

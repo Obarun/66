@@ -50,7 +50,7 @@ int tree_resolve_master_create(char const *base, uid_t owner)
     mres.name = resolve_add_string(wres, SS_MASTER + 1) ;
     mres.allow = resolve_add_string(wres, pw->pw_name) ;
 
-    log_trace("write inner resolve file of trees") ;
+    log_trace("write Master resolve file of trees") ;
     if (!resolve_write(wres, dst, SS_MASTER + 1))
         goto err ;
 

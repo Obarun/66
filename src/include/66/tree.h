@@ -32,6 +32,9 @@
 #define TREE_GROUPS_USER "user"
 #define TREE_GROUPS_USER_LEN (sizeof TREE_GROUPS_USER - 1)
 
+#define DATA_TREE 1
+#define DATA_TREE_MASTER 2
+
 typedef struct resolve_tree_s resolve_tree_t, *resolve_tree_t_ref ;
 struct resolve_tree_s
 {
@@ -85,11 +88,13 @@ struct resolve_tree_master_s
    uint32_t allow ;
    uint32_t enabled ;
    uint32_t current ;
+   uint32_t contents ;
 
    uint32_t nenabled ;
+   uint32_t ncontents ;
 
 } ;
-#define RESOLVE_TREE_MASTER_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0 }
+#define RESOLVE_TREE_MASTER_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0 }
 
 typedef enum resolve_tree_master_enum_e resolve_tree_master_enum_t, *resolve_tree_master_enum_t_ref;
 enum resolve_tree_master_enum_e
@@ -98,7 +103,9 @@ enum resolve_tree_master_enum_e
     TREE_ENUM_MASTER_ALLOW,
     TREE_ENUM_MASTER_ENABLED,
     TREE_ENUM_MASTER_CURRENT,
+    TREE_ENUM_MASTER_CONTENTS,
     TREE_ENUM_MASTER_NENABLED,
+    TREE_ENUM_MASTER_NCONTENTS,
     TREE_ENUM_MASTER_ENDOFKEY
 } ;
 
@@ -183,15 +190,15 @@ extern int tree_resolve_read_cdb(cdb *c, resolve_tree_t *tres) ;
 extern int tree_resolve_write_cdb(cdbmaker *c, resolve_tree_t *tres) ;
 extern int tree_resolve_copy(resolve_tree_t *dst, resolve_tree_t *tres) ;
 extern int tree_resolve_modify_field(resolve_tree_t *tres, uint8_t field, char const *data) ;
-extern int tree_resolve_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree_enum_t field) ;
+extern int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree_enum_t field) ;
 
 /** Master */
-extern int tree_resolve_read_master_cdb(cdb *c, resolve_tree_master_t *mres) ;
-extern int tree_resolve_write_master_cdb(cdbmaker *c, resolve_tree_master_t *mres) ;
+extern int tree_resolve_master_read_cdb(cdb *c, resolve_tree_master_t *mres) ;
+extern int tree_resolve_master_write_cdb(cdbmaker *c, resolve_tree_master_t *mres) ;
 extern int tree_resolve_master_create(char const *base, uid_t owner) ;
 extern int tree_resolve_master_copy(resolve_tree_master_t *dst, resolve_tree_master_t *mres) ;
 extern int tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint8_t field, char const *data) ;
-extern int tree_resolve_master_field_tosa(stralloc *sa, resolve_tree_master_t *mres, resolve_tree_master_enum_t field) ;
+extern int tree_resolve_master_get_field_tosa(stralloc *sa, resolve_tree_master_t *mres, resolve_tree_master_enum_t field) ;
 
 /**
  *
