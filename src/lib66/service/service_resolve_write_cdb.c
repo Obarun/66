@@ -1,5 +1,5 @@
 /*
- * service_write_cdb.c
+ * service_resolve_write_cdb.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -19,7 +19,7 @@
 #include <66/resolve.h>
 #include <66/service.h>
 
-int service_write_cdb(cdbmaker *c, resolve_service_t *sres)
+int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres)
 {
 
     log_flow() ;
