@@ -1,5 +1,5 @@
 /*
- * service.c
+ * service_resolve_get_field_tosa.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -18,155 +18,165 @@
 #include <oblibs/string.h>
 
 #include <skalibs/stralloc.h>
+#include <skalibs/types.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
 
-int service_resolve_field_to_sa(stralloc *sa, resolve_service_t *res, resolve_service_enum_t field)
+int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve_service_enum_t field)
 {
     log_flow() ;
 
-    uint32_t ifield ;
+    char fmt[UINT32_FMT] ;
+    char const *str = 0 ;
 
     switch(field) {
 
         case SERVICE_ENUM_NAME:
-            ifield = res->name ;
+            str = res->sa.s + res->name ;
             break ;
 
         case SERVICE_ENUM_DESCRIPTION:
-            ifield = res->description ;
+            str = res->sa.s + res->description ;
             break ;
 
         case SERVICE_ENUM_VERSION:
-            ifield = res->version ;
+            str = res->sa.s + res->version ;
             break ;
 
         case SERVICE_ENUM_LOGGER:
-            ifield = res->logger ;
+            str = res->sa.s + res->logger ;
             break ;
 
         case SERVICE_ENUM_LOGREAL:
-            ifield = res->logreal ;
+            str = res->sa.s + res->logreal ;
             break ;
 
         case SERVICE_ENUM_LOGASSOC:
-            ifield = res->logassoc ;
+            str = res->sa.s + res->logassoc ;
             break ;
 
         case SERVICE_ENUM_DSTLOG:
-            ifield = res->dstlog ;
+            str = res->sa.s + res->dstlog ;
             break ;
 
         case SERVICE_ENUM_DEPENDS:
-            ifield = res->depends ;
+            str = res->sa.s + res->depends ;
             break ;
 
         case SERVICE_ENUM_REQUIREDBY:
-            ifield = res->requiredby ;
+            str = res->sa.s + res->requiredby ;
             break ;
 
         case SERVICE_ENUM_OPTSDEPS:
-            ifield = res->optsdeps ;
+            str = res->sa.s + res->optsdeps ;
             break ;
 
         case SERVICE_ENUM_EXTDEPS:
-            ifield = res->extdeps ;
+            str = res->sa.s + res->extdeps ;
             break ;
 
         case SERVICE_ENUM_CONTENTS:
-            ifield = res->contents ;
+            str = res->sa.s + res->contents ;
             break ;
 
         case SERVICE_ENUM_SRC:
-            ifield = res->src ;
+            str = res->sa.s + res->src ;
             break ;
 
         case SERVICE_ENUM_SRCONF:
-            ifield = res->srconf ;
+            str = res->sa.s + res->srconf ;
             break ;
 
         case SERVICE_ENUM_LIVE:
-            ifield = res->live ;
+            str = res->sa.s + res->live ;
             break ;
 
         case SERVICE_ENUM_RUNAT:
-            ifield = res->runat ;
+            str = res->sa.s + res->runat ;
             break ;
 
         case SERVICE_ENUM_TREE:
-            ifield = res->tree ;
+            str = res->sa.s + res->tree ;
             break ;
 
         case SERVICE_ENUM_TREENAME:
-            ifield = res->treename ;
+            str = res->sa.s + res->treename ;
             break ;
 
         case SERVICE_ENUM_STATE:
-            ifield = res->state ;
+            str = res->sa.s + res->state ;
             break ;
 
         case SERVICE_ENUM_EXEC_RUN:
-            ifield = res->exec_run ;
+            str = res->sa.s + res->exec_run ;
             break ;
 
         case SERVICE_ENUM_EXEC_LOG_RUN:
-            ifield = res->exec_log_run ;
+            str = res->sa.s + res->exec_log_run ;
             break ;
 
         case SERVICE_ENUM_REAL_EXEC_RUN:
-            ifield = res->real_exec_run ;
+            str = res->sa.s + res->real_exec_run ;
             break ;
 
         case SERVICE_ENUM_REAL_EXEC_LOG_RUN:
-            ifield = res->real_exec_log_run ;
+            str = res->sa.s + res->real_exec_log_run ;
             break ;
 
         case SERVICE_ENUM_EXEC_FINISH:
-            ifield = res->exec_finish ;
+            str = res->sa.s + res->exec_finish ;
             break ;
 
         case SERVICE_ENUM_REAL_EXEC_FINISH:
-            ifield = res->real_exec_finish ;
+            str = res->sa.s + res->real_exec_finish ;
             break ;
 
         case SERVICE_ENUM_TYPE:
-            ifield = res->type ;
+            fmt[uint32_fmt(fmt,res->type)] = 0 ;
+            str = fmt ;
             break ;
 
         case SERVICE_ENUM_NDEPENDS:
-            ifield = res->ndepends ;
+            fmt[uint32_fmt(fmt,res->ndepends)] = 0 ;
+            str = fmt ;
             break ;
 
         case SERVICE_ENUM_NREQUIREDBY:
-            ifield = res->nrequiredby ;
+            fmt[uint32_fmt(fmt,res->nrequiredby)] = 0 ;
+            str = fmt ;
             break ;
 
         case SERVICE_ENUM_NOPTSDEPS:
-            ifield = res->noptsdeps ;
+            fmt[uint32_fmt(fmt,res->noptsdeps)] = 0 ;
+            str = fmt ;
             break ;
 
         case SERVICE_ENUM_NEXTDEPS:
-            ifield = res->nextdeps ;
+            fmt[uint32_fmt(fmt,res->nextdeps)] = 0 ;
+            str = fmt ;
             break ;
 
         case SERVICE_ENUM_NCONTENTS:
-            ifield = res->ncontents ;
+            fmt[uint32_fmt(fmt,res->ncontents)] = 0 ;
+            str = fmt ;
             break ;
 
         case SERVICE_ENUM_DOWN:
-            ifield = res->down ;
+            fmt[uint32_fmt(fmt,res->down)] = 0 ;
+            str = fmt ;
             break ;
 
         case SERVICE_ENUM_DISEN:
-            ifield = res->disen ;
+            fmt[uint32_fmt(fmt,res->disen)] = 0 ;
+            str = fmt ;
             break ;
 
         default:
             return 0 ;
     }
 
-    if (!auto_stra(sa,res->sa.s + ifield))
+    if (!auto_stra(sa,str))
         return 0 ;
 
     return 1 ;
