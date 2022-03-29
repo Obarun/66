@@ -39,7 +39,7 @@ int service_isenabled(char const *sv)
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     size_t newlen = 0, pos = 0 ;
-    int e = -1 ;
+    int e = -1, r ;
     char const *exclude[3] = { SS_BACKUP + 1, SS_RESOLVE + 1, 0 } ;
 
     if (!set_ownersysdir(&sa, getuid())) {
@@ -74,13 +74,15 @@ int service_isenabled(char const *sv)
         char trees[newlen + strlen(treename) + SS_SVDIRS_LEN + 1] ;
         auto_strings(trees, tmp, treename, SS_SVDIRS) ;
 
-        if (resolve_check(trees, sv)) {
+        r = resolve_read_g(wres, trees, sv) ;
 
-            if (!resolve_read(wres, trees, sv)) {
+        if (r < 0) {
 
-                log_warnu("read resolve file: ", trees, "/", sv) ;
-                goto freed ;
-            }
+            log_warnu("read resolve file: ", trees, "/", sv) ;
+            e = -1 ;
+            goto freed ;
+
+        } else if (r) {
 
             if (res.disen) {
 
@@ -91,6 +93,7 @@ int service_isenabled(char const *sv)
 
             } else {
 
+                log_trace(sv, " disabled at tree: ", treename) ;
                 e = 2 ;
                 goto freed ;
             }

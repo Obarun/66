@@ -16,6 +16,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/types.h>
 
 #include <66/resolve.h>
 
@@ -29,12 +30,15 @@ int resolve_read_g(resolve_wrapper_t *wres, char const *src, char const *name)
     char tmp[srclen + SS_RESOLVE_LEN + 1 + namelen + 1] ;
     auto_strings(tmp,src,SS_RESOLVE,"/",name) ;
 
-    r = scan_mode(tmp,S_IFREG) ;
-    if (r <= 0)
-        log_warnusys_return(LOG_EXIT_ZERO,"found resolve file: ", tmp) ;
+    int r = scan_mode(tmp,S_IFREG) ;
+    if (r < 0)
+        return -1 ;
+
+    if (!r)
+        return 0 ;
 
     if (!resolve_read_cdb(wres,tmp))
-        return 0 ;
+        return -1 ;
 
     return 1 ;
 }
