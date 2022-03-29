@@ -1,5 +1,5 @@
 /*
- * tree_resolve_field_tosa.c
+ * tree_resolve_get_field_tosa.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -20,7 +20,7 @@
 #include <66/tree.h>
 #include <66/resolve.h>
 
-int tree_resolve_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree_enum_t field)
+int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree_enum_t field)
 {
     log_flow() ;
 
