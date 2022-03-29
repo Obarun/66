@@ -1,5 +1,5 @@
 /*
- * tree_resolve_read_master_cdb.c
+ * tree_resolve_master_read_cdb.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -23,7 +23,7 @@
 #include <66/tree.h>
 #include <66/resolve.h>
 
-int tree_resolve_read_master_cdb(cdb *c, resolve_tree_master_t *mres)
+int tree_resolve_master_read_cdb(cdb *c, resolve_tree_master_t *mres)
 {
     log_flow() ;
 
@@ -51,9 +51,17 @@ int tree_resolve_read_master_cdb(cdb *c, resolve_tree_master_t *mres)
     resolve_find_cdb(&tmp,c,"current") ;
     mres->current = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
 
+    /* contents */
+    resolve_find_cdb(&tmp,c,"contents") ;
+    mres->contents = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
+
     /* nenabled */
     x = resolve_find_cdb(&tmp,c,"nenabled") ;
     mres->nenabled = x ;
+
+    /* ncontents */
+    x = resolve_find_cdb(&tmp,c,"ncontents") ;
+    mres->ncontents = x ;
 
     free(wres) ;
     stralloc_free(&tmp) ;

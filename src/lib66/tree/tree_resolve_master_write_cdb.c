@@ -1,5 +1,5 @@
 /*
- * tree_resolve_write_master_cdb.c
+ * tree_resolve_master_write_cdb.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -19,7 +19,7 @@
 #include <66/tree.h>
 #include <66/resolve.h>
 
-int tree_resolve_write_master_cdb(cdbmaker *c, resolve_tree_master_t *mres)
+int tree_resolve_master_write_cdb(cdbmaker *c, resolve_tree_master_t *mres)
 {
     log_flow() ;
 
@@ -37,8 +37,14 @@ int tree_resolve_write_master_cdb(cdbmaker *c, resolve_tree_master_t *mres)
     /* current */
     !resolve_add_cdb(c,"current",str + mres->current) ||
 
+    /* contents */
+    !resolve_add_cdb(c,"contents",str + mres->contents) ||
+
     /* nenabled */
-    !resolve_add_cdb_uint(c,"nenabled",mres->nenabled)) return 0 ;
+    !resolve_add_cdb_uint(c,"nenabled",mres->nenabled) ||
+
+    /* ncontents */
+    !resolve_add_cdb_uint(c,"ncontents",mres->ncontents)) return 0 ;
 
     return 1 ;
 }
