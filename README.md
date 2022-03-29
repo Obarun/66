@@ -47,7 +47,7 @@ Contact information
 
 * XMPP Channel:
   obarun@muc.syntazia.org
-  
+
 
 Supports the project
 ---------------------
@@ -73,7 +73,7 @@ You can find several examples for common daemon [here](https://framagit.org/pkg/
 
 By default, 66 use [execline](http://skarnet.org/software/execline) as scripting language.
 [66-tools](https://framagit.org/obarun/66-tools) provide some additonal tools to help you on this task.
-Some are specific to `execline` where other can be used on classic shell.
+Some are specific to `execline` where other can be used on classic shell. However, you can specify the scripting language to use.
 
 Examples of common use
 ----------------------
