@@ -1,5 +1,5 @@
 /*
- * service_read_cdb.c
+ * service_resolve_read_cdb.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -23,7 +23,7 @@
 #include <66/resolve.h>
 #include <66/service.h>
 
-int service_read_cdb(cdb *c, resolve_service_t *res)
+int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
 {
     log_flow() ;
 
