@@ -28,7 +28,7 @@
 #include <66/enum.h>
 #include <66/graph.h>
 
-/** @tree: absolute path of the tree
+/** @tree: absolute path of the tree including SS_SVDIRS
  * what = 0 -> classic
  * what = 1 -> atomic and bundle
  * what > 1 -> module */
@@ -36,31 +36,44 @@ int graph_build_service_bytree(graph_t *g, char const *tree, uint8_t what)
 {
     log_flow() ;
 
-    int e = 0 ;
+    int e = 0, pos = 0 ;
     stralloc sa = STRALLOC_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
-    size_t treelen = strlen(tree), pos = 0 ;
-    char solve[treelen + SS_SVDIRS_LEN + SS_RESOLVE_LEN + 1] ;
+    resolve_service_master_t mres = RESOLVE_SERVICE_MASTER_ZERO ;
+    resolve_wrapper_t_ref mwres = resolve_set_struct(DATA_SERVICE_MASTER, &mres) ;
 
-    auto_strings(solve, tree, SS_SVDIRS, SS_RESOLVE) ;
-
-    char const *exclude[2] = { SS_MASTER + 1, 0 } ;
-
-    if (!sastr_dir_get(&sa,solve,exclude,S_IFREG))
+    if (!resolve_read_g(mwres, tree, SS_MASTER + 1)) {
+        log_warnu("read resolve Master file of trees") ;
         goto err ;
+    }
 
-    solve[treelen + SS_SVDIRS_LEN] = 0 ;
+    if (mres.nclassic)
+        if (!auto_stra(&sa, mres.sa.s + mres.classic))
+            goto err ;
 
-    if (!service_resolve_sort_bytype(&sa, solve))
-        goto err ;
+    if (mres.nmodule)
+        if (!auto_stra(&sa, mres.sa.s + mres.module))
+            goto err ;
+
+    if (mres.nbundle)
+        if (!auto_stra(&sa, mres.sa.s + mres.bundle))
+            goto err ;
+
+    if (mres.nlongrun)
+        if (!auto_stra(&sa, mres.sa.s + mres.longrun))
+            goto err ;
+
+    if (mres.noneshot)
+        if (!auto_stra(&sa, mres.sa.s + mres.oneshot))
+            goto err ;
 
     FOREACH_SASTR(&sa, pos) {
 
         char *service = sa.s + pos ;
 
-        if (!resolve_read(wres, solve, service))
+        if (!resolve_read(wres, tree, service))
             goto err ;
 
         char *str = res.sa.s ;
@@ -118,6 +131,7 @@ int graph_build_service_bytree(graph_t *g, char const *tree, uint8_t what)
 
     err:
         resolve_free(wres) ;
+        resolve_free(mwres) ;
         stralloc_free(&sa) ;
         return e ;
 }
