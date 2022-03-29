@@ -20,14 +20,14 @@
 #include <skalibs/uint32.h>
 #include <skalibs/uint64.h>
 
-#define SS_FLAGS_FALSE 0
-#define SS_FLAGS_TRUE 1
-#define SS_FLAGS_UNKNOWN 2
-#define SS_FLAGS_RELOAD 0
-#define SS_FLAGS_INIT 1
-#define SS_FLAGS_UNSUPERVISE 2
-#define SS_FLAGS_STATE 3
-#define SS_FLAGS_PID 4
+#define SS_FLAGS_FALSE (1 << 1)
+#define SS_FLAGS_TRUE (1 << 2)
+#define SS_FLAGS_UNKNOWN (1 << 3)
+#define SS_FLAGS_RELOAD (1 << 4)
+#define SS_FLAGS_INIT (1 << 5)
+#define SS_FLAGS_UNSUPERVISE (1 << 6)
+#define SS_FLAGS_STATE (1 << 7)
+#define SS_FLAGS_PID (1 << 8)
 
 typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;
 struct ss_state_s
