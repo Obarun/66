@@ -33,7 +33,7 @@
 #include <66/utils.h>
 #include <66/constants.h>
 
-#define MAXOPTS 32
+#define MAXOPTS 42
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -97,6 +97,8 @@ static void info_display_string(char const *field,char const *str)
     }
     if (buffer_putsflush(buffer_1,"\n") == -1)
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+
+
 }
 
 static void info_display_int(char const *field,unsigned int id)
@@ -112,7 +114,7 @@ static void info_display_int(char const *field,unsigned int id)
 int main(int argc, char const *const *argv)
 {
     int found = 0, what = 0 ;
-    uint8_t logger = 0 ;
+    uint8_t logger = 0, master = 0 ;
 
     stralloc satree = STRALLOC_ZERO ;
     stralloc src = STRALLOC_ZERO ;
@@ -211,12 +213,37 @@ int main(int argc, char const *const *argv)
             "Ncontents" ,
             "Down" ,
             "Disen",
-            "Real_logger_name" } ;
+            "Real_logger_name",
+            "Classic",
+            "Bundle",
+            "Longrun",
+            "Oneshot",
+            "Module",
+            "Nclassic",
+            "Nbundle",
+            "Nlongrun",
+            "Noneshot",
+            "Nmodule"
+        } ;
 
+
+        resolve_wrapper_t_ref wres = 0 ;
+        resolve_wrapper_t_ref lwres = 0 ;
         resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
         resolve_service_t lres = RESOLVE_SERVICE_ZERO ;
-        resolve_wrapper_t_ref lwres = resolve_set_struct(DATA_SERVICE, &lres) ;
+        resolve_service_master_t mres = RESOLVE_SERVICE_MASTER_ZERO ;
+
+
+        if (!strcmp(svname, SS_MASTER + 1)) {
+
+            master = 1 ;
+            wres = resolve_set_struct(DATA_SERVICE_MASTER, &mres) ;
+
+        } else {
+
+            wres = resolve_set_struct(DATA_SERVICE, &res) ;
+            lwres = resolve_set_struct(DATA_SERVICE, &lres) ;
+        }
 
         found = service_intree(&src,svname,tname) ;
         if (found == -1) log_dieu(LOG_EXIT_SYS,"resolve tree source of sv: ",svname) ;
@@ -233,77 +260,94 @@ int main(int argc, char const *const *argv)
 
         info_field_align(service_buf,fields,field_suffix,MAXOPTS) ;
 
-        info_display_string(fields[0],res.sa.s + res.name) ;
-        info_display_string(fields[1],res.sa.s + res.description) ;
-        info_display_string(fields[2],res.sa.s + res.version) ;
-        info_display_string(fields[3],res.sa.s + res.logger) ;
-        info_display_string(fields[4],res.sa.s + res.logreal) ;
-        info_display_string(fields[5],res.sa.s + res.logassoc) ;
-        info_display_string(fields[6],res.sa.s + res.dstlog) ;
-        info_display_string(fields[7],res.sa.s + res.depends) ;
-        info_display_string(fields[8],res.sa.s + res.requiredby) ;
-        info_display_string(fields[9],res.sa.s + res.optsdeps) ;
-        info_display_string(fields[10],res.sa.s + res.extdeps) ;
-        info_display_string(fields[11],res.sa.s + res.contents) ;
-        info_display_string(fields[12],res.sa.s + res.src) ;
-        info_display_string(fields[13],res.sa.s + res.srconf) ;
-        info_display_string(fields[14],res.sa.s + res.live) ;
-        info_display_string(fields[15],res.sa.s + res.runat) ;
-        info_display_string(fields[16],res.sa.s + res.tree) ;
-        info_display_string(fields[17],res.sa.s + res.treename) ;
-        info_display_string(fields[18],res.sa.s + res.state) ;
-        info_display_string(fields[19],res.sa.s + res.exec_run) ;
-        info_display_string(fields[20],res.sa.s + res.real_exec_run) ;
-        info_display_string(fields[21],res.sa.s + res.exec_finish) ;
-        info_display_string(fields[22],res.sa.s + res.real_exec_finish) ;
-        info_display_int(fields[23],res.type) ;
-        info_display_int(fields[24],res.ndepends) ;
-        info_display_int(fields[25],res.nrequiredby) ;
-        info_display_int(fields[26],res.noptsdeps) ;
-        info_display_int(fields[27],res.nextdeps) ;
-        info_display_int(fields[28],res.ncontents) ;
-        info_display_int(fields[29],res.down) ;
-        info_display_int(fields[30],res.disen) ;
+        if (!master) {
 
-        if (res.logger && logger)
-        {
-            if (!resolve_read(lwres,src.s,res.sa.s + res.logger)) log_dieusys(111,"read resolve file of: ",res.sa.s + res.logger) ;
+            info_display_string(fields[0],res.sa.s + res.name) ;
+            info_display_string(fields[1],res.sa.s + res.description) ;
+            info_display_string(fields[2],res.sa.s + res.version) ;
+            info_display_string(fields[3],res.sa.s + res.logger) ;
+            info_display_string(fields[4],res.sa.s + res.logreal) ;
+            info_display_string(fields[5],res.sa.s + res.logassoc) ;
+            info_display_string(fields[6],res.sa.s + res.dstlog) ;
+            info_display_string(fields[7],res.sa.s + res.depends) ;
+            info_display_string(fields[8],res.sa.s + res.requiredby) ;
+            info_display_string(fields[9],res.sa.s + res.optsdeps) ;
+            info_display_string(fields[10],res.sa.s + res.extdeps) ;
+            info_display_string(fields[11],res.sa.s + res.contents) ;
+            info_display_string(fields[12],res.sa.s + res.src) ;
+            info_display_string(fields[13],res.sa.s + res.srconf) ;
+            info_display_string(fields[14],res.sa.s + res.live) ;
+            info_display_string(fields[15],res.sa.s + res.runat) ;
+            info_display_string(fields[16],res.sa.s + res.tree) ;
+            info_display_string(fields[17],res.sa.s + res.treename) ;
+            info_display_string(fields[18],res.sa.s + res.state) ;
+            info_display_string(fields[19],res.sa.s + res.exec_run) ;
+            info_display_string(fields[20],res.sa.s + res.real_exec_run) ;
+            info_display_string(fields[21],res.sa.s + res.exec_finish) ;
+            info_display_string(fields[22],res.sa.s + res.real_exec_finish) ;
+            info_display_int(fields[23],res.type) ;
+            info_display_int(fields[24],res.ndepends) ;
+            info_display_int(fields[25],res.nrequiredby) ;
+            info_display_int(fields[26],res.noptsdeps) ;
+            info_display_int(fields[27],res.nextdeps) ;
+            info_display_int(fields[28],res.ncontents) ;
+            info_display_int(fields[29],res.down) ;
+            info_display_int(fields[30],res.disen) ;
 
-            if (buffer_putsflush(buffer_1,"\n") == -1)
-                log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+            if (res.logger && logger) {
 
-            info_display_string(fields[31],res.sa.s + res.logreal) ;
-            info_display_string(fields[0],lres.sa.s + lres.name) ;
-            info_display_string(fields[1],lres.sa.s + lres.description) ;
-            info_display_string(fields[2],lres.sa.s + lres.version) ;
-            info_display_string(fields[3],lres.sa.s + lres.logger) ;
-            info_display_string(fields[4],lres.sa.s + lres.logreal) ;
-            info_display_string(fields[5],lres.sa.s + lres.logassoc) ;
-            info_display_string(fields[6],lres.sa.s + lres.dstlog) ;
-            info_display_string(fields[7],lres.sa.s + lres.depends) ;
-            info_display_string(fields[8],lres.sa.s + lres.requiredby) ;
-            info_display_string(fields[12],lres.sa.s + lres.src) ;
-            info_display_string(fields[13],lres.sa.s + lres.srconf) ;
-            info_display_string(fields[14],lres.sa.s + lres.live) ;
-            info_display_string(fields[15],lres.sa.s + lres.runat) ;
-            info_display_string(fields[16],lres.sa.s + lres.tree) ;
-            info_display_string(fields[17],lres.sa.s + lres.treename) ;
-            info_display_string(fields[15],lres.sa.s + lres.state) ;
-            info_display_string(fields[19],lres.sa.s + lres.exec_log_run) ;
-            info_display_string(fields[20],lres.sa.s + lres.real_exec_log_run) ;
-            info_display_int(fields[23],lres.type) ;
-            info_display_int(fields[24],lres.ndepends) ;
-            info_display_int(fields[25],lres.nrequiredby) ;
-            info_display_int(fields[29],lres.down) ;
-            info_display_int(fields[30],lres.disen) ;
+                if (!resolve_read(lwres,src.s,res.sa.s + res.logger)) log_dieusys(111,"read resolve file of: ",res.sa.s + res.logger) ;
+
+                if (buffer_putsflush(buffer_1,"\n") == -1)
+                    log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+
+                info_display_string(fields[31],res.sa.s + res.logreal) ;
+                info_display_string(fields[0],lres.sa.s + lres.name) ;
+                info_display_string(fields[1],lres.sa.s + lres.description) ;
+                info_display_string(fields[2],lres.sa.s + lres.version) ;
+                info_display_string(fields[3],lres.sa.s + lres.logger) ;
+                info_display_string(fields[4],lres.sa.s + lres.logreal) ;
+                info_display_string(fields[5],lres.sa.s + lres.logassoc) ;
+                info_display_string(fields[6],lres.sa.s + lres.dstlog) ;
+                info_display_string(fields[7],lres.sa.s + lres.depends) ;
+                info_display_string(fields[8],lres.sa.s + lres.requiredby) ;
+                info_display_string(fields[12],lres.sa.s + lres.src) ;
+                info_display_string(fields[13],lres.sa.s + lres.srconf) ;
+                info_display_string(fields[14],lres.sa.s + lres.live) ;
+                info_display_string(fields[15],lres.sa.s + lres.runat) ;
+                info_display_string(fields[16],lres.sa.s + lres.tree) ;
+                info_display_string(fields[17],lres.sa.s + lres.treename) ;
+                info_display_string(fields[15],lres.sa.s + lres.state) ;
+                info_display_string(fields[19],lres.sa.s + lres.exec_log_run) ;
+                info_display_string(fields[20],lres.sa.s + lres.real_exec_log_run) ;
+                info_display_int(fields[23],lres.type) ;
+                info_display_int(fields[24],lres.ndepends) ;
+                info_display_int(fields[25],lres.nrequiredby) ;
+                info_display_int(fields[29],lres.down) ;
+                info_display_int(fields[30],lres.disen) ;
+
+                resolve_free(lwres) ;
+            }
+
+        } else {
+
+                info_display_string(fields[0],mres.sa.s + mres.name) ;
+                info_display_string(fields[32],mres.sa.s + mres.classic) ;
+                info_display_string(fields[33],mres.sa.s + mres.bundle) ;
+                info_display_string(fields[34],mres.sa.s + mres.longrun) ;
+                info_display_string(fields[35],mres.sa.s + mres.oneshot) ;
+                info_display_string(fields[36],mres.sa.s + mres.module) ;
+                info_display_int(fields[37],mres.nclassic) ;
+                info_display_int(fields[38],mres.nbundle) ;
+                info_display_int(fields[39],mres.nlongrun) ;
+                info_display_int(fields[40],mres.noneshot) ;
+                info_display_int(fields[41],mres.nmodule) ;
+
         }
 
         resolve_free(wres) ;
-        resolve_free(lwres) ;
 
     } else {
-
-        uint8_t master = 0 ;
 
         char tree_buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
             "Name",
@@ -312,8 +356,6 @@ int main(int argc, char const *const *argv)
             "Allow",
             "Groups",
             "Contents",
-            "Enabled",
-            "Current",
             "Ndepends",
             "Nrequiredby",
             "Nallow",
@@ -321,7 +363,13 @@ int main(int argc, char const *const *argv)
             "Ncontents",
             "Init" ,
             "Disen",
-            "Nenabled" } ;
+            // Master
+            "Enabled",
+            "Current",
+            "Contents",
+            "Nenabled",
+            "Ncontents"
+        } ;
 
         resolve_wrapper_t_ref wres = 0 ;
         resolve_tree_t tres = RESOLVE_TREE_ZERO ;
@@ -363,21 +411,23 @@ int main(int argc, char const *const *argv)
             info_display_string(fields[3],tres.sa.s + tres.allow) ;
             info_display_string(fields[4],tres.sa.s + tres.groups) ;
             info_display_string(fields[5],tres.sa.s + tres.contents) ;
-            info_display_int(fields[8],tres.ndepends) ;
-            info_display_int(fields[9],tres.nrequiredby) ;
-            info_display_int(fields[10],tres.nallow) ;
-            info_display_int(fields[11],tres.ngroups) ;
-            info_display_int(fields[12],tres.ncontents) ;
-            info_display_int(fields[13],tres.init) ;
-            info_display_int(fields[14],tres.disen) ;
+            info_display_int(fields[6],tres.ndepends) ;
+            info_display_int(fields[7],tres.nrequiredby) ;
+            info_display_int(fields[8],tres.nallow) ;
+            info_display_int(fields[9],tres.ngroups) ;
+            info_display_int(fields[10],tres.ncontents) ;
+            info_display_int(fields[11],tres.init) ;
+            info_display_int(fields[12],tres.disen) ;
 
         } else {
 
             info_display_string(fields[0],mres.sa.s + mres.name) ;
             info_display_string(fields[3],mres.sa.s + mres.allow) ;
-            info_display_string(fields[6],mres.sa.s + mres.enabled) ;
-            info_display_string(fields[7],mres.sa.s + mres.current) ;
-            info_display_int(fields[15],mres.nenabled) ;
+            info_display_string(fields[13],mres.sa.s + mres.enabled) ;
+            info_display_string(fields[14],mres.sa.s + mres.current) ;
+            info_display_string(fields[15],mres.sa.s + mres.contents) ;
+            info_display_int(fields[16],mres.nenabled) ;
+            info_display_int(fields[17],mres.ncontents) ;
         }
 
         resolve_free(wres) ;
