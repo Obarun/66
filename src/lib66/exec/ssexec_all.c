@@ -58,10 +58,6 @@
 #define FLAGS_UNBLOCK (1 << 5) // 32 all deps up/down
 #define FLAGS_FATAL (1 << 6) // 64 process crashed
 
-/** return 1 if set, else 0*/
-#define FLAGS_ISSET(has, want) \
-        ((~(has) & (want)) == 0)
-
 typedef struct pidvertex_s pidvertex_t, *pidvertex_t_ref ;
 struct pidvertex_s
 {
@@ -468,9 +464,9 @@ static void pidvertex_init_array(pidvertex_t *apidv, graph_t *g, unsigned int *l
             log_dieu(LOG_EXIT_SYS, "read resolve file of tree: ", name) ;
 
         if (r)
-            pidv.state |= FLAGS_UP ;
+            FLAGS_SET(pidv.state, FLAGS_UP) ;
         else
-            pidv.state |= FLAGS_DOWN ;
+            FLAGS_SET(pidv.state, FLAGS_DOWN) ;
 
         apidv[pos] = pidv ;
     }
@@ -635,13 +631,11 @@ static int async_deps(pidvertex_t *apidv, unsigned int i, unsigned int what, sse
                         switch(action) {
 
                             case GOTIT:
-                                apidv[pos].state = 0 ;
-                                apidv[pos].state = (!what ? FLAGS_UP : FLAGS_DOWN) ;
+                                FLAGS_SET(apidv[pos].state, (!what ? FLAGS_UP : FLAGS_DOWN)) ;
                                 goto next ;
 
                             case FATAL:
-                                apidv[pos].state = 0 ;
-                                apidv[pos].state = FLAGS_FATAL ;
+                                FLAGS_SET(apidv[pos].state, FLAGS_FATAL) ;
                                 goto err ;
 
                             case WAIT:
@@ -678,7 +672,7 @@ static int async(pidvertex_t *apidv, unsigned int i, unsigned int what, ssexec_t
 
         if (!FLAGS_ISSET(apidv[i].state, FLAGS_BLOCK)) {
 
-            apidv[i].state |= FLAGS_BLOCK ;
+            FLAGS_SET(apidv[i].state, FLAGS_BLOCK) ;
 
             if (apidv[i].nedge)
                 if (!async_deps(apidv, i, what, info, graph, deadline))
@@ -819,19 +813,19 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp, ssexec
     if (what) {
 
         requiredby = 1 ;
-        flag = FLAGS_UP ;
-        flag_run = FLAGS_STOPPING ;
+        FLAGS_SET(flag, FLAGS_UP) ;
+        FLAGS_SET(flag_run, FLAGS_STOPPING) ;
 
     } else {
 
-        flag = FLAGS_DOWN ;
-        flag_run = FLAGS_STARTING ;
+        FLAGS_SET(flag, FLAGS_DOWN) ;
+        FLAGS_SET(flag_run, FLAGS_STARTING) ;
     }
 
     if ((scandir_ok(info->scandir.s)) <= 0)
         log_die(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
 
-    if (!graph_build_g(&graph, info->base.s, info->treename.s, DATA_TREE))
+    if (!graph_build_g(&graph, info->base.s, info->treename.s, DATA_TREE, 0))
         log_dieu(LOG_EXIT_SYS,"build the graph") ;
 
     /** initialize and allocate apidvertex array */
