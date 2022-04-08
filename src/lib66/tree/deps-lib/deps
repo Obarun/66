@@ -30,9 +30,6 @@ tree_seed_setseed.o
 tree_sethome.o
 tree_setname.o
 tree_switch_current.o
--ls6rc
--ls6
 -loblibs
--lexecline
 -lskarnet
 

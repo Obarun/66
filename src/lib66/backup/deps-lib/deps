@@ -1,9 +1,6 @@
 backup_cmd_switcher.o
 backup_make_new.o
 backup_realpath_sym.o
--ls6rc
--ls6
 -loblibs
--lexecline
 -lskarnet
 

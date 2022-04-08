@@ -15,6 +15,7 @@ set_ownerhome.o
 set_ownersysdir.o
 yourgid.o
 youruid.o
+-ls6
 -loblibs
 -lskarnet
 

@@ -3,7 +3,6 @@ parse_service.o
 parser.o
 parser_utils.o
 parser_write.o
--ls6rc
 -ls6
 -loblibs
 -lexecline

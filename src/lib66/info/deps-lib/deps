@@ -9,9 +9,7 @@ info_graph_display_tree.o
 info_graph_init.o
 info_length_from_wchar.o
 info_walk.o
--ls6rc
 -ls6
 -loblibs
--lexecline
 -lskarnet
 

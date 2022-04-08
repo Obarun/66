@@ -21,9 +21,6 @@ service_resolve_setlognwrite.o
 service_resolve_setnwrite.o
 service_resolve_sort_bytype.o
 service_resolve_write_cdb.o
--ls6rc
--ls6
 -loblibs
--lexecline
 -lskarnet
 

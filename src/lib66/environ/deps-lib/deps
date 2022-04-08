@@ -7,9 +7,6 @@ env_import_version_file.o
 env_make_symlink.o
 env_prepare_for_write.o
 env_resolve_conf.o
--ls6rc
--ls6
 -loblibs
--lexecline
 -lskarnet
 
