@@ -1,7 +1,11 @@
-state.o
--ls6rc
--ls6
+state_check.o
+state_check_flags.o
+state_pack.o
+state_read.o
+state_rmfile.o
+state_setflag.o
+state_unpack.o
+state_write.o
 -loblibs
--lexecline
 -lskarnet
 
