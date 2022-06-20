@@ -187,7 +187,7 @@ static void info_display_depends(char const *field, char const *treename)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    if (!graph_build_g(&graph, base.s, treename, DATA_TREE))
+    if (!graph_build_g(&graph, base.s, treename, DATA_TREE, 0))
         log_dieu(LOG_EXIT_SYS,"build the graph") ;
 
     r = graph_matrix_get_edge_g_sorted_sa(&sa, &graph, treename, 0) ;
@@ -248,7 +248,7 @@ static void info_display_requiredby(char const *field, char const *treename)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    if (!graph_build_g(&graph, base.s, treename, DATA_TREE))
+    if (!graph_build_g(&graph, base.s, treename, DATA_TREE, 0))
         log_dieu(LOG_EXIT_SYS,"build the graph") ;
 
     r = graph_matrix_get_edge_g_sorted_sa(&sa, &graph, treename, 1) ;
@@ -383,7 +383,7 @@ static void info_display_contents(char const *field, char const *treename)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    auto_strings(tmp, src.s, treename) ;
+    auto_strings(tmp, src.s, treename, SS_SVDIRS) ;
 
     if (!graph_build_service_bytree(&graph, tmp, 2))
         log_dieu(LOG_EXIT_SYS,"build the graph dependencies") ;
