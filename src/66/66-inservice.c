@@ -350,7 +350,12 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    if (!graph_build_service_bytree(&graph, res->sa.s + res->tree, 2))
+    size_t treelen = strlen(res->sa.s + res->tree) ;
+    char solve[treelen + SS_SVDIRS_LEN + 1] ;
+
+    auto_strings(solve, res->sa.s + res->tree, SS_SVDIRS) ;
+
+    if (!graph_build_service_bytree(&graph, solve, 2))
         log_dieu(LOG_EXIT_SYS,"build the graph dependencies") ;
 
     unsigned int list[graph.mlen] ;
