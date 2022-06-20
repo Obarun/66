@@ -69,6 +69,9 @@ int graph_build_service_bytree(graph_t *g, char const *tree, uint8_t what)
         if (!auto_stra(&sa, mres.sa.s + mres.oneshot))
             goto err ;
 
+    if (!sastr_clean_string_g(&sa, sa.s))
+        goto err ;
+
     FOREACH_SASTR(&sa, pos) {
 
         char *service = sa.s + pos ;
