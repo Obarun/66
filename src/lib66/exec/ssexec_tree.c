@@ -160,6 +160,12 @@ static void check_identifier(char const *name)
     if (!memcmp(name, SS_MASTER + 1, 6))
         log_die(LOG_EXIT_USER,"tree name: ",name,": starts with reserved prefix Master") ;
 
+    char str[UINT_FMT] ;
+    str[uint_fmt(str, SS_MAX_TREENAME)] = 0 ;
+
+    if (strlen(name) > SS_MAX_TREENAME)
+        log_die(LOG_EXIT_USER,"tree name is too long -- it can not exceed ", str) ;
+
 }
 
 static void auto_dir(char const *dst,mode_t mode)
