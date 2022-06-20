@@ -47,6 +47,8 @@ void ssexec_set_info(ssexec_t *info)
     int r ;
 
     info->owner = MYUID ;
+    info->ownerlen = uid_fmt(info->ownerstr,info->owner) ;
+    info->ownerstr[info->ownerlen] = 0 ;
 
     if (!set_ownersysdir(&info->base,info->owner)) log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
@@ -144,13 +146,35 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
                 case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(info->usage) ;
                             info->opt_verbo = 1 ;
                             break ;
-                case 'l' :  if (!auto_stra(&info->live,l.arg)) log_die_nomem("stralloc") ;
-                            info->opt_live = 1 ;
-                            break ;
-                case 't' :  if(!auto_stra(&info->treename,l.arg)) log_die_nomem("stralloc") ;
-                            info->opt_tree = 1 ;
-                            info->skip_opt_tree = 0 ;
-                            break ;
+                case 'l' :
+
+                    char str[UINT_FMT] ;
+                    str[uint_fmt(str, SS_MAX_PATH)] = 0 ;
+
+                    if (strlen(l.arg) > SS_MAX_PATH)
+                        log_die(LOG_EXIT_USER,"live path is too long -- it can not exceed ", str) ;
+
+                    if (!auto_stra(&info->live,l.arg))
+                        log_die_nomem("stralloc") ;
+
+                    info->opt_live = 1 ;
+                    break ;
+
+                case 't' :
+
+                    char str[UINT_FMT] ;
+                    str[uint_fmt(str, SS_MAX_TREENAME)] = 0 ;
+
+                    if (strlen(l.arg) > SS_MAX_TREENAME)
+                        log_die(LOG_EXIT_USER,"tree name is too long -- it can not exceed ", str) ;
+
+                    if (!auto_stra(&info->treename,l.arg))
+                        log_die_nomem("stralloc") ;
+
+                    info->opt_tree = 1 ;
+                    info->skip_opt_tree = 0 ;
+                    break ;
+
                 case 'T' :  if (!uint0_scan(l.arg, &info->timeout)) log_usage(info->usage) ;
                             info->opt_timeout = 1 ;
                             break ;
