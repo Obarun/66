@@ -26,26 +26,22 @@
 #include <66/resolve.h>
 #include <66/tree.h>
 
-
 int graph_build_tree(graph_t *g, char const *base)
 {
     log_flow() ;
 
     int e = 0 ;
     size_t baselen = strlen(base), pos = 0 ;
-    char const *exclude[2] = { SS_MASTER + 1, 0 } ;
-    char solve[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1] ;
+    char solve[baselen + SS_SYSTEM_LEN + 1] ;
 
     stralloc sa = STRALLOC_ZERO ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
 
-    auto_strings(solve, base, SS_SYSTEM, SS_RESOLVE) ;
-
-    if (!sastr_dir_get(&sa, solve, exclude, S_IFREG))
+    if (!resolve_get_field_tosa_g(&sa, base, 0, SS_MASTER + 1, DATA_TREE_MASTER, TREE_ENUM_MASTER_CONTENTS))
         goto err ;
 
-    solve[baselen + SS_SYSTEM_LEN] = 0 ;
+    auto_strings(solve, base, SS_SYSTEM) ;
 
     FOREACH_SASTR(&sa, pos) {
 
