@@ -30,7 +30,7 @@
  * @Return 1 if found
  * @Return 2 if found but marked disabled
  * @Return -1 system error */
-int service_isenabledat(stralloc *tree, char const *sv)
+int service_isenabledat(char *atree, char const *sv)
 {
 
     log_flow() ;
@@ -96,7 +96,7 @@ int service_isenabledat(stralloc *tree, char const *sv)
                 e = 2 ;
             }
 
-            if (!auto_stra(tree, treename)) {
+            if (!auto_strings(atree, treename)) {
                 e = -1 ;
                 goto freed ;
             }
