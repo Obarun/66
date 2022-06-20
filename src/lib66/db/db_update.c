@@ -28,7 +28,7 @@
 #include <66/utils.h>
 #include <66/ssexec.h>
 
-int db_update(char const *newdb, ssexec_t *info,char const *const *envp)
+int db_update(char const *newdb, ssexec_t *info)
 {
     log_flow() ;
 
@@ -56,7 +56,7 @@ int db_update(char const *newdb, ssexec_t *info,char const *const *envp)
     newargv[m++] = db ;
     newargv[m++] = 0 ;
 
-    pid = child_spawn0(newargv[0],newargv,envp) ;
+    pid = child_spawn0(newargv[0],newargv, (char const *const *)environ) ;
     if (waitpid_nointr(pid,&wstat, 0) < 0)
         log_warnusys_return(LOG_EXIT_ZERO,"wait for ",newargv[0]) ;
 

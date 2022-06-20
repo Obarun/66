@@ -29,7 +29,7 @@
 
 /** 1-> backup
  * 0-> ori */
-int db_switch_to(ssexec_t *info, char const *const *envp,unsigned int where)
+int db_switch_to(ssexec_t *info, unsigned int where)
 {
     log_flow() ;
 
@@ -80,7 +80,7 @@ int db_switch_to(ssexec_t *info, char const *const *envp,unsigned int where)
                 goto err ;
             }
             log_trace("update ",info->livetree.s,"/",info->treename.s," to ",db.s,"/",info->treename.s) ;
-            if (!db_update(db.s, info,envp))
+            if (!db_update(db.s, info))
             {
                 log_trace("rollback db service: ", info->treename.s) ;
                 memcpy(cmd + cmdlen," -s0",4) ;
@@ -114,7 +114,7 @@ int db_switch_to(ssexec_t *info, char const *const *envp,unsigned int where)
                 goto err ;
             }
             log_trace("update ",info->livetree.s,"/",info->treename.s," to ",db.s,"/",info->treename.s) ;
-            if (!db_update(db.s, info,envp))
+            if (!db_update(db.s, info))
             {
                 log_trace("rollback db: ", info->treename.s) ;
                 memcpy(cmd + cmdlen," -s1",4) ;
