@@ -29,7 +29,10 @@ Fine tuning of the installation directories:
 
   --shebangdir=DIR                 absolute path for execline #\! invocations [BINDIR]
   --livedir=DIR                    default live directory [/run/66]
-  --max-svscan-service=NUMBER      default maximum number of service handled by s6-svscan [500]
+  --max-service=NUMBER             default maximum number of services handled by s6-svscan [500]
+  --max-path-size=KB               default maximum size of a path[1024KB]
+  --max-service-size=KB            default maximum size of a frontend service name[256KB]
+  --max-tree-name-size=KB          default maximum size of a tree name[256KB]
   --with-skeleton=DIR              skeleton files directory installation [SYSDIR/66]
   --with-system-log=DIR            system service log directory [/var/log/66]
   --with-s6-log-user=USER          user for running s6-log program [root]
@@ -67,6 +70,14 @@ Fine tuning of the installation directories:
  Apply the same rule for --with-system-module and --with-sysadmin-module options.
 
  Valid FORMAT for --with-s6-log-timestamp are tai,iso,none.
+
+ --max-path-size correspond to the maximum size of the path of per specified options for the
+ configuration installation. Each --with-*-*=DIR can not exceed --max-path-size=. Also, please
+ consider to incorporate service_adm the size of the $HOME path.
+
+ --max-service-size= correspond to the maximum size of a frontend service name. Note: an
+ initiated service name can not exceed this size. For a frontend file with name foo@, the final name
+ of the runtime service (e.g. foo@bar) can not exceed --max-service-size=.
 
 Dependencies:
   --with-sysdeps=DIR               use sysdeps in DIR [PREFIX/lib/skalibs/sysdeps]
@@ -185,6 +196,9 @@ mandir='$datarootdir/man'
 shebangdir='$bindir'
 livedir='/run/66'
 max_service='500'
+max_path='1024'
+max_service_size='256'
+max_treename='256'
 skel='$sysconfdir/66'
 system_dir='/var/lib/66'
 system_log='/var/log/66'
@@ -236,7 +250,10 @@ for arg ; do
     --mandir=*) mandir=${arg#*=} ;;
     --shebangdir=*) shebangisdefault=false ; shebangdir=${arg#*=} ;;
     --livedir=*) livedir=${arg#*=} ;;
-    --max-svscan-service=*) max_service=${arg#*=} ;;
+    --max-service=*) max_service=${arg#*=} ;;
+    --max-path-size=*) max_path=${arg#*=} ;;
+    --max-service-size=*) max_service_size=${arg#*=} ;;
+    --max-tree-name-size=*) max_treename=${arg#*=} ;;
     --with-skeleton=*) skel=${arg#*=} ;;
     --with-system-dir=*) system_dir=${arg#*=} ;;
     --with-system-log=*) system_log=${arg#*=} ;;
@@ -351,15 +368,38 @@ else
     fail "$0: invalid --with-s6-log-timestamp value -- valid value are: tai, iso or none"
 fi
 
-# check valid max_service
-case $max_service in
-    ''|*[!0-9]*) fail "$0: invalid number for --max-svscan-service" ;;
-    *) break ;;
-esac
+# check valid integer
+for i in $max_service $max_path $max_service_size $max_treename; do
+    case $i in
+        ''|*[!0-9]*) fail "$0: invalid number for $i" ;;
+        *) break ;;
+    esac
+done
 
 if [ $max_service -lt 2 ]; then
-    fail "$0: lower limit for --max-svscan-service is 2"
+    fail "$0: lower limit for --max-service is 2"
 fi
+
+if [ $max_path -lt 2 ]; then
+     fail "$0: lower limit for --max-path-size is 2"
+fi
+
+if [ $max_service_size -lt 2 ]; then
+     fail "$0: lower limit for --max-service-size is 2"
+fi
+
+if [ $max_treename -lt 2 ]; then
+     fail "$0: lower limit for --max-tree-name-size is 2"
+fi
+
+for i in $skel $system_dir $system_log $service_system $module_system $script_system \
+        $seed_system $service_adm $module_adm $service_admconf $seed_adm $user_dir $service_user \
+        $module_user $script_user $service_userconf $user_log $seed_user; do
+
+        if [ ${#i} -ge $max_path ]; then
+            fail "$0: higher length for $i is $max_path"
+        fi
+done
 
 ## logger notification
 if $s6log_notify; then
@@ -521,6 +561,9 @@ datarootdir := $datarootdir
 mandir := $mandir
 livedir := $livedir
 max_service := $max_service
+max_path := $max_path
+max_service_size := $max_service_size
+max_treename := $max_treename
 skel := $skel
 system_dir := $system_dir
 system_log := $system_log
@@ -607,6 +650,9 @@ All rights reserved.*/
 #define ${package_macro_name}_VERSION "$version"
 #define ${package_macro_name}_LIVE "$livedir/"
 #define ${package_macro_name}_MAX_SERVICE $max_service
+#define ${package_macro_name}_MAX_PATH $max_path
+#define ${package_macro_name}_MAX_SERVICE_NAME $max_service_size
+#define ${package_macro_name}_MAX_TREENAME $max_treename
 #define ${package_macro_name}_SYSTEM_DIR "$system_dir/"
 #define ${package_macro_name}_SKEL_DIR "$skel/"
 #define ${package_macro_name}_LOGGER_SYSDIR "$system_log/"
