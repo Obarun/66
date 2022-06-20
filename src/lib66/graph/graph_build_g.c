@@ -17,15 +17,17 @@
 #include <oblibs/graph.h>
 #include <oblibs/log.h>
 
+#include <66/service.h>
+#include <66/tree.h>
 #include <66/graph.h>
 
-int graph_build_g(graph_t *g, char const *base, char const *treename, uint8_t data_type)
+int graph_build_g(graph_t *g, char const *base, char const *treename, uint8_t data_type, uint8_t general)
 {
     log_flow() ;
 
     if (data_type == DATA_SERVICE) {
 
-        //if (!graph_build_service(g, base, treename))
+        if (!graph_build_service(g, base, treename, general))
             return 0 ;
 
     } else if (data_type == DATA_TREE) {
