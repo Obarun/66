@@ -53,6 +53,7 @@ extern int instance_create(stralloc *sasv,char const *svname, char const *regex,
 
 extern int module_path(stralloc *sdir, stralloc *mdir, char const *sv,char const *frontend_src, uid_t owner) ;
 extern int sa_pointo(stralloc *sa, ssexec_t *info, int type, unsigned int where) ;
-extern int create_live(ssexec_t *info) ;
+extern int create_live_state(ssexec_t *info, char const *treename) ;
+extern int create_live_tree(ssexec_t *info) ;
 
 #endif
