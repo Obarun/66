@@ -825,7 +825,7 @@ int ssexec_all(int argc, char const *const *argv,char const *const *envp, ssexec
     if ((scandir_ok(info->scandir.s)) <= 0)
         log_die(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
 
-    if (!graph_build_g(&graph, info->base.s, info->treename.s, DATA_TREE, 0))
+    if (!graph_build_g(&graph, info->base.s, 0, DATA_TREE, 0))
         log_dieu(LOG_EXIT_SYS,"build the graph") ;
 
     /** initialize and allocate apidvertex array */
