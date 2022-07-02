@@ -208,7 +208,7 @@ void inline shebang(buffer *b, char const *opts)
 {
     log_flow() ;
 
-    if (!auto_buf(b, "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb ",opts,"\n"))
+    if (!auto_buf(b, "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb ", opts, "\n"))
         log_die_nomem("buffer") ;
 }
 
@@ -554,6 +554,125 @@ void write_control(char const *scandir,char const *live, char const *filename, i
         auto_chmod(mode,0755) ;
 }
 
+void auto_empty_file(char const *dst, char const *filename)
+{
+    size_t dstlen = strlen(dst), filen = strlen(filename) ;
+
+    char tmp[dstlen + filen + 1] ;
+    auto_strings(tmp, dst, filename) ;
+
+    int fd = open_trunc(tmp) ;
+    if (fd < 0)
+        log_dieusys(LOG_EXIT_SYS, "create file: ", tmp) ;
+    fd_close(fd) ;
+}
+
+static void create_service_skel(char const *service, char const *target, char const *notif)
+{
+    size_t targetlen = strlen(target) ;
+    size_t servicelen = strlen(service) + 1 ;
+
+    char dst[targetlen + 1 + servicelen + 22 + 1] ;
+    auto_strings(dst, target, "/", service, "/data/rules/uid/0") ;
+
+    auto_dir(dst, 0755) ;
+    auto_empty_file(dst, "/allow") ;
+
+    char sym[targetlen + 1 + servicelen + 22 + 1] ;
+    auto_strings(sym, target, "/", service, "/data/rules/uid/self") ;
+
+    log_trace("point symlink: ", sym, " to ", dst) ;
+    if (symlink(dst, sym) < 0)
+        log_dieusys(LOG_EXIT_SYS, "symlink: ", sym) ;
+
+    auto_strings(dst, target, "/", service, "/data/rules/gid/0") ;
+    auto_dir(dst, 0755) ;
+    auto_empty_file(dst, "/allow") ;
+
+    auto_strings(dst, target, "/", service, "/notification-fd") ;
+
+    if(!openwritenclose_unsafe(dst, notif, strlen(notif)))
+        log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
+}
+
+static void create_service_oneshot(char const *scandir)
+{
+    size_t scandirlen = strlen(scandir) ;
+    size_t fdlen = scandirlen + 1 + SS_ONESHOTD_LEN ;
+
+    create_service_skel(SS_ONESHOTD, scandir, "3\n") ;
+    size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + strlen(SS_LIBEXECPREFIX) + 184 + 1 ;
+    char run[runlen] ;
+    auto_strings(run,"#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n", \
+                    "fdmove -c 2 1\n",
+                    "fdmove 1 3\n",
+                    "s6-ipcserver-socketbinder -- s\n",
+                    "s6-ipcserverd -1 --\n",
+                    "s6-ipcserver-access -v0 -E -l0 -i data/rules --\n",
+                    "s6-sudod -t 30000 --\n",
+                    SS_LIBEXECPREFIX "66-oneshotd -l ../.. --\n") ;
+
+
+    char dst[fdlen + 4] ;
+    auto_strings(dst, scandir, "/", SS_ONESHOTD, "/run") ;
+
+    // -1 openwritenclose_unsafe do not accept closed string
+    if (!openwritenclose_unsafe(dst, run, runlen - 1))
+        log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
+
+    if (chmod(dst, 0755) < 0)
+        log_dieusys(LOG_EXIT_SYS, "chmod: ", dst) ;
+}
+
+static void create_service_fdholder(char const *scandir)
+{
+    size_t scandirlen = strlen(scandir) ;
+    size_t fdlen = scandirlen + 1 + SS_FDHOLDER_LEN ;
+
+    create_service_skel(SS_FDHOLDER, scandir, "1\n") ;
+
+    char dst[fdlen + 21 + 1] ;
+    auto_strings(dst, scandir, "/", SS_FDHOLDER, "/data/rules/uid/0/env") ;
+
+    auto_dir(dst, 0755) ;
+
+    auto_empty_file(dst, "/S6_FDHOLDER_GETDUMP") ;
+    auto_empty_file(dst, "/S6_FDHOLDER_LIST") ;
+    auto_empty_file(dst, "/S6_FDHOLDER_SETDUMP") ;
+
+    auto_strings(dst + fdlen + 21, "/S6_FDHOLDER_STORE_REGEX" ) ;
+
+    if(!openwritenclose_unsafe(dst, "^" SS_FDHOLDER_PIPENAME "\n", SS_FDHOLDER_PIPENAME_LEN + 2))
+        log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
+
+    char sym[fdlen + 48 + 1] ;
+    auto_strings(sym, scandir, "/", SS_FDHOLDER, "/data/rules/uid/0/env/S6_FDHOLDER_RETRIEVE_REGEX") ;
+
+    log_trace("point symlink: ", sym, " to ", dst) ;
+    if (symlink(dst, sym) < 0)
+        log_dieusys(LOG_EXIT_SYS, "symlink: ", dst) ;
+
+    auto_strings(sym, scandir, "/", SS_FDHOLDER, "/data/rules/gid/0/env") ;
+    auto_strings(dst, scandir, "/", SS_FDHOLDER, "/data/rules/uid/0/env") ;
+
+    log_trace("point symlink: ", sym, " to ", dst) ;
+    if (symlink(dst, sym) < 0)
+        log_dieusys(LOG_EXIT_SYS, "symlink: ", dst) ;
+
+    size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + 56 + 1 ;
+    char run[runlen] ;
+    auto_strings(run, "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n", "s6-fdholder-daemon -1 -i data/rules -- s\n") ;
+    auto_strings(dst, scandir, "/", SS_FDHOLDER, "/run") ;
+
+    // -1 openwritenclose_unsafe do not accept closed string
+    if(!openwritenclose_unsafe(dst, run, runlen - 1))
+        log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
+
+    if (chmod(dst, 0755) < 0)
+        log_dieusys(LOG_EXIT_SYS, "chmod: ", dst) ;
+
+}
+
 void create_scandir(char const *live, char const *scandir)
 {
     log_flow() ;
@@ -566,7 +685,7 @@ void create_scandir(char const *live, char const *scandir)
 
     auto_check(tmp,0755,0,AUTO_CRTE_CHW) ;
 
-    /** run/66/scandir/name/.svscan */
+    /** run/66/scandir/uid/.svscan */
     auto_strings(tmp + scanlen, SS_SVSCAN_LOG) ;
 
     auto_check(tmp,0755,0,AUTO_CRTE_CHW) ;
@@ -588,6 +707,9 @@ void create_scandir(char const *live, char const *scandir)
 
         write_shutdownd(live, scandir) ;
     }
+
+    create_service_fdholder(scandir) ;
+    create_service_oneshot(scandir) ;
 }
 
 void sanitize_live(char const *live)
@@ -611,12 +733,8 @@ void sanitize_live(char const *live)
         auto_file(tmp,SS_BOOT_CONTAINER_HALTCMD,"EXITCODE=0\nHALTCODE=p\n",22) ;
     }
 
-    /** run/66/tree */
-    auto_strings(tmp + livelen,SS_TREE) ;
-    auto_check(tmp,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
-
     /** run/66/log */
-    auto_strings(tmp + livelen,SS_LOG) ;
+    auto_strings(tmp + livelen, SS_LOG) ;
     auto_check(tmp,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
 
     /** /run/66/state*/
@@ -787,12 +905,6 @@ int main(int argc, char const *const *argv, char const *const *envp)
                 log_die_nomem("stralloc") ;
             auto_rm(scandir.s) ;
         }
-
-        /** /run/66/tree/uid */
-        if (!stralloc_copy(&scandir,&live)) log_die_nomem("stralloc") ;
-        r = set_livetree(&scandir,OWNER) ;
-        if (!r) log_dieusys(LOG_EXIT_SYS,"set livetree directory") ;
-        auto_rm(scandir.s) ;
 
         /** run/66/state/uid */
         if (!stralloc_copy(&scandir,&live)) log_die_nomem("stralloc") ;
