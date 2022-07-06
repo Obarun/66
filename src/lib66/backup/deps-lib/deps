@@ -1,6 +1,3 @@
-backup_cmd_switcher.o
-backup_make_new.o
-backup_realpath_sym.o
 -loblibs
 -lskarnet
 
