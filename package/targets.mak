@@ -3,7 +3,6 @@ BIN_TARGETS := \
 66-scanctl \
 66-init \
 66-tree \
-66-dbctl \
 66-enable \
 66-disable \
 66-parser \

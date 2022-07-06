@@ -1,9 +1,0 @@
-db_compile.o
-db_find_compiled_state.o
-db_ok.o
-db_switch_to.o
-db_update.o
--ls6rc
--loblibs
--lskarnet
-

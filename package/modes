@@ -2,7 +2,6 @@
 66-scanctl          0755
 66-init             0755
 66-tree             0755
-66-dbctl            0755
 66-enable           0755
 66-disable          0755
 66-parser           0755
