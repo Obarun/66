@@ -579,6 +579,30 @@ void create_backupdir(char const *base, char const *treename)
     auto_dir(tmp,0755) ;
 }
 
+void tree_master_modify_current(char const *base, char const *treename)
+{
+    resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+    size_t baselen = strlen(base) ;
+    stralloc sa = STRALLOC_ZERO ;
+    char solve[baselen + SS_SYSTEM_LEN + 1] ;
+    auto_strings(solve, base, SS_SYSTEM) ;
+
+    if (!resolve_get_field_tosa_g(&sa, base, 0, SS_MASTER + 1, DATA_TREE_MASTER, TREE_ENUM_MASTER_CURRENT))
+        log_dieu(LOG_EXIT_SYS, "get value of field current of resolve Master file of trees") ;
+
+    if (!strcmp(sa.s, treename)) {
+
+        if (!resolve_modify_field(wres, TREE_ENUM_MASTER_CURRENT, 0))
+            log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", SS_MASTER + 1) ;
+
+        if (!resolve_write(wres, solve, SS_MASTER + 1))
+            log_dieusys(LOG_EXIT_SYS, "write resolve file of :", solve, SS_MASTER) ;
+    }
+
+    stralloc_free(&sa) ;
+}
+
 void tree_master_modify_contents(char const *base, char const *treename)
 {
     stralloc sa = STRALLOC_ZERO ;
@@ -1174,6 +1198,8 @@ void tree_remove(graph_t *g, char const *base, char const *treename)
     }
 
     tree_master_modify_contents(base, treename) ;
+
+    tree_master_modify_current(base, treename) ;
 
     resolve_free(wres) ;
 
