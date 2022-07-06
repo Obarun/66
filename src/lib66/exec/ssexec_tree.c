@@ -38,16 +38,14 @@
 #include <66/config.h>
 #include <66/utils.h>
 #include <66/constants.h>
-#include <66/db.h>
 #include <66/enum.h>
 #include <66/state.h>
 #include <66/service.h>
 #include <66/resolve.h>
 #include <66/graph.h>
+#include <66/sanitize.h>
 
 #include <s6/supervise.h>
-#include <s6-rc/s6rc-servicedir.h>
-#include <s6-rc/s6rc-constants.h>
 
 #define TREE_COLON_DELIM ':'
 #define TREE_COMMA_DELIM ','
@@ -177,35 +175,6 @@ static void auto_dir(char const *dst,mode_t mode)
         log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"create directory: ",dst) ;
 }
 
-static void auto_create(char *strings,char const *str, size_t len)
-{
-    log_flow() ;
-
-    auto_strings(strings + len, str) ;
-    auto_dir(strings,0755) ;
-}
-
-static void auto_check(char *dst)
-{
-    log_flow() ;
-
-    int r = scan_mode(dst,S_IFDIR) ;
-
-    if (r == -1)
-        log_diesys_nclean(LOG_EXIT_SYS, &cleanup, "conflicting format for: ", dst) ;
-
-    if (!r)
-        auto_dir(dst,0755) ;
-}
-
-static void inline auto_stralloc(stralloc *sa,char const *str)
-{
-    log_flow() ;
-
-    if (!auto_stra(sa,str))
-        log_die_nomem("stralloc") ;
-}
-
 static ssize_t tree_get_key(char *table,char const *str)
 {
     ssize_t pos = -1 ;
@@ -222,97 +191,6 @@ static ssize_t tree_get_key(char *table,char const *str)
     pos++ ; // remove '='
 
     return pos ;
-}
-
-void sanitize_system(ssexec_t *info)
-{
-    log_flow() ;
-
-    log_trace("sanitize system..." ) ;
-
-    size_t baselen = info->base.len ;
-    uid_t log_uid ;
-    gid_t log_gid ;
-    char dst[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_MASTER_LEN + 1] ;
-    auto_strings(dst,info->base.s, SS_SYSTEM) ;
-
-    /** base is /var/lib/66 or $HOME/.66*/
-    /** this verification is made in case of
-     * first use of 66-*** tools */
-    auto_check(dst) ;
-    /** create extra directory for service part */
-    if (!info->owner) {
-
-        auto_check(SS_LOGGER_SYSDIR) ;
-
-        if (!youruid(&log_uid,SS_LOGGER_RUNNER) ||
-        !yourgid(&log_gid,log_uid))
-            log_dieusys(LOG_EXIT_SYS,"get uid and gid of: ",SS_LOGGER_RUNNER) ;
-
-        if (chown(SS_LOGGER_SYSDIR,log_uid,log_gid) == -1)
-            log_dieusys(LOG_EXIT_SYS,"chown: ",SS_LOGGER_RUNNER) ;
-
-        auto_check(SS_SERVICE_SYSDIR) ;
-        auto_check(SS_SERVICE_ADMDIR) ;
-        auto_check(SS_SERVICE_ADMCONFDIR) ;
-        auto_check(SS_MODULE_SYSDIR) ;
-        auto_check(SS_MODULE_ADMDIR) ;
-        auto_check(SS_SCRIPT_SYSDIR) ;
-        auto_check(SS_SEED_ADMDIR) ;
-        auto_check(SS_SEED_SYSDIR) ;
-
-    } else {
-
-        size_t extralen ;
-        stralloc extra = STRALLOC_ZERO ;
-        if (!set_ownerhome(&extra,info->owner))
-            log_dieusys(LOG_EXIT_SYS,"set home directory") ;
-
-        extralen = extra.len ;
-        if (!auto_stra(&extra, SS_USER_DIR, SS_SYSTEM))
-            log_die_nomem("stralloc") ;
-        auto_check(extra.s) ;
-
-        extra.len = extralen ;
-        auto_stralloc(&extra,SS_LOGGER_USERDIR) ;
-        auto_check(extra.s) ;
-
-        extra.len = extralen ;
-        auto_stralloc(&extra,SS_SERVICE_USERDIR) ;
-        auto_check(extra.s) ;
-
-        extra.len = extralen ;
-        auto_stralloc(&extra,SS_SERVICE_USERCONFDIR) ;
-        auto_check(extra.s) ;
-
-        extra.len = extralen ;
-        auto_stralloc(&extra,SS_MODULE_USERDIR) ;
-        auto_check(extra.s) ;
-
-        extra.len = extralen ;
-        auto_stralloc(&extra,SS_SCRIPT_USERDIR) ;
-        auto_check(extra.s) ;
-
-        extra.len = extralen ;
-        auto_stralloc(&extra,SS_SEED_USERDIR) ;
-        auto_check(extra.s) ;
-
-        stralloc_free(&extra) ;
-    }
-
-    auto_strings(dst,info->base.s, SS_SYSTEM, SS_RESOLVE) ;
-    auto_check(dst) ;
-
-    auto_strings(dst + baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN, SS_MASTER) ;
-
-    if (!scan_mode(dst, S_IFREG))
-        if (!tree_resolve_master_create(info->base.s, info->owner))
-            log_dieu(LOG_EXIT_SYS, "write Master resolve file of trees") ;
-
-    auto_strings(dst + baselen, SS_TREE_CURRENT) ;
-    auto_check(dst) ;
-    auto_strings(dst + baselen, SS_SYSTEM, SS_BACKUP) ;
-    auto_check(dst) ;
 }
 
 static void tree_parse_options_groups(char *store, char const *str)
@@ -440,7 +318,7 @@ static void tree_parse_options_depends(graph_t *g, ssexec_t *info, char const *s
 
             log_trace("launch 66-tree sub-process for tree: ", name) ;
 
-            if (ssexec_tree(nargc, newargv, (char const *const *)environ, &newinfo))
+            if (ssexec_tree(nargc, newargv, &newinfo))
                 log_dieusys(LOG_EXIT_SYS, "create tree: ", name) ;
 
             ssexec_free(&newinfo) ;
@@ -621,60 +499,19 @@ void create_tree(ssexec_t *info)
 {
     log_flow() ;
 
-    size_t newlen = 0, treelen = info->tree.len ;
+    size_t treelen = info->tree.len ;
     char const *tree = info->tree.s ;
-    char dst[treelen + SS_SVDIRS_LEN + SS_DB_LEN + SS_SRC_LEN + 16 + 1] ;
-    char sym[treelen + SS_SVDIRS_LEN + 1 + SS_SYM_SVC_LEN + 1] ;
-    char dstsym[treelen + SS_SVDIRS_LEN + SS_SVC_LEN + 1] ;
+    char dst[treelen + SS_SVDIRS_LEN + SS_RESOLVE_LEN + 1] ;
 
-    auto_strings(dst, tree) ;
-    newlen = treelen ;
-
-    auto_create(dst, SS_SVDIRS, newlen) ;
-    auto_create(dst, SS_RULES, newlen) ;
-    auto_strings(dst + newlen, SS_SVDIRS) ;
-    newlen = newlen + SS_SVDIRS_LEN ;
-    auto_create(dst, SS_DB, newlen) ;
-    auto_create(dst, SS_SVC, newlen) ;
-    auto_create(dst, SS_RESOLVE, newlen) ;
-    dst[newlen] = 0 ;
+    auto_strings(dst, tree, SS_SVDIRS, SS_SVC) ;
+    auto_dir(dst, 0755) ;
+    auto_strings(dst + treelen + SS_SVDIRS_LEN, SS_RESOLVE) ;
+    auto_dir(dst, 0755) ;
+    auto_strings(dst + treelen, SS_RULES) ;
+    auto_dir(dst, 0755) ;
 
     if (!service_resolve_master_create(info->base.s, info->treename.s))
-        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"write Master resolve file of services") ;
-
-    auto_strings(sym,dst, "/", SS_SYM_SVC) ;
-    auto_strings(dstsym, dst, SS_SVC) ;
-
-    log_trace("point symlink: ", sym, " to ", dstsym) ;
-    if (symlink(dstsym,sym) < 0)
-        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"symlink: ", sym) ;
-
-    auto_strings(sym + newlen + 1, SS_SYM_DB) ;
-    auto_strings(dstsym + newlen, SS_DB) ;
-
-    log_trace("point symlink: ", sym, " to ", dstsym) ;
-    if (symlink(dstsym, sym) < 0)
-        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"symlink: ", sym) ;
-
-    auto_strings(dst + newlen, SS_DB) ;
-    newlen = newlen + SS_DB_LEN ;
-    auto_create(dst, SS_SRC, newlen) ;
-    auto_strings(dst + newlen, SS_SRC) ;
-    newlen = newlen + SS_SRC_LEN ;
-    auto_create(dst, SS_MASTER, newlen) ;
-    auto_strings(dst + newlen, SS_MASTER) ;
-    newlen = newlen + SS_MASTER_LEN ;
-
-    log_trace("create file: ", dst, "/contents") ;
-    if (!file_create_empty(dst, "contents", 0644))
-        log_dieusys_nclean(LOG_EXIT_SYS, &cleanup, "create: ", dst, "/contents") ;
-
-    auto_strings(dst + newlen, "/type") ;
-
-    log_trace("create file: ", dst) ;
-    if(!openwritenclose_unsafe(dst, "bundle\n",7))
-        log_dieusys_nclean(LOG_EXIT_SYS, &cleanup, "write: ", dst) ;
-
+        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"write Master resolve file of services for tree: ", info->treename.s) ;
 }
 
 void tree_groups(char const *base, char const *treename, char const *value)
@@ -784,7 +621,7 @@ void tree_master_modify_contents(char const *base, char const *treename)
     resolve_free(wres) ;
 }
 
-void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what, char const *const *envp)
+void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what)
 {
     log_flow() ;
 
@@ -807,6 +644,9 @@ void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what, char const *cons
     log_trace("creating: ", info->tree.s, "..." ) ;
     create_tree(info) ;
 
+    char svdir[info->tree.len + SS_SVDIRS_LEN + SS_SVC_LEN + 2] ;
+    auto_strings(svdir, info->tree.s, SS_SVDIRS, SS_SVC, "/") ;
+
     log_trace("creating backup directory of tree: ", info->treename.s, "...") ;
     create_backupdir(info->base.s, info->treename.s) ;
 
@@ -815,15 +655,6 @@ void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what, char const *cons
 
     // set permissions
     what->allow = 1 ;
-
-    // compilation of the db
-    size_t dblen = info->tree.len ;
-    char newdb[dblen + SS_SVDIRS_LEN + 1] ;
-    auto_strings(newdb, info->tree.s, SS_SVDIRS) ;
-
-    log_trace("compile: ",newdb, "/db/", info->treename.s, "..." ) ;
-    if (!db_compile(newdb, info->tree.s, info->treename.s, envp))
-        log_dieu_nclean(LOG_EXIT_SYS,&cleanup, "compile ", newdb, "/db/", info->treename.s) ;
 
     tres.name = resolve_add_string(wres, info->treename.s) ;
     tres.groups = resolve_add_string(wres, info->owner ? TREE_GROUPS_USER : TREE_GROUPS_ADM) ;
@@ -836,7 +667,7 @@ void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what, char const *cons
     /** check of the seed.sa.len: if the seed file is not parse at this point
      * the seed.sa.s + seed.depends is empty which produce a segmentation fault
      * when the -o options is passed at commandline. We have already passed
-     * through the tree_parse_options_depends anyway when it's the case */
+     * through the tree_parse_options_depends anyway when it's the case. */
     if (what->depends && seed.sa.len)
         tree_parse_options_depends(g, info, seed.sa.s + seed.depends, 0, what) ;
 
@@ -852,9 +683,7 @@ void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what, char const *cons
 }
 
 /**
- *
  * WARNING: The order of the trees are not sorted by dependencies order
- *
  *
  * !action -> disable
  * action -> disable */
@@ -942,7 +771,7 @@ void tree_enable_disable_deps(graph_t *g,char const *base, char const *treename,
     size_t pos = 0, element = 0 ;
     stralloc sa = STRALLOC_ZERO ;
 
-    if (graph_matrix_get_edge_g_sa(&sa, g, treename, action ? 0 : 1) < 0)
+    if (graph_matrix_get_edge_g_sa(&sa, g, treename, action ? 0 : 1, 0) < 0)
         log_dieu(LOG_EXIT_SYS, "get ", action ? "dependencies" : "required by" ," of: ", treename) ;
 
     size_t len = sastr_nelement(&sa) ;
@@ -1031,7 +860,7 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
 
     auto_strings(solve, base, SS_SYSTEM) ;
 
-    if (graph_matrix_get_edge_g_sorted_sa(&sa, g, treename, requiredby) < 0)
+    if (graph_matrix_get_edge_g_sorted_sa(&sa, g, treename, requiredby, 0) < 0)
         log_dieu(LOG_EXIT_SYS,"get sorted ", requiredby ? "required by" : "dependency", " list of tree: ", treename) ;
 
     size_t vlen = sastr_nelement(&sa) ;
@@ -1126,7 +955,7 @@ void tree_depends_requiredby_deps(graph_t *g, char const *base, char const *tree
     stralloc sa = STRALLOC_ZERO ;
     char solve[baselen + SS_SYSTEM_LEN + 1] ;
 
-    if (graph_matrix_get_edge_g_sorted_sa(&sa, g, treename, requiredby) < 0)
+    if (graph_matrix_get_edge_g_sorted_sa(&sa, g, treename, requiredby, 0) < 0)
         log_dieu(LOG_EXIT_SYS,"get sorted ", requiredby ? "required by" : "dependency", " list of tree: ", treename) ;
 
     size_t vlen = sastr_nelement(&sa) ;
@@ -1368,48 +1197,36 @@ void tree_clone(char const *clone, ssexec_t *info)
 
     int r ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
+    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     stralloc sa = STRALLOC_ZERO ;
-    char const *exclude[1] = { 0 } ;
+    char const *exclude[2] = { SS_MASTER + 1, 0 } ;
 
     size_t syslen = info->base.len + SS_SYSTEM_LEN ;
-    size_t treelen = info->treename.len, clonelen = strlen(clone) ;
+    size_t clonelen = strlen(clone) ;
     size_t pos = 0 ;
 
     char system[syslen + 1] ;
-    auto_strings(system,info->base.s,SS_SYSTEM) ;
+    auto_strings(system, info->base.s, SS_SYSTEM) ;
 
     size_t clone_target_len = syslen + 1 + clonelen ;
     char clone_target[clone_target_len + 1] ;
-    auto_strings(clone_target,system,"/",clone) ;
+    auto_strings(clone_target, system, "/", clone) ;
 
     r = scan_mode(clone_target,S_IFDIR) ;
-    if ((r < 0) || r) log_die(LOG_EXIT_SYS,clone_target,": already exist") ;
+    if ((r < 0) || r) log_die(LOG_EXIT_USER,clone_target,": already exist") ;
 
     // clone main directory
-    log_trace("clone: ",info->treename.s," as: ",clone,"..." ) ;
-    if (!hiercopy(info->tree.s,clone_target))
+    log_trace("clone: ", info->treename.s, " as: ", clone, "..." ) ;
+    if (!hiercopy(info->tree.s, clone_target))
         log_dieusys(LOG_EXIT_SYS,"copy: ",info->tree.s," to: ",clone_target) ;
 
-    // clone backup directory
-    size_t clone_backup_len = syslen + SS_BACKUP_LEN + 1 + clonelen ;
-    char clone_backup[clone_backup_len + 1] ;
-    auto_strings(clone_backup,system,SS_BACKUP,"/",clone) ;
-
-    char tree_backup[syslen + SS_BACKUP_LEN + 1 + treelen + 1] ;
-    auto_strings(tree_backup,system,SS_BACKUP,"/",info->treename.s) ;
-
-    /* make cleantree pointing to the clone to be able to remove it
-     * in case of crach */
     cleantree = clone_target ;
 
-    log_trace("clone backup of: ",info->treename.s," as: ",clone,"..." ) ;
-    if (!hiercopy(tree_backup,clone_backup))
-        log_dieu_nclean(LOG_EXIT_SYS,&cleanup,"copy: ",tree_backup," to: ",clone_backup) ;
-
-    // modify the resolve file to match the new name
-    // main directory first
+    /**
+     * modify the resolve files of all services inside the clone
+     * to match the new name of the tree.
+     * */
     char src_resolve[clone_target_len + SS_SVDIRS_LEN + SS_RESOLVE_LEN + 1] ;
     auto_strings(src_resolve,clone_target,SS_SVDIRS,SS_RESOLVE) ;
 
@@ -1426,93 +1243,56 @@ void tree_clone(char const *clone, ssexec_t *info)
         if (!resolve_read(wres,clone_res,name))
             log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of: ",src_resolve,"/",name) ;
 
-        if (!resolve_modify_field(wres, SERVICE_ENUM_RUNAT, clone)  ||
+        char status[info->base.len + SS_SYSTEM_LEN + 1 + clonelen + SS_SVDIRS_LEN + SS_SVC_LEN + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
+        auto_strings(status, info->base.s, SS_SYSTEM, "/", clone, SS_SVDIRS, SS_SVC, SS_STATE, "/", SS_STATUS) ;
+
+        if (!resolve_modify_field(wres, SERVICE_ENUM_TREE, clone_target) ||
             !resolve_modify_field(wres, SERVICE_ENUM_TREENAME, clone) ||
-            !resolve_modify_field(wres, SERVICE_ENUM_TREE, clone) ||
-            !resolve_modify_field(wres, SERVICE_ENUM_STATE, clone))
+            !resolve_modify_field(wres, SERVICE_ENUM_STATUS, status))
                 log_dieusys_nclean(LOG_EXIT_SYS, &cleanup, "modify resolve file of: ", name) ;
 
         if (!resolve_write(wres,clone_res,name))
             log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"write resolve file of: ",src_resolve,"/",name) ;
     }
 
-    // rename db
-    char clone_db_old[clone_target_len + SS_SVDIRS_LEN + SS_DB_LEN + 1 + treelen + 1] ;
-    auto_strings(clone_db_old,clone_target,SS_SVDIRS,SS_DB,"/",info->treename.s) ;
-
-    char clone_db_new[clone_target_len + SS_SVDIRS_LEN + SS_DB_LEN + 1 + clonelen + 1] ;
-    auto_strings(clone_db_new,clone_target,SS_SVDIRS,SS_DB,"/",clone) ;
-
-    log_trace("rename tree db: ",info->treename.s," as: ",clone,"..." ) ;
-    if (rename(clone_db_old,clone_db_new) == -1)
-        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"rename: ",clone_db_old," to: ",clone_db_new) ;
-
-    // backup directory
-    char src_resolve_backup[clone_backup_len + SS_RESOLVE_LEN + 1] ;
-    auto_strings(src_resolve_backup,clone_backup,SS_RESOLVE) ;
-
-    sa.len = 0 ;
-
-    /** main and backup can be different,so rebuild the list
-     * Also, a backup directory can be empty, check it first */
-    r = scan_mode(src_resolve_backup,S_IFDIR) ;
-    if (r == 1) {
-
-        if (!sastr_dir_get(&sa,src_resolve_backup,exclude,S_IFREG))
-            log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"get resolve file at: ",src_resolve_backup) ;
-
-        pos = 0 ;
-        FOREACH_SASTR(&sa, pos) {
-
-            char *name = sa.s + pos ;
-
-            if (!resolve_read(wres,clone_backup,name))
-                log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of: ",src_resolve_backup,"/",name) ;
-
-            if (!resolve_modify_field(wres, SERVICE_ENUM_RUNAT, clone) ||
-                !resolve_modify_field(wres, SERVICE_ENUM_TREENAME, clone) ||
-                !resolve_modify_field(wres, SERVICE_ENUM_TREE, clone) ||
-                !resolve_modify_field(wres, SERVICE_ENUM_STATE, clone))
-                    log_dieusys_nclean(LOG_EXIT_SYS, &cleanup, "modify resolve file of: ", name) ;
-
-            if (!resolve_write(wres,clone_backup,name))
-                log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"write resolve file of: ",src_resolve,"/",name) ;
-        }
-        // rename db
-        char clone_db_backup_old[clone_backup_len + SS_DB_LEN + 1 + treelen + 1] ;
-        auto_strings(clone_db_backup_old,clone_backup,SS_DB,"/",info->treename.s) ;
-
-        char clone_db_backup_new[clone_backup_len + SS_DB_LEN + 1 + clonelen + 1] ;
-        auto_strings(clone_db_backup_new,clone_backup,SS_DB,"/",clone) ;
-
-        log_trace("rename tree backup db: ",info->treename.s," as: ",clone,"..." ) ;
-        if (rename(clone_db_backup_old,clone_db_backup_new) == -1)
-            log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"rename: ",clone_db_backup_old," to: ",clone_db_backup_new) ;
-    }
-    /** tree resolve file */
-
     resolve_free(wres) ;
 
-    wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+    /** copy tree resolve file */
+    struct stat st ;
+    char src[syslen + SS_RESOLVE_LEN + 1 + info->treename.len + 1] ;
+    char dst[syslen + SS_RESOLVE_LEN + 1 + clonelen + 1] ;
+    auto_strings(src, system, SS_RESOLVE, "/", info->treename.s) ;
+    auto_strings(dst, system, SS_RESOLVE, "/", clone) ;
 
-    if (!resolve_read(wres, system, info->treename.s))
-        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read inner resolve file of trees") ;
+    if (stat(src, &st) < 0)
+        log_dieusys_nclean(LOG_EXIT_SYS, &cleanup, "stat: ", src) ;
 
-    if (!resolve_modify_field(wres, TREE_ENUM_MASTER_ENABLED, 0) ||
-        !resolve_modify_field(wres, TREE_ENUM_MASTER_NAME, clone))
-            log_dieusys(LOG_EXIT_SYS, "modify inner resolve file of trees") ;
+    if (!filecopy_unsafe(src, dst, st.st_mode))
+        log_dieusys_nclean(LOG_EXIT_SYS, &cleanup, "copy: ", src, " to: ", dst) ;
 
-    mres.nenabled = 0 ;
+    lchown(dst, st.st_uid, st.st_gid) ;
+
+    /** tree resolve file */
+    wres = resolve_set_struct(DATA_TREE, &tres) ;
+
+    if (!resolve_read(wres, system, clone))
+        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of tree: ", clone) ;
+
+    if(!resolve_modify_field(wres, TREE_ENUM_DISEN, 0))
+        log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", clone) ;
 
     if (!resolve_write(wres, system, clone))
-        log_dieusys_nclean(LOG_EXIT_SYS, &cleanup, "write inner resolve file of trees") ;
+        log_dieusys_nclean(LOG_EXIT_SYS, &cleanup, "write resolve file of tree: ", clone) ;
 
     resolve_free(wres) ;
+
+    /** tree Master resolve file */
+    tree_master_modify_contents(info->base.s, clone) ;
 
     log_info("Cloned successfully: ", info->treename.s, " to: ", clone) ;
 }
 
-int ssexec_tree(int argc, char const *const *argv, char const *const *envp, ssexec_t *info)
+int ssexec_tree(int argc, char const *const *argv, ssexec_t *info)
 {
     int r ;
 
@@ -1628,12 +1408,12 @@ int ssexec_tree(int argc, char const *const *argv, char const *const *envp, ssex
     }
 
     if(!r && what.create)
-        tree_create(&graph, info, &what, envp) ;
+        tree_create(&graph, info, &what) ;
 
     if (!r && what.remove)
         log_dieusys(LOG_EXIT_SYS,"find tree: ", info->treename.s) ;
 
-    if (!graph_build_g(&graph, info->base.s, info->treename.s, DATA_TREE, 0))
+    if (!graph_build_g(&graph, info->base.s, 0, DATA_TREE, 0))
         log_dieu(LOG_EXIT_SYS,"build the graph") ;
 
     if (what.remove) {
@@ -1641,7 +1421,7 @@ int ssexec_tree(int argc, char const *const *argv, char const *const *envp, ssex
         goto freed ;
     }
 
-    /** groups influence on enable. Apply it first */
+    /** groups influence on enable. Apply it first. */
     if (what.groups)
         tree_groups(info->base.s, info->treename.s, what.gr) ;
 
