@@ -46,7 +46,7 @@ Contact information
   https://web.obarun.org/
 
 * XMPP Channel:
-  obarun@muc.syntazia.org
+  obarun@xmpp.obarun.org
 
 
 Supports the project
@@ -67,12 +67,12 @@ POC was made on `Gentoo`, `Funtoo`, `Devuan`, `Void`, `Adelie`, `Arch`.
 
 ### Runtime service file
 
-You can find several examples for common daemon [here](https://framagit.org/pkg/observice)
+You can find several examples for common daemon [here](https://git.obarun.org/pkg/observice)
 
 ### Frontend service file scripting
 
 By default, 66 use [execline](http://skarnet.org/software/execline) as scripting language.
-[66-tools](https://framagit.org/obarun/66-tools) provide some additonal tools to help you on this task.
+[66-tools](https://git.obarun.org/obarun/66-tools) provide some additonal tools to help you on this task.
 Some are specific to `execline` where other can be used on classic shell. However, you can specify the scripting language to use.
 
 Examples of common use
