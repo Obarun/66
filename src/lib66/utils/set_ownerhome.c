@@ -17,6 +17,7 @@
 #include <pwd.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 
 #include <skalibs/stralloc.h>
 
@@ -39,9 +40,8 @@ int set_ownerhome(stralloc *base,uid_t owner)
     errno = e ;
     if (!user_home) return 0 ;
 
-    if (!stralloc_cats(base,user_home)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-    if (!stralloc_cats(base,"/")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-    if (!stralloc_0(base)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-    base->len--;
+    if (!auto_stra(base,user_home, "/"))
+        log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
     return 1 ;
 }

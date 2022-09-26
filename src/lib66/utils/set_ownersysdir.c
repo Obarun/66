@@ -16,6 +16,7 @@
 #include <errno.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 
 #include <skalibs/stralloc.h>
 
@@ -39,17 +40,15 @@ int set_ownersysdir(stralloc *base, uid_t owner)
     errno = e ;
     if (user_home == NULL) return 0 ;
 
-    if(owner > 0){
-        if (!stralloc_cats(base,user_home)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-        if (!stralloc_cats(base,"/")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-        if (!stralloc_cats(base,SS_USER_DIR)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-        if (!stralloc_0(base)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+    if(owner > 0) {
+        if (!auto_stra(base,user_home, "/", SS_USER_DIR))
+            log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+    } else {
+
+        if (!auto_stra(base,SS_SYSTEM_DIR))
+            log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
     }
-    else
-    {
-        if (!stralloc_cats(base,SS_SYSTEM_DIR)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-        if (!stralloc_0(base)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-    }
-    base->len--;
+
     return 1 ;
 }

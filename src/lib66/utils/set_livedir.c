@@ -13,6 +13,7 @@
  */
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 
 #include <skalibs/stralloc.h>
 
@@ -23,21 +24,18 @@ int set_livedir(stralloc *live)
 {
     log_flow() ;
 
-    if (live->len)
-    {
-        if (live->s[0] != '/') return -1 ;
-        if (live->s[live->len - 2] != '/')
-        {
+    if (live->len) {
+
+        if (live->s[0] != '/')
+            return -1 ;
+
+        if (live->s[live->len - 2] != '/') {
             live->len-- ;
-            if (!stralloc_cats(live,"/")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-            if (!stralloc_0(live)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+            if (!auto_stra(live,"/")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
         }
-    }
-    else
-    {
-        if (!stralloc_cats(live,SS_LIVE)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-        if (!stralloc_0(live)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-    }
-    live->len--;
+
+    } else if (!auto_stra(live,SS_LIVE))
+        log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
     return 1 ;
 }

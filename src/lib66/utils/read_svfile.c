@@ -28,13 +28,11 @@ int read_svfile(stralloc *sasv,char const *name,char const *src)
     log_flow() ;
 
     int r ;
+
     size_t srclen = strlen(src) ;
     size_t namelen = strlen(name) ;
-
     char svtmp[srclen + namelen + 1] ;
-    memcpy(svtmp,src,srclen) ;
-    memcpy(svtmp + srclen, name, namelen) ;
-    svtmp[srclen + namelen] = 0 ;
+    auto_strings(svtmp, src, name) ;
 
     size_t filesize=file_get_size(svtmp) ;
     if (!filesize)
@@ -44,9 +42,10 @@ int read_svfile(stralloc *sasv,char const *name,char const *src)
     if(!r)
         log_warnusys_return(LOG_EXIT_ZERO,"open ", svtmp) ;
 
+
     /** ensure that we have an empty line at the end of the string*/
-    if (!stralloc_cats(sasv,"\n")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-    if (!stralloc_0(sasv)) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+    if (!auto_stra(sasv, "\n"))
+        log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 
     return 1 ;
 }
