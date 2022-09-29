@@ -36,14 +36,5 @@ int graph_build_g(graph_t *g, char const *base, char const *treename, uint8_t da
             return 0 ;
     }
 
-    if (!graph_matrix_build(g))
-        log_warnu_return(LOG_EXIT_ZERO, "build the graph") ;
-
-    if (!graph_matrix_analyze_cycle(g))
-        log_warnu_return(LOG_EXIT_ZERO, "found cycle") ;
-
-    if (!graph_matrix_sort(g))
-        log_warnu_return(LOG_EXIT_ZERO, "sort the graph") ;
-
     return 1 ;
 }
