@@ -44,7 +44,7 @@ int graph_build_service(graph_t *g, char const *base, char const *treename, uint
 
     if (general) {
 
-        if (!resolve_get_field_tosa_g(&sa, base, treename, treename, DATA_TREE_MASTER, TREE_ENUM_MASTER_CONTENTS))
+        if (!resolve_get_field_tosa_g(&sa, base, treename, SS_MASTER + 1, DATA_TREE_MASTER, E_RESOLVE_TREE_MASTER_CONTENTS))
             goto err ;
 
         FOREACH_SASTR(&sa, pos) {
