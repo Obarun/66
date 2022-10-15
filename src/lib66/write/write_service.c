@@ -47,14 +47,33 @@ int write_services(resolve_service_t *res, char const *workdir, uint8_t force)
     {
         resolve_service_t fres = RESOLVE_SERVICE_ZERO ;
         resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &fres) ;
+        ss_state_t ste = STATE_ZERO ;
+        if (resolve_check(workdir, name)) {
+            if (!resolve_read(wres, workdir, name))
+                log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name) ;
 
-        if (resolve_read_g(wres, workdir, name))
-            if (fres.type != type && fres.live.disen)
-                log_die(LOG_EXIT_SYS, "Detection of incompatible type format for: ", name, " -- current: ", get_key_by_enum(ENUM_TYPE, type), " previous: ", get_key_by_enum(ENUM_TYPE, fres.type)) ;
+            if (state_check(fres.sa.s + fres.path.home, name)) {
 
+                if (!state_read(&ste, fres.sa.s + fres.path.home, name))
+                    log_dieu(LOG_EXIT_SYS, "read state file of: ", name) ;
+
+                if (fres.type != type && FLAGS_ISSET(ste.isenabled, STATE_FLAGS_TRUE))
+                    log_die(LOG_EXIT_SYS, "Detection of incompatible type format for: ", name, " -- current: ", get_key_by_enum(ENUM_TYPE, type), " previous: ", get_key_by_enum(ENUM_TYPE, fres.type)) ;
+            }
+        }
         resolve_free(wres) ;
     }
-
+    /**
+     *
+     *
+     * please pass through a temporary or backup
+     *
+     * just need to switch the /run/66/state/0/<service> symlink
+     * with atomic_symlink
+     *
+     *
+     *
+     * */
     char wname[workdirlen + SS_SVC_LEN + 1 + namelen + 1] ;
     auto_strings(wname, workdir, SS_SVC, "/", name) ;
 
@@ -79,6 +98,10 @@ int write_services(resolve_service_t *res, char const *workdir, uint8_t force)
     log_trace("Write service ", name, " ...") ;
 
     switch(type) {
+
+        case TYPE_MODULE:
+        case TYPE_BUNDLE:
+            break ;
 
         case TYPE_CLASSIC:
 

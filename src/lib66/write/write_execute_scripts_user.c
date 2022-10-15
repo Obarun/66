@@ -34,7 +34,7 @@ void write_execute_scripts_user(resolve_service_t *res, resolve_service_addon_sc
     char *shebang = scripts->shebang ? res->sa.s + scripts->shebang : SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n" ;
     size_t shebanglen = strlen(shebang) ;
     size_t scriptlen = strlen(res->sa.s + scripts->run_user) ;
-    char run[2 + shebanglen + 15 + scriptlen + 1] ;
+    char run[shebanglen + scriptlen + 4 + 1] ;
     int build = !strcmp(res->sa.s + scripts->build, "custom") ? 1 : 0 ;
     char write[strlen(dst) + 1 + strlen(file) + 1] ;
 
@@ -45,11 +45,9 @@ void write_execute_scripts_user(resolve_service_t *res, resolve_service_addon_sc
     if (build && scripts->shebang)
         auto_strings(run + FAKELEN, res->sa.s + scripts->shebang, "\n") ;
     else
-        auto_strings(run + FAKELEN, \
-                    SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n",
-                    "fdmove -c 2 1\n") ;
+        auto_strings(run + FAKELEN, shebang, "\n") ;
 
-    auto_strings(run + FAKELEN, res->sa.s + scripts->run_user) ;
+    auto_strings(run + FAKELEN, res->sa.s + scripts->run_user, "\n") ;
 
     if (!file_write_unsafe(dst, file, run, FAKELEN))
         log_dieusys(LOG_EXIT_SYS, "write: ", dst, "/", file) ;

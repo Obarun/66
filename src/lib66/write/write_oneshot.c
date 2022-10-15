@@ -25,17 +25,17 @@ void write_oneshot(resolve_service_t *res, char const *dst)
     write_common(res, dst) ;
 
     /** run file */
-    write_execute_scripts(res, &res->execute.run, "up", dst) ;
+    write_execute_scripts("up", res->sa.s + res->execute.run.run, dst) ;
 
     /** finish file */
     if (res->execute.finish.run_user)
-        write_execute_scripts(res, &res->execute.finish, "down", dst) ;
+        write_execute_scripts("down", res->sa.s + res->execute.finish.run, dst) ;
 
     /** run.user file */
-    write_execute_scripts_user(res, &res->execute.run, "up.user", dst) ;
+    write_execute_scripts("up.user", res->sa.s + res->execute.run.run_user, dst) ;
 
     /** finish.user file */
     if (res->execute.finish.run_user)
-        write_execute_scripts_user(res, &res->execute.finish, "down.user", dst) ;
+        write_execute_scripts("down.user", res->sa.s + res->execute.finish.run_user, dst) ;
 
 }

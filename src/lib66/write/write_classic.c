@@ -30,23 +30,23 @@ void write_classic(resolve_service_t *res, char const *dst, uint8_t force)
     write_common(res, dst) ;
 
     /** run file */
-    write_execute_scripts(res, &res->execute.run, "run", dst) ;
+    write_execute_scripts("run", res->sa.s + res->execute.run.run, dst) ;
 
     /** finish file */
     if (res->execute.finish.run_user)
-        write_execute_scripts(res, &res->execute.finish, "finish", dst) ;
+        write_execute_scripts("finish", res->sa.s + res->execute.finish.run, dst) ;
 
     /** run.user file */
-    write_execute_scripts_user(res, &res->execute.run, "run.user", dst) ;
+    write_execute_scripts( "run.user", res->sa.s + res->execute.run.run_user, dst) ;
 
     /** finish.user file */
     if (res->execute.finish.run_user)
-        write_execute_scripts_user(res, &res->execute.finish, "finish.user", dst) ;
+        write_execute_scripts("finish.user", res->sa.s + res->execute.finish.run_user, dst) ;
 
     /** logger */
     if (res->logger.name) {
 
-        char destination[strlen(dst)] ;
+        char destination[strlen(dst) + 1] ;
 
         if (!ob_dirname(destination, dst))
             log_dieu(LOG_EXIT_SYS, "get dirname of: ", dst) ;

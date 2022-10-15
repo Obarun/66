@@ -2,7 +2,6 @@ write_classic.o
 write_common.o
 write_environ.o
 write_execute_scripts.o
-write_execute_scripts_user.o
 write_logger.o
 write_oneshot.o
 write_service.o

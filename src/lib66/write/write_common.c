@@ -36,9 +36,6 @@ void write_common(resolve_service_t *res, char const *dst)
 {
     log_flow() ;
 
-    char *time = 0 ;
-    size_t dstlen = strlen(dst) ;
-
     /** down file */
     if (res->execute.down)
         if (!file_create_empty(dst, "down", 0644))
@@ -100,7 +97,6 @@ void write_common(resolve_service_t *res, char const *dst)
         FOREACH_SASTR(&sa, pos) {
 
             char *what = sa.s + pos ;
-            size_t whatlen = strlen(what) ;
             char tmp[SS_MAX_PATH_LEN + 1] ;
             char basedir[srclen + 1] ;
 
