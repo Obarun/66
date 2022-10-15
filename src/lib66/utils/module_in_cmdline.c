@@ -29,15 +29,15 @@ int module_in_cmdline(genalloc *gares, resolve_service_t *res, char const *dir)
     log_flow() ;
 
     int e = 0 ;
-    stralloc tmp = STRALLOC_ZERO ;
+/*    stralloc tmp = STRALLOC_ZERO ;
     size_t pos = 0 ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     if (!resolve_append(gares,wres)) goto err ;
 
-    if (res->contents)
+    if (res->dependencies.depends)
     {
-        if (!sastr_clean_string(&tmp,res->sa.s + res->contents))
+        if (!sastr_clean_string(&tmp,res->sa.s + res->dependencies.depends))
             goto err ;
     }
     for (; pos < tmp.len ; pos += strlen(tmp.s + pos) + 1)
@@ -55,5 +55,5 @@ int module_in_cmdline(genalloc *gares, resolve_service_t *res, char const *dir)
     err:
         free(wres) ;
         stralloc_free(&tmp) ;
-        return e ;
+  */      return e ;
 }

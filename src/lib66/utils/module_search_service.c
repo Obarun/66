@@ -49,9 +49,9 @@ int module_search_service(char const *src, genalloc *gares, char const *name,uin
     {
         char *dname = list.s + pos ;
         if (!resolve_read(wres,src,dname)) goto err ;
-        if (res.type == TYPE_MODULE && res.contents)
+        if (res.type == TYPE_MODULE && res.dependencies.depends)
         {
-            if (!sastr_clean_string(&tmp,res.sa.s + res.contents)) goto err ;
+            if (!sastr_clean_string(&tmp,res.sa.s + res.dependencies.depends)) goto err ;
             for (deps = 0 ; deps < tmp.len ; deps += strlen(tmp.s + deps) + 1)
             {
                 if (!strcmp(name,tmp.s + deps))
