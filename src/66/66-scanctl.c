@@ -29,6 +29,7 @@
 
 #include <s6/config.h>
 
+#include <66/svc.h>
 #include <66/utils.h>
 
 static char TMPENV[MAXENV + 1] ;
@@ -137,14 +138,13 @@ static int send_signal(char const *scandir, char const *signal)
         auto_strings(csig,signal) ;
     }
 
-    log_info("Sending -",csig," signal to scandir: ",scandir,"...") ;
-    return scandir_send_signal(scandir,csig) ;
+    return svc_scandir_send(scandir,csig) ;
 }
 
 static void scandir_up(char const *scandir, unsigned int timeout, unsigned int notif, char const *const *envp)
 {
     int r ;
-    r = scandir_ok(scandir) ;
+    r = svc_scandir_ok(scandir) ;
     if (r < 0) log_dieusys(LOG_EXIT_SYS, "check: ", scandir) ;
     if (r)
     {
@@ -184,6 +184,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
     char const *newenv[MAXENV+1] ;
     char const *const *genv = 0 ;
     char const *signal ;
+    char str[UINT_FMT] ;
 
     stralloc scandir = STRALLOC_ZERO ;
     stralloc envdir = STRALLOC_ZERO ;
@@ -220,8 +221,12 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
                 case 'l' :
 
-                    if (!stralloc_cats(&scandir,l.arg) ||
-                    !stralloc_0(&scandir))
+                    str[uint_fmt(str, SS_MAX_PATH)] = 0 ;
+
+                    if (strlen(l.arg) > SS_MAX_PATH)
+                        log_die(LOG_EXIT_USER,"live path is too long -- it can not exceed ", str) ;
+
+                    if (!auto_stra(&scandir,l.arg))
                         log_die_nomem("stralloc") ;
 
                     break ;
@@ -319,7 +324,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
         return 0 ;
     }
 
-    r = scandir_ok(scandir.s) ;
+    r = svc_scandir_ok(scandir.s) ;
     if (!r) log_diesys(LOG_EXIT_SYS,"scandir: ",scandir.s," is not running") ;
     else if (r < 0) log_dieusys(LOG_EXIT_SYS, "check: ", scandir.s) ;
 
