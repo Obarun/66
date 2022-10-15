@@ -12,258 +12,151 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <string.h>
+#include <stdint.h>
 
-#include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
-#include <oblibs/string.h>
+#include <oblibs/types.h>
+#include <oblibs/obgetopt.h>
+#include <oblibs/graph.h>
 
-#include <skalibs/stralloc.h>
+#include <skalibs/sgetopt.h>
+#include <skalibs/djbunix.h>
 #include <skalibs/genalloc.h>
 
-#include <66/utils.h>
-#include <66/constants.h>
-#include <66/db.h>
-#include <66/svc.h>
-#include <66/rc.h>
+#include <66/graph.h>
+#include <66/config.h>
 #include <66/ssexec.h>
-#include <66/resolve.h>
-#include <66/service.h>
 #include <66/state.h>
+#include <66/svc.h>
+#include <66/service.h>
 
-static unsigned int DEADLINE = 0 ;
-static unsigned int UNSUP = 0 ;
-static char *SIG = "-d" ;
-
-static ss_resolve_graph_t graph_unsup_cl = RESOLVE_GRAPH_ZERO ;
-static ss_resolve_graph_t graph_cl = RESOLVE_GRAPH_ZERO ;
-static ss_resolve_graph_t graph_unsup_rc = RESOLVE_GRAPH_ZERO ;
-static ss_resolve_graph_t graph_rc = RESOLVE_GRAPH_ZERO ;
-
-int svc_down(ssexec_t *info, char const *const *envp)
+int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    unsigned int reverse = 1 ;
-    int r ;
+    uint32_t flag = 0 ;
+    graph_t graph = GRAPH_ZERO ;
 
-    if (genalloc_len(resolve_service_t,&graph_unsup_cl.name))
-    {
-        UNSUP = 1 ;
-        r = ss_resolve_graph_publish(&graph_unsup_cl,reverse) ;
-        if (r < 0 || !r)
-        {
-            log_warnusys("publish service graph") ;
-            goto err ;
-        }
-        if (!svc_unsupervise(info,&graph_unsup_cl.sorted,SIG,envp)) goto err ;
-    }
-    else
-    {
-        r = ss_resolve_graph_publish(&graph_cl,reverse) ;
-        if (r < 0 || !r)
-        {
-            log_warnusys("publish service graph") ;
-            goto err ;
-        }
-        if (!svc_send(info,&graph_cl.sorted,SIG,envp)) goto err ;
-    }
-    ss_resolve_graph_free(&graph_unsup_cl) ;
-    ss_resolve_graph_free(&graph_cl) ;
-    return 1 ;
-    err:
-        ss_resolve_graph_free(&graph_unsup_cl) ;
-        ss_resolve_graph_free(&graph_cl) ;
-        return 0 ;
-}
+    unsigned int areslen = 0, list[SS_MAX_SERVICE], nservice = 0 ;
+    resolve_service_t ares[SS_MAX_SERVICE] ;
 
-int rc_down(ssexec_t *info, char const *const *envp)
-{
-    log_flow() ;
-
-    unsigned int reverse = 1 ;
-    int r ;
-
-    if (genalloc_len(resolve_service_t,&graph_unsup_rc.name))
-    {
-        UNSUP = 1 ;
-        r = ss_resolve_graph_publish(&graph_unsup_rc,reverse) ;
-        if (r < 0 || !r)
-        {
-            log_warnusys("publish service graph") ;
-            goto err ;
-        }
-        if (!rc_unsupervise(info,&graph_unsup_rc.sorted,"-d",envp)) goto err ;
-    }
-    else
-    {
-        r = ss_resolve_graph_publish(&graph_rc,reverse) ;
-        if (r < 0 || !r)
-        {
-            log_warnusys("publish service graph") ;
-            goto err ;
-        }
-        if (!rc_send(info,&graph_rc.sorted,"-d",envp)) goto err ;
-    }
-
-    ss_resolve_graph_free(&graph_unsup_rc) ;
-    ss_resolve_graph_free(&graph_rc) ;
-    return 1 ;
-    err:
-        ss_resolve_graph_free(&graph_unsup_rc) ;
-        ss_resolve_graph_free(&graph_rc) ;
-        return 0 ;
-}
-
-int ssexec_stop(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
-{
-    // be sure that the global var are set correctly
-    DEADLINE = 0 ;
-    UNSUP = 0 ;
-    SIG = "-d" ;
-
-    if (info->timeout) DEADLINE = info->timeout ;
-
-    int cl, rc, sigopt ;
-    stralloc sares = STRALLOC_ZERO ;
-    genalloc gares = GENALLOC_ZERO ; //resolve_service_t
-    resolve_service_t_ref pres ;
-    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-    ss_state_t sta = STATE_ZERO ;
-
-    cl = rc = sigopt = 0 ;
+    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_ISSUPERVISED|STATE_FLAGS_WANTDOWN) ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
 
-        for (;;)
-        {
+        for (;;) {
+
             int opt = getopt_args(argc,argv, ">" OPTS_STOP, &l) ;
             if (opt == -1) break ;
             if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 
-            switch (opt)
-            {
-                case 'u' :  UNSUP = 1 ; break ;
-                case 'X' :  if (sigopt) log_usage(usage_stop) ; sigopt = 1 ; SIG = "-X" ; break ;
-                case 'K' :  if (sigopt) log_usage(usage_stop) ; sigopt = 1 ; SIG = "-K" ; break ;
-                default :   log_usage(usage_stop) ;
+            switch (opt) {
+
+                case 'u' :
+
+                    FLAGS_SET(flag, STATE_FLAGS_TOUNSUPERVISE|STATE_FLAGS_WANTUP) ;
+                    break ;
+
+                case 'X' :
+
+                    log_1_warn("deprecated option -- use 66-svctl -xd instead") ;
+                    return 0 ;
+
+                case 'K' :
+
+                    log_1_warn("deprecated option -- use 66-svctl -kd instead") ;
+                    return 0 ;
+
+                default :
+                    log_usage(usage_stop) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
-    if (argc < 1) log_usage(usage_stop) ;
+    if (argc < 1)
+        log_usage(usage_stop) ;
 
-    if ((scandir_ok(info->scandir.s)) !=1 ) log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
+    if ((svc_scandir_ok(info->scandir.s)) != 1)
+        log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
 
-    if (!sa_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) log_dieusys(LOG_EXIT_SYS,"set revolve pointer to source") ;
+    /** build the graph of the entire system */
+    graph_build_service(&graph, ares, &areslen, info, flag) ;
 
-    for (;*argv;argv++)
-    {
-        char const *name = *argv ;
-        if (!resolve_check(sares.s,name)) log_info_return(LOG_EXIT_ZERO,name," is not enabled") ;
-        if (!resolve_read(wres,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
-        if (res.type == TYPE_MODULE)
-        {
-            if (!module_in_cmdline(&gares,&res,sares.s))
-                log_dieu(LOG_EXIT_SYS,"add dependencies of module: ",name) ;
-        }
-        else
-        {
-            if (!resolve_append(&gares,wres))
-                log_dieusys(LOG_EXIT_SYS,"append resolve file of: ",name) ;
-        }
+    if (!graph.mlen)
+        log_die(LOG_EXIT_USER, "services selection is not available -- try first to install the corresponding frontend file") ;
+
+    int n = 0 ;
+    for (; n < argc ; n++) {
+
+        int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
+        if (aresid < 0)
+            log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you started it?") ;
+
+        list[nservice++] = aresid ;
+        unsigned int l[graph.mlen] ;
+        unsigned int c = 0 ;
+
+        /** find requiredby of the service from the graph, do it recursively */
+        c = graph_matrix_get_edge_g_list(l, &graph, argv[n], 1, 1) ;
+
+        /** append to the list to deal with */
+        for (unsigned int pos = 0 ; pos < c ; pos++)
+            list[nservice + pos] = l[pos] ;
+
+        nservice += c ;
     }
 
-    for (unsigned int i = 0 ; i < genalloc_len(resolve_service_t,&gares) ; i++)
-    {
-        int unsup = 0 , reverse = 1 ;
-        pres = &genalloc_s(resolve_service_t,&gares)[i] ;
-        char const *string = pres->sa.s ;
-        char const *name = string + pres->name ;
-        char const *state = string + pres->state ;
+    if (FLAGS_ISSET(flag, STATE_FLAGS_TOUNSUPERVISE)) {
 
-        if (!state_check(state,name)) log_die(LOG_EXIT_USER,name," : is not initialized") ;
-        else if (!state_read(&sta,state,name)) log_dieusys(LOG_EXIT_SYS,"read state file of: ",name) ;
+        /** we cannot pass through the svc_send() function which
+         * call ssexec_svctl(). The ssexec_svctl function is asynchronous.
+         * So, when child exist, the svc_send is "unblocked" and the program
+         * continue to execute. We need to wait for all services to be brought
+         * down before executing the unsupervise.*/
+        pid_t pid ;
+        int wstat ;
 
-        int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
+        int nargc = 4 + nservice ;
+        char const *newargv[nargc] ;
+        unsigned int m = 0, n = 0 ;
 
-        if (obstr_equal(name,SS_MASTER + 1))
-        {
-            if (pres->ndepends) goto append ;
-            else continue ;
-        }
+        newargv[m++] = "66-svctl" ;
+        newargv[m++] = "-wD" ;
+        newargv[m++] = "-d" ;
 
-        /** logger cannot be unsupervised alone */
-        if (logname > 0 && (!resolve_cmp(&gares,string + pres->logassoc, DATA_SERVICE)))
-        {
-            if (UNSUP) log_die(LOG_EXIT_SYS,"logger detected - unsupervise request is not allowed") ;
-        }
-        if (UNSUP) unsup = 1 ;
-        if (sta.unsupervise) unsup = 1 ;
-        append:
-        if (pres->type == TYPE_CLASSIC)
-        {
-            if (unsup)
-            {
-                if (!ss_resolve_graph_build(&graph_unsup_cl,&genalloc_s(resolve_service_t,&gares)[i],sares.s,reverse))
-                    log_dieusys(LOG_EXIT_SYS,"build services graph") ;
-                if (!service_resolve_add_logger(&graph_unsup_cl.name,sares.s))
-                    log_dieusys(LOG_EXIT_SYS,"append service selection with logger") ;
-            }
-            if (!ss_resolve_graph_build(&graph_cl,&genalloc_s(resolve_service_t,&gares)[i],sares.s,reverse))
-                log_dieusys(LOG_EXIT_SYS,"build services graph") ;
-            cl++ ;
-        }
-        else
-        {
-            if (unsup)
-            {
-                if (!ss_resolve_graph_build(&graph_unsup_rc,&genalloc_s(resolve_service_t,&gares)[i],sares.s,reverse))
-                    log_dieusys(LOG_EXIT_SYS,"build services graph") ;
-                if (!service_resolve_add_logger(&graph_unsup_rc.name,sares.s))
-                    log_dieusys(LOG_EXIT_SYS,"append service selection with logger") ;
-            }
-            if (!ss_resolve_graph_build(&graph_rc,&genalloc_s(resolve_service_t,&gares)[i],sares.s,reverse))
-                log_dieusys(LOG_EXIT_SYS,"build services graph") ;
-            rc++;
-        }
+        for (; n < nservice ; n++)
+            newargv[m++] = graph.data.s + genalloc_s(graph_hash_t,&graph.hash)[list[n]].vertex ;
+
+        newargv[m++] = 0 ;
+
+        pid = child_spawn0(newargv[0], newargv, (char const *const *) environ) ;
+
+        if (waitpid_nointr(pid, &wstat, 0) < 0)
+            log_dieusys(LOG_EXIT_SYS, "wait for 66-svctl") ;
+
+        if (wstat)
+            log_dieu(LOG_EXIT_SYS, "stop services selection") ;
+
+        svc_unsupervise(list, nservice, &graph, ares, areslen) ;
+
+    } else {
+
+        unsigned int siglen = 2 ;
+        char *sig[siglen + 1] ;
+
+        sig[0] = "-wD" ;
+        sig[1] = "-d" ;
+        sig[2] = 0 ;
+
+        if (!svc_send(argv, argc, sig, siglen, info))
+            log_dieu(LOG_EXIT_SYS, "send -wD -d signal") ;
     }
 
-    /** rc work */
-    if (rc)
-    {
-        log_trace("stop atomic services ...") ;
-        if (!rc_down(info,envp))
-            log_dieu(LOG_EXIT_SYS,"stop atomic services") ;
-        log_trace("switch atomic services of: ",info->treename.s," to source") ;
-        if (!db_switch_to(info,envp,SS_SWSRC))
-            log_dieu(LOG_EXIT_SYS,"switch",info->livetree.s,"/",info->treename.s," to source") ;
+    service_resolve_array_free(ares, areslen) ;
 
-    }
-
-    /** svc work */
-    if (cl)
-    {
-        log_trace("stop classic services ...") ;
-        if (!svc_down(info,envp))
-            log_dieu(LOG_EXIT_SYS,"stop classic services") ;
-        log_trace("switch classic services of: ",info->treename.s," to source") ;
-        if (!svc_switch_to(info,SS_SWSRC))
-            log_dieu(LOG_EXIT_SYS,"switch classic service of: ",info->treename.s," to source") ;
-    }
-
-    if (UNSUP)
-    {
-        log_trace("send signal -an to scandir: ",info->scandir.s) ;
-        if (scandir_send_signal(info->scandir.s,"h") <= 0)
-            log_dieu(LOG_EXIT_SYS,"send signal to scandir: ", info->scandir.s) ;
-    }
-    stralloc_free(&sares) ;
-    resolve_free(wres) ;
-    resolve_deep_free(DATA_SERVICE, &gares) ;
+    graph_free_all(&graph) ;
 
     return 0 ;
 }

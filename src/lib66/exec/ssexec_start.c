@@ -12,380 +12,156 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <string.h>
-#include <stdlib.h>
+#include <stdint.h>
 
-#include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
-#include <oblibs/string.h>
 #include <oblibs/types.h>
+#include <oblibs/obgetopt.h>
+#include <oblibs/graph.h>
 
-#include <skalibs/stralloc.h>
+#include <skalibs/sgetopt.h>
 #include <skalibs/genalloc.h>
 
-#include <66/db.h>
-#include <66/utils.h>
-#include <66/constants.h>
-#include <66/svc.h>
 #include <66/ssexec.h>
-#include <66/resolve.h>
-#include <66/rc.h>
+#include <66/config.h>
+#include <66/graph.h>
 #include <66/state.h>
+#include <66/svc.h>
+#include <66/sanitize.h>
 #include <66/service.h>
 
-static int empty = 0 ;
-static unsigned int RELOAD = 0 ;
-static unsigned int DEADLINE = 0 ;
-static char *SIG = "-u" ;
-
-static genalloc nclassic = GENALLOC_ZERO ; //resolve_t type
-static genalloc nrc = GENALLOC_ZERO ; //resolve_t type
-static ss_resolve_graph_t graph_init_cl = RESOLVE_GRAPH_ZERO ;
-static ss_resolve_graph_t graph_reload_cl = RESOLVE_GRAPH_ZERO ;
-static ss_resolve_graph_t graph_init_rc = RESOLVE_GRAPH_ZERO ;
-static ss_resolve_graph_t graph_reload_rc = RESOLVE_GRAPH_ZERO ;
-
-int svc_sanitize(ssexec_t *info, char const *const *envp)
+int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    unsigned int reverse = 0 ;
-    int r ;
-    stralloc sares = STRALLOC_ZERO ;
+    uint32_t flag = 0 ;
+    graph_t graph = GRAPH_ZERO ;
+    unsigned int siglen = 2 ;
+    char *sig[siglen + 1] ;
 
-    if (!sa_pointo(&sares,info,TYPE_CLASSIC,SS_RESOLVE_SRC))
-    {
-        log_warnu("set revolve pointer to source") ;
-        goto err;
-    }
-    if (genalloc_len(resolve_service_t,&graph_reload_cl.name))
-    {
-        //reverse = 1 ;
-        r = ss_resolve_graph_publish(&graph_reload_cl,reverse) ;
-        if (r < 0 || !r)
-        {
-            log_warnusys("publish service graph") ;
-            goto err ;
-        }
+    unsigned int areslen = 0, list[SS_MAX_SERVICE], nservice = 0 ;
+    resolve_service_t ares[SS_MAX_SERVICE] ;
 
-        if (!svc_unsupervise(info,&graph_reload_cl.sorted,"-d",envp))
-            goto err ;
-
-        genalloc_reverse(resolve_service_t,&graph_reload_cl.sorted) ;
-        if (!svc_init(info,sares.s,&graph_reload_cl.sorted))
-        {
-            log_warnu("iniatiate service list") ;
-            goto err ;
-        }
-        goto end ;
-    }
-    if (genalloc_len(resolve_service_t,&graph_init_cl.name))
-    {
-        r = ss_resolve_graph_publish(&graph_init_cl,reverse) ;
-        if (r < 0 || !r)
-        {
-            log_warnusys("publish service graph") ;
-            goto err ;
-        }
-        if (!svc_init(info,sares.s,&graph_init_cl.sorted))
-        {
-            log_warnu("iniatiate service list") ;
-            goto err ;
-        }
-    }
-
-    end:
-    stralloc_free(&sares) ;
-    ss_resolve_graph_free(&graph_reload_cl) ;
-    ss_resolve_graph_free(&graph_init_cl) ;
-    return 1 ;
-    err:
-        stralloc_free(&sares) ;
-        ss_resolve_graph_free(&graph_reload_cl) ;
-        ss_resolve_graph_free(&graph_init_cl) ;
-        return 0 ;
-}
-
-int rc_sanitize(ssexec_t *info, char const *const *envp)
-{
-    log_flow() ;
-
-    int r, reverse = 1, done = 0 ;
-    stralloc sares = STRALLOC_ZERO ;
-
-    char db[info->livetree.len + 1 + info->treename.len + 1] ;
-    memcpy(db,info->livetree.s,info->livetree.len) ;
-    db[info->livetree.len] = '/' ;
-    memcpy(db + info->livetree.len + 1, info->treename.s, info->treename.len) ;
-    db[info->livetree.len + 1 + info->treename.len] = 0 ;
-
-    if (!db_ok(info->livetree.s,info->treename.s))
-    {
-        r = rc_init(info,envp) ;
-        if (!r) goto err ;
-        else if (r > 1) { empty = 1 ; goto end ; }
-        done = 1 ;
-    }
-    if (!sa_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC))
-    {
-        log_warnu("set revolve pointer to source") ;
-        goto err;
-    }
-    if (genalloc_len(resolve_service_t,&graph_init_rc.name) && !done)
-    {
-        int ireverse = 0 ;
-        r = ss_resolve_graph_publish(&graph_init_rc,ireverse) ;
-        if (r < 0 || !r)
-        {
-            log_warnusys("publish service graph") ;
-            goto err ;
-        }
-        if (!rc_manage(info,&graph_init_rc.sorted))
-        {
-            log_warnu("iniatiate service list") ;
-            goto err ;
-        }
-    }
-    if (genalloc_len(resolve_service_t,&graph_reload_rc.name))
-    {
-        r = ss_resolve_graph_publish(&graph_reload_rc,reverse) ;
-        if (r < 0 || !r)
-        {
-            log_warnusys("publish service graph") ;
-            goto err ;
-        }
-        if (!db_switch_to(info,envp,SS_SWBACK))
-        {
-            log_warnu("switch ",info->treename.s," to backup") ;
-            goto err ;
-        }
-        if (!db_compile(sares.s,info->tree.s, info->treename.s,envp))
-        {
-            log_warnu("compile ",sares.s,"/",info->treename.s) ;
-            goto err ;
-        }
-
-        if (!db_switch_to(info,envp,SS_SWSRC))
-        {
-            log_warnu("switch ",info->treename.s," to source") ;
-            goto err ;
-        }
-
-        if (!rc_send(info,&graph_reload_rc.sorted,"-d",envp)) goto err ;
-    }
-    end:
-    ss_resolve_graph_free(&graph_reload_rc) ;
-    ss_resolve_graph_free(&graph_init_rc) ;
-    stralloc_free(&sares) ;
-    return 1 ;
-
-    err:
-        ss_resolve_graph_free(&graph_reload_rc) ;
-        ss_resolve_graph_free(&graph_init_rc) ;
-        stralloc_free(&sares) ;
-        return 0 ;
-}
-
-int rc_start(ssexec_t *info,genalloc *ga,char const *signal,char const *const *envp)
-{
-    log_flow() ;
-
-    char const *sig ;
-    if (RELOAD >= 1) sig = "-r" ;
-    else sig = "-u" ;
-
-    int r = db_find_compiled_state(info->livetree.s,info->treename.s) ;
-    if (r >= 1)
-    {
-        if (!db_switch_to(info,envp,SS_SWSRC))
-            log_warnu_return(LOG_EXIT_ZERO,"switch: ",info->treename.s," to source") ;
-    }
-    if (!rc_send(info,ga,sig,envp)) return 0 ;
-
-    return 1 ;
-}
-
-int ssexec_start(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
-{
-    // be sure that the global var are set correctly
-    RELOAD = 0 ;
-    DEADLINE = 0 ;
-    SIG = "-u" ;
-
-    if (info->timeout) DEADLINE = info->timeout ;
-
-    int cl, rc, logname ;
-    stralloc sares = STRALLOC_ZERO ;
-    stralloc sasta = STRALLOC_ZERO ;
-    genalloc gares = GENALLOC_ZERO ; //resolve_service_t
-    resolve_service_t_ref pres ;
-    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-    ss_state_t sta = STATE_ZERO ;
-
-    cl = rc = logname = 0  ;
+    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOINIT|STATE_FLAGS_WANTUP) ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
 
-        for (;;)
-        {
+        for (;;) {
+
             int opt = getopt_args(argc,argv, ">" OPTS_START, &l) ;
             if (opt == -1) break ;
             if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 
-            switch (opt)
-            {
-                case 'r' :  if (RELOAD) log_usage(usage_start) ; RELOAD = 1 ; SIG = "-r" ; break ;
-                case 'R' :  if (RELOAD) log_usage(usage_start) ; RELOAD = 2 ; SIG = "-u" ; break ;
-                default :   log_usage(usage_start) ;
+            switch (opt) {
+
+                case 'r' :
+
+                    if (FLAGS_ISSET(flag, STATE_FLAGS_TORESTART))
+                        log_usage(usage_start) ;
+
+                    FLAGS_SET(flag, STATE_FLAGS_TORELOAD) ;
+                    break ;
+
+                case 'R' :
+
+                    if (FLAGS_ISSET(flag, STATE_FLAGS_TORELOAD))
+                        log_usage(usage_start) ;
+
+                    FLAGS_SET(flag, STATE_FLAGS_TORESTART) ;
+                    break ;
+
+                default :
+
+                    log_usage(usage_start) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
-    if (argc < 1) log_usage(usage_start) ;
+    if (argc < 1)
+        log_usage(usage_start) ;
 
-    if ((scandir_ok(info->scandir.s)) !=1 ) log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
+    if ((svc_scandir_ok(info->scandir.s)) !=  1 )
+        log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;
 
-    if (!sa_pointo(&sasta,info,SS_NOTYPE,SS_RESOLVE_STATE)) log_dieusys(LOG_EXIT_SYS,"set revolve pointer to state") ;
-    /** the tree may not initialized already, check it and create
-     * the live directory if it's the case */
-    if (!scan_mode(sasta.s,S_IFDIR))
-        if (!create_live(info)) log_dieusys(LOG_EXIT_SYS,"create live state") ;
+    int n = 0 ;
+    for (; n < argc ; n++)
+        /** If it's the first use of 66, we don't have
+         * any resolve files available or the service was
+         * never parsed, the graph is empty in the first case or
+         * the later call of service_array_search do not found the corresponding
+         * resolve file for the second case.
+         * Try at least to parse the corresponding frontend file. */
+        sanitize_source(argv[n], info, STATE_FLAGS_UNKNOWN) ;
 
-    if (!sa_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) log_dieusys(LOG_EXIT_SYS,"set revolve pointer to source") ;
+    /** build the graph of the entire system */
+    graph_build_service(&graph, ares, &areslen, info, flag) ;
 
-    for (;*argv;argv++)
-    {
-        char const *name = *argv ;
-        if (!resolve_check(sares.s,name)) log_info_return(LOG_EXIT_ZERO,name," is not enabled") ;
-        if (!resolve_read(wres,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
-        if (res.type == TYPE_MODULE)
-        {
-            if (!module_in_cmdline(&gares,&res,sares.s))
-                log_dieu(LOG_EXIT_SYS,"add dependencies of module: ",name) ;
-        }
-        else
-        {
-            if (!resolve_append(&gares,wres))
-                log_dieusys(LOG_EXIT_SYS,"append services selection with: ",name) ;
-        }
+    if (!graph.mlen)
+        log_die(LOG_EXIT_USER, "services selection is not available -- try first to install the corresponding frontend file") ;
+
+    for (n = 0 ; n < argc ; n++) {
+
+        int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
+        if (aresid < 0)
+            log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you parsed it?") ;
+
+        list[nservice++] = aresid ;
+        unsigned int l[graph.mlen] ;
+        unsigned int c = 0 ;
+
+        /** find dependencies of the service from the graph, do it recursively */
+        c = graph_matrix_get_edge_g_list(l, &graph, argv[n], 0, 1) ;
+
+        /** append to the list to deal with */
+        for (unsigned int pos = 0 ; pos < c ; pos++)
+            list[nservice + pos] = l[pos] ;
+
+        nservice += c ;
     }
 
-    for (unsigned int i = 0 ; i < genalloc_len(resolve_service_t,&gares) ; i++)
-    {
-        int init = 0 ;
-        int reload = 0 ;
-        int reverse = 0 ;
-        pres = &genalloc_s(resolve_service_t,&gares)[i] ;
-        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, pres) ;
-        char *string = pres->sa.s ;
-        char *name = string + pres->name ;
-        logname = 0 ;
-        if (!state_check(sasta.s,name))
-        {
-            init = 1 ;
-            goto append ;
-        }
-        else if (!state_read(&sta,sasta.s,name)) log_dieusys(LOG_EXIT_SYS,"read state file of: ",name) ;
+    /** initiate services at the corresponding scandir */
+    sanitize_init(list, nservice, &graph, ares, areslen, FLAGS_ISSET(flag, STATE_FLAGS_TORESTART) ? STATE_FLAGS_TOINIT : STATE_FLAGS_UNKNOWN) ;
 
-        if (obstr_equal(name,SS_MASTER + 1)) goto append ;
+    service_resolve_array_free(ares, areslen) ;
 
-        if (!pres->disen)
-            log_die(LOG_EXIT_USER,"service: ",name," was disabled, you can only stop it") ;
+    graph_free_all(&graph) ;
 
-        logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-        if (logname > 0 && (!resolve_cmp(&gares, string + pres->logassoc, DATA_SERVICE)))
-        {
-            if (RELOAD > 1) log_die(LOG_EXIT_SYS,"-R signal is not allowed to a logger") ;
-            if (sta.init) reverse = 1 ;
-        }
-        if (RELOAD > 1 || sta.reload) reload = 1 ;
+    if (FLAGS_ISSET(flag, STATE_FLAGS_TORELOAD)) {
 
-        if (sta.init){ reload = 0 ; init = 1 ; }
+        sig[0] = "-wU" ;
+        sig[1] = "-ru" ;
+        sig[2] = 0 ;
 
-        append:
-        if (pres->type == TYPE_CLASSIC)
-        {
-            if (reload)
-            {
-                reverse = 1 ;
-                if (!ss_resolve_graph_build(&graph_reload_cl,&genalloc_s(resolve_service_t,&gares)[i],sares.s,reverse))
-                    log_dieusys(LOG_EXIT_SYS,"build services graph") ;
-            }
-            else if (init)
-            {
-                reverse = 0 ;
-                if (!ss_resolve_graph_build(&graph_init_cl,&genalloc_s(resolve_service_t,&gares)[i],sares.s,reverse))
-                    log_dieusys(LOG_EXIT_SYS,"build services graph") ;
-            }
-            if (!resolve_append(&nclassic,wres)) log_dieusys(LOG_EXIT_SYS,"append services selection with: ",name) ;
-            cl++ ;
-        }
-        else
-        {
-            if (reload)
-            {
-                reverse = 1 ;
-                if (!ss_resolve_graph_build(&graph_reload_rc,&genalloc_s(resolve_service_t,&gares)[i],sares.s,reverse))
-                    log_dieusys(LOG_EXIT_SYS,"build services graph") ;
-            }
-            else if (init)
-            {
-                reverse = 0 ;
-                if (!ss_resolve_graph_build(&graph_init_rc,&genalloc_s(resolve_service_t,&gares)[i],sares.s,reverse))
-                    log_dieusys(LOG_EXIT_SYS,"build services graph") ;
-            }
-            if (!resolve_append(&nrc,wres)) log_dieusys(LOG_EXIT_SYS,"append services selection with: ",name) ;
-            rc++;
-        }
-        free(wres) ;
+        if (!svc_send(argv, argc, sig, siglen, info))
+            log_dieu(LOG_EXIT_SYS, "send -wU -ru signal") ;
+
+    } else if (FLAGS_ISSET(flag, STATE_FLAGS_TORESTART)) {
+
+        sig[0] = "-wD" ;
+        sig[1] = "-d" ;
+        sig[2] = 0 ;
+
+        if (!svc_send(argv, argc, sig, siglen, info))
+            log_dieu(LOG_EXIT_SYS, "send -wD -d signal") ;
+
+        sig[0] = "-wU" ;
+        sig[1] = "-ru" ;
+        sig[2] = 0 ;
+
+        if (!svc_send(argv, argc, sig, siglen, info))
+            log_dieu(LOG_EXIT_SYS, "send -wU -u signal") ;
+
+    } else {
+
+        sig[0] = "-wU" ;
+        sig[1] = "-u" ;
+        sig[2] = 0 ;
+
+        if (!svc_send(argv, argc, sig, siglen, info))
+            log_dieu(LOG_EXIT_SYS, "send -wU -u signal") ;
     }
-
-    if (cl)
-    {
-        log_trace("sanitize classic services list...") ;
-        if (!svc_sanitize(info,envp))
-            log_dieu(LOG_EXIT_SYS,"sanitize classic services list") ;
-        log_trace("start classic services list ...") ;
-        {
-            /** In case of -R asked by user, svc service will be unsupervised.
-             * In this case the log will be started directly by the service (log is
-             * a part of the service directory A.K.A. service/log).
-             * So we need to make a distinction for 66-svctl between -r and -R to avoid
-             * to start the logger before the service itself because the resolution of
-             * the graph will append the service log. */
-            if (RELOAD == 2) SIG = "-R" ;
-            if (!svc_send(info,&nclassic,SIG,envp))
-                log_dieu(LOG_EXIT_SYS,"start classic services list") ;
-        }
-        log_trace("switch classic service list of: ",info->treename.s," to source") ;
-        if (!svc_switch_to(info,SS_SWSRC))
-            log_dieu(LOG_EXIT_SYS,"switch classic service list of: ",info->treename.s," to source") ;
-
-        resolve_deep_free(DATA_SERVICE, &nclassic) ;
-    }
-    if (rc)
-    {
-        log_trace("sanitize atomic services list...") ;
-        if (!rc_sanitize(info,envp))
-            log_dieu(LOG_EXIT_SYS,"sanitize atomic services list") ;
-        if (!empty)
-        {
-            log_trace("start atomic services list ...") ;
-            if (!rc_start(info,&nrc,SIG,envp))
-                log_dieu(LOG_EXIT_SYS,"start atomic services list ") ;
-            log_trace("switch atomic services list of: ",info->treename.s," to source") ;
-            if (!db_switch_to(info,envp,SS_SWSRC))
-                log_dieu(LOG_EXIT_SYS,"switch atomic services list of: ",info->treename.s," to source") ;
-        }
-        resolve_deep_free(DATA_SERVICE, &nrc) ;
-    }
-    stralloc_free(&sares) ;
-    stralloc_free(&sasta) ;
-    resolve_deep_free(DATA_SERVICE, &gares) ;
-    resolve_free(wres) ;
 
     return 0 ;
 }
