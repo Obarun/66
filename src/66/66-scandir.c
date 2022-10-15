@@ -39,7 +39,9 @@
 #include <execline/config.h>
 
 #include <66/config.h>
+#include <66/svc.h>
 #include <66/utils.h>
+#include <66/enum.h>
 #include <66/constants.h>
 
 #define CRASH 0
@@ -554,17 +556,15 @@ void write_control(char const *scandir,char const *live, char const *filename, i
         auto_chmod(mode,0755) ;
 }
 
-void auto_empty_file(char const *dst, char const *filename)
+void auto_empty_file(char const *dst, char const *filename, char const *contents)
 {
     size_t dstlen = strlen(dst), filen = strlen(filename) ;
 
     char tmp[dstlen + filen + 1] ;
     auto_strings(tmp, dst, filename) ;
 
-    int fd = open_trunc(tmp) ;
-    if (fd < 0)
+    if (!file_write_unsafe_g(tmp, contents))
         log_dieusys(LOG_EXIT_SYS, "create file: ", tmp) ;
-    fd_close(fd) ;
 }
 
 static void create_service_skel(char const *service, char const *target, char const *notif)
@@ -576,23 +576,21 @@ static void create_service_skel(char const *service, char const *target, char co
     auto_strings(dst, target, "/", service, "/data/rules/uid/0") ;
 
     auto_dir(dst, 0755) ;
-    auto_empty_file(dst, "/allow") ;
+    auto_empty_file(dst, "/allow", "") ;
 
     char sym[targetlen + 1 + servicelen + 22 + 1] ;
     auto_strings(sym, target, "/", service, "/data/rules/uid/self") ;
 
-    log_trace("point symlink: ", sym, " to ", dst) ;
-    if (symlink(dst, sym) < 0)
+    log_trace("point symlink: ", sym, " to ", "0") ;
+    if (symlink("0", sym) < 0)
         log_dieusys(LOG_EXIT_SYS, "symlink: ", sym) ;
 
     auto_strings(dst, target, "/", service, "/data/rules/gid/0") ;
     auto_dir(dst, 0755) ;
-    auto_empty_file(dst, "/allow") ;
+    auto_empty_file(dst, "/allow", "") ;
 
-    auto_strings(dst, target, "/", service, "/notification-fd") ;
-
-    if(!openwritenclose_unsafe(dst, notif, strlen(notif)))
-        log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
+    auto_strings(dst, target, "/", service, "/") ;
+    auto_file(dst, "notification-fd", notif, strlen(notif)) ;
 }
 
 static void create_service_oneshot(char const *scandir)
@@ -601,23 +599,23 @@ static void create_service_oneshot(char const *scandir)
     size_t fdlen = scandirlen + 1 + SS_ONESHOTD_LEN ;
 
     create_service_skel(SS_ONESHOTD, scandir, "3\n") ;
-    size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + strlen(SS_LIBEXECPREFIX) + 184 + 1 ;
-    char run[runlen] ;
+    size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + strlen(SS_LIBEXECPREFIX) + 174 ;
+    char run[runlen + 1] ;
     auto_strings(run,"#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n", \
-                    "fdmove -c 2 1\n",
-                    "fdmove 1 3\n",
-                    "s6-ipcserver-socketbinder -- s\n",
-                    "s6-ipcserverd -1 --\n",
-                    "s6-ipcserver-access -v0 -E -l0 -i data/rules --\n",
-                    "s6-sudod -t 30000 --\n",
-                    SS_LIBEXECPREFIX "66-oneshotd -l ../.. --\n") ;
+                    "fdmove -c 2 1\n", \
+                    "fdmove 1 3\n", \
+                    "s6-ipcserver-socketbinder -- s\n", \
+                    "s6-ipcserverd -1 --\n", \
+                    "s6-ipcserver-access -v0 -E -l0 -i data/rules --\n", \
+                    "s6-sudod -t 30000 --\n", \
+                    SS_LIBEXECPREFIX "66-oneshot --\n") ;
 
 
-    char dst[fdlen + 4] ;
+    char dst[fdlen + 5] ;
     auto_strings(dst, scandir, "/", SS_ONESHOTD, "/run") ;
 
     // -1 openwritenclose_unsafe do not accept closed string
-    if (!openwritenclose_unsafe(dst, run, runlen - 1))
+    if (!openwritenclose_unsafe(dst, run, runlen))
         log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
 
     if (chmod(dst, 0755) < 0)
@@ -636,9 +634,9 @@ static void create_service_fdholder(char const *scandir)
 
     auto_dir(dst, 0755) ;
 
-    auto_empty_file(dst, "/S6_FDHOLDER_GETDUMP") ;
-    auto_empty_file(dst, "/S6_FDHOLDER_LIST") ;
-    auto_empty_file(dst, "/S6_FDHOLDER_SETDUMP") ;
+    auto_empty_file(dst, "/S6_FDHOLDER_GETDUMP", "\n") ;
+    auto_empty_file(dst, "/S6_FDHOLDER_LIST", "\n") ;
+    auto_empty_file(dst, "/S6_FDHOLDER_SETDUMP", "\n") ;
 
     auto_strings(dst + fdlen + 21, "/S6_FDHOLDER_STORE_REGEX" ) ;
 
@@ -648,20 +646,43 @@ static void create_service_fdholder(char const *scandir)
     char sym[fdlen + 48 + 1] ;
     auto_strings(sym, scandir, "/", SS_FDHOLDER, "/data/rules/uid/0/env/S6_FDHOLDER_RETRIEVE_REGEX") ;
 
+    auto_strings(dst, "S6_FDHOLDER_STORE_REGEX") ;
+
     log_trace("point symlink: ", sym, " to ", dst) ;
     if (symlink(dst, sym) < 0)
         log_dieusys(LOG_EXIT_SYS, "symlink: ", dst) ;
 
     auto_strings(sym, scandir, "/", SS_FDHOLDER, "/data/rules/gid/0/env") ;
-    auto_strings(dst, scandir, "/", SS_FDHOLDER, "/data/rules/uid/0/env") ;
+    auto_strings(dst, "../../uid/0/env") ;
 
     log_trace("point symlink: ", sym, " to ", dst) ;
     if (symlink(dst, sym) < 0)
         log_dieusys(LOG_EXIT_SYS, "symlink: ", dst) ;
 
-    size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + 56 + 1 ;
+    size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) +  277 + 1 ;
+    /* {
+     *
+     *
+     *
+     * should be libexec/66-fdholder-filler
+     *
+     * */
     char run[runlen] ;
-    auto_strings(run, "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n", "s6-fdholder-daemon -1 -i data/rules -- s\n") ;
+    auto_strings(run, "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n", \
+                "pipeline -dw -- {\n",
+                "   if -- {\n", \
+                "       forstdin -x0 -- i\n", \
+                "           exit 0\n", \
+                "   }\n", \
+                "   if -nt -- {\n", \
+                "       redirfd -r 0 ./data/autofilled\n", \
+                "       s6-ipcclient -l0 -- s\n", \
+                "       /tmp/66/66-fdholder-filler -1 --\n", \
+                "   }\n", \
+                "   s6-svc -t .\n", \
+                "}\n", \
+                "s6-fdholder-daemon -1 -i data/rules -- s\n") ;
+
     auto_strings(dst, scandir, "/", SS_FDHOLDER, "/run") ;
 
     // -1 openwritenclose_unsafe do not accept closed string
@@ -670,6 +691,12 @@ static void create_service_fdholder(char const *scandir)
 
     if (chmod(dst, 0755) < 0)
         log_dieusys(LOG_EXIT_SYS, "chmod: ", dst) ;
+
+    auto_strings(dst, scandir, "/", SS_FDHOLDER, "/data/autofilled") ;
+
+    // -1 openwritenclose_unsafe do not accept closed string
+    if(!openwritenclose_unsafe(dst, "\n", 1))
+        log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
 
 }
 
@@ -717,7 +744,7 @@ void sanitize_live(char const *live)
     log_flow() ;
 
     size_t livelen = strlen(live) ;
-    char tmp[livelen + SS_BOOT_CONTAINER_DIR_LEN + 1] ;
+    char tmp[livelen + SS_BOOT_CONTAINER_DIR_LEN + 1 + strlen(OWNERSTR) + 1] ;
 
     /** run/66 */
     auto_check(live,0755,0,AUTO_CRTE_CHW) ;
@@ -890,7 +917,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
         goto end ;
     }
 
-    r = scandir_ok(scandir.s) ;
+    r = svc_scandir_ok(scandir.s) ;
     if (r < 0) log_dieusys(LOG_EXIT_SYS, "check: ", scandir.s) ;
     if (r && remove) log_dieu(LOG_EXIT_USER,"remove: ",scandir.s,": is running")  ;
     if (remove)
