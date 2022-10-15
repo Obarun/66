@@ -27,15 +27,12 @@ int tree_isenabled(char const *base, char const *treename)
     log_flow() ;
 
     int e = -1 ;
-    size_t baselen = strlen(base), pos = 0 ;
+    size_t pos = 0 ;
     stralloc sa = STRALLOC_ZERO ;
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
-    char solve[baselen + SS_SYSTEM_LEN + 1] ;
 
-    auto_strings(solve, base, SS_SYSTEM) ;
-
-    if (!resolve_read(wres, solve, SS_MASTER + 1))
+    if (!resolve_read_g(wres, base, SS_MASTER + 1))
         goto err ;
 
     if (mres.nenabled) {

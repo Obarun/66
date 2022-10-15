@@ -29,15 +29,12 @@ int tree_ongroups(char const *base, char const *treename, char const *group)
     log_flow() ;
 
     int e = -1 ;
-    size_t baselen = strlen(base), pos = 0 ;
+    size_t pos = 0 ;
     stralloc sa = STRALLOC_ZERO ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
-    char solve[baselen + SS_SYSTEM_LEN + 1] ;
 
-    auto_strings(solve, base, SS_SYSTEM) ;
-
-    if (!resolve_read(wres, solve, treename))
+    if (!resolve_read_g(wres, base, treename))
         goto err ;
 
     if (tres.ngroups) {

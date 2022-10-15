@@ -24,88 +24,102 @@
 
 resolve_field_table_t resolve_tree_field_table[] = {
 
-    [TREE_ENUM_NAME] = { .field = "name" },
-    [TREE_ENUM_DEPENDS] = { .field = "depends" },
-    [TREE_ENUM_REQUIREDBY] = { .field = "requiredby" },
-    [TREE_ENUM_ALLOW] = { .field = "allow" },
-    [TREE_ENUM_GROUPS] = { .field = "groups" },
-    [TREE_ENUM_CONTENTS] = { .field = "contents" },
-    [TREE_ENUM_NDEPENDS] = { .field = "ndepends" },
-    [TREE_ENUM_NREQUIREDBY] = { .field = "nrequiredby" },
-    [TREE_ENUM_NALLOW] = { .field = "nallow" },
-    [TREE_ENUM_NGROUPS] = { .field = "ngroups" },
-    [TREE_ENUM_NCONTENTS] = { .field = "ncontents" },
-    [TREE_ENUM_INIT] = { .field = "init" },
-    [TREE_ENUM_DISEN] = { .field = "disen" },
-    [TREE_ENUM_ENDOFKEY] = { .field = 0 }
+    [E_RESOLVE_TREE_NAME] = { .field = "name" },
+    [E_RESOLVE_TREE_DEPENDS] = { .field = "depends" },
+    [E_RESOLVE_TREE_REQUIREDBY] = { .field = "requiredby" },
+    [E_RESOLVE_TREE_ALLOW] = { .field = "allow" },
+    [E_RESOLVE_TREE_GROUPS] = { .field = "groups" },
+    [E_RESOLVE_TREE_CONTENTS] = { .field = "contents" },
+    [E_RESOLVE_TREE_NDEPENDS] = { .field = "ndepends" },
+    [E_RESOLVE_TREE_NREQUIREDBY] = { .field = "nrequiredby" },
+    [E_RESOLVE_TREE_NALLOW] = { .field = "nallow" },
+    [E_RESOLVE_TREE_NGROUPS] = { .field = "ngroups" },
+    [E_RESOLVE_TREE_NCONTENTS] = { .field = "ncontents" },
+    [E_RESOLVE_TREE_INIT] = { .field = "init" },
+    [E_RESOLVE_TREE_DISEN] = { .field = "disen" },
+    [E_RESOLVE_TREE_ENDOFKEY] = { .field = 0 }
 } ;
 
 int tree_resolve_modify_field(resolve_tree_t *tres, uint8_t field, char const *data)
 {
     log_flow() ;
 
-    uint32_t ifield ;
+    uint32_t ifield = 0 ;
     int e = 0 ;
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, tres) ;
 
     switch(field) {
 
-        case TREE_ENUM_NAME:
+        case E_RESOLVE_TREE_NAME:
             tres->name = resolve_add_string(wres,data) ;
             break ;
 
-        case TREE_ENUM_DEPENDS:
+        case E_RESOLVE_TREE_DEPENDS:
             tres->depends = resolve_add_string(wres,data) ;
             break ;
 
-        case TREE_ENUM_REQUIREDBY:
+        case E_RESOLVE_TREE_REQUIREDBY:
             tres->requiredby = resolve_add_string(wres,data) ;
             break ;
 
-        case TREE_ENUM_ALLOW:
+        case E_RESOLVE_TREE_ALLOW:
             tres->allow = resolve_add_string(wres,data) ;
             break ;
 
-        case TREE_ENUM_GROUPS:
+        case E_RESOLVE_TREE_GROUPS:
             tres->groups = resolve_add_string(wres,data) ;
             break ;
 
-        case TREE_ENUM_CONTENTS:
+        case E_RESOLVE_TREE_CONTENTS:
             tres->contents = resolve_add_string(wres,data) ;
             break ;
 
-        case TREE_ENUM_NDEPENDS:
+        case E_RESOLVE_TREE_NDEPENDS:
+            if (!data)
+                data = "0" ;
             if (!uint0_scan(data, &ifield)) goto err ;
             tres->ndepends = ifield ;
             break ;
 
-        case TREE_ENUM_NREQUIREDBY:
+        case E_RESOLVE_TREE_NREQUIREDBY:
+            if (!data)
+                data = "0" ;
             if (!uint0_scan(data, &ifield)) goto err ;
             tres->nrequiredby = ifield ;
             break ;
 
-        case TREE_ENUM_NALLOW:
+        case E_RESOLVE_TREE_NALLOW:
+            if (!data)
+                data = "0" ;
             if (!uint0_scan(data, &ifield)) goto err ;
             tres->nallow = ifield ;
             break ;
 
-        case TREE_ENUM_NGROUPS:
+        case E_RESOLVE_TREE_NGROUPS:
+            if (!data)
+                data = "0" ;
             if (!uint0_scan(data, &ifield)) goto err ;
             tres->ngroups = ifield ;
             break ;
 
-        case TREE_ENUM_NCONTENTS:
+        case E_RESOLVE_TREE_NCONTENTS:
+            if (!data)
+                data = "0" ;
             if (!uint0_scan(data, &ifield)) goto err ;
             tres->ncontents = ifield ;
             break ;
 
-        case TREE_ENUM_INIT:
+        case E_RESOLVE_TREE_INIT:
+            if (!data)
+                data = "0" ;
             if (!uint0_scan(data, &ifield)) goto err ;
             tres->init = ifield ;
             break ;
 
-        case TREE_ENUM_DISEN:
+        case E_RESOLVE_TREE_DISEN:
+            if (!data)
+                data = "0" ;
             if (!uint0_scan(data, &ifield)) goto err ;
             tres->disen = ifield ;
             break ;

@@ -24,14 +24,14 @@
 
 resolve_field_table_t resolve_tree_master_field_table[] = {
 
-    [TREE_ENUM_MASTER_NAME] = { .field = "name" },
-    [TREE_ENUM_MASTER_ALLOW] = { .field = "allow" },
-    [TREE_ENUM_MASTER_ENABLED] = { .field = "enabled" },
-    [TREE_ENUM_MASTER_CURRENT] = { .field = "current" },
-    [TREE_ENUM_MASTER_CONTENTS] = { .field = "contents" },
-    [TREE_ENUM_MASTER_NENABLED] = { .field = "nenabled" },
-    [TREE_ENUM_MASTER_NCONTENTS] = { .field = "ncontents" },
-    [TREE_ENUM_MASTER_ENDOFKEY] = { .field = 0 }
+    [E_RESOLVE_TREE_MASTER_NAME] = { .field = "name" },
+    [E_RESOLVE_TREE_MASTER_ALLOW] = { .field = "allow" },
+    [E_RESOLVE_TREE_MASTER_ENABLED] = { .field = "enabled" },
+    [E_RESOLVE_TREE_MASTER_CURRENT] = { .field = "current" },
+    [E_RESOLVE_TREE_MASTER_CONTENTS] = { .field = "contents" },
+    [E_RESOLVE_TREE_MASTER_NENABLED] = { .field = "nenabled" },
+    [E_RESOLVE_TREE_MASTER_NCONTENTS] = { .field = "ncontents" },
+    [E_RESOLVE_TREE_MASTER_ENDOFKEY] = { .field = 0 }
 } ;
 
 int tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint8_t field, char const *data)
@@ -45,32 +45,36 @@ int tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint8_t field,
 
     switch(field) {
 
-        case TREE_ENUM_MASTER_NAME:
+        case E_RESOLVE_TREE_MASTER_NAME:
             mres->name = resolve_add_string(wres,data) ;
             break ;
 
-        case TREE_ENUM_MASTER_ALLOW:
+        case E_RESOLVE_TREE_MASTER_ALLOW:
             mres->allow = resolve_add_string(wres,data) ;
             break ;
 
-        case TREE_ENUM_MASTER_ENABLED:
+        case E_RESOLVE_TREE_MASTER_ENABLED:
             mres->enabled = resolve_add_string(wres,data) ;
             break ;
 
-        case TREE_ENUM_MASTER_CURRENT:
+        case E_RESOLVE_TREE_MASTER_CURRENT:
             mres->current = resolve_add_string(wres,data) ;
             break ;
 
-        case TREE_ENUM_MASTER_CONTENTS:
+        case E_RESOLVE_TREE_MASTER_CONTENTS:
             mres->contents = resolve_add_string(wres,data) ;
             break ;
 
-        case TREE_ENUM_MASTER_NENABLED:
+        case E_RESOLVE_TREE_MASTER_NENABLED:
+            if (!data)
+                data = "0" ;
             if (!uint0_scan(data, &ifield)) goto err ;
             mres->nenabled = ifield ;
             break ;
 
-        case TREE_ENUM_MASTER_NCONTENTS:
+        case E_RESOLVE_TREE_MASTER_NCONTENTS:
+            if (!data)
+                data = "0" ;
             if (!uint0_scan(data, &ifield)) goto err ;
             mres->ncontents = ifield ;
             break ;

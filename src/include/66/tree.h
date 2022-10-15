@@ -32,9 +32,6 @@
 #define TREE_GROUPS_USER "user"
 #define TREE_GROUPS_USER_LEN (sizeof TREE_GROUPS_USER - 1)
 
-#define DATA_TREE 1
-#define DATA_TREE_MASTER 2
-
 typedef struct resolve_tree_s resolve_tree_t, *resolve_tree_t_ref ;
 struct resolve_tree_s
 {
@@ -62,20 +59,20 @@ struct resolve_tree_s
 typedef enum resolve_tree_enum_e resolve_tree_enum_t, *resolve_tree_enum_t_ref;
 enum resolve_tree_enum_e
 {
-    TREE_ENUM_NAME = 0,
-    TREE_ENUM_DEPENDS,
-    TREE_ENUM_REQUIREDBY,
-    TREE_ENUM_ALLOW,
-    TREE_ENUM_GROUPS,
-    TREE_ENUM_CONTENTS,
-    TREE_ENUM_NDEPENDS,
-    TREE_ENUM_NREQUIREDBY,
-    TREE_ENUM_NALLOW,
-    TREE_ENUM_NGROUPS,
-    TREE_ENUM_NCONTENTS,
-    TREE_ENUM_INIT,
-    TREE_ENUM_DISEN,
-    TREE_ENUM_ENDOFKEY
+    E_RESOLVE_TREE_NAME = 0,
+    E_RESOLVE_TREE_DEPENDS,
+    E_RESOLVE_TREE_REQUIREDBY,
+    E_RESOLVE_TREE_ALLOW,
+    E_RESOLVE_TREE_GROUPS,
+    E_RESOLVE_TREE_CONTENTS,
+    E_RESOLVE_TREE_NDEPENDS,
+    E_RESOLVE_TREE_NREQUIREDBY,
+    E_RESOLVE_TREE_NALLOW,
+    E_RESOLVE_TREE_NGROUPS,
+    E_RESOLVE_TREE_NCONTENTS,
+    E_RESOLVE_TREE_INIT,
+    E_RESOLVE_TREE_DISEN,
+    E_RESOLVE_TREE_ENDOFKEY
 } ;
 
 typedef struct resolve_tree_master_s resolve_tree_master_t, *resolve_tree_master_t_ref ;
@@ -99,14 +96,14 @@ struct resolve_tree_master_s
 typedef enum resolve_tree_master_enum_e resolve_tree_master_enum_t, *resolve_tree_master_enum_t_ref;
 enum resolve_tree_master_enum_e
 {
-    TREE_ENUM_MASTER_NAME = 0,
-    TREE_ENUM_MASTER_ALLOW,
-    TREE_ENUM_MASTER_ENABLED,
-    TREE_ENUM_MASTER_CURRENT,
-    TREE_ENUM_MASTER_CONTENTS,
-    TREE_ENUM_MASTER_NENABLED,
-    TREE_ENUM_MASTER_NCONTENTS,
-    TREE_ENUM_MASTER_ENDOFKEY
+    E_RESOLVE_TREE_MASTER_NAME = 0,
+    E_RESOLVE_TREE_MASTER_ALLOW,
+    E_RESOLVE_TREE_MASTER_ENABLED,
+    E_RESOLVE_TREE_MASTER_CURRENT,
+    E_RESOLVE_TREE_MASTER_CONTENTS,
+    E_RESOLVE_TREE_MASTER_NENABLED,
+    E_RESOLVE_TREE_MASTER_NCONTENTS,
+    E_RESOLVE_TREE_MASTER_ENDOFKEY
 } ;
 
 extern resolve_field_table_t resolve_tree_field_table[] ;
@@ -162,12 +159,7 @@ extern int tree_isenabled(char const *base, char const *treename) ;
  * @Return -1 on system error */
 extern int tree_ongroups(char const *base, char const *treename, char const *group) ;
 
-extern int tree_cmd_state(unsigned int verbosity,char const *cmd,char const *tree) ;
-extern int tree_state(int argc, char const *const *argv) ;
-
 extern int tree_copy(stralloc *dir, char const *tree,char const *treename) ;
-
-extern int tree_copy_tmp(char const *workdir, ssexec_t *info) ;
 
 extern int tree_get_permissions(char const *tree, uid_t owner) ;
 

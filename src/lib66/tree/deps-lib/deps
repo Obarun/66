@@ -1,6 +1,3 @@
-tree_cmd_state.o
-tree_copy.o
-tree_copy_tmp.o
 tree_find_current.o
 tree_get_permissions.o
 tree_iscurrent.o

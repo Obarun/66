@@ -17,7 +17,6 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/environ.h> //char const **environ ;
 
 #include <66/constants.h>
 #include <66/ssexec.h>
@@ -59,8 +58,8 @@ int tree_sethome(ssexec_t *info)
             /** Tree doesn't exist yet.
              * Let see if we have a seed/<name> to create it,
              * but only if we come from the 66-enable tool. */
-            if (strcmp(info->prog, "66-enable"))
-                return 0 ;
+            //if (strcmp(info->prog, "66-enable"))
+              //  return 0 ;
 
             if (!tree_seed_isvalid(info->treename.s))
                 log_warnu_return(LOG_EXIT_ZERO,"find a seed file to create the tree: ", info->treename.s) ;
@@ -69,14 +68,14 @@ int tree_sethome(ssexec_t *info)
             char const *newargv[nargc] ;
             unsigned int m = 0 ;
 
-            newargv[m++] = "fake_name" ;
+            newargv[m++] = "66-tree" ;
             newargv[m++] = info->treename.s ;
             newargv[m++] = 0 ;
 
-            if (ssexec_tree(nargc, newargv,(char const *const *)environ, info))
+            if (ssexec_tree(nargc, newargv, info))
                 log_warnu_return(LOG_EXIT_ZERO,"create tree: ",info->treename.s) ;
         }
-        /** The tree_sethome() function can be recursively called. The info->tree may not empty.
+        /** The tree_sethome() function can be recursively called. The info->tree may not be empty.
          * Be sure to clean up before using it. */
         info->tree.len = 0 ;
         if (!auto_stra(&info->tree, base, SS_SYSTEM, "/", info->treename.s))

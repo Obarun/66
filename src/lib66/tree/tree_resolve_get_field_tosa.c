@@ -29,61 +29,61 @@ int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree
 
     switch(field) {
 
-        case TREE_ENUM_NAME:
+        case E_RESOLVE_TREE_NAME:
             str = tres->sa.s + tres->name ;
             break ;
 
-        case TREE_ENUM_DEPENDS:
+        case E_RESOLVE_TREE_DEPENDS:
             str = tres->sa.s + tres->depends ;
             break ;
 
-        case TREE_ENUM_REQUIREDBY:
+        case E_RESOLVE_TREE_REQUIREDBY:
             str = tres->sa.s + tres->requiredby ;
             break ;
 
-        case TREE_ENUM_ALLOW:
+        case E_RESOLVE_TREE_ALLOW:
             str = tres->sa.s + tres->allow ;
             break ;
 
-        case TREE_ENUM_GROUPS:
+        case E_RESOLVE_TREE_GROUPS:
             str = tres->sa.s + tres->groups ;
             break ;
 
-        case TREE_ENUM_CONTENTS:
+        case E_RESOLVE_TREE_CONTENTS:
             str = tres->sa.s + tres->contents ;
             break ;
 
-        case TREE_ENUM_NDEPENDS:
+        case E_RESOLVE_TREE_NDEPENDS:
             fmt[uint32_fmt(fmt,tres->ndepends)] = 0 ;
             str = fmt ;
             break ;
 
-        case TREE_ENUM_NREQUIREDBY:
+        case E_RESOLVE_TREE_NREQUIREDBY:
             fmt[uint32_fmt(fmt,tres->nrequiredby)] = 0 ;
             str = fmt ;
             break ;
 
-        case TREE_ENUM_NALLOW:
+        case E_RESOLVE_TREE_NALLOW:
             fmt[uint32_fmt(fmt,tres->nallow)] = 0 ;
             str = fmt ;
             break ;
 
-        case TREE_ENUM_NGROUPS:
+        case E_RESOLVE_TREE_NGROUPS:
             fmt[uint32_fmt(fmt,tres->ngroups)] = 0 ;
             str = fmt ;
             break ;
 
-        case TREE_ENUM_NCONTENTS:
+        case E_RESOLVE_TREE_NCONTENTS:
             fmt[uint32_fmt(fmt,tres->ncontents)] = 0 ;
             str = fmt ;
             break ;
 
-        case TREE_ENUM_INIT:
+        case E_RESOLVE_TREE_INIT:
             fmt[uint32_fmt(fmt,tres->init)] = 0 ;
             str = fmt ;
             break ;
 
-        case TREE_ENUM_DISEN:
+        case E_RESOLVE_TREE_DISEN:
             fmt[uint32_fmt(fmt,tres->disen)] = 0 ;
             str = fmt ;
             break ;

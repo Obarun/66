@@ -28,18 +28,17 @@ int tree_find_current(stralloc *tree, char const *base)
     log_flow() ;
 
     int e = 0 ;
-    size_t baselen = strlen(base) ;
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
-    char t[baselen + SS_SYSTEM_LEN + 1] ;
 
-    auto_strings(t, base, SS_SYSTEM) ;
-
-    if (!resolve_read(wres, t, SS_MASTER + 1))
+    if (!resolve_read_g(wres, base, SS_MASTER + 1))
         goto err ;
 
-    if (!auto_stra(tree, base, SS_SYSTEM, "/", mres.sa.s + mres.current))
-        goto err ;
+    if (mres.current) {
+        if (!auto_stra(tree, base, SS_SYSTEM, "/", mres.sa.s + mres.current))
+            goto err ;
+
+    } else goto err ;
 
     e = 1 ;
     err:
