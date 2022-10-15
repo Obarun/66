@@ -17,12 +17,15 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <unistd.h>//access
-//#include <stdio.h>
-//#include <stdlib.h>
+#include <stdlib.h>//malloc, free
 
 #include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
+#include <oblibs/types.h>
 #include <oblibs/string.h>
+#include <oblibs/directory.h>
+#include <oblibs/graph.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/types.h>
 #include <skalibs/stralloc.h>
@@ -32,11 +35,12 @@
 #include <skalibs/selfpipe.h>
 #include <skalibs/iopause.h>
 #include <skalibs/tai.h>
+#include <skalibs/types.h>
 #include <skalibs/sig.h>//sig_ignore
 
 #include <s6/supervise.h>//s6_svstatus_t
 #include <s6/ftrigr.h>
-
+#include <s6/ftrigw.h>
 
 #include <66/utils.h>
 #include <66/constants.h>
@@ -45,85 +49,86 @@
 #include <66/resolve.h>
 #include <66/state.h>
 #include <66/service.h>
+#include <66/enum.h>
+#include <66/graph.h>
 
-unsigned int SV_DEADLINE = 3000 ;
-unsigned int DEATHSV = 5 ;
-ftrigr_t fifo = FTRIGR_ZERO ;
 
-typedef struct pidindex_s pidindex_t ;
-struct pidindex_s
+
+
+
+
+
+#include <stdio.h>
+
+
+
+
+
+#define FLAGS_STARTING 1 // 1 starting not really up
+#define FLAGS_STOPPING (1 << 1) // 2 stopping not really down
+#define FLAGS_UP (1 << 2) // 4 really up
+#define FLAGS_DOWN (1 << 3) // 8 really down
+#define FLAGS_BLOCK (1 << 4) // 16 all deps are not up/down
+#define FLAGS_UNBLOCK (1 << 5) // 32 all deps are up/down
+#define FLAGS_FATAL (1 << 6) // 64 process crashed
+
+#define DATASIZE 63
+
+static ftrigr_t FIFO = FTRIGR_ZERO ;
+static unsigned int napid = 0 ;
+static unsigned int npid = 0 ;
+
+static resolve_service_t_ref pares = 0 ;
+static unsigned int *pareslen = 0 ;
+static char updown[4] = "-w \0" ;
+static uint8_t opt_updown = 0 ;
+static char data[DATASIZE + 1] = "-" ;
+static unsigned int datalen = 1 ;
+static uint8_t reloadmsg = 0 ;
+
+typedef struct pidservice_s pidservice_t, *pidservice_t_ref ;
+struct pidservice_s
 {
-    ss_resolve_sig_t_ref sv ;
     pid_t pid ;
+    uint16_t ids ;
+    int aresid ; // id at array ares
+    unsigned int vertex ; // id at graph_hash_t struct
+    uint8_t state ;
+    int nedge ;
+    unsigned int *edge ; // array of id at graph_hash_t struct
+} ;
+#define PIDSERVICE_ZERO { 0, 0, -1, 0, 0, 0, 0 }
+
+typedef enum fifo_e fifo_t, *fifo_t_ref ;
+enum fifo_e
+{
+    FIFO_u = 0,
+    FIFO_U,
+    FIFO_d,
+    FIFO_D,
+    FIFO_F,
+    FIFO_b,
+    FIFO_B
 } ;
 
-static pidindex_t *pidindex ;
-static unsigned int npids = 0 ;
-
-static int read_file (char const *file, char *buf, size_t n)
+typedef enum service_action_e service_action_t, *service_action_t_ref ;
+enum service_action_e
 {
-    log_flow() ;
+    SERVICE_ACTION_GOTIT = 0,
+    SERVICE_ACTION_WAIT,
+    SERVICE_ACTION_FATAL,
+    SERVICE_ACTION_UNKNOWN
+} ;
 
-    ssize_t r = openreadnclose_nb(file, buf, n) ;
-    if (r < 0)
-    {
-        if (errno != ENOENT)
-            log_warnusys_return(LOG_EXIT_ZERO,"open: ", file) ;
-    }
-    buf[byte_chr(buf, r, '\n')] = 0 ;
-    return 1 ;
-}
-
-static int read_uint (char const *file, unsigned int *fd)
-{
-    log_flow() ;
-
-    char buf[UINT_FMT + 1] ;
-    if (!read_file(file, buf, UINT_FMT)) return 0 ;
-    if (!uint0_scan(buf, fd))
-        log_warn_return(LOG_EXIT_ZERO,"invalid: ", file) ;
-
-    return 1 ;
-}
-
-/** @Return 0 on fail
- * @Return 1 on success */
-int handle_signal_svc(ss_resolve_sig_t *sv_signal)
-{
-    log_flow() ;
-
-    s6_svstatus_t status = S6_SVSTATUS_ZERO ;
-    char *sv = sv_signal->res.sa.s + sv_signal->res.runat ;
-
-    if (!s6_svstatus_read(sv,&status))
-        log_warnusys_return(LOG_EXIT_ZERO,"read status of: ",sv) ;
-
-    sv_signal->pid = status.pid ;
-
-    if (WIFSIGNALED(status.wstat) && !WEXITSTATUS(status.wstat)) return 1 ;// && (WTERMSIG(status.wstat) == 15 )) return 1 ;
-    if (!WIFSIGNALED(status.wstat) && !WEXITSTATUS(status.wstat)) return 1 ;
-    else return 0 ;
-}
-
-static unsigned char const svctl_actions[9][9] =
-{
- //signal receive:
- //  c->u       U       r/u     R/U     d       D       x       O       s
-                                                                                //signal wanted
-    { GOTIT,    DONE,   GOTIT,  DONE,   DEAD,   DEAD,   PERM,   PERM,   UKNOW },// SIGUP
-    { WAIT,     GOTIT,  WAIT,   GOTIT,  DEAD,   DEAD,   PERM,   PERM,   UKNOW },// SIGRUP
-    { DONE,     DONE,   GOTIT,  DONE,   WAIT,   WAIT,   PERM,   PERM,   UKNOW },// SIGR
-    { WAIT,     GOTIT,  WAIT,   GOTIT,  WAIT,   WAIT,   PERM,   PERM,   UKNOW },// SIGRR
-    { DEAD,     DEAD,   WAIT,   DEAD,   GOTIT,  DONE,   PERM,   PERM,   UKNOW },// SIGDOWN
-    { DEAD,     DEAD,   WAIT,   DEAD,   WAIT,   GOTIT,  PERM,   PERM,   UKNOW },// SIGRDOWN
-    { DEAD,     DEAD,   DEAD,   DEAD,   WAIT,   WAIT,   DONE,   WAIT,   DONE },// SIGX
-    { WAIT,     WAIT,   WAIT,   WAIT,   WAIT,   WAIT,   PERM,   GOTIT,  UKNOW },// SIGO
-    { UKNOW,    UKNOW,  UKNOW,  UKNOW,  UKNOW,  UKNOW,  UKNOW,  UKNOW,  DONE }, // SIGSUP
+static const unsigned char actions[2][7] = {
+    // u U d D F b B
+    { SERVICE_ACTION_WAIT, SERVICE_ACTION_GOTIT, SERVICE_ACTION_UNKNOWN, SERVICE_ACTION_UNKNOWN, SERVICE_ACTION_FATAL, SERVICE_ACTION_WAIT, SERVICE_ACTION_GOTIT }, // !what -> up
+    { SERVICE_ACTION_UNKNOWN, SERVICE_ACTION_UNKNOWN, SERVICE_ACTION_WAIT, SERVICE_ACTION_GOTIT, SERVICE_ACTION_FATAL, SERVICE_ACTION_WAIT, SERVICE_ACTION_GOTIT } // what -> down
 
 } ;
 
-//  convert signal receive into enum number
-static const uint8_t chtenum[128] =
+//  convert signal into enum number
+static const unsigned int char2enum[128] =
 {
     0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //8
     0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //16
@@ -133,572 +138,801 @@ static const uint8_t chtenum[128] =
     0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //48
     0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //56
     0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //64
-    0 ,  0 ,  0 ,  0 ,  5 ,  0 ,  0 ,  0 , //72
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  7 , //80
-    0 ,  0 ,  0 ,  0 ,  0 ,  1,   0 ,  0 , //88
-    6 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //96
-    0 ,  0 ,  0 ,  0 ,  4 ,  0 ,  0 ,  0 , //104
+    0 ,  0 ,  FIFO_B ,  0 ,  FIFO_D ,  0 ,  FIFO_F ,  0 , //72
+    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //80
+    0 ,  0 ,  0 ,  0 ,  0 ,  FIFO_U,   0 ,  0 , //88
+    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //96
+    0 ,  0 ,  FIFO_b ,  0 ,  FIFO_d ,  0 ,  0 ,  0 , //104
     0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //112
-    0 ,  0 ,  0 ,  8 ,  0 ,  0 ,  0 ,  0 , //120
-    6 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0   //128
+    0 ,  0 ,  0 ,  0 ,  0 ,  FIFO_u ,  0 ,  0 , //120
+    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0   //128
 } ;
-/** we use three file more than s6-svc program :
- *
- *   timeout-up and timeout-down will define the deadline for the iopause
- *      each service contain his deadline into the sv_signal.deadline key.
- *      If thoses files doesn't exit 3000 millisec is set by default.
- *      This deadline value can be set on commandline by the -T options.
- *   max-death-tally
- *      We let s6-supervise make what it need to do with this file but
- *      we take the same number to set the sv_signal.death value
- *      accepted for every daemon before exiting if the SIGNAL is not reached.
- *      If this file doesn't exist a number of 5 death (death -> number
- *      of wrong signal received) is set by default.
- *      This ndeath value can be set on commandline by the -n options.
- *
- * In all case the loop is broken to avoids infinite iopause
- *
- * The notication-fd file is used as the original one. If the file
- * exist and the SIGNAL is u , we change SIGNAL to U.
- */
 
-/**@Return 0 on success
- * @Return 1 on if signal is not complete (e.g. want U receive only u)
- * @Return 2 on fail
- * @Return 3 for PERMANENT failure */
-int handle_case(stralloc *sa, ss_resolve_sig_t *svc)
+static pidservice_t pidservice_init(unsigned int len)
 {
     log_flow() ;
 
-    int p, h, err ;
-    unsigned int state, i = 0 ;
-    state = svc->sig ;
+    pidservice_t pids = PIDSERVICE_ZERO ;
 
-    err = 2 ;
+    pids.edge = (unsigned int *)malloc(len * sizeof(unsigned int)) ;
 
-    for (;i < sa->len ; i++)
-    {
-        p = chtenum[(unsigned char)sa->s[i]] ;
-        unsigned char action = svctl_actions[state][p] ;
+    graph_array_init_single(pids.edge, len) ;
 
-        switch (action)
-        {
-            case GOTIT:
-                        h = handle_signal_svc(svc) ;
-                        if (!h)
-                        {
-                            err = 0 ;
-                            break ;
-                        }
-                        return 1 ;
-            case WAIT:  err = 0 ;
-                        break ;
-            case DEAD:  return 2 ;
-            case DONE:  return 1 ;
-            case PERM:  return 3 ;
-            default:    log_warn_return(2,"invalid state, make a bug report") ;
-        }
-    }
-    return err ;
+    return pids ;
 }
 
-static void write_state(ss_resolve_sig_t *svc)
+static int pidservice_get_id(pidservice_t *apids, unsigned int id)
 {
     log_flow() ;
 
-    ss_state_t sta = STATE_ZERO ;
-    char const *state = svc->res.sa.s + svc->res.state ;
-    char const *sv = svc->res.sa.s + svc->res.name ;
-    if (svc->sig <= 3)
-    {
-        if (svc->state <= 1)
-        {
-            state_setflag(&sta,SS_FLAGS_PID,svc->pid) ;
-            state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
-        }
-        else
-        {
-            state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
-            state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
-        }
+    unsigned int pos = 0 ;
+
+    for (; pos < napid ; pos++) {
+        if (apids[pos].vertex == id)
+            return (unsigned int) pos ;
     }
-    else
-    {
-        if (svc->state <=1)
-        {
-            state_setflag(&sta,SS_FLAGS_PID,SS_FLAGS_FALSE) ;
-            state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_FALSE) ;
-        }
-        else
-        {
-            state_setflag(&sta,SS_FLAGS_PID,svc->pid) ;
-            state_setflag(&sta,SS_FLAGS_STATE,SS_FLAGS_TRUE) ;
-        }
-    }
-    state_setflag(&sta,SS_FLAGS_RELOAD,SS_FLAGS_FALSE) ;
-    state_setflag(&sta,SS_FLAGS_INIT,SS_FLAGS_FALSE) ;
-//  state_setflag(&sta,SS_FLAGS_UNSUPERVISE,SS_FLAGS_FALSE) ;
-    log_trace("Write state file of: ",sv) ;
-    if (!state_write(&sta,state,sv))
-        log_warnusys("write state file of: ",sv) ;
+    return -1 ;
 }
 
-static int announce(ss_resolve_sig_t *svc)
+static void pidservice_free(pidservice_t *pids)
 {
     log_flow() ;
 
-    int r = svc->state ;
-    char *sv = svc->res.sa.s + svc->res.name ;
-    /** special case time out reached or number execeeded,
-     *  last check with s6-svstat framboise*/
-    if (r == 0 || r == 4 || r == 5)
-    {
-        int e = handle_signal_svc(svc) ;
-        if (!e){
-            if (!r) r = 2 ;
-            else r = r ;
-        }
-        else r = r == 0 ? 0 : 1 ;
-        svc->state = r ;
-    }
-    switch(r)
-    {
-        case 0: log_info(sv," is ",(svc->sig > 3) ? "down" : "up"," but not notified by the daemon itself") ;
-                break ;
-        case 1: log_info(sv,": ",(svc->sig > 3) ? "stopped" : (svc->sig == 2 || svc->sig == 3) ? "reloaded" : "started"," successfully") ;
-                break ;
-        case 2: log_1_warn("unable to ",(svc->sig > 3) ? "stop " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start ", sv) ;
-                break ;
-        case 3: log_1_warn(sv," report permanent failure -- unable to ",(svc->sig > 1) ? "stop" : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start") ;
-                break ;
-        case 4: log_1_warn("unable to ",(svc->sig > 3) ? "stop: " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start: ",sv, ": number of try exceeded") ;
-                break ;
-        case 5: log_1_warn("unable to ",(svc->sig > 3) ? "stop: " : (svc->sig == 2 || svc->sig == 3) ? "reload" : "start: ",sv, ": time out reached") ;
-                break ;
-        case-1:
-        default:log_warn("unexpected data in state file of: ",sv," -- please make a bug report") ;
-                break ;
-    }
-    return r ;
+    free(pids->edge) ;
 }
 
-static inline void kill_all (void)
+static void pidservice_array_free(pidservice_t *apids,  unsigned int len)
 {
     log_flow() ;
 
-    unsigned int j = npids ;
-    while (j--) kill(pidindex[j].pid, SIGTERM) ;
+    size_t pos = 0 ;
+
+    for(; pos < len ; pos++)
+        pidservice_free(&apids[pos]) ;
 }
 
-static int handle_signal_pipe(genalloc *gakeep)
+static void pidservice_init_array(unsigned int *list, unsigned int listlen, pidservice_t *apids, graph_t *g, resolve_service_t *ares, unsigned int areslen, ssexec_t *info, uint8_t requiredby, uint32_t flag) {
+
+    log_flow() ;
+
+    int r = 0 ;
+    unsigned int pos = 0 ;
+
+    for (; pos < listlen ; pos++) {
+
+        pidservice_t pids = pidservice_init(g->mlen) ;
+
+        char *name = g->data.s + genalloc_s(graph_hash_t,&g->hash)[list[pos]].vertex ;
+
+        pids.aresid = service_resolve_array_search(ares, areslen, name) ;
+
+        if (pids.aresid < 0)
+            log_dieu(LOG_EXIT_SYS,"find ares id of: ", name, " -- please make a bug reports") ;
+
+        if (FLAGS_ISSET(flag, STATE_FLAGS_TOPROPAGATE)) {
+            /**
+             * This is should be recursive as long as the user ask for the propagation.
+             * So, call graph_matrix_get_edge_g_sorted_list() with recursive mode.
+             * This is overkill if we come from other 66 tools. Its call with the complete
+             * service selection to deal with.
+             * No choice here, we want a complete 66-svctl independence
+             * */
+            pids.nedge = graph_matrix_get_edge_g_sorted_list(pids.edge, g, name, requiredby, 1) ;
+
+            if (pids.nedge < 0)
+                log_dieu(LOG_EXIT_SYS,"get sorted ", requiredby ? "required by" : "dependency", " list of tree: ", name) ;
+        }
+
+        pids.vertex = graph_hash_vertex_get_id(g, name) ;
+
+        if (pids.vertex < 0)
+            log_dieu(LOG_EXIT_SYS, "get vertex id -- please make a bug report") ;
+
+        if (ares[pids.aresid].type == TYPE_ONESHOT) {
+
+                ss_state_t ste = STATE_ZERO ;
+
+                if (!state_read(&ste, ares[pids.aresid].sa.s + ares[pids.aresid].path.home, name))
+                    log_dieusys(LOG_EXIT_SYS, "read state file of: ", name) ;
+
+                if (ste.isup == STATE_FLAGS_TRUE)
+                    FLAGS_SET(pids.state, FLAGS_UP) ;
+                else
+                    FLAGS_SET(pids.state, FLAGS_DOWN) ;
+
+        } else {
+
+            s6_svstatus_t status ;
+
+            r = s6_svstatus_read(ares[pids.aresid].sa.s + ares[pids.aresid].live.scandir, &status) ;
+
+            pid_t pid = !r ? 0 : status.pid ;
+
+            if (pid > 0) {
+
+                FLAGS_SET(pids.state, FLAGS_UP) ;
+            }
+            else
+                FLAGS_SET(pids.state, FLAGS_DOWN) ;
+        }
+
+        apids[pos] = pids ;
+    }
+}
+
+static void pidservice_init_fifo(pidservice_t *apids, graph_t *graph, ssexec_t *info, unsigned int deadline)
+{
+    log_flow() ;
+
+    unsigned int pos = 0 ;
+    gid_t gid ;
+
+    tain dead ;
+    tain_from_millisecs(&dead, deadline) ;
+    tain_now_set_stopwatch_g() ;
+    tain_add_g(&dead, &dead) ;
+
+    if (!yourgid(&gid, info->owner))
+        log_dieusys(LOG_EXIT_SYS, "get gid") ;
+
+    if (!ftrigr_startf_g(&FIFO, &dead))
+        log_dieusys(LOG_EXIT_SYS, "ftrigr_startf") ;
+
+    for (; pos < napid ; pos++) {
+
+        char *notifdir = pares[apids[pos].aresid].sa.s +  pares[apids[pos].aresid].live.notifdir ;
+
+        if (!dir_create_parent(notifdir, 0700))
+            log_dieusys(LOG_EXIT_SYS, "create directory: ", notifdir) ;
+
+        if (!ftrigw_fifodir_make(notifdir, gid, 0))
+            log_dieusys(LOG_EXIT_SYS, "make fifo directory: ", notifdir) ;
+
+        /** may already exist, cleans it */
+        if (!ftrigw_clean(notifdir))
+            log_dieusys(LOG_EXIT_SYS, "clean fifo directory: ", notifdir) ;
+
+        apids[pos].ids = ftrigr_subscribe_g(&FIFO, notifdir, "[uUdDFbB]", FTRIGR_REPEAT, &dead) ;
+
+        if (!apids[pos].ids)
+            log_dieusys(LOG_EXIT_SYS, "subcribe to: ", notifdir) ;
+    }
+}
+
+static inline void kill_all(pidservice_t *apids)
+{
+    log_flow() ;
+
+    unsigned int j = napid ;
+    while (j--) kill(apids[j].pid, SIGKILL) ;
+}
+
+/**
+ * @what: up or down
+ * @success: 0 fail, 1 win
+ * */
+static void announce(pidservice_t *apids, unsigned int what, unsigned int success, unsigned int exitcode)
+{
+    log_flow() ;
+
+    int fd = 0 ;
+    char const *notifdir = pares[apids->aresid].sa.s + pares[apids->aresid].live.notifdir ;
+    char const *name = pares[apids->aresid].sa.s + pares[apids->aresid].name ;
+    char const *base = pares[apids->aresid].sa.s + pares[apids->aresid].path.home ;
+    char const *scandir = pares[apids->aresid].sa.s + pares[apids->aresid].live.scandir ;
+    size_t scandirlen = strlen(scandir) ;
+    char file[scandirlen +  6] ;
+
+    auto_strings(file, scandir, "/down") ;
+
+    uint8_t flag = what ? FLAGS_DOWN : FLAGS_UP ;
+
+    if (success) {
+
+        FLAGS_SET(apids->state, FLAGS_BLOCK|FLAGS_FATAL) ;
+
+        fd = open_trunc(file) ;
+        if (fd < 0)
+            log_dieusys(LOG_EXIT_SYS, "create file: ", scandir) ;
+        fd_close(fd) ;
+
+        log_trace("sends notification F to: ", notifdir) ;
+        if (ftrigw_notify(notifdir, 'F') < 0)
+            log_dieusys(LOG_EXIT_SYS, "notifies event directory: ", notifdir) ;
+
+        char fmt[UINT_FMT] ;
+        fmt[uint_fmt(fmt, exitcode)] = 0 ;
+
+        log_1_warn("Unable to ", reloadmsg ? "reload" : what ? "stop" : "start", " service: ", name, " -- exited with signal: ", fmt) ;
+
+
+
+    } else {
+
+        if (!state_messenger(base, name, STATE_FLAGS_ISUP, what ? STATE_FLAGS_FALSE : STATE_FLAGS_TRUE))
+            log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
+
+        FLAGS_SET(apids->state, flag|FLAGS_UNBLOCK) ;
+
+        if (!pares[apids->aresid].execute.down && pares[apids->aresid].type == TYPE_CLASSIC) {
+
+            if (!what) {
+
+                if (!access(scandir, F_OK)) {
+                    log_trace("delete down file: ", file) ;
+                    if (unlink(file) < 0 && errno != ENOENT)
+                        log_warnusys("delete down file: ", file) ;
+                }
+
+            } else {
+
+                fd = open_trunc(file) ;
+                if (fd < 0)
+                    log_dieusys(LOG_EXIT_SYS, "create file: ", file) ;
+                fd_close(fd) ;
+            }
+        }
+
+        log_trace("sends notification ", what ? "D" : "U", " to: ", notifdir) ;
+        if (ftrigw_notify(notifdir, what ? 'D' : 'U') < 0)
+            log_dieusys(LOG_EXIT_SYS, "notifies event directory: ", notifdir) ;
+
+        log_info("Successfully ", reloadmsg ? "reloaded" : what ? "stopped" : "started", " service: ", name) ;
+
+    }
+
+    tain dead ;
+    tain_from_millisecs(&dead, 3000) ;
+    tain_now_set_stopwatch_g() ;
+    tain_add_g(&dead, &dead) ;
+
+    if (!ftrigr_unsubscribe_g(&FIFO, apids->ids, &dead))
+        log_dieusys(LOG_EXIT_SYS, "unsubcribe: ", name) ;
+}
+
+static int handle_signal(pidservice_t *apids, unsigned int what, graph_t *graph, ssexec_t *info)
 {
     log_flow() ;
 
     int ok = 1 ;
-    for (;;)
-    {
-        switch (selfpipe_read())
-        {
-            case -1 : log_warnusys_return(LOG_EXIT_ZERO,"selfpipe_read") ;
-            case 0 : goto end ;
-            case SIGCHLD:
-                for (;;)
-                {
-                    unsigned int j = 0 ;
+
+    for (;;) {
+
+        int s = selfpipe_read() ;
+        switch (s) {
+
+            case -1 : log_dieusys(LOG_EXIT_SYS,"selfpipe_read") ;
+            case 0 : return ok ;
+            case SIGCHLD :
+
+                for (;;) {
+
+                    unsigned int pos = 0 ;
                     int wstat ;
                     pid_t r = wait_nohang(&wstat) ;
-                    if (r < 0)
-                        if (errno = ECHILD) break ;
-                        else log_dieusys(LOG_EXIT_SYS,"wait for children") ;
-                    else if (!r) break ;
-                    for (; j < npids ; j++) if (pidindex[j].pid == r) break ;
-                    if (j < npids)
-                    {
-                        ss_resolve_sig_t_ref sv = pidindex[j].sv ;
-                        pidindex[j] = pidindex[--npids] ;
-                        if (!WIFSIGNALED(wstat) && !WEXITSTATUS(wstat))
-                        {
-                            if (announce(sv) > 1) ok = 0 ;
-                            write_state(sv) ;
-                        }
+
+                    if (r < 0) {
+
+                        if (errno = ECHILD)
+                            break ;
                         else
-                        {
-                            ok = 0 ; announce(sv) ; write_state(sv) ;
+                            log_dieusys(LOG_EXIT_SYS,"wait for children") ;
+
+                    } else if (!r) break ;
+
+
+                    for (; pos < napid ; pos++)
+                        if (apids[pos].pid == r)
+                            break ;
+
+                    if (pos < napid) {
+
+                        if (!WIFSIGNALED(wstat) && !WEXITSTATUS(wstat)) {
+
+                            announce(&apids[pos], what, 0, 0) ;
+
+                        } else {
+
+                            ok = 0 ;
+                            announce(&apids[pos], what, 1, WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat)) ;
                         }
+
+                        npid-- ;
                     }
                 }
                 break ;
-            case SIGTERM:
-            case SIGINT:
-                    log_warn("received SIGINT, aborting service transition") ;
-                    kill_all() ;
+            case SIGTERM :
+            case SIGINT :
+                    log_1_warn("received SIGINT, aborting tree transition") ;
+                    kill_all(apids) ;
                     break ;
-            default : log_warn("unexpected data in selfpipe") ;
+            default : log_die(LOG_EXIT_SYS, "unexpected data in selfpipe") ;
         }
     }
-    end:
+
     return ok ;
-
 }
-static int compute_timeout(tain *start,tain *tsv)
+
+static int doit(pidservice_t *sv, unsigned int what, unsigned int deadline)
 {
     log_flow() ;
 
-    tain now,tpass ;
-    tain_now_g() ;
-    tain_copynow(&now) ;
-    tain_sub(&tpass,&now,start) ;
-    if (tain_less(tsv,&tpass)) return 0 ;
-    return 1 ;
+    uint8_t type = pares[sv->aresid].type ;
+
+    pid_t pid ;
+    int wstat, e = 0 ;
+
+    if (type == TYPE_MODULE || type == TYPE_BUNDLE)
+        /**
+         * Those type are not real services. Passing here with
+         * this kind of service means that the dependencies
+         * of the service was made anyway. So, we can consider it as
+         * already up/down.
+         * */
+         return 1 ;
+
+    if (type == TYPE_CLASSIC) {
+
+        char *scandir = pares[sv->aresid].sa.s + pares[sv->aresid].live.scandir ;
+
+        if (updown[2] == 'U' || updown[2] == 'D' || updown[2] == 'R') {
+
+            if (!pares[sv->aresid].notify)
+                updown[2] = updown[2] == 'U' ? 'u' : updown[2] == 'D' ? 'd' : updown[2] == 'R' ? 'r' : updown[2] ;
+
+        }
+
+        char tfmt[UINT32_FMT] ;
+        tfmt[uint_fmt(tfmt, deadline)] = 0 ;
+
+        char const *newargv[8] ;
+        unsigned int m = 0 ;
+
+        newargv[m++] = "s6-svc" ;
+        newargv[m++] = data ;
+
+        if (opt_updown)
+            newargv[m++] = updown ;
+
+        newargv[m++] = "-T" ;
+        newargv[m++] = tfmt ;
+        newargv[m++] = "--" ;
+        newargv[m++] = scandir ;
+        newargv[m++] = 0 ;
+
+        log_info("sending ", opt_updown ? newargv[2] : "", opt_updown ? " " : "", data, " to: ", scandir) ;
+
+        pid = child_spawn0(newargv[0], newargv, (char const *const *) environ) ;
+
+        if (waitpid_nointr(pid, &wstat, 0) < 0)
+            log_warnusys_return(LOG_EXIT_ZERO, "wait for s6-svc") ;
+
+        if (!WIFSIGNALED(wstat) && !WEXITSTATUS(wstat))
+            e = 1 ;
+
+    } else if (type == TYPE_ONESHOT) {
+
+        char *sa = pares[sv->aresid].sa.s ;
+        char *name = sa + pares[sv->aresid].name ;
+        size_t namelen = strlen(name) ;
+        char *tree = pares[sv->aresid].sa.s + pares[sv->aresid].path.tree ;
+        size_t treelen = strlen(tree) ;
+        unsigned int timeout = 0 ;
+        if (!what)
+            timeout = pares[sv->aresid].execute.timeout.up ;
+        else
+            timeout = pares[sv->aresid].execute.timeout.down ;
+
+        char script[treelen + SS_SVDIRS_LEN + SS_SVC_LEN + 1 + namelen + 7 + 1] ;
+        auto_strings(script, tree, SS_SVDIRS, SS_SVC, "/", name) ;
+
+        char tfmt[UINT32_FMT] ;
+        tfmt[uint_fmt(tfmt, timeout)] = 0 ;
+
+        char *oneshotdir = pares[sv->aresid].sa.s + pares[sv->aresid].live.oneshotddir ;
+        char *scandir = pares[sv->aresid].sa.s + pares[sv->aresid].live.scandir ;
+        char oneshot[strlen(oneshotdir) + 2 + 1] ;
+        auto_strings(oneshot, oneshotdir, "/s") ;
+
+        char const *newargv[11] ;
+        unsigned int m = 0 ;
+        newargv[m++] = "s6-sudo" ;
+        newargv[m++] = VERBOSITY >= 4 ? "-vel0" : "-el0" ;
+        newargv[m++] = "-t" ;
+        newargv[m++] = "30000" ;
+        newargv[m++] = "-T" ;
+        newargv[m++] = tfmt ;
+        newargv[m++] = "--" ;
+        newargv[m++] = oneshot ;
+        newargv[m++] = !what ? "up" : "down" ;
+        newargv[m++] = script ;
+        newargv[m++] = 0 ;
+
+        log_info("sending ", !what ? "up" : "down", " to: ", scandir) ;
+
+        pid = child_spawn0(newargv[0], newargv, (char const *const *) environ) ;
+
+        if (waitpid_nointr(pid, &wstat, 0) < 0)
+            log_warnusys_return(LOG_EXIT_ZERO, "wait for s6-sudo") ;
+
+
+        if (!WIFSIGNALED(wstat) && !WEXITSTATUS(wstat))
+            e = 1 ;
+    }
+
+    return e ;
 }
 
-static void svc_listen_less(int state_val, int *state,unsigned int *did,unsigned int *loop,unsigned int pos)
+static int async_deps(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph, unsigned int deadline)
 {
     log_flow() ;
 
-    (*state) = state_val ;
-    did[pos] = 1 ;
-    (*loop)--;
-}
-static void svc_listen(unsigned int nsv,tain *deadline)
-{
-    log_flow() ;
+    int e = 0, r ;
+    unsigned int pos = 0 ;
 
-    int r ;
-    tain start ;
+    tain dead ;
+    tain_from_millisecs(&dead, deadline) ;
+    tain_now_set_stopwatch_g() ;
+    tain_add_g(&dead, &dead) ;
+
+    iopause_fd x = { .fd = ftrigr_fd(&FIFO), .events = IOPAUSE_READ } ;
     stralloc sa = STRALLOC_ZERO ;
-    iopause_fd x = { .fd = ftrigr_fd(&fifo), .events = IOPAUSE_READ } ;
-    ss_resolve_sig_t_ref svc ;
-    int *state = 0 ;
-    unsigned int *ndeath = 0, i, j ;
-    unsigned int did[nsv] ;
-    i = j = nsv ;
 
-    tain_now_g() ;
-    tain_copynow(&start) ;
+    while (apids[i].nedge) {
 
-    while(i--)
-        did[i] = 0 ;
+        /** TODO: the pidvertex_get_id() function make a loop
+         * through the apids array to find the corresponding
+         * index of the edge at the apids array.
+         * This is clearly a waste of time and should be optimized. */
+        unsigned int id = pidservice_get_id(apids, apids[i].edge[pos]) ;
 
-    while(j)
-    {
-        r = iopause_g(&x, 1, deadline) ;
-        if (r < 0) log_diesys(LOG_EXIT_SYS,"listen iopause") ;
-        else if (!r) log_die(LOG_EXIT_SYS,"listen time out") ;
-        if (x.revents & IOPAUSE_READ)
-        {
-            i = 0 ;
-            if (ftrigr_update(&fifo) < 0) log_dieusys(LOG_EXIT_SYS,"update fifo") ;
-            for (;i < nsv;i++)
-            {
-                if (did[i]) continue ;
-                svc = pidindex[i].sv ;
-                state = &svc->state ;
-                ndeath = &svc->ndeath ;
-                if (!compute_timeout(&start,&pidindex[i].sv->deadline))
-                { svc_listen_less(5,state,did,&j,i) ; continue ; }
+        if (id < 0)
+            log_dieu(LOG_EXIT_SYS, "get apidservice id -- please make a bug report") ;
+
+        r = iopause_g(&x, 1, &dead) ;
+        if (r < 0)
+            log_dieusys(LOG_EXIT_SYS, "iopause") ;
+        if (!r)
+            log_die(LOG_EXIT_SYS,"time out") ;
+
+        if (x.revents & IOPAUSE_READ) {
+
+            if (ftrigr_update(&FIFO) < 0)
+                log_dieusys(LOG_EXIT_SYS, "ftrigr_update") ;
+
+            for(pos = 0 ; pos < napid ; pos++) {
+
                 sa.len = 0 ;
-                r = ftrigr_checksa(&fifo,svc->ids, &sa) ;
-                if (r < 0) log_dieusys(LOG_EXIT_SYS,"check fifo") ;
-                else if (r)
-                {
-                    (*ndeath)-- ;
-                    (*state) = handle_case(&sa,svc) ;
-                    if (!(*ndeath)) svc_listen_less(4,state,did,&j,i) ;
-                    if ((*state) >= 1) svc_listen_less(*state,state,did,&j,i) ;
-                }
+                r = ftrigr_checksa(&FIFO, apids[pos].ids, &sa) ;
 
+                if (r < 0)
+                    log_dieusys(LOG_EXIT_SYS, "ftrigr_check") ;
+
+                else if (r) {
+
+                    size_t l = 0 ;
+
+                    for (; l < sa.len ; l++) {
+
+                        unsigned int p = char2enum[(unsigned int)sa.s[l]] ;
+                        unsigned char action = actions[what][p] ;
+                        char s[2] = { sa.s[l], 0 } ;
+                        log_trace("received signal: ", s, " from: ", pares[apids[pos].aresid].sa.s + pares[apids[pos].aresid].name) ;
+                        switch(action) {
+
+                            case SERVICE_ACTION_GOTIT:
+                                FLAGS_SET(apids[pos].state, (!what ? FLAGS_UP : FLAGS_DOWN)) ;
+                                goto next ;
+
+                            case SERVICE_ACTION_FATAL:
+                                FLAGS_SET(apids[pos].state, FLAGS_FATAL) ;
+                                goto err ;
+
+                            case SERVICE_ACTION_WAIT:
+                                goto next ;
+
+                            case SERVICE_ACTION_UNKNOWN:
+                            default:
+                                log_die(LOG_EXIT_ZERO,"invalid action -- please make a bug report") ;
+                        }
+                    }
+                }
             }
         }
+        next:
+        apids[i].nedge-- ;
     }
-    stralloc_free(&sa) ;
+
+    e = 1 ;
+    err:
+        stralloc_free(&sa) ;
+        return e ;
 }
-/* @return 111 unable to control
- * @return 100 "something is wrong with the S6_SUPERVISE_CTLDIR directory. errno reported
- * @return 99 supervisor not listening */
-static int svc_writectl(ss_resolve_sig_t *svc)
+
+static int async(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph, unsigned int deadline)
 {
     log_flow() ;
 
-    int r ;
-    char *sv = svc->res.sa.s + svc->res.runat ;
-    size_t siglen = strlen(svc->sigtosend) ;
-    log_trace("send signal: ",svc->sigtosend," to: ", sv,"/",S6_SUPERVISE_CTLDIR) ;
-    r = s6_svc_writectl(sv, S6_SUPERVISE_CTLDIR, svc->sigtosend, siglen) ;
-    if (r == -1) return 111 ;
-    else if (r == -2) return 100 ;
-    else if (!r) return 99 ;
-    return 0 ;
+    int e = 1 ;
+
+    char *name = graph->data.s + genalloc_s(graph_hash_t,&graph->hash)[apids[i].vertex].vertex ;
+    char *notifdir = pares[apids[i].aresid].sa.s + pares[apids[i].aresid].live.notifdir ;
+
+    if (FLAGS_ISSET(apids[i].state, (!what ? FLAGS_DOWN : FLAGS_UP))) {
+
+        if (!FLAGS_ISSET(apids[i].state, FLAGS_BLOCK)) {
+
+            FLAGS_SET(apids[i].state, FLAGS_BLOCK) ;
+
+            if (apids[i].nedge)
+                if (!async_deps(apids, i, what, info, graph, deadline))
+                    log_warnu_return(LOG_EXIT_ZERO, !what ? "start" : "stop", " dependencies of service: ", name) ;
+
+            e = doit(&apids[i], what, deadline) ;
+
+        } else {
+
+            log_info("Skipping service: ", name, " -- already in ", what ? "stopping" : "starting", " process") ;
+
+            log_trace("sends notification ", what ? "d" : "u", " to : ", notifdir) ;
+            if (ftrigw_notify(notifdir, what ? 'd' : 'u') < 0)
+                log_warnusys_return(LOG_EXIT_ZERO, "notifies event directory: ", notifdir) ;
+
+        }
+
+    } else {
+
+        log_info("Skipping service: ", name, " -- already ", what ? "down" : "up") ;
+
+        //log_trace("sends notification ", what ? "D" : "U", " to : ", notifdir) ;
+        //if (ftrigw_notify(notifdir, what ? 'D' : 'U') < 0)
+        //    log_warnusys_return(LOG_EXIT_ZERO, "notifies event directory: ", notifdir) ;
+
+    }
+
+    return e ;
 }
 
-static void svc_async(unsigned int i,unsigned int nsv)
+static int waitit(pidservice_t *apids, unsigned int what, graph_t *graph, unsigned int deadline, ssexec_t *info)
 {
     log_flow() ;
 
+    unsigned int e = 1, pos = 0 ;
     int r ;
     pid_t pid ;
-    pid = fork() ;
-    if (pid < 0) return ;
-    if (!pid)
-    {
-        r = svc_writectl(pidindex[i].sv) ;
-        _exit(r) ;
+    pidservice_t apidservicetable[napid] ;
+    pidservice_t_ref apidservice = apidservicetable ;
+
+    tain dead ;
+    tain_from_millisecs(&dead, deadline) ;
+    tain_now_set_stopwatch_g() ;
+    tain_add_g(&dead, &dead) ;
+
+    int spfd = selfpipe_init() ;
+
+    if (spfd < 0)
+        log_dieusys(LOG_EXIT_SYS, "selfpipe_init") ;
+
+    if (!selfpipe_trap(SIGCHLD) ||
+        !selfpipe_trap(SIGINT) ||
+        !selfpipe_trap(SIGTERM) ||
+        !sig_altignore(SIGPIPE))
+            log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
+
+    pidservice_init_fifo(apids, graph, info, deadline) ;
+
+    for (pos = 0 ; pos < napid ; pos++)
+        apidservice[pos] = apids[pos] ;
+
+    for (pos = 0 ; pos < napid ; pos++) {
+
+        pid = fork() ;
+
+        if (pid < 0)
+            log_dieusys(LOG_EXIT_SYS, "fork") ;
+
+        if (!pid) {
+            e = async(apidservice, pos, what, info, graph, deadline) ;
+            goto freed ;
+        }
+
+        apidservice[pos].pid = pid ;
+
+        npid++ ;
     }
 
-    pidindex[npids].pid = pid ;
-    pidindex[npids++].sv = pidindex[i].sv ;
-    return ;
+    iopause_fd x = { .fd = spfd, .events = IOPAUSE_READ } ;
+
+    while (npid) {
+
+        r = iopause_g(&x, 1, &dead) ;
+        if (r < 0)
+            log_dieusys(LOG_EXIT_SYS, "iopause") ;
+        if (!r)
+            log_die(LOG_EXIT_SYS,"time out") ;
+
+        if (x.revents & IOPAUSE_READ)
+            if (!handle_signal(apidservice, what, graph, info))
+                e = 0 ;
+    }
+    freed:
+    ftrigr_end(&FIFO) ;
+    selfpipe_finish() ;
+
+    return e ;
 }
 
-int doit (int spfd, genalloc *gakeep, tain *deadline)
+int ssexec_svctl(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    iopause_fd x = { .fd = spfd, .events = IOPAUSE_READ } ;
-    unsigned int nsv = genalloc_len(ss_resolve_sig_t,gakeep) ;
-    unsigned int i = 0 ;
-    int exitcode = 1 ;
-    pidindex_t pidindextable[nsv] ;
-    pidindex = pidindextable ;
-    /** keep the good order service declaration
-     * of the genalloc*/
-    while(i<nsv){
-        pidindex[i].sv = &genalloc_s(ss_resolve_sig_t,gakeep)[i] ;
-        pidindex[i].pid = 0 ;
-        i++ ;
-    }
-    i = 0 ;
-    while(i < nsv)
-    {
-        svc_async(i,nsv) ;
-        i++ ;
-    }
-    svc_listen(nsv,deadline) ;
-    while (npids)
-    {
-        int r = iopause_g(&x,1,deadline) ;
-        if (r < 0) log_dieusys(LOG_EXIT_SYS,"iopause") ;
-        if (!r) log_die(LOG_EXIT_SYS,"time out") ;
-        if (!handle_signal_pipe(gakeep)) exitcode = 0 ;
-    }
-    return exitcode ;
-}
+    int r ;
+    // what = 0 -> up signal
+    uint8_t what = 0, requiredby = 0 ;
+    static unsigned int deadline = 3000 ;
+    graph_t graph = GRAPH_ZERO ;
 
-int ssexec_svctl(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
-{
-    // be sure that the global var are set correctly
-    SV_DEADLINE = 3000 ;
-    DEATHSV = 5 ;
+    unsigned int areslen = 0, list[SS_MAX_SERVICE] ;
+    resolve_service_t ares[SS_MAX_SERVICE] ;
 
-    int e, isup, r, ret = 1 ;
-    unsigned int death, tsv, reverse, tsv_g ;
-    int SIGNAL = -1 ;
-    tain ttmain ;
+    /*
+     * STATE_FLAGS_TOPROPAGATE = 0
+     * do not send signal to the depends/requiredby of the service.
+     *
+     * STATE_FLAGS_TOPROPAGATE = 1
+     * also send signal to the depends/requiredby of the service
+     *
+     * When we come from 66-start/stop tool we always want to
+     * propagate the signal. But we may need/want to send a e.g. SIGHUP signal
+     * to a specific service without interfering on its depends/requiredby services
+     *
+     * Also, we only deal with already supervised service. This tool is the signal sender,
+     * it not intended to sanitize the state of the services.
+     *
+     * */
+    uint32_t gflag = STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_ISSUPERVISED|STATE_FLAGS_WANTUP ;
 
-    genalloc gakeep = GENALLOC_ZERO ; //type ss_resolve_sig
-    stralloc sares = STRALLOC_ZERO ;
-    ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
-    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-    ss_state_t sta = STATE_ZERO ;
-
-    char *sig = 0 ;
-
-    s6_svstatus_t status = S6_SVSTATUS_ZERO ;
-
-    tsv = death = reverse = 0 ;
-    tsv_g = SV_DEADLINE ;
-
-    //PROG = "66-svctl" ;
     {
         subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, OPTS_SVCTL, &l) ;
+            int opt = subgetopt_r(argc,argv, OPTS_SVCTL, &l) ;
             if (opt == -1) break ;
-            if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
-            switch (opt)
-            {
-                case 'n' :  if (!uint0_scan(l.arg, &death)) log_usage(usage_svctl) ; break ;
-                case 'u' :  if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGUP ; sig ="u" ; break ;
-                case 'r' :  if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGR ; sig = "r" ; break ;
-                /** -R is an inner signal and need to come from 66-start.s6-svc do not understand it*/
-                case 'R' :
-                            if (!strcmp(info->prog,"66-svctl")) log_usage(usage_svctl) ;
-                            if (SIGNAL > 0) log_usage(usage_svctl) ;
-                            SIGNAL = SIGRR ; sig = "r" ;
-                            break ;
-                case 'd' :  if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGDOWN ; sig = "d" ; break ;
-                case 'X' :  if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGX ; sig = "xd" ; break ;
-                case 'K' :  if (SIGNAL > 0) log_usage(usage_svctl) ; SIGNAL = SIGRDOWN ; sig = "kd" ; break ;
+            //if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 
-                default : log_usage(usage_svctl) ;
+            switch (opt) {
+
+                case 'a' :
+                case 'b' :
+                case 'q' :
+                case 'h' :
+                case 'k' :
+                case 't' :
+                case 'i' :
+                case '1' :
+                case '2' :
+                case 'p' :
+                case 'c' :
+                case 'y' :
+                case 'r' :
+                case 'o' :
+                case 'd' :
+                case 'u' :
+                case 'x' :
+                case 'O' :
+
+                    if (datalen >= DATASIZE)
+                        log_die(LOG_EXIT_USER, "too many arguments") ;
+
+                    data[datalen++] = opt ;
+                    break ;
+
+                case 'w' :
+
+                    if (!memchr("dDuUrR", l.arg[0], 6))
+                        log_usage(usage_svctl) ;
+
+                    updown[2] = l.arg[0] ;
+                    opt_updown = 1 ;
+                    break ;
+
+                case 'P':
+                    FLAGS_CLEAR(gflag, STATE_FLAGS_TOPROPAGATE) ;
+                    break ;
+
+                default :
+                    log_usage(usage_svctl) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
-    if (argc < 1 || (SIGNAL < 0)) log_usage(usage_svctl) ;
-    if (info->timeout) tsv = info->timeout ;
-    if ((scandir_ok(info->scandir.s)) !=1 ) log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
-    if (!sa_pointo(&sares,info,SS_NOTYPE,SS_RESOLVE_SRC)) log_dieusys(LOG_EXIT_SYS,"set revolve pointer to source") ;
-    if (SIGNAL > SIGR) reverse = 1 ;
-    for(;*argv;argv++)
-    {
-        char const *name = *argv ;
-        int logname = 0 ;
-        logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-        if (!resolve_check(sares.s,name)) log_diesys(LOG_EXIT_SYS,"unknown service: ",name) ;
-        if (!resolve_read(wres,sares.s,name)) log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",name) ;
-        if (res.type >= TYPE_BUNDLE) log_die(LOG_EXIT_SYS,name," has type ",get_key_by_enum(ENUM_TYPE,res.type)) ;
-        if (SIGNAL == SIGR && logname < 0) reverse = 1 ;
-        if (!ss_resolve_graph_build(&graph,&res,sares.s,reverse)) log_dieusys(LOG_EXIT_SYS,"build services graph") ;
+    if (argc < 1)
+        log_usage(usage_svctl) ;
+
+    if (!datalen)
+        log_die(LOG_EXIT_USER, "too few arguments") ;
+
+    if (info->timeout)
+        deadline = info->timeout ;
+
+    if (data[1] != 'u')
+        what = 1 ;
+
+    if (data[1] == 'r')
+        reloadmsg++ ;
+
+    if (what) {
+
+        requiredby = 1 ;
+        FLAGS_SET(gflag, STATE_FLAGS_WANTUP) ;
+        FLAGS_CLEAR(gflag, STATE_FLAGS_WANTDOWN) ;
     }
 
-    r = ss_resolve_graph_publish(&graph,reverse) ;
-    if (r < 0) log_die(LOG_EXIT_SYS,"cyclic dependencies detected") ;
-    if (!r) log_dieusys(LOG_EXIT_SYS,"publish service graph") ;
+    if ((svc_scandir_ok(info->scandir.s)) != 1)
+        log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
 
-    for(unsigned int i = 0 ; i < genalloc_len(resolve_service_t,&graph.sorted) ; i++)
+    /** build the graph of the entire system
+     *
+     *
+     * ici tu passe dans le graph sans controle de savoir si le service
+     * est au minima parsed voir initialized
+     *
+     *  */
+    graph_build_service(&graph, ares, &areslen, info, gflag) ;
+
+/*
     {
-        ss_resolve_sig_t sv_signal = RESOLVE_SIG_ZERO ;
-        sv_signal.res = genalloc_s(resolve_service_t,&graph.sorted)[i] ;
-        char *string = sv_signal.res.sa.s ;
-        char *svok = string + sv_signal.res.runat ;
-        char *state = string + sv_signal.res.state ;
+        stralloc sa = STRALLOC_ZERO ;
+        char const *exclude[1] = { 0 } ;
+        char solve[info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1 + SS_SERVICE_LEN + 1] ;
 
-        size_t svoklen = strlen(svok) ;
-        char file[svoklen + SS_NOTIFICATION_LEN + 1 + 1] ;
-        memcpy(file,svok,svoklen) ;
-        if (!state_check(state,string + sv_signal.res.name)) log_die(LOG_EXIT_SYS,"unitialized service: ",string + sv_signal.res.name) ;
-        if (!state_read(&sta,state,string + sv_signal.res.name)) log_dieusys(LOG_EXIT_SYS,"read state of: ",string + sv_signal.res.name) ;
-        if (sta.init) log_die(LOG_EXIT_SYS,"unitialized service: ",string + sv_signal.res.name) ;
-        if (!s6_svstatus_read(svok,&status)) log_dieusys(LOG_EXIT_SYS,"read status of: ",svok) ;
-        isup = status.pid && !status.flagfinishing ;
+        auto_strings(solve, info->base.s, SS_SYSTEM, SS_RESOLVE, "/", SS_SERVICE) ;
 
-        if (isup && (SIGNAL == SIGUP))
-        {
-            log_info("Already up: ",string + sv_signal.res.name) ;
-            continue ;
-        }
-        else if (!isup && (SIGNAL >= SIGDOWN))
-        {
-            log_info("Already down: ",string + sv_signal.res.name) ;
-            continue ;
-        }
-        /** special case on reload signal, if the process is down
-         * simply bring it up */
-        else if (!isup && ((SIGNAL == SIGR) || (SIGNAL == SIGRR)))
-        {
-            sig = "u" ;
-            SIGNAL = SIGUP ;
-        }
-        sv_signal.sigtosend = sig ; sv_signal.sig = SIGNAL ;
+        if (!sastr_dir_get_recursive(&sa,solve,exclude,S_IFREG, 0))
+            log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
-        /** notification-fd */
-        memcpy(file + svoklen,"/" SS_NOTIFICATION,SS_NOTIFICATION_LEN + 1) ;
-        file[svoklen + SS_NOTIFICATION_LEN + 1] = 0 ;
-        e = errno ;
-        errno = 0 ;
+        service_graph_g(sa.s, sa.len, &graph, ares, &areslen, info, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP|STATE_FLAGS_WANTDOWN) ;
 
-        if (access(file, F_OK) < 0 && errno != ENOENT)
-            log_warnsys("conflicting format of file: " SS_NOTIFICATION) ;
-        else if (errno != ENOENT)
-        {
-
-            if (!read_uint(file,&sv_signal.notify)) log_dieusys(LOG_EXIT_SYS,"read: ",file) ;
-            if (SIGNAL == SIGUP)
-            { sv_signal.sig = SIGRUP ; sv_signal.sigtosend = "uwU" ; }
-            else if (SIGNAL == SIGR || SIGNAL == SIGRR)
-            { sv_signal.sig = SIGRR ; sv_signal.sigtosend = "rwR" ; }
-            else if (SIGNAL == SIGDOWN)
-            { sv_signal.sig = SIGRDOWN ; sv_signal.sigtosend = "dwD" ; }
-        }
-        /** max-death-tally */
-        if (!death)
-        {
-            memcpy(file + svoklen,"/" SS_MAXDEATHTALLY, SS_MAXDEATHTALLY_LEN + 1) ;
-            file[svoklen + SS_MAXDEATHTALLY_LEN + 1] = 0 ;
-            errno = 0 ;
-            if (access(file, F_OK) < 0)
-                if (errno != ENOENT) log_dieusys(LOG_EXIT_SYS, "access ", file) ;
-
-            if (errno == ENOENT)
-                sv_signal.ndeath = DEATHSV ;
-            else
-            {
-                if (!read_uint(file,&sv_signal.ndeath)) log_dieusys(LOG_EXIT_SYS,"read: ",file) ;
-            }
-        }
-        else sv_signal.ndeath = death ;
-
-        tain tcheck ;
-        tain_from_millisecs(&tcheck,tsv) ;
-        int check = tain_to_millisecs(&tcheck) ;
-        if (check > 0)
-        {
-            tain_from_millisecs(&sv_signal.deadline, tsv) ;
-            tsv_g += tsv ;
-        }
-        else
-        {
-            /** timeout-{up/down} */
-            char *tm = NULL ;
-            unsigned int t ;
-            if (SIGNAL <= SIGR)
-                tm="/timeout-up" ;
-            else tm="/timeout-down" ;
-            errno = 0 ;
-            size_t tmlen = strlen(tm) ;
-            memcpy(file + svoklen,tm, tmlen) ;
-            file[svoklen + tmlen] = 0 ;
-            if (access(file, F_OK) < 0)
-                if (errno != ENOENT) log_dieusys(LOG_EXIT_SYS, "access ", file) ;
-
-            if (errno == ENOENT)
-            {
-                tain_from_millisecs(&sv_signal.deadline, SV_DEADLINE) ;
-                tsv_g += SV_DEADLINE ;
-            }
-            else
-            {
-                if (!read_uint(file,&t)) log_dieusys(LOG_EXIT_SYS,"read: ",file) ;
-                {
-                    tain_from_millisecs(&sv_signal.deadline, t) ;
-                    tsv_g += t ;
-                }
-            }
-        }
-        errno = e ;
-        if (!genalloc_append(ss_resolve_sig_t,&gakeep,&sv_signal)) log_dieusys(LOG_EXIT_SYS,"append services selection with: ",string + sv_signal.res.name) ;
+        stralloc_free(&sa) ;
     }
-    /** nothing to do */
-    if (!genalloc_len(ss_resolve_sig_t,&gakeep)) goto finish ;
+*/
+    if (!graph.mlen)
+        log_die(LOG_EXIT_USER, "services selection is not supervised -- initiate its first") ;
 
-    //ttmain = tain_infinite_relative ;
-    tain_from_millisecs(&ttmain,tsv_g) ;
-    tain_now_set_stopwatch_g() ;
-    tain_add_g(&ttmain,&ttmain) ;
+    for (; *argv ; argv++) {
 
-    int spfd = selfpipe_init() ;
-    if (spfd < 0) log_dieusys(LOG_EXIT_SYS, "selfpipe_init") ;
-    if (!selfpipe_trap(SIGCHLD)) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
-    if (!selfpipe_trap(SIGINT)) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
-    if (!selfpipe_trap(SIGTERM)) log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
-    if (!sig_ignore(SIGPIPE)) log_dieusys(LOG_EXIT_SYS,"ignore SIGPIPE") ;
+        int aresid = service_resolve_array_search(ares, areslen, *argv) ;
+        if (aresid < 0)
+            log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you parsed it?") ;
 
-    if (!svc_init_pipe(&fifo,&gakeep,&ttmain)) log_dieu(LOG_EXIT_SYS,"init pipe") ;
+        unsigned int l[graph.mlen], c = 0, pos = 0 ;
 
-    ret = doit(spfd,&gakeep,&ttmain) ;
+        /** find dependencies of the service from the graph, do it recursively */
+        c = graph_matrix_get_edge_g_sorted_list(l, &graph, *argv, !!requiredby, 1) ;
 
-    finish:
-        ftrigr_end(&fifo) ;
-        selfpipe_finish() ;
-        stralloc_free(&sares) ;
-        ss_resolve_graph_free(&graph) ;
-        genalloc_free(ss_resolve_sig_t,&gakeep) ;
-        resolve_free(wres) ;
+        /** append to the list to deal with */
+        for (; pos < c ; pos++)
+            list[napid + pos] = l[pos] ;
 
-    return (!ret) ? 111 : 0 ;
+        napid += c ;
+
+        list[napid++] = aresid ;
+    }
+
+    pidservice_t apids[napid] ;
+
+    pares = ares ;
+    pareslen = &areslen ;
+
+    pidservice_init_array(list, napid, apids, &graph, ares, areslen, info, requiredby, gflag) ;
+
+    r = waitit(apids, what, &graph, deadline, info) ;
+
+    graph_free_all(&graph) ;
+    pidservice_array_free(apids, napid) ;
+    service_resolve_array_free(ares, areslen) ;
+
+    return (!r) ? 111 : 0 ;
 }
