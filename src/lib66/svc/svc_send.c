@@ -12,35 +12,30 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <66/svc.h>
-
-#include <stddef.h>
-
 #include <oblibs/log.h>
 
-#include <skalibs/genalloc.h>
-
+#include <66/svc.h>
 #include <66/resolve.h>
 #include <66/ssexec.h>
 
-int svc_send(ssexec_t *info, resolve_service_t *sv, unsigned int len, char const *sig)
+int svc_send(char const *const *list, unsigned int nservice, char **sig, unsigned int siglen, ssexec_t *info)
 {
     log_flow() ;
 
-    unsigned int pos = 0 ;
-    int nargc = 3 + len ;
+    int nargc = 2 + nservice + siglen ;
     char const *newargv[nargc] ;
     unsigned int m = 0 ;
 
-    newargv[m++] = "svc_send" ;
-    newargv[m++] = sig ;
+    newargv[m++] = "66-svctl" ;
+    for (; *sig ; sig++)
+        newargv[m++] = *sig ;
 
-    for (; pos < len ; pos++)
-        newargv[m++] = sv[pos].sa.s + sv[pos].name ;
+    for (; *list ; list++)
+        newargv[m++] = *list ;
 
     newargv[m++] = 0 ;
 
-    if (ssexec_svctl(nargc, newargv, (char const *const *) environ, info))
+    if (ssexec_svctl(nargc, newargv, info))
         return 0 ;
 
     return 1 ;

@@ -12,91 +12,55 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <66/svc.h>
-
-#include <string.h>
-
 #include <oblibs/log.h>
 
 #include <skalibs/genalloc.h>
-#include <skalibs/stralloc.h>
-#include <skalibs/djbunix.h>
 
-#include <66/utils.h>
-#include <66/resolve.h>
-#include <66/ssexec.h>
 #include <66/state.h>
+#include <66/sanitize.h>
+#include <66/graph.h>
+#include <66/svc.h>
 
-int svc_unsupervise(ssexec_t *info, resolve_service_t *sv, unsigned int len)
+static void sanitize_it(resolve_service_t *res)
+{
+    sanitize_fdholder(res, STATE_FLAGS_FALSE) ;
+    sanitize_scandir(res, STATE_FLAGS_TOUNSUPERVISE) ;
+    sanitize_livestate(res, STATE_FLAGS_TOUNSUPERVISE) ;
+}
+
+/** this function considers that the service is already down */
+void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve_service_t *ares, unsigned int areslen)
 {
     log_flow() ;
 
     unsigned int pos = 0 ;
-    ss_state_t sta = STATE_ZERO ;
-    resolve_service_t_ref pres = 0 ;
 
-    if (!svc_send(info, sv, len, "-d"))
-        log_warnu_return(LOG_EXIT_ZERO, "stop services") ;
+    if (!alen)
+        return ;
 
-    for (; pos < len ; pos++) {
+    for (; pos < alen ; pos++) {
 
-        char const *string = sv[pos].sa.s ;
-        int r = access(string, F_OK) ;
-        if (!r) {
-            log_trace("delete service directory: ",string + sv[pos].runat) ;
-            if (rm_rf(string + sv[pos].runat) < 0)
-                log_warnu_return(LOG_EXIT_ZERO, "delete: ", string + sv[pos].runat) ;
-        }
-    }
+        char *name = g->data.s + genalloc_s(graph_hash_t,&g->hash)[alist[pos]].vertex ;
 
-    for (pos = 0 ; pos < len ; pos++) {
+        int aresid = service_resolve_array_search(ares, areslen, name) ;
+        if (aresid < 0)
+            log_dieu(LOG_EXIT_SYS,"find ares id -- please make a bug reports") ;
 
-        pres = &sv[pos] ;
-        char const *string = pres->sa.s ;
-        char const *name = string + pres->name  ;
-        char const *state = string + pres->state ;
-        size_t treenamelen = strlen(string + pres->treename) ;
-        char res_s[info->base.len + SS_SYSTEM + 1 + treenamelen + SS_SVDIRS_LEN + 1] ;
+        sanitize_it(&ares[aresid]) ;
 
-        // remove the resolve/state file if the service is disabled
-        if (!pres->disen) {
+        if (ares[aresid].logger.name) {
+            resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+            resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
-            auto_strings(res_s, info->base.s, SS_SYSTEM, "/", string + pres->treename, SS_SVDIRS) ;
+            if (!resolve_read_g(wres, ares[aresid].sa.s + ares[aresid].path.home, ares[aresid].sa.s + ares[aresid].logger.name))
+                log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", ares[aresid].sa.s + ares[aresid].logger.name) ;
 
-            log_trace("Delete resolve file of: ", name) ;
-            resolve_rmfile(res_s, name) ;
+            sanitize_it(&res) ;
 
-            int r = access(state, F_OK) ;
-            if (!r) {
-                log_trace("Delete state file of: ", name) ;
-                state_rmfile(state, name) ;
-            }
-
-        } else if (!access(state, F_OK)) {
-
-            /**
-             * The svc_unsupervise can be called with service which was
-             * never initialized. In this case the live state directory
-             * doesn't exist and we don't want to create a fresh one.
-             * So check first if the state directory exist before
-             * passing through here
-             * */
-
-            state_setflag(&sta, SS_FLAGS_RELOAD, SS_FLAGS_FALSE) ;
-            state_setflag(&sta, SS_FLAGS_INIT, SS_FLAGS_TRUE) ;
-    //      state_setflag(&sta, SS_FLAGS_UNSUPERVISE, SS_FLAGS_FALSE) ;
-            state_setflag(&sta, SS_FLAGS_STATE, SS_FLAGS_FALSE) ;
-            state_setflag(&sta, SS_FLAGS_PID, SS_FLAGS_FALSE) ;
-
-            log_trace("Write state file of: ", name) ;
-            if (!state_write(&sta, state, name))
-                log_warnu_return(LOG_EXIT_ZERO, "write state file of: ", name) ;
-
+            resolve_free(wres) ;
         }
 
         log_info("Unsupervised successfully: ", name) ;
     }
-
-    return 1 ;
 }
 
