@@ -15,26 +15,28 @@
 #include <string.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 
 #include <skalibs/djbunix.h>
 
 #include <66/state.h>
+#include <66/constants.h>
+#include <66/resolve.h>
 
-int state_read(ss_state_t *sta, char const *src, char const *name)
+int state_read(ss_state_t *sta, char const *base, char const *name)
 {
     log_flow() ;
 
-    char pack[SS_STATE_SIZE] ;
-    size_t srclen = strlen(src) ;
+    size_t baselen = strlen(base) ;
     size_t namelen = strlen(name) ;
+    char pack[STATE_STATE_SIZE] ;
+    char target[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1 + SS_SERVICE_LEN + 1 + namelen + SS_SVC_LEN + 1 + namelen + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
 
-    char tmp[srclen + 1 + namelen + 1] ;
-    memcpy(tmp,src,srclen) ;
-    tmp[srclen] = '/' ;
-    memcpy(tmp + srclen + 1, name, namelen) ;
-    tmp[srclen + 1 + namelen] = 0 ;
+    auto_strings(target, base, SS_SYSTEM, SS_RESOLVE, "/", SS_SERVICE, "/", name, SS_SVC, "/", name, SS_STATE, "/", SS_STATUS) ;
 
-    if (openreadnclose(tmp, pack, SS_STATE_SIZE) < SS_STATE_SIZE) return 0 ;
+    if (openreadnclose(target, pack, STATE_STATE_SIZE) < STATE_STATE_SIZE)
+        return 0 ;
+
     state_unpack(pack, sta) ;
 
     return 1 ;

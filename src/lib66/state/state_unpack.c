@@ -24,20 +24,44 @@ void state_unpack(char *pack,ss_state_t *sta)
 {
     log_flow() ;
 
-    uint32_t reload ;
-    uint32_t init ;
-    uint32_t unsupervise ;
-    uint32_t state ;
-    uint64_t pid ;
+    uint32_t toinit ;
+    uint32_t toreload ;
+    uint32_t torestart ;
+    uint32_t tounsupervise ;
+    uint32_t isdownfile ;
+    uint32_t isearlier ;
+    uint32_t isenabled ;
+    uint32_t isparsed ;
+    uint32_t issupervised ;
+    uint32_t isup ;
 
-    uint32_unpack_big(pack,&reload) ;
-    sta->reload = reload ;
-    uint32_unpack_big(pack+4,&init) ;
-    sta->init = init ;
-    uint32_unpack_big(pack+8,&unsupervise) ;
-    sta->unsupervise = unsupervise ;
-    uint32_unpack_big(pack+12,&state) ;
-    sta->state = state ;
-    uint64_unpack_big(pack+16,&pid) ;
-    sta->pid = pid ;
+    uint32_unpack_big(pack, &toinit) ;
+    sta->toinit = toinit ;
+
+    uint32_unpack_big(pack + 4, &toreload) ;
+    sta->toreload = toreload ;
+
+    uint32_unpack_big(pack + 8, &torestart) ;
+    sta->torestart = torestart ;
+
+    uint32_unpack_big(pack + 12, &tounsupervise) ;
+    sta->tounsupervise = tounsupervise ;
+
+    uint32_unpack_big(pack + 16, &isdownfile) ;
+    sta->isdownfile = isdownfile ;
+
+    uint32_unpack_big(pack + 20, &isearlier) ;
+    sta->isearlier = isearlier ;
+
+    uint32_unpack_big(pack + 24, &isenabled) ;
+    sta->isenabled = isenabled ;
+
+    uint32_unpack_big(pack + 28, &isparsed) ;
+    sta->isparsed = isparsed ;
+
+    uint32_unpack_big(pack + 32, &issupervised) ;
+    sta->issupervised = issupervised ;
+
+    uint32_unpack_big(pack + 36, &isup) ;
+    sta->isup = isup ;
 }

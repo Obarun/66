@@ -1,9 +1,10 @@
 state_check.o
-state_check_flags.o
+state_get_flags.o
+state_messenger.o
 state_pack.o
 state_read.o
 state_rmfile.o
-state_setflag.o
+state_set_flag.o
 state_unpack.o
 state_write.o
 -loblibs

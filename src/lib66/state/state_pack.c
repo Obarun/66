@@ -22,9 +22,14 @@ void state_pack(char *pack, ss_state_t *sta)
 {
     log_flow() ;
 
-    uint32_pack_big(pack,sta->reload) ;
-    uint32_pack_big(pack+4,sta->init) ;
-    uint32_pack_big(pack+8,sta->unsupervise) ;
-    uint32_pack_big(pack+12,sta->state) ;
-    uint64_pack_big(pack+16,sta->pid) ;
+    uint32_pack_big(pack, sta->toinit) ;
+    uint32_pack_big(pack + 4, sta->toreload) ;
+    uint32_pack_big(pack + 8, sta->torestart) ;
+    uint32_pack_big(pack + 12, sta->tounsupervise) ;
+    uint32_pack_big(pack + 16, sta->isdownfile) ;
+    uint32_pack_big(pack + 20, sta->isearlier) ;
+    uint32_pack_big(pack + 24, sta->isenabled) ;
+    uint32_pack_big(pack + 28, sta->isparsed) ;
+    uint32_pack_big(pack + 32, sta->issupervised) ;
+    uint32_pack_big(pack + 36, sta->isup) ;
 }

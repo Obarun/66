@@ -15,23 +15,23 @@
 #include <string.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 
 #include <skalibs/posixplz.h>
 
 #include <66/state.h>
+#include <66/constants.h>
+#include <66/resolve.h>
 
-void state_rmfile(char const *src,char const *name)
+void state_rmfile(char const *base, char const *name)
 {
     log_flow() ;
 
-    size_t srclen = strlen(src) ;
+    size_t baselen = strlen(base) ;
     size_t namelen = strlen(name) ;
+    char target[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1 + SS_SERVICE_LEN + 1 + namelen + SS_SVC_LEN + 1 + namelen + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
 
-    char tmp[srclen + 1 + namelen + 1] ;
-    memcpy(tmp,src,srclen) ;
-    tmp[srclen] = '/' ;
-    memcpy(tmp + srclen + 1, name, namelen) ;
-    tmp[srclen + 1 + namelen] = 0 ;
+    auto_strings(target, base, SS_SYSTEM, SS_RESOLVE, "/", SS_SERVICE, "/", name, SS_SVC, "/", name, SS_STATE, "/", SS_STATUS) ;
 
-    unlink_void(tmp) ;
+    unlink_void(target) ;
 }

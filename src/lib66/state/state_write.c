@@ -13,29 +13,38 @@
  */
 
 #include <string.h>
+#include <unistd.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
+#include <oblibs/directory.h>
 
 #include <skalibs/djbunix.h>
 
 #include <66/state.h>
+#include <66/constants.h>
+#include <66/resolve.h>
 
-int state_write(ss_state_t *sta, char const *dst, char const *name)
+int state_write(ss_state_t *sta, char const *base, char const *name)
 {
     log_flow() ;
 
-    char pack[SS_STATE_SIZE] ;
-    size_t dstlen = strlen(dst) ;
+    size_t baselen = strlen(base) ;
     size_t namelen = strlen(name) ;
+    char target[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1 + SS_SERVICE_LEN + 1 + namelen + SS_SVC_LEN + 1 + namelen + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
 
-    char tmp[dstlen + 1 + namelen + 1] ;
-    memcpy(tmp,dst,dstlen) ;
-    tmp[dstlen] = '/' ;
-    memcpy(tmp + dstlen + 1, name, namelen) ;
-    tmp[dstlen + 1 + namelen] = 0 ;
+    auto_strings(target, base, SS_SYSTEM, SS_RESOLVE, "/", SS_SERVICE, "/", name, SS_SVC, "/", name, SS_STATE) ;
 
-    state_pack(pack,sta) ;
-    if (!openwritenclose_unsafe(tmp,pack,SS_STATE_SIZE)) return 0 ;
+    if (access(target, F_OK) < 0)
+        if (!dir_create_parent(target, 0755))
+            log_warnusys_return(LOG_EXIT_ZERO, "create directory: ", target) ;
+
+    auto_strings(target + baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1 + SS_SERVICE_LEN + 1 + namelen + SS_SVC_LEN + 1 + namelen + SS_STATE_LEN, "/", SS_STATUS) ;
+
+    char pack[STATE_STATE_SIZE] ;
+
+    state_pack(pack, sta) ;
+    if (!openwritenclose_unsafe(target, pack, STATE_STATE_SIZE)) return 0 ;
 
     return 1 ;
 }

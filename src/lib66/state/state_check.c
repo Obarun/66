@@ -13,26 +13,27 @@
  */
 
 #include <string.h>
-#include <sys/stat.h>
+#include <unistd.h>
 
 #include <oblibs/log.h>
-#include <oblibs/types.h>
+#include <oblibs/string.h>
 
 #include <66/state.h>
+#include <66/constants.h>
+#include <66/resolve.h>
 
-int state_check(char const *src, char const *name)
+int state_check(char const *base, char const *name)
 {
     log_flow() ;
 
-    int r ;
-    size_t srclen = strlen(src) ;
+    size_t baselen = strlen(base) ;
     size_t namelen = strlen(name) ;
-    char tmp[srclen + 1 + namelen + 1] ;
-    memcpy(tmp,src,srclen) ;
-    tmp[srclen] = '/' ;
-    memcpy(tmp + srclen + 1, name, namelen) ;
-    tmp[srclen + 1 + namelen] = 0 ;
-    r = scan_mode(tmp,S_IFREG) ;
-    if (r <= 0) return 0 ;
+    char target[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1 + SS_SERVICE_LEN + 1 + namelen + SS_SVC_LEN + 1 + namelen + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
+
+    auto_strings(target, base, SS_SYSTEM, SS_RESOLVE, "/", SS_SERVICE, "/", name, SS_SVC, "/", name, SS_STATE, "/", SS_STATUS) ;
+
+    if (access(target, F_OK) < 0)
+        return 0 ;
+
     return 1 ;
 }
