@@ -31,6 +31,7 @@ int scandir_send_signal(char const *scandir,char const *signal)
     for (; datalen < idlen ; datalen++)
         data[datalen] = signal[datalen] ;
 
+    log_trace("send signal: ", signal, " to scandir: ", scandir) ;
     switch (s6_svc_writectl(scandir, S6_SVSCAN_CTLDIR, data, datalen))
     {
         case -1: log_warnusys("control: ", scandir) ;
