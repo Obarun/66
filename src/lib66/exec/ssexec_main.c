@@ -67,12 +67,7 @@ void ssexec_set_info(ssexec_t *info)
     if (!r) log_die_nomem("stralloc") ;
     if(r < 0) log_die(LOG_EXIT_SYS,"live: ",info->live.s," must be an absolute path") ;
 
-    if (!stralloc_copy(&info->livetree,&info->live)) log_die_nomem("stralloc") ;
     if (!stralloc_copy(&info->scandir,&info->live)) log_die_nomem("stralloc") ;
-
-    r = set_livetree(&info->livetree,info->owner) ;
-    if (!r) log_die_nomem("stralloc") ;
-    if(r < 0) log_die(LOG_EXIT_SYS,"livetree: ",info->livetree.s," must be an absolute path") ;
 
     r = set_livescan(&info->scandir,info->owner) ;
     if (!r) log_die_nomem("stralloc") ;
@@ -90,7 +85,9 @@ static inline void info_help (char const *help,char const *usage)
 
 static inline void append_opts(char *opts,size_t baselen, ssexec_func_t *func)
 {
-    if ((*func) == &ssexec_init)
+    if ((*func) == &ssexec_parse)
+        auto_strings(opts + baselen,OPTS_PARSE) ;
+    else if ((*func) == &ssexec_init)
         auto_strings(opts + baselen,OPTS_INIT) ;
     else if ((*func) == &ssexec_enable)
         auto_strings(opts + baselen,OPTS_ENABLE) ;
@@ -102,8 +99,6 @@ static inline void append_opts(char *opts,size_t baselen, ssexec_func_t *func)
         auto_strings(opts + baselen,OPTS_STOP) ;
     else if ((*func) == &ssexec_svctl)
         auto_strings(opts + baselen,OPTS_SVCTL) ;
-    else if ((*func) == &ssexec_dbctl)
-        auto_strings(opts + baselen,OPTS_DBCTL) ;
     else if ((*func) == &ssexec_env)
         auto_strings(opts + baselen,OPTS_ENV) ;
     else if ((*func) == &ssexec_all)
@@ -124,6 +119,7 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
     /** 30 options should be large enough */
     char opts[30] ;
     char const *main = "hv:l:t:T:z" ;
+    char str[UINT_FMT] ;
     size_t mainlen = strlen(main) ;
 
     auto_strings(opts,main) ;
@@ -148,7 +144,6 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
                             break ;
                 case 'l' :
 
-                    char str[UINT_FMT] ;
                     str[uint_fmt(str, SS_MAX_PATH)] = 0 ;
 
                     if (strlen(l.arg) > SS_MAX_PATH)
@@ -162,7 +157,6 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
 
                 case 't' :
 
-                    char str[UINT_FMT] ;
                     str[uint_fmt(str, SS_MAX_TREENAME)] = 0 ;
 
                     if (strlen(l.arg) > SS_MAX_TREENAME)
@@ -227,7 +221,7 @@ int ssexec_main(int argc, char const *const *argv,char const *const *envp,ssexec
 
     nargv[n] = 0 ;
 
-    r = (*func)(n,nargv,envp,info) ;
+    r = (*func)(n, nargv, info) ;
 
     ssexec_free(info) ;
 
