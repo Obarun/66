@@ -22,8 +22,11 @@ BIN_TARGETS := \
 66-umountall \
 66-echo \
 execl-envfile \
-66-nuke \
-66-oneshot \
-66-fdholder-filler
+66-nuke
+
+LIBEXEC_TARGETS := \
+66-fdholder-filler \
+66-oneshot
+
 
 LIB_DEFS := 66=66

@@ -659,14 +659,8 @@ static void create_service_fdholder(char const *scandir)
     if (symlink(dst, sym) < 0)
         log_dieusys(LOG_EXIT_SYS, "symlink: ", dst) ;
 
-    size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) +  277 + 1 ;
-    /* {
-     *
-     *
-     *
-     * should be libexec/66-fdholder-filler
-     *
-     * */
+    size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + strlen(SS_LIBEXECPREFIX) + 277 + 1 ;
+
     char run[runlen] ;
     auto_strings(run, "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n", \
                 "pipeline -dw -- {\n",
@@ -677,7 +671,7 @@ static void create_service_fdholder(char const *scandir)
                 "   if -nt -- {\n", \
                 "       redirfd -r 0 ./data/autofilled\n", \
                 "       s6-ipcclient -l0 -- s\n", \
-                "       /tmp/66/66-fdholder-filler -1 --\n", \
+                "       ", SS_LIBEXECPREFIX "66-fdholder-filler -1 --\n", \
                 "   }\n", \
                 "   s6-svc -t .\n", \
                 "}\n", \
