@@ -12,29 +12,23 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <stdint.h>
 
-#include <oblibs/graph.h>
 #include <oblibs/log.h>
 
 #include <66/service.h>
-#include <66/tree.h>
+#include <66/resolve.h>
 #include <66/graph.h>
+#include <66/ssexec.h>
 
-int graph_build_g(graph_t *g, char const *base, char const *treename, uint8_t data_type, uint8_t general)
+void graph_build_g(graph_t *graph, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info)
 {
     log_flow() ;
 
-    if (data_type == DATA_SERVICE) {
+    if (data_type == DATA_SERVICE)
 
-        if (!graph_build_service(g, base, treename, general))
-            return 0 ;
+        graph_build_service(graph, ares, areslen, info) ;
 
-    } else if (data_type == DATA_TREE) {
+    else if (data_type == DATA_TREE)
 
-        if (!graph_build_tree(g, base))
-            return 0 ;
-    }
-
-    return 1 ;
+        graph_build_tree(g, info->base.s) ;
 }

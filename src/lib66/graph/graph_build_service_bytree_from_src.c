@@ -70,29 +70,17 @@ int graph_build_service_bytree_from_src(graph_t *g, char const *src, uint8_t wha
             goto err ;
         }
 
-        if (res.ndepends) {
+        if (res.dependencies.ndepends) {
 
-            if (res.type == TYPE_MODULE || res.type == TYPE_BUNDLE) {
-
-                uint32_t depends = res.type == TYPE_MODULE ? what > 1 ? res.contents : res.depends : res.depends ;
-
-                if (!graph_add_deps(g, service, str + depends, 0)) {
-                    log_warnu("add dependencies of service: ",service) ;
-                    goto err ;
-                }
-
-            } else {
-
-                if (!graph_add_deps(g, service,str + res.depends, 0)) {
-                    log_warnu("add dependencies of service: ",service) ;
-                    goto err ;
-                }
+            if (!graph_compute_dependencies(g, service,str + res.dependencies.depends, 0)) {
+                log_warnu("add dependencies of service: ",service) ;
+                goto err ;
             }
         }
 
-        if (res.nrequiredby) {
+        if (res.dependencies.nrequiredby) {
 
-            if (!graph_add_deps(g, service, str + res.requiredby, 1)) {
+            if (!graph_compute_dependencies(g, service, str + res.dependencies.requiredby, 1)) {
                 log_warnu("add requiredby of service: ", service) ;
                 goto err ;
             }

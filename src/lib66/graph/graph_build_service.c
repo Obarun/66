@@ -12,8 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <stdint.h>
 #include <string.h>
+#include <stdint.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -22,49 +22,24 @@
 #include <skalibs/stralloc.h>
 
 #include <66/constants.h>
-#include <66/tree.h>
-#include <66/resolve.h>
+#include <66/service.h>
 #include <66/graph.h>
+#include <66/state.h>
 
-/**
- * @general has only effect for DATA_SERVICE type
- * !general -> all services from @treename
- * general -> all services from all trees of the system
- *
- * */
-int graph_build_service(graph_t *g, char const *base, char const *treename, uint8_t general)
+void graph_build_service(graph_t *graph, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag)
 {
     log_flow() ;
 
-    int e = 0 ;
-    size_t pos = 0, baselen = strlen(base) ;
     stralloc sa = STRALLOC_ZERO ;
+    char const *exclude[1] = { 0 } ;
+    char solve[info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1 + SS_SERVICE_LEN + 1] ;
 
-    char solve[baselen + SS_SYSTEM_LEN + 1 + SS_MAX_TREENAME + SS_SVDIRS_LEN + 1] ;
+    auto_strings(solve, info->base.s, SS_SYSTEM, SS_RESOLVE, "/", SS_SERVICE) ;
 
-    if (general) {
+    if (!sastr_dir_get_recursive(&sa, solve, exclude, S_IFREG, 0))
+        log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
-        if (!resolve_get_field_tosa_g(&sa, base, treename, SS_MASTER + 1, DATA_TREE_MASTER, E_RESOLVE_TREE_MASTER_CONTENTS))
-            goto err ;
+    service_graph_g(sa.s, sa.len, graph, ares, areslen, info, flag) ;
 
-        FOREACH_SASTR(&sa, pos) {
-
-            auto_strings(solve + baselen + SS_SYSTEM_LEN + 1, sa.s + pos, SS_SVDIRS) ;
-
-            if (!graph_build_service_bytree(g, solve, 2))
-                goto err ;
-        }
-
-    } else {
-
-        auto_strings(solve, base, SS_SYSTEM, "/", treename, SS_SVDIRS) ;
-
-        if (!graph_build_service_bytree(g, solve, 2))
-                goto err ;
-    }
-
-    e = 1 ;
-    err:
-        stralloc_free(&sa) ;
-        return e ;
+    stralloc_free(&sa) ;
 }
