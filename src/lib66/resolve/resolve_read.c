@@ -18,19 +18,17 @@
 #include <oblibs/string.h>
 
 #include <66/resolve.h>
+#include <66/constants.h>
 
-int resolve_read(resolve_wrapper_t *wres, char const *src, char const *name)
+int resolve_read(resolve_wrapper_t *wres, char const *base, char const *name)
 {
     log_flow() ;
 
-    size_t srclen = strlen(src) ;
+    size_t baselen = strlen(base) ;
     size_t namelen = strlen(name) ;
 
-    char tmp[srclen + SS_RESOLVE_LEN + 1 + namelen + 1] ;
-    auto_strings(tmp,src,SS_RESOLVE,"/",name) ;
+    char file[baselen + SS_RESOLVE_LEN + 1 + namelen + 1] ;
+    auto_strings(file, base, SS_RESOLVE, "/", name) ;
 
-    if (!resolve_read_cdb(wres,tmp))
-        return 0 ;
-
-    return 1 ;
+    return resolve_read_cdb(wres, file) ;
 }

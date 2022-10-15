@@ -1,5 +1,5 @@
 /*
- * resolve_read_g.c
+ * resolve_remove_g.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -13,6 +13,9 @@
  */
 
 #include <string.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -20,27 +23,28 @@
 #include <66/resolve.h>
 #include <66/constants.h>
 
-int resolve_read_g(resolve_wrapper_t *wres, char const *base, char const *name)
+void resolve_remove_g(char const *base, char const *name, uint8_t data_type)
 {
     log_flow() ;
 
-    if (!resolve_check_g(wres, base, name))
-        return 0 ;
-
+    int e = errno ;
     size_t baselen = strlen(base) ;
     size_t namelen = strlen(name) ;
-
     char path[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1 + SS_SERVICE_LEN + 1 + namelen + 1] ;
 
-    if (wres->type == DATA_SERVICE || wres->type == DATA_SERVICE_MASTER) {
+    if (data_type == DATA_SERVICE || data_type == DATA_SERVICE_MASTER) {
 
         auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, "/", SS_SERVICE, "/", name) ;
 
-    } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
+        resolve_remove(path, name) ;
+
+        unlink(path) ;
+        errno = e ;
+
+    } else if (data_type == DATA_TREE || data_type == DATA_TREE_MASTER) {
 
         auto_strings(path, base, SS_SYSTEM) ;
 
-    } else return 0 ;
-
-    return resolve_read(wres, path, name) ;
+        resolve_remove(path, name) ;
+    }
 }

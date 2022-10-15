@@ -28,21 +28,17 @@
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/tree.h>
-#include <66/graph.h>
 
-int resolve_write_cdb(resolve_wrapper_t *wres, char const *dst, char const *name)
+int resolve_write_cdb(resolve_wrapper_t *wres, char const *file)
 {
     log_flow() ;
 
     int fd ;
-    size_t dstlen = strlen(dst), namelen = strlen(name);
+    size_t filelen = strlen(file);
     cdbmaker c = CDBMAKER_ZERO ;
-    char tfile[dstlen + 1 + namelen + namelen + 9] ;
-    char dfile[dstlen + 1 + namelen + 1] ;
+    char tfile[filelen + 9] ;
 
-    auto_strings(dfile,dst,"/",name) ;
-
-    auto_strings(tfile,dst,"/",name,":",name,":","XXXXXX") ;
+    auto_strings(tfile, file, ":", "XXXXXX") ;
 
     fd = mkstemp(tfile) ;
     if (fd < 0 || ndelay_off(fd)) {
@@ -84,8 +80,8 @@ int resolve_write_cdb(resolve_wrapper_t *wres, char const *dst, char const *name
 
     close(fd) ;
 
-    if (rename(tfile, dfile) < 0) {
-        log_warnusys("rename ", tfile, " to ", dfile) ;
+    if (rename(tfile, file) < 0) {
+        log_warnusys("rename ", tfile, " to ", file) ;
         goto err_fd ;
     }
 

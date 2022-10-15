@@ -1,5 +1,5 @@
 /*
- * resolve_rmfile.c
+ * resolve_remove.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -13,23 +13,27 @@
  */
 
 #include <string.h>
+#include <unistd.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 
-#include <skalibs/posixplz.h>
-
 #include <66/resolve.h>
+#include <66/constants.h>
 
-void resolve_rmfile(char const *src,char const *name)
+void resolve_remove(char const *base, char const *name)
 {
     log_flow() ;
 
-    size_t srclen = strlen(src) ;
+    int e = errno ;
+    size_t baselen = strlen(base) ;
     size_t namelen = strlen(name) ;
 
-    char tmp[srclen + SS_RESOLVE_LEN + 1 + namelen +1] ;
-    auto_strings(tmp, src, SS_RESOLVE, "/", name) ;
+    char file[baselen + SS_RESOLVE_LEN + 1 + namelen +1] ;
+    auto_strings(file, base, SS_RESOLVE, "/", name) ;
 
-    unlink_void(tmp) ;
+    unlink(file) ;
+    errno = e ;
 }
+

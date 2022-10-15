@@ -17,8 +17,8 @@
 #include <skalibs/stralloc.h>
 
 #include <66/resolve.h>
-#include <66/tree.h>
 #include <66/service.h>
+#include <66/tree.h>
 
 int resolve_init(resolve_wrapper_t *wres)
 {

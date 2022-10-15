@@ -16,7 +16,6 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
-#include <oblibs/string.h>
 
 #include <skalibs/cdbmake.h>
 #include <skalibs/types.h>//uint##_pack

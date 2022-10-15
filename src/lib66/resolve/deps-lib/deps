@@ -1,10 +1,8 @@
 resolve_add_cdb.o
 resolve_add_cdb_uint.o
 resolve_add_string.o
-resolve_append.o
 resolve_check.o
-resolve_cmp.o
-resolve_deep_free.o
+resolve_check_g.o
 resolve_find_cdb.o
 resolve_free.o
 resolve_get_field_tosa.o
@@ -15,11 +13,12 @@ resolve_modify_field_g.o
 resolve_read.o
 resolve_read_cdb.o
 resolve_read_g.o
-resolve_rmfile.o
-resolve_search.o
+resolve_remove.o
+resolve_remove_g.o
 resolve_set_struct.o
 resolve_write.o
 resolve_write_cdb.o
+resolve_write_g.o
 -loblibs
 -lskarnet
 

@@ -26,7 +26,7 @@
 
 int resolve_find_cdb(stralloc *result, cdb const *c, char const *key)
 {
-    log_flow() ;
+    //log_flow() ;
 
     uint32_t x = 0 ;
     size_t klen = strlen(key) ;

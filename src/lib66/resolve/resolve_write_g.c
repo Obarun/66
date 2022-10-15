@@ -1,5 +1,5 @@
 /*
- * resolve_check.c
+ * resolve_write_g.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -13,7 +13,6 @@
  */
 
 #include <string.h>
-#include <unistd.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -21,18 +20,24 @@
 #include <66/resolve.h>
 #include <66/constants.h>
 
-int resolve_check(char const *base, char const *name)
+int resolve_write_g(resolve_wrapper_t *wres, char const *base, char const *name)
 {
     log_flow() ;
 
     size_t baselen = strlen(base) ;
     size_t namelen = strlen(name) ;
 
-    char file[baselen + SS_RESOLVE_LEN + 1 + namelen + 1] ;
-    auto_strings(file, base, SS_RESOLVE, "/", name) ;
+    char path[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1 + SS_SERVICE_LEN + 1 + SS_SERVICE_LEN + 1 + namelen + 1] ;
 
-    if (access(file, F_OK) < 0)
-        return 0 ;
+    if (wres->type == DATA_SERVICE || wres->type == DATA_SERVICE_MASTER) {
 
-    return 1 ;
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, "/", SS_SERVICE, "/", name) ;
+
+    } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
+
+        auto_strings(path, base, SS_SYSTEM) ;
+
+    } else return 0 ;
+
+    return resolve_write(wres, path, name) ;
 }

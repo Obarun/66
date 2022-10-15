@@ -22,74 +22,64 @@
 #include <skalibs/stralloc.h>
 
 #include <66/constants.h>
-#include <66/tree.h>
-#include <66/service.h>
 #include <66/resolve.h>
+#include <66/service.h>
+#include <66/tree.h>
 
-int resolve_get_field_tosa_g(stralloc *sa, char const *base, char const *treename, char const *element, uint8_t data_type, uint8_t field)
+int resolve_get_field_tosa_g(stralloc *sa, char const *base, char const *name, uint8_t data_type, uint8_t field)
 {
     log_flow() ;
+
+    if (!name)
+        return 0 ;
+
     int e = 0 ;
-    size_t baselen = strlen(base), tot = baselen + SS_SYSTEM_LEN + 1, treelen = 0 ;
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_service_master_t mres = RESOLVE_SERVICE_MASTER_ZERO ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_tree_master_t tmres = RESOLVE_TREE_MASTER_ZERO ;
-
     resolve_wrapper_t_ref wres = 0 ;
 
     if (data_type == DATA_SERVICE) {
-        treelen = strlen(treename) ;
-        tot += treelen + SS_SVDIRS_LEN + 1 ;
-    }
 
-    char solve[tot] ;
+        wres = resolve_set_struct(data_type, &res) ;
 
-    if (data_type == DATA_SERVICE || data_type == DATA_SERVICE_MASTER) {
+    } else if (data_type == DATA_SERVICE_MASTER) {
 
-        if (data_type == DATA_SERVICE) {
+        wres = resolve_set_struct(data_type, &mres) ;
 
-            wres = resolve_set_struct(data_type, &res) ;
+    } else if (data_type == DATA_TREE) {
 
-        } else if (data_type == DATA_SERVICE_MASTER) {
+        wres = resolve_set_struct(data_type, &tres) ;
 
-            wres = resolve_set_struct(data_type, &mres) ;
-        }
+    } else if (data_type == DATA_TREE_MASTER) {
 
-        auto_strings(solve, base, SS_SYSTEM, "/", treename, SS_SVDIRS) ;
+        wres = resolve_set_struct(data_type, &tmres) ;
 
-    } else if (data_type == DATA_TREE || data_type == DATA_TREE_MASTER) {
-
-        if (data_type == DATA_TREE) {
-
-            wres = resolve_set_struct(data_type, &tres) ;
-
-        } else if (data_type == DATA_TREE_MASTER) {
-
-            wres = resolve_set_struct(data_type, &tmres) ;
-        }
-
-        auto_strings(solve, base, SS_SYSTEM) ;
-    }
-
-    if (!resolve_read(wres, solve, element))
+    } else return 0 ;
+    /***
+     *
+     *
+     *  need to be review for resolve Master file of trees
+     * the resolve_read_g will not work on this case
+     *
+     *
+     * */
+    if (!resolve_read_g(wres, base, name))
         goto err ;
 
     if (!resolve_get_field_tosa(sa, wres, field))
         goto err ;
 
-    {
-        char t[sa->len + 1] ;
-        auto_strings(t, sa->s) ;
-
-        sa->len = 0 ;
-
-        if (!sastr_clean_string(sa, t))
+    /**
+     * check if field isn't empty
+     * */
+    if (sa->len)
+        if (!sastr_clean_string_flush_sa(sa, sa->s))
             goto err ;
-    }
-    e = 1 ;
 
+    e = 1 ;
     err:
         resolve_free(wres) ;
         return e ;

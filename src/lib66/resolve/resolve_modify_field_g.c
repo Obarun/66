@@ -12,55 +12,24 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <string.h>
 #include <stdint.h>
 
 #include <oblibs/log.h>
-#include <oblibs/string.h>
 
 #include <66/resolve.h>
-#include <66/service.h>
-#include <66/tree.h>
-#include <66/constants.h>
-#include <66/graph.h>
 
-
-int resolve_modify_field_g(resolve_wrapper_t_ref wres, char const *base, char const *element, uint8_t field, char const *value)
+int resolve_modify_field_g(resolve_wrapper_t_ref wres, char const *base, char const *name, uint8_t field, char const *value)
 {
-
     log_flow() ;
 
-    size_t baselen = strlen(base), tot = baselen + SS_SYSTEM_LEN + 1, treelen = 0 ;
-    char *treename = 0 ;
-    /** The master is at the same as any service on that tree.
-     * Use the same wres type for service Master*/
-    if (wres->type == DATA_SERVICE) {
-        treename = ((resolve_service_t *)wres->obj)->sa.s + ((resolve_service_t *)wres->obj)->treename ;
-        treelen = strlen(treename) ;
-        tot += treelen + SS_SVDIRS_LEN + 1 ;
-
-    }
-
-    char solve[tot] ;
-
-    if (wres->type == DATA_SERVICE || wres->type == DATA_SERVICE_MASTER) {
-
-        auto_strings(solve, base, SS_SYSTEM, "/", treename, SS_SVDIRS) ;
-
-    } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
-
-        auto_strings(solve, base, SS_SYSTEM) ;
-    }
-
-    if (!resolve_read(wres, solve, element))
-        log_warnusys_return(LOG_EXIT_ZERO, "read resolve file of: ", solve, "/", element) ;
+    if (!resolve_read_g(wres, base, name))
+        return 0 ;
 
     if (!resolve_modify_field(wres, field, value))
-        log_warnusys_return(LOG_EXIT_ZERO, "modify resolve file of: ", solve, "/", element) ;
+        return 0 ;
 
-    if (!resolve_write(wres, solve, element))
-        log_warnusys_return(LOG_EXIT_ZERO, "write resolve file of :", solve, "/", element) ;
+    if (!resolve_write_g(wres, base, name))
+        return 0 ;
 
     return 1 ;
-
 }

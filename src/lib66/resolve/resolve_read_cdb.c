@@ -20,25 +20,24 @@
 #include <skalibs/djbunix.h>
 
 #include <66/resolve.h>
-#include <66/graph.h>
 #include <66/service.h>
 #include <66/tree.h>
 
-int resolve_read_cdb(resolve_wrapper_t *wres, char const *name)
+int resolve_read_cdb(resolve_wrapper_t *wres, char const *file)
 {
     log_flow() ;
 
     int fd, e = 0 ;
     cdb c = CDB_ZERO ;
 
-    fd = open_readb(name) ;
+    fd = open_readb(file) ;
     if (fd < 0) {
-        log_warnusys("open: ",name) ;
+        log_warnusys("open: ",file) ;
         goto err_fd ;
     }
 
     if (!cdb_init_fromfd(&c, fd)) {
-        log_warnusys("cdb_init: ", name) ;
+        log_warnusys("cdb_init: ", file) ;
         goto err ;
     }
 
