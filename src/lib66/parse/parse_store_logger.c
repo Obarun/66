@@ -47,6 +47,8 @@ int parse_store_logger(resolve_service_t *res, char *store, int idsec, int idkey
 
         case KEY_LOGGER_SHEBANG:
 
+             log_1_warn("deprecated key @shebang -- define your complete shebang directly inside your @execute key field") ;
+
             if (!parse_store_start_stop(res, store, idsec, KEY_STARTSTOP_SHEBANG))
                 goto err ;
 
@@ -96,6 +98,9 @@ int parse_store_logger(resolve_service_t *res, char *store, int idsec, int idkey
 
             if (!uint320_scan(store, &res->logger.maxsize))
                 parse_error_return(0, 3, idsec, idkey) ;
+
+            if (res->logger.maxsize < 4096 || res->logger.maxsize > 268435455)
+                parse_error_return(0, 0, idsec, idkey) ;
 
             break ;
 

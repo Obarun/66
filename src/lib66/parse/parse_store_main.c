@@ -73,6 +73,10 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 
         case KEY_MAIN_TYPE:
 
+            if (res->name)
+                /** already passed through here */
+                break ;
+
             if (!parse_clean_line(store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
@@ -107,6 +111,9 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 
             if (!uint320_scan(store, &res->maxdeath))
                 parse_error_return(0, 3, idsec, idkey) ;
+
+            if (res->maxdeath > 4096)
+                parse_error_return(0, 0, idsec, idkey) ;
 
             break ;
 
@@ -277,6 +284,12 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
                 for (; pos < len ; pos += strlen(t + pos) + 1) {
 
                     if (pos == (size_t)p) {
+
+                        if (!owner)
+                            /** avoid field e.g root root where originaly
+                             * we want e.g. user root. The term user will be
+                             * root at getpwuid() call */
+                            continue ;
 
                         struct passwd *pw = getpwuid(owner);
                         if (!pw) {

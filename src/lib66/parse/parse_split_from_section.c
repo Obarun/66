@@ -21,6 +21,7 @@
 #include <oblibs/mill.h>
 
 #include <skalibs/stralloc.h>
+#include <skalibs/types.h> //UINT_FMT
 
 #include <66/parser.h>
 #include <66/resolve.h>
@@ -44,7 +45,7 @@ int parse_split_from_section(resolve_service_t *res, stralloc *secname, char *st
 {
     log_flow() ;
 
-    int e = 0, r = 0, found = 0, skip = 0 ;
+    int e = 0, r = 0, found = 0 ;
 
     key_all_t const *list = total_list ;
     stralloc sakey = STRALLOC_ZERO ;
@@ -52,7 +53,7 @@ int parse_split_from_section(resolve_service_t *res, stralloc *secname, char *st
     // cpos -> current, ipos -> idx pos, tpos -> temporary pos, end -> end the parse process
     size_t len = strlen(str), cpos = 0, ipos = 0, tpos = 0, end = 0 ;
     char tline[len + 1] ;
-    char store[len + 1] ;
+    char store[len + UINT_FMT + 1] ; // +6 be paranoid
     char *line ;
 
     // find the name of the current section
@@ -85,7 +86,6 @@ int parse_split_from_section(resolve_service_t *res, stralloc *secname, char *st
 
     while(cpos < len) {
 
-        skip = 0 ;
         ipos = 0 ;
         tpos = 0 ;
         end = 0 ;

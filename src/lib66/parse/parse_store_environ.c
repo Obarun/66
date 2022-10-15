@@ -25,8 +25,6 @@
 #include <66/utils.h>
 #include <66/environ.h>
 
-#include <stdio.h>
-
 int parse_store_environ(resolve_service_t *res, char *store, int idsec, int idkey)
 {
     int e = 0 ;

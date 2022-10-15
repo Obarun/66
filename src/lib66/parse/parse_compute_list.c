@@ -27,14 +27,15 @@
 #include <66/service.h>
 
 /**
- * @opts -> 1 : build list of optional deps
+ * @opts -> 1 : build list removing commented optional deps
  * */
 int parse_compute_list(resolve_wrapper_t_ref wres, stralloc *sa, uint32_t *res, uint8_t opts)
 {
     int r, found = 0 ;
     size_t len = sa->len, pos = 0 ;
-    char t[len + 1] ;
-    char f[len + 1] ;
+    size_t nelement = sastr_nelement(sa) ;
+    char t[len + nelement + 2] ;
+    char f[len + nelement + 2] ;
 
     memset(f, 0, len) ;
     memset(t, 0, len) ;

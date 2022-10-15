@@ -44,7 +44,7 @@ int parse_dependencies(resolve_service_t *res, resolve_service_t *ares, unsigned
             goto freed ;
         }
 
-        char t[sa.len] ;
+        char t[sa.len + 1] ;
 
         sastr_to_char(t, &sa) ;
 
@@ -53,8 +53,8 @@ int parse_dependencies(resolve_service_t *res, resolve_service_t *ares, unsigned
         for (; pos < len ; pos += strlen(t + pos) + 1) {
 
             sa.len = 0 ;
-            char name[strlen(t + pos)] ;
-            char ainsta[strlen(t + pos)] ;
+            char name[strlen(t + pos) + 1] ;
+            char ainsta[strlen(t + pos) + 1] ;
             int insta = -1 ;
 
             log_trace("parse dependencies: ", t + pos, " of service: ", res->sa.s + res->name) ;
