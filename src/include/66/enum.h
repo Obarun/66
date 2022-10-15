@@ -125,8 +125,6 @@ enum enum_key_section_regex_e
     KEY_REGEX_DIRECTORIES ,
     KEY_REGEX_FILES ,
     KEY_REGEX_INFILES ,
-    KEY_REGEX_ADDSERVICES ,
-    KEY_REGEX_APPLYTO ,
     KEY_REGEX_ENDOFKEY
 } ;
 

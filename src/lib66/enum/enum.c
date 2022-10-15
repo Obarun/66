@@ -14,9 +14,7 @@
 
 #include <66/enum.h>
 
-#include <stddef.h>
-
-#include <oblibs/string.h>
+#include <string.h>
 
 #include <oblibs/log.h>
 
@@ -34,10 +32,9 @@ char const *enum_str_key_section_main[] = {
     "@type" ,
     "@version" ,
     "@description" ,
-    "@contents" ,
     "@depends" ,
+    "@requiredby",
     "@optsdepends" ,
-    "@extdepends" ,
     "@options" ,
     "@notify" ,
     "@user" ,
@@ -78,7 +75,7 @@ char const *enum_str_key_section_logger[] = {
 } ;
 
 char const *enum_str_key_section_environ[] = {
-    "@none" ,
+    "@environ" ,
     0
 } ;
 
@@ -87,14 +84,12 @@ char const *enum_str_key_section_regex[] = {
     "@directories" ,
     "@files" ,
     "@infiles" ,
-    "@addservices" ,
     0
 } ;
 
 char const *enum_str_type[] = {
     "classic" ,
     "bundle" ,
-    "longrun" ,
     "oneshot" ,
     "module" ,
     0
@@ -113,13 +108,12 @@ char const *enum_str_expected[] = {
 char const *enum_str_opts[] = {
     "log" ,
     "env" ,
-    "hiercopy" ,
-    "pipeline" ,
     0
 } ;
 
 char const *enum_str_flags[] = {
     "down" ,
+    "earlier" ,
     0
 } ;
 
@@ -141,14 +135,6 @@ char const *enum_str_time[] = {
     "tai" ,
     "iso" ,
     "none" ,
-    0
-} ;
-
-char const *enum_str_logopts[] = {
-    "producer-for" ,
-
-    "consumer-for" ,
-    "pipeline-name" ,
     0
 } ;
 
@@ -180,7 +166,6 @@ enum_all_enum_t enum_all[] = {
     [ENUM_BUILD] = { .enum_all = BUILD_ENDOFKEY - ENUM_START , .str = enum_str_build } ,
     [ENUM_MANDATORY] = { .enum_all = MANDATORY_ENDOFKEY - ENUM_START , .str = enum_str_mandatory } ,
     [ENUM_TIME] = { .enum_all = TIME_ENDOFKEY - ENUM_START , .str = enum_str_time } ,
-    [ENUM_LOGOPTS] = { .enum_all = LOGOPTS_ENDOFKEY - ENUM_START , .str = enum_str_logopts } ,
     [ENUM_SEED] = { .enum_all = SEED_ENDOFKEY - ENUM_START , .str = enum_str_seed } ,
     [ENUM_ENDOFKEY] = { 0 }
 
@@ -188,12 +173,12 @@ enum_all_enum_t enum_all[] = {
 
 ssize_t get_enum_by_key_one(char const *str, int const e)
 {
-    log_flow() ;
+    //log_flow() ;
 
     int i = 0 ;
     enum_all_enum_t *key = enum_all ;
     for(; i < key[e].enum_all;i++)
-        if(obstr_equal(str,key[e].str[i]))
+        if(!strcmp(str,key[e].str[i]))
             return i ;
 
     return -1 ;
@@ -201,7 +186,7 @@ ssize_t get_enum_by_key_one(char const *str, int const e)
 
 ssize_t get_enum_by_key(char const *str)
 {
-    log_flow() ;
+    //log_flow() ;
 
     int i = 0, ret ;
 
@@ -218,4 +203,9 @@ char const *get_key_by_enum(int const e, int const key)
     log_flow() ;
 
     return enum_all[e].str[key] ;
+}
+
+char const *get_key_by_key_all(int const idsec, int const idkey)
+{
+    return *total_list[idsec].list[idkey].name ;
 }
