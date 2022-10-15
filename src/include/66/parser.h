@@ -46,7 +46,7 @@ extern void ssexec_enable_cleanup(void) ;
 /** main */
 extern void start_parser(char const *sv, ssexec_t *info, uint8_t disable_module, char const *directory_forced) ;
 
-extern void parser(char const *sv, char const *dst, ssexec_t *info, uint8_t force, uint8_t conf) ;
+extern void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf) ;
 extern int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, unsigned int *residx, char const *forced_directory) ;
 extern int parse_dependencies(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force,uint8_t conf, char const *forced_directory) ;
 
@@ -76,5 +76,8 @@ extern void parse_error(int ierr, int idsec, int idkey) ;
 
 /** module */
 extern void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force) ;
+
+/** resolve */
+extern void parse_compute_resolve(resolve_service_t *res, ssexec_t *info) ;
 
 #endif

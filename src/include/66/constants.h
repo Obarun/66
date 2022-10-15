@@ -29,8 +29,6 @@
 #define SS_MODULE_LEN (sizeof SS_MODULE - 1)
 #define SS_SCANDIR "scandir"
 #define SS_SCANDIR_LEN (sizeof SS_SCANDIR - 1)
-#define SS_TREE "tree"
-#define SS_TREE_LEN (sizeof SS_TREE - 1)
 #define SS_NOTIFICATION "notification-fd"
 #define SS_NOTIFICATION_LEN (sizeof SS_NOTIFICATION - 1)
 #define SS_MAXDEATHTALLY "max-death-tally"
@@ -41,18 +39,11 @@
 #define SS_RULES_LEN (sizeof SS_RULES - 1)
 #define SS_SVDIRS "/servicedirs"
 #define SS_SVDIRS_LEN (sizeof SS_SVDIRS - 1)
-#define SS_BACKUP "/backup"
-#define SS_BACKUP_LEN (sizeof SS_BACKUP - 1)
-#define SS_LIVETREE_INIT "init"
-#define SS_LIVETREE_INIT_LEN (sizeof SS_LIVETREE_INIT - 1)
 
 /**service dir*/
 #define SS_SVC "/svc"
 #define SS_SVC_LEN (sizeof SS_SVC - 1)
-#define SS_DB "/db"
-#define SS_DB_LEN (sizeof SS_DB - 1)
-#define SS_SRC "/source"
-#define SS_SRC_LEN (sizeof SS_SRC - 1)
+
 #define SS_MASTER "/Master"
 #define SS_MASTER_LEN (sizeof SS_MASTER - 1)
 #define SS_CONTENTS "contents"
@@ -61,23 +52,12 @@
 /** logger */
 #define SS_LOG "log"
 #define SS_LOG_LEN (sizeof SS_LOG - 1)
-#define SS_LOG_SUFFIX "-" SS_LOG
+
+#define SS_LOG_SUFFIX "-log"
 #define SS_LOG_SUFFIX_LEN (sizeof SS_LOG_SUFFIX - 1)
+
 #define SS_SVSCAN_LOG "/.s6-svscan"
 #define SS_SVSCAN_LOG_LEN (sizeof SS_SVSCAN_LOG - 1)
-
-/** pipe */
-#define SS_PIPE_NAME "bundle-"
-#define SS_PIPE_NAME_LEN (sizeof SS_PIPE_NAME - 1)
-
-/** backup */
-#define SS_SYM_DB "bdb"
-#define SS_SYM_DB_LEN (sizeof SS_SYM_DB - 1)
-#define SS_SYM_SVC "bsvc"
-#define SS_SYM_SVC_LEN (sizeof SS_SYM_SVC - 1)
-
-#define SS_SWSRC 0 //switch to source
-#define SS_SWBACK 1 //switch to backup
 
 /** environment and data */
 #define SS_ENVDIR "/conf"
@@ -89,6 +69,18 @@
 
 #define SS_STATE "/state"
 #define SS_STATE_LEN (sizeof SS_STATE - 1)
+#define SS_STATUS "status"
+#define SS_STATUS_LEN (sizeof SS_STATUS - 1)
+
+#define SS_RESOLVE "/.resolve"
+#define SS_RESOLVE_LEN (sizeof SS_RESOLVE - 1)
+
+#define SS_FDHOLDER "fdholder"
+#define SS_FDHOLDER_LEN (sizeof SS_FDHOLDER - 1)
+#define SS_FDHOLDER_PIPENAME "pipe:66-"
+#define SS_FDHOLDER_PIPENAME_LEN (sizeof SS_FDHOLDER_PIPENAME - 1)
+#define SS_ONESHOTD "oneshotd"
+#define SS_ONESHOTD_LEN (sizeof SS_ONESHOTD - 1)
 
 #define SS_VAR_UNEXPORT '!'
 
@@ -99,6 +91,7 @@
 
 #define SS_EVENTDIR "/event"
 #define SS_EVENTDIR_LEN (sizeof SS_EVENTDIR - 1)
+
 /** boot */
 #define SS_BOOT_CONF "init.conf"
 #define SS_BOOT_CONF_LEN (sizeof SS_BOOT_CONF - 1)
@@ -121,6 +114,7 @@
 #define SS_BOOT_LOGFIFO_LEN (sizeof SS_BOOT_LOGFIFO - 1)
 #define SS_BOOT_SHUTDOWND "66-shutdownd"
 #define SS_BOOT_SHUTDOWND_LEN (sizeof SS_BOOT_SHUTDOWND - 1)
+
 /** container */
 #define SS_BOOT_CONTAINER 0
 #define SS_BOOT_RCINIT_CONTAINER "rc.init.container"
@@ -138,4 +132,5 @@
 #define SS_INSTANCE_NAME 1
 
 #define SS_MAX_PATH_LEN (SS_MAX_PATH + SS_SYSTEM_LEN + SS_SVDIRS_LEN + SS_MAX_TREENAME + SS_MAX_SERVICE_NAME + 63 + 1)
+
 #endif

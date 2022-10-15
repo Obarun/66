@@ -26,7 +26,7 @@
 #define SS_INFO_H
 
 #define INFO_FIELD_MAXLEN 30
-#define INFO_NKEY 100
+#define INFO_NKEY 150
 
 typedef int info_graph_func(char const *name, char const *obj) ;
 typedef info_graph_func *info_graph_func_t_ref ;

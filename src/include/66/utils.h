@@ -32,8 +32,6 @@
 #define YOURGID(passto,owner) yourgid(passto,owner)
 
 /** ss_utils.c file */
-extern int scandir_ok (char const *dir) ;
-extern int scandir_send_signal(char const *scandir,char const *signal) ;
 extern char const *get_userhome(uid_t myuid) ;
 extern int youruid(uid_t *passto,char const *owner) ;
 extern int yourgid(gid_t *passto,uid_t owner) ;
@@ -55,5 +53,9 @@ extern int module_path(stralloc *sdir, stralloc *mdir, char const *sv,char const
 extern int sa_pointo(stralloc *sa, ssexec_t *info, int type, unsigned int where) ;
 extern int create_live_state(ssexec_t *info, char const *treename) ;
 extern int create_live_tree(ssexec_t *info) ;
+extern void name_isvalid(char const *name) ;
+
+extern int set_ownerhome_stack(char *store) ;
+extern int set_ownersysdir_stack(char *base, uid_t owner) ;
 
 #endif

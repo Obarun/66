@@ -21,12 +21,13 @@
 #include <skalibs/stralloc.h>
 
 #include <66/parser.h>
+#include <66/service.h>
 
 extern int env_resolve_conf(stralloc *env,char const *svname,uid_t owner) ;
-extern int env_make_symlink(sv_alltype *sv) ;
-extern int env_compute(stralloc *result,sv_alltype *sv, uint8_t conf) ;
+extern int env_make_symlink(resolve_service_t *res) ;
+extern int env_compute(stralloc *result, resolve_service_t *res) ;
 extern int env_clean_with_comment(stralloc *sa) ;
-extern int env_prepare_for_write(stralloc *name, stralloc *dst, stralloc *contents, sv_alltype *sv,uint8_t conf) ;
+extern int env_prepare_for_write(stralloc *dst, stralloc *contents, resolve_service_t *res) ;
 
 /** version function */
 extern int env_find_current_version(stralloc *sa,char const *svconf) ;

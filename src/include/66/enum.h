@@ -35,7 +35,6 @@ enum enum_main_e
     ENUM_BUILD ,
     ENUM_MANDATORY ,
     ENUM_TIME ,
-    ENUM_LOGOPTS ,
     ENUM_SEED ,
     ENUM_ENDOFKEY
 } ;
@@ -60,10 +59,9 @@ enum enum_key_section_main_e
     KEY_MAIN_TYPE = 0 ,
     KEY_MAIN_VERSION ,
     KEY_MAIN_DESCRIPTION ,
-    KEY_MAIN_CONTENTS ,
     KEY_MAIN_DEPENDS ,
+    KEY_MAIN_REQUIREDBY ,
     KEY_MAIN_OPTSDEPS ,
-    KEY_MAIN_EXTDEPS ,
     KEY_MAIN_OPTIONS ,
     KEY_MAIN_NOTIFY ,
     KEY_MAIN_USER ,
@@ -106,7 +104,6 @@ enum enum_key_section_logger_e
     KEY_LOGGER_TIMESTP ,
     KEY_LOGGER_T_FINISH ,
     KEY_LOGGER_T_KILL ,
-    KEY_LOGGER_DEPENDS ,
     KEY_LOGGER_ENDOFKEY
 } ;
 
@@ -129,6 +126,7 @@ enum enum_key_section_regex_e
     KEY_REGEX_FILES ,
     KEY_REGEX_INFILES ,
     KEY_REGEX_ADDSERVICES ,
+    KEY_REGEX_APPLYTO ,
     KEY_REGEX_ENDOFKEY
 } ;
 
@@ -139,7 +137,6 @@ enum enum_type_e
 {
     TYPE_CLASSIC = 0 ,
     TYPE_BUNDLE ,
-    TYPE_LONGRUN ,
     TYPE_ONESHOT ,
     TYPE_MODULE ,
     TYPE_ENDOFKEY
@@ -167,8 +164,6 @@ enum enum_opts_e
 {
     OPTS_LOGGER = 0 ,
     OPTS_ENVIR ,
-    OPTS_HIERCOPY ,
-    OPTS_PIPELINE ,
     OPTS_ENDOFKEY
 } ;
 
@@ -178,6 +173,7 @@ typedef enum enum_flags_e enum_flags_t, *enum_flags_t_ref ;
 enum enum_flags_e
 {
     FLAGS_DOWN = 0 ,
+    FLAGS_EARLIER,
     FLAGS_ENDOFKEY
 } ;
 
@@ -215,17 +211,6 @@ enum enum_time_e
 } ;
 
 extern char const *enum_str_time[] ;
-
-typedef enum enum_logopts_e enum_logotps_t, *enum_logopts_t_ref ;
-enum enum_logopts_e
-{
-    LOGOPTS_PRODUCER = 0 ,
-    LOGOPTS_CONSUMER ,
-    LOGOPTS_PIPE ,
-    LOGOPTS_ENDOFKEY
-} ;
-
-extern char const *enum_str_logopts[] ;
 
 typedef enum enum_seed_e enum_seed_t, *enum_seed_t_ref ;
 enum enum_seed_e
@@ -294,10 +279,9 @@ static key_description_t const main_section_list[] =
     { .name = &enum_str_key_section_main[KEY_MAIN_TYPE], .id = KEY_MAIN_TYPE, .expected = EXPECT_LINE },
     { .name = &enum_str_key_section_main[KEY_MAIN_VERSION], .id = KEY_MAIN_VERSION, .expected = EXPECT_LINE },
     { .name = &enum_str_key_section_main[KEY_MAIN_DESCRIPTION], .id = KEY_MAIN_DESCRIPTION, .expected = EXPECT_QUOTE },
-    { .name = &enum_str_key_section_main[KEY_MAIN_CONTENTS], .id = KEY_MAIN_CONTENTS, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_main[KEY_MAIN_DEPENDS], .id = KEY_MAIN_DEPENDS, .expected = EXPECT_BRACKET },
+    { .name = &enum_str_key_section_main[KEY_MAIN_REQUIREDBY], .id = KEY_MAIN_REQUIREDBY, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_main[KEY_MAIN_OPTSDEPS], .id = KEY_MAIN_OPTSDEPS, .expected = EXPECT_BRACKET },
-    { .name = &enum_str_key_section_main[KEY_MAIN_EXTDEPS], .id = KEY_MAIN_EXTDEPS, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_main[KEY_MAIN_OPTIONS], .id = KEY_MAIN_OPTIONS, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_main[KEY_MAIN_NOTIFY], .id = KEY_MAIN_NOTIFY, .expected = EXPECT_UINT },
     { .name = &enum_str_key_section_main[KEY_MAIN_USER], .id = KEY_MAIN_USER, .expected = EXPECT_BRACKET },
@@ -324,17 +308,16 @@ static key_description_t const startstop_section_list[] =
 
 static key_description_t const logger_section_list[] =
 {
-    { .name = &enum_str_key_section_logger[KEY_LOGGER_DESTINATION], .id = KEY_LOGGER_DESTINATION, .expected = EXPECT_SLASH },
     { .name = &enum_str_key_section_logger[KEY_LOGGER_BUILD], .id = KEY_LOGGER_BUILD, .expected = EXPECT_LINE },
     { .name = &enum_str_key_section_logger[KEY_LOGGER_RUNAS], .id = KEY_LOGGER_RUNAS, .expected = EXPECT_LINE },
-    { .name = &enum_str_key_section_logger[KEY_LOGGER_DEPENDS], .id = KEY_LOGGER_DEPENDS, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_logger[KEY_LOGGER_SHEBANG], .id = KEY_LOGGER_SHEBANG, .expected = EXPECT_QUOTE },
-    { .name = &enum_str_key_section_logger[KEY_LOGGER_T_FINISH], .id = KEY_LOGGER_T_FINISH, .expected = EXPECT_UINT },
-    { .name = &enum_str_key_section_logger[KEY_LOGGER_T_KILL], .id = KEY_LOGGER_T_KILL, .expected = EXPECT_UINT },
+    { .name = &enum_str_key_section_logger[KEY_LOGGER_EXEC], .id = KEY_LOGGER_EXEC, .expected = EXPECT_BRACKET },
+    { .name = &enum_str_key_section_logger[KEY_LOGGER_DESTINATION], .id = KEY_LOGGER_DESTINATION, .expected = EXPECT_SLASH },
     { .name = &enum_str_key_section_logger[KEY_LOGGER_BACKUP], .id = KEY_LOGGER_BACKUP, .expected = EXPECT_UINT },
     { .name = &enum_str_key_section_logger[KEY_LOGGER_MAXSIZE], .id = KEY_LOGGER_MAXSIZE, .expected = EXPECT_UINT },
     { .name = &enum_str_key_section_logger[KEY_LOGGER_TIMESTP], .id = KEY_LOGGER_TIMESTP, .expected = EXPECT_LINE },
-    { .name = &enum_str_key_section_logger[KEY_LOGGER_EXEC], .id = KEY_LOGGER_EXEC, .expected = EXPECT_BRACKET },
+    { .name = &enum_str_key_section_logger[KEY_LOGGER_T_FINISH], .id = KEY_LOGGER_T_FINISH, .expected = EXPECT_UINT },
+    { .name = &enum_str_key_section_logger[KEY_LOGGER_T_KILL], .id = KEY_LOGGER_T_KILL, .expected = EXPECT_UINT },
     { .name = &enum_str_key_section_logger[KEY_LOGGER_ENDOFKEY] }
 } ;
 
@@ -374,5 +357,6 @@ static key_all_t const total_list[] =
     { .list = 0 }
 } ;
 
+extern char const *get_key_by_key_all(int const idsec, int const key) ;
 
 #endif
