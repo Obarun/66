@@ -23,7 +23,7 @@ int instance_check(char const *svname)
 {
     log_flow() ;
 
-    int r ;
+    int r = 0 ;
     r = get_len_until(svname,'@') ;
     // avoid empty value after the instance template name
     if (strlen(svname+r) <= 1 && r > 0) return 0 ;

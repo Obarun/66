@@ -26,6 +26,7 @@ int instance_create(stralloc *sasv,char const *svname, char const *regex, int le
 {
     log_flow() ;
 
+    int e = 0 ;
     char const *copy ;
     size_t tlen = len + 1 ;
 
@@ -39,11 +40,16 @@ int instance_create(stralloc *sasv,char const *svname, char const *regex, int le
         log_warnu("replace instance character for service: ",svname) ;
         goto err ;
     }
-    if (!stralloc_copy(sasv,&tmp)) goto err ;
-    stralloc_free(&tmp) ;
 
-    return 1 ;
+    stralloc_0(&tmp) ;
+
+    sasv->len = 0 ;
+
+    if (!auto_stra(sasv, tmp.s))
+        goto err ;
+
+    e = 1 ;
     err:
         stralloc_free(&tmp) ;
-        return 0 ;
+        return e ;
 }
