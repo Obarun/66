@@ -22,6 +22,7 @@
 #include <skalibs/stralloc.h>
 
 #include <66/utils.h>
+#include <66/constants.h>
 
 int set_ownerhome(stralloc *base,uid_t owner)
 {
@@ -42,6 +43,33 @@ int set_ownerhome(stralloc *base,uid_t owner)
 
     if (!auto_stra(base,user_home, "/"))
         log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+    return 1 ;
+}
+
+int set_ownerhome_stack(char *store)
+{
+    log_flow() ;
+
+    char const *user_home = 0 ;
+    int e = errno ;
+    struct passwd *st = getpwuid(getuid()) ;
+    errno = 0 ;
+    if (!st) {
+        if (!errno) errno = ESRCH ;
+        return 0 ;
+    }
+    user_home = st->pw_dir ;
+    errno = e ;
+    if (!user_home)
+        return 0 ;
+
+    if (strlen(user_home) + 1 > SS_MAX_PATH_LEN) {
+        errno = ENAMETOOLONG ;
+        return 0 ;
+    }
+
+    auto_strings(store, user_home, "/") ;
 
     return 1 ;
 }
