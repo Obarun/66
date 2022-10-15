@@ -5,7 +5,7 @@ BIN_TARGETS := \
 66-tree \
 66-enable \
 66-disable \
-66-parser \
+66-parse \
 66-start \
 66-stop \
 66-svctl \
@@ -22,6 +22,8 @@ BIN_TARGETS := \
 66-umountall \
 66-echo \
 execl-envfile \
-66-nuke
+66-nuke \
+66-oneshot \
+66-fdholder-filler
 
 LIB_DEFS := 66=66
