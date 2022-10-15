@@ -299,7 +299,7 @@ static inline void unsupervise_tree (void)
     char const *except[3] =
     {
         "66-shutdownd",
-        nologger ? 0 : SS_SCANDIR SS_LOG_SUFFIX,
+        nologger ? 0 : SS_SCANDIR SS_LOG,
         0
     } ;
     size_t livelen = strlen(live) ;
