@@ -13,7 +13,6 @@
  */
 
 #include <sys/types.h>
-#include <string.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>

@@ -23,30 +23,27 @@
 
 #include <66/environ.h>
 #include <66/constants.h>
+#include <66/service.h>
 #include <66/parser.h>
 
-
-int env_prepare_for_write(stralloc *name, stralloc *dst, stralloc *contents, sv_alltype *sv,uint8_t conf)
+int env_prepare_for_write(stralloc *dst, stralloc *contents, resolve_service_t *res)
 {
     log_flow() ;
 
-    char *svconf = keep.s + sv->srconf ;
-    size_t svconf_len = strlen(svconf) ;
-    char sym[svconf_len + SS_SYM_VERSION_LEN + 1] ;
+    char *conf = res->sa.s + res->environ.envdir ;
+    size_t conflen = strlen(conf) ;
+    char sym[conflen + SS_SYM_VERSION_LEN + 1] ;
 
-    auto_strings(sym,svconf,SS_SYM_VERSION) ;
+    auto_strings(sym, conf, SS_SYM_VERSION) ;
 
-    if (!env_compute(contents,sv,conf))
-        log_warnu_return(LOG_EXIT_ZERO,"compute environment") ;
+    if (!env_compute(contents, res))
+        log_warnu_return(LOG_EXIT_ZERO, "compute environment") ;
 
     if (sareadlink(dst, sym) == -1)
-        log_warnusys_return(LOG_EXIT_ZERO,"read link of: ",sym) ;
+        log_warnusys_return(LOG_EXIT_ZERO, "read link of: ", sym) ;
 
     if (!stralloc_0(dst))
-        log_warnusys_return(LOG_EXIT_ZERO,"stralloc") ;
-
-    if (!auto_stra(name,".",keep.s + sv->cname.name))
-        log_warnusys_return(LOG_EXIT_ZERO,"stralloc") ;
+        log_warnusys_return(LOG_EXIT_ZERO, "stralloc") ;
 
     return 1 ;
 }
