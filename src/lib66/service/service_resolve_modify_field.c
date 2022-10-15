@@ -22,201 +22,422 @@
 
 resolve_field_table_t resolve_service_field_table[] = {
 
-    [SERVICE_ENUM_NAME] = { .field = "name" },
-    [SERVICE_ENUM_DESCRIPTION] = { .field = "description" },
-    [SERVICE_ENUM_VERSION] = { .field = "version" },
-    [SERVICE_ENUM_LOGGER] = { .field = "logger" },
-    [SERVICE_ENUM_LOGREAL] = { .field = "logreal" },
-    [SERVICE_ENUM_LOGASSOC] = { .field = "logassoc" },
-    [SERVICE_ENUM_DSTLOG] = { .field = "dstlog" },
-    [SERVICE_ENUM_DEPENDS] = { .field = "depends" },
-    [SERVICE_ENUM_REQUIREDBY] = { .field = "requiredby" },
-    [SERVICE_ENUM_OPTSDEPS] = { .field = "optsdeps" },
-    [SERVICE_ENUM_EXTDEPS] = { .field = "extdeps" },
-    [SERVICE_ENUM_CONTENTS] = { .field = "contents" },
-    [SERVICE_ENUM_SRC] = { .field = "src" },
-    [SERVICE_ENUM_SRCONF] = { .field = "srconf" },
-    [SERVICE_ENUM_LIVE] = { .field = "live" },
-    [SERVICE_ENUM_RUNAT] = { .field = "runat" },
-    [SERVICE_ENUM_TREE] = { .field = "tree" },
-    [SERVICE_ENUM_TREENAME] = { .field = "treename" },
-    [SERVICE_ENUM_STATE] = { .field = "state" },
-    [SERVICE_ENUM_EXEC_RUN] = { .field = "exec_run" },
-    [SERVICE_ENUM_EXEC_LOG_RUN] = { .field = "exec_log_run" },
-    [SERVICE_ENUM_REAL_EXEC_RUN] = { .field = "real_exec_run" },
-    [SERVICE_ENUM_REAL_EXEC_LOG_RUN] = { .field = "real_exec_log_run" },
-    [SERVICE_ENUM_EXEC_FINISH] = { .field = "exec_finish" },
-    [SERVICE_ENUM_REAL_EXEC_FINISH] = { .field = "real_exec_finish" },
-    [SERVICE_ENUM_TYPE] = { .field = "type" },
-    [SERVICE_ENUM_NDEPENDS] = { .field = "ndepends" },
-    [SERVICE_ENUM_NREQUIREDBY] = { .field = "nrequiredby" },
-    [SERVICE_ENUM_NOPTSDEPS] = { .field = "noptsdeps" },
-    [SERVICE_ENUM_NEXTDEPS] = { .field = "nextdeps" },
-    [SERVICE_ENUM_NCONTENTS] = { .field = "ncontents" },
-    [SERVICE_ENUM_DOWN] = { .field = "down" },
-    [SERVICE_ENUM_DISEN] = { .field = "disen" },
-    [SERVICE_ENUM_ENDOFKEY] = { .field = 0 }
+    [E_RESOLVE_SERVICE_NAME] = { .field = "name" },
+    [E_RESOLVE_SERVICE_DESCRIPTION] = { .field = "description" },
+    [E_RESOLVE_SERVICE_VERSION] = { .field = "version" },
+    [E_RESOLVE_SERVICE_TYPE] = { .field = "type" },
+    [E_RESOLVE_SERVICE_NOTIFY] = { .field = "notify" },
+    [E_RESOLVE_SERVICE_MAXDEATH] = { .field = "maxdeath" },
+    [E_RESOLVE_SERVICE_EARLIER] = { .field = "earlier" },
+    [E_RESOLVE_SERVICE_HIERCOPY] = { .field = "hiercopy" },
+    [E_RESOLVE_SERVICE_INTREE] = { .field = "intree" },
+    [E_RESOLVE_SERVICE_OWNERSTR] = { .field = "ownerstr" },
+    [E_RESOLVE_SERVICE_OWNER] = { .field = "owner" },
+    [E_RESOLVE_SERVICE_TREENAME] = { .field = "treename" },
+    [E_RESOLVE_SERVICE_USER] = { .field = "user" },
+    [E_RESOLVE_SERVICE_INMODULE] = { .field = "inmodule" },
+
+    // path
+    [E_RESOLVE_SERVICE_HOME] = { .field = "home" },
+    [E_RESOLVE_SERVICE_FRONTEND] = { .field = "frontend" },
+    [E_RESOLVE_SERVICE_TREE] = { .field = "tree" },
+    [E_RESOLVE_SERVICE_STATUS] = { .field = "status" },
+
+    // dependencies
+    [E_RESOLVE_SERVICE_DEPENDS] = { .field = "depends" },
+    [E_RESOLVE_SERVICE_REQUIREDBY] = { .field = "requiredby" },
+    [E_RESOLVE_SERVICE_OPTSDEPS] = { .field = "optsdeps" },
+    [E_RESOLVE_SERVICE_NDEPENDS] = { .field = "ndepends" },
+    [E_RESOLVE_SERVICE_NREQUIREDBY] = { .field = "nrequiredby" },
+    [E_RESOLVE_SERVICE_NOPTSDEPS] = { .field = "noptsdeps" },
+
+    // execute
+    [E_RESOLVE_SERVICE_RUN] = { .field = "run" },
+    [E_RESOLVE_SERVICE_RUN_USER] = { .field = "run_user" },
+    [E_RESOLVE_SERVICE_RUN_BUILD] = { .field = "run_build" },
+    [E_RESOLVE_SERVICE_RUN_SHEBANG] = { .field = "run_shebang" },
+    [E_RESOLVE_SERVICE_RUN_RUNAS] = { .field = "run_runas" },
+    [E_RESOLVE_SERVICE_FINISH] = { .field = "finish" },
+    [E_RESOLVE_SERVICE_FINISH_USER] = { .field = "finish_user" },
+    [E_RESOLVE_SERVICE_FINISH_BUILD] = { .field = "finish_build" },
+    [E_RESOLVE_SERVICE_FINISH_SHEBANG] = { .field = "finish_shebang" },
+    [E_RESOLVE_SERVICE_FINISH_RUNAS] = { .field = "finish_runas" },
+    [E_RESOLVE_SERVICE_TIMEOUTKILL] = { .field = "timeoutkill" },
+    [E_RESOLVE_SERVICE_TIMEOUTFINISH] = { .field = "timeoutfinish" },
+    [E_RESOLVE_SERVICE_TIMEOUTUP] = { .field = "timeoutup" },
+    [E_RESOLVE_SERVICE_TIMEOUTDOWN] = { .field = "timeoutdown" },
+    [E_RESOLVE_SERVICE_DOWN] = { .field = "down" },
+    [E_RESOLVE_SERVICE_DOWNSIGNAL] = { .field = "downsignal" },
+
+    // live
+    [E_RESOLVE_SERVICE_LIVEDIR] = { .field = "livedir" },
+    [E_RESOLVE_SERVICE_SCANDIR] = { .field = "scandirdir" },
+    [E_RESOLVE_SERVICE_STATEDIR] = { .field = "statedir" },
+    [E_RESOLVE_SERVICE_EVENTDIR] = { .field = "eventdir" },
+    [E_RESOLVE_SERVICE_NOTIFDIR] = { .field = "notifdir" },
+    [E_RESOLVE_SERVICE_SUPERVISEDIR] = { .field = "supervisedir" },
+    [E_RESOLVE_SERVICE_FDHOLDERDIR] = { .field = "fdholderdir" },
+    [E_RESOLVE_SERVICE_ONESHOTDDIR] = { .field = "oneshotddir" },
+
+    // logger
+    [E_RESOLVE_SERVICE_LOGNAME] = { .field = "logname" },
+    [E_RESOLVE_SERVICE_LOGDESTINATION] = { .field = "logdestination" },
+    [E_RESOLVE_SERVICE_LOGBACKUP] = { .field = "logbackup" },
+    [E_RESOLVE_SERVICE_LOGMAXSIZE] = { .field = "logmaxsize" },
+    [E_RESOLVE_SERVICE_LOGTIMESTAMP] = { .field = "logtimestamp" },
+    [E_RESOLVE_SERVICE_LOGWANT] = { .field = "logwant" },
+    [E_RESOLVE_SERVICE_LOGRUN] = { .field = "logrun" },
+    [E_RESOLVE_SERVICE_LOGRUN_USER] = { .field = "logrun_user" },
+    [E_RESOLVE_SERVICE_LOGRUN_BUILD] = { .field = "logrun_build" },
+    [E_RESOLVE_SERVICE_LOGRUN_SHEBANG] = { .field = "logrun_shebang" },
+    [E_RESOLVE_SERVICE_LOGRUN_RUNAS] = { .field = "logrun_runas" },
+    [E_RESOLVE_SERVICE_LOGTIMEOUTKILL] = { .field = "logtimeoutkill" },
+    [E_RESOLVE_SERVICE_LOGTIMEOUTFINISH] = { .field = "logtimeoutfinish" },
+
+    // environment
+    [E_RESOLVE_SERVICE_ENV] = { .field = "env" },
+    [E_RESOLVE_SERVICE_ENVDIR] = { .field = "envdir" },
+    [E_RESOLVE_SERVICE_ENV_OVERWRITE] = { .field = "env_overwrite" },
+
+    // regex
+    [E_RESOLVE_SERVICE_REGEX_CONFIGURE] = { .field = "configure" },
+    [E_RESOLVE_SERVICE_REGEX_DIRECTORIES] = { .field = "directories" },
+    [E_RESOLVE_SERVICE_REGEX_FILES] = { .field = "files" },
+    [E_RESOLVE_SERVICE_REGEX_INFILES] = { .field = "infiles" },
+    [E_RESOLVE_SERVICE_REGEX_NDIRECTORIES] = { .field = "ndirectories" },
+    [E_RESOLVE_SERVICE_REGEX_NFILES] = { .field = "nfiles" },
+    [E_RESOLVE_SERVICE_REGEX_NINFILES] = { .field = "ninfiles" },
+    [E_RESOLVE_SERVICE_ENDOFKEY] = { .field = 0 }
 } ;
+uint32_t resolve_add_uint(char const *data)
+{
+    uint32_t u ;
+
+    if (!data)
+        data = "0" ;
+    if (!uint0_scan(data, &u))
+        return 0 ;
+    return u ;
+}
 
 int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t field, char const *data)
 {
     log_flow() ;
 
-    uint32_t ifield ;
     int e = 0 ;
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     switch(field) {
 
-        case SERVICE_ENUM_NAME:
-            res->name = resolve_add_string(wres,data) ;
+        // configuration
+
+        case E_RESOLVE_SERVICE_NAME:
+            res->name = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_DESCRIPTION:
-            res->description = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_DESCRIPTION:
+            res->description = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_VERSION:
-            res->version = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_VERSION:
+            res->version = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_LOGGER:
-            res->logger = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_TYPE:
+            res->type = resolve_add_uint(data) ;
             break ;
 
-        case SERVICE_ENUM_LOGREAL:
-            res->logreal = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_NOTIFY:
+            res->notify = resolve_add_uint(data) ;
             break ;
 
-        case SERVICE_ENUM_LOGASSOC:
-            res->logassoc = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_MAXDEATH:
+            res->maxdeath = resolve_add_uint(data) ; ;
             break ;
 
-        case SERVICE_ENUM_DSTLOG:
-            res->dstlog = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_EARLIER:
+            res->earlier = resolve_add_uint(data) ; ;
             break ;
 
-        case SERVICE_ENUM_DEPENDS:
-            res->depends = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_HIERCOPY:
+            res->hiercopy = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_REQUIREDBY:
-            res->requiredby = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_INTREE:
+            res->intree = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_OPTSDEPS:
-            res->optsdeps = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_OWNERSTR:
+            res->ownerstr = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_EXTDEPS:
-            res->extdeps = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_OWNER:
+            res->owner = resolve_add_uint(data) ;
             break ;
 
-        case SERVICE_ENUM_CONTENTS:
-            res->contents = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_TREENAME:
+            res->treename = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_SRC:
-            res->src = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_USER:
+            res->user = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_SRCONF:
-            res->srconf = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_INMODULE:
+            res->inmodule = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_LIVE:
-            res->live = resolve_add_string(wres,data) ;
+        // path
+
+        case E_RESOLVE_SERVICE_HOME:
+            res->path.home = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_RUNAT:
-            res->runat = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_FRONTEND:
+            res->path.frontend = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_TREE:
-            res->tree = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_TREE:
+            res->path.tree = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_TREENAME:
-            res->treename = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_STATUS:
+            res->path.status = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_STATE:
-            res->state = resolve_add_string(wres,data) ;
+        // dependencies
+
+        case E_RESOLVE_SERVICE_DEPENDS:
+            res->dependencies.depends = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_EXEC_RUN:
-            res->exec_run = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_REQUIREDBY:
+            res->dependencies.requiredby = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_EXEC_LOG_RUN:
-            res->exec_log_run = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_OPTSDEPS:
+            res->dependencies.optsdeps = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_REAL_EXEC_RUN:
-            res->real_exec_run = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_NDEPENDS:
+            res->dependencies.ndepends = resolve_add_uint(data) ;
             break ;
 
-        case SERVICE_ENUM_REAL_EXEC_LOG_RUN:
-            res->real_exec_log_run = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_NREQUIREDBY:
+            res->dependencies.nrequiredby = resolve_add_uint(data) ;
             break ;
 
-        case SERVICE_ENUM_EXEC_FINISH:
-            res->exec_finish = resolve_add_string(wres,data) ;
+        case E_RESOLVE_SERVICE_NOPTSDEPS:
+            res->dependencies.noptsdeps = resolve_add_uint(data) ;
             break ;
 
-        case SERVICE_ENUM_REAL_EXEC_FINISH:
-            res->real_exec_finish = resolve_add_string(wres,data) ;
+
+        // execute
+
+        case E_RESOLVE_SERVICE_RUN:
+            res->execute.run.run = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_TYPE:
-            if (!uint0_scan(data, &ifield)) goto err ;
-            res->type = ifield ;
+        case E_RESOLVE_SERVICE_RUN_USER:
+            res->execute.run.run_user = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_NDEPENDS:
-            if (!uint0_scan(data, &ifield)) goto err ;
-            res->ndepends = ifield ;
+        case E_RESOLVE_SERVICE_RUN_BUILD:
+            res->execute.run.build = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_NREQUIREDBY:
-            if (!uint0_scan(data, &ifield)) goto err ;
-            res->nrequiredby = ifield ;
+        case E_RESOLVE_SERVICE_RUN_SHEBANG:
+            res->execute.run.shebang = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_NOPTSDEPS:
-            if (!uint0_scan(data, &ifield)) goto err ;
-            res->noptsdeps = ifield ;
+        case E_RESOLVE_SERVICE_RUN_RUNAS:
+            res->execute.run.runas = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_NEXTDEPS:
-            if (!uint0_scan(data, &ifield)) goto err ;
-            res->nextdeps = ifield ;
+        case E_RESOLVE_SERVICE_FINISH:
+            res->execute.finish.run = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_NCONTENTS:
-            if (!uint0_scan(data, &ifield)) goto err ;
-            res->ncontents = ifield ;
+        case E_RESOLVE_SERVICE_FINISH_USER:
+            res->execute.finish.run_user = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_DOWN:
-            if (!uint0_scan(data, &ifield)) goto err ;
-            res->down = ifield ;
+        case E_RESOLVE_SERVICE_FINISH_BUILD:
+            res->execute.finish.build = resolve_add_string(wres, data) ;
             break ;
 
-        case SERVICE_ENUM_DISEN:
-            if (!uint0_scan(data, &ifield)) goto err ;
-            res->disen = ifield ;
+        case E_RESOLVE_SERVICE_FINISH_SHEBANG:
+            res->execute.finish.shebang = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_FINISH_RUNAS:
+            res->execute.finish.runas = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_TIMEOUTKILL:
+            res->execute.timeout.kill = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_TIMEOUTFINISH:
+            res->execute.timeout.finish = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_TIMEOUTUP:
+            res->execute.timeout.up = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_TIMEOUTDOWN:
+            res->execute.timeout.down = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_DOWN:
+            res->execute.down = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_DOWNSIGNAL:
+            res->execute.downsignal = resolve_add_uint(data) ;
+            break ;
+
+        // live
+
+        case E_RESOLVE_SERVICE_LIVEDIR:
+            res->live.livedir = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_SCANDIR:
+            res->live.scandir = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_STATEDIR:
+            res->live.statedir = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_EVENTDIR:
+            res->live.eventdir = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_NOTIFDIR:
+            res->live.notifdir = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_SUPERVISEDIR:
+            res->live.supervisedir = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_FDHOLDERDIR:
+            res->live.fdholderdir = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_ONESHOTDDIR:
+            res->live.oneshotddir = resolve_add_string(wres, data) ;
+            break ;
+
+        // logger
+
+        case E_RESOLVE_SERVICE_LOGNAME:
+            res->logger.name = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGDESTINATION:
+            res->logger.destination = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGBACKUP:
+            res->logger.backup = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGMAXSIZE:
+            res->logger.maxsize = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGTIMESTAMP:
+            res->logger.timestamp = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGWANT:
+            res->logger.want = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGRUN:
+            res->logger.execute.run.run = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGRUN_USER:
+            res->logger.execute.run.run_user = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGRUN_BUILD:
+            res->logger.execute.run.build = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGRUN_SHEBANG:
+            res->logger.execute.run.shebang = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGRUN_RUNAS:
+            res->logger.execute.run.runas = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGTIMEOUTKILL:
+            res->logger.timeout.kill = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGTIMEOUTFINISH:
+            res->logger.timeout.finish = resolve_add_uint(data) ;
+            break ;
+
+        // environment
+
+        case E_RESOLVE_SERVICE_ENV:
+            res->environ.env = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_ENVDIR:
+            res->environ.envdir = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_ENV_OVERWRITE:
+            res->environ.env_overwrite = resolve_add_uint(data) ;
+            break ;
+
+        // regex
+
+        case E_RESOLVE_SERVICE_REGEX_CONFIGURE:
+            res->regex.configure = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_REGEX_DIRECTORIES:
+            res->regex.directories = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_REGEX_FILES:
+            res->regex.files = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_REGEX_INFILES:
+            res->regex.infiles = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_REGEX_NDIRECTORIES:
+            res->regex.ndirectories = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_REGEX_NFILES:
+            res->regex.nfiles = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_REGEX_NINFILES:
+            res->regex.ninfiles = resolve_add_uint(data) ;
             break ;
 
         default:
-            break ;
+            return e ;
     }
 
     e = 1 ;
 
-    err:
-        free(wres) ;
-        return e ;
+   free(wres) ;
+   return e ;
 
 }

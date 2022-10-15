@@ -29,6 +29,8 @@ int service_cmp_basedir(char const *dir)
 
     /** dir can be 0, so nothing to do */
     if (!dir) return 1 ;
+
+    int e = 0 ;
     size_t len = strlen(dir) ;
     uid_t owner = MYUID ;
     stralloc home = STRALLOC_ZERO ;
@@ -65,9 +67,9 @@ int service_cmp_basedir(char const *dir)
                     goto err ;
             } else goto err ;
 
-    stralloc_free(&home) ;
-    return 1 ;
+    e = 1 ;
+
     err:
         stralloc_free(&home) ;
-        return 0 ;
+        return e ;
 }

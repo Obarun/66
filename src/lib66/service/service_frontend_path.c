@@ -15,60 +15,75 @@
 #include <sys/types.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 
 #include <skalibs/stralloc.h>
 
+#include <66/config.h>
 #include <66/utils.h>
 #include <66/constants.h>
 #include <66/service.h>
 
-int service_frontend_path(stralloc *sasrc,char const *sv, uid_t owner,char const *directory_forced)
+int service_frontend_path(stralloc *sasrc, char const *sv, uid_t owner, char const *directory_forced)
 {
     log_flow() ;
 
-    int r ;
+    int r, e = 0 ;
     char const *src = 0 ;
-    int err = -1 ;
-    stralloc home = STRALLOC_ZERO ;
-    if (directory_forced)
-    {
-        if (!service_cmp_basedir(directory_forced)) { log_warn("invalid base service directory: ",directory_forced) ; goto err ; }
+    char home[SS_MAX_PATH_LEN + 1 + strlen(SS_USER_DIR) + 1] ;
+
+    if (directory_forced) {
+
+        if (!service_cmp_basedir(directory_forced))
+            log_die(LOG_EXIT_USER, "invalid base service directory: ", directory_forced) ;
+
         src = directory_forced ;
-        r = service_frontend_src(sasrc,sv,src) ;
-        if (r == -1){ log_warnusys("parse source directory: ",src) ; goto err ; }
-        if (!r) { log_warnu("find service: ",sv) ; err = 0 ; goto err ; }
-    }
-    else
-    {
-        if (!owner) src = SS_SERVICE_ADMDIR ;
-        else
-        {
-            if (!set_ownerhome(&home,owner)) { log_warnusys("set home directory") ; goto err ; }
-            if (!stralloc_cats(&home,SS_SERVICE_USERDIR)) { log_warnsys("stralloc") ; goto err ; }
-            if (!stralloc_0(&home)) { log_warnsys("stralloc") ; goto err ; }
-            home.len-- ;
-            src = home.s ;
+        r = service_frontend_src(sasrc, sv, src) ;
+        if (r == -1)
+            log_dieusys(LOG_EXIT_SYS, "parse source directory: ", src) ;
+
+        if (!r)
+            goto freed ;
+
+    } else {
+
+        if (!owner)
+            src = SS_SERVICE_ADMDIR ;
+        else {
+
+            if (!set_ownerhome_stack(home))
+                log_dieusys(LOG_EXIT_SYS, "set home directory") ;
+
+            auto_strings(home + strlen(home), SS_USER_DIR) ;
+
+            src = home ;
         }
 
-        r = service_frontend_src(sasrc,sv,src) ;
-        if (r == -1){ log_warnusys("parse source directory: ",src) ; goto err ; }
-        if (!r)
-        {
+        r = service_frontend_src(sasrc, sv, src) ;
+        if (r == -1)
+            log_dieusys(LOG_EXIT_SYS, "parse source directory: ", src) ;
+
+        if (!r) {
+
             src = SS_SERVICE_ADMDIR ;
-            r = service_frontend_src(sasrc,sv,src) ;
-            if (r == -1) { log_warnusys("parse source directory: ",src) ; goto err ; }
-            if (!r)
-            {
+            r = service_frontend_src(sasrc, sv, src) ;
+            if (r == -1)
+                log_dieusys(LOG_EXIT_SYS, "parse source directory: ", src) ;
+
+            if (!r) {
+
                 src = SS_SERVICE_SYSDIR ;
-                r = service_frontend_src(sasrc,sv,src) ;
-                if (r == -1) { log_warnusys("parse source directory: ",src) ; goto err ; }
-                if (!r) { log_warnu("find service: ",sv) ; err = 0 ; goto err ; }
+                r = service_frontend_src(sasrc, sv, src) ;
+                if (r == -1)
+                    log_dieusys(LOG_EXIT_SYS, "parse source directory: ", src) ;
+
+                if (!r)
+                    goto freed ;
             }
         }
     }
-    stralloc_free(&home) ;
-    return 1 ;
-    err:
-        stralloc_free(&home) ;
-        return err ;
+    e = 1 ;
+
+    freed:
+        return e ;
 }

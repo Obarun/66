@@ -29,52 +29,70 @@ int service_resolve_master_get_field_tosa(stralloc *sa, resolve_service_master_t
 
     switch(field) {
 
-        case SERVICE_ENUM_MASTER_NAME:
+        case E_RESOLVE_SERVICE_MASTER_NAME:
             str = mres->sa.s + mres->name ;
             break ;
 
-        case SERVICE_ENUM_MASTER_CLASSIC:
+        case E_RESOLVE_SERVICE_MASTER_CLASSIC:
             str = mres->sa.s + mres->classic ;
             break ;
 
-        case SERVICE_ENUM_MASTER_LONGRUN:
-            str = mres->sa.s + mres->longrun ;
-            break ;
-
-        case SERVICE_ENUM_MASTER_BUNDLE:
+        case E_RESOLVE_SERVICE_MASTER_BUNDLE:
             str = mres->sa.s + mres->bundle ;
             break ;
 
-        case SERVICE_ENUM_MASTER_ONESHOT:
+        case E_RESOLVE_SERVICE_MASTER_ONESHOT:
             str = mres->sa.s + mres->oneshot ;
             break ;
 
-        case SERVICE_ENUM_MASTER_MODULE:
+        case E_RESOLVE_SERVICE_MASTER_MODULE:
             str = mres->sa.s + mres->module ;
             break ;
 
-        case SERVICE_ENUM_MASTER_NCLASSIC:
+        case E_RESOLVE_SERVICE_MASTER_ENABLED:
+            str = mres->sa.s + mres->enabled ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_DISABLED:
+            str = mres->sa.s + mres->disabled ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_CONTENTS:
+            str = mres->sa.s + mres->contents ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_NCLASSIC:
             fmt[uint32_fmt(fmt,mres->nclassic)] = 0 ;
             str = fmt ;
             break ;
 
-        case SERVICE_ENUM_MASTER_NBUNDLE:
+        case E_RESOLVE_SERVICE_MASTER_NBUNDLE:
             fmt[uint32_fmt(fmt,mres->nbundle)] = 0 ;
             str = fmt ;
             break ;
 
-        case SERVICE_ENUM_MASTER_NLONGRUN:
-            fmt[uint32_fmt(fmt,mres->nlongrun)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case SERVICE_ENUM_MASTER_NONESHOT:
+        case E_RESOLVE_SERVICE_MASTER_NONESHOT:
             fmt[uint32_fmt(fmt,mres->noneshot)] = 0 ;
             str = fmt ;
             break ;
 
-        case SERVICE_ENUM_MASTER_NMODULE:
+        case E_RESOLVE_SERVICE_MASTER_NMODULE:
             fmt[uint32_fmt(fmt,mres->nmodule)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_NENABLED:
+            fmt[uint32_fmt(fmt,mres->nenabled)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_NDISABLED:
+            fmt[uint32_fmt(fmt,mres->ndisabled)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_NCONTENTS:
+            fmt[uint32_fmt(fmt,mres->ncontents)] = 0 ;
             str = fmt ;
             break ;
 

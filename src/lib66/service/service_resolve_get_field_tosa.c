@@ -29,155 +29,341 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
 
     char fmt[UINT32_FMT] ;
     char const *str = 0 ;
+    int e = 0 ;
 
     switch(field) {
 
-        case SERVICE_ENUM_NAME:
+        // configuration
+
+        case E_RESOLVE_SERVICE_NAME:
             str = res->sa.s + res->name ;
             break ;
 
-        case SERVICE_ENUM_DESCRIPTION:
+        case E_RESOLVE_SERVICE_DESCRIPTION:
             str = res->sa.s + res->description ;
             break ;
 
-        case SERVICE_ENUM_VERSION:
+        case E_RESOLVE_SERVICE_VERSION:
             str = res->sa.s + res->version ;
             break ;
 
-        case SERVICE_ENUM_LOGGER:
-            str = res->sa.s + res->logger ;
-            break ;
-
-        case SERVICE_ENUM_LOGREAL:
-            str = res->sa.s + res->logreal ;
-            break ;
-
-        case SERVICE_ENUM_LOGASSOC:
-            str = res->sa.s + res->logassoc ;
-            break ;
-
-        case SERVICE_ENUM_DSTLOG:
-            str = res->sa.s + res->dstlog ;
-            break ;
-
-        case SERVICE_ENUM_DEPENDS:
-            str = res->sa.s + res->depends ;
-            break ;
-
-        case SERVICE_ENUM_REQUIREDBY:
-            str = res->sa.s + res->requiredby ;
-            break ;
-
-        case SERVICE_ENUM_OPTSDEPS:
-            str = res->sa.s + res->optsdeps ;
-            break ;
-
-        case SERVICE_ENUM_EXTDEPS:
-            str = res->sa.s + res->extdeps ;
-            break ;
-
-        case SERVICE_ENUM_CONTENTS:
-            str = res->sa.s + res->contents ;
-            break ;
-
-        case SERVICE_ENUM_SRC:
-            str = res->sa.s + res->src ;
-            break ;
-
-        case SERVICE_ENUM_SRCONF:
-            str = res->sa.s + res->srconf ;
-            break ;
-
-        case SERVICE_ENUM_LIVE:
-            str = res->sa.s + res->live ;
-            break ;
-
-        case SERVICE_ENUM_RUNAT:
-            str = res->sa.s + res->runat ;
-            break ;
-
-        case SERVICE_ENUM_TREE:
-            str = res->sa.s + res->tree ;
-            break ;
-
-        case SERVICE_ENUM_TREENAME:
-            str = res->sa.s + res->treename ;
-            break ;
-
-        case SERVICE_ENUM_STATE:
-            str = res->sa.s + res->state ;
-            break ;
-
-        case SERVICE_ENUM_EXEC_RUN:
-            str = res->sa.s + res->exec_run ;
-            break ;
-
-        case SERVICE_ENUM_EXEC_LOG_RUN:
-            str = res->sa.s + res->exec_log_run ;
-            break ;
-
-        case SERVICE_ENUM_REAL_EXEC_RUN:
-            str = res->sa.s + res->real_exec_run ;
-            break ;
-
-        case SERVICE_ENUM_REAL_EXEC_LOG_RUN:
-            str = res->sa.s + res->real_exec_log_run ;
-            break ;
-
-        case SERVICE_ENUM_EXEC_FINISH:
-            str = res->sa.s + res->exec_finish ;
-            break ;
-
-        case SERVICE_ENUM_REAL_EXEC_FINISH:
-            str = res->sa.s + res->real_exec_finish ;
-            break ;
-
-        case SERVICE_ENUM_TYPE:
+        case E_RESOLVE_SERVICE_TYPE:
             fmt[uint32_fmt(fmt,res->type)] = 0 ;
             str = fmt ;
             break ;
 
-        case SERVICE_ENUM_NDEPENDS:
-            fmt[uint32_fmt(fmt,res->ndepends)] = 0 ;
+        case E_RESOLVE_SERVICE_NOTIFY:
+            fmt[uint32_fmt(fmt,res->notify)] = 0 ;
             str = fmt ;
             break ;
 
-        case SERVICE_ENUM_NREQUIREDBY:
-            fmt[uint32_fmt(fmt,res->nrequiredby)] = 0 ;
+        case E_RESOLVE_SERVICE_MAXDEATH:
+            fmt[uint32_fmt(fmt,res->maxdeath)] = 0 ;
             str = fmt ;
             break ;
 
-        case SERVICE_ENUM_NOPTSDEPS:
-            fmt[uint32_fmt(fmt,res->noptsdeps)] = 0 ;
+        case E_RESOLVE_SERVICE_EARLIER:
+            fmt[uint32_fmt(fmt,res->earlier)] = 0 ;
             str = fmt ;
             break ;
 
-        case SERVICE_ENUM_NEXTDEPS:
-            fmt[uint32_fmt(fmt,res->nextdeps)] = 0 ;
+        case E_RESOLVE_SERVICE_HIERCOPY:
+            str = res->sa.s + res->hiercopy ;
+            break ;
+
+        case E_RESOLVE_SERVICE_INTREE:
+            str = res->sa.s + res->intree ;
+            break ;
+
+        case E_RESOLVE_SERVICE_OWNERSTR:
+            str = res->sa.s + res->ownerstr ;
+            break ;
+
+        case E_RESOLVE_SERVICE_OWNER:
+            fmt[uint32_fmt(fmt,res->owner)] = 0 ;
             str = fmt ;
             break ;
 
-        case SERVICE_ENUM_NCONTENTS:
-            fmt[uint32_fmt(fmt,res->ncontents)] = 0 ;
+        case E_RESOLVE_SERVICE_TREENAME:
+            str = res->sa.s + res->treename ;
+            break ;
+
+        case E_RESOLVE_SERVICE_USER:
+            str = res->sa.s + res->user ;
+            break ;
+
+        case E_RESOLVE_SERVICE_INMODULE:
+            str = res->sa.s + res->inmodule ;
+            break ;
+
+        // path configuration
+
+        case E_RESOLVE_SERVICE_HOME:
+            str = res->sa.s + res->path.home ;
+            break ;
+
+        case E_RESOLVE_SERVICE_FRONTEND:
+            str = res->sa.s + res->path.frontend ;
+            break ;
+
+        case E_RESOLVE_SERVICE_TREE:
+            str = res->sa.s + res->path.tree ;
+            break ;
+
+        case E_RESOLVE_SERVICE_STATUS:
+            str = res->sa.s + res->path.status ;
+
+        // dependencies
+
+        case E_RESOLVE_SERVICE_DEPENDS:
+            str = res->sa.s + res->dependencies.depends ;
+            break ;
+
+        case E_RESOLVE_SERVICE_REQUIREDBY:
+            str = res->sa.s + res->dependencies.requiredby ;
+            break ;
+
+        case E_RESOLVE_SERVICE_OPTSDEPS:
+            str = res->sa.s + res->dependencies.optsdeps ;
+            break ;
+
+        case E_RESOLVE_SERVICE_NDEPENDS:
+            fmt[uint32_fmt(fmt,res->dependencies.ndepends)] = 0 ;
             str = fmt ;
             break ;
 
-        case SERVICE_ENUM_DOWN:
-            fmt[uint32_fmt(fmt,res->down)] = 0 ;
+        case E_RESOLVE_SERVICE_NREQUIREDBY:
+            fmt[uint32_fmt(fmt,res->dependencies.nrequiredby)] = 0 ;
             str = fmt ;
             break ;
 
-        case SERVICE_ENUM_DISEN:
-            fmt[uint32_fmt(fmt,res->disen)] = 0 ;
+        case E_RESOLVE_SERVICE_NOPTSDEPS:
+            fmt[uint32_fmt(fmt,res->dependencies.noptsdeps)] = 0 ;
+            str = fmt ;
+            break ;
+
+        // execute
+
+        case E_RESOLVE_SERVICE_RUN:
+            str = res->sa.s + res->execute.run.run ;
+            break ;
+
+        case E_RESOLVE_SERVICE_RUN_USER:
+            str = res->sa.s + res->execute.run.run_user ;
+            break ;
+
+        case E_RESOLVE_SERVICE_RUN_BUILD:
+            str = res->sa.s + res->execute.run.build ;
+            break ;
+
+        case E_RESOLVE_SERVICE_RUN_SHEBANG:
+            str = res->sa.s + res->execute.run.shebang ;
+            break ;
+
+        case E_RESOLVE_SERVICE_RUN_RUNAS:
+            str = res->sa.s + res->execute.run.runas ;
+            break ;
+
+        case E_RESOLVE_SERVICE_FINISH:
+            str = res->sa.s + res->execute.finish.run ;
+            break ;
+
+        case E_RESOLVE_SERVICE_FINISH_USER:
+            str = res->sa.s + res->execute.finish.run_user ;
+            break ;
+
+        case E_RESOLVE_SERVICE_FINISH_BUILD:
+            str = res->sa.s + res->execute.finish.build ;
+            break ;
+
+        case E_RESOLVE_SERVICE_FINISH_SHEBANG:
+            str = res->sa.s + res->execute.finish.shebang ;
+            break ;
+
+        case E_RESOLVE_SERVICE_FINISH_RUNAS:
+            str = res->sa.s + res->execute.finish.runas ;
+            break ;
+
+        case E_RESOLVE_SERVICE_TIMEOUTKILL:
+            fmt[uint32_fmt(fmt,res->execute.timeout.kill)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_TIMEOUTFINISH:
+            fmt[uint32_fmt(fmt,res->execute.timeout.finish)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_TIMEOUTUP:
+            fmt[uint32_fmt(fmt,res->execute.timeout.up)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_TIMEOUTDOWN:
+            fmt[uint32_fmt(fmt,res->execute.timeout.down)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_DOWN:
+            fmt[uint32_fmt(fmt,res->execute.down)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_DOWNSIGNAL:
+            fmt[uint32_fmt(fmt,res->execute.downsignal)] = 0 ;
+            str = fmt ;
+            break ;
+
+        // live
+
+        case E_RESOLVE_SERVICE_LIVEDIR:
+            str = res->sa.s + res->live.livedir ;
+            break ;
+
+        case E_RESOLVE_SERVICE_SCANDIR:
+            str = res->sa.s + res->live.scandir ;
+            break ;
+
+        case E_RESOLVE_SERVICE_STATEDIR:
+            str = res->sa.s + res->live.statedir ;
+            break ;
+
+        case E_RESOLVE_SERVICE_EVENTDIR:
+            str = res->sa.s + res->live.eventdir ;
+            break ;
+
+        case E_RESOLVE_SERVICE_NOTIFDIR:
+            str = res->sa.s + res->live.notifdir ;
+            break ;
+
+        case E_RESOLVE_SERVICE_SUPERVISEDIR:
+            str = res->sa.s + res->live.supervisedir ;
+            break ;
+
+        case E_RESOLVE_SERVICE_FDHOLDERDIR:
+            str = res->sa.s + res->live.fdholderdir ;
+            break ;
+
+        case E_RESOLVE_SERVICE_ONESHOTDDIR:
+            str = res->sa.s + res->live.oneshotddir ;
+            break ;
+
+        // logger
+
+        case E_RESOLVE_SERVICE_LOGNAME:
+            str = res->sa.s + res->logger.name ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGDESTINATION:
+            str = res->sa.s + res->logger.destination ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGBACKUP:
+            fmt[uint32_fmt(fmt,res->logger.backup)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGMAXSIZE:
+            fmt[uint32_fmt(fmt,res->logger.maxsize)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGTIMESTAMP:
+            fmt[uint32_fmt(fmt,res->logger.timestamp)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGWANT:
+            fmt[uint32_fmt(fmt,res->logger.want)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGRUN:
+            str = res->sa.s + res->logger.execute.run.run ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGRUN_USER:
+            str = res->sa.s + res->logger.execute.run.run_user ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGRUN_BUILD:
+            str = res->sa.s + res->logger.execute.run.build ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGRUN_SHEBANG:
+            str = res->sa.s + res->logger.execute.run.shebang ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGRUN_RUNAS:
+            str = res->sa.s + res->logger.execute.run.runas ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGTIMEOUTKILL:
+            fmt[uint32_fmt(fmt,res->logger.timeout.kill)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LOGTIMEOUTFINISH:
+            fmt[uint32_fmt(fmt,res->logger.timeout.finish)] = 0 ;
+            str = fmt ;
+            break ;
+
+
+        // environment
+
+        case E_RESOLVE_SERVICE_ENV:
+            str = res->sa.s + res->environ.env ;
+            break ;
+
+        case E_RESOLVE_SERVICE_ENVDIR:
+            str = res->sa.s + res->environ.envdir ;
+            break ;
+
+        case E_RESOLVE_SERVICE_ENV_OVERWRITE:
+            fmt[uint32_fmt(fmt,res->environ.env_overwrite)] = 0 ;
+            str = fmt ;
+            break ;
+
+        // regex
+
+        case E_RESOLVE_SERVICE_REGEX_CONFIGURE:
+            str = res->sa.s + res->regex.directories ;
+            break ;
+
+        case E_RESOLVE_SERVICE_REGEX_DIRECTORIES:
+            str = res->sa.s + res->regex.directories ;
+            break ;
+
+        case E_RESOLVE_SERVICE_REGEX_FILES:
+            str = res->sa.s + res->regex.files ;
+            break ;
+
+        case E_RESOLVE_SERVICE_REGEX_INFILES:
+            str = res->sa.s + res->regex.infiles ;
+            break ;
+
+        case E_RESOLVE_SERVICE_REGEX_NDIRECTORIES:
+            fmt[uint32_fmt(fmt,res->regex.ndirectories)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_REGEX_NFILES:
+            fmt[uint32_fmt(fmt,res->regex.nfiles)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_REGEX_NINFILES:
+            fmt[uint32_fmt(fmt,res->regex.ninfiles)] = 0 ;
             str = fmt ;
             break ;
 
         default:
-            return 0 ;
+            return e ;
     }
 
     if (!auto_stra(sa,str))
-        return 0 ;
+        return e ;
 
-    return 1 ;
+    e = 1 ;
+    return e ;
 }

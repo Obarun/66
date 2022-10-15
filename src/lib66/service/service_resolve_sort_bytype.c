@@ -19,8 +19,18 @@
 #include <skalibs/stralloc.h>
 
 #include <66/resolve.h>
+#include <66/enum.h>
 #include <66/service.h>
-
+/***
+ *
+ *
+ *
+ * may not be used anymore
+ *
+ *
+ *
+ *
+ * */
 int service_resolve_sort_bytype(stralloc *list, char const *src)
 {
     log_flow() ;
@@ -70,7 +80,6 @@ int service_resolve_sort_bytype(stralloc *list, char const *src)
                 break ;
 
             case TYPE_BUNDLE:
-            case TYPE_LONGRUN:
             case TYPE_ONESHOT:
 
                 if (!stralloc_insertb(list, module_list, name, strlen(name) + 1))

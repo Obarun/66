@@ -36,15 +36,19 @@ int service_resolve_master_copy(resolve_service_master_t *dst, resolve_service_m
     dst->name = mres->name ;
     dst->classic = mres->classic ;
     dst->bundle = mres->bundle ;
-    dst->longrun = mres->longrun ;
     dst->oneshot = mres->oneshot ;
     dst->module = mres->module ;
+    dst->enabled = mres->enabled ;
+    dst->disabled = mres->disabled ;
+    dst->contents = mres->contents ;
 
     dst->nclassic = mres->nclassic ;
     dst->nbundle = mres->nbundle ;
-    dst->nlongrun = mres->nlongrun ;
     dst->noneshot = mres->noneshot ;
     dst->nmodule = mres->nmodule ;
+    dst->nenabled = mres->nenabled ;
+    dst->ndisabled = mres->ndisabled ;
+    dst->ncontents = mres->ncontents ;
 
     return 1 ;
 

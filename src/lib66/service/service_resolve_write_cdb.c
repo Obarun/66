@@ -26,107 +26,92 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres)
 
     char *str = sres->sa.s ;
 
-    /* name */
-    if (!resolve_add_cdb(c,"name",str + sres->name) ||
+    // configuration
+    if (!resolve_add_cdb(c, "name", str + sres->name) ||
+    !resolve_add_cdb(c, "description", str + sres->description) ||
+    !resolve_add_cdb(c, "version", str + sres->version) ||
+    !resolve_add_cdb_uint(c, "type", sres->type) ||
+    !resolve_add_cdb_uint(c, "notify", sres->notify) ||
+    !resolve_add_cdb_uint(c, "maxdeath", sres->maxdeath) ||
+    !resolve_add_cdb_uint(c, "earlier", sres->earlier) ||
+    !resolve_add_cdb(c, "hiercopy", str + sres->hiercopy) ||
+    !resolve_add_cdb(c, "intree", str + sres->intree) ||
+    !resolve_add_cdb(c, "ownerstr", str + sres->ownerstr) ||
+    !resolve_add_cdb_uint(c, "owner", sres->owner) ||
+    !resolve_add_cdb(c, "treename", str + sres->treename) ||
+    !resolve_add_cdb(c, "user", str + sres->user) ||
+    !resolve_add_cdb(c, "inmodule", str + sres->inmodule) ||
 
-    /* description */
-    !resolve_add_cdb(c,"description",str + sres->description) ||
+    // path
+    !resolve_add_cdb(c, "home", str + sres->path.home) ||
+    !resolve_add_cdb(c, "frontend", str + sres->path.frontend) ||
+    !resolve_add_cdb(c, "tree", str + sres->path.tree) ||
+    !resolve_add_cdb(c, "status", str + sres->path.status) ||
 
-    /* version */
-    !resolve_add_cdb(c,"version",str + sres->version) ||
+    // dependencies
+    !resolve_add_cdb(c, "depends", str + sres->dependencies.depends) ||
+    !resolve_add_cdb(c, "requiredby", str + sres->dependencies.requiredby) ||
+    !resolve_add_cdb(c, "optsdeps", str + sres->dependencies.optsdeps) ||
+    !resolve_add_cdb_uint(c, "ndepends", sres->dependencies.ndepends) ||
+    !resolve_add_cdb_uint(c, "nrequiredby", sres->dependencies.nrequiredby) ||
+    !resolve_add_cdb_uint(c, "noptsdeps", sres->dependencies.noptsdeps) ||
 
-    /* logger */
-    !resolve_add_cdb(c,"logger",str + sres->logger) ||
+    // execute
+    !resolve_add_cdb(c, "run", str + sres->execute.run.run) ||
+    !resolve_add_cdb(c, "run_user", str + sres->execute.run.run_user) ||
+    !resolve_add_cdb(c, "run_build", str + sres->execute.run.build) ||
+    !resolve_add_cdb(c, "run_shebang", str + sres->execute.run.shebang) ||
+    !resolve_add_cdb(c, "run_runas", str + sres->execute.run.runas) ||
+    !resolve_add_cdb(c, "finish", str + sres->execute.finish.run) ||
+    !resolve_add_cdb(c, "finish_user", str + sres->execute.finish.run_user) ||
+    !resolve_add_cdb(c, "finish_build", str + sres->execute.finish.build) ||
+    !resolve_add_cdb(c, "finish_shebang", str + sres->execute.finish.shebang) ||
+    !resolve_add_cdb(c, "finish_runas", str + sres->execute.finish.runas) ||
+    !resolve_add_cdb_uint(c, "timeoutkill", sres->execute.timeout.kill) ||
+    !resolve_add_cdb_uint(c, "timeoutfinish", sres->execute.timeout.finish) ||
+    !resolve_add_cdb_uint(c, "timeoutup", sres->execute.timeout.up) ||
+    !resolve_add_cdb_uint(c, "timeoutdown", sres->execute.timeout.down) ||
+    !resolve_add_cdb_uint(c, "down", sres->execute.down) ||
+    !resolve_add_cdb_uint(c, "downsignal", sres->execute.downsignal) ||
 
-    /* logreal */
-    !resolve_add_cdb(c,"logreal",str + sres->logreal) ||
+    //live
+    !resolve_add_cdb(c, "livedir", str + sres->live.livedir) ||
+    !resolve_add_cdb(c, "scandir", str + sres->live.scandir) ||
+    !resolve_add_cdb(c, "statedir", str + sres->live.statedir) ||
+    !resolve_add_cdb(c, "eventdir", str + sres->live.eventdir) ||
+    !resolve_add_cdb(c, "notifdir", str + sres->live.notifdir) ||
+    !resolve_add_cdb(c, "supervisedir", str + sres->live.supervisedir) ||
+    !resolve_add_cdb(c, "fdholderdir", str + sres->live.fdholderdir) ||
+    !resolve_add_cdb(c, "oneshotddir", str + sres->live.oneshotddir) ||
 
-    /* logassoc */
-    !resolve_add_cdb(c,"logassoc",str + sres->logassoc) ||
+    // logger
+    !resolve_add_cdb(c, "logname", str + sres->logger.name) ||
+    !resolve_add_cdb(c, "logdestination", str + sres->logger.destination) ||
+    !resolve_add_cdb_uint(c, "logbackup", sres->logger.backup) ||
+    !resolve_add_cdb_uint(c, "logmaxsize", sres->logger.maxsize) ||
+    !resolve_add_cdb_uint(c, "logwant", sres->logger.want) ||
+    !resolve_add_cdb_uint(c, "logtimestamp", sres->logger.timestamp) ||
+    !resolve_add_cdb(c, "logrun", str + sres->logger.execute.run.run) ||
+    !resolve_add_cdb(c, "logrun_user", str + sres->logger.execute.run.run_user) ||
+    !resolve_add_cdb(c, "logrun_build", str + sres->logger.execute.run.build) ||
+    !resolve_add_cdb(c, "logrun_shebang", str + sres->logger.execute.run.shebang) ||
+    !resolve_add_cdb(c, "logrun_runas", str + sres->logger.execute.run.runas) ||
+    !resolve_add_cdb_uint(c, "logtimeoutkill", sres->logger.execute.timeout.kill) ||
+    !resolve_add_cdb_uint(c, "logtimeoutfinish", sres->logger.execute.timeout.finish) ||
 
-    /* dstlog */
-    !resolve_add_cdb(c,"dstlog",str + sres->dstlog) ||
+    // environ
+    !resolve_add_cdb(c, "env", str + sres->environ.env) ||
+    !resolve_add_cdb(c, "envdir", str + sres->environ.envdir) ||
+    !resolve_add_cdb_uint(c, "env_overwrite", sres->environ.env_overwrite) ||
 
-    /* depends */
-    !resolve_add_cdb(c,"depends",str + sres->depends) ||
-
-    /* deps */
-    !resolve_add_cdb(c,"requiredby",str + sres->requiredby) ||
-
-    /* optsdeps */
-    !resolve_add_cdb(c,"optsdeps",str + sres->optsdeps) ||
-
-    /* extdeps */
-    !resolve_add_cdb(c,"extdeps",str + sres->extdeps) ||
-
-    /* contents */
-    !resolve_add_cdb(c,"contents",str + sres->contents) ||
-
-    /* src */
-    !resolve_add_cdb(c,"src",str + sres->src) ||
-
-    /* srconf */
-    !resolve_add_cdb(c,"srconf",str + sres->srconf) ||
-
-    /* live */
-    !resolve_add_cdb(c,"live",str + sres->live) ||
-
-    /* runat */
-    !resolve_add_cdb(c,"runat",str + sres->runat) ||
-
-    /* tree */
-    !resolve_add_cdb(c,"tree",str + sres->tree) ||
-
-    /* treename */
-    !resolve_add_cdb(c,"treename",str + sres->treename) ||
-
-    /* dstlog */
-    !resolve_add_cdb(c,"dstlog",str + sres->dstlog) ||
-
-    /* state */
-    !resolve_add_cdb(c,"state",str + sres->state) ||
-
-    /* exec_run */
-    !resolve_add_cdb(c,"exec_run",str + sres->exec_run) ||
-
-    /* exec_log_run */
-    !resolve_add_cdb(c,"exec_log_run",str + sres->exec_log_run) ||
-
-    /* real_exec_run */
-    !resolve_add_cdb(c,"real_exec_run",str + sres->real_exec_run) ||
-
-    /* real_exec_log_run */
-    !resolve_add_cdb(c,"real_exec_log_run",str + sres->real_exec_log_run) ||
-
-    /* exec_finish */
-    !resolve_add_cdb(c,"exec_finish",str + sres->exec_finish) ||
-
-    /* real_exec_finish */
-    !resolve_add_cdb(c,"real_exec_finish",str + sres->real_exec_finish) ||
-
-    /* type */
-    !resolve_add_cdb_uint(c,"type",sres->type) ||
-
-    /* ndepends */
-    !resolve_add_cdb_uint(c,"ndepends",sres->ndepends) ||
-
-    /* ndeps */
-    !resolve_add_cdb_uint(c,"ndeps",sres->nrequiredby) ||
-
-    /* noptsdeps */
-    !resolve_add_cdb_uint(c,"noptsdeps",sres->noptsdeps) ||
-
-    /* nextdeps */
-    !resolve_add_cdb_uint(c,"nextdeps",sres->nextdeps) ||
-
-    /* ncontents */
-    !resolve_add_cdb_uint(c,"ncontents",sres->ncontents) ||
-
-    /* down */
-    !resolve_add_cdb_uint(c,"down",sres->down) ||
-
-    /* disen */
-    !resolve_add_cdb_uint(c,"disen",sres->disen)) return 0 ;
+    // regex
+    !resolve_add_cdb(c, "configure", str + sres->regex.configure) ||
+    !resolve_add_cdb(c, "directories", str + sres->regex.directories) ||
+    !resolve_add_cdb(c, "files", str + sres->regex.files) ||
+    !resolve_add_cdb(c, "infiles", str + sres->regex.infiles) ||
+    !resolve_add_cdb_uint(c, "ndirectories", sres->regex.ndirectories) ||
+    !resolve_add_cdb_uint(c, "nfiles", sres->regex.nfiles) ||
+    !resolve_add_cdb_uint(c, "ninfiles", sres->regex.ninfiles)) return 0 ;
 
     return 1 ;
 }

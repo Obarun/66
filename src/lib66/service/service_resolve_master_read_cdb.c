@@ -47,10 +47,6 @@ int service_resolve_master_read_cdb(cdb *c, resolve_service_master_t *tres)
     resolve_find_cdb(&tmp,c,"bundle") ;
     tres->bundle = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
 
-    /* longrun */
-    resolve_find_cdb(&tmp,c,"longrun") ;
-    tres->longrun = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-
     /* oneshot */
     resolve_find_cdb(&tmp,c,"oneshot") ;
     tres->oneshot = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
@@ -58,6 +54,18 @@ int service_resolve_master_read_cdb(cdb *c, resolve_service_master_t *tres)
     /* modules */
     resolve_find_cdb(&tmp,c,"module") ;
     tres->module = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
+
+    /* enabled */
+    resolve_find_cdb(&tmp,c,"enabled") ;
+    tres->enabled = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
+
+    /* disabled */
+    resolve_find_cdb(&tmp,c,"disabled") ;
+    tres->disabled = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
+
+    /* contents */
+    resolve_find_cdb(&tmp,c,"contents") ;
+    tres->contents = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
 
     /* nclassic */
     x = resolve_find_cdb(&tmp,c,"nclassic") ;
@@ -67,10 +75,6 @@ int service_resolve_master_read_cdb(cdb *c, resolve_service_master_t *tres)
     x = resolve_find_cdb(&tmp,c,"nbundle") ;
     tres->nbundle = x ;
 
-    /* nlongrun */
-    x = resolve_find_cdb(&tmp,c,"nlongrun") ;
-    tres->nlongrun = x ;
-
     /* noneshot */
     x = resolve_find_cdb(&tmp,c,"noneshot") ;
     tres->noneshot = x ;
@@ -78,6 +82,18 @@ int service_resolve_master_read_cdb(cdb *c, resolve_service_master_t *tres)
     /* nmodule */
     x = resolve_find_cdb(&tmp,c,"nmodule") ;
     tres->nmodule = x ;
+
+    /* nenabled */
+    x = resolve_find_cdb(&tmp,c,"nenabled") ;
+    tres->nenabled = x ;
+
+    /* ndisabled */
+    x = resolve_find_cdb(&tmp,c,"ndisabled") ;
+    tres->ndisabled = x ;
+
+    /* ncontents */
+    x = resolve_find_cdb(&tmp,c,"ncontents") ;
+    tres->ncontents = x ;
 
     free(wres) ;
     stralloc_free(&tmp) ;

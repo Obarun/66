@@ -31,14 +31,23 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src)
 
     int  insta, equal = 0, e = -1, r = 0, found = 0 ;
     stralloc sa = STRALLOC_ZERO ;
-    size_t pos = 0, dpos = 0 ;
+    size_t pos = 0, dpos = 0, pathlen = strlen(src) ;
 
     char const *exclude[1] = { 0 } ;
 
-    if (!sastr_dir_get_recursive(&sa, src, exclude, S_IFREG|S_IFDIR, 1)) {
+    char path[pathlen + 1] ;
+
+    auto_strings(path, src) ;
+
+    /** avoid double slash */
+    if (path[pathlen - 1] == '/')
+        path[pathlen - 1] = 0 ;
+
+    if (!sastr_dir_get_recursive(&sa, path, exclude, S_IFREG|S_IFDIR, 1)) {
         stralloc_free(&sa) ;
         return e ;
     }
+
     size_t len = sa.len ;
     char tmp[len + 1] ;
     sastr_to_char(tmp, &sa) ;

@@ -34,39 +34,93 @@ int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res)
         !stralloc_0(&dst->sa))
             return 0 ;
 
+    // configuration
     dst->name = res->name ;
     dst->description = res->description ;
     dst->version = res->version ;
-    dst->logger = res->logger ;
-    dst->logreal = res->logreal ;
-    dst->logassoc = res->logassoc ;
-    dst->dstlog = res->dstlog ;
-    dst->depends = res->depends ;
-    dst->requiredby = res->requiredby ;
-    dst->optsdeps = res->optsdeps ;
-    dst->extdeps = res->extdeps ;
-    dst->contents = res->contents ;
-    dst->src = res->src ;
-    dst->srconf = res->srconf ;
-    dst->live = res->live ;
-    dst->runat = res->runat ;
-    dst->tree = res->tree ;
-    dst->treename = res->treename ;
-    dst->state = res->state ;
-    dst->exec_run = res->exec_run ;
-    dst->exec_log_run = res->exec_log_run ;
-    dst->real_exec_run = res->real_exec_run ;
-    dst->real_exec_log_run = res->real_exec_log_run ;
-    dst->exec_finish = res->exec_finish ;
-    dst->real_exec_finish = res->real_exec_finish ;
     dst->type = res->type ;
-    dst->ndepends = res->ndepends ;
-    dst->nrequiredby = res->nrequiredby ;
-    dst->noptsdeps = res->noptsdeps ;
-    dst->nextdeps = res->nextdeps ;
-    dst->ncontents = res->ncontents ;
-    dst->down = res->down ;
-    dst->disen = res->disen ;
+    dst->notify = res->notify ;
+    dst->maxdeath = res->maxdeath ;
+    dst->earlier = res->earlier ;
+    dst->hiercopy = res->hiercopy ;
+    dst->intree = res->intree ;
+    dst->ownerstr = res->ownerstr ;
+    dst->owner = res->owner ;
+    dst->treename = res->treename ;
+    dst->user = res->user ;
+    dst->inmodule = res->inmodule ;
+
+    // path
+    dst->path.home = res->path.home ;
+    dst->path.frontend = res->path.frontend ;
+    dst->path.tree = res->path.tree ;
+    dst->path.status = res->path.status ;
+
+    // dependencies
+    dst->dependencies.depends = res->dependencies.depends ;
+    dst->dependencies.requiredby = res->dependencies.requiredby ;
+    dst->dependencies.optsdeps = res->dependencies.optsdeps ;
+    dst->dependencies.ndepends = res->dependencies.ndepends ;
+    dst->dependencies.nrequiredby = res->dependencies.nrequiredby ;
+    dst->dependencies.noptsdeps = res->dependencies.noptsdeps ;
+
+    // execute
+    dst->execute.run.run = res->execute.run.run ;
+    dst->execute.run.run_user = res->execute.run.run_user ;
+    dst->execute.run.build = res->execute.run.build ;
+    dst->execute.run.shebang = res->execute.run.shebang ;
+    dst->execute.run.runas = res->execute.run.runas ;
+    dst->execute.finish.run = res->execute.finish.run ;
+    dst->execute.finish.run_user = res->execute.finish.run_user ;
+    dst->execute.finish.build = res->execute.finish.build ;
+    dst->execute.finish.shebang = res->execute.finish.shebang ;
+    dst->execute.finish.runas = res->execute.finish.runas ;
+    dst->execute.timeout.kill = res->execute.timeout.kill ;
+    dst->execute.timeout.finish = res->execute.timeout.finish ;
+    dst->execute.timeout.up = res->execute.timeout.up ;
+    dst->execute.timeout.down = res->execute.timeout.down ;
+    dst->execute.down = res->execute.down ;
+    dst->execute.downsignal = res->execute.downsignal ;
+
+    // live
+    dst->live.livedir = res->live.livedir ;
+    dst->live.scandir = res->live.scandir ;
+    dst->live.statedir = res->live.statedir ;
+    dst->live.eventdir = res->live.eventdir ;
+    dst->live.notifdir = res->live.notifdir ;
+    dst->live.supervisedir = res->live.supervisedir ;
+    dst->live.fdholderdir = res->live.fdholderdir ;
+    dst->live.oneshotddir = res->live.oneshotddir ;
+
+    // logger
+    dst->logger.name = res->logger.name ;
+    dst->logger.destination = res->logger.destination ;
+    dst->logger.backup = res->logger.backup ;
+    dst->logger.maxsize = res->logger.maxsize ;
+    dst->logger.timestamp = res->logger.timestamp ;
+    dst->logger.want = res->logger.want ;
+    dst->logger.execute.run.run = res->logger.execute.run.run ;
+    dst->logger.execute.run.run_user = res->logger.execute.run.run_user ;
+    dst->logger.execute.run.build = res->logger.execute.run.build ;
+    dst->logger.execute.run.shebang = res->logger.execute.run.shebang ;
+    dst->logger.execute.run.runas = res->logger.execute.run.runas ;
+    dst->logger.timeout.kill = res->logger.timeout.kill ;
+    dst->logger.timeout.finish = res->logger.timeout.finish ;
+
+    // environment
+    dst->environ.env = res->environ.env ;
+    dst->environ.envdir = res->environ.envdir ;
+    dst->environ.env_overwrite = res->environ.env_overwrite ;
+
+    // regex
+    dst->regex.configure = res->regex.configure ;
+    dst->regex.directories = res->regex.directories ;
+    dst->regex.files = res->regex.files ;
+    dst->regex.infiles = res->regex.infiles ;
+    dst->regex.ndirectories = res->regex.ndirectories ;
+    dst->regex.nfiles = res->regex.nfiles ;
+    dst->regex.ninfiles = res->regex.ninfiles ;
+
 
     return 1 ;
 }

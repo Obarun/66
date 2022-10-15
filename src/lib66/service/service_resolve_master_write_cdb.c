@@ -34,14 +34,20 @@ int service_resolve_master_write_cdb(cdbmaker *c, resolve_service_master_t *mres
     /* bundle */
     !resolve_add_cdb(c,"bundle",str + mres->bundle) ||
 
-    /* longrun */
-    !resolve_add_cdb(c,"longrun",str + mres->longrun) ||
-
     /* oneshot */
     !resolve_add_cdb(c,"oneshot",str + mres->oneshot) ||
 
     /* module */
     !resolve_add_cdb(c,"module",str + mres->module) ||
+
+    /* enabled */
+    !resolve_add_cdb(c,"enabled",str + mres->enabled) ||
+
+    /* disabled */
+    !resolve_add_cdb(c,"disabled",str + mres->disabled) ||
+
+    /* contents */
+    !resolve_add_cdb(c,"contents",str + mres->contents) ||
 
     /* nclassic */
     !resolve_add_cdb_uint(c,"nclassic",mres->nclassic) ||
@@ -49,14 +55,20 @@ int service_resolve_master_write_cdb(cdbmaker *c, resolve_service_master_t *mres
     /* nbundle */
     !resolve_add_cdb_uint(c,"nbundle",mres->nbundle) ||
 
-    /* nlongrun */
-    !resolve_add_cdb_uint(c,"nlongrun",mres->nlongrun) ||
-
     /* noneshot */
     !resolve_add_cdb_uint(c,"noneshot",mres->noneshot) ||
 
     /* nmodule */
-    !resolve_add_cdb_uint(c,"nmodule",mres->nmodule)) return 0 ;
+    !resolve_add_cdb_uint(c,"nmodule",mres->nmodule) ||
+
+    /* nenabled */
+    !resolve_add_cdb_uint(c,"nenabled",mres->nenabled) ||
+
+    /* ndisabled */
+    !resolve_add_cdb_uint(c,"ndisabled",mres->ndisabled) ||
+
+    /* ncontents */
+    !resolve_add_cdb_uint(c,"ncontents",mres->ncontents)) return 0 ;
 
     return 1 ;
 }

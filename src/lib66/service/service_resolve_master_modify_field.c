@@ -26,19 +26,23 @@
 
 resolve_field_table_t resolve_service_master_field_table[] = {
 
-    [SERVICE_ENUM_MASTER_NAME] = { .field = "name" },
-    [SERVICE_ENUM_MASTER_CLASSIC] = { .field = "classic" },
-    [SERVICE_ENUM_MASTER_BUNDLE] = { .field = "bundle" },
-    [SERVICE_ENUM_MASTER_LONGRUN] = { .field = "longrun" },
-    [SERVICE_ENUM_MASTER_ONESHOT] = { .field = "oneshot" },
-    [SERVICE_ENUM_MASTER_MODULE] = { .field = "module" },
+    [E_RESOLVE_SERVICE_MASTER_NAME] = { .field = "name" },
+    [E_RESOLVE_SERVICE_MASTER_CLASSIC] = { .field = "classic" },
+    [E_RESOLVE_SERVICE_MASTER_BUNDLE] = { .field = "bundle" },
+    [E_RESOLVE_SERVICE_MASTER_ONESHOT] = { .field = "oneshot" },
+    [E_RESOLVE_SERVICE_MASTER_MODULE] = { .field = "module" },
+    [E_RESOLVE_SERVICE_MASTER_ENABLED] = { .field = "enabled" },
+    [E_RESOLVE_SERVICE_MASTER_DISABLED] = { .field = "disabled" },
+    [E_RESOLVE_SERVICE_MASTER_CONTENTS] = { .field = "contents" },
 
-    [SERVICE_ENUM_MASTER_NCLASSIC] = { .field = "nclassic" },
-    [SERVICE_ENUM_MASTER_NBUNDLE] = { .field = "nbundle" },
-    [SERVICE_ENUM_MASTER_NLONGRUN] = { .field = "nlongrun" },
-    [SERVICE_ENUM_MASTER_NONESHOT] = { .field = "noneshot" },
-    [SERVICE_ENUM_MASTER_NMODULE] = { .field = "nmodule" },
-    [SERVICE_ENUM_MASTER_ENDOFKEY] = { .field = 0 },
+    [E_RESOLVE_SERVICE_MASTER_NCLASSIC] = { .field = "nclassic" },
+    [E_RESOLVE_SERVICE_MASTER_NBUNDLE] = { .field = "nbundle" },
+    [E_RESOLVE_SERVICE_MASTER_NONESHOT] = { .field = "noneshot" },
+    [E_RESOLVE_SERVICE_MASTER_NMODULE] = { .field = "nmodule" },
+    [E_RESOLVE_SERVICE_MASTER_NENABLED] = { .field = "nenabled" },
+    [E_RESOLVE_SERVICE_MASTER_NDISABLED] = { .field = "ndisabled" },
+    [E_RESOLVE_SERVICE_MASTER_NCONTENTS] = { .field = "ncontents" },
+    [E_RESOLVE_SERVICE_MASTER_ENDOFKEY] = { .field = 0 },
 } ;
 
 int service_resolve_master_modify_field(resolve_service_master_t *mres, uint8_t field, char const *data)
@@ -52,53 +56,85 @@ int service_resolve_master_modify_field(resolve_service_master_t *mres, uint8_t 
 
     switch(field) {
 
-        case SERVICE_ENUM_MASTER_NAME:
+        case E_RESOLVE_SERVICE_MASTER_NAME:
             mres->name = resolve_add_string(wres,data) ;
             break ;
 
-        case SERVICE_ENUM_MASTER_CLASSIC:
+        case E_RESOLVE_SERVICE_MASTER_CLASSIC:
             mres->classic = resolve_add_string(wres,data) ;
             break ;
 
-        case SERVICE_ENUM_MASTER_BUNDLE:
+        case E_RESOLVE_SERVICE_MASTER_BUNDLE:
             mres->bundle = resolve_add_string(wres,data) ;
             break ;
 
-        case SERVICE_ENUM_MASTER_LONGRUN:
-            mres->longrun = resolve_add_string(wres,data) ;
-            break ;
-
-        case SERVICE_ENUM_MASTER_ONESHOT:
+        case E_RESOLVE_SERVICE_MASTER_ONESHOT:
             mres->oneshot = resolve_add_string(wres,data) ;
             break ;
 
-        case SERVICE_ENUM_MASTER_MODULE:
+        case E_RESOLVE_SERVICE_MASTER_MODULE:
             mres->module = resolve_add_string(wres,data) ;
             break ;
 
-        case SERVICE_ENUM_MASTER_NCLASSIC:
+        case E_RESOLVE_SERVICE_MASTER_ENABLED:
+            mres->enabled = resolve_add_string(wres,data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_DISABLED:
+            mres->disabled = resolve_add_string(wres,data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_CONTENTS:
+            mres->contents = resolve_add_string(wres,data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_NCLASSIC:
+            if (!data)
+                data = "0" ;
             if (!uint0_scan(data, &ifield)) goto err ;
             mres->nclassic= ifield ;
             break ;
 
-        case SERVICE_ENUM_MASTER_NBUNDLE:
+        case E_RESOLVE_SERVICE_MASTER_NBUNDLE:
+            if (!data)
+                data = "0" ;
             if (!uint0_scan(data, &ifield)) goto err ;
             mres->nbundle = ifield ;
             break ;
 
-        case SERVICE_ENUM_MASTER_NLONGRUN:
-            if (!uint0_scan(data, &ifield)) goto err ;
-            mres->nlongrun = ifield ;
-            break ;
-
-        case SERVICE_ENUM_MASTER_NONESHOT:
+        case E_RESOLVE_SERVICE_MASTER_NONESHOT:
+            if (!data)
+                data = "0" ;
             if (!uint0_scan(data, &ifield)) goto err ;
             mres->noneshot = ifield ;
             break ;
 
-        case SERVICE_ENUM_MASTER_NMODULE:
+        case E_RESOLVE_SERVICE_MASTER_NMODULE:
+            if (!data)
+                data = "0" ;
             if (!uint0_scan(data, &ifield)) goto err ;
             mres->nmodule = ifield ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_NENABLED:
+            if (!data)
+                data = "0" ;
+            if (!uint0_scan(data, &ifield)) goto err ;
+            mres->nenabled = ifield ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_NDISABLED:
+            if (!data)
+                data = "0" ;
+            if (!uint0_scan(data, &ifield)) goto err ;
+            mres->ndisabled = ifield ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_NCONTENTS:
+            if (!data)
+                data = "0" ;
+            if (!uint0_scan(data, &ifield)) goto err ;
+            mres->ncontents = ifield ;
             break ;
 
         default:
