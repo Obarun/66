@@ -118,28 +118,6 @@ static void parse_module_check_name(char const *src, char const *name)
         log_die(LOG_EXIT_USER, "invalid directory name for module: ", name, " -- directory name must start with a '@' character") ;
 }
 
-static int parse_module_ownerhome(char *store)
-{
-    log_flow() ;
-
-    char const *user_home = 0 ;
-    int e = errno ;
-    struct passwd *st = getpwuid(getuid()) ;
-    errno = 0 ;
-    if (!st) {
-        if (!errno) errno = ESRCH ;
-        return 0 ;
-    }
-    user_home = st->pw_dir ;
-    errno = e ;
-    if (!user_home)
-        return 0 ;
-
-    auto_strings(store, user_home, "/") ;
-
-    return 1 ;
-}
-
 /* 0 filename undefine
  * -1 system error
  * should return at least 2 meaning :: no file define*/
@@ -292,6 +270,7 @@ static void regex_replace(stralloc *list, resolve_service_t *res)
         }
     }
 
+    stralloc_free(&frontend) ;
     stralloc_free(&sa) ;
 }
 
@@ -507,7 +486,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
 
     } else {
 
-        if (!parse_module_ownerhome(path))
+        if (!set_ownerhome_stack(path))
             log_dieusys(LOG_EXIT_SYS, "unable to find the home directory of the user") ;
 
         pathlen = strlen(path) ;
