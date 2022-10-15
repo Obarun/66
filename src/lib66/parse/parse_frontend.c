@@ -92,7 +92,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 {
     log_flow() ;
 
-    int insta, r ;
+    int insta, r, isparsed ;
     size_t svlen = strlen(sv) ;
     char svname[svlen + 1], svsrc[svlen + 1] ;
     char atree[SS_MAX_TREENAME + 1] ;
@@ -135,11 +135,11 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     char file[sa.len + 1] ;
     auto_strings(file, sa.s) ;
 
-    r = service_is_g(atree, svname, STATE_FLAGS_ISPARSED) ;
-    if (r == -1)
-        log_dieu(LOG_EXIT_SYS, "check already parsed services") ;
+    isparsed = service_is_g(atree, svname, STATE_FLAGS_ISPARSED) ;
+    if (isparsed == -1)
+        log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please a bug report") ;
 
-    if (r) {
+    if (isparsed) {
 
         if (!force) {
 
@@ -188,13 +188,12 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     if (!parse_store_main(&res, store, SECTION_MAIN, KEY_MAIN_TYPE))
         log_dieu(LOG_EXIT_SYS, "store field type of service: ", svname) ;
 
-    stralloc_free(&sa) ;
-
     res.name = resolve_add_string(wres, svname) ;
+
     res.owner = info->owner ;
     res.ownerstr = resolve_add_string(wres, info->ownerstr) ;
 
-    res.path.frontend = resolve_add_string(wres, svsrc) ;
+    res.path.frontend = resolve_add_string(wres, sv) ;
 
     // keep overwrite_conf
     res.environ.env_overwrite = conf ;
@@ -219,7 +218,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
         if (res.dependencies.ndepends) {
             size_t len = strlen(res.sa.s + res.dependencies.depends) ;
-            char t[len + 1] ;
+            char t[len + strlen(res.sa.s + res.dependencies.optsdeps) + 2] ;
             auto_strings(t + len, " ", res.sa.s + res.dependencies.optsdeps) ;
             res.dependencies.depends = resolve_add_string(wres, t) ;
 
@@ -229,23 +228,29 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
         }
     }
 
-    if (!parse_dependencies(&res, ares, areslen, info, force, conf, forced_directory))
-        log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", svname) ;
+    /** We take the dependencies in two case:
+     * If the user ask to it(force > 1)
+     * If the service was never parsed(!isparsed)*/
+    if (force > 1 || !isparsed)
+        if (!parse_dependencies(&res, ares, areslen, info, force, conf, forced_directory))
+            log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", svname) ;
 
-    service_resolve_compute(&res, info) ;
+    parse_compute_resolve(&res, info) ;
 
     if (res.type == TYPE_MODULE)
         parse_module(&res, ares, areslen, info, force) ;
 
-    log_warn("add service: ", svname) ;
+    log_trace("add service: ", svname) ;
 
     if (service_resolve_array_search(ares, *areslen, svname) < 0) {
+        if (*areslen >= SS_MAX_SERVICE)
+            log_die(LOG_EXIT_SYS, "to many service to parse -- compile again 66 changing the --max-service options") ;
         (*residx) = *areslen ;
         ares[(*areslen)++] = res ;
     }
 
     freed:
-
+        stralloc_free(&sa) ;
         free(wres) ;
         return 1 ;
 }
