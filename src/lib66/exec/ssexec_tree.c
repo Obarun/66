@@ -54,6 +54,14 @@
 
 static char const *cleantree = 0 ;
 
+typedef enum visit_e visit ;
+enum visit_e
+{
+    SS_WHITE = 0,
+    SS_GRAY,
+    SS_BLACK
+} ;
+
 typedef struct tree_opts_map_s tree_opts_map_t ;
 struct tree_opts_map_s
 {
@@ -520,12 +528,9 @@ void tree_groups(char const *base, char const *treename, char const *value)
 
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
-    size_t nb = 0, baselen = strlen(base) ;
+    size_t nb = 0 ;
     char pack[UINT_FMT] ;
-    char solve[baselen + SS_SYSTEM_LEN + 1] ;
     char const *val ;
-
-    auto_strings(solve, base, SS_SYSTEM) ;
 
     log_trace("set: ", treename," to group ..." ) ;
 
@@ -542,65 +547,19 @@ void tree_groups(char const *base, char const *treename, char const *value)
     uint_pack(pack, nb) ;
     pack[uint_fmt(pack, nb)] = 0 ;
 
-    if (!resolve_read(wres, solve, treename))
-        log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", solve, "/.resolve/", treename) ;
+    if (!resolve_read_g(wres, base, treename))
+        log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", treename) ;
 
-    if (!resolve_modify_field(wres, TREE_ENUM_GROUPS, val) ||
-        !resolve_modify_field(wres, TREE_ENUM_NGROUPS, pack))
+    if (!resolve_modify_field(wres, E_RESOLVE_TREE_GROUPS, val) ||
+        !resolve_modify_field(wres, E_RESOLVE_TREE_NGROUPS, pack))
             log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
 
-    if (!resolve_write(wres, solve, treename))
-        log_dieusys(LOG_EXIT_SYS, "write resolve file of: ", solve, "/.resolve/", treename) ;
+    if (!resolve_write_g(wres, base, treename))
+        log_dieusys(LOG_EXIT_SYS, "write resolve file of: ", treename) ;
 
     resolve_free(wres) ;
 
     log_info("Set successfully: ", treename, " to group: ", value) ;
-}
-
-void create_backupdir(char const *base, char const *treename)
-{
-    log_flow() ;
-
-    int r ;
-    size_t baselen = strlen(base) ;
-    size_t treenamelen = strlen(treename) ;
-    char tmp[baselen + 1 + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treenamelen + 1] ;
-
-    auto_strings(tmp, base, SS_SYSTEM, SS_BACKUP, "/", treename) ;
-
-    r = scan_mode(tmp,S_IFDIR) ;
-    if (r || (r == -1)) {
-
-        log_trace("remove existing backup: ",tmp) ;
-        if (!dir_rm_rf(tmp))
-            log_dieusys_nclean(LOG_EXIT_SYS, &cleanup, "remove: ", tmp) ;
-    }
-
-    auto_dir(tmp,0755) ;
-}
-
-void tree_master_modify_current(char const *base, char const *treename)
-{
-    resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
-    size_t baselen = strlen(base) ;
-    stralloc sa = STRALLOC_ZERO ;
-    char solve[baselen + SS_SYSTEM_LEN + 1] ;
-    auto_strings(solve, base, SS_SYSTEM) ;
-
-    if (!resolve_get_field_tosa_g(&sa, base, 0, SS_MASTER + 1, DATA_TREE_MASTER, TREE_ENUM_MASTER_CURRENT))
-        log_dieu(LOG_EXIT_SYS, "get value of field current of resolve Master file of trees") ;
-
-    if (!strcmp(sa.s, treename)) {
-
-        if (!resolve_modify_field(wres, TREE_ENUM_MASTER_CURRENT, 0))
-            log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", SS_MASTER + 1) ;
-
-        if (!resolve_write(wres, solve, SS_MASTER + 1))
-            log_dieusys(LOG_EXIT_SYS, "write resolve file of :", solve, SS_MASTER) ;
-    }
-
-    stralloc_free(&sa) ;
 }
 
 void tree_master_modify_contents(char const *base, char const *treename)
@@ -613,12 +572,12 @@ void tree_master_modify_contents(char const *base, char const *treename)
 
     char const *exclude[2] = { SS_MASTER + 1, 0 } ;
 
-    log_trace("modify field contents of resolve Master of file of trees") ;
+    log_trace("modify field contents of resolve Master file of trees") ;
 
     auto_strings(solve, base, SS_SYSTEM, SS_RESOLVE) ;
 
     if (!sastr_dir_get(&sa, solve, exclude, S_IFREG))
-        log_dieu_nclean(LOG_EXIT_SYS, &cleanup,"get resolve file of tree: ", treename) ;
+        log_dieu_nclean(LOG_EXIT_SYS, &cleanup, "get resolve files of tree: ", treename) ;
 
     size_t ncontents = sastr_nelement(&sa) ;
 
@@ -626,10 +585,8 @@ void tree_master_modify_contents(char const *base, char const *treename)
         if (!sastr_rebuild_in_oneline(&sa))
             log_dieu_nclean(LOG_EXIT_SYS, &cleanup, "rebuild stralloc") ;
 
-    solve[baselen + SS_SYSTEM_LEN] = 0 ;
-
-    if (!resolve_read(wres, solve, SS_MASTER + 1))
-        log_dieusys(LOG_EXIT_SYS, "read resolve Master file of trees") ;
+    if (!resolve_read_g(wres, base, SS_MASTER + 1))
+        log_dieusys_nclean(LOG_EXIT_SYS, &cleanup, "read resolve Master file of trees") ;
 
     mres.ncontents = (uint32_t)ncontents ;
 
@@ -638,8 +595,8 @@ void tree_master_modify_contents(char const *base, char const *treename)
     else
         mres.contents = resolve_add_string(wres, "") ;
 
-    if (!resolve_write(wres, solve, SS_MASTER + 1))
-        log_dieusys(LOG_EXIT_SYS, "write resolve Master file of trees") ;
+    if (!resolve_write_g(wres, base, SS_MASTER + 1))
+        log_dieusys_nclean(LOG_EXIT_SYS, &cleanup, "write resolve Master file of trees") ;
 
     stralloc_free(&sa) ;
     resolve_free(wres) ;
@@ -652,9 +609,6 @@ void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what)
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
     tree_seed_t seed = TREE_SEED_ZERO ;
-    char solve[info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1] ;
-
-    auto_strings(solve, info->base.s, SS_SYSTEM) ;
 
     resolve_init(wres) ;
 
@@ -671,9 +625,6 @@ void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what)
     char svdir[info->tree.len + SS_SVDIRS_LEN + SS_SVC_LEN + 2] ;
     auto_strings(svdir, info->tree.s, SS_SVDIRS, SS_SVC, "/") ;
 
-    log_trace("creating backup directory of tree: ", info->treename.s, "...") ;
-    create_backupdir(info->base.s, info->treename.s) ;
-
     /** unset cleanup */
     cleantree = 0 ;
 
@@ -685,8 +636,8 @@ void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what)
     tres.ngroups = 1 ;
 
     log_trace("write resolve file of: ", info->treename.s) ;
-    if (!resolve_write(wres, solve, info->treename.s))
-        log_dieu_nclean(LOG_EXIT_SYS, &cleanup, "write resolve file: ", solve, SS_RESOLVE, "/", info->treename.s) ;
+    if (!resolve_write_g(wres, info->base.s, info->treename.s))
+        log_dieu_nclean(LOG_EXIT_SYS, &cleanup, "write resolve file of: ", info->treename.s) ;
 
     /** check of the seed.sa.len: if the seed file is not parse at this point
      * the seed.sa.s + seed.depends is empty which produce a segmentation fault
@@ -715,22 +666,19 @@ void tree_master_enable_disable(char const *base, char const *treename, uint8_t 
 {
     log_flow() ;
 
-    size_t pos = 0, nb = 0, baselen = strlen(base), len = 0 ;
+    size_t pos = 0, nb = 0, len = 0 ;
     stralloc sa = STRALLOC_ZERO ;
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
-    char solve[baselen + SS_SYSTEM_LEN + 1] ;
 
     log_trace(!action ? "disable" : "enable"," tree: ", treename, " from: ", SS_MASTER + 1) ;
 
-    auto_strings(solve, base, SS_SYSTEM) ;
-
-    if (!resolve_read(wres, solve, SS_MASTER + 1))
-        log_dieusys(LOG_EXIT_SYS, "read inner resolve file of trees") ;
+    if (!resolve_read_g(wres, base, SS_MASTER + 1))
+        log_dieusys(LOG_EXIT_SYS, "read resolve Master file of trees") ;
 
     if (!mres.nenabled && action) {
-        if (!resolve_modify_field(wres, TREE_ENUM_MASTER_ENABLED, treename))
-            log_dieusys(LOG_EXIT_SYS, "modify inner resolve file of trees") ;
+        if (!resolve_modify_field(wres, E_RESOLVE_TREE_MASTER_ENABLED, treename))
+            log_dieusys(LOG_EXIT_SYS, "modify resolve Master file of trees") ;
 
         mres.nenabled = 1 ;
         goto write ;
@@ -774,15 +722,15 @@ void tree_master_enable_disable(char const *base, char const *treename, uint8_t 
         if (!stralloc_0(&sa))
             log_die_nomem("stralloc") ;
 
-        if (!resolve_modify_field(wres, TREE_ENUM_MASTER_ENABLED, sa.s))
+        if (!resolve_modify_field(wres, E_RESOLVE_TREE_MASTER_ENABLED, sa.s))
             log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", SS_MASTER + 1) ;
 
         mres.nenabled = nb ;
     }
 
     write:
-        if (!resolve_write(wres, solve, SS_MASTER + 1))
-            log_dieusys(LOG_EXIT_SYS, "write inner resolve file of trees") ;
+        if (!resolve_write_g(wres, base, SS_MASTER + 1))
+            log_dieusys(LOG_EXIT_SYS, "write resolve Master file of trees") ;
 
         resolve_free(wres) ;
         stralloc_free(&sa) ;
@@ -830,9 +778,6 @@ void tree_enable_disable(graph_t *g, char const *base, char const *treename, uin
 
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
-    size_t baselen = strlen(base) ;
-
-    char solve[baselen + SS_SYSTEM_LEN + 1] ;
 
     uint8_t disen = tree_isenabled(base, treename) ;
     if (disen < 0)
@@ -847,10 +792,8 @@ void tree_enable_disable(graph_t *g, char const *base, char const *treename, uin
             return ;
         }
 
-        auto_strings(solve, base, SS_SYSTEM) ;
-
-        if (!resolve_modify_field_g(wres, base, treename, TREE_ENUM_DISEN, !action ? "0" : "1"))
-            log_dieu(LOG_EXIT_SYS, "modify field: ", resolve_tree_field_table[TREE_ENUM_DISEN].field," of tree: ", treename, " with value: ", !action ? "0" : "1") ;
+        if (!resolve_modify_field_g(wres, base, treename, E_RESOLVE_TREE_DISEN, !action ? "0" : "1"))
+            log_dieu(LOG_EXIT_SYS, "modify field: ", resolve_tree_field_table[E_RESOLVE_TREE_DISEN].field," of tree: ", treename, " with value: ", !action ? "0" : "1") ;
 
         tree_enable_disable_deps(g, base, treename, action) ;
         tree_master_enable_disable(base, treename, action) ;
@@ -873,16 +816,13 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
 
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
-    size_t pos = 0, len = 0, nb = 0, baselen = strlen(base), element = 0 ;
-    uint8_t ewhat = !requiredby ? TREE_ENUM_DEPENDS : TREE_ENUM_REQUIREDBY ;
-    uint8_t nwhat = !requiredby ? TREE_ENUM_NDEPENDS : TREE_ENUM_NREQUIREDBY ;
+    size_t pos = 0, len = 0, nb = 0, element = 0 ;
+    uint8_t ewhat = !requiredby ? E_RESOLVE_TREE_DEPENDS : E_RESOLVE_TREE_REQUIREDBY ;
+    uint8_t nwhat = !requiredby ? E_RESOLVE_TREE_NDEPENDS : E_RESOLVE_TREE_NREQUIREDBY ;
     stralloc sa = STRALLOC_ZERO ;
     char pack[UINT_FMT] ;
-    char solve[baselen + SS_SYSTEM_LEN + 1] ;
 
     log_trace("manage ", !requiredby ? "dependencies" : "required by", " for tree: ", treename, "..." ) ;
-
-    auto_strings(solve, base, SS_SYSTEM) ;
 
     if (graph_matrix_get_edge_g_sorted_sa(&sa, g, treename, requiredby, 0) < 0)
         log_dieu(LOG_EXIT_SYS,"get sorted ", requiredby ? "required by" : "dependency", " list of tree: ", treename) ;
@@ -939,15 +879,15 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
     uint_pack(pack, nb) ;
     pack[uint_fmt(pack, nb)] = 0 ;
 
-    if (!resolve_read(wres, solve, treename))
-        log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", solve, "/.resolve/", treename) ;
+    if (!resolve_read_g(wres, base, treename))
+        log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", treename) ;
 
     if (!resolve_modify_field(wres, ewhat, sa.s) ||
         !resolve_modify_field(wres, nwhat, pack))
             log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
 
-    if (!resolve_write(wres, solve, treename))
-        log_dieusys(LOG_EXIT_SYS, "write resolve file of: ", solve, "/.resolve/", treename) ;
+    if (!resolve_write_g(wres, base, treename))
+        log_dieusys(LOG_EXIT_SYS, "write resolve file of: ", treename) ;
 
     if (!none) {
 
@@ -1028,8 +968,8 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
 
     auto_strings(tmp, base, SS_SYSTEM) ;
 
-    if (!resolve_read(wres, tmp, treename))
-        log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", tmp, "/.resolve/", treename) ;
+    if (!resolve_read_g(wres, base, treename))
+        log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", treename) ;
 
     if (tres.nallow)
         if (!sastr_clean_string(&sa, tres.sa.s + tres.allow))
@@ -1118,7 +1058,6 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
         }
     }
 
-    tmp[baselen + SS_SYSTEM_LEN] = 0 ;
     len = sa.len ;
 
     char t[len + 1] ;
@@ -1137,10 +1076,10 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
     if (!stralloc_0(&sa))
         log_die_nomem("stralloc") ;
 
-    if (!resolve_modify_field(wres, TREE_ENUM_ALLOW, sa.s))
+    if (!resolve_modify_field(wres, E_RESOLVE_TREE_ALLOW, sa.s))
         log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
 
-    if (!resolve_write(wres, tmp, treename))
+    if (!resolve_write_g(wres, base, treename))
         log_dieusys(LOG_EXIT_SYS, "write resolve file of: ", treename) ;
 
     stralloc_free(&sa) ;
@@ -1153,26 +1092,16 @@ void tree_remove(graph_t *g, char const *base, char const *treename)
 {
     log_flow() ;
 
-    int r ;
     size_t baselen = strlen(base), treenamelen = strlen(treename) ;
-    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
 
-    char tree[baselen + SS_SYSTEM_LEN + 1 + treenamelen + 1] ;
+    char tmp[baselen + SS_SYSTEM_LEN + 1 + treenamelen + 1] ;
 
-    auto_strings(tree, base, SS_SYSTEM, "/", treename) ;
+    auto_strings(tmp, base, SS_SYSTEM, "/", treename) ;
 
-    log_trace("delete: ", tree, "..." ) ;
+    log_trace("delete: ", tmp, "..." ) ;
 
-    if (!dir_rm_rf(tree))
-        log_dieusys(LOG_EXIT_SYS,"delete: ", tree) ;
-
-    char tmp[baselen + SS_SYSTEM_LEN + SS_BACKUP_LEN + 1 + treenamelen  + 1] ;
-
-    auto_strings(tmp, base, SS_SYSTEM) ;
-
-    if (!resolve_read(wres, tmp, treename))
-        log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", tmp, "/.resolve/", treename) ;
+    if (!dir_rm_rf(tmp))
+        log_dieusys(LOG_EXIT_SYS,"delete: ", tmp) ;
 
     tree_enable_disable(g, base, treename, 0) ;
 
@@ -1181,27 +1110,17 @@ void tree_remove(graph_t *g, char const *base, char const *treename)
 
     /** requiredby */
     tree_depends_requiredby_deps(g, base, treename, 1, 1, treename) ;
-
+    /**
+     *
+     * need to remove the symlinks of services at system/.resolve/service/<services>
+     *
+     * */
     log_trace("remove resolve file of tree: ", treename) ;
-
-    resolve_rmfile(tmp, treename) ;
-
-    auto_strings(tmp + baselen + SS_SYSTEM_LEN, SS_BACKUP, "/", treename) ;
-
-    r = scan_mode(tmp,S_IFDIR) ;
-    if (r || (r < 0)) {
-
-        log_trace("delete backup of tree: ", tmp, "...") ;
-        if (!dir_rm_rf(tmp))
-            log_dieusys(LOG_EXIT_SYS, "delete: ", tmp) ;
-
-    }
+    resolve_remove_g(base, treename, DATA_TREE) ;
 
     tree_master_modify_contents(base, treename) ;
 
-    tree_master_modify_current(base, treename) ;
-
-    resolve_free(wres) ;
+    tree_switch_current(base, treename) ;
 
     log_info("Deleted successfully: ", treename) ;
 }
@@ -1272,9 +1191,9 @@ void tree_clone(char const *clone, ssexec_t *info)
         char status[info->base.len + SS_SYSTEM_LEN + 1 + clonelen + SS_SVDIRS_LEN + SS_SVC_LEN + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
         auto_strings(status, info->base.s, SS_SYSTEM, "/", clone, SS_SVDIRS, SS_SVC, SS_STATE, "/", SS_STATUS) ;
 
-        if (!resolve_modify_field(wres, SERVICE_ENUM_TREE, clone_target) ||
-            !resolve_modify_field(wres, SERVICE_ENUM_TREENAME, clone) ||
-            !resolve_modify_field(wres, SERVICE_ENUM_STATUS, status))
+        if (!resolve_modify_field(wres, E_RESOLVE_SERVICE_TREE, clone_target) ||
+            !resolve_modify_field(wres, E_RESOLVE_SERVICE_TREENAME, clone) ||
+            !resolve_modify_field(wres, E_RESOLVE_SERVICE_STATUS, status))
                 log_dieusys_nclean(LOG_EXIT_SYS, &cleanup, "modify resolve file of: ", name) ;
 
         if (!resolve_write(wres,clone_res,name))
@@ -1304,7 +1223,7 @@ void tree_clone(char const *clone, ssexec_t *info)
     if (!resolve_read(wres, system, clone))
         log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"read resolve file of tree: ", clone) ;
 
-    if(!resolve_modify_field(wres, TREE_ENUM_DISEN, 0))
+    if(!resolve_modify_field(wres, E_RESOLVE_TREE_DISEN, 0))
         log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", clone) ;
 
     if (!resolve_write(wres, system, clone))
@@ -1439,8 +1358,7 @@ int ssexec_tree(int argc, char const *const *argv, ssexec_t *info)
     if (!r && what.remove)
         log_dieusys(LOG_EXIT_SYS,"find tree: ", info->treename.s) ;
 
-    if (!graph_build_g(&graph, info->base.s, 0, DATA_TREE, 0))
-        log_dieu(LOG_EXIT_SYS,"build the graph") ;
+    graph_build_tree(&graph, info->base.s) ;
 
     if (what.remove) {
         tree_remove(&graph, info->base.s, info->treename.s) ;

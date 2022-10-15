@@ -21,10 +21,12 @@
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
 #include <oblibs/obgetopt.h>
+#include <oblibs/sastr.h>
 
 #include <66/parser.h>
 #include <66/ssexec.h>
-
+#include <66/utils.h>
+/*
 static void check_dir(char const *dir, uint8_t force, int main)
 {
     log_flow() ;
@@ -50,13 +52,13 @@ static void check_dir(char const *dir, uint8_t force, int main)
         if (!dir_create_parent(dir, 0755))
             log_dieusys(LOG_EXIT_SYS,"create: ",dir) ;
 }
-
+*/
 int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
 {
-    char const *dir ;
-    char const *sv  ;
+    log_flow() ;
 
     uint8_t force = 0 , conf = 0 ;
+    stralloc sa = STRALLOC_ZERO ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -96,25 +98,45 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
         argc -= l.ind ; argv += l.ind ;
     }
 
-    if (argc < 2) log_usage(usage_parse) ;
+    if (argc < 1)
+        log_usage(usage_parse) ;
 
-    sv = argv[0] ;
-    dir = argv[1] ;
+    for (; *argv ; argv++) {
 
-    if (dir[0] != '/')
-        log_die(LOG_EXIT_USER, "directory: ",dir," must be an absolute path") ;
+        sa.len = 0 ;
+        size_t namelen = strlen(*argv) ;
+        char const *sv = 0 ;
+        char bname[namelen + 1] ;
+        char dname[namelen + 1] ;
+        char const *directory_forced = 0 ;
 
-    if (sv[0] != '/')
-        log_die(LOG_EXIT_USER, "service: ",sv," must be an absolute path") ;
+        if (argv[0][0] == '/') {
 
-    char name[strlen(sv)] ;
+            if (!ob_dirname(dname, *argv))
+                log_dieu(LOG_EXIT_SYS, "get dirname of: ", *argv) ;
 
-    if (!ob_basename(name, sv))
-        log_dieusys(LOG_EXIT_SYS, "get basename of: ", sv) ;
+            if (!ob_basename(bname, *argv))
+                log_dieu(LOG_EXIT_SYS, "get basename of: ", *argv) ;
 
-    parser(sv, dir, info, force, 0) ;
+            sv = bname ;
+            directory_forced = dname ;
+        } else
+            sv = *argv ;
 
-    log_info("Written successfully: ",name, " at: ",dir) ;
+        name_isvalid(sv) ;
+
+        if (!service_frontend_path(&sa, sv, info->owner, directory_forced))
+            log_dieu(LOG_EXIT_USER, "find service frontend file of: ", sv) ;
+
+        /** need to check all the contents of the stralloc.
+         * service can be a directory name. In this case
+         * we parse all services it contains. */
+        size_t pos = 0 ;
+        FOREACH_SASTR(&sa, pos)
+            parse_service(sa.s + pos, info, force, conf) ;
+    }
+
+    stralloc_free(&sa) ;
 
     return 0 ;
 }

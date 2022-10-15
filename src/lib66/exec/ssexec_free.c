@@ -29,7 +29,6 @@ void ssexec_free(ssexec_t *info)
     stralloc_free(&info->base) ;
     stralloc_free(&info->live) ;
     stralloc_free(&info->tree) ;
-    stralloc_free(&info->livetree) ;
     stralloc_free(&info->scandir) ;
     stralloc_free(&info->treename) ;
 }
