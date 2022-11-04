@@ -607,7 +607,7 @@ static int async_deps(pidservice_t *apids, unsigned int i, unsigned int what, ss
                 idx += r + 1 ;
 
                 /**
-                 * the receiving string have the format:
+                 * the received string have the format:
                  *      index_of_the_ares_array_of_the_service_dependency:signal_receive
                  *
                  * typically:
@@ -628,7 +628,7 @@ static int async_deps(pidservice_t *apids, unsigned int i, unsigned int what, ss
 
                 ilog = id ;
 
-                log_trace(pares[apids[i].aresid].sa.s + pares[apids[i].aresid].name, " acknowledges: ", &c, " from: ", pares[ilog].sa.s + pares[ilog].name, " ", &c,"-> ", line) ;
+                log_trace(pares[apids[i].aresid].sa.s + pares[apids[i].aresid].name, " acknowledges: ", &c, " from: ", pares[ilog].sa.s + pares[ilog].name) ;
 
                 if (!visit[pos]) {
 
@@ -648,7 +648,7 @@ static int async_deps(pidservice_t *apids, unsigned int i, unsigned int what, ss
             }
         }
         next:
-        
+
     }
 
     return 1 ;
