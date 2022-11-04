@@ -135,7 +135,7 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
         sig[2] = 0 ;
 
         if (!svc_send(argv, argc, sig, siglen, info))
-            log_dieu(LOG_EXIT_SYS, "send -wU -ru signal") ;
+            log_dieu(LOG_EXIT_SYS, "send -wU -ru signal to services selection") ;
 
     } else if (FLAGS_ISSET(flag, STATE_FLAGS_TORESTART)) {
 
@@ -144,14 +144,14 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
         sig[2] = 0 ;
 
         if (!svc_send(argv, argc, sig, siglen, info))
-            log_dieu(LOG_EXIT_SYS, "send -wD -d signal") ;
+            log_dieu(LOG_EXIT_SYS, "send -wD -d signal to services selection") ;
 
         sig[0] = "-wU" ;
         sig[1] = "-ru" ;
         sig[2] = 0 ;
 
         if (!svc_send(argv, argc, sig, siglen, info))
-            log_dieu(LOG_EXIT_SYS, "send -wU -u signal") ;
+            log_dieu(LOG_EXIT_SYS, "send -wU -u signal to services selection") ;
 
     } else {
 
@@ -160,7 +160,7 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
         sig[2] = 0 ;
 
         if (!svc_send(argv, argc, sig, siglen, info))
-            log_dieu(LOG_EXIT_SYS, "send -wU -u signal") ;
+            log_dieu(LOG_EXIT_SYS, "send -wU -u signal to services selection") ;
     }
 
     return 0 ;
