@@ -130,7 +130,7 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
 
         /** need to check all the contents of the stralloc.
          * service can be a directory name. In this case
-         * we parse all services it contains. */
+         * we parse all services inside. */
         size_t pos = 0 ;
         FOREACH_SASTR(&sa, pos)
             parse_service(sa.s + pos, info, force, conf) ;
