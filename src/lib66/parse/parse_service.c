@@ -58,14 +58,19 @@ parse_mill_t MILL_GET_VALUE = \
 
 /***
  *
+ * Not sure of this implementation. The contents of the a tree can be found easily
+ * now with the SS_SYSTEM_DIR/system/.resolve/service directory. This needs is only necessary
+ * at worth for the init process to quickly found a service. On the other side, each manipulation
+ * of the tree need to be specified at Master service file.
  *
- * This function is not fully operationnal.
+ * Actually, init do not pass through the Master service file of the tree. Maybe a Master service for
+ * all trees localized at SS_SYSTEM_DIR/system/.resolve/service/Master can be a better way to do it.
  *
- * Need to classify the all the field of the Master resolve file
+ * At the end, i think that good API to know/acknowledge of a global system state changes should be provide. After all, handling events will appear in the future.
  *
  *
  * */
-void service_master_modify_contents(resolve_service_t *res)
+void service_master_modify_contents(resolve_service_t *res, resolve_service_master_enum_t ENUM)
 {
     stralloc sa = STRALLOC_ZERO ;
     resolve_service_master_t mres = RESOLVE_SERVICE_MASTER_ZERO ;
@@ -95,12 +100,72 @@ void service_master_modify_contents(resolve_service_t *res)
     if (!resolve_read(wres, solve, SS_MASTER + 1))
         log_dieusys(LOG_EXIT_SYS, "read resolve Master file of services") ;
 
-    mres.ncontents = (uint32_t)ncontents ;
 
-    if (ncontents)
-        mres.contents = resolve_add_string(wres, sa.s) ;
-    else
-        mres.contents = resolve_add_string(wres, "") ;
+
+    switch (ENUM) {
+
+        case E_RESOLVE_SERVICE_MASTER_CLASSIC:
+
+            if (mres.nclassic)
+                mres.classic = resolve_add_string(wres, sa.s) ;
+            else
+                mres.classic = resolve_add_string(wres, "") ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_BUNDLE:
+
+            if (mres.nbundle)
+                mres.bundle = resolve_add_string(wres, sa.s) ;
+            else
+                mres.bundle = resolve_add_string(wres, "") ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_ONESHOT:
+
+            if (mres.noneshot)
+                mres.oneshot = resolve_add_string(wres, sa.s) ;
+            else
+                mres.oneshot = resolve_add_string(wres, "") ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_MODULE:
+
+            if (mres.nmodule)
+                mres.module = resolve_add_string(wres, sa.s) ;
+            else
+                mres.module = resolve_add_string(wres, "") ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_ENABLED:
+
+            if (mres.nenabled)
+                mres.enabled = resolve_add_string(wres, sa.s) ;
+            else
+                mres.enabled = resolve_add_string(wres, "") ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_DISABLED:
+
+            if (mres.ndisabled)
+                mres.disabled = resolve_add_string(wres, sa.s) ;
+            else
+                mres.disabled = resolve_add_string(wres, "") ;
+            break ;
+
+        case E_RESOLVE_SERVICE_MASTER_CONTENTS:
+
+            if (mres.ncontents)
+                mres.contents = resolve_add_string(wres, sa.s) ;
+            else
+                mres.contents = resolve_add_string(wres, "") ;
+
+            //mres.ncontents = (uint32_t)ncontents ;
+
+            break ;
+
+        default:
+            break ;
+    }
 
     if (!resolve_write(wres, solve, SS_MASTER + 1))
         log_dieusys(LOG_EXIT_SYS, "write resolve Master file of services") ;
@@ -139,7 +204,7 @@ void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
             if (!state_write(&sta, ares[pos].sa.s + ares[pos].path.home, ares[pos].sa.s + ares[pos].logger.name))
                 log_dieu(LOG_EXIT_SYS, "write state file of: ", ares[pos].sa.s + ares[pos].logger.name) ;
 
-        service_master_modify_contents(&ares[pos]) ;
+        service_master_modify_contents(&ares[pos], E_RESOLVE_SERVICE_MASTER_CONTENTS) ;
 
         log_info("Parsed successfully: ", ares[pos].sa.s + ares[pos].name, " at tree: ", ares[pos].sa.s + ares[pos].treename) ;
     }
