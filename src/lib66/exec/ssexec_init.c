@@ -13,141 +13,137 @@
  */
 
 #include <string.h>
-#include <sys/types.h>
-#include <unistd.h>//chown
-#include <stdio.h>
+#include <stdint.h>
 
-#include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
-#include <oblibs/types.h>//scan_mode
-#include <oblibs/directory.h>
+#include <oblibs/types.h>
 #include <oblibs/sastr.h>
 #include <oblibs/string.h>
+#include <oblibs/graph.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/djbunix.h>
 
-#include <66/utils.h>
 #include <66/constants.h>
+#include <66/config.h>
+#include <66/service.h>
 #include <66/tree.h>
 #include <66/svc.h>
-#include <66/resolve.h>
 #include <66/ssexec.h>
 #include <66/state.h>
+#include <66/graph.h>
 #include <66/sanitize.h>
-
-static int init_parse_options(char const *opts)
+/**
+ *
+ *
+ *
+ * attention lorsque les services sont initializer en earlier
+ * verifier que lorsque le scandir est lancer qu'il start automatiquement les services
+ * qui ont ete initialized
+ *
+ *
+ *
+ *
+ *
+ * */
+static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 {
-    int r = get_len_until(opts, '=') ;
-    if (r < 0)
-        log_die(LOG_EXIT_USER, "invalid opts: ", opts) ;
+    uint32_t flag = 0 ;
+    graph_t graph = GRAPH_ZERO ;
 
-    char tmp[9] ;
+    unsigned int areslen = 0, list[SS_MAX_SERVICE], visit[SS_MAX_SERVICE], nservice = 0, n = 0 ;
+    resolve_service_t ares[SS_MAX_SERVICE] ;
 
-    auto_strings(tmp, opts + r + 1) ;
+    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
-    if (!strcmp(tmp, "disabled"))
-        return 0 ;
+    /** build the graph of the entire system */
+    graph_build_service(&graph, ares, &areslen, info, flag) ;
 
-    else if (!strcmp(tmp, "enabled"))
-        return 1 ;
+    if (!graph.mlen)
+        log_die(LOG_EXIT_USER, "services selection is not available -- try first to install the corresponding frontend file") ;
 
-    else
-        log_die(LOG_EXIT_USER, "invalid opts: ", tmp) ;
+    FOREACH_SASTR(sa, n) {
 
-}
+        int aresid = service_resolve_array_search(ares, areslen, sa->s + n) ;
+        if (aresid < 0)
+            log_die(LOG_EXIT_USER, "service: ", sa->s + n, " not available -- did you parsed it?") ;
 
-static void doit(stralloc *sa, char const *svdirs, char const *treename, uint8_t earlier)
-{
-    unsigned int pos = 0, count = 0, nservice = sastr_nelement(sa) ;
-    resolve_service_t ares[nservice] ;
+        unsigned int l[graph.mlen], c = 0, pos = 0, idx = 0 ;
 
-    FOREACH_SASTR(sa, pos) {
+        idx = graph_hash_vertex_get_id(&graph, sa->s + n) ;
 
-        char *service = sa->s + pos ;
+        if (!visit[idx]) {
 
-        resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+            if (earlier) {
 
-        if (!resolve_read(wres, svdirs, service))
-            log_dieusys(LOG_EXIT_SYS,"read resolve file of: ", service) ;
+                if (ares[aresid].earlier) {
 
-        /**
-         * boot time. We only pick the earlier service.
-         * The rest is initialized at stage2.
-         * */
-        if (earlier) {
-            if (res.earlier)
-                ares[count++] = res ;
+                    list[nservice++] = idx ;
+                    visit[idx] = 1 ;
+                }
 
-        } else
-            ares[count++] = res ;
+            } else {
+
+                list[nservice++] = idx ;
+                visit[idx] = 1 ;
+            }
+
+        }
+
+        /** find dependencies of the service from the graph, do it recursively */
+        c = graph_matrix_get_edge_g_list(l, &graph, sa->s + n, 0, 1) ;
+
+        /** append to the list to deal with */
+        for (; pos < c ; pos++) {
+
+            if (!visit[l[pos]]) {
+
+                if (earlier) {
+
+                    if (ares[aresid].earlier) {
+
+                        list[nservice++] = l[pos] ;
+                        visit[l[pos]] = 1 ;
+                    }
+
+                } else {
+
+                    list[nservice++] = l[pos] ;
+                    visit[l[pos]] = 1 ;
+                }
+            }
+        }
     }
 
-    nservice = count ;
+    sanitize_init(list, nservice, &graph, ares, areslen, earlier ? STATE_FLAGS_ISEARLIER : STATE_FLAGS_UNKNOWN) ;
 
-    //0 don't remove down file -> 2 remove down file
-    if (!sanitize_init(ares, nservice, !earlier ? 0 : STATE_FLAGS_ISEARLIER))
-        log_dieu(LOG_EXIT_SYS,"initiate services of tree: ", treename) ;
-
-    service_resolve_array_free(ares, nservice) ;
+    service_resolve_array_free(ares, areslen) ;
+    graph_free_all(&graph) ;
 }
 
 int ssexec_init(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    int r, what = -1 ;
-    uint8_t nopts = 0, earlier = 0 ;
+    int r ;
+    uint8_t earlier = 0 ;
     char const *treename = 0 ;
-    char opts[14] ;
-    gid_t gidowner ;
-    resolve_service_master_t mres = RESOLVE_SERVICE_MASTER_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_MASTER, &mres) ;
+    char const *exclude[2] = { SS_MASTER + 1 , 0 } ;
+
     stralloc sa = STRALLOC_ZERO ;
 
-    if (!yourgid(&gidowner,info->owner))
-        log_dieusys(LOG_EXIT_SYS,"get gid") ;
-
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;) {
-
-            int opt = getopt_args(argc,argv, ">" OPTS_INIT, &l) ;
-            if (opt == -1) break ;
-            if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
-
-            switch (opt) {
-
-                case 'o' :
-
-                    auto_strings(opts, l.arg) ;
-                    nopts++ ;
-
-                default:
-
-                    log_usage(usage_init) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
-    if (argc < 1)
+    if (argc < 2 || !argv[1])
         log_usage(usage_init) ;
 
     treename = argv[1] ;
 
-    if (nopts)
-        what = init_parse_options(opts) ;
-
     size_t treenamelen = strlen(treename) ;
-    size_t treelen = info->base.len + SS_SYSTEM_LEN + 1 + treenamelen + 1 + SS_SVDIRS_LEN ;
+    size_t treelen = info->base.len + SS_SYSTEM_LEN + 1 + treenamelen + SS_SVDIRS_LEN + SS_RESOLVE_LEN ;
     char tree[treelen + 1] ;
+
     auto_strings(tree, info->base.s, SS_SYSTEM, "/", treename) ;
 
     if (!tree_isvalid(info->base.s, treename))
-        log_diesys(LOG_EXIT_USER, "invalid tree directory: ", treename) ;
+        log_diesys(LOG_EXIT_USER, "invalid tree name: ", treename) ;
 
     if (!tree_get_permissions(tree, info->owner))
         log_die(LOG_EXIT_USER, "You're not allowed to use the tree: ", tree) ;
@@ -156,58 +152,23 @@ int ssexec_init(int argc, char const *const *argv, ssexec_t *info)
     if (r < 0) log_die(LOG_EXIT_SYS,info->scandir.s, " conflicted format") ;
     if (!r) log_die(LOG_EXIT_USER,"scandir: ", info->scandir.s, " doesn't exist") ;
 
-    r = scandir_ok(info->scandir.s) ;
+    r = svc_scandir_ok(info->scandir.s) ;
     if (r != 1) earlier = 1 ;
 
-    auto_strings(tree + info->base.len + SS_SYSTEM_LEN + 1 + treenamelen, SS_SVDIRS) ;
+    auto_strings(tree + info->base.len + SS_SYSTEM_LEN + 1 + treenamelen, SS_SVDIRS, SS_RESOLVE) ;
 
-    if (!resolve_read_g(wres, tree, SS_MASTER + 1))
-        log_dieu(LOG_EXIT_SYS, "read resolve service Master file of tree: ", treename) ;
+    if (!sastr_dir_get(&sa, tree, exclude, S_IFREG))
+        log_dieu(LOG_EXIT_SYS, "get services list from tree: ", treename) ;
 
-    if (what < 0) {
+    if (sa.len) {
 
-        if (mres.ncontents) {
+         doit(&sa, info, earlier) ;
 
-            if (!sastr_clean_string(&sa, mres.sa.s + mres.contents))
-                log_dieu(LOG_EXIT_SYS, "clean string: ", mres.sa.s + mres.contents) ;
+    } else {
 
-        } else {
-
-            log_info("Initialization report: no enabled services to initiate at tree: ", treename) ;
-            goto end ;
-        }
-
-    } else if (!what) {
-
-        if (mres.ndisabled) {
-
-            if (!sastr_clean_string(&sa, mres.sa.s + mres.disabled))
-                log_dieu(LOG_EXIT_SYS, "clean string: ", mres.sa.s + mres.disabled) ;
-
-        } else {
-
-            log_info("Initialization report: no disabled services to initiate at tree: ", treename) ;
-            goto end ;
-        }
-
-    } else if (what) {
-
-        if (mres.nenabled) {
-
-            if (!sastr_clean_string(&sa, mres.sa.s + mres.enabled))
-                log_dieu(LOG_EXIT_SYS, "clean string: ", mres.sa.s + mres.enabled) ;
-
-        } else {
-
-            log_info("Initialization report: no enabled services to initiate at tree: ", treename) ;
-            goto end ;
-        }
+        log_info("Initialization report: no services to initiate at tree: ", treename) ;
     }
 
-    doit(&sa, tree, treename, earlier) ;
-
-    end:
-        resolve_free(wres) ;
-        stralloc_free(&sa) ;
-        return 0 ;
+    stralloc_free(&sa) ;
+    return 0 ;
 }
