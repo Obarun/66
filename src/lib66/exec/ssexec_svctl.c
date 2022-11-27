@@ -237,7 +237,7 @@ static void announce(unsigned int pos, pidservice_t *apids, unsigned int what, u
 
         fmt[uint_fmt(fmt, exitcode)] = 0 ;
 
-        log_1_warn("Unable to ", reloadmsg ? "reload" : what ? "stop" : "start", " service: ", name, " -- exited with signal: ", fmt) ;
+        log_1_warn("Unable to ", reloadmsg == 1 ? "restart" : reloadmsg > 1 ? "reload" : what ? "stop" : "start", " service: ", name, " -- exited with signal: ", fmt) ;
 
         FLAGS_SET(apids[pos].state, FLAGS_BLOCK|FLAGS_FATAL) ;
 
@@ -270,7 +270,7 @@ static void announce(unsigned int pos, pidservice_t *apids, unsigned int what, u
         FLAGS_CLEAR(apids[pos].state, FLAGS_BLOCK) ;
         FLAGS_SET(apids[pos].state, flag|FLAGS_UNBLOCK) ;
 
-        log_info("Successfully ", reloadmsg ? "reloaded" : what ? "stopped" : "started", " service: ", name) ;
+        log_info("Successfully ", reloadmsg == 1 ? "restarted" : reloadmsg > 1 ? "reloaded" : what ? "stopped" : "started", " service: ", name) ;
     }
 }
 
@@ -411,7 +411,23 @@ static int handle_signal(pidservice_t *apids, unsigned int what, graph_t *graph,
     return ok ;
 }
 
-static int doit(pidservice_t *sv, unsigned int what, unsigned int deadline)
+/** this following function come from:
+ * https://git.skarnet.org/cgi-bin/cgit.cgi/s6-rc/tree/src/s6-rc/s6-rc.c#n111
+ * under license ISC where parameters was modified */
+static uint32_t compute_timeout (uint32_t timeout, tain *deadline)
+{
+  uint32_t t = timeout ;
+  int globalt ;
+  tain globaltto ;
+  tain_sub(&globaltto, deadline, &STAMP) ;
+  globalt = tain_to_millisecs(&globaltto) ;
+  if (!globalt) globalt = 1 ;
+  if (globalt > 0 && (!t || (unsigned int)globalt < t))
+    t = (uint32_t)globalt ;
+  return t ;
+}
+
+static int doit(pidservice_t *sv, unsigned int what, tain *deadline)
 {
     log_flow() ;
 
@@ -419,6 +435,16 @@ static int doit(pidservice_t *sv, unsigned int what, unsigned int deadline)
 
     pid_t pid ;
     int wstat ;
+
+    char tfmt[UINT32_FMT] ;
+
+    unsigned int timeout = 0 ;
+    if (!what)
+        timeout = compute_timeout(type == TYPE_ONESHOT ? pares[sv->aresid].execute.timeout.up : pares[sv->aresid].execute.timeout.kill, deadline) ;
+    else
+        timeout = compute_timeout(type == TYPE_ONESHOT ? pares[sv->aresid].execute.timeout.down : pares[sv->aresid].execute.timeout.finish, deadline) ;
+
+    tfmt[uint_fmt(tfmt, timeout)] = 0 ;
 
     if (type == TYPE_MODULE || type == TYPE_BUNDLE)
         /**
@@ -439,9 +465,6 @@ static int doit(pidservice_t *sv, unsigned int what, unsigned int deadline)
                 updown[2] = updown[2] == 'U' ? 'u' : updown[2] == 'D' ? 'd' : updown[2] == 'R' ? 'r' : updown[2] ;
 
         }
-
-        char tfmt[UINT32_FMT] ;
-        tfmt[uint_fmt(tfmt, deadline)] = 0 ;
 
         char const *newargv[8] ;
         unsigned int m = 0 ;
@@ -470,7 +493,6 @@ static int doit(pidservice_t *sv, unsigned int what, unsigned int deadline)
         else
             return WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat) ;
 
-
     }
 
     char *sa = pares[sv->aresid].sa.s ;
@@ -478,17 +500,9 @@ static int doit(pidservice_t *sv, unsigned int what, unsigned int deadline)
     size_t namelen = strlen(name) ;
     char *tree = pares[sv->aresid].sa.s + pares[sv->aresid].path.tree ;
     size_t treelen = strlen(tree) ;
-    unsigned int timeout = 0 ;
-    if (!what)
-        timeout = pares[sv->aresid].execute.timeout.up ;
-    else
-        timeout = pares[sv->aresid].execute.timeout.down ;
 
     char script[treelen + SS_SVDIRS_LEN + SS_SVC_LEN + 1 + namelen + 7 + 1] ;
     auto_strings(script, tree, SS_SVDIRS, SS_SVC, "/", name) ;
-
-    char tfmt[UINT32_FMT] ;
-    tfmt[uint_fmt(tfmt, timeout)] = 0 ;
 
     char *oneshotdir = pares[sv->aresid].sa.s + pares[sv->aresid].live.oneshotddir ;
     char *scandir = pares[sv->aresid].sa.s + pares[sv->aresid].live.scandir ;
@@ -547,7 +561,7 @@ static int check_action(pidservice_t *apids, unsigned int pos, unsigned int rece
 
 }
 
-static int async_deps(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph, unsigned int deadline)
+static int async_deps(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph, tain *deadline)
 {
     log_flow() ;
 
@@ -556,9 +570,8 @@ static int async_deps(pidservice_t *apids, unsigned int i, unsigned int what, ss
     char buf[(UINT_FMT*2)*SS_MAX_SERVICE + 1] ;
 
     tain dead ;
-    tain_from_millisecs(&dead, deadline) ;
     tain_now_set_stopwatch_g() ;
-    tain_add_g(&dead, &dead) ;
+    tain_add_g(&dead, deadline) ;
 
     iopause_fd x = { .fd = apids[i].pipe[0], .events = IOPAUSE_READ, 0 } ;
 
@@ -620,7 +633,8 @@ static int async_deps(pidservice_t *apids, unsigned int i, unsigned int what, ss
                 if (sep < 0)
                     log_die(LOG_EXIT_SYS, "received bad signal format -- please make a bug report") ;
 
-                char c = line[sep + 1] ;
+                unsigned int c = line[sep + 1] ;
+                char pc[2] = { c, 0 } ;
                 line[sep] = 0 ;
 
                 if (!uint0_scan(line, &id))
@@ -628,7 +642,7 @@ static int async_deps(pidservice_t *apids, unsigned int i, unsigned int what, ss
 
                 ilog = id ;
 
-                log_trace(pares[apids[i].aresid].sa.s + pares[apids[i].aresid].name, " acknowledges: ", &c, " from: ", pares[ilog].sa.s + pares[ilog].name) ;
+                log_trace(pares[apids[i].aresid].sa.s + pares[apids[i].aresid].name, " acknowledges: ", pc, " from: ", pares[ilog].sa.s + pares[ilog].name) ;
 
                 if (!visit[pos]) {
 
@@ -654,7 +668,7 @@ static int async_deps(pidservice_t *apids, unsigned int i, unsigned int what, ss
     return 1 ;
 }
 
-static int async(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph, unsigned int deadline)
+static int async(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph, tain *deadline)
 {
     log_flow() ;
 
@@ -662,7 +676,7 @@ static int async(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_
 
     char *name = graph->data.s + genalloc_s(graph_hash_t,&graph->hash)[apids[i].vertex].vertex ;
 
-    log_info("beginning of the process of: ", name) ;
+    log_trace("beginning of the process of: ", name) ;
 
     if (FLAGS_ISSET(apids[i].state, (!what ? FLAGS_DOWN : FLAGS_UP))) {
 
@@ -678,7 +692,7 @@ static int async(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_
 
         } else {
 
-            log_info("Skipping service: ", name, " -- already in ", what ? "stopping" : "starting", " process") ;
+            log_trace("skipping service: ", name, " -- already in ", what ? "stopping" : "starting", " process") ;
 
             notify(apids, i, what ? "d" : "u", what) ;
 
@@ -687,14 +701,14 @@ static int async(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_
     } else {
 
         /** do not notify here, the handle will make it for us */
-        log_info("Skipping service: ", name, " -- already ", what ? "down" : "up") ;
+        log_trace("skipping service: ", name, " -- already ", what ? "down" : "up") ;
 
     }
 
     return e ;
 }
 
-static int waitit(pidservice_t *apids, unsigned int what, graph_t *graph, unsigned int deadline, ssexec_t *info)
+static int waitit(pidservice_t *apids, unsigned int what, graph_t *graph, tain *deadline, ssexec_t *info)
 {
     log_flow() ;
 
@@ -704,10 +718,8 @@ static int waitit(pidservice_t *apids, unsigned int what, graph_t *graph, unsign
     pidservice_t apidservicetable[napid] ;
     pidservice_t_ref apidservice = apidservicetable ;
 
-    tain dead ;
-    tain_from_millisecs(&dead, deadline) ;
     tain_now_set_stopwatch_g() ;
-    tain_add_g(&dead, &dead) ;
+    tain_add_g(deadline, deadline) ;
 
     int spfd = selfpipe_init() ;
 
@@ -759,7 +771,7 @@ static int waitit(pidservice_t *apids, unsigned int what, graph_t *graph, unsign
 
     while (npid) {
 
-        r = iopause_g(&x, 1, &dead) ;
+        r = iopause_g(&x, 1, deadline) ;
 
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "iopause") ;
@@ -793,12 +805,11 @@ int ssexec_svctl(int argc, char const *const *argv, ssexec_t *info)
     log_flow() ;
 
     int r ;
-    // what = 0 -> up signal
     uint8_t what = 0, requiredby = 0 ;
-    static unsigned int deadline = 3000 ;
+    tain deadline ;
     graph_t graph = GRAPH_ZERO ;
 
-    unsigned int areslen = 0, list[SS_MAX_SERVICE] ;
+    unsigned int areslen = 0, list[SS_MAX_SERVICE], visit[SS_MAX_SERVICE] ;
     resolve_service_t ares[SS_MAX_SERVICE] ;
 
     /*
@@ -808,7 +819,7 @@ int ssexec_svctl(int argc, char const *const *argv, ssexec_t *info)
      * STATE_FLAGS_TOPROPAGATE = 1
      * send signal to the depends/requiredby of the service
      *
-     * When we come from 66-start/stop tool we always want to
+     * When we come from 66 start/stop tool we always want to
      * propagate the signal. But we may need/want to send a e.g. SIGHUP signal
      * to a specific service without interfering on its depends/requiredby services
      *
@@ -825,7 +836,6 @@ int ssexec_svctl(int argc, char const *const *argv, ssexec_t *info)
         {
             int opt = subgetopt_r(argc,argv, OPTS_SVCTL, &l) ;
             if (opt == -1) break ;
-            //if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 
             switch (opt) {
 
@@ -874,20 +884,21 @@ int ssexec_svctl(int argc, char const *const *argv, ssexec_t *info)
         argc -= l.ind ; argv += l.ind ;
     }
 
-    if (argc < 1)
+    if (argc < 1 || datalen < 2)
         log_usage(usage_svctl) ;
 
-    if (!datalen)
-        log_die(LOG_EXIT_USER, "too few arguments") ;
-
     if (info->timeout)
-        deadline = info->timeout ;
+        tain_from_millisecs(&deadline, info->timeout) ;
+    else
+        deadline = tain_infinite_relative ;
 
     if (data[1] != 'u')
         what = 1 ;
 
     if (data[1] == 'r')
-        reloadmsg++ ;
+        reloadmsg = 1 ;
+    else if (data[1] == 'h')
+        reloadmsg = 2 ;
 
     if (what) {
 
@@ -905,24 +916,35 @@ int ssexec_svctl(int argc, char const *const *argv, ssexec_t *info)
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not supervised -- initiate its first") ;
 
+    graph_array_init_single(visit, SS_MAX_SERVICE) ;
+
     for (; *argv ; argv++) {
 
         int aresid = service_resolve_array_search(ares, areslen, *argv) ;
         if (aresid < 0)
             log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you parsed it?") ;
 
-        unsigned int l[graph.mlen], c = 0, pos = 0 ;
+        unsigned int l[graph.mlen], c = 0, pos = 0, idx = 0 ;
+
+        idx = graph_hash_vertex_get_id(&graph, *argv) ;
+
+        if (!visit[idx]) {
+            /** avoid double entry */
+            list[napid++] = idx ;
+            visit[idx] = 1 ;
+
+        }
 
         /** find dependencies of the service from the graph, do it recursively */
         c = graph_matrix_get_edge_g_sorted_list(l, &graph, *argv, requiredby, 1) ;
 
         /** append to the list to deal with */
-        for (; pos < c ; pos++)
-            list[napid + pos] = l[pos] ;
-
-        napid += c ;
-
-        list[napid++] = aresid ;
+        for (; pos < c ; pos++) {
+            if (!visit[l[pos]]) {
+                list[napid++] = l[pos] ;
+                visit[l[pos]] = 1 ;
+            }
+        }
     }
 
     pidservice_t apids[napid] ;
@@ -932,7 +954,7 @@ int ssexec_svctl(int argc, char const *const *argv, ssexec_t *info)
 
     pidservice_init_array(list, napid, apids, &graph, ares, areslen, info, requiredby, gflag) ;
 
-    r = waitit(apids, what, &graph, deadline, info) ;
+    r = waitit(apids, what, &graph, &deadline, info) ;
 
     graph_free_all(&graph) ;
 
