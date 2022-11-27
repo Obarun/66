@@ -1,5 +1,5 @@
 /*
- * 66-scanctl.c
+ * ssexec_scanctl.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -16,10 +16,10 @@
 #include <fcntl.h>
 
 #include <oblibs/log.h>
-#include <oblibs/obgetopt.h>
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
 
+#include <skalibs/sgetopt.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
 #include <skalibs/djbunix.h>
@@ -31,30 +31,9 @@
 
 #include <66/svc.h>
 #include <66/utils.h>
+#include <66/ssexec.h>
 
 static char TMPENV[MAXENV + 1] ;
-
-#define USAGE "66-scanctl [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -d notif ] [ -t rescan ] [ -e environment ] [ -o owner ] start|stop|reload|quit|nuke|zombies or any s6-svscanctl options"
-
-static inline void info_help (void)
-{
-    DEFAULT_MSG = 0 ;
-
-    static char const *help =
-"\n"
-"options :\n"
-"   -h: print this help\n"
-"   -z: use color\n"
-"   -v: increase/decrease verbosity\n"
-"   -l: live directory\n"
-"   -d: notify readiness on file descriptor\n"
-"   -t: rescan scandir every milliseconds\n"
-"   -e: environment directory\n"
-"   -o: handles scandir of owner\n"
-;
-
-    log_info(USAGE,"\n",help) ;
-}
 
 static inline unsigned int lookup (char const *const *table, char const *signal)
 {
@@ -175,7 +154,7 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
     xexec_ae(newup[0], newup, envp) ;
 }
 
-int main(int argc, char const *const *argv, char const *const *envp)
+int ssexec_scanctl(int argc, char const *const *argv, ssexec_t *info)
 {
     int r ;
     uid_t owner = MYUID ;
@@ -183,53 +162,21 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     char const *newenv[MAXENV+1] ;
     char const *const *genv = 0 ;
+    char const *const *genvp = (char const *const *)environ ;
     char const *signal ;
-    char str[UINT_FMT] ;
 
     stralloc scandir = STRALLOC_ZERO ;
     stralloc envdir = STRALLOC_ZERO ;
 
-    log_color = &log_color_disable ;
-
-    PROG = "66-scanctl" ;
     {
         subgetopt l = SUBGETOPT_ZERO ;
 
-        for (;;)
-        {
-            int opt = getopt_args(argc,argv, ">hv:zl:o:d:t:e:", &l) ;
+        for (;;) {
+
+            int opt = subgetopt_r(argc,argv, OPTS_SCANCTL, &l) ;
             if (opt == -1) break ;
-            if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
-            switch (opt)
-            {
-                case 'h' :
 
-                    info_help() ;
-                    return 0 ;
-
-                case 'v' :
-
-                    if (!uint0_scan(l.arg, &VERBOSITY))
-                        log_usage(USAGE) ;
-
-                    break ;
-
-                case 'z' :
-
-                    log_color = !isatty(1) ? &log_color_disable : &log_color_enable ;
-                    break ;
-
-                case 'l' :
-
-                    str[uint_fmt(str, SS_MAX_PATH)] = 0 ;
-
-                    if (strlen(l.arg) > SS_MAX_PATH)
-                        log_die(LOG_EXIT_USER,"live path is too long -- it can not exceed ", str) ;
-
-                    if (!auto_stra(&scandir,l.arg))
-                        log_die_nomem("stralloc") ;
-
-                    break ;
+            switch (opt) {
 
                 case 'o' :
 
@@ -244,7 +191,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
                 case 'd' :
 
                     if (!uint0_scan(l.arg, &notif))
-                        log_usage(USAGE) ;
+                        log_usage(usage_scanctl) ;
 
                     if (notif < 3)
                         log_die(LOG_EXIT_USER, "notification fd must be 3 or more") ;
@@ -257,7 +204,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
                 case 't' :
 
                     if (!uint0_scan(l.arg, &timeout))
-                        log_usage(USAGE) ;
+                        log_usage(usage_scanctl) ;
 
                     break ;
 
@@ -270,13 +217,13 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
                 default :
 
-                    log_usage(USAGE) ;
+                    log_usage(usage_scanctl) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
-    if (argc < 1) log_usage(USAGE) ;
+    if (argc < 1) log_usage(usage_scanctl) ;
     signal = argv[0] ;
     r = set_livedir(&scandir) ;
     if (r < 0) log_die(LOG_EXIT_USER,"live: ",scandir.s," must be an absolute path") ;
@@ -294,20 +241,21 @@ int main(int argc, char const *const *argv, char const *const *envp)
         if (!environ_clean_envfile_unexport(&modifs,envdir.s))
             log_dieu(LOG_EXIT_SYS,"clean environment file of: ",envdir.s) ;
 
-        size_t envlen = env_len(envp) ;
-        size_t n = env_len(envp) + 1 + byte_count(modifs.s,modifs.len,'\0') ;
+
+        size_t envlen = env_len(genvp) ;
+        size_t n = env_len(genvp) + 1 + byte_count(modifs.s,modifs.len,'\0') ;
         size_t mlen = modifs.len ;
         memcpy(TMPENV,modifs.s,mlen) ;
         TMPENV[mlen] = 0 ;
 
-        if (!env_merge(newenv, n, envp, envlen, TMPENV, mlen))
+        if (!env_merge(newenv, n, genvp, envlen, TMPENV, mlen))
             log_dieu(LOG_EXIT_SYS,"merge environment") ;
 
         stralloc_free(&modifs) ;
 
         genv = newenv ;
     }
-    else genv = envp ;
+    else genv = genvp ;
 
     sig = parse_signal(signal) ;
 

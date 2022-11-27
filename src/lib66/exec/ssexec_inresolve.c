@@ -1,5 +1,5 @@
 /*
- * 66-inresolve.c
+ * ssexec_inresolve.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -18,7 +18,6 @@
 #include <oblibs/log.h>
 #include <oblibs/sastr.h>
 #include <oblibs/string.h>
-#include <oblibs/obgetopt.h>
 #include <oblibs/types.h>
 
 #include <skalibs/types.h>
@@ -27,6 +26,7 @@
 #include <skalibs/buffer.h>
 
 #include <66/resolve.h>
+#include <66/ssexec.h>
 #include <66/tree.h>
 #include <66/service.h>
 #include <66/info.h>
@@ -39,24 +39,6 @@
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
-
-#define USAGE "66-inresolve [ -h ] [ -z ] [ -v verbosity ] [ -t tree ] tree|service name"
-
-static inline void info_help (void)
-{
-    DEFAULT_MSG = 0 ;
-
-    static char const *help =
-"\n"
-"options :\n"
-"   -h: print this help\n"
-"   -z: use color\n"
-"   -v: increase/decrease verbosity\n"
-"   -t: only search service at the specified tree\n"
-;
-
-    log_info(USAGE,"\n",help) ;
-}
 
 static inline unsigned int lookup (char const *const *table, char const *data)
 {
@@ -199,63 +181,24 @@ static void info_display_service_field(resolve_service_t *res)
 
 }
 
-int main(int argc, char const *const *argv)
+int ssexec_inresolve(int argc, char const *const *argv, ssexec_t *info)
 {
     int found = 0, what = 0 ;
     uint8_t master = 0 ;
 
     stralloc sa = STRALLOC_ZERO ;
     char const *svname = 0 ;
-    char const *treename = 0 ;
+    char const *treename = info->treename.s ;
     char atree[SS_MAX_TREENAME + 1] ;
 
-    log_color = &log_color_disable ;
+    argc-- ;
+    argv++ ;
 
-    PROG = "66-inresolve" ;
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;)
-        {
-            int opt = getopt_args(argc,argv, ">hv:zt:", &l) ;
-            if (opt == -1) break ;
-            if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
-            switch (opt)
-            {
-                case 'h' :
-
-                    info_help();
-                    return 0 ;
-
-                case 'v' :
-
-                    if (!uint0_scan(l.arg, &VERBOSITY))
-                        log_usage(USAGE) ;
-                    break ;
-
-                case 'z' :
-
-                    log_color = !isatty(1) ? &log_color_disable : &log_color_enable ;
-                    break ;
-
-                case 't' :
-
-                    treename = l.arg ;
-                    break ;
-
-                default :
-
-                    log_usage(USAGE) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
-    if (argc < 2) log_usage(USAGE) ;
+    if (argc < 2) log_usage(usage_inresolve) ;
 
     what = parse_what(*argv) ;
     if (what == 2)
-        log_usage(USAGE) ;
+        log_usage(usage_inresolve) ;
 
     argv++;
     argc--;

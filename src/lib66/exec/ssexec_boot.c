@@ -1,5 +1,5 @@
 /*
- * 66-boot.c
+ * ssexec_boot.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -29,10 +29,10 @@
 #include <oblibs/log.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
-#include <oblibs/obgetopt.h>
 #include <oblibs/environ.h>
 #include <oblibs/sastr.h>
 
+#include <skalibs/sgetopt.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
@@ -40,6 +40,7 @@
 
 #include <66/config.h>
 #include <66/constants.h>
+#include <66/ssexec.h>
 
 static mode_t mask = SS_BOOT_UMASK ;
 static unsigned int rescan = SS_BOOT_RESCAN ;
@@ -57,21 +58,18 @@ static char const *envdir = 0 ;
 static char const *fifo = 0 ;
 static char const *log_user = SS_LOGGER_RUNNER ;
 static char const *cver = 0 ;
-static char tpath[MAXENV + 1] ;
-static char trcinit[MAXENV + 1] ;
-static char trcinit_container[MAXENV + 1] ;
-static char tlive[MAXENV + 1] ;
-static char ttree[MAXENV + 1] ;
-static char confile[MAXENV + 1] ;
+static char tpath[SS_MAX_PATH_LEN + 1] ;
+static char trcinit[SS_MAX_PATH_LEN + 1] ;
+static char trcinit_container[SS_MAX_PATH_LEN + 1] ;
+static char tlive[SS_MAX_PATH_LEN + 1] ;
+static char ttree[SS_MAX_PATH_LEN + 1] ;
+static char confile[SS_MAX_PATH_LEN + 1 + SS_BOOT_CONF_LEN + 1] ;
 static char const *const *genv = 0 ;
 static int fdin ;
-static char const *proc_cmdline="/proc/cmdline" ;
 static stralloc sacmdline = STRALLOC_ZERO ;
 static int notifpipe[2] ;
 
 #define MAXBUF 1024*64*2
-
-#define USAGE "66-boot [ -h ] [ -z ] [ -m ] [ -s skel ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]"
 
 static void sulogin(char const *msg,char const *arg)
 {
@@ -84,79 +82,11 @@ static void sulogin(char const *msg,char const *arg)
     if (*msg) log_warnu(msg,arg) ;
     pid = child_spawn0(newarg[0],newarg,genv) ;
     if (waitpid_nointr(pid,&wstat, 0) < 0)
-            log_dieusys(LOG_EXIT_SYS,"wait for sulogin -- you are on your own") ;
+        log_dieusys(LOG_EXIT_SYS,"wait for sulogin -- you are on your own") ;
     fdin=dup(0) ;
     if (fdin == -1) log_dieu(LOG_EXIT_SYS,"duplicate stdin -- you are on your own") ;
     close(0) ;
     if (open("/dev/null",O_WRONLY)) log_dieu(LOG_EXIT_SYS,"open /dev/null -- you are on your own") ;
-}
-
-static inline void info_help (void)
-{
-    DEFAULT_MSG = 0 ;
-
-    static char const *help =
-"\n"
-"options :\n"
-"   -h: print this help\n"
-"   -z: use color\n"
-"   -m: mount parent live directory\n"
-"   -s: skeleton directory\n"
-"   -l: run catch-all logger as log_user user\n"
-"   -e: environment directory or file\n"
-"   -d: dev directory\n"
-"   -b: banner to display\n"
-;
-
-    log_info(USAGE,"\n",help) ;
-}
-
-static int read_line(stralloc *dst, char const *line)
-{
-    log_flow() ;
-
-    char b[MAXBUF] ;
-    int fd ;
-    unsigned int n = 0, m = MAXBUF ;
-
-    fd = open(line, O_RDONLY) ;
-    if (fd == -1) return 0 ;
-
-    for(;;)
-    {
-        ssize_t r = read(fd,b+n,m-n);
-        if (r == -1)
-        {
-            if (errno == EINTR) continue ;
-            break ;
-        }
-        n += r ;
-        // buffer is full
-        if (n == m)
-        {
-            --n ;
-            break ;
-        }
-        // end of file
-        if (r == 0) break ;
-    }
-    close(fd) ;
-
-    if(n)
-    {
-        int i = n ;
-        // remove trailing zeroes
-        while (i && b[i-1] == '\0') --i ;
-        while (i--)
-            if (b[i] == '\n' || b[i] == '\0') b[i] = ' ' ;
-
-        if (b[n-1] == ' ') b[n-1] = '\0' ;
-    }
-    b[n] = '\0';
-
-    if (!stralloc_cats(dst,b) ||
-        !stralloc_0(dst)) sulogin("close stralloc",dst->s) ;
-    return n ;
 }
 
 static int get_value(stralloc *val,char const *key)
@@ -204,51 +134,46 @@ static void parse_conf(void)
     int r ;
     unsigned int j = 0 ;
     uint8_t empty = 0 ;
+    size_t filesize = 0 ;
     char u[UINT_FMT] ;
+    char *gvalue = 0 ;
     stralloc src = STRALLOC_ZERO ;
-    stralloc cmdline = STRALLOC_ZERO ;
     stralloc val = STRALLOC_ZERO ;
-    if (skel[0] != '/') sulogin("skeleton directory must be an aboslute path: ",skel) ;
-    size_t skelen = strlen(skel) ;
-    memcpy(confile,skel,skelen) ;
-    confile[skelen] = '/' ;
-    memcpy(confile + skelen + 1, SS_BOOT_CONF, SS_BOOT_CONF_LEN) ;
-    confile[skelen + 1 + SS_BOOT_CONF_LEN] = 0 ;
-    size_t filesize=file_get_size(confile) ;
-    /** skeleton file */
-    r = openreadfileclose(confile,&src,filesize) ;
-    if(!r) sulogin("open configuration file: ",confile) ;
-    if (!stralloc_0(&src)) sulogin("append stralloc of file: ",confile) ;
 
-    /** /proc/cmdline */
-    if (!read_line(&cmdline,proc_cmdline)) {
-        /** we don't want to die here */
-        log_warnu("read: ",proc_cmdline) ;
-    }
-    else if (!sastr_split_element_in_nline(&cmdline)) {
-        log_warnu("split: ",proc_cmdline) ;
-        cmdline.len = 0 ;
-    }
-    for (char const *const *p = valid;*p;p++,j++)
+    if (skel[0] != '/')
+        sulogin("skeleton directory must be an aboslute path: ",skel) ;
+
+    auto_strings(confile, skel, "/", SS_BOOT_CONF) ;
+
+    filesize = file_get_size(confile) ;
+    /** skeleton file */
+    r = openreadfileclose(confile, &src, filesize) ;
+    if(!r)
+        sulogin("open configuration file: ",confile) ;
+    if (!stralloc_0(&src))
+        sulogin("append stralloc of file: ",confile) ;
+
+    for (char const *const *p = valid; *p; p++, j++)
     {
         empty = 0 ;
-        /** try first to read from /proc/cmdline.
+        /** try first to read from kernel environment.
          * If the key is not found, try to read the skeleton file.
          * Finally keep the default value if we cannot get a correct
          * key=value pair */
-        if (cmdline.len > 0) {
-            if (!stralloc_copy(&val,&cmdline)) sulogin("copy stralloc of file: ",proc_cmdline) ;
+        gvalue = getenv(*p) ;
+        if (gvalue) {
 
-        }
-        else if (!stralloc_copy(&val,&src)) sulogin("copy stralloc of file: ",confile) ;
+            if (!auto_stra(&val, *p, "=", gvalue))
+                sulogin("copy value of key: ", *p) ;
 
-        if (!get_value(&val,*p))
-        {
-            if (cmdline.len > 0) {
-                if (!stralloc_copy(&val,&src)) sulogin("copy stralloc of file: ",confile) ;
-                if (!get_value(&val,*p)) empty = 1 ;
-            }
-            else empty = 1 ;
+        } else {
+
+            if (!stralloc_copy(&val, &src))
+                sulogin("copy stralloc of file: ",confile) ;
+
+            if (!get_value(&val,*p))
+                empty = 1 ;
+
         }
 
         switch (j)
@@ -368,7 +293,6 @@ static void parse_conf(void)
     if (!sastr_split_string_in_nline(&sacmdline)) sulogin("split string: ",sacmdline.s) ;
 
     stralloc_free(&val) ;
-    stralloc_free(&cmdline) ;
     stralloc_free(&src) ;
 }
 
@@ -475,33 +399,35 @@ static inline void run_stage2 (char const *const *envp, size_t envlen, char cons
     xmexec_fm(newargv, envp, envlen, t, tlen) ;
 }
 
-static inline void run_cmdline(char const *const *newargv, char const *const *envp, char const *msg,char const *arg)
+static inline void make_cmdline(char const *prog,char const **add,int len,char const *msg,char const *arg,char const *const *envp)
 {
     log_flow() ;
 
     pid_t pid ;
     int wstat ;
-    pid = child_spawn0(newargv[0],newargv,envp) ;
-    if (waitpid_nointr(pid,&wstat, 0) < 0)
-        sulogin("wait for: ",newargv[0]) ;
-    if (wstat) sulogin(msg,arg) ;
-}
-
-static inline void make_cmdline(char const *prog,char const **add,int len,char const *msg,char const *arg,char const *const *envp)
-{
-    log_flow() ;
-
-    int m = 6 + len, i = 0, n = 0 ;
+    int m = 7 + len, i = 0, n = 0 ;
     char const *newargv[m] ;
+
+    newargv[n++] = "66" ;
     newargv[n++] = prog ;
     newargv[n++] = "-v" ;
     newargv[n++] = cver ;
     newargv[n++] = "-l" ;
     newargv[n++] = live ;
+
     for (;i<len;i++)
         newargv[n++] = add[i] ;
+
     newargv[n] = 0 ;
-    run_cmdline(newargv,envp,msg,arg) ;
+
+    pid = child_spawn0(newargv[0], newargv, envp) ;
+
+    if (waitpid_nointr(pid, &wstat, 0) < 0)
+        sulogin("wait for: ", newargv[0]) ;
+
+    if (wstat)
+        sulogin(msg, arg) ;
+
 }
 
 static void cad(void)
@@ -515,7 +441,7 @@ static void cad(void)
     int fd ;
     fd = open("/dev/tty0", O_RDONLY | O_NOCTTY) ;
     if (fd < 0) {
-        log_warnusys("open /dev/", "tty0 (kbrequest will not be handled)") ;
+        log_warnusys("open /dev/tty0 (kbrequest will not be handled)") ;
     }
     else {
 
@@ -532,7 +458,7 @@ static void cad(void)
 
 }
 
-int main(int argc, char const *const *argv,char const *const *envp)
+int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 {
     VERBOSITY = 0 ;
     unsigned int r , tmpfs = 0, opened = 0 ;
@@ -541,30 +467,25 @@ int main(int argc, char const *const *argv,char const *const *envp)
     char verbo[UINT_FMT] ;
     cver = verbo ;
     stralloc envmodifs = STRALLOC_ZERO ;
-    genv = envp ;
+    genv = (char const *const *)environ ;
 
-    log_color = &log_color_disable ;
-
-    PROG = "66-boot" ;
     {
         subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, ">hzms:e:d:b:l:", &l) ;
+            int opt = subgetopt_r(argc, argv, OPTS_BOOT, &l) ;
             if (opt == -1) break ;
-            if (opt == -2) sulogin("options must be set first","") ;
+
             switch (opt)
             {
-                case 'h' : info_help(); return 0 ;
-                case 'z' : log_color = !isatty(1) ? &log_color_disable : &log_color_enable ; break ;
                 case 'm' : tmpfs = 1 ; break ;
                 case 's' : skel = l.arg ; break ;
                 case 'e' : envdir = l.arg ; break ;
                 case 'd' : slashdev = l.arg ; break ;
                 case 'b' : banner = l.arg ; break ;
                 case 'l' : log_user = l.arg ; break ;
-                default :  log_usage(USAGE) ;
+                default :  log_usage(usage_boot) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
@@ -684,13 +605,14 @@ int main(int argc, char const *const *argv,char const *const *envp)
         t[m++] = log_user ;
         t[m++] = "create" ;
         log_info("Create live scandir at: ",live) ;
-        make_cmdline(SS_EXTBINPREFIX "66-scandir",t,nargc,"create live scandir at: ",live,envp) ;
+
+        make_cmdline("scandir", t, nargc, "create live scandir at: ", live, genv) ;
     }
     /** initiate earlier service */
     {
-        char const *t[] = { "-t",tree,"classic" } ;
+        char const *t[] = { tree } ;
         log_info("Initiate earlier service of tree: ",tree) ;
-        make_cmdline(SS_EXTBINPREFIX "66-init",t,3,"initiate earlier service of tree: ",tree,envp) ;
+        make_cmdline("init", t, 1, "initiate earlier service of tree: ", tree, genv) ;
     }
 
     if (envdir) {
@@ -716,8 +638,9 @@ int main(int argc, char const *const *argv,char const *const *envp)
         char fmtfd[2 + UINT_FMT] = "-" ;
 
         size_t m = 0 ;
-        static char const *newargv[7] ;
-        newargv[m++] = SS_EXTBINPREFIX "66-scanctl" ;
+        static char const *newargv[8] ;
+        newargv[m++] = "66" ;
+        newargv[m++] = "scanctl" ;
         newargv[m++] = "-v0" ;
         if (!catch_log)
             newargv[m++] = fmtfd ;

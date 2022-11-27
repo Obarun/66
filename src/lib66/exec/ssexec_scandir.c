@@ -1,5 +1,5 @@
 /*
- * 66-scandir.c
+ * ssexec_scandir.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -19,7 +19,6 @@
 #include <sys/stat.h>
 #include <stdarg.h>
 
-#include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
 #include <oblibs/directory.h>
 #include <oblibs/types.h>
@@ -28,6 +27,7 @@
 #include <oblibs/environ.h>
 
 #include <skalibs/stralloc.h>
+#include <skalibs/sgetopt.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/types.h>
 #include <skalibs/env.h>
@@ -39,6 +39,7 @@
 #include <execline/config.h>
 
 #include <66/config.h>
+#include <66/ssexec.h>
 #include <66/svc.h>
 #include <66/utils.h>
 #include <66/enum.h>
@@ -763,7 +764,7 @@ void sanitize_live(char const *live)
     auto_check(tmp,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
 }
 
-int main(int argc, char const *const *argv, char const *const *envp)
+int ssexec_scandir(int argc, char const *const *argv, ssexec_t *info)
 {
     int r ;
     unsigned int cmd, create, remove ;
@@ -771,41 +772,22 @@ int main(int argc, char const *const *argv, char const *const *envp)
     stralloc live = STRALLOC_ZERO ;
     stralloc scandir = STRALLOC_ZERO ;
 
-    log_color = &log_color_disable ;
-
     CONFIG_STR_LEN = compute_buf_size(SS_BINPREFIX, SS_EXTBINPREFIX, SS_EXTLIBEXECPREFIX, SS_LIBEXECPREFIX, SS_EXECLINE_SHEBANGPREFIX, 0) ;
 
     cmd = create = remove = 0 ;
 
     OWNER = MYUID ;
 
-    PROG = "66-scandir" ;
     {
         subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, ">hzv:bl:s:o:L:cB", &l) ;
+            int opt = subgetopt_r(argc, argv, OPTS_SCANDIR, &l) ;
             if (opt == -1) break ;
-            if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
+
             switch (opt)
             {
-                case 'h' :
-
-                    info_help() ;
-                    return 0 ;
-
-                case 'z' :
-
-                    log_color = !isatty(1) ? &log_color_disable : &log_color_enable ;
-                    break ;
-
-                case 'v' :
-
-                    if (!uint0_scan(l.arg, &VERBOSITY))
-                        log_usage(USAGE) ;
-                    break ;
-
                 case 'b' :
 
                     BOOT = 1 ;
@@ -850,19 +832,19 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
                 default :
 
-                    log_usage(USAGE) ;
+                    log_usage(usage_scandir) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
     if (!argc)
-        log_usage(USAGE) ;
+        log_usage(usage_scandir) ;
 
     cmd = parse_command(argv[0]) ;
 
     if (cmd == 3) {
-        log_usage(USAGE) ;
+        log_usage(usage_scandir) ;
     } else if (!cmd) {
         create = 1 ;
     } else  {

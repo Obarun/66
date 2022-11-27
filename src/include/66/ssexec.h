@@ -111,6 +111,16 @@ extern ssexec_func_t ssexec_svctl ;
 extern ssexec_func_t ssexec_env ;
 extern ssexec_func_t ssexec_all ;
 extern ssexec_func_t ssexec_tree ;
+extern ssexec_func_t ssexec_reconfigure ;
+extern ssexec_func_t ssexec_reload ;
+extern ssexec_func_t ssexec_restart ;
+extern ssexec_func_t ssexec_inresolve ;
+extern ssexec_func_t ssexec_instate ;
+extern ssexec_func_t ssexec_intree ;
+extern ssexec_func_t ssexec_inservice ;
+extern ssexec_func_t ssexec_boot ;
+extern ssexec_func_t ssexec_scanctl ;
+extern ssexec_func_t ssexec_scandir ;
 
 extern char const *usage_parse ;
 extern char const *help_parse ;
@@ -132,18 +142,43 @@ extern char const *usage_all ;
 extern char const *help_all ;
 extern char const *usage_tree ;
 extern char const *help_tree ;
+extern char const *usage_reconfigure ;
+extern char const *help_reconfigure ;
+extern char const *usage_reload ;
+extern char const *help_reload ;
+extern char const *usage_restart ;
+extern char const *help_restart ;
+extern char const *usage_unsupervise ;
+extern char const *help_unsupervise ;
+extern char const *usage_inresolve ;
+extern char const *help_inresolve ;
+extern char const *usage_instate ;
+extern char const *help_instate ;
+extern char const *usage_intree ;
+extern char const *help_intree ;
+extern char const *usage_inservice ;
+extern char const *help_inservice ;
+extern char const *usage_boot ;
+extern char const *help_boot ;
+extern char const *usage_scanctl ;
+extern char const *help_scanctl ;
+extern char const *usage_scandir ;
+extern char const *help_scandir ;
+extern char const *usage_66 ;
 
+#define OPTS_SUBSTART "P"
+#define OPTS_SUBSTART_LEN (sizeof OPTS_SUBSTART - 1)
 #define OPTS_PARSE "fFcmCI"
 #define OPTS_PARSE_LEN (sizeof OPTS_PARSE - 1)
-#define OPTS_INIT "o:"
+#define OPTS_INIT ""
 #define OPTS_INIT_LEN (sizeof OPTS_INIT - 1)
 #define OPTS_ENABLE "fFSI"
 #define OPTS_ENABLE_LEN (sizeof OPTS_ENABLE - 1)
 #define OPTS_DISABLE "SFR"
 #define OPTS_DISABLE_LEN (sizeof OPTS_DISABLE - 1)
-#define OPTS_START "rR"
+#define OPTS_START "P"
 #define OPTS_START_LEN (sizeof OPTS_START - 1)
-#define OPTS_STOP "uXK"
+#define OPTS_STOP "P"
 #define OPTS_STOP_LEN (sizeof OPTS_STOP - 1)
 #define OPTS_SVCTL "abqhkti12pcyroduxOw:P"
 #define OPTS_SVCTL_LEN (sizeof OPTS_SVCTL - 1)
@@ -153,9 +188,21 @@ extern char const *help_tree ;
 #define OPTS_ALL_LEN (sizeof OPTS_ALL - 1)
 #define OPTS_TREE "na:d:cS:EDRC:o:"
 #define OPTS_TREE_LEN (sizeof OPTS_TREE - 1)
+#define OPTS_INRESOLVE ""
+#define OPTS_INRESOLVE_LEN (sizeof OPTS_INRESOLVE - 1)
+#define OPTS_INSTATE ""
+#define OPTS_INSTATE_LEN (sizeof OPTS_INSTATE - 1)
+#define OPTS_INTREE "no:grd:l:"
+#define OPTS_INTREE_LEN (sizeof OPTS_INTREE - 1)
+#define OPTS_INSERVICE "no:grd:t:p:"
+#define OPTS_INSERVICE_LEN (sizeof OPTS_INSERVICE - 1)
+#define OPTS_BOOT "ms:e:d:b:l:"
+#define OPTS_BOOT_LEN (sizeof OPTS_BOOT - 1)
+#define OPTS_SCANCTL "o:d:t:e:"
+#define OPTS_SCANCTL_LEN (sizeof OPTS_SCANCTL - 1)
+#define OPTS_SCANDIR "bl:s:o:L:cB"
+#define OPTS_SCANDIR_LEN (sizeof OPTS_SCANDIR - 1)
 
-extern int ssexec_main(int argc, char const *const *argv, char const *const *envp,ssexec_func_t *func,ssexec_t *info) ;
-extern void ssexec_set_info(ssexec_t *info) ;
-extern int ssexec_set_treeinfo(ssexec_t *info) ;
+
 
 #endif

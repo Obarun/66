@@ -1,5 +1,5 @@
 /*
- * 66-instate.c
+ * ssexec_instate.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -27,6 +27,7 @@
 #include <skalibs/buffer.h>
 
 #include <66/resolve.h>
+#include <66/ssexec.h>
 #include <66/info.h>
 #include <66/utils.h>
 #include <66/constants.h>
@@ -83,7 +84,7 @@ static void info_display_int(char const *field,unsigned int id)
     info_display_string(field,str) ;
 }
 
-int main(int argc, char const *const *argv)
+int ssexec_instate(int argc, char const *const *argv, ssexec_t *info)
 {
     int found = 0 ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
@@ -93,8 +94,6 @@ int main(int argc, char const *const *argv)
     char const *svname = 0 ;
     char const *ste = 0 ;
     char atree[SS_MAX_TREENAME + 1] ;
-
-    log_color = &log_color_disable ;
 
     char buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
         "toinit",
@@ -108,47 +107,10 @@ int main(int argc, char const *const *argv)
         "issupervised",
         "isup" } ;
 
-    PROG = "66-instate" ;
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
+    argc-- ;
+    argv++ ;
 
-        for (;;)
-        {
-            int opt = getopt_args(argc,argv, ">hv:zt:", &l) ;
-            if (opt == -1) break ;
-            if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
-            switch (opt)
-            {
-                case 'h' :
-
-                    info_help();
-                    return 0 ;
-
-                case 'v' :
-
-                        if (!uint0_scan(l.arg, &VERBOSITY))
-                            log_usage(USAGE) ;
-
-                        break ;
-
-                case 'z' :
-
-                    log_color = !isatty(1) ? &log_color_disable : &log_color_enable ;
-                    break ;
-
-                case 't' :
-
-                    log_1_warn("deprecated option -t -- ignore it") ;
-                    break ;
-
-                default :
-                    log_usage(USAGE) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
-    if (!argc) log_usage(USAGE) ;
+    if (!argc) log_usage(usage_instate) ;
     svname = *argv ;
 
     if (!set_ownersysdir_stack(base, getuid()))
