@@ -16,7 +16,6 @@
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
-#include <oblibs/obgetopt.h>
 #include <oblibs/graph.h>
 
 #include <skalibs/sgetopt.h>
@@ -36,8 +35,10 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
 
     uint32_t flag = 0 ;
     graph_t graph = GRAPH_ZERO ;
+    uint8_t siglen = 3 ;
+    int e = 0 ;
 
-    unsigned int areslen = 0, list[SS_MAX_SERVICE], nservice = 0 ;
+    unsigned int areslen = 0, list[SS_MAX_SERVICE], visit[SS_MAX_SERVICE], nservice = 0, n = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE] ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_ISSUPERVISED|STATE_FLAGS_WANTDOWN) ;
@@ -47,11 +48,16 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
 
         for (;;) {
 
-            int opt = getopt_args(argc,argv, ">" OPTS_STOP, &l) ;
+            int opt = subgetopt_r(argc,argv, OPTS_STOP, &l) ;
             if (opt == -1) break ;
-            if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 
             switch (opt) {
+
+                case 'P' :
+
+                    FLAGS_CLEAR(flag, STATE_FLAGS_TOPROPAGATE) ;
+                    siglen++ ;
+                    break ;
 
                 case 'u' :
 
@@ -60,12 +66,12 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
 
                 case 'X' :
 
-                    log_1_warn("deprecated option -- use 66-svctl -xd instead") ;
+                    log_1_warn("deprecated option -- use 66 svctl -xd instead") ;
                     return 0 ;
 
                 case 'K' :
 
-                    log_1_warn("deprecated option -- use 66-svctl -kd instead") ;
+                    log_1_warn("deprecated option -- use 66 svctl -kd instead") ;
                     return 0 ;
 
                 default :
@@ -87,76 +93,58 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- try first to install the corresponding frontend file") ;
 
-    int n = 0 ;
+    graph_array_init_single(visit, SS_MAX_SERVICE) ;
+
     for (; n < argc ; n++) {
 
         int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
         if (aresid < 0)
-            log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you started it?") ;
+            log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you started it?") ;
 
-        list[nservice++] = aresid ;
-        unsigned int l[graph.mlen] ;
-        unsigned int c = 0 ;
+        unsigned int l[graph.mlen], c = 0, pos = 0, idx = 0 ;
 
-        /** find requiredby of the service from the graph, do it recursively */
+        idx = graph_hash_vertex_get_id(&graph, argv[n]) ;
+
+        if (!visit[idx]) {
+            list[nservice++] = idx ;
+            visit[idx] = 1 ;
+        }
+
+        /** find dependencies of the service from the graph, do it recursively */
         c = graph_matrix_get_edge_g_list(l, &graph, argv[n], 1, 1) ;
 
         /** append to the list to deal with */
-        for (unsigned int pos = 0 ; pos < c ; pos++)
-            list[nservice + pos] = l[pos] ;
-
-        nservice += c ;
+        for (; pos < c ; pos++) {
+            if (!visit[l[pos]]) {
+                list[nservice++] = l[pos] ;
+                visit[l[pos]] = 1 ;
+            }
+        }
     }
 
-    if (FLAGS_ISSET(flag, STATE_FLAGS_TOUNSUPERVISE)) {
+    char *sig[siglen] ;
+    if (siglen > 3) {
 
-        /** we cannot pass through the svc_send() function which
-         * call ssexec_svctl(). The ssexec_svctl function is asynchronous.
-         * So, when child exist, the svc_send is "unblocked" and the program
-         * continue to execute. We need to wait for all services to be brought
-         * down before executing the unsupervise.*/
-        pid_t pid ;
-        int wstat ;
-
-        int nargc = 4 + nservice ;
-        char const *newargv[nargc] ;
-        unsigned int m = 0, n = 0 ;
-
-        newargv[m++] = "66-svctl" ;
-        newargv[m++] = "-wD" ;
-        newargv[m++] = "-d" ;
-
-        for (; n < nservice ; n++)
-            newargv[m++] = graph.data.s + genalloc_s(graph_hash_t,&graph.hash)[list[n]].vertex ;
-
-        newargv[m++] = 0 ;
-
-        pid = child_spawn0(newargv[0], newargv, (char const *const *) environ) ;
-
-        if (waitpid_nointr(pid, &wstat, 0) < 0)
-            log_dieusys(LOG_EXIT_SYS, "wait for 66-svctl") ;
-
-        if (wstat)
-            log_dieu(LOG_EXIT_SYS, "stop services selection") ;
-
-        svc_unsupervise(list, nservice, &graph, ares, areslen) ;
+        sig[0] = "-P" ;
+        sig[1] = "-wD" ;
+        sig[2] = "-d" ;
+        sig[3] = 0 ;
 
     } else {
-
-        unsigned int siglen = 2 ;
-        char *sig[siglen + 1] ;
 
         sig[0] = "-wD" ;
         sig[1] = "-d" ;
         sig[2] = 0 ;
-
-        if (!svc_send(argv, argc, sig, siglen, info))
-            log_dieu(LOG_EXIT_SYS, "send -wD -d signal") ;
     }
+
+    e = svc_send_wait(argv, argc, sig, siglen, info) ;
+
+    if (FLAGS_ISSET(flag, STATE_FLAGS_TOUNSUPERVISE))
+        svc_unsupervise(list, nservice, &graph, ares, areslen) ;
 
     service_resolve_array_free(ares, areslen) ;
 
     graph_free_all(&graph) ;
 
-    return 0 ;
+    return e ;
 }
