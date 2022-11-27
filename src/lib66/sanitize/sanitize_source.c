@@ -26,7 +26,9 @@
 
 void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)
 {
-    int r ;
+    log_flow() ;
+
+    int r, logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
     char atree[SS_MAX_TREENAME + 1] ;
 
     r = service_is_g(atree, name, STATE_FLAGS_ISPARSED) ;
@@ -37,29 +39,34 @@ void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)
 
         int argc = 3 ;
         int m = 0 ;
+        char *prog = PROG ;
         char const *newargv[argc] ;
 
-        newargv[m++] = "66-parse" ;
+        newargv[m++] = "parse" ;
         newargv[m++] = name ;
         newargv[m++] = 0 ;
 
+        PROG = "parse" ;
         if (ssexec_parse(argc, newargv, info))
             log_dieu(LOG_EXIT_SYS, "parse service: ", name) ;
+        PROG = prog ;
 
-    } else if FLAGS_ISSET(flag, STATE_FLAGS_TORESTART) {
+    } else if (FLAGS_ISSET(flag, STATE_FLAGS_TORELOAD) && logname < 0) {
 
         int argc = 4 ;
         int m = 0 ;
+        char *prog = PROG ;
         char const *newargv[argc] ;
 
-        newargv[m++] = "66-parse" ;
+        newargv[m++] = "parse" ;
         newargv[m++] = "-f" ;
         newargv[m++] = name ;
         newargv[m++] = 0 ;
 
+        PROG = "parse" ;
         if (ssexec_parse(argc, newargv, info))
             log_dieu(LOG_EXIT_SYS, "parse service: ", name) ;
-
+        PROG = prog ;
     }
 
 }
