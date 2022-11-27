@@ -45,7 +45,7 @@ static void parse_service_instance(stralloc *frontend, char const *svsrc, char c
     if (!instance_splitname(&sa, sv, insta, SS_INSTANCE_TEMPLATE))
         log_die(LOG_EXIT_SYS, "split instance service of: ", sv) ;
 
-    log_trace("read frontend service of: ", svsrc, sa.s) ;
+    log_trace("read frontend service of: ", svsrc, sv) ;
 
     if (read_svfile(frontend, sa.s, svsrc) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read frontend service of: ", svsrc, sa.s) ;
@@ -62,12 +62,20 @@ static void set_info(ssexec_t *info)
     log_flow() ;
 
     info->tree.len = 0 ;
-    int r = ssexec_set_treeinfo(info) ;
-    if (r == -4) log_die(LOG_EXIT_USER,"You're not allowed to use the tree: ",info->tree.s) ;
-    if (r == -3) log_dieu(LOG_EXIT_USER,"find the current tree. You must use the -t options") ;
-    if (r == -2) log_dieu(LOG_EXIT_USER,"set the tree name") ;
-    if (r == -1) log_dieu(LOG_EXIT_USER,"parse seed file") ;
-    if (!r) log_dieusys(LOG_EXIT_SYS,"find tree: ", info->treename.s) ;
+    int r = tree_sethome(info) ;
+    if (r == -3)
+        log_dieu(LOG_EXIT_USER, "find the current tree. You must use the -t options") ;
+    else if (r == -2)
+        log_dieu(LOG_EXIT_USER, "set the tree name") ;
+    else if (r == -1)
+        log_dieu(LOG_EXIT_USER, "parse seed file") ;
+    else if (!r)
+        log_dieusys(LOG_EXIT_SYS, "find tree: ", info->treename.s) ;
+
+    if (!tree_get_permissions(info->tree.s, info->owner))
+       log_die(LOG_EXIT_USER, "You're not allowed to use the tree: ", info->tree.s) ;
+
+    info->treeallow = 1 ;
 
 }
 
@@ -116,11 +124,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
     insta = instance_check(svname) ;
 
-    if (!insta) {
-
-        log_die(LOG_EXIT_SYS, "invalid instance name: ", svname) ;
-
-    } else if (insta > 0) {
+    if (insta > 0) {
 
         parse_service_instance(&sa, svsrc, svname, insta) ;
 
@@ -137,7 +141,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
     isparsed = service_is_g(atree, svname, STATE_FLAGS_ISPARSED) ;
     if (isparsed == -1)
-        log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please a bug report") ;
+        log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please make a bug report") ;
 
     if (isparsed) {
 
@@ -244,7 +248,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
     if (service_resolve_array_search(ares, *areslen, svname) < 0) {
         if (*areslen >= SS_MAX_SERVICE)
-            log_die(LOG_EXIT_SYS, "to many service to parse -- compile again 66 changing the --max-service options") ;
+            log_die(LOG_EXIT_SYS, "too many services to parse -- compile again 66 changing the --max-service options") ;
         (*residx) = *areslen ;
         ares[(*areslen)++] = res ;
     }
