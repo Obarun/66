@@ -103,7 +103,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
 
         if (!earlier && is_supervised) {
 
-            if (!FLAGS_ISSET(flags, STATE_FLAGS_TORELOAD))
+            if (!FLAGS_ISSET(flags, STATE_FLAGS_TORELOAD) && !FLAGS_ISSET(flags, STATE_FLAGS_TORESTART))
                 sanitize_fdholder(&ares[aresid], STATE_FLAGS_TRUE) ;
 
             log_trace("create fifo: ", sa + ares[aresid].live.eventdir) ;
@@ -147,7 +147,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
 
         if (nids) {
 
-            sanitize_scandir(&ares[0], STATE_FLAGS_TORELOAD) ;
+            sanitize_scandir(&ares[real[0]], STATE_FLAGS_TORELOAD) ;
 
             log_trace("waiting for events on fifo...") ;
             if (ftrigr_wait_and_g(&fifo, ids, nids, &deadline) < 0)
@@ -162,7 +162,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
                 tfmt[uint_fmt(tfmt, 3000)] = 0 ;
                 pid_t pid ;
                 int wstat ;
-                char *socket = ares[0].sa.s + ares[0].live.fdholderdir ;
+                char *socket = ares[real[0]].sa.s + ares[real[0]].live.fdholderdir ;
 
                 char const *newargv[8] ;
                 unsigned int m = 0 ;
