@@ -26,7 +26,6 @@
 
 ssize_t resolve_add_string(resolve_wrapper_t *wres, char const *data)
 {
-    log_flow() ;
 
     RESOLVE_SET_SAWRES(wres) ;
 
