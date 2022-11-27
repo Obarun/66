@@ -44,7 +44,7 @@ int info_walk(graph_t *g, char const *name, char const *obj, info_graph_func *fu
 
     } else {
 
-        count = graph_matrix_get_edge_g_sorted_sa(&sa, g, name, requiredby) ;
+        count = graph_matrix_get_edge_g_sorted_sa(&sa, g, name, requiredby, 0) ;
 
         if (count == -1) {
             stralloc_free(&sa) ;
@@ -73,7 +73,7 @@ int info_walk(graph_t *g, char const *name, char const *obj, info_graph_func *fu
         if (!info_graph_display(name, obj, func, depth, last, padding, style))
             goto err ;
 
-        if (graph_matrix_get_edge_g_sorted_sa(&sa, g, name, requiredby) == -1)
+        if (graph_matrix_get_edge_g_sorted_sa(&sa, g, name, requiredby, 0) == -1)
             goto err ;
 
         if (sa.len)
