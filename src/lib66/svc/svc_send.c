@@ -26,7 +26,7 @@ int svc_send(char const *const *list, unsigned int nservice, char **sig, unsigne
     char const *newargv[nargc] ;
     unsigned int m = 0 ;
 
-    newargv[m++] = "66-svctl" ;
+    newargv[m++] = "svctl" ;
     for (; *sig ; sig++)
         newargv[m++] = *sig ;
 
@@ -35,8 +35,6 @@ int svc_send(char const *const *list, unsigned int nservice, char **sig, unsigne
 
     newargv[m++] = 0 ;
 
-    if (ssexec_svctl(nargc, newargv, info))
-        return 0 ;
+    return ssexec_svctl(nargc, newargv, info) ;
 
-    return 1 ;
 }
