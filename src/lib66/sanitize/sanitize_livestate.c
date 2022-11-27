@@ -80,7 +80,7 @@ static void sanitize_livestate_service_symlink(resolve_service_t *res)
 
     auto_strings(dst, res->sa.s + res->path.tree, SS_SVDIRS, SS_SVC, "/", name) ;
 
-    if (!atomic_symlink(dst, sym, "scandir"))
+    if (!atomic_symlink(dst, sym, "livestate"))
        log_dieu(LOG_EXIT_SYS, "symlink: ", sym, " to: ", dst) ;
 }
 
