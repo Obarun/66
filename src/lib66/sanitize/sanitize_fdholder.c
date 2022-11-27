@@ -29,6 +29,7 @@
 #include <66/service.h>
 #include <66/constants.h>
 #include <66/state.h>
+#include <66/enum.h>
 
 #include <s6/fdholder.h>
 
@@ -43,7 +44,7 @@ void sanitize_fdholder(resolve_service_t *res, uint32_t flag)
 {
     log_flow() ;
 
-    if (res->logger.name) {
+    if (res->logger.name && res->type == TYPE_CLASSIC) {
 
         stralloc list = STRALLOC_ZERO ;
         char *sa = res->sa.s ;
