@@ -36,12 +36,10 @@
  *
  *
  *
- * attention lorsque les services sont initializer en earlier
- * verifier que lorsque le scandir est lancer qu'il start automatiquement les services
- * qui ont ete initialized
- *
- *
- *
+ * TEST NEEDED :
+ *      Be sure that earlier service can be started as fat as possible when
+ *      the scandir was brought up. So, the down file should not exist at the end
+ *      of the initialization phase.
  *
  *
  * */
