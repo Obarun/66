@@ -21,7 +21,6 @@
 #include <pwd.h>
 #include <stdlib.h>//free
 
-#include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
@@ -30,6 +29,7 @@
 #include <oblibs/sastr.h>
 #include <oblibs/graph.h>
 
+#include <skalibs/sgetopt.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/bytestr.h>//byte_count
@@ -312,9 +312,10 @@ static void tree_parse_options_depends(graph_t *g, ssexec_t *info, char const *s
 
             int nwhat = what->noseed ? 2 : 0 ;
             int nargc = 3 + nwhat ;
+            char *prog = PROG ;
             char const *newargv[nargc] ;
             uint8_t m = 0 ;
-            newargv[m++] = "66-tree (child)" ;
+            newargv[m++] = "tree (child)" ;
 
             if (nwhat) {
                 newargv[m++] = "-o" ;
@@ -326,8 +327,10 @@ static void tree_parse_options_depends(graph_t *g, ssexec_t *info, char const *s
 
             log_trace("launch 66-tree sub-process for tree: ", name) ;
 
+            PROG = "tree" ;
             if (ssexec_tree(nargc, newargv, &newinfo))
                 log_dieusys(LOG_EXIT_SYS, "create tree: ", name) ;
+            PROG = prog ;
 
             ssexec_free(&newinfo) ;
 
@@ -984,7 +987,7 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
             uids[1] = owner ;
 
         } else {
-            /** command can be 66-tree -a <account> <tree>
+            /** command can be 66 tree -a <account> <tree>
              * where <tree> doesn't exist yet.
              * Keep the -a option value and append the owner
              * of the process at the end of the list. */
@@ -1251,9 +1254,8 @@ int ssexec_tree(int argc, char const *const *argv, ssexec_t *info)
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, ">" OPTS_TREE, &l) ;
+            int opt = subgetopt_r(argc, argv, OPTS_TREE, &l) ;
             if (opt == -1) break ;
-            if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 
             switch (opt)
             {
@@ -1301,7 +1303,7 @@ int ssexec_tree(int argc, char const *const *argv, ssexec_t *info)
 
                 case 'd' :
 
-                    log_1_warn("deprecated option -d -- see allow field at -o options") ;
+                    log_1_warn("deprecated option -d -- see deny field at -o options") ;
                     break ;
 
                 case 'C' :
@@ -1329,8 +1331,6 @@ int ssexec_tree(int argc, char const *const *argv, ssexec_t *info)
     info->treename.len = 0 ;
     if (!auto_stra(&info->treename, argv[0]))
         log_die_nomem("stralloc") ;
-
-    sanitize_system(info) ;
 
     r = tree_isvalid(info->base.s, info->treename.s) ;
     if (r < 0)
