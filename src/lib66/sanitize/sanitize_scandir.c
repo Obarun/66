@@ -93,7 +93,7 @@ static void compute_supervision_dir(resolve_service_t *res)
 
     umask(hmod) ;
 }
-#include <stdlib.h>
+
 void sanitize_scandir(resolve_service_t *res, uint32_t flag)
 {
     log_flow() ;
