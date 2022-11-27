@@ -54,13 +54,7 @@ int info_graph_display_tree(char const *name, char const *obj)
         goto freed ;
     }
 
-    if (!auto_stra(&sa, SS_SYSTEM))
-        goto freed ;
-
-    if (!resolve_check(sa.s, name))
-        goto freed ;
-
-    if (!resolve_read(wres, sa.s, name))
+    if (!resolve_read_g(wres, sa.s, name))
         goto freed ;
 
     sa.len = 0 ;
