@@ -16,11 +16,9 @@
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
-#include <oblibs/obgetopt.h>
 #include <oblibs/graph.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/genalloc.h>
 
 #include <66/ssexec.h>
 #include <66/config.h>
@@ -36,10 +34,9 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
 
     uint32_t flag = 0 ;
     graph_t graph = GRAPH_ZERO ;
-    unsigned int siglen = 2 ;
-    char *sig[siglen + 1] ;
+    uint8_t siglen = 3 ;
 
-    unsigned int areslen = 0, list[SS_MAX_SERVICE], nservice = 0 ;
+    unsigned int areslen = 0, list[SS_MAX_SERVICE], visit[SS_MAX_SERVICE], nservice = 0, n = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE] ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOINIT|STATE_FLAGS_WANTUP) ;
@@ -49,26 +46,15 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
 
         for (;;) {
 
-            int opt = getopt_args(argc,argv, ">" OPTS_START, &l) ;
+            int opt = subgetopt_r(argc,argv, OPTS_START, &l) ;
             if (opt == -1) break ;
-            if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 
             switch (opt) {
 
-                case 'r' :
+                case 'P' :
 
-                    if (FLAGS_ISSET(flag, STATE_FLAGS_TORESTART))
-                        log_usage(usage_start) ;
-
-                    FLAGS_SET(flag, STATE_FLAGS_TORELOAD) ;
-                    break ;
-
-                case 'R' :
-
-                    if (FLAGS_ISSET(flag, STATE_FLAGS_TORELOAD))
-                        log_usage(usage_start) ;
-
-                    FLAGS_SET(flag, STATE_FLAGS_TORESTART) ;
+                    FLAGS_CLEAR(flag, STATE_FLAGS_TOPROPAGATE) ;
+                    siglen++ ;
                     break ;
 
                 default :
@@ -85,7 +71,6 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
     if ((svc_scandir_ok(info->scandir.s)) !=  1 )
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;
 
-    int n = 0 ;
     for (; n < argc ; n++)
         /** If it's the first use of 66, we don't have
          * any resolve files available or the service was
@@ -101,67 +86,56 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- try first to install the corresponding frontend file") ;
 
+    graph_array_init_single(visit, SS_MAX_SERVICE) ;
+
     for (n = 0 ; n < argc ; n++) {
 
         int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
         if (aresid < 0)
-            log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you parsed it?") ;
+            log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parsed it?") ;
 
-        list[nservice++] = aresid ;
-        unsigned int l[graph.mlen] ;
-        unsigned int c = 0 ;
+        unsigned int l[graph.mlen], c = 0, pos = 0, idx = 0 ;
+
+        idx = graph_hash_vertex_get_id(&graph, argv[n]) ;
+
+        if (!visit[idx]) {
+            list[nservice++] = idx ;
+            visit[idx] = 1 ;
+        }
 
         /** find dependencies of the service from the graph, do it recursively */
         c = graph_matrix_get_edge_g_list(l, &graph, argv[n], 0, 1) ;
 
         /** append to the list to deal with */
-        for (unsigned int pos = 0 ; pos < c ; pos++)
-            list[nservice + pos] = l[pos] ;
-
-        nservice += c ;
+        for (; pos < c ; pos++) {
+            if (!visit[l[pos]]) {
+                list[nservice++] = l[pos] ;
+                visit[l[pos]] = 1 ;
+            }
+        }
     }
 
     /** initiate services at the corresponding scandir */
-    sanitize_init(list, nservice, &graph, ares, areslen, FLAGS_ISSET(flag, STATE_FLAGS_TORESTART) ? STATE_FLAGS_TOINIT : STATE_FLAGS_UNKNOWN) ;
+    sanitize_init(list, nservice, &graph, ares, areslen, FLAGS_ISSET(flag, STATE_FLAGS_TORELOAD) ? flag : STATE_FLAGS_UNKNOWN) ;
 
     service_resolve_array_free(ares, areslen) ;
 
     graph_free_all(&graph) ;
 
-    if (FLAGS_ISSET(flag, STATE_FLAGS_TORELOAD)) {
+    char *sig[siglen] ;
+    if (siglen > 3) {
 
-        sig[0] = "-wU" ;
-        sig[1] = "-ru" ;
-        sig[2] = 0 ;
-
-        if (!svc_send(argv, argc, sig, siglen, info))
-            log_dieu(LOG_EXIT_SYS, "send -wU -ru signal to services selection") ;
-
-    } else if (FLAGS_ISSET(flag, STATE_FLAGS_TORESTART)) {
-
-        sig[0] = "-wD" ;
-        sig[1] = "-d" ;
-        sig[2] = 0 ;
-
-        if (!svc_send(argv, argc, sig, siglen, info))
-            log_dieu(LOG_EXIT_SYS, "send -wD -d signal to services selection") ;
-
-        sig[0] = "-wU" ;
-        sig[1] = "-ru" ;
-        sig[2] = 0 ;
-
-        if (!svc_send(argv, argc, sig, siglen, info))
-            log_dieu(LOG_EXIT_SYS, "send -wU -u signal to services selection") ;
+        sig[0] = "-P" ;
+        sig[1] = "-wU" ;
+        sig[2] = "-u" ;
+        sig[3] = 0 ;
 
     } else {
 
         sig[0] = "-wU" ;
         sig[1] = "-u" ;
         sig[2] = 0 ;
-
-        if (!svc_send(argv, argc, sig, siglen, info))
-            log_dieu(LOG_EXIT_SYS, "send -wU -u signal to services selection") ;
     }
 
-    return 0 ;
+    return svc_send(argv, argc, sig, siglen, info) ;
 }
