@@ -20,6 +20,7 @@
 #include <66/sanitize.h>
 #include <66/graph.h>
 #include <66/svc.h>
+#include <66/enum.h>
 
 static void sanitize_it(resolve_service_t *res)
 {
@@ -48,7 +49,7 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve
 
         sanitize_it(&ares[aresid]) ;
 
-        if (ares[aresid].logger.name) {
+        if (ares[aresid].logger.name && ares[aresid].type == TYPE_CLASSIC) {
             resolve_service_t res = RESOLVE_SERVICE_ZERO ;
             resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
