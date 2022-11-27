@@ -93,7 +93,7 @@ static void compute_supervision_dir(resolve_service_t *res)
 
     umask(hmod) ;
 }
-
+#include <stdlib.h>
 void sanitize_scandir(resolve_service_t *res, uint32_t flag)
 {
     log_flow() ;
@@ -102,12 +102,10 @@ void sanitize_scandir(resolve_service_t *res, uint32_t flag)
     char *name = res->sa.s + res->name ;
     size_t namelen = strlen(name) ;
     size_t livelen = strlen(res->sa.s + res->live.livedir) ;
-    size_t scandirlen = strlen(res->sa.s + res->live.scandir) ;
+    size_t scandirlen = livelen + SS_SCANDIR_LEN + 1 + strlen(res->sa.s + res->ownerstr)  ;
 
     char svcandir[scandirlen + 1] ;
-    auto_strings(svcandir, res->sa.s + res->live.scandir) ;
-
-    svcandir[scandirlen - namelen - 1] = 0 ;
+    auto_strings(svcandir, res->sa.s + res->live.livedir, SS_SCANDIR, "/", res->sa.s + res->ownerstr) ;
 
     r = access(res->sa.s + res->live.scandir, F_OK) ;
     if (r == -1 && FLAGS_ISSET(flag, STATE_FLAGS_TOINIT)) {
