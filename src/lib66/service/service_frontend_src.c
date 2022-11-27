@@ -29,10 +29,10 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src)
 {
     log_flow() ;
 
-    int  insta, equal = 0, e = -1, r = 0, found = 0 ;
+    int insta, equal = 0, e = -1, r = 0, found = 0 ;
     stralloc sa = STRALLOC_ZERO ;
-    size_t pos = 0, dpos = 0, pathlen = strlen(src) ;
-
+    size_t pos = 0, dpos = 0, pathlen = strlen(src), namelen = strlen(name) ;
+    char instaname[strlen(name) + 1] ;
     char const *exclude[1] = { 0 } ;
 
     char path[pathlen + 1] ;
@@ -52,6 +52,24 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src)
     char tmp[len + 1] ;
     sastr_to_char(tmp, &sa) ;
 
+    insta = instance_check(name) ;
+    if (!insta) {
+        log_warn("invalid instance name: ", name) ;
+        goto err ;
+    }
+
+    sa.len = 0 ;
+
+    if (insta > 0) {
+        /** search for the template name */
+        memcpy(instaname, name, insta + 1) ;
+        instaname[insta + 1] = 0 ;
+
+    } else {
+
+        auto_strings(instaname, name) ;
+    }
+
     for (; pos < len ; pos += strlen(tmp + pos) + 1) {
 
         sa.len = 0 ;
@@ -64,21 +82,15 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src)
 
         size_t dnamelen = strlen(dname) ;
         char bname[dnamelen + 1] ;
+        char srcname[dnamelen + 1] ;
 
         if (!ob_basename(bname,dname))
             goto err ;
 
-        equal = strcmp(name, bname) ;
+        if (!ob_dirname(srcname, dname))
+            goto err ;
 
-        insta = instance_check(bname) ;
-
-        if (insta > 0) {
-
-            if (!instance_splitname(&sa, bname, insta, SS_INSTANCE_TEMPLATE))
-                goto err ;
-
-            equal = strcmp(sa.s,bname) ;
-        }
+        equal = strcmp(instaname, bname) ;
 
         if (!equal) {
 
@@ -86,8 +98,12 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src)
 
             if (S_ISREG(st.st_mode)) {
 
-                if (sastr_cmp(sasrc, dname) == -1)
-                    if (!sastr_add_string(sasrc, dname))
+                char result[strlen(srcname) + namelen + 1] ;
+
+                auto_strings(result, srcname, name) ;
+
+                if (sastr_cmp(sasrc, result) == -1)
+                    if (!sastr_add_string(sasrc, result))
                         goto err ;
 
                 break ;
