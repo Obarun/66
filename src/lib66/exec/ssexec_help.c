@@ -167,7 +167,7 @@ char const *help_tree =
 "   noseed: do not use seed file to build the tree\n"
 ;
 
-char const *usage_tree = "66 treectl [ -h ] [ -z ] [ -v verbosity ] tree" ;
+char const *usage_treectl = "66 treectl [ -h ] [ -z ] [ -v verbosity ] tree" ;
 
 char const *help_treectl =
 "\n"
