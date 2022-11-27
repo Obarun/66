@@ -51,6 +51,9 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
         if (service_resolve_array_search(ares, (*areslen), name) < 0) {
 
             resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+            /** need to make a copy of the resolve due of the freed
+             * of the wres struct at the end of the process */
+            resolve_service_t cp = RESOLVE_SERVICE_ZERO ;
             wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
             if (FLAGS_ISSET(flag, STATE_FLAGS_TOINIT))
@@ -64,12 +67,26 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
                 if (!state_read(&ste, res.sa.s + res.path.home, name))
                     log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug report") ;
 
-                if (service_is(&ste, STATE_FLAGS_ISSUPERVISED))
-                    ares[(*areslen)++] = res ;
-                else
+                if (service_is(&ste, STATE_FLAGS_ISSUPERVISED)) {
+
+                    if (!service_resolve_copy(&cp, &res))
+                        log_dieu(LOG_EXIT_SYS, "copy resolve file of: ", name, " -- please make a bug report") ;
+
+                    ares[(*areslen)++] = cp ;
+
+                } else {
+
+                    resolve_free(wres) ;
                     continue ;
-            } else
-                ares[(*areslen)++] = res ;
+                }
+
+            } else {
+
+                if (!service_resolve_copy(&cp, &res))
+                    log_dieu(LOG_EXIT_SYS, "copy resolve file of: ", name, " -- please make a bug report") ;
+
+                ares[(*areslen)++] = cp ;
+            }
 
             if (FLAGS_ISSET(flag, STATE_FLAGS_TOPROPAGATE)) {
 
@@ -88,9 +105,9 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
                     service_graph_collect(g, sa.s, sa.len, ares, areslen, info, flag) ;
                 }
             }
+            resolve_free(wres) ;
         }
     }
 
-    free(wres) ;
     stralloc_free(&sa) ;
 }
