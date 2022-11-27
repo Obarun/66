@@ -35,25 +35,25 @@ int service_is(ss_state_t *ste, uint32_t flag)
 
     switch (flag) {
 
-        case STATE_FLAGS_TOINIT : return FLAGS_ISSET(ste->toinit, STATE_FLAGS_TRUE) ;
+        case STATE_FLAGS_TOINIT : return FLAGS_ISSET(ste->toinit, STATE_FLAGS_TRUE) ? 1 : 0 ;
 
-        case STATE_FLAGS_TORELOAD: return FLAGS_ISSET(ste->toreload, STATE_FLAGS_TRUE) ;
+        case STATE_FLAGS_TORELOAD: return FLAGS_ISSET(ste->toreload, STATE_FLAGS_TRUE) ? 1 : 0 ;
 
-        case STATE_FLAGS_TORESTART : return FLAGS_ISSET(ste->torestart, STATE_FLAGS_TRUE) ;
+        case STATE_FLAGS_TORESTART : return FLAGS_ISSET(ste->torestart, STATE_FLAGS_TRUE) ? 1 : 0 ;
 
-        case STATE_FLAGS_TOUNSUPERVISE : return FLAGS_ISSET(ste->tounsupervise, STATE_FLAGS_TRUE) ;
+        case STATE_FLAGS_TOUNSUPERVISE : return FLAGS_ISSET(ste->tounsupervise, STATE_FLAGS_TRUE) ? 1 : 0 ;
 
-        case STATE_FLAGS_ISDOWNFILE : return FLAGS_ISSET(ste->isdownfile, STATE_FLAGS_TRUE) ;
+        case STATE_FLAGS_ISDOWNFILE : return FLAGS_ISSET(ste->isdownfile, STATE_FLAGS_TRUE) ? 1 : 0 ;
 
-        case STATE_FLAGS_ISEARLIER : return FLAGS_ISSET(ste->isearlier, STATE_FLAGS_TRUE) ;
+        case STATE_FLAGS_ISEARLIER : return FLAGS_ISSET(ste->isearlier, STATE_FLAGS_TRUE) ? 1 : 0 ;
 
-        case STATE_FLAGS_ISENABLED : return FLAGS_ISSET(ste->isenabled, STATE_FLAGS_TRUE) ;
+        case STATE_FLAGS_ISENABLED : return FLAGS_ISSET(ste->isenabled, STATE_FLAGS_TRUE) ? 1 : 0 ;
 
-        case STATE_FLAGS_ISPARSED : return  FLAGS_ISSET(ste->isparsed, STATE_FLAGS_TRUE) ; //always true framboise
+        case STATE_FLAGS_ISPARSED : return  FLAGS_ISSET(ste->isparsed, STATE_FLAGS_TRUE) ? 1 : 0 ; //always true framboise
 
-        case STATE_FLAGS_ISSUPERVISED : return FLAGS_ISSET(ste->issupervised, STATE_FLAGS_TRUE) ;
+        case STATE_FLAGS_ISSUPERVISED : return FLAGS_ISSET(ste->issupervised, STATE_FLAGS_TRUE) ? 1 : 0 ;
 
-        case STATE_FLAGS_ISUP : return FLAGS_ISSET(ste->isup, STATE_FLAGS_TRUE) ;
+        case STATE_FLAGS_ISUP : return FLAGS_ISSET(ste->isup, STATE_FLAGS_TRUE) ? 1 : 0 ;
 
         default:
             break ;
@@ -86,7 +86,6 @@ int service_is_g(char *atree, char const *name, uint32_t flag)
     }
 
     size_t baselen = strlen(base) ;
-    //char tmp[baselen + SS_SYSTEM_LEN + 1] ;
     auto_strings(base + baselen, SS_SYSTEM) ;
 
     // no tree exist yet
