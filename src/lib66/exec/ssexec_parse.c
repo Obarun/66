@@ -65,9 +65,9 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, ">" OPTS_PARSE, &l) ;
+            int opt = subgetopt_r(argc,argv, OPTS_PARSE, &l) ;
             if (opt == -1) break ;
-            if (opt == -2) log_die(LOG_EXIT_USER, "options must be set first") ;
+
             switch (opt)
             {
                 case 'f' :
