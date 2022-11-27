@@ -83,6 +83,7 @@ int sanitize_system(ssexec_t *info)
     /** set cleanup */
     cleantree = info->tree.s ;
 
+    int r ;
     size_t baselen = info->base.len ;
     uid_t log_uid ;
     gid_t log_gid ;
@@ -164,6 +165,31 @@ int sanitize_system(ssexec_t *info)
 
     auto_strings(dst + baselen, SS_TREE_CURRENT) ;
     auto_check(dst) ;
+
+    /** create the default tree if it doesn't exist yet */
+    r = tree_isvalid(info->base.s, SS_DEFAULT_TREENAME) ;
+    if (r < 0)
+        log_dieu(LOG_EXIT_SYS, "check validity of tree: ", SS_DEFAULT_TREENAME) ;
+
+    if (!r) {
+
+        int nargc = 4 ;
+        char const *newargv[nargc] ;
+        unsigned int m = 0 ;
+
+        newargv[m++] = "tree" ;
+        newargv[m++] = "-E" ;
+        newargv[m++] = SS_DEFAULT_TREENAME ;
+        newargv[m++] = 0 ;
+
+        char *prog = PROG ;
+        PROG = "tree" ;
+
+        if (ssexec_tree(nargc, newargv, info))
+            log_dieu(LOG_EXIT_SYS, "create tree: ", SS_DEFAULT_TREENAME) ;
+
+        PROG = prog ;
+    }
 
     return 1 ;
 }

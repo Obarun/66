@@ -39,9 +39,11 @@ int tree_sethome(ssexec_t *info)
     if (!info->treename.len) {
 
         if (!tree_find_current(&info->tree, base))
-            return -3 ;
+            /** no current tree found. Use the default one. */
+            if (!auto_stra(&info->tree, base, SS_SYSTEM, "/", SS_DEFAULT_TREENAME))
+                return 0 ;
 
-        if (!tree_setname(&info->treename,info->tree.s))
+        if (!tree_setname(&info->treename, info->tree.s))
             return -2 ;
 
     } else {
@@ -56,10 +58,7 @@ int tree_sethome(ssexec_t *info)
 
         } else if (!r) {
             /** Tree doesn't exist yet.
-             * Let see if we have a seed/<name> to create it,
-             * but only if we come from the 66-enable tool. */
-            //if (strcmp(info->prog, "66-enable"))
-              //  return 0 ;
+             * Let see if we have a seed file to create it */
 
             if (!tree_seed_isvalid(info->treename.s))
                 log_warnu_return(LOG_EXIT_ZERO,"find a seed file to create the tree: ", info->treename.s) ;
@@ -68,12 +67,15 @@ int tree_sethome(ssexec_t *info)
             char const *newargv[nargc] ;
             unsigned int m = 0 ;
 
-            newargv[m++] = "66-tree" ;
+            newargv[m++] = "66 tree" ;
             newargv[m++] = info->treename.s ;
             newargv[m++] = 0 ;
 
+            char *prog = PROG ;
+            PROG = "tree" ;
             if (ssexec_tree(nargc, newargv, info))
                 log_warnu_return(LOG_EXIT_ZERO,"create tree: ",info->treename.s) ;
+            PROG = prog ;
         }
         /** The tree_sethome() function can be recursively called. The info->tree may not be empty.
          * Be sure to clean up before using it. */
