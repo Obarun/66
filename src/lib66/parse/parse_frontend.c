@@ -79,18 +79,6 @@ static void set_info(ssexec_t *info)
 
 }
 
-static void already_parsed(char const *sv, char const *atree, ssexec_t *info)
-{
-    log_info("ignoring service: ", sv, " -- already present at tree: ", atree) ;
-    /** we don't care about the use of the -t option. The define of the
-     * info->tree and info->treename is just made to avoid segmentation fault
-     * at the rest of the process. The service is not parsed or enabled again anyway. */
-    info->treename.len = 0 ;
-    if (!auto_stra(&info->treename, atree))
-        log_die_nomem("stralloc") ;
-    set_info(info) ;
-}
-
 /* @sv -> name of the service to parse with
  * the path of the frontend file source
  * @Die on fail
@@ -147,10 +135,10 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
         if (!force) {
 
-            already_parsed(svname, atree, info) ;
+            log_info("ignoring service: ", svname, " -- already present at tree: ", atree) ;
             return 2 ;
 
-        } else if (!info->skip_opt_tree) {
+        } else if (info->opt_tree) {
             /* -t option was used */
             if (strcmp(info->treename.s, atree))
                 log_die(LOG_EXIT_SYS,"you can not enable again a service already set on another tree -- current: ", atree, " asked: ", info->treename.s, ". Try first to disable it") ;
@@ -159,26 +147,28 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
     }
 
-    if (info->skip_opt_tree) {
+    if (info->opt_tree) {
 
-        /** @intree may not exist */
-        r = sastr_find(&sa, get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_INTREE)) ;
-        if (r == -1)
-            goto follow ;
+        if (tree_isvalid(info->base.s, info->treename.s) <= 0) {
 
-        if (!environ_get_val_of_key(&sa, get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_INTREE)))
-            log_dieu(LOG_EXIT_SYS, "get field intree of service: ", sv) ;
+            /** @intree may not exist */
+            r = sastr_find(&sa, get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_INTREE)) ;
+            if (r == -1)
+                goto follow ;
 
-        if (!sastr_clean_element(&sa))
-            log_dieu(LOG_EXIT_SYS, "clean field intree of service: ", sv) ;
+            if (!environ_get_val_of_key(&sa, get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_INTREE)))
+                log_dieu(LOG_EXIT_SYS, "get field intree of service: ", sv) ;
 
-        res.intree = resolve_add_string(wres, sa.s) ;
+            if (!sastr_clean_element(&sa))
+                log_dieu(LOG_EXIT_SYS, "clean field intree of service: ", sv) ;
 
-        info->treename.len = 0 ;
-        if (!auto_stra(&info->treename, res.sa.s + res.intree) ||
-            !auto_stra(&sa, file))
-                log_die_nomem("stralloc") ;
+            res.intree = resolve_add_string(wres, sa.s) ;
 
+            info->treename.len = 0 ;
+            if (!auto_stra(&info->treename, res.sa.s + res.intree) ||
+                !auto_stra(&sa, file))
+                    log_die_nomem("stralloc") ;
+        }
     }
 
     follow:
@@ -233,7 +223,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     }
 
     /** We take the dependencies in two case:
-     * If the user ask to it(force > 1)
+     * If the user ask for it(force > 1)
      * If the service was never parsed(!isparsed)*/
     if (force > 1 || !isparsed)
         if (!parse_dependencies(&res, ares, areslen, info, force, conf, forced_directory))
@@ -244,7 +234,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     if (res.type == TYPE_MODULE)
         parse_module(&res, ares, areslen, info, force) ;
 
-    log_trace("add service: ", svname) ;
+    log_trace("add service to the selection: ", svname) ;
 
     if (service_resolve_array_search(ares, *areslen, svname) < 0) {
         if (*areslen >= SS_MAX_SERVICE)
