@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 #include <oblibs/sastr.h>
 #include <oblibs/types.h>
 
@@ -55,6 +56,19 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
              * of the wres struct at the end of the process */
             resolve_service_t cp = RESOLVE_SERVICE_ZERO ;
             wres = resolve_set_struct(DATA_SERVICE, &res) ;
+
+            /** double pass with resolve_read.
+             * The service may already exist, respects the treename before the
+             * call of sanitize_source.
+             * The service do not exist yet, sanitize it with sanitize_source
+             * and read again the resolve file to know the change */
+            if (resolve_read_g(wres, info->base.s, name)) {
+
+                info->treename.len = 0 ;
+
+                if (!auto_stra(&info->treename, res.sa.s + res.treename))
+                    log_die_nomem("stralloc") ;
+            }
 
             if (FLAGS_ISSET(flag, STATE_FLAGS_TOINIT))
                 sanitize_source(name, info, flag) ;
