@@ -178,7 +178,7 @@ extern char const *usage_66 ;
 #define OPTS_DISABLE_LEN (sizeof OPTS_DISABLE - 1)
 #define OPTS_START "P"
 #define OPTS_START_LEN (sizeof OPTS_START - 1)
-#define OPTS_STOP "P"
+#define OPTS_STOP "uP"
 #define OPTS_STOP_LEN (sizeof OPTS_STOP - 1)
 #define OPTS_SVCTL "abqhkti12pcyroduxOw:P"
 #define OPTS_SVCTL_LEN (sizeof OPTS_SVCTL - 1)
