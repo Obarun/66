@@ -165,7 +165,7 @@ int sanitize_system(ssexec_t *info)
         newargv[m++] = SS_DEFAULT_TREENAME ;
         newargv[m++] = 0 ;
 
-        char *prog = PROG ;
+        char const *prog = PROG ;
         PROG = "tree" ;
 
         if (ssexec_tree(nargc, newargv, info))

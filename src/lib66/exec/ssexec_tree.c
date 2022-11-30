@@ -312,7 +312,7 @@ static void tree_parse_options_depends(graph_t *g, ssexec_t *info, char const *s
 
             int nwhat = what->noseed ? 2 : 0 ;
             int nargc = 3 + nwhat ;
-            char *prog = PROG ;
+            char const *prog = PROG ;
             char const *newargv[nargc] ;
             uint8_t m = 0 ;
             newargv[m++] = "tree (child)" ;

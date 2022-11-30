@@ -39,7 +39,7 @@ void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)
 
         int argc = 3 ;
         int m = 0 ;
-        char *prog = PROG ;
+        char const *prog = PROG ;
         char const *newargv[argc] ;
 
         newargv[m++] = "parse" ;
@@ -55,7 +55,7 @@ void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)
 
         int argc = 4 ;
         int m = 0 ;
-        char *prog = PROG ;
+        char const *prog = PROG ;
         char const *newargv[argc] ;
 
         newargv[m++] = "parse" ;

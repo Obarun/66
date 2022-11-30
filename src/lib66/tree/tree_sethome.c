@@ -74,7 +74,7 @@ int tree_sethome(ssexec_t *info)
             newargv[m++] = info->treename.s ;
             newargv[m++] = 0 ;
 
-            char *prog = PROG ;
+            char const *prog = PROG ;
             PROG = "tree" ;
             if (ssexec_tree(nargc, newargv, info))
                 log_warnu_return(LOG_EXIT_ZERO,"create tree: ",info->treename.s) ;

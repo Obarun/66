@@ -37,7 +37,7 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
     uint8_t siglen = 2 ;
     graph_t graph = GRAPH_ZERO ;
 
-    unsigned int areslen = 0, list[SS_MAX_SERVICE], nservice = 0 ;
+    unsigned int areslen = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE] ;
     char atree[SS_MAX_TREENAME + 1] ;
 
