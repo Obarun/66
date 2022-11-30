@@ -22,7 +22,6 @@
 
 int resolve_add_cdb(cdbmaker *c, char const *key, char const *data)
 {
-    log_flow() ;
 
     size_t klen = strlen(key) ;
     size_t dlen = strlen(data) ;

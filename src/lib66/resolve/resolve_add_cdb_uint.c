@@ -24,7 +24,6 @@
 
 int resolve_add_cdb_uint(cdbmaker *c, char const *key, uint32_t data)
 {
-    log_flow() ;
 
     char pack[4] ;
     size_t klen = strlen(key) ;
