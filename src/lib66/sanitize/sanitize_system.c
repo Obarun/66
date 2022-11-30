@@ -30,27 +30,13 @@
 #include <66/state.h>
 #include <66/tree.h>
 
-static char const *cleantree = 0 ;
-
-static void cleanup(void)
-{
-    log_flow() ;
-
-    if (cleantree) {
-
-        log_trace("removing: ",cleantree,"...") ;
-        if (!dir_rm_rf(cleantree))
-            log_dieusys(LOG_EXIT_SYS, "remove: ", cleantree) ;
-    }
-}
-
 static void auto_dir(char const *dst, mode_t mode)
 {
     log_flow() ;
 
     log_trace("create directory: ",dst) ;
     if (!dir_create_parent(dst,mode))
-        log_dieusys_nclean(LOG_EXIT_SYS,&cleanup,"create directory: ",dst) ;
+        log_dieusys(LOG_EXIT_SYS, "create directory: ",dst) ;
 }
 
 static void auto_check(char *dst)
@@ -60,7 +46,7 @@ static void auto_check(char *dst)
     int r = scan_mode(dst,S_IFDIR) ;
 
     if (r == -1)
-        log_diesys_nclean(LOG_EXIT_SYS, &cleanup, "conflicting format for: ", dst) ;
+        log_diesys(LOG_EXIT_SYS, "conflicting format for: ", dst) ;
 
     if (!r)
         auto_dir(dst,0755) ;
@@ -80,9 +66,6 @@ int sanitize_system(ssexec_t *info)
 
     log_trace("sanitize system..." ) ;
 
-    /** set cleanup */
-    cleantree = info->tree.s ;
-
     int r ;
     size_t baselen = info->base.len ;
     uid_t log_uid ;
@@ -92,7 +75,7 @@ int sanitize_system(ssexec_t *info)
 
     /** base is /var/lib/66 or $HOME/.66*/
     /** this verification is made in case of
-     * first use of 66-*** tools */
+     * first use of 66 cmd tools */
     auto_check(dst) ;
     /** create extra directory for service part */
     if (!info->owner) {
