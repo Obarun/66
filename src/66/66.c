@@ -61,8 +61,7 @@ static void set_info(ssexec_t *info)
 
     int r ;
 
-    if (!info->skip_opt_tree)
-        set_treeinfo(info) ;
+    set_treeinfo(info) ;
 
     r = set_livedir(&info->live) ;
     if (!r)
@@ -80,6 +79,17 @@ static void set_info(ssexec_t *info)
         log_die(LOG_EXIT_SYS, "scandir: ", info->scandir.s, " must be an absolute path") ;
 }
 
+static void info_clean(ssexec_t *info)
+{
+
+    info->base.len = 0 ;
+    info->live.len = 0 ;
+    info->tree.len = 0 ;
+    info->scandir.len = 0 ;
+    info->treename.len = 0 ;
+
+}
+
 int main(int argc, char const *const *argv)
 {
 
@@ -89,6 +99,7 @@ int main(int argc, char const *const *argv)
     }
 
     int r, n = 0, i = 0 ;
+    uint8_t sanitize = 0 ;
     /** 30 options should be large enough */
     char opts[30] ;
     char const *main = "hv:l:t:T:z" ;
@@ -98,6 +109,8 @@ int main(int argc, char const *const *argv)
     ssexec_t info = SSEXEC_ZERO ;
     ssexec_func_t_ref func = 0 ;
     log_color = &log_color_disable ;
+
+    info_clean(&info) ;
 
     info.owner = getuid() ;
     info.ownerlen = uid_fmt(info.ownerstr, info.owner) ;
@@ -116,7 +129,7 @@ int main(int argc, char const *const *argv)
         info.usage = usage_boot ;
         func = &ssexec_boot ;
 
-        //sanitize_system(&info) ;
+        sanitize++ ;
 
         auto_strings(opts, main, OPTS_BOOT) ;
 
@@ -129,8 +142,6 @@ int main(int argc, char const *const *argv)
         info.usage = usage_enable ;
         func = &ssexec_enable ;
 
-        sanitize_system(&info) ;
-
         auto_strings(opts, main, OPTS_ENABLE) ;
 
     } else if (!strcmp(argv[1], "disable")) {
@@ -141,8 +152,6 @@ int main(int argc, char const *const *argv)
         info.help = help_disable ;
         info.usage = usage_disable ;
         func = &ssexec_disable ;
-
-        sanitize_system(&info) ;
 
         auto_strings(opts, main, OPTS_DISABLE) ;
 
@@ -155,8 +164,6 @@ int main(int argc, char const *const *argv)
         info.usage = usage_start ;
         func = &ssexec_start ;
 
-        sanitize_system(&info) ;
-
         auto_strings(opts, main, OPTS_START) ;
 
     } else if (!strcmp(argv[1], "stop")) {
@@ -168,24 +175,9 @@ int main(int argc, char const *const *argv)
         info.usage = usage_stop ;
         func = &ssexec_stop ;
 
-        sanitize_system(&info) ;
-
         auto_strings(opts, main, OPTS_STOP) ;
 
-    } else if (!strcmp(argv[1], "stop")) {
-
-        PROG = "stop" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_stop ;
-        info.usage = usage_stop ;
-        func = &ssexec_stop ;
-
-        sanitize_system(&info) ;
-
-        auto_strings(opts, main, OPTS_STOP) ;
-
-    } else if (!strcmp(argv[1], "all")) {
+    }  else if (!strcmp(argv[1], "all")) {
 
         PROG = "all" ;
         nargv[n++] = PROG ;
@@ -193,8 +185,6 @@ int main(int argc, char const *const *argv)
         info.help = help_all ;
         info.usage = usage_all ;
         func = &ssexec_all ;
-
-        sanitize_system(&info) ;
 
         auto_strings(opts, main, OPTS_ALL) ;
 
@@ -207,8 +197,6 @@ int main(int argc, char const *const *argv)
         info.usage = usage_env ;
         func = &ssexec_env ;
 
-        sanitize_system(&info) ;
-
         auto_strings(opts, main, OPTS_ENV) ;
 
     } else if (!strcmp(argv[1], "init")) {
@@ -219,8 +207,6 @@ int main(int argc, char const *const *argv)
         info.help = help_init ;
         info.usage = usage_init ;
         func = &ssexec_init ;
-
-        sanitize_system(&info) ;
 
         auto_strings(opts, main, OPTS_INIT) ;
 
@@ -233,8 +219,6 @@ int main(int argc, char const *const *argv)
         info.usage = usage_parse ;
         func = &ssexec_parse ;
 
-        sanitize_system(&info) ;
-
         auto_strings(opts, main, OPTS_PARSE) ;
 
     } else if (!strcmp(argv[1], "reconfigure")) {
@@ -245,8 +229,6 @@ int main(int argc, char const *const *argv)
         info.help = help_reconfigure ;
         info.usage = usage_reconfigure ;
         func = &ssexec_reconfigure ;
-
-        sanitize_system(&info) ;
 
         auto_strings(opts, main, OPTS_SUBSTART) ;
 
@@ -259,8 +241,6 @@ int main(int argc, char const *const *argv)
         info.usage = usage_reload ;
         func = &ssexec_reload ;
 
-        sanitize_system(&info) ;
-
         auto_strings(opts, main, OPTS_SUBSTART) ;
 
     } else if (!strcmp(argv[1], "restart")) {
@@ -271,8 +251,6 @@ int main(int argc, char const *const *argv)
         info.help = help_restart ;
         info.usage = usage_restart ;
         func = &ssexec_restart ;
-
-        sanitize_system(&info) ;
 
         auto_strings(opts, main, OPTS_SUBSTART) ;
 
@@ -286,8 +264,6 @@ int main(int argc, char const *const *argv)
         info.usage = usage_stop ;
         func = &ssexec_stop ;
 
-        sanitize_system(&info) ;
-
         auto_strings(opts, main, OPTS_STOP) ;
 
     } else if (!strcmp(argv[1], "svctl")) {
@@ -298,8 +274,6 @@ int main(int argc, char const *const *argv)
         info.help = help_svctl ;
         info.usage = usage_svctl ;
         func = &ssexec_svctl ;
-
-        sanitize_system(&info) ;
 
         auto_strings(opts, main, OPTS_SVCTL) ;
 
@@ -312,8 +286,6 @@ int main(int argc, char const *const *argv)
         info.usage = usage_tree ;
         func = &ssexec_tree ;
 
-        sanitize_system(&info) ;
-
         auto_strings(opts, main, OPTS_TREE) ;
 
     } else if (!strcmp(argv[1], "inresolve")) {
@@ -324,8 +296,6 @@ int main(int argc, char const *const *argv)
         info.help = help_inresolve ;
         info.usage = usage_inresolve ;
         func = &ssexec_inresolve ;
-
-        sanitize_system(&info) ;
 
         auto_strings(opts, main, OPTS_INRESOLVE) ;
 
@@ -338,8 +308,6 @@ int main(int argc, char const *const *argv)
         info.usage = usage_instate ;
         func = &ssexec_instate ;
 
-        sanitize_system(&info) ;
-
         auto_strings(opts, main, OPTS_INSTATE) ;
 
     } else if (!strcmp(argv[1], "intree")) {
@@ -350,8 +318,6 @@ int main(int argc, char const *const *argv)
         info.help = help_intree ;
         info.usage = usage_intree ;
         func = &ssexec_intree ;
-
-        sanitize_system(&info) ;
 
         auto_strings(opts, main, OPTS_INTREE) ;
 
@@ -364,8 +330,6 @@ int main(int argc, char const *const *argv)
         info.usage = usage_inservice ;
         func = &ssexec_inservice ;
 
-        sanitize_system(&info) ;
-
         auto_strings(opts, main, OPTS_INSERVICE) ;
 
     } else if (!strcmp(argv[1], "scanctl")) {
@@ -377,8 +341,6 @@ int main(int argc, char const *const *argv)
         info.usage = usage_scanctl ;
         func = &ssexec_scanctl ;
 
-        //sanitize_system(&info) ;
-
         auto_strings(opts, main, OPTS_SCANCTL) ;
 
     } else if (!strcmp(argv[1], "scandir")) {
@@ -389,8 +351,6 @@ int main(int argc, char const *const *argv)
         info.help = help_scandir ;
         info.usage = usage_scandir ;
         func = &ssexec_scandir ;
-
-        //sanitize_system(&info) ;
 
         auto_strings(opts, main, OPTS_SCANDIR) ;
 
@@ -449,7 +409,6 @@ int main(int argc, char const *const *argv)
                         log_die_nomem("stralloc") ;
 
                     info.opt_tree = 1 ;
-                    info.skip_opt_tree = 0 ;
                     break ;
 
                 case 'T' :
@@ -504,6 +463,9 @@ int main(int argc, char const *const *argv)
         }
         argc -= l.ind ; argv += l.ind ;
     }
+
+    if (!sanitize)
+        sanitize_system(&info) ;
 
     set_info(&info) ;
 
