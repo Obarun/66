@@ -212,7 +212,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
         if (!state_messenger(sa  + ares[aresid].path.home, name, STATE_FLAGS_TOINIT, STATE_FLAGS_FALSE))
             log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
 
-        log_info("Initialized successfully: ", sa + ares[pos].name) ;
+        log_info("Initialized successfully: ", name) ;
     }
 
     ftrigr_end(&fifo) ;
