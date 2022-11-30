@@ -20,12 +20,13 @@
 #include <oblibs/graph.h>
 
 #include <66/service.h>
+#include <66/tree.h>
 #include <66/ssexec.h>
 
 
 
 //extern void graph_build_g(graph_t *graph, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info) ;
-extern void graph_build_tree(graph_t *g,char const *base) ;
+extern void graph_build_tree(graph_t *g,char const *base, resolve_tree_master_enum_t field) ;
 extern void graph_build_service(graph_t *g, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag) ;
 extern int graph_compute_dependencies(graph_t *g, char const *vertex, char const *edge, uint8_t requiredby) ;
 
