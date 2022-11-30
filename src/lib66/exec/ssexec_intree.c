@@ -151,7 +151,7 @@ static void info_display_depends(char const *field, char const *treename)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    graph_build_tree(&graph, base.s) ;
+    graph_build_tree(&graph, base.s, E_RESOLVE_TREE_MASTER_CONTENTS) ;
 
     r = graph_matrix_get_edge_g_sorted_sa(&sa, &graph, treename, 0, 0) ;
     if (r < 0)
@@ -211,7 +211,7 @@ static void info_display_requiredby(char const *field, char const *treename)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    graph_build_tree(&graph, base.s) ;
+    graph_build_tree(&graph, base.s, E_RESOLVE_TREE_MASTER_CONTENTS) ;
 
     r = graph_matrix_get_edge_g_sorted_sa(&sa, &graph, treename, 1, 0) ;
     if (r < 0)

@@ -27,7 +27,7 @@
 #include <66/tree.h>
 #include <66/graph.h>
 
-void graph_build_tree(graph_t *g, char const *base)
+void graph_build_tree(graph_t *g, char const *base, resolve_tree_master_enum_t field)
 {
     log_flow() ;
 
@@ -37,7 +37,7 @@ void graph_build_tree(graph_t *g, char const *base)
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
 
-    if (!resolve_get_field_tosa_g(&sa, base, SS_MASTER + 1, DATA_TREE_MASTER, E_RESOLVE_TREE_MASTER_CONTENTS))
+    if (!resolve_get_field_tosa_g(&sa, base, SS_MASTER + 1, DATA_TREE_MASTER, field))
         log_dieu(LOG_EXIT_SYS, "get resolve Master file of trees") ;
 
     FOREACH_SASTR(&sa, pos) {

@@ -30,5 +30,5 @@ void graph_build_g(graph_t *graph, resolve_service_t *ares, unsigned int *aresle
 
     else if (data_type == DATA_TREE)
 
-        graph_build_tree(g, info->base.s) ;
+        graph_build_tree(g, info->base.s, E_RESOLVE_TREE_MASTER_CONTENTS) ;
 }

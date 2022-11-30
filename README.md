@@ -1,4 +1,4 @@
-![GitLabl Build Status](https://framagit.org/Obarun/66/badges/master/pipeline.svg)
+![GitLabl Build Status](https://git.obarun.org/Obarun/66/badges/master/pipeline.svg)
 
 66 - Helpers tools around S6 supervision suite
 ===

@@ -307,7 +307,7 @@ static void tree_parse_options_depends(graph_t *g, ssexec_t *info, char const *s
             newinfo.help = info->help ;
             newinfo.usage = info->usage ;
             newinfo.opt_color = info->opt_color ;
-            newinfo.skip_opt_tree = info->skip_opt_tree ;
+            newinfo.opt_tree = info->opt_tree ;
 
 
             int nwhat = what->noseed ? 2 : 0 ;
@@ -325,7 +325,7 @@ static void tree_parse_options_depends(graph_t *g, ssexec_t *info, char const *s
             newargv[m++] = name ;
             newargv[m++] = 0 ;
 
-            log_trace("launch 66-tree sub-process for tree: ", name) ;
+            log_trace("launch 66 tree sub-process for tree: ", name) ;
 
             PROG = "tree" ;
             if (ssexec_tree(nargc, newargv, &newinfo))
@@ -1358,7 +1358,7 @@ int ssexec_tree(int argc, char const *const *argv, ssexec_t *info)
     if (!r && what.remove)
         log_dieusys(LOG_EXIT_SYS,"find tree: ", info->treename.s) ;
 
-    graph_build_tree(&graph, info->base.s) ;
+    graph_build_tree(&graph, info->base.s, E_RESOLVE_TREE_MASTER_CONTENTS) ;
 
     if (what.remove) {
         tree_remove(&graph, info->base.s, info->treename.s) ;
