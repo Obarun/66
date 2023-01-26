@@ -100,8 +100,6 @@ void service_master_modify_contents(resolve_service_t *res, resolve_service_mast
     if (!resolve_read(wres, solve, SS_MASTER + 1))
         log_dieusys(LOG_EXIT_SYS, "read resolve Master file of services") ;
 
-
-
     switch (ENUM) {
 
         case E_RESOLVE_SERVICE_MASTER_CLASSIC:
@@ -179,7 +177,11 @@ void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
     unsigned int areslen = 0, residx = 0, pos = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE] ;
 
-    int r = parse_frontend(sv, ares, &areslen, info, force, conf, &residx, 0) ;
+    char main[strlen(sv) + 1] ;
+    if (!ob_basename(main, sv))
+        log_dieu(LOG_EXIT_SYS, "get basename of: ", sv) ;
+
+    int r = parse_frontend(sv, ares, &areslen, info, force, conf, &residx, 0, main) ;
     if (r == 2)
         /** already parsed */
         return ;

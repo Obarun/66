@@ -106,7 +106,7 @@ static uint32_t compute_pipe_service(resolve_wrapper_t_ref wres, ssexec_t *info,
 }
 
 /**
- * @!runorfinish -> finish, @runofinish -> run
+ * @!runorfinish -> finish, @runorfinish -> run
  * */
 static void compute_wrapper_scripts(resolve_service_t *res, resolve_service_addon_scripts_t *scripts, char const *file, uint8_t runorfinish)
 {

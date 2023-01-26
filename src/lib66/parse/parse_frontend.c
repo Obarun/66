@@ -84,7 +84,7 @@ static void set_info(ssexec_t *info)
  * @Die on fail
  * @Return 1 on success
  * @Return 2 -> already parsed */
-int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, unsigned int *residx, char const *forced_directory)
+int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, unsigned int *residx, char const *forced_directory, char const *main)
 {
     log_flow() ;
 
@@ -226,7 +226,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
      * If the user ask for it(force > 1)
      * If the service was never parsed(!isparsed)*/
     if (force > 1 || !isparsed)
-        if (!parse_dependencies(&res, ares, areslen, info, force, conf, forced_directory))
+        if (!parse_dependencies(&res, ares, areslen, info, force, conf, forced_directory, main))
             log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", svname) ;
 
     parse_compute_resolve(&res, info) ;

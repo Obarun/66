@@ -28,7 +28,7 @@
 #include <66/utils.h>
 #include <66/constants.h>
 
-int parse_dependencies(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory)
+int parse_dependencies(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main)
 {
     log_flow() ;
 
@@ -36,6 +36,7 @@ int parse_dependencies(resolve_service_t *res, resolve_service_t *ares, unsigned
     int r, e = 0 ;
     unsigned int residx = 0 ;
     stralloc sa = STRALLOC_ZERO ;
+    char *current = res->sa.s + res->name ;
 
     if (res->dependencies.ndepends) {
 
@@ -80,6 +81,10 @@ int parse_dependencies(resolve_service_t *res, resolve_service_t *ares, unsigned
                 auto_strings(name, t + pos) ;
             }
 
+            if (!strcmp(main, name))
+                log_die(LOG_EXIT_USER, "direct cyclic dependencies detected -- ", main, " depends on: ", current, " which depends on: ", main) ;
+
+
             r = service_frontend_path(&sa, name, getuid(), forced_directory) ;
             if (r < 1) {
                 log_warnu( "get frontend service file of: ", t + pos) ;
@@ -96,7 +101,7 @@ int parse_dependencies(resolve_service_t *res, resolve_service_t *ares, unsigned
                 log_die_nomem("stralloc") ;
 
             /** nothing to do with the exit code */
-            parse_frontend(sa.s, ares, areslen, info, force, conf, &residx, forced_directory) ;
+            parse_frontend(sa.s, ares, areslen, info, force, conf, &residx, forced_directory, main) ;
         }
 
     } else

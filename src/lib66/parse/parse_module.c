@@ -604,7 +604,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
             log_die(LOG_EXIT_SYS, "cyclic call detected -- ", name, " call ", bname) ;
 
         /** nothing to do with the exit code */
-        parse_frontend(dname, ares, areslen, info, force, conf, &residx, path) ;
+        parse_frontend(dname, ares, areslen, info, force, conf, &residx, path, bname) ;
 
         wres = resolve_set_struct(DATA_SERVICE, &ares[residx]) ;
 
