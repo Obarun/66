@@ -36,7 +36,8 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
     graph_t graph = GRAPH_ZERO ;
     uint8_t siglen = 3 ;
 
-    unsigned int areslen = 0, list[SS_MAX_SERVICE], visit[SS_MAX_SERVICE], nservice = 0, n = 0 ;
+    int n = 0 ;
+    unsigned int areslen = 0, list[SS_MAX_SERVICE], visit[SS_MAX_SERVICE], nservice = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE] ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOINIT|STATE_FLAGS_WANTUP) ;
