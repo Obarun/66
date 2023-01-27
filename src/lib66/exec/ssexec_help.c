@@ -141,32 +141,6 @@ char const *help_treectl =
 "   -f: fork the process\n"
 ;
 
-char const *usage_tree = "66 tree [ -h ] [ -z ] [ -v verbosity ] [ -c ] [ -o depends=:... ] [ -E|D ] [ -R ] tree" ;
-
-char const *help_tree =
-"\n"
-"options:\n"
-"   -h: print this help\n"
-"   -z: use color\n"
-"   -v: increase/decrease verbosity\n"
-"   -c: set tree as default\n"
-"   -o: colon separated list of options\n"
-"   -E: enable the tree\n"
-"   -D: disable the tree\n"
-"   -R: remove the tree\n"
-
-"\n"
-"valid fields for -o options are:\n"
-"\n"
-"   depends=: comma separated list of dependencies for tree or none\n"
-"   requiredby=: comma separated list of trees required by tree or none\n"
-"   groups=: add tree to the specified groups\n"
-"   allow=: comma separated list of account to allow at tree\n"
-"   deny=: comma separated list of account to deny at tree\n"
-"   clone=: make a clone of tree\n"
-"   noseed: do not use seed file to build the tree\n"
-;
-*/
 char const *usage_tree = "66 tree [ -h ] [ -z ] [ -v verbosity ] [ -T timeout ] [ -l live ] create|admin|remove|enable|disable|current|up|down|unsupervise [ -f ] [ -o depends=:... ] tree" ;
 
 char const *help_tree =
@@ -384,4 +358,4 @@ char const *help_scandir =
 "   -o: handles owner scandir\n"
 ;
 
-char const *usage_66 = "66 start|stop|unsupervise|enable|disable|all|init|env|parse|svctl|tree|reconfigure|reload|restart|scanctl|scandir|boot service(s)|tree" ;
+char const *usage_66 = "66 start|stop|unsupervise|enable|disable|init|env|parse|svctl|tree|reconfigure|reload|restart|scanctl|scandir|boot service(s)|tree" ;

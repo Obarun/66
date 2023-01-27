@@ -176,17 +176,6 @@ int main(int argc, char const *const *argv)
 
         auto_strings(opts, main, OPTS_STOP) ;
 
-    }  else if (!strcmp(argv[1], "all")) {
-
-        PROG = "all" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_treectl ;
-        info.usage = usage_treectl ;
-        func = &ssexec_treectl ;
-
-        auto_strings(opts, main, OPTS_TREECTL) ;
-
     } else if (!strcmp(argv[1], "env")) {
 
         PROG = "env" ;
