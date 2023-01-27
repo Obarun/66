@@ -1,4 +1,3 @@
-ssexec_all.o
 ssexec_boot.o
 ssexec_copy.o
 ssexec_disable.o
