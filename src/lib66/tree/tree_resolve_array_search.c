@@ -13,11 +13,13 @@
  */
 
 #include <string.h>
-
+#include <oblibs/log.h>
 #include <66/tree.h>
 
 int tree_resolve_array_search(resolve_tree_t *ares, unsigned int areslen, char const *name)
 {
+    log_flow() ;
+
     unsigned int pos = 0 ;
 
     for (; pos < areslen ; pos++) {
