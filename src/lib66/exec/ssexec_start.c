@@ -137,5 +137,5 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
         sig[2] = 0 ;
     }
 
-    return svc_send(argv, argc, sig, siglen, info) ;
+    return svc_send_wait(argv, argc, sig, siglen, info) ;
 }
