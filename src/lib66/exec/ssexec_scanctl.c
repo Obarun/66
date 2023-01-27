@@ -150,7 +150,6 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
     newup[m++] = scandir ;
     newup[m++] = 0 ;
 
-    //log_info("Starts scandir ",scandir," ...") ;
     xexec_ae(newup[0], newup, envp) ;
 }
 

@@ -21,6 +21,8 @@ ssexec_start.o
 ssexec_stop.o
 ssexec_svctl.o
 ssexec_tree.o
+ssexec_treectl.o
+ssexec_tree_wrapper.o
 -ls6
 -loblibs
 -lskarnet

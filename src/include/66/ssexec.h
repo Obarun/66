@@ -110,7 +110,7 @@ extern ssexec_func_t ssexec_start ;
 extern ssexec_func_t ssexec_stop ;
 extern ssexec_func_t ssexec_svctl ;
 extern ssexec_func_t ssexec_env ;
-extern ssexec_func_t ssexec_all ;
+extern ssexec_func_t ssexec_treectl ;
 extern ssexec_func_t ssexec_tree ;
 extern ssexec_func_t ssexec_reconfigure ;
 extern ssexec_func_t ssexec_reload ;
@@ -122,6 +122,7 @@ extern ssexec_func_t ssexec_inservice ;
 extern ssexec_func_t ssexec_boot ;
 extern ssexec_func_t ssexec_scanctl ;
 extern ssexec_func_t ssexec_scandir ;
+extern ssexec_func_t ssexec_tree_wrapper ;
 
 extern char const *usage_parse ;
 extern char const *help_parse ;
@@ -139,8 +140,8 @@ extern char const *usage_init ;
 extern char const *help_init ;
 extern char const *usage_env ;
 extern char const *help_env ;
-extern char const *usage_all ;
-extern char const *help_all ;
+extern char const *usage_treectl ;
+extern char const *help_treectl ;
 extern char const *usage_tree ;
 extern char const *help_tree ;
 extern char const *usage_reconfigure ;
@@ -185,9 +186,9 @@ extern char const *usage_66 ;
 #define OPTS_SVCTL_LEN (sizeof OPTS_SVCTL - 1)
 #define OPTS_ENV "c:s:VLr:e:i:"
 #define OPTS_ENV_LEN (sizeof OPTS_ENV - 1)
-#define OPTS_ALL "f"
-#define OPTS_ALL_LEN (sizeof OPTS_ALL - 1)
-#define OPTS_TREE "na:d:cS:EDRC:o:"
+#define OPTS_TREECTL "f"
+#define OPTS_TREECTL_LEN (sizeof OPTS_TREECTL - 1)
+#define OPTS_TREE "co:EDRnadC:S:"
 #define OPTS_TREE_LEN (sizeof OPTS_TREE - 1)
 #define OPTS_INRESOLVE ""
 #define OPTS_INRESOLVE_LEN (sizeof OPTS_INRESOLVE - 1)

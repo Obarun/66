@@ -127,9 +127,9 @@ char const *help_env =
 "   -e: edit the file with editor\n"
 ;
 
-char const *usage_all = "66 all [ -h ] [ -z ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -f ] up|down|unsupervise" ;
+char const *usage_treectl = "66 treectl [ -h ] [ -z ] [ -v verbosity ] [ -T timeout ] [ -l live ] [ -t tree ] [ -f ] up|down|unsupervise" ;
 
-char const *help_all =
+char const *help_treectl =
 "\n"
 "options:\n"
 "   -h: print this help\n"
@@ -166,15 +166,29 @@ char const *help_tree =
 "   clone=: make a clone of tree\n"
 "   noseed: do not use seed file to build the tree\n"
 ;
+*/
+char const *usage_tree = "66 tree [ -h ] [ -z ] [ -v verbosity ] [ -T timeout ] [ -l live ] create|admin|remove|enable|disable|current|up|down|unsupervise [ -f ] [ -o depends=:... ] tree" ;
 
-char const *usage_treectl = "66 treectl [ -h ] [ -z ] [ -v verbosity ] tree" ;
-
-char const *help_treectl =
+char const *help_tree =
 "\n"
 "options:\n"
 "   -h: print this help\n"
 "   -z: use color\n"
 "   -v: increase/decrease verbosity\n"
+"   -T: timeout\n"
+"   -f: fork the process\n"
+"   -o: colon separated list of options\n"
+
+"\n"
+"valid fields for -o options are:\n"
+"\n"
+"   depends=: comma separated list of dependencies for tree or none\n"
+"   requiredby=: comma separated list of trees required by tree or none\n"
+"   groups=: add tree to the specified groups\n"
+"   allow=: comma separated list of account to allow at tree\n"
+"   deny=: comma separated list of account to deny at tree\n"
+"   clone=: make a clone of tree\n"
+"   noseed: do not use seed file to build the tree\n"
 ;
 
 char const *usage_reconfigure = "66 reconfigure [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -P ] service(s)" ;

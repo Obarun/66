@@ -119,7 +119,6 @@ int main(int argc, char const *const *argv)
     if (!set_ownersysdir(&info.base, info.owner))
         log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-
     if (!strcmp(argv[1], "boot")) {
 
         PROG = "boot" ;
@@ -182,11 +181,11 @@ int main(int argc, char const *const *argv)
         PROG = "all" ;
         nargv[n++] = PROG ;
         info.prog = PROG ;
-        info.help = help_all ;
-        info.usage = usage_all ;
-        func = &ssexec_all ;
+        info.help = help_treectl ;
+        info.usage = usage_treectl ;
+        func = &ssexec_treectl ;
 
-        auto_strings(opts, main, OPTS_ALL) ;
+        auto_strings(opts, main, OPTS_TREECTL) ;
 
     } else if (!strcmp(argv[1], "env")) {
 
@@ -281,10 +280,7 @@ int main(int argc, char const *const *argv)
 
         PROG = "tree" ;
         nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_tree ;
-        info.usage = usage_tree ;
-        func = &ssexec_tree ;
+        func = &ssexec_tree_wrapper ;
 
         auto_strings(opts, main, OPTS_TREE) ;
 
