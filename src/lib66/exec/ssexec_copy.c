@@ -23,11 +23,11 @@ void ssexec_copy(ssexec_t *dest, ssexec_t *src)
 {
     log_flow() ;
 
-    stralloc_copy(&dest->base, &src->base) ;
-    stralloc_copy(&dest->live, &src->live) ;
-    stralloc_copy(&dest->tree, &src->tree) ;
-    stralloc_copy(&dest->scandir, &src->scandir) ;
-    stralloc_copy(&dest->treename, &src->treename) ;
+    auto_stra(&dest->base, src->base.s) ;
+    auto_stra(&dest->live, src->live.s) ;
+    auto_stra(&dest->tree, src->tree.s) ;
+    auto_stra(&dest->scandir, src->scandir.s) ;
+    auto_stra(&dest->treename, src->treename.s) ;
 
     dest->treeallow = src->treeallow ;
     dest->owner = src->owner ;
