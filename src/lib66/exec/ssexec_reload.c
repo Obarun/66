@@ -27,17 +27,18 @@
 #include <66/svc.h>
 #include <66/sanitize.h>
 #include <66/service.h>
+#include <66/enum.h>
 
 int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    int r ;
+    int r, nargc = 0, n = 0 ;
     uint32_t flag = 0 ;
     uint8_t siglen = 2 ;
     graph_t graph = GRAPH_ZERO ;
 
-    unsigned int areslen = 0 ;
+    unsigned int areslen = 0, m = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE] ;
     char atree[SS_MAX_TREENAME + 1] ;
 
@@ -73,7 +74,8 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
     if ((svc_scandir_ok(info->scandir.s)) !=  1 )
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;
 
-    int n = 0 ;
+    char const *nargv[argc] ;
+
     for (; n < argc ; n++) {
 
         r = service_is_g(atree, argv[n], STATE_FLAGS_ISPARSED) ;
@@ -108,24 +110,64 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
         int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
         if (aresid < 0)
             log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you parsed it?") ;
+
+        if (ares[aresid].type == TYPE_ONESHOT) {
+            nargc++ ;
+            nargv[m++] = ares[aresid].sa.s + ares[aresid].name ;
+        }
     }
 
-    service_resolve_array_free(ares, areslen) ;
-
-    graph_free_all(&graph) ;
+    if (nargc)
+        nargv[m] = 0 ;
 
     char *sig[siglen] ;
     if (siglen > 2) {
 
         sig[0] = "-P" ;
-        sig[1] = "-h" ;
+        sig[1] = "-H" ;
         sig[2] = 0 ;
 
     } else {
 
-        sig[0] = "-h" ;
+        sig[0] = "-H" ;
         sig[1] = 0 ;
     }
 
-    return svc_send(argv, argc, sig, siglen, info) ;
+    r = svc_send_wait(argv, argc, sig, siglen, info) ;
+    if (r)
+        goto err ;
+    /** s6-supervise do not deal with oneshot service:
+     * The previous send command will bring it down but
+     * s6-supervise will not bring it up automatically.
+     * Well, do it manually */
+
+    if (nargc) {
+
+        int verbo = VERBOSITY ;
+        VERBOSITY = 0 ;
+        char *nsig[siglen + 1] ;
+
+        if (siglen > 2) {
+
+            nsig[0] = "-P" ;
+            nsig[1] = "-wU" ;
+            nsig[2] = "-u" ;
+            nsig[3] = 0 ;
+
+        } else {
+
+            nsig[0] = "-wU" ;
+            nsig[1] = "-u" ;
+            nsig[2] = 0 ;
+        }
+        siglen++ ;
+        r = svc_send_wait(nargv, nargc, nsig, siglen, info) ;
+        VERBOSITY = verbo ;
+    }
+
+    err:
+        service_resolve_array_free(ares, areslen) ;
+        graph_free_all(&graph) ;
+
+        return r ;
 }
