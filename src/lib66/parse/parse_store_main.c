@@ -34,6 +34,8 @@
 #include <66/enum.h>
 #include <66/utils.h>
 
+#include <stdio.h>
+
 int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 {
     int r = 0, e = 0 ;
@@ -201,7 +203,9 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 
             if (!parse_clean_list(&sa, store))
                 parse_error_return(0, 8, idsec, idkey) ;
-            {
+
+            if (sa.len) {
+
                 size_t len = sa.len ;
 
                 char t[len + 1] ;
@@ -215,12 +219,13 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
                     if (!auto_stra(&sa, t + pos, " "))
                             goto err ;
                 }
-            }
-            sa.len-- ;
-            if (!stralloc_0(&sa))
-                goto err ;
 
-            res->hiercopy = resolve_add_string(wres, sa.s) ;
+                sa.len-- ;
+                if (!stralloc_0(&sa))
+                    goto err ;
+
+                res->hiercopy = resolve_add_string(wres, sa.s) ;
+            }
 
             break ;
 
@@ -231,7 +236,9 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 
             if (!parse_clean_list(&sa, store))
                 parse_error_return(0, 8, idsec, idkey) ;
-            {
+
+            if (sa.len) {
+
                 pos = 0 ;
                 FOREACH_SASTR(&sa, pos) {
 
@@ -258,7 +265,8 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
             if (!parse_clean_list(&sa, store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
-            {
+            if (sa.len) {
+
                 uid_t user[256] ;
                 memset(user, 0, 256*sizeof(uid_t)) ;
 
@@ -327,9 +335,9 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
                     if (!e)
                         log_warnu_return(LOG_EXIT_ZERO,"use the service -- permission denied") ;
                 }
-            }
 
-            res->user = resolve_add_string(wres, sa.s) ;
+                res->user = resolve_add_string(wres, sa.s) ;
+            }
 
             break ;
 
@@ -338,7 +346,8 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
             if (!parse_clean_list(&sa, store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
-            res->dependencies.depends = parse_compute_list(wres, &sa, &res->dependencies.ndepends, 0) ;
+            if (sa.len)
+                res->dependencies.depends = parse_compute_list(wres, &sa, &res->dependencies.ndepends, 0) ;
 
             break ;
 
@@ -347,7 +356,8 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
             if (!parse_clean_list(&sa, store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
-            res->dependencies.requiredby = parse_compute_list(wres, &sa, &res->dependencies.nrequiredby, 0) ;
+            if (sa.len)
+                res->dependencies.requiredby = parse_compute_list(wres, &sa, &res->dependencies.nrequiredby, 0) ;
 
             break ;
 
@@ -356,7 +366,8 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
             if (!parse_clean_list(&sa, store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
-            res->dependencies.optsdeps = parse_compute_list(wres, &sa, &res->dependencies.noptsdeps, 1) ;
+            if (sa.len)
+                res->dependencies.optsdeps = parse_compute_list(wres, &sa, &res->dependencies.noptsdeps, 1) ;
 
             break ;
 

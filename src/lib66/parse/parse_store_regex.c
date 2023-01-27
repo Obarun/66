@@ -46,7 +46,8 @@ int parse_store_regex(resolve_service_t *res, char *store, int idsec, int idkey)
             if (!parse_clean_list(&sa, store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
-            res->regex.directories = parse_compute_list(wres, &sa, &res->regex.ndirectories, 0) ;
+            if (sa.len)
+                res->regex.directories = parse_compute_list(wres, &sa, &res->regex.ndirectories, 0) ;
 
             break ;
 
@@ -55,7 +56,8 @@ int parse_store_regex(resolve_service_t *res, char *store, int idsec, int idkey)
             if (!parse_clean_list(&sa, store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
-            res->regex.files = parse_compute_list(wres, &sa, &res->regex.nfiles, 0) ;
+            if (sa.len)
+                res->regex.files = parse_compute_list(wres, &sa, &res->regex.nfiles, 0) ;
 
             break ;
 
@@ -64,7 +66,8 @@ int parse_store_regex(resolve_service_t *res, char *store, int idsec, int idkey)
             if (!parse_clean_list(&sa, store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
-            res->regex.infiles = parse_compute_list(wres, &sa, &res->regex.ninfiles, 0) ;
+            if (sa.len)
+                res->regex.infiles = parse_compute_list(wres, &sa, &res->regex.ninfiles, 0) ;
 
             break ;
 
