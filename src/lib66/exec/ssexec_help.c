@@ -96,7 +96,7 @@ char const *help_stop =
 "   -u: unsupervise service(s)\n"
 ;
 
-char const *usage_svctl = "66 svctl [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -wu | -wU | -wd | -wD | -wr | -wR ] [ -abqhkti12pcyoduxOr ] service(s)" ;
+char const *usage_svctl = "66 svctl [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -t tree ] [ -T timeout ] [ -wu | -wU | -wd | -wD | -wr | -wR ] [ -abqHkti12pcyoduxOr ] service(s)" ;
 
 char const *help_svctl =
 "\n"

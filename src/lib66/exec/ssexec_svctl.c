@@ -174,7 +174,7 @@ static int pidservice_get_id(pidservice_t *apids, unsigned int id)
     return -1 ;
 }
 
-void notify(pidservice_t *apids, unsigned int pos, char const *sig, unsigned int what)
+static void notify(pidservice_t *apids, unsigned int pos, char const *sig, unsigned int what)
 {
     log_flow() ;
 
@@ -842,7 +842,7 @@ int ssexec_svctl(int argc, char const *const *argv, ssexec_t *info)
                 case 'a' :
                 case 'b' :
                 case 'q' :
-                case 'h' :
+                case 'H' :
                 case 'k' :
                 case 't' :
                 case 'i' :
@@ -861,7 +861,7 @@ int ssexec_svctl(int argc, char const *const *argv, ssexec_t *info)
                     if (datalen >= DATASIZE)
                         log_die(LOG_EXIT_USER, "too many arguments") ;
 
-                    data[datalen++] = opt ;
+                    data[datalen++] = opt == 'H' ? 'h' : opt ;
                     break ;
 
                 case 'w' :
