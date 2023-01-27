@@ -41,7 +41,7 @@ int tree_switch_current(char const *base, char const *treename)
     char pack[UID_FMT] ;
     size_t packlen = uint_fmt(pack, MYUID) ;
     pack[packlen] = 0 ;
-    char dst[baselen + SS_TREE_CURRENT_LEN + 1 + packlen + treelen + 2 + 1] ;
+    char dst[baselen + SS_SYSTEM_LEN + SS_TREE_CURRENT_LEN + 1 + packlen + treelen + 2 + 1] ;
     char sym[baselen + SS_TREE_CURRENT_LEN + 1 + packlen + 1 + SS_TREE_CURRENT_LEN + 1] ;
 
     auto_strings(dst, base, SS_TREE_CURRENT, "/" , pack) ;
