@@ -1123,7 +1123,18 @@ void tree_remove(graph_t *g, char const *base, char const *treename)
 
     tree_master_modify_contents(base, treename) ;
 
-    tree_switch_current(base, treename) ;
+    if (tree_iscurrent(base, treename)) {
+        /** this symlink must be valid in any case. If not the
+         * sanitize_system process will crash. So, at least point to
+         * the SS_DEFAULT_TREENAME as this tree is create automatically
+         * if it doesn't exist at every 66 command invocation */
+        log_warn("tree ",treename, " is marked as default -- switch default to: ", SS_DEFAULT_TREENAME) ;
+
+        if (!tree_switch_current(base, SS_DEFAULT_TREENAME))
+            log_dieusys(LOG_EXIT_SYS,"set: ", SS_DEFAULT_TREENAME, " as default") ;
+
+        log_info("Set successfully: ", SS_DEFAULT_TREENAME," as default") ;
+    }
 
     log_info("Deleted successfully: ", treename) ;
 }
