@@ -186,7 +186,6 @@ int ssexec_inresolve(int argc, char const *const *argv, ssexec_t *info)
     int found = 0, what = 0 ;
     uint8_t master = 0 ;
 
-    stralloc sa = STRALLOC_ZERO ;
     char const *svname = 0 ;
     char const *treename = info->treename.s ;
     char atree[SS_MAX_TREENAME + 1] ;
@@ -203,9 +202,6 @@ int ssexec_inresolve(int argc, char const *const *argv, ssexec_t *info)
     argv++;
     argc--;
     svname = *argv ;
-
-    if (!set_ownersysdir(&sa, getuid()))
-        log_dieu(LOG_EXIT_SYS, "set owner directory") ;
 
     if (!what) {
 
@@ -318,22 +314,21 @@ int ssexec_inresolve(int argc, char const *const *argv, ssexec_t *info)
             wres = resolve_set_struct(DATA_SERVICE, &res) ;
         }
 
-
         if (!master) {
 
             found = service_is_g(atree, svname, STATE_FLAGS_ISPARSED) ;
             if (found == -1)
                 log_dieu(LOG_EXIT_SYS, "get information of service: ", svname, " -- please a bug report") ;
             else if (!found)
-                log_die(LOG_EXIT_USER, "unknown service: ", svname) ;
+                log_die(LOG_EXIT_USER, svname, " is not parsed -- try to parse it first") ;
 
-            if (!resolve_read_g(wres, sa.s, svname))
+            if (!resolve_read_g(wres, info->base.s, svname))
                 log_dieusys(LOG_EXIT_SYS,"read resolve file") ;
 
         } else {
 
-            char solve[sa.len + SS_SYSTEM_LEN + 1 + strlen(treename) + SS_SVDIRS_LEN + 1] ;
-            auto_strings(solve, sa.s, SS_SYSTEM, "/", treename, SS_SVDIRS) ;
+            char solve[info->base.len + SS_SYSTEM_LEN + 1 + strlen(treename) + SS_SVDIRS_LEN + 1] ;
+            auto_strings(solve, info->base.s, SS_SYSTEM, "/", treename, SS_SVDIRS) ;
 
             if (!resolve_read(wres, solve, SS_MASTER + 1))
                 log_dieusys(LOG_EXIT_SYS,"read resolve file") ;
@@ -405,14 +400,14 @@ int ssexec_inresolve(int argc, char const *const *argv, ssexec_t *info)
             wres = resolve_set_struct(DATA_TREE, &tres) ;
         }
 
-        found = tree_isvalid(sa.s, svname) ;
+        found = tree_isvalid(info->base.s, svname) ;
         if (found < 0)
             log_diesys(LOG_EXIT_SYS, "invalid tree directory") ;
 
         if (!found)
             log_dieusys(LOG_EXIT_SYS, "find tree: ", svname) ;
 
-        if (!resolve_read_g(wres, sa.s, svname))
+        if (!resolve_read_g(wres, info->base.s, svname))
             log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
 
         info_field_align(tree_buf, fields, field_suffix,MAXOPTS) ;
@@ -445,10 +440,7 @@ int ssexec_inresolve(int argc, char const *const *argv, ssexec_t *info)
         }
 
         resolve_free(wres) ;
-
     }
-
-    stralloc_free(&sa) ;
 
     return 0 ;
 }
