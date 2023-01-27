@@ -692,7 +692,10 @@ static int async(pidtree_t *apidt, unsigned int i, unsigned int what, ssexec_t *
 
     log_trace("beginning of the process of: ", name) ;
 
-    if (FLAGS_ISSET(apidt[i].state, (!what ? FLAGS_DOWN : FLAGS_UP))) {
+    if (FLAGS_ISSET(apidt[i].state, (!what ? FLAGS_DOWN : FLAGS_UP)) ||
+        /** force to pass through unsupersive process even
+         * if the tree is marked down */
+        FLAGS_ISSET(apidt[i].state, (what ? FLAGS_DOWN : FLAGS_UP)) && what == 2) {
 
         if (!FLAGS_ISSET(apidt[i].state, FLAGS_BLOCK)) {
 
