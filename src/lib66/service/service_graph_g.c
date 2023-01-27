@@ -26,5 +26,9 @@ void service_graph_g(char const *alist, size_t alen, graph_t *graph, resolve_ser
 
     service_graph_collect(graph, alist, alen, ares, areslen, info, flag) ;
 
+    if (!*areslen) {
+        log_warn("no services matching the requirements at tree: ", info->treename.s) ;
+        return ;
+    }
     service_graph_build(graph, ares, (*areslen), flag) ;
 }
