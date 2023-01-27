@@ -91,7 +91,7 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
     graph_build_service(&graph, ares, &areslen, info, flag) ;
 
     if (!graph.mlen)
-        log_die(LOG_EXIT_USER, "services selection is not available -- try first to install the corresponding frontend file") ;
+        log_die(LOG_EXIT_USER, "services selection is not available -- did you started its first?") ;
 
     graph_array_init_single(visit, SS_MAX_SERVICE) ;
 
