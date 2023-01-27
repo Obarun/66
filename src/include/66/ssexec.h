@@ -98,6 +98,7 @@ typedef int ssexec_func_t(int argc, char const *const *argv, ssexec_t *info) ;
 typedef ssexec_func_t *ssexec_func_t_ref ;
 
 extern void ssexec_free(ssexec_t *info) ;
+extern void ssexec_copy(ssexec_t *dest, ssexec_t *src) ;
 extern ssexec_t const ssexec_zero ;
 extern void set_ssinfo(ssexec_t *info) ;
 
@@ -180,7 +181,7 @@ extern char const *usage_66 ;
 #define OPTS_START_LEN (sizeof OPTS_START - 1)
 #define OPTS_STOP "uP"
 #define OPTS_STOP_LEN (sizeof OPTS_STOP - 1)
-#define OPTS_SVCTL "abqhkti12pcyroduxOw:P"
+#define OPTS_SVCTL "abqHkti12pcyroduxOw:P"
 #define OPTS_SVCTL_LEN (sizeof OPTS_SVCTL - 1)
 #define OPTS_ENV "c:s:VLr:e:i:"
 #define OPTS_ENV_LEN (sizeof OPTS_ENV - 1)

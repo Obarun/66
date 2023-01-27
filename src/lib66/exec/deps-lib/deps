@@ -1,5 +1,6 @@
 ssexec_all.o
 ssexec_boot.o
+ssexec_copy.o
 ssexec_disable.o
 ssexec_enable.o
 ssexec_env.o

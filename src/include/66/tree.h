@@ -183,7 +183,7 @@ extern int tree_resolve_write_cdb(cdbmaker *c, resolve_tree_t *tres) ;
 extern int tree_resolve_copy(resolve_tree_t *dst, resolve_tree_t *tres) ;
 extern int tree_resolve_modify_field(resolve_tree_t *tres, uint8_t field, char const *data) ;
 extern int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree_enum_t field) ;
-
+extern int tree_resolve_array_search(resolve_tree_t *ares, unsigned int areslen, char const *name) ;
 /** Master */
 extern int tree_resolve_master_read_cdb(cdb *c, resolve_tree_master_t *mres) ;
 extern int tree_resolve_master_write_cdb(cdbmaker *c, resolve_tree_master_t *mres) ;

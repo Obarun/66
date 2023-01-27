@@ -5,6 +5,7 @@ tree_isenabled.o
 tree_isinitialized.o
 tree_isvalid.o
 tree_ongroups.o
+tree_resolve_array_search.o
 tree_resolve_copy.o
 tree_resolve_get_field_tosa.o
 tree_resolve_master_copy.o
