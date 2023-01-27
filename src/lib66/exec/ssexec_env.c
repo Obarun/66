@@ -35,10 +35,11 @@
 #include <66/ssexec.h>
 #include <66/utils.h>
 #include <66/config.h>
-#include <66/parser.h>
 #include <66/environ.h>
 #include <66/constants.h>
 #include <66/resolve.h>
+#include <66/write.h>
+#include <66/state.h>
 
 static char const *EDITOR = 0 ;
 
@@ -67,7 +68,7 @@ static uint8_t check_current_version(char const *svconf,char const *version)
     return !version_cmp(bname,version,SS_CONFIG_VERSION_NDOT) ? 1 : 0 ;
 }
 
-static void run_editor(char const *src, char const *sv, char const *const *envp)
+static void run_editor(char const *src, char const *sv)
 {
     log_flow() ;
 
@@ -86,7 +87,7 @@ static void run_editor(char const *src, char const *sv, char const *const *envp)
         }
     }
     char const *const newarg[3] = { EDITOR, tsrc, 0 } ;
-    xexec_ae (newarg[0],newarg,envp) ;
+    xexec_ae (newarg[0],newarg, (char const *const *)environ) ;
 }
 
 static void do_import(char const *svname, char const *svconf, char const *version, int svtype)
@@ -193,8 +194,7 @@ static void write_user_env_file(char const *src, char const *sv)
             if (r == -1)
                 log_die(LOG_EXIT_SYS,"invalid upstream configuration file! Do you have modified it? Tries to enable the service again.") ;
 
-            if (!write_env(sv,sa.s + r,src))
-                log_dieusys(LOG_EXIT_SYS,"write: ",src,"/",sv);
+            write_environ(sv, sa.s + r, src) ;
         }
         else
             log_diesys(LOG_EXIT_SYS,"conflicting format of file: ",tsrc) ;
@@ -203,8 +203,10 @@ static void write_user_env_file(char const *src, char const *sv)
     stralloc_free(&sa) ;
 }
 
-int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
+int ssexec_env(int argc, char const *const *argv, ssexec_t *info)
 {
+    log_flow() ;
+
     int r ;
     size_t pos = 0 ;
     stralloc satmp = STRALLOC_ZERO ;
@@ -216,9 +218,11 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
+    char atree[SS_MAX_TREENAME + 1] ;
+
     uint8_t todo = T_UNSET ;
 
-    char const *sv = 0, *svconf = 0, *src = 0, *treename = 0, *import = 0 ;
+    char const *sv = 0, *svconf = 0, *src = 0, *import = 0 ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -292,29 +296,23 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 
     if (todo == T_UNSET && !import && !saversion.len && !eversion.len) todo = T_EDIT ;
 
-    treename = !info->opt_tree ? 0 : info->treename.s ;
-
-    r = service_intree(&sasrc,sv,treename) ;
-    if (r == -1) log_dieu(LOG_EXIT_SYS,"resolve tree source of sv: ",sv) ;
+    r = service_is_g(atree, sv, STATE_FLAGS_ISPARSED) ;
+    if (r == -1)
+        log_dieusys(LOG_EXIT_SYS, "get information of service: ", sv, " -- please a bug report") ;
     else if (!r) {
-        log_info("no tree exist yet") ;
+        log_warn(sv, " is not parsed -- try to parse it first") ;
         goto freed ;
     }
-    else if (r > 2) {
-        log_die(LOG_EXIT_SYS,sv," is set on different tree -- please use -t options") ;
-    }
-    else if (r == 1) log_die(LOG_EXIT_SYS,"unknown service: ",sv, !info->opt_tree ? " in current tree: " : " in tree: ", info->treename.s) ;
 
-    if (!resolve_read(wres,sasrc.s,sv))
-        log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",sv) ;
+    if (!resolve_read_g(wres, info->base.s, sv))
+        log_dieusys(LOG_EXIT_SYS,"read resolve file of: ", sv) ;
 
-    if (!res.srconf) {
+    if (!res.environ.envdir) {
         log_1_warn(sv," do not have configuration file") ;
         goto freed ;
     }
 
-    svconf = res.sa.s + res.srconf ;
-    sasrc.len = 0 ;
+    svconf = res.sa.s + res.environ.envdir ;
 
     if (saversion.len)
     {
@@ -421,7 +419,7 @@ int ssexec_env(int argc, char const *const *argv,char const *const *envp,ssexec_
 
             write_user_env_file(src,sv) ;
 
-            run_editor(src, sv, envp) ;
+            run_editor(src, sv) ;
 
         /** Can't happens */
         default: break ;
