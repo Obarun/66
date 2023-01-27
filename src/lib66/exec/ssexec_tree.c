@@ -664,7 +664,7 @@ void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what)
  * WARNING: The order of the trees are not sorted by dependencies order
  *
  * !action -> disable
- * action -> disable */
+ * action -> enable */
 void tree_master_enable_disable(char const *base, char const *treename, uint8_t action)
 {
     log_flow() ;
@@ -1367,7 +1367,7 @@ int ssexec_tree(int argc, char const *const *argv, ssexec_t *info)
         goto freed ;
     }
 
-    /** groups influence on enable. Apply it first. */
+    /** groups have influence on enable. Apply it first. */
     if (what.groups)
         tree_groups(info->base.s, info->treename.s, what.gr) ;
 
@@ -1376,6 +1376,18 @@ int ssexec_tree(int argc, char const *const *argv, ssexec_t *info)
         tree_depends_requiredby(&graph, info->base.s, info->treename.s, 0, what.ndepends, 0) ;
 
         tree_depends_requiredby_deps(&graph, info->base.s, info->treename.s, 0, what.ndepends, 0) ;
+
+        sa.len = 0 ;
+        size_t pos = 0 ;
+        if (graph_matrix_get_edge_g_sorted_sa(&sa, &graph, info->treename.s, 0, 0) < 0)
+            log_dieu(LOG_EXIT_SYS,"get sorted dependency list of tree: ", info->treename.s) ;
+
+        FOREACH_SASTR(&sa, pos) {
+            if (tree_isenabled(info->base.s, sa.s + pos)) {
+                tree_enable_disable(&graph, info->base.s, info->treename.s, 1) ;
+                break ;
+            }
+        }
     }
 
     if (what.requiredby) {
@@ -1383,6 +1395,16 @@ int ssexec_tree(int argc, char const *const *argv, ssexec_t *info)
         tree_depends_requiredby(&graph, info->base.s, info->treename.s, 1, what.nrequiredby, 0) ;
 
         tree_depends_requiredby_deps(&graph, info->base.s, info->treename.s, 1, what.nrequiredby, 0) ;
+
+        sa.len = 0 ;
+        size_t pos = 0 ;
+        if (graph_matrix_get_edge_g_sorted_sa(&sa, &graph, info->treename.s, 1, 0) < 0)
+            log_dieu(LOG_EXIT_SYS,"get sorted dependency list of tree: ", info->treename.s) ;
+
+        if (!tree_isenabled(info->base.s, info->treename.s)) {
+            FOREACH_SASTR(&sa, pos)
+                tree_enable_disable(&graph, info->base.s, sa.s + pos, 0) ;
+        }
     }
 
     if (what.enable)
