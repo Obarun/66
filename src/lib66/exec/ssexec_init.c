@@ -47,6 +47,7 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 {
     uint32_t flag = 0 ;
     graph_t graph = GRAPH_ZERO ;
+    ss_state_t ste = STATE_ZERO ;
 
     unsigned int areslen = 0, list[SS_MAX_SERVICE], visit[SS_MAX_SERVICE], nservice = 0, n = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE] ;
@@ -81,8 +82,13 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 
             } else {
 
-                list[nservice++] = idx ;
-                visit[idx] = 1 ;
+                if (!state_read(&ste, ares[aresid].sa.s + ares[aresid].path.home, sa->s + n))
+                    log_dieusys(LOG_EXIT_SYS, "read state file of service: ", sa->s + n) ;
+
+                if (service_is(&ste, STATE_FLAGS_ISENABLED)) {
+                    list[nservice++] = idx ;
+                    visit[idx] = 1 ;
+                }
             }
 
         }
@@ -95,6 +101,12 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 
             if (!visit[l[pos]]) {
 
+                char *name = graph.data.s + genalloc_s(graph_hash_t,&graph.hash)[l[pos]].vertex ;
+
+                aresid = service_resolve_array_search(ares, areslen, name) ;
+                if (aresid < 0)
+                    log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parsed it?") ;
+
                 if (earlier) {
 
                     if (ares[aresid].earlier) {
@@ -105,8 +117,13 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 
                 } else {
 
-                    list[nservice++] = l[pos] ;
-                    visit[l[pos]] = 1 ;
+                    if (!state_read(&ste, ares[aresid].sa.s + ares[aresid].path.home, name))
+                        log_dieusys(LOG_EXIT_SYS, "read state file of service: ", name) ;
+
+                    if (service_is(&ste, STATE_FLAGS_ISENABLED)) {
+                        list[nservice++] = l[pos] ;
+                        visit[l[pos]] = 1 ;
+                    }
                 }
             }
         }
@@ -164,7 +181,7 @@ int ssexec_init(int argc, char const *const *argv, ssexec_t *info)
 
     } else {
 
-        log_info("Initialization report: no services to initiate at tree: ", treename) ;
+        log_info("Report: no services to initiate at tree: ", treename) ;
     }
 
     stralloc_free(&sa) ;
