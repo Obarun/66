@@ -1242,6 +1242,8 @@ void tree_clone(char const *clone, ssexec_t *info)
 
 int ssexec_tree(int argc, char const *const *argv, ssexec_t *info)
 {
+    log_flow();
+
     int r ;
 
     stralloc sa = STRALLOC_ZERO ;
@@ -1346,7 +1348,7 @@ int ssexec_tree(int argc, char const *const *argv, ssexec_t *info)
      * mark it false if the tree already exist */
     if (r) {
         if (!what.nopts) {
-            log_1_warn(info->treename.s, ": already exist") ;
+            log_warn(info->treename.s, ": already exist") ;
             goto freed ;
         }
         what.create = 0 ;
