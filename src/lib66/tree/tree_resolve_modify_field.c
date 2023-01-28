@@ -36,6 +36,7 @@ resolve_field_table_t resolve_tree_field_table[] = {
     [E_RESOLVE_TREE_NGROUPS] = { .field = "ngroups" },
     [E_RESOLVE_TREE_NCONTENTS] = { .field = "ncontents" },
     [E_RESOLVE_TREE_INIT] = { .field = "init" },
+    [E_RESOLVE_TREE_SUPERVISED] = { .field = "supervised" },
     [E_RESOLVE_TREE_DISEN] = { .field = "disen" },
     [E_RESOLVE_TREE_ENDOFKEY] = { .field = 0 }
 } ;
@@ -115,6 +116,13 @@ int tree_resolve_modify_field(resolve_tree_t *tres, uint8_t field, char const *d
                 data = "0" ;
             if (!uint0_scan(data, &ifield)) goto err ;
             tres->init = ifield ;
+            break ;
+
+        case E_RESOLVE_TREE_SUPERVISED:
+            if (!data)
+                data = "0" ;
+            if (!uint0_scan(data, &ifield)) goto err ;
+            tres->supervised = ifield ;
             break ;
 
         case E_RESOLVE_TREE_DISEN:

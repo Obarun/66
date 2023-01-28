@@ -3,6 +3,7 @@ tree_get_permissions.o
 tree_iscurrent.o
 tree_isenabled.o
 tree_isinitialized.o
+tree_issupervised.o
 tree_isvalid.o
 tree_ongroups.o
 tree_resolve_array_search.o

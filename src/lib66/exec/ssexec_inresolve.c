@@ -377,13 +377,14 @@ int ssexec_inresolve(int argc, char const *const *argv, ssexec_t *info)
             "ngroups",
             "ncontents",
             "init" ,
-            "disen", // 13
+            "supervised",
+            "disen", // 14
             // Master
             "enabled",
             "current",
             "contents",
             "nenabled",
-            "ncontents" // 18
+            "ncontents" // 19
         } ;
 
         resolve_wrapper_t_ref wres = 0 ;
@@ -426,17 +427,18 @@ int ssexec_inresolve(int argc, char const *const *argv, ssexec_t *info)
             info_display_int(fields[9], tres.ngroups) ;
             info_display_int(fields[10], tres.ncontents) ;
             info_display_int(fields[11], tres.init) ;
-            info_display_int(fields[12], tres.disen) ;
+            info_display_int(fields[12], tres.supervised) ;
+            info_display_int(fields[13], tres.disen) ;
 
         } else {
 
             info_display_string(fields[0], mres.sa.s, mres.name, 1) ;
             info_display_string(fields[3], mres.sa.s, mres.allow, 1) ;
-            info_display_string(fields[13], mres.sa.s, mres.enabled, 1) ;
-            info_display_string(fields[14], mres.sa.s, mres.current, 1) ;
-            info_display_string(fields[15], mres.sa.s, mres.contents, 1) ;
-            info_display_int(fields[16], mres.nenabled) ;
-            info_display_int(fields[17], mres.ncontents) ;
+            info_display_string(fields[14], mres.sa.s, mres.enabled, 1) ;
+            info_display_string(fields[15], mres.sa.s, mres.current, 1) ;
+            info_display_string(fields[16], mres.sa.s, mres.contents, 1) ;
+            info_display_int(fields[17], mres.nenabled) ;
+            info_display_int(fields[18], mres.ncontents) ;
         }
 
         resolve_free(wres) ;

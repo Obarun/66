@@ -43,18 +43,19 @@ struct resolve_tree_s
     uint32_t requiredby ;
     uint32_t allow ;
     uint32_t groups ;
-    uint32_t contents ;//not used
+    uint32_t contents ;
 
     uint32_t ndepends ;
     uint32_t nrequiredby ;
     uint32_t nallow ;
     uint32_t ngroups ; //not really useful for now, we accept only one group
-    uint32_t ncontents ; //not used
+    uint32_t ncontents ;
 
     uint32_t init ;//not initialized->0, initialized->1
+    uint32_t supervised ;//not superviseded->0, supervised->1
     uint32_t disen ;//disable->0, enable->1
 } ;
-#define RESOLVE_TREE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_TREE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
 typedef enum resolve_tree_enum_e resolve_tree_enum_t, *resolve_tree_enum_t_ref;
 enum resolve_tree_enum_e
@@ -71,6 +72,7 @@ enum resolve_tree_enum_e
     E_RESOLVE_TREE_NGROUPS,
     E_RESOLVE_TREE_NCONTENTS,
     E_RESOLVE_TREE_INIT,
+    E_RESOLVE_TREE_SUPERVISED,
     E_RESOLVE_TREE_DISEN,
     E_RESOLVE_TREE_ENDOFKEY
 } ;
@@ -148,6 +150,11 @@ extern int tree_iscurrent(char const *base, char const *treename) ;
  * @Return 0 on fail
  * @Return -1 on system error */
 extern int tree_isinitialized(char const *base, char const *treename) ;
+
+/** @Return 1 on success
+ * @Return 0 on fail
+ * @Return -1 on system error */
+extern int tree_issupervised(char const *base, char const *treename) ;
 
 /** @Return 1 on success
  * @Return 0 if not valid
