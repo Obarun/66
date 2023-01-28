@@ -271,9 +271,15 @@ static void announce(unsigned int pos, pidtree_t *apidt, char const *base, unsig
 
     uint8_t flag = what ? FLAGS_DOWN : FLAGS_UP ;
 
-    if (!what || what == 2)
-        if (!resolve_modify_field_g(wres, base, treename, E_RESOLVE_TREE_INIT, what ? (success ? "1" : "0") : (success ? "0" : "1")))
+    if (!resolve_modify_field_g(wres, base, treename, E_RESOLVE_TREE_INIT, what ? (success ? "1" : "0") : (success ? "0" : "1")))
+        log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
+
+    if (what != 1) {
+
+        if (!resolve_modify_field_g(wres, base, treename, E_RESOLVE_TREE_SUPERVISED, what ? (success ? "1" : "0") : (success ? "0" : "1")))
             log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
+
+    }
 
     if (success) {
 
@@ -430,36 +436,66 @@ static uint32_t compute_timeout (uint32_t timeout, tain *deadline)
 
 static int ssexec_callback(stralloc *sa, ssexec_t *info, unsigned int what)
 {
-    size_t pos = 0, len = sastr_len(sa), e = 1 ;
+    int r, e = 1 ;
+    size_t pos = 0, len = sa->len ;
+    char t[len + 1] ;
+    char atree[SS_MAX_TREENAME + 1] ;
 
-    int n = what == 2 ? 2 : 1 ;
-    int nargc = n + len ;
-    char const *prog = PROG ;
-    char const *newargv[nargc] ;
-    unsigned int m = 0 ;
+    sastr_to_char(t, sa) ;
+    sa->len = 0 ;
 
-    newargv[m++] = "treectl" ;
-    if (what == 2)
-        newargv[m++] = "-u" ;
+    /** only deal with enabled service at up time and
+     * supervised service at down time */
+    for (; pos < len ; pos += strlen(t + pos) + 1) {
 
-    FOREACH_SASTR(sa, pos)
-        newargv[m++] = sa->s + pos ;
+        char *name = t + pos ;
 
-    newargv[m] = 0 ;
+        r = service_is_g(atree, name, !what ? STATE_FLAGS_ISENABLED : STATE_FLAGS_ISSUPERVISED) ;
+        if (r < 0)
+            log_dieusys(LOG_EXIT_SYS, "get information of service: ", name, " -- please a bug report") ;
 
-    if (!what) {
-
-        PROG = "start" ;
-        e = ssexec_start(nargc, newargv, info) ;
-        PROG = prog ;
-
-    } else {
-
-        PROG = "stop" ;
-        e = ssexec_stop(nargc, newargv, info) ;
-        PROG = prog ;
+        if (r > 0)
+            if (!sastr_add_string(sa, name))
+                log_dieu(LOG_EXIT_SYS, "add string") ;
     }
 
+    if (!sa->len) {
+        e = 0 ;
+        goto end ;
+    }
+
+    {
+        pos = 0, len = sastr_nelement(sa) ;
+
+        int n = what == 2 ? 2 : 1 ;
+        int nargc = n + len ;
+        char const *prog = PROG ;
+        char const *newargv[nargc] ;
+        unsigned int m = 0 ;
+
+        newargv[m++] = "treectl" ;
+        if (what == 2)
+            newargv[m++] = "-u" ;
+
+        FOREACH_SASTR(sa, pos)
+            newargv[m++] = sa->s + pos ;
+
+        newargv[m] = 0 ;
+
+        if (!what) {
+
+            PROG = "start" ;
+            e = ssexec_start(nargc, newargv, info) ;
+            PROG = prog ;
+
+        } else {
+
+            PROG = "stop" ;
+            e = ssexec_stop(nargc, newargv, info) ;
+            PROG = prog ;
+        }
+    }
+    end:
     return e ;
 }
 
@@ -497,7 +533,7 @@ static int doit(char const *treename, ssexec_t *sinfo, unsigned int what, tain *
             char const *newargv[nargc] ;
             unsigned int m = 0 ;
 
-            newargv[m++] = "all (child)" ;
+            newargv[m++] = "tree" ;
             newargv[m++] = info.treename.s ;
             newargv[m++] = 0 ;
 
@@ -515,14 +551,9 @@ static int doit(char const *treename, ssexec_t *sinfo, unsigned int what, tain *
 
     {
         stralloc sa = STRALLOC_ZERO ;
-        char const *exclude[2] = { SS_MASTER + 1 , 0 } ;
-        size_t treelen = info.tree.len + SS_SVDIRS_LEN + SS_RESOLVE_LEN ;
-        char tree[treelen + 1] ;
 
-        auto_strings(tree, info.tree.s, SS_SVDIRS, SS_RESOLVE) ;
-
-        if (!sastr_dir_get(&sa, tree, exclude, S_IFREG))
-            log_dieu(LOG_EXIT_SYS, "get services list from tree: ", info.treename.s) ;
+        if (!resolve_get_field_tosa_g(&sa, info.base.s, info.treename.s, DATA_TREE, E_RESOLVE_TREE_CONTENTS))
+            log_warnu_return(LOG_EXIT_ZERO, "get services list from tree: ", info.treename.s) ;
 
         if (!sa.len) {
 
@@ -912,15 +943,21 @@ int ssexec_treectl(int argc, char const *const *argv, ssexec_t *info)
             else continue ;
         }
 
-        r = tree_isinitialized(info->base.s, treename) ;
-        if (r && !what) {
+        int init = tree_isinitialized(info->base.s, treename) ;
+        int supervised = tree_issupervised(info->base.s, treename) ;
+
+        if (!what && init) {
+            log_warn("tree: ", treename," is already up") ;
+            continue ;
+
+        } else if (what == 1 && !init) {
 
             log_warn("tree: ", treename," is already up") ;
             continue ;
 
-        } else if (!r && what) {
+        } else if (what == 2 && !supervised) {
 
-            log_warn("tree: ", treename," is already down") ;
+            log_warn("tree: ", treename," is already up") ;
             continue ;
 
         }
@@ -956,7 +993,7 @@ int ssexec_treectl(int argc, char const *const *argv, ssexec_t *info)
     pareslen = &areslen ;
 
     if (!napid) {
-        log_warn("no trees -- something wrong, tree ", SS_DEFAULT_TREENAME, " should exist!") ;
+        log_warn("no trees matching the requirements -- nothing to do") ;
         r = 0 ;
         goto end ;
     }
