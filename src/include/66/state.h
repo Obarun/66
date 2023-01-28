@@ -40,7 +40,6 @@
 #define STATE_FLAGS_WANTUP (1 << 15)
 #define STATE_FLAGS_WANTDOWN (1 << 16)
 
-
 typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;
 struct ss_state_s
 {
