@@ -26,33 +26,7 @@
 #include <66/parser.h>
 #include <66/ssexec.h>
 #include <66/utils.h>
-/*
-static void check_dir(char const *dir, uint8_t force, int main)
-{
-    log_flow() ;
 
-    int r ;
-
-    r = scan_mode(dir, S_IFDIR) ;
-    if (r < 0) {
-        errno = ENOTDIR ;
-        log_diesys(LOG_EXIT_SYS,"conflicting format of: ",dir) ;
-    }
-
-    if (r && force && main) {
-
-        if ((dir_rm_rf(dir) < 0) || !r )
-            log_dieusys(LOG_EXIT_SYS,"sanitize directory: ",dir) ;
-        r = 0 ;
-
-    } else if (r && !force && main)
-        log_die(LOG_EXIT_SYS,"destination: ",dir," already exist") ;
-
-    if (!r)
-        if (!dir_create_parent(dir, 0755))
-            log_dieusys(LOG_EXIT_SYS,"create: ",dir) ;
-}
-*/
 int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
@@ -65,7 +39,7 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
 
         for (;;)
         {
-            int opt = subgetopt_r(argc,argv, OPTS_PARSE, &l) ;
+            int opt = subgetopt_r(argc, argv, OPTS_PARSE, &l) ;
             if (opt == -1) break ;
 
             switch (opt)
@@ -73,12 +47,16 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
                 case 'f' :
 
                     /** only rewrite the service itself */
+                    if (force)
+                        log_usage(usage_enable) ;
                     force = 1 ;
                     break ;
 
                 case 'F' :
 
-                    /** force to rewrite it dependencies */
+                     /** force to rewrite it dependencies */
+                     if (force)
+                        log_usage(usage_enable) ;
                     force = 2 ;
                     break ;
 
