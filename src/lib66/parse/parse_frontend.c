@@ -135,7 +135,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
         if (!force) {
 
-            log_info("ignoring service: ", svname, " -- already present at tree: ", atree) ;
+            log_warn("ignoring service: ", svname, " -- already present at tree: ", atree) ;
             return 2 ;
 
         } else if (info->opt_tree) {

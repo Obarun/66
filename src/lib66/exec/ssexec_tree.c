@@ -580,7 +580,7 @@ void tree_master_modify_contents(char const *base, char const *treename)
     auto_strings(solve, base, SS_SYSTEM, SS_RESOLVE) ;
 
     if (!sastr_dir_get(&sa, solve, exclude, S_IFREG))
-        log_dieu_nclean(LOG_EXIT_SYS, &cleanup, "get resolve files of tree: ", treename) ;
+        log_dieu_nclean(LOG_EXIT_SYS, &cleanup, "get resolve files of trees") ;
 
     size_t ncontents = sastr_nelement(&sa) ;
 
