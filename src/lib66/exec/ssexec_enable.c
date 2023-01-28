@@ -14,428 +14,236 @@
 
 #include <string.h>
 #include <stdint.h>
-#include <errno.h>
 
-#include <stdio.h>
-
-#include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/sastr.h>
-#include <oblibs/files.h>
+#include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/genalloc.h>
-#include <skalibs/djbunix.h>
+#include <skalibs/sgetopt.h>
 
+#include <66/graph.h>
 #include <66/constants.h>
-#include <66/utils.h>
-#include <66/tree.h>
-#include <66/db.h>
-#include <66/parser.h>
-#include <66/svc.h>
-#include <66/resolve.h>
-#include <66/ssexec.h>
-#include <66/environ.h>
+#include <66/sanitize.h>
+#include <66/state.h>
 #include <66/service.h>
+#include <66/ssexec.h>
 
+typedef enum visit_e visit ;
+enum visit_e
+{
+    SS_WHITE = 0,
+    SS_GRAY,
+    SS_BLACK
+} ;
 
-static stralloc workdir = STRALLOC_ZERO ;
-stralloc PARSED_LIST = STRALLOC_ZERO ;
-
-/** force == 1, only rewrite the service
- * force == 2, rewrite the service and it dependencies*/
-static uint8_t FORCE = 0 ;
-/** rewrite configuration file */
-static uint8_t CONF = 0 ;
-
-void ssexec_enable_cleanup(void)
+static void visit_init(visit *v, size_t len)
 {
     log_flow() ;
 
-    if (!workdir.len)
-        return ;
-    int e = errno ;
-    rm_rf(workdir.s) ;
-    errno = e ;
+    size_t pos = 0 ;
+    for (; pos < len; pos++)
+        v[pos] = SS_WHITE ;
+
 }
+
+void service_enable_disable(graph_t *g, char const *base, char const *name, uint8_t action) ;
 
 static void check_identifier(char const *name)
 {
     log_flow() ;
 
     int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-    if (logname > 0) log_die(LOG_EXIT_USER,"service name: ",name,": ends with reserved suffix -log") ;
-    if (!memcmp(name, SS_MASTER + 1, 6)) log_die(LOG_EXIT_USER,"service name: ",name,": starts with reserved prefix Master") ;
+    if (logname > 0) log_die(LOG_EXIT_USER,"service: ",name,": ends with reserved suffix -log") ;
+    if (!memcmp(name,SS_MASTER+1,6)) log_die(LOG_EXIT_USER,"service: ",name,": starts with reserved prefix Master") ;
     if (!strcmp(name,SS_SERVICE)) log_die(LOG_EXIT_USER,"service as service name is a reserved name") ;
     if (!strcmp(name,"service@")) log_die(LOG_EXIT_USER,"service@ as service name is a reserved name") ;
 }
 
-void start_parser(char const *sv, ssexec_t *info, uint8_t disable_module, char const *directory_forced)
+void service_enable_disable_deps(graph_t *g, char const *base, char const *sv, uint8_t action)
 {
     log_flow() ;
 
-    size_t pos = 0 ;
+    size_t pos = 0, element = 0 ;
+    stralloc sa = STRALLOC_ZERO ;
 
-    stralloc parsed_list = STRALLOC_ZERO ;
+    if (graph_matrix_get_edge_g_sa(&sa, g, sv, action ? 0 : 1, 0) < 0)
+        log_dieu(LOG_EXIT_SYS, "get ", action ? "dependencies" : "required by" ," of: ", sv) ;
 
-    char *name = 0 ;
-    int r ;
+    size_t len = sastr_nelement(&sa) ;
+    visit v[len] ;
 
-    r = parse_service(sv, &parsed_list, info, FORCE, CONF) ;
-    if (!r)
-        log_dieu(LOG_EXIT_SYS, "parse service file: ",name,": or its dependencies") ;
+    visit_init(v, len) ;
 
-    // already enabled
-    if (r == 2)
-        goto freed ;
+    if (sa.len) {
 
-    // parse deps
-    pos = 0 ;
-    for (; pos < genalloc_len(sv_alltype, &gasv) ; pos ++) {
+        FOREACH_SASTR(&sa, pos) {
 
-        sv_alltype_ref sv = &genalloc_s(sv_alltype,&gasv)[pos] ;
+            if (v[element] == SS_WHITE) {
 
-        name = keep.s + sv->cname.name ;
+                char *name = sa.s + pos ;
 
-        int exist = service_isenabled(name) ;
+                service_enable_disable(g, base, name, action) ;
 
-        if (sv->cname.itype != TYPE_CLASSIC) {
-
-            if (FORCE > 1 || !exist) {
-
-                if (!parse_service_alldeps(sv, info, &parsed_list, FORCE, directory_forced))
-                    log_dieu(LOG_EXIT_SYS, "parse dependencies of: ", name) ;
-
-                if (sv->cname.itype == TYPE_MODULE) {
-
-                    r = parse_module(sv, info, &parsed_list, FORCE) ;
-                    if (!r)
-                        log_dieu(LOG_EXIT_SYS, "parse module: ", name) ;
-
-                    else if (r == 2)
-                        continue ;
-
-                    if ((FORCE > 1) && (exist > 0) && disable_module) {
-
-                        char const *newargv[4] ;
-                        unsigned int m = 0 ;
-
-                        newargv[m++] = "fake_name" ;
-                        newargv[m++] = name ;
-                        newargv[m++] = 0 ;
-                        if (ssexec_disable(m, newargv, (char const *const *)environ, info))
-                            log_dieu(LOG_EXIT_SYS, "disable module: ", name) ;
-                    }
-                }
+                v[element] = SS_GRAY ;
             }
+            element++ ;
         }
     }
-    freed:
-    stralloc_free(&parsed_list) ;
+
+    stralloc_free(&sa) ;
 }
 
-void start_write(stralloc *tostart,unsigned int *nclassic,unsigned int *nlongrun,char const *workdir, genalloc *gasv,ssexec_t *info)
+/** @action -> 0 disable
+ * @action -> 1 enable */
+void service_enable_disable(graph_t *g, char const *base, char const *name, uint8_t action)
 {
     log_flow() ;
 
-    int r ;
-    stralloc module = STRALLOC_ZERO ;
-    stralloc version = STRALLOC_ZERO ;
+    if (!state_messenger(base, name, STATE_FLAGS_ISENABLED, !action ? STATE_FLAGS_FALSE : STATE_FLAGS_TRUE))
+        log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
 
-    for (unsigned int i = 0; i < genalloc_len(sv_alltype,gasv); i++)
-    {
-        sv_alltype_ref sv = &genalloc_s(sv_alltype,gasv)[i] ;
-        char *name ;
+    service_enable_disable_deps(g, base, name, action) ;
 
-        r = write_services(sv, workdir,FORCE,CONF) ;
-        if (!r)
-            log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"write service: ",name) ;
+    log_info(!action ? "Disabled" : "Enabled"," successfully service: ", name) ;
 
-        if (r > 1) continue ; //service already added
-
-        /** only read name after the write_services process.
-         * it change the sv_alltype appending the real_exec element */
-        name = keep.s + sv->cname.name ;
-
-        log_trace("write resolve file of: ",name) ;
-        if (!service_resolve_setnwrite(sv,info,workdir))
-            log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"write revolve file for: ",name) ;
-
-        if (sastr_cmp(tostart,name) == -1)
-        {
-            if (sv->cname.itype == TYPE_CLASSIC) (*nclassic)++ ;
-            else (*nlongrun)++ ;
-            if (!sastr_add_string(tostart,name))
-                log_dieusys_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"stralloc") ;
-        }
-
-        log_trace("Service written successfully: ", name) ;
-
-        if (sv->cname.itype == TYPE_MODULE)
-            stralloc_catb(&module,name,strlen(name) + 1) ;
-    }
-
-    if (module.len)
-    {
-        /** we need to rewrite the contents file of each module
-         * in the good order. we cannot make this before here because
-         * we need the resolve file for each services*/
-        int r ;
-        size_t pos = 0, gpos = 0 ;
-        size_t workdirlen = strlen(workdir) ;
-        resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-        resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
-        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-        resolve_wrapper_t_ref dwres = resolve_set_struct(DATA_SERVICE, &dres) ;
-        stralloc salist = STRALLOC_ZERO ;
-        genalloc gamodule = GENALLOC_ZERO ;
-        ss_resolve_graph_t mgraph = RESOLVE_GRAPH_ZERO ;
-        char *name = 0 ;
-        char *err_msg = 0 ;
-
-        FOREACH_SASTR(&module, pos) {
-
-            salist.len = 0 ;
-            name = module.s + pos ;
-            size_t namelen = strlen(name) ;
-            char dst[workdirlen + SS_DB_LEN + SS_SRC_LEN + 1 + namelen + 1];
-            auto_strings(dst,workdir,SS_DB,SS_SRC,"/",name) ;
-
-            if (!resolve_read(wres,workdir,name)) {
-                err_msg = "read resolve file of: " ;
-                goto err ;
-            }
-
-            if (!sastr_clean_string(&salist,res.sa.s + res.contents)) {
-                err_msg = "rebuild dependencies list of: " ;
-                goto err ;
-            }
-
-            {
-                gpos = 0 ;
-                FOREACH_SASTR(&salist,gpos) {
-
-                    if (!resolve_read(dwres,workdir,salist.s + gpos)) {
-                        err_msg = "read resolve file of: " ;
-                        goto err ;
-                    }
-
-                    if (dres.type != TYPE_CLASSIC)
-                    {
-                        if (resolve_search(&gamodule, name, DATA_SERVICE) == -1)
-                        {
-                            if (!resolve_append(&gamodule,dwres))
-                            {
-                                err_msg = "append genalloc with: " ;
-                                goto err ;
-                            }
-                        }
-                    }
-                }
-            }
-
-            for (gpos = 0 ; gpos < genalloc_len(resolve_service_t,&gamodule) ; gpos++)
-            {
-                if (!ss_resolve_graph_build(&mgraph,&genalloc_s(resolve_service_t,&gamodule)[gpos],workdir,0))
-                {
-                    err_msg = "build the graph of: " ;
-                    goto err ;
-                }
-            }
-
-            r = ss_resolve_graph_publish(&mgraph,0) ;
-            if (r < 0) {
-                err_msg = "publish graph -- cyclic graph detected in: " ;
-                goto err ;
-            }
-            else if (!r)
-            {
-                err_msg = "publish service graph of: " ;
-                goto err ;
-            }
-
-            salist.len = 0 ;
-            for (gpos = 0 ; gpos < genalloc_len(resolve_service_t,&mgraph.sorted) ; gpos++)
-            {
-                char *string = genalloc_s(resolve_service_t,&mgraph.sorted)[gpos].sa.s ;
-                char *name = string + genalloc_s(resolve_service_t,&mgraph.sorted)[gpos].name ;
-                if (!auto_stra(&salist,name,"\n"))
-                {
-                    err_msg = "append stralloc for: " ;
-                    goto err ;
-                }
-            }
-
-            /** finally write it */
-            if (!file_write_unsafe(dst,SS_CONTENTS,salist.s,salist.len))
-            {
-                err_msg = "create contents file of: "  ;
-                goto err ;
-            }
-
-            resolve_deep_free(DATA_SERVICE, &gamodule) ;
-            ss_resolve_graph_free(&mgraph) ;
-        }
-
-        stralloc_free(&module) ;
-        stralloc_free(&version) ;
-        return ;
-
-        err:
-            resolve_deep_free(DATA_SERVICE, &gamodule) ;
-            ss_resolve_graph_free(&mgraph) ;
-            resolve_free(wres) ;
-            resolve_free(dwres) ;
-            stralloc_free(&salist) ;
-            log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,err_msg,name) ;
-    }
-    stralloc_free(&module) ;
-    stralloc_free(&version) ;
 }
 
-int ssexec_enable(int argc, char const *const *argv,char const *const *envp,ssexec_t *info)
+static void parse_it(char const *name, uint8_t force, uint8_t conf, ssexec_t *info)
 {
-    // be sure that the global var are set correctly
-    FORCE = CONF = 0 ;
 
-    int r ;
+    int argc = 4 + (force ? 1 : 0) + (conf ? 1 : 0) ;
+    int m = 0 ;
+    char const *prog = PROG ;
+    char const *newargv[argc] ;
+
+    newargv[m++] = "parse" ;
+    if (force)
+        newargv[m++] = force == 2 ? "-F" : "-f" ;
+    if (conf)
+        newargv[m++] = "-I" ;
+    newargv[m++] = name ;
+    newargv[m++] = 0 ;
+
+    PROG = "parse" ;
+    if (ssexec_parse(argc, newargv, info))
+        log_dieu(LOG_EXIT_SYS, "parse service: ", name) ;
+    PROG = prog ;
+}
+
+int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
+{
+    log_flow() ;
+
+    uint32_t flag = 0 ;
+    uint8_t force = 0, conf = 0, start = 0 ;
+    int n = 0, e = 1 ;
     size_t pos = 0 ;
-    unsigned int nbsv, nlongrun, nclassic, start ;
+    graph_t graph = GRAPH_ZERO ;
+    stralloc sa = STRALLOC_ZERO ;
 
-    stralloc sasrc = STRALLOC_ZERO ;
-    stralloc tostart = STRALLOC_ZERO ;
+    unsigned int areslen = 0 ;
+    resolve_service_t ares[SS_MAX_SERVICE] ;
 
-    r = nbsv = nclassic = nlongrun = start = 0 ;
+    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, ">" OPTS_ENABLE, &l) ;
+            int opt = subgetopt_r(argc, argv, OPTS_ENABLE, &l) ;
             if (opt == -1) break ;
-            if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
-            switch (opt)
-            {
-                case 'f' :  if (FORCE) log_usage(usage_enable) ;
-                            FORCE = 1 ; break ;
-                case 'F' :  if (FORCE) log_usage(usage_enable) ;
-                            FORCE = 2 ; break ;
-                case 'I' :  CONF = 1 ; break ;
-                case 'S' :  start = 1 ; break ;
-                default :   log_usage(usage_enable) ;
+
+            switch (opt) {
+
+                case 'f' :
+
+                    /** only rewrite the service itself */
+                    if (force)
+                        log_usage(usage_enable) ;
+                    force = 1 ;
+                    break ;
+
+                case 'F' :
+
+                     /** force to rewrite it dependencies */
+                    if (force)
+                        log_usage(usage_enable) ;
+                    force = 2 ;
+                    break ;
+
+                case 'I' :
+
+                    conf = 1 ;
+                    break ;
+
+                case 'S' :
+
+                    start = 1 ;
+                    break ;
+
+                default :
+                    log_usage(usage_enable) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
-    if (argc < 1) log_usage(usage_enable) ;
+    if (argc < 1)
+        log_usage(usage_enable) ;
 
-    for(;*argv;argv++)
-    {
-        check_identifier(*argv) ;
-        size_t len = strlen(*argv) ;
-        char const *sv = 0 ;
-        char const *directory_forced = 0 ;
-        char bname[len + 1] ;
-        char dname[len + 1] ;
-
-        if (argv[0][0] == '/') {
-            if (!ob_dirname(dname,*argv))
-                log_dieu(LOG_EXIT_SYS,"get dirname of: ",*argv) ;
-            if (!ob_basename(bname,*argv)) log_dieu(LOG_EXIT_SYS,"get basename of: ",*argv) ;
-            sv = bname ;
-            directory_forced = dname ;
-        } else  sv = *argv ;
-
-        if (service_frontend_path(&sasrc,sv,info->owner,!directory_forced ? 0 : directory_forced) < 1)
-            log_dieu(LOG_EXIT_SYS,"resolve source path of: ",*argv) ;
+    for(; n < argc ; n++) {
+        check_identifier(argv[n]) ;
+        parse_it(argv[n], force, conf, info) ;
     }
 
-    FOREACH_SASTR(&sasrc, pos)
-        start_parser(sasrc.s + pos, info, 1, 0) ;
+    /** build the graph of the entire system */
+    graph_build_service(&graph, ares, &areslen, info, flag) ;
 
-    /**
-     *
-     *
-     * ATTENTION si -t ne pas passait alors info->tree et info->treename.s
-     * n'est pas definie
-     *
-     *
-     * */
-    if (!tree_copy(&workdir,info->tree.s,info->treename.s)) log_dieusys(LOG_EXIT_SYS,"create tmp working directory") ;
+    if (!graph.mlen)
+        log_die(LOG_EXIT_USER, "services selection is not available -- try first to install the corresponding frontend file") ;
 
-    start_write(&tostart,&nclassic,&nlongrun,workdir.s,&gasv,info) ;
+    for (n = 0 ; n < argc ; n++) {
 
-    if (nclassic)
-    {
-        if (!svc_switch_to(info,SS_SWBACK))
-            log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"switch ",info->treename.s," to backup") ;
+        service_enable_disable(&graph, info->base.s, argv[n],  1) ;
+
+        int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
+        if (aresid < 0)
+            log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- please make a bug report") ;
+
+        char *treename = ares[aresid].sa.s + ares[aresid].treename ;
+
+        if (!sastr_add_string(&sa, argv[n]))
+            log_dieu(LOG_EXIT_SYS, "add string") ;
     }
 
-    if(nlongrun)
-    {
-        ss_resolve_graph_t graph = RESOLVE_GRAPH_ZERO ;
-        r = ss_resolve_graph_src(&graph,workdir.s,0,1) ;
-        if (!r)
-            log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"resolve source of graph for tree: ",info->treename.s) ;
+    if (start && sa.len) {
 
-        r = ss_resolve_graph_publish(&graph,0) ;
-        if (r <= 0)
-        {
-            ssexec_enable_cleanup() ;
-            if (r < 0) log_die(LOG_EXIT_USER,"cyclic graph detected") ;
-            log_dieusys(LOG_EXIT_SYS,"publish service graph") ;
-        }
-        if (!service_resolve_master_write(info,&graph,workdir.s,0))
-            log_dieusys_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"update inner bundle") ;
-
-        ss_resolve_graph_free(&graph) ;
-        if (!db_compile(workdir.s,info->tree.s,info->treename.s,envp))
-            log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"compile ",workdir.s,"/",info->treename.s) ;
-
-        /** this is an important part, we call s6-rc-update here */
-        if (!db_switch_to(info,envp,SS_SWBACK))
-            log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"switch ",info->treename.s," to backup") ;
-    }
-
-    if (!tree_copy_tmp(workdir.s,info))
-        log_dieu_nclean(LOG_EXIT_SYS,&ssexec_enable_cleanup,"copy: ",workdir.s," to: ", info->tree.s) ;
-
-
-    ssexec_enable_cleanup() ;
-
-    /** parser allocation*/
-    freed_parser() ;
-    /** inner allocation */
-    stralloc_free(&workdir) ;
-    stralloc_free(&sasrc) ;
-
-    for (pos = 0 ; pos < tostart.len; pos += strlen(tostart.s + pos) + 1)
-        log_info("Enabled successfully: ", tostart.s + pos) ;
-
-    if (start && tostart.len)
-    {
-        int nargc = 2 + sastr_len(&tostart) ;
+        size_t len = sastr_len(&sa) ;
+        pos = 0 ;
+        int nargc = 1 + len ;
+        char const *prog = PROG ;
         char const *newargv[nargc] ;
         unsigned int m = 0 ;
 
-        newargv[m++] = "fake_name" ;
+        newargv[m++] = "start" ;
+        FOREACH_SASTR(&sa, pos)
+            newargv[m++] = sa.s + pos ;
+        newargv[m] = 0 ;
 
-        for (pos = 0 ; pos < tostart.len; pos += strlen(tostart.s + pos) + 1)
-            newargv[m++] = tostart.s + pos ;
-
-        newargv[m++] = 0 ;
-
-        if (ssexec_start(nargc,newargv,envp,info))
-        {
-            stralloc_free(&tostart) ;
-            return 111 ;
-        }
+        PROG = "start" ;
+        e = ssexec_start(nargc, newargv, info) ;
+        PROG = prog ;
+        goto end ;
     }
+    e = 0 ;
 
-    stralloc_free(&tostart) ;
+    end:
+        stralloc_free(&sa) ;
+        service_resolve_array_free(ares, areslen) ;
+        graph_free_all(&graph) ;
 
-    return 0 ;
+    return e ;
 }
