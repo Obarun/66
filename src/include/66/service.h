@@ -358,6 +358,7 @@ extern int service_resolve_modify_field(resolve_service_t *res, resolve_service_
 extern int service_resolve_read_cdb(cdb *c, resolve_service_t *res) ;
 extern int service_resolve_write(resolve_service_t *res) ;
 extern int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres) ;
+extern void service_enable_disable(graph_t *g, char const *base, char const *sv, uint8_t action) ;
 
 /** Master */
 extern int service_resolve_master_copy(resolve_service_master_t *dst, resolve_service_master_t *mres) ;

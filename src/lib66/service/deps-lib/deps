@@ -1,4 +1,5 @@
 service_cmp_basedir.o
+service_enable_disable.o
 service_endof_dir.o
 service_frontend_path.o
 service_frontend_src.o
