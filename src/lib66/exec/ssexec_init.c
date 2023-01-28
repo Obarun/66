@@ -142,7 +142,7 @@ int ssexec_init(int argc, char const *const *argv, ssexec_t *info)
     int r ;
     uint8_t earlier = 0 ;
     char const *treename = 0 ;
-    char const *exclude[2] = { SS_MASTER + 1 , 0 } ;
+
 
     stralloc sa = STRALLOC_ZERO ;
 
@@ -150,9 +150,8 @@ int ssexec_init(int argc, char const *const *argv, ssexec_t *info)
         log_usage(usage_init) ;
 
     treename = argv[1] ;
-
     size_t treenamelen = strlen(treename) ;
-    size_t treelen = info->base.len + SS_SYSTEM_LEN + 1 + treenamelen + SS_SVDIRS_LEN + SS_RESOLVE_LEN ;
+    size_t treelen = info->base.len + SS_SYSTEM_LEN + 1 + treenamelen + 1 ;
     char tree[treelen + 1] ;
 
     auto_strings(tree, info->base.s, SS_SYSTEM, "/", treename) ;
@@ -170,9 +169,7 @@ int ssexec_init(int argc, char const *const *argv, ssexec_t *info)
     r = svc_scandir_ok(info->scandir.s) ;
     if (r != 1) earlier = 1 ;
 
-    auto_strings(tree + info->base.len + SS_SYSTEM_LEN + 1 + treenamelen, SS_SVDIRS, SS_RESOLVE) ;
-
-    if (!sastr_dir_get(&sa, tree, exclude, S_IFREG))
+    if (!resolve_get_field_tosa_g(&sa, info->base.s, treename, DATA_TREE, E_RESOLVE_TREE_CONTENTS))
         log_dieu(LOG_EXIT_SYS, "get services list from tree: ", treename) ;
 
     if (sa.len) {

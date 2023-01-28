@@ -34,6 +34,7 @@
 #include <66/state.h>
 #include <66/resolve.h>
 #include <66/service.h>
+#include <66/tree.h>
 
 parse_mill_t MILL_GET_SECTION_NAME = \
 { \
@@ -69,7 +70,7 @@ parse_mill_t MILL_GET_VALUE = \
  * At the end, i think that good API to know/acknowledge of a global system state changes should be provide. After all, handling events will appear in the future.
  *
  *
- * */
+ *
 void service_master_modify_contents(resolve_service_t *res, resolve_service_master_enum_t ENUM)
 {
     stralloc sa = STRALLOC_ZERO ;
@@ -171,6 +172,54 @@ void service_master_modify_contents(resolve_service_t *res, resolve_service_mast
     stralloc_free(&sa) ;
     resolve_free(wres) ;
 }
+*/
+
+static void service_notify_add_string(stralloc *sa, char const *name, char const *str)
+{
+    if (!sastr_clean_string(sa, str))
+        log_dieu(LOG_EXIT_SYS, "clean string") ;
+
+    if (!sastr_add_string(sa, name))
+        log_dieu(LOG_EXIT_SYS, "clean string") ;
+
+    if (!sastr_sortndrop_element(sa))
+        log_dieu(LOG_EXIT_SYS, "sort string") ;
+}
+
+static void service_notify_tree(char const *name, char const *base, char const *treename, uint8_t field)
+{
+    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    stralloc sa = STRALLOC_ZERO ;
+
+    log_trace("modify field contents of resolve tree file: ", treename) ;
+
+    if (!resolve_read_g(wres, base, treename))
+        log_dieusys(LOG_EXIT_SYS, "read resolve file of tree: ", treename) ;
+
+    if (field == E_RESOLVE_TREE_CONTENTS) {
+
+        if (tres.ncontents)
+            service_notify_add_string(&sa, name, tres.sa.s + tres.contents) ;
+        else if (!sastr_add_string(&sa, name))
+            log_dieu(LOG_EXIT_SYS, "add string") ;
+
+        tres.ncontents += 1 ;
+    } else goto freed ;
+
+    if (!sastr_rebuild_in_oneline(&sa))
+        log_dieu(LOG_EXIT_SYS, "rebuild stralloc list") ;
+
+    if (!resolve_modify_field(wres, field, sa.s))
+        log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
+
+    if (!resolve_write_g(wres, base, treename))
+        log_dieusys(LOG_EXIT_SYS, "write resolve file of tree: ", treename) ;
+
+    freed :
+    stralloc_free(&sa) ;
+    resolve_free(wres) ;
+}
 
 void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
 {
@@ -206,7 +255,8 @@ void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
             if (!state_write(&sta, ares[pos].sa.s + ares[pos].path.home, ares[pos].sa.s + ares[pos].logger.name))
                 log_dieu(LOG_EXIT_SYS, "write state file of: ", ares[pos].sa.s + ares[pos].logger.name) ;
 
-        service_master_modify_contents(&ares[pos], E_RESOLVE_SERVICE_MASTER_CONTENTS) ;
+        //service_master_modify_contents(&ares[pos], E_RESOLVE_SERVICE_MASTER_CONTENTS) ;
+        service_notify_tree(ares[pos].sa.s + ares[pos].name, info->base.s, ares[pos].sa.s + ares[pos].treename, E_RESOLVE_TREE_CONTENTS) ;
 
         log_info("Parsed successfully: ", ares[pos].sa.s + ares[pos].name, " at tree: ", ares[pos].sa.s + ares[pos].treename) ;
     }
