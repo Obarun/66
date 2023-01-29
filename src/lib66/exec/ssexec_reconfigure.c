@@ -92,7 +92,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 
         r = service_is_g(atree, argv[n], STATE_FLAGS_ISPARSED) ;
         if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "get information of service: ", argv[n], " -- please a bug report") ;
+            log_dieusys(LOG_EXIT_SYS, "get information of service: ", argv[n], " -- please make a bug report") ;
 
         if (!r) {
             /** nothing to do */
