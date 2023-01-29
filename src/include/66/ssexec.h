@@ -116,6 +116,8 @@ extern ssexec_func_t ssexec_reconfigure ;
 extern ssexec_func_t ssexec_reload ;
 extern ssexec_func_t ssexec_restart ;
 extern ssexec_func_t ssexec_inresolve ;
+extern ssexec_func_t ssexec_resolve_service ;
+extern ssexec_func_t ssexec_resolve_tree ;
 extern ssexec_func_t ssexec_instate ;
 extern ssexec_func_t ssexec_intree ;
 extern ssexec_func_t ssexec_inservice ;
@@ -123,6 +125,8 @@ extern ssexec_func_t ssexec_boot ;
 extern ssexec_func_t ssexec_scanctl ;
 extern ssexec_func_t ssexec_scandir ;
 extern ssexec_func_t ssexec_tree_wrapper ;
+extern ssexec_func_t ssexec_service_wrapper ;
+extern ssexec_func_t ssexec_service_admin ;
 
 extern char const *usage_parse ;
 extern char const *help_parse ;
@@ -166,6 +170,10 @@ extern char const *usage_scanctl ;
 extern char const *help_scanctl ;
 extern char const *usage_scandir ;
 extern char const *help_scandir ;
+extern char const *usage_service_wrapper ;
+extern char const *help_service_wrapper ;
+extern char const *usage_service_admin ;
+extern char const *help_service_admin ;
 extern char const *usage_66 ;
 
 #define OPTS_SUBSTART "P"
@@ -176,7 +184,7 @@ extern char const *usage_66 ;
 #define OPTS_INIT_LEN (sizeof OPTS_INIT - 1)
 #define OPTS_ENABLE "fFSI"
 #define OPTS_ENABLE_LEN (sizeof OPTS_ENABLE - 1)
-#define OPTS_DISABLE "SFR"
+#define OPTS_DISABLE "S"
 #define OPTS_DISABLE_LEN (sizeof OPTS_DISABLE - 1)
 #define OPTS_START "P"
 #define OPTS_START_LEN (sizeof OPTS_START - 1)
@@ -204,6 +212,10 @@ extern char const *usage_66 ;
 #define OPTS_SCANCTL_LEN (sizeof OPTS_SCANCTL - 1)
 #define OPTS_SCANDIR "bl:s:o:L:cB"
 #define OPTS_SCANDIR_LEN (sizeof OPTS_SCANDIR - 1)
+#define OPTS_SERVICE_WRAPPER ""
+#define OPTS_SERVICE_WRAPPER_LEN (sizeof OPTS_SERVICE_WRAPPER - 1)
+#define OPTS_SERVICE_ADMIN ""
+#define OPTS_SERVICE_ADMIN_LEN (sizeof OPTS_SERVICE_ADMIN - 1)
 
 
 

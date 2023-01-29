@@ -43,7 +43,7 @@ char const *help_enable =
 "   -S: enable and start the service\n"
 ;
 
-char const *usage_disable = "66 disable [ -h ] [ -z ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -S ] [ -F ] [ -R ] service(s)" ;
+char const *usage_disable = "66 disable [ -h ] [ -z ] [ -v verbosity ] [ - l live ] [ -t tree ] [ -S ] service(s)" ;
 
 char const *help_disable =
 "\n"
@@ -53,9 +53,7 @@ char const *help_disable =
 "   -v: increase/decrease verbosity\n"
 "   -l: live directory\n"
 "   -t: name of the tree to use\n"
-"   -S: disable and stop the service\n"
-"   -F: forces to disable the service\n"
-"   -R: disable the service and remove its configuration and logger files\n"
+"   -S: disable and stop/unsupervice the service if needed\n"
 ;
 
 char const *usage_init = "66 init [ -h ] [ -z ] [ -v verbosity ] [ -l live ] tree" ;
@@ -311,6 +309,60 @@ char const *help_inservice =
 "   logfile: displays the contents of the log file\n"
 ;
 
+/**
+ *
+ * pass -g as default
+ * -d -g -p become -o depth=,graph=none,reverse=,nline=
+ *
+ *
+ * */
+char const *usage_service_wrapper = "66 service [ -h ] [ -z ] [ -v verbosity ] [ -t tree ] status|resolve|state|remove [ -n ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ]  [ -p nline ] service" ;
+
+char const *help_service_wrapper =
+"\n"
+"options :\n"
+"   -h: print this help\n"
+"   -z: use color\n"
+"   -v: increase/decrease verbosity\n"
+"   -n: do not display the field name\n"
+"   -o: comma separated list of field to display\n"
+"   -g: displays the contents field as graph\n"
+"   -d: limit the depth of the contents field recursion\n"
+"   -r: reverse the contents field\n"
+"   -t: only search service at the specified tree\n"
+"   -p: print n last lines of the log file\n"
+"\n"
+"valid fields for -o options are:\n"
+"\n"
+"   name: displays the name\n"
+"   version: displays the version of the service\n"
+"   intree: displays the service's tree name\n"
+"   status: displays the status\n"
+"   type: displays the service type\n"
+"   description: displays the description\n"
+"   source: displays the source of the service's frontend file\n"
+"   live: displays the service's live directory\n"
+"   depends: displays the service's dependencies\n"
+"   requiredby: displays the service(s) which depends on service\n"
+"   extdepends: displays the service's external dependencies\n"
+"   optsdepends: displays the service's optional dependencies\n"
+"   start: displays the service's start script\n"
+"   stop: displays the service's stop script\n"
+"   envat: displays the source of the environment file\n"
+"   envfile: displays the contents of the environment file\n"
+"   logname: displays the logger's name\n"
+"   logdst: displays the logger's destination\n"
+"   logfile: displays the contents of the log file\n"
+;
+
+char const *usage_service_admin = "66 service remove [ -h ] service" ;
+
+char const *help_service_admin =
+"\n"
+"options :\n"
+"   -h: print this help\n"
+;
+
 char const *usage_boot = "66 boot [ -h ] [ -z ] [ -m ] [ -s skel ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]" ;
 
 char const *help_boot =
@@ -358,4 +410,4 @@ char const *help_scandir =
 "   -o: handles owner scandir\n"
 ;
 
-char const *usage_66 = "66 start|stop|unsupervise|enable|disable|init|env|parse|svctl|tree|reconfigure|reload|restart|scanctl|scandir|boot service(s)|tree" ;
+char const *usage_66 = "66 start|stop|reload|restart|unsupervise|reconfigure|enable|disable|env|service|tree|init|parse|svctl|scanctl|scandir|boot|version service(s)|tree" ;

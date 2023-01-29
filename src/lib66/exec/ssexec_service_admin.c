@@ -1,5 +1,5 @@
 /*
- * ssexec_tree_wrapper.c
+ * ssexec_service_admin.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -30,13 +30,13 @@ static inline void info_help (char const *help,char const *usage)
     log_info(usage,"\n", help) ;
 }
 
-int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_service_admin(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
     if (!argv[1]) {
-        PROG = "tree" ;
-        log_usage(usage_tree) ;
+        PROG = "service" ;
+        log_usage(usage_service_wrapper) ;
     }
 
     int r, n = 0, i = 0 ;
@@ -44,80 +44,14 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
     ssexec_func_t_ref func = 0 ;
     char const *nargv[argc + 1] ;
 
-    if (!strcmp(argv[1], "create")) {
+    if (!strcmp(argv[1], "status")) {
 
         nargv[n++] = PROG ;
 
         info->prog = PROG ;
-        info->help = help_tree ;
-        info->usage = usage_tree ;
-        func = &ssexec_tree ;
-
-        argc-- ;
-        argv++ ;
-
-    } else if (!strcmp(argv[1], "admin")) {
-
-        nargv[n++] = PROG ;
-
-        info->prog = PROG ;
-        info->help = help_tree ;
-        info->usage = usage_tree ;
-        func = &ssexec_tree ;
-
-        argc-- ;
-        argv++ ;
-
-    } else if (!strcmp(argv[1], "remove")) {
-
-        nargv[n++] = PROG ;
-        nargv[n++] = "-R" ;
-
-        info->prog = PROG ;
-        info->help = help_tree ;
-        info->usage = usage_tree ;
-        func = &ssexec_tree ;
-
-        argc-- ;
-        argv++ ;
-
-    } else if (!strcmp(argv[1], "enable")) {
-
-        nargv[n++] = PROG ;
-        nargv[n++] = "-E" ;
-
-        info->prog = PROG ;
-        info->help = help_tree ;
-        info->usage = usage_tree ;
-        func = &ssexec_tree ;
-
-        argc-- ;
-        argv++ ;
-
-    } else if (!strcmp(argv[1], "disable")) {
-
-        nargv[n++] = PROG ;
-        nargv[n++] = "-D" ;
-
-        info->prog = PROG ;
-        info->help = help_tree ;
-        info->usage = usage_tree ;
-
-        func = &ssexec_tree ;
-
-        argc-- ;
-        argv++ ;
-
-    } else if (!strcmp(argv[1], "current")) {
-
-        nargv[n++] = PROG ;
-        nargv[n++] = "-c" ;
-
-        info->prog = PROG ;
-        info->help = help_tree ;
-        info->usage = usage_tree ;
-
-        func = &ssexec_tree ;
+        info->help = help_inservice ;
+        info->usage = usage_inservice ;
+        func = &ssexec_inservice ;
 
         argc-- ;
         argv++ ;
@@ -129,48 +63,34 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->prog = PROG ;
         info->help = help_inresolve ;
         info->usage = usage_inresolve ;
-
-        func = &ssexec_resolve_tree ;
+        func = &ssexec_resolve_service ;
 
         argc-- ;
         argv++ ;
 
-    } else if (!strcmp(argv[1], "status")) {
+    } else if (!strcmp(argv[1], "state")) {
 
         nargv[n++] = PROG ;
 
         info->prog = PROG ;
-        info->help = help_intree ;
-        info->usage = usage_intree ;
-
-        func = &ssexec_intree ;
+        info->help = help_instate ;
+        info->usage = usage_instate ;
+        func = &ssexec_instate ;
 
         argc-- ;
         argv++ ;
 
-    } else if (!strcmp(argv[1], "up")) {
+    } else if (!strcmp(argv[1], "remove")) {
+
+        nargv[n++] = PROG ;
 
         info->prog = PROG ;
-        info->help = help_treectl ;
-        info->usage = usage_treectl ;
-        func = &ssexec_treectl ;
-        ctl++ ;
+        info->help = help_instate ;
+        info->usage = usage_instate ;
+        func = &ssexec_service_admin ;
 
-    } else if (!strcmp(argv[1], "down")) {
-
-        info->prog = PROG ;
-        info->help = help_treectl ;
-        info->usage = usage_treectl ;
-        func = &ssexec_treectl ;
-        ctl++ ;
-
-    } else if (!strcmp(argv[1], "unsupervise")) {
-
-        info->prog = PROG ;
-        info->help = help_treectl ;
-        info->usage = usage_treectl ;
-        func = &ssexec_treectl ;
-        ctl++ ;
+        argc-- ;
+        argv++ ;
 
     } else {
 
