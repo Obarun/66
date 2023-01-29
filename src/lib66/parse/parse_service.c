@@ -56,125 +56,7 @@ parse_mill_t MILL_GET_VALUE = \
     .skip = " \t\r", .skiplen = 3, .forceskip = 1, \
     .inner.debug = "get_value" } ;
 
-
-/***
- *
- * Not sure of this implementation. The contents of the a tree can be found easily
- * now with the SS_SYSTEM_DIR/system/.resolve/service directory. This needs is only necessary
- * at worth for the init process to quickly found a service. On the other side, each manipulation
- * of the tree need to be specified at Master service file.
- *
- * Actually, init do not pass through the Master service file of the tree. Maybe a Master service for
- * all trees localized at SS_SYSTEM_DIR/system/.resolve/service/Master can be a better way to do it.
- *
- * At the end, i think that good API to know/acknowledge of a global system state changes should be provide. After all, handling events will appear in the future.
- *
- *
- *
-void service_master_modify_contents(resolve_service_t *res, resolve_service_master_enum_t ENUM)
-{
-    stralloc sa = STRALLOC_ZERO ;
-    resolve_service_master_t mres = RESOLVE_SERVICE_MASTER_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_MASTER, &mres) ;
-    char *treename = res->sa.s + res->treename ;
-    char *tree = res->sa.s + res->path.tree ;
-    size_t treelen = strlen(tree) ;
-    char solve[treelen + SS_SVDIRS_LEN + SS_RESOLVE_LEN + 1] ;
-
-    char const *exclude[2] = { SS_MASTER + 1, 0 } ;
-
-    log_trace("modify field contents of resolve Master file of services") ;
-
-    auto_strings(solve, tree, SS_SVDIRS, SS_RESOLVE) ;
-
-    if (!sastr_dir_get(&sa, solve, exclude, S_IFREG))
-        log_dieu(LOG_EXIT_SYS, "get resolve files of tree: ", treename) ;
-
-    size_t ncontents = sastr_nelement(&sa) ;
-
-    if (ncontents)
-        if (!sastr_rebuild_in_oneline(&sa))
-            log_dieu(LOG_EXIT_SYS, "rebuild stralloc") ;
-
-    auto_strings(solve, tree, SS_SVDIRS) ;
-
-    if (!resolve_read(wres, solve, SS_MASTER + 1))
-        log_dieusys(LOG_EXIT_SYS, "read resolve Master file of services") ;
-
-    switch (ENUM) {
-
-        case E_RESOLVE_SERVICE_MASTER_CLASSIC:
-
-            if (mres.nclassic)
-                mres.classic = resolve_add_string(wres, sa.s) ;
-            else
-                mres.classic = resolve_add_string(wres, "") ;
-            break ;
-
-        case E_RESOLVE_SERVICE_MASTER_BUNDLE:
-
-            if (mres.nbundle)
-                mres.bundle = resolve_add_string(wres, sa.s) ;
-            else
-                mres.bundle = resolve_add_string(wres, "") ;
-            break ;
-
-        case E_RESOLVE_SERVICE_MASTER_ONESHOT:
-
-            if (mres.noneshot)
-                mres.oneshot = resolve_add_string(wres, sa.s) ;
-            else
-                mres.oneshot = resolve_add_string(wres, "") ;
-            break ;
-
-        case E_RESOLVE_SERVICE_MASTER_MODULE:
-
-            if (mres.nmodule)
-                mres.module = resolve_add_string(wres, sa.s) ;
-            else
-                mres.module = resolve_add_string(wres, "") ;
-            break ;
-
-        case E_RESOLVE_SERVICE_MASTER_ENABLED:
-
-            if (mres.nenabled)
-                mres.enabled = resolve_add_string(wres, sa.s) ;
-            else
-                mres.enabled = resolve_add_string(wres, "") ;
-            break ;
-
-        case E_RESOLVE_SERVICE_MASTER_DISABLED:
-
-            if (mres.ndisabled)
-                mres.disabled = resolve_add_string(wres, sa.s) ;
-            else
-                mres.disabled = resolve_add_string(wres, "") ;
-            break ;
-
-        case E_RESOLVE_SERVICE_MASTER_CONTENTS:
-
-            if (mres.ncontents)
-                mres.contents = resolve_add_string(wres, sa.s) ;
-            else
-                mres.contents = resolve_add_string(wres, "") ;
-
-            //mres.ncontents = (uint32_t)ncontents ;
-
-            break ;
-
-        default:
-            break ;
-    }
-
-    if (!resolve_write(wres, solve, SS_MASTER + 1))
-        log_dieusys(LOG_EXIT_SYS, "write resolve Master file of services") ;
-
-    stralloc_free(&sa) ;
-    resolve_free(wres) ;
-}
-*/
-
-static void service_notify_add_string(stralloc *sa, char const *name, char const *str)
+static void parse_notify_add_string(stralloc *sa, char const *name, char const *str)
 {
     if (!sastr_clean_string(sa, str))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
@@ -186,8 +68,13 @@ static void service_notify_add_string(stralloc *sa, char const *name, char const
         log_dieu(LOG_EXIT_SYS, "sort string") ;
 }
 
-static void service_notify_tree(char const *name, char const *base, char const *treename, uint8_t field)
+static void parse_notify_tree(resolve_service_t *res, char const *base, uint8_t field)
 {
+    log_flow() ;
+
+    char *treename = res->sa.s + res->treename ;
+    char *name = res->sa.s + res->name ;
+
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
     stralloc sa = STRALLOC_ZERO ;
@@ -199,12 +86,52 @@ static void service_notify_tree(char const *name, char const *base, char const *
 
     if (field == E_RESOLVE_TREE_CONTENTS) {
 
+        char atree[SS_MAX_TREENAME + 1] ;
+
+        if (service_is_g(atree, name, STATE_FLAGS_ISPARSED)) {
+
+            if (strcmp(atree, treename)) {
+
+                /** remove it from the previous used tree */
+                resolve_tree_t res = RESOLVE_TREE_ZERO ;
+                resolve_wrapper_t_ref wtres = resolve_set_struct(DATA_TREE, &res) ;
+
+                if (!resolve_read_g(wtres, base, atree))
+                    log_dieu(LOG_EXIT_SYS, "read resolve file of tree: ", atree) ;
+
+                if (!sastr_clean_string(&sa, res.sa.s + res.contents))
+                    log_dieu(LOG_EXIT_SYS, "clean string") ;
+
+                if (!sastr_remove_element(&sa, name))
+                    log_dieu(LOG_EXIT_SYS, "remove service: ", name, " from tree: ", treename) ;
+
+                if (sa.len) {
+                    if (!sastr_rebuild_in_oneline(&sa))
+                        log_dieu(LOG_EXIT_SYS, "rebuild stralloc list") ;
+                } else
+                    stralloc_0(&sa) ;
+
+
+                if (!tree_resolve_modify_field(&res, E_RESOLVE_TREE_CONTENTS, sa.s))
+                    log_dieu(LOG_EXIT_SYS, "modify resolve field of tree: ", atree) ;
+
+                res.ncontents-- ;
+
+                if (!resolve_write_g(wtres, base, atree))
+                    log_dieu(LOG_EXIT_SYS, "write resolve file of tree: ", atree) ;
+
+                resolve_free(wtres) ;
+            }
+            sa.len = 0 ;
+        }
+
         if (tres.ncontents)
-            service_notify_add_string(&sa, name, tres.sa.s + tres.contents) ;
+            parse_notify_add_string(&sa, name, tres.sa.s + tres.contents) ;
         else if (!sastr_add_string(&sa, name))
             log_dieu(LOG_EXIT_SYS, "add string") ;
 
-        tres.ncontents += 1 ;
+        tres.ncontents++ ;
+
     } else goto freed ;
 
     if (!sastr_rebuild_in_oneline(&sa))
@@ -223,6 +150,8 @@ static void service_notify_tree(char const *name, char const *base, char const *
 
 void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
 {
+    log_flow();
+
     unsigned int areslen = 0, residx = 0, pos = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE] ;
 
@@ -236,6 +165,12 @@ void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
         return ;
 
     for (; pos < areslen ; pos++) {
+
+        /** notify first the resolve Master file of the tree
+         * about the location of the service. If the service is
+         * already parsed and the user ask to force it on different tree,
+         * we can know the old place of the service by the old resolve service file*/
+        parse_notify_tree(&ares[pos], info->base.s, E_RESOLVE_TREE_CONTENTS) ;
 
         char dst[strlen(ares[pos].sa.s + ares[pos].path.tree) + SS_SVDIRS_LEN + 1] ;
         auto_strings(dst, ares[pos].sa.s + ares[pos].path.tree, SS_SVDIRS) ;
@@ -254,9 +189,6 @@ void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
         if (ares[pos].logger.name && ares[pos].type == TYPE_CLASSIC)
             if (!state_write(&sta, ares[pos].sa.s + ares[pos].path.home, ares[pos].sa.s + ares[pos].logger.name))
                 log_dieu(LOG_EXIT_SYS, "write state file of: ", ares[pos].sa.s + ares[pos].logger.name) ;
-
-        //service_master_modify_contents(&ares[pos], E_RESOLVE_SERVICE_MASTER_CONTENTS) ;
-        service_notify_tree(ares[pos].sa.s + ares[pos].name, info->base.s, ares[pos].sa.s + ares[pos].treename, E_RESOLVE_TREE_CONTENTS) ;
 
         log_info("Parsed successfully: ", ares[pos].sa.s + ares[pos].name, " at tree: ", ares[pos].sa.s + ares[pos].treename) ;
     }
