@@ -96,6 +96,12 @@ int main(int argc, char const *const *argv)
     if (!argv[1]) {
         PROG = "66" ;
         log_usage(usage_66) ;
+
+    } else if (!strcmp(argv[1], "version")) {
+
+        PROG = "version" ;
+        log_info(SS_VERSION) ;
+        return 0 ;
     }
 
     int r, n = 0, i = 0 ;
@@ -271,29 +277,15 @@ int main(int argc, char const *const *argv)
         nargv[n++] = PROG ;
         func = &ssexec_tree_wrapper ;
 
-        auto_strings(opts, main, OPTS_TREE) ;
+        auto_strings(opts, main) ;
 
-    } else if (!strcmp(argv[1], "inresolve")) {
+    } else if (!strcmp(argv[1], "service")) {
 
-        PROG = "inresolve" ;
+        PROG = "service" ;
         nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_inresolve ;
-        info.usage = usage_inresolve ;
-        func = &ssexec_inresolve ;
+        func = &ssexec_service_wrapper ;
 
-        auto_strings(opts, main, OPTS_INRESOLVE) ;
-
-    } else if (!strcmp(argv[1], "instate")) {
-
-        PROG = "instate" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_instate ;
-        info.usage = usage_instate ;
-        func = &ssexec_instate ;
-
-        auto_strings(opts, main, OPTS_INSTATE) ;
+        auto_strings(opts, main) ;
 
     } else if (!strcmp(argv[1], "intree")) {
 
