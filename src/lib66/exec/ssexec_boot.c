@@ -479,13 +479,14 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 
             switch (opt)
             {
+                case 'h' : info_help(info->help, info->usage) ; return 0 ;
                 case 'm' : tmpfs = 1 ; break ;
                 case 's' : skel = l.arg ; break ;
                 case 'e' : envdir = l.arg ; break ;
                 case 'd' : slashdev = l.arg ; break ;
                 case 'b' : banner = l.arg ; break ;
                 case 'l' : log_user = l.arg ; break ;
-                default :  log_usage(usage_boot) ;
+                default :  log_usage(info->usage, "\n", info->help) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;

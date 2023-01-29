@@ -21,22 +21,13 @@
 #include <66/ssexec.h>
 #include <66/config.h>
 
-static inline void info_help (char const *help,char const *usage)
-{
-    log_flow() ;
-
-    DEFAULT_MSG = 0 ;
-
-    log_info(usage,"\n", help) ;
-}
-
 int ssexec_service_wrapper(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
     if (!argv[1]) {
         PROG = "service" ;
-        log_usage(usage_service_wrapper) ;
+        log_usage(usage_service_wrapper, "\n", help_service_wrapper) ;
     }
 
     int r, n = 0, i = 0 ;
@@ -47,55 +38,47 @@ int ssexec_service_wrapper(int argc, char const *const *argv, ssexec_t *info)
     if (!strcmp(argv[1], "status")) {
 
         nargv[n++] = PROG ;
-
         info->prog = PROG ;
-        info->help = help_inservice ;
-        info->usage = usage_inservice ;
+        info->help = help_service_status ;
+        info->usage = usage_service_status ;
         func = &ssexec_inservice ;
-
-        argc-- ;
-        argv++ ;
 
     } else if (!strcmp(argv[1], "resolve")) {
 
         nargv[n++] = PROG ;
-
         info->prog = PROG ;
-        info->help = help_inresolve ;
-        info->usage = usage_inresolve ;
+        info->help = help_service_resolve ;
+        info->usage = usage_service_resolve ;
         func = &ssexec_resolve_service ;
-
-        argc-- ;
-        argv++ ;
 
     } else if (!strcmp(argv[1], "state")) {
 
         nargv[n++] = PROG ;
-
         info->prog = PROG ;
-        info->help = help_instate ;
-        info->usage = usage_instate ;
+        info->help = help_service_state ;
+        info->usage = usage_service_state ;
         func = &ssexec_instate ;
-
-        argc-- ;
-        argv++ ;
 
     } else if (!strcmp(argv[1], "remove")) {
 
         nargv[n++] = PROG ;
-
         info->prog = PROG ;
-        info->help = help_instate ;
-        info->usage = usage_instate ;
+        info->help = help_service_remove ;
+        info->usage = usage_service_remove ;
         func = &ssexec_service_admin ;
-
-        argc-- ;
-        argv++ ;
 
     } else {
 
-        log_usage(usage_tree) ;
+        if (!strcmp(argv[1], "-h")) {
+            info_help(help_service_wrapper, usage_service_wrapper) ;
+            return 0 ;
+        }
+
+        log_usage(usage_service_wrapper, "\n", help_service_wrapper) ;
     }
+
+    argc-- ;
+    argv++ ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -151,6 +134,9 @@ int ssexec_service_wrapper(int argc, char const *const *argv, ssexec_t *info)
         }
         argc -= l.ind ; argv += l.ind ;
     }
+
+    if (argc < 1)
+        log_usage(info->usage, "\n", info->help) ;
 
     for (i = 0 ; i < argc ; i++ , argv++)
         nargv[n++] = *argv ;

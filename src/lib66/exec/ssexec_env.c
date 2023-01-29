@@ -16,7 +16,6 @@
 #include <stdlib.h>//getenv
 #include <unistd.h>//_exit,access
 
-#include <oblibs/obgetopt.h>
 #include <oblibs/log.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
@@ -24,6 +23,7 @@
 #include <oblibs/sastr.h>
 #include <oblibs/environ.h>
 
+#include <skalibs/sgetopt.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 #include <skalibs/buffer.h>
@@ -229,12 +229,16 @@ int ssexec_env(int argc, char const *const *argv, ssexec_t *info)
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, ">" OPTS_ENV, &l) ;
+            int opt = subgetopt_r(argc, argv, OPTS_ENV, &l) ;
             if (opt == -1) break ;
-            if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
 
             switch (opt)
             {
+                case 'h' :
+
+                    info_help(info->help, info->usage) ;
+                    return 0 ;
+
                 case 'c' :
 
                         if (env_check_version(&saversion,l.arg) <= 0)
@@ -251,13 +255,13 @@ int ssexec_env(int argc, char const *const *argv, ssexec_t *info)
 
                 case 'V' :
 
-                        if (todo != T_UNSET) log_usage(usage_env) ;
+                        if (todo != T_UNSET) log_usage(info->usage, "\n", info->help) ;
                         todo = T_VLIST ;
 
                         break ;
                 case 'L' :
 
-                        if (todo != T_UNSET) log_usage(usage_env) ;
+                        if (todo != T_UNSET) log_usage(info->usage, "\n", info->help) ;
                         todo = T_LIST ;
 
                         break ;
@@ -267,7 +271,7 @@ int ssexec_env(int argc, char const *const *argv, ssexec_t *info)
                         if (!sastr_add_string(&savar,l.arg))
                             log_die_nomem("stralloc") ;
 
-                        if (todo != T_UNSET && todo != T_REPLACE) log_usage(usage_env) ;
+                        if (todo != T_UNSET && todo != T_REPLACE) log_usage(info->usage, "\n", info->help) ;
                         todo = T_REPLACE ;
 
                         break ;
@@ -285,13 +289,13 @@ int ssexec_env(int argc, char const *const *argv, ssexec_t *info)
 
                 default :
 
-                    log_usage(usage_env) ;
+                    log_usage(info->usage, "\n", info->help) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
-    if (argc < 1) log_usage(usage_env) ;
+    if (argc < 1) log_usage(info->usage, "\n", info->help) ;
     sv = argv[0] ;
 
     if (todo == T_UNSET && !import && !saversion.len && !eversion.len) todo = T_EDIT ;

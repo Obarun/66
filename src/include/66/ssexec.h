@@ -128,95 +128,126 @@ extern ssexec_func_t ssexec_tree_wrapper ;
 extern ssexec_func_t ssexec_service_wrapper ;
 extern ssexec_func_t ssexec_service_admin ;
 
-extern char const *usage_parse ;
-extern char const *help_parse ;
-extern char const *usage_enable ;
-extern char const *help_enable ;
-extern char const *usage_disable ;
-extern char const *help_disable ;
-extern char const *usage_svctl ;
-extern char const *help_svctl ;
-extern char const *usage_start ;
-extern char const *help_start ;
-extern char const *usage_stop ;
-extern char const *help_stop ;
-extern char const *usage_init ;
-extern char const *help_init ;
-extern char const *usage_env ;
-extern char const *help_env ;
-extern char const *usage_treectl ;
-extern char const *help_treectl ;
-extern char const *usage_tree ;
-extern char const *help_tree ;
-extern char const *usage_reconfigure ;
-extern char const *help_reconfigure ;
-extern char const *usage_reload ;
-extern char const *help_reload ;
-extern char const *usage_restart ;
-extern char const *help_restart ;
-extern char const *usage_unsupervise ;
-extern char const *help_unsupervise ;
-extern char const *usage_inresolve ;
-extern char const *help_inresolve ;
-extern char const *usage_instate ;
-extern char const *help_instate ;
-extern char const *usage_intree ;
-extern char const *help_intree ;
-extern char const *usage_inservice ;
-extern char const *help_inservice ;
+extern void info_help (char const *help,char const *usage) ;
+
+extern char const *usage_66 ;
+extern char const *help_66 ;
+
 extern char const *usage_boot ;
 extern char const *help_boot ;
-extern char const *usage_scanctl ;
-extern char const *help_scanctl ;
-extern char const *usage_scandir ;
-extern char const *help_scandir ;
+
+extern char const *usage_enable ;
+extern char const *help_enable ;
+
+extern char const *usage_disable ;
+extern char const *help_disable ;
+
+extern char const *usage_start ;
+extern char const *help_start ;
+
+extern char const *usage_stop ;
+extern char const *help_stop ;
+
+extern char const *usage_env ;
+extern char const *help_env ;
+
+extern char const *usage_init ;
+extern char const *help_init ;
+
+extern char const *usage_parse ;
+extern char const *help_parse ;
+
+extern char const *usage_reconfigure ;
+extern char const *help_reconfigure ;
+
+extern char const *usage_reload ;
+extern char const *help_reload ;
+
+extern char const *usage_restart ;
+extern char const *help_restart ;
+
+extern char const *usage_unsupervise ;
+extern char const *help_unsupervise ;
+
+extern char const *usage_svctl ;
+extern char const *help_svctl ;
+
+extern char const *usage_tree_wrapper ;
+extern char const *help_tree_wrapper ;
+extern char const *usage_tree_create ;
+extern char const *help_tree_create ;
+extern char const *usage_tree_admin ;
+extern char const *help_tree_admin ;
+extern char const *usage_tree_remove ;
+extern char const *help_tree_remove ;
+extern char const *usage_tree_enable ;
+extern char const *help_tree_enable ;
+extern char const *usage_tree_disable ;
+extern char const *help_tree_disable ;
+extern char const *usage_tree_current ;
+extern char const *help_tree_current ;
+extern char const *usage_tree_resolve ;
+extern char const *help_tree_resolve ;
+extern char const *usage_tree_status ;
+extern char const *help_tree_status ;
+extern char const *usage_tree_up ;
+extern char const *help_tree_up ;
+extern char const *usage_tree_down ;
+extern char const *help_tree_down ;
+extern char const *usage_tree_unsupervise ;
+extern char const *help_tree_unsupervise ;
+
 extern char const *usage_service_wrapper ;
 extern char const *help_service_wrapper ;
-extern char const *usage_service_admin ;
-extern char const *help_service_admin ;
-extern char const *usage_66 ;
+extern char const *usage_service_status ;
+extern char const *help_service_status ;
+extern char const *usage_service_resolve ;
+extern char const *help_service_resolve ;
+extern char const *usage_service_state ;
+extern char const *help_service_state ;
+extern char const *usage_service_remove ;
+extern char const *help_service_remove ;
 
-#define OPTS_SUBSTART "P"
+extern char const *usage_scanctl ;
+extern char const *help_scanctl ;
+
+extern char const *usage_scandir ;
+extern char const *help_scandir ;
+
+#define OPTS_SUBSTART "hP"
 #define OPTS_SUBSTART_LEN (sizeof OPTS_SUBSTART - 1)
-#define OPTS_PARSE "fFcmCI"
+#define OPTS_PARSE "hfFcmCI"
 #define OPTS_PARSE_LEN (sizeof OPTS_PARSE - 1)
-#define OPTS_INIT ""
-#define OPTS_INIT_LEN (sizeof OPTS_INIT - 1)
-#define OPTS_ENABLE "fFSI"
+#define OPTS_ENABLE "hfFSI"
 #define OPTS_ENABLE_LEN (sizeof OPTS_ENABLE - 1)
-#define OPTS_DISABLE "S"
+#define OPTS_DISABLE "hS"
 #define OPTS_DISABLE_LEN (sizeof OPTS_DISABLE - 1)
-#define OPTS_START "P"
+#define OPTS_START "hP"
 #define OPTS_START_LEN (sizeof OPTS_START - 1)
-#define OPTS_STOP "uP"
+#define OPTS_STOP "huP"
 #define OPTS_STOP_LEN (sizeof OPTS_STOP - 1)
-#define OPTS_SVCTL "abqHkti12pcyroduxOw:P"
+#define OPTS_SVCTL "habqHkti12pcyroduxOw:P"
 #define OPTS_SVCTL_LEN (sizeof OPTS_SVCTL - 1)
-#define OPTS_ENV "c:s:VLr:e:i:"
+#define OPTS_ENV "hc:s:VLr:e:i:"
 #define OPTS_ENV_LEN (sizeof OPTS_ENV - 1)
 #define OPTS_TREECTL "f"
 #define OPTS_TREECTL_LEN (sizeof OPTS_TREECTL - 1)
-#define OPTS_TREE "co:EDRnadC:S:"
+#define OPTS_TREE "hco:EDRnadC:S:"
 #define OPTS_TREE_LEN (sizeof OPTS_TREE - 1)
-#define OPTS_INRESOLVE ""
-#define OPTS_INRESOLVE_LEN (sizeof OPTS_INRESOLVE - 1)
-#define OPTS_INSTATE ""
-#define OPTS_INSTATE_LEN (sizeof OPTS_INSTATE - 1)
 #define OPTS_INTREE "no:grd:l:"
 #define OPTS_INTREE_LEN (sizeof OPTS_INTREE - 1)
 #define OPTS_INSERVICE "no:grd:t:p:"
 #define OPTS_INSERVICE_LEN (sizeof OPTS_INSERVICE - 1)
-#define OPTS_BOOT "ms:e:d:b:l:"
+#define OPTS_BOOT "hms:e:d:b:l:"
 #define OPTS_BOOT_LEN (sizeof OPTS_BOOT - 1)
-#define OPTS_SCANCTL "o:d:t:e:"
+#define OPTS_SCANCTL "ho:d:t:e:"
 #define OPTS_SCANCTL_LEN (sizeof OPTS_SCANCTL - 1)
-#define OPTS_SCANDIR "bl:s:o:L:cB"
+#define OPTS_SCANDIR "hbl:s:o:L:cB"
 #define OPTS_SCANDIR_LEN (sizeof OPTS_SCANDIR - 1)
+
 #define OPTS_SERVICE_WRAPPER ""
 #define OPTS_SERVICE_WRAPPER_LEN (sizeof OPTS_SERVICE_WRAPPER - 1)
 #define OPTS_SERVICE_ADMIN ""
 #define OPTS_SERVICE_ADMIN_LEN (sizeof OPTS_SERVICE_ADMIN - 1)
-
-
 
 #endif

@@ -41,20 +41,6 @@ static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
 
 #define USAGE "66-instate [ -h ] [ -v verbosity ] [ -z ] service"
 
-static inline void info_help (void)
-{
-    DEFAULT_MSG = 0 ;
-
-    static char const *help =
-"\n"
-"options :\n"
-"   -h: print this help\n"
-"   -z: use color\n"
-"   -t: only search service at the specified tree\n"
-;
-
-    log_info(USAGE,"\n",help) ;
-}
 
 static void info_display_string(char const *field,char const *str)
 {
@@ -110,7 +96,7 @@ int ssexec_instate(int argc, char const *const *argv, ssexec_t *info)
     argc-- ;
     argv++ ;
 
-    if (!argc) log_usage(usage_instate) ;
+    if (!argc) log_usage(usage_service_state, "\n", help_service_state) ;
     svname = *argv ;
 
     if (!set_ownersysdir_stack(base, getuid()))

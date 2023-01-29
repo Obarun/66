@@ -75,28 +75,6 @@ static int BUF_FD ; // general buffer fd
 
 #define USAGE "66-scandir [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -b|B ] [ -c ] [ -L log_user ] [ -s skel ] [ -o owner ] create|remove"
 
-static inline void info_help (void)
-{
-    DEFAULT_MSG = 0 ;
-
-    static char const *help =
-"\n"
-"options :\n"
-"   -h: print this help\n"
-"   -z: use color\n"
-"   -v: increase/decrease verbosity\n"
-"   -l: live directory\n"
-"   -b: create scandir for a boot process\n"
-"   -B: create scandir for a boot process inside a container\n"
-"   -c: do not catch log\n"
-"   -L: run catch-all logger as log_user user\n"
-"   -s: skeleton directory\n"
-"   -o: handles owner scandir\n"
-;
-
-    log_info(USAGE,"\n",help) ;
-}
-
 static inline unsigned int lookup (char const *const *table, char const *signal)
 {
     log_flow() ;
@@ -788,6 +766,11 @@ int ssexec_scandir(int argc, char const *const *argv, ssexec_t *info)
 
             switch (opt)
             {
+                 case 'h' :
+
+                    info_help(info->help, info->usage) ;
+                    return 0 ;
+
                 case 'b' :
 
                     BOOT = 1 ;
@@ -832,14 +815,14 @@ int ssexec_scandir(int argc, char const *const *argv, ssexec_t *info)
 
                 default :
 
-                    log_usage(usage_scandir) ;
+                    log_usage(info->usage, "\n", info->help) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
     if (!argc)
-        log_usage(usage_scandir) ;
+        log_usage(info->usage, "\n", info->help) ;
 
     cmd = parse_command(argv[0]) ;
 

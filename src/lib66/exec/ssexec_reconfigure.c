@@ -29,21 +29,7 @@
 #include <66/service.h>
 
 #include <stdio.h>
-/**
- *
- *
- * ./66 reconfigure consolekit provoque une erreur
- *
- *
- *
- *
- * reconfigure(src/lib66/svc/svc_scandir_send.c: svc_scandir_send(): 34): tracing: send signal: an to scandir: /run/66/state/0/dbus-log/scandir
- * reconfigure(src/lib66/svc/svc_scandir_send.c: svc_scandir_send(): 37): warning: unable to control: /run/66/state/0/dbus-log/scandir: No such file or directory
- * reconfigure(src/lib66/sanitize/sanitize_scandir.c: sanitize_scandir(): 150): fatal: unable to reload scandir: /run/66/state/0/dbus-log/scandir
- *
- *
- *
- * */
+
 int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
@@ -69,6 +55,11 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 
             switch (opt) {
 
+                case 'h' :
+
+                    info_help(info->help, info->usage) ;
+                    return 0 ;
+
                 case 'P' :
 
                     siglen++ ;
@@ -76,14 +67,14 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 
                 default :
 
-                    log_usage(usage_start) ;
+                    log_usage(info->usage, "\n", info->help) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
     if (argc < 1)
-        log_usage(usage_start) ;
+        log_usage(info->usage, "\n", info->help) ;
 
     if ((svc_scandir_ok(info->scandir.s)) !=  1 )
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;

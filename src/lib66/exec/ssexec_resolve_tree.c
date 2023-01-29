@@ -80,7 +80,6 @@ int ssexec_resolve_tree(int argc, char const *const *argv, ssexec_t *info)
     uint8_t master = 0 ;
 
     char const *svname = 0 ;
-    char const *treename = info->treename.s ;
 
     resolve_wrapper_t_ref wres = 0 ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
@@ -90,7 +89,7 @@ int ssexec_resolve_tree(int argc, char const *const *argv, ssexec_t *info)
     argv++ ;
 
     if (argc < 1)
-        log_usage(usage_inresolve) ;
+        log_usage(usage_tree_resolve, "\n", help_tree_resolve) ;
 
     svname = *argv ;
 

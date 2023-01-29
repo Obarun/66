@@ -879,21 +879,21 @@ int ssexec_inservice(int argc, char const *const *argv, ssexec_t *info)
             int opt = subgetopt_r(argc,argv, OPTS_INSERVICE, &l) ;
             if (opt == -1) break ;
 
-            switch (opt)
-            {
+            switch (opt) {
+
                 case 'n' :  NOFIELD = 0 ; break ;
                 case 'o' :  legacy = 0 ; info_parse_options(l.arg,what) ; break ;
                 case 'g' :  GRAPH = 1 ; break ;
                 case 'r' :  REVERSE = 1 ; break ;
-                case 'd' :  if (!uint0_scan(l.arg, &MAXDEPTH)) log_usage(usage_inservice) ; break ;
-                case 'p' :  if (!uint0_scan(l.arg, &nlog)) log_usage(usage_inservice) ; break ;
-                default :   log_usage(usage_inservice) ;
+                case 'd' :  if (!uint0_scan(l.arg, &MAXDEPTH)) log_usage(usage_service_status, "\n", help_service_status) ; break ;
+                case 'p' :  if (!uint0_scan(l.arg, &nlog)) log_usage(usage_service_status, "\n", help_service_status) ; break ;
+                default :   log_usage(usage_service_status, "\n", help_service_status) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
-    if (!argc) log_usage(usage_inservice) ;
+    if (!argc) log_usage(usage_service_status, "\n", help_service_status) ;
     svname = *argv ;
 
     if (legacy)

@@ -139,7 +139,7 @@ static inline unsigned int lookup (char const *const *table, char const *signal)
     return i ;
 }
 
-static inline unsigned int parse_signal (char const *signal)
+static inline unsigned int parse_signal (char const *signal, ssexec_t *info)
 {
     log_flow() ;
 
@@ -150,7 +150,7 @@ static inline unsigned int parse_signal (char const *signal)
         0
     } ;
     unsigned int i = lookup(signal_table, signal) ;
-    if (!signal_table[i]) log_usage(usage_treectl) ;
+    if (!signal_table[i]) log_usage(info->usage, "\n", info->help) ;
     return i ;
 }
 
@@ -872,14 +872,14 @@ int ssexec_treectl(int argc, char const *const *argv, ssexec_t *info)
 
             switch (opt) {
                 case 'f' :  shut = 1 ; break ;
-                default :   log_usage(usage_treectl) ;
+                default :   log_usage(info->usage, "\n", info->help) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
     if (argc < 1)
-        log_usage(usage_treectl) ;
+        log_usage(info->usage, "\n", info->help) ;
 
     info->treename.len = 0 ;
 
@@ -893,7 +893,7 @@ int ssexec_treectl(int argc, char const *const *argv, ssexec_t *info)
     else
         deadline = tain_infinite_relative ;
 
-    what = parse_signal(*argv) ;
+    what = parse_signal(*argv, info) ;
 
     reloadmsg = what ;
 

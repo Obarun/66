@@ -1331,13 +1331,14 @@ int ssexec_tree(int argc, char const *const *argv, ssexec_t *info)
 
                 default :
 
-                    log_usage(usage_tree) ;
+                    log_usage(info->usage, "\n", info->help) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
-    if (argc < 1) log_usage(usage_tree) ;
+    if (argc < 1)
+        log_usage(info->usage, "\n", info->help) ;
 
     check_identifier(argv[0]) ;
 

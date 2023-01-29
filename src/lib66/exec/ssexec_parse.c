@@ -44,11 +44,16 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
 
             switch (opt)
             {
+                case 'h' :
+
+                    info_help(info->help, info->usage) ;
+                    return 0 ;
+
                 case 'f' :
 
                     /** only rewrite the service itself */
                     if (force)
-                        log_usage(usage_enable) ;
+                        log_usage(info->usage, "\n", info->help) ;
                     force = 1 ;
                     break ;
 
@@ -56,7 +61,7 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
 
                      /** force to rewrite it dependencies */
                      if (force)
-                        log_usage(usage_enable) ;
+                        log_usage(info->usage, "\n", info->help) ;
                     force = 2 ;
                     break ;
 
@@ -70,14 +75,14 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
                 case 'C' :  log_1_warn("deprecated option -- ignoring") ; break ;
 
                 default :
-                    log_usage(usage_parse) ;
+                    log_usage(info->usage, "\n", info->help) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
     if (argc < 1)
-        log_usage(usage_parse) ;
+        log_usage(info->usage, "\n", info->help) ;
 
     for (; *argv ; argv++) {
 

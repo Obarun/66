@@ -177,6 +177,11 @@ int ssexec_scanctl(int argc, char const *const *argv, ssexec_t *info)
 
             switch (opt) {
 
+                 case 'h' :
+
+                    info_help(info->help, info->usage) ;
+                    return 0 ;
+
                 case 'o' :
 
                     if (MYUID)
@@ -216,13 +221,13 @@ int ssexec_scanctl(int argc, char const *const *argv, ssexec_t *info)
 
                 default :
 
-                    log_usage(usage_scanctl) ;
+                    log_usage(info->usage, "\n", info->help) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
-    if (argc < 1) log_usage(usage_scanctl) ;
+    if (argc < 1) log_usage(info->usage, "\n", info->help) ;
     signal = argv[0] ;
     r = set_livedir(&scandir) ;
     if (r < 0) log_die(LOG_EXIT_USER,"live: ",scandir.s," must be an absolute path") ;

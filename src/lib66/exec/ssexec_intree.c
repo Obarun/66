@@ -530,11 +530,11 @@ int ssexec_intree(int argc, char const *const *argv, ssexec_t *info)
                 case 'o' :  legacy = 0 ; info_parse_options(l.arg,what) ; break ;
                 case 'g' :  GRAPH = 1 ; break ;
                 case 'r' :  REVERSE = 1 ; break ;
-                case 'd' :  if (!uint0_scan(l.arg, &MAXDEPTH)) log_usage(usage_intree) ; break ;
-                case 'l' :  if (!stralloc_cats(&live,l.arg)) log_usage(usage_intree) ;
-                            if (!stralloc_0(&live)) log_usage(usage_intree) ;
+                case 'd' :  if (!uint0_scan(l.arg, &MAXDEPTH)) log_usage(info->usage, "\n", info->help) ; break ;
+                case 'l' :  if (!stralloc_cats(&live,l.arg)) log_usage(info->usage, "\n", info->help) ;
+                            if (!stralloc_0(&live)) log_usage(info->usage, "\n", info->help) ;
                             break ;
-                default :   log_usage(usage_intree) ;
+                default :   log_usage(info->usage, "\n", info->help) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;

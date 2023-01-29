@@ -53,6 +53,11 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
 
             switch (opt) {
 
+                case 'h' :
+
+                    info_help(info->help, info->usage) ;
+                    return 0 ;
+
                 case 'P' :
 
                     FLAGS_CLEAR(flag, STATE_FLAGS_TOPROPAGATE) ;
@@ -75,14 +80,14 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
                     return 0 ;
 
                 default :
-                    log_usage(usage_stop) ;
+                    log_usage(info->usage, "\n", info->help) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
     if (argc < 1)
-        log_usage(usage_stop) ;
+        log_usage(info->usage, "\n", info->help) ;
 
     if ((svc_scandir_ok(info->scandir.s)) != 1)
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;

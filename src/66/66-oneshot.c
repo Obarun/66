@@ -30,7 +30,7 @@
 
 #define USAGE "66-oneshot [ -h ] [ -v verbosity ] up|down /var/lib/66/system/<tree>/servicedirs/svc/<service>"
 
-static inline void info_help (void)
+static inline void help_oneshot (void)
 {
     DEFAULT_MSG = 0 ;
 
@@ -62,7 +62,7 @@ int main(int argc, char const *const *argv)
             if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
             switch (opt)
             {
-                case 'h' :  info_help(); return 0 ;
+                case 'h' :  help_oneshot(); return 0 ;
                 case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
                 default :   log_usage(USAGE) ;
             }

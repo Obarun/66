@@ -67,6 +67,11 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
 
             switch (opt) {
 
+                case 'h' :
+
+                    info_help(info->help, info->usage) ;
+                    return 0 ;
+
                 case 'S' :
 
                     stop = 1 ;
@@ -83,14 +88,14 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
                     break ;
 
                 default :
-                    log_usage(usage_disable) ;
+                    log_usage(info->usage, "\n", info->help) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
     if (argc < 1)
-        log_usage(usage_disable) ;
+        log_usage(info->usage, "\n", info->help) ;
 
     /** build the graph of the entire system */
     graph_build_service(&graph, ares, &areslen, info, flag) ;

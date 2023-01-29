@@ -34,11 +34,11 @@ int svc_send_wait(char const *const *list, unsigned int nservice, char **sig, un
     verbo[uint_fmt(verbo, VERBOSITY)] = 0 ;
 
     newargv[m++] = "66" ;
-    newargv[m++] = "svctl" ;
     if (info->opt_color)
         newargv[m++] = "-z" ;
     newargv[m++] = "-v" ;
     newargv[m++] = verbo ;
+    newargv[m++] = "signal" ;
 
     for (; *sig ; sig++)
         newargv[m++] = *sig ;

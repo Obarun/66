@@ -21,22 +21,13 @@
 #include <66/ssexec.h>
 #include <66/config.h>
 
-static inline void info_help (char const *help,char const *usage)
-{
-    log_flow() ;
-
-    DEFAULT_MSG = 0 ;
-
-    log_info(usage,"\n", help) ;
-}
-
 int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
     if (!argv[1]) {
         PROG = "tree" ;
-        log_usage(usage_tree) ;
+        log_usage(usage_tree_wrapper, "\n", help_tree_wrapper) ;
     }
 
     int r, n = 0, i = 0 ;
@@ -49,8 +40,8 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         nargv[n++] = PROG ;
 
         info->prog = PROG ;
-        info->help = help_tree ;
-        info->usage = usage_tree ;
+        info->help = help_tree_create ;
+        info->usage = usage_tree_create ;
         func = &ssexec_tree ;
 
         argc-- ;
@@ -61,8 +52,8 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         nargv[n++] = PROG ;
 
         info->prog = PROG ;
-        info->help = help_tree ;
-        info->usage = usage_tree ;
+        info->help = help_tree_admin ;
+        info->usage = usage_tree_admin ;
         func = &ssexec_tree ;
 
         argc-- ;
@@ -74,8 +65,8 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         nargv[n++] = "-R" ;
 
         info->prog = PROG ;
-        info->help = help_tree ;
-        info->usage = usage_tree ;
+        info->help = help_tree_remove ;
+        info->usage = usage_tree_remove ;
         func = &ssexec_tree ;
 
         argc-- ;
@@ -87,8 +78,8 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         nargv[n++] = "-E" ;
 
         info->prog = PROG ;
-        info->help = help_tree ;
-        info->usage = usage_tree ;
+        info->help = help_tree_enable ;
+        info->usage = usage_tree_enable ;
         func = &ssexec_tree ;
 
         argc-- ;
@@ -100,8 +91,8 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         nargv[n++] = "-D" ;
 
         info->prog = PROG ;
-        info->help = help_tree ;
-        info->usage = usage_tree ;
+        info->help = help_tree_disable ;
+        info->usage = usage_tree_disable ;
 
         func = &ssexec_tree ;
 
@@ -114,8 +105,8 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         nargv[n++] = "-c" ;
 
         info->prog = PROG ;
-        info->help = help_tree ;
-        info->usage = usage_tree ;
+        info->help = help_tree_current ;
+        info->usage = usage_tree_current ;
 
         func = &ssexec_tree ;
 
@@ -127,8 +118,8 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         nargv[n++] = PROG ;
 
         info->prog = PROG ;
-        info->help = help_inresolve ;
-        info->usage = usage_inresolve ;
+        info->help = help_tree_resolve ;
+        info->usage = usage_tree_resolve ;
 
         func = &ssexec_resolve_tree ;
 
@@ -140,8 +131,8 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         nargv[n++] = PROG ;
 
         info->prog = PROG ;
-        info->help = help_intree ;
-        info->usage = usage_intree ;
+        info->help = help_tree_status ;
+        info->usage = usage_tree_status ;
 
         func = &ssexec_intree ;
 
@@ -151,30 +142,35 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
     } else if (!strcmp(argv[1], "up")) {
 
         info->prog = PROG ;
-        info->help = help_treectl ;
-        info->usage = usage_treectl ;
+        info->help = help_tree_up ;
+        info->usage = usage_tree_up ;
         func = &ssexec_treectl ;
         ctl++ ;
 
     } else if (!strcmp(argv[1], "down")) {
 
         info->prog = PROG ;
-        info->help = help_treectl ;
-        info->usage = usage_treectl ;
+        info->help = help_tree_down ;
+        info->usage = usage_tree_down ;
         func = &ssexec_treectl ;
         ctl++ ;
 
     } else if (!strcmp(argv[1], "unsupervise")) {
 
         info->prog = PROG ;
-        info->help = help_treectl ;
-        info->usage = usage_treectl ;
+        info->help = help_tree_unsupervise ;
+        info->usage = usage_tree_unsupervise ;
         func = &ssexec_treectl ;
         ctl++ ;
 
     } else {
 
-        log_usage(usage_tree) ;
+        if (!strcmp(argv[1], "-h")) {
+            info_help(help_tree_wrapper, usage_tree_wrapper) ;
+            return 0 ;
+        }
+
+        log_usage(usage_tree_wrapper, "\n", help_tree_wrapper) ;
     }
 
     {

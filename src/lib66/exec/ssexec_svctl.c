@@ -838,6 +838,9 @@ int ssexec_svctl(int argc, char const *const *argv, ssexec_t *info)
             if (opt == -1) break ;
 
             switch (opt) {
+                case 'h' :
+                    info_help(info->help, info->usage) ;
+                    return 0 ;
 
                 case 'a' :
                 case 'b' :
@@ -867,7 +870,7 @@ int ssexec_svctl(int argc, char const *const *argv, ssexec_t *info)
                 case 'w' :
 
                     if (!memchr("dDuUrR", l.arg[0], 6))
-                        log_usage(usage_svctl) ;
+                        log_usage(info->usage, "\n", info->help) ;
 
                     updown[2] = l.arg[0] ;
                     opt_updown = 1 ;
@@ -878,14 +881,14 @@ int ssexec_svctl(int argc, char const *const *argv, ssexec_t *info)
                     break ;
 
                 default :
-                    log_usage(usage_svctl) ;
+                    log_usage(info->usage, "\n", info->help) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
     if (argc < 1 || datalen < 2)
-        log_usage(usage_svctl) ;
+        log_usage(info->usage, "\n", info->help) ;
 
     if (info->timeout)
         tain_from_millisecs(&deadline, info->timeout) ;

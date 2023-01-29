@@ -143,11 +143,10 @@ int ssexec_init(int argc, char const *const *argv, ssexec_t *info)
     uint8_t earlier = 0 ;
     char const *treename = 0 ;
 
-
     stralloc sa = STRALLOC_ZERO ;
 
     if (argc < 2 || !argv[1])
-        log_usage(usage_init) ;
+        log_usage(info->usage, "\n", info->help) ;
 
     treename = argv[1] ;
     size_t treenamelen = strlen(treename) ;

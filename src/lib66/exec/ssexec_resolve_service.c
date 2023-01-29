@@ -170,7 +170,7 @@ int ssexec_resolve_service(int argc, char const *const *argv, ssexec_t *info)
     argv++ ;
 
     if (argc < 1)
-        log_usage(usage_inresolve) ;
+        log_usage(usage_service_resolve, "\n", help_service_resolve) ;
 
     svname = *argv ;
 

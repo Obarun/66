@@ -21,26 +21,17 @@
 #include <66/ssexec.h>
 #include <66/config.h>
 
-static inline void info_help (char const *help,char const *usage)
-{
-    log_flow() ;
-
-    DEFAULT_MSG = 0 ;
-
-    log_info(usage,"\n", help) ;
-}
-
 int ssexec_service_admin(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
     if (!argv[1]) {
         PROG = "service" ;
-        log_usage(usage_service_wrapper) ;
+        log_usage(usage_service_remove, "\n", help_service_remove) ;
     }
 
     int r, n = 0, i = 0 ;
-    uint8_t ctl = 0 ;
+/*    uint8_t ctl = 0 ;
     ssexec_func_t_ref func = 0 ;
     char const *nargv[argc + 1] ;
 
@@ -94,7 +85,7 @@ int ssexec_service_admin(int argc, char const *const *argv, ssexec_t *info)
 
     } else {
 
-        log_usage(usage_tree) ;
+        log_usage(usage_service_admin, "\n", help_service_admin) ;
     }
 
     {
@@ -103,14 +94,9 @@ int ssexec_service_admin(int argc, char const *const *argv, ssexec_t *info)
         int f = 0 ;
         for (;;) {
 
-            int opt = subgetopt_r(argc, argv, "-h", &l) ;
+            int opt = subgetopt_r(argc, argv, "", &l) ;
             if (opt == -1) break ;
             switch (opt) {
-
-                case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
 
                 default:
 
@@ -159,10 +145,10 @@ int ssexec_service_admin(int argc, char const *const *argv, ssexec_t *info)
 
     if (ctl) {
         /* swap the command and options e.g.
-         * down -f <treename> <-> -f down <treename> */
+         * down -f <treename> <-> -f down <treename>
         if (n > 2) {
             /* swap the command and options e.g.
-             * down -f <-> -f down */
+             * down -f <-> -f down
             nargv[n] = nargv[n-1] ;
             nargv[n-1] = nargv[0] ;
             nargv[++n] = 0 ;
@@ -179,6 +165,7 @@ int ssexec_service_admin(int argc, char const *const *argv, ssexec_t *info)
     }
 
     r = (*func)(n, nargv, info) ;
-
+*/
+r = 0 ;
     return r ;
 }

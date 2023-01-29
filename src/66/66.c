@@ -26,15 +26,6 @@
 #include <66/sanitize.h>
 #include <66/tree.h>
 
-static inline void info_help (char const *help,char const *usage)
-{
-    log_flow() ;
-
-    DEFAULT_MSG = 0 ;
-
-    log_info(usage,"\n", help) ;
-}
-
 void set_treeinfo(ssexec_t *info)
 {
     log_flow() ;
@@ -95,19 +86,12 @@ int main(int argc, char const *const *argv)
 
     if (!argv[1]) {
         PROG = "66" ;
-        log_usage(usage_66) ;
-
-    } else if (!strcmp(argv[1], "version")) {
-
-        PROG = "version" ;
-        log_info(SS_VERSION) ;
+        log_usage( usage_66, "\n", help_66) ;
         return 0 ;
     }
 
     int r, n = 0, i = 0 ;
     uint8_t sanitize = 0 ;
-    /** 30 options should be large enough */
-    char opts[30] ;
     char const *main = "hv:l:t:T:z" ;
     char str[UINT_FMT] ;
     char const *nargv[argc + 1] ;
@@ -125,234 +109,20 @@ int main(int argc, char const *const *argv)
     if (!set_ownersysdir(&info.base, info.owner))
         log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-    if (!strcmp(argv[1], "boot")) {
-
-        PROG = "boot" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_boot ;
-        info.usage = usage_boot ;
-        func = &ssexec_boot ;
-
-        sanitize++ ;
-
-        auto_strings(opts, main, OPTS_BOOT) ;
-
-    } else if (!strcmp(argv[1], "enable")) {
-
-        PROG = "enable" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_enable ;
-        info.usage = usage_enable ;
-        func = &ssexec_enable ;
-
-        auto_strings(opts, main, OPTS_ENABLE) ;
-
-    } else if (!strcmp(argv[1], "disable")) {
-
-        PROG = "disable" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_disable ;
-        info.usage = usage_disable ;
-        func = &ssexec_disable ;
-
-        auto_strings(opts, main, OPTS_DISABLE) ;
-
-    } else if (!strcmp(argv[1], "start")) {
-
-        PROG = "start" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_start ;
-        info.usage = usage_start ;
-        func = &ssexec_start ;
-
-        auto_strings(opts, main, OPTS_START) ;
-
-    } else if (!strcmp(argv[1], "stop")) {
-
-        PROG = "stop" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_stop ;
-        info.usage = usage_stop ;
-        func = &ssexec_stop ;
-
-        auto_strings(opts, main, OPTS_STOP) ;
-
-    } else if (!strcmp(argv[1], "env")) {
-
-        PROG = "env" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_env ;
-        info.usage = usage_env ;
-        func = &ssexec_env ;
-
-        auto_strings(opts, main, OPTS_ENV) ;
-
-    } else if (!strcmp(argv[1], "init")) {
-
-        PROG = "init" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_init ;
-        info.usage = usage_init ;
-        func = &ssexec_init ;
-
-        auto_strings(opts, main, OPTS_INIT) ;
-
-    } else if (!strcmp(argv[1], "parse")) {
-
-        PROG = "parse" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_parse ;
-        info.usage = usage_parse ;
-        func = &ssexec_parse ;
-
-        auto_strings(opts, main, OPTS_PARSE) ;
-
-    } else if (!strcmp(argv[1], "reconfigure")) {
-
-        PROG = "reconfigure" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_reconfigure ;
-        info.usage = usage_reconfigure ;
-        func = &ssexec_reconfigure ;
-
-        auto_strings(opts, main, OPTS_SUBSTART) ;
-
-    } else if (!strcmp(argv[1], "reload")) {
-
-        PROG = "reload" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_reload ;
-        info.usage = usage_reload ;
-        func = &ssexec_reload ;
-
-        auto_strings(opts, main, OPTS_SUBSTART) ;
-
-    } else if (!strcmp(argv[1], "restart")) {
-
-        PROG = "restart" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_restart ;
-        info.usage = usage_restart ;
-        func = &ssexec_restart ;
-
-        auto_strings(opts, main, OPTS_SUBSTART) ;
-
-    } else if (!strcmp(argv[1], "unsupervise")) {
-
-        PROG = "stop" ;
-        nargv[n++] = PROG ;
-        nargv[n++] = "-u" ;
-        info.prog = PROG ;
-        info.help = help_stop ;
-        info.usage = usage_stop ;
-        func = &ssexec_stop ;
-
-        auto_strings(opts, main, OPTS_STOP) ;
-
-    } else if (!strcmp(argv[1], "svctl")) {
-
-        PROG = "svctl" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_svctl ;
-        info.usage = usage_svctl ;
-        func = &ssexec_svctl ;
-
-        auto_strings(opts, main, OPTS_SVCTL) ;
-
-    } else if (!strcmp(argv[1], "tree")) {
-
-        PROG = "tree" ;
-        nargv[n++] = PROG ;
-        func = &ssexec_tree_wrapper ;
-
-        auto_strings(opts, main) ;
-
-    } else if (!strcmp(argv[1], "service")) {
-
-        PROG = "service" ;
-        nargv[n++] = PROG ;
-        func = &ssexec_service_wrapper ;
-
-        auto_strings(opts, main) ;
-
-    } else if (!strcmp(argv[1], "intree")) {
-
-        PROG = "intree" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_intree ;
-        info.usage = usage_intree ;
-        func = &ssexec_intree ;
-
-        auto_strings(opts, main, OPTS_INTREE) ;
-
-    } else if (!strcmp(argv[1], "inservice")) {
-
-        PROG = "inservice" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_inservice ;
-        info.usage = usage_inservice ;
-        func = &ssexec_inservice ;
-
-        auto_strings(opts, main, OPTS_INSERVICE) ;
-
-    } else if (!strcmp(argv[1], "scanctl")) {
-
-        PROG = "scanctl" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_scanctl ;
-        info.usage = usage_scanctl ;
-        func = &ssexec_scanctl ;
-
-        auto_strings(opts, main, OPTS_SCANCTL) ;
-
-    } else if (!strcmp(argv[1], "scandir")) {
-
-        PROG = "scandir" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_scandir ;
-        info.usage = usage_scandir ;
-        func = &ssexec_scandir ;
-
-        auto_strings(opts, main, OPTS_SCANDIR) ;
-
-    } else {
-
-        log_usage(usage_66) ;
-    }
-
-    argc-- ;
-    argv++ ;
-
     {
         subgetopt l = SUBGETOPT_ZERO ;
 
         int f = 0 ;
         for (;;)
         {
-            int opt = subgetopt_r(argc, argv, opts, &l) ;
+            int opt = subgetopt_r(argc, argv, main, &l) ;
 
             if (opt == -1) break ;
             switch (opt)
             {
                 case 'h' :
 
-                    info_help(info.help, info.usage) ;
+                    info_help(help_66, usage_66) ;
                     return 0 ;
 
                 case 'v' :
@@ -400,7 +170,8 @@ int main(int argc, char const *const *argv)
                     log_color = !isatty(1) ? &log_color_disable : &log_color_enable ;
                     info.opt_color = 1 ;
                     break ;
-
+                case '?' :
+                    log_usage(usage_66, "\n", help_66) ;
                 default :
 
                     for (i = 0 ; i < n ; i++) {
@@ -440,6 +211,176 @@ int main(int argc, char const *const *argv)
         }
         argc -= l.ind ; argv += l.ind ;
     }
+
+    if (!strcmp(argv[1], "version")) {
+
+        PROG = "version" ;
+        log_info(SS_VERSION) ;
+        return 0 ;
+
+    } else if (!strcmp(argv[0], "boot")) {
+
+        PROG = "boot" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_boot ;
+        info.usage = usage_boot ;
+        func = &ssexec_boot ;
+
+        sanitize++ ;
+
+    } else if (!strcmp(argv[0], "enable")) {
+
+        PROG = "enable" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_enable ;
+        info.usage = usage_enable ;
+        func = &ssexec_enable ;
+
+    } else if (!strcmp(argv[0], "disable")) {
+
+        PROG = "disable" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_disable ;
+        info.usage = usage_disable ;
+        func = &ssexec_disable ;
+
+    } else if (!strcmp(argv[0], "start")) {
+
+        PROG = "start" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_start ;
+        info.usage = usage_start ;
+        func = &ssexec_start ;
+
+    } else if (!strcmp(argv[0], "stop")) {
+
+        PROG = "stop" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_stop ;
+        info.usage = usage_stop ;
+        func = &ssexec_stop ;
+
+    } else if (!strcmp(argv[0], "env")) {
+
+        PROG = "env" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_env ;
+        info.usage = usage_env ;
+        func = &ssexec_env ;
+
+    } else if (!strcmp(argv[0], "init")) {
+
+        PROG = "init" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_init ;
+        info.usage = usage_init ;
+        func = &ssexec_init ;
+
+    } else if (!strcmp(argv[0], "parse")) {
+
+        PROG = "parse" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_parse ;
+        info.usage = usage_parse ;
+        func = &ssexec_parse ;
+
+    } else if (!strcmp(argv[0], "reconfigure")) {
+
+        PROG = "reconfigure" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_reconfigure ;
+        info.usage = usage_reconfigure ;
+        func = &ssexec_reconfigure ;
+
+    } else if (!strcmp(argv[0], "reload")) {
+
+        PROG = "reload" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_reload ;
+        info.usage = usage_reload ;
+        func = &ssexec_reload ;
+
+    } else if (!strcmp(argv[0], "restart")) {
+
+        PROG = "restart" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_restart ;
+        info.usage = usage_restart ;
+        func = &ssexec_restart ;
+
+    } else if (!strcmp(argv[0], "unsupervise")) {
+
+        PROG = "stop" ;
+        nargv[n++] = PROG ;
+        nargv[n++] = "-u" ;
+        info.prog = PROG ;
+        info.help = help_unsupervise ;
+        info.usage = usage_unsupervise ;
+        func = &ssexec_stop ;
+
+    } else if (!strcmp(argv[0], "signal")) {
+
+        PROG = "svctl" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_svctl ;
+        info.usage = usage_svctl ;
+        func = &ssexec_svctl ;
+
+    } else if (!strcmp(argv[0], "tree")) {
+
+        PROG = "tree" ;
+        nargv[n++] = PROG ;
+        func = &ssexec_tree_wrapper ;
+
+    } else if (!strcmp(argv[0], "service")) {
+
+        PROG = "service" ;
+        nargv[n++] = PROG ;
+        func = &ssexec_service_wrapper ;
+
+    } else if (!strcmp(argv[0], "scanctl")) {
+
+        PROG = "scanctl" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_scanctl ;
+        info.usage = usage_scanctl ;
+        func = &ssexec_scanctl ;
+
+    } else if (!strcmp(argv[0], "scandir")) {
+
+        PROG = "scandir" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_scandir ;
+        info.usage = usage_scandir ;
+        func = &ssexec_scandir ;
+
+    } else {
+
+        PROG = "66" ;
+        if (!strcmp(argv[0], "-h")) {
+            info_help(help_66, usage_66) ;
+            return 0 ;
+        }
+
+        log_usage(usage_66, "\n", help_66) ;
+    }
+
+    argc-- ;
+    argv++ ;
 
     if (!sanitize)
         sanitize_system(&info) ;
