@@ -187,7 +187,12 @@ void parse_env_var(stralloc *result, stralloc *modifs, char const *line)
 
 int main (int argc, char const *const *argv, char const *const *envp)
 {
-    int r = 0, unexport = 0, insist = 1 ;
+    /**
+     *
+     * Passe par des flags please
+     *
+     * */
+    int r = 0, unexport = 0, insist = 1, noprog = 0 ;
     size_t pos = 0, nvar = 0 ;
     char const *path = 0, *file = 0 ;
     char tpath[MAXENV + 1], tfile[MAXENV+1] ;
@@ -205,13 +210,14 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
         for (;;)
         {
-            int opt = subgetopt_r(argc,argv, "hv:l", &l) ;
+            int opt = subgetopt_r(argc,argv, "hv:l:X", &l) ;
             if (opt == -1) break ;
             switch (opt)
             {
                 case 'h' :  info_help(); return 0 ;
                 case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
                 case 'l' :  insist = 0 ; break ;
+                case 'X' :  noprog = 1 ; break ;
                 default :   log_usage(USAGE) ;
             }
         }
@@ -242,43 +248,43 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
             log_dieu(LOG_EXIT_SYS,"get file from: ",path) ;
 
-        } else {
-
-            log_warn("get file from: ",path) ;
-            xexec_ae(argv[0],argv,envp) ;
         }
+
+        log_warnu("get file from: ",path) ;
+        if (!noprog)
+            xexec_ae(argv[0],argv,envp) ;
     }
 
-    if (path[0] == '.')
-    {
+    if (path[0] == '.') {
+
         if (!dir_beabsolute(tpath,path)) {
 
             if (insist) {
 
                 log_dieusys(LOG_EXIT_SYS,"find relative path: ",path) ;
-
-            } else {
-
-                log_warn("find relative path: ",path) ;
-                xexec_ae(argv[0],argv,envp) ;
             }
+
+            log_warnu("find relative path: ",path) ;
+
+            if (!noprog)
+                xexec_ae(argv[0],argv,envp) ;
         }
         path = tpath ;
     }
 
-    if (file)
-    {
+    if (file) {
+
         if (!file_readputsa(&again,path,file)) {
 
             if (insist) {
 
                 log_dieusys(LOG_EXIT_SYS,"read file: ",path,file) ;
 
-            } else {
-
-                log_warn("read file: ",path,file) ;
-                xexec_ae(argv[0],argv,envp) ;
             }
+
+            log_warn("read file: ",path,file) ;
+            if (noprog)
+                xexec_ae(argv[0],argv,envp) ;
         }
 
         if (!environ_get_clean_env(&again) ||
@@ -307,10 +313,11 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
                 log_dieu(LOG_EXIT_SYS,"clean environment file of: ",path) ;
 
-            } else {
-                log_warn("clean environment file of: ",path) ;
-                xexec_ae(argv[0],argv,envp) ;
             }
+
+            log_warn("clean environment file of: ",path) ;
+            if (!noprog)
+                xexec_ae(argv[0],argv,envp) ;
         }
 
         if (!stralloc_copy(&dst,&modifs))
@@ -397,9 +404,43 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
     stralloc_free(&modifs) ;
 
+    /**
+     *
+     *
+     * avec le noprog attention ici des allocations a la fin du programme
+     * le exec ne suit pas derriere
+     *
+     *
+     * */
     char const *v[r + 1] ;
     if (!env_make (v, r ,dst.s, dst.len)) log_dieusys(LOG_EXIT_SYS,"make environment") ;
     v[r] = 0 ;
 
-    mexec_fm (v, newenv, env_len(newenv),info.modifs.s,info.modifs.len) ;
+    if (!noprog)
+        mexec_fm (v, newenv, env_len(newenv),info.modifs.s,info.modifs.len) ;
+    else {
+        /**
+         *
+         *
+         *
+         *
+         *
+         *
+         *
+         * ATTENTION a refaire et voir pour les flags
+         *
+         *
+         *
+         *
+         *
+         *
+         *
+         *
+         *
+        size_t pos = 0 ;
+        FOREACH_SASTR(&info.var, pos)
+            setenv(info.vars.s + pos, (const char *)value, 1);
+        */
+        stralloc_free(&dst) ;
+    }
 }
