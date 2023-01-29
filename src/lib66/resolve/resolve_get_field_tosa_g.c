@@ -58,14 +58,7 @@ int resolve_get_field_tosa_g(stralloc *sa, char const *base, char const *name, u
         wres = resolve_set_struct(data_type, &tmres) ;
 
     } else return 0 ;
-    /***
-     *
-     *
-     *  need to be review for resolve Master file of trees
-     * the resolve_read_g will not work on this case
-     *
-     *
-     * */
+
     if (!resolve_read_g(wres, base, name))
         goto err ;
 
