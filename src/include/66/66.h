@@ -31,5 +31,6 @@
 #include <66/svc.h>
 #include <66/tree.h>
 #include <66/utils.h>
+#include <66/write.h>
 
 #endif
