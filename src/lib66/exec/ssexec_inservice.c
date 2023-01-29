@@ -71,8 +71,6 @@ static unsigned int REVERSE = 0 ;
 static unsigned int NOFIELD = 1 ;
 static unsigned int GRAPH = 0 ;
 static unsigned int nlog = 20 ;
-static stralloc src = STRALLOC_ZERO ;
-static stralloc home = STRALLOC_ZERO ;// /var/lib/66/system or ${HOME}/system
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -187,11 +185,11 @@ static void info_display_intree(char const *field,resolve_service_t *res)
 
 static void info_get_status(resolve_service_t *res)
 {
-    int r ;
-    int wstat ;
+    int r, wstat, warn_color = 0 ;
     pid_t pid ;
+
     ss_state_t sta = STATE_ZERO ;
-    int warn_color = 0 ;
+
     if (res->type == TYPE_CLASSIC) {
 
         r = s6_svc_ok(res->sa.s + res->live.scandir) ;
@@ -443,57 +441,51 @@ static void info_display_deps(char const *field, resolve_service_t *res)
         stralloc_free(&deps) ;
 }
 
-static void info_display_with_source_tree(stralloc *list,resolve_service_t *res)
+static void info_display_with_source_tree(stralloc *list, resolve_service_t *res)
 {
-    size_t pos = 0, lpos = 0, newlen = 0 ;
-    stralloc svlist = STRALLOC_ZERO ;
-    stralloc ntree = STRALLOC_ZERO ;
-    stralloc src = STRALLOC_ZERO ;
+    size_t pos = 0, lpos = 0 ;
     stralloc tmp = STRALLOC_ZERO ;
-    char const *exclude[2] = { SS_RESOLVE + 1, 0 } ;
-    char *treename = 0 ;
+    stralloc sa = STRALLOC_ZERO ;
 
-    if (!auto_stra(&src,home.s)) log_die_nomem("stralloc") ;
-    newlen = src.len ;
+    if (!resolve_get_field_tosa_g(&sa, pinfo->base.s, SS_MASTER + 1, DATA_TREE_MASTER, E_RESOLVE_TREE_MASTER_CONTENTS))
+        log_dieu(LOG_EXIT_SYS, "get list of trees") ;
 
-    if (!sastr_dir_get(&ntree,home.s,exclude,S_IFDIR))
-        log_dieu(LOG_EXIT_SYS,"get list of trees of: ",home.s) ;
+    size_t len = sa.len ;
 
-    for (pos = 0 ; pos < ntree.len ; pos += strlen(ntree.s + pos) + 1)
-    {
-        svlist.len = 0 ;
-        src.len = newlen ;
-        treename = ntree.s + pos ;
+    char t[len + 1] ;
 
-        if (!auto_stra(&src,treename,SS_SVDIRS,SS_RESOLVE))
-            log_die_nomem("stralloc") ;
+    sastr_to_char(t, &sa) ;
 
-        exclude[0] = SS_MASTER + 1 ;
-        exclude[1] = 0 ;
-        if (!sastr_dir_get(&svlist,src.s,exclude,S_IFREG))
-            log_dieu(LOG_EXIT_SYS,"get contents of tree: ",src.s) ;
+    sa.len = 0 ;
 
-        for (lpos = 0 ; lpos < list->len ; lpos += strlen(list->s + lpos) + 1)
-        {
-            char *name = list->s + lpos ;
-            if (sastr_cmp(&svlist,name) >= 0)
-            {
-                if (!stralloc_cats(&tmp,name) ||
-                !stralloc_cats(&tmp,":") ||
-                !stralloc_catb(&tmp,treename,strlen(treename) +1))
+    for (; pos < len ; pos += strlen(t + pos) + 1) {
+
+        sa.len = lpos = 0 ;
+        char *treename = t + pos ;
+
+        if (!resolve_get_field_tosa_g(&sa, pinfo->base.s, treename, DATA_TREE, E_RESOLVE_TREE_CONTENTS))
+            log_dieu(LOG_EXIT_SYS, "get services list from tree: ", treename) ;
+
+        FOREACH_SASTR(&sa, lpos) {
+
+            char *service = sa.s + lpos ;
+
+            if (sastr_cmp(list, service) >= 0) {
+
+                if (!stralloc_cats(&tmp, service) ||
+                !stralloc_cats(&tmp, ":") ||
+                !stralloc_catb(&tmp, treename, strlen(treename) +1))
                     log_die_nomem("stralloc") ;
             }
         }
     }
 
-    list->len = 0 ;
-    for (pos = 0 ; pos < tmp.len ; pos += strlen(tmp.s + pos) + 1)
-        if (!stralloc_catb(list,tmp.s + pos,strlen(tmp.s + pos) + 1))
+    list->len = pos = 0 ;
+    FOREACH_SASTR(&tmp, pos)
+        if (!stralloc_catb(list, tmp.s + pos, strlen(tmp.s + pos) + 1))
             log_die_nomem("stralloc") ;
 
-    stralloc_free (&svlist) ;
-    stralloc_free (&ntree) ;
-    stralloc_free (&src) ;
+    stralloc_free (&sa) ;
     stralloc_free (&tmp) ;
 }
 
@@ -837,19 +829,15 @@ int ssexec_inservice(int argc, char const *const *argv, ssexec_t *info)
     int what[MAXOPTS] = { 0 } ;
 
     pinfo = info ;
-    uid_t owner ;
-    char ownerstr[UID_FMT] ;
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-    stralloc satree = STRALLOC_ZERO ;
 
     char const *svname = 0 ;
     char atree[SS_MAX_TREENAME + 1] ;
 
     for (int i = 0 ; i < MAXOPTS ; i++)
         what[i] = -1 ;
-
 
     char buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
         "Name",
@@ -893,11 +881,13 @@ int ssexec_inservice(int argc, char const *const *argv, ssexec_t *info)
         argc -= l.ind ; argv += l.ind ;
     }
 
-    if (!argc) log_usage(usage_service_status, "\n", help_service_status) ;
+    if (!argc)
+        log_usage(usage_service_status, "\n", help_service_status) ;
+
     svname = *argv ;
 
-    if (legacy)
-    {
+    if (legacy) {
+
         unsigned int i = 0 ;
         for (; i < MAXOPTS - 1 ; i++)
             what[i] = i ;
@@ -905,19 +895,12 @@ int ssexec_inservice(int argc, char const *const *argv, ssexec_t *info)
         what[i] = -1 ;
     }
 
-    owner = getuid() ;
-    size_t ownerlen = uid_fmt(ownerstr,owner) ;
-    ownerstr[ownerlen] = 0 ;
-
     info_field_align(buf,fields,field_suffix,MAXOPTS) ;
 
     setlocale(LC_ALL, "");
 
-    if(!strcmp(nl_langinfo(CODESET), "UTF-8")) {
+    if(!strcmp(nl_langinfo(CODESET), "UTF-8"))
         S_STYLE = &graph_utf8;
-    }
-    if (!set_ownersysdir(&home,owner)) log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
-    if (!auto_stra(&home,SS_SYSTEM,"/")) log_die_nomem("stralloc") ;
 
     r = service_is_g(atree, svname, STATE_FLAGS_ISPARSED) ;
     if (r < 0)
@@ -937,12 +920,8 @@ int ssexec_inservice(int argc, char const *const *argv, ssexec_t *info)
     if (buffer_putsflush(buffer_1,"\n") == -1)
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 
-
     freed:
     resolve_free(wres) ;
-    stralloc_free(&src) ;
-    stralloc_free(&home) ;
-    stralloc_free(&satree) ;
 
     return 0 ;
 
