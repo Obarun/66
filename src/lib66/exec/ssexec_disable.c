@@ -46,7 +46,7 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
     log_flow() ;
 
     uint32_t flag = 0 ;
-    uint8_t stop = 0, remove = 0 ;
+    uint8_t stop = 0 ;
     int n = 0, e = 1 ;
     size_t pos = 0 ;
     graph_t graph = GRAPH_ZERO ;
@@ -74,14 +74,12 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
 
                 case 'F' :
 
-                    log_1_warn("options -F is deprecated -- skipping it") ;
+                    log_1_warn("options -F is dead -- skipping it") ;
                     break ;
 
                 case 'R' :
 
-                    if (stop)
-                        log_usage(usage_disable) ;
-                    remove = 1 ;
+                    log_1_warn("options -F is deprecated -- use instead 66 service remove <service>") ;
                     break ;
 
                 default :
