@@ -13,16 +13,18 @@
  * */
 
 #include <stdint.h>
+#include <unistd.h>
 
 #include <oblibs/log.h>
 
-#include <skalibs/stralloc.h>
 #include <skalibs/lolstdio.h>
-#include <skalibs/buffer.h>
+#include <skalibs/types.h>
 
-#include <66/info.h>
 #include <66/service.h>
-#include <66/tree.h>
+#include <66/utils.h>
+#include <66/resolve.h>
+#include <66/config.h>
+#include <66/constants.h>
 #include <66/state.h>
 #include <66/enum.h>
 
@@ -32,69 +34,56 @@ int info_graph_display_service(char const *name, char const *obj)
 {
     log_flow() ;
 
-    stralloc tree = STRALLOC_ZERO ;
+    int err = 0 ;
+    uint8_t pid_color = 0 ;
+
+    char str_pid[UINT_FMT] ;
+    char *ppid ;
+
+    ss_state_t sta = STATE_ZERO ;
+    s6_svstatus_t status = S6_SVSTATUS_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
-    int r = service_intree(&tree, name, obj), err = 0 ;
+    char base[SS_MAX_PATH_LEN + SS_SYSTEM_LEN + 1] ;
 
-    if (r != 2) {
-        if (r == 1)
-            log_warnu("find: ", name, " at tree: ", !obj ? tree.s : obj) ;
-        if (r > 2)
-            log_1_warn(name, " is set on different tree -- please use -t options") ;
+    if (!set_ownersysdir_stack(base, getuid()))
+        log_warn_return(LOG_EXIT_ZERO, "set owner directory") ;
 
+    if (!resolve_read_g(wres, base, name)) {
+        log_warnu("read resolve file of: ",name) ;
         goto freed ;
     }
 
-    if (!resolve_check(tree.s, name))
+    if (!state_read(&sta, res.sa.s + res.path.home, name)) {
+        log_warnusys("read state of: ",name) ;
         goto freed ;
+    }
 
-    if (!resolve_read(wres, tree.s, name))
-        goto freed ;
+    if (res.type == TYPE_CLASSIC) {
 
-    char str_pid[UINT_FMT] ;
-    uint8_t pid_color = 0 ;
-    char *ppid ;
-    ss_state_t sta = STATE_ZERO ;
-    s6_svstatus_t status = S6_SVSTATUS_ZERO ;
-
-    if (res.type == TYPE_CLASSIC || res.type == TYPE_LONGRUN) {
-
-        s6_svstatus_read(res.sa.s + res.runat ,&status) ;
+        s6_svstatus_read(res.sa.s + res.live.scandir ,&status) ;
         pid_color = !status.pid ? 1 : 2 ;
         str_pid[uint_fmt(str_pid, status.pid)] = 0 ;
         ppid = &str_pid[0] ;
 
     } else {
 
-        char *ste = res.sa.s + res.state ;
-        char *name = res.sa.s + res.name ;
-        if (!state_check(ste,name)) {
-
-            ppid = "unitialized" ;
-            goto dis ;
-        }
-
-        if (!state_read(&sta,ste,name)) {
-
-            log_warnu("read state of: ",name) ;
-            goto freed ;
-        }
-        if (sta.init) {
+         if (!service_is(&sta, STATE_FLAGS_TOINIT)) {
 
             ppid = "unitialized" ;
             goto dis ;
 
-        } else if (!sta.state) {
+        } else if (!service_is(&sta, STATE_FLAGS_ISUP)) {
 
             ppid = "down" ;
             pid_color = 1 ;
 
-        } else if (sta.state) {
+        } else {
 
             ppid = "up" ;
             pid_color = 2 ;
+
         }
     }
 
@@ -102,25 +91,23 @@ int info_graph_display_service(char const *name, char const *obj)
 
     if (!bprintf(buffer_1,"(%s%s%s,%s%s%s,%s) %s", \
 
-                pid_color > 1 ? log_color->valid : pid_color ? log_color->error : log_color->warning, \
-                ppid, \
-                log_color->off, \
+        pid_color > 1 ? log_color->valid : pid_color ? log_color->error : log_color->warning, \
+        ppid, \
+        log_color->off, \
 
-                res.disen ? log_color->off : log_color->error, \
-                res.disen ? "Enabled" : "Disabled", \
-                log_color->off, \
+        service_is(&sta, STATE_FLAGS_ISENABLED) ? log_color->off : log_color->error, \
+        service_is(&sta, STATE_FLAGS_ISENABLED) ? "Enabled" : "Disabled", \
+        log_color->off, \
 
-                get_key_by_enum(ENUM_TYPE,res.type), \
+        get_key_by_enum(ENUM_TYPE,res.type), \
 
-                name))
-                    goto freed ;
+        name))
+            goto freed ;
 
     err = 1 ;
 
     freed:
         resolve_free(wres) ;
-        stralloc_free(&tree) ;
 
     return err ;
-
 }

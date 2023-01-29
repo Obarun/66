@@ -88,7 +88,6 @@ static void info_display_live(char const *field, resolve_service_t *res) ;
 static void info_display_deps(char const *field, resolve_service_t *res) ;
 static void info_display_requiredby(char const *field, resolve_service_t *res) ;
 static void info_display_optsdeps(char const *field, resolve_service_t *res) ;
-static void info_display_extdeps(char const *field, resolve_service_t *res) ;
 static void info_display_start(char const *field, resolve_service_t *res) ;
 static void info_display_stop(char const *field, resolve_service_t *res) ;
 static void info_display_envat(char const *field, resolve_service_t *res) ;
@@ -99,17 +98,7 @@ static void info_display_logfile(char const *field, resolve_service_t *res) ;
 
 info_graph_style *S_STYLE = &graph_default ;
 
-
-
-
-
-
-#include <stdio.h>// a effacer
-
-
-
-
-
+static ssexec_t_ref pinfo = 0 ;
 
 info_opts_map_t const opts_sv_table[] =
 {
@@ -123,19 +112,18 @@ info_opts_map_t const opts_sv_table[] =
     { .str = "live", .svfunc = &info_display_live, .id = 7 },
     { .str = "depends", .svfunc = &info_display_deps, .id = 8 },
     { .str = "requiredby", .svfunc = &info_display_requiredby, .id = 9 },
-    { .str = "extdepends", .svfunc = &info_display_extdeps, .id = 10 },
-    { .str = "optsdepends", .svfunc = &info_display_optsdeps, .id = 11 },
-    { .str = "start", .svfunc = &info_display_start, .id = 12 },
-    { .str = "stop", .svfunc = &info_display_stop, .id = 13 },
-    { .str = "envat", .svfunc = &info_display_envat, .id = 14 },
-    { .str = "envfile", .svfunc = &info_display_envfile, .id = 15 },
-    { .str = "logname", .svfunc = &info_display_logname, .id = 16 },
-    { .str = "logdst", .svfunc = &info_display_logdst, .id = 17 },
-    { .str = "logfile", .svfunc = &info_display_logfile, .id = 18 },
+    { .str = "optsdepends", .svfunc = &info_display_optsdeps, .id = 10 },
+    { .str = "start", .svfunc = &info_display_start, .id = 11 },
+    { .str = "stop", .svfunc = &info_display_stop, .id = 12 },
+    { .str = "envat", .svfunc = &info_display_envat, .id = 13 },
+    { .str = "envfile", .svfunc = &info_display_envfile, .id = 14 },
+    { .str = "logname", .svfunc = &info_display_logname, .id = 15 },
+    { .str = "logdst", .svfunc = &info_display_logdst, .id = 16 },
+    { .str = "logfile", .svfunc = &info_display_logfile, .id = 17 },
     { .str = 0, .svfunc = 0, .id = -1 }
 } ;
 
-#define MAXOPTS 20
+#define MAXOPTS 19
 #define checkopts(n) if (n >= MAXOPTS) log_die(LOG_EXIT_USER, "too many options")
 #define DELIM ','
 
@@ -174,11 +162,9 @@ char *print_nlog(char *str, int n)
 
 static void info_display_string(char const *str)
 {
-    if (!bprintf(buffer_1,"%s",str))
-        log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-
-    if (buffer_putsflush(buffer_1,"\n") == -1)
-        log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+    if (!bprintf(buffer_1,"%s",str) ||
+        buffer_putsflush(buffer_1,"\n") == -1)
+            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 }
 
 static void info_display_name(char const *field, resolve_service_t *res)
@@ -190,16 +176,7 @@ static void info_display_name(char const *field, resolve_service_t *res)
 static void info_display_version(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
-    /** tempory check here, it not mandatory for the moment*/
-    if (res->version > 0)
-    {
-        info_display_string(res->sa.s + res->version) ;
-    }
-    else
-    {
-        if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
-            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-    }
+    info_display_string(res->sa.s + res->version) ;
 }
 
 static void info_display_intree(char const *field,resolve_service_t *res)
@@ -215,11 +192,10 @@ static void info_get_status(resolve_service_t *res)
     pid_t pid ;
     ss_state_t sta = STATE_ZERO ;
     int warn_color = 0 ;
-    if (res->type == TYPE_CLASSIC)
-    {
+    if (res->type == TYPE_CLASSIC) {
+
         r = s6_svc_ok(res->sa.s + res->live.scandir) ;
-        if (r != 1)
-        {
+        if (r != 1) {
             if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
             return ;
@@ -237,48 +213,32 @@ static void info_get_status(resolve_service_t *res)
 
         if (wstat)
             log_dieu(LOG_EXIT_SYS,"status for service: ",res->sa.s + res->name) ;
-    }
-    else
-    {
+
+    } else {
+
         char *ste = res->sa.s + res->path.home ;
         char *name = res->sa.s + res->name ;
         char *status = 0 ;
-        if (!state_check(ste, SS_STATUS))
-        {
-            status = "unitialized" ;
-            goto dis ;
-        }
 
         if (!state_read(&sta, ste, name))
             log_dieusys(LOG_EXIT_SYS,"read state of: ",name) ;
 
-        if (sta.toinit) {
+        if (!service_is(&sta, STATE_FLAGS_TOINIT)) {
+
             status = "unitialized" ;
-        }
-        /*
-         *
-         *
-         *
-         *
-         *
-         * A revoir sta.statedir n'exist pas
-         *
-         *
-         *
-         *
-         *
-        else if (!sta.statedir)
-        {
+
+        } else if (!service_is(&sta, STATE_FLAGS_ISUP)) {
+
             status = "down" ;
             warn_color = 1 ;
-        }
-        else if (sta.statedir)
-        {
+
+        } else {
+
             status = "up" ;
             warn_color = 2 ;
-        }*/
-        dis:
-        if (!bprintf(buffer_1,"%s%s%s\n",warn_color > 1 ? log_color->valid : warn_color ? log_color->error : log_color->warning,status,log_color->off))
+        }
+
+        if (!bprintf(buffer_1, "%s%s%s\n", warn_color > 1 ? log_color->valid : warn_color ? log_color->error : log_color->warning, status, log_color->off))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
     }
 }
@@ -290,10 +250,11 @@ static void info_display_status(char const *field,resolve_service_t *res)
 
     if (NOFIELD) info_display_field_name(field) ;
 
-    if (state_read(&ste, res->sa.s + res->path.home, res->sa.s + res->name))
+    if (!state_read(&ste, res->sa.s + res->path.home, res->sa.s + res->name))
         log_dieusys(LOG_EXIT_SYS, "read state file of: ", res->sa.s + res->name) ;
 
-    disen = FLAGS_ISSET(ste.isenabled, STATE_FLAGS_TRUE) ;
+    disen = service_is(&ste, STATE_FLAGS_ISENABLED) ;
+
     if (!bprintf(buffer_1,"%s%s%s%s", disen ? log_color->valid : log_color->error, disen ? "enabled" : "disabled", log_color->off, ", "))
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
@@ -333,18 +294,19 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
     size_t padding = 1 ;
     int r ;
     graph_t graph = GRAPH_ZERO ;
+
+    unsigned int areslen = 0 ;
+    resolve_service_t ares[SS_MAX_SERVICE] ;
+
     stralloc deps = STRALLOC_ZERO ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    size_t treelen = strlen(res->sa.s + res->path.tree) ;
-    char solve[treelen + SS_SVDIRS_LEN + 1] ;
+    graph_build_service(&graph, ares, &areslen, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
-    auto_strings(solve, res->sa.s + res->path.tree, SS_SVDIRS) ;
-
-    if (!graph_build_service_bytree(&graph, solve, 2, 0))
-        log_dieu(LOG_EXIT_SYS,"build the graph dependencies") ;
+   if (!graph.mlen)
+        log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
 
     unsigned int list[graph.mlen] ;
 
@@ -410,13 +372,18 @@ static void info_display_deps(char const *field, resolve_service_t *res)
     size_t padding = 1 ;
     graph_t graph = GRAPH_ZERO ;
 
+    unsigned int areslen = 0 ;
+    resolve_service_t ares[SS_MAX_SERVICE] ;
+
     stralloc deps = STRALLOC_ZERO ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    if (!graph_build_service_bytree(&graph, res->sa.s + res->path.tree, 2, 0))
-        log_dieu(LOG_EXIT_SYS,"build the graph dependencies") ;
+    graph_build_service(&graph, ares, &areslen, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
+
+    if (!graph.mlen)
+        log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
 
     unsigned int list[graph.mlen] ;
 
@@ -489,7 +456,6 @@ static void info_display_with_source_tree(stralloc *list,resolve_service_t *res)
     if (!auto_stra(&src,home.s)) log_die_nomem("stralloc") ;
     newlen = src.len ;
 
-
     if (!sastr_dir_get(&ntree,home.s,exclude,S_IFDIR))
         log_dieu(LOG_EXIT_SYS,"get list of trees of: ",home.s) ;
 
@@ -561,67 +527,38 @@ static void info_display_optsdeps(char const *field, resolve_service_t *res)
         stralloc_free(&salist) ;
 }
 
-static void info_display_extdeps(char const *field, resolve_service_t *res)
-{
-    /*
-    stralloc salist = STRALLOC_ZERO ;
-
-    if (NOFIELD) info_display_field_name(field) ;
-    else field = 0 ;
-
-    if (!res->nextdeps) goto empty ;
-
-    if (!sastr_clean_string(&salist,res->sa.s + res->extdeps))
-        log_dieu(LOG_EXIT_SYS,"build dependencies list") ;
-
-    info_display_with_source_tree(&salist,res) ;
-
-    if (REVERSE)
-        if (!sastr_reverse(&salist))
-                log_dieu(LOG_EXIT_SYS,"reverse dependencies list") ;
-
-    info_display_list(field,&salist) ;
-
-    goto freed ;
-
-    empty:
-        if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
-            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-
-    freed:
-        stralloc_free(&salist) ;
-    */
-}
-
 static void info_display_start(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     else field = 0 ;
+
+    size_t padding = info_length_from_wchar(field) + 1 ;
+    if (field)
+        if (!bprintf(buffer_1,"\n%*s",padding,""))
+            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+
     if (res->execute.run.run_user)
-    {
-        info_display_nline(field,res->sa.s + res->execute.run.run_user) ;
-    }
+        info_display_nline(field, res->sa.s + res->execute.run.run_user) ;
     else
-    {
         if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-    }
 }
 
 static void info_display_stop(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     else field = 0 ;
+
+    size_t padding = info_length_from_wchar(field) + 1 ;
+    if (field)
+        if (!bprintf(buffer_1,"\n%*s",padding,""))
+            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+
     if (res->execute.finish.run_user)
-    {
         info_display_nline(field,res->sa.s + res->execute.finish.run_user) ;
-    }
     else
-    {
         if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-    }
-
 }
 
 static void info_display_envat(char const *field,resolve_service_t *res)
@@ -896,9 +833,10 @@ static void info_parse_options(char const *str,int *what)
 int ssexec_inservice(int argc, char const *const *argv, ssexec_t *info)
 {
     unsigned int legacy = 1 ;
-    int found = 0 ;
+    int r = 0 ;
     int what[MAXOPTS] = { 0 } ;
 
+    pinfo = info ;
     uid_t owner ;
     char ownerstr[UID_FMT] ;
 
@@ -924,7 +862,6 @@ int ssexec_inservice(int argc, char const *const *argv, ssexec_t *info)
         "Live",
         "Dependencies",
         "Required by",
-        "External dependencies" ,
         "Optional dependencies" ,
         "Start script",
         "Stop script",
@@ -982,39 +919,18 @@ int ssexec_inservice(int argc, char const *const *argv, ssexec_t *info)
     if (!set_ownersysdir(&home,owner)) log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
     if (!auto_stra(&home,SS_SYSTEM,"/")) log_die_nomem("stralloc") ;
 
-    /*
-     *
-     *
-     * sortie a revoir pour le passage vers service_is_g
-     *
-     *
-     * */
-    found = service_is_g(atree, svname, STATE_FLAGS_ISENABLED) ;
+    r = service_is_g(atree, svname, STATE_FLAGS_ISPARSED) ;
+    if (r < 0)
+        log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please make a bug report") ;
 
-    if (found == -1) log_dieusys(LOG_EXIT_SYS,"resolve tree source of service: ",svname) ;
-    else if (!found) {
-        log_info("no tree exist yet") ;
+    if (!r) {
+        /** nothing to do */
+        log_1_warn("unknown service: ", svname) ;
         goto freed ;
     }
-    else if (found > 2) {
-        log_die(LOG_EXIT_SYS,svname," is set on different tree -- please use -t options") ;
-    }
-    else if (found == 1) log_die(LOG_EXIT_SYS,"unknown service: ",svname) ;
-    /**
-     *
-     *
-     *
-     *  le src.s est vide ducon
-     *
-     * a revoir
-     *
-     *
-     *
-     *
-     *
-     * */
-    if (!resolve_read(wres,src.s,svname))
-        log_dieusys(LOG_EXIT_SYS,"read resolve file of: ",svname) ;
+
+    if (!resolve_read_g(wres, info->base.s, svname))
+        log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", svname) ;
 
     info_display_all(&res,what) ;
 
