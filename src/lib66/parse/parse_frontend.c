@@ -141,7 +141,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
         } else if (info->opt_tree) {
             /* -t option was used */
             if (strcmp(info->treename.s, atree))
-                log_die(LOG_EXIT_SYS,"you can not enable again a service already set on another tree -- current: ", atree, " asked: ", info->treename.s, ". Try first to disable it") ;
+                log_warn("service: ", svname, " is already parsed at tree: ", atree, " -- switching it to tree: ", info->treename.s) ;
 
         }
 
@@ -220,6 +220,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
             res.dependencies.depends = resolve_add_string(wres, res.sa.s + res.dependencies.optsdeps) ;
         }
+        res.dependencies.ndepends += res.dependencies.noptsdeps ;
     }
 
     /** We take the dependencies in two case:
