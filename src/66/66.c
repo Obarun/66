@@ -212,7 +212,7 @@ int main(int argc, char const *const *argv)
         argc -= l.ind ; argv += l.ind ;
     }
 
-    if (!strcmp(argv[1], "version")) {
+    if (!strcmp(argv[0], "version")) {
 
         PROG = "version" ;
         log_info(SS_VERSION) ;
