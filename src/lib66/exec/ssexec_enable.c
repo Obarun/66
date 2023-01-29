@@ -142,7 +142,18 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
         log_die(LOG_EXIT_USER, "services selection is not available -- try first to install the corresponding frontend file") ;
 
     for (n = 0 ; n < argc ; n++) {
-
+        /**
+         *
+         *
+         * need to check if the service is declared at the same tree
+         * than asked:
+         *    sA on tA
+         *    ask sA on tB by the -t options
+         *
+         * in this case we need to remove sA from the resolve file of the tree tA
+         *
+         *
+         * */
         service_enable_disable(&graph, info->base.s, argv[n], 1) ;
 
         if (!sastr_add_string(&sa, argv[n]))
