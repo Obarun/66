@@ -33,6 +33,7 @@ extern int graph_compute_dependencies(graph_t *g, char const *vertex, char const
 
 extern int graph_build_service_bytree(graph_t *g, char const *tree, uint8_t what,  uint8_t is_supervised) ;
 extern int graph_build_service_bytree_from_src(graph_t *g, char const *src, uint8_t what) ;
-
+/** possible remove of it */
+extern int graph_build_service_from_sastr(graph_t *graph, stralloc *sa, char const *base) ;
 
 #endif

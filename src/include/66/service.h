@@ -376,8 +376,7 @@ extern void service_graph_build(graph_t *g, resolve_service_t *ares, unsigned in
 
 extern int service_is(ss_state_t *ste, uint32_t flag) ;
 
-/** possible remove of it */
-extern int graph_build_service_from_list(char const *const *list, char const *base, graph_t *graph, resolve_service_t *ares, uint8_t requiredby) ;
+
 
 
 
