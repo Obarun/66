@@ -75,7 +75,7 @@ int info_graph_display_tree(char const *name)
     if (enabled < 0)
         goto freed ;
 
-    if (!bprintf(buffer_1," %s (%s%s%s,%s%s%s,%s%s%s)", \
+    if (!bprintf(buffer_1,"%s (%s%s%s,%s%s%s,%s%s%s)", \
 
                 name, \
 

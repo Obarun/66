@@ -30,7 +30,7 @@
 
 #include <s6/supervise.h>
 
-int info_graph_display_service(char const *name, char const *obj)
+int info_graph_display_service(char const *name)
 {
     log_flow() ;
 
@@ -89,21 +89,21 @@ int info_graph_display_service(char const *name, char const *obj)
 
     dis:
 
-    if (!bprintf(buffer_1," %s (%s%s%s,%s%s%s,%s%s%s,%s:%s)", \
+    if (!bprintf(buffer_1,"%s (%s%s%s%s,%s%s%s%s,%s%s%s%s,%s%s%s%s)", \
 
         name, \
 
-        pid_color > 1 ? log_color->valid : pid_color ? log_color->error : log_color->warning, \
+        "pid=",pid_color > 1 ? log_color->valid : pid_color ? log_color->error : log_color->warning, \
         ppid, \
         log_color->off, \
 
-        service_is(&sta, STATE_FLAGS_ISENABLED) ? log_color->off : log_color->warning, \
+        "state=", service_is(&sta, STATE_FLAGS_ISENABLED) ? log_color->off : log_color->warning, \
         service_is(&sta, STATE_FLAGS_ISENABLED) ? "Enabled" : "Disabled", \
         log_color->off, \
 
-        log_color->blue, get_key_by_enum(ENUM_TYPE,res.type), log_color->off, \
+        "type=", log_color->blue, get_key_by_enum(ENUM_TYPE,res.type), log_color->off, \
 
-        "tree", res.sa.s + res.treename ))
+        "intree=", BMAGENTA, res.sa.s + res.treename, log_color->off ))
             goto freed ;
 
     err = 1 ;
