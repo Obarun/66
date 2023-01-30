@@ -41,7 +41,7 @@ int ssexec_service_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->prog = PROG ;
         info->help = help_service_status ;
         info->usage = usage_service_status ;
-        func = &ssexec_inservice ;
+        func = &ssexec_service_status ;
 
     } else if (!strcmp(argv[1], "resolve")) {
 
@@ -49,7 +49,7 @@ int ssexec_service_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->prog = PROG ;
         info->help = help_service_resolve ;
         info->usage = usage_service_resolve ;
-        func = &ssexec_resolve_service ;
+        func = &ssexec_service_resolve ;
 
     } else if (!strcmp(argv[1], "state")) {
 
@@ -57,7 +57,7 @@ int ssexec_service_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->prog = PROG ;
         info->help = help_service_state ;
         info->usage = usage_service_state ;
-        func = &ssexec_instate ;
+        func = &ssexec_service_state ;
 
     } else if (!strcmp(argv[1], "remove")) {
 

@@ -42,7 +42,7 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->prog = PROG ;
         info->help = help_tree_create ;
         info->usage = usage_tree_create ;
-        func = &ssexec_tree ;
+        func = &ssexec_tree_admin ;
 
         argc-- ;
         argv++ ;
@@ -54,7 +54,7 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->prog = PROG ;
         info->help = help_tree_admin ;
         info->usage = usage_tree_admin ;
-        func = &ssexec_tree ;
+        func = &ssexec_tree_admin ;
 
         argc-- ;
         argv++ ;
@@ -67,7 +67,7 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->prog = PROG ;
         info->help = help_tree_remove ;
         info->usage = usage_tree_remove ;
-        func = &ssexec_tree ;
+        func = &ssexec_tree_admin ;
 
         argc-- ;
         argv++ ;
@@ -80,7 +80,7 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->prog = PROG ;
         info->help = help_tree_enable ;
         info->usage = usage_tree_enable ;
-        func = &ssexec_tree ;
+        func = &ssexec_tree_admin ;
 
         argc-- ;
         argv++ ;
@@ -94,7 +94,7 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->help = help_tree_disable ;
         info->usage = usage_tree_disable ;
 
-        func = &ssexec_tree ;
+        func = &ssexec_tree_admin ;
 
         argc-- ;
         argv++ ;
@@ -108,7 +108,7 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->help = help_tree_current ;
         info->usage = usage_tree_current ;
 
-        func = &ssexec_tree ;
+        func = &ssexec_tree_admin ;
 
         argc-- ;
         argv++ ;
@@ -121,7 +121,7 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->help = help_tree_resolve ;
         info->usage = usage_tree_resolve ;
 
-        func = &ssexec_resolve_tree ;
+        func = &ssexec_tree_resolve ;
 
         argc-- ;
         argv++ ;
@@ -134,7 +134,7 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->help = help_tree_status ;
         info->usage = usage_tree_status ;
 
-        func = &ssexec_intree ;
+        func = &ssexec_tree_status ;
 
         argc-- ;
         argv++ ;
@@ -144,7 +144,7 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->prog = PROG ;
         info->help = help_tree_up ;
         info->usage = usage_tree_up ;
-        func = &ssexec_treectl ;
+        func = &ssexec_tree_signal ;
         ctl++ ;
 
     } else if (!strcmp(argv[1], "down")) {
@@ -152,7 +152,7 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->prog = PROG ;
         info->help = help_tree_down ;
         info->usage = usage_tree_down ;
-        func = &ssexec_treectl ;
+        func = &ssexec_tree_signal ;
         ctl++ ;
 
     } else if (!strcmp(argv[1], "unsupervise")) {
@@ -160,7 +160,7 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->prog = PROG ;
         info->help = help_tree_unsupervise ;
         info->usage = usage_tree_unsupervise ;
-        func = &ssexec_treectl ;
+        func = &ssexec_tree_signal ;
         ctl++ ;
 
     } else {

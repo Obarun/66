@@ -1,5 +1,5 @@
 /*
- * ssexec_instate.c
+ * ssexec_service_state.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -70,7 +70,7 @@ static void info_display_int(char const *field,unsigned int id)
     info_display_string(field,str) ;
 }
 
-int ssexec_instate(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_service_state(int argc, char const *const *argv, ssexec_t *info)
 {
     int found = 0 ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;

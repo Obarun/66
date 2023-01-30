@@ -334,9 +334,9 @@ int main(int argc, char const *const *argv)
         PROG = "svctl" ;
         nargv[n++] = PROG ;
         info.prog = PROG ;
-        info.help = help_svctl ;
-        info.usage = usage_svctl ;
-        func = &ssexec_svctl ;
+        info.help = help_service_signal ;
+        info.usage = usage_service_signal ;
+        func = &ssexec_service_signal ;
 
     } else if (!strcmp(argv[0], "tree")) {
 

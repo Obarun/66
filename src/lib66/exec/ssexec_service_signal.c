@@ -1,5 +1,5 @@
 /*
- * ssexec_svctl.c
+ * ssexec_service_signal.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -800,7 +800,7 @@ static int waitit(pidservice_t *apids, unsigned int what, graph_t *graph, tain *
         return e ;
 }
 
-int ssexec_svctl(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_service_signal(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 

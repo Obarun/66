@@ -1,5 +1,5 @@
 /*
- * ssexec_resolve_tree.c
+ * ssexec_tree_resolve.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -74,7 +74,7 @@ static void info_display_int(char const *field, uint32_t element)
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
-int ssexec_resolve_tree(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
 {
     int r = 0 ;
     uint8_t master = 0 ;

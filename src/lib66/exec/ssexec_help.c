@@ -194,9 +194,9 @@ char const *help_unsupervise =
 "   -P: do not propagate signal to its dependencies\n"
 ;
 
-char const *usage_svctl = "66 signal [ -h ] [ -wu | -wU | -wd | -wD | -wr | -wR ] [ -abqHkti12pcyodDuUxOr ] service..." ;
+char const *usage_service_signal = "66 signal [ -h ] [ -wu | -wU | -wd | -wD | -wr | -wR ] [ -abqHkti12pcyodDuUxOr ] service..." ;
 
-char const *help_svctl =
+char const *help_service_signal =
 "\nsend a signal to services\n"
 "\n"
 "options:\n"
@@ -229,7 +229,7 @@ char const *help_svctl =
 "   -r : restart service by sending it a signal(default SIGTERM)"
 ;
 
-char const *usage_tree_wrapper = "66 tree [ -h ] create|admin|remove|enable|disable|current|up|down|unsupervise [<command options>] tree" ;
+char const *usage_tree_wrapper = "66 tree [ -h ] create|admin|remove|enable|disable|current|status|resolve|up|down|unsupervise [<command options>] tree" ;
 
 char const *help_tree_wrapper =
 "\nmain sub tools to manages trees\n"
@@ -244,6 +244,8 @@ char const *help_tree_wrapper =
 "   enable: activate tree for the next boot\n"
 "   disable: deactivate tree for the next boot\n"
 "   current: mark tree as current\n"
+"   status: display information about tree\n"
+"   resolve: display resolve file of tree\n"
 "   up: bring up all services from tree\n"
 "   down: bring down all services from tree\n"
 "   unsupervise: bring down and unsupervise all services from tree\n"
@@ -360,7 +362,7 @@ char const *help_tree_status =
 "   allowed: displays a list of allowed user to use the tree\n"
 "   contents: displays the contents of the tree\n"
 "\n"
-"If not trees are provided, it display all trees from the system\n"
+"If no tree name are provided, it display all trees from the system\n"
 ;
 
 char const *usage_tree_up = "66 tree up [ -h ] [ -f ] tree" ;

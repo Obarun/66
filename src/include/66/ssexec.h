@@ -108,25 +108,29 @@ extern ssexec_func_t ssexec_enable ;
 extern ssexec_func_t ssexec_disable ;
 extern ssexec_func_t ssexec_start ;
 extern ssexec_func_t ssexec_stop ;
-extern ssexec_func_t ssexec_svctl ;
 extern ssexec_func_t ssexec_env ;
-extern ssexec_func_t ssexec_treectl ;
-extern ssexec_func_t ssexec_tree ;
 extern ssexec_func_t ssexec_reconfigure ;
 extern ssexec_func_t ssexec_reload ;
 extern ssexec_func_t ssexec_restart ;
-extern ssexec_func_t ssexec_inresolve ;
-extern ssexec_func_t ssexec_resolve_service ;
-extern ssexec_func_t ssexec_resolve_tree ;
-extern ssexec_func_t ssexec_instate ;
-extern ssexec_func_t ssexec_intree ;
-extern ssexec_func_t ssexec_inservice ;
+/** PID1 and supervision */
 extern ssexec_func_t ssexec_boot ;
 extern ssexec_func_t ssexec_scanctl ;
 extern ssexec_func_t ssexec_scandir ;
-extern ssexec_func_t ssexec_tree_wrapper ;
+//extern ssexec_func_t ssexec_inresolve ;
+/** service */
+extern ssexec_func_t ssexec_service_resolve ;
+extern ssexec_func_t ssexec_service_state ;
+extern ssexec_func_t ssexec_service_status ;
 extern ssexec_func_t ssexec_service_wrapper ;
 extern ssexec_func_t ssexec_service_admin ;
+extern ssexec_func_t ssexec_service_signal ;
+/** tree */
+extern ssexec_func_t ssexec_tree_wrapper ;
+extern ssexec_func_t ssexec_tree_signal ;
+extern ssexec_func_t ssexec_tree_admin ;
+extern ssexec_func_t ssexec_tree_status ;
+extern ssexec_func_t ssexec_tree_resolve ;
+
 
 extern void info_help (char const *help,char const *usage) ;
 
@@ -169,9 +173,6 @@ extern char const *help_restart ;
 extern char const *usage_unsupervise ;
 extern char const *help_unsupervise ;
 
-extern char const *usage_svctl ;
-extern char const *help_svctl ;
-
 extern char const *usage_tree_wrapper ;
 extern char const *help_tree_wrapper ;
 extern char const *usage_tree_create ;
@@ -207,6 +208,8 @@ extern char const *usage_service_state ;
 extern char const *help_service_state ;
 extern char const *usage_service_remove ;
 extern char const *help_service_remove ;
+extern char const *usage_service_signal ;
+extern char const *help_service_signal ;
 
 extern char const *usage_scanctl ;
 extern char const *help_scanctl ;

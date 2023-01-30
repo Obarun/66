@@ -1,5 +1,5 @@
 /*
- * ssexec_inservice.c
+ * ssexec_service_status.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -822,7 +822,7 @@ static void info_parse_options(char const *str,int *what)
     stralloc_free(&sa) ;
 }
 
-int ssexec_inservice(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_service_status(int argc, char const *const *argv, ssexec_t *info)
 {
     unsigned int legacy = 1 ;
     int r = 0 ;

@@ -168,7 +168,7 @@ int sanitize_system(ssexec_t *info)
         char const *prog = PROG ;
         PROG = "tree" ;
 
-        if (ssexec_tree(nargc, newargv, info))
+        if (ssexec_tree_admin(nargc, newargv, info))
             log_dieu(LOG_EXIT_SYS, "create tree: ", SS_DEFAULT_TREENAME) ;
 
         PROG = prog ;

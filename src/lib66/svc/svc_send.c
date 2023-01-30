@@ -35,6 +35,6 @@ int svc_send(char const *const *list, unsigned int nservice, char **sig, unsigne
 
     newargv[m++] = 0 ;
 
-    return ssexec_svctl(nargc, newargv, info) ;
+    return ssexec_service_signal(nargc, newargv, info) ;
 
 }

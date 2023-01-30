@@ -1,5 +1,5 @@
 /*
- * ssexec_intree.c
+ * ssexec_tree_status.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -449,7 +449,7 @@ static void info_parse_options(char const *str,int *what)
     stralloc_free(&sa) ;
 }
 
-int ssexec_intree(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_tree_status(int argc, char const *const *argv, ssexec_t *info)
 {
     unsigned int legacy = 1 ;
 

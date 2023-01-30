@@ -1,5 +1,5 @@
 /*
- * ssexec_resolve_service.c
+ * ssexec_service_resolve.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -156,7 +156,7 @@ static void info_display_service_field(resolve_service_t *res)
 
 }
 
-int ssexec_resolve_service(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_service_resolve(int argc, char const *const *argv, ssexec_t *info)
 {
     int r = 0 ;
 

@@ -1,5 +1,5 @@
 /*
- * ssexec_treectl.c
+ * ssexec_tree_signal.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -846,7 +846,7 @@ static int waitit(pidtree_t *apidt, unsigned int what, graph_t *graph, tain *dea
         return e ;
 }
 
-int ssexec_treectl(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 

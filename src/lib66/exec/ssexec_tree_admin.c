@@ -1,5 +1,5 @@
 /*
- * ssexec_tree.c
+ * ssexec_tree_admin.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -328,7 +328,7 @@ static void tree_parse_options_depends(graph_t *g, ssexec_t *info, char const *s
             log_trace("launch 66 tree sub-process for tree: ", name) ;
 
             PROG = "tree" ;
-            if (ssexec_tree(nargc, newargv, &newinfo))
+            if (ssexec_tree_admin(nargc, newargv, &newinfo))
                 log_dieusys(LOG_EXIT_SYS, "create tree: ", name) ;
             PROG = prog ;
 
@@ -1251,7 +1251,7 @@ void tree_clone(char const *clone, ssexec_t *info)
     log_info("Cloned successfully: ", info->treename.s, " to: ", clone) ;
 }
 
-int ssexec_tree(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow();
 
