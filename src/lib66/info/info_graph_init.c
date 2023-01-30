@@ -26,9 +26,9 @@ info_graph_style graph_utf8 = {
 } ;
 
 info_graph_style graph_default = {
-    "|-",
-    "`-",
-    "|",
+    "|-", // tip
+    "`-", // last
+    "|", // limb
     2
 } ;
 

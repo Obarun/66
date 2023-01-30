@@ -103,7 +103,7 @@ static void parse_notify_tree(resolve_service_t *res, char const *base, uint8_t 
                     log_dieu(LOG_EXIT_SYS, "clean string") ;
 
                 if (!sastr_remove_element(&sa, name))
-                    log_dieu(LOG_EXIT_SYS, "remove service: ", name, " from tree: ", treename) ;
+                    log_dieu(LOG_EXIT_SYS, "remove service: ", name, " list") ;
 
                 if (sa.len) {
                     if (!sastr_rebuild_in_oneline(&sa))
