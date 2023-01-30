@@ -358,8 +358,9 @@ char const *help_tree_status =
 "   depends: displays the list of tree(s) started before\n"
 "   requiredby: displays the list of tree(s) started after\n"
 "   allowed: displays a list of allowed user to use the tree\n"
-"   symlinks: displays the target of tree's symlinks\n"
 "   contents: displays the contents of the tree\n"
+"\n"
+"If not trees are provided, it display all trees from the system\n"
 ;
 
 char const *usage_tree_up = "66 tree up [ -h ] [ -f ] tree" ;

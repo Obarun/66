@@ -234,9 +234,9 @@ extern char const *help_scandir ;
 #define OPTS_TREECTL_LEN (sizeof OPTS_TREECTL - 1)
 #define OPTS_TREE "hco:EDRnadC:S:"
 #define OPTS_TREE_LEN (sizeof OPTS_TREE - 1)
-#define OPTS_INTREE "no:grd:l:"
+#define OPTS_INTREE "no:grd:"
 #define OPTS_INTREE_LEN (sizeof OPTS_INTREE - 1)
-#define OPTS_INSERVICE "no:grd:t:p:"
+#define OPTS_INSERVICE "no:grd:p:"
 #define OPTS_INSERVICE_LEN (sizeof OPTS_INSERVICE - 1)
 #define OPTS_BOOT "hms:e:d:b:l:"
 #define OPTS_BOOT_LEN (sizeof OPTS_BOOT - 1)
