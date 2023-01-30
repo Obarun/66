@@ -28,7 +28,7 @@
 #include <66/constants.h>
 #include <66/info.h>
 
-int info_graph_display_tree(char const *name, char const *obj)
+int info_graph_display_tree(char const *name)
 {
     log_flow() ;
 
@@ -67,21 +67,31 @@ int info_graph_display_tree(char const *name, char const *obj)
     if (init < 0)
         goto freed ;
 
+    int up = tres.supervised ;
+    if (up < 0)
+        goto freed ;
+
     int enabled = tree_isenabled(base, name) ;
     if (enabled < 0)
         goto freed ;
 
-    if (!bprintf(buffer_1,"(%s%s%s,%s%s%s) %s", \
+    if (!bprintf(buffer_1," %s (%s%s%s,%s%s%s,%s%s%s)", \
+
+                name, \
 
                 init ? log_color->valid : log_color->warning, \
                 init ? "Initialized" : "Unitialized", \
                 log_color->off, \
 
-                enabled ? log_color->valid : log_color->error, \
-                enabled ? "Enabled" : "Disabled", \
+                up ? log_color->valid : log_color->error, \
+                up ? "Up" : "Down", \
                 log_color->off, \
 
-                name))
+
+                enabled ? log_color->valid : log_color->warning, \
+                enabled ? "Enabled" : "Disabled", \
+                log_color->off))
+
                     goto freed ;
 
     err = 1 ;

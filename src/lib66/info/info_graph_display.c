@@ -19,7 +19,7 @@
 
 #include <66/info.h>
 
-int info_graph_display(char const *name, char const *obj, info_graph_func *func, depth_t *depth, int last, int padding, info_graph_style *style)
+int info_graph_display(char const *name, info_graph_func *func, depth_t *depth, int last, int padding, info_graph_style *style)
 {
     log_flow() ;
 
@@ -46,7 +46,7 @@ int info_graph_display(char const *name, char const *obj, info_graph_func *func,
                 style->indent * (depth->level - level), "", \
                 tip)) return 0 ;
 
-    int r = (*func)(name, obj) ;
+    int r = (*func)(name) ;
     if (!r) return 0 ;
     if (buffer_putsflush(buffer_1,"\n") < 0)
         return 0 ;

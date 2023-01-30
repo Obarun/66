@@ -23,7 +23,7 @@
 #include <66/info.h>
 #include <66/graph.h>
 
-int info_walk(graph_t *g, char const *name, char const *obj, info_graph_func *func, uint8_t requiredby, uint8_t reverse, depth_t *depth, int padding, info_graph_style *style)
+int info_walk(graph_t *g, char const *name, char const *treename, info_graph_func *func, uint8_t requiredby, uint8_t reverse, depth_t *depth, int padding, info_graph_style *style)
 {
     log_flow() ;
 
@@ -40,7 +40,7 @@ int info_walk(graph_t *g, char const *name, char const *obj, info_graph_func *fu
             stralloc_free(&sa) ;
             return e ;
         }
-        count = sastr_len(&sa) ;
+        count = sastr_nelement(&sa) ;
 
     } else {
 
@@ -70,35 +70,42 @@ int info_walk(graph_t *g, char const *name, char const *obj, info_graph_func *fu
         int last =  idx + 1 < count  ? 0 : 1 ;
         char *name = vertex + pos ;
 
-        if (!info_graph_display(name, obj, func, depth, last, padding, style))
+        if (depth->level == 1 && treename) {
+            char atree[SS_MAX_TREENAME + 1] ;
+
+            service_is_g(atree, name, 0) ;
+
+            if (strcmp(treename, atree))
+                continue ;
+        }
+
+        if (!info_graph_display(name, func, depth, last, padding, style))
             goto err ;
 
         if (graph_matrix_get_edge_g_sorted_sa(&sa, g, name, requiredby, 0) == -1)
             goto err ;
 
-        if (sa.len)
-        {
-            depth_t d =
-            {
+        if (sa.len) {
+
+            depth_t d = {
                 depth,
                 NULL,
                 depth->level + 1
             } ;
             depth->next = &d;
 
-            if(last)
-            {
-                if(depth->prev)
-                {
+            if(last) {
+
+                if(depth->prev) {
+
                     depth->prev->next = &d;
                     d.prev = depth->prev;
                     depth = &d;
-
                 }
                 else
                     d.prev = NULL;
             }
-            if (!info_walk(g, name, obj, func, requiredby, reverse, &d, padding, style))
+            if (!info_walk(g, name, treename, func, requiredby, reverse, &d, padding, style))
                 goto err ;
             depth->next = NULL ;
         }

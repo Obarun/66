@@ -253,7 +253,7 @@ static void info_display_status(char const *field,resolve_service_t *res)
 
     disen = service_is(&ste, STATE_FLAGS_ISENABLED) ;
 
-    if (!bprintf(buffer_1,"%s%s%s%s", disen ? log_color->valid : log_color->error, disen ? "enabled" : "disabled", log_color->off, ", "))
+    if (!bprintf(buffer_1,"%s%s%s%s", disen ? log_color->valid : log_color->warning, disen ? "enabled" : "disabled", log_color->off, ", "))
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
     if (buffer_putsflush(buffer_1,"") == -1)
@@ -317,12 +317,12 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
 
     if (GRAPH) {
 
-        if (!bprintf(buffer_1,"%s\n","/"))
+        if (!bprintf(buffer_1,"%s\n","\\"))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
         depth_t d = info_graph_init() ;
 
-        if (!info_walk(&graph, res->sa.s + res->name, res->sa.s + res->treename, &info_graph_display_service, 1, REVERSE, &d, padding, S_STYLE))
+        if (!info_walk(&graph, res->sa.s + res->name, 0, &info_graph_display_service, 1, REVERSE, &d, padding, S_STYLE))
             log_dieu(LOG_EXIT_SYS,"display the requiredby list") ;
 
         goto freed ;
@@ -349,7 +349,7 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
     empty:
         if (GRAPH)
         {
-            if (!bprintf(buffer_1,"%s\n","/"))
+            if (!bprintf(buffer_1,"%s\n","\\"))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
             if (!bprintf(buffer_1,"%*s%s%s%s%s\n",padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
@@ -394,12 +394,12 @@ static void info_display_deps(char const *field, resolve_service_t *res)
 
     if (GRAPH)
     {
-        if (!bprintf(buffer_1,"%s\n","/"))
+        if (!bprintf(buffer_1,"%s\n","\\"))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
         depth_t d = info_graph_init() ;
 
-        if (!info_walk(&graph, res->sa.s + res->name, res->sa.s + res->treename, &info_graph_display_service, 0, REVERSE, &d, padding, S_STYLE))
+        if (!info_walk(&graph, res->sa.s + res->name, 0, &info_graph_display_service, 0, REVERSE, &d, padding, S_STYLE))
             log_dieu(LOG_EXIT_SYS,"display the dependencies list") ;
 
         goto freed ;
@@ -424,7 +424,7 @@ static void info_display_deps(char const *field, resolve_service_t *res)
     empty:
         if (GRAPH)
         {
-            if (!bprintf(buffer_1,"%s\n","/"))
+            if (!bprintf(buffer_1,"%s\n","\\"))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
             if (!bprintf(buffer_1,"%*s%s%s%s%s\n",padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
