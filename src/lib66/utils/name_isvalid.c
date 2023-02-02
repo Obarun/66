@@ -26,7 +26,7 @@ void name_isvalid(char const *name)
     if (!memcmp(name, SS_MASTER + 1, 6))
         log_die(LOG_EXIT_USER, "service name: ", name, ": starts with reserved prefix Master") ;
 
-    if (!strcmp(name, SS_SERVICE))
+    if (!strcmp(name, SS_SERVICE + 1))
         log_die(LOG_EXIT_USER, "service as service name is a reserved name") ;
 
     if (!strcmp(name, SS_SERVICE "@"))

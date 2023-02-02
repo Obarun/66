@@ -31,15 +31,15 @@ int state_write(ss_state_t *sta, char const *base, char const *name)
 
     size_t baselen = strlen(base) ;
     size_t namelen = strlen(name) ;
-    char target[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1 + SS_SERVICE_LEN + 1 + namelen + SS_SVC_LEN + 1 + namelen + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
+    char target[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + SS_SVC_LEN + 1 + namelen + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
 
-    auto_strings(target, base, SS_SYSTEM, SS_RESOLVE, "/", SS_SERVICE, "/", name, SS_SVC, "/", name, SS_STATE) ;
+    auto_strings(target, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name, SS_SVC, "/", name, SS_STATE) ;
 
     if (access(target, F_OK) < 0)
         if (!dir_create_parent(target, 0755))
             log_warnusys_return(LOG_EXIT_ZERO, "create directory: ", target) ;
 
-    auto_strings(target + baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1 + SS_SERVICE_LEN + 1 + namelen + SS_SVC_LEN + 1 + namelen + SS_STATE_LEN, "/", SS_STATUS) ;
+    auto_strings(target + baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + SS_SVC_LEN + 1 + namelen + SS_STATE_LEN, "/", SS_STATUS) ;
 
     char pack[STATE_STATE_SIZE] ;
 

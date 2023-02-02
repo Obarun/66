@@ -28,9 +28,9 @@ int state_check(char const *base, char const *name)
 
     size_t baselen = strlen(base) ;
     size_t namelen = strlen(name) ;
-    char target[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1 + SS_SERVICE_LEN + 1 + namelen + SS_SVC_LEN + 1 + namelen + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
+    char target[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + SS_SVC_LEN + 1 + namelen + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
 
-    auto_strings(target, base, SS_SYSTEM, SS_RESOLVE, "/", SS_SERVICE, "/", name, SS_SVC, "/", name, SS_STATE, "/", SS_STATUS) ;
+    auto_strings(target, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name, SS_SVC, "/", name, SS_STATE, "/", SS_STATUS) ;
 
     if (access(target, F_OK) < 0)
         return 0 ;

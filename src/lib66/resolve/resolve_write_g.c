@@ -27,11 +27,11 @@ int resolve_write_g(resolve_wrapper_t *wres, char const *base, char const *name)
     size_t baselen = strlen(base) ;
     size_t namelen = strlen(name) ;
 
-    char path[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1 + SS_SERVICE_LEN + 1 + SS_SERVICE_LEN + 1 + namelen + 1] ;
+    char path[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_SERVICE_LEN + 1 + namelen + 1] ;
 
     if (wres->type == DATA_SERVICE || wres->type == DATA_SERVICE_MASTER) {
 
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, "/", SS_SERVICE, "/", name) ;
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 
     } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
 

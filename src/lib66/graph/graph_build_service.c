@@ -32,9 +32,9 @@ void graph_build_service(graph_t *graph, resolve_service_t *ares, unsigned int *
 
     stralloc sa = STRALLOC_ZERO ;
     char const *exclude[1] = { 0 } ;
-    char solve[info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1 + SS_SERVICE_LEN + 1] ;
+    char solve[info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1] ;
 
-    auto_strings(solve, info->base.s, SS_SYSTEM, SS_RESOLVE, "/", SS_SERVICE) ;
+    auto_strings(solve, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE) ;
 
     if (!sastr_dir_get_recursive(&sa, solve, exclude, S_IFREG, 0))
         log_dieu(LOG_EXIT_SYS, "get resolve files") ;

@@ -23,8 +23,6 @@
 #define SS_SYSTEM_LEN (sizeof SS_SYSTEM - 1)
 #define SS_TREE_CURRENT "current"
 #define SS_TREE_CURRENT_LEN (sizeof SS_TREE_CURRENT - 1)
-#define SS_SERVICE "service"
-#define SS_SERVICE_LEN (sizeof SS_SERVICE - 1)
 #define SS_MODULE "module"
 #define SS_MODULE_LEN (sizeof SS_MODULE - 1)
 #define SS_SCANDIR "scandir"
@@ -43,7 +41,8 @@
 /**service dir*/
 #define SS_SVC "/svc"
 #define SS_SVC_LEN (sizeof SS_SVC - 1)
-
+#define SS_SERVICE "/service"
+#define SS_SERVICE_LEN (sizeof SS_SERVICE - 1)
 #define SS_MASTER "/Master"
 #define SS_MASTER_LEN (sizeof SS_MASTER - 1)
 #define SS_CONTENTS "contents"
