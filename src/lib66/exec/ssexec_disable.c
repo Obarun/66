@@ -29,17 +29,7 @@
 #include <66/service.h>
 #include <66/graph.h>
 #include <66/resolve.h>
-
-static void check_identifier(char const *name)
-{
-    log_flow() ;
-
-    int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-    if (logname > 0) log_die(LOG_EXIT_USER,"service: ",name,": ends with reserved suffix -log") ;
-    if (!memcmp(name,SS_MASTER+1,6)) log_die(LOG_EXIT_USER,"service: ",name,": starts with reserved prefix Master") ;
-    if (!strcmp(name,SS_SERVICE)) log_die(LOG_EXIT_USER,"service as service name is a reserved name") ;
-    if (!strcmp(name,"service@")) log_die(LOG_EXIT_USER,"service@ as service name is a reserved name") ;
-}
+#include <66/utils.h>
 
 int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
 {
@@ -104,7 +94,7 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
         log_die(LOG_EXIT_USER, "services selection is not available -- try to parse it first") ;
 
     for (; n < argc ; n++) {
-        check_identifier(argv[n]) ;
+        name_isvalid(argv[n]) ;
         service_enable_disable(&graph, info->base.s, argv[n], 0) ;
 
         if (!sastr_add_string(&sa, argv[n]))

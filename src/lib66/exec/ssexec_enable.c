@@ -30,17 +30,7 @@
 #include <66/config.h>
 #include <66/state.h>
 #include <66/resolve.h>
-
-static void check_identifier(char const *name)
-{
-    log_flow() ;
-
-    int logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-    if (logname > 0) log_die(LOG_EXIT_USER,"service: ",name,": ends with reserved suffix -log") ;
-    if (!memcmp(name,SS_MASTER+1,6)) log_die(LOG_EXIT_USER,"service: ",name,": starts with reserved prefix Master") ;
-    if (!strcmp(name,SS_SERVICE)) log_die(LOG_EXIT_USER,"service as service name is a reserved name") ;
-    if (!strcmp(name,"service@")) log_die(LOG_EXIT_USER,"service@ as service name is a reserved name") ;
-}
+#include <66/utils.h>
 
 static void parse_it(char const *name, uint8_t force, uint8_t conf, ssexec_t *info)
 {
@@ -131,7 +121,7 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
         log_usage(info->usage, "\n", info->help) ;
 
     for(; n < argc ; n++) {
-        check_identifier(argv[n]) ;
+        name_isvalid(argv[n]) ;
         parse_it(argv[n], force, conf, info) ;
     }
 
