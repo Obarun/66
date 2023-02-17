@@ -409,7 +409,7 @@ static int handle_signal(pidtree_t *apidt, unsigned int what, graph_t *graph, ss
             case SIGINT :
                     log_1_warn("received SIGINT, aborting transaction") ;
                     kill_all(apidt) ;
-                    ok = 111 ;
+                    ok = 110 ;
                     break ;
             default : log_die(LOG_EXIT_SYS, "unexpected data in selfpipe") ;
         }
@@ -436,6 +436,8 @@ static uint32_t compute_timeout (uint32_t timeout, tain *deadline)
 
 static int ssexec_callback(stralloc *sa, ssexec_t *info, unsigned int what)
 {
+    log_flow() ;
+
     int r, e = 1 ;
     size_t pos = 0, len = sa->len ;
     char t[len + 1] ;
@@ -473,7 +475,7 @@ static int ssexec_callback(stralloc *sa, ssexec_t *info, unsigned int what)
         char const *newargv[nargc] ;
         unsigned int m = 0 ;
 
-        newargv[m++] = "treectl" ;
+        newargv[m++] = "signal" ;
         if (what == 2)
             newargv[m++] = "-u" ;
 
@@ -514,14 +516,12 @@ static int doit(char const *treename, ssexec_t *sinfo, unsigned int what, tain *
         if (!auto_stra(&info.treename, treename))
             log_die_nomem("stralloc") ;
 
-        info.tree.len = 0 ;
-
         r = tree_sethome(&info) ;
         if (r <= 0)
             log_warnu_return(LOG_EXIT_ZERO, "find tree: ", info.treename.s) ;
 
-        if (!tree_get_permissions(info.tree.s, info.owner))
-            log_warn_return(LOG_EXIT_ZERO, "You're not allowed to use the tree: ", info.tree.s) ;
+        if (!tree_get_permissions(info.base.s, info.treename.s))
+            log_warn_return(LOG_EXIT_ZERO, "You're not allowed to use the tree: ", info.treename.s) ;
     }
 
     if (!tree_isinitialized(info.base.s, info.treename.s) && !what) {
@@ -533,7 +533,7 @@ static int doit(char const *treename, ssexec_t *sinfo, unsigned int what, tain *
             char const *newargv[nargc] ;
             unsigned int m = 0 ;
 
-            newargv[m++] = "tree" ;
+            newargv[m++] = "signal" ;
             newargv[m++] = info.treename.s ;
             newargv[m++] = 0 ;
 
@@ -952,12 +952,12 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
 
         } else if (what == 1 && !init) {
 
-            log_warn("tree: ", treename," is already up") ;
+            log_warn("tree: ", treename," is already down") ;
             continue ;
 
         } else if (what == 2 && !supervised) {
 
-            log_warn("tree: ", treename," is already up") ;
+            log_warn("tree: ", treename," is already unsupervised") ;
             continue ;
 
         }
