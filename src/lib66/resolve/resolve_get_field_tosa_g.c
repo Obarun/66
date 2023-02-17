@@ -36,7 +36,6 @@ int resolve_get_field_tosa_g(stralloc *sa, char const *base, char const *name, u
     int e = 0 ;
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_service_master_t mres = RESOLVE_SERVICE_MASTER_ZERO ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_tree_master_t tmres = RESOLVE_TREE_MASTER_ZERO ;
     resolve_wrapper_t_ref wres = 0 ;
@@ -44,10 +43,6 @@ int resolve_get_field_tosa_g(stralloc *sa, char const *base, char const *name, u
     if (data_type == DATA_SERVICE) {
 
         wres = resolve_set_struct(data_type, &res) ;
-
-    } else if (data_type == DATA_SERVICE_MASTER) {
-
-        wres = resolve_set_struct(data_type, &mres) ;
 
     } else if (data_type == DATA_TREE) {
 

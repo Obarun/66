@@ -30,7 +30,7 @@ int resolve_check_g(resolve_wrapper_t *wres, char const *base, char const *name)
 
     char path[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_SERVICE_LEN + 1 + namelen + 1] ;
 
-    if (wres->type == DATA_SERVICE || wres->type == DATA_SERVICE_MASTER) {
+    if (wres->type == DATA_SERVICE) {
 
         auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 

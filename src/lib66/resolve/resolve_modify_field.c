@@ -32,14 +32,6 @@ int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *
 
         return service_resolve_modify_field(res, field, by) ;
 
-    } else if (wres->type == DATA_SERVICE_MASTER) {
-
-        resolve_service_master_t_ref res = (resolve_service_master_t *)wres->obj  ;
-
-        log_trace("modify field ", resolve_service_master_field_table[field].field," of resolve Master file of services with value: ", by) ;
-
-        return service_resolve_master_modify_field(res, field, by) ;
-
     } else if (wres->type == DATA_TREE) {
 
         resolve_tree_t_ref res = (resolve_tree_t *)wres->obj  ;

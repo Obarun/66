@@ -11,16 +11,8 @@ service_resolve_array_free.o
 service_resolve_array_search.o
 service_resolve_copy.o
 service_resolve_get_field_tosa.o
-service_resolve_master_copy.o
-service_resolve_master_create.o
-service_resolve_master_get_field_tosa.o
-service_resolve_master_modify_field.o
-service_resolve_master_read_cdb.o
-service_resolve_master_write.o
-service_resolve_master_write_cdb.o
 service_resolve_modify_field.o
 service_resolve_read_cdb.o
-service_resolve_sort_bytype.o
 service_resolve_write.o
 service_resolve_write_cdb.o
 -loblibs

@@ -32,12 +32,6 @@ int resolve_get_field_tosa(stralloc *sa, resolve_wrapper_t_ref wres, uint8_t fie
 
         return service_resolve_get_field_tosa(sa, res, field) ;
 
-    } else if (wres->type == DATA_SERVICE_MASTER) {
-
-        resolve_service_master_t_ref res = (resolve_service_master_t *)wres->obj  ;
-
-        return service_resolve_master_get_field_tosa(sa, res, field) ;
-
     } else if (wres->type == DATA_TREE) {
 
         resolve_tree_t_ref res = (resolve_tree_t *)wres->obj  ;

@@ -56,11 +56,6 @@ int resolve_write_cdb(resolve_wrapper_t *wres, char const *file)
         if (!service_resolve_write_cdb(&c, ((resolve_service_t *)wres->obj)))
             goto err ;
 
-    } else if (wres->type == DATA_SERVICE_MASTER) {
-
-        if (!service_resolve_master_write_cdb(&c, ((resolve_service_master_t *)wres->obj)))
-            goto err ;
-
     } else if (wres->type == DATA_TREE) {
 
         if (!tree_resolve_write_cdb(&c, ((resolve_tree_t *)wres->obj)))

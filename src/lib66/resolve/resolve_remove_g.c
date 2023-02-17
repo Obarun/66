@@ -32,7 +32,7 @@ void resolve_remove_g(char const *base, char const *name, uint8_t data_type)
     size_t namelen = strlen(name) ;
     char path[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + 1] ;
 
-    if (data_type == DATA_SERVICE || data_type == DATA_SERVICE_MASTER) {
+    if (data_type == DATA_SERVICE) {
 
         auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 

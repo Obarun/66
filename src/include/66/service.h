@@ -32,11 +32,10 @@ struct resolve_service_addon_path_s
 {
     uint32_t home ; // string, /var/lib/66 or /home/user/.66
     uint32_t frontend ;  // string, /home/<user>/.66/service or /etc/66/service or /usr/lib/66/service
-    uint32_t tree ; // string, /var/lib/66/system/treename
-    uint32_t status ; //string, /var/lib/66/system/treename/servicedirs/svc/service_name/state/status
+    uint32_t status ; //string, /var/lib/66/system/service/svc/service_name/state/status
 } ;
 
-#define RESOLVE_SERVICE_ADDON_PATH_ZERO { 0,0,0,0 }
+#define RESOLVE_SERVICE_ADDON_PATH_ZERO { 0,0,0 }
 
 typedef struct resolve_service_addon_dependencies_s resolve_service_addon_dependencies_t, *resolve_service_addon_dependencies_t_ref ;
 struct resolve_service_addon_dependencies_s
@@ -97,11 +96,11 @@ typedef struct resolve_service_addon_live_s resolve_service_addon_live_t, *resol
 struct resolve_service_addon_live_s
 {
     uint32_t livedir ; // string, /run/66
-    uint32_t scandir ; // string, /run/66/state/uid/service_name/scandir/service_name -> /var/lib/66/system/treename/svc/service -> /run/66/scandir/uid
-    uint32_t statedir ; // string, /run/66/state/uid/service_name/state -> /var/lib/66/system/treename/svc/service/state
-    uint32_t eventdir ; // string, /run/66/state/uid/service_name/event -> /var/lib/66/system/treename/svc/service/event
-    uint32_t notifdir ; // string, /run/66/state/uid/service_name/notif -> /var/lib/66/system/treename/svc/service/notif
-    uint32_t supervisedir ; // string, /run/66/state/uid/service_name/supervise -> /var/lib/66/system/treename/svc/service/supervise
+    uint32_t scandir ; // string, /run/66/state/uid/service_name/scandir/service_name -> /var/lib/66/system/service/svc/service_name -> /run/66/scandir/uid
+    uint32_t statedir ; // string, /run/66/state/uid/service_name/state -> /var/lib/66/system/service/svc/service_name/state
+    uint32_t eventdir ; // string, /run/66/state/uid/service_name/event -> /var/lib/66/system/service/svc/service_name/event
+    uint32_t notifdir ; // string, /run/66/state/uid/service_name/notif -> /var/lib/66/system/service/svc/service_name/notif
+    uint32_t supervisedir ; // string, /run/66/state/uid/service_name/supervise -> /var/lib/66/system/service/svc/service_name/supervise
     uint32_t fdholderdir ; // string, /run/66/state/uid/service_name/scandir/fdholder
     uint32_t oneshotddir ; // string, /run/66/state/uid/service_name/scandir/oneshotd
 } ;
@@ -223,7 +222,6 @@ enum resolve_service_enum_e
     // path
     E_RESOLVE_SERVICE_HOME,
     E_RESOLVE_SERVICE_FRONTEND,
-    E_RESOLVE_SERVICE_TREE,
     E_RESOLVE_SERVICE_STATUS,
 
     // dependencies
@@ -294,56 +292,7 @@ enum resolve_service_enum_e
 
 } ;
 
-typedef struct resolve_service_master_s resolve_service_master_t, *resolve_service_master_t_ref ;
-struct resolve_service_master_s
-{
-    uint32_t salen ;
-    stralloc sa ;
-
-    uint32_t name ;
-
-    uint32_t classic ;
-    uint32_t bundle ;
-    uint32_t oneshot ;
-    uint32_t module ;
-    uint32_t enabled ;
-    uint32_t disabled ;
-    uint32_t contents ;
-
-    uint32_t nclassic ;
-    uint32_t nbundle ;
-    uint32_t noneshot ;
-    uint32_t nmodule ;
-    uint32_t nenabled ;
-    uint32_t ndisabled ;
-    uint32_t ncontents ;
-} ;
-#define RESOLVE_SERVICE_MASTER_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
-
-typedef enum resolve_service_master_enum_e resolve_service_master_enum_t, *resolve_service_master_enum_t_ref;
-enum resolve_service_master_enum_e
-{
-    E_RESOLVE_SERVICE_MASTER_NAME = 0,
-    E_RESOLVE_SERVICE_MASTER_CLASSIC,
-    E_RESOLVE_SERVICE_MASTER_BUNDLE,
-    E_RESOLVE_SERVICE_MASTER_ONESHOT,
-    E_RESOLVE_SERVICE_MASTER_MODULE,
-    E_RESOLVE_SERVICE_MASTER_ENABLED,
-    E_RESOLVE_SERVICE_MASTER_DISABLED,
-    E_RESOLVE_SERVICE_MASTER_CONTENTS,
-    E_RESOLVE_SERVICE_MASTER_NCLASSIC,
-    E_RESOLVE_SERVICE_MASTER_NBUNDLE,
-    E_RESOLVE_SERVICE_MASTER_NONESHOT,
-    E_RESOLVE_SERVICE_MASTER_NMODULE,
-    E_RESOLVE_SERVICE_MASTER_NENABLED,
-    E_RESOLVE_SERVICE_MASTER_NDISABLED,
-    E_RESOLVE_SERVICE_MASTER_NCONTENTS,
-    E_RESOLVE_SERVICE_MASTER_ENDOFKEY
-} ;
-
 extern resolve_field_table_t resolve_service_field_table[] ;
-extern resolve_field_table_t resolve_service_master_field_table[] ;
-
 
 extern int service_cmp_basedir(char const *dir) ;
 extern int service_endof_dir(char const *dir, char const *name) ;
@@ -359,15 +308,6 @@ extern int service_resolve_read_cdb(cdb *c, resolve_service_t *res) ;
 extern int service_resolve_write(resolve_service_t *res) ;
 extern int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres) ;
 extern void service_enable_disable(graph_t *g, char const *base, char const *sv, uint8_t action) ;
-
-/** Master */
-extern int service_resolve_master_copy(resolve_service_master_t *dst, resolve_service_master_t *mres) ;
-extern int service_resolve_master_create(char const *base, char const *treename) ;
-extern int service_resolve_master_get_field_tosa(stralloc *sa, resolve_service_master_t *mres, resolve_service_master_enum_t field) ;
-extern int service_resolve_master_modify_field(resolve_service_master_t *mres, uint8_t field, char const *data) ;
-extern int service_resolve_master_read_cdb(cdb *c, resolve_service_master_t *tres) ;
-extern int service_resolve_master_write(graph_t *graph, char const *dest) ;
-extern int service_resolve_master_write_cdb(cdbmaker *c, resolve_service_master_t *mres) ;
 
 /** Graph */
 extern void service_graph_g(char const *alist, size_t alen, graph_t *graph, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag) ;
