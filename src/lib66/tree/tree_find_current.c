@@ -23,11 +23,11 @@
 #include <66/tree.h>
 #include <66/constants.h>
 
-int tree_find_current(stralloc *tree, char const *base)
+int tree_find_current(char *treename, char const *base)
 {
     log_flow() ;
 
-    int e = 0 ;
+    int e = -1 ;
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
 
@@ -35,12 +35,12 @@ int tree_find_current(stralloc *tree, char const *base)
         goto err ;
 
     if (mres.current) {
-        if (!auto_stra(tree, base, SS_SYSTEM, "/", mres.sa.s + mres.current))
-            goto err ;
 
-    } else goto err ;
+        auto_strings(treename, mres.sa.s + mres.current) ;
+        e = 1 ;
 
-    e = 1 ;
+    } else e = 0 ;
+
     err:
         resolve_free(wres) ;
         return e ;
