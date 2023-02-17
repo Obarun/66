@@ -15,26 +15,61 @@
 #include <string.h>
 
 #include <oblibs/log.h>
-#include <oblibs/string.h>
-#include <oblibs/types.h>
+#include <oblibs/sastr.h>
 
-#include <66/constants.h>
+#include <skalibs/stralloc.h>
+
+#include <66/tree.h>
 #include <66/resolve.h>
+#include <66/constants.h>
 
 int tree_isvalid(char const *base, char const *treename)
 {
     log_flow() ;
 
-    int r ;
-    size_t baselen = strlen(base), treelen = strlen(treename) ;
-    char t[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 1 + treelen + 1] ;
-    auto_strings(t, base, SS_SYSTEM, SS_RESOLVE, "/", treename) ;
+    int e = -1 ;
+    size_t pos = 0 ;
+    stralloc sa = STRALLOC_ZERO ;
+    resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
 
-    r = scan_mode(t, S_IFREG) ;
-    if (r < 0)
-        return -1 ;
-    else if (!r)
-        return 0 ;
+    /** make distinction between system error
+     * and unexisting tree */
+    {
+        resolve_tree_t tres = RESOLVE_TREE_ZERO ;
+        resolve_wrapper_t_ref twres = resolve_set_struct(DATA_TREE, &tres) ;
 
-    return 1 ;
+        if (!resolve_check_g(twres, base, treename)) {
+            e = 0 ;
+            goto freed ;
+        }
+        resolve_free(twres) ;
+    }
+
+    if (!resolve_read_g(wres, base, SS_MASTER + 1))
+        goto freed ;
+
+    if (!tree_resolve_master_get_field_tosa(&sa, &mres, E_RESOLVE_TREE_MASTER_CONTENTS))
+        goto freed ;
+
+    if (mres.ncontents) {
+
+        if (!sastr_clean_string_flush_sa(&sa, sa.s))
+            goto freed ;
+
+        FOREACH_SASTR(&sa, pos) {
+
+            if (!strcmp(treename, sa.s + pos)) {
+                e = 1 ;
+                goto freed ;
+            }
+        }
+
+    } else e = 0 ;
+
+    freed:
+        stralloc_free(&sa) ;
+        resolve_free(wres) ;
+        return e ;
+
 }
