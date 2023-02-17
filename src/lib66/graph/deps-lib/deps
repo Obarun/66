@@ -1,7 +1,4 @@
 graph_build_service.o
-graph_build_service_bytree.o
-graph_build_service_bytree_from_src.o
-graph_build_service_from_list.o
 graph_build_tree.o
 graph_compute_dependencies.o
 graph_remove_deps.o
