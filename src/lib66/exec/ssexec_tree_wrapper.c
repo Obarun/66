@@ -179,7 +179,7 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         int f = 0 ;
         for (;;) {
 
-            int opt = subgetopt_r(argc, argv, "-h", &l) ;
+            int opt = subgetopt_r(argc, argv, "h", &l) ;
             if (opt == -1) break ;
             switch (opt) {
 
