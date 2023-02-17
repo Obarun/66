@@ -34,7 +34,7 @@
 #include <66/config.h>
 #include <66/state.h>
 
-#define MAXOPTS 19
+#define MAXOPTS 18
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -79,7 +79,7 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
     int r = 0 ;
     uint8_t master = 0 ;
 
-    char const *svname = 0 ;
+    char const *treename = 0 ;
 
     resolve_wrapper_t_ref wres = 0 ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
@@ -91,7 +91,7 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
     if (argc < 1)
         log_usage(usage_tree_resolve, "\n", help_tree_resolve) ;
 
-    svname = *argv ;
+    treename = *argv ;
 
     char tree_buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
         "name",
@@ -106,14 +106,13 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
         "ngroups",
         "ncontents",
         "init" ,
-        "supervised",
-        "disen", // 14
+        "supervised", // 13
         // Master
         "enabled",
         "current",
         "contents",
         "nenabled",
-        "ncontents" // 19
+        "ncontents" // 18
     } ;
 
     if (!strcmp(argv[0], SS_MASTER + 1)) {
@@ -124,16 +123,17 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
     } else {
 
         wres = resolve_set_struct(DATA_TREE, &tres) ;
+
+        r = tree_isvalid(info->base.s, treename) ;
+
+        if (r < 0)
+        log_dieu(LOG_EXIT_SYS, "check validity of tree: ", treename) ;
+
+        if (!r)
+            log_dieusys(LOG_EXIT_SYS, "find tree: ", treename) ;
     }
 
-    r = tree_isvalid(info->base.s, svname) ;
-    if (r < 0)
-        log_diesys(LOG_EXIT_SYS, "invalid tree directory") ;
-
-    if (!r)
-        log_dieusys(LOG_EXIT_SYS, "find tree: ", svname) ;
-
-    if (!resolve_read_g(wres, info->base.s, svname))
+    if (!resolve_read_g(wres, info->base.s, treename))
         log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
 
     info_field_align(tree_buf, fields, field_suffix,MAXOPTS) ;
@@ -153,17 +153,16 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
         info_display_int(fields[10], tres.ncontents) ;
         info_display_int(fields[11], tres.init) ;
         info_display_int(fields[12], tres.supervised) ;
-        info_display_int(fields[13], tres.disen) ;
 
     } else {
 
         info_display_string(fields[0], mres.sa.s, mres.name, 1) ;
         info_display_string(fields[3], mres.sa.s, mres.allow, 1) ;
-        info_display_string(fields[14], mres.sa.s, mres.enabled, 1) ;
-        info_display_string(fields[15], mres.sa.s, mres.current, 1) ;
-        info_display_string(fields[16], mres.sa.s, mres.contents, 1) ;
-        info_display_int(fields[17], mres.nenabled) ;
-        info_display_int(fields[18], mres.ncontents) ;
+        info_display_string(fields[13], mres.sa.s, mres.enabled, 1) ;
+        info_display_string(fields[14], mres.sa.s, mres.current, 1) ;
+        info_display_string(fields[15], mres.sa.s, mres.contents, 1) ;
+        info_display_int(fields[16], mres.nenabled) ;
+        info_display_int(fields[17], mres.ncontents) ;
     }
 
     resolve_free(wres) ;

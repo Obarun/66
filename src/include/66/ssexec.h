@@ -35,11 +35,6 @@ struct ssexec_s
     //char live[SS_MAX_SERVICE] ;
     //size_t livelen ;
 
-    stralloc tree ;
-
-    //char tree[SS_MAX_SERVICE] ;
-    //size_t treelen ;
-
     stralloc scandir ;
 
     //char scandir[SS_MAX_SERVICE] ;
@@ -76,7 +71,6 @@ struct ssexec_s
 
 #define SSEXEC_ZERO {   .base = STRALLOC_ZERO, \
                         .live = STRALLOC_ZERO, \
-                        .tree = STRALLOC_ZERO, \
                         .scandir = STRALLOC_ZERO, \
                         .treename = STRALLOC_ZERO, \
                         .treeallow = 0, \
@@ -100,7 +94,7 @@ typedef ssexec_func_t *ssexec_func_t_ref ;
 extern void ssexec_free(ssexec_t *info) ;
 extern void ssexec_copy(ssexec_t *dest, ssexec_t *src) ;
 extern ssexec_t const ssexec_zero ;
-extern void set_ssinfo(ssexec_t *info) ;
+extern void set_treeinfo(ssexec_t *info) ;
 
 extern ssexec_func_t ssexec_parse ;
 extern ssexec_func_t ssexec_init ;

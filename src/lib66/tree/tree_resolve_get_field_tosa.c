@@ -88,11 +88,6 @@ int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree
             str = fmt ;
             break ;
 
-        case E_RESOLVE_TREE_DISEN:
-            fmt[uint32_fmt(fmt,tres->disen)] = 0 ;
-            str = fmt ;
-            break ;
-
         default:
             return 0 ;
     }

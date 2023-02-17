@@ -62,10 +62,7 @@ int tree_resolve_write_cdb(cdbmaker *c, resolve_tree_t *tres)
     !resolve_add_cdb_uint(c,"init",tres->init) ||
 
     /* supervised */
-    !resolve_add_cdb_uint(c,"supervised",tres->supervised) ||
-
-    /* disen */
-    !resolve_add_cdb_uint(c,"disen",tres->disen)) return 0 ;
+    !resolve_add_cdb_uint(c,"supervised",tres->supervised)) return 0 ;
 
     return 1 ;
 }

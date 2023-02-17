@@ -53,9 +53,8 @@ struct resolve_tree_s
 
     uint32_t init ;//not initialized->0, initialized->1
     uint32_t supervised ;//not superviseded->0, supervised->1
-    uint32_t disen ;//disable->0, enable->1
 } ;
-#define RESOLVE_TREE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_TREE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
 typedef enum resolve_tree_enum_e resolve_tree_enum_t, *resolve_tree_enum_t_ref;
 enum resolve_tree_enum_e
@@ -73,7 +72,6 @@ enum resolve_tree_enum_e
     E_RESOLVE_TREE_NCONTENTS,
     E_RESOLVE_TREE_INIT,
     E_RESOLVE_TREE_SUPERVISED,
-    E_RESOLVE_TREE_DISEN,
     E_RESOLVE_TREE_ENDOFKEY
 } ;
 
@@ -139,7 +137,7 @@ extern int tree_isvalid(char const *base, char const *treename) ;
 /** Append @tree with the name of the current tree
  * @Return 1 on success
  * @Return 0 on fail */
-extern int tree_find_current(stralloc *tree, char const *base) ;
+extern int tree_find_current(char *tree, char const *base) ;
 
 /** @Return 1 on success
  * @Return 0 if not valid
@@ -168,14 +166,11 @@ extern int tree_ongroups(char const *base, char const *treename, char const *gro
 
 extern int tree_copy(stralloc *dir, char const *tree,char const *treename) ;
 
-extern int tree_get_permissions(char const *tree, uid_t owner) ;
+extern int tree_get_permissions(char const *base, char const *treename) ;
 
 extern int tree_sethome(ssexec_t *info) ;
 
-extern char tree_setname(stralloc *sa, char const *tree) ;
-
 extern int tree_switch_current(char const *base, char const *tree) ;
-
 
 
 /**
@@ -191,6 +186,8 @@ extern int tree_resolve_copy(resolve_tree_t *dst, resolve_tree_t *tres) ;
 extern int tree_resolve_modify_field(resolve_tree_t *tres, uint8_t field, char const *data) ;
 extern int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree_enum_t field) ;
 extern int tree_resolve_array_search(resolve_tree_t *ares, unsigned int areslen, char const *name) ;
+extern void tree_service_add(char const *base, char const *treename, char const *service) ;
+extern void tree_service_remove(char const *base, char const *treename, char const *service) ;
 /** Master */
 extern int tree_resolve_master_read_cdb(cdb *c, resolve_tree_master_t *mres) ;
 extern int tree_resolve_master_write_cdb(cdbmaker *c, resolve_tree_master_t *mres) ;

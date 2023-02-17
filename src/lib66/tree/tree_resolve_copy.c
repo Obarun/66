@@ -47,7 +47,6 @@ int tree_resolve_copy(resolve_tree_t *dst, resolve_tree_t *tres)
     dst->ncontents = tres->ncontents ;
     dst->init = tres->init ;
     dst->supervised = tres->supervised ;
-    dst->disen = tres->disen ;
 
     return 1 ;
 

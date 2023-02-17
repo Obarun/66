@@ -87,10 +87,6 @@ int tree_resolve_read_cdb(cdb *c, resolve_tree_t *tres)
     x = resolve_find_cdb(&tmp,c,"supervised") ;
     tres->supervised = x ;
 
-    /* disen */
-    x = resolve_find_cdb(&tmp,c,"disen") ;
-    tres->disen = x ;
-
     free(wres) ;
     stralloc_free(&tmp) ;
 
