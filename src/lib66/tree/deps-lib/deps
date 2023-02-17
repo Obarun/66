@@ -26,8 +26,9 @@ tree_seed_isvalid.o
 tree_seed_parse_file.o
 tree_seed_resolve_path.o
 tree_seed_setseed.o
+tree_service_add.o
+tree_service_remove.o
 tree_sethome.o
-tree_setname.o
 tree_switch_current.o
 -loblibs
 -lskarnet

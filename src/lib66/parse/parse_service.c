@@ -56,102 +56,11 @@ parse_mill_t MILL_GET_VALUE = \
     .skip = " \t\r", .skiplen = 3, .forceskip = 1, \
     .inner.debug = "get_value" } ;
 
-static void parse_notify_add_string(stralloc *sa, char const *name, char const *str)
-{
-    if (!sastr_clean_string(sa, str))
-        log_dieu(LOG_EXIT_SYS, "clean string") ;
-
-    if (!sastr_add_string(sa, name))
-        log_dieu(LOG_EXIT_SYS, "clean string") ;
-
-    if (!sastr_sortndrop_element(sa))
-        log_dieu(LOG_EXIT_SYS, "sort string") ;
-}
-
-static void parse_notify_tree(resolve_service_t *res, char const *base, uint8_t field)
-{
-    log_flow() ;
-
-    char *treename = res->sa.s + res->treename ;
-    char *name = res->sa.s + res->name ;
-
-    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
-    stralloc sa = STRALLOC_ZERO ;
-
-    log_trace("modify field contents of resolve tree file: ", treename) ;
-
-    if (!resolve_read_g(wres, base, treename))
-        log_dieusys(LOG_EXIT_SYS, "read resolve file of tree: ", treename) ;
-
-    if (field == E_RESOLVE_TREE_CONTENTS) {
-
-        char atree[SS_MAX_TREENAME + 1] ;
-
-        if (service_is_g(atree, name, STATE_FLAGS_ISPARSED)) {
-
-            if (strcmp(atree, treename)) {
-
-                /** remove it from the previous used tree */
-                resolve_tree_t res = RESOLVE_TREE_ZERO ;
-                resolve_wrapper_t_ref wtres = resolve_set_struct(DATA_TREE, &res) ;
-
-                if (!resolve_read_g(wtres, base, atree))
-                    log_dieu(LOG_EXIT_SYS, "read resolve file of tree: ", atree) ;
-
-                if (!sastr_clean_string(&sa, res.sa.s + res.contents))
-                    log_dieu(LOG_EXIT_SYS, "clean string") ;
-
-                if (!sastr_remove_element(&sa, name))
-                    log_dieu(LOG_EXIT_SYS, "remove service: ", name, " list") ;
-
-                if (sa.len) {
-                    if (!sastr_rebuild_in_oneline(&sa))
-                        log_dieu(LOG_EXIT_SYS, "rebuild stralloc list") ;
-                } else
-                    stralloc_0(&sa) ;
-
-
-                if (!tree_resolve_modify_field(&res, E_RESOLVE_TREE_CONTENTS, sa.s))
-                    log_dieu(LOG_EXIT_SYS, "modify resolve field of tree: ", atree) ;
-
-                res.ncontents-- ;
-
-                if (!resolve_write_g(wtres, base, atree))
-                    log_dieu(LOG_EXIT_SYS, "write resolve file of tree: ", atree) ;
-
-                resolve_free(wtres) ;
-            }
-            sa.len = 0 ;
-        }
-
-        if (tres.ncontents)
-            parse_notify_add_string(&sa, name, tres.sa.s + tres.contents) ;
-        else if (!sastr_add_string(&sa, name))
-            log_dieu(LOG_EXIT_SYS, "add string") ;
-
-        tres.ncontents++ ;
-
-    } else goto freed ;
-
-    if (!sastr_rebuild_in_oneline(&sa))
-        log_dieu(LOG_EXIT_SYS, "rebuild stralloc list") ;
-
-    if (!resolve_modify_field(wres, field, sa.s))
-        log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
-
-    if (!resolve_write_g(wres, base, treename))
-        log_dieusys(LOG_EXIT_SYS, "write resolve file of tree: ", treename) ;
-
-    freed :
-    stralloc_free(&sa) ;
-    resolve_free(wres) ;
-}
-
 void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
 {
     log_flow();
 
+    int r ;
     unsigned int areslen = 0, residx = 0, pos = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE] ;
 
@@ -159,21 +68,30 @@ void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
     if (!ob_basename(main, sv))
         log_dieu(LOG_EXIT_SYS, "get basename of: ", sv) ;
 
-    int r = parse_frontend(sv, ares, &areslen, info, force, conf, &residx, 0, main) ;
+    r = parse_frontend(sv, ares, &areslen, info, force, conf, &residx, 0, main) ;
     if (r == 2)
         /** already parsed */
         return ;
 
     for (; pos < areslen ; pos++) {
 
-        /** notify first the resolve Master file of the tree
-         * about the location of the service. If the service is
-         * already parsed and the user ask to force it on different tree,
-         * we can know the old place of the service by the old resolve service file*/
-        parse_notify_tree(&ares[pos], info->base.s, E_RESOLVE_TREE_CONTENTS) ;
+        if (force) {
 
-        char dst[strlen(ares[pos].sa.s + ares[pos].path.tree) + SS_SVDIRS_LEN + 1] ;
-        auto_strings(dst, ares[pos].sa.s + ares[pos].path.tree, SS_SVDIRS) ;
+            resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+            resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+            /** warn old tree of the change and modify the desired one.
+             * Force was used so we are supposed to have an existing resolve file of
+             * the service. Before overwritting its resolve file, check if the tree is the same.*/
+            if (resolve_read_g(wres, info->base.s, ares[pos].sa.s + ares[pos].name) &&
+                strcmp(ares[pos].sa.s + ares[pos].treename, res.sa.s + res.treename))
+                    tree_service_remove(info->base.s, res.sa.s + res.treename, res.sa.s + res.name) ;
+        }
+
+        parse_compute_resolve(&ares[pos], info) ;
+        tree_service_add(info->base.s, ares[pos].sa.s + ares[pos].treename, ares[pos].sa.s + ares[pos].name) ;
+
+        char dst[strlen(ares[pos].sa.s + ares[pos].path.home) + SS_SYSTEM_LEN + SS_SERVICE_LEN + 1] ;
+        auto_strings(dst, ares[pos].sa.s + ares[pos].path.home, SS_SYSTEM, SS_SERVICE) ;
 
         write_services(&ares[pos], dst, force) ;
 
