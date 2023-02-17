@@ -18,15 +18,14 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 
+#include <66/config.h>
 #include <66/constants.h>
 #include <66/ssexec.h>
 #include <66/tree.h>
 
 /**
- * @Return -3 > unable to find current
- * @Return -2 > unable to fix tree name
- * @Return -1 > unable to parse seed file
- * @Return 0 > tree doesn't exist
+ * @Return -1 > error system
+ * @Return 0 > unable to find seed file
  * @Return 1 > success */
 int tree_sethome(ssexec_t *info)
 {
@@ -38,15 +37,22 @@ int tree_sethome(ssexec_t *info)
 
     if (!info->opt_tree) {
 
-        if (!tree_find_current(&info->tree, base)) {
-            /** no current tree found. Use the default one. */
-            info->tree.len = 0 ;
-            if (!auto_stra(&info->tree, base, SS_SYSTEM, "/", SS_DEFAULT_TREENAME))
-                return 0 ;
-        }
+        char t[SS_MAX_TREENAME + 1] ;
+        r = tree_find_current(t, base) ;
+
+        if (r < 0)
+            return -1 ;
+
         info->treename.len = 0 ;
-        if (!tree_setname(&info->treename, info->tree.s))
-            return -2 ;
+        if (!r) {
+            /** no current tree found. Use the default one.*/
+            if (!auto_stra(&info->treename, SS_DEFAULT_TREENAME))
+                return -1 ;
+        } else {
+
+            if (!auto_stra(&info->treename, t))
+                return -1 ;
+        }
 
     } else {
 
@@ -56,7 +62,7 @@ int tree_sethome(ssexec_t *info)
             /** The tree name exist on the system
              * but it's not a directory */
              errno = EEXIST ;
-             return 0 ;
+             return -1 ;
 
         } else if (!r) {
 
@@ -77,15 +83,9 @@ int tree_sethome(ssexec_t *info)
             char const *prog = PROG ;
             PROG = "tree" ;
             if (ssexec_tree_admin(nargc, newargv, info))
-                log_warnu_return(LOG_EXIT_ZERO,"create tree: ",info->treename.s) ;
+                log_warnu_return(LOG_EXIT_LESSONE,"create tree: ",info->treename.s) ;
             PROG = prog ;
         }
-
-        /** The tree_sethome() function can be recursively called. The info->tree may not be empty.
-         * Be sure to clean up before using it. */
-        info->tree.len = 0 ;
-        if (!auto_stra(&info->tree, base, SS_SYSTEM, "/", info->treename.s))
-            log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 
     }
 
