@@ -26,7 +26,7 @@ int svc_send(char const *const *list, unsigned int nservice, char **sig, unsigne
     char const *newargv[nargc] ;
     unsigned int m = 0 ;
 
-    newargv[m++] = "svctl" ;
+    newargv[m++] = "signal" ;
     for (; *sig ; sig++)
         newargv[m++] = *sig ;
 
