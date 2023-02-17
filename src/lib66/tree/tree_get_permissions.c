@@ -12,34 +12,58 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <66/utils.h>
+#include <unistd.h>
+#include <stddef.h>
 
-#include <sys/types.h>
+#include <oblibs/log.h>
+#include <oblibs/sastr.h>
 
-#include <oblibs/types.h>
-#include <oblibs/string.h>
-
+#include <skalibs/stralloc.h>
 #include <skalibs/types.h>
 
+#include <66/utils.h>
+#include <66/tree.h>
+#include <66/resolve.h>
 #include <66/constants.h>
 
-int tree_get_permissions(char const *tree,uid_t owner)
+int tree_get_permissions(char const *base, char const *treename)
 {
     log_flow() ;
 
-    ssize_t r ;
-    size_t treelen = strlen(tree) ;
-    char pack[UID_FMT] ;
-    uint32_pack(pack,owner) ;
-    size_t packlen = uint_fmt(pack,owner) ;
-    pack[packlen] = 0 ;
+    int e = -1 ;
+    size_t pos = 0 ;
+    stralloc sa = STRALLOC_ZERO ;
+    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    uid_t uid = getuid(), treeuid = -1 ;
 
-    char tmp[treelen + SS_RULES_LEN + 1 + packlen + 1] ;
+    if (!resolve_read_g(wres, base, treename))
+        goto freed ;
 
-    auto_strings(tmp, tree, SS_RULES, "/", pack) ;
+    if (tres.nallow) {
 
-    r = scan_mode(tmp,S_IFREG) ;
-    if (r != 1) return 0 ;
+        if (!sastr_clean_string(&sa, tres.sa.s + tres.allow))
+            goto freed ;
 
-    return 1 ;
+        FOREACH_SASTR(&sa, pos) {
+
+            if (!uint0_scan(sa.s + pos, &treeuid))
+                goto freed ;
+
+            if (uid == treeuid) {
+                e = 1 ;
+                goto freed ;
+            }
+        }
+
+    } else {
+
+        e = 0 ;
+        goto freed ;
+    }
+
+    freed:
+        stralloc_free(&sa) ;
+        resolve_free(wres) ;
+        return e ;
 }
