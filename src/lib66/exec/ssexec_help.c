@@ -47,7 +47,7 @@ char const *help_66 =
 "   env: manage service environment variable\n"
 "   service: manage/see service information\n"
 "   tree: manage/see tree information\n"
-"   init: initiate to scandir all service declared inside tree\n"
+"   init: initiate to scandir all services marked enabled at tree\n"
 "   parse: parse the service frontend file\n"
 "   signal: send signal to service\n"
 "   scanctl: send signal to scandir\n"
@@ -237,7 +237,7 @@ char const *help_tree_wrapper =
 "options:\n"
 "   -h: print this help\n"
 "\n"
-"command:"
+"command:\n"
 "   create: create tree\n"
 "   admin: manage tree\n"
 "   remove: remove tree\n"
@@ -253,7 +253,7 @@ char const *help_tree_wrapper =
 "Use '66 tree <command> -h' to see command options\n"
 ;
 
-char const *usage_tree_create = "66 tree create [ -h ] [ -o depends=,requiredby=,... ] tree" ;
+char const *usage_tree_create = "66 tree create [ -h ] [ -o depends=:requiredby=:... ] tree" ;
 
 char const *help_tree_create =
 "\ncreate a tree\n"
@@ -273,7 +273,7 @@ char const *help_tree_create =
 "   noseed: do not use seed file to build the tree\n"
 ;
 
-char const *usage_tree_admin = "66 tree admin [ -h ] [ -o depends=,requiredby=,... ] tree" ;
+char const *usage_tree_admin = "66 tree admin [ -h ] [ -o depends=:requiredby=:... ] tree" ;
 
 char const *help_tree_admin =
 "\nadministrate an existing tree\n"

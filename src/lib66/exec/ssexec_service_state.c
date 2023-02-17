@@ -39,9 +39,6 @@
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
 
-#define USAGE "66-instate [ -h ] [ -v verbosity ] [ -z ] service"
-
-
 static void info_display_string(char const *field,char const *str)
 {
     info_display_field_name(field) ;

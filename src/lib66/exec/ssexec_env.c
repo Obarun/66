@@ -192,7 +192,7 @@ static void write_user_env_file(char const *src, char const *sv)
 
             r = str_contain(sa.s,"[ENDWARN]") ;
             if (r == -1)
-                log_die(LOG_EXIT_SYS,"invalid upstream configuration file! Do you have modified it? Tries to enable the service again.") ;
+                log_die(LOG_EXIT_SYS,"invalid upstream configuration file! Do you have modified it? Tries to parse the service again.") ;
 
             write_environ(sv, sa.s + r, src) ;
         }
