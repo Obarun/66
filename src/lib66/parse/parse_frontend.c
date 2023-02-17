@@ -57,28 +57,6 @@ static void parse_service_instance(stralloc *frontend, char const *svsrc, char c
 
 }
 
-static void set_info(ssexec_t *info)
-{
-    log_flow() ;
-
-    info->tree.len = 0 ;
-    int r = tree_sethome(info) ;
-    if (r == -3)
-        log_dieu(LOG_EXIT_USER, "find the current tree. You must use the -t options") ;
-    else if (r == -2)
-        log_dieu(LOG_EXIT_USER, "set the tree name") ;
-    else if (r == -1)
-        log_dieu(LOG_EXIT_USER, "parse seed file") ;
-    else if (!r)
-        log_dieusys(LOG_EXIT_SYS, "find tree: ", info->treename.s) ;
-
-    if (!tree_get_permissions(info->tree.s, info->owner))
-       log_die(LOG_EXIT_USER, "You're not allowed to use the tree: ", info->tree.s) ;
-
-    info->treeallow = 1 ;
-
-}
-
 /* @sv -> name of the service to parse with
  * the path of the frontend file source
  * @Die on fail
@@ -131,25 +109,19 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     if (isparsed == -1)
         log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please make a bug report") ;
 
-    if (isparsed) {
+    if (isparsed && !force) {
 
-        if (!force) {
-
-            log_warn("ignoring service: ", svname, " -- already present at tree: ", atree) ;
+            log_warn("ignoring service: ", svname, " -- already parsed") ;
             return 2 ;
-
-        } else if (info->opt_tree) {
-            /* -t option was used */
-            if (strcmp(info->treename.s, atree))
-                log_warn("service: ", svname, " is already parsed at tree: ", atree, " -- switching it to tree: ", info->treename.s) ;
-
-        }
-
     }
 
     if (info->opt_tree) {
 
-        if (tree_isvalid(info->base.s, info->treename.s) <= 0) {
+        r = tree_isvalid(info->base.s, info->treename.s) ;
+        if (r < 0)
+            log_dieu(LOG_EXIT_SYS, "check validity of tree: ", info->treename.s) ;
+
+        if (!r) {
 
             /** @intree may not exist */
             r = sastr_find(&sa, get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_INTREE)) ;
@@ -165,6 +137,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
             res.intree = resolve_add_string(wres, sa.s) ;
 
             info->treename.len = 0 ;
+            sa.len = 0 ;
             if (!auto_stra(&info->treename, res.sa.s + res.intree) ||
                 !auto_stra(&sa, file))
                     log_die_nomem("stralloc") ;
@@ -194,7 +167,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
     /** try to create the tree if not exist yet with
      * the help of the seed files */
-    set_info(info) ;
+    set_treeinfo(info) ;
 
     /** contents of directory should be listed by service_frontend_path
      * except for module type */
@@ -230,12 +203,10 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
         if (!parse_dependencies(&res, ares, areslen, info, force, conf, forced_directory, main))
             log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", svname) ;
 
-    parse_compute_resolve(&res, info) ;
-
     if (res.type == TYPE_MODULE)
         parse_module(&res, ares, areslen, info, force) ;
 
-    log_trace("add service to the selection: ", svname) ;
+    log_trace("add service ", svname, " to the selection: ") ;
 
     if (service_resolve_array_search(ares, *areslen, svname) < 0) {
         if (*areslen >= SS_MAX_SERVICE)
