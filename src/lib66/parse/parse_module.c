@@ -373,7 +373,6 @@ static void regex_configure(resolve_service_t *res, ssexec_t *info, char const *
             "MOD_NAME=", name, "\n", \
             "MOD_BASE=", res->sa.s + res->path.home, "\n", \
             "MOD_LIVE=", res->sa.s + res->live.livedir, "\n", \
-            "MOD_TREE=", res->sa.s + res->path.tree, "\n", \
             "MOD_SCANDIR=", res->sa.s + res->live.scandir, "\n", \
             "MOD_TREENAME=", res->sa.s + res->treename, "\n", \
             "MOD_OWNER=", res->sa.s + res->ownerstr, "\n", \

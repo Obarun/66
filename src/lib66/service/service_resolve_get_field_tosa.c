@@ -106,10 +106,6 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
             str = res->sa.s + res->path.frontend ;
             break ;
 
-        case E_RESOLVE_SERVICE_TREE:
-            str = res->sa.s + res->path.tree ;
-            break ;
-
         case E_RESOLVE_SERVICE_STATUS:
             str = res->sa.s + res->path.status ;
 

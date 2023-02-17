@@ -54,14 +54,15 @@ static void scandir_service_to_scandir(resolve_service_t *res)
 {
     char *name = res->sa.s + res->name ;
     size_t namelen = strlen(name) ;
-    size_t treelen = strlen(res->sa.s + res->path.tree) ;
+    size_t homelen = strlen(res->sa.s + res->path.home) ;
     size_t livelen = strlen(res->sa.s + res->live.livedir) ;
     size_t ownerlen = strlen(res->sa.s + res->ownerstr) ;
 
-    char sym[treelen + SS_SVDIRS_LEN + SS_SVC_LEN + 1 + namelen + 1 + SS_SCANDIR_LEN + 1] ;
+    char sym[homelen + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + namelen + 1 + SS_SCANDIR_LEN + 1] ;
     char dst[livelen + SS_SCANDIR_LEN + 1 + ownerlen + 1] ;
 
-    auto_strings(sym, res->sa.s + res->path.tree, SS_SVDIRS, SS_SVC, "/", name, "/", SS_SCANDIR) ;
+    auto_strings(sym, res->sa.s + res->path.home, SS_SYSTEM, SS_SERVICE
+    , SS_SVC, "/", name, "/", SS_SCANDIR) ;
 
     auto_strings(dst, res->sa.s + res->live.livedir, SS_SCANDIR, "/", res->sa.s + res->ownerstr) ;
 

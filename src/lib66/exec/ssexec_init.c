@@ -145,21 +145,16 @@ int ssexec_init(int argc, char const *const *argv, ssexec_t *info)
 
     stralloc sa = STRALLOC_ZERO ;
 
-    if (argc < 2 || !argv[1])
+    if (!argc)
         log_usage(info->usage, "\n", info->help) ;
 
     treename = argv[1] ;
-    size_t treenamelen = strlen(treename) ;
-    size_t treelen = info->base.len + SS_SYSTEM_LEN + 1 + treenamelen + 1 ;
-    char tree[treelen + 1] ;
-
-    auto_strings(tree, info->base.s, SS_SYSTEM, "/", treename) ;
 
     if (!tree_isvalid(info->base.s, treename))
         log_diesys(LOG_EXIT_USER, "invalid tree name: ", treename) ;
 
-    if (!tree_get_permissions(tree, info->owner))
-        log_die(LOG_EXIT_USER, "You're not allowed to use the tree: ", tree) ;
+    if (!tree_get_permissions(info->base.s, treename))
+        log_die(LOG_EXIT_USER, "You're not allowed to use the tree: ", treename) ;
 
     r = scan_mode(info->scandir.s, S_IFDIR) ;
     if (r < 0) log_die(LOG_EXIT_SYS,info->scandir.s, " conflicted format") ;

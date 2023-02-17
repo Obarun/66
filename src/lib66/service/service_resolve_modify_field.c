@@ -40,7 +40,6 @@ resolve_field_table_t resolve_service_field_table[] = {
     // path
     [E_RESOLVE_SERVICE_HOME] = { .field = "home" },
     [E_RESOLVE_SERVICE_FRONTEND] = { .field = "frontend" },
-    [E_RESOLVE_SERVICE_TREE] = { .field = "tree" },
     [E_RESOLVE_SERVICE_STATUS] = { .field = "status" },
 
     // dependencies
@@ -196,10 +195,6 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
 
         case E_RESOLVE_SERVICE_FRONTEND:
             res->path.frontend = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_TREE:
-            res->path.tree = resolve_add_string(wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_STATUS:

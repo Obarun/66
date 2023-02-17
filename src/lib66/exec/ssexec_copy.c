@@ -25,7 +25,6 @@ void ssexec_copy(ssexec_t *dest, ssexec_t *src)
 
     auto_stra(&dest->base, src->base.s) ;
     auto_stra(&dest->live, src->live.s) ;
-    auto_stra(&dest->tree, src->tree.s) ;
     auto_stra(&dest->scandir, src->scandir.s) ;
     auto_stra(&dest->treename, src->treename.s) ;
 
@@ -39,7 +38,6 @@ void ssexec_copy(ssexec_t *dest, ssexec_t *src)
     dest->usage = src->usage ;
     dest->opt_verbo = src->opt_verbo ;
     dest->opt_live = src->opt_live ;
-    dest->opt_tree = src->opt_tree ;
     dest->opt_timeout = src->opt_timeout ;
     dest->opt_color = src->opt_color ;
     dest->skip_opt_tree = src->skip_opt_tree ;

@@ -22,18 +22,9 @@
 #include <skalibs/cdb.h>
 #include <skalibs/cdbmake.h>
 
-
-#define SS_RESOLVE_LIVE 0
-#define SS_RESOLVE_SRC 1
-#define SS_RESOLVE_STATE 2
-#define SS_NOTYPE -1
-#define SS_SIMPLE 0
-#define SS_DOUBLE 1
-
 #define DATA_TREE 1
 #define DATA_TREE_MASTER 2
 #define DATA_SERVICE 0
-#define DATA_SERVICE_MASTER 3
 
 typedef struct resolve_wrapper_s resolve_wrapper_t, *resolve_wrapper_t_ref ;
 struct resolve_wrapper_s
@@ -46,7 +37,6 @@ struct resolve_wrapper_s
 #define RESOLVE_SET_SAWRES(wres) \
     stralloc_ref sawres = 0 ; \
     if (wres->type == DATA_SERVICE) sawres = (&((resolve_service_t *)wres->obj)->sa) ; \
-    else if (wres->type == DATA_SERVICE_MASTER) sawres = (&((resolve_service_master_t *)wres->obj)->sa) ; \
     else if (wres->type == DATA_TREE) sawres = (&((resolve_tree_t *)wres->obj)->sa) ; \
     else if (wres->type == DATA_TREE_MASTER) sawres = (&((resolve_tree_master_t *)wres->obj)->sa) ;
 #endif

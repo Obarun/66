@@ -45,7 +45,6 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres)
     // path
     !resolve_add_cdb(c, "home", str + sres->path.home) ||
     !resolve_add_cdb(c, "frontend", str + sres->path.frontend) ||
-    !resolve_add_cdb(c, "tree", str + sres->path.tree) ||
     !resolve_add_cdb(c, "status", str + sres->path.status) ||
 
     // dependencies

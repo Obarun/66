@@ -71,14 +71,14 @@ static void sanitize_livestate_service_symlink(resolve_service_t *res)
     size_t namelen = strlen(name) ;
     size_t livelen = strlen(res->sa.s + res->live.livedir) ;
     size_t ownerlen = strlen(res->sa.s + res->ownerstr) ;
-    size_t treelen = strlen(res->sa.s + res->path.tree) ;
+    size_t homelen = strlen(res->sa.s + res->path.home) ;
 
     char sym[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + namelen + 1] ;
-    char dst[treelen + SS_SVDIRS_LEN + SS_SVC_LEN + 1 + namelen + 1] ;
+    char dst[homelen + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + namelen + 1] ;
 
     auto_strings(sym, res->sa.s + res->live.livedir, SS_STATE + 1, "/", res->sa.s + res->ownerstr, "/", name) ;
 
-    auto_strings(dst, res->sa.s + res->path.tree, SS_SVDIRS, SS_SVC, "/", name) ;
+    auto_strings(dst, res->sa.s + res->path.home, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", name) ;
 
     if (!atomic_symlink(dst, sym, "livestate"))
        log_dieu(LOG_EXIT_SYS, "symlink: ", sym, " to: ", dst) ;

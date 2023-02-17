@@ -32,12 +32,12 @@ int service_resolve_write(resolve_service_t *res)
     char *name = res->sa.s + res->name ;
     size_t namelen = strlen(name) ;
     char sym[strlen(res->sa.s + res->path.home) + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + 1] ;
-    char dst[strlen(res->sa.s + res->path.tree) + SS_SVDIRS_LEN + 1] ;
+    char dst[strlen(res->sa.s + res->path.home) + SS_SYSTEM_LEN + SS_SERVICE_LEN + 1] ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     auto_strings(sym, res->sa.s + res->path.home, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 
-    auto_strings(dst, res->sa.s + res->path.tree, SS_SVDIRS) ;
+    auto_strings(dst, res->sa.s + res->path.home, SS_SYSTEM, SS_SERVICE) ;
 
     if (!resolve_write(wres, dst, name))
         goto err ;

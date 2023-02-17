@@ -68,8 +68,6 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
     res->path.home = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     resolve_find_cdb(&tmp,c,"frontend") ;
     res->path.frontend = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-    resolve_find_cdb(&tmp,c,"tree") ;
-    res->path.tree = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     resolve_find_cdb(&tmp,c,"status") ;
     res->path.status = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
 

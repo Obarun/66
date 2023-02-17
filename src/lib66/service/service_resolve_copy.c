@@ -53,7 +53,6 @@ int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res)
     // path
     dst->path.home = res->path.home ;
     dst->path.frontend = res->path.frontend ;
-    dst->path.tree = res->path.tree ;
     dst->path.status = res->path.status ;
 
     // dependencies

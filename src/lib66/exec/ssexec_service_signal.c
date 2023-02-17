@@ -498,11 +498,11 @@ static int doit(pidservice_t *sv, unsigned int what, tain *deadline)
     char *sa = pares[sv->aresid].sa.s ;
     char *name = sa + pares[sv->aresid].name ;
     size_t namelen = strlen(name) ;
-    char *tree = pares[sv->aresid].sa.s + pares[sv->aresid].path.tree ;
-    size_t treelen = strlen(tree) ;
+    char *home = pares[sv->aresid].sa.s + pares[sv->aresid].path.home ;
+    size_t homelen = strlen(home) ;
 
-    char script[treelen + SS_SVDIRS_LEN + SS_SVC_LEN + 1 + namelen + 7 + 1] ;
-    auto_strings(script, tree, SS_SVDIRS, SS_SVC, "/", name) ;
+    char script[homelen + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + namelen + 7 + 1] ;
+    auto_strings(script, home, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", name) ;
 
     char *oneshotdir = pares[sv->aresid].sa.s + pares[sv->aresid].live.oneshotddir ;
     char *scandir = pares[sv->aresid].sa.s + pares[sv->aresid].live.scandir ;

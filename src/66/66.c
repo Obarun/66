@@ -31,17 +31,13 @@ void set_treeinfo(ssexec_t *info)
     log_flow() ;
 
     int r = tree_sethome(info) ;
-    if (r == -3)
-        log_dieu(LOG_EXIT_USER, "find the current tree. You must use the -t options") ;
-    if (r == -2)
-        log_dieu(LOG_EXIT_USER, "set the tree name") ;
     if (r == -1)
-        log_dieu(LOG_EXIT_USER, "parse seed file") ;
+        log_dieu(LOG_EXIT_USER, "set the tree name") ;
     if (!r)
-        log_dieusys(LOG_EXIT_SYS, "find tree: ", info->treename.s) ;
+        log_dieu(LOG_EXIT_USER, "parse seed file") ;
 
-    if (!tree_get_permissions(info->tree.s, info->owner))
-        log_die(LOG_EXIT_USER,"You're not allowed to use the tree: ",info->tree.s) ;
+    if (!tree_get_permissions(info->base.s, info->treename.s))
+        log_die(LOG_EXIT_USER,"You're not allowed to use the tree: ",info->treename.s) ;
 
     info->treeallow = 1 ;
 }
@@ -75,7 +71,6 @@ static void info_clean(ssexec_t *info)
 
     info->base.len = 0 ;
     info->live.len = 0 ;
-    info->tree.len = 0 ;
     info->scandir.len = 0 ;
     info->treename.len = 0 ;
 
@@ -170,8 +165,11 @@ int main(int argc, char const *const *argv)
                     log_color = !isatty(1) ? &log_color_disable : &log_color_enable ;
                     info.opt_color = 1 ;
                     break ;
+
                 case '?' :
+
                     log_usage(usage_66, "\n", help_66) ;
+
                 default :
 
                     for (i = 0 ; i < n ; i++) {
@@ -194,7 +192,7 @@ int main(int argc, char const *const *argv)
                     if (!f) {
 
                         if (l.arg) {
-                            // distinction between e.g -enano and -e nano
+                            // distinction between e.g -e<value> and -e <value>
                             if (argv[l.ind - 1][0] != '-')
                                 nargv[n++] = argv[l.ind - 2] ;
 

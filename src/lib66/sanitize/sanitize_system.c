@@ -70,7 +70,7 @@ int sanitize_system(ssexec_t *info)
     size_t baselen = info->base.len ;
     uid_t log_uid ;
     gid_t log_gid ;
-    char dst[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1] ;
+    char dst[baselen + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1] ;
     auto_strings(dst,info->base.s, SS_SYSTEM) ;
 
     /** base is /var/lib/66 or $HOME/.66*/
@@ -146,7 +146,10 @@ int sanitize_system(ssexec_t *info)
         if (!tree_resolve_master_create(info->base.s, info->owner))
             log_dieu(LOG_EXIT_SYS, "write Master resolve file of trees") ;
 
-    auto_strings(dst + baselen, SS_TREE_CURRENT) ;
+    auto_strings(dst + baselen + SS_SYSTEM_LEN, SS_SERVICE, SS_RESOLVE) ;
+    auto_check(dst) ;
+
+    auto_strings(dst + baselen + SS_SYSTEM_LEN + SS_SERVICE_LEN, SS_SVC) ;
     auto_check(dst) ;
 
     /** create the default tree if it doesn't exist yet */

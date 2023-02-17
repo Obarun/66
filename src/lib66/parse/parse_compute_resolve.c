@@ -340,11 +340,10 @@ static void compute_log(resolve_service_t *res, ssexec_t *info)
 
     lres.path.home = resolve_add_string(wres, str + res->path.home) ;
     lres.path.frontend = resolve_add_string(wres, str + res->path.frontend) ;
-    lres.path.tree = resolve_add_string(wres, str + res->path.tree) ;
 
     {
-        char status[strlen(res->sa.s + res->path.tree) + SS_SVDIRS_LEN + SS_SVC_LEN + 1 + strlen(name) + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
-        auto_strings(status, res->sa.s + res->path.tree, SS_SVDIRS, SS_SVC, "/", name, SS_STATE, "/" SS_STATUS) ;
+        char status[strlen(res->sa.s + res->path.home) + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + strlen(name) + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
+        auto_strings(status, res->sa.s + res->path.home, SS_SYSTEM, SS_SYSTEM, SS_SVC, "/", name, SS_STATE, "/" SS_STATUS) ;
         lres.path.status = resolve_add_string(wres, status) ;
 
     }
@@ -390,32 +389,22 @@ void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     char name[strlen(res->sa.s + res->name) + 1] ;
-    char tree[info->base.len + SS_SYSTEM_LEN + 1 + SS_MAX_TREENAME + 1] ;
-    char status[info->base.len + SS_SYSTEM_LEN + 1 + SS_MAX_TREENAME + SS_SVDIRS_LEN + SS_SVC_LEN + 1 + strlen(name) + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
+    char status[info->base.len + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + strlen(name) + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
 
     auto_strings(name, res->sa.s + res->name) ;
+    auto_strings(status, info->base.s, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", name, SS_STATE, "/" SS_STATUS) ;
+
+    res->path.status = resolve_add_string(wres, status) ;
 
     res->path.home = resolve_add_string(wres, info->base.s) ;
 
-    if (res->intree) {
-
-        auto_strings(tree, info->base.s, SS_SYSTEM, "/", res->sa.s + res->intree) ;
-        res->treename = resolve_add_string(wres,res->sa.s + res->intree) ;
-        res->path.tree = resolve_add_string(wres, tree) ;
-
-        auto_strings(status, res->sa.s + res->path.tree, SS_SVDIRS, SS_SVC, "/", name, SS_STATE, "/" SS_STATUS) ;
-        res->path.status = resolve_add_string(wres, status) ;
-
-
-    } else {
-
-        auto_strings(tree, info->base.s, SS_SYSTEM, "/", info->treename.s) ;
-        res->treename = resolve_add_string(wres,info->treename.s) ;
-        res->path.tree = resolve_add_string(wres, tree) ;
-
-        auto_strings(status, res->sa.s + res->path.tree, SS_SVDIRS, SS_SVC, "/", name, SS_STATE, "/" SS_STATUS) ;
-        res->path.status = resolve_add_string(wres, status) ;
-    }
+    /** Command line precede frontend file which precede the default tree name*/
+    if (info->opt_tree)
+        res->treename = resolve_add_string(wres, info->treename.s) ;
+    else if (res->intree)
+        res->treename = resolve_add_string(wres, res->sa.s + res->intree) ;
+    else
+        res->treename = resolve_add_string(wres, info->treename.s) ;
 
     /* live */
     res->live.livedir = resolve_add_string(wres, info->live.s) ;
