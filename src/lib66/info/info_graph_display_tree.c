@@ -50,7 +50,7 @@ int info_graph_display_tree(char const *name)
     auto_strings(base, sa.s) ;
 
     if (tree_isvalid(sa.s, name) <= 0) {
-        log_warn("invalide tree: ", name) ;
+        log_warn("invalid tree: ", name) ;
         goto freed ;
     }
 

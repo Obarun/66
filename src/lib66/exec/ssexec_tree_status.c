@@ -95,7 +95,7 @@ static void info_display_current(char const *field,char const *treename)
         log_dieu(LOG_EXIT_ZERO, "read resolve file of: ", treename) ;
 
     if (NOFIELD) info_display_field_name(field) ;
-    if (!bprintf(buffer_1,"%s%s%s", current ? log_color->blink : log_color->warning, current ? "yes":"no",log_color->off))
+    if (!bprintf(buffer_1,"%s%s%s", current ? log_color->valid : log_color->warning, current ? "yes":"no",log_color->off))
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
     if (buffer_putsflush(buffer_1,"\n") == -1)
@@ -355,8 +355,8 @@ static void info_display_contents(char const *field, char const *treename)
 
     graph_build_service(&graph, ares, &areslen, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
-    if (!graph.mlen)
-        log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
+    if (!areslen)
+        goto empty ;
 
     if (GRAPH) {
 
