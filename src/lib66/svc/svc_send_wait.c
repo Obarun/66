@@ -13,6 +13,7 @@
  */
 
 #include <oblibs/log.h>
+#include <oblibs/environ.h>
 
 #include <skalibs/djbunix.h>
 

@@ -26,6 +26,7 @@
 #include <oblibs/directory.h>
 #include <oblibs/graph.h>
 #include <oblibs/sastr.h>
+#include <oblibs/environ.h>
 
 #include <skalibs/types.h>
 #include <skalibs/stralloc.h>
