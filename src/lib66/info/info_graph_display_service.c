@@ -103,7 +103,7 @@ int info_graph_display_service(char const *name)
 
         "type=", log_color->blue, get_key_by_enum(ENUM_TYPE,res.type), log_color->off, \
 
-        "tree=", BMAGENTA, res.sa.s + res.treename, log_color->off ))
+        "tree=", log_color->magenta, res.sa.s + res.treename, log_color->off))
             goto freed ;
 
     err = 1 ;
