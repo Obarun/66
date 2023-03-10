@@ -477,8 +477,8 @@ void write_control(char const *scandir,char const *live, char const *filename, i
     if (!BOOT) {
 
         if (!auto_buf(&b,
-            EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-all -v3 -l ",
-            live," down }\n"))
+            EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66 -v3 -l ",
+            live," tree down }\n"))
                 log_die_nomem("buffer") ;
 
     }
@@ -500,14 +500,14 @@ void write_control(char const *scandir,char const *live, char const *filename, i
             break ;
         case TERM:
             if (!BOOT)
-                if (!auto_buf(&b, SS_BINPREFIX "66-scanctl -l ",live," stop\n"))
+                if (!auto_buf(&b, SS_BINPREFIX "66 -l ",live," scanctl stop\n"))
                     log_die_nomem("buffer") ;
 
             break ;
         case QUIT:
 
             if (!BOOT)
-                if (!auto_buf(&b, SS_BINPREFIX "66-scanctl -l ",live," quit\n"))
+                if (!auto_buf(&b, SS_BINPREFIX "66 -l ",live," scanctl quit\n"))
                     log_die_nomem("buffer") ;
 
             break ;
@@ -659,7 +659,7 @@ static void create_service_fdholder(char const *scandir)
     auto_strings(dst, scandir, "/", SS_FDHOLDER, "/run") ;
 
     // -1 openwritenclose_unsafe do not accept closed string
-    if(!openwritenclose_unsafe(dst, run, runlen - 1))
+    if (!openwritenclose_unsafe(dst, run, strlen(run) - 1))
         log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
 
     if (chmod(dst, 0755) < 0)
