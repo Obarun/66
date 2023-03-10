@@ -10,7 +10,6 @@ parse_error.o
 parse_frontend.o
 parse_line_g.o
 parse_mandatory.o
-parse_module.o
 parse_parentheses.o
 parse_section.o
 parse_service.o
