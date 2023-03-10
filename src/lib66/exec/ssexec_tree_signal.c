@@ -903,7 +903,7 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
     if ((svc_scandir_ok(info->scandir.s)) <= 0)
         log_die(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
 
-    graph_build_tree(&graph, info->base.s, E_RESOLVE_TREE_MASTER_ENABLED) ;
+    graph_build_tree(&graph, info->base.s, !info->treename.len ? E_RESOLVE_TREE_MASTER_ENABLED : E_RESOLVE_TREE_CONTENTS) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "trees selection is not created -- creates at least one tree") ;
