@@ -22,6 +22,7 @@
 
 #include <66/constants.h>
 #include <66/utils.h>
+#include <66/instance.h>
 
 /* @sdir -> service dir
  * @mdir -> module dir */

@@ -1,6 +1,7 @@
 instance_check.o
 instance_create.o
 instance_splitname.o
+instance_splitname_to_char.o
 -loblibs
 -lskarnet
 
