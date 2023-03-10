@@ -35,6 +35,8 @@
 #include <66/enum.h>
 #include <66/state.h> // service_is_g flag
 #include <66/parser.h>
+#include <66/module.h>
+#include <66/instance.h>
 
 static void parse_service_instance(stralloc *frontend, char const *svsrc, char const *sv, int insta)
 {
@@ -196,17 +198,15 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
         res.dependencies.ndepends += res.dependencies.noptsdeps ;
     }
 
-    /** We take the dependencies in two case:
-     * If the user ask for it(force > 1)
-     * If the service was never parsed(!isparsed)*/
-    if (force > 1 || !isparsed)
-        if (!parse_dependencies(&res, ares, areslen, info, force, conf, forced_directory, main))
+    /** parse dependencies iff the service was never parsed */
+    if (!isparsed)
+        if (!parse_dependencies(&res, ares, areslen, info, force, conf, forced_directory, main, force > 1 ? 1 : 0))
             log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", svname) ;
 
     if (res.type == TYPE_MODULE)
         parse_module(&res, ares, areslen, info, force) ;
 
-    log_trace("add service ", svname, " to the selection: ") ;
+    log_trace("add service ", svname, " to the selection") ;
 
     if (service_resolve_array_search(ares, *areslen, svname) < 0) {
         if (*areslen >= SS_MAX_SERVICE)
