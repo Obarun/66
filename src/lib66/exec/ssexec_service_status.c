@@ -222,9 +222,9 @@ static void info_get_status(resolve_service_t *res)
         if (!state_read(&sta, ste, name))
             log_dieusys(LOG_EXIT_SYS,"read state of: ",name) ;
 
-        if (!service_is(&sta, STATE_FLAGS_TOINIT)) {
+        if (!service_is(&sta, STATE_FLAGS_ISSUPERVISED)) {
 
-            status = "unitialized" ;
+            status = "unsupervised" ;
 
         } else if (!service_is(&sta, STATE_FLAGS_ISUP)) {
 
