@@ -48,7 +48,7 @@ extern void start_parser(char const *sv, ssexec_t *info, uint8_t disable_module,
 
 extern void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf) ;
 extern int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, unsigned int *residx, char const *forced_directory, char const *main) ;
-extern int parse_dependencies(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force,uint8_t conf, char const *forced_directory, char const *main) ;
+extern int parse_dependencies(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force,uint8_t conf, char const *forced_directory, char const *main, uint8_t requiredby) ;
 
 /** split */
 extern int parse_section(stralloc *secname, char const *str, size_t *pos) ;
