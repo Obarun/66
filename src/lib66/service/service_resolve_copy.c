@@ -116,9 +116,11 @@ int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res)
     dst->regex.directories = res->regex.directories ;
     dst->regex.files = res->regex.files ;
     dst->regex.infiles = res->regex.infiles ;
+    dst->regex.contents = res->regex.contents ;
     dst->regex.ndirectories = res->regex.ndirectories ;
     dst->regex.nfiles = res->regex.nfiles ;
     dst->regex.ninfiles = res->regex.ninfiles ;
+    dst->regex.ncontents = res->regex.ncontents ;
 
 
     return 1 ;

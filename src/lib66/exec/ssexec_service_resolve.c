@@ -34,7 +34,7 @@
 #include <66/config.h>
 #include <66/state.h>
 
-#define MAXOPTS 69
+#define MAXOPTS 71
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -149,9 +149,11 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_string(fields[63], res->sa.s, res->regex.directories, 1) ;
     info_display_string(fields[64], res->sa.s, res->regex.files, 1) ;
     info_display_string(fields[65], res->sa.s, res->regex.infiles, 1) ;
-    info_display_int(fields[66], res->regex.ndirectories) ;
-    info_display_int(fields[67], res->regex.nfiles) ;
-    info_display_int(fields[68], res->regex.ninfiles) ;
+    info_display_string(fields[66], res->sa.s, res->regex.contents, 1) ;
+    info_display_int(fields[67], res->regex.ndirectories) ;
+    info_display_int(fields[68], res->regex.nfiles) ;
+    info_display_int(fields[69], res->regex.ninfiles) ;
+    info_display_int(fields[70], res->regex.ncontents) ;
 
 }
 
@@ -247,9 +249,11 @@ int ssexec_service_resolve(int argc, char const *const *argv, ssexec_t *info)
         "directories",
         "files",
         "infiles",
+        "contents",
         "ndirectories",
         "nfiles",
-        "ninfiles" // 69
+        "ninfiles",
+        "ncontents" // 71
 
     } ;
 

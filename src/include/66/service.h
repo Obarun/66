@@ -148,13 +148,15 @@ struct resolve_service_addon_regex_s
     uint32_t directories ; // string
     uint32_t files ; // string
     uint32_t infiles ; // string
+    uint32_t contents ; // string
 
     uint32_t ndirectories ; // integer
     uint32_t nfiles ; // integer
     uint32_t ninfiles ; // integer
+    uint32_t ncontents ; // integer
 } ;
 
-#define RESOLVE_SERVICE_ADDON_REGEX_ZERO { 0,0,0,0,0,0,0 }
+#define RESOLVE_SERVICE_ADDON_REGEX_ZERO { 0,0,0,0,0,0,0,0,0 }
 
 
 typedef struct resolve_service_s resolve_service_t, *resolve_service_t_ref ;
@@ -285,9 +287,11 @@ enum resolve_service_enum_e
     E_RESOLVE_SERVICE_REGEX_DIRECTORIES,
     E_RESOLVE_SERVICE_REGEX_FILES,
     E_RESOLVE_SERVICE_REGEX_INFILES,
+    E_RESOLVE_SERVICE_REGEX_CONTENTS,
     E_RESOLVE_SERVICE_REGEX_NDIRECTORIES,
     E_RESOLVE_SERVICE_REGEX_NFILES,
     E_RESOLVE_SERVICE_REGEX_NINFILES,
+    E_RESOLVE_SERVICE_REGEX_NCONTENTS,
     E_RESOLVE_SERVICE_ENDOFKEY
 
 } ;

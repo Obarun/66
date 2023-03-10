@@ -103,9 +103,11 @@ resolve_field_table_t resolve_service_field_table[] = {
     [E_RESOLVE_SERVICE_REGEX_DIRECTORIES] = { .field = "directories" },
     [E_RESOLVE_SERVICE_REGEX_FILES] = { .field = "files" },
     [E_RESOLVE_SERVICE_REGEX_INFILES] = { .field = "infiles" },
+    [E_RESOLVE_SERVICE_REGEX_CONTENTS] = { .field = "contents" },
     [E_RESOLVE_SERVICE_REGEX_NDIRECTORIES] = { .field = "ndirectories" },
     [E_RESOLVE_SERVICE_REGEX_NFILES] = { .field = "nfiles" },
     [E_RESOLVE_SERVICE_REGEX_NINFILES] = { .field = "ninfiles" },
+    [E_RESOLVE_SERVICE_REGEX_NCONTENTS] = { .field = "ncontents" },
     [E_RESOLVE_SERVICE_ENDOFKEY] = { .field = 0 }
 } ;
 uint32_t resolve_add_uint(char const *data)
@@ -414,6 +416,10 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
             res->regex.infiles = resolve_add_string(wres, data) ;
             break ;
 
+        case E_RESOLVE_SERVICE_REGEX_CONTENTS:
+            res->regex.contents = resolve_add_string(wres, data) ;
+            break ;
+
         case E_RESOLVE_SERVICE_REGEX_NDIRECTORIES:
             res->regex.ndirectories = resolve_add_uint(data) ;
             break ;
@@ -424,6 +430,10 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
 
         case E_RESOLVE_SERVICE_REGEX_NINFILES:
             res->regex.ninfiles = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_REGEX_NCONTENTS:
+            res->regex.ncontents = resolve_add_uint(data) ;
             break ;
 
         default:

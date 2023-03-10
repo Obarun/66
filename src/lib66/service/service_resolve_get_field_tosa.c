@@ -338,6 +338,10 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
             str = res->sa.s + res->regex.infiles ;
             break ;
 
+        case E_RESOLVE_SERVICE_REGEX_CONTENTS:
+            str = res->sa.s + res->regex.contents ;
+            break ;
+
         case E_RESOLVE_SERVICE_REGEX_NDIRECTORIES:
             fmt[uint32_fmt(fmt,res->regex.ndirectories)] = 0 ;
             str = fmt ;
@@ -350,6 +354,11 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
 
         case E_RESOLVE_SERVICE_REGEX_NINFILES:
             fmt[uint32_fmt(fmt,res->regex.ninfiles)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_REGEX_NCONTENTS:
+            fmt[uint32_fmt(fmt,res->regex.ncontents)] = 0 ;
             str = fmt ;
             break ;
 

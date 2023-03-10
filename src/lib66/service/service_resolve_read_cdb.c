@@ -182,12 +182,16 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
     res->regex.files = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     resolve_find_cdb(&tmp,c,"infiles") ;
     res->regex.infiles = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
+    resolve_find_cdb(&tmp,c,"contents") ;
+    res->regex.contents = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     x = resolve_find_cdb(&tmp,c,"ndirectories") ;
     res->regex.ndirectories = x ;
     x = resolve_find_cdb(&tmp,c,"nfiles") ;
     res->regex.nfiles = x ;
     x = resolve_find_cdb(&tmp,c,"ninfiles") ;
     res->regex.ninfiles = x ;
+    x = resolve_find_cdb(&tmp,c,"ncontents") ;
+    res->regex.ncontents = x ;
 
 
     free(wres) ;
