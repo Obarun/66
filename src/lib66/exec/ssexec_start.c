@@ -17,6 +17,7 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/graph.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/sgetopt.h>
 
@@ -27,6 +28,7 @@
 #include <66/svc.h>
 #include <66/sanitize.h>
 #include <66/service.h>
+#include <66/enum.h>
 
 int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
 {
@@ -40,7 +42,7 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
     unsigned int areslen = 0, list[SS_MAX_SERVICE], visit[SS_MAX_SERVICE], nservice = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE] ;
 
-    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOINIT|STATE_FLAGS_WANTUP) ;
+    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOPARSE|STATE_FLAGS_WANTUP) ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -119,10 +121,37 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
                 visit[l[pos]] = 1 ;
             }
         }
+        if (ares[aresid].type == TYPE_MODULE) {
+
+            if (ares[aresid].regex.ncontents) {
+
+                stralloc sa = STRALLOC_ZERO ;
+                if (!sastr_clean_string(&sa, ares[aresid].sa.s + ares[aresid].regex.contents))
+                    log_dieu(LOG_EXIT_SYS, "clean string") ;
+
+                {
+                    size_t idx = 0 ;
+                    FOREACH_SASTR(&sa, idx) {
+
+
+                        /** find dependencies of the service from the graph, do it recursively */
+                        c = graph_matrix_get_edge_g_list(l, &graph, sa.s + idx, 0, 1) ;
+
+                        /** append to the list to deal with */
+                        for (pos = 0 ; pos < c ; pos++) {
+                            if (!visit[l[pos]]) {
+                                list[nservice++] = l[pos] ;
+                                visit[l[pos]] = 1 ;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /** initiate services at the corresponding scandir */
-    sanitize_init(list, nservice, &graph, ares, areslen, FLAGS_ISSET(flag, STATE_FLAGS_TORELOAD) ? flag : STATE_FLAGS_UNKNOWN) ;
+    sanitize_init(list, nservice, &graph, ares, areslen, STATE_FLAGS_UNKNOWN) ;
 
     service_resolve_array_free(ares, areslen) ;
 
