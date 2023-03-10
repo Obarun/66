@@ -43,6 +43,8 @@ int service_is(ss_state_t *ste, uint32_t flag)
 
         case STATE_FLAGS_TOUNSUPERVISE : return FLAGS_ISSET(ste->tounsupervise, STATE_FLAGS_TRUE) ? 1 : 0 ;
 
+        case STATE_FLAGS_TOPARSE : return FLAGS_ISSET(ste->toparse, STATE_FLAGS_TRUE) ? 1 : 0 ;
+
         case STATE_FLAGS_ISDOWNFILE : return FLAGS_ISSET(ste->isdownfile, STATE_FLAGS_TRUE) ? 1 : 0 ;
 
         case STATE_FLAGS_ISEARLIER : return FLAGS_ISSET(ste->isearlier, STATE_FLAGS_TRUE) ? 1 : 0 ;

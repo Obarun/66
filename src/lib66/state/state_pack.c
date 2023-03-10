@@ -26,10 +26,11 @@ void state_pack(char *pack, ss_state_t *sta)
     uint32_pack_big(pack + 4, sta->toreload) ;
     uint32_pack_big(pack + 8, sta->torestart) ;
     uint32_pack_big(pack + 12, sta->tounsupervise) ;
-    uint32_pack_big(pack + 16, sta->isdownfile) ;
-    uint32_pack_big(pack + 20, sta->isearlier) ;
-    uint32_pack_big(pack + 24, sta->isenabled) ;
-    uint32_pack_big(pack + 28, sta->isparsed) ;
-    uint32_pack_big(pack + 32, sta->issupervised) ;
-    uint32_pack_big(pack + 36, sta->isup) ;
+    uint32_pack_big(pack + 16, sta->toparse) ;
+    uint32_pack_big(pack + 20, sta->isdownfile) ;
+    uint32_pack_big(pack + 24, sta->isearlier) ;
+    uint32_pack_big(pack + 28, sta->isenabled) ;
+    uint32_pack_big(pack + 32, sta->isparsed) ;
+    uint32_pack_big(pack + 36, sta->issupervised) ;
+    uint32_pack_big(pack + 40, sta->isup) ;
 }

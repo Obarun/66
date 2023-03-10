@@ -28,6 +28,7 @@ void state_unpack(char *pack,ss_state_t *sta)
     uint32_t toreload ;
     uint32_t torestart ;
     uint32_t tounsupervise ;
+    uint32_t toparse ;
     uint32_t isdownfile ;
     uint32_t isearlier ;
     uint32_t isenabled ;
@@ -47,21 +48,24 @@ void state_unpack(char *pack,ss_state_t *sta)
     uint32_unpack_big(pack + 12, &tounsupervise) ;
     sta->tounsupervise = tounsupervise ;
 
-    uint32_unpack_big(pack + 16, &isdownfile) ;
+    uint32_unpack_big(pack + 16, &toparse) ;
+    sta->toparse = toparse ;
+
+    uint32_unpack_big(pack + 20, &isdownfile) ;
     sta->isdownfile = isdownfile ;
 
-    uint32_unpack_big(pack + 20, &isearlier) ;
+    uint32_unpack_big(pack + 24, &isearlier) ;
     sta->isearlier = isearlier ;
 
-    uint32_unpack_big(pack + 24, &isenabled) ;
+    uint32_unpack_big(pack + 28, &isenabled) ;
     sta->isenabled = isenabled ;
 
-    uint32_unpack_big(pack + 28, &isparsed) ;
+    uint32_unpack_big(pack + 32, &isparsed) ;
     sta->isparsed = isparsed ;
 
-    uint32_unpack_big(pack + 32, &issupervised) ;
+    uint32_unpack_big(pack + 36, &issupervised) ;
     sta->issupervised = issupervised ;
 
-    uint32_unpack_big(pack + 36, &isup) ;
+    uint32_unpack_big(pack + 40, &isup) ;
     sta->isup = isup ;
 }

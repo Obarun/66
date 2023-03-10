@@ -29,16 +29,17 @@
 #define STATE_FLAGS_TORELOAD (1 << 5) // ...
 #define STATE_FLAGS_TORESTART (1 << 6)
 #define STATE_FLAGS_TOUNSUPERVISE (1 << 7)
-#define STATE_FLAGS_ISDOWNFILE (1 << 8)
-#define STATE_FLAGS_ISEARLIER (1 << 9)
-#define STATE_FLAGS_ISENABLED (1 << 10)
-#define STATE_FLAGS_ISPARSED (1 << 11)
-#define STATE_FLAGS_ISSUPERVISED (1 << 12)
-#define STATE_FLAGS_ISUP (1 << 13)
+#define STATE_FLAGS_TOPARSE (1 << 8)
+#define STATE_FLAGS_ISDOWNFILE (1 << 9)
+#define STATE_FLAGS_ISEARLIER (1 << 10)
+#define STATE_FLAGS_ISENABLED (1 << 11)
+#define STATE_FLAGS_ISPARSED (1 << 12)
+#define STATE_FLAGS_ISSUPERVISED (1 << 13)
+#define STATE_FLAGS_ISUP (1 << 14)
 
-#define STATE_FLAGS_TOPROPAGATE (1 << 14)
-#define STATE_FLAGS_WANTUP (1 << 15)
-#define STATE_FLAGS_WANTDOWN (1 << 16)
+#define STATE_FLAGS_TOPROPAGATE (1 << 15)
+#define STATE_FLAGS_WANTUP (1 << 16)
+#define STATE_FLAGS_WANTDOWN (1 << 17)
 
 typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;
 struct ss_state_s
@@ -50,6 +51,7 @@ struct ss_state_s
     uint32_t toreload ;
     uint32_t torestart ;
     uint32_t tounsupervise ;
+    uint32_t toparse ;
     uint32_t isdownfile ;
     uint32_t isearlier ;
     uint32_t isenabled ;
@@ -58,7 +60,7 @@ struct ss_state_s
     uint32_t isup ;
 } ;
 
-#define STATE_ZERO { 2,2,2,2,2,2,2,2,2,2 }
+#define STATE_ZERO { 2,2,2,2,2,2,2,2,2,2,2 }
 extern ss_state_t const ss_state_zero ;
 
 extern int state_check(char const *base, char const *name) ;

@@ -38,6 +38,7 @@ int state_get_flags(char const *base, char const *name, int flags)
         case STATE_FLAGS_TORELOAD: return sta.toreload ;
         case STATE_FLAGS_TORESTART: return sta.torestart ;
         case STATE_FLAGS_TOUNSUPERVISE: return sta.tounsupervise ;
+        case STATE_FLAGS_TOPARSE: return sta.toparse ;
         case STATE_FLAGS_ISDOWNFILE: return sta.isdownfile ;
         case STATE_FLAGS_ISEARLIER: return sta.isearlier ;
         case STATE_FLAGS_ISENABLED: return sta.isenabled ;
