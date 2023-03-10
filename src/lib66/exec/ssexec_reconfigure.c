@@ -170,6 +170,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     {
         /** start service */
         unsigned int m = 0 ;
+        int nargc = 2 + nservice + siglen ;
         char const *newargv[nargc] ;
 
         newargv[m++] = "start" ;
