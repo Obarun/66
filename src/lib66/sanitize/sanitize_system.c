@@ -64,8 +64,6 @@ int sanitize_system(ssexec_t *info)
 {
     log_flow() ;
 
-    log_trace("sanitize system..." ) ;
-
     int r ;
     size_t baselen = info->base.len ;
     uid_t log_uid ;
