@@ -17,6 +17,7 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/graph.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/sgetopt.h>
 
@@ -27,6 +28,7 @@
 #include <66/svc.h>
 #include <66/sanitize.h>
 #include <66/service.h>
+#include <66/constants.h>
 
 #include <stdio.h>
 
@@ -38,12 +40,13 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     uint32_t flag = 0 ;
     uint8_t siglen = 0 ;
     graph_t graph = GRAPH_ZERO ;
+    stralloc sa = STRALLOC_ZERO ;
 
     unsigned int areslen = 0, list[SS_MAX_SERVICE], visit[SS_MAX_SERVICE], nservice = 0, n = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE] ;
     char atree[SS_MAX_TREENAME + 1] ;
 
-    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOINIT|STATE_FLAGS_WANTUP) ;
+    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOPARSE|STATE_FLAGS_WANTUP) ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -87,7 +90,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 
         if (!r) {
             /** nothing to do */
-            log_warn(argv[n], " is not parsed -- try to start it first") ;
+            log_warn(argv[n], " is not parsed -- try to parse it first") ;
             return 0 ;
         }
 
@@ -135,6 +138,10 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
             }
         }
     }
+    /** keep list of already running service */
+    char const *exclude[4] = { SS_FDHOLDER, SS_ONESHOTD, SS_SVSCAN_LOG, 0 } ;
+    if (!sastr_dir_get(&sa, info->scandir.s, exclude, S_IFDIR))
+        log_dieusys(LOG_EXIT_SYS, "get list of running services") ;
 
     {
         /** stop service and unsupervise it */
@@ -163,7 +170,6 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     {
         /** start service */
         unsigned int m = 0 ;
-        int nargc = 1 + nservice + siglen ;
         char const *newargv[nargc] ;
 
         newargv[m++] = "start" ;
@@ -172,17 +178,18 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 
         for (n = 0 ; n < nservice ; n++) {
             char *name = graph.data.s + genalloc_s(graph_hash_t,&graph.hash)[list[n]].vertex ;
-            newargv[m++] = name ;
-
+            if (sastr_cmp(&sa, name) >= 0)
+                newargv[m++] = name ;
         }
 
         newargv[m++] = 0 ;
 
-        e = ssexec_start(nargc, newargv, info) ;
+        e = ssexec_start(m - 1, newargv, info) ;
 
     }
 
     freed:
+        stralloc_free(&sa) ;
         service_resolve_array_free(ares, areslen) ;
         graph_free_all(&graph) ;
 
