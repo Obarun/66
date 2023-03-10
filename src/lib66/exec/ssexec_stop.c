@@ -115,7 +115,7 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
             visit[idx] = 1 ;
         }
 
-        /** find dependencies of the service from the graph, do it recursively */
+        /** find requiredby of the service from the graph, do it recursively */
         c = graph_matrix_get_edge_g_list(l, &graph, argv[n], 1, 1) ;
 
         /** append to the list to deal with */
