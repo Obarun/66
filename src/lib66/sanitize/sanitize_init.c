@@ -76,7 +76,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
          * Special case for Oneshot, we only deal with
          * the scandir symlink.
          * */
-        if (ares[aresid].type == TYPE_BUNDLE || ares[aresid].type == TYPE_MODULE )
+        if (ares[aresid].type == TYPE_BUNDLE || ares[aresid].type == TYPE_MODULE)
             continue ;
 
         is_supervised = access(scandir, F_OK) ;
@@ -207,8 +207,17 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
 
         char *sa = ares[aresid].sa.s ;
 
-        if (!ftrigw_clean(sa + ares[aresid].live.eventdir))
-            log_warnu("clean event directory: ", sa + ares[aresid].live.eventdir) ;
+        if (ares[aresid].type == TYPE_CLASSIC || ares[aresid].type == TYPE_ONESHOT) {
+
+            if (!ftrigw_clean(sa + ares[aresid].live.eventdir))
+                log_warnu("clean event directory: ", sa + ares[aresid].live.eventdir) ;
+
+        } else if (ares[aresid].type == TYPE_BUNDLE || ares[aresid].type == TYPE_MODULE) {
+
+            /** Consider Module and Bundle as supervised */
+            if (!state_messenger(sa + ares[aresid].path.home, name, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE))
+                log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
+        }
 
         if (!state_messenger(sa  + ares[aresid].path.home, name, STATE_FLAGS_TOINIT, STATE_FLAGS_FALSE))
             log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
