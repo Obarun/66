@@ -13,6 +13,7 @@
  */
 
 #include <unistd.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
 
@@ -27,14 +28,21 @@ int resolve_read_cdb(resolve_wrapper_t *wres, char const *file)
 {
     log_flow() ;
 
-    int fd, e = 0 ;
+    int fd, e = -1, err = errno ;
     cdb c = CDB_ZERO ;
+
+    errno = 0 ;
 
     fd = open_readb(file) ;
     if (fd < 0) {
+
         log_warnusys("open: ",file) ;
+        if (errno == ENOENT)
+            e = 0 ;
         goto err_fd ;
     }
+
+    errno = err ;
 
     if (!cdb_init_fromfd(&c, fd)) {
         log_warnusys("cdb_init: ", file) ;
@@ -43,18 +51,24 @@ int resolve_read_cdb(resolve_wrapper_t *wres, char const *file)
 
     if (wres->type == DATA_SERVICE) {
 
-        if (!service_resolve_read_cdb(&c, ((resolve_service_t *)wres->obj)))
+        if (!service_resolve_read_cdb(&c, ((resolve_service_t *)wres->obj))) {
+            e = 0 ;
             goto err ;
+        }
 
     } else if (wres->type == DATA_TREE){
 
-        if (!tree_resolve_read_cdb(&c, ((resolve_tree_t *)wres->obj)))
+        if (!tree_resolve_read_cdb(&c, ((resolve_tree_t *)wres->obj))) {
+            e = 0 ;
             goto err ;
+        }
 
     } else if (wres->type == DATA_TREE_MASTER) {
 
-        if (!tree_resolve_master_read_cdb(&c, ((resolve_tree_master_t *)wres->obj)))
+        if (!tree_resolve_master_read_cdb(&c, ((resolve_tree_master_t *)wres->obj))) {
+            e = 0 ;
             goto err ;
+        }
     }
 
     e = 1 ;
