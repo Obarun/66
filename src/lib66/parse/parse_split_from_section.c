@@ -140,7 +140,7 @@ int parse_split_from_section(resolve_service_t *res, stralloc *secname, char *st
 
         tpos = 0 ;
 
-        // loop around all keys for the section
+        // loop around all keys from the section
         while (*total_list[id].list[ipos].name) {
 
             found = 0 ;

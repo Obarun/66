@@ -45,7 +45,7 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve
 
         int aresid = service_resolve_array_search(ares, areslen, name) ;
         if (aresid < 0)
-            log_dieu(LOG_EXIT_SYS,"find ares id -- please make a bug reports") ;
+            log_dieu(LOG_EXIT_SYS,"find ares id of: ", name, " -- please make a bug reports") ;
 
         sanitize_it(&ares[aresid]) ;
 

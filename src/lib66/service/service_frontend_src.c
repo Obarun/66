@@ -24,6 +24,7 @@
 #include <66/constants.h>
 #include <66/utils.h>
 #include <66/service.h>
+#include <66/instance.h>
 
 int service_frontend_src(stralloc *sasrc, char const *name, char const *src)
 {
@@ -139,7 +140,7 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src)
                             /** system error */
                             goto err ;
                         if (!r)
-                            /** nothing found on empty sub-directory */
+                            /** nothing found at empty sub-directory */
                             found = 0 ;
                     }
 
