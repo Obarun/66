@@ -28,8 +28,6 @@ void tree_service_add(char const *base, char const *treename, char const *servic
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
     stralloc sa = STRALLOC_ZERO ;
 
-    log_trace("modify field contents of resolve tree file: ", treename) ;
-
     if (!resolve_read_g(wres, base, treename))
         log_dieusys(LOG_EXIT_SYS, "read resolve file of tree: ", treename) ;
 
