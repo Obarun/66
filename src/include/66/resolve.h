@@ -92,7 +92,7 @@ extern int resolve_get_field_tosa(stralloc *sa, resolve_wrapper_t_ref wres, uint
 extern int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *by) ;
 extern int resolve_read_cdb(resolve_wrapper_t *wres, char const *file) ;
 extern int resolve_write_cdb(resolve_wrapper_t *wres, char const *file) ;
-extern int resolve_add_cdb(cdbmaker *c, char const *key, char const *data) ;
+extern int resolve_add_cdb(cdbmaker *c, char const *key, char const *str, uint32_t element, uint8_t check) ;
 extern int resolve_add_cdb_uint(cdbmaker *c, char const *key, uint32_t data) ;
 extern int resolve_find_cdb(stralloc *result, cdb const *c, char const *key) ;
 

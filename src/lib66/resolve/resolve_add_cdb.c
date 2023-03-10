@@ -20,13 +20,17 @@
 
 #include <66/resolve.h>
 
-int resolve_add_cdb(cdbmaker *c, char const *key, char const *data)
+int resolve_add_cdb(cdbmaker *c, char const *key, char const *str, uint32_t element, uint8_t check)
 {
+    char const *data = str + element ;
+    size_t klen = strlen(key), dlen = strlen(data) ;
 
-    size_t klen = strlen(key) ;
-    size_t dlen = strlen(data) ;
+    if (check && !element) {
+        data = "" ;
+        dlen = 1 ;
+    }
 
-    if (!cdbmake_add(c,key,klen,dlen ? data : 0,dlen))
+    if (!cdbmake_add(c,key,klen, data, dlen))
         log_warnsys_return(LOG_EXIT_ZERO,"cdb_make_add: ",key) ;
 
     return 1 ;

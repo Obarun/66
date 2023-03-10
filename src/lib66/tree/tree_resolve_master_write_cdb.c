@@ -26,19 +26,19 @@ int tree_resolve_master_write_cdb(cdbmaker *c, resolve_tree_master_t *mres)
     char *str = mres->sa.s ;
 
     /* name */
-    if (!resolve_add_cdb(c,"name",str + mres->name) ||
+    if (!resolve_add_cdb(c,"name",str, mres->name, 1) ||
 
     /* allow */
-    !resolve_add_cdb(c,"allow",str + mres->allow) ||
+    !resolve_add_cdb(c,"allow",str, mres->allow, 1) ||
 
     /* enabled */
-    !resolve_add_cdb(c,"enabled",str + mres->enabled) ||
+    !resolve_add_cdb(c,"enabled",str, mres->enabled, 1) ||
 
     /* current */
-    !resolve_add_cdb(c,"current",str + mres->current) ||
+    !resolve_add_cdb(c,"current",str, mres->current, 1) ||
 
     /* contents */
-    !resolve_add_cdb(c,"contents",str + mres->contents) ||
+    !resolve_add_cdb(c,"contents",str, mres->contents, 1) ||
 
     /* nenabled */
     !resolve_add_cdb_uint(c,"nenabled",mres->nenabled) ||

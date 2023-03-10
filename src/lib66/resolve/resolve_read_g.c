@@ -40,7 +40,7 @@ int resolve_read_g(resolve_wrapper_t *wres, char const *base, char const *name)
 
         auto_strings(path, base, SS_SYSTEM) ;
 
-    } else return 0 ;
+    }
 
     return resolve_read(wres, path, name) ;
 }

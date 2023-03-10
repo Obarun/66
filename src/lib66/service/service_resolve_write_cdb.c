@@ -27,45 +27,45 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres)
     char *str = sres->sa.s ;
 
     // configuration
-    if (!resolve_add_cdb(c, "name", str + sres->name) ||
-    !resolve_add_cdb(c, "description", str + sres->description) ||
-    !resolve_add_cdb(c, "version", str + sres->version) ||
+    if (!resolve_add_cdb(c, "name", str, sres->name, 0) ||
+    !resolve_add_cdb(c, "description", str, sres->description, 1) ||
+    !resolve_add_cdb(c, "version", str, sres->version, 1) ||
     !resolve_add_cdb_uint(c, "type", sres->type) ||
     !resolve_add_cdb_uint(c, "notify", sres->notify) ||
     !resolve_add_cdb_uint(c, "maxdeath", sres->maxdeath) ||
     !resolve_add_cdb_uint(c, "earlier", sres->earlier) ||
-    !resolve_add_cdb(c, "hiercopy", str + sres->hiercopy) ||
-    !resolve_add_cdb(c, "intree", str + sres->intree) ||
-    !resolve_add_cdb(c, "ownerstr", str + sres->ownerstr) ||
+    !resolve_add_cdb(c, "hiercopy", str, sres->hiercopy, 1) ||
+    !resolve_add_cdb(c, "intree", str, sres->intree, 1) ||
+    !resolve_add_cdb(c, "ownerstr", str, sres->ownerstr, 1) ||
     !resolve_add_cdb_uint(c, "owner", sres->owner) ||
-    !resolve_add_cdb(c, "treename", str + sres->treename) ||
-    !resolve_add_cdb(c, "user", str + sres->user) ||
-    !resolve_add_cdb(c, "inmodule", str + sres->inmodule) ||
+    !resolve_add_cdb(c, "treename", str, sres->treename, 1) ||
+    !resolve_add_cdb(c, "user", str, sres->user, 1) ||
+    !resolve_add_cdb(c, "inmodule", str, sres->inmodule, 1) ||
 
     // path
-    !resolve_add_cdb(c, "home", str + sres->path.home) ||
-    !resolve_add_cdb(c, "frontend", str + sres->path.frontend) ||
-    !resolve_add_cdb(c, "status", str + sres->path.status) ||
+    !resolve_add_cdb(c, "home", str, sres->path.home, 1) ||
+    !resolve_add_cdb(c, "frontend", str, sres->path.frontend, 1) ||
+    !resolve_add_cdb(c, "status", str, sres->path.status, 1) ||
 
     // dependencies
-    !resolve_add_cdb(c, "depends", str + sres->dependencies.depends) ||
-    !resolve_add_cdb(c, "requiredby", str + sres->dependencies.requiredby) ||
-    !resolve_add_cdb(c, "optsdeps", str + sres->dependencies.optsdeps) ||
+    !resolve_add_cdb(c, "depends", str, sres->dependencies.depends, 1) ||
+    !resolve_add_cdb(c, "requiredby", str, sres->dependencies.requiredby, 1) ||
+    !resolve_add_cdb(c, "optsdeps", str, sres->dependencies.optsdeps, 1) ||
     !resolve_add_cdb_uint(c, "ndepends", sres->dependencies.ndepends) ||
     !resolve_add_cdb_uint(c, "nrequiredby", sres->dependencies.nrequiredby) ||
     !resolve_add_cdb_uint(c, "noptsdeps", sres->dependencies.noptsdeps) ||
 
     // execute
-    !resolve_add_cdb(c, "run", str + sres->execute.run.run) ||
-    !resolve_add_cdb(c, "run_user", str + sres->execute.run.run_user) ||
-    !resolve_add_cdb(c, "run_build", str + sres->execute.run.build) ||
-    !resolve_add_cdb(c, "run_shebang", str + sres->execute.run.shebang) ||
-    !resolve_add_cdb(c, "run_runas", str + sres->execute.run.runas) ||
-    !resolve_add_cdb(c, "finish", str + sres->execute.finish.run) ||
-    !resolve_add_cdb(c, "finish_user", str + sres->execute.finish.run_user) ||
-    !resolve_add_cdb(c, "finish_build", str + sres->execute.finish.build) ||
-    !resolve_add_cdb(c, "finish_shebang", str + sres->execute.finish.shebang) ||
-    !resolve_add_cdb(c, "finish_runas", str + sres->execute.finish.runas) ||
+    !resolve_add_cdb(c, "run", str, sres->execute.run.run, 1) ||
+    !resolve_add_cdb(c, "run_user", str, sres->execute.run.run_user, 1) ||
+    !resolve_add_cdb(c, "run_build", str, sres->execute.run.build, 1) ||
+    !resolve_add_cdb(c, "run_shebang", str, sres->execute.run.shebang, 1) ||
+    !resolve_add_cdb(c, "run_runas", str, sres->execute.run.runas, 1) ||
+    !resolve_add_cdb(c, "finish", str, sres->execute.finish.run, 1) ||
+    !resolve_add_cdb(c, "finish_user", str, sres->execute.finish.run_user, 1) ||
+    !resolve_add_cdb(c, "finish_build", str, sres->execute.finish.build, 1) ||
+    !resolve_add_cdb(c, "finish_shebang", str, sres->execute.finish.shebang, 1) ||
+    !resolve_add_cdb(c, "finish_runas", str, sres->execute.finish.runas, 1) ||
     !resolve_add_cdb_uint(c, "timeoutkill", sres->execute.timeout.kill) ||
     !resolve_add_cdb_uint(c, "timeoutfinish", sres->execute.timeout.finish) ||
     !resolve_add_cdb_uint(c, "timeoutup", sres->execute.timeout.up) ||
@@ -74,43 +74,45 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres)
     !resolve_add_cdb_uint(c, "downsignal", sres->execute.downsignal) ||
 
     //live
-    !resolve_add_cdb(c, "livedir", str + sres->live.livedir) ||
-    !resolve_add_cdb(c, "scandir", str + sres->live.scandir) ||
-    !resolve_add_cdb(c, "statedir", str + sres->live.statedir) ||
-    !resolve_add_cdb(c, "eventdir", str + sres->live.eventdir) ||
-    !resolve_add_cdb(c, "notifdir", str + sres->live.notifdir) ||
-    !resolve_add_cdb(c, "supervisedir", str + sres->live.supervisedir) ||
-    !resolve_add_cdb(c, "fdholderdir", str + sres->live.fdholderdir) ||
-    !resolve_add_cdb(c, "oneshotddir", str + sres->live.oneshotddir) ||
+    !resolve_add_cdb(c, "livedir", str, sres->live.livedir, 1) ||
+    !resolve_add_cdb(c, "scandir", str, sres->live.scandir, 1) ||
+    !resolve_add_cdb(c, "statedir", str, sres->live.statedir, 1) ||
+    !resolve_add_cdb(c, "eventdir", str, sres->live.eventdir, 1) ||
+    !resolve_add_cdb(c, "notifdir", str, sres->live.notifdir, 1) ||
+    !resolve_add_cdb(c, "supervisedir", str, sres->live.supervisedir, 1) ||
+    !resolve_add_cdb(c, "fdholderdir", str, sres->live.fdholderdir, 1) ||
+    !resolve_add_cdb(c, "oneshotddir", str, sres->live.oneshotddir, 1) ||
 
     // logger
-    !resolve_add_cdb(c, "logname", str + sres->logger.name) ||
-    !resolve_add_cdb(c, "logdestination", str + sres->logger.destination) ||
+    !resolve_add_cdb(c, "logname", str, sres->logger.name, 1) ||
+    !resolve_add_cdb(c, "logdestination", str, sres->logger.destination, 1) ||
     !resolve_add_cdb_uint(c, "logbackup", sres->logger.backup) ||
     !resolve_add_cdb_uint(c, "logmaxsize", sres->logger.maxsize) ||
     !resolve_add_cdb_uint(c, "logwant", sres->logger.want) ||
     !resolve_add_cdb_uint(c, "logtimestamp", sres->logger.timestamp) ||
-    !resolve_add_cdb(c, "logrun", str + sres->logger.execute.run.run) ||
-    !resolve_add_cdb(c, "logrun_user", str + sres->logger.execute.run.run_user) ||
-    !resolve_add_cdb(c, "logrun_build", str + sres->logger.execute.run.build) ||
-    !resolve_add_cdb(c, "logrun_shebang", str + sres->logger.execute.run.shebang) ||
-    !resolve_add_cdb(c, "logrun_runas", str + sres->logger.execute.run.runas) ||
+    !resolve_add_cdb(c, "logrun", str, sres->logger.execute.run.run, 1) ||
+    !resolve_add_cdb(c, "logrun_user", str, sres->logger.execute.run.run_user, 1) ||
+    !resolve_add_cdb(c, "logrun_build", str, sres->logger.execute.run.build, 1) ||
+    !resolve_add_cdb(c, "logrun_shebang", str, sres->logger.execute.run.shebang, 1) ||
+    !resolve_add_cdb(c, "logrun_runas", str, sres->logger.execute.run.runas, 1) ||
     !resolve_add_cdb_uint(c, "logtimeoutkill", sres->logger.execute.timeout.kill) ||
     !resolve_add_cdb_uint(c, "logtimeoutfinish", sres->logger.execute.timeout.finish) ||
 
     // environ
-    !resolve_add_cdb(c, "env", str + sres->environ.env) ||
-    !resolve_add_cdb(c, "envdir", str + sres->environ.envdir) ||
+    !resolve_add_cdb(c, "env", str, sres->environ.env, 1) ||
+    !resolve_add_cdb(c, "envdir", str, sres->environ.envdir, 1) ||
     !resolve_add_cdb_uint(c, "env_overwrite", sres->environ.env_overwrite) ||
 
     // regex
-    !resolve_add_cdb(c, "configure", str + sres->regex.configure) ||
-    !resolve_add_cdb(c, "directories", str + sres->regex.directories) ||
-    !resolve_add_cdb(c, "files", str + sres->regex.files) ||
-    !resolve_add_cdb(c, "infiles", str + sres->regex.infiles) ||
+    !resolve_add_cdb(c, "configure", str, sres->regex.configure, 1) ||
+    !resolve_add_cdb(c, "directories", str, sres->regex.directories, 1) ||
+    !resolve_add_cdb(c, "files", str, sres->regex.files, 1) ||
+    !resolve_add_cdb(c, "infiles", str, sres->regex.infiles, 1) ||
+    !resolve_add_cdb(c, "contents", str, sres->regex.contents, 1) ||
     !resolve_add_cdb_uint(c, "ndirectories", sres->regex.ndirectories) ||
     !resolve_add_cdb_uint(c, "nfiles", sres->regex.nfiles) ||
-    !resolve_add_cdb_uint(c, "ninfiles", sres->regex.ninfiles)) return 0 ;
+    !resolve_add_cdb_uint(c, "ninfiles", sres->regex.ninfiles) ||
+    !resolve_add_cdb_uint(c, "ncontents", sres->regex.ncontents)) return 0 ;
 
     return 1 ;
 }

@@ -26,22 +26,22 @@ int tree_resolve_write_cdb(cdbmaker *c, resolve_tree_t *tres)
     char *str = tres->sa.s ;
 
     /* name */
-    if (!resolve_add_cdb(c,"name",str + tres->name) ||
+    if (!resolve_add_cdb(c,"name",str, tres->name, 0) ||
 
     /* depends */
-    !resolve_add_cdb(c,"depends",str + tres->depends) ||
+    !resolve_add_cdb(c,"depends",str, tres->depends, 1) ||
 
     /* requiredby */
-    !resolve_add_cdb(c,"requiredby",str + tres->requiredby) ||
+    !resolve_add_cdb(c,"requiredby",str, tres->requiredby, 1) ||
 
     /* allow */
-    !resolve_add_cdb(c,"allow",str + tres->allow) ||
+    !resolve_add_cdb(c,"allow",str, tres->allow, 1) ||
 
     /* groups */
-    !resolve_add_cdb(c,"groups",str + tres->groups) ||
+    !resolve_add_cdb(c,"groups",str, tres->groups, 1) ||
 
     /* contents */
-    !resolve_add_cdb(c,"contents",str + tres->contents) ||
+    !resolve_add_cdb(c,"contents",str, tres->contents, 1) ||
 
     /* ndepends */
     !resolve_add_cdb_uint(c,"ndepends",tres->ndepends) ||
