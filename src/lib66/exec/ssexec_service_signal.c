@@ -312,7 +312,7 @@ static void pidservice_init_array(unsigned int *list, unsigned int listlen, pids
         if (pids.vertex < 0)
             log_dieu(LOG_EXIT_SYS, "get vertex id -- please make a bug report") ;
 
-        if (ares[pids.aresid].type == TYPE_ONESHOT) {
+        if (ares[pids.aresid].type != TYPE_CLASSIC) {
 
                 ss_state_t ste = STATE_ZERO ;
 
@@ -451,7 +451,7 @@ static int doit(pidservice_t *sv, unsigned int what, tain *deadline)
         /**
          * Those type are not real services. Passing here with
          * this kind of service means that the dependencies
-         * of the service was passed anyway. So, we can consider it as
+         * of the service was passed. So, we can consider it as
          * already up/down.
          * */
          return 0 ;
@@ -858,9 +858,12 @@ int ssexec_service_signal(int argc, char const *const *argv, ssexec_t *info)
                 case 'r' :
                 case 'o' :
                 case 'd' :
+                case 'D' :
                 case 'u' :
+                case 'U' :
                 case 'x' :
                 case 'O' :
+                case 'Q' :
 
                     if (datalen >= DATASIZE)
                         log_die(LOG_EXIT_USER, "too many arguments") ;
@@ -905,10 +908,9 @@ int ssexec_service_signal(int argc, char const *const *argv, ssexec_t *info)
         reloadmsg = 2 ;
 
     if (what) {
-
         requiredby = 1 ;
-        FLAGS_SET(gflag, STATE_FLAGS_WANTUP) ;
-        FLAGS_CLEAR(gflag, STATE_FLAGS_WANTDOWN) ;
+        FLAGS_SET(gflag, STATE_FLAGS_WANTDOWN) ;
+        FLAGS_CLEAR(gflag, STATE_FLAGS_WANTUP) ;
     }
 
     if ((svc_scandir_ok(info->scandir.s)) != 1)
@@ -947,6 +949,34 @@ int ssexec_service_signal(int argc, char const *const *argv, ssexec_t *info)
             if (!visit[l[pos]]) {
                 list[napid++] = l[pos] ;
                 visit[l[pos]] = 1 ;
+            }
+        }
+        if (ares[aresid].type == TYPE_MODULE) {
+
+            if (ares[aresid].regex.ncontents) {
+
+                stralloc sa = STRALLOC_ZERO ;
+                if (!sastr_clean_string(&sa, ares[aresid].sa.s + ares[aresid].regex.contents))
+			log_dieu(LOG_EXIT_SYS, "clean string") ;
+
+                {
+                    size_t idx = 0 ;
+                    FOREACH_SASTR(&sa, idx) {
+
+
+                        /** find dependencies of the service from the graph, do it recursively */
+                        c = graph_matrix_get_edge_g_list(l, &graph, sa.s + idx, 0, 1) ;
+
+                        /** append to the list to deal with */
+                        for (pos = 0 ; pos < c ; pos++) {
+                            if (!visit[l[pos]]) {
+                                list[napid++] = l[pos] ;
+                                visit[l[pos]] = 1 ;
+                            }
+                        }
+                    }
+                }
+                stralloc_free(&sa) ;
             }
         }
     }
