@@ -223,7 +223,7 @@ extern char const *help_scandir ;
 #define OPTS_START_LEN (sizeof OPTS_START - 1)
 #define OPTS_STOP "huP"
 #define OPTS_STOP_LEN (sizeof OPTS_STOP - 1)
-#define OPTS_SVCTL "habqHkti12pcyroduxOw:P"
+#define OPTS_SVCTL "habqHkti12pcyrodDuUxOw:P"
 #define OPTS_SVCTL_LEN (sizeof OPTS_SVCTL - 1)
 #define OPTS_ENV "hc:s:VLr:e:i:"
 #define OPTS_ENV_LEN (sizeof OPTS_ENV - 1)
