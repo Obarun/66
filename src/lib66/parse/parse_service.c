@@ -35,6 +35,8 @@
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/tree.h>
+#include <66/graph.h>
+#include <66/sanitize.h>
 
 parse_mill_t MILL_GET_SECTION_NAME = \
 { \
@@ -96,6 +98,14 @@ void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
         write_services(&ares[pos], dst, force) ;
 
         ss_state_t sta = STATE_ZERO ;
+
+        if (state_check(ares[pos].sa.s + ares[pos].path.home, ares[pos].sa.s + ares[pos].name)) {
+
+            if (!state_read(&sta, ares[pos].sa.s + ares[pos].path.home, ares[pos].sa.s + ares[pos].name))
+                log_dieu(LOG_EXIT_SYS, "read state file of: ", ares[pos].sa.s + ares[pos].name) ;
+
+        }
+
         FLAGS_SET(sta.toinit, STATE_FLAGS_TRUE) ;
         FLAGS_SET(sta.isparsed, STATE_FLAGS_TRUE) ;
         FLAGS_SET(sta.isearlier, ares[pos].earlier ? STATE_FLAGS_TRUE : STATE_FLAGS_FALSE) ;
@@ -104,9 +114,22 @@ void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
         if (!state_write(&sta, ares[pos].sa.s + ares[pos].path.home, ares[pos].sa.s + ares[pos].name))
             log_dieu(LOG_EXIT_SYS, "write state file of: ", ares[pos].sa.s + ares[pos].name) ;
 
-        if (ares[pos].logger.name && ares[pos].type == TYPE_CLASSIC)
+        if (ares[pos].logger.name && ares[pos].type == TYPE_CLASSIC) {
+
+            if (state_check(info->base.s, ares[pos].sa.s + ares[pos].logger.name)) {
+
+                if (!state_read(&sta, ares[pos].sa.s + ares[pos].path.home, ares[pos].sa.s + ares[pos].logger.name))
+                    log_dieu(LOG_EXIT_SYS, "read state file of: ", ares[pos].sa.s + ares[pos].logger.name) ;
+
+                FLAGS_SET(sta.toinit, STATE_FLAGS_TRUE) ;
+                FLAGS_SET(sta.isparsed, STATE_FLAGS_TRUE) ;
+                FLAGS_SET(sta.isearlier, ares[pos].earlier ? STATE_FLAGS_TRUE : STATE_FLAGS_FALSE) ;
+                FLAGS_SET(sta.isdownfile, ares[pos].execute.down ? STATE_FLAGS_TRUE : STATE_FLAGS_FALSE) ;
+            }
+
             if (!state_write(&sta, ares[pos].sa.s + ares[pos].path.home, ares[pos].sa.s + ares[pos].logger.name))
                 log_dieu(LOG_EXIT_SYS, "write state file of: ", ares[pos].sa.s + ares[pos].logger.name) ;
+        }
 
         log_info("Parsed successfully: ", ares[pos].sa.s + ares[pos].name, " at tree: ", ares[pos].sa.s + ares[pos].treename) ;
     }
