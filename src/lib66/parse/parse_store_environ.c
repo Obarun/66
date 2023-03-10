@@ -27,6 +27,11 @@
 
 int parse_store_environ(resolve_service_t *res, char *store, int idsec, int idkey)
 {
+    log_flow() ;
+
+    if (res->type == TYPE_BUNDLE)
+        return 1 ;
+
     int e = 0 ;
     stralloc sa = STRALLOC_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;

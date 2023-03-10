@@ -20,6 +20,8 @@
 
 int parse_store_g(resolve_service_t *res, char *store, int idsec, int idkey)
 {
+    log_flow() ;
+
     log_trace("storing key: ", get_key_by_key_all(idsec, idkey)) ;
 
     switch(idsec) {
