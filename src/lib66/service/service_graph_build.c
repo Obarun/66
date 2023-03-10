@@ -17,10 +17,44 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/graph.h>
+#include <oblibs/sastr.h>
+#include <oblibs/string.h>
 
 #include <66/service.h>
 #include <66/graph.h>
 #include <66/state.h>
+
+static void issupervised(char *store, char const *base, char const *str)
+{
+    size_t pos = 0 ;
+    ss_state_t ste = STATE_ZERO ;
+    stralloc sa = STRALLOC_ZERO ;
+
+    memset(store, 0, strlen(str)) ;
+
+    if (!sastr_clean_string(&sa, str))
+        log_dieu(LOG_EXIT_SYS, "clean string") ;
+
+    FOREACH_SASTR(&sa, pos) {
+
+        char *name = sa.s + pos ;
+
+        if (!state_check(base, name))
+            continue ;
+
+        if (!state_read(&ste, base, name))
+            continue ;
+
+        if (service_is(&ste, STATE_FLAGS_ISSUPERVISED))
+            auto_strings(store + strlen(store), name, " ") ;
+        else
+            continue ;
+    }
+
+    store[strlen(store) - 1] = 0 ;
+
+    stralloc_free(&sa) ;
+}
 
 void service_graph_build(graph_t *g, resolve_service_t *ares, unsigned int areslen, uint32_t flag)
 {
@@ -39,13 +73,43 @@ void service_graph_build(graph_t *g, resolve_service_t *ares, unsigned int aresl
 
         if (FLAGS_ISSET(flag, STATE_FLAGS_TOPROPAGATE)) {
 
-            if (pres->dependencies.ndepends && FLAGS_ISSET(flag, STATE_FLAGS_WANTUP))
-                if (!graph_compute_dependencies(g, service, pres->sa.s + pres->dependencies.depends, 0))
-                    log_dieu(LOG_EXIT_SYS, "add dependencies of service: ",service) ;
+            if (pres->dependencies.ndepends && FLAGS_ISSET(flag, STATE_FLAGS_WANTUP)) {
 
-            if (pres->dependencies.nrequiredby && FLAGS_ISSET(flag, STATE_FLAGS_WANTDOWN))
-                if (!graph_compute_dependencies(g, service, pres->sa.s + pres->dependencies.requiredby, 1))
-                    log_dieu(LOG_EXIT_SYS, "add dependencies of service: ",service) ;
+                char store[strlen(pres->sa.s + pres->dependencies.depends) + 1] ;
+
+                if (FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {
+
+                    issupervised(store, pres->sa.s + pres->path.home, pres->sa.s + pres->dependencies.depends) ;
+
+
+                } else {
+
+                    auto_strings(store, pres->sa.s + pres->dependencies.depends) ;
+
+                }
+
+                if (strlen(store))
+                    if (!graph_compute_dependencies(g, service, store, 0))
+                        log_dieu(LOG_EXIT_SYS, "add dependencies of service: ",service) ;
+            }
+
+            if (pres->dependencies.nrequiredby && FLAGS_ISSET(flag, STATE_FLAGS_WANTDOWN)) {
+
+                char store[strlen(pres->sa.s + pres->dependencies.requiredby) + 1] ;
+
+                if (FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {
+
+                    issupervised(store, pres->sa.s + pres->path.home, pres->sa.s + pres->dependencies.requiredby) ;
+
+                } else {
+
+                    auto_strings(store, pres->sa.s + pres->dependencies.requiredby) ;
+                }
+
+                if (strlen(store))
+                    if (!graph_compute_dependencies(g, service, store, 1))
+                        log_dieu(LOG_EXIT_SYS, "add requiredby of service: ",service) ;
+            }
         }
     }
 
@@ -53,7 +117,7 @@ void service_graph_build(graph_t *g, resolve_service_t *ares, unsigned int aresl
         log_dieu(LOG_EXIT_SYS, "build the graph") ;
 
     if (!graph_matrix_analyze_cycle(g))
-        log_dieu(LOG_EXIT_SYS, "found cycle") ;
+        log_die(LOG_EXIT_SYS, "cyclic graph detected") ;
 
     if (!graph_matrix_sort(g))
         log_dieu(LOG_EXIT_SYS, "sort the graph") ;
