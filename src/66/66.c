@@ -89,7 +89,7 @@ int main(int argc, char const *const *argv)
     uint8_t sanitize = 0 ;
     char const *main = "hv:l:t:T:z" ;
     char str[UINT_FMT] ;
-    char const *nargv[argc + 1] ;
+    char const *nargv[argc + 3] ;
 
     ssexec_t info = SSEXEC_ZERO ;
     ssexec_func_t_ref func = 0 ;
