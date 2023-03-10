@@ -392,7 +392,7 @@ void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
     char status[info->base.len + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + strlen(name) + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
 
     auto_strings(name, res->sa.s + res->name) ;
-    auto_strings(status, info->base.s, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", name, SS_STATE, "/" SS_STATUS) ;
+    auto_strings(status, info->base.s, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", name, SS_STATE, "/", SS_STATUS) ;
 
     res->path.status = resolve_add_string(wres, status) ;
 
@@ -482,31 +482,35 @@ void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
         }
     }
 
-    // {run,up}/{run,up}.user script
-    if (res->type == TYPE_ONESHOT) {
+    if (res->type == TYPE_ONESHOT || res->type == TYPE_CLASSIC) {
 
-        compute_wrapper_scripts(res, &res->execute.run, "up", 1) ;
-        compute_wrapper_scripts_user(res, &res->execute.run, 1) ;
-
-    } else {
-
-        compute_wrapper_scripts(res, &res->execute.run, "run", 1) ;
-        compute_wrapper_scripts_user(res, &res->execute.run, 1) ;
-
-    }
-
-    // {finish,down}/{finish,down}.user script
-    if (res->execute.finish.run_user) {
+        // {run,up}/{run,up}.user script
         if (res->type == TYPE_ONESHOT) {
 
-            compute_wrapper_scripts(res, &res->execute.finish, "down", 0) ;
-            compute_wrapper_scripts_user(res, &res->execute.finish, 0) ;
+            compute_wrapper_scripts(res, &res->execute.run, "up", 1) ;
+            compute_wrapper_scripts_user(res, &res->execute.run, 1) ;
 
         } else {
 
-            compute_wrapper_scripts(res, &res->execute.finish, "finish", 0) ;
-            compute_wrapper_scripts_user(res, &res->execute.finish, 0) ;
+            compute_wrapper_scripts(res, &res->execute.run, "run", 1) ;
+            compute_wrapper_scripts_user(res, &res->execute.run, 1) ;
 
+        }
+
+        // {finish,down}/{finish,down}.user script
+        if (res->execute.finish.run_user) {
+
+            if (res->type == TYPE_ONESHOT) {
+
+                compute_wrapper_scripts(res, &res->execute.finish, "down", 0) ;
+                compute_wrapper_scripts_user(res, &res->execute.finish, 0) ;
+
+            } else {
+
+                compute_wrapper_scripts(res, &res->execute.finish, "finish", 0) ;
+                compute_wrapper_scripts_user(res, &res->execute.finish, 0) ;
+
+            }
         }
     }
 
