@@ -15,6 +15,7 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
+#include <oblibs/sastr.h>
 
 #include <66/service.h>
 #include <66/graph.h>
@@ -30,5 +31,6 @@ void service_graph_g(char const *alist, size_t alen, graph_t *graph, resolve_ser
         log_warn("no services matching the requirements at tree: ", info->treename.s) ;
         return ;
     }
+
     service_graph_build(graph, ares, (*areslen), flag) ;
 }
