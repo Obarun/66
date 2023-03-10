@@ -30,14 +30,15 @@
 #include <66/graph.h>
 #include <66/enum.h>
 
-/** list all services of the system
- * STATE_FLAGS_TOINIT -> it call sanitize_source() function.
+/** list all services of the system dependending of the flag passed.
+ * STATE_FLAGS_TOPARSE -> call sanitize_source
  * STATE_FLAGS_TOPROPAGATE -> it build with the dependencies/requiredby services.
  * STATE_FLAGS_ISSUPERVISED -> only keep already supervised service*/
 void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag)
 {
     log_flow () ;
 
+    int r ;
     size_t pos = 0 ;
     ss_state_t ste = STATE_ZERO ;
     stralloc sa = STRALLOC_ZERO ;
@@ -46,7 +47,6 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
 
     for (; pos < alen ; pos += strlen(alist + pos) + 1) {
 
-        sa.len = 0 ;
         char const *name = alist + pos ;
 
         if (service_resolve_array_search(ares, (*areslen), name) < 0) {
@@ -62,15 +62,21 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
              * call of sanitize_source.
              * The service do not exist yet, sanitize it with sanitize_source
              * and read again the resolve file to know the change */
-            if (resolve_read_g(wres, info->base.s, name)) {
+            r = resolve_read_g(wres, info->base.s, name) ;
+            if (r < 0)
+                log_dieu(LOG_EXIT_SYS, "read resolve file: ", name) ;
+
+            if (r) {
 
                 info->treename.len = 0 ;
 
                 if (!auto_stra(&info->treename, res.sa.s + res.treename))
                     log_die_nomem("stralloc") ;
-            }
 
-            if (FLAGS_ISSET(flag, STATE_FLAGS_TOINIT))
+            } else if (!FLAGS_ISSET(flag, STATE_FLAGS_TOPARSE))
+                continue ;
+
+            if (FLAGS_ISSET(flag, STATE_FLAGS_TOPARSE))
                 sanitize_source(name, info, flag) ;
 
             if (!resolve_read_g(wres, info->base.s, name))
@@ -104,20 +110,53 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
 
             if (FLAGS_ISSET(flag, STATE_FLAGS_TOPROPAGATE)) {
 
-                if (res.dependencies.ndepends && FLAGS_ISSET(flag, STATE_FLAGS_WANTDOWN)) {
+                stralloc module = STRALLOC_ZERO ;
+
+                if (res.type == TYPE_MODULE) {
+
+                    if (res.regex.ncontents)
+                        if (!sastr_clean_string(&module, res.sa.s + res.regex.contents))
+                            log_dieu(LOG_EXIT_SYS, "clean string") ;
+                }
+
+                if (res.dependencies.ndepends && FLAGS_ISSET(flag, STATE_FLAGS_WANTUP)) {
+
+                    sa.len = 0 ;
 
                     if (!sastr_clean_string(&sa, res.sa.s + res.dependencies.depends))
                         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
+                    if (module.len) {
+                        FOREACH_SASTR(&module, pos)
+                            sastr_add_string(&sa, module.s + pos) ;
+                    }
+
+                    stralloc_0(&sa) ;
+                    sa.len-- ;
+
                     service_graph_collect(g, sa.s, sa.len, ares, areslen, info, flag) ;
 
-                } else if (res.dependencies.nrequiredby && FLAGS_ISSET(flag, STATE_FLAGS_WANTUP)) {
+                }
+
+                if (res.dependencies.nrequiredby && FLAGS_ISSET(flag, STATE_FLAGS_WANTDOWN)) {
+
+                    sa.len = 0 ;
 
                     if (!sastr_clean_string(&sa, res.sa.s + res.dependencies.requiredby))
                         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
+                    if (module.len) {
+                        FOREACH_SASTR(&module, pos)
+                            sastr_add_string(&sa, module.s + pos) ;
+                    }
+
+                    stralloc_0(&sa) ;
+                    sa.len-- ;
+
                     service_graph_collect(g, sa.s, sa.len, ares, areslen, info, flag) ;
                 }
+
+                stralloc_free(&module) ;
             }
             resolve_free(wres) ;
         }
