@@ -106,7 +106,7 @@ char const *help_start =
 "   -P: do not propagate signal to its dependencies\n"
 ;
 
-char const *usage_stop = "66 stop [ -h ] [ -P ] [ -u ] service..." ;
+char const *usage_stop = "66 stop [ -h ] [ -P ] service..." ;
 
 char const *help_stop =
 "\nbring down services\n"
@@ -114,7 +114,6 @@ char const *help_stop =
 "options:\n"
 "   -h: print this help\n"
 "   -P: do not propagate signal to its requiredby\n"
-"   -u: unsupervise service(s)\n"
 ;
 
 char const *usage_env = "66 env [ -h ] [ -c version ] [ -s version ] [ -V|L ] [ -r key=value ] [ -i src,dst ] [ -e editor ] service" ;
@@ -142,7 +141,7 @@ char const *help_init =
 "   -h: print this help\n"
 ;
 
-char const *usage_parse = "66 parse [ -h ] [ -f|F ] [ -I ] service..." ;
+char const *usage_parse = "66 parse [ -h ] [ -f ] [ -I ] service..." ;
 
 char const *help_parse =
 "\nparse a frontend service file and install its result to resolve files\n"
@@ -150,7 +149,6 @@ char const *help_parse =
 "options:\n"
 "   -h: print this help\n"
 "   -f: force to overwrite existing destination\n"
-"   -F: also force to overwrite its dependencies\n"
 "   -I: do not import modified configuration files from previous version\n"
 ;
 
@@ -373,6 +371,8 @@ char const *help_tree_up =
 "options:\n"
 "   -h: print this help\n"
 "   -f: fork the process\n"
+"\n"
+"If no tree name are provided, it bring up all enabled trees from the system\n"
 ;
 
 char const *usage_tree_down = "66 tree down [ -h ] [ -f ] tree" ;
@@ -383,6 +383,8 @@ char const *help_tree_down =
 "options:\n"
 "   -h: print this help\n"
 "   -f: fork the process\n"
+"\n"
+"If no tree name are provided, it bring down all enabled trees from the system\n"
 ;
 
 char const *usage_tree_unsupervise = "66 tree unsupervise [ -h ] [ -f ] tree" ;
@@ -393,6 +395,8 @@ char const *help_tree_unsupervise =
 "options:\n"
 "   -h: print this help\n"
 "   -f: fork the process\n"
+"\n"
+"If no tree name are provided, it unsupervise all enabled trees from the system\n"
 ;
 
 char const *usage_service_wrapper = "66 service [ -h ] status|resolve|state|remove [<command options>] service..." ;

@@ -26,6 +26,7 @@
 #include <66/parser.h>
 #include <66/ssexec.h>
 #include <66/utils.h>
+#include <66/sanitize.h>
 
 int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
 {
@@ -57,19 +58,12 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
                     force = 1 ;
                     break ;
 
-                case 'F' :
-
-                     /** force to rewrite it dependencies */
-                     if (force)
-                        log_usage(info->usage, "\n", info->help) ;
-                    force = 2 ;
-                    break ;
-
                 case 'I' :
 
                     conf = 1 ;
                     break ;
 
+                case 'F' :  log_1_warn("deprecated option -- ignoring") ; break ;
                 case 'c' :  log_1_warn("deprecated option -- ignoring") ; break ;
                 case 'm' :  log_1_warn("deprecated option -- ignoring") ; break ;
                 case 'C' :  log_1_warn("deprecated option -- ignoring") ; break ;
@@ -118,6 +112,8 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
         FOREACH_SASTR(&sa, pos)
             parse_service(sa.s + pos, info, force, conf) ;
     }
+
+    sanitize_graph(info) ;
 
     stralloc_free(&sa) ;
 
