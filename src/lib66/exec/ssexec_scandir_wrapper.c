@@ -88,6 +88,9 @@ int ssexec_scandir_wrapper(int argc, char const *const *argv, ssexec_t *info)
         argv++ ;
     }
 
+    if (!argc)
+        log_usage(usage_scandir_wrapper, "\n", help_scandir_wrapper) ;
+
     if (!strcmp(argv[0], "create")) {
 
         nargv[n++] = argv[0] ;
