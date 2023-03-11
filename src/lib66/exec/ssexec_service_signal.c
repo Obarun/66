@@ -839,9 +839,6 @@ int ssexec_service_signal(int argc, char const *const *argv, ssexec_t *info)
             if (opt == -1) break ;
 
             switch (opt) {
-                case 'h' :
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
 
                 case 'a' :
                 case 'b' :
@@ -957,7 +954,7 @@ int ssexec_service_signal(int argc, char const *const *argv, ssexec_t *info)
 
                 stralloc sa = STRALLOC_ZERO ;
                 if (!sastr_clean_string(&sa, ares[aresid].sa.s + ares[aresid].regex.contents))
-			log_dieu(LOG_EXIT_SYS, "clean string") ;
+            log_dieu(LOG_EXIT_SYS, "clean string") ;
 
                 {
                     size_t idx = 0 ;

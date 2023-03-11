@@ -31,7 +31,6 @@ int ssexec_service_wrapper(int argc, char const *const *argv, ssexec_t *info)
     }
 
     int r, n = 0, i = 0 ;
-    uint8_t ctl = 0 ;
     ssexec_func_t_ref func = 0 ;
     char const *nargv[argc + 1] ;
 
@@ -142,27 +141,6 @@ int ssexec_service_wrapper(int argc, char const *const *argv, ssexec_t *info)
         nargv[n++] = *argv ;
 
     nargv[n] = 0 ;
-
-    if (ctl) {
-        /* swap the command and options e.g.
-         * down -f <treename> <-> -f down <treename> */
-        if (n > 2) {
-            /* swap the command and options e.g.
-             * down -f <-> -f down */
-            nargv[n] = nargv[n-1] ;
-            nargv[n-1] = nargv[0] ;
-            nargv[++n] = 0 ;
-
-        } else if (nargv[n-1][0] == '-') {
-            nargv[n++] = nargv[0] ;
-            nargv[n] = 0 ;
-        } else {
-            nargv[n] = nargv[n-1] ;
-            nargv[n-1] = nargv[0] ;
-            nargv[++n] = 0 ;
-        }
-
-    }
 
     r = (*func)(n, nargv, info) ;
 
