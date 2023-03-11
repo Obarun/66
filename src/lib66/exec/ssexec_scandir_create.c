@@ -1,5 +1,5 @@
 /*
- * ssexec_scandir.c
+ * ssexec_scandir_create.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -13,37 +13,30 @@
  */
 
 #include <string.h>
-#include <errno.h>
-#include <sys/stat.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <stdarg.h>
 
+#include <oblibs/string.h>
 #include <oblibs/log.h>
 #include <oblibs/directory.h>
 #include <oblibs/types.h>
 #include <oblibs/files.h>
-#include <oblibs/string.h>
-#include <oblibs/environ.h>
 
-#include <skalibs/stralloc.h>
-#include <skalibs/sgetopt.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/types.h>
-#include <skalibs/env.h>
-#include <skalibs/bytestr.h>//byte_count
-#include <skalibs/exec.h>
 #include <skalibs/buffer.h>
+#include <skalibs/sgetopt.h>
 
-#include <s6/config.h>
-#include <execline/config.h>
-
+#include <66/constants.h>
+#include <66/utils.h>
 #include <66/config.h>
 #include <66/ssexec.h>
-#include <66/svc.h>
-#include <66/utils.h>
 #include <66/enum.h>
-#include <66/constants.h>
+
+#include <execline/config.h>
+#include <s6/config.h>
 
 #define CRASH 0
 #define FINISH 1
@@ -60,7 +53,7 @@
 #define PERM1777 S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO
 
 static uid_t OWNER ;
-static char OWNERSTR[UID_FMT] ;
+static char *OWNERSTR ;
 static gid_t GIDOWNER ;
 static char GIDSTR[GID_FMT] ;
 
@@ -73,31 +66,6 @@ static size_t compute_buf_size(char const *str,...) ;
 static size_t CONFIG_STR_LEN = 0 ;
 static int BUF_FD ; // general buffer fd
 
-#define USAGE "66-scandir [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -b|B ] [ -c ] [ -L log_user ] [ -s skel ] [ -o owner ] create|remove"
-
-static inline unsigned int lookup (char const *const *table, char const *signal)
-{
-    log_flow() ;
-
-    unsigned int i = 0 ;
-    for (; table[i] ; i++) if (!strcmp(signal, table[i])) break ;
-    return i ;
-}
-
-static inline unsigned int parse_command (char const *command)
-{
-    log_flow() ;
-
-    static char const *const command_table[] =
-    {
-        "create",
-        "remove",
-        0
-    } ;
-  unsigned int i = lookup(command_table, command) ;
-  if (!command_table[i]) i = 3 ;
-  return i ;
-}
 
 static void inline auto_chown(char const *str)
 {
@@ -173,7 +141,7 @@ static void inline auto_rm(char const *str)
     if (r > 0)
     {
         log_info("removing: ",str,"...") ;
-        if (rm_rf(str) < 0) log_dieusys(LOG_EXIT_SYS,"remove: ",str) ;
+        if (!dir_rm_rf(str)) log_dieusys(LOG_EXIT_SYS,"remove: ",str) ;
     }
 }
 
@@ -500,14 +468,14 @@ void write_control(char const *scandir,char const *live, char const *filename, i
             break ;
         case TERM:
             if (!BOOT)
-                if (!auto_buf(&b, SS_BINPREFIX "66 -l ",live," scanctl stop\n"))
+                if (!auto_buf(&b, SS_BINPREFIX "66 -l ",live," scandir stop\n"))
                     log_die_nomem("buffer") ;
 
             break ;
         case QUIT:
 
             if (!BOOT)
-                if (!auto_buf(&b, SS_BINPREFIX "66 -l ",live," scanctl quit\n"))
+                if (!auto_buf(&b, SS_BINPREFIX "66 -l ",live," scandir quit\n"))
                     log_die_nomem("buffer") ;
 
             break ;
@@ -742,34 +710,24 @@ void sanitize_live(char const *live)
     auto_check(tmp,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
 }
 
-int ssexec_scandir(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_scandir_create(int argc, char const *const *argv, ssexec_t *info)
 {
     int r ;
-    unsigned int cmd, create, remove ;
-
-    stralloc live = STRALLOC_ZERO ;
-    stralloc scandir = STRALLOC_ZERO ;
 
     CONFIG_STR_LEN = compute_buf_size(SS_BINPREFIX, SS_EXTBINPREFIX, SS_EXTLIBEXECPREFIX, SS_LIBEXECPREFIX, SS_EXECLINE_SHEBANGPREFIX, 0) ;
 
-    cmd = create = remove = 0 ;
-
-    OWNER = MYUID ;
+    OWNER = info->owner ;
+    OWNERSTR = info->ownerstr ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
 
         for (;;)
         {
-            int opt = subgetopt_r(argc, argv, OPTS_SCANDIR, &l) ;
+            int opt = subgetopt_r(argc, argv, OPTS_SCANDIR_CREATE, &l) ;
             if (opt == -1) break ;
 
-            switch (opt)
-            {
-                 case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
+            switch (opt) {
 
                 case 'b' :
 
@@ -782,26 +740,10 @@ int ssexec_scandir(int argc, char const *const *argv, ssexec_t *info)
                     BOOT = 1 ;
                     break ;
 
-                case 'l' :
-
-                    if (!stralloc_cats(&live,l.arg) ||
-                    !stralloc_0(&live))
-                        log_die_nomem("stralloc") ;
-
-                    break ;
-
                 case 's' :
 
                     skel = l.arg ;
                     break ;
-
-                case 'o' :
-
-                    if (MYUID)
-                        log_die(LOG_EXIT_USER, "only root can use -o option") ;
-
-                    if (!youruid(&OWNER,l.arg))
-                        log_dieusys(LOG_EXIT_SYS,"get uid of: ",l.arg) ;
 
                 case 'c' :
 
@@ -821,87 +763,28 @@ int ssexec_scandir(int argc, char const *const *argv, ssexec_t *info)
         argc -= l.ind ; argv += l.ind ;
     }
 
-    if (!argc)
-        log_usage(info->usage, "\n", info->help) ;
-
-    cmd = parse_command(argv[0]) ;
-
-    if (cmd == 3) {
-        log_usage(usage_scandir) ;
-    } else if (!cmd) {
-        create = 1 ;
-    } else  {
-        remove = 1 ;
-    }
-
     if (BOOT && OWNER && !CONTAINER)
-        log_die(LOG_EXIT_USER,"-b options can be set only with root") ;
-
-    OWNERSTR[uid_fmt(OWNERSTR,OWNER)] = 0 ;
+        log_die(LOG_EXIT_USER, "-b options can be set only with root") ;
 
     if (!yourgid(&GIDOWNER,OWNER))
-        log_dieusys(LOG_EXIT_SYS,"set gid of: ",OWNERSTR) ;
+        log_dieusys(LOG_EXIT_SYS, "set gid of: ", OWNERSTR) ;
 
     GIDSTR[gid_fmt(GIDSTR,GIDOWNER)] = 0 ;
 
-    /** live -> /run/66/ */
-    r = set_livedir(&live) ;
-    if (r < 0) log_die(LOG_EXIT_USER,"live: ",live.s," must be an absolute path") ;
-    if (!r) log_dieusys(LOG_EXIT_SYS,"set live directory") ;
-
-    if (!stralloc_copy(&scandir,&live)) log_die_nomem("stralloc") ;
-
-    /** scandir -> /run/66/scandir/ */
-    r = set_livescan(&scandir,OWNER) ;
-    if (r < 0) log_die(LOG_EXIT_USER,"scandir: ", scandir.s, " must be an absolute path") ;
-    if (!r) log_dieusys(LOG_EXIT_SYS,"set scandir directory") ;
-
     if (BOOT && skel[0] != '/')
-        log_die(LOG_EXIT_USER, "rc.shutdown: ",skel," must be an absolute path") ;
+        log_die(LOG_EXIT_USER, "rc.shutdown: ", skel, " must be an absolute path") ;
 
-    r = scan_mode(scandir.s, S_IFDIR) ;
-    if (r < 0) log_die(LOG_EXIT_SYS,"scandir: ",scandir.s," exist with unkown mode") ;
-    if (!r && !create && !remove) log_die(LOG_EXIT_USER,"scandir: ",scandir.s," doesn't exist") ;
-    if (!r && create)
-    {
-        log_trace("sanitize ",live.s," ...") ;
-        sanitize_live(live.s) ;
-        log_info ("create scandir ",scandir.s," ...") ;
-        create_scandir(live.s, scandir.s) ;
-    }
+    r = scan_mode(info->scandir.s, S_IFDIR) ;
+    if (r < 0) log_die(LOG_EXIT_SYS, "scandir: ", info->scandir.s, " exist with unkown mode") ;
+    if (!r) {
 
-    if (r && create)
-    {
-        log_info("scandir: ",scandir.s," already exist, keep it") ;
-        goto end ;
-    }
+        log_trace("sanitize ", info->live.s, " ...") ;
+        sanitize_live(info->live.s) ;
+        log_info ("create scandir ", info->scandir.s, " ...") ;
+        create_scandir(info->live.s, info->scandir.s) ;
 
-    r = svc_scandir_ok(scandir.s) ;
-    if (r < 0) log_dieusys(LOG_EXIT_SYS, "check: ", scandir.s) ;
-    if (r && remove) log_dieu(LOG_EXIT_USER,"remove: ",scandir.s,": is running")  ;
-    if (remove)
-    {
-        /** /run/66/scandir/0 */
-        auto_rm(scandir.s) ;
-
-        if (CONTAINER) {
-            /** /run/66/scandir/container */
-            if (!stralloc_copy(&scandir,&live)) log_die_nomem("stralloc") ;
-            if (!auto_stra(&scandir,SS_BOOT_CONTAINER_DIR,"/",OWNERSTR))
-                log_die_nomem("stralloc") ;
-            auto_rm(scandir.s) ;
-        }
-
-        /** run/66/state/uid */
-        if (!stralloc_copy(&scandir,&live)) log_die_nomem("stralloc") ;
-        r = set_livestate(&scandir,OWNER) ;
-        if (!r) log_dieusys(LOG_EXIT_SYS,"set livestate directory") ;
-        auto_rm(scandir.s) ;
-    }
-
-    end:
-    stralloc_free(&scandir) ;
-    stralloc_free(&live) ;
+    } else
+        log_info("scandir: ", info->scandir.s, " already exist, keep it") ;
 
     return 0 ;
 }

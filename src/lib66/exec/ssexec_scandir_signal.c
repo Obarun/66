@@ -1,5 +1,5 @@
 /*
- * ssexec_scanctl.c
+ * ssexec_scandir_signal.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -19,19 +19,17 @@
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
 
+#include <skalibs/types.h>
+#include <skalibs/bytestr.h>
+#include <skalibs/env.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/stralloc.h>
-#include <skalibs/types.h>
-#include <skalibs/djbunix.h>
 #include <skalibs/exec.h>
-#include <skalibs/env.h>
-#include <skalibs/bytestr.h>
+
+#include <66/ssexec.h>
+#include <66/svc.h>
 
 #include <s6/config.h>
-
-#include <66/svc.h>
-#include <66/utils.h>
-#include <66/ssexec.h>
 
 static char TMPENV[MAXENV + 1] ;
 
@@ -51,16 +49,20 @@ static inline unsigned int parse_signal (char const *signal)
     static char const *const signal_table[] =
     {
         "start",
-        "stop",
-        "reload",
-        "quit",
-        "nuke",
-        "zombies",
+        "stop", // -t
+        "reconfigure", // -h or -an
+        "rescan", // -a
+        "quit", // -q
+        "halt", // -qb
+        "abort", // -b
+        "nuke", // -n
+        "annihilate", // -N
+        "zombies", // -z
         0
     } ;
-  unsigned int i = lookup(signal_table, signal) ;
-  if (!signal_table[i]) i = 6 ;
-  return i ;
+    unsigned int i = lookup(signal_table, signal) ;
+    if (!signal_table[i]) i = 10 ;
+    return i ;
 }
 
 static int send_signal(char const *scandir, char const *signal)
@@ -68,53 +70,73 @@ static int send_signal(char const *scandir, char const *signal)
     log_flow() ;
 
     unsigned int sig = 0 ;
-    size_t siglen = strlen(signal) ;
-    char csig[siglen + 1] ;
+    char csig[3] ;
     sig = parse_signal(signal) ;
-    if (sig < 6)
-    {
-        switch(sig)
-        {
-            /** start signal, should never happens */
-            case 0:
 
-                return 1 ;
+    switch(sig) {
 
-            case 1:
+        /** start signal, should never happens */
+        case 0:
 
-                csig[0] = 't' ;
-                csig[1] = 0 ;
-                break ;
+            return 1 ;
 
-            case 2:
+        case 1: // stop
 
-                csig[0] = 'h' ;
-                csig[1] = 0 ;
-                break ;
+            csig[0] = 't' ;
+            csig[1] = 0 ;
+            break ;
 
-            case 3:
+        case 2: // reconfigure
 
-                csig[0] = 'q' ;
-                csig[1] = 0 ;
-                break ;
+            csig[0] = 'h' ;
+            csig[1] = 0 ;
+            break ;
 
-            case 4:
+        case 3: // rescan
 
-                csig[0] = 'n' ;
-                csig[1] = 0 ;
-                break ;
+            csig[0] = 'a' ;
+            csig[1] = 0 ;
+            break ;
 
-            case 5:
+        case 4: // quit
 
-                csig[0] = 'z' ;
-                csig[1] = 0 ;
-                break ;
+            csig[0] = 'q' ;
+            csig[1] = 0 ;
+            break ;
 
-            default: break ;
-        }
-    }
-    else {
-        auto_strings(csig,signal) ;
+        case 5: // halt
+
+            csig[0] = 'q' ;
+            csig[1] = 'b' ;
+            csig[2] = 0 ;
+            break ;
+
+        case 6: // abort
+
+            csig[0] = 'b' ;
+            csig[1] = 0 ;
+            break ;
+
+        case 7: // nuke
+
+            csig[0] = 'n' ;
+            csig[1] = 0 ;
+            break ;
+
+        case 8: // annihilate
+
+            csig[0] = 'N' ;
+            csig[1] = 0 ;
+            break ;
+
+        case 9: // zombies
+
+            csig[0] = 'z' ;
+            csig[1] = 0 ;
+            break ;
+
+        default:
+            log_die(LOG_EXIT_SYS, "unknown signal: ", signal) ;
     }
 
     return svc_scandir_send(scandir,csig) ;
@@ -122,15 +144,6 @@ static int send_signal(char const *scandir, char const *signal)
 
 static void scandir_up(char const *scandir, unsigned int timeout, unsigned int notif, char const *const *envp)
 {
-    int r ;
-    r = svc_scandir_ok(scandir) ;
-    if (r < 0) log_dieusys(LOG_EXIT_SYS, "check: ", scandir) ;
-    if (r)
-    {
-        log_trace("scandir: ",scandir," already running") ;
-        return ;
-    }
-
     unsigned int no = notif ? 2 : 0 ;
     char const *newup[6 + no] ;
     unsigned int m = 0 ;
@@ -153,10 +166,10 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
     xexec_ae(newup[0], newup, envp) ;
 }
 
-int ssexec_scanctl(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
 {
     int r ;
-    uid_t owner = MYUID ;
+
     unsigned int timeout = 0, notif = 0, sig = 0 ;
 
     char const *newenv[MAXENV+1] ;
@@ -164,7 +177,6 @@ int ssexec_scanctl(int argc, char const *const *argv, ssexec_t *info)
     char const *const *genvp = (char const *const *)environ ;
     char const *signal ;
 
-    stralloc scandir = STRALLOC_ZERO ;
     stralloc envdir = STRALLOC_ZERO ;
 
     {
@@ -177,25 +189,10 @@ int ssexec_scanctl(int argc, char const *const *argv, ssexec_t *info)
 
             switch (opt) {
 
-                 case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
-
-                case 'o' :
-
-                    if (MYUID)
-                        log_die(LOG_EXIT_USER, "only root can use -o option") ;
-
-                    if (!youruid(&owner,l.arg))
-                        log_dieusys(LOG_EXIT_SYS,"get uid of: ",l.arg) ;
-
-                    break ;
-
                 case 'd' :
 
                     if (!uint0_scan(l.arg, &notif))
-                        log_usage(usage_scanctl) ;
+                        log_usage(info->usage, "\n", info->help) ;
 
                     if (notif < 3)
                         log_die(LOG_EXIT_USER, "notification fd must be 3 or more") ;
@@ -205,10 +202,10 @@ int ssexec_scanctl(int argc, char const *const *argv, ssexec_t *info)
 
                     break ;
 
-                case 't' :
+                case 's' :
 
                     if (!uint0_scan(l.arg, &timeout))
-                        log_usage(usage_scanctl) ;
+                        log_usage(info->usage, "\n", info->help) ;
 
                     break ;
 
@@ -227,24 +224,19 @@ int ssexec_scanctl(int argc, char const *const *argv, ssexec_t *info)
         argc -= l.ind ; argv += l.ind ;
     }
 
-    if (argc < 1) log_usage(info->usage, "\n", info->help) ;
-    signal = argv[0] ;
-    r = set_livedir(&scandir) ;
-    if (r < 0) log_die(LOG_EXIT_USER,"live: ",scandir.s," must be an absolute path") ;
-    if (!r) log_dieusys(LOG_EXIT_SYS,"set live directory") ;
-    r = set_livescan(&scandir,owner) ;
-    if (r < 0) log_die(LOG_EXIT_USER,"scandir: ", scandir.s, " must be an absolute path") ;
-    if (!r) log_dieusys(LOG_EXIT_SYS,"set scandir directory") ;
+    if (argc < 1)
+        log_usage(info->usage, "\n", info->help) ;
 
-    if (envdir.len)
-    {
+    signal = argv[0] ;
+
+    if (envdir.len) {
+
         stralloc modifs = STRALLOC_ZERO ;
         if (envdir.s[0] != '/')
             log_die(LOG_EXIT_USER,"environment: ",envdir.s," must be an absolute path") ;
 
         if (!environ_clean_envfile_unexport(&modifs,envdir.s))
             log_dieu(LOG_EXIT_SYS,"clean environment file of: ",envdir.s) ;
-
 
         size_t envlen = env_len(genvp) ;
         size_t n = env_len(genvp) + 1 + byte_count(modifs.s,modifs.len,'\0') ;
@@ -265,28 +257,35 @@ int ssexec_scanctl(int argc, char const *const *argv, ssexec_t *info)
 
     if (!sig) {
 
-        char scan[scandir.len + 1] ;
-        auto_strings(scan,scandir.s) ;
+        char scandir[info->scandir.len + 1] ;
+        auto_strings(scandir, info->scandir.s) ;
+
+        int r ;
+        r = svc_scandir_ok(scandir) ;
+        if (r < 0)
+            log_dieusys(LOG_EXIT_SYS, "check: ", scandir) ;
+        if (r) {
+            log_trace("scandir: ", scandir, " already running") ;
+            return 0 ;
+        }
 
         stralloc_free(&envdir) ;
-        stralloc_free(&scandir) ;
+        ssexec_free(info) ;
 
-        scandir_up(scan,timeout,notif,genv) ;
-        /** if already running, scandir_up() return */
+        scandir_up(scandir, timeout, notif, genv) ;
         return 0 ;
     }
 
-    r = svc_scandir_ok(scandir.s) ;
-    if (!r) log_diesys(LOG_EXIT_SYS,"scandir: ",scandir.s," is not running") ;
-    else if (r < 0) log_dieusys(LOG_EXIT_SYS, "check: ", scandir.s) ;
+    r = svc_scandir_ok(info->scandir.s) ;
+    if (r < 0)
+        log_dieusys(LOG_EXIT_SYS, "check: ", info->scandir.s) ;
+    else if (!r)
+        log_diesys(LOG_EXIT_SYS, "scandir: ", info->scandir.s, " is not running") ;
 
-    if (send_signal(scandir.s,signal) <= 0) goto err ;
+    if (send_signal(info->scandir.s,signal) <= 0)
+        log_dieu(LOG_EXIT_SYS, "send signal to scandir: ", info->scandir.s) ;
 
-    stralloc_free(&scandir) ;
     return 0 ;
-    err:
-        stralloc_free(&scandir) ;
-        return 111 ;
 }
 
 

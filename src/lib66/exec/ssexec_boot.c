@@ -409,11 +409,11 @@ static inline void make_cmdline(char const *prog,char const **add,int len,char c
     char const *newargv[m] ;
 
     newargv[n++] = "66" ;
-    newargv[n++] = prog ;
     newargv[n++] = "-v" ;
     newargv[n++] = cver ;
     newargv[n++] = "-l" ;
     newargv[n++] = live ;
+    newargv[n++] = prog ;
 
     for (;i<len;i++)
         newargv[n++] = add[i] ;
@@ -591,6 +591,7 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 
         char const *t[nargc] ;
 
+        t[m++] = "create" ;
         if (container) {
             t[m++] = "-B" ;
         } else {
@@ -604,7 +605,7 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
         t[m++] = skel ;
         t[m++] = "-L" ;
         t[m++] = log_user ;
-        t[m++] = "create" ;
+
         log_info("Create live scandir at: ",live) ;
 
         make_cmdline("scandir", t, nargc, "create live scandir at: ", live, genv) ;
@@ -641,13 +642,13 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
         size_t m = 0 ;
         static char const *newargv[8] ;
         newargv[m++] = "66" ;
-        newargv[m++] = "scanctl" ;
         newargv[m++] = "-v0" ;
-        if (!catch_log)
-            newargv[m++] = fmtfd ;
         newargv[m++] = "-l" ;
         newargv[m++] = live ;
+        newargv[m++] = "scandir" ;
         newargv[m++] = "start" ;
+        if (!catch_log)
+            newargv[m++] = fmtfd ;
         newargv[m++] = 0 ;
 
         memcpy(pathvar, "PATH=", 5) ;

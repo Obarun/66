@@ -23,7 +23,7 @@ inline void info_help (char const *help,char const *usage)
 }
 
 
-char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] start|stop|reload|restart|unsupervise|reconfigure|enable|disable|env|service|tree|init|parse|signal|scanctl|scandir|boot|version [<command options>] service...|tree" ;
+char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|unsupervise|reconfigure|enable|disable|environ|service|tree|init|parse|signal|scandir|boot|version [<command options>] service...|tree" ;
 
 char const *help_66 =
 "\nmain tool to init a system, control and manage services\n"
@@ -34,6 +34,7 @@ char const *help_66 =
 "   -v: increase/decrease verbosity\n"
 "   -l: live directory\n"
 "   -T: timeout\n"
+"   -t: name of the tree to use\n"
 "\n"
 "command:\n"
 "   start: bring up service\n"
@@ -44,13 +45,12 @@ char const *help_66 =
 "   reconfigure: bring down, unsupervise, parse it again and bring up service\n"
 "   enable: activate service for the next boot\n"
 "   disable: deactivate service for the next boot\n"
-"   env: manage service environment variable\n"
+"   environ: manage service environment variable\n"
 "   service: manage/see service information\n"
 "   tree: manage/see tree information\n"
 "   init: initiate to scandir all services marked enabled at tree\n"
 "   parse: parse the service frontend file\n"
 "   signal: send signal to service\n"
-"   scanctl: send signal to scandir\n"
 "   scandir: manage scandir\n"
 "   boot: boot the system with 66\n"
 "   version: display 66 version\n"
@@ -116,7 +116,7 @@ char const *help_stop =
 "   -P: do not propagate signal to its requiredby\n"
 ;
 
-char const *usage_env = "66 env [ -h ] [ -c version ] [ -s version ] [ -V|L ] [ -r key=value ] [ -i src,dst ] [ -e editor ] service" ;
+char const *usage_env = "66 environ [ -h ] [ -c version ] [ -s version ] [ -V|L ] [ -r key=value ] [ -i src,dst ] [ -e editor ] service" ;
 
 char const *help_env =
 "\nmanage environment service files and its contents\n"
@@ -479,30 +479,146 @@ char const *help_service_remove =
 "   -h: print this help\n"
 ;
 
-char const *usage_scanctl = "66 scanctl [ -d notif ] [ -t rescan ] [ -e environment ] [ -o owner ] start|stop|reload|quit|nuke|zombies or any s6-svscanctl options" ;
+char const *usage_scandir_wrapper = "66 scandir [ -h ] [ -o owner ] create|remove|start|stop|reconfigure|rescan|quit|halt|abort|nuke|annihilate|zombies [<command options>]" ;
 
-char const *help_scanctl =
-"\nsend signal to scandir\n"
+char const *help_scandir_wrapper =
+"\nmain sub tools to manage scandir\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
-"   -d: notify readiness on file descriptor\n"
-"   -t: rescan scandir every milliseconds\n"
-"   -e: environment directory\n"
 "   -o: handles scandir of owner\n"
+"\n"
+"command:\n"
+"   create: create a scandir\n"
+"   remove: remove a scandir\n"
+"   start: start a scandir\n"
+"   stop: stop a running scandir\n"
+"   reconfigure: reconfigure a running scandir\n"
+"   rescan: rescan a running scandir\n"
+"   quit: quit a running scandir\n"
+"   halt: halt a running scandir\n"
+"   abort: abort a running scandir\n"
+"   nuke: nuke a running scandir\n"
+"   annihilate: annihilate a running scandir\n"
+"   zombies: destroy zombies from a running scandir\n"
+"\n"
+"Use '66 scandir <command> -h' to see command options\n"
 ;
 
-char const *usage_scandir = "66 scandir [ -h ] [ -b|B ] [ -c ] [ -L log_user ] [ -s skel ] [ -o owner ] create|remove" ;
+char const *usage_scandir_create = "66 scandir create [ -h ] [ -b|B ] [ -c ] [ -L log_user ] [ -s skel ]" ;
 
-char const *help_scandir =
-"\nmanage a scandir\n"
+char const *help_scandir_create =
+"\ncreate a scandir\n"
 "\n"
 "options:\n"
 "   -h: print this help\n"
 "   -b: create scandir for a boot process\n"
 "   -B: create scandir for a boot process inside a container\n"
-"   -c: do not catch log\n"
+"   -c: do not catch logs\n"
 "   -L: run catch-all logger as log_user user\n"
-"   -s: skeleton directory\n"
-"   -o: handles owner scandir\n"
+"   -s: use skel as skeleton directory\n"
 ;
+
+char const *usage_scandir_remove = "66 scandir remove [ -h ]" ;
+
+char const *help_scandir_remove =
+"\nremove a existing scandir\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+;
+
+char const *usage_scandir_start = "66 scandir start [ -h ] [ -d notif ] [ -s rescan ] [ -e environment ]" ;
+
+char const *help_scandir_start =
+"\nstart a scandir\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+"   -d: notify readiness on file descriptor\n"
+"   -s: scan scandir every milliseconds\n"
+"   -e: use environment as environment directory\n"
+;
+
+char const *usage_scandir_stop = "66 scandir stop [ -h ]" ;
+
+char const *help_scandir_stop =
+"\nstop a running scandir\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+;
+
+char const *usage_scandir_reconfigure = "66 scandir reconfigure [ -h ]" ;
+
+char const *help_scandir_reconfigure =
+"\nperform a scan and destroy inactive service of scandir\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+;
+
+char const *usage_scandir_rescan = "66 scandir rescan [ -h ]" ;
+
+char const *help_scandir_rescan =
+"\nrescan a running scandir to integrate new services\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+"   -o: handles scandir of owner\n"
+;
+
+char const *usage_scandir_quit = "66 scandir quit [ -h ]" ;
+
+char const *help_scandir_quit =
+"\nquit a running scandir\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+;
+
+char const *usage_scandir_halt = "66 scandir halt [ -h ]" ;
+
+char const *help_scandir_halt =
+"\nhalt a running scandir\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+;
+
+char const *usage_scandir_abort = "66 scandir abort [ -h ]" ;
+
+char const *help_scandir_abort =
+"\nabort a running scandir\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+;
+
+char const *usage_scandir_nuke = "66 scandir nuke [ -h ]" ;
+
+char const *help_scandir_nuke =
+"\nnuke a running scandir\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+;
+
+char const *usage_scandir_annihilate = "66 scandir annihilate [ -h ]" ;
+
+char const *help_scandir_annihilate =
+"\nannihilate a running scandir\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+;
+
+char const *usage_scandir_zombies = "66 scandir zombies [ -h ]" ;
+
+char const *help_scandir_zombies =
+"\ndestroy zombies from a running scandir\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+;
+

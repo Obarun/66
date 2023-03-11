@@ -45,12 +45,6 @@ struct ssexec_s
     //char treename[SS_MAX_SERVICE] ;
     //size_t treenamelen ;
 
-    /**
-     *
-     * verifier pour les cast entre int et uint8_t
-     * a son call
-     *
-     * */
     uint8_t treeallow ; //1 yes , 0 no
     uid_t owner ;
     char ownerstr[UID_FMT] ;
@@ -96,6 +90,7 @@ extern void ssexec_copy(ssexec_t *dest, ssexec_t *src) ;
 extern ssexec_t const ssexec_zero ;
 extern void set_treeinfo(ssexec_t *info) ;
 
+/** main */
 extern ssexec_func_t ssexec_parse ;
 extern ssexec_func_t ssexec_init ;
 extern ssexec_func_t ssexec_enable ;
@@ -106,11 +101,14 @@ extern ssexec_func_t ssexec_env ;
 extern ssexec_func_t ssexec_reconfigure ;
 extern ssexec_func_t ssexec_reload ;
 extern ssexec_func_t ssexec_restart ;
+
 /** PID1 and supervision */
 extern ssexec_func_t ssexec_boot ;
-extern ssexec_func_t ssexec_scanctl ;
-extern ssexec_func_t ssexec_scandir ;
-//extern ssexec_func_t ssexec_inresolve ;
+extern ssexec_func_t ssexec_scandir_wrapper ;
+extern ssexec_func_t ssexec_scandir_create ;
+extern ssexec_func_t ssexec_scandir_remove ;
+extern ssexec_func_t ssexec_scandir_signal ;
+
 /** service */
 extern ssexec_func_t ssexec_service_resolve ;
 extern ssexec_func_t ssexec_service_state ;
@@ -118,6 +116,7 @@ extern ssexec_func_t ssexec_service_status ;
 extern ssexec_func_t ssexec_service_wrapper ;
 extern ssexec_func_t ssexec_service_admin ;
 extern ssexec_func_t ssexec_service_signal ;
+
 /** tree */
 extern ssexec_func_t ssexec_tree_wrapper ;
 extern ssexec_func_t ssexec_tree_signal ;
@@ -205,16 +204,39 @@ extern char const *help_service_remove ;
 extern char const *usage_service_signal ;
 extern char const *help_service_signal ;
 
-extern char const *usage_scanctl ;
-extern char const *help_scanctl ;
-
-extern char const *usage_scandir ;
-extern char const *help_scandir ;
+extern char const *usage_scandir_wrapper ;
+extern char const *help_scandir_wrapper ;
+extern char const *usage_scandir_create ;
+extern char const *help_scandir_create ;
+extern char const *usage_scandir_remove ;
+extern char const *help_scandir_remove ;
+extern char const *usage_scandir_start ;
+extern char const *help_scandir_start ;
+extern char const *usage_scandir_stop ;
+extern char const *help_scandir_stop ;
+extern char const *usage_scandir_reconfigure ;
+extern char const *help_scandir_reconfigure ;
+extern char const *usage_scandir_rescan ;
+extern char const *help_scandir_rescan ;
+extern char const *usage_scandir_quit ;
+extern char const *help_scandir_quit ;
+extern char const *usage_scandir_halt ;
+extern char const *help_scandir_halt ;
+extern char const *usage_scandir_abort ;
+extern char const *help_scandir_abort ;
+extern char const *usage_scandir_nuke ;
+extern char const *help_scandir_nuke ;
+extern char const *usage_scandir_annihilate ;
+extern char const *help_scandir_annihilate ;
+extern char const *usage_scandir_zombies ;
+extern char const *help_scandir_zombies ;
 
 #define OPTS_SUBSTART "hP"
 #define OPTS_SUBSTART_LEN (sizeof OPTS_SUBSTART - 1)
 #define OPTS_PARSE "hfFcmCI"
 #define OPTS_PARSE_LEN (sizeof OPTS_PARSE - 1)
+#define OPTS_INIT "h"
+#define OPTS_INIT_LEN (sizeof OPTS_INIT - 1)
 #define OPTS_ENABLE "hfFSI"
 #define OPTS_ENABLE_LEN (sizeof OPTS_ENABLE - 1)
 #define OPTS_DISABLE "hS"
@@ -239,8 +261,10 @@ extern char const *help_scandir ;
 #define OPTS_BOOT_LEN (sizeof OPTS_BOOT - 1)
 #define OPTS_SCANCTL "ho:d:t:e:"
 #define OPTS_SCANCTL_LEN (sizeof OPTS_SCANCTL - 1)
-#define OPTS_SCANDIR "hbl:s:o:L:cB"
-#define OPTS_SCANDIR_LEN (sizeof OPTS_SCANDIR - 1)
+#define OPTS_SCANDIR_WRAPPER "ho:"
+#define OPTS_SCANCTL_WRAPPER_LEN (sizeof OPTS_SCANDIR_WRAPPER - 1)
+#define OPTS_SCANDIR_CREATE "bBs:cL:"
+#define OPTS_SCANDIR_CREATE_LEN (sizeof OPTS_SCANDIR_CREATE - 1)
 
 #define OPTS_SERVICE_WRAPPER ""
 #define OPTS_SERVICE_WRAPPER_LEN (sizeof OPTS_SERVICE_WRAPPER - 1)

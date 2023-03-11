@@ -251,7 +251,7 @@ static inline void prepare_stage4 (char what)
     unlink_void(STAGE4_FILE ".new") ;
     fd = open_excl(STAGE4_FILE ".new") ;
     if (fd == -1) log_dieusys(LOG_EXIT_SYS, "open ", STAGE4_FILE ".new", " for writing") ;
-    buffer_init(&b, &buffer_write, fd, buf, 512) ;
+    buffer_init(&b, &buffer_write, fd, buf, 516) ;
 
     if (inns)
     {
@@ -267,10 +267,9 @@ static inline void prepare_stage4 (char what)
             || buffer_puts(&b,live) < 0
             || buffer_puts(&b,SS_BOOT_LOG " }\n  ") < 0)
 
-            || buffer_puts(&b, S6_EXTBINPREFIX "66-scanctl ") < 0
-            || buffer_puts(&b, "-l ") < 0
+            || buffer_puts(&b, S6_EXTBINPREFIX "66 -l ") < 0
             || buffer_puts(&b, live) < 0
-            || buffer_putsflush(&b, " b\n}\n") < 0)
+            || buffer_puts(&b, " scandir abort\n}\n") < 0)
             log_dieusys(LOG_EXIT_SYS, "write to ", STAGE4_FILE ".new") ;
     }
     else

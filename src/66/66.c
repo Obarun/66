@@ -263,9 +263,9 @@ int main(int argc, char const *const *argv)
         info.usage = usage_stop ;
         func = &ssexec_stop ;
 
-    } else if (!strcmp(argv[0], "env")) {
+    } else if (!strcmp(argv[0], "environ")) {
 
-        PROG = "env" ;
+        PROG = "environ" ;
         nargv[n++] = PROG ;
         info.prog = PROG ;
         info.help = help_env ;
@@ -329,7 +329,7 @@ int main(int argc, char const *const *argv)
 
     } else if (!strcmp(argv[0], "signal")) {
 
-        PROG = "svctl" ;
+        PROG = "signal" ;
         nargv[n++] = PROG ;
         info.prog = PROG ;
         info.help = help_service_signal ;
@@ -348,23 +348,14 @@ int main(int argc, char const *const *argv)
         nargv[n++] = PROG ;
         func = &ssexec_service_wrapper ;
 
-    } else if (!strcmp(argv[0], "scanctl")) {
-
-        PROG = "scanctl" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_scanctl ;
-        info.usage = usage_scanctl ;
-        func = &ssexec_scanctl ;
-
     } else if (!strcmp(argv[0], "scandir")) {
 
         PROG = "scandir" ;
         nargv[n++] = PROG ;
         info.prog = PROG ;
-        info.help = help_scandir ;
-        info.usage = usage_scandir ;
-        func = &ssexec_scandir ;
+        info.help = help_scandir_wrapper ;
+        info.usage = usage_scandir_wrapper ;
+        func = &ssexec_scandir_wrapper ;
 
     } else {
 
