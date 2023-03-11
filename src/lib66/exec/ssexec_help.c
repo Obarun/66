@@ -528,7 +528,7 @@ char const *help_scandir_remove =
 "   -h: print this help\n"
 ;
 
-char const *usage_scandir_start = "66 scandir start [ -h ] [ -d notif ] [ -s rescan ] [ -e environment ]" ;
+char const *usage_scandir_start = "66 scandir start [ -h ] [ -d notif ] [ -s rescan ] [ -e environment ] [ -B ]" ;
 
 char const *help_scandir_start =
 "\nstart a scandir\n"
@@ -538,6 +538,7 @@ char const *help_scandir_start =
 "   -d: notify readiness on file descriptor\n"
 "   -s: scan scandir every milliseconds\n"
 "   -e: use environment as environment directory\n"
+"   -B: create scandir (if it not exist yet) for a boot process inside a container\n"
 ;
 
 char const *usage_scandir_stop = "66 scandir stop [ -h ]" ;

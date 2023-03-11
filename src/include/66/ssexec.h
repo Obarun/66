@@ -259,7 +259,7 @@ extern char const *help_scandir_zombies ;
 #define OPTS_INSERVICE_LEN (sizeof OPTS_INSERVICE - 1)
 #define OPTS_BOOT "hms:e:d:b:l:"
 #define OPTS_BOOT_LEN (sizeof OPTS_BOOT - 1)
-#define OPTS_SCANCTL "ho:d:t:e:"
+#define OPTS_SCANCTL "d:s:e:B"
 #define OPTS_SCANCTL_LEN (sizeof OPTS_SCANCTL - 1)
 #define OPTS_SCANDIR_WRAPPER "ho:"
 #define OPTS_SCANCTL_WRAPPER_LEN (sizeof OPTS_SCANDIR_WRAPPER - 1)
