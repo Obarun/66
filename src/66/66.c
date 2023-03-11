@@ -352,9 +352,6 @@ int main(int argc, char const *const *argv)
 
         PROG = "scandir" ;
         nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_scandir_wrapper ;
-        info.usage = usage_scandir_wrapper ;
         func = &ssexec_scandir_wrapper ;
 
     } else {

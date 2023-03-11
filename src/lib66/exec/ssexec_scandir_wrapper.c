@@ -35,141 +35,25 @@ int ssexec_scandir_wrapper(int argc, char const *const *argv, ssexec_t *info)
 
     int r, n = 0, i = 0 ;
     uid_t owner = -1 ;
+    uint8_t ctl = 0 ;
     ssexec_func_t_ref func = 0 ;
     char const *nargv[argc + 1] ;
 
-    if (!strcmp(argv[1], "create")) {
+    if (argv[1][0] == '-') {
 
-        nargv[n++] = PROG ;
-        info->prog = PROG ;
-        info->help = help_scandir_create ;
-        info->usage = usage_scandir_create ;
-        func = &ssexec_scandir_create ;
-
-    } else if (!strcmp(argv[1], "remove")) {
-
-        nargv[n++] = PROG ;
-        info->prog = PROG ;
-        info->help = help_scandir_remove ;
-        info->usage = usage_scandir_remove ;
-        func = &ssexec_scandir_remove ;
-
-    } else if (!strcmp(argv[1], "start")) {
-
-        nargv[n++] = PROG ;
-        nargv[n++] = argv[1] ;
-        info->prog = PROG ;
-        info->help = help_scandir_start ;
-        info->usage = usage_scandir_start ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[1], "stop")) {
-
-        nargv[n++] = PROG ;
-        nargv[n++] = argv[1] ;
-        info->prog = PROG ;
-        info->help = help_scandir_stop ;
-        info->usage = usage_scandir_stop ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[1], "reconfigure")) {
-
-        nargv[n++] = PROG ;
-        nargv[n++] = argv[1] ;
-        info->prog = PROG ;
-        info->help = help_scandir_reconfigure ;
-        info->usage = usage_scandir_reconfigure ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[1], "rescan")) {
-
-        nargv[n++] = PROG ;
-        nargv[n++] = argv[1] ;
-        info->prog = PROG ;
-        info->help = help_scandir_rescan ;
-        info->usage = usage_scandir_rescan ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[1], "quit")) {
-
-        nargv[n++] = PROG ;
-        nargv[n++] = argv[1] ;
-        info->prog = PROG ;
-        info->help = help_scandir_quit ;
-        info->usage = usage_scandir_quit ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[1], "halt")) {
-
-        nargv[n++] = PROG ;
-        nargv[n++] = argv[1] ;
-        info->prog = PROG ;
-        info->help = help_scandir_halt ;
-        info->usage = usage_scandir_halt ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[1], "abort")) {
-
-        nargv[n++] = PROG ;
-        nargv[n++] = argv[1] ;
-        info->prog = PROG ;
-        info->help = help_scandir_abort ;
-        info->usage = usage_scandir_abort ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[1], "nuke")) {
-
-        nargv[n++] = PROG ;
-        nargv[n++] = argv[1] ;
-        info->prog = PROG ;
-        info->help = help_scandir_nuke ;
-        info->usage = usage_scandir_nuke ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[1], "annihilate")) {
-
-        nargv[n++] = PROG ;
-        nargv[n++] = argv[1] ;
-        info->prog = PROG ;
-        info->help = help_scandir_annihilate ;
-        info->usage = usage_scandir_annihilate ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[1], "zombies")) {
-
-        nargv[n++] = PROG ;
-        nargv[n++] = argv[1] ;
-        info->prog = PROG ;
-        info->help = help_scandir_zombies ;
-        info->usage = usage_scandir_zombies ;
-        func = &ssexec_scandir_signal ;
-
-    } else {
-
-        if (!strcmp(argv[1], "-h")) {
-            info_help(help_scandir_wrapper, usage_scandir_wrapper) ;
-            return 0 ;
-        }
-
-        log_usage(usage_scandir_wrapper, "\n", help_scandir_wrapper) ;
-    }
-
-    argc-- ;
-    argv++ ;
-
-    {
+        ctl++ ;
         subgetopt l = SUBGETOPT_ZERO ;
 
-        int f = 0 ;
         for (;;) {
 
-            int opt = subgetopt_r(argc, argv, OPTS_SCANDIR_WRAPPER, &l) ;
+            int opt = subgetopt_r(argc, argv, "ho:", &l) ;
             if (opt == -1) break ;
+
             switch (opt) {
 
                 case 'h' :
 
-                    info_help(info->help, info->usage) ;
+                    info_help(help_scandir_wrapper, usage_scandir_wrapper) ;
                     return 0 ;
 
                 case 'o' :
@@ -188,49 +72,134 @@ int ssexec_scandir_wrapper(int argc, char const *const *argv, ssexec_t *info)
                     if (!auto_stra(&info->scandir, info->live.s, SS_SCANDIR, "/", info->ownerstr))
                         log_die_nomem("stralloc") ;
 
+                    break ;
+
                 default:
 
-                    for (i = 0 ; i < n ; i++) {
+                    log_usage(usage_scandir_wrapper, "\n", help_scandir_wrapper) ;
 
-                        if (!argv[l.ind])
-                            log_usage(info->usage) ;
-
-                        if (l.arg) {
-
-                            if (!strcmp(nargv[i],argv[l.ind - 2]) || !strcmp(nargv[i],l.arg))
-                                f = 1 ;
-
-                        } else {
-
-                            if (!strcmp(nargv[i],argv[l.ind]))
-                                f = 1 ;
-                        }
-                    }
-
-                    if (!f) {
-
-                        if (l.arg) {
-                            // distinction between e.g -enano and -e nano
-                            if (argv[l.ind - 1][0] != '-')
-                                nargv[n++] = argv[l.ind - 2] ;
-
-                            nargv[n++] = argv[l.ind - 1] ;
-
-                        } else {
-
-                            nargv[n++] = argv[l.ind] ;
-                        }
-                    }
-                    f = 0 ;
-                    break ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
+    if (!ctl) {
+        argc-- ;
+        argv++ ;
+    }
+
+    if (!strcmp(argv[0], "create")) {
+
+        nargv[n++] = argv[0] ;
+        info->prog = PROG ;
+        info->help = help_scandir_create ;
+        info->usage = usage_scandir_create ;
+        func = &ssexec_scandir_create ;
+
+    } else if (!strcmp(argv[0], "remove")) {
+
+        nargv[n++] = argv[0] ;
+        info->prog = PROG ;
+        info->help = help_scandir_remove ;
+        info->usage = usage_scandir_remove ;
+        func = &ssexec_scandir_remove ;
+
+    } else if (!strcmp(argv[0], "start")) {
+
+
+        nargv[n++] = argv[0] ;
+        info->prog = PROG ;
+        info->help = help_scandir_start ;
+        info->usage = usage_scandir_start ;
+        func = &ssexec_scandir_signal ;
+
+    } else if (!strcmp(argv[0], "stop")) {
+
+
+        nargv[n++] = argv[0] ;
+        info->prog = PROG ;
+        info->help = help_scandir_stop ;
+        info->usage = usage_scandir_stop ;
+        func = &ssexec_scandir_signal ;
+
+    } else if (!strcmp(argv[0], "reconfigure")) {
+
+
+        nargv[n++] = argv[0] ;
+        info->prog = PROG ;
+        info->help = help_scandir_reconfigure ;
+        info->usage = usage_scandir_reconfigure ;
+        func = &ssexec_scandir_signal ;
+
+    } else if (!strcmp(argv[0], "rescan")) {
+
+        nargv[n++] = PROG ;
+        nargv[n++] = argv[0] ;
+        info->prog = PROG ;
+        info->help = help_scandir_rescan ;
+        info->usage = usage_scandir_rescan ;
+        func = &ssexec_scandir_signal ;
+
+    } else if (!strcmp(argv[0], "quit")) {
+
+
+        nargv[n++] = argv[0] ;
+        info->prog = PROG ;
+        info->help = help_scandir_quit ;
+        info->usage = usage_scandir_quit ;
+        func = &ssexec_scandir_signal ;
+
+    } else if (!strcmp(argv[0], "halt")) {
+
+
+        nargv[n++] = argv[0] ;
+        info->prog = PROG ;
+        info->help = help_scandir_halt ;
+        info->usage = usage_scandir_halt ;
+        func = &ssexec_scandir_signal ;
+
+    } else if (!strcmp(argv[0], "abort")) {
+
+
+        nargv[n++] = argv[0] ;
+        info->prog = PROG ;
+        info->help = help_scandir_abort ;
+        info->usage = usage_scandir_abort ;
+        func = &ssexec_scandir_signal ;
+
+    } else if (!strcmp(argv[0], "nuke")) {
+
+        nargv[n++] = argv[0] ;
+        info->prog = PROG ;
+        info->help = help_scandir_nuke ;
+        info->usage = usage_scandir_nuke ;
+        func = &ssexec_scandir_signal ;
+
+    } else if (!strcmp(argv[0], "annihilate")) {
+
+        nargv[n++] = argv[0] ;
+        info->prog = PROG ;
+        info->help = help_scandir_annihilate ;
+        info->usage = usage_scandir_annihilate ;
+        func = &ssexec_scandir_signal ;
+
+    } else if (!strcmp(argv[0], "zombies")) {
+
+        nargv[n++] = argv[0] ;
+        info->prog = PROG ;
+        info->help = help_scandir_zombies ;
+        info->usage = usage_scandir_zombies ;
+        func = &ssexec_scandir_signal ;
+
+    }
+
+    argc-- ;
+    argv++ ;
+
     for (i = 0 ; i < argc ; i++ , argv++)
         nargv[n++] = *argv ;
 
+    nargv[n++] = nargv[0] ;
     nargv[n] = 0 ;
 
     r = (*func)(n, nargv, info) ;
