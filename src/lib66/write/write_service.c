@@ -83,7 +83,7 @@ int write_services(resolve_service_t *res, char const *workdir, uint8_t force)
 
     if ((r && force) || !r) {
 
-        if (dir_rm_rf(wname) < 0)
+        if (!dir_rm_rf(wname))
             log_dieusys(LOG_EXIT_SYS, "remove: ", wname) ;
 
         if (!dir_create_parent(wname, 0755))

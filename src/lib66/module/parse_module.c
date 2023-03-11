@@ -107,7 +107,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
             goto deps ;
         }
 
-        if (dir_rm_rf(path) < 0)
+        if (!dir_rm_rf(path))
             log_dieusys (LOG_EXIT_SYS, "remove: ", path) ;
 
         if (!hiercopy(dirname, path))
