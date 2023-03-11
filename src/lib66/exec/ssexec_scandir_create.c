@@ -83,6 +83,20 @@ static void inline auto_dir(char const *str,mode_t mode)
     log_trace("create directory: ",str) ;
     if (!dir_create_parent(str,mode))
         log_dieusys(LOG_EXIT_SYS,"create directory: ",str) ;
+
+    size_t n = strlen(str), i = 0 ;
+    char tmp[n + 1] ;
+    for (; i < n ; i++) {
+
+        if ((str[i] == '/') && i)
+        {
+            tmp[i] = 0 ;
+            auto_chown(tmp) ;
+        }
+        tmp[i] = str[i] ;
+    }
+
+    auto_chown(str) ;
 }
 
 static void inline auto_chmod(char const *str,mode_t mode)
@@ -97,9 +111,14 @@ static void inline auto_file(char const *dst,char const *file,char const *conten
 {
     log_flow() ;
 
-    log_trace("write file: ",dst,"/",file) ;
+    char f[strlen(dst) + 1 + strlen(file) + 1] ;
+    auto_strings(f, dst, "/", file) ;
+
+    log_trace("write file: ", f) ;
     if (!file_write_unsafe(dst,file,contents,conlen))
         log_dieusys(LOG_EXIT_SYS,"write file: ",dst,"/",file) ;
+
+    auto_chown(f) ;
 }
 
 static void inline auto_check(char const *str,mode_t type,mode_t perm,int what)
@@ -274,8 +293,8 @@ void write_bootlog(char const *live, char const *scandir)
     log_flow() ;
 
     int r ;
-    uid_t uid ;
-    gid_t gid ;
+    uid_t uid = -1 ;
+    gid_t gid = -1 ;
     size_t livelen = strlen(live), scandirlen = strlen(scandir), ownerlen = uid_fmt(OWNERSTR,OWNER), loglen = 0, blen = 0 ;
     buffer b ;
     char path[livelen + 4 + ownerlen + 1] ;
@@ -292,6 +311,7 @@ void write_bootlog(char const *live, char const *scandir)
     auto_strings(logdir + loglen, "/fifo") ;
 
     auto_fifo(logdir) ;
+    auto_chown(logdir) ;
 
     /** set the log path for the run file
      * /run/66/log*/
@@ -350,6 +370,7 @@ void write_bootlog(char const *live, char const *scandir)
     auto_strings(logdir + loglen,"/run") ;
 
     auto_chmod(logdir,0755) ;
+    auto_chown(logdir) ;
 }
 
 void write_control(char const *scandir,char const *live, char const *filename, int file)
@@ -501,6 +522,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
         auto_strings(mode + scandirlen + SS_SVSCAN_LOG_LEN, filename) ;
 
         auto_chmod(mode,0755) ;
+        auto_chown(mode) ;
 }
 
 void auto_empty_file(char const *dst, char const *filename, char const *contents)
@@ -512,6 +534,8 @@ void auto_empty_file(char const *dst, char const *filename, char const *contents
 
     if (!file_write_unsafe_g(tmp, contents))
         log_dieusys(LOG_EXIT_SYS, "create file: ", tmp) ;
+
+    auto_chown(tmp) ;
 }
 
 static void create_service_skel(char const *service, char const *target, char const *notif)
@@ -532,8 +556,12 @@ static void create_service_skel(char const *service, char const *target, char co
     if (symlink("0", sym) < 0)
         log_dieusys(LOG_EXIT_SYS, "symlink: ", sym) ;
 
+    if (lchown(sym, OWNER, GIDOWNER) < 0)
+        log_dieusys(LOG_EXIT_SYS, "chown: ", sym) ;
+
     auto_strings(dst, target, "/", service, "/data/rules/gid/0") ;
     auto_dir(dst, 0755) ;
+
     auto_empty_file(dst, "/allow", "") ;
 
     auto_strings(dst, target, "/", service, "/") ;
@@ -567,6 +595,8 @@ static void create_service_oneshot(char const *scandir)
 
     if (chmod(dst, 0755) < 0)
         log_dieusys(LOG_EXIT_SYS, "chmod: ", dst) ;
+
+    auto_chown(dst) ;
 }
 
 static void create_service_fdholder(char const *scandir)
@@ -590,6 +620,8 @@ static void create_service_fdholder(char const *scandir)
     if(!openwritenclose_unsafe(dst, "^" SS_FDHOLDER_PIPENAME "\n", SS_FDHOLDER_PIPENAME_LEN + 2))
         log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
 
+    auto_chown(dst) ;
+
     char sym[fdlen + 48 + 1] ;
     auto_strings(sym, scandir, "/", SS_FDHOLDER, "/data/rules/uid/0/env/S6_FDHOLDER_RETRIEVE_REGEX") ;
 
@@ -599,12 +631,18 @@ static void create_service_fdholder(char const *scandir)
     if (symlink(dst, sym) < 0)
         log_dieusys(LOG_EXIT_SYS, "symlink: ", dst) ;
 
+    if (lchown(sym, OWNER, GIDOWNER) < 0)
+        log_dieusys(LOG_EXIT_SYS, "chown: ", sym) ;
+
     auto_strings(sym, scandir, "/", SS_FDHOLDER, "/data/rules/gid/0/env") ;
     auto_strings(dst, "../../uid/0/env") ;
 
     log_trace("point symlink: ", sym, " to ", dst) ;
     if (symlink(dst, sym) < 0)
         log_dieusys(LOG_EXIT_SYS, "symlink: ", dst) ;
+
+    if (lchown(sym, OWNER, GIDOWNER) < 0)
+        log_dieusys(LOG_EXIT_SYS, "chown: ", sym) ;
 
     size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + strlen(SS_LIBEXECPREFIX) + 277 + 1 ;
 
@@ -630,8 +668,8 @@ static void create_service_fdholder(char const *scandir)
     if (!openwritenclose_unsafe(dst, run, strlen(run) - 1))
         log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
 
-    if (chmod(dst, 0755) < 0)
-        log_dieusys(LOG_EXIT_SYS, "chmod: ", dst) ;
+    auto_chmod(dst, 0755) ;
+    auto_chown(dst) ;
 
     auto_strings(dst, scandir, "/", SS_FDHOLDER, "/data/autofilled") ;
 
@@ -639,6 +677,7 @@ static void create_service_fdholder(char const *scandir)
     if(!openwritenclose_unsafe(dst, "\n", 1))
         log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
 
+    auto_chown(dst) ;
 }
 
 void create_scandir(char const *live, char const *scandir)
@@ -664,12 +703,13 @@ void create_scandir(char const *live, char const *scandir)
         "/SIGQUIT", "/SIGTERM", "/SIGUSR1", "/SIGUSR2",
         "/SIGPWR", "/SIGWINCH"
      } ;
+
     log_trace("write control file... ") ;
     for (int i = 0 ; i < 9; i++)
         write_control(scandir,live,file[i],i) ;
 
-    if (BOOT)
-    {
+    if (BOOT) {
+
         if (CATCH_LOG)
             write_bootlog(live, scandir) ;
 
@@ -712,6 +752,8 @@ void sanitize_live(char const *live)
 
 int ssexec_scandir_create(int argc, char const *const *argv, ssexec_t *info)
 {
+    log_flow() ;
+
     int r ;
 
     CONFIG_STR_LEN = compute_buf_size(SS_BINPREFIX, SS_EXTBINPREFIX, SS_EXTLIBEXECPREFIX, SS_LIBEXECPREFIX, SS_EXECLINE_SHEBANGPREFIX, 0) ;
@@ -735,6 +777,9 @@ int ssexec_scandir_create(int argc, char const *const *argv, ssexec_t *info)
                     break ;
 
                 case 'B' :
+
+                    if (OWNER)
+                        log_die(LOG_EXIT_USER, "-B options can be set only with root") ;
 
                     CONTAINER = 1 ;
                     BOOT = 1 ;
