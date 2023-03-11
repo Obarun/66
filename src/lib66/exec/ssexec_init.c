@@ -22,6 +22,7 @@
 #include <oblibs/graph.h>
 
 #include <skalibs/stralloc.h>
+#include <skalibs/sgetopt.h>
 
 #include <66/constants.h>
 #include <66/config.h>
@@ -144,6 +145,28 @@ int ssexec_init(int argc, char const *const *argv, ssexec_t *info)
     char const *treename = 0 ;
 
     stralloc sa = STRALLOC_ZERO ;
+
+    {
+        subgetopt l = SUBGETOPT_ZERO ;
+
+        for (;;)
+        {
+            int opt = subgetopt_r(argc, argv, OPTS_INIT, &l) ;
+            if (opt == -1) break ;
+
+            switch (opt) {
+
+                case 'h' :
+
+                    info_help(info->help, info->usage) ;
+                    return 0 ;
+
+                default :
+                    log_usage(info->usage, "\n", info->help) ;
+            }
+        }
+        argc -= l.ind ; argv += l.ind ;
+    }
 
     if (!argc)
         log_usage(info->usage, "\n", info->help) ;
