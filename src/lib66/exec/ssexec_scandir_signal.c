@@ -18,6 +18,7 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
+#include <oblibs/types.h>
 
 #include <skalibs/types.h>
 #include <skalibs/bytestr.h>
@@ -168,9 +169,11 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
 
 int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
 {
+    log_flow() ;
+
     int r ;
 
-    unsigned int timeout = 0, notif = 0, sig = 0 ;
+    unsigned int timeout = 0, notif = 0, sig = 0, container = 0 ;
 
     char const *newenv[MAXENV+1] ;
     char const *const *genv = 0 ;
@@ -216,6 +219,12 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
 
                     break ;
 
+                case 'B' :
+
+                    container = 1 ;
+
+                    break ;
+
                 default :
 
                     log_usage(info->usage, "\n", info->help) ;
@@ -223,9 +232,6 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
         }
         argc -= l.ind ; argv += l.ind ;
     }
-
-    if (argc < 1)
-        log_usage(info->usage, "\n", info->help) ;
 
     signal = argv[0] ;
 
@@ -261,9 +267,32 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
         auto_strings(scandir, info->scandir.s) ;
 
         int r ;
+        r = scan_mode(scandir, S_IFDIR) ;
+        if (r < 0)
+           log_die(LOG_EXIT_SYS, scandir, " conflicted format") ;
+
+        if (!r) {
+
+            unsigned int m = 0 ;
+            int nargc = 3 + (container ? 1 : 0) ;
+            char const *newargv[nargc] ;
+
+            newargv[m++] = "create" ;
+
+            if (container)
+                newargv[m++] = "-B" ;
+
+            newargv[m++] = "create" ;
+            newargv[m] = 0 ;
+
+            if (ssexec_scandir_create(m, newargv, info))
+                log_dieu(LOG_EXIT_SYS, "create scandir: ", scandir) ;
+        }
+
         r = svc_scandir_ok(scandir) ;
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "check: ", scandir) ;
+
         if (r) {
             log_trace("scandir: ", scandir, " already running") ;
             return 0 ;
@@ -282,7 +311,7 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
     else if (!r)
         log_diesys(LOG_EXIT_SYS, "scandir: ", info->scandir.s, " is not running") ;
 
-    if (send_signal(info->scandir.s,signal) <= 0)
+    if (send_signal(info->scandir.s, signal) <= 0)
         log_dieu(LOG_EXIT_SYS, "send signal to scandir: ", info->scandir.s) ;
 
     return 0 ;
