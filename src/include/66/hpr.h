@@ -33,6 +33,7 @@
 #define hpr_send(l,s, n) openwritenclose_unsafe(l, (s), n)
 #define hpr_cancel(l) hpr_send(l,"c", 1)
 extern int hpr_shutdown (char const *live, unsigned int, tain const *, unsigned int) ;
-extern void hpr_wall (char const *) ;
+extern void hpr_wall (char const *s) ;
+extern void hpr_wallv (struct iovec const *v, unsigned int n) ;
 
 #endif

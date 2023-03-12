@@ -1,5 +1,6 @@
 hpr_shutdown.o
 hpr_wall.o
+hpr_wallv.o
 -loblibs
 -lskarnet
 
