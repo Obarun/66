@@ -23,7 +23,7 @@ inline void info_help (char const *help,char const *usage)
 }
 
 
-char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|unsupervise|reconfigure|enable|disable|environ|service|tree|init|parse|signal|scandir|boot|version [<command options>] service...|tree" ;
+char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|unsupervise|reconfigure|enable|disable|environ|status|resolve|state|remove|signal|tree|init|parse|scandir|boot|version [<command options>] service...|tree" ;
 
 char const *help_66 =
 "\nmain tool to init a system, control and manage services\n"
@@ -46,11 +46,14 @@ char const *help_66 =
 "   enable: activate service for the next boot\n"
 "   disable: deactivate service for the next boot\n"
 "   environ: manage service environment variable\n"
-"   service: manage/see service information\n"
+"   status: display services informations\n"
+"   resolve: display the resolve files contents of services\n"
+"   state: display state files contents of services\n"
+"   remove: remove services and cleanup all files belong to it from the system\n"
+"   signal: send signal to service\n"
 "   tree: manage/see tree information\n"
 "   init: initiate to scandir all services marked enabled at tree\n"
 "   parse: parse the service frontend file\n"
-"   signal: send signal to service\n"
 "   scandir: manage scandir\n"
 "   boot: boot the system with 66\n"
 "   version: display 66 version\n"
