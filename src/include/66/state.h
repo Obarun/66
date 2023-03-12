@@ -19,7 +19,7 @@
 
 #include <skalibs/uint32.h>
 
-#define STATE_STATE_SIZE 40
+#define STATE_STATE_SIZE 44
 
 #define STATE_FLAGS_FALSE (1 << 1) // 2
 #define STATE_FLAGS_TRUE (1 << 2) // 4
