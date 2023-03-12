@@ -88,7 +88,6 @@ int main(int argc, char const *const *argv)
 
     int r, n = 0, i = 0 ;
     uint8_t sanitize = 0 ;
-    char const *main = "hv:l:t:T:z" ;
     char str[UINT_FMT] ;
     char const *nargv[argc + 3] ;
 
@@ -111,7 +110,7 @@ int main(int argc, char const *const *argv)
         int f = 0 ;
         for (;;)
         {
-            int opt = subgetopt_r(argc, argv, main, &l) ;
+            int opt = subgetopt_r(argc, argv, OPTS_MAIN, &l) ;
 
             if (opt == -1) break ;
             switch (opt)

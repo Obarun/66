@@ -865,11 +865,11 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
 
         for (;;)
         {
-            int opt = subgetopt_r(argc,argv, OPTS_INSERVICE, &l) ;
+            int opt = subgetopt_r(argc,argv, OPTS_STATUS, &l) ;
             if (opt == -1) break ;
 
             switch (opt) {
-
+                case 'h' :  info_help(info->help, info->usage) ; return 0 ;
                 case 'n' :  NOFIELD = 0 ; break ;
                 case 'o' :  legacy = 0 ; info_parse_options(l.arg,what) ; break ;
                 case 'g' :  GRAPH = 1 ; break ;

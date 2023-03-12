@@ -1128,7 +1128,7 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
 
         for (;;)
         {
-            int opt = subgetopt_r(argc, argv, OPTS_TREE, &l) ;
+            int opt = subgetopt_r(argc, argv, OPTS_TREE_ADMIN, &l) ;
             if (opt == -1) break ;
 
             switch (opt)

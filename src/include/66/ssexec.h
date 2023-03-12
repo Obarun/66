@@ -224,6 +224,8 @@ extern char const *help_reboot ;
 extern char const *usage_halt ;
 extern char const *help_halt ;
 
+#define OPTS_MAIN "hv:l:t:T:z"
+#define OPTS_MAIN_LEN (sizeof OPTS_MAIN - 1)
 #define OPTS_SUBSTART "hP"
 #define OPTS_SUBSTART_LEN (sizeof OPTS_SUBSTART - 1)
 #define OPTS_PARSE "hfFcmCI"
@@ -232,37 +234,37 @@ extern char const *help_halt ;
 #define OPTS_INIT_LEN (sizeof OPTS_INIT - 1)
 #define OPTS_ENABLE "hfSI"
 #define OPTS_ENABLE_LEN (sizeof OPTS_ENABLE - 1)
-#define OPTS_DISABLE "hS"
+#define OPTS_DISABLE "hSFR"
 #define OPTS_DISABLE_LEN (sizeof OPTS_DISABLE - 1)
 #define OPTS_START "hP"
 #define OPTS_START_LEN (sizeof OPTS_START - 1)
 #define OPTS_STOP "huP"
 #define OPTS_STOP_LEN (sizeof OPTS_STOP - 1)
-#define OPTS_SVCTL "habqHkti12pcyrodDuUxOw:P"
-#define OPTS_SVCTL_LEN (sizeof OPTS_SVCTL - 1)
+#define OPTS_STATUS "hno:grd:p:"
+#define OPTS_STATUS_LEN (sizeof OPTS_STATUS - 1)
+#define OPTS_SIGNAL "habqHkti12pcyrodDuUxOQw:P"
+#define OPTS_SIGNAL_LEN (sizeof OPTS_SIGNAL - 1)
 #define OPTS_ENV "hc:s:VLr:e:i:"
 #define OPTS_ENV_LEN (sizeof OPTS_ENV - 1)
-#define OPTS_TREECTL "f"
-#define OPTS_TREECTL_LEN (sizeof OPTS_TREECTL - 1)
-#define OPTS_TREE "hco:EDRnadC:S:"
-#define OPTS_TREE_LEN (sizeof OPTS_TREE - 1)
-#define OPTS_INTREE "no:grd:"
-#define OPTS_INTREE_LEN (sizeof OPTS_INTREE - 1)
-#define OPTS_INSERVICE "no:grd:p:"
-#define OPTS_INSERVICE_LEN (sizeof OPTS_INSERVICE - 1)
+
+#define OPTS_TREE_WRAPPER "h"
+#define OPTS_TREE_WRAPPER_LEN (sizeof OPTS_TREE_WRAPPER - 1)
+#define OPTS_TREE_STATUS "no:grd:"
+#define OPTS_TREE_STATUS_LEN (sizeof OPTS_TREE_STATUS - 1)
+#define OPTS_TREE_SIGNAL "f"
+#define OPTS_TREE_SIGNAL_LEN (sizeof OPTS_TREE_SIGNAL - 1)
+#define OPTS_TREE_ADMIN "co:EDRnadC:S:"
+#define OPTS_TREE_ADMIN_LEN (sizeof OPTS_TREE_ADMIN - 1)
+
 #define OPTS_BOOT "hms:e:d:b:l:"
 #define OPTS_BOOT_LEN (sizeof OPTS_BOOT - 1)
-#define OPTS_SCANCTL "d:s:e:bB"
-#define OPTS_SCANCTL_LEN (sizeof OPTS_SCANCTL - 1)
+
 #define OPTS_SCANDIR_WRAPPER "ho:"
 #define OPTS_SCANCTL_WRAPPER_LEN (sizeof OPTS_SCANDIR_WRAPPER - 1)
+#define OPTS_SCANDIR_SIGNAL "d:s:e:bB"
+#define OPTS_SCANDIR_SIGNAL_LEN (sizeof OPTS_SCANDIR_SIGNAL - 1)
 #define OPTS_SCANDIR_CREATE "bBs:cL:"
 #define OPTS_SCANDIR_CREATE_LEN (sizeof OPTS_SCANDIR_CREATE - 1)
-
-#define OPTS_SERVICE_WRAPPER ""
-#define OPTS_SERVICE_WRAPPER_LEN (sizeof OPTS_SERVICE_WRAPPER - 1)
-#define OPTS_SERVICE_ADMIN ""
-#define OPTS_SERVICE_ADMIN_LEN (sizeof OPTS_SERVICE_ADMIN - 1)
 
 #define OPTS_SHUTDOWN_WRAPPER "hFfat:m:W"
 #define OPTS_SHUTDOWN_WRAPPER_LEN (sizeof OPTS_SHUTDOWN_WRAPPER - 1)

@@ -867,7 +867,7 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
 
         for (;;)
         {
-            int opt = subgetopt_r(argc, argv, OPTS_TREECTL, &l) ;
+            int opt = subgetopt_r(argc, argv, OPTS_TREE_SIGNAL, &l) ;
             if (opt == -1) break ;
 
             switch (opt) {

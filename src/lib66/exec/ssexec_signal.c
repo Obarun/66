@@ -836,11 +836,11 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
 
         for (;;)
         {
-            int opt = subgetopt_r(argc,argv, OPTS_SVCTL, &l) ;
+            int opt = subgetopt_r(argc,argv, OPTS_SIGNAL, &l) ;
             if (opt == -1) break ;
 
             switch (opt) {
-
+                case 'h' : info_help(info->help, info->usage) ; return 0 ;
                 case 'a' :
                 case 'b' :
                 case 'q' :

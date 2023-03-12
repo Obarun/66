@@ -207,7 +207,7 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
 
         for (;;) {
 
-            int opt = subgetopt_r(argc,argv, OPTS_SCANCTL, &l) ;
+            int opt = subgetopt_r(argc,argv, OPTS_SCANDIR_SIGNAL, &l) ;
             if (opt == -1) break ;
 
             switch (opt) {

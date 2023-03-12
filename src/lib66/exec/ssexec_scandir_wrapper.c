@@ -46,7 +46,7 @@ int ssexec_scandir_wrapper(int argc, char const *const *argv, ssexec_t *info)
 
         for (;;) {
 
-            int opt = subgetopt_r(argc, argv, "ho:", &l) ;
+            int opt = subgetopt_r(argc, argv, OPTS_SCANDIR_WRAPPER, &l) ;
             if (opt == -1) break ;
 
             switch (opt) {
