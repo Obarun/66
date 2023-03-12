@@ -14,6 +14,8 @@
 
 #include <string.h>
 #include <fcntl.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -29,6 +31,7 @@
 
 #include <66/ssexec.h>
 #include <66/svc.h>
+#include <66/utils.h>
 
 #include <s6/config.h>
 
@@ -143,8 +146,10 @@ static int send_signal(char const *scandir, char const *signal)
     return svc_scandir_send(scandir,csig) ;
 }
 
-static void scandir_up(char const *scandir, unsigned int timeout, unsigned int notif, char const *const *envp)
+static void scandir_up(char const *scandir, unsigned int timeout, unsigned int notif, char const *const *envp, ssexec_t *info)
 {
+    uid_t uid = getuid() ;
+    gid_t gid = getgid() ;
     unsigned int no = notif ? 2 : 0 ;
     char const *newup[6 + no] ;
     unsigned int m = 0 ;
@@ -163,6 +168,21 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
     newup[m++] = "--" ;
     newup[m++] = scandir ;
     newup[m++] = 0 ;
+
+    if (!uid && uid != info->owner) {
+        /** -o <owner> was asked. Respect it
+         * a start the s6-svscan process with the
+         * good uid and gid */
+        if (!yourgid(&gid, info->owner))
+            log_dieusys(LOG_EXIT_SYS, "get gid of: ", info->ownerstr) ;
+        if (setgid(gid) < 0)
+            log_dieusys(LOG_EXIT_SYS, "setgid for: ", info->ownerstr) ;
+        if (setuid(info->owner) < 0)
+            log_dieusys(LOG_EXIT_SYS, "setuid for: ", info->ownerstr) ;
+
+    }
+
+    ssexec_free(info) ;
 
     xexec_ae(newup[0], newup, envp) ;
 }
@@ -299,10 +319,8 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
         }
 
         stralloc_free(&envdir) ;
-        ssexec_free(info) ;
 
-        scandir_up(scandir, timeout, notif, genv) ;
-        return 0 ;
+        scandir_up(scandir, timeout, notif, genv, info) ;
     }
 
     r = svc_scandir_ok(info->scandir.s) ;
