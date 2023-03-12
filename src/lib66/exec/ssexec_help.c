@@ -73,7 +73,7 @@ char const *help_boot =
 "   -b: banner to display\n"
 ;
 
-char const *usage_enable = "66 enable [ -h ] [ -f|F ] [ -I ] [ -S ] service..." ;
+char const *usage_enable = "66 enable [ -h ] [ -f ] [ -I ] [ -S ] service..." ;
 
 char const *help_enable =
 "\nactivate services at the next boot\n"
@@ -81,7 +81,6 @@ char const *help_enable =
 "options:\n"
 "   -h: print this help\n"
 "   -f: force to overwrite the service(s)\n"
-"   -F: force to overwrite the service(s) and its dependencies\n"
 "   -I: do not import modified configuration files from previous version\n"
 "   -S: enable and start the service\n"
 ;
@@ -192,9 +191,72 @@ char const *help_unsupervise =
 "   -P: do not propagate signal to its dependencies\n"
 ;
 
-char const *usage_service_signal = "66 signal [ -h ] [ -wu | -wU | -wd | -wD | -wr | -wR ] [ -abqHkti12pcyodDuUxOr ] service..." ;
+char const *usage_status = "66 status [ -h ] [ -n ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -p nline ] service..." ;
 
-char const *help_service_signal =
+char const *help_status =
+"\ndisplay services informations\n"
+"\n"
+"options :\n"
+"   -h: print this help\n"
+"   -n: do not display the field name\n"
+"   -o: comma separated list of options\n"
+"   -g: displays the contents field as graph\n"
+"   -d: limit the depth of the contents field recursion\n"
+"   -r: reverse the contents field\n"
+"   -p: print n last lines of the log file\n"
+"\n"
+"valid fields for -o options are:\n"
+"\n"
+"   name: displays the name\n"
+"   version: displays the version of the service\n"
+"   intree: displays the service's tree name\n"
+"   status: displays the status\n"
+"   type: displays the service type\n"
+"   description: displays the description\n"
+"   source: displays the source of the service's frontend file\n"
+"   live: displays the service's live directory\n"
+"   depends: displays the service's dependencies\n"
+"   requiredby: displays the service(s) which depends on service\n"
+"   optsdepends: displays the service's optional dependencies\n"
+"   start: displays the service's start script\n"
+"   stop: displays the service's stop script\n"
+"   envat: displays the source of the environment file\n"
+"   envfile: displays the contents of the environment file\n"
+"   logname: displays the logger's name\n"
+"   logdst: displays the logger's destination\n"
+"   logfile: displays the contents of the log file\n"
+;
+
+char const *usage_resolve = "66 resolve [ -h ] service" ;
+
+char const *help_resolve =
+"\ndisplay the resolve files contents of services\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+;
+
+char const *usage_state = "66 state [ -h ] service" ;
+
+char const *help_state =
+"\ndisplay state files contents of services\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+;
+
+char const *usage_remove = "66 remove [ -h ] service" ;
+
+char const *help_remove =
+"\nremove services and cleanup all files belong to it from the system\n"
+"\n"
+"options :\n"
+"   -h: print this help\n"
+;
+
+char const *usage_signal = "66 signal [ -h ] [ -wu | -wU | -wd | -wD | -wr | -wR ] [ -abqHkti12pcyodDuUxOr ] service..." ;
+
+char const *help_signal =
 "\nsend a signal to services\n"
 "\n"
 "options:\n"
@@ -397,86 +459,6 @@ char const *help_tree_unsupervise =
 "   -f: fork the process\n"
 "\n"
 "If no tree name are provided, it unsupervise all enabled trees from the system\n"
-;
-
-char const *usage_service_wrapper = "66 service [ -h ] status|resolve|state|remove [<command options>] service..." ;
-
-char const *help_service_wrapper =
-"\nmain sub tools to view and manages services\n"
-"\n"
-"options :\n"
-"   -h: print this help\n"
-"\n"
-"command:\n"
-"   status: displays information of the service\n"
-"   resolve: displays the resolve file of the service\n"
-"   state: displays the state file of the service\n"
-"   remove: remove and cleanup the service\n"
-"\n"
-"Use '66 service <command> -h' to see command options\n"
-;
-
-char const *usage_service_status = "66 service status [ -h ] [ -n ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -p nline ] service..." ;
-
-char const *help_service_status =
-"\ndisplay services informations\n"
-"\n"
-"options :\n"
-"   -h: print this help\n"
-"   -n: do not display the field name\n"
-"   -o: comma separated list of options\n"
-"   -g: displays the contents field as graph\n"
-"   -d: limit the depth of the contents field recursion\n"
-"   -r: reverse the contents field\n"
-"   -p: print n last lines of the log file\n"
-"\n"
-"valid fields for -o options are:\n"
-"\n"
-"   name: displays the name\n"
-"   version: displays the version of the service\n"
-"   intree: displays the service's tree name\n"
-"   status: displays the status\n"
-"   type: displays the service type\n"
-"   description: displays the description\n"
-"   source: displays the source of the service's frontend file\n"
-"   live: displays the service's live directory\n"
-"   depends: displays the service's dependencies\n"
-"   requiredby: displays the service(s) which depends on service\n"
-"   optsdepends: displays the service's optional dependencies\n"
-"   start: displays the service's start script\n"
-"   stop: displays the service's stop script\n"
-"   envat: displays the source of the environment file\n"
-"   envfile: displays the contents of the environment file\n"
-"   logname: displays the logger's name\n"
-"   logdst: displays the logger's destination\n"
-"   logfile: displays the contents of the log file\n"
-;
-
-char const *usage_service_resolve = "66 service resolve [ -h ] service" ;
-
-char const *help_service_resolve =
-"\ndisplay the resolve files contents of services\n"
-"\n"
-"options:\n"
-"   -h: print this help\n"
-;
-
-char const *usage_service_state = "66 service state [ -h ] service" ;
-
-char const *help_service_state =
-"\ndisplay state files contents of services\n"
-"\n"
-"options:\n"
-"   -h: print this help\n"
-;
-
-char const *usage_service_remove = "66 service remove [ -h ] service" ;
-
-char const *help_service_remove =
-"\nremove services and cleanup all files belong to it from the system\n"
-"\n"
-"options :\n"
-"   -h: print this help\n"
 ;
 
 char const *usage_scandir_wrapper = "66 scandir [ -h ] [ -o owner ] create|remove|start|stop|reconfigure|rescan|quit|halt|abort|nuke|annihilate|zombies [<command options>]" ;

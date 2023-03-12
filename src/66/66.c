@@ -327,21 +327,51 @@ int main(int argc, char const *const *argv)
         PROG = "signal" ;
         nargv[n++] = PROG ;
         info.prog = PROG ;
-        info.help = help_service_signal ;
-        info.usage = usage_service_signal ;
-        func = &ssexec_service_signal ;
+        info.help = help_signal ;
+        info.usage = usage_signal ;
+        func = &ssexec_signal ;
+
+    } else if (!strcmp(argv[0], "status")) {
+
+        PROG = "status" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_status ;
+        info.usage = usage_status ;
+        func = &ssexec_status ;
+
+    } else if (!strcmp(argv[0], "resolve")) {
+
+        PROG = "resolve" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_resolve ;
+        info.usage = usage_resolve ;
+        func = &ssexec_resolve ;
+
+    } else if (!strcmp(argv[0], "state")) {
+
+        PROG = "state" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_state ;
+        info.usage = usage_state ;
+        func = &ssexec_state ;
+
+    } else if (!strcmp(argv[0], "remove")) {
+
+        PROG = "remove" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_remove ;
+        info.usage = usage_remove ;
+        func = &ssexec_remove ;
 
     } else if (!strcmp(argv[0], "tree")) {
 
         PROG = "tree" ;
         nargv[n++] = PROG ;
         func = &ssexec_tree_wrapper ;
-
-    } else if (!strcmp(argv[0], "service")) {
-
-        PROG = "service" ;
-        nargv[n++] = PROG ;
-        func = &ssexec_service_wrapper ;
 
     } else if (!strcmp(argv[0], "scandir")) {
 

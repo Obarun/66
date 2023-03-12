@@ -1,5 +1,5 @@
 /*
- * ssexec_service_state.c
+ * ssexec_state.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -11,6 +11,7 @@
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file./
  */
+
 
 #include <string.h>
 #include <wchar.h>
@@ -67,7 +68,7 @@ static void info_display_int(char const *field,unsigned int id)
     info_display_string(field,str) ;
 }
 
-int ssexec_service_state(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
 {
     int found = 0 ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
@@ -93,7 +94,7 @@ int ssexec_service_state(int argc, char const *const *argv, ssexec_t *info)
     argc-- ;
     argv++ ;
 
-    if (!argc) log_usage(usage_service_state, "\n", help_service_state) ;
+    if (!argc) log_usage(info->usage, "\n", info->help) ;
     svname = *argv ;
 
     if (!set_ownersysdir_stack(base, getuid()))

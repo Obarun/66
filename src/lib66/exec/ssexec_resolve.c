@@ -1,5 +1,5 @@
 /*
- * ssexec_service_resolve.c
+ * ssexec_resolve.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -157,7 +157,7 @@ static void info_display_service_field(resolve_service_t *res)
 
 }
 
-int ssexec_service_resolve(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
 {
     int r = 0 ;
 
@@ -171,7 +171,7 @@ int ssexec_service_resolve(int argc, char const *const *argv, ssexec_t *info)
     argv++ ;
 
     if (argc < 1)
-        log_usage(usage_service_resolve, "\n", help_service_resolve) ;
+        log_usage(info->usage, "\n", info->help) ;
 
     svname = *argv ;
 

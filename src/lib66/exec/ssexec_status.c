@@ -1,5 +1,5 @@
 /*
- * ssexec_service_status.c
+ * ssexec_status.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -95,11 +95,11 @@ static void info_display_logname(char const *field, resolve_service_t *res) ;
 static void info_display_logdst(char const *field, resolve_service_t *res) ;
 static void info_display_logfile(char const *field, resolve_service_t *res) ;
 
-info_graph_style *S_STYLE = &graph_default ;
+static info_graph_style *S_STYLE = &graph_default ;
 
 static ssexec_t_ref pinfo = 0 ;
 
-info_opts_map_t const opts_sv_table[] =
+static info_opts_map_t const opts_sv_table[] =
 {
     { .str = "name", .svfunc = &info_display_name, .id = 0 },
     { .str = "version", .svfunc = &info_display_version, .id = 1 },
@@ -126,7 +126,7 @@ info_opts_map_t const opts_sv_table[] =
 #define checkopts(n) if (n >= MAXOPTS) log_die(LOG_EXIT_USER, "too many options")
 #define DELIM ','
 
-char *print_nlog(char *str, int n)
+static char *print_nlog(char *str, int n)
 {
     int r = 0 ;
     int delim ='\n' ;
@@ -823,7 +823,7 @@ static void info_parse_options(char const *str,int *what)
     stralloc_free(&sa) ;
 }
 
-int ssexec_service_status(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
 {
     unsigned int legacy = 1 ;
     int r = 0 ;
@@ -874,16 +874,16 @@ int ssexec_service_status(int argc, char const *const *argv, ssexec_t *info)
                 case 'o' :  legacy = 0 ; info_parse_options(l.arg,what) ; break ;
                 case 'g' :  GRAPH = 1 ; break ;
                 case 'r' :  REVERSE = 1 ; break ;
-                case 'd' :  if (!uint0_scan(l.arg, &MAXDEPTH)) log_usage(usage_service_status, "\n", help_service_status) ; break ;
-                case 'p' :  if (!uint0_scan(l.arg, &nlog)) log_usage(usage_service_status, "\n", help_service_status) ; break ;
-                default :   log_usage(usage_service_status, "\n", help_service_status) ;
+                case 'd' :  if (!uint0_scan(l.arg, &MAXDEPTH)) log_usage(info->usage, "\n", info->help) ; break ;
+                case 'p' :  if (!uint0_scan(l.arg, &nlog)) log_usage(info->usage, "\n", info->help) ; break ;
+                default :   log_usage(info->usage, "\n", info->help) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
 
     if (!argc)
-        log_usage(usage_service_status, "\n", help_service_status) ;
+        log_usage(info->usage, "\n", info->help) ;
 
     svname = *argv ;
 

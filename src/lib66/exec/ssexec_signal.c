@@ -1,5 +1,5 @@
 /*
- * ssexec_service_signal.c
+ * ssexec_signal.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -11,6 +11,7 @@
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file./
  */
+
 
 #include <string.h>
 #include <errno.h>
@@ -801,7 +802,7 @@ static int waitit(pidservice_t *apids, unsigned int what, graph_t *graph, tain *
         return e ;
 }
 
-int ssexec_service_signal(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 

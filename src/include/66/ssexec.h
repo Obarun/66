@@ -110,12 +110,11 @@ extern ssexec_func_t ssexec_scandir_remove ;
 extern ssexec_func_t ssexec_scandir_signal ;
 
 /** service */
-extern ssexec_func_t ssexec_service_resolve ;
-extern ssexec_func_t ssexec_service_state ;
-extern ssexec_func_t ssexec_service_status ;
-extern ssexec_func_t ssexec_service_wrapper ;
-extern ssexec_func_t ssexec_service_admin ;
-extern ssexec_func_t ssexec_service_signal ;
+extern ssexec_func_t ssexec_status ;
+extern ssexec_func_t ssexec_resolve ;
+extern ssexec_func_t ssexec_state ;
+extern ssexec_func_t ssexec_remove ;
+extern ssexec_func_t ssexec_signal ;
 
 /** tree */
 extern ssexec_func_t ssexec_tree_wrapper ;
@@ -131,42 +130,40 @@ extern void info_help (char const *help,char const *usage) ;
 
 extern char const *usage_66 ;
 extern char const *help_66 ;
-
 extern char const *usage_boot ;
 extern char const *help_boot ;
-
 extern char const *usage_enable ;
 extern char const *help_enable ;
-
 extern char const *usage_disable ;
 extern char const *help_disable ;
-
 extern char const *usage_start ;
 extern char const *help_start ;
-
 extern char const *usage_stop ;
 extern char const *help_stop ;
-
 extern char const *usage_env ;
 extern char const *help_env ;
-
 extern char const *usage_init ;
 extern char const *help_init ;
-
 extern char const *usage_parse ;
 extern char const *help_parse ;
-
 extern char const *usage_reconfigure ;
 extern char const *help_reconfigure ;
-
 extern char const *usage_reload ;
 extern char const *help_reload ;
-
 extern char const *usage_restart ;
 extern char const *help_restart ;
-
 extern char const *usage_unsupervise ;
 extern char const *help_unsupervise ;
+extern char const *usage_status ;
+extern char const *help_status ;
+extern char const *usage_resolve ;
+extern char const *help_resolve ;
+extern char const *usage_state ;
+extern char const *help_state ;
+extern char const *usage_remove ;
+extern char const *help_remove ;
+extern char const *usage_signal ;
+extern char const *help_signal ;
 
 extern char const *usage_tree_wrapper ;
 extern char const *help_tree_wrapper ;
@@ -192,19 +189,6 @@ extern char const *usage_tree_down ;
 extern char const *help_tree_down ;
 extern char const *usage_tree_unsupervise ;
 extern char const *help_tree_unsupervise ;
-
-extern char const *usage_service_wrapper ;
-extern char const *help_service_wrapper ;
-extern char const *usage_service_status ;
-extern char const *help_service_status ;
-extern char const *usage_service_resolve ;
-extern char const *help_service_resolve ;
-extern char const *usage_service_state ;
-extern char const *help_service_state ;
-extern char const *usage_service_remove ;
-extern char const *help_service_remove ;
-extern char const *usage_service_signal ;
-extern char const *help_service_signal ;
 
 extern char const *usage_scandir_wrapper ;
 extern char const *help_scandir_wrapper ;
@@ -246,7 +230,7 @@ extern char const *help_halt ;
 #define OPTS_PARSE_LEN (sizeof OPTS_PARSE - 1)
 #define OPTS_INIT "h"
 #define OPTS_INIT_LEN (sizeof OPTS_INIT - 1)
-#define OPTS_ENABLE "hfFSI"
+#define OPTS_ENABLE "hfSI"
 #define OPTS_ENABLE_LEN (sizeof OPTS_ENABLE - 1)
 #define OPTS_DISABLE "hS"
 #define OPTS_DISABLE_LEN (sizeof OPTS_DISABLE - 1)
