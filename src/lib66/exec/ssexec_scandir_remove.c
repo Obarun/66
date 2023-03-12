@@ -69,7 +69,7 @@ int ssexec_scandir_remove(int argc, char const *const *argv, ssexec_t *info)
 
     /** run/66/state/uid */
     info->scandir.len = 0 ;
-    if (!auto_stra(&info->scandir, info->live.s, SS_STATE, "/", info->ownerstr))
+    if (!auto_stra(&info->scandir, info->live.s, SS_STATE + 1, "/", info->ownerstr))
         log_die_nomem("stralloc") ;
     auto_rm(info->scandir.s) ;
 
