@@ -193,7 +193,7 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
 
     int r ;
 
-    unsigned int timeout = 0, notif = 0, sig = 0, container = 0 ;
+    unsigned int timeout = 0, notif = 0, sig = 0, container = 0, boot = 0 ;
 
     char const *newenv[MAXENV+1] ;
     char const *const *genv = 0 ;
@@ -236,6 +236,12 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
 
                     if(!auto_stra(&envdir,l.arg))
                         log_die_nomem("stralloc") ;
+
+                    break ;
+
+                case 'b' :
+
+                    boot = 1 ;
 
                     break ;
 
@@ -294,13 +300,16 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
         if (!r) {
 
             unsigned int m = 0 ;
-            int nargc = 3 + (container ? 1 : 0) ;
+            int nargc = 3 + (container ? 1 : 0) + (boot ? 1 : 0) ;
             char const *newargv[nargc] ;
 
             newargv[m++] = "create" ;
 
             if (container)
                 newargv[m++] = "-B" ;
+
+            if (boot)
+                newargv[m++] = "-b" ;
 
             newargv[m++] = "create" ;
             newargv[m] = 0 ;
