@@ -41,7 +41,7 @@ static void parse_it(char const *name, uint8_t force, uint8_t conf, ssexec_t *in
 
     newargv[m++] = "parse" ;
     if (force)
-        newargv[m++] = force == 2 ? "-F" : "-f" ;
+        newargv[m++] = "-f" ;
     if (conf)
         newargv[m++] = "-I" ;
     newargv[m++] = name ;
@@ -90,14 +90,6 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
                     if (force)
                         log_usage(info->usage, "\n", info->help) ;
                     force = 1 ;
-                    break ;
-
-                case 'F' :
-
-                     /** force to rewrite it dependencies */
-                    if (force)
-                        log_usage(info->usage, "\n", info->help) ;
-                    force = 2 ;
                     break ;
 
                 case 'I' :
