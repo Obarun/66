@@ -97,7 +97,7 @@ int info_graph_display_service(char const *name)
         ppid, \
         log_color->off, \
 
-        "state=", service_is(&sta, STATE_FLAGS_ISENABLED) ? log_color->off : log_color->warning, \
+        "state=", service_is(&sta, STATE_FLAGS_ISENABLED) ? log_color->valid : log_color->warning, \
         service_is(&sta, STATE_FLAGS_ISENABLED) ? "Enabled" : "Disabled", \
         log_color->off, \
 
