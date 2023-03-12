@@ -528,7 +528,7 @@ char const *help_scandir_remove =
 "   -h: print this help\n"
 ;
 
-char const *usage_scandir_start = "66 scandir start [ -h ] [ -d notif ] [ -s rescan ] [ -e environment ] [ -B ]" ;
+char const *usage_scandir_start = "66 scandir start [ -h ] [ -d notif ] [ -s rescan ] [ -e environment ] [ -b|B ]" ;
 
 char const *help_scandir_start =
 "\nstart a scandir\n"
@@ -538,6 +538,7 @@ char const *help_scandir_start =
 "   -d: notify readiness on file descriptor\n"
 "   -s: scan scandir every milliseconds\n"
 "   -e: use environment as environment directory\n"
+"   -b: create scandir (if it not exist yet) for a boot process\n"
 "   -B: create scandir (if it not exist yet) for a boot process inside a container\n"
 ;
 
@@ -623,3 +624,47 @@ char const *help_scandir_zombies =
 "   -h: print this help\n"
 ;
 
+char const *usage_poweroff = "66 poweroff [ -h ] [ -a ] [ -f|F ] [ -m message ] [ -t time ] [ -W ] when" ;
+
+char const *help_poweroff =
+"\npoweroff the system\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+"   -a: use access control\n"
+"   -f: sync filesytem and immediately poweroff the system\n"
+"   -F: do not sync filesytem and immediately poweroff the system\n"
+"   -m: replace the default message by message\n"
+"   -t: grace time period between SIGTERM and SIGKILL\n"
+"   -W: do not send a wall message to users\n"
+;
+
+char const *usage_reboot = "66 reboot [ -h ] [ -a ] [ -f|F ] [ -m message ] [ -t time ] [ -W ] when" ;
+
+char const *help_reboot =
+"\nreboot the system\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+"   -a: use access control\n"
+"   -f: sync filesytem and immediately reboot the system\n"
+"   -F: do not sync filesytem and immediately reboot the system\n"
+"   -m: replace the default message by message\n"
+"   -t: grace time period between SIGTERM and SIGKILL\n"
+"   -W: do not send a wall message to users\n"
+;
+
+char const *usage_halt = "66 halt [ -h ] [ -a ] [ -f|F ] [ -m message ] [ -t time ] [ -W ] when" ;
+
+char const *help_halt =
+"\nhalt the system\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+"   -a: use access control\n"
+"   -f: sync filesytem and immediately halt the system\n"
+"   -F: do not sync filesytem and immediately halt the system\n"
+"   -m: replace the default message by message\n"
+"   -t: grace time period between SIGTERM and SIGKILL\n"
+"   -W: do not send a wall message to users\n"
+;

@@ -25,6 +25,7 @@
 #include <66/utils.h>
 #include <66/sanitize.h>
 #include <66/tree.h>
+#include <66/hpr.h>
 
 void set_treeinfo(ssexec_t *info)
 {
@@ -210,13 +211,7 @@ int main(int argc, char const *const *argv)
         argc -= l.ind ; argv += l.ind ;
     }
 
-    if (!strcmp(argv[0], "version")) {
-
-        PROG = "version" ;
-        log_info(SS_VERSION) ;
-        return 0 ;
-
-    } else if (!strcmp(argv[0], "boot")) {
+    if (!strcmp(argv[0], "boot")) {
 
         PROG = "boot" ;
         nargv[n++] = PROG ;
@@ -353,6 +348,49 @@ int main(int argc, char const *const *argv)
         PROG = "scandir" ;
         nargv[n++] = PROG ;
         func = &ssexec_scandir_wrapper ;
+
+    } else if (!strcmp(argv[0], "poweroff")) {
+
+        PROG = "poweroff" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_poweroff ;
+        info.usage = usage_poweroff ;
+        func = &ssexec_shutdown_wrapper ;
+
+    } else if (!strcmp(argv[0], "reboot")) {
+
+        PROG = "reboot" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_reboot ;
+        info.usage = usage_reboot ;
+        func = &ssexec_shutdown_wrapper ;
+
+    } else if (!strcmp(argv[0], "halt")) {
+
+        PROG = "halt" ;
+        nargv[n++] = PROG ;
+        info.prog = PROG ;
+        info.help = help_halt ;
+        info.usage = usage_halt ;
+        func = &ssexec_shutdown_wrapper ;
+
+    } else if (!strcmp(argv[0], "wall")) {
+
+        PROG = "wall" ;
+        if (!argv[1])
+            log_die(LOG_EXIT_USER, "missing message to send") ;
+        /** message need to be double quoted.
+         * we don't check that here */
+        hpr_wall(argv[1]) ;
+        return 0 ;
+
+    } else if (!strcmp(argv[0], "version")) {
+
+        PROG = "version" ;
+        log_info(SS_VERSION) ;
+        return 0 ;
 
     } else {
 

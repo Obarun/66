@@ -133,6 +133,18 @@ int main (int argc, char const *const *argv)
     }
 
     if (!tain_now_g()) log_warnsys("get current time") ;
+
+    size_t livelen = strlen(live) ;
+    char tlive[livelen + INITCTL_LEN + 1] ;
+    memcpy(tlive,live,livelen) ;
+    memcpy(tlive + livelen,INITCTL,INITCTL_LEN) ;
+    tlive[livelen + INITCTL_LEN] = 0 ;
+
+    if (!hpr_send(tlive, "", 0)) {
+        errno = EPERM ;
+        log_dieusys(LOG_EXIT_SYS, "talk to shutdownd") ;
+    }
+
     if (dowtmp)
     {
         struct utmpx utx =

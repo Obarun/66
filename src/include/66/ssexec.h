@@ -124,6 +124,8 @@ extern ssexec_func_t ssexec_tree_admin ;
 extern ssexec_func_t ssexec_tree_status ;
 extern ssexec_func_t ssexec_tree_resolve ;
 
+/** shutdown */
+extern ssexec_func_t ssexec_shutdown_wrapper ;
 
 extern void info_help (char const *help,char const *usage) ;
 
@@ -231,6 +233,13 @@ extern char const *help_scandir_annihilate ;
 extern char const *usage_scandir_zombies ;
 extern char const *help_scandir_zombies ;
 
+extern char const *usage_poweroff ;
+extern char const *help_poweroff ;
+extern char const *usage_reboot ;
+extern char const *help_reboot ;
+extern char const *usage_halt ;
+extern char const *help_halt ;
+
 #define OPTS_SUBSTART "hP"
 #define OPTS_SUBSTART_LEN (sizeof OPTS_SUBSTART - 1)
 #define OPTS_PARSE "hfFcmCI"
@@ -259,7 +268,7 @@ extern char const *help_scandir_zombies ;
 #define OPTS_INSERVICE_LEN (sizeof OPTS_INSERVICE - 1)
 #define OPTS_BOOT "hms:e:d:b:l:"
 #define OPTS_BOOT_LEN (sizeof OPTS_BOOT - 1)
-#define OPTS_SCANCTL "d:s:e:B"
+#define OPTS_SCANCTL "d:s:e:bB"
 #define OPTS_SCANCTL_LEN (sizeof OPTS_SCANCTL - 1)
 #define OPTS_SCANDIR_WRAPPER "ho:"
 #define OPTS_SCANCTL_WRAPPER_LEN (sizeof OPTS_SCANDIR_WRAPPER - 1)
@@ -270,5 +279,8 @@ extern char const *help_scandir_zombies ;
 #define OPTS_SERVICE_WRAPPER_LEN (sizeof OPTS_SERVICE_WRAPPER - 1)
 #define OPTS_SERVICE_ADMIN ""
 #define OPTS_SERVICE_ADMIN_LEN (sizeof OPTS_SERVICE_ADMIN - 1)
+
+#define OPTS_SHUTDOWN_WRAPPER "hFfat:m:W"
+#define OPTS_SHUTDOWN_WRAPPER_LEN (sizeof OPTS_SHUTDOWN_WRAPPER - 1)
 
 #endif

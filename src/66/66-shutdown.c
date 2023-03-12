@@ -284,11 +284,13 @@ int main (int argc, char const *const *argv)
     }
     if (live && live[0] != '/') log_die(LOG_EXIT_USER,"live: ",live," must be an absolute path") ;
     else live = SS_LIVE ;
+
     size_t livelen = strlen(live) ;
     char tlive[livelen + INITCTL_LEN + 1] ;
     memcpy(tlive,live,livelen) ;
     memcpy(tlive + livelen,INITCTL,INITCTL_LEN) ;
     tlive[livelen + INITCTL_LEN] = 0 ;
+
     if (geteuid())
     {
         errno = EPERM ;

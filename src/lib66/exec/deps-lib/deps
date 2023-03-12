@@ -20,6 +20,7 @@ ssexec_service_signal.o
 ssexec_service_state.o
 ssexec_service_status.o
 ssexec_service_wrapper.o
+ssexec_shutdown_wrapper.o
 ssexec_start.o
 ssexec_stop.o
 ssexec_tree_admin.o

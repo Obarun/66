@@ -9,13 +9,9 @@
 66-oneshot          0755
 66-fdholder-filler  0755
 execl-envfile       0755
-halt                0755
 init                0755
 init.conf           0644
-poweroff            0755
 rc.init             0755
 rc.init.container   0755
 rc.shutdown         0755
 rc.shutdown.final   0755
-reboot              0755
-shutdown            0755
