@@ -69,7 +69,7 @@ int info_graph_display_service(char const *name)
 
     } else {
 
-         if (!service_is(&sta, STATE_FLAGS_TOINIT)) {
+         if (!service_is(&sta, STATE_FLAGS_ISSUPERVISED)) {
 
             ppid = "unitialized" ;
             goto dis ;
