@@ -961,7 +961,6 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
                     size_t idx = 0 ;
                     FOREACH_SASTR(&sa, idx) {
 
-
                         /** find dependencies of the service from the graph, do it recursively */
                         c = graph_matrix_get_edge_g_list(l, &graph, sa.s + idx, 0, 1) ;
 
