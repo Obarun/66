@@ -24,7 +24,7 @@
 #include <66/graph.h>
 #include <66/state.h>
 
-static void issupervised(char *store, char const *base, char const *str)
+static void issupervised(char *store, resolve_service_t *ares, unsigned int areslen, char const *str)
 {
     size_t pos = 0 ;
     ss_state_t ste = STATE_ZERO ;
@@ -39,10 +39,16 @@ static void issupervised(char *store, char const *base, char const *str)
 
         char *name = sa.s + pos ;
 
-        if (!state_check(base, name))
+        int aresid = service_resolve_array_search(ares, areslen, name) ;
+        if (aresid < 0) {
+            log_warn("service: ", name, " not available -- ignore it") ;
+            continue ;
+        }
+
+        if (!state_check(&ares[aresid]))
             continue ;
 
-        if (!state_read(&ste, base, name))
+        if (!state_read(&ste, &ares[aresid]))
             continue ;
 
         if (service_is(&ste, STATE_FLAGS_ISSUPERVISED))
@@ -79,8 +85,7 @@ void service_graph_build(graph_t *g, resolve_service_t *ares, unsigned int aresl
 
                 if (FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {
 
-                    issupervised(store, pres->sa.s + pres->path.home, pres->sa.s + pres->dependencies.depends) ;
-
+                    issupervised(store, ares, areslen, pres->sa.s + pres->dependencies.depends) ;
 
                 } else {
 
@@ -99,7 +104,7 @@ void service_graph_build(graph_t *g, resolve_service_t *ares, unsigned int aresl
 
                 if (FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {
 
-                    issupervised(store, pres->sa.s + pres->path.home, pres->sa.s + pres->dependencies.requiredby) ;
+                    issupervised(store, ares, areslen, pres->sa.s + pres->dependencies.requiredby) ;
 
                 } else {
 

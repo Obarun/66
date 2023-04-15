@@ -33,6 +33,7 @@
 #include <66/state.h>
 #include <66/graph.h>
 #include <66/sanitize.h>
+
 /**
  *
  *
@@ -83,7 +84,7 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 
             } else {
 
-                if (!state_read(&ste, ares[aresid].sa.s + ares[aresid].path.home, sa->s + n))
+                if (!state_read(&ste, &ares[aresid]))
                     log_dieusys(LOG_EXIT_SYS, "read state file of service: ", sa->s + n) ;
 
                 if (service_is(&ste, STATE_FLAGS_ISENABLED)) {
@@ -118,7 +119,7 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 
                 } else {
 
-                    if (!state_read(&ste, ares[aresid].sa.s + ares[aresid].path.home, name))
+                    if (!state_read(&ste, &ares[aresid]))
                         log_dieusys(LOG_EXIT_SYS, "read state file of service: ", name) ;
 
                     if (service_is(&ste, STATE_FLAGS_ISENABLED)) {
@@ -171,7 +172,7 @@ int ssexec_init(int argc, char const *const *argv, ssexec_t *info)
     if (!argc)
         log_usage(info->usage, "\n", info->help) ;
 
-    treename = argv[1] ;
+    treename = argv[0] ;
 
     if (!tree_isvalid(info->base.s, treename))
         log_diesys(LOG_EXIT_USER, "invalid tree name: ", treename) ;

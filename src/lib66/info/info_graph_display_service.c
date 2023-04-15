@@ -55,8 +55,8 @@ int info_graph_display_service(char const *name)
         goto freed ;
     }
 
-    if (!state_read(&sta, res.sa.s + res.path.home, name)) {
-        log_warnusys("read state of: ",name) ;
+    if (!state_read(&sta, &res)) {
+        log_warnusys("read state of: ", name) ;
         goto freed ;
     }
 

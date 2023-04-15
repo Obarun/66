@@ -46,6 +46,7 @@ static void scandir_scandir_to_livestate(resolve_service_t *res)
 
     auto_strings(dst, res->sa.s + res->live.livedir, SS_STATE + 1, "/", res->sa.s + res->ownerstr, "/", name) ;
 
+    log_trace("symlink: ", sym, " to: ", dst) ;
     if (!atomic_symlink(dst, sym, "scandir"))
        log_dieu(LOG_EXIT_SYS, "symlink: ", sym, " to: ", dst) ;
 }
@@ -66,6 +67,7 @@ static void scandir_service_to_scandir(resolve_service_t *res)
 
     auto_strings(dst, res->sa.s + res->live.livedir, SS_SCANDIR, "/", res->sa.s + res->ownerstr) ;
 
+    log_trace("symlink: ", sym, " to: ", dst) ;
     if (!atomic_symlink(dst, sym, "scandir"))
        log_dieu(LOG_EXIT_SYS, "symlink: ", sym, " to: ", dst) ;
 }
@@ -77,6 +79,7 @@ static void compute_supervision_dir(resolve_service_t *res)
     char *supervise = res->sa.s + res->live.supervisedir ;
 
     /* event dir */
+    log_trace("create directory: ", event) ;
     int r = dir_create_parent(event, 0700) ;
     if (!r)
         log_dieusys(LOG_EXIT_SYS, "create directory: ", event) ;
@@ -88,6 +91,7 @@ static void compute_supervision_dir(resolve_service_t *res)
         log_dieusys(LOG_EXIT_SYS, "chmod: ", event) ;
 
     /* supervise dir*/
+    log_trace("create directory: ", supervise) ;
     r = dir_create_parent(supervise, 0700) ;
     if (!r)
         log_dieusys(LOG_EXIT_SYS, "create directory: ", event) ;
@@ -124,10 +128,10 @@ void sanitize_scandir(resolve_service_t *res, uint32_t flag)
                 log_dieu(LOG_EXIT_SYS, "reload scandir: ", svcandir) ;
         }
 
-        if (!state_messenger(res->sa.s + res->path.home, name, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE))
+        if (!state_messenger(res, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE))
            log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
 
-        if (!state_messenger(res->sa.s + res->path.home, name, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE))
+        if (!state_messenger(res, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE))
             log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
 
     } else {
@@ -139,10 +143,10 @@ void sanitize_scandir(resolve_service_t *res, uint32_t flag)
 
             unlink_void(s) ;
 
-            if (!state_messenger(res->sa.s + res->path.home, name, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_FALSE))
+            if (!state_messenger(res, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_FALSE))
                 log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
 
-            if (!state_messenger(res->sa.s + res->path.home, name, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE))
+            if (!state_messenger(res, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE))
                 log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
 
             if (svc_scandir_send(svcandir, "an") <= 0)
@@ -154,10 +158,10 @@ void sanitize_scandir(resolve_service_t *res, uint32_t flag)
             if (svc_scandir_send(svcandir, "a") <= 0)
                 log_dieu(LOG_EXIT_SYS, "reload scandir: ", svcandir) ;
 
-            if (!state_messenger(res->sa.s + res->path.home, name, STATE_FLAGS_TORELOAD, STATE_FLAGS_FALSE))
+            if (!state_messenger(res, STATE_FLAGS_TORELOAD, STATE_FLAGS_FALSE))
                 log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
 
-            if (!state_messenger(res->sa.s + res->path.home, name, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE))
+            if (!state_messenger(res, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE))
                 log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
         }
     }

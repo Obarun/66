@@ -76,7 +76,7 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
             } else if (!FLAGS_ISSET(flag, STATE_FLAGS_TOPARSE))
                 continue ;
 
-            if (FLAGS_ISSET(flag, STATE_FLAGS_TOPARSE))
+            if (FLAGS_ISSET(flag, STATE_FLAGS_TOPARSE) && !r)
                 sanitize_source(name, info, flag) ;
 
             if (!resolve_read_g(wres, info->base.s, name))
@@ -84,7 +84,7 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
 
             if (FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {
 
-                if (!state_read(&ste, res.sa.s + res.path.home, name))
+                if (!state_read(&ste, &res))
                     log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug report") ;
 
                 if (service_is(&ste, STATE_FLAGS_ISSUPERVISED)) {
@@ -110,29 +110,12 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
 
             if (FLAGS_ISSET(flag, STATE_FLAGS_TOPROPAGATE)) {
 
-                stralloc module = STRALLOC_ZERO ;
-
-                if (res.type == TYPE_MODULE) {
-
-                    if (res.regex.ncontents)
-                        if (!sastr_clean_string(&module, res.sa.s + res.regex.contents))
-                            log_dieu(LOG_EXIT_SYS, "clean string") ;
-                }
-
                 if (res.dependencies.ndepends && FLAGS_ISSET(flag, STATE_FLAGS_WANTUP)) {
 
                     sa.len = 0 ;
 
                     if (!sastr_clean_string(&sa, res.sa.s + res.dependencies.depends))
                         log_dieu(LOG_EXIT_SYS, "clean string") ;
-
-                    if (module.len) {
-                        FOREACH_SASTR(&module, pos)
-                            sastr_add_string(&sa, module.s + pos) ;
-                    }
-
-                    stralloc_0(&sa) ;
-                    sa.len-- ;
 
                     service_graph_collect(g, sa.s, sa.len, ares, areslen, info, flag) ;
 
@@ -145,18 +128,9 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
                     if (!sastr_clean_string(&sa, res.sa.s + res.dependencies.requiredby))
                         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-                    if (module.len) {
-                        FOREACH_SASTR(&module, pos)
-                            sastr_add_string(&sa, module.s + pos) ;
-                    }
-
-                    stralloc_0(&sa) ;
-                    sa.len-- ;
-
                     service_graph_collect(g, sa.s, sa.len, ares, areslen, info, flag) ;
                 }
 
-                stralloc_free(&module) ;
             }
             resolve_free(wres) ;
         }

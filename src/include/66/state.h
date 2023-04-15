@@ -19,6 +19,8 @@
 
 #include <skalibs/uint32.h>
 
+#include <66/service.h>
+
 #define STATE_STATE_SIZE 44
 
 #define STATE_FLAGS_FALSE (1 << 1) // 2
@@ -63,14 +65,13 @@ struct ss_state_s
 #define STATE_ZERO { 2,2,2,2,2,2,2,2,2,2,2 }
 extern ss_state_t const ss_state_zero ;
 
-extern int state_check(char const *base, char const *name) ;
-extern void state_rmfile(char const *base, char const *name) ;
+extern void state_rmfile(resolve_service_t *res) ;
 extern void state_pack(char *base, ss_state_t *sta) ;
 extern void state_unpack(char *pack, ss_state_t *sta) ;
-extern int state_write(ss_state_t *sta, char const *base, char const *name) ;
-extern int state_read(ss_state_t *sta, char const *base, char const *name) ;
 extern void state_set_flag(ss_state_t *sta, int flags,int flags_val) ;
-extern int state_get_flags(char const *base, char const *name, int flags) ;
-extern int state_messenger(char const *base, char const *name, uint32_t flag, uint32_t value) ;
+extern int state_check(resolve_service_t *res) ;
+extern int state_write(ss_state_t *sta, resolve_service_t *res) ;
+extern int state_read(ss_state_t *sta, resolve_service_t *res) ;
+extern int state_messenger(resolve_service_t *res, uint32_t flag, uint32_t value) ;
 
 #endif

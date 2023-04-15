@@ -21,18 +21,18 @@
 
 #include <66/state.h>
 #include <66/constants.h>
-#include <66/resolve.h>
+#include <66/service.h>
 
-int state_read(ss_state_t *sta, char const *base, char const *name)
+int state_read(ss_state_t *sta, resolve_service_t *res)
 {
     log_flow() ;
 
-    size_t baselen = strlen(base) ;
-    size_t namelen = strlen(name) ;
-    char pack[STATE_STATE_SIZE] ;
-    char target[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + SS_SVC_LEN + 1 + namelen + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
+    size_t len = strlen(res->sa.s + res->path.servicedir) ;
 
-    auto_strings(target, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name, SS_SVC, "/", name, SS_STATE, "/", SS_STATUS) ;
+    char pack[STATE_STATE_SIZE] ;
+    char target[len + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
+
+    auto_strings(target, res->sa.s + res->path.servicedir, SS_STATE, "/", SS_STATUS) ;
 
     if (openreadnclose(target, pack, STATE_STATE_SIZE) < STATE_STATE_SIZE)
         return 0 ;

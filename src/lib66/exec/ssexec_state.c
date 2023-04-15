@@ -12,28 +12,20 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-
-#include <string.h>
 #include <wchar.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
-#include <oblibs/string.h>
-#include <oblibs/obgetopt.h>
-#include <oblibs/types.h>
 
 #include <skalibs/types.h>
-#include <skalibs/stralloc.h>
 #include <skalibs/lolstdio.h>
 #include <skalibs/buffer.h>
 
-#include <66/resolve.h>
-#include <66/ssexec.h>
 #include <66/info.h>
-#include <66/utils.h>
-#include <66/constants.h>
+#include <66/resolve.h>
+#include <66/service.h>
 #include <66/state.h>
 #include <66/config.h>
+#include <66/ssexec.h>
 
 #define MAXOPTS 11
 
@@ -70,13 +62,12 @@ static void info_display_int(char const *field,unsigned int id)
 
 int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
 {
-    int found = 0 ;
+    int r = -1 ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-    char base[SS_MAX_PATH + 1] ;
+
     ss_state_t sta = STATE_ZERO ;
     char const *svname = 0 ;
-    char const *ste = 0 ;
     char atree[SS_MAX_TREENAME + 1] ;
 
     char buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
@@ -94,22 +85,25 @@ int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
     argc-- ;
     argv++ ;
 
-    if (!argc) log_usage(info->usage, "\n", info->help) ;
+    if (!argc)
+        log_usage(info->usage, "\n", info->help) ;
+
     svname = *argv ;
 
-    if (!set_ownersysdir_stack(base, getuid()))
-        log_dieu(LOG_EXIT_SYS, "set owner directory") ;
-
-    found = service_is_g(atree, svname, STATE_FLAGS_ISPARSED) ;
-    if (found == -1)
+    r = service_is_g(atree, svname, STATE_FLAGS_ISPARSED) ;
+    if (r == -1)
         log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please a bug report") ;
-    else if (!found)
+    else if (!r)
         log_die(LOG_EXIT_USER, "unknown service: ", svname) ;
+
+    r = resolve_read_g(wres, info->base.s, svname) ;
+    if (r < 0)
+        log_dieu(LOG_EXIT_SYS, "read resolve file: ", svname) ;
 
     info_field_align(buf,fields,field_suffix,MAXOPTS) ;
 
-    if (!state_check(base, svname)) log_diesys(111,"unitialized service: ",svname) ;
-    if (!state_read(&sta, base, svname)) log_dieusys(111,"read state file of: ",ste,"/",svname) ;
+    if (!state_read(&sta, &res))
+        log_dieusys(111,"read state file of: ", svname) ;
 
     info_display_int(fields[0],sta.toinit) ;
     info_display_int(fields[1],sta.toreload) ;
@@ -121,7 +115,6 @@ int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
     info_display_int(fields[7],sta.isparsed) ;
     info_display_int(fields[8],sta.issupervised) ;
     info_display_int(fields[9],sta.isup) ;
-
 
     resolve_free(wres) ;
 

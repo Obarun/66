@@ -113,7 +113,7 @@ int service_is_g(char *atree, char const *name, uint32_t flag)
 
     auto_strings(atree, res.sa.s + res.treename) ;
 
-    if (!state_read(&ste, res.sa.s + res.path.home, name)) {
+    if (!state_read(&ste, &res)) {
         log_warnu("read state file of: ", name, " -- please make a bug report") ;
         goto freed ;
     }

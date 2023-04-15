@@ -23,28 +23,34 @@
 
 #include <66/state.h>
 #include <66/constants.h>
-#include <66/resolve.h>
+#include <66/service.h>
 
-int state_write(ss_state_t *sta, char const *base, char const *name)
+int state_write(ss_state_t *sta, resolve_service_t *res)
 {
     log_flow() ;
 
-    size_t baselen = strlen(base) ;
-    size_t namelen = strlen(name) ;
-    char target[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + SS_SVC_LEN + 1 + namelen + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
+    size_t len = strlen(res->sa.s + res->path.servicedir) ;
 
-    auto_strings(target, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name, SS_SVC, "/", name, SS_STATE) ;
+    char target[len + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
 
-    if (access(target, F_OK) < 0)
+    auto_strings(target, res->sa.s + res->path.servicedir, SS_STATE) ;
+
+    if (access(target, F_OK) < 0) {
+        log_trace("create directory: ", target) ;
         if (!dir_create_parent(target, 0755))
             log_warnusys_return(LOG_EXIT_ZERO, "create directory: ", target) ;
+    }
 
-    auto_strings(target + baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + SS_SVC_LEN + 1 + namelen + SS_STATE_LEN, "/", SS_STATUS) ;
+    auto_strings(target + len + SS_STATE_LEN, "/", SS_STATUS) ;
 
     char pack[STATE_STATE_SIZE] ;
 
     state_pack(pack, sta) ;
-    if (!openwritenclose_unsafe(target, pack, STATE_STATE_SIZE)) return 0 ;
+
+    log_trace("write status file at: ", target) ;
+
+    if (!openwritenclose_unsafe(target, pack, STATE_STATE_SIZE))
+        return 0 ;
 
     return 1 ;
 }

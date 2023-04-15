@@ -1,5 +1,4 @@
 state_check.o
-state_get_flags.o
 state_messenger.o
 state_pack.o
 state_read.o

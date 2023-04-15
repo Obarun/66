@@ -16,21 +16,21 @@
 
 #include <oblibs/log.h>
 #include <66/state.h>
+#include <66/service.h>
 
-int state_messenger(char const *base, char const *name, uint32_t flag, uint32_t value)
+int state_messenger(resolve_service_t *res, uint32_t flag, uint32_t value)
 {
     log_flow() ;
 
     ss_state_t sta = STATE_ZERO ;
 
-    if (!state_read(&sta, base, name))
-        log_warnusys_return(LOG_EXIT_ZERO, "read status file of: ", name) ;
+    if (!state_read(&sta, res))
+        log_warnusys_return(LOG_EXIT_ZERO, "read status file of: ", res->sa.s + res->name) ;
 
     state_set_flag(&sta, flag, value) ;
 
-    if (!state_write(&sta, base, name))
-        log_warnusys_return(LOG_EXIT_ZERO, "write status file of: ", name) ;
-
+    if (!state_write(&sta, res))
+        log_warnusys_return(LOG_EXIT_ZERO, "write status file of: ", res->sa.s + res->name) ;
 
     return 1 ;
 }
