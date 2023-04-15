@@ -13,6 +13,7 @@
  */
 
 #include <oblibs/log.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/genalloc.h>
 
@@ -49,16 +50,34 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve
 
         sanitize_it(&ares[aresid]) ;
 
-        if (ares[aresid].logger.name && ares[aresid].type == TYPE_CLASSIC) {
-            resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-            resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+        if (ares[aresid].logger.want && ares[aresid].type == TYPE_CLASSIC) {
 
-            if (!resolve_read_g(wres, ares[aresid].sa.s + ares[aresid].path.home, ares[aresid].sa.s + ares[aresid].logger.name))
-                log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", ares[aresid].sa.s + ares[aresid].logger.name) ;
+            char *name = ares[aresid].sa.s + ares[aresid].logger.name ;
+            int aresid = service_resolve_array_search(ares, areslen, name) ;
+            if (aresid < 0)
+                log_dieu(LOG_EXIT_SYS,"find ares id of: ", name, " -- please make a bug reports") ;
 
-            sanitize_it(&res) ;
+            sanitize_it(&ares[aresid]) ;
+        }
 
-            resolve_free(wres) ;
+        if ((ares[aresid].type == TYPE_BUNDLE || ares[aresid].type == TYPE_MODULE) && ares[aresid].dependencies.ncontents) {
+
+            stralloc sa = STRALLOC_ZERO ;
+            size_t bpos = 0 ;
+
+            if (!sastr_clean_string(&sa, ares[aresid].sa.s + ares[aresid].dependencies.contents))
+                log_dieusys(LOG_EXIT_SYS, "clean string") ;
+
+            FOREACH_SASTR(&sa, bpos) {
+
+                int aresid = service_resolve_array_search(ares, areslen, sa.s + bpos) ;
+                if (aresid < 0)
+                    log_dieu(LOG_EXIT_SYS,"find ares id of: ", sa.s + bpos, " -- please make a bug reports") ;
+
+                sanitize_it(&ares[aresid]) ;
+            }
+
+            stralloc_free(&sa) ;
         }
 
         log_info("Unsupervised successfully: ", name) ;

@@ -55,7 +55,7 @@ int svc_send_wait(char const *const *list, unsigned int nservice, char **sig, un
         log_warnusys_return(LOG_EXIT_SYS, "wait for svctl") ;
 
     if (wstat)
-        log_warnu_return(WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat), "stop services selection") ;
+        log_warnu_return(WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat), "handle services selection") ;
 
     return 0 ;
 }
