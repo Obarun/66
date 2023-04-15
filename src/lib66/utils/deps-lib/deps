@@ -1,7 +1,4 @@
 get_userhome.o
-module_in_cmdline.o
-module_path.o
-module_search_service.o
 name_isvalid.o
 read_svfile.o
 set_livedir.o
@@ -9,6 +6,7 @@ set_livescan.o
 set_livestate.o
 set_ownerhome.o
 set_ownersysdir.o
+visit.o
 yourgid.o
 youruid.o
 -ls6

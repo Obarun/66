@@ -1,6 +1,7 @@
 graph_build_service.o
 graph_build_tree.o
 graph_compute_dependencies.o
+graph_compute_visit.o
 graph_remove_deps.o
 -loblibs
 -lskarnet

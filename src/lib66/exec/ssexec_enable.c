@@ -67,6 +67,9 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
     unsigned int areslen = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE] ;
 
+    visit_t visit[SS_MAX_SERVICE] ;
+    visit_init(visit, SS_MAX_SERVICE) ;
+
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
     {
@@ -125,7 +128,11 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
 
     for (n = 0 ; n < argc ; n++) {
 
-        service_enable_disable(&graph, info->base.s, argv[n], 1) ;
+        int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
+        if (aresid < 0)
+            log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parsed it?") ;
+
+        service_enable_disable(&graph, &ares[aresid], ares, areslen, 1, visit) ;
 
         if (!sastr_add_string(&sa, argv[n]))
             log_dieu(LOG_EXIT_SYS, "add string") ;

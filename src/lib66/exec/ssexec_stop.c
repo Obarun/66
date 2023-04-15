@@ -17,6 +17,7 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/graph.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/djbunix.h>
@@ -28,6 +29,7 @@
 #include <66/state.h>
 #include <66/svc.h>
 #include <66/service.h>
+#include <66/enum.h>
 
 int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
 {
@@ -106,25 +108,7 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
         if (aresid < 0)
             log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you started it?") ;
 
-        unsigned int l[graph.mlen], c = 0, pos = 0, idx = 0 ;
-
-        idx = graph_hash_vertex_get_id(&graph, argv[n]) ;
-
-        if (!visit[idx]) {
-            list[nservice++] = idx ;
-            visit[idx] = 1 ;
-        }
-
-        /** find requiredby of the service from the graph, do it recursively */
-        c = graph_matrix_get_edge_g_list(l, &graph, argv[n], 1, 1) ;
-
-        /** append to the list to deal with */
-        for (; pos < c ; pos++) {
-            if (!visit[l[pos]]) {
-                list[nservice++] = l[pos] ;
-                visit[l[pos]] = 1 ;
-            }
-        }
+        graph_compute_visit(argv[n], visit, list, &graph, &nservice, 1) ;
     }
 
     char *sig[siglen] ;

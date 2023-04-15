@@ -52,14 +52,6 @@
 #define TREE_MAXOPTS 9
 #define tree_checkopts(n) if (n >= TREE_MAXOPTS) log_die(LOG_EXIT_USER, "too many -o options")
 
-typedef enum visit_e visit ;
-enum visit_e
-{
-    SS_WHITE = 0,
-    SS_GRAY,
-    SS_BLACK
-} ;
-
 typedef struct tree_opts_map_s tree_opts_map_t ;
 struct tree_opts_map_s
 {
@@ -133,16 +125,6 @@ tree_what_t what_init(void)
     memset(what.duids, 0, 256 * sizeof(uid_t)) ;
 
     return what ;
-}
-
-void visit_init(visit *v, size_t len)
-{
-    log_flow() ;
-
-    size_t pos = 0 ;
-    for (; pos < len; pos++)
-        v[pos] = SS_WHITE ;
-
 }
 
 void tree_enable_disable(graph_t *g, char const *base, char const *treename, uint8_t action) ;
@@ -695,7 +677,7 @@ void tree_enable_disable_deps(graph_t *g,char const *base, char const *treename,
         log_dieu(LOG_EXIT_SYS, "get ", action ? "dependencies" : "required by" ," of: ", treename) ;
 
     size_t len = sastr_nelement(&sa) ;
-    visit v[len] ;
+    visit_t v[len] ;
 
     visit_init(v, len) ;
 
@@ -703,13 +685,13 @@ void tree_enable_disable_deps(graph_t *g,char const *base, char const *treename,
 
         FOREACH_SASTR(&sa, pos) {
 
-            if (v[element] == SS_WHITE) {
+            if (v[element] == VISIT_WHITE) {
 
                 char *name = sa.s + pos ;
 
                 tree_enable_disable(g, base, name, action) ;
 
-                v[element] = SS_GRAY ;
+                v[element] = VISIT_GRAY ;
             }
             element++ ;
         }
@@ -773,7 +755,7 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
         log_dieu(LOG_EXIT_SYS,"get sorted ", requiredby ? "required by" : "dependency", " list of tree: ", treename) ;
 
     size_t vlen = sastr_nelement(&sa) ;
-    visit v[vlen] ;
+    visit_t v[vlen] ;
 
     visit_init(v, vlen) ;
 
@@ -787,7 +769,7 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
 
         for(; pos < len ; pos += strlen(t + pos) + 1, element++) {
 
-            if (v[element] == SS_WHITE) {
+            if (v[element] == VISIT_WHITE) {
 
                 char *name = t + pos ;
 
@@ -800,7 +782,7 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
 
                     if (deps) {
                         if (!strcmp(name, deps)) {
-                            v[element] = SS_GRAY ;
+                            v[element] = VISIT_GRAY ;
                             continue ;
                         }
                     }
@@ -811,7 +793,7 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
                     nb++ ;
                 }
 
-                v[element] = SS_GRAY ;
+                v[element] = VISIT_GRAY ;
             }
         }
     }
@@ -868,7 +850,7 @@ void tree_depends_requiredby_deps(graph_t *g, char const *base, char const *tree
         log_dieu(LOG_EXIT_SYS,"get sorted ", requiredby ? "required by" : "dependency", " list of tree: ", treename) ;
 
     size_t vlen = sastr_nelement(&sa) ;
-    visit v[vlen] ;
+    visit_t v[vlen] ;
 
     visit_init(v, vlen) ;
 
@@ -881,13 +863,13 @@ void tree_depends_requiredby_deps(graph_t *g, char const *base, char const *tree
 
     for(; pos < len ; pos += strlen(t + pos) + 1, element++) {
 
-        if (v[element] == SS_WHITE) {
+        if (v[element] == VISIT_WHITE) {
 
             char *name = t + pos ;
 
             tree_depends_requiredby(g, base, name, !requiredby, none, deps) ;
 
-            v[element] = SS_GRAY ;
+            v[element] = VISIT_GRAY ;
         }
     }
 

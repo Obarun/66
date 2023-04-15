@@ -119,25 +119,9 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         if (aresid < 0)
             log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parsed it?") ;
 
-        unsigned int l[graph.mlen], c = 0, pos = 0, idx = 0 ;
-
-        idx = graph_hash_vertex_get_id(&graph, argv[n]) ;
-
-        if (!visit[idx]) {
-            list[nservice++] = idx ;
-            visit[idx] = 1 ;
-        }
-        /** find dependencies of the service from the graph, do it recursively */
-        c = graph_matrix_get_edge_g_list(l, &graph, argv[n], 1, 1) ;
-
-        /** append to the list to deal with */
-        for (; pos < c ; pos++) {
-            if (!visit[l[pos]]) {
-                list[nservice++] = l[pos] ;
-                visit[l[pos]] = 1 ;
-            }
-        }
+        graph_compute_visit(argv[n], visit, list, &graph, &nservice, 1) ;
     }
+
     /** keep list of already running service */
     char const *exclude[4] = { SS_FDHOLDER, SS_ONESHOTD, SS_SVSCAN_LOG, 0 } ;
     if (!sastr_dir_get(&sa, info->scandir.s, exclude, S_IFDIR))
@@ -147,6 +131,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         /** stop service and unsupervise it */
         unsigned int m = 0 ;
         int nargc = 2 + argc + siglen ;
+        char const *prog = PROG ;
         char const *newargv[nargc] ;
 
         newargv[m++] = "stop" ;
@@ -158,7 +143,9 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 
         newargv[m++] = 0 ;
 
+        PROG = "stop" ;
         e = ssexec_stop(nargc, newargv, info) ;
+        PROG = prog ;
         if (e)
             goto freed ;
     }
@@ -170,23 +157,22 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     {
         /** start service */
         unsigned int m = 0 ;
-        int nargc = 2 + nservice + siglen ;
+        int nargc = 2 + argc + siglen ;
+        char const *prog = PROG ;
         char const *newargv[nargc] ;
 
         newargv[m++] = "start" ;
         if (siglen)
             newargv[m++] = "-P" ;
 
-        for (n = 0 ; n < nservice ; n++) {
-            char *name = graph.data.s + genalloc_s(graph_hash_t,&graph.hash)[list[n]].vertex ;
-            if (sastr_cmp(&sa, name) >= 0)
-                newargv[m++] = name ;
-        }
+        for (n = 0 ; n < argc ; n++)
+            newargv[m++] = argv[n] ;
 
         newargv[m++] = 0 ;
 
-        e = ssexec_start(m - 1, newargv, info) ;
-
+        PROG= "start" ;
+        e = ssexec_start(--m, newargv, info) ;
+        PROG = prog ;
     }
 
     freed:

@@ -30,6 +30,7 @@
 #include <66/graph.h>
 #include <66/resolve.h>
 #include <66/utils.h>
+#include <66/state.h>
 
 int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
 {
@@ -44,6 +45,9 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
 
     unsigned int areslen = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE] ;
+
+    visit_t visit[SS_MAX_SERVICE] ;
+    visit_init(visit, SS_MAX_SERVICE) ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
@@ -74,7 +78,7 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
 
                 case 'R' :
 
-                    log_1_warn("options -F is deprecated -- use instead 66 service remove <service>") ;
+                    log_1_warn("options -F is deprecated -- use instead 66 remove <service>") ;
                     break ;
 
                 default :
@@ -94,8 +98,14 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
         log_die(LOG_EXIT_USER, "services selection is not available -- try to parse it first") ;
 
     for (; n < argc ; n++) {
+
         name_isvalid(argv[n]) ;
-        service_enable_disable(&graph, info->base.s, argv[n], 0) ;
+
+        int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
+        if (aresid < 0)
+            log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parsed it?") ;
+
+        service_enable_disable(&graph, &ares[aresid], ares, areslen, 0, visit) ;
 
         if (!sastr_add_string(&sa, argv[n]))
             log_dieu(LOG_EXIT_SYS, "add string") ;

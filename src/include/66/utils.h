@@ -24,12 +24,21 @@
 #include <skalibs/genalloc.h>
 
 #include <66/ssexec.h>
-#include <66/service.h>
 
 #define MYUID getuid()
 #define YOURUID(passto,owner) youruid(passto,owner)
 #define MYGID getgid()
 #define YOURGID(passto,owner) yourgid(passto,owner)
+
+typedef enum visit_e visit_t ;
+enum visit_e
+{
+    VISIT_WHITE = 0,
+    VISIT_GRAY,
+    VISIT_BLACK
+} ;
+
+extern void visit_init(visit_t *visit, size_t len) ;
 
 /** ss_utils.c file */
 extern char const *get_userhome(uid_t myuid) ;
@@ -42,10 +51,7 @@ extern int set_livestate(stralloc *live,uid_t owner) ;
 extern int set_ownerhome(stralloc *base,uid_t owner) ;
 extern int set_ownersysdir(stralloc *base,uid_t owner) ;
 extern int read_svfile(stralloc *sasv,char const *name,char const *src) ;
-extern int module_in_cmdline(genalloc *gares, resolve_service_t *res, char const *dir) ;
-extern int module_search_service(char const *src, genalloc *gares, char const *name,uint8_t *found, char module_name[256]) ;
 
-extern int module_path(stralloc *sdir, stralloc *mdir, char const *sv,char const *frontend_src, uid_t owner) ;
 extern int sa_pointo(stralloc *sa, ssexec_t *info, int type, unsigned int where) ;
 extern int create_live_state(ssexec_t *info, char const *treename) ;
 extern int create_live_tree(ssexec_t *info) ;

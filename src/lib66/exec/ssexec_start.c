@@ -102,52 +102,8 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
         if (aresid < 0)
             log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parsed it?") ;
 
-        unsigned int l[graph.mlen], c = 0, pos = 0, idx = 0 ;
+        graph_compute_visit(argv[n], visit, list, &graph, &nservice, 0) ;
 
-        idx = graph_hash_vertex_get_id(&graph, argv[n]) ;
-
-        if (!visit[idx]) {
-            list[nservice++] = idx ;
-            visit[idx] = 1 ;
-        }
-
-        /** find dependencies of the service from the graph, do it recursively */
-        c = graph_matrix_get_edge_g_list(l, &graph, argv[n], 0, 1) ;
-
-        /** append to the list to deal with */
-        for (; pos < c ; pos++) {
-            if (!visit[l[pos]]) {
-                list[nservice++] = l[pos] ;
-                visit[l[pos]] = 1 ;
-            }
-        }
-        if (ares[aresid].type == TYPE_MODULE) {
-
-            if (ares[aresid].regex.ncontents) {
-
-                stralloc sa = STRALLOC_ZERO ;
-                if (!sastr_clean_string(&sa, ares[aresid].sa.s + ares[aresid].regex.contents))
-                    log_dieu(LOG_EXIT_SYS, "clean string") ;
-
-                {
-                    size_t idx = 0 ;
-                    FOREACH_SASTR(&sa, idx) {
-
-
-                        /** find dependencies of the service from the graph, do it recursively */
-                        c = graph_matrix_get_edge_g_list(l, &graph, sa.s + idx, 0, 1) ;
-
-                        /** append to the list to deal with */
-                        for (pos = 0 ; pos < c ; pos++) {
-                            if (!visit[l[pos]]) {
-                                list[nservice++] = l[pos] ;
-                                visit[l[pos]] = 1 ;
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 
     /** initiate services at the corresponding scandir */
