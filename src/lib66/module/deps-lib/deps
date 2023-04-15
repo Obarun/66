@@ -1,4 +1,7 @@
 get_list.o
+module_in_cmdline.o
+module_path.o
+module_search_service.o
 parse_module.o
 parse_module_check_dir.o
 regex_configure.o
