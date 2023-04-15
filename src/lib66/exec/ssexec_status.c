@@ -30,7 +30,6 @@
 #include <oblibs/environ.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/genalloc.h>
 #include <skalibs/lolstdio.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/djbunix.h>
@@ -87,6 +86,7 @@ static void info_display_live(char const *field, resolve_service_t *res) ;
 static void info_display_deps(char const *field, resolve_service_t *res) ;
 static void info_display_requiredby(char const *field, resolve_service_t *res) ;
 static void info_display_optsdeps(char const *field, resolve_service_t *res) ;
+static void info_display_contents(char const *field, resolve_service_t *res) ;
 static void info_display_start(char const *field, resolve_service_t *res) ;
 static void info_display_stop(char const *field, resolve_service_t *res) ;
 static void info_display_envat(char const *field, resolve_service_t *res) ;
@@ -112,17 +112,18 @@ static info_opts_map_t const opts_sv_table[] =
     { .str = "depends", .svfunc = &info_display_deps, .id = 8 },
     { .str = "requiredby", .svfunc = &info_display_requiredby, .id = 9 },
     { .str = "optsdepends", .svfunc = &info_display_optsdeps, .id = 10 },
-    { .str = "start", .svfunc = &info_display_start, .id = 11 },
-    { .str = "stop", .svfunc = &info_display_stop, .id = 12 },
-    { .str = "envat", .svfunc = &info_display_envat, .id = 13 },
-    { .str = "envfile", .svfunc = &info_display_envfile, .id = 14 },
-    { .str = "logname", .svfunc = &info_display_logname, .id = 15 },
-    { .str = "logdst", .svfunc = &info_display_logdst, .id = 16 },
-    { .str = "logfile", .svfunc = &info_display_logfile, .id = 17 },
+    { .str = "contents", .svfunc = &info_display_contents, .id = 11 },
+    { .str = "start", .svfunc = &info_display_start, .id = 12 },
+    { .str = "stop", .svfunc = &info_display_stop, .id = 13 },
+    { .str = "envat", .svfunc = &info_display_envat, .id = 14 },
+    { .str = "envfile", .svfunc = &info_display_envfile, .id = 15 },
+    { .str = "logname", .svfunc = &info_display_logname, .id = 16 },
+    { .str = "logdst", .svfunc = &info_display_logdst, .id = 17 },
+    { .str = "logfile", .svfunc = &info_display_logfile, .id = 18 },
     { .str = 0, .svfunc = 0, .id = -1 }
 } ;
 
-#define MAXOPTS 19
+#define MAXOPTS 20
 #define checkopts(n) if (n >= MAXOPTS) log_die(LOG_EXIT_USER, "too many options")
 #define DELIM ','
 
@@ -215,12 +216,10 @@ static void info_get_status(resolve_service_t *res)
 
     } else {
 
-        char *ste = res->sa.s + res->path.home ;
-        char *name = res->sa.s + res->name ;
         char *status = 0 ;
 
-        if (!state_read(&sta, ste, name))
-            log_dieusys(LOG_EXIT_SYS,"read state of: ",name) ;
+        if (!state_read(&sta, res))
+            log_dieusys(LOG_EXIT_SYS,"read state of: ", res->sa.s + res->name) ;
 
         if (!service_is(&sta, STATE_FLAGS_ISSUPERVISED)) {
 
@@ -249,7 +248,7 @@ static void info_display_status(char const *field,resolve_service_t *res)
 
     if (NOFIELD) info_display_field_name(field) ;
 
-    if (!state_read(&ste, res->sa.s + res->path.home, res->sa.s + res->name))
+    if (!state_read(&ste, res))
         log_dieusys(LOG_EXIT_SYS, "read state file of: ", res->sa.s + res->name) ;
 
     disen = service_is(&ste, STATE_FLAGS_ISENABLED) ;
@@ -340,7 +339,7 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
 
         if (REVERSE)
             if (!sastr_reverse(&deps))
-                log_dieu(LOG_EXIT_SYS,"reverse the requiredby list") ;
+                log_dieu(LOG_EXIT_SYS,"reverse the selection list") ;
 
         info_display_list(field,&deps) ;
 
@@ -416,7 +415,7 @@ static void info_display_deps(char const *field, resolve_service_t *res)
 
         if (REVERSE)
             if (!sastr_reverse(&deps))
-                log_dieu(LOG_EXIT_SYS,"reverse the dependencies list") ;
+                log_dieu(LOG_EXIT_SYS,"reverse the selection list") ;
 
         info_display_list(field,&deps) ;
 
@@ -500,13 +499,43 @@ static void info_display_optsdeps(char const *field, resolve_service_t *res)
     if (!res->dependencies.noptsdeps) goto empty ;
 
     if (!sastr_clean_string(&salist,res->sa.s + res->dependencies.optsdeps))
-        log_dieu(LOG_EXIT_SYS,"build dependencies list") ;
+        log_dieu(LOG_EXIT_SYS,"build optionnal dependencies list") ;
 
     info_display_with_source_tree(&salist,res) ;
 
     if (REVERSE)
         if (!sastr_reverse(&salist))
-                log_dieu(LOG_EXIT_SYS,"reverse dependencies list") ;
+                log_dieu(LOG_EXIT_SYS,"reverse the selection list") ;
+
+    info_display_list(field,&salist) ;
+
+    goto freed ;
+
+    empty:
+        if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
+            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+
+    freed:
+        stralloc_free(&salist) ;
+}
+
+static void info_display_contents(char const *field, resolve_service_t *res)
+{
+    stralloc salist = STRALLOC_ZERO ;
+
+    if (NOFIELD) info_display_field_name(field) ;
+    else field = 0 ;
+
+    if (!res->dependencies.ncontents) goto empty ;
+
+    if (!sastr_clean_string(&salist,res->sa.s + res->dependencies.contents))
+        log_dieu(LOG_EXIT_SYS,"build contents list") ;
+
+    info_display_with_source_tree(&salist,res) ;
+
+    if (REVERSE)
+        if (!sastr_reverse(&salist))
+                log_dieu(LOG_EXIT_SYS,"reverse the selection list") ;
 
     info_display_list(field,&salist) ;
 
@@ -852,6 +881,7 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
         "Dependencies",
         "Required by",
         "Optional dependencies" ,
+        "Contents",
         "Start script",
         "Stop script",
         "Environment source",

@@ -46,14 +46,17 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres)
     !resolve_add_cdb(c, "home", str, sres->path.home, 1) ||
     !resolve_add_cdb(c, "frontend", str, sres->path.frontend, 1) ||
     !resolve_add_cdb(c, "status", str, sres->path.status, 1) ||
+    !resolve_add_cdb(c, "servicedir", str, sres->path.servicedir, 1) ||
 
     // dependencies
     !resolve_add_cdb(c, "depends", str, sres->dependencies.depends, 1) ||
     !resolve_add_cdb(c, "requiredby", str, sres->dependencies.requiredby, 1) ||
     !resolve_add_cdb(c, "optsdeps", str, sres->dependencies.optsdeps, 1) ||
+    !resolve_add_cdb(c, "contents", str, sres->dependencies.contents, 1) ||
     !resolve_add_cdb_uint(c, "ndepends", sres->dependencies.ndepends) ||
     !resolve_add_cdb_uint(c, "nrequiredby", sres->dependencies.nrequiredby) ||
     !resolve_add_cdb_uint(c, "noptsdeps", sres->dependencies.noptsdeps) ||
+    !resolve_add_cdb_uint(c, "ncontents", sres->dependencies.ncontents) ||
 
     // execute
     !resolve_add_cdb(c, "run", str, sres->execute.run.run, 1) ||
@@ -108,11 +111,9 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres)
     !resolve_add_cdb(c, "directories", str, sres->regex.directories, 1) ||
     !resolve_add_cdb(c, "files", str, sres->regex.files, 1) ||
     !resolve_add_cdb(c, "infiles", str, sres->regex.infiles, 1) ||
-    !resolve_add_cdb(c, "contents", str, sres->regex.contents, 1) ||
     !resolve_add_cdb_uint(c, "ndirectories", sres->regex.ndirectories) ||
     !resolve_add_cdb_uint(c, "nfiles", sres->regex.nfiles) ||
-    !resolve_add_cdb_uint(c, "ninfiles", sres->regex.ninfiles) ||
-    !resolve_add_cdb_uint(c, "ncontents", sres->regex.ncontents)) return 0 ;
+    !resolve_add_cdb_uint(c, "ninfiles", sres->regex.ninfiles)) return 0 ;
 
     return 1 ;
 }

@@ -41,14 +41,17 @@ resolve_field_table_t resolve_service_field_table[] = {
     [E_RESOLVE_SERVICE_HOME] = { .field = "home" },
     [E_RESOLVE_SERVICE_FRONTEND] = { .field = "frontend" },
     [E_RESOLVE_SERVICE_STATUS] = { .field = "status" },
+    [E_RESOLVE_SERVICE_SERVICEDIR] = { .field = "servicedir" },
 
     // dependencies
     [E_RESOLVE_SERVICE_DEPENDS] = { .field = "depends" },
     [E_RESOLVE_SERVICE_REQUIREDBY] = { .field = "requiredby" },
     [E_RESOLVE_SERVICE_OPTSDEPS] = { .field = "optsdeps" },
+    [E_RESOLVE_SERVICE_CONTENTS] = { .field = "contents" },
     [E_RESOLVE_SERVICE_NDEPENDS] = { .field = "ndepends" },
     [E_RESOLVE_SERVICE_NREQUIREDBY] = { .field = "nrequiredby" },
     [E_RESOLVE_SERVICE_NOPTSDEPS] = { .field = "noptsdeps" },
+    [E_RESOLVE_SERVICE_NCONTENTS] = { .field = "ncontents" },
 
     // execute
     [E_RESOLVE_SERVICE_RUN] = { .field = "run" },
@@ -103,11 +106,9 @@ resolve_field_table_t resolve_service_field_table[] = {
     [E_RESOLVE_SERVICE_REGEX_DIRECTORIES] = { .field = "directories" },
     [E_RESOLVE_SERVICE_REGEX_FILES] = { .field = "files" },
     [E_RESOLVE_SERVICE_REGEX_INFILES] = { .field = "infiles" },
-    [E_RESOLVE_SERVICE_REGEX_CONTENTS] = { .field = "contents" },
     [E_RESOLVE_SERVICE_REGEX_NDIRECTORIES] = { .field = "ndirectories" },
     [E_RESOLVE_SERVICE_REGEX_NFILES] = { .field = "nfiles" },
     [E_RESOLVE_SERVICE_REGEX_NINFILES] = { .field = "ninfiles" },
-    [E_RESOLVE_SERVICE_REGEX_NCONTENTS] = { .field = "ncontents" },
     [E_RESOLVE_SERVICE_ENDOFKEY] = { .field = 0 }
 } ;
 uint32_t resolve_add_uint(char const *data)
@@ -203,6 +204,10 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
             res->path.status = resolve_add_string(wres, data) ;
             break ;
 
+        case E_RESOLVE_SERVICE_SERVICEDIR:
+            res->path.servicedir = resolve_add_string(wres, data) ;
+            break ;
+
         // dependencies
 
         case E_RESOLVE_SERVICE_DEPENDS:
@@ -217,6 +222,10 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
             res->dependencies.optsdeps = resolve_add_string(wres, data) ;
             break ;
 
+        case E_RESOLVE_SERVICE_CONTENTS:
+            res->dependencies.contents = resolve_add_string(wres, data) ;
+            break ;
+
         case E_RESOLVE_SERVICE_NDEPENDS:
             res->dependencies.ndepends = resolve_add_uint(data) ;
             break ;
@@ -229,6 +238,9 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
             res->dependencies.noptsdeps = resolve_add_uint(data) ;
             break ;
 
+        case E_RESOLVE_SERVICE_NCONTENTS:
+            res->dependencies.ncontents = resolve_add_uint(data) ;
+            break ;
 
         // execute
 
@@ -416,10 +428,6 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
             res->regex.infiles = resolve_add_string(wres, data) ;
             break ;
 
-        case E_RESOLVE_SERVICE_REGEX_CONTENTS:
-            res->regex.contents = resolve_add_string(wres, data) ;
-            break ;
-
         case E_RESOLVE_SERVICE_REGEX_NDIRECTORIES:
             res->regex.ndirectories = resolve_add_uint(data) ;
             break ;
@@ -430,10 +438,6 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
 
         case E_RESOLVE_SERVICE_REGEX_NINFILES:
             res->regex.ninfiles = resolve_add_uint(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_REGEX_NCONTENTS:
-            res->regex.ncontents = resolve_add_uint(data) ;
             break ;
 
         default:

@@ -54,14 +54,17 @@ int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res)
     dst->path.home = res->path.home ;
     dst->path.frontend = res->path.frontend ;
     dst->path.status = res->path.status ;
+    dst->path.servicedir = res->path.servicedir ;
 
     // dependencies
     dst->dependencies.depends = res->dependencies.depends ;
     dst->dependencies.requiredby = res->dependencies.requiredby ;
     dst->dependencies.optsdeps = res->dependencies.optsdeps ;
+    dst->dependencies.contents = res->dependencies.contents ;
     dst->dependencies.ndepends = res->dependencies.ndepends ;
     dst->dependencies.nrequiredby = res->dependencies.nrequiredby ;
     dst->dependencies.noptsdeps = res->dependencies.noptsdeps ;
+    dst->dependencies.ncontents = res->dependencies.ncontents ;
 
     // execute
     dst->execute.run.run = res->execute.run.run ;
@@ -116,12 +119,9 @@ int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res)
     dst->regex.directories = res->regex.directories ;
     dst->regex.files = res->regex.files ;
     dst->regex.infiles = res->regex.infiles ;
-    dst->regex.contents = res->regex.contents ;
     dst->regex.ndirectories = res->regex.ndirectories ;
     dst->regex.nfiles = res->regex.nfiles ;
     dst->regex.ninfiles = res->regex.ninfiles ;
-    dst->regex.ncontents = res->regex.ncontents ;
-
 
     return 1 ;
 }

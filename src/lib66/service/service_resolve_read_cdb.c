@@ -70,6 +70,8 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
     res->path.frontend = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     resolve_find_cdb(&tmp,c,"status") ;
     res->path.status = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
+    resolve_find_cdb(&tmp,c,"servicedir") ;
+    res->path.servicedir = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
 
     /* dependencies */
     resolve_find_cdb(&tmp,c,"depends") ;
@@ -78,12 +80,16 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
     res->dependencies.requiredby = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     resolve_find_cdb(&tmp,c,"optsdeps") ;
     res->dependencies.optsdeps = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
+    resolve_find_cdb(&tmp,c,"contents") ;
+    res->dependencies.contents = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     x = resolve_find_cdb(&tmp,c,"ndepends") ;
     res->dependencies.ndepends = x ;
     x = resolve_find_cdb(&tmp,c,"nrequiredby") ;
     res->dependencies.nrequiredby = x ;
     x = resolve_find_cdb(&tmp,c,"noptsdeps") ;
     res->dependencies.noptsdeps = x ;
+    x = resolve_find_cdb(&tmp,c,"ncontents") ;
+    res->dependencies.ncontents = x ;
 
     /* execute */
     resolve_find_cdb(&tmp,c,"run") ;
@@ -182,17 +188,12 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
     res->regex.files = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     resolve_find_cdb(&tmp,c,"infiles") ;
     res->regex.infiles = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-    resolve_find_cdb(&tmp,c,"contents") ;
-    res->regex.contents = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     x = resolve_find_cdb(&tmp,c,"ndirectories") ;
     res->regex.ndirectories = x ;
     x = resolve_find_cdb(&tmp,c,"nfiles") ;
     res->regex.nfiles = x ;
     x = resolve_find_cdb(&tmp,c,"ninfiles") ;
     res->regex.ninfiles = x ;
-    x = resolve_find_cdb(&tmp,c,"ncontents") ;
-    res->regex.ncontents = x ;
-
 
     free(wres) ;
     stralloc_free(&tmp) ;
