@@ -116,7 +116,7 @@ static void pidservice_init_array(unsigned int *list, unsigned int listlen, pids
 
 }
 
-int svc_compute_ns(resolve_service_t *res, uint8_t what, uint8_t timeout, ssexec_t *info, char const *updown, uint8_t opt_updown, uint8_t reloadmsg,char const *data, uint8_t propagate)
+int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char const *updown, uint8_t opt_updown, uint8_t reloadmsg,char const *data, uint8_t propagate)
 {
     log_flow() ;
 
@@ -178,7 +178,7 @@ int svc_compute_ns(resolve_service_t *res, uint8_t what, uint8_t timeout, ssexec
 
     pidservice_init_array(list, napid, apids, &graph, ares, areslen, info, requiredby, gflag) ;
 
-    r = svc_launch(apids, napid, what, &graph, ares, info->timeout ? info->timeout : 0, info, updown, opt_updown, reloadmsg, data, propagate) ;
+    r = svc_launch(apids, napid, what, &graph, ares, info, updown, opt_updown, reloadmsg, data, propagate) ;
 
     graph_free_all(&graph) ;
 

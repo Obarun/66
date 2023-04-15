@@ -251,7 +251,7 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
 
     pidservice_init_array(list, napid, apids, &graph, ares, areslen, info, requiredby, gflag) ;
 
-    r = svc_launch(apids, napid, what, &graph, ares, info->timeout ? info->timeout : 0, info, updown, opt_updown, reloadmsg, data, propagate) ;
+    r = svc_launch(apids, napid, what, &graph, ares, info, updown, opt_updown, reloadmsg, data, propagate) ;
 
     graph_free_all(&graph) ;
 

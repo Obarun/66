@@ -28,15 +28,27 @@ int svc_send_wait(char const *const *list, unsigned int nservice, char **sig, un
     pid_t pid ;
     int wstat ;
 
-    int nargc = 5 + nservice + siglen + info->opt_color ;
+    int nargc = 5 + nservice + siglen + info->opt_color + (info->opt_timeout ? 2 : 0) ;
     char const *newargv[nargc] ;
     unsigned int m = 0 ;
     char verbo[UINT_FMT] ;
+    char fmt[UINT32_FMT] ;
+
     verbo[uint_fmt(verbo, VERBOSITY)] = 0 ;
 
+    if (info->opt_timeout)
+        fmt[uint32_fmt(fmt,info->timeout)] = 0 ;
+
     newargv[m++] = "66" ;
+
     if (info->opt_color)
         newargv[m++] = "-z" ;
+
+    if (info->timeout) {
+        newargv[m++] = "-T" ;
+        newargv[m++] = fmt ;
+    }
+
     newargv[m++] = "-v" ;
     newargv[m++] = verbo ;
     newargv[m++] = "signal" ;

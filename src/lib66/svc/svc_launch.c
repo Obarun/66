@@ -417,20 +417,30 @@ static int handle_signal(pidservice_t *apids, unsigned int what, graph_t *graph,
     return ok ;
 }
 
-/** this following function come from:
- * https://git.skarnet.org/cgi-bin/cgit.cgi/s6-rc/tree/src/s6-rc/s6-rc.c#n111
- * under license ISC where parameters was modified */
-static uint32_t compute_timeout (uint32_t timeout, tain *deadline)
+unsigned int compute_timeout(unsigned int idx, unsigned int what)
 {
-  uint32_t t = timeout ;
-  int globalt ;
-  tain globaltto ;
-  tain_sub(&globaltto, deadline, &STAMP) ;
-  globalt = tain_to_millisecs(&globaltto) ;
-  if (!globalt) globalt = 1 ;
-  if (globalt > 0 && (!t || (unsigned int)globalt < t))
-    t = (uint32_t)globalt ;
-  return t ;
+    unsigned int timeout = 0 ;
+
+    if (!what) {
+
+        if (pares[idx].type == TYPE_ONESHOT && pares[idx].execute.timeout.up)
+            timeout = pares[idx].execute.timeout.up ;
+        else if (pares[idx].type == TYPE_CLASSIC && pares[idx].execute.timeout.kill)
+            timeout = pares[idx].execute.timeout.kill ;
+
+    } else {
+
+        if (pares[idx].type == TYPE_ONESHOT && pares[idx].execute.timeout.down)
+            timeout = pares[idx].execute.timeout.down ;
+        else if (pares[idx].type == TYPE_CLASSIC && pares[idx].execute.timeout.finish)
+            timeout = pares[idx].execute.timeout.finish ;
+    }
+
+    if (!timeout && PINFO->opt_timeout)
+        timeout = PINFO->timeout ;
+
+    return timeout ;
+
 }
 
 static int doit(pidservice_t *sv, unsigned int what, tain *deadline)
@@ -445,10 +455,8 @@ static int doit(pidservice_t *sv, unsigned int what, tain *deadline)
     char tfmt[UINT32_FMT] ;
 
     unsigned int timeout = 0 ;
-    if (!what)
-        timeout = compute_timeout(type == TYPE_ONESHOT ? pares[sv->aresid].execute.timeout.up : pares[sv->aresid].execute.timeout.kill, deadline) ;
-    else
-        timeout = compute_timeout(type == TYPE_ONESHOT ? pares[sv->aresid].execute.timeout.down : pares[sv->aresid].execute.timeout.finish, deadline) ;
+
+    timeout = compute_timeout(sv->aresid, what) ;
 
     tfmt[uint_fmt(tfmt, timeout)] = 0 ;
 
@@ -534,7 +542,7 @@ static int doit(pidservice_t *sv, unsigned int what, tain *deadline)
 
     } else if (type == TYPE_BUNDLE || type == TYPE_MODULE) {
 
-        return svc_compute_ns(&pares[sv->aresid], what, timeout, PINFO, updown, opt_updown, reloadmsg, data, PROPAGATE) ; ;
+        return svc_compute_ns(&pares[sv->aresid], what, PINFO, updown, opt_updown, reloadmsg, data, PROPAGATE) ; ;
     }
     // never happen, let compiler to be happy
     return 0 ;
@@ -580,7 +588,7 @@ static int async(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_
     return e ;
 }
 
-int svc_launch(pidservice_t *apids, unsigned int len, uint8_t what, graph_t *graph, resolve_service_t *ares, uint8_t timeout, ssexec_t *info, char const *rise, uint8_t rise_opt, uint8_t msg, char const *signal, uint8_t propagate)
+int svc_launch(pidservice_t *apids, unsigned int len, uint8_t what, graph_t *graph, resolve_service_t *ares, ssexec_t *info, char const *rise, uint8_t rise_opt, uint8_t msg, char const *signal, uint8_t propagate)
 {
     log_flow() ;
 
@@ -601,13 +609,10 @@ int svc_launch(pidservice_t *apids, unsigned int len, uint8_t what, graph_t *gra
     auto_strings(data, signal) ;
     pares = ares ;
 
-    if (timeout)
-        tain_from_millisecs(&deadline, timeout) ;
+    if (info->opt_timeout)
+        tain_from_millisecs(&deadline, info->timeout) ;
     else
         deadline = tain_infinite_relative ;
-
-    tain_now_set_stopwatch_g() ;
-    tain_add_g(&deadline, &deadline) ;
 
     int spfd = selfpipe_init() ;
 
@@ -631,6 +636,9 @@ int svc_launch(pidservice_t *apids, unsigned int len, uint8_t what, graph_t *gra
             log_dieusys(LOG_EXIT_SYS, "pipe");
 
     }
+
+    tain_now_set_stopwatch_g() ;
+    tain_add_g(&deadline, &deadline) ;
 
     for (pos = 0 ; pos < napid ; pos++) {
 
