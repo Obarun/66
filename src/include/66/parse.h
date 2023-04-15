@@ -1,5 +1,5 @@
 /*
- * parser.h
+ * parse.h
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -12,8 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#ifndef SS_PARSER_H
-#define SS_PARSER_H
+#ifndef SS_PARSE_H
+#define SS_PARSE_H
 
 #include <sys/types.h>
 #include <stdint.h>
@@ -47,8 +47,8 @@ extern void ssexec_enable_cleanup(void) ;
 extern void start_parser(char const *sv, ssexec_t *info, uint8_t disable_module, char const *directory_forced) ;
 
 extern void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf) ;
-extern int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, unsigned int *residx, char const *forced_directory, char const *main) ;
-extern int parse_dependencies(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force,uint8_t conf, char const *forced_directory, char const *main, uint8_t requiredby) ;
+extern int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inmodule) ;
+extern int parse_interdependences(char const *service, char const *list, unsigned int listlen, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inmodule) ;
 
 /** split */
 extern int parse_section(stralloc *secname, char const *str, size_t *pos) ;
@@ -78,6 +78,6 @@ extern void parse_error(int ierr, int idsec, int idkey) ;
 extern void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force) ;
 
 /** resolve */
-extern void parse_compute_resolve(resolve_service_t *res, ssexec_t *info) ;
+extern void parse_compute_resolve(unsigned int idx, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info) ;
 
 #endif

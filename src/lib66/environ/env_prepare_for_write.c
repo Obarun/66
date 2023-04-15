@@ -24,7 +24,7 @@
 #include <66/environ.h>
 #include <66/constants.h>
 #include <66/service.h>
-#include <66/parser.h>
+#include <66/parse.h>
 
 int env_prepare_for_write(stralloc *dst, stralloc *contents, resolve_service_t *res)
 {

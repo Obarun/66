@@ -23,7 +23,7 @@
 #include <oblibs/obgetopt.h>
 #include <oblibs/sastr.h>
 
-#include <66/parser.h>
+#include <66/parse.h>
 #include <66/ssexec.h>
 #include <66/utils.h>
 #include <66/sanitize.h>

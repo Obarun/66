@@ -21,7 +21,7 @@
 #include <skalibs/unix-transactional.h>//atomic_symlink
 
 #include <66/environ.h>
-#include <66/parser.h>
+#include <66/parse.h>
 #include <66/constants.h>
 #include <66/service.h>
 

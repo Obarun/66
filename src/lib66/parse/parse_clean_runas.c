@@ -22,7 +22,7 @@
 
 #include <skalibs/types.h>
 
-#include <66/parser.h>
+#include <66/parse.h>
 #include <66/utils.h>
 
 int parse_clean_runas(char const *str, int idsec, int idkey)

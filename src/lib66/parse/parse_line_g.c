@@ -19,7 +19,7 @@
 
 #include <skalibs/stralloc.h>
 
-#include <66/parser.h>
+#include <66/parse.h>
 
 /* @Return 2 if bad format */
 int parse_line_g(char *store, parse_mill_t *config, char const *str, size_t *pos)

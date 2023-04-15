@@ -20,7 +20,7 @@
 
 #include <skalibs/stralloc.h>
 
-#include <66/parser.h>
+#include <66/parse.h>
 #include <66/service.h>
 
 extern int env_resolve_conf(stralloc *env,char const *svname,uid_t owner) ;

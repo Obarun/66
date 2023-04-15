@@ -22,7 +22,7 @@
 #include <66/graph.h>
 #include <66/hpr.h>
 #include <66/info.h>
-#include <66/parser.h>
+#include <66/parse.h>
 #include <66/resolve.h>
 #include <66/sanitize.h>
 #include <66/service.h>

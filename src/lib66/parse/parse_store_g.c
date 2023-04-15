@@ -14,7 +14,7 @@
 
 #include <oblibs/log.h>
 
-#include <66/parser.h>
+#include <66/parse.h>
 #include <66/resolve.h>
 #include <66/enum.h>
 

@@ -22,7 +22,7 @@
 
 #include <skalibs/stralloc.h>
 
-#include <66/parser.h>
+#include <66/parse.h>
 #include <66/resolve.h>
 #include <66/service.h>
 
@@ -34,26 +34,23 @@ int parse_compute_list(resolve_wrapper_t_ref wres, stralloc *sa, uint32_t *res, 
     int r, found = 0 ;
     size_t len = sa->len, pos = 0 ;
     size_t nelement = sastr_nelement(sa) ;
-    char t[len + nelement + 2] ;
+    stralloc tmp = STRALLOC_ZERO ;
     char f[len + nelement + 2] ;
 
     memset(f, 0, len) ;
-    memset(t, 0, len) ;
 
-    sastr_to_char(t, sa) ;
+    for (; pos < sa->len ; pos += strlen(sa->s + pos) + 1) {
 
-    for (; pos < len ; pos += strlen(t + pos) + 1) {
-
-        if (t[pos] == '#')
+        if (sa->s[pos] == '#')
             continue ;
 
         if (opts) {
 
-            sa->len = 0 ;
+            tmp.len = 0 ;
 
-            r = service_frontend_path(sa, t + pos, getuid(), 0) ;
+            r = service_frontend_path(&tmp, sa->s + pos, getuid(), 0) ;
             if (r == -1)
-                log_dieu(LOG_EXIT_SYS, "get frontend service file of: ", t + pos) ;
+                log_dieu(LOG_EXIT_SYS, "get frontend service file of: ", sa->s + pos) ;
 
             if (!r)
                 continue ;
@@ -62,7 +59,7 @@ int parse_compute_list(resolve_wrapper_t_ref wres, stralloc *sa, uint32_t *res, 
 
         }
 
-        auto_strings(f + strlen(f), t + pos, " ") ;
+        auto_strings(f + strlen(f), sa->s + pos, " ") ;
 
         (*res)++ ;
 
@@ -71,6 +68,8 @@ int parse_compute_list(resolve_wrapper_t_ref wres, stralloc *sa, uint32_t *res, 
     }
 
     f[strlen(f) - 1] = 0 ;
+
+    stralloc_free(&tmp) ;
 
     return resolve_add_string(wres, f) ;
 

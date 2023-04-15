@@ -20,7 +20,7 @@
 
 #include <skalibs/stralloc.h>
 
-#include <66/parser.h>
+#include <66/parse.h>
 #include <66/enum.h>
 
 int parse_section(stralloc *secname, char const *str, size_t *pos)

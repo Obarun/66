@@ -17,7 +17,7 @@
 
 #include <oblibs/string.h>
 
-#include <66/parser.h>
+#include <66/parse.h>
 
 static char parse_char_next(char const *s, size_t *pos)
 {

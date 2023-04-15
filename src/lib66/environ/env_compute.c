@@ -22,7 +22,7 @@
 
 #include <66/environ.h>
 #include <66/service.h>
-#include <66/parser.h>
+#include <66/parse.h>
 
 
 int env_compute(stralloc *result, resolve_service_t *res)

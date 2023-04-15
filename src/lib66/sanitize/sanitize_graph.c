@@ -24,7 +24,7 @@
 #include <66/ssexec.h>
 #include <66/service.h>
 #include <66/resolve.h>
-#include <66/parser.h>
+#include <66/parse.h>
 #include <66/state.h>
 #include <66/graph.h>
 
