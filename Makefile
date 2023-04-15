@@ -64,8 +64,8 @@ GENERATE_MAN := $(shell doc/make-man.sh)
 endif
 INSTALL_HTML := $(wildcard doc/$(version)/html/*.html)
 INSTALL_MAN := $(wildcard doc/man/*/*)
-INSTALL_DATA := skel/halt skel/init skel/poweroff skel/rc.init skel/rc.init.container \
-	skel/rc.shutdown skel/reboot skel/shutdown skel/rc.shutdown.final skel/init.conf
+INSTALL_DATA := skel/init skel/rc.init skel/rc.init.container \
+	skel/rc.shutdown skel/rc.shutdown.final skel/init.conf
 
 all: $(ALL_LIBS) $(ALL_BINS) $(ALL_INCLUDES)
 
