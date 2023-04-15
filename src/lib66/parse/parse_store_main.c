@@ -27,14 +27,12 @@
 #include <skalibs/types.h>
 #include <skalibs/sig.h>
 
-#include <66/parser.h>
+#include <66/parse.h>
 #include <66/resolve.h>
 #include <66/constants.h>
 #include <66/service.h>
 #include <66/enum.h>
 #include <66/utils.h>
-
-#include <stdio.h>
 
 int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 {
@@ -368,6 +366,16 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 
             if (sa.len)
                 res->dependencies.optsdeps = parse_compute_list(wres, &sa, &res->dependencies.noptsdeps, 1) ;
+
+            break ;
+
+        case KEY_MAIN_CONTENTS:
+
+            if (!parse_clean_list(&sa, store))
+                parse_error_return(0, 8, idsec, idkey) ;
+
+            if (sa.len)
+                res->dependencies.contents = parse_compute_list(wres, &sa, &res->dependencies.ncontents, 0) ;
 
             break ;
 
