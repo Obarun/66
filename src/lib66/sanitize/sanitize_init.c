@@ -50,6 +50,9 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
     int is_supervised = 0, is_init ;
     unsigned int pos = 0, nsv = 0 ;
     unsigned int real[alen] ;
+    unsigned int msg[areslen] ;
+
+    memset(msg, 0, areslen) ;
 
     /* nothing to do */
     if (!alen)
@@ -83,6 +86,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
 
         if (!earlier && !is_supervised) {
             log_warn(name," already initialized -- ignore it") ;
+            msg[aresid] = 1 ;
             continue ;
         }
 
@@ -154,38 +158,6 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
             if (ftrigr_wait_and_g(&fifo, ids, nids, &deadline) < 0)
                 log_dieusys(LOG_EXIT_SYS, "wait for events") ;
 
-             {
-                /** for now, i don't know exactly why
-                 * but if the fdholder daemon isn't reloaded
-                 * the up process hangs at a service logger start.
-                 * Sending a -ru to fdholder solve the issue.*/
-                char tfmt[UINT32_FMT] ;
-                tfmt[uint_fmt(tfmt, 3000)] = 0 ;
-                pid_t pid ;
-                int wstat ;
-                char *socket = ares[real[0]].sa.s + ares[real[0]].live.fdholderdir ;
-
-                char const *newargv[8] ;
-                unsigned int m = 0 ;
-
-                newargv[m++] = "s6-svc" ;
-                newargv[m++] = "-ru" ;
-                newargv[m++] = "-T" ;
-                newargv[m++] = tfmt ;
-                newargv[m++] = "--" ;
-                newargv[m++] = socket ;
-                newargv[m++] = 0 ;
-
-                log_trace("sending -ru signal to: ", socket) ;
-
-                pid = child_spawn0(newargv[0], newargv, (char const *const *) environ) ;
-
-                if (waitpid_nointr(pid, &wstat, 0) < 0)
-                    log_dieusys(LOG_EXIT_SYS, "wait for reload of the fdholder daemon") ;
-
-                if (wstat)
-                    log_dieu(LOG_EXIT_SYS, "reload fdholder service; ", socket) ;
-            }
         }
     }
 
@@ -215,14 +187,15 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
         } else if (ares[aresid].type == TYPE_BUNDLE || ares[aresid].type == TYPE_MODULE) {
 
             /** Consider Module and Bundle as supervised */
-            if (!state_messenger(sa + ares[aresid].path.home, name, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE))
+            if (!state_messenger(&ares[aresid], STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE))
                 log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
         }
 
-        if (!state_messenger(sa  + ares[aresid].path.home, name, STATE_FLAGS_TOINIT, STATE_FLAGS_FALSE))
+        if (!state_messenger(&ares[aresid], STATE_FLAGS_TOINIT, STATE_FLAGS_FALSE))
             log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
 
-        log_info("Initialized successfully: ", name) ;
+        if (!msg[aresid])
+            log_info("Initialized successfully: ", name) ;
     }
 
     ftrigr_end(&fifo) ;
