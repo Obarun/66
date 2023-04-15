@@ -5,6 +5,7 @@ sanitize_livestate.o
 sanitize_scandir.o
 sanitize_source.o
 sanitize_system.o
+sanitize_write.o
 -loblibs
 -lskarnet
 
