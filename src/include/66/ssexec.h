@@ -183,10 +183,10 @@ extern char const *usage_tree_resolve ;
 extern char const *help_tree_resolve ;
 extern char const *usage_tree_status ;
 extern char const *help_tree_status ;
-extern char const *usage_tree_up ;
-extern char const *help_tree_up ;
-extern char const *usage_tree_down ;
-extern char const *help_tree_down ;
+extern char const *usage_tree_start ;
+extern char const *help_tree_start ;
+extern char const *usage_tree_stop ;
+extern char const *help_tree_stop ;
 extern char const *usage_tree_unsupervise ;
 extern char const *help_tree_unsupervise ;
 
