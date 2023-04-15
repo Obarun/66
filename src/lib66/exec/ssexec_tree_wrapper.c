@@ -139,19 +139,19 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         argc-- ;
         argv++ ;
 
-    } else if (!strcmp(argv[1], "up")) {
+    } else if (!strcmp(argv[1], "start")) {
 
         info->prog = PROG ;
-        info->help = help_tree_up ;
-        info->usage = usage_tree_up ;
+        info->help = help_tree_start ;
+        info->usage = usage_tree_start ;
         func = &ssexec_tree_signal ;
         ctl++ ;
 
-    } else if (!strcmp(argv[1], "down")) {
+    } else if (!strcmp(argv[1], "stop")) {
 
         info->prog = PROG ;
-        info->help = help_tree_down ;
-        info->usage = usage_tree_down ;
+        info->help = help_tree_stop ;
+        info->usage = usage_tree_stop ;
         func = &ssexec_tree_signal ;
         ctl++ ;
 

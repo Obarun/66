@@ -45,6 +45,7 @@
 #include <66/svc.h>//scandir_ok
 #include <66/utils.h>
 #include <66/graph.h>
+#include <66/state.h>
 
 #include <s6/ftrigr.h>
 #include <s6/ftrigw.h>
@@ -144,8 +145,8 @@ static inline unsigned int parse_signal (char const *signal, ssexec_t *info)
     log_flow() ;
 
     static char const *const signal_table[] = {
-        "up",
-        "down",
+        "start",
+        "stop",
         "unsupervise",
         0
     } ;
@@ -524,31 +525,6 @@ static int doit(char const *treename, ssexec_t *sinfo, unsigned int what, tain *
             log_warn_return(LOG_EXIT_ZERO, "You're not allowed to use the tree: ", info.treename.s) ;
     }
 
-    if (!tree_isinitialized(info.base.s, info.treename.s) && !what) {
-
-        if (!what) {
-
-            int nargc = 3 ;
-            char const *prog = PROG ;
-            char const *newargv[nargc] ;
-            unsigned int m = 0 ;
-
-            newargv[m++] = "signal" ;
-            newargv[m++] = info.treename.s ;
-            newargv[m++] = 0 ;
-
-            PROG = "init" ;
-            if (ssexec_init(nargc, newargv, &info))
-                log_warnu_return(LOG_EXIT_ZERO, "initiate services of tree: ", info.treename.s) ;
-            PROG = prog ;
-
-        } else {
-
-            log_warn ("uninitialized tree: ", info.treename.s) ;
-            goto end ;
-        }
-    }
-
     {
         stralloc sa = STRALLOC_ZERO ;
 
@@ -571,8 +547,8 @@ static int doit(char const *treename, ssexec_t *sinfo, unsigned int what, tain *
 
         stralloc_free(&sa) ;
     }
-    end:
-        e = 0 ;
+
+    e = 0 ;
     err:
         ssexec_free(&info) ;
         return e ;
@@ -746,7 +722,7 @@ static int async(pidtree_t *apidt, unsigned int i, unsigned int what, ssexec_t *
     } else {
 
         /** do not notify here, the handle will make it for us */
-        log_trace("skipping service: ", name, " -- already ", what ? "down" : "up") ;
+        log_trace("skipping tree: ", name, " -- already ", what ? "down" : "up") ;
 
     }
 
@@ -790,7 +766,7 @@ static int waitit(pidtree_t *apidt, unsigned int what, graph_t *graph, tain *dea
 
     }
 
-        for (pos = 0 ; pos < napid ; pos++) {
+    for (pos = 0 ; pos < napid ; pos++) {
 
         pid = fork() ;
 
@@ -903,7 +879,7 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
     if ((svc_scandir_ok(info->scandir.s)) <= 0)
         log_die(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
 
-    graph_build_tree(&graph, info->base.s, !info->treename.len ? E_RESOLVE_TREE_MASTER_ENABLED : E_RESOLVE_TREE_CONTENTS) ;
+    graph_build_tree(&graph, info->base.s, !info->treename.len ? E_RESOLVE_TREE_MASTER_ENABLED : E_RESOLVE_TREE_MASTER_CONTENTS) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "trees selection is not created -- creates at least one tree") ;
