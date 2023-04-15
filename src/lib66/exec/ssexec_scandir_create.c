@@ -419,7 +419,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
 
             if (!auto_buf(&b,
                 SS_BINPREFIX "66-echo -- \"scandir ",
-                scandir," shutted down...\"\n"))
+                scandir," stopped...\"\n"))
                     log_die_nomem("buffer") ;
         }
         goto write ;
@@ -467,7 +467,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
 
         if (!auto_buf(&b,
             EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66 -v3 -l ",
-            live," tree down }\n"))
+            live," tree stop }\n"))
                 log_die_nomem("buffer") ;
 
     }
@@ -488,10 +488,11 @@ void write_control(char const *scandir,char const *live, char const *filename, i
 
             break ;
         case TERM:
+            /*
             if (!BOOT)
                 if (!auto_buf(&b, SS_BINPREFIX "66 -l ",live," scandir stop\n"))
                     log_die_nomem("buffer") ;
-
+             */
             break ;
         case QUIT:
 
