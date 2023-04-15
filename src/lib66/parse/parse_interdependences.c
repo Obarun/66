@@ -1,5 +1,5 @@
 /*
- * parse_dependencies.c
+ * parse_interdependences.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -23,26 +23,23 @@
 
 #include <66/resolve.h>
 #include <66/service.h>
-#include <66/parser.h>
+#include <66/parse.h>
 #include <66/ssexec.h>
 #include <66/utils.h>
 #include <66/constants.h>
 #include <66/instance.h>
 
-int parse_dependencies(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, uint8_t requiredby)
+int parse_interdependences(char const *service, char const *list, unsigned int listlen, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inmodule)
 {
     log_flow() ;
 
-    uint32_t deps = !requiredby ? res->dependencies.ndepends : res->dependencies.nrequiredby ;
-    uint32_t data = !requiredby ? res->dependencies.depends : res->dependencies.requiredby ;
-    size_t pos = 0, len = 0 ;
     int r, e = 0 ;
-    unsigned int residx = 0 ;
+    size_t pos = 0, len = 0 ;
     stralloc sa = STRALLOC_ZERO ;
 
-    if (deps) {
+    if (listlen) {
 
-        if (!sastr_clean_string(&sa, res->sa.s + data)) {
+        if (!sastr_clean_string(&sa, list)) {
             log_warnu("clean the string") ;
             goto freed ;
         }
@@ -60,7 +57,7 @@ int parse_dependencies(resolve_service_t *res, resolve_service_t *ares, unsigned
             char ainsta[strlen(name) + 1] ;
             int insta = -1 ;
 
-            log_trace("parse ", !requiredby ? "dependencies " : "requiredby ", name, " of service: ", res->sa.s + res->name) ;
+            log_trace("parse interdependences ", name, " of service: ", service) ;
 
             insta = instance_check(name) ;
 
@@ -74,8 +71,7 @@ int parse_dependencies(resolve_service_t *res, resolve_service_t *ares, unsigned
             }
 
             if (!strcmp(main, name))
-                log_die(LOG_EXIT_USER, "direct cyclic dependencies detected -- ", main, " depends on: ", res->sa.s + res->name, " which depends on: ", main) ;
-
+                log_die(LOG_EXIT_USER, "direct cyclic interdependences detected -- ", main, " depends on: ", service, " which depends on: ", main) ;
 
             r = service_frontend_path(&sa, name, getuid(), forced_directory) ;
             if (r < 1) {
@@ -87,11 +83,13 @@ int parse_dependencies(resolve_service_t *res, resolve_service_t *ares, unsigned
                 log_die_nomem("stralloc") ;
 
             /** nothing to do with the exit code */
-            parse_frontend(sa.s, ares, areslen, info, force, conf, &residx, forced_directory, main) ;
+            parse_frontend(sa.s, ares, areslen, info, force, conf, forced_directory, main, inmodule) ;
+
         }
 
+
     } else
-        log_trace("no ", !requiredby ? "dependencies" : "requiredby", " found for: ", res->sa.s + res->name) ;
+        log_trace("no interdependences found for service: ", service) ;
 
     e = 1 ;
 

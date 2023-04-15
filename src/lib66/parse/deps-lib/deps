@@ -5,9 +5,9 @@ parse_clean_runas.o
 parse_compute_list.o
 parse_compute_resolve.o
 parse_contents.o
-parse_dependencies.o
 parse_error.o
 parse_frontend.o
+parse_interdependences.o
 parse_line_g.o
 parse_mandatory.o
 parse_parentheses.o
