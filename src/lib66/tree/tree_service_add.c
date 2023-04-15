@@ -42,10 +42,15 @@ void tree_service_add(char const *base, char const *treename, char const *servic
         if (!sastr_sortndrop_element(&sa))
             log_dieu(LOG_EXIT_SYS, "sort string") ;
 
-    } else if (!sastr_add_string(&sa, service))
-        log_dieu(LOG_EXIT_SYS, "add string") ;
+        tres.ncontents = sastr_nelement(&sa) ;
 
-    tres.ncontents++ ;
+    } else {
+
+        if (!sastr_add_string(&sa, service))
+            log_dieu(LOG_EXIT_SYS, "add string") ;
+
+        tres.ncontents++ ;
+    }
 
     if (!sastr_rebuild_in_oneline(&sa))
         log_dieu(LOG_EXIT_SYS, "rebuild stralloc list") ;
