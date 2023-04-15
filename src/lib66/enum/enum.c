@@ -35,6 +35,7 @@ char const *enum_str_key_section_main[] = {
     "@depends" ,
     "@requiredby",
     "@optsdepends" ,
+    "@contents" ,
     "@options" ,
     "@notify" ,
     "@user" ,
