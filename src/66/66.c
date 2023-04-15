@@ -123,7 +123,7 @@ int main(int argc, char const *const *argv)
                 case 'v' :
 
                     if (!uint0_scan(l.arg, &VERBOSITY))
-                        log_usage(info.usage) ;
+                        log_usage(usage_66, "\n", help_66) ;
                     info.opt_verbo = 1 ;
                     break ;
 
@@ -156,7 +156,7 @@ int main(int argc, char const *const *argv)
                 case 'T' :
 
                     if (!uint0_scan(l.arg, &info.timeout))
-                        log_usage(info.usage) ;
+                        log_usage(usage_66, "\n", help_66) ;
                     info.opt_timeout = 1 ;
                     break ;
 
@@ -175,7 +175,7 @@ int main(int argc, char const *const *argv)
                     for (i = 0 ; i < n ; i++) {
 
                         if (!argv[l.ind])
-                            log_usage(info.usage) ;
+                            log_usage(usage_66, "\n", help_66) ;
 
                         if (l.arg) {
 
