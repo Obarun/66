@@ -30,18 +30,21 @@ int service_resolve_write(resolve_service_t *res)
     int r, e = 0 ;
 
     char *name = res->sa.s + res->name ;
-    size_t namelen = strlen(name) ;
-    char sym[strlen(res->sa.s + res->path.home) + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + 1] ;
-    char dst[strlen(res->sa.s + res->path.home) + SS_SYSTEM_LEN + SS_SERVICE_LEN + 1] ;
+    size_t namelen = strlen(name), homelen = strlen(res->sa.s + res->path.home) ;
+    char sym[homelen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + 1] ;
+    char dst[homelen + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + namelen + 1] ;
+
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     auto_strings(sym, res->sa.s + res->path.home, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 
-    auto_strings(dst, res->sa.s + res->path.home, SS_SYSTEM, SS_SERVICE) ;
+    auto_strings(dst, res->sa.s + res->path.home, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", name) ;
 
+    log_trace("write resolve file: ",dst, SS_RESOLVE, "/", name) ;
     if (!resolve_write(wres, dst, name))
         goto err ;
 
+    log_trace("symlink: ", sym, " to: ", dst) ;
     r = symlink(dst, sym) ;
     if (r < 0 && errno != EEXIST) {
         log_warnusys("point symlink: ", sym, " to: ", dst) ;
