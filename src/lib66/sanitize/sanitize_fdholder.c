@@ -30,6 +30,7 @@
 #include <66/constants.h>
 #include <66/state.h>
 #include <66/enum.h>
+#include <66/svc.h>
 
 #include <s6/fdholder.h>
 
@@ -55,7 +56,6 @@ void sanitize_fdholder(resolve_service_t *res, uint32_t flag)
 
         s6_fdholder_t a = S6_FDHOLDER_ZERO ;
         tain deadline = tain_infinite_relative, limit = tain_infinite_relative ;
-        unsigned int fd ;
         char fdname[SS_FDHOLDER_PIPENAME_LEN + 2 + namelen + 1] ;
         char sock[socketlen + 3] ;
 
@@ -70,17 +70,30 @@ void sanitize_fdholder(resolve_service_t *res, uint32_t flag)
 
         if (FLAGS_ISSET(flag, STATE_FLAGS_TRUE)) {
 
+            int fd[2] ;
+            if (pipe(fd) < 0)
+                log_dieu(LOG_EXIT_SYS, "pipe") ;
+
             auto_strings(fdname, SS_FDHOLDER_PIPENAME, "r-", name) ;
 
             log_trace("store identifier: ", fdname) ;
-            if (!s6_fdholder_store_g(&a, fd, fdname, &limit, &deadline))
+            if (!s6_fdholder_store_g(&a, fd[0], fdname, &limit, &deadline)) {
+                close(fd[0]) ;
+                close(fd[1]) ;
                 log_dieusys(LOG_EXIT_SYS, "store fd: ", fdname) ;
+            }
+
+            close(fd[0]) ;
 
             fdname[strlen(SS_FDHOLDER_PIPENAME)] = 'w' ;
 
             log_trace("store identifier: ", fdname) ;
-            if (!s6_fdholder_store_g(&a, fd, fdname, &limit, &deadline))
+            if (!s6_fdholder_store_g(&a, fd[1], fdname, &limit, &deadline)) {
+                close(fd[1]) ;
                 log_dieusys(LOG_EXIT_SYS, "store fd: ", fdname) ;
+            }
+
+            close(fd[1]) ;
 
         } else if (FLAGS_ISSET(flag, STATE_FLAGS_FALSE)) {
 
@@ -126,6 +139,8 @@ void sanitize_fdholder(resolve_service_t *res, uint32_t flag)
 
         if (!openwritenclose_unsafe(file, list.s, list.len))
             log_dieusys(LOG_EXIT_SYS, "write file: ", file) ;
+
+        svc_send_fdholder(socket) ;
 
         stralloc_free(&list) ;
     }
