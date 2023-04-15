@@ -12,7 +12,7 @@ importas -iu LIVE LIVE
 
 if -n {
     if { 66-echo -- "[Start services of tree ${TREE}...]" }
-    66 -v${VERBOSITY} -l ${LIVE} tree up ${TREE}
+    66 -v${VERBOSITY} -l ${LIVE} tree start ${TREE}
 }
 
 if { 66-echo -- "rc.init: fatal: please see the log at ${LIVE}/log/0/current" }

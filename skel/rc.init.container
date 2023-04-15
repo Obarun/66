@@ -13,7 +13,7 @@ importas -iu CONTAINER_HALTCMD
 
 foreground {
     if { 66-echo -- "[Start services of tree ${TREE}...]" }
-    66 -v${VERBOSITY} -l ${LIVE} tree up ${TREE}
+    66 -v${VERBOSITY} -l ${LIVE} tree start ${TREE}
 }
 
 importas initcode ?
