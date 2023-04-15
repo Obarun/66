@@ -27,6 +27,7 @@
 #include <66/enum.h>
 #include <66/write.h>
 #include <66/constants.h>
+#include <66/sanitize.h>
 
 /** @Return 0 on fail
  * @Return 1 on success
@@ -34,35 +35,16 @@
  *
  * @workdir -> /var/lib/66/system/<tree>/servicedirs/
  * */
-int write_services(resolve_service_t *res, char const *workdir, uint8_t force)
+void write_services(resolve_service_t *res, char const *workdir)
 {
     log_flow() ;
 
-    int r ;
-    size_t workdirlen = strlen(workdir) ;
     char *name = res->sa.s + res->name ;
-    size_t namelen = strlen(name) ;
-    int type = res->type ;
+    uint32_t type = res->type ;
+    char logname = get_rstrlen_until(name, SS_LOG_SUFFIX) ;
+    if (logname > 0)
+        type = 4 ;
 
-    {
-        resolve_service_t fres = RESOLVE_SERVICE_ZERO ;
-        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &fres) ;
-        ss_state_t ste = STATE_ZERO ;
-        if (resolve_check(workdir, name)) {
-            if (!resolve_read(wres, workdir, name))
-                log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name) ;
-
-            if (state_check(fres.sa.s + fres.path.home, name)) {
-
-                if (!state_read(&ste, fres.sa.s + fres.path.home, name))
-                    log_dieu(LOG_EXIT_SYS, "read state file of: ", name) ;
-
-                if (fres.type != type && FLAGS_ISSET(ste.isenabled, STATE_FLAGS_TRUE))
-                    log_die(LOG_EXIT_SYS, "Detection of incompatible type format for: ", name, " -- current: ", get_key_by_enum(ENUM_TYPE, type), " previous: ", get_key_by_enum(ENUM_TYPE, fres.type)) ;
-            }
-        }
-        resolve_free(wres) ;
-    }
     /**
      *
      *
@@ -74,28 +56,8 @@ int write_services(resolve_service_t *res, char const *workdir, uint8_t force)
      *
      *
      * */
-    char wname[workdirlen + SS_SVC_LEN + 1 + namelen + 1] ;
-    auto_strings(wname, workdir, SS_SVC, "/", name) ;
 
-    r = scan_mode(wname, S_IFDIR) ;
-    if (r < 0)
-        log_die(LOG_EXIT_SYS, "unvalide source: ", wname) ;
-
-    if ((r && force) || !r) {
-
-        if (!dir_rm_rf(wname))
-            log_dieusys(LOG_EXIT_SYS, "remove: ", wname) ;
-
-        if (!dir_create_parent(wname, 0755))
-            log_dieusys(LOG_EXIT_SYS, "create ", wname) ;
-
-    } else if (r && !force) {
-
-        log_info("Ignoring: ", name, " service: already written") ;
-        return 2 ;
-    }
-
-    log_trace("Write service ", name, " ...") ;
+    log_trace("write service ", name) ;
 
     switch(type) {
 
@@ -105,19 +67,23 @@ int write_services(resolve_service_t *res, char const *workdir, uint8_t force)
 
         case TYPE_CLASSIC:
 
-            write_classic(res, wname, force) ;
+            write_classic(res, workdir) ;
             break ;
 
         case TYPE_ONESHOT:
 
-            write_oneshot(res, wname) ;
+            write_oneshot(res, workdir) ;
+            break ;
+
+        case 4:
+
+            write_logger(res, workdir) ;
             break ;
 
         default:
             log_die(LOG_EXIT_SYS, "unkown type: ", get_key_by_enum(ENUM_TYPE, type)) ;
     }
 
-    return 1 ;
 }
 
 

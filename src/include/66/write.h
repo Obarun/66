@@ -18,12 +18,12 @@
 #include <stdint.h>
 #include <66/service.h>
 
-extern int write_services(resolve_service_t *res, char const *workdir, uint8_t force) ;
-extern void write_classic(resolve_service_t *res, char const *dst, uint8_t force) ;
+extern void write_services(resolve_service_t *res, char const *workdir) ;
+extern void write_classic(resolve_service_t *res, char const *dst) ;
 extern void write_common(resolve_service_t *res, char const *dst) ;
 extern void write_environ(char const *name, char const *contents, char const *dst) ;
 extern void write_execute_scripts(char const *file, char const *contents, char const *dst) ;
-extern void write_logger(resolve_service_t *res, char const *destination, uint8_t force) ;
+extern void write_logger(resolve_service_t *res, char const *destination) ;
 extern void write_oneshot(resolve_service_t *res, char const *dst) ;
 extern void write_uint(char const *dst, char const *name, uint32_t ui) ;
 

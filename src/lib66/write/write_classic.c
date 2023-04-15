@@ -22,7 +22,7 @@
 
 /* dst e.g. /var/lib/66/system/<tree>/servicedirs/svc/<name> */
 
-void write_classic(resolve_service_t *res, char const *dst, uint8_t force)
+void write_classic(resolve_service_t *res, char const *dst)
 {
     log_flow() ;
 
@@ -42,16 +42,4 @@ void write_classic(resolve_service_t *res, char const *dst, uint8_t force)
     /** finish.user file */
     if (res->execute.finish.run_user)
         write_execute_scripts("finish.user", res->sa.s + res->execute.finish.run_user, dst) ;
-
-    /** logger */
-    if (res->logger.name) {
-
-        char destination[strlen(dst) + 1] ;
-
-        if (!ob_dirname(destination, dst))
-            log_dieu(LOG_EXIT_SYS, "get dirname of: ", dst) ;
-
-        write_logger(res, destination, force) ;
-    }
-
 }

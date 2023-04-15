@@ -40,49 +40,31 @@
 
 /** @destination -> /var/lib/66/system/<tree>/servicedirs/svc/ */
 
-void write_logger(resolve_service_t *res, char const *destination, uint8_t force)
+void write_logger(resolve_service_t *res, char const *destination)
 {
     log_flow() ;
 
-    int r ;
     uid_t log_uid ;
     gid_t log_gid ;
     uint8_t owner = res->owner ;
 
-    char *logrunner = res->logger.execute.run.runas ? res->sa.s + res->logger.execute.run.runas : SS_LOGGER_RUNNER ;
+    char *logrunner = res->execute.run.runas ? res->sa.s + res->execute.run.runas : SS_LOGGER_RUNNER ;
 
-    char dst[strlen(destination) + strlen(res->sa.s + res->logger.name) + 1] ;
-    auto_strings(dst, destination, res->sa.s + res->logger.name) ;
+    if (res->execute.timeout.kill)
+        write_uint(destination, "timeout-kill", res->execute.timeout.kill) ;
 
-    r = scan_mode(dst, S_IFDIR) ;
-    if (r && force) {
-
-        if (!dir_rm_rf(dst))
-            log_dieusys(LOG_EXIT_SYS, "delete: ", dst) ;
-
-    } else if (r) {
-
-        log_warn("ignoring ", dst, " -- already exist") ;
-        return ;
-    }
-
-    if (!dir_create_parent(dst, 0755))
-        log_dieusys(LOG_EXIT_SYS, "create directory: ", dst) ;
-
-    if (res->logger.execute.timeout.kill)
-        write_uint(dst, "timeout-kill", res->logger.execute.timeout.kill) ;
-
-    if (res->logger.execute.timeout.finish)
-        write_uint(dst, "timeout-finish", res->logger.execute.timeout.finish) ;
+    if (res->execute.timeout.finish)
+        write_uint(destination, "timeout-finish", res->execute.timeout.finish) ;
 
     /** notification */
-    write_uint(dst, "notification-fd", 3) ;
+    write_uint(destination, "notification-fd", 3) ;
 
     /** log destination */
+    log_trace("create directory: ", res->sa.s + res->logger.destination) ;
     if (!dir_create_parent(res->sa.s + res->logger.destination, 0755))
         log_dieusys(LOG_EXIT_SYS, "create directory: ", res->sa.s + res->logger.destination) ;
 
-    if (!owner && ((res->logger.execute.run.build == BUILD_AUTO) || (!res->logger.execute.run.build))) {
+    if (!owner && ((res->execute.run.build == BUILD_AUTO) || (!res->execute.run.build))) {
 
         if (!youruid(&log_uid, logrunner) || !yourgid(&log_gid, log_uid))
             log_dieusys(LOG_EXIT_SYS, "get uid and gid of: ", logrunner) ;
@@ -91,22 +73,22 @@ void write_logger(resolve_service_t *res, char const *destination, uint8_t force
             log_dieusys(LOG_EXIT_SYS, "chown: ", res->sa.s + res->logger.destination) ;
     }
 
-    char write[strlen(dst) + 10] ;
+    char write[strlen(destination) + 10] ;
 
     /** run script */
-    if (!file_write_unsafe(dst, "run", res->sa.s + res->logger.execute.run.run, strlen(res->sa.s + res->logger.execute.run.run)))
-        log_dieusys(LOG_EXIT_SYS, "write: ", dst, "/run.user") ;
+    if (!file_write_unsafe(destination, "run", res->sa.s + res->execute.run.run, strlen(res->sa.s + res->execute.run.run)))
+        log_dieusys(LOG_EXIT_SYS, "write: ", destination, "/run.user") ;
 
-    auto_strings(write, dst, "/run") ;
+    auto_strings(write, destination, "/run") ;
 
     if (chmod(write, 0755) < 0)
         log_dieusys(LOG_EXIT_SYS, "chmod", write) ;
 
     /** run.user script */
-    if (!file_write_unsafe(dst, "run.user", res->sa.s + res->logger.execute.run.run_user, strlen(res->sa.s + res->logger.execute.run.run_user)))
-        log_dieusys(LOG_EXIT_SYS, "write: ", dst, "/run.user") ;
+    if (!file_write_unsafe(destination, "run.user", res->sa.s + res->execute.run.run_user, strlen(res->sa.s + res->execute.run.run_user)))
+        log_dieusys(LOG_EXIT_SYS, "write: ", destination, "/run.user") ;
 
-    auto_strings(write, dst, "/run.user") ;
+    auto_strings(write, destination, "/run.user") ;
 
     if (chmod(write, 0755) < 0)
         log_dieusys(LOG_EXIT_SYS, "chmod", write) ;
