@@ -25,7 +25,7 @@
 
 #include <66/ssexec.h>
 #include <66/resolve.h>
-#include <66/state.h>
+#include <66/utils.h>
 
 typedef struct resolve_service_addon_path_s resolve_service_addon_path_t, *resolve_service_addon_path_t_ref ;
 struct resolve_service_addon_path_s
@@ -33,9 +33,10 @@ struct resolve_service_addon_path_s
     uint32_t home ; // string, /var/lib/66 or /home/user/.66
     uint32_t frontend ;  // string, /home/<user>/.66/service or /etc/66/service or /usr/lib/66/service
     uint32_t status ; //string, /var/lib/66/system/service/svc/service_name/state/status
+    uint32_t servicedir ; //string, /var/lib/66/system/service/svc/service_name or for module /var/lib/66/system/service/svc/module_name/svc/service_name
 } ;
 
-#define RESOLVE_SERVICE_ADDON_PATH_ZERO { 0,0,0 }
+#define RESOLVE_SERVICE_ADDON_PATH_ZERO { 0,0,0,0 }
 
 typedef struct resolve_service_addon_dependencies_s resolve_service_addon_dependencies_t, *resolve_service_addon_dependencies_t_ref ;
 struct resolve_service_addon_dependencies_s
@@ -43,13 +44,15 @@ struct resolve_service_addon_dependencies_s
     uint32_t depends ; // string
     uint32_t requiredby ; // string,
     uint32_t optsdeps ; // string, optional dependencies
+    uint32_t contents ; // string
 
     uint32_t ndepends ; // integer
     uint32_t nrequiredby ; // integer
     uint32_t noptsdeps ; // integer
+    uint32_t ncontents ; // integer
 } ;
 
-#define RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO { 0,0,0,0,0,0 }
+#define RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO { 0,0,0,0,0,0,0,0 }
 
 typedef struct resolve_service_addon_timeout_s resolve_service_addon_timeout_t, *resolve_service_addon_timeout_t_ref ;
 struct resolve_service_addon_timeout_s
@@ -148,15 +151,14 @@ struct resolve_service_addon_regex_s
     uint32_t directories ; // string
     uint32_t files ; // string
     uint32_t infiles ; // string
-    uint32_t contents ; // string
 
     uint32_t ndirectories ; // integer
     uint32_t nfiles ; // integer
     uint32_t ninfiles ; // integer
-    uint32_t ncontents ; // integer
+
 } ;
 
-#define RESOLVE_SERVICE_ADDON_REGEX_ZERO { 0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_SERVICE_ADDON_REGEX_ZERO { 0,0,0,0,0,0,0 }
 
 
 typedef struct resolve_service_s resolve_service_t, *resolve_service_t_ref ;
@@ -225,14 +227,17 @@ enum resolve_service_enum_e
     E_RESOLVE_SERVICE_HOME,
     E_RESOLVE_SERVICE_FRONTEND,
     E_RESOLVE_SERVICE_STATUS,
+    E_RESOLVE_SERVICE_SERVICEDIR,
 
     // dependencies
     E_RESOLVE_SERVICE_DEPENDS,
     E_RESOLVE_SERVICE_REQUIREDBY,
     E_RESOLVE_SERVICE_OPTSDEPS,
+    E_RESOLVE_SERVICE_CONTENTS,
     E_RESOLVE_SERVICE_NDEPENDS,
     E_RESOLVE_SERVICE_NREQUIREDBY,
     E_RESOLVE_SERVICE_NOPTSDEPS,
+    E_RESOLVE_SERVICE_NCONTENTS,
 
     // execute
     E_RESOLVE_SERVICE_RUN,
@@ -287,11 +292,9 @@ enum resolve_service_enum_e
     E_RESOLVE_SERVICE_REGEX_DIRECTORIES,
     E_RESOLVE_SERVICE_REGEX_FILES,
     E_RESOLVE_SERVICE_REGEX_INFILES,
-    E_RESOLVE_SERVICE_REGEX_CONTENTS,
     E_RESOLVE_SERVICE_REGEX_NDIRECTORIES,
     E_RESOLVE_SERVICE_REGEX_NFILES,
     E_RESOLVE_SERVICE_REGEX_NINFILES,
-    E_RESOLVE_SERVICE_REGEX_NCONTENTS,
     E_RESOLVE_SERVICE_ENDOFKEY
 
 } ;
@@ -311,20 +314,16 @@ extern int service_resolve_modify_field(resolve_service_t *res, resolve_service_
 extern int service_resolve_read_cdb(cdb *c, resolve_service_t *res) ;
 extern int service_resolve_write(resolve_service_t *res) ;
 extern int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres) ;
-extern void service_enable_disable(graph_t *g, char const *base, char const *sv, uint8_t action) ;
+extern void service_enable_disable(graph_t *g, resolve_service_t *res, resolve_service_t *ares, unsigned int areslen, uint8_t action, visit_t *visit) ;
+/* avoid circular dependencies by prototyping the ss_state_t instead
+ * of calling the state.h header file*/
+typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;
+extern int service_is(ss_state_t *ste, uint32_t flag) ;
 
 /** Graph */
 extern void service_graph_g(char const *alist, size_t alen, graph_t *graph, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag) ;
 extern void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag) ;
 extern void service_graph_build(graph_t *g, resolve_service_t *ares, unsigned int areslen, uint32_t flag) ;
 
-extern int service_is(ss_state_t *ste, uint32_t flag) ;
-
-
-
-
-
-/** SHOULD BE NOT USED */
-extern int service_resolve_sort_bytype(stralloc *list, char const *src) ;
 
 #endif

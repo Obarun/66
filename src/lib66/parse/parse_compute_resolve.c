@@ -17,6 +17,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/directory.h>
 
 #include <skalibs/types.h>
 #include <skalibs/stralloc.h>
@@ -26,41 +27,86 @@
 #include <66/resolve.h>
 #include <66/state.h>
 #include <66/ssexec.h>
-#include <66/parser.h>
+#include <66/parse.h>
 #include <66/utils.h>
 #include <66/service.h>
-
+#include <66/sanitize.h>
 #include <s6/config.h>
 
 #ifndef FAKELEN
 #define FAKELEN strlen(run)
 #endif
 
-static uint32_t compute_scan_dir(resolve_wrapper_t_ref wres, ssexec_t *info, char const *service)
+static uint32_t compute_servicedir(resolve_wrapper_t_ref wres, ssexec_t *info)
 {
-    log_flow() ;
+    resolve_service_t_ref res = (resolve_service_t *)wres->obj ;
+    char *name = res->sa.s + res->name ;
+    size_t namelen = strlen(name) ;
 
-    size_t servicelen = strlen(service) ;
+    char dir[info->base.len + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + namelen + 1] ;
 
-    char tmp[info->live.len + SS_STATE_LEN + 1 + info->ownerlen + 1 + servicelen + 1 + SS_SCANDIR_LEN + 1 + servicelen + 1] ;
-    auto_strings(tmp, info->live.s, SS_STATE + 1, "/", info->ownerstr, "/", service, "/", SS_SCANDIR, "/", service) ;
+    auto_strings(dir, info->base.s, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", name) ;
 
-    return resolve_add_string(wres, tmp) ;
+    return resolve_add_string(wres, dir) ;
+}
 
+static uint32_t compute_status(resolve_wrapper_t_ref wres, ssexec_t *info)
+{
+    resolve_service_t_ref res = (resolve_service_t *)wres->obj ;
+    char *name = res->sa.s + res->name ;
+    size_t namelen = strlen(name) ;
+
+    char dir[info->base.len + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + namelen + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
+
+    auto_strings(dir, info->base.s, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", name, SS_STATE, "/", SS_STATUS) ;
+
+    return resolve_add_string(wres, dir) ;
 
 }
 
-static uint32_t compute_state_dir(resolve_wrapper_t_ref wres, ssexec_t *info, char const *service, char const *folder)
+static uint32_t compute_scan_dir(resolve_wrapper_t_ref wres, ssexec_t *info)
+{
+    log_flow() ;
+
+    resolve_service_t_ref res = (resolve_service_t *)wres->obj ;
+    char *name = res->sa.s + res->name ;
+    size_t namelen = strlen(name) ;
+
+    char dir[info->live.len + SS_STATE_LEN + 1 + info->ownerlen + 1 + namelen + 1 + SS_SCANDIR_LEN + 1 + namelen + 1] ;
+
+    auto_strings(dir, info->live.s, SS_STATE + 1, "/", info->ownerstr, "/", name, "/", SS_SCANDIR, "/", name) ;
+
+    return resolve_add_string(wres, dir) ;
+}
+
+static uint32_t compute_state_dir(resolve_wrapper_t_ref wres, ssexec_t *info, char const *folder)
+{
+    log_flow() ;
+
+    resolve_service_t_ref res = (resolve_service_t *)wres->obj ;
+    char *name = res->sa.s + res->name ;
+    size_t namelen = strlen(name) ;
+    size_t folderlen = strlen(folder) ;
+
+    char dir[info->live.len + SS_STATE_LEN + 1 + info->ownerlen + 1 + namelen + 1 + folderlen + 1] ;
+
+    auto_strings(dir, info->live.s, SS_STATE + 1, "/", info->ownerstr, "/", name, "/", folder) ;
+
+    return resolve_add_string(wres, dir) ;
+}
+
+static uint32_t compute_pipe_service(resolve_wrapper_t_ref wres, ssexec_t *info, char const *service, char const *name)
 {
     log_flow() ;
 
     size_t servicelen = strlen(service) ;
-    size_t folderlen = strlen(folder) ;
+    size_t namelen = strlen(name) ;
 
-    char tmp[info->live.len + SS_STATE_LEN + 1 + info->ownerlen + 1 + servicelen + 1 + folderlen + 1] ;
-    auto_strings(tmp, info->live.s, SS_STATE + 1, "/", info->ownerstr, "/", service, "/", folder) ;
+    char tmp[info->live.len + SS_STATE_LEN + 1 + info->ownerlen + 1 + servicelen + 1 + SS_SCANDIR_LEN + 1 + namelen + 1] ;
+    auto_strings(tmp, info->live.s, SS_STATE + 1, "/", info->ownerstr, "/", service, "/", SS_SCANDIR, "/", name) ;
 
     return resolve_add_string(wres, tmp) ;
+
 }
 
 static uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res)
@@ -68,7 +114,7 @@ static uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *r
     log_flow() ;
 
     size_t namelen = strlen(res->sa.s + res->name) ;
-    size_t syslen = res->owner ? strlen(res->sa.s + res->path.home) + strlen(SS_LOGGER_USERDIR) : strlen(SS_LOGGER_SYSDIR) ;
+    size_t syslen = res->owner ? strlen(res->sa.s + res->path.home) + strlen(SS_LOGGER_USERDIR) + strlen(SS_USER_DIR) : strlen(SS_LOGGER_SYSDIR) ;
     size_t dstlen = res->logger.destination ? strlen(res->sa.s + res->logger.destination) : strlen(SS_LOGGER_SYSDIR) ;
 
     char dstlog[syslen + dstlen + namelen + 1] ;
@@ -89,20 +135,6 @@ static uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *r
     }
 
     return resolve_add_string(wres, dstlog) ;
-}
-
-static uint32_t compute_pipe_service(resolve_wrapper_t_ref wres, ssexec_t *info, char const *service, char const *name)
-{
-    log_flow() ;
-
-    size_t servicelen = strlen(service) ;
-    size_t namelen = strlen(name) ;
-
-    char tmp[info->live.len + SS_STATE_LEN + 1 + info->ownerlen + 1 + servicelen + 1 + SS_SCANDIR_LEN + 1 + namelen + 1] ;
-    auto_strings(tmp, info->live.s, SS_STATE + 1, "/", info->ownerstr, "/", service, "/", SS_SCANDIR, "/", name) ;
-
-    return resolve_add_string(wres, tmp) ;
-
 }
 
 /**
@@ -303,7 +335,7 @@ static void compute_log_script(resolve_service_t *res)
     free(wres) ;
 }
 
-static void compute_log(resolve_service_t *res, ssexec_t *info)
+static void compute_log(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info)
 {
     log_flow() ;
 
@@ -323,7 +355,6 @@ static void compute_log(resolve_service_t *res, ssexec_t *info)
     auto_strings(description, str + res->name, " logger") ;
 
     lres.name = resolve_add_string(wres, name) ;
-
     lres.description = resolve_add_string(wres, description) ;
     lres.version = resolve_add_string(wres, str + res->version) ;
     lres.type = res->type ;
@@ -337,16 +368,13 @@ static void compute_log(resolve_service_t *res, ssexec_t *info)
     lres.owner = res->owner ;
     lres.treename = resolve_add_string(wres, str + res->treename) ;
     lres.user = resolve_add_string(wres, str + res->user) ;
+    if (res->inmodule)
+        lres.inmodule = resolve_add_string(wres, str + res->inmodule) ;
 
     lres.path.home = resolve_add_string(wres, str + res->path.home) ;
     lres.path.frontend = resolve_add_string(wres, str + res->path.frontend) ;
-
-    {
-        char status[strlen(res->sa.s + res->path.home) + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + strlen(name) + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
-        auto_strings(status, res->sa.s + res->path.home, SS_SYSTEM, SS_SYSTEM, SS_SVC, "/", name, SS_STATE, "/" SS_STATUS) ;
-        lres.path.status = resolve_add_string(wres, status) ;
-
-    }
+    lres.path.servicedir = compute_servicedir(wres, info) ;
+    lres.path.status = compute_status(wres, info) ;
 
     lres.dependencies.requiredby = resolve_add_string(wres, str + res->name) ;
     lres.dependencies.nrequiredby = 1 ;
@@ -360,13 +388,19 @@ static void compute_log(resolve_service_t *res, ssexec_t *info)
     lres.execute.downsignal = res->logger.execute.downsignal ;
 
     lres.live.livedir = resolve_add_string(wres, info->live.s) ;
-    lres.live.scandir = compute_scan_dir(wres, info, name) ;
-    lres.live.statedir = compute_state_dir(wres, info, name, "state") ;
-    lres.live.eventdir = compute_state_dir(wres, info, name, "event") ;
-    lres.live.notifdir = compute_state_dir(wres, info, name, "notif") ;
-    lres.live.supervisedir = compute_state_dir(wres, info, name, "supervise") ;
+    lres.live.scandir = compute_scan_dir(wres, info) ;
+    lres.live.statedir = compute_state_dir(wres, info, "state") ;
+    lres.live.eventdir = compute_state_dir(wres, info, "event") ;
+    lres.live.notifdir = compute_state_dir(wres, info, "notif") ;
+    lres.live.supervisedir = compute_state_dir(wres, info, "supervise") ;
     lres.live.fdholderdir = compute_pipe_service(wres, info, name, SS_FDHOLDER) ;
     lres.live.oneshotddir = compute_pipe_service(wres, info, name, SS_ONESHOTD) ;
+
+    lres.logger.destination = resolve_add_string(wres, str + res->logger.destination) ;
+    lres.logger.backup = res->logger.backup ;
+    lres.logger.maxsize = res->logger.maxsize ;
+    lres.logger.timestamp = res->logger.timestamp ;
+    lres.logger.want = 0 ;
 
     // oneshot do not use fdholder daemon
     if (res->type == TYPE_CLASSIC) {
@@ -377,24 +411,28 @@ static void compute_log(resolve_service_t *res, ssexec_t *info)
         lres.execute.run.runas = resolve_add_string(wres, res->sa.s + res->logger.execute.run.runas) ;
     }
 
-    if (!service_resolve_write(&lres))
-        log_dieu(LOG_EXIT_SYS, "write resolve file of service: ", name) ;
+    if (service_resolve_array_search(ares, *areslen, name) < 0) {
+        if (*areslen >= SS_MAX_SERVICE)
+            log_die(LOG_EXIT_SYS, "too many services to parse -- compile again 66 changing the --max-service options") ;
 
-    resolve_free(wres) ;
+        ares[(*areslen)++] = lres ;
+    }
+
+    free(wres) ;
 }
 
-void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
+void parse_compute_resolve(unsigned int idx, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info)
 {
     log_flow() ;
 
+    resolve_service_t_ref res = &ares[idx] ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     char name[strlen(res->sa.s + res->name) + 1] ;
-    char status[info->base.len + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + strlen(name) + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
 
     auto_strings(name, res->sa.s + res->name) ;
-    auto_strings(status, info->base.s, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", name, SS_STATE, "/", SS_STATUS) ;
 
-    res->path.status = resolve_add_string(wres, status) ;
+    res->path.status = compute_status(wres, info) ;
+    res->path.servicedir = compute_servicedir(wres, info) ;
 
     res->path.home = resolve_add_string(wres, info->base.s) ;
 
@@ -430,7 +468,7 @@ void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
      *
      *      /run/66/scandir/uid/
      * */
-    res->live.scandir = compute_scan_dir(wres, info, name) ;
+    res->live.scandir = compute_scan_dir(wres, info) ;
 
     /* state */
     /**
@@ -441,16 +479,16 @@ void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
      *      /run/66/state/uid/service_name/event
      *      /run/66/state/uid/service_name/supervise
      * */
-    res->live.statedir = compute_state_dir(wres, info, name, "state") ;
+    res->live.statedir = compute_state_dir(wres, info, "state") ;
 
     /* event */
-    res->live.eventdir = compute_state_dir(wres, info, name, "event") ;
+    res->live.eventdir = compute_state_dir(wres, info, "event") ;
 
     /* notif */
-    res->live.notifdir = compute_state_dir(wres, info, name, "notif") ;
+    res->live.notifdir = compute_state_dir(wres, info, "notif") ;
 
     /* supervise */
-    res->live.supervisedir = compute_state_dir(wres, info, name, "supervise") ;
+    res->live.supervisedir = compute_state_dir(wres, info, "supervise") ;
 
     /* fdholder */
     res->live.fdholderdir = compute_pipe_service(wres, info, name, SS_FDHOLDER) ;
@@ -458,9 +496,10 @@ void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
     /* oneshotd */
     res->live.oneshotddir = compute_pipe_service(wres, info, name, SS_ONESHOTD) ;
 
-    if (res->logger.want && res->type != TYPE_MODULE && res->type != TYPE_BUNDLE) {
+    if (res->logger.want && (res->type == TYPE_CLASSIC || res->type == TYPE_ONESHOT)) {
 
         size_t namelen = strlen(name) ;
+
         char logname[namelen + SS_LOG_SUFFIX_LEN + 1] ;
 
         auto_strings(logname, name, SS_LOG_SUFFIX) ;
@@ -469,16 +508,24 @@ void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
 
         res->logger.destination = compute_log_dir(wres, res) ;
 
-        if (res->type != TYPE_ONESHOT) {
+        if (res->type == TYPE_CLASSIC) {
 
             /** the logger is not a service with oneshot type */
-            char buf[strlen(res->sa.s + res->dependencies.depends) + 1 + strlen(res->sa.s + res->logger.name) + 1] ;
-            auto_strings(buf, res->sa.s + res->dependencies.depends, " ", res->sa.s + res->logger.name) ;
+            if (res->dependencies.ndepends) {
 
-            res->dependencies.depends = resolve_add_string(wres, buf) ;
+                char buf[strlen(res->sa.s + res->dependencies.depends) + 1 + strlen(res->sa.s + res->logger.name) + 1] ;
+                auto_strings(buf, res->sa.s + res->dependencies.depends, " ", res->sa.s + res->logger.name) ;
+
+                res->dependencies.depends = resolve_add_string(wres, buf) ;
+
+            } else {
+
+                res->dependencies.depends = resolve_add_string(wres, res->sa.s + res->logger.name) ;
+
+            }
             res->dependencies.ndepends++ ;
 
-            compute_log(res, info) ;
+            compute_log(res, ares, areslen, info) ;
         }
     }
 
@@ -513,9 +560,6 @@ void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
             }
         }
     }
-
-    if (!service_resolve_write(res))
-        log_dieu(LOG_EXIT_SYS, "write resolve file of service: ", name) ;
 
     free(wres) ;
 }
