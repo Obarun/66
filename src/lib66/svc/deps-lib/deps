@@ -1,6 +1,9 @@
+svc_compute_ns.o
+svc_launch.o
 svc_scandir_ok.o
 svc_scandir_send.o
 svc_send.o
+svc_send_fdholder.o
 svc_send_wait.o
 svc_unsupervise.o
 -ls6

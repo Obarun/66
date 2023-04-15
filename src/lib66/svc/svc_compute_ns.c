@@ -1,5 +1,5 @@
 /*
- * ssexec_signal.c
+ * ssexec_compute_ns.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -12,22 +12,23 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <string.h>
 #include <stdint.h>
 
 #include <oblibs/log.h>
 #include <oblibs/graph.h>
 #include <oblibs/types.h>
+#include <oblibs/sastr.h>
 
-#include <skalibs/sgetopt.h>
+#include <skalibs/genalloc.h>
 
 #include <66/svc.h>
 #include <66/config.h>
 #include <66/resolve.h>
 #include <66/ssexec.h>
-#include <66/service.h>
 #include <66/state.h>
 #include <66/enum.h>
+#include <66/service.h>
+#include <66/sanitize.h>
 
 #include <s6/supervise.h>//s6_svstatus_t
 
@@ -115,111 +116,24 @@ static void pidservice_init_array(unsigned int *list, unsigned int listlen, pids
 
 }
 
-int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
+int svc_compute_ns(resolve_service_t *res, uint8_t what, uint8_t timeout, ssexec_t *info, char const *updown, uint8_t opt_updown, uint8_t reloadmsg,char const *data, uint8_t propagate)
 {
     log_flow() ;
 
     int r ;
-    uint8_t what = 0, requiredby = 0, propagate = 1 ;
+    uint8_t requiredby = 0 ;
+    size_t pos = 0 ;
     graph_t graph = GRAPH_ZERO ;
+    stralloc sa = STRALLOC_ZERO ;
 
     unsigned int napid = 0 ;
-
-    char updown[4] = "-w \0" ;
-    uint8_t opt_updown = 0 ;
-    char data[DATASIZE + 1] = "-" ;
-    unsigned int datalen = 1 ;
-    uint8_t reloadmsg = 0 ;
-
     unsigned int areslen = 0, list[SS_MAX_SERVICE], visit[SS_MAX_SERVICE] ;
     resolve_service_t ares[SS_MAX_SERVICE] ;
 
-    /*
-     * STATE_FLAGS_TOPROPAGATE = 0
-     * do not send signal to the depends/requiredby of the service.
-     *
-     * STATE_FLAGS_TOPROPAGATE = 1
-     * send signal to the depends/requiredby of the service
-     *
-     * When we come from 66 start/stop tool we always want to
-     * propagate the signal. But we may need/want to send a e.g. SIGHUP signal
-     * to a specific service without interfering on its depends/requiredby services
-     *
-     * Also, we only deal with already supervised service. This tool is the signal sender,
-     * it not intended to sanitize the state of the services.
-     *
-     * */
-    uint32_t gflag = STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_ISSUPERVISED|STATE_FLAGS_WANTUP ;
+    uint32_t gflag = STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;)
-        {
-            int opt = subgetopt_r(argc,argv, OPTS_SIGNAL, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-                case 'h' : info_help(info->help, info->usage) ; return 0 ;
-                case 'a' :
-                case 'b' :
-                case 'q' :
-                case 'H' :
-                case 'k' :
-                case 't' :
-                case 'i' :
-                case '1' :
-                case '2' :
-                case 'p' :
-                case 'c' :
-                case 'y' :
-                case 'r' :
-                case 'o' :
-                case 'd' :
-                case 'D' :
-                case 'u' :
-                case 'U' :
-                case 'x' :
-                case 'O' :
-                case 'Q' :
-
-                    if (datalen >= DATASIZE)
-                        log_die(LOG_EXIT_USER, "too many arguments") ;
-
-                    data[datalen++] = opt == 'H' ? 'h' : opt ;
-                    break ;
-
-                case 'w' :
-
-                    if (!memchr("dDuUrR", l.arg[0], 6))
-                        log_usage(info->usage, "\n", info->help) ;
-
-                    updown[2] = l.arg[0] ;
-                    opt_updown = 1 ;
-                    break ;
-
-                case 'P':
-                    propagate = 0 ;
-                    FLAGS_CLEAR(gflag, STATE_FLAGS_TOPROPAGATE) ;
-                    break ;
-
-                default :
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
-    if (argc < 1 || datalen < 2)
-        log_usage(info->usage, "\n", info->help) ;
-
-    if (data[1] != 'u')
-        what = 1 ;
-
-    if (data[1] == 'r')
-        reloadmsg = 1 ;
-    else if (data[1] == 'h')
-        reloadmsg = 2 ;
+    if (!propagate)
+        FLAGS_CLEAR(gflag, STATE_FLAGS_TOPROPAGATE) ;
 
     if (what) {
         requiredby = 1 ;
@@ -227,25 +141,38 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
         FLAGS_CLEAR(gflag, STATE_FLAGS_WANTUP) ;
     }
 
-    if ((svc_scandir_ok(info->scandir.s)) != 1)
-        log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
+    if (res->dependencies.ncontents) {
 
-    /** build the graph of the entire system.*/
-    graph_build_service(&graph, ares, &areslen, info, gflag) ;
+        if (!sastr_clean_string(&sa, res->sa.s + res->dependencies.contents))
+            log_dieu(LOG_EXIT_SYS, "clean string") ;
+
+    } else {
+        log_warn("empty ns: ", res->sa.s + res->name) ;
+        return 0 ;
+    }
+
+    /** build the graph of the ns */
+    service_graph_g(sa.s, sa.len, &graph, ares, &areslen, info, gflag) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not supervised -- initiate its first") ;
 
     graph_array_init_single(visit, SS_MAX_SERVICE) ;
 
-    for (; *argv ; argv++) {
+    FOREACH_SASTR(&sa, pos) {
 
-        int aresid = service_resolve_array_search(ares, areslen, *argv) ;
+        char const *name = sa.s + pos ;
+
+        int aresid = service_resolve_array_search(ares, areslen, name) ;
         if (aresid < 0)
-            log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you parsed it?") ;
+            log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parsed it?") ;
 
-        graph_compute_visit(*argv, visit, list, &graph, &napid, requiredby) ;
+        graph_compute_visit(name, visit, list, &graph, &napid, requiredby) ;
+
     }
+
+    if (!what)
+        sanitize_init(list, napid, &graph, ares, areslen, STATE_FLAGS_UNKNOWN) ;
 
     pidservice_t apids[napid] ;
 
@@ -256,6 +183,8 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
     graph_free_all(&graph) ;
 
     service_resolve_array_free(ares, areslen) ;
+
+    stralloc_free(&sa) ;
 
     return r ;
 }
