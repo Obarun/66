@@ -34,23 +34,27 @@ void tree_service_remove(char const *base, char const *treename, char const *ser
     if (!resolve_read_g(wres, base, treename))
         log_dieusys(LOG_EXIT_SYS, "read resolve file of tree: ", treename) ;
 
-    if (!sastr_clean_string(&sa, tres.sa.s + tres.contents))
-        log_dieu(LOG_EXIT_SYS, "clean string") ;
+    if (tres.ncontents) {
 
-    if (!sastr_remove_element(&sa, service))
-        log_dieu(LOG_EXIT_SYS, "remove service: ", service, " list") ;
+        if (!sastr_clean_string(&sa, tres.sa.s + tres.contents))
+            log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    if (sa.len) {
-        if (!sastr_rebuild_in_oneline(&sa))
-            log_dieu(LOG_EXIT_SYS, "rebuild stralloc list") ;
-        str = sa.s ;
+        if (!sastr_remove_element(&sa, service))
+            log_dieu(LOG_EXIT_SYS, "remove service: ", service, " from selection") ;
 
-    } else str = "" ;
+        if (sa.len) {
+            if (!sastr_rebuild_in_oneline(&sa))
+                log_dieu(LOG_EXIT_SYS, "rebuild stralloc list") ;
+            str = sa.s ;
 
-    if (!resolve_modify_field(wres, E_RESOLVE_TREE_CONTENTS, str))
+        } else str = "" ;
+
+        if (!resolve_modify_field(wres, E_RESOLVE_TREE_CONTENTS, str))
         log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
+    }
 
-    tres.ncontents-- ;
+    if (tres.ncontents)
+        tres.ncontents-- ;
 
     if (!resolve_write_g(wres, base, treename))
         log_dieusys(LOG_EXIT_SYS, "write resolve file of tree: ", treename) ;
