@@ -48,10 +48,28 @@ static void parse_service_instance(stralloc *frontend, char const *svsrc, char c
     if (!instance_splitname(&sa, sv, insta, SS_INSTANCE_TEMPLATE))
         log_die(LOG_EXIT_SYS, "split instance service of: ", sv) ;
 
-    log_trace("read frontend service of: ", svsrc, sv) ;
+    log_trace("read frontend service at: ", svsrc, sa.s) ;
 
-    if (read_svfile(frontend, sa.s, svsrc) <= 0)
-        log_dieusys(LOG_EXIT_SYS, "read frontend service of: ", svsrc, sa.s) ;
+    if (read_svfile(frontend, sa.s, svsrc) <= 0) {
+
+        char instaname[sa.len + 1] ;
+        auto_strings(instaname, sa.s) ;
+        sa.len = 0 ;
+        /** in module the template service may not exist e.g.
+         * module which call another module. In this case
+         * follow the classic way */
+        int r = service_frontend_path(&sa, sv, getuid(), 0) ;
+        if (r < 1)
+            log_dieu(LOG_EXIT_SYS, "get frontend service file of: ", sv) ;
+
+        char svsrc[sa.len + 1] ;
+
+        if (!ob_dirname(svsrc, sa.s))
+            log_dieu(LOG_EXIT_SYS, "get dirname of: ", sa.s) ;
+
+        if (read_svfile(frontend, instaname, svsrc) <= 0)
+            log_dieusys(LOG_EXIT_SYS, "read frontend service at: ", svsrc, instaname) ;
+    }
 
     stralloc_free(&sa) ;
 
@@ -110,10 +128,10 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
     } else {
 
-        log_trace("read frontend service of: ", sv) ;
+        log_trace("read frontend service at: ", sv) ;
 
         if (read_svfile(&sa, svname, svsrc) <= 0)
-            log_dieusys(LOG_EXIT_SYS, "read frontend service of: ", sv) ;
+            log_dieusys(LOG_EXIT_SYS, "read frontend service at: ", sv) ;
     }
 
     char file[sa.len + 1] ;
@@ -238,7 +256,6 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
         if (*areslen >= SS_MAX_SERVICE)
             log_die(LOG_EXIT_SYS, "too many services to parse -- compile again 66 changing the --max-service options") ;
         ares[(*areslen)++] = res ;
-
     }
 
     freed:
@@ -246,3 +263,4 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
         free(wres) ;
         return 1 ;
 }
+

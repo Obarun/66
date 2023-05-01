@@ -26,10 +26,10 @@
 #define SS_MODULE_CONFIG_DIR_LEN (sizeof SS_MODULE_CONFIG_DIR - 1)
 #define SS_MODULE_CONFIG_SCRIPT "configure"
 #define SS_MODULE_CONFIG_SCRIPT_LEN (sizeof SS_MODULE_CONFIG_SCRIPT - 1)
-#define SS_MODULE_SERVICE "/service"
-#define SS_MODULE_SERVICE_LEN (sizeof SS_MODULE_SERVICE - 1)
-#define SS_MODULE_SERVICE_INSTANCE "/service@"
-#define SS_MODULE_SERVICE_INSTANCE_LEN (sizeof SS_MODULE_SERVICE_INSTANCE - 1)
+#define SS_MODULE_FRONTEND "/frontend"
+#define SS_MODULE_FRONTEND_LEN (sizeof SS_MODULE_FRONTEND - 1)
+#define SS_MODULE_ACTIVATED "/activated"
+#define SS_MODULE_ACTIVATED_LEN (sizeof SS_MODULE_ACTIVATED - 1)
 
 extern void get_list(stralloc *list, char const *src, char const *name, mode_t mode) ;
 extern void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force) ;

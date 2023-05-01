@@ -13,6 +13,7 @@
  */
 
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -100,12 +101,12 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
     log_flow() ;
 
     int r, insta = -1 ;
-    size_t pos = 0, pathlen = 0 ;
+    size_t pos = 0, copylen = 0, len = 0 ;
     char name[strlen(res->sa.s + res->name) + 1] ;
     auto_strings(name,res->sa.s + res->name) ;
     char *src = res->sa.s + res->path.frontend ;
-    char dirname[strlen(src) + 1] ;
-    char path[SS_MAX_PATH_LEN] ;
+    char dirname[strlen(src)] ;
+    char copy[SS_MAX_PATH_LEN] ;
     char ainsta[strlen(name)] ;
     stralloc list = STRALLOC_ZERO ;
     resolve_wrapper_t_ref wres = 0 ;
@@ -120,34 +121,32 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
 
     if (!getuid()) {
 
-        auto_strings(path, SS_SERVICE_ADMDIR, name) ;
+        auto_strings(copy, SS_SERVICE_ADMDIR, name) ;
 
     } else {
 
-        if (!set_ownerhome_stack(path))
+        if (!set_ownerhome_stack(copy))
             log_dieusys(LOG_EXIT_SYS, "unable to find the home directory of the user") ;
 
-        pathlen = strlen(path) ;
-        auto_strings(path + pathlen, SS_SERVICE_USERDIR, name) ;
+        auto_strings(copy + copylen, SS_SERVICE_USERDIR, name) ;
     }
 
     uint8_t conf = res->environ.env_overwrite ;
 
-    /** check mandatory directories
-     * res->frontend/module_name/{configure,service,service@} */
+    /** check mandatory directories */
     parse_module_check_dir(dirname, SS_MODULE_CONFIG_DIR) ;
-    parse_module_check_dir(dirname, SS_MODULE_SERVICE) ;
-    parse_module_check_dir(dirname, SS_MODULE_SERVICE_INSTANCE) ;
+    parse_module_check_dir(dirname, SS_MODULE_ACTIVATED) ;
+    parse_module_check_dir(dirname, SS_MODULE_FRONTEND) ;
 
-    r = scan_mode(path, S_IFDIR) ;
+    r = scan_mode(copy, S_IFDIR) ;
     if (r == -1) {
         errno = EEXIST ;
-        log_dieusys(LOG_EXIT_SYS, "conflicting format of: ", path) ;
+        log_dieusys(LOG_EXIT_SYS, "conflicting format of: ", copy) ;
 
     } else if (!r) {
 
-        if (!hiercopy(dirname, path))
-            log_dieusys(LOG_EXIT_SYS, "copy: ", dirname, " to: ", path) ;
+        if (!hiercopy(dirname, copy))
+            log_dieusys(LOG_EXIT_SYS, "copy: ", dirname, " to: ", copy) ;
 
     } else {
 
@@ -158,119 +157,136 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
             goto deps ;
         }
 
-        log_trace("remove directory: ", path) ;
+        log_trace("remove directory: ", copy) ;
 
-        if (!dir_rm_rf(path))
-            log_dieusys (LOG_EXIT_SYS, "remove: ", path) ;
+        if (!dir_rm_rf(copy))
+            log_dieusys (LOG_EXIT_SYS, "remove: ", copy) ;
 
-        if (!hiercopy(dirname, path))
-            log_dieusys(LOG_EXIT_SYS,"copy: ", dirname, " to: ", path) ;
+        log_trace("copy: ", dirname, " to: ", copy) ;
+        if (!hiercopy(dirname, copy))
+            log_dieusys(LOG_EXIT_SYS,"copy: ", dirname, " to: ", copy) ;
     }
 
-    pathlen = strlen(path) ;
+    copylen = strlen(copy) ;
+
+    auto_strings(copy + copylen, "/", ainsta) ;
+
     /** remove the original service frontend file inside the copied directory
      * to avoid double frontend service file for a same service.*/
-    auto_strings(path + pathlen, "/", ainsta) ;
+    errno = 0 ;
+    if (unlink(copy) < 0 && errno != ENOENT)
+        log_dieusys(LOG_EXIT_ZERO, "unlink: ", copy) ;
 
-    if (unlink(path) < 0)
-        log_dieusys(LOG_EXIT_ZERO, "unlink: ", path) ;
+    copy[copylen] = 0 ;
 
-    path[pathlen] = 0 ;
+    auto_strings(copy + copylen, SS_MODULE_FRONTEND) ;
 
     /** contents */
-    get_list(&list, path, name, S_IFREG) ;
+    get_list(&list, copy, name, S_IFREG) ;
     regex_replace(&list, res) ;
 
+    copy[copylen] = 0 ;
+
     /** directories */
-    get_list(&list, path, name, S_IFDIR) ;
+    get_list(&list, copy, name, S_IFDIR) ;
     regex_rename(&list, res, res->regex.directories) ;
 
     /** filename */
-    get_list(&list, path, name, S_IFREG) ;
+    get_list(&list, copy, name, S_IFREG) ;
     regex_rename(&list, res, res->regex.files) ;
 
     /** configure script */
-    regex_configure(res, info, path, name) ;
+    regex_configure(res, info, copy, name) ;
 
     deps:
 
-    list.len = 0 ;
+    auto_strings(copy + copylen, SS_MODULE_ACTIVATED) ;
 
-    if (!auto_stra(&list, path))
-        log_die_nomem("stralloc") ;
+    get_list(&list, copy, name, S_IFREG) ;
 
-    char t[list.len] ;
+    auto_strings(copy + copylen, SS_MODULE_FRONTEND) ;
 
-    sastr_to_char(t, &list) ;
+    {
+        /* parse each activated services */
+        len = list.len ;
+        char l[len + 1] ;
+        stralloc sa = STRALLOC_ZERO ;
 
-    list.len = 0 ;
-    char const *exclude[3] = { SS_MODULE_CONFIG_DIR + 1, SS_MODULE_SERVICE_INSTANCE + 1, 0 } ;
+        sastr_to_char(l, &list) ;
 
-    if (!sastr_dir_get_recursive(&list, t, exclude, S_IFREG, 1))
-        log_dieusys(LOG_EXIT_SYS, "get file(s) of module: ", name) ;
+        list.len = 0 ;
 
-    char ll[list.len] ;
-    size_t llen = list.len ;
+        for (pos = 0 ; pos < len ; pos += strlen(l + pos) + 1) {
 
-    sastr_to_char(ll, &list) ;
+            sa.len = 0 ;
 
-    list.len = 0 ;
+            char fname[strlen(l + pos)] ;
 
-    for (pos = 0 ; pos < llen ; pos += strlen(ll + pos) + 1) {
+            if (!ob_basename(fname, l + pos))
+                log_dieusys(LOG_EXIT_ZERO, "basename of: ", l + pos) ;
 
-        char *dname = ll + pos ;
-        char ainsta[pathlen + SS_MODULE_SERVICE_INSTANCE_LEN + 1 + SS_MAX_SERVICE_NAME + 1] ;
-        size_t dlen = strlen(dname) ;
-        char bname[dlen] ;
+            /** cannot call itself */
+            if (!strcmp(name, fname))
+                log_die(LOG_EXIT_SYS, "cyclic call detected -- ", name, " call ", fname) ;
 
-        if (!ob_basename(bname,dname))
-            log_dieu(LOG_EXIT_SYS, "find basename of: ", dname) ;
+            /** Search first inside the frontend directory.
+             * If not found, search in the entire system. */
 
-        if (instance_check(bname) > 0) {
-            auto_strings(ainsta, path, SS_MODULE_SERVICE_INSTANCE, "/", bname) ;
-            dname = ainsta ;
-        }
+            if (!service_frontend_path(&sa, fname, info->owner, copy)) {
 
-        if (!strcmp(name, bname))
-            log_die(LOG_EXIT_SYS, "cyclic call detected -- ", name, " call ", bname) ;
+                if (!service_frontend_path(&sa, fname, info->owner, 0))
+                    log_dieu(LOG_EXIT_USER, "find service frontend file of: ", fname) ;
 
-        char n[strlen(name) + 1 + strlen(bname) + 1] ;
+                /*if (!hiercopy(sa.s, copy))
+                    log_dieusys(LOG_EXIT_SYS, "copy: ", sa.s, " to: ", copy) ;
+                */
+            }
 
-        auto_strings(n, name, ":", bname) ;
+            char n[strlen(name) + 1 + strlen(fname) + 1] ;
 
-        if (!sastr_add_string(&list, n))
-            log_die_nomem("stralloc") ;
-
-        parse_frontend(dname, ares, areslen, info, force, conf, path, bname, name) ;
-    }
-
-    llen = list.len ;
-
-    sastr_to_char(ll, &list) ;
-
-    list.len = 0 ;
-
-    for (pos = 0 ; pos < llen ; pos += strlen(ll + pos) + 1) {
-
-        int aresid = service_resolve_array_search(ares, *areslen, ll + pos) ;
-        if (aresid < 0)
-            log_die(LOG_EXIT_USER, "service: ",ll + pos, " not available -- please make a bug report") ;
-
-        if (ares[aresid].dependencies.ndepends || ares[aresid].dependencies.nrequiredby)
-            convert_tomodule(&ares[aresid], name) ;
-
-        if (ares[aresid].logger.want && ares[aresid].type == TYPE_CLASSIC) {
-
-            char n[strlen(ares[aresid].sa.s + ares[aresid].name) + SS_LOG_SUFFIX_LEN + 1] ;
-
-            auto_strings(n, ares[aresid].sa.s + ares[aresid].name, SS_LOG_SUFFIX) ;
+            auto_strings(n, name, ":", fname) ;
 
             if (!sastr_add_string(&list, n))
                 log_die_nomem("stralloc") ;
+
+            parse_frontend(sa.s, ares, areslen, info, force, conf, copy, fname, name) ;
         }
 
-        if (!sastr_add_string(&list, ll + pos))
-            log_die_nomem("stralloc") ;
+        stralloc_free(&sa) ;
+    }
+
+    {
+        /* make a good list of dependencies/requiredby*/
+        len = list.len ;
+
+        char l[len + 1] ;
+
+        sastr_to_char(l, &list) ;
+
+        list.len = 0 ;
+
+        for (pos = 0 ; pos < len ; pos += strlen(l + pos) + 1) {
+
+            int aresid = service_resolve_array_search(ares, *areslen, l + pos) ;
+            if (aresid < 0)
+                log_die(LOG_EXIT_USER, "service: ", l + pos, " not available -- please make a bug report") ;
+
+            if (ares[aresid].dependencies.ndepends || ares[aresid].dependencies.nrequiredby)
+                convert_tomodule(&ares[aresid], name) ;
+
+            if (ares[aresid].logger.want && ares[aresid].type == TYPE_CLASSIC) {
+
+                char n[strlen(ares[aresid].sa.s + ares[aresid].name) + SS_LOG_SUFFIX_LEN + 1] ;
+
+                auto_strings(n, ares[aresid].sa.s + ares[aresid].name, SS_LOG_SUFFIX) ;
+
+                if (!sastr_add_string(&list, n))
+                    log_die_nomem("stralloc") ;
+            }
+
+            if (!sastr_add_string(&list, l + pos))
+                log_die_nomem("stralloc") ;
+        }
     }
 
     wres = resolve_set_struct(DATA_SERVICE, res) ;
