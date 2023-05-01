@@ -77,7 +77,7 @@ static void resolve_compare(resolve_service_t *res)
         }
 
         if (strcmp(res->sa.s + res->treename, fres.sa.s + fres.treename))
-            tree_service_remove(res->sa.s + res->path.home, res->sa.s + res->treename, name) ;
+            tree_service_remove(fres.sa.s + fres.path.home, fres.sa.s + fres.treename, name) ;
     }
 
     resolve_free(wres) ;
