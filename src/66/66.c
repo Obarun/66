@@ -27,22 +27,6 @@
 #include <66/tree.h>
 #include <66/hpr.h>
 
-void set_treeinfo(ssexec_t *info)
-{
-    log_flow() ;
-
-    int r = tree_sethome(info) ;
-    if (r == -1)
-        log_dieu(LOG_EXIT_USER, "set the tree name") ;
-    if (!r)
-        log_dieu(LOG_EXIT_USER, "parse seed file") ;
-
-    if (!tree_get_permissions(info->base.s, info->treename.s))
-        log_die(LOG_EXIT_USER,"You're not allowed to use the tree: ",info->treename.s) ;
-
-    info->treeallow = 1 ;
-}
-
 static void set_info(ssexec_t *info)
 {
     log_flow() ;

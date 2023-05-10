@@ -88,7 +88,6 @@ typedef ssexec_func_t *ssexec_func_t_ref ;
 extern void ssexec_free(ssexec_t *info) ;
 extern void ssexec_copy(ssexec_t *dest, ssexec_t *src) ;
 extern ssexec_t const ssexec_zero ;
-extern void set_treeinfo(ssexec_t *info) ;
 
 /** main */
 extern ssexec_func_t ssexec_parse ;

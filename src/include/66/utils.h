@@ -59,5 +59,6 @@ extern void name_isvalid(char const *name) ;
 
 extern int set_ownerhome_stack(char *store) ;
 extern int set_ownersysdir_stack(char *base, uid_t owner) ;
+extern void set_treeinfo(ssexec_t *info) ;
 
 #endif
