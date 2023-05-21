@@ -25,7 +25,6 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/types.h>
 
-
 #include <66/service.h>
 #include <66/constants.h>
 #include <66/state.h>
@@ -34,6 +33,59 @@
 
 #include <s6/fdholder.h>
 
+void fdholder_store(s6_fdholder_t *a, char const *name, tain *deadline, tain *limit)
+{
+    size_t namelen = strlen(name) ;
+    char fdname[SS_FDHOLDER_PIPENAME_LEN + 2 + namelen + 1] ;
+
+    int fd[2] ;
+    if (pipe(fd) < 0)
+        log_dieu(LOG_EXIT_SYS, "pipe") ;
+
+    auto_strings(fdname, SS_FDHOLDER_PIPENAME, "r-", name) ;
+
+    log_trace("store identifier: ", fdname) ;
+    if (!s6_fdholder_store_g(a, fd[0], fdname, limit, deadline)) {
+        close(fd[0]) ;
+        close(fd[1]) ;
+        log_dieusys(LOG_EXIT_SYS, "store fd: ", fdname) ;
+    }
+
+    close(fd[0]) ;
+
+    fdname[strlen(SS_FDHOLDER_PIPENAME)] = 'w' ;
+
+    log_trace("store identifier: ", fdname) ;
+    if (!s6_fdholder_store_g(a, fd[1], fdname, limit, deadline)) {
+        close(fd[1]) ;
+        log_dieusys(LOG_EXIT_SYS, "store fd: ", fdname) ;
+    }
+
+    close(fd[1]) ;
+}
+
+void fdholder_delete(s6_fdholder_t *a, char const *name, tain *deadline)
+{
+    size_t namelen = strlen(name) ;
+    char fdname[SS_FDHOLDER_PIPENAME_LEN + 2 + namelen + 1] ;
+
+    auto_strings(fdname, SS_FDHOLDER_PIPENAME, "r-", name) ;
+
+    if (s6_fdholder_retrieve_g(a, fdname, deadline) >= 0) {
+        log_trace("delete identifier: ", fdname) ;
+        if (!s6_fdholder_delete_g(a, fdname, deadline))
+            log_dieusys(LOG_EXIT_SYS, "delete fd: ", fdname) ;
+    }
+
+    fdname[strlen(SS_FDHOLDER_PIPENAME)] = 'w' ;
+
+    if (s6_fdholder_retrieve_g(a, fdname, deadline) >= 0) {
+
+        log_trace("delete identifier: ", fdname) ;
+        if (!s6_fdholder_delete_g(a, fdname, deadline))
+            log_dieusys(LOG_EXIT_SYS, "delete fd: ", fdname) ;
+    }
+}
 /**
  * Accepted flag are
  *      - STATE_FLAGS_TRUE -> store the service A.K.A identifier
@@ -50,16 +102,17 @@ void sanitize_fdholder(resolve_service_t *res, uint32_t flag)
         stralloc list = STRALLOC_ZERO ;
         char *sa = res->sa.s ;
         char *name = sa + res->logger.name ;
-        size_t namelen = strlen(name) ;
         char *socket = sa + res->live.fdholderdir ;
         size_t socketlen = strlen(socket) ;
-
+        ss_state_t sta = STATE_ZERO ;
         s6_fdholder_t a = S6_FDHOLDER_ZERO ;
         tain deadline = tain_infinite_relative, limit = tain_infinite_relative ;
-        char fdname[SS_FDHOLDER_PIPENAME_LEN + 2 + namelen + 1] ;
         char sock[socketlen + 3] ;
 
         auto_strings(sock, socket, "/s") ;
+
+        if (!state_read(&sta, res))
+            log_dieu(LOG_EXIT_SYS, "read state file of: ", name) ;
 
         tain_now_set_stopwatch_g() ;
         tain_add_g(&deadline, &deadline) ;
@@ -70,44 +123,18 @@ void sanitize_fdholder(resolve_service_t *res, uint32_t flag)
 
         if (FLAGS_ISSET(flag, STATE_FLAGS_TRUE)) {
 
-            int fd[2] ;
-            if (pipe(fd) < 0)
-                log_dieu(LOG_EXIT_SYS, "pipe") ;
+            if (service_is(&sta, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_TRUE ||
+                service_is(&sta, STATE_FLAGS_TORELOAD) == STATE_FLAGS_TRUE ||
+                service_is(&sta, STATE_FLAGS_TORESTART) == STATE_FLAGS_TRUE) {
 
-            auto_strings(fdname, SS_FDHOLDER_PIPENAME, "r-", name) ;
-
-            log_trace("store identifier: ", fdname) ;
-            if (!s6_fdholder_store_g(&a, fd[0], fdname, &limit, &deadline)) {
-                close(fd[0]) ;
-                close(fd[1]) ;
-                log_dieusys(LOG_EXIT_SYS, "store fd: ", fdname) ;
+                fdholder_delete(&a, name, &deadline) ;
             }
 
-            close(fd[0]) ;
-
-            fdname[strlen(SS_FDHOLDER_PIPENAME)] = 'w' ;
-
-            log_trace("store identifier: ", fdname) ;
-            if (!s6_fdholder_store_g(&a, fd[1], fdname, &limit, &deadline)) {
-                close(fd[1]) ;
-                log_dieusys(LOG_EXIT_SYS, "store fd: ", fdname) ;
-            }
-
-            close(fd[1]) ;
+            fdholder_store(&a, name, &deadline, &limit) ;
 
         } else if (FLAGS_ISSET(flag, STATE_FLAGS_FALSE)) {
 
-            auto_strings(fdname, SS_FDHOLDER_PIPENAME, "r-", name) ;
-
-            log_trace("delete identifier: ", fdname) ;
-            if (!s6_fdholder_delete_g(&a, fdname, &deadline))
-                log_dieusys(LOG_EXIT_SYS, "delete fd: ", fdname) ;
-
-            fdname[strlen(SS_FDHOLDER_PIPENAME)] = 'w' ;
-
-            log_trace("delete identifier: ", fdname) ;
-            if (!s6_fdholder_delete_g(&a, fdname, &deadline))
-                log_dieusys(LOG_EXIT_SYS, "delete fd: ", fdname) ;
+            fdholder_delete(&a, name, &deadline) ;
 
         }
 
