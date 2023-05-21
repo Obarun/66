@@ -40,6 +40,9 @@ int tree_resolve_master_write_cdb(cdbmaker *c, resolve_tree_master_t *mres)
     /* contents */
     !resolve_add_cdb(c,"contents",str, mres->contents, 1) ||
 
+    /* nallow */
+    !resolve_add_cdb_uint(c,"nallow", mres->nallow) ||
+
     /* nenabled */
     !resolve_add_cdb_uint(c,"nenabled",mres->nenabled) ||
 
