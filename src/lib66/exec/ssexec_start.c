@@ -80,13 +80,12 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;
 
     for (; n < argc ; n++)
-        /** If it's the first use of 66, we don't have
-         * any resolve files available or the service was
-         * never parsed, the graph is empty in the first case or
-         * the later call of service_array_search do not found the corresponding
-         * resolve file for the second case.
-         * Try at least to parse the corresponding frontend file. */
-        sanitize_source(argv[n], info, STATE_FLAGS_UNKNOWN) ;
+        /** If it's the first use of 66 or we don't have any resolve files available,
+         * or the service was never parsed, the graph is empty in the first case,
+         * or the later call of service_array_search does not find the corresponding
+         * resolve file in the second case.
+         * At least try to parse the corresponding frontend file. */
+        sanitize_source(argv[n], info) ;
 
     /** build the graph of the entire system */
     graph_build_service(&graph, ares, &areslen, info, flag) ;
@@ -103,11 +102,10 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
             log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parsed it?") ;
 
         graph_compute_visit(argv[n], visit, list, &graph, &nservice, 0) ;
-
     }
 
     /** initiate services at the corresponding scandir */
-    sanitize_init(list, nservice, &graph, ares, areslen, STATE_FLAGS_UNKNOWN) ;
+    sanitize_init(list, nservice, &graph, ares, areslen) ;
 
     service_resolve_array_free(ares, areslen) ;
 
