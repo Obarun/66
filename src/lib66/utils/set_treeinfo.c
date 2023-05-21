@@ -12,8 +12,6 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <stddef.h>
-
 #include <oblibs/log.h>
 
 #include <66/utils.h>
