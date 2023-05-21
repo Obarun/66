@@ -67,15 +67,14 @@ int tree_sethome(ssexec_t *info)
         } else if (!r) {
 
             /** Tree doesn't exist yet.
-             * Let see if we have a seed file to create it */
-            if (!tree_seed_isvalid(info->treename.s))
-                log_warnu_return(LOG_EXIT_ZERO,"find a seed file to create the tree: ", info->treename.s) ;
+             * Let see if we have a seed file to create it.
+             * if (!tree_seed_isvalid(info->treename.s))
+             *   log_warnu_return(LOG_EXIT_ZERO,"find a seed file to create the tree: ", info->treename.s) ; */
 
-            int nargc = 4 ;
+            int nargc = 3 ;
             char const *newargv[nargc] ;
             unsigned int m = 0 ;
 
-            newargv[m++] = "66" ;
             newargv[m++] = "tree" ;
             newargv[m++] = info->treename.s ;
             newargv[m++] = 0 ;
