@@ -575,10 +575,10 @@ void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what)
     if (!resolve_write_g(wres, info->base.s, info->treename.s))
         log_dieu(LOG_EXIT_SYS, "write resolve file of: ", info->treename.s) ;
 
-    /** check of the seed.sa.len: if the seed file is not parse at this point
-     * the seed.sa.s + seed.depends is empty which produce a segmentation fault
-     * when the -o options is passed at commandline. We have already passed
-     * through the tree_parse_options_depends anyway when it's the case. */
+    /** Check the length of seed.sa.len: If the seed file is not parsed at this point,
+     * seed.sa.s + seed.depends is empty, which can lead to a segmentation fault
+     * when the -o option is passed at the command line. However, we have already gone
+     * through the tree_parse_options_depends in such cases. */
     if (what->depends && seed.sa.len)
         tree_parse_options_depends(g, info, seed.sa.s + seed.depends, 0, what) ;
 
@@ -972,6 +972,8 @@ static void tree_service_switch_contents(char const *base, char const *treesrc, 
     size_t pos = 0 ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref swres = resolve_set_struct(DATA_SERVICE, &res) ;
     stralloc sa = STRALLOC_ZERO ;
 
     if (!resolve_get_field_tosa_g(&sa, base, treesrc, DATA_TREE, E_RESOLVE_TREE_CONTENTS))
@@ -979,13 +981,13 @@ static void tree_service_switch_contents(char const *base, char const *treesrc, 
 
     FOREACH_SASTR(&sa, pos) {
         log_trace("switch service: ", sa.s + pos, " to tree: ", treedst) ;
-        /** set service to default tree */
-        if (!resolve_modify_field_g(wres, base, sa.s + pos, E_RESOLVE_SERVICE_TREENAME, treedst))
+        if (!resolve_modify_field_g(swres, base, sa.s + pos, E_RESOLVE_SERVICE_TREENAME, treedst))
             log_dieu(LOG_EXIT_SYS, "modify resolve file of: ", sa.s + pos) ;
     }
 
     stralloc_free(&sa) ;
     resolve_free(wres) ;
+    resolve_free(swres) ;
 }
 
 void tree_remove(graph_t *g, char const *base, char const *treename)
@@ -1007,10 +1009,10 @@ void tree_remove(graph_t *g, char const *base, char const *treename)
     tree_depends_requiredby_deps(g, base, treename, 1, 1, treename) ;
 
     if (tree_iscurrent(base, treename)) {
-        /** this symlink must be valid in any case. If not the
-         * sanitize_system process will crash. So, at least point to
-         * the SS_DEFAULT_TREENAME such as this tree is create automatically
-         * at every 66 command invocation if it doesn't exist  */
+        /** This symlink must be valid in any case to avoid crashing the sanitize_system process.
+         * If it is not valid, at least point it to the SS_DEFAULT_TREENAME,
+         * as this tree is automatically created at every 66 command invocation
+         * if it does not exist yet. */
         log_warn("tree ",treename, " is marked as default -- switch default to: ", SS_DEFAULT_TREENAME) ;
 
         if (!tree_switch_current(base, SS_DEFAULT_TREENAME))
@@ -1030,10 +1032,10 @@ void tree_remove(graph_t *g, char const *base, char const *treename)
 
     tree_service_switch_contents(base, treename, current) ;
 
-    tree_master_modify_contents(base) ;
-
     log_trace("remove resolve file of tree: ", treename) ;
     resolve_remove_g(base, treename, DATA_TREE) ;
+
+    tree_master_modify_contents(base) ;
 
     log_info("Deleted successfully: ", treename) ;
 }
@@ -1073,7 +1075,8 @@ void tree_clone(char const *clone, ssexec_t *info)
     if (!filecopy_unsafe(src, dst, st.st_mode))
         log_dieusys(LOG_EXIT_SYS, "copy: ", src, " to: ", dst) ;
 
-    lchown(dst, st.st_uid, st.st_gid) ;
+    if (lchown(dst, st.st_uid, st.st_gid) < 0)
+        log_dieusys(LOG_EXIT_SYS, "chown: ", dst) ;
 
     if (!resolve_read(wres, info->base.s, clone))
         log_dieu(LOG_EXIT_SYS, "read resolve file of tree: ", clone) ;
@@ -1099,7 +1102,11 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
     log_flow();
 
     int r ;
-
+    /** We can arrive here from other ssexec_xxx functions that
+     * already define the tree name. It will be overwritten,
+     * correcting the info structure.
+     * Therefore, retrieve the original name at the end of the process. */
+    char oldtree[SS_MAX_TREENAME + 1] ;
     stralloc sa = STRALLOC_ZERO ;
     graph_t graph = GRAPH_ZERO ;
 
@@ -1149,7 +1156,7 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
 
                 case 'n':
 
-                    log_1_warn("deprecated option -n -- creation of a tree is the default option") ;
+                    log_1_warn("deprecated option -n -- use '66 tree create <treename>' instead") ;
                     break ;
 
                 case 'a' :
@@ -1169,7 +1176,7 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
 
                 case 'S' :
 
-                    log_1_warn("deprecated option -S -- see depends/requiredb fields at -o options") ;
+                    log_1_warn("deprecated option -S -- see depends/requiredby fields at -o options") ;
                     break ;
 
                 default :
@@ -1184,6 +1191,15 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
         log_usage(info->usage, "\n", info->help) ;
 
     check_identifier(argv[0]) ;
+
+    if (info->opt_tree) {
+
+        auto_strings(oldtree, info->treename.s) ;
+
+    } else {
+        /** avoid empty string */
+        auto_strings(oldtree, argv[0]) ;
+    }
 
     info->treename.len = 0 ;
     if (!auto_stra(&info->treename, argv[0]))
@@ -1275,6 +1291,10 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
         tree_clone(what.sclone, info) ;
 
     freed:
+        info->treename.len = 0 ;
+        if (!auto_stra(&info->treename, oldtree))
+            log_die_nomem("stralloc") ;
+
         stralloc_free(&sa) ;
         graph_free_all(&graph) ;
 
