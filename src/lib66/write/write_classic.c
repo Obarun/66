@@ -20,7 +20,7 @@
 #include <66/service.h>
 #include <66/write.h>
 
-/* dst e.g. /var/lib/66/system/<tree>/servicedirs/svc/<name> */
+/* dst e.g. /var/lib/66/system/service/svc/<name> */
 
 void write_classic(resolve_service_t *res, char const *dst)
 {

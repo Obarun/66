@@ -35,6 +35,7 @@ void write_execute_scripts(char const *file, char const *contents, char const *d
     char run[strlen(contents) + 1] ;
     auto_strings(run, contents) ;
 
+    log_trace("create file: ", dst, "/", file) ;
     if (!file_write_unsafe(dst, file, run, FAKELEN))
         log_dieusys(LOG_EXIT_SYS, "write: ", dst, "/", file) ;
 

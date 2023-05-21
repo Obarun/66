@@ -37,9 +37,11 @@ void write_common(resolve_service_t *res, char const *dst)
     log_flow() ;
 
     /** down file */
-    if (res->execute.down)
+    if (res->execute.down) {
+        log_trace("create file: ", dst, "/down") ;
         if (!file_create_empty(dst, "down", 0644))
             log_dieusys(LOG_EXIT_SYS, "create down file") ;
+    }
 
     /** notification-fd */
     if (res->notify)
@@ -125,6 +127,7 @@ void write_common(resolve_service_t *res, char const *dst)
                 }
             }
 
+            log_trace("copy: ", tmp, " to: ", dst) ;
             if (!hiercopy(tmp, dst))
                 log_dieusys(LOG_EXIT_SYS, "copy: ", tmp, " to: ", dst) ;
         }

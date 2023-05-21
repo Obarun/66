@@ -38,7 +38,7 @@
 #define FAKELEN strlen(run)
 #endif
 
-/** @destination -> /var/lib/66/system/<tree>/servicedirs/svc/ */
+/** @destination -> /var/lib/66/system/service/svc/<name> */
 
 void write_logger(resolve_service_t *res, char const *destination)
 {
@@ -76,6 +76,7 @@ void write_logger(resolve_service_t *res, char const *destination)
     char write[strlen(destination) + 10] ;
 
     /** run script */
+    log_trace("create file: ", destination, "/run") ;
     if (!file_write_unsafe(destination, "run", res->sa.s + res->execute.run.run, strlen(res->sa.s + res->execute.run.run)))
         log_dieusys(LOG_EXIT_SYS, "write: ", destination, "/run.user") ;
 
@@ -85,6 +86,7 @@ void write_logger(resolve_service_t *res, char const *destination)
         log_dieusys(LOG_EXIT_SYS, "chmod", write) ;
 
     /** run.user script */
+log_trace("create file: ", destination, "/run.user") ;
     if (!file_write_unsafe(destination, "run.user", res->sa.s + res->execute.run.run_user, strlen(res->sa.s + res->execute.run.run_user)))
         log_dieusys(LOG_EXIT_SYS, "write: ", destination, "/run.user") ;
 

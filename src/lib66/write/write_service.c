@@ -45,18 +45,6 @@ void write_services(resolve_service_t *res, char const *workdir)
     if (logname > 0)
         type = 4 ;
 
-    /**
-     *
-     *
-     * please pass through a temporary or backup
-     *
-     * just need to switch the /run/66/state/0/<service> symlink
-     * with atomic_symlink
-     *
-     *
-     *
-     * */
-
     log_trace("write service ", name) ;
 
     switch(type) {

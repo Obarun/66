@@ -26,6 +26,7 @@ void write_uint(char const *dst, char const *name, uint32_t ui)
 
     char number[UINT32_FMT] ;
 
+    log_trace("write file: ", dst, "/", name) ;
     if (!file_write_unsafe(dst, name, number, uint32_fmt(number,ui)))
         log_dieusys(LOG_EXIT_SYS, "write: ", dst, "/", name) ;
 }
