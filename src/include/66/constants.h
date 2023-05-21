@@ -35,8 +35,6 @@
 /**tree dir*/
 #define SS_RULES "/rules"
 #define SS_RULES_LEN (sizeof SS_RULES - 1)
-#define SS_SVDIRS "/servicedirs"
-#define SS_SVDIRS_LEN (sizeof SS_SVDIRS - 1)
 
 /**service dir*/
 #define SS_SVC "/svc"
@@ -130,6 +128,6 @@
 #define SS_INSTANCE_TEMPLATE 0
 #define SS_INSTANCE_NAME 1
 
-#define SS_MAX_PATH_LEN (SS_MAX_PATH + SS_SYSTEM_LEN + SS_SVDIRS_LEN + SS_MAX_TREENAME + SS_MAX_SERVICE_NAME + 63 + 1)
+#define SS_MAX_PATH_LEN (SS_MAX_PATH + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + SS_MAX_TREENAME + SS_MAX_SERVICE_NAME + 63 + 1)
 
 #endif
