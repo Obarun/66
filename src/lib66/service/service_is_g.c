@@ -45,8 +45,6 @@ int service_is(ss_state_t *ste, uint32_t flag)
 
         case STATE_FLAGS_TOPARSE : return ste->toparse ;
 
-        case STATE_FLAGS_TOSWITCH : return ste->toswitch ;
-
         case STATE_FLAGS_ISDOWNFILE : return ste->isdownfile ;
 
         case STATE_FLAGS_ISEARLIER : return ste->isearlier ;
