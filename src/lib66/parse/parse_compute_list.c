@@ -31,6 +31,9 @@
  * */
 int parse_compute_list(resolve_wrapper_t_ref wres, stralloc *sa, uint32_t *res, uint8_t opts)
 {
+
+    if (!sa->len)
+        return resolve_add_string(wres, "") ;
     int r, found = 0 ;
     size_t len = sa->len, pos = 0 ;
     size_t nelement = sastr_nelement(sa) ;
