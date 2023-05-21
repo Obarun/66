@@ -27,7 +27,7 @@
 #include <66/config.h>
 #include <66/ssexec.h>
 
-#define MAXOPTS 11
+#define MAXOPTS 12
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -74,6 +74,7 @@ int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
         "toreload",
         "torestart",
         "tounsupervise",
+        "toparse",
         "isdownfile",
         "isearlier" ,
         "isenabled" ,
@@ -108,12 +109,13 @@ int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
     info_display_int(fields[1],sta.toreload) ;
     info_display_int(fields[2],sta.torestart) ;
     info_display_int(fields[3],sta.tounsupervise) ;
-    info_display_int(fields[4],sta.isdownfile) ;
-    info_display_int(fields[5],sta.isearlier) ;
-    info_display_int(fields[6],sta.isenabled) ;
-    info_display_int(fields[7],sta.isparsed) ;
-    info_display_int(fields[8],sta.issupervised) ;
-    info_display_int(fields[9],sta.isup) ;
+    info_display_int(fields[4],sta.toparse) ;
+    info_display_int(fields[5],sta.isdownfile) ;
+    info_display_int(fields[6],sta.isearlier) ;
+    info_display_int(fields[7],sta.isenabled) ;
+    info_display_int(fields[8],sta.isparsed) ;
+    info_display_int(fields[9],sta.issupervised) ;
+    info_display_int(fields[10],sta.isup) ;
 
     resolve_free(wres) ;
 
