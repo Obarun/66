@@ -27,14 +27,11 @@ int state_read(ss_state_t *sta, resolve_service_t *res)
 {
     log_flow() ;
 
-    size_t len = strlen(res->sa.s + res->path.servicedir) ;
-
+    int r ;
     char pack[STATE_STATE_SIZE] ;
-    char target[len + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
 
-    auto_strings(target, res->sa.s + res->path.servicedir, SS_STATE, "/", SS_STATUS) ;
-
-    if (openreadnclose(target, pack, STATE_STATE_SIZE) < STATE_STATE_SIZE)
+    r = openreadnclose(res->sa.s + res->path.status, pack, STATE_STATE_SIZE) ;
+    if (r < STATE_STATE_SIZE || r < 0)
         return 0 ;
 
     state_unpack(pack, sta) ;

@@ -26,13 +26,7 @@ int state_check(resolve_service_t *res)
 {
     log_flow() ;
 
-    size_t len = strlen(res->sa.s + res->path.servicedir) ;
-
-    char target[len + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
-
-    auto_strings(target, res->sa.s + res->path.servicedir, SS_STATE, "/", SS_STATUS) ;
-
-    if (access(target, F_OK) < 0)
+    if (access(res->sa.s + res->path.status, F_OK) < 0)
         return 0 ;
 
     return 1 ;
