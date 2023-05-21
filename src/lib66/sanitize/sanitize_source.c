@@ -22,9 +22,10 @@
 #include <66/constants.h>
 #include <66/sanitize.h>
 #include <66/service.h>
+#include <66/resolve.h>
 #include <66/state.h>
 
-void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)
+void sanitize_source(char const *name, ssexec_t *info)
 {
     log_flow() ;
 
@@ -35,7 +36,7 @@ void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)
     if (r == -1)
         log_dieusys(LOG_EXIT_SYS, "get information of service: ", name, " -- please a bug report") ;
 
-    if (!r) {
+    if (!r || r == STATE_FLAGS_FALSE) {
 
         int argc = 3 ;
         int m = 0 ;
@@ -51,23 +52,49 @@ void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)
             log_dieu(LOG_EXIT_SYS, "parse service: ", name) ;
         PROG = prog ;
 
-    } else if (FLAGS_ISSET(flag, STATE_FLAGS_TORELOAD) && logname < 0) {
+    } else if (logname < 0) {
 
         int argc = 4 ;
         int m = 0 ;
         char const *prog = PROG ;
         char const *newargv[argc] ;
 
-        newargv[m++] = "parse" ;
-        newargv[m++] = "-f" ;
-        newargv[m++] = name ;
-        newargv[m++] = 0 ;
+        ss_state_t sta = STATE_ZERO ;
+        resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
-        PROG = "parse" ;
-        if (ssexec_parse(argc, newargv, info))
-            log_dieu(LOG_EXIT_SYS, "parse service: ", name) ;
-        PROG = prog ;
+        /** We can come from ssexec_reconfigure, in
+         * this case we need to use the tree defined previously */
+        r = resolve_read_g(wres, info->base.s, name) ;
+        if (r < 0)
+            log_dieu(LOG_EXIT_SYS, "read resolve file: ", name) ;
+
+        if (!state_read(&sta, &res))
+            log_dieu(LOG_EXIT_SYS, "read state file of: ", name) ;
+
+        if (service_is(&sta, STATE_FLAGS_TOPARSE) == STATE_FLAGS_TRUE) {
+
+            if (!info->opt_tree) {
+
+                info->treename.len = 0 ;
+
+                if (!auto_stra(&info->treename, res.sa.s + res.treename))
+                    log_die_nomem("stralloc") ;
+
+                info->opt_tree = 1 ;
+            }
+
+            newargv[m++] = "parse" ;
+            newargv[m++] = "-f" ;
+            newargv[m++] = name ;
+            newargv[m++] = 0 ;
+
+            PROG = "parse" ;
+            if (ssexec_parse(argc, newargv, info))
+                log_dieu(LOG_EXIT_SYS, "parse service: ", name) ;
+            PROG = prog ;
+        }
+        resolve_free(wres) ;
     }
-
 }
 
