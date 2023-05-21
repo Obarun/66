@@ -18,8 +18,10 @@
 #include <oblibs/types.h>
 #include <oblibs/graph.h>
 #include <oblibs/sastr.h>
+#include <oblibs/string.h>
 
 #include <skalibs/sgetopt.h>
+#include <skalibs/genalloc.h>
 
 #include <66/ssexec.h>
 #include <66/config.h>
@@ -29,8 +31,7 @@
 #include <66/sanitize.h>
 #include <66/service.h>
 #include <66/constants.h>
-
-#include <stdio.h>
+#include <66/tree.h>
 
 int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 {
@@ -40,7 +41,6 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     uint32_t flag = 0 ;
     uint8_t siglen = 0 ;
     graph_t graph = GRAPH_ZERO ;
-    stralloc sa = STRALLOC_ZERO ;
 
     unsigned int areslen = 0, list[SS_MAX_SERVICE], visit[SS_MAX_SERVICE], nservice = 0, n = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE] ;
@@ -82,29 +82,6 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     if ((svc_scandir_ok(info->scandir.s)) !=  1 )
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;
 
-    for (; n < argc ; n++) {
-
-        r = service_is_g(atree, argv[n], STATE_FLAGS_ISPARSED) ;
-        if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "get information of service: ", argv[n], " -- please make a bug report") ;
-
-        if (!r) {
-            /** nothing to do */
-            log_warn(argv[n], " is not parsed -- try to parse it first") ;
-            return 0 ;
-        }
-
-        r = service_is_g(atree, argv[n], STATE_FLAGS_ISSUPERVISED) ;
-        if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "get information of service: ", argv[n], " -- please a bug report") ;
-
-        if (!r) {
-            /** nothing to do */
-            log_1_warn(argv[n], " is not running -- try to start it first") ;
-            return 0 ;
-        }
-    }
-
     /** build the graph of the entire system */
     graph_build_service(&graph, ares, &areslen, info, flag) ;
 
@@ -113,24 +90,51 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 
     graph_array_init_single(visit, SS_MAX_SERVICE) ;
 
-    for (n = 0 ; n < argc ; n++) {
+    for (; n < argc ; n++) {
 
         int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
         if (aresid < 0)
-            log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parsed it?") ;
+            log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- please make a bug report") ;
 
-        graph_compute_visit(argv[n], visit, list, &graph, &nservice, 1) ;
+        if (!state_messenger(&ares[aresid], STATE_FLAGS_TOPARSE, STATE_FLAGS_TRUE))
+            log_dieusys(LOG_EXIT_SYS, "send message to state of: ", argv[n]) ;
+
+        r = service_is_g(atree, argv[n], STATE_FLAGS_ISSUPERVISED) ;
+        if (r < 0)
+            log_dieusys(LOG_EXIT_SYS, "get information of service: ", argv[n], " -- please make a bug report") ;
+
+        if (!r || r == STATE_FLAGS_FALSE) {
+            /* only parse it again */
+            continue ;
+
+        } else {
+
+            r = tree_ongroups(ares[aresid].sa.s + ares[aresid].path.home, ares[aresid].sa.s + ares[aresid].treename, TREE_GROUPS_BOOT) ;
+
+            if (r < 0)
+                log_dieu(LOG_EXIT_SYS, "get groups of service: ", argv[n]) ;
+
+            if (r)
+                continue ;
+
+            graph_compute_visit(argv[n], visit, list, &graph, &nservice, 1) ;
+        }
     }
 
-    /** keep list of already running service */
-    char const *exclude[4] = { SS_FDHOLDER, SS_ONESHOTD, SS_SVSCAN_LOG, 0 } ;
-    if (!sastr_dir_get(&sa, info->scandir.s, exclude, S_IFDIR))
-        log_dieusys(LOG_EXIT_SYS, "get list of running services") ;
+    if (nservice) {
 
-    {
-        /** stop service and unsupervise it */
+        /** We need to search in every tree to stop the service
+         * if the user has specified a specific tree. Therefore, remove
+         * the -t option for the stop process and re-enable it
+         * for the parse and start processes. */
+        char tree[info->treename.len + 1] ;
+        auto_strings(tree, info->treename.s) ;
+
+        info->treename.len = 0 ;
+        info->opt_tree = 0 ;
+
         unsigned int m = 0 ;
-        int nargc = 2 + argc + siglen ;
+        int nargc = 2 + nservice + siglen ;
         char const *prog = PROG ;
         char const *newargv[nargc] ;
 
@@ -138,8 +142,13 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         if (siglen)
             newargv[m++] = "-P" ;
         newargv[m++] = "-u" ;
-        for (n = 0 ; n < argc ; n++)
-            newargv[m++] = argv[n] ;
+
+        for (n = 0 ; n < nservice ; n++) {
+
+            char *name = graph.data.s + genalloc_s(graph_hash_t,&graph.hash)[list[n]].vertex ;
+            if (get_rstrlen_until(name,SS_LOG_SUFFIX) < 0)
+                newargv[m++] = name ;
+        }
 
         newargv[m++] = 0 ;
 
@@ -148,16 +157,20 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         PROG = prog ;
         if (e)
             goto freed ;
+
+        info->treename.len = 0 ;
+        auto_stra(&info->treename, tree) ;
+        info->opt_tree = 1 ;
     }
 
     /** force to parse again the service */
     for (n = 0 ; n < argc ; n++)
-        sanitize_source(argv[n], info, STATE_FLAGS_TORELOAD) ;
+        sanitize_source(argv[n], info) ;
 
-    {
-        /** start service */
+    if (nservice) {
+
         unsigned int m = 0 ;
-        int nargc = 2 + argc + siglen ;
+        int nargc = 2 + nservice + siglen ;
         char const *prog = PROG ;
         char const *newargv[nargc] ;
 
@@ -165,8 +178,12 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         if (siglen)
             newargv[m++] = "-P" ;
 
-        for (n = 0 ; n < argc ; n++)
-            newargv[m++] = argv[n] ;
+        for (n = 0 ; n < nservice ; n++) {
+
+            char *name = graph.data.s + genalloc_s(graph_hash_t,&graph.hash)[list[n]].vertex ;
+            if (get_rstrlen_until(name,SS_LOG_SUFFIX) < 0)
+                newargv[m++] = name ;
+        }
 
         newargv[m++] = 0 ;
 
@@ -176,7 +193,6 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     }
 
     freed:
-        stralloc_free(&sa) ;
         service_resolve_array_free(ares, areslen) ;
         graph_free_all(&graph) ;
 
