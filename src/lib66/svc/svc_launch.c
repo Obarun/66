@@ -212,7 +212,7 @@ static void announce(unsigned int pos, pidservice_t *apids, unsigned int what, u
 
     } else {
 
-        if (!state_messenger(&pares[apids[pos].aresid], STATE_FLAGS_ISUP, what ? STATE_FLAGS_FALSE : STATE_FLAGS_TRUE))
+        if (!state_messenger(&pares[apids[pos].aresid], STATE_FLAGS_ISUP, data[1] == 'a' || data[1] == 'h' || data [1] == 'U' || data[1] == 'r' ? STATE_FLAGS_TRUE : what ? STATE_FLAGS_FALSE : STATE_FLAGS_TRUE))
             log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
 
         if (!pares[apids[pos].aresid].execute.down && pares[apids[pos].aresid].type == TYPE_CLASSIC) {
@@ -686,6 +686,7 @@ int svc_launch(pidservice_t *apids, unsigned int len, uint8_t what, graph_t *gra
     }
 
     selfpipe_finish() ;
+
     end:
         for (pos = 0 ; pos < napid ; pos++) {
             close(apidservice[pos].pipe[1]) ;
