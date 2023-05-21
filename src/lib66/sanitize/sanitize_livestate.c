@@ -85,7 +85,7 @@ static void sanitize_livestate_service_symlink(resolve_service_t *res)
        log_dieu(LOG_EXIT_SYS, "symlink: ", sym, " to: ", dst) ;
 }
 
-void sanitize_livestate(resolve_service_t *res, uint32_t flag)
+void sanitize_livestate(resolve_service_t *res)
 {
     log_flow() ;
 
@@ -94,10 +94,13 @@ void sanitize_livestate(resolve_service_t *res, uint32_t flag)
     size_t namelen = strlen(name) ;
     size_t livelen = strlen(res->sa.s + res->live.livedir) ;
     size_t ownerlen = strlen(res->sa.s + res->owner) ;
-
+    ss_state_t sta = STATE_ZERO ;
     char ste[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + namelen + 1] ;
 
     auto_strings(ste, res->sa.s + res->live.livedir, SS_STATE + 1, "/", res->sa.s + res->ownerstr, "/", name) ;
+
+    if (!state_read(&sta, res))
+        log_dieu(LOG_EXIT_SYS, "read state file of: ", name) ;
 
     r = access(ste, F_OK) ;
     if (r == -1) {
@@ -108,17 +111,13 @@ void sanitize_livestate(resolve_service_t *res, uint32_t flag)
 
     } else {
 
-        if (FLAGS_ISSET(flag, STATE_FLAGS_TOUNSUPERVISE)) {
+        if (service_is(&sta, STATE_FLAGS_TOUNSUPERVISE) == STATE_FLAGS_TRUE) {
 
             log_trace("unlink: ", ste) ;
             unlink_void(ste) ;
 
-            if (!state_messenger(res, STATE_FLAGS_TORELOAD, STATE_FLAGS_FALSE))
+            if (!state_messenger(res, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE))
                 log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
         }
     }
-
-    if (!state_messenger(res, STATE_FLAGS_TOINIT, STATE_FLAGS_FALSE))
-        log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
-
 }
