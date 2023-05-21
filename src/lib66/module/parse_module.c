@@ -123,10 +123,14 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
 
         auto_strings(copy, SS_SERVICE_ADMDIR, name) ;
 
+        copylen = strlen(copy) ;
+
     } else {
 
         if (!set_ownerhome_stack(copy))
             log_dieusys(LOG_EXIT_SYS, "unable to find the home directory of the user") ;
+
+        copylen = strlen(copy) ;
 
         auto_strings(copy + copylen, SS_SERVICE_USERDIR, name) ;
     }
@@ -166,8 +170,6 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
         if (!hiercopy(dirname, copy))
             log_dieusys(LOG_EXIT_SYS,"copy: ", dirname, " to: ", copy) ;
     }
-
-    copylen = strlen(copy) ;
 
     auto_strings(copy + copylen, "/", ainsta) ;
 
