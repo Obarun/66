@@ -62,7 +62,19 @@ struct ss_state_s
     uint32_t isup ;
 } ;
 
-#define STATE_ZERO { 2,2,2,2,2,2,2,2,2,2,2 }
+#define STATE_ZERO { \
+    STATE_FLAGS_FALSE, \
+    STATE_FLAGS_FALSE, \
+    STATE_FLAGS_FALSE, \
+    STATE_FLAGS_FALSE, \
+    STATE_FLAGS_FALSE, \
+    STATE_FLAGS_FALSE, \
+    STATE_FLAGS_FALSE, \
+    STATE_FLAGS_FALSE, \
+    STATE_FLAGS_FALSE, \
+    STATE_FLAGS_FALSE, \
+    STATE_FLAGS_FALSE, \
+}
 extern ss_state_t const ss_state_zero ;
 
 extern void state_rmfile(resolve_service_t *res) ;
