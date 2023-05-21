@@ -176,7 +176,9 @@ int main(int argc, char const *const *argv)
             log_dieusys(LOG_EXIT_SYS, "transfer pipes") ;
     }
 
-    if (notif) write(1, "\n", 1) ;
+    if (notif)
+        if (write(1, "\n", 1) < 0)
+            log_dieusys(LOG_EXIT_SYS, "notify failed") ;
 
     return 0 ;
 }
