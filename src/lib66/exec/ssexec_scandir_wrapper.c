@@ -194,7 +194,9 @@ int ssexec_scandir_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->usage = usage_scandir_zombies ;
         func = &ssexec_scandir_signal ;
 
-    }
+    } else
+        log_usage(usage_scandir_wrapper, "\n", help_scandir_wrapper) ;
+
 
     argc-- ;
     argv++ ;
