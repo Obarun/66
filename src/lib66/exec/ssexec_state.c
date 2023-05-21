@@ -50,14 +50,13 @@ static void info_display_string(char const *field,char const *str)
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 }
 
-static void info_display_int(char const *field,unsigned int id)
+static void info_display_int(char const *field, unsigned int id)
 {
-    char *str = 0 ;
-    char ival[UINT_FMT] ;
-    ival[uint_fmt(ival,id)] = 0 ;
-    str = ival ;
+    char *str = "0" ;
+    if (id == STATE_FLAGS_TRUE)
+        str = "1" ;
 
-    info_display_string(field,str) ;
+    info_display_string(field, str) ;
 }
 
 int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
@@ -93,8 +92,8 @@ int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
     r = service_is_g(atree, svname, STATE_FLAGS_ISPARSED) ;
     if (r == -1)
         log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please a bug report") ;
-    else if (!r)
-        log_die(LOG_EXIT_USER, "unknown service: ", svname) ;
+    else if (!r || r == STATE_FLAGS_FALSE)
+        log_die(LOG_EXIT_USER, "service: ", svname, " is not parsed -- try to parse it using '66 parse ", svname, "'") ;
 
     r = resolve_read_g(wres, info->base.s, svname) ;
     if (r < 0)
