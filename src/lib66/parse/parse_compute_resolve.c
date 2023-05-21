@@ -43,9 +43,9 @@ static uint32_t compute_servicedir(resolve_wrapper_t_ref wres, ssexec_t *info)
     char *name = res->sa.s + res->name ;
     size_t namelen = strlen(name) ;
 
-    char dir[info->base.len + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + namelen + 1] ;
+    char dir[info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + 1] ;
 
-    auto_strings(dir, info->base.s, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", name) ;
+    auto_strings(dir, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 
     return resolve_add_string(wres, dir) ;
 }
@@ -56,9 +56,9 @@ static uint32_t compute_status(resolve_wrapper_t_ref wres, ssexec_t *info)
     char *name = res->sa.s + res->name ;
     size_t namelen = strlen(name) ;
 
-    char dir[info->base.len + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + namelen + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
+    char dir[info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
 
-    auto_strings(dir, info->base.s, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", name, SS_STATE, "/", SS_STATUS) ;
+    auto_strings(dir, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name, SS_STATE, "/", SS_STATUS) ;
 
     return resolve_add_string(wres, dir) ;
 
