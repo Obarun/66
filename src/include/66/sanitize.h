@@ -22,14 +22,12 @@
 
 extern int sanitize_system(ssexec_t *info) ;
 
-extern void sanitize_source(char const *name, ssexec_t *info, uint32_t flag) ;
+extern void sanitize_source(char const *name, ssexec_t *info) ;
 extern void sanitize_fdholder(resolve_service_t *res, uint32_t flag) ;
-extern void sanitize_livestate(resolve_service_t *res, uint32_t flag) ;
-extern void sanitize_scandir(resolve_service_t *res, uint32_t flag) ;
-extern void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_service_t *ares, unsigned int areslen, uint32_t flags) ;
+extern void sanitize_livestate(resolve_service_t *res) ;
+extern void sanitize_scandir(resolve_service_t *res) ;
+extern void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_service_t *ares, unsigned int areslen) ;
 extern void sanitize_graph(ssexec_t *info) ;
 extern void sanitize_write(resolve_service_t *res, uint8_t force) ;
-/*
-extern int sanitize_backup(resolve_service_t *res, uint32_t flag) ;
-*/
+
 #endif
