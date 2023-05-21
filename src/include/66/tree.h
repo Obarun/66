@@ -78,20 +78,21 @@ enum resolve_tree_enum_e
 typedef struct resolve_tree_master_s resolve_tree_master_t, *resolve_tree_master_t_ref ;
 struct resolve_tree_master_s
 {
-   uint32_t salen ;
-   stralloc sa ;
+    uint32_t salen ;
+    stralloc sa ;
 
-   uint32_t name ;
-   uint32_t allow ;
-   uint32_t enabled ;
-   uint32_t current ;
-   uint32_t contents ;
+    uint32_t name ;
+    uint32_t allow ;
+    uint32_t enabled ;
+    uint32_t current ;
+    uint32_t contents ;
 
-   uint32_t nenabled ;
-   uint32_t ncontents ;
+    uint32_t nallow ;
+    uint32_t nenabled ;
+    uint32_t ncontents ;
 
 } ;
-#define RESOLVE_TREE_MASTER_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0 }
+#define RESOLVE_TREE_MASTER_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0 }
 
 typedef enum resolve_tree_master_enum_e resolve_tree_master_enum_t, *resolve_tree_master_enum_t_ref;
 enum resolve_tree_master_enum_e
@@ -101,6 +102,7 @@ enum resolve_tree_master_enum_e
     E_RESOLVE_TREE_MASTER_ENABLED,
     E_RESOLVE_TREE_MASTER_CURRENT,
     E_RESOLVE_TREE_MASTER_CONTENTS,
+    E_RESOLVE_TREE_MASTER_NALLOW,
     E_RESOLVE_TREE_MASTER_NENABLED,
     E_RESOLVE_TREE_MASTER_NCONTENTS,
     E_RESOLVE_TREE_MASTER_ENDOFKEY
