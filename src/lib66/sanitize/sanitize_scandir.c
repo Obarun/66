@@ -39,10 +39,10 @@ static void scandir_scandir_to_livestate(resolve_service_t *res)
     size_t livelen = strlen(res->sa.s + res->live.livedir) ;
     size_t ownerlen = strlen(res->sa.s + res->ownerstr) ;
 
-    char sym[livelen + 1 + SS_SCANDIR_LEN + 1 + ownerlen + 1 + namelen + 1] ;
+    char sym[livelen + SS_SCANDIR_LEN + 1 + ownerlen + 1 + namelen + 1] ;
     char dst[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + namelen + 1] ;
 
-    auto_strings(sym, res->sa.s + res->live.livedir, "/", SS_SCANDIR, "/", res->sa.s + res->ownerstr, "/", name) ;
+    auto_strings(sym, res->sa.s + res->live.livedir, SS_SCANDIR, "/", res->sa.s + res->ownerstr, "/", name) ;
 
     auto_strings(dst, res->sa.s + res->live.livedir, SS_STATE + 1, "/", res->sa.s + res->ownerstr, "/", name) ;
 
@@ -99,7 +99,7 @@ static void compute_supervision_dir(resolve_service_t *res)
     umask(hmod) ;
 }
 
-void sanitize_scandir(resolve_service_t *res, uint32_t flag)
+void sanitize_scandir(resolve_service_t *res)
 {
     log_flow() ;
 
@@ -108,12 +108,16 @@ void sanitize_scandir(resolve_service_t *res, uint32_t flag)
     size_t namelen = strlen(name) ;
     size_t livelen = strlen(res->sa.s + res->live.livedir) ;
     size_t scandirlen = livelen + SS_SCANDIR_LEN + 1 + strlen(res->sa.s + res->ownerstr)  ;
-
+    ss_state_t sta = STATE_ZERO ;
     char svcandir[scandirlen + 1] ;
+
     auto_strings(svcandir, res->sa.s + res->live.livedir, SS_SCANDIR, "/", res->sa.s + res->ownerstr) ;
 
+    if (!state_read(&sta, res))
+        log_dieu(LOG_EXIT_SYS, "read state file of: ", name) ;
+
     r = access(res->sa.s + res->live.scandir, F_OK) ;
-    if (r == -1 && FLAGS_ISSET(flag, STATE_FLAGS_TOINIT)) {
+    if (r == -1 && service_is(&sta, STATE_FLAGS_TOINIT) == STATE_FLAGS_TRUE) {
 
         if (res->type == TYPE_CLASSIC)
             scandir_scandir_to_livestate(res) ;
@@ -122,47 +126,50 @@ void sanitize_scandir(resolve_service_t *res, uint32_t flag)
 
         compute_supervision_dir(res) ;
 
-        if (FLAGS_ISSET(flag, STATE_FLAGS_ISEARLIER)) {
+        if (service_is(&sta, STATE_FLAGS_ISEARLIER) == STATE_FLAGS_TRUE) {
 
             if (svc_scandir_send(svcandir, "h") <= 0)
                 log_dieu(LOG_EXIT_SYS, "reload scandir: ", svcandir) ;
         }
 
-        if (!state_messenger(res, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE))
-           log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
+        state_set_flag(&sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE) ;
+        state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE) ;
+        state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_FALSE) ;
 
-        if (!state_messenger(res, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE))
-            log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
+        if (!state_write(&sta, res))
+            log_dieu(LOG_EXIT_SYS, "write state file of: ", name) ;
 
     } else {
 
-        if (FLAGS_ISSET(flag, STATE_FLAGS_TOUNSUPERVISE)) {
+        if (service_is(&sta, STATE_FLAGS_TOUNSUPERVISE) == STATE_FLAGS_TRUE) {
 
             char s[livelen + SS_SCANDIR_LEN + 1 + strlen(res->sa.s + res->ownerstr) + 1 + namelen + 1] ;
             auto_strings(s, res->sa.s + res->live.livedir, SS_SCANDIR, "/", res->sa.s + res->ownerstr, "/", name) ;
 
             unlink_void(s) ;
 
-            if (!state_messenger(res, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_FALSE))
-                log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
+            state_set_flag(&sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_FALSE) ;
+            state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE) ;
+            state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_TRUE) ;
 
-            if (!state_messenger(res, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE))
-                log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
+            if (!state_write(&sta, res))
+                log_dieu(LOG_EXIT_SYS, "write state file of: ", name) ;
 
             if (svc_scandir_send(svcandir, "an") <= 0)
                 log_dieu(LOG_EXIT_SYS, "reload scandir: ", svcandir) ;
         }
 
-        if (FLAGS_ISSET(flag, STATE_FLAGS_TORELOAD)) {
+        if (service_is(&sta, STATE_FLAGS_TORELOAD) == STATE_FLAGS_TRUE) {
 
             if (svc_scandir_send(svcandir, "a") <= 0)
                 log_dieu(LOG_EXIT_SYS, "reload scandir: ", svcandir) ;
 
-            if (!state_messenger(res, STATE_FLAGS_TORELOAD, STATE_FLAGS_FALSE))
-                log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
+            state_set_flag(&sta, STATE_FLAGS_TORELOAD, STATE_FLAGS_FALSE) ;
+            state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE) ;
+            state_set_flag(&sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE) ;
 
-            if (!state_messenger(res, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE))
-                log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
+            if (!state_write(&sta, res))
+                log_dieu(LOG_EXIT_SYS, "write state file of: ", name) ;
         }
     }
 }
