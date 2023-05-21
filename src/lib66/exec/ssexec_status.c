@@ -51,22 +51,6 @@
 
 #include <s6/supervise.h>
 
-/**
- *
- *
- *
- *
- * a revoir, notamment les fonctions appeler comme optsdeps
- *le tname pour le tree etc etc
- *
- *
- *
- *
- *
- *
- *
- *
- * */
 static unsigned int REVERSE = 0 ;
 static unsigned int NOFIELD = 1 ;
 static unsigned int GRAPH = 0 ;
@@ -76,11 +60,14 @@ static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
 static void info_display_string(char const *str) ;
 static void info_display_name(char const *field, resolve_service_t *res) ;
+static void info_display_version(char const *field, resolve_service_t *res) ;
 static void info_display_intree(char const *field, resolve_service_t *res) ;
 static void info_display_status(char const *field, resolve_service_t *res) ;
 static void info_display_type(char const *field, resolve_service_t *res) ;
 static void info_display_description(char const *field, resolve_service_t *res) ;
-static void info_display_version(char const *field, resolve_service_t *res) ;
+static void info_display_notify(char const *field, resolve_service_t *res) ;
+static void info_display_maxdeath(char const *field, resolve_service_t *res) ;
+static void info_display_earlier(char const *field, resolve_service_t *res) ;
 static void info_display_source(char const *field, resolve_service_t *res) ;
 static void info_display_live(char const *field, resolve_service_t *res) ;
 static void info_display_deps(char const *field, resolve_service_t *res) ;
@@ -107,23 +94,26 @@ static info_opts_map_t const opts_sv_table[] =
     { .str = "status", .svfunc = &info_display_status, .id = 3 },
     { .str = "type", .svfunc = &info_display_type, .id = 4 },
     { .str = "description", .svfunc = &info_display_description, .id = 5 },
-    { .str = "source", .svfunc = &info_display_source, .id = 6 },
-    { .str = "live", .svfunc = &info_display_live, .id = 7 },
-    { .str = "depends", .svfunc = &info_display_deps, .id = 8 },
-    { .str = "requiredby", .svfunc = &info_display_requiredby, .id = 9 },
-    { .str = "optsdepends", .svfunc = &info_display_optsdeps, .id = 10 },
-    { .str = "contents", .svfunc = &info_display_contents, .id = 11 },
-    { .str = "start", .svfunc = &info_display_start, .id = 12 },
-    { .str = "stop", .svfunc = &info_display_stop, .id = 13 },
-    { .str = "envat", .svfunc = &info_display_envat, .id = 14 },
-    { .str = "envfile", .svfunc = &info_display_envfile, .id = 15 },
-    { .str = "logname", .svfunc = &info_display_logname, .id = 16 },
-    { .str = "logdst", .svfunc = &info_display_logdst, .id = 17 },
-    { .str = "logfile", .svfunc = &info_display_logfile, .id = 18 },
+    { .str = "notify", .svfunc = &info_display_notify, .id = 6 },
+    { .str = "maxdeath", .svfunc = &info_display_maxdeath, .id = 7 },
+    { .str = "earlier", .svfunc = &info_display_earlier, .id = 8 },
+    { .str = "source", .svfunc = &info_display_source, .id = 9 },
+    { .str = "live", .svfunc = &info_display_live, .id = 10 },
+    { .str = "depends", .svfunc = &info_display_deps, .id = 11 },
+    { .str = "requiredby", .svfunc = &info_display_requiredby, .id = 12 },
+    { .str = "optsdepends", .svfunc = &info_display_optsdeps, .id = 13 },
+    { .str = "contents", .svfunc = &info_display_contents, .id = 14 },
+    { .str = "start", .svfunc = &info_display_start, .id = 15 },
+    { .str = "stop", .svfunc = &info_display_stop, .id = 16 },
+    { .str = "envat", .svfunc = &info_display_envat, .id = 17 },
+    { .str = "envfile", .svfunc = &info_display_envfile, .id = 18 },
+    { .str = "logname", .svfunc = &info_display_logname, .id = 19 },
+    { .str = "logdst", .svfunc = &info_display_logdst, .id = 20 },
+    { .str = "logfile", .svfunc = &info_display_logfile, .id = 21 },
     { .str = 0, .svfunc = 0, .id = -1 }
 } ;
 
-#define MAXOPTS 20
+#define MAXOPTS 23
 #define checkopts(n) if (n >= MAXOPTS) log_die(LOG_EXIT_USER, "too many options")
 #define DELIM ','
 
@@ -165,6 +155,18 @@ static void info_display_string(char const *str)
     if (!bprintf(buffer_1,"%s",str) ||
         buffer_putsflush(buffer_1,"\n") == -1)
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+}
+
+static void info_display_int(uint32_t element)
+{
+    char ui[UINT_FMT] ;
+    ui[uint_fmt(ui, element)] = 0 ;
+
+    if (!buffer_puts(buffer_1, ui))
+        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+
+    if (buffer_putsflush(buffer_1, "\n") == -1)
+        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
 static void info_display_name(char const *field, resolve_service_t *res)
@@ -221,11 +223,11 @@ static void info_get_status(resolve_service_t *res)
         if (!state_read(&sta, res))
             log_dieusys(LOG_EXIT_SYS,"read state of: ", res->sa.s + res->name) ;
 
-        if (!service_is(&sta, STATE_FLAGS_ISSUPERVISED)) {
+        if (service_is(&sta, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_FALSE) {
 
             status = "unsupervised" ;
 
-        } else if (!service_is(&sta, STATE_FLAGS_ISUP)) {
+        } else if (service_is(&sta, STATE_FLAGS_ISUP) == STATE_FLAGS_FALSE) {
 
             status = "down" ;
             warn_color = 1 ;
@@ -253,7 +255,7 @@ static void info_display_status(char const *field,resolve_service_t *res)
 
     disen = service_is(&ste, STATE_FLAGS_ISENABLED) ;
 
-    if (!bprintf(buffer_1,"%s%s%s%s", disen ? log_color->valid : log_color->warning, disen ? "enabled" : "disabled", log_color->off, ", "))
+    if (!bprintf(buffer_1,"%s%s%s%s", disen == STATE_FLAGS_TRUE ? log_color->valid : log_color->warning, disen == STATE_FLAGS_TRUE ? "enabled" : "disabled", log_color->off, ", "))
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
     if (buffer_putsflush(buffer_1,"") == -1)
@@ -273,6 +275,24 @@ static void info_display_description(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     info_display_string(res->sa.s + res->description) ;
+}
+
+static void info_display_notify(char const *field,resolve_service_t *res)
+{
+    if (NOFIELD) info_display_field_name(field) ;
+    info_display_int(res->notify) ;
+}
+
+static void info_display_maxdeath(char const *field, resolve_service_t *res)
+{
+    if (NOFIELD) info_display_field_name(field) ;
+    info_display_int(res->maxdeath) ;
+}
+
+static void info_display_earlier(char const *field,resolve_service_t *res)
+{
+    if (NOFIELD) info_display_field_name(field) ;
+    info_display_int(res->earlier) ;
 }
 
 static void info_display_source(char const *field,resolve_service_t *res)
@@ -440,7 +460,7 @@ static void info_display_deps(char const *field, resolve_service_t *res)
         graph_free_all(&graph) ;
         stralloc_free(&deps) ;
 }
-
+/*
 static void info_display_with_source_tree(stralloc *list, resolve_service_t *res)
 {
     size_t pos = 0, lpos = 0 ;
@@ -482,13 +502,13 @@ static void info_display_with_source_tree(stralloc *list, resolve_service_t *res
 
     list->len = pos = 0 ;
     FOREACH_SASTR(&tmp, pos)
-        if (!stralloc_catb(list, tmp.s + pos, strlen(tmp.s + pos) + 1))
+        if (!sastr_add_string(list, tmp.s + pos))
             log_die_nomem("stralloc") ;
 
     stralloc_free (&sa) ;
     stralloc_free (&tmp) ;
 }
-
+*/
 static void info_display_optsdeps(char const *field, resolve_service_t *res)
 {
     stralloc salist = STRALLOC_ZERO ;
@@ -501,7 +521,7 @@ static void info_display_optsdeps(char const *field, resolve_service_t *res)
     if (!sastr_clean_string(&salist,res->sa.s + res->dependencies.optsdeps))
         log_dieu(LOG_EXIT_SYS,"build optionnal dependencies list") ;
 
-    info_display_with_source_tree(&salist,res) ;
+    //info_display_with_source_tree(&salist,res) ;
 
     if (REVERSE)
         if (!sastr_reverse(&salist))
@@ -531,7 +551,7 @@ static void info_display_contents(char const *field, resolve_service_t *res)
     if (!sastr_clean_string(&salist,res->sa.s + res->dependencies.contents))
         log_dieu(LOG_EXIT_SYS,"build contents list") ;
 
-    info_display_with_source_tree(&salist,res) ;
+    //info_display_with_source_tree(&salist,res) ;
 
     if (REVERSE)
         if (!sastr_reverse(&salist))
@@ -876,6 +896,9 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
         "Status",
         "Type",
         "Description",
+        "Notify",
+        "Max death",
+        "Earlier",
         "Source",
         "Live",
         "Dependencies",
@@ -937,9 +960,9 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
     if (r < 0)
         log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please make a bug report") ;
 
-    if (!r) {
+    if (!r || r == STATE_FLAGS_FALSE) {
         /** nothing to do */
-        log_1_warn("unknown service: ", svname) ;
+        log_1_warn("service: ", svname, " is not parsed -- try to parse it using '66 parse ", svname, "'") ;
         goto freed ;
     }
 
