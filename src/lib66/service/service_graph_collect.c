@@ -59,7 +59,7 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
 
             /** double pass with resolve_read.
              * The service may already exist, respects the treename before the
-             * call of sanitize_source.
+             * call of sanitize_source if the -t option was not set by user.
              * The service do not exist yet, sanitize it with sanitize_source
              * and read again the resolve file to know the change */
             r = resolve_read_g(wres, info->base.s, name) ;
@@ -68,16 +68,20 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
 
             if (r) {
 
-                info->treename.len = 0 ;
+                if (!info->opt_tree) {
 
-                if (!auto_stra(&info->treename, res.sa.s + res.treename))
-                    log_die_nomem("stralloc") ;
+                    info->treename.len = 0 ;
 
-            } else if (!FLAGS_ISSET(flag, STATE_FLAGS_TOPARSE))
+                    if (!auto_stra(&info->treename, res.sa.s + res.treename))
+                        log_die_nomem("stralloc") ;
+                }
+
+            } else if (FLAGS_ISSET(flag, STATE_FLAGS_TOPARSE)) {
+
+                sanitize_source(name, info) ;
+
+            } else
                 continue ;
-
-            if (FLAGS_ISSET(flag, STATE_FLAGS_TOPARSE) && !r)
-                sanitize_source(name, info, flag) ;
 
             if (!resolve_read_g(wres, info->base.s, name))
                 log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name, " -- please make a bug report") ;
@@ -87,7 +91,7 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
                 if (!state_read(&ste, &res))
                     log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug report") ;
 
-                if (service_is(&ste, STATE_FLAGS_ISSUPERVISED)) {
+                if (service_is(&ste, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_TRUE) {
 
                     if (!service_resolve_copy(&cp, &res))
                         log_dieu(LOG_EXIT_SYS, "copy resolve file of: ", name, " -- please make a bug report") ;
