@@ -24,6 +24,7 @@
 #include <skalibs/stralloc.h>
 
 #include <66/ssexec.h>
+#include <66/config.h>
 #include <66/constants.h>
 #include <66/sanitize.h>
 #include <66/utils.h>
@@ -144,10 +145,7 @@ int sanitize_system(ssexec_t *info)
         if (!tree_resolve_master_create(info->base.s, info->owner))
             log_dieu(LOG_EXIT_SYS, "write Master resolve file of trees") ;
 
-    auto_strings(dst + baselen + SS_SYSTEM_LEN, SS_SERVICE, SS_RESOLVE) ;
-    auto_check(dst) ;
-
-    auto_strings(dst + baselen + SS_SYSTEM_LEN + SS_SERVICE_LEN, SS_SVC) ;
+    auto_strings(dst + baselen + SS_SYSTEM_LEN, SS_SERVICE, SS_SVC) ;
     auto_check(dst) ;
 
     /** create the default tree if it doesn't exist yet */
