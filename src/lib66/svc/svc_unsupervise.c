@@ -26,8 +26,12 @@
 static void sanitize_it(resolve_service_t *res)
 {
     sanitize_fdholder(res, STATE_FLAGS_FALSE) ;
-    sanitize_scandir(res, STATE_FLAGS_TOUNSUPERVISE) ;
-    sanitize_livestate(res, STATE_FLAGS_TOUNSUPERVISE) ;
+
+    if (!state_messenger(res, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_TRUE))
+        log_dieusys(LOG_EXIT_SYS, "send message to state of: ", res->sa.s + res->name) ;
+
+    sanitize_scandir(res) ;
+    sanitize_livestate(res) ;
 }
 
 /** this function considers that the service is already down */
