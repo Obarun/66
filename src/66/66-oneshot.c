@@ -28,7 +28,7 @@
 #include <66/service.h>
 #include <66/resolve.h>
 
-#define USAGE "66-oneshot [ -h ] [ -v verbosity ] up|down /var/lib/66/system/<tree>/servicedirs/svc/<service>"
+#define USAGE "66-oneshot [ -h ] [ -v verbosity ] up|down /var/lib/66/system/service/svc/<service>"
 
 static inline void help_oneshot (void)
 {
