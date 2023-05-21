@@ -35,40 +35,42 @@ int service_is(ss_state_t *ste, uint32_t flag)
 
     switch (flag) {
 
-        case STATE_FLAGS_TOINIT : return FLAGS_ISSET(ste->toinit, STATE_FLAGS_TRUE) ? 1 : 0 ;
+        case STATE_FLAGS_TOINIT : return ste->toinit ;
 
-        case STATE_FLAGS_TORELOAD: return FLAGS_ISSET(ste->toreload, STATE_FLAGS_TRUE) ? 1 : 0 ;
+        case STATE_FLAGS_TORELOAD: return ste->toreload ;
 
-        case STATE_FLAGS_TORESTART : return FLAGS_ISSET(ste->torestart, STATE_FLAGS_TRUE) ? 1 : 0 ;
+        case STATE_FLAGS_TORESTART : return ste->torestart ;
 
-        case STATE_FLAGS_TOUNSUPERVISE : return FLAGS_ISSET(ste->tounsupervise, STATE_FLAGS_TRUE) ? 1 : 0 ;
+        case STATE_FLAGS_TOUNSUPERVISE : return ste->tounsupervise ;
 
-        case STATE_FLAGS_TOPARSE : return FLAGS_ISSET(ste->toparse, STATE_FLAGS_TRUE) ? 1 : 0 ;
+        case STATE_FLAGS_TOPARSE : return ste->toparse ;
 
-        case STATE_FLAGS_ISDOWNFILE : return FLAGS_ISSET(ste->isdownfile, STATE_FLAGS_TRUE) ? 1 : 0 ;
+        case STATE_FLAGS_TOSWITCH : return ste->toswitch ;
 
-        case STATE_FLAGS_ISEARLIER : return FLAGS_ISSET(ste->isearlier, STATE_FLAGS_TRUE) ? 1 : 0 ;
+        case STATE_FLAGS_ISDOWNFILE : return ste->isdownfile ;
 
-        case STATE_FLAGS_ISENABLED : return FLAGS_ISSET(ste->isenabled, STATE_FLAGS_TRUE) ? 1 : 0 ;
+        case STATE_FLAGS_ISEARLIER : return ste->isearlier ;
 
-        case STATE_FLAGS_ISPARSED : return  FLAGS_ISSET(ste->isparsed, STATE_FLAGS_TRUE) ? 1 : 0 ; //always true framboise
+        case STATE_FLAGS_ISENABLED : return ste->isenabled ;
 
-        case STATE_FLAGS_ISSUPERVISED : return FLAGS_ISSET(ste->issupervised, STATE_FLAGS_TRUE) ? 1 : 0 ;
+        case STATE_FLAGS_ISPARSED : return ste->isparsed ; //always true framboise
 
-        case STATE_FLAGS_ISUP : return FLAGS_ISSET(ste->isup, STATE_FLAGS_TRUE) ? 1 : 0 ;
+        case STATE_FLAGS_ISSUPERVISED : return ste->issupervised ;
+
+        case STATE_FLAGS_ISUP : return ste->isup ;
 
         default:
             break ;
 
     }
 
-    return 0 ;
+    return STATE_FLAGS_FALSE ;
 }
 
 /*@Return :
  * -1 system error
  * 0 check fail
- * 1 check success */
+ * STATE_FLAGS_TRUE/STATE_FLAGS_FALSE check success */
 int service_is_g(char *atree, char const *name, uint32_t flag)
 {
 
@@ -106,7 +108,7 @@ int service_is_g(char *atree, char const *name, uint32_t flag)
         goto freed ;
     }
 
-    if (strlen(res.sa.s + res.treename) > SS_MAX_TREENAME) {
+    if (strlen(res.sa.s + res.treename) >= SS_MAX_TREENAME) {
         errno = ENAMETOOLONG ;
         goto freed ;
     }

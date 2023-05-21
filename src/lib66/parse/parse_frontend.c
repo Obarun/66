@@ -141,8 +141,11 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     if (isparsed == -1)
         log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please make a bug report") ;
 
-    if (isparsed && !force)
-        log_warn_return(2, "ignoring service: ", svname, " -- already parsed") ;
+    if (isparsed == STATE_FLAGS_TRUE) {
+
+        if (!force)
+            log_warn_return(2, "ignoring service: ", svname, " -- already parsed") ;
+    }
 
     if (info->opt_tree) {
 
@@ -237,7 +240,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     }
 
     /** parse interdependences if the service was never parsed */
-    if (!isparsed) {
+    if (isparsed == STATE_FLAGS_FALSE) {
 
         if (!parse_interdependences(svname, res.sa.s + res.dependencies.depends, res.dependencies.ndepends, ares, areslen, info, force, conf, forced_directory, main, inmodule))
                 log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", svname) ;

@@ -40,7 +40,7 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
 
     unsigned int areslen = 0, m = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE] ;
-    char atree[SS_MAX_TREENAME + 1] ;
+    ss_state_t sta = STATE_ZERO ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TORESTART|STATE_FLAGS_WANTUP) ;
 
@@ -81,29 +81,6 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
 
     char const *nargv[argc] ;
 
-    for (; n < argc ; n++) {
-
-        r = service_is_g(atree, argv[n], STATE_FLAGS_ISPARSED) ;
-        if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "get information of service: ", argv[n], " -- please a bug report") ;
-
-        if (!r) {
-            /** nothing to do */
-            log_warn(argv[n], " is not parsed -- try to start it first") ;
-            return 0 ;
-        }
-
-        r = service_is_g(atree, argv[n], STATE_FLAGS_ISSUPERVISED) ;
-        if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "get information of service: ", argv[n], " -- please a bug report") ;
-
-        if (!r) {
-            /** nothing to do */
-            log_warn(argv[n], " is not running -- try to start it first") ;
-            return 0 ;
-        }
-    }
-
     /** build the graph of the entire system */
     graph_build_service(&graph, ares, &areslen, info, flag) ;
 
@@ -115,6 +92,13 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
         int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
         if (aresid < 0)
             log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you parsed it?") ;
+
+        if (!state_read(&sta, &ares[aresid]))
+            log_dieu(LOG_EXIT_SYS, "read state file of: ", argv[n]) ;
+
+        if (service_is(&sta, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_FALSE)
+            /** nothing to do */
+            log_warn_return(LOG_EXIT_ZERO, "service: ", argv[n], " is not supervised -- try to start it first using '66 start ", argv[n], "'") ;
 
         if (ares[aresid].type == TYPE_ONESHOT) {
             nargc++ ;
@@ -143,11 +127,11 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
     r = svc_send_wait(argv, argc, sig, siglen, info) ;
     if (r)
         goto err ;
+
     /** s6-supervise do not deal with oneshot service:
      * The previous send command will bring it down but
      * s6-supervise will not bring it up automatically.
      * Well, do it manually */
-
     if (nargc) {
 
         int verbo = VERBOSITY ;

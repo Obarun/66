@@ -69,12 +69,12 @@ int info_graph_display_service(char const *name)
 
     } else {
 
-         if (!service_is(&sta, STATE_FLAGS_ISSUPERVISED)) {
+         if (service_is(&sta, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_FALSE) {
 
             ppid = "unitialized" ;
             goto dis ;
 
-        } else if (!service_is(&sta, STATE_FLAGS_ISUP)) {
+        } else if (service_is(&sta, STATE_FLAGS_ISUP) == STATE_FLAGS_FALSE) {
 
             ppid = "down" ;
             pid_color = 1 ;
@@ -97,8 +97,8 @@ int info_graph_display_service(char const *name)
         ppid, \
         log_color->off, \
 
-        "state=", service_is(&sta, STATE_FLAGS_ISENABLED) ? log_color->valid : log_color->warning, \
-        service_is(&sta, STATE_FLAGS_ISENABLED) ? "Enabled" : "Disabled", \
+        "state=", service_is(&sta, STATE_FLAGS_ISENABLED) == STATE_FLAGS_TRUE ? log_color->valid : log_color->warning, \
+        service_is(&sta, STATE_FLAGS_ISENABLED) == STATE_FLAGS_TRUE ? "Enabled" : "Disabled", \
         log_color->off, \
 
         "type=", log_color->blue, get_key_by_enum(ENUM_TYPE,res.type), log_color->off, \

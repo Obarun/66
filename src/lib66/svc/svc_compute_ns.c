@@ -85,12 +85,12 @@ static void pidservice_init_array(unsigned int *list, unsigned int listlen, pids
 
         if (ares[pids.aresid].type != TYPE_CLASSIC) {
 
-                ss_state_t ste = STATE_ZERO ;
+                ss_state_t sta = STATE_ZERO ;
 
-                if (!state_read(&ste, &ares[pids.aresid]))
+                if (!state_read(&sta, &ares[pids.aresid]))
                     log_dieusys(LOG_EXIT_SYS, "read state file of: ", name) ;
 
-                if (ste.isup == STATE_FLAGS_TRUE)
+                if (service_is(&sta, STATE_FLAGS_ISUP) == STATE_FLAGS_TRUE)
                     FLAGS_SET(pids.state, SVC_FLAGS_UP) ;
                 else
                     FLAGS_SET(pids.state, SVC_FLAGS_DOWN) ;
@@ -172,7 +172,7 @@ int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char co
     }
 
     if (!what)
-        sanitize_init(list, napid, &graph, ares, areslen, STATE_FLAGS_UNKNOWN) ;
+        sanitize_init(list, napid, &graph, ares, areslen) ;
 
     pidservice_t apids[napid] ;
 

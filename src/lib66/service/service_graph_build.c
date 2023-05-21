@@ -51,7 +51,7 @@ static void issupervised(char *store, resolve_service_t *ares, unsigned int ares
         if (!state_read(&ste, &ares[aresid]))
             continue ;
 
-        if (service_is(&ste, STATE_FLAGS_ISSUPERVISED))
+        if (service_is(&ste, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_TRUE)
             auto_strings(store + strlen(store), name, " ") ;
         else
             continue ;

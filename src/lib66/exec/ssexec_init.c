@@ -87,7 +87,7 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
                 if (!state_read(&ste, &ares[aresid]))
                     log_dieusys(LOG_EXIT_SYS, "read state file of service: ", sa->s + n) ;
 
-                if (service_is(&ste, STATE_FLAGS_ISENABLED)) {
+                if (service_is(&ste, STATE_FLAGS_ISENABLED) == STATE_FLAGS_TRUE) {
                     list[nservice++] = idx ;
                     visit[idx] = 1 ;
                 }
@@ -122,7 +122,7 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
                     if (!state_read(&ste, &ares[aresid]))
                         log_dieusys(LOG_EXIT_SYS, "read state file of service: ", name) ;
 
-                    if (service_is(&ste, STATE_FLAGS_ISENABLED)) {
+                    if (service_is(&ste, STATE_FLAGS_ISENABLED) == STATE_FLAGS_TRUE) {
                         list[nservice++] = l[pos] ;
                         visit[l[pos]] = 1 ;
                     }
@@ -131,7 +131,7 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
         }
     }
 
-    sanitize_init(list, nservice, &graph, ares, areslen, earlier ? STATE_FLAGS_ISEARLIER : STATE_FLAGS_UNKNOWN) ;
+    sanitize_init(list, nservice, &graph, ares, areslen) ;
 
     service_resolve_array_free(ares, areslen) ;
     graph_free_all(&graph) ;

@@ -303,8 +303,8 @@ int ssexec_env(int argc, char const *const *argv, ssexec_t *info)
     r = service_is_g(atree, sv, STATE_FLAGS_ISPARSED) ;
     if (r == -1)
         log_dieusys(LOG_EXIT_SYS, "get information of service: ", sv, " -- please a bug report") ;
-    else if (!r) {
-        log_warn(sv, " is not parsed -- try to parse it first") ;
+    else if (!r || r == STATE_FLAGS_FALSE) {
+        log_warn("service: ", sv, " is not parsed -- try to parse it first using '66 parse ", sv, "'") ;
         goto freed ;
     }
 

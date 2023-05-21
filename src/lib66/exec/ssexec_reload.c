@@ -86,21 +86,21 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
 
         r = service_is_g(atree, argv[n], STATE_FLAGS_ISPARSED) ;
         if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "get information of service: ", argv[n], " -- please a bug report") ;
+            log_dieusys(LOG_EXIT_SYS, "get information of service: ", argv[n], " -- please make a bug report") ;
 
-        if (!r) {
+        if (!r || r == STATE_FLAGS_FALSE) {
             /** nothing to do */
-            log_warn(argv[n], " is not parsed -- try to start it first") ;
+            log_warn(argv[n], " is not parsed -- try to start it first using '66 start ", argv[n], "'") ;
             return 0 ;
         }
 
         r = service_is_g(atree, argv[n], STATE_FLAGS_ISSUPERVISED) ;
         if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "get information of service: ", argv[n], " -- please a bug report") ;
+            log_dieusys(LOG_EXIT_SYS, "get information of service: ", argv[n], " -- please make a bug report") ;
 
-        if (!r) {
+        if (!r || r == STATE_FLAGS_FALSE) {
             /** nothing to do */
-            log_warn(argv[n], " is not running -- try to start it first") ;
+            log_warn(argv[n], " is not running -- try to start it first using '66 start ", argv[n], "'") ;
             return 0 ;
         }
     }

@@ -457,7 +457,7 @@ static int ssexec_callback(stralloc *sa, ssexec_t *info, unsigned int what)
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "get information of service: ", name, " -- please a bug report") ;
 
-        if (r > 0)
+        if (r == STATE_FLAGS_TRUE)
             if (!sastr_add_string(sa, name))
                 log_dieu(LOG_EXIT_SYS, "add string") ;
     }

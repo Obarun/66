@@ -84,12 +84,12 @@ static void pidservice_init_array(unsigned int *list, unsigned int listlen, pids
 
         if (ares[pids.aresid].type != TYPE_CLASSIC) {
 
-                ss_state_t ste = STATE_ZERO ;
+                ss_state_t sta = STATE_ZERO ;
 
-                if (!state_read(&ste, &ares[pids.aresid]))
+                if (!state_read(&sta, &ares[pids.aresid]))
                     log_dieusys(LOG_EXIT_SYS, "read state file of: ", name) ;
 
-                if (ste.isup == STATE_FLAGS_TRUE)
+                if (service_is(&sta, STATE_FLAGS_ISUP) == STATE_FLAGS_TRUE)
                     FLAGS_SET(pids.state, SVC_FLAGS_UP) ;
                 else
                     FLAGS_SET(pids.state, SVC_FLAGS_DOWN) ;
