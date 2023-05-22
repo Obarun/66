@@ -134,7 +134,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         info->opt_tree = 0 ;
 
         unsigned int m = 0 ;
-        int nargc = 2 + nservice + siglen ;
+        int nargc = 3 + nservice + siglen ;
         char const *prog = PROG ;
         char const *newargv[nargc] ;
 
@@ -150,16 +150,17 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
                 newargv[m++] = name ;
         }
 
-        newargv[m++] = 0 ;
+        newargv[m] = 0 ;
 
         PROG = "stop" ;
-        e = ssexec_stop(nargc, newargv, info) ;
+        e = ssexec_stop(m, newargv, info) ;
         PROG = prog ;
         if (e)
             goto freed ;
 
         info->treename.len = 0 ;
-        auto_stra(&info->treename, tree) ;
+        if (!auto_stra(&info->treename, tree))
+            log_die_nomem("stralloc") ;
         info->opt_tree = 1 ;
     }
 
@@ -185,10 +186,10 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
                 newargv[m++] = name ;
         }
 
-        newargv[m++] = 0 ;
+        newargv[m] = 0 ;
 
         PROG= "start" ;
-        e = ssexec_start(--m, newargv, info) ;
+        e = ssexec_start(m, newargv, info) ;
         PROG = prog ;
     }
 
