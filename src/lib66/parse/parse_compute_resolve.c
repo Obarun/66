@@ -479,16 +479,16 @@ void parse_compute_resolve(unsigned int idx, resolve_service_t *ares, unsigned i
      *      /run/66/state/uid/service_name/event
      *      /run/66/state/uid/service_name/supervise
      * */
-    res->live.statedir = compute_state_dir(wres, info, "state") ;
+    res->live.statedir = compute_state_dir(wres, info, SS_STATE + 1) ;
 
     /* event */
-    res->live.eventdir = compute_state_dir(wres, info, "event") ;
+    res->live.eventdir = compute_state_dir(wres, info, SS_EVENTDIR + 1) ;
 
     /* notif */
     res->live.notifdir = compute_state_dir(wres, info, "notif") ;
 
     /* supervise */
-    res->live.supervisedir = compute_state_dir(wres, info, "supervise") ;
+    res->live.supervisedir = compute_state_dir(wres, info, SS_SUPERVISEDIR + 1) ;
 
     /* fdholder */
     res->live.fdholderdir = compute_pipe_service(wres, info, name, SS_FDHOLDER) ;
