@@ -5,6 +5,7 @@ state_read.o
 state_rmfile.o
 state_set_flag.o
 state_unpack.o
+state_write_tmp.o
 state_write.o
 -loblibs
 -lskarnet
