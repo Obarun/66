@@ -149,6 +149,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
 
     } else if (!r) {
 
+        log_trace("copy: ", dirname, " to: ", copy) ;
         if (!hiercopy(dirname, copy))
             log_dieusys(LOG_EXIT_SYS, "copy: ", dirname, " to: ", copy) ;
 
