@@ -215,7 +215,7 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 
                 for (; pos < len ; pos += strlen(t + pos) + 1) {
                     if (!auto_stra(&sa, t + pos, " "))
-                            goto err ;
+                        goto err ;
                 }
 
                 sa.len-- ;

@@ -389,10 +389,10 @@ static void compute_log(resolve_service_t *res, resolve_service_t *ares, unsigne
 
     lres.live.livedir = resolve_add_string(wres, info->live.s) ;
     lres.live.scandir = compute_scan_dir(wres, info) ;
-    lres.live.statedir = compute_state_dir(wres, info, "state") ;
-    lres.live.eventdir = compute_state_dir(wres, info, "event") ;
+    lres.live.statedir = compute_state_dir(wres, info, SS_STATE + 1) ;
+    lres.live.eventdir = compute_state_dir(wres, info, SS_EVENTDIR + 1) ;
     lres.live.notifdir = compute_state_dir(wres, info, "notif") ;
-    lres.live.supervisedir = compute_state_dir(wres, info, "supervise") ;
+    lres.live.supervisedir = compute_state_dir(wres, info, SS_SUPERVISEDIR + 1) ;
     lres.live.fdholderdir = compute_pipe_service(wres, info, name, SS_FDHOLDER) ;
     lres.live.oneshotddir = compute_pipe_service(wres, info, name, SS_ONESHOTD) ;
 
