@@ -89,6 +89,9 @@
 #define SS_EVENTDIR "/event"
 #define SS_EVENTDIR_LEN (sizeof SS_EVENTDIR - 1)
 
+#define SS_SUPERVISEDIR "/supervise"
+#define SS_SUPERVISEDIR_LEN (sizeof SS_SUPERVISEDIR - 1)
+
 /** boot */
 #define SS_BOOT_CONF "init.conf"
 #define SS_BOOT_CONF_LEN (sizeof SS_BOOT_CONF - 1)
