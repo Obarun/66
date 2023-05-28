@@ -18,7 +18,7 @@
 #include <oblibs/files.h>
 #include <oblibs/types.h>
 
-void write_environ(char const *name, char const *contents, char const *dst)
+int write_environ(char const *name, char const *contents, char const *dst)
 {
     log_flow() ;
 
@@ -27,10 +27,12 @@ void write_environ(char const *name, char const *contents, char const *dst)
 
     r = scan_mode(dst,S_IFDIR) ;
     if (r < 0)
-        log_die(LOG_EXIT_SYS, "conflicting format of the environment directory: ", dst) ;
+        log_warn_return(LOG_EXIT_ZERO, "conflicting format of the environment directory: ", dst) ;
     else if (!r)
-        log_dieusys(LOG_EXIT_SYS, "find environment directory: ", dst) ;
+        log_warnusys_return(LOG_EXIT_ZERO, "find environment directory: ", dst) ;
 
     if (!file_write_unsafe(dst, name, contents, len))
-        log_dieusys(LOG_EXIT_SYS, "create file: ", dst, "/", name) ;
+        log_warnusys_return(LOG_EXIT_ZERO, "create file: ", dst, "/", name) ;
+
+    return 1 ;
 }

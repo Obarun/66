@@ -42,6 +42,7 @@ extern parse_mill_t MILL_GET_VALUE ;
 
 /** freed and cleanup*/
 extern void ssexec_enable_cleanup(void) ;
+extern void parse_cleanup(resolve_service_t *res, char const *tmpdir, uint8_t force) ;
 
 /** main */
 extern void start_parser(char const *sv, ssexec_t *info, uint8_t disable_module, char const *directory_forced) ;

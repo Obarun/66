@@ -14,6 +14,7 @@
 
 
 #include <string.h>
+#include <stdlib.h>
 #include <errno.h>
 
 #include <oblibs/log.h>
@@ -32,7 +33,7 @@
 #include <66/environ.h>
 #include <66/enum.h>
 
-void write_common(resolve_service_t *res, char const *dst)
+int write_common(resolve_service_t *res, char const *dst)
 {
     log_flow() ;
 
@@ -40,34 +41,38 @@ void write_common(resolve_service_t *res, char const *dst)
     if (res->execute.down) {
         log_trace("create file: ", dst, "/down") ;
         if (!file_create_empty(dst, "down", 0644))
-            log_dieusys(LOG_EXIT_SYS, "create down file") ;
+            log_warnusys_return(LOG_EXIT_ZERO, "create down file") ;
     }
 
     /** notification-fd */
     if (res->notify)
-        write_uint(dst, SS_NOTIFICATION, res->notify) ;
+        if (!write_uint(dst, SS_NOTIFICATION, res->notify))
+            log_warnusys_return(LOG_EXIT_ZERO, "write uint file", SS_NOTIFICATION) ;
 
     /** timeout family
      *
      * Only write timeout file for classic service.
-     * All others services are read directly through
-     * the resolve file at start process. */
+     * S6-supervise need it otherwise it's read directly
+     * from the resolve file at start process. */
     if (res->execute.timeout.kill)
-        write_uint(dst, "timeout-kill", res->execute.timeout.kill) ;
+        if (!write_uint(dst, "timeout-kill", res->execute.timeout.kill))
+            log_warnusys_return(LOG_EXIT_ZERO, "write uint file timeout-kill") ;
 
     if (res->execute.timeout.finish)
-        write_uint(dst, "timeout-finish", res->execute.timeout.finish) ;
+        if (!write_uint(dst, "timeout-finish", res->execute.timeout.finish))
+            log_warnusys_return(LOG_EXIT_ZERO, "write uint file timeout-finish") ;
 
     /** max-death-tally */
     if (res->maxdeath)
-        write_uint(dst, SS_MAXDEATHTALLY, res->maxdeath) ;
+        if (!write_uint(dst, SS_MAXDEATHTALLY, res->maxdeath))
+            log_warnusys_return(LOG_EXIT_ZERO, "write uint file", SS_MAXDEATHTALLY) ;
 
     /** down-signal */
     if (res->execute.downsignal)
-        write_uint(dst, "down-signal", res->execute.downsignal) ;
+        if (!write_uint(dst, "down-signal", res->execute.downsignal))
+            log_warnusys_return(LOG_EXIT_ZERO, "write uint file down-signal") ;
 
-    /** environment
-     * environment for module is already written by the parse_module() function */
+    /** environment for module is already written by the parse_module() function */
     if (res->environ.env && res->type != TYPE_MODULE) {
 
         stralloc dst = STRALLOC_ZERO ;
@@ -76,9 +81,10 @@ void write_common(resolve_service_t *res, char const *dst)
         auto_strings(name, ".", res->sa.s + res->name) ;
 
         if (!env_prepare_for_write(&dst, &contents, res))
-            log_dieu(LOG_EXIT_SYS, "prepare environment for: ", res->sa.s + res->name) ;
+            log_warnusys_return(LOG_EXIT_ZERO, "prepare environment for: ", res->sa.s + res->name) ;
 
-        write_environ(name, contents.s, dst.s) ;
+        if (!write_environ(name, contents.s, dst.s))
+            log_warnusys_return(LOG_EXIT_ZERO, "write environment for: ", res->sa.s + res->name) ;
 
         stralloc_free(&dst) ;
         stralloc_free(&contents) ;
@@ -91,28 +97,71 @@ void write_common(resolve_service_t *res, char const *dst)
         size_t pos = 0 ;
         stralloc sa = STRALLOC_ZERO ;
         char *src = res->sa.s + res->path.frontend ;
-        size_t srclen = strlen(src) ;
+        size_t srclen = strlen(src), dstlen = strlen(dst) ;
+        char basedir[srclen + 1] ;
+
+        if (!ob_dirname(basedir, src))
+            log_warnusys_return(LOG_EXIT_ZERO, "get dirname of: ", src) ;
+
 
         if (!sastr_clean_string(&sa, res->sa.s + res->hiercopy))
-            log_dieu(LOG_EXIT_SYS, "clean string") ;
+            log_warnusys_return(LOG_EXIT_ZERO, "clean string") ;
 
         FOREACH_SASTR(&sa, pos) {
 
             char *what = sa.s + pos ;
+            int fd ;
+            size_t wlen = strlen(what) ;
             char tmp[SS_MAX_PATH_LEN + 1] ;
-            char basedir[srclen + 1] ;
+            char dest[dstlen + 1 + wlen + 1];
+            char basename[SS_MAX_PATH_LEN + 1] ;
 
-            if (!ob_dirname(basedir, src))
-                log_dieu(LOG_EXIT_SYS, "get dirname of: ", src) ;
+            if (what [0] == '/' ) {
 
-            if (what[0] == '.') {
+                auto_strings(tmp, what) ;
 
-                if (!dir_beabsolute(tmp, src))
-                    log_dieusys(LOG_EXIT_SYS, "find absolute path of: ", what) ;
+                if (!ob_basename(basename, what))
+                    log_warnusys_return(LOG_EXIT_ZERO, "get basename of: ", what) ;
+
+                what = basename ;
+
+            } else if (what[0] == '.' && ((what[1] == '/') || (what[1] == '.' && what[2] == '/'))) {
+               /** distinction between .file and ./ ../ directory */
+                char b[strlen(src) + 1]  ;
+
+                if (!ob_dirname(b, src))
+                    log_warnusys_return(LOG_EXIT_ZERO, "get dirname of: ", src) ;
+
+                fd = open_read(".") ;
+                if (fd < 0)
+                    log_warnusys_return(LOG_EXIT_ZERO, "open current directory") ;
+
+                if (chdir(b) < 0) {
+                    fd_close(fd) ;
+                    log_warnusys_return(LOG_EXIT_ZERO, "change directory") ;
+                }
+
+                char *p = realpath(what, tmp) ;
+                if (!p) {
+                    fd_close(fd) ;
+                    log_warnusys_return(LOG_EXIT_ZERO, "get absolute path of: ", what) ;
+                }
+
+                if (fd_chdir(fd) < 0) {
+                    fd_close(fd) ;
+                    log_warnusys_return(LOG_EXIT_ZERO, "change directory") ;
+                }
+
+                fd_close(fd) ;
+
+                if (!ob_basename(basename, what))
+                    log_warnusys_return(LOG_EXIT_ZERO, "get basename of: ", what) ;
+
+                what = basename ;
 
             } else {
 
-                auto_strings(tmp, what) ;
+                auto_strings(tmp, basedir, what) ;
             }
 
             r = scan_mode(tmp, S_IFDIR) ;
@@ -120,16 +169,23 @@ void write_common(resolve_service_t *res, char const *dst)
 
                 r = scan_mode(tmp, S_IFREG) ;
                 if (!r)
-                    log_dieusys(LOG_EXIT_SYS, "find: ", tmp) ;
-                if (r < 0) {
+                    log_warnusys_return(LOG_EXIT_ZERO, "find: ", tmp) ;
+                else if (r < 0) {
                     errno = ENOTSUP ;
-                    log_diesys(LOG_EXIT_SYS, "invalid format of: ", tmp) ;
+                    log_warnusys_return(LOG_EXIT_ZERO, "invalid format of: ", tmp) ;
                 }
             }
 
-            log_trace("copy: ", tmp, " to: ", dst) ;
-            if (!hiercopy(tmp, dst))
-                log_dieusys(LOG_EXIT_SYS, "copy: ", tmp, " to: ", dst) ;
+            auto_strings(dest, dst, "/", what) ;
+
+            log_trace("copy: ", tmp, " to: ", dest) ;
+            if (!hiercopy(tmp, dest))
+                log_warnusys_return(LOG_EXIT_ZERO, "copy: ", tmp, " to: ", dest) ;
         }
+        stralloc_free(&sa) ;
     }
+
+
+
+    return 1 ;
 }

@@ -20,7 +20,7 @@
 
 #include <skalibs/types.h>
 
-void write_uint(char const *dst, char const *name, uint32_t ui)
+int write_uint(char const *dst, char const *name, uint32_t ui)
 {
     log_flow() ;
 
@@ -28,5 +28,7 @@ void write_uint(char const *dst, char const *name, uint32_t ui)
 
     log_trace("write file: ", dst, "/", name) ;
     if (!file_write_unsafe(dst, name, number, uint32_fmt(number,ui)))
-        log_dieusys(LOG_EXIT_SYS, "write: ", dst, "/", name) ;
+        log_warnusys_return(LOG_EXIT_ZERO, "write: ", dst, "/", name) ;
+
+    return 1 ;
 }

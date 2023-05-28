@@ -28,6 +28,7 @@
 #include <66/write.h>
 #include <66/constants.h>
 #include <66/sanitize.h>
+#include <66/parse.h>
 
 /** @Return 0 on fail
  * @Return 1 on success
@@ -35,7 +36,7 @@
  *
  * @workdir -> /var/lib/66/system/<tree>/servicedirs/
  * */
-void write_services(resolve_service_t *res, char const *workdir)
+void write_services(resolve_service_t *res, char const *workdir, uint8_t force)
 {
     log_flow() ;
 
@@ -43,9 +44,9 @@ void write_services(resolve_service_t *res, char const *workdir)
     uint32_t type = res->type ;
     char logname = get_rstrlen_until(name, SS_LOG_SUFFIX) ;
     if (logname > 0)
-        type = 4 ;
+        type = 10 ;
 
-    log_trace("write service ", name) ;
+    log_trace("write service: ", name) ;
 
     switch(type) {
 
@@ -55,20 +56,21 @@ void write_services(resolve_service_t *res, char const *workdir)
 
         case TYPE_CLASSIC:
 
-            write_classic(res, workdir) ;
+            write_classic(res, workdir, force) ;
             break ;
 
         case TYPE_ONESHOT:
 
-            write_oneshot(res, workdir) ;
+            write_oneshot(res, workdir, force) ;
             break ;
 
-        case 4:
+        case 10:
 
-            write_logger(res, workdir) ;
+            write_logger(res, workdir, force) ;
             break ;
 
         default:
+            parse_cleanup(res, workdir, force) ;
             log_die(LOG_EXIT_SYS, "unkown type: ", get_key_by_enum(ENUM_TYPE, type)) ;
     }
 

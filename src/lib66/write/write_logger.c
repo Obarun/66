@@ -31,6 +31,7 @@
 #include <66/utils.h>
 #include <s6/config.h>
 #include <66/constants.h>
+#include <66/parse.h>
 
 #include <s6/config.h>
 
@@ -40,7 +41,7 @@
 
 /** @destination -> /var/lib/66/system/service/svc/<name> */
 
-void write_logger(resolve_service_t *res, char const *destination)
+void write_logger(resolve_service_t *res, char const *destination, uint8_t force)
 {
     log_flow() ;
 
@@ -50,48 +51,72 @@ void write_logger(resolve_service_t *res, char const *destination)
 
     char *logrunner = res->execute.run.runas ? res->sa.s + res->execute.run.runas : SS_LOGGER_RUNNER ;
 
-    if (res->execute.timeout.kill)
-        write_uint(destination, "timeout-kill", res->execute.timeout.kill) ;
+    if (res->execute.timeout.kill) {
+        if (!write_uint(destination, "timeout-kill", res->execute.timeout.kill)) {
+            parse_cleanup(res, destination, force) ;
+            log_dieusys(LOG_EXIT_SYS, "write uint file timeout-kill") ;
+        }
+    }
 
-    if (res->execute.timeout.finish)
-        write_uint(destination, "timeout-finish", res->execute.timeout.finish) ;
+    if (res->execute.timeout.finish) {
+        if (!write_uint(destination, "timeout-finish", res->execute.timeout.finish)) {
+            parse_cleanup(res, destination, force) ;
+            log_dieusys(LOG_EXIT_SYS, "write uint file timeout-finish") ;
+        }
+    }
 
     /** notification */
-    write_uint(destination, "notification-fd", 3) ;
+    if (!write_uint(destination, SS_NOTIFICATION, 3)) {
+        parse_cleanup(res, destination, force) ;
+        log_dieusys(LOG_EXIT_SYS, "write uint file ", SS_NOTIFICATION) ;
+    }
 
     /** log destination */
     log_trace("create directory: ", res->sa.s + res->logger.destination) ;
-    if (!dir_create_parent(res->sa.s + res->logger.destination, 0755))
+    if (!dir_create_parent(res->sa.s + res->logger.destination, 0755)) {
+        parse_cleanup(res, destination, force) ;
         log_dieusys(LOG_EXIT_SYS, "create directory: ", res->sa.s + res->logger.destination) ;
+    }
 
     if (!owner && ((res->execute.run.build == BUILD_AUTO) || (!res->execute.run.build))) {
 
-        if (!youruid(&log_uid, logrunner) || !yourgid(&log_gid, log_uid))
+        if (!youruid(&log_uid, logrunner) || !yourgid(&log_gid, log_uid)) {
+            parse_cleanup(res, destination, force) ;
             log_dieusys(LOG_EXIT_SYS, "get uid and gid of: ", logrunner) ;
-
-        if (chown(res->sa.s + res->logger.destination, log_uid, log_gid) == -1)
+        }
+        if (chown(res->sa.s + res->logger.destination, log_uid, log_gid) == -1) {
+            parse_cleanup(res, destination, force) ;
             log_dieusys(LOG_EXIT_SYS, "chown: ", res->sa.s + res->logger.destination) ;
+        }
     }
 
     char write[strlen(destination) + 10] ;
 
     /** run script */
     log_trace("create file: ", destination, "/run") ;
-    if (!file_write_unsafe(destination, "run", res->sa.s + res->execute.run.run, strlen(res->sa.s + res->execute.run.run)))
+    if (!file_write_unsafe(destination, "run", res->sa.s + res->execute.run.run, strlen(res->sa.s + res->execute.run.run))) {
+        parse_cleanup(res, destination, force) ;
         log_dieusys(LOG_EXIT_SYS, "write: ", destination, "/run.user") ;
+    }
 
     auto_strings(write, destination, "/run") ;
 
-    if (chmod(write, 0755) < 0)
+    if (chmod(write, 0755) < 0) {
+        parse_cleanup(res, destination, force) ;
         log_dieusys(LOG_EXIT_SYS, "chmod", write) ;
+    }
 
     /** run.user script */
-log_trace("create file: ", destination, "/run.user") ;
-    if (!file_write_unsafe(destination, "run.user", res->sa.s + res->execute.run.run_user, strlen(res->sa.s + res->execute.run.run_user)))
+    log_trace("create file: ", destination, "/run.user") ;
+    if (!file_write_unsafe(destination, "run.user", res->sa.s + res->execute.run.run_user, strlen(res->sa.s + res->execute.run.run_user))) {
+        parse_cleanup(res, destination, force) ;
         log_dieusys(LOG_EXIT_SYS, "write: ", destination, "/run.user") ;
+    }
 
     auto_strings(write, destination, "/run.user") ;
 
-    if (chmod(write, 0755) < 0)
+    if (chmod(write, 0755) < 0) {
+        parse_cleanup(res, destination, force) ;
         log_dieusys(LOG_EXIT_SYS, "chmod", write) ;
+    }
 }

@@ -23,7 +23,7 @@
 #define FAKELEN strlen(run)
 #endif
 
-void write_execute_scripts(char const *file, char const *contents, char const *dst)
+int write_execute_scripts(char const *file, char const *contents, char const *dst)
 {
 
     log_flow() ;
@@ -37,8 +37,10 @@ void write_execute_scripts(char const *file, char const *contents, char const *d
 
     log_trace("create file: ", dst, "/", file) ;
     if (!file_write_unsafe(dst, file, run, FAKELEN))
-        log_dieusys(LOG_EXIT_SYS, "write: ", dst, "/", file) ;
+        log_warnusys_return(LOG_EXIT_ZERO, "write: ", dst, "/", file) ;
 
     if (chmod(write, 0755) < 0)
-        log_dieusys(LOG_EXIT_SYS, "chmod", write) ;
+        log_warnusys_return(LOG_EXIT_ZERO, "chmod", write) ;
+
+    return 1 ;
 }

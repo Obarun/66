@@ -28,6 +28,9 @@ extern void sanitize_livestate(resolve_service_t *res) ;
 extern void sanitize_scandir(resolve_service_t *res) ;
 extern void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_service_t *ares, unsigned int areslen) ;
 extern void sanitize_graph(ssexec_t *info) ;
-extern void sanitize_write(resolve_service_t *res, uint8_t force) ;
+/** @Return 0 the service is already written
+ * @Return 1 the service will be overwritten
+ * die on system error */
+extern int sanitize_write(resolve_service_t *res, uint8_t force) ;
 
 #endif

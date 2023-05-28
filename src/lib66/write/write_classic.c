@@ -19,27 +19,45 @@
 
 #include <66/service.h>
 #include <66/write.h>
+#include <66/parse.h>
 
 /* dst e.g. /var/lib/66/system/service/svc/<name> */
 
-void write_classic(resolve_service_t *res, char const *dst)
+void write_classic(resolve_service_t *res, char const *dst, uint8_t force)
 {
     log_flow() ;
 
     /**notification,timeout, ... */
-    write_common(res, dst) ;
+    if (!write_common(res, dst)) {
+        parse_cleanup(res, dst, force) ;
+        log_dieu(LOG_EXIT_SYS, "write common file of: ", res->sa.s + res->name) ;
+    }
 
     /** run file */
-    write_execute_scripts("run", res->sa.s + res->execute.run.run, dst) ;
+    if (!write_execute_scripts("run", res->sa.s + res->execute.run.run, dst)) {
+        parse_cleanup(res, dst, force) ;
+        log_dieu(LOG_EXIT_SYS, "write execute script of: ", res->sa.s + res->name) ;
+    }
 
     /** finish file */
-    if (res->execute.finish.run_user)
-        write_execute_scripts("finish", res->sa.s + res->execute.finish.run, dst) ;
+    if (res->execute.finish.run_user) {
+        if (!write_execute_scripts("finish", res->sa.s + res->execute.finish.run, dst)) {
+            parse_cleanup(res, dst, force) ;
+            log_dieu(LOG_EXIT_SYS, "write execute script of: ", res->sa.s + res->name) ;
+        }
+    }
 
     /** run.user file */
-    write_execute_scripts( "run.user", res->sa.s + res->execute.run.run_user, dst) ;
+    if (!write_execute_scripts( "run.user", res->sa.s + res->execute.run.run_user, dst)) {
+        parse_cleanup(res, dst, force) ;
+        log_dieu(LOG_EXIT_SYS, "write execute script of: ", res->sa.s + res->name) ;
+    }
 
     /** finish.user file */
-    if (res->execute.finish.run_user)
-        write_execute_scripts("finish.user", res->sa.s + res->execute.finish.run_user, dst) ;
+    if (res->execute.finish.run_user) {
+        if (!write_execute_scripts("finish.user", res->sa.s + res->execute.finish.run_user, dst)) {
+            parse_cleanup(res, dst, force) ;
+            log_dieu(LOG_EXIT_SYS, "write execute script of: ", res->sa.s + res->name) ;
+        }
+    }
 }
