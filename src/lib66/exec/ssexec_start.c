@@ -39,8 +39,8 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
     uint8_t siglen = 3 ;
 
     int n = 0 ;
-    unsigned int areslen = 0, list[SS_MAX_SERVICE], visit[SS_MAX_SERVICE], nservice = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE] ;
+    unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0 ;
+    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOPARSE|STATE_FLAGS_WANTUP) ;
 

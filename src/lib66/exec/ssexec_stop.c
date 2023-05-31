@@ -40,8 +40,8 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
     uint8_t siglen = 3 ;
     int e = 0 ;
 
-    unsigned int areslen = 0, list[SS_MAX_SERVICE], visit[SS_MAX_SERVICE], nservice = 0, n = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE] ;
+    unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0, n = 0 ;
+    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_ISSUPERVISED|STATE_FLAGS_WANTDOWN) ;
 

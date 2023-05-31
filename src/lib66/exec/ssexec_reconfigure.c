@@ -42,8 +42,8 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     uint8_t siglen = 0 ;
     graph_t graph = GRAPH_ZERO ;
 
-    unsigned int areslen = 0, list[SS_MAX_SERVICE], visit[SS_MAX_SERVICE], nservice = 0, n = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE] ;
+    unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0, n = 0 ;
+    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
     char atree[SS_MAX_TREENAME + 1] ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOPARSE|STATE_FLAGS_WANTUP) ;

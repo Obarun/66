@@ -131,8 +131,8 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
     unsigned int datalen = 1 ;
     uint8_t reloadmsg = 0 ;
 
-    unsigned int areslen = 0, list[SS_MAX_SERVICE], visit[SS_MAX_SERVICE] ;
-    resolve_service_t ares[SS_MAX_SERVICE] ;
+    unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1] ;
+    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
 
     /*
      * STATE_FLAGS_TOPROPAGATE = 0

@@ -39,7 +39,7 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
     graph_t graph = GRAPH_ZERO ;
 
     unsigned int areslen = 0, m = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE] ;
+    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
     char atree[SS_MAX_TREENAME + 1] ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;

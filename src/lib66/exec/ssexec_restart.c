@@ -39,7 +39,7 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
     graph_t graph = GRAPH_ZERO ;
 
     unsigned int areslen = 0, m = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE] ;
+    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
     ss_state_t sta = STATE_ZERO ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TORESTART|STATE_FLAGS_WANTUP) ;

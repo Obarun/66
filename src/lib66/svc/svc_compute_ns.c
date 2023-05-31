@@ -127,8 +127,8 @@ int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char co
     stralloc sa = STRALLOC_ZERO ;
 
     unsigned int napid = 0 ;
-    unsigned int areslen = 0, list[SS_MAX_SERVICE], visit[SS_MAX_SERVICE] ;
-    resolve_service_t ares[SS_MAX_SERVICE] ;
+    unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1] ;
+    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
 
     uint32_t gflag = STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP ;
 

@@ -169,7 +169,7 @@ void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
     int r ;
     unsigned int areslen = 0, count = 0, pos = 0 ;
     uint8_t rforce = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE] ;
+    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
     stralloc sa = STRALLOC_ZERO ;
 
     char main[strlen(sv) + 1] ;

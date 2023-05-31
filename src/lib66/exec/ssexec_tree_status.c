@@ -349,7 +349,7 @@ static void info_display_contents(char const *field, char const *treename)
     graph_t graph = GRAPH_ZERO ;
 
     unsigned int areslen = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE] ;
+    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }

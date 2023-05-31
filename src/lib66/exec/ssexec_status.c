@@ -314,7 +314,7 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
     graph_t graph = GRAPH_ZERO ;
 
     unsigned int areslen = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE] ;
+    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
 
     stralloc deps = STRALLOC_ZERO ;
 
@@ -391,7 +391,7 @@ static void info_display_deps(char const *field, resolve_service_t *res)
     graph_t graph = GRAPH_ZERO ;
 
     unsigned int areslen = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE] ;
+    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
 
     stralloc deps = STRALLOC_ZERO ;
 
