@@ -101,6 +101,9 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
     if (inmodule) {
 
+        if (service_resolve_array_search(ares, *areslen, svname) >= 0)
+            log_warn_return(2, "ignoring: ", svname, " service -- already appended to the selection") ;
+
         char n[strlen(inmodule) + 1 + strlen(svname) + 1] ;
         auto_strings(n, inmodule, ":", svname) ;
 
@@ -140,12 +143,11 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     isparsed = service_is_g(atree, svname, STATE_FLAGS_ISPARSED) ;
     if (isparsed == -1)
         log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please make a bug report") ;
+    else if (!isparsed)
+        isparsed = STATE_FLAGS_FALSE ;
 
-    if (isparsed == STATE_FLAGS_TRUE) {
-
-        if (!force)
-            log_warn_return(2, "ignoring service: ", svname, " -- already parsed") ;
-    }
+    if (isparsed == STATE_FLAGS_TRUE && !force)
+        log_warn_return(2, "ignoring service: ", svname, " -- already parsed") ;
 
     if (info->opt_tree) {
 
@@ -205,6 +207,11 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
     res.path.frontend = resolve_add_string(wres, sv) ;
 
+    /** logger is set by default. if service is a module
+     * we don't want logger. So, set it false by default. */
+    if (res.type == TYPE_MODULE)
+        res.logger.want = 0 ;
+
     // keep overwrite_conf
     res.environ.env_overwrite = conf ;
 
@@ -243,7 +250,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     if (isparsed == STATE_FLAGS_FALSE) {
 
         if (!parse_interdependences(svname, res.sa.s + res.dependencies.depends, res.dependencies.ndepends, ares, areslen, info, force, conf, forced_directory, main, inmodule))
-                log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", svname) ;
+            log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", svname) ;
 
         if (res.type == TYPE_BUNDLE)
             if (!parse_interdependences(svname, res.sa.s + res.dependencies.contents, res.dependencies.ncontents, ares, areslen, info, force, conf, forced_directory, main, inmodule))
@@ -256,7 +263,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     if (service_resolve_array_search(ares, *areslen, svname) < 0) {
 
         log_trace("add service ", svname, " to the selection") ;
-        if (*areslen >= SS_MAX_SERVICE)
+        if (*areslen > SS_MAX_SERVICE)
             log_die(LOG_EXIT_SYS, "too many services to parse -- compile again 66 changing the --max-service options") ;
         ares[(*areslen)++] = res ;
     }
