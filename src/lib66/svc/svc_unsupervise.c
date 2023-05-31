@@ -25,6 +25,8 @@
 
 static void sanitize_it(resolve_service_t *res)
 {
+    log_flow() ;
+
     sanitize_fdholder(res, STATE_FLAGS_FALSE) ;
 
     if (!state_messenger(res, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_TRUE))
@@ -32,6 +34,23 @@ static void sanitize_it(resolve_service_t *res)
 
     sanitize_scandir(res) ;
     sanitize_livestate(res) ;
+
+    log_info("Unsupervised successfully: ", res->sa.s + res->name) ;
+}
+
+static void unsupervise_logger(unsigned int idx, resolve_service_t *ares, unsigned int areslen)
+{
+    log_flow() ;
+
+    if (ares[idx].logger.want && ares[idx].type == TYPE_CLASSIC) {
+
+        char *name = ares[idx].sa.s + ares[idx].logger.name ;
+        int aresid = service_resolve_array_search(ares, areslen, name) ;
+        if (aresid < 0)
+            log_dieu(LOG_EXIT_SYS,"find ares id of: ", name, " -- please make a bug reports") ;
+
+        sanitize_it(&ares[aresid]) ;
+    }
 }
 
 /** this function considers that the service is already down */
@@ -40,6 +59,8 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve
     log_flow() ;
 
     unsigned int pos = 0 ;
+    size_t bpos = 0 ;
+    stralloc sa = STRALLOC_ZERO ;
 
     if (!alen)
         return ;
@@ -54,20 +75,11 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve
 
         sanitize_it(&ares[aresid]) ;
 
-        if (ares[aresid].logger.want && ares[aresid].type == TYPE_CLASSIC) {
-
-            char *name = ares[aresid].sa.s + ares[aresid].logger.name ;
-            int aresid = service_resolve_array_search(ares, areslen, name) ;
-            if (aresid < 0)
-                log_dieu(LOG_EXIT_SYS,"find ares id of: ", name, " -- please make a bug reports") ;
-
-            sanitize_it(&ares[aresid]) ;
-        }
+        unsupervise_logger(aresid, ares, areslen) ;
 
         if ((ares[aresid].type == TYPE_BUNDLE || ares[aresid].type == TYPE_MODULE) && ares[aresid].dependencies.ncontents) {
 
-            stralloc sa = STRALLOC_ZERO ;
-            size_t bpos = 0 ;
+            sa.len = 0, bpos = 0 ;
 
             if (!sastr_clean_string(&sa, ares[aresid].sa.s + ares[aresid].dependencies.contents))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
@@ -80,11 +92,9 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve
 
                 sanitize_it(&ares[aresid]) ;
             }
-
-            stralloc_free(&sa) ;
         }
-
-        log_info("Unsupervised successfully: ", name) ;
     }
+
+    stralloc_free(&sa) ;
 }
 
