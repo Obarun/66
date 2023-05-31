@@ -37,58 +37,78 @@
 #include <66/parse.h>
 #include <66/sanitize.h>
 
-static void convert_tomodule(resolve_service_t *res, char const *module)
+static void parse_module_prefix(char *result, stralloc *sa, resolve_service_t *ares, unsigned int areslen, char const *module)
 {
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-    stralloc sa = STRALLOC_ZERO ;
+    log_flow() ;
+
+    int aresid = -1 ;
     size_t pos = 0, mlen = strlen(module) ;
 
-    if (res->dependencies.ndepends) {
+    FOREACH_SASTR(sa, pos) {
 
-        if (!sastr_clean_string(&sa, res->sa.s + res->dependencies.depends))
+        aresid = service_resolve_array_search(ares, areslen, sa->s + pos) ;
+
+        if (aresid < 0) {
+            /** try with the name of the module as prefix */
+            char tmp[mlen + 1 + strlen(sa->s + pos) + 1] ;
+
+            auto_strings(tmp, module, ":", sa->s + pos) ;
+
+            aresid = service_resolve_array_search(ares, areslen, tmp) ;
+            if (aresid < 0)
+                log_die(LOG_EXIT_USER, "service: ", sa->s + pos, " not available -- please make a bug report") ;
+        }
+
+        /** check if the dependencies is a external one. In this
+         * case, the service is not considered as part of the module */
+        if (ares[aresid].inmodule && (!strcmp(ares[aresid].sa.s + ares[aresid].inmodule, module)))
+            auto_strings(result + strlen(result), module, ":", sa->s + pos, " ") ;
+        else
+            auto_strings(result + strlen(result), sa->s + pos, " ") ;
+    }
+
+    result[strlen(result) - 1] = 0 ;
+}
+
+static void parse_convert_tomodule(unsigned int idx, resolve_service_t *ares, unsigned int areslen, char const *module)
+{
+    log_flow() ;
+
+    size_t mlen = strlen(module) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &ares[idx]) ;
+    stralloc sa = STRALLOC_ZERO ;
+
+    if (ares[idx].dependencies.ndepends) {
+
+        if (!sastr_clean_string(&sa, ares[idx].sa.s + ares[idx].dependencies.depends))
             log_die_nomem("stralloc") ;
 
-        size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * res->dependencies.ndepends ;
+        size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * ares[idx].dependencies.ndepends ;
         char n[len] ;
 
         memset(n, 0, len) ;
 
-        FOREACH_SASTR(&sa, pos) {
+        parse_module_prefix(n, &sa, ares, areslen, module) ;
 
-            auto_strings(n + strlen(n), module, ":", sa.s + pos, " ") ;
-        }
-
-        n[strlen(n) - 1] = 0 ;
-
-        res->dependencies.depends = resolve_add_string(wres, n) ;
+        ares[idx].dependencies.depends = resolve_add_string(wres, n) ;
 
     }
 
-    if (res->dependencies.nrequiredby) {
+    if (ares[idx].dependencies.nrequiredby) {
 
         sa.len = 0 ;
 
-        if (!sastr_clean_string(&sa, res->sa.s + res->dependencies.requiredby))
+        if (!sastr_clean_string(&sa, ares[idx].sa.s + ares[idx].dependencies.requiredby))
             log_die_nomem("stralloc") ;
 
-        size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * res->dependencies.nrequiredby ;
-
+        size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * ares[idx].dependencies.nrequiredby ;
         char n[len] ;
 
         memset(n, 0, len) ;
 
-        pos = 0 ;
+        parse_module_prefix(n, &sa, ares, areslen, module) ;
 
-        FOREACH_SASTR(&sa, pos) {
-
-            char n[mlen + 1 + strlen(sa.s + pos) + 1] ;
-
-            auto_strings(n + strlen(n), module, ":", sa.s + pos, " ") ;
-        }
-
-        n[strlen(n) - 1] = 0 ;
-
-        res->dependencies.requiredby = resolve_add_string(wres, n) ;
+        ares[idx].dependencies.requiredby = resolve_add_string(wres, n) ;
 
     }
 
@@ -112,6 +132,8 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
     resolve_wrapper_t_ref wres = 0 ;
 
     log_trace("parse module: ", name) ;
+
+    wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     if (!ob_dirname(dirname, src))
         log_dieu(LOG_EXIT_SYS, "get directory name of: ", src) ;
@@ -163,7 +185,6 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
         }
 
         log_trace("remove directory: ", copy) ;
-
         if (!dir_rm_rf(copy))
             log_dieusys (LOG_EXIT_SYS, "remove: ", copy) ;
 
@@ -212,6 +233,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
     {
         /* parse each activated services */
         len = list.len ;
+        uint8_t out = 0 ;
         char l[len + 1] ;
         stralloc sa = STRALLOC_ZERO ;
 
@@ -222,7 +244,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
         for (pos = 0 ; pos < len ; pos += strlen(l + pos) + 1) {
 
             sa.len = 0 ;
-
+            out = 0 ;
             char fname[strlen(l + pos)] ;
 
             if (!ob_basename(fname, l + pos))
@@ -234,25 +256,47 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
 
             /** Search first inside the frontend directory.
              * If not found, search in the entire system. */
-
             if (!service_frontend_path(&sa, fname, info->owner, copy)) {
 
                 if (!service_frontend_path(&sa, fname, info->owner, 0))
                     log_dieu(LOG_EXIT_USER, "find service frontend file of: ", fname) ;
 
-                /*if (!hiercopy(sa.s, copy))
-                    log_dieusys(LOG_EXIT_SYS, "copy: ", sa.s, " to: ", copy) ;
-                */
+                out++;
             }
 
-            char n[strlen(name) + 1 + strlen(fname) + 1] ;
+            /* The module has no knowledge of services outside of it,
+             * and the system has no knowledge of services inside the module.
+             * If a service frontend is not defined inside the module,
+             * consider it as a typical dependency of the module itself
+             * and not as part of the module. */
+            if (!out) {
 
-            auto_strings(n, name, ":", fname) ;
+                char n[strlen(name) + 1 + strlen(fname) + 1] ;
 
-            if (!sastr_add_string(&list, n))
-                log_die_nomem("stralloc") ;
+                auto_strings(n, name, ":", fname) ;
 
-            parse_frontend(sa.s, ares, areslen, info, force, conf, copy, fname, name) ;
+                if (!sastr_add_string(&list, n))
+                    log_die_nomem("stralloc") ;
+
+            } else {
+
+
+                if (res->dependencies.ndepends) {
+
+                    size_t len = strlen(res->sa.s + res->dependencies.depends) ;
+                    char tmp[len + strlen(fname) + 2] ;
+                    auto_strings(tmp, res->sa.s + res->dependencies.depends, " ", fname) ;
+                    res->dependencies.depends = resolve_add_string(wres, tmp) ;
+
+                } else {
+
+                    res->dependencies.depends = resolve_add_string(wres, fname) ;
+                }
+
+                res->dependencies.ndepends++ ;
+            }
+
+            parse_frontend(sa.s, ares, areslen, info, force, conf, !out ? copy : 0, fname, !out ? name : 0) ;
         }
 
         stralloc_free(&sa) ;
@@ -275,7 +319,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
                 log_die(LOG_EXIT_USER, "service: ", l + pos, " not available -- please make a bug report") ;
 
             if (ares[aresid].dependencies.ndepends || ares[aresid].dependencies.nrequiredby)
-                convert_tomodule(&ares[aresid], name) ;
+                parse_convert_tomodule(aresid, ares, *areslen, name) ;
 
             if (ares[aresid].logger.want && ares[aresid].type == TYPE_CLASSIC) {
 
@@ -291,8 +335,6 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
                 log_die_nomem("stralloc") ;
         }
     }
-
-    wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     res->dependencies.contents = parse_compute_list(wres, &list, &res->dependencies.ncontents, 0) ;
 
