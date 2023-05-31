@@ -572,7 +572,7 @@ static int async(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_
 
         } else {
 
-            log_trace("skipping service: ", name, " -- already in ", what ? "stopping" : "starting", " process") ;
+            log_warn("skipping service: ", name, " -- already in ", what ? "stopping" : "starting", " process") ;
 
             notify(apids, i, what ? "d" : "u", what) ;
 
@@ -581,7 +581,7 @@ static int async(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_
     } else {
 
         /** do not notify here, the handle will make it for us */
-        log_trace("skipping service: ", name, " -- already ", what ? "down" : "up") ;
+        log_warn("skipping service: ", name, " -- already ", what ? "down" : "up") ;
 
     }
 
