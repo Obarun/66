@@ -348,10 +348,12 @@ static void compute_log(resolve_service_t *res, resolve_service_t *ares, unsigne
     resolve_init(wres) ;
 
     char *str = res->sa.s ;
-    char *name = str + res->logger.name ;
-    size_t namelen = strlen(name) ;
-
+    size_t namelen = strlen(str + res->logger.name) ;
+    char name[namelen + 1] ;
     char description[namelen + 7 + 1] ;
+
+    auto_strings(name, str + res->logger.name) ;
+
     auto_strings(description, str + res->name, " logger") ;
 
     lres.name = resolve_add_string(wres, name) ;
@@ -412,7 +414,9 @@ static void compute_log(resolve_service_t *res, resolve_service_t *ares, unsigne
     }
 
     if (service_resolve_array_search(ares, *areslen, name) < 0) {
-        if (*areslen >= SS_MAX_SERVICE)
+
+        log_trace("add service ", name, " to the selection") ;
+        if (*areslen > SS_MAX_SERVICE)
             log_die(LOG_EXIT_SYS, "too many services to parse -- compile again 66 changing the --max-service options") ;
 
         ares[(*areslen)++] = lres ;
@@ -521,8 +525,8 @@ void parse_compute_resolve(unsigned int idx, resolve_service_t *ares, unsigned i
             } else {
 
                 res->dependencies.depends = resolve_add_string(wres, res->sa.s + res->logger.name) ;
-
             }
+
             res->dependencies.ndepends++ ;
 
             compute_log(res, ares, areslen, info) ;
