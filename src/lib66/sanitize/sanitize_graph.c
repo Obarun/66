@@ -18,6 +18,7 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/graph.h>
+#include <oblibs/string.h>
 
 #include <skalibs/stralloc.h>
 
@@ -27,6 +28,7 @@
 #include <66/parse.h>
 #include <66/state.h>
 #include <66/graph.h>
+#include <66/constants.h>
 
 /** rewrite depends/requiredby of each service
  * found on the system */
@@ -38,7 +40,7 @@ void sanitize_graph(ssexec_t *info)
     uint32_t flag = 0 ;
     unsigned int areslen = 0 ;
     stralloc sa = STRALLOC_ZERO ;
-    resolve_service_t ares[SS_MAX_SERVICE] ;
+    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
     graph_t graph = GRAPH_ZERO ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOPARSE|STATE_FLAGS_WANTUP|STATE_FLAGS_WANTDOWN) ;
@@ -54,7 +56,7 @@ void sanitize_graph(ssexec_t *info)
 
         char *name = res->sa.s + res->name ;
 
-        if (graph_matrix_get_edge_g_sa(&sa, &graph, name, 0, 1) < -1)
+        if (graph_matrix_get_edge_g_sa(&sa, &graph, name, 0, 0) < 0)
             log_dieu(LOG_EXIT_SYS, "get dependencies of service: ", name) ;
 
         res->dependencies.ndepends = 0 ;
@@ -65,7 +67,7 @@ void sanitize_graph(ssexec_t *info)
 
         sa.len = 0 ;
 
-        if (graph_matrix_get_edge_g_sa(&sa, &graph, name, 1, 1) < -1)
+        if (graph_matrix_get_edge_g_sa(&sa, &graph, name, 1, 0) < 0)
             log_dieu(LOG_EXIT_SYS, "get requiredby of service: ", name) ;
 
         res->dependencies.nrequiredby = 0 ;
