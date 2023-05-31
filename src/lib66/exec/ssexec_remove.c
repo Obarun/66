@@ -58,7 +58,7 @@ static void remove_service(resolve_service_t *res, ssexec_t *info)
 
     tree_service_remove(info->base.s, res->sa.s + res->treename, res->sa.s + res->name) ;
 
-    if (res->logger.want && res->type == TYPE_CLASSIC) {
+    if ((res->logger.want && (res->type == TYPE_CLASSIC || res->type == TYPE_ONESHOT)) && !res->inmodule) {
 
         resolve_service_t lres = RESOLVE_SERVICE_ZERO ;
         resolve_wrapper_t_ref lwres = resolve_set_struct(DATA_SERVICE, &lres) ;
