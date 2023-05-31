@@ -146,6 +146,7 @@ void sanitize_scandir(resolve_service_t *res)
             char s[livelen + SS_SCANDIR_LEN + 1 + strlen(res->sa.s + res->ownerstr) + 1 + namelen + 1] ;
             auto_strings(s, res->sa.s + res->live.livedir, SS_SCANDIR, "/", res->sa.s + res->ownerstr, "/", name) ;
 
+            log_trace("remove symlink: ", s) ;
             unlink_void(s) ;
 
             state_set_flag(&sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_FALSE) ;
@@ -157,9 +158,8 @@ void sanitize_scandir(resolve_service_t *res)
 
             if (svc_scandir_send(svcandir, "an") <= 0)
                 log_dieu(LOG_EXIT_SYS, "reload scandir: ", svcandir) ;
-        }
 
-        if (service_is(&sta, STATE_FLAGS_TORELOAD) == STATE_FLAGS_TRUE) {
+        } else if (service_is(&sta, STATE_FLAGS_TORELOAD) == STATE_FLAGS_TRUE) {
 
             if (svc_scandir_send(svcandir, "a") <= 0)
                 log_dieu(LOG_EXIT_SYS, "reload scandir: ", svcandir) ;
