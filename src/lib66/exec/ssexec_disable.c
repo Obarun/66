@@ -44,9 +44,9 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
     stralloc sa = STRALLOC_ZERO ;
 
     unsigned int areslen = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE] ;
+    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
 
-    visit_t visit[SS_MAX_SERVICE] ;
+    visit_t visit[SS_MAX_SERVICE + 1] ;
     visit_init(visit, SS_MAX_SERVICE) ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
@@ -105,7 +105,7 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
         if (aresid < 0)
             log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parsed it?") ;
 
-        service_enable_disable(&graph, &ares[aresid], ares, areslen, 0, visit) ;
+        service_enable_disable(&graph, aresid, ares, areslen, 0, visit) ;
 
         if (!sastr_add_string(&sa, argv[n]))
             log_dieu(LOG_EXIT_SYS, "add string") ;
