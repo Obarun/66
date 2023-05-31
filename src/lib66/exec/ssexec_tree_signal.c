@@ -457,9 +457,14 @@ static int ssexec_callback(stralloc *sa, ssexec_t *info, unsigned int what)
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "get information of service: ", name, " -- please a bug report") ;
 
-        if (r == STATE_FLAGS_TRUE)
-            if (!sastr_add_string(sa, name))
-                log_dieu(LOG_EXIT_SYS, "add string") ;
+        if (r == STATE_FLAGS_TRUE) {
+            /** do not handle loggers or services declared inside a module,
+             * ssexec_{start,stop} will build the graph and integrate them as needed.
+             * We don't use resolve file here to avoid the read.*/
+            if (get_rstrlen_until(name, SS_LOG_SUFFIX) < 0 && get_rstrlen_until(name, ":") < 0)
+                if (!sastr_add_string(sa, name))
+                    log_dieu(LOG_EXIT_SYS, "add string") ;
+        }
     }
 
     if (!sa->len) {
@@ -832,8 +837,8 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
     stralloc sa = STRALLOC_ZERO ;
     size_t pos = 0 ;
 
-    unsigned int areslen = 0, list[SS_MAX_SERVICE], visit[SS_MAX_SERVICE] ;
-    resolve_tree_t ares[SS_MAX_SERVICE] ;
+    unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1] ;
+    resolve_tree_t ares[SS_MAX_SERVICE + 1] ;
     resolve_wrapper_t_ref wres = 0 ;
 
     graph_t graph = GRAPH_ZERO ;
