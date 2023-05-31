@@ -97,7 +97,7 @@ void sanitize_fdholder(resolve_service_t *res, uint32_t flag)
 {
     log_flow() ;
 
-    if (res->logger.name && res->type == TYPE_CLASSIC) {
+    if (res->logger.want && res->type == TYPE_CLASSIC) {
 
         stralloc list = STRALLOC_ZERO ;
         char *sa = res->sa.s ;
@@ -127,13 +127,16 @@ void sanitize_fdholder(resolve_service_t *res, uint32_t flag)
                 service_is(&sta, STATE_FLAGS_TORELOAD) == STATE_FLAGS_TRUE ||
                 service_is(&sta, STATE_FLAGS_TORESTART) == STATE_FLAGS_TRUE) {
 
+                log_trace("delete fdholder entry: ", name) ;
                 fdholder_delete(&a, name, &deadline) ;
             }
 
+            log_trace("store fdholder entry: ", name) ;
             fdholder_store(&a, name, &deadline, &limit) ;
 
         } else if (FLAGS_ISSET(flag, STATE_FLAGS_FALSE)) {
 
+            log_trace("delete fdholder entry: ", name) ;
             fdholder_delete(&a, name, &deadline) ;
 
         }
