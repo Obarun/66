@@ -9,6 +9,7 @@
 66-oneshot          0755
 66-fdholder-filler  0755
 execl-envfile       0755
+execl-toc           0755
 init                0755
 init.conf           0644
 rc.init             0755
