@@ -67,12 +67,24 @@ void service_graph_build(graph_t *g, resolve_service_t *ares, unsigned int aresl
     log_flow() ;
 
     unsigned int pos = 0 ;
+    ss_state_t ste = STATE_ZERO ;
     resolve_service_t_ref pres = 0 ;
 
     for (; pos < areslen ; pos++) {
 
         pres = &ares[pos] ;
         char *service = pres->sa.s + pres->name ;
+
+        if (!state_check(&ares[pos]))
+            continue ;
+
+        if (!state_read(&ste, &ares[pos]))
+            continue ;
+
+        if (service_is(&ste, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_FALSE && FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {
+            log_warn("service: ", service, " not available -- ignore it") ;
+            continue ;
+        }
 
         if (!graph_vertex_add(g, service))
             log_dieu(LOG_EXIT_SYS, "add vertex: ", service) ;

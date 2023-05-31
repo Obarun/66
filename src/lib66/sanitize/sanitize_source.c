@@ -29,7 +29,8 @@ void sanitize_source(char const *name, ssexec_t *info)
 {
     log_flow() ;
 
-    int r, logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
+    int r ;
+    ssize_t logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
     char atree[SS_MAX_TREENAME + 1] ;
 
     r = service_is_g(atree, name, STATE_FLAGS_ISPARSED) ;
