@@ -42,7 +42,7 @@ void write_services(resolve_service_t *res, char const *workdir, uint8_t force)
 
     char *name = res->sa.s + res->name ;
     uint32_t type = res->type ;
-    char logname = get_rstrlen_until(name, SS_LOG_SUFFIX) ;
+    ssize_t logname = get_rstrlen_until(name, SS_LOG_SUFFIX) ;
     if (logname > 0)
         type = 10 ;
 
