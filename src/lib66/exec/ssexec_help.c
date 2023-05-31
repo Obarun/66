@@ -248,13 +248,14 @@ char const *help_state =
 "   -h: print this help\n"
 ;
 
-char const *usage_remove = "66 remove [ -h ] service" ;
+char const *usage_remove = "66 remove [ -h ] [ -P ] service" ;
 
 char const *help_remove =
 "\nremove services and cleanup all files belong to it from the system\n"
 "\n"
 "options :\n"
 "   -h: print this help\n"
+"   -P: do not propagate signal to its dependencies at stop process\n"
 ;
 
 char const *usage_signal = "66 signal [ -h ] [ -wu | -wU | -wd | -wD | -wr | -wR ] [ -abqHkti12pcyodDuUxOr ] service..." ;
