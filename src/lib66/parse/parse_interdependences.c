@@ -82,8 +82,11 @@ int parse_interdependences(char const *service, char const *list, unsigned int l
             if (!stralloc_0(&sa))
                 log_die_nomem("stralloc") ;
 
-            /** nothing to do with the exit code */
-            parse_frontend(sa.s, ares, areslen, info, force, conf, forced_directory, main, inmodule) ;
+            /** nothing to do with the exit code.
+             * forced_directory == 0 means that the service
+             * comes from an external directory of the module.
+             * In this case don't associated it at the module. */
+            parse_frontend(sa.s, ares, areslen, info, force, conf, forced_directory, main, !forced_directory ? 0 : inmodule) ;
 
         }
 
