@@ -93,7 +93,7 @@ static void info_display_current(char const *field,char const *treename)
 {
     int current = tree_iscurrent(pinfo->base.s, treename) ;
     if (current < 0)
-        log_dieu(LOG_EXIT_ZERO, "read resolve file of: ", treename) ;
+        log_dieu(LOG_EXIT_SYS, "read resolve file of: ", treename) ;
 
     if (NOFIELD) info_display_field_name(field) ;
     if (!bprintf(buffer_1,"%s%s%s", current ? log_color->valid : log_color->warning, current ? "yes":"no",log_color->off))
