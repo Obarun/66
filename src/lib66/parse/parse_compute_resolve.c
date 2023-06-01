@@ -220,7 +220,7 @@ static void compute_wrapper_scripts_user(resolve_service_t *res, resolve_service
 
         auto_strings(run + FAKELEN, shebang) ;
         if (res->environ.envdir)
-            auto_strings(run + FAKELEN, "execl-envfile ", res->sa.s + res->environ.envdir, SS_SYM_VERSION "\n") ;
+            auto_strings(run + FAKELEN, "execl-envfile -v4 ", res->sa.s + res->environ.envdir, SS_SYM_VERSION "\n") ;
     }
 
     auto_strings(run + FAKELEN, res->sa.s + scripts->run_user, "\n") ;

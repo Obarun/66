@@ -971,7 +971,6 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
     if (buffer_putsflush(buffer_1,"\n") == -1)
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 
-    freed:
     resolve_free(wres) ;
 
     return 0 ;
