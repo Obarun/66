@@ -103,7 +103,7 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
             if (!environ_clean_envfile(&env, dst.s))
                 log_dieu(LOG_EXIT_SYS, "read environment") ;
 
-            if (!environ_remove_unexport(&env, &env))
+            if (!environ_remove_unexport(&env, env.s, env.len))
                 log_dieu(LOG_EXIT_SYS, "remove exclamation mark from environment variables") ;
 
             stralloc_free(&oenv) ;

@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <oblibs/string.h>
 #include <oblibs/log.h>
@@ -49,9 +50,19 @@ static inline void info_help (void)
     log_info(USAGE,"\n",help) ;
 }
 
-void parse_env_var(stralloc *result, stralloc *modifs, char const *line) ;
+static void parse_env_var(stralloc *result, char const *line) ;
 
-void substitute_env_var(stralloc *result, stralloc *modifs, char const *mkey, char const *key, char const *regex)
+static void die_or_exec(char const *path, uint8_t insist, char const *const *argv, char const *const *envp)
+{
+    if (insist)
+        log_dieusys(LOG_EXIT_SYS, "get environment from: ", path) ;
+    else
+        log_warnusys("get environment from: ", path) ;
+
+    xexec_ae(argv[0], argv, envp) ;
+}
+
+static void substitute_env_var(stralloc *result, char const *mkey, char const *key, char const *regex)
 {
     stralloc tmp = STRALLOC_ZERO ;
 
@@ -59,9 +70,8 @@ void substitute_env_var(stralloc *result, stralloc *modifs, char const *mkey, ch
         !stralloc_0(&tmp))
             log_die_nomem("stralloc") ;
 
-    if (!sastr_rebuild_in_nline(&tmp) ||
-        !stralloc_0(&tmp))
-            log_dieu(LOG_EXIT_SYS,"rebuild line") ;
+    if (!sastr_rebuild_in_nline(&tmp))
+        log_dieu(LOG_EXIT_SYS,"rebuild line") ;
 
     char *by = getenv(key) ;
 
@@ -92,115 +102,107 @@ void substitute_env_var(stralloc *result, stralloc *modifs, char const *mkey, ch
         char tmp[strlen(key) + 1 + strlen(by) + 1] ;
         auto_strings(tmp,key,"=",by) ;
 
-        parse_env_var(result, modifs, tmp) ;
+        parse_env_var(result, tmp) ;
     }
 
     if (!sastr_replace_all(result, regex, by))
-        log_dieu(LOG_EXIT_SYS,"replace: ", regex, "by: ", by) ;
-
+        log_dieu(LOG_EXIT_SYS,"replace: ", regex, " by: ", by) ;
 
     stralloc_free(&tmp) ;
 }
 
-void parse_env_var(stralloc *result, stralloc *modifs, char const *line)
+void parse_env_var(stralloc *result, char const *line)
 {
-        stralloc subs = STRALLOC_ZERO ;
+    size_t spos = 0, pos = 0 ;
+    stralloc subs = STRALLOC_ZERO ;
 
-        size_t spos = 0, pos = 0 ;
+    /** be sure to deal with key=value */
+    spos = get_sep_before(line,'=','\n') ;
+    if (spos<= 0)
+        log_dieu(LOG_EXIT_SYS,"get value from line: ", line) ;
 
-        /** be sure to deal with key=value */
-        spos = get_sep_before(line,'=','\n') ;
-        if (spos<= 0)
-            log_dieu(LOG_EXIT_SYS,"get value from line: ", line) ;
+    spos++ ; //remove the = character
 
-        spos++ ; //remove the = character
+    /** master key -- see comment at substitute_env_var */
+    char mkey[spos + 1] ;
+    memcpy(mkey,line,spos - 1) ;
+    mkey[spos - 1] = 0 ;
 
-        /** master key -- see comment at substitute_env_var */
-        char mkey[spos + 1] ;
-        memcpy(mkey,line,spos - 1) ;
-        mkey[spos - 1] = 0 ;
+    if (!auto_stra(&subs, line + spos))
+        log_die_nomem("stralloc") ;
 
-        if (!auto_stra(&subs, line + spos))
-            log_die_nomem("stralloc") ;
+    if (!sastr_split_element_in_nline(&subs))
+        log_dieu(LOG_EXIT_SYS,"split line") ;
 
-        if (!sastr_split_element_in_nline(&subs) ||
-            !stralloc_0(&subs))
-                log_dieu(LOG_EXIT_SYS,"split line") ;
+    {
+        FOREACH_SASTR(&subs, pos) {
 
-        {
-            FOREACH_SASTR(&subs, pos) {
+            char *line = subs.s + pos ;
+            size_t len = strlen(line) ;
+            char key[len + 1] ;
 
-                char *line = subs.s + pos ;
-                size_t len = strlen(line) ;
-                char key[len + 1] ;
+            ssize_t rstart = 0 ;
 
-                ssize_t rstart = 0 ;
+            /** deal with multiple ${} on the
+             * same line */
+            while (rstart < len) {
 
-                /** deal with multiple ${} on the
-                 * same line */
-                while (rstart < len) {
+                ssize_t r = get_len_until(line + rstart, '$') ;
 
-                    ssize_t r = get_len_until(line + rstart, '$') ;
+                if (r == -1)
+                    break ;
 
-                    if (r == -1)
-                        break ;
+                rstart += r ;
 
-                    rstart += r ;
+                ssize_t start = rstart + 1 ;
 
-                    ssize_t start = rstart + 1 ;
+                if (line[start] == '{') {
 
-                    if (line[start] == '{') {
+                    ssize_t rend = get_len_until(line + start , '}') ;
 
-                        ssize_t rend = get_len_until(line + start , '}') ;
-
-                        if (rend == -1) {
-                            log_warn("unmatched { at line: ", line) ;
-                            return ;
-                        }
-
-                        ssize_t end = rend - 1 ;
-                        start++ ;
-
-                        memcpy(key, line + start, end) ;
-                        key[end] = 0 ;
-
-                        char regex[rend + 3] ;
-                        memcpy(regex,line + rstart, rend + 2) ;
-                        regex[rend + 2] = 0 ;
-
-                        substitute_env_var(result, modifs, mkey, key, regex) ;
-
-                        rstart += rstart + rend + 2 ;
-
-                    } else {
-
-                        log_warn("ignoring variable at line: ", line," -- missing {}" ) ;
-                        rstart += rstart + 1 ;
+                    if (rend == -1) {
+                        log_warn("unmatched { at line: ", line) ;
                         return ;
                     }
+
+                    ssize_t end = rend - 1 ;
+                    start++ ;
+
+                    memcpy(key, line + start, end) ;
+                    key[end] = 0 ;
+
+                    char regex[rend + 3] ;
+                    memcpy(regex,line + rstart, rend + 2) ;
+                    regex[rend + 2] = 0 ;
+
+                    substitute_env_var(result, mkey, key, regex) ;
+
+                    rstart += rstart + rend + 2 ;
+
+                } else {
+
+                    log_warn("ignoring variable at line: ", line," -- missing {}" ) ;
+                    rstart += rstart + 1 ;
+                    return ;
                 }
             }
         }
-
+    }
     stralloc_free(&subs) ;
 }
 
 int main (int argc, char const *const *argv, char const *const *envp)
 {
-    /**
-     *
-     * Passe par des flags please
-     *
-     * */
-    int r = 0, unexport = 0, insist = 1, noprog = 0 ;
+
+    int r = 0 ;
+    uint8_t unexport = 0, insist = 1 ;
     size_t pos = 0, nvar = 0 ;
-    char const *path = 0, *file = 0 ;
+    char const *path = 0 ;
     char tpath[MAXENV + 1], tfile[MAXENV+1] ;
-    stralloc again = STRALLOC_ZERO ;
+    struct stat st ;
+
     stralloc modifs = STRALLOC_ZERO ;
-    stralloc dst = STRALLOC_ZERO ;
-    stralloc key = STRALLOC_ZERO ;
-    stralloc val = STRALLOC_ZERO ;
+    stralloc sa = STRALLOC_ZERO ;
 
     exlsn_t info = EXLSN_ZERO ;
 
@@ -208,239 +210,201 @@ int main (int argc, char const *const *argv, char const *const *envp)
     {
         subgetopt l = SUBGETOPT_ZERO ;
 
-        for (;;)
-        {
-            int opt = subgetopt_r(argc,argv, "hv:l:X", &l) ;
-            if (opt == -1) break ;
-            switch (opt)
-            {
-                case 'h' :  info_help(); return 0 ;
-                case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
-                case 'l' :  insist = 0 ; break ;
-                case 'X' :  noprog = 1 ; break ;
-                default :   log_usage(USAGE) ;
+        for (;;) {
+
+            int opt = subgetopt_r(argc, argv, "hv:l:", &l) ;
+            if (opt == -1)
+                break ;
+
+            switch (opt) {
+
+                case 'h' :
+
+                    info_help();
+                    return 0 ;
+
+                case 'v' :
+
+                    if (!uint0_scan(l.arg, &VERBOSITY))
+                        log_usage(USAGE) ;
+
+                    break ;
+
+                case 'l' :
+
+                    insist = 0 ;
+                    break ;
+
+                default :
+
+                    log_usage(USAGE) ;
             }
         }
         argc -= l.ind ; argv += l.ind ;
     }
-    if (argc < 2) log_usage(USAGE) ;
+
+    if (argc < 2)
+        log_usage(USAGE) ;
 
     path = *argv ;
     argv++;
     argc--;
 
-    r = scan_mode(path,S_IFREG) ;
-    if (r > 0) {
-        if (!ob_basename(tfile,path))
-            log_dieu(LOG_EXIT_SYS,"get file name of: ",path) ;
-
-        file = tfile ;
-
-        if (!ob_dirname(tpath,path))
-            log_dieu(LOG_EXIT_SYS,"get parent path of: ",path) ;
-
-        path = tpath ;
-    }
-
-    if (!r) {
-
-        if (insist) {
-
-            log_dieu(LOG_EXIT_SYS,"get file from: ",path) ;
-
-        }
-
-        log_warnu("get file from: ",path) ;
-        if (!noprog)
-            xexec_ae(argv[0],argv,envp) ;
-    }
-
     if (path[0] == '.') {
 
-        if (!dir_beabsolute(tpath,path)) {
+        if (!dir_beabsolute(tpath, path))
+            die_or_exec(path, insist, argv, envp) ;
 
-            if (insist) {
-
-                log_dieusys(LOG_EXIT_SYS,"find relative path: ",path) ;
-            }
-
-            log_warnu("find relative path: ",path) ;
-
-            if (!noprog)
-                xexec_ae(argv[0],argv,envp) ;
-        }
         path = tpath ;
     }
 
-    if (file) {
+    r = stat(path, &st) ;
+    if (r < 0)
+        die_or_exec(path, insist, argv, envp) ;
 
-        if (!file_readputsa(&again,path,file)) {
+    if (S_ISREG(st.st_mode)) {
 
-            if (insist) {
+        if (!ob_basename(tfile, path))
+            log_dieu(LOG_EXIT_SYS, "get basename of: ", path) ;
 
-                log_dieusys(LOG_EXIT_SYS,"read file: ",path,file) ;
+        if (!ob_dirname(tpath, path))
+            log_dieu(LOG_EXIT_SYS, "get dirname of: ", path) ;
 
-            }
+        if (!file_readputsa(&modifs, tpath, tfile))
+            die_or_exec(path, insist, argv, envp) ;
 
-            log_warn("read file: ",path,file) ;
-            if (noprog)
-                xexec_ae(argv[0],argv,envp) ;
-        }
+        if (!environ_get_clean_env(&modifs))
+            log_dieu(LOG_EXIT_SYS, "clean environment of: ", path) ;
 
-        if (!environ_get_clean_env(&again) ||
-            !environ_remove_unexport(&modifs,&again))
-                log_dieu(LOG_EXIT_SYS,"prepare modified environment of: ",file) ;
-
-        modifs.len-- ;
-
-        if (!sastr_split_string_in_nline(&modifs))
-            log_dieu(LOG_EXIT_SYS,"build environment line of: ",file) ;
-
-        if (!auto_stra(&dst,again.s,"\n"))
+        if (!auto_stra(&sa, modifs.s))
             log_die_nomem("stralloc") ;
 
-        nvar = sastr_nelement(&again) ;
-        if (nvar > MAXVAR) log_dieusys(LOG_EXIT_SYS,"to many variables in file: ",path,file) ;
-
-        if (again.len > MAXENV)
-            log_die(LOG_EXIT_SYS,"environment string too long") ;
-    }
-    else
-    {
-        if (!environ_clean_envfile(&modifs,path)) {
-
-            if (insist) {
-
-                log_dieu(LOG_EXIT_SYS,"clean environment file of: ",path) ;
-
-            }
-
-            log_warn("clean environment file of: ",path) ;
-            if (!noprog)
-                xexec_ae(argv[0],argv,envp) ;
-        }
-
-        if (!stralloc_copy(&dst,&modifs))
-               log_die_nomem("stralloc") ;
-
-        if (!environ_remove_unexport(&modifs,&modifs))
-            log_dieu(LOG_EXIT_SYS,"remove exclamation mark from environment variables") ;
+        if (!environ_remove_unexport(&modifs, modifs.s, modifs.len))
+            log_dieu(LOG_EXIT_SYS, "remove exclamation mark from: ", path) ;
 
         if (!sastr_split_string_in_nline(&modifs))
-            log_dieu(LOG_EXIT_SYS,"build environment line") ;
-    }
+            log_dieu(LOG_EXIT_SYS, "build environment line of: ", path) ;
 
-    stralloc_free(&again) ;
+        nvar = sastr_nelement(&modifs) ;
+        if (nvar > MAXVAR)
+            log_dieusys(LOG_EXIT_SYS, "to many variables in file: ", path) ;
 
-    {
-        stralloc result = STRALLOC_ZERO ;
-        size_t pos = 0 ;
+        if (modifs.len > MAXENV)
+            log_die(LOG_EXIT_SYS, "environment string too long") ;
 
-        if (!stralloc_copy(&result, &modifs) ||
-            !stralloc_0(&result))
-                log_die_nomem("stralloc") ;
+    } else if (S_ISDIR(st.st_mode)) {
 
-        FOREACH_SASTR(&modifs, pos)
+        if (!environ_clean_envfile(&modifs, path))
+            die_or_exec(path, insist, argv, envp) ;
 
-            parse_env_var(&result, &modifs, modifs.s + pos) ;
-
-
-        if (!sastr_split_string_in_nline(&result) ||
-            !stralloc_0(&result))
-                log_dieu(LOG_EXIT_SYS,"split string") ;
-
-        if (!stralloc_copy(&modifs, &result))
+        if (!stralloc_copy(&sa, &modifs))
             log_die_nomem("stralloc") ;
 
-        stralloc_free(&result) ;
+        if (!environ_remove_unexport(&modifs, modifs.s, modifs.len))
+            log_dieu(LOG_EXIT_SYS, "remove exclamation mark from environment variables") ;
+
+        if (!sastr_split_string_in_nline(&modifs))
+            log_dieu(LOG_EXIT_SYS, "build environment line") ;
+
+    } else {
+
+        errno = EINVAL ;
+        log_diesys(LOG_EXIT_USER, "invalid format for path: ", path) ;
+    }
+
+    {
+        pos = 0 ;
+        size_t len = modifs.len ;
+        char t[len + 1] ;
+
+        sastr_to_char(t, &modifs) ;
+
+        for (pos = 0 ; pos < len ; pos += strlen(t + pos) + 1)
+            parse_env_var(&modifs, t + pos) ;
+
+        if (!sastr_split_string_in_nline(&modifs))
+            log_dieu(LOG_EXIT_SYS,"split string") ;
     }
 
     /** be able to freed the stralloc before existing */
-    char tmp[modifs.len+1] ;
-    memcpy(tmp,modifs.s,modifs.len) ;
-    tmp[modifs.len] = 0 ;
+    char tmp[modifs.len + 1] ;
+    sastr_to_char(tmp, &modifs) ;
 
-    size_t n = env_len(envp) + 1 + byte_count(modifs.s,modifs.len,'\0') ;
+    size_t tmplen = modifs.len, n = env_len(envp) + 1 + byte_count(modifs.s, modifs.len, '\0') ;
     char const *newenv[n + 1] ;
-    if (!env_merge (newenv, n ,envp,env_len(envp),tmp, modifs.len)) log_dieusys(LOG_EXIT_SYS,"build environment") ;
 
-    if (!sastr_split_string_in_nline(&dst))
-        log_dieusys(LOG_EXIT_SYS,"split line") ;
+    if (!env_merge(newenv, n , envp, env_len(envp), tmp, tmplen))
+        log_dieusys(LOG_EXIT_SYS, "build environment") ;
 
-    pos = 0 ;
+    {
+        /** keep variable in environment if ! do not exist*/
+        size_t tmplen = sa.len ;
+        pos = 0 ;
 
-    while (pos < dst.len) {
+        char tmp[sa.len + 1] ;
 
-        unexport = 0 ;
-        key.len = val.len = 0 ;
-        if (!stralloc_copy(&key,&dst) ||
-        !stralloc_copy(&val,&dst)) log_die_nomem("stralloc") ;
+        sastr_to_char(tmp, &sa) ;
 
-        if (!environ_get_key_nclean(&key,&pos)) log_dieusys(LOG_EXIT_SYS,"get key from line: ",key.s + pos) ;
-        pos-- ;// retrieve the '=' character
-        if (!environ_get_val(&val,&pos)) log_dieusys(LOG_EXIT_SYS,"get value from line: ",val.s + pos) ;
+        while (pos < tmplen) {
 
-        char *uval = val.s ;
-        if (val.s[0] == VAR_UNEXPORT)
-        {
-            uval = val.s+1 ;
-            unexport = 1 ;
+            unexport = 0 ;
+            sa.len = 0 ;
+
+            if (!auto_stra(&sa, tmp))
+                log_die_nomem("stralloc") ;
+
+            if (!environ_get_key_nclean(&sa, &pos))
+                log_dieu(LOG_EXIT_SYS, "get key from line: ", sa.s + pos) ;
+
+            char tkey[strlen(sa.s) + 1] ;
+            auto_strings(tkey, sa.s) ;
+
+            sa.len = 0 ;
+
+            if (!auto_stra(&sa, tmp))
+                log_die_nomem("stralloc") ;
+
+            pos-- ;// retrieve the '=' character
+            if (!environ_get_val(&sa, &pos))
+                log_dieu(LOG_EXIT_SYS, "get value from line: ", sa.s + pos) ;
+
+            char *uval = sa.s ;
+
+            if (sa.s[0] == VAR_UNEXPORT) {
+
+                uval = sa.s + 1 ;
+                unexport = 1 ;
+            }
+
+            if(sastr_cmp(&info.vars, tkey) == -1)
+                if (!environ_substitute(tkey, uval, &info, newenv, unexport))
+                    log_dieu(LOG_EXIT_SYS, "substitute value of: ", tkey, " by: ", uval) ;
         }
-
-        if(sastr_cmp(&info.vars,key.s) == -1)
-            if (!environ_substitute(key.s,uval,&info,newenv,unexport))
-                log_dieu(LOG_EXIT_SYS,"substitute value of: ",key.s," by: ",uval) ;
     }
-    stralloc_free(&key) ;
-    stralloc_free(&val) ;
-    stralloc_free(&dst) ;
+
+    sa.len = 0 ;
+    modifs.len = 0 ;
+
+    if (!env_string(&modifs, argv, (unsigned int)argc))
+        log_dieu(LOG_EXIT_SYS, "make environment string") ;
+
+    r = el_substitute(&sa, modifs.s, modifs.len, info.vars.s, info.values.s,
+        genalloc_s(elsubst_t const, &info.data), genalloc_len(elsubst_t const, &info.data)) ;
+
     stralloc_free(&modifs) ;
 
-    if (!env_string (&modifs, argv, (unsigned int) argc)) log_dieu(LOG_EXIT_SYS,"make environment string") ;
-    r = el_substitute (&dst, modifs.s, modifs.len, info.vars.s, info.values.s,
-        genalloc_s (elsubst_t const, &info.data),genalloc_len (elsubst_t const, &info.data)) ;
-    if (r < 0) log_dieusys(LOG_EXIT_SYS,"el_substitute") ;
-    else if (!r) _exit(0) ;
+    if (r < 0)
+        log_dieusys(LOG_EXIT_SYS, "el_substitute") ;
+    else if (!r) {
+        stralloc_free(&sa) ;
+        _exit(0) ;
+    }
 
-    stralloc_free(&modifs) ;
-
-    /**
-     *
-     *
-     * avec le noprog attention ici des allocations a la fin du programme
-     * le exec ne suit pas derriere
-     *
-     *
-     * */
     char const *v[r + 1] ;
-    if (!env_make (v, r ,dst.s, dst.len)) log_dieusys(LOG_EXIT_SYS,"make environment") ;
+    if (!env_make (v, r , sa.s, sa.len))
+        log_dieusys(LOG_EXIT_SYS, "make environment") ;
+
     v[r] = 0 ;
 
-    if (!noprog)
-        mexec_fm (v, newenv, env_len(newenv),info.modifs.s,info.modifs.len) ;
-    else {
-        /**
-         *
-         *
-         *
-         *
-         *
-         *
-         *
-         * ATTENTION a refaire et voir pour les flags
-         *
-         *
-         *
-         *
-         *
-         *
-         *
-         *
-         *
-        size_t pos = 0 ;
-        FOREACH_SASTR(&info.var, pos)
-            setenv(info.vars.s + pos, (const char *)value, 1);
-        */
-        stralloc_free(&dst) ;
-    }
+    mexec_fm(v, newenv, env_len(newenv), info.modifs.s, info.modifs.len) ;
 }
