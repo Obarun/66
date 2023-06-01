@@ -56,6 +56,9 @@ static void remove_service(resolve_service_t *res, ssexec_t *info)
 
     free(path) ;
 
+    if (res->environ.envdir)
+        auto_remove(res->sa.s + res->environ.envdir) ;
+
     tree_service_remove(info->base.s, res->sa.s + res->treename, res->sa.s + res->name) ;
 
     if ((res->logger.want && (res->type == TYPE_CLASSIC || res->type == TYPE_ONESHOT)) && !res->inmodule) {
