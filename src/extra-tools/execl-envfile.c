@@ -356,6 +356,9 @@ int main (int argc, char const *const *argv, char const *const *envp)
             if (!environ_get_key_nclean(&sa, &pos))
                 log_dieu(LOG_EXIT_SYS, "get key from line: ", sa.s + pos) ;
 
+            if (!sa.len)
+                continue ;
+
             char tkey[strlen(sa.s) + 1] ;
             auto_strings(tkey, sa.s) ;
 
