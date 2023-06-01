@@ -107,7 +107,7 @@ static void info_display_enabled(char const *field,char const *treename)
 {
     int enabled = tree_isenabled(pinfo->base.s, treename) ;
     if (enabled < 0)
-        log_dieu(LOG_EXIT_ZERO, "read resolve file of: ", treename) ;
+        log_dieu(LOG_EXIT_SYS, "read resolve file of: ", treename) ;
 
     if (NOFIELD) info_display_field_name(field) ;
     if (!bprintf(buffer_1,"%s%s%s",enabled ? log_color->valid : log_color->warning, enabled ? "yes":"no",log_color->off))

@@ -960,11 +960,8 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
     if (r < 0)
         log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please make a bug report") ;
 
-    if (!r || r == STATE_FLAGS_FALSE) {
-        /** nothing to do */
-        log_1_warn("service: ", svname, " is not parsed -- try to parse it using '66 parse ", svname, "'") ;
-        goto freed ;
-    }
+    if (!r || r == STATE_FLAGS_FALSE)
+        log_die("service: ", svname, " is not parsed -- try to parse it using '66 parse ", svname, "'") ;
 
     if (!resolve_read_g(wres, info->base.s, svname))
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", svname) ;

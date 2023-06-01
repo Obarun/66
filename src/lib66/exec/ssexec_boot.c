@@ -581,7 +581,7 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
         if (mount("tmpfs", fs, "tmpfs", MS_NODEV | MS_NOSUID, "mode=0755") == -1)
             sulogin("mount: ",fs) ;
     }
-    /** respect the path before run 66-xxx API*/
+    /** respect the path before run API*/
     if (setenv("PATH", path, 1) == -1) sulogin("set initial PATH: ",path) ;
     /** create scandir */
     {
