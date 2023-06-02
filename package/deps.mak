@@ -51,7 +51,7 @@ src/lib66/exec/ssexec_init.o src/lib66/exec/ssexec_init.lo: src/lib66/exec/ssexe
 src/lib66/exec/ssexec_parse.o src/lib66/exec/ssexec_parse.lo: src/lib66/exec/ssexec_parse.c src/include/66/parse.h src/include/66/sanitize.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/exec/ssexec_reconfigure.o src/lib66/exec/ssexec_reconfigure.lo: src/lib66/exec/ssexec_reconfigure.c src/include/66/config.h src/include/66/constants.h src/include/66/graph.h src/include/66/sanitize.h src/include/66/service.h src/include/66/ssexec.h src/include/66/state.h src/include/66/svc.h src/include/66/tree.h
 src/lib66/exec/ssexec_reload.o src/lib66/exec/ssexec_reload.lo: src/lib66/exec/ssexec_reload.c src/include/66/config.h src/include/66/enum.h src/include/66/graph.h src/include/66/sanitize.h src/include/66/service.h src/include/66/ssexec.h src/include/66/state.h src/include/66/svc.h
-src/lib66/exec/ssexec_remove.o src/lib66/exec/ssexec_remove.lo: src/lib66/exec/ssexec_remove.c src/include/66/ssexec.h
+src/lib66/exec/ssexec_remove.o src/lib66/exec/ssexec_remove.lo: src/lib66/exec/ssexec_remove.c src/include/66/config.h src/include/66/constants.h src/include/66/enum.h src/include/66/resolve.h src/include/66/service.h src/include/66/ssexec.h src/include/66/state.h src/include/66/tree.h
 src/lib66/exec/ssexec_resolve.o src/lib66/exec/ssexec_resolve.lo: src/lib66/exec/ssexec_resolve.c src/include/66/config.h src/include/66/constants.h src/include/66/info.h src/include/66/resolve.h src/include/66/service.h src/include/66/ssexec.h src/include/66/state.h src/include/66/utils.h
 src/lib66/exec/ssexec_restart.o src/lib66/exec/ssexec_restart.lo: src/lib66/exec/ssexec_restart.c src/include/66/config.h src/include/66/enum.h src/include/66/graph.h src/include/66/sanitize.h src/include/66/service.h src/include/66/ssexec.h src/include/66/state.h src/include/66/svc.h
 src/lib66/exec/ssexec_scandir_create.o src/lib66/exec/ssexec_scandir_create.lo: src/lib66/exec/ssexec_scandir_create.c src/include/66/config.h src/include/66/constants.h src/include/66/enum.h src/include/66/ssexec.h src/include/66/utils.h
@@ -239,7 +239,7 @@ src/lib66/utils/youruid.o src/lib66/utils/youruid.lo: src/lib66/utils/youruid.c 
 src/lib66/write/write_classic.o src/lib66/write/write_classic.lo: src/lib66/write/write_classic.c src/include/66/parse.h src/include/66/service.h src/include/66/write.h
 src/lib66/write/write_common.o src/lib66/write/write_common.lo: src/lib66/write/write_common.c src/include/66/constants.h src/include/66/enum.h src/include/66/environ.h src/include/66/service.h src/include/66/write.h
 src/lib66/write/write_environ.o src/lib66/write/write_environ.lo: src/lib66/write/write_environ.c
-src/lib66/write/write_execute_scripts.o src/lib66/write/write_execute_scripts.lo: src/lib66/write/write_execute_scripts.c
+src/lib66/write/write_execute_scripts.o src/lib66/write/write_execute_scripts.lo: src/lib66/write/write_execute_scripts.c src/include/66/utils.h
 src/lib66/write/write_logger.o src/lib66/write/write_logger.lo: src/lib66/write/write_logger.c src/include/66/config.h src/include/66/constants.h src/include/66/enum.h src/include/66/parse.h src/include/66/utils.h src/include/66/write.h
 src/lib66/write/write_make_symlink.o src/lib66/write/write_make_symlink.lo: src/lib66/write/write_make_symlink.c src/include/66/constants.h src/include/66/service.h
 src/lib66/write/write_oneshot.o src/lib66/write/write_oneshot.lo: src/lib66/write/write_oneshot.c src/include/66/parse.h src/include/66/service.h src/include/66/write.h
