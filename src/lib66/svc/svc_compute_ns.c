@@ -165,7 +165,7 @@ int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char co
 
         int aresid = service_resolve_array_search(ares, areslen, name) ;
         if (aresid < 0)
-            log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parsed it?") ;
+            log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
         graph_compute_visit(name, visit, list, &graph, &napid, requiredby) ;
 

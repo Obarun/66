@@ -44,7 +44,7 @@ static void service_enable_disable_deps(graph_t *g, unsigned int idx, resolve_se
             char *name = sa.s + pos ;
             int aresid = service_resolve_array_search(ares, areslen, name) ;
             if (aresid < 0)
-                log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parsed it?") ;
+                log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
             if (visit[aresid] == VISIT_WHITE)
                 service_enable_disable(g, aresid, ares, areslen, action, visit) ;
@@ -77,7 +77,7 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
 
             int aresid = service_resolve_array_search(ares, areslen, name) ;
             if (aresid < 0)
-                log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parsed it?") ;
+                log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
             if (visit[aresid] == VISIT_WHITE) {
 
@@ -105,7 +105,7 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
                     char *name = sa.s + pos ;
                     int aresid = service_resolve_array_search(ares, areslen, name) ;
                     if (aresid < 0)
-                        log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parsed it?") ;
+                        log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
                     if (visit[aresid] == VISIT_WHITE) {
 

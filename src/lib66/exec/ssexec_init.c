@@ -66,7 +66,7 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 
         int aresid = service_resolve_array_search(ares, areslen, sa->s + n) ;
         if (aresid < 0)
-            log_die(LOG_EXIT_USER, "service: ", sa->s + n, " not available -- did you parsed it?") ;
+            log_die(LOG_EXIT_USER, "service: ", sa->s + n, " not available -- did you parse it?") ;
 
         unsigned int l[graph.mlen], c = 0, pos = 0, idx = 0 ;
 
@@ -107,7 +107,7 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 
                 aresid = service_resolve_array_search(ares, areslen, name) ;
                 if (aresid < 0)
-                    log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parsed it?") ;
+                    log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
                 if (earlier) {
 

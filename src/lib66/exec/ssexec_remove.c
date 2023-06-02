@@ -160,7 +160,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
             log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", argv[pos]) ;
 
         if (!r)
-            log_dieu(LOG_EXIT_USER, "find service: ", argv[pos], " -- did you parsed it ?") ;
+            log_dieu(LOG_EXIT_USER, "find service: ", argv[pos], " -- did you parse it?") ;
 
         if (!state_read(&ste, &res))
             log_dieusys(LOG_EXIT_SYS, "read state file of: ", argv[pos], " -- please make a bug report") ;

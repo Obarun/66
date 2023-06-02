@@ -99,7 +99,7 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
 
         int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
         if (aresid < 0)
-            log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parsed it?") ;
+            log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parse it?") ;
 
         graph_compute_visit(argv[n], visit, list, &graph, &nservice, 0) ;
     }

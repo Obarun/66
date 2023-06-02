@@ -130,7 +130,7 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
 
         int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
         if (aresid < 0)
-            log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parsed it?") ;
+            log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parse it?") ;
 
         service_enable_disable(&graph, aresid, ares, areslen, 1, visit) ;
 

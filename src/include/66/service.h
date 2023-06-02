@@ -181,7 +181,7 @@ struct resolve_service_s
     uint32_t owner ; // integer, uid of the owner
     uint32_t treename ; // string
     uint32_t user ; // string
-    uint32_t inmodule ; // string, name of the module wich depend on
+    uint32_t inmodule ; // string, name of the module which depend on
 
     resolve_service_addon_path_t path ;
     resolve_service_addon_dependencies_t dependencies ;

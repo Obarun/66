@@ -91,7 +91,7 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
 
         int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
         if (aresid < 0)
-            log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you parsed it?") ;
+            log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you parse it?") ;
 
         if (!state_read(&sta, &ares[aresid]))
             log_dieu(LOG_EXIT_SYS, "read state file of: ", argv[n]) ;
