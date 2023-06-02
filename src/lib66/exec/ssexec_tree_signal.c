@@ -408,7 +408,7 @@ static int handle_signal(pidtree_t *apidt, unsigned int what, graph_t *graph, ss
             case SIGTERM :
             case SIGKILL :
             case SIGINT :
-                    log_1_warn("received SIGINT, aborting transaction") ;
+                    log_1_warn("aborting transaction") ;
                     kill_all(apidt) ;
                     ok = 110 ;
                     break ;
