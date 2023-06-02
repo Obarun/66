@@ -25,7 +25,7 @@ int state_messenger(resolve_service_t *res, uint32_t flag, uint32_t value)
     ss_state_t sta = STATE_ZERO ;
 
     if (!state_read(&sta, res))
-        log_warnusys_return(LOG_EXIT_ZERO, "read status file of: ", res->sa.s + res->name) ;
+        log_warnu_return(LOG_EXIT_ZERO, "read status file of: ", res->sa.s + res->name) ;
 
     state_set_flag(&sta, flag, value) ;
 
