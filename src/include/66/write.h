@@ -24,7 +24,7 @@ extern void write_oneshot(resolve_service_t *res, char const *dst, uint8_t force
 extern void write_logger(resolve_service_t *res, char const *dst, uint8_t force) ;
 
 extern int write_common(resolve_service_t *res, char const *dst) ;
-extern int write_execute_scripts(char const *file, char const *contents, char const *dst) ;
+extern int write_execute_scripts(char const *file, char const *contents, char const *dst, char const *runas) ;
 extern int write_uint(char const *dst, char const *name, uint32_t ui) ;
 extern int write_environ(char const *name, char const *contents, char const *dst) ;
 

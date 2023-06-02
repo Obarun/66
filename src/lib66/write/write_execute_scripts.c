@@ -14,16 +14,19 @@
 
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/unistd.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 
+#include <66/utils.h>
+
 #ifndef FAKELEN
 #define FAKELEN strlen(run)
 #endif
 
-int write_execute_scripts(char const *file, char const *contents, char const *dst)
+int write_execute_scripts(char const *file, char const *contents, char const *dst, char const *runas)
 {
 
     log_flow() ;
@@ -41,6 +44,18 @@ int write_execute_scripts(char const *file, char const *contents, char const *ds
 
     if (chmod(write, 0755) < 0)
         log_warnusys_return(LOG_EXIT_ZERO, "chmod", write) ;
+
+    if (runas) {
+
+        uid_t uid ;
+        gid_t gid ;
+        if (!youruid(&uid, runas) ||
+            !yourgid(&gid, uid))
+            log_warnu_return(LOG_EXIT_ZERO,"get uid and gid of: ", runas) ;
+
+        if (!chown(write, uid, gid) < 0)
+            log_warnusys_return(LOG_EXIT_ZERO, "chown: ", write) ;
+    }
 
     return 1 ;
 }
