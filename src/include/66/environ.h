@@ -23,7 +23,7 @@
 #include <66/parse.h>
 #include <66/service.h>
 
-extern int env_resolve_conf(stralloc *env,char const *svname,uid_t owner) ;
+extern int env_resolve_conf(stralloc *env, resolve_service_t *res) ;
 extern int env_make_symlink(resolve_service_t *res) ;
 extern int env_compute(stralloc *result, resolve_service_t *res) ;
 extern int env_clean_with_comment(stralloc *sa) ;
