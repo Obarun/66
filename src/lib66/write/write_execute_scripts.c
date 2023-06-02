@@ -53,7 +53,7 @@ int write_execute_scripts(char const *file, char const *contents, char const *ds
             !yourgid(&gid, uid))
             log_warnu_return(LOG_EXIT_ZERO,"get uid and gid of: ", runas) ;
 
-        if (!chown(write, uid, gid) < 0)
+        if (chown(write, uid, gid) < 0)
             log_warnusys_return(LOG_EXIT_ZERO, "chown: ", write) ;
     }
 
