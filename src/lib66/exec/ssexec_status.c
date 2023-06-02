@@ -608,8 +608,7 @@ static void info_display_envat(char const *field,resolve_service_t *res)
     if (NOFIELD) info_display_field_name(field) ;
     stralloc salink = STRALLOC_ZERO ;
 
-    if (!res->environ.envdir) goto empty ;
-    {
+    if (res->environ.envdir) {
         stralloc salink = STRALLOC_ZERO ;
         char *src = res->sa.s + res->environ.envdir ;
 
@@ -628,15 +627,13 @@ static void info_display_envat(char const *field,resolve_service_t *res)
 
         stralloc_free(&salink) ;
 
-        goto freed ;
+        return ;
     }
-    empty:
 
     if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
-    freed:
-        stralloc_free(&salink) ;
+    stralloc_free(&salink) ;
 }
 
 static void info_display_envfile(char const *field,resolve_service_t *res)
