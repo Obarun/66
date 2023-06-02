@@ -441,10 +441,13 @@ static int ssexec_callback(stralloc *sa, ssexec_t *info, unsigned int what)
 
     int r, e = 1 ;
     size_t pos = 0, len = sa->len ;
+    ss_state_t ste = STATE_ZERO ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     char t[len + 1] ;
-    char atree[SS_MAX_TREENAME + 1] ;
 
     sastr_to_char(t, sa) ;
+
     sa->len = 0 ;
 
     /** only deal with enabled service at up time and
@@ -453,19 +456,24 @@ static int ssexec_callback(stralloc *sa, ssexec_t *info, unsigned int what)
 
         char *name = t + pos ;
 
-        r = service_is_g(atree, name, !what ? STATE_FLAGS_ISENABLED : STATE_FLAGS_ISSUPERVISED) ;
-        if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "get information of service: ", name, " -- please a bug report") ;
+        r = resolve_read_g(wres, info->base.s, name) ;
+        if (r == -1)
+            log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name) ;
+        if (!r)
+            log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name, " -- please make a bug report") ;
 
-        if (r == STATE_FLAGS_TRUE) {
-            /** do not handle loggers or services declared inside a module,
-             * ssexec_{start,stop} will build the graph and integrate them as needed.
-             * We don't use resolve file here to avoid the read.*/
-            if (get_rstrlen_until(name, SS_LOG_SUFFIX) < 0 && get_rstrlen_until(name, ":") < 0)
+        if (!state_read(&ste, &res))
+            log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug report") ;
+
+        if (service_is(&ste, !what ? STATE_FLAGS_ISENABLED : STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_TRUE) {
+
+            if (get_rstrlen_until(name, SS_LOG_SUFFIX) < 0 && !res.inmodule)
                 if (!sastr_add_string(sa, name))
                     log_dieu(LOG_EXIT_SYS, "add string") ;
         }
     }
+
+    resolve_free(wres) ;
 
     if (!sa->len) {
         e = 0 ;
@@ -518,7 +526,7 @@ static int doit(char const *treename, ssexec_t *sinfo, unsigned int what, tain *
 
     {
         info.treename.len = 0 ;
-
+        info.opt_tree = 1 ;
         if (!auto_stra(&info.treename, treename))
             log_die_nomem("stralloc") ;
 
@@ -898,6 +906,14 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
 
         char *treename = sa.s + pos ;
 
+        /** only one tree */
+        if (info->treename.len) {
+
+            if (!strcmp(info->treename.s, treename))
+                found = 1 ;
+            else continue ;
+        }
+
         if (tree_resolve_array_search(ares, areslen, treename) < 0) {
 
             resolve_tree_t tres = RESOLVE_TREE_ZERO ;
@@ -914,14 +930,6 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
             ares[areslen++] = cp ;
 
             resolve_free(wres) ;
-        }
-
-        /** only one tree */
-        if (info->treename.len) {
-
-            if (!strcmp(info->treename.s, treename))
-                found = 1 ;
-            else continue ;
         }
 
         int init = tree_isinitialized(info->base.s, treename) ;
@@ -964,6 +972,7 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
                 visit[l[pos]] = 1 ;
             }
         }
+
         if (found)
             break ;
     }
@@ -974,7 +983,6 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
     pareslen = &areslen ;
 
     if (!napid) {
-        log_warn("no trees matching the requirements -- nothing to do") ;
         r = 0 ;
         goto end ;
     }
