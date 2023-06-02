@@ -22,20 +22,32 @@
 #include <66/environ.h>
 #include <66/constants.h>
 #include <66/utils.h>
+#include <66/service.h>
 
-int env_resolve_conf(stralloc *env,char const *svname, uid_t owner)
+int env_resolve_conf(stralloc *env, resolve_service_t *res)
 {
     log_flow() ;
 
-    if (!owner)
-    {
-        if (!stralloc_cats(env,SS_SERVICE_ADMCONFDIR)) return 0 ;
+    if (!res->owner) {
+
+        if (!stralloc_cats(env, SS_SERVICE_ADMCONFDIR))
+            return 0 ;
+
+    } else {
+
+        if (!set_ownerhome(env, res->owner))
+            return 0 ;
+
+        if (!stralloc_cats(env, SS_SERVICE_USERCONFDIR))
+            return 0 ;
     }
-    else
-    {
-        if (!set_ownerhome(env,owner)) return 0 ;
-        if (!stralloc_cats(env,SS_SERVICE_USERCONFDIR)) return 0 ;
-    }
-    if (!auto_stra(env,svname)) return 0 ;
+
+    if (res->inmodule)
+        if (!auto_stra(env, res->sa.s + res->inmodule, SS_SYM_VERSION, "/"))
+            return 0 ;
+
+    if (!auto_stra(env, res->sa.s + res->name))
+        return 0 ;
+
     return 1 ;
 }

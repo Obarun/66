@@ -50,7 +50,6 @@ int write_common(resolve_service_t *res, char const *dst)
             log_warnusys_return(LOG_EXIT_ZERO, "write uint file", SS_NOTIFICATION) ;
 
     /** timeout family
-     *
      * Only write timeout file for classic service.
      * S6-supervise need it otherwise it's read directly
      * from the resolve file at start process. */
@@ -72,8 +71,8 @@ int write_common(resolve_service_t *res, char const *dst)
         if (!write_uint(dst, "down-signal", res->execute.downsignal))
             log_warnusys_return(LOG_EXIT_ZERO, "write uint file down-signal") ;
 
-    /** environment for module is already written by the parse_module() function */
-    if (res->environ.env && res->type != TYPE_MODULE) {
+    /** environment */
+    if (res->environ.env) {
 
         stralloc dst = STRALLOC_ZERO ;
         stralloc contents = STRALLOC_ZERO ;
@@ -102,7 +101,6 @@ int write_common(resolve_service_t *res, char const *dst)
 
         if (!ob_dirname(basedir, src))
             log_warnusys_return(LOG_EXIT_ZERO, "get dirname of: ", src) ;
-
 
         if (!sastr_clean_string(&sa, res->sa.s + res->hiercopy))
             log_warnusys_return(LOG_EXIT_ZERO, "clean string") ;
@@ -182,6 +180,7 @@ int write_common(resolve_service_t *res, char const *dst)
             if (!hiercopy(tmp, dest))
                 log_warnusys_return(LOG_EXIT_ZERO, "copy: ", tmp, " to: ", dest) ;
         }
+
         stralloc_free(&sa) ;
     }
 

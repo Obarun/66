@@ -49,7 +49,7 @@ int parse_store_environ(resolve_service_t *res, char *store, int idsec, int idke
             res->environ.env = resolve_add_string(wres, sa.s) ;
 
             sa.len = 0 ;
-            if (!env_resolve_conf(&sa, res->sa.s + res->name, MYUID))
+            if (!env_resolve_conf(&sa, res))
                 goto err ;
 
             res->environ.envdir = resolve_add_string(wres, sa.s) ;
