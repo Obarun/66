@@ -87,7 +87,8 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 {
     log_flow() ;
 
-    int insta, r, isparsed ;
+    int insta, isparsed ;
+    uint8_t opt_tree_forced = 0 ;
     size_t svlen = strlen(sv) ;
     char svname[svlen + 1], svsrc[svlen + 1] ;
     char atree[SS_MAX_TREENAME + 1] ;
@@ -149,45 +150,44 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     if (isparsed == STATE_FLAGS_TRUE && !force)
         log_warn_return(2, "ignoring service: ", svname, " -- already parsed") ;
 
-    if (info->opt_tree) {
+    {
+        /** search for the type field*/
+        if (!environ_get_val_of_key(&sa, get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_TYPE)))
+            log_dieu(LOG_EXIT_SYS, "get field ", get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_TYPE)," of service: ", svname) ;
 
-        r = tree_isvalid(info->base.s, info->treename.s) ;
-        if (r < 0)
-            log_dieu(LOG_EXIT_SYS, "check validity of tree: ", info->treename.s) ;
+        char store[sa.len + 1] ;
+        auto_strings(store, sa.s) ;
 
-        if (!r) {
+        if (!parse_store_main(&res, store, SECTION_MAIN, KEY_MAIN_TYPE))
+            log_dieu(LOG_EXIT_SYS, "store field type of service: ", svname) ;
 
-            /** @intree may not exist */
-            r = sastr_find(&sa, get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_INTREE)) ;
-            if (r == -1)
-                goto follow ;
+        sa.len = 0 ;
+        if (!auto_stra(&sa, file))
+            log_die_nomem("stralloc") ;
+    }
 
-            if (!environ_get_val_of_key(&sa, get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_INTREE)))
-                log_dieu(LOG_EXIT_SYS, "get field intree of service: ", sv) ;
+    if (!info->opt_tree) {
 
-            if (!sastr_clean_element(&sa))
-                log_dieu(LOG_EXIT_SYS, "clean field intree of service: ", sv) ;
+        /** search for the intree field.
+         * This field is not mandatory, do not crash if it not found */
+        if (environ_get_val_of_key(&sa, get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_INTREE))) {
 
-            res.intree = resolve_add_string(wres, sa.s) ;
+            char store[sa.len + 1] ;
+            auto_strings(store, sa.s) ;
+
+            if (!parse_store_main(&res, store, SECTION_MAIN, KEY_MAIN_INTREE))
+                log_dieu(LOG_EXIT_SYS, "store field intree of service: ", svname) ;
 
             info->treename.len = 0 ;
+            info->opt_tree = 1 ;
+            opt_tree_forced = 1 ;
             sa.len = 0 ;
+
             if (!auto_stra(&info->treename, res.sa.s + res.intree) ||
                 !auto_stra(&sa, file))
                     log_die_nomem("stralloc") ;
         }
     }
-
-    follow:
-
-    if (!environ_get_val_of_key(&sa, get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_TYPE)))
-        log_dieu(LOG_EXIT_SYS, "get field ", get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_TYPE)," of service: ", svname) ;
-
-    char store[sa.len + 1] ;
-    auto_strings(store, sa.s) ;
-
-    if (!parse_store_main(&res, store, SECTION_MAIN, KEY_MAIN_TYPE))
-        log_dieu(LOG_EXIT_SYS, "store field type of service: ", svname) ;
 
     if (inmodule) {
 
@@ -215,13 +215,9 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     // keep overwrite_conf
     res.environ.env_overwrite = conf ;
 
-    /** try to create the tree if not exist yet with
-     * the help of the seed files */
-    set_treeinfo(info) ;
-
     /** contents of directory should be listed by service_frontend_path
      * except for module type */
-    if (scan_mode(sv,S_IFDIR) == 1 && res.type != TYPE_MODULE)
+    if (scan_mode(sv, S_IFDIR) == 1 && res.type != TYPE_MODULE)
         goto freed ;
 
     if (!parse_contents(wres, file, svname))
@@ -229,6 +225,15 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
     if (!parse_mandatory(&res))
         log_die(LOG_EXIT_SYS, "some mandatory field is missing for service: ", svname) ;
+
+    /** try to create the tree if not exist yet with
+     * the help of the seed files */
+    set_treeinfo(info) ;
+
+    res.treename = resolve_add_string(wres, info->treename.s) ;
+
+    if (opt_tree_forced)
+        info->opt_tree = 0 ;
 
     /** append res.dependencies.depends list with the optional dependencies list */
     if (res.dependencies.noptsdeps) {

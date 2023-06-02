@@ -122,6 +122,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
 
     int r, insta = -1 ;
     size_t pos = 0, copylen = 0, len = 0 ;
+    uint8_t opt_tree = info->opt_tree ;
     char name[strlen(res->sa.s + res->name) + 1] ;
     auto_strings(name,res->sa.s + res->name) ;
     char *src = res->sa.s + res->path.frontend ;
@@ -245,6 +246,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
 
             sa.len = 0 ;
             out = 0 ;
+            info->opt_tree = opt_tree ;
             char fname[strlen(l + pos)] ;
 
             if (!ob_basename(fname, l + pos))
@@ -278,11 +280,18 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
                 if (!sastr_add_string(&list, n))
                     log_die_nomem("stralloc") ;
 
+                info->opt_tree = 1 ;
+                info->treename.len = 0 ;
+                if (!auto_stra(&info->treename, res->sa.s + res->intree))
+                    log_die_nomem("stralloc") ;
+
             } else {
 
+                info->opt_tree = 0 ;
 
                 if (res->dependencies.ndepends) {
-
+                    /** TODO: avoid to increase db size by
+                     * storing dependencies into an array */
                     size_t len = strlen(res->sa.s + res->dependencies.depends) ;
                     char tmp[len + strlen(fname) + 2] ;
                     auto_strings(tmp, res->sa.s + res->dependencies.depends, " ", fname) ;

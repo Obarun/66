@@ -440,14 +440,6 @@ void parse_compute_resolve(unsigned int idx, resolve_service_t *ares, unsigned i
 
     res->path.home = resolve_add_string(wres, info->base.s) ;
 
-    /** Command line precede frontend file which precede the default tree name*/
-    if (info->opt_tree)
-        res->treename = resolve_add_string(wres, info->treename.s) ;
-    else if (res->intree)
-        res->treename = resolve_add_string(wres, res->sa.s + res->intree) ;
-    else
-        res->treename = resolve_add_string(wres, info->treename.s) ;
-
     /* live */
     res->live.livedir = resolve_add_string(wres, info->live.s) ;
 
@@ -466,7 +458,7 @@ void parse_compute_resolve(unsigned int idx, resolve_service_t *ares, unsigned i
      *
      * which is a symlink pointing to
      *
-     *      /var/lib/66/system/treename/servicedirs/svc/service_name
+     *      /var/lib/66/system/servicedirs/svc/service_name
      *
      * which is a symlink pointing to:
      *

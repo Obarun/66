@@ -381,6 +381,10 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 
         case KEY_MAIN_INTREE:
 
+            if (res->intree)
+                /** already passed through here */
+                break ;
+
             if (!parse_clean_line(store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
