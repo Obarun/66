@@ -170,7 +170,7 @@ static void compute_wrapper_scripts(resolve_service_t *res, resolve_service_addo
     if (res->environ.env && build)
         /** call execl-envfile if a custom @execute is asked.
          * its call will be made at run.user file for execlineb script*/
-        auto_strings(run + FAKELEN, "execl-envfile ", res->sa.s + res->environ.envdir, SS_SYM_VERSION "\n") ;
+        auto_strings(run + FAKELEN, "execl-envfile -v4 ", res->sa.s + res->environ.envdir, SS_SYM_VERSION "\n") ;
 
     /** log redirection for oneshot service */
     if (res->logger.want && res->type == TYPE_ONESHOT) {

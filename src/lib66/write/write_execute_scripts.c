@@ -19,6 +19,7 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
+#include <oblibs/types.h>
 
 #include <66/utils.h>
 
@@ -47,11 +48,27 @@ int write_execute_scripts(char const *file, char const *contents, char const *ds
 
     if (runas) {
 
+        size_t len = strlen(runas) ;
         uid_t uid ;
         gid_t gid ;
-        if (!youruid(&uid, runas) ||
-            !yourgid(&gid, uid))
-            log_warnu_return(LOG_EXIT_ZERO,"get uid and gid of: ", runas) ;
+
+        char file[len + 1] ;
+        auto_strings(file, runas) ;
+
+        char *colon ;
+        colon = strchr(file,':') ;
+
+        if (colon) {
+
+            uid = file ;
+            gid = colon + 1 ;
+
+        } else {
+
+            if (!youruid(&uid, runas) ||
+                !yourgid(&gid, uid))
+                log_warnu_return(LOG_EXIT_ZERO,"get uid and gid of: ", runas) ;
+        }
 
         if (chown(write, uid, gid) < 0)
             log_warnusys_return(LOG_EXIT_ZERO, "chown: ", write) ;
