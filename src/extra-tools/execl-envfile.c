@@ -128,6 +128,12 @@ void parse_env_var(stralloc *result, char const *line)
     memcpy(mkey,line,spos - 1) ;
     mkey[spos - 1] = 0 ;
 
+    if (!line[spos]) {
+
+        stralloc_free(&subs) ;
+        return ;
+    }
+
     if (!auto_stra(&subs, line + spos))
         log_die_nomem("stralloc") ;
 
