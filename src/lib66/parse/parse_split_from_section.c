@@ -15,6 +15,7 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include <oblibs/stack.h>
 #include <oblibs/log.h>
 #include <oblibs/sastr.h>
 #include <oblibs/string.h>
@@ -48,7 +49,6 @@ int parse_split_from_section(resolve_service_t *res, stralloc *secname, char *st
     int e = 0, r = 0, found = 0 ;
 
     key_all_t const *list = total_list ;
-    stralloc sakey = STRALLOC_ZERO ;
 
     // cpos -> current, ipos -> idx pos, tpos -> temporary pos, end -> end the parse process
     size_t len = strlen(str), cpos = 0, ipos = 0, tpos = 0, end = 0 ;
@@ -89,7 +89,7 @@ int parse_split_from_section(resolve_service_t *res, stralloc *secname, char *st
         ipos = 0 ;
         tpos = 0 ;
         end = 0 ;
-        sakey.len = 0 ;
+
         line = (char *)str + cpos ; // (char *) shut up compiler
 
         /** comment must be the first character found
@@ -126,13 +126,19 @@ int parse_split_from_section(resolve_service_t *res, stralloc *secname, char *st
 
         // get a cleaned key string
         wild_zero_all(&MILL_GET_KEY) ;
-        r = mill_element(&sakey, line, &MILL_GET_KEY, &tpos) ;
+        _init_stack_(stk, strlen(line) + 1) ;
+        r = mill_element(&stk, line, &MILL_GET_KEY, &tpos) ;
         if (r < 1) {
             log_warnu("get key at frontend service file of service: ", svname, " from line: ", line, " -- please make a bug report") ;
             goto err ;
         } else if (!r || tpos + cpos >= len) {
                 // '=' was not find or end of string?
                 break ;
+        }
+
+        if (!stack_close(&stk)) {
+            log_warnu("stack overflow") ;
+            goto err ;
         }
 
         // copy the string to parse
@@ -146,7 +152,7 @@ int parse_split_from_section(resolve_service_t *res, stralloc *secname, char *st
             found = 0 ;
 
             // look for a valid key name
-            if (*list[id].list[ipos].name && !strcmp(sakey.s, *list[id].list[ipos].name)) {
+            if (*list[id].list[ipos].name && !strcmp(stk.s, *list[id].list[ipos].name)) {
 
                 found = 1 ;
 
@@ -208,7 +214,7 @@ int parse_split_from_section(resolve_service_t *res, stralloc *secname, char *st
         }
 
         if (!found && r >= 0) {
-            log_warn("unknown key: ", sakey.s," : in section: ",  secname->s + previous_sec, " -- ignoring it") ;
+            log_warn("unknown key: ", store," : in section: ",  secname->s + previous_sec, " -- ignoring it") ;
             tpos = get_len_until(line, '\n') ;
             cpos += tpos + 1 ;
         }
@@ -218,6 +224,5 @@ int parse_split_from_section(resolve_service_t *res, stralloc *secname, char *st
     e = 1 ;
 
     err:
-        stralloc_free(&sakey) ;
         return e ;
 }

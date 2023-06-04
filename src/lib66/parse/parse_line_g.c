@@ -16,26 +16,26 @@
 
 #include <oblibs/string.h>
 #include <oblibs/mill.h>
+#include <oblibs/stack.h>
 
 #include <skalibs/stralloc.h>
 
 #include <66/parse.h>
 
-/* @Return 2 if bad format */
 int parse_line_g(char *store, parse_mill_t *config, char const *str, size_t *pos)
 {
-    int r = 0, e = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
+    int r = 0 ;
+    _init_stack_(stk, strlen(str) + 1) ;
 
-    r = mill_element(&sa, str, config, pos) ;
-    if (r <= 0 || !sa.len)
-        goto err ;
+    r = mill_element(&stk, str, config, pos) ;
+    if (r <= 0 || !stk.len)
+        return 0 ;
 
-    if (!stralloc_0(&sa))
-        goto err ;
+    if (!stack_close(&stk))
+        return 0 ;
 
-    if (sa.s[0] == ' ')
-        goto err ;
+    if (stk.s[0] == ' ')
+        return 0 ;
 
     r = get_len_until(str, '\n') ;
     if (r < 1)
@@ -43,11 +43,7 @@ int parse_line_g(char *store, parse_mill_t *config, char const *str, size_t *pos
 
     (*pos) = r + 1 ; // +1 remove '\n'
 
-    e = 1 ;
+    auto_strings(store, stk.s) ;
 
-    auto_strings(store, sa.s) ;
-
-    err:
-        stralloc_free(&sa) ;
-        return e ;
+    return 1 ;
 }

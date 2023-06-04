@@ -17,6 +17,7 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/mill.h>
+#include <oblibs/stack.h>
 
 #include <skalibs/stralloc.h>
 
@@ -29,20 +30,21 @@ int regex_get_file_name(char *filename, char const *str)
 
     int r ;
     size_t pos = 0 ;
-    stralloc kp = STRALLOC_ZERO ;
-
+    _init_stack_(stk, strlen(str) + 1) ;
     parse_mill_t MILL_GET_COLON = {
     .open = ':', .close = ':',
     .skip = " \t\r", .skiplen = 3,
     .forceclose = 1,
     .inner.debug = "get_colon" } ;
 
-    r = mill_element(&kp, str, &MILL_GET_COLON, &pos) ;
+    r = mill_element(&stk, str, &MILL_GET_COLON, &pos) ;
     if (r == -1)
         log_dieu(LOG_EXIT_SYS, "get filename of line: ", str) ;
 
-    auto_strings(filename, kp.s) ;
+    if (!stack_close(&stk))
+        log_die(LOG_EXIT_SYS, "stack overflow") ;
 
-    stralloc_free(&kp) ;
+    auto_strings(filename, stk.s) ;
+
     return pos ;
 }

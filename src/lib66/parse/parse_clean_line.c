@@ -16,27 +16,25 @@
 
 #include <oblibs/mill.h>
 #include <oblibs/string.h>
+#include <oblibs/stack.h>
+#include <oblibs/log.h>
 
 #include <skalibs/stralloc.h>
 
 int parse_clean_line(char *str)
 {
-
-    int r = 0, e = 0 ;
+    int r = 0 ;
     size_t tpos = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
-
+    _init_stack_(stk, strlen(str) + 1) ;
     wild_zero_all(&MILL_CLEAN_LINE) ;
-    r = mill_element(&sa, str, &MILL_CLEAN_LINE, &tpos) ;
+    r = mill_element(&stk, str, &MILL_CLEAN_LINE, &tpos) ;
     if (r <= 0)
-        goto err ;
+        return 0 ;
 
-    auto_strings(str, sa.s) ;
+    if (!stack_close(&stk))
+        log_die(LOG_EXIT_SYS, "stack overflow") ;
 
-    e = 1 ;
+    auto_strings(str, stk.s) ;
 
-    err:
-        stralloc_free(&sa) ;
-        return e ;
-
+    return 1 ;
 }
