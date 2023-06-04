@@ -55,9 +55,9 @@ static void parse_env_var(stralloc *result, char const *line) ;
 static void die_or_exec(char const *path, uint8_t insist, char const *const *argv, char const *const *envp)
 {
     if (insist)
-        log_dieusys(LOG_EXIT_SYS, "get environment from: ", path) ;
+        log_dieu(LOG_EXIT_SYS, "get environment from: ", path) ;
     else
-        log_warnusys("get environment from: ", path) ;
+        log_warnu("get environment from: ", path) ;
 
     xexec_ae(argv[0], argv, envp) ;
 }
