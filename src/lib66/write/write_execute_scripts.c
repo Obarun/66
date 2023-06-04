@@ -60,8 +60,11 @@ int write_execute_scripts(char const *file, char const *contents, char const *ds
 
         if (colon) {
 
-            uid = file ;
-            gid = colon + 1 ;
+            if (!uid0_scan(file, &uid))
+                log_warnu_return(LOG_EXIT_ZERO,"get uid of: ", runas) ;
+
+            if (!gid0_scan(colon + 1, &gid))
+                log_warnu_return(LOG_EXIT_ZERO,"get gid of: ", runas) ;
 
         } else {
 
