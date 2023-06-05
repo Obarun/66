@@ -438,8 +438,6 @@ void parse_compute_resolve(unsigned int idx, resolve_service_t *ares, unsigned i
     res->path.status = compute_status(wres, info) ;
     res->path.servicedir = compute_servicedir(wres, info) ;
 
-    res->path.home = resolve_add_string(wres, info->base.s) ;
-
     /* live */
     res->live.livedir = resolve_add_string(wres, info->live.s) ;
 

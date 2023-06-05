@@ -204,7 +204,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
     res.owner = info->owner ;
     res.ownerstr = resolve_add_string(wres, info->ownerstr) ;
-
+    res.path.home = resolve_add_string(wres, info->base.s) ;
     res.path.frontend = resolve_add_string(wres, sv) ;
 
     /** logger is set by default. if service is a module

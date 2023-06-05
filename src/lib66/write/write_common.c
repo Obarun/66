@@ -71,8 +71,8 @@ int write_common(resolve_service_t *res, char const *dst)
         if (!write_uint(dst, "down-signal", res->execute.downsignal))
             log_warnusys_return(LOG_EXIT_ZERO, "write uint file down-signal") ;
 
-    /** environment */
-    if (res->environ.env) {
+    /** environment for module is already written by the regex_configure() function */
+    if (res->environ.env && res->type != TYPE_MODULE) {
 
         stralloc dst = STRALLOC_ZERO ;
         stralloc contents = STRALLOC_ZERO ;
