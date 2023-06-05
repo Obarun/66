@@ -170,7 +170,7 @@ void sanitize_fdholder(resolve_service_t *res, uint32_t flag)
         if (!openwritenclose_unsafe(file, list.s, list.len))
             log_dieusys(LOG_EXIT_SYS, "write file: ", file) ;
 
-        svc_send_fdholder(socket) ;
+        svc_send_fdholder(socket, "twR") ;
 
         stralloc_free(&list) ;
     }

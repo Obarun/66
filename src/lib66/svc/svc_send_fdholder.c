@@ -15,14 +15,14 @@
 #include <stdlib.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 
 #include <skalibs/types.h>
 #include <skalibs/djbunix.h>
 
 #include <66/svc.h>
 
-
-void svc_send_fdholder(char const *socket)
+void svc_send_fdholder(char const *socket, char const *signal)
 {
     log_flow() ;
 
@@ -33,16 +33,18 @@ void svc_send_fdholder(char const *socket)
 
     char const *newargv[8] ;
     unsigned int m = 0 ;
+    char sig[1 + strlen(signal) + 1] ;
+    auto_strings(sig, "-", signal) ;
 
     newargv[m++] = "s6-svc" ;
-    newargv[m++] = "-twR" ;
+    newargv[m++] = sig ;
     newargv[m++] = "-T" ;
     newargv[m++] = tfmt ;
     newargv[m++] = "--" ;
     newargv[m++] = socket ;
     newargv[m++] = 0 ;
 
-    log_trace("sending -twR signal to: ", socket) ;
+    log_trace("sending -", signal, " signal to: ", socket) ;
 
     pid = child_spawn0(newargv[0], newargv, (char const *const *) environ) ;
 
