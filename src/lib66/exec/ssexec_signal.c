@@ -120,7 +120,7 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
     log_flow() ;
 
     int r ;
-    uint8_t what = 0, requiredby = 0, propagate = 1 ;
+    uint8_t what = 1, requiredby = 0, propagate = 1 ;
     graph_t graph = GRAPH_ZERO ;
 
     unsigned int napid = 0 ;
@@ -213,8 +213,8 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
     if (argc < 1 || datalen < 2)
         log_usage(info->usage, "\n", info->help) ;
 
-    if (data[1] != 'u')
-        what = 1 ;
+    if (data[1] == 'u' || data[1] == 'U')
+        what = 0 ;
 
     if (data[1] == 'r')
         reloadmsg = 1 ;
