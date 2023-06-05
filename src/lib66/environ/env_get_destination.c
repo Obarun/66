@@ -1,5 +1,5 @@
 /*
- * env_prepare_for_write.c
+ * env_resolve_conf.c
  *
  * Copyright (c) 2018-2022 Eric Vidal <eric@obarun.org>
  *
@@ -12,7 +12,6 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <stdint.h>
 #include <string.h>
 
 #include <oblibs/log.h>
@@ -24,17 +23,22 @@
 #include <66/environ.h>
 #include <66/constants.h>
 #include <66/service.h>
-#include <66/parse.h>
 
-int env_prepare_for_write(stralloc *dst, stralloc *contents, resolve_service_t *res)
+int env_get_destination(stralloc *sa, resolve_service_t *res)
 {
     log_flow() ;
 
-    if (!env_compute(contents, res))
-        log_warnu_return(LOG_EXIT_ZERO, "compute environment") ;
+    char *conf = res->sa.s + res->environ.envdir ;
+    size_t conflen = strlen(conf) ;
+    char sym[conflen + SS_SYM_VERSION_LEN + 1] ;
 
-    if (!env_get_destination(dst, res))
-        log_warnu_return(LOG_EXIT_ZERO, "get directory destination for environment") ;
+    auto_strings(sym, conf, SS_SYM_VERSION) ;
+
+    if (sareadlink(sa, sym) == -1)
+        log_warnusys_return(LOG_EXIT_ZERO, "read link of: ", sym) ;
+
+    if (!stralloc_0(sa))
+        log_warnusys_return(LOG_EXIT_ZERO, "stralloc") ;
 
     return 1 ;
 }

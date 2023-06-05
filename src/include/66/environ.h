@@ -28,6 +28,7 @@ extern int env_make_symlink(resolve_service_t *res) ;
 extern int env_compute(stralloc *result, resolve_service_t *res) ;
 extern int env_clean_with_comment(stralloc *sa) ;
 extern int env_prepare_for_write(stralloc *dst, stralloc *contents, resolve_service_t *res) ;
+extern int env_get_destination(stralloc *sa, resolve_service_t *res) ;
 
 /** version function */
 extern int env_find_current_version(stralloc *sa,char const *svconf) ;
