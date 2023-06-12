@@ -17,6 +17,7 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/graph.h>
+#include <oblibs/stack.h>
 
 #include <skalibs/sgetopt.h>
 
@@ -33,12 +34,12 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    int r, nargc = 0, n = 0 ;
+    int r, n = 0 ;
     uint32_t flag = 0 ;
     uint8_t siglen = 3 ;
     graph_t graph = GRAPH_ZERO ;
 
-    unsigned int areslen = 0, m = 0 ;
+    unsigned int areslen = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE + 1] ;
     ss_state_t sta = STATE_ZERO ;
 
@@ -79,8 +80,6 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
     if ((svc_scandir_ok(info->scandir.s)) !=  1 )
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;
 
-    char const *nargv[argc] ;
-
     /** build the graph of the entire system */
     graph_build_service(&graph, ares, &areslen, info, flag) ;
 
@@ -99,15 +98,7 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
         if (service_is(&sta, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_FALSE)
             /** nothing to do */
             log_warn_return(LOG_EXIT_ZERO, "service: ", argv[n], " is not supervised -- try to start it first using '66 start ", argv[n], "'") ;
-
-        if (ares[aresid].type == TYPE_ONESHOT) {
-            nargc++ ;
-            nargv[m++] = ares[aresid].sa.s + ares[aresid].name ;
-        }
     }
-
-    if (nargc)
-        nargv[m] = 0 ;
 
     char *sig[siglen] ;
     if (siglen > 3) {
@@ -125,39 +116,9 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
     }
 
     r = svc_send_wait(argv, argc, sig, siglen, info) ;
-    if (r)
-        goto err ;
 
-    /** s6-supervise do not deal with oneshot service:
-     * The previous send command will bring it down but
-     * s6-supervise will not bring it up automatically.
-     * Well, do it manually */
-    if (nargc) {
+    service_resolve_array_free(ares, areslen) ;
+    graph_free_all(&graph) ;
 
-        int verbo = VERBOSITY ;
-        VERBOSITY = 0 ;
-
-        if (siglen > 3) {
-
-            sig[0] = "-P" ;
-            sig[1] = "-wU" ;
-            sig[2] = "-u" ;
-            sig[3] = 0 ;
-
-        } else {
-
-            sig[0] = "-wU" ;
-            sig[1] = "-u" ;
-            sig[2] = 0 ;
-        }
-
-        r = svc_send_wait(nargv, nargc, sig, siglen, info) ;
-        VERBOSITY = verbo ;
-    }
-
-    err:
-        service_resolve_array_free(ares, areslen) ;
-        graph_free_all(&graph) ;
-
-        return r ;
+    return r ;
 }
