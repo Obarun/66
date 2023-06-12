@@ -47,13 +47,13 @@ int set_ownerhome(stralloc *base,uid_t owner)
     return 1 ;
 }
 
-int set_ownerhome_stack(char *store)
+int set_ownerhome_stack_byuid(char *store, uid_t owner)
 {
     log_flow() ;
 
     char const *user_home = 0 ;
     int e = errno ;
-    struct passwd *st = getpwuid(getuid()) ;
+    struct passwd *st = getpwuid(owner) ;
     errno = 0 ;
     if (!st) {
         if (!errno) errno = ESRCH ;
@@ -72,4 +72,11 @@ int set_ownerhome_stack(char *store)
     auto_strings(store, user_home, "/") ;
 
     return 1 ;
+}
+
+int set_ownerhome_stack(char *store)
+{
+    log_flow() ;
+
+    return set_ownerhome_stack_byuid(store, getuid()) ;
 }
