@@ -18,7 +18,7 @@ RUN git clone -b dev https://git.obarun.org/obarun/66.git
 
 WORKDIR /66
 
-RUN ./configure --prefix=/usr --bindir=/usr/bin --shebangdir=/usr/bin --with-system-service=/usr/lib/66/service --with-system-module=/usr/lib/66/module --with-system-script=/usr/lib/66/script --with-system-seed=/usr/lib/66/seed --with-s6-log-user=root --with-s6-log-timestamp=iso --disable-shared --with-lib=/usr/lib/skalibs --with-lib=/usr/lib/execline --with-lib=/usr/lib/s6 --with-lib=/usr/lib/oblibs --disable-shared
+RUN ./configure --prefix=/usr --bindir=/usr/bin --shebangdir=/usr/bin --with-system-service=/usr/lib/66/service --with-system-script=/usr/lib/66/script --with-system-seed=/usr/lib/66/seed --with-s6-log-user=root --with-s6-log-timestamp=iso --disable-shared --with-lib=/usr/lib/skalibs --with-lib=/usr/lib/execline --with-lib=/usr/lib/s6 --with-lib=/usr/lib/oblibs --disable-shared
 
 RUN make install
 
