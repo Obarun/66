@@ -212,7 +212,12 @@ static void announce(unsigned int pos, pidservice_t *apids, unsigned int what, u
 
     } else {
 
-        if (!state_messenger(&pares[apids[pos].aresid], STATE_FLAGS_ISUP, data[1] == 'a' || data[1] == 'h' || data [1] == 'U' || data[1] == 'r' ? STATE_FLAGS_TRUE : what ? STATE_FLAGS_FALSE : STATE_FLAGS_TRUE))
+        if (!state_messenger(&pares[apids[pos].aresid], STATE_FLAGS_ISUP, \
+                                                        data[1] == 'a' || \
+                                                        data[1] == 'h' || \
+                                                        data[1] == 'U' || \
+                                                        data[1] == 'r' \
+                                                        ? STATE_FLAGS_TRUE : what ? STATE_FLAGS_FALSE : STATE_FLAGS_TRUE))
             log_dieu(LOG_EXIT_SYS, "send message to state of: ", name) ;
 
         if (!pares[apids[pos].aresid].execute.down && pares[apids[pos].aresid].type == TYPE_CLASSIC) {
@@ -535,10 +540,44 @@ static int doit(pidservice_t *sv, unsigned int what, tain *deadline)
         if (waitpid_nointr(pid, &wstat, 0) < 0)
             log_warnusys_return(LOG_EXIT_ZERO, "wait for s6-sudo") ;
 
-        if (!WIFSIGNALED(wstat) && !WEXITSTATUS(wstat))
-            return WEXITSTATUS(wstat) ;
-        else
+        if (!WIFSIGNALED(wstat) && !WEXITSTATUS(wstat)) {
+
+            if (data[1] == 'r') {
+                /** oneshot service are not handled automatically by
+                 * s6-supervise. Signal is restart, so let it down first 
+                 * and force to bring it up again .*/
+                
+                log_trace("sending ", "up to: ", scandir) ;
+
+                char const *newargv[11] ;
+                unsigned int m = 0 ;
+                newargv[m++] = "s6-sudo" ;
+                newargv[m++] = VERBOSITY >= 4 ? "-vel0" : "-el0" ;
+                newargv[m++] = "-t" ;
+                newargv[m++] = "30000" ;
+                newargv[m++] = "-T" ;
+                newargv[m++] = tfmt ;
+                newargv[m++] = "--" ;
+                newargv[m++] = oneshot ;
+                newargv[m++] = "up" ;
+                newargv[m++] = script ;
+                newargv[m++] = 0 ;
+
+                pid = child_spawn0(newargv[0], newargv, (char const *const *) environ) ;
+
+                if (waitpid_nointr(pid, &wstat, 0) < 0)
+                    log_warnusys_return(LOG_EXIT_ZERO, "wait for s6-sudo") ;
+
+                if (WIFSIGNALED(wstat) && WEXITSTATUS(wstat))
+                    return WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat) ;                 
+            } 
+
+            return WEXITSTATUS(wstat) ;            
+        
+        } else {
+                    
             return WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat) ;
+        }
 
     } else if (type == TYPE_BUNDLE || type == TYPE_MODULE) {
 
