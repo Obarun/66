@@ -114,18 +114,23 @@ static uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *r
     log_flow() ;
 
     size_t namelen = strlen(res->sa.s + res->name) ;
-    size_t syslen = res->owner ? strlen(res->sa.s + res->path.home) + strlen(SS_LOGGER_USERDIR) + strlen(SS_USER_DIR) : strlen(SS_LOGGER_SYSDIR) ;
+    size_t syslen = res->owner ? strlen(res->sa.s + res->path.home) + strlen(SS_LOGGER_USERDIR) : strlen(SS_LOGGER_SYSDIR) ;
     size_t dstlen = res->logger.destination ? strlen(res->sa.s + res->logger.destination) : strlen(SS_LOGGER_SYSDIR) ;
 
     char dstlog[syslen + dstlen + namelen + 1] ;
 
     if (!res->logger.destination) {
 
-        if (res->owner)
-            // + strlen(SS_USER_DIR) to avoid double SS_USER_DIR e.g. /home/<user>/.66/.66/log
-            auto_strings(dstlog, res->sa.s + res->path.home, SS_LOGGER_USERDIR + strlen(SS_USER_DIR), res->sa.s + res->name) ;
+        if (res->owner) {
+            
+            char home[SS_MAX_PATH_LEN + 1 + strlen(SS_LOGGER_USERDIR) + 1] ;
 
-        else
+            if (!set_ownerhome_stack(home))
+                log_dieusys(LOG_EXIT_SYS,"set home directory") ;
+        
+            auto_strings(dstlog, home, SS_LOGGER_USERDIR, res->sa.s + res->name) ;
+
+        } else
 
             auto_strings(dstlog, SS_LOGGER_SYSDIR, res->sa.s + res->name) ;
 
