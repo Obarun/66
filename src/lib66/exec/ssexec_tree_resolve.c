@@ -161,6 +161,7 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
         info_display_string(fields[13], mres.sa.s, mres.enabled, 1) ;
         info_display_string(fields[14], mres.sa.s, mres.current, 1) ;
         info_display_string(fields[15], mres.sa.s, mres.contents, 1) ;
+        info_display_int(fields[8], mres.nallow) ;
         info_display_int(fields[16], mres.nenabled) ;
         info_display_int(fields[17], mres.ncontents) ;
     }
