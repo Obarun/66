@@ -30,7 +30,7 @@ int service_frontend_path(stralloc *sasrc, char const *sv, uid_t owner, char con
 
     int r, e = 0 ;
     char const *src = 0 ;
-    char home[SS_MAX_PATH_LEN + 1 + strlen(SS_USER_DIR) + 1] ;
+    char home[SS_MAX_PATH_LEN + 1 + strlen(SS_SERVICE_USERDIR) + 1] ;
 
     if (directory_forced) {
 
@@ -54,7 +54,7 @@ int service_frontend_path(stralloc *sasrc, char const *sv, uid_t owner, char con
             if (!set_ownerhome_stack(home))
                 log_dieusys(LOG_EXIT_SYS, "set home directory") ;
 
-            auto_strings(home + strlen(home), SS_USER_DIR) ;
+            auto_strings(home + strlen(home), SS_SERVICE_USERDIR) ;
 
             src = home ;
         }
