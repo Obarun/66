@@ -21,8 +21,6 @@
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
 
-#include <skalibs/stralloc.h>
-
 #include <66/ssexec.h>
 #include <66/config.h>
 #include <66/constants.h>
@@ -51,14 +49,6 @@ static void auto_check(char *dst)
 
     if (!r)
         auto_dir(dst,0755) ;
-}
-
-static void inline auto_stralloc(stralloc *sa,char const *str)
-{
-    log_flow() ;
-
-    if (!auto_stra(sa,str))
-        log_die_nomem("stralloc") ;
 }
 
 int sanitize_system(ssexec_t *info)
@@ -99,41 +89,31 @@ int sanitize_system(ssexec_t *info)
 
     } else {
 
-        size_t extralen ;
-        stralloc extra = STRALLOC_ZERO ;
-        if (!set_ownerhome(&extra,info->owner))
+        char home[SS_MAX_PATH_LEN + 1] ;
+
+        if (!set_ownerhome_stack(home))
             log_dieusys(LOG_EXIT_SYS,"set home directory") ;
 
-        extralen = extra.len ;
-        if (!auto_stra(&extra, SS_USER_DIR, SS_SYSTEM))
-            log_die_nomem("stralloc") ;
-        auto_check(extra.s) ;
+        size_t homelen = strlen(home) ;
+        char target[homelen + SS_MAX_PATH_LEN + 1] ;
 
-        extra.len = extralen ;
-        auto_stralloc(&extra,SS_LOGGER_USERDIR) ;
-        auto_check(extra.s) ;
+        auto_strings(target, home, SS_USER_DIR, SS_SYSTEM) ;
+        auto_check(target) ;
 
-        extra.len = extralen ;
-        auto_stralloc(&extra,SS_SERVICE_USERDIR) ;
-        auto_check(extra.s) ;
+        auto_strings(target + homelen, SS_LOGGER_USERDIR) ;
+        auto_check(target) ;
 
-        extra.len = extralen ;
-        auto_stralloc(&extra,SS_SERVICE_USERCONFDIR) ;
-        auto_check(extra.s) ;
+        auto_strings(target + homelen, SS_SERVICE_USERDIR) ;
+        auto_check(target) ;
 
-        extra.len = extralen ;
-        auto_stralloc(&extra,SS_MODULE_USERDIR) ;
-        auto_check(extra.s) ;
+        auto_strings(target + homelen, SS_SERVICE_USERCONFDIR) ;
+        auto_check(target) ;
 
-        extra.len = extralen ;
-        auto_stralloc(&extra,SS_SCRIPT_USERDIR) ;
-        auto_check(extra.s) ;
+        auto_strings(target + homelen, SS_SCRIPT_USERDIR) ;
+        auto_check(target) ;
 
-        extra.len = extralen ;
-        auto_stralloc(&extra,SS_SEED_USERDIR) ;
-        auto_check(extra.s) ;
-
-        stralloc_free(&extra) ;
+        auto_strings(target + homelen, SS_SEED_USERDIR) ;
+        auto_check(target) ;
     }
 
     auto_strings(dst, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE) ;
