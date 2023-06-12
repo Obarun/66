@@ -16,11 +16,13 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
 #include <oblibs/types.h>
+#include <oblibs/directory.h>
 
 #include <skalibs/types.h>
 #include <skalibs/bytestr.h>
@@ -32,6 +34,7 @@
 #include <66/ssexec.h>
 #include <66/svc.h>
 #include <66/utils.h>
+#include <66/constants.h>
 
 #include <s6/config.h>
 
@@ -74,8 +77,14 @@ static int send_signal(char const *scandir, char const *signal)
     log_flow() ;
 
     unsigned int sig = 0 ;
+    uint8_t down = 0 ;
     char csig[3] ;
     sig = parse_signal(signal) ;
+    char fdholder[strlen(scandir) + 1 + SS_FDHOLDER_LEN + 1] ;
+    char oneshotd[strlen(scandir) + 1 + SS_FDHOLDER_LEN + 1] ;
+
+    auto_strings(fdholder, scandir, "/", SS_FDHOLDER) ;
+    auto_strings(oneshotd, scandir, "/", SS_ONESHOTD) ;
 
     switch(sig) {
 
@@ -94,12 +103,14 @@ static int send_signal(char const *scandir, char const *signal)
 
             csig[0] = 'h' ;
             csig[1] = 0 ;
+            down = 1 ;
             break ;
 
         case 3: // rescan
 
             csig[0] = 'a' ;
             csig[1] = 0 ;
+            down = 1 ;
             break ;
 
         case 4: // quit
@@ -143,10 +154,21 @@ static int send_signal(char const *scandir, char const *signal)
             log_die(LOG_EXIT_SYS, "unknown signal: ", signal) ;
     }
 
+    if (!down) {
+
+        svc_send_fdholder(fdholder, "dx") ;
+        svc_send_fdholder(oneshotd, "dx") ;
+
+    } else {
+
+        svc_send_fdholder(fdholder, "U") ;
+        svc_send_fdholder(oneshotd, "U") ;
+    }
+
     return svc_scandir_send(scandir,csig) ;
 }
 
-static void scandir_up(char const *scandir, unsigned int timeout, unsigned int notif, char const *const *envp, ssexec_t *info)
+static void scandir_up(char const *scandir, unsigned int timeout, unsigned int notif, unsigned int foreground, char const *const *envp, ssexec_t *info)
 {
     uid_t uid = getuid() ;
     gid_t gid = getgid() ;
@@ -168,6 +190,88 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
     newup[m++] = "--" ;
     newup[m++] = scandir ;
     newup[m++] = 0 ;
+
+    if (!foreground && info->owner) {
+
+        int fd ;
+        char *target = "/dev/null" ;
+        char home[SS_MAX_PATH_LEN + 1] ;
+        gid_t gid = -1 ;
+
+        if (!yourgid(&gid, info->owner))
+            log_dieusys(LOG_EXIT_SYS, "get gid") ;
+
+        if (!set_ownerhome_stack_byuid(home, info->owner))
+            log_dieusys(LOG_EXIT_SYS,"set home directory") ;
+
+        size_t homelen = strlen(home), loglen = strlen(SS_LOGGER_USERDIR) ;
+        char file[homelen + loglen + 1 + SS_SCANDIR_LEN + 1 + SS_TREE_CURRENT_LEN + 1] ;
+
+        auto_strings(file, home, SS_LOGGER_USERDIR, "/", SS_SCANDIR) ;
+
+        if (!dir_create_parent(file, 755))
+            log_dieusys(LOG_EXIT_SYS, "create directory: ", file) ;
+
+        file[homelen + loglen + 1] = 0 ;
+
+        if (chown(file, info->owner, gid) < 0)
+            log_dieusys(LOG_EXIT_SYS, "chown: ", file) ;
+
+        if (chmod(file, 0755) < 0)
+            log_dieusys(LOG_EXIT_SYS,"chmod: ", file) ;
+
+        auto_strings(file + homelen + loglen + 1, SS_SCANDIR) ;
+
+        if (chown(file, info->owner, gid) < 0)
+            log_dieusys(LOG_EXIT_SYS, "chown: ", file) ;
+
+        if (chmod(file, 0755) < 0)
+            log_dieusys(LOG_EXIT_SYS,"chmod: ", file) ;
+
+        auto_strings(file + homelen + loglen + 1 + SS_SCANDIR_LEN, "/", SS_TREE_CURRENT) ;
+
+        pid_t pid = fork() ;
+        if (pid < 0)
+            log_dieusys(LOG_EXIT_SYS, "fork") ;
+        else if (pid)
+            _exit(0) ;
+
+        if (setsid() < 0)
+            log_dieusys(LOG_EXIT_SYS, "setsid") ;
+
+        pid = fork() ;
+        if (pid < 0)
+            log_dieusys(LOG_EXIT_SYS, "fork") ;
+        else if (pid)
+            _exit(0) ;
+
+        if ((chdir("/")) < 0)
+            log_dieusys(LOG_EXIT_SYS,"chdir") ;
+
+        fd = open(target,O_RDONLY) ;
+        if (fd < 0)
+            log_dieusys(LOG_EXIT_SYS, "open ",target) ;
+
+        if (dup2(fd, 0) < 0)
+            log_dieusys(LOG_EXIT_SYS, "copy stdin to ", target) ;
+
+        close(fd) ;
+
+        fd = open(file, O_WRONLY|O_NONBLOCK|O_CREAT|O_APPEND, 0700) ;
+        if (fd < 0)
+            log_dieusys(LOG_EXIT_SYS, "open file: ", file) ;
+
+        if (dup2(fd, 1) < 0)
+            log_dieusys(LOG_EXIT_SYS, "copy stdout to: ", file) ;
+
+        close(fd) ;
+
+        if (dup2(1, 2) < 0)
+            log_dieusys(LOG_EXIT_SYS, "copy stderr to stdout") ;
+
+        if (chown(file, info->owner, gid) < 0)
+            log_dieusys(LOG_EXIT_SYS, "chown: ", file) ;
+    }
 
     if (!uid && uid != info->owner) {
         /** -o <owner> was asked. Respect it
@@ -193,7 +297,7 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
 
     int r ;
 
-    unsigned int timeout = 0, notif = 0, sig = 0, container = 0, boot = 0 ;
+    unsigned int timeout = 0, notif = 0, sig = 0, container = 0, boot = 0, foreground = 0 ;
 
     char const *newenv[MAXENV+1] ;
     char const *const *genv = 0 ;
@@ -251,6 +355,12 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
 
                     break ;
 
+                case 'f' :
+
+                    foreground = 1 ;
+
+                    break ;
+
                 default :
 
                     log_usage(info->usage, "\n", info->help) ;
@@ -284,6 +394,8 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
         genv = newenv ;
     }
     else genv = genvp ;
+
+    stralloc_free(&envdir) ;
 
     sig = parse_signal(signal) ;
 
@@ -327,16 +439,14 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
             return 0 ;
         }
 
-        stralloc_free(&envdir) ;
-
-        scandir_up(scandir, timeout, notif, genv, info) ;
+        scandir_up(scandir, timeout, notif, foreground, genv, info) ;
     }
 
     r = svc_scandir_ok(info->scandir.s) ;
     if (r < 0)
         log_dieusys(LOG_EXIT_SYS, "check: ", info->scandir.s) ;
     else if (!r)
-        log_diesys(LOG_EXIT_SYS, "scandir: ", info->scandir.s, " is not running") ;
+       log_diesys(LOG_EXIT_SYS, "scandir: ", info->scandir.s, " is not running") ;
 
     if (send_signal(info->scandir.s, signal) <= 0)
         log_dieu(LOG_EXIT_SYS, "send signal to scandir: ", info->scandir.s) ;
