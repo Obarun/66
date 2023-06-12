@@ -26,12 +26,20 @@
 static void sanitize_it(resolve_service_t *res)
 {
     log_flow() ;
+    
+    ss_state_t sta = STATE_ZERO ;
 
     sanitize_fdholder(res, STATE_FLAGS_FALSE) ;
 
-    if (!state_messenger(res, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_TRUE))
-        log_dieusys(LOG_EXIT_SYS, "send message to state of: ", res->sa.s + res->name) ;
+    if (!state_read(&sta, res))
+        log_dieu(LOG_EXIT_SYS, "read state file of: ", res->sa.s + res->name) ;
 
+    state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_TRUE) ;
+    state_set_flag(&sta, STATE_FLAGS_ISUP, STATE_FLAGS_FALSE) ;
+
+    if (!state_write(&sta, res))
+        log_dieu(LOG_EXIT_SYS, "write state file of: ", res->sa.s + res->name) ;
+    
     sanitize_scandir(res) ;
     sanitize_livestate(res) ;
 
