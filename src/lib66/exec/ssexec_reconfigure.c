@@ -79,9 +79,6 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     if (argc < 1)
         log_usage(info->usage, "\n", info->help) ;
 
-    if ((svc_scandir_ok(info->scandir.s)) !=  1 )
-        log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;
-
     /** build the graph of the entire system */
     graph_build_service(&graph, ares, &areslen, info, flag) ;
 
@@ -121,7 +118,11 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         }
     }
 
-    if (nservice) {
+    r = svc_scandir_ok(info->scandir.s) ;
+    if (r < 0)
+        log_dieusys(LOG_EXIT_SYS, "check: ", info->scandir.s) ;
+
+    if (nservice && r) {
 
         /** We need to search in every tree to stop the service
          * if the user has specified a specific tree. Therefore, remove
@@ -168,7 +169,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     for (n = 0 ; n < argc ; n++)
         sanitize_source(argv[n], info) ;
 
-    if (nservice) {
+    if (nservice && r) {
 
         unsigned int m = 0 ;
         int nargc = 2 + nservice + siglen ;
