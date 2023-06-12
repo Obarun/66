@@ -42,39 +42,35 @@ Fine tuning of the installation directories:
 
   --with-system-dir=DIR            66 tools system working directory [/var/lib/66]
   --with-system-service=DIR        system service frontend directory [DATAROOTDIR/66/service]
-  --with-system-module=DIR         system module directory [DATAROOTDIR/66/module]
   --with-system-script=DIR         system script directory [DATAROOTDIR/66/script]
   --with-system-seed=DIR           system trees default configuration[DATAROOTDIR/66/seed]
 
   --with-sysadmin-service=DIR      sysadmin service frontend directory [SYSDIR/66/service]
   --with-sysadmin-service-conf=DIR sysadmin service configuration file directory [SYSDIR/66/conf]
-  --with-sysadmin-module=DIR       sysadmin module directory [SYSDIR/66/module]
   --with-sysadmin-seed=DIR         sysadmin trees default configuration[SYSDIR/66/seed]
 
   --with-user-dir=DIR              66 tools user working directory [.66]
   --with-user-log=DIR              user service log directory [.66/log]
   --with-user-service=DIR          user service directory [.66/service]
   --with-user-service-conf=DIR     user service configuration directory [.66/conf]
-  --with-user-module=DIR           user module directory [.66/module]
   --with-user-script=DIR           user script directory [.66/script]
   --with-user-seed=DIR             user trees default configuration [.66/seed]
 
  Do not set an absolute path but a \$HOME relative path for --with-user-dir,
- --with-user-log, --with-user-service, --with-user-service-conf, --with-user-module,
- --with-user-script and --with-user-seed.
+ --with-user-log, --with-user-service, --with-user-service-conf, --with-user-script 
+ and --with-user-seed.
  The \$HOME prefix will be appened at the pathname automatically in function of the user.
  For example , by default the final path for --with-user-dir will be \$HOME/.66.
 
  --with-system-service and --with-sysadmin-service directory must be two differents path.
  For example do not set --with-sysadmin-service=/etc/66/service/sysadmin with system service
  --with-system-service=/etc/66/service.
- Apply the same rule for --with-system-module and --with-sysadmin-module options.
 
  Valid FORMAT for --with-s6-log-timestamp are tai,iso,none.
 
  --max-path-size correspond to the maximum size of the path of per specified options for the
  configuration installation. Each --with-*-*=DIR can not exceed --max-path-size=. Also, please
- consider to incorporate service_adm the size of the $HOME path.
+ consider to incorporate the size of the $HOME path.
 
  --max-service-size= correspond to the maximum size of a frontend service name. Note: an
  initiated service name can not exceed this size. For a frontend file with name foo@, the final name
@@ -208,16 +204,13 @@ s6log_user='root'
 s6log_timestamp='tai'
 s6log_notify=false
 service_system='$datarootdir/66/service'
-module_system='$datarootdir/66/module'
 script_system='$datarootdir/66/script'
 seed_system='$datarootdir/66/seed'
 service_adm='$sysconfdir/66/service'
-module_adm='$sysconfdir/66/module'
 service_admconf='$sysconfdir/66/conf'
 seed_adm='$sysconfdir/66/seed'
 user_dir='.66'
 service_user='.66/service'
-module_user='.66/module'
 script_user='.66/script'
 service_userconf='.66/conf'
 user_log='.66/log'
@@ -264,16 +257,13 @@ for arg ; do
     --with-s6-log-timestamp=*) s6log_timestamp=${arg#*=} ;;
     --disable-s6-log-notification) s6log_notify=true ;;
     --with-system-service=*) service_system=${arg#*=} ;;
-    --with-system-module=*) module_system=${arg#*=} ;;
     --with-system-script=*) script_system=${arg#*=} ;;
     --with-system-seed=*) seed_system=${arg#*=} ;;
     --with-sysadmin-service=*) service_adm=${arg#*=} ;;
-    --with-sysadmin-module=*) module_adm=${arg#*=} ;;
     --with-sysadmin-service-conf=*) service_admconf=${arg#*=} ;;
     --with-sysadmin-seed=*) seed_adm=${arg#*=} ;;
     --with-user-dir=*) user_dir=${arg#*=} ;;
     --with-user-service=*) service_user=${arg#*=} ;;
-    --with-user-module=*) module_user=${arg#*=} ;;
     --with-user-script=*) script_user=${arg#*=} ;;
     --with-user-service-conf=*) service_userconf=${arg#*=} ;;
     --with-user-log=*) user_log=${arg#*=} ;;
@@ -322,9 +312,6 @@ if test -z "$sysconfdir" ; then
   if test "$service_adm" = '$sysconfdir/66/service' ; then
     service_adm='$sysconfdir/66/service'
   fi
-  if test "$module_adm" = '$sysconfdir/66/module' ; then
-    service_adm='$sysconfdir/66/module'
-  fi
   if test "$service_admconf" = '$sysconfdir/66/conf' ; then
     service_admconf='$sysconfdir/66/conf'
   fi
@@ -340,21 +327,21 @@ fi
 stripdir prefix
 for i in exec_prefix dynlibdir libexecdir bindir libdir includedir sysconfdir \
         datarootdir mandir shebangdir livedir skel system_dir system_log \
-        service_system module_system script_system service_adm module_adm service_admconf sysdeps ; do
+        service_system script_system service_adm service_admconf sysdeps ; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
 done
 
 stripdir datarootdir
-for i in service_system module_system script_system seed_system mandir; do
+for i in service_system script_system seed_system mandir; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
 done
 
 stripdir sysconfdir
-for i in service_adm module_adm service_admconf seed_adm skel; do
+for i in service_adm service_admconf seed_adm skel; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
@@ -399,9 +386,9 @@ if [ ${#default_treename} -gt $max_treename ]; then
     fail "$0: maximum length of --with-default-tree-name is $max_treename"
 fi
 
-for i in $skel $system_dir $system_log $service_system $module_system $script_system \
-        $seed_system $service_adm $module_adm $service_admconf $seed_adm $user_dir $service_user \
-        $module_user $script_user $service_userconf $user_log $seed_user; do
+for i in $skel $system_dir $system_log $service_system $script_system \
+        $seed_system $service_adm $service_admconf $seed_adm $user_dir $service_user \
+        $script_user $service_userconf $user_log $seed_user; do
 
         if [ ${#i} -ge $max_path ]; then
             fail "$0: higher length for $i is $max_path"
@@ -579,16 +566,13 @@ s6log_user := $s6log_user
 s6log_timestamp := $s6log_timestamp
 s6log_notify := $s6log_notify
 service_system := $service_system
-module_system := $module_system
 script_system := $script_system
 seed_system := $seed_system
 service_adm := $service_adm
-module_adm := $module_adm
 service_admconf := $service_admconf
 seed_adm := $seed_adm
 user_dir := $user_dir
 service_user := $service_user
-module_user := $module_user
 script_user := $script_user
 service_userconf := $service_userconf
 user_log := $user_log
@@ -671,8 +655,6 @@ All rights reserved.*/
 #define ${package_macro_name}_SERVICE_SYSDIR "$service_system/"
 #define ${package_macro_name}_SERVICE_ADMDIR "$service_adm/"
 #define ${package_macro_name}_SERVICE_ADMCONFDIR "$service_admconf/"
-#define ${package_macro_name}_MODULE_SYSDIR "$module_system/"
-#define ${package_macro_name}_MODULE_ADMDIR "$module_adm/"
 #define ${package_macro_name}_SCRIPT_SYSDIR "$script_system/"
 #define ${package_macro_name}_SEED_SYSDIR "$seed_system/"
 #define ${package_macro_name}_SEED_ADMDIR "$seed_adm/"
@@ -683,7 +665,6 @@ All rights reserved.*/
 #define ${package_macro_name}_LOGGER_USERDIR "$user_log/"
 #define ${package_macro_name}_SERVICE_USERDIR "$service_user/"
 #define ${package_macro_name}_SERVICE_USERCONFDIR "$service_userconf/"
-#define ${package_macro_name}_MODULE_USERDIR "$module_user/"
 #define ${package_macro_name}_SCRIPT_USERDIR "$script_user/"
 #define ${package_macro_name}_SEED_USERDIR "$seed_user/"
 
