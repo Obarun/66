@@ -365,7 +365,7 @@ void write_bootlog(char const *live, char const *scandir)
 
     write_to_bufnclose(&b, logdir, "run") ;
 
-    auto_file(logdir,"notification-fd","3\n",2) ;
+    auto_file(logdir, SS_NOTIFICATION, "3\n",2) ;
 
     auto_strings(logdir + loglen,"/run") ;
 
@@ -488,18 +488,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
 
             break ;
         case TERM:
-            /*
-            if (!BOOT)
-                if (!auto_buf(&b, SS_BINPREFIX "66 -l ",live," scandir stop\n"))
-                    log_die_nomem("buffer") ;
-             */
-            break ;
         case QUIT:
-
-            if (!BOOT)
-                if (!auto_buf(&b, SS_BINPREFIX "66 -l ",live," scandir quit\n"))
-                    log_die_nomem("buffer") ;
-
             break ;
 
         case INT:
@@ -539,13 +528,13 @@ void auto_empty_file(char const *dst, char const *filename, char const *contents
     auto_chown(tmp) ;
 }
 
-static void create_service_skel(char const *service, char const *target, char const *notif)
+static void create_service_skel(char const *service, char const *target, char const *notif, ssexec_t *info)
 {
     size_t targetlen = strlen(target) ;
     size_t servicelen = strlen(service) + 1 ;
 
-    char dst[targetlen + 1 + servicelen + 22 + 1] ;
-    auto_strings(dst, target, "/", service, "/data/rules/uid/0") ;
+    char dst[targetlen + 1 + servicelen + info->ownerlen + 21 + 1] ;
+    auto_strings(dst, target, "/", service, "/data/rules/uid/", info->ownerstr) ;
 
     auto_dir(dst, 0755) ;
     auto_empty_file(dst, "/allow", "") ;
@@ -553,28 +542,28 @@ static void create_service_skel(char const *service, char const *target, char co
     char sym[targetlen + 1 + servicelen + 22 + 1] ;
     auto_strings(sym, target, "/", service, "/data/rules/uid/self") ;
 
-    log_trace("point symlink: ", sym, " to ", "0") ;
-    if (symlink("0", sym) < 0)
+    log_trace("point symlink: ", sym, " to ", info->ownerstr) ;
+    if (symlink(info->ownerstr, sym) < 0)
         log_dieusys(LOG_EXIT_SYS, "symlink: ", sym) ;
 
     if (lchown(sym, OWNER, GIDOWNER) < 0)
         log_dieusys(LOG_EXIT_SYS, "chown: ", sym) ;
 
-    auto_strings(dst, target, "/", service, "/data/rules/gid/0") ;
+    auto_strings(dst, target, "/", service, "/data/rules/gid/", info->ownerstr) ;
     auto_dir(dst, 0755) ;
 
     auto_empty_file(dst, "/allow", "") ;
 
     auto_strings(dst, target, "/", service, "/") ;
-    auto_file(dst, "notification-fd", notif, strlen(notif)) ;
+    auto_file(dst, SS_NOTIFICATION, notif, strlen(notif)) ;
 }
 
-static void create_service_oneshot(char const *scandir)
+static void create_service_oneshot(char const *scandir, ssexec_t *info)
 {
     size_t scandirlen = strlen(scandir) ;
     size_t fdlen = scandirlen + 1 + SS_ONESHOTD_LEN ;
 
-    create_service_skel(SS_ONESHOTD, scandir, "3\n") ;
+    create_service_skel(SS_ONESHOTD, scandir, "3\n", info) ;
     size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + strlen(SS_LIBEXECPREFIX) + 174 ;
     char run[runlen + 1] ;
     auto_strings(run,"#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n", \
@@ -600,15 +589,15 @@ static void create_service_oneshot(char const *scandir)
     auto_chown(dst) ;
 }
 
-static void create_service_fdholder(char const *scandir)
+static void create_service_fdholder(char const *scandir, ssexec_t *info)
 {
     size_t scandirlen = strlen(scandir) ;
     size_t fdlen = scandirlen + 1 + SS_FDHOLDER_LEN ;
 
-    create_service_skel(SS_FDHOLDER, scandir, "1\n") ;
+    create_service_skel(SS_FDHOLDER, scandir, "1\n", info) ;
 
-    char dst[fdlen + 21 + 1] ;
-    auto_strings(dst, scandir, "/", SS_FDHOLDER, "/data/rules/uid/0/env") ;
+    char dst[fdlen + info->ownerlen + 20 + 1] ;
+    auto_strings(dst, scandir, "/", SS_FDHOLDER, "/data/rules/uid/", info->ownerstr, "/env") ;
 
     auto_dir(dst, 0755) ;
 
@@ -616,15 +605,15 @@ static void create_service_fdholder(char const *scandir)
     auto_empty_file(dst, "/S6_FDHOLDER_LIST", "\n") ;
     auto_empty_file(dst, "/S6_FDHOLDER_SETDUMP", "\n") ;
 
-    auto_strings(dst + fdlen + 21, "/S6_FDHOLDER_STORE_REGEX" ) ;
+    auto_strings(dst + fdlen + info->ownerlen + 20, "/S6_FDHOLDER_STORE_REGEX" ) ;
 
     if(!openwritenclose_unsafe(dst, "^" SS_FDHOLDER_PIPENAME "\n", SS_FDHOLDER_PIPENAME_LEN + 2))
         log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
 
     auto_chown(dst) ;
 
-    char sym[fdlen + 48 + 1] ;
-    auto_strings(sym, scandir, "/", SS_FDHOLDER, "/data/rules/uid/0/env/S6_FDHOLDER_RETRIEVE_REGEX") ;
+    char sym[fdlen + info->ownerlen + 47 + 1] ;
+    auto_strings(sym, scandir, "/", SS_FDHOLDER, "/data/rules/uid/",info->ownerstr,"/env/S6_FDHOLDER_RETRIEVE_REGEX") ;
 
     auto_strings(dst, "S6_FDHOLDER_STORE_REGEX") ;
 
@@ -635,8 +624,8 @@ static void create_service_fdholder(char const *scandir)
     if (lchown(sym, OWNER, GIDOWNER) < 0)
         log_dieusys(LOG_EXIT_SYS, "chown: ", sym) ;
 
-    auto_strings(sym, scandir, "/", SS_FDHOLDER, "/data/rules/gid/0/env") ;
-    auto_strings(dst, "../../uid/0/env") ;
+    auto_strings(sym, scandir, "/", SS_FDHOLDER, "/data/rules/gid/", info->ownerstr, "/env") ;
+    auto_strings(dst, "../../uid/", info->ownerstr, "/env") ;
 
     log_trace("point symlink: ", sym, " to ", dst) ;
     if (symlink(dst, sym) < 0)
@@ -681,7 +670,7 @@ static void create_service_fdholder(char const *scandir)
     auto_chown(dst) ;
 }
 
-void create_scandir(char const *live, char const *scandir)
+static void create_scandir(char const *live, char const *scandir, ssexec_t *info)
 {
     log_flow() ;
 
@@ -717,8 +706,8 @@ void create_scandir(char const *live, char const *scandir)
         write_shutdownd(live, scandir) ;
     }
 
-    create_service_fdholder(scandir) ;
-    create_service_oneshot(scandir) ;
+    create_service_fdholder(scandir, info) ;
+    create_service_oneshot(scandir, info) ;
 }
 
 void sanitize_live(char const *live)
@@ -774,6 +763,9 @@ int ssexec_scandir_create(int argc, char const *const *argv, ssexec_t *info)
 
                 case 'b' :
 
+                    if (OWNER)
+                        log_die(LOG_EXIT_USER, "-b options can be set only with root") ;
+
                     BOOT = 1 ;
                     break ;
 
@@ -827,7 +819,7 @@ int ssexec_scandir_create(int argc, char const *const *argv, ssexec_t *info)
         log_trace("sanitize ", info->live.s, " ...") ;
         sanitize_live(info->live.s) ;
         log_info ("create scandir ", info->scandir.s, " ...") ;
-        create_scandir(info->live.s, info->scandir.s) ;
+        create_scandir(info->live.s, info->scandir.s, info) ;
 
     } else
         log_info("scandir: ", info->scandir.s, " already exist, keep it") ;
