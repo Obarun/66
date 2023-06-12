@@ -34,6 +34,7 @@
 #include <66/tree.h>
 #include <66/config.h>
 #include <66/constants.h>
+#include <66/svc.h>
 
 static void auto_remove(char const *path)
 {
@@ -172,7 +173,11 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
         ares[areslen++] = res ;
     }
 
-    if (sa.len) {
+    r = svc_scandir_ok(info->scandir.s) ;
+    if (r < 0)
+        log_dieusys(LOG_EXIT_SYS, "check: ", info->scandir.s) ;
+
+    if (sa.len && r) {
 
         pos = 0 ;
         char const *prog = PROG ;
