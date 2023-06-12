@@ -28,48 +28,12 @@ int tree_isvalid(char const *base, char const *treename)
     log_flow() ;
 
     int e = -1 ;
-    size_t pos = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
-    resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
+    resolve_wrapper_t_ref twres = resolve_set_struct(DATA_TREE, &tres) ;
 
-    /** make distinction between system error
-     * and unexisting tree */
-    {
-        resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-        resolve_wrapper_t_ref twres = resolve_set_struct(DATA_TREE, &tres) ;
+    e = resolve_check_g(twres, base, treename) ;
 
-        if (!resolve_check_g(twres, base, treename)) {
-            e = 0 ;
-            goto freed ;
-        }
-        resolve_free(twres) ;
-    }
+    resolve_free(twres) ;
 
-    if (!resolve_read_g(wres, base, SS_MASTER + 1))
-        goto freed ;
-
-    if (!tree_resolve_master_get_field_tosa(&sa, &mres, E_RESOLVE_TREE_MASTER_CONTENTS))
-        goto freed ;
-
-    if (mres.ncontents) {
-
-        if (!sastr_clean_string_flush_sa(&sa, sa.s))
-            goto freed ;
-
-        FOREACH_SASTR(&sa, pos) {
-
-            if (!strcmp(treename, sa.s + pos)) {
-                e = 1 ;
-                goto freed ;
-            }
-        }
-
-    } else e = 0 ;
-
-    freed:
-        stralloc_free(&sa) ;
-        resolve_free(wres) ;
-        return e ;
-
+    return e ;
 }
