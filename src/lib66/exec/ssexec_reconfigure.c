@@ -139,6 +139,12 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         char const *prog = PROG ;
         char const *newargv[nargc] ;
 
+        char const *help = info->help ;
+        char const *usage = info->usage ;
+
+        info->help = help_stop ;
+        info->usage = usage_stop ;
+
         newargv[m++] = "stop" ;
         if (siglen)
             newargv[m++] = "-P" ;
@@ -159,6 +165,9 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         if (e)
             goto freed ;
 
+        info->help = help ;
+        info->usage = usage ;
+
         info->treename.len = 0 ;
         if (!auto_stra(&info->treename, tree))
             log_die_nomem("stralloc") ;
@@ -176,6 +185,12 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         char const *prog = PROG ;
         char const *newargv[nargc] ;
 
+        char const *help = info->help ;
+        char const *usage = info->usage ;
+
+        info->help = help_start ;
+        info->usage = usage_start ;
+
         newargv[m++] = "start" ;
         if (siglen)
             newargv[m++] = "-P" ;
@@ -192,6 +207,9 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         PROG= "start" ;
         e = ssexec_start(m, newargv, info) ;
         PROG = prog ;
+
+        info->help = help ;
+        info->usage = usage ;
     }
 
     freed:

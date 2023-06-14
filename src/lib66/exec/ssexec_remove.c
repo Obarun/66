@@ -185,6 +185,12 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
         char const *newargv[nargc] ;
         unsigned int m = 0 ;
 
+        char const *help = info->help ;
+        char const *usage = info->usage ;
+
+        info->help = help_stop ;
+        info->usage = usage_stop ;
+
         newargv[m++] = "stop" ;
         newargv[m++] = "-u" ;
         if (siglen)
@@ -199,6 +205,9 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
         if (ssexec_stop(nargc, newargv, info))
             log_dieu(LOG_EXIT_SYS, "stop service selection") ;
         PROG = prog ;
+
+        info->help = help ;
+        info->usage = usage ;
     }
 
     for (pos = 0 ; pos < areslen ; pos++) {
