@@ -6,10 +6,9 @@ if [ "$1" == "commit" ]; then
     tag=0
 fi
 
-skalibs_tag="v2.11.0.0"
-execline_tag="v2.8.1.0"
-s6_tag="v2.11.0.0"
-s6_rc_tag="v0.5.2.3"
+skalibs_tag="v2.13.1.1"
+execline_tag="v2.9.3.0"
+s6_tag="v2.11.3.2"
 oblibs_tag="v0.1.4.0"
 
 check_tag(){
