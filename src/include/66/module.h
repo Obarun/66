@@ -41,7 +41,5 @@ extern void regex_get_regex(char *regex, char const *str) ;
 extern void regex_get_replace(char *replace, char const *str) ;
 extern void regex_rename(stralloc *list, resolve_service_t *res, uint32_t element) ;
 extern void regex_replace(stralloc *list, resolve_service_t *res) ;
-extern int module_in_cmdline(genalloc *gares, resolve_service_t *res, char const *dir) ;
-extern int module_search_service(char const *src, genalloc *gares, char const *name,uint8_t *found, char module_name[256]) ;
 
 #endif
