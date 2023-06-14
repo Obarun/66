@@ -125,13 +125,14 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
     size_t pos = 0, copylen = 0, len = 0 ;
     uint8_t opt_tree = info->opt_tree ;
     char name[strlen(res->sa.s + res->name) + 1] ;
-    auto_strings(name,res->sa.s + res->name) ;
     char *src = res->sa.s + res->path.frontend ;
     char dirname[strlen(src)] ;
     char copy[SS_MAX_PATH_LEN] ;
     char ainsta[strlen(name)] ;
     stralloc list = STRALLOC_ZERO ;
     resolve_wrapper_t_ref wres = 0 ;
+
+    auto_strings(name,res->sa.s + res->name) ;
 
     log_trace("parse module: ", name) ;
 
@@ -239,6 +240,16 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
         len = list.len ;
         uint8_t out = 0 ;
         char l[len + 1] ;
+        char ebase[copylen + 1] ;
+        memcpy(ebase, copy, copylen) ;
+        ebase[copylen] = 0 ;
+
+        if (!ob_basename(dirname, dirname))
+            log_dieusys(LOG_EXIT_SYS, "get basename of: ", dirname) ;
+
+        if (!ob_basename(ebase, ebase))
+            log_dieusys(LOG_EXIT_SYS, "get basename of: ", dirname) ;
+
         stralloc sa = STRALLOC_ZERO ;
 
         sastr_to_char(l, &list) ;
@@ -251,6 +262,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
             out = 0 ;
             info->opt_tree = opt_tree ;
             char fname[strlen(l + pos)] ;
+            char const *exclude[1] = { 0 } ;
 
             if (!ob_basename(fname, l + pos))
                 log_dieusys(LOG_EXIT_ZERO, "basename of: ", l + pos) ;
@@ -259,11 +271,12 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
             if (!strcmp(name, fname))
                 log_die(LOG_EXIT_SYS, "cyclic call detected -- ", name, " call ", fname) ;
 
-            /** Search first inside the frontend directory.
+            /** Search first inside the module directory.
              * If not found, search in the entire system. */
-            if (!service_frontend_path(&sa, fname, info->owner, copy)) {
+            if (!service_frontend_path(&sa, fname, info->owner, copy, exclude)) {
 
-                if (!service_frontend_path(&sa, fname, info->owner, 0))
+                char const *inside[3] = { ebase, dirname, 0 } ;
+                if (!service_frontend_path(&sa, fname, info->owner, 0, inside))
                     log_dieu(LOG_EXIT_USER, "find service frontend file of: ", fname) ;
 
                 out++;
