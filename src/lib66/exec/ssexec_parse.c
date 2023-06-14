@@ -86,6 +86,7 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
         char bname[namelen + 1] ;
         char dname[namelen + 1] ;
         char const *directory_forced = 0 ;
+        char const *exclude[1] = { 0 } ;
 
         if (argv[0][0] == '/') {
 
@@ -102,7 +103,7 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
 
         name_isvalid(sv) ;
 
-        if (!service_frontend_path(&sa, sv, info->owner, directory_forced))
+        if (!service_frontend_path(&sa, sv, info->owner, directory_forced, exclude))
             log_dieu(LOG_EXIT_USER, "find service frontend file of: ", sv) ;
 
         /** need to check all the contents of the stralloc.

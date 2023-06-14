@@ -44,6 +44,7 @@ static void parse_service_instance(stralloc *frontend, char const *svsrc, char c
     log_flow() ;
 
     stralloc sa = STRALLOC_ZERO ;
+    char const *exclude[1] = { 0 } ;
 
     if (!instance_splitname(&sa, sv, insta, SS_INSTANCE_TEMPLATE))
         log_die(LOG_EXIT_SYS, "split instance service of: ", sv) ;
@@ -58,7 +59,7 @@ static void parse_service_instance(stralloc *frontend, char const *svsrc, char c
         /** in module the template service may not exist e.g.
          * module which call another module. In this case
          * follow the classic way */
-        int r = service_frontend_path(&sa, sv, getuid(), 0) ;
+        int r = service_frontend_path(&sa, sv, getuid(), 0, exclude) ;
         if (r < 1)
             log_dieu(LOG_EXIT_SYS, "get frontend service file of: ", sv) ;
 
@@ -135,7 +136,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
         log_trace("read frontend service at: ", sv) ;
 
         if (read_svfile(&sa, svname, svsrc) <= 0)
-            log_dieusys(LOG_EXIT_SYS, "read frontend service at: ", sv) ;
+            log_dieu(LOG_EXIT_SYS, "read frontend service at: ", sv) ;
     }
 
     char file[sa.len + 1] ;

@@ -26,7 +26,7 @@
 #include <66/service.h>
 #include <66/instance.h>
 
-int service_frontend_src(stralloc *sasrc, char const *name, char const *src)
+int service_frontend_src(stralloc *sasrc, char const *name, char const *src, char const **exclude)
 {
     log_flow() ;
 
@@ -34,7 +34,6 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src)
     stralloc sa = STRALLOC_ZERO ;
     size_t pos = 0, dpos = 0, pathlen = strlen(src), namelen = strlen(name) ;
     char instaname[strlen(name) + 1] ;
-    char const *exclude[1] = { 0 } ;
 
     char path[pathlen + 1] ;
 
@@ -135,7 +134,7 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src)
                     dpos = 0 ;
                     FOREACH_SASTR(&sa, dpos) {
 
-                        r = service_frontend_src(sasrc, sa.s + dpos, dname) ;
+                        r = service_frontend_src(sasrc, sa.s + dpos, dname, exclude) ;
                         if (r < 0)
                             /** system error */
                             goto err ;

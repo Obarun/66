@@ -24,7 +24,7 @@
 #include <66/constants.h>
 #include <66/service.h>
 
-int service_frontend_path(stralloc *sasrc, char const *sv, uid_t owner, char const *directory_forced)
+int service_frontend_path(stralloc *sasrc, char const *sv, uid_t owner, char const *directory_forced, char const **exclude)
 {
     log_flow() ;
 
@@ -34,11 +34,13 @@ int service_frontend_path(stralloc *sasrc, char const *sv, uid_t owner, char con
 
     if (directory_forced) {
 
+        char const *exclude[1] = { 0 } ;
+
         if (!service_cmp_basedir(directory_forced))
             log_die(LOG_EXIT_USER, "invalid base service directory: ", directory_forced) ;
 
         src = directory_forced ;
-        r = service_frontend_src(sasrc, sv, src) ;
+        r = service_frontend_src(sasrc, sv, src, exclude) ;
         if (r == -1)
             log_dieusys(LOG_EXIT_SYS, "parse source directory: ", src) ;
 
@@ -59,21 +61,21 @@ int service_frontend_path(stralloc *sasrc, char const *sv, uid_t owner, char con
             src = home ;
         }
 
-        r = service_frontend_src(sasrc, sv, src) ;
+        r = service_frontend_src(sasrc, sv, src, exclude) ;
         if (r == -1)
             log_dieusys(LOG_EXIT_SYS, "parse source directory: ", src) ;
 
         if (!r) {
 
             src = SS_SERVICE_ADMDIR ;
-            r = service_frontend_src(sasrc, sv, src) ;
+            r = service_frontend_src(sasrc, sv, src, exclude) ;
             if (r == -1)
                 log_dieusys(LOG_EXIT_SYS, "parse source directory: ", src) ;
 
             if (!r) {
 
                 src = SS_SERVICE_SYSDIR ;
-                r = service_frontend_src(sasrc, sv, src) ;
+                r = service_frontend_src(sasrc, sv, src, exclude) ;
                 if (r == -1)
                     log_dieusys(LOG_EXIT_SYS, "parse source directory: ", src) ;
 
