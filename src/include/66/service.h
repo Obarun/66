@@ -315,7 +315,7 @@ extern int service_resolve_read_cdb(cdb *c, resolve_service_t *res) ;
 extern void service_resolve_write(resolve_service_t *res) ;
 extern void service_resolve_write_tmp(resolve_service_t *res, char const *dst, uint8_t force) ;
 extern int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres) ;
-extern void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *ares, unsigned int areslen, uint8_t action, visit_t *visit) ;
+extern void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *ares, unsigned int areslen, uint8_t action, visit_t *visit, uint8_t propagate) ;
 /* avoid circular dependencies by prototyping the ss_state_t instead
  * of calling the state.h header file*/
 typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;

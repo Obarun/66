@@ -58,7 +58,7 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
     log_flow() ;
 
     uint32_t flag = 0 ;
-    uint8_t force = 0, conf = 0, start = 0 ;
+    uint8_t force = 0, conf = 0, start = 0, propagate = 1 ;
     int n = 0, e = 1 ;
     size_t pos = 0 ;
     graph_t graph = GRAPH_ZERO ;
@@ -105,6 +105,11 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
                     start = 1 ;
                     break ;
 
+                case 'P' :
+
+                    propagate = 0 ;
+                    break ;
+
                 default :
                     log_usage(info->usage, "\n", info->help) ;
             }
@@ -132,7 +137,8 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
         if (aresid < 0)
             log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parse it?") ;
 
-        service_enable_disable(&graph, aresid, ares, areslen, 1, visit) ;
+        if (propagate)
+            service_enable_disable(&graph, aresid, ares, areslen, 1, visit, propagate) ;
 
         if (!sastr_add_string(&sa, argv[n]))
             log_dieu(LOG_EXIT_SYS, "add string") ;
@@ -141,10 +147,16 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
     if (start && sa.len) {
 
         size_t len = sastr_nelement(&sa) ;
-        int nargc = 1 + len ;
+        int nargc = 2 + len ;
         char const *prog = PROG ;
         char const *newargv[nargc] ;
         unsigned int m = 0 ;
+
+        char const *help = info->help ;
+        char const *usage = info->usage ;
+
+        info->help = help_start ;
+        info->usage = usage_start ;
 
         newargv[m++] = "start" ;
         FOREACH_SASTR(&sa, pos)
@@ -152,8 +164,12 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
         newargv[m] = 0 ;
 
         PROG = "start" ;
-        e = ssexec_start(nargc, newargv, info) ;
+        e = ssexec_start(m, newargv, info) ;
         PROG = prog ;
+
+        info->help = help ;
+        info->usage = usage ;
+
         goto end ;
     }
     e = 0 ;

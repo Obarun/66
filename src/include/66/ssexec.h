@@ -231,9 +231,9 @@ extern char const *help_halt ;
 #define OPTS_PARSE_LEN (sizeof OPTS_PARSE - 1)
 #define OPTS_INIT "h"
 #define OPTS_INIT_LEN (sizeof OPTS_INIT - 1)
-#define OPTS_ENABLE "hfSI"
+#define OPTS_ENABLE "hfSIP"
 #define OPTS_ENABLE_LEN (sizeof OPTS_ENABLE - 1)
-#define OPTS_DISABLE "hSFR"
+#define OPTS_DISABLE "hSFRP"
 #define OPTS_DISABLE_LEN (sizeof OPTS_DISABLE - 1)
 #define OPTS_START "hP"
 #define OPTS_START_LEN (sizeof OPTS_START - 1)

@@ -26,7 +26,7 @@
 #include <66/utils.h>
 #include <66/enum.h>
 
-static void service_enable_disable_deps(graph_t *g, unsigned int idx, resolve_service_t *ares, unsigned int areslen, uint8_t action, visit_t *visit)
+static void service_enable_disable_deps(graph_t *g, unsigned int idx, resolve_service_t *ares, unsigned int areslen, uint8_t action, visit_t *visit, uint8_t propagate)
 {
     log_flow() ;
 
@@ -47,7 +47,7 @@ static void service_enable_disable_deps(graph_t *g, unsigned int idx, resolve_se
                 log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
             if (visit[aresid] == VISIT_WHITE)
-                service_enable_disable(g, aresid, ares, areslen, action, visit) ;
+                service_enable_disable(g, aresid, ares, areslen, action, visit, propagate) ;
         }
     }
 
@@ -56,7 +56,7 @@ static void service_enable_disable_deps(graph_t *g, unsigned int idx, resolve_se
 
 /** @action -> 0 disable
  * @action -> 1 enable */
-void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *ares, unsigned int areslen, uint8_t action, visit_t *visit)
+void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *ares, unsigned int areslen, uint8_t action, visit_t *visit, uint8_t propagate)
 {
     log_flow() ;
 
@@ -67,7 +67,8 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
         if (!state_messenger(res, STATE_FLAGS_ISENABLED, !action ? STATE_FLAGS_FALSE : STATE_FLAGS_TRUE))
             log_dieusys(LOG_EXIT_SYS, "send message to state of: ", res->sa.s + res->name) ;
 
-        service_enable_disable_deps(g, idx, ares, areslen, action, visit) ;
+        if (propagate)
+            service_enable_disable_deps(g, idx, ares, areslen, action, visit, propagate) ;
 
         /** the logger must be disabled to avoid to start it
          * with the 66 tree start <tree> command */
@@ -112,7 +113,7 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
                         if (!state_messenger(&ares[aresid], STATE_FLAGS_ISENABLED, !action ? STATE_FLAGS_FALSE : STATE_FLAGS_TRUE))
                             log_dieusys(LOG_EXIT_SYS, "send message to state of: ", res->sa.s + res->name) ;
 
-                        service_enable_disable_deps(g, aresid, ares, areslen, action, visit) ;
+                        service_enable_disable_deps(g, aresid, ares, areslen, action, visit, propagate) ;
 
                         visit[aresid] = VISIT_GRAY ;
 
