@@ -29,7 +29,7 @@ int tree_issupervised(char const *base, char const *treename)
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
 
-    if (!resolve_read_g(wres, base, treename))
+    if (resolve_read_g(wres, base, treename)  <= 0)
         goto err ;
 
     if (tres.supervised)

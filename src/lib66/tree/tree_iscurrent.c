@@ -29,7 +29,7 @@ int tree_iscurrent(char const *base, char const *treename)
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
 
-    if (!resolve_read_g(wres, base, SS_MASTER + 1))
+    if (resolve_read_g(wres, base, SS_MASTER + 1)  <= 0)
         goto err ;
 
     if (!strcmp(mres.sa.s + mres.current, treename))

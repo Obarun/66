@@ -44,7 +44,7 @@ void graph_build_tree(graph_t *g, char const *base, resolve_tree_master_enum_t f
 
         char *name = sa.s + pos ;
 
-        if (!resolve_read_g(wres, base, name))
+        if (resolve_read_g(wres, base, name) <= 0)
             log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name) ;
 
         if (!graph_vertex_add(g, name))

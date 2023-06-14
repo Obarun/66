@@ -138,7 +138,7 @@ static void info_display_allow(char const *field, char const *treename)
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
 
-    if (!resolve_read_g(wres, pinfo->base.s, treename))
+    if (resolve_read_g(wres, pinfo->base.s, treename) <= 0)
         log_dieusys(LOG_EXIT_SYS,"read resolve file of tree: ", treename) ;
 
     if (NOFIELD)
@@ -196,7 +196,7 @@ static void info_display_groups(char const *field, char const *treename)
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
 
-    if (!resolve_read_g(wres, pinfo->base.s, treename))
+    if (resolve_read_g(wres, pinfo->base.s, treename) <= 0)
         log_dieusys(LOG_EXIT_SYS,"read resolve file of: ", treename) ;
 
     if (NOFIELD)

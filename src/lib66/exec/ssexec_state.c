@@ -97,7 +97,7 @@ int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
         log_die(LOG_EXIT_USER, "service: ", svname, " is not parsed -- try to parse it using '66 parse ", svname, "'") ;
 
     r = resolve_read_g(wres, info->base.s, svname) ;
-    if (r < 0)
+    if (r <= 0)
         log_dieu(LOG_EXIT_SYS, "read resolve file: ", svname) ;
 
     info_field_align(buf,fields,field_suffix,MAXOPTS) ;

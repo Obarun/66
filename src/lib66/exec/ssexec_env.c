@@ -308,7 +308,7 @@ int ssexec_env(int argc, char const *const *argv, ssexec_t *info)
         goto freed ;
     }
 
-    if (!resolve_read_g(wres, info->base.s, sv))
+    if (resolve_read_g(wres, info->base.s, sv) <= 0)
         log_dieusys(LOG_EXIT_SYS,"read resolve file of: ", sv) ;
 
     if (!res.environ.envdir) {

@@ -184,6 +184,7 @@ static void all_redir_fd(void)
 
 void tree_resolve_array_free(resolve_tree_t *ares, unsigned int areslen)
 {
+    log_flow() ;
 
     unsigned int pos = 0 ;
     for (; pos < areslen ; pos++)
@@ -922,7 +923,7 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
             resolve_tree_t cp = RESOLVE_TREE_ZERO ;
             wres = resolve_set_struct(DATA_TREE, &tres) ;
 
-            if (!resolve_read_g(wres, info->base.s, treename))
+            if (resolve_read_g(wres, info->base.s, treename) <= 0)
                 log_dieu(LOG_EXIT_SYS, "read resolve file of: ", treename, " -- please make a bug report") ;
 
             tree_resolve_copy(&cp, &tres) ;

@@ -493,7 +493,7 @@ void tree_groups(graph_t *graph, char const *base, char const *treename, char co
     uint_pack(pack, nb) ;
     pack[uint_fmt(pack, nb)] = 0 ;
 
-    if (!resolve_read_g(wres, base, treename))
+    if (resolve_read_g(wres, base, treename) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", treename) ;
 
     if (!resolve_modify_field(wres, E_RESOLVE_TREE_GROUPS, val) ||
@@ -531,7 +531,7 @@ void tree_master_modify_contents(char const *base)
         if (!sastr_rebuild_in_oneline(&sa))
             log_dieu(LOG_EXIT_SYS, "rebuild stralloc") ;
 
-    if (!resolve_read_g(wres, base, SS_MASTER + 1))
+    if (resolve_read_g(wres, base, SS_MASTER + 1) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve Master file of trees") ;
 
     mres.ncontents = (uint32_t)ncontents ;
@@ -609,7 +609,7 @@ void tree_master_enable_disable(char const *base, char const *treename, uint8_t 
 
     log_trace(!action ? "disable" : "enable"," tree: ", treename, " from: ", SS_MASTER + 1) ;
 
-    if (!resolve_read_g(wres, base, SS_MASTER + 1))
+    if (resolve_read_g(wres, base, SS_MASTER + 1) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve Master file of trees") ;
 
     if (!mres.nenabled && action) {
@@ -806,7 +806,7 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
     uint_pack(pack, nb) ;
     pack[uint_fmt(pack, nb)] = 0 ;
 
-    if (!resolve_read_g(wres, base, treename))
+    if (resolve_read_g(wres, base, treename) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", treename) ;
 
     if (!resolve_modify_field(wres, ewhat, sa.s) ||
@@ -892,7 +892,7 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
 
     log_trace("set ", !what ? "denied" : "allowed", " user for tree: ", treename, "..." ) ;
 
-    if (!resolve_read_g(wres, base, treename))
+    if (resolve_read_g(wres, base, treename)  <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", treename) ;
 
     if (tres.nallow)
@@ -1078,7 +1078,7 @@ void tree_clone(char const *clone, ssexec_t *info)
     if (lchown(dst, st.st_uid, st.st_gid) < 0)
         log_dieusys(LOG_EXIT_SYS, "chown: ", dst) ;
 
-    if (!resolve_read(wres, info->base.s, clone))
+    if (resolve_read(wres, info->base.s, clone) <= 0)
         log_dieu(LOG_EXIT_SYS, "read resolve file of tree: ", clone) ;
 
     if (!resolve_modify_field(wres, E_RESOLVE_TREE_INIT, 0) ||

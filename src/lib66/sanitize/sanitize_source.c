@@ -67,7 +67,7 @@ void sanitize_source(char const *name, ssexec_t *info)
         /** We can come from ssexec_reconfigure, in
          * this case we need to use the tree defined previously */
         r = resolve_read_g(wres, info->base.s, name) ;
-        if (r < 0)
+        if (r <= 0)
             log_dieu(LOG_EXIT_SYS, "read resolve file: ", name) ;
 
         if (!state_read(&sta, &res))

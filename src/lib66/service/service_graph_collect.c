@@ -83,7 +83,7 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
             } else
                 continue ;
 
-            if (!resolve_read_g(wres, info->base.s, name))
+            if (resolve_read_g(wres, info->base.s, name) <= 0)
                 log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name, " -- please make a bug report") ;
 
             if (FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {

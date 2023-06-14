@@ -34,7 +34,7 @@ int tree_ongroups(char const *base, char const *treename, char const *group)
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
 
-    if (!resolve_read_g(wres, base, treename))
+    if (resolve_read_g(wres, base, treename) <= 0)
         goto err ;
 
     if (tres.ngroups) {

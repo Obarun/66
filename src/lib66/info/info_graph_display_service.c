@@ -50,7 +50,7 @@ int info_graph_display_service(char const *name)
     if (!set_ownersysdir_stack(base, getuid()))
         log_warn_return(LOG_EXIT_ZERO, "set owner directory") ;
 
-    if (!resolve_read_g(wres, base, name)) {
+    if (resolve_read_g(wres, base, name) <= 0) {
         log_warnu("read resolve file of: ",name) ;
         goto freed ;
     }

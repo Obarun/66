@@ -31,7 +31,7 @@ void tree_service_remove(char const *base, char const *treename, char const *ser
 
     log_trace("modify field contents of resolve tree file: ", treename) ;
 
-    if (!resolve_read_g(wres, base, treename))
+    if (resolve_read_g(wres, base, treename) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of tree: ", treename) ;
 
     if (tres.ncontents) {

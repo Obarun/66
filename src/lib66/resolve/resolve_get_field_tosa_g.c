@@ -54,7 +54,7 @@ int resolve_get_field_tosa_g(stralloc *sa, char const *base, char const *name, u
 
     } else return 0 ;
 
-    if (!resolve_read_g(wres, base, name))
+    if (resolve_read_g(wres, base, name) <= 0)
         goto err ;
 
     if (!resolve_get_field_tosa(sa, wres, field))
