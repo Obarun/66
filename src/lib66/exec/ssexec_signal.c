@@ -241,9 +241,20 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
     for (; *argv ; argv++) {
 
         int aresid = service_resolve_array_search(ares, areslen, *argv) ;
-        if (aresid < 0)
-            log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you parse it?") ;
-
+        /** The service may not be supervised, for example serviceB depends on
+         * serviceA and serviceB by unsupervised by the user. So it will be ignored
+         * by the function graph_build_service. In this case, the service does not
+         * exist at array.
+         *
+         * At stop process, just ignore it as it already down anyway */
+        if (aresid < 0) {
+            if (what && data[1] != 'r' || data[1] != 'h') {
+                log_warn("service: ", *argv, " not available -- ignoring it?") ;
+                continue ;
+            } else {
+                log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you parse it?") ;
+            }
+        }
         graph_compute_visit(*argv, visit, list, &graph, &napid, requiredby) ;
     }
 

@@ -105,9 +105,16 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
     for (; n < argc ; n++) {
 
         int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
-        if (aresid < 0)
-            log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you started it?") ;
 
+        /** The service may not be supervised, so it will be ignored by the
+         * function graph_build_service. In this case, the service does not
+         * exist at array.
+         *
+         * This the stop process, just ignore it as it already down anyway */
+        if (aresid < 0) {
+            log_warn("service: ", argv[n], " is already stopped or unsupervised -- ignoring it?") ;
+            continue ;
+        }
         graph_compute_visit(argv[n], visit, list, &graph, &nservice, 1) ;
     }
 
