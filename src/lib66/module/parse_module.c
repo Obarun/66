@@ -274,9 +274,15 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
             /** Search first inside the module directory.
              * If not found, search in the entire system. */
             if (!service_frontend_path(&sa, fname, info->owner, copy, exclude)) {
+                /** a module directory can contain the service in its activated/frontend
+                 * directory. Module do not know anything about the system or about
+                 * any other module.
+                 *
+                 * The frontend need to come from outside any module directory.*/
 
-                char const *inside[3] = { ebase, dirname, 0 } ;
-                if (!service_frontend_path(&sa, fname, info->owner, 0, inside))
+                char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, 0 } ;
+
+                if (!service_frontend_path(&sa, fname, info->owner, 0, exclude))
                     log_dieu(LOG_EXIT_USER, "find service frontend file of: ", fname) ;
 
                 out++;
