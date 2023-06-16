@@ -89,21 +89,33 @@ int info_graph_display_service(char const *name)
 
     dis:
 
-    if (!bprintf(buffer_1,"%s (%s%s%s%s,%s%s%s%s,%s%s%s%s,%s%s%s%s)", \
+    if (!bprintf(buffer_1,"%s (%s%s%s%s%s, %s%s%s%s%s, %s%s%s%s%s, %s%s%s%s%s)", \
 
         name, \
 
-        "pid=",pid_color > 1 ? log_color->valid : pid_color ? log_color->error : log_color->warning, \
+        pid_color > 1 ? log_color->valid : pid_color ? log_color->error : log_color->warning, \
+        "pid", \
+        log_color->off, \
+        "=", \
         ppid, \
-        log_color->off, \
 
-        "state=", service_is(&sta, STATE_FLAGS_ISENABLED) == STATE_FLAGS_TRUE ? log_color->valid : log_color->warning, \
+        service_is(&sta, STATE_FLAGS_ISENABLED) == STATE_FLAGS_TRUE ? log_color->valid : log_color->warning, \
+        "state", \
+        log_color->off, \
+        "=", \
         service_is(&sta, STATE_FLAGS_ISENABLED) == STATE_FLAGS_TRUE ? "Enabled" : "Disabled", \
+
+        log_color->blue, \
+        "type",
         log_color->off, \
+        "=", \
+        get_key_by_enum(ENUM_TYPE,res.type), \
 
-        "type=", log_color->blue, get_key_by_enum(ENUM_TYPE,res.type), log_color->off, \
-
-        "tree=", log_color->magenta, res.sa.s + res.treename, log_color->off))
+        log_color->magenta, \
+        "tree", \
+        log_color->off, \
+        "=", \
+        res.sa.s + res.treename))
             goto freed ;
 
     err = 1 ;
