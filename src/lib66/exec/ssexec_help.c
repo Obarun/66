@@ -76,15 +76,13 @@ char const *help_boot =
 "   -b: banner to display\n"
 ;
 
-char const *usage_enable = "66 enable [ -h ] [ -f ] [ -I ] [ -S ] service..." ;
+char const *usage_enable = "66 enable [ -h ] [ -S ] service..." ;
 
 char const *help_enable =
 "\nactivate services at the next boot\n"
 "\n"
 "options:\n"
 "   -h: print this help\n"
-"   -f: force to overwrite the service(s)\n"
-"   -I: do not import modified configuration files from previous version\n"
 "   -S: enable and start the service\n"
 ;
 
