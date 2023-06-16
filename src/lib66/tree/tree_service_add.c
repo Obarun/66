@@ -13,9 +13,7 @@
  */
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/stack.h>
 
 #include <66/resolve.h>
 #include <66/tree.h>
@@ -24,43 +22,53 @@ void tree_service_add(char const *base, char const *treename, char const *servic
 {
     log_flow() ;
 
+    int r ;
+    size_t len = strlen(service) ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
-    stralloc sa = STRALLOC_ZERO ;
+    stack_ref pstk = 0 ;
+
+    _init_stack_(stk, SS_MAX_SERVICE * SS_MAX_SERVICE_NAME + 1 + len + 1) ;
 
     if (resolve_read_g(wres, base, treename) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of tree: ", treename) ;
 
     if (tres.ncontents) {
 
-        if (!sastr_clean_string(&sa, tres.sa.s + tres.contents))
-            log_dieu(LOG_EXIT_SYS, "clean string") ;
+        if (!stack_convert_string(&stk, tres.sa.s + tres.contents, strlen(tres.sa.s + tres.contents)))
+            log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
-        if (!sastr_add_string(&sa, service))
-            log_dieu(LOG_EXIT_SYS, "clean string") ;
+        if (stack_retrieve_element(&stk, service) < 0) {
 
-        if (!sastr_sortndrop_element(&sa))
-            log_dieu(LOG_EXIT_SYS, "sort string") ;
+            if (!stack_add_g(&stk, service))
+                log_dieusys(LOG_EXIT_SYS, "add service: ", service, " to tree: ", treename) ;
 
-        tres.ncontents = sastr_nelement(&sa) ;
+            tres.ncontents++ ;
+        }
+
+        if (!stack_close(&stk))
+            log_dieusys(LOG_EXIT_SYS, "close stack") ;
 
     } else {
 
-        if (!sastr_add_string(&sa, service))
-            log_dieu(LOG_EXIT_SYS, "add string") ;
+        if (!stack_add_g(&stk, service))
+            log_dieu(LOG_EXIT_SYS, "add string to stack") ;
 
         tres.ncontents++ ;
+
+        if (!stack_close(&stk))
+            log_dieusys(LOG_EXIT_SYS, "close stack") ;
+
     }
 
-    if (!sastr_rebuild_in_oneline(&sa))
-        log_dieu(LOG_EXIT_SYS, "rebuild stralloc list") ;
+    if (!stack_convert_tostring(&stk))
+        log_dieu(LOG_EXIT_SYS, "convert stack to string") ;
 
-    if (!resolve_modify_field(wres, E_RESOLVE_TREE_CONTENTS, sa.s))
+    if (!resolve_modify_field(wres, E_RESOLVE_TREE_CONTENTS, stk.s))
         log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
 
     if (!resolve_write_g(wres, base, treename))
         log_dieusys(LOG_EXIT_SYS, "write resolve file of tree: ", treename) ;
 
-    stralloc_free(&sa) ;
     resolve_free(wres) ;
 }
