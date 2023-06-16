@@ -16,6 +16,7 @@ service_resolve_write.o
 service_resolve_read_cdb.o
 service_resolve_write_cdb.o
 service_resolve_write_tmp.o
+service_switch_tree.o
 -loblibs
 -lskarnet
 
