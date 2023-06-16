@@ -112,7 +112,7 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
          *
          * This the stop process, just ignore it as it already down anyway */
         if (aresid < 0) {
-            log_warn("service: ", argv[n], " is already stopped or unsupervised -- ignoring it?") ;
+            log_warn("service: ", argv[n], " is already stopped or unsupervised -- ignoring it") ;
             continue ;
         }
         graph_compute_visit(argv[n], visit, list, &graph, &nservice, 1) ;

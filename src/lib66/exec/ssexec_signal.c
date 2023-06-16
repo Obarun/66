@@ -249,7 +249,7 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
          * At stop process, just ignore it as it already down anyway */
         if (aresid < 0) {
             if (what && data[1] != 'r' || data[1] != 'h') {
-                log_warn("service: ", *argv, " not available -- ignoring it?") ;
+                log_warn("service: ", *argv, " is already stopped or unsupervised -- ignoring it") ;
                 continue ;
             } else {
                 log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you parse it?") ;
