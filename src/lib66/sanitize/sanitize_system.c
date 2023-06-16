@@ -81,8 +81,6 @@ int sanitize_system(ssexec_t *info)
         auto_check(SS_SERVICE_SYSDIR) ;
         auto_check(SS_SERVICE_ADMDIR) ;
         auto_check(SS_SERVICE_ADMCONFDIR) ;
-        auto_check(SS_MODULE_SYSDIR) ;
-        auto_check(SS_MODULE_ADMDIR) ;
         auto_check(SS_SCRIPT_SYSDIR) ;
         auto_check(SS_SEED_ADMDIR) ;
         auto_check(SS_SEED_SYSDIR) ;
