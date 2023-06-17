@@ -24,6 +24,7 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/lolstdio.h>
 #include <skalibs/buffer.h>
+#include <skalibs/sgetopt.h>
 
 #include <66/resolve.h>
 #include <66/ssexec.h>
@@ -167,14 +168,6 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
-    argc-- ;
-    argv++ ;
-
-    if (argc < 1)
-        log_usage(info->usage, "\n", info->help) ;
-
-    svname = *argv ;
-
     char service_buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
         "name",
         "description" ,
@@ -258,6 +251,32 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
 
     } ;
 
+    {
+        subgetopt l = SUBGETOPT_ZERO ;
+
+        for (;;)
+        {
+            int opt = subgetopt_r(argc, argv, OPTS_RESOLVE, &l) ;
+            if (opt == -1) break ;
+
+            switch (opt) {
+
+                case 'h' :
+
+                    info_help(info->help, info->usage) ;
+                    return 0 ;
+
+                default :
+                    log_usage(info->usage, "\n", info->help) ;
+            }
+        }
+        argc -= l.ind ; argv += l.ind ;
+    }
+
+    if (argc < 1)
+        log_usage(info->usage, "\n", info->help) ;
+
+    svname = *argv ;
 
     r = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
     if (r == -1)

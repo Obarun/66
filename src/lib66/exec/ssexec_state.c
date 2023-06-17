@@ -87,7 +87,7 @@ int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
 
         for (;;)
         {
-            int opt = subgetopt_r(argc, argv, OPTS_ENABLE, &l) ;
+            int opt = subgetopt_r(argc, argv, OPTS_STATE, &l) ;
             if (opt == -1) break ;
 
             switch (opt) {

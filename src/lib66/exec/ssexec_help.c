@@ -47,7 +47,7 @@ char const *help_66 =
 "   disable: deactivate service for the next boot\n"
 "   environ: manage service environment variable\n"
 "   status: display services informations\n"
-"   resolve: display the resolve files contents of services\n"
+"   resolve: display the resolve file contents of services\n"
 "   state: display state files contents of services\n"
 "   remove: remove services and cleanup all files belong to it from the system\n"
 "   signal: send signal to service\n"
@@ -231,7 +231,7 @@ char const *help_status =
 char const *usage_resolve = "66 resolve [ -h ] service" ;
 
 char const *help_resolve =
-"\ndisplay the resolve files contents of services\n"
+"\ndisplay the resolve file contents of services\n"
 "\n"
 "options:\n"
 "   -h: print this help\n"

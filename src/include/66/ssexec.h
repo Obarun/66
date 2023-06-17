@@ -247,6 +247,8 @@ extern char const *help_halt ;
 #define OPTS_ENV_LEN (sizeof OPTS_ENV - 1)
 #define OPTS_STATE "h"
 #define OPTS_STATE_LEN (sizeof OPTS_STATE - 1)
+#define OPTS_RESOLVE "h"
+#define OPTS_RESOVLE_LEN (sizeof OPTS_RESOLVE - 1)
 
 #define OPTS_TREE_WRAPPER "h"
 #define OPTS_TREE_WRAPPER_LEN (sizeof OPTS_TREE_WRAPPER - 1)
