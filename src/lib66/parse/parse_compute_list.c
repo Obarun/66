@@ -25,6 +25,7 @@
 #include <66/parse.h>
 #include <66/resolve.h>
 #include <66/service.h>
+#include <66/module.h>
 
 /**
  * @opts -> 1 : build list removing commented optional deps
@@ -38,7 +39,7 @@ int parse_compute_list(resolve_wrapper_t_ref wres, stralloc *sa, uint32_t *res, 
     size_t len = sa->len, pos = 0 ;
     size_t nelement = sastr_nelement(sa) ;
     stralloc tmp = STRALLOC_ZERO ;
-    char const *exclude[1] = { 0 } ;
+    char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, 0 } ;
 
     char f[len + nelement + 2] ;
 

@@ -28,6 +28,7 @@
 #include <66/utils.h>
 #include <66/constants.h>
 #include <66/instance.h>
+#include <66/module.h>
 
 int parse_interdependences(char const *service, char const *list, unsigned int listlen, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inmodule)
 {
@@ -36,7 +37,8 @@ int parse_interdependences(char const *service, char const *list, unsigned int l
     int r, e = 0 ;
     size_t pos = 0, len = 0 ;
     stralloc sa = STRALLOC_ZERO ;
-    char const *exclude[1] = { 0 } ;
+
+    char const *exclude[4] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, SS_MODULE_CONFIG_DIR, 0 } ;
 
     if (listlen) {
 

@@ -30,11 +30,15 @@
 #define SS_MODULE_FRONTEND_LEN (sizeof SS_MODULE_FRONTEND - 1)
 #define SS_MODULE_ACTIVATED "/activated"
 #define SS_MODULE_ACTIVATED_LEN (sizeof SS_MODULE_ACTIVATED - 1)
+#define SS_MODULE_DEPENDS "/depends"
+#define SS_MODULE_DEPENDS_LEN (sizeof SS_MODULE_DEPENDS - 1)
+#define SS_MODULE_REQUIREDBY "/requiredby"
+#define SS_MODULE_REQUIREDBY_LEN (sizeof SS_MODULE_REQUIREDBY - 1)
 
-extern void get_list(stralloc *list, char const *src, char const *name, mode_t mode) ;
 extern void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force) ;
 extern void parse_module_check_dir(char const *src,char const *dir) ;
 extern void parse_module_check_name(char const *src, char const *name) ;
+
 extern void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, char const *name) ;
 extern int regex_get_file_name(char *filename, char const *str) ;
 extern void regex_get_regex(char *regex, char const *str) ;
@@ -42,4 +46,5 @@ extern void regex_get_replace(char *replace, char const *str) ;
 extern void regex_rename(stralloc *list, resolve_service_t *res, uint32_t element) ;
 extern void regex_replace(stralloc *list, resolve_service_t *res) ;
 
+extern void get_list(stralloc *list, char const *src, char const *name, mode_t mode, char const **exclude) ;
 #endif

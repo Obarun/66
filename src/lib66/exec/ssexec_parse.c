@@ -27,6 +27,7 @@
 #include <66/ssexec.h>
 #include <66/utils.h>
 #include <66/sanitize.h>
+#include <66/module.h>
 
 int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
 {
@@ -86,7 +87,7 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
         char bname[namelen + 1] ;
         char dname[namelen + 1] ;
         char const *directory_forced = 0 ;
-        char const *exclude[1] = { 0 } ;
+        char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, 0 } ;
 
         if (argv[0][0] == '/') {
 

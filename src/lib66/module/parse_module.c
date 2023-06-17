@@ -37,6 +37,7 @@
 #include <66/utils.h>
 #include <66/parse.h>
 #include <66/sanitize.h>
+#include <66/state.h>
 
 static void parse_module_prefix(char *result, stralloc *sa, resolve_service_t *ares, unsigned int areslen, char const *module)
 {
@@ -117,6 +118,238 @@ static void parse_convert_tomodule(unsigned int idx, resolve_service_t *ares, un
     free(wres) ;
 }
 
+static void parse_module_dependencies(stralloc *list, resolve_service_t *res, uint8_t requiredby, resolve_service_t *ares, unsigned int *areslen, uint8_t force, uint8_t conf, ssexec_t *info)
+{
+    log_flow() ;
+
+    if (!list->len)
+        return ;
+
+    char *name = res->sa.s + res->name ;
+    size_t pos = 0 ;
+    uint8_t opt_tree = info->opt_tree ;
+    _init_stack_(stk, list->len + 1) ;
+    uint32_t *field = !requiredby ? &res->dependencies.depends : &res->dependencies.requiredby ;
+    uint32_t *nfield = !requiredby ? &res->dependencies.ndepends : &res->dependencies.nrequiredby ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    stralloc sa = STRALLOC_ZERO ;
+    char const *exclude[4] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, SS_MODULE_CONFIG_DIR + 1, 0 } ;
+
+    info->opt_tree = 0 ;
+
+    FOREACH_SASTR(list, pos) {
+
+        sa.len = 0 ;
+        char fname[strlen(list->s + pos)] ;
+
+        if (!ob_basename(fname, list->s + pos))
+            log_dieusys(LOG_EXIT_ZERO, "basename of: ", list->s + pos) ;
+
+        /** cannot call itself */
+        if (!strcmp(name, fname))
+            log_die(LOG_EXIT_SYS, "cyclic call detected -- ", name, " call ", fname) ;
+
+        if (!service_frontend_path(&sa, fname, info->owner, 0, exclude))
+            log_dieu(LOG_EXIT_USER, "find service frontend file of: ", fname) ;
+
+        if (!stack_add_g(&stk, fname))
+            log_dieusys(LOG_EXIT_SYS, "handle service dependencies list") ;
+
+        (*nfield)++ ;
+
+        parse_frontend(sa.s, ares, areslen, info, force, conf, 0, fname, 0) ;
+
+    }
+
+    info->opt_tree = opt_tree ;
+
+    if (!stack_close(&stk))
+        log_dieusys(LOG_EXIT_SYS, "close stack") ;
+
+    if (!stack_convert_tostring(&stk))
+        log_dieusys(LOG_EXIT_SYS, "rebuild stack list") ;
+
+    if (*nfield) {
+
+        size_t len = strlen(res->sa.s + *field) ;
+        char tmp[len + stk.len + 2] ;
+        auto_strings(tmp, res->sa.s + *field, " ", stk.s) ;
+        (*field) = resolve_add_string(wres, tmp) ;
+
+    } else {
+
+        (*field) = resolve_add_string(wres, stk.s) ;
+    }
+
+    stralloc_free(&sa) ;
+    free(wres) ;
+}
+
+static void parse_module_regex(resolve_service_t *res, char *copy, size_t copylen, ssexec_t *info)
+{
+    char *name = res->sa.s + res->name ;
+    stralloc list = STRALLOC_ZERO ;
+
+    /** contents */
+    {
+        auto_strings(copy + copylen, SS_MODULE_FRONTEND) ;
+
+        char const *exclude[1] = { 0 } ;
+
+        get_list(&list, copy, name, S_IFREG, exclude) ;
+        regex_replace(&list, res) ;
+    }
+
+    {
+        copy[copylen] = 0 ;
+
+        char const *exclude[4] = { SS_MODULE_DEPENDS + 1, SS_MODULE_REQUIREDBY + 1, SS_MODULE_CONFIG_DIR + 1, 0 } ;
+
+        /** directories */
+        get_list(&list, copy, name, S_IFDIR, exclude) ;
+        regex_rename(&list, res, res->regex.directories) ;
+
+        /** filename */
+        get_list(&list, copy, name, S_IFREG, exclude) ;
+        regex_rename(&list, res, res->regex.files) ;
+    }
+
+    stralloc_free(&list) ;
+
+    /** configure script */
+    regex_configure(res, info, copy, name) ;
+}
+
+static void parse_module_migrate(resolve_service_t *old, resolve_service_t *new, char const *base, uint8_t requiredby)
+{
+    int r ;
+    uint32_t *ofield = !requiredby ? &old->dependencies.depends : &old->dependencies.requiredby ;
+    uint32_t *onfield = !requiredby ? &old->dependencies.ndepends : &old->dependencies.nrequiredby ;
+    uint32_t *nfield = !requiredby ? &new->dependencies.depends : &new->dependencies.requiredby ;
+
+    if (*onfield) {
+
+        size_t pos = 0, olen = strlen(old->sa.s + *ofield) ;
+        _init_stack_(sold, olen + 1) ;
+
+        if (!stack_convert_string(&sold, old->sa.s + *ofield, olen))
+            log_dieusys(LOG_EXIT_SYS, "convert string") ;
+
+        {
+            resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
+            resolve_wrapper_t_ref dwres = resolve_set_struct(DATA_SERVICE, &dres) ;
+
+            size_t clen = strlen(new->sa.s + *nfield) ;
+            _init_stack_(snew, clen + 1) ;
+
+            /** new module configuration depends field may be empty.*/
+            if (clen)
+                if (!stack_convert_string(&snew, new->sa.s + *nfield, clen))
+                    log_dieusys(LOG_EXIT_SYS, "convert string") ;
+
+            /** check if the service was deactivated.*/
+            FOREACH_STK(&sold, pos) {
+
+                if (stack_retrieve_element(&snew, sold.s + pos) < 0 || !clen) {
+
+                    uint32_t *dfield = requiredby ? &dres.dependencies.depends : &dres.dependencies.requiredby ;
+                    uint32_t *dnfield = requiredby ? &dres.dependencies.ndepends : &dres.dependencies.nrequiredby ;
+
+                    char *dname = sold.s + pos ;
+
+                    r = resolve_read_g(dwres, base, dname) ;
+                    if (r < 0)
+                        log_die(LOG_EXIT_USER, "read resolve file of: ") ;
+
+                    if (!r)
+                        continue ;
+
+                    if (*dnfield) {
+
+                        size_t len = strlen(dres.sa.s + *dfield) ;
+                        _init_stack_(stk, len + 1) ;
+
+                        if (!stack_convert_string(&stk, dres.sa.s + *dfield, len))
+                            log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
+
+                        /** remove the module name to the depends field of the old service dependency*/
+                        if (!stack_remove_element_g(&stk, new->sa.s + new->name))
+                            log_dieusys(LOG_EXIT_SYS, "remove element") ;
+
+                        (*dnfield) = (uint32_t)stack_count_element(&stk) ;
+
+                        if (*dnfield) {
+
+                            if (!stack_convert_tostring(&stk))
+                                log_dieusys(LOG_EXIT_SYS, "convert stack to string") ;
+
+                            (*dfield) = resolve_add_string(dwres, stk.s) ;
+
+                        } else {
+
+                            (*dfield) = resolve_add_string(dwres, "") ;
+
+                            /** If the module was enabled, the service dependency was as well.
+                             * If the service dependency was only activated by the module
+                             * (meaning the service only has the module as a "depends" dependency),
+                             * the service should also be disabled.
+                             *
+                             * The point is: 66 WORK ON MECHANISM NOT POLICIES!
+                             *
+                             *
+
+                            {
+                                unsigned int m = 0 ;
+                                int nargc = 4 ;
+                                char const *prog = PROG ;
+                                char const *newargv[nargc] ;
+
+                                char const *help = info->help ;
+                                char const *usage = info->usage  ;
+
+                                info->help = help_disable ;
+                                info->usage = usage_disable ;
+
+                                newargv[m++] = "disable" ;
+                                newargv[m++] = "-P" ;
+                                newargv[m++] = dname ;
+                                newargv[m] = 0 ;
+
+                                PROG = "disable" ;
+                                if (ssexec_disable(m, newargv, info))
+                                    log_dieu(LOG_EXIT_SYS,"disable: ", dname) ;
+                                PROG = prog ;
+
+                                if (service_is_g(dname, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_TRUE) {
+
+                                    info->help = help_stop ;
+                                    info->usage = usage_stop ;
+
+                                    newargv[0] = "stop" ;
+                                    newargv[1] = "-Pu" ;
+
+                                    PROG = "stop" ;
+                                    if (ssexec_stop(m, newargv, info))
+                                        log_dieu(LOG_EXIT_SYS,"stop: ", dname) ;
+                                    PROG = prog ;
+
+                                    info->help = help ;
+                                    info->usage = usage ;
+                                }
+                            }
+                             */
+                        }
+
+                        if (!resolve_write_g(dwres, dres.sa.s + dres.path.home, dname))
+                            log_dieusys(LOG_EXIT_SYS, "write resolve file of: ", dname) ;
+                    }
+                }
+            }
+            resolve_free(dwres) ;
+        }
+    }
+}
+
 void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force)
 {
     log_flow() ;
@@ -127,7 +360,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
     char name[strlen(res->sa.s + res->name) + 1] ;
     char *src = res->sa.s + res->path.frontend ;
     char dirname[strlen(src)] ;
-    char copy[SS_MAX_PATH_LEN] ;
+    char copy[SS_MAX_PATH_LEN + 1] ;
     char ainsta[strlen(name)] ;
     stralloc list = STRALLOC_ZERO ;
     resolve_wrapper_t_ref wres = 0 ;
@@ -165,6 +398,8 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
     /** check mandatory directories */
     parse_module_check_dir(dirname, SS_MODULE_CONFIG_DIR) ;
     parse_module_check_dir(dirname, SS_MODULE_ACTIVATED) ;
+    parse_module_check_dir(dirname, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS) ;
+    parse_module_check_dir(dirname, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) ;
     parse_module_check_dir(dirname, SS_MODULE_FRONTEND) ;
 
     r = scan_mode(copy, S_IFDIR) ;
@@ -172,28 +407,26 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
         errno = EEXIST ;
         log_dieusys(LOG_EXIT_SYS, "conflicting format of: ", copy) ;
 
-    } else if (!r) {
-
-        log_trace("copy: ", dirname, " to: ", copy) ;
-        if (!hiercopy(dirname, copy))
-            log_dieusys(LOG_EXIT_SYS, "copy: ", dirname, " to: ", copy) ;
-
     } else {
 
-        /** Must reconfigure all services of the module */
-        if (!force) {
+        if (force || !r) {
 
+            if (r) {
+                log_trace("remove directory: ", copy) ;
+                if (!dir_rm_rf(copy))
+                    log_dieusys (LOG_EXIT_SYS, "remove: ", copy) ;
+            }
+
+            log_trace("copy: ", dirname, " to: ", copy) ;
+            if (!hiercopy(dirname, copy))
+                log_dieusys(LOG_EXIT_SYS, "copy: ", dirname, " to: ", copy) ;
+
+            copy[copylen] = 0 ;
+
+            parse_module_regex(res, copy, copylen, info) ;
+
+        } else
             log_warn("skip configuration of the module: ", name, " -- already configured") ;
-            goto deps ;
-        }
-
-        log_trace("remove directory: ", copy) ;
-        if (!dir_rm_rf(copy))
-            log_dieusys (LOG_EXIT_SYS, "remove: ", copy) ;
-
-        log_trace("copy: ", dirname, " to: ", copy) ;
-        if (!hiercopy(dirname, copy))
-            log_dieusys(LOG_EXIT_SYS,"copy: ", dirname, " to: ", copy) ;
     }
 
     auto_strings(copy + copylen, "/", ainsta) ;
@@ -204,36 +437,30 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
     if (unlink(copy) < 0 && errno != ENOENT)
         log_dieusys(LOG_EXIT_ZERO, "unlink: ", copy) ;
 
-    copy[copylen] = 0 ;
+    /** handle new activated depends/requiredby service.*/
+    {
+        char const *exclude[1] = { 0 } ;
+        auto_strings(copy + copylen, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS) ;
+        get_list(&list, copy, name, S_IFREG, exclude) ;
 
-    auto_strings(copy + copylen, SS_MODULE_FRONTEND) ;
+        parse_module_dependencies(&list, res, 0, ares, areslen, force, conf, info) ;
 
-    /** contents */
-    get_list(&list, copy, name, S_IFREG) ;
-    regex_replace(&list, res) ;
+        auto_strings(copy + copylen, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) ;
+        get_list(&list, copy, name, S_IFREG, exclude) ;
 
-    copy[copylen] = 0 ;
-
-    /** directories */
-    get_list(&list, copy, name, S_IFDIR) ;
-    regex_rename(&list, res, res->regex.directories) ;
-
-    /** filename */
-    get_list(&list, copy, name, S_IFREG) ;
-    regex_rename(&list, res, res->regex.files) ;
-
-    /** configure script */
-    regex_configure(res, info, copy, name) ;
-
-    deps:
+        parse_module_dependencies(&list, res, 1, ares, areslen, force, conf, info) ;
+    }
 
     auto_strings(copy + copylen, SS_MODULE_ACTIVATED) ;
 
-    get_list(&list, copy, name, S_IFREG) ;
+    {
+        char const *exclude[3] = { SS_MODULE_DEPENDS + 1, SS_MODULE_REQUIREDBY + 1, 0 } ;
+
+        get_list(&list, copy, name, S_IFREG, exclude) ;
+    }
 
     auto_strings(copy + copylen, SS_MODULE_FRONTEND) ;
 
-    _init_stack_(stk, list.len + sastr_nelement(&list)) ;
     {
         /* parse each activated services */
 
@@ -259,7 +486,6 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
         for (pos = 0 ; pos < len ; pos += strlen(l + pos) + 1) {
 
             sa.len = 0 ;
-            out = 0 ;
             info->opt_tree = opt_tree ;
             char fname[strlen(l + pos)] ;
             char const *exclude[1] = { 0 } ;
@@ -272,51 +498,32 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
                 log_die(LOG_EXIT_SYS, "cyclic call detected -- ", name, " call ", fname) ;
 
             /** Search first inside the module directory.
-             * If not found, search in the entire system. */
+             * If not found, warn user about what to do.*/
             if (!service_frontend_path(&sa, fname, info->owner, copy, exclude)) {
-                /** a module directory can contain the service in its activated/frontend
-                 * directory. Module do not know anything about the system or about
-                 * any other module.
-                 *
-                 * The frontend need to come from outside any module directory.*/
 
-                char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, 0 } ;
+                copy[copylen] = 0 ;
+                char deps[copylen + SS_MODULE_ACTIVATED_LEN + SS_MODULE_DEPENDS_LEN + 1 + strlen(fname) + 1] ;
+                char require[copylen + SS_MODULE_ACTIVATED_LEN + SS_MODULE_REQUIREDBY_LEN + 1 + strlen(fname) + 1] ;
 
-                if (!service_frontend_path(&sa, fname, info->owner, 0, exclude))
-                    log_dieu(LOG_EXIT_USER, "find service frontend file of: ", fname) ;
-
-                out++;
-            }
-
-            /* The module has no knowledge of services outside of it,
-             * and the system has no knowledge of services inside the module.
-             * If a service frontend is not defined inside the module,
-             * consider it as a typical dependency of the module itself
-             * and not as part of the module. */
-            if (!out) {
-
-                char n[strlen(name) + 1 + strlen(fname) + 1] ;
-
-                auto_strings(n, name, ":", fname) ;
-
-                if (!sastr_add_string(&list, n))
-                    log_die_nomem("stralloc") ;
-
-                info->opt_tree = 1 ;
-                info->treename.len = 0 ;
-                if (!auto_stra(&info->treename, res->sa.s + res->intree))
-                    log_die_nomem("stralloc") ;
-
-            } else {
-
-                info->opt_tree = 0 ;
-
-                if (!stack_add_g(&stk, fname))
-                    log_dieusys(LOG_EXIT_SYS, "handle service dependencies list") ;
-
-                res->dependencies.ndepends++ ;
+                auto_strings(deps, copy, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS, "/", fname) ;
+                auto_strings(require, copy, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY, "/", fname) ;
+                log_die(LOG_EXIT_USER, "you can not activate a service without providing its frontend file at ",copy, \
+                                    ". If you want to add an depends/requiredby service to the module, consider creating a named empty file at ", \
+                                    deps, " or ", require) ;
 
             }
+
+            char n[strlen(name) + 1 + strlen(fname) + 1] ;
+
+            auto_strings(n, name, ":", fname) ;
+
+            if (!sastr_add_string(&list, n))
+                log_die_nomem("stralloc") ;
+
+            info->opt_tree = 1 ;
+            info->treename.len = 0 ;
+            if (!auto_stra(&info->treename, res->sa.s + res->intree))
+                log_die_nomem("stralloc") ;
 
             parse_frontend(sa.s, ares, areslen, info, force, conf, !out ? copy : 0, fname, !out ? name : 0) ;
         }
@@ -324,173 +531,52 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
         stralloc_free(&sa) ;
     }
 
-    if (stk.len) {
-
-        if (!stack_close(&stk))
-            log_dieusys(LOG_EXIT_SYS, "close stack") ;
-
-        if (!stack_convert_tostring(&stk))
-            log_dieusys(LOG_EXIT_SYS, "rebuild stack list") ;
-
-        if (res->dependencies.ndepends) {
-
-            size_t len = strlen(res->sa.s + res->dependencies.depends) ;
-            char tmp[len + stk.len + 2] ;
-            auto_strings(tmp, res->sa.s + res->dependencies.depends, " ", stk.s) ;
-            res->dependencies.depends = resolve_add_string(wres, tmp) ;
-
-        } else {
-
-            res->dependencies.depends = resolve_add_string(wres, stk.s) ;
-        }
-    }
-
     /** Remove the module name from requiredby field
      * of the dependencies if the service disappears with the
      * fresh parse process.
      *
-     * The Module enable the service by the configure script.
-     * As long as the frontend come from an external module
-     * directory, it will mark the module name as requiredby
-     * dependencies at the service.
+     * The Module enable the service by the configure script
+     * through the activated/requiredby directory.
+     * It will mark the module name as requiredby dependencies
+     * at the service.
      *
-     * Then the module disable the service. In this case
-     * if the requiredby field is not corrected, the sanitize_graph
-     * function will found a service which may not exist anymore
-     * at the new state of the machine and so, it activate again a removed
-     * service from the module.
+     * Then the module deactivate the service. In this case
+     * if the corresponding resolve field is not corrected, the sanitize_graph
+     * function will found a module as requiredby field of the service
+     * which is not valid at the new state of the module.
      *
      * As long as the user asked for the force option, we can retrieve
      * and read the old resolve file (meaning the current one) to
-     * compare it with the new one.
-     *
-     * The problem does not appear in case of first parse process
-     * of the module.*/
+     * compare it with the new one.*/
 
     if (force) {
 
         resolve_service_t ores = RESOLVE_SERVICE_ZERO ;
         resolve_wrapper_t_ref owres = resolve_set_struct(DATA_SERVICE, &ores) ;
 
-        if (resolve_read_g(owres, info->base.s, res->sa.s + res->name) <= 0)
+        /** Try to open the old resolve file.
+         * Do not crash if it does not find it. User
+         * can use -f options even if it's the first parse
+         * process of the module.*/
+        r = resolve_read_g(owres, info->base.s, res->sa.s + res->name) ;
+        if (r < 0) {
+
             log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", res->sa.s + res->name) ;
 
-        if (ores.dependencies.ndepends) {
-            /** open the old resolve file */
-            size_t pos = 0, olen = strlen(ores.sa.s + ores.dependencies.depends) ;
-            _init_stack_(old, olen + 1) ;
+        } else if (r) {
 
-            if (!stack_convert_string(&old, ores.sa.s + ores.dependencies.depends, olen))
-                log_dieusys(LOG_EXIT_SYS, "convert string") ;
+            /* depends */
+            parse_module_migrate(&ores, res, info->base.s, 0) ;
 
-            {
-                resolve_service_t nres = RESOLVE_SERVICE_ZERO ;
-                resolve_wrapper_t_ref nwres = resolve_set_struct(DATA_SERVICE, &nres) ;
-
-                size_t clen = strlen(res->sa.s + res->dependencies.depends) ;
-                _init_stack_(new, clen + 1) ;
-
-                if (!stack_convert_string(&new, res->sa.s + res->dependencies.depends, clen))
-                    log_dieusys(LOG_EXIT_SYS, "convert string") ;
-
-                /** check if the service was deactivated*/
-                FOREACH_STK(&old, pos) {
-
-                    if (stack_retrieve_element(&new, old.s + pos) < 0) {
-
-                        char *dname = old.s + pos ;
-
-                        int r = resolve_read_g(nwres, info->base.s, dname) ;
-                        if (r < 0)
-                            log_die(LOG_EXIT_USER, "read resolve file of: ") ;
-
-                        if (!r)
-                            continue ;
-
-                        if (nres.dependencies.nrequiredby) {
-
-                            size_t len = strlen(nres.sa.s + nres.dependencies.requiredby) ;
-                            _init_stack_(stk, len + 1) ;
-
-                            if (!stack_convert_string(&stk, nres.sa.s + nres.dependencies.requiredby, len + 1))
-                                log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
-
-                            /** remove the module name to the requiredby field of the old service dependency*/
-                            if (!stack_remove_element_g(&stk, name))
-                                log_dieusys(LOG_EXIT_SYS, "remove element") ;
-
-                            nres.dependencies.nrequiredby = (uint32_t) stack_count_element(&stk) ;
-
-                            if (nres.dependencies.nrequiredby) {
-                                if (!stack_convert_tostring(&stk))
-                                    log_dieusys(LOG_EXIT_SYS, "convert stack to string") ;
-
-                                nres.dependencies.requiredby = resolve_add_string(nwres, stk.s) ;
-
-                            } else {
-
-                                nres.dependencies.requiredby = resolve_add_string(nwres, "") ;
-
-                                /** If the module was enabled, the service dependency was as well.
-                                 * If the service dependency was only activated by the module
-                                 * (meaning the service only has the module as a "requiredby" dependency),
-                                 * the service should also be disabled.*/
-
-                                {
-
-                                    unsigned int m = 0 ;
-                                    int nargc = 4 ;
-                                    char const *prog = PROG ;
-                                    char const *newargv[nargc] ;
-
-                                    char const *help = info->help ;
-                                    char const *usage = info->usage  ;
-
-                                    info->help = help_disable ;
-                                    info->usage = usage_disable ;
-
-                                    newargv[m++] = "disable" ;
-                                    newargv[m++] = "-P" ;
-                                    newargv[m++] = dname ;
-                                    newargv[m] = 0 ;
-
-                                    PROG = "disable" ;
-                                    if (ssexec_disable(m, newargv, info))
-                                        log_dieu(LOG_EXIT_SYS,"disable: ", dname) ;
-                                    PROG = prog ;
-
-                                    /** Also, unsupervise it.*/
-
-                                    info->help = help_stop ;
-                                    info->usage = usage_stop ;
-
-                                    newargv[0] = "stop" ;
-                                    newargv[1] = "-Pu" ;
-
-                                    PROG = "stop" ;
-                                    if (ssexec_stop(m, newargv, info))
-                                        log_dieu(LOG_EXIT_SYS,"stop: ", dname) ;
-                                    PROG = prog ;
-
-                                    info->help = help ;
-                                    info->usage = usage ;
-                                }
-                            }
-
-                            if (!resolve_write_g(nwres, nres.sa.s + nres.path.home, dname))
-                                log_dieusys(LOG_EXIT_SYS, "write resolve file of: ", dname) ;
-                        }
-                    }
-                }
-                resolve_free(nwres) ;
-            }
+            /* requiredby */
+            parse_module_migrate(&ores, res, info->base.s, 1) ;
         }
         resolve_free(owres) ;
     }
 
 
     {
-        /* make a good list of dependencies/requiredby*/
+        /* append the module name at each inner depends/requiredby dependencies service name.*/
         len = list.len ;
 
         char l[len + 1] ;
@@ -521,9 +607,9 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
             if (!sastr_add_string(&list, l + pos))
                 log_die_nomem("stralloc") ;
         }
-    }
 
-    res->dependencies.contents = parse_compute_list(wres, &list, &res->dependencies.ncontents, 0) ;
+        res->dependencies.contents = parse_compute_list(wres, &list, &res->dependencies.ncontents, 0) ;
+    }
 
     free(wres) ;
     stralloc_free(&list) ;

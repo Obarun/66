@@ -22,12 +22,11 @@
 
 #include <66/module.h>
 
-void get_list(stralloc *list, char const *src, char const *name, mode_t mode)
+void get_list(stralloc *list, char const *src, char const *name, mode_t mode, char const **exclude)
 {
     log_flow() ;
 
     list->len = 0 ;
-    char const *exclude[2] = { SS_MODULE_CONFIG_DIR + 1, 0 } ;
 
     if (!sastr_dir_get_recursive(list, src, exclude, mode, 1))
         log_dieusys(LOG_EXIT_SYS,"get file(s) of module: ", name) ;
