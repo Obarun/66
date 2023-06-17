@@ -92,7 +92,7 @@ src/lib66/instance/instance_create.o src/lib66/instance/instance_create.lo: src/
 src/lib66/instance/instance_splitname.o src/lib66/instance/instance_splitname.lo: src/lib66/instance/instance_splitname.c src/include/66/utils.h
 src/lib66/instance/instance_splitname_to_char.o src/lib66/instance/instance_splitname_to_char.lo: src/lib66/instance/instance_splitname_to_char.c
 src/lib66/module/get_list.o src/lib66/module/get_list.lo: src/lib66/module/get_list.c src/include/66/module.h
-src/lib66/module/parse_module.o src/lib66/module/parse_module.lo: src/lib66/module/parse_module.c src/include/66/constants.h src/include/66/info.h src/include/66/instance.h src/include/66/module.h src/include/66/parse.h src/include/66/resolve.h src/include/66/sanitize.h src/include/66/utils.h
+src/lib66/module/parse_module.o src/lib66/module/parse_module.lo: src/lib66/module/parse_module.c src/include/66/constants.h src/include/66/info.h src/include/66/instance.h src/include/66/module.h src/include/66/parse.h src/include/66/resolve.h src/include/66/sanitize.h src/include/66/state.h src/include/66/utils.h
 src/lib66/module/parse_module_check_dir.o src/lib66/module/parse_module_check_dir.lo: src/lib66/module/parse_module_check_dir.c
 src/lib66/module/regex_configure.o src/lib66/module/regex_configure.lo: src/lib66/module/regex_configure.c src/include/66/environ.h src/include/66/info.h src/include/66/module.h src/include/66/resolve.h src/include/66/write.h
 src/lib66/module/regex_get_file_name.o src/lib66/module/regex_get_file_name.lo: src/lib66/module/regex_get_file_name.c
