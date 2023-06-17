@@ -218,8 +218,6 @@ int ssexec_env(int argc, char const *const *argv, ssexec_t *info)
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
-    char atree[SS_MAX_TREENAME + 1] ;
-
     uint8_t todo = T_UNSET ;
 
     char const *sv = 0, *svconf = 0, *src = 0, *import = 0 ;
@@ -300,7 +298,7 @@ int ssexec_env(int argc, char const *const *argv, ssexec_t *info)
 
     if (todo == T_UNSET && !import && !saversion.len && !eversion.len) todo = T_EDIT ;
 
-    r = service_is_g(atree, sv, STATE_FLAGS_ISPARSED) ;
+    r = service_is_g(sv, STATE_FLAGS_ISPARSED) ;
     if (r == -1)
         log_dieusys(LOG_EXIT_SYS, "get information of service: ", sv, " -- please a bug report") ;
     else if (!r || r == STATE_FLAGS_FALSE) {

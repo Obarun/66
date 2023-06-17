@@ -40,7 +40,6 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
 
     unsigned int areslen = 0, m = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE + 1] ;
-    char atree[SS_MAX_TREENAME + 1] ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
@@ -84,7 +83,7 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
 
     for (; n < argc ; n++) {
 
-        r = service_is_g(atree, argv[n], STATE_FLAGS_ISPARSED) ;
+        r = service_is_g(argv[n], STATE_FLAGS_ISPARSED) ;
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "get information of service: ", argv[n], " -- please make a bug report") ;
 
@@ -94,7 +93,7 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
             return 0 ;
         }
 
-        r = service_is_g(atree, argv[n], STATE_FLAGS_ISSUPERVISED) ;
+        r = service_is_g(argv[n], STATE_FLAGS_ISSUPERVISED) ;
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "get information of service: ", argv[n], " -- please make a bug report") ;
 

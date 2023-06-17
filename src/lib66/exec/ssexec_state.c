@@ -67,7 +67,6 @@ int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
 
     ss_state_t sta = STATE_ZERO ;
     char const *svname = 0 ;
-    char atree[SS_MAX_TREENAME + 1] ;
 
     char buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
         "toinit",
@@ -90,7 +89,7 @@ int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
 
     svname = *argv ;
 
-    r = service_is_g(atree, svname, STATE_FLAGS_ISPARSED) ;
+    r = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
     if (r == -1)
         log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please a bug report") ;
     else if (!r || r == STATE_FLAGS_FALSE)

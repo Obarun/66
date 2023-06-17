@@ -44,7 +44,6 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 
     unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0, n = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE + 1] ;
-    char atree[SS_MAX_TREENAME + 1] ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOPARSE|STATE_FLAGS_WANTUP) ;
 
@@ -96,7 +95,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         if (!state_messenger(&ares[aresid], STATE_FLAGS_TOPARSE, STATE_FLAGS_TRUE))
             log_dieusys(LOG_EXIT_SYS, "send message to state of: ", argv[n]) ;
 
-        r = service_is_g(atree, argv[n], STATE_FLAGS_ISSUPERVISED) ;
+        r = service_is_g(argv[n], STATE_FLAGS_ISSUPERVISED) ;
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "get information of service: ", argv[n], " -- please make a bug report") ;
 

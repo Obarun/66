@@ -65,11 +65,53 @@ int service_is(ss_state_t *ste, uint32_t flag)
     return STATE_FLAGS_FALSE ;
 }
 
+int service_get_treename(char *atree, char const *name, uint32_t flag)
+{
+    log_flow() ;
+
+    int e = 0, r = -1 ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+
+    char base[SS_MAX_PATH_LEN + SS_SYSTEM_LEN + 1] ;
+
+    if (!set_ownersysdir_stack(base, getuid())) {
+        resolve_free(wres) ;
+        log_warnusys_return(LOG_EXIT_ZERO, "set owner directory") ;
+    }
+
+    size_t baselen = strlen(base) ;
+    auto_strings(base + baselen, SS_SYSTEM) ;
+
+    // no tree exist yet
+    if (!scan_mode(base, S_IFDIR))
+        goto freed ;
+
+    base[baselen] = 0 ;
+
+    r = resolve_read_g(wres, base, name) ;
+    if (r == -1 || !r)
+        goto freed ;
+
+    if (strlen(res.sa.s + res.treename) >= SS_MAX_TREENAME) {
+        errno = ENAMETOOLONG ;
+        goto freed ;
+    }
+
+    auto_strings(atree, res.sa.s + res.treename) ;
+
+    e = 1 ;
+
+    freed:
+        resolve_free(wres) ;
+        return e ;
+}
+
 /*@Return :
  * -1 system error
  * 0 check fail
  * STATE_FLAGS_TRUE/STATE_FLAGS_FALSE check success */
-int service_is_g(char *atree, char const *name, uint32_t flag)
+int service_is_g(char const *name, uint32_t flag)
 {
 
     log_flow() ;
@@ -105,13 +147,6 @@ int service_is_g(char *atree, char const *name, uint32_t flag)
         e = 0 ;
         goto freed ;
     }
-
-    if (strlen(res.sa.s + res.treename) >= SS_MAX_TREENAME) {
-        errno = ENAMETOOLONG ;
-        goto freed ;
-    }
-
-    auto_strings(atree, res.sa.s + res.treename) ;
 
     if (!state_read(&ste, &res)) {
         log_warnu("read state file of: ", name, " -- please make a bug report") ;

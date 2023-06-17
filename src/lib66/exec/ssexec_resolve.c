@@ -163,7 +163,6 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
     int r = 0 ;
 
     char const *svname = 0 ;
-    char atree[SS_MAX_TREENAME + 1] ;
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
@@ -260,7 +259,7 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
     } ;
 
 
-    r = service_is_g(atree, svname, STATE_FLAGS_ISPARSED) ;
+    r = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
     if (r == -1)
         log_dieu(LOG_EXIT_SYS, "get information of service: ", svname, " -- please a bug report") ;
     else if (!r || r == STATE_FLAGS_FALSE)

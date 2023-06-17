@@ -881,7 +881,6 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
     char const *svname = 0 ;
-    char atree[SS_MAX_TREENAME + 1] ;
 
     for (int i = 0 ; i < MAXOPTS ; i++)
         what[i] = -1 ;
@@ -953,7 +952,7 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
     if(!strcmp(nl_langinfo(CODESET), "UTF-8"))
         S_STYLE = &graph_utf8;
 
-    r = service_is_g(atree, svname, STATE_FLAGS_ISPARSED) ;
+    r = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
     if (r < 0)
         log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please make a bug report") ;
 

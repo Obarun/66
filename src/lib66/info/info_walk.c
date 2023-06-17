@@ -73,7 +73,8 @@ int info_walk(graph_t *g, char const *name, char const *treename, info_graph_fun
         if (depth->level == 1 && treename) {
             char atree[SS_MAX_TREENAME + 1] ;
 
-            service_is_g(atree, name, 0) ;
+            if (!service_get_treename(atree, name, 0))
+                goto err ;
 
             if (strcmp(treename, atree))
                 continue ;

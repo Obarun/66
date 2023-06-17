@@ -31,9 +31,8 @@ void sanitize_source(char const *name, ssexec_t *info)
 
     int r ;
     ssize_t logname = get_rstrlen_until(name,SS_LOG_SUFFIX) ;
-    char atree[SS_MAX_TREENAME + 1] ;
 
-    r = service_is_g(atree, name, STATE_FLAGS_ISPARSED) ;
+    r = service_is_g(name, STATE_FLAGS_ISPARSED) ;
     if (r == -1)
         log_dieusys(LOG_EXIT_SYS, "get information of service: ", name, " -- please a bug report") ;
 

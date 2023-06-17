@@ -92,7 +92,6 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     uint8_t opt_tree_forced = 0 ;
     size_t svlen = strlen(sv) ;
     char svname[svlen + 1], svsrc[svlen + 1] ;
-    char atree[SS_MAX_TREENAME + 1] ;
     stralloc sa = STRALLOC_ZERO ;
 
     if (!ob_basename(svname, sv))
@@ -142,7 +141,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     char file[sa.len + 1] ;
     auto_strings(file, sa.s) ;
 
-    isparsed = service_is_g(atree, svname, STATE_FLAGS_ISPARSED) ;
+    isparsed = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
     if (isparsed == -1)
         log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please make a bug report") ;
     else if (!isparsed)
