@@ -26,8 +26,6 @@ void tree_service_remove(char const *base, char const *treename, char const *ser
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
     char *str = 0 ;
 
-    log_trace("modify field contents of resolve tree file: ", treename) ;
-
     if (resolve_read_g(wres, base, treename) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of tree: ", treename) ;
 
@@ -49,15 +47,17 @@ void tree_service_remove(char const *base, char const *treename, char const *ser
 
             str = stk.s ;
 
-        } else str = "" ;
+            tres.ncontents = stack_count_element(&stk) ;
+
+        } else {
+
+            tres.ncontents = 0 ;
+            str = "" ;
+        }
 
         if (!resolve_modify_field(wres, E_RESOLVE_TREE_CONTENTS, str))
             log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
 
-        tres.ncontents-- ;
-
-        if (!resolve_write_g(wres, base, treename))
-            log_dieusys(LOG_EXIT_SYS, "write resolve file of tree: ", treename) ;
     }
 
     resolve_free(wres) ;

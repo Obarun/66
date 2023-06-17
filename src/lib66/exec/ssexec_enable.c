@@ -25,6 +25,7 @@
 #include <66/state.h>
 #include <66/graph.h>
 #include <66/config.h>
+#include <66/enum.h>
 
 static void parse_it(char const *name, ssexec_t *info)
 {
@@ -43,11 +44,26 @@ static void parse_it(char const *name, ssexec_t *info)
     PROG = prog ;
 }
 
+static void service_resolve_array_write(char const *base, resolve_service_t *ares, uint32_t *indexes, uint32_t lindex)
+{
+    log_flow() ;
+
+    uint32_t pos = 0 ;
+
+    for (; pos < lindex ; ++pos) {
+
+        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &ares[indexes[pos]]) ;
+
+        if (!resolve_write_g(wres, base, ares[indexes[pos]].sa.s + ares[indexes[pos]].name))
+            log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", ares[indexes[pos]].sa.s + ares[indexes[pos]].name) ;
+    }
+}
+
 int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    uint32_t flag = 0 ;
+    uint32_t flag = 0, *indexes = { 0 }, lindex = 0 ;
     uint8_t start = 0, propagate = 1 ;
     int n = 0, e = 1 ;
     size_t pos = 0 ;
@@ -117,13 +133,31 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
 
         service_enable_disable(&graph, aresid, ares, areslen, 1, visit, propagate) ;
 
-        if (info->opt_tree)
+        if (info->opt_tree) {
+
             service_switch_tree(&ares[aresid], info->base.s, info->treename.s) ;
+
+            indexes[lindex++] = aresid ;
+
+            if (ares[aresid].logger.want && ares[aresid].type == TYPE_CLASSIC) {
+
+                int logid = service_resolve_array_search(ares, areslen, ares[aresid].sa.s + ares[aresid].logger.name) ;
+                if (logid < 0)
+                    log_die(LOG_EXIT_USER, "service: ", ares[aresid].sa.s + ares[aresid].logger.name, " not available -- please make a bug report") ;
+
+                service_switch_tree(&ares[logid], info->base.s, info->treename.s) ;
+
+                indexes[lindex++] = logid ;
+            }
+        }
 
         if (!stack_add_g(&stk, argv[n]))
             log_dieu(LOG_EXIT_SYS, "add string") ;
+
+        log_info("Enabled successfully service: ", ares[aresid].sa.s + ares[aresid].name) ;
     }
 
+    service_resolve_array_write(info->base.s, ares, indexes, lindex) ;
     service_resolve_array_free(ares, areslen) ;
     graph_free_all(&graph) ;
 
@@ -155,8 +189,6 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
         info->help = help ;
         info->usage = usage ;
     }
-
-
 
     return e ;
 }

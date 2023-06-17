@@ -126,7 +126,5 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
         }
 
         visit[idx] = VISIT_GRAY ;
-
-        log_info(!action ? "Disabled" : "Enabled"," successfully service: ", res->sa.s + res->name) ;
     }
 }

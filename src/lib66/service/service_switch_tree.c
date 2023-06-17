@@ -33,8 +33,5 @@ void service_switch_tree(resolve_service_t *res, char const *base, char const *t
     if (!service_resolve_modify_field(res, E_RESOLVE_SERVICE_TREENAME, totreename))
         log_dieu(LOG_EXIT_SYS, "modify resolve file of: ", res->sa.s + res->name) ;
 
-    if (!resolve_write_g(wres, base, res->sa.s + res->name))
-        log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", res->sa.s + res->name) ;
-
     free(wres) ;
 }
