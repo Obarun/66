@@ -361,7 +361,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
     char *src = res->sa.s + res->path.frontend ;
     char dirname[strlen(src)] ;
     char copy[SS_MAX_PATH_LEN + 1] ;
-    char ainsta[strlen(name)] ;
+    char ainsta[strlen(res->sa.s + res->name) + 1] ;
     stralloc list = STRALLOC_ZERO ;
     resolve_wrapper_t_ref wres = 0 ;
 
