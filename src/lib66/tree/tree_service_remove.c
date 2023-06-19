@@ -58,6 +58,8 @@ void tree_service_remove(char const *base, char const *treename, char const *ser
         if (!resolve_modify_field(wres, E_RESOLVE_TREE_CONTENTS, str))
             log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
 
+        if (!resolve_write_g(wres, base, treename))
+            log_dieusys(LOG_EXIT_SYS, "write resolve file of tree: ", treename) ;
     }
 
     resolve_free(wres) ;
