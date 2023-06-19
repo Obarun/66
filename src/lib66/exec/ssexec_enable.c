@@ -63,7 +63,7 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    uint32_t flag = 0, *indexes = { 0 }, lindex = 0 ;
+    uint32_t flag = 0, indexes[SS_MAX_SERVICE + 1], lindex = 0 ;
     uint8_t start = 0, propagate = 1 ;
     int n = 0, e = 1 ;
     size_t pos = 0 ;
@@ -74,6 +74,7 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
 
     visit_t visit[SS_MAX_SERVICE + 1] ;
     visit_init(visit, SS_MAX_SERVICE) ;
+    visit_init(indexes, SS_MAX_SERVICE) ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
