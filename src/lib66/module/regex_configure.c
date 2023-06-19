@@ -127,7 +127,7 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
 
         newargv[m++] = 0 ;
 
-        log_info("launch script configure of module: ", name) ;
+        log_info("launch configure script of module: ", name) ;
 
         pid = child_spawn0(newargv[0], newargv, newenv) ;
 
