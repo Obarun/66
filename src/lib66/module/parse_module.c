@@ -358,14 +358,15 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
     size_t pos = 0, copylen = 0, len = 0 ;
     uint8_t opt_tree = info->opt_tree ;
     char name[strlen(res->sa.s + res->name) + 1] ;
-    char *src = res->sa.s + res->path.frontend ;
-    char dirname[strlen(src)] ;
+    char src[strlen(res->sa.s + res->path.frontend) + 1] ;
+    char dirname[strlen(src) + 1] ;
     char copy[SS_MAX_PATH_LEN + 1] ;
     char ainsta[strlen(res->sa.s + res->name) + 1] ;
     stralloc list = STRALLOC_ZERO ;
     resolve_wrapper_t_ref wres = 0 ;
 
     auto_strings(name,res->sa.s + res->name) ;
+    auto_strings(src,res->sa.s + res->path.frontend) ;
 
     log_trace("parse module: ", name) ;
 
@@ -421,6 +422,14 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
             if (!hiercopy(dirname, copy))
                 log_dieusys(LOG_EXIT_SYS, "copy: ", dirname, " to: ", copy) ;
 
+            auto_strings(copy + copylen, "/", ainsta) ;
+
+            /** remove the original service frontend file inside the copied directory
+             * to avoid double frontend service file for a same service.*/
+            errno = 0 ;
+            if (unlink(copy) < 0 && errno != ENOENT)
+                log_dieusys(LOG_EXIT_ZERO, "unlink: ", copy) ;
+
             copy[copylen] = 0 ;
 
             parse_module_regex(res, copy, copylen, info) ;
@@ -428,14 +437,6 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
         } else
             log_warn("skip configuration of the module: ", name, " -- already configured") ;
     }
-
-    auto_strings(copy + copylen, "/", ainsta) ;
-
-    /** remove the original service frontend file inside the copied directory
-     * to avoid double frontend service file for a same service.*/
-    errno = 0 ;
-    if (unlink(copy) < 0 && errno != ENOENT)
-        log_dieusys(LOG_EXIT_ZERO, "unlink: ", copy) ;
 
     /** handle new activated depends/requiredby service.*/
     {
@@ -463,7 +464,6 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
 
     {
         /* parse each activated services */
-
         len = list.len ;
         uint8_t out = 0 ;
         char l[len + 1] ;
@@ -486,7 +486,6 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
         for (pos = 0 ; pos < len ; pos += strlen(l + pos) + 1) {
 
             sa.len = 0 ;
-            info->opt_tree = opt_tree ;
             char fname[strlen(l + pos)] ;
             char const *exclude[1] = { 0 } ;
 
@@ -522,10 +521,12 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
 
             info->opt_tree = 1 ;
             info->treename.len = 0 ;
-            if (!auto_stra(&info->treename, res->sa.s + res->intree))
+            if (!auto_stra(&info->treename, res->sa.s + res->treename))
                 log_die_nomem("stralloc") ;
 
             parse_frontend(sa.s, ares, areslen, info, force, conf, !out ? copy : 0, fname, !out ? name : 0) ;
+
+            info->opt_tree = opt_tree ;
         }
 
         stralloc_free(&sa) ;

@@ -99,6 +99,7 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
 
             sv = bname ;
             directory_forced = dname ;
+
         } else
             sv = *argv ;
 
