@@ -237,6 +237,24 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
                 resolve_free(mwres) ;
             }
+
+            char dir[SS_MAX_PATH_LEN + 1] ;
+
+            if (!info->owner) {
+
+                auto_strings(dir, SS_SERVICE_ADMDIR, ares[pos].sa.s + ares[pos].name) ;
+
+            } else {
+
+                if (!set_ownerhome_stack(dir))
+                    log_dieusys(LOG_EXIT_SYS, "unable to find the home directory of the user") ;
+
+                size_t dirlen = strlen(dir) ;
+
+                auto_strings(dir + dirlen, SS_SERVICE_USERDIR, ares[pos].sa.s + ares[pos].name) ;
+            }
+
+            auto_remove(dir) ;
         }
     }
 
