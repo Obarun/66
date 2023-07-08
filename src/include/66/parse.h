@@ -74,6 +74,8 @@ extern int parse_clean_list(stralloc *sa, char const *str) ;
 extern int parse_clean_line(char *str)  ;
 extern int parse_mandatory(resolve_service_t *res) ;
 extern void parse_error(int ierr, int idsec, int idkey) ;
+extern void parse_rename_interdependences(resolve_service_t *res, char const *prefix, resolve_service_t *ares, unsigned int *areslen) ;
+extern void parse_db_migrate(resolve_service_t *res, ssexec_t *info) ;
 
 /** module */
 extern void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force) ;

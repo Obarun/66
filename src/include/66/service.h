@@ -318,6 +318,7 @@ extern void service_resolve_write_tmp(resolve_service_t *res, char const *dst, u
 extern int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres) ;
 extern void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *ares, unsigned int areslen, uint8_t action, visit_t *visit, uint8_t propagate) ;
 extern void service_switch_tree(resolve_service_t *res, char const *base, char const *totreename) ;
+extern void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char const *base, uint8_t requiredby) ;
 /* avoid circular dependencies by prototyping the ss_state_t instead
  * of calling the state.h header file*/
 typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;

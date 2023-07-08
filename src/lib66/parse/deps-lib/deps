@@ -5,12 +5,14 @@ parse_clean_runas.o
 parse_compute_list.o
 parse_compute_resolve.o
 parse_contents.o
+parse_db_migrate.o
 parse_error.o
 parse_frontend.o
 parse_interdependences.o
 parse_line_g.o
 parse_mandatory.o
 parse_parentheses.o
+parse_rename_interdependences.o
 parse_section.o
 parse_service.o
 parse_split_from_section.o
