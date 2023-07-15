@@ -167,6 +167,10 @@ int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char co
         if (aresid < 0)
             log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
+        if (ares[aresid].earlier) {
+            log_warn("ignoring ealier service: ", ares[aresid].sa.s + ares[aresid].name) ;
+            continue ;
+        }
         graph_compute_visit(name, visit, list, &graph, &napid, requiredby) ;
 
     }

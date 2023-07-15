@@ -43,7 +43,7 @@ void sanitize_graph(ssexec_t *info)
     resolve_service_t ares[SS_MAX_SERVICE + 1] ;
     graph_t graph = GRAPH_ZERO ;
 
-    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOPARSE|STATE_FLAGS_WANTUP|STATE_FLAGS_WANTDOWN) ;
+    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOPARSE|STATE_FLAGS_WANTUP|STATE_FLAGS_WANTDOWN|STATE_FLAGS_ISEARLIER) ;
 
     /** build the graph of the entire system */
     graph_build_service(&graph, ares, &areslen, info, flag) ;

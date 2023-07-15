@@ -45,6 +45,9 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
+    if (earlier)
+        FLAGS_SET(flag, STATE_FLAGS_ISEARLIER) ;
+
     /** build the graph of the entire system */
     graph_build_service(&graph, ares, &areslen, info, flag) ;
 
@@ -54,8 +57,14 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
     FOREACH_SASTR(sa, n) {
 
         int aresid = service_resolve_array_search(ares, areslen, sa->s + n) ;
-        if (aresid < 0)
+        if (aresid < 0) {
+
+            if (earlier) {
+                log_warn("ignoring none earlier service: ", sa->s + n) ;
+                continue ;
+            }
             log_die(LOG_EXIT_USER, "service: ", sa->s + n, " not available -- did you parse it?") ;
+        }
 
         unsigned int l[graph.mlen], c = 0, pos = 0, idx = 0 ;
 

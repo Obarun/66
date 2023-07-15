@@ -466,7 +466,7 @@ static int ssexec_callback(stralloc *sa, ssexec_t *info, unsigned int what)
         if (!state_read(&ste, &res))
             log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug report") ;
 
-        if (service_is(&ste, !what ? STATE_FLAGS_ISENABLED : STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_TRUE) {
+        if (!what ? ste.isenabled : ste.issupervised == STATE_FLAGS_TRUE && ste.isearlier == STATE_FLAGS_FALSE) {
 
             if (get_rstrlen_until(name, SS_LOG_SUFFIX) < 0 && !res.inmodule)
                 if (!sastr_add_string(sa, name))

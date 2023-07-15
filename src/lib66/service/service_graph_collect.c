@@ -86,12 +86,26 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
             if (resolve_read_g(wres, info->base.s, name) <= 0)
                 log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name, " -- please make a bug report") ;
 
+            if (!state_read(&ste, &res))
+                log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug report") ;
+
+            if (FLAGS_ISSET(flag, STATE_FLAGS_ISEARLIER)) {
+
+                if (ste.isearlier == STATE_FLAGS_TRUE) {
+
+                    if (!service_resolve_copy(&cp, &res))
+                        log_dieu(LOG_EXIT_SYS, "copy resolve file of: ", name, " -- please make a bug report") ;
+
+                    ares[(*areslen)++] = cp ;
+                    continue ;
+                }
+                resolve_free(wres) ;
+                continue ;
+            }
+
             if (FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {
 
-                if (!state_read(&ste, &res))
-                    log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug report") ;
-
-                if (service_is(&ste, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_TRUE) {
+                if (ste.issupervised == STATE_FLAGS_TRUE) {
 
                     if (!service_resolve_copy(&cp, &res))
                         log_dieu(LOG_EXIT_SYS, "copy resolve file of: ", name, " -- please make a bug report") ;
