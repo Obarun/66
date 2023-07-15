@@ -46,7 +46,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
     ftrigr_t fifo = FTRIGR_ZERO ;
     uint32_t earlier ;
     gid_t gid = getgid() ;
-    int is_supervised = 0, is_init ;
+    int is_supervised = 0, is_init = 0, gearlier = 0 ;
     unsigned int pos = 0, nsv = 0 ;
     unsigned int real[alen] ;
     unsigned int msg[areslen] ;
@@ -78,6 +78,8 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
         if (is_init < 0 || service_is(&sta, STATE_FLAGS_TOINIT) == STATE_FLAGS_TRUE)
             sanitize_livestate(&ares[aresid]) ;
 
+        if (earlier)
+            gearlier = aresid ;
         /**
          * Bundle and module type are not a daemons. We don't need to supervise it.
          * Special case for Oneshot, we only deal with the scandir symlink. */
@@ -101,12 +103,15 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
         }
 
         /* down file */
-        char downfile[scandirlen + 6] ;
-        auto_strings(downfile, scandir, "/down") ;
-        int fd = open_trunc(downfile) ;
-        if (fd < 0)
-            log_dieusys(LOG_EXIT_SYS, "create file: ", downfile) ;
-        fd_close(fd) ;
+        if (!earlier) {
+
+            char downfile[scandirlen + 6] ;
+            auto_strings(downfile, scandir, "/down") ;
+            int fd = open_trunc(downfile) ;
+            if (fd < 0)
+                log_dieusys(LOG_EXIT_SYS, "create file: ", downfile) ;
+            fd_close(fd) ;
+        }
 
         if (!earlier && is_supervised) {
 
@@ -165,9 +170,6 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
 
         }
     }
-
-    if (earlier)
-        sanitize_scandir(&ares[0]) ;
 
     /**
      * We pass through here even for Bundle, Module and Oneshot.

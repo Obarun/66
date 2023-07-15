@@ -105,6 +105,7 @@ void sanitize_scandir(resolve_service_t *res)
 
     int r ;
     char *name = res->sa.s + res->name ;
+    uint8_t earlier = 0 ;
     size_t namelen = strlen(name) ;
     size_t livelen = strlen(res->sa.s + res->live.livedir) ;
     size_t scandirlen = livelen + SS_SCANDIR_LEN + 1 + strlen(res->sa.s + res->ownerstr)  ;
@@ -126,7 +127,8 @@ void sanitize_scandir(resolve_service_t *res)
 
         compute_supervision_dir(res) ;
 
-        if (service_is(&sta, STATE_FLAGS_ISEARLIER) == STATE_FLAGS_TRUE) {
+        earlier = service_is(&sta, STATE_FLAGS_ISEARLIER) == STATE_FLAGS_TRUE ? 1 : 0 ;
+        if (!earlier) {
 
             if (svc_scandir_send(svcandir, "h") <= 0)
                 log_dieu(LOG_EXIT_SYS, "reload scandir: ", svcandir) ;
