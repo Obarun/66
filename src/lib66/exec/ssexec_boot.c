@@ -99,7 +99,6 @@ static int get_value(stralloc *val,char const *key)
         return 0 ;
     }
     if (!sastr_rebuild_in_oneline(val)) sulogin("rebuild line of value: ",val->s) ;
-    if (!stralloc_0(val)) sulogin("append stralloc of value: ",val->s) ;
 
     return 1 ;
 }
