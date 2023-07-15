@@ -209,7 +209,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
     /** logger is set by default. if service is a module
      * we don't want logger. So, set it false by default. */
-    if (res.type == TYPE_MODULE)
+    if (res.type == TYPE_MODULE || res.type == TYPE_BUNDLE)
         res.logger.want = 0 ;
 
     // keep overwrite_conf
@@ -257,9 +257,14 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
         if (!parse_interdependences(svname, res.sa.s + res.dependencies.depends, res.dependencies.ndepends, ares, areslen, info, force, conf, forced_directory, main, inmodule))
             log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", svname) ;
 
-        if (res.type == TYPE_BUNDLE)
+        if (res.type == TYPE_BUNDLE) {
+
             if (!parse_interdependences(svname, res.sa.s + res.dependencies.contents, res.dependencies.ncontents, ares, areslen, info, force, conf, forced_directory, main, inmodule))
                 log_dieu(LOG_EXIT_SYS, "parse contents of bundle service: ", svname) ;
+
+            if (force)
+                parse_db_migrate(&res, info) ;
+        }
     }
 
     if (res.type == TYPE_MODULE)
