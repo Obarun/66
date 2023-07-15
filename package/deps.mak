@@ -19,12 +19,12 @@ src/include/66/svc.h: src/include/66/graph.h src/include/66/service.h src/includ
 src/include/66/tree.h: src/include/66/resolve.h src/include/66/ssexec.h
 src/include/66/utils.h: src/include/66/ssexec.h
 src/include/66/write.h: src/include/66/service.h
-src/66/66.o src/66/66.lo: src/66/66.c src/include/66/hpr.h src/include/66/sanitize.h src/include/66/ssexec.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-fdholder-filler.o src/66/66-fdholder-filler.lo: src/66/66-fdholder-filler.c src/include/66/constants.h
 src/66/66-hpr.o src/66/66-hpr.lo: src/66/66-hpr.c src/include/66/config.h src/include/66/hpr.h
 src/66/66-oneshot.o src/66/66-oneshot.lo: src/66/66-oneshot.c src/include/66/constants.h src/include/66/resolve.h src/include/66/service.h
 src/66/66-shutdown.o src/66/66-shutdown.lo: src/66/66-shutdown.c src/include/66/config.h src/include/66/hpr.h
 src/66/66-shutdownd.o src/66/66-shutdownd.lo: src/66/66-shutdownd.c src/include/66/config.h src/include/66/constants.h
+src/66/66.o src/66/66.lo: src/66/66.c src/include/66/hpr.h src/include/66/sanitize.h src/include/66/ssexec.h src/include/66/tree.h src/include/66/utils.h
 src/extra-tools/66-echo.o src/extra-tools/66-echo.lo: src/extra-tools/66-echo.c
 src/extra-tools/66-nuke.o src/extra-tools/66-nuke.lo: src/extra-tools/66-nuke.c
 src/extra-tools/66-umountall.o src/extra-tools/66-umountall.lo: src/extra-tools/66-umountall.c src/include/66/config.h

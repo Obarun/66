@@ -34,17 +34,6 @@
 #include <66/graph.h>
 #include <66/sanitize.h>
 
-/**
- *
- *
- *
- * TEST NEEDED :
- *      Be sure that earlier service can be started as fat as possible when
- *      the scandir was brought up. So, the down file should not exist at the end
- *      of the initialization phase.
- *
- *
- * */
 static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 {
     uint32_t flag = 0 ;
