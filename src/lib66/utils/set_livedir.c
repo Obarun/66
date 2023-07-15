@@ -29,10 +29,8 @@ int set_livedir(stralloc *live)
         if (live->s[0] != '/')
             return -1 ;
 
-        if (live->s[live->len - 2] != '/') {
-            live->len-- ;
+        if (live->s[live->len - 1] != '/')
             if (!auto_stra(live,"/")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
-        }
 
     } else if (!auto_stra(live,SS_LIVE))
         log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
