@@ -356,7 +356,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
             unexport = 0 ;
             sa.len = 0 ;
 
-            if (!auto_stra(&sa, tmp))
+            if (!stralloc_copyb(&sa, tmp, tmplen))
                 log_die_nomem("stralloc") ;
 
             if (!environ_get_key_nclean(&sa, &pos))
