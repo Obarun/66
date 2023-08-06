@@ -24,19 +24,21 @@
 #include <66/service.h>
 #include <66/parse.h>
 
-
 int env_compute(stralloc *result, resolve_service_t *res)
 {
     log_flow() ;
 
     int r ;
     uint32_t conf = res->environ.env_overwrite ;
-    char *version = res->sa.s + res->version ;
-    char *svconf = res->sa.s + res->environ.envdir ;
-    char *name = res->sa.s + res->name ;
-    size_t svconf_len = strlen(svconf), version_len = strlen(version) ;
-    char src[svconf_len + 1 + version_len + 1] ;
+    size_t conflen = strlen(res->sa.s + res->environ.envdir), versionlen = strlen(res->sa.s + res->version), namelen = strlen(res->sa.s + res->name) ;
+    char version[versionlen + 1] ;
+    char svconf[conflen + 1] ;
+    char name[namelen + 1] ;
+    char src[conflen + 1 + versionlen + 1] ;
 
+    auto_strings(version, res->sa.s + res->version) ;
+    auto_strings(svconf, res->sa.s + res->environ.envdir) ;
+    auto_strings(name, res->sa.s + res->name) ;
     auto_strings(src, svconf, "/", version) ;
 
     /** previous version, this is the current version before
@@ -48,7 +50,6 @@ int env_compute(stralloc *result, resolve_service_t *res)
     /** store current configure file version before the switch
      * of the symlink with the env_make_symlink() function */
     r = env_find_current_version(&pversion, svconf) ;
-
     if (r == -1)
         log_warnu_return(LOG_EXIT_ZERO, "find previous configuration file version") ;
 
