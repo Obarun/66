@@ -69,13 +69,13 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
         if (!state_read(&sta, &ares[aresid]))
             log_dieu(LOG_EXIT_SYS, "read state file of: ", name) ;
 
-        earlier = service_is(&sta, STATE_FLAGS_ISEARLIER) == STATE_FLAGS_TRUE ? 1 : 0 ;
+        earlier = sta.isearlier == STATE_FLAGS_TRUE ? 1 : 0 ;
         char *sa = ares[aresid].sa.s ;
         char *scandir = sa + ares[aresid].live.scandir ;
         size_t scandirlen = strlen(scandir) ;
 
         is_init = access(sa + ares[aresid].live.statedir, F_OK) ;
-        if (is_init < 0 || service_is(&sta, STATE_FLAGS_TOINIT) == STATE_FLAGS_TRUE)
+        if (is_init < 0 || sta.toinit == STATE_FLAGS_TRUE)
             sanitize_livestate(&ares[aresid]) ;
 
         if (earlier)
@@ -89,7 +89,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
         is_supervised = access(scandir, F_OK) ;
 
         if (!earlier && !is_supervised) {
-            log_warn(name," already initialized -- ignore it") ;
+            log_trace(name," already initialized -- ignore it") ;
             msg[aresid] = 1 ;
             continue ;
         }
@@ -107,6 +107,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
 
             char downfile[scandirlen + 6] ;
             auto_strings(downfile, scandir, "/down") ;
+            log_trace("create file: ", downfile) ;
             int fd = open_trunc(downfile) ;
             if (fd < 0)
                 log_dieusys(LOG_EXIT_SYS, "create file: ", downfile) ;
