@@ -39,7 +39,7 @@ int write_execute_scripts(char const *file, char const *contents, char const *ds
     char run[strlen(contents) + 1] ;
     auto_strings(run, contents) ;
 
-    log_trace("create file: ", dst, "/", file) ;
+    log_trace("write file: ", dst, "/", file) ;
     if (!file_write_unsafe(dst, file, run, FAKELEN))
         log_warnusys_return(LOG_EXIT_ZERO, "write: ", dst, "/", file) ;
 

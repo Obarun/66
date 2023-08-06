@@ -111,10 +111,10 @@ int write_common(resolve_service_t *res, char const *dst)
             int fd ;
             size_t wlen = strlen(what) ;
             char tmp[SS_MAX_PATH_LEN + 1] ;
-            char dest[dstlen + 1 + wlen + 1];
+            char dest[dstlen + 1 + wlen + 1] ;
             char basename[SS_MAX_PATH_LEN + 1] ;
 
-            if (what [0] == '/' ) {
+            if (what[0] == '/' ) {
 
                 auto_strings(tmp, what) ;
 
@@ -183,8 +183,6 @@ int write_common(resolve_service_t *res, char const *dst)
 
         stralloc_free(&sa) ;
     }
-
-
 
     return 1 ;
 }

@@ -77,7 +77,13 @@ void write_logger(resolve_service_t *res, char const *destination, uint8_t force
         parse_cleanup(res, destination, force) ;
         log_dieusys(LOG_EXIT_SYS, "create directory: ", res->sa.s + res->logger.destination) ;
     }
-
+    /**
+     * ISSUE: In case of e.g. earlier service the log
+     * may point to a tmpfs directory. At next reboot
+     * the log directory will not be present. We just
+     * react as oneshot service making it at .run file
+     * with execl-toc.
+     */
     if (!owner && ((res->execute.run.build == BUILD_AUTO) || (!res->execute.run.build))) {
 
         if (!youruid(&log_uid, logrunner) || !yourgid(&log_gid, log_uid)) {
@@ -93,7 +99,7 @@ void write_logger(resolve_service_t *res, char const *destination, uint8_t force
     char write[strlen(destination) + 10] ;
 
     /** run script */
-    log_trace("create file: ", destination, "/run") ;
+    log_trace("write file: ", destination, "/run") ;
     if (!file_write_unsafe(destination, "run", res->sa.s + res->execute.run.run, strlen(res->sa.s + res->execute.run.run))) {
         parse_cleanup(res, destination, force) ;
         log_dieusys(LOG_EXIT_SYS, "write: ", destination, "/run.user") ;
@@ -107,7 +113,7 @@ void write_logger(resolve_service_t *res, char const *destination, uint8_t force
     }
 
     /** run.user script */
-    log_trace("create file: ", destination, "/run.user") ;
+    log_trace("write file: ", destination, "/run.user") ;
     if (!file_write_unsafe(destination, "run.user", res->sa.s + res->execute.run.run_user, strlen(res->sa.s + res->execute.run.run_user))) {
         parse_cleanup(res, destination, force) ;
         log_dieusys(LOG_EXIT_SYS, "write: ", destination, "/run.user") ;
