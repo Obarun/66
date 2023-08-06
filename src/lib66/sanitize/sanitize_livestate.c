@@ -111,13 +111,15 @@ void sanitize_livestate(resolve_service_t *res)
 
     } else {
 
-        if (service_is(&sta, STATE_FLAGS_TOUNSUPERVISE) == STATE_FLAGS_TRUE) {
+        if (sta.tounsupervise == STATE_FLAGS_TRUE) {
 
             log_trace("unlink: ", ste) ;
             unlink_void(ste) ;
 
-            if (!state_messenger(res, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE))
-                log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
+            state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE) ;
+
+            if (!state_write(&sta, res))
+                log_dieusys(LOG_EXIT_SYS, "write status file of: ", name) ;
         }
     }
 }

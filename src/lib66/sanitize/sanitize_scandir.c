@@ -83,6 +83,12 @@ static void compute_supervision_dir(resolve_service_t *res)
     int r = dir_create_parent(event, 0700) ;
     if (!r)
         log_dieusys(LOG_EXIT_SYS, "create directory: ", event) ;
+    /**
+     *
+     * ISSUE: All the following means writting on a possible
+     * ro mountpoint, so crash occurs.
+     *
+     * */
 
     if (chown(event, -1, getegid()) < 0)
         log_dieusys(LOG_EXIT_SYS, "chown: ", event) ;
@@ -118,7 +124,7 @@ void sanitize_scandir(resolve_service_t *res)
         log_dieu(LOG_EXIT_SYS, "read state file of: ", name) ;
 
     r = access(res->sa.s + res->live.scandir, F_OK) ;
-    if (r == -1 && service_is(&sta, STATE_FLAGS_TOINIT) == STATE_FLAGS_TRUE) {
+    if (r == -1 && (sta.toinit == STATE_FLAGS_TRUE || sta.isearlier == STATE_FLAGS_TRUE)) {
 
         if (res->type == TYPE_CLASSIC)
             scandir_scandir_to_livestate(res) ;
