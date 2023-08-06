@@ -60,10 +60,10 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
         if (aresid < 0) {
 
             if (earlier) {
-                log_warn("ignoring none earlier service: ", sa->s + n) ;
+                log_trace("ignoring none earlier service: ", sa->s + n) ;
                 continue ;
             }
-            log_die(LOG_EXIT_USER, "service: ", sa->s + n, " not available -- did you parse it?") ;
+            log_die(LOG_EXIT_USER, "service: ", sa->s + n, " not available -- please execute \"66 parse ", sa->s + n,"\" command first") ;
         }
 
         unsigned int l[graph.mlen], c = 0, pos = 0, idx = 0 ;
@@ -180,7 +180,7 @@ int ssexec_init(int argc, char const *const *argv, ssexec_t *info)
 
     r = scan_mode(info->scandir.s, S_IFDIR) ;
     if (r < 0) log_die(LOG_EXIT_SYS,info->scandir.s, " conflicted format") ;
-    if (!r) log_die(LOG_EXIT_USER,"scandir: ", info->scandir.s, " doesn't exist") ;
+    if (!r) log_die(LOG_EXIT_USER,"scandir: ", info->scandir.s, " doesn't exist -- please execute \"66 scandir create\" command first") ;
 
     r = svc_scandir_ok(info->scandir.s) ;
     if (r != 1) earlier = 1 ;
