@@ -122,12 +122,12 @@ static uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *r
     if (!res->logger.destination) {
 
         if (res->owner) {
-            
+
             char home[SS_MAX_PATH_LEN + 1 + strlen(SS_LOGGER_USERDIR) + 1] ;
 
             if (!set_ownerhome_stack(home))
                 log_dieusys(LOG_EXIT_SYS,"set home directory") ;
-        
+
             auto_strings(dstlog, home, SS_LOGGER_USERDIR, res->sa.s + res->name) ;
 
         } else
@@ -216,7 +216,12 @@ static void compute_wrapper_scripts_user(resolve_service_t *res, resolve_service
     char run[shebanglen + execlen + scriptlen + 4 + 1] ;
 
     auto_strings(run, "#!") ;
-
+    /**
+     * NOTE: scripts->shebang is deprecated
+     * and will be removed. Warn user about it.
+     * Shebang must be define by the user at
+     * @execute field.
+     */
     if (build && scripts->shebang) {
 
         auto_strings(run + FAKELEN, res->sa.s + scripts->shebang, "\n") ;
@@ -327,6 +332,12 @@ static void compute_log_script(resolve_service_t *res)
 
         } else {
 
+            /**
+             * NOTE: scripts->shebang is deprecated
+             * and will be removed. Warn user about it.
+             * Shebang must be define by the user at
+             * @execute field.
+             */
             char *shebang = res->logger.execute.run.shebang ? res->sa.s + res->logger.execute.run.shebang : "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n" ;
             size_t shebanglen = strlen(shebang) ;
 
