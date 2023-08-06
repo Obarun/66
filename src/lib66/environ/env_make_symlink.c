@@ -41,11 +41,13 @@ int env_make_symlink(resolve_service_t *res)
 
     auto_strings(sym_version,svconf,SS_SYM_VERSION) ;
 
+    log_trace("create directory: ", dst) ;
     if (!dir_create_parent(dst,0755))
         log_warnsys_return(LOG_EXIT_ZERO,"create directory: ",dst) ;
 
     /** atomic_symlink check if exist
      * if it doesn't exist, it create it*/
+    log_trace("point symlink: ", sym_version, " to ", dst) ;
     if (!atomic_symlink(dst,sym_version,"env_compute"))
         log_warnu_return(LOG_EXIT_ZERO,"symlink: ",sym_version," to: ",dst) ;
 
