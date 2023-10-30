@@ -79,7 +79,7 @@ static void parse_prefix_name(unsigned int idx, resolve_service_t *ares, unsigne
         size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * ares[idx].dependencies.ndepends ;
         char n[len] ;
 
-        memset(n, 0, len * sizeof(size_t)); ;
+        memset(n, 0, len * sizeof(char)); ;
 
         parse_prefix(n, &stk, ares, areslen, prefix) ;
 
@@ -98,7 +98,7 @@ static void parse_prefix_name(unsigned int idx, resolve_service_t *ares, unsigne
         size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * ares[idx].dependencies.nrequiredby ;
         char n[len] ;
 
-        memset(n, 0, len * sizeof(size_t)) ;
+        memset(n, 0, len * sizeof(char)) ;
 
         parse_prefix(n, &stk, ares, areslen, prefix) ;
 
