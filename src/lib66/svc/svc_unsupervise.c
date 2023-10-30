@@ -15,54 +15,42 @@
 #include <oblibs/log.h>
 #include <oblibs/sastr.h>
 
-#include <skalibs/genalloc.h>
-
 #include <66/state.h>
 #include <66/sanitize.h>
 #include <66/graph.h>
 #include <66/svc.h>
 #include <66/enum.h>
+#include <66/symlink.h>
+#include <66/constants.h>
 
 static void sanitize_it(resolve_service_t *res)
 {
     log_flow() ;
-    
-    ss_state_t sta = STATE_ZERO ;
 
-    sanitize_fdholder(res, STATE_FLAGS_FALSE) ;
+    ss_state_t sta = STATE_ZERO ;
 
     if (!state_read(&sta, res))
         log_dieu(LOG_EXIT_SYS, "read state file of: ", res->sa.s + res->name) ;
 
+    sanitize_fdholder(res, &sta, STATE_FLAGS_FALSE) ;
+
     state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_TRUE) ;
     state_set_flag(&sta, STATE_FLAGS_ISUP, STATE_FLAGS_FALSE) ;
 
-    if (!state_write(&sta, res))
-        log_dieu(LOG_EXIT_SYS, "write state file of: ", res->sa.s + res->name) ;
-    
-    sanitize_scandir(res) ;
-    sanitize_livestate(res) ;
+    sanitize_scandir(res, &sta) ;
+
+    state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_TRUE) ;
+
+    sanitize_livestate(res, &sta) ;
+
+    if (!symlink_switch(res, SYMLINK_SOURCE))
+        log_dieusys(LOG_EXIT_SYS, "switch service symlink to source for: ", res->sa.s + res->name) ;
 
     log_info("Unsupervised successfully: ", res->sa.s + res->name) ;
 }
 
-static void unsupervise_logger(unsigned int idx, resolve_service_t *ares, unsigned int areslen)
-{
-    log_flow() ;
-
-    if (ares[idx].logger.want && ares[idx].type == TYPE_CLASSIC) {
-
-        char *name = ares[idx].sa.s + ares[idx].logger.name ;
-        int aresid = service_resolve_array_search(ares, areslen, name) ;
-        if (aresid < 0)
-            log_dieu(LOG_EXIT_SYS,"find ares id of: ", name, " -- please make a bug reports") ;
-
-        sanitize_it(&ares[aresid]) ;
-    }
-}
-
-/** this function considers that the service is already down */
-void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve_service_t *ares, unsigned int areslen)
+/** this function considers that the service is already down except for the logger */
+void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve_service_t *ares, unsigned int areslen, ssexec_t *info)
 {
     log_flow() ;
 
@@ -83,8 +71,6 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve
 
         sanitize_it(&ares[aresid]) ;
 
-        unsupervise_logger(aresid, ares, areslen) ;
-
         if ((ares[aresid].type == TYPE_BUNDLE || ares[aresid].type == TYPE_MODULE) && ares[aresid].dependencies.ncontents) {
 
             sa.len = 0, bpos = 0 ;
@@ -102,7 +88,6 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve
             }
         }
     }
-
     stralloc_free(&sa) ;
 }
 

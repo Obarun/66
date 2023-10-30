@@ -55,7 +55,7 @@ extern int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, 
 extern int svc_scandir_ok (char const *dir) ;
 extern int svc_scandir_send(char const *scandir,char const *signal) ;
 extern int svc_send_wait(char const *const *list, unsigned int nservice, char **sig, unsigned int siglen, ssexec_t *info) ;
-extern void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve_service_t *ares, unsigned int areslen) ;
+extern void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve_service_t *ares, unsigned int areslen, ssexec_t *info) ;
 extern void svc_send_fdholder(char const *socket, char const *signal) ;
 
 #endif
