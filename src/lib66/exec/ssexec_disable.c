@@ -104,13 +104,13 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
 
     for (; n < argc ; n++) {
 
-        name_isvalid(argv[n]) ;
-
         int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
         if (aresid < 0)
             log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parse it?") ;
 
         service_enable_disable(&graph, aresid, ares, areslen, 0, visit, propagate) ;
+
+        tree_service_remove(info->base.s, ares[aresid].sa.s + ares[aresid].treename, ares[aresid].sa.s + ares[aresid].name) ;
 
         if (!sastr_add_string(&sa, argv[n]))
             log_dieu(LOG_EXIT_SYS, "add string") ;
