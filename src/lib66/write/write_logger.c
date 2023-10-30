@@ -51,6 +51,11 @@ void write_logger(resolve_service_t *res, char const *destination, uint8_t force
 
     char *logrunner = res->execute.run.runas ? res->sa.s + res->execute.run.runas : SS_LOGGER_RUNNER ;
 
+    if (!youruid(&log_uid, logrunner) || !yourgid(&log_gid, log_uid)) {
+        parse_cleanup(res, destination, force) ;
+        log_dieusys(LOG_EXIT_SYS, "get uid and gid of: ", logrunner) ;
+    }
+
     if (res->execute.timeout.kill) {
         if (!write_uint(destination, "timeout-kill", res->execute.timeout.kill)) {
             parse_cleanup(res, destination, force) ;
@@ -71,30 +76,11 @@ void write_logger(resolve_service_t *res, char const *destination, uint8_t force
         log_dieusys(LOG_EXIT_SYS, "write uint file ", SS_NOTIFICATION) ;
     }
 
-    /** log destination */
-    log_trace("create directory: ", res->sa.s + res->logger.destination) ;
-    if (!dir_create_parent(res->sa.s + res->logger.destination, 0755)) {
-        parse_cleanup(res, destination, force) ;
-        log_dieusys(LOG_EXIT_SYS, "create directory: ", res->sa.s + res->logger.destination) ;
-    }
-    /**
-     * ISSUE: In case of e.g. earlier service the log
-     * may point to a tmpfs directory. At next reboot
-     * the log directory will not be present. We just
-     * react as oneshot service making it at .run file
-     * with execl-toc.
+    /** log destination
+     *
+     * The creation of the log destination directory is made at sanitize_init
+     * to avoid none existing directory if the destination is on tmpfs directory
      */
-    if (!owner && ((res->execute.run.build == BUILD_AUTO) || (!res->execute.run.build))) {
-
-        if (!youruid(&log_uid, logrunner) || !yourgid(&log_gid, log_uid)) {
-            parse_cleanup(res, destination, force) ;
-            log_dieusys(LOG_EXIT_SYS, "get uid and gid of: ", logrunner) ;
-        }
-        if (chown(res->sa.s + res->logger.destination, log_uid, log_gid) == -1) {
-            parse_cleanup(res, destination, force) ;
-            log_dieusys(LOG_EXIT_SYS, "chown: ", res->sa.s + res->logger.destination) ;
-        }
-    }
 
     char write[strlen(destination) + 10] ;
 
@@ -124,5 +110,13 @@ void write_logger(resolve_service_t *res, char const *destination, uint8_t force
     if (chmod(write, 0755) < 0) {
         parse_cleanup(res, destination, force) ;
         log_dieusys(LOG_EXIT_SYS, "chmod", write) ;
+    }
+
+    if (!owner) {
+
+        if (chown(write, log_uid, log_gid) == -1) {
+            parse_cleanup(res, destination, force) ;
+            log_dieusys(LOG_EXIT_SYS, "chown: ", write) ;
+        }
     }
 }

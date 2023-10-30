@@ -15,6 +15,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <sys/stat.h> // umask
 
 #include <oblibs/log.h>
@@ -34,46 +35,26 @@
 
 static void scandir_scandir_to_livestate(resolve_service_t *res)
 {
+    log_flow() ;
+
     char *name = res->sa.s + res->name ;
     size_t namelen = strlen(name) ;
     size_t livelen = strlen(res->sa.s + res->live.livedir) ;
     size_t ownerlen = strlen(res->sa.s + res->ownerstr) ;
 
     char sym[livelen + SS_SCANDIR_LEN + 1 + ownerlen + 1 + namelen + 1] ;
-    char dst[livelen + SS_STATE_LEN + 1 + ownerlen + 1 + namelen + 1] ;
 
     auto_strings(sym, res->sa.s + res->live.livedir, SS_SCANDIR, "/", res->sa.s + res->ownerstr, "/", name) ;
 
-    auto_strings(dst, res->sa.s + res->live.livedir, SS_STATE + 1, "/", res->sa.s + res->ownerstr, "/", name) ;
-
-    log_trace("symlink: ", sym, " to: ", dst) ;
-    if (!atomic_symlink(dst, sym, "scandir"))
-       log_dieu(LOG_EXIT_SYS, "symlink: ", sym, " to: ", dst) ;
+    log_trace("symlink: ", sym, " to: ", res->sa.s + res->live.servicedir) ;
+    if (!atomic_symlink(res->sa.s + res->live.servicedir, sym, "scandir"))
+       log_dieu(LOG_EXIT_SYS, "symlink: ", sym, " to: ", res->sa.s + res->live.servicedir) ;
 }
 
-static void scandir_service_to_scandir(resolve_service_t *res)
+int scandir_supervision_dir(resolve_service_t *res)
 {
-    char *name = res->sa.s + res->name ;
-    size_t namelen = strlen(name) ;
-    size_t homelen = strlen(res->sa.s + res->path.home) ;
-    size_t livelen = strlen(res->sa.s + res->live.livedir) ;
-    size_t ownerlen = strlen(res->sa.s + res->ownerstr) ;
+    log_flow() ;
 
-    char sym[homelen + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + namelen + 1 + SS_SCANDIR_LEN + 1] ;
-    char dst[livelen + SS_SCANDIR_LEN + 1 + ownerlen + 1] ;
-
-    auto_strings(sym, res->sa.s + res->path.home, SS_SYSTEM, SS_SERVICE
-    , SS_SVC, "/", name, "/", SS_SCANDIR) ;
-
-    auto_strings(dst, res->sa.s + res->live.livedir, SS_SCANDIR, "/", res->sa.s + res->ownerstr) ;
-
-    log_trace("symlink: ", sym, " to: ", dst) ;
-    if (!atomic_symlink(dst, sym, "scandir"))
-       log_dieu(LOG_EXIT_SYS, "symlink: ", sym, " to: ", dst) ;
-}
-
-static void compute_supervision_dir(resolve_service_t *res)
-{
     mode_t hmod = umask(0) ;
     char *event = res->sa.s + res->live.eventdir ;
     char *supervise = res->sa.s + res->live.supervisedir ;
@@ -82,102 +63,73 @@ static void compute_supervision_dir(resolve_service_t *res)
     log_trace("create directory: ", event) ;
     int r = dir_create_parent(event, 0700) ;
     if (!r)
-        log_dieusys(LOG_EXIT_SYS, "create directory: ", event) ;
-    /**
-     *
-     * ISSUE: All the following means writting on a possible
-     * ro mountpoint, so crash occurs.
-     *
-     * */
+        log_warnusys_return(LOG_EXIT_ZERO, "create directory: ", event) ;
 
     if (chown(event, -1, getegid()) < 0)
-        log_dieusys(LOG_EXIT_SYS, "chown: ", event) ;
+        log_warnusys_return(LOG_EXIT_ZERO, "chown: ", event) ;
 
     if (chmod(event, 03730) < 0)
-        log_dieusys(LOG_EXIT_SYS, "chmod: ", event) ;
+        log_warnusys_return(LOG_EXIT_ZERO, "chmod: ", event) ;
 
-    /* supervise dir*/
+    /* supervise dir */
     log_trace("create directory: ", supervise) ;
     r = dir_create_parent(supervise, 0700) ;
     if (!r)
-        log_dieusys(LOG_EXIT_SYS, "create directory: ", event) ;
+        log_warnusys_return(LOG_EXIT_ZERO, "create directory: ", event) ;
 
     umask(hmod) ;
+
+    return 1 ;
 }
 
-void sanitize_scandir(resolve_service_t *res)
+int sanitize_scandir(resolve_service_t *res, ss_state_t *sta)
 {
     log_flow() ;
 
     int r ;
-    char *name = res->sa.s + res->name ;
-    uint8_t earlier = 0 ;
-    size_t namelen = strlen(name) ;
     size_t livelen = strlen(res->sa.s + res->live.livedir) ;
     size_t scandirlen = livelen + SS_SCANDIR_LEN + 1 + strlen(res->sa.s + res->ownerstr)  ;
-    ss_state_t sta = STATE_ZERO ;
     char svcandir[scandirlen + 1] ;
 
     auto_strings(svcandir, res->sa.s + res->live.livedir, SS_SCANDIR, "/", res->sa.s + res->ownerstr) ;
 
-    if (!state_read(&sta, res))
-        log_dieu(LOG_EXIT_SYS, "read state file of: ", name) ;
-
     r = access(res->sa.s + res->live.scandir, F_OK) ;
-    if (r == -1 && (sta.toinit == STATE_FLAGS_TRUE || sta.isearlier == STATE_FLAGS_TRUE)) {
+    if (r == -1 && (sta->toinit == STATE_FLAGS_TRUE || res->earlier)) {
 
         if (res->type == TYPE_CLASSIC)
             scandir_scandir_to_livestate(res) ;
 
-        scandir_service_to_scandir(res) ;
-
-        compute_supervision_dir(res) ;
-
-        earlier = service_is(&sta, STATE_FLAGS_ISEARLIER) == STATE_FLAGS_TRUE ? 1 : 0 ;
-        if (!earlier) {
+        if (res->earlier) {
 
             if (svc_scandir_send(svcandir, "h") <= 0)
-                log_dieu(LOG_EXIT_SYS, "reload scandir: ", svcandir) ;
+                log_warnu_return(LOG_EXIT_ZERO, "reload scandir: ", svcandir) ;
         }
 
-        state_set_flag(&sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE) ;
-        state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE) ;
-        state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_FALSE) ;
-
-        if (!state_write(&sta, res))
-            log_dieu(LOG_EXIT_SYS, "write state file of: ", name) ;
+        state_set_flag(sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE) ;
+        state_set_flag(sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE) ;
 
     } else {
 
-        if (service_is(&sta, STATE_FLAGS_TOUNSUPERVISE) == STATE_FLAGS_TRUE) {
+        if (sta->tounsupervise == STATE_FLAGS_TRUE) {
 
-            char s[livelen + SS_SCANDIR_LEN + 1 + strlen(res->sa.s + res->ownerstr) + 1 + namelen + 1] ;
-            auto_strings(s, res->sa.s + res->live.livedir, SS_SCANDIR, "/", res->sa.s + res->ownerstr, "/", name) ;
+            log_trace("remove symlink: ", res->sa.s + res->live.scandir) ;
+            unlink_void(res->sa.s + res->live.scandir) ;
 
-            log_trace("remove symlink: ", s) ;
-            unlink_void(s) ;
-
-            state_set_flag(&sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_FALSE) ;
-            state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE) ;
-            state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_TRUE) ;
-
-            if (!state_write(&sta, res))
-                log_dieu(LOG_EXIT_SYS, "write state file of: ", name) ;
+            state_set_flag(sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_FALSE) ;
+            state_set_flag(sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE) ;
 
             if (svc_scandir_send(svcandir, "an") <= 0)
-                log_dieu(LOG_EXIT_SYS, "reload scandir: ", svcandir) ;
+                log_warnu_return(LOG_EXIT_ZERO, "reload scandir: ", svcandir) ;
 
-        } else if (service_is(&sta, STATE_FLAGS_TORELOAD) == STATE_FLAGS_TRUE) {
+        } else if (sta->toreload == STATE_FLAGS_TRUE) {
 
             if (svc_scandir_send(svcandir, "a") <= 0)
-                log_dieu(LOG_EXIT_SYS, "reload scandir: ", svcandir) ;
+                log_warnu_return(LOG_EXIT_ZERO, "reload scandir: ", svcandir) ;
 
-            state_set_flag(&sta, STATE_FLAGS_TORELOAD, STATE_FLAGS_FALSE) ;
-            state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE) ;
-            state_set_flag(&sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE) ;
-
-            if (!state_write(&sta, res))
-                log_dieu(LOG_EXIT_SYS, "write state file of: ", name) ;
+            state_set_flag(sta, STATE_FLAGS_TORELOAD, STATE_FLAGS_FALSE) ;
+            state_set_flag(sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE) ;
+            state_set_flag(sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE) ;
         }
     }
+    return 1 ;
 }

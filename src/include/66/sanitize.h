@@ -19,13 +19,14 @@
 
 #include <66/service.h>
 #include <66/ssexec.h>
+#include <66/state.h>
 
 extern int sanitize_system(ssexec_t *info) ;
 
 extern void sanitize_source(char const *name, ssexec_t *info) ;
-extern void sanitize_fdholder(resolve_service_t *res, uint32_t flag) ;
-extern void sanitize_livestate(resolve_service_t *res) ;
-extern void sanitize_scandir(resolve_service_t *res) ;
+extern int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag) ;
+extern int sanitize_livestate(resolve_service_t *res, ss_state_t *sta) ;
+extern int sanitize_scandir(resolve_service_t *res, ss_state_t *sta) ;
 extern void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_service_t *ares, unsigned int areslen) ;
 extern void sanitize_graph(ssexec_t *info) ;
 /** @Return 0 the service is already written

@@ -33,14 +33,16 @@
 
 #include <s6/fdholder.h>
 
-void fdholder_store(s6_fdholder_t *a, char const *name, tain *deadline, tain *limit)
+static int fdholder_store(s6_fdholder_t *a, char const *name, tain *deadline, tain *limit)
 {
+    log_flow() ;
+
     size_t namelen = strlen(name) ;
     char fdname[SS_FDHOLDER_PIPENAME_LEN + 2 + namelen + 1] ;
 
     int fd[2] ;
     if (pipe(fd) < 0)
-        log_dieu(LOG_EXIT_SYS, "pipe") ;
+        log_warnu_return(LOG_EXIT_ZERO, "pipe") ;
 
     auto_strings(fdname, SS_FDHOLDER_PIPENAME, "r-", name) ;
 
@@ -48,7 +50,7 @@ void fdholder_store(s6_fdholder_t *a, char const *name, tain *deadline, tain *li
     if (!s6_fdholder_store_g(a, fd[0], fdname, limit, deadline)) {
         close(fd[0]) ;
         close(fd[1]) ;
-        log_dieusys(LOG_EXIT_SYS, "store fd: ", fdname) ;
+        log_warnusys_return(LOG_EXIT_ZERO, "store fd: ", fdname) ;
     }
 
     close(fd[0]) ;
@@ -58,14 +60,18 @@ void fdholder_store(s6_fdholder_t *a, char const *name, tain *deadline, tain *li
     log_trace("store identifier: ", fdname) ;
     if (!s6_fdholder_store_g(a, fd[1], fdname, limit, deadline)) {
         close(fd[1]) ;
-        log_dieusys(LOG_EXIT_SYS, "store fd: ", fdname) ;
+        log_warnusys_return(LOG_EXIT_ZERO, "store fd: ", fdname) ;
     }
 
     close(fd[1]) ;
+
+    return 1 ;
 }
 
-void fdholder_delete(s6_fdholder_t *a, char const *name, tain *deadline)
+static int fdholder_delete(s6_fdholder_t *a, char const *name, tain *deadline)
 {
+    log_flow() ;
+
     size_t namelen = strlen(name) ;
     char fdname[SS_FDHOLDER_PIPENAME_LEN + 2 + namelen + 1] ;
 
@@ -74,7 +80,7 @@ void fdholder_delete(s6_fdholder_t *a, char const *name, tain *deadline)
     if (s6_fdholder_retrieve_g(a, fdname, deadline) >= 0) {
         log_trace("delete identifier: ", fdname) ;
         if (!s6_fdholder_delete_g(a, fdname, deadline))
-            log_dieusys(LOG_EXIT_SYS, "delete fd: ", fdname) ;
+            log_warnusys_return(LOG_EXIT_ZERO, "delete fd: ", fdname) ;
     }
 
     fdname[strlen(SS_FDHOLDER_PIPENAME)] = 'w' ;
@@ -83,8 +89,9 @@ void fdholder_delete(s6_fdholder_t *a, char const *name, tain *deadline)
 
         log_trace("delete identifier: ", fdname) ;
         if (!s6_fdholder_delete_g(a, fdname, deadline))
-            log_dieusys(LOG_EXIT_SYS, "delete fd: ", fdname) ;
+            log_warnusys_return(LOG_EXIT_ZERO, "delete fd: ", fdname) ;
     }
+    return 1 ;
 }
 /**
  * Accepted flag are
@@ -93,7 +100,7 @@ void fdholder_delete(s6_fdholder_t *a, char const *name, tain *deadline)
  *
  * */
 
-void sanitize_fdholder(resolve_service_t *res, uint32_t flag)
+int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag)
 {
     log_flow() ;
 
@@ -104,22 +111,18 @@ void sanitize_fdholder(resolve_service_t *res, uint32_t flag)
         char *name = sa + res->logger.name ;
         char *socket = sa + res->live.fdholderdir ;
         size_t socketlen = strlen(socket) ;
-        ss_state_t sta = STATE_ZERO ;
         s6_fdholder_t a = S6_FDHOLDER_ZERO ;
         tain deadline = tain_infinite_relative, limit = tain_infinite_relative ;
         char sock[socketlen + 3] ;
 
         auto_strings(sock, socket, "/s") ;
 
-        if (!state_read(&sta, res))
-            log_dieu(LOG_EXIT_SYS, "read state file of: ", name) ;
-
         tain_now_set_stopwatch_g() ;
         tain_add_g(&deadline, &deadline) ;
         tain_add_g(&limit, &limit) ;
 
         if (!s6_fdholder_start_g(&a, sock, &deadline))
-            log_dieusys(LOG_EXIT_SYS, "connect to socket: ", sock) ;
+            log_warnusys_return(LOG_EXIT_ZERO, "connect to socket: ", sock) ;
 
         if (FLAGS_ISSET(flag, STATE_FLAGS_TRUE)) {
 
@@ -128,21 +131,24 @@ void sanitize_fdholder(resolve_service_t *res, uint32_t flag)
                 sta->torestart == STATE_FLAGS_TRUE) {
 
                 log_trace("delete fdholder entry: ", name) ;
-                fdholder_delete(&a, name, &deadline) ;
+                if (!fdholder_delete(&a, name, &deadline))
+                    return 0 ;
             }
 
             log_trace("store fdholder entry: ", name) ;
-            fdholder_store(&a, name, &deadline, &limit) ;
+            if (!fdholder_store(&a, name, &deadline, &limit))
+                return 0 ;
 
         } else if (FLAGS_ISSET(flag, STATE_FLAGS_FALSE)) {
 
             log_trace("delete fdholder entry: ", name) ;
-            fdholder_delete(&a, name, &deadline) ;
+            if (!fdholder_delete(&a, name, &deadline))
+                return 0 ;
 
         }
 
         if (s6_fdholder_list_g(&a, &list, &deadline) < 0)
-            log_dieusys(LOG_EXIT_SYS, "list identifier") ;
+            log_warnusys_return(LOG_EXIT_ZERO, "list identifier") ;
 
         s6_fdholder_end(&a) ;
 
@@ -168,10 +174,12 @@ void sanitize_fdholder(resolve_service_t *res, uint32_t flag)
         auto_strings(file, socket, "/data/autofilled") ;
 
         if (!openwritenclose_unsafe(file, list.s, list.len))
-            log_dieusys(LOG_EXIT_SYS, "write file: ", file) ;
+            log_warnusys_return(LOG_EXIT_ZERO, "write file: ", file) ;
 
         svc_send_fdholder(socket, "twR") ;
 
         stralloc_free(&list) ;
     }
+
+    return 1 ;
 }
