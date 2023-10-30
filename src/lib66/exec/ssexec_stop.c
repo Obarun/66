@@ -18,6 +18,7 @@
 #include <oblibs/types.h>
 #include <oblibs/graph.h>
 #include <oblibs/sastr.h>
+#include <oblibs/string.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/djbunix.h>
@@ -30,6 +31,7 @@
 #include <66/svc.h>
 #include <66/service.h>
 #include <66/enum.h>
+#include <66/constants.h>
 
 int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
 {
@@ -40,7 +42,7 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
     uint8_t siglen = 3 ;
     int e = 0 ;
 
-    unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0, n = 0 ;
+    unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0, pos = 0, idx = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE + 1] ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_ISSUPERVISED|STATE_FLAGS_WANTDOWN) ;
@@ -102,9 +104,9 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
 
     graph_array_init_single(visit, SS_MAX_SERVICE) ;
 
-    for (; n < argc ; n++) {
+    for (; pos < argc ; pos++) {
 
-        int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
+        int aresid = service_resolve_array_search(ares, areslen, argv[pos]) ;
 
         /** The service may not be supervised, so it will be ignored by the
          * function graph_build_service. In this case, the service does not
@@ -112,10 +114,28 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
          *
          * This the stop process, just ignore it as it already down anyway */
         if (aresid < 0) {
-            log_warn("service: ", argv[n], " is already stopped or unsupervised -- ignoring it") ;
+            log_warn("service: ", argv[pos], " is already stopped or unsupervised -- ignoring it") ;
             continue ;
         }
-        graph_compute_visit(argv[n], visit, list, &graph, &nservice, 1) ;
+
+        /** the logger need to be stopped in case of unsupervise request */
+        if (FLAGS_ISSET(flag, STATE_FLAGS_TOUNSUPERVISE)) {
+
+            if (get_rstrlen_until(argv[pos], SS_LOG_SUFFIX) < 0) {
+
+                if (ares[aresid].logger.want) {
+
+                    idx = graph_hash_vertex_get_id(&graph, ares[aresid].sa.s + ares[aresid].logger.name) ;
+
+                    if (!visit[idx]) {
+                        list[nservice++] = idx ;
+                        visit[idx] = 1 ;
+                    }
+                }
+            }
+
+        }
+        graph_compute_visit(argv[pos], visit, list, &graph, &nservice, 1) ;
     }
 
     char *sig[siglen] ;
@@ -133,10 +153,16 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
         sig[2] = 0 ;
     }
 
-    e = svc_send_wait(argv, argc, sig, siglen, info) ;
+    char const *nargv[nservice + 1] ;
+    for (pos = 0 ; pos < nservice ; pos++)
+        nargv[pos] = graph.data.s + genalloc_s(graph_hash_t, &graph.hash)[list[pos]].vertex ;
+
+    nargv[pos] = 0 ;
+
+    e = svc_send_wait(nargv, nservice + 1, sig, siglen, info) ;
 
     if (FLAGS_ISSET(flag, STATE_FLAGS_TOUNSUPERVISE))
-        svc_unsupervise(list, nservice, &graph, ares, areslen) ;
+        svc_unsupervise(list, nservice, &graph, ares, areslen, info) ;
 
     service_resolve_array_free(ares, areslen) ;
 
