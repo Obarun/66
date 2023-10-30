@@ -28,6 +28,4 @@ extern int write_execute_scripts(char const *file, char const *contents, char co
 extern int write_uint(char const *dst, char const *name, uint32_t ui) ;
 extern int write_environ(char const *name, char const *contents, char const *dst) ;
 
-extern void write_make_symlink(resolve_service_t *res) ;
-
 #endif

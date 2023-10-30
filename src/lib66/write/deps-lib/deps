@@ -3,7 +3,6 @@ write_common.o
 write_environ.o
 write_execute_scripts.o
 write_logger.o
-write_make_symlink.o
 write_oneshot.o
 write_service.o
 write_uint.o

@@ -33,8 +33,6 @@
 /** @Return 0 on fail
  * @Return 1 on success
  * @Return 2 if the service is ignored
- *
- * @workdir -> /var/lib/66/system/<tree>/servicedirs/
  * */
 void write_services(resolve_service_t *res, char const *workdir, uint8_t force)
 {
