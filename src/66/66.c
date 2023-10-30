@@ -295,14 +295,14 @@ int main(int argc, char const *const *argv)
         info.usage = usage_restart ;
         func = &ssexec_restart ;
 
-    } else if (!strcmp(argv[0], "unsupervise")) {
+    } else if (!strcmp(argv[0], "free")) {
 
         PROG = "stop" ;
         nargv[n++] = PROG ;
         nargv[n++] = "-u" ;
         info.prog = PROG ;
-        info.help = help_unsupervise ;
-        info.usage = usage_unsupervise ;
+        info.help = help_free ;
+        info.usage = usage_free ;
         func = &ssexec_stop ;
 
     } else if (!strcmp(argv[0], "signal")) {
