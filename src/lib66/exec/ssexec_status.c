@@ -253,9 +253,9 @@ static void info_display_status(char const *field,resolve_service_t *res)
     if (!state_read(&ste, res))
         log_dieusys(LOG_EXIT_SYS, "read state file of: ", res->sa.s + res->name) ;
 
-    disen = service_is(&ste, STATE_FLAGS_ISENABLED) ;
+    disen = res->enabled ;
 
-    if (!bprintf(buffer_1,"%s%s%s%s", disen == STATE_FLAGS_TRUE ? log_color->valid : log_color->warning, disen == STATE_FLAGS_TRUE ? "enabled" : "disabled", log_color->off, ", "))
+    if (!bprintf(buffer_1,"%s%s%s%s", disen ? log_color->valid : log_color->warning, disen ? "enabled" : "disabled", log_color->off, ", "))
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
     if (buffer_putsflush(buffer_1,"") == -1)

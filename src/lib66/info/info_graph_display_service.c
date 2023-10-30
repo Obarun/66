@@ -99,11 +99,11 @@ int info_graph_display_service(char const *name)
         "=", \
         ppid, \
 
-        service_is(&sta, STATE_FLAGS_ISENABLED) == STATE_FLAGS_TRUE ? log_color->valid : log_color->warning, \
+        res.enabled ? log_color->valid : log_color->warning, \
         "state", \
         log_color->off, \
         "=", \
-        service_is(&sta, STATE_FLAGS_ISENABLED) == STATE_FLAGS_TRUE ? "Enabled" : "Disabled", \
+        res.enabled ? "Enabled" : "Disabled", \
 
         log_color->blue, \
         "type",

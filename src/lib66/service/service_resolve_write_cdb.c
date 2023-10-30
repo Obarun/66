@@ -41,12 +41,12 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres)
     !resolve_add_cdb(c, "treename", str, sres->treename, 1) ||
     !resolve_add_cdb(c, "user", str, sres->user, 1) ||
     !resolve_add_cdb(c, "inmodule", str, sres->inmodule, 1) ||
+    !resolve_add_cdb_uint(c, "enabled", sres->enabled) ||
 
     // path
     !resolve_add_cdb(c, "home", str, sres->path.home, 1) ||
     !resolve_add_cdb(c, "frontend", str, sres->path.frontend, 1) ||
-    !resolve_add_cdb(c, "status", str, sres->path.status, 1) ||
-    !resolve_add_cdb(c, "servicedir", str, sres->path.servicedir, 1) ||
+    !resolve_add_cdb(c, "src_servicedir", str, sres->path.servicedir, 1) ||
 
     // dependencies
     !resolve_add_cdb(c, "depends", str, sres->dependencies.depends, 1) ||
@@ -78,6 +78,8 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres)
 
     //live
     !resolve_add_cdb(c, "livedir", str, sres->live.livedir, 1) ||
+    !resolve_add_cdb(c, "status", str, sres->live.status, 1) ||
+    !resolve_add_cdb(c, "live_servicedir", str, sres->live.servicedir, 1) ||
     !resolve_add_cdb(c, "scandir", str, sres->live.scandir, 1) ||
     !resolve_add_cdb(c, "statedir", str, sres->live.statedir, 1) ||
     !resolve_add_cdb(c, "eventdir", str, sres->live.eventdir, 1) ||

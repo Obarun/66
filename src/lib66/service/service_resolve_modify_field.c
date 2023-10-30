@@ -36,11 +36,11 @@ resolve_field_table_t resolve_service_field_table[] = {
     [E_RESOLVE_SERVICE_TREENAME] = { .field = "treename" },
     [E_RESOLVE_SERVICE_USER] = { .field = "user" },
     [E_RESOLVE_SERVICE_INMODULE] = { .field = "inmodule" },
+    [E_RESOLVE_SERVICE_ENABLED] = { .field = "enabled" },
 
     // path
     [E_RESOLVE_SERVICE_HOME] = { .field = "home" },
     [E_RESOLVE_SERVICE_FRONTEND] = { .field = "frontend" },
-    [E_RESOLVE_SERVICE_STATUS] = { .field = "status" },
     [E_RESOLVE_SERVICE_SERVICEDIR] = { .field = "servicedir" },
 
     // dependencies
@@ -73,6 +73,8 @@ resolve_field_table_t resolve_service_field_table[] = {
 
     // live
     [E_RESOLVE_SERVICE_LIVEDIR] = { .field = "livedir" },
+    [E_RESOLVE_SERVICE_STATUS] = { .field = "status" },
+    [E_RESOLVE_SERVICE_SERVICEDIR_LIVE] = { .field = "servicedir" },
     [E_RESOLVE_SERVICE_SCANDIR] = { .field = "scandirdir" },
     [E_RESOLVE_SERVICE_STATEDIR] = { .field = "statedir" },
     [E_RESOLVE_SERVICE_EVENTDIR] = { .field = "eventdir" },
@@ -190,6 +192,11 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
             res->inmodule = resolve_add_string(wres, data) ;
             break ;
 
+        case E_RESOLVE_SERVICE_ENABLED:
+            res->enabled = resolve_add_uint(data) ; ;
+            break ;
+
+
         // path
 
         case E_RESOLVE_SERVICE_HOME:
@@ -198,10 +205,6 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
 
         case E_RESOLVE_SERVICE_FRONTEND:
             res->path.frontend = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_STATUS:
-            res->path.status = resolve_add_string(wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_SERVICEDIR:
@@ -312,6 +315,14 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
 
         case E_RESOLVE_SERVICE_LIVEDIR:
             res->live.livedir = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_STATUS:
+            res->live.status = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_SERVICEDIR_LIVE:
+            res->live.servicedir = resolve_add_string(wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_SCANDIR:

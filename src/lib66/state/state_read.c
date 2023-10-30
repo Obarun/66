@@ -30,7 +30,7 @@ int state_read(ss_state_t *sta, resolve_service_t *res)
     int r ;
     char pack[STATE_STATE_SIZE] ;
 
-    r = openreadnclose(res->sa.s + res->path.status, pack, STATE_STATE_SIZE) ;
+    r = openreadnclose(res->sa.s + res->live.status, pack, STATE_STATE_SIZE) ;
     if (r < STATE_STATE_SIZE || r < 0)
         return 0 ;
 

@@ -62,15 +62,15 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
     res->user = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     resolve_find_cdb(&tmp,c,"inmodule") ;
     res->inmodule = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
+    x = resolve_find_cdb(&tmp,c,"enabled") ;
+    res->enabled = x ;
 
     /* path configuration */
     resolve_find_cdb(&tmp,c,"home") ;
     res->path.home = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     resolve_find_cdb(&tmp,c,"frontend") ;
     res->path.frontend = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-    resolve_find_cdb(&tmp,c,"status") ;
-    res->path.status = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-    resolve_find_cdb(&tmp,c,"servicedir") ;
+    resolve_find_cdb(&tmp,c,"src_servicedir") ;
     res->path.servicedir = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
 
     /* dependencies */
@@ -128,6 +128,10 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
     /* live */
     resolve_find_cdb(&tmp,c,"livedir") ;
     res->live.livedir = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
+    resolve_find_cdb(&tmp,c,"status") ;
+    res->live.status = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
+    resolve_find_cdb(&tmp,c,"live_servicedir") ;
+    res->live.servicedir = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     resolve_find_cdb(&tmp,c,"scandir") ;
     res->live.scandir = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     resolve_find_cdb(&tmp,c,"statedir") ;

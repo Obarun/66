@@ -96,6 +96,11 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
             str = res->sa.s + res->inmodule ;
             break ;
 
+        case E_RESOLVE_SERVICE_ENABLED:
+            fmt[uint32_fmt(fmt,res->enabled)] = 0 ;
+            str = fmt ;
+            break ;
+
         // path configuration
 
         case E_RESOLVE_SERVICE_HOME:
@@ -106,11 +111,9 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
             str = res->sa.s + res->path.frontend ;
             break ;
 
-        case E_RESOLVE_SERVICE_STATUS:
-            str = res->sa.s + res->path.status ;
-
         case E_RESOLVE_SERVICE_SERVICEDIR:
             str = res->sa.s + res->path.servicedir ;
+            break ;
 
         // dependencies
 
@@ -226,6 +229,14 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
 
         case E_RESOLVE_SERVICE_LIVEDIR:
             str = res->sa.s + res->live.livedir ;
+            break ;
+
+        case E_RESOLVE_SERVICE_STATUS:
+            str = res->sa.s + res->live.status ;
+            break ;
+
+        case E_RESOLVE_SERVICE_SERVICEDIR_LIVE:
+            str = res->sa.s + res->live.servicedir ;
             break ;
 
         case E_RESOLVE_SERVICE_SCANDIR:

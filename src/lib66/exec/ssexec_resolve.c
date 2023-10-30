@@ -14,6 +14,7 @@
 
 #include <string.h>
 #include <wchar.h>
+#include <stdint.h>
 
 #include <oblibs/log.h>
 #include <oblibs/sastr.h>
@@ -35,7 +36,7 @@
 #include <66/config.h>
 #include <66/state.h>
 
-#define MAXOPTS 72
+#define MAXOPTS 73
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -77,85 +78,87 @@ static void info_display_int(char const *field, uint32_t element)
 
 static void info_display_service_field(resolve_service_t *res)
 {
-    info_display_string(fields[0], res->sa.s, res->name, 0) ;
-    info_display_string(fields[1], res->sa.s, res->description, 1) ;
-    info_display_string(fields[2], res->sa.s, res->version, 1) ;
-    info_display_int(fields[3], res->type) ;
-    info_display_int(fields[4], res->notify) ;
-    info_display_int(fields[5], res->maxdeath) ;
-    info_display_int(fields[6], res->earlier) ;
-    info_display_string(fields[7], res->sa.s, res->hiercopy, 1) ;
-    info_display_string(fields[8], res->sa.s, res->intree, 1) ;
-    info_display_string(fields[9], res->sa.s, res->ownerstr, 1) ;
-    info_display_int(fields[10], res->owner) ;
-    info_display_string(fields[11], res->sa.s, res->treename, 1) ;
-    info_display_string(fields[12], res->sa.s, res->user, 1) ;
-    info_display_string(fields[13], res->sa.s, res->inmodule, 1) ;
+    uint8_t m = 0 ;
+    info_display_string(fields[m++], res->sa.s, res->name, 0) ;
+    info_display_string(fields[m++], res->sa.s, res->description, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->version, 1) ;
+    info_display_int(fields[m++], res->type) ;
+    info_display_int(fields[m++], res->notify) ;
+    info_display_int(fields[m++], res->maxdeath) ;
+    info_display_int(fields[m++], res->earlier) ;
+    info_display_string(fields[m++], res->sa.s, res->hiercopy, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->intree, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->ownerstr, 1) ;
+    info_display_int(fields[m++], res->owner) ;
+    info_display_string(fields[m++], res->sa.s, res->treename, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->user, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->inmodule, 1) ;
 
-    info_display_string(fields[14], res->sa.s, res->path.home, 1) ;
-    info_display_string(fields[15], res->sa.s, res->path.frontend, 1) ;
-    info_display_string(fields[16], res->sa.s, res->path.status, 1) ;
-    info_display_string(fields[17], res->sa.s, res->path.servicedir, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->path.home, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->path.frontend, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->path.servicedir, 1) ;
 
-    info_display_string(fields[18], res->sa.s, res->dependencies.depends, 1) ;
-    info_display_string(fields[19], res->sa.s, res->dependencies.requiredby, 1) ;
-    info_display_string(fields[20], res->sa.s, res->dependencies.optsdeps, 1) ;
-    info_display_string(fields[21], res->sa.s, res->dependencies.contents, 1) ;
-    info_display_int(fields[22], res->dependencies.ndepends) ;
-    info_display_int(fields[23], res->dependencies.nrequiredby) ;
-    info_display_int(fields[24], res->dependencies.noptsdeps) ;
-    info_display_int(fields[25], res->dependencies.ncontents) ;
+    info_display_string(fields[m++], res->sa.s, res->dependencies.depends, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->dependencies.requiredby, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->dependencies.optsdeps, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->dependencies.contents, 1) ;
+    info_display_int(fields[m++], res->dependencies.ndepends) ;
+    info_display_int(fields[m++], res->dependencies.nrequiredby) ;
+    info_display_int(fields[m++], res->dependencies.noptsdeps) ;
+    info_display_int(fields[m++], res->dependencies.ncontents) ;
 
-    info_display_string(fields[26], res->sa.s, res->execute.run.run, 1) ;
-    info_display_string(fields[27], res->sa.s, res->execute.run.run_user, 1) ;
-    info_display_string(fields[28], res->sa.s, res->execute.run.build, 1) ;
-    info_display_string(fields[29], res->sa.s, res->execute.run.shebang, 1) ;
-    info_display_string(fields[30], res->sa.s, res->execute.run.runas, 1) ;
-    info_display_string(fields[31], res->sa.s, res->execute.finish.run, 1) ;
-    info_display_string(fields[32], res->sa.s, res->execute.finish.run_user, 1) ;
-    info_display_string(fields[33], res->sa.s, res->execute.finish.build, 1) ;
-    info_display_string(fields[34], res->sa.s, res->execute.finish.shebang, 1) ;
-    info_display_string(fields[35], res->sa.s, res->execute.finish.runas, 1) ;
-    info_display_int(fields[36], res->execute.timeout.kill) ;
-    info_display_int(fields[37], res->execute.timeout.finish) ;
-    info_display_int(fields[38], res->execute.timeout.up) ;
-    info_display_int(fields[39], res->execute.timeout.down) ;
-    info_display_int(fields[40], res->execute.down) ;
-    info_display_int(fields[41], res->execute.downsignal) ;
+    info_display_string(fields[m++], res->sa.s, res->execute.run.run, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->execute.run.run_user, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->execute.run.build, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->execute.run.shebang, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->execute.run.runas, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->execute.finish.run, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->execute.finish.run_user, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->execute.finish.build, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->execute.finish.shebang, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->execute.finish.runas, 1) ;
+    info_display_int(fields[m++], res->execute.timeout.kill) ;
+    info_display_int(fields[m++], res->execute.timeout.finish) ;
+    info_display_int(fields[m++], res->execute.timeout.up) ;
+    info_display_int(fields[m++], res->execute.timeout.down) ;
+    info_display_int(fields[m++], res->execute.down) ;
+    info_display_int(fields[m++], res->execute.downsignal) ;
 
-    info_display_string(fields[42], res->sa.s, res->live.livedir, 1) ;
-    info_display_string(fields[43], res->sa.s, res->live.scandir, 1) ;
-    info_display_string(fields[44], res->sa.s, res->live.statedir, 1) ;
-    info_display_string(fields[45], res->sa.s, res->live.eventdir, 1) ;
-    info_display_string(fields[46], res->sa.s, res->live.notifdir, 1) ;
-    info_display_string(fields[47], res->sa.s, res->live.supervisedir, 1) ;
-    info_display_string(fields[48], res->sa.s, res->live.fdholderdir, 1) ;
-    info_display_string(fields[49], res->sa.s, res->live.oneshotddir, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->live.livedir, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->live.status, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->live.servicedir, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->live.scandir, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->live.statedir, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->live.eventdir, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->live.notifdir, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->live.supervisedir, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->live.fdholderdir, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->live.oneshotddir, 1) ;
 
-    info_display_string(fields[50], res->sa.s, res->logger.name, 1) ;
-    info_display_string(fields[51], res->sa.s, res->logger.destination, 1) ;
-    info_display_int(fields[52], res->logger.backup) ;
-    info_display_int(fields[53], res->logger.maxsize) ;
-    info_display_int(fields[54], res->logger.timestamp) ;
-    info_display_string(fields[55], res->sa.s, res->logger.execute.run.run, 1) ;
-    info_display_string(fields[56], res->sa.s, res->logger.execute.run.run_user, 1) ;
-    info_display_string(fields[57], res->sa.s, res->logger.execute.run.build, 1) ;
-    info_display_string(fields[58], res->sa.s, res->logger.execute.run.shebang, 1) ;
-    info_display_string(fields[59], res->sa.s, res->logger.execute.run.runas, 1) ;
-    info_display_int(fields[60], res->logger.execute.timeout.kill) ;
-    info_display_int(fields[61], res->logger.execute.timeout.finish) ;
+    info_display_string(fields[m++], res->sa.s, res->logger.name, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->logger.destination, 1) ;
+    info_display_int(fields[m++], res->logger.backup) ;
+    info_display_int(fields[m++], res->logger.maxsize) ;
+    info_display_int(fields[m++], res->logger.timestamp) ;
+    info_display_string(fields[m++], res->sa.s, res->logger.execute.run.run, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->logger.execute.run.run_user, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->logger.execute.run.build, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->logger.execute.run.shebang, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->logger.execute.run.runas, 1) ;
+    info_display_int(fields[m++], res->logger.execute.timeout.kill) ;
+    info_display_int(fields[m++], res->logger.execute.timeout.finish) ;
 
-    info_display_string(fields[62], res->sa.s, res->environ.env, 1) ;
-    info_display_string(fields[63], res->sa.s, res->environ.envdir, 1) ;
-    info_display_int(fields[64], res->environ.env_overwrite) ;
+    info_display_string(fields[m++], res->sa.s, res->environ.env, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->environ.envdir, 1) ;
+    info_display_int(fields[m++], res->environ.env_overwrite) ;
 
-    info_display_string(fields[65], res->sa.s, res->regex.configure, 1) ;
-    info_display_string(fields[66], res->sa.s, res->regex.directories, 1) ;
-    info_display_string(fields[67], res->sa.s, res->regex.files, 1) ;
-    info_display_string(fields[68], res->sa.s, res->regex.infiles, 1) ;
-    info_display_int(fields[69], res->regex.ndirectories) ;
-    info_display_int(fields[70], res->regex.nfiles) ;
-    info_display_int(fields[71], res->regex.ninfiles) ;
+    info_display_string(fields[m++], res->sa.s, res->regex.configure, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->regex.directories, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->regex.files, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->regex.infiles, 1) ;
+    info_display_int(fields[m++], res->regex.ndirectories) ;
+    info_display_int(fields[m++], res->regex.nfiles) ;
+    info_display_int(fields[m], res->regex.ninfiles) ;
 
 }
 
@@ -186,8 +189,7 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
 
         "home",
         "frontend",
-        "status", //17
-        "servicedir",
+        "servicedir", //17
 
         "depends",
         "requiredby",
@@ -216,13 +218,15 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "downsignal", // 41
 
         "livedir",
+        "status",
+        "servicedir",
         "scandir",
         "statedir",
         "eventdir",
         "notifdir",
         "supervisedir",
         "fdholderdir",
-        "oneshotddir", //49
+        "oneshotddir", //50
 
         "logname" ,
         "logdestination" ,
@@ -235,11 +239,11 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "logrun_shebang" ,
         "logrun_runas" ,
         "logtimeoutkill",
-        "logtimeoutfinish", // 61
+        "logtimeoutfinish", // 62
 
         "env",
         "envdir",
-        "env_overwrite", // 64
+        "env_overwrite", // 65
 
         "configure",
         "directories",
@@ -247,7 +251,7 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "infiles",
         "ndirectories",
         "nfiles",
-        "ninfiles" // 71
+        "ninfiles" // 72
 
     } ;
 

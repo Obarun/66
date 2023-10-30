@@ -95,7 +95,7 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
         if (!state_read(&sta, &ares[aresid]))
             log_dieu(LOG_EXIT_SYS, "read state file of: ", argv[n]) ;
 
-        if (service_is(&sta, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_FALSE)
+        if (sta.issupervised == STATE_FLAGS_FALSE)
             /** nothing to do */
             log_warn_return(LOG_EXIT_ZERO, "service: ", argv[n], " is not supervised -- try to start it first using '66 start ", argv[n], "'") ;
     }

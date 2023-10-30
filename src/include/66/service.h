@@ -32,11 +32,10 @@ struct resolve_service_addon_path_s
 {
     uint32_t home ; // string, /var/lib/66 or /home/user/.66
     uint32_t frontend ;  // string, /home/<user>/.66/service or /etc/66/service or /usr/lib/66/service
-    uint32_t status ; //string, /var/lib/66/system/service/svc/service_name/state/status
-    uint32_t servicedir ; //string, /var/lib/66/system/service/svc/service_name or for module /var/lib/66/system/service/svc/module_name/svc/service_name
+    uint32_t servicedir ; //string, /var/lib/66/system/service/svc/service_name
 } ;
 
-#define RESOLVE_SERVICE_ADDON_PATH_ZERO { 0,0,0,0 }
+#define RESOLVE_SERVICE_ADDON_PATH_ZERO { 0,0,0 }
 
 typedef struct resolve_service_addon_dependencies_s resolve_service_addon_dependencies_t, *resolve_service_addon_dependencies_t_ref ;
 struct resolve_service_addon_dependencies_s
@@ -99,6 +98,8 @@ typedef struct resolve_service_addon_live_s resolve_service_addon_live_t, *resol
 struct resolve_service_addon_live_s
 {
     uint32_t livedir ; // string, /run/66
+    uint32_t status ; //string, /var/lib/66/system/.resolve/service/service_name/state/status
+    uint32_t servicedir ; // string, /run/66/state/uid/service_name
     uint32_t scandir ; // string, /run/66/state/uid/service_name/scandir/service_name -> /var/lib/66/system/service/svc/service_name -> /run/66/scandir/uid
     uint32_t statedir ; // string, /run/66/state/uid/service_name/state -> /var/lib/66/system/service/svc/service_name/state
     uint32_t eventdir ; // string, /run/66/state/uid/service_name/event -> /var/lib/66/system/service/svc/service_name/event
@@ -108,7 +109,7 @@ struct resolve_service_addon_live_s
     uint32_t oneshotddir ; // string, /run/66/state/uid/service_name/scandir/oneshotd
 } ;
 
-#define RESOLVE_SERVICE_ADDON_LIVE_ZERO { 0,0,0,0,0,0,0,0 }
+#define RESOLVE_SERVICE_ADDON_LIVE_ZERO { 0,0,0,0,0,0,0,0,0,0 }
 
 typedef struct resolve_service_addon_logger_s resolve_service_addon_logger_t, *resolve_service_addon_logger_t_ref ;
 struct resolve_service_addon_logger_s
@@ -182,6 +183,7 @@ struct resolve_service_s
     uint32_t treename ; // string
     uint32_t user ; // string
     uint32_t inmodule ; // string, name of the module which depend on
+    uint32_t enabled ; // integer, 0 not enabled
 
     resolve_service_addon_path_t path ;
     resolve_service_addon_dependencies_t dependencies ;
@@ -194,7 +196,7 @@ struct resolve_service_s
 } ;
 
 #define RESOLVE_SERVICE_ZERO { 0,STRALLOC_ZERO, \
-                               0,0,0,0,0,5,0,0,0,0,0,0,0,0, \
+                               0,0,0,0,0,5,0,0,0,0,0,0,0,0,0, \
                                RESOLVE_SERVICE_ADDON_PATH_ZERO, \
                                RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO, \
                                RESOLVE_SERVICE_ADDON_EXECUTE_ZERO, \
@@ -222,11 +224,11 @@ enum resolve_service_enum_e
     E_RESOLVE_SERVICE_TREENAME,
     E_RESOLVE_SERVICE_USER,
     E_RESOLVE_SERVICE_INMODULE,
+    E_RESOLVE_SERVICE_ENABLED,
 
     // path
     E_RESOLVE_SERVICE_HOME,
     E_RESOLVE_SERVICE_FRONTEND,
-    E_RESOLVE_SERVICE_STATUS,
     E_RESOLVE_SERVICE_SERVICEDIR,
 
     // dependencies
@@ -259,6 +261,8 @@ enum resolve_service_enum_e
 
     // live
     E_RESOLVE_SERVICE_LIVEDIR,
+    E_RESOLVE_SERVICE_STATUS,
+    E_RESOLVE_SERVICE_SERVICEDIR_LIVE,
     E_RESOLVE_SERVICE_SCANDIR,
     E_RESOLVE_SERVICE_STATEDIR,
     E_RESOLVE_SERVICE_EVENTDIR,

@@ -26,7 +26,7 @@ int state_check(resolve_service_t *res)
 {
     log_flow() ;
 
-    if (access(res->sa.s + res->path.status, F_OK) < 0)
+    if (access(res->sa.s + res->live.status, F_OK) < 0)
         return 0 ;
 
     return 1 ;

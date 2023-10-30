@@ -33,15 +33,19 @@
 #include <66/state.h>
 #include <66/graph.h>
 #include <66/sanitize.h>
+#include <66/utils.h>
 
 static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 {
+    log_flow() ;
+
     uint32_t flag = 0 ;
     graph_t graph = GRAPH_ZERO ;
-    ss_state_t ste = STATE_ZERO ;
 
     unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0, n = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE + 1] ;
+
+    memset(&visit, 0, SS_MAX_SERVICE + 1 * sizeof(unsigned int)) ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
@@ -82,12 +86,15 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 
             } else {
 
-                if (!state_read(&ste, &ares[aresid]))
-                    log_dieusys(LOG_EXIT_SYS, "read state file of service: ", sa->s + n) ;
+                if (ares[aresid].enabled) {
 
-                if (service_is(&ste, STATE_FLAGS_ISENABLED) == STATE_FLAGS_TRUE) {
                     list[nservice++] = idx ;
                     visit[idx] = 1 ;
+
+                } else {
+
+                    log_trace("ignoring not enabled service: ", ares[aresid].sa.s + ares[aresid].name) ;
+
                 }
             }
 
@@ -117,12 +124,11 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 
                 } else {
 
-                    if (!state_read(&ste, &ares[aresid]))
-                        log_dieusys(LOG_EXIT_SYS, "read state file of service: ", name) ;
+                    if (ares[aresid].enabled) {
 
-                    if (service_is(&ste, STATE_FLAGS_ISENABLED) == STATE_FLAGS_TRUE) {
                         list[nservice++] = l[pos] ;
                         visit[l[pos]] = 1 ;
+
                     }
                 }
             }

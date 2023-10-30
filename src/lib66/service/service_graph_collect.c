@@ -91,7 +91,7 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
 
             if (FLAGS_ISSET(flag, STATE_FLAGS_ISEARLIER)) {
 
-                if (ste.isearlier == STATE_FLAGS_TRUE) {
+                if (res.earlier) {
 
                     if (!service_resolve_copy(&cp, &res))
                         log_dieu(LOG_EXIT_SYS, "copy resolve file of: ", name, " -- please make a bug report") ;

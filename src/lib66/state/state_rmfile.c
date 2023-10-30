@@ -27,5 +27,5 @@ void state_rmfile(resolve_service_t *res)
 {
     log_flow() ;
 
-    unlink_void(res->sa.s + res->path.status) ;
+    unlink_void(res->sa.s + res->live.status) ;
 }

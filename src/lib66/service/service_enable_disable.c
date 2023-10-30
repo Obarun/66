@@ -63,9 +63,13 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
     if (visit[idx] == VISIT_WHITE) {
 
         resolve_service_t_ref res = &ares[idx] ;
+        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-        if (!state_messenger(res, STATE_FLAGS_ISENABLED, !action ? STATE_FLAGS_FALSE : STATE_FLAGS_TRUE))
-            log_dieusys(LOG_EXIT_SYS, "send message to state of: ", res->sa.s + res->name) ;
+        if (!service_resolve_modify_field(res, E_RESOLVE_SERVICE_ENABLED, !action ? "0" : "1"))
+            log_dieu(LOG_EXIT_SYS, "modify resolve file of: ", res->sa.s + res->name) ;
+
+        if (!resolve_write_g(wres, res->sa.s + res->path.home, res->sa.s + res->name))
+            log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", res->sa.s + res->name) ;
 
         if (propagate)
             service_enable_disable_deps(g, idx, ares, areslen, action, visit, propagate) ;
@@ -82,8 +86,13 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
 
             if (visit[aresid] == VISIT_WHITE) {
 
-                if (!state_messenger(&ares[aresid], STATE_FLAGS_ISENABLED, !action ? STATE_FLAGS_FALSE : STATE_FLAGS_TRUE))
-                    log_dieusys(LOG_EXIT_SYS, "send message to state of: ", name) ;
+                wres = resolve_set_struct(DATA_SERVICE, &ares[aresid]) ;
+
+                if (!service_resolve_modify_field(&ares[aresid], E_RESOLVE_SERVICE_ENABLED, !action ? "0" : "1"))
+                    log_dieu(LOG_EXIT_SYS, "modify resolve file of: ", ares[aresid].sa.s + ares[aresid].name) ;
+
+                if (!resolve_write_g(wres, ares[aresid].sa.s + ares[aresid].path.home, ares[aresid].sa.s + ares[aresid].name))
+                    log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", ares[aresid].sa.s + ares[aresid].name) ;
 
                 log_info("Disabled successfully service: ", name) ;
 
@@ -110,8 +119,13 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
 
                     if (visit[aresid] == VISIT_WHITE) {
 
-                        if (!state_messenger(&ares[aresid], STATE_FLAGS_ISENABLED, !action ? STATE_FLAGS_FALSE : STATE_FLAGS_TRUE))
-                            log_dieusys(LOG_EXIT_SYS, "send message to state of: ", res->sa.s + res->name) ;
+                        wres = resolve_set_struct(DATA_SERVICE, &ares[aresid]) ;
+
+                        if (!service_resolve_modify_field(&ares[aresid], E_RESOLVE_SERVICE_ENABLED, !action ? "0" : "1"))
+                            log_dieu(LOG_EXIT_SYS, "modify resolve file of: ", ares[aresid].sa.s + ares[aresid].name) ;
+
+                        if (!resolve_write_g(wres, ares[aresid].sa.s + ares[aresid].path.home, ares[aresid].sa.s + ares[aresid].name))
+                            log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", ares[aresid].sa.s + ares[aresid].name) ;
 
                         service_enable_disable_deps(g, aresid, ares, areslen, action, visit, propagate) ;
 
@@ -125,6 +139,7 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
             }
         }
 
+        free(wres) ;
         visit[idx] = VISIT_GRAY ;
     }
 }

@@ -49,11 +49,11 @@ int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res)
     dst->treename = res->treename ;
     dst->user = res->user ;
     dst->inmodule = res->inmodule ;
+    dst->enabled = res->enabled ;
 
     // path
     dst->path.home = res->path.home ;
     dst->path.frontend = res->path.frontend ;
-    dst->path.status = res->path.status ;
     dst->path.servicedir = res->path.servicedir ;
 
     // dependencies
@@ -86,6 +86,8 @@ int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res)
 
     // live
     dst->live.livedir = res->live.livedir ;
+    dst->live.status = res->live.status ;
+    dst->live.servicedir = res->live.servicedir ;
     dst->live.scandir = res->live.scandir ;
     dst->live.statedir = res->live.statedir ;
     dst->live.eventdir = res->live.eventdir ;
