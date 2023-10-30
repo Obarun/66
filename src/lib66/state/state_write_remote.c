@@ -1,5 +1,5 @@
 /*
- * state_write_tmp.c
+ * state_write_remote.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -24,7 +24,7 @@
 #include <66/state.h>
 #include <66/constants.h>
 
-int state_write_tmp(ss_state_t *sta, char const *dst)
+int state_write_remote(ss_state_t *sta, char const *dst)
 {
     log_flow() ;
 
