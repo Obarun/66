@@ -13,6 +13,7 @@
  */
 
 #include <wchar.h>
+#include <stdint.h>
 
 #include <oblibs/log.h>
 
@@ -63,6 +64,7 @@ static void info_display_int(char const *field, unsigned int id)
 int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
 {
     int r = -1 ;
+    uint8_t m = 0 ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
@@ -124,17 +126,17 @@ int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
     if (!state_read(&sta, &res))
         log_dieusys(111,"read state file of: ", svname) ;
 
-    info_display_int(fields[0],sta.toinit) ;
-    info_display_int(fields[1],sta.toreload) ;
-    info_display_int(fields[2],sta.torestart) ;
-    info_display_int(fields[3],sta.tounsupervise) ;
-    info_display_int(fields[4],sta.toparse) ;
-    info_display_int(fields[5],sta.isdownfile) ;
-    info_display_int(fields[6],sta.isearlier) ;
-    info_display_int(fields[7],sta.isenabled) ;
-    info_display_int(fields[8],sta.isparsed) ;
-    info_display_int(fields[9],sta.issupervised) ;
-    info_display_int(fields[10],sta.isup) ;
+    info_display_int(fields[m++],sta.toinit) ;
+    info_display_int(fields[m++],sta.toreload) ;
+    info_display_int(fields[m++],sta.torestart) ;
+    info_display_int(fields[m++],sta.tounsupervise) ;
+    info_display_int(fields[m++],sta.toparse) ;
+    info_display_int(fields[m++],sta.isdownfile) ;
+    info_display_int(fields[m++],sta.isearlier) ;
+    info_display_int(fields[m++],sta.isenabled) ;
+    info_display_int(fields[m++],sta.isparsed) ;
+    info_display_int(fields[m++],sta.issupervised) ;
+    info_display_int(fields[m],sta.isup) ;
 
     resolve_free(wres) ;
 
