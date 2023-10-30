@@ -1,5 +1,5 @@
 /*
- * service_resolve_write_tmp.c
+ * service_resolve_write_remote.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -24,7 +24,7 @@
 #include <66/constants.h>
 #include <66/parse.h>
 
-void service_resolve_write_tmp(resolve_service_t *res, char const *dst, uint8_t force)
+void service_resolve_write_remote(resolve_service_t *res, char const *dst, uint8_t force)
 {
     log_flow() ;
 
