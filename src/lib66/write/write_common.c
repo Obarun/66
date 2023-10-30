@@ -26,6 +26,7 @@
 
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/unix-transactional.h>
 
 #include <66/service.h>
 #include <66/write.h>
