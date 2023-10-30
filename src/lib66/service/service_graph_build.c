@@ -51,7 +51,7 @@ static void issupervised(char *store, resolve_service_t *ares, unsigned int ares
         if (!state_read(&ste, &ares[aresid]))
             continue ;
 
-        if ((&ste, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_TRUE)
+        if (ste.issupervised == STATE_FLAGS_TRUE)
             auto_strings(store + strlen(store), name, " ") ;
         else
             continue ;
@@ -81,7 +81,7 @@ void service_graph_build(graph_t *g, resolve_service_t *ares, unsigned int aresl
         if (!state_read(&ste, &ares[pos]))
             continue ;
 
-        if (service_is(&ste, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_FALSE && FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {
+        if (ste.issupervised == STATE_FLAGS_FALSE && FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {
             log_warn("service: ", service, " not available -- ignore it") ;
             continue ;
         }

@@ -54,7 +54,7 @@ static void resolve_compare(resolve_service_t *res)
         if (!state_read(&sta, &fres))
             log_dieu(LOG_EXIT_SYS, "read state file of: ", name) ;
 
-        if (service_is(&sta, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_TRUE) {
+        if (sta.issupervised == STATE_FLAGS_TRUE) {
 
             if (fres.type != res->type)
                 log_die(LOG_EXIT_SYS, "Detection of incompatible type format for supervised service: ", name, " -- current: ", get_key_by_enum(ENUM_TYPE, res->type), " previous: ", get_key_by_enum(ENUM_TYPE, fres.type), ". Please unsupervise it with '66 unsupervice ", name,"' before trying the conversion") ;
@@ -89,7 +89,7 @@ static int preserve(resolve_service_t *res, uint8_t force)
 
         } else
             /** This info should never be executed as long as the parse_frontend
-             * check already verifies the service and prevents reaching this point if !force. */
+             *  verify the service and prevents reaching this point if !force. */
             log_info_return(0, "Ignoring: ", res->sa.s + res->name, " -- service already written") ;
     }
 
@@ -100,10 +100,6 @@ int sanitize_write(resolve_service_t *res, uint8_t force)
 {
     log_flow() ;
 
-    int r ;
-
-    r = preserve(res, force) ;
-
-    return r ;
+    return preserve(res, force) ;
 }
 

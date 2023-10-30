@@ -123,9 +123,9 @@ void sanitize_fdholder(resolve_service_t *res, uint32_t flag)
 
         if (FLAGS_ISSET(flag, STATE_FLAGS_TRUE)) {
 
-            if (service_is(&sta, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_TRUE ||
-                service_is(&sta, STATE_FLAGS_TORELOAD) == STATE_FLAGS_TRUE ||
-                service_is(&sta, STATE_FLAGS_TORESTART) == STATE_FLAGS_TRUE) {
+            if (sta->issupervised == STATE_FLAGS_TRUE ||
+                sta->toreload == STATE_FLAGS_TRUE ||
+                sta->torestart == STATE_FLAGS_TRUE) {
 
                 log_trace("delete fdholder entry: ", name) ;
                 fdholder_delete(&a, name, &deadline) ;

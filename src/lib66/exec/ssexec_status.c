@@ -223,11 +223,11 @@ static void info_get_status(resolve_service_t *res)
         if (!state_read(&sta, res))
             log_dieusys(LOG_EXIT_SYS,"read state of: ", res->sa.s + res->name) ;
 
-        if (service_is(&sta, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_FALSE) {
+        if (sta.issupervised == STATE_FLAGS_FALSE) {
 
             status = "unsupervised" ;
 
-        } else if (service_is(&sta, STATE_FLAGS_ISUP) == STATE_FLAGS_FALSE) {
+        } else if (sta.isup == STATE_FLAGS_FALSE) {
 
             status = "down" ;
             warn_color = 1 ;

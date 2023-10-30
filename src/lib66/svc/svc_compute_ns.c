@@ -90,7 +90,7 @@ static void pidservice_init_array(unsigned int *list, unsigned int listlen, pids
                 if (!state_read(&sta, &ares[pids.aresid]))
                     log_dieusys(LOG_EXIT_SYS, "read state file of: ", name) ;
 
-                if (service_is(&sta, STATE_FLAGS_ISUP) == STATE_FLAGS_TRUE)
+                if (sta.isup == STATE_FLAGS_TRUE)
                     FLAGS_SET(pids.state, SVC_FLAGS_UP) ;
                 else
                     FLAGS_SET(pids.state, SVC_FLAGS_DOWN) ;

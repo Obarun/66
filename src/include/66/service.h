@@ -322,7 +322,6 @@ extern void service_db_migrate(resolve_service_t *old, resolve_service_t *new, c
 /* avoid circular dependencies by prototyping the ss_state_t instead
  * of calling the state.h header file*/
 typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;
-extern int service_is(ss_state_t *ste, uint32_t flag) ;
 
 /** Graph */
 extern void service_graph_g(char const *alist, size_t alen, graph_t *graph, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag) ;

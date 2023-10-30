@@ -30,7 +30,7 @@
 #include <66/constants.h>
 #include <66/utils.h>
 
-int service_is(ss_state_t *ste, uint32_t flag)
+static int service_is(ss_state_t *ste, uint32_t flag)
 {
 
     switch (flag) {

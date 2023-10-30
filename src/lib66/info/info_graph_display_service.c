@@ -69,12 +69,12 @@ int info_graph_display_service(char const *name)
 
     } else {
 
-         if (service_is(&sta, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_FALSE) {
+         if (sta.issupervised == STATE_FLAGS_FALSE) {
 
             ppid = "unitialized" ;
             goto dis ;
 
-        } else if (service_is(&sta, STATE_FLAGS_ISUP) == STATE_FLAGS_FALSE) {
+        } else if (sta.isup == STATE_FLAGS_FALSE) {
 
             ppid = "down" ;
             pid_color = 1 ;

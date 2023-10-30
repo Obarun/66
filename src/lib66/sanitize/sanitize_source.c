@@ -72,7 +72,7 @@ void sanitize_source(char const *name, ssexec_t *info)
         if (!state_read(&sta, &res))
             log_dieu(LOG_EXIT_SYS, "read state file of: ", name) ;
 
-        if (service_is(&sta, STATE_FLAGS_TOPARSE) == STATE_FLAGS_TRUE) {
+        if (sta.toparse == STATE_FLAGS_TRUE) {
 
             if (!info->opt_tree) {
 
