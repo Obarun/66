@@ -13,6 +13,7 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #include <oblibs/log.h>
 #include <oblibs/graph.h>

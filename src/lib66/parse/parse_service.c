@@ -36,6 +36,7 @@
 #include <66/tree.h>
 #include <66/graph.h>
 #include <66/sanitize.h>
+#include <66/symlink.h>
 
 parse_mill_t MILL_GET_SECTION_NAME = \
 { \
@@ -76,15 +77,15 @@ void parse_cleanup(resolve_service_t *res, char const *tmpdir, uint8_t force)
     }
 }
 
-static void parse_copy_online(char const *dst, char const *src, resolve_service_t *res, uint8_t force)
+static void parse_copy_to_source(char const *dst, char const *src, resolve_service_t *res, uint8_t force)
 {
     log_flow() ;
 
-    size_t pos = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
-    size_t srclen = strlen(src) ;
+    size_t pos = 0, srclen = strlen(src) ;
 
     if (!access(dst, F_OK)) {
+
+        stralloc sa = STRALLOC_ZERO ;
 
         char const *exclude[6] = { SS_EVENTDIR + 1, SS_SUPERVISEDIR + 1, SS_SCANDIR, SS_STATE + 1, SS_RESOLVE + 1, 0 } ;
         if (!sastr_dir_get_recursive(&sa, dst, exclude, S_IFDIR|S_IFREG, 1)) {
@@ -115,16 +116,15 @@ static void parse_copy_online(char const *dst, char const *src, resolve_service_
                 }
             }
         }
-    }
 
-    stralloc_free(&sa) ;
+        stralloc_free(&sa) ;
+    }
 
     if (access(dst, F_OK) < 0) {
 
         log_trace("create directory: ", dst) ;
         if (!dir_create_parent(dst, 0755)) {
             parse_cleanup(res, src, force) ;
-            stralloc_free(&sa) ;
             log_dieusys(LOG_EXIT_SYS, "create directory: ", dst) ;
         }
     }
@@ -132,8 +132,15 @@ static void parse_copy_online(char const *dst, char const *src, resolve_service_
     log_trace("copy:", src, " to: ", dst) ;
     if (!hiercopy(src, dst)) {
         parse_cleanup(res, src, force) ;
-        stralloc_free(&sa) ;
         log_dieusys(LOG_EXIT_SYS, "copy: ", src, " to: ", dst) ;
+    }
+
+    /** be paranoid after the use of hiercopy and be sure
+     * to have dst in 0755 mode. If not the log cannot be
+     * executed with other permissions than root */
+    if (chmod(dst, 0755)< 0) {
+        parse_cleanup(res, src, force) ;
+        log_dieusys(LOG_EXIT_SYS,"chmod: ", dst) ;
     }
 }
 
@@ -156,7 +163,7 @@ static void parse_write_state(resolve_service_t *res, char const *dst, uint8_t f
     state_set_flag(&sta, STATE_FLAGS_ISEARLIER, res->earlier ? STATE_FLAGS_TRUE : STATE_FLAGS_FALSE) ;
     state_set_flag(&sta, STATE_FLAGS_ISDOWNFILE, res->execute.down ? STATE_FLAGS_TRUE : STATE_FLAGS_FALSE) ;
 
-    if (!state_write_tmp(&sta, dst)) {
+    if (!state_write_remote(&sta, dst)) {
         parse_cleanup(res, dst, force) ;
         log_dieu(LOG_EXIT_SYS, "write state file of: ", res->sa.s + res->name) ;
     }
@@ -211,9 +218,9 @@ void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
 
         parse_write_state(&ares[pos], sa.s, rforce) ;
 
-        service_resolve_write_tmp(&ares[pos], sa.s, rforce) ;
+        service_resolve_write_remote(&ares[pos], sa.s, rforce) ;
 
-        parse_copy_online(servicedir, sa.s, &ares[pos], rforce) ;
+        parse_copy_to_source(servicedir, sa.s, &ares[pos], rforce) ;
 
         /** do not die here, just warn the user */
         log_trace("remove temporary directory: ", sa.s) ;
@@ -222,7 +229,15 @@ void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
 
         tree_service_add(info->base.s, ares[pos].sa.s + ares[pos].treename, ares[pos].sa.s + ares[pos].name) ;
 
-        write_make_symlink(&ares[pos]) ;
+        if (!symlink_make(&ares[pos]))
+            log_dieusys(LOG_EXIT_SYS, "make service symlink") ;
+
+        /** symlink may exist already, be sure to point to the correct location
+         * may not be necessary as long as the service must pass through sanitize_init at
+         * startup */
+
+        if (!symlink_switch(&ares[pos], SYMLINK_SOURCE))
+            log_dieusys(LOG_EXIT_SYS, "sanitize_symlink") ;
 
         log_info("Parsed successfully: ", ares[pos].sa.s + ares[pos].name, " at tree: ", ares[pos].sa.s + ares[pos].treename) ;
     }

@@ -44,26 +44,11 @@ static void parse_it(char const *name, ssexec_t *info)
     PROG = prog ;
 }
 
-static void service_resolve_array_write(char const *base, resolve_service_t *ares, uint32_t *indexes, uint32_t lindex)
-{
-    log_flow() ;
-
-    uint32_t pos = 0 ;
-
-    for (; pos < lindex ; ++pos) {
-
-        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &ares[indexes[pos]]) ;
-
-        if (!resolve_write_g(wres, base, ares[indexes[pos]].sa.s + ares[indexes[pos]].name))
-            log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", ares[indexes[pos]].sa.s + ares[indexes[pos]].name) ;
-    }
-}
-
 int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    uint32_t flag = 0, indexes[SS_MAX_SERVICE + 1], lindex = 0 ;
+    uint32_t flag = 0 ;
     uint8_t start = 0, propagate = 1 ;
     int n = 0, e = 1 ;
     size_t pos = 0 ;
@@ -74,7 +59,6 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
 
     visit_t visit[SS_MAX_SERVICE + 1] ;
     visit_init(visit, SS_MAX_SERVICE) ;
-    visit_init(indexes, SS_MAX_SERVICE) ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
@@ -115,10 +99,8 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
 
     _init_stack_(stk, argc * SS_MAX_TREENAME) ;
 
-    for(; n < argc ; n++) {
-        name_isvalid(argv[n]) ;
+    for(; n < argc ; n++)
         parse_it(argv[n], info) ;
-    }
 
     /** build the graph of the entire system */
     graph_build_service(&graph, ares, &areslen, info, flag) ;
@@ -138,8 +120,6 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
 
             service_switch_tree(&ares[aresid], info->base.s, info->treename.s) ;
 
-            indexes[lindex++] = aresid ;
-
             if (ares[aresid].logger.want && ares[aresid].type == TYPE_CLASSIC) {
 
                 int logid = service_resolve_array_search(ares, areslen, ares[aresid].sa.s + ares[aresid].logger.name) ;
@@ -148,7 +128,6 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
 
                 service_switch_tree(&ares[logid], info->base.s, info->treename.s) ;
 
-                indexes[lindex++] = logid ;
             }
         }
 
@@ -158,7 +137,6 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
         log_info("Enabled successfully service: ", ares[aresid].sa.s + ares[aresid].name) ;
     }
 
-    service_resolve_array_write(info->base.s, ares, indexes, lindex) ;
     service_resolve_array_free(ares, areslen) ;
     graph_free_all(&graph) ;
 

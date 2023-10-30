@@ -37,21 +37,41 @@
 #define FAKELEN strlen(run)
 #endif
 
-static uint32_t compute_servicedir(resolve_wrapper_t_ref wres, ssexec_t *info)
+static uint32_t compute_src_servicedir(resolve_wrapper_t_ref wres, ssexec_t *info)
 {
+    log_flow() ;
+
     resolve_service_t_ref res = (resolve_service_t *)wres->obj ;
     char *name = res->sa.s + res->name ;
     size_t namelen = strlen(name) ;
 
-    char dir[info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + 1] ;
+    char dir[info->base.len + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + namelen + 1] ;
 
-    auto_strings(dir, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+    auto_strings(dir, info->base.s, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", name) ;
 
     return resolve_add_string(wres, dir) ;
 }
 
+static uint32_t compute_live_servicedir(resolve_wrapper_t_ref wres, ssexec_t *info)
+{
+    log_flow() ;
+
+    resolve_service_t_ref res = (resolve_service_t *)wres->obj ;
+    char *name = res->sa.s + res->name ;
+    size_t namelen = strlen(name) ;
+
+    char dir[info->live.len + SS_STATE_LEN + 1 + info->ownerlen + 1 + namelen + 1] ;
+
+    auto_strings(dir, info->live.s, SS_STATE + 1, "/", info->ownerstr, "/", name) ;
+
+    return resolve_add_string(wres, dir) ;
+}
+
+
 static uint32_t compute_status(resolve_wrapper_t_ref wres, ssexec_t *info)
 {
+    log_flow() ;
+
     resolve_service_t_ref res = (resolve_service_t *)wres->obj ;
     char *name = res->sa.s + res->name ;
     size_t namelen = strlen(name) ;
@@ -72,9 +92,9 @@ static uint32_t compute_scan_dir(resolve_wrapper_t_ref wres, ssexec_t *info)
     char *name = res->sa.s + res->name ;
     size_t namelen = strlen(name) ;
 
-    char dir[info->live.len + SS_STATE_LEN + 1 + info->ownerlen + 1 + namelen + 1 + SS_SCANDIR_LEN + 1 + namelen + 1] ;
+    char dir[info->live.len + SS_SCANDIR_LEN + 1 + info->ownerlen + 1 + namelen + 1] ;
 
-    auto_strings(dir, info->live.s, SS_STATE + 1, "/", info->ownerstr, "/", name, "/", SS_SCANDIR, "/", name) ;
+    auto_strings(dir, info->live.s, SS_SCANDIR, "/", info->ownerstr, "/", name) ;
 
     return resolve_add_string(wres, dir) ;
 }
@@ -102,8 +122,8 @@ static uint32_t compute_pipe_service(resolve_wrapper_t_ref wres, ssexec_t *info,
     size_t servicelen = strlen(service) ;
     size_t namelen = strlen(name) ;
 
-    char tmp[info->live.len + SS_STATE_LEN + 1 + info->ownerlen + 1 + servicelen + 1 + SS_SCANDIR_LEN + 1 + namelen + 1] ;
-    auto_strings(tmp, info->live.s, SS_STATE + 1, "/", info->ownerstr, "/", service, "/", SS_SCANDIR, "/", name) ;
+    char tmp[info->live.len + SS_SCANDIR_LEN + 1 + info->ownerlen + 1 + namelen + 1] ;
+    auto_strings(tmp, info->live.s, SS_SCANDIR, "/", info->ownerstr, "/", name) ;
 
     return resolve_add_string(wres, tmp) ;
 
@@ -149,7 +169,7 @@ static void compute_wrapper_scripts(resolve_service_t *res, resolve_service_addo
 {
     log_flow() ;
 
-    int build = !strcmp(res->sa.s + scripts->build, "custom") ? 1 : 0 ;
+    int build = !strcmp(res->sa.s + scripts->build, "custom") ? BUILD_CUSTOM : BUILD_AUTO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     char *shebang = "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -" ;
     size_t shebanglen = strlen(shebang) ;
@@ -210,7 +230,7 @@ static void compute_wrapper_scripts_user(resolve_service_t *res, resolve_service
     char *shebang = scripts->shebang ? res->sa.s + scripts->shebang : SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n" ;
     size_t shebanglen = strlen(shebang) ;
     size_t scriptlen = strlen(res->sa.s + scripts->run_user) ;
-    int build = !strcmp(res->sa.s + scripts->build, "custom") ? 1 : 0 ;
+    int build = !strcmp(res->sa.s + scripts->build, "custom") ? BUILD_CUSTOM : BUILD_AUTO ;
     size_t execlen = !build ? (res->environ.envdir ? (strlen(res->sa.s + res->environ.envdir) + 14 + SS_SYM_VERSION_LEN + 1) : 0) : 0 ;
 
     char run[shebanglen + execlen + scriptlen + 4 + 1] ;
@@ -250,7 +270,7 @@ static void compute_log_script(resolve_service_t *res)
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-    int build = !strcmp(res->sa.s + res->logger.execute.run.build, "custom") ? 1 : 0 ;
+    int build = !strcmp(res->sa.s + res->logger.execute.run.build, "custom") ? BUILD_CUSTOM : BUILD_AUTO ;
 
     char *pmax = 0 ;
     char *pback = 0 ;
@@ -391,8 +411,7 @@ static void compute_log(resolve_service_t *res, resolve_service_t *ares, unsigne
 
     lres.path.home = resolve_add_string(wres, str + res->path.home) ;
     lres.path.frontend = resolve_add_string(wres, str + res->path.frontend) ;
-    lres.path.servicedir = compute_servicedir(wres, info) ;
-    lres.path.status = compute_status(wres, info) ;
+    lres.path.servicedir = compute_src_servicedir(wres, info) ;
 
     lres.dependencies.requiredby = resolve_add_string(wres, str + res->name) ;
     lres.dependencies.nrequiredby = 1 ;
@@ -406,6 +425,8 @@ static void compute_log(resolve_service_t *res, resolve_service_t *ares, unsigne
     lres.execute.downsignal = res->logger.execute.downsignal ;
 
     lres.live.livedir = resolve_add_string(wres, info->live.s) ;
+    lres.live.status = compute_status(wres, info) ;
+    lres.live.servicedir = compute_live_servicedir(wres, info) ;
     lres.live.scandir = compute_scan_dir(wres, info) ;
     lres.live.statedir = compute_state_dir(wres, info, SS_STATE + 1) ;
     lres.live.eventdir = compute_state_dir(wres, info, SS_EVENTDIR + 1) ;
@@ -451,11 +472,16 @@ void parse_compute_resolve(unsigned int idx, resolve_service_t *ares, unsigned i
 
     auto_strings(name, res->sa.s + res->name) ;
 
-    res->path.status = compute_status(wres, info) ;
-    res->path.servicedir = compute_servicedir(wres, info) ;
+    res->path.servicedir = compute_src_servicedir(wres, info) ;
 
     /* live */
     res->live.livedir = resolve_add_string(wres, info->live.s) ;
+
+    /* status */
+    res->live.status = compute_status(wres, info) ;
+
+    /* servicedir */
+    res->live.servicedir = compute_live_servicedir(wres, info) ;
 
     /* scandir */
     /**
