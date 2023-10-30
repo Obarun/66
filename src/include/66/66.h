@@ -29,6 +29,7 @@
 #include <66/ssexec.h>
 #include <66/state.h>
 #include <66/svc.h>
+#include <66/symlink.h>
 #include <66/tree.h>
 #include <66/utils.h>
 #include <66/write.h>

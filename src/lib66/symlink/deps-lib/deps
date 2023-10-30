@@ -1,0 +1,7 @@
+symlink_make.o
+symlink_switch.o
+symlink_pointto.o
+-ls6
+-loblibs
+-lskarnet
+
