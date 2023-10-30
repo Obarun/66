@@ -15,6 +15,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h>// unlink
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -46,16 +47,9 @@ static void auto_remove(char const *path)
 static void remove_service(resolve_service_t *res, ssexec_t *info)
 {
     int r ;
-    char *path = 0 ;
     char sym[strlen(res->sa.s + res->path.home) + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME + 1] ;
 
-    path = realpath(res->sa.s + res->path.servicedir, 0) ;
-    if (!path)
-        log_dieusys(LOG_EXIT_SYS, "retrieve real path of: ", res->sa.s + res->path.servicedir) ;
-
-    auto_remove(path) ;
-
-    free(path) ;
+    auto_remove(res->sa.s + res->path.servicedir) ;
 
     if (res->environ.envdir)
         auto_remove(res->sa.s + res->environ.envdir) ;
@@ -71,13 +65,7 @@ static void remove_service(resolve_service_t *res, ssexec_t *info)
         if (r <= 0)
             log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", res->sa.s + res->logger.name) ;
 
-        path = realpath(lres.sa.s + lres.path.servicedir, 0) ;
-        if (!path)
-            log_dieusys(LOG_EXIT_SYS, "retrieve real path of: ", lres.sa.s + lres.path.servicedir) ;
-
-        auto_remove(path) ;
-
-        free(path) ;
+        auto_remove(lres.sa.s + lres.path.servicedir) ;
 
         auto_remove(lres.sa.s + lres.logger.destination) ;
 
@@ -87,6 +75,9 @@ static void remove_service(resolve_service_t *res, ssexec_t *info)
 
         log_trace("remove symlink: ", sym) ;
         unlink_void(sym) ;
+
+        log_trace("remove symlink: ", lres.sa.s + lres.live.scandir) ;
+        unlink_void(lres.sa.s + lres.live.scandir) ;
 
         log_info("removed successfully: ", lres.sa.s + lres.name) ;
 
@@ -98,9 +89,11 @@ static void remove_service(resolve_service_t *res, ssexec_t *info)
     log_trace("remove symlink: ", sym) ;
     unlink_void(sym) ;
 
+    log_trace("remove symlink: ", res->sa.s + res->live.scandir) ;
+    unlink_void(res->sa.s + res->live.scandir) ;
+
     log_info("removed successfully: ", res->sa.s + res->name) ;
 }
-
 
 int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 {
@@ -166,7 +159,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
         if (!state_read(&ste, &res))
             log_dieusys(LOG_EXIT_SYS, "read state file of: ", argv[pos], " -- please make a bug report") ;
 
-        if (service_is(&ste, STATE_FLAGS_ISSUPERVISED) == STATE_FLAGS_TRUE)
+        if (ste.issupervised == STATE_FLAGS_TRUE)
             if (!sastr_add_string(&sa, argv[pos]))
                 log_dieusys(LOG_EXIT_SYS, "add service: ", argv[pos], " to selection") ;
 
@@ -238,6 +231,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
                 resolve_free(mwres) ;
             }
 
+            /** remove directory made by the module at configuration time */
             char dir[SS_MAX_PATH_LEN + 1] ;
 
             if (!info->owner) {
