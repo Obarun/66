@@ -23,7 +23,7 @@ inline void info_help (char const *help,char const *usage)
 }
 
 
-char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|unsupervise|reconfigure|enable|disable|environ|status|resolve|state|remove|signal|tree|init|parse|scandir|boot|version [<command options>] service...|tree" ;
+char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|free|reconfigure|enable|disable|environ|status|resolve|state|remove|signal|tree|init|parse|scandir|boot|version [<command options>] service...|tree" ;
 
 char const *help_66 =
 "\nmain tool to init a system, control and manage services\n"
@@ -41,7 +41,7 @@ char const *help_66 =
 "   stop: bring down service\n"
 "   reload: send a SIGHUP signal to service\n"
 "   restart: bring down service then bring it up\n"
-"   unsupervise: bring down service and remove it from scandir\n"
+"   free: bring down service and remove it from scandir\n"
 "   reconfigure: bring down, unsupervise, parse it again and bring up service\n"
 "   enable: activate service for the next boot\n"
 "   disable: deactivate service for the next boot\n"
@@ -182,9 +182,9 @@ char const *help_restart =
 "   -P: do not propagate signal to its dependencies\n"
 ;
 
-char const *usage_unsupervise = "66 unsupervise [ -h ] [ -P ] service..." ;
+char const *usage_free = "66 free [ -h ] [ -P ] service..." ;
 
-char const *help_unsupervise =
+char const *help_free =
 "\nbring down services and remove it from the scandir\n"
 "\n"
 "options:\n"
