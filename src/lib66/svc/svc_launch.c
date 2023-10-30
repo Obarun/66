@@ -14,7 +14,7 @@
 
 #include <string.h>
 #include <stdint.h>
-#include <unistd.h> // access
+#include <unistd.h> // access, unlink
 #include <errno.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -281,7 +281,7 @@ static int async_deps(pidservice_t *apids, unsigned int i, unsigned int what, ss
 
         if (x.revents & IOPAUSE_READ) {
 
-            memset(buf, 0, sizeof(buf)) ;
+            memset(buf, 0, ((UINT_FMT*2)*SS_MAX_SERVICE + 1) * sizeof(char)) ;
             r = read(apids[i].pipe[0], buf, sizeof(buf)) ;
             if (r < 0)
                 log_dieu(LOG_EXIT_SYS, "read from pipe") ;
@@ -544,10 +544,10 @@ static int doit(pidservice_t *sv, unsigned int what, tain *deadline)
 
             if (data[1] == 'r') {
                 /** oneshot service are not handled automatically by
-                 * s6-supervise. Signal is restart, so let it down first 
+                 * s6-supervise. Signal is restart, so let it down first
                  * and force to bring it up again .*/
-                
-                log_trace("sending ", "up to: ", scandir) ;
+
+                log_trace("sending up to: ", scandir) ;
 
                 char const *newargv[11] ;
                 unsigned int m = 0 ;
@@ -569,13 +569,13 @@ static int doit(pidservice_t *sv, unsigned int what, tain *deadline)
                     log_warnusys_return(LOG_EXIT_ZERO, "wait for s6-sudo") ;
 
                 if (WIFSIGNALED(wstat) && WEXITSTATUS(wstat))
-                    return WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat) ;                 
-            } 
+                    return WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat) ;
+            }
 
-            return WEXITSTATUS(wstat) ;            
-        
+            return WEXITSTATUS(wstat) ;
+
         } else {
-                    
+
             return WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat) ;
         }
 

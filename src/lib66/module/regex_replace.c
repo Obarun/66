@@ -78,9 +78,9 @@ void regex_replace(stralloc *list, resolve_service_t *res)
                 if ((line[0] != ':') || (get_sep_before(line + 1, ':', '=') < 0))
                     log_die(LOG_EXIT_SYS, "bad format in line: ", line, " of key @infiles field") ;
 
-                memset(filename, 0, SS_MAX_SERVICE_NAME + 1) ;
-                memset(replace, 0, linelen + 1) ;
-                memset(regex, 0, linelen + 1) ;
+                memset(filename, 0, SS_MAX_SERVICE_NAME + 1 * sizeof(char)); ;
+                memset(replace, 0, linelen + 1 * sizeof(char)) ;
+                memset(regex, 0, linelen + 1 * sizeof(char)) ;
 
                 fpos = regex_get_file_name(filename, line) ;
                 if (fpos < 3) all = 1 ;

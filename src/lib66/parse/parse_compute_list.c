@@ -43,7 +43,7 @@ int parse_compute_list(resolve_wrapper_t_ref wres, stralloc *sa, uint32_t *res, 
 
     char f[len + nelement + 2] ;
 
-    memset(f, 0, len) ;
+    memset(f, 0, len * sizeof(size_t)) ;
 
     for (; pos < sa->len ; pos += strlen(sa->s + pos) + 1) {
 

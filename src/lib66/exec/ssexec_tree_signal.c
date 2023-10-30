@@ -626,7 +626,7 @@ static int async_deps(pidtree_t *apidt, unsigned int i, unsigned int what, ssexe
 
         if (x.revents & IOPAUSE_READ) {
 
-            memset(buf, 0, sizeof(buf)) ;
+            memset(buf, 0, ((UINT_FMT*2)*SS_MAX_SERVICE + 1) * sizeof(char)) ;
             r = read(apidt[i].pipe[0], buf, sizeof(buf)) ;
             if (r < 0)
                 log_dieu(LOG_EXIT_SYS, "read from pipe") ;

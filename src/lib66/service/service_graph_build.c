@@ -30,7 +30,7 @@ static void issupervised(char *store, resolve_service_t *ares, unsigned int ares
     ss_state_t ste = STATE_ZERO ;
     stralloc sa = STRALLOC_ZERO ;
 
-    memset(store, 0, strlen(str)) ;
+    memset(store, 0, strlen(str) * sizeof(char)) ;
 
     if (!sastr_clean_string(&sa, str))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
@@ -93,7 +93,7 @@ void service_graph_build(graph_t *g, resolve_service_t *ares, unsigned int aresl
 
             if (pres->dependencies.ndepends && FLAGS_ISSET(flag, STATE_FLAGS_WANTUP)) {
 
-                char store[strlen(pres->sa.s + pres->dependencies.depends) + 1] ;
+                char store[strlen(pres->sa.s + pres->dependencies.depends) + 1 * pres->dependencies.ndepends] ;
 
                 if (FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {
 
@@ -112,7 +112,7 @@ void service_graph_build(graph_t *g, resolve_service_t *ares, unsigned int aresl
 
             if (pres->dependencies.nrequiredby && FLAGS_ISSET(flag, STATE_FLAGS_WANTDOWN)) {
 
-                char store[strlen(pres->sa.s + pres->dependencies.requiredby) + 1] ;
+                char store[strlen(pres->sa.s + pres->dependencies.requiredby) + 1 * pres->dependencies.nrequiredby] ;
 
                 if (FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {
 

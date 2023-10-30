@@ -120,7 +120,7 @@ tree_what_t what_init(void)
 
     tree_what_t what = TREE_WHAT_ZERO ;
 
-    memset(what.gr, 0, 6) ;
+    memset(what.gr, 0, 6 * sizeof(char)); ;
     memset(what.auids, 0, 256 * sizeof(uid_t));
     memset(what.duids, 0, 256 * sizeof(uid_t)) ;
 
