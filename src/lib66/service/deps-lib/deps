@@ -15,8 +15,8 @@ service_resolve_get_field_tosa.o
 service_resolve_modify_field.o
 service_resolve_write.o
 service_resolve_read_cdb.o
+service_resolve_write_remote.o
 service_resolve_write_cdb.o
-service_resolve_write_tmp.o
 service_switch_tree.o
 -loblibs
 -lskarnet

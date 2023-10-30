@@ -83,7 +83,7 @@ extern void state_unpack(char *pack, ss_state_t *sta) ;
 extern void state_set_flag(ss_state_t *sta, int flags,int flags_val) ;
 extern int state_check(resolve_service_t *res) ;
 extern int state_write(ss_state_t *sta, resolve_service_t *res) ;
-extern int state_write_tmp(ss_state_t *sta, char const *tmp) ;
+extern int state_write_remote(ss_state_t *sta, char const *tmp) ;
 extern int state_read(ss_state_t *sta, resolve_service_t *res) ;
 extern int state_messenger(resolve_service_t *res, uint32_t flag, uint32_t value) ;
 
