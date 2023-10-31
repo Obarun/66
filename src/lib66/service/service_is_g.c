@@ -45,12 +45,6 @@ static int service_is(ss_state_t *ste, uint32_t flag)
 
         case STATE_FLAGS_TOPARSE : return ste->toparse ;
 
-        case STATE_FLAGS_ISDOWNFILE : return ste->isdownfile ;
-
-        case STATE_FLAGS_ISEARLIER : return ste->isearlier ;
-
-        case STATE_FLAGS_ISENABLED : return ste->isenabled ;
-
         case STATE_FLAGS_ISPARSED : return ste->isparsed ; //always true framboise
 
         case STATE_FLAGS_ISSUPERVISED : return ste->issupervised ;

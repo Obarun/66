@@ -160,8 +160,6 @@ static void parse_write_state(resolve_service_t *res, char const *dst, uint8_t f
     state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_TRUE) ;
     state_set_flag(&sta, STATE_FLAGS_TOPARSE, STATE_FLAGS_FALSE) ;
     state_set_flag(&sta, STATE_FLAGS_ISPARSED, STATE_FLAGS_TRUE) ;
-    state_set_flag(&sta, STATE_FLAGS_ISEARLIER, res->earlier ? STATE_FLAGS_TRUE : STATE_FLAGS_FALSE) ;
-    state_set_flag(&sta, STATE_FLAGS_ISDOWNFILE, res->execute.down ? STATE_FLAGS_TRUE : STATE_FLAGS_FALSE) ;
 
     if (!state_write_remote(&sta, dst)) {
         parse_cleanup(res, dst, force) ;

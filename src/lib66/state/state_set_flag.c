@@ -29,9 +29,6 @@ void state_set_flag(ss_state_t *sta, int flags, int flags_val)
         case STATE_FLAGS_TORESTART: sta->torestart = flags_val ; break ;
         case STATE_FLAGS_TOUNSUPERVISE: sta->tounsupervise = flags_val ; break ;
         case STATE_FLAGS_TOPARSE: sta->toparse = flags_val ; break ;
-        case STATE_FLAGS_ISDOWNFILE: sta->isdownfile = flags_val ; break ;
-        case STATE_FLAGS_ISEARLIER: sta->isearlier = flags_val ; break ;
-        case STATE_FLAGS_ISENABLED: sta->isenabled = flags_val ; break ;
         case STATE_FLAGS_ISPARSED: sta->isparsed = flags_val ; break ;
         case STATE_FLAGS_ISSUPERVISED: sta->issupervised = flags_val ; break ;
         case STATE_FLAGS_ISUP: sta->isup = flags_val ; break ;
