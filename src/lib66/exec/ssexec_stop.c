@@ -45,6 +45,8 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
     unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0, pos = 0, idx = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE + 1] ;
 
+    memset(list, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
+    memset(visit, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_ISSUPERVISED|STATE_FLAGS_WANTDOWN) ;
 
     {
@@ -117,24 +119,6 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
             log_warn("service: ", argv[pos], " is already stopped or unsupervised -- ignoring it") ;
             continue ;
         }
-
-        /** the logger need to be stopped in case of unsupervise request */
-        if (FLAGS_ISSET(flag, STATE_FLAGS_TOUNSUPERVISE)) {
-
-            if (get_rstrlen_until(argv[pos], SS_LOG_SUFFIX) < 0) {
-
-                if (ares[aresid].logger.want) {
-
-                    idx = graph_hash_vertex_get_id(&graph, ares[aresid].sa.s + ares[aresid].logger.name) ;
-
-                    if (!visit[idx]) {
-                        list[nservice++] = idx ;
-                        visit[idx] = 1 ;
-                    }
-                }
-            }
-
-        }
         graph_compute_visit(argv[pos], visit, list, &graph, &nservice, 1) ;
     }
 
@@ -153,16 +137,51 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
         sig[2] = 0 ;
     }
 
-    char const *nargv[nservice + 1] ;
-    for (pos = 0 ; pos < nservice ; pos++)
-        nargv[pos] = graph.data.s + genalloc_s(graph_hash_t, &graph.hash)[list[pos]].vertex ;
+    unsigned int flist[SS_MAX_SERVICE + 1], fvisit[SS_MAX_SERVICE + 1], fnservice = 0 ;
+    char const *nargv[(nservice * 2) + 1] ; // nservice * 2 -> at worse one logger per service
+    unsigned int nargc = 0 ;
 
-    nargv[pos] = 0 ;
+    idx = 0 ;
+    memset(flist, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
+    memset(fvisit, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
 
-    e = svc_send_wait(nargv, nservice + 1, sig, siglen, info) ;
+    for (pos = 0 ; pos < nservice ; pos++) {
+
+        char *name = graph.data.s + genalloc_s(graph_hash_t, &graph.hash)[list[pos]].vertex ;
+        nargv[nargc++] = name ;
+
+        idx = graph_hash_vertex_get_id(&graph, name) ;
+
+        if (!fvisit[idx]) {
+            flist[fnservice++] = idx ;
+            fvisit[idx] = 1 ;
+        }
+
+        int aresid = service_resolve_array_search(ares, areslen, name) ;
+        if (aresid < 0)
+            log_die(LOG_EXIT_USER, "service: ", name, " not available -- please make a bug report") ;
+
+        /** the logger need to be stopped in case of unsupervise request */
+        if (FLAGS_ISSET(flag, STATE_FLAGS_TOUNSUPERVISE)) {
+
+            if (get_rstrlen_until(name, SS_LOG_SUFFIX) < 0 && ares[aresid].logger.want) {
+
+                nargv[nargc++] = ares[aresid].sa.s + ares[aresid].logger.name ;
+                idx = graph_hash_vertex_get_id(&graph, ares[aresid].sa.s + ares[aresid].logger.name) ;
+                if (!fvisit[idx]) {
+                    flist[fnservice++] = idx ;
+                    fvisit[idx] = 1 ;
+                }
+            }
+        }
+    }
+
+    nargv[nargc] = 0 ;
+
+    e = svc_send_wait(nargv, nargc, sig, siglen, info) ;
 
     if (FLAGS_ISSET(flag, STATE_FLAGS_TOUNSUPERVISE))
-        svc_unsupervise(list, nservice, &graph, ares, areslen, info) ;
+        svc_unsupervise(flist, fnservice, &graph, ares, areslen, info) ;
 
     service_resolve_array_free(ares, areslen) ;
 
