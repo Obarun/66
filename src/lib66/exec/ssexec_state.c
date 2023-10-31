@@ -77,9 +77,6 @@ int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
         "torestart",
         "tounsupervise",
         "toparse",
-        "isdownfile",
-        "isearlier" ,
-        "isenabled" ,
         "isparsed" ,
         "issupervised",
         "isup" } ;
@@ -131,9 +128,6 @@ int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
     info_display_int(fields[m++],sta.torestart) ;
     info_display_int(fields[m++],sta.tounsupervise) ;
     info_display_int(fields[m++],sta.toparse) ;
-    info_display_int(fields[m++],sta.isdownfile) ;
-    info_display_int(fields[m++],sta.isearlier) ;
-    info_display_int(fields[m++],sta.isenabled) ;
     info_display_int(fields[m++],sta.isparsed) ;
     info_display_int(fields[m++],sta.issupervised) ;
     info_display_int(fields[m],sta.isup) ;

@@ -26,6 +26,8 @@
 
 int parse_section(stralloc *secname, char const *str, size_t *pos)
 {
+    log_flow() ;
+
     int id = -1 ;
     size_t len = strlen(str), newpos = 0, found = 0 ;
     _init_stack_(stk, len + 1) ;

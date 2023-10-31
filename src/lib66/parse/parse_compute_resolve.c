@@ -119,7 +119,6 @@ static uint32_t compute_pipe_service(resolve_wrapper_t_ref wres, ssexec_t *info,
 {
     log_flow() ;
 
-    size_t servicelen = strlen(service) ;
     size_t namelen = strlen(name) ;
 
     char tmp[info->live.len + SS_SCANDIR_LEN + 1 + info->ownerlen + 1 + namelen + 1] ;
