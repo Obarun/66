@@ -36,7 +36,7 @@
 #include <66/config.h>
 #include <66/state.h>
 
-#define MAXOPTS 73
+#define MAXOPTS 74
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -140,6 +140,7 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_int(fields[m++], res->logger.backup) ;
     info_display_int(fields[m++], res->logger.maxsize) ;
     info_display_int(fields[m++], res->logger.timestamp) ;
+    info_display_int(fields[m++], res->logger.want) ;
     info_display_string(fields[m++], res->sa.s, res->logger.execute.run.run, 1) ;
     info_display_string(fields[m++], res->sa.s, res->logger.execute.run.run_user, 1) ;
     info_display_string(fields[m++], res->sa.s, res->logger.execute.run.build, 1) ;
@@ -185,11 +186,11 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "owner",
         "treename",
         "user" ,
-        "inmodule", // 14
+        "inmodule",
 
         "home",
         "frontend",
-        "servicedir", //17
+        "servicedir",
 
         "depends",
         "requiredby",
@@ -198,7 +199,7 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "ndepends",
         "nrequiredby",
         "noptsdeps",
-        "ncontents", // 25
+        "ncontents",
 
         "run",
         "run_user",
@@ -215,7 +216,7 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "timeoutup",
         "timeoutdown",
         "down",
-        "downsignal", // 41
+        "downsignal",
 
         "livedir",
         "status",
@@ -226,24 +227,25 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "notifdir",
         "supervisedir",
         "fdholderdir",
-        "oneshotddir", //50
+        "oneshotddir",
 
         "logname" ,
         "logdestination" ,
         "logbackup" ,
         "logmaxsize" ,
         "logtimestamp" ,
+        "logwant",
         "logrun" ,
         "logrun_user" ,
         "logrun_build" ,
         "logrun_shebang" ,
         "logrun_runas" ,
         "logtimeoutkill",
-        "logtimeoutfinish", // 62
+        "logtimeoutfinish",
 
         "env",
         "envdir",
-        "env_overwrite", // 65
+        "env_overwrite",
 
         "configure",
         "directories",
@@ -251,8 +253,7 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "infiles",
         "ndirectories",
         "nfiles",
-        "ninfiles" // 72
-
+        "ninfiles"
     } ;
 
     {
