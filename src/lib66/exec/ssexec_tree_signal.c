@@ -852,6 +852,9 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
 
     graph_t graph = GRAPH_ZERO ;
 
+    memset(list, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
+    memset(visit, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
+
     {
         subgetopt l = SUBGETOPT_ZERO ;
 
