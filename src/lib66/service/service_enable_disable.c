@@ -141,5 +141,7 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
 
         free(wres) ;
         visit[idx] = 1 ;
+
+        log_info(!action ? "Disabled" : "Enabled"," successfully service: ", ares[idx].sa.s + ares[idx].name) ;
     }
 }

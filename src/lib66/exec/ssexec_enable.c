@@ -133,7 +133,6 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
         if (!stack_add_g(&stk, argv[n]))
             log_dieu(LOG_EXIT_SYS, "add string") ;
 
-        log_info("Enabled successfully service: ", ares[aresid].sa.s + ares[aresid].name) ;
     }
 
     service_resolve_array_free(ares, areslen) ;
