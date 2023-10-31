@@ -45,8 +45,8 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
     unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0, pos = 0, idx = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE + 1] ;
 
-    memset(list, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
-    memset(visit, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
+    memset(list, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
+    memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_ISSUPERVISED|STATE_FLAGS_WANTDOWN) ;
 
     {
@@ -104,8 +104,6 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- did you start it first?") ;
 
-    graph_array_init_single(visit, SS_MAX_SERVICE) ;
-
     for (; pos < argc ; pos++) {
 
         int aresid = service_resolve_array_search(ares, areslen, argv[pos]) ;
@@ -142,8 +140,8 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
     unsigned int nargc = 0 ;
 
     idx = 0 ;
-    memset(flist, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
-    memset(fvisit, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
+    memset(flist, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
+    memset(fvisit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
 
     for (pos = 0 ; pos < nservice ; pos++) {
 

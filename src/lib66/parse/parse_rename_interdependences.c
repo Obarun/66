@@ -115,11 +115,12 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, r
 
     unsigned int aresid = 0 ;
     size_t plen = strlen(prefix) ;
-    visit_t visit[SS_MAX_SERVICE + 1] ;
+    unsigned int visit[SS_MAX_SERVICE + 1] ;
     resolve_wrapper_t_ref awres = 0 ;
     stralloc sa = STRALLOC_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-    visit_init(visit, SS_MAX_SERVICE) ;
+
+    memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
 
     for (; aresid < *areslen ; aresid++) {
 

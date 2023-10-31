@@ -263,9 +263,9 @@ static int async_deps(pidservice_t *apids, unsigned int i, unsigned int what, ss
     iopause_fd x = { .fd = apids[i].pipe[0], .events = IOPAUSE_READ, 0 } ;
 
     unsigned int n = apids[i].nedge ;
-    unsigned int visit[n] ;
+    unsigned int visit[n + 1] ;
 
-    graph_array_init_single(visit, n) ;
+    memset(visit, 0, (n + 1) * sizeof(unsigned int));
 
     while (pos < n) {
 

@@ -130,8 +130,8 @@ int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char co
     unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1] ;
     resolve_service_t ares[SS_MAX_SERVICE + 1] ;
 
-    memset(list, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
-    memset(visit, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
+    memset(list, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
+    memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
     uint32_t gflag = STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP ;
 
     if (!propagate)
@@ -158,8 +158,6 @@ int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char co
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not supervised -- initiate its first") ;
-
-    graph_array_init_single(visit, SS_MAX_SERVICE) ;
 
     FOREACH_SASTR(&sa, pos) {
 

@@ -86,7 +86,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
     ss_state_t sta = STATE_ZERO ;
 
     memset(msg, 0, areslen * sizeof(unsigned int)) ;
-    memset(toclean, 0, SS_MAX_SERVICE + 1 * sizeof(unsigned int)) ;
+    memset(toclean, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
 
     /* nothing to do */
     if (!alen)

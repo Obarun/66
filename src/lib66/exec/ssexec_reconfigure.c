@@ -45,8 +45,8 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0, n = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE + 1] ;
 
-    memset(list, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
-    memset(visit, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
+    memset(list, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
+    memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOPARSE|STATE_FLAGS_WANTUP) ;
 
     {
@@ -85,8 +85,6 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- try first to install the corresponding frontend file") ;
-
-    graph_array_init_single(visit, SS_MAX_SERVICE) ;
 
     for (; n < argc ; n++) {
 

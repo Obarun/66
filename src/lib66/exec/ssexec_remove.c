@@ -36,6 +36,7 @@
 #include <66/config.h>
 #include <66/constants.h>
 #include <66/svc.h>
+#include <66/utils.h>
 
 static void auto_remove(char const *path)
 {

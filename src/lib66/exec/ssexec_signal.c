@@ -151,8 +151,8 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
      * */
     uint32_t gflag = STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_ISSUPERVISED|STATE_FLAGS_WANTUP ;
 
-    memset(list, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
-    memset(visit, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
+    memset(list, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
+    memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -238,8 +238,6 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not supervised -- initiate its first") ;
-
-    graph_array_init_single(visit, SS_MAX_SERVICE) ;
 
     for (; *argv ; argv++) {
 

@@ -56,10 +56,9 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
 
     unsigned int areslen = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE + 1] ;
+    unsigned int visit[SS_MAX_SERVICE + 1] ;
 
-    visit_t visit[SS_MAX_SERVICE + 1] ;
-    visit_init(visit, SS_MAX_SERVICE) ;
-
+    memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
     {

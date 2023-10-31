@@ -33,7 +33,6 @@
 #include <66/state.h>
 #include <66/graph.h>
 #include <66/sanitize.h>
-#include <66/utils.h>
 
 static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 {
@@ -45,8 +44,8 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
     unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0, n = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE + 1] ;
 
-    memset(list, 0, SS_MAX_SERVICE + 1 * sizeof(unsigned int)) ;
-    memset(visit, 0, SS_MAX_SERVICE + 1 * sizeof(unsigned int)) ;
+    memset(list, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
+    memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
     if (earlier)

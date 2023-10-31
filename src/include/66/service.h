@@ -25,7 +25,6 @@
 
 #include <66/ssexec.h>
 #include <66/resolve.h>
-#include <66/utils.h>
 
 typedef struct resolve_service_addon_path_s resolve_service_addon_path_t, *resolve_service_addon_path_t_ref ;
 struct resolve_service_addon_path_s
@@ -320,7 +319,7 @@ extern int service_resolve_read_cdb(cdb *c, resolve_service_t *res) ;
 extern void service_resolve_write(resolve_service_t *res) ;
 extern void service_resolve_write_remote(resolve_service_t *res, char const *dst, uint8_t force) ;
 extern int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres) ;
-extern void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *ares, unsigned int areslen, uint8_t action, visit_t *visit, uint8_t propagate) ;
+extern void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *ares, unsigned int areslen, uint8_t action, unsigned int *visit, uint8_t propagate) ;
 extern void service_switch_tree(resolve_service_t *res, char const *base, char const *totreename) ;
 extern void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char const *base, uint8_t requiredby) ;
 /* avoid circular dependencies by prototyping the ss_state_t instead

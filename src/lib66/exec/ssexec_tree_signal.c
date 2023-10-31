@@ -608,9 +608,9 @@ static int async_deps(pidtree_t *apidt, unsigned int i, unsigned int what, ssexe
     iopause_fd x = { .fd = apidt[i].pipe[0], .events = IOPAUSE_READ, 0 } ;
 
     unsigned int n = apidt[i].nedge ;
-    unsigned int visit[n] ;
+    unsigned int visit[n + 1] ;
 
-    graph_array_init_single(visit, n) ;
+    memset(visit, 0, (n + 1) * sizeof (unsigned int));
 
     while (pos < n) {
 
@@ -852,8 +852,8 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
 
     graph_t graph = GRAPH_ZERO ;
 
-    memset(list, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
-    memset(visit, 0, SS_MAX_SERVICE * sizeof(unsigned int)) ;
+    memset(list, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
+    memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -900,8 +900,6 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "trees selection is not created -- creates at least one tree") ;
-
-    graph_array_init_single(visit, SS_MAX_SERVICE) ;
 
     if (!graph_matrix_sort_tosa(&sa, &graph))
         log_dieu(LOG_EXIT_SYS, "get list of trees for graph -- please make a bug report") ;

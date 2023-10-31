@@ -20,8 +20,6 @@
 
 #include <skalibs/stralloc.h>
 
-#include <66/utils.h>
-
 int instance_create(stralloc *sasv,char const *svname, char const *regex, int len)
 {
     log_flow() ;

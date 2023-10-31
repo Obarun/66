@@ -30,16 +30,6 @@
 #define MYGID getgid()
 #define YOURGID(passto,owner) yourgid(passto,owner)
 
-typedef enum visit_e visit_t ;
-enum visit_e
-{
-    VISIT_WHITE = 0,
-    VISIT_GRAY,
-    VISIT_BLACK
-} ;
-
-extern void visit_init(visit_t *visit, size_t len) ;
-
 /** ss_utils.c file */
 extern char const *get_userhome(uid_t myuid) ;
 extern int youruid(uid_t *passto,char const *owner) ;

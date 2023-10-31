@@ -677,21 +677,22 @@ void tree_enable_disable_deps(graph_t *g,char const *base, char const *treename,
         log_dieu(LOG_EXIT_SYS, "get ", action ? "dependencies" : "required by" ," of: ", treename) ;
 
     size_t len = sastr_nelement(&sa) ;
-    visit_t v[len] ;
+    unsigned int v[len] ;
 
-    visit_init(v, len) ;
+    memset(v, 0, (len + 1) * sizeof(unsigned int)) ;
+
 
     if (sa.len) {
 
         FOREACH_SASTR(&sa, pos) {
 
-            if (v[element] == VISIT_WHITE) {
+            if (!v[element]) {
 
                 char *name = sa.s + pos ;
 
                 tree_enable_disable(g, base, name, action) ;
 
-                v[element] = VISIT_GRAY ;
+                v[element] = 1 ;
             }
             element++ ;
         }
@@ -755,9 +756,9 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
         log_dieu(LOG_EXIT_SYS,"get sorted ", requiredby ? "required by" : "dependency", " list of tree: ", treename) ;
 
     size_t vlen = sastr_nelement(&sa) ;
-    visit_t v[vlen] ;
+    unsigned int v[vlen + 1] ;
 
-    visit_init(v, vlen) ;
+    memset(v, 0, (vlen + 1) * sizeof(unsigned int)) ;
 
     len = sa.len ;
     {
@@ -769,7 +770,7 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
 
         for(; pos < len ; pos += strlen(t + pos) + 1, element++) {
 
-            if (v[element] == VISIT_WHITE) {
+            if (!v[element]) {
 
                 char *name = t + pos ;
 
@@ -782,7 +783,7 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
 
                     if (deps) {
                         if (!strcmp(name, deps)) {
-                            v[element] = VISIT_GRAY ;
+                            v[element] = 1 ;
                             continue ;
                         }
                     }
@@ -793,7 +794,7 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
                     nb++ ;
                 }
 
-                v[element] = VISIT_GRAY ;
+                v[element] = 1 ;
             }
         }
     }
@@ -850,9 +851,9 @@ void tree_depends_requiredby_deps(graph_t *g, char const *base, char const *tree
         log_dieu(LOG_EXIT_SYS,"get sorted ", requiredby ? "required by" : "dependency", " list of tree: ", treename) ;
 
     size_t vlen = sastr_nelement(&sa) ;
-    visit_t v[vlen] ;
+    unsigned int v[vlen + 1] ;
 
-    visit_init(v, vlen) ;
+    memset(v, 0, (vlen + 1) * sizeof(unsigned int)) ;
 
     auto_strings(solve, base, SS_SYSTEM) ;
 
@@ -863,13 +864,13 @@ void tree_depends_requiredby_deps(graph_t *g, char const *base, char const *tree
 
     for(; pos < len ; pos += strlen(t + pos) + 1, element++) {
 
-        if (v[element] == VISIT_WHITE) {
+        if (!v[element]) {
 
             char *name = t + pos ;
 
             tree_depends_requiredby(g, base, name, !requiredby, none, deps) ;
 
-            v[element] = VISIT_GRAY ;
+            v[element] = 1 ;
         }
     }
 
