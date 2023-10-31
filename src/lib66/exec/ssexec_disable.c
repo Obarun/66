@@ -108,11 +108,8 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
 
         service_enable_disable(&graph, aresid, ares, areslen, 0, visit, propagate) ;
 
-        tree_service_remove(info->base.s, ares[aresid].sa.s + ares[aresid].treename, ares[aresid].sa.s + ares[aresid].name) ;
-
         if (!sastr_add_string(&sa, argv[n]))
             log_dieu(LOG_EXIT_SYS, "add string") ;
-
     }
 
     if (stop && sa.len) {
