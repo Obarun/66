@@ -23,6 +23,5 @@
 
 extern int symlink_switch(resolve_service_t *res, uint8_t flag) ;
 extern int symlink_make(resolve_service_t *res) ;
-extern int symlink_pointto(resolve_service_t *res) ;
 
 #endif
