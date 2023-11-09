@@ -110,9 +110,10 @@ int main(int argc, char const *const *argv)
     /**
      * be paranoid and avoid to crash just for a
      * not executable script
-     * */
+     * Cannot be possible to a read-only filesystem
     if (chmod(script, 0755) < 0)
         log_dieusys(LOG_EXIT_SYS,"chmod: ", script) ;
+    */
 
     char const *newargv[3] ;
     unsigned int m = 0 ;
