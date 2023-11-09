@@ -99,12 +99,6 @@ int sanitize_scandir(resolve_service_t *res, ss_state_t *sta)
         if (res->type == TYPE_CLASSIC)
             scandir_scandir_to_livestate(res) ;
 
-        if (!res->earlier) {
-
-            if (svc_scandir_send(svcandir, "h") <= 0)
-                log_warnu_return(LOG_EXIT_ZERO, "reload scandir: ", svcandir) ;
-        }
-
         state_set_flag(sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE) ;
         state_set_flag(sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE) ;
 
