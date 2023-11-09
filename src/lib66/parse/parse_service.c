@@ -148,20 +148,15 @@ static void parse_write_state(resolve_service_t *res, char const *dst, uint8_t f
 {
     log_flow() ;
     ss_state_t sta = STATE_ZERO ;
+    char dir[strlen(dst) + SS_STATE_LEN + 1] ;
 
-    if (state_check(res)) {
-
-        if (!state_read(&sta, res)) {
-            parse_cleanup(res, dst, force) ;
-            log_dieu(LOG_EXIT_SYS, "read state file of: ", res->sa.s + res->name) ;
-        }
-    }
+    auto_strings(dir, dst, SS_STATE) ;
 
     state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_TRUE) ;
     state_set_flag(&sta, STATE_FLAGS_TOPARSE, STATE_FLAGS_FALSE) ;
     state_set_flag(&sta, STATE_FLAGS_ISPARSED, STATE_FLAGS_TRUE) ;
 
-    if (!state_write_remote(&sta, dst)) {
+    if (!state_write_remote(&sta, dir)) {
         parse_cleanup(res, dst, force) ;
         log_dieu(LOG_EXIT_SYS, "write state file of: ", res->sa.s + res->name) ;
     }

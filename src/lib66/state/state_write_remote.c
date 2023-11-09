@@ -30,9 +30,9 @@ int state_write_remote(ss_state_t *sta, char const *dst)
 
     size_t len = strlen(dst) ;
     char pack[STATE_STATE_SIZE] ;
-    char dir[len + SS_STATE_LEN + 1 + SS_STATUS_LEN + 1] ;
+    char dir[len + 1 + SS_STATUS_LEN + 1] ;
 
-    auto_strings(dir, dst, SS_STATE) ;
+    auto_strings(dir, dst) ;
 
     if (access(dir, F_OK) < 0) {
         log_trace("create directory: ", dir) ;
@@ -42,7 +42,7 @@ int state_write_remote(ss_state_t *sta, char const *dst)
 
     state_pack(pack, sta) ;
 
-    auto_strings(dir + len + SS_STATE_LEN, "/", SS_STATUS) ;
+    auto_strings(dir + len, "/", SS_STATUS) ;
 
     log_trace("write status file: ", dir) ;
     if (!openwritenclose_unsafe(dir, pack, STATE_STATE_SIZE))

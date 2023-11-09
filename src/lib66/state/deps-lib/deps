@@ -1,6 +1,7 @@
 state_check.o
 state_messenger.o
 state_pack.o
+state_read_remote.o
 state_read.o
 state_rmfile.o
 state_set_flag.o

@@ -48,14 +48,14 @@ struct ss_state_s
     /** STATE_FLAGS_FALSE -> no,
      * STATE_FLAGS_TRUE -> yes
      * for all field */
-    uint32_t toinit ; // runtime, in other case sanitize_init look for the presence of live.statedir
-    uint32_t toreload ; // runtime
-    uint32_t torestart ; // runtime
-    uint32_t tounsupervise ; // runtime
-    uint32_t toparse ; // useless
-    uint32_t isparsed ; // doesn't change but used a lot, can be set to STATE_FLAGS_TRUE at initialization of the state struct
-    uint32_t issupervised ; // set in sanitize_init, so runtime
-    uint32_t isup ; // runtime
+    uint32_t toinit ;
+    uint32_t toreload ;
+    uint32_t torestart ;
+    uint32_t tounsupervise ;
+    uint32_t toparse ;
+    uint32_t isparsed ;
+    uint32_t issupervised ;
+    uint32_t isup ;
 } ;
 
 #define STATE_ZERO { \
@@ -64,7 +64,7 @@ struct ss_state_s
     STATE_FLAGS_FALSE, \
     STATE_FLAGS_FALSE, \
     STATE_FLAGS_FALSE, \
-    STATE_FLAGS_FALSE, \
+    STATE_FLAGS_TRUE, \
     STATE_FLAGS_FALSE, \
     STATE_FLAGS_FALSE, \
 }
@@ -78,6 +78,7 @@ extern int state_check(resolve_service_t *res) ;
 extern int state_write(ss_state_t *sta, resolve_service_t *res) ;
 extern int state_write_remote(ss_state_t *sta, char const *tmp) ;
 extern int state_read(ss_state_t *sta, resolve_service_t *res) ;
+extern int state_read_remote(ss_state_t *sta, char const *dst) ;
 extern int state_messenger(resolve_service_t *res, uint32_t flag, uint32_t value) ;
 
 #endif

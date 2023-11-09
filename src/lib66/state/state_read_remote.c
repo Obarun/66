@@ -1,5 +1,5 @@
 /*
- * state_check.c
+ * state_read_remote.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *
@@ -12,25 +12,29 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <string.h>
-#include <unistd.h>
-
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 
+#include <skalibs/djbunix.h>
+
 #include <66/state.h>
 #include <66/constants.h>
-#include <66/service.h>
 
-int state_check(resolve_service_t *res)
+int state_read_remote(ss_state_t *sta, char const *dst)
 {
     log_flow() ;
-    char status[strlen(res->sa.s + res->live.statedir) + 1 + SS_STATUS_LEN + 1] ;
 
-    auto_strings(status, res->sa.s + res->live.statedir, "/", SS_STATUS) ;
+    int r ;
+    char pack[STATE_STATE_SIZE] ;
+    char dir[strlen(dst) + 1 + SS_STATUS_LEN + 1];
 
-    if (access(status, F_OK) < 0 && access(res->sa.s + res->live.status, F_OK) < 0)
+    auto_strings(dir, dst, "/", SS_STATUS) ;
+
+    r = openreadnclose(dir, pack, STATE_STATE_SIZE) ;
+    if (r < STATE_STATE_SIZE || r < 0)
         return 0 ;
+
+    state_unpack(pack, sta) ;
 
     return 1 ;
 }
