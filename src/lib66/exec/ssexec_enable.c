@@ -26,23 +26,7 @@
 #include <66/graph.h>
 #include <66/config.h>
 #include <66/enum.h>
-
-static void parse_it(char const *name, ssexec_t *info)
-{
-    int argc = 3 ;
-    int m = 0 ;
-    char const *prog = PROG ;
-    char const *newargv[argc] ;
-
-    newargv[m++] = "parse" ;
-    newargv[m++] = name ;
-    newargv[m] = 0 ;
-
-    PROG = "parse" ;
-    if (ssexec_parse(m, newargv, info))
-        log_dieu(LOG_EXIT_SYS, "parse service: ", name) ;
-    PROG = prog ;
-}
+#include <66/sanitize.h>
 
 int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
 {
@@ -99,13 +83,13 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
     _init_stack_(stk, argc * SS_MAX_TREENAME) ;
 
     for(; n < argc ; n++)
-        parse_it(argv[n], info) ;
+        sanitize_source(argv[n], info) ;
 
     /** build the graph of the entire system */
     graph_build_service(&graph, ares, &areslen, info, flag) ;
 
     if (!graph.mlen)
-        log_die(LOG_EXIT_USER, "services selection is not available -- try first to install the corresponding frontend file") ;
+        log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
 
     for (n = 0 ; n < argc ; n++) {
 
