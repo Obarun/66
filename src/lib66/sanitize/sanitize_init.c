@@ -13,7 +13,6 @@
  */
 
 #include <string.h>
-#include <stdlib.h>
 #include <errno.h>
 #include <unistd.h>// unlink
 
@@ -64,9 +63,6 @@ void cleanup(resolve_service_t *ares, unsigned int areslen)
 
             log_trace("remove symlink: ", ares[pos].sa.s + ares[pos].live.scandir) ;
             unlink(ares[pos].sa.s + ares[pos].live.scandir) ;
-
-            if (!symlink_switch(&ares[pos], SYMLINK_SOURCE))
-                log_warnusys("switch service symlink to source for: ", ares[pos].sa.s + ares[pos].name) ;
         }
     }
     errno = e ;
@@ -81,8 +77,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
     gid_t gid = getgid() ;
     int is_supervised = 0 ;
     unsigned int pos = 0, nsv = 0 ;
-    unsigned int real[alen] ;
-    unsigned int msg[areslen] ;
+    unsigned int real[alen], msg[areslen] ;
     ss_state_t sta = STATE_ZERO ;
 
     memset(msg, 0, areslen * sizeof(unsigned int)) ;
@@ -105,35 +100,14 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
         char *scandir = ares[aresid].sa.s + ares[aresid].live.scandir ;
         size_t scandirlen = strlen(scandir) ;
 
-        /** try to read the state following the symlink. It may not exist yet,
-         * for example at boot after a hard shutdown */
         int r = state_read(&sta, &ares[aresid]) ;
 
-        if (!symlink_switch(&ares[aresid], SYMLINK_SOURCE))
-            log_dieu(LOG_EXIT_SYS, "switch service symlink to source for: ", name) ;
-
-        if (!r && !state_read(&sta, &ares[aresid]))
+        if (!r)
             log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug reports") ;
-
-        //r = access(ares[aresid].sa.s + ares[aresid].live.servicedir, F_OK) ;
-        //if (!r) {
-
-            //if (sta.isup == STATE_FLAGS_TRUE)
-            //    log_die(LOG_EXIT_USER, "service: ", name, " is running and the frontend file has changed. Please use 66 reconfigure ", name, " command instead.") ;
-
-            //log_trace("remove directory: ", ares[aresid].sa.s + ares[aresid].live.servicedir) ;
-            //if (!dir_rm_rf(ares[aresid].sa.s + ares[aresid].live.servicedir))
-            //    log_dieusys(LOG_EXIT_SYS, "remove live directory: ", ares[aresid].sa.s + ares[aresid].live.servicedir) ;
-        //}
 
         if (!sanitize_livestate(&ares[aresid], &sta)) {
             cleanup(ares, areslen) ;
             log_dieu(LOG_EXIT_SYS, "sanitize state directory: ", ares[aresid].sa.s + ares[aresid].name) ;
-        }
-
-        if (!symlink_switch(&ares[aresid], SYMLINK_LIVE)) {
-            cleanup(ares, areslen) ;
-            log_dieusys(LOG_EXIT_SYS, "switch service symlink to live for: ", name) ;
         }
 
         /**
@@ -157,8 +131,16 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
                 log_dieusys(LOG_EXIT_SYS, "sanitize_scandir directory: ", ares[aresid].sa.s + ares[aresid].live.scandir) ;
             }
 
-            if (ares[aresid].type == TYPE_ONESHOT)
+            if (ares[aresid].type == TYPE_ONESHOT) {
+
+                if (!state_write(&sta, &ares[aresid])) {
+                    cleanup(ares, areslen) ;
+                    log_dieusys(LOG_EXIT_SYS, "write status file of: ", ares[aresid].sa.s + ares[aresid].name) ;
+                }
+
                 continue ;
+            }
+
         }
 
         /* down file */
@@ -280,27 +262,31 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
             log_dieusys(LOG_EXIT_SYS, "read status file of: ", sa + ares[aresid].name) ;
         }
 
+        if (ares[aresid].type == TYPE_CLASSIC) {
+
+            if (!earlier) {
+
+                log_trace("clean event directory: ", sa + ares[aresid].live.eventdir) ;
+                if (!ftrigw_clean(sa + ares[aresid].live.eventdir))
+                    log_warnu("clean event directory: ", sa + ares[aresid].live.eventdir) ;
+            }
+        }
         if (ares[aresid].type == TYPE_CLASSIC || ares[aresid].type == TYPE_ONESHOT) {
 
-            log_trace("clean event directory: ", sa + ares[aresid].live.eventdir) ;
-            if (!ftrigw_clean(sa + ares[aresid].live.eventdir))
-                log_warnu("clean event directory: ", sa + ares[aresid].live.eventdir) ;
-
-            if (ares[aresid].type == TYPE_CLASSIC && ares[aresid].logger.want) {
-                /** Creation of the logger destination.
-                 * This is made here to avoid issues if the logger destination
-                 * is on tmpfs.
-                */
+            if (ares[aresid].logger.want) {
+                /** Creation of the logger destination. This is made here to avoid
+                 * issues on tmpfs logger directory destination */
                 uid_t log_uid ;
                 gid_t log_gid ;
                 char *logrunner = ares[aresid].logger.execute.run.runas ? ares[aresid].sa.s + ares[aresid].logger.execute.run.runas : SS_LOGGER_RUNNER ;
+                char *dst = ares[aresid].sa.s + ares[aresid].logger.destination ;
 
                 if (!youruid(&log_uid, logrunner) || !yourgid(&log_gid, log_uid)) {
                     cleanup(ares, areslen) ;
                     log_dieusys(LOG_EXIT_SYS, "get uid and gid of: ", logrunner) ;
                 }
-                char *dst = ares[aresid].sa.s + ares[aresid].logger.destination ;
 
+                log_trace("create directory: ", dst) ;
                 if (!dir_create_parent(dst, 0755)) {
                     cleanup(ares, areslen) ;
                     log_dieusys(LOG_EXIT_SYS, "create directory: ", ares[aresid].sa.s + ares[aresid].logger.destination) ;
@@ -314,11 +300,11 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
                     }
                 }
             }
-
         }
 
         /** Consider Module and Bundle as supervised */
         state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_FALSE) ;
+        state_set_flag(&sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE) ;
 
         if (!state_write(&sta, &ares[aresid])) {
             cleanup(ares, areslen) ;

@@ -13,6 +13,7 @@
  */
 
 #include <string.h>
+#include <unistd.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -29,8 +30,18 @@ int state_read(ss_state_t *sta, resolve_service_t *res)
 
     int r ;
     char pack[STATE_STATE_SIZE] ;
+    char *path = 0 ;
+    char status[strlen(res->sa.s + res->live.statedir) + 1 + SS_STATUS_LEN + 1] ;
 
-    r = openreadnclose(res->sa.s + res->live.status, pack, STATE_STATE_SIZE) ;
+    auto_strings(status, res->sa.s + res->live.statedir, "/", SS_STATUS) ;
+
+    if (access(status, F_OK) < 0) {
+        path = res->sa.s + res->live.status ;
+    } else {
+        path = status ;
+    }
+
+    r = openreadnclose(path, pack, STATE_STATE_SIZE) ;
     if (r < STATE_STATE_SIZE || r < 0)
         return 0 ;
 

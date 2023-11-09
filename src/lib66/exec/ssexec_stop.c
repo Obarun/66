@@ -117,7 +117,7 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
             log_warn("service: ", argv[pos], " is already stopped or unsupervised -- ignoring it") ;
             continue ;
         }
-        graph_compute_visit(argv[pos], visit, list, &graph, &nservice, 1) ;
+        graph_compute_visit(ares, aresid, visit, list, &graph, &nservice, 1) ;
     }
 
     char *sig[siglen] ;

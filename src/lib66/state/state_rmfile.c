@@ -13,6 +13,7 @@
  */
 
 #include <string.h>
+#include <unistd.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -27,5 +28,13 @@ void state_rmfile(resolve_service_t *res)
 {
     log_flow() ;
 
-    unlink_void(res->sa.s + res->live.status) ;
+    char status[strlen(res->sa.s + res->live.statedir) + 1 + SS_STATUS_LEN + 1] ;
+
+    auto_strings(status, res->sa.s + res->live.statedir, "/", SS_STATUS) ;
+
+    if (access(status, F_OK) < 0) {
+        unlink_void(res->sa.s + res->live.status) ;
+    } else {
+        unlink_void(status) ;
+    }
 }

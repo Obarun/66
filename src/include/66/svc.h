@@ -48,10 +48,22 @@ struct pidservice_s
      * to notify when a service is started/stopped */
     unsigned int notif[SS_MAX_SERVICE + 1] ;
 } ;
-#define PIDSERVICE_ZERO { { -1, -1 }, -1, -1, 0, 0, 0, { 0 } }
 
-extern int svc_launch(pidservice_t *apids, unsigned int len, uint8_t what, graph_t *graph, resolve_service_t *ares, ssexec_t *info, char const *rise, uint8_t rise_opt, uint8_t msg, char const *signal, uint8_t propagate) ;
-extern int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char const *updown, uint8_t opt_updown, uint8_t reloadmsg,char const *data, uint8_t propagate) ;
+#define PIDSERVICE_ZERO { \
+    .pipe[0] = -1, \
+    .pipe[1] = -1, \
+    .aresid = -1, \
+    .vertex = -1, \
+    .state = 0, \
+    .nedge =  0, \
+    .edge = { 0 }, \
+    .nnotif = 0, \
+    .notif = { 0 } \
+}
+
+extern void svc_init_array(unsigned int *list, unsigned int listlen, pidservice_t *apids, graph_t *g, resolve_service_t *ares, unsigned int areslen, ssexec_t *info, uint8_t requiredby, uint32_t flag) ;
+extern int svc_launch(pidservice_t *apids, unsigned int napid, uint8_t what, graph_t *graph, resolve_service_t *ares, unsigned int areslen, ssexec_t *info, char const *rise, uint8_t rise_opt, uint8_t msg, char const *signal, uint8_t propagate) ;
+extern int svc_compute_ns(resolve_service_t *ares, unsigned int areslen, unsigned int aresid, uint8_t what, ssexec_t *info, char const *updown, uint8_t opt_updown, uint8_t reloadmsg,char const *data, uint8_t propagate, pidservice_t *apids, unsigned int napids) ;
 extern int svc_scandir_ok (char const *dir) ;
 extern int svc_scandir_send(char const *scandir,char const *signal) ;
 extern int svc_send_wait(char const *const *list, unsigned int nservice, char **sig, unsigned int siglen, ssexec_t *info) ;

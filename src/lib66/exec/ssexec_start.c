@@ -101,7 +101,7 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
         if (aresid < 0)
             log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parse it?") ;
 
-        graph_compute_visit(argv[n], visit, list, &graph, &nservice, 0) ;
+        graph_compute_visit(ares, aresid, visit, list, &graph, &nservice, 0) ;
     }
 
     /** initiate services at the corresponding scandir */

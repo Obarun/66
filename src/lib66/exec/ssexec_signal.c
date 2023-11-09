@@ -240,10 +240,9 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
         log_die(LOG_EXIT_USER, "services selection is not supervised -- initiate its first") ;
 
     for (; *argv ; argv++) {
-
         int aresid = service_resolve_array_search(ares, areslen, *argv) ;
         /** The service may not be supervised, for example serviceB depends on
-         * serviceA and serviceB by unsupervised by the user. So it will be ignored
+         * serviceA and serviceB was unsupervised by the user. So it will be ignored
          * by the function graph_build_service. In this case, the service does not
          * exist at array.
          *
@@ -256,14 +255,14 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
                 log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you parse it?") ;
             }
         }
-        graph_compute_visit(*argv, visit, list, &graph, &napid, requiredby) ;
+        graph_compute_visit(ares, aresid, visit, list, &graph, &napid, requiredby) ;
     }
 
     pidservice_t apids[napid] ;
 
-    pidservice_init_array(list, napid, apids, &graph, ares, areslen, info, requiredby, gflag) ;
+    svc_init_array(list, napid, apids, &graph, ares, areslen, info, requiredby, gflag) ;
 
-    r = svc_launch(apids, napid, what, &graph, ares, info, updown, opt_updown, reloadmsg, data, propagate) ;
+    r = svc_launch(apids, napid, what, &graph, ares, areslen, info, updown, opt_updown, reloadmsg, data, propagate) ;
 
     graph_free_all(&graph) ;
 

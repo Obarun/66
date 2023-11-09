@@ -42,6 +42,7 @@ static unsigned int napid = 0 ;
 static unsigned int npid = 0 ;
 
 static resolve_service_t_ref pares = 0 ;
+static unsigned int pareslen = 0 ;
 static char data[DATASIZE + 1] ;
 static char updown[4] ;
 static uint8_t opt_updown = 0 ;
@@ -248,113 +249,6 @@ static void announce(unsigned int pos, pidservice_t *apids, unsigned int what, u
     }
 }
 
-static int async_deps(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph, tain *deadline)
-{
-    log_flow() ;
-
-    int r ;
-    unsigned int pos = 0, id = 0, ilog = 0, idx = 0 ;
-    char buf[(UINT_FMT*2)*SS_MAX_SERVICE + 1] ;
-
-    tain dead ;
-    tain_now_set_stopwatch_g() ;
-    tain_add_g(&dead, deadline) ;
-
-    iopause_fd x = { .fd = apids[i].pipe[0], .events = IOPAUSE_READ, 0 } ;
-
-    unsigned int n = apids[i].nedge ;
-    unsigned int visit[n + 1] ;
-
-    memset(visit, 0, (n + 1) * sizeof(unsigned int));
-
-    while (pos < n) {
-
-        r = iopause_g(&x, 1, &dead) ;
-
-        if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "iopause") ;
-
-        if (!r) {
-            errno = ETIMEDOUT ;
-            log_dieusys(LOG_EXIT_SYS,"time out", pares[apids[i].aresid].sa.s + pares[apids[i].aresid].name) ;
-        }
-
-        if (x.revents & IOPAUSE_READ) {
-
-            memset(buf, 0, ((UINT_FMT*2)*SS_MAX_SERVICE + 1) * sizeof(char)) ;
-            r = read(apids[i].pipe[0], buf, sizeof(buf)) ;
-            if (r < 0)
-                log_dieu(LOG_EXIT_SYS, "read from pipe") ;
-            buf[r] = 0 ;
-
-            idx = 0 ;
-
-            while (r != -1) {
-                /** The buf might contain multiple signal coming
-                 * from the dependencies if they finished before
-                 * the start of this read process. Check every
-                 * signal received.*/
-                r = get_len_until(buf + idx, '@') ;
-
-                if (r < 0)
-                    /* no more signal */
-                    goto next ;
-
-                char line[r + 1] ;
-                memcpy(line, buf + idx, r) ;
-                line[r] = 0 ;
-
-                idx += r + 1 ;
-
-                /**
-                 * the received string have the format:
-                 *      index_of_the_ares_array_of_the_service_dependency:signal_receive
-                 *
-                 * typically:
-                 *      - 10:D
-                 *      - 30:u
-                 *      - ...
-                 *
-                 * Split it and check the signal receive.*/
-                int sep = get_len_until(line, ':') ;
-                if (sep < 0)
-                    log_die(LOG_EXIT_SYS, "received bad signal format -- please make a bug report") ;
-
-                unsigned int c = line[sep + 1] ;
-                char pc[2] = { c, 0 } ;
-                line[sep] = 0 ;
-
-                if (!uint0_scan(line, &id))
-                    log_dieusys(LOG_EXIT_SYS, "retrieve service number -- please make a bug report") ;
-
-                ilog = id ;
-
-                log_trace(pares[apids[i].aresid].sa.s + pares[apids[i].aresid].name, " acknowledges: ", pc, " from: ", pares[ilog].sa.s + pares[ilog].name) ;
-
-                if (!visit[pos]) {
-
-                    id = pidservice_get_id(apids, id) ;
-                    if (id < 0)
-                        log_dieu(LOG_EXIT_SYS, "get apidservice id -- please make a bug report") ;
-
-                    id = check_action(apids, id, c, what) ;
-                    if (id < 0)
-                        log_die(LOG_EXIT_SYS, "service dependency: ", pares[ilog].sa.s + pares[ilog].name, " of: ", pares[apids[i].aresid].sa.s + pares[apids[i].aresid].name," crashed") ;
-
-                    if (!id)
-                        continue ;
-
-                    visit[pos++]++ ;
-                }
-            }
-        }
-        next:
-
-    }
-
-    return 1 ;
-}
-
 static int handle_signal(pidservice_t *apids, unsigned int what, graph_t *graph, ssexec_t *info)
 {
     log_flow() ;
@@ -448,11 +342,12 @@ unsigned int compute_timeout(unsigned int idx, unsigned int what)
 
 }
 
-static int doit(pidservice_t *sv, unsigned int what, tain *deadline)
+static int doit(pidservice_t *apids, unsigned int napid, unsigned int idx, unsigned int what, tain *deadline)
 {
     log_flow() ;
 
-    uint8_t type = pares[sv->aresid].type ;
+    unsigned int pidx = apids[idx].aresid ;
+    uint8_t type = pares[pidx].type ;
 
     pid_t pid ;
     int wstat ;
@@ -461,17 +356,17 @@ static int doit(pidservice_t *sv, unsigned int what, tain *deadline)
 
     unsigned int timeout = 0 ;
 
-    timeout = compute_timeout(sv->aresid, what) ;
+    timeout = compute_timeout(pidx, what) ;
 
     tfmt[uint_fmt(tfmt, timeout)] = 0 ;
 
     if (type == TYPE_CLASSIC) {
 
-        char *scandir = pares[sv->aresid].sa.s + pares[sv->aresid].live.scandir ;
+        char *scandir = pares[pidx].sa.s + pares[pidx].live.scandir ;
 
         if (updown[2] == 'U' || updown[2] == 'D' || updown[2] == 'R') {
 
-            if (!pares[sv->aresid].notify)
+            if (!pares[pidx].notify)
                 updown[2] = updown[2] == 'U' ? 'u' : updown[2] == 'D' ? 'd' : updown[2] == 'R' ? 'r' : updown[2] ;
 
         }
@@ -505,17 +400,17 @@ static int doit(pidservice_t *sv, unsigned int what, tain *deadline)
 
     } else if (type == TYPE_ONESHOT) {
 
-        char *sa = pares[sv->aresid].sa.s ;
-        char *name = sa + pares[sv->aresid].name ;
+        char *sa = pares[pidx].sa.s ;
+        char *name = sa + pares[pidx].name ;
         size_t namelen = strlen(name) ;
-        char *home = pares[sv->aresid].sa.s + pares[sv->aresid].path.home ;
+        char *home = pares[pidx].sa.s + pares[pidx].path.home ;
         size_t homelen = strlen(home) ;
 
         char script[homelen + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + namelen + 7 + 1] ;
         auto_strings(script, home, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", name) ;
 
-        char *oneshotdir = pares[sv->aresid].sa.s + pares[sv->aresid].live.oneshotddir ;
-        char *scandir = pares[sv->aresid].sa.s + pares[sv->aresid].live.scandir ;
+        char *oneshotdir = pares[pidx].sa.s + pares[pidx].live.oneshotddir ;
+        char *scandir = pares[pidx].sa.s + pares[pidx].live.scandir ;
         char oneshot[strlen(oneshotdir) + 2 + 1] ;
         auto_strings(oneshot, oneshotdir, "/s") ;
 
@@ -579,15 +474,126 @@ static int doit(pidservice_t *sv, unsigned int what, tain *deadline)
             return WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat) ;
         }
 
-    } else if (type == TYPE_BUNDLE || type == TYPE_MODULE) {
+    } else if (type == TYPE_MODULE) {
 
-        return svc_compute_ns(&pares[sv->aresid], what, PINFO, updown, opt_updown, reloadmsg, data, PROPAGATE) ; ;
+        return svc_compute_ns(pares, pareslen, pidx, what, PINFO, updown, opt_updown, reloadmsg, data, PROPAGATE, apids, napid) ;
     }
-    // never happen, let compiler to be happy
+
+    /* return 0 in case of bundle, all services of the bundle
+     * should be started/stopped at this stage.*/
     return 0 ;
 }
 
-static int async(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph, tain *deadline)
+static int async_deps(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_t *info, tain *deadline)
+{
+    log_flow() ;
+
+    int r ;
+    unsigned int pos = 0, id = 0, ilog = 0, idx = 0 ;
+    char buf[(UINT_FMT*2)*SS_MAX_SERVICE + 1] ;
+
+    tain dead ;
+    tain_now_set_stopwatch_g() ;
+    tain_add_g(&dead, deadline) ;
+
+    iopause_fd x = { .fd = apids[i].pipe[0], .events = IOPAUSE_READ, 0 } ;
+
+    unsigned int n = apids[i].nedge ;
+    unsigned int visit[n + 1] ;
+
+    memset(visit, 0, (n + 1) * sizeof(unsigned int));
+
+    log_trace("waiting dependencies for: ", pares[apids[i].aresid].sa.s + pares[apids[i].aresid].name) ;
+
+    while (pos < n) {
+
+        r = iopause_g(&x, 1, &dead) ;
+
+        if (r < 0)
+            log_dieusys(LOG_EXIT_SYS, "iopause") ;
+
+        if (!r) {
+            errno = ETIMEDOUT ;
+            log_dieusys(LOG_EXIT_SYS,"time out", pares[apids[i].aresid].sa.s + pares[apids[i].aresid].name) ;
+        }
+
+        if (x.revents & IOPAUSE_READ) {
+
+            memset(buf, 0, ((UINT_FMT*2)*SS_MAX_SERVICE + 1) * sizeof(char)) ;
+            r = read(apids[i].pipe[0], buf, sizeof(buf)) ;
+            if (r < 0)
+                log_dieu(LOG_EXIT_SYS, "read from pipe") ;
+            buf[r] = 0 ;
+
+            idx = 0 ;
+
+            while (r != -1) {
+                /** The buf might contain multiple signal coming
+                 * from the dependencies if they finished before
+                 * the start of this read process. Check every
+                 * signal received.*/
+                r = get_len_until(buf + idx, '@') ;
+
+                if (r < 0)
+                    /* no more signal */
+                    goto next ;
+
+                char line[r + 1] ;
+                memcpy(line, buf + idx, r) ;
+                line[r] = 0 ;
+
+                idx += r + 1 ;
+
+                /**
+                 * the received string have the format:
+                 *      index_of_the_ares_array_of_the_service_dependency:signal_receive
+                 *
+                 * typically:
+                 *      - 10:D
+                 *      - 30:u
+                 *      - ...
+                 *
+                 * Split it and check the signal receive.*/
+                int sep = get_len_until(line, ':') ;
+                if (sep < 0)
+                    log_die(LOG_EXIT_SYS, "received bad signal format -- please make a bug report") ;
+
+                unsigned int c = line[sep + 1] ;
+                char pc[2] = { c, 0 } ;
+                line[sep] = 0 ;
+
+                if (!uint0_scan(line, &id))
+                    log_dieusys(LOG_EXIT_SYS, "retrieve service number -- please make a bug report") ;
+
+                ilog = id ;
+
+                log_trace(pares[apids[i].aresid].sa.s + pares[apids[i].aresid].name, " acknowledges: ", pc, " from: ", pares[ilog].sa.s + pares[ilog].name) ;
+
+                if (!visit[pos]) {
+
+                    id = pidservice_get_id(apids, id) ;
+                    if (id < 0)
+                        log_dieu(LOG_EXIT_SYS, "get apidservice id -- please make a bug report") ;
+
+                    id = check_action(apids, id, c, what) ;
+                    if (id < 0)
+                        log_die(LOG_EXIT_SYS, "service dependency: ", pares[ilog].sa.s + pares[ilog].name, " of: ", pares[apids[i].aresid].sa.s + pares[apids[i].aresid].name," crashed") ;
+
+                    if (!id)
+                        continue ;
+
+                    visit[pos++]++ ;
+                }
+            }
+        }
+        next:
+
+    }
+
+    return 1 ;
+}
+
+static int async(pidservice_t *apids, unsigned int napid, unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph, tain *deadline)
 {
     log_flow() ;
 
@@ -595,7 +601,7 @@ static int async(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_
 
     char *name = graph->data.s + genalloc_s(graph_hash_t,&graph->hash)[apids[i].vertex].vertex ;
 
-    log_trace("beginning of the process of: ", name) ;
+    log_trace("Initiating process of: ", name) ;
 
     if (FLAGS_ISSET(apids[i].state, (!what ? SVC_FLAGS_DOWN : SVC_FLAGS_UP))) {
 
@@ -604,10 +610,10 @@ static int async(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_
             FLAGS_SET(apids[i].state, SVC_FLAGS_BLOCK) ;
 
             if (apids[i].nedge)
-                if (!async_deps(apids, i, what, info, graph, deadline))
+                if (!async_deps(apids, i, what, info, deadline))
                     log_warnu_return(LOG_EXIT_ZERO, !what ? "start" : "stop", " dependencies of service: ", name) ;
 
-            e = doit(&apids[i], what, deadline) ;
+            e = doit(apids, napid, i, what, deadline) ;
 
         } else {
 
@@ -627,7 +633,7 @@ static int async(pidservice_t *apids, unsigned int i, unsigned int what, ssexec_
     return e ;
 }
 
-int svc_launch(pidservice_t *apids, unsigned int len, uint8_t what, graph_t *graph, resolve_service_t *ares, ssexec_t *info, char const *rise, uint8_t rise_opt, uint8_t msg, char const *signal, uint8_t propagate)
+int svc_launch(pidservice_t *apids, unsigned int len, uint8_t what, graph_t *graph, resolve_service_t *ares, unsigned int areslen, ssexec_t *info, char const *rise, uint8_t rise_opt, uint8_t msg, char const *signal, uint8_t propagate)
 {
     log_flow() ;
 
@@ -647,6 +653,7 @@ int svc_launch(pidservice_t *apids, unsigned int len, uint8_t what, graph_t *gra
     reloadmsg = msg ;
     auto_strings(data, signal) ;
     pares = ares ;
+    pareslen = areslen ;
 
     if (info->opt_timeout)
         tain_from_millisecs(&deadline, info->timeout) ;
@@ -692,7 +699,7 @@ int svc_launch(pidservice_t *apids, unsigned int len, uint8_t what, graph_t *gra
 
             close(apidservice[pos].pipe[1]) ;
 
-            e = async(apidservice, pos, what, info, graph, &deadline) ;
+            e = async(apidservice, napid, pos, what, info, graph, &deadline) ;
 
             goto end ;
         }
