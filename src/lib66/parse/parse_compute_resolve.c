@@ -187,7 +187,10 @@ static void compute_wrapper_scripts(resolve_service_t *res, resolve_service_addo
                 res->sa.s + res->name, SS_LOG_SUFFIX "\"\n", \
                 "fdswap 0 1\n") ;
 
-    auto_strings(run + FAKELEN, "fdmove -c 2 1\n") ;
+    if (!res->logger.want)
+        /** if logger was asked a redirection of stdout is made (see below).
+         * in this case we need to move stderr AFTER stdout */
+        auto_strings(run + FAKELEN, "fdmove -c 2 1\n") ;
 
 
     /** environ */
@@ -199,8 +202,9 @@ static void compute_wrapper_scripts(resolve_service_t *res, resolve_service_addo
     /** log redirection for oneshot service */
     if (res->logger.want && res->type == TYPE_ONESHOT) {
 
-        auto_strings(run + FAKELEN, "execl-toc", " -d ", res->sa.s + res->logger.destination, " -m 0755\n") ;
+        //auto_strings(run + FAKELEN, "execl-toc", " -d ", res->sa.s + res->logger.destination, " -m 0755\n") ;
         auto_strings(run + FAKELEN, "redirfd -a 1 ", res->sa.s + res->logger.destination, "/current\n") ;
+        auto_strings(run + FAKELEN, "fdmove -c 2 1\n") ;
     }
 
     /** runas */
@@ -483,37 +487,9 @@ void parse_compute_resolve(unsigned int idx, resolve_service_t *ares, unsigned i
     res->live.servicedir = compute_live_servicedir(wres, info) ;
 
     /* scandir */
-    /**
-     *
-     * /run/66/state/uid/service_name/scandir/service_name
-     *
-     * Symlink name:
-     *
-     *      /run/66/scandir/uid/service_name
-     *
-     * Symlink poiting to:
-     *
-     *      /run/66/state/uid/service_name
-     *
-     * which is a symlink pointing to
-     *
-     *      /var/lib/66/system/servicedirs/svc/service_name
-     *
-     * which is a symlink pointing to:
-     *
-     *      /run/66/scandir/uid/
-     * */
     res->live.scandir = compute_scan_dir(wres, info) ;
 
     /* state */
-    /**
-     *
-     * see above:
-     *
-     *      /run/66/state/uid/service_name/state
-     *      /run/66/state/uid/service_name/event
-     *      /run/66/state/uid/service_name/supervise
-     * */
     res->live.statedir = compute_state_dir(wres, info, SS_STATE + 1) ;
 
     /* event */
