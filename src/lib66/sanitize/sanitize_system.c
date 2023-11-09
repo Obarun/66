@@ -69,14 +69,21 @@ int sanitize_system(ssexec_t *info)
     /** create extra directory for service part */
     if (!info->owner) {
 
-        auto_check(SS_LOGGER_SYSDIR) ;
+        /** filesystem may on ro at boot.
+         * only pass through chmod if it exists yet.
+         * It should already exist at boot time because service
+         * was enabled and so sanitize_system was run at least one time */
+        if (access(SS_LOGGER_SYSDIR, F_OK) < 0) {
 
-        if (!youruid(&log_uid,SS_LOGGER_RUNNER) ||
-        !yourgid(&log_gid,log_uid))
-            log_dieusys(LOG_EXIT_SYS,"get uid and gid of: ",SS_LOGGER_RUNNER) ;
+            auto_check(SS_LOGGER_SYSDIR) ;
 
-        if (chown(SS_LOGGER_SYSDIR,log_uid,log_gid) == -1)
-            log_dieusys(LOG_EXIT_SYS,"chown: ",SS_LOGGER_RUNNER) ;
+            if (!youruid(&log_uid,SS_LOGGER_RUNNER) ||
+                !yourgid(&log_gid,log_uid))
+                    log_dieusys(LOG_EXIT_SYS,"get uid and gid of: ",SS_LOGGER_RUNNER) ;
+
+            if (chown(SS_LOGGER_SYSDIR,log_uid,log_gid) == -1)
+                log_dieusys(LOG_EXIT_SYS,"chown: ",SS_LOGGER_RUNNER) ;
+        }
 
         auto_check(SS_SERVICE_SYSDIR) ;
         auto_check(SS_SERVICE_ADMDIR) ;
