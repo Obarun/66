@@ -18,8 +18,8 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/sastr.h>
 #include <oblibs/types.h>
+#include <oblibs/stack.h>
 
 #include <skalibs/stralloc.h>
 
@@ -113,7 +113,6 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
                     ares[(*areslen)++] = cp ;
 
                 } else {
-
                     resolve_free(wres) ;
                     continue ;
                 }
@@ -130,23 +129,23 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
 
                 if (res.dependencies.ndepends && FLAGS_ISSET(flag, STATE_FLAGS_WANTUP)) {
 
-                    sa.len = 0 ;
-
-                    if (!sastr_clean_string(&sa, res.sa.s + res.dependencies.depends))
+                    size_t len = strlen(res.sa.s + res.dependencies.depends) ;
+                    _init_stack_(stk, len + 1) ;
+                    if (!stack_convert_string(&stk, res.sa.s + res.dependencies.depends, len))
                         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-                    service_graph_collect(g, sa.s, sa.len, ares, areslen, info, flag) ;
+                    service_graph_collect(g, stk.s, stk.len, ares, areslen, info, flag) ;
 
                 }
 
                 if (res.dependencies.nrequiredby && FLAGS_ISSET(flag, STATE_FLAGS_WANTDOWN)) {
 
-                    sa.len = 0 ;
-
-                    if (!sastr_clean_string(&sa, res.sa.s + res.dependencies.requiredby))
+                    size_t len = strlen(res.sa.s + res.dependencies.requiredby) ;
+                    _init_stack_(stk, len + 1) ;
+                    if (!stack_convert_string(&stk, res.sa.s + res.dependencies.requiredby, len))
                         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-                    service_graph_collect(g, sa.s, sa.len, ares, areslen, info, flag) ;
+                    service_graph_collect(g, stk.s, stk.len, ares, areslen, info, flag) ;
                 }
 
             }
