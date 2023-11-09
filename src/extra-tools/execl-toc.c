@@ -879,7 +879,7 @@ int main(int argc,char const *const *argv, char const *const *envp)
                 default :   for (int i = 0 ; i < n ; i++)
                             {
                                 if (!argv[l.ind]) log_usage(USAGE) ;
-                                if (obstr_equal(nargv[i],argv[l.ind]))
+                                if (!strcmp(nargv[i],argv[l.ind]))
                                     f = 1 ;
                             }
                             if (!f) nargv[n++] = (char *)argv[l.ind] ;
