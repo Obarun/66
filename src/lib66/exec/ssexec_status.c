@@ -859,7 +859,7 @@ static void info_parse_options(char const *str,int *what)
         old = nopts ;
         for (; t->str; t++)
         {
-            if (obstr_equal(o,t->str))
+            if (!strcmp(o,t->str))
                 what[nopts++] = t->id ;
         }
         if (old == nopts) log_die(LOG_EXIT_SYS,"invalid option: ",o) ;

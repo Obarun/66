@@ -133,8 +133,6 @@ static const unsigned int char2enum[128] =
 
 static inline unsigned int lookup (char const *const *table, char const *signal)
 {
-    log_flow() ;
-
     unsigned int i = 0 ;
     for (; table[i] ; i++) if (!strcmp(signal, table[i])) break ;
     return i ;

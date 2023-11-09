@@ -1,5 +1,5 @@
 /*
- * ssexec_signal.c
+ * svc_launch.c
  *
  * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
  *

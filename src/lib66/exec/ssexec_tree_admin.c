@@ -227,6 +227,9 @@ static void tree_parse_options_depends(graph_t *g, ssexec_t *info, char const *s
 {
     log_flow() ;
 
+    if (!*str)
+        return ;
+
     int r ;
     size_t pos = 0 ;
     char *name = 0 ;
@@ -317,7 +320,7 @@ static void tree_parse_options(graph_t *g, char const *str, ssexec_t *info, tree
 {
     log_flow() ;
 
-    if (!str)
+    if (!*str)
         return ;
 
     size_t pos = 0, len = 0 ;
@@ -579,10 +582,10 @@ void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what)
      * seed.sa.s + seed.depends is empty, which can lead to a segmentation fault
      * when the -o option is passed at the command line. However, we have already gone
      * through the tree_parse_options_depends in such cases. */
-    if (what->depends && seed.sa.len)
+    if (what->depends)
         tree_parse_options_depends(g, info, seed.sa.s + seed.depends, 0, what) ;
 
-    if (what->requiredby && seed.sa.len)
+    if (what->requiredby)
         tree_parse_options_depends(g, info, seed.sa.s + seed.requiredby, 1, what) ;
 
     tree_master_modify_contents(info->base.s) ;
@@ -1210,7 +1213,8 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
     if (r < 0)
         log_diesys(LOG_EXIT_SYS, "invalid tree directory") ;
 
-    tree_parse_options(&graph, sa.s, info, &what) ;
+    if (sa.len)
+       tree_parse_options(&graph, sa.s, info, &what) ;
 
     /** create is the option by default
      * mark it false if the tree already exist */
