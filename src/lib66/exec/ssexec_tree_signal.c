@@ -152,16 +152,22 @@ static inline unsigned int parse_signal (char const *signal, ssexec_t *info)
     if (!signal_table[i]) log_usage(info->usage, "\n", info->help) ;
     return i ;
 }
-
+/**
+ * huh!! a revoir et faire test
+ *
+ *
+*/
 static void all_redir_fd(void)
 {
     log_flow() ;
-
-    int fd ;
-    while((fd = open("/dev/tty",O_RDWR|O_NOCTTY)) >= 0) {
-
-        if (fd >= 3)
-            break ;
+    char *target = !isatty(1) ? "/dev/null" : "/dev/tty" ;
+    int fd, count = 3 ;
+    while((fd = open(target,O_RDWR|O_NOCTTY)) >= 0 && count <= fd) {
+        close(count) ;
+        count++ ;
+        close(fd) ;
+        //if (fd >= 3)
+        //    break ;
     }
 
     dup2 (fd,0) ;
@@ -271,16 +277,6 @@ static void announce(unsigned int pos, pidtree_t *apidt, char const *base, unsig
 
     uint8_t flag = what ? FLAGS_DOWN : FLAGS_UP ;
 
-    if (!resolve_modify_field_g(wres, base, treename, E_RESOLVE_TREE_INIT, what ? (success ? "1" : "0") : (success ? "0" : "1")))
-        log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
-
-    if (what != 1) {
-
-        if (!resolve_modify_field_g(wres, base, treename, E_RESOLVE_TREE_SUPERVISED, what ? (success ? "1" : "0") : (success ? "0" : "1")))
-            log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
-
-    }
-
     if (success) {
 
         notify(apidt, pos, "F", what) ;
@@ -304,11 +300,10 @@ static void announce(unsigned int pos, pidtree_t *apidt, char const *base, unsig
     resolve_free(wres) ;
 }
 
-static void pidtree_init_array(unsigned int *list, unsigned int listlen, pidtree_t *apidt, graph_t *g, resolve_tree_t *ares, unsigned int areslen, ssexec_t *info, uint8_t requiredby)
+static void pidtree_init_array(unsigned int *list, unsigned int listlen, pidtree_t *apidt, graph_t *g, resolve_tree_t *ares, unsigned int areslen, ssexec_t *info, uint8_t requiredby, uint8_t what)
 {
     log_flow() ;
 
-    int r = 0 ;
     unsigned int pos = 0 ;
 
     for (; pos < listlen ; pos++) {
@@ -337,12 +332,7 @@ static void pidtree_init_array(unsigned int *list, unsigned int listlen, pidtree
         if (pids.vertex < 0)
             log_dieu(LOG_EXIT_SYS, "get vertex id -- please make a bug report") ;
 
-        r = tree_isinitialized(info->base.s, name) ;
-
-        if (r < 0)
-            log_dieu(LOG_EXIT_SYS, "read resolve file of tree: ", name) ;
-
-        if (r)
+        if (what)
             FLAGS_SET(pids.state, FLAGS_UP) ;
         else
             FLAGS_SET(pids.state, FLAGS_DOWN) ;
@@ -932,25 +922,6 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
             resolve_free(wres) ;
         }
 
-        int init = tree_isinitialized(info->base.s, treename) ;
-        int supervised = tree_issupervised(info->base.s, treename) ;
-
-        if (!what && init) {
-            log_warn("tree: ", treename," is already up") ;
-            continue ;
-
-        } else if (what == 1 && !init) {
-
-            log_warn("tree: ", treename," is already down") ;
-            continue ;
-
-        } else if (what == 2 && !supervised) {
-
-            log_warn("tree: ", treename," is already unsupervised") ;
-            continue ;
-
-        }
-
         unsigned int l[graph.mlen], c = 0, pos = 0, idx = 0 ;
 
         idx = graph_hash_vertex_get_id(&graph, treename) ;
@@ -987,7 +958,7 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
         goto end ;
     }
 
-    pidtree_init_array(list, napid, apidt, &graph, ares, areslen, info, requiredby) ;
+    pidtree_init_array(list, napid, apidt, &graph, ares, areslen, info, requiredby, what) ;
 
     if (shut) {
 
