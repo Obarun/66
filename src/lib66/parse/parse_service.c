@@ -230,9 +230,7 @@ void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
         if (!symlink_make(&ares[pos]))
             log_dieusys(LOG_EXIT_SYS, "make service symlink") ;
 
-        /** symlink may exist already, be sure to point to the correct location
-         * may not be necessary as long as the service must pass through sanitize_init at
-         * startup */
+        /** symlink may exist already, be sure to point to the correct location */
 
         if (!symlink_switch(&ares[pos], SYMLINK_SOURCE))
             log_dieusys(LOG_EXIT_SYS, "sanitize_symlink") ;

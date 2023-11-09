@@ -84,7 +84,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     graph_build_service(&graph, ares, &areslen, info, flag) ;
 
     if (!graph.mlen)
-        log_die(LOG_EXIT_USER, "services selection is not available -- try first to install the corresponding frontend file") ;
+        log_die(LOG_EXIT_USER, "services selection is not available -- have you already parsed a service?") ;
 
     for (; n < argc ; n++) {
 

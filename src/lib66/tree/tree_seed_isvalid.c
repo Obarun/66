@@ -12,12 +12,16 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <oblibs/log.h>
+
 #include <skalibs/stralloc.h>
 
 #include <66/tree.h>
 
 int tree_seed_isvalid(char const *seed)
 {
+    log_flow() ;
+
     int e = 1 ;
     stralloc src = STRALLOC_ZERO ;
 

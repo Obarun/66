@@ -49,7 +49,7 @@ void svc_send_fdholder(char const *socket, char const *signal)
     pid = child_spawn0(newargv[0], newargv, (char const *const *) environ) ;
 
     if (waitpid_nointr(pid, &wstat, 0) < 0)
-        log_dieusys(LOG_EXIT_SYS, "wait for reload of the fdholder daemon") ;
+        log_dieusys(LOG_EXIT_SYS, "waiting reload of the fdholder daemon") ;
 
     if (wstat)
         log_dieu(LOG_EXIT_SYS, "reload fdholder service; ", socket) ;

@@ -55,7 +55,7 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
     graph_build_service(&graph, ares, &areslen, info, flag) ;
 
     if (!graph.mlen)
-        log_die(LOG_EXIT_USER, "services selection is not available -- try first to install the corresponding frontend file") ;
+        log_die(LOG_EXIT_USER, "services selection is not available -- have you already parsed a service?") ;
 
     FOREACH_SASTR(sa, n) {
 
