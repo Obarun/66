@@ -88,9 +88,9 @@ static int preserve(resolve_service_t *res, uint8_t force)
             resolve_compare(res) ;
 
         } else
-            /** This info should never be executed as long as the parse_frontend
+            /** This info should only be executed with reconfigure process as long as the parse_frontend
              *  verify the service and prevents reaching this point if !force. */
-            log_info_return(0, "Ignoring: ", res->sa.s + res->name, " -- service already written") ;
+            log_warn_return(0, "Ignoring: ", res->sa.s + res->name, " -- service already written") ;
     }
 
     return r ;
