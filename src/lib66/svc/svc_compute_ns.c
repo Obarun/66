@@ -17,9 +17,7 @@
 #include <oblibs/log.h>
 #include <oblibs/graph.h>
 #include <oblibs/types.h>
-#include <oblibs/sastr.h>
-
-#include <skalibs/genalloc.h>
+#include <oblibs/stack.h>
 
 #include <66/svc.h>
 #include <66/config.h>
@@ -38,7 +36,7 @@ int svc_compute_ns(resolve_service_t *sares, unsigned int sareslen, unsigned int
     uint8_t requiredby = 0 ;
     size_t pos = 0 ;
     graph_t graph = GRAPH_ZERO ;
-    stralloc sa = STRALLOC_ZERO ;
+    _init_stack_(stk, SS_MAX_SERVICE * SS_MAX_SERVICE_NAME) ;
 
     unsigned int napid = 0 ;
     unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1] ;
@@ -60,7 +58,7 @@ int svc_compute_ns(resolve_service_t *sares, unsigned int sareslen, unsigned int
 
     if (sares[saresid].dependencies.ncontents) {
 
-        if (!sastr_clean_string(&sa, sares[saresid].sa.s + sares[saresid].dependencies.contents))
+        if (!stack_convert_string_g(&stk, sares[saresid].sa.s + sares[saresid].dependencies.contents))
             log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     } else {
@@ -69,14 +67,14 @@ int svc_compute_ns(resolve_service_t *sares, unsigned int sareslen, unsigned int
     }
 
     /** build the graph of the ns */
-    service_graph_g(sa.s, sa.len, &graph, ares, &areslen, info, gflag) ;
+    service_graph_g(stk.s, stk.len, &graph, ares, &areslen, info, gflag) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not supervised -- initiate its first") ;
 
-    FOREACH_SASTR(&sa, pos) {
+    FOREACH_STK(&stk, pos) {
 
-        char const *name = sa.s + pos ;
+        char const *name = stk.s + pos ;
 
         int aresid = service_resolve_array_search(ares, areslen, name) ;
         if (aresid < 0)
@@ -101,8 +99,6 @@ int svc_compute_ns(resolve_service_t *sares, unsigned int sareslen, unsigned int
     graph_free_all(&graph) ;
 
     service_resolve_array_free(ares, areslen) ;
-
-    stralloc_free(&sa) ;
 
     return r ;
 }
