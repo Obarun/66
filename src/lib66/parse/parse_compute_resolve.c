@@ -168,13 +168,11 @@ static void compute_wrapper_scripts(resolve_service_t *res, resolve_service_addo
 {
     log_flow() ;
 
-    int build = !strcmp(res->sa.s + scripts->build, "custom") ? BUILD_CUSTOM : BUILD_AUTO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     char *shebang = "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -" ;
     size_t shebanglen = strlen(shebang) ;
-    size_t execlen = build ? (res->environ.envdir ? (strlen(res->sa.s + res->environ.envdir) + 14 + SS_SYM_VERSION_LEN + 1) : 0) : 0 ;
 
-    char run[shebanglen + strlen(res->sa.s + res->live.fdholderdir) + SS_FDHOLDER_PIPENAME_LEN + strlen(res->sa.s + res->name) + SS_LOG_SUFFIX_LEN + strlen(S6_BINPREFIX) + strlen(res->sa.s + scripts->runas) + execlen + (SS_MAX_PATH*2) + SS_MAX_PATH + strlen(file) + 132 + 1] ;
+    char run[shebanglen + strlen(res->sa.s + res->live.fdholderdir) + SS_FDHOLDER_PIPENAME_LEN + strlen(res->sa.s + res->name) + SS_LOG_SUFFIX_LEN + strlen(S6_BINPREFIX) + (SS_MAX_PATH*2) + SS_MAX_PATH + strlen(file) + 132 + 1] ;
 
     auto_strings(run, shebang, !runorfinish ? (res->type != TYPE_ONESHOT ? "S0\n" : "P\n") : "P\n") ;
 
@@ -186,30 +184,6 @@ static void compute_wrapper_scripts(resolve_service_t *res, resolve_service_addo
                 "\"" SS_FDHOLDER_PIPENAME "w-", \
                 res->sa.s + res->name, SS_LOG_SUFFIX "\"\n", \
                 "fdswap 0 1\n") ;
-
-    if (!res->logger.want)
-        /** if logger was asked a redirection of stdout is made (see below).
-         * in this case we need to move stderr AFTER stdout */
-        auto_strings(run + FAKELEN, "fdmove -c 2 1\n") ;
-
-
-    /** environ */
-    if (res->environ.env && build)
-        /** call execl-envfile if a custom @execute is asked.
-         * its call will be made at run.user file for execlineb script*/
-        auto_strings(run + FAKELEN, "execl-envfile -v4 ", res->sa.s + res->environ.envdir, SS_SYM_VERSION "\n") ;
-
-    /** log redirection for oneshot service */
-    if (res->logger.want && res->type == TYPE_ONESHOT) {
-
-        //auto_strings(run + FAKELEN, "execl-toc", " -d ", res->sa.s + res->logger.destination, " -m 0755\n") ;
-        auto_strings(run + FAKELEN, "redirfd -a 1 ", res->sa.s + res->logger.destination, "/current\n") ;
-        auto_strings(run + FAKELEN, "fdmove -c 2 1\n") ;
-    }
-
-    /** runas */
-    if (!res->owner && scripts->runas)
-        auto_strings(run + FAKELEN, S6_BINPREFIX "s6-setuidgid ", res->sa.s + scripts->runas, "\n") ;
 
     auto_strings(run + FAKELEN, "./", file, ".user", !runorfinish ? (res->type != TYPE_ONESHOT ? " $@\n" : "\n") : "\n") ;
 
@@ -233,18 +207,18 @@ static void compute_wrapper_scripts_user(resolve_service_t *res, resolve_service
     char *shebang = scripts->shebang ? res->sa.s + scripts->shebang : SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n" ;
     size_t shebanglen = strlen(shebang) ;
     size_t scriptlen = strlen(res->sa.s + scripts->run_user) ;
+    size_t loglen = (res->logger.want && res->type == TYPE_ONESHOT) ? strlen(res->sa.s + res->logger.destination) : 0 ;
+    size_t runaslen = (!res->owner && scripts->runas) ? strlen(res->sa.s + scripts->runas) : 0 ;
     int build = !strcmp(res->sa.s + scripts->build, "custom") ? BUILD_CUSTOM : BUILD_AUTO ;
-    size_t execlen = !build ? (res->environ.envdir ? (strlen(res->sa.s + res->environ.envdir) + 14 + SS_SYM_VERSION_LEN + 1) : 0) : 0 ;
+    size_t execlen = !build ? (res->environ.envdir ? (strlen(res->sa.s + res->environ.envdir) + 19 + SS_SYM_VERSION_LEN + 1) : 0) : 0 ;
 
-    char run[shebanglen + execlen + scriptlen + 4 + 1] ;
+    char run[shebanglen + (loglen + 22) + 14 + execlen + (runaslen + 14) + scriptlen + 4 + 1] ;
 
     auto_strings(run, "#!") ;
-    /**
-     * NOTE: scripts->shebang is deprecated
-     * and will be removed. Warn user about it.
-     * Shebang must be define by the user at
-     * @execute field.
-     */
+
+    if (scripts->shebang)
+        log_warn("@shebang field is deprecated -- please define it at start of your @execute field instead") ;
+
     if (build && scripts->shebang) {
 
         auto_strings(run + FAKELEN, res->sa.s + scripts->shebang, "\n") ;
@@ -252,8 +226,19 @@ static void compute_wrapper_scripts_user(resolve_service_t *res, resolve_service
     } else {
 
         auto_strings(run + FAKELEN, shebang) ;
+
+        if (res->logger.want && res->type == TYPE_ONESHOT)
+            auto_strings(run + FAKELEN, "redirfd -a 1 ", res->sa.s + res->logger.destination, "/current\n") ;
+
+        auto_strings(run + FAKELEN, "fdmove -c 2 1\n") ;
+
         if (res->environ.envdir)
             auto_strings(run + FAKELEN, "execl-envfile -v4 ", res->sa.s + res->environ.envdir, SS_SYM_VERSION "\n") ;
+
+        /** runas */
+        if (!res->owner && scripts->runas)
+            auto_strings(run + FAKELEN, S6_BINPREFIX "s6-setuidgid ", res->sa.s + scripts->runas, "\n") ;
+
     }
 
     auto_strings(run + FAKELEN, res->sa.s + scripts->run_user, "\n") ;
@@ -319,12 +304,7 @@ static void compute_log_script(resolve_service_t *res)
                     "s6-fdholder-retrieve ", \
                     res->sa.s + res->live.fdholderdir, "/s ", \
                     "\"" SS_FDHOLDER_PIPENAME "r-", \
-                    res->sa.s + res->logger.name, "\"\n", \
-                    "fdmove -c 2 1\n") ;
-
-        /** runas */
-        if (!res->owner)
-            auto_strings(run + FAKELEN, S6_BINPREFIX "s6-setuidgid ", logrunner, "\n") ;
+                    res->sa.s + res->logger.name, "\"\n") ;
 
         auto_strings(run + FAKELEN, "./run.user\n") ;
 
@@ -338,6 +318,13 @@ static void compute_log_script(resolve_service_t *res)
             char run[shebanglen + strlen(pback) + strlen(timestamp) + strlen(pmax) + strlen(res->sa.s + res->logger.destination) + 17 + 1] ;
 
             auto_strings(run, shebang) ;
+
+            auto_strings(run + FAKELEN, "fdmove -c 2 1\n") ;
+
+            /** runas */
+            if (!res->owner)
+                auto_strings(run + FAKELEN, S6_BINPREFIX "s6-setuidgid ", logrunner, "\n") ;
+
 
             auto_strings(run + FAKELEN, "s6-log ") ;
 
@@ -355,12 +342,9 @@ static void compute_log_script(resolve_service_t *res)
 
         } else {
 
-            /**
-             * NOTE: scripts->shebang is deprecated
-             * and will be removed. Warn user about it.
-             * Shebang must be define by the user at
-             * @execute field.
-             */
+            if (res->logger.execute.run.shebang)
+                log_warn("@shebang field is deprecated -- please define it at start of your @execute field instead") ;
+
             char *shebang = res->logger.execute.run.shebang ? res->sa.s + res->logger.execute.run.shebang : "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n" ;
             size_t shebanglen = strlen(shebang) ;
 
