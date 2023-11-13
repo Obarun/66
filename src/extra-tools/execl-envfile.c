@@ -118,7 +118,7 @@ void parse_env_var(stralloc *result, char const *line)
 
     /** be sure to deal with key=value */
     spos = get_sep_before(line,'=','\n') ;
-    if (spos<= 0)
+    if (spos <= 0)
         log_dieu(LOG_EXIT_SYS,"get value from line: ", line) ;
 
     spos++ ; //remove the = character
@@ -370,7 +370,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
             sa.len = 0 ;
 
-            if (!auto_stra(&sa, tmp))
+            if (!stralloc_copyb(&sa, tmp, tmplen))
                 log_die_nomem("stralloc") ;
 
             pos-- ;// retrieve the '=' character
