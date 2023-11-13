@@ -17,7 +17,7 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/graph.h>
-#include <oblibs/sastr.h>
+#include <oblibs/stack.h>
 #include <oblibs/string.h>
 
 #include <66/service.h>
@@ -26,18 +26,18 @@
 
 static void issupervised(char *store, resolve_service_t *ares, unsigned int areslen, char const *str)
 {
-    size_t pos = 0 ;
+    size_t pos = 0, len = strlen(str) ;
     ss_state_t ste = STATE_ZERO ;
-    stralloc sa = STRALLOC_ZERO ;
 
-    memset(store, 0, strlen(str) * sizeof(char)) ;
+    _init_stack_(stk, len) ;
+    memset(store, 0, len * sizeof(char)) ;
 
-    if (!sastr_clean_string(&sa, str))
+    if (!stack_convert_string(&stk, str, len))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    FOREACH_SASTR(&sa, pos) {
+    FOREACH_STK(&stk, pos) {
 
-        char *name = sa.s + pos ;
+        char *name = stk.s + pos ;
 
         int aresid = service_resolve_array_search(ares, areslen, name) ;
         if (aresid < 0) {
