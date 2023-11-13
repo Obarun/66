@@ -19,17 +19,13 @@
 
 int parse_clean_list(stralloc *sa, char const *str)
 {
-    int e = 0 ;
     sa->len = 0 ;
 
     if (!auto_stra(sa, str))
-        goto err ;
+        return 0 ;
 
     if (!sastr_clean_element(sa))
-        goto err ;
+        return 0 ;
 
-    e = 1 ;
-
-    err:
-        return e ;
+    return 1 ;
 }
