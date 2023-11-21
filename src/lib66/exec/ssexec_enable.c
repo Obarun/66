@@ -83,7 +83,7 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
     _init_stack_(stk, argc * SS_MAX_TREENAME) ;
 
     for(; n < argc ; n++)
-        sanitize_source(argv[n], info) ;
+        sanitize_source(argv[n], info, flag) ;
 
     /** build the graph of the entire system */
     graph_build_service(&graph, ares, &areslen, info, flag) ;

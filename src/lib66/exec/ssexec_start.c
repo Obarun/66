@@ -87,7 +87,7 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
          * or the later call of service_array_search does not find the corresponding
          * resolve file in the second case.
          * At least try to parse the corresponding frontend file. */
-        sanitize_source(argv[n], info) ;
+        sanitize_source(argv[n], info, flag) ;
 
     /** build the graph of the entire system */
     graph_build_service(&graph, ares, &areslen, info, flag) ;

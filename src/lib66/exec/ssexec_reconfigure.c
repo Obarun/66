@@ -100,7 +100,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         if (!state_read(&sta, &ares[aresid]))
             log_dieu(LOG_EXIT_SYS, "read state file of: ", argv[n]) ;
 
-        sta.isparsed = STATE_FLAGS_FALSE ;
+        sta.toparse = STATE_FLAGS_TRUE ;
 
         if (!state_write(&sta, &ares[aresid]))
             log_dieusys(LOG_EXIT_SYS, "write status file of: ", argv[n]) ;
@@ -193,7 +193,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 
     /** force to parse again the service */
     for (n = 0 ; n < argc ; n++)
-        sanitize_source(argv[n], info) ;
+        sanitize_source(argv[n], info, flag) ;
 
     for (n = 0 ; n < ntostate ; n++) {
 
@@ -201,13 +201,12 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
          * Reverse to the previous state of the isparsed flag. */
         if (state_read_remote(&sta, ares[tostate[n]].sa.s + ares[tostate[n]].live.statedir)) {
 
-            sta.isparsed = STATE_FLAGS_TRUE ;
+            sta.toparse = STATE_FLAGS_FALSE ;
 
             if (!state_write_remote(&sta, ares[tostate[n]].sa.s + ares[tostate[n]].live.statedir))
                 log_warnusys("write status file of: ", ares[tostate[n]].sa.s + ares[tostate[n]].live.statedir) ;
         }
     }
-
 
     if (nservice && r) {
 

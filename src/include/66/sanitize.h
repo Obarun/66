@@ -23,7 +23,7 @@
 
 extern int sanitize_system(ssexec_t *info) ;
 
-extern void sanitize_source(char const *name, ssexec_t *info) ;
+extern void sanitize_source(char const *name, ssexec_t *info, uint32_t flag) ;
 extern int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag) ;
 extern int sanitize_livestate(resolve_service_t *res, ss_state_t *sta) ;
 extern int sanitize_scandir(resolve_service_t *res, ss_state_t *sta) ;
