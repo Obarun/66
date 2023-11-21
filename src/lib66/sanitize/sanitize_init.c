@@ -204,7 +204,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
 
         for (pos = 0 ; pos < nsv ; pos++) {
 
-            if (ares[real[pos]].type == TYPE_CLASSIC) {
+            if (ares[real[pos]].type == TYPE_CLASSIC && !ares[real[pos]].earlier) {
 
                 fake = pos ;
                 char *sa = ares[real[pos]].sa.s ;
