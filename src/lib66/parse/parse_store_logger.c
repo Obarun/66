@@ -27,7 +27,7 @@ int parse_store_logger(resolve_service_t *res, char *store, int idsec, int idkey
 {
     log_flow() ;
 
-    if (res->type == TYPE_BUNDLE || res->type == TYPE_MODULE)
+    if (res->type == TYPE_MODULE)
         return 1 ;
 
     int r = 0, e = 0 ;

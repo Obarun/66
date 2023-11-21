@@ -71,7 +71,7 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve
 
         sanitize_it(&ares[aresid]) ;
 
-        if ((ares[aresid].type == TYPE_BUNDLE || ares[aresid].type == TYPE_MODULE) && ares[aresid].dependencies.ncontents) {
+        if (ares[aresid].type == TYPE_MODULE && ares[aresid].dependencies.ncontents) {
 
             sa.len = 0, bpos = 0 ;
 

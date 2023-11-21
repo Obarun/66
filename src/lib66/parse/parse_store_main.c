@@ -196,9 +196,6 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 
         case KEY_MAIN_HIERCOPY:
 
-            if (res->type == TYPE_BUNDLE)
-                log_warn_return(LOG_EXIT_ONE,"key: ", get_key_by_enum(ENUM_KEY_SECTION_MAIN, idkey), ": is not valid for type ", get_key_by_enum(ENUM_TYPE, res->type), " -- ignoring it") ;
-
             if (!parse_clean_list(&sa, store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
@@ -228,9 +225,6 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
             break ;
 
         case KEY_MAIN_OPTIONS:
-
-            if (res->type == TYPE_BUNDLE)
-                log_warn_return(LOG_EXIT_ONE,"key: ", get_key_by_enum(ENUM_KEY_SECTION_MAIN, idkey), ": is not valid for type ", get_key_by_enum(ENUM_TYPE, res->type), " -- ignoring it") ;
 
             if (!parse_clean_list(&sa, store))
                 parse_error_return(0, 8, idsec, idkey) ;

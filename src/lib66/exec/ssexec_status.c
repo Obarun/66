@@ -758,7 +758,7 @@ static void info_display_logname(char const *field,resolve_service_t *res)
 static void info_display_logdst(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
-    if (res->type != TYPE_BUNDLE || res->type != TYPE_MODULE)
+    if (res->type != TYPE_MODULE)
     {
         if (res->logger.name || (res->type == TYPE_ONESHOT && res->logger.destination))
         {
@@ -777,7 +777,7 @@ static void info_display_logdst(char const *field,resolve_service_t *res)
 static void info_display_logfile(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
-    if (res->type != TYPE_BUNDLE || res->type != TYPE_MODULE)
+    if (res->type != TYPE_MODULE)
     {
         if (res->logger.name || (res->type == TYPE_ONESHOT && res->logger.destination))
         {

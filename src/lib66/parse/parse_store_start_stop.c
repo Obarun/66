@@ -27,7 +27,7 @@ int parse_store_start_stop(resolve_service_t *res, char *store, int idsec, int i
 {
     log_flow() ;
 
-    if (res->type == TYPE_BUNDLE || res->type == TYPE_MODULE)
+    if (res->type == TYPE_MODULE)
         return 1 ;
 
     int e = 0 ;

@@ -479,8 +479,7 @@ static int doit(pidservice_t *apids, unsigned int napid, unsigned int idx, unsig
         return svc_compute_ns(pares, pareslen, pidx, what, PINFO, updown, opt_updown, reloadmsg, data, PROPAGATE, apids, napid) ;
     }
 
-    /* return 0 in case of bundle, all services of the bundle
-     * should be started/stopped at this stage.*/
+    /* should be never reached*/
     return 0 ;
 }
 

@@ -139,31 +139,6 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, r
                     log_die_nomem("stralloc") ;
             }
 
-            if (ares[aresid].dependencies.ncontents && ares[aresid].type == TYPE_BUNDLE && !visit[aresid]) {
-
-                size_t idx = 0 ;
-                stralloc list = STRALLOC_ZERO ;
-                visit[aresid] = 1 ;
-                awres = resolve_set_struct(DATA_SERVICE, &ares[aresid]) ;
-                _init_stack_(stkl, strlen(ares[aresid].sa.s + ares[aresid].dependencies.contents) + 1) ;
-
-                if (!stack_convert_string_g(&stkl, ares[aresid].sa.s + ares[aresid].dependencies.contents))
-                    log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
-
-                FOREACH_STK(&stkl, idx)
-                    if (!auto_stra(&list, prefix, ":", stkl.s + idx, " "))
-                        log_die_nomem("stralloc") ;
-
-                list.len-- ;
-                if (!stralloc_0(&list))
-                    log_die_nomem("stralloc") ;
-
-                ares[aresid].dependencies.contents = resolve_add_string(awres, list.s) ;
-
-                stralloc_free(&list) ;
-
-            }
-
             char tmp[plen + 1 + strlen(ares[aresid].sa.s + ares[aresid].name) + 1] ;
 
             auto_strings(tmp, prefix, ":", ares[aresid].sa.s + ares[aresid].name) ;

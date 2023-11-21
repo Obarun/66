@@ -49,7 +49,6 @@ void write_services(resolve_service_t *res, char const *workdir, uint8_t force)
     switch(type) {
 
         case TYPE_MODULE:
-        case TYPE_BUNDLE:
             break ;
 
         case TYPE_CLASSIC:

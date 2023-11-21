@@ -90,7 +90,6 @@ char const *enum_str_key_section_regex[] = {
 
 char const *enum_str_type[] = {
     "classic" ,
-    "bundle" ,
     "oneshot" ,
     "module" ,
     0
@@ -127,7 +126,6 @@ char const *enum_str_build[] = {
 char const *enum_str_mandatory[] = {
     "need" ,
     "opts" ,
-    "bundle" ,
     "custom" ,
     0
 } ;

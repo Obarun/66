@@ -111,9 +111,9 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
         }
 
         /**
-         * Bundle and module type are not a daemons. We don't need to supervise it.
+         * Module type are not a daemons. We don't need to supervise it.
          * Special case for Oneshot, we only deal with the scandir symlink. */
-        if (ares[aresid].type == TYPE_BUNDLE || ares[aresid].type == TYPE_MODULE)
+        if (ares[aresid].type == TYPE_MODULE)
             continue ;
 
         is_supervised = access(scandir, F_OK) ;
@@ -241,7 +241,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
     ftrigr_end(&fifo) ;
 
     /**
-     * We pass through here even for Bundle, Module and Oneshot.
+     * We pass through here even for Module and Oneshot.
      * We need to write the state file anyway. Thus can always
      * be consider as initialized.
      * */
@@ -302,7 +302,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
             }
         }
 
-        /** Consider Module and Bundle as supervised */
+        /** Consider Module as supervised */
         state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_FALSE) ;
         state_set_flag(&sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE) ;
 

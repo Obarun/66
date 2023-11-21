@@ -135,7 +135,6 @@ typedef enum enum_type_e enum_type_t, *enum_type_t_ref ;
 enum enum_type_e
 {
     TYPE_CLASSIC = 0 ,
-    TYPE_BUNDLE ,
     TYPE_ONESHOT ,
     TYPE_MODULE ,
     TYPE_ENDOFKEY
@@ -193,7 +192,6 @@ enum enum_mandatory_e
 {
     MANDATORY_NEED = 0 ,
     MANDATORY_OPTS ,
-    MANDATORY_BUNDLE ,
     MANDATORY_CUSTOM ,
     MANDATORY_ENDOFKEY
 } ;

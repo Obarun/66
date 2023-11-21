@@ -100,7 +100,7 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
             }
         }
 
-        if (res->type == TYPE_MODULE || res->type == TYPE_BUNDLE) {
+        if (res->type == TYPE_MODULE) {
 
             if (res->dependencies.ncontents) {
 
