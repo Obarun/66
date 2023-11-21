@@ -35,31 +35,30 @@ int parse_mandatory(resolve_service_t *res)
 
         case TYPE_ONESHOT:
 
-            if (!strcmp(res->sa.s + res->execute.run.build, "custom") && !res->execute.run.shebang)
-                    log_warn_return(LOG_EXIT_ZERO,"custom build asked at section [start] -- key @shebang must be set") ;
+            if (res->execute.run.shebang)
+                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at @execute key") ;
 
             if (!res->execute.run.run_user)
-                    log_warn_return(LOG_EXIT_ZERO,"key @execute at section [start] must be set") ;
+                log_warn_return(LOG_EXIT_ZERO,"key @execute at section [start] must be set") ;
 
-            if (!strcmp(res->sa.s + res->execute.finish.build, "custom") && !res->execute.finish.shebang)
-                    log_warn_return(LOG_EXIT_ZERO,"custom build asked at section [stop] -- key @shebang must be set") ;
+            if (res->execute.finish.shebang)
+                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at @execute key") ;
 
             break ;
 
         case TYPE_CLASSIC:
 
-             if (!strcmp(res->sa.s + res->execute.run.build, "custom") && !res->execute.run.shebang)
-                    log_warn_return(LOG_EXIT_ZERO,"custom build asked at section [start] -- key @shebang must be set") ;
+             if (res->execute.run.shebang)
+                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at @execute key") ;
 
             if (!res->execute.run.run_user)
-                    log_warn_return(LOG_EXIT_ZERO,"key @execute at section [start] must be set") ;
+                log_warn_return(LOG_EXIT_ZERO,"key @execute at section [start] must be set") ;
 
+            if (res->execute.finish.shebang)
+                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at @execute key") ;
 
-            if (!strcmp(res->sa.s + res->execute.finish.build, "custom") && !res->execute.finish.shebang)
-                    log_warn_return(LOG_EXIT_ZERO,"custom build asked at section [stop] -- key @shebang must be set") ;
-
-            if (!strcmp(res->sa.s + res->logger.execute.finish.build, "custom") && !res->logger.execute.finish.shebang)
-                    log_warn_return(LOG_EXIT_ZERO,"custom build asked at section [stop] -- key @shebang must be set") ;
+            if (res->logger.execute.finish.shebang)
+                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at @execute key") ;
 
             break ;
 
