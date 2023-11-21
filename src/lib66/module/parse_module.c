@@ -256,7 +256,6 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
     {
         /* parse each activated services */
         len = list.len ;
-        uint8_t out = 0 ;
         char l[len + 1] ;
         char ebase[copylen + 1] ;
         memcpy(ebase, copy, copylen) ;
@@ -295,7 +294,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
 
                 auto_strings(deps, copy, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS, "/", fname) ;
                 auto_strings(require, copy, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY, "/", fname) ;
-                log_die(LOG_EXIT_USER, "you can not activate a service without providing its frontend file at ",copy, \
+                log_die(LOG_EXIT_USER, "you can not activate the service ", fname, " without providing its frontend file at ",copy, \
                                     ". If you want to add an depends/requiredby service to the module, consider creating a named empty file at ", \
                                     deps, " or ", require) ;
 
@@ -306,7 +305,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
             if (!auto_stra(&info->treename, res->sa.s + res->treename))
                 log_die_nomem("stralloc") ;
 
-            parse_frontend(list.s, ares, areslen, info, force, conf, !out ? copy : 0, fname, !out ? name : 0) ;
+            parse_frontend(list.s, ares, areslen, info, force, conf, copy, fname, name) ;
 
             info->opt_tree = opt_tree ;
         }
@@ -332,7 +331,8 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
      * compare it with the new one.*/
     parse_db_migrate(res, info) ;
 
-    /** append the module name at each inner depends/requiredby dependencies service name.*/
+    /** append the module name at each inner depends/requiredby dependencies service name
+     * and define contents field.*/
     parse_rename_interdependences(res, name, ares, areslen) ;
 
     free(wres) ;
