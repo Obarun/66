@@ -58,8 +58,6 @@ static void issupervised(char *store, resolve_service_t *ares, unsigned int ares
     }
 
     store[strlen(store) - 1] = 0 ;
-
-    stralloc_free(&sa) ;
 }
 
 void service_graph_build(graph_t *g, resolve_service_t *ares, unsigned int areslen, uint32_t flag)

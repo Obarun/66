@@ -21,8 +21,6 @@
 #include <oblibs/types.h>
 #include <oblibs/stack.h>
 
-#include <skalibs/stralloc.h>
-
 #include <66/service.h>
 #include <66/resolve.h>
 #include <66/sanitize.h>
@@ -34,20 +32,19 @@
  * STATE_FLAGS_TOPARSE -> call sanitize_source
  * STATE_FLAGS_TOPROPAGATE -> it build with the dependencies/requiredby services.
  * STATE_FLAGS_ISSUPERVISED -> only keep already supervised service*/
-void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag)
+void service_graph_collect(graph_t *g, char const *slist, size_t slen, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag)
 {
     log_flow () ;
 
     int r ;
     size_t pos = 0 ;
     ss_state_t ste = STATE_ZERO ;
-    stralloc sa = STRALLOC_ZERO ;
 
     resolve_wrapper_t_ref wres = 0 ;
 
-    for (; pos < alen ; pos += strlen(alist + pos) + 1) {
+    for (; pos < slen ; pos += strlen(slist + pos) + 1) {
 
-        char const *name = alist + pos ;
+        char const *name = slist + pos ;
 
         if (service_resolve_array_search(ares, (*areslen), name) < 0) {
 
@@ -78,7 +75,7 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
 
             } else if (FLAGS_ISSET(flag, STATE_FLAGS_TOPARSE)) {
 
-                sanitize_source(name, info) ;
+                sanitize_source(name, info, flag) ;
 
             } else
                 continue ;
@@ -132,7 +129,7 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
                     size_t len = strlen(res.sa.s + res.dependencies.depends) ;
                     _init_stack_(stk, len + 1) ;
                     if (!stack_convert_string(&stk, res.sa.s + res.dependencies.depends, len))
-                        log_dieu(LOG_EXIT_SYS, "clean string") ;
+                        log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
                     service_graph_collect(g, stk.s, stk.len, ares, areslen, info, flag) ;
 
@@ -143,7 +140,7 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
                     size_t len = strlen(res.sa.s + res.dependencies.requiredby) ;
                     _init_stack_(stk, len + 1) ;
                     if (!stack_convert_string(&stk, res.sa.s + res.dependencies.requiredby, len))
-                        log_dieu(LOG_EXIT_SYS, "clean string") ;
+                        log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
                     service_graph_collect(g, stk.s, stk.len, ares, areslen, info, flag) ;
                 }
@@ -152,6 +149,4 @@ void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_s
             resolve_free(wres) ;
         }
     }
-
-    stralloc_free(&sa) ;
 }
