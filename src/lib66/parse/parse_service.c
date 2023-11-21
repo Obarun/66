@@ -15,6 +15,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h> //access
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>

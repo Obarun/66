@@ -124,7 +124,7 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, r
 
     for (; aresid < *areslen ; aresid++) {
 
-        if (!strcmp(ares[aresid].sa.s + ares[aresid].inmodule, prefix)) {
+        if (!strcmp(ares[aresid].sa.s + ares[aresid].inns, prefix)) {
 
             if (ares[aresid].dependencies.ndepends || ares[aresid].dependencies.nrequiredby)
                 parse_prefix_name(aresid, ares, *areslen, prefix) ;
