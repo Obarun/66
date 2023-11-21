@@ -181,7 +181,7 @@ struct resolve_service_s
     uint32_t owner ; // integer, uid of the owner
     uint32_t treename ; // string
     uint32_t user ; // string
-    uint32_t inmodule ; // string, name of the module which depend on
+    uint32_t inns ; // string, name of the namespace(module) which depend on
     uint32_t enabled ; // integer, 0 not enabled
 
     resolve_service_addon_path_t path ;
@@ -222,7 +222,7 @@ enum resolve_service_enum_e
     E_RESOLVE_SERVICE_OWNER,
     E_RESOLVE_SERVICE_TREENAME,
     E_RESOLVE_SERVICE_USER,
-    E_RESOLVE_SERVICE_INMODULE,
+    E_RESOLVE_SERVICE_INNS,
     E_RESOLVE_SERVICE_ENABLED,
 
     // path
@@ -327,7 +327,7 @@ extern void service_db_migrate(resolve_service_t *old, resolve_service_t *new, c
 typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;
 
 /** Graph */
-extern void service_graph_g(char const *alist, size_t alen, graph_t *graph, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag) ;
+extern void service_graph_g(char const *slist, size_t slen, graph_t *graph, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag) ;
 extern void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag) ;
 extern void service_graph_build(graph_t *g, resolve_service_t *ares, unsigned int areslen, uint32_t flag) ;
 

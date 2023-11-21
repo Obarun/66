@@ -91,7 +91,7 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_int(fields[m++], res->owner) ;
     info_display_string(fields[m++], res->sa.s, res->treename, 1) ;
     info_display_string(fields[m++], res->sa.s, res->user, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->inmodule, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->inns, 1) ;
     info_display_int(fields[m++], res->enabled) ;
 
     info_display_string(fields[m++], res->sa.s, res->path.home, 1) ;

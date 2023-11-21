@@ -42,8 +42,8 @@ int env_resolve_conf(stralloc *env, resolve_service_t *res)
             return 0 ;
     }
 
-    if (res->inmodule)
-        if (!auto_stra(env, res->sa.s + res->inmodule, SS_SYM_VERSION, "/"))
+    if (res->inns)
+        if (!auto_stra(env, res->sa.s + res->inns, SS_SYM_VERSION, "/"))
             return 0 ;
 
     if (!auto_stra(env, res->sa.s + res->name))
