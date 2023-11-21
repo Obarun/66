@@ -92,8 +92,8 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
             str = res->sa.s + res->user ;
             break ;
 
-        case E_RESOLVE_SERVICE_INMODULE:
-            str = res->sa.s + res->inmodule ;
+        case E_RESOLVE_SERVICE_INNS:
+            str = res->sa.s + res->inns ;
             break ;
 
         case E_RESOLVE_SERVICE_ENABLED:

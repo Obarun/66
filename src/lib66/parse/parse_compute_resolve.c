@@ -393,8 +393,8 @@ static void compute_log(resolve_service_t *res, resolve_service_t *ares, unsigne
     lres.owner = res->owner ;
     lres.treename = resolve_add_string(wres, str + res->treename) ;
     lres.user = resolve_add_string(wres, str + res->user) ;
-    if (res->inmodule)
-        lres.inmodule = resolve_add_string(wres, str + res->inmodule) ;
+    if (res->inns)
+        lres.inns = resolve_add_string(wres, str + res->inns) ;
 
     lres.path.home = resolve_add_string(wres, str + res->path.home) ;
     lres.path.frontend = resolve_add_string(wres, str + res->path.frontend) ;

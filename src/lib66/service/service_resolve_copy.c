@@ -48,7 +48,7 @@ int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res)
     dst->owner = res->owner ;
     dst->treename = res->treename ;
     dst->user = res->user ;
-    dst->inmodule = res->inmodule ;
+    dst->inns = res->inns ;
     dst->enabled = res->enabled ;
 
     // path

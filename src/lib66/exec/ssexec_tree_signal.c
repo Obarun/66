@@ -456,7 +456,7 @@ static int ssexec_callback(stralloc *sa, ssexec_t *info, unsigned int what)
 
         if (!what ? res.enabled : ste.issupervised == STATE_FLAGS_TRUE && !res.earlier) {
 
-            if (get_rstrlen_until(name, SS_LOG_SUFFIX) < 0 && !res.inmodule)
+            if (get_rstrlen_until(name, SS_LOG_SUFFIX) < 0 && !res.inns)
                 if (!sastr_add_string(sa, name))
                     log_dieu(LOG_EXIT_SYS, "add string") ;
         }

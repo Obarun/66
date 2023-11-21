@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h> //free
+#include <sys/stat.h>
 
 #include <oblibs/log.h>
 #include <oblibs/sastr.h>
@@ -84,7 +85,7 @@ static void parse_service_instance(stralloc *frontend, char const *svsrc, char c
  * @Die on fail
  * @Return 1 on success
  * @Return 2 -> already parsed */
-int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inmodule)
+int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns)
 {
     log_flow() ;
 
@@ -100,13 +101,13 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     if (!ob_dirname(svsrc, sv))
         log_dieu(LOG_EXIT_SYS, "get dirname of: ", sv) ;
 
-    if (inmodule) {
+    if (inns) {
 
         if (service_resolve_array_search(ares, *areslen, svname) >= 0)
             log_warn_return(2, "ignoring: ", svname, " service -- already appended to the selection") ;
 
-        char n[strlen(inmodule) + 1 + strlen(svname) + 1] ;
-        auto_strings(n, inmodule, ":", svname) ;
+        char n[strlen(inns) + 1 + strlen(svname) + 1] ;
+        auto_strings(n, inns, ":", svname) ;
 
         if (service_resolve_array_search(ares, *areslen, n) >= 0)
             log_warn_return(2, "ignoring: ", n, " service -- already appended to the selection") ;
@@ -189,13 +190,13 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
         }
     }
 
-    if (inmodule) {
+    if (inns) {
 
-        char n[strlen(inmodule) + 1 + strlen(svname) + 1] ;
-        auto_strings(n, inmodule,":",svname) ;
+        char n[strlen(inns) + 1 + strlen(svname) + 1] ;
+        auto_strings(n, inns,":",svname) ;
 
         res.name = resolve_add_string(wres, n) ;
-        res.inmodule = resolve_add_string(wres, inmodule) ;
+        res.inns = resolve_add_string(wres, inns) ;
 
     } else {
 
@@ -217,8 +218,11 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
     /** contents of directory should be listed by service_frontend_path
      * except for module type */
-    if (scan_mode(sv, S_IFDIR) == 1 && res.type != TYPE_MODULE)
-        goto freed ;
+    if (scan_mode(sv, S_IFDIR) == 1 && res.type != TYPE_MODULE) {
+        stralloc_free(&sa) ;
+        resolve_free(wres) ;
+        return 1 ;
+    }
 
     if (!parse_contents(wres, file, svname))
         log_dieu(LOG_EXIT_SYS, "parse file of service: ", svname) ;
@@ -254,24 +258,23 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     /** parse interdependences if the service was never parsed */
     if (isparsed == STATE_FLAGS_FALSE) {
 
-        if (!parse_interdependences(svname, res.sa.s + res.dependencies.depends, res.dependencies.ndepends, ares, areslen, info, force, conf, forced_directory, main, inmodule))
+        if (!parse_interdependences(svname, res.sa.s + res.dependencies.depends, res.dependencies.ndepends, ares, areslen, info, force, conf, forced_directory, main, inns))
             log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", svname) ;
     }
 
     if (res.type == TYPE_MODULE)
         parse_module(&res, ares, areslen, info, force) ;
 
-    if (service_resolve_array_search(ares, *areslen, svname) < 0) {
+    if (service_resolve_array_search(ares, *areslen, res.sa.s + res.name) < 0) {
 
-        log_trace("add service ", svname, " to the selection") ;
+        log_trace("add service ", res.sa.s + res.name, " to the selection") ;
         if (*areslen > SS_MAX_SERVICE)
             log_die(LOG_EXIT_SYS, "too many services to parse -- compile again 66 changing the --max-service options") ;
         ares[(*areslen)++] = res ;
     }
 
-    freed:
-        stralloc_free(&sa) ;
-        free(wres) ;
-        return 1 ;
+    stralloc_free(&sa) ;
+    free(wres) ;
+    return 1 ;
 }
 

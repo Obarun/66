@@ -35,7 +35,7 @@ resolve_field_table_t resolve_service_field_table[] = {
     [E_RESOLVE_SERVICE_OWNER] = { .field = "owner" },
     [E_RESOLVE_SERVICE_TREENAME] = { .field = "treename" },
     [E_RESOLVE_SERVICE_USER] = { .field = "user" },
-    [E_RESOLVE_SERVICE_INMODULE] = { .field = "inmodule" },
+    [E_RESOLVE_SERVICE_INNS] = { .field = "inns" },
     [E_RESOLVE_SERVICE_ENABLED] = { .field = "enabled" },
 
     // path
@@ -188,12 +188,12 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
             res->user = resolve_add_string(wres, data) ;
             break ;
 
-        case E_RESOLVE_SERVICE_INMODULE:
-            res->inmodule = resolve_add_string(wres, data) ;
+        case E_RESOLVE_SERVICE_INNS:
+            res->inns = resolve_add_string(wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_ENABLED:
-            res->enabled = resolve_add_uint(data) ; ;
+            res->enabled = resolve_add_uint(data) ;
             break ;
 
 

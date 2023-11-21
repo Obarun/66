@@ -76,7 +76,7 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
 
         /** the logger must be disabled to avoid to start it
          * with the 66 tree start <tree> command */
-        if (res->logger.want && !action && res->type == TYPE_CLASSIC && !res->inmodule) {
+        if (res->logger.want && !action && res->type == TYPE_CLASSIC && !res->inns) {
 
             char *name = res->sa.s + res->logger.name ;
 

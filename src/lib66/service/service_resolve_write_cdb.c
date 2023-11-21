@@ -40,7 +40,7 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres)
     !resolve_add_cdb_uint(c, "owner", sres->owner) ||
     !resolve_add_cdb(c, "treename", str, sres->treename, 1) ||
     !resolve_add_cdb(c, "user", str, sres->user, 1) ||
-    !resolve_add_cdb(c, "inmodule", str, sres->inmodule, 1) ||
+    !resolve_add_cdb(c, "inns", str, sres->inns, 1) ||
     !resolve_add_cdb_uint(c, "enabled", sres->enabled) ||
 
     // path

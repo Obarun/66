@@ -60,8 +60,8 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
     res->treename = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     resolve_find_cdb(&tmp,c,"user") ;
     res->user = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-    resolve_find_cdb(&tmp,c,"inmodule") ;
-    res->inmodule = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
+    resolve_find_cdb(&tmp,c,"inns") ;
+    res->inns = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     x = resolve_find_cdb(&tmp,c,"enabled") ;
     res->enabled = x ;
 

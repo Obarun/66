@@ -52,7 +52,7 @@ static void parse_prefix(char *result, stack *stk, resolve_service_t *ares, unsi
 
         /** check if the dependencies is a external one. In this
          * case, the service is not considered as part of the prefix */
-        if (ares[aresid].inmodule && (!strcmp(ares[aresid].sa.s + ares[aresid].inmodule, prefix)))
+        if (ares[aresid].inns && (!strcmp(ares[aresid].sa.s + ares[aresid].inns, prefix)))
             auto_strings(result + strlen(result), prefix, ":", stk->s + pos, " ") ;
         else
             auto_strings(result + strlen(result), stk->s + pos, " ") ;

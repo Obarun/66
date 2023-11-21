@@ -186,7 +186,7 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "owner",
         "treename",
         "user" ,
-        "inmodule",
+        "inns",
         "enabled",
 
         "home",
