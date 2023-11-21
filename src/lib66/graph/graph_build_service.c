@@ -38,7 +38,7 @@ void graph_build_service(graph_t *graph, resolve_service_t *ares, unsigned int *
 
     auto_strings(solve, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE) ;
 
-    if (!sastr_dir_get_recursive(&sa, solve, exclude, S_IFREG, 0))
+    if (!sastr_dir_get_recursive(&sa, solve, exclude, S_IFLNK, 0))
         log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
     memset(ares, 0, (SS_MAX_SERVICE + 1) * sizeof(resolve_service_t)) ;
