@@ -20,12 +20,12 @@ src/include/66/symlink.h: src/include/66/service.h
 src/include/66/tree.h: src/include/66/resolve.h src/include/66/ssexec.h
 src/include/66/utils.h: src/include/66/ssexec.h
 src/include/66/write.h: src/include/66/service.h
-src/66/66.o src/66/66.lo: src/66/66.c src/include/66/hpr.h src/include/66/sanitize.h src/include/66/ssexec.h src/include/66/tree.h src/include/66/utils.h
 src/66/66-fdholder-filler.o src/66/66-fdholder-filler.lo: src/66/66-fdholder-filler.c src/include/66/constants.h
 src/66/66-hpr.o src/66/66-hpr.lo: src/66/66-hpr.c src/include/66/config.h src/include/66/hpr.h
 src/66/66-oneshot.o src/66/66-oneshot.lo: src/66/66-oneshot.c src/include/66/constants.h src/include/66/resolve.h src/include/66/service.h
 src/66/66-shutdown.o src/66/66-shutdown.lo: src/66/66-shutdown.c src/include/66/config.h src/include/66/hpr.h
 src/66/66-shutdownd.o src/66/66-shutdownd.lo: src/66/66-shutdownd.c src/include/66/config.h src/include/66/constants.h
+src/66/66.o src/66/66.lo: src/66/66.c src/include/66/hpr.h src/include/66/sanitize.h src/include/66/ssexec.h src/include/66/tree.h src/include/66/utils.h
 src/extra-tools/66-echo.o src/extra-tools/66-echo.lo: src/extra-tools/66-echo.c
 src/extra-tools/66-nuke.o src/extra-tools/66-nuke.lo: src/extra-tools/66-nuke.c
 src/extra-tools/66-umountall.o src/extra-tools/66-umountall.lo: src/extra-tools/66-umountall.c src/include/66/config.h
@@ -146,7 +146,7 @@ src/lib66/resolve/resolve_write.o src/lib66/resolve/resolve_write.lo: src/lib66/
 src/lib66/resolve/resolve_write_cdb.o src/lib66/resolve/resolve_write_cdb.lo: src/lib66/resolve/resolve_write_cdb.c src/include/66/resolve.h src/include/66/service.h src/include/66/tree.h
 src/lib66/resolve/resolve_write_g.o src/lib66/resolve/resolve_write_g.lo: src/lib66/resolve/resolve_write_g.c src/include/66/constants.h src/include/66/resolve.h
 src/lib66/sanitize/sanitize_fdholder.o src/lib66/sanitize/sanitize_fdholder.lo: src/lib66/sanitize/sanitize_fdholder.c src/include/66/constants.h src/include/66/enum.h src/include/66/service.h src/include/66/state.h src/include/66/svc.h
-src/lib66/sanitize/sanitize_graph.o src/lib66/sanitize/sanitize_graph.lo: src/lib66/sanitize/sanitize_graph.c src/include/66/constants.h src/include/66/graph.h src/include/66/parse.h src/include/66/resolve.h src/include/66/service.h src/include/66/ssexec.h src/include/66/state.h
+src/lib66/sanitize/sanitize_graph.o src/lib66/sanitize/sanitize_graph.lo: src/lib66/sanitize/sanitize_graph.c src/include/66/constants.h src/include/66/enum.h src/include/66/graph.h src/include/66/parse.h src/include/66/resolve.h src/include/66/service.h src/include/66/ssexec.h src/include/66/state.h
 src/lib66/sanitize/sanitize_init.o src/lib66/sanitize/sanitize_init.lo: src/lib66/sanitize/sanitize_init.c src/include/66/constants.h src/include/66/enum.h src/include/66/resolve.h src/include/66/sanitize.h src/include/66/ssexec.h src/include/66/state.h src/include/66/symlink.h src/include/66/utils.h
 src/lib66/sanitize/sanitize_livestate.o src/lib66/sanitize/sanitize_livestate.lo: src/lib66/sanitize/sanitize_livestate.c src/include/66/constants.h src/include/66/sanitize.h src/include/66/service.h src/include/66/state.h src/include/66/utils.h
 src/lib66/sanitize/sanitize_scandir.o src/lib66/sanitize/sanitize_scandir.lo: src/lib66/sanitize/sanitize_scandir.c src/include/66/constants.h src/include/66/enum.h src/include/66/sanitize.h src/include/66/service.h src/include/66/state.h src/include/66/svc.h
@@ -161,7 +161,7 @@ src/lib66/service/service_frontend_path.o src/lib66/service/service_frontend_pat
 src/lib66/service/service_frontend_src.o src/lib66/service/service_frontend_src.lo: src/lib66/service/service_frontend_src.c src/include/66/constants.h src/include/66/instance.h src/include/66/service.h src/include/66/utils.h
 src/lib66/service/service_graph_build.o src/lib66/service/service_graph_build.lo: src/lib66/service/service_graph_build.c src/include/66/graph.h src/include/66/service.h src/include/66/state.h
 src/lib66/service/service_graph_collect.o src/lib66/service/service_graph_collect.lo: src/lib66/service/service_graph_collect.c src/include/66/enum.h src/include/66/graph.h src/include/66/resolve.h src/include/66/sanitize.h src/include/66/service.h src/include/66/state.h
-src/lib66/service/service_graph_g.o src/lib66/service/service_graph_g.lo: src/lib66/service/service_graph_g.c src/include/66/graph.h src/include/66/service.h src/include/66/ssexec.h src/include/66/state.h
+src/lib66/service/service_graph_g.o src/lib66/service/service_graph_g.lo: src/lib66/service/service_graph_g.c src/include/66/enum.h src/include/66/graph.h src/include/66/service.h src/include/66/ssexec.h src/include/66/state.h
 src/lib66/service/service_is_g.o src/lib66/service/service_is_g.lo: src/lib66/service/service_is_g.c src/include/66/constants.h src/include/66/resolve.h src/include/66/service.h src/include/66/state.h src/include/66/tree.h src/include/66/utils.h
 src/lib66/service/service_resolve_array_free.o src/lib66/service/service_resolve_array_free.lo: src/lib66/service/service_resolve_array_free.c src/include/66/service.h
 src/lib66/service/service_resolve_array_search.o src/lib66/service/service_resolve_array_search.lo: src/lib66/service/service_resolve_array_search.c src/include/66/service.h
