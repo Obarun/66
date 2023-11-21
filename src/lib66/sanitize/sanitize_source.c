@@ -25,7 +25,7 @@
 #include <66/resolve.h>
 #include <66/state.h>
 
-void sanitize_source(char const *name, ssexec_t *info)
+void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)
 {
     log_flow() ;
 
@@ -36,7 +36,7 @@ void sanitize_source(char const *name, ssexec_t *info)
     if (r == -1)
         log_dieusys(LOG_EXIT_SYS, "get information of service: ", name, " -- please a bug report") ;
 
-    if (!r || r == STATE_FLAGS_FALSE) {
+    if (!r) {
 
         int argc = 3 ;
         int m = 0 ;
@@ -52,7 +52,7 @@ void sanitize_source(char const *name, ssexec_t *info)
             log_dieu(LOG_EXIT_SYS, "parse service: ", name) ;
         PROG = prog ;
 
-    } else if (logname < 0) {
+    } else if (logname < 0 && FLAGS_ISSET(flag, STATE_FLAGS_TOPARSE)) {
 
         int argc = 4 ;
         int m = 0 ;
