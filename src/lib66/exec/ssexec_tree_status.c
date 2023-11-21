@@ -25,6 +25,7 @@
 #include <oblibs/types.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
+#include <oblibs/stack.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/genalloc.h>
@@ -118,6 +119,10 @@ static void info_display_enabled(char const *field,char const *treename)
 
 static void info_display_init(char const *field,char const *treename)
 {
+    /* it not possible to write the resolve file of a tree at boot
+       if the filesystem is ro. So consider tree as never initiated.
+       ssexec_{start,stop,free,...} will deal with the live state of
+       the services anyway.
     unsigned int init = tree_isinitialized(pinfo->base.s, treename) ;
     if (init == -1) log_dieu(LOG_EXIT_SYS, "resolve file of tree: ", treename) ;
 
@@ -128,6 +133,7 @@ static void info_display_init(char const *field,char const *treename)
     if (buffer_putsflush(buffer_1,"\n") == -1)
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
+    */
 }
 
 static void info_display_allow(char const *field, char const *treename)
@@ -346,14 +352,23 @@ static void info_display_contents(char const *field, char const *treename)
 
     size_t padding = 1 ;
     graph_t graph = GRAPH_ZERO ;
+    stralloc sa = STRALLOC_ZERO ;
 
     unsigned int areslen = 0 ;
     resolve_service_t ares[SS_MAX_SERVICE + 1] ;
 
+    memset(ares, 0, (SS_MAX_SERVICE + 1) * sizeof(resolve_service_t)) ;
+
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    graph_build_service(&graph, ares, &areslen, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
+    if (!resolve_get_field_tosa_g(&sa, pinfo->base.s, treename, DATA_TREE, E_RESOLVE_TREE_CONTENTS))
+        log_dieu(LOG_EXIT_SYS, "get field contents of tree: ", treename) ;
+
+    if (!sa.len)
+        goto empty ;
+
+    service_graph_g(sa.s, sa.len, &graph, ares, &areslen, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
     if (!areslen)
         goto empty ;
@@ -365,20 +380,12 @@ static void info_display_contents(char const *field, char const *treename)
 
         depth_t d = info_graph_init() ;
 
-        if (!info_walk(&graph, 0, treename, &info_graph_display_service, 0, REVERSE, &d, padding, T_STYLE))
+        if (!info_walk(&graph, 0, 0, &info_graph_display_service, 0, REVERSE, &d, padding, T_STYLE))
             log_dieu(LOG_EXIT_SYS,"display the graph dependencies") ;
 
         goto freed ;
 
     } else {
-
-        stralloc sa = STRALLOC_ZERO ;
-
-        if (!resolve_get_field_tosa_g(&sa, pinfo->base.s, treename, DATA_TREE, E_RESOLVE_TREE_CONTENTS))
-            log_dieu(LOG_EXIT_SYS, "get tree services list of: ", treename) ;
-
-        if (!sa.len)
-            goto empty ;
 
         if (REVERSE)
             if (!sastr_reverse(&sa))
@@ -407,6 +414,7 @@ static void info_display_contents(char const *field, char const *treename)
 
     freed:
         graph_free_all(&graph) ;
+        stralloc_free(&sa) ;
 }
 
 static void info_display_all(char const *treename,int *what)
