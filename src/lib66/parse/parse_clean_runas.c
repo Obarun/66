@@ -54,8 +54,10 @@ int parse_clean_runas(char const *str, int idsec, int idkey)
         }
         else {
 
-            if (get_uidbyname(file, &uid) == -1)
+            if (get_uidbyname(file, &uid) == -1) {
+                log_warnu("get uid of user: ", file) ;
                 parse_error_return(0, 0, idsec, idkey) ;
+            }
         }
 
         uid_strlen = uid_fmt(uid_str,uid) ;
@@ -91,6 +93,7 @@ int parse_clean_runas(char const *str, int idsec, int idkey)
             if (!errno)
                 errno = ESRCH ;
 
+            log_warnu("invalid user: ", str) ;
             parse_error_return(0, 0, idsec, idkey) ;
         }
 
