@@ -168,7 +168,7 @@ static int send_signal(char const *scandir, char const *signal)
     return svc_scandir_send(scandir,csig) ;
 }
 
-static void scandir_up(char const *scandir, unsigned int timeout, unsigned int notif, unsigned int foreground, char const *const *envp, ssexec_t *info)
+static void scandir_up(char const *scandir, unsigned int timeout, unsigned int notif, char const *const *envp, ssexec_t *info)
 {
     uid_t uid = getuid() ;
     gid_t gid = getgid() ;
@@ -190,88 +190,6 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
     newup[m++] = "--" ;
     newup[m++] = scandir ;
     newup[m++] = 0 ;
-
-    if (!foreground && info->owner) {
-
-        int fd ;
-        char *target = "/dev/null" ;
-        char home[SS_MAX_PATH_LEN + 1] ;
-        gid_t gid = -1 ;
-
-        if (!yourgid(&gid, info->owner))
-            log_dieusys(LOG_EXIT_SYS, "get gid") ;
-
-        if (!set_ownerhome_stack_byuid(home, info->owner))
-            log_dieusys(LOG_EXIT_SYS,"set home directory") ;
-
-        size_t homelen = strlen(home), loglen = strlen(SS_LOGGER_USERDIR) ;
-        char file[homelen + loglen + 1 + SS_SCANDIR_LEN + 1 + SS_TREE_CURRENT_LEN + 1] ;
-
-        auto_strings(file, home, SS_LOGGER_USERDIR, "/", SS_SCANDIR) ;
-
-        if (!dir_create_parent(file, 755))
-            log_dieusys(LOG_EXIT_SYS, "create directory: ", file) ;
-
-        file[homelen + loglen + 1] = 0 ;
-
-        if (chown(file, info->owner, gid) < 0)
-            log_dieusys(LOG_EXIT_SYS, "chown: ", file) ;
-
-        if (chmod(file, 0755) < 0)
-            log_dieusys(LOG_EXIT_SYS,"chmod: ", file) ;
-
-        auto_strings(file + homelen + loglen + 1, SS_SCANDIR) ;
-
-        if (chown(file, info->owner, gid) < 0)
-            log_dieusys(LOG_EXIT_SYS, "chown: ", file) ;
-
-        if (chmod(file, 0755) < 0)
-            log_dieusys(LOG_EXIT_SYS,"chmod: ", file) ;
-
-        auto_strings(file + homelen + loglen + 1 + SS_SCANDIR_LEN, "/", SS_TREE_CURRENT) ;
-
-        pid_t pid = fork() ;
-        if (pid < 0)
-            log_dieusys(LOG_EXIT_SYS, "fork") ;
-        else if (pid)
-            _exit(0) ;
-
-        if (setsid() < 0)
-            log_dieusys(LOG_EXIT_SYS, "setsid") ;
-
-        pid = fork() ;
-        if (pid < 0)
-            log_dieusys(LOG_EXIT_SYS, "fork") ;
-        else if (pid)
-            _exit(0) ;
-
-        if ((chdir("/")) < 0)
-            log_dieusys(LOG_EXIT_SYS,"chdir") ;
-
-        fd = open(target,O_RDONLY) ;
-        if (fd < 0)
-            log_dieusys(LOG_EXIT_SYS, "open ",target) ;
-
-        if (dup2(fd, 0) < 0)
-            log_dieusys(LOG_EXIT_SYS, "copy stdin to ", target) ;
-
-        close(fd) ;
-
-        fd = open(file, O_WRONLY|O_NONBLOCK|O_CREAT|O_APPEND, 0700) ;
-        if (fd < 0)
-            log_dieusys(LOG_EXIT_SYS, "open file: ", file) ;
-
-        if (dup2(fd, 1) < 0)
-            log_dieusys(LOG_EXIT_SYS, "copy stdout to: ", file) ;
-
-        close(fd) ;
-
-        if (dup2(1, 2) < 0)
-            log_dieusys(LOG_EXIT_SYS, "copy stderr to stdout") ;
-
-        if (chown(file, info->owner, gid) < 0)
-            log_dieusys(LOG_EXIT_SYS, "chown: ", file) ;
-    }
 
     if (!uid && uid != info->owner) {
         /** -o <owner> was asked. Respect it
@@ -297,7 +215,7 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
 
     int r ;
 
-    unsigned int timeout = 0, notif = 0, sig = 0, container = 0, boot = 0, foreground = 0 ;
+    unsigned int timeout = 0, notif = 0, sig = 0, container = 0, boot = 0 ;
 
     char const *newenv[MAXENV+1] ;
     char const *const *genv = 0 ;
@@ -352,12 +270,6 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
                 case 'B' :
 
                     container = 1 ;
-
-                    break ;
-
-                case 'f' :
-
-                    foreground = 1 ;
 
                     break ;
 
@@ -439,7 +351,7 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
             return 0 ;
         }
 
-        scandir_up(scandir, timeout, notif, foreground, genv, info) ;
+        scandir_up(scandir, timeout, notif, genv, info) ;
     }
 
     r = svc_scandir_ok(info->scandir.s) ;

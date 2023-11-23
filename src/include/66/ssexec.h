@@ -264,7 +264,7 @@ extern char const *help_halt ;
 
 #define OPTS_SCANDIR_WRAPPER "ho:"
 #define OPTS_SCANCTL_WRAPPER_LEN (sizeof OPTS_SCANDIR_WRAPPER - 1)
-#define OPTS_SCANDIR_SIGNAL "d:s:e:bBf"
+#define OPTS_SCANDIR_SIGNAL "d:s:e:bB"
 #define OPTS_SCANDIR_SIGNAL_LEN (sizeof OPTS_SCANDIR_SIGNAL - 1)
 #define OPTS_SCANDIR_CREATE "bBs:cL:"
 #define OPTS_SCANDIR_CREATE_LEN (sizeof OPTS_SCANDIR_CREATE - 1)
