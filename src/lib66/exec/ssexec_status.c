@@ -16,6 +16,7 @@
 #include <locale.h>
 #include <langinfo.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <wchar.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -64,6 +65,7 @@ static void info_display_intree(char const *field, resolve_service_t *res) ;
 static void info_display_status(char const *field, resolve_service_t *res) ;
 static void info_display_type(char const *field, resolve_service_t *res) ;
 static void info_display_description(char const *field, resolve_service_t *res) ;
+static void info_display_inns(char const *field, resolve_service_t *res) ;
 static void info_display_notify(char const *field, resolve_service_t *res) ;
 static void info_display_maxdeath(char const *field, resolve_service_t *res) ;
 static void info_display_earlier(char const *field, resolve_service_t *res) ;
@@ -71,8 +73,8 @@ static void info_display_source(char const *field, resolve_service_t *res) ;
 static void info_display_live(char const *field, resolve_service_t *res) ;
 static void info_display_deps(char const *field, resolve_service_t *res) ;
 static void info_display_requiredby(char const *field, resolve_service_t *res) ;
-static void info_display_optsdeps(char const *field, resolve_service_t *res) ;
 static void info_display_contents(char const *field, resolve_service_t *res) ;
+static void info_display_optsdeps(char const *field, resolve_service_t *res) ;
 static void info_display_start(char const *field, resolve_service_t *res) ;
 static void info_display_stop(char const *field, resolve_service_t *res) ;
 static void info_display_envat(char const *field, resolve_service_t *res) ;
@@ -93,26 +95,27 @@ static info_opts_map_t const opts_sv_table[] =
     { .str = "status", .svfunc = &info_display_status, .id = 3 },
     { .str = "type", .svfunc = &info_display_type, .id = 4 },
     { .str = "description", .svfunc = &info_display_description, .id = 5 },
-    { .str = "notify", .svfunc = &info_display_notify, .id = 6 },
-    { .str = "maxdeath", .svfunc = &info_display_maxdeath, .id = 7 },
-    { .str = "earlier", .svfunc = &info_display_earlier, .id = 8 },
-    { .str = "source", .svfunc = &info_display_source, .id = 9 },
-    { .str = "live", .svfunc = &info_display_live, .id = 10 },
-    { .str = "depends", .svfunc = &info_display_deps, .id = 11 },
-    { .str = "requiredby", .svfunc = &info_display_requiredby, .id = 12 },
-    { .str = "optsdepends", .svfunc = &info_display_optsdeps, .id = 13 },
+    { .str = "partof", .svfunc = &info_display_inns, .id = 6 },
+    { .str = "notify", .svfunc = &info_display_notify, .id = 7 },
+    { .str = "maxdeath", .svfunc = &info_display_maxdeath, .id = 8 },
+    { .str = "earlier", .svfunc = &info_display_earlier, .id = 9 },
+    { .str = "source", .svfunc = &info_display_source, .id = 10 },
+    { .str = "live", .svfunc = &info_display_live, .id = 11 },
+    { .str = "depends", .svfunc = &info_display_deps, .id = 12 },
+    { .str = "requiredby", .svfunc = &info_display_requiredby, .id = 13 },
     { .str = "contents", .svfunc = &info_display_contents, .id = 14 },
-    { .str = "start", .svfunc = &info_display_start, .id = 15 },
-    { .str = "stop", .svfunc = &info_display_stop, .id = 16 },
-    { .str = "envat", .svfunc = &info_display_envat, .id = 17 },
-    { .str = "envfile", .svfunc = &info_display_envfile, .id = 18 },
-    { .str = "logname", .svfunc = &info_display_logname, .id = 19 },
-    { .str = "logdst", .svfunc = &info_display_logdst, .id = 20 },
-    { .str = "logfile", .svfunc = &info_display_logfile, .id = 21 },
+    { .str = "optsdepends", .svfunc = &info_display_optsdeps, .id = 15 },
+    { .str = "start", .svfunc = &info_display_start, .id = 16 },
+    { .str = "stop", .svfunc = &info_display_stop, .id = 17 },
+    { .str = "envat", .svfunc = &info_display_envat, .id = 18 },
+    { .str = "envfile", .svfunc = &info_display_envfile, .id = 19 },
+    { .str = "logname", .svfunc = &info_display_logname, .id = 20 },
+    { .str = "logdst", .svfunc = &info_display_logdst, .id = 21 },
+    { .str = "logfile", .svfunc = &info_display_logfile, .id = 22 },
     { .str = 0, .svfunc = 0, .id = -1 }
 } ;
 
-#define MAXOPTS 23
+#define MAXOPTS 24
 #define checkopts(n) if (n >= MAXOPTS) log_die(LOG_EXIT_USER, "too many options")
 #define DELIM ','
 
@@ -274,6 +277,13 @@ static void info_display_description(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
     info_display_string(res->sa.s + res->description) ;
+}
+
+static void info_display_inns(char const *field,resolve_service_t *res)
+{
+    if (NOFIELD) info_display_field_name(field) ;
+    char *s = res->inns ? res->sa.s + res->inns : "None" ;
+    info_display_string(s) ;
 }
 
 static void info_display_notify(char const *field,resolve_service_t *res)
@@ -459,55 +469,7 @@ static void info_display_deps(char const *field, resolve_service_t *res)
         graph_free_all(&graph) ;
         stralloc_free(&deps) ;
 }
-/*
-static void info_display_with_source_tree(stralloc *list, resolve_service_t *res)
-{
-    size_t pos = 0, lpos = 0 ;
-    stralloc tmp = STRALLOC_ZERO ;
-    stralloc sa = STRALLOC_ZERO ;
 
-    if (!resolve_get_field_tosa_g(&sa, pinfo->base.s, SS_MASTER + 1, DATA_TREE_MASTER, E_RESOLVE_TREE_MASTER_CONTENTS))
-        log_dieu(LOG_EXIT_SYS, "get list of trees") ;
-
-    size_t len = sa.len ;
-
-    char t[len + 1] ;
-
-    sastr_to_char(t, &sa) ;
-
-    sa.len = 0 ;
-
-    for (; pos < len ; pos += strlen(t + pos) + 1) {
-
-        sa.len = lpos = 0 ;
-        char *treename = t + pos ;
-
-        if (!resolve_get_field_tosa_g(&sa, pinfo->base.s, treename, DATA_TREE, E_RESOLVE_TREE_CONTENTS))
-            log_dieu(LOG_EXIT_SYS, "get services list from tree: ", treename) ;
-
-        FOREACH_SASTR(&sa, lpos) {
-
-            char *service = sa.s + lpos ;
-
-            if (sastr_cmp(list, service) >= 0) {
-
-                if (!stralloc_cats(&tmp, service) ||
-                !stralloc_cats(&tmp, ":") ||
-                !stralloc_catb(&tmp, treename, strlen(treename) +1))
-                    log_die_nomem("stralloc") ;
-            }
-        }
-    }
-
-    list->len = pos = 0 ;
-    FOREACH_SASTR(&tmp, pos)
-        if (!sastr_add_string(list, tmp.s + pos))
-            log_die_nomem("stralloc") ;
-
-    stralloc_free (&sa) ;
-    stralloc_free (&tmp) ;
-}
-*/
 static void info_display_optsdeps(char const *field, resolve_service_t *res)
 {
     stralloc salist = STRALLOC_ZERO ;
@@ -519,8 +481,6 @@ static void info_display_optsdeps(char const *field, resolve_service_t *res)
 
     if (!sastr_clean_string(&salist,res->sa.s + res->dependencies.optsdeps))
         log_dieu(LOG_EXIT_SYS,"build optionnal dependencies list") ;
-
-    //info_display_with_source_tree(&salist,res) ;
 
     if (REVERSE)
         if (!sastr_reverse(&salist))
@@ -540,32 +500,71 @@ static void info_display_optsdeps(char const *field, resolve_service_t *res)
 
 static void info_display_contents(char const *field, resolve_service_t *res)
 {
-    stralloc salist = STRALLOC_ZERO ;
+    size_t padding = 1 ;
+    graph_t graph = GRAPH_ZERO ;
+    stralloc sa = STRALLOC_ZERO ;
 
-    if (NOFIELD) info_display_field_name(field) ;
-    else field = 0 ;
+    unsigned int areslen = 0 ;
+    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
 
-    if (!res->dependencies.ncontents) goto empty ;
+    if (NOFIELD) padding = info_display_field_name(field) ;
+    else { field = 0 ; padding = 0 ; }
 
-    if (!sastr_clean_string(&salist,res->sa.s + res->dependencies.contents))
-        log_dieu(LOG_EXIT_SYS,"build contents list") ;
+    if (!res->dependencies.ncontents)
+        goto empty ;
 
-    //info_display_with_source_tree(&salist,res) ;
+    if (!sastr_clean_string(&sa, res->sa.s + res->dependencies.contents))
+        log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    if (REVERSE)
-        if (!sastr_reverse(&salist))
-                log_dieu(LOG_EXIT_SYS,"reverse the selection list") ;
+    service_graph_g(sa.s, sa.len, &graph, ares, &areslen, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
-    info_display_list(field,&salist) ;
+    if (!graph.mlen)
+        log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
 
-    goto freed ;
+    if (!sa.len)
+        goto empty ;
 
-    empty:
-        if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
+    if (GRAPH) {
+
+        if (!bprintf(buffer_1,"%s\n","\\"))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
+        depth_t d = info_graph_init() ;
+
+        if (!info_walk(&graph, 0, 0, &info_graph_display_service, 0, REVERSE, &d, padding, S_STYLE))
+            log_dieu(LOG_EXIT_SYS,"display the dependencies list") ;
+
+        goto freed ;
+
+    } else {
+
+        if (REVERSE)
+            if (!sastr_reverse(&sa))
+                log_dieu(LOG_EXIT_SYS,"reverse the selection list") ;
+
+        info_display_list(field,&sa) ;
+
+        goto freed ;
+    }
+    empty:
+        if (GRAPH)
+        {
+            if (!bprintf(buffer_1,"%s\n","\\"))
+                log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+
+            if (!bprintf(buffer_1,"%*s%s%s%s%s\n",padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
+                log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+        }
+        else
+        {
+            if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
+                log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+        }
+
     freed:
-        stralloc_free(&salist) ;
+        graph_free_all(&graph) ;
+        service_resolve_array_free(ares, areslen) ;
+        stralloc_free(&sa) ;
 }
 
 static void info_display_start(char const *field,resolve_service_t *res)
@@ -891,6 +890,7 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
         "Status",
         "Type",
         "Description",
+        "Part of",
         "Notify",
         "Max death",
         "Earlier",
@@ -900,6 +900,7 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
         "Required by",
         "Optional dependencies" ,
         "Contents",
+        "Optional dependencies" ,
         "Start script",
         "Stop script",
         "Environment source",
