@@ -84,18 +84,19 @@ static void inline auto_dir(char const *str,mode_t mode)
     if (!dir_create_parent(str,mode))
         log_dieusys(LOG_EXIT_SYS,"create directory: ",str) ;
 
-    size_t n = strlen(str), i = 0 ;
-    char tmp[n + 1] ;
-    for (; i < n ; i++) {
+    if (!OWNER) {
+        size_t n = strlen(str), i = 0 ;
+        char tmp[n + 1] ;
+        for (; i < n ; i++) {
 
-        if ((str[i] == '/') && i)
-        {
-            tmp[i] = 0 ;
-            auto_chown(tmp) ;
+            if ((str[i] == '/') && i)
+            {
+                tmp[i] = 0 ;
+                auto_chown(tmp) ;
+            }
+            tmp[i] = str[i] ;
         }
-        tmp[i] = str[i] ;
     }
-
     auto_chown(str) ;
 }
 
