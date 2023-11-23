@@ -64,7 +64,7 @@ static void parse_module_dependencies(stralloc *list, resolve_service_t *res, ui
         char fname[strlen(list->s + pos)] ;
 
         if (!ob_basename(fname, list->s + pos))
-            log_dieusys(LOG_EXIT_ZERO, "basename of: ", list->s + pos) ;
+            log_dieusys(LOG_EXIT_SYS, "basename of: ", list->s + pos) ;
 
         /** cannot call itself */
         if (!strcmp(name, fname))
