@@ -898,7 +898,6 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
         "Live",
         "Dependencies",
         "Required by",
-        "Optional dependencies" ,
         "Contents",
         "Optional dependencies" ,
         "Start script",

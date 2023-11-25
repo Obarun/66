@@ -410,7 +410,7 @@ static int handle_signal(pidtree_t *apidt, unsigned int what, graph_t *graph, ss
 
 /** this following function come from:
  * https://git.skarnet.org/cgi-bin/cgit.cgi/s6-rc/tree/src/s6-rc/s6-rc.c#n111
- * under license ISC where parameters was modified */
+ * under license ISC where parameters was modified
 static uint32_t compute_timeout (uint32_t timeout, tain *deadline)
 {
   uint32_t t = timeout ;
@@ -423,7 +423,7 @@ static uint32_t compute_timeout (uint32_t timeout, tain *deadline)
     t = (uint32_t)globalt ;
   return t ;
 }
-
+ */
 static int ssexec_callback(stralloc *sa, ssexec_t *info, unsigned int what)
 {
     log_flow() ;
