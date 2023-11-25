@@ -23,7 +23,7 @@ inline void info_help (char const *help,char const *usage)
 }
 
 
-char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|free|reconfigure|enable|disable|environ|status|resolve|state|remove|signal|tree|init|parse|scandir|boot|version [<command options>] service...|tree" ;
+char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|free|reconfigure|enable|disable|configure|status|resolve|state|remove|signal|tree|init|parse|scandir|boot|version [<command options>] service...|tree" ;
 
 char const *help_66 =
 "\nmain tool to init a system, control and manage services\n"
@@ -45,7 +45,7 @@ char const *help_66 =
 "   reconfigure: bring down, unsupervise, parse it again and bring up service\n"
 "   enable: activate service for the next boot\n"
 "   disable: deactivate service for the next boot\n"
-"   environ: manage service environment variable\n"
+"   configure: manage service environment variable\n"
 "   status: display services informations\n"
 "   resolve: display the resolve file contents of services\n"
 "   state: display state files contents of services\n"
@@ -116,7 +116,7 @@ char const *help_stop =
 "   -P: do not propagate signal to its requiredby\n"
 ;
 
-char const *usage_env = "66 environ [ -h ] [ -c version ] [ -s version ] [ -V|L ] [ -r key=value ] [ -i src,dst ] [ -e editor ] service" ;
+char const *usage_env = "66 configure [ -h ] [ -c version ] [ -s version ] [ -V|L ] [ -r key=value ] [ -i src,dst ] [ -e editor ] service" ;
 
 char const *help_env =
 "\nmanage environment service files and its contents\n"

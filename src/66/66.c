@@ -241,9 +241,9 @@ int main(int argc, char const *const *argv)
         info.usage = usage_stop ;
         func = &ssexec_stop ;
 
-    } else if (!strcmp(argv[0], "environ")) {
+    } else if (!strcmp(argv[0], "configure")) {
 
-        PROG = "environ" ;
+        PROG = "configure" ;
         nargv[n++] = PROG ;
         info.prog = PROG ;
         info.help = help_env ;

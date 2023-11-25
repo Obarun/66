@@ -83,7 +83,7 @@ static void run_editor(char const *src, char const *sv)
 
         if (!EDITOR) {
 
-            log_die(LOG_EXIT_SYS,"EDITOR is not set at the environment variable -- please use the -e option to specify the editor to use e.g. 66-env -e nano <service>.") ;
+            log_die(LOG_EXIT_SYS,"EDITOR is not set at the environment variable -- please use the -e option to specify the editor to use e.g. 66 configure -e nano <service>.") ;
         }
     }
     char const *const newarg[3] = { EDITOR, tsrc, 0 } ;
