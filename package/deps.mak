@@ -155,7 +155,7 @@ src/lib66/sanitize/sanitize_system.o src/lib66/sanitize/sanitize_system.lo: src/
 src/lib66/sanitize/sanitize_write.o src/lib66/sanitize/sanitize_write.lo: src/lib66/sanitize/sanitize_write.c src/include/66/constants.h src/include/66/enum.h src/include/66/resolve.h src/include/66/sanitize.h src/include/66/state.h src/include/66/svc.h src/include/66/tree.h
 src/lib66/service/service_cmp_basedir.o src/lib66/service/service_cmp_basedir.lo: src/lib66/service/service_cmp_basedir.c src/include/66/constants.h src/include/66/service.h src/include/66/utils.h
 src/lib66/service/service_db_migrate.o src/lib66/service/service_db_migrate.lo: src/lib66/service/service_db_migrate.c src/include/66/resolve.h src/include/66/service.h
-src/lib66/service/service_enable_disable.o src/lib66/service/service_enable_disable.lo: src/lib66/service/service_enable_disable.c src/include/66/enum.h src/include/66/graph.h src/include/66/service.h src/include/66/state.h
+src/lib66/service/service_enable_disable.o src/lib66/service/service_enable_disable.lo: src/lib66/service/service_enable_disable.c src/include/66/enum.h src/include/66/graph.h src/include/66/service.h src/include/66/ssexec.h src/include/66/state.h
 src/lib66/service/service_endof_dir.o src/lib66/service/service_endof_dir.lo: src/lib66/service/service_endof_dir.c src/include/66/service.h
 src/lib66/service/service_frontend_path.o src/lib66/service/service_frontend_path.lo: src/lib66/service/service_frontend_path.c src/include/66/config.h src/include/66/constants.h src/include/66/service.h src/include/66/utils.h
 src/lib66/service/service_frontend_src.o src/lib66/service/service_frontend_src.lo: src/lib66/service/service_frontend_src.c src/include/66/constants.h src/include/66/instance.h src/include/66/service.h src/include/66/utils.h
@@ -172,7 +172,7 @@ src/lib66/service/service_resolve_read_cdb.o src/lib66/service/service_resolve_r
 src/lib66/service/service_resolve_write.o src/lib66/service/service_resolve_write.lo: src/lib66/service/service_resolve_write.c src/include/66/constants.h src/include/66/resolve.h src/include/66/service.h
 src/lib66/service/service_resolve_write_cdb.o src/lib66/service/service_resolve_write_cdb.lo: src/lib66/service/service_resolve_write_cdb.c src/include/66/resolve.h src/include/66/service.h
 src/lib66/service/service_resolve_write_remote.o src/lib66/service/service_resolve_write_remote.lo: src/lib66/service/service_resolve_write_remote.c src/include/66/constants.h src/include/66/parse.h src/include/66/service.h
-src/lib66/service/service_switch_tree.o src/lib66/service/service_switch_tree.lo: src/lib66/service/service_switch_tree.c src/include/66/resolve.h src/include/66/service.h src/include/66/tree.h
+src/lib66/service/service_switch_tree.o src/lib66/service/service_switch_tree.lo: src/lib66/service/service_switch_tree.c src/include/66/resolve.h src/include/66/service.h src/include/66/ssexec.h src/include/66/tree.h
 src/lib66/shutdown/hpr_shutdown.o src/lib66/shutdown/hpr_shutdown.lo: src/lib66/shutdown/hpr_shutdown.c src/include/66/hpr.h
 src/lib66/shutdown/hpr_wall.o src/lib66/shutdown/hpr_wall.lo: src/lib66/shutdown/hpr_wall.c src/include/66/hpr.h
 src/lib66/shutdown/hpr_wallv.o src/lib66/shutdown/hpr_wallv.lo: src/lib66/shutdown/hpr_wallv.c src/include/66/hpr.h
@@ -224,7 +224,7 @@ src/lib66/tree/tree_seed_isvalid.o src/lib66/tree/tree_seed_isvalid.lo: src/lib6
 src/lib66/tree/tree_seed_parse_file.o src/lib66/tree/tree_seed_parse_file.lo: src/lib66/tree/tree_seed_parse_file.c src/include/66/enum.h src/include/66/tree.h
 src/lib66/tree/tree_seed_resolve_path.o src/lib66/tree/tree_seed_resolve_path.lo: src/lib66/tree/tree_seed_resolve_path.c src/include/66/constants.h src/include/66/tree.h src/include/66/utils.h
 src/lib66/tree/tree_seed_setseed.o src/lib66/tree/tree_seed_setseed.lo: src/lib66/tree/tree_seed_setseed.c src/include/66/tree.h
-src/lib66/tree/tree_service_add.o src/lib66/tree/tree_service_add.lo: src/lib66/tree/tree_service_add.c src/include/66/resolve.h src/include/66/tree.h
+src/lib66/tree/tree_service_add.o src/lib66/tree/tree_service_add.lo: src/lib66/tree/tree_service_add.c src/include/66/resolve.h src/include/66/ssexec.h src/include/66/tree.h
 src/lib66/tree/tree_service_remove.o src/lib66/tree/tree_service_remove.lo: src/lib66/tree/tree_service_remove.c src/include/66/resolve.h src/include/66/tree.h
 src/lib66/tree/tree_sethome.o src/lib66/tree/tree_sethome.lo: src/lib66/tree/tree_sethome.c src/include/66/config.h src/include/66/constants.h src/include/66/ssexec.h src/include/66/tree.h
 src/lib66/tree/tree_switch_current.o src/lib66/tree/tree_switch_current.lo: src/lib66/tree/tree_switch_current.c src/include/66/constants.h src/include/66/resolve.h src/include/66/tree.h
