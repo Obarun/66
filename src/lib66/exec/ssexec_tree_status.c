@@ -52,7 +52,7 @@ static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
 static void info_display_name(char const *field,char const *treename) ;
 static void info_display_current(char const *field,char const *treename) ;
 static void info_display_enabled(char const *field,char const *treename) ;
-static void info_display_init(char const *field,char const *treename) ;
+//static void info_display_init(char const *field,char const *treename) ;
 static void info_display_depends(char const *field,char const *treename) ;
 static void info_display_requiredby(char const *field,char const *treename) ;
 static void info_display_allow(char const *field,char const *treename) ;
@@ -67,16 +67,16 @@ info_opts_map_t const opts_tree_table[] =
     { .str = "name", .func = &info_display_name, .id = 0 },
     { .str = "current", .func = &info_display_current, .id = 1 },
     { .str = "enabled", .func = &info_display_enabled, .id = 2 },
-    { .str = "init", .func = &info_display_init, .id = 3 },
-    { .str = "allowed", .func = &info_display_allow, .id = 4 },
-    { .str = "groups", .func = &info_display_groups, .id = 5 },
-    { .str = "depends", .func = &info_display_depends, .id = 6 },
-    { .str = "requiredby", .func = &info_display_requiredby, .id = 7 },
-    { .str = "contents", .func = &info_display_contents, .id = 8 },
+//    { .str = "init", .func = &info_display_init, .id = 3 },
+    { .str = "allowed", .func = &info_display_allow, .id = 3 },
+    { .str = "groups", .func = &info_display_groups, .id = 4 },
+    { .str = "depends", .func = &info_display_depends, .id = 5 },
+    { .str = "requiredby", .func = &info_display_requiredby, .id = 6 },
+    { .str = "contents", .func = &info_display_contents, .id = 7 },
     { .str = 0, .func = 0, .id = -1 }
 } ;
 
-#define MAXOPTS 10
+#define MAXOPTS 9
 #define checkopts(n) if (n >= MAXOPTS) log_die(LOG_EXIT_USER, "too many options")
 #define DELIM ','
 
@@ -116,10 +116,10 @@ static void info_display_enabled(char const *field,char const *treename)
     if (buffer_putsflush(buffer_1,"\n") == -1)
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 }
-
+/*
 static void info_display_init(char const *field,char const *treename)
 {
-    /* it not possible to write the resolve file of a tree at boot
+     it not possible to write the resolve file of a tree at boot
        if the filesystem is ro. So consider tree as never initiated.
        ssexec_{start,stop,free,...} will deal with the live state of
        the services anyway.
@@ -133,9 +133,9 @@ static void info_display_init(char const *field,char const *treename)
     if (buffer_putsflush(buffer_1,"\n") == -1)
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
-    */
-}
 
+}
+*/
 static void info_display_allow(char const *field, char const *treename)
 {
 
@@ -477,7 +477,7 @@ int ssexec_tree_status(int argc, char const *const *argv, ssexec_t *info)
         "Name",
         "Current",
         "Enabled",
-        "Initialized",
+        //"Initialized",
         "Allowed",
         "Groups",
         "Depends",

@@ -62,7 +62,7 @@ int info_graph_display_tree(char const *name)
     int r = set_livedir(&sa) ;
     if (r <= 0)
         goto freed ;
-
+    /*
     int init = tres.init ;
     if (init < 0)
         goto freed ;
@@ -70,15 +70,16 @@ int info_graph_display_tree(char const *name)
     int up = tres.supervised ;
     if (up < 0)
         goto freed ;
-
+    */
     int enabled = tree_isenabled(base, name) ;
     if (enabled < 0)
         goto freed ;
 
-    if (!bprintf(buffer_1,"%s (%s%s%s,%s%s%s,%s%s%s)", \
+    //if (!bprintf(buffer_1,"%s (%s%s%s,%s%s%s,%s%s%s)",
+    if (!bprintf(buffer_1,"%s (%s%s%s)", \
 
                 name, \
-
+                /*
                 init ? log_color->valid : log_color->warning, \
                 init ? "Initialized" : "Unitialized", \
                 log_color->off, \
@@ -86,7 +87,7 @@ int info_graph_display_tree(char const *name)
                 up ? log_color->valid : log_color->error, \
                 up ? "Up" : "Down", \
                 log_color->off, \
-
+                */
 
                 enabled ? log_color->valid : log_color->warning, \
                 enabled ? "Enabled" : "Disabled", \
