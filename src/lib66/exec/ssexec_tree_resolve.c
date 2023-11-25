@@ -33,7 +33,7 @@
 #include <66/config.h>
 #include <66/state.h>
 
-#define MAXOPTS 18
+#define MAXOPTS 16
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -104,8 +104,8 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
         "nallow",
         "ngroups",
         "ncontents",
-        "init" ,
-        "supervised", // 13
+        //"init" ,
+        //"supervised", // 13
         // Master
         "enabled",
         "current",
@@ -139,19 +139,21 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
 
     if (!master) {
 
-        info_display_string(fields[0], tres.sa.s, tres.name, 0) ;
-        info_display_string(fields[1], tres.sa.s, tres.depends, 1) ;
-        info_display_string(fields[2], tres.sa.s, tres.requiredby, 1) ;
-        info_display_string(fields[3], tres.sa.s, tres.allow, 1) ;
-        info_display_string(fields[4], tres.sa.s, tres.groups, 1) ;
-        info_display_string(fields[5], tres.sa.s, tres.contents, 1) ;
-        info_display_int(fields[6], tres.ndepends) ;
-        info_display_int(fields[7], tres.nrequiredby) ;
-        info_display_int(fields[8], tres.nallow) ;
-        info_display_int(fields[9], tres.ngroups) ;
-        info_display_int(fields[10], tres.ncontents) ;
-        info_display_int(fields[11], tres.init) ;
-        info_display_int(fields[12], tres.supervised) ;
+        unsigned int m = 0 ;
+
+        info_display_string(fields[m++], tres.sa.s, tres.name, 0) ;
+        info_display_string(fields[m++], tres.sa.s, tres.depends, 1) ;
+        info_display_string(fields[m++], tres.sa.s, tres.requiredby, 1) ;
+        info_display_string(fields[m++], tres.sa.s, tres.allow, 1) ;
+        info_display_string(fields[m++], tres.sa.s, tres.groups, 1) ;
+        info_display_string(fields[m++], tres.sa.s, tres.contents, 1) ;
+        info_display_int(fields[m++], tres.ndepends) ;
+        info_display_int(fields[m++], tres.nrequiredby) ;
+        info_display_int(fields[m++], tres.nallow) ;
+        info_display_int(fields[m++], tres.ngroups) ;
+        info_display_int(fields[m++], tres.ncontents) ;
+        //info_display_int(fields[m++], tres.init) ;
+        //info_display_int(fields[m++], tres.supervised) ;
 
     } else {
 
