@@ -15,6 +15,8 @@
 #ifndef SS_SVC_H
 #define SS_SVC_H
 
+#include <unistd.h>
+
 #include <66/service.h>
 #include <66/ssexec.h>
 #include <66/graph.h>
