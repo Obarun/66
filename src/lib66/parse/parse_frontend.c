@@ -85,7 +85,7 @@ static void parse_service_instance(stralloc *frontend, char const *svsrc, char c
  * @Die on fail
  * @Return 1 on success
  * @Return 2 -> already parsed */
-int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns)
+int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree)
 {
     log_flow() ;
 
@@ -236,6 +236,9 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
     res.treename = resolve_add_string(wres, info->treename.s) ;
 
+    if (inns && intree)
+        res.intree = resolve_add_string(wres, intree) ;
+
     if (opt_tree_forced)
         info->opt_tree = 0 ;
 
@@ -258,7 +261,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     /** parse interdependences if the service was never parsed */
     if (isparsed == STATE_FLAGS_FALSE) {
 
-        if (!parse_interdependences(svname, res.sa.s + res.dependencies.depends, res.dependencies.ndepends, ares, areslen, info, force, conf, forced_directory, main, inns))
+        if (!parse_interdependences(svname, res.sa.s + res.dependencies.depends, res.dependencies.ndepends, ares, areslen, info, force, conf, forced_directory, main, inns, intree))
             log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", svname) ;
     }
 
