@@ -97,7 +97,6 @@ int svc_compute_ns(resolve_service_t *sares, unsigned int sareslen, unsigned int
     r = svc_launch(apids, napid, what, &graph, ares, areslen, info, updown, opt_updown, reloadmsg, data, propagate) ;
 
     graph_free_all(&graph) ;
-
     service_resolve_array_free(ares, areslen) ;
 
     return r ;

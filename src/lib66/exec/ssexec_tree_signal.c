@@ -696,7 +696,7 @@ static int async(pidtree_t *apidt, unsigned int i, unsigned int what, ssexec_t *
 
     char *name = graph->data.s + genalloc_s(graph_hash_t,&graph->hash)[apidt[i].vertex].vertex ;
 
-    log_trace("beginning of the process of: ", name) ;
+    log_trace("beginning of the process of tree: ", name) ;
 
     if (FLAGS_ISSET(apidt[i].state, (!what ? FLAGS_DOWN : FLAGS_UP)) ||
         /** force to pass through unsupersive process even

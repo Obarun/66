@@ -182,7 +182,6 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
         svc_unsupervise(flist, fnservice, &graph, ares, areslen, info) ;
 
     service_resolve_array_free(ares, areslen) ;
-
     graph_free_all(&graph) ;
 
     return e ;

@@ -22,6 +22,7 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
+#include <oblibs/environ.h>
 
 #include <skalibs/types.h>
 #include <skalibs/tai.h>

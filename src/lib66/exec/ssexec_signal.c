@@ -179,7 +179,6 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
     r = svc_launch(apids, napid, what, &graph, ares, areslen, info, updown, opt_updown, reloadmsg, data, propagate) ;
 
     graph_free_all(&graph) ;
-
     service_resolve_array_free(ares, areslen) ;
 
     return r ;

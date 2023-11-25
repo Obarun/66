@@ -34,7 +34,6 @@ void graph_compute_visit(resolve_service_t *ares, unsigned int aresid, unsigned 
         visit[idx] = 1 ;
     }
 
-
     /** find dependencies of the service from the graph, do it recursively */
     c = graph_matrix_get_edge_g_list(l, graph, ares[aresid].sa.s + ares[aresid].name, requiredby, 1) ;
 
