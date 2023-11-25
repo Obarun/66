@@ -95,7 +95,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
         if (aresid < 0)
             log_dieu(LOG_EXIT_SYS,"find ares id -- please make a bug reports") ;
 
-        toclean[pos] = 1 ;
+        toclean[aresid] = 1 ;
         earlier = ares[aresid].earlier ;
         char *scandir = ares[aresid].sa.s + ares[aresid].live.scandir ;
         size_t scandirlen = strlen(scandir) ;
