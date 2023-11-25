@@ -40,6 +40,7 @@
 #include <skalibs/tai.h>
 #include <skalibs/direntry.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/cspawn.h>
 #include <skalibs/iopause.h>
 #include <skalibs/skamisc.h>
 

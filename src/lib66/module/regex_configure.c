@@ -26,6 +26,7 @@
 #include <skalibs/types.h>
 #include <skalibs/env.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/cspawn.h>
 #include <skalibs/bytestr.h>
 
 #include <66/module.h>

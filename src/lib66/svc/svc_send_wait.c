@@ -16,6 +16,7 @@
 #include <oblibs/environ.h>
 
 #include <skalibs/djbunix.h>
+#include <skalibs/cspawn.h>
 
 #include <66/svc.h>
 #include <66/resolve.h>

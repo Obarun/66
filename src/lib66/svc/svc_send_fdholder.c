@@ -19,6 +19,7 @@
 
 #include <skalibs/types.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/cspawn.h>
 
 #include <66/svc.h>
 

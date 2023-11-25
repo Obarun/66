@@ -173,12 +173,14 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
     uid_t uid = getuid() ;
     gid_t gid = getgid() ;
     unsigned int no = notif ? 2 : 0 ;
-    char const *newup[6 + no] ;
+    char const *newup[8 + no] ;
     unsigned int m = 0 ;
     char fmt[UINT_FMT] ;
     fmt[uint_fmt(fmt, timeout)] = 0 ;
     char snotif[UINT_FMT] ;
     snotif[uint_fmt(snotif, notif)] = 0 ;
+    char maxservice[UINT_FMT] ;
+    maxservice[uint_fmt(maxservice, SS_MAX_SERVICE_NAME)] = 0 ;
 
     newup[m++] = S6_BINPREFIX "s6-svscan" ;
     if (no) {
@@ -187,6 +189,8 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
     }
     newup[m++] = "-t" ;
     newup[m++] = fmt ;
+    newup[m++] = "-L" ;
+    newup[m++] = maxservice ;
     newup[m++] = "--" ;
     newup[m++] = scandir ;
     newup[m++] = 0 ;

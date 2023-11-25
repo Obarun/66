@@ -28,6 +28,7 @@
 #include <skalibs/tai.h>
 #include <skalibs/selfpipe.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/cspawn.h>
 #include <skalibs/genalloc.h>
 #include <skalibs/iopause.h>
 #include <skalibs/sig.h>//sig_ignore

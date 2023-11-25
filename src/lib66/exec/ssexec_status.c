@@ -34,6 +34,7 @@
 #include <skalibs/lolstdio.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/cspawn.h>
 #include <skalibs/buffer.h>
 #include <skalibs/sgetopt.h>
 
