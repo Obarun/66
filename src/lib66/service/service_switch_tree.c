@@ -19,8 +19,9 @@
 #include <66/service.h>
 #include <66/resolve.h>
 #include <66/tree.h>
+#include <66/ssexec.h>
 
-void service_switch_tree(resolve_service_t *res, char const *base, char const *totreename)
+void service_switch_tree(resolve_service_t *res, char const *base, char const *totreename, ssexec_t *info)
 {
     log_flow() ;
 
@@ -28,7 +29,7 @@ void service_switch_tree(resolve_service_t *res, char const *base, char const *t
 
     tree_service_remove(base, res->sa.s + res->treename, res->sa.s + res->name) ;
 
-    tree_service_add(base, totreename, res->sa.s + res->name) ;
+    tree_service_add(totreename, res->sa.s + res->name, info) ;
 
     if (!service_resolve_modify_field(res, E_RESOLVE_SERVICE_TREENAME, totreename))
         log_dieu(LOG_EXIT_SYS, "modify resolve file of: ", res->sa.s + res->name) ;

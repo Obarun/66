@@ -177,7 +177,7 @@ void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
     if (!ob_basename(main, sv))
         log_dieu(LOG_EXIT_SYS, "get basename of: ", sv) ;
 
-    r = parse_frontend(sv, ares, &areslen, info, force, conf, 0, main, 0) ;
+    r = parse_frontend(sv, ares, &areslen, info, force, conf, 0, main, 0, 0) ;
     if (r == 2)
         /** already parsed */
         return ;
@@ -221,7 +221,7 @@ void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
         if (!dir_rm_rf(sa.s))
             log_warnu("remove temporary directory: ", sa.s) ;
 
-        tree_service_add(info->base.s, ares[pos].sa.s + ares[pos].treename, ares[pos].sa.s + ares[pos].name) ;
+        tree_service_add(ares[pos].sa.s + ares[pos].treename, ares[pos].sa.s + ares[pos].name, info) ;
 
         if (!symlink_make(&ares[pos]))
             log_dieusys(LOG_EXIT_SYS, "make service symlink") ;

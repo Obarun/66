@@ -106,7 +106,7 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
         if (aresid < 0)
             log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parse it?") ;
 
-        service_enable_disable(&graph, aresid, ares, areslen, 0, visit, propagate) ;
+        service_enable_disable(&graph, aresid, ares, areslen, 0, visit, propagate, info) ;
 
         if (!sastr_add_string(&sa, argv[n]))
             log_dieu(LOG_EXIT_SYS, "add string") ;

@@ -97,11 +97,11 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
         if (aresid < 0)
             log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parse it?") ;
 
-        service_enable_disable(&graph, aresid, ares, areslen, 1, visit, propagate) ;
+        service_enable_disable(&graph, aresid, ares, areslen, 1, visit, propagate, info) ;
 
         if (info->opt_tree) {
 
-            service_switch_tree(&ares[aresid], info->base.s, info->treename.s) ;
+            service_switch_tree(&ares[aresid], info->base.s, info->treename.s, info) ;
 
             if (ares[aresid].logger.want && ares[aresid].type == TYPE_CLASSIC) {
 
@@ -109,14 +109,12 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
                 if (logid < 0)
                     log_die(LOG_EXIT_USER, "service: ", ares[aresid].sa.s + ares[aresid].logger.name, " not available -- please make a bug report") ;
 
-                service_switch_tree(&ares[logid], info->base.s, info->treename.s) ;
-
+                service_switch_tree(&ares[logid], info->base.s, info->treename.s, info) ;
             }
         }
 
         if (!stack_add_g(&stk, argv[n]))
             log_dieu(LOG_EXIT_SYS, "add string") ;
-
     }
 
     service_resolve_array_free(ares, areslen) ;

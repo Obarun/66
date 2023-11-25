@@ -25,8 +25,9 @@
 #include <66/graph.h>
 #include <66/state.h>
 #include <66/enum.h>
+#include <66/ssexec.h>
 
-static void service_enable_disable_deps(graph_t *g, unsigned int idx, resolve_service_t *ares, unsigned int areslen, uint8_t action, unsigned int *visit, uint8_t propagate)
+static void service_enable_disable_deps(graph_t *g, unsigned int idx, resolve_service_t *ares, unsigned int areslen, uint8_t action, unsigned int *visit, uint8_t propagate, ssexec_t *info)
 {
     log_flow() ;
 
@@ -47,7 +48,7 @@ static void service_enable_disable_deps(graph_t *g, unsigned int idx, resolve_se
                 log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
             if (!visit[aresid])
-                service_enable_disable(g, aresid, ares, areslen, action, visit, propagate) ;
+                service_enable_disable(g, aresid, ares, areslen, action, visit, propagate, info) ;
         }
     }
 
@@ -56,7 +57,7 @@ static void service_enable_disable_deps(graph_t *g, unsigned int idx, resolve_se
 
 /** @action -> 0 disable
  * @action -> 1 enable */
-void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *ares, unsigned int areslen, uint8_t action, unsigned int *visit, uint8_t propagate)
+void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *ares, unsigned int areslen, uint8_t action, unsigned int *visit, uint8_t propagate, ssexec_t *info)
 {
     log_flow() ;
 
@@ -65,6 +66,10 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
         resolve_service_t_ref res = &ares[idx] ;
         resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
+        /** resolve file may already exist. Be sure to add it to the contents field of the tree.*/
+        if (action)
+            tree_service_add(res->sa.s + (res->intree ? res->intree : res->treename), res->sa.s + res->name, info) ;
+
         if (!service_resolve_modify_field(res, E_RESOLVE_SERVICE_ENABLED, !action ? "0" : "1"))
             log_dieu(LOG_EXIT_SYS, "modify resolve file of: ", res->sa.s + res->name) ;
 
@@ -72,7 +77,7 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
             log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", res->sa.s + res->name) ;
 
         if (propagate)
-            service_enable_disable_deps(g, idx, ares, areslen, action, visit, propagate) ;
+            service_enable_disable_deps(g, idx, ares, areslen, action, visit, propagate, info) ;
 
         /** the logger must be disabled to avoid to start it
          * with the 66 tree start <tree> command */
@@ -87,6 +92,9 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
             if (!visit[aresid]) {
 
                 wres = resolve_set_struct(DATA_SERVICE, &ares[aresid]) ;
+
+                if (action)
+                    tree_service_add(ares[aresid].sa.s + (ares[aresid].intree ? ares[aresid].intree : ares[aresid].treename), ares[aresid].sa.s + ares[aresid].name, info) ;
 
                 if (!service_resolve_modify_field(&ares[aresid], E_RESOLVE_SERVICE_ENABLED, !action ? "0" : "1"))
                     log_dieu(LOG_EXIT_SYS, "modify resolve file of: ", ares[aresid].sa.s + ares[aresid].name) ;
@@ -121,13 +129,16 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
 
                         wres = resolve_set_struct(DATA_SERVICE, &ares[aresid]) ;
 
+                        if (action)
+                            tree_service_add(ares[aresid].sa.s + (ares[aresid].intree ? ares[aresid].intree : ares[aresid].treename), ares[aresid].sa.s + ares[aresid].name, info) ;
+
                         if (!service_resolve_modify_field(&ares[aresid], E_RESOLVE_SERVICE_ENABLED, !action ? "0" : "1"))
                             log_dieu(LOG_EXIT_SYS, "modify resolve file of: ", ares[aresid].sa.s + ares[aresid].name) ;
 
                         if (!resolve_write_g(wres, ares[aresid].sa.s + ares[aresid].path.home, ares[aresid].sa.s + ares[aresid].name))
                             log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", ares[aresid].sa.s + ares[aresid].name) ;
 
-                        service_enable_disable_deps(g, aresid, ares, areslen, action, visit, propagate) ;
+                        service_enable_disable_deps(g, aresid, ares, areslen, action, visit, propagate, info) ;
 
                         visit[aresid] = 1 ;
 

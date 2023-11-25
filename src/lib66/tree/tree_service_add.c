@@ -17,8 +17,9 @@
 
 #include <66/resolve.h>
 #include <66/tree.h>
+#include <66/ssexec.h>
 
-void tree_service_add(char const *base, char const *treename, char const *service)
+void tree_service_add(char const *treename, char const *service, ssexec_t *info)
 {
     log_flow() ;
 
@@ -28,7 +29,25 @@ void tree_service_add(char const *base, char const *treename, char const *servic
 
     _init_stack_(stk, SS_MAX_SERVICE * SS_MAX_SERVICE_NAME + 1 + len + 1) ;
 
-    if (resolve_read_g(wres, base, treename) <= 0)
+    if (!tree_isvalid(info->base.s, treename)) {
+
+        int nargc = 3 ;
+        char const *newargv[nargc] ;
+        unsigned int m = 0 ;
+
+        newargv[m++] = "tree" ;
+        newargv[m++] = treename ;
+        newargv[m++] = 0 ;
+
+        char const *prog = PROG ;
+        PROG = "tree" ;
+        if (ssexec_tree_admin(nargc, newargv, info))
+            log_dieusys(LOG_EXIT_SYS, "create tree: ", treename) ;
+        PROG = prog ;
+
+    }
+
+    if (resolve_read_g(wres, info->base.s, treename) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of tree: ", treename) ;
 
     if (tres.ncontents) {
@@ -61,7 +80,7 @@ void tree_service_add(char const *base, char const *treename, char const *servic
     if (!resolve_modify_field(wres, E_RESOLVE_TREE_CONTENTS, stk.s))
         log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
 
-    if (!resolve_write_g(wres, base, treename))
+    if (!resolve_write_g(wres, info->base.s, treename))
         log_dieusys(LOG_EXIT_SYS, "write resolve file of tree: ", treename) ;
 
     resolve_free(wres) ;
