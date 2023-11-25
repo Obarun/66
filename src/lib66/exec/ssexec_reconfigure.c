@@ -32,6 +32,7 @@
 #include <66/service.h>
 #include <66/constants.h>
 #include <66/tree.h>
+#include <skalibs/djbunix.h>
 
 int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 {
@@ -97,6 +98,10 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         if (aresid < 0)
             log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parse it?") ;
 
+        char status[strlen(ares[aresid].sa.s + ares[aresid].path.servicedir) + SS_STATE_LEN + 1] ;
+
+        auto_strings(status, ares[aresid].sa.s + ares[aresid].path.servicedir, SS_STATE) ;
+
         if (!state_read(&sta, &ares[aresid]))
             log_dieu(LOG_EXIT_SYS, "read state file of: ", argv[n]) ;
 
@@ -120,6 +125,10 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
             continue ;
 
         } else {
+
+            if (!state_write_remote(&sta, status))
+                log_dieusys(LOG_EXIT_SYS, "write status file of: ", argv[n]) ;
+
             /** services of group boot cannot be restarted, the changes will appear only at
              * next reboot.*/
             r = tree_ongroups(ares[aresid].sa.s + ares[aresid].path.home, ares[aresid].sa.s + ares[aresid].treename, TREE_GROUPS_BOOT) ;
@@ -198,7 +207,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     for (n = 0 ; n < ntostate ; n++) {
 
         /** live of the service still exist.
-         * Reverse to the previous state of the isparsed flag. */
+         * Reverse to the previous state of the toparse flag. */
         if (state_read_remote(&sta, ares[tostate[n]].sa.s + ares[tostate[n]].live.statedir)) {
 
             sta.toparse = STATE_FLAGS_FALSE ;
