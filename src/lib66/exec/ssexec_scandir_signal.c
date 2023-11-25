@@ -173,7 +173,7 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
     uid_t uid = getuid() ;
     gid_t gid = getgid() ;
     unsigned int no = notif ? 2 : 0 ;
-    char const *newup[8 + no] ;
+    char const *newup[7 + no] ;
     unsigned int m = 0 ;
     char fmt[UINT_FMT] ;
     fmt[uint_fmt(fmt, timeout)] = 0 ;
@@ -191,7 +191,6 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
     newup[m++] = fmt ;
     newup[m++] = "-L" ;
     newup[m++] = maxservice ;
-    newup[m++] = "--" ;
     newup[m++] = scandir ;
     newup[m++] = 0 ;
 
