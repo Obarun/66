@@ -237,7 +237,7 @@ extern char const *help_halt ;
 #define OPTS_DISABLE_LEN (sizeof OPTS_DISABLE - 1)
 #define OPTS_START "hP"
 #define OPTS_START_LEN (sizeof OPTS_START - 1)
-#define OPTS_STOP "huP"
+#define OPTS_STOP "hurP"
 #define OPTS_STOP_LEN (sizeof OPTS_STOP - 1)
 #define OPTS_STATUS "hno:grd:p:"
 #define OPTS_STATUS_LEN (sizeof OPTS_STATUS - 1)

@@ -13,7 +13,6 @@ ssexec_remove.o
 ssexec_resolve.o
 ssexec_restart.o
 ssexec_scandir_create.o
-ssexec_scandir_remove.o
 ssexec_scandir_signal.o
 ssexec_scandir_wrapper.o
 ssexec_shutdown_wrapper.o

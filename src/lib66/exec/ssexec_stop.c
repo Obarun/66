@@ -39,7 +39,7 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
 
     uint32_t flag = 0 ;
     graph_t graph = GRAPH_ZERO ;
-    uint8_t siglen = 3 ;
+    uint8_t siglen = 3, remove = 0 ;
     int e = 0 ;
 
     unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0, pos = 0, idx = 0 ;
@@ -73,6 +73,11 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
                 case 'u' :
 
                     FLAGS_SET(flag, STATE_FLAGS_TOUNSUPERVISE|STATE_FLAGS_WANTUP) ;
+                    break ;
+
+                case 'r' :
+
+                    remove = 1 ;
                     break ;
 
                 case 'X' :
@@ -180,6 +185,9 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
 
     if (FLAGS_ISSET(flag, STATE_FLAGS_TOUNSUPERVISE))
         svc_unsupervise(flist, fnservice, &graph, ares, areslen, info) ;
+
+    if (remove)
+        svc_remove(flist, fnservice, &graph, ares, areslen, info) ;
 
     service_resolve_array_free(ares, areslen) ;
     graph_free_all(&graph) ;
