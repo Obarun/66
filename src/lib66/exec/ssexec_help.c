@@ -23,7 +23,7 @@ inline void info_help (char const *help,char const *usage)
 }
 
 
-char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|free|reconfigure|enable|disable|configure|status|resolve|state|remove|signal|tree|init|parse|scandir|boot|version [<command options>] service...|tree" ;
+char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|free|reconfigure|enable|disable|configure|status|resolve|state|remove|signal|tree|init|parse|scandir|boot|poweroff|reboot|halt|version [<command options>] service...|tree" ;
 
 char const *help_66 =
 "\nmain tool to init a system, control and manage services\n"
