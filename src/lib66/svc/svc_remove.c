@@ -42,7 +42,6 @@ static void remove_service(resolve_service_t *res, ssexec_t *info)
 {
     log_flow() ;
 
-    int r ;
     char sym[strlen(res->sa.s + res->path.home) + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME + 1] ;
 
     auto_remove(res->sa.s + res->path.servicedir) ;

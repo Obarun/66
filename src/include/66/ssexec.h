@@ -112,7 +112,6 @@ extern ssexec_func_t ssexec_scandir_signal ;
 extern ssexec_func_t ssexec_status ;
 extern ssexec_func_t ssexec_resolve ;
 extern ssexec_func_t ssexec_state ;
-extern ssexec_func_t ssexec_remove ;
 extern ssexec_func_t ssexec_signal ;
 
 /** tree */
