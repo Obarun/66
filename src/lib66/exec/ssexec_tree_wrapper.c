@@ -155,7 +155,7 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         func = &ssexec_tree_signal ;
         ctl++ ;
 
-    } else if (!strcmp(argv[1], "unsupervise")) {
+    } else if (!strcmp(argv[1], "free")) {
 
         info->prog = PROG ;
         info->help = help_tree_unsupervise ;

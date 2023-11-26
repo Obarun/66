@@ -145,7 +145,7 @@ static inline unsigned int parse_signal (char const *signal, ssexec_t *info)
     static char const *const signal_table[] = {
         "start",
         "stop",
-        "unsupervise",
+        "free",
         0
     } ;
     unsigned int i = lookup(signal_table, signal) ;
@@ -542,9 +542,6 @@ static int doit(char const *treename, ssexec_t *sinfo, unsigned int what, tain *
             int r = ssexec_callback(&sa, &info, what) ;
             if (r)
                 goto err ;
-
-            if (what == 2)
-                log_info("Unsupervised successfully tree: ", info.treename.s) ;
         }
 
         stralloc_free(&sa) ;

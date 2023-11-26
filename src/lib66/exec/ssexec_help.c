@@ -294,7 +294,7 @@ char const *help_signal =
 "   -r : restart service by sending it a signal(default SIGTERM)\n"
 ;
 
-char const *usage_tree_wrapper = "66 tree [ -h ] create|admin|remove|enable|disable|current|status|resolve|start|stop|unsupervise [<command options>] tree" ;
+char const *usage_tree_wrapper = "66 tree [ -h ] create|admin|remove|enable|disable|current|status|resolve|start|stop|free [<command options>] tree" ;
 
 char const *help_tree_wrapper =
 "\nmain sub tools to manages trees\n"
@@ -313,7 +313,7 @@ char const *help_tree_wrapper =
 "   resolve: display resolve file of tree\n"
 "   start: bring up all services from tree\n"
 "   stop: bring down all services from tree\n"
-"   unsupervise: bring down and unsupervise all services from tree\n"
+"   free: bring down and unsupervise all services from tree\n"
 "\n"
 "Use '66 tree <command> -h' to see command options\n"
 ;
@@ -454,7 +454,7 @@ char const *help_tree_stop =
 "If no tree name are provided, it bring down all enabled trees from the system\n"
 ;
 
-char const *usage_tree_unsupervise = "66 tree unsupervise [ -h ] [ -f ] tree" ;
+char const *usage_tree_unsupervise = "66 tree free [ -h ] [ -f ] tree" ;
 
 char const *help_tree_unsupervise =
 "\nbring down and unsupervise all services of tree\n"
