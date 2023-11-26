@@ -6,7 +6,6 @@ BIN_TARGETS := \
 66-umountall \
 66-echo \
 execl-envfile \
-execl-toc \
 66-nuke
 
 LIBEXEC_TARGETS := \

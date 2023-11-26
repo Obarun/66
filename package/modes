@@ -2,14 +2,12 @@
 66-shutdown         0755
 66-shutdownd        0755
 66-hpr              0755
-66-rebuild          0755
 66-umountall        0755
 66-echo             0755
 66-nuke             0755
 66-oneshot          0755
 66-fdholder-filler  0755
 execl-envfile       0755
-execl-toc           0755
 init                0755
 init.conf           0644
 rc.init             0755
