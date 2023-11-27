@@ -70,7 +70,7 @@ build_s6() {
 ## oblibs
 build_oblibs() {
 
-    git clone https://framagit.org/obarun/oblibs
+    git clone https://git.obarun.org/obarun/oblibs
     cd oblibs
     check_tag "${oblibs_tag}"
     ./configure \
