@@ -1,0 +1,41 @@
+## An empty field is not allowed. If the key is define, the value must exist and valid.
+## In other case, simply comment it.
+
+## Boolean: use false or true. Default false for an absent key.
+## List: use comma to separate each element.
+
+## List: corresponds to 66 tree admin -o depends=<tree> or 66 tree create -o depends=<tree> <tree>
+## You can use the term 'none'
+
+#depends = none
+
+## List: corresponds to 66 tree admin -o requiredby=<tree> or 66 tree create -o requiredby=<tree> <tree>
+## You can use the term 'none'
+
+#requiredby = none
+
+## Boolean: corresponds to 66 tree enable <tree>
+
+#enable = false
+
+## List: corresponds to 66 tree admin -o allow=<user> or 66 tree create -o allow=<user>
+## If you want to allow any user without specifying a particular user
+## you can use the term 'user'
+
+#allow = root
+
+## List: corresponds to 66 tree admin -o deny=<user> or 66 tree create -o deny=<user>
+## If you want to allow any user without specifying a particular user
+## you can use the term 'user'
+
+#deny = none
+
+## Boolean: corresponds to 66 tree current
+
+#current = false
+
+## Corresponds to 66 tree admin -o groups=<group> or 66 tree create -o groups=<group>
+## Can be one of the term: boot, admin, user or none.
+## Only one group is allowed.
+
+#groups = admin
