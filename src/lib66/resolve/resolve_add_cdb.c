@@ -1,7 +1,7 @@
 /*
  * resolve_add_cdb.c
  *
- * Copyright (c) 2018-2022 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2023 Eric Vidal <eric@obarun.org>
  *
  * All rights reserved.
  *

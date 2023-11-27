@@ -1,7 +1,7 @@
 /*
  * tree_seed_parse_file.c
  *
- * Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2023 Eric Vidal <eric@obarun.org>
  *
  * All rights reserved.
  *
