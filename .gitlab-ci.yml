@@ -26,4 +26,5 @@ build:
   only:
     refs:
       - master
+      - dev
 

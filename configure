@@ -57,7 +57,7 @@ Fine tuning of the installation directories:
   --with-user-seed=DIR             user trees default configuration [.66/seed]
 
  Do not set an absolute path but a \$HOME relative path for --with-user-dir,
- --with-user-log, --with-user-service, --with-user-service-conf, --with-user-script 
+ --with-user-log, --with-user-service, --with-user-service-conf, --with-user-script
  and --with-user-seed.
  The \$HOME prefix will be appened at the pathname automatically in function of the user.
  For example , by default the final path for --with-user-dir will be \$HOME/.66.
@@ -629,7 +629,7 @@ echo "Creating src/include/${package}/config.h..."
 mkdir -p -m 0755 src/include/${package}
 exec 3>&1 1> src/include/${package}/config.h
 cat <<EOF
-/* Copyright (c) 2018-2021 Eric Vidal <eric@obarun.org>
+/* Copyright (c) 2018-2023 Eric Vidal <eric@obarun.org>
 All rights reserved.*/
 
 /* ISC license. */

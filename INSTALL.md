@@ -5,11 +5,10 @@ Build Instructions
 
 - A POSIX-compliant C development environment
 - GNU make version 3.81 or later
-- skalibs version 2.11.0.0: http://skarnet.org/software/skalibs/
-- execline version 2.8.1.0: http://skarnet.org/software/execline/
-- s6 version 2.11.0.0: http://skarnet.org/software/s6/
-- s6-rc version 0.5.2.3: http://skarnet.org/software/s6-rc/
-- oblibs version 0.1.4.0: https://framagit.org/Obarun/oblibs/
+- skalibs version 2.14.0.1: http://skarnet.org/software/skalibs/
+- execline version 2.9.4.0: http://skarnet.org/software/execline/
+- s6 version 2.12.0.2: http://skarnet.org/software/s6/
+- oblibs version 0.2.0.0: https://framagit.org/Obarun/oblibs/
 - lowdown version 0.6.4 or later for man and html pages: https://kristaps.bsd.lv/lowdown/
 - linux-api-headers 5.8 or later: https://www.gnu.org/software/libc (only for linux system)
 
@@ -32,7 +31,6 @@ Note: the man and html documentation pages will always be generated if *lowdown*
 
 You can customize the installation process via flags given to configure. See `./configure --help` for a list of all available configure options.
 
-
 ## Environment variables
 
 Controlling a build process via environment variables is a big and dangerous hammer. You should try and pass flags to configure instead; nevertheless, a few standard environment variables are recognized.
@@ -40,7 +38,6 @@ Controlling a build process via environment variables is a big and dangerous ham
 If the CC environment variable is set, its value will override compiler detection by configure. The *--host=HOST* option will still add a HOST- prefix to the value of CC.
 
 The values of *CFLAGS*, *CPPFLAGS* and *LDFLAGS* will be appended to the default flags set by configure. To override those defaults instead of appending to them, use the *CPPFLAGS*, *CFLAGS* and *LDFLAGS* *make variables* instead of environment variables.
-
 
 ## Make variables
 
@@ -51,11 +48,13 @@ You can invoke make with a few variables for more configuration.
 *DESTDIR* can be given on the `make install` command line in order to install to a staging directory.
 
 ## Static binaries
+
 By default, binaries are linked against static versions of all the libraries they depend on, except for the libc. You can enforce linking against the static libc with *--enable-static-libc*.
 
 (If you are using a GNU/Linux system, be aware that the GNU libc behaves badly with static linking and produces huge executables, which is why it is not the default. Other libcs are better suited to static linking, for instance [musl](http://musl-libc.org/)
 
 ## Cross-compilation
+
 skarnet.org packages centralize all the difficulty of cross-compilation in one place: skalibs. Once you have
 cross-compiled skalibs, the rest is easy.
 

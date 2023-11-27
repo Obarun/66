@@ -6,10 +6,10 @@ if [ "$1" == "commit" ]; then
     tag=0
 fi
 
-skalibs_tag="v2.13.1.1"
-execline_tag="v2.9.3.0"
-s6_tag="v2.11.3.2"
-oblibs_tag="v0.1.4.0"
+skalibs_tag="v2.14.0.1"
+execline_tag="v2.9.4.00"
+s6_tag="v2.12.0.2"
+oblibs_tag="0.2.0.0"
 
 check_tag(){
 
@@ -67,21 +67,6 @@ build_s6() {
     cd ..
 }
 
-## s6-rc
-build_s6_rc() {
-    git clone https://github.com/skarnet/s6-rc
-    cd s6-rc
-    check_tag "${s6_rc_tag}"
-    ./configure \
-        --prefix=/usr \
-        --bindir=/usr/bin \
-        --sbindir=/usr/bin \
-        --enable-shared
-
-    make install || return 1
-    cd ..
-}
-
 ## oblibs
 build_oblibs() {
 
@@ -107,5 +92,4 @@ _run() {
 _run build_skalibs
 _run build_execline
 _run build_s6
-_run build_s6_rc
 _run build_oblibs
