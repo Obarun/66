@@ -73,7 +73,7 @@ int main(int argc, char const *const *argv)
     int r, n = 0, i = 0 ;
     uint8_t sanitize = 0 ;
     char str[UINT_FMT] ;
-    char const *nargv[argc + 4] ;
+    char const *nargv[argc + 3] ;
 
     ssexec_t info = SSEXEC_ZERO ;
     ssexec_func_t_ref func = 0 ;
@@ -345,12 +345,10 @@ int main(int argc, char const *const *argv)
 
         PROG = "remove" ;
         nargv[n++] = PROG ;
-        nargv[n++] = "-u" ;
-        nargv[n++] = "-r" ;
         info.prog = PROG ;
         info.help = help_remove ;
         info.usage = usage_remove ;
-        func = &ssexec_stop ;
+        func = &ssexec_remove ;
 
     } else if (!strcmp(argv[0], "tree")) {
 

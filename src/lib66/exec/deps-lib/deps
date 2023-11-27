@@ -9,6 +9,7 @@ ssexec_init.o
 ssexec_parse.o
 ssexec_reconfigure.o
 ssexec_reload.o
+ssexec_remove.o
 ssexec_resolve.o
 ssexec_restart.o
 ssexec_scandir_create.o

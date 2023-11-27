@@ -1,7 +1,6 @@
 svc_compute_ns.o
 svc_init_array.o
 svc_launch.o
-svc_remove.o
 svc_scandir_ok.o
 svc_scandir_send.o
 svc_send_fdholder.o
