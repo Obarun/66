@@ -11,6 +11,120 @@ author: Eric Vidal <eric@obarun.org>
 
 ---
 
+# In 0.7.0.0
+- Adaptation to `skalibs` 2.14.0.1
+- Adaptation to `execline` 2.9.4.0
+- Adaptation to `s6` 2.12.0.2
+- Adaptation to `oblibs` 0.2.0.0
+
+This release marks a significant rewrite of `66`, introducing a new UI and serving as a comprehensive service supervision suite and independent service manager.
+
+Primarily, expect no compatibility with previous versions due to:
+
+- The removal of `s6-rc` support. Service management is now fully integrated into `66`.
+- A complete overhaul of the folder structure for storage and runtime directories, simplifying it considerably.
+- An overhaul of tree behavior. Trees now function as services, and a complete tree dependency graph has been implemented.
+- Services can now depend on each other regardless of whether the service is declared on the same tree or the declaration order of the tree. For instance, if service `Sb` depends on service `Sa` and `Sa` is within `TreeB` while service `Sb` is within `TreeA`, and `TreeB` depends on `TreeA`, launching `TreeA` will start `Sb` even if `TreeB` isn't started first. When `TreeB` is executed, `Sb` will find `Sa` already started and commence directly.
+
+For UI changes, a [Rosetta stone](#rosetta.md) is available.
+
+## Frontend Files
+
+### New fields have been added:
+
+- `@requiredby`: Specifies which service is required by another service. For example, if service Sa declares service Sb as required by Sa's dependency, Sb won't start until Sa does. This allows building complex graph structures without modifying every frontend file of each service.
+- `@earlier`: Declares any service as an earlier one, starting as soon as the scandir is running, similar to tty12. This field is mandatory for services intended to start earlier.
+- `@intree`: Specifies the tree to use at enable/start time.
+
+The following field has been removed:
+
+- `@extdepends`: No longer necessary as services can depend on any service regardless of the tree used.
+
+### Behavioral changes:
+
+- `@options`:
+
+    - `log`: The logger is now set by default. You can specify not to use the logger by adding an exclamation mark in front of 'log' like '!log'.
+    - `env`: No longer mandatory. As long as you define an environment section, the parser will use it.
+    - `pipeline`: This option was only present for s6-rc.
+
+- `@shebang`: Deprecated but kept for compatibility reasons. Declare your shebang directly within the `@execute` field.
+
+- `@build`: Not mandatory anymore, as it will be declared 'auto' by default.
+Service Behavior
+
+The `classic` type now accepts the fields `@depends` and `@requiredby`. The `classic` type replaces the `longrun` type.
+
+Logger destinations for `oneshot` type services can now be declared on a **tmpfs** directory, particularly useful during boot time.
+
+Services can be started without being enabled first. In this case, the service won't start on the next reboot.
+
+The `bundle` and `longrun` types have been removed, replaced by `classic`, `oneshot`, and `module` types. For compatibility reasons, if your old `frontend` file declares the service as a `longrun` type, the parser will convert it to a `classic` type automatically. No automatic conversion is made for services of type `bundle`.
+
+## [Environment] Section
+
+This section now allows reusing the same variable. For instance:
+
+```
+socket_name=!/run/dbus/system_bus_socket
+cmd_args=!--system --address=unix:path=${socket_name}
+```
+
+The order of key-value pair declaration **doesn't matter**:
+
+```
+cmd_args=!--system --address=unix:path=${socket_name}
+socket_name=!/run/dbus/system_bus_socket
+```
+
+## Module Changes
+
+The `module` directory structure has been completely redesigned for better intuitiveness and comprehensiveness. Expect no compatibility with the previous version; a rewrite is required if you use `module` on your system.
+
+A `module` cannot contain another `module`; instead, you can declare it as a dependency via `@depends` or `@requiredby`. These can also be specified through the `configure` `module` script.
+
+Refer to the specific [module](#module-service.md) page for further information.
+
+## Trees
+
+Trees now react as services regarding graph dependencies. You can declare a `tree` depending on or required by others.
+
+A default named `global` `tree` is provided. Services without their localization defined or users not specifying a `tree` to use will be defined within that `tree`.
+
+A `seed` file can be provided for automatic `tree` configuration at creation time. For example, it defines `depends/requiredby` dependencies of the `tree`.
+
+If a service declares a non-existing `tree`, the `tree` will be created automatically with a default configuration, but without any `depends/requiredby` dependencies. To configure the `tree` with specific requirements at creation time, provide and install `seed` file with your service.
+
+## Configure Script
+
+Removed flags:
+- `--with-system-module=DIR`
+- `--with-sysadmin-module=DIR`
+- `--with-user-module=DIR`
+
+Added flags:
+- `--with-default-tree-name=NAME`
+- `--max-path-size=KB`
+- `--max-service-size=KB`
+- `--max-tree-name-size=KB`
+- `--with-system-seed=DIR`
+- `--with-sysadmin-seed=DIR`
+- `--with-user-seed=DIR`
+
+The slashpackage convention was removed.
+
+## Code Changes
+
+The code has been largely rewritten and simplified, offering more features with approximately the same number of code lines. Additionally, the code now uses less `HEAP` memory, although this optimization is ongoing.
+
+The parser was completely rewritten and heavily optimized, significantly reducing the time to parse a service(by three times).
+
+The start process was rewritten due to the removal of `s6-rc`. `Oblibs` now provide general functions to build any *Acyclic graph*.
+
+The code for the module part was revamped and greatly simplified.
+
+---
+
 # In 0.6.2.0
 
 - **WARNING**: `66-update` is no longer compatible with 66 version under 0.5.0.0.
