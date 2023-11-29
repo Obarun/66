@@ -168,7 +168,7 @@ int main(int argc, char const *const *argv)
             dump[(i<<1)+1].fd = p[1] ;
             offset.nano = 1 ;
             tain_add(&dump[(i<<1)+1].limit, &dump[i<<1].limit, &offset) ;
-            memcpy(dump[(i<<1)+1].id, buf + indices[i], len) ;
+            memcpy(dump[(i<<1)+1].id, buf + indices[i], len + 1) ;
             dump[(i<<1)+1].id[8] = 'w' ;
         }
 
