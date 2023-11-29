@@ -294,7 +294,7 @@ char const *help_signal =
 "   -r : restart service by sending it a signal(default SIGTERM)\n"
 ;
 
-char const *usage_tree_wrapper = "66 tree [ -h ] create|admin|remove|enable|disable|current|status|resolve|start|stop|free [<command options>] tree" ;
+char const *usage_tree_wrapper = "66 tree [ -h ] create|admin|remove|enable|disable|current|status|resolve|start|stop|free [<subcommand options>] tree" ;
 
 char const *help_tree_wrapper =
 "\nmain sub tools to manages trees\n"
@@ -302,7 +302,7 @@ char const *help_tree_wrapper =
 "options:\n"
 "   -h: print this help\n"
 "\n"
-"command:\n"
+"subcommand:\n"
 "   create: create tree\n"
 "   admin: manage tree\n"
 "   remove: remove tree\n"
@@ -475,7 +475,7 @@ char const *help_scandir_wrapper =
 "   -h: print this help\n"
 "   -o: handles scandir of owner\n"
 "\n"
-"command:\n"
+"subcommand:\n"
 "   create: create a scandir\n"
 "   remove: remove a scandir\n"
 "   start: start a scandir\n"
