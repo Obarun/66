@@ -94,14 +94,15 @@ static int fdholder_delete(s6_fdholder_t *a, char const *name, tain *deadline)
     }
     return 1 ;
 }
+
 /**
  * Accepted flag are
  *      - STATE_FLAGS_TRUE -> store the service A.K.A identifier
  *      - STATE_FLAGS_FALSE -> delete the service A.K.A identifier
- *
+ * @init: come form sanitize_init 0 -> no, 1 -> yes
  * */
 
-int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag)
+int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag, uint32_t init)
 {
     log_flow() ;
 
@@ -127,9 +128,9 @@ int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag)
 
         if (FLAGS_ISSET(flag, STATE_FLAGS_TRUE)) {
 
-            if (sta->issupervised == STATE_FLAGS_TRUE ||
+            if ((sta->issupervised == STATE_FLAGS_TRUE ||
                 sta->toreload == STATE_FLAGS_TRUE ||
-                sta->torestart == STATE_FLAGS_TRUE) {
+                sta->torestart == STATE_FLAGS_TRUE) && !init) {
 
                 log_trace("delete fdholder entry: ", name) ;
                 if (!fdholder_delete(&a, name, &deadline))
@@ -152,6 +153,9 @@ int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag)
             log_warnusys_return(LOG_EXIT_ZERO, "list identifier") ;
 
         s6_fdholder_end(&a) ;
+
+        if (!stralloc_0(&list))
+            log_die_nomem("stralloc") ;
 
         size_t pos = 0, tlen = list.len ;
         char t[tlen + 1] ;

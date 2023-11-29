@@ -32,7 +32,7 @@ static void sanitize_it(resolve_service_t *res)
     if (!state_read(&sta, res))
         log_dieu(LOG_EXIT_SYS, "read state file of: ", res->sa.s + res->name) ;
 
-    sanitize_fdholder(res, &sta, STATE_FLAGS_FALSE) ;
+    sanitize_fdholder(res, &sta, STATE_FLAGS_FALSE, 0) ;
 
     state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_TRUE) ;
     state_set_flag(&sta, STATE_FLAGS_ISUP, STATE_FLAGS_FALSE) ;

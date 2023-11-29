@@ -54,7 +54,7 @@ void cleanup(resolve_service_t *ares, unsigned int areslen)
 
         if (toclean[pos]) {
 
-            if (!sanitize_fdholder(&ares[pos], &sta, STATE_FLAGS_FALSE))
+            if (!sanitize_fdholder(&ares[pos], &sta, STATE_FLAGS_FALSE, 0))
                 log_warnusys("sanitize fdholder directory: ", ares[pos].sa.s + ares[pos].live.fdholderdir);
 
             log_trace("remove directory: ", ares[pos].sa.s + ares[pos].live.servicedir) ;
@@ -159,7 +159,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, resolve_s
 
         if (!earlier && is_supervised) {
 
-            if (!sanitize_fdholder(&ares[aresid], &sta, STATE_FLAGS_TRUE)) {
+            if (!sanitize_fdholder(&ares[aresid], &sta, STATE_FLAGS_TRUE, 1)) {
                 cleanup(ares, areslen) ;
                 log_dieusys(LOG_EXIT_SYS, "sanitize fdholder directory: ", ares[aresid].sa.s + ares[aresid].live.fdholderdir) ;
             }
