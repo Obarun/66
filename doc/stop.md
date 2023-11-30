@@ -19,7 +19,7 @@ stop [ -h ] [ -P ] service(s)
 
 This command expects to find an already running [scandir](scandir.html) and an already parsed service. If the state of the *service* is already down, the *stop* command does nothing but handles required by dependency except when passing the **-P** option.
 
-Multiple *services* can be stoppeded by seperating their names with a space.
+Multiple *services* can be stopped by seperating their names with a space.
 
 The `66 -t` command option have no effect. `66` will detect automatically the associated *tree* of the service along its required by dependencies.
 
