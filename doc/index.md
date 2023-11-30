@@ -7,7 +7,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # What is 66?
 
-Sixty-six is a collection of system tools built around [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc) created to make the implementation and manipulation of service files on your machine easier. It is meant to be a toolbox for the declaration, implementation and administration of services where seperate programs can be joined to achieve powerful functionality with small amounts of code.
+Sixty-six is a service manager built around [s6](https://skarnet.org/software/s6) created to make the implementation and manipulation of service files on your machine easier. It is meant to be a toolbox for the declaration, implementation and administration of services to achieve powerful functionality with small amounts of code.
 
 Examples of what can be achieved by assembling different programs provided by *66*:
 
@@ -26,13 +26,13 @@ Examples of what can be achieved by assembling different programs provided by *6
 - Automatic dependencies service chain.
 - ...
 
-**Note**: This documentation tries to be complete and self-contained. However, if you have never heard of [s6](https://skarnet.org/software/s6) and/or [s6-rc](https://skarnet.org/software/s6-rc) you might be confused at first. Please refer to the skarnet documentation if in doubt.
+**Note**: This documentation tries to be complete and self-contained. However, if you have never heard of [s6](https://skarnet.org/software/s6) you might be confused at first. Please refer to the skarnet documentation if in doubt.
 
 ## Installation
 
 ### Requirements
 
-Please refer to the [INSTALL.md](https://framagit.org/Obarun/66) file for details.
+Please refer to the [INSTALL.md](https://git.obarun.org/Obarun/66) file for details.
 
 ### Licensing
 
@@ -48,22 +48,19 @@ See [changes](upgrade.html) between version.
 
 ### Debug tools
 
-- [66-parser](66-parser.html)
-- [66-inresolve](66-inresolve.html)
-- [66-instate](66-instate.html)
+- [parser](parser.html)
+- [resolve](resolve.html)
+- [state](state.html)
 
 ### Admin tools
 
-- [66-boot](66-boot.html)
-- [66-scandir](66-scandir.html)
-- [66-scanctl](66-scanctl.html)
-- [66-init](66-init.html)
-- [66-svctl](66-svctl.html)
-- [66-dbctl](66-dbctl.html)
+- [boot](boot.html)
+- [scandir](scandir.html)
+- [init](init.html)
+- [signal](signal.html)
 - [66-hpr](66-hpr.html)
 - [66-shutdownd](66-shutdownd.html)
-- [66-update](66-update.html)
-- [66-nuke](66-nuke.html)
+- [66-shutdown](66-shutdown.html)
 
 ### User tools
 
@@ -71,29 +68,37 @@ See [changes](upgrade.html) between version.
 - [instantiated service file](instantiated-service.html)
 - [module service creation](module-service.html)
 - [Service configuration file](service-configuration-file.html)
-- [66-all](66-all.html)
-- [66-tree](66-tree.html)
-- [66-enable](66-enable.html)
-- [66-disable](66-disable.html)
-- [66-start](66-start.html)
-- [66-stop](66-stop.html)
-- [66-intree](66-intree.html)
-- [66-inservice](66-inservice.html)
-- [66-env](66-env.html)
+- [tree](tree.html)
+- [enable](enable.html)
+- [disable](disable.html)
+- [start](start.html)
+- [stop](stop.html)
+- [reload](reload.html)
+- [restart](restart.html)
+- [status](status.html)
+- [configure](configure.html)
+- [remove](remove.html)
+- [reconfigure](reconfigure.html)
+- [free](free.html)
+- [poweroff](poweroff.html)
+- [reboot](reboot.html)
+- [halt](halt.html)
 - [66-shutdown](66-shutdown.html)
 
 ### Extra tools
 
 - [66-echo](66-echo.html)
 - [66-umountall](66-umountall.html)
+- [66-nuke](66-nuke.html)
 - [execl-envfile](execl-envfile.html)
 
 ## Why is 66 necessary?
 
-Implementation and handling of service files based on [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc) can be complex and difficult to understand. This led to the creation of the 66 tools.
+Implementation and handling of service files based on [s6](https://skarnet.org/software/s6) can be complex and difficult to understand. This led to the creation of the 66 tools.
+
 Why the name
 
-*66* is the result of the combination of the former [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc).
+Previously *66* was the result of the combination of the former [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc). With time and code improvement the `s6-rc` was dropped. `66` is now a fully independent service manager, although the name has been retained.
 It is a lot faster and easier to write and remember when writing. Apart from that it is a nice command prefix to have. It identifies the origin of the software and it's short.
 
-Expect more use of the *66-* prefix in future obarun.org software releases and please avoid using it for your own projects.
+Expect more use of the *66-* prefix in future [obarun](https://web.obarun.org) software releases and please avoid using it for your own projects.
