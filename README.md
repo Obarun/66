@@ -1,12 +1,12 @@
 ![GitLabl Build Status](https://git.obarun.org/Obarun/66/badges/master/pipeline.svg)
 
-66 - Helpers tools around S6 supervision suite
+66 - Service manager around S6 supervision suite
 ===
 
-Sixty-six is a collection of system tools built around [s6](http://skarnet.org/software/s6) and [s6-rc](http://skarnet.org/software/s6-rc) created to make the implementation and manipulation of service files on your machine easier.
-It is meant to be a toolbox for the declaration, implementation and administration of services where seperate programs can be joined to achieve powerful functionality with small amounts of code.
+Sixty-six is service manager built around [s6](http://skarnet.org/software/s6) created to make the implementation and manipulation of service files on your machine easier.
+It is meant to be a toolbox for the declaration, implementation and administration of services to achieve powerful functionality with small amounts of code.
 
-Examples of what can be achieved by assembling different programs provided by 66:
+Examples of what can be achieved by 66:
 * Frontend service files declaration.
 * Easy creation of a scandir.
 * Nested supervision tree.
@@ -61,77 +61,16 @@ Frontend service file
 
 ### Boot service file
 
-The boot sequence can be a tedious task to accomplish. A **portable** and **complete** set of service can be found [here](https://framagit.org/pkg/obmods/boot-66serv).
+The boot sequence can be a tedious task to accomplish. A **portable** and **complete** set of services can be found [here](https://git.obarun.org/obmods/boot-66serv).
 This set of service work out of the box and highly configurable to suit needs of the distributions.
-POC was made on `Gentoo`, `Funtoo`, `Devuan`, `Void`, `Adelie`, `Arch`.
+POC was made on `Gentoo`, `Funtoo`, `Devuan`, `Void`, `Adelie`, `Antix`, `Arch`.
 
 ### Runtime service file
 
-You can find several examples for common daemon [here](https://git.obarun.org/pkg/observice)
+You can find several examples for common daemon [here](https://git.obarun.org/pkg/observice) or [here](https://github.com/mobinmob/void-66-services)(thanks to mobinmob).
 
 ### Frontend service file scripting
 
-By default, 66 use [execline](http://skarnet.org/software/execline) as scripting language.
+By default, 66 use [execline](http://skarnet.org/software/execline) as scripting language. However, you can specify the scripting language to use.
 [66-tools](https://git.obarun.org/obarun/66-tools) provide some additonal tools to help you on this task.
-Some are specific to `execline` where other can be used on classic shell. However, you can specify the scripting language to use.
-
-Examples of common use
-----------------------
-
-Note: all 66 tools can be run as `root` or `regular user`.
-
-Creates a new tree called `root`:
-
-```
-66-tree -n root
-```
-
-Enables the tree at boot time:
-```
-66-tree -E root
-```
-
-Enables a service inside a specific tree:
-```
-66-enable -t root dhcpcd tty@tty1 tty@tty2
-```
-
-Disables a service from a specific tree:
-```
-66-disable -t root dhcpcd
-```
-
-Starts a service:
-```
-66-start dhcpcd
-```
-
-Stops a service:
-```
-66-stop dhcpcd
-```
-
-View the status of a service:
-```
-66-inservice dhcpcd
-```
-
-View a specific fields of the service(name,status and the contain of the associated log file):
-```
-66-inservice -o name,status,logfile dhcpcd
-```
-
-View all services contained on a tree:
-```
-66-intree root
-```
-
-Starts all services in one pass for a specific tree:
-```
-66-all -t root up
-```
-
-Stops all services in one pass for a specific tree:
-```
-66-all -t root down
-```
+Some are specific to `execline` where other can be used on classic shell.
