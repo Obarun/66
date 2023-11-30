@@ -17,7 +17,7 @@ Handles an environment file and variable of a service depending on the options p
 configure [ -h ] [ -c version ] [ -s version ] [ -V|L ] [ -r key=value ] [ -i src,dst ] [ -e editor ] service
 ```
 
-- This program allows to handle the configuration file of *service* found by default at `%%service_admconf%%/<service>`. Depending of the options passed, you can displays the contents of the file, see the current version used, edits the configuration file and so on.
+This command allows to handle the configuration file of *service* found by default at `%%service_admconf%%/<service>`. Depending of the options passed, you can displays the contents of the file, see the current version used, edits the configuration file and so on.
 
 The edition of the configuration file is the **default** option if neither option is passed.
 
