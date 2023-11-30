@@ -43,10 +43,7 @@ The following field has been removed:
 ### Behavioral changes:
 
 - `@options`:
-
-    - `log`: The logger is now set by default. You can specify not to use the logger by adding an exclamation mark in front of 'log' like '!log'.
-    - `env`: No longer mandatory. As long as you define an environment section, the parser will use it.
-    - `pipeline`: This option was only present for s6-rc.
+    - `pipeline`: This option was removed. It was only present for `s6-rc`.
 
 - `@shebang`: Deprecated but kept for compatibility reasons. Declare your shebang directly within the `@execute` field.
 
@@ -112,6 +109,10 @@ Added flags:
 - `--with-user-seed=DIR`
 
 The slashpackage convention was removed.
+
+## Skeleton files
+
+The skeleton files `shudown`, `reboot`, `poweroff` and `halt` are removed and replaced by `66 reboot`, `66 poweroff`, `66 halt` command respectively.
 
 ## Code Changes
 
