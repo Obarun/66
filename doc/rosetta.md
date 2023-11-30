@@ -1,4 +1,4 @@
-title: The 66 Suite: upgrade
+title: The 66 Suite: rosetta
 author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)

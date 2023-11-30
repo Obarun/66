@@ -1,4 +1,4 @@
-title: The 66 Suite: 66-stop
+title: The 66 Suite: stop
 author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)
@@ -42,10 +42,6 @@ Stop the service without handling any dependencies
 ```
 66 stop -P foo
 ```
-
-## Dependencies handling
-
-Any required by dependency chain will be resolved automatically. It is unnecessary to manually define chained sets of required by dependencies. If FooA has a declared required by dependency on FooB, FooB will be automatically considered and stopped first when stop FooA. This will run recursively until all required by dependencies are stopped.
 
 ## Modules services
 

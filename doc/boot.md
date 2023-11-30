@@ -1,4 +1,4 @@
-title: The 66 Suite: 66-boot
+title: The 66 Suite: boot
 author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)

@@ -1,4 +1,4 @@
-title: The 66 Suite: 66-start
+title: The 66 Suite: start
 author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)
@@ -49,10 +49,6 @@ Start a *service* in a specific *tree* if the service was never parsed
 ```
 66 -t treeA start foo
 ```
-
-## Dependencies handling
-
-Any dependency chain will be resolved automatically. It is unnecessary to manually define chained sets of dependencies. If FooA has a declared dependency on FooB, FooB will be automatically considered and started first when starting FooA. This will run recursively until all dependencies are started.
 
 ## Modules services
 
