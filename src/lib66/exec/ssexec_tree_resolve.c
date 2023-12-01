@@ -109,9 +109,7 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
         // Master
         "enabled",
         "current",
-        "contents",
         "nenabled",
-        "ncontents" // 18
     } ;
 
     if (!strcmp(argv[0], SS_MASTER + 1)) {
@@ -159,12 +157,12 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
 
         info_display_string(fields[0], mres.sa.s, mres.name, 1) ;
         info_display_string(fields[3], mres.sa.s, mres.allow, 1) ;
-        info_display_string(fields[13], mres.sa.s, mres.enabled, 1) ;
-        info_display_string(fields[14], mres.sa.s, mres.current, 1) ;
-        info_display_string(fields[15], mres.sa.s, mres.contents, 1) ;
+        info_display_string(fields[11], mres.sa.s, mres.enabled, 1) ;
+        info_display_string(fields[12], mres.sa.s, mres.current, 1) ;
+        info_display_string(fields[5], mres.sa.s, mres.contents, 1) ;
         info_display_int(fields[8], mres.nallow) ;
-        info_display_int(fields[16], mres.nenabled) ;
-        info_display_int(fields[17], mres.ncontents) ;
+        info_display_int(fields[13], mres.nenabled) ;
+        info_display_int(fields[10], mres.ncontents) ;
     }
 
     resolve_free(wres) ;
