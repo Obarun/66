@@ -1,41 +1,48 @@
 ## An empty field is not allowed. If the key is define, the value must exist and valid.
 ## In other case, simply comment it.
 
-## Boolean: use false or true. Default false for an absent key.
-## List: use comma to separate each element.
+## This file use the two following type format:
+##   Boolean: use false or true. Default false for an absent key.
+##   List: a comma separated string list.
 
-## List: corresponds to 66 tree admin -o depends=<tree> or 66 tree create -o depends=<tree> <tree>
-## You can use the term 'none'
+## Type: List
+## Corresponds to e.g. '66 tree admin -o depends=treebar treefoo' or '66 tree create -o depends=treebar treefoo' command
+## You can use the term 'none'.
 
 #depends = none
 
-## List: corresponds to 66 tree admin -o requiredby=<tree> or 66 tree create -o requiredby=<tree> <tree>
+## Type: List
+## Corresponds to e.g. '66 tree admin -o requiredby=treebar treefoo' or '66 tree create -o requiredby=treebar treefoo' command
 ## You can use the term 'none'
 
 #requiredby = none
 
-## Boolean: corresponds to 66 tree enable <tree>
+## Type: Boolean
+## Corresponds to e.g. '66 tree enable treefoo' command
 
 #enable = false
 
-## List: corresponds to 66 tree admin -o allow=<user> or 66 tree create -o allow=<user>
-## If you want to allow any user without specifying a particular user
-## you can use the term 'user'
+## Type: List
+## Corresponds to e.g. '66 tree admin -o allow=root treefoo' or '66 tree create -o allow=root treefoo' command
+## If you want to allow any regular account without specifying a particular account name,
+## you can use the term 'user'. The account name must be valid on the system.
 
 #allow = root
 
-## List: corresponds to 66 tree admin -o deny=<user> or 66 tree create -o deny=<user>
-## If you want to allow any user without specifying a particular user
-## you can use the term 'user'
+## Type: List
+## Corresponds to e.g. '66 tree admin -o deny=root treefoo' or '66 tree create -o deny=root treefoo' command
+## If you want to allow any regular account without specifying a particular account name,
+## you can use the term 'user'. The account name must be valid on the system.
 
-#deny = none
+#deny = user
 
-## Boolean: corresponds to 66 tree current
+## Type: Boolean
+## Corresponds to '66 tree current' command
 
 #current = false
 
-## Corresponds to 66 tree admin -o groups=<group> or 66 tree create -o groups=<group>
-## Can be one of the term: boot, admin, user or none.
+## Corresponds to e.g. '66 tree admin -o groups=boot treefoo' or '66 tree create -o groups=boot treefoo' command
+## Can be one of the term: 'boot', 'admin', 'user' or 'none'.
 ## Only one group is allowed.
 
 #groups = admin
