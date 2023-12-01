@@ -1091,11 +1091,13 @@ void tree_clone(char const *clone, ssexec_t *info)
     if (lchown(dst, st.st_uid, st.st_gid) < 0)
         log_dieusys(LOG_EXIT_SYS, "chown: ", dst) ;
 
-    if (resolve_read(wres, info->base.s, clone) <= 0)
+    if (resolve_read_g(wres, info->base.s, clone) <= 0)
         log_dieu(LOG_EXIT_SYS, "read resolve file of tree: ", clone) ;
 
     if (!resolve_modify_field(wres, E_RESOLVE_TREE_INIT, 0) ||
         !resolve_modify_field(wres, E_RESOLVE_TREE_SUPERVISED, 0) ||
+        !resolve_modify_field(wres, E_RESOLVE_TREE_CONTENTS, "") ||
+        !resolve_modify_field(wres, E_RESOLVE_TREE_NCONTENTS, 0) ||
         !resolve_modify_field(wres, E_RESOLVE_TREE_NAME, clone))
             log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", clone) ;
 
