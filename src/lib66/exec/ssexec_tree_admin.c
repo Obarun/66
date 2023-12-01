@@ -513,6 +513,8 @@ void tree_groups(graph_t *graph, char const *base, char const *treename, char co
 
 void tree_master_modify_contents(char const *base)
 {
+    log_flow() ;
+
     stralloc sa = STRALLOC_ZERO ;
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
@@ -582,10 +584,10 @@ void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what)
      * seed.sa.s + seed.depends is empty, which can lead to a segmentation fault
      * when the -o option is passed at the command line. However, we have already gone
      * through the tree_parse_options_depends in such cases. */
-    if (what->depends)
+    if (what->depends && seed.sa.len)
         tree_parse_options_depends(g, info, seed.sa.s + seed.depends, 0, what) ;
 
-    if (what->requiredby)
+    if (what->requiredby && seed.sa.len)
         tree_parse_options_depends(g, info, seed.sa.s + seed.requiredby, 1, what) ;
 
     tree_master_modify_contents(info->base.s) ;
