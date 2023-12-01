@@ -973,8 +973,10 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
     log_info("Permissions rules set successfully for tree: ", treename) ;
 }
 
-static void tree_service_switch_contents(char const *base, char const *treesrc, char const *treedst)
+static void tree_service_switch_contents(char const *base, char const *treesrc, char const *treedst, ssexec_t *info)
 {
+    log_flow() ;
+
     size_t pos = 0 ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
@@ -987,6 +989,9 @@ static void tree_service_switch_contents(char const *base, char const *treesrc, 
 
     FOREACH_SASTR(&sa, pos) {
         log_trace("switch service: ", sa.s + pos, " to tree: ", treedst) ;
+
+        tree_service_add(treedst, sa.s + pos, info) ;
+
         if (!resolve_modify_field_g(swres, base, sa.s + pos, E_RESOLVE_SERVICE_TREENAME, treedst))
             log_dieu(LOG_EXIT_SYS, "modify resolve file of: ", sa.s + pos) ;
     }
@@ -996,7 +1001,7 @@ static void tree_service_switch_contents(char const *base, char const *treesrc, 
     resolve_free(swres) ;
 }
 
-void tree_remove(graph_t *g, char const *base, char const *treename)
+void tree_remove(graph_t *g, char const *base, char const *treename, ssexec_t *info)
 {
     log_flow() ;
 
@@ -1034,9 +1039,11 @@ void tree_remove(graph_t *g, char const *base, char const *treename)
 
         if (r)
             current = tree ;
+        else
+            current = SS_DEFAULT_TREENAME ;
     }
 
-    tree_service_switch_contents(base, treename, current) ;
+    tree_service_switch_contents(base, treename, current, info) ;
 
     log_trace("remove resolve file of tree: ", treename) ;
     resolve_remove_g(base, treename, DATA_TREE) ;
@@ -1237,7 +1244,7 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
     graph_build_tree(&graph, info->base.s, E_RESOLVE_TREE_MASTER_CONTENTS) ;
 
     if (what.remove) {
-        tree_remove(&graph, info->base.s, info->treename.s) ;
+        tree_remove(&graph, info->base.s, info->treename.s, info) ;
         goto freed ;
     }
 
