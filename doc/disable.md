@@ -23,6 +23,8 @@ The `66 -t` command option have no effect. `66` will detect automatically the as
 
 In case of `module` service type, all services within the `module` are disabled.
 
+Required by dependencies of services are also managed in chains. For example, if the `foo` service is disabled and required by `foobar`, `foobar` will also be disabled. This process occurs recursively.
+
 Multiple *services* can be disabled by seperating their names with a space.
 
 ## Options

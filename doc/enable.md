@@ -25,6 +25,8 @@ In case of `module` service type, all services within the `module` are enabled.
 
 Multiple *services* can be enabled by seperating their names with a space.
 
+Dependencies of services are also managed in chains. For example, if the `foo` service is enabled and depends on `foobar`', `foobar` will also be enabled. This process occurs recursively.
+
 ## Options
 
 - **-h** : prints this help.
