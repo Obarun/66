@@ -25,11 +25,11 @@ The absolute path of the frontend service file can also be set. In this case, th
 
 ## Options
 
-- **-h** : prints this help.
+- **-h**: prints this help.
 
-- **-f** : force. Owerwrite an existing parsing result.
+- **-f**: force. Owerwrite an existing parsing result.
 
-- **-I** : do not imports modified configuration files from the previous version used. Refer to [Service configuration file](service-configuration-file.html) for further information.
+- **-I**: do not imports modified configuration files from the previous version used. Refer to [Service configuration file](service-configuration-file.html) for further information.
 
 ## Note
 

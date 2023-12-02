@@ -23,23 +23,23 @@ The edition of the configuration file is the **default** option if neither optio
 
 ## Options
 
-- **-h** : prints this help.
+- **-h**: prints this help.
 
-- **-c** *version* : makes *version* as the current one to use by default. If the service is already running, you need to restart the *service* to apply the change by the command e.g. `66 restart foo`.
+- **-c** *version*: makes *version* as the current one to use by default. If the service is already running, you need to restart the *service* to apply the change by the command e.g. `66 restart foo`.
 
-- **-s** *version* : specifies the version to handles with the options **-V**, **-L**, **-r** and **-e** instead of using the current one.
+- **-s** *version*: specifies the version to handles with the options **-V**, **-L**, **-r** and **-e** instead of using the current one.
 
-- **-V** : lists available versioned configuration directories of the *service*. The term `current` is used to specific the current version in use as follow:
+- **-V**: lists available versioned configuration directories of the *service*. The term `current` is used to specific the current version in use as follow:
 
     ````
     0.2.0
     0.1.4 current
     ````
-- **-r** *key=value* : override an existing `key=value` pair with the given one. The `key=value` needs to be single quoted in case of multiple arguments.This option can be specified multiple times.
+- **-r** *key=value*: override an existing `key=value` pair with the given one. The `key=value` needs to be single quoted in case of multiple arguments.This option can be specified multiple times.
 
-- **-L** : lists defined environment variables for the *service*. It do the same for all files found at the configuration directory.
+- **-L**: lists defined environment variables for the *service*. It do the same for all files found at the configuration directory.
 
-- **-i** *src,dst* : imports configuration file from *src* version to *dst* version. The *src* version and *dst* version need to be separated by a comma without space before and after it. It **do not import** the configuration written by the parse process but only deal with extra configuration files written by the sysadmin.
+- **-i** *src,dst*: imports configuration file from *src* version to *dst* version. The *src* version and *dst* version need to be separated by a comma without space before and after it. It **do not import** the configuration written by the parse process but only deal with extra configuration files written by the sysadmin.
 
 - **-e** *editor*: edit the configuration file with *editor*. If you don't specify this option, it try to found the `EDITOR` variable from the environment variable. Note: the upstream file (meaning the one prefixed with a dot) is **never** touched. A copy of the upstream file is copied (if it doesn't exist yet) and the *configure* command  modifies that file.(see [Service configuration file](service-configuration-file.html) for further information).
 

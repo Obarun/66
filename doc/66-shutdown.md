@@ -28,11 +28,11 @@ The *66-shutdown* program abides to the standards of the LSB-3.0.0 [shutdown](ht
 
 *time* must be one of these formats: `[ now | [+]mins | hh:mm ]` where:
 
-- *now* : triggers the shutdown sequence immediately.
+- *now*: triggers the shutdown sequence immediately.
 
-- *mins* or *+mins* : relative time; triggers the shutdown sequence after *mins* minutes.
+- *mins* or *+mins*: relative time; triggers the shutdown sequence after *mins* minutes.
 
-- *hh:mm* : absolute time; triggers the shutdown sequence when the time *hh:mm* occurs. If that time has passed for the current day, it will wait for the next day. *hh* can have 1 or 2 digits; *mm* must have 2 digits.
+- *hh:mm*: absolute time; triggers the shutdown sequence when the time *hh:mm* occurs. If that time has passed for the current day, it will wait for the next day. *hh* can have 1 or 2 digits; *mm* must have 2 digits.
 
 
 ## Exit codes
@@ -43,27 +43,27 @@ The *66-shutdown* program abides to the standards of the LSB-3.0.0 [shutdown](ht
 
 ## Options
 
-- **-H** : prints this help.
+- **-H**: prints this help.
 
-- **-l** *live* : changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66-scandir](66-scandir.html).
+- **-l** *live*: changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66-scandir](66-scandir.html).
 
-- **-a** : access control. The shutdown sequence will only be launched if one of the users listed in `%%skel%%/shutdown.allow` is currently logged in (as tracked by utmp). `%%skel%%/shutdown.allow` is a text file which accepts one user per line. Lines starting with `#` are commented out.
+- **-a**: access control. The shutdown sequence will only be launched if one of the users listed in `%%skel%%/shutdown.allow` is currently logged in (as tracked by utmp). `%%skel%%/shutdown.allow` is a text file which accepts one user per line. Lines starting with `#` are commented out.
 
-- **-t** *sec* : have a "grace time" period of sec seconds between the `SIGTERM` and the `SIGKILL` at the end of the shutdown sequence when it is time to kill all processes (allows processes to receive `SIGTERM` to exit cleanly). Default is `3` seconds.
+- **-t** *sec*: have a "grace time" period of sec seconds between the `SIGTERM` and the `SIGKILL` at the end of the shutdown sequence when it is time to kill all processes (allows processes to receive `SIGTERM` to exit cleanly). Default is `3` seconds.
 
-- **-k** : do not shut down; send a warning message to all logged in users.
+- **-k**: do not shut down; send a warning message to all logged in users.
 
-- **-h** : halt the system at the end of the shutdown sequence.
+- **-h**: halt the system at the end of the shutdown sequence.
 
-- **-p** : power off the system at the end of the shutdown sequence. This option is provided as an extension it is not required by the LSB interface.
+- **-p**: power off the system at the end of the shutdown sequence. This option is provided as an extension it is not required by the LSB interface.
 
-- **-r** : reboot the system at the end of the shutdown sequence.
+- **-r**: reboot the system at the end of the shutdown sequence.
 
-- **-f** : ignored.
+- **-f**: ignored.
 
-- **-F** : ignored.
+- **-F**: ignored.
 
-- **-c** : cancel a planned shutdown. Can only cancel the effect of a previous call to *shutdown* with a time argument that was not *now*. This cannot be used to interrupt a shutdown sequence that has already started.
+- **-c**: cancel a planned shutdown. Can only cancel the effect of a previous call to *shutdown* with a time argument that was not *now*. This cannot be used to interrupt a shutdown sequence that has already started.
 
 ## Notes
 

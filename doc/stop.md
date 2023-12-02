@@ -27,9 +27,9 @@ In case of `module` *service* type, all *services* declared within the `module` 
 
 ## Options
 
-- **-h** : prints this help.
+- **-h**: prints this help.
 
-- **-P** : Do not handle services required by dependencies. In such cases, the *stop* command will not attempt to stop the services that depend on the service, regardless of their current state.
+- **-P**: Do not handle services required by dependencies. In such cases, the *stop* command will not attempt to stop the services that depend on the service, regardless of their current state.
 
 ## Usage examples
 

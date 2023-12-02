@@ -591,7 +591,7 @@ This section is *mandatory*. (!)
 
     * Any valid number.
 
-    This will create the file *max-death-tally*. Once this file was created the value will equal the maximum number of service death events that the supervisor will keep track of. If the service dies more than this number of times, the oldest event will be forgotten and the transition ([66-start](66-start.html) or [66-stop](66-stop.html)) will be declared as failed. Tracking death events is useful, for example, when throttling service restarts. The value cannot be greater than 4096. Without this file a default of 3 is used.
+    This will create the file *max-death-tally*. Once this file was created the value will equal the maximum number of service death events that the supervisor will keep track of. If the service dies more than this number of times, the oldest event will be forgotten and the transition ([66-start](66-start.html) or [66-stop](66-stop.html)) will be declared as failed. Tracking death events is useful, for example, when throttling service restarts. The value cannot be greater than 4096. Without this file a default of 10 is used.
 
     ---
 
@@ -1062,7 +1062,7 @@ The minimal template is:
 ```
     [main]
     @type = classic,bundle,longrun,oneshot,module
-    @version =
+    @version = 0.0.0
     @description = ""
     @user = ()
 
@@ -1128,4 +1128,5 @@ This prototype contain all valid section with all valid `key=value` pair.
     @files = ( key=value key=value )
     @infiles = ( :filename:key=value ::key=value )
     @addservices = ()
+    @applyto = ()
 ```

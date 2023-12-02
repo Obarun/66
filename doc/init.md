@@ -22,7 +22,7 @@ Ther command `66 scandir create` need to executed before trying to run the `init
 
 ## Options
 
-- **-h** : prints this help.
+- **-h**: prints this help.
 
 ## Initialization process
 

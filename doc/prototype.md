@@ -23,4 +23,4 @@ author: Eric Vidal <eric@obarun.org>
 
 ## Options
 
-- **- ** :
+- **- **:

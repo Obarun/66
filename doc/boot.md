@@ -27,19 +27,19 @@ Command *boot* never exits. It spawns the `rc.init` script and execs into [scand
 
 ## Options
 
-- **-h** : prints this help.
+- **-h**: prints this help.
 
-- **-m** : umount the basename of the *LIVE* directory set into the *init.conf* skeleton file, if it is already mounted, and mounts a tmpfs on it. By default, the *LIVE* basename is mounted if it is not already a valid mountpoint. Otherwise without the **-m** option, it does nothing.
+- **-m**: umount the basename of the *LIVE* directory set into the *init.conf* skeleton file, if it is already mounted, and mounts a tmpfs on it. By default, the *LIVE* basename is mounted if it is not already a valid mountpoint. Otherwise without the **-m** option, it does nothing.
 
-- **-s** *skel* : an absolute path. Directory that holds skeleton files. By default this will be `%%skel%%`. The default can also be changed at compile time by passing the `--with-skeleton=DIR` option to `./configure`. This directory ***must*** contain the necessary skeleton files to properly boot the machine, without it the system **will not boot**.
+- **-s** *skel*: an absolute path. Directory that holds skeleton files. By default this will be `%%skel%%`. The default can also be changed at compile time by passing the `--with-skeleton=DIR` option to `./configure`. This directory ***must*** contain the necessary skeleton files to properly boot the machine, without it the system **will not boot**.
 
-- **-l** *log_user* : the `catch-all` logger will run as *log_user*. Default is `%%s6log_user%%`. The default can also be changed at compile-time by passing the `--with-s6-log-user=user` option to `./configure`.
+- **-l** *log_user*: the `catch-all` logger will run as *log_user*. Default is `%%s6log_user%%`. The default can also be changed at compile-time by passing the `--with-s6-log-user=user` option to `./configure`.
 
-- **-e** *environment* : an absolute path. *stage 1 init* empties its environment before spawning the `rc.init` skeleton file and executing into [scandir start](scandir.html) in order to prevent kernel environment variables from leaking into the process tree. The *PATH* variable is the only variable set for the environment. If you want to define additional environment variables then use this option. Behaves the same as [scandir start -e](scandir.html).
+- **-e** *environment*: an absolute path. *stage 1 init* empties its environment before spawning the `rc.init` skeleton file and executing into [scandir start](scandir.html) in order to prevent kernel environment variables from leaking into the process tree. The *PATH* variable is the only variable set for the environment. If you want to define additional environment variables then use this option. Behaves the same as [scandir start -e](scandir.html).
 
-- **-d** *dev* : mounts a devtmpfs on *dev*. By default, no such mount is performed - it is assumed that a devtmpfs is automounted on `/dev` at boot time by the kernel or an initramfs.
+- **-d** *dev*: mounts a devtmpfs on *dev*. By default, no such mount is performed - it is assumed that a devtmpfs is automounted on `/dev` at boot time by the kernel or an initramfs.
 
-- **-b** *banner* : prints banner to */dev/console* at the start of the stage 1 init process. Defaults to:
+- **-b** *banner*: prints banner to */dev/console* at the start of the stage 1 init process. Defaults to:
 `[Starts stage1 process ...]`
 
 ## Early preparation

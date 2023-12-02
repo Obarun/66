@@ -29,9 +29,9 @@ Multiple *services* can be disabled by seperating their names with a space.
 
 ## Options
 
-- **-h** : prints this help.
+- **-h**: prints this help.
 
-- **-S** : stops the *service* on the fly directly after disabling it. If the state of the *service* is already down, this option will have no effect. This also applies to the required by  dependencies of the service.
+- **-S**: stops the *service* on the fly directly after disabling it. If the state of the *service* is already down, this option will have no effect. This also applies to the required by  dependencies of the service.
 
 ## Usage examples
 
