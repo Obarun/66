@@ -306,7 +306,7 @@ char const *help_tree_wrapper =
 "   stop: bring down all services from tree\n"
 "   free: bring down and unsupervise all services from tree\n"
 "\n"
-"Use '66 tree <command> -h' to see command options\n"
+"Use '66 tree <subcommand> -h' to see subcommand options\n"
 ;
 
 char const *usage_tree_create = "66 tree create [ -h ] [ -o depends=:requiredby=:... ] tree" ;
@@ -393,7 +393,7 @@ char const *help_tree_resolve =
 "   -h: print this help\n"
 ;
 
-char const *usage_tree_status = "66 tree status [ -h ] [ -n ] [ -o name,init,enabled,... ] [ -g ] [ -d depth ] [ -r ] tree" ;
+char const *usage_tree_status = "66 tree status [ -h ] [ -n ] [ -o name,enabled,... ] [ -g ] [ -d depth ] [ -r ] tree" ;
 
 char const *help_tree_status =
 "\ndisplay information about tree\n"
@@ -411,11 +411,10 @@ char const *help_tree_status =
 "   name: displays the name of the tree\n"
 "   current: displays a boolean value of the current state\n"
 "   enabled: displays a boolean value of the enable state\n"
-"   init: displays a boolean value of the initialization state\n"
 "   depends: displays the list of tree(s) started before\n"
 "   requiredby: displays the list of tree(s) started after\n"
 "   allowed: displays a list of allowed user to use the tree\n"
-"   contents: displays the contents of the tree\n"
+"   contents: displays the list of services associated to tree\n"
 "\n"
 "If no tree name are provided, it display all trees from the system\n"
 ;
@@ -429,16 +428,15 @@ char const *help_tree_init =
 "   -h: print this help\n"
 ;
 
-char const *usage_tree_start = "66 tree start [ -h ] [ -f ] tree" ;
+char const *usage_tree_start = "66 tree start [ -h ] tree" ;
 
 char const *help_tree_start =
 "\nbring up all enabled services of tree\n"
 "\n"
 "options:\n"
 "   -h: print this help\n"
-"   -f: fork the process\n"
 "\n"
-"If no tree name are provided, it bring up all enabled trees from the system\n"
+"If no tree name are provided, it bring up all enabled services within all enabled trees of the system\n"
 ;
 
 char const *usage_tree_stop = "66 tree stop [ -h ] [ -f ] tree" ;
@@ -450,7 +448,7 @@ char const *help_tree_stop =
 "   -h: print this help\n"
 "   -f: fork the process\n"
 "\n"
-"If no tree name are provided, it bring down all enabled trees from the system\n"
+"If no tree name are provided, it bring down all services within all enabled trees of the system\n"
 ;
 
 char const *usage_tree_unsupervise = "66 tree free [ -h ] [ -f ] tree" ;
@@ -462,7 +460,7 @@ char const *help_tree_unsupervise =
 "   -h: print this help\n"
 "   -f: fork the process\n"
 "\n"
-"If no tree name are provided, it unsupervise all enabled trees from the system\n"
+"If no tree name are provided, it unsupervise all services within all trees of the system\n"
 ;
 
 char const *usage_scandir_wrapper = "66 scandir [ -h ] [ -o owner ] create|remove|start|stop|reconfigure|rescan|quit|halt|abort|nuke|annihilate|zombies [<command options>]" ;
@@ -488,7 +486,7 @@ char const *help_scandir_wrapper =
 "   annihilate: annihilate a running scandir\n"
 "   zombies: destroy zombies from a running scandir\n"
 "\n"
-"Use '66 scandir <command> -h' to see command options\n"
+"Use '66 scandir <subcommand> -h' to see subcommand options\n"
 ;
 
 char const *usage_scandir_create = "66 scandir create [ -h ] [ -b|B ] [ -c ] [ -L log_user ] [ -s skel ]" ;

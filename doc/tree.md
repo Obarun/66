@@ -14,7 +14,7 @@ This command handles a *tree* containing a set of *services*.
 ## Interface
 
 ```
-tree [ -h ] create|admin|remove|enable|disable|current|status|resolve|start|stop|free tree
+tree [ -h ] create|admin|remove|enable|disable|current|status|resolve|init|start|stop|free tree
 ```
 
 The `tree` command functions similarly to services, wherein each *tree* can have dependencies or be required by another *tree*. These subcommands facilitate various actions such as creating, managing, activating, and checking the status of trees, among other functionalities, within the system. Additionally, it manages dependencies between different trees, enabling effective control and organization of *tree* structures.
@@ -23,9 +23,9 @@ The default tree named `%%default_treename%%` is provided. This *tree* is automa
 
 Configuration of the *tree* during its creation can be managed through a configuration file called `seed`.—see [Seed files](#seed-files).
 
-Services within *tree* need to be *enabled*, with the [enable](enable.html) subcommand, to be managed by the `start` subcommand. The `stop` and `free` subcommand manages any running services within *tree*.
+Services within *tree* need to be *enabled*, with the [66 enable](enable.html) command, to be managed by the `start` subcommand. The `stop` and `free` subcommand manages any running services within *tree*.
 
-A non-existing *tree* can also be created automatically when invocating of the `66 -t` option with commands that accept it. For example, the `66 -t treefoo enable foo` call automatically creates `treefoo` if it doesn't exist yet, applying the [basic creation configuration](#basic-creation-configuration) or utilizing the `seed` file configuration if such file exists.
+A non-existing *tree* can also be created automatically when invocating of the `66 -t` option with commands that accept it. For example, the `66 -t treefoo enable foo` call automatically creates the tree `treefoo` if it doesn't exist yet, applying the [basic creation configuration](#basic-creation-configuration) or utilizing the `seed` file configuration if such file exists.
 
 ## Why trees?
 
@@ -37,7 +37,11 @@ tree named print contains services cups and nfs
 tree named graphic contains services xorg, notification-daemon, gvfsd and dbus
 ```
 
-When booting your machine and opting for console-only usage, your concern might solely be a working internet connection, disregarding xorg or cups. Initially, you would only enable `network` at the base level. Upon every boot, this *tree* and all its *enabled* services will automatically start. Later, when you need to print a document stored on another server, you'd typically start `cups` and then `nfs`. By leveraging the *tree* concept, you can start `print`, making all necessary services available. After finishing the printing task, instead of individually stopping the required services, you can simply stop `print`, and all services within it will cease automatically. The functionality extends further: say, you now wish to watch a video, requiring an active X server and potentially other services. Enter `graphics`, specifically designed for such purposes.
+When booting your machine and opting for console-only usage, your concern might solely be a working internet connection, disregarding xorg or cups. Initially, you would only enable `network` at the base level. Upon every boot, this *tree* and all its *enabled* services will automatically start.
+
+Later, when you need to print a document stored on another server, you'd typically start `cups` and then `nfs`. By leveraging the *tree* concept, you can start `print`, making all necessary services available. After finishing the printing task, instead of individually stopping the required services, you can simply stop `print`, and all services within it will cease automatically.
+
+The functionality extends further: say, you now wish to watch a video, requiring an active X server and potentially other services. Enter `graphics`, specifically designed for such purposes.
 
 ## Options
 
@@ -100,7 +104,7 @@ This subcommand creates a *tree* that doesn't exist and potentially configures i
 tree create [ -h ] [ -o depends=:requiredby=:... ] *tree*
 ```
 
-After creation *tree* do not contain any services. You need to [associate](#associated-service-to-a-tree) services within *tree* with the [enable](enable.html) command.
+After creation *tree* do not contain any services. You need to [associate](#associated-service-to-a-tree) services within *tree* with the [66 enable](enable.html) command.
 
 #### Options
 
@@ -125,7 +129,7 @@ Creates a tree named `treefoo`
 66 tree create treefoo
 ```
 
-Creates, configures and clones a *tree* named `treefoo` and a clone of `treefoo` named `treefoo2`
+Creates, configures and clones a *tree* named `treefoo` where the clone of `treefoo` is named `treefoo2`
 ```
 66 tree create -o depends=treebar,treebaz:groups=admin:deny=none:allow=root:clone=treefoo2 treefoo
 ```
@@ -158,6 +162,16 @@ valid fields for `-o` options are:
    - **clone=**: make a clone of *tree*. This create an exact copy of the configuration of the *tree*, with the exception that no services are associated with the cloned *tree*. The name of the clone **must not** already exists int the system.
 
 #### Usage examples
+
+Changes the dependencies of `treefoo` to `treebaz` where `treefoo` depended previously of tree `treebar`
+```
+66 tree admin -o depends=treebaz treefoo
+```
+
+Deny all user of `treefoo`
+```
+66 tree admin -o deny=user treefoo
+```
 
 ### Remove
 
@@ -565,7 +579,7 @@ This `template` example of `seed` file can be found at [contributions/seed](http
 
 ## Groups behavior
 
-This feature is in progress. Currently, the only group that has an effect is the `boot` group. A tree set to the `boot` group cannot be *enabled*. Trees associated with the `boot` group are automatically managed by `66` during boot time. Enabling a *tree* within the `boot` group results in services within the *tree* starting twice, which is likely not the intended behavior.
+This feature is in progress. Currently, the only group that has an effect is the `boot` group. A tree set to the `boot` group **cannot be** *enabled*. Trees associated with the `boot` group are automatically managed by `66` during boot time. Enabling a *tree* within the `boot` group results in services within the *tree* starting twice, which is likely not the intended behavior.
 
 The primary purpose and future goal of this feature are to manage *tree* permissions and provide the ability to handle multiple trees simultaneously. For instance, requesting to `start` the `admin` group will initiate all trees within this group.
 
