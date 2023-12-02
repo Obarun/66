@@ -96,9 +96,9 @@ Stops the *tree* called `print`. Any running services will be stopped and unsupe
 
 ### Create
 
-#### Interface
-
 This subcommand creates a *tree* that doesn't exist and potentially configures it based on the options used.
+
+#### Interface
 
 ```
 tree create [ -h ] [ -o depends=:requiredby=:... ] *tree*
@@ -136,9 +136,9 @@ Creates, configures and clones a *tree* named `treefoo` where the clone of `tree
 
 ### Admin
 
-#### Interface
-
 This command allow to manage configuration of an already existing *tree*.
+
+#### Interface
 
 ```
 tree admin [ -h ] [ -o depends=:requiredby=:... ] tree
@@ -175,9 +175,9 @@ Deny all user of `treefoo`
 
 ### Remove
 
-#### Interface
-
 This command remove a *tree*. This operation **cannot be** undone. Process with caution.
+
+#### Interface
 
 ```
 tree remove [ -h ] tree
@@ -199,9 +199,9 @@ Tree dependencies, including required by dependencies, are managed. For instance
 
 ### Enable
 
-#### Interface
-
 This command enables a *tree* for the next boot.
+
+#### Interface
 
 ```
 tree enable [ -h ] tree
@@ -226,9 +226,9 @@ Enables `treefoo` tree
 
 ### Disable
 
-#### Interface
-
 This command is the exact opposite of `enable` command.
+
+#### Interface
 
 ```
 tree disable [ -h ] tree
@@ -249,9 +249,9 @@ Disables `treefoo` tree
 
 ### Current
 
-#### Interface
-
 This command a *tree* as the current one.
+
+#### Interface
 
 ```
 66 tree [ -h ] current tree
@@ -272,9 +272,9 @@ Marks `treefoo` as current
 
 ### Status
 
-#### Interface
-
 This command displays information about a *tree*.
+
+#### Interface
 
 ```
 tree status [ -h ] [ -n ] [ -o name,enabled,... ] [ -g ] [ -d depth ] [ -r ] tree
@@ -387,9 +387,9 @@ Contents    : \
 
 ### Resolve
 
-#### Interface
-
 This command displays the complete contents of the [resolve](deeper.html#resolve-files) file of the *tree*.
+
+#### Interface
 
 ```
 66 tree resolve [ -h ] tree
@@ -409,9 +409,9 @@ Displays contents of the `treefoo` resolve file.
 ```
 ### Init
 
-#### Interface
-
 This command initiate services of a tree to a scandir directory
+
+#### Interface
 
 ```
 66 tree init [ -h ] tree
@@ -434,9 +434,9 @@ Initiates all *enabled* services of `treefoo` to a running scandir
 
 ### Start
 
-#### Interface
-
 This command starts all services **marked enabled** within tree
+
+#### Interface
 
 ```
 tree start [ -h ] [ -f ] tree
@@ -464,9 +464,9 @@ Starts all services marked enabled of tree `treefoo`
 
 ### Stop
 
-#### Interface
-
 This command stops all **running services** within tree
+
+#### Interface
 
 ```
 66 tree stop [ -h ] [ -f ] tree
@@ -495,9 +495,9 @@ Stops all services of tree `treefoo`
 
 ### Free
 
-#### Interface
-
 This command stops and unsupervise tree.
+
+#### Interface
 
 ```
 66 tree free [ -h ] [ -f ] tree
