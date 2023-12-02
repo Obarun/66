@@ -32,7 +32,7 @@ ifelse { test ${initcode} -gt 0 }
         66-echo -- EXITCODE=${initcode}
     }
 
-    66-echo -- "rc.init.container: fatal: the service boot process crashed with exitcode=${initcode}" }
+    66-echo -- "rc.init.container: fatal: the service boot process crashed with exitcode=${initcode}"
 }
 
 
