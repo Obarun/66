@@ -14,9 +14,9 @@ A mix of [s6-envdir](https://skarnet.org/software/s6/s6-envdir.html) and [import
 ## Interface
 
 ```
-    execl-envfile [ -h ] [ -v verbosity ] [ -l ] src prog
+execl-envfile [ -h ] [ -v verbosity ] [ -l ] src prog
 ```
-This tool expects to find a regular file or a directory in *src* containing one or multiple `key=value` pair(s). It will parse that file, import the `key=value` and then exec the given *prog* with the modified environment. In case of directory for each file found it apply the same process. *src* can be an absolute or a relative path.
+This program expects to find a regular file or a directory in *src* containing one or multiple `key=value` pair(s). It will parse that file, import the `key=value` and then exec the given *prog* with the modified environment. In case of directory for each file found it apply the same process. *src* can be an absolute or a relative path.
 
 - It opens and reads a file.
 
@@ -29,13 +29,6 @@ This tool expects to find a regular file or a directory in *src* containing one 
 - It unexports the variable(s) if requested.
 
 - It execs *prog* with the modified environment.
-
-
-## Exit codes
-
-- *0* success
-- *100* wrong usage
-- *111* system call failed
 
 ## Options
 

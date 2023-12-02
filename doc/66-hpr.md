@@ -9,12 +9,14 @@ author: Eric Vidal <eric@obarun.org>
 
 # 66-hpr
 
-Triggers the software shutdown procedure. Performs an immediate hardware shutdown with the **‑f** option. It is normally invoked by `halt`, `poweroff` or `reboot` wrappers installed by default at `%%skel%%`. This program is a modified copy of [s6-linux-init-hpr](https://skarnet.org/software/s6-linux-init/s6-linux-init-hpr.html).
+Triggers the software shutdown procedure. Performs an immediate hardware shutdown with the **‑f** option. It is normally invoked by `66 halt`, `66 poweroff` or `66 reboot` command. This program is a modified copy of [s6-linux-init-hpr](https://skarnet.org/software/s6-linux-init/s6-linux-init-hpr.html).
+
+This program is primarily used internally by `66`. User may prefer to use `66 halt`, `66 poweroff` or `66 reboot` instead.
 
 ## Interface
 
 ```
-    66-hpr [ -H ] [ -l live ] [ -b banner ] [ -f ] [ -h | -p | -r ] [ -n ] [ -d | -w ] [ -W ]
+66-hpr [ -H ] [ -l live ] [ -b banner ] [ -f ] [ -h | -p | -r ] [ -n ] [ -d | -w ] [ -W ]
 ```
 
 - If the **-f** option is passed the system is stopped or rebooted immediately without properly cleaning up.
@@ -24,12 +26,6 @@ Triggers the software shutdown procedure. Performs an immediate hardware shutdow
 - The command exits 0; the shutdown procedure happens asynchronously.
 
 This is the traditional sysvinit interface for the `halt`, `poweroff` and `reboot` programs. *66‑hpr* must always be called with either **‑h**, **‑p** or **‑r**.
-
-## Exit codes
-
-- *0* success
-- *100* wrong usage
-- *111* system call failed
 
 ## Options
 

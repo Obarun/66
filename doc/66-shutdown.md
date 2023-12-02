@@ -11,13 +11,14 @@ author: Eric Vidal <eric@obarun.org>
 
 Triggers the system shutdown procedure. It is normally invoked as shutdown at your binary system directory. This program is a modified copy of [s6-linux-init-shutdown](https://skarnet.org/software/s6-linux-init/s6-linux-init-shutdown.html).
 
+The *66-shutdown* binary is not meant to be called directly. User may prefer to use the `66 halt`, `66 poweroff` or `66 reboot` command.
+
 ## Interface
 
 ```
-    66-shutdown [ -H ] [ -l live ] [ -h | -p | -r | -k ] [ -a ] [ -t sec ] [ -f | -F ] time [ message ]
-    66-shutdown -c [ message ]
+66-shutdown [ -H ] [ -l live ] [ -h | -p | -r | -k ] [ -a ] [ -t sec ] [ -f | -F ] time [ message ]
+66-shutdown -c [ message ]
 ```
-
 
 - Will cancel a pending shutdown if *-c* is passed.
 - Else plans the shutdown procedure at time time.
@@ -33,13 +34,6 @@ The *66-shutdown* program abides to the standards of the LSB-3.0.0 [shutdown](ht
 - *mins* or *+mins*: relative time; triggers the shutdown sequence after *mins* minutes.
 
 - *hh:mm*: absolute time; triggers the shutdown sequence when the time *hh:mm* occurs. If that time has passed for the current day, it will wait for the next day. *hh* can have 1 or 2 digits; *mm* must have 2 digits.
-
-
-## Exit codes
-
-- *0* success
-- *100* wrong usage
-- *111* system call failed
 
 ## Options
 
@@ -66,8 +60,5 @@ The *66-shutdown* program abides to the standards of the LSB-3.0.0 [shutdown](ht
 - **-c**: cancel a planned shutdown. Can only cancel the effect of a previous call to *shutdown* with a time argument that was not *now*. This cannot be used to interrupt a shutdown sequence that has already started.
 
 ## Notes
-
-
-The *66-shutdown* binary is not meant to be called directly. It should always be referenced by the shutdown skeleton file installed by default at `%%skel%%`. The binary **should be copied** or **symlinked** into the binary directory of the system.
 
 The **-f** and **-F** exist for compatibility reasons. The LSB sepcification says they are used to advise the system to skip or enforce a `fsck` after rebooting. But they are only advisory and for decades now systems have used other methods of evaluating whether they should perform filesystem checks so these options are largely obsolete nowadays.
