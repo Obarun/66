@@ -1,5 +1,5 @@
 /*
- * ssexec_init.c
+ * ssexec_tree_init.c
  *
  * Copyright (c) 2018-2023 Eric Vidal <eric@obarun.org>
  *
@@ -140,7 +140,7 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
     graph_free_all(&graph) ;
 }
 
-int ssexec_init(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_tree_init(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
@@ -155,7 +155,7 @@ int ssexec_init(int argc, char const *const *argv, ssexec_t *info)
 
         for (;;)
         {
-            int opt = subgetopt_r(argc, argv, OPTS_INIT, &l) ;
+            int opt = subgetopt_r(argc, argv, OPTS_TREE_INIT, &l) ;
             if (opt == -1) break ;
 
             switch (opt) {

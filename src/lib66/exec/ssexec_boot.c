@@ -612,9 +612,9 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
     }
     /** initiate earlier service */
     {
-        char const *t[] = { tree } ;
+        char const *t[] = { "init", tree } ;
         log_info("Initiate earlier service of tree: ",tree) ;
-        make_cmdline("init", t, 1, "initiate earlier service of tree: ", tree, genv) ;
+        make_cmdline("tree", t, 2, "initiate earlier service of tree: ", tree, genv) ;
     }
 
     if (envdir) {

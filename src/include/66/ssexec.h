@@ -91,7 +91,6 @@ extern ssexec_t const ssexec_zero ;
 
 /** main */
 extern ssexec_func_t ssexec_parse ;
-extern ssexec_func_t ssexec_init ;
 extern ssexec_func_t ssexec_enable ;
 extern ssexec_func_t ssexec_disable ;
 extern ssexec_func_t ssexec_start ;
@@ -121,6 +120,7 @@ extern ssexec_func_t ssexec_tree_signal ;
 extern ssexec_func_t ssexec_tree_admin ;
 extern ssexec_func_t ssexec_tree_status ;
 extern ssexec_func_t ssexec_tree_resolve ;
+extern ssexec_func_t ssexec_tree_init ;
 
 /** shutdown */
 extern ssexec_func_t ssexec_shutdown_wrapper ;
@@ -141,8 +141,6 @@ extern char const *usage_stop ;
 extern char const *help_stop ;
 extern char const *usage_env ;
 extern char const *help_env ;
-extern char const *usage_init ;
-extern char const *help_init ;
 extern char const *usage_parse ;
 extern char const *help_parse ;
 extern char const *usage_reconfigure ;
@@ -182,6 +180,8 @@ extern char const *usage_tree_resolve ;
 extern char const *help_tree_resolve ;
 extern char const *usage_tree_status ;
 extern char const *help_tree_status ;
+extern char const *usage_tree_init ;
+extern char const *help_tree_init ;
 extern char const *usage_tree_start ;
 extern char const *help_tree_start ;
 extern char const *usage_tree_stop ;
@@ -229,8 +229,6 @@ extern char const *help_halt ;
 #define OPTS_SUBSTART_LEN (sizeof OPTS_SUBSTART - 1)
 #define OPTS_PARSE "hfFcmCI"
 #define OPTS_PARSE_LEN (sizeof OPTS_PARSE - 1)
-#define OPTS_INIT "h"
-#define OPTS_INIT_LEN (sizeof OPTS_INIT - 1)
 #define OPTS_ENABLE "hSP"
 #define OPTS_ENABLE_LEN (sizeof OPTS_ENABLE - 1)
 #define OPTS_DISABLE "hSFRP"
@@ -258,6 +256,8 @@ extern char const *help_halt ;
 #define OPTS_TREE_SIGNAL_LEN (sizeof OPTS_TREE_SIGNAL - 1)
 #define OPTS_TREE_ADMIN "co:EDRnadC:S:"
 #define OPTS_TREE_ADMIN_LEN (sizeof OPTS_TREE_ADMIN - 1)
+#define OPTS_TREE_INIT "h"
+#define OPTS_TREE_INIT_LEN (sizeof OPTS_TREE_INIT - 1)
 
 #define OPTS_BOOT "hms:e:d:b:l:"
 #define OPTS_BOOT_LEN (sizeof OPTS_BOOT - 1)

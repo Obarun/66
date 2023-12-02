@@ -250,15 +250,6 @@ int main(int argc, char const *const *argv)
         info.usage = usage_env ;
         func = &ssexec_env ;
 
-    } else if (!strcmp(argv[0], "init")) {
-
-        PROG = "init" ;
-        nargv[n++] = PROG ;
-        info.prog = PROG ;
-        info.help = help_init ;
-        info.usage = usage_init ;
-        func = &ssexec_init ;
-
     } else if (!strcmp(argv[0], "parse")) {
 
         PROG = "parse" ;

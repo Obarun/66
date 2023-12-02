@@ -139,6 +139,19 @@ int ssexec_tree_wrapper(int argc, char const *const *argv, ssexec_t *info)
         argc-- ;
         argv++ ;
 
+    } else if (!strcmp(argv[1], "init")) {
+
+        nargv[n++] = PROG ;
+
+        info->prog = PROG ;
+        info->help = help_tree_init ;
+        info->usage = usage_tree_init ;
+
+        func = &ssexec_tree_init ;
+
+        argc-- ;
+        argv++ ;
+
     } else if (!strcmp(argv[1], "start")) {
 
         info->prog = PROG ;

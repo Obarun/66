@@ -23,7 +23,7 @@ inline void info_help (char const *help,char const *usage)
 }
 
 
-char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|free|reconfigure|enable|disable|configure|status|resolve|state|remove|signal|tree|init|parse|scandir|boot|poweroff|reboot|halt|version [<command options>] service...|tree" ;
+char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|free|reconfigure|enable|disable|configure|status|resolve|state|remove|signal|tree|parse|scandir|boot|poweroff|reboot|halt|version [<command options>] service...|tree" ;
 
 char const *help_66 =
 "\nmain tool to init a system, control and manage services\n"
@@ -52,7 +52,6 @@ char const *help_66 =
 "   remove: remove services and cleanup all files belong to it from the system\n"
 "   signal: send signal to service\n"
 "   tree: manage/see tree information\n"
-"   init: initiate to scandir all services marked enabled at tree\n"
 "   parse: parse the service frontend file\n"
 "   scandir: manage scandir\n"
 "   boot: boot the system\n"
@@ -133,15 +132,6 @@ char const *help_env =
 "   -r: replace the value of the key\n"
 "   -i: import configuration files from src version to dst version\n"
 "   -e: edit the file with editor\n"
-;
-
-char const *usage_init = "66 init [ -h ] tree" ;
-
-char const *help_init =
-"\ninitiate all services present in tree to a scandir already running\n"
-"\n"
-"options:\n"
-"   -h: print this help\n"
 ;
 
 char const *usage_parse = "66 parse [ -h ] [ -f ] [ -I ] service..." ;
@@ -294,7 +284,7 @@ char const *help_signal =
 "   -r : restart service by sending it a signal(default SIGTERM)\n"
 ;
 
-char const *usage_tree_wrapper = "66 tree [ -h ] create|admin|remove|enable|disable|current|status|resolve|start|stop|free [<subcommand options>] tree" ;
+char const *usage_tree_wrapper = "66 tree [ -h ] create|admin|remove|enable|disable|current|status|resolve|init|start|stop|free [<subcommand options>] tree" ;
 
 char const *help_tree_wrapper =
 "\nmain subcommands to manages trees\n"
@@ -311,6 +301,7 @@ char const *help_tree_wrapper =
 "   current: mark tree as current\n"
 "   status: displays information about tree\n"
 "   resolve: displays resolve file of tree\n"
+"   init: initiate all services marked enabled from tree\n"
 "   start: bring up all enabled services from tree\n"
 "   stop: bring down all services from tree\n"
 "   free: bring down and unsupervise all services from tree\n"
@@ -355,7 +346,6 @@ char const *help_tree_admin =
 "   allow=: comma separated list of account to allow at tree\n"
 "   deny=: comma separated list of account to deny at tree\n"
 "   clone=: make a clone of tree\n"
-"   noseed: do not use seed file to build the tree\n"
 ;
 
 char const *usage_tree_remove = "66 tree remove [ -h ] tree" ;
@@ -428,6 +418,15 @@ char const *help_tree_status =
 "   contents: displays the contents of the tree\n"
 "\n"
 "If no tree name are provided, it display all trees from the system\n"
+;
+
+char const *usage_tree_init = "66 tree init [ -h ] tree" ;
+
+char const *help_tree_init =
+"\ninitiate all services present in tree to a scandir already running\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
 ;
 
 char const *usage_tree_start = "66 tree start [ -h ] [ -f ] tree" ;
