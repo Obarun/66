@@ -407,6 +407,30 @@ Displays contents of the `treefoo` resolve file.
 ```
 66 tree resolve treefoo
 ```
+### Init
+
+#### Interface
+
+This command initiate services of a tree to a scandir directory
+
+```
+66 tree init [ -h ] tree
+```
+
+The behavior of this subcommand will depends of the state of the [scandir](scandir.html). If the scandir is not running, this command will initiate earlier services of *tree*, in other case its initiate all *enabled* services within *tree*.
+
+This subcommand is primarily used internally by `66 boot` command to initiate earlier services of *tree*. Initiation of services is made automatically at each invocation of `66 start` or `66 tree start` command is services was not initiate previously.
+
+#### Options
+
+- **-h**: prints this help.
+
+#### Usage examples
+
+Initiates all *enabled* services of `treefoo` to a running scandir
+```
+66 tree init treefoo
+```
 
 ### Start
 

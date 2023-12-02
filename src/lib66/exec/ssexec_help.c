@@ -422,7 +422,7 @@ char const *help_tree_status =
 char const *usage_tree_init = "66 tree init [ -h ] tree" ;
 
 char const *help_tree_init =
-"\ninitiate all services present in tree to a scandir already running\n"
+"\ninitiate all enabled services associated to a tree to a scandir directory\n"
 "\n"
 "options:\n"
 "   -h: print this help\n"
