@@ -66,7 +66,8 @@ See [changes](upgrade.html) between version.
 
 - [frontend service file](frontend.html)
 - [instantiated service file](instantiated-service.html)
-- [module service creation](module-service.html)
+- [module service usage](module-usage.html)
+- [module service creation](module-creation.html)
 - [Service configuration file](service-configuration-file.html)
 - [tree](tree.html)
 - [enable](enable.html)
