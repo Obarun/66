@@ -239,7 +239,7 @@ extern char const *help_halt ;
 #define OPTS_STOP_LEN (sizeof OPTS_STOP - 1)
 #define OPTS_STATUS "hno:grd:p:"
 #define OPTS_STATUS_LEN (sizeof OPTS_STATUS - 1)
-#define OPTS_SIGNAL "habqHkti12pcyrodDuUxOQw:P"
+#define OPTS_SIGNAL "habqHkti12pcys:rodDuUxOQw:P"
 #define OPTS_SIGNAL_LEN (sizeof OPTS_SIGNAL - 1)
 #define OPTS_ENV "hc:s:VLr:e:i:"
 #define OPTS_ENV_LEN (sizeof OPTS_ENV - 1)
