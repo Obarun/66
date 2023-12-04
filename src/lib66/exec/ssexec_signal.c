@@ -21,6 +21,7 @@
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/nsig.h>
+#include <skalibs/sig.h>
 
 #include <66/svc.h>
 #include <66/config.h>
@@ -94,6 +95,7 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
             if (opt == -1) break ;
 
             switch (opt) {
+                case 'h' : info_help(info->help, info->usage) ; return 0 ;
                 case 's' :
                     {
                         int sig ;
@@ -103,7 +105,6 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
                             log_die(LOG_EXIT_USER, l.arg, " is not in the list of user-available signals") ;
                         opt = cmdsig[sig] ;
                     }
-                case 'h' : info_help(info->help, info->usage) ; return 0 ;
                 case 'a' :
                 case 'b' :
                 case 'q' :

@@ -249,7 +249,7 @@ char const *help_remove =
 "   -P: do not propagate signal to its dependencies at stop process\n"
 ;
 
-char const *usage_signal = "66 signal [ -h ] [ -wu | -wU | -wd | -wD | -wr | -wR ] [ -abqHkti12pcyodDuUxOr ] service..." ;
+char const *usage_signal = "66 signal [ -h ] [ -wu | -wU | -wd | -wD | -wr | -wR ] [ -abqHkti12pcysodDuUxOr ] service..." ;
 
 char const *help_signal =
 "\nsend a signal to services\n"
