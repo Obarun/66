@@ -58,33 +58,24 @@ See [changes](upgrade.html) between version.
 - [scandir](scandir.html)
 - [init](init.html)
 - [signal](signal.html)
-- [66-hpr](66-hpr.html)
-- [66-shutdownd](66-shutdownd.html)
-- [66-shutdown](66-shutdown.html)
 
 ### User tools
 
-- [frontend service file](frontend.html)
-- [instantiated service file](instantiated-service.html)
-- [module service usage](module-usage.html)
-- [module service creation](module-creation.html)
-- [Service configuration file](service-configuration-file.html)
-- [tree](tree.html)
-- [enable](enable.html)
-- [disable](disable.html)
 - [start](start.html)
 - [stop](stop.html)
+- [enable](enable.html)
+- [disable](disable.html)
 - [reload](reload.html)
 - [restart](restart.html)
 - [status](status.html)
 - [configure](configure.html)
-- [remove](remove.html)
 - [reconfigure](reconfigure.html)
+- [remove](remove.html)
 - [free](free.html)
+- [tree](tree.html)
 - [poweroff](poweroff.html)
 - [reboot](reboot.html)
 - [halt](halt.html)
-- [66-shutdown](66-shutdown.html)
 
 ### Extra tools
 
@@ -93,11 +84,25 @@ See [changes](upgrade.html) between version.
 - [66-nuke](66-nuke.html)
 - [execl-envfile](execl-envfile.html)
 
+### Internal tools
+
+- [66-hpr](66-hpr.html)
+- [66-shutdownd](66-shutdownd.html)
+- [66-shutdown](66-shutdown.html)
+
+### Others documentation
+
+- [frontend service file](frontend.html)
+- [instantiated service file](instantiated-service.html)
+- [module service usage](module-usage.html)
+- [module service creation](module-creation.html)
+- [Service configuration file](service-configuration-file.html)
+
 ## Why is 66 necessary?
 
-Implementation and handling of service files based on [s6](https://skarnet.org/software/s6) can be complex and difficult to understand. This led to the creation of the 66 tools.
+Implementation and handling of service files based on [s6](https://skarnet.org/software/s6) can be complex and difficult to understand. This led to the creation of the 66 program.
 
-Why the name
+Why the name?
 
 Previously *66* was the result of the combination of the former [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc). With time and code improvement the `s6-rc` was dropped. `66` is now a fully independent service manager, although the name has been retained.
 It is a lot faster and easier to write and remember when writing. Apart from that it is a nice command prefix to have. It identifies the origin of the software and it's short.
