@@ -32,7 +32,7 @@ For UI changes, a [Rosetta stone](#rosetta.md) is available.
 
 ### New fields have been added:
 
-- `@requiredby`: Specifies which service is required by another service. For example, if service Sa declares service Sb as required by Sa's dependency, Sb won't start until Sa does. This allows building complex graph structures without modifying every frontend file of each service.
+- `@requiredby`: Specifies which service is required-by another service. For example, if service Sa declares service Sb as required-by Sa's dependency, Sb won't start until Sa does. This allows building complex graph structures without modifying every frontend file of each service.
 - `@earlier`: Declares any service as an earlier one, starting as soon as the scandir is running, similar to tty12. This field is mandatory for services intended to start earlier.
 - `@intree`: Specifies the tree to use at enable/start time.
 
@@ -80,11 +80,11 @@ The `module` directory structure has been completely redesigned for better intui
 
 A `module` cannot contain another `module`; instead, you can declare it as a dependency via `@depends` or `@requiredby`. These can also be specified through the `configure` `module` script.
 
-Refer to the specific [module](#module-service.md) page for further information.
+Refer to the specific [module](module-creation.html) page for further information.
 
 ## Trees
 
-Trees now react as services regarding graph dependencies. You can declare a `tree` depending on or required by others.
+Trees now react as services regarding graph dependencies. You can declare a `tree` depending on or required-by others.
 
 A default named `global` `tree` is provided. Services without their localization defined or users not specifying a `tree` to use will be defined within that `tree`.
 

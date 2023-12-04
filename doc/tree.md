@@ -17,7 +17,7 @@ This command handles a *tree* containing a set of *services*.
 tree [ -h ] create|admin|remove|enable|disable|current|status|resolve|init|start|stop|free tree
 ```
 
-The `tree` command functions similarly to services, wherein each *tree* can have dependencies or be required by another *tree*. These subcommands facilitate various actions such as creating, managing, activating, and checking the status of trees, among other functionalities, within the system. Additionally, it manages dependencies between different trees, enabling effective control and organization of *tree* structures.
+The `tree` command functions similarly to services, wherein each *tree* can have dependencies or be required-by another *tree*. These subcommands facilitate various actions such as creating, managing, activating, and checking the status of trees, among other functionalities, within the system. Additionally, it manages dependencies between different trees, enabling effective control and organization of *tree* structures.
 
 The default tree named `%%default_treename%%` is provided. This *tree* is automatically created using [basic creation configuration](#basic-creation-configuration), with the key difference that this *tree* is enabled by default. The default name can also be changed at compile time by passing the `--with-default-tree-name=` option to `configure`. If the `%%default_treename%%` is removed, a simple invocation of a `66` command will create it again.
 
@@ -115,7 +115,7 @@ After creation *tree* do not contain any services. You need to [associate](#asso
 valid fields for `-o` options are:
 
    - **depends=**: comma separated list of dependencies for *tree* or `none`. If the name of the *tree* passed as dependencies doesn't exist, it will be automatically created.
-   - **requiredby=**: comma separated list of trees required by *tree* or none. If the name of the *tree* passed as required by dependencies doesn't exist, it will be automatically created.
+   - **requiredby=**: comma separated list of trees required-by *tree* or none. If the name of the *tree* passed as required-by dependencies doesn't exist, it will be automatically created.
    - **groups=**: add *tree* to the specified groups. Accepted group are `boot`, `admin`, `user` and `none` —see [Groups behavior](#groups-behavior).
    - **allow=**: comma separated list of account to allow at *tree*. Account must be valid on the system. **name account is expected** not the corresponding `UID` of the account. The term `user` is also accepted to significate that all user neither root of the system can use *tree*.
    - **deny=**: comma separated list of account to deny at *tree*. Account must be valid on the system. **name account is expected** not the corresponding `UID` of the account. The term `user` is also accepted to significate that all user neither root of the system can use *tree*.
@@ -154,12 +154,12 @@ If the *tree* does not exist, it is created and configured based on the options 
 
 valid fields for `-o` options are:
 
-   - **depends=**: comma separated list of dependencies for *tree* or `none`. If the name of the *tree* passed as dependencies doesn't exist, it will be automatically created.
-   - **requiredby=**: comma separated list of trees required by *tree* or none. If the name of the *tree* passed as required by dependencies doesn't exist, it will be automatically created.
-   - **groups=**: add *tree* to the specified groups. Accepted group are `boot`, `admin`, `user` and `none` —see [Groups behavior](#groups-behavior).
-   - **allow=**: comma separated list of account to allow at *tree*. Account must be valid on the system. **name account is expected** not the corresponding `UID` of the account. The term `user` is also accepted to significate that all user neither root of the system can use *tree*. Any user not explicitly allowed is automatically denied for configuring the given *tree*.
-   - **deny=**: comma separated list of account to deny at *tree*. Account must be valid on the system. **name account is expected** not the corresponding `UID` of the account. The term `user` is also accepted to significate that all user neither root of the system can use *tree*.
-   - **clone=**: make a clone of *tree*. This create an exact copy of the configuration of the *tree*, with the exception that no services are associated with the cloned *tree*. The name of the clone **must not** already exists int the system.
+   - **depends=** *trees*: comma separated list of *trees* dependencies for *tree* or `none`. If the name of the *tree* passed as dependencies doesn't exist, it will be automatically created.
+   - **requiredby=**: comma separated list of *trees* required-by dependencies for *tree* or none. If the name of the *tree* passed as required-by dependencies doesn't exist, it will be automatically created.
+   - **groups=** *group*: add *tree* to the specified *group*. Accepted group are `boot`, `admin`, `user` and `none` —see [Groups behavior](#groups-behavior).
+   - **allow=** *user*: comma separated list of *user* account to allow at *tree*. Account must be valid on the system. **name account is expected** not the corresponding `UID` of the account. The term `user` is also accepted to significate that all user neither root of the system can use *tree*. Any user not explicitly allowed is automatically denied for configuring the given *tree*.
+   - **deny=** *user*: comma separated list of *user* account to deny at *tree*. Account must be valid on the system. **name account is expected** not the corresponding `UID` of the account. The term `user` is also accepted to significate that all user neither root of the system can use *tree*.
+   - **clone=** *name*: make a clone *name* of *tree*. This create an exact copy of the configuration of the *tree*, with the exception that no services are associated with the cloned *tree*. The name of the clone **must not** already exists int the system.
 
 #### Usage examples
 
@@ -185,7 +185,7 @@ tree remove [ -h ] tree
 
 Services associated with the tree are switched to the *tree* marked current or to the `%%default_treename%%` in other cases. The state of services remains unchanged during the switch.
 
-Tree dependencies, including required by dependencies, are managed. For instance, if `treefoo` is required by `treebar`, the dependencies of `treebar` are adjusted, removing `treefoo` as a dependency. This adjustment is done recursively, ensuring all interdependencies are updated. Therefore, the entire tree dependency graph is reconstructed.
+Tree dependencies, including required-by dependencies, are managed. For instance, if `treefoo` is required-by `treebar`, the dependencies of `treebar` are adjusted, removing `treefoo` as a dependency. This adjustment is done recursively, ensuring all interdependencies are updated. Therefore, the entire tree dependency graph is reconstructed.
 
 #### Options
 
@@ -234,7 +234,7 @@ This command is the exact opposite of `enable` command.
 tree disable [ -h ] tree
 ```
 
-Required by dependencies of trees are also managed in chains. For example, if the `treefoo` is disabled and required by `treebar`', `treebar` will also be disabled. This process occurs recursively.
+required-by dependencies of trees are also managed in chains. For example, if the `treefoo` is disabled and required-by `treebar`', `treebar` will also be disabled. This process occurs recursively.
 
 #### Options
 
@@ -343,7 +343,7 @@ Allowed     : root
 Groups      : admin
 Depends     : \
               └─None
-Required by : \
+required by : \
               └─session (Enabled)
 Contents    : \
               ├─dbus-log (pid=719, state=Enabled, type=classic, tree=global)
@@ -370,7 +370,7 @@ Allowed     : root
 Groups      : admin
 Depends     : \
               └─None
-Required by : \
+required by : \
               └─session (Enabled)
 Contents    : \
               ├─openntpd (pid=736, state=Enabled, type=classic, tree=global)
@@ -474,7 +474,7 @@ This command stops all **running services** within tree
 
 If *tree* is not specified, the command manages all services within all *enabled* trees available of the system.
 
-Required by dependencies of *tree* are also managed in chains. For example, if the `treefoo` tree is stopped and required by `treebar`', `treebar` will be stopped first. This process occurs recursively.
+required-by dependencies of *tree* are also managed in chains. For example, if the `treefoo` tree is stopped and required-by `treebar`', `treebar` will be stopped first. This process occurs recursively.
 
 #### Options
 
@@ -505,7 +505,7 @@ This command stops and unsupervise tree.
 
 If *tree* is not specified, the command manages all services within all *enabled* trees available of the system.
 
-Required by dependencies of *tree* are also managed in chains. For example, if the `treefoo` tree is stopped and required by `treebar`', `treebar` will be stopped first. This process occurs recursively.
+required-by dependencies of *tree* are also managed in chains. For example, if the `treefoo` tree is stopped and required-by `treebar`', `treebar` will be stopped first. This process occurs recursively.
 
 #### Options
 

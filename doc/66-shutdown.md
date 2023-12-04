@@ -49,7 +49,7 @@ The *66-shutdown* program abides to the standards of the LSB-3.0.0 [shutdown](ht
 
 - **-h**: halt the system at the end of the shutdown sequence.
 
-- **-p**: power off the system at the end of the shutdown sequence. This option is provided as an extension it is not required by the LSB interface.
+- **-p**: power off the system at the end of the shutdown sequence. This option is provided as an extension it is not required-by the LSB interface.
 
 - **-r**: reboot the system at the end of the shutdown sequence.
 

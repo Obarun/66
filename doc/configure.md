@@ -17,9 +17,9 @@ Handles an environment file and variable of a service depending on the options p
 configure [ -h ] [ -c version ] [ -s version ] [ -V|L ] [ -r key=value ] [ -i src,dst ] [ -e editor ] service
 ```
 
-This command allows to handle the configuration file of *service* found by default at `%%service_admconf%%/<service>`. Depending of the options passed, you can displays the contents of the file, see the current version used, edits the configuration file and so on.
+This command allows to handle the [configuration](service-configuration-file.html) file of *service* found by default at `%%service_admconf%%/<service>`. Depending of the options passed, you can displays the contents of the file, see the current version used, edits the configuration file and so on.
 
-The edition of the configuration file is the **default** option if neither option is passed.
+The edition of the [configuration](service-configuration-file.html) file is the **default** option if neither option is passed.
 
 ## Options
 
@@ -82,8 +82,10 @@ List the defined environment variables of the service `barz` of the module `foo@
 
 ## Notes
 
-Removing a *key* from the environment after the use can be handled by using an exclamation mark `!` at the begin of the value:
+Removing a *key* from the environment variable during the execution time of the service can be handled by using an exclamation mark `!` at the begin of the value:
 
 ```
 66 configure -r 'CMD_ARGS=!-c /etc/nginx/nginx.conf -g "daemon off;"' nginx
 ```
+
+It this case the `CMD_ARGS` variable is not define at the environment variable of the service.

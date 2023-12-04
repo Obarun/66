@@ -19,11 +19,11 @@ disable [ -h ] [ -S ] service(s)
 
 This tool expects to find an already enabled *service*. The targeted service(s) can also be stopped on the fly when disabling it with the **-S** option. Generally speaking this command is the strict opposite of the [enable](enable.html) tool.
 
-The `66 -t` command option have no effect. `66` will detect automatically the associated *tree* of the service along its required by dependencies.
+The `66 -t` command option have no effect. `66` will detect automatically the associated *tree* of the service along its required-by dependencies.
 
 In case of `module` service type, all services within the `module` are disabled.
 
-Required by dependencies of services are also managed in chains. For example, if the `foo` service is disabled and required by `foobar`, `foobar` will also be disabled. This process occurs recursively.
+required-by dependencies of services are also managed in chains. For example, if the `foo` service is disabled and required-by `foobar`, `foobar` will also be disabled. This process occurs recursively.
 
 Multiple *services* can be disabled by seperating their names with a space.
 
@@ -31,7 +31,7 @@ Multiple *services* can be disabled by seperating their names with a space.
 
 - **-h**: prints this help.
 
-- **-S**: stops the *service* on the fly directly after disabling it. If the state of the *service* is already down, this option will have no effect. This also applies to the required by  dependencies of the service.
+- **-S**: stops the *service* on the fly directly after disabling it. If the state of the *service* is already down, this option will have no effect. This also applies to the required-by  dependencies of the service.
 
 ## Usage examples
 

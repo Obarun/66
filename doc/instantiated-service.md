@@ -1,4 +1,4 @@
-title: The 66 Suite: module service creation
+title: The 66 Suite: instantiatied service
 author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)
@@ -23,23 +23,23 @@ Example :
 
     [main]
     @type = classic
+    @version = 0.0.1
     @description = "Launch @I"
     @user = ( root )
 
     [start]
-    @build = auto
-    @execute = ( agetty -J 38400 @I } )
+    @execute = ( agetty -J 38400 @I )
 ```
 
-By using [66-enable tty@tty1](66-enable.html), the resulting file will then be:
+By using [66 parse tty@tty1](parse.html) or any other `66` command which automatically the `66 parse` command, the resulting file will then be:
 
 ```
     [main]
     @type = classic
+    @version = 0.0.1
     @description = "Launch tty1"
     @user = ( root )
 
     [start]
-    @build = auto
-    @execute = ( agetty -J 38400 tty1 } )
+    @execute = ( agetty -J 38400 tty1 )
 ```

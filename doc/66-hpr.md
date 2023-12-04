@@ -55,7 +55,3 @@ The system is going down NOW!
 - **-w**: Only write a wtmp shutdown entry; does not actually shut down the system.
 
 - **-W**: Do not send a *wall* message to users before shutting down the system. Some other implementations of the `halt`, `poweroff` and `reboot` commands use the `‑‑no‑wall` long option to achieve this.
-
-## Notes
-
-`halt`, `poweroff` and `reboot` scripts that call *66‑hpr* with the relevant option ***should be copied or symlinked*** by the administrator into the binary directory of your system.
