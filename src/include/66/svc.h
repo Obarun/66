@@ -25,7 +25,7 @@
 
 #include <66/service.h>
 
-#define DATASIZE 64
+#define DATASIZE 65
 
 #define SVC_FLAGS_STARTING 1 // 1 starting not really up
 #define SVC_FLAGS_STOPPING (1 << 1) // 2 stopping not really down
