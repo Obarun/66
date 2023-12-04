@@ -25,6 +25,8 @@ The `66 -t` command option have no effect. `66` will detect automatically the as
 
 In case of `module` *service* type, all *services* declared within the `module` will stop. The **-P** has no effect on the *services* within the `module` and only affects the module's required-by dependencies.
 
+This command handles [interdependencies](66.html#handling-dependencies).
+
 ## Options
 
 - **-h**: prints this help.

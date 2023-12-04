@@ -27,6 +27,8 @@ If the *service* was already parsed, the `66 -t` command option have no effect.
 
 In case of `module` *service* type, all *services* declared within the `module` will start. The **-P** has no effect on the *services* within the `module` and only affects the module's dependencies.
 
+This command handles [interdependencies](66.html#handling-dependencies).
+
 ## Options
 
 - **-h**: prints this help.

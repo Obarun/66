@@ -106,6 +106,8 @@ tree create [ -h ] [ -o depends=:requiredby=:... ] *tree*
 
 After creation *tree* do not contain any services. You need to [associate](#associated-service-to-a-tree) services within *tree* with the [66 enable](enable.html) command.
 
+This command handles [interdependencies](66.html#handling-dependencies).
+
 #### Options
 
 - **-h**: prints this help.
@@ -145,6 +147,8 @@ tree admin [ -h ] [ -o depends=:requiredby=:... ] tree
 ```
 
 If the *tree* does not exist, it is created and configured based on the options used.
+
+This command handles [interdependencies](66.html#handling-dependencies).
 
 #### Options
 
@@ -209,9 +213,9 @@ tree enable [ -h ] tree
 
 If the *tree* does not exist, it is created and configured with [basic creation configuration](#basic-creation-configuration).
 
-Dependencies of trees are also managed in chains. For example, if the `treefoo` is enabled and depends on `treebar`', `treebar` will also be enabled. This process occurs recursively.
-
 Trees associated to the `boot` [group](#groups-behavior) cannot be enabled.
+
+This command handles [interdependencies](66.html#handling-dependencies).
 
 #### Options
 
@@ -234,7 +238,7 @@ This command is the exact opposite of `enable` command.
 tree disable [ -h ] tree
 ```
 
-required-by dependencies of trees are also managed in chains. For example, if the `treefoo` is disabled and required-by `treebar`', `treebar` will also be disabled. This process occurs recursively.
+This command handles [interdependencies](66.html#handling-dependencies).
 
 #### Options
 
@@ -395,7 +399,7 @@ This command displays the complete contents of the [resolve](deeper.html#resolve
 66 tree resolve [ -h ] tree
 ```
 
-Resolve file are used internally by `66` to know *tree* information. This subcommand is purely a debug tool used by system administrator or developers in case of issues.
+Resolve file are used internally by `66` to know *tree* information. This subcommand is purely a debug command used by system administrator or developers.
 
 #### Options
 
@@ -444,7 +448,7 @@ tree start [ -h ] [ -f ] tree
 
 If *tree* is not specified, the command manages all *enabled* services within all *enabled* trees available of the system.
 
-Dependencies of *tree* are also managed in chains. For example, if the `treefoo` tree is started and depends on `treebar`', `treebar` will be started first. This process occurs recursively.
+This command handles [interdependencies](66.html#handling-dependencies).
 
 #### Options
 
@@ -474,7 +478,7 @@ This command stops all **running services** within tree
 
 If *tree* is not specified, the command manages all services within all *enabled* trees available of the system.
 
-required-by dependencies of *tree* are also managed in chains. For example, if the `treefoo` tree is stopped and required-by `treebar`', `treebar` will be stopped first. This process occurs recursively.
+This command handles [interdependencies](66.html#handling-dependencies).
 
 #### Options
 
@@ -505,7 +509,7 @@ This command stops and unsupervise tree.
 
 If *tree* is not specified, the command manages all services within all *enabled* trees available of the system.
 
-required-by dependencies of *tree* are also managed in chains. For example, if the `treefoo` tree is stopped and required-by `treebar`', `treebar` will be stopped first. This process occurs recursively.
+This command handles [interdependencies](66.html#handling-dependencies).
 
 #### Options
 

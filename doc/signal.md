@@ -23,6 +23,8 @@ This command is the heart of `66` concerning service state change. Every other `
 
 Multiple *services* can be handled by separating their names with a space.
 
+This command handles [interdependencies](66.html#handling-dependencies).
+
 ## Options
 
 - **-h**: print this help.
