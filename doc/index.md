@@ -12,13 +12,12 @@ Sixty-six is a service manager built around [s6](https://skarnet.org/software/s6
 Examples of what can be achieved by assembling different programs provided by *66*:
 
 - Frontend service files declaration.
-
 - Easy creation of a scandir.
 - Nested supervision tree.
 - Instance service file creation.
 - Multiple directories service file declaration(packager,sysadmin,user).
 - Easy change of service configuration.
-- Automatic logger creation.
+- Automatic logger creation even for oneshot service.
 - Service Notification.
 - Organizes services as a tree.
 - Easy view of service status.
@@ -46,20 +45,20 @@ See [changes](upgrade.html) between version.
 
 ## Commands
 
-### Debug tools
+### Debug command
 
-- [parser](parser.html)
+- [parse](parse.html)
 - [resolve](resolve.html)
 - [state](state.html)
 
-### Admin tools
+### Admin command
 
 - [boot](boot.html)
 - [scandir](scandir.html)
 - [init](init.html)
 - [signal](signal.html)
 
-### User tools
+### User command
 
 - [start](start.html)
 - [stop](stop.html)
@@ -76,6 +75,7 @@ See [changes](upgrade.html) between version.
 - [poweroff](poweroff.html)
 - [reboot](reboot.html)
 - [halt](halt.html)
+- [version](version.html)
 
 ### Extra tools
 
