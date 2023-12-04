@@ -23,7 +23,7 @@ inline void info_help (char const *help,char const *usage)
 }
 
 
-char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|free|reconfigure|enable|disable|configure|status|resolve|state|remove|signal|tree|parse|scandir|boot|poweroff|reboot|halt|version [<command options>] service...|tree" ;
+char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|free|reconfigure|enable|disable|configure|status|resolve|state|remove|signal|tree|parse|scandir|boot|poweroff|reboot|halt|version [<command options> or <subcommand options> ] service...|tree" ;
 
 char const *help_66 =
 "\nmain tool to init a system, control and manage services\n"
@@ -31,27 +31,27 @@ char const *help_66 =
 "options:\n"
 "   -h: print this help\n"
 "   -z: use color\n"
-"   -v: increase/decrease verbosity\n"
-"   -l: live directory\n"
-"   -T: timeout\n"
-"   -t: name of the tree to use\n"
+"   -v verbosity: increase/decrease verbosity of the command\n"
+"   -l live: changes live directory\n"
+"   -T timeout: general timeout (in milliseconds) passed to command\n"
+"   -t tree: use tree as tree to use\n"
 "\n"
 "command:\n"
 "   start: bring up service\n"
 "   stop: bring down service\n"
-"   reload: send a SIGHUP signal to service\n"
-"   restart: bring down service then bring it up\n"
+"   reload: send a SIGHUP signal to services\n"
+"   restart: bring down then bring up services\n"
 "   free: bring down service and remove it from scandir\n"
 "   reconfigure: bring down, unsupervise, parse it again and bring up service\n"
 "   enable: activate service for the next boot\n"
 "   disable: deactivate service for the next boot\n"
 "   configure: manage service environment variable\n"
-"   status: display services informations\n"
-"   resolve: display the resolve file contents of services\n"
-"   state: display state files contents of services\n"
-"   remove: remove services and cleanup all files belong to it from the system\n"
-"   signal: send signal to service\n"
-"   tree: manage/see tree information\n"
+"   status: display service informations\n"
+"   resolve: display the service's resolve file contents\n"
+"   state: display service's state file contents\n"
+"   remove: remove service and cleanup all files belong to it within the system\n"
+"   signal: send signal to services\n"
+"   tree: manage or see tree information\n"
 "   parse: parse the service frontend file\n"
 "   scandir: manage scandir\n"
 "   boot: boot the system\n"
@@ -71,11 +71,11 @@ char const *help_boot =
 "options :\n"
 "   -h: print this help\n"
 "   -m: mount parent live directory\n"
-"   -s: skeleton directory\n"
-"   -l: run catch-all logger as log_user user\n"
-"   -e: environment directory or file\n"
-"   -d: dev directory\n"
-"   -b: banner to display\n"
+"   -s skel: skeleton directory to use\n"
+"   -l log_user: run catch-all logger as log_user user\n"
+"   -e environment: environment directory or file to use\n"
+"   -d dev: mount dev directory\n"
+"   -b banner: print banner at start of the init process\n"
 ;
 
 char const *usage_enable = "66 enable [ -h ] [ -S ] service..." ;
@@ -85,7 +85,7 @@ char const *help_enable =
 "\n"
 "options:\n"
 "   -h: print this help\n"
-"   -S: enable and start the service\n"
+"   -S: enable and start the service immediately\n"
 ;
 
 char const *usage_disable = "66 disable [ -h ] [ -S ] service..." ;
@@ -95,7 +95,7 @@ char const *help_disable =
 "\n"
 "options:\n"
 "   -h: print this help\n"
-"   -S: disable and stop/unsupervice service if needed\n"
+"   -S: disable and stop the service immediately\n"
 ;
 
 char const *usage_start = "66 start [ -h ] [ -P ] service..." ;
@@ -125,13 +125,13 @@ char const *help_env =
 "\n"
 "options:\n"
 "   -h: print this help\n"
-"   -c: set version as default\n"
-"   -s: specifies the version to handle\n"
+"   -c version: set version to use as default\n"
+"   -s version: specifies the version to handle\n"
 "   -V: lists available versioned configuration directories of the service\n"
 "   -L: lists the environment variables of the service\n"
-"   -r: replace the value of the key\n"
-"   -i: import configuration files from src version to dst version\n"
-"   -e: edit the file with editor\n"
+"   -r key=value: replace the value of the key\n"
+"   -i src,dst: import configuration files from src version to dst version\n"
+"   -e editor: edit the file with editor\n"
 ;
 
 char const *usage_parse = "66 parse [ -h ] [ -f ] [ -I ] service..." ;
@@ -193,11 +193,11 @@ char const *help_status =
 "options :\n"
 "   -h: print this help\n"
 "   -n: do not display the field name\n"
-"   -o: comma separated list of options\n"
+"   -o options: comma separated list of options\n"
 "   -g: displays the contents field as graph\n"
-"   -d: limit the depth of the contents field recursion\n"
+"   -d depth: limit the depth of the contents field recursion by depth\n"
 "   -r: reverse the contents field\n"
-"   -p: print n last lines of the log file\n"
+"   -p nline: print nline last lines of the log file\n"
 "\n"
 "valid fields for -o options are:\n"
 "\n"
@@ -256,12 +256,6 @@ char const *help_signal =
 "\n"
 "options:\n"
 "   -h: print this help\n"
-"   -wu: do not exit until the service is up\n"
-"   -wU: do not exit until the service is up and ready and has notified readiness\n"
-"   -wd: do not exit until the service is down\n"
-"   -wD: do not exit until the service is down and ready to be brought up and has notified readiness\n"
-"   -wr: do not exit until the service has been started or restarted\n"
-"   -wR: do not exit until the service has been started or restarted and has notified readiness\n"
 "   -a: send a SIGALRM signal\n"
 "   -b: send a SIGABRT signal\n"
 "   -q: send a SIGQUIT signal\n"
@@ -274,6 +268,7 @@ char const *help_signal =
 "   -p: send a SIGSTOP signal\n"
 "   -c: send a SIGCONT signal\n"
 "   -y: send a SIGWINCH signal\n"
+"   -s signal: send signal to the supervised process by signal name or its number\n"
 "   -o: once. Equivalent to '-uO'\n"
 "   -d: send a SIGTERM signal then a SIGCONT signal\n"
 "   -D: bring down service and avoid to be bring it up automatically\n"
@@ -282,6 +277,12 @@ char const *help_signal =
 "   -x: bring down the service and propagate to its supervisor\n"
 "   -O : mark the service to run once at most\n"
 "   -r : restart service by sending it a signal(default SIGTERM)\n"
+"   -wu: do not exit until the service is up\n"
+"   -wU: do not exit until the service is up and ready and has notified readiness\n"
+"   -wd: do not exit until the service is down\n"
+"   -wD: do not exit until the service is down and ready to be brought up and has notified readiness\n"
+"   -wr: do not exit until the service has been started or restarted\n"
+"   -wR: do not exit until the service has been started or restarted and has notified readiness\n"
 ;
 
 char const *usage_tree_wrapper = "66 tree [ -h ] create|admin|remove|enable|disable|current|status|resolve|init|start|stop|free [<subcommand options>] tree" ;
@@ -316,16 +317,16 @@ char const *help_tree_create =
 "\n"
 "options:\n"
 "   -h: print this help\n"
-"   -o: list of options separated by colons\n"
+"   -o options: list of options separated by colons\n"
 "\n"
 "valid fields for -o options are:\n"
 "\n"
-"   depends=: comma separated list of dependencies for tree or none\n"
-"   requiredby=: comma separated list of trees required by tree or none\n"
-"   groups=: add tree to the specified groups\n"
-"   allow=: comma separated list of account to allow at tree\n"
-"   deny=: comma separated list of account to deny at tree\n"
-"   clone=: make a clone of tree\n"
+"   depends= trees: comma separated list of trees dependencies for tree or none\n"
+"   requiredby= trees: comma separated list of trees required-by dependencies for tree or none\n"
+"   groups= group: add tree to the specified group\n"
+"   allow= user: comma separated list of user account to allow at tree\n"
+"   deny= user: comma separated list of user account to deny at tree\n"
+"   clone= name: make a clone name of tree\n"
 "   noseed: do not use seed file to build the tree\n"
 ;
 
@@ -336,15 +337,15 @@ char const *help_tree_admin =
 "\n"
 "options:\n"
 "   -h: print this help\n"
-"   -o: list of options separated by colons\n"
+"   -o options: list of options separated by colons\n"
 "\n"
 "valid fields for -o options are:\n"
 "\n"
-"   depends=: comma separated list of dependencies for tree or none\n"
-"   requiredby=: comma separated list of trees required by tree or none\n"
-"   groups=: add tree to the specified groups\n"
-"   allow=: comma separated list of account to allow at tree\n"
-"   deny=: comma separated list of account to deny at tree\n"
+"   depends= trees: comma separated list of trees dependencies for tree or none\n"
+"   requiredby= trees: comma separated list of trees required-by dependencies for tree or none\n"
+"   groups= group: add tree to the specified group\n"
+"   allow= user: comma separated list of user account to allow at tree\n"
+"   deny= user: comma separated list of user account to deny at tree\n"
 "   clone=: make a clone of tree\n"
 ;
 
@@ -401,9 +402,9 @@ char const *help_tree_status =
 "options :\n"
 "   -h: print this help\n"
 "   -n: do not display the names of fields\n"
-"   -o: comma separated list of field to display\n"
+"   -o options: comma separated list of field to display\n"
 "   -g: displays the contents field as graph\n"
-"   -d: limit the depth of the contents field recursion\n"
+"   -d depth: limit the depth of the contents field recursion by depth\n"
 "   -r: reverse the contents field\n"
 "\n"
 "valid fields for -o options are:\n"
@@ -470,7 +471,7 @@ char const *help_scandir_wrapper =
 "\n"
 "options :\n"
 "   -h: print this help\n"
-"   -o: handles scandir of owner\n"
+"   -o owner: handles scandir of owner\n"
 "\n"
 "subcommand:\n"
 "   create: create a scandir\n"
@@ -499,8 +500,8 @@ char const *help_scandir_create =
 "   -b: create scandir for a boot process\n"
 "   -B: create scandir for a boot process inside a container\n"
 "   -c: do not catch logs\n"
-"   -L: run catch-all logger as log_user user\n"
-"   -s: use skel as skeleton directory\n"
+"   -L log_user: run catch-all logger as log_user user\n"
+"   -s skel: use skel as skeleton directory\n"
 ;
 
 char const *usage_scandir_remove = "66 scandir remove [ -h ]" ;
@@ -519,9 +520,9 @@ char const *help_scandir_start =
 "\n"
 "options:\n"
 "   -h: print this help\n"
-"   -d: notify readiness on file descriptor\n"
-"   -s: scan scandir every milliseconds\n"
-"   -e: use environment as environment directory\n"
+"   -d notif: notify readiness on file descriptor notif\n"
+"   -s rescan: scan scandir every rescan milliseconds\n"
+"   -e environment: use environment as environment directory\n"
 "   -b: create scandir (if it not exist yet) for a boot process\n"
 "   -B: create scandir (if it not exist yet) for a boot process inside a container\n"
 ;
@@ -551,7 +552,6 @@ char const *help_scandir_rescan =
 "\n"
 "options:\n"
 "   -h: print this help\n"
-"   -o: handles scandir of owner\n"
 ;
 
 char const *usage_scandir_quit = "66 scandir quit [ -h ]" ;
@@ -618,8 +618,8 @@ char const *help_poweroff =
 "   -a: use access control\n"
 "   -f: sync filesytem and immediately poweroff the system\n"
 "   -F: do not sync filesytem and immediately poweroff the system\n"
-"   -m: replace the default message by message\n"
-"   -t: grace time period between SIGTERM and SIGKILL\n"
+"   -m message: replace the default message by message\n"
+"   -t time: use time as grace time period between SIGTERM and SIGKILL\n"
 "   -W: do not send a wall message to users\n"
 ;
 
@@ -633,8 +633,8 @@ char const *help_reboot =
 "   -a: use access control\n"
 "   -f: sync filesytem and immediately reboot the system\n"
 "   -F: do not sync filesytem and immediately reboot the system\n"
-"   -m: replace the default message by message\n"
-"   -t: grace time period between SIGTERM and SIGKILL\n"
+"   -m message: replace the default message by message\n"
+"   -t time: use time as grace time period between SIGTERM and SIGKILL\n"
 "   -W: do not send a wall message to users\n"
 ;
 
@@ -648,7 +648,7 @@ char const *help_halt =
 "   -a: use access control\n"
 "   -f: sync filesytem and immediately halt the system\n"
 "   -F: do not sync filesytem and immediately halt the system\n"
-"   -m: replace the default message by message\n"
-"   -t: grace time period between SIGTERM and SIGKILL\n"
+"   -m message: replace the default message by message\n"
+"   -t time: use time as grace time period between SIGTERM and SIGKILL\n"
 "   -W: do not send a wall message to users\n"
 ;
