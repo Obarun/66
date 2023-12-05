@@ -56,7 +56,6 @@ INSTALL := ./tools/install.sh
 ALL_BINS := $(LIBEXEC_TARGETS) $(BIN_TARGETS)
 ALL_LIBS := $(SHARED_LIBS) $(STATIC_LIBS) $(INTERNAL_LIBS)
 ALL_INCLUDES := $(wildcard src/include/$(package)/*.h)
-INSTALL_DATA += init.conf
 LOWDOWN := $(shell type -p lowdown)
 ifdef LOWDOWN
 GENERATE_HTML := $(shell doc/make-html.sh $(version))
@@ -64,7 +63,7 @@ GENERATE_MAN := $(shell doc/make-man.sh)
 endif
 INSTALL_HTML := $(wildcard doc/$(version)/html/*.html)
 INSTALL_MAN := $(wildcard doc/man/*/*)
-INSTALL_DATA := skel/init skel/rc.init skel/rc.init.container \
+INSTALL_DATA := skel/rc.init skel/rc.init.container \
 	skel/rc.shutdown skel/rc.shutdown.final skel/init.conf
 
 all: $(ALL_LIBS) $(ALL_BINS) $(ALL_INCLUDES)
@@ -92,7 +91,7 @@ ifneq ($(strip $(ALL_BINS)$(SHARED_LIBS)),)
 	exec $(STRIP) -R .note -R .comment $(ALL_BINS) $(SHARED_LIBS)
 endif
 
-install: install-dynlib install-libexec install-bin install-lib install-include install-data install-html install-man
+install: install-dynlib install-libexec install-bin install-lib install-include install-data install-html install-man install-init
 install-dynlib: $(SHARED_LIBS:lib%.so.xyzzy=$(DESTDIR)$(dynlibdir)/lib%.so)
 install-libexec: $(LIBEXEC_TARGETS:%=$(DESTDIR)$(libexecdir)/%)
 install-bin: $(BIN_TARGETS:%=$(DESTDIR)$(bindir)/%)
@@ -104,98 +103,95 @@ install-man: install-man1 install-man5 install-man8
 install-man1: $(INSTALL_MAN:doc/man/man1/%.1=$(DESTDIR)$(mandir)/man1/%.1)
 install-man5: $(INSTALL_MAN:doc/man/man5/%.5=$(DESTDIR)$(mandir)/man5/%.5)
 install-man8: $(INSTALL_MAN:doc/man/man8/%.8=$(DESTDIR)$(mandir)/man8/%.8)
+install-init: $(INIT_TARGETS:skel/init=$(DESTDIR)$(bindir)/init)
 
 $(DESTDIR)$(datarootdir)/doc/$(package)/$(version)/%.html: doc/$(version)/html/%.html
 	$(INSTALL) -D -m 644 $< $@ && \
 	sed -e 's,%%shebangdir%%,$(shebangdir),g' \
 		-e 's,%%skel%%,$(skel),g' \
-        -e 's,%%livedir%%,$(livedir),g' \
+		-e 's,%%bindir%%,$(bindir),g' \
+		-e 's,%%livedir%%,$(livedir),g' \
 		-e 's,%%system_dir%%,$(system_dir),g' \
 		-e 's,%%system_log%%,$(system_log),g' \
 		-e 's,%%s6log_user%%,$(s6log_user),g' \
 		-e 's,%%s6log_timestamp%%,$(s6log_timestamp),g' \
 		-e 's,%%s6log_notify%%,$(s6log_notify),g' \
 		-e 's,%%service_system%%,$(service_system),g' \
-		-e 's,%%module_system%%,$(module_system),g' \
 		-e 's,%%script_system%%,$(script_system),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
-		-e 's,%%module_adm%%,$(module_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \
 		-e 's,%%service_user%%,$(service_user),g' \
-		-e 's,%%module_user%%,$(module_user),g' \
 		-e 's,%%script_user%%,$(script_user),g' \
 		-e 's,%%service_userconf%%,$(service_userconf),g' \
-		-e 's,%%user_log%%,$(user_log),g' $< > $@
+		-e 's,%%user_log%%,$(user_log),g' \
+		-e 's,%%default_treename%%,$(default_treename),g' $< > $@
 
 $(DESTDIR)$(mandir)/man1/%.1: doc/man/man1/%.1
 	$(INSTALL) -D -m 644 $< $@ && \
 	sed -e 's,%%shebangdir%%,$(shebangdir),g' \
 		-e 's,%%skel%%,$(skel),g' \
-        -e 's,%%livedir%%,$(livedir),g' \
+		-e 's,%%bindir%%,$(bindir),g' \
+		-e 's,%%livedir%%,$(livedir),g' \
 		-e 's,%%system_dir%%,$(system_dir),g' \
 		-e 's,%%system_log%%,$(system_log),g' \
 		-e 's,%%s6log_user%%,$(s6log_user),g' \
 		-e 's,%%s6log_timestamp%%,$(s6log_timestamp),g' \
 		-e 's,%%s6log_notify%%,$(s6log_notify),g' \
 		-e 's,%%service_system%%,$(service_system),g' \
-		-e 's,%%module_system%%,$(module_system),g' \
 		-e 's,%%script_system%%,$(script_system),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
-		-e 's,%%module_adm%%,$(module_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \
 		-e 's,%%service_user%%,$(service_user),g' \
-		-e 's,%%module_user%%,$(module_user),g' \
 		-e 's,%%script_user%%,$(script_user),g' \
 		-e 's,%%service_userconf%%,$(service_userconf),g' \
-		-e 's,%%user_log%%,$(user_log),g' $< > $@
+		-e 's,%%user_log%%,$(user_log),g' \
+		-e 's,%%default_treename%%,$(default_treename),g' $< > $@
 
 $(DESTDIR)$(mandir)/man5/%.5: doc/man/man5/%.5
 	$(INSTALL) -D -m 644 $< $@ && \
 	sed -e 's,%%shebangdir%%,$(shebangdir),g' \
 		-e 's,%%skel%%,$(skel),g' \
-        -e 's,%%livedir%%,$(livedir),g' \
+		-e 's,%%bindir%%,$(bindir),g' \
+		-e 's,%%livedir%%,$(livedir),g' \
 		-e 's,%%system_dir%%,$(system_dir),g' \
 		-e 's,%%system_log%%,$(system_log),g' \
 		-e 's,%%s6log_user%%,$(s6log_user),g' \
 		-e 's,%%s6log_timestamp%%,$(s6log_timestamp),g' \
 		-e 's,%%s6log_notify%%,$(s6log_notify),g' \
 		-e 's,%%service_system%%,$(service_system),g' \
-		-e 's,%%module_system%%,$(module_system),g' \
 		-e 's,%%script_system%%,$(script_system),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
-		-e 's,%%module_adm%%,$(module_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \
 		-e 's,%%service_user%%,$(service_user),g' \
-		-e 's,%%module_user%%,$(module_user),g' \
 		-e 's,%%script_user%%,$(script_user),g' \
 		-e 's,%%service_userconf%%,$(service_userconf),g' \
-		-e 's,%%user_log%%,$(user_log),g' $< > $@
+		-e 's,%%user_log%%,$(user_log),g' \
+		-e 's,%%default_treename%%,$(default_treename),g' $< > $@
 
 $(DESTDIR)$(mandir)/man8/%.8: doc/man/man8/%.8
 	$(INSTALL) -D -m 644 $< $@ && \
 	sed -e 's,%%shebangdir%%,$(shebangdir),g' \
 		-e 's,%%skel%%,$(skel),g' \
-        -e 's,%%livedir%%,$(livedir),g' \
+		-e 's,%%bindir%%,$(bindir),g' \
+		-e 's,%%livedir%%,$(livedir),g' \
 		-e 's,%%system_dir%%,$(system_dir),g' \
 		-e 's,%%system_log%%,$(system_log),g' \
 		-e 's,%%s6log_user%%,$(s6log_user),g' \
 		-e 's,%%s6log_timestamp%%,$(s6log_timestamp),g' \
 		-e 's,%%s6log_notify%%,$(s6log_notify),g' \
 		-e 's,%%service_system%%,$(service_system),g' \
-		-e 's,%%module_system%%,$(module_system),g' \
 		-e 's,%%script_system%%,$(script_system),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
-		-e 's,%%module_adm%%,$(module_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \
 		-e 's,%%service_user%%,$(service_user),g' \
-		-e 's,%%module_user%%,$(module_user),g' \
 		-e 's,%%script_user%%,$(script_user),g' \
 		-e 's,%%service_userconf%%,$(service_userconf),g' \
-		-e 's,%%user_log%%,$(user_log),g' $< > $@
+		-e 's,%%user_log%%,$(user_log),g' \
+		-e 's,%%default_treename%%,$(default_treename),g' $< > $@
 
 $(DESTDIR)$(skel)/%: skel/%
 	exec $(INSTALL) -D -m 644 $< $@
@@ -217,6 +213,13 @@ $(DESTDIR)$(libexecdir)/% $(DESTDIR)$(bindir)/%: % package/modes
 	grep -- ^$(@F) < package/modes | { read name mode owner && \
 	if [ x$$owner != x ] ; then chown -- $$owner $@ ; fi && \
 	chmod $$mode $@ ; }
+
+$(DESTDIR)$(bindir)/init: skel/init package/modes
+	exec $(INSTALL) -D -m 600 $< $@
+	grep -- ^$(@F) < package/modes | { read name mode owner && \
+	if [ x$$owner != x ] ; then chown -- $$owner $@ ; fi && \
+	chmod $$mode $@ ; } && \
+	exec sed -e "s/@EXECLINE_SHEBANGPREFIX@/$(subst /,\/,$(shebangdir))/g" $< > $@
 
 $(DESTDIR)$(libdir)/lib%.a: lib%.a.xyzzy
 	exec $(INSTALL) -D -m 644 $< $@
@@ -240,6 +243,6 @@ lib%.a.xyzzy:
 lib%.so.xyzzy:
 	exec $(CC) -o $@ $(CFLAGS_ALL) $(CFLAGS_SHARED) $(LDFLAGS_ALL) $(LDFLAGS_SHARED) -Wl,-soname,$(patsubst lib%.so.xyzzy,lib%.so.$(version_M),$@) $^ $(EXTRA_LIBS) $(LDLIBS)
 
-.PHONY: it all clean distclean tgz strip install install-dynlib install-libexec install-bin install-lib install-include install-data install-html install-man
+.PHONY: it all clean distclean tgz strip install install-dynlib install-libexec install-bin install-lib install-include install-data install-html install-man install-init
 
 .DELETE_ON_ERROR:

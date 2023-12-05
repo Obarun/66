@@ -12,5 +12,6 @@ LIBEXEC_TARGETS := \
 66-fdholder-filler \
 66-oneshot
 
+INIT_TARGETS := skel/init
 
 LIB_DEFS := 66=66
