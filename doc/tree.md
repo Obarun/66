@@ -327,7 +327,7 @@ In a script you can do
 #!/bin/sh
 
 tree="${1}"
-isenabled=$(66 tree status -no ${tree})
+isenabled=$(66 tree status -no enabled ${tree})
 
 if [ ${isenabled} = "no" ]; then
    echo ${tree} is not enabled
