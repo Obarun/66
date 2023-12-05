@@ -73,11 +73,11 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
      * STATE_FLAGS_TOPROPAGATE = 1
      * send signal to the depends/requiredby of the service
      *
-     * When we come from 66 start/stop tool we always want to
+     * When we come from 66 start/stop command we always want to
      * propagate the signal. But we may need/want to send a e.g. SIGHUP signal
      * to a specific service without interfering on its depends/requiredby services
      *
-     * Also, we only deal with already supervised service. This tool is the signal sender,
+     * Also, we only deal with already supervised service. This command is the signal sender,
      * it not intended to sanitize the state of the services.
      *
      * */

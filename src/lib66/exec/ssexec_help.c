@@ -26,7 +26,7 @@ inline void info_help (char const *help,char const *usage)
 char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|free|reconfigure|enable|disable|configure|status|resolve|state|remove|signal|tree|parse|scandir|boot|poweroff|reboot|halt|version [<command options> or <subcommand options> ] service...|tree" ;
 
 char const *help_66 =
-"\nmain tool to init a system, control and manage services\n"
+"\nprogram to init a system, control and manage services\n"
 "\n"
 "options:\n"
 "   -h: print this help\n"
@@ -34,7 +34,7 @@ char const *help_66 =
 "   -v verbosity: increase/decrease verbosity of the command\n"
 "   -l live: changes live directory\n"
 "   -T timeout: general timeout (in milliseconds) passed to command\n"
-"   -t tree: use tree as tree to use\n"
+"   -t tree: set tree as tree to use\n"
 "\n"
 "command:\n"
 "   start: bring up service\n"
@@ -148,7 +148,7 @@ char const *help_parse =
 char const *usage_reconfigure = "66 reconfigure [ -h ] [ -P ] service..." ;
 
 char const *help_reconfigure =
-"\nconvenient tool to bring down, unsupervise, parse again and bring up services in one pass\n"
+"\nconvenient command to bring down, unsupervise, parse again and bring up services in one pass\n"
 "\n"
 "options:\n"
 "   -h: print this help\n"
@@ -158,7 +158,7 @@ char const *help_reconfigure =
 char const *usage_reload = "66 reload [ -h ] [ -P ] service..." ;
 
 char const *help_reload =
-"\nconvenient tool to send a SIGHUP signal to services\n"
+"\nconvenient command to send a SIGHUP signal to services\n"
 "\n"
 "options:\n"
 "   -h: print this help\n"
@@ -168,7 +168,7 @@ char const *help_reload =
 char const *usage_restart = "66 restart [ -h ] [ -P ] service..." ;
 
 char const *help_restart =
-"\nconvenient tool to bring down then bring up services in one pass\n"
+"\nconvenient command to bring down then bring up services in one pass\n"
 "\n"
 "options:\n"
 "   -h: print this help\n"
