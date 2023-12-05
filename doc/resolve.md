@@ -23,7 +23,7 @@ This command displays the contents of the service's *resolve* file. This file ar
 
 ## Options
 
-- **-h** : prints this help;
+- **-h** : prints this help.
 
 ## Usage example
 

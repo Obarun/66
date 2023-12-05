@@ -17,7 +17,7 @@ This command starts one ore more *services*.
 start [ -h ] [ -P ] service(s)
 ```
 
-This command expects to find an already running [scandir](scandir.html). If the state of the *service* is already up, the *start* command does nothing but handles dependency except when passing the **-P** option.
+This command expects to find an already running [scandir](scandir.html). If the state of the *service* is already up, the *start* command does nothing but handles dependency except when passing the `-P` option.
 
 Multiple *services* can be started by seperating their names with a space.
 

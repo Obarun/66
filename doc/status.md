@@ -9,7 +9,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # status
 
-This command displays information about services.
+This command displays information about service.
 
 ## Interface
 
