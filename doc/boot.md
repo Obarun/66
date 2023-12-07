@@ -7,17 +7,15 @@ author: Eric Vidal <eric@obarun.org>
 
 [obarun.org](https://web.obarun.org)
 
-# 66-boot
+# boot
 
 Meant to be run as pid 1 as a *stage1* init. Performs the necessary early system preparation and execs into [scandir start](scandir.html).
 
 ## Interface
 
-
 ```
 boot [ -h ] [ -z ] [ -m ] [ -s skel ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]
 ```
-
 
 This program performs some early preparations, spawns a process that will run the `rc.init` script and then execs into [scandir start](scandir.html).
 
@@ -82,7 +80,7 @@ When booting a system, command *boot* performs the following operations:
 
 - It execs into [66 -v VERBOSITY -l LIVE start](scandir.html) with `LIVE/scandir/0` (default `%%livedir%%/scandir/0`) as its scandir.
 
-    * [scandir start](scandir.html) transitions into [s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) which spawns the early services that are defined in *TREE* where one of those services is `scandir-log`, which is the `catch-all` logger. Once this service is up *66-boot*'s child *stage2* unblocks.
+    * [scandir start](scandir.html) transitions into [s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) which spawns the early services that are defined in *TREE* where one of those services is `scandir-log`, which is the `catch-all` logger. Once this service is up `boot's` command child *stage2* unblocks.
 
     * The child then execs into `rc.init`
 

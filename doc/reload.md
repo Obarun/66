@@ -14,7 +14,7 @@ This command reloads one or more services.
 ## Interface
 
 ```
-reload [ -h ] [ -P ] service(s)
+reload [ -h ] [ -P ] service...
 ```
 
 This command send a `SIGHUP` signal to *service*. Many daemon reacts of `SIGHUP` signal to re-read its configuration file that has been changed. This command expects to find an already running *service*.
@@ -42,7 +42,7 @@ Reloads the `foo` service
 66 reload foo
 ```
 
-Restarts the `foo-log` service
+Reloads the `foo-log` service
 ```
 66 reload -P foo-log
 ```
