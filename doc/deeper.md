@@ -9,7 +9,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # Deeper understanding
 
-This documentation explains the internal structure of `66` on the system and the roles of the different directories and file components
+This documentation explains the internal structure of `66` on the system and the roles of the different directories and file components.
 
 **Never manually changes** any directories or files within the `66` ecosystem,as this is the best way to break it.
 
@@ -66,7 +66,7 @@ The `%%system_dir%%/system/service/svc` directory includes service directories, 
 
 The content of the resolve file for a tree, such as `%%default_treename%%`, can be viewed using the [66 resolve](resolve.html) command in the following manner
 ```
-66 tree resolve <tree>
+66 tree resolve global
 ```
 
 This displays information in a self-explanatory manner
@@ -108,13 +108,13 @@ The `Master` resolve file isn't accessible for direct user use. Attempting to ex
 
 This file serves `66` in rapidly accessing an overview of trees on the system. When a user triggers a `66 tree disable session` command, it updates the `enabled` and `nenabled` fields to reflect the current state of the tree.
 
-### %%system_dir%%/system/service/svc/<service>
+### %%system_dir%%/system/service/svc/\<service\>
 
 Every service possesses its individual directory. At its core, this directory houses the outcome of the [parse](parse.html) process, heavily reliant on the corresponding [frontend](frontend.html) file. Yet, all service directories invariably include the `.resolve` and `state` subdirectories.
 
-#### %%system_dir%%/system/service/svc/<service>/.resolve
+#### %%system_dir%%/system/service/svc/\<service\>/.resolve
 
-This directory stores the resolve file for each service, mirroring how `%%system_dir%%/system/.resolve/` houses the resolve file for a tree. Running `66 resolve <service>` showcases the content of this file, presenting information similar to the following
+This directory stores the resolve file for each service, mirroring how `%%system_dir%%/system/.resolve/` houses the resolve file for a tree. Running `66 resolve \<service\>` showcases the content of this file, presenting information similar to the following
 ```
 name             : openntpd
 description      : ntpd daemon
@@ -241,7 +241,7 @@ Some precision is needed here:
 - Meanwhile, `run_user`, and `finish_user` fields are derived from the [[start]](frontend.html#section-start) and [[stop]](frontend.html#section-stop) sections in the frontend file. Specifically, `run_user` corresponds to `@execute` in the [[start]](frontend.html#section-start) section, and the others function similarly but for the [[stop]](frontend.html#section-stop) section.
 - Other fields like `ownerstr`, `home`, `frontend`, `servicedir`, `livedir`, `status`, `servicedir`, `scandir`, `statedir`, `eventdir`, `notifdir`, `supervisedir`, `fdholderdir`, `oneshotddir`, `logname`, `logwant` and `env_overwrite` are used internally for `66`'s operations.
 
-#### %%system_dir%%/system/service/svc/<service>/status
+#### %%system_dir%%/system/service/svc/\<service\>/status
 
 This directory houses a *binary* file named `status`, which `66` uses to track the service's current operational status. Running `66 state <service>` displays output similar to the following
 ```
@@ -255,15 +255,15 @@ issupervised    : 1
 isup            : 1
 ```
 
-For instance, when executing `66 free <service>`, the tounsupervise field switches to `1` at the process start and back to `0` at the end. Additionally, `isup` and `issupervised` also become `0`.
+For instance, when executing `66 free <service>`, the `tounsupervise` field switches to `1` at the process start and back to `0` at the end. Additionally, `isup` and `issupervised` also become `0`.
 
 ## %%skel%%
 
 This directory is specified at compile time by using the `--with-skeleton=` option to `./configure`.
 
-It holds various configuration files utilized by `66`. It's crucial for system administrators to avoid altering this directory or its subdirectories, ensuring users can manage it without losing their changes.
+It holds various configuration files utilized by `66`.
 
-User may want to manage this directory with the exception of the `%%service_admconf%%` below.
+User may want to manage some subdirectories with the exception of the `%%service_admconf%%` below.
 
 ### %%service_admconf%%
 
@@ -281,11 +281,15 @@ This directory is specified at compile time by using the `--with-sysadmin-seed=`
 
 This directory is managed by the user and stores [seed](tree.html#seed-files) files, used, for example, by the [tree](tree.html) command. If a [seed](tree.html#seed-files) file exists both in this directory and at `%%service_system%%`, the one in this directory takes precedence.
 
+It's crucial for system administrators to avoid altering this directory or its subdirectories, ensuring users can manage it without losing their changes.
+
 ### %%service_adm%%
 
 This directory is specified at compile time by using the `--with-sysadmin-service=` option to `./configure`.
 
 This directory is designated for users to store [frontend](frontend.html) files. If a [frontend](frontend.html) file for a service exists both in this directory and at `%%service_system%%`, the file in this directory takes precedence.
+
+It's crucial for system administrators to avoid altering this directory or its subdirectories, ensuring users can manage it without losing their changes.
 
 ## %%service_system%%
 
@@ -355,7 +359,7 @@ This directory is specified at compile time by using the `--with-system-log=` op
 
 This directory is automatically managed by `66`. Users, including system administrators, should avoid directly interacting with these directories.
 
-Each service, if a logger is associated, has its own subdirectory likely %%system_log%%/66/<service>.
+Each service, if a logger is associated, has its own subdirectory likely `%%system_log%%/66/<service>`.
 
 User can control the rotation of the log file with:
 

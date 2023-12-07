@@ -118,6 +118,7 @@ $(DESTDIR)$(datarootdir)/doc/$(package)/$(version)/%.html: doc/$(version)/html/%
 		-e 's,%%s6log_notify%%,$(s6log_notify),g' \
 		-e 's,%%service_system%%,$(service_system),g' \
 		-e 's,%%script_system%%,$(script_system),g' \
+		-e 's,%%seed_system%%,$(seed_system),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \
@@ -140,6 +141,7 @@ $(DESTDIR)$(mandir)/man1/%.1: doc/man/man1/%.1
 		-e 's,%%s6log_notify%%,$(s6log_notify),g' \
 		-e 's,%%service_system%%,$(service_system),g' \
 		-e 's,%%script_system%%,$(script_system),g' \
+		-e 's,%%seed_system%%,$(seed_system),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \
@@ -162,6 +164,7 @@ $(DESTDIR)$(mandir)/man5/%.5: doc/man/man5/%.5
 		-e 's,%%s6log_notify%%,$(s6log_notify),g' \
 		-e 's,%%service_system%%,$(service_system),g' \
 		-e 's,%%script_system%%,$(script_system),g' \
+		-e 's,%%seed_system%%,$(seed_system),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \
@@ -184,6 +187,7 @@ $(DESTDIR)$(mandir)/man8/%.8: doc/man/man8/%.8
 		-e 's,%%s6log_notify%%,$(s6log_notify),g' \
 		-e 's,%%service_system%%,$(service_system),g' \
 		-e 's,%%script_system%%,$(script_system),g' \
+		-e 's,%%seed_system%%,$(seed_system),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \
