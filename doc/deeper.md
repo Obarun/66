@@ -333,6 +333,8 @@ Given `66` can run with root or regular account privileges, this directory conta
 
 This directory consists of service symlinks that point to its corresponding `%%livedir%%/state/UID/<service>` directory.
 
+*note*: The `66 scandir create -B` invocation create the directory `%%livedir%%/scandir/UID/container` containing a named file *halt*. See [boot](boot.html) for further information.
+
 ### %%livedir%%/state
 
 This directory is managed internally by `66` and contains directories and files needed for the run time of services. Users, including system administrators, should avoid directly interacting with these directories.
@@ -361,66 +363,8 @@ User can control the rotation of the log file with:
 
 - invocating `66 reload -P <service>` or `66 signal -aP <service>` command.
 
-
-
-
-
-
-
-
-
-
-
-
-
 ## Resolve files
 
-*Resolve* files are [CDB](http://cr.yp.to/cdb.html) databases.
+*Resolve* files are essentially [CDB](http://cr.yp.to/cdb.html) databases. They are independent of extra libraries, running daemons, or third-party programs. These files are lightweight and efficient to read and write. However, the downside is the inability to upgrade a field without rewriting the entire database whenever modifications are made to any fields.
 
-
-
-
-
-
-## Scandir creation process
-
-When creating the *scandir* various files and directories will be created at the *live* directory.
-
-If created with the user root, you will find the following in `%%livedir%%` (the directory created by default if **‑l** is not passed and 0 being the corresponding UID for the root user):
-
-- *%%livedir%%/scandir/0*: stores all longrun proccesses (commonly known as daemons) started by root.
-
-- *%%livedir%%/tree/0*: stores any [s6‑rc](https://skarnet.org/software/s6-rc) service database started by root.
-
-- *%%livedir%%/log/0*: stores the `catch-all` logger when the *scandir* is created for a boot procedure with the **‑b** option.
-
-- *%%livedir%%/state/0*: stores internal *66* ecosystem files.
-
-If the *scandir* was created with a regular user you will find the following in `%%livedir%%`
-(Default directories if **‑l** is not passed and 1000 being the UID for the user):
-
-- *%%livedir%%/scandir/1000*
-
-- *%%livedir%%/tree/1000*
-
-- *%%livedir%%/state/1000*
-
-The **-B** option create an extra directory at `%%livedir%%/scandir/<owner>/container` containing a file named *halt*. See [66-boot](boot.html) for further information.
-
-If a *scandir* already existed at the default location for the given user it will prevent its creation when calling `66‑scandir create`. If you wanted to create a different scandir for the same owner at the same live location you must delete it first with `66-scandir remove`.
-
-## Scandir removal process
-
-The *scandir* **must** first be stopped sending a signal with [66‑scanctl stop](66-scanctl.html) or similar to be able to remove it.
-
-Some directories of the *scandir* may not be removed if another user accesses them. In our previous example where we created a *scandir* for root with UID `0` and a regular user with the UID `1000` this would imply the following:
-
-- *%%livedir%%/scandir/0* # will be deleted
-
-- *%%livedir%%/tree/0*    # will be deleted
-
-- *%%livedir%%/log/0*     # will be deleted
-
-- *%%livedir%%/state/0*   # will be deleted
-
-The *live* directory of the root user (in this example and by default `%%livedir%%`) will not be removed because another user (the one from our example) can still use it. In fact *66‑scandir* will only remove the subdirectories of the corresponding UID of the *owner* while the *live* root directory is not touched. If *live* was created on a RAM filesystem as suggested the deletion happens on the next reboot.
+The size of the database varies based on its contents and typically ranges between 4-7 kilobytes.

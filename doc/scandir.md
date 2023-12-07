@@ -190,7 +190,7 @@ scandir remove [ -h ]
 
 The *scandir* **must** first be stopped with [scandir stop](#stop) subcommand or similar subcommand to be able to remove it.
 
-This subcommand remove some directories and files from the `%%livedir%%` directory. Refers to [deeper understanding](deeper.html) documentation for futhers documentation.
+Certain directories within the scandir will not be removed. Specifically, `%%livedir%%/log`, `%%livedir%%/scandir`, and `%%livedir%%/state` remain intact, whereas all `UID` subdirectories are deleted. Refers to [deeper understanding](deeper.html) for futhers information.
 
 #### Options
 
