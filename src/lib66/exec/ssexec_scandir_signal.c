@@ -57,10 +57,9 @@ static inline unsigned int parse_signal (char const *signal)
     {
         "start",
         "stop", // -t
-        "reconfigure", // -h or -an
-        "rescan", // -a
+        "reload", // -h or -an
+        "check", // -a
         "quit", // -q
-        "halt", // -qb
         "abort", // -b
         "nuke", // -n
         "annihilate", // -N
@@ -68,7 +67,7 @@ static inline unsigned int parse_signal (char const *signal)
         0
     } ;
     unsigned int i = lookup(signal_table, signal) ;
-    if (!signal_table[i]) i = 10 ;
+    if (!signal_table[i]) i = 9 ;
     return i ;
 }
 
@@ -99,14 +98,14 @@ static int send_signal(char const *scandir, char const *signal)
             csig[1] = 0 ;
             break ;
 
-        case 2: // reconfigure
+        case 2: // reload
 
             csig[0] = 'h' ;
             csig[1] = 0 ;
             down = 1 ;
             break ;
 
-        case 3: // rescan
+        case 3: // check
 
             csig[0] = 'a' ;
             csig[1] = 0 ;
@@ -119,32 +118,25 @@ static int send_signal(char const *scandir, char const *signal)
             csig[1] = 0 ;
             break ;
 
-        case 5: // halt
-
-            csig[0] = 'q' ;
-            csig[1] = 'b' ;
-            csig[2] = 0 ;
-            break ;
-
-        case 6: // abort
+        case 5: // abort
 
             csig[0] = 'b' ;
             csig[1] = 0 ;
             break ;
 
-        case 7: // nuke
+        case 6: // nuke
 
             csig[0] = 'n' ;
             csig[1] = 0 ;
             break ;
 
-        case 8: // annihilate
+        case 7: // annihilate
 
             csig[0] = 'N' ;
             csig[1] = 0 ;
             break ;
 
-        case 9: // zombies
+        case 8: // zombies
 
             csig[0] = 'z' ;
             csig[1] = 0 ;

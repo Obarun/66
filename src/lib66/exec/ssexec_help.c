@@ -185,7 +185,7 @@ char const *help_free =
 "   -P: do not propagate signal to its dependencies\n"
 ;
 
-char const *usage_status = "66 status [ -h ] [ -n ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -p nline ] service..." ;
+char const *usage_status = "66 status [ -h ] [ -n ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -p nline ] service" ;
 
 char const *help_status =
 "\ndisplay services informations\n"
@@ -207,10 +207,15 @@ char const *help_status =
 "   status: displays the status\n"
 "   type: displays the service type\n"
 "   description: displays the description\n"
+"   partof: displays the module name for services part of that module\n"
+"   notify: displays the number of the fd for readiness notification\n"
+"   maxdeath: displays the number of maximum death\n"
+"   earlier: tell if service is an earlier one\n"
 "   source: displays the source of the service's frontend file\n"
 "   live: displays the service's live directory\n"
 "   depends: displays the service's dependencies\n"
 "   requiredby: displays the service(s) which depends on service\n"
+"   contents: displays services within module\n"
 "   optsdepends: displays the service's optional dependencies\n"
 "   start: displays the service's start script\n"
 "   stop: displays the service's stop script\n"
@@ -465,7 +470,7 @@ char const *help_tree_unsupervise =
 "If no tree name are provided, it unsupervise all services within all trees of the system\n"
 ;
 
-char const *usage_scandir_wrapper = "66 scandir [ -h ] [ -o owner ] create|remove|start|stop|reconfigure|rescan|quit|halt|abort|nuke|annihilate|zombies [<command options>]" ;
+char const *usage_scandir_wrapper = "66 scandir [ -h ] [ -o owner ] create|start|stop|remove|reload|check|quit|abort|nuke|annihilate|zombies [<command options>]" ;
 
 char const *help_scandir_wrapper =
 "\nmain subcommands to manage scandir\n"
@@ -476,13 +481,12 @@ char const *help_scandir_wrapper =
 "\n"
 "subcommand:\n"
 "   create: create a scandir\n"
-"   remove: remove a scandir\n"
 "   start: start a scandir\n"
 "   stop: stop a running scandir\n"
-"   reconfigure: reconfigure a running scandir\n"
-"   rescan: rescan a running scandir\n"
+"   remove: remove a scandir\n"
+"   reload: reload a running scandir\n"
+"   check: check a running scandir\n"
 "   quit: quit a running scandir\n"
-"   halt: halt a running scandir\n"
 "   abort: abort a running scandir\n"
 "   nuke: nuke a running scandir\n"
 "   annihilate: annihilate a running scandir\n"
@@ -524,8 +528,8 @@ char const *help_scandir_start =
 "   -d notif: notify readiness on file descriptor notif\n"
 "   -s rescan: scan scandir every rescan milliseconds\n"
 "   -e environment: use environment as environment directory\n"
-"   -b: create scandir (if it not exist yet) for a boot process\n"
-"   -B: create scandir (if it not exist yet) for a boot process inside a container\n"
+"   -b: create scandir (if it doesn't exist yet) for a boot process\n"
+"   -B: create scandir (if it doesn't exist yet) for a boot process inside a container\n"
 ;
 
 char const *usage_scandir_stop = "66 scandir stop [ -h ]" ;
@@ -546,10 +550,10 @@ char const *help_scandir_reconfigure =
 "   -h: print this help\n"
 ;
 
-char const *usage_scandir_rescan = "66 scandir rescan [ -h ]" ;
+char const *usage_scandir_check = "66 scandir check [ -h ]" ;
 
-char const *help_scandir_rescan =
-"\nrescan a running scandir to integrate new services\n"
+char const *help_scandir_check =
+"\ncheck a running scandir for services\n"
 "\n"
 "options:\n"
 "   -h: print this help\n"
@@ -559,15 +563,6 @@ char const *usage_scandir_quit = "66 scandir quit [ -h ]" ;
 
 char const *help_scandir_quit =
 "\nquit a running scandir\n"
-"\n"
-"options:\n"
-"   -h: print this help\n"
-;
-
-char const *usage_scandir_halt = "66 scandir halt [ -h ]" ;
-
-char const *help_scandir_halt =
-"\nhalt a running scandir\n"
 "\n"
 "options:\n"
 "   -h: print this help\n"

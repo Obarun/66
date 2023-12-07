@@ -134,31 +134,21 @@ int ssexec_scandir_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->usage = usage_scandir_reconfigure ;
         func = &ssexec_scandir_signal ;
 
-    } else if (!strcmp(argv[0], "rescan")) {
+    } else if (!strcmp(argv[0], "check")) {
 
         nargv[n++] = PROG ;
         nargv[n++] = argv[0] ;
         info->prog = PROG ;
-        info->help = help_scandir_rescan ;
-        info->usage = usage_scandir_rescan ;
+        info->help = help_scandir_check ;
+        info->usage = usage_scandir_check ;
         func = &ssexec_scandir_signal ;
 
     } else if (!strcmp(argv[0], "quit")) {
-
 
         nargv[n++] = argv[0] ;
         info->prog = PROG ;
         info->help = help_scandir_quit ;
         info->usage = usage_scandir_quit ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[0], "halt")) {
-
-
-        nargv[n++] = argv[0] ;
-        info->prog = PROG ;
-        info->help = help_scandir_halt ;
-        info->usage = usage_scandir_halt ;
         func = &ssexec_scandir_signal ;
 
     } else if (!strcmp(argv[0], "abort")) {
