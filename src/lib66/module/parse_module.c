@@ -314,6 +314,10 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
 
     }
 
+    /** append the module name at each inner depends/requiredby dependencies service name
+     * and define contents field.*/
+    parse_rename_interdependences(res, name, ares, areslen) ;
+
     /** Remove the module name from requiredby field
      * of the dependencies if the service disappears with the
      * fresh parse process.
@@ -332,10 +336,6 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
      * and read the old resolve file (meaning the current one) to
      * compare it with the new one.*/
     parse_db_migrate(res, info) ;
-
-    /** append the module name at each inner depends/requiredby dependencies service name
-     * and define contents field.*/
-    parse_rename_interdependences(res, name, ares, areslen) ;
 
     free(wres) ;
     stralloc_free(&list) ;

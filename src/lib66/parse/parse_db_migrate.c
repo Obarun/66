@@ -12,11 +12,87 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <stdint.h>
+
 #include <oblibs/log.h>
+#include <oblibs/stack.h>
+#include <oblibs/string.h>
 
 #include <66/service.h>
 #include <66/resolve.h>
 #include <66/ssexec.h>
+#include <66/tree.h>
+#include <66/constants.h>
+
+static void service_db_tree(resolve_service_t *old, resolve_service_t *new, ssexec_t *info)
+{
+    log_flow() ;
+
+    char *ocontents = old->sa.s + old->dependencies.contents ;
+    char *ncontents = new->sa.s + new->dependencies.contents ;
+
+    size_t pos = 0, olen = strlen(ocontents) ;
+    _init_stack_(sremove, olen + 1) ;
+
+    {
+        _init_stack_(sold, olen + 1) ;
+
+        if (!stack_convert_string_g(&sold, ocontents))
+            log_dieusys(LOG_EXIT_SYS, "convert string") ;
+
+        {
+            size_t nlen = strlen(ncontents) ;
+            _init_stack_(snew, nlen + 1) ;
+
+            if (!stack_convert_string_g(&snew, ncontents))
+                log_dieusys(LOG_EXIT_SYS, "convert string") ;
+
+            FOREACH_STK(&sold, pos) {
+                if (stack_retrieve_element(&snew, sold.s + pos) < 0) {
+                    if (!stack_add_g(&sremove, sold.s + pos))
+                        log_dieu(LOG_EXIT_SYS, "add string") ;
+                }
+            }
+        }
+    }
+
+    if (sremove.len) {
+
+        unsigned int m = 0 ;
+        int nargc = 3 + sremove.count  ;
+        char const *prog = PROG ;
+        char const *newargv[nargc] ;
+
+        char const *help = info->help ;
+        char const *usage = info->usage ;
+
+        info->help = help_remove ;
+        info->usage = usage_remove ;
+
+        newargv[m++] = "remove" ;
+        newargv[m++] = "-P" ;
+
+        pos = 0 ;
+        FOREACH_STK(&sremove, pos) {
+
+            char *name = sremove.s + pos ;
+              if (get_rstrlen_until(name, SS_LOG_SUFFIX) < 0)
+                newargv[m++] = name ;
+        }
+
+        newargv[m] = 0 ;
+
+        PROG= "remove" ;
+        int e = ssexec_remove(m, newargv, info) ;
+        PROG = prog ;
+
+        info->help = help ;
+        info->usage = usage ;
+
+        if (e)
+            log_dieu(LOG_EXIT_SYS, "unable to remove selection from module: ", new->sa.s + new->name) ;
+    }
+}
 
 void parse_db_migrate(resolve_service_t *res, ssexec_t *info)
 {
@@ -42,6 +118,9 @@ void parse_db_migrate(resolve_service_t *res, ssexec_t *info)
 
         /* requiredby */
         service_db_migrate(&ores, res, info->base.s, 1) ;
+
+        /* contents of the previous tree */
+        service_db_tree(&ores, res, info) ;
     }
     resolve_free(owres) ;
 }
