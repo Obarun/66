@@ -207,9 +207,18 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
         if (!state_read(&ste, &res))
             log_dieusys(LOG_EXIT_SYS, "read state file of: ", argv[pos], " -- please make a bug report") ;
 
-        if (ste.issupervised == STATE_FLAGS_TRUE)
-            if (!sastr_add_string(&sa, argv[pos]))
-                log_dieusys(LOG_EXIT_SYS, "add service: ", argv[pos], " to selection") ;
+        if (ste.issupervised == STATE_FLAGS_TRUE) {
+            /** services of group boot cannot be stopped, the changes will appear only at
+             * next reboot.*/
+            r = tree_ongroups(res.sa.s + res.path.home, res.sa.s + res.treename, TREE_GROUPS_BOOT) ;
+
+            if (r < 0)
+                log_dieu(LOG_EXIT_SYS, "get groups of service: ", argv[pos]) ;
+
+            if (!r)
+                if (!sastr_add_string(&sa, argv[pos]))
+                    log_dieusys(LOG_EXIT_SYS, "add service: ", argv[pos], " to selection") ;
+        }
 
         ares[areslen++] = res ;
 
