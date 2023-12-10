@@ -14,7 +14,7 @@ This command remove all components of a service. This operation **cannot be** un
 ## Interface
 
 ```
-remove [ -h ] [ -P ] service
+remove [ -h ] [ -P ] service...
 ```
 
 This command remove all files belongs to *service* from the system even its log file. The only exception is its [frontend](frontend.html) file.
@@ -22,6 +22,8 @@ This command remove all files belongs to *service* from the system even its log 
 If the *service* is running, it will be stopped and unsupervised before removing it. This is also applied to its required-by dependencies except if the `-P` is passed.
 
 In case of `module` *service* type, all *services* declared within the `module` will be removed. The `-P` has no effect on the *services* within the `module` and only affects the module's dependencies.
+
+If the associated tree of *service* is a part of the group `boot`, the service is not stopped and not unsupervised. The changes will occur at the next boot.
 
 This command handles [interdependencies](66.html#handling-dependencies).
 

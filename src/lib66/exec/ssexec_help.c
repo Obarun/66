@@ -244,7 +244,7 @@ char const *help_state =
 "   -h: print this help\n"
 ;
 
-char const *usage_remove = "66 remove [ -h ] [ -P ] service" ;
+char const *usage_remove = "66 remove [ -h ] [ -P ] service..." ;
 
 char const *help_remove =
 "\nremove services and cleanup all files belong to it from the system\n"
