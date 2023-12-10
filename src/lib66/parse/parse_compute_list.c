@@ -39,7 +39,8 @@ int parse_compute_list(resolve_wrapper_t_ref wres, stralloc *sa, uint32_t *res, 
     size_t len = sa->len, pos = 0 ;
     size_t nelement = sastr_nelement(sa) ;
     stralloc tmp = STRALLOC_ZERO ;
-    char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, 0 } ;
+    uint8_t exlen = 2 ;
+    char const *exclude[2] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1 } ;
 
     char f[len + nelement + 2] ;
 
@@ -54,7 +55,7 @@ int parse_compute_list(resolve_wrapper_t_ref wres, stralloc *sa, uint32_t *res, 
 
             tmp.len = 0 ;
 
-            r = service_frontend_path(&tmp, sa->s + pos, getuid(), 0, exclude) ;
+            r = service_frontend_path(&tmp, sa->s + pos, getuid(), 0, exclude, exlen) ;
             if (r == -1)
                 log_dieu(LOG_EXIT_SYS, "get frontend service file of: ", sa->s + pos) ;
 

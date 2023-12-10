@@ -306,7 +306,7 @@ extern resolve_field_table_t resolve_service_field_table[] ;
 
 extern int service_cmp_basedir(char const *dir) ;
 extern int service_endof_dir(char const *dir, char const *name) ;
-extern int service_frontend_path(stralloc *sasrc,char const *sv, uid_t owner,char const *directory_forced, char const **exclude) ;
+extern int service_frontend_path(stralloc *sasrc,char const *sv, uid_t owner,char const *directory_forced, char const **exclude, uint8_t exlen) ;
 extern int service_frontend_src(stralloc *sasrc, char const *name, char const *src, char const **exclude) ;
 extern int service_is_g(char const *name, uint32_t flag) ;
 extern int service_get_treename(char *atree, char const *name, uint32_t flag) ;

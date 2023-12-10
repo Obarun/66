@@ -12,6 +12,7 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <stdint.h>
 #include <sys/types.h>
 
 #include <oblibs/log.h>
@@ -24,13 +25,40 @@
 #include <66/constants.h>
 #include <66/service.h>
 
-int service_frontend_path(stralloc *sasrc, char const *sv, uid_t owner, char const *directory_forced, char const **exclude)
+static void compute_exclude(char const **nexclude, char const **oexclude, uint8_t exlen, uid_t owner)
+{
+    uint8_t pos = 0 ;
+
+    if (exlen) {
+        for (; pos < exlen ; pos++)
+            nexclude[pos] = oexclude[pos] ;
+
+        if (owner)
+            nexclude[pos] = 0 ;
+    } else
+        nexclude[0] = 0 ;
+
+    if (!owner) {
+        if (!exlen) {
+            nexclude[0] = "user" ;
+            nexclude[1] = 0 ;
+        } else {
+            nexclude[pos++] = "user" ;
+            nexclude[pos] = 0 ;
+        }
+    }
+}
+
+int service_frontend_path(stralloc *sasrc, char const *sv, uid_t owner, char const *directory_forced, char const **exclude, uint8_t exlen)
 {
     log_flow() ;
 
     int r, e = 0 ;
     char const *src = 0 ;
     char home[SS_MAX_PATH_LEN + 1 + strlen(SS_SERVICE_USERDIR) + 1] ;
+    char const *ex[exlen + 2] ;
+
+    compute_exclude(ex, exclude, exlen, owner) ;
 
     if (directory_forced) {
 
@@ -49,9 +77,9 @@ int service_frontend_path(stralloc *sasrc, char const *sv, uid_t owner, char con
 
     } else {
 
-        if (!owner)
+        if (!owner) {
             src = SS_SERVICE_ADMDIR ;
-        else {
+        } else {
 
             if (!set_ownerhome_stack(home))
                 log_dieusys(LOG_EXIT_SYS, "set home directory") ;
@@ -61,21 +89,32 @@ int service_frontend_path(stralloc *sasrc, char const *sv, uid_t owner, char con
             src = home ;
         }
 
-        r = service_frontend_src(sasrc, sv, src, exclude) ;
+        r = service_frontend_src(sasrc, sv, src, ex) ;
         if (r == -1)
             log_dieusys(LOG_EXIT_SYS, "parse source directory: ", src) ;
 
         if (!r) {
 
-            src = SS_SERVICE_ADMDIR ;
-            r = service_frontend_src(sasrc, sv, src, exclude) ;
+            if (!owner) {
+                goto next ;
+            } else {
+                src = SS_SERVICE_ADMDIR_USER ;
+            }
+
+            r = service_frontend_src(sasrc, sv, src, ex) ;
             if (r == -1)
                 log_dieusys(LOG_EXIT_SYS, "parse source directory: ", src) ;
 
+            next:
             if (!r) {
 
-                src = SS_SERVICE_SYSDIR ;
-                r = service_frontend_src(sasrc, sv, src, exclude) ;
+                if (!owner) {
+                    src = SS_SERVICE_SYSDIR ;
+                } else {
+                    src = SS_SERVICE_SYSDIR_USER ;
+                }
+
+                r = service_frontend_src(sasrc, sv, src, ex) ;
                 if (r == -1)
                     log_dieusys(LOG_EXIT_SYS, "parse source directory: ", src) ;
 

@@ -37,8 +37,8 @@ int parse_interdependences(char const *service, char const *list, unsigned int l
     int r, e = 0 ;
     size_t pos = 0, len = 0 ;
     stralloc sa = STRALLOC_ZERO ;
-
-    char const *exclude[4] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, SS_MODULE_CONFIG_DIR, 0 } ;
+    uint8_t exlen = 3 ;
+    char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, SS_MODULE_CONFIG_DIR } ;
 
     if (listlen) {
 
@@ -76,7 +76,7 @@ int parse_interdependences(char const *service, char const *list, unsigned int l
             if (!strcmp(main, name))
                 log_die(LOG_EXIT_USER, "direct cyclic interdependences detected -- ", main, " depends on: ", service, " which depends on: ", main) ;
 
-            r = service_frontend_path(&sa, name, getuid(), forced_directory, exclude) ;
+            r = service_frontend_path(&sa, name, getuid(), forced_directory, exclude, exlen) ;
             if (r < 1) {
                 log_warnu( "get frontend service file of: ", name) ;
                 goto freed ;

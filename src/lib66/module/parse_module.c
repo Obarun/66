@@ -54,7 +54,8 @@ static void parse_module_dependencies(stralloc *list, resolve_service_t *res, ui
     uint32_t *nfield = !requiredby ? &res->dependencies.ndepends : &res->dependencies.nrequiredby ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     stralloc sa = STRALLOC_ZERO ;
-    char const *exclude[4] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, SS_MODULE_CONFIG_DIR + 1, 0 } ;
+    uint8_t exlen = 3 ;
+    char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, SS_MODULE_CONFIG_DIR + 1 } ;
 
     info->opt_tree = 0 ;
 
@@ -70,7 +71,7 @@ static void parse_module_dependencies(stralloc *list, resolve_service_t *res, ui
         if (!strcmp(name, fname))
             log_die(LOG_EXIT_SYS, "cyclic call detected -- ", name, " call ", fname) ;
 
-        if (!service_frontend_path(&sa, fname, info->owner, 0, exclude))
+        if (!service_frontend_path(&sa, fname, info->owner, 0, exclude, exlen))
             log_dieu(LOG_EXIT_USER, "find service frontend file of: ", fname) ;
 
         if (!stack_add_g(&stk, fname))
@@ -275,6 +276,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
 
             list.len = 0 ;
             char fname[strlen(l + pos)] ;
+            uint8_t exlen = 0 ; // see service_frontend_path file and compute_exclude()
             char const *exclude[1] = { 0 } ;
 
             if (!ob_basename(fname, l + pos))
@@ -286,7 +288,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
 
             /** Search first inside the module directory.
              * If not found, warn user about what to do.*/
-            if (!service_frontend_path(&list, fname, info->owner, copy, exclude)) {
+            if (!service_frontend_path(&list, fname, info->owner, copy, exclude, exlen)) {
 
                 copy[copylen] = 0 ;
                 char deps[copylen + SS_MODULE_ACTIVATED_LEN + SS_MODULE_DEPENDS_LEN + 1 + strlen(fname) + 1] ;
