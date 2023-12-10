@@ -653,7 +653,9 @@ All rights reserved.*/
 #define ${package_macro_name}_LOGGER_TIMESTAMP $s6log_timestamp
 #define ${package_macro_name}_LOGGER_NOTIFY $s6log_notify
 #define ${package_macro_name}_SERVICE_SYSDIR "$service_system/"
+#define ${package_macro_name}_SERVICE_SYSDIR_USER "$service_system/user/"
 #define ${package_macro_name}_SERVICE_ADMDIR "$service_adm/"
+#define ${package_macro_name}_SERVICE_ADMDIR_USER "$service_adm/user/"
 #define ${package_macro_name}_SERVICE_ADMCONFDIR "$service_admconf/"
 #define ${package_macro_name}_SCRIPT_SYSDIR "$script_system/"
 #define ${package_macro_name}_SEED_SYSDIR "$seed_system/"
