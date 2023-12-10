@@ -116,7 +116,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 
         issupervised = sta.issupervised == STATE_FLAGS_TRUE ? 1 : 0 ;
 
-        if (ares[aresid].enabled)
+        if (ares[aresid].enabled && !ares[aresid].inns)
             if (!stack_add_g(&stk, argv[n]))
                 log_dieu(LOG_EXIT_SYS, "add string") ;
 
