@@ -40,16 +40,20 @@ The following field has been removed:
 
 - `@extdepends`: No longer necessary as services can depend on any service regardless of the tree used.
 
+Frontend files for regular account **must be** now localized at `%%service_system%%/user`, `%%service_adm%%/user` or `${HOME}/%%service_user%%`.
+
 ### Behavioral changes:
 
 - `@options`:
     - `pipeline`: This option was removed. It was only present for `s6-rc`.
+    - `env`: This option was removed. The simple declaration of the [environment] section.
 
 - `@shebang`: Deprecated but kept for compatibility reasons. Declare your shebang directly within the `@execute` field.
 
 - `@build`: Not mandatory anymore, as it will be declared 'auto' by default.
 Service Behavior
 
+- `@addservices`
 The `classic` type now accepts the fields `@depends` and `@requiredby`. The `classic` type replaces the `longrun` type.
 
 Logger destinations for `oneshot` type services can now be declared on a **tmpfs** directory, particularly useful during boot time.
@@ -60,11 +64,12 @@ The `bundle` and `longrun` types have been removed, replaced by `classic`, `ones
 
 ## [Environment] Section
 
-This section now allows reusing the same variable. For instance:
+This section now allows reusing the same variable or variable from the actual environment. For instance:
 
 ```
 socket_name=!/run/dbus/system_bus_socket
 cmd_args=!--system --address=unix:path=${socket_name}
+PATH=/usr/local/bin:${PATH}
 ```
 
 The order of key-value pair declaration **doesn't matter**:
@@ -74,13 +79,17 @@ cmd_args=!--system --address=unix:path=${socket_name}
 socket_name=!/run/dbus/system_bus_socket
 ```
 
+Variable name **must be** between `${}` to get it value. For instance, `$var` is not replaced by its value.
+
+Double-quote within *value* **must be** escaped with backslash `\`. Refers to the updated documentation of [execl-envfile](execl-envfile.html) for futhers information.
+
 ## Module Changes
 
 The `module` directory structure has been completely redesigned for better intuitiveness and comprehensiveness. Expect no compatibility with the previous version; a rewrite is required if you use `module` on your system.
 
 A `module` cannot contain another `module`; instead, you can declare it as a dependency via `@depends` or `@requiredby`. These can also be specified through the `configure` `module` script.
 
-Refer to the specific [module](module-creation.html) page for further information.
+Refer to the specific [module](module-creation.html) page for furthers information.
 
 ## Trees
 

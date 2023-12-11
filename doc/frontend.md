@@ -777,25 +777,24 @@ A file containing the `key=value` pair(s) will be created by default at `%%servi
         cmd_args=-d -s
     ````
 
-    The `!` character can be put in front of the value. **Do not** put space between the exclamation mark and the value.
+    The `!` character can precede the value. Ensure **no** space exists between the exclamation mark and the *value*. This action explicitly avoids setting the value of the *key* for the runtime process but only applies it at the start of the service. For example, the `key=value` pair passed to the following command line doesn't necessarily need to be included in the service's general environment variables
 
-    For example, the following is valid:
+    the following syntax is valid
 
     ````
         [environment]
         dir_run=!/run/openntpd
         cmd_args = !-d -s
     ````
-    where:
+    where this one is not
 
     ````
         [environment]
         dir_run=! /run/openntpd
         cmd_args = ! -d -s
     ````
-    is not.
 
-    This will explicitly **not** set the value of the key for the runtime process but only at the start of the service. In this example the `key=value` pair passed to the command line does not need to be present in the general environment variable of the service.
+    Refers to [execl-envfile](execl-envfile.html) for futhers information.
 
 ---
 

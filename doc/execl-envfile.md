@@ -45,11 +45,51 @@ This program expects to find a regular file or a directory in *src* containing o
 ## File syntax
 
 *src* is a text file or a directory containing lines of pairs with the syntax being: `key = value`
-Whitespace is permitted before and after *key*, and before or after *value*. Quoting is also possible.
+Whitespace is permitted before and after *key*, and before or after *value*.
 
-Empty lines or lines containing only whitespace are ignored. Lines beginning with `#` (also after whitespace) are ignored and typically used for comments. Comments are not possible at the end of lines: `key = value # comment` is not a valid comment.
+Empty lines, or lines containing only whitespace, are ignored. Lines beginning with `#` or `;` (possibly after some whitespace) are ignored (and typically used for comments). Leading and trailing whitespace is stripped from values; but a *value* can be double-quoted, which allows for inclusion of leading and trailing whitespace.
 
-If val begin by a `!` character: `key=!value` the key will be removed from the environment after the substitution.
+Escaping double-quoted can be done with backslash `\`. For instance,
+
+```
+cmd_args=-g \"daemon off;\"
+```
+
+C escapes, including hexadecimal and octal sequences, are supported in quoted values. Unicode codepoint sequences are not supported.
+
+If *value* is empty, *key* is still added to the environment, with an empty value.
+
+If you do not want *key* to be added to the environment at all, prefix the *value* with an exclamation mark `!`. Whitespace **are not permitted** between the `!` and `value`. For instance,
+
+```
+socket_name=!sname
+```
+
+In this case the *key* will be removed from the environment after the substitution.
+
+Variable name **must be** between `${}` to get it value. For instance, `$var` is not replaced by its value.
+
+Reusing the same variable or variable from the actual environment is allowed. In such case, variable name **must be** between `${}` to get it value. For instance, `$var` is not replaced by its value. For intance, an environment file can be declared
+
+```
+PATH=/usr/local/bin:${PATH}
+socket_name=sname
+socket_dir=dname
+socket=${socket_dir}/${socket_name}
+```
+
+The order of key-value pair declaration **doesn't matter**:
+
+```
+PATH=/usr/local/bin:${PATH}
+socket=${socket_dir}/${socket_name}
+socket_name=sname
+socket_dir=dname
+```
+
+### Limits
+
+*src* can not exceed more than `100` files. Each file can not contain more than `8191` bytes or more than `50` `key=value` pairs.
 
 ## Usage example
 
@@ -75,7 +115,3 @@ The equivalent with s6-envdir and importas would be:
 ```
 
 where `%%service_admconf%%` contains two named files `RUNDIR` and `CMD_ARGS` written with `/run/openntpd` and `-d -s` respectively.
-
-## Limits
-
-*src* can not exceed more than `100` files. Each file can not contain more than `8191` bytes or more than `50` `key=value` pairs.
