@@ -259,6 +259,7 @@ This command handles [interdependencies](66.html#handling-dependencies).
 #### Usage examples
 
 Disables `treefoo` tree
+
 ```
 66 tree disable treefoo
 ```
@@ -282,6 +283,7 @@ After marking a *tree* as current, the `66` command using the `-t` reacts to tha
 #### Usage examples
 
 Marks `treefoo` as current
+
 ```
 66 tree current treefoo
 ```
@@ -320,21 +322,25 @@ valid fields for `-o` options are:
 #### Usage and output examples
 
 Displays all information of all trees
+
 ```
 66 tree status
 ```
 
 Only display the field `name` and `enabled` of all trees
+
 ```
 66 tree status -o name,enabled
 ```
 
 Only display the field `enabled` of tree `treefoo` without displaying the name of the field
+
 ```
 66 tree status -n -o enabled treefoo
 ```
 
 In a script you can do
+
 ```
 #!/bin/sh
 
@@ -349,6 +355,7 @@ fi
 ```
 
 Displays information of associated services of tree `global` using graph mode
+
 ```
 66 tree status -g global
 
@@ -376,6 +383,7 @@ Contents    : \
 It also displays information of each associated services of tree `global` within () parentheses, which are self-explainatory.
 
 Displays information about the associated services of the global tree in reverse graph mode, representing the process for stop
+
 ```
 66 tree status -g -r global
 
@@ -419,7 +427,8 @@ Resolve file are used internally by `66` to know *tree* information. This subcom
 
 #### Usage examples
 
-Displays contents of the `treefoo` resolve file.
+Displays contents of the `treefoo` resolve file
+
 ```
 66 tree resolve treefoo
 ```
@@ -444,6 +453,7 @@ This subcommand is primarily used internally by `66 boot` command to initiate ea
 #### Usage examples
 
 Initiates all *enabled* services of `treefoo` to a running scandir
+
 ```
 66 tree init treefoo
 ```
@@ -469,11 +479,13 @@ This command handles [interdependencies](66.html#handling-dependencies).
 #### Usage examples
 
 Starts all services marked enabled of all enabled trees of the system
+
 ```
 66 tree start
 ```
 
 Starts all services marked enabled of tree `treefoo`
+
 ```
 66 tree start treefoo
 ```
@@ -500,11 +512,13 @@ This command handles [interdependencies](66.html#handling-dependencies).
 #### Usage examples
 
 Stops all services from all enabled trees available on the system
+
 ```
 66 tree stop
 ```
 
 Stops all services of tree `treefoo`
+
 ```
 66 tree stop treefoo
 ```
