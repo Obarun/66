@@ -66,31 +66,37 @@ Without specifying the `-o`, all fields are displayed.
 ## Usage examples
 
 Displays all information of service `foo`
+
 ```
 66 status foo
 ```
 
 Only displays the field `name` and `status` of service `foo`
+
 ```
 66 status -o name,status foo
 ```
 
 Also, do not display the name of the field `name` and `status` of service `foo`
+
 ```
 66 status -no name,status foo
 ```
 
 Only displays the contents of the log file of the service `foo`
+
 ```
 66 status -o logfile foo
 ```
 
 Also, displays the last 100 lines of the log file of the service `foo`
+
 ```
 66 status -o logfile -p100 foo
 ```
 
 In a script you can do
+
 ```
 #!/bin/sh
 
@@ -107,6 +113,7 @@ fi
 ```
 
 Displays information of the service using the graph mode
+
 ```
 66 status -g dbus
 

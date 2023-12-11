@@ -34,11 +34,13 @@ This command handles [interdependencies](66.html#handling-dependencies).
 ## Usage example
 
 Removes the service `foo`
+
 ```
 66 remove foo
 ```
 
 Removes the service `foo` without touching its interdependencies
+
 ```
 66 remove -P foo
 ```

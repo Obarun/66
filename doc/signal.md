@@ -59,26 +59,31 @@ This command handles [interdependencies](66.html#handling-dependencies).
 ## Usage examples
 
 Send a SIGHUP signal to `foo`
+
 ```
 66 signal -H foo
 ```
 
 Send a SIGHUP signal to `foo` by signal name
+
 ```
 66 signal -s SIGHUP foo
 ```
 
 Triggers a log rotation of `foo-log`
+
 ```
 66 signal -a -P foo-log
 ```
 
 Take down `foo` and block until the process is down and the finish script has completed
+
 ```
 66 signal -wD -d foo
 ```
 
 Bring up `foo` and block until it has sent notification that it is ready. Exit if it is still not ready after 5 seconds.
+
 ```
 66 -T 5000 -wU -u foo
 ```

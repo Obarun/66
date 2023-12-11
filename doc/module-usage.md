@@ -12,6 +12,7 @@ author: Eric Vidal <eric@obarun.org>
 This documentation describe how to use *module* from an user point of view. If you want to create a *module*, refers to [service module creation](module-creation.html) page.
 
 A *module* is a [instantiated service](instantiated-service.html) and can be managed like any other instantiated services. For intance, to [start](start.html) it
+
 ```
 66 start foo@bar
 ```
@@ -19,16 +20,19 @@ A *module* is a [instantiated service](instantiated-service.html) and can be man
 where `foo@` is the name of the *module* and `bar` the name of its intance. If the *module* was never parsed before, you will get the default configuration define by the developer of the *module* service.
 
 Obviously you can [enable](enable.html) it
+
 ```
 66 enable foo@bar
 ```
 
 or makes these two operations in one pass
+
 ```
 66 enable -S foo@bar
 ```
 
 The advantage of a *module* reside in the facts that you can [configure](configure.html) the *module* according to your needs. To do so,
+
 ```
 66 configure foo@bar
 ```
@@ -36,6 +40,7 @@ The advantage of a *module* reside in the facts that you can [configure](configu
 This command allow you to change the environment variable of the *module* and so, its configuration.
 
 Now, you need to apply the changes
+
 ```
 66 reconfigure foo@bar
 ```
@@ -45,16 +50,19 @@ The *module* should now use your configuration. The [reconfigure](reconfigure.ht
 # Manage service within *module*
 
 As *module* is a set of services, when you start it, several services may be started. You can get the list of the services within *module* using the [status](status.html) command.
+
 ```
 66 status foo@bar
 ```
 
 The command display different field notably the `contents` field corresponding to the list of the service within the *module*. You can control the state of these service like you do for any other services applying the following syntax
+
 ```
 66 <command> <module_name>:<service_name>
 ```
 
 For example, if `foo@bar` contain the service `baz`
+
 ```
 66 stop foo@bar:baz
 ```
@@ -62,6 +70,7 @@ For example, if `foo@bar` contain the service `baz`
 Simply separates the name of the *module* and the name of the service by a colon `:`.
 
 A *module* can contain instantiated service. In this case use the same syntax specifying the complete name of the instantiated service. If `foo@bar` contain the instantiated service `bar@bou`, do
+
 ```
 66 reload foo@bar:bar@bou
 ```

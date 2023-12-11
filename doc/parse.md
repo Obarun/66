@@ -42,21 +42,25 @@ However, a system administrator might want to parse a service frontend file unde
 ## Usage examples
 
 Parses the frontend file of `foo` service
+
 ```
 66 parse foo
 ```
 
 Parses the frontend file of `foo` service without importing `key=value` pair previous configuration file
+
 ```
 66 parse -I foo
 ```
 
 Force to parse again an existing parsing result of `foo` service
+
 ```
 66 parse -f foo
 ```
 
 Parses the frontend file of `foo` service specifying the localization of the frontend file
+
 ```
 66 parse %%service_adm%%/foo
 ```

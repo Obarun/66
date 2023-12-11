@@ -46,36 +46,43 @@ The edition of the [configuration](service-configuration-file.html) file is the 
 ## Usage examples
 
 Lists the defined environment variable of the service `foo`
+
 ```
 66 configure -L foo
 ```
 
 Change the value of the `CMD_ARGS` variable for the service `nginx`
+
 ```
 66 configure -r CMD_ARGS='-c /etc/nginx/nginx.conf -g "daemon off;"' nginx
 ```
 
 Import the configuration file from the 0.1.6 version to th e0.1.7 version of the service `foo`
+
 ```
 66 configure -i 0.1.6,0.1.7 foo
 ```
 
 Get the list of version available for the service `foo`
+
 ```
 66 configure -V foo
 ```
 
 Edit the configuration file of the service `foo` using the `nano` editor
+
 ```
 sudo 66 configure -e nano foo
 ```
 
 See the the defined environment variable of the service `foo` from the `0.1.6` version
+
 ```
 66 configure -s 0.1.6 -L foo
 ```
 
 List the defined environment variables of the service `barz` of the module `foo@foobar`
+
 ```
 66 configure -L foo@foobar:barz
 ```

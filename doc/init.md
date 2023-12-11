@@ -37,6 +37,7 @@ Users, even system administrator, should not need to directly invoke this comman
 ## Usage examples
 
 Initiates services of tree `treefoo`
+
 ```
 66 init treefoo
 ```

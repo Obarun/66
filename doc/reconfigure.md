@@ -36,11 +36,13 @@ This command handles [interdependencies](66.html#handling-dependencies) for the 
 ## Usage examples
 
 Reconfigures the `foo` service
+
 ```
 66 reconfigure foo
 ```
 
 Reconfigures the `foo@bar` module service
+
 ```
 66 reconfigure foo@bar
 ```

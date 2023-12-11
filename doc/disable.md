@@ -36,16 +36,19 @@ This command handles [interdependencies](66.html#handling-dependencies).
 ## Usage examples
 
 Disable the service
+
 ```
 66 disable foo
 ```
 
 Disable an intanced service
+
 ```
 66 disable foo@foobar
 ```
 
 Disable and stop the service, also increase the default verbosity:
+
 ```
 66 -v3 disable -S foo
 ```

@@ -28,6 +28,7 @@ This command displays the contents of the service's *resolve* file. This file ar
 ## Usage example
 
 Displays the *resolve* file of service `foo`
+
 ```
 66 resolve foo
 ```

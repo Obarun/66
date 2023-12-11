@@ -50,37 +50,7 @@ See [changes](upgrade.html) between version.
 
 ## Commands
 
-### Debug command
-
-- [parse](parse.html)
-- [resolve](resolve.html)
-- [state](state.html)
-
-### Admin command
-
-- [boot](boot.html)
-- [scandir](scandir.html)
-- [init](init.html)
-- [signal](signal.html)
-
-### User command
-
-- [start](start.html)
-- [stop](stop.html)
-- [enable](enable.html)
-- [disable](disable.html)
-- [reload](reload.html)
-- [restart](restart.html)
-- [status](status.html)
-- [configure](configure.html)
-- [reconfigure](reconfigure.html)
-- [remove](remove.html)
-- [free](free.html)
-- [tree](tree.html)
-- [poweroff](poweroff.html)
-- [reboot](reboot.html)
-- [halt](halt.html)
-- [version](version.html)
+- [66](66.html)
 
 ### Extra tools
 

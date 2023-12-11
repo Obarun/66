@@ -26,6 +26,7 @@ This command displays the contents of the service's *state* file. This file are 
 ## Usage example
 
 Display state of service `foo`
+
 ```
 66 state foo
 ```

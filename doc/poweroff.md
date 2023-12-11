@@ -38,21 +38,25 @@ The *when* provided **must be** on these formats:
 ## Usage examples
 
 Shuts down the system.
+
 ```
 66 poweroff
 ```
 
 Shuts down a broken system
+
 ```
 66 poweroff -f
 ```
 
 Shuts down the system after 10 minutes
+
 ```
 66 poweroff 10
 ```
 
 Sends an "system will be shutted down in 10 minutes" to connected account and shuts down the system after 10 minutes
+
 ```
 66 poweroff -m "system will be shutted down in 10 minutes" 10
 ```

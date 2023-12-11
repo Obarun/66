@@ -38,11 +38,13 @@ This command handles [interdependencies](66.html#handling-dependencies).
 ## Usage examples
 
 Reloads the `foo` service
+
 ```
 66 reload foo
 ```
 
 Reloads the `foo-log` service
+
 ```
 66 reload -P foo-log
 ```

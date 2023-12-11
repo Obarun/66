@@ -36,11 +36,13 @@ This command handles [interdependencies](66.html#handling-dependencies).
 ## Usage examples
 
 Restarts the `foo` service
+
 ```
 66 restart foo
 ```
 
 Restarts the `foo` service without handling its required-by dependencies
+
 ```
 66 restart -P foo
 ```

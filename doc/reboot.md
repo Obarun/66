@@ -38,21 +38,25 @@ The *when* provided **must be** on these formats:
 ## Usage examples
 
 reboots the system.
+
 ```
 66 reboot
 ```
 
 reboots a broken system
+
 ```
 66 reboot -f
 ```
 
 reboots the system after 10 minutes
+
 ```
 66 reboot 10
 ```
 
 Sends an "system will be rebooted in 10 minutes" to connected account and reboot the system after 10 minutes
+
 ```
 66 reboot -m "system will be rebooted in 10 minutes" 10
 ```

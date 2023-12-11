@@ -227,11 +227,13 @@ scandir reload [ -h ]
 #### Usage examples
 
 Reloads a running *scandir*.
+
 ```
 66 scandir reload
 ```
 
 Reloads a *scandir* for the owner `owner`
+
 ```
 66 scandir -o owner reload
 ```
@@ -255,11 +257,13 @@ scandir check [ -h ]
 #### Usage examples
 
 Checks a *scandir*
+
 ```
 66 scandir check
 ```
 
 Checks a *scandir* for the owner `owner`
+
 ```
 66 scandir -o owner check
 ```
@@ -283,11 +287,13 @@ scandir quit [ -h ]
 #### Usage examples
 
 Quits a *scandir* running *scandir*.
+
 ```
 66 scandir quit
 ```
 
 Quits a *scandir* for the owner `owner`
+
 ```
 66 scandir -o owner quit
 ```
@@ -311,11 +317,13 @@ scandir abort [ -h ]
 #### Usage examples
 
 Aborts a *scandir*
+
 ```
 66 scandir abort
 ```
 
 Aborts a *scandir* for the owner `owner`
+
 ```
 66 scandir -o owner abort
 ```
@@ -338,11 +346,13 @@ scandir nuke [ -h ]
 #### Usage examples
 
 Kill s6-supervise processes from a *scandir*
+
 ```
 66 scandir nuke
 ```
 
 Kill s6-supervise processes from a *scandir* for the owner `owner`
+
 ```
 66 scandir -o owner nuke
 ```
@@ -366,11 +376,13 @@ Does the same thing as [nuke](#nuke), except that `SIGTERM` is sent to all the r
 #### Usage examples
 
 Annihilates a *scandir*
+
 ```
 66 scandir annihilate
 ```
 
 Annihilates a *scandir* for the owner `owner`
+
 ```
 66 scandir -o owner annihilate
 ```
@@ -394,11 +406,13 @@ Immediately triggers s6-svscan's reaper mechanism.
 #### Usage examples
 
 Removes zombies from a *scandir*
+
 ```
 66 scandir zombies
 ```
 
 Removes zombies from a *scandir* for the owner `owner`
+
 ```
 66 scandir -o owner zombies
 ```

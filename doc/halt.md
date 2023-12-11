@@ -38,21 +38,25 @@ The *when* provided **must be** on these formats:
 ## Usage examples
 
 Halts the system.
+
 ```
 66 halt
 ```
 
 Halts a broken system
+
 ```
 66 halt -f
 ```
 
 Halts the system after 10 minutes
+
 ```
 66 halt 10
 ```
 
 Sends an "system will be halted in 10 minutes" to connected account and halt the system after 10 minutes
+
 ```
 66 halt -m "system will be halted in 10 minutes" 10
 ```

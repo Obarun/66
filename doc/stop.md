@@ -35,12 +35,14 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 ## Usage examples
 
-Stop a service handling its required-by dependencies.
+Stop a service handling its required-by dependencies
+
 ```
 66 stop foo
 ```
 
 Stop the service without handling any dependencies
+
 ```
 66 stop -P foo
 ```

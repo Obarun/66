@@ -38,16 +38,19 @@ This command handles [interdependencies](66.html#handling-dependencies).
 ## Usage examples
 
 Start a service handling its dependencies.
+
 ```
 66 start foo
 ```
 
 Start the service without handling any dependencies
+
 ```
 66 start -P foo
 ```
 
 Start a *service* in a specific *tree* if the service was never parsed
+
 ```
 66 -t treeA start foo
 ```

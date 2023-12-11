@@ -65,31 +65,37 @@ The functionality extends further: say, you now wish to watch a video, requiring
 ### Usage examples
 
 Create a non-existing *tree* named `network`
+
 ```
 66 tree create network
 ```
 
 Create a non-existing *tree* named `print` which depends on *tree* `network` and associated to the `admin` group
+
 ```
 66 tree create -o depends=network:groups=admin print
 ```
 
 Create a non-existing *tree* named `graphics` which depends on *tree* `network`
+
 ```
 66 tree create -o depends=network graphics
 ```
 
 Enables a *tree* called `network`
+
 ```
 66 tree enable network
 ```
 
-Starts the *tree* called `print`. Any *enabled* services associated with this *tree* are brought up.
+Starts the *tree* called `print`. Any *enabled* services associated with this *tree* are brought up
+
 ```
 66 tree start print
 ```
 
-Stops the *tree* called `print`. Any running services will be stopped and unsupervised.
+Stops the *tree* called `print`. Any running services will be stopped and unsupervised
+
 ```
 66 tree free print
 ```
@@ -127,11 +133,13 @@ valid fields for `-o` options are:
 #### Usage examples
 
 Creates a tree named `treefoo`
+
 ```
 66 tree create treefoo
 ```
 
 Creates, configures and clones a *tree* named `treefoo` where the clone of `treefoo` is named `treefoo2`
+
 ```
 66 tree create -o depends=treebar,treebaz:groups=admin:deny=none:allow=root:clone=treefoo2 treefoo
 ```
@@ -168,11 +176,13 @@ valid fields for `-o` options are:
 #### Usage examples
 
 Changes the dependencies of `treefoo` to `treebaz` where `treefoo` depended previously of tree `treebar`
+
 ```
 66 tree admin -o depends=treebaz treefoo
 ```
 
 Deny all user of `treefoo`
+
 ```
 66 tree admin -o deny=user treefoo
 ```
@@ -197,6 +207,7 @@ Tree dependencies, including required-by dependencies, are managed. For instance
 
 #### Usage examples
 
+Removes `treefoo` tree
 ```
 66 tree remove treefoo
 ```
@@ -224,6 +235,7 @@ This command handles [interdependencies](66.html#handling-dependencies).
 #### Usage examples
 
 Enables `treefoo` tree
+
 ```
 66 tree enable treefoo
 ```
@@ -519,11 +531,13 @@ This command handles [interdependencies](66.html#handling-dependencies).
 #### Usage examples
 
 Stops and unsuperives all services from all enabled trees available on the system
+
 ```
 66 tree stop
 ```
 
 Stops and unsupervise all services of tree `treefoo`
+
 ```
 66 tree stop treefoo
 ```
@@ -551,7 +565,8 @@ A `seed` file can be provided to automatically configure the tree during its cre
 
 The `seed` file name need to correspond to the name of the tree to be configured.
 
-The following template is self-explained:
+The following template is self-explained
+
 ```
 ## An empty field is not allowed. If the key is define, the value must exist and valid.
 ## In other case, simply comment it.

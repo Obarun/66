@@ -36,16 +36,19 @@ This command handles [interdependencies](66.html#handling-dependencies).
 ## Usage examples
 
 Enable a service while specifying with the tree name(this only takes effect if the service has not been parsed before):
+
 ```
 66 -t treeA enable foo
 ```
 
 Enable an instanced service:
+
 ```
 66 enable foo@foobar
 ```
 
 Enable and start the service, also increase the default verbosity:
+
 ```
 66 -v3 enable -S foo
 ```
