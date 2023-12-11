@@ -14,7 +14,7 @@ This command disables one or more services.
 ## Interface
 
 ```
-disable [ -h ] [ -S ] service(s)
+disable [ -h ] [ -S ] service...
 ```
 
 This command expects to find an already enabled *service*. The targeted service(s) can also be stopped on the fly when disabling it with the **-S** option. Generally speaking this command is the strict opposite of the [enable](enable.html) command.

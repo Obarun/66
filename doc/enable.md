@@ -17,7 +17,7 @@ This command enables one or more services within a specified *tree* depending of
 enable [ -h ] [ -S ] service(s)
 ```
 
-This command will also parse the service if it was never parsed. In this case, it expects to find a corresponding [frontend service file](frontend.html), or a *service* instance (see [instance](#Instantiated service)), by default at `%%service_adm%%` or `%%service_system%%` in this order of precedence for root user and `$HOME/%%service_user%%`, `%%service_adm%%` or `%%service_system%%` in this order of precedence for a normal user. The default path can be changed at compile time by passing the `--with-system-service=DIR`, `--with-sysadmin-service=DIR` and `--with-user-service=DIR` to `./configure`.The *service* will then be available in the given *tree* for the next boot depending on the state of the *tree*. The targeted service(s) can also be started on the fly when enabling it with the **-S** option.
+This command will also parse the service if it was never parsed. The *service* will then be available in the given *tree* for the next boot depending on the state of the *tree*. The targeted service(s) can also be started on the fly when enabling it with the **-S** option.
 
 The given *tree* can be define through the `-t` option in the `66` general option or by using the `@intree` field within the frontend file or setting a current tree through the [66 tree current](66-tree.html) subcommand. If neither `-t` options nor `@intree` is provided, or if no tree is marked as a current one, it will enable the service within the default tree named `%%default_treename%%`. The default tree name can be changed at compile time by passing the `--with-default-tree-name` to `./configure`.
 
