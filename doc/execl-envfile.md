@@ -62,7 +62,7 @@ If *value* is empty, *key* is still added to the environment, with an empty valu
 If you do not want *key* to be added to the environment at all, prefix the *value* with an exclamation mark `!`. Whitespace **are not permitted** between the `!` and `value`. For instance,
 
 ```
-socket_name=!sname
+    socket_name=!sname
 ```
 
 In this case the *key* will be removed from the environment after the substitution.
@@ -70,19 +70,19 @@ In this case the *key* will be removed from the environment after the substituti
 Reusing the same variable or variable from the actual environment is allowed. In such case, variable name **must be** between `${}` to get it value. For intance, an environment file can be declared
 
 ```
-PATH=/usr/local/bin:${PATH}
-socket_name=sname
-socket_dir=dname
-socket=${socket_dir}/${socket_name}
+    PATH=/usr/local/bin:${PATH}
+    socket_name=sname
+    socket_dir=dname
+    socket=${socket_dir}/${socket_name}
 ```
 
 The order of `key=value` pair declaration **do not** matter
 
 ```
-PATH=/usr/local/bin:${PATH}
-socket=${socket_dir}/${socket_name}
-socket_name=sname
-socket_dir=dname
+    PATH=/usr/local/bin:${PATH}
+    socket=${socket_dir}/${socket_name}
+    socket_name=sname
+    socket_dir=dname
 ```
 
 ### Limits
