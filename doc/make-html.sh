@@ -1,6 +1,6 @@
 #!/bin/sh
 
-html='66-all 66-dbctl 66-disable 66-echo 66-enable 66-env 66-init 66-inresolve 66-inservice 66-instate 66-intree 66-parser 66-scanctl 66-scandir 66-start 66-stop 66-svctl 66-tree 66-update 66-boot 66-hpr 66-shutdown 66-shutdownd 66-umountall 66-update 66-nuke frontend instantiated-service module-service index execl-envfile service-configuration-file upgrade'
+html='66-echo 66-hpr 66-nuke 66-shutdown 66-shutdownd 66-umountall 66 boot configure deeper disable enable execl-envfile frontend halt index init instantiated-service module-creation module-usage parse poweroff reboot reconfigure reload remove resolve restart rosetta scandir service-configuration-file signal start state status stop tree upgrade'
 
 version=${1}
 
