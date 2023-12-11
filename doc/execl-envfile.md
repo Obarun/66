@@ -67,9 +67,7 @@ socket_name=!sname
 
 In this case the *key* will be removed from the environment after the substitution.
 
-Variable name **must be** between `${}` to get it value. For instance, `$var` is not replaced by its value.
-
-Reusing the same variable or variable from the actual environment is allowed. In such case, variable name **must be** between `${}` to get it value. For instance, `$var` is not replaced by its value. For intance, an environment file can be declared
+Reusing the same variable or variable from the actual environment is allowed. In such case, variable name **must be** between `${}` to get it value. For intance, an environment file can be declared
 
 ```
 PATH=/usr/local/bin:${PATH}
@@ -78,7 +76,7 @@ socket_dir=dname
 socket=${socket_dir}/${socket_name}
 ```
 
-The order of key-value pair declaration **doesn't matter**:
+The order of `key=value` pair declaration **do not** matter
 
 ```
 PATH=/usr/local/bin:${PATH}
