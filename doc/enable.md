@@ -14,7 +14,7 @@ This command enables one or more services within a specified *tree* depending of
 ## Interface
 
 ```
-enable [ -h ] [ -S ] service(s)
+enable [ -h ] [ -S ] service...
 ```
 
 This command will also parse the service if it was never parsed. The *service* will then be available in the given *tree* for the next boot depending on the state of the *tree*. The targeted service(s) can also be started on the fly when enabling it with the **-S** option.
