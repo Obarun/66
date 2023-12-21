@@ -128,7 +128,8 @@ void service_graph_collect(graph_t *g, char const *slist, size_t slen, resolve_s
 
                     size_t len = strlen(res.sa.s + res.dependencies.depends) ;
                     _init_stack_(stk, len + 1) ;
-                    if (!stack_convert_string(&stk, res.sa.s + res.dependencies.depends, len))
+
+                    if (!stack_clean_string(&stk, res.sa.s + res.dependencies.depends, len))
                         log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
                     service_graph_collect(g, stk.s, stk.len, ares, areslen, info, flag) ;
@@ -139,7 +140,8 @@ void service_graph_collect(graph_t *g, char const *slist, size_t slen, resolve_s
 
                     size_t len = strlen(res.sa.s + res.dependencies.requiredby) ;
                     _init_stack_(stk, len + 1) ;
-                    if (!stack_convert_string(&stk, res.sa.s + res.dependencies.requiredby, len))
+
+                    if (!stack_clean_string(&stk, res.sa.s + res.dependencies.requiredby, len))
                         log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
                     service_graph_collect(g, stk.s, stk.len, ares, areslen, info, flag) ;

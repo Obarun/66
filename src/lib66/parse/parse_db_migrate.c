@@ -37,14 +37,14 @@ static void service_db_tree(resolve_service_t *old, resolve_service_t *new, ssex
     {
         _init_stack_(sold, olen + 1) ;
 
-        if (!stack_convert_string_g(&sold, ocontents))
+        if (!stack_clean_string_g(&sold, ocontents))
             log_dieusys(LOG_EXIT_SYS, "convert string") ;
 
         {
             size_t nlen = strlen(ncontents) ;
             _init_stack_(snew, nlen + 1) ;
 
-            if (!stack_convert_string_g(&snew, ncontents))
+            if (!stack_clean_string_g(&snew, ncontents))
                 log_dieusys(LOG_EXIT_SYS, "convert string") ;
 
             FOREACH_STK(&sold, pos) {

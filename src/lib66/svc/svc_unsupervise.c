@@ -13,7 +13,7 @@
  */
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
+#include <oblibs/stack.h>
 
 #include <66/state.h>
 #include <66/sanitize.h>
@@ -75,10 +75,12 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve
 
             sa.len = 0, bpos = 0 ;
 
-            if (!sastr_clean_string(&sa, ares[aresid].sa.s + ares[aresid].dependencies.contents))
+            _init_stack_(stk, strlen(hash->res.sa.s + hash->res.dependencies.contents)) ;
+
+            if (!stack_clean_string_g(&stk, hash->res.sa.s + hash->res.dependencies.contents))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
-            FOREACH_SASTR(&sa, bpos) {
+            FOREACH_STK(&stk, bpos) {
 
                 int aresid = service_resolve_array_search(ares, areslen, sa.s + bpos) ;
                 if (aresid < 0)

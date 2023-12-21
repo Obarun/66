@@ -35,7 +35,7 @@ void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char con
         size_t pos = 0, olen = strlen(old->sa.s + *ofield) ;
         _init_stack_(sold, olen + 1) ;
 
-        if (!stack_convert_string(&sold, old->sa.s + *ofield, olen))
+        if (!stack_clean_string(&sold, old->sa.s + *ofield, olen))
             log_dieusys(LOG_EXIT_SYS, "convert string") ;
 
         {
@@ -47,7 +47,7 @@ void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char con
 
             /** new module configuration depends field may be empty.*/
             if (clen)
-                if (!stack_convert_string(&snew, new->sa.s + *nfield, clen))
+                if (!stack_clean_string(&snew, new->sa.s + *nfield, clen))
                     log_dieusys(LOG_EXIT_SYS, "convert string") ;
 
             /** check if the service was deactivated.*/
@@ -72,7 +72,7 @@ void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char con
                         size_t len = strlen(dres.sa.s + *dfield) ;
                         _init_stack_(stk, len + 1) ;
 
-                        if (!stack_convert_string(&stk, dres.sa.s + *dfield, len))
+                        if (!stack_clean_string(&stk, dres.sa.s + *dfield, len))
                             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
                         /** remove the module name to the depends field of the old service dependency*/

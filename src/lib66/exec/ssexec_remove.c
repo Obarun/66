@@ -58,7 +58,7 @@ static void remove_deps(resolve_service_t *res, resolve_service_t *ares, unsigne
     resolve_wrapper_t_ref wres = 0 ;
     _init_stack_(stk, strlen(res->sa.s + res->dependencies.requiredby)) ;
 
-    if (!stack_convert_string_g(&stk, res->sa.s + res->dependencies.requiredby))
+    if (!stack_clean_string_g(&stk, res->sa.s + res->dependencies.requiredby))
         log_dieu(LOG_EXIT_SYS, "convert string") ;
 
     FOREACH_STK(&stk, pos) {
@@ -276,7 +276,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
                 resolve_wrapper_t_ref mwres = resolve_set_struct(DATA_SERVICE, &mres) ;
                 _init_stack_(stk, strlen(ares[pos].sa.s + ares[pos].dependencies.contents)) ;
 
-                if (!stack_convert_string_g(&stk, ares[pos].sa.s + ares[pos].dependencies.contents))
+                if (!stack_clean_string_g(&stk, c->res.sa.s + c->res.dependencies.contents))
                     log_dieu(LOG_EXIT_SYS, "convert string") ;
 
                 FOREACH_STK(&stk, pos) {

@@ -52,7 +52,7 @@ void tree_service_add(char const *treename, char const *service, ssexec_t *info)
 
     if (tres.ncontents) {
 
-        if (!stack_convert_string(&stk, tres.sa.s + tres.contents, strlen(tres.sa.s + tres.contents)))
+        if (!stack_clean_string_g(&stk, tres.sa.s + tres.contents))
             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
         if (stack_retrieve_element(&stk, service) < 0)
@@ -78,7 +78,7 @@ void tree_service_add(char const *treename, char const *service, ssexec_t *info)
         log_dieu(LOG_EXIT_SYS, "convert stack to string") ;
 
     if (!resolve_modify_field(wres, E_RESOLVE_TREE_CONTENTS, stk.s))
-        log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
+        log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", treename) ;
 
     if (!resolve_write_g(wres, info->base.s, treename))
         log_dieusys(LOG_EXIT_SYS, "write resolve file of tree: ", treename) ;

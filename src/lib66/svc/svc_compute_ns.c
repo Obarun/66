@@ -58,7 +58,7 @@ int svc_compute_ns(resolve_service_t *sares, unsigned int sareslen, unsigned int
 
     if (sares[saresid].dependencies.ncontents) {
 
-        if (!stack_convert_string_g(&stk, sares[saresid].sa.s + sares[saresid].dependencies.contents))
+        if (!stack_clean_string_g(&stk, res->sa.s + res->dependencies.contents))
             log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     } else {

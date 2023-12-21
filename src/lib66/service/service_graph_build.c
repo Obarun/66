@@ -32,7 +32,7 @@ static void issupervised(char *store, resolve_service_t *ares, unsigned int ares
     _init_stack_(stk, len) ;
     memset(store, 0, len * sizeof(char)) ;
 
-    if (!stack_convert_string(&stk, str, len))
+    if (!stack_clean_string(&stk, str, len))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     FOREACH_STK(&stk, pos) {

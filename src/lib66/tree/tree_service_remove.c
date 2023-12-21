@@ -34,7 +34,7 @@ void tree_service_remove(char const *base, char const *treename, char const *ser
         size_t clen = strlen(tres.sa.s + tres.contents) ;
         _init_stack_(stk, clen + 1) ;
 
-        if (!stack_convert_string(&stk, tres.sa.s + tres.contents, clen))
+        if (!stack_clean_string(&stk, tres.sa.s + tres.contents, clen))
             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
         if (!stack_remove_element_g(&stk, service))

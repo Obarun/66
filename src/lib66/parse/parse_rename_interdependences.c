@@ -73,7 +73,7 @@ static void parse_prefix_name(unsigned int idx, resolve_service_t *ares, unsigne
         size_t depslen = strlen(ares[idx].sa.s + ares[idx].dependencies.depends) ;
         _init_stack_(stk, depslen + 1) ;
 
-        if (!stack_convert_string(&stk, ares[idx].sa.s + ares[idx].dependencies.depends, depslen))
+        if (!stack_clean_string(&stk, res->sa.s + res->dependencies.depends, depslen))
             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
         size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * ares[idx].dependencies.ndepends ;
@@ -92,7 +92,7 @@ static void parse_prefix_name(unsigned int idx, resolve_service_t *ares, unsigne
         size_t depslen = strlen(ares[idx].sa.s + ares[idx].dependencies.requiredby) ;
         _init_stack_(stk, depslen + 1) ;
 
-        if (!stack_convert_string(&stk, ares[idx].sa.s + ares[idx].dependencies.requiredby, depslen))
+        if (!stack_clean_string(&stk, res->sa.s + res->dependencies.requiredby, depslen))
             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
         size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * ares[idx].dependencies.nrequiredby ;

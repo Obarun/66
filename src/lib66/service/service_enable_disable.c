@@ -113,14 +113,14 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
             if (res->dependencies.ncontents) {
 
                 size_t pos = 0 ;
-                stralloc sa = STRALLOC_ZERO ;
+                _init_stack_(stk, strlen(res->sa.s + res->dependencies.contents)) ;
 
-                if (!sastr_clean_string(&sa, res->sa.s + res->dependencies.contents))
+                if (!stack_clean_string_g(&stk, res->sa.s + res->dependencies.contents))
                     log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-                FOREACH_SASTR(&sa, pos) {
+                FOREACH_STK(&stk, pos) {
 
-                    char *name = sa.s + pos ;
+                    char *name = stk.s + pos ;
                     int aresid = service_resolve_array_search(ares, areslen, name) ;
                     if (aresid < 0)
                         log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
@@ -145,8 +145,6 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
                         log_info(!action ? "Disabled" : "Enabled"," successfully service: ", ares[aresid].sa.s + ares[aresid].name) ;
                     }
                 }
-
-                stralloc_free(&sa) ;
             }
         }
 
