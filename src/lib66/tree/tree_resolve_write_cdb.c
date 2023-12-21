@@ -43,6 +43,9 @@ int tree_resolve_write_cdb(cdbmaker *c, resolve_tree_t *tres)
     /* contents */
     !resolve_add_cdb(c,"contents",str, tres->contents, 1) ||
 
+    /* enabled */
+    !resolve_add_cdb_uint(c,"enabled",tres->enabled) ||
+
     /* ndepends */
     !resolve_add_cdb_uint(c,"ndepends",tres->ndepends) ||
 

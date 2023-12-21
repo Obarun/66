@@ -26,11 +26,9 @@ resolve_field_table_t resolve_tree_master_field_table[] = {
 
     [E_RESOLVE_TREE_MASTER_NAME] = { .field = "name" },
     [E_RESOLVE_TREE_MASTER_ALLOW] = { .field = "allow" },
-    [E_RESOLVE_TREE_MASTER_ENABLED] = { .field = "enabled" },
     [E_RESOLVE_TREE_MASTER_CURRENT] = { .field = "current" },
     [E_RESOLVE_TREE_MASTER_CONTENTS] = { .field = "contents" },
     [E_RESOLVE_TREE_MASTER_NALLOW] = { .field = "nallow" },
-    [E_RESOLVE_TREE_MASTER_NENABLED] = { .field = "nenabled" },
     [E_RESOLVE_TREE_MASTER_NCONTENTS] = { .field = "ncontents" },
     [E_RESOLVE_TREE_MASTER_ENDOFKEY] = { .field = 0 }
 } ;
@@ -54,10 +52,6 @@ int tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint8_t field,
             mres->allow = resolve_add_string(wres,data) ;
             break ;
 
-        case E_RESOLVE_TREE_MASTER_ENABLED:
-            mres->enabled = resolve_add_string(wres,data) ;
-            break ;
-
         case E_RESOLVE_TREE_MASTER_CURRENT:
             mres->current = resolve_add_string(wres,data) ;
             break ;
@@ -71,13 +65,6 @@ int tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint8_t field,
                 data = "0" ;
             if (!uint0_scan(data, &ifield)) goto err ;
             mres->nallow = ifield ;
-            break ;
-
-        case E_RESOLVE_TREE_MASTER_NENABLED:
-            if (!data)
-                data = "0" ;
-            if (!uint0_scan(data, &ifield)) goto err ;
-            mres->nenabled = ifield ;
             break ;
 
         case E_RESOLVE_TREE_MASTER_NCONTENTS:

@@ -35,6 +35,7 @@ int tree_resolve_copy(resolve_tree_t *dst, resolve_tree_t *tres)
             return 0 ;
 
     dst->name = tres->name ;
+    dst->enabled = tres->enabled ;
     dst->depends = tres->depends ;
     dst->requiredby = tres->requiredby ;
     dst->allow = tres->allow ;

@@ -43,10 +43,6 @@ int tree_resolve_master_read_cdb(cdb *c, resolve_tree_master_t *mres)
     resolve_find_cdb(&tmp,c,"allow") ;
     mres->allow = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
 
-    /* enabled */
-    resolve_find_cdb(&tmp,c,"enabled") ;
-    mres->enabled = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-
     /* current */
     resolve_find_cdb(&tmp,c,"current") ;
     mres->current = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
@@ -58,10 +54,6 @@ int tree_resolve_master_read_cdb(cdb *c, resolve_tree_master_t *mres)
     /* nallow */
     x = resolve_find_cdb(&tmp,c,"nallow") ;
     mres->nallow = x ;
-
-    /* nenabled */
-    x = resolve_find_cdb(&tmp,c,"nenabled") ;
-    mres->nenabled = x ;
 
     /* ncontents */
     x = resolve_find_cdb(&tmp,c,"ncontents") ;

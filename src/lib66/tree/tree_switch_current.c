@@ -33,7 +33,7 @@ int tree_switch_current(char const *base, char const *treename)
     }
 
     if (!resolve_modify_field_g(wres, base, SS_MASTER + 1, E_RESOLVE_TREE_MASTER_CURRENT,  treename)) {
-        log_warnu("modify field: ", resolve_tree_master_field_table[E_RESOLVE_TREE_MASTER_CURRENT].field," of inner resolve file with value: ", treename) ;
+        log_warnu("modify field: ", resolve_tree_master_field_table[E_RESOLVE_TREE_MASTER_CURRENT].field," of Master resolve file with value: ", treename) ;
         goto freed ;
     }
 

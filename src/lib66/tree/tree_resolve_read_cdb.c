@@ -39,6 +39,10 @@ int tree_resolve_read_cdb(cdb *c, resolve_tree_t *tres)
     resolve_find_cdb(&tmp,c,"name") ;
     tres->name = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
 
+    /* enabled */
+    x = resolve_find_cdb(&tmp,c,"enabled") ;
+    tres->enabled = x ;
+
     /* depends */
     resolve_find_cdb(&tmp,c,"depends") ;
     tres->depends = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;

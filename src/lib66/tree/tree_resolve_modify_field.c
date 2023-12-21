@@ -25,6 +25,7 @@
 resolve_field_table_t resolve_tree_field_table[] = {
 
     [E_RESOLVE_TREE_NAME] = { .field = "name" },
+    [E_RESOLVE_TREE_NAME] = { .field = "enabled" },
     [E_RESOLVE_TREE_DEPENDS] = { .field = "depends" },
     [E_RESOLVE_TREE_REQUIREDBY] = { .field = "requiredby" },
     [E_RESOLVE_TREE_ALLOW] = { .field = "allow" },
@@ -53,6 +54,13 @@ int tree_resolve_modify_field(resolve_tree_t *tres, uint8_t field, char const *d
 
         case E_RESOLVE_TREE_NAME:
             tres->name = resolve_add_string(wres,data) ;
+            break ;
+
+        case E_RESOLVE_TREE_ENABLED:
+            if (!data)
+                data = "0" ;
+            if (!uint0_scan(data, &ifield)) goto err ;
+            tres->enabled = ifield ;
             break ;
 
         case E_RESOLVE_TREE_DEPENDS:

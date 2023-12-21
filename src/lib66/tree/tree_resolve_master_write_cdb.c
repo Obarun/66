@@ -31,9 +31,6 @@ int tree_resolve_master_write_cdb(cdbmaker *c, resolve_tree_master_t *mres)
     /* allow */
     !resolve_add_cdb(c,"allow",str, mres->allow, 1) ||
 
-    /* enabled */
-    !resolve_add_cdb(c,"enabled",str, mres->enabled, 1) ||
-
     /* current */
     !resolve_add_cdb(c,"current",str, mres->current, 1) ||
 
@@ -42,9 +39,6 @@ int tree_resolve_master_write_cdb(cdbmaker *c, resolve_tree_master_t *mres)
 
     /* nallow */
     !resolve_add_cdb_uint(c,"nallow", mres->nallow) ||
-
-    /* nenabled */
-    !resolve_add_cdb_uint(c,"nenabled",mres->nenabled) ||
 
     /* ncontents */
     !resolve_add_cdb_uint(c,"ncontents",mres->ncontents)) return 0 ;

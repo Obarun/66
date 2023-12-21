@@ -33,6 +33,11 @@ int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree
             str = tres->sa.s + tres->name ;
             break ;
 
+        case E_RESOLVE_TREE_ENABLED:
+            fmt[uint32_fmt(fmt,tres->enabled)] = 0 ;
+            str = fmt ;
+            break ;
+
         case E_RESOLVE_TREE_DEPENDS:
             str = tres->sa.s + tres->depends ;
             break ;
