@@ -118,7 +118,7 @@ struct resolve_service_addon_logger_s
     uint32_t destination ; // string
     uint32_t backup ; // integer
     uint32_t maxsize ; // integer
-    /** integer, default 3 which mean not touched, in this case the value configured by
+    /** integer, default 3 which mean not touched, in this case the value configured
      * at compilation take precedence */
     uint32_t timestamp ;
     uint32_t want ; // 1 want, 0 do not want. Want by default

@@ -48,7 +48,7 @@ int symlink_switch(resolve_service_t *res, uint8_t flag)
         auto_strings(dst, res->sa.s + res->live.servicedir) ;
     }
 
-    log_trace("symlink: ", sym, " to: ", dst) ;
+    log_trace("switch symlink: ", sym, " to: ", dst) ;
     if (!atomic_symlink(dst, sym, "symlink_switch"))
         log_warnusys_return(LOG_EXIT_ZERO, "point symlink: ", sym, " to: ", dst) ;
 

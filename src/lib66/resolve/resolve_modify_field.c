@@ -28,7 +28,7 @@ int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *
 
         resolve_service_t_ref res = (resolve_service_t *)wres->obj  ;
 
-        log_trace("modify field ", resolve_service_field_table[field].field," of service ", res->sa.s + res->name, " with value: ", by) ;
+        log_trace("store field ", resolve_service_field_table[field].field," of service ", res->sa.s + res->name, " with value: ", by) ;
 
         return service_resolve_modify_field(res, field, by) ;
 
@@ -36,7 +36,7 @@ int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *
 
         resolve_tree_t_ref res = (resolve_tree_t *)wres->obj  ;
 
-        log_trace("modify field ", resolve_tree_field_table[field].field," of tree ", res->sa.s + res->name, " with value: ", by) ;
+        log_trace("store field ", resolve_tree_field_table[field].field," of tree ", res->sa.s + res->name, " with value: ", by) ;
 
         return tree_resolve_modify_field(res, field, by) ;
 
@@ -44,7 +44,7 @@ int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *
 
         resolve_tree_master_t_ref res = (resolve_tree_master_t *)wres->obj  ;
 
-        log_trace("modify field ", resolve_tree_master_field_table[field].field," of resolve Master file of trees with value: ", by) ;
+        log_trace("store field ", resolve_tree_master_field_table[field].field," of resolve Master file of trees with value: ", by) ;
 
         return tree_resolve_master_modify_field(res, field, by) ;
 

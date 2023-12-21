@@ -41,7 +41,6 @@ int parse_compute_list(resolve_wrapper_t_ref wres, stralloc *sa, uint32_t *res, 
     stralloc tmp = STRALLOC_ZERO ;
     uint8_t exlen = 2 ;
     char const *exclude[2] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1 } ;
-
     char f[len + nelement + 2] ;
 
     memset(f, 0, (len + nelement + 2) * sizeof(char)) ;
