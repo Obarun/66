@@ -40,9 +40,8 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 
     uint32_t flag = 0 ;
     graph_t graph = GRAPH_ZERO ;
-
-    unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0, n = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
+    struct resolve_hash_s *hres = NULL ;
+    unsigned int list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0, n = 0 ;
 
     memset(list, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
     memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
@@ -52,15 +51,16 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
         FLAGS_SET(flag, STATE_FLAGS_ISEARLIER) ;
 
     /** build the graph of the entire system */
-    graph_build_service(&graph, ares, &areslen, info, flag) ;
+    graph_build_service(&graph, &hres, info, flag) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- have you already parsed a service?") ;
 
     FOREACH_SASTR(sa, n) {
 
-        int aresid = service_resolve_array_search(ares, areslen, sa->s + n) ;
-        if (aresid < 0) {
+        struct resolve_hash_s *hash ;
+        hash = hash_search(&hres, sa->s + n) ;
+        if (hash == NULL) {
 
             if (earlier) {
                 log_trace("ignoring none earlier service: ", sa->s + n) ;
@@ -77,7 +77,7 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 
             if (earlier) {
 
-                if (ares[aresid].earlier) {
+                if (hash->res.earlier) {
 
                     list[nservice++] = idx ;
                     visit[idx] = 1 ;
@@ -85,14 +85,14 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 
             } else {
 
-                if (ares[aresid].enabled) {
+                if (hash->res.enabled) {
 
                     list[nservice++] = idx ;
                     visit[idx] = 1 ;
 
                 } else {
 
-                    log_trace("ignoring not enabled service: ", ares[aresid].sa.s + ares[aresid].name) ;
+                    log_trace("ignoring not enabled service: ", hash->res.sa.s + hash->res.name) ;
 
                 }
             }
@@ -109,13 +109,14 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 
                 char *name = graph.data.s + genalloc_s(graph_hash_t,&graph.hash)[l[pos]].vertex ;
 
-                aresid = service_resolve_array_search(ares, areslen, name) ;
-                if (aresid < 0)
+                struct resolve_hash_s *h ;
+                h = hash_search(&hres, name) ;
+                if (hash == NULL)
                     log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
                 if (earlier) {
 
-                    if (ares[aresid].earlier) {
+                    if (h->res.earlier) {
 
                         list[nservice++] = l[pos] ;
                         visit[l[pos]] = 1 ;
@@ -123,7 +124,7 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 
                 } else {
 
-                    if (ares[aresid].enabled) {
+                    if (h->res.enabled) {
 
                         list[nservice++] = l[pos] ;
                         visit[l[pos]] = 1 ;
@@ -134,9 +135,9 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
         }
     }
 
-    sanitize_init(list, nservice, &graph, ares, areslen) ;
+    sanitize_init(list, nservice, &graph, &hres) ;
 
-    service_resolve_array_free(ares, areslen) ;
+    hash_free(&hres) ;
     graph_free_all(&graph) ;
 }
 

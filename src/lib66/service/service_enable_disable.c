@@ -17,6 +17,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/graph.h>
+#include <oblibs/stack.h>
 #include <oblibs/sastr.h>
 
 #include <skalibs/stralloc.h>
@@ -27,13 +28,13 @@
 #include <66/enum.h>
 #include <66/ssexec.h>
 
-static void service_enable_disable_deps(graph_t *g, unsigned int idx, resolve_service_t *ares, unsigned int areslen, uint8_t action, unsigned int *visit, uint8_t propagate, ssexec_t *info)
+static void service_enable_disable_deps(graph_t *g, struct resolve_hash_s *hash, struct resolve_hash_s **hres, uint8_t action, uint8_t propagate, ssexec_t *info)
 {
     log_flow() ;
 
     size_t pos = 0 ;
     stralloc sa = STRALLOC_ZERO ;
-    resolve_service_t_ref res = &ares[idx] ;
+    resolve_service_t_ref res = &hash->res ;
 
     if (graph_matrix_get_edge_g_sa(&sa, g, res->sa.s + res->name, action ? 0 : 1, 0) < 0)
         log_dieu(LOG_EXIT_SYS, "get ", action ? "dependencies" : "required by" ," of: ", res->sa.s + res->name) ;
@@ -43,12 +44,15 @@ static void service_enable_disable_deps(graph_t *g, unsigned int idx, resolve_se
         FOREACH_SASTR(&sa, pos) {
 
             char *name = sa.s + pos ;
-            int aresid = service_resolve_array_search(ares, areslen, name) ;
-            if (aresid < 0)
+
+            struct resolve_hash_s *h = hash_search(hres, name) ;
+            if (h == NULL)
                 log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
-            if (!visit[aresid])
-                service_enable_disable(g, aresid, ares, areslen, action, visit, propagate, info) ;
+            if (!h->visit) {
+                service_enable_disable(g, h, hres, action, propagate, info) ;
+                h->visit = 1 ;
+            }
         }
     }
 
@@ -57,27 +61,29 @@ static void service_enable_disable_deps(graph_t *g, unsigned int idx, resolve_se
 
 /** @action -> 0 disable
  * @action -> 1 enable */
-void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *ares, unsigned int areslen, uint8_t action, unsigned int *visit, uint8_t propagate, ssexec_t *info)
+void service_enable_disable(graph_t *g, struct resolve_hash_s *hash, struct resolve_hash_s **hres, uint8_t action, uint8_t propagate, ssexec_t *info)
 {
     log_flow() ;
 
-    if (!visit[idx]) {
+    if (!hash->visit) {
 
-        resolve_service_t_ref res = &ares[idx] ;
+        resolve_service_t_ref res = &hash->res ;
         resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+        char const *treename = res->sa.s + (res->intree ? res->intree : res->treename) ;
 
         /** resolve file may already exist. Be sure to add it to the contents field of the tree.*/
         if (action)
-            tree_service_add(res->sa.s + (res->intree ? res->intree : res->treename), res->sa.s + res->name, info) ;
+            tree_service_add(treename, res->sa.s + res->name, info) ;
 
-        if (!service_resolve_modify_field(res, E_RESOLVE_SERVICE_ENABLED, !action ? "0" : "1"))
-            log_dieu(LOG_EXIT_SYS, "modify resolve file of: ", res->sa.s + res->name) ;
+        res->enabled = action ;
 
         if (!resolve_write_g(wres, res->sa.s + res->path.home, res->sa.s + res->name))
             log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", res->sa.s + res->name) ;
 
         if (propagate)
-            service_enable_disable_deps(g, idx, ares, areslen, action, visit, propagate, info) ;
+            service_enable_disable_deps(g, hash, hres, action, propagate, info) ;
+
+        free(wres) ;
 
         /** the logger must be disabled to avoid to start it
          * with the 66 tree start <tree> command */
@@ -85,26 +91,27 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
 
             char *name = res->sa.s + res->logger.name ;
 
-            int aresid = service_resolve_array_search(ares, areslen, name) ;
-            if (aresid < 0)
+            struct resolve_hash_s *h = hash_search(hres, name) ;
+            if (h == NULL)
                 log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
-            if (!visit[aresid]) {
+            if (!h->visit) {
 
-                wres = resolve_set_struct(DATA_SERVICE, &ares[aresid]) ;
+                wres = resolve_set_struct(DATA_SERVICE,  &h->res) ;
 
                 if (action)
-                    tree_service_add(ares[aresid].sa.s + (ares[aresid].intree ? ares[aresid].intree : ares[aresid].treename), ares[aresid].sa.s + ares[aresid].name, info) ;
+                    tree_service_add(treename, h->res.sa.s + h->res.name, info) ;
 
-                if (!service_resolve_modify_field(&ares[aresid], E_RESOLVE_SERVICE_ENABLED, !action ? "0" : "1"))
-                    log_dieu(LOG_EXIT_SYS, "modify resolve file of: ", ares[aresid].sa.s + ares[aresid].name) ;
+                h->res.enabled = action ;
 
-                if (!resolve_write_g(wres, ares[aresid].sa.s + ares[aresid].path.home, ares[aresid].sa.s + ares[aresid].name))
-                    log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", ares[aresid].sa.s + ares[aresid].name) ;
+                if (!resolve_write_g(wres, h->res.sa.s + h->res.path.home, h->res.sa.s + h->res.name))
+                    log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", h->res.sa.s + h->res.name) ;
 
-                log_info("Disabled successfully service: ", name) ;
+                log_info("Disabled successfully: ", name) ;
 
-                visit[aresid] = 1 ;
+                h->visit = 1 ;
+
+                resolve_free(wres) ;
             }
         }
 
@@ -121,36 +128,37 @@ void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *are
                 FOREACH_STK(&stk, pos) {
 
                     char *name = stk.s + pos ;
-                    int aresid = service_resolve_array_search(ares, areslen, name) ;
-                    if (aresid < 0)
+
+                    struct resolve_hash_s *h = hash_search(hres, name) ;
+                    if (h == NULL)
                         log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
-                    if (!visit[aresid]) {
+                    if (!h->visit) {
 
-                        wres = resolve_set_struct(DATA_SERVICE, &ares[aresid]) ;
+                        wres = resolve_set_struct(DATA_SERVICE,  &h->res) ;
 
                         if (action)
-                            tree_service_add(ares[aresid].sa.s + (ares[aresid].intree ? ares[aresid].intree : ares[aresid].treename), ares[aresid].sa.s + ares[aresid].name, info) ;
+                            tree_service_add(treename, h->res.sa.s + h->res.name, info) ;
 
-                        if (!service_resolve_modify_field(&ares[aresid], E_RESOLVE_SERVICE_ENABLED, !action ? "0" : "1"))
-                            log_dieu(LOG_EXIT_SYS, "modify resolve file of: ", ares[aresid].sa.s + ares[aresid].name) ;
+                        h->res.enabled = action ;
 
-                        if (!resolve_write_g(wres, ares[aresid].sa.s + ares[aresid].path.home, ares[aresid].sa.s + ares[aresid].name))
-                            log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", ares[aresid].sa.s + ares[aresid].name) ;
+                        if (!resolve_write_g(wres, h->res.sa.s + h->res.path.home, h->res.sa.s + h->res.name))
+                            log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", h->res.sa.s + h->res.name) ;
 
-                        service_enable_disable_deps(g, aresid, ares, areslen, action, visit, propagate, info) ;
+                        service_enable_disable_deps(g, h, hres, action, propagate, info) ;
 
-                        visit[aresid] = 1 ;
+                        h->visit = 1 ;
 
-                        log_info(!action ? "Disabled" : "Enabled"," successfully service: ", ares[aresid].sa.s + ares[aresid].name) ;
+                        log_info(!action ? "Disabled" : "Enabled"," successfully service: ", h->res.sa.s + h->res.name) ;
+
+                        resolve_free(wres) ;
                     }
                 }
             }
         }
 
-        free(wres) ;
-        visit[idx] = 1 ;
+        hash->visit = 1 ;
 
-        log_info(!action ? "Disabled" : "Enabled"," successfully service: ", ares[idx].sa.s + ares[idx].name) ;
+        log_info(!action ? "Disabled" : "Enabled"," successfully: ", hash->res.sa.s + hash->res.name) ;
     }
 }

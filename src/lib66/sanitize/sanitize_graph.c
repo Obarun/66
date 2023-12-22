@@ -30,6 +30,7 @@
 #include <66/graph.h>
 #include <66/constants.h>
 #include <66/enum.h>
+#include <66/hash.h>
 
 /** rewrite depends/requiredby of each service
  * found on the system */
@@ -37,53 +38,53 @@ void sanitize_graph(ssexec_t *info)
 {
     log_flow() ;
 
-    int n = 0 ;
     uint32_t flag = 0 ;
-    unsigned int areslen = 0 ;
     stralloc sa = STRALLOC_ZERO ;
-    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
+    struct resolve_hash_s *hres = NULL, *c, *tmp ;
     graph_t graph = GRAPH_ZERO ;
+    resolve_wrapper_t_ref wres = 0 ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOPARSE|STATE_FLAGS_WANTUP|STATE_FLAGS_WANTDOWN) ;
 
+    log_trace("sanitize system graph") ;
     /** build the graph of the entire system */
-    graph_build_service(&graph, ares, &areslen, info, flag) ;
+    graph_build_service(&graph, &hres, info, flag) ;
 
-    for (; n < areslen ; n++) {
+    HASH_ITER(hh, hres, c, tmp) {
 
         sa.len = 0 ;
-        resolve_service_t_ref res = &ares[n] ;
-        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-        char *name = res->sa.s + res->name ;
+        wres = resolve_set_struct(DATA_SERVICE, &c->res) ;
+
+        char *name = c->res.sa.s + c->res.name ;
 
         if (graph_matrix_get_edge_g_sa(&sa, &graph, name, 0, 0) < 0)
             log_dieu(LOG_EXIT_SYS, "get dependencies of service: ", name) ;
 
-        res->dependencies.ndepends = 0 ;
-        res->dependencies.depends = 0 ;
+        c->res.dependencies.ndepends = 0 ;
+        c->res.dependencies.depends = 0 ;
 
         if (sa.len)
-            res->dependencies.depends = parse_compute_list(wres, &sa, &res->dependencies.ndepends, 0) ;
+            c->res.dependencies.depends = parse_compute_list(wres, &sa, &c->res.dependencies.ndepends, 0) ;
 
         sa.len = 0 ;
 
         if (graph_matrix_get_edge_g_sa(&sa, &graph, name, 1, 0) < 0)
             log_dieu(LOG_EXIT_SYS, "get requiredby of service: ", name) ;
 
-        res->dependencies.nrequiredby = 0 ;
-        res->dependencies.requiredby = 0 ;
+        c->res.dependencies.nrequiredby = 0 ;
+        c->res.dependencies.requiredby = 0 ;
 
         if (sa.len)
-            res->dependencies.requiredby = parse_compute_list(wres, &sa, &res->dependencies.nrequiredby, 0) ;
+            c->res.dependencies.requiredby = parse_compute_list(wres, &sa, &c->res.dependencies.nrequiredby, 0) ;
 
         if (!resolve_write_g(wres, info->base.s, name))
             log_dieu(LOG_EXIT_SYS, "write resolve file of service: ", name) ;
 
-        free(wres) ;
+        resolve_free(wres) ;
     }
 
-    service_resolve_array_free(ares, areslen) ;
-    graph_free_all(&graph) ;
     stralloc_free(&sa) ;
+    hash_free(&hres) ;
+    graph_free_all(&graph) ;
 }

@@ -1,3 +1,4 @@
+parse_append_logger.o
 parse_clean_line.o
 parse_clean_list.o
 parse_clean_quotes.o

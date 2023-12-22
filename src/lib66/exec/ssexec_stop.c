@@ -41,9 +41,8 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
     graph_t graph = GRAPH_ZERO ;
     uint8_t siglen = 3 ;
     int e = 0 ;
-
-    unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0, pos = 0, idx = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
+    struct resolve_hash_s *hres = NULL ;
+    unsigned int list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0, pos = 0, idx = 0 ;
 
     memset(list, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
     memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
@@ -99,25 +98,24 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
 
     /** build the graph of the entire system */
-    graph_build_service(&graph, ares, &areslen, info, flag) ;
+    graph_build_service(&graph, &hres, info, flag) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- did you start it first?") ;
 
     for (; pos < argc ; pos++) {
 
-        int aresid = service_resolve_array_search(ares, areslen, argv[pos]) ;
-
         /** The service may not be supervised, so it will be ignored by the
          * function graph_build_service. In this case, the service does not
          * exist at array.
          *
          * This the stop process, just ignore it as it already down anyway */
-        if (aresid < 0) {
+        struct resolve_hash_s *hash = hash_search(&hres, argv[pos]) ;
+        if (hash == NULL) {
             log_warn("service: ", argv[pos], " is already stopped or unsupervised -- ignoring it") ;
             continue ;
         }
-        graph_compute_visit(ares, aresid, visit, list, &graph, &nservice, 1) ;
+        graph_compute_visit(*hash, visit, list, &graph, &nservice, 1) ;
     }
 
     char *sig[siglen] ;
@@ -155,17 +153,17 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
             fvisit[idx] = 1 ;
         }
 
-        int aresid = service_resolve_array_search(ares, areslen, name) ;
-        if (aresid < 0)
+        struct resolve_hash_s *hash = hash_search(&hres, name) ;
+        if (hash == NULL)
             log_die(LOG_EXIT_USER, "service: ", name, " not available -- please make a bug report") ;
 
         /** the logger need to be stopped in case of unsupervise request */
         if (FLAGS_ISSET(flag, STATE_FLAGS_TOUNSUPERVISE)) {
 
-            if (get_rstrlen_until(name, SS_LOG_SUFFIX) < 0 && ares[aresid].logger.want) {
+            if (get_rstrlen_until(name, SS_LOG_SUFFIX) < 0 && hash->res.logger.want) {
 
-                nargv[nargc++] = ares[aresid].sa.s + ares[aresid].logger.name ;
-                idx = graph_hash_vertex_get_id(&graph, ares[aresid].sa.s + ares[aresid].logger.name) ;
+                nargv[nargc++] = hash->res.sa.s + hash->res.logger.name ;
+                idx = graph_hash_vertex_get_id(&graph, hash->res.sa.s + hash->res.logger.name) ;
                 if (!fvisit[idx]) {
                     flist[fnservice++] = idx ;
                     fvisit[idx] = 1 ;
@@ -179,9 +177,9 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
     e = svc_send_wait(nargv, nargc, sig, siglen, info) ;
 
     if (FLAGS_ISSET(flag, STATE_FLAGS_TOUNSUPERVISE))
-        svc_unsupervise(flist, fnservice, &graph, ares, areslen, info) ;
+        svc_unsupervise(flist, fnservice, &graph, &hres, info) ;
 
-    service_resolve_array_free(ares, areslen) ;
+    hash_free(&hres) ;
     graph_free_all(&graph) ;
 
     return e ;

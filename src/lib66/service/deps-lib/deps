@@ -7,9 +7,8 @@ service_frontend_src.o
 service_graph_build.o
 service_graph_collect.o
 service_graph_g.o
+service_hash.o
 service_is_g.o
-service_resolve_array_free.o
-service_resolve_array_search.o
 service_resolve_copy.o
 service_resolve_get_field_tosa.o
 service_resolve_modify_field.o

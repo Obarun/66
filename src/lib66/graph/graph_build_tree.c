@@ -78,6 +78,5 @@ void graph_build_tree(graph_t *g, struct resolve_hash_tree_s **htres, char const
     if (!graph_matrix_sort(g))
         log_dieu(LOG_EXIT_SYS, "sort the graph") ;
 
-    resolve_free(wres) ;
     stralloc_free(&sa) ;
 }

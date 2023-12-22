@@ -16,7 +16,6 @@
 
 #include <oblibs/log.h>
 #include <oblibs/types.h> // FLAGS
-#include <oblibs/stack.h>
 
 #include <skalibs/sgetopt.h>
 
@@ -37,14 +36,12 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
     int n = 0, e = 1 ;
     size_t pos = 0 ;
     graph_t graph = GRAPH_ZERO ;
+    struct resolve_hash_s *hres = NULL ;
+    struct resolve_hash_s tostart[argc] ;
 
-    unsigned int areslen = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
-    unsigned int visit[SS_MAX_SERVICE + 1] ;
+    memset(tostart, 0, sizeof(struct resolve_hash_s) * argc) ;
 
-    memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
-
     {
         subgetopt l = SUBGETOPT_ZERO ;
 
@@ -80,52 +77,46 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
     if (argc < 1)
         log_usage(info->usage, "\n", info->help) ;
 
-    _init_stack_(stk, argc * SS_MAX_TREENAME) ;
-
     for(; n < argc ; n++)
         sanitize_source(argv[n], info, flag) ;
 
     /** build the graph of the entire system */
-    graph_build_service(&graph, ares, &areslen, info, flag) ;
+    graph_build_service(&graph, &hres, info, flag) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
 
     for (n = 0 ; n < argc ; n++) {
 
-        int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
-        if (aresid < 0)
+        struct resolve_hash_s *hash = hash_search(&hres, argv[n]) ;
+        if (hash == NULL)
             log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parse it?") ;
 
-        service_enable_disable(&graph, aresid, ares, areslen, 1, visit, propagate, info) ;
+        service_enable_disable(&graph, hash, &hres, 1, propagate, info) ;
 
         if (info->opt_tree) {
 
-            service_switch_tree(&ares[aresid], info->base.s, info->treename.s, info) ;
+            service_switch_tree(&hash->res, info->base.s, info->treename.s, info) ;
 
-            if (ares[aresid].logger.want && ares[aresid].type == TYPE_CLASSIC) {
+            if (hash->res.logger.want && hash->res.type == TYPE_CLASSIC) {
 
-                int logid = service_resolve_array_search(ares, areslen, ares[aresid].sa.s + ares[aresid].logger.name) ;
-                if (logid < 0)
-                    log_die(LOG_EXIT_USER, "service: ", ares[aresid].sa.s + ares[aresid].logger.name, " not available -- please make a bug report") ;
+                struct resolve_hash_s *log = hash_search(&hres, hash->res.sa.s + hash->res.logger.name) ;
+                if (log == NULL)
+                    log_die(LOG_EXIT_USER, "service: ", hash->res.sa.s + hash->res.logger.name, " not available -- please make a bug report") ;
 
-                service_switch_tree(&ares[logid], info->base.s, info->treename.s, info) ;
+                service_switch_tree(&log->res, info->base.s, info->treename.s, info) ;
             }
         }
 
-        if (!stack_add_g(&stk, argv[n]))
-            log_dieu(LOG_EXIT_SYS, "add string") ;
+        tostart[n] = *hash ;
     }
 
-    service_resolve_array_free(ares, areslen) ;
     graph_free_all(&graph) ;
-
     e = 0 ;
 
-    if (start && stk.len) {
+    if (start && n) {
 
-        size_t len = stack_count_element(&stk) ;
-        int nargc = 2 + len ;
+        int nargc = 2 + n ;
         char const *prog = PROG ;
         char const *newargv[nargc] ;
         unsigned int m = 0 ;
@@ -137,8 +128,8 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
         info->usage = usage_start ;
 
         newargv[m++] = "start" ;
-        FOREACH_STK(&stk, pos)
-            newargv[m++] = stk.s + pos ;
+        for (; pos < n ; pos++)
+            newargv[m++] = tostart[pos].name ;
         newargv[m] = 0 ;
 
         PROG = "start" ;
@@ -148,6 +139,8 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
         info->help = help ;
         info->usage = usage ;
     }
+
+    hash_free(&hres) ;
 
     return e ;
 }

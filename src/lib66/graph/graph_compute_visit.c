@@ -21,13 +21,13 @@
 #include <66/service.h>
 #include <66/enum.h>
 
-void graph_compute_visit(resolve_service_t *ares, unsigned int aresid, unsigned int *visit, unsigned int *list, graph_t *graph, unsigned int *nservice, uint8_t requiredby)
+void graph_compute_visit(struct resolve_hash_s hash, unsigned int *visit, unsigned int *list, graph_t *graph, unsigned int *nservice, uint8_t requiredby)
 {
     log_flow() ;
 
     unsigned int l[graph->mlen], c = 0, pos = 0, idx = 0 ;
 
-    idx = graph_hash_vertex_get_id(graph, ares[aresid].sa.s + ares[aresid].name) ;
+    idx = graph_hash_vertex_get_id(graph, hash.res.sa.s + hash.res.name) ;
 
     if (!visit[idx]) {
         list[(*nservice)++] = idx ;
@@ -35,7 +35,7 @@ void graph_compute_visit(resolve_service_t *ares, unsigned int aresid, unsigned 
     }
 
     /** find dependencies of the service from the graph, do it recursively */
-    c = graph_matrix_get_edge_g_list(l, graph, ares[aresid].sa.s + ares[aresid].name, requiredby, 1) ;
+    c = graph_matrix_get_edge_g_list(l, graph, hash.res.sa.s + hash.res.name, requiredby, 1) ;
 
     /** append to the list to deal with */
     for (pos = 0 ; pos < c ; pos++) {

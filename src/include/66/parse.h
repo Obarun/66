@@ -47,9 +47,10 @@ extern void parse_cleanup(resolve_service_t *res, char const *tmpdir, uint8_t fo
 /** main */
 extern void start_parser(char const *sv, ssexec_t *info, uint8_t disable_module, char const *directory_forced) ;
 
-extern void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf) ;
-extern int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree) ;
-extern int parse_interdependences(char const *service, char const *list, unsigned int listlen, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree) ;
+extern void parse_service(struct resolve_hash_s **href, char const *sv, ssexec_t *info, uint8_t force, uint8_t conf) ;
+extern int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree) ;
+extern int parse_interdependences(char const *service, char const *list, unsigned int listlen, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree) ;
+extern void parse_append_logger(struct resolve_hash_s **hres, resolve_service_t *res, ssexec_t *info) ;
 
 /** split */
 extern int parse_section(stralloc *secname, char const *str, size_t *pos) ;
@@ -74,13 +75,19 @@ extern int parse_clean_list(stralloc *sa, char const *str) ;
 extern int parse_clean_line(char *str)  ;
 extern int parse_mandatory(resolve_service_t *res) ;
 extern void parse_error(int ierr, int idsec, int idkey) ;
-extern void parse_rename_interdependences(resolve_service_t *res, char const *prefix, resolve_service_t *ares, unsigned int *areslen) ;
+extern void parse_rename_interdependences(resolve_service_t *res, char const *prefix, struct resolve_hash_s **hres, ssexec_t *info) ;
 extern void parse_db_migrate(resolve_service_t *res, ssexec_t *info) ;
 
 /** module */
-extern void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force) ;
+extern void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force) ;
 
 /** resolve */
-extern void parse_compute_resolve(unsigned int idx, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info) ;
+extern void parse_compute_resolve(resolve_service_t *res, ssexec_t *info) ;
+extern uint32_t compute_src_servicedir(resolve_wrapper_t_ref wres, ssexec_t *info) ;
+extern uint32_t compute_live_servicedir(resolve_wrapper_t_ref wres, ssexec_t *info) ;
+extern uint32_t compute_status(resolve_wrapper_t_ref wres, ssexec_t *info) ;
+extern uint32_t compute_scan_dir(resolve_wrapper_t_ref wres, ssexec_t *info) ;
+extern uint32_t compute_state_dir(resolve_wrapper_t_ref wres, ssexec_t *info, char const *folder) ;
+extern uint32_t compute_pipe_service(resolve_wrapper_t_ref wres, ssexec_t *info, char const *name) ;
 
 #endif

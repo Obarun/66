@@ -38,9 +38,7 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
     uint32_t flag = 0 ;
     uint8_t siglen = 3 ;
     graph_t graph = GRAPH_ZERO ;
-
-    unsigned int areslen = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
+    struct resolve_hash_s *hres = NULL ;
     ss_state_t sta = STATE_ZERO ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TORESTART|STATE_FLAGS_WANTUP) ;
@@ -81,18 +79,18 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;
 
     /** build the graph of the entire system */
-    graph_build_service(&graph, ares, &areslen, info, flag) ;
+    graph_build_service(&graph, &hres, info, flag) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- have you already parsed a service?") ;
 
     for (n = 0 ; n < argc ; n++) {
 
-        int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
-        if (aresid < 0)
+        struct resolve_hash_s *hash = hash_search(&hres, argv[n]) ;
+        if (hash == NULL)
             log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you parse it?") ;
 
-        if (!state_read(&sta, &ares[aresid]))
+        if (!state_read(&sta, &hash->res))
             log_dieu(LOG_EXIT_SYS, "read state file of: ", argv[n]) ;
 
         if (sta.issupervised == STATE_FLAGS_FALSE)
@@ -117,7 +115,7 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
 
     r = svc_send_wait(argv, argc, sig, siglen, info) ;
 
-    service_resolve_array_free(ares, areslen) ;
+    hash_free(&hres) ;
     graph_free_all(&graph) ;
 
     return r ;

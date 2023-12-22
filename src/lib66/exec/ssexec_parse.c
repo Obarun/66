@@ -113,13 +113,15 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
          * service can be a directory name. In this case
          * we parse all services inside. */
         size_t pos = 0 ;
+        struct resolve_hash_s *hres = NULL ;
         FOREACH_SASTR(&sa, pos)
-            parse_service(sa.s + pos, info, force, conf) ;
+            parse_service(&hres, sa.s + pos, info, force, conf) ;
+
+        hash_free(&hres) ;
     }
 
-    sanitize_graph(info) ;
-
     stralloc_free(&sa) ;
+    sanitize_graph(info) ;
 
     return 0 ;
 }

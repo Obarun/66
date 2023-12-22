@@ -25,6 +25,7 @@
 
 #include <66/ssexec.h>
 #include <66/resolve.h>
+#include <66/hash.h>
 
 typedef struct resolve_service_addon_path_s resolve_service_addon_path_t, *resolve_service_addon_path_t_ref ;
 struct resolve_service_addon_path_s
@@ -302,6 +303,15 @@ enum resolve_service_enum_e
 
 } ;
 
+struct resolve_hash_s {
+	char name[SS_MAX_SERVICE_NAME + 1] ; // name as key
+	uint8_t visit ;
+	resolve_service_t res ;
+	UT_hash_handle hh ;
+
+} ;
+#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, NULL }
+
 extern resolve_field_table_t resolve_service_field_table[] ;
 
 extern int service_cmp_basedir(char const *dir) ;
@@ -310,8 +320,6 @@ extern int service_frontend_path(stralloc *sasrc,char const *sv, uid_t owner,cha
 extern int service_frontend_src(stralloc *sasrc, char const *name, char const *src, char const **exclude) ;
 extern int service_is_g(char const *name, uint32_t flag) ;
 extern int service_get_treename(char *atree, char const *name, uint32_t flag) ;
-extern void service_resolve_array_free(resolve_service_t *ares, unsigned int areslen) ;
-extern int service_resolve_array_search(resolve_service_t *ares, unsigned int areslen, char const *name) ;
 extern int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res) ;
 extern int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve_service_enum_t field) ;
 extern int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t field, char const *data) ;
@@ -319,7 +327,7 @@ extern int service_resolve_read_cdb(cdb *c, resolve_service_t *res) ;
 extern void service_resolve_write(resolve_service_t *res) ;
 extern void service_resolve_write_remote(resolve_service_t *res, char const *dst, uint8_t force) ;
 extern int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres) ;
-extern void service_enable_disable(graph_t *g, unsigned int idx, resolve_service_t *ares, unsigned int areslen, uint8_t action, unsigned int *visit, uint8_t propagate, ssexec_t *info) ;
+extern void service_enable_disable(graph_t *g, struct resolve_hash_s *hash, struct resolve_hash_s **hres, uint8_t action, uint8_t propagate, ssexec_t *info) ;
 extern void service_switch_tree(resolve_service_t *res, char const *base, char const *totreename, ssexec_t *info) ;
 extern void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char const *base, uint8_t requiredby) ;
 /* avoid circular dependencies by prototyping the ss_state_t instead
@@ -327,9 +335,14 @@ extern void service_db_migrate(resolve_service_t *old, resolve_service_t *new, c
 typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;
 
 /** Graph */
-extern void service_graph_g(char const *slist, size_t slen, graph_t *graph, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag) ;
-extern void service_graph_collect(graph_t *g, char const *alist, size_t alen, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag) ;
-extern void service_graph_build(graph_t *g, resolve_service_t *ares, unsigned int areslen, uint32_t flag) ;
+extern void service_graph_g(char const *slist, size_t slen, graph_t *graph, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag) ;
+extern void service_graph_collect(graph_t *g, char const *alist, size_t alen, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag) ;
+extern void service_graph_build(graph_t *g, struct resolve_hash_s **hres, uint32_t flag) ;
 
+/** Hash */
+extern int hash_add(struct resolve_hash_s **hres, char const *name, resolve_service_t res) ;
+extern struct resolve_hash_s *hash_search(struct resolve_hash_s **hres, char const *name) ;
+extern int hash_count(struct resolve_hash_s **hres) ;
+extern void hash_free(struct resolve_hash_s **hres) ;
 
 #endif

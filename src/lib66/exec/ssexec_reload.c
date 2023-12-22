@@ -37,9 +37,8 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
     uint32_t flag = 0 ;
     uint8_t siglen = 2 ;
     graph_t graph = GRAPH_ZERO ;
-
-    unsigned int areslen = 0, m = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
+    struct resolve_hash_s *hres = NULL ;
+    unsigned int m = 0 ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
@@ -105,20 +104,20 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
     }
 
     /** build the graph of the entire system */
-    graph_build_service(&graph, ares, &areslen, info, flag) ;
+    graph_build_service(&graph, &hres, info, flag) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
 
     for (n = 0 ; n < argc ; n++) {
 
-        int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
-        if (aresid < 0)
+        struct resolve_hash_s *hash = hash_search(&hres, argv[n]) ;
+        if (hash == NULL)
             log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you pars it?") ;
 
-        if (ares[aresid].type == TYPE_ONESHOT) {
+        if (hash->res.type == TYPE_ONESHOT) {
             nargc++ ;
-            nargv[m++] = ares[aresid].sa.s + ares[aresid].name ;
+            nargv[m++] = hash->res.sa.s + hash->res.name ;
         }
     }
 
@@ -171,7 +170,7 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
     }
 
     err:
-        service_resolve_array_free(ares, areslen) ;
+        hash_free(&hres) ;
         graph_free_all(&graph) ;
 
         return r ;

@@ -27,12 +27,13 @@
 #include <66/state.h>
 #include <66/graph.h>
 #include <66/enum.h>
+#include <66/hash.h>
 
 /** list all services of the system dependending of the flag passed.
  * STATE_FLAGS_TOPARSE -> call sanitize_source
  * STATE_FLAGS_TOPROPAGATE -> it build with the dependencies/requiredby services.
  * STATE_FLAGS_ISSUPERVISED -> only keep already supervised service*/
-void service_graph_collect(graph_t *g, char const *slist, size_t slen, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag)
+void service_graph_collect(graph_t *g, char const *slist, size_t slen, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag)
 {
     log_flow () ;
 
@@ -45,13 +46,11 @@ void service_graph_collect(graph_t *g, char const *slist, size_t slen, resolve_s
     for (; pos < slen ; pos += strlen(slist + pos) + 1) {
 
         char const *name = slist + pos ;
+        struct resolve_hash_s *hash = hash_search(hres, name) ;
 
-        if (service_resolve_array_search(ares, (*areslen), name) < 0) {
+        if (hash == NULL) {
 
             resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-            /** need to make a copy of the resolve due of the freed
-             * of the wres struct at the end of the process */
-            resolve_service_t cp = RESOLVE_SERVICE_ZERO ;
             wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
             /** double pass with resolve_read.
@@ -90,10 +89,9 @@ void service_graph_collect(graph_t *g, char const *slist, size_t slen, resolve_s
 
                 if (res.earlier) {
 
-                    if (!service_resolve_copy(&cp, &res))
-                        log_dieu(LOG_EXIT_SYS, "copy resolve file of: ", name, " -- please make a bug report") ;
-
-                    ares[(*areslen)++] = cp ;
+                    log_trace("add service: ", name, " to the graph selection") ;
+                    if (!hash_add(hres, name, res))
+                        log_dieu(LOG_EXIT_SYS, "append graph selection with: ", name) ;
                     continue ;
                 }
                 resolve_free(wres) ;
@@ -104,10 +102,9 @@ void service_graph_collect(graph_t *g, char const *slist, size_t slen, resolve_s
 
                 if (ste.issupervised == STATE_FLAGS_TRUE) {
 
-                    if (!service_resolve_copy(&cp, &res))
-                        log_dieu(LOG_EXIT_SYS, "copy resolve file of: ", name, " -- please make a bug report") ;
-
-                    ares[(*areslen)++] = cp ;
+                    log_trace("add service: ", name, " to the graph selection") ;
+                    if (!hash_add(hres, name, res))
+                        log_dieu(LOG_EXIT_SYS, "append graph selection with: ", name) ;
 
                 } else {
                     resolve_free(wres) ;
@@ -116,10 +113,9 @@ void service_graph_collect(graph_t *g, char const *slist, size_t slen, resolve_s
 
             } else {
 
-                if (!service_resolve_copy(&cp, &res))
-                    log_dieu(LOG_EXIT_SYS, "copy resolve file of: ", name, " -- please make a bug report") ;
-
-                ares[(*areslen)++] = cp ;
+                log_trace("add service: ", name, " to the graph selection") ;
+                if (!hash_add(hres, name, res))
+                    log_dieu(LOG_EXIT_SYS, "append graph selection with: ", name) ;
             }
 
             if (FLAGS_ISSET(flag, STATE_FLAGS_TOPROPAGATE)) {
@@ -132,7 +128,7 @@ void service_graph_collect(graph_t *g, char const *slist, size_t slen, resolve_s
                     if (!stack_clean_string(&stk, res.sa.s + res.dependencies.depends, len))
                         log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
-                    service_graph_collect(g, stk.s, stk.len, ares, areslen, info, flag) ;
+                    service_graph_collect(g, stk.s, stk.len, hres, info, flag) ;
 
                 }
 
@@ -144,11 +140,12 @@ void service_graph_collect(graph_t *g, char const *slist, size_t slen, resolve_s
                     if (!stack_clean_string(&stk, res.sa.s + res.dependencies.requiredby, len))
                         log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
-                    service_graph_collect(g, stk.s, stk.len, ares, areslen, info, flag) ;
+                    service_graph_collect(g, stk.s, stk.len, hres, info, flag) ;
                 }
 
             }
-            resolve_free(wres) ;
+
+            free(wres) ;
         }
     }
 }

@@ -18,10 +18,8 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/string.h>
-#include <oblibs/sastr.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/stralloc.h>
 
 #include <66/constants.h>
 #include <66/ssexec.h>
@@ -40,15 +38,12 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
     int n = 0, e = 1 ;
     size_t pos = 0 ;
     graph_t graph = GRAPH_ZERO ;
-    stralloc sa = STRALLOC_ZERO ;
+    struct resolve_hash_s *hres = NULL ;
+    struct resolve_hash_s tostop[argc] ;
 
-    unsigned int areslen = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
-    unsigned int visit[SS_MAX_SERVICE + 1] ;
+    memset(tostop, 0, sizeof(struct resolve_hash_s) * argc) ;
 
-    memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
-
     {
         subgetopt l = SUBGETOPT_ZERO ;
 
@@ -95,27 +90,28 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
         log_usage(info->usage, "\n", info->help) ;
 
     /** build the graph of the entire system */
-    graph_build_service(&graph, ares, &areslen, info, flag) ;
+    graph_build_service(&graph, &hres, info, flag) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- try to parse it first") ;
 
     for (; n < argc ; n++) {
 
-        int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
-        if (aresid < 0)
+        struct resolve_hash_s *hash = hash_search(&hres, argv[n]) ;
+        if (hash == NULL)
             log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parse it?") ;
 
-        service_enable_disable(&graph, aresid, ares, areslen, 0, visit, propagate, info) ;
+        service_enable_disable(&graph, hash, &hres, 0, propagate, info) ;
 
-        if (!sastr_add_string(&sa, argv[n]))
-            log_dieu(LOG_EXIT_SYS, "add string") ;
+        tostop[n] = *hash ;
     }
 
-    if (stop && sa.len) {
+    graph_free_all(&graph) ;
+    e = 0 ;
 
-        size_t len = sastr_nelement(&sa) ;
-        int nargc = 3 + len ;
+    if (stop && n) {
+
+        int nargc = 3 + n ;
         char const *prog = PROG ;
         char const *newargv[nargc] ;
         unsigned int m = 0 ;
@@ -128,8 +124,8 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
 
         newargv[m++] = "stop" ;
         newargv[m++] = "-u" ;
-        FOREACH_SASTR(&sa, pos)
-            newargv[m++] = sa.s + pos ;
+        for (; pos < n ; pos++)
+            newargv[m++] = tostop[pos].name ;
         newargv[m] = 0 ;
 
         PROG = "stop" ;
@@ -138,15 +134,9 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
 
         info->help = help ;
         info->usage = usage ;
-
-        goto end ;
     }
-    e = 0 ;
 
-    end:
-        stralloc_free(&sa) ;
-        service_resolve_array_free(ares, areslen) ;
-        graph_free_all(&graph) ;
+    hash_free(&hres) ;
 
     return e ;
 }

@@ -322,16 +322,13 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
     size_t padding = 1 ;
     int r ;
     graph_t graph = GRAPH_ZERO ;
-
-    unsigned int areslen = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
-
+    struct resolve_hash_s *hres = NULL ;
     stralloc deps = STRALLOC_ZERO ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    graph_build_service(&graph, ares, &areslen, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
+    graph_build_service(&graph, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
    if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
@@ -391,6 +388,7 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
         }
     freed:
         graph_free_all(&graph) ;
+        hash_free(&hres) ;
         stralloc_free(&deps) ;
 }
 
@@ -399,16 +397,14 @@ static void info_display_deps(char const *field, resolve_service_t *res)
     int r ;
     size_t padding = 1 ;
     graph_t graph = GRAPH_ZERO ;
-
-    unsigned int areslen = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
+    struct resolve_hash_s *hres = NULL ;
 
     stralloc deps = STRALLOC_ZERO ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    graph_build_service(&graph, ares, &areslen, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
+    graph_build_service(&graph, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
@@ -468,6 +464,7 @@ static void info_display_deps(char const *field, resolve_service_t *res)
 
     freed:
         graph_free_all(&graph) ;
+        hash_free(&hres) ;
         stralloc_free(&deps) ;
 }
 
@@ -504,9 +501,7 @@ static void info_display_contents(char const *field, resolve_service_t *res)
     size_t padding = 1 ;
     graph_t graph = GRAPH_ZERO ;
     stralloc sa = STRALLOC_ZERO ;
-
-    unsigned int areslen = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
+    struct resolve_hash_s *hres = NULL ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
@@ -517,7 +512,7 @@ static void info_display_contents(char const *field, resolve_service_t *res)
     if (!sastr_clean_string(&sa, res->sa.s + res->dependencies.contents))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    service_graph_g(sa.s, sa.len, &graph, ares, &areslen, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
+    service_graph_g(sa.s, sa.len, &graph, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
@@ -564,7 +559,7 @@ static void info_display_contents(char const *field, resolve_service_t *res)
 
     freed:
         graph_free_all(&graph) ;
-        service_resolve_array_free(ares, areslen) ;
+        hash_free(&hres) ;
         stralloc_free(&sa) ;
 }
 

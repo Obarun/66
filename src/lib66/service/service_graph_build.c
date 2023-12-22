@@ -23,8 +23,9 @@
 #include <66/service.h>
 #include <66/graph.h>
 #include <66/state.h>
+#include <66/hash.h>
 
-static void issupervised(char *store, resolve_service_t *ares, unsigned int areslen, char const *str)
+static void issupervised(char *store, struct resolve_hash_s **hres, char const *str)
 {
     size_t pos = 0, len = strlen(str) ;
     ss_state_t ste = STATE_ZERO ;
@@ -39,16 +40,16 @@ static void issupervised(char *store, resolve_service_t *ares, unsigned int ares
 
         char *name = stk.s + pos ;
 
-        int aresid = service_resolve_array_search(ares, areslen, name) ;
-        if (aresid < 0) {
+        struct resolve_hash_s *hash = hash_search(hres, name) ;
+        if (hash == NULL) {
             log_warn("service: ", name, " not available -- ignore it") ;
             continue ;
         }
 
-        if (!state_check(&ares[aresid]))
+        if (!state_check(&hash->res))
             continue ;
 
-        if (!state_read(&ste, &ares[aresid]))
+        if (!state_read(&ste, &hash->res))
             continue ;
 
         if (ste.issupervised == STATE_FLAGS_TRUE)
@@ -60,23 +61,23 @@ static void issupervised(char *store, resolve_service_t *ares, unsigned int ares
     store[strlen(store) - 1] = 0 ;
 }
 
-void service_graph_build(graph_t *g, resolve_service_t *ares, unsigned int areslen, uint32_t flag)
+void service_graph_build(graph_t *g, struct resolve_hash_s **hres, uint32_t flag)
 {
     log_flow() ;
 
-    unsigned int pos = 0 ;
     ss_state_t ste = STATE_ZERO ;
     resolve_service_t_ref pres = 0 ;
+    struct resolve_hash_s *c, *tmp ;
 
-    for (; pos < areslen ; pos++) {
+    HASH_ITER(hh, *hres, c, tmp) {
 
-        pres = &ares[pos] ;
+        pres = &c->res ;
         char *service = pres->sa.s + pres->name ;
 
-        if (!state_check(&ares[pos]))
+        if (!state_check(pres))
             continue ;
 
-        if (!state_read(&ste, &ares[pos]))
+        if (!state_read(&ste, pres))
             continue ;
 
         if (ste.issupervised == STATE_FLAGS_FALSE && FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {
@@ -95,7 +96,7 @@ void service_graph_build(graph_t *g, resolve_service_t *ares, unsigned int aresl
 
                 if (FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {
 
-                    issupervised(store, ares, areslen, pres->sa.s + pres->dependencies.depends) ;
+                    issupervised(store, hres, pres->sa.s + pres->dependencies.depends) ;
 
                 } else {
 
@@ -114,7 +115,7 @@ void service_graph_build(graph_t *g, resolve_service_t *ares, unsigned int aresl
 
                 if (FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {
 
-                    issupervised(store, ares, areslen, pres->sa.s + pres->dependencies.requiredby) ;
+                    issupervised(store, hres, pres->sa.s + pres->dependencies.requiredby) ;
 
                 } else {
 

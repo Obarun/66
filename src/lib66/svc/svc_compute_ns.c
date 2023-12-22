@@ -28,7 +28,7 @@
 #include <66/sanitize.h>
 
 /** sares -> services ares */
-int svc_compute_ns(resolve_service_t *sares, unsigned int sareslen, unsigned int saresid, uint8_t what, ssexec_t *info, char const *updown, uint8_t opt_updown, uint8_t reloadmsg,char const *data, uint8_t propagate, pidservice_t *handled, unsigned int nhandled)
+int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char const *updown, uint8_t opt_updown, uint8_t reloadmsg,char const *data, uint8_t propagate, pidservice_t *handled, unsigned int nhandled)
 {
     log_flow() ;
 
@@ -39,12 +39,11 @@ int svc_compute_ns(resolve_service_t *sares, unsigned int sareslen, unsigned int
     _init_stack_(stk, SS_MAX_SERVICE * SS_MAX_SERVICE_NAME) ;
 
     unsigned int napid = 0 ;
-    unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1] ;
-    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
+    unsigned int list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1] ;
+    struct resolve_hash_s *hash = NULL ;
 
     memset(list, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
     memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
-    memset(ares, 0, (SS_MAX_SERVICE + 1) * sizeof(resolve_service_t)) ;
     uint32_t gflag = STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP ;
 
     if (!propagate)
@@ -56,18 +55,18 @@ int svc_compute_ns(resolve_service_t *sares, unsigned int sareslen, unsigned int
         FLAGS_CLEAR(gflag, STATE_FLAGS_WANTUP) ;
     }
 
-    if (sares[saresid].dependencies.ncontents) {
+    if (res->dependencies.ncontents) {
 
         if (!stack_clean_string_g(&stk, res->sa.s + res->dependencies.contents))
             log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     } else {
-        log_warn("empty ns: ", sares[saresid].sa.s + sares[saresid].name) ;
+        log_warn("empty ns: ", res->sa.s + res->name) ;
         return 0 ;
     }
 
     /** build the graph of the ns */
-    service_graph_g(stk.s, stk.len, &graph, ares, &areslen, info, gflag) ;
+    service_graph_g(stk.s, stk.len, &graph, &hash, info, gflag) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not supervised -- initiate its first") ;
@@ -76,28 +75,28 @@ int svc_compute_ns(resolve_service_t *sares, unsigned int sareslen, unsigned int
 
         char const *name = stk.s + pos ;
 
-        int aresid = service_resolve_array_search(ares, areslen, name) ;
-        if (aresid < 0)
+        struct resolve_hash_s *h = hash_search(&hash, name) ;
+        if (h == NULL)
             log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
-        if (ares[aresid].earlier) {
-            log_warn("ignoring ealier service: ", ares[aresid].sa.s + ares[aresid].name) ;
+        if (h->res.earlier) {
+            log_warn("ignoring ealier service: ", h->res.sa.s + h->res.name) ;
             continue ;
         }
-        graph_compute_visit(ares, aresid, visit, list, &graph, &napid, requiredby) ;
+        graph_compute_visit(*h, visit, list, &graph, &napid, requiredby) ;
     }
 
     if (!what)
-        sanitize_init(list, napid, &graph, ares, areslen) ;
+        sanitize_init(list, napid, &graph, &hash) ;
 
     pidservice_t apids[napid] ;
 
-    svc_init_array(list, napid, apids, &graph, ares, areslen, info, requiredby, gflag) ;
+    svc_init_array(list, napid, apids, &graph, &hash, info, requiredby, gflag) ;
 
-    r = svc_launch(apids, napid, what, &graph, ares, areslen, info, updown, opt_updown, reloadmsg, data, propagate) ;
+    r = svc_launch(apids, napid, what, &graph, &hash, info, updown, opt_updown, reloadmsg, data, propagate) ;
 
+    hash_free(&hash) ;
     graph_free_all(&graph) ;
-    service_resolve_array_free(ares, areslen) ;
 
     return r ;
 }

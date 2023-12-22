@@ -86,7 +86,7 @@ static void parse_service_instance(stralloc *frontend, char const *svsrc, char c
  * @Die on fail
  * @Return 1 on success
  * @Return 2 -> already parsed */
-int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree)
+int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree)
 {
     log_flow() ;
 
@@ -95,6 +95,7 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     size_t svlen = strlen(sv) ;
     char svname[svlen + 1], svsrc[svlen + 1] ;
     stralloc sa = STRALLOC_ZERO ;
+    struct resolve_hash_s *hash ;
 
     if (!ob_basename(svname, sv))
         log_dieu(LOG_EXIT_SYS, "get basename of: ", sv) ;
@@ -104,18 +105,21 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
 
     if (inns) {
 
-        if (service_resolve_array_search(ares, *areslen, svname) >= 0)
+        hash = hash_search(hres, svname) ;
+        if (hash != NULL)
             log_warn_return(2, "ignoring: ", svname, " service -- already appended to the selection") ;
 
         char n[strlen(inns) + 1 + strlen(svname) + 1] ;
         auto_strings(n, inns, ":", svname) ;
 
-        if (service_resolve_array_search(ares, *areslen, n) >= 0)
+        hash = hash_search(hres, n) ;
+        if (hash != NULL)
             log_warn_return(2, "ignoring: ", n, " service -- already appended to the selection") ;
 
     } else {
 
-        if (service_resolve_array_search(ares, *areslen, svname) >= 0)
+        hash = hash_search(hres, svname) ;
+        if (hash != NULL)
             log_warn_return(2, "ignoring: ", svname, " service -- already appended to the selection") ;
     }
 
@@ -262,19 +266,28 @@ int parse_frontend(char const *sv, resolve_service_t *ares, unsigned int *aresle
     /** parse interdependences if the service was never parsed */
     if (isparsed == STATE_FLAGS_FALSE) {
 
-        if (!parse_interdependences(svname, res.sa.s + res.dependencies.depends, res.dependencies.ndepends, ares, areslen, info, force, conf, forced_directory, main, inns, intree))
+        if (!parse_interdependences(svname, res.sa.s + res.dependencies.depends, res.dependencies.ndepends, hres, info, force, conf, forced_directory, main, inns, intree))
             log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", svname) ;
     }
 
     if (res.type == TYPE_MODULE)
-        parse_module(&res, ares, areslen, info, force) ;
+        parse_module(&res, hres, info, force) ;
 
-    if (service_resolve_array_search(ares, *areslen, res.sa.s + res.name) < 0) {
+    parse_compute_resolve(&res, info) ;
 
-        log_trace("add service ", res.sa.s + res.name, " to the selection") ;
-        if (*areslen > SS_MAX_SERVICE)
+    if (res.logger.want && res.type != TYPE_MODULE && !res.inns)
+        parse_append_logger(hres, &res, info) ;
+
+    hash = hash_search(hres, res.sa.s + res.name) ;
+    if (hash == NULL) {
+
+        if (hash_count(hres) > SS_MAX_SERVICE)
             log_die(LOG_EXIT_SYS, "too many services to parse -- compile again 66 changing the --max-service options") ;
-        ares[(*areslen)++] = res ;
+
+        log_trace("add service: ", res.sa.s + res.name, " to the service selection") ;
+        char *name = res.sa.s + res.name ; // hash_add + log_dieu doesn't accept res.sa.s + res.name
+        if (!hash_add(hres, name, res))
+            log_dieu(LOG_EXIT_SYS, "append service selection with: ", name) ;
     }
 
     stralloc_free(&sa) ;

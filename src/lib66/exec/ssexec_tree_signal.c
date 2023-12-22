@@ -643,10 +643,6 @@ static int async_deps(struct resolve_hash_tree_s **htres, pidtree_t *apidt, unsi
 
                 if (!visit[pos]) {
 
-                    id = pidtree_get_id(apidt, id) ;
-                    if (id < 0)
-                        log_dieu(LOG_EXIT_SYS, "get apidtree id -- please make a bug report") ;
-
                     id = check_action(apidt, id, c, what) ;
                     if (id < 0)
                         log_die(LOG_EXIT_SYS, "tree dependency: ", apidt[id].tres->sa.s + apidt[id].tres->name, " of: ", apidt[id].tres->sa.s + apidt[id].tres->name," crashed") ;

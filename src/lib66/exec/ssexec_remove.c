@@ -38,6 +38,7 @@
 #include <66/constants.h>
 #include <66/svc.h>
 #include <66/utils.h>
+#include <66/hash.h>
 
 static void auto_remove(char const *path)
 {
@@ -46,7 +47,7 @@ static void auto_remove(char const *path)
         log_dieusys(LOG_EXIT_SYS, "remove directory: ", path) ;
 }
 
-static void remove_deps(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, stralloc *sa, ssexec_t *info)
+static void remove_deps(resolve_service_t *res, struct resolve_hash_s **hres, stralloc *sa, ssexec_t *info)
 {
 
     if (!res->dependencies.nrequiredby)
@@ -82,10 +83,12 @@ static void remove_deps(resolve_service_t *res, resolve_service_t *ares, unsigne
             if (!sastr_add_string(sa, stk.s + pos))
                 log_dieusys(LOG_EXIT_SYS, "add service: ", stk.s + pos, " to selection") ;
 
-        ares[(*areslen)++] = dres ;
+        log_trace("add service: ", stk.s + pos, " to the service selection") ;
+        if (!hash_add(hres, stk.s + pos, dres))
+            log_dieu(LOG_EXIT_SYS, "append service selection with: ", stk.s + pos) ;
 
         if (dres.dependencies.nrequiredby)
-            remove_deps(&dres, ares, areslen, sa, info) ;
+            remove_deps(&dres, hres, sa, info) ;
     }
 
     free(wres) ;
@@ -109,9 +112,10 @@ static void remove_service(resolve_service_t *res, ssexec_t *info)
         resolve_wrapper_t_ref lwres = resolve_set_struct(DATA_SERVICE, &lres) ;
 
         r = resolve_read_g(lwres, info->base.s, res->sa.s + res->logger.name) ;
-        if (r <= 0)
-            log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", res->sa.s + res->logger.name) ;
-
+        if (r <= 0) {
+            log_warnusys("read resolve file of: ", res->sa.s + res->logger.name, " -- ignoring it") ;
+            goto end ;
+        }
         auto_remove(lres.sa.s + lres.path.servicedir) ;
 
         auto_remove(lres.sa.s + lres.logger.destination) ;
@@ -130,7 +134,7 @@ static void remove_service(resolve_service_t *res, ssexec_t *info)
 
         resolve_free(lwres) ;
     }
-
+    end:
     auto_strings(sym, res->sa.s + res->path.home, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", res->sa.s + res->name) ;
 
     log_trace("remove symlink: ", sym) ;
@@ -150,10 +154,10 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
     size_t pos = 0 ;
     uint32_t flag = 0 ;
     uint8_t siglen = 0 ;
-    unsigned int areslen = 0 ;
     ss_state_t ste = STATE_ZERO ;
     stralloc sa = STRALLOC_ZERO ;
     resolve_wrapper_t_ref wres = 0 ;
+    struct resolve_hash_s *hres = NULL, *c, *tmp ;
 
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_ISSUPERVISED|STATE_FLAGS_TOUNSUPERVISE|STATE_FLAGS_WANTDOWN) ;
 
@@ -189,9 +193,6 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
     if (argc < 1)
         log_usage(info->usage, "\n", info->help) ;
 
-    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
-    memset(ares, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
-
     for(; pos < argc ; pos++) {
 
         resolve_service_t res = RESOLVE_SERVICE_ZERO ;
@@ -220,10 +221,12 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
                     log_dieusys(LOG_EXIT_SYS, "add service: ", argv[pos], " to selection") ;
         }
 
-        ares[areslen++] = res ;
+        log_trace("add service: ", argv[pos], " to the service selection") ;
+        if (!hash_add(&hres, argv[pos], res))
+            log_dieu(LOG_EXIT_SYS, "append service selection with: ", argv[pos]) ;
 
         if (!siglen)
-            remove_deps(&res, ares, &areslen, &sa, info) ;
+            remove_deps(&res, &hres, &sa, info) ;
     }
 
     r = svc_scandir_ok(info->scandir.s) ;
@@ -263,18 +266,18 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
         info->usage = usage ;
     }
 
-    for (pos = 0 ; pos < areslen ; pos++) {
+    HASH_ITER(hh, hres, c, tmp) {
 
-        remove_service(&ares[pos], info) ;
+        remove_service(&c->res, info) ;
 
-        if (ares[pos].type == TYPE_MODULE) {
+        if (c->res.type == TYPE_MODULE) {
 
-            if (ares[pos].dependencies.ncontents) {
+            if (c->res.dependencies.ncontents) {
 
                 size_t pos = 0 ;
                 resolve_service_t mres = RESOLVE_SERVICE_ZERO ;
                 resolve_wrapper_t_ref mwres = resolve_set_struct(DATA_SERVICE, &mres) ;
-                _init_stack_(stk, strlen(ares[pos].sa.s + ares[pos].dependencies.contents)) ;
+                _init_stack_(stk, strlen(c->res.sa.s + c->res.dependencies.contents)) ;
 
                 if (!stack_clean_string_g(&stk, c->res.sa.s + c->res.dependencies.contents))
                     log_dieu(LOG_EXIT_SYS, "convert string") ;
@@ -282,8 +285,10 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
                 FOREACH_STK(&stk, pos) {
 
                     r = resolve_read_g(mwres, info->base.s, stk.s + pos) ;
-                    if (r <= 0)
-                        log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", stk.s + pos) ;
+                    if (r <= 0) {
+                        log_warnusys("read resolve file of: ", stk.s + pos) ;
+                        continue ;
+                    }
 
                     remove_service(&mres, info) ;
                 }
@@ -296,7 +301,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
             if (!info->owner) {
 
-                auto_strings(dir, SS_SERVICE_ADMDIR, ares[pos].sa.s + ares[pos].name) ;
+                auto_strings(dir, SS_SERVICE_ADMDIR, c->res.sa.s + c->res.name) ;
 
             } else {
 
@@ -305,7 +310,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
                 size_t dirlen = strlen(dir) ;
 
-                auto_strings(dir + dirlen, SS_SERVICE_USERDIR, ares[pos].sa.s + ares[pos].name) ;
+                auto_strings(dir + dirlen, SS_SERVICE_USERDIR, c->res.sa.s + c->res.name) ;
             }
 
             auto_remove(dir) ;
@@ -313,7 +318,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
     }
 
     stralloc_free(&sa) ;
-    service_resolve_array_free(ares, areslen) ;
+    hash_free(&hres) ;
     free(wres) ;
 
     return 0 ;

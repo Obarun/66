@@ -42,7 +42,7 @@ static pidservice_t pidservice_init(unsigned int len)
     return pids ;
 }
 
-void svc_init_array(unsigned int *list, unsigned int listlen, pidservice_t *apids, graph_t *g, resolve_service_t *ares, unsigned int areslen, ssexec_t *info, uint8_t requiredby, uint32_t flag)
+void svc_init_array(unsigned int *list, unsigned int listlen, pidservice_t *apids, graph_t *g, struct resolve_hash_s **hres, ssexec_t *info, uint8_t requiredby, uint32_t flag)
 {
     log_flow() ;
 
@@ -55,20 +55,20 @@ void svc_init_array(unsigned int *list, unsigned int listlen, pidservice_t *apid
 
         char *name = g->data.s + genalloc_s(graph_hash_t,&g->hash)[list[pos]].vertex ;
 
-        pids.aresid = service_resolve_array_search(ares, areslen, name) ;
+        struct resolve_hash_s *hash = hash_search(hres, name) ;
+        if (hash == NULL)
+            log_dieu(LOG_EXIT_SYS,"find hash id of: ", name, " -- please make a bug reports") ;
 
-        if (pids.aresid < 0)
-            log_dieu(LOG_EXIT_SYS,"find ares id of: ", name, " -- please make a bug reports") ;
-
+        pids.res = &hash->res ;
 
         if (FLAGS_ISSET(flag, STATE_FLAGS_TOPROPAGATE)) {
 
-            pids.nedge = graph_matrix_get_edge_g_sorted_list(pids.edge, g, name, requiredby, 1) ;
+            pids.nedge = graph_matrix_get_edge_g_sorted_list(pids.edge, g, name, requiredby, 0) ;
 
             if (pids.nedge < 0)
                 log_dieu(LOG_EXIT_SYS,"get sorted ", requiredby ? "required by" : "dependency", " list of service: ", name) ;
 
-            pids.nnotif = graph_matrix_get_edge_g_sorted_list(pids.notif, g, name, !requiredby, 1) ;
+            pids.nnotif = graph_matrix_get_edge_g_sorted_list(pids.notif, g, name, !requiredby, 0) ;
 
             if (pids.nnotif < 0)
                 log_dieu(LOG_EXIT_SYS,"get sorted ", !requiredby ? "required by" : "dependency", " list of service: ", name) ;
@@ -79,11 +79,11 @@ void svc_init_array(unsigned int *list, unsigned int listlen, pidservice_t *apid
         if (pids.vertex < 0)
             log_dieu(LOG_EXIT_SYS, "get vertex id -- please make a bug report") ;
 
-        if (ares[pids.aresid].type != TYPE_CLASSIC) {
+        if (pids.res->type != TYPE_CLASSIC) {
 
                 ss_state_t sta = STATE_ZERO ;
 
-                if (!state_read(&sta, &ares[pids.aresid]))
+                if (!state_read(&sta, pids.res))
                     log_dieusys(LOG_EXIT_SYS, "read state file of: ", name) ;
 
                 if (sta.isup == STATE_FLAGS_TRUE)
@@ -95,7 +95,7 @@ void svc_init_array(unsigned int *list, unsigned int listlen, pidservice_t *apid
 
             s6_svstatus_t status ;
 
-            r = s6_svstatus_read(ares[pids.aresid].sa.s + ares[pids.aresid].live.scandir, &status) ;
+            r = s6_svstatus_read(pids.res->sa.s + pids.res->live.scandir, &status) ;
 
             pid_t pid = !r ? 0 : status.pid ;
 

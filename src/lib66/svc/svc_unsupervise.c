@@ -50,13 +50,12 @@ static void sanitize_it(resolve_service_t *res)
 }
 
 /** this function considers that the service is already down except for the logger */
-void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve_service_t *ares, unsigned int areslen, ssexec_t *info)
+void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, struct resolve_hash_s **hres, ssexec_t *info)
 {
     log_flow() ;
 
     unsigned int pos = 0 ;
     size_t bpos = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
 
     if (!alen)
         return ;
@@ -65,15 +64,15 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve
 
         char *name = g->data.s + genalloc_s(graph_hash_t,&g->hash)[alist[pos]].vertex ;
 
-        int aresid = service_resolve_array_search(ares, areslen, name) ;
-        if (aresid < 0)
-            log_dieu(LOG_EXIT_SYS,"find ares id of: ", name, " -- please make a bug reports") ;
+        struct resolve_hash_s *hash = hash_search(hres, name) ;
+        if (hash == NULL)
+            log_dieu(LOG_EXIT_SYS,"find hash id of: ", name, " -- please make a bug reports") ;
 
-        sanitize_it(&ares[aresid]) ;
+        sanitize_it(&hash->res) ;
 
-        if (ares[aresid].type == TYPE_MODULE && ares[aresid].dependencies.ncontents) {
+        if (hash->res.type == TYPE_MODULE && hash->res.dependencies.ncontents) {
 
-            sa.len = 0, bpos = 0 ;
+            bpos = 0 ;
 
             _init_stack_(stk, strlen(hash->res.sa.s + hash->res.dependencies.contents)) ;
 
@@ -82,14 +81,13 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, resolve
 
             FOREACH_STK(&stk, bpos) {
 
-                int aresid = service_resolve_array_search(ares, areslen, sa.s + bpos) ;
-                if (aresid < 0)
-                    log_dieu(LOG_EXIT_SYS,"find ares id of: ", sa.s + bpos, " -- please make a bug reports") ;
+                struct resolve_hash_s *h = hash_search(hres, stk.s + bpos) ;
+                if (h == NULL)
+                    log_dieu(LOG_EXIT_SYS,"find hash id of: ", stk.s + bpos, " -- please make a bug reports") ;
 
-                sanitize_it(&ares[aresid]) ;
+                sanitize_it(&h->res) ;
             }
         }
     }
-    stralloc_free(&sa) ;
 }
 

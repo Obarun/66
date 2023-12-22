@@ -38,6 +38,7 @@
 #include <66/graph.h>
 #include <66/sanitize.h>
 #include <66/symlink.h>
+#include <66/hash.h>
 
 parse_mill_t MILL_GET_SECTION_NAME = \
 { \
@@ -163,77 +164,69 @@ static void parse_write_state(resolve_service_t *res, char const *dst, uint8_t f
     }
 }
 
-void parse_service(char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
+void parse_service(struct resolve_hash_s **hres, char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
 {
     log_flow();
 
     int r ;
-    unsigned int areslen = 0, count = 0, pos = 0 ;
     uint8_t rforce = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
     stralloc sa = STRALLOC_ZERO ;
+    struct resolve_hash_s *c, *tmp ;
 
     char main[strlen(sv) + 1] ;
     if (!ob_basename(main, sv))
         log_dieu(LOG_EXIT_SYS, "get basename of: ", sv) ;
 
-    r = parse_frontend(sv, ares, &areslen, info, force, conf, 0, main, 0, 0) ;
+    r = parse_frontend(sv, hres, info, force, conf, 0, main, 0, 0) ;
     if (r == 2)
         /** already parsed */
         return ;
 
-    /** parse_compute_resolve add the logger
-     * to the ares array */
-    count = areslen ;
-    for (; pos < count ; pos++)
-        parse_compute_resolve(pos, ares, &areslen, info) ;
-
-    for (pos = 0 ; pos < areslen ; pos++) {
+    HASH_ITER(hh, *hres, c, tmp) {
 
         sa.len = 0 ;
         /** be paranoid */
         rforce = 0 ;
-        size_t namelen = strlen(ares[pos].sa.s + ares[pos].name), homelen = strlen(ares[pos].sa.s + ares[pos].path.home) ;
+        size_t namelen = strlen(c->res.sa.s + c->res.name), homelen = strlen(c->res.sa.s + c->res.path.home) ;
 
         char servicedir[homelen + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + namelen + 1] ;
 
-        auto_strings(servicedir, ares[pos].sa.s + ares[pos].path.home, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", ares[pos].sa.s + ares[pos].name) ;
+        auto_strings(servicedir, c->res.sa.s + c->res.path.home, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", c->res.sa.s + c->res.name) ;
 
-        if (sanitize_write(&ares[pos], force))
+        if (sanitize_write(&c->res, force))
             rforce = 1 ;
 
-        if (!auto_stra(&sa, "/tmp/", ares[pos].sa.s + ares[pos].name, ":XXXXXX"))
+        if (!auto_stra(&sa, "/tmp/", c->res.sa.s + c->res.name, ":XXXXXX"))
             log_die_nomem("stralloc") ;
 
         if (!mkdtemp(sa.s))
             log_dieusys(LOG_EXIT_SYS, "create temporary directory") ;
 
-        write_services(&ares[pos], sa.s, rforce) ;
+        write_services(&c->res, sa.s, rforce) ;
 
-        parse_write_state(&ares[pos], sa.s, rforce) ;
+        parse_write_state(&c->res, sa.s, rforce) ;
 
-        service_resolve_write_remote(&ares[pos], sa.s, rforce) ;
+        service_resolve_write_remote(&c->res, sa.s, rforce) ;
 
-        parse_copy_to_source(servicedir, sa.s, &ares[pos], rforce) ;
+        parse_copy_to_source(servicedir, sa.s, &c->res, rforce) ;
 
         /** do not die here, just warn the user */
         log_trace("remove temporary directory: ", sa.s) ;
         if (!dir_rm_rf(sa.s))
             log_warnu("remove temporary directory: ", sa.s) ;
 
-        tree_service_add(ares[pos].sa.s + ares[pos].treename, ares[pos].sa.s + ares[pos].name, info) ;
+        tree_service_add(c->res.sa.s + c->res.treename, c->res.sa.s + c->res.name, info) ;
 
-        if (!symlink_make(&ares[pos]))
+        if (!symlink_make(&c->res))
             log_dieusys(LOG_EXIT_SYS, "make service symlink") ;
 
         /** symlink may exist already, be sure to point to the correct location */
 
-        if (!symlink_switch(&ares[pos], SYMLINK_SOURCE))
+        if (!symlink_switch(&c->res, SYMLINK_SOURCE))
             log_dieusys(LOG_EXIT_SYS, "sanitize_symlink") ;
 
-        log_info("Parsed successfully: ", ares[pos].sa.s + ares[pos].name, " at tree: ", ares[pos].sa.s + ares[pos].treename) ;
+        log_info("Parsed successfully: ", c->res.sa.s + c->res.name, " at tree: ", c->res.sa.s + c->res.treename) ;
     }
 
-    service_resolve_array_free(ares, areslen) ;
     stralloc_free(&sa) ;
 }

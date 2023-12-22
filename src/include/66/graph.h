@@ -25,10 +25,9 @@
 #include <66/hash.h>
 
 extern void graph_build_tree(graph_t *g, struct resolve_hash_tree_s **htres, char const *base, resolve_tree_master_enum_t field) ;
-extern void graph_build_service(graph_t *g, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag) ;
+extern void graph_build_service(graph_t *g, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag) ;
 extern int graph_compute_dependencies(graph_t *g, char const *vertex, char const *edge, uint8_t requiredby) ;
-extern void graph_compute_visit(resolve_service_t *ares, unsigned int aresid, unsigned int *visit, unsigned int *list, graph_t *graph, unsigned int *nservice, uint8_t requiredby) ;
-
+extern void graph_compute_visit(struct resolve_hash_s hres, unsigned int *visit, unsigned int *list, graph_t *graph, unsigned int *nservice, uint8_t requiredby) ;
 extern int graph_build_service_bytree(graph_t *g, char const *tree, uint8_t what,  uint8_t is_supervised) ;
 extern int graph_build_service_bytree_from_src(graph_t *g, char const *src, uint8_t what) ;
 

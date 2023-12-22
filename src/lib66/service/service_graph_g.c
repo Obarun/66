@@ -25,6 +25,7 @@
 #include <66/ssexec.h>
 #include <66/state.h>
 #include <66/enum.h>
+#include <66/hash.h>
 
 static void debug_flag(uint32_t flag)
 {
@@ -73,19 +74,19 @@ static void debug_flag(uint32_t flag)
     log_trace("requested flags to build the graph: ", req) ;
 }
 
-void service_graph_g(char const *slist, size_t slen, graph_t *graph, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag)
+void service_graph_g(char const *slist, size_t slen, graph_t *graph, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag)
 {
     log_flow() ;
 
     debug_flag(flag) ;
 
-    service_graph_collect(graph, slist, slen, ares, areslen, info, flag) ;
+    service_graph_collect(graph, slist, slen, hres, info, flag) ;
 
-    if (!*areslen) {
+    if (!HASH_COUNT(*hres)) {
         /* avoid empty string */
         log_warn("no services matching the requirements at tree: ", info->treename.s) ;
         return ;
     }
 
-    service_graph_build(graph, ares, (*areslen), flag) ;
+    service_graph_build(graph, hres, flag) ;
 }

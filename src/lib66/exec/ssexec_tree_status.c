@@ -370,7 +370,7 @@ static void info_display_contents(char const *field, char const *treename)
     if (!sa.len)
         goto empty ;
 
-    service_graph_g_hash(sa.s, sa.len, &graph, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
+    service_graph_g(sa.s, sa.len, &graph, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
     if (!HASH_COUNT(hres))
         goto empty ;

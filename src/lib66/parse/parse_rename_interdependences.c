@@ -27,124 +27,123 @@
 #include <66/resolve.h>
 #include <66/enum.h>
 #include <66/constants.h>
+#include <66/hash.h>
 
-static void parse_prefix(char *result, stack *stk, resolve_service_t *ares, unsigned int areslen, char const *prefix)
+static void parse_prefix(char *result, stack *stk, struct resolve_hash_s **hres, char const *prefix)
 {
     log_flow() ;
 
-    int aresid = -1 ;
     size_t pos = 0, mlen = strlen(prefix) ;
+    struct resolve_hash_s *hash ;
 
     FOREACH_STK(stk, pos) {
 
-        aresid = service_resolve_array_search(ares, areslen, stk->s + pos) ;
+        hash = hash_search(hres, stk->s + pos) ;
+        if (hash == NULL) {
 
-        if (aresid < 0) {
             /** try with the name of the prefix as prefix */
             char tmp[mlen + 1 + strlen(stk->s + pos) + 1] ;
 
             auto_strings(tmp, prefix, ":", stk->s + pos) ;
 
-            aresid = service_resolve_array_search(ares, areslen, tmp) ;
-            if (aresid < 0)
+            hash = hash_search(hres, tmp) ;
+            if (hash == NULL)
                 log_die(LOG_EXIT_USER, "service: ", stk->s + pos, " not available -- please make a bug report") ;
         }
 
         /** check if the dependencies is a external one. In this
-         * case, the service is not considered as part of the prefix */
-        if (ares[aresid].inns && (!strcmp(ares[aresid].sa.s + ares[aresid].inns, prefix)))
+         * case, the service is not considered as part of the ns */
+        if (hash->res.inns && (!strcmp(hash->res.sa.s + hash->res.inns, prefix)) && str_start_with(hash->res.sa.s + hash->res.name, prefix))
             auto_strings(result + strlen(result), prefix, ":", stk->s + pos, " ") ;
         else
-            auto_strings(result + strlen(result), stk->s + pos, " ") ;
+            auto_strings(result + strlen(result), hash->res.sa.s + hash->res.name, " ") ;
     }
 
     result[strlen(result) - 1] = 0 ;
 }
 
-static void parse_prefix_name(unsigned int idx, resolve_service_t *ares, unsigned int areslen, char const *prefix)
+static void parse_prefix_name(resolve_service_t *res, struct resolve_hash_s **hres, char const *prefix)
 {
     log_flow() ;
 
     size_t mlen = strlen(prefix) ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &ares[idx]) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-    if (ares[idx].dependencies.ndepends) {
+    if (res->dependencies.ndepends) {
 
-        size_t depslen = strlen(ares[idx].sa.s + ares[idx].dependencies.depends) ;
+        size_t depslen = strlen(res->sa.s + res->dependencies.depends) ;
         _init_stack_(stk, depslen + 1) ;
 
         if (!stack_clean_string(&stk, res->sa.s + res->dependencies.depends, depslen))
             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
-        size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * ares[idx].dependencies.ndepends ;
+        size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * res->dependencies.ndepends ;
         char n[len] ;
 
         memset(n, 0, len * sizeof(char)); ;
 
-        parse_prefix(n, &stk, ares, areslen, prefix) ;
+        parse_prefix(n, &stk, hres, prefix) ;
 
-        ares[idx].dependencies.depends = resolve_add_string(wres, n) ;
+        res->dependencies.depends = resolve_add_string(wres, n) ;
 
     }
 
-    if (ares[idx].dependencies.nrequiredby) {
+    if (res->dependencies.nrequiredby) {
 
-        size_t depslen = strlen(ares[idx].sa.s + ares[idx].dependencies.requiredby) ;
+        size_t depslen = strlen(res->sa.s + res->dependencies.requiredby) ;
         _init_stack_(stk, depslen + 1) ;
 
         if (!stack_clean_string(&stk, res->sa.s + res->dependencies.requiredby, depslen))
             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
-        size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * ares[idx].dependencies.nrequiredby ;
+        size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * res->dependencies.nrequiredby ;
         char n[len] ;
 
         memset(n, 0, len * sizeof(char)) ;
 
-        parse_prefix(n, &stk, ares, areslen, prefix) ;
+        parse_prefix(n, &stk, hres, prefix) ;
 
-        ares[idx].dependencies.requiredby = resolve_add_string(wres, n) ;
+        res->dependencies.requiredby = resolve_add_string(wres, n) ;
 
     }
 
     free(wres) ;
 }
 
-void parse_rename_interdependences(resolve_service_t *res, char const *prefix, resolve_service_t *ares, unsigned int *areslen)
+void parse_rename_interdependences(resolve_service_t *res, char const *prefix, struct resolve_hash_s **hres, ssexec_t *info)
 {
     log_flow() ;
 
-    unsigned int aresid = 0 ;
-    size_t plen = strlen(prefix) ;
-    unsigned int visit[SS_MAX_SERVICE + 1] ;
-    resolve_wrapper_t_ref awres = 0 ;
+    struct resolve_hash_s *c, *tmp ;
     stralloc sa = STRALLOC_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-    memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
+    HASH_ITER(hh, *hres, c, tmp) {
 
-    for (; aresid < *areslen ; aresid++) {
+        if (!strcmp(c->res.sa.s + c->res.inns, prefix)) {
 
-        if (!strcmp(ares[aresid].sa.s + ares[aresid].inns, prefix)) {
+            if (c->res.dependencies.ndepends || c->res.dependencies.nrequiredby)
+                parse_prefix_name(&c->res, hres, prefix) ;
 
-            if (ares[aresid].dependencies.ndepends || ares[aresid].dependencies.nrequiredby)
-                parse_prefix_name(aresid, ares, *areslen, prefix) ;
+            if (c->res.logger.want && (c->res.type == TYPE_CLASSIC || c->res.type == TYPE_ONESHOT)) {
 
-            if (ares[aresid].logger.want && ares[aresid].type == TYPE_CLASSIC) {
+                size_t namelen = strlen(c->res.sa.s + c->res.name) ;
+                char logname[namelen + SS_LOG_SUFFIX_LEN + 1] ;
 
-                char n[strlen(ares[aresid].sa.s + ares[aresid].name) + SS_LOG_SUFFIX_LEN + 1] ;
+                auto_strings(logname, c->res.sa.s + c->res.name, SS_LOG_SUFFIX) ;
 
-                auto_strings(n, ares[aresid].sa.s + ares[aresid].name, SS_LOG_SUFFIX) ;
+                parse_append_logger(hres, &c->res, info) ;
 
-                if (!sastr_add_string(&sa, n))
-                    log_die_nomem("stralloc") ;
+                if (c->res.type == TYPE_CLASSIC) {
+                    if (!sastr_add_string(&sa, logname))
+                        log_die_nomem("stralloc") ;
+                }
+
             }
 
-            char tmp[plen + 1 + strlen(ares[aresid].sa.s + ares[aresid].name) + 1] ;
-
-            auto_strings(tmp, prefix, ":", ares[aresid].sa.s + ares[aresid].name) ;
-
-            if (!sastr_add_string(&sa, ares[aresid].sa.s + ares[aresid].name))
-                log_die_nomem("stralloc") ;
+            if (sastr_cmp(&sa, c->res.sa.s + c->res.name) < 0 )
+                if (!sastr_add_string(&sa, c->res.sa.s + c->res.name))
+                    log_die_nomem("stralloc") ;
         }
     }
 
@@ -152,5 +151,4 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, r
 
     stralloc_free(&sa) ;
     free(wres) ;
-    free(awres) ;
 }

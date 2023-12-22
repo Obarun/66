@@ -35,7 +35,7 @@
 #define SS_MODULE_REQUIREDBY "/requiredby"
 #define SS_MODULE_REQUIREDBY_LEN (sizeof SS_MODULE_REQUIREDBY - 1)
 
-extern void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force) ;
+extern void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force) ;
 extern void parse_module_check_dir(char const *src,char const *dir) ;
 extern void parse_module_check_name(char const *src, char const *name) ;
 

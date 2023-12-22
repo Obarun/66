@@ -39,7 +39,7 @@
 #include <66/sanitize.h>
 #include <66/state.h>
 
-static void parse_module_dependencies(stralloc *list, resolve_service_t *res, uint8_t requiredby, resolve_service_t *ares, unsigned int *areslen, uint8_t force, uint8_t conf, ssexec_t *info)
+static void parse_module_dependencies(stralloc *list, resolve_service_t *res, uint8_t requiredby, struct resolve_hash_s **hres, uint8_t force, uint8_t conf, ssexec_t *info)
 {
     log_flow() ;
 
@@ -79,7 +79,7 @@ static void parse_module_dependencies(stralloc *list, resolve_service_t *res, ui
 
         (*nfield)++ ;
 
-        parse_frontend(sa.s, ares, areslen, info, force, conf, 0, fname, 0, 0) ;
+        parse_frontend(sa.s, hres, info, force, conf, 0, fname, 0, 0) ;
 
     }
 
@@ -142,7 +142,7 @@ static void parse_module_regex(resolve_service_t *res, char *copy, size_t copyle
     regex_configure(res, info, copy, name) ;
 }
 
-void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint8_t force)
+void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force)
 {
     log_flow() ;
 
@@ -236,12 +236,12 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
         auto_strings(copy + copylen, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS) ;
         get_list(&list, copy, name, S_IFREG, exclude) ;
 
-        parse_module_dependencies(&list, res, 0, ares, areslen, force, conf, info) ;
+        parse_module_dependencies(&list, res, 0, hres, force, conf, info) ;
 
         auto_strings(copy + copylen, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) ;
         get_list(&list, copy, name, S_IFREG, exclude) ;
 
-        parse_module_dependencies(&list, res, 1, ares, areslen, force, conf, info) ;
+        parse_module_dependencies(&list, res, 1, hres, force, conf, info) ;
     }
 
     auto_strings(copy + copylen, SS_MODULE_ACTIVATED) ;
@@ -307,7 +307,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
             if (!auto_stra(&info->treename, res->sa.s + res->treename))
                 log_die_nomem("stralloc") ;
 
-            parse_frontend(list.s, ares, areslen, info, force, conf, copy, fname, name, res->intree ? res->sa.s + res->intree : 0) ;
+            parse_frontend(list.s, hres, info, force, conf, copy, fname, name, res->intree ? res->sa.s + res->intree : 0) ;
 
             info->opt_tree = opt_tree ;
         }
@@ -316,7 +316,7 @@ void parse_module(resolve_service_t *res, resolve_service_t *ares, unsigned int 
 
     /** append the module name at each inner depends/requiredby dependencies service name
      * and define contents field.*/
-    parse_rename_interdependences(res, name, ares, areslen) ;
+    parse_rename_interdependences(res, name, hres, info) ;
 
     /** Remove the module name from requiredby field
      * of the dependencies if the service disappears with the

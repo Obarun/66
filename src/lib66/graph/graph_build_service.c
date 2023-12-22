@@ -27,8 +27,9 @@
 #include <66/graph.h>
 #include <66/state.h>
 #include <66/config.h>
+#include <66/hash.h>
 
-void graph_build_service(graph_t *graph, resolve_service_t *ares, unsigned int *areslen, ssexec_t *info, uint32_t flag)
+void graph_build_service(graph_t *graph, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag)
 {
     log_flow() ;
 
@@ -41,9 +42,7 @@ void graph_build_service(graph_t *graph, resolve_service_t *ares, unsigned int *
     if (!sastr_dir_get_recursive(&sa, solve, exclude, S_IFLNK, 0))
         log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
-    memset(ares, 0, (SS_MAX_SERVICE + 1) * sizeof(resolve_service_t)) ;
-
-    service_graph_g(sa.s, sa.len, graph, ares, areslen, info, flag) ;
+    service_graph_g(sa.s, sa.len, graph, hres, info, flag) ;
 
     stralloc_free(&sa) ;
 }

@@ -20,6 +20,7 @@
 #include <oblibs/sastr.h>
 
 #include <skalibs/sgetopt.h>
+#include <skalibs/genalloc.h>
 
 #include <66/ssexec.h>
 #include <66/config.h>
@@ -29,18 +30,19 @@
 #include <66/sanitize.h>
 #include <66/service.h>
 #include <66/enum.h>
+#include <66/hash.h>
 
 int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
+    int n = 0 ;
     uint32_t flag = 0 ;
     graph_t graph = GRAPH_ZERO ;
     uint8_t siglen = 3 ;
+    unsigned int list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0 ;
 
-    int n = 0 ;
-    unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
+    struct resolve_hash_s *hres = NULL ;
 
     memset(list, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
     memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
@@ -90,25 +92,24 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
         sanitize_source(argv[n], info, flag) ;
 
     /** build the graph of the entire system */
-    graph_build_service(&graph, ares, &areslen, info, flag) ;
+    graph_build_service(&graph, &hres, info, flag) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
 
     for (n = 0 ; n < argc ; n++) {
 
-        int aresid = service_resolve_array_search(ares, areslen, argv[n]) ;
-        if (aresid < 0)
+        struct resolve_hash_s *hash = hash_search(&hres, argv[n]) ;
+        if (hash == NULL)
             log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parse it?") ;
 
-        graph_compute_visit(ares, aresid, visit, list, &graph, &nservice, 0) ;
+        graph_compute_visit(*hash, visit, list, &graph, &nservice, 0) ;
     }
 
     /** initiate services at the corresponding scandir */
-    sanitize_init(list, nservice, &graph, ares, areslen) ;
+    sanitize_init(list, nservice, &graph, &hres) ;
 
-    service_resolve_array_free(ares, areslen) ;
-
+    hash_free(&hres) ;
     graph_free_all(&graph) ;
 
     char *sig[siglen] ;
