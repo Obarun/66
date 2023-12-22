@@ -32,7 +32,7 @@
 #define FAKELEN strlen(run)
 #endif
 
-static uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res)
+uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res)
 {
     log_flow() ;
 
@@ -249,20 +249,10 @@ void parse_append_logger(struct resolve_hash_s **hres, resolve_service_t *res, s
 {
     log_flow() ;
 
-    char *name = res->sa.s + res->name ;
+    char *logname = res->sa.s + res->logger.name ;
     struct resolve_hash_s *hash ;
     resolve_service_t lres = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-    size_t namelen = strlen(name) ;
-    char logname[namelen + SS_LOG_SUFFIX_LEN + 1] ;
-
-    auto_strings(logname, name, SS_LOG_SUFFIX) ;
-
-    res->logger.name = resolve_add_string(wres, logname) ;
-
-    res->logger.destination = compute_log_dir(wres, res) ;
-
-    res->logger.execute.run.runas = res->logger.execute.run.runas ? resolve_add_string(wres, res->sa.s + res->logger.execute.run.runas) : resolve_add_string(wres, SS_LOGGER_RUNNER) ;
 
     hash = hash_search(hres, logname) ;
     if (hash == NULL && res->type == TYPE_CLASSIC) {
@@ -270,14 +260,14 @@ void parse_append_logger(struct resolve_hash_s **hres, resolve_service_t *res, s
 
         if (res->dependencies.ndepends) {
 
-            char buf[strlen(res->sa.s + res->dependencies.depends) + 1 + strlen(res->sa.s + res->logger.name) + 1] ;
-            auto_strings(buf, res->sa.s + res->dependencies.depends, " ", res->sa.s + res->logger.name) ;
+            char buf[strlen(res->sa.s + res->dependencies.depends) + 1 + strlen(logname) + 1] ;
+            auto_strings(buf, res->sa.s + res->dependencies.depends, " ", logname) ;
 
             res->dependencies.depends = resolve_add_string(wres, buf) ;
 
         } else {
 
-            res->dependencies.depends = resolve_add_string(wres, res->sa.s + res->logger.name) ;
+            res->dependencies.depends = resolve_add_string(wres, logname) ;
         }
 
         res->dependencies.ndepends++ ;

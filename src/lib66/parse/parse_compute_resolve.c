@@ -258,6 +258,21 @@ void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
     /* oneshotd */
     res->live.oneshotddir = compute_pipe_service(wres, info, SS_ONESHOTD) ;
 
+    if (res->logger.want && res->type != TYPE_MODULE && !res->inns) {
+
+        char *name = res->sa.s + res->name ;
+        size_t namelen = strlen(name) ;
+        char logname[namelen + SS_LOG_SUFFIX_LEN + 1] ;
+
+        auto_strings(logname, name, SS_LOG_SUFFIX) ;
+
+        res->logger.name = resolve_add_string(wres, logname) ;
+
+        res->logger.destination = compute_log_dir(wres, res) ;
+
+        res->logger.execute.run.runas = res->logger.execute.run.runas ? resolve_add_string(wres, res->sa.s + res->logger.execute.run.runas) : resolve_add_string(wres, SS_LOGGER_RUNNER) ;
+    }
+
     if (res->type == TYPE_ONESHOT || res->type == TYPE_CLASSIC) {
 
         // {run,up}/{run,up}.user script

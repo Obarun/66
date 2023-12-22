@@ -116,7 +116,7 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, s
 
     struct resolve_hash_s *c, *tmp ;
     stralloc sa = STRALLOC_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    resolve_wrapper_t_ref wres = 0 ;
 
     HASH_ITER(hh, *hres, c, tmp) {
 
@@ -129,8 +129,15 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, s
 
                 size_t namelen = strlen(c->res.sa.s + c->res.name) ;
                 char logname[namelen + SS_LOG_SUFFIX_LEN + 1] ;
+                wres = resolve_set_struct(DATA_SERVICE, &c->res) ;
 
                 auto_strings(logname, c->res.sa.s + c->res.name, SS_LOG_SUFFIX) ;
+
+                c->res.logger.name = resolve_add_string(wres, logname) ;
+
+                c->res.logger.destination = compute_log_dir(wres, res) ;
+
+                c->res.logger.execute.run.runas = c->res.logger.execute.run.runas ? resolve_add_string(wres, c->res.sa.s + c->res.logger.execute.run.runas) : resolve_add_string(wres, SS_LOGGER_RUNNER) ;
 
                 parse_append_logger(hres, &c->res, info) ;
 
@@ -145,7 +152,10 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, s
                 if (!sastr_add_string(&sa, c->res.sa.s + c->res.name))
                     log_die_nomem("stralloc") ;
         }
+        free(wres) ;
     }
+
+    wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     res->dependencies.contents = parse_compute_list(wres, &sa, &res->dependencies.ncontents, 0) ;
 
