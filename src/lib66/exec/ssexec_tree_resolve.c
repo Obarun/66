@@ -33,7 +33,7 @@
 #include <66/config.h>
 #include <66/state.h>
 
-#define MAXOPTS 16
+#define MAXOPTS 17
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -94,6 +94,7 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
 
     char tree_buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
         "name",
+        "enabled",
         "depends" ,
         "requiredby",
         "allow",
@@ -107,9 +108,7 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
         //"init" ,
         //"supervised", // 13
         // Master
-        "enabled",
         "current",
-        "nenabled",
     } ;
 
     if (!strcmp(argv[0], SS_MASTER + 1)) {
@@ -140,6 +139,7 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
         unsigned int m = 0 ;
 
         info_display_string(fields[m++], tres.sa.s, tres.name, 0) ;
+        info_display_int(fields[m++], tres.enabled) ;
         info_display_string(fields[m++], tres.sa.s, tres.depends, 1) ;
         info_display_string(fields[m++], tres.sa.s, tres.requiredby, 1) ;
         info_display_string(fields[m++], tres.sa.s, tres.allow, 1) ;
@@ -156,13 +156,11 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
     } else {
 
         info_display_string(fields[0], mres.sa.s, mres.name, 1) ;
-        info_display_string(fields[3], mres.sa.s, mres.allow, 1) ;
-        info_display_string(fields[11], mres.sa.s, mres.enabled, 1) ;
+        info_display_string(fields[4], mres.sa.s, mres.allow, 1) ;
         info_display_string(fields[12], mres.sa.s, mres.current, 1) ;
-        info_display_string(fields[5], mres.sa.s, mres.contents, 1) ;
-        info_display_int(fields[8], mres.nallow) ;
-        info_display_int(fields[13], mres.nenabled) ;
-        info_display_int(fields[10], mres.ncontents) ;
+        info_display_string(fields[6], mres.sa.s, mres.contents, 1) ;
+        info_display_int(fields[9], mres.nallow) ;
+        info_display_int(fields[11], mres.ncontents) ;
     }
 
     resolve_free(wres) ;

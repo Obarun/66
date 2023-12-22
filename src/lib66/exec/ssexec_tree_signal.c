@@ -61,8 +61,6 @@
 static unsigned int napid = 0 ;
 static unsigned int npid = 0 ;
 
-static resolve_tree_t_ref pares = 0 ;
-static unsigned int *pareslen = 0 ;
 static uint8_t reloadmsg = 0 ;
 
 typedef struct pidtree_s pidtree_t, *pidtree_t_ref ;
@@ -70,7 +68,7 @@ struct pidtree_s
 {
     int pipe[2] ;
     pid_t pid ;
-    int aresid ; // id at array ares
+    resolve_tree_t *tres ; // id at array ares
     unsigned int vertex ; // id at graph_hash_t struct
     uint8_t state ;
     int nedge ;
@@ -80,7 +78,17 @@ struct pidtree_s
      * to notify when a tree is started/stopped */
     unsigned int notif[SS_MAX_SERVICE + 1] ;
 } ;
-#define PIDTREE_ZERO { { -1, -1 }, -1, -1, 0, 0, 0, { 0 } }
+#define PIDTREE_ZERO { \
+    .pipe[0] = -1, \
+    .pipe[1] = -1, \
+    .tres = NULL, \
+    .vertex = -1, \
+    .state = 0, \
+    .nedge =  0, \
+    .edge = { 0 }, \
+    .nnotif = 0, \
+    .notif = { 0 } \
+}
 
 typedef enum fifo_e fifo_t, *fifo_t_ref ;
 enum fifo_e
@@ -186,15 +194,6 @@ static void all_redir_fd(void)
     umask(022) ;
 }
 
-void tree_resolve_array_free(resolve_tree_t *ares, unsigned int areslen)
-{
-    log_flow() ;
-
-    unsigned int pos = 0 ;
-    for (; pos < areslen ; pos++)
-        stralloc_free(&ares[pos].sa) ;
-}
-
 static inline void kill_all(pidtree_t *apidt)
 {
     log_flow() ;
@@ -217,21 +216,6 @@ static pidtree_t pidtree_init(unsigned int len)
     return pids ;
 }
 
-
-static int pidtree_get_id(pidtree_t *apidt, unsigned int id)
-{
-    log_flow() ;
-
-    unsigned int pos = 0 ;
-
-    for (; pos < napid ; pos++) {
-        if (apidt[pos].vertex == id)
-            return (unsigned int) pos ;
-    }
-    return -1 ;
-}
-
-
 static void notify(pidtree_t *apidt, unsigned int pos, char const *sig, unsigned int what)
 {
     log_flow() ;
@@ -246,16 +230,16 @@ static void notify(pidtree_t *apidt, unsigned int pos, char const *sig, unsigned
 
             if (apidt[pos].notif[i] == apidt[idx].vertex && !FLAGS_ISSET(apidt[idx].state, flag))  {
 
-                size_t nlen = uint_fmt(fmt, apidt[pos].aresid) ;
+                size_t nlen = uint_fmt(fmt, pos) ;
                 fmt[nlen] = 0 ;
                 size_t len = nlen + 1 + 2 ;
                 char s[len + 1] ;
                 auto_strings(s, fmt, ":", sig, "@") ;
 
-                log_trace("sends notification ", sig, " to: ", pares[apidt[idx].aresid].sa.s + pares[apidt[idx].aresid].name, " from: ", pares[apidt[pos].aresid].sa.s + pares[apidt[pos].aresid].name) ;
+                log_trace("sends notification ", sig, " to: ", apidt[idx].tres->sa.s + apidt[idx].tres->name, " from: ", apidt[pos].tres->sa.s + apidt[pos].tres->name) ;
 
                 if (write(apidt[idx].pipe[1], s, strlen(s)) < 0)
-                    log_dieusys(LOG_EXIT_SYS, "send notif to: ", pares[apidt[idx].aresid].sa.s + pares[apidt[idx].aresid].name) ;
+                    log_dieusys(LOG_EXIT_SYS, "send notif to: ", apidt[idx].tres->sa.s + apidt[idx].tres->name) ;
             }
         }
     }
@@ -270,37 +254,34 @@ static void announce(unsigned int pos, pidtree_t *apidt, char const *base, unsig
     log_flow() ;
 
     char fmt[UINT_FMT] ;
-    char const *treename = pares[apidt[pos].aresid].sa.s + pares[apidt[pos].aresid].name ;
-
-    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    char const *treename = apidt[pos].tres->sa.s + apidt[pos].tres->name ;
 
     uint8_t flag = what ? FLAGS_DOWN : FLAGS_UP ;
 
     if (success) {
 
-        notify(apidt, pos, "F", what) ;
-
         fmt[uint_fmt(fmt, exitcode)] = 0 ;
 
         log_1_warnu(reloadmsg == 0 ? "start" : reloadmsg > 1 ? "unsupervise" : what == 0 ? "start" : "stop", " tree: ", treename, " -- exited with signal: ", fmt) ;
 
+        notify(apidt, pos, "F", what) ;
+
         FLAGS_SET(apidt[pos].state, FLAGS_BLOCK|FLAGS_FATAL) ;
 
     } else {
+
+        log_info("Successfully ", reloadmsg == 0 ? "started" : reloadmsg > 1 ? "unsupervised" : what == 0 ? "started" : "stopped", " tree: ", treename) ;
 
         notify(apidt, pos, what ? "D" : "U", what) ;
 
         FLAGS_CLEAR(apidt[pos].state, FLAGS_BLOCK) ;
         FLAGS_SET(apidt[pos].state, flag|FLAGS_UNBLOCK) ;
 
-        log_info("Successfully ", reloadmsg == 0 ? "started" : reloadmsg > 1 ? "unsupervised" : what == 0 ? "started" : "stopped", " tree: ", treename) ;
     }
 
-    resolve_free(wres) ;
 }
 
-static void pidtree_init_array(unsigned int *list, unsigned int listlen, pidtree_t *apidt, graph_t *g, resolve_tree_t *ares, unsigned int areslen, ssexec_t *info, uint8_t requiredby, uint8_t what)
+static void pidtree_init_array(unsigned int *list, unsigned int listlen, pidtree_t *apidt, graph_t *g, struct resolve_hash_tree_s **htres, ssexec_t *info, uint8_t requiredby, uint8_t what)
 {
     log_flow() ;
 
@@ -312,10 +293,11 @@ static void pidtree_init_array(unsigned int *list, unsigned int listlen, pidtree
 
         char *name = g->data.s + genalloc_s(graph_hash_t,&g->hash)[list[pos]].vertex ;
 
-        pids.aresid = tree_resolve_array_search(ares, areslen, name) ;
+        struct resolve_hash_tree_s *hash = hash_search_tree(htres, name) ;
+        if (hash == NULL)
+            log_dieu(LOG_EXIT_SYS,"find hash id of: ", name, " -- please make a bug report") ;
 
-        if (pids.aresid < 0)
-            log_dieu(LOG_EXIT_SYS,"find ares id of: ", name, " -- please make a bug report") ;
+        pids.tres = &hash->tres ;
 
         pids.nedge = graph_matrix_get_edge_g_sorted_list(pids.edge, g, name, requiredby, 1) ;
 
@@ -380,17 +362,16 @@ static int handle_signal(pidtree_t *apidt, unsigned int what, graph_t *graph, ss
                         if (!WIFSIGNALED(wstat) && !WEXITSTATUS(wstat)) {
 
                             announce(pos, apidt, info->base.s, what, 0, 0) ;
+                            npid-- ;
 
                         } else {
 
                             ok = WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat) ;
                             announce(pos, apidt, info->base.s, what, 1, ok) ;
-
+                            npid-- ;
                             kill_all(apidt) ;
                             break ;
                         }
-
-                        npid-- ;
                     }
                 }
                 break ;
@@ -399,7 +380,7 @@ static int handle_signal(pidtree_t *apidt, unsigned int what, graph_t *graph, ss
             case SIGINT :
                     log_1_warn("aborting transaction") ;
                     kill_all(apidt) ;
-                    ok = 110 ;
+                    ok = 111 ;
                     break ;
             default : log_die(LOG_EXIT_SYS, "unexpected data in selfpipe") ;
         }
@@ -424,6 +405,7 @@ static uint32_t compute_timeout (uint32_t timeout, tain *deadline)
   return t ;
 }
  */
+
 static int ssexec_callback(stralloc *sa, ssexec_t *info, unsigned int what)
 {
     log_flow() ;
@@ -578,12 +560,12 @@ static int check_action(pidtree_t *apidt, unsigned int pos, unsigned int receive
 
 }
 
-static int async_deps(pidtree_t *apidt, unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph, tain *deadline)
+static int async_deps(struct resolve_hash_tree_s **htres, pidtree_t *apidt, unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph, tain *deadline)
 {
     log_flow() ;
 
     int r ;
-    unsigned int pos = 0, id = 0, ilog = 0, idx = 0 ;
+    unsigned int pos = 0, id = 0, idx = 0 ;
     char buf[(UINT_FMT*2)*SS_MAX_SERVICE + 1] ;
 
     tain dead ;
@@ -606,7 +588,7 @@ static int async_deps(pidtree_t *apidt, unsigned int i, unsigned int what, ssexe
 
         if (!r) {
             errno = ETIMEDOUT ;
-            log_dieusys(LOG_EXIT_SYS,"time out", pares[apidt[i].aresid].sa.s + pares[apidt[i].aresid].name) ;
+            log_dieusys(LOG_EXIT_SYS,"time out", apidt[i].tres->sa.s + apidt[i].tres->name) ;
         }
 
         if (x.revents & IOPAUSE_READ) {
@@ -638,7 +620,7 @@ static int async_deps(pidtree_t *apidt, unsigned int i, unsigned int what, ssexe
 
                 /**
                  * the received string have the format:
-                 *      index_of_the_ares_array_of_the_tree_dependency:signal_receive
+                 *      apids_array_id:signal_receive
                  *
                  * typically:
                  *      - 10:D
@@ -657,9 +639,7 @@ static int async_deps(pidtree_t *apidt, unsigned int i, unsigned int what, ssexe
                 if (!uint0_scan(line, &id))
                     log_dieusys(LOG_EXIT_SYS, "retrieve service number -- please make a bug report") ;
 
-                ilog = id ;
-
-                log_trace(pares[apidt[i].aresid].sa.s + pares[apidt[i].aresid].name, " acknowledges: ", pc, " from: ", pares[ilog].sa.s + pares[ilog].name) ;
+                log_trace(apidt[i].tres->sa.s + apidt[i].tres->name, " acknowledges: ", pc, " from: ", apidt[id].tres->sa.s + apidt[id].tres->name) ;
 
                 if (!visit[pos]) {
 
@@ -669,7 +649,7 @@ static int async_deps(pidtree_t *apidt, unsigned int i, unsigned int what, ssexe
 
                     id = check_action(apidt, id, c, what) ;
                     if (id < 0)
-                        log_die(LOG_EXIT_SYS, "tree dependency: ", pares[ilog].sa.s + pares[ilog].name, " of: ", pares[apidt[i].aresid].sa.s + pares[apidt[i].aresid].name," crashed") ;
+                        log_die(LOG_EXIT_SYS, "tree dependency: ", apidt[id].tres->sa.s + apidt[id].tres->name, " of: ", apidt[id].tres->sa.s + apidt[id].tres->name," crashed") ;
 
                     if (!id)
                         continue ;
@@ -685,7 +665,7 @@ static int async_deps(pidtree_t *apidt, unsigned int i, unsigned int what, ssexe
     return 1 ;
 }
 
-static int async(pidtree_t *apidt, unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph, tain *deadline)
+static int async(struct resolve_hash_tree_s **htres, pidtree_t *apidt, unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph, tain *deadline)
 {
     log_flow() ;
 
@@ -705,7 +685,7 @@ static int async(pidtree_t *apidt, unsigned int i, unsigned int what, ssexec_t *
             FLAGS_SET(apidt[i].state, FLAGS_BLOCK) ;
 
             if (apidt[i].nedge)
-                if (!async_deps(apidt, i, what, info, graph, deadline))
+                if (!async_deps(htres, apidt, i, what, info, graph, deadline))
                     log_warnu_return(LOG_EXIT_ZERO, !what ? "start" : "stop", " dependencies of tree: ", name) ;
 
             e = doit(name, info, what, deadline) ;
@@ -728,7 +708,7 @@ static int async(pidtree_t *apidt, unsigned int i, unsigned int what, ssexec_t *
     return e ;
 }
 
-static int waitit(pidtree_t *apidt, unsigned int what, graph_t *graph, tain *deadline, ssexec_t *info)
+static int waitit(struct resolve_hash_tree_s **htres, pidtree_t *apidt, unsigned int what, graph_t *graph, tain *deadline, ssexec_t *info)
 {
     log_flow() ;
 
@@ -752,7 +732,6 @@ static int waitit(pidtree_t *apidt, unsigned int what, graph_t *graph, tain *dea
         !selfpipe_trap(SIGTERM) ||
         !sig_altignore(SIGPIPE))
             log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
-
 
     iopause_fd x = { .fd = spfd, .events = IOPAUSE_READ, .revents = 0 } ;
 
@@ -778,7 +757,7 @@ static int waitit(pidtree_t *apidt, unsigned int what, graph_t *graph, tain *dea
 
             close(apidtree[pos].pipe[1]) ;
 
-            e = async(apidtree, pos, what, info, graph, deadline) ;
+            e = async(htres, apidtree, pos, what, info, graph, deadline) ;
 
             goto end ;
         }
@@ -810,15 +789,43 @@ static int waitit(pidtree_t *apidt, unsigned int what, graph_t *graph, tain *dea
         }
     }
 
-
     selfpipe_finish() ;
-    end:
-        for (pos = 0 ; pos < napid ; pos++) {
-            close(apidtree[pos].pipe[1]) ;
-            close(apidtree[pos].pipe[0]) ;
-        }
 
+    for (pos = 0 ; pos < napid ; pos++) {
+        close(apidtree[pos].pipe[1]) ;
+        close(apidtree[pos].pipe[0]) ;
+    }
+
+
+    end:
         return e ;
+}
+
+static void compute_visit_tree(char const *treename, unsigned int *visit, unsigned int *list, graph_t *graph, unsigned int *ntree, uint8_t requiredby)
+{
+    log_flow() ;
+
+    unsigned int l[graph->mlen], c = 0, pos = 0, idx = 0 ;
+
+    idx = graph_hash_vertex_get_id(graph, treename) ;
+
+    if (!visit[idx]) {
+        /** avoid double entry */
+        list[(*ntree)++] = idx ;
+        visit[idx] = 1 ;
+
+    }
+
+    /** find dependencies of the tree from the graph, do it recursively */
+    c = graph_matrix_get_edge_g_sorted_list(l, graph, treename, requiredby, 1) ;
+
+    /** append to the list to deal with */
+    for (; pos < c ; pos++) {
+        if (!visit[l[pos]]) {
+            list[(*ntree)++] = l[pos] ;
+            visit[l[pos]] = 1 ;
+        }
+    }
 }
 
 int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
@@ -827,14 +834,11 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
 
     int r, shut = 0, fd ;
     tain deadline ;
-    uint8_t what = 0, requiredby = 0, found = 0 ;
+    uint8_t what = 0, requiredby = 0 ;
     stralloc sa = STRALLOC_ZERO ;
     size_t pos = 0 ;
-
-    unsigned int areslen = 0, list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1] ;
-    resolve_tree_t ares[SS_MAX_SERVICE + 1] ;
-    resolve_wrapper_t_ref wres = 0 ;
-
+    struct resolve_hash_tree_s *htres = NULL ;
+    unsigned int list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1] ;
     graph_t graph = GRAPH_ZERO ;
 
     memset(list, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
@@ -881,7 +885,7 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
     if ((svc_scandir_ok(info->scandir.s)) <= 0)
         log_die(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
 
-    graph_build_tree(&graph, info->base.s, !info->treename.len ? E_RESOLVE_TREE_MASTER_ENABLED : E_RESOLVE_TREE_MASTER_CONTENTS) ;
+    graph_build_tree(&graph, &htres, info->base.s, E_RESOLVE_TREE_MASTER_CONTENTS) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "trees selection is not created -- creates at least one tree") ;
@@ -889,73 +893,39 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
     if (!graph_matrix_sort_tosa(&sa, &graph))
         log_dieu(LOG_EXIT_SYS, "get list of trees for graph -- please make a bug report") ;
 
-    FOREACH_SASTR(&sa, pos) {
+    /** only one tree */
 
-        char *treename = sa.s + pos ;
+    if (info->treename.len) {
 
-        /** only one tree */
-        if (info->treename.len) {
+        struct resolve_hash_tree_s *hash = hash_search_tree(&htres, info->treename.s) ;
+        if (hash == NULL)
+            log_dieu(LOG_EXIT_SYS,"find hash id of: ", info->treename.s, " -- please make a bug report") ;
 
-            if (!strcmp(info->treename.s, treename))
-                found = 1 ;
-            else continue ;
+        compute_visit_tree(info->treename.s, visit, list, &graph, &napid, requiredby) ;
+
+    } else {
+
+        FOREACH_SASTR(&sa, pos) {
+
+            char *treename = sa.s + pos ;
+            struct resolve_hash_tree_s *hash = hash_search_tree(&htres, treename) ;
+
+            if (hash == NULL)
+                log_dieu(LOG_EXIT_SYS,"find hash id of: ", treename, " -- please make a bug report") ;
+
+            if (hash->tres.enabled)
+                compute_visit_tree(treename, visit, list, &graph, &napid, requiredby) ;
         }
-
-        if (tree_resolve_array_search(ares, areslen, treename) < 0) {
-
-            resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-            /** need to make a copy of the resolve due of the freed
-             * of the wres struct at the end of the process */
-            resolve_tree_t cp = RESOLVE_TREE_ZERO ;
-            wres = resolve_set_struct(DATA_TREE, &tres) ;
-
-            if (resolve_read_g(wres, info->base.s, treename) <= 0)
-                log_dieu(LOG_EXIT_SYS, "read resolve file of: ", treename, " -- please make a bug report") ;
-
-            tree_resolve_copy(&cp, &tres) ;
-
-            ares[areslen++] = cp ;
-
-            resolve_free(wres) ;
-        }
-
-        unsigned int l[graph.mlen], c = 0, pos = 0, idx = 0 ;
-
-        idx = graph_hash_vertex_get_id(&graph, treename) ;
-
-        if (!visit[idx]) {
-            /** avoid double entry */
-            list[napid++] = idx ;
-            visit[idx] = 1 ;
-
-        }
-
-        /** find dependencies of the tree from the graph, do it recursively */
-        c = graph_matrix_get_edge_g_sorted_list(l, &graph, treename, requiredby, 1) ;
-
-        /** append to the list to deal with */
-        for (; pos < c ; pos++) {
-            if (!visit[l[pos]]) {
-                list[napid++] = l[pos] ;
-                visit[l[pos]] = 1 ;
-            }
-        }
-
-        if (found)
-            break ;
     }
 
     pidtree_t apidt[graph.mlen] ;
-
-    pares = ares ;
-    pareslen = &areslen ;
 
     if (!napid) {
         r = 0 ;
         goto end ;
     }
 
-    pidtree_init_array(list, napid, apidt, &graph, ares, areslen, info, requiredby, what) ;
+    pidtree_init_array(list, napid, apidt, &graph, &htres, info, requiredby, what) ;
 
     if (shut) {
 
@@ -985,7 +955,7 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
         }
     }
 
-    r = waitit(apidt, what, &graph, &deadline, info) ;
+    r = waitit(&htres, apidt, what, &graph, &deadline, info) ;
 
     end:
 
@@ -1003,7 +973,7 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
 
         graph_free_all(&graph) ;
         stralloc_free(&sa) ;
-        tree_resolve_array_free(ares, areslen) ;
+        hash_free_tree(&htres) ;
 
         return r ;
 }

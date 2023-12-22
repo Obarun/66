@@ -42,6 +42,7 @@
 #include <66/graph.h>
 #include <66/ssexec.h>
 #include <66/state.h>
+#include <66/hash.h>
 
 static unsigned int REVERSE = 0 ;
 static unsigned int NOFIELD = 1 ;
@@ -231,11 +232,12 @@ static void info_display_depends(char const *field, char const *treename)
     size_t padding = 1 ;
     graph_t graph = GRAPH_ZERO ;
     stralloc sa = STRALLOC_ZERO ;
+    struct resolve_hash_tree_s *htres = NULL ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    graph_build_tree(&graph, pinfo->base.s, E_RESOLVE_TREE_MASTER_CONTENTS) ;
+    graph_build_tree(&graph, &htres, pinfo->base.s, E_RESOLVE_TREE_MASTER_CONTENTS) ;
 
     r = graph_matrix_get_edge_g_sorted_sa(&sa, &graph, treename, 0, 0) ;
     if (r < 0)
@@ -283,6 +285,7 @@ static void info_display_depends(char const *field, char const *treename)
     freed:
         graph_free_all(&graph) ;
         stralloc_free(&sa) ;
+        hash_free_tree(&htres) ;
 }
 
 static void info_display_requiredby(char const *field, char const *treename)
@@ -291,11 +294,12 @@ static void info_display_requiredby(char const *field, char const *treename)
     size_t padding = 1 ;
     graph_t graph = GRAPH_ZERO ;
     stralloc sa = STRALLOC_ZERO ;
+    struct resolve_hash_tree_s *htres = NULL ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    graph_build_tree(&graph, pinfo->base.s, E_RESOLVE_TREE_MASTER_CONTENTS) ;
+    graph_build_tree(&graph, &htres, pinfo->base.s, E_RESOLVE_TREE_MASTER_CONTENTS) ;
 
     r = graph_matrix_get_edge_g_sorted_sa(&sa, &graph, treename, 1, 0) ;
     if (r < 0)
@@ -345,6 +349,7 @@ static void info_display_requiredby(char const *field, char const *treename)
     freed:
         graph_free_all(&graph) ;
         stralloc_free(&sa) ;
+        hash_free_tree(&htres) ;
 }
 
 static void info_display_contents(char const *field, char const *treename)
@@ -354,10 +359,7 @@ static void info_display_contents(char const *field, char const *treename)
     graph_t graph = GRAPH_ZERO ;
     stralloc sa = STRALLOC_ZERO ;
 
-    unsigned int areslen = 0 ;
-    resolve_service_t ares[SS_MAX_SERVICE + 1] ;
-
-    memset(ares, 0, (SS_MAX_SERVICE + 1) * sizeof(resolve_service_t)) ;
+    struct resolve_hash_s *hres = NULL ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
@@ -368,9 +370,9 @@ static void info_display_contents(char const *field, char const *treename)
     if (!sa.len)
         goto empty ;
 
-    service_graph_g(sa.s, sa.len, &graph, ares, &areslen, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
+    service_graph_g_hash(sa.s, sa.len, &graph, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
-    if (!areslen)
+    if (!HASH_COUNT(hres))
         goto empty ;
 
     if (GRAPH) {
@@ -414,6 +416,7 @@ static void info_display_contents(char const *field, char const *treename)
 
     freed:
         graph_free_all(&graph) ;
+        hash_free(&hres) ;
         stralloc_free(&sa) ;
 }
 
@@ -464,6 +467,7 @@ int ssexec_tree_status(int argc, char const *const *argv, ssexec_t *info)
     size_t pos = 0 ;
     int what[MAXOPTS] = { 0 } ;
     stralloc sa = STRALLOC_ZERO ;
+    struct resolve_hash_tree_s *htres = NULL ;
 
     pinfo = info ;
 
@@ -548,7 +552,7 @@ int ssexec_tree_status(int argc, char const *const *argv, ssexec_t *info)
 
         graph_t graph = GRAPH_ZERO ;
 
-        graph_build_tree(&graph, pinfo->base.s, E_RESOLVE_TREE_MASTER_CONTENTS) ;
+        graph_build_tree(&graph, &htres, pinfo->base.s, E_RESOLVE_TREE_MASTER_CONTENTS) ;
 
         if (!graph_matrix_sort_tosa(&sa, &graph))
             log_dieu(LOG_EXIT_SYS, "get the sorted list of trees") ;
@@ -579,6 +583,7 @@ int ssexec_tree_status(int argc, char const *const *argv, ssexec_t *info)
     freed:
 
     stralloc_free(&sa) ;
+    hash_free_tree(&htres) ;
 
     return 0 ;
 }

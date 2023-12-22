@@ -24,6 +24,7 @@
 
 #include <66/ssexec.h>
 #include <66/resolve.h>
+#include <66/hash.h>
 
 #define TREE_GROUPS_BOOT "boot"
 #define TREE_GROUPS_BOOT_LEN (sizeof TREE_GROUPS_BOOT - 1)
@@ -129,6 +130,15 @@ struct tree_seed_s
 } ;
 #define TREE_SEED_ZERO { STRALLOC_ZERO, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0 }
 
+struct resolve_hash_tree_s {
+	char name[SS_MAX_SERVICE_NAME + 1] ; // name as key
+	uint8_t visit ;
+	resolve_tree_t tres ;
+	UT_hash_handle hh ;
+
+} ;
+#define RESOLVE_HASH_TREE_ZERO { 0, 0, RESOLVE_TREE_ZERO, NULL }
+
 /** @Return 1 on success
  * @Return 0 if not valid
  * @Return -1 on system error */
@@ -173,19 +183,13 @@ extern int tree_sethome(ssexec_t *info) ;
 extern int tree_switch_current(char const *base, char const *tree) ;
 
 
-/**
- *
- * Resolve API
- *
- * */
-
+/** Resolve API */
 /** tree */
 extern int tree_resolve_read_cdb(cdb *c, resolve_tree_t *tres) ;
 extern int tree_resolve_write_cdb(cdbmaker *c, resolve_tree_t *tres) ;
 extern int tree_resolve_copy(resolve_tree_t *dst, resolve_tree_t *tres) ;
 extern int tree_resolve_modify_field(resolve_tree_t *tres, uint8_t field, char const *data) ;
 extern int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree_enum_t field) ;
-extern int tree_resolve_array_search(resolve_tree_t *ares, unsigned int areslen, char const *name) ;
 extern void tree_service_add(char const *treename, char const *service, ssexec_t *info) ;
 extern void tree_service_remove(char const *base, char const *treename, char const *service) ;
 /** Master */
@@ -196,11 +200,7 @@ extern int tree_resolve_master_copy(resolve_tree_master_t *dst, resolve_tree_mas
 extern int tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint8_t field, char const *data) ;
 extern int tree_resolve_master_get_field_tosa(stralloc *sa, resolve_tree_master_t *mres, resolve_tree_master_enum_t field) ;
 
-/**
- *
- * Seed API
- *
- * */
+/** Seed API */
 extern int tree_seed_file_isvalid(char const *seedpath, char const *treename) ;
 extern void tree_seed_free(tree_seed_t *seed) ;
 extern int tree_seed_get_group_permissions(tree_seed_t *seed) ;
@@ -210,5 +210,10 @@ extern int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath) ;
 extern int tree_seed_resolve_path(stralloc *sa, char const *seed) ;
 extern int tree_seed_setseed(tree_seed_t *seed, char const *treename) ;
 
+/** HASH API*/
+extern int hash_add_tree(struct resolve_hash_tree_s **hash, char const *name, resolve_tree_t res) ;
+extern struct resolve_hash_tree_s *hash_search_tree(struct resolve_hash_tree_s **hash, char const *name) ;
+extern int hash_count_tree(struct resolve_hash_tree_s **hash) ;
+extern void hash_free_tree(struct resolve_hash_tree_s **hash) ;
 
 #endif
