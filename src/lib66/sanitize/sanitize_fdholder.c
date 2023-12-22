@@ -166,7 +166,7 @@ int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag, ui
 
         for (; pos < tlen ; pos += strlen(t + pos) + 1) {
 
-            if (str_start_with(t + pos, SS_FDHOLDER_PIPENAME "r-")) {
+            if (!str_start_with(t + pos, SS_FDHOLDER_PIPENAME "r-")) {
                 /** only keep the reader, the writer is automatically created
                  * by the 66-fdholder-filler. see format of it */
                 if (!auto_stra(&list, t + pos, "\n"))
@@ -178,6 +178,7 @@ int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag, ui
 
         auto_strings(file, socket, "/data/autofilled") ;
 
+        log_trace("create fdholder autofilled file") ;
         if (!openwritenclose_unsafe(file, list.s, list.len))
             log_warnusys_return(LOG_EXIT_ZERO, "write file: ", file) ;
 
