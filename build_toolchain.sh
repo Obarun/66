@@ -18,23 +18,16 @@ check_tag(){
     fi
 }
 
-rm_package(){
-
-    pacman -Rdd ${1}
-
-}
-
 ## skalibs
 build_skalibs() {
 
-    rm_package "skalibs"
     git clone https://github.com/skarnet/skalibs
     cd skalibs
     check_tag "${skalibs_tag}"
     ./configure \
         --prefix=/usr \
         --with-default-path=/usr/bin \
-        --disable-shared
+        --enable-shared
 
     make install || return 1
     cd ..
@@ -43,7 +36,6 @@ build_skalibs() {
 ## execline
 build_execline() {
 
-    rm_package "execline"
     git clone https://github.com/skarnet/execline
     cd execline
     check_tag "${execline_tag}"
@@ -53,7 +45,7 @@ build_execline() {
         --bindir=/usr/bin \
         --sbindir=/usr/bin \
         --shebangdir=/usr/bin \
-        --disable-shared
+        --enable-shared
 
     make install || return 1
     cd ..
@@ -62,7 +54,6 @@ build_execline() {
 ## s6
 build_s6() {
 
-    rm_package "s6"
     git clone https://github.com/skarnet/s6
     cd s6
     check_tag "${s6_tag}"
@@ -70,7 +61,7 @@ build_s6() {
         --prefix=/usr \
         --bindir=/usr/bin \
         --sbindir=/usr/bin \
-        --disable-shared
+        --enable-shared
 
     make install || return 1
     cd ..
@@ -79,15 +70,16 @@ build_s6() {
 ## oblibs
 build_oblibs() {
 
-    rm_package "oblibs"
     git clone https://git.obarun.org/obarun/oblibs
     cd oblibs
-    check_tag "${oblibs_tag}"
+    #check_tag "${oblibs_tag}"
+    git switch dev
+
     ./configure \
         --prefix=/usr \
         --with-lib=/usr/lib/skalibs \
         --with-lib=/usr/lib/execline \
-        --disable-shared
+        --enable-shared
 
     make install || return 1
     cd ..
