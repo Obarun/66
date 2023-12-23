@@ -84,6 +84,9 @@ build_oblibs() {
     cd oblibs
     check_tag "${oblibs_tag}"
     ./configure \
+        --prefix=/usr \
+        --with-lib=/usr/lib/skalibs \
+        --with-lib=/usr/lib/execline \
         --enable-shared
 
     make install || return 1
