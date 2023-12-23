@@ -8,7 +8,7 @@ before_script:
 test:
   stage: test
   script:
-  - ./configure --bindir=/usr/bin --shebangdir=/usr/bin
+  - ./configure --bindir=/usr/bin --shebangdir=/usr/bin --with-lib=/usr/lib/skalibs --with-lib=/usr/lib/execline --with-lib=/usr/lib/s6 --with-lib=/usr/lib/oblibs
   - make
   - make DESTDIR=gitlab-ci install
 
@@ -19,7 +19,7 @@ test:
 build:
   stage: build
   script:
-  - ./configure --bindir=/usr/bin --shebangdir=/usr/bin
+  - ./configure --bindir=/usr/bin --shebangdir=/usr/bin --with-lib=/usr/lib/skalibs --with-lib=/usr/lib/execline --with-lib=/usr/lib/s6 --with-lib=/usr/lib/oblibs
   - make
   - make DESTDIR=gitlab-ci install
 
