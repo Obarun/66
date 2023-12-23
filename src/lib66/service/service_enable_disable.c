@@ -69,11 +69,20 @@ void service_enable_disable(graph_t *g, struct resolve_hash_s *hash, struct reso
 
         resolve_service_t_ref res = &hash->res ;
         resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-        char const *treename = res->sa.s + (res->intree ? res->intree : res->treename) ;
+        char const *treename = 0 ;
+        if (info->opt_tree)
+            treename = info->treename.s ;
+        else
+            treename = res->sa.s + (res->intree ? res->intree : res->treename) ;
 
         /** resolve file may already exist. Be sure to add it to the contents field of the tree.*/
-        if (action)
+        if (action) {
+
+            if (info->opt_tree)
+                tree_service_remove(res->sa.s + res->path.home, res->sa.s + res->treename, res->sa.s + res->name) ;
+
             tree_service_add(treename, res->sa.s + res->name, info) ;
+        }
 
         res->enabled = action ;
 
@@ -98,9 +107,6 @@ void service_enable_disable(graph_t *g, struct resolve_hash_s *hash, struct reso
             if (!h->visit) {
 
                 wres = resolve_set_struct(DATA_SERVICE,  &h->res) ;
-
-                if (action)
-                    tree_service_add(treename, h->res.sa.s + h->res.name, info) ;
 
                 h->res.enabled = action ;
 
@@ -137,8 +143,13 @@ void service_enable_disable(graph_t *g, struct resolve_hash_s *hash, struct reso
 
                         wres = resolve_set_struct(DATA_SERVICE,  &h->res) ;
 
-                        if (action)
+                        if (action) {
+
+                            if (info->opt_tree)
+                                tree_service_remove(h->res.sa.s + h->res.path.home, h->res.sa.s + h->res.treename, h->res.sa.s + h->res.name) ;
+
                             tree_service_add(treename, h->res.sa.s + h->res.name, info) ;
+                        }
 
                         h->res.enabled = action ;
 
@@ -149,7 +160,7 @@ void service_enable_disable(graph_t *g, struct resolve_hash_s *hash, struct reso
 
                         h->visit = 1 ;
 
-                        log_info(!action ? "Disabled" : "Enabled"," successfully service: ", h->res.sa.s + h->res.name) ;
+                        log_info(!action ? "Disabled" : "Enabled"," successfully: ", h->res.sa.s + h->res.name) ;
 
                         resolve_free(wres) ;
                     }
