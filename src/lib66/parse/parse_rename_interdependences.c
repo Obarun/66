@@ -135,7 +135,7 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, s
 
                 c->res.logger.name = resolve_add_string(wres, logname) ;
 
-                c->res.logger.destination = compute_log_dir(wres, res) ;
+                c->res.logger.destination = compute_log_dir(wres, &c->res) ;
 
                 c->res.logger.execute.run.runas = c->res.logger.execute.run.runas ? resolve_add_string(wres, c->res.sa.s + c->res.logger.execute.run.runas) : resolve_add_string(wres, SS_LOGGER_RUNNER) ;
 
@@ -146,13 +146,14 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, s
                         log_die_nomem("stralloc") ;
                 }
 
+                free(wres) ;
+
             }
 
             if (sastr_cmp(&sa, c->res.sa.s + c->res.name) < 0 )
                 if (!sastr_add_string(&sa, c->res.sa.s + c->res.name))
                     log_die_nomem("stralloc") ;
         }
-        free(wres) ;
     }
 
     wres = resolve_set_struct(DATA_SERVICE, res) ;
