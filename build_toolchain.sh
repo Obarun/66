@@ -34,7 +34,7 @@ build_skalibs() {
     ./configure \
         --prefix=/usr \
         --with-default-path=/usr/bin \
-        --enable-shared
+        --disable-shared
 
     make install || return 1
     cd ..
@@ -53,7 +53,7 @@ build_execline() {
         --bindir=/usr/bin \
         --sbindir=/usr/bin \
         --shebangdir=/usr/bin \
-        --enable-shared
+        --disable-shared
 
     make install || return 1
     cd ..
@@ -70,7 +70,7 @@ build_s6() {
         --prefix=/usr \
         --bindir=/usr/bin \
         --sbindir=/usr/bin \
-        --enable-shared
+        --disable-shared
 
     make install || return 1
     cd ..
@@ -87,7 +87,7 @@ build_oblibs() {
         --prefix=/usr \
         --with-lib=/usr/lib/skalibs \
         --with-lib=/usr/lib/execline \
-        --enable-shared
+        --disable-shared
 
     make install || return 1
     cd ..
