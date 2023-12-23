@@ -79,9 +79,9 @@ void service_enable_disable(graph_t *g, struct resolve_hash_s *hash, struct reso
         if (action) {
 
             if (info->opt_tree)
-                tree_service_remove(res->sa.s + res->path.home, res->sa.s + res->treename, res->sa.s + res->name) ;
-
-            tree_service_add(treename, res->sa.s + res->name, info) ;
+                service_switch_tree(res, res->sa.s + res->path.home, treename, info) ;
+            else
+                tree_service_add(treename, res->sa.s + res->name, info) ;
         }
 
         res->enabled = action ;
@@ -146,9 +146,9 @@ void service_enable_disable(graph_t *g, struct resolve_hash_s *hash, struct reso
                         if (action) {
 
                             if (info->opt_tree)
-                                tree_service_remove(h->res.sa.s + h->res.path.home, h->res.sa.s + h->res.treename, h->res.sa.s + h->res.name) ;
-
-                            tree_service_add(treename, h->res.sa.s + h->res.name, info) ;
+                                service_switch_tree(&h->res, h->res.sa.s + h->res.path.home, treename, info) ;
+                            else
+                                tree_service_add(treename, h->res.sa.s + h->res.name, info) ;
                         }
 
                         h->res.enabled = action ;
