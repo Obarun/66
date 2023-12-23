@@ -29,6 +29,6 @@ void get_list(stralloc *list, char const *src, char const *name, mode_t mode, ch
     list->len = 0 ;
 
     if (!sastr_dir_get_recursive(list, src, exclude, mode, 1))
-        log_dieusys(LOG_EXIT_SYS,"get file(s) of module: ", name) ;
+        log_dieusys(LOG_EXIT_SYS,"get files of module: ", name) ;
 
 }
