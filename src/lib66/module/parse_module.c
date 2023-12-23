@@ -109,6 +109,8 @@ static void parse_module_dependencies(stralloc *list, resolve_service_t *res, ui
 
 static void parse_module_regex(resolve_service_t *res, char *copy, size_t copylen, ssexec_t *info)
 {
+    log_flow() ;
+
     char *name = res->sa.s + res->name ;
     stralloc list = STRALLOC_ZERO ;
 
@@ -184,6 +186,8 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
         copylen = strlen(copy) ;
 
         auto_strings(copy + copylen, SS_SERVICE_USERDIR, name) ;
+
+        copylen = strlen(copy) ;
     }
 
     uint8_t conf = res->environ.env_overwrite ;
