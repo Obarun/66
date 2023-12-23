@@ -73,7 +73,9 @@ build_oblibs() {
     git clone https://git.obarun.org/obarun/oblibs
     cd oblibs
 
-    check_tag "${oblibs_tag}"
+    # check_tag "${oblibs_tag}"
+
+    git switch dev
 
     ./configure \
         --prefix=/usr \
