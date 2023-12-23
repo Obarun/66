@@ -6,10 +6,10 @@ if [ "$1" == "commit" ]; then
     tag=0
 fi
 
-skalibs_tag="v2.14.0.1"
+skalibs_tag="v2.14.1.0"
 execline_tag="v2.9.4.0"
-s6_tag="v2.12.0.2"
-oblibs_tag="0.2.0.1"
+s6_tag="v2.12.0.3"
+oblibs_tag="0.2.0.2"
 
 check_tag(){
 
@@ -72,8 +72,8 @@ build_oblibs() {
 
     git clone https://git.obarun.org/obarun/oblibs
     cd oblibs
-    #check_tag "${oblibs_tag}"
-    git switch dev
+
+    check_tag "${oblibs_tag}"
 
     ./configure \
         --prefix=/usr \
