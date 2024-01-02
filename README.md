@@ -74,3 +74,25 @@ You can find several examples for common daemon [here](https://git.obarun.org/pk
 By default, 66 use [execline](http://skarnet.org/software/execline) as scripting language. However, you can specify the scripting language to use.
 [66-tools](https://git.obarun.org/obarun/66-tools) provide some additonal tools to help you on this task.
 Some are specific to `execline` where other can be used on classic shell.
+
+Roadmap
+-------
+
+This Roadmap for the next release is not writting in the stone. Feel free to make a merge request to this roadmap.
+
+- Revise the frontend file's keyword field by excluding the `@` symbol:
+
+  For instance, `@depends` will be `Depends`. That will allow for a file that's closer to the original INI format and less confusing for users.
+
+- Provide a `[documentation]` section:
+
+  Enable the provision of documentation for each service using a [documentation] section. This documentation will be easily accessible by invoking the 66 doc command.
+
+- Provide a `Conflicts` keyword at frontend file:
+
+  Allow to declare a conflicting service through the `Conflicts` field, e.g. `connmand` service will declare `Conflicts = ( Networkmanager )`.
+
+- Provide keyword for basic operations:
+
+  Certain repetitive tasks can be more efficiently managed directly by `66` in C rather than scripting them in the `Execute` field. For example, utilizing a `WorkDir` keyword can facilitate moving to the declared WorkDir value before executing the script.
+
