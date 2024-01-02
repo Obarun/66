@@ -96,3 +96,6 @@ This Roadmap for the next release is not writting in the stone. Feel free to mak
 
   Certain repetitive tasks can be more efficiently managed directly by `66` in C rather than scripting them in the `Execute` field. For example, utilizing a `WorkDir` keyword can facilitate moving to the declared WorkDir value before executing the script.
 
+- React on event:
+
+  Implementation of a daemon for event response to allow users to define services that dynamically start and stop when certain conditions are met, without needing to encode every possible condition in the service manager configuration.
