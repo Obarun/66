@@ -374,8 +374,8 @@ static inline void run_stage2 (char const *const *envp, size_t envlen, char cons
 
         close(notifpipe[1]) ;
         wait_for_notif(notifpipe[0]) ;
-    }
-    else {
+
+    } else {
 
         close(1) ;
         if (open(fifo, O_WRONLY) != 1)  /* blocks until catch-all logger is up */
@@ -479,7 +479,7 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 
             switch (opt)
             {
-                case 'h' : info_help(info->help, info->usage) ; return 0 ;
+                case 'h' : VERBOSITY = 1 ; info_help(info->help, info->usage) ; return 0 ;
                 case 'm' : tmpfs = 1 ; break ;
                 case 's' : skel = l.arg ; break ;
                 case 'e' : envdir = l.arg ; break ;
