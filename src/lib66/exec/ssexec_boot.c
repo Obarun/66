@@ -570,17 +570,22 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
     split_tmpfs(fs,live) ;
     r = is_mnt(fs) ;
 
-    if (!r || tmpfs)
-    {
-        if (r && tmpfs)
-        {
-            log_info("Umount: ",fs) ;
-            if (umount(fs) == -1) sulogin ("umount: ",fs ) ;
+    if (!r || tmpfs) {
+
+        if (!r) {
+
+            log_info("Mount: ",fs) ;
+            if (mount("tmpfs", fs, "tmpfs", MS_NODEV | MS_NOSUID, "mode=0755") == -1)
+                sulogin("mount: ",fs) ;
+
+        } else if (tmpfs) {
+
+            log_info("Remount: ",fs) ;
+            if (mount("tmpfs", fs, "tmpfs", MS_REMOUNT | MS_NODEV | MS_NOSUID, "mode=0755") == -1)
+                sulogin("mount: ",fs) ;
         }
-        log_info("Mount: ",fs) ;
-        if (mount("tmpfs", fs, "tmpfs", MS_NODEV | MS_NOSUID, "mode=0755") == -1)
-            sulogin("mount: ",fs) ;
     }
+
     /** respect the path before run API*/
     if (setenv("PATH", path, 1) == -1) sulogin("set initial PATH: ",path) ;
     /** create scandir */
@@ -618,6 +623,7 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
     }
 
     if (envdir) {
+        log_info("Prepare environment") ;
         if (!environ_clean_envfile_unexport(&envmodifs,envdir))
             sulogin("prepare environment from: ",envdir) ;
     }
