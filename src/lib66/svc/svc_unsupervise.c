@@ -34,6 +34,8 @@ static void sanitize_it(resolve_service_t *res)
 
     sanitize_fdholder(res, &sta, STATE_FLAGS_FALSE, 0) ;
 
+    svc_send_fdholder(res->sa.s + res->live.fdholderdir, "twR") ;
+
     state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_TRUE) ;
     state_set_flag(&sta, STATE_FLAGS_ISUP, STATE_FLAGS_FALSE) ;
 

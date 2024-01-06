@@ -182,7 +182,7 @@ int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag, ui
         if (!openwritenclose_unsafe(file, list.s, list.len))
             log_warnusys_return(LOG_EXIT_ZERO, "write file: ", file) ;
 
-        svc_send_fdholder(socket, "twR") ;
+        //svc_send_fdholder(socket, "twR") ;
 
         stralloc_free(&list) ;
     }

@@ -41,6 +41,7 @@
 #include <66/enum.h>
 #include <66/sanitize.h>
 #include <66/symlink.h>
+#include <66/svc.h>
 
 void cleanup(struct resolve_hash_s *hash, unsigned int alen)
 {
@@ -64,6 +65,10 @@ void cleanup(struct resolve_hash_s *hash, unsigned int alen)
         unlink(pres->sa.s + pres->live.scandir) ;
 
     }
+
+    if (alen)
+        svc_send_fdholder(hash[0].res.sa.s + hash[0].res.live.fdholderdir, "twR") ;
+
     errno = e ;
 }
 
@@ -76,7 +81,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, struct re
         return ;
 
     ftrigr_t fifo = FTRIGR_ZERO ;
-    uint32_t earlier ;
+    uint32_t earlier, fdh = 0 ;
     gid_t gid = getgid() ;
     int is_supervised = 0 ;
     unsigned int pos = 0, nsv = 0, msg[alen] ;
@@ -173,6 +178,8 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, struct re
                 cleanup(toclean, pos) ;
                 log_dieusys(LOG_EXIT_SYS, "create fifo: ", pres->sa.s + pres->live.eventdir) ;
             }
+
+            fdh = 1 ;
         }
 
         if (!state_write(&sta, pres)) {
@@ -182,6 +189,9 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, struct re
 
         real[nsv++] = *hash ;
     }
+
+    if (!earlier && fdh && nsv)
+        svc_send_fdholder(real[0].res.sa.s + real[0].res.live.fdholderdir, "twR") ;
 
     /**
      * scandir is already running, we need to synchronize with it
