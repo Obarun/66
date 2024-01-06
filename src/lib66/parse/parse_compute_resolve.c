@@ -144,12 +144,12 @@ static void compute_wrapper_scripts(resolve_service_t *res, resolve_service_addo
 
     if (res->logger.want && res->type != TYPE_ONESHOT)
         auto_strings(run + FAKELEN, \
-                "fdmove 1 0\n", \
-                "s6-fdholder-retrieve ", \
+                SS_EXECLINE_SHEBANGPREFIX "fdmove 1 0\n", \
+                S6_BINPREFIX "s6-fdholder-retrieve ", \
                 res->sa.s + res->live.fdholderdir, "/s ", \
                 "\"" SS_FDHOLDER_PIPENAME "w-", \
                 res->sa.s + res->name, SS_LOG_SUFFIX "\"\n", \
-                "fdswap 0 1\n") ;
+                SS_EXECLINE_SHEBANGPREFIX "fdswap 0 1\n") ;
 
     auto_strings(run + FAKELEN, "./", file, ".user", !runorfinish ? (res->type != TYPE_ONESHOT ? " $@\n" : "\n") : "\n") ;
 
@@ -170,33 +170,43 @@ static void compute_wrapper_scripts_user(resolve_service_t *res, resolve_service
     log_flow() ;
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-    char *shebang = scripts->shebang ? res->sa.s + scripts->shebang : SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n" ;
-    size_t shebanglen = strlen(shebang) ;
+    char *shebang = 0 ;
     size_t scriptlen = strlen(res->sa.s + scripts->run_user) ;
     size_t loglen = (res->logger.want && res->type == TYPE_ONESHOT) ? strlen(res->sa.s + res->logger.destination) : 0 ;
     size_t runaslen = (!res->owner && scripts->runas) ? strlen(res->sa.s + scripts->runas) : 0 ;
     int build = !strcmp(res->sa.s + scripts->build, "custom") ? BUILD_CUSTOM : BUILD_AUTO ;
     size_t execlen = !build ? (res->environ.envdir ? (strlen(res->sa.s + res->environ.envdir) + 19 + SS_SYM_VERSION_LEN + 1) : 0) : 0 ;
+    size_t fakelen = 0, shebanglen = 0 ;
+    /** shebang is deprecated*/
+    if (scripts->shebang)
+        log_warn("@shebang field is deprecated -- please define it at the start of your @execute field instead") ;
+
+    if (build && scripts->shebang) {
+        shebang = res->sa.s + scripts->shebang ;
+        shebanglen = strlen(shebang) ;
+    } else if (!build) {
+        shebang = SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n" ;
+        shebanglen = strlen(shebang) ;
+    }
 
     char run[shebanglen + (loglen + 22) + 14 + execlen + (runaslen + 14) + scriptlen + 4 + 1] ;
 
-    auto_strings(run, "#!") ;
-
-    if (scripts->shebang)
-        log_warn("@shebang field is deprecated -- please define it at start of your @execute field instead") ;
 
     if (build && scripts->shebang) {
 
+        auto_strings(run, "#!") ;
         auto_strings(run + FAKELEN, res->sa.s + scripts->shebang, "\n") ;
+        fakelen = FAKELEN ;
 
-    } else {
+    } else if (!build) {
 
+        auto_strings(run, "#!") ;
         auto_strings(run + FAKELEN, shebang) ;
 
         if (res->logger.want && res->type == TYPE_ONESHOT)
-            auto_strings(run + FAKELEN, "redirfd -a 1 ", res->sa.s + res->logger.destination, "/current\n") ;
+            auto_strings(run + FAKELEN, SS_EXECLINE_SHEBANGPREFIX "redirfd -a 1 ", res->sa.s + res->logger.destination, "/current\n") ;
 
-        auto_strings(run + FAKELEN, "fdmove -c 2 1\n") ;
+        auto_strings(run + FAKELEN, SS_EXECLINE_SHEBANGPREFIX "fdmove -c 2 1\n") ;
 
         if (res->environ.envdir)
             auto_strings(run + FAKELEN, "execl-envfile -v4 ", res->sa.s + res->environ.envdir, SS_SYM_VERSION "\n") ;
@@ -205,9 +215,10 @@ static void compute_wrapper_scripts_user(resolve_service_t *res, resolve_service
         if (!res->owner && scripts->runas)
             auto_strings(run + FAKELEN, S6_BINPREFIX "s6-setuidgid ", res->sa.s + scripts->runas, "\n") ;
 
-    }
+        fakelen = FAKELEN ;
 
-    auto_strings(run + FAKELEN, res->sa.s + scripts->run_user, "\n") ;
+    } else
+        auto_strings(run + fakelen, res->sa.s + scripts->run_user, "\n") ;
 
     if (runorfinish)
         res->execute.run.run_user = resolve_add_string(wres, run) ;
