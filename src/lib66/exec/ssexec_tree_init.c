@@ -53,6 +53,13 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
     /** build the graph of the entire system */
     graph_build_service(&graph, &hres, info, flag) ;
 
+    if (!graph.mlen && earlier) {
+        hash_free(&hres) ;
+        graph_free_all(&graph) ;
+        log_warn("no earlier service to initiate") ;
+        return ;
+    }
+
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- have you already parsed a service?") ;
 
@@ -196,7 +203,7 @@ int ssexec_tree_init(int argc, char const *const *argv, ssexec_t *info)
 
     if (sa.len) {
 
-         doit(&sa, info, earlier) ;
+        doit(&sa, info, earlier) ;
 
     } else {
 
