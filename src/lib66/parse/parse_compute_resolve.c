@@ -217,8 +217,9 @@ static void compute_wrapper_scripts_user(resolve_service_t *res, resolve_service
 
         fakelen = FAKELEN ;
 
-    } else
-        auto_strings(run + fakelen, res->sa.s + scripts->run_user, "\n") ;
+    }
+
+    auto_strings(run + fakelen, res->sa.s + scripts->run_user, "\n") ;
 
     if (runorfinish)
         res->execute.run.run_user = resolve_add_string(wres, run) ;
