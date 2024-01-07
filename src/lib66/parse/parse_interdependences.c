@@ -60,6 +60,9 @@ int parse_interdependences(char const *service, char const *list, unsigned int l
             char ainsta[strlen(name) + 1] ;
             int insta = -1 ;
 
+            if (!strcmp(name, service))
+                log_die(LOG_EXIT_USER, "direct cyclic interdependences detected -- ", name, " depends on: ", service) ;
+
             log_trace("parse interdependences ", name, " of service: ", service) ;
 
             insta = instance_check(name) ;
