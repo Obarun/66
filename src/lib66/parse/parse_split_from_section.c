@@ -56,6 +56,8 @@ int parse_split_from_section(resolve_service_t *res, stralloc *secname, char *st
     char store[len + UINT_FMT + 1] ; // +6 be paranoid
     char *line ;
 
+    memset(store, 0, sizeof(char) * (len + UINT_FMT + 1)) ;
+
     // find the name of the current section
     ssize_t previous_sec = parse_get_previous_element(secname, 0) ;
 
