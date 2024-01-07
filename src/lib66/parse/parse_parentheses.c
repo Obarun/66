@@ -92,7 +92,7 @@ int parse_parentheses(char *store, char const *str, size_t *pos)
                         e = 0 ;
 
                         e = get_len_until(line + o, '\n') + 1 ;
-                        printf("e:%i - %i\n",o + e, parentheses) ;
+
                         if (o + e >= len) {
                             // end of string. this validate the parenthese
                             parentheses-- ;
