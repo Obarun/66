@@ -736,18 +736,15 @@ Furthermore there are some keys specific to the log.
 
     ````
         [logger]
-        @build = auto
         @runas = user
         @timeout-finish = 10000
-
         @destination = /run/log
         @backup = 10
         @timestamp = iso
     ````
     ````
         [logger]
-        @build = auto
-        @timestamp = iso
+        @destination = /run/log
     ````
 
 ---
@@ -777,7 +774,7 @@ A file containing the `key=value` pair(s) will be created by default at `%%servi
         cmd_args=-d -s
     ````
 
-    The `!` character can precede the value. Ensure **no** space exists between the exclamation mark and the *value*. This action explicitly avoids setting the value of the *key* for the runtime process but only applies it at the start of the service. For example, the `key=value` pair passed to the following command line doesn't necessarily need to be included in the service's general environment variables
+    The `!` character can precede the value. Ensure **no** space exists between the exclamation mark and the *value*. This action explicitly avoids setting the value of the *key* for the runtime process but only applies it at the start of the service. For intance, the following valid example unset the `key=value` pair `dir_run=!/run/openntpd` from the general environment variables of the service.
 
     the following syntax is valid
 
@@ -855,7 +852,7 @@ You can use the `@I` string as key field. It will be replaced by the `module` na
 
     mandatory : no
 
-    syntax : colon
+    syntax : colon inside bracket
 
     valid value :
 
