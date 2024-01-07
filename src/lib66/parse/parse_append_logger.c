@@ -131,13 +131,13 @@ static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
 
             auto_strings(run, shebang) ;
 
-            auto_strings(run + FAKELEN, "fdmove -c 2 1\n") ;
+            auto_strings(run + FAKELEN, SS_EXECLINE_SHEBANGPREFIX "fdmove -c 2 1\n") ;
 
             /** runas */
             if (!res->owner)
                 auto_strings(run + FAKELEN, S6_BINPREFIX "s6-setuidgid ", logrunner, "\n") ;
 
-            auto_strings(run + FAKELEN, "s6-log ") ;
+            auto_strings(run + FAKELEN, S6_BINPREFIX "s6-log ") ;
 
             if (SS_LOGGER_NOTIFY)
                 auto_strings(run + FAKELEN, "-d3 ") ;
