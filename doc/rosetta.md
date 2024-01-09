@@ -166,7 +166,7 @@ This tool previously handles all services for trees, the new command handles all
 | `66-tree` -a | `66` tree admin -o allow=*user*,*user*,... or at creation with `66` tree create -o allow=*user*,*user*,... |
 | `66-tree` -d | `66` tree admin -o deny=*user*,*user*,... or at creation with `66` tree create -o deny=*user*,*user*,... |
 | `66-tree` -c | `66` tree current |
-| `66-tree` -S | `66` tree admin -o depends=*tree*,*tree*,... or at creation with `66` tree -o depends=*tree*,*tree*,... |
+| `66-tree` -S | `66` tree admin -o depends=*tree*,*tree*,... or at creation with `66` tree create -o depends=*tree*,*tree*,... |
 | `66-tree` -E | `66` tree enable |
 | `66-tree` -D | `66` tree disable |
 | `66-tree` -R | `66` tree remove |
