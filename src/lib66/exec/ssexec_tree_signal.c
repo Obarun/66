@@ -25,11 +25,11 @@
 #include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/sastr.h>
-#include <oblibs/obgetopt.h>
 #include <oblibs/files.h>
 #include <oblibs/graph.h>
 #include <oblibs/directory.h>
 
+#include <skalibs/sgetopt.h>
 #include <skalibs/types.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>

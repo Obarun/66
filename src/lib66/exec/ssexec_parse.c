@@ -20,8 +20,9 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
-#include <oblibs/obgetopt.h>
 #include <oblibs/sastr.h>
+
+#include <skalibs/sgetopt.h>
 
 #include <66/parse.h>
 #include <66/ssexec.h>

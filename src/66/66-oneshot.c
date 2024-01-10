@@ -16,7 +16,6 @@
 #include <string.h>
 
 #include <oblibs/log.h>
-#include <oblibs/obgetopt.h>
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
 
@@ -57,9 +56,9 @@ int main(int argc, char const *const *argv)
 
         for (;;)
         {
-            int opt = getopt_args(argc,argv, ">hv:", &l) ;
+            int opt = subgetopt_r(argc, argv, "hv:", &l) ;
             if (opt == -1) break ;
-            if (opt == -2) log_die(LOG_EXIT_USER,"options must be set first") ;
+
             switch (opt)
             {
                 case 'h' :  help_oneshot(); return 0 ;
