@@ -152,14 +152,11 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
     int r ;
     size_t pos = 0 ;
-    uint32_t flag = 0 ;
     uint8_t siglen = 0 ;
     ss_state_t ste = STATE_ZERO ;
     stralloc sa = STRALLOC_ZERO ;
     resolve_wrapper_t_ref wres = 0 ;
     struct resolve_hash_s *hres = NULL, *c, *tmp ;
-
-    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_ISSUPERVISED|STATE_FLAGS_TOUNSUPERVISE|STATE_FLAGS_WANTDOWN) ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -178,7 +175,6 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
                 case 'P' :
 
-                    FLAGS_CLEAR(flag, STATE_FLAGS_TOPROPAGATE) ;
                     siglen++ ;
                     break ;
 
