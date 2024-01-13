@@ -22,12 +22,12 @@ This release marks a significant rewrite of `66`, introducing a new UI and servi
 
 Primarily, expect no compatibility with previous versions due to:
 
-- The removal of `s6-rc` support. Service management is now fully integrated into `66`.
+- The removal of `s6-rc` support. `66` is now a complete independent service management based on s6 for init and service supervision.
 - A complete overhaul of the folder structure for storage and runtime directories, simplifying it considerably.
 - An overhaul of tree behavior. Trees now function as services, and a complete tree dependency graph has been implemented.
 - Services can now depend on each other regardless of whether the service is declared on the same tree or the declaration order of the tree. For instance, if service `Sb` depends on service `Sa` and `Sa` is within `TreeB` while service `Sb` is within `TreeA`, and `TreeB` depends on `TreeA`, launching `TreeA` will start `Sa` even if `TreeB` isn't started first. When `TreeB` is executed, `Sb` will find `Sa` already started and commence directly.
 
-For UI changes, a [Rosetta stone](#rosetta.md) is available.
+For UI changes, frontend file convertion and clean of the `66` architecture, a [Rosetta stone](#rosetta.md) is available.
 
 ## Frontend Files
 
@@ -47,14 +47,14 @@ Frontend files for regular account **must be** now localized at `%%service_syste
 
 - `@options`:
     - `pipeline`: This option was removed. It was only present for `s6-rc`.
-    - `env`: This option was removed. The simple declaration of the [environment] section.
+    - `env`: This option was removed. The simple declaration of the [environment] section is sufficient to activate the options.
 
-- `@shebang`: Deprecated but kept for compatibility reasons. Declare your shebang directly within the `@execute` field.
+- `@shebang`: Deprecated but kept for compatibility reasons. Declare your shebang directly within the `@execute` field. Refers to [frontend](frontend.html#a-word-about-the-@execute-key) documentation for futhers information.
 
 - `@build`: Not mandatory anymore, as it will be declared 'auto' by default.
-Service Behavior
 
-- `@addservices`
+- `@addservices`: This options was removed from the `[regex]` section.
+
 The `classic` type now accepts the fields `@depends` and `@requiredby`. The `classic` type replaces the `longrun` type.
 
 Logger destinations for `oneshot` type services can now be declared on a **tmpfs** directory, particularly useful during boot time.
@@ -65,7 +65,7 @@ The `bundle` and `longrun` types have been removed, replaced by `classic`, `ones
 
 ## [Environment] Section
 
-This section now allows reusing the same variable or variable from the actual environment. For instance:
+This section now allows reusing the same variable from the actual environment. For instance:
 
 ```
 socket_name=!/run/dbus/system_bus_socket

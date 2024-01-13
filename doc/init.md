@@ -28,7 +28,7 @@ The command `66 scandir create` need to be executed before trying to run the `in
 
 The command will make an exact copy of the *enabled* service files and directories of the *tree* inside a [scandir](scandir.html) directory at `%%livedir%%/state/UID` where *UID* is the uid of the current owner of the process. The [scandir](scandir.html) does not need to be necessarily running. This is useful at boot time to initiate an early service before starting the scandir. Once the [scandir](scandir.html) starts—see [66 scandir start](scandir.html) command, the already present services start automatically.
 
-If the [scandir](scandir.html) is running, you should invoke a [66 scandir reconfigure](scandur.html) command to inform it about the changes.
+If the [scandir](scandir.html) is running, you should invoke a [66 scandir reconfigure](reconfigure.html) command to inform it about the changes.
 
 ## Note
 

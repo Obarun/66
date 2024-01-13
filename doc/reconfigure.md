@@ -23,7 +23,7 @@ If the *service* is running, it is stopped and then unsupervised. Afterward, the
 
 For `module` *service* types, the same process is applied to all services within the *module*. If the module is part of a tree associated with the boot [group](tree.html#groups-behavior), only the parse process is executed to avoid interrupting the boot sequence. The changes will be applied during the next [reboot](reboot.html).
 
-Multiple *services* can be disabled by seperating their names with a space.
+Multiple *services* can be disabled by separating their names with a space.
 
 This command handles [interdependencies](66.html#handling-dependencies) for the [stop](stop.html), [free](free.html) and [start](start.html) process.
 

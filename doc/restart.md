@@ -14,7 +14,7 @@ This command restarts one or more services.
 ## Interface
 
 ```
-restart [ -h ] [ -P ] service(s)
+restart [ -h ] [ -P ] service...
 ```
 
 This command bring down and bring up again a *service*. This command expects to find an already running *service*.
@@ -23,7 +23,7 @@ The `66 -t` command option have no effect. `66` will detect automatically the as
 
 In case of `module` service type, all services within the `module` are restarted.
 
-Multiple *services* can be disabled by seperating their names with a space.
+Multiple *services* can be disabled by separating their names with a space.
 
 This command handles [interdependencies](66.html#handling-dependencies).
 
