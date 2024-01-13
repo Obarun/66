@@ -27,7 +27,7 @@ Primarily, expect no compatibility with previous versions due to:
 - An overhaul of tree behavior. Trees now function as services, and a complete tree dependency graph has been implemented.
 - Services can now depend on each other regardless of whether the service is declared on the same tree or the declaration order of the tree. For instance, if service `Sb` depends on service `Sa` and `Sa` is within `TreeB` while service `Sb` is within `TreeA`, and `TreeB` depends on `TreeA`, launching `TreeA` will start `Sa` even if `TreeB` isn't started first. When `TreeB` is executed, `Sb` will find `Sa` already started and commence directly.
 
-For UI changes, frontend file convertion and clean of the `66` architecture, a [Rosetta stone](#rosetta.md) is available.
+For UI changes, frontend file convertion and clean of the `66` architecture, a [Rosetta stone](rosetta.html) is available.
 
 ## Frontend Files
 

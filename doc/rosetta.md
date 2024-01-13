@@ -226,7 +226,9 @@ Manual intervention is required to upgrade the frontend file to version 0.7.0.0,
     ....
     )
     ```
+
     The incorret way is
+
     ```
     @execute = (
     #!/usr/bin/sh
@@ -234,13 +236,16 @@ Manual intervention is required to upgrade the frontend file to version 0.7.0.0,
         ....
     )
     ```
+
     The following is also incorrect
+
     ```
     @execute = ( #!/usr/bin/sh
     echo myscript
         ....
     )
     ```
+
     Failure to adhere to the correct syntax will result in an `Error format` during the execution of the service.
 
 
@@ -266,6 +271,7 @@ Manual intervention is required to upgrade the frontend file to version 0.7.0.0,
     [start]
     @execute=(true)
     ```
+
     Certainly, you can replace the `bundle` type with the `module` type. However, depending on your specific cases, the `module` type might overcomplicate the service itself.
 
 - The `module` type must be redefined from scratch due to significant changes in the directory `module` structure.. Refers to the [module-creation](module-creation.html) documentation for detailed information.
