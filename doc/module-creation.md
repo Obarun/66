@@ -54,7 +54,7 @@ The module directory have the following structure:
 
 The frontend file of the module itself **must** be present at the root of the module directory.
 
-Any services that you need **must** be present inside the *fronted*. The parser only deals with these directories. If a service `fooA` has `fooB` as dependency, `fooA` ***and*** `fooB` **must** exist in the e.g. `%%service_system%%/<module_name>/frontend` directory.
+Any services that you need **must** be present **inside** the frontend directory. The parser only deals with these directories. If a service `fooA` has `fooB` as dependency, `fooA` ***and*** `fooB` **must** exist in the e.g. `%%service_system%%/<module_name>/frontend` directory.
 
 ## A word about the [[main]](frontend.html#Section: [main]) section with the module type
 
