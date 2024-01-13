@@ -894,61 +894,63 @@ This is an unnecessary example but it shows how to construct this use case. The 
 ```
 
 The parser creates an exact copy of what it finds between `(` and `)`. This means that regardless of the character found, it retains it. For instance, if you write
+
 ```
-@execute = (
-#!/bin/bash echo hello world!
-)
+    @execute = (
+    #!/bin/bash echo hello world!
+    )
 ```
 the final result will contain a newline at the very beginning corresponding to the newline found between `(` and the definition of the shebang `#!/bin/bash`. In this case, when executing the service, you'll encounter an ***Exec format error*** because the very first line corresponds to a newline instead of the shebang declaration.
 
 To avoid this issue, ALWAYS declare the shebang of your script directly after `(` and without any spaces, tabs, newlines, etc. For example,
+
 ```
-@execute = (#!/bin/bash
-echo hello world!
-)
+    @execute = (#!/bin/bash
+    echo hello world!
+    )
 ```
 
 When using the `@execute` field with your script language, ensure that the `)` character is not followed by a new line that begins with `@`, `#[A-Z]`, or `#`@ at the very start of the line. This is to ensure validity. For example, the following code snippets are invalid:
 
 ```
-@execute = (#!/bin/sh
+    @execute = (#!/bin/sh
 
-option="${1}"
-case ${option} in
-   -f) FILE="${2}"
-#@FILE: param for echo command
-      echo "File name is $FILE"
-      ;;
-   -d) DIR="${2}"
-      echo "Dir name is $DIR"
-      ;;
-   *)
-      echo "`basename ${0}`:usage: [-f file] | [-d directory]"
-      exit 1 # Command to come out of the program with status 1
-      ;;
-esac
+    option="${1}"
+    case ${option} in
+    -f) FILE="${2}"
+    #@FILE: param for echo command
+        echo "File name is $FILE"
+        ;;
+    -d) DIR="${2}"
+        echo "Dir name is $DIR"
+        ;;
+    *)
+        echo "`basename ${0}`:usage: [-f file] | [-d directory]"
+        exit 1 # Command to come out of the program with status 1
+        ;;
+    esac
 ```
 
 
 The parser looks for the sequence `@`, `#[A-Z]`, or `#@` to validate the last `)` character in the `@execute` field. To correct this, ensure that the sequence doesn’t start at the beginning of the line following the `)` character. The corrected examples show this by adding a tab or space in front of `#@FILE`.
 
 ```
-@execute = (#!/bin/sh
-option="${1}"
-case ${option} in
-   -f) FILE="${2}"
-    #@FILE: param for echo command
-      echo "File name is $FILE"
-      ;;
-   -d) DIR="${2}"
-      echo "Dir name is $DIR"
-      ;;
-   *)
-      echo "`basename ${0}`:usage: [-f file] | [-d directory]"
-      exit 1 # Command to come out of the program with status 1
-      ;;
-esac
-)
+    @execute = (#!/bin/sh
+    option="${1}"
+    case ${option} in
+    -f) FILE="${2}"
+        #@FILE: param for echo command
+        echo "File name is $FILE"
+        ;;
+    -d) DIR="${2}"
+        echo "Dir name is $DIR"
+        ;;
+    *)
+        echo "`basename ${0}`:usage: [-f file] | [-d directory]"
+        exit 1 # Command to come out of the program with status 1
+        ;;
+    esac
+    )
 ```
 
 When using this sort of custom function `@runas` has **no effect**. You **must** define with care what you want to happen in a *custom* case.

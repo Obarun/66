@@ -119,6 +119,7 @@ $(DESTDIR)$(datarootdir)/doc/$(package)/$(version)/%.html: doc/$(version)/html/%
 		-e 's,%%service_system%%,$(service_system),g' \
 		-e 's,%%script_system%%,$(script_system),g' \
 		-e 's,%%seed_system%%,$(seed_system),g' \
+		-e 's,%%seed_adm%%,$(seed_adm),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \

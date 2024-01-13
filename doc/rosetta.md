@@ -286,6 +286,6 @@ You can safely remove the following directories and files:
 
 The exact same task applies to the `${HOME}/%%user_dir%%` directory. Also, you can remove the `${HOME}/%%user_dir%%/module` directory.
 
-## %%seed_adm%%
+## %%skel%%
 
-You can safely remove the following `%%system_dir%%/module` directory.
+You can safely remove the following `%%skel%%/module` directory.

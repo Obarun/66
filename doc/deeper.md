@@ -65,11 +65,13 @@ The `%%system_dir%%/system/service/svc` directory includes service directories, 
 ### %%system_dir%%/system/.resolve/<tree>
 
 The content of the resolve file for a tree, such as `%%default_treename%%`, can be viewed using the [66 resolve](resolve.html) command in the following manner
+
 ```
 66 tree resolve global
 ```
 
 This displays information in a self-explanatory manner
+
 ```
 name        : global
 depends     : None
@@ -93,6 +95,7 @@ Essentially, trees are just resolve files - keeping it simple, straightforward, 
 #### Master resolve file
 
 The `Master` resolve file holds significant importance as it contains information about all trees. You can access its contents using the `66 tree resolve Master` command, which presents information in a self-explanatory format
+
 ```
 name        : Master
 allow       : root
@@ -115,6 +118,7 @@ Every service possesses its individual directory. At its core, this directory ho
 #### %%system_dir%%/system/service/svc/\<service\>/.resolve
 
 This directory stores the resolve file for each service, mirroring how `%%system_dir%%/system/.resolve/` houses the resolve file for a tree. Running `66 resolve \<service\>` showcases the content of this file, presenting information similar to the following
+
 ```
 name             : openntpd
 description      : ntpd daemon
@@ -235,15 +239,21 @@ ninfiles         : 0
 The `66 status <service>` command provides a subset of these information. Too much detail might be overwhelming, so it simplifies the output for ease of use.
 
 Some precision is needed here:
+
 - The intree field corresponds to the `@intree` field in the [frontend](frontend.html) file, while `treename` indicates the current associated tree of the service. Changing the tree with `66 -t <tree> enable <service>` modifies `treename`, leaving `intree` unchanged.
+
 - The `inns` field indicates whether the service is a part of a `module`.
+
 - The `run` and `finish` field contains the content of the `%%system_dir%%/system/svc/service/svc/<service>/run` and `%%system_dir%%/system/svc/service/svc/<service>/finish` file respectively.
+
 - Meanwhile, `run_user`, and `finish_user` fields are derived from the [[start]](frontend.html#section-start) and [[stop]](frontend.html#section-stop) sections in the frontend file. Specifically, `run_user` corresponds to `@execute` in the [[start]](frontend.html#section-start) section, and the others function similarly but for the [[stop]](frontend.html#section-stop) section.
+
 - Other fields like `ownerstr`, `home`, `frontend`, `servicedir`, `livedir`, `status`, `servicedir`, `scandir`, `statedir`, `eventdir`, `notifdir`, `supervisedir`, `fdholderdir`, `oneshotddir`, `logname`, `logwant` and `env_overwrite` are used internally for `66`'s operations.
 
 #### %%system_dir%%/system/service/svc/\<service\>/status
 
 This directory houses a *binary* file named `status`, which `66` uses to track the service's current operational status. Running `66 state <service>` displays output similar to the following
+
 ```
 toinit          : 0
 toreload        : 0

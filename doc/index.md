@@ -74,6 +74,7 @@ See [changes](upgrade.html) between version.
 - [module service usage](module-usage.html)
 - [module service creation](module-creation.html)
 - [Service configuration file](service-configuration-file.html)
+- [Deeper understanding](deeper.html)
 
 ## Why is 66 necessary?
 
