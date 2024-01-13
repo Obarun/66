@@ -243,7 +243,7 @@ for arg ; do
     --sysconfdir=*) sysconfdir=${arg#*=} ;;
     --datarootdir=*) datarootdir=${arg#*=} ;;
     --mandir=*) mandir=${arg#*=} ;;
-    --shebangdir=*) shebangisdefault=false ; shebangdir=${arg#*=} ;;
+    --shebangdir=*) shebangdir=${arg#*=} ;;
     --livedir=*) livedir=${arg#*=} ;;
     --max-service=*) max_service=${arg#*=} ;;
     --max-path-size=*) max_path=${arg#*=} ;;

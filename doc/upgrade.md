@@ -12,10 +12,11 @@ author: Eric Vidal <eric@obarun.org>
 ---
 
 # In 0.7.0.0
-- Adaptation to `skalibs` 2.14.0.1
+
+- Adaptation to `skalibs` 2.14.1.0
 - Adaptation to `execline` 2.9.4.0
-- Adaptation to `s6` 2.12.0.2
-- Adaptation to `oblibs` 0.2.0.0
+- Adaptation to `s6` 2.12.0.3
+- Adaptation to `oblibs` 0.2.1.0
 
 This release marks a significant rewrite of `66`, introducing a new UI and serving as a comprehensive service supervision suite and independent service manager.
 

@@ -9,7 +9,7 @@ fi
 skalibs_tag="v2.14.1.0"
 execline_tag="v2.9.4.0"
 s6_tag="v2.12.0.3"
-oblibs_tag="0.2.0.2"
+oblibs_tag="0.2.1.0"
 
 check_tag(){
 
