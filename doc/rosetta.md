@@ -7,7 +7,7 @@ author: Eric Vidal <eric@obarun.org>
 
 [obarun.org](https://web.obarun.org)
 
-This documentation explains the differences in options and interface changes between versions `v0.6.1.3` and `0.7.0.0`.
+This documentation explains the differences in options and interface changes between versions `v0.6.1.3` and `0.7.0.0`. Futhers information can be found to the [upgrade](upgrade.html) page concerning behavior changes, frontend `@key` changes and more.
 
 # General Interface changes
 
@@ -210,3 +210,82 @@ With the previous version, services must be enabled to be able to start the serv
 | `66-stop` -X | `66` signal -x |
 | `66-stop` -K | `66` signal -k -d |
 
+# Converting service frontend file from 0.6.2.0 version to 0.7.0.0
+
+Manual intervention is required to upgrade the frontend file to version 0.7.0.0, as both the `longrun` and `bundle` types have been eliminated. Additionally, certain fields have been altered, deprecated, or removed.
+
+- The `longrun` type should be converted to the `classic` type. To achieve this, simply replace `@type=longrun` with `@type=classic`. This conversion is performed by 66 during the parse process, but the change is not applied to the frontend file.
+
+- The `@extdepends=` field has been removed and has no effect. To address this, switch the service definition in this field to the `@depends=` field. For example, a service declaring `@depends=(consolekit)` and `@extdepends=(dbus)` should be converted by removing the `@extdepends` field and appending dbus to the `@depends=(dbus consolekit)` field.
+
+- The `@shebang` field is deprecated and will be removed in a future release. To define the shebang for our script, place it at the beginning of the `@execute` field **right after** the opened parentheses, **without** any space, new line, or other characters. For example, for an sh script, the beginning of the @execute field must be
+
+    ```
+    @execute = (!#/usr/bin/sh
+    echo myscript
+    ....
+    )
+    ```
+    The incorret way is
+    ```
+    @execute = (
+    #!/usr/bin/sh
+    echo myscript
+        ....
+    )
+    ```
+    The following is also incorrect
+    ```
+    @execute = ( #!/usr/bin/sh
+    echo myscript
+        ....
+    )
+    ```
+    Failure to adhere to the correct syntax will result in an `Error format` during the execution of the service.
+
+
+- The `bundle` type no longer exists. To achieve a similar behavior, you can emulate the functionality of a `bundle` by using a `oneshot` type. Define the `@depends=` field with the service name previously defined in your `bundle` type under the `@contents` field. The `@execute` field of the `oneshot` service should simply be defined as `true`. For instance, the following bundle
+
+    ```
+    [main]
+    @type=bundle
+    @version=0.0.1
+    @description="launch network"
+    @user=(root)
+    @contents=(connmand openntpd)
+    ```
+    will be converted to following `oneshot` service
+    ```
+    [main]
+    @type=oneshot
+    @version=0.0.1
+    @description="launch network"
+    @user=(root)
+    @depends=(connmand openntpd)
+
+    [start]
+    @execute=(true)
+    ```
+    Certainly, you can replace the `bundle` type with the `module` type. However, depending on your specific cases, the `module` type might overcomplicate the service itself.
+
+- The `module` type must be redefined from scratch due to significant changes in the directory `module` structure.. Refers to the [module-creation](module-creation.html) documentation for detailed information.
+
+# Cleaning the 66 directories and files
+
+The heart structure of `66` has been reframed, resulting in a simplified directory architecture. Clean unused files and directories from the previous release by following the instructions below. Additionally, refer to the [deeper understanding](deeper.html) documentation about the `66` architecture.
+
+## %%system_dir%%
+
+You can safely remove the following directories and files:
+
+- `%%system_dir%%/current` directory.
+
+- `%%system_dir%%/system/`:
+
+    Any other directories and files ***except*** for the `%%system_dir%%/.resolve` and `%%system_dir%%/service` directories from this directory.
+
+The exact same task applies to the `${HOME}/%%user_dir%%` directory. Also, you can remove the `${HOME}/%%user_dir%%/module` directory.
+
+## %%seed_adm%%
+
+You can safely remove the following `%%system_dir%%/module` directory.
