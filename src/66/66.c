@@ -194,6 +194,9 @@ int main(int argc, char const *const *argv)
         argc -= l.ind ; argv += l.ind ;
     }
 
+    if (!argc)
+        log_usage(usage_66, "\n", help_66) ;
+
     if (!strcmp(argv[0], "boot")) {
 
         PROG = "boot" ;
