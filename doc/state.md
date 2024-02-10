@@ -11,13 +11,15 @@ author: Eric Vidal <eric@obarun.org>
 
 This command displays the contents of the service's *state* file.
 
+This command is purely a debug command used by system administrator or developers.
+
 ## Interface
 
 ```
 state [ -h ] service
 ```
 
-This command displays the contents of the service's *state* file. This file are used internally by the `66` program to know runtime *service* information. This command is purely a debug command used by system administrator or developers.
+This command displays the contents of the service's *state* file. This file are used internally by the `66` program to know runtime *service* information.
 
 ## Options
 

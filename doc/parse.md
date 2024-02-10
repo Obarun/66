@@ -11,6 +11,10 @@ author: Eric Vidal <eric@obarun.org>
 
 Parses a [frontend](frontend.html) service file and writes the result to a directory.
 
+Users may not directly execute this command. It is primarily used internally by `66`. `66` automatically handles a non-parsed service by invoking the `parse` command. Users who wish to parse a service again with the `-f` option should prefer using the [reconfigure](reconfigure.html) command.
+
+However, a system administrator might want to parse a service frontend file under construction to ensure everything is functioning correctly without altering the system's state.
+
 ## Interface
 
 ```
@@ -32,12 +36,6 @@ This command handles [interdependencies](66.html#handling-dependencies) and pars
 - **-f**: force. Owerwrite an existing parsing result.
 
 - **-I**: do not imports modified configuration files from the previous version used. Refer to [Service configuration file](service-configuration-file.html) for further information.
-
-## Note
-
-Users may not directly execute this command. It is primarily used internally by `66`. `66` automatically handles a non-parsed service by invoking the `parse` command. Users who wish to parse a service again with the `-f` option should prefer using the [reconfigure](reconfigure.html) command.
-
-However, a system administrator might want to parse a service frontend file under construction to ensure everything is functioning correctly without altering the system's state.
 
 ## Usage examples
 

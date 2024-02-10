@@ -134,7 +134,7 @@ The *scandir* is created if it wasn't made previously, but you don't a fine-grai
 
 - **-d** *notif*: notify readiness on file descriptor notif. When *scandir* is ready to accept signal, it will write a newline to *notif*. *notif* **cannot be** lesser than `3`. By default, no notification is sent. If **-b** is set, this option have no effects.
 
-- **-t** *rescan*: perform a scan every *rescan* milliseconds. If *rescan* is set to 0 (the default), automatic scans are never performed after the first one and [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) will only detect new services by issuing either [scandir reload](scandir.html#reload) or [scandir check](scandir.html#rescan). It is **strongly** discouraged to set *rescan* to a positive value under `500`.
+- **-t** *rescan*: perform a scan every *rescan* milliseconds. If *rescan* is set to 0 (the default), automatic scans are never performed after the first one and [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) will only detect new services by issuing either [scandir reload](scandir.html#reload) or [scandir check](scandir.html#check). It is **strongly** discouraged to set *rescan* to a positive value under `500`.
 
 - **-e** *environment*: an absolute path. Merge the current environment variables with variables found in this directory before starting the *scandir*. Any file in environment not beginning with a dot and not containing the `=` character will be read and parsed. Each services will inherit of the `key=value` pair define within *environment*. The mentioned environment directory ***can not*** exceed more than `100` files. Each file can not contain more than `8095` bytes or more than `50` `key=value` pairs.
 

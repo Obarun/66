@@ -1,7 +1,7 @@
-title: The 66-tools Suite: execl-envfile
+title: The 66 Suite: execl-envfile
 author: Eric Vidal <eric@obarun.org>
 
-[66-tools](index.html)
+[66](index.html)
 
 [Software](https://web.obarun.org/software)
 

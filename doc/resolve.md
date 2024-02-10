@@ -11,13 +11,15 @@ author: Eric Vidal <eric@obarun.org>
 
 This command displays the contents of the service's *resolve* file.
 
+This command is purely a debug command used by system administrators or developers.
+
 ## Interface
 
 ```
 resolve [ -h ] service
 ```
 
-This command displays the contents of the service's *resolve* file. This file are used internally by the `66` program to know *service* information. This command is purely a debug command used by system administrators or developers.
+This command displays the contents of the service's *resolve* file. This file are used internally by the `66` program to know *service* information.
 
 [Resolve](deeper.html#resolve-files) files are at the core of `66` for service information. They are used internally by `66` to build the dependency graph, ascertain file locations, the parse process result of a service, and other critical aspects of a service.
 

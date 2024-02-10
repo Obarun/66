@@ -280,10 +280,10 @@ The code for the module part was revamped and greatly simplified.
     - The *up* option is passed to *66-scanctl*.
     - The **-e** option is passed to *66-scanctl*.
     - New options:
-        - **-B**: specifies to create a scandir for a container. In this case, a `/run/66/scandir/container/halt` file is created(see [66-boot](66-boot.hmtl) for further information).
+        - **-B**: specifies to create a scandir for a container. In this case, a `/run/66/scandir/container/halt` file is created(see [66-boot](66-boot.html) for further information).
         - **-c**: do not set the `catch-all` logger.
 
-- *skeleton file*: (see [66-boot](66-boot.hmtl) for further information).
+- *skeleton file*: (see [66-boot](66-boot.html) for further information).
     - *init.conf*:
         - New variables:
             - *CONTAINER*: specifies to boot inside a container.

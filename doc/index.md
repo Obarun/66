@@ -7,7 +7,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # What is 66?
 
-Sixty-six is an init and service manager built around [s6](https://skarnet.org/software/s6) created to make the implementation and manipulation of service files on your machine easier. It is meant to be a toolbox for the declaration, implementation and administration of services to achieve powerful functionality with small amounts of code.
+Sixty-six is a service manager providing init built around [s6](https://skarnet.org/software/s6) created to make the implementation and manipulation of service files on your machine easier. It is meant to be a toolbox for the declaration, implementation and administration of services to achieve powerful functionality with small amounts of code.
 
 Examples of what can be achieved by assembling different programs provided by `66`:
 
@@ -36,7 +36,7 @@ Booting with `66` to be able to supervise and manage services **is not** mandato
 
 ### Requirements
 
-Please refer to the [INSTALL.md](https://git.obarun.org/Obarun/66) file for details.
+Please refer to the [INSTALL.md](https://git.obarun.org/Obarun/66/-/blob/master/INSTALL.md) file for details.
 
 ### Licensing
 

@@ -895,7 +895,7 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
 
         struct resolve_hash_tree_s *hash = hash_search_tree(&htres, info->treename.s) ;
         if (hash == NULL)
-            log_dieu(LOG_EXIT_SYS,"find hash id of: ", info->treename.s, " -- please make a bug report") ;
+            log_dieu(LOG_EXIT_SYS,"find tree: ", info->treename.s) ;
 
         compute_visit_tree(info->treename.s, visit, list, &graph, &napid, requiredby) ;
 
