@@ -1,6 +1,6 @@
 #!/bin/sh
 
-man1='66 configure disable enable free execl-envfile halt init parse poweroff reboot reconfigure reload remove resolve restart rosetta scandir signal start state status stop tree upgrade version'
+man1='66 configure disable enable free execl-envfile halt parse poweroff reboot reconfigure reload remove resolve restart rosetta scandir signal start state status stop tree upgrade version'
 
 man8='boot 66-hpr 66-shutdown 66-shutdownd 66-umountall'
 

@@ -31,7 +31,7 @@ Example :
     @execute = ( agetty -J 38400 @I )
 ```
 
-By using [66 parse tty@tty1](parse.html) or any other `66` command, the resulting file will then be:
+By using [66 parse tty@tty1](66-parse.html) or any other `66` command, the resulting file will then be:
 
 ```
     [main]

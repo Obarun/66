@@ -17,7 +17,7 @@ This command bring down *services* and remove it from the scandir.
 free [ -h ] [ -P ] service...
 ```
 
-This command expects to find an already supervised service. If the state of the *service* is already up, the *free* command stop it first. Subsequently, service is unsupervised from the [scandir](scandir.html), freeing the memory used by the service.
+This command expects to find an already supervised service. If the state of the *service* is already up, the *free* command stop it first. Subsequently, service is unsupervised from the [scandir](66-scandir.html), freeing the memory used by the service.
 
 Multiple *services* can be started by separating their names with a space.
 

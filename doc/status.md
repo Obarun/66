@@ -17,7 +17,7 @@ This command displays information about service.
 status [ -h ] [ -n ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -p nline ] service
 ```
 
-By default the dependency graph is rendered in the [start](start.html) order of execution. You can reverse the rendered order, meaning the [stop](stop.html) execution, with the `-r` option.
+By default the dependency graph is rendered in the [start](66-start.html) order of execution. You can reverse the rendered order, meaning the [stop](66-stop.html) execution, with the `-r` option.
 
 Without specifying the `-o`, all fields are displayed.
 

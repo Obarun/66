@@ -39,7 +39,7 @@ The *66-shutdown* program abides to the standards of the LSB-3.0.0 [shutdown](ht
 
 - **-H**: prints this help.
 
-- **-l** *live*: changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66 scandir](scandir.html).
+- **-l** *live*: changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66 scandir](66-scandir.html).
 
 - **-a**: access control. The shutdown sequence will only be launched if one of the users listed in `%%skel%%/shutdown.allow` is currently logged in (as tracked by utmp). `%%skel%%/shutdown.allow` is a text file which accepts one user per line. Lines starting with `#` are commented out.
 

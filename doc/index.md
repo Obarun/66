@@ -26,9 +26,9 @@ Examples of what can be achieved by assembling different programs provided by `6
 - Automatic dependencies service chain.
 - ...
 
-`66` can easily be used within container. With one command, [66 scandir start](scandir.html), you are ready to go to supervise and manage any kind of service as root or regular account.
+`66` can easily be used within container. With one command, [66 scandir start](66-scandir.html), you are ready to go to supervise and manage any kind of service as root or regular account.
 
-Booting with `66` to be able to supervise and manage services **is not** mandatory. You can use it in parallel with another init or service manager, start a `scandir` directory with the [66 scandir start](scandir.html) command, and you are ready to supervise any kind of services.
+Booting with `66` to be able to supervise and manage services **is not** mandatory. You can use it in parallel with another init or service manager, start a `scandir` directory with the [66 scandir start](66-scandir.html) command, and you are ready to supervise any kind of services.
 
 **Note**: This documentation tries to be complete and self-contained. However, if you have never heard of [s6](https://skarnet.org/software/s6) you might be confused at first. Please refer to the skarnet documentation if in doubt.
 

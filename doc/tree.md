@@ -23,7 +23,7 @@ The default tree named `%%default_treename%%` is provided. This *tree* is automa
 
 Configuration of the *tree* during its creation can be managed through a configuration file called `seed`.—see [Seed files](#seed-files).
 
-Services within *tree* need to be *enabled*, with the [66 enable](enable.html) command, to be managed by the `start` subcommand. The `stop` and `free` subcommand manages any running services within *tree*.
+Services within *tree* need to be *enabled*, with the [66 enable](66-enable.html) command, to be managed by the `start` subcommand. The `stop` and `free` subcommand manages any running services within *tree*.
 
 A non-existing *tree* can also be created automatically when invocating of the `66 -t` option with commands that accept it. For example, the `66 -t treefoo enable foo` call automatically creates the tree `treefoo` if it doesn't exist yet, applying the [basic creation configuration](#basic-creation-configuration) or utilizing the `seed` file configuration if such file exists.
 
@@ -110,7 +110,7 @@ This subcommand creates a *tree* that doesn't exist and potentially configures i
 tree create [ -h ] [ -o depends=:requiredby=:... ] *tree*
 ```
 
-After creation *tree* do not contain any services. You need to [associate](#associated-service-to-a-tree) services within *tree* with the [66 enable](enable.html) command.
+After creation *tree* do not contain any services. You need to [associate](#associated-service-to-a-tree) services within *tree* with the [66 enable](66-enable.html) command.
 
 This command handles [interdependencies](66.html#handling-dependencies).
 
@@ -442,13 +442,17 @@ This command initiate services of a tree to a scandir directory
 66 tree init [ -h ] tree
 ```
 
-The behavior of this subcommand will depends of the state of the [scandir](scandir.html). If the scandir is not running, this command will initiate earlier services of *tree*, in other case its initiate all *enabled* services within *tree*.
+The behavior of this subcommand will depends of the state of the [scandir](66-scandir.html). If the scandir is not running, this command will initiate earlier services of *tree*, in other case its initiate all *enabled* services within *tree*.
 
-This subcommand is primarily used internally by `66 boot` command to initiate earlier services of *tree*. Initiation of services is made automatically at each invocation of `66 start` or `66 tree start` command is services was not initiate previously.
+Users, even system administrator, should not need to directly invoke this command. This subcommand is primarily used internally by `66 boot` command to initiate earlier services of *tree*. Initiation of services is made automatically at each invocation of `66 start` or `66 tree start` command is services was not initiate previously.
 
 #### Options
 
 - **-h**: prints this help.
+
+#### Initialization process
+
+The command will make an exact copy of the *enabled* service files and directories of the *tree* inside a [scandir](66-scandir.html) directory at `%%livedir%%/state/UID` where *UID* is the uid of the current owner of the process. The [scandir](66-scandir.html) does not need to be necessarily running. This is useful at boot time to initiate an early service before starting the scandir. Once the [scandir](66-scandir.html) starts—see [66 scandir start](66-scandir.html) command, the already present services start automatically.
 
 #### Usage examples
 

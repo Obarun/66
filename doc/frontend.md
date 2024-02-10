@@ -434,9 +434,9 @@ This section is *mandatory*. (!)
     valid values :
 
     * down: This will create the file down corresponding to the file down of [s6](https://skarnet.org/software/s6) program.
-    * earlier: This set the service as an *earlier* service meaning starts the service as soon as the [scandir](scandir.html) is up.
+    * earlier: This set the service as an *earlier* service meaning starts the service as soon as the [scandir](66-scandir.html) is up.
 
-    Once this file was created the default state of the service will be considered down, not up: the service will not automatically be started until it receives a [66 start](start.html) command. Without this file the default state of the service will be up and started automatically.
+    Once this file was created the default state of the service will be considered down, not up: the service will not automatically be started until it receives a [66 start](66-start.html) command. Without this file the default state of the service will be up and started automatically.
 
     ---
 
@@ -482,7 +482,7 @@ This section is *mandatory*. (!)
 
     * Any valid number.
 
-    This will create the file *timeout-kill*. Once this file is created and the value is not `0`, then on reception of a [stop](stop.html) command—which sends a `SIGTERM` and a `SIGCONT` to the service — a timeout of value in milliseconds is set. If the service is still not dead, after *value* in milliseconds, it will receive a `SIGKILL`. If the file does not exist, or contains `0`, or an invalid value, then the service is never forcibly killed.
+    This will create the file *timeout-kill*. Once this file is created and the value is not `0`, then on reception of a [stop](66-stop.html) command—which sends a `SIGTERM` and a `SIGCONT` to the service — a timeout of value in milliseconds is set. If the service is still not dead, after *value* in milliseconds, it will receive a `SIGKILL`. If the file does not exist, or contains `0`, or an invalid value, then the service is never forcibly killed.
 
     ---
 
@@ -498,7 +498,7 @@ This section is *mandatory*. (!)
 
     * Any valid number.
 
-    This will create the file *timeout-up*. Once this file is created the *value* will equal the maximum number of milliseconds that [start](start.html) command will wait for successful completion of the service start. If starting the service takes longer than this value, [start](start.html) command will declare the transition a failure. If the value is `0`, which is the default, no timeout is defined and [start](start.html) command will wait for the service to start until the *maxdeath* is reached.
+    This will create the file *timeout-up*. Once this file is created the *value* will equal the maximum number of milliseconds that [start](66-start.html) command will wait for successful completion of the service start. If starting the service takes longer than this value, [start](66-start.html) command will declare the transition a failure. If the value is `0`, which is the default, no timeout is defined and [start](66-start.html) command will wait for the service to start until the *maxdeath* is reached.
 
     ---
 
@@ -514,7 +514,7 @@ This section is *mandatory*. (!)
 
     * Any valid number.
 
-    This will create the file *timeout-down*. Once this file is created the value will equal the maximum number of milliseconds [stop](stop.html) command will wait for successful completion of the service stop. If starting the service takes longer than this value, [stop](stop.html) command will declare the transition a failure. If the value is `0`, no timeout is defined and [stop](stop.html) command will wait for the service to start until the *maxdeath* is reached. Without this file a value of `3000` (`3` seconds) will be used by default.
+    This will create the file *timeout-down*. Once this file is created the value will equal the maximum number of milliseconds [stop](66-stop.html) command will wait for successful completion of the service stop. If starting the service takes longer than this value, [stop](66-stop.html) command will declare the transition a failure. If the value is `0`, no timeout is defined and [stop](66-stop.html) command will wait for the service to start until the *maxdeath* is reached. Without this file a value of `3000` (`3` seconds) will be used by default.
 
     ---
 
@@ -530,7 +530,7 @@ This section is *mandatory*. (!)
 
     * Any valid number.
 
-    This will create the file *max-death-tally*. Once this file was created the value will equal the maximum number of service death events that the supervisor will keep track of. If the service dies more than this number of times, the oldest event will be forgotten and the transition ([start](start.html) or [stop](stop.html)) will be declared as failed. Tracking death events is useful, for example, when throttling service restarts. The value cannot be greater than 4096. Without this file a default of 10 is used.
+    This will create the file *max-death-tally*. Once this file was created the value will equal the maximum number of service death events that the supervisor will keep track of. If the service dies more than this number of times, the oldest event will be forgotten and the transition ([start](66-start.html) or [stop](66-stop.html)) will be declared as failed. Tracking death events is useful, for example, when throttling service restarts. The value cannot be greater than 4096. Without this file a default of 10 is used.
 
     ---
 
@@ -546,7 +546,7 @@ This section is *mandatory*. (!)
 
     * The name or number of a signal.
 
-    This will create the file *down-signal* which is used to kill the supervised process when a [reload](reload.html), [restart](restart.html) or [stop](stop.html) command is used. If the file does not exist `SIGTERM` will be used by default.
+    This will create the file *down-signal* which is used to kill the supervised process when a [reload](66-reload.html), [restart](66-restart.html) or [stop](66-stop.html) command is used. If the file does not exist `SIGTERM` will be used by default.
 
     ---
 
@@ -576,7 +576,7 @@ This section is *mandatory*. (!)
 
     The service will automatically be activated at the tree name set in the *@intree* key value.
 
-    **Note**: If a corresponding [seed](tree.html#seed-files) file exist on your system, its will be used to create and configure the tree.
+    **Note**: If a corresponding [seed](66-tree.html#seed-files) file exist on your system, its will be used to create and configure the tree.
 
 ---
 

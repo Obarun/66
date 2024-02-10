@@ -11,7 +11,7 @@ author: Eric Vidal <eric@obarun.org>
 
 This documentation describe how to use *module* from an user point of view. If you want to create a *module*, refers to [service module creation](module-creation.html) page.
 
-A *module* is a [instantiated service](instantiated-service.html) and can be managed like any other instantiated services. For intance, to [start](start.html) it
+A *module* is a [instantiated service](instantiated-service.html) and can be managed like any other instantiated services. For intance, to [start](66-start.html) it
 
 ```
 66 start foo@bar
@@ -19,7 +19,7 @@ A *module* is a [instantiated service](instantiated-service.html) and can be man
 
 where `foo@` is the name of the *module* and `bar` the name of its intance. If the *module* was never parsed before, you will get the default configuration define by the developer of the *module* service.
 
-Obviously you can [enable](enable.html) it
+Obviously you can [enable](66-enable.html) it
 
 ```
 66 enable foo@bar
@@ -31,7 +31,7 @@ or makes these two operations in one pass
 66 enable -S foo@bar
 ```
 
-The advantage of a *module* reside in the facts that you can [configure](configure.html) the *module* according to your needs. To do so,
+The advantage of a *module* reside in the facts that you can [configure](66-configure.html) the *module* according to your needs. To do so,
 
 ```
 66 configure foo@bar
@@ -45,11 +45,11 @@ Now, you need to apply the changes
 66 reconfigure foo@bar
 ```
 
-The *module* should now use your configuration. The [reconfigure](reconfigure.html) command need to be called each time you change the configuration of the *module*. If you don't use the [reconfigure](reconfigure.html) command, the *module* keeps the previous configuration.
+The *module* should now use your configuration. The [reconfigure](66-reconfigure.html) command need to be called each time you change the configuration of the *module*. If you don't use the [reconfigure](66-reconfigure.html) command, the *module* keeps the previous configuration.
 
 # Manage service within *module*
 
-As *module* is a set of services, when you start it, several services may be started. You can get the list of the services within *module* using the [status](status.html) command.
+As *module* is a set of services, when you start it, several services may be started. You can get the list of the services within *module* using the [status](66-status.html) command.
 
 ```
 66 status foo@bar

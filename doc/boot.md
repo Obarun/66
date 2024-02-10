@@ -9,7 +9,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # boot
 
-Meant to be run as pid 1 as a *stage1* init. Performs the necessary early system preparation and execs into [scandir start](scandir.html).
+Meant to be run as pid 1 as a *stage1* init. Performs the necessary early system preparation and execs into [scandir start](66-scandir.html).
 
 ## Interface
 
@@ -17,11 +17,11 @@ Meant to be run as pid 1 as a *stage1* init. Performs the necessary early system
 boot [ -h ] [ -z ] [ -m ] [ -s skel ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]
 ```
 
-This program performs some early preparations, spawns a process that will run the `rc.init` script and then execs into [scandir start](scandir.html).
+This program performs some early preparations, spawns a process that will run the `rc.init` script and then execs into [scandir start](66-scandir.html).
 
 ## Exit codes
 
-Command *boot* never exits. It spawns the `rc.init` script and execs into [scandir start](scandir.html) which runs forever until the machine stops or reboots.
+Command *boot* never exits. It spawns the `rc.init` script and execs into [scandir start](66-scandir.html) which runs forever until the machine stops or reboots.
 
 ## Options
 
@@ -33,7 +33,7 @@ Command *boot* never exits. It spawns the `rc.init` script and execs into [scand
 
 - **-l** *log_user*: the `catch-all` logger will run as *log_user*. Default is `%%s6log_user%%`. The default can also be changed at compile-time by passing the `--with-s6-log-user=user` option to `./configure`.
 
-- **-e** *environment*: an absolute path. *stage 1 init* empties its environment before spawning the `rc.init` skeleton file and executing into [scandir start](scandir.html) in order to prevent kernel environment variables from leaking into the process tree. The *PATH* variable is the only variable set for the environment. If you want to define additional environment variables then use this option. Behaves the same as [scandir start -e](scandir.html).
+- **-e** *environment*: an absolute path. *stage 1 init* empties its environment before spawning the `rc.init` skeleton file and executing into [scandir start](66-scandir.html) in order to prevent kernel environment variables from leaking into the process tree. The *PATH* variable is the only variable set for the environment. If you want to define additional environment variables then use this option. Behaves the same as [scandir start -e](66-scandir.html).
 
 - **-d** *dev*: mounts a devtmpfs on *dev*. By default, no such mount is performed - it is assumed that a devtmpfs is automounted on `/dev` at boot time by the kernel or an initramfs.
 
@@ -60,13 +60,13 @@ When booting a system, command *boot* performs the following operations:
 
 - It checks if the *LIVE* basename is a valid mountpoint, and if so it mounts it. If requested, it unmounts if the *LIVE* basename is a valid mountpoint and performs a mount.
 
-- It creates the *LIVE* directory invocating [66 -v VERBOSITY -l LIVE scandir  -b -c -s skel create](scandir.html) plus **-L user_log** if requested.
+- It creates the *LIVE* directory invocating [66 -v VERBOSITY -l LIVE scandir  -b -c -s skel create](66-scandir.html) plus **-L user_log** if requested.
 
-- It initiates the early services of *TREE* invocating [66 -v VERBOSITY -l LIVE init TREE](init.html).
+- It initiates the early services of *TREE* invocating [66 -v VERBOSITY -l LIVE tree init TREE](66-66-tree.html#init).
 
 - It reads the initial environment from *environment* if requested.
 
-- It performs "the fifo trick" where it redirects its stdout to the `catch-all` logger's fifo without blocking before the `catch-all` logger is even up (because it's a service that will be spawned a bit later, when [scandir start](scandir.html) is executed).
+- It performs "the fifo trick" where it redirects its stdout to the `catch-all` logger's fifo without blocking before the `catch-all` logger is even up (because it's a service that will be spawned a bit later, when [scandir start](66-scandir.html) is executed).
 
 - It forks a child, also called *stage2*.
 
@@ -78,9 +78,9 @@ When booting a system, command *boot* performs the following operations:
 
 - It also makes the catch-all logger's fifo its stderr.
 
-- It execs into [66 -v VERBOSITY -l LIVE start](scandir.html) with `LIVE/scandir/0` (default `%%livedir%%/scandir/0`) as its scandir.
+- It execs into [66 -v VERBOSITY -l LIVE scandir start](66-scandir.html) with `LIVE/scandir/0` (default `%%livedir%%/scandir/0`) as its scandir.
 
-    * [scandir start](scandir.html) transitions into [s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) which spawns the early services that are defined in *TREE* where one of those services is `scandir-log`, which is the `catch-all` logger. Once this service is up `boot's` command child *stage2* unblocks.
+    * [scandir start](66-scandir.html) transitions into [s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) which spawns the early services that are defined in *TREE* where one of those services is `scandir-log`, which is the `catch-all` logger. Once this service is up `boot's` command child *stage2* unblocks.
 
     * The child then execs into `rc.init`
 
@@ -100,11 +100,11 @@ Skeleton files are mandatory and must exist on your system to be able to boot an
 
     * `PATH=/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin` : the initial value for the *PATH* environment variable that will be passed on to all starting processes unless it's overridden by *PATH* declaration with the **-e** option. It is absolutely necessary for [execline](https://skarnet.org/software/execline/),[s6](https://skarnet.org/software/s6/) and all *66 command* binaries to be accessible via *PATH*, else the machine will not boot.
 
-    * `TREE=boot` : name of the *tree* to start. This *tree* should contain a sane set of services to bring up the machine into an operating system. Service marked `earlier` will start early at the invocation of [init](init.html) command. *stage2* will then start any other service type. It is the responsibility of the system administrator to build this tree without errors.
+    * `TREE=boot` : name of the *tree* to start. This *tree* should contain a sane set of services to bring up the machine into an operating system. Service marked `earlier` will start early at the invocation of [tree init](66-66-tree.html#init) command. *stage2* will then start any other service type. It is the responsibility of the system administrator to build this tree without errors.
 
-    * `RCINIT=%%skel%%/rc.init` : an absolute path. This file is launched at the end of *stage1* and run as *stage2*. It calls [init](init.html) command to initiate any enabled services inside of *TREE* except the earlier ones which were already initiated by *stage1*. After that it invokes [66 start](start.html) command to bring up all services.
+    * `RCINIT=%%skel%%/rc.init` : an absolute path. This file is launched at the end of *stage1* and run as *stage2*. It calls [tree init](66-66-tree.html#init) command to initiate any enabled services inside of *TREE* except the earlier ones which were already initiated by *stage1*. After that it invokes [66 start](66-start.html) command to bring up all services.
 
-    * `RCSHUTDOWN=%%skel%%/rc.shutdown` : an absolute path. This is launched when a shutdown is requested also called *stage3*. It invokes [66 tree stop](tree.html) command to bring down all services of *TREE*.
+    * `RCSHUTDOWN=%%skel%%/rc.shutdown` : an absolute path. This is launched when a shutdown is requested also called *stage3*. It invokes [66 tree stop](66-tree.html) command to bring down all services of *TREE*.
 
     * `RCSHUTDOWNFINAL=%%skel%%/rc.shutdown.final` : an absolute path. This file will be run at the very end of the shutdown procedure, after all processes have been killed and all filesystems have been unmounted, just before the system is rebooted or the power turned off.
 

@@ -17,7 +17,7 @@ Controls an already supervised *service*.
 signal [ -h ] [ -wu | -wU | -wd | -wD | -wr | -wR ] [ -abqHkti12pcysodDuUxOrP ] service...
 ```
 
-This command expects to find an already supervised *service* and an already running [scandir](scandir.html).
+This command expects to find an already supervised *service* and an already running [scandir](66-scandir.html).
 
 This command is the heart of `66` concerning service state change. Every other `66` command that need to send a signal to a service pass through this command.
 

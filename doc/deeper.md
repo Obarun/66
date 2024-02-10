@@ -60,11 +60,11 @@ The `%%system_dir%%/system/.resolve` directory contains resolve files for trees.
 
 The `%%system_dir%%/system/.resolve/service` directory consists of symlinks that point to resolve files for each service. These symlinks enable `66` to quickly access the resolve files for individual services, facilitating the construction of the complete graph of services interdependences.
 
-The `%%system_dir%%/system/service/svc` directory includes service directories, each housing the results of the [parse](parse.html) process, as well as internal directories and files essential for `66`.
+The `%%system_dir%%/system/service/svc` directory includes service directories, each housing the results of the [parse](66-parse.html) process, as well as internal directories and files essential for `66`.
 
 ### %%system_dir%%/system/.resolve/<tree>
 
-The content of the resolve file for a tree, such as `%%default_treename%%`, can be viewed using the [66 resolve](resolve.html) command in the following manner
+The content of the resolve file for a tree, such as `%%default_treename%%`, can be viewed using the [66 resolve](66-resolve.html) command in the following manner
 
 ```
 66 tree resolve global
@@ -113,7 +113,7 @@ This file serves `66` in rapidly accessing an overview of trees on the system. W
 
 ### %%system_dir%%/system/service/svc/\<service\>
 
-Every service possesses its individual directory. At its core, this directory houses the outcome of the [parse](parse.html) process, heavily reliant on the corresponding [frontend](frontend.html) file. Yet, all service directories invariably include the `.resolve` and `state` subdirectories.
+Every service possesses its individual directory. At its core, this directory houses the outcome of the [parse](66-parse.html) process, heavily reliant on the corresponding [frontend](frontend.html) file. Yet, all service directories invariably include the `.resolve` and `state` subdirectories.
 
 #### %%system_dir%%/system/service/svc/\<service\>/.resolve
 
@@ -281,7 +281,7 @@ This directory is specified at compile time by using the `--with-sysadmin-servic
 
 This directory stores the configuration file of a service, which is the outcome of the [[environment]](frontend.html#section-environment) section parsed from the [frontend](frontend.html) file.
 
-The `66 configure <service>` command handles this directory. It's advised for users, including system administrators, to avoid direct interaction with these directories and utilize the [configure](configure.html) command instead.
+The `66 configure <service>` command handles this directory. It's advised for users, including system administrators, to avoid direct interaction with these directories and utilize the [configure](66-configure.html) command instead.
 
 Its subdirectories contain versioned files per service and are self-explanatory.
 
@@ -289,7 +289,7 @@ Its subdirectories contain versioned files per service and are self-explanatory.
 
 This directory is specified at compile time by using the `--with-sysadmin-seed=` option to `./configure`.
 
-This directory is managed by the user and stores [seed](tree.html#seed-files) files, used, for example, by the [tree](tree.html) command. If a [seed](tree.html#seed-files) file exists both in this directory and at `%%service_system%%`, the one in this directory takes precedence.
+This directory is managed by the user and stores [seed](66-tree.html#seed-files) files, used, for example, by the [tree](66-tree.html) command. If a [seed](66-tree.html#seed-files) file exists both in this directory and at `%%service_system%%`, the one in this directory takes precedence.
 
 It's crucial for system administrators to avoid altering this directory or its subdirectories, ensuring users can manage it without losing their changes.
 
@@ -317,7 +317,7 @@ This directory serves as a location for system administrators to install additio
 
 This directory is specified at compile time by using the `--with-system-seed=` option to `./configure`.
 
-this directory is intended for system administrators to install [seed](tree.html#seed-files) files. User modifications in this directory may be lost during system updates.
+this directory is intended for system administrators to install [seed](66-tree.html#seed-files) files. User modifications in this directory may be lost during system updates.
 
 ## %%livedir%%
 
@@ -327,7 +327,7 @@ This should be within a writable and executable filesystem, likely a RAM filesys
 
 This directory and its subdirectories are managed by `66`. Users, including system administrators, should avoid directly interacting with these directories.
 
-It create at [66 scandir create](scandir.html#start) invocation if it doesn't yet.
+It create at [66 scandir create](66-scandir.html#start) invocation if it doesn't yet.
 
 ### %%livedir%%/log
 
@@ -335,11 +335,11 @@ This directory houses log files, usually one per service. It's commonly used for
 
 ### %%livedir%%/log/0
 
-This directory stores logs generated by `scandir-log` service, which is internally created by `66`. During the boot, the [rc.init](boot.html#skeleton-files) skeleton file performs actions and captures output using `scandir-log`.  It might also contain `uncaught-log` entries from services lacking their own logger, making it valuable for debugging purposes.
+This directory stores logs generated by `scandir-log` service, which is internally created by `66`. During the boot, the [rc.init](66-boot.html#skeleton-files) skeleton file performs actions and captures output using `scandir-log`.  It might also contain `uncaught-log` entries from services lacking their own logger, making it valuable for debugging purposes.
 
 ### %%livedir%%/scandir
 
-This directory is managed through the [scandir](scandir.html) comand. Users, including system administrators, should avoid directly interacting with these directories.
+This directory is managed through the [scandir](66-scandir.html) comand. Users, including system administrators, should avoid directly interacting with these directories.
 
 #### %%livedir%%/scandir/UID
 
@@ -347,7 +347,7 @@ Given `66` can run with root or regular account privileges, this directory conta
 
 This directory consists of service symlinks that point to its corresponding `%%livedir%%/state/UID/<service>` directory.
 
-*note*: The `66 scandir create -B` invocation create the directory `%%livedir%%/scandir/UID/container` containing a named file *halt*. See [boot](boot.html) for further information.
+*note*: The `66 scandir create -B` invocation create the directory `%%livedir%%/scandir/UID/container` containing a named file *halt*. See [boot](66-boot.html) for further information.
 
 ### %%livedir%%/state
 
@@ -361,7 +361,7 @@ For instance, the `%%livedir%%/state/0/<service>` contains a verbatim copy of th
 
 Invocating the `66 free <service>` remove the corresponding `%%livedir%%/state/0/<service>` directory.
 
-At [start](start.html) command executed will created the corresponding `%%livedir%%/state/0/<service>` if it doesn't exist yet.
+At [start](66-start.html) command executed will created the corresponding `%%livedir%%/state/0/<service>` if it doesn't exist yet.
 
 ## %%system_log%%
 

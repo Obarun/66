@@ -90,19 +90,19 @@ Various files and directories is created at `%%livedir%%`. Refers to [deeper und
 #### Options
 
 - **-h**: print this help.
-- **-b**: create scandir for a boot process. Only the root user can use this option. It is not meant to be used directly even with root. [66 boot](boot.html) calls it during the boot process.
+- **-b**: create scandir for a boot process. Only the root user can use this option. It is not meant to be used directly even with root. [66 boot](66-boot.html) calls it during the boot process.
 - **-B**: create scandir for a boot process inside a container. This option modifies some behaviors:
 
     The ultimate output fallback (i.e. the place where error messages go when nothing catches them, e.g. the error messages from the catch-all logger and the [s6-supervise](https://skarnet.org/software/s6/s6-supervise.html) process managing the catch-all logger) is not `/dev/console`, but the descriptor that was init's standard error.
-    Stopping the container with reboot will make the container's init program report being killed by a `SIGHUP`. Stopping it with [66 poweroff](poweroff.html) will make it report being killed by a `SIGINT`. This is according to the reboot(2) specification.
-    Stopping the container with [66 halt](halt.html), however, is different. It will make the container's pid 1 read a number in the `/run/66/container/\<owner\>/halt` file which contents the variable `EXITCODE`, and exit with the code it has read. (Default is 0.) This means that in order to run a command in a container managed by [66 boot](boot.html) and exit the container when the command dies while reporting the exit code to its parent, [66 boot](boot.html) use the `/etc/66/rc.init.container` file instead of the `/etc/66/rc.init` file. This file should be modified to launch the command that you want to start inside this container. Then you need to stop that container calling [66 halt](halt.html).
+    Stopping the container with reboot will make the container's init program report being killed by a `SIGHUP`. Stopping it with [66 poweroff](66-poweroff.html) will make it report being killed by a `SIGINT`. This is according to the reboot(2) specification.
+    Stopping the container with [66 halt](66-halt.html), however, is different. It will make the container's pid 1 read a number in the `/run/66/container/\<owner\>/halt` file which contents the variable `EXITCODE`, and exit with the code it has read. (Default is 0.) This means that in order to run a command in a container managed by [66 boot](66-boot.html) and exit the container when the command dies while reporting the exit code to its parent, [66 boot](66-boot.html) use the `/etc/66/rc.init.container` file instead of the `/etc/66/rc.init` file. This file should be modified to launch the command that you want to start inside this container. Then you need to stop that container calling [66 halt](66-halt.html).
     All the running services will be killed, all the zombies will be reaped, and the container will exit with the required exit code.
 
 - **-c**: do not catch logs. On a non-containerized system, that means that all the logs from the *scandir* will go to `/dev/console`, and that `/dev/console` will also be the default `stdout` and `stderr` for services running under the supervision tree: use of this option is discouraged. On a containerized system (when paired with the `-B` option), it simply means that these outputs go to the default `stdout` and `stderr` given to the container's init - this should generally not be the default, but might be useful in some cases.
 
 - **-L** *log_user*: run catch-all logger as *log_user* user. Default is `%%s6log_user%%`. The default can also be changed at compile-time by passing the `‑‑with‑s6‑log‑user=user` option to `./configure`.
 
-- **-s** *skel*: use *skel* as skeleton directory. Directory containing *skeleton* files. This option is not meant to be used directly even with root. [66 boot](boot.html) calls it during the boot process. Default is `%%skel%%`.
+- **-s** *skel*: use *skel* as skeleton directory. Directory containing *skeleton* files. This option is not meant to be used directly even with root. [66 boot](66-boot.html) calls it during the boot process. Default is `%%skel%%`.
 
 #### Usage examples
 
@@ -134,7 +134,7 @@ The *scandir* is created if it wasn't made previously, but you don't a fine-grai
 
 - **-d** *notif*: notify readiness on file descriptor notif. When *scandir* is ready to accept signal, it will write a newline to *notif*. *notif* **cannot be** lesser than `3`. By default, no notification is sent. If **-b** is set, this option have no effects.
 
-- **-t** *rescan*: perform a scan every *rescan* milliseconds. If *rescan* is set to 0 (the default), automatic scans are never performed after the first one and [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) will only detect new services by issuing either [scandir reload](scandir.html#reload) or [scandir check](scandir.html#check). It is **strongly** discouraged to set *rescan* to a positive value under `500`.
+- **-t** *rescan*: perform a scan every *rescan* milliseconds. If *rescan* is set to 0 (the default), automatic scans are never performed after the first one and [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) will only detect new services by issuing either [scandir reload](66-scandir.html#reload) or [scandir check](66-scandir.html#check). It is **strongly** discouraged to set *rescan* to a positive value under `500`.
 
 - **-e** *environment*: an absolute path. Merge the current environment variables with variables found in this directory before starting the *scandir*. Any file in environment not beginning with a dot and not containing the `=` character will be read and parsed. Each services will inherit of the `key=value` pair define within *environment*. The mentioned environment directory ***can not*** exceed more than `100` files. Each file can not contain more than `8095` bytes or more than `50` `key=value` pairs.
 
@@ -419,6 +419,6 @@ Removes zombies from a *scandir* for the owner `owner`
 
 ## Boot specification
 
-The **-b**, **-B**, **-c** and **-s** option are called by [66 boot](boot.html). **‑b** and **-B** will create `.s6‑svscan` control files (see [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) interface documentation) specifically for stage1 (PID1 process). This special *scandir* is controlled by [66 halt](halt.html), [66 poweroff](poweroff.html) and  [66 reboot](reboot.html) command. The [66-shutdownd](66‑shutdownd.html) daemon which controls the shutdown request will be created automatically at the correct location. Further this specific task needs to read the skeleton file `init.conf` containing the *live* directory location which is the purpose of the **‑s** option.
+The **-b**, **-B**, **-c** and **-s** option are called by [66 boot](66-boot.html). **‑b** and **-B** will create `.s6‑svscan` control files (see [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) interface documentation) specifically for stage1 (PID1 process). This special *scandir* is controlled by [66 halt](66-halt.html), [66 poweroff](66-poweroff.html) and  [66 reboot](66-reboot.html) command. The [66-shutdownd](66‑shutdownd.html) daemon which controls the shutdown request will be created automatically at the correct location. Further this specific task needs to read the skeleton file `init.conf` containing the *live* directory location which is the purpose of the **‑s** option.
 
 The *live* directory for the boot process requires writable directories and an executable filesystem. In order to accommodate for read‑only root filesystems there needs to be a tmpfs mounted before [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) can be run.

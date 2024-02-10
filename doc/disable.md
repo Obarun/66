@@ -17,7 +17,7 @@ This command disables one or more services.
 disable [ -h ] [ -S ] service...
 ```
 
-This command expects to find an already enabled *service*. The targeted service(s) can also be stopped on the fly when disabling it with the **-S** option. Generally speaking this command is the strict opposite of the [enable](enable.html) command.
+This command expects to find an already enabled *service*. The targeted service(s) can also be stopped on the fly when disabling it with the **-S** option. Generally speaking this command is the strict opposite of the [enable](66-enable.html) command.
 
 The `66 -t` command option have no effect. `66` will detect automatically the associated *tree* of the service along its required-by dependencies.
 

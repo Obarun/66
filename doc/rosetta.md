@@ -127,7 +127,7 @@ New subcommands was integrated to `66 scandir` to avoid using options from `s6-s
 ## 66-init
 ---
 
-As `s6-rc` was dropped, the specification of the type of the service is not needed anymore. This program was integrated to `66 tree` command -- see [66 tree init](tree.html#init) documentation for futhers information.
+As `s6-rc` was dropped, the specification of the type of the service is not needed anymore. This program was integrated to `66 tree` command -- see [66 tree init](66-tree.html#init) documentation for futhers information.
 
 | old argument | new argument |
 | --- | --- |

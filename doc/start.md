@@ -17,11 +17,11 @@ This command starts one ore more *services*.
 start [ -h ] [ -P ] service...
 ```
 
-This command expects to find an already running [scandir](scandir.html). If the state of the *service* is already up, the *start* command does nothing but handles dependency except when passing the `-P` option.
+This command expects to find an already running [scandir](66-scandir.html). If the state of the *service* is already up, the *start* command does nothing but handles dependency except when passing the `-P` option.
 
 Multiple *services* can be started by separating their names with a space.
 
-If the *service* has never been parsed, the *start* command will parse it and associate the service with a specific *tree* if the `66 -t` option was used, or if the `frontend` file defines the `@intree` field, or if a `tree` was marked as current—refer to the [tree current](tree.html#current) subcommand. Otherwise, the *service* will be associated with the `%%default_treename%%`. This process is applied to all dependencies of the service.
+If the *service* has never been parsed, the *start* command will parse it and associate the service with a specific *tree* if the `66 -t` option was used, or if the `frontend` file defines the `@intree` field, or if a `tree` was marked as current—refer to the [tree current](66-tree.html#current) subcommand. Otherwise, the *service* will be associated with the `%%default_treename%%`. This process is applied to all dependencies of the service.
 
 If the *service* was already parsed, the `66 -t` command option have no effect.
 
