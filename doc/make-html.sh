@@ -1,6 +1,6 @@
 #!/bin/sh
 
-html='66-echo 66-hpr 66-nuke 66-shutdown 66-shutdownd 66-umountall 66 boot configure deeper disable enable execl-envfile free frontend halt index instantiated-service module-creation module-usage parse poweroff reboot reconfigure reload remove resolve restart rosetta scandir service-configuration-file signal start state status stop tree upgrade version'
+html='66-echo 66-hpr 66-nuke 66-shutdown 66-shutdownd 66-umountall 66 66-boot 66-configure 66-deeper 66-disable 66-enable execl-envfile 66-free 66-frontend 66-halt index 66-instantiated-service 66-module-creation 66-module-usage 66-parse 66-poweroff 66-reboot 66-reconfigure 66-reload 66-remove 66-resolve 66-restart 66-rosetta 66-scandir 66-service-configuration-file 66-signal 66-start 66-state 66-status 66-stop 66-tree 66-upgrade 66-version'
 
 version=${1}
 

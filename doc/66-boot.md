@@ -62,7 +62,7 @@ When booting a system, command *boot* performs the following operations:
 
 - It creates the *LIVE* directory invocating [66 -v VERBOSITY -l LIVE scandir  -b -c -s skel create](66-scandir.html) plus **-L user_log** if requested.
 
-- It initiates the early services of *TREE* invocating [66 -v VERBOSITY -l LIVE tree init TREE](66-66-tree.html#init).
+- It initiates the early services of *TREE* invocating [66 -v VERBOSITY -l LIVE tree init TREE](66-tree.html#init).
 
 - It reads the initial environment from *environment* if requested.
 
@@ -100,9 +100,9 @@ Skeleton files are mandatory and must exist on your system to be able to boot an
 
     * `PATH=/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin` : the initial value for the *PATH* environment variable that will be passed on to all starting processes unless it's overridden by *PATH* declaration with the **-e** option. It is absolutely necessary for [execline](https://skarnet.org/software/execline/),[s6](https://skarnet.org/software/s6/) and all *66 command* binaries to be accessible via *PATH*, else the machine will not boot.
 
-    * `TREE=boot` : name of the *tree* to start. This *tree* should contain a sane set of services to bring up the machine into an operating system. Service marked `earlier` will start early at the invocation of [tree init](66-66-tree.html#init) command. *stage2* will then start any other service type. It is the responsibility of the system administrator to build this tree without errors.
+    * `TREE=boot` : name of the *tree* to start. This *tree* should contain a sane set of services to bring up the machine into an operating system. Service marked `earlier` will start early at the invocation of [tree init](66-tree.html#init) command. *stage2* will then start any other service type. It is the responsibility of the system administrator to build this tree without errors.
 
-    * `RCINIT=%%skel%%/rc.init` : an absolute path. This file is launched at the end of *stage1* and run as *stage2*. It calls [tree init](66-66-tree.html#init) command to initiate any enabled services inside of *TREE* except the earlier ones which were already initiated by *stage1*. After that it invokes [66 start](66-start.html) command to bring up all services.
+    * `RCINIT=%%skel%%/rc.init` : an absolute path. This file is launched at the end of *stage1* and run as *stage2*. It calls [tree init](66-tree.html#init) command to initiate any enabled services inside of *TREE* except the earlier ones which were already initiated by *stage1*. After that it invokes [66 start](66-start.html) command to bring up all services.
 
     * `RCSHUTDOWN=%%skel%%/rc.shutdown` : an absolute path. This is launched when a shutdown is requested also called *stage3*. It invokes [66 tree stop](66-tree.html) command to bring down all services of *TREE*.
 
