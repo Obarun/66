@@ -9,9 +9,9 @@ author: Eric Vidal <eric@obarun.org>
 
 # Module service usage
 
-This documentation describe how to use *module* from an user point of view. If you want to create a *module*, refers to [service module creation](module-creation.html) page.
+This documentation describe how to use *module* from an user point of view. If you want to create a *module*, refers to [service module creation](66-module-creation.html) page.
 
-A *module* is a [instantiated service](instantiated-service.html) and can be managed like any other instantiated services. For intance, to [start](66-start.html) it
+A *module* is a [instantiated service](66-instantiated-service.html) and can be managed like any other instantiated services. For intance, to [start](66-start.html) it
 
 ```
 66 start foo@bar

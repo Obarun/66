@@ -113,7 +113,7 @@ This file serves `66` in rapidly accessing an overview of trees on the system. W
 
 ### %%system_dir%%/system/service/svc/\<service\>
 
-Every service possesses its individual directory. At its core, this directory houses the outcome of the [parse](66-parse.html) process, heavily reliant on the corresponding [frontend](frontend.html) file. Yet, all service directories invariably include the `.resolve` and `state` subdirectories.
+Every service possesses its individual directory. At its core, this directory houses the outcome of the [parse](66-parse.html) process, heavily reliant on the corresponding [frontend](66-frontend.html) file. Yet, all service directories invariably include the `.resolve` and `state` subdirectories.
 
 #### %%system_dir%%/system/service/svc/\<service\>/.resolve
 
@@ -240,13 +240,13 @@ The `66 status <service>` command provides a subset of these information. Too mu
 
 Some precision is needed here:
 
-- The intree field corresponds to the `@intree` field in the [frontend](frontend.html) file, while `treename` indicates the current associated tree of the service. Changing the tree with `66 -t <tree> enable <service>` modifies `treename`, leaving `intree` unchanged.
+- The intree field corresponds to the `@intree` field in the [frontend](66-frontend.html) file, while `treename` indicates the current associated tree of the service. Changing the tree with `66 -t <tree> enable <service>` modifies `treename`, leaving `intree` unchanged.
 
 - The `inns` field indicates whether the service is a part of a `module`.
 
 - The `run` and `finish` field contains the content of the `%%system_dir%%/system/svc/service/svc/<service>/run` and `%%system_dir%%/system/svc/service/svc/<service>/finish` file respectively.
 
-- Meanwhile, `run_user`, and `finish_user` fields are derived from the [[start]](frontend.html#section-start) and [[stop]](frontend.html#section-stop) sections in the frontend file. Specifically, `run_user` corresponds to `@execute` in the [[start]](frontend.html#section-start) section, and the others function similarly but for the [[stop]](frontend.html#section-stop) section.
+- Meanwhile, `run_user`, and `finish_user` fields are derived from the [[start]](66-frontend.html#section-start) and [[stop]](66-frontend.html#section-stop) sections in the frontend file. Specifically, `run_user` corresponds to `@execute` in the [[start]](66-frontend.html#section-start) section, and the others function similarly but for the [[stop]](66-frontend.html#section-stop) section.
 
 - Other fields like `ownerstr`, `home`, `frontend`, `servicedir`, `livedir`, `status`, `servicedir`, `scandir`, `statedir`, `eventdir`, `notifdir`, `supervisedir`, `fdholderdir`, `oneshotddir`, `logname`, `logwant` and `env_overwrite` are used internally for `66`'s operations.
 
@@ -279,7 +279,7 @@ User may want to manage some subdirectories with the exception of the `%%service
 
 This directory is specified at compile time by using the `--with-sysadmin-service-conf=` option to `./configure`.
 
-This directory stores the configuration file of a service, which is the outcome of the [[environment]](frontend.html#section-environment) section parsed from the [frontend](frontend.html) file.
+This directory stores the configuration file of a service, which is the outcome of the [[environment]](66-frontend.html#section-environment) section parsed from the [frontend](66-frontend.html) file.
 
 The `66 configure <service>` command handles this directory. It's advised for users, including system administrators, to avoid direct interaction with these directories and utilize the [configure](66-configure.html) command instead.
 
@@ -297,7 +297,7 @@ It's crucial for system administrators to avoid altering this directory or its s
 
 This directory is specified at compile time by using the `--with-sysadmin-service=` option to `./configure`.
 
-This directory is designated for users to store [frontend](frontend.html) files. If a [frontend](frontend.html) file for a service exists both in this directory and at `%%service_system%%`, the file in this directory takes precedence.
+This directory is designated for users to store [frontend](66-frontend.html) files. If a [frontend](66-frontend.html) file for a service exists both in this directory and at `%%service_system%%`, the file in this directory takes precedence.
 
 It's crucial for system administrators to avoid altering this directory or its subdirectories, ensuring users can manage it without losing their changes.
 
@@ -305,13 +305,13 @@ It's crucial for system administrators to avoid altering this directory or its s
 
 This directory is specified at compile time by using the `--with-system-service=` option to `./configure`.
 
-This directory is reserved for system administrators to install [frontend](frontend.html) file, often through package manager. Any modifications made by users may be overwritten during system updates.
+This directory is reserved for system administrators to install [frontend](66-frontend.html) file, often through package manager. Any modifications made by users may be overwritten during system updates.
 
 ## %%script_system%%
 
 This directory is specified at compile time by using the `--with-system-script=` option to `./configure`.
 
-This directory serves as a location for system administrators to install additional scripts required by [frontend](frontend.html) files or those related to the `module` service type. It's a secure area for administrators to manage scripts effectively.
+This directory serves as a location for system administrators to install additional scripts required by [frontend](66-frontend.html) files or those related to the `module` service type. It's a secure area for administrators to manage scripts effectively.
 
 ## %%seed_system%%
 
@@ -373,7 +373,7 @@ Each service, if a logger is associated, has its own subdirectory likely `%%syst
 
 User can control the rotation of the log file with:
 
-- the `@backup` field at the [[logger]](frontend.html#section-logger) section of the [frontend](frontend.html) file.
+- the `@backup` field at the [[logger]](66-frontend.html#section-logger) section of the [frontend](66-frontend.html) file.
 
 - invocating `66 reload -P <service>` or `66 signal -aP <service>` command.
 

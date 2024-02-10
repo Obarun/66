@@ -9,7 +9,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # parse
 
-Parses a [frontend](frontend.html) service file and writes the result to a directory.
+Parses a [frontend](66-frontend.html) service file and writes the result to a directory.
 
 Users may not directly execute this command. It is primarily used internally by `66`. `66` automatically handles a non-parsed service by invoking the `parse` command. Users who wish to parse a service again with the `-f` option should prefer using the [reconfigure](66-reconfigure.html) command.
 
@@ -21,7 +21,7 @@ However, a system administrator might want to parse a service frontend file unde
 parser [ -h ] [ -f ] [ -I ] service...
 ```
 
-- Opens and reads the [frontend](frontend.html) *service* file.
+- Opens and reads the [frontend](66-frontend.html) *service* file.
 - Runs a parser on the file.
 - Writes the parsing result to the `%%system_dir%%/system/service/svc/foo` directory.
 
@@ -35,7 +35,7 @@ This command handles [interdependencies](66.html#handling-dependencies) and pars
 
 - **-f**: force. Owerwrite an existing parsing result.
 
-- **-I**: do not imports modified configuration files from the previous version used. Refer to [Service configuration file](service-configuration-file.html) for further information.
+- **-I**: do not imports modified configuration files from the previous version used. Refer to [Service configuration file](66-service-configuration-file.html) for further information.
 
 ## Usage examples
 

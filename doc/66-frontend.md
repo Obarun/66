@@ -9,7 +9,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # The frontend service file
 
-The [s6](https://skarnet.org/software/s6) programs use different files. It is quite complex to understand and manage the relationship between all those files. If you're interested in the details you should read [the documentation for the s6 servicedir](https://skarnet.org/software/s6/servicedir.html) and also about [classic](https://skarnet.org/software/s6/servicedir.html) and [module](module-creation.html) services. The frontend service file of `66` program allows you to deal with all these different services in a centralized manner and in one single location.
+The [s6](https://skarnet.org/software/s6) programs use different files. It is quite complex to understand and manage the relationship between all those files. If you're interested in the details you should read [the documentation for the s6 servicedir](https://skarnet.org/software/s6/servicedir.html) and also about [classic](https://skarnet.org/software/s6/servicedir.html) and [module](66-module-creation.html) services. The frontend service file of `66` program allows you to deal with all these different services in a centralized manner and in one single location.
 
 By default `66` program expects to find service files in `%%service_system%%` and `%%service_adm%%` for root user, `%%service_system%%/user` and `%%service_adm/user%%` for regular accounts. For regular accounts, `$HOME/%%service_user%%` will take priority over the previous ones. Although this can be changed at compile time by passing the `--with-system-service=DIR`, `--with-sysadmin-service=DIR` and `--with-user-service=DIRoption` to `./configure`.
 
@@ -17,7 +17,7 @@ The frontend service file has a format of `INI` with a specific syntax on the ke
 
 The file is made of *sections* which can contain one or more `key value` pairs where the *key* name can contain special characters like `-` (hyphen) or `_` (low line) except the character `@` (commercial at) which is reserved.
 
-You can find a prototype with all valid section and all valid `key=value` pair at the end of this [document](frontend.html#prototype-of-a-frontend-file).
+You can find a prototype with all valid section and all valid `key=value` pair at the end of this [document](66-frontend.html#prototype-of-a-frontend-file).
 
 ### File names examples
 
@@ -58,12 +58,12 @@ All sections need to be declared with the name written between square brackets `
 
  The frontend service file allows the following section names:
 
-- [[main]](frontend.html#section-main)
-- [[start]](frontend.html#section-start)
-- [[stop]](frontend.html#section-stop)
-- [[logger]](frontend.html#section-logger)
-- [[environment]](frontend.html#section-environment)
-- [[regex]](frontend.html#section-regex)
+- [[main]](66-frontend.html#section-main)
+- [[start]](66-frontend.html#section-start)
+- [[stop]](66-frontend.html#section-stop)
+- [[logger]](66-frontend.html#section-logger)
+- [[environment]](66-frontend.html#section-environment)
+- [[regex]](66-frontend.html#section-regex)
 
 Although a section can be mandatory not all of its key fields must be necessarily so.
 
@@ -420,7 +420,7 @@ This section is *mandatory*. (!)
             @options = ( !log )
         ````
 
-        The behavior of the logger can be configured in the corresponding section—see [[logger]](frontend.html#section-logger).
+        The behavior of the logger can be configured in the corresponding section—see [[logger]](66-frontend.html#section-logger).
 
     ---
 
@@ -649,7 +649,7 @@ This section is *mandatory*. (!)
 
 This section is *optional*.
 
-This section is exactly the same as [[start]](frontend.html#section-start) and shares the same keys. With the exception that it will handle the stop process of the service.
+This section is exactly the same as [[start]](66-frontend.html#section-start) and shares the same keys. With the exception that it will handle the stop process of the service.
 
 ---
 
@@ -657,16 +657,16 @@ This section is exactly the same as [[start]](frontend.html#section-start) and s
 
 This section is *optional*.
 
-It will only have effects if value *log* was **not** prefixed by an exclamation mark to the `@options` key in the [[main]](frontend.html#section-main) section.
+It will only have effects if value *log* was **not** prefixed by an exclamation mark to the `@options` key in the [[main]](66-frontend.html#section-main) section.
 
-This section extends the `@build`, `@runas`, and `@execute` key fields from [[start]](frontend.html#section-start) and the `@timeout-finish` and `@timeout-kill` key fields from [[main]](frontend.html#section-main) . These are also valid keys for [[logger]](frontend.html#section-logger) and behave the same way they do in the other sections but they can not be specified except for the mandatory key `@build`—see example below. In such case the default behaviour for those key are apply.
+This section extends the `@build`, `@runas`, and `@execute` key fields from [[start]](66-frontend.html#section-start) and the `@timeout-finish` and `@timeout-kill` key fields from [[main]](66-frontend.html#section-main) . These are also valid keys for [[logger]](66-frontend.html#section-logger) and behave the same way they do in the other sections but they can not be specified except for the mandatory key `@build`—see example below. In such case the default behaviour for those key are apply.
 
 Furthermore there are some keys specific to the log.
 
 ### Valid *key* names:
 
-- `@build`, `@runas`, and `@execute` — See [[start]](frontend.html#section-start)
-- `@timeout-finish`, `@timeout-kill` — See [[main]](frontend.html#section-main)
+- `@build`, `@runas`, and `@execute` — See [[start]](66-frontend.html#section-start)
+- `@timeout-finish`, `@timeout-kill` — See [[main]](66-frontend.html#section-main)
 
     ---
 
@@ -732,7 +732,7 @@ Furthermore there are some keys specific to the log.
 
     The logged line will not be preceded by any timestamp.
 
-    The following are two possible examples for the [[logger]](frontend.html#section-logger) section definition.
+    The following are two possible examples for the [[logger]](66-frontend.html#section-logger) section definition.
 
     ````
         [logger]
@@ -799,7 +799,7 @@ A file containing the `key=value` pair(s) will be created by default at `%%servi
 
 This section is *optional*.
 
-It will only have an effect when the service is a `module` type—see the section [Module service creation](module-creation.html).
+It will only have an effect when the service is a `module` type—see the section [Module service creation](66-module-creation.html).
 
 You can use the `@I` string as key field. It will be replaced by the `module` name as you do for instantiated service before applying the regex section.
 
@@ -965,9 +965,9 @@ Furthermore when you set `@build` to auto the parser will take care about the re
     echo "the error of the daemon written into the appropriate file"
 ```
 
-Finally you need to take care about how you define your environment variable in the section [[environment]](frontend.html#section-environment). When setting `@build` to auto the parser will also take care about the `!` character if you use it. This character will have no **effect** in the case of custom.
+Finally you need to take care about how you define your environment variable in the section [[environment]](66-frontend.html#section-environment). When setting `@build` to auto the parser will also take care about the `!` character if you use it. This character will have no **effect** in the case of custom.
 
-This same behavior applies to the [[logger]](frontend.html#section-logger) section. The fields `@destination`, `@backup`, `@maxsize` and `@timestamp` will have **no effect** in a custom case. You need to explicitly define the program to use the logger and the options for it in your `@execute` field.
+This same behavior applies to the [[logger]](66-frontend.html#section-logger) section. The fields `@destination`, `@backup`, `@maxsize` and `@timestamp` will have **no effect** in a custom case. You need to explicitly define the program to use the logger and the options for it in your `@execute` field.
 
 ---
 

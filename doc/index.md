@@ -44,9 +44,9 @@ Please refer to the [INSTALL.md](https://git.obarun.org/Obarun/66/-/blob/master/
 
 ### Upgrade
 
-See [changes](upgrade.html) between version.
+See [changes](66-upgrade.html) between version.
 
-**(!)** The significant changes in versions 0.7.0.0 and above render them incompatible with versions prior to 0.7.0.0. You can refer to the [Rosetta Stone](rosetta.html) to understand the interface and behavioral differences between versions below 0.7.0.0 and version 0.7.0.0
+**(!)** The significant changes in versions 0.7.0.0 and above render them incompatible with versions prior to 0.7.0.0. You can refer to the [Rosetta Stone](66-rosetta.html) to understand the interface and behavioral differences between versions below 0.7.0.0 and version 0.7.0.0
 
 ---
 
@@ -69,12 +69,12 @@ See [changes](upgrade.html) between version.
 
 ### Others documentation
 
-- [frontend service file](frontend.html)
-- [instantiated service file](instantiated-service.html)
-- [module service usage](module-usage.html)
-- [module service creation](module-creation.html)
-- [Service configuration file](service-configuration-file.html)
-- [Deeper understanding](deeper.html)
+- [frontend service file](66-frontend.html)
+- [instantiated service file](66-instantiated-service.html)
+- [module service usage](66-module-usage.html)
+- [module service creation](66-module-creation.html)
+- [Service configuration file](66-service-configuration-file.html)
+- [Deeper understanding](66-deeper.html)
 
 ## Why is 66 necessary?
 

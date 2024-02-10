@@ -21,7 +21,7 @@ resolve [ -h ] service
 
 This command displays the contents of the service's *resolve* file. This file are used internally by the `66` program to know *service* information.
 
-[Resolve](deeper.html#resolve-files) files are at the core of `66` for service information. They are used internally by `66` to build the dependency graph, ascertain file locations, the parse process result of a service, and other critical aspects of a service.
+[Resolve](66-deeper.html#resolve-files) files are at the core of `66` for service information. They are used internally by `66` to build the dependency graph, ascertain file locations, the parse process result of a service, and other critical aspects of a service.
 
 ## Options
 

@@ -27,7 +27,7 @@ Primarily, expect no compatibility with previous versions due to:
 - An overhaul of tree behavior. Trees now function as services, and a complete tree dependency graph has been implemented.
 - Services can now depend on each other regardless of whether the service is declared on the same tree or the declaration order of the tree. For instance, if service `Sb` depends on service `Sa` and `Sa` is within `TreeB` while service `Sb` is within `TreeA`, and `TreeB` depends on `TreeA`, launching `TreeA` will start `Sa` even if `TreeB` isn't started first. When `TreeB` is executed, `Sb` will find `Sa` already started and commence directly.
 
-For UI changes, frontend file convertion and clean of the `66` architecture, a [Rosetta stone](rosetta.html) is available.
+For UI changes, frontend file convertion and clean of the `66` architecture, a [Rosetta stone](66-rosetta.html) is available.
 
 ## Frontend Files
 
@@ -49,7 +49,7 @@ Frontend files for regular account **must be** now localized at `%%service_syste
     - `pipeline`: This option was removed. It was only present for `s6-rc`.
     - `env`: This option was removed. The simple declaration of the [environment] section is sufficient to activate the options.
 
-- `@shebang`: Deprecated but kept for compatibility reasons. Declare your shebang directly within the `@execute` field. Refers to [frontend](frontend.html#a-word-about-the-@execute-key) documentation for futhers information.
+- `@shebang`: Deprecated but kept for compatibility reasons. Declare your shebang directly within the `@execute` field. Refers to [frontend](66-frontend.html#a-word-about-the-@execute-key) documentation for futhers information.
 
 - `@build`: Not mandatory anymore, as it will be declared 'auto' by default.
 
@@ -90,7 +90,7 @@ The `module` directory structure has been completely redesigned for better intui
 
 A `module` cannot contain another `module`; instead, you can declare it as a dependency via `@depends` or `@requiredby`. These can also be specified through the `configure` `module` script.
 
-Refer to the specific [module](module-creation.html) page for furthers information.
+Refer to the specific [module](66-module-creation.html) page for furthers information.
 
 ## Trees
 
@@ -221,7 +221,7 @@ The code for the module part was revamped and greatly simplified.
 
 - Bugs fix:
     - Respect variables value from kernel command line.
-    - Fix release number at upgrade.html file.
+    - Fix release number at 66-upgrade.html file.
     - Fix string lenght at regex replacement time.
 
 ---
@@ -269,7 +269,7 @@ The code for the module part was revamped and greatly simplified.
     - the **-d** option is now no longer available.
 
 - *66-enable*:
-    - the -c|m|C|i is now deprecated. The configuration file is handled automatically (see [Service configuration file](service-configuration-file.html) for further information.)
+    - the -c|m|C|i is now deprecated. The configuration file is handled automatically (see [Service configuration file](66-service-configuration-file.html) for further information.)
     - **-I**: new options to avoid the copy of a modified configuration file.
 
 - *66-parser*:

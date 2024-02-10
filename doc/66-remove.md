@@ -17,7 +17,7 @@ This command remove all components of a service. This operation **cannot be** un
 remove [ -h ] [ -P ] service...
 ```
 
-This command remove all files belongs to *service* from the system even its log file. The only exception is its [frontend](frontend.html) file.
+This command remove all files belongs to *service* from the system even its log file. The only exception is its [frontend](66-frontend.html) file.
 
 If the *service* is running, it will be stopped and unsupervised before removing it. This is also applied to its required-by dependencies except if the `-P` is passed.
 

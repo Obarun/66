@@ -85,7 +85,7 @@ scandir create [ -h ] [ -b|B ] [ -c ] [ -L log_user ] [ -s skel ]
 
 This command create the necessary directory at `%%livedir%%`. If the *scandir* already exist for the given user it will prevent its creation. You *must* remove it first if you don't want to keep it.
 
-Various files and directories is created at `%%livedir%%`. Refers to [deeper understanding](deeper.html) documentation for futhers information.
+Various files and directories is created at `%%livedir%%`. Refers to [deeper understanding](66-deeper.html) documentation for futhers information.
 
 #### Options
 
@@ -190,7 +190,7 @@ scandir remove [ -h ]
 
 The *scandir* **must** first be stopped with [scandir stop](#stop) subcommand or similar subcommand to be able to remove it.
 
-Certain directories within the scandir will not be removed. Specifically, `%%livedir%%/log`, `%%livedir%%/scandir`, and `%%livedir%%/state` remain intact, whereas all `UID` subdirectories are deleted. Refers to [deeper understanding](deeper.html) for futhers information.
+Certain directories within the scandir will not be removed. Specifically, `%%livedir%%/log`, `%%livedir%%/scandir`, and `%%livedir%%/state` remain intact, whereas all `UID` subdirectories are deleted. Refers to [deeper understanding](66-deeper.html) for futhers information.
 
 #### Options
 

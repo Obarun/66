@@ -7,7 +7,7 @@ author: Eric Vidal <eric@obarun.org>
 
 [obarun.org](https://web.obarun.org)
 
-This documentation explains the differences in options and interface changes between versions `v0.6.1.3` and `0.7.0.0`. Futhers information can be found to the [upgrade](upgrade.html) page concerning behavior changes, frontend `@key` changes and more.
+This documentation explains the differences in options and interface changes between versions `v0.6.1.3` and `0.7.0.0`. Futhers information can be found to the [upgrade](66-upgrade.html) page concerning behavior changes, frontend `@key` changes and more.
 
 # General Interface changes
 
@@ -274,11 +274,11 @@ Manual intervention is required to upgrade the frontend file to version 0.7.0.0,
 
     Certainly, you can replace the `bundle` type with the `module` type. However, depending on your specific cases, the `module` type might overcomplicate the service itself.
 
-- The `module` type must be redefined from scratch due to significant changes in the directory `module` structure.. Refers to the [module-creation](module-creation.html) documentation for detailed information.
+- The `module` type must be redefined from scratch due to significant changes in the directory `module` structure.. Refers to the [module-creation](66-module-creation.html) documentation for detailed information.
 
 # Cleaning the 66 directories and files
 
-The heart structure of `66` has been reframed, resulting in a simplified directory architecture. Clean unused files and directories from the previous release by following the instructions below. Additionally, refer to the [deeper understanding](deeper.html) documentation about the `66` architecture.
+The heart structure of `66` has been reframed, resulting in a simplified directory architecture. Clean unused files and directories from the previous release by following the instructions below. Additionally, refer to the [deeper understanding](66-deeper.html) documentation about the `66` architecture.
 
 ## %%system_dir%%
 

@@ -9,7 +9,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # Module service creation
 
-A module is an [instantiated](instantiated-service.html) service. It works the same way as a service frontend file but allows the user/admin to configure a set of different kind of services before executing the parse process. Also, the set of services can be configured with the conjunction of a script called *configure* which can be made in any language.
+A module is an [instantiated](66-instantiated-service.html) service. It works the same way as a service frontend file but allows the user/admin to configure a set of different kind of services before executing the parse process. Also, the set of services can be configured with the conjunction of a script called *configure* which can be made in any language.
 
 This allows one to pre-configure a set of parameters or other services for special tasks without knowing the exact target of the module. The best example is the module for booting a machine. Each machine is different and the set of services need to be adaptable as much as possible for different kinds of machines during boot; e.g booting a container.
 
@@ -17,13 +17,13 @@ Additionally, a service of type 'module' can be likened to a sandbox. Services w
 
 A module is defined with two elements:
 
-- a directory located in the same directory as any other service [frontend](frontend.html#the-frontend-service-file) file.
+- a directory located in the same directory as any other service [frontend](66-frontend.html#the-frontend-service-file) file.
 
-- An [instantiated frontend service](instantiated-service.html) file located at the root of that directory.
+- An [instantiated frontend service](66-instantiated-service.html) file located at the root of that directory.
 
 ## Frontend file
 
-The [instantiated frontend service](instantiated-service.html) is written as any other instantiated service with its own specification—see the section [[regex]](frontend.html#Section: [regex]).
+The [instantiated frontend service](66-instantiated-service.html) is written as any other instantiated service with its own specification—see the section [[regex]](66-frontend.html#Section: [regex]).
 
 ## Module directory
 
@@ -56,9 +56,9 @@ The frontend file of the module itself **must** be present at the root of the mo
 
 Any services that you need **must** be present **inside** the frontend directory. The parser only deals with these directories. If a service `fooA` has `fooB` as dependency, `fooA` ***and*** `fooB` **must** exist in the e.g. `%%service_system%%/<module_name>/frontend` directory.
 
-## A word about the [[main]](frontend.html#Section: [main]) section with the module type
+## A word about the [[main]](66-frontend.html#Section: [main]) section with the module type
 
-The valid fields in section [[main]](frontend.html#Section: [main]) are:
+The valid fields in section [[main]](66-frontend.html#Section: [main]) are:
 
 - @type
 - @description
@@ -70,7 +70,7 @@ The valid fields in section [[main]](frontend.html#Section: [main]) are:
 - @optsdepends
 - @hiercopy
 
-All other fields from [[main]](frontend.html#Section: [main]) section are not allowed.
+All other fields from [[main]](66-frontend.html#Section: [main]) section are not allowed.
 
 ## Module process creation
 
