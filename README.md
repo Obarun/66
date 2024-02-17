@@ -63,7 +63,7 @@ Frontend service file
 
 The boot sequence can be a tedious task to accomplish. A **portable** and **complete** set of services can be found [here](https://git.obarun.org/obmods/boot-66serv).
 This set of service work out of the box and highly configurable to suit needs of the distributions.
-POC was made on `Gentoo`, `Funtoo`, `Devuan`, `Void`, `Adelie`, `Antix`, `Arch`.
+POC was made on `Gentoo`, `Funtoo`, `Devuan`, `Void`, `Adelie`, `Antix`, `Arch` and `Obarun`.
 
 ### Runtime service file
 

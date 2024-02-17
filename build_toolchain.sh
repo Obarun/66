@@ -6,7 +6,7 @@ if [ "$1" == "commit" ]; then
     tag=0
 fi
 
-skalibs_tag="v2.14.1.0"
+skalibs_tag="v2.14.1.1"
 execline_tag="v2.9.4.0"
 s6_tag="v2.12.0.3"
 oblibs_tag="0.2.1.0"
