@@ -79,7 +79,7 @@ int env_compute(stralloc *result, resolve_service_t *res)
     }
 
     if (!auto_stra(result, \
-    "## [STARTWARN]\n## DO NOT MODIFY THIS FILE, IT OVERWRITTEN AT UPGRADE TIME.\n## Uses \'66 environ ", \
+    "## [STARTWARN]\n## DO NOT MODIFY THIS FILE, IT OVERWRITTEN AT UPGRADE TIME.\n## Uses \'66 configure ", \
     name,"\' command instead.\n## Or make a copy of this file at ", src, "/", name, \
     " and modify it.\n## [ENDWARN]\n", res->sa.s + res->environ.env))
         log_warnu_return(LOG_EXIT_ZERO,"stralloc") ;
