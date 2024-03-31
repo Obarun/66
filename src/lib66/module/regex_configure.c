@@ -95,11 +95,12 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
             if (!env_prepare_for_write(&dst, &oenv, res))
                 log_dieu(LOG_EXIT_SYS, "prepare environment") ;
 
-            write_environ(name, oenv.s, dst.s) ;
+            if (!write_environ(name, oenv.s, dst.s))
+                log_dieu(LOG_EXIT_SYS, "write environment") ;
 
             /** Reads all files from the directory */
             if (!environ_clean_envfile(&env, dst.s))
-                log_dieu(LOG_EXIT_SYS, "read environment") ;
+                log_dieu(LOG_EXIT_SYS, "clean environment") ;
 
             if (!environ_remove_unexport(&env, env.s, env.len))
                 log_dieu(LOG_EXIT_SYS, "remove exclamation mark from environment variables") ;
