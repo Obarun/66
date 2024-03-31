@@ -88,7 +88,7 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
 
         struct resolve_hash_s *hash = hash_search(&hres, argv[n]) ;
         if (hash == NULL)
-            log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you parse it?") ;
+            log_dieu(LOG_EXIT_USER, "find service: ", argv[n], " -- did you parse it?") ;
 
         if (!state_read(&sta, &hash->res))
             log_dieu(LOG_EXIT_SYS, "read state file of: ", argv[n]) ;

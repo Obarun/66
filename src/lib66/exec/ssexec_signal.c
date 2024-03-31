@@ -52,14 +52,12 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
     log_flow() ;
 
     int r ;
-    uint8_t what = 1, requiredby = 0, propagate = 1 ;
+    uint8_t what = 1, requiredby = 0, propagate = 1, opt_updown = 0, reloadmsg = 0 ;
     graph_t graph = GRAPH_ZERO ;
-    unsigned int napid = 0 ;
+    unsigned int napid = 0, pos = 0 ;
     char updown[4] = "-w \0" ;
-    uint8_t opt_updown = 0 ;
     char data[DATASIZE + 1] = "-" ;
     unsigned int datalen = 1 ;
-    uint8_t reloadmsg = 0 ;
     struct resolve_hash_s *hres = NULL ;
     unsigned int list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1] ;
 
@@ -177,9 +175,9 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not supervised -- initiate its first") ;
 
-    for (; *argv ; argv++) {
+    for (; pos < argc ; pos++) {
 
-        struct resolve_hash_s *hash = hash_search(&hres, *argv) ;
+        struct resolve_hash_s *hash = hash_search(&hres, argv[pos]) ;
         /** The service may not be supervised, for example serviceB depends on
          * serviceA and serviceB was unsupervised by the user. So it will be ignored
          * by the function graph_build_service. In this case, the service does not
@@ -188,14 +186,17 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
          * At stop process, just ignore it as it already down anyway */
         if (hash == NULL) {
             if (what && data[1] != 'r' || data[1] != 'h') {
-                log_warn("service: ", *argv, " is already stopped or unsupervised -- ignoring it") ;
+                log_warn("service: ", argv[pos], " is already stopped or unsupervised -- ignoring it") ;
                 continue ;
             } else {
-                log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you parse it?") ;
+                log_die(LOG_EXIT_USER, "service: ", argv[pos], " not available -- did you parse it?") ;
             }
         }
         graph_compute_visit(*hash, visit, list, &graph, &napid, requiredby) ;
     }
+
+    if (!napid)
+        log_dieu(LOG_EXIT_USER, "find service: ", argv[0], " -- not currently in use") ;
 
     pidservice_t apids[napid] ;
 

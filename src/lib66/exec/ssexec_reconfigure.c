@@ -94,7 +94,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 
         struct resolve_hash_s *hash = hash_search(&hres, argv[n]) ;
         if (hash == NULL)
-            log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parse it?") ;
+            log_dieu(LOG_EXIT_USER, "find service: ", argv[n], " -- did you parse it?") ;
 
         pres = &hash->res ;
         char status[strlen(pres->sa.s + pres->path.servicedir) + SS_STATE_LEN + 1] ;

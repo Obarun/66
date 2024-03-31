@@ -118,6 +118,9 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
         graph_compute_visit(*hash, visit, list, &graph, &nservice, 1) ;
     }
 
+    if (!nservice)
+        log_dieu(LOG_EXIT_USER, "find service: ", argv[0], " -- not currently in use") ;
+
     char *sig[siglen] ;
     if (siglen > 3) {
 
