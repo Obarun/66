@@ -39,7 +39,7 @@ The edition of the [configuration](66-service-configuration-file.html) file is t
 
 - **-L**: lists defined environment variables for the *service*. It do the same for all files found at the configuration directory.
 
-- **-i** *src,dst*: imports configuration file from *src* version to *dst* version. The *src* version and *dst* version need to be separated by a comma without space before and after it. It **do not import** the configuration written by the parse process but only deal with extra configuration files written by the sysadmin.
+- **-i** *src,dst*: imports configuration file from *src* version to *dst* version. For instance, `0.3.1` is the *src* and `0.7.0` is the *dest*. The *src* version and *dst* version need to be separated by a comma without space before and after it. It **do not import** the configuration written by the parse process but only deal with extra configuration files written by the sysadmin.
 
 - **-e** *editor*: edit the configuration file with *editor*. If you don't specify this option, it try to found the `EDITOR` variable from the environment variable. Note: the upstream file (meaning the one prefixed with a dot) is **never** touched. A copy of the upstream file is copied (if it doesn't exist yet) and the *configure* command  modifies that file.(see [Service configuration file](66-service-configuration-file.html) for further information).
 
