@@ -106,11 +106,9 @@ static void do_import(char const *svname, char const *svconf, char const *versio
     unsigned int n = sastr_len(&sasrc) ;
     checkopts(n) ;
 
-    FOREACH_SASTR(&sasrc,pos) {
-
-        if (!pos) src_version = sasrc.s + pos ;
-        else dst_version = sasrc.s + pos ;
-    }
+    src_version = sasrc.s ;
+    pos = strlen(sasrc.s) + 1 ;
+    dst_version = sasrc.s + pos ;
 
     if (!env_import_version_file(svname,svconf,src_version,dst_version,svtype))
         log_dieu(LOG_EXIT_SYS,"import configuration file from version: ",src_version," to version: ",dst_version) ;
@@ -194,7 +192,9 @@ static void write_user_env_file(char const *src, char const *sv)
             if (r == -1)
                 log_die(LOG_EXIT_SYS,"invalid upstream configuration file! Do you have modified it? Tries to parse the service again.") ;
 
-            write_environ(sv, sa.s + r, src) ;
+            r++; // remove the last \n
+            if (!write_environ(sv, sa.s + r, src))
+                log_dieu(LOG_EXIT_SYS, "write environment") ;
         }
         else
             log_diesys(LOG_EXIT_SYS,"conflicting format of file: ",tsrc) ;
@@ -302,8 +302,7 @@ int ssexec_env(int argc, char const *const *argv, ssexec_t *info)
     if (r == -1)
         log_dieusys(LOG_EXIT_SYS, "get information of service: ", sv, " -- please a bug report") ;
     else if (!r || r == STATE_FLAGS_FALSE) {
-        log_warn("service: ", sv, " is not parsed -- try to parse it first using '66 parse ", sv, "'") ;
-        goto freed ;
+        log_die(LOG_EXIT_SYS, "service: ", sv, " is not parsed -- try to parse it first using '66 parse ", sv, "'") ;
     }
 
     if (resolve_read_g(wres, info->base.s, sv) <= 0)
