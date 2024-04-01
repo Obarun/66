@@ -37,15 +37,8 @@ int parse_store_environ(resolve_service_t *res, char *store, int idsec, int idke
 
         case KEY_ENVIRON_ENVAL:
 
-            if (!auto_stra(&sa, store))
-                goto err ;
+            res->environ.env = resolve_add_string(wres, store) ;
 
-            if (!env_clean_with_comment(&sa))
-                log_warnu_return(LOG_EXIT_ZERO,"clean environment value") ;
-
-            res->environ.env = resolve_add_string(wres, sa.s) ;
-
-            sa.len = 0 ;
             if (!env_resolve_conf(&sa, res))
                 goto err ;
 
