@@ -102,7 +102,7 @@ static int fdholder_delete(s6_fdholder_t *a, char const *name, tain *deadline)
  * @init: come form sanitize_init 0 -> no, 1 -> yes
  * */
 
-int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag, uint32_t init)
+int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag, uint8_t init)
 {
     log_flow() ;
 
