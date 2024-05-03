@@ -609,7 +609,7 @@ void tree_enable_disable_deps(graph_t *g,char const *base, char const *treename,
         log_dieu(LOG_EXIT_SYS, "get ", action ? "dependencies" : "required by" ," of: ", treename) ;
 
     size_t len = sastr_nelement(&sa) ;
-    unsigned int v[len] ;
+    unsigned int v[len + 1] ;
 
     memset(v, 0, (len + 1) * sizeof(unsigned int)) ;
 
