@@ -259,7 +259,9 @@ Manual intervention is required to upgrade the frontend file to version 0.7.0.0,
     @user=(root)
     @contents=(connmand openntpd)
     ```
+
     will be converted to following `oneshot` service
+
     ```
     [main]
     @type=oneshot
