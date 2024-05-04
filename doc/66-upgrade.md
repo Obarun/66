@@ -11,6 +11,15 @@ author: Eric Vidal <eric@obarun.org>
 
 ---
 
+# In 0.7.0.1
+
+- Bug fix:
+
+    - Fix buffer overflow at tree administration
+    - Typo fix
+
+---
+
 # In 0.7.0.0
 
 - Adaptation to `skalibs` 2.14.1.0
