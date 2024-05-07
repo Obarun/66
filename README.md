@@ -1,7 +1,6 @@
 ![GitLabl Build Status](https://git.obarun.org/Obarun/66/badges/master/pipeline.svg)
 
-66 - Service manager around S6 supervision suite
-===
+# 66 - Service manager around S6 supervision suite
 
 Sixty-six is service manager built around [s6](http://skarnet.org/software/s6) created to make the implementation and manipulation of service files on your machine easier.
 It is meant to be a toolbox for the declaration, implementation and administration of services to achieve powerful functionality with small amounts of code.
@@ -23,18 +22,15 @@ Examples of what can be achieved by 66:
 
 66 works on mechanisms not on policies. It can be compiled with `glibc` or `musl`.
 
-Installation
-------------
+## Installation
 
 See the INSTALL.md file.
 
-Documentation
--------------
+## Documentation
 
 Online [documentation](https://web.obarun.org/software/66/)
 
-Contact information
--------------------
+## Contact information
 
 * Email:
   Eric Vidal `<eric@obarun.org>`
@@ -49,13 +45,11 @@ Contact information
   obarun@xmpp.obarun.org
 
 
-Supports the project
----------------------
+## Supports the project
 
 Please consider to make [donation](https://web.obarun.org/index.php?id=18)
 
-Frontend service file
----------------------
+## Frontend service file
 
 66 do not provide any frontend services file by default. 66 works on mechanisms not on policies.
 
@@ -75,36 +69,35 @@ By default, 66 use [execline](http://skarnet.org/software/execline) as scripting
 [66-tools](https://git.obarun.org/obarun/66-tools) provide some additonal tools to help you on this task.
 Some are specific to `execline` where other can be used on classic shell.
 
-Roadmap
--------
+## Roadmap
 
 This Roadmap for the next release is not writting in the stone. Feel free to make a merge request to this roadmap.
 
-- Revise the frontend file's keyword field by excluding the `@` symbol:
+* [] Revise the frontend file's keyword field by excluding the `@` symbol:
 
   For instance, `@depends` will be `Depends`. That will allow for a file that's closer to the original INI format and less confusing for users.
 
-- Provide a `[documentation]` section:
+* [] Provide a `[documentation]` section:
 
   Enable the provision of documentation for each service using a [documentation] section. This documentation will be easily accessible by invoking the 66 doc command.
 
-- Provide a `Conflicts` keyword at frontend file:
+* [] Provide a `Conflicts` keyword at frontend file:
 
   Allow to declare a conflicting service through the `Conflicts` field, e.g. `connmand` service will declare `Conflicts = ( Networkmanager )`.
 
-- Provide keyword for basic operations:
+* [] Provide keyword for basic operations:
 
   Certain repetitive tasks can be more efficiently managed directly by `66` in C rather than scripting them in the `Execute` field. For example, utilizing a `WorkDir` keyword can facilitate moving to the declared WorkDir value before executing the script.
 
-- React on event:
+* [] Reacts on event:
 
   Implementation of a daemon for event response to allow users to define services that dynamically start and stop when certain conditions are met, without needing to encode every possible condition in the service manager configuration.
 
-- Ability to redirect stdin, stdout and stderr
+* [] Ability to redirect stdin, stdout and stderr
 
   Allow to specify to make redirection of standard output
 
-- Ability to Handle a general environment structure
+* [] Ability to Handle a general environment structure
 
   Every scandir will start with environment variable define by user through configuration file at specific directory, for instance `/etc/66/environment`.
   Ability through a new command to update this environment.
