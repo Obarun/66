@@ -161,7 +161,6 @@ typedef enum enum_opts_e enum_opts_t, *enum_opts_t_ref ;
 enum enum_opts_e
 {
     OPTS_LOGGER = 0 ,
-    OPTS_ENVIR ,
     OPTS_ENDOFKEY
 } ;
 

@@ -107,7 +107,6 @@ char const *enum_str_expected[] = {
 
 char const *enum_str_opts[] = {
     "log" ,
-    "env" ,
     0
 } ;
 
