@@ -19,6 +19,7 @@
 #include <oblibs/graph.h>
 #include <oblibs/stack.h>
 #include <oblibs/string.h>
+#include <oblibs/lexer.h>
 
 #include <66/service.h>
 #include <66/graph.h>
@@ -30,10 +31,10 @@ static void issupervised(char *store, struct resolve_hash_s **hres, char const *
     size_t pos = 0, len = strlen(str) ;
     ss_state_t ste = STATE_ZERO ;
 
-    _init_stack_(stk, len) ;
+    _alloc_stk_(stk, len + 1) ;
     memset(store, 0, len * sizeof(char)) ;
 
-    if (!stack_clean_string(&stk, str, len))
+    if (!stack_string_clean(&stk, str))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     FOREACH_STK(&stk, pos) {

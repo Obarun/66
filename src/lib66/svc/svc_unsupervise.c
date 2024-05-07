@@ -14,6 +14,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/stack.h>
+#include <oblibs/lexer.h>
 
 #include <66/state.h>
 #include <66/sanitize.h>
@@ -76,9 +77,9 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, struct 
 
             bpos = 0 ;
 
-            _init_stack_(stk, strlen(hash->res.sa.s + hash->res.dependencies.contents)) ;
+            _alloc_stk_(stk, strlen(hash->res.sa.s + hash->res.dependencies.contents) + 1) ;
 
-            if (!stack_clean_string_g(&stk, hash->res.sa.s + hash->res.dependencies.contents))
+            if (!stack_string_clean(&stk, hash->res.sa.s + hash->res.dependencies.contents))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
             FOREACH_STK(&stk, bpos) {

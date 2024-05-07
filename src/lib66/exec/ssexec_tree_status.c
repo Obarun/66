@@ -18,13 +18,13 @@
 #include <sys/types.h>
 #include <wchar.h>
 #include <unistd.h>//access
-#include <stdio.h>
 
 #include <oblibs/sastr.h>
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
+#include <oblibs/lexer.h>
 #include <oblibs/stack.h>
 
 #include <skalibs/sgetopt.h>
@@ -435,16 +435,18 @@ static void info_display_all(char const *treename,int *what)
 static void info_parse_options(char const *str,int *what)
 {
     size_t pos = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
+    _alloc_stk_(stk, strlen(str) + 1) ;
 
-    if (!sastr_clean_string_wdelim(&sa,str,DELIM)) log_dieu(LOG_EXIT_SYS,"parse options") ;
-    unsigned int n = sastr_len(&sa), nopts = 0 , old ;
-    checkopts(n) ;
+    if (!lexer_trim_with_delim(&stk, str, DELIM))
+        log_dieu(LOG_EXIT_SYS,"parse options") ;
+
+    unsigned int nopts = 0 , old ;
+    checkopts(stk.count) ;
     info_opts_map_t const *t ;
 
-    for (;pos < sa.len; pos += strlen(sa.s + pos) + 1) {
+    FOREACH_STK(&stk, pos) {
 
-        char *o = sa.s + pos ;
+        char *o = stk.s + pos ;
         t = opts_tree_table ;
         old = nopts ;
         for (; t->str; t++) {
@@ -456,12 +458,12 @@ static void info_parse_options(char const *str,int *what)
         if (old == nopts)
             log_die(LOG_EXIT_SYS,"invalid option: ",o) ;
     }
-
-    stralloc_free(&sa) ;
 }
 
 int ssexec_tree_status(int argc, char const *const *argv, ssexec_t *info)
 {
+    log_flow() ;
+
     unsigned int legacy = 1 ;
 
     size_t pos = 0 ;

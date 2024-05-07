@@ -14,6 +14,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/stack.h>
+#include <oblibs/lexer.h>
 
 #include <66/resolve.h>
 #include <66/tree.h>
@@ -26,8 +27,6 @@ void tree_service_add(char const *treename, char const *service, ssexec_t *info)
     size_t len = strlen(service) ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
-
-    _init_stack_(stk, SS_MAX_SERVICE * SS_MAX_SERVICE_NAME + 1 + len + 1) ;
 
     if (!tree_isvalid(info->base.s, treename)) {
 
@@ -50,10 +49,14 @@ void tree_service_add(char const *treename, char const *service, ssexec_t *info)
     if (resolve_read_g(wres, info->base.s, treename) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of tree: ", treename) ;
 
+    _alloc_stk_(stk, strlen(tres.sa.s + tres.contents) + len + 3) ;
+
     if (tres.ncontents) {
 
-        if (!stack_clean_string_g(&stk, tres.sa.s + tres.contents))
+        if (!stack_string_clean(&stk, tres.sa.s + tres.contents))
             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
+
+        stk.len++ ; // unclose the stack allowing appending string
 
         if (stack_retrieve_element(&stk, service) < 0)
             if (!stack_add_g(&stk, service))
@@ -74,7 +77,7 @@ void tree_service_add(char const *treename, char const *service, ssexec_t *info)
 
     tres.ncontents = stack_count_element(&stk) ;
 
-    if (!stack_convert_tostring(&stk))
+    if (!stack_string_rebuild_with_delim(&stk, ' '))
         log_dieu(LOG_EXIT_SYS, "convert stack to string") ;
 
     if (!resolve_modify_field(wres, E_RESOLVE_TREE_CONTENTS, stk.s))

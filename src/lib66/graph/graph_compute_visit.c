@@ -15,7 +15,6 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
-#include <oblibs/stack.h>
 
 #include <66/graph.h>
 #include <66/service.h>

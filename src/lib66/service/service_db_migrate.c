@@ -17,6 +17,7 @@
 
 #include <oblibs/stack.h>
 #include <oblibs/log.h>
+#include <oblibs/lexer.h>
 
 #include <66/service.h>
 #include <66/resolve.h>
@@ -33,9 +34,9 @@ void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char con
     if (*onfield) {
 
         size_t pos = 0, olen = strlen(old->sa.s + *ofield) ;
-        _init_stack_(sold, olen + 1) ;
+        _alloc_stk_(sold, olen + 1) ;
 
-        if (!stack_clean_string(&sold, old->sa.s + *ofield, olen))
+        if (!stack_string_clean(&sold, old->sa.s + *ofield))
             log_dieusys(LOG_EXIT_SYS, "convert string") ;
 
         {
@@ -43,11 +44,11 @@ void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char con
             resolve_wrapper_t_ref dwres = resolve_set_struct(DATA_SERVICE, &dres) ;
 
             size_t clen = strlen(new->sa.s + *nfield) ;
-            _init_stack_(snew, clen + 1) ;
+            _alloc_stk_(snew, clen + 1) ;
 
             /** new module configuration depends field may be empty.*/
             if (clen)
-                if (!stack_clean_string(&snew, new->sa.s + *nfield, clen))
+                if (!stack_string_clean(&snew, new->sa.s + *nfield))
                     log_dieusys(LOG_EXIT_SYS, "convert string") ;
 
             /** check if the service was deactivated.*/
@@ -70,9 +71,9 @@ void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char con
                     if (*dnfield) {
 
                         size_t len = strlen(dres.sa.s + *dfield) ;
-                        _init_stack_(stk, len + 1) ;
+                        _alloc_stk_(stk, len + 1) ;
 
-                        if (!stack_clean_string(&stk, dres.sa.s + *dfield, len))
+                        if (!stack_string_clean(&stk, dres.sa.s + *dfield))
                             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
                         /** remove the module name to the depends field of the old service dependency*/
@@ -83,7 +84,7 @@ void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char con
 
                         if (*dnfield) {
 
-                            if (!stack_convert_tostring(&stk))
+                            if (!stack_string_rebuild_with_delim(&stk, ' '))
                                 log_dieusys(LOG_EXIT_SYS, "convert stack to string") ;
 
                             (*dfield) = resolve_add_string(dwres, stk.s) ;

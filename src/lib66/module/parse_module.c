@@ -49,11 +49,11 @@ static void parse_module_dependencies(stralloc *list, resolve_service_t *res, ui
     char *name = res->sa.s + res->name ;
     size_t pos = 0 ;
     uint8_t opt_tree = info->opt_tree ;
-    _init_stack_(stk, list->len + 1) ;
+    _alloc_stk_(stk, list->len + 1) ;
+    _alloc_sa_(sa) ;
     uint32_t *field = !requiredby ? &res->dependencies.depends : &res->dependencies.requiredby ;
     uint32_t *nfield = !requiredby ? &res->dependencies.ndepends : &res->dependencies.nrequiredby ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-    stralloc sa = STRALLOC_ZERO ;
     uint8_t exlen = 3 ;
     char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, SS_MODULE_CONFIG_DIR + 1 } ;
 
@@ -88,7 +88,7 @@ static void parse_module_dependencies(stralloc *list, resolve_service_t *res, ui
     if (!stack_close(&stk))
         log_dieusys(LOG_EXIT_SYS, "close stack") ;
 
-    if (!stack_convert_tostring(&stk))
+    if (!stack_string_rebuild_with_delim(&stk, ' '))
         log_dieusys(LOG_EXIT_SYS, "rebuild stack list") ;
 
     if (*nfield) {
@@ -103,7 +103,7 @@ static void parse_module_dependencies(stralloc *list, resolve_service_t *res, ui
         (*field) = resolve_add_string(wres, stk.s) ;
     }
 
-    stralloc_free(&sa) ;
+
     free(wres) ;
 }
 
