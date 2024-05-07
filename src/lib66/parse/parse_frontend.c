@@ -143,9 +143,7 @@ int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info,
         if (read_svfile(&sa, svname, svsrc) <= 0)
             log_dieu(LOG_EXIT_SYS, "read frontend service at: ", sv) ;
     }
-
-    char file[sa.len + 1] ;
-    auto_strings(file, sa.s) ;
+    _alloc_stk_(store, sa.len + 1) ;
 
     isparsed = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
     if (isparsed == -1)
@@ -157,41 +155,32 @@ int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info,
         log_warn_return(2, "ignoring service: ", svname, " -- already parsed") ;
 
     {
-        /** search for the type field*/
-        if (!environ_get_val_of_key(&sa, get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_TYPE)))
+
+        if (!parse_get_value_of_key(&store, sa.s, get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_TYPE)))
             log_dieu(LOG_EXIT_SYS, "get field ", get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_TYPE)," of service: ", svname) ;
 
-        char store[sa.len + 1] ;
-        auto_strings(store, sa.s) ;
+        if (!stack_close(&store))
+            log_die_nomem("stack overflow") ;
 
-        if (!parse_store_main(&res, store, SECTION_MAIN, KEY_MAIN_TYPE))
+        if (!parse_store_main(&res, &store, SECTION_MAIN, KEY_MAIN_TYPE))
             log_dieu(LOG_EXIT_SYS, "store field type of service: ", svname) ;
-
-        sa.len = 0 ;
-        if (!auto_stra(&sa, file))
-            log_die_nomem("stralloc") ;
     }
 
     if (!info->opt_tree) {
 
         /** search for the intree field.
          * This field is not mandatory, do not crash if it not found */
-        if (environ_get_val_of_key(&sa, get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_INTREE))) {
+        if (parse_get_value_of_key(&store, sa.s, get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_INTREE))) {
 
-            char store[sa.len + 1] ;
-            auto_strings(store, sa.s) ;
-
-            if (!parse_store_main(&res, store, SECTION_MAIN, KEY_MAIN_INTREE))
+            if (!parse_store_main(&res, &store, SECTION_MAIN, KEY_MAIN_INTREE))
                 log_dieu(LOG_EXIT_SYS, "store field intree of service: ", svname) ;
 
             info->treename.len = 0 ;
             info->opt_tree = 1 ;
             opt_tree_forced = 1 ;
-            sa.len = 0 ;
 
-            if (!auto_stra(&info->treename, res.sa.s + res.intree) ||
-                !auto_stra(&sa, file))
-                    log_die_nomem("stralloc") ;
+            if (!auto_stra(&info->treename, res.sa.s + res.intree))
+                log_die_nomem("stralloc") ;
         }
     }
 
@@ -229,7 +218,7 @@ int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info,
         return 1 ;
     }
 
-    if (!parse_contents(wres, file, svname))
+    if (!parse_contents(&res, sa.s))
         log_dieu(LOG_EXIT_SYS, "parse file of service: ", svname) ;
 
     if (!parse_mandatory(&res))

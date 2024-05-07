@@ -18,7 +18,7 @@
 #include <66/resolve.h>
 #include <66/enum.h>
 
-int parse_store_g(resolve_service_t *res, char *store, int idsec, int idkey)
+int parse_store_g(resolve_service_t *res, stack *store, int idsec, int idkey)
 {
     log_flow() ;
 

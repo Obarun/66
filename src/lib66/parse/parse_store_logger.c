@@ -23,7 +23,7 @@
 #include <66/service.h>
 #include <66/enum.h>
 
-int parse_store_logger(resolve_service_t *res, char *store, int idsec, int idkey)
+int parse_store_logger(resolve_service_t *res, stack *store, int idsec, int idkey)
 {
     log_flow() ;
 
@@ -31,7 +31,6 @@ int parse_store_logger(resolve_service_t *res, char *store, int idsec, int idkey
         return 1 ;
 
     int r = 0, e = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     switch(idkey) {
@@ -68,40 +67,37 @@ int parse_store_logger(resolve_service_t *res, char *store, int idsec, int idkey
 
         case KEY_LOGGER_T_KILL:
 
-            if (!uint320_scan(store, &res->logger.execute.timeout.kill))
+            if (!uint320_scan(store->s, &res->logger.execute.timeout.kill))
                 parse_error_return(0, 3, idsec, idkey) ;
 
             break ;
 
         case KEY_LOGGER_T_FINISH:
 
-            if (!uint320_scan(store, &res->logger.execute.timeout.finish))
+            if (!uint320_scan(store->s, &res->logger.execute.timeout.finish))
                 parse_error_return(0, 3, idsec, idkey) ;
 
             break ;
 
         case KEY_LOGGER_DESTINATION:
 
-            if (!parse_clean_line(store))
-                parse_error_return(0, 8, idsec, idkey) ;
-
-            if (store[0] != '/')
+            if (store->s[0] != '/')
                 parse_error_return(0, 4, idsec, idkey) ;
 
-            res->logger.destination = resolve_add_string(wres, store) ;
+            res->logger.destination = resolve_add_string(wres, store->s) ;
 
            break ;
 
         case KEY_LOGGER_BACKUP:
 
-            if (!uint320_scan(store, &res->logger.backup))
+            if (!uint320_scan(store->s, &res->logger.backup))
                 parse_error_return(0, 3, idsec, idkey) ;
 
             break ;
 
         case KEY_LOGGER_MAXSIZE:
 
-            if (!uint320_scan(store, &res->logger.maxsize))
+            if (!uint320_scan(store->s, &res->logger.maxsize))
                 parse_error_return(0, 3, idsec, idkey) ;
 
             if (res->logger.maxsize < 4096 || res->logger.maxsize > 268435455)
@@ -111,7 +107,7 @@ int parse_store_logger(resolve_service_t *res, char *store, int idsec, int idkey
 
         case KEY_LOGGER_TIMESTP:
 
-            r = get_enum_by_key(store) ;
+            r = get_enum_by_key(store->s) ;
             if (r == -1)
                 parse_error_return(0, 0, idsec, idkey) ;
 
@@ -126,7 +122,6 @@ int parse_store_logger(resolve_service_t *res, char *store, int idsec, int idkey
     e = 1 ;
 
     err :
-        stralloc_free(&sa) ;
         free(wres) ;
         return e ;
 }
