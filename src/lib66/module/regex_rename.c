@@ -14,10 +14,13 @@
 
 #include <string.h>
 #include <unistd.h>
-#include <stdio.h>
+#include <stdio.h>//rename
 
 #include <oblibs/log.h>
 #include <oblibs/sastr.h>
+#include <oblibs/stack.h>
+#include <oblibs/lexer.h>
+#include <oblibs/environ.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
@@ -29,29 +32,28 @@ void regex_rename(stralloc *list, resolve_service_t *res, uint32_t element)
 {
     log_flow() ;
 
-    stralloc sa = STRALLOC_ZERO ;
-
     if (!element)
         return ;
 
-    if (!sastr_clean_string(&sa, res->sa.s + element))
+    size_t pos = 0, idx = 0 ;
+    _alloc_sa_(sa) ;
+    _alloc_stk_(stk, strlen(res->sa.s + element)) ;
+
+    if (!stack_string_clean(&stk, res->sa.s + element))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    size_t pos = 0, idx = 0, salen = sa.len ;
-    char t[sa.len] ;
-
-    sastr_to_char(t, &sa) ;
-
-    for (; pos < salen ; pos += strlen(t + pos) + 1) {
+    FOREACH_STK(&stk, pos) {
 
         idx = 0 ;
-        char *line = t + pos ;
-        char replace[SS_MAX_PATH] = { 0 } ;
-        char regex[SS_MAX_PATH] = { 0 } ;
+        char *line = stk.s + pos ;
+        _alloc_stk_(key, strlen(line) + 1) ;
+        _alloc_stk_(val, strlen(line) + 1) ;
 
-        regex_get_replace(replace,line) ;
+        if (!environ_get_key(&key, line))
+            log_dieusys(LOG_EXIT_SYS, "get key at line: ",  line) ;
 
-        regex_get_regex(regex,line) ;
+        if (!environ_get_value(&val, line))
+            log_dieusys(LOG_EXIT_SYS, "get value at line: ",  line) ;
 
         FOREACH_SASTR(list, idx) {
 
@@ -69,8 +71,8 @@ void regex_rename(stralloc *list, resolve_service_t *res, uint32_t element)
             if (!stralloc_0(&sa))
                 log_die_nomem("stralloc") ;
 
-            if (!sastr_replace(&sa, replace, regex))
-                log_dieu(LOG_EXIT_SYS, "replace: ", replace, " by: ", regex, " in file: ", str) ;
+            if (!sastr_replace(&sa, key.s, val.s))
+                log_dieu(LOG_EXIT_SYS, "replace: ", key.s, " by: ", val.s, " in file: ", str) ;
 
             if (!stralloc_0(&sa))
                 log_die_nomem("stralloc") ;
@@ -90,5 +92,4 @@ void regex_rename(stralloc *list, resolve_service_t *res, uint32_t element)
             }
         }
     }
-    stralloc_free(&sa) ;
 }

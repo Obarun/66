@@ -31,6 +31,7 @@
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
 #include <oblibs/sastr.h>
+#include <oblibs/stack.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/djbunix.h>
@@ -92,15 +93,14 @@ static void sulogin(char const *msg,char const *arg)
 
 static int get_value(stralloc *val,char const *key)
 {
-    if (!environ_get_val_of_key(val,key)) return 0 ;
-    /** value may be empty, in this case we use the default one */
-    if (!sastr_clean_element(val))
-    {
-        log_warnu("get value of: ",key," -- keeps the default") ;
+    _alloc_stk_(stk, val->len + 1) ;
+    if (!environ_search_value(&stk, val->s, key))
         return 0 ;
-    }
-    if (!sastr_rebuild_in_oneline(val)) sulogin("rebuild line of value: ",val->s) ;
-
+    val->len = 0 ;
+    if (!stralloc_copyb(val, stk.s, stk.len) ||
+        !stralloc_0(val))
+            sulogin("stralloc in get_value","") ;
+    val->len-- ;
     return 1 ;
 }
 
@@ -624,7 +624,7 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 
     if (envdir) {
         log_info("Prepare environment") ;
-        if (!environ_clean_envfile_unexport(&envmodifs,envdir))
+        if (!environ_merge_dir_g(&envmodifs,envdir))
             sulogin("prepare environment from: ",envdir) ;
     }
 
