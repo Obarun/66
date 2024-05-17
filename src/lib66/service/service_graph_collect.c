@@ -145,6 +145,27 @@ void service_graph_collect(graph_t *g, char const *slist, size_t slen, struct re
 
             }
 
+            /**
+             * In case of crash of a command and for whatever the reason, the
+             * service inside the module may not corresponds to the state of the
+             * module itself.
+             *
+             * Whatever the current state of service inside the module, we keep
+             * trace of its because others commands will look for these inner services.
+             *
+             * At the end of any process, the ssexec_signal will deal properly
+             * with the current state and the desire state of the service. */
+            if (res.type == TYPE_MODULE && res.dependencies.ncontents) {
+
+                size_t len = strlen(res.sa.s + res.dependencies.contents) ;
+                _init_stack_(stk, len + 1) ;
+
+                if (!stack_clean_string(&stk, res.sa.s + res.dependencies.contents, len))
+                    log_dieusys(LOG_EXIT_SYS, "clean string") ;
+
+                service_graph_collect(g, stk.s, stk.len, hres, info, flag) ;
+            }
+
             free(wres) ;
         }
     }
