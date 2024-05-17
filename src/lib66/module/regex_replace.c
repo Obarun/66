@@ -17,9 +17,6 @@
 #include <oblibs/log.h>
 #include <oblibs/sastr.h>
 #include <oblibs/files.h>
-#include <oblibs/stack.h>
-#include <oblibs/lexer.h>
-#include <oblibs/environ.h>
 
 #include <skalibs/stralloc.h>
 
@@ -28,52 +25,52 @@
 #include <66/constants.h>
 #include <66/module.h>
 
-void regex_replace(stralloc *filelist, resolve_service_t *res)
+void regex_replace(stralloc *list, resolve_service_t *res)
 {
     log_flow() ;
 
     int r ;
     size_t pos = 0, idx = 0 ;
 
+    stralloc frontend = STRALLOC_ZERO ;
+    stralloc sa = STRALLOC_ZERO ;
+
     if (!res->regex.ninfiles)
         return ;
 
-    _alloc_sa_(frontend) ;
-    _alloc_stk_(infiles, strlen(res->sa.s + res->regex.infiles)) ;
-
-    if (!stack_string_trimline(&infiles, res->sa.s + res->regex.infiles))
+    if (!sastr_clean_string(&sa, res->sa.s + res->regex.infiles))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    FOREACH_SASTR(filelist, pos) {
+    FOREACH_SASTR(list, pos) {
 
         frontend.len = idx = 0 ;
-        char *file = filelist->s + pos ;
-        size_t len = strlen(file) ;
+        char *str = list->s + pos ;
+        size_t len = strlen(str) ;
         char bname[len + 1] ;
         char dname[len + 1] ;
 
-        if (!ob_basename(bname, file))
-            log_dieu(LOG_EXIT_SYS, "get basename of: ", file) ;
+        if (!ob_basename(bname, str))
+            log_dieu(LOG_EXIT_SYS, "get basename of: ", str) ;
 
-        if (!ob_dirname(dname, file))
-            log_dieu(LOG_EXIT_SYS, "get dirname of: ", file) ;
+        if (!ob_dirname(dname, str))
+            log_dieu(LOG_EXIT_SYS, "get dirname of: ", str) ;
 
         //log_trace("read service file of: ", dname, bname) ;
         r = read_svfile(&frontend, bname, dname) ;
         if (!r)
-            log_dieusys(LOG_EXIT_SYS, "read file: ", file) ;
+            log_dieusys(LOG_EXIT_SYS, "read file: ", str) ;
         else if (r == -1)
             continue ;
 
         {
-            FOREACH_STK(&infiles, idx) {
+            FOREACH_SASTR(&sa, idx) {
 
-                uint8_t r = 0 ;
-                char const *line = infiles.s + idx ;
+                int all = 0, fpos = 0 ;
+                char const *line = sa.s + idx ;
                 size_t linelen = strlen(line) ;
-                _alloc_stk_(filename, linelen + 1) ;
-                _alloc_stk_(key, linelen + 1) ;
-                _alloc_stk_(val, linelen + 1) ;
+                char filename[SS_MAX_SERVICE_NAME + 1] ;
+                char replace[linelen + 1] ;
+                char regex[linelen + 1] ;
 
                 if (linelen >= SS_MAX_PATH_LEN)
                     log_die(LOG_EXIT_SYS, "limit exceeded in service: ", res->sa.s + res->name) ;
@@ -81,20 +78,26 @@ void regex_replace(stralloc *filelist, resolve_service_t *res)
                 if ((line[0] != ':') || (get_sep_before(line + 1, ':', '=') < 0))
                     log_die(LOG_EXIT_SYS, "bad format in line: ", line, " of key @infiles field") ;
 
-                r = regex_get_file_name(&filename, line) ;
-                if (!r)
-                    log_dieusys(LOG_EXIT_SYS, "get file name at line: ",  line) ;
+                memset(filename, 0, (SS_MAX_SERVICE_NAME + 1) * sizeof(char)); ;
+                memset(replace, 0, (linelen + 1) * sizeof(char)) ;
+                memset(regex, 0, (linelen + 1) * sizeof(char)) ;
 
-                if (!environ_get_key(&key, line + r))
-                    log_dieusys(LOG_EXIT_SYS, "get key at line: ",  line + r) ;
+                fpos = regex_get_file_name(filename, line) ;
+                if (fpos < 3) all = 1 ;
 
-                if (!environ_get_value(&val, line + r))
-                    log_dieusys(LOG_EXIT_SYS, "get value at line: ",  line + r) ;
+                regex_get_replace(replace, line + fpos) ;
 
-                if (!strcmp(bname, filename.s) || !filename.len) {
+                regex_get_regex(regex, line + fpos) ;
 
-                    if (!sastr_replace_g(&frontend, key.s, val.s))
-                        log_dieu(LOG_EXIT_SYS, "replace: ", key.s, " by: ", val.s, " in file: ", file) ;
+                if (!strcmp(bname, filename) || all) {
+
+                    if (!sastr_replace_all(&frontend, replace, regex))
+                        log_dieu(LOG_EXIT_SYS, "replace: ", replace, " by: ", regex, " in file: ", str) ;
+
+                    if (!stralloc_0(&frontend))
+                        log_dieusys(LOG_EXIT_SYS, "stralloc") ;
+
+                    frontend.len-- ;
 
                     if (!file_write_unsafe(dname, bname, frontend.s, frontend.len))
                         log_dieusys(LOG_EXIT_SYS, "write: ", dname, "/", bname) ;
@@ -102,4 +105,7 @@ void regex_replace(stralloc *filelist, resolve_service_t *res)
             }
         }
     }
+
+    stralloc_free(&frontend) ;
+    stralloc_free(&sa) ;
 }

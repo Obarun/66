@@ -49,18 +49,3 @@ Reloads the `foo-log` service
 66 reload -P foo-log
 ```
 
-## Modules services
-
-Services within a `module` can also be managed independently. If you need to reload a particular service inside the `module`, specify the name of the `module` service followed by a colon `:` and the name of the service within the `module`
-
-```
-66 reload foo@foobar:foobaz
-```
-
-where `foo@foobar` is the name of the `module` service and `foobaz` the name of the service inside the `module` service.
-
-You also can use the `-P` option to avoid handling the dependencies of the service inside the `module` service
-
-```
-66 reload -P foo@foobar:foobaz
-```

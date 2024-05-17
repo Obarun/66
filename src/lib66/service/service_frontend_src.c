@@ -102,12 +102,9 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src, cha
 
                 auto_strings(result, srcname, name) ;
 
-                if (sastr_cmp(sasrc, result) == -1) {
-                    if (!sastr_add_string(sasrc, result) ||
-                        !stralloc_0(sasrc))
+                if (sastr_cmp(sasrc, result) == -1)
+                    if (!sastr_add_string(sasrc, result))
                         goto err ;
-                    sasrc->len-- ;
-                }
 
                 break ;
 

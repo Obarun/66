@@ -16,7 +16,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <stdio.h>//rename
+#include <stdio.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>

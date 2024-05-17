@@ -23,50 +23,54 @@
 #include <66/resolve.h>
 #include <66/enum.h>
 
-int parse_store_regex(resolve_service_t *res, stack *store, int idsec, int idkey)
+int parse_store_regex(resolve_service_t *res, char *store, int idsec, int idkey)
 {
     log_flow() ;
 
     if (res->type != TYPE_MODULE)
         return 1 ;
 
+    stralloc sa = STRALLOC_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     switch(idkey) {
 
         case KEY_REGEX_CONFIGURE:
 
-            res->regex.configure = resolve_add_string(wres, store->s) ;
+            if (!parse_clean_quotes(store))
+                parse_error_return(0, 8, idsec, idkey) ;
+
+            res->regex.configure = resolve_add_string(wres, store) ;
 
             break ;
 
         case KEY_REGEX_DIRECTORIES:
 
-            if (!parse_list(store))
+            if (!parse_clean_list(&sa, store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
-            if (store->len)
-                res->regex.directories = parse_compute_list(wres, store, &res->regex.ndirectories, 0) ;
+            if (sa.len)
+                res->regex.directories = parse_compute_list(wres, &sa, &res->regex.ndirectories, 0) ;
 
             break ;
 
         case KEY_REGEX_FILES:
 
-            if (!parse_list(store))
+            if (!parse_clean_list(&sa, store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
-            if (store->len)
-                res->regex.files = parse_compute_list(wres, store, &res->regex.nfiles, 0) ;
+            if (sa.len)
+                res->regex.files = parse_compute_list(wres, &sa, &res->regex.nfiles, 0) ;
 
             break ;
 
         case KEY_REGEX_INFILES:
 
-            if (!parse_list(store))
+            if (!parse_clean_list(&sa, store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
-            if (store->len)
-                res->regex.infiles = parse_compute_list(wres, store, &res->regex.ninfiles, 0) ;
+            if (sa.len)
+                res->regex.infiles = parse_compute_list(wres, &sa, &res->regex.ninfiles, 0) ;
 
             break ;
 
@@ -74,6 +78,7 @@ int parse_store_regex(resolve_service_t *res, stack *store, int idsec, int idkey
             log_warn_return(LOG_EXIT_ZERO, "unknown key: ", get_key_by_key_all(idsec, idkey)) ;
     }
 
+    stralloc_free(&sa) ;
     free(wres) ;
     return 1 ;
 }

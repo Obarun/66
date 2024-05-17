@@ -52,7 +52,4 @@ extern int set_ownersysdir_stack(char *base, uid_t owner) ;
 extern int set_ownerhome_stack_byuid(char *store, uid_t owner) ;
 extern void set_treeinfo(ssexec_t *info) ;
 
-extern int version_compare(char const  *a, char const *b, uint8_t ndot) ;
-extern int version_store(stralloc *sa, char const *str, uint8_t ndot) ;
-
 #endif

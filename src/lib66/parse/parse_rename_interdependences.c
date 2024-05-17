@@ -19,7 +19,8 @@
 #include <oblibs/string.h>
 #include <oblibs/sastr.h>
 #include <oblibs/stack.h>
-#include <oblibs/lexer.h>
+
+#include <skalibs/stralloc.h>
 
 #include <66/parse.h>
 #include <66/service.h>
@@ -71,9 +72,9 @@ static void parse_prefix_name(resolve_service_t *res, struct resolve_hash_s **hr
     if (res->dependencies.ndepends) {
 
         size_t depslen = strlen(res->sa.s + res->dependencies.depends) ;
-        _alloc_stk_(stk, depslen + 1) ;
+        _init_stack_(stk, depslen + 1) ;
 
-        if (!stack_string_clean(&stk, res->sa.s + res->dependencies.depends))
+        if (!stack_clean_string(&stk, res->sa.s + res->dependencies.depends, depslen))
             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
         size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * res->dependencies.ndepends ;
@@ -90,9 +91,9 @@ static void parse_prefix_name(resolve_service_t *res, struct resolve_hash_s **hr
     if (res->dependencies.nrequiredby) {
 
         size_t depslen = strlen(res->sa.s + res->dependencies.requiredby) ;
-        _alloc_stk_(stk, depslen + 1) ;
+        _init_stack_(stk, depslen + 1) ;
 
-        if (!stack_string_clean(&stk, res->sa.s + res->dependencies.requiredby))
+        if (!stack_clean_string(&stk, res->sa.s + res->dependencies.requiredby, depslen))
             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
         size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * res->dependencies.nrequiredby ;
@@ -114,7 +115,7 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, s
     log_flow() ;
 
     struct resolve_hash_s *c, *tmp ;
-    _alloc_stk_(stk, SS_MAX_SERVICE_NAME + 1) ;
+    stralloc sa = STRALLOC_ZERO ;
     resolve_wrapper_t_ref wres = 0 ;
 
     HASH_ITER(hh, *hres, c, tmp) {
@@ -141,23 +142,24 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, s
                 parse_append_logger(hres, &c->res, info) ;
 
                 if (c->res.type == TYPE_CLASSIC) {
-                    if (!stack_add_g(&stk, logname))
-                        log_die_nomem("stack overflow") ;
+                    if (!sastr_add_string(&sa, logname))
+                        log_die_nomem("stralloc") ;
                 }
 
                 free(wres) ;
 
             }
 
-            if (stack_retrieve_element(&stk, c->res.sa.s + c->res.name) < 0 )
-                if (!stack_add_g(&stk, c->res.sa.s + c->res.name))
-                    log_die_nomem("stack overflow") ;
+            if (sastr_cmp(&sa, c->res.sa.s + c->res.name) < 0 )
+                if (!sastr_add_string(&sa, c->res.sa.s + c->res.name))
+                    log_die_nomem("stralloc") ;
         }
     }
 
     wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-    res->dependencies.contents = parse_compute_list(wres, &stk, &res->dependencies.ncontents, 0) ;
+    res->dependencies.contents = parse_compute_list(wres, &sa, &res->dependencies.ncontents, 0) ;
 
+    stralloc_free(&sa) ;
     free(wres) ;
 }

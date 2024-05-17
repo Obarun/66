@@ -31,14 +31,40 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 {
     log_flow() ;
 
-    int r ;
-    size_t pos = 0 ;
-    _alloc_sa_(sa) ;
+    int r, e = 0 ;
 
-    if (!environ_merge_file(&sa, seedpath))
-        log_warn_return(LOG_EXIT_ZERO, "merge seed file: ", seedpath) ;
+    stralloc sa = STRALLOC_ZERO ;
+    size_t pos = 0 ;
+
+    size_t filesize=file_get_size(seedpath) ;
+    if (!filesize) {
+
+        log_warn(seedpath," is empty") ;
+        goto err ;
+    }
+
+    r = openreadfileclose(seedpath, &sa, filesize) ;
+    if(!r) {
+
+        log_warnusys("open ", seedpath) ;
+        goto err ;
+    }
+
+    /** ensure that we have an empty line at the end of the string*/
+    if (!auto_stra(&sa,"\n"))
+        log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+
+    if (!environ_get_clean_env(&sa)) {
+
+        log_warnu("clean seed file: ", seedpath) ;
+        goto err ;
+    }
+
+    if (!sastr_split_string_in_nline(&sa))
+        goto err ;
 
     FOREACH_SASTR(&sa, pos) {
+
 
         char *line = sa.s + pos, *key = 0, *val = 0 ;
         size_t len = strlen(line) ;
@@ -50,7 +76,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
         /** should never happens */
         if (r == -1) {
             log_warn("invalid format of key: ",line," -- please make a bug report") ;
-            return 0 ;
+            goto err ;
         }
 
         key = tmp ;
@@ -64,7 +90,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 
                 seed->depends = seed->sa.len ;
                 if (!sastr_add_string(&seed->sa, val))
-                    return 0 ;
+                    goto err ;
 
                 seed->nopts++ ;
 
@@ -74,7 +100,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 
                 seed->requiredby = seed->sa.len ;
                 if (!sastr_add_string(&seed->sa, val))
-                    return 0 ;
+                    goto err ;
 
                 seed->nopts++ ;
 
@@ -93,7 +119,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 
                 seed->allow = seed->sa.len ;
                 if (!sastr_add_string(&seed->sa, val))
-                    return 0 ;
+                    goto err ;
 
                 seed->nopts++ ;
 
@@ -103,7 +129,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 
                 seed->deny = seed->sa.len ;
                 if (!sastr_add_string(&seed->sa, val))
-                    return 0 ;
+                    goto err ;
 
                 seed->nopts++ ;
 
@@ -123,12 +149,12 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
                 if (strcmp(val,TREE_GROUPS_BOOT) && strcmp(val,TREE_GROUPS_ADM) && strcmp(val,TREE_GROUPS_USER)) {
 
                     log_warn("invalid group: ", val) ;
-                    return 0 ;
+                    goto err ;
                 }
 
                 seed->groups = seed->sa.len ;
                 if (!sastr_add_string(&seed->sa, val))
-                    return 0 ;
+                    goto err ;
 
                 seed->nopts++ ;
 
@@ -137,10 +163,13 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
             default :
 
                 log_warn("unknown key: ", key, " -- ignoring") ;
-                return 0 ;
+                goto err ;
         }
 
     }
 
-    return 1 ;
+    e = 1 ;
+    err:
+        stralloc_free(&sa) ;
+        return e ;
 }

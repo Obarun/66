@@ -28,8 +28,6 @@
 #include <oblibs/string.h>
 #include <oblibs/sastr.h>
 #include <oblibs/graph.h>
-#include <oblibs/lexer.h>
-#include <oblibs/stack.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/stralloc.h>
@@ -188,19 +186,18 @@ void tree_parse_uid_list(uid_t *uids, char const *str)
     log_flow() ;
 
     size_t pos = 0 ;
+    stralloc sa = STRALLOC_ZERO ;
 
-    _alloc_stk_(stk, strlen(str) + 1) ;
-
-    if (!lexer_trim_with_delim(&stk, str, TREE_COMMA_DELIM))
-        log_dieu(LOG_EXIT_SYS,"parse options") ;
+    if (!sastr_clean_string_wdelim(&sa, str, TREE_COMMA_DELIM))
+        log_dieu(LOG_EXIT_SYS,"parse uid list") ;
 
     uid_t owner = getuid() ;
     /** special case, we don't know which user want to use
      *  the tree, we need a general name to allow all users.
      *  The term "user" is took here to allow the current user*/
-    ssize_t p = stack_retrieve_element(&stk, "user") ;
+    ssize_t p = sastr_cmp(&sa, "user") ;
 
-    FOREACH_STK(&stk, pos) {
+    FOREACH_SASTR(&sa, pos) {
 
         if (pos == (size_t)p) {
 
@@ -218,9 +215,12 @@ void tree_parse_uid_list(uid_t *uids, char const *str)
             continue ;
         }
 
-        if (!scan_uidlist(stk.s + pos, uids))
-            log_dieu(LOG_EXIT_USER,"scan account: ",stk.s + pos) ;
+        if (!scan_uidlist(sa.s + pos, uids))
+            log_dieu(LOG_EXIT_USER,"scan account: ",sa.s + pos) ;
+
     }
+
+    stralloc_free(&sa) ;
 }
 
 static void tree_parse_options_depends(graph_t *g, ssexec_t *info, char const *str, uint8_t requiredby, tree_what_t *what)
@@ -233,23 +233,24 @@ static void tree_parse_options_depends(graph_t *g, ssexec_t *info, char const *s
     int r ;
     size_t pos = 0 ;
     char *name = 0 ;
-    _alloc_stk_(stk, strlen(str) + 1) ;
+    stralloc sa = STRALLOC_ZERO ;
 
-    if (!lexer_trim_with_delim(&stk, str, TREE_COMMA_DELIM))
+    if (!sastr_clean_string_wdelim(&sa, str, TREE_COMMA_DELIM))
         log_dieu(LOG_EXIT_SYS,"clean sub options") ;
 
-    if (stack_retrieve_element(&stk, "none") >= 0) {
+    if (sastr_cmp(&sa, "none") >= 0) {
         if (!requiredby)
             what->ndepends = 0 ;
         else
             what->nrequiredby = 0 ;
 
+        stralloc_free(&sa) ;
         return ;
     }
 
-    FOREACH_STK(&stk, pos) {
+    FOREACH_SASTR(&sa, pos) {
 
-        name = stk.s + pos ;
+        name = sa.s + pos ;
 
         r = tree_isvalid(info->base.s, name) ;
         if (r < 0)
@@ -311,6 +312,8 @@ static void tree_parse_options_depends(graph_t *g, ssexec_t *info, char const *s
                 log_die(LOG_EXIT_SYS,"add requiredby: ", name, " to: ", info->treename.s) ;
         }
     }
+
+    stralloc_free(&sa) ;
 }
 
 static void tree_parse_options(graph_t *g, char const *str, ssexec_t *info, tree_what_t *what)
@@ -323,19 +326,19 @@ static void tree_parse_options(graph_t *g, char const *str, ssexec_t *info, tree
     size_t pos = 0, len = 0 ;
     ssize_t r ;
     char *line = 0, *key = 0, *val = 0 ;
-    _alloc_stk_(stk, strlen(str) + 1) ;
+    stralloc sa = STRALLOC_ZERO ;
     tree_opts_map_t const *t ;
 
-    if (!lexer_trim_with_delim(&stk, str, TREE_COLON_DELIM))
+    if (!sastr_clean_string_wdelim(&sa, str, TREE_COLON_DELIM))
         log_dieu(LOG_EXIT_SYS,"clean options") ;
 
-    unsigned int nopts = 0 , old ;
+    unsigned int n = sastr_len(&sa), nopts = 0 , old ;
 
-    tree_checkopts(stk.count) ;
+    tree_checkopts(n) ;
 
-    FOREACH_STK(&stk, pos) {
+    FOREACH_SASTR(&sa, pos) {
 
-        line = stk.s + pos ;
+        line = sa.s + pos ;
         t = tree_opts_table ;
         old = nopts ;
 
@@ -418,6 +421,8 @@ static void tree_parse_options(graph_t *g, char const *str, ssexec_t *info, tree
         if (old == nopts)
             log_die(LOG_EXIT_SYS,"invalid option: ",line) ;
     }
+
+    stralloc_free(&sa) ;
 }
 
 void tree_parse_seed(char const *treename, tree_seed_t *seed, tree_what_t *what)
@@ -903,7 +908,7 @@ static void tree_service_switch_contents(char const *base, char const *treesrc, 
 {
     log_flow() ;
 
-    size_t pos = 0 ; ssize_t r = -1 ;
+    size_t pos = 0 ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
@@ -915,18 +920,6 @@ static void tree_service_switch_contents(char const *base, char const *treesrc, 
 
     FOREACH_SASTR(&sa, pos) {
         log_trace("switch service: ", sa.s + pos, " to tree: ", treedst) ;
-
-        /** Tree may be corrupted, check the validity of the service
-         * before switching it. It also avoid to crash the process
-         * for an unexisting service which can cause a stuck situation where
-         * you cannot remove a tree for a corrupted list of service.*/
-
-        r = resolve_read_g(swres, base, sa.s + pos) ;
-        if (r == -1)
-            log_dieusys(LOG_EXIT_SYS, "get information of service: ", sa.s + pos, " -- please make a bug report") ;
-
-        if (!r)
-            continue ;
 
         tree_service_add(treedst, sa.s + pos, info) ;
 

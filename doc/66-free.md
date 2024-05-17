@@ -19,7 +19,7 @@ free [ -h ] [ -P ] service...
 
 This command expects to find an already supervised service. If the state of the *service* is already up, the *free* command stop it first. Subsequently, service is unsupervised from the [scandir](66-scandir.html), freeing the memory used by the service.
 
-Multiple *services* can be freed by separating their names with a space.
+Multiple *services* can be started by separating their names with a space.
 
 In case of `module` *service* type, all *services* declared within the `module` will also be unsupervised. The **-P** has no effect on the *services* within the `module` and only affects the module's dependencies.
 

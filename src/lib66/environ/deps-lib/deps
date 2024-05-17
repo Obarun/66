@@ -1,5 +1,6 @@
 env_append_version.o
 env_check_version.o
+env_clean_with_comment.o
 env_compute.o
 env_find_current_version.o
 env_get_destination.o

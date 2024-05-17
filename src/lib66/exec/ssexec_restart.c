@@ -17,7 +17,7 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/graph.h>
-
+#include <oblibs/stack.h>
 
 #include <skalibs/sgetopt.h>
 

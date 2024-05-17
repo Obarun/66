@@ -23,7 +23,6 @@
 #include <oblibs/stack.h>
 #include <oblibs/sastr.h>
 #include <oblibs/directory.h>
-#include <oblibs/lexer.h>
 
 #include <skalibs/posixplz.h>
 #include <skalibs/stralloc.h>
@@ -50,7 +49,6 @@ static void auto_remove(char const *path)
 
 static void remove_deps(resolve_service_t *res, struct resolve_hash_s **hres, stralloc *sa, ssexec_t *info)
 {
-    log_flow() ;
 
     if (!res->dependencies.nrequiredby)
         return ;
@@ -59,9 +57,9 @@ static void remove_deps(resolve_service_t *res, struct resolve_hash_s **hres, st
     unsigned int pos = 0 ;
     ss_state_t ste = STATE_ZERO ;
     resolve_wrapper_t_ref wres = 0 ;
-    _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.requiredby) + 1) ;
+    _init_stack_(stk, strlen(res->sa.s + res->dependencies.requiredby)) ;
 
-    if (!stack_string_clean(&stk, res->sa.s + res->dependencies.requiredby))
+    if (!stack_clean_string_g(&stk, res->sa.s + res->dependencies.requiredby))
         log_dieu(LOG_EXIT_SYS, "convert string") ;
 
     FOREACH_STK(&stk, pos) {
@@ -98,9 +96,6 @@ static void remove_deps(resolve_service_t *res, struct resolve_hash_s **hres, st
 
 static void remove_service(resolve_service_t *res, ssexec_t *info)
 {
-
-    log_flow() ;
-
     int r ;
     char sym[strlen(res->sa.s + res->path.home) + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME + 1] ;
 
@@ -278,9 +273,9 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
                 size_t pos = 0 ;
                 resolve_service_t mres = RESOLVE_SERVICE_ZERO ;
                 resolve_wrapper_t_ref mwres = resolve_set_struct(DATA_SERVICE, &mres) ;
-                _alloc_stk_(stk, strlen(c->res.sa.s + c->res.dependencies.contents) + 1) ;
+                _init_stack_(stk, strlen(c->res.sa.s + c->res.dependencies.contents)) ;
 
-                if (!stack_string_clean(&stk, c->res.sa.s + c->res.dependencies.contents))
+                if (!stack_clean_string_g(&stk, c->res.sa.s + c->res.dependencies.contents))
                     log_dieu(LOG_EXIT_SYS, "convert string") ;
 
                 FOREACH_STK(&stk, pos) {

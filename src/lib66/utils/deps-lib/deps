@@ -7,7 +7,6 @@ set_livestate.o
 set_ownerhome.o
 set_ownersysdir.o
 set_treeinfo.o
-version.o
 yourgid.o
 youruid.o
 -ls6

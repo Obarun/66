@@ -14,64 +14,60 @@
 
 #include <string.h>
 
+#include <oblibs/mill.h>
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/stack.h>
-#include <oblibs/lexer.h>
+
+#include <skalibs/stralloc.h>
 
 #include <66/parse.h>
-#include <66/resolve.h>
 #include <66/enum.h>
 
-int parse_section(resolve_service_t *res, char const *str, size_t sid)
+int parse_section(stralloc *secname, char const *str, size_t *pos)
 {
     log_flow() ;
 
-    int kid = -1 ; // key id
-    char const *secname = enum_str_section[sid] ;
-    lexer_config kcfg = LEXER_CONFIG_KEY ;
+    int id = -1 ;
+    size_t len = strlen(str), newpos = 0, found = 0 ;
+    _init_stack_(stk, len + 1) ;
 
-    kcfg.str = str ;
-    kcfg.slen = strlen(str) ;
+    while ((*pos) < len) {
 
-    if (!strcmp(enum_str_section[sid], enum_str_section[SECTION_ENV])) {
+        stk.len = 0 ;
+        newpos = 0 ;
 
-        int r = get_len_until(str, '\n') ;
-        if (r < 0)
-            r = 0 ;
-        r++ ;
-        size_t len = strlen(str + r) ;
-        _alloc_stk_(store, len + 1) ;
-        if (!stack_copy_g(&store, str + r) ||
-            !stack_close(&store))
-            log_warnu_return(LOG_EXIT_ZERO, "stack overflow") ;
+        if (mill_element(&stk, str + (*pos), &MILL_GET_SECTION_NAME, &newpos) == -1)
+            goto end ;
 
-        if (!parse_store_g(res, &store, SECTION_ENV, KEY_ENVIRON_ENVAL))
-            log_warnu_return(LOG_EXIT_ZERO, "store resolve file of: ", res->sa.s + res->name) ;
+        if (stk.len) {
+            if (!stack_close(&stk))
+                return -1 ;
 
-        return 1 ;
-    }
+            found = 1 ;
 
-    _alloc_stk_(key, kcfg.slen + 1) ;
+            // check the validity of the section name
+            id = get_enum_by_key(stk.s) ;
 
-    while (kcfg.pos < kcfg.slen) {
-
-        kcfg.found = 0 ;
-        key.len = 0 ;
-        kid = parse_key(&key, &kcfg) ;
-        if (kid < 0)
-            log_warnu_return(LOG_EXIT_ZERO, "get keys in section: ", secname) ;
-
-        if (kcfg.found) {
-
-            _alloc_stk_(store, kcfg.slen + 1) ;
-
-            if (!parse_value(&store, &kcfg, sid, kid))
-                log_warnu_return(LOG_EXIT_ZERO, "get value of key: ", key.s) ;
-
-            if (!parse_store_g(res, &store, sid, kid))
-                log_warnu_return(LOG_EXIT_ZERO, "store resolve file of: ", res->sa.s + res->name) ;
+            if (id < 0) {
+                log_warn("invalid section name: ", stk.s, " -- ignoring it") ;
+                newpos-- ; // " retrieve the last ']'"
+                // find the start of the section and pass the next line
+                id = get_len_until(str + (newpos - strlen(stk.s)), '\n') ;
+                newpos = newpos - strlen(stk.s) + id + 1 ;
+                found = 0 ;
+            }
         }
+
+        (*pos) += newpos ;
+
+        if (found) break ;
     }
-    return 1 ;
+
+    if (found)
+        if (!stralloc_catb(secname, stk.s, strlen(stk.s) + 1))
+            return -1 ;
+
+    end:
+        return found ? 1 : 0 ;
 }

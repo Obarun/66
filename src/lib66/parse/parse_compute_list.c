@@ -30,34 +30,33 @@
 /**
  * @opts -> 1 : build list removing commented optional deps
  * */
-int parse_compute_list(resolve_wrapper_t_ref wres, stack *store, uint32_t *res, uint8_t opts)
+int parse_compute_list(resolve_wrapper_t_ref wres, stralloc *sa, uint32_t *res, uint8_t opts)
 {
-    log_flow() ;
 
-    if (!store->len)
+    if (!sa->len)
         return resolve_add_string(wres, "") ;
-
     int r, found = 0 ;
-    size_t len = store->len, pos = 0 ;
-    size_t nelement = stack_count_element(store) ;
+    size_t len = sa->len, pos = 0 ;
+    size_t nelement = sastr_nelement(sa) ;
     stralloc tmp = STRALLOC_ZERO ;
+    uint8_t exlen = 2 ;
     char const *exclude[2] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1 } ;
     char f[len + nelement + 2] ;
 
     memset(f, 0, (len + nelement + 2) * sizeof(char)) ;
 
-    FOREACH_STK(store, pos) {
+    for (; pos < sa->len ; pos += strlen(sa->s + pos) + 1) {
 
-        if (store->s[pos] == '#')
+        if (sa->s[pos] == '#')
             continue ;
 
         if (opts) {
 
             tmp.len = 0 ;
 
-            r = service_frontend_path(&tmp, store->s + pos, getuid(), 0, exclude, 2) ;
+            r = service_frontend_path(&tmp, sa->s + pos, getuid(), 0, exclude, exlen) ;
             if (r == -1)
-                log_dieu(LOG_EXIT_SYS, "get frontend service file of: ", store->s + pos) ;
+                log_dieu(LOG_EXIT_SYS, "get frontend service file of: ", sa->s + pos) ;
 
             if (!r)
                 continue ;
@@ -66,7 +65,7 @@ int parse_compute_list(resolve_wrapper_t_ref wres, stack *store, uint32_t *res, 
 
         }
 
-        auto_strings(f + strlen(f), store->s + pos, " ") ;
+        auto_strings(f + strlen(f), sa->s + pos, " ") ;
 
         (*res)++ ;
 
@@ -79,5 +78,6 @@ int parse_compute_list(resolve_wrapper_t_ref wres, stack *store, uint32_t *res, 
     stralloc_free(&tmp) ;
 
     return resolve_add_string(wres, f) ;
+
 }
 

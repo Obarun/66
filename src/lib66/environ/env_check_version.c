@@ -19,7 +19,6 @@
 
 #include <66/environ.h>
 #include <66/constants.h>
-#include <66/utils.h>
 
 int env_check_version(stralloc *sa, char const *version)
 {
@@ -27,7 +26,7 @@ int env_check_version(stralloc *sa, char const *version)
 
     int r ;
 
-    r = version_store(sa,version,SS_CONFIG_VERSION_NDOT) ;
+    r = version_scan(sa,version,SS_CONFIG_VERSION_NDOT) ;
 
     if (r == -1)
         log_warnusys_return(LOG_EXIT_ZERO,"stralloc") ;

@@ -47,7 +47,7 @@ This program expects to find a regular file or a directory in *src* containing o
 *src* is a text file or a directory containing lines of pairs with the syntax being: `key = value`
 Whitespace is permitted before and after *key*, and before or after *value*.
 
-Empty lines, or lines containing only whitespace, are ignored. Lines beginning with `#` (possibly after some whitespace) are ignored (and typically used for comments). Leading and trailing whitespace is stripped from values; but a *value* can be double-quoted, which allows for inclusion of leading and trailing whitespace.
+Empty lines, or lines containing only whitespace, are ignored. Lines beginning with `#` or `;` (possibly after some whitespace) are ignored (and typically used for comments). Leading and trailing whitespace is stripped from values; but a *value* can be double-quoted, which allows for inclusion of leading and trailing whitespace.
 
 Escaping double-quoted can be done with backslash `\`. For instance,
 
@@ -85,17 +85,9 @@ The order of `key=value` pair declaration **do not** matter
     socket_dir=dname
 ```
 
-A variable calling itself is **only** allowed if the `key` name can be found at the environment of the current process. If the key of the `key=value` cannot not be found it left the pair as it. For intance,
-
-```
-    PATH=/usr/local/bin:${PATH}
-```
-
-will only works if `PATH` is already define at the current environment. If not the result will literally be `PATH=/usr/local/bin:${PATH}`.
-
 ### Limits
 
-*src* can not exceed more than `20` files. Each file can not contain more than `8191` bytes or more than `50` `key=value` pairs.
+*src* can not exceed more than `100` files. Each file can not contain more than `8191` bytes or more than `50` `key=value` pairs.
 
 ## Usage example
 

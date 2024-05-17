@@ -1,7 +1,7 @@
 /*
- * parse_bracket.c
+ * parser_parentheses.c
  *
- * Copyright (c) 2024 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2024 Eric Vidal <eric@obarun.org>
  *
  * All rights reserved.
  *
@@ -15,13 +15,9 @@
 #include <string.h>
 #include <stdint.h>
 
-#include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/stack.h>
-#include <oblibs/lexer.h>
 
 #include <66/parse.h>
-#include <66/enum.h>
 
 static char parse_char_next(char const *s, size_t slen, size_t *pos)
 {
@@ -32,42 +28,35 @@ static char parse_char_next(char const *s, size_t slen, size_t *pos)
     return c ;
 }
 
-int parse_bracket(stack *store, lexer_config *kcfg)
+int parse_parentheses(char *store, char const *str, size_t *pos)
 {
-    log_flow() ;
+    int open = 0, close = 0, /* valid closed parentheses */ vp = 0, /* last valid closed parentheses position */ lvp = 0 ;
+    uint8_t parentheses = 1 ;
+    size_t o = 0, slen = strlen(str), e = 0 ;
 
-    int /* valid closed bracket */ vp = 1, /* last valid closed bracket position */ lvp = 0 ;
-    uint8_t bracket = 1 ;
-    size_t o = 0, e = 0 ;
-
-    lexer_config cfg = LEXER_CONFIG_ZERO ;
-
-    cfg.str = kcfg->str + kcfg->cpos ;
-    cfg.slen = kcfg->slen - kcfg->cpos ;
-    cfg.open = "(";
-    cfg.olen = 1 ;
-    cfg.close = ")" ;
-    cfg.clen = 1 ;
-    cfg.kopen = 0 ;
-    cfg.kclose = 0 ;
-
-    if (!lexer(store, &cfg))
+    open = get_sep_before(str, '=', '(') ;
+    if (open <= 0)
         return 0 ;
-
-    if (!cfg.found)
+    close = get_sep_before(str, '(', ')') ;
+    if (close < 0)
         return 0 ;
+    open += get_len_until(str + open + 1, '(') ; // +1 remove '='
+    open += 2 ; // +2 remove '('
 
-    char const *line =  cfg.str + cfg.pos ;
+
+    char line[slen + 1] ;
+    auto_strings(line, str + open) ;
     size_t len = strlen(line) ;
 
-    /**
-     * The following while loop receives a string starting after the last
-     * closed bracket found by the previous lexer process and checks if
-     * the closed bracket is valid or not. For instance,
-     * in an @execute field, we can also encounter a pair of opened
-     * and closed brackets if it's written in, for example, shell script.
-     */
-    while (bracket && o < len) {
+    /** The general idea of this parsing process is to get
+     * the same number of opened and closed parentheses.
+     *
+     * For intance, this function receive string starting with the key name field
+     * at the very start of the string, '@execute=( ....'
+     * we simply looking for corresponding closed parenthese and kept verbatim
+     * of what we have been found between '(' and ')'.
+    */
+    while (parentheses && o < len) {
 
         char c = parse_char_next(line, len, &o) ;
 
@@ -78,7 +67,7 @@ int parse_bracket(stack *store, lexer_config *kcfg)
                     vp-- ;
                     lvp = 0 ;
                 }
-                bracket++ ;
+                parentheses++ ;
                 break ;
 
             case ')':
@@ -88,10 +77,10 @@ int parse_bracket(stack *store, lexer_config *kcfg)
                         lvp = 0 ;
                     }
 
-                    if (bracket - 1 == 0) {
+                    if (parentheses - 1 == 0) {
                         /*
                          * This check the validity of the closed parenthese.
-                         * For instance, a 'case...esac' statement in scripts
+                         * For instance, a case...esac statement in scripts
                          * use a ')' without its corresponding reverse part.
                          *
                          * When examining the very first character of the next
@@ -106,7 +95,7 @@ int parse_bracket(stack *store, lexer_config *kcfg)
 
                         if (o + e >= len) {
                             // end of string. this validate the parenthese
-                            bracket-- ;
+                            parentheses-- ;
                             o = lp ;
                             vp = 0 ;
                             break ;
@@ -124,11 +113,8 @@ int parse_bracket(stack *store, lexer_config *kcfg)
 
                         /** Outside of the context specified (e.g., @execute=()),
                          * only '#' and '@' character combinaison are considered valid to
-                         * validate the bracket. If neither of these is present,
+                         * validate the parentheses. If neither of these is present,
                          * it signifies that we are inside a script.*/
-                        while(line[o] == ' ' || line[o] == '\t' || line[o] == '\r')
-                            o++ ;
-
                         if (line[o] != '#' && line[o] != '@')
                             break ;
 
@@ -137,7 +123,7 @@ int parse_bracket(stack *store, lexer_config *kcfg)
                             if (line[o + 1] == '@') {
                                 /** a commented key validates the parenthese */
                                 o = lp ;
-                                bracket-- ;
+                                parentheses-- ;
                                 vp = 0 ;
                             } else {
                                 // this is a comment
@@ -149,12 +135,12 @@ int parse_bracket(stack *store, lexer_config *kcfg)
                             break ;
                         }
                         o = lp ;
-                        bracket-- ;
+                        parentheses-- ;
                         vp = 0 ;
                         break ;
 
                     } else
-                       bracket-- ;
+                       parentheses-- ;
 
                     break ;
                 }
@@ -167,7 +153,7 @@ int parse_bracket(stack *store, lexer_config *kcfg)
                      * this validates the parenthese.*/
                     if (line[o + 1] == '@') {
                         o = lvp ;
-                        bracket-- ;
+                        parentheses-- ;
                         vp = 0 ;
                     } else {
                         /** another comment, continue the check at the
@@ -177,51 +163,29 @@ int parse_bracket(stack *store, lexer_config *kcfg)
                     }
                 }
                 break ;
-            case '[':
 
-                if (vp) {
-                    /** check the validity of the section name.
-                     * we can found a '[]' pair in shell scripts,
-                     * else we are inside a script.
-                    */
-                    char secname[20] ;
-                    int r = get_sep_before(line + o, ']', '\n') ;
-                    if (r < 0) {
-                        e = get_len_until(line + o, '\n') + 1 ;
-                        o += e ;
-                        break ;
-                    }
-
-                    memcpy(secname, line + o, r) ;
-                    secname[r] = 0 ;
-                    unsigned int pos = 0 ;
-                    while (enum_str_section[pos]) {
-                        if (!strcmp(secname, enum_str_section[pos])) {
-                            o = lvp ;
-                            bracket-- ;
-                            vp = 0 ;
-                            break ;
-                        }
-                        pos++ ;
-                    }
-                }
-                break ;
             case '@':
                 /** we previously coming from a comment.
                  * this validates the parenthese.*/
                 if (vp) {
                     o = lvp ;
-                    bracket-- ;
+                    parentheses-- ;
                     vp = 0 ;
                 }
                 break ;
             case '\n':
+                if (vp) {
+                    /** we previously coming from an empty line.
+                     * continue the check at the next line*/
+                    e = get_len_until(line + o, '\n') + 1 ;
+                    o += e ;
+                }
                 break ;
             case -1:
                 return 0 ;
             default:
                 if (vp) {
-                    /** this invalidate the bracket*/
+                    /** this invalidate the parentheses*/
                     vp = 0 ;
                 }
                 break ;
@@ -230,22 +194,24 @@ int parse_bracket(stack *store, lexer_config *kcfg)
 
     if (vp && (o == len)) {
         /** end of string. this validate the parenthese */
-        bracket-- ;
+        parentheses-- ;
         o = lvp ;
     }
 
-    o -= 1 ; // remove the last bracket
-
-    if (bracket)
+    if (parentheses)
         return 0 ;
 
-    cfg.cpos = o + cfg.pos ;
+    (*pos) = open + len ;
 
-    store->len = 0 ;
+    open = get_len_until(str, '\n') ;
+    if (open < 1)
+        open = 0 ;
 
-    if (!stack_add(store, cfg.str + cfg.opos + 1, cfg.cpos - cfg.opos - 1) ||
-        !stack_close(store))
-            return 0 ;
+    (*pos) = open + 1 ; // +1 remove '\n'
+
+    len = len - (len - o) - 1 ;
+    memcpy(store, line, len) ;
+    store[len] = 0 ;
 
     return 1 ;
 }

@@ -99,12 +99,18 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
                 log_dieu(LOG_EXIT_SYS, "write environment") ;
 
             /** Reads all files from the directory */
-            if (!environ_merge_dir_g(&env, dst.s))
+            if (!environ_clean_envfile(&env, dst.s))
                 log_dieu(LOG_EXIT_SYS, "clean environment") ;
+
+            if (!environ_remove_unexport(&env, env.s, env.len))
+                log_dieu(LOG_EXIT_SYS, "remove exclamation mark from environment variables") ;
 
             stralloc_free(&oenv) ;
             stralloc_free(&dst) ;
         }
+
+        if (!sastr_split_string_in_nline(&env))
+            log_dieu(LOG_EXIT_SYS, "rebuild environment") ;
 
         n = env_len((const char *const *)environ) + 1 + byte_count(env.s,env.len,'\0') ;
         char const *newenv[n + 1] ;

@@ -12,23 +12,20 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <sys/types.h>
 #include <string.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
+#include <oblibs/string.h>
 
-#include <skalibs/stralloc.h>
-
-#include <66/module.h>
-
-void get_list(stralloc *list, char const *src, char const *name, mode_t mode, char const **exclude)
+void regex_get_replace(char *replace, char const *str)
 {
     log_flow() ;
 
-    list->len = 0 ;
-
-    if (!sastr_dir_get_recursive(list, src, exclude, mode, 1))
-        log_dieusys(LOG_EXIT_SYS,"get files of module: ", name) ;
-
+    int pos = get_len_until(str,'=') ;
+    if (!pos || pos == -1)
+       log_dieu(LOG_EXIT_SYS,"replace string of line: ", str) ;
+    char tmp[pos + 1] ;
+    memcpy(tmp,str,pos) ;
+    tmp[pos] = 0 ;
+    auto_strings(replace, tmp) ;
 }

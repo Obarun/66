@@ -25,7 +25,6 @@
 #include <66/environ.h>
 #include <66/constants.h>
 #include <66/enum.h>
-#include <66/utils.h>
 
 
 int env_import_version_file(char const *svname, char const *svconf, char const *sversion, char const *dversion, int svtype)
@@ -43,7 +42,7 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
 
     auto_strings(svname_dot,".",svname) ;
 
-    r = version_compare(sversion,dversion,SS_CONFIG_VERSION_NDOT) ;
+    r = version_cmp(sversion,dversion,SS_CONFIG_VERSION_NDOT) ;
 
     if (!r) {
 
@@ -61,7 +60,7 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
     }
 
     if (!env_append_version(&src_ver,svconf,sversion) ||
-        !env_append_version(&dst_ver,svconf,dversion))
+    !env_append_version(&dst_ver,svconf,dversion))
         return 0 ;
 
     char const *exclude[2] = { svname_dot, 0 } ;

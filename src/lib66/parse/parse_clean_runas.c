@@ -18,7 +18,6 @@
 #include <unistd.h>
 
 #include <oblibs/string.h>
-#include <oblibs/log.h>
 #include <oblibs/types.h>
 
 #include <skalibs/types.h>
@@ -28,8 +27,6 @@
 
 int parse_clean_runas(char const *str, int idsec, int idkey)
 {
-    log_flow() ;
-
     size_t len = strlen(str) ;
     char file[len + 1] ;
     auto_strings(file, str) ;
@@ -43,6 +40,8 @@ int parse_clean_runas(char const *str, int idsec, int idkey)
 
         uid_t uid ;
         gid_t gid ;
+        size_t uid_strlen ;
+        size_t gid_strlen ;
         static char uid_str[UID_FMT] ;
         static char gid_str[GID_FMT] ;
 
@@ -55,16 +54,14 @@ int parse_clean_runas(char const *str, int idsec, int idkey)
         }
         else {
 
-            if (!uint320_scan(file, &uid))
-                parse_error_return(0, 3, idsec, idkey) ;
-
-            if (!getpwuid(uid)) {
+            if (get_uidbyname(file, &uid) == -1) {
                 log_warnu("get uid of user: ", file) ;
                 parse_error_return(0, 0, idsec, idkey) ;
             }
         }
 
-        uid_str[uid_fmt(uid_str,uid)] = 0 ;
+        uid_strlen = uid_fmt(uid_str,uid) ;
+        uid_str[uid_strlen] = 0 ;
 
         /** on format uid:, get the gid of
          * the owner of the process */
@@ -72,14 +69,15 @@ int parse_clean_runas(char const *str, int idsec, int idkey)
 
             if (!yourgid(&gid,uid))
                 parse_error_return(0, 0, idsec, idkey) ;
-
         }
         else {
-            if (!uint320_scan(colon + 1, &gid))
+
+            if (get_gidbygroup(colon + 1,&gid) == -1)
                 parse_error_return(0, 0, idsec, idkey) ;
         }
+        gid_strlen = gid_fmt(gid_str,gid) ;
+        gid_str[gid_strlen] = 0 ;
 
-        gid_str[gid_fmt(gid_str, gid)] = 0 ;
 
         auto_strings((char *)str, uid_str, ":", gid_str) ;
 
@@ -87,29 +85,20 @@ int parse_clean_runas(char const *str, int idsec, int idkey)
 
         int e = errno ;
         errno = 0 ;
-        struct passwd *pw ;
 
-        if (str[0] >= '0' && str[0] <= '9') {
-
-            uid_t uid = -1 ;
-            if (!uint320_scan(str, &uid))
-                parse_error_return(0, 3, idsec, idkey) ;
-            pw = getpwuid(uid) ;
-
-        } else {
-            pw = getpwnam(str);
-        }
+        struct passwd *pw = getpwnam(str);
 
         if (!pw) {
 
             if (!errno)
                 errno = ESRCH ;
 
-            log_warnsys("invalid user: ", str) ;
+            log_warnu("invalid user: ", str) ;
             parse_error_return(0, 0, idsec, idkey) ;
         }
 
         errno = e ;
+
     }
 
     return 1 ;

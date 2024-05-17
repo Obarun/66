@@ -18,7 +18,6 @@
 #include <oblibs/graph.h>
 #include <oblibs/types.h>
 #include <oblibs/stack.h>
-#include <oblibs/lexer.h>
 
 #include <66/svc.h>
 #include <66/config.h>
@@ -37,6 +36,7 @@ int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char co
     uint8_t requiredby = 0 ;
     size_t pos = 0 ;
     graph_t graph = GRAPH_ZERO ;
+    _init_stack_(stk, SS_MAX_SERVICE * SS_MAX_SERVICE_NAME) ;
 
     unsigned int napid = 0 ;
     unsigned int list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1] ;
@@ -55,11 +55,9 @@ int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char co
         FLAGS_CLEAR(gflag, STATE_FLAGS_WANTUP) ;
     }
 
-     _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.contents) + 1) ;
-
     if (res->dependencies.ncontents) {
 
-        if (!stack_string_clean(&stk, res->sa.s + res->dependencies.contents))
+        if (!stack_clean_string_g(&stk, res->sa.s + res->dependencies.contents))
             log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     } else {

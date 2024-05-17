@@ -1,5 +1,5 @@
 /*
- * parse_module_check_dir.c
+ * regex_get_replace.c
  *
  * Copyright (c) 2018-2024 Eric Vidal <eric@obarun.org>
  *

@@ -14,7 +14,6 @@
 
 #include <oblibs/log.h>
 #include <oblibs/stack.h>
-#include <oblibs/lexer.h>
 
 #include <66/resolve.h>
 #include <66/tree.h>
@@ -33,9 +32,9 @@ void tree_service_remove(char const *base, char const *treename, char const *ser
     if (tres.ncontents) {
 
         size_t clen = strlen(tres.sa.s + tres.contents) ;
-        _alloc_stk_(stk, clen + 1) ;
+        _init_stack_(stk, clen + 1) ;
 
-        if (!stack_string_clean(&stk, tres.sa.s + tres.contents))
+        if (!stack_clean_string(&stk, tres.sa.s + tres.contents, clen))
             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
         if (!stack_remove_element_g(&stk, service))
@@ -43,7 +42,7 @@ void tree_service_remove(char const *base, char const *treename, char const *ser
 
         if (stk.len) {
 
-            if (!stack_string_rebuild_with_delim(&stk, ' '))
+            if (!stack_convert_tostring(&stk))
                 log_dieu(LOG_EXIT_SYS, "convert stack to string") ;
 
             str = stk.s ;

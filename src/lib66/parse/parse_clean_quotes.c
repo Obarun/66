@@ -1,5 +1,5 @@
 /*
- * regex_get_replace.c
+ * parse_clean_quotes.c
  *
  * Copyright (c) 2018-2024 Eric Vidal <eric@obarun.org>
  *
@@ -12,23 +12,30 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <sys/types.h>
-#include <string.h>
-
-#include <oblibs/log.h>
+#include <oblibs/string.h>
 #include <oblibs/sastr.h>
 
 #include <skalibs/stralloc.h>
 
-#include <66/module.h>
-
-void get_list(stralloc *list, char const *src, char const *name, mode_t mode, char const **exclude)
+int parse_clean_quotes(char *str)
 {
-    log_flow() ;
+    int e = 0 ;
+    stralloc sa = STRALLOC_ZERO ;
 
-    list->len = 0 ;
+    if (!auto_stra(&sa, str))
+        goto err ;
 
-    if (!sastr_dir_get_recursive(list, src, exclude, mode, 1))
-        log_dieusys(LOG_EXIT_SYS,"get files of module: ", name) ;
+    if (!sastr_clean_element(&sa))
+        goto err ;
 
+    if (!sastr_rebuild_in_oneline(&sa))
+        goto err ;
+
+    auto_strings(str, sa.s) ;
+
+    e = 1 ;
+
+    err:
+        stralloc_free(&sa) ;
+        return e ;
 }

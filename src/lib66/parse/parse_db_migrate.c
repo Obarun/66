@@ -17,7 +17,6 @@
 #include <oblibs/log.h>
 #include <oblibs/stack.h>
 #include <oblibs/string.h>
-#include <oblibs/lexer.h>
 
 #include <66/service.h>
 #include <66/resolve.h>
@@ -33,19 +32,19 @@ static void service_db_tree(resolve_service_t *old, resolve_service_t *new, ssex
     char *ncontents = new->sa.s + new->dependencies.contents ;
 
     size_t pos = 0, olen = strlen(ocontents) ;
-    _alloc_stk_(sremove, olen + 1) ;
+    _init_stack_(sremove, olen + 1) ;
 
     {
-        _alloc_stk_(sold, olen + 1) ;
+        _init_stack_(sold, olen + 1) ;
 
-        if (!stack_string_clean(&sold, ocontents))
+        if (!stack_clean_string_g(&sold, ocontents))
             log_dieusys(LOG_EXIT_SYS, "convert string") ;
 
         {
             size_t nlen = strlen(ncontents) ;
-            _alloc_stk_(snew, nlen + 1) ;
+            _init_stack_(snew, nlen + 1) ;
 
-            if (!stack_string_clean(&snew, ncontents))
+            if (!stack_clean_string_g(&snew, ncontents))
                 log_dieusys(LOG_EXIT_SYS, "convert string") ;
 
             FOREACH_STK(&sold, pos) {

@@ -25,7 +25,7 @@
 #include <66/utils.h>
 #include <66/environ.h>
 
-int parse_store_environ(resolve_service_t *res, stack *store, int idsec, int idkey)
+int parse_store_environ(resolve_service_t *res, char *store, int idsec, int idkey)
 {
     log_flow() ;
 
@@ -37,7 +37,7 @@ int parse_store_environ(resolve_service_t *res, stack *store, int idsec, int idk
 
         case KEY_ENVIRON_ENVAL:
 
-            res->environ.env = resolve_add_string(wres, store->s) ;
+            res->environ.env = resolve_add_string(wres, store) ;
 
             if (!env_resolve_conf(&sa, res))
                 goto err ;

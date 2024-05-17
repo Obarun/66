@@ -31,8 +31,6 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 - **-h** : prints this help.
 
-- **-P**: Do not handle service dependencies. In such cases, the *remove* command will not attempt to remove the services that are dependent on the service.
-
 ## Usage example
 
 Removes the service `foo`

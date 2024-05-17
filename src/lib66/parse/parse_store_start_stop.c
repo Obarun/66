@@ -15,14 +15,15 @@
 #include <stdlib.h> //free
 
 #include <oblibs/log.h>
-#include <oblibs/string.h>
+
+#include <skalibs/stralloc.h>
 
 #include <66/parse.h>
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/enum.h>
 
-int parse_store_start_stop(resolve_service_t *res, stack *store, int idsec, int idkey)
+int parse_store_start_stop(resolve_service_t *res, char *store, int idsec, int idkey)
 {
     log_flow() ;
 
@@ -30,59 +31,70 @@ int parse_store_start_stop(resolve_service_t *res, stack *store, int idsec, int 
         return 1 ;
 
     int e = 0 ;
+    stralloc sa = STRALLOC_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     switch(idkey) {
 
         case KEY_STARTSTOP_BUILD:
 
+            if (!parse_clean_line(store))
+                parse_error_return(0, 8, idsec, idkey) ;
+
             if (idsec == SECTION_START)
-                res->execute.run.build = resolve_add_string(wres, store->s) ;
+                res->execute.run.build = resolve_add_string(wres, store) ;
             else if (idsec == SECTION_STOP)
-                res->execute.finish.build = resolve_add_string(wres, store->s) ;
+                res->execute.finish.build = resolve_add_string(wres, store) ;
             else if (idsec == SECTION_LOG)
-                res->logger.execute.run.build = resolve_add_string(wres, store->s) ;
+                res->logger.execute.run.build = resolve_add_string(wres, store) ;
+
             break ;
 
         case KEY_STARTSTOP_RUNAS:
-            {
-                char tmp[store->len + 1] ;
-                auto_strings(tmp, store->s) ;
-                if (!parse_clean_runas(tmp, idsec, idkey))
-                    goto err ;
 
-                if (idsec == SECTION_START)
-                    res->execute.run.runas = resolve_add_string(wres, tmp) ;
-                else if (idsec == SECTION_STOP)
-                    res->execute.finish.runas = resolve_add_string(wres, tmp) ;
-                else if (idsec == SECTION_LOG)
-                    res->logger.execute.run.runas = resolve_add_string(wres, tmp) ;
-            }
+            if (!parse_clean_line(store))
+                parse_error_return(0, 8, idsec, idkey) ;
+
+            if (!parse_clean_runas(store, idsec, idkey))
+                goto err ;
+
+            if (idsec == SECTION_START)
+                res->execute.run.runas = resolve_add_string(wres, store) ;
+            else if (idsec == SECTION_STOP)
+                res->execute.finish.runas = resolve_add_string(wres, store) ;
+            else if (idsec == SECTION_LOG)
+                res->logger.execute.run.runas = resolve_add_string(wres, store) ;
+
             break ;
 
         case KEY_STARTSTOP_SHEBANG:
 
             log_1_warn("deprecated key @shebang -- define your complete shebang directly inside your @execute key field") ;
 
-            if (store->s[0] != '/')
+            if (!parse_clean_quotes(store))
+                parse_error_return(0, 8, idsec, idkey) ;
+
+            if (store[0] != '/')
                 parse_error_return(0, 4, idsec, idkey) ;
 
             if (idsec == SECTION_START)
-                res->execute.run.shebang = resolve_add_string(wres, store->s) ;
+                res->execute.run.shebang = resolve_add_string(wres, store) ;
             else if (idsec == SECTION_STOP)
-                res->execute.finish.shebang = resolve_add_string(wres, store->s) ;
+                res->execute.finish.shebang = resolve_add_string(wres, store) ;
             else if (idsec == SECTION_LOG)
-                res->logger.execute.run.shebang = resolve_add_string(wres, store->s) ;
+                res->logger.execute.run.shebang = resolve_add_string(wres, store) ;
+
             break ;
 
         case KEY_STARTSTOP_EXEC:
 
             if (idsec == SECTION_START)
-                res->execute.run.run_user = resolve_add_string(wres, store->s) ;
+                res->execute.run.run_user = resolve_add_string(wres, store) ;
             else if (idsec == SECTION_STOP)
-                res->execute.finish.run_user = resolve_add_string(wres, store->s) ;
+                res->execute.finish.run_user = resolve_add_string(wres, store) ;
             else if (idsec == SECTION_LOG)
-                res->logger.execute.run.run_user = resolve_add_string(wres, store->s) ;
+                res->logger.execute.run.run_user = resolve_add_string(wres, store) ;
+
             break ;
 
         default:
@@ -92,6 +104,7 @@ int parse_store_start_stop(resolve_service_t *res, stack *store, int idsec, int 
     e = 1 ;
 
     err :
+        stralloc_free(&sa) ;
         free(wres) ;
         return e ;
 }

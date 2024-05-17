@@ -19,7 +19,6 @@
 #include <oblibs/graph.h>
 #include <oblibs/stack.h>
 #include <oblibs/sastr.h>
-#include <oblibs/lexer.h>
 
 #include <skalibs/stralloc.h>
 
@@ -127,9 +126,9 @@ void service_enable_disable(graph_t *g, struct resolve_hash_s *hash, struct reso
             if (res->dependencies.ncontents) {
 
                 size_t pos = 0 ;
-                _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.contents) + 1) ;
+                _init_stack_(stk, strlen(res->sa.s + res->dependencies.contents)) ;
 
-                if (!stack_string_clean(&stk, res->sa.s + res->dependencies.contents))
+                if (!stack_clean_string_g(&stk, res->sa.s + res->dependencies.contents))
                     log_dieu(LOG_EXIT_SYS, "clean string") ;
 
                 FOREACH_STK(&stk, pos) {
