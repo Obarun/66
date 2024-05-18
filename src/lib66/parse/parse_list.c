@@ -28,19 +28,9 @@ int parse_list(stack *stk)
     if (!stack_copy_stack(&tmp, stk))
         return 0 ;
 
-    cfg.str = tmp.s ; cfg.slen = tmp.len ;
-    stk->len = 0 ; stk->count = 0 ;
+    stack_reset(stk) ;
 
-    while (cfg.pos < cfg.slen) {
-
-        lexer_reset(&cfg) ;
-        cfg.opos = 0 ;
-        cfg.cpos = 0 ;
-        if (!lexer(stk, &cfg))
-            return 0 ;
-    }
-
-    if (!stack_close(stk))
+    if (!lexer_trim_with_g(stk, tmp.s, &cfg))
         return 0 ;
 
     return 1 ;

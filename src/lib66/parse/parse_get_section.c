@@ -37,11 +37,8 @@ int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, s
         cfg.pos = pos ;
         stack_reset(&stk) ;
 
-        if (!lexer(&stk, &cfg))
+        if (!lexer(&stk, &cfg) || !stack_close(&stk))
             return 0 ;
-
-        if (!stack_close(&stk))
-            log_warnu_return(LOG_EXIT_ZERO, "stack overflow") ;
 
         if (cfg.found) {
 

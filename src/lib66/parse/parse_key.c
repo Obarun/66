@@ -24,11 +24,8 @@ int parse_key(stack *key, lexer_config *cfg)
 {
     int kid = -1, next = -1 ;
 
-    if (!lexer(key, cfg))
+    if (!lexer(key, cfg) || !stack_close(key))
         return -1 ;
-
-    if (!stack_close(key))
-        log_warnu_return(LOG_EXIT_LESSONE, "stack overflow") ;
 
     if (cfg->found) {
 
