@@ -32,7 +32,7 @@ extern int env_get_destination(stralloc *sa, resolve_service_t *res) ;
 
 /** version function */
 extern int env_find_current_version(stralloc *sa,char const *svconf) ;
-extern int env_check_version(stralloc *sa, char const *version) ;
+extern int env_check_version(stack *stk, char const *version) ;
 extern int env_append_version(stralloc *saversion, char const *svconf, char const *version) ;
 extern int env_import_version_file(char const *svname, char const *svconf, char const *sversion, char const *dversion,int svtype) ;
 
