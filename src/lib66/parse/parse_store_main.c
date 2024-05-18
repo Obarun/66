@@ -52,19 +52,14 @@ int parse_store_main(resolve_service_t *res, stack *store, int idsec, int idkey)
         case KEY_MAIN_VERSION:
 
             {
-                stralloc sa = STRALLOC_ZERO ;
-                if (!auto_stra(&sa, store->s))
-                    goto err ;
-
-                r = version_store(&sa, store->s, SS_CONFIG_VERSION_NDOT) ;
+                r = version_store(store, store->s, SS_CONFIG_VERSION_NDOT) ;
                 if (r == -1)
                     goto err ;
 
                 if (!r)
                     parse_error_return(0, 0, idsec, idkey) ;
 
-                res->version = resolve_add_string(wres, sa.s) ;
-                stralloc_free(&sa) ;
+                res->version = resolve_add_string(wres, store->s) ;
             }
             break ;
 
