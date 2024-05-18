@@ -21,6 +21,7 @@
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/sastr.h>
+#include <oblibs/stack.h>
 #include <oblibs/environ.h>
 
 #include <skalibs/sgetopt.h>
@@ -95,51 +96,42 @@ static void do_import(char const *svname, char const *svconf, char const *versio
     log_flow() ;
 
     size_t pos = 0 ;
-    stralloc sasrc = STRALLOC_ZERO ;
+    _alloc_stk_(stk, strlen(version) + 1) ;
 
     char *src_version = 0 ;
     char *dst_version = 0 ;
 
-    if (!sastr_clean_string_wdelim(&sasrc,version,DELIM))
+    if (!lexer_trim_with_delim(&stk,version,DELIM))
         log_dieu(LOG_EXIT_SYS,"clean string: ",version) ;
 
-    unsigned int n = sastr_len(&sasrc) ;
-    checkopts(n) ;
+    checkopts(stk.count) ;
 
-    src_version = sasrc.s ;
-    pos = strlen(sasrc.s) + 1 ;
-    dst_version = sasrc.s + pos ;
+    src_version = stk.s ;
+    pos = strlen(stk.s) + 1 ;
+    dst_version = stk.s + pos ;
 
     if (!env_import_version_file(svname,svconf,src_version,dst_version,svtype))
         log_dieu(LOG_EXIT_SYS,"import configuration file from version: ",src_version," to version: ",dst_version) ;
-
-    stralloc_free(&sasrc) ;
 }
 
 static void replace_value_of_key(stralloc *srclist,char const *key)
 {
     log_flow() ;
 
-    stralloc sakey = STRALLOC_ZERO ;
-
-    size_t pos = 0 ;
+    _alloc_sa_(sakey) ;
+    _alloc_stk_(line, strlen(key) + 1) ;
 
     int start = -1 ,end = -1 ;
 
-    if (!auto_stra(&sakey,key))
-        log_die_nomem("stralloc") ;
+    if (!environ_get_key(&line,key))
+        log_dieusys(LOG_EXIT_SYS,"get key: ",key, " from environments") ;
 
-    if (!environ_get_key_nclean(&sakey,&pos))
-        log_die(LOG_EXIT_SYS,"invalid format at key: ",key) ;
+    if (!stack_add(&line, "=", 1))
+        log_die_nomem("stack") ;
 
-    sakey.len-- ;
-
-    if (!auto_stra(&sakey,"="))
-        log_die_nomem("stralloc") ;
-
-    start = sastr_find(srclist,sakey.s) ;
+    start = sastr_find(srclist,line.s) ;
     if (start == -1) {
-        log_1_warnu("find key: ",sakey.s) ;
+        log_1_warnu("find key: ",line.s) ;
         return ;
     }
 
@@ -148,10 +140,8 @@ static void replace_value_of_key(stralloc *srclist,char const *key)
     if (end == -1)
         log_dieu(LOG_EXIT_SYS,"find end of line") ;
 
-    sakey.len = 0 ;
-
     if (!stralloc_catb(&sakey,srclist->s + start,end ) ||
-    !stralloc_0(&sakey))
+        !stralloc_0(&sakey))
         log_die_nomem("stralloc") ;
 
     if (!strcmp(sakey.s,key))
@@ -164,8 +154,6 @@ static void replace_value_of_key(stralloc *srclist,char const *key)
         log_die_nomem("stralloc") ;
 
     srclist->len-- ;
-
-    stralloc_free(&sakey) ;
 }
 
 static void write_user_env_file(char const *src, char const *sv)
