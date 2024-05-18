@@ -19,7 +19,6 @@
 #include <oblibs/stack.h>
 
 #include <skalibs/types.h>
-#include <skalibs/stralloc.h>
 
 int version_compare(char const  *a, char const *b, uint8_t ndot)
 {
@@ -50,7 +49,7 @@ int version_compare(char const  *a, char const *b, uint8_t ndot)
     return 0 ;
 }
 
-int version_store(stralloc *sa, char const *str, uint8_t ndot)
+int version_store(stack *stk, char const *str, uint8_t ndot)
 {
     log_flow() ;
 
@@ -60,7 +59,7 @@ int version_store(stralloc *sa, char const *str, uint8_t ndot)
     size_t slen = strlen(str) ;
     char snum[slen + 1] ;
     auto_strings(snum,str) ;
-    sa->len = 0 ;
+    stack_reset(stk) ;
     while(dot < ndot + 1)
     {
         size_t len = strlen(snum) ;
@@ -69,13 +68,14 @@ int version_store(stralloc *sa, char const *str, uint8_t ndot)
         char tmp[len + 1] ;
         auto_strings(tmp,snum + r + 1) ;
         if (!uint0_scan(tmp,&num)) return 0 ;
-        if (!stralloc_inserts(sa,0,tmp)) return -1 ;
+        if (!stack_insert(stk,0,tmp)) return -1 ;
         if (dot < ndot)
-            if (!stralloc_inserts(sa,0,".")) return -1 ;
+            if (!stack_insert(stk,0,".")) return -1 ;
         dot++ ;
         snum[r] = 0 ;
     }
-    if (!stralloc_0(sa)) return -1 ;
-    sa->len-- ;
+    if (!stack_close(stk))
+        return -1 ;
+
     return 1 ;
 }
