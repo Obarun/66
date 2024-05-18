@@ -95,7 +95,7 @@ extern ssexec_func_t ssexec_enable ;
 extern ssexec_func_t ssexec_disable ;
 extern ssexec_func_t ssexec_start ;
 extern ssexec_func_t ssexec_stop ;
-extern ssexec_func_t ssexec_env ;
+extern ssexec_func_t ssexec_configure ;
 extern ssexec_func_t ssexec_reconfigure ;
 extern ssexec_func_t ssexec_reload ;
 extern ssexec_func_t ssexec_restart ;

@@ -2,7 +2,7 @@ ssexec_boot.o
 ssexec_copy.o
 ssexec_disable.o
 ssexec_enable.o
-ssexec_env.o
+ssexec_configure.o
 ssexec_free.o
 ssexec_help.o
 ssexec_parse.o

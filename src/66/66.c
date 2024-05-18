@@ -251,7 +251,7 @@ int main(int argc, char const *const *argv)
         info.prog = PROG ;
         info.help = help_env ;
         info.usage = usage_env ;
-        func = &ssexec_env ;
+        func = &ssexec_configure ;
 
     } else if (!strcmp(argv[0], "parse")) {
 

@@ -1,5 +1,5 @@
 /*
- * ssexec_env.c
+ * ssexec_configure.c
  *
  * Copyright (c) 2018-2024 Eric Vidal <eric@obarun.org>
  *
@@ -149,7 +149,7 @@ static void write_user_env_file(char const *src, char const *sv)
     stralloc_free(&sa) ;
 }
 
-int ssexec_env(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_configure(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
@@ -288,7 +288,7 @@ int ssexec_env(int argc, char const *const *argv, ssexec_t *info)
             char sym[conflen + SS_SYM_VERSION_LEN + 1] ;
             auto_strings(sym, svconf, SS_SYM_VERSION) ;
 
-            if (!atomic_symlink(src.s, sym, "ssexec_env"))
+            if (!atomic_symlink(src.s, sym, "ssexec_configure"))
                 log_warnu_return(LOG_EXIT_ZERO, "symlink: ", sym, " to: ", src.s) ;
 
             log_info("symlink switched successfully to version: ", src.s) ;
