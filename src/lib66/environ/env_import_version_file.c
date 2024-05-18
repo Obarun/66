@@ -34,7 +34,7 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
 
     int r ;
     struct stat st ;
-    size_t pos = 0, svname_len= strlen(svname) ;
+    size_t pos = 0, svname_len = strlen(svname) ;
     stralloc salist = STRALLOC_ZERO ;
     stralloc src_ver = STRALLOC_ZERO ;
     stralloc dst_ver = STRALLOC_ZERO ;
@@ -56,7 +56,7 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
 
     if (r == 1) {
 
-        log_warn_return(LOG_EXIT_ONE,"configuration file version regression for ",svname," -- ignoring configuration file version importation") ;
+        log_warn_return(LOG_EXIT_ONE,"configuration file version regression for ",svname," -- ignoring importation request") ;
         goto freed ;
     }
 
