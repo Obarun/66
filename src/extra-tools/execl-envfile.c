@@ -166,8 +166,8 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
     modifs.len = 0 ;
 
-    if (!environ_merge_arguments(&modifs, argv))
-        log_dieu(LOG_EXIT_SYS, "merge environment with arguments") ;
+    if (!environ_import_arguments(&modifs, argv, argc))
+        log_dieusys(LOG_EXIT_SYS, "import arguments to environment") ;
 
     r = el_substitute(&sa, modifs.s, modifs.len, info.vars.s, info.values.s,
         genalloc_s(elsubst_t const, &info.data), genalloc_len(elsubst_t const, &info.data)) ;
