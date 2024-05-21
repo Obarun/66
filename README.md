@@ -73,31 +73,31 @@ Some are specific to `execline` where other can be used on classic shell.
 
 This Roadmap for the next release is not writting in the stone. Feel free to make a merge request to this roadmap.
 
-* [] Revise the frontend file's keyword field by excluding the `@` symbol:
+* [ ] Revise the frontend file's keyword field by excluding the `@` symbol:
 
   For instance, `@depends` will be `Depends`. That will allow for a file that's closer to the original INI format and less confusing for users.
 
-* [] Provide a `[documentation]` section:
+* [ ] Provide a `[documentation]` section:
 
   Enable the provision of documentation for each service using a [documentation] section. This documentation will be easily accessible by invoking the 66 doc command.
 
-* [] Provide a `Conflicts` keyword at frontend file:
+* [ ] Provide a `Conflicts` keyword at frontend file:
 
   Allow to declare a conflicting service through the `Conflicts` field, e.g. `connmand` service will declare `Conflicts = ( Networkmanager )`.
 
-* [] Provide keyword for basic operations:
+* [ ] Provide keyword for basic operations:
 
   Certain repetitive tasks can be more efficiently managed directly by `66` in C rather than scripting them in the `Execute` field. For example, utilizing a `WorkDir` keyword can facilitate moving to the declared WorkDir value before executing the script.
 
-* [] Reacts on event:
+* [ ] Reacts on event:
 
   Implementation of a daemon for event response to allow users to define services that dynamically start and stop when certain conditions are met, without needing to encode every possible condition in the service manager configuration.
 
-* [] Ability to redirect stdin, stdout and stderr
+* [ ] Ability to redirect stdin, stdout and stderr
 
   Allow to specify to make redirection of standard output
 
-* [] Ability to Handle a general environment structure
+* [ ] Ability to Handle a general environment structure
 
   Every scandir will start with environment variable define by user through configuration file at specific directory, for instance `/etc/66/environment`.
   Ability through a new command to update this environment.

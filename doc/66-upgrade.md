@@ -11,6 +11,24 @@ author: Eric Vidal <eric@obarun.org>
 
 ---
 
+# In 0.7.1.0
+
+- Adapt to `oblibs` 0.3.0.0
+
+- Bugs fix:
+
+    - make exclusive `-s` and `-c` options at *configure* command.
+    - respect `-s` option for edition at *configure* command.
+    - provide *wall* command documentation. This command was added from 0.7.0.0 tag but the documentation wasn't.
+    - fix closing string at parse time.
+    - typo fix.
+
+- Complete review of the *execl-envfile* program. Adapting it to the new lexer and environ familly functions make it faster and easier to debug and use less HEAP memory.
+
+- Remove deprecated *env* key of the `@options` field.
+
+---
+
 # In 0.7.0.2
 
 - Hot fix:
