@@ -11,6 +11,14 @@ author: Eric Vidal <eric@obarun.org>
 
 ---
 
+# In 0.7.0.2
+
+- Hot fix:
+
+    - Always build the graph with the service associated to a module.
+
+---
+
 # In 0.7.0.1
 
 - Bug fix:
