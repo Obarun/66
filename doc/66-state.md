@@ -23,7 +23,7 @@ This command displays the contents of the service's *state* file. This file are 
 
 ## Options
 
-- **-h**: prints this help;
+- **-h**: prints this help
 
 ## Usage example
 

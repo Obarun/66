@@ -220,6 +220,8 @@ extern char const *usage_reboot ;
 extern char const *help_reboot ;
 extern char const *usage_halt ;
 extern char const *help_halt ;
+extern char const *usage_wall ;
+extern char const *help_wall ;
 
 #define OPTS_MAIN "hv:l:t:T:z"
 #define OPTS_MAIN_LEN (sizeof OPTS_MAIN - 1)

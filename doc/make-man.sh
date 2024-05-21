@@ -1,6 +1,6 @@
 #!/bin/sh
 
-man1='66 66-configure 66-disable 66-enable 66-free execl-envfile 66-halt 66-parse 66-poweroff 66-reboot 66-reconfigure 66-reload 66-remove 66-resolve 66-restart 66-rosetta 66-scandir 66-signal 66-start 66-state 66-status 66-stop 66-tree 66-upgrade 66-version'
+man1='66 66-configure 66-disable 66-enable 66-free execl-envfile 66-halt 66-parse 66-poweroff 66-reboot 66-reconfigure 66-reload 66-remove 66-resolve 66-restart 66-rosetta 66-scandir 66-signal 66-start 66-state 66-status 66-stop 66-tree 66-upgrade 66-version 66-wall'
 
 man8='66-boot 66-hpr 66-shutdown 66-shutdownd 66-umountall'
 
