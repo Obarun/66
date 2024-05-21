@@ -840,27 +840,29 @@ static void info_display_all(resolve_service_t *res,int *what)
 static void info_parse_options(char const *str,int *what)
 {
     size_t pos = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
-
-    if (!sastr_clean_string_wdelim(&sa,str,DELIM)) log_dieu(LOG_EXIT_SYS,"parse options") ;
-    unsigned int n = sastr_len(&sa), nopts = 0 , old ;
-    checkopts(n) ;
+    unsigned int nopts = 0 , old = 0 ;
     info_opts_map_t const *t ;
+    _alloc_stk_(stk, strlen(str) + 1) ;
 
-    for (;pos < sa.len; pos += strlen(sa.s + pos) + 1)
-    {
-        char *o = sa.s + pos ;
+    if (!lexer_trim_with_delim(&stk,str,DELIM))
+        log_dieu(LOG_EXIT_SYS,"parse options") ;
+
+    checkopts(stk.count) ;
+
+    FOREACH_STK(&stk, pos) {
+
+        char *o = stk.s + pos ;
         t = opts_sv_table ;
         old = nopts ;
-        for (; t->str; t++)
-        {
+        for (; t->str; t++) {
+
             if (!strcmp(o,t->str))
                 what[nopts++] = t->id ;
         }
-        if (old == nopts) log_die(LOG_EXIT_SYS,"invalid option: ",o) ;
-    }
 
-    stralloc_free(&sa) ;
+        if (old == nopts)
+            log_die(LOG_EXIT_SYS,"invalid option: ",o) ;
+    }
 }
 
 int ssexec_status(int argc, char const *const *argv, ssexec_t *info)

@@ -251,7 +251,7 @@ int main(int argc, char const *const *argv)
         info.prog = PROG ;
         info.help = help_env ;
         info.usage = usage_env ;
-        func = &ssexec_env ;
+        func = &ssexec_configure ;
 
     } else if (!strcmp(argv[0], "parse")) {
 
@@ -388,6 +388,12 @@ int main(int argc, char const *const *argv)
         PROG = "wall" ;
         if (!argv[1])
             log_die(LOG_EXIT_USER, "missing message to send") ;
+
+        if (!strcmp(argv[1], "-h")) {
+            info_help(help_wall, usage_wall) ;
+            return 0 ;
+        }
+
         /** message need to be double quoted.
          * we don't check that here */
         hpr_wall(argv[1]) ;

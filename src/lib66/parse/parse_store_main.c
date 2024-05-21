@@ -34,41 +34,33 @@
 #include <66/enum.h>
 #include <66/utils.h>
 
-int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
+int parse_store_main(resolve_service_t *res, stack *store, int idsec, int idkey)
 {
+    log_flow() ;
+
     int r = 0, e = 0 ;
     size_t pos = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     switch(idkey) {
 
         case KEY_MAIN_DESCRIPTION:
 
-            if (!parse_clean_quotes(store))
-                parse_error_return(0, 8, idsec, idkey) ;
-
-            res->description = resolve_add_string(wres, store) ;
-
+            res->description = resolve_add_string(wres, store->s) ;
             break ;
 
         case KEY_MAIN_VERSION:
 
-            if (!parse_clean_line(store))
-                parse_error_return(0, 8, idsec, idkey) ;
+            {
+                r = version_store(store, store->s, SS_CONFIG_VERSION_NDOT) ;
+                if (r == -1)
+                    goto err ;
 
-            if (!auto_stra(&sa, store))
-                goto err ;
+                if (!r)
+                    parse_error_return(0, 0, idsec, idkey) ;
 
-            r = version_scan(&sa, store, SS_CONFIG_VERSION_NDOT) ;
-            if (r == -1)
-                goto err ;
-
-            if (!r)
-                parse_error_return(0, 0, idsec, idkey) ;
-
-            res->version = resolve_add_string(wres, sa.s) ;
-
+                res->version = resolve_add_string(wres, store->s) ;
+            }
             break ;
 
         case KEY_MAIN_TYPE:
@@ -77,16 +69,13 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
                 /** already passed through here */
                 break ;
 
-            if (!parse_clean_line(store))
-                parse_error_return(0, 8, idsec, idkey) ;
-
-            if (!strcmp(store, "longrun")) {
+            if (!strcmp(store->s, "longrun")) {
                 log_1_warn("deprecated type longrun -- convert it automatically to classic type") ;
                 res->type = 0 ;
                 break ;
             }
 
-            r = get_enum_by_key(store) ;
+            r = get_enum_by_key(store->s) ;
             if (r == -1)
                 parse_error_return(0, 0, idsec, idkey) ;
 
@@ -98,7 +87,7 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 
             parse_error_type(res->type,ENUM_KEY_SECTION_MAIN, idkey) ;
 
-            if (!uint320_scan(store, &res->notify))
+            if (!uint320_scan(store->s, &res->notify))
                 parse_error_return(0, 3, idsec, idkey) ;
 
             if (res->notify < 3)
@@ -108,8 +97,7 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 
         case KEY_MAIN_DEATH:
 
-
-            if (!uint320_scan(store, &res->maxdeath))
+            if (!uint320_scan(store->s, &res->maxdeath))
                 parse_error_return(0, 3, idsec, idkey) ;
 
             if (res->maxdeath > 4096)
@@ -121,14 +109,14 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 
             parse_error_type(res->type,ENUM_KEY_SECTION_MAIN, idkey) ;
 
-            if (!parse_clean_list(&sa, store))
+            if (!parse_list(store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
             {
                 pos = 0 ;
-                FOREACH_SASTR(&sa, pos) {
+                FOREACH_STK(store, pos) {
 
-                    r = get_enum_by_key_one(sa.s + pos, ENUM_FLAGS) ;
+                    r = get_enum_by_key_one(store->s + pos, ENUM_FLAGS) ;
 
                     if (r == -1)
                         parse_error_return(0, 0, idsec, idkey) ;
@@ -147,11 +135,8 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 
             parse_error_type(res->type,ENUM_KEY_SECTION_MAIN, idkey) ;
 
-            if (!parse_clean_line(store))
-                parse_error_return(0, 8, idsec, idkey) ;
-
             int t = 0 ;
-            if (!sig0_scan(store, &t))
+            if (!sig0_scan(store->s, &t))
                 parse_error_return(0, 3, idsec, idkey) ;
 
             res->execute.downsignal = (uint32_t)t ;
@@ -162,7 +147,7 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 
             parse_error_type(res->type,ENUM_KEY_SECTION_MAIN, idkey) ;
 
-            if (!uint320_scan(store, &res->execute.timeout.kill))
+            if (!uint320_scan(store->s, &res->execute.timeout.kill))
                 parse_error_return(0, 3, idsec, idkey) ;
 
             break ;
@@ -171,7 +156,7 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 
             parse_error_type(res->type,ENUM_KEY_SECTION_MAIN, idkey) ;
 
-            if (!uint320_scan(store, &res->execute.timeout.finish))
+            if (!uint320_scan(store->s, &res->execute.timeout.finish))
                 parse_error_return(0, 3, idsec, idkey) ;
 
             break ;
@@ -180,7 +165,7 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 
             parse_error_type(res->type,ENUM_KEY_SECTION_MAIN, idkey) ;
 
-            if (!uint320_scan(store, &res->execute.timeout.up))
+            if (!uint320_scan(store->s, &res->execute.timeout.up))
                 parse_error_return(0, 3, idsec, idkey) ;
 
             break ;
@@ -189,54 +174,56 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 
             parse_error_type(res->type,ENUM_KEY_SECTION_MAIN, idkey) ;
 
-            if (!uint320_scan(store, &res->execute.timeout.down))
+            if (!uint320_scan(store->s, &res->execute.timeout.down))
                 parse_error_return(0, 3, idsec, idkey) ;
 
             break ;
 
         case KEY_MAIN_HIERCOPY:
 
-            if (!parse_clean_list(&sa, store))
+            if (!parse_list(store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
-            if (sa.len) {
+            if (store->len) {
 
-                size_t len = sa.len ;
-
+                size_t len = store->len ;
                 char t[len + 1] ;
 
-                sastr_to_char(t, &sa) ;
+                memset(t, 0, sizeof(char) * len) ;
+                memcpy(t, store->s, store->len) ;
+                t[store->len] = 0 ;
 
-                sa.len = 0 ;
-                pos = 0 ;
+                stack_reset(store) ;
 
-                for (; pos < len ; pos += strlen(t + pos) + 1) {
-                    if (!auto_stra(&sa, t + pos, " "))
+                for (pos = 0 ; pos < len ; pos += strlen(t + pos) + 1) {
+                    if (!stack_add(store, t + pos, strlen(t + pos)) ||
+                        !stack_add(store, " ", 1) ||
+                        !stack_close(store))
                         goto err ;
                 }
 
-                sa.len-- ;
-                if (!stralloc_0(&sa))
+                store->len-- ;
+                if (!stack_close(store))
                     goto err ;
 
-                res->hiercopy = resolve_add_string(wres, sa.s) ;
+                res->hiercopy = resolve_add_string(wres, store->s) ;
             }
 
             break ;
 
         case KEY_MAIN_OPTIONS:
 
-            if (!parse_clean_list(&sa, store))
+            if (!parse_list(store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
-            if (sa.len) {
+            if (store->len) {
 
                 pos = 0 ;
-                FOREACH_SASTR(&sa, pos) {
+                FOREACH_STK(store, pos) {
 
-                    uint8_t reverse = sa.s[pos] == '!' ? 1 : 0 ;
+                    uint8_t reverse = store->s[pos] == '!' ? 1 : 0 ;
 
-                    r = get_enum_by_key(sa.s + pos + reverse) ;
+                    r = get_enum_by_key(store->s + pos + reverse) ;
 
                     if (r == -1)
                         parse_error_return(0, 0, idsec, idkey) ;
@@ -244,9 +231,6 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
                     /** do no set a logger by default */
                     if (reverse && r == OPTS_LOGGER)
                         res->logger.want = 0 ;
-
-                    if (r == OPTS_ENVIR)
-                        log_warn("options: env is deprecated -- simply set an [environment] section") ;
                 }
             }
 
@@ -254,34 +238,28 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
 
         case KEY_MAIN_USER:
 
-            if (!parse_clean_list(&sa, store))
+            if (!parse_list(store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
-            if (sa.len) {
+            if (store->len) {
+
+                stralloc sa = STRALLOC_ZERO ;
 
                 uid_t user[256] ;
-                memset(user, 0, 256*sizeof(uid_t)) ;
+                memset(user, 0, 256 * sizeof(uid_t)) ;
 
                 uid_t owner = MYUID ;
                 if (!owner) {
 
-                    if (sastr_find(&sa, "root") == -1)
+                    if (stack_retrieve_element(store, "root") == -1)
                         log_warnu_return(LOG_EXIT_ZERO, "use the service -- permission denied") ;
                 }
                 /** special case, we don't know which user want to use
                  * the service, we need a general name to allow the current owner
                  * of the process. The term "user" is took here to allow him */
-                ssize_t p = sastr_cmp(&sa, "user") ;
-                size_t len = sa.len ;
+                ssize_t p = stack_retrieve_element(store, "user") ;
                 pos = 0 ;
-
-                char t[len + 1] ;
-
-                sastr_to_char(t, &sa) ;
-
-                sa.len = 0 ;
-
-                for (; pos < len ; pos += strlen(t + pos) + 1) {
+                FOREACH_STK(store, pos) {
 
                     if (pos == (size_t)p) {
 
@@ -307,14 +285,14 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
                         continue ;
                     }
 
-                    if (!scan_uidlist(t + pos, user))
+                    if (!scan_uidlist(store->s + pos, user))
                         parse_error_return(0, 0, idsec, idkey) ;
 
-                    if (!auto_stra(&sa, t + pos, " "))
+                    if (!auto_stra(&sa, store->s + pos, " "))
                         log_warnu_return(LOG_EXIT_ZERO, "stralloc") ;
 
                 }
-                uid_t nb = user[0] ;
+                int nb = (int)user[0] ;
                 if (p == -1 && owner) {
 
                     int e = 0 ;
@@ -329,47 +307,48 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
                 }
 
                 res->user = resolve_add_string(wres, sa.s) ;
+                stralloc_free(&sa) ;
             }
 
             break ;
 
         case KEY_MAIN_DEPENDS:
 
-            if (!parse_clean_list(&sa, store))
+            if (!parse_list(store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
-            if (sa.len)
-                res->dependencies.depends = parse_compute_list(wres, &sa, &res->dependencies.ndepends, 0) ;
+            if (store->len)
+                res->dependencies.depends = parse_compute_list(wres, store, &res->dependencies.ndepends, 0) ;
 
             break ;
 
         case KEY_MAIN_REQUIREDBY:
 
-            if (!parse_clean_list(&sa, store))
+            if (!parse_list(store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
-            if (sa.len)
-                res->dependencies.requiredby = parse_compute_list(wres, &sa, &res->dependencies.nrequiredby, 0) ;
+            if (store->len)
+                res->dependencies.requiredby = parse_compute_list(wres, store, &res->dependencies.nrequiredby, 0) ;
 
             break ;
 
         case KEY_MAIN_OPTSDEPS:
 
-            if (!parse_clean_list(&sa, store))
+            if (!parse_list(store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
-            if (sa.len)
-                res->dependencies.optsdeps = parse_compute_list(wres, &sa, &res->dependencies.noptsdeps, 1) ;
+            if (store->len)
+                res->dependencies.optsdeps = parse_compute_list(wres, store, &res->dependencies.noptsdeps, 1) ;
 
             break ;
 
         case KEY_MAIN_CONTENTS:
 
-            if (!parse_clean_list(&sa, store))
+            if (!parse_list(store))
                 parse_error_return(0, 8, idsec, idkey) ;
 
-            if (sa.len)
-                res->dependencies.contents = parse_compute_list(wres, &sa, &res->dependencies.ncontents, 0) ;
+            if (store->len)
+                res->dependencies.contents = parse_compute_list(wres, store, &res->dependencies.ncontents, 0) ;
 
             break ;
 
@@ -379,10 +358,7 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
                 /** already passed through here */
                 break ;
 
-            if (!parse_clean_line(store))
-                parse_error_return(0, 8, idsec, idkey) ;
-
-            res->intree = resolve_add_string(wres, store) ;
+            res->intree = resolve_add_string(wres, store->s) ;
 
             break ;
 
@@ -393,8 +369,6 @@ int parse_store_main(resolve_service_t *res, char *store, int idsec, int idkey)
     e = 1 ;
 
     err :
-        stralloc_free(&sa) ;
         free(wres) ;
         return e ;
-
 }

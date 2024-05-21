@@ -20,6 +20,7 @@
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/stack.h>
+#include <oblibs/lexer.h>
 
 #include <66/service.h>
 #include <66/resolve.h>
@@ -123,9 +124,9 @@ void service_graph_collect(graph_t *g, char const *slist, size_t slen, struct re
                 if (res.dependencies.ndepends && FLAGS_ISSET(flag, STATE_FLAGS_WANTUP)) {
 
                     size_t len = strlen(res.sa.s + res.dependencies.depends) ;
-                    _init_stack_(stk, len + 1) ;
+                    _alloc_stk_(stk, len + 1) ;
 
-                    if (!stack_clean_string(&stk, res.sa.s + res.dependencies.depends, len))
+                    if (!stack_string_clean(&stk, res.sa.s + res.dependencies.depends))
                         log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
                     service_graph_collect(g, stk.s, stk.len, hres, info, flag) ;
@@ -135,9 +136,9 @@ void service_graph_collect(graph_t *g, char const *slist, size_t slen, struct re
                 if (res.dependencies.nrequiredby && FLAGS_ISSET(flag, STATE_FLAGS_WANTDOWN)) {
 
                     size_t len = strlen(res.sa.s + res.dependencies.requiredby) ;
-                    _init_stack_(stk, len + 1) ;
+                    _alloc_stk_(stk, len + 1) ;
 
-                    if (!stack_clean_string(&stk, res.sa.s + res.dependencies.requiredby, len))
+                    if (!stack_string_clean(&stk, res.sa.s + res.dependencies.requiredby))
                         log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
                     service_graph_collect(g, stk.s, stk.len, hres, info, flag) ;
@@ -158,9 +159,9 @@ void service_graph_collect(graph_t *g, char const *slist, size_t slen, struct re
             if (res.type == TYPE_MODULE && res.dependencies.ncontents) {
 
                 size_t len = strlen(res.sa.s + res.dependencies.contents) ;
-                _init_stack_(stk, len + 1) ;
+                _alloc_stk_(stk, len + 1) ;
 
-                if (!stack_clean_string(&stk, res.sa.s + res.dependencies.contents, len))
+                if (!stack_string_clean(&stk, res.sa.s + res.dependencies.contents))
                     log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
                 service_graph_collect(g, stk.s, stk.len, hres, info, flag) ;

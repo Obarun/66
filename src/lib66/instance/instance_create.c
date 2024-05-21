@@ -24,30 +24,19 @@ int instance_create(stralloc *sasv,char const *svname, char const *regex, int le
 {
     log_flow() ;
 
-    int e = 0 ;
     char const *copy ;
     size_t tlen = len + 1 ;
 
-    stralloc tmp = STRALLOC_ZERO ;
+    _alloc_sa_(tmp) ;
 
-    if (!auto_stra(&tmp,sasv->s)) goto err ;
+    if (!auto_stra(&tmp,sasv->s)) return 0 ;
 
     copy = svname + tlen ;
 
-    if (!sastr_replace_all(&tmp,regex,copy)){
-        log_warnu("replace instance character for service: ",svname) ;
-        goto err ;
-    }
-
-    stralloc_0(&tmp) ;
+    if (!sastr_replace_g(&tmp,regex,copy))
+        log_warnu_return(LOG_EXIT_ZERO, "replace instance character for service: ",svname) ;
 
     sasv->len = 0 ;
 
-    if (!auto_stra(sasv, tmp.s))
-        goto err ;
-
-    e = 1 ;
-    err:
-        stralloc_free(&tmp) ;
-        return e ;
+    return auto_stra(sasv, tmp.s) ;
 }

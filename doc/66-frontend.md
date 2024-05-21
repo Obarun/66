@@ -844,7 +844,7 @@ You can use the `@I` string as key field. It will be replaced by the `module` na
 
     valid value :
 
-    * Reacts exactly as @directories field but on filename instead of directories name.
+    * Reacts exactly as @directories field but on files name instead of directories name.
 
     ---
 

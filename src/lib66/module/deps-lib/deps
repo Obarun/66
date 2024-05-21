@@ -3,8 +3,6 @@ parse_module.o
 parse_module_check_dir.o
 regex_configure.o
 regex_get_file_name.o
-regex_get_regex.o
-regex_get_replace.o
 regex_rename.o
 regex_replace.o
 -loblibs

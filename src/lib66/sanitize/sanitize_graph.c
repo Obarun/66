@@ -64,8 +64,13 @@ void sanitize_graph(ssexec_t *info)
         c->res.dependencies.ndepends = 0 ;
         c->res.dependencies.depends = 0 ;
 
-        if (sa.len)
-            c->res.dependencies.depends = parse_compute_list(wres, &sa, &c->res.dependencies.ndepends, 0) ;
+        if (sa.len) {
+            _alloc_stk_(stk, sa.len + 1) ;
+            if (!stack_copy(&stk, sa.s, sa.len))
+                log_die_nomem("stack overflow") ;
+
+            c->res.dependencies.depends = parse_compute_list(wres, &stk, &c->res.dependencies.ndepends, 0) ;
+        }
 
         sa.len = 0 ;
 
@@ -75,8 +80,13 @@ void sanitize_graph(ssexec_t *info)
         c->res.dependencies.nrequiredby = 0 ;
         c->res.dependencies.requiredby = 0 ;
 
-        if (sa.len)
-            c->res.dependencies.requiredby = parse_compute_list(wres, &sa, &c->res.dependencies.nrequiredby, 0) ;
+        if (sa.len) {
+            _alloc_stk_(stk, sa.len + 1) ;
+            if (!stack_copy(&stk, sa.s, sa.len))
+                log_die_nomem("stack overflow") ;
+
+            c->res.dependencies.requiredby = parse_compute_list(wres, &stk, &c->res.dependencies.nrequiredby, 0) ;
+        }
 
         if (!resolve_write_g(wres, info->base.s, name))
             log_dieu(LOG_EXIT_SYS, "write resolve file of service: ", name) ;

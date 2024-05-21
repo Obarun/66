@@ -284,7 +284,7 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
         if (envdir.s[0] != '/')
             log_die(LOG_EXIT_USER,"environment: ",envdir.s," must be an absolute path") ;
 
-        if (!environ_clean_envfile_unexport(&modifs,envdir.s))
+        if (!environ_merge_dir_g(&modifs,envdir.s))
             log_dieu(LOG_EXIT_SYS,"clean environment file of: ",envdir.s) ;
 
         size_t envlen = env_len(genvp) ;

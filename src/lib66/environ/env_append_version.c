@@ -28,21 +28,17 @@ int env_append_version(stralloc *saversion, char const *svconf, char const *vers
 
     int r ;
 
-    stralloc sa = STRALLOC_ZERO ;
+    _alloc_stk_(stk, strlen(version) + 1) ;
 
-    if (!env_check_version(&sa,version))
+    if (!env_check_version(&stk,version))
         return 0 ;
 
-    saversion->len = 0 ;
-
-    if (!auto_stra(saversion,svconf,"/",sa.s))
+    if (!auto_stra(saversion,svconf,"/",stk.s))
         log_warnusys_return(LOG_EXIT_ZERO,"stralloc") ;
 
     r = scan_mode(saversion->s,S_IFDIR) ;
     if (r == -1 || !r)
         log_warnusys_return(LOG_EXIT_ZERO,"find the versioned directory: ",saversion->s) ;
-
-    stralloc_free(&sa) ;
 
     return 1 ;
 }

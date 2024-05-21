@@ -23,7 +23,7 @@ inline void info_help (char const *help,char const *usage)
 }
 
 
-char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|free|reconfigure|enable|disable|configure|status|resolve|state|remove|signal|tree|parse|scandir|boot|poweroff|reboot|halt|version [<command options> or <subcommand options> ] service...|tree" ;
+char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|free|reconfigure|enable|disable|configure|status|resolve|state|remove|signal|tree|parse|scandir|boot|poweroff|reboot|halt|wall|version [<command options> or <subcommand options> ] service...|tree" ;
 
 char const *help_66 =
 "\nprogram to init a system, control and manage services\n"
@@ -58,6 +58,7 @@ char const *help_66 =
 "   poweroff: poweroff the system\n"
 "   reboot: reboot the system\n"
 "   halt: halt the system\n"
+"   wall: send message to all users connected"
 "   version: display 66 version\n"
 "\n"
 "Use '66 <command> -h' to see command options\n"
@@ -647,4 +648,13 @@ char const *help_halt =
 "   -m message: replace the default message by message\n"
 "   -t time: use time as grace time period between SIGTERM and SIGKILL\n"
 "   -W: do not send a wall message to users\n"
+;
+
+char const *usage_wall = "66 wall [ -h ] message" ;
+
+char const *help_wall =
+"\nsend message to connected users\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
 ;

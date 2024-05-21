@@ -16,122 +16,54 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/lexer.h>
 
 #include <66/parse.h>
 #include <66/resolve.h>
 #include <66/enum.h>
 
-int parse_contents(resolve_wrapper_t_ref wres, char const *contents, char const *svname)
+int parse_contents(resolve_service_t *res, char const *str)
 {
     log_flow() ;
 
-    size_t clen = strlen(contents), pos = 0, start = 0, len = 0 ;
+    size_t len = strlen(str) ;
+    unsigned int ncfg = 0, n = 0 ;
+    lexer_config acfg[SECTION_ENDOFKEY] ;
+    memset(acfg, 0, sizeof(struct lexer_config_s) * SECTION_ENDOFKEY) ;
 
-    stralloc secname = STRALLOC_ZERO ;
-    stralloc sadir = STRALLOC_ZERO ;
+    log_trace("search for section of service: ", res->sa.s + res->name) ;
+    if (!parse_get_section(acfg, &ncfg, str, len))
+        log_warn_return(LOG_EXIT_ZERO,"get section");
 
-    int e = 0, found = 0 ;
+    char tmp[len + 1] ;
 
-    while (pos < clen) {
+    for (; n < ncfg ; n++) {
 
-        found = 0 ;
-
-        /** keep the starting point of the beginning
-         * of the section search process */
-        start = pos ;
-
-        // get the section name
-        found = parse_section(&secname, contents, &pos) ;
-
-        if (found == -1)
-            log_die_nomem("stralloc") ;
-
-        // we are not able to find any section and we are at the start of the file
-        if (!found && !start) {
-            log_warn("invalid frontend file of: ", svname, " -- no section found") ;
-            goto err ;
+        /* get characters between two sections or section and EOF*/
+        if (n + 1 >= ncfg) {
+            /* End of file */
+            memcpy(tmp, str + acfg[n].cpos + 1, len - (acfg[n].cpos + 1)) ;
+            tmp[len - (acfg[n].cpos + 1)] = 0 ;
+        } else {
+            /* Next section exist */
+            memcpy(tmp, str + acfg[n].cpos + 1, acfg[n+1].opos - (acfg[n].cpos + 1)) ;
+            tmp[acfg[n+1].opos - (acfg[n].cpos + 1)] = 0 ;
         }
 
-        if (!start && strcmp(secname.s, enum_str_section[SECTION_MAIN])) {
-            log_warn("invalid frontend file of: ", svname, " -- section [main] must be set first") ;
-            goto err ;
-        }
+        char secname[(acfg[n].cpos - (acfg[n].opos + 1)) + 1] ;
+        memcpy(secname, str + acfg[n].opos + 1, acfg[n].cpos - (acfg[n].opos + 1)) ;
+        secname[acfg[n].cpos - (acfg[n].opos + 1)] = 0 ;
 
-        // not more section, end of file. We copy the rest of the file
-        if (!found) {
+        ssize_t id = get_enum_by_key(secname) ;
 
-            len = clen - start ;
+        if (id < 0)
+            log_warnu_return(LOG_EXIT_ZERO, "get id of section: ", secname, " -- please make a bug report") ;
 
-            char tmp[clen + 1] ;
+        log_trace("parsing section: ", secname) ;
 
-            auto_strings(tmp, contents + start + 1) ;
-
-            if (!parse_split_from_section((resolve_service_t *)wres->obj, &secname, tmp, svname))
-                goto err ;
-
-            break ;
-        }
-        else {
-
-            /** again, keep the starting point of the begin
-             * of the section search process */
-            start = pos ;
-
-            found = 0 ;
-
-            /* search for the next section
-             * we don't want to keep the section name to
-             * avoid a double entry at the next pass of the loop */
-            len = secname.len ;
-            found = parse_section(&secname, contents, &pos) ;
-            secname.len = len ;
-
-            if (found == -1)
-                log_die_nomem("stralloc") ;
-
-            int r = get_rlen_until(contents, '\n', pos - 1) ;
-
-            // found a new one
-            if (found) {
-
-                len = r - start ;
-
-                char tmp[clen + 1] ;
-                memcpy(tmp, contents + start + 1, len) ;
-                tmp[len] = 0 ;
-
-                if (!parse_split_from_section((resolve_service_t *)wres->obj, &secname, tmp, svname))
-                    goto err ;
-
-                // jump the contents of the section just parsed
-                start += len ;
-            }
-            else {
-
-                len = clen - start  ;
-
-                char tmp[clen + 1] ;
-
-                auto_strings(tmp, contents + start + 1) ;
-
-                if (!parse_split_from_section((resolve_service_t *)wres->obj, &secname, tmp, svname))
-                    goto err ;
-
-                // end of file
-                break ;
-            }
-            /** restart the next research from the end of the previous
-             * copy A.K.A start of the next section just found previously */
-            pos = start ;
-        }
+        if (!parse_section(res, tmp, id))
+            log_warnu_return(LOG_EXIT_ZERO,"parse section: ", secname, " of service: ", res->sa.s + res->name) ;
     }
 
-    e = 1 ;
-
-    err:
-        stralloc_free(&secname) ;
-        stralloc_free(&sadir) ;
-        return e ;
+    return 1 ;
 }

@@ -40,25 +40,115 @@
 #include <66/symlink.h>
 #include <66/hash.h>
 
-parse_mill_t MILL_GET_SECTION_NAME = \
-{ \
-    .open = '[', .close = ']', \
-    .forceclose = 1, .forceskip = 1, \
-    .skip = " \t\r", .skiplen = 3, \
-    .inner.debug = "get_section_name" } ;
+lexer_config LEXER_CONFIG_SECTION = { \
+    .str = 0,\
+    .slen = 0,\
+    .open = "[",\
+    .olen = 1,\
+    .close = "]",\
+    .clen = 1,\
+    .skip = " \t\r",\
+    .skiplen = 3,\
+    .kopen = 0,\
+    .kclose = 0,\
+    .style = 0,\
+    .forceopen = 0,\
+    .forceclose = 0,\
+    .pos = 0,\
+    .opos = 0,\
+    .cpos = 0,\
+    .invalue = 0,\
+    .found = 0,\
+    .exitcode = 0,\
+} ;
 
-parse_mill_t MILL_GET_KEY = \
-{ \
-    .close = '=', .forceclose = 1, \
-    .forceopen = 1, .keepopen = 1, \
-    .skip = " \n\t\r", .skiplen = 4, .forceskip = 1, \
-    .inner.debug = "get_key_nclean" } ;
+lexer_config LEXER_CONFIG_QUOTE = { \
+    .str = 0,\
+    .slen = 0,\
+    .open = "\"",\
+    .olen = 1,\
+    .close = "\n\"",\
+    .clen = 2,\
+    .skip = 0,\
+    .skiplen = 0,\
+    .kopen = 0,\
+    .kclose = 0,\
+    .style = 0,\
+    .forceopen = 0,\
+    .forceclose = 0,\
+    .pos = 0,\
+    .opos = 0,\
+    .cpos = 0,\
+    .invalue = 0,\
+    .found = 0,\
+    .exitcode = 0,\
+} ;
 
-parse_mill_t MILL_GET_VALUE = \
-{ \
-    .open = '=', .close = '\n', .forceclose = 1, \
-    .skip = " \t\r", .skiplen = 3, .forceskip = 1, \
-    .inner.debug = "get_value" } ;
+lexer_config LEXER_CONFIG_INLINE = { \
+    .str = 0,\
+    .slen = 0,\
+    .open = "=",\
+    .olen = 1,\
+    .close = "\n",\
+    .clen = 1,\
+    .skip = " \t\r",\
+    .skiplen = 3,\
+    .kopen = 0,\
+    .kclose = 0,\
+    .style = 0,\
+    .forceopen = 0,\
+    .forceclose = 0,\
+    .pos = 0,\
+    .opos = 0,\
+    .cpos = 0,\
+    .invalue = 0,\
+    .found = 0,\
+    .exitcode = 0,\
+} ;
+
+lexer_config LEXER_CONFIG_LIST = { \
+    .str = 0,\
+    .slen = 0,\
+    .open = 0,\
+    .olen = 0,\
+    .close = " ",\
+    .clen = 1,\
+    .skip = " \t\r\n",\
+    .skiplen = 4,\
+    .kopen = 1,\
+    .kclose = 0,\
+    .style = 0,\
+    .forceopen = 1,\
+    .forceclose = 1,\
+    .pos = 0,\
+    .opos = 0,\
+    .cpos = 0,\
+    .invalue = 0,\
+    .found = 0,\
+    .exitcode = 0,\
+} ;
+
+lexer_config LEXER_CONFIG_KEY = { \
+    .str = 0,\
+    .slen = 0,\
+    .open = "@",\
+    .olen = 1,\
+    .close = "=",\
+    .clen = 1,\
+    .skip = " \t\r",\
+    .skiplen = 3,\
+    .kopen = 1,\
+    .kclose = 0,\
+    .style = 0,\
+    .forceopen = 0,\
+    .forceclose = 0,\
+    .pos = 0,\
+    .opos = 0,\
+    .cpos = 0,\
+    .invalue = 0,\
+    .found = 0,\
+    .exitcode = 0,\
+} ;
 
 void parse_cleanup(resolve_service_t *res, char const *tmpdir, uint8_t force)
 {
@@ -170,7 +260,7 @@ void parse_service(struct resolve_hash_s **hres, char const *sv, ssexec_t *info,
 
     int r ;
     uint8_t rforce = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
+    _alloc_sa_(sa) ;
     struct resolve_hash_s *c, *tmp ;
 
     char main[strlen(sv) + 1] ;
@@ -227,6 +317,4 @@ void parse_service(struct resolve_hash_s **hres, char const *sv, ssexec_t *info,
 
         log_info("Parsed successfully: ", c->res.sa.s + c->res.name, " at tree: ", c->res.sa.s + c->res.treename) ;
     }
-
-    stralloc_free(&sa) ;
 }

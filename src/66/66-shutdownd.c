@@ -143,19 +143,15 @@ static void parse_conf(char const *confile,char *rcshut,char const *key)
 {
     log_flow() ;
 
-    int r ;
-    stralloc src = STRALLOC_ZERO ;
     size_t filesize = file_get_size(confile) ;
-    r = openreadfileclose(confile,&src,filesize) ;
-    if(!r) log_dieusys(LOG_EXIT_SYS,"open configuration file: ",confile) ;
-    if (!stralloc_0(&src)) log_dieusys(LOG_EXIT_SYS,"append stralloc configuration file") ;
-
-    if (environ_get_val_of_key(&src,key))
-    {
-        memcpy(rcshut,src.s,src.len) ;
-        rcshut[src.len] = 0 ;
+    _alloc_stk_(stk, filesize + 1) ;
+    _alloc_stk_(val, filesize + 1) ;
+    if (!stack_read_file(&stk, confile))
+        log_dieusys(LOG_EXIT_SYS,"read file: ",confile) ;
+    if (environ_search_value(&val, stk.s, key)) {
+        memcpy(rcshut,val.s,val.len) ;
+        rcshut[val.len] = 0 ;
     }
-    stralloc_free(&src) ;
 }
 
 static inline void run_rcshut (void)

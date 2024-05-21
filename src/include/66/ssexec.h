@@ -95,7 +95,7 @@ extern ssexec_func_t ssexec_enable ;
 extern ssexec_func_t ssexec_disable ;
 extern ssexec_func_t ssexec_start ;
 extern ssexec_func_t ssexec_stop ;
-extern ssexec_func_t ssexec_env ;
+extern ssexec_func_t ssexec_configure ;
 extern ssexec_func_t ssexec_reconfigure ;
 extern ssexec_func_t ssexec_reload ;
 extern ssexec_func_t ssexec_restart ;
@@ -220,6 +220,8 @@ extern char const *usage_reboot ;
 extern char const *help_reboot ;
 extern char const *usage_halt ;
 extern char const *help_halt ;
+extern char const *usage_wall ;
+extern char const *help_wall ;
 
 #define OPTS_MAIN "hv:l:t:T:z"
 #define OPTS_MAIN_LEN (sizeof OPTS_MAIN - 1)

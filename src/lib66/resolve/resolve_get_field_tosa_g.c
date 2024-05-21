@@ -63,8 +63,9 @@ int resolve_get_field_tosa_g(stralloc *sa, char const *base, char const *name, u
     /**
      * check if field isn't empty
      * */
+
     if (sa->len)
-        if (!sastr_clean_string_flush_sa(sa, sa->s))
+        if (!sastr_clean_string(sa, sa->s))
             goto err ;
 
     e = 1 ;
