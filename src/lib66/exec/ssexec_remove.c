@@ -296,25 +296,6 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
                 resolve_free(mwres) ;
             }
-
-            /** remove directory made by the module at configuration time */
-            char dir[SS_MAX_PATH_LEN + 1] ;
-
-            if (!info->owner) {
-
-                auto_strings(dir, SS_SERVICE_ADMDIR, c->res.sa.s + c->res.name) ;
-
-            } else {
-
-                if (!set_ownerhome_stack(dir))
-                    log_dieusys(LOG_EXIT_SYS, "unable to find the home directory of the user") ;
-
-                size_t dirlen = strlen(dir) ;
-
-                auto_strings(dir + dirlen, SS_SERVICE_USERDIR, c->res.sa.s + c->res.name) ;
-            }
-
-            auto_remove(dir) ;
         }
     }
 

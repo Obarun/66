@@ -64,8 +64,8 @@ int service_frontend_path(stralloc *sasrc, char const *sv, uid_t owner, char con
 
         char const *exclude[1] = { 0 } ;
 
-        if (!service_cmp_basedir(directory_forced))
-            log_die(LOG_EXIT_USER, "invalid base service directory: ", directory_forced) ;
+        //if (!service_cmp_basedir(directory_forced))
+        //    log_die(LOG_EXIT_USER, "invalid base service directory: ", directory_forced) ;
 
         src = directory_forced ;
         r = service_frontend_src(sasrc, sv, src, exclude) ;

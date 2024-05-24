@@ -103,94 +103,62 @@ static void parse_module_dependencies(stralloc *list, resolve_service_t *res, ui
         (*field) = resolve_add_string(wres, stk.s) ;
     }
 
-
     free(wres) ;
 }
 
-static void parse_module_regex(resolve_service_t *res, char *copy, size_t copylen, ssexec_t *info)
+static void parse_module_regex(resolve_service_t *res, char *dir, size_t copylen, ssexec_t *info)
 {
     log_flow() ;
 
     char *name = res->sa.s + res->name ;
-    stralloc list = STRALLOC_ZERO ;
+    _alloc_sa_(list) ;
 
     /** contents */
     {
-        auto_strings(copy + copylen, SS_MODULE_FRONTEND) ;
+        auto_strings(dir + copylen, SS_MODULE_FRONTEND) ;
 
         char const *exclude[1] = { 0 } ;
 
-        get_list(&list, copy, name, S_IFREG, exclude) ;
+        get_list(&list, dir, name, S_IFREG, exclude) ;
         regex_replace(&list, res) ;
     }
 
     {
-        copy[copylen] = 0 ;
+        dir[copylen] = 0 ;
 
         char const *exclude[4] = { SS_MODULE_DEPENDS + 1, SS_MODULE_REQUIREDBY + 1, SS_MODULE_CONFIG_DIR + 1, 0 } ;
 
         /** directories */
-        get_list(&list, copy, name, S_IFDIR, exclude) ;
+        get_list(&list, dir, name, S_IFDIR, exclude) ;
         regex_rename(&list, res, res->regex.directories) ;
 
         /** filename */
-        get_list(&list, copy, name, S_IFREG, exclude) ;
+        get_list(&list, dir, name, S_IFREG, exclude) ;
         regex_rename(&list, res, res->regex.files) ;
     }
 
-    stralloc_free(&list) ;
-
     /** configure script */
-    regex_configure(res, info, copy, name) ;
+    regex_configure(res, info, dir, name) ;
 }
 
 void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force)
 {
     log_flow() ;
 
-    int r, insta = -1 ;
-    size_t pos = 0, copylen = 0, len = 0 ;
-    uint8_t opt_tree = info->opt_tree ;
-    char name[strlen(res->sa.s + res->name) + 1] ;
-    char src[strlen(res->sa.s + res->path.frontend) + 1] ;
-    char dirname[strlen(src) + 1] ;
-    char copy[SS_MAX_PATH_LEN + 1] ;
-    char ainsta[strlen(res->sa.s + res->name) + 1] ;
-    stralloc list = STRALLOC_ZERO ;
-    resolve_wrapper_t_ref wres = 0 ;
+    size_t pos = 0, tmplen = 0, namelen = strlen(res->sa.s + res->name) ;
+    uint8_t opt_tree = info->opt_tree, conf = res->environ.env_overwrite ;
+    char name[namelen + 1] ;
+    char dirname[strlen(res->sa.s + res->path.frontend) + 1] ;
+    _alloc_sa_(sa) ;
+    _alloc_stk_(tmpdir, namelen + 12 + strlen(SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) + 1 + SS_MAX_SERVICE_NAME + 1) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     auto_strings(name,res->sa.s + res->name) ;
-    auto_strings(src,res->sa.s + res->path.frontend) ;
 
     log_trace("parse module: ", name) ;
 
-    wres = resolve_set_struct(DATA_SERVICE, res) ;
-
-    if (!ob_dirname(dirname, src))
-        log_dieu(LOG_EXIT_SYS, "get directory name of: ", src) ;
-
-    insta = instance_check(name) ;
-    instance_splitname_to_char(ainsta, name, insta, 0) ;
-
-    if (!getuid()) {
-
-        auto_strings(copy, SS_SERVICE_ADMDIR, name) ;
-
-        copylen = strlen(copy) ;
-
-    } else {
-
-        if (!set_ownerhome_stack(copy))
-            log_dieusys(LOG_EXIT_SYS, "unable to find the home directory of the user") ;
-
-        copylen = strlen(copy) ;
-
-        auto_strings(copy + copylen, SS_SERVICE_USERDIR, name) ;
-
-        copylen = strlen(copy) ;
-    }
-
-    uint8_t conf = res->environ.env_overwrite ;
+    if (!ob_dirname(dirname, res->sa.s + res->path.frontend))
+        log_dieu(LOG_EXIT_SYS, "get directory name of: ", res->sa.s + res->path.frontend) ;
 
     /** check mandatory directories */
     parse_module_check_dir(dirname, SS_MODULE_CONFIG_DIR) ;
@@ -199,72 +167,52 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
     parse_module_check_dir(dirname, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) ;
     parse_module_check_dir(dirname, SS_MODULE_FRONTEND) ;
 
-    r = scan_mode(copy, S_IFDIR) ;
-    if (r == -1) {
-        errno = EEXIST ;
-        log_dieusys(LOG_EXIT_SYS, "conflicting format of: ", copy) ;
+    auto_strings(tmpdir.s, "/tmp/", name, ":XXXXXX") ;
 
-    } else {
+    if (!mkdtemp(tmpdir.s))
+        log_dieusys(LOG_EXIT_SYS, "create temporary directory") ;
 
-        if (force || !r) {
+    tmplen = tmpdir.len = strlen(tmpdir.s) ;
 
-            if (r) {
-                log_trace("remove directory: ", copy) ;
-                if (!dir_rm_rf(copy))
-                    log_dieusys (LOG_EXIT_SYS, "remove: ", copy) ;
-            }
+    log_info("copy: ", dirname, " to: ", tmpdir.s) ;
+    if (!hiercopy(dirname, tmpdir.s))
+        log_dieusys(LOG_EXIT_SYS, "copy: ", dirname, " to: ", tmpdir.s) ;
 
-            log_trace("copy: ", dirname, " to: ", copy) ;
-            if (!hiercopy(dirname, copy))
-                log_dieusys(LOG_EXIT_SYS, "copy: ", dirname, " to: ", copy) ;
-
-            auto_strings(copy + copylen, "/", ainsta) ;
-
-            /** remove the original service frontend file inside the copied directory
-             * to avoid double frontend service file for a same service.*/
-            errno = 0 ;
-            if (unlink(copy) < 0 && errno != ENOENT)
-                log_dieusys(LOG_EXIT_ZERO, "unlink: ", copy) ;
-
-            copy[copylen] = 0 ;
-
-            parse_module_regex(res, copy, copylen, info) ;
-
-        } else
-            log_warn("skip configuration of the module: ", name, " -- already configured") ;
-    }
+    parse_module_regex(res, tmpdir.s, tmplen, info) ;
 
     /** handle new activated depends/requiredby service.*/
     {
         char const *exclude[1] = { 0 } ;
-        auto_strings(copy + copylen, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS) ;
-        get_list(&list, copy, name, S_IFREG, exclude) ;
+        auto_strings(tmpdir.s + tmplen, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS) ;
+        get_list(&sa, tmpdir.s, name, S_IFREG, exclude) ;
 
-        parse_module_dependencies(&list, res, 0, hres, force, conf, info) ;
+        parse_module_dependencies(&sa, res, 0, hres, force, conf, info) ;
 
-        auto_strings(copy + copylen, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) ;
-        get_list(&list, copy, name, S_IFREG, exclude) ;
+        auto_strings(tmpdir.s + tmplen, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) ;
+        get_list(&sa, tmpdir.s, name, S_IFREG, exclude) ;
 
-        parse_module_dependencies(&list, res, 1, hres, force, conf, info) ;
+        parse_module_dependencies(&sa, res, 1, hres, force, conf, info) ;
     }
 
-    auto_strings(copy + copylen, SS_MODULE_ACTIVATED) ;
+    auto_strings(tmpdir.s + tmplen, SS_MODULE_ACTIVATED) ;
 
     {
         char const *exclude[3] = { SS_MODULE_DEPENDS + 1, SS_MODULE_REQUIREDBY + 1, 0 } ;
 
-        get_list(&list, copy, name, S_IFREG, exclude) ;
+        get_list(&sa, tmpdir.s, name, S_IFREG, exclude) ;
     }
 
-    auto_strings(copy + copylen, SS_MODULE_FRONTEND) ;
+    auto_strings(tmpdir.s + tmplen, SS_MODULE_FRONTEND) ;
 
     {
         /* parse each activated services */
-        len = list.len ;
-        char l[len + 1] ;
-        char ebase[copylen + 1] ;
-        memcpy(ebase, copy, copylen) ;
-        ebase[copylen] = 0 ;
+        size_t len = sa.len ;
+        uint8_t exlen = 0 ; // see service_frontend_path file and compute_exclude()
+        char const *exclude[1] = { 0 } ;
+        _alloc_stk_(stk, len + 1) ;
+        char ebase[tmplen + 1] ;
+        memcpy(ebase, tmpdir.s, tmplen) ;
+        ebase[tmplen] = 0 ;
 
         if (!ob_basename(dirname, dirname))
             log_dieusys(LOG_EXIT_SYS, "get basename of: ", dirname) ;
@@ -272,19 +220,16 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
         if (!ob_basename(ebase, ebase))
             log_dieusys(LOG_EXIT_SYS, "get basename of: ", dirname) ;
 
-        sastr_to_char(l, &list) ;
+        if (!stack_copy_g(&stk, sa.s))
+            log_die_nomem("stack") ;
 
-        list.len = 0 ;
+        FOREACH_STK(&stk, pos) {
 
-        for (pos = 0 ; pos < len ; pos += strlen(l + pos) + 1) {
+            sa.len = 0 ;
+            char fname[strlen(stk.s + pos) + 1] ;
 
-            list.len = 0 ;
-            char fname[strlen(l + pos)] ;
-            uint8_t exlen = 0 ; // see service_frontend_path file and compute_exclude()
-            char const *exclude[1] = { 0 } ;
-
-            if (!ob_basename(fname, l + pos))
-                log_dieusys(LOG_EXIT_ZERO, "basename of: ", l + pos) ;
+            if (!ob_basename(fname, stk.s + pos))
+                log_dieusys(LOG_EXIT_ZERO, "basename of: ", stk.s + pos) ;
 
             /** cannot call itself */
             if (!strcmp(name, fname))
@@ -292,15 +237,16 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
 
             /** Search first inside the module directory.
              * If not found, warn user about what to do.*/
-            if (!service_frontend_path(&list, fname, info->owner, copy, exclude, exlen)) {
+            if (!service_frontend_path(&sa, fname, info->owner, tmpdir.s, exclude, exlen)) {
 
-                copy[copylen] = 0 ;
-                char deps[copylen + SS_MODULE_ACTIVATED_LEN + SS_MODULE_DEPENDS_LEN + 1 + strlen(fname) + 1] ;
-                char require[copylen + SS_MODULE_ACTIVATED_LEN + SS_MODULE_REQUIREDBY_LEN + 1 + strlen(fname) + 1] ;
+                tmpdir.s[tmplen] = 0 ;
+                tmpdir.len = tmplen ;
+                char deps[tmplen + SS_MODULE_ACTIVATED_LEN + SS_MODULE_DEPENDS_LEN + 1 + strlen(fname) + 1] ;
+                char require[tmplen + SS_MODULE_ACTIVATED_LEN + SS_MODULE_REQUIREDBY_LEN + 1 + strlen(fname) + 1] ;
 
-                auto_strings(deps, copy, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS, "/", fname) ;
-                auto_strings(require, copy, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY, "/", fname) ;
-                log_die(LOG_EXIT_USER, "you can not activate the service ", fname, " without providing its frontend file at ",copy, \
+                auto_strings(deps, tmpdir.s, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS, "/", fname) ;
+                auto_strings(require, tmpdir.s, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY, "/", fname) ;
+                log_die(LOG_EXIT_USER, "you can not activate the service ", fname, " without providing its frontend file at ",tmpdir.s, \
                                     ". If you want to add an depends/requiredby service to the module, consider creating a named empty file at ", \
                                     deps, " or ", require) ;
 
@@ -311,7 +257,7 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
             if (!auto_stra(&info->treename, res->sa.s + res->treename))
                 log_die_nomem("stralloc") ;
 
-            parse_frontend(list.s, hres, info, force, conf, copy, fname, name, res->intree ? res->sa.s + res->intree : 0) ;
+            parse_frontend(sa.s, hres, info, force, conf, tmpdir.s, fname, name, res->intree ? res->sa.s + res->intree : 0) ;
 
             info->opt_tree = opt_tree ;
         }
@@ -341,6 +287,11 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
      * compare it with the new one.*/
     parse_db_migrate(res, info) ;
 
+    /** do not die here, just warn the user */
+    log_info("remove temporary directory: ", tmpdir.s) ;
+    tmpdir.s[tmplen] = 0 ;
+    if (!dir_rm_rf(tmpdir.s))
+        log_warnu("remove temporary directory: ", tmpdir.s) ;
+
     free(wres) ;
-    stralloc_free(&list) ;
 }
