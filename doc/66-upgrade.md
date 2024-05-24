@@ -11,6 +11,17 @@ author: Eric Vidal <eric@obarun.org>
 
 ---
 
+# In 0.7.1.1
+
+- Bugs fix:
+
+    - corrected environment computation and string cleanup from the frontend key.
+    - fixed the value of the intree key.
+    - ensured sufficient space for renaming interdependencies.
+    - fixed the use of parse_list functions, even in the case of multiple lines.
+
+---
+
 # In 0.7.1.0
 
 - Adapt to `oblibs` 0.3.0.0
