@@ -97,6 +97,9 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
             log_dieu(LOG_EXIT_USER, "find service: ", argv[n], " -- did you parse it?") ;
 
         pres = &hash->res ;
+        if (pres->inns)
+            log_die(LOG_EXIT_USER, "reconfiguring an individual service that is part of a module is not allowed -- please reconfigure the entire module instead using \'66 reconfigure ", pres->sa.s + pres->inns, "\'") ;
+
         char status[strlen(pres->sa.s + pres->path.servicedir) + SS_STATE_LEN + 1] ;
 
         auto_strings(status, pres->sa.s + pres->path.servicedir, SS_STATE) ;

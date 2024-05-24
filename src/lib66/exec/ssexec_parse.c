@@ -34,6 +34,7 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
+    int r = 0 ;
     uint8_t force = 0 , conf = 0 ;
     stralloc sa = STRALLOC_ZERO ;
 
@@ -106,6 +107,15 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
             sv = *argv ;
 
         name_isvalid(sv) ;
+
+        r = str_contain(sv, ":") ;
+        if (r >= 0) {
+            size_t len = strlen(sv) ;
+            _alloc_stk_(stk, len + 1) ;
+            stack_add(&stk, sv, len - (--r)) ; // do not check output here, we are dying anyway
+            stack_close(&stk) ;
+            log_die(LOG_EXIT_USER, "parsing an individual service that is part of a module is not allowed -- please parse the entire module instead using \'66 parse ", stk.s, "\'") ;
+        }
 
         if (!service_frontend_path(&sa, sv, info->owner, directory_forced, exclude, exlen))
             log_dieu(LOG_EXIT_USER, "find service frontend file of: ", sv) ;
