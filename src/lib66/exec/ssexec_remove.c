@@ -48,7 +48,7 @@ static void auto_remove(char const *path)
         log_dieusys(LOG_EXIT_SYS, "remove directory: ", path) ;
 }
 
-static void remove_deps(resolve_service_t *res, struct resolve_hash_s **hres, stralloc *sa, ssexec_t *info)
+static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, stralloc *sa, ssexec_t *info)
 {
     log_flow() ;
 
@@ -90,7 +90,7 @@ static void remove_deps(resolve_service_t *res, struct resolve_hash_s **hres, st
             log_dieu(LOG_EXIT_SYS, "append service selection with: ", stk.s + pos) ;
 
         if (dres.dependencies.nrequiredby)
-            remove_deps(&dres, hres, sa, info) ;
+            compute_deps(&dres, hres, sa, info) ;
     }
 
     free(wres) ;
@@ -113,31 +113,39 @@ static void remove_service(resolve_service_t *res, ssexec_t *info)
 
     if ((res->logger.want && (res->type == TYPE_CLASSIC || res->type == TYPE_ONESHOT)) && !res->inns) {
 
-        resolve_service_t lres = RESOLVE_SERVICE_ZERO ;
-        resolve_wrapper_t_ref lwres = resolve_set_struct(DATA_SERVICE, &lres) ;
+        if (res->type == TYPE_ONESHOT) {
 
-        r = resolve_read_g(lwres, info->base.s, res->sa.s + res->logger.name) ;
-        if (r <= 0) {
-            log_warnusys("read resolve file of: ", res->sa.s + res->logger.name, " -- ignoring it") ;
-            goto end ;
+            auto_remove(res->sa.s + res->logger.destination) ;
+
+        } else {
+
+            resolve_service_t lres = RESOLVE_SERVICE_ZERO ;
+            resolve_wrapper_t_ref lwres = resolve_set_struct(DATA_SERVICE, &lres) ;
+
+            r = resolve_read_g(lwres, info->base.s, res->sa.s + res->logger.name) ;
+            if (r <= 0) {
+                log_warnusys("read resolve file of: ", res->sa.s + res->logger.name, " -- ignoring it") ;
+                goto end ;
+            }
+
+            auto_remove(lres.sa.s + lres.path.servicedir) ;
+
+            auto_remove(lres.sa.s + lres.logger.destination) ;
+
+            tree_service_remove(info->base.s, lres.sa.s + lres.treename, lres.sa.s + lres.name) ;
+
+            auto_strings(sym, lres.sa.s + lres.path.home, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", lres.sa.s + lres.name) ;
+
+            log_trace("remove symlink: ", sym) ;
+            unlink_void(sym) ;
+
+            log_trace("remove symlink: ", lres.sa.s + lres.live.scandir) ;
+            unlink_void(lres.sa.s + lres.live.scandir) ;
+
+            log_info("removed successfully: ", lres.sa.s + lres.name) ;
+
+            resolve_free(lwres) ;
         }
-        auto_remove(lres.sa.s + lres.path.servicedir) ;
-
-        auto_remove(lres.sa.s + lres.logger.destination) ;
-
-        tree_service_remove(info->base.s, lres.sa.s + lres.treename, lres.sa.s + lres.name) ;
-
-        auto_strings(sym, lres.sa.s + lres.path.home, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", lres.sa.s + lres.name) ;
-
-        log_trace("remove symlink: ", sym) ;
-        unlink_void(sym) ;
-
-        log_trace("remove symlink: ", lres.sa.s + lres.live.scandir) ;
-        unlink_void(lres.sa.s + lres.live.scandir) ;
-
-        log_info("removed successfully: ", lres.sa.s + lres.name) ;
-
-        resolve_free(lwres) ;
     }
     end:
     auto_strings(sym, res->sa.s + res->path.home, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", res->sa.s + res->name) ;
@@ -159,7 +167,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
     size_t pos = 0 ;
     uint8_t siglen = 0 ;
     ss_state_t ste = STATE_ZERO ;
-    stralloc sa = STRALLOC_ZERO ;
+    _alloc_sa_(sa) ;
     resolve_wrapper_t_ref wres = 0 ;
     struct resolve_hash_s *hres = NULL, *c, *tmp ;
 
@@ -227,7 +235,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
             log_dieu(LOG_EXIT_SYS, "append service selection with: ", argv[pos]) ;
 
         if (!siglen)
-            remove_deps(&res, &hres, &sa, info) ;
+            compute_deps(&res, &hres, &sa, info) ;
     }
 
     r = svc_scandir_ok(info->scandir.s) ;
@@ -299,7 +307,6 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
         }
     }
 
-    stralloc_free(&sa) ;
     hash_free(&hres) ;
     free(wres) ;
 
