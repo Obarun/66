@@ -114,7 +114,7 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, s
     log_flow() ;
 
     struct resolve_hash_s *c, *tmp ;
-    _alloc_stk_(stk, SS_MAX_SERVICE_NAME + 1) ;
+    _alloc_stk_(stk, hash_count(hres) * SS_MAX_SERVICE_NAME + 1) ;
     resolve_wrapper_t_ref wres = 0 ;
 
     HASH_ITER(hh, *hres, c, tmp) {

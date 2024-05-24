@@ -84,6 +84,9 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
                 log_dieu(LOG_EXIT_SYS, "append environment variables") ;
         }
 
+        if (!sastr_clean_string(&env, env.s))
+            log_dieu(LOG_EXIT_SYS, "clean string") ;
+
         /** environment is not mandatory */
         if (res->environ.env > 0)
         {
@@ -106,10 +109,10 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
             stralloc_free(&dst) ;
         }
 
-        n = env_len((const char *const *)environ) + 1 + byte_count(env.s,env.len,'\0') ;
+        n = env_len((const char *const *)environ) + 1 + byte_count(env.s, env.len, '\0') ;
         char const *newenv[n + 1] ;
 
-        if (!env_merge (newenv, n ,(const char *const *)environ,env_len((const char *const *)environ), env.s, env.len))
+        if (!env_merge(newenv, n ,(const char *const *)environ,env_len((const char *const *)environ), env.s, env.len))
             log_dieu(LOG_EXIT_SYS, "build environment") ;
 
         if (chdir(pwd) < 0)

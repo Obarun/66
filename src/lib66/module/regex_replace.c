@@ -41,7 +41,7 @@ void regex_replace(stralloc *filelist, resolve_service_t *res)
     _alloc_sa_(frontend) ;
     _alloc_stk_(infiles, strlen(res->sa.s + res->regex.infiles)) ;
 
-    if (!stack_string_trimline(&infiles, res->sa.s + res->regex.infiles))
+    if (!stack_string_clean(&infiles, res->sa.s + res->regex.infiles))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     FOREACH_SASTR(filelist, pos) {
