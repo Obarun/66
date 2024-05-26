@@ -33,7 +33,7 @@ Fine tuning of the installation directories:
   --max-path-size=KB               default maximum size of a path[1024KB]
   --max-service-size=KB            default maximum size of a frontend service name[256KB]
   --max-tree-name-size=KB          default maximum size of a tree name[256KB]
-  --with-default-tree-name=NAME    name of the default tree[global]
+  --with-default-tree-name=NAME    name of the default tree [global]
   --with-skeleton=DIR              skeleton files directory installation [SYSDIR/66]
   --with-system-log=DIR            system service log directory [/var/log/66]
   --with-s6-log-user=USER          user for running s6-log program [root]
@@ -43,11 +43,12 @@ Fine tuning of the installation directories:
   --with-system-dir=DIR            66 tools system working directory [/var/lib/66]
   --with-system-service=DIR        system service frontend directory [DATAROOTDIR/66/service]
   --with-system-script=DIR         system script directory [DATAROOTDIR/66/script]
-  --with-system-seed=DIR           system trees default configuration[DATAROOTDIR/66/seed]
+  --with-system-seed=DIR           system trees default configuration [DATAROOTDIR/66/seed]
 
   --with-sysadmin-service=DIR      sysadmin service frontend directory [SYSDIR/66/service]
   --with-sysadmin-service-conf=DIR sysadmin service configuration file directory [SYSDIR/66/conf]
-  --with-sysadmin-seed=DIR         sysadmin trees default configuration[SYSDIR/66/seed]
+  --with-sysadmin-seed=DIR         sysadmin trees default configuration [SYSDIR/66/seed]
+  --with-sysadmin-environment=DIR  sysadmin environment directory [SYSDIR/66/environment]
 
   --with-user-dir=DIR              66 tools user working directory [.66]
   --with-user-log=DIR              user service log directory [.66/log]
@@ -55,6 +56,7 @@ Fine tuning of the installation directories:
   --with-user-service-conf=DIR     user service configuration directory [.66/conf]
   --with-user-script=DIR           user script directory [.66/script]
   --with-user-seed=DIR             user trees default configuration [.66/seed]
+  --with-user-environment=DIR      user environment directory [.66/environment]
 
  Do not set an absolute path but a \$HOME relative path for --with-user-dir,
  --with-user-log, --with-user-service, --with-user-service-conf, --with-user-script
@@ -209,12 +211,14 @@ seed_system='$datarootdir/66/seed'
 service_adm='$sysconfdir/66/service'
 service_admconf='$sysconfdir/66/conf'
 seed_adm='$sysconfdir/66/seed'
+environment_adm='$sysconfdir/66/environment'
 user_dir='.66'
 service_user='.66/service'
 script_user='.66/script'
 service_userconf='.66/conf'
 user_log='.66/log'
 seed_user='.66/seed'
+environment_user='.66/environment'
 sysdeps='$prefix/lib/skalibs/sysdeps'
 manualsysdeps=false
 shared=false
@@ -262,12 +266,14 @@ for arg ; do
     --with-sysadmin-service=*) service_adm=${arg#*=} ;;
     --with-sysadmin-service-conf=*) service_admconf=${arg#*=} ;;
     --with-sysadmin-seed=*) seed_adm=${arg#*=} ;;
+    --with-sysadmin-environment=*) environment_adm=${arg#*=} ;;
     --with-user-dir=*) user_dir=${arg#*=} ;;
     --with-user-service=*) service_user=${arg#*=} ;;
     --with-user-script=*) script_user=${arg#*=} ;;
     --with-user-service-conf=*) service_userconf=${arg#*=} ;;
     --with-user-log=*) user_log=${arg#*=} ;;
     --with-user-seed=*) seed_user=${arg#*=} ;;
+    --with-user-environment=*) environment_user=${arg#*=} ;;
     --with-sysdeps=*) sysdeps=${arg#*=} manualsysdeps=true ;;
     --with-include=*) var=${arg#*=} ; stripdir var ; addincpath="$addincpath -I$var" ;;
     --with-lib=*) var=${arg#*=} ; stripdir var ; addlibspath="$addlibspath -L$var" ; vpaths="$vpaths $var" ;;
@@ -321,6 +327,9 @@ if test -z "$sysconfdir" ; then
   if test "$seed_adm" = '$sysconfdir/66/seed' ; then
     seed_adm='$sysconfdir/66/seed'
   fi
+  if test "$environment_adm" = '$sysconfdir/66/environment' ; then
+    environment_adm='$sysconfdir/66/environment'
+  fi
 fi
 
 # Expand installation directories
@@ -341,7 +350,7 @@ for i in service_system script_system seed_system mandir; do
 done
 
 stripdir sysconfdir
-for i in service_adm service_admconf seed_adm skel; do
+for i in service_adm service_admconf seed_adm environment_adm skel; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
@@ -387,8 +396,8 @@ if [ ${#default_treename} -gt $max_treename ]; then
 fi
 
 for i in $skel $system_dir $system_log $service_system $script_system \
-        $seed_system $service_adm $service_admconf $seed_adm $user_dir $service_user \
-        $script_user $service_userconf $user_log $seed_user; do
+        $seed_system $service_adm $service_admconf $seed_adm $environment_adm $user_dir $service_user \
+        $script_user $service_userconf $user_log $seed_user $environment_user; do
 
         if [ ${#i} -ge $max_path ]; then
             fail "$0: higher length for $i is $max_path"
@@ -571,12 +580,14 @@ seed_system := $seed_system
 service_adm := $service_adm
 service_admconf := $service_admconf
 seed_adm := $seed_adm
+environment_adm := $environment_adm
 user_dir := $user_dir
 service_user := $service_user
 script_user := $script_user
 service_userconf := $service_userconf
 user_log := $user_log
 seed_user := $seed_user
+environment_user := $environment_user
 sysdeps := $sysdeps
 version := $version
 
@@ -660,6 +671,7 @@ All rights reserved.*/
 #define ${package_macro_name}_SCRIPT_SYSDIR "$script_system/"
 #define ${package_macro_name}_SEED_SYSDIR "$seed_system/"
 #define ${package_macro_name}_SEED_ADMDIR "$seed_adm/"
+#define ${package_macro_name}_ENVIRONMENT_ADMDIR "$environment_adm/"
 
 /** Do not use absolute path but a \$HOME relative path
  * The /home/<user> prefix will be automatically added to the pathname */
@@ -669,6 +681,7 @@ All rights reserved.*/
 #define ${package_macro_name}_SERVICE_USERCONFDIR "$service_userconf/"
 #define ${package_macro_name}_SCRIPT_USERDIR "$script_user/"
 #define ${package_macro_name}_SEED_USERDIR "$seed_user/"
+#define ${package_macro_name}_ENVIRONMENT_USERDIR "$environment_user/"
 
 EOF
 

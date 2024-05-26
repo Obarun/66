@@ -120,6 +120,7 @@ $(DESTDIR)$(datarootdir)/doc/$(package)/$(version)/%.html: doc/$(version)/html/%
 		-e 's,%%script_system%%,$(script_system),g' \
 		-e 's,%%seed_system%%,$(seed_system),g' \
 		-e 's,%%seed_adm%%,$(seed_adm),g' \
+		-e 's,%%environment_adm%%,$(environment_adm),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \
@@ -127,6 +128,8 @@ $(DESTDIR)$(datarootdir)/doc/$(package)/$(version)/%.html: doc/$(version)/html/%
 		-e 's,%%script_user%%,$(script_user),g' \
 		-e 's,%%service_userconf%%,$(service_userconf),g' \
 		-e 's,%%user_log%%,$(user_log),g' \
+		-e 's,%%seed_user%%,$(seed_user),g' \
+		-e 's,%%environment_user%%,$(environment_user),g' \
 		-e 's,%%default_treename%%,$(default_treename),g' $< > $@
 
 $(DESTDIR)$(mandir)/man1/%.1: doc/man/man1/%.1
@@ -144,6 +147,7 @@ $(DESTDIR)$(mandir)/man1/%.1: doc/man/man1/%.1
 		-e 's,%%script_system%%,$(script_system),g' \
 		-e 's,%%seed_system%%,$(seed_system),g' \
 		-e 's,%%seed_adm%%,$(seed_adm),g' \
+		-e 's,%%environment_adm%%,$(environment_adm),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \
@@ -151,6 +155,8 @@ $(DESTDIR)$(mandir)/man1/%.1: doc/man/man1/%.1
 		-e 's,%%script_user%%,$(script_user),g' \
 		-e 's,%%service_userconf%%,$(service_userconf),g' \
 		-e 's,%%user_log%%,$(user_log),g' \
+		-e 's,%%seed_user%%,$(seed_user),g' \
+		-e 's,%%environment_user%%,$(environment_user),g' \
 		-e 's,%%default_treename%%,$(default_treename),g' $< > $@
 
 $(DESTDIR)$(mandir)/man5/%.5: doc/man/man5/%.5
@@ -168,6 +174,7 @@ $(DESTDIR)$(mandir)/man5/%.5: doc/man/man5/%.5
 		-e 's,%%script_system%%,$(script_system),g' \
 		-e 's,%%seed_system%%,$(seed_system),g' \
 		-e 's,%%seed_adm%%,$(seed_adm),g' \
+		-e 's,%%environment_adm%%,$(environment_adm),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \
@@ -175,6 +182,8 @@ $(DESTDIR)$(mandir)/man5/%.5: doc/man/man5/%.5
 		-e 's,%%script_user%%,$(script_user),g' \
 		-e 's,%%service_userconf%%,$(service_userconf),g' \
 		-e 's,%%user_log%%,$(user_log),g' \
+		-e 's,%%seed_user%%,$(seed_user),g' \
+		-e 's,%%environment_user%%,$(environment_user),g' \
 		-e 's,%%default_treename%%,$(default_treename),g' $< > $@
 
 $(DESTDIR)$(mandir)/man8/%.8: doc/man/man8/%.8
@@ -192,6 +201,7 @@ $(DESTDIR)$(mandir)/man8/%.8: doc/man/man8/%.8
 		-e 's,%%script_system%%,$(script_system),g' \
 		-e 's,%%seed_system%%,$(seed_system),g' \
 		-e 's,%%seed_adm%%,$(seed_adm),g' \
+		-e 's,%%environment_adm%%,$(environment_adm),g' \
 		-e 's,%%service_adm%%,$(service_adm),g' \
 		-e 's,%%service_admconf%%,$(service_admconf),g' \
 		-e 's,%%user_dir%%,$(user_dir),g' \
@@ -199,6 +209,8 @@ $(DESTDIR)$(mandir)/man8/%.8: doc/man/man8/%.8
 		-e 's,%%script_user%%,$(script_user),g' \
 		-e 's,%%service_userconf%%,$(service_userconf),g' \
 		-e 's,%%user_log%%,$(user_log),g' \
+		-e 's,%%seed_user%%,$(seed_user),g' \
+		-e 's,%%environment_user%%,$(environment_user),g' \
 		-e 's,%%default_treename%%,$(default_treename),g' $< > $@
 
 $(DESTDIR)$(skel)/%: skel/%
