@@ -23,6 +23,7 @@
 #include <oblibs/environ.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/types.h>
 #include <skalibs/bytestr.h>
@@ -37,8 +38,6 @@
 #include <66/constants.h>
 
 #include <s6/config.h>
-
-static char TMPENV[MAXENV + 1] ;
 
 static inline unsigned int lookup (char const *const *table, char const *signal)
 {
@@ -200,8 +199,8 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
     }
 
     ssexec_free(info) ;
-
-    xexec_ae(newup[0], newup, envp) ;
+    // it merge char const *const *environ with en->s where env->s take precedence
+    xmexec_m(newup, env->s, env->len) ;
 }
 
 int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
@@ -211,13 +210,9 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
     int r ;
 
     unsigned int timeout = 0, notif = 0, sig = 0, container = 0, boot = 0 ;
-
-    char const *newenv[MAXENV+1] ;
-    char const *const *genv = 0 ;
-    char const *const *genvp = (char const *const *)environ ;
     char const *signal ;
-
-    stralloc envdir = STRALLOC_ZERO ;
+    char const *userenv = 0 ;
+    _alloc_sa_(env) ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -251,8 +246,7 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
 
                 case 'e' :
 
-                    if(!auto_stra(&envdir,l.arg))
-                        log_die_nomem("stralloc") ;
+                    userenv = l.arg ;
 
                     break ;
 
@@ -278,31 +272,18 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
 
     signal = argv[0] ;
 
-    if (envdir.len) {
+    if (!environ_merge_dir(&env, info->environment.s))
+        log_dieusys(LOG_EXIT_SYS, "merge environment directory: ", info->environment.s) ;
 
-        stralloc modifs = STRALLOC_ZERO ;
-        if (envdir.s[0] != '/')
-            log_die(LOG_EXIT_USER,"environment: ",envdir.s," must be an absolute path") ;
+    if (userenv) {
 
-        if (!environ_merge_dir_g(&modifs,envdir.s))
-            log_dieu(LOG_EXIT_SYS,"clean environment file of: ",envdir.s) ;
+        if (userenv[0] != '/')
+            log_dieusys(LOG_EXIT_USER,"environment directory must be an absolute path: ", userenv) ;
 
-        size_t envlen = env_len(genvp) ;
-        size_t n = env_len(genvp) + 1 + byte_count(modifs.s,modifs.len,'\0') ;
-        size_t mlen = modifs.len ;
-        memcpy(TMPENV,modifs.s,mlen) ;
-        TMPENV[mlen] = 0 ;
+        if (!environ_merge_dir(&env, userenv))
+           log_dieu(LOG_EXIT_SYS,"merge environment directory: ", userenv) ;
 
-        if (!env_merge(newenv, n, genvp, envlen, TMPENV, mlen))
-            log_dieu(LOG_EXIT_SYS,"merge environment") ;
-
-        stralloc_free(&modifs) ;
-
-        genv = newenv ;
     }
-    else genv = genvp ;
-
-    stralloc_free(&envdir) ;
 
     sig = parse_signal(signal) ;
 
@@ -346,7 +327,7 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
             return 0 ;
         }
 
-        scandir_up(scandir, timeout, notif, genv, info) ;
+        scandir_up(scandir, timeout, notif, &env, info) ;
     }
 
     r = svc_scandir_ok(info->scandir.s) ;

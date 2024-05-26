@@ -66,12 +66,12 @@ static char trcinit_container[SS_MAX_PATH_LEN + 1] ;
 static char tlive[SS_MAX_PATH_LEN + 1] ;
 static char ttree[SS_MAX_PATH_LEN + 1] ;
 static char confile[SS_MAX_PATH_LEN + 1 + SS_BOOT_CONF_LEN + 1] ;
-static char const *const *genv = 0 ;
 static int fdin ;
-static stralloc sacmdline = STRALLOC_ZERO ;
+static stralloc envconf = STRALLOC_ZERO ;
 static int notifpipe[2] ;
 
 #define MAXBUF 1024*64*2
+#include <stdio.h>
 
 static void sulogin(char const *msg,char const *arg)
 {
@@ -82,26 +82,13 @@ static void sulogin(char const *msg,char const *arg)
     if (dup2(fdin,0) == -1) log_dieu(LOG_EXIT_SYS,"duplicate stdin -- you are on your own") ;
     close(fdin) ;
     if (*msg) log_warnu(msg,arg) ;
-    pid = child_spawn0(newarg[0],newarg,genv) ;
+    pid = child_spawn0(newarg[0],newarg,(char const *const *)environ) ;
     if (waitpid_nointr(pid,&wstat, 0) < 0)
         log_dieusys(LOG_EXIT_SYS,"wait for sulogin -- you are on your own") ;
     fdin=dup(0) ;
     if (fdin == -1) log_dieu(LOG_EXIT_SYS,"duplicate stdin -- you are on your own") ;
     close(0) ;
     if (open("/dev/null",O_WRONLY)) log_dieu(LOG_EXIT_SYS,"open /dev/null -- you are on your own") ;
-}
-
-static int get_value(stralloc *val,char const *key)
-{
-    _alloc_stk_(stk, val->len + 1) ;
-    if (!environ_search_value(&stk, val->s, key))
-        return 0 ;
-    val->len = 0 ;
-    if (!stralloc_copyb(val, stk.s, stk.len) ||
-        !stralloc_0(val))
-            sulogin("stralloc in get_value","") ;
-    val->len-- ;
-    return 1 ;
 }
 
 static inline void string_to_table(char *table,char const **pointer,char const *str, uint8_t empty)
@@ -125,157 +112,196 @@ static inline uint8_t string_to_uint(char const *str, unsigned int *ui, uint8_t 
     return 1 ;
 }
 
+static int get_value(stralloc *val,char const *key)
+{
+    _alloc_stk_(stk, val->len + 1) ;
+    if (!environ_search_value(&stk, val->s, key))
+        return 0 ;
+    val->len = 0 ;
+    if (!stralloc_copyb(val, stk.s, stk.len) ||
+        !stralloc_0(val))
+            sulogin("stralloc in get_value","") ;
+    val->len-- ;
+    return 1 ;
+}
+
+static int read_kernel_parameters(stralloc *kernel, const char *file, size_t len)
+{
+    _alloc_stk_(f, len + 1) ;
+    _alloc_stk_(trim, len + 1) ;
+    _alloc_stk_(res, len + 1) ;
+    size_t pos = 0 ;
+
+    if (!stack_read_file(&f, file))
+        sulogin("read file: ", file) ;
+
+    if (!stack_string_clean(&trim, f.s))
+        sulogin("clean file: ", file) ;
+
+    FOREACH_STK(&trim, pos) {
+        ssize_t r = get_len_until(trim.s + pos, '=') ;
+        if (r >= 0) {
+            len = strlen(trim.s + pos) ;
+            if (!stack_add(&res, trim.s + pos, len + 1))
+                sulogin("stack overflow", "") ;
+        }
+    }
+
+    if (!stack_close(&res))
+        sulogin("stack overflow", "") ;
+
+    if (!stralloc_copyb(kernel, res.s, res.len) ||
+        !stralloc_0(kernel))
+            sulogin("stralloc", "") ;
+
+    kernel->len-- ;
+
+    return 1 ;
+}
+
 static void parse_conf(void)
 {
     log_flow() ;
 
     static char const *valid[] =
     { "VERBOSITY", "PATH", "LIVE", "TREE", "RCINIT", "UMASK", "RESCAN", "CONTAINER", "CATCHLOG", "RCINIT_CONTAINER", 0 } ;
-    int r ;
+
     unsigned int j = 0 ;
     uint8_t empty = 0 ;
-    size_t filesize = 0 ;
-    char u[UINT_FMT] ;
-    char *gvalue = 0 ;
-    stralloc src = STRALLOC_ZERO ;
-    stralloc val = STRALLOC_ZERO ;
-
+    _alloc_sa_(kernel) ;
+    _alloc_sa_(val) ;
+    char *kfile = "/proc/cmdline" ;
+	size_t ksize = file_get_size(kfile) ;
+    /** skeleton file */
     if (skel[0] != '/')
         sulogin("skeleton directory must be an aboslute path: ",skel) ;
 
     auto_strings(confile, skel, "/", SS_BOOT_CONF) ;
 
-    filesize = file_get_size(confile) ;
-    /** skeleton file */
-    r = openreadfileclose(confile, &src, filesize) ;
-    if(!r)
-        sulogin("open configuration file: ",confile) ;
-    if (!stralloc_0(&src))
-        sulogin("append stralloc of file: ",confile) ;
+    if (!read_kernel_parameters(&kernel, kfile, ksize))
+        sulogin("read kernel parameters: ", kfile) ;
 
-    for (char const *const *p = valid; *p; p++, j++)
-    {
+    if (!environ_merge_file(&envconf, confile))
+        sulogin("merge environment file: ", confile) ;
+
+    // kernel key=value pair take precedence
+    if (!environ_merge_environ(&envconf, &kernel))
+        sulogin("merge kernel parameters", "") ;
+
+    if (!environ_rebuild(&envconf))
+        sulogin("rebuild environment", "") ;
+
+    for (char const *const *p = valid; *p; p++, j++) {
+
         empty = 0 ;
-        /** try first to read from kernel environment.
-         * If the key is not found, try to read the skeleton file.
-         * Finally keep the default value if we cannot get a correct
-         * key=value pair */
-        gvalue = getenv(*p) ;
-        if (gvalue) {
+        val.len = 0 ;
+        if (!stralloc_copys(&val, envconf.s))
+            sulogin("copy stralloc", "") ;
 
-            if (!auto_stra(&val, *p, "=", gvalue))
-                sulogin("copy value of key: ", *p) ;
+        switch (j) {
 
-        } else {
-
-            if (!stralloc_copy(&val, &src))
-                sulogin("copy stralloc of file: ",confile) ;
-
-            if (!get_value(&val,*p))
-                empty = 1 ;
-
-        }
-
-        switch (j)
-        {
             case 0:
+
+                if (!get_value(&val, "VERBOSITY"))
+                    empty = 1 ;
 
                 if (!string_to_uint(val.s,&VERBOSITY,empty))
                     sulogin("parse VERBOSITY value: ",val.s) ;
 
-                u[uint_fmt(u, VERBOSITY)] = 0 ;
-                if (!auto_stra(&sacmdline,"VERBOSITY=",u,"\n"))
-                    sulogin("append environment stralloc with key: VERBOSITY=",u) ;
                 break ;
 
             case 1:
 
+                if (!get_value(&val, "PATH"))
+                    empty = 1 ;
+
                 string_to_table(tpath,&path,val.s,empty) ;
 
-                if (!auto_stra(&sacmdline,"PATH=",path,"\n"))
-                    sulogin("append environment stralloc with key: PATH=",path) ;
                 break ;
 
             case 2:
+
+                if (!get_value(&val, "LIVE"))
+                    empty = 1 ;
 
                 string_to_table(tlive,&live,val.s,empty) ;
 
                 if (live[0] != '/')
                     sulogin ("LIVE must be an absolute path",live) ;
 
-                if (!auto_stra(&sacmdline,"LIVE=",live,"\n"))
-                    sulogin("append environment stralloc with key: LIVE=",live) ;
                 break ;
 
             case 3:
 
+                if (!get_value(&val, "TREE"))
+                    empty = 1 ;
+
                 string_to_table(ttree,&tree,val.s,empty) ;
 
-                if (!auto_stra(&sacmdline,"TREE=",tree,"\n"))
-                    sulogin("append environment stralloc with key: TREE=",tree) ;
                 break ;
 
             case 4:
+
+                if (!get_value(&val, "RCINIT"))
+                    empty = 1 ;
 
                 string_to_table(trcinit,&rcinit,val.s,empty) ;
 
                 if (rcinit[0] != '/')
                     sulogin ("RCINIT must be an absolute path: ",rcinit) ;
 
-                if (!auto_stra(&sacmdline,"RCINIT=",rcinit,"\n"))
-                    sulogin("append environment stralloc with key: RCINIT=",rcinit) ;
                 break ;
 
             case 5:
 
+                if (!get_value(&val, "UMASK"))
+                    empty = 1 ;
+
                 if (!string_to_uint(val.s,&mask,empty))
                     sulogin("invalid UMASK value: ",val.s) ;
 
-                u[uint_fmt(u, mask)] = 0 ;
-                if (!auto_stra(&sacmdline,"UMASK=",u,"\n"))
-                    sulogin("append environment stralloc with key: UMASK=",u) ;
                 break ;
 
             case 6:
 
+                if (!get_value(&val, "RESCAN"))
+                    empty = 1 ;
+
                 if (!string_to_uint(val.s,&rescan,empty))
                     sulogin("invalid RESCAN value: ",val.s) ;
 
-                u[uint_fmt(u, rescan)] = 0 ;
-                if (!auto_stra(&sacmdline,"RESCAN=",u,"\n"))
-                    sulogin("append environment stralloc with key: RESCAN=",u) ;
                 break ;
 
             case 7:
 
+                if (!get_value(&val, "CONTAINER"))
+                    empty = 1 ;
+
                 if (!string_to_uint(val.s,&container,empty))
                     sulogin("invalid CONTAINER value: ",val.s) ;
-
-                u[uint_fmt(u,container)] = 0 ;
-                if (!auto_stra(&sacmdline,"CONTAINER=",u,"\n"))
-                    sulogin("append environment stralloc with key: CONTAINER=",u) ;
 
                 break ;
 
             case 8:
 
+                if (!get_value(&val, "CATCHLOG"))
+                    empty = 1 ;
+
                 if (!string_to_uint(val.s,&catch_log,empty))
                     sulogin("invalid CATCHLOG value: ",val.s) ;
 
-                u[uint_fmt(u,catch_log)] = 0 ;
-                if (!auto_stra(&sacmdline,"CATCHLOG=",u,"\n"))
-                    sulogin("append environment stralloc with key: CATCHLOG=",u) ;
                 break ;
 
             case 9:
+
+                if (!get_value(&val, "RCINIT_CONTAINER"))
+                    empty = 1 ;
 
                 string_to_table(trcinit_container,&rcinit_container,val.s,empty) ;
 
                 if (rcinit_container[0] != '/')
                     sulogin ("RCINIT_CONTAINER must be an absolute path: ",rcinit_container) ;
 
-                if (!auto_stra(&sacmdline,"RCINIT_CONTAINER=",rcinit_container,"\n"))
-                    sulogin("append environment stralloc with key: RCINIT_CONTAINER=",rcinit_container) ;
                 break ;
 
             default: break ;
@@ -283,17 +309,14 @@ static void parse_conf(void)
 
     }
     if (container) {
-        if (!auto_stra(&sacmdline,"CONTAINER_HALTCMD=",live,SS_BOOT_CONTAINER_DIR,"/0/",SS_BOOT_CONTAINER_HALTCMD,"\n")) {
+        if (!auto_stra(&envconf,"CONTAINER_HALTCMD=",live,SS_BOOT_CONTAINER_DIR,"/0/",SS_BOOT_CONTAINER_HALTCMD,"\n")) {
             char tmp[strlen(live) + SS_BOOT_CONTAINER_DIR_LEN + 1 + SS_BOOT_CONTAINER_HALTCMD_LEN +1] ;
             auto_strings(tmp,live,SS_BOOT_CONTAINER_DIR,"/",SS_BOOT_CONTAINER_HALTCMD) ;
             sulogin("append environment stralloc with key: CONTAINER_HALTCMD=",tmp) ;
         }
     }
 
-    if (!sastr_split_string_in_nline(&sacmdline)) sulogin("split string: ",sacmdline.s) ;
-
-    stralloc_free(&val) ;
-    stralloc_free(&src) ;
+    if (!sastr_split_string_in_nline(&envconf)) sulogin("split string: ",envconf.s) ;
 }
 
 static inline void wait_for_notif (int fd)
@@ -350,11 +373,10 @@ static void split_tmpfs(char *dst,char const *str)
     dst[len] = 0 ;
 }
 
-static inline void run_stage2 (char const *const *envp, size_t envlen, char const *modifs, size_t modiflen)
+static inline void run_stage2 (void)
 {
     log_flow() ;
 
-    size_t pos = 0 ;
     char const *newargv[3] ;
 
     if (container) {
@@ -386,22 +408,25 @@ static inline void run_stage2 (char const *const *envp, size_t envlen, char cons
 
     close(fdin) ;
 
-    for (;pos < modiflen ; pos += strlen(modifs + pos) +1)
-        if (!stralloc_catb(&sacmdline,modifs + pos, strlen(modifs + pos) + 1))
-            sulogin("append environment stralloc with value: ",modifs + pos) ;
-
-    size_t tlen = sacmdline.len ;
+    size_t tlen = envconf.len ;
     char t[tlen + 1] ;
-    memcpy(t,sacmdline.s,tlen) ;
+    memcpy(t,envconf.s,tlen) ;
     t[tlen] = 0 ;
-    stralloc_free(&sacmdline) ;
+    stralloc_free(&envconf) ;
 
-    xmexec_fm(newargv, envp, envlen, t, tlen) ;
+    xmexec_m(newargv, t, tlen) ;
 }
 
-static inline void make_cmdline(char const *prog,char const **add,int len,char const *msg,char const *arg,char const *const *envp)
+static inline void make_cmdline(char const *prog,char const **add,int len,char const *msg,char const *arg, stralloc *env)
 {
     log_flow() ;
+
+    size_t elen = sastr_nelement(env) ;
+    char const *e[elen+1] ;
+
+    if (!env_make(e, elen, env->s, env->len))
+        sulogin("make environment", "") ;
+    e[elen] = 0 ;
 
     pid_t pid ;
     int wstat ;
@@ -420,7 +445,7 @@ static inline void make_cmdline(char const *prog,char const **add,int len,char c
 
     newargv[n] = 0 ;
 
-    pid = child_spawn0(newargv[0], newargv, envp) ;
+    pid = child_spawn0(newargv[0], newargv, e) ;
 
     if (waitpid_nointr(pid, &wstat, 0) < 0)
         sulogin("wait for: ", newargv[0]) ;
@@ -460,14 +485,15 @@ static void cad(void)
 
 int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 {
+	log_flow() ;
+
     VERBOSITY = 0 ;
+    stralloc env = STRALLOC_ZERO ;
     unsigned int r , tmpfs = 0, opened = 0 ;
     size_t bannerlen, livelen ;
     pid_t pid ;
     char verbo[UINT_FMT] ;
     cver = verbo ;
-    stralloc envmodifs = STRALLOC_ZERO ;
-    genv = (char const *const *)environ ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -491,11 +517,12 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
         }
         argc -= l.ind ; argv += l.ind ;
     }
-    if (geteuid())
-    {
+
+    if (geteuid()) {
         errno = EPERM ;
-        log_diesys(LOG_EXIT_USER, "nice try, peon") ;
+        log_diesys(LOG_EXIT_USER, "nice try, but missing root privileges") ;
     }
+
     fdin=dup(0) ;
     parse_conf() ;
     verbo[uint_fmt(verbo, VERBOSITY)] = 0 ;
@@ -521,6 +548,7 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 
           close(3) ;
         }
+
     } else {
 
         allwrite(1, banner, bannerlen) ;
@@ -585,9 +613,28 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
                 sulogin("mount: ",fs) ;
         }
     }
+    {
+        /** Be sure to have at least the PATH environment variable define.
+         * The SS_ENVIRONMENT_ADMDIR can be empty */
+        if (setenv("PATH", path, 1) == -1)
+            sulogin("set initial PATH: ",path) ;
 
-    /** respect the path before run API*/
-    if (setenv("PATH", path, 1) == -1) sulogin("set initial PATH: ",path) ;
+        if (!environ_import_arguments(&env, (char const *const *)environ, env_len((char const *const *)environ)))
+            sulogin("import environment", "") ;
+
+        if (!environ_merge_dir(&env, info->environment.s))
+            sulogin("merge environment directory: ", info->environment.s) ;
+
+        if (envdir) {
+
+            if (envdir[0] != '/')
+                sulogin("environment directory must be absolute: ", envdir) ;
+
+            if (!environ_merge_dir(&env, envdir))
+                sulogin("merge environment directory", envdir) ;
+        }
+    }
+
     /** create scandir */
     {
         size_t ncatch = !catch_log ? 1 : 0 ;
@@ -613,19 +660,13 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 
         log_info("Create live scandir at: ",live) ;
 
-        make_cmdline("scandir", t, nargc, "create live scandir at: ", live, genv) ;
+        make_cmdline("scandir", t, nargc, "create live scandir at: ", live, &env) ;
     }
     /** initiate earlier service */
     {
         char const *t[] = { "init", tree } ;
         log_info("Initiate earlier service of tree: ",tree) ;
-        make_cmdline("tree", t, 2, "initiate earlier service of tree: ", tree, genv) ;
-    }
-
-    if (envdir) {
-        log_info("Prepare environment") ;
-        if (!environ_merge_dir_g(&envmodifs,envdir))
-            sulogin("prepare environment from: ",envdir) ;
+        make_cmdline("tree", t, 2, "initiate earlier service of tree: ", tree, &env) ;
     }
 
     if (catch_log)
@@ -640,9 +681,6 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 
     /** fork and starts scandir */
     {
-        size_t pathlen = strlen(path) ;
-        char const *newenvp[2] = { 0, 0 } ;
-        char pathvar[6 + pathlen] ;
         char fmtfd[2 + UINT_FMT] = "-" ;
 
         size_t m = 0 ;
@@ -657,11 +695,6 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
             newargv[m++] = fmtfd ;
         newargv[m++] = 0 ;
 
-        memcpy(pathvar, "PATH=", 5) ;
-        memcpy(pathvar + 5, path, pathlen + 1) ;
-
-        newenvp[0] = pathvar ;
-
         if (!catch_log && pipe(notifpipe) < 0)
             sulogin("pipe","") ;
 
@@ -671,7 +704,7 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
             sulogin("fork: ",container ? rcinit_container : rcinit) ;
 
         if (!pid)
-            run_stage2(newenvp, 1, envmodifs.s,envmodifs.len) ;
+            run_stage2() ;
 
         if (!catch_log) {
 
@@ -688,7 +721,8 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
         }
 
         close(fdin) ;
-        xmexec_fm(newargv, newenvp, 1, envmodifs.s, envmodifs.len) ;
+        // it merge char const *const *environ with env.s where env.s take precedence
+        xmexec_m(newargv, env.s, env.len) ;
 
     }
 }
