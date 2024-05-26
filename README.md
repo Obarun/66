@@ -97,7 +97,8 @@ This Roadmap for the next release is not writting in the stone. Feel free to mak
 
   Allow to specify to make redirection of standard output
 
-* [ ] Ability to Handle a general environment structure
+* [x] Ability to Handle a general environment structure
 
   Every scandir will start with environment variable define by user through configuration file at specific directory, for instance `/etc/66/environment`.
-  Ability through a new command to update this environment.
+
+* [ ] Ability through a new command to update the general environment.
