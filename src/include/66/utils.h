@@ -40,6 +40,7 @@ extern int set_livetree(stralloc *live,uid_t owner) ;
 extern int set_livestate(stralloc *live,uid_t owner) ;
 extern int set_ownerhome(stralloc *base,uid_t owner) ;
 extern int set_ownersysdir(stralloc *base,uid_t owner) ;
+extern int set_environment(stralloc *env,uid_t owner) ;
 extern int read_svfile(stralloc *sasv,char const *name,char const *src) ;
 
 extern int sa_pointo(stralloc *sa, ssexec_t *info, int type, unsigned int where) ;

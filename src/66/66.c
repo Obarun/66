@@ -49,16 +49,18 @@ static void set_info(ssexec_t *info)
         log_die_nomem("stralloc") ;
     if(r < 0)
         log_die(LOG_EXIT_SYS, "scandir: ", info->scandir.s, " must be an absolute path") ;
+
+    if (!set_environment(&info->environment, info->owner))
+        log_dieusys(LOG_EXIT_ZERO, "set environment") ;
 }
 
 static void info_clean(ssexec_t *info)
 {
-
     info->base.len = 0 ;
     info->live.len = 0 ;
     info->scandir.len = 0 ;
     info->treename.len = 0 ;
-
+    info->environment.len = 0 ;
 }
 
 int main(int argc, char const *const *argv)

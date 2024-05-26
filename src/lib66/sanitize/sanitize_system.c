@@ -93,6 +93,7 @@ int sanitize_system(ssexec_t *info)
         auto_check(SS_SCRIPT_SYSDIR) ;
         auto_check(SS_SEED_ADMDIR) ;
         auto_check(SS_SEED_SYSDIR) ;
+        auto_check(SS_ENVIRONMENT_ADMDIR) ;
 
     } else {
 
@@ -120,6 +121,9 @@ int sanitize_system(ssexec_t *info)
         auto_check(target) ;
 
         auto_strings(target + homelen, SS_SEED_USERDIR) ;
+        auto_check(target) ;
+
+        auto_strings(target + homelen, SS_ENVIRONMENT_USERDIR) ;
         auto_check(target) ;
     }
 

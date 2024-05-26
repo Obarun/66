@@ -45,6 +45,8 @@ struct ssexec_s
     //char treename[SS_MAX_SERVICE] ;
     //size_t treenamelen ;
 
+    stralloc environment ;
+
     uint8_t treeallow ; //1 yes , 0 no
     uid_t owner ;
     char ownerstr[UID_FMT] ;
@@ -67,6 +69,7 @@ struct ssexec_s
                         .live = STRALLOC_ZERO, \
                         .scandir = STRALLOC_ZERO, \
                         .treename = STRALLOC_ZERO, \
+                        .environment = STRALLOC_ZERO, \
                         .treeallow = 0, \
                         .owner = 0, \
                         .ownerstr = { 0 }, \
