@@ -159,7 +159,7 @@ static int send_signal(char const *scandir, char const *signal)
     return svc_scandir_send(scandir,csig) ;
 }
 
-static void scandir_up(char const *scandir, unsigned int timeout, unsigned int notif, char const *const *envp, ssexec_t *info)
+static void scandir_up(char const *scandir, unsigned int timeout, unsigned int notif, stralloc *env, ssexec_t *info)
 {
     uid_t uid = getuid() ;
     gid_t gid = getgid() ;
