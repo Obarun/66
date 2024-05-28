@@ -174,7 +174,7 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
 
     tmplen = tmpdir.len = strlen(tmpdir.s) ;
 
-    log_info("copy: ", dirname, " to: ", tmpdir.s) ;
+    log_trace("copy: ", dirname, " to: ", tmpdir.s) ;
     if (!hiercopy(dirname, tmpdir.s))
         log_dieusys(LOG_EXIT_SYS, "copy: ", dirname, " to: ", tmpdir.s) ;
 
@@ -220,7 +220,7 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
         if (!ob_basename(ebase, ebase))
             log_dieusys(LOG_EXIT_SYS, "get basename of: ", dirname) ;
 
-        if (!stack_copy_g(&stk, sa.s))
+        if (!stack_copy(&stk, sa.s, sa.len))
             log_die_nomem("stack") ;
 
         FOREACH_STK(&stk, pos) {
@@ -288,8 +288,8 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
     parse_db_migrate(res, info) ;
 
     /** do not die here, just warn the user */
-    log_info("remove temporary directory: ", tmpdir.s) ;
     tmpdir.s[tmplen] = 0 ;
+    log_trace("remove temporary directory: ", tmpdir.s) ;
     if (!dir_rm_rf(tmpdir.s))
         log_warnu("remove temporary directory: ", tmpdir.s) ;
 
