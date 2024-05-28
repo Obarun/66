@@ -54,15 +54,41 @@ int parse_contents(resolve_service_t *res, char const *str)
         memcpy(secname, str + acfg[n].opos + 1, acfg[n].cpos - (acfg[n].opos + 1)) ;
         secname[acfg[n].cpos - (acfg[n].opos + 1)] = 0 ;
 
-        ssize_t id = get_enum_by_key(secname) ;
-
+        ssize_t id = get_enum_by_key(list_section, secname) ;
         if (id < 0)
             log_warnu_return(LOG_EXIT_ZERO, "get id of section: ", secname, " -- please make a bug report") ;
 
-        log_trace("parsing section: ", secname) ;
+        switch (id) {
 
-        if (!parse_section(res, tmp, id))
-            log_warnu_return(LOG_EXIT_ZERO,"parse section: ", secname, " of service: ", res->sa.s + res->name) ;
+            case SECTION_MAIN:
+                if (!parse_section_main(res, tmp))
+                    log_warnu_return(LOG_EXIT_ZERO,"parse section: ", secname, " of service: ", res->sa.s + res->name) ;
+                break ;
+            case SECTION_START:
+                if (!parse_section_start(res, tmp))
+                    log_warnu_return(LOG_EXIT_ZERO,"parse section: ", secname, " of service: ", res->sa.s + res->name) ;
+                break ;
+            case SECTION_STOP:
+                if (!parse_section_stop(res, tmp))
+                    log_warnu_return(LOG_EXIT_ZERO,"parse section: ", secname, " of service: ", res->sa.s + res->name) ;
+                break ;
+            case SECTION_LOG:
+                if (!parse_section_logger(res, tmp))
+                    log_warnu_return(LOG_EXIT_ZERO,"parse section: ", secname, " of service: ", res->sa.s + res->name) ;
+                break ;
+            case SECTION_ENV:
+                if (!parse_section_environment(res, tmp))
+                    log_warnu_return(LOG_EXIT_ZERO,"parse section: ", secname, " of service: ", res->sa.s + res->name) ;
+                break ;
+            case SECTION_REGEX:
+                if (!parse_section_regex(res, tmp))
+                    log_warnu_return(LOG_EXIT_ZERO,"parse section: ", secname, " of service: ", res->sa.s + res->name) ;
+                break;
+
+            default:
+                /* never happen*/
+                break;
+        }
     }
 
     return 1 ;
