@@ -7,7 +7,6 @@ parse_contents.o
 parse_db_migrate.o
 parse_error.o
 parse_frontend.o
-parse_get_section_id.o
 parse_get_section.o
 parse_get_value_of_key.o
 parse_interdependences.o
