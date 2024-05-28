@@ -149,61 +149,17 @@ char const *enum_str_seed[] = {
     0
 } ;
 
-enum_all_enum_t enum_all[] = {
-
-    [ENUM_SECTION] = { .enum_all = SECTION_ENDOFKEY - ENUM_START, .str = enum_str_section } ,
-    [ENUM_KEY_SECTION_MAIN] = { .enum_all = KEY_MAIN_ENDOFKEY - ENUM_START, .str = enum_str_key_section_main } ,
-    [ENUM_KEY_SECTION_STARTSTOP] = { .enum_all = KEY_STARTSTOP_ENDOFKEY - ENUM_START, .str = enum_str_key_section_startstop } ,
-    [ENUM_KEY_SECTION_LOGGER] = { .enum_all = KEY_LOGGER_ENDOFKEY - ENUM_START, .str = enum_str_key_section_logger } ,
-    [ENUM_KEY_SECTION_ENVIRON] = { .enum_all = KEY_ENVIRON_ENDOFKEY - ENUM_START, .str = enum_str_key_section_environ } ,
-    [ENUM_KEY_SECTION_REGEX] = { .enum_all = KEY_REGEX_ENDOFKEY - ENUM_START, .str = enum_str_key_section_regex } ,
-    [ENUM_TYPE] = { .enum_all = TYPE_ENDOFKEY - ENUM_START, .str = enum_str_type } ,
-    [ENUM_EXPECTED] = { .enum_all = EXPECT_ENDOFKEY - ENUM_START, .str = enum_str_expected } ,
-    [ENUM_OPTS] = { .enum_all = OPTS_ENDOFKEY- ENUM_START , .str = enum_str_opts } ,
-    [ENUM_FLAGS] = { .enum_all = FLAGS_ENDOFKEY - ENUM_START , .str = enum_str_flags } ,
-    [ENUM_BUILD] = { .enum_all = BUILD_ENDOFKEY - ENUM_START , .str = enum_str_build } ,
-    [ENUM_MANDATORY] = { .enum_all = MANDATORY_ENDOFKEY - ENUM_START , .str = enum_str_mandatory } ,
-    [ENUM_TIME] = { .enum_all = TIME_ENDOFKEY - ENUM_START , .str = enum_str_time } ,
-    [ENUM_SEED] = { .enum_all = SEED_ENDOFKEY - ENUM_START , .str = enum_str_seed } ,
-    [ENUM_ENDOFKEY] = { 0 }
-
-} ;
-
-ssize_t get_enum_by_key_one(char const *str, int const e)
+ssize_t get_enum_by_key(key_description_t const *list, char const *key)
 {
-    //log_flow() ;
-
     int i = 0 ;
-    enum_all_enum_t *key = enum_all ;
-    for(; i < key[e].enum_all;i++)
-        if(!strcmp(str,key[e].str[i]))
+    for(; list[i].name ; i++) {
+        if(!strcmp(key, *list[i].name))
             return i ;
-
-    return -1 ;
-}
-
-ssize_t get_enum_by_key(char const *str)
-{
-    //log_flow() ;
-
-    int i = 0, ret ;
-
-    for (;i<ENUM_ENDOFKEY;i++)
-    {
-        ret = get_enum_by_key_one(str,i) ;
-        if (ret >= 0) return ret ;
     }
     return -1 ;
 }
 
-char const *get_key_by_enum(int const e, int const key)
+char const *get_key_by_enum(key_description_t const *list, int const key)
 {
-    log_flow() ;
-
-    return enum_all[e].str[key] ;
-}
-
-char const *get_key_by_key_all(int const idsec, int const idkey)
-{
-    return *total_list[idsec].list[idkey].name ;
+    return *list[key].name ;
 }

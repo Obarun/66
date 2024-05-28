@@ -17,28 +17,6 @@
 
 #include <sys/types.h> //ssize_t
 
-#define ENUM_START 0
-
-typedef enum enum_main_e enum_main_t, *enum_main_t_ref ;
-enum enum_main_e
-{
-    ENUM_SECTION = 0 ,
-    ENUM_KEY_SECTION_MAIN ,
-    ENUM_KEY_SECTION_STARTSTOP ,
-    ENUM_KEY_SECTION_LOGGER ,
-    ENUM_KEY_SECTION_ENVIRON ,
-    ENUM_KEY_SECTION_REGEX ,
-    ENUM_TYPE ,
-    ENUM_EXPECTED ,
-    ENUM_OPTS ,
-    ENUM_FLAGS ,
-    ENUM_BUILD ,
-    ENUM_MANDATORY ,
-    ENUM_TIME ,
-    ENUM_SEED ,
-    ENUM_ENDOFKEY
-} ;
-
 typedef enum enum_section_e enum_section_t, *enum_section_t_ref ;
 enum enum_section_e
 {
@@ -143,20 +121,6 @@ enum enum_type_e
 
 extern char const *enum_str_type[] ;
 
-typedef enum enum_expected_e enum_expected_t, *enum_expected_t_ref ;
-enum enum_expected_e
-{
-    EXPECT_LINE = 0 ,
-    EXPECT_BRACKET ,
-    EXPECT_UINT ,
-    EXPECT_SLASH ,
-    EXPECT_QUOTE ,
-    EXPECT_KEYVAL ,
-    EXPECT_ENDOFKEY
-} ;
-
-extern char const *enum_str_expected[] ;
-
 typedef enum enum_opts_e enum_opts_t, *enum_opts_t_ref ;
 enum enum_opts_e
 {
@@ -186,17 +150,6 @@ enum enum_build_e
 
 extern char const *enum_str_build[] ;
 
-typedef enum enum_mandatory_e enum_mandatory_t, *enum_mandatory_t_ref ;
-enum enum_mandatory_e
-{
-    MANDATORY_NEED = 0 ,
-    MANDATORY_OPTS ,
-    MANDATORY_CUSTOM ,
-    MANDATORY_ENDOFKEY
-} ;
-
-extern char const *enum_str_mandatory[]  ;
-
 typedef enum enum_time_e enum_time_t, *enum_time_t_ref ;
 enum enum_time_e
 {
@@ -224,37 +177,21 @@ enum enum_seed_e
 
 } ;
 
+extern char const *enum_str_seed[] ;
 
-typedef struct enum_all_enum_s enum_all_enum_t, *enum_all_enum_t_ref ;
-struct enum_all_enum_s
+typedef enum enum_expected_e enum_expected_t, *enum_expected_t_ref ;
+enum enum_expected_e
 {
-    unsigned int const enum_all ;
-    char const **str ;
+    EXPECT_LINE = 0 ,
+    EXPECT_BRACKET ,
+    EXPECT_UINT ,
+    EXPECT_SLASH ,
+    EXPECT_QUOTE ,
+    EXPECT_KEYVAL ,
+    EXPECT_ENDOFKEY
 } ;
 
-
-
-extern ssize_t get_enum_by_key_one(char const *str, int const e) ;
-extern ssize_t get_enum_by_key(char const *str) ;
-extern char const *get_key_by_enum(int const e, int const key) ;
-extern enum_all_enum_t enum_all[] ;
-
-typedef enum actions_e actions_t, *actions_t_ref ;
-enum actions_e
-{
-    ACTION_COMMON = 0 ,
-    ACTION_EXECRUN ,
-    ACTION_EXECFINISH ,
-    ACTION_EXECLOG ,
-    ACTION_EXECUP ,
-    ACTION_EXECDOWN,
-    ACTION_ENVIRON,
-    ACTION_REGEX ,
-    ACTION_SKIP
-} ;
-
-//extern unsigned char const actions[SECTION_ENDOFKEY][TYPE_ENDOFKEY] ;
-//extern unsigned char const states[SECTION_ENDOFKEY][TYPE_ENDOFKEY] ;
+extern char const *enum_str_expected[] ;
 
 typedef struct key_description_s key_description_t ;
 struct key_description_s
@@ -264,13 +201,18 @@ struct key_description_s
     int const expected ;
 } ;
 
-typedef struct key_all_s key_all_t ;
-struct key_all_s
+static key_description_t const list_section[] =
 {
-    key_description_t const *list ;
+    { .name = &enum_str_section[SECTION_MAIN], .id = SECTION_MAIN, .expected = 0 } ,
+    { .name = &enum_str_section[SECTION_START], .id = SECTION_START, .expected = 0 } ,
+    { .name = &enum_str_section[SECTION_STOP], .id = SECTION_STOP, .expected = 0 } ,
+    { .name = &enum_str_section[SECTION_LOG], .id = SECTION_LOG, .expected = 0 } ,
+    { .name = &enum_str_section[SECTION_ENV], .id = SECTION_ENV, .expected = 0 } ,
+    { .name = &enum_str_section[SECTION_REGEX], .id = SECTION_REGEX, .expected = 0 } ,
+    { .name = 0 }
 } ;
 
-static key_description_t const main_section_list[] =
+static key_description_t const list_section_main[] =
 {
     { .name = &enum_str_key_section_main[KEY_MAIN_TYPE], .id = KEY_MAIN_TYPE, .expected = EXPECT_LINE },
     { .name = &enum_str_key_section_main[KEY_MAIN_VERSION], .id = KEY_MAIN_VERSION, .expected = EXPECT_LINE },
@@ -291,19 +233,19 @@ static key_description_t const main_section_list[] =
     { .name = &enum_str_key_section_main[KEY_MAIN_SIGNAL], .id = KEY_MAIN_SIGNAL, .expected = EXPECT_UINT },
     { .name = &enum_str_key_section_main[KEY_MAIN_FLAGS], .id = KEY_MAIN_FLAGS, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_main[KEY_MAIN_INTREE], .id = KEY_MAIN_INTREE, .expected = EXPECT_LINE },
-    { .name = &enum_str_key_section_main[KEY_MAIN_ENDOFKEY] }
+    { .name = 0 }
 } ;
 
-static key_description_t const startstop_section_list[] =
+static key_description_t const list_section_startstop[] =
 {
     { .name = &enum_str_key_section_startstop[KEY_STARTSTOP_BUILD], .id = KEY_STARTSTOP_BUILD, .expected = EXPECT_LINE },
     { .name = &enum_str_key_section_startstop[KEY_STARTSTOP_RUNAS], .id = KEY_STARTSTOP_RUNAS, .expected = EXPECT_LINE },
     { .name = &enum_str_key_section_startstop[KEY_STARTSTOP_SHEBANG], .id = KEY_STARTSTOP_SHEBANG, .expected = EXPECT_QUOTE },
     { .name = &enum_str_key_section_startstop[KEY_STARTSTOP_EXEC], .id = KEY_STARTSTOP_EXEC, .expected = EXPECT_BRACKET },
-    { .name = &enum_str_key_section_startstop[KEY_STARTSTOP_ENDOFKEY] }
+    { .name = 0 }
 } ;
 
-static key_description_t const logger_section_list[] =
+static key_description_t const list_section_logger[] =
 {
     { .name = &enum_str_key_section_logger[KEY_LOGGER_BUILD], .id = KEY_LOGGER_BUILD, .expected = EXPECT_LINE },
     { .name = &enum_str_key_section_logger[KEY_LOGGER_RUNAS], .id = KEY_LOGGER_RUNAS, .expected = EXPECT_LINE },
@@ -315,44 +257,99 @@ static key_description_t const logger_section_list[] =
     { .name = &enum_str_key_section_logger[KEY_LOGGER_TIMESTP], .id = KEY_LOGGER_TIMESTP, .expected = EXPECT_LINE },
     { .name = &enum_str_key_section_logger[KEY_LOGGER_T_FINISH], .id = KEY_LOGGER_T_FINISH, .expected = EXPECT_UINT },
     { .name = &enum_str_key_section_logger[KEY_LOGGER_T_KILL], .id = KEY_LOGGER_T_KILL, .expected = EXPECT_UINT },
-    { .name = &enum_str_key_section_logger[KEY_LOGGER_ENDOFKEY] }
+    { .name = 0 }
 } ;
 
-static key_description_t const environment_section_list[] =
+static key_description_t const list_section_environment[] =
 {
     { .name = &enum_str_key_section_environ[KEY_ENVIRON_ENVAL], .id = KEY_ENVIRON_ENVAL, .expected = EXPECT_KEYVAL },
-    { .name = &enum_str_key_section_environ[KEY_ENVIRON_ENDOFKEY] }
+    { .name = 0 }
 } ;
 
-static key_description_t const regex_section_list[] =
+static key_description_t const list_section_regex[] =
 {
     { .name = &enum_str_key_section_regex[KEY_REGEX_CONFIGURE], .id = KEY_REGEX_CONFIGURE, .expected = EXPECT_QUOTE },
     { .name = &enum_str_key_section_regex[KEY_REGEX_DIRECTORIES], .id = KEY_REGEX_DIRECTORIES, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_regex[KEY_REGEX_FILES], .id = KEY_REGEX_FILES, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_regex[KEY_REGEX_INFILES], .id = KEY_REGEX_INFILES, .expected = EXPECT_BRACKET },
-    { .name = &enum_str_key_section_regex[KEY_REGEX_ENDOFKEY] }
+    { .name = 0 }
 } ;
 
-static int const total_list_el[7] = { \
-    KEY_MAIN_ENDOFKEY + 1, \
-    KEY_STARTSTOP_ENDOFKEY + 1, \
-    KEY_STARTSTOP_ENDOFKEY + 1, \
-    KEY_LOGGER_ENDOFKEY + 1, \
-    KEY_ENVIRON_ENDOFKEY + 1, \
-    KEY_REGEX_ENDOFKEY + 1, \
-    0 } ;
-
-static key_all_t const total_list[] =
+static key_description_t const list_type[] =
 {
-    { .list = main_section_list },
-    { .list = startstop_section_list },
-    { .list = startstop_section_list },
-    { .list = logger_section_list },
-    { .list = environment_section_list },
-    { .list = regex_section_list },
-    { .list = 0 }
+    { .name = &enum_str_type[TYPE_CLASSIC], .id = TYPE_CLASSIC, .expected = EXPECT_LINE } ,
+    { .name = &enum_str_type[TYPE_ONESHOT], .id = TYPE_ONESHOT, .expected = EXPECT_LINE } ,
+    { .name = &enum_str_type[TYPE_MODULE], .id = TYPE_MODULE, .expected = EXPECT_LINE } ,
+    { .name = 0 }
 } ;
 
-extern char const *get_key_by_key_all(int const idsec, int const key) ;
+static key_description_t const list_opts[] =
+{
+    { .name = &enum_str_opts[OPTS_LOGGER], .id = OPTS_LOGGER, .expected = EXPECT_BRACKET } ,
+    { .name = 0 }
+} ;
+
+static key_description_t const list_flags[] =
+{
+    { .name = &enum_str_flags[FLAGS_DOWN], .id = FLAGS_DOWN, .expected = EXPECT_BRACKET } ,
+    { .name = &enum_str_flags[FLAGS_EARLIER], .id = FLAGS_EARLIER, .expected = EXPECT_BRACKET } ,
+    { .name = 0 }
+} ;
+
+static key_description_t const list_build[] =
+{
+    { .name = &enum_str_build[BUILD_AUTO], .id = BUILD_AUTO, .expected = EXPECT_LINE } ,
+    { .name = &enum_str_build[BUILD_CUSTOM], .id = BUILD_CUSTOM, .expected = EXPECT_LINE } ,
+    { .name = 0 }
+} ;
+
+static key_description_t const list_timestamp[] =
+{
+    { .name = &enum_str_time[TIME_TAI], .id = TIME_TAI, .expected = EXPECT_LINE } ,
+    { .name = &enum_str_time[TIME_ISO], .id = TIME_ISO, .expected = EXPECT_LINE } ,
+    { .name = &enum_str_time[TIME_NONE], .id = TIME_NONE, .expected = EXPECT_LINE } ,
+    { .name = 0 }
+} ;
+
+static key_description_t const list_seed[] =
+{
+    { .name = &enum_str_seed[SEED_DEPENDS], .id = SEED_DEPENDS, .expected = EXPECT_LINE } ,
+    { .name = &enum_str_seed[SEED_REQUIREDBY], .id = SEED_REQUIREDBY, .expected = EXPECT_LINE } ,
+    { .name = &enum_str_seed[SEED_ENABLE], .id = SEED_ENABLE, .expected = EXPECT_LINE } ,
+    { .name = &enum_str_seed[SEED_ALLOW], .id = SEED_ALLOW, .expected = EXPECT_LINE } ,
+    { .name = &enum_str_seed[SEED_DENY], .id = SEED_DENY, .expected = EXPECT_LINE } ,
+    { .name = &enum_str_seed[SEED_CURRENT], .id = SEED_CURRENT, .expected = EXPECT_LINE } ,
+    { .name = &enum_str_seed[SEED_GROUPS], .id = SEED_GROUPS, .expected = EXPECT_LINE } ,
+    { .name = &enum_str_seed[SEED_CONTENTS], .id = SEED_CONTENTS, .expected = EXPECT_LINE } ,
+    { .name = 0 }
+} ;
+
+typedef enum enum_mandatory_e enum_mandatory_t, *enum_mandatory_t_ref ;
+enum enum_mandatory_e
+{
+    MANDATORY_NEED = 0 ,
+    MANDATORY_OPTS ,
+    MANDATORY_CUSTOM ,
+    MANDATORY_ENDOFKEY
+} ;
+
+extern char const *enum_str_mandatory[]  ;
+
+typedef enum actions_e actions_t, *actions_t_ref ;
+enum actions_e
+{
+    ACTION_COMMON = 0 ,
+    ACTION_EXECRUN ,
+    ACTION_EXECFINISH ,
+    ACTION_EXECLOG ,
+    ACTION_EXECUP ,
+    ACTION_EXECDOWN,
+    ACTION_ENVIRON,
+    ACTION_REGEX ,
+    ACTION_SKIP
+} ;
+
+extern ssize_t get_enum_by_key(key_description_t const *list, char const *key) ;
+extern char const *get_key_by_enum(key_description_t const *list, int const key) ;
 
 #endif
