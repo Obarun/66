@@ -23,7 +23,7 @@
 #include <66/resolve.h>
 #include <66/enum.h>
 
-int parse_store_regex(resolve_service_t *res, stack *store, int idsec, int idkey)
+int parse_store_regex(resolve_service_t *res, stack *store, const int sid, const int kid)
 {
     log_flow() ;
 
@@ -32,7 +32,7 @@ int parse_store_regex(resolve_service_t *res, stack *store, int idsec, int idkey
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-    switch(idkey) {
+    switch(kid) {
 
         case KEY_REGEX_CONFIGURE:
 
@@ -43,7 +43,7 @@ int parse_store_regex(resolve_service_t *res, stack *store, int idsec, int idkey
         case KEY_REGEX_DIRECTORIES:
 
             if (!parse_list(store))
-                parse_error_return(0, 8, idsec, idkey) ;
+                parse_error_return(0, 8, sid, list_section_regex, kid) ;
 
             if (store->len)
                 res->regex.directories = parse_compute_list(wres, store, &res->regex.ndirectories, 0) ;
@@ -53,7 +53,7 @@ int parse_store_regex(resolve_service_t *res, stack *store, int idsec, int idkey
         case KEY_REGEX_FILES:
 
             if (!parse_list(store))
-                parse_error_return(0, 8, idsec, idkey) ;
+                parse_error_return(0, 8, sid, list_section_regex, kid) ;
 
             if (store->len)
                 res->regex.files = parse_compute_list(wres, store, &res->regex.nfiles, 0) ;
@@ -63,7 +63,7 @@ int parse_store_regex(resolve_service_t *res, stack *store, int idsec, int idkey
         case KEY_REGEX_INFILES:
 
             if (!parse_list(store))
-                parse_error_return(0, 8, idsec, idkey) ;
+                parse_error_return(0, 8, sid, list_section_regex, kid) ;
 
             if (store->len)
                 res->regex.infiles = parse_compute_list(wres, store, &res->regex.ninfiles, 0) ;
@@ -71,7 +71,8 @@ int parse_store_regex(resolve_service_t *res, stack *store, int idsec, int idkey
             break ;
 
         default:
-            log_warn_return(LOG_EXIT_ZERO, "unknown key: ", get_key_by_key_all(idsec, idkey)) ;
+            /** never happen*/
+            log_warn_return(LOG_EXIT_ZERO, "unknown id key in section regex -- please make a bug report") ;
     }
 
     free(wres) ;

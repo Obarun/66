@@ -19,15 +19,16 @@
 #include <66/parse.h>
 #include <66/enum.h>
 
-int parse_value(stack *store, lexer_config *kcfg, int const sid, int const kid)
+int parse_value(stack *store, lexer_config *kcfg, const int sid, key_description_t const *list, const int kid)
 {
+    log_flow() ;
+
     size_t pos = 0 ;
-    key_all_t const *list = total_list ;
     lexer_config vcfg = LEXER_CONFIG_ZERO ;
 
-    log_trace("parsing value of key: ", *list[sid].list[kid].name) ;
+    log_trace("parsing value of key: ", *list[kid].name) ;
 
-    switch(list[sid].list[kid].expected) {
+    switch(list[kid].expected) {
 
         case EXPECT_QUOTE:
 
@@ -36,7 +37,7 @@ int parse_value(stack *store, lexer_config *kcfg, int const sid, int const kid)
             vcfg.str = kcfg->str + kcfg->cpos ;
             vcfg.slen = kcfg->slen - kcfg->cpos ;
             if (!lexer(store, &vcfg))
-                parse_error_return(LOG_EXIT_ZERO, 6, sid, kid) ;
+                parse_error_return(LOG_EXIT_ZERO, 6, sid, list, kid) ;
 
             kcfg->pos += vcfg.pos - 1 ;
             break ;
@@ -45,7 +46,7 @@ int parse_value(stack *store, lexer_config *kcfg, int const sid, int const kid)
 
             pos = 0 ;
             if (!parse_bracket(store, kcfg))
-                parse_error_return(LOG_EXIT_ZERO, 6, sid, kid) ;
+                parse_error_return(LOG_EXIT_ZERO, 6, sid, list, kid) ;
             kcfg->pos += pos  ;
             break ;
 
@@ -58,7 +59,7 @@ int parse_value(stack *store, lexer_config *kcfg, int const sid, int const kid)
             vcfg.str = kcfg->str + kcfg->cpos ;
             vcfg.slen = kcfg->slen - kcfg->cpos ;
             if (!lexer(store, &vcfg))
-                parse_error_return(LOG_EXIT_ZERO, 6, sid, kid) ;
+                parse_error_return(LOG_EXIT_ZERO, 6, sid, list, kid) ;
             kcfg->pos += vcfg.pos - 1 ;
             break ;
         default:

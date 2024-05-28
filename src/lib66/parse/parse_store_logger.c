@@ -23,7 +23,7 @@
 #include <66/service.h>
 #include <66/enum.h>
 
-int parse_store_logger(resolve_service_t *res, stack *store, int idsec, int idkey)
+int parse_store_logger(resolve_service_t *res, stack *store, int sid, int kid)
 {
     log_flow() ;
 
@@ -33,18 +33,18 @@ int parse_store_logger(resolve_service_t *res, stack *store, int idsec, int idke
     int r = 0, e = 0 ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-    switch(idkey) {
+    switch(kid) {
 
         case KEY_LOGGER_BUILD:
 
-            if (!parse_store_start_stop(res, store, idsec, KEY_STARTSTOP_BUILD))
+            if (!parse_store_start_stop(res, store, sid, KEY_STARTSTOP_BUILD))
                 goto err ;
 
             break ;
 
         case KEY_LOGGER_RUNAS:
 
-            if (!parse_store_start_stop(res, store, idsec, KEY_STARTSTOP_RUNAS))
+            if (!parse_store_start_stop(res, store, sid, KEY_STARTSTOP_RUNAS))
                 goto err ;
 
             break ;
@@ -53,14 +53,14 @@ int parse_store_logger(resolve_service_t *res, stack *store, int idsec, int idke
 
              log_1_warn("deprecated key @shebang -- define your complete shebang directly inside your @execute key field") ;
 
-            if (!parse_store_start_stop(res, store, idsec, KEY_STARTSTOP_SHEBANG))
+            if (!parse_store_start_stop(res, store, sid, KEY_STARTSTOP_SHEBANG))
                 goto err ;
 
             break ;
 
         case KEY_LOGGER_EXEC:
 
-            if (!parse_store_start_stop(res, store, idsec, KEY_STARTSTOP_EXEC))
+            if (!parse_store_start_stop(res, store, sid, KEY_STARTSTOP_EXEC))
                 goto err ;
 
             break ;
@@ -68,21 +68,21 @@ int parse_store_logger(resolve_service_t *res, stack *store, int idsec, int idke
         case KEY_LOGGER_T_KILL:
 
             if (!uint320_scan(store->s, &res->logger.execute.timeout.kill))
-                parse_error_return(0, 3, idsec, idkey) ;
+                parse_error_return(0, 3, sid, list_section_logger, kid) ;
 
             break ;
 
         case KEY_LOGGER_T_FINISH:
 
             if (!uint320_scan(store->s, &res->logger.execute.timeout.finish))
-                parse_error_return(0, 3, idsec, idkey) ;
+                parse_error_return(0, 3, sid, list_section_logger, kid) ;
 
             break ;
 
         case KEY_LOGGER_DESTINATION:
 
             if (store->s[0] != '/')
-                parse_error_return(0, 4, idsec, idkey) ;
+                parse_error_return(0, 4, sid, list_section_logger, kid) ;
 
             res->logger.destination = resolve_add_string(wres, store->s) ;
 
@@ -91,32 +91,33 @@ int parse_store_logger(resolve_service_t *res, stack *store, int idsec, int idke
         case KEY_LOGGER_BACKUP:
 
             if (!uint320_scan(store->s, &res->logger.backup))
-                parse_error_return(0, 3, idsec, idkey) ;
+                parse_error_return(0, 3, sid, list_section_logger, kid) ;
 
             break ;
 
         case KEY_LOGGER_MAXSIZE:
 
             if (!uint320_scan(store->s, &res->logger.maxsize))
-                parse_error_return(0, 3, idsec, idkey) ;
+                parse_error_return(0, 3, sid, list_section_logger, kid) ;
 
             if (res->logger.maxsize < 4096 || res->logger.maxsize > 268435455)
-                parse_error_return(0, 0, idsec, idkey) ;
+                parse_error_return(0, 0, sid, list_section_logger, kid) ;
 
             break ;
 
         case KEY_LOGGER_TIMESTP:
 
-            r = get_enum_by_key(store->s) ;
+            r = get_enum_by_key(list_timestamp, store->s) ;
             if (r == -1)
-                parse_error_return(0, 0, idsec, idkey) ;
+                parse_error_return(0, 0, sid, list_section_logger, kid) ;
 
             res->logger.timestamp = (uint32_t)r ;
 
             break ;
 
         default:
-            log_warn_return(LOG_EXIT_ZERO, "unknown key: ", get_key_by_key_all(idsec, idkey)) ;
+            /** never happen*/
+            log_warn_return(LOG_EXIT_ZERO, "unknown id key in section logger -- please make a bug report") ;
     }
 
     e = 1 ;

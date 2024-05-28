@@ -25,7 +25,7 @@
 #include <66/utils.h>
 #include <66/environ.h>
 
-int parse_store_environ(resolve_service_t *res, stack *store, int idsec, int idkey)
+int parse_store_environ(resolve_service_t *res, stack *store, const int sid, const int kid)
 {
     log_flow() ;
 
@@ -33,7 +33,7 @@ int parse_store_environ(resolve_service_t *res, stack *store, int idsec, int idk
     stralloc sa = STRALLOC_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-    switch(idkey) {
+    switch(kid) {
 
         case KEY_ENVIRON_ENVAL:
 
@@ -47,7 +47,8 @@ int parse_store_environ(resolve_service_t *res, stack *store, int idsec, int idk
             break ;
 
         default:
-            log_warn_return(LOG_EXIT_ZERO, "unknown key: ", get_key_by_key_all(idsec, idkey)) ;
+            /** never happen*/
+            log_warn_return(LOG_EXIT_ZERO, "unknown id key in section environment -- please make a bug report") ;
     }
 
     e = 1 ;

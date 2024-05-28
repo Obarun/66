@@ -271,7 +271,7 @@ static void info_display_status(char const *field,resolve_service_t *res)
 static void info_display_type(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
-    info_display_string(get_key_by_enum(ENUM_TYPE,res->type)) ;
+    info_display_string(get_key_by_enum(list_type, res->type)) ;
 }
 
 static void info_display_description(char const *field,resolve_service_t *res)

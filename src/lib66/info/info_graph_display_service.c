@@ -109,7 +109,7 @@ int info_graph_display_service(char const *name)
         "type",
         log_color->off, \
         "=", \
-        get_key_by_enum(ENUM_TYPE,res.type), \
+        get_key_by_enum(list_type,res.type), \
 
         log_color->magenta, \
         "tree", \

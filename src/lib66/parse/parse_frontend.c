@@ -155,8 +155,8 @@ int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info,
         log_warn_return(2, "ignoring service: ", svname, " -- already parsed") ;
 
     {
-        if (!parse_get_value_of_key(&store, sa.s, get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_TYPE)))
-            log_dieu(LOG_EXIT_SYS, "get field ", get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_TYPE)," of service: ", svname) ;
+        if (!parse_get_value_of_key(&store, sa.s, SECTION_MAIN, list_section_main, KEY_MAIN_TYPE))
+            log_dieu(LOG_EXIT_SYS, "get field ", get_key_by_enum(list_section_main, KEY_MAIN_TYPE)," of service: ", svname) ;
 
         if (!stack_close(&store))
             log_die_nomem("stack overflow") ;
@@ -171,7 +171,7 @@ int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info,
 
         /** search for the intree field.
          * This field is not mandatory, do not crash if it not found */
-        if (parse_get_value_of_key(&store, sa.s, get_key_by_enum(ENUM_KEY_SECTION_MAIN, KEY_MAIN_INTREE))) {
+        if (parse_get_value_of_key(&store, sa.s, SECTION_MAIN, list_section_main, KEY_MAIN_INTREE)) {
 
             if (!parse_store_main(&res, &store, SECTION_MAIN, KEY_MAIN_INTREE))
                 log_dieu(LOG_EXIT_SYS, "store field intree of service: ", svname) ;

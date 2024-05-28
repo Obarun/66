@@ -56,7 +56,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
         key = tmp ;
         val = line + r ;
 
-        ssize_t e = get_enum_by_key(key) ;
+        ssize_t e = get_enum_by_key(list_seed, key) ;
 
         switch (e) {
 

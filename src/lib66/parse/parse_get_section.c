@@ -42,8 +42,7 @@ int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, s
 
         if (cfg.found) {
 
-            ssize_t id = get_enum_by_key(stk.s) ;
-
+            ssize_t id = get_enum_by_key(list_section, stk.s) ;
             if (id < 0 || cfg.str[!cfg.opos ? 0 : cfg.opos - 1] == '#') {
                 log_warn(id < 0 ? "invalid section name: " : "commented section: ", stk.s, " -- ignoring it") ;
                 id = get_len_until(cfg.str + cfg.cpos, '\n') ;

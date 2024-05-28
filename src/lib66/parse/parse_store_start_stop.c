@@ -22,7 +22,7 @@
 #include <66/service.h>
 #include <66/enum.h>
 
-int parse_store_start_stop(resolve_service_t *res, stack *store, int idsec, int idkey)
+int parse_store_start_stop(resolve_service_t *res, stack *store, const int sid, const int kid)
 {
     log_flow() ;
 
@@ -32,15 +32,15 @@ int parse_store_start_stop(resolve_service_t *res, stack *store, int idsec, int 
     int e = 0 ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-    switch(idkey) {
+    switch(kid) {
 
         case KEY_STARTSTOP_BUILD:
 
-            if (idsec == SECTION_START)
+            if (sid == SECTION_START)
                 res->execute.run.build = resolve_add_string(wres, store->s) ;
-            else if (idsec == SECTION_STOP)
+            else if (sid == SECTION_STOP)
                 res->execute.finish.build = resolve_add_string(wres, store->s) ;
-            else if (idsec == SECTION_LOG)
+            else if (sid == SECTION_LOG)
                 res->logger.execute.run.build = resolve_add_string(wres, store->s) ;
             break ;
 
@@ -48,14 +48,14 @@ int parse_store_start_stop(resolve_service_t *res, stack *store, int idsec, int 
             {
                 char tmp[store->len + 1] ;
                 auto_strings(tmp, store->s) ;
-                if (!parse_clean_runas(tmp, idsec, idkey))
+                if (!parse_clean_runas(tmp, sid, kid))
                     goto err ;
 
-                if (idsec == SECTION_START)
+                if (sid == SECTION_START)
                     res->execute.run.runas = resolve_add_string(wres, tmp) ;
-                else if (idsec == SECTION_STOP)
+                else if (sid == SECTION_STOP)
                     res->execute.finish.runas = resolve_add_string(wres, tmp) ;
-                else if (idsec == SECTION_LOG)
+                else if (sid == SECTION_LOG)
                     res->logger.execute.run.runas = resolve_add_string(wres, tmp) ;
             }
             break ;
@@ -65,28 +65,29 @@ int parse_store_start_stop(resolve_service_t *res, stack *store, int idsec, int 
             log_1_warn("deprecated key @shebang -- define your complete shebang directly inside your @execute key field") ;
 
             if (store->s[0] != '/')
-                parse_error_return(0, 4, idsec, idkey) ;
+                parse_error_return(0, 4, sid, list_section_startstop, kid) ;
 
-            if (idsec == SECTION_START)
+            if (sid == SECTION_START)
                 res->execute.run.shebang = resolve_add_string(wres, store->s) ;
-            else if (idsec == SECTION_STOP)
+            else if (sid == SECTION_STOP)
                 res->execute.finish.shebang = resolve_add_string(wres, store->s) ;
-            else if (idsec == SECTION_LOG)
+            else if (sid == SECTION_LOG)
                 res->logger.execute.run.shebang = resolve_add_string(wres, store->s) ;
             break ;
 
         case KEY_STARTSTOP_EXEC:
 
-            if (idsec == SECTION_START)
+            if (sid == SECTION_START)
                 res->execute.run.run_user = resolve_add_string(wres, store->s) ;
-            else if (idsec == SECTION_STOP)
+            else if (sid == SECTION_STOP)
                 res->execute.finish.run_user = resolve_add_string(wres, store->s) ;
-            else if (idsec == SECTION_LOG)
+            else if (sid == SECTION_LOG)
                 res->logger.execute.run.run_user = resolve_add_string(wres, store->s) ;
             break ;
 
         default:
-            log_warn_return(LOG_EXIT_ZERO, "unknown key: ", get_key_by_key_all(idsec, idkey)) ;
+            /** never happen*/
+            log_warn_return(LOG_EXIT_ZERO, "unknown id key in section ", *list_section_startstop[sid].name, "  -- please make a bug report") ;
     }
 
     e = 1 ;

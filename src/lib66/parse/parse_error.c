@@ -16,15 +16,12 @@
 
 #include <66/enum.h>
 
-void parse_error(int ierr, int idsec, int idkey)
+void parse_error(int ierr, const int sid, key_description_t const *list, const int idkey)
 {
     log_flow() ;
 
-    char const *section = get_key_by_enum(ENUM_SECTION, idsec) ;
-    /* start stop enum are the same, enum_all must increase by one to match
-     * the correct list
-     * */
-    char const *key = get_key_by_enum(idsec < 2 ? idsec + 1 : idsec,idkey) ;
+    char const *section = enum_str_section[sid] ;
+    char const *key = get_key_by_enum(list, idkey) ;
 
     switch(ierr)
     {

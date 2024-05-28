@@ -21,11 +21,12 @@
 #include <66/parse.h>
 #include <66/enum.h>
 
-int parse_get_value_of_key(stack *store, char const *str, char const *key)
+int parse_get_value_of_key(stack *store, char const *str, const int sid, key_description_t const *list, const int kid)
 {
+    log_flow() ;
+
     lexer_config cfg = LEXER_CONFIG_KEY ;
-    key_all_t const *list = total_list ;
-    int kid = -1, sid = -1, spos = 0, kpos = 0 ;
+    int tkid = -1 ;
 
     cfg.str = str ;
     cfg.slen = strlen(str) ;
@@ -35,35 +36,13 @@ int parse_get_value_of_key(stack *store, char const *str, char const *key)
 
         k.len = 0 ;
         cfg.found = 0 ;
-        kid = parse_key(&k, &cfg) ;
-        if (kid < 0)
-            log_warnu_return(LOG_EXIT_ZERO, "parse key: ", key) ;
+        tkid = parse_key(&k, &cfg, list) ;
+        if (tkid < 0)
+            log_warnu_return(LOG_EXIT_ZERO, "parse key: ", *list[kid].name) ;
 
-        if (cfg.found && !strcmp(k.s, key)) {
+        if (cfg.found && tkid == kid) {
 
-            spos = 0 ;
-            sid = -1 ;
-            /* search for the section id of the key */
-            while (list[spos].list) {
-
-                kpos = 0 ;
-                while(*list[spos].list[kpos].name) {
-
-                    if (!strcmp(k.s, *list[spos].list[kpos].name)) {
-                        sid = spos ;
-                        break ;
-                    }
-                    kpos++ ;
-                }
-                if (sid == spos)
-                    break ;
-                spos++ ;
-            }
-
-            if (sid < 0)
-                log_warnu_return(LOG_EXIT_ZERO, "get section id of key: ", k.s, " -- please make a bug report") ;
-
-            if (!parse_value(store, &cfg, sid, kid))
+            if (!parse_value(store, &cfg, sid, list, kid))
                 log_warnu_return(LOG_EXIT_ZERO, "get value of key: ", k.s) ;
 
             break ;

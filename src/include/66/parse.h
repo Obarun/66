@@ -23,15 +23,16 @@
 
 #include <66/ssexec.h>
 #include <66/service.h>
+#include <66/enum.h>
 
-#define parse_error_return(ret, nerr, idsec, idkey) do { \
-    parse_error(nerr, idsec, idkey) ; \
+#define parse_error_return(ret, nerr, sid, list, idkey) do { \
+    parse_error(nerr, sid, list, idkey) ; \
     return ret ; \
 } while (0)
 
-#define parse_error_type(type, idsec, idkey ) do { \
+#define parse_error_type(type, list, idkey) do { \
     if (type == TYPE_MODULE) \
-        log_warn_return(LOG_EXIT_ONE, "key: ", get_key_by_enum(idsec, idkey), " is not valid for type ", get_key_by_enum(ENUM_TYPE, type), " -- ignoring it") ; \
+        log_warn_return(LOG_EXIT_ONE, "key: ", get_key_by_enum(list, idkey), " is not valid for type ", get_key_by_enum(list_type, type), " -- ignoring it") ; \
 } while (0)
 
 /** lexer configuration */
@@ -57,12 +58,18 @@ extern int parse_interdependences(char const *service, char const *list, unsigne
 extern void parse_append_logger(struct resolve_hash_s **hres, resolve_service_t *res, ssexec_t *info) ;
 
 /** split */
-extern int parse_section(resolve_service_t *res, char const *str, size_t sid) ;
+extern int parse_section_main(resolve_service_t *res, const char *str) ;
+extern int parse_section_start(resolve_service_t *res, const char *str) ;
+extern int parse_section_stop(resolve_service_t *res, const char *str) ;
+extern int parse_section_logger(resolve_service_t *res, const char *str) ;
+extern int parse_section_environment(resolve_service_t *res, const char *str) ;
+extern int parse_section_regex(resolve_service_t *res, const char *str) ;
+extern int parse_section(resolve_service_t *res, char const *str, key_description_t const *list, const int sid) ;
 extern int parse_contents(resolve_service_t *res, char const *str) ;
 extern int parse_compute_list(resolve_wrapper_t_ref wres, stack *store, uint32_t *res, uint8_t opts) ;
 
 /** store */
-extern int parse_store_g(resolve_service_t *res, stack *store, int idsec, int idkey) ;
+extern int parse_store_g(resolve_service_t *res, stack *store, const int sid, key_description_t const *list, const int idkey) ;
 extern int parse_store_main(resolve_service_t *res, stack *store, int idsec, int idkey) ;
 extern int parse_store_start_stop(resolve_service_t *res, stack *store, int idsec, int idkey) ;
 extern int parse_store_logger(resolve_service_t *res, stack *store, int idsec, int idkey) ;
@@ -72,16 +79,15 @@ extern int parse_store_regex(resolve_service_t *res, stack *store, int idsec, in
 /** helper */
 
 extern int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, size_t len) ;
-extern int parse_get_section_id(char const *name) ;
-extern int parse_key(stack *key, lexer_config *cfg) ;
-extern int parse_value(stack *store, lexer_config *kcfg, int const sid, int const kid) ;
+extern int parse_key(stack *key, lexer_config *cfg, key_description_t const *list) ;
+extern int parse_value(stack *store, lexer_config *kcfg, const int sid, key_description_t const *list, int const kid) ;
 extern int parse_list(stack *stk) ;
 extern int parse_bracket(stack *store, lexer_config *kcfg) ;
 extern int parse_clean_runas(char const *str, int idsec, int idkey) ;
 extern int parse_bracket(stack *store, lexer_config *kcfg) ;
-extern int parse_get_value_of_key(stack *store, char const *str, char const *key) ;
+extern int parse_get_value_of_key(stack *store, char const *str, const int sid, key_description_t const *list, const int kid) ;
 extern int parse_mandatory(resolve_service_t *res) ;
-extern void parse_error(int ierr, int idsec, int idkey) ;
+extern void parse_error(int ierr, int idsec, key_description_t const *list, int idkey) ;
 extern void parse_rename_interdependences(resolve_service_t *res, char const *prefix, struct resolve_hash_s **hres, ssexec_t *info) ;
 extern void parse_db_migrate(resolve_service_t *res, ssexec_t *info) ;
 

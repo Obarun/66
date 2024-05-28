@@ -68,7 +68,7 @@ void write_services(resolve_service_t *res, char const *workdir, uint8_t force)
 
         default:
             parse_cleanup(res, workdir, force) ;
-            log_die(LOG_EXIT_SYS, "unkown type: ", get_key_by_enum(ENUM_TYPE, type)) ;
+            log_die(LOG_EXIT_SYS, "unkown type: ", get_key_by_enum(list_type, type)) ;
     }
 
 }
