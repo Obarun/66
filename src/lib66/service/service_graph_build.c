@@ -82,7 +82,7 @@ void service_graph_build(graph_t *g, struct resolve_hash_s **hres, uint32_t flag
             continue ;
 
         if (ste.issupervised == STATE_FLAGS_FALSE && FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {
-            log_warn("service: ", service, " not available -- ignore it") ;
+            log_warn("requested flags issupervised where service ", service, " is not -- ignoring it") ;
             continue ;
         }
 

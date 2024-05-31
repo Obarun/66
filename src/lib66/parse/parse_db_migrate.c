@@ -41,7 +41,8 @@ static void service_db_tree(resolve_service_t *old, resolve_service_t *new, ssex
         if (!stack_string_clean(&sold, ocontents))
             log_dieusys(LOG_EXIT_SYS, "convert string") ;
 
-        {
+        if (new->dependencies.ncontents) {
+
             size_t nlen = strlen(ncontents) ;
             _alloc_stk_(snew, nlen + 1) ;
 

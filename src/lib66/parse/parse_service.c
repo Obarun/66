@@ -133,8 +133,8 @@ lexer_config LEXER_CONFIG_KEY = { \
     .slen = 0,\
     .open = "@",\
     .olen = 1,\
-    .close = "=",\
-    .clen = 1,\
+    .close = "=\n",\
+    .clen = 2,\
     .skip = " \t\r",\
     .skiplen = 3,\
     .kopen = 1,\

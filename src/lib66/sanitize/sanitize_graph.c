@@ -55,8 +55,8 @@ void sanitize_graph(ssexec_t *info)
         sa.len = 0 ;
 
         wres = resolve_set_struct(DATA_SERVICE, &c->res) ;
-
-        char *name = c->res.sa.s + c->res.name ;
+        char name[strlen(c->res.sa.s + c->res.name) + 1] ;
+        auto_strings(name, c->res.sa.s + c->res.name) ;
 
         if (graph_matrix_get_edge_g_sa(&sa, &graph, name, 0, 0) < 0)
             log_dieu(LOG_EXIT_SYS, "get dependencies of service: ", name) ;

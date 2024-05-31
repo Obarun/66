@@ -43,11 +43,12 @@ void service_graph_collect(graph_t *g, char const *slist, size_t slen, struct re
     ss_state_t ste = STATE_ZERO ;
 
     resolve_wrapper_t_ref wres = 0 ;
+    struct resolve_hash_s *hash = 0 ;
 
     for (; pos < slen ; pos += strlen(slist + pos) + 1) {
 
         char const *name = slist + pos ;
-        struct resolve_hash_s *hash = hash_search(hres, name) ;
+        hash = hash_search(hres, name) ;
 
         if (hash == NULL) {
 

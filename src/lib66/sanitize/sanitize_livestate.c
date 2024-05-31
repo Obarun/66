@@ -53,7 +53,12 @@ static int sanitize_livestate_directory(resolve_service_t *res)
     if (!r) {
 
         log_trace("create directory: ", ste) ;
-        r = dir_create_parent(ste, 0700) ;
+        /** Permissions is set to 0755 to be able
+         * to launch services dropping privilegies
+         * before executing the run.user script.
+         * Setting 0700 do not allow other users
+         * to execute the script. */
+        r = dir_create_parent(ste, 0755) ;
         if (!r)
             log_warnusys_return(LOG_EXIT_ZERO, "create directory: ", ste) ;
 
