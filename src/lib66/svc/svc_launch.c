@@ -221,7 +221,15 @@ static void announce(unsigned int pos, pidservice_t *apids, unsigned int what, u
             } else {
 
                 fd = open_trunc(file) ;
-                if (fd < 0)
+                /** The directory and file may not exist. Typically,
+                 * a service inside a module can not match the state
+                 * of the module and may occur in case of crash of a
+                 * previous user command invocation.
+                 * Where are on stop process, so do not crash
+                 * for a corrupted service.
+                 * At start process, the live directory will be made
+                 * from scratch anyway.*/
+                if (fd < 0 && errno != ENOENT)
                     log_dieusys(LOG_EXIT_SYS, "create file: ", file) ;
                 fd_close(fd) ;
             }
@@ -405,7 +413,7 @@ static int doit(pidservice_t *apids, unsigned int napid, unsigned int idx, unsig
         newargv[m++] = servicedir ;
         newargv[m++] = 0 ;
 
-        log_trace("sending ", !what ? "up" : "down", " to: ", scandir) ;
+        log_trace("sending ", !what ? "start" : "stop", " to: ", scandir) ;
 
         pid = child_spawn0(newargv[0], newargv, (char const *const *) environ) ;
 
