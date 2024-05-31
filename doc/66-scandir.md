@@ -14,7 +14,7 @@ Handles the *scandir* for a given user. Designed to be either root or a branch o
 ## Interface
 
 ```
-scandir [ -h ] [ -o owner ] create|start|stop|remove|reload|check|quit|abort|nuke|annihilate|zombies [<command options>]
+scandir [ -h ] [ -o owner ] create|start|stop|remove|reconfigure|check|quit|abort|nuke|annihilate|zombies [<command options>]
 ```
 
 This program creates, removes or sends a signal to a *scandir* (directory containing a collection of s6‑supervise processes) for the current owner of the proccess depending on the provided options.
@@ -33,7 +33,7 @@ When the `start` subcommand is invoked, this command launches the [s6-svscan](ht
 - **start**: start a *scandir*.
 - **stop**: stop a running *scandir*.
 - **remove**: remove a *scandir*.
-- **reload**: reload a running *scandir*.
+- **reconfigure**: reconfigure a running *scandir*.
 - **check**: check a running *scandir*.
 - **quit**: quit a running *scandir*.
 - **abort**: abort a running *scandir*.
@@ -208,14 +208,14 @@ Removes a *scandir* for the owner `owner`
 66 scandir -o owner scandir
 ```
 
-### reload
+### reconfigure
 
-This command reload configuration of a running *scandir*.
+This command reconfigure a running *scandir*.
 
 #### Interface
 
 ```
-scandir reload [ -h ]
+scandir reconfigure [ -h ]
 ```
 
 [s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) will perform a scan, and destroy inactive services.
@@ -226,16 +226,16 @@ scandir reload [ -h ]
 
 #### Usage examples
 
-Reloads a running *scandir*.
+Reconfigures a running *scandir*.
 
 ```
-66 scandir reload
+66 scandir reconfigure
 ```
 
-Reloads a *scandir* for the owner `owner`
+Reconfigures a *scandir* for the owner `owner`
 
 ```
-66 scandir -o owner reload
+66 scandir -o owner reconfigure
 ```
 
 ### check

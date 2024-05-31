@@ -19,14 +19,18 @@
 #include <66/graph.h>
 #include <66/service.h>
 #include <66/enum.h>
-
+#include <stdio.h>
 void graph_compute_visit(struct resolve_hash_s hash, unsigned int *visit, unsigned int *list, graph_t *graph, unsigned int *nservice, uint8_t requiredby)
 {
     log_flow() ;
 
-    unsigned int l[graph->mlen], c = 0, pos = 0, idx = 0 ;
+    unsigned int l[graph->mlen], c = 0, pos = 0 ;
+    memset(l, 0, sizeof(unsigned int) * graph->mlen) ;
+    ssize_t idx = 0 ;
 
     idx = graph_hash_vertex_get_id(graph, hash.res.sa.s + hash.res.name) ;
+    if (idx < 0)
+        log_dieu(LOG_EXIT_SYS, "get id of service: ", hash.res.sa.s + hash.res.name, " -- please make a bug report") ;
 
     if (!visit[idx]) {
         list[(*nservice)++] = idx ;

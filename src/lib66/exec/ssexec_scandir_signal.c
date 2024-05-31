@@ -56,7 +56,7 @@ static inline unsigned int parse_signal (char const *signal)
     {
         "start",
         "stop", // -t
-        "reload", // -h or -an
+        "reconfigure", // -h or -an
         "check", // -a
         "quit", // -q
         "abort", // -b
@@ -97,7 +97,7 @@ static int send_signal(char const *scandir, char const *signal)
             csig[1] = 0 ;
             break ;
 
-        case 2: // reload
+        case 2: // reconfigure
 
             csig[0] = 'h' ;
             csig[1] = 0 ;

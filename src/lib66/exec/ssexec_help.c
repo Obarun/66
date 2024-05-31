@@ -471,7 +471,7 @@ char const *help_tree_unsupervise =
 "If no tree name are provided, it unsupervise all services within all trees of the system\n"
 ;
 
-char const *usage_scandir_wrapper = "66 scandir [ -h ] [ -o owner ] create|start|stop|remove|reload|check|quit|abort|nuke|annihilate|zombies [<command options>]" ;
+char const *usage_scandir_wrapper = "66 scandir [ -h ] [ -o owner ] create|start|stop|remove|reconfigure|check|quit|abort|nuke|annihilate|zombies" ;
 
 char const *help_scandir_wrapper =
 "\nmain subcommands to manage scandir\n"
@@ -485,7 +485,7 @@ char const *help_scandir_wrapper =
 "   start: start a scandir\n"
 "   stop: stop a running scandir\n"
 "   remove: remove a scandir\n"
-"   reload: reload a running scandir\n"
+"   reconfigure: reconfigure a running scandir\n"
 "   check: check a running scandir\n"
 "   quit: quit a running scandir\n"
 "   abort: abort a running scandir\n"
@@ -510,15 +510,6 @@ char const *help_scandir_create =
 "   -s skel: use skel as skeleton directory\n"
 ;
 
-char const *usage_scandir_remove = "66 scandir remove [ -h ]" ;
-
-char const *help_scandir_remove =
-"\nremove a existing scandir\n"
-"\n"
-"options:\n"
-"   -h: print this help\n"
-;
-
 char const *usage_scandir_start = "66 scandir start [ -h ] [ -d notif ] [ -s rescan ] [ -e environment ] [ -b|B ]" ;
 
 char const *help_scandir_start =
@@ -541,6 +532,16 @@ char const *help_scandir_stop =
 "options:\n"
 "   -h: print this help\n"
 ;
+
+char const *usage_scandir_remove = "66 scandir remove [ -h ]" ;
+
+char const *help_scandir_remove =
+"\nremove a existing scandir\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+;
+
 
 char const *usage_scandir_reconfigure = "66 scandir reconfigure [ -h ]" ;
 

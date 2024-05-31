@@ -99,14 +99,6 @@ int ssexec_scandir_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->usage = usage_scandir_create ;
         func = &ssexec_scandir_create ;
 
-    } else if (!strcmp(argv[0], "remove")) {
-
-        nargv[n++] = argv[0] ;
-        info->prog = PROG ;
-        info->help = help_scandir_remove ;
-        info->usage = usage_scandir_remove ;
-        func = &ssexec_scandir_remove ;
-
     } else if (!strcmp(argv[0], "start")) {
 
 
@@ -125,10 +117,21 @@ int ssexec_scandir_wrapper(int argc, char const *const *argv, ssexec_t *info)
         info->usage = usage_scandir_stop ;
         func = &ssexec_scandir_signal ;
 
-    } else if (!strcmp(argv[0], "reconfigure")) {
-
+    } else if (!strcmp(argv[0], "remove")) {
 
         nargv[n++] = argv[0] ;
+        info->prog = PROG ;
+        info->help = help_scandir_remove ;
+        info->usage = usage_scandir_remove ;
+        func = &ssexec_scandir_remove ;
+
+    } else if (!strcmp(argv[0], "reconfigure") || !strcmp(argv[0], "reload")) {
+
+        uint8_t p = strcmp(argv[0], "reload") ;
+        if (!p)
+            log_1_warn("reload is a deprecated command -- please use reconfigure instead") ;
+
+        nargv[n++] = !p ? "reconfigure" : argv[0] ;
         info->prog = PROG ;
         info->help = help_scandir_reconfigure ;
         info->usage = usage_scandir_reconfigure ;
