@@ -26,15 +26,15 @@
 #include <oblibs/sastr.h>
 #include <oblibs/lexer.h>
 
-#include <skalibs/bytestr.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/env.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/env.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/exec.h>
 
 #include <execline/execline.h>
+
+#include <66/config.h>
 
 #define USAGE "execl-envfile [ -h ] [ -v verbosity ] [ -l ] src prog"
 
@@ -71,7 +71,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
     int r = 0 ;
     uint8_t insist = 1 ;
     char const *path = 0 ;
-    char tpath[MAXENV + 1] ;
+    char tpath[SS_MAX_PATH + 1] ;
     struct stat st ;
     stralloc modifs = STRALLOC_ZERO ;
     stralloc sa = STRALLOC_ZERO ;
@@ -154,14 +154,10 @@ int main (int argc, char const *const *argv, char const *const *envp)
     if (!environ_clean_unexport(&modifs))
         log_dieusys(LOG_EXIT_SYS, "remove exclamation mark from environment") ;
 
-    /** be able to freed the stralloc before existing */
-    char tmp[modifs.len + 1] ;
-    sastr_to_char(tmp, &modifs) ;
-
-    size_t tmplen = modifs.len, n = env_len(envp) + 1 + byte_count(modifs.s, modifs.len, '\0') ;
+    size_t n = env_len(envp) + 1 + sastr_nelement(&modifs) ;
     char const *newenv[n + 1] ;
 
-    if (!env_merge(newenv, n , envp, env_len(envp), tmp, tmplen))
+    if (!env_merge(newenv, n , envp, env_len(envp), modifs.s, modifs.len))
         log_dieusys(LOG_EXIT_SYS, "build environment") ;
 
     modifs.len = 0 ;
@@ -172,8 +168,6 @@ int main (int argc, char const *const *argv, char const *const *envp)
     r = el_substitute(&sa, modifs.s, modifs.len, info.vars.s, info.values.s,
         genalloc_s(elsubst_t const, &info.data), genalloc_len(elsubst_t const, &info.data)) ;
 
-    stralloc_free(&modifs) ;
-
     if (r < 0)
         log_dieusys(LOG_EXIT_SYS, "el_substitute") ;
     else if (!r) {
@@ -181,11 +175,17 @@ int main (int argc, char const *const *argv, char const *const *envp)
         _exit(0) ;
     }
 
+    if (!stralloc_copyb(&modifs, info.modifs.s, info.modifs.len) ||
+        !stralloc_0(&modifs))
+            log_die_nomem("stralloc") ;
+
+    exlsn_free(&info) ;
+
     char const *v[r + 1] ;
     if (!env_make (v, r , sa.s, sa.len))
         log_dieusys(LOG_EXIT_SYS, "make environment") ;
 
     v[r] = 0 ;
 
-    mexec_fm(v, newenv, env_len(newenv), info.modifs.s, info.modifs.len) ;
+    mexec_fm(v, newenv, env_len(newenv), modifs.s, modifs.len) ;
 }
