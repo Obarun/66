@@ -69,7 +69,17 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, struct 
 
         struct resolve_hash_s *hash = hash_search(hres, name) ;
         if (hash == NULL)
-            log_dieu(LOG_EXIT_SYS,"find hash id of: ", name, " -- please make a bug reports") ;
+        /** This would happen uniquely in case of module.
+         * Service inside module may not the same as the
+         * module itself. In this case, the function to build
+         * the graph do not append the selection list with
+         * that service resulting of an unrecognizable service id
+         * within the hash. This is also stuck us e.g. to remove
+         * properly an entire module.
+         * Well, ignore the service for now, the algorithm of the graph
+         * need to be review anynway on future release*/
+            //log_dieu(LOG_EXIT_SYS,"find hash id of: ", name, " -- please make a bug reports") ;
+            continue ;
 
         sanitize_it(&hash->res) ;
 
@@ -86,7 +96,8 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, struct 
 
                 struct resolve_hash_s *h = hash_search(hres, stk.s + bpos) ;
                 if (h == NULL)
-                    log_dieu(LOG_EXIT_SYS,"find hash id of: ", stk.s + bpos, " -- please make a bug reports") ;
+                    //log_dieu(LOG_EXIT_SYS,"find hash id of: ", stk.s + bpos, " -- please make a bug reports") ;
+                    continue ;
 
                 sanitize_it(&h->res) ;
             }
