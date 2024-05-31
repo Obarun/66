@@ -29,7 +29,7 @@ src/66/66.o src/66/66.lo: src/66/66.c src/include/66/hpr.h src/include/66/saniti
 src/extra-tools/66-echo.o src/extra-tools/66-echo.lo: src/extra-tools/66-echo.c
 src/extra-tools/66-nuke.o src/extra-tools/66-nuke.lo: src/extra-tools/66-nuke.c
 src/extra-tools/66-umountall.o src/extra-tools/66-umountall.lo: src/extra-tools/66-umountall.c src/include/66/config.h
-src/extra-tools/execl-envfile.o src/extra-tools/execl-envfile.lo: src/extra-tools/execl-envfile.c
+src/extra-tools/execl-envfile.o src/extra-tools/execl-envfile.lo: src/extra-tools/execl-envfile.c src/include/66/config.h
 src/lib66/enum/enum.o src/lib66/enum/enum.lo: src/lib66/enum/enum.c src/include/66/enum.h
 src/lib66/environ/env_append_version.o src/lib66/environ/env_append_version.lo: src/lib66/environ/env_append_version.c src/include/66/environ.h
 src/lib66/environ/env_check_version.o src/lib66/environ/env_check_version.lo: src/lib66/environ/env_check_version.c src/include/66/constants.h src/include/66/environ.h src/include/66/utils.h
@@ -266,7 +266,7 @@ src/lib66/write/write_uint.o src/lib66/write/write_uint.lo: src/lib66/write/writ
 66-nuke: EXTRA_LIBS := -loblibs -lskarnet
 66-nuke: src/extra-tools/66-nuke.o
 66-umountall: EXTRA_LIBS := -loblibs -lskarnet
-66-umountall: src/extra-tools/66-umountall.o
+66-umountall: src/extra-tools/66-umountall.o ${LIB66}
 execl-envfile: EXTRA_LIBS := -loblibs -lexecline -lskarnet
 execl-envfile: src/extra-tools/execl-envfile.o ${LIBEXECLINE} 
 ifeq ($(strip $(STATIC_LIBS_ARE_PIC)),)
