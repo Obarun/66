@@ -285,6 +285,14 @@ The `66 configure <service>` command handles this directory. It's advised for us
 
 Its subdirectories contain versioned files per service and are self-explanatory.
 
+### %%environment_adm%%
+
+This directory is specified at compile time by using the `--with-sysadmin-environment=DIR` option to `./configure`.
+
+This directory serves as a location for system administrators to provide default environment variables used by a [scandir](66-scandir.html) at runtime and propagated to services handled by the scandir.
+
+See the [Environment](66-scandir.html#environment) explanation for further information about the behavior, the syntax and the limitations.
+
 ### %%seed_adm%%
 
 This directory is specified at compile time by using the `--with-sysadmin-seed=` option to `./configure`.

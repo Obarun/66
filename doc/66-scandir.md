@@ -63,9 +63,9 @@ Creates a *scandir* for the boot process using the specific account `logaccount`
 66 scandir create -b -L logaccount
 ```
 
-Creates (if doesn't exist yet) and starts a *scandir* for the boot process within a container adding an environment directory
+Creates (if doesn't exist yet) and starts a *scandir* for the boot process within a container adding an extra environment directory called `/myenvdir`.
 ```
-66 scandir start -B -e /etc/66/environment
+66 scandir start -B -e /myenvdir
 ```
 
 Stops an already running *scandir*
@@ -136,7 +136,7 @@ The *scandir* is created if it wasn't made previously, but you don't a fine-grai
 
 - **-t** *rescan*: perform a scan every *rescan* milliseconds. If *rescan* is set to 0 (the default), automatic scans are never performed after the first one and [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) will only detect new services by issuing either [scandir reload](66-scandir.html#reload) or [scandir check](66-scandir.html#check). It is **strongly** discouraged to set *rescan* to a positive value under `500`.
 
-- **-e** *environment*: an absolute path. Merge the current environment variables with variables found in this directory before starting the *scandir*. Any file in environment not beginning with a dot and not containing the `=` character will be read and parsed. Each services will inherit of the `key=value` pair define within *environment*. The mentioned environment directory ***can not*** exceed more than `100` files. Each file can not contain more than `8095` bytes or more than `50` `key=value` pairs.
+- **-e** *environment*: an absolute path. Merge the current environment variables with variables found in this directory before starting the *scandir*. Any file in environment not beginning with a dot and not containing the `=` character will be read and parsed. Each services started within the *scandir* will inherit of the `key=value` pair define within *environment*. By default, *66* import the %%environment_adm%% environment directory by default for the root user and the %%environment_user%% directory for the regular user. Although this can be changed at compile time by passing the `--with-sysadmin-environment=DIR `, `--with-user-environment=DIR` for root and regular user respectively. In case of same `key=value` pair, the environment directory define with the `-e` take precedence. Also, see [Environment](#environment) for further information about the syntax and the limitations.
 
 #### Usage examples
 
@@ -422,3 +422,51 @@ Removes zombies from a *scandir* for the owner `owner`
 The **-b**, **-B**, **-c** and **-s** option are called by [66 boot](66-boot.html). **‑b** and **-B** will create `.s6‑svscan` control files (see [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) interface documentation) specifically for stage1 (PID1 process). This special *scandir* is controlled by [66 halt](66-halt.html), [66 poweroff](66-poweroff.html) and  [66 reboot](66-reboot.html) command. The [66-shutdownd](66‑shutdownd.html) daemon which controls the shutdown request will be created automatically at the correct location. Further this specific task needs to read the skeleton file `init.conf` containing the *live* directory location which is the purpose of the **‑s** option.
 
 The *live* directory for the boot process requires writable directories and an executable filesystem. In order to accommodate for read‑only root filesystems there needs to be a tmpfs mounted before [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) can be run.
+
+## Environment
+
+An Environment directory is a directory containing files with lines of pairs with the syntax being: `key = value`. The directory is parsed by ascending alphabetical order. If there are duplicate `key=value` pairs, the pair found in the last file takes precedence.
+
+Whitespace is permitted before and after *key*, and before or after *value*.
+
+Empty lines, or lines containing only whitespace, are ignored. Lines beginning with `#` (possibly after some whitespace) are ignored (and typically used for comments). Leading and trailing whitespace is stripped from values; but a *value* can be double-quoted, which allows for inclusion of leading and trailing whitespace.
+
+Escaping double-quoted can be done with backslash `\`. For instance,
+
+```
+cmd_args=-g \"daemon off;\"
+```
+
+C escapes, including hexadecimal and octal sequences, are supported in quoted values. Unicode codepoint sequences are not supported.
+
+If *value* is empty, *key* is still added to the environment, with an empty value.
+
+Reusing the same variable or variable from the actual environment is allowed. In such case, variable name **must be** between `${}` to get it value. For intance, an environment file can be declared
+
+```
+    PATH=/usr/local/bin:${PATH}
+    socket_name=sname
+    socket_dir=dname
+    socket=${socket_dir}/${socket_name}
+```
+
+The order of `key=value` pair declaration **do not** matter
+
+```
+    PATH=/usr/local/bin:${PATH}
+    socket=${socket_dir}/${socket_name}
+    socket_name=sname
+    socket_dir=dname
+```
+
+A variable calling itself is **only** allowed if the `key` name can be found at the environment of the current process. If the key of the `key=value` cannot not be found it left the pair as it. For intance,
+
+```
+    PATH=/usr/local/bin:${PATH}
+```
+
+will only works if `PATH` is already define at the current environment. If not the result will literally be `PATH=/usr/local/bin:${PATH}`.
+
+### Limits
+
+An environment directory ***can not*** exceed more than `20` files. Each file can not contain more than `8191` bytes or more than `50` `key=value` pairs.

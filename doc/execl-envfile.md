@@ -44,7 +44,8 @@ This program expects to find a regular file or a directory in *src* containing o
 
 ## File syntax
 
-*src* is a text file or a directory containing lines of pairs with the syntax being: `key = value`
+*src* is a text file or a directory containing files with lines of pairs with the syntax being: `key = value`. If *src* is a directory, the directory is parsed by ascending alphabetical order. If there are duplicate `key=value` pairs, the pair found in the last file takes precedence.
+
 Whitespace is permitted before and after *key*, and before or after *value*.
 
 Empty lines, or lines containing only whitespace, are ignored. Lines beginning with `#` (possibly after some whitespace) are ignored (and typically used for comments). Leading and trailing whitespace is stripped from values; but a *value* can be double-quoted, which allows for inclusion of leading and trailing whitespace.
