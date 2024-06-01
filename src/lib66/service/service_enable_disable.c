@@ -50,6 +50,11 @@ static void service_enable_disable_deps(graph_t *g, struct resolve_hash_s *hash,
             if (h == NULL)
                 log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
+            if ((action ? h->res.enabled : !h->res.enabled) && !h->res.inns) {
+                log_warn("service: ", h->res.sa.s + h->res.name, " already ", action ? "enabled" : "disabled", " -- ignoring it") ;
+                continue ;
+            }
+
             if (!h->visit) {
                 service_enable_disable(g, h, hres, action, propagate, info) ;
                 h->visit = 1 ;
