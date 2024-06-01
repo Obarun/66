@@ -35,8 +35,6 @@ static void sanitize_it(resolve_service_t *res)
 
     sanitize_fdholder(res, &sta, STATE_FLAGS_FALSE, 0) ;
 
-    svc_send_fdholder(res->sa.s + res->live.fdholderdir, "twR") ;
-
     state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_TRUE) ;
     state_set_flag(&sta, STATE_FLAGS_ISUP, STATE_FLAGS_FALSE) ;
 
@@ -59,6 +57,7 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, struct 
 
     unsigned int pos = 0 ;
     size_t bpos = 0 ;
+    char *fdholderdir = 0 ;
 
     if (!alen)
         return ;
@@ -66,8 +65,8 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, struct 
     for (; pos < alen ; pos++) {
 
         char *name = g->data.s + genalloc_s(graph_hash_t,&g->hash)[alist[pos]].vertex ;
-
         struct resolve_hash_s *hash = hash_search(hres, name) ;
+
         if (hash == NULL)
         /** This would happen uniquely in case of module.
          * Service inside module may not the same as the
@@ -80,6 +79,8 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, struct 
          * need to be review anynway on future release*/
             //log_dieu(LOG_EXIT_SYS,"find hash id of: ", name, " -- please make a bug reports") ;
             continue ;
+
+        fdholderdir = hash->res.sa.s + hash->res.live.fdholderdir ;
 
         sanitize_it(&hash->res) ;
 
@@ -103,5 +104,7 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, struct 
             }
         }
     }
+
+    svc_send_fdholder(fdholderdir, "twR") ;
 }
 
