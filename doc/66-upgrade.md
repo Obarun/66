@@ -11,6 +11,38 @@ author: Eric Vidal <eric@obarun.org>
 
 ---
 
+# In 0.7.2.0
+
+- Adapt to `oblibs` 0.3.0.1`
+
+- Bugs fix:
+
+    - Logger destination directory for a oneshot or logger destination directory for a service inside a module are now properly deleted at `remove` subcommand invocation.
+    - Allow empty modules.
+    - Respect the associated tree of a service at `enable` process time if it were already enabled.
+
+- Behavior changes:
+
+    - The `-s` and `-c` options to the `configure` subcommand are now mutually exclusive.
+    - Service inside module cannot be reconfigured alone. The whole module must be reconfigured instead.
+    - To be consistent between subcommand, the `scandir reload` subcommand was renamed to `scandir reconfigure`. The old subcommand invocation still work.
+    - The configuration directory used to build a module is not kept anymore after a parse process. A temporary is used instead.
+
+- New features:
+
+    - The contains of the %%environment_adm%% or %%environment_user%% for root and regular user respectively is imported by default at `scandir start` command invocation.
+    Although this can be changed at compile time by passing the `--with-sysadmin-environment=DIR `, `--with-user-environment=DIR` for root and regular user respectively
+
+- Enhancement:
+
+    - Avoid to crash at `unsupervise` process with a corrupted service. This allows to avoid to be stuck at `remove` command invocation for a corrupted service or a corrupted state service within module.
+    - Avoid to crash at `stop` process if the service is already unsupervised.
+    - Earn rapidity at `unsupervise` process by sending only one signal for all services to the `fdholder` service.
+    - Use temporary directory for the creation of a the module configuration directories.
+    - Complete review of the *struct enum* ecosystem and passing from an O(n*m) algorithm to O(1). This also serves as preparation for future releases that will include new sections and key fields.
+
+---
+
 # In 0.7.1.1
 
 - Bugs fix:
