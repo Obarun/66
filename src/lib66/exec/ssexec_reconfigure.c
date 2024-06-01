@@ -122,7 +122,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
             toenable[ntoenable++] = *hash ;
 
         if (!issupervised) {
-            /* only force to parse it again */
+            /* parse it again only if force was requested */
             continue ;
 
         } else {
@@ -156,7 +156,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
          * for the parse and start process. */
         char tree[info->treename.len + 1] ;
         auto_strings(tree, info->treename.s) ;
-
+        uint32_t opstree = info->opt_tree ;
         info->treename.len = 0 ;
         info->opt_tree = 0 ;
 
@@ -198,7 +198,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         info->treename.len = 0 ;
         if (!auto_stra(&info->treename, tree))
             log_die_nomem("stralloc") ;
-        info->opt_tree = 1 ;
+        info->opt_tree = opstree ;
     }
 
     /** force to parse again the service */
