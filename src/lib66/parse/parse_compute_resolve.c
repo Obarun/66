@@ -131,32 +131,27 @@ uint32_t compute_pipe_service(resolve_wrapper_t_ref wres, ssexec_t *info, char c
 /**
  * @!runorfinish -> finish, @runorfinish -> run
  * */
-static void compute_wrapper_scripts(resolve_service_t *res, resolve_service_addon_scripts_t *scripts, char const *file, uint8_t runorfinish)
+static void compute_wrapper_scripts(resolve_service_t *res, uint8_t runorfinish)
 {
     log_flow() ;
 
+    resolve_service_addon_scripts_t *script = runorfinish ? &res->execute.run : &res->execute.finish ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     char *shebang = "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -" ;
+    /** TODO:
+     *  -v${VERBOSITY} should use to correspond to the
+     *  request of the user.
+     *   */
+    char *exec = SS_EXTLIBEXECPREFIX "66-execute" ;
+    char run[strlen(shebang) + 3 + strlen(exec) + 7 + strlen(res->sa.s + res->name) + 4 + 1] ;
 
-    char run[SS_MAX_PATH_LEN + 1] ;
+    auto_strings(run, \
+        shebang, (!runorfinish) ? ((res->type == TYPE_CLASSIC) ? "S0\n" : "P\n") : "P\n", \
+        exec, \
+        !runorfinish ? " stop " : " start ", \
+        res->sa.s + res->name, (!runorfinish) ? " $@\n" : "\n") ;
 
-    auto_strings(run, shebang, !runorfinish ? (res->type != TYPE_ONESHOT ? "S0\n" : "P\n") : "P\n") ;
-
-    if (res->logger.want && res->type != TYPE_ONESHOT)
-        auto_strings(run + FAKELEN, \
-                SS_EXECLINE_SHEBANGPREFIX "fdmove 1 0\n", \
-                S6_BINPREFIX "s6-fdholder-retrieve ", \
-                res->sa.s + res->live.fdholderdir, "/s ", \
-                "\"" SS_FDHOLDER_PIPENAME "w-", \
-                res->sa.s + res->name, SS_LOG_SUFFIX "\"\n", \
-                SS_EXECLINE_SHEBANGPREFIX "fdswap 0 1\n") ;
-
-    auto_strings(run + FAKELEN, "./", file, ".user", !runorfinish ? (res->type != TYPE_ONESHOT ? " $@\n" : "\n") : "\n") ;
-
-    if (runorfinish)
-        res->execute.run.run = resolve_add_string(wres, run) ;
-    else
-        res->execute.finish.run = resolve_add_string(wres, run) ;
+    script->run = resolve_add_string(wres, run) ;
 
     free(wres) ;
 }
@@ -164,67 +159,39 @@ static void compute_wrapper_scripts(resolve_service_t *res, resolve_service_addo
 /**
  * @!runorfinish -> finish.user, @runofinish -> run.user
  * */
-static void compute_wrapper_scripts_user(resolve_service_t *res, resolve_service_addon_scripts_t *scripts, uint8_t runorfinish)
+static void compute_wrapper_scripts_user(resolve_service_t *res, uint8_t runorfinish)
 {
 
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     char *shebang = 0 ;
-    size_t scriptlen = strlen(res->sa.s + scripts->run_user) ;
-    size_t loglen = (res->logger.want && res->type == TYPE_ONESHOT) ? strlen(res->sa.s + res->logger.destination) : 0 ;
-    size_t runaslen = (!res->owner && scripts->runas) ? strlen(res->sa.s + scripts->runas) : 0 ;
-    int build = !strcmp(res->sa.s + scripts->build, "custom") ? BUILD_CUSTOM : BUILD_AUTO ;
-    size_t execlen = !build ? (res->environ.envdir ? (strlen(res->sa.s + res->environ.envdir) + 19 + SS_SYM_VERSION_LEN + 1) : 0) : 0 ;
     size_t fakelen = 0, shebanglen = 0 ;
+    resolve_service_addon_scripts_t *script = runorfinish ? &res->execute.run : &res->execute.finish ;
+    size_t scriptlen = strlen(res->sa.s + script->run_user) ;
+    int build = !strcmp(res->sa.s + script->build, "custom") ? BUILD_CUSTOM : BUILD_AUTO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+
     /** shebang is deprecated*/
-    if (scripts->shebang)
+    if (script->shebang)
         log_warn("@shebang field is deprecated -- please define it at the start of your @execute field instead") ;
 
-    if (build && scripts->shebang) {
-        shebang = res->sa.s + scripts->shebang ;
+    if (build && script->shebang) {
+        shebang = res->sa.s + script->shebang ;
         shebanglen = strlen(shebang) ;
     } else if (!build) {
-        shebang = SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n" ;
+        shebang = "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P" ;
         shebanglen = strlen(shebang) ;
     }
 
-    char run[shebanglen + (loglen + 22) + 14 + execlen + (runaslen + 14) + scriptlen + 4 + 1] ;
+    char run[shebanglen + 1 + scriptlen + 1 + 1] ;
 
+    auto_strings(run, shebang, "\n") ;
+    fakelen = FAKELEN ;
 
-    if (build && scripts->shebang) {
+    if (script->run_user)
+        auto_strings(run + fakelen, res->sa.s + script->run_user, "\n") ;
 
-        auto_strings(run, "#!") ;
-        auto_strings(run + FAKELEN, res->sa.s + scripts->shebang, "\n") ;
-        fakelen = FAKELEN ;
-
-    } else if (!build) {
-
-        auto_strings(run, "#!") ;
-        auto_strings(run + FAKELEN, shebang) ;
-
-        if (res->logger.want && res->type == TYPE_ONESHOT)
-            auto_strings(run + FAKELEN, SS_EXECLINE_SHEBANGPREFIX "redirfd -a 1 ", res->sa.s + res->logger.destination, "/current\n") ;
-
-        auto_strings(run + FAKELEN, SS_EXECLINE_SHEBANGPREFIX "fdmove -c 2 1\n") ;
-
-        if (res->environ.envdir)
-            auto_strings(run + FAKELEN, "execl-envfile -v4 ", res->sa.s + res->environ.envdir, SS_SYM_VERSION "\n") ;
-
-        /** runas */
-        if (!res->owner && scripts->runas)
-            auto_strings(run + FAKELEN, S6_BINPREFIX "s6-setuidgid ", res->sa.s + scripts->runas, "\n") ;
-
-        fakelen = FAKELEN ;
-
-    }
-
-    auto_strings(run + fakelen, res->sa.s + scripts->run_user, "\n") ;
-
-    if (runorfinish)
-        res->execute.run.run_user = resolve_add_string(wres, run) ;
-    else
-        res->execute.finish.run_user = resolve_add_string(wres, run) ;
+    script->run_user = resolve_add_string(wres, run) ;
 
     free(wres) ;
 }
@@ -287,34 +254,11 @@ void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
 
     if (res->type == TYPE_ONESHOT || res->type == TYPE_CLASSIC) {
 
-        // {run,up}/{run,up}.user script
-        if (res->type == TYPE_ONESHOT) {
+        compute_wrapper_scripts(res, 1) ; // run
+        compute_wrapper_scripts(res, 0) ; // finish
 
-            compute_wrapper_scripts(res, &res->execute.run, "up", 1) ;
-            compute_wrapper_scripts_user(res, &res->execute.run, 1) ;
-
-        } else {
-
-            compute_wrapper_scripts(res, &res->execute.run, "run", 1) ;
-            compute_wrapper_scripts_user(res, &res->execute.run, 1) ;
-
-        }
-
-        // {finish,down}/{finish,down}.user script
-        if (res->execute.finish.run_user) {
-
-            if (res->type == TYPE_ONESHOT) {
-
-                compute_wrapper_scripts(res, &res->execute.finish, "down", 0) ;
-                compute_wrapper_scripts_user(res, &res->execute.finish, 0) ;
-
-            } else {
-
-                compute_wrapper_scripts(res, &res->execute.finish, "finish", 0) ;
-                compute_wrapper_scripts_user(res, &res->execute.finish, 0) ;
-
-            }
-        }
+        compute_wrapper_scripts_user(res, 1) ; // run.user
+        compute_wrapper_scripts_user(res, 0) ; // finish.user
     }
 
     free(wres) ;

@@ -47,7 +47,6 @@ void write_logger(resolve_service_t *res, char const *destination, uint8_t force
 
     uid_t log_uid ;
     gid_t log_gid ;
-    uint8_t owner = res->owner ;
 
     char *logrunner = res->execute.run.runas ? res->sa.s + res->execute.run.runas : SS_LOGGER_RUNNER ;
 
@@ -76,11 +75,7 @@ void write_logger(resolve_service_t *res, char const *destination, uint8_t force
         log_dieusys(LOG_EXIT_SYS, "write uint file ", SS_NOTIFICATION) ;
     }
 
-    /** log destination
-     *
-     * The creation of the log destination directory is made at sanitize_init
-     * to avoid none existing directory if the destination is on tmpfs directory
-     */
+    /** The creation of the log destination directory is made by the 66-execute program */
 
     char write[strlen(destination) + 10] ;
 
@@ -96,27 +91,5 @@ void write_logger(resolve_service_t *res, char const *destination, uint8_t force
     if (chmod(write, 0755) < 0) {
         parse_cleanup(res, destination, force) ;
         log_dieusys(LOG_EXIT_SYS, "chmod", write) ;
-    }
-
-    /** run.user script */
-    log_trace("write file: ", destination, "/run.user") ;
-    if (!file_write_unsafe(destination, "run.user", res->sa.s + res->execute.run.run_user, strlen(res->sa.s + res->execute.run.run_user))) {
-        parse_cleanup(res, destination, force) ;
-        log_dieusys(LOG_EXIT_SYS, "write: ", destination, "/run.user") ;
-    }
-
-    auto_strings(write, destination, "/run.user") ;
-
-    if (chmod(write, 0755) < 0) {
-        parse_cleanup(res, destination, force) ;
-        log_dieusys(LOG_EXIT_SYS, "chmod", write) ;
-    }
-
-    if (!owner) {
-
-        if (chown(write, log_uid, log_gid) == -1) {
-            parse_cleanup(res, destination, force) ;
-            log_dieusys(LOG_EXIT_SYS, "chown: ", write) ;
-        }
     }
 }

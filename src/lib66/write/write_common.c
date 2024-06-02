@@ -34,7 +34,7 @@
 #include <66/environ.h>
 #include <66/enum.h>
 
-int write_common(resolve_service_t *res, char const *dst)
+int write_common(resolve_service_t *res, char const *dst, uint8_t force)
 {
     log_flow() ;
 
@@ -185,5 +185,18 @@ int write_common(resolve_service_t *res, char const *dst)
         stralloc_free(&sa) ;
     }
 
+    /** run file */
+    if (!write_execute_scripts("run", res->sa.s + res->execute.run.run, dst, 0)) {
+        parse_cleanup(res, dst, force) ;
+        log_dieu(LOG_EXIT_SYS, "write execute script of: ", res->sa.s + res->name) ;
+    }
+
+    /** finish file */
+    if (res->execute.finish.run) {
+        if (!write_execute_scripts("finish", res->sa.s + res->execute.finish.run, dst, 0)) {
+            parse_cleanup(res, dst, force) ;
+            log_dieu(LOG_EXIT_SYS, "write execute script of: ", res->sa.s + res->name) ;
+        }
+    }
     return 1 ;
 }

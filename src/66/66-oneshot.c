@@ -48,7 +48,7 @@ int main(int argc, char const *const *argv)
     char upath[UINT_FMT] ;
     upath[uint_fmt(upath, SS_MAX_PATH)] = 0 ;
     char const *path = 0 ;
-    char *file = "up" ;
+    char *file = "run" ;
 
     PROG = "66-oneshot" ;
     {
@@ -73,7 +73,7 @@ int main(int argc, char const *const *argv)
         log_usage(USAGE) ;
 
     if (argv[0][0] == 'd')
-        file = "down" ;
+        file = "finish" ;
 
     if (argv[0][0] != 'd' && argv[0][0] != 'u')
         log_die(LOG_EXIT_USER, "only up or down signals are allowed") ;
@@ -86,7 +86,7 @@ int main(int argc, char const *const *argv)
 
     if (access(argv[1], F_OK) < 0) {
 
-        if (file[0] == 'd')
+        if (file[0] == 'f')
             /* really nothing to do here */
             return 0 ;
 
@@ -100,11 +100,19 @@ int main(int argc, char const *const *argv)
     char script[len + 1 + strlen(file) + 1] ;
     auto_strings(script, path, "/", file) ;
 
-    if (file[0] == 'd')
-        /** do not crash if the down file doesn't exist
-         * considere it down instead*/
-         if (access(script, F_OK) < 0)
-            _exit(0) ;
+    /** Keep compatibility with previous version */
+    if (access(script, F_OK) < 0) {
+        // try with the old name
+        auto_strings(script + len + 1, (file[0] == 'f') ? "down" : "up") ;
+        if (access(script, F_OK) < 0){
+            if (file[0] == 'f')
+                _exit(0) ;
+            else
+                log_dieusys(LOG_EXIT_SYS, "find: ", script) ;
+        }
+
+        file = (file[0] == 'f') ? "down" : "up" ;
+    }
 
     /**
      * be paranoid and avoid to crash just for a

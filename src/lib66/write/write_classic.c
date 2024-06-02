@@ -28,36 +28,8 @@ void write_classic(resolve_service_t *res, char const *dst, uint8_t force)
     log_flow() ;
 
     /**notification,timeout, ... */
-    if (!write_common(res, dst)) {
+    if (!write_common(res, dst, force)) {
         parse_cleanup(res, dst, force) ;
         log_dieu(LOG_EXIT_SYS, "write common file of: ", res->sa.s + res->name) ;
-    }
-
-    /** run file */
-    if (!write_execute_scripts("run", res->sa.s + res->execute.run.run, dst, 0)) {
-        parse_cleanup(res, dst, force) ;
-        log_dieu(LOG_EXIT_SYS, "write execute script of: ", res->sa.s + res->name) ;
-    }
-
-    /** finish file */
-    if (res->execute.finish.run_user) {
-        if (!write_execute_scripts("finish", res->sa.s + res->execute.finish.run, dst, 0)) {
-            parse_cleanup(res, dst, force) ;
-            log_dieu(LOG_EXIT_SYS, "write execute script of: ", res->sa.s + res->name) ;
-        }
-    }
-
-    /** run.user file */
-    if (!write_execute_scripts("run.user", res->sa.s + res->execute.run.run_user, dst, res->execute.run.runas ? res->sa.s + res->execute.run.runas : 0)) {
-        parse_cleanup(res, dst, force) ;
-        log_dieu(LOG_EXIT_SYS, "write execute script of: ", res->sa.s + res->name) ;
-    }
-
-    /** finish.user file */
-    if (res->execute.finish.run_user) {
-        if (!write_execute_scripts("finish.user", res->sa.s + res->execute.finish.run_user, dst, res->execute.finish.runas ? res->sa.s + res->execute.finish.runas : 0)) {
-            parse_cleanup(res, dst, force) ;
-            log_dieu(LOG_EXIT_SYS, "write execute script of: ", res->sa.s + res->name) ;
-        }
     }
 }

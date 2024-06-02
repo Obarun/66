@@ -110,15 +110,12 @@ static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
 
     {
         /** run scripts */
-        char run[SS_MAX_PATH_LEN + 1] ;
+        char run[strlen(shebang) + 17 + strlen(res->sa.s + res->name) + 1 + 1] ;
 
         auto_strings(run, \
                     shebang, \
-                    "s6-fdholder-retrieve ", \
-                    res->sa.s + res->live.fdholderdir, "/s ", \
-                    "\"" SS_FDHOLDER_PIPENAME "r-", \
-                    res->sa.s + res->logger.name, "\"\n", \
-                    "./run.user\n") ;
+                    SS_EXTLIBEXECPREFIX "66-execute start ", \
+                    log->sa.s + log->name, "\n") ;
 
         log->execute.run.run = resolve_add_string(wres, run) ;
 
@@ -130,12 +127,6 @@ static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
             char run[SS_MAX_PATH_LEN + 1] ;
 
             auto_strings(run, shebang) ;
-
-            auto_strings(run + FAKELEN, SS_EXECLINE_SHEBANGPREFIX "fdmove -c 2 1\n") ;
-
-            /** runas */
-            if (!res->owner)
-                auto_strings(run + FAKELEN, S6_BINPREFIX "s6-setuidgid ", logrunner, "\n") ;
 
             auto_strings(run + FAKELEN, S6_BINPREFIX "s6-log ") ;
 

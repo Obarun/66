@@ -20,6 +20,7 @@ src/include/66/symlink.h: src/include/66/service.h
 src/include/66/tree.h: src/include/66/hash.h src/include/66/resolve.h src/include/66/ssexec.h
 src/include/66/utils.h: src/include/66/ssexec.h
 src/include/66/write.h: src/include/66/service.h
+src/66/66-execute.o src/66/66-execute.lo: src/66/66-execute.c src/include/66/constants.h src/include/66/enum.h src/include/66/resolve.h src/include/66/service.h src/include/66/utils.h
 src/66/66-fdholder-filler.o src/66/66-fdholder-filler.lo: src/66/66-fdholder-filler.c src/include/66/constants.h
 src/66/66-hpr.o src/66/66-hpr.lo: src/66/66-hpr.c src/include/66/config.h src/include/66/hpr.h
 src/66/66-oneshot.o src/66/66-oneshot.lo: src/66/66-oneshot.c src/include/66/constants.h src/include/66/resolve.h src/include/66/service.h
@@ -247,6 +248,8 @@ src/lib66/write/write_service.o src/lib66/write/write_service.lo: src/lib66/writ
 src/lib66/write/write_uint.o src/lib66/write/write_uint.lo: src/lib66/write/write_uint.c
 66: EXTRA_LIBS := -ls6 -loblibs -lskarnet
 66: src/66/66.o ${LIB66}
+66-execute: EXTRA_LIBS := -ls6 -loblibs -lexecline -lskarnet
+66-execute: src/66/66-execute.o ${LIB66} 
 66-fdholder-filler: EXTRA_LIBS := -ls6 -loblibs -lskarnet
 66-fdholder-filler: src/66/66-fdholder-filler.o ${LIB66}  
 66-hpr: EXTRA_LIBS := -loblibs -lskarnet ${SYSCLOCK_LIB} ${SOCKET_LIB}

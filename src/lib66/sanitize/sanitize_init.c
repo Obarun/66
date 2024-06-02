@@ -288,35 +288,6 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, struct re
             }
         }
 
-        if ((pres->type == TYPE_CLASSIC || pres->type == TYPE_ONESHOT) && pres->logger.want) {
-
-            /** Creation of the logger destination. This is made here to avoid
-             * issues on tmpfs logger directory destination */
-            uid_t log_uid ;
-            gid_t log_gid ;
-            char *logrunner = pres->sa.s + pres->logger.execute.run.runas ;
-            char *dst = pres->sa.s + pres->logger.destination ;
-
-            if (!youruid(&log_uid, logrunner) || !yourgid(&log_gid, log_uid)) {
-                cleanup(toclean, ntoclean) ;
-                log_dieusys(LOG_EXIT_SYS, "get uid and gid of: ", logrunner) ;
-            }
-
-            log_trace("create directory: ", dst) ;
-            if (!dir_create_parent(dst, 0755)) {
-                cleanup(toclean, ntoclean) ;
-                log_dieusys(LOG_EXIT_SYS, "create directory: ", dst) ;
-            }
-
-            if (!pres->owner && (strcmp(pres->sa.s + pres->logger.execute.run.build, "custom"))) {
-
-                if (chown(dst, log_uid, log_gid) == -1) {
-                    cleanup(toclean, ntoclean) ;
-                    log_dieusys(LOG_EXIT_SYS, "chown: ", dst) ;
-                }
-            }
-        }
-
         /** Consider Module as supervised */
         state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_FALSE) ;
         state_set_flag(&sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE) ;

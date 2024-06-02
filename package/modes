@@ -4,6 +4,7 @@
 66-hpr              0755
 66-umountall        0755
 66-echo             0755
+66-execute          0755
 66-nuke             0755
 66-oneshot          0755
 66-fdholder-filler  0755

@@ -52,13 +52,8 @@ void write_services(resolve_service_t *res, char const *workdir, uint8_t force)
             break ;
 
         case TYPE_CLASSIC:
-
-            write_classic(res, workdir, force) ;
-            break ;
-
         case TYPE_ONESHOT:
-
-            write_oneshot(res, workdir, force) ;
+            write_common(res, workdir, force) ;
             break ;
 
         case 10:

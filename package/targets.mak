@@ -9,6 +9,7 @@ execl-envfile \
 66-nuke
 
 LIBEXEC_TARGETS := \
+66-execute \
 66-fdholder-filler \
 66-oneshot
 
