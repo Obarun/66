@@ -97,8 +97,7 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
     if ((svc_scandir_ok(info->scandir.s)) != 1)
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
 
-    /** build the graph of the entire system */
-    graph_build_service(&graph, &hres, info, flag) ;
+    graph_build_arguments(&graph, argv, argc, &hres, info, flag) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- did you start it first?") ;
@@ -106,7 +105,7 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
     for (; pos < argc ; pos++) {
 
         /** The service may not be supervised, so it will be ignored by the
-         * function graph_build_service. In this case, the service does not
+         * function graph_build_arguments. In this case, the service does not
          * exist at array.
          *
          * This the stop process, just ignore it as it already down anyway */

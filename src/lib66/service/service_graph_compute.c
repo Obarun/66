@@ -1,5 +1,5 @@
 /*
- * service_graph_build.c
+ * service_graph_compute.c
  *
  * Copyright (c) 2018-2024 Eric Vidal <eric@obarun.org>
  *
@@ -62,7 +62,7 @@ static void issupervised(char *store, struct resolve_hash_s **hres, char const *
     store[strlen(store) - 1] = 0 ;
 }
 
-void service_graph_build(graph_t *g, struct resolve_hash_s **hres, uint32_t flag)
+void service_graph_compute(graph_t *g, struct resolve_hash_s **hres, uint32_t flag)
 {
     log_flow() ;
 

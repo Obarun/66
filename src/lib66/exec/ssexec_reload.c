@@ -103,8 +103,7 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
         }
     }
 
-    /** build the graph of the entire system */
-    graph_build_service(&graph, &hres, info, flag) ;
+    graph_build_arguments(&graph, argv, argc, &hres, info, flag) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;

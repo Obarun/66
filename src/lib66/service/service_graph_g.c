@@ -80,7 +80,7 @@ void service_graph_g(char const *slist, size_t slen, graph_t *graph, struct reso
 
     debug_flag(flag) ;
 
-    service_graph_collect(graph, slist, slen, hres, info, flag) ;
+    service_graph_collect_list(graph, slist, slen, hres, info, flag) ;
 
     if (!HASH_COUNT(*hres)) {
         /* avoid empty string */
@@ -88,5 +88,5 @@ void service_graph_g(char const *slist, size_t slen, graph_t *graph, struct reso
         return ;
     }
 
-    service_graph_build(graph, hres, flag) ;
+    service_graph_compute(graph, hres, flag) ;
 }

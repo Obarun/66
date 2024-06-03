@@ -328,9 +328,11 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    graph_build_service(&graph, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
+    service_graph_collect(&graph, res->sa.s + res->name, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTDOWN) ;
 
-   if (!graph.mlen)
+    service_graph_compute(&graph, &hres, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTDOWN) ;
+
+    if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
 
     unsigned int list[graph.mlen] ;
@@ -404,7 +406,9 @@ static void info_display_deps(char const *field, resolve_service_t *res)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    graph_build_service(&graph, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
+    service_graph_collect(&graph, res->sa.s + res->name, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
+
+    service_graph_compute(&graph, &hres, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;

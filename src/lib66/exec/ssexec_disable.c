@@ -43,7 +43,7 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
 
     memset(tostop, 0, sizeof(struct resolve_hash_s) * argc) ;
 
-    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
+    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTDOWN) ;
     {
         subgetopt l = SUBGETOPT_ZERO ;
 
@@ -89,8 +89,7 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
     if (argc < 1)
         log_usage(info->usage, "\n", info->help) ;
 
-    /** build the graph of the entire system */
-    graph_build_service(&graph, &hres, info, flag) ;
+    graph_build_arguments(&graph, argv, argc, &hres, info, flag) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- try to parse it first") ;

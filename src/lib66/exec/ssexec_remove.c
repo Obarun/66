@@ -143,7 +143,7 @@ static void remove_logger(resolve_service_t *res, ssexec_t *info)
     log_trace("remove symlink: ", lres.sa.s + lres.live.scandir) ;
     unlink_void(lres.sa.s + lres.live.scandir) ;
 
-    log_info("removed successfully logger of: ", res->sa.s + res->name) ;
+    log_info("removed successfully: ", lres.sa.s + lres.name) ;
 
     resolve_free(lwres) ;
 }

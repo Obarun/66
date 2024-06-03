@@ -34,141 +34,143 @@
  * STATE_FLAGS_TOPARSE -> call sanitize_source
  * STATE_FLAGS_TOPROPAGATE -> it build with the dependencies/requiredby services.
  * STATE_FLAGS_ISSUPERVISED -> only keep already supervised service*/
-void service_graph_collect(graph_t *g, char const *slist, size_t slen, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag)
+void service_graph_collect(graph_t *g, char const *name, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag)
 {
     log_flow () ;
 
     int r ;
-    size_t pos = 0 ;
     ss_state_t ste = STATE_ZERO ;
-
-    resolve_wrapper_t_ref wres = 0 ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     struct resolve_hash_s *hash = 0 ;
+    short readagain = 0 ;
 
-    for (; pos < slen ; pos += strlen(slist + pos) + 1) {
+    hash = hash_search(hres, name) ;
 
-        char const *name = slist + pos ;
-        hash = hash_search(hres, name) ;
+    if (hash == NULL) {
 
-        if (hash == NULL) {
+        /** double pass with resolve_read.
+         * The service may already exist, respects the treename before the
+         * call of sanitize_source if the -t option was not set by user.
+         * The service do not exist yet, sanitize it with sanitize_source
+         * and read again the resolve file to know the change */
+        r = resolve_read_g(wres, info->base.s, name) ;
+        if (r < 0)
+            log_dieu(LOG_EXIT_SYS, "read resolve file: ", name) ;
 
-            resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-            wres = resolve_set_struct(DATA_SERVICE, &res) ;
+        if (r) {
 
-            /** double pass with resolve_read.
-             * The service may already exist, respects the treename before the
-             * call of sanitize_source if the -t option was not set by user.
-             * The service do not exist yet, sanitize it with sanitize_source
-             * and read again the resolve file to know the change */
-            r = resolve_read_g(wres, info->base.s, name) ;
-            if (r < 0)
-                log_dieu(LOG_EXIT_SYS, "read resolve file: ", name) ;
+            if (!info->opt_tree) {
 
-            if (r) {
+                info->treename.len = 0 ;
 
-                if (!info->opt_tree) {
+                if (!auto_stra(&info->treename, res.sa.s + res.treename))
+                    log_die_nomem("stralloc") ;
+            }
 
-                    info->treename.len = 0 ;
+        } else if (FLAGS_ISSET(flag, STATE_FLAGS_TOPARSE)) {
 
-                    if (!auto_stra(&info->treename, res.sa.s + res.treename))
-                        log_die_nomem("stralloc") ;
-                }
+            sanitize_source(name, info, flag) ;
+            readagain++ ;
 
-            } else if (FLAGS_ISSET(flag, STATE_FLAGS_TOPARSE)) {
+        } else {
 
-                sanitize_source(name, info, flag) ;
+            resolve_free(wres) ;
+            return ;
+        }
 
-            } else
-                continue ;
-
+        if (readagain)
             if (resolve_read_g(wres, info->base.s, name) <= 0)
                 log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name, " -- please make a bug report") ;
 
-            if (!state_read(&ste, &res))
-                log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug report") ;
+        if (!state_read(&ste, &res))
+            log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug report") ;
 
-            if (FLAGS_ISSET(flag, STATE_FLAGS_ISEARLIER)) {
+        if (FLAGS_ISSET(flag, STATE_FLAGS_ISEARLIER)) {
 
-                if (res.earlier) {
-
-                    log_trace("add service: ", name, " to the graph selection") ;
-                    if (!hash_add(hres, name, res))
-                        log_dieu(LOG_EXIT_SYS, "append graph selection with: ", name) ;
-                    continue ;
-                }
-                resolve_free(wres) ;
-                continue ;
-            }
-
-            if (FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {
-
-                if (ste.issupervised == STATE_FLAGS_TRUE) {
-
-                    log_trace("add service: ", name, " to the graph selection") ;
-                    if (!hash_add(hres, name, res))
-                        log_dieu(LOG_EXIT_SYS, "append graph selection with: ", name) ;
-
-                } else {
-                    resolve_free(wres) ;
-                    continue ;
-                }
-
-            } else {
+            if (res.earlier) {
 
                 log_trace("add service: ", name, " to the graph selection") ;
                 if (!hash_add(hres, name, res))
                     log_dieu(LOG_EXIT_SYS, "append graph selection with: ", name) ;
+
+                return ;
+            }
+            resolve_free(wres) ;
+            return ;
+        }
+
+        if (FLAGS_ISSET(flag, STATE_FLAGS_ISSUPERVISED)) {
+
+            if (ste.issupervised == STATE_FLAGS_TRUE) {
+
+                log_trace("add service: ", name, " to the graph selection") ;
+                if (!hash_add(hres, name, res))
+                    log_dieu(LOG_EXIT_SYS, "append graph selection with: ", name) ;
+
+            } else {
+                resolve_free(wres) ;
+                return ;
             }
 
-            if (FLAGS_ISSET(flag, STATE_FLAGS_TOPROPAGATE)) {
+        } else {
 
-                if (res.dependencies.ndepends && FLAGS_ISSET(flag, STATE_FLAGS_WANTUP)) {
+            log_trace("add service: ", name, " to the graph selection") ;
+            if (!hash_add(hres, name, res))
+                log_dieu(LOG_EXIT_SYS, "append graph selection with: ", name) ;
 
-                    size_t len = strlen(res.sa.s + res.dependencies.depends) ;
-                    _alloc_stk_(stk, len + 1) ;
+        }
 
-                    if (!stack_string_clean(&stk, res.sa.s + res.dependencies.depends))
-                        log_dieusys(LOG_EXIT_SYS, "clean string") ;
+        if (FLAGS_ISSET(flag, STATE_FLAGS_TOPROPAGATE)) {
 
-                    service_graph_collect(g, stk.s, stk.len, hres, info, flag) ;
+            if (res.dependencies.ndepends && FLAGS_ISSET(flag, STATE_FLAGS_WANTUP)) {
 
-                }
-
-                if (res.dependencies.nrequiredby && FLAGS_ISSET(flag, STATE_FLAGS_WANTDOWN)) {
-
-                    size_t len = strlen(res.sa.s + res.dependencies.requiredby) ;
-                    _alloc_stk_(stk, len + 1) ;
-
-                    if (!stack_string_clean(&stk, res.sa.s + res.dependencies.requiredby))
-                        log_dieusys(LOG_EXIT_SYS, "clean string") ;
-
-                    service_graph_collect(g, stk.s, stk.len, hres, info, flag) ;
-                }
-
-            }
-
-            /**
-             * In case of crash of a command and for whatever the reason, the
-             * service inside the module may not corresponds to the state of the
-             * module itself.
-             *
-             * Whatever the current state of service inside the module, we keep
-             * trace of its because others commands will look for these inner services.
-             *
-             * At the end of any process, the ssexec_signal will deal properly
-             * with the current state and the desire state of the service. */
-            if (res.type == TYPE_MODULE && res.dependencies.ncontents) {
-
-                size_t len = strlen(res.sa.s + res.dependencies.contents) ;
+                size_t len = strlen(res.sa.s + res.dependencies.depends) ;
                 _alloc_stk_(stk, len + 1) ;
 
-                if (!stack_string_clean(&stk, res.sa.s + res.dependencies.contents))
+                if (!stack_string_clean(&stk, res.sa.s + res.dependencies.depends))
                     log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
-                service_graph_collect(g, stk.s, stk.len, hres, info, flag) ;
+                service_graph_collect_list(g, stk.s, stk.len, hres, info, flag) ;
+
             }
 
-            free(wres) ;
+            if (res.dependencies.nrequiredby && FLAGS_ISSET(flag, STATE_FLAGS_WANTDOWN)) {
+
+                size_t len = strlen(res.sa.s + res.dependencies.requiredby) ;
+                _alloc_stk_(stk, len + 1) ;
+
+                if (!stack_string_clean(&stk, res.sa.s + res.dependencies.requiredby))
+                    log_dieusys(LOG_EXIT_SYS, "clean string") ;
+
+                service_graph_collect_list(g, stk.s, stk.len, hres, info, flag) ;
+            }
+
         }
+
+        /**
+         * In case of crash of a command and for whatever the reason, the
+         * service inside the module may not corresponds to the state of the
+         * module itself.
+         *
+         * Whatever the current state of service inside the module, we keep
+         * trace of its because others commands will look for these inner services.
+         *
+         * At the end of any process, the ssexec_signal will deal properly
+         * with the current state and the desire state of the service. */
+        if (res.type == TYPE_MODULE && res.dependencies.ncontents) {
+
+            size_t len = strlen(res.sa.s + res.dependencies.contents) ;
+            _alloc_stk_(stk, len + 1) ;
+
+            if (!stack_string_clean(&stk, res.sa.s + res.dependencies.contents))
+                log_dieusys(LOG_EXIT_SYS, "clean string") ;
+
+            service_graph_collect_list(g, stk.s, stk.len, hres, info, flag) ;
+        }
+
     }
+
+    free(wres) ;
 }
+

@@ -81,10 +81,10 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
     if (argc < 1)
         log_usage(info->usage, "\n", info->help) ;
 
-    for (; *argv ; argv++) {
+    for (int n = 0 ; n < argc && argv[n] ; n++) {
 
         sa.len = 0 ;
-        size_t namelen = strlen(*argv) ;
+        size_t namelen = strlen(argv[n]) ;
         char const *sv = 0 ;
         char bname[namelen + 1] ;
         char dname[namelen + 1] ;
@@ -94,17 +94,17 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
 
         if (argv[0][0] == '/') {
 
-            if (!ob_dirname(dname, *argv))
-                log_dieu(LOG_EXIT_SYS, "get dirname of: ", *argv) ;
+            if (!ob_dirname(dname, argv[n]))
+                log_dieu(LOG_EXIT_SYS, "get dirname of: ", argv[n]) ;
 
-            if (!ob_basename(bname, *argv))
-                log_dieu(LOG_EXIT_SYS, "get basename of: ", *argv) ;
+            if (!ob_basename(bname, argv[n]))
+                log_dieu(LOG_EXIT_SYS, "get basename of: ", argv[n]) ;
 
             sv = bname ;
             directory_forced = dname ;
 
         } else
-            sv = *argv ;
+            sv = argv[n] ;
 
         name_isvalid(sv) ;
 

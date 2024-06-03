@@ -77,11 +77,16 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
     if (argc < 1)
         log_usage(info->usage, "\n", info->help) ;
 
-    for(; n < argc ; n++)
+    for(; n < argc ; n++) {
         sanitize_source(argv[n], info, flag) ;
+        service_graph_collect(&graph, argv[n], &hres, info, flag) ;
+    }
 
-    /** build the graph of the entire system */
-    graph_build_service(&graph, &hres, info, flag) ;
+    if (!HASH_COUNT(hres))
+        /* avoid empty graph */
+        log_die(LOG_EXIT_USER,"no services requested found") ;
+
+    service_graph_compute(&graph, &hres, flag) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;

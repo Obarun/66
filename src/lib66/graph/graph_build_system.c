@@ -1,5 +1,5 @@
 /*
- * graph_build_service.c
+ * graph_build_system.c
  *
  * Copyright (c) 2018-2024 Eric Vidal <eric@obarun.org>
  *
@@ -12,7 +12,6 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <string.h>
 #include <stdint.h>
 #include <sys/stat.h>
 
@@ -20,20 +19,16 @@
 #include <oblibs/string.h>
 #include <oblibs/sastr.h>
 
-#include <skalibs/stralloc.h>
-
 #include <66/constants.h>
-#include <66/service.h>
 #include <66/graph.h>
-#include <66/state.h>
-#include <66/config.h>
-#include <66/hash.h>
+#include <66/service.h>
+#include <66/ssexec.h>
 
-void graph_build_service(graph_t *graph, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag)
+void graph_build_system(graph_t *graph, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag)
 {
     log_flow() ;
 
-    stralloc sa = STRALLOC_ZERO ;
+    _alloc_sa_(sa) ;
     char const *exclude[1] = { 0 } ;
     char solve[info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1] ;
 
@@ -43,6 +38,4 @@ void graph_build_service(graph_t *graph, struct resolve_hash_s **hres, ssexec_t 
         log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
     service_graph_g(sa.s, sa.len, graph, hres, info, flag) ;
-
-    stralloc_free(&sa) ;
 }

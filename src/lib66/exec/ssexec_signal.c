@@ -169,8 +169,7 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
     if ((svc_scandir_ok(info->scandir.s)) != 1)
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
 
-    /** build the graph of the entire system.*/
-    graph_build_service(&graph, &hres, info, gflag) ;
+    graph_build_arguments(&graph, argv, argc, &hres, info, gflag) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not supervised -- initiate its first") ;
@@ -180,7 +179,7 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
         struct resolve_hash_s *hash = hash_search(&hres, argv[pos]) ;
         /** The service may not be supervised, for example serviceB depends on
          * serviceA and serviceB was unsupervised by the user. So it will be ignored
-         * by the function graph_build_service. In this case, the service does not
+         * by the function graph_build_arguments. In this case, the service does not
          * exist at array.
          *
          * At stop process, just ignore it as it already down anyway */

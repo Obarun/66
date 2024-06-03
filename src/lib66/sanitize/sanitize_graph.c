@@ -19,6 +19,7 @@
 #include <oblibs/types.h>
 #include <oblibs/graph.h>
 #include <oblibs/string.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/stralloc.h>
 
@@ -39,7 +40,7 @@ void sanitize_graph(ssexec_t *info)
     log_flow() ;
 
     uint32_t flag = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
+    _alloc_sa_(sa) ;
     struct resolve_hash_s *hres = NULL, *c, *tmp ;
     graph_t graph = GRAPH_ZERO ;
     resolve_wrapper_t_ref wres = 0 ;
@@ -47,8 +48,9 @@ void sanitize_graph(ssexec_t *info)
     FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOPARSE|STATE_FLAGS_WANTUP|STATE_FLAGS_WANTDOWN) ;
 
     log_trace("sanitize system graph") ;
+
     /** build the graph of the entire system */
-    graph_build_service(&graph, &hres, info, flag) ;
+    graph_build_system(&graph, &hres, info, flag) ;
 
     HASH_ITER(hh, hres, c, tmp) {
 
@@ -94,7 +96,6 @@ void sanitize_graph(ssexec_t *info)
         resolve_free(wres) ;
     }
 
-    stralloc_free(&sa) ;
     hash_free(&hres) ;
     graph_free_all(&graph) ;
 }

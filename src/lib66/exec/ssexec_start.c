@@ -83,16 +83,21 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
     if ((svc_scandir_ok(info->scandir.s)) !=  1 )
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;
 
-    for (; n < argc ; n++)
+    for (; n < argc ; n++){
         /** If it's the first use of 66 or we don't have any resolve files available,
          * or the service was never parsed, the graph is empty in the first case,
          * or the later call of service_array_search does not find the corresponding
          * resolve file in the second case.
          * At least try to parse the corresponding frontend file. */
         sanitize_source(argv[n], info, flag) ;
+        service_graph_collect(&graph, argv[n], &hres, info, flag) ;
+    }
 
-    /** build the graph of the entire system */
-    graph_build_service(&graph, &hres, info, flag) ;
+    if (!HASH_COUNT(hres))
+        /* avoid empty graph */
+        log_die(LOG_EXIT_USER,"no services requested found") ;
+
+    service_graph_compute(&graph, &hres, flag) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;

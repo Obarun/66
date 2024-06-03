@@ -1,4 +1,5 @@
-graph_build_service.o
+graph_build_arguments.o
+graph_build_system.o
 graph_build_tree.o
 graph_compute_dependencies.o
 graph_compute_visit.o

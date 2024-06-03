@@ -4,7 +4,8 @@ service_enable_disable.o
 service_endof_dir.o
 service_frontend_path.o
 service_frontend_src.o
-service_graph_build.o
+service_graph_compute.o
+service_graph_collect_list.o
 service_graph_collect.o
 service_graph_g.o
 service_hash.o

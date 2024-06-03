@@ -336,8 +336,9 @@ typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;
 
 /** Graph */
 extern void service_graph_g(char const *slist, size_t slen, graph_t *graph, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag) ;
-extern void service_graph_collect(graph_t *g, char const *alist, size_t alen, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag) ;
-extern void service_graph_build(graph_t *g, struct resolve_hash_s **hres, uint32_t flag) ;
+extern void service_graph_collect_list(graph_t *g, char const *alist, size_t alen, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag) ;
+extern void service_graph_collect(graph_t *g, const char *name, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag) ;
+extern void service_graph_compute(graph_t *g, struct resolve_hash_s **hres, uint32_t flag) ;
 
 /** Hash */
 extern int hash_add(struct resolve_hash_s **hres, char const *name, resolve_service_t res) ;

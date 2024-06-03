@@ -50,8 +50,7 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
     if (earlier)
         FLAGS_SET(flag, STATE_FLAGS_ISEARLIER) ;
 
-    /** build the graph of the entire system */
-    graph_build_service(&graph, &hres, info, flag) ;
+    service_graph_g(sa->s, sa->len, &graph, &hres, info, flag) ;
 
     if (!graph.mlen && earlier) {
         hash_free(&hres) ;
