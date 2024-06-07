@@ -46,6 +46,8 @@ When booting a system, command *boot* performs the following operations:
 
 - It prints a banner to `/dev/console`.
 
+- It imports the environment variables. See [Environment importation](#environment-importation) below.
+
 - It parses the `init.conf` skeleton file.
 
 - It chdirs into `/`.
@@ -63,8 +65,6 @@ When booting a system, command *boot* performs the following operations:
 - It creates the *LIVE* directory invocating [66 -v VERBOSITY -l LIVE scandir  -b -c -s skel create](66-scandir.html) plus **-L user_log** if requested.
 
 - It initiates the early services of *TREE* invocating [66 -v VERBOSITY -l LIVE tree init TREE](66-tree.html#init).
-
-- It reads the initial environment from *environment* if requested.
 
 - It performs "the fifo trick" where it redirects its stdout to the `catch-all` logger's fifo without blocking before the `catch-all` logger is even up (because it's a service that will be spawned a bit later, when [scandir start](66-scandir.html) is executed).
 
@@ -137,3 +137,12 @@ Any valid `key=value` pair set at the `init.conf` skeleton file can be passed on
 ```
 BOOT_IMAGE=../vmlinuz-linux root=/dev/sda3 ro vga=895 initrd=../intel-ucode.img,../initramfs-linux.img TREE=boot VERBOSITY=4
 ```
+
+## Environment importation
+
+The environment variables used to launch all commands during the boot process are determined in the following order of precedence. For any `key=value` pair, the last one encountered takes precedence:
+
+- Variables imported from the init.conf file.
+- Variables imported from the %%environment_adm%% directory.
+- Variables imported from the directory specified with the -e option, if provided.
+- Variables imported from the kernel command line.
