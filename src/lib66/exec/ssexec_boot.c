@@ -507,7 +507,6 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 {
 	log_flow() ;
 
-    VERBOSITY = 0 ;
     stralloc env = STRALLOC_ZERO ;
     unsigned int r , tmpfs = 0, opened = 0 ;
     size_t bannerlen, livelen ;
@@ -553,9 +552,13 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
         if (!environ_merge_file(&env, confile))
             sulogin("merge environment file: ", confile) ;
 
-        // envp
-        if (!environ_import_arguments(&env, (char const *const *)environ, env_len((char const *const *)environ)))
-            sulogin("import environment", "") ;
+        /** (char const *const *)environ
+         * This is the environment of the current process like HOME=/
+         * As we are on boot, less drop it to avoid to poluate
+         * all processes with it and only keep key=value pair from
+         * user. */
+        //if (!environ_import_arguments(&env, (char const *const *)environ, env_len((char const *const *)environ)))
+        //    sulogin("import environment", "") ;
 
         // SS_ENVIRONMENT_ADMDIR
         if (!environ_merge_dir(&env, info->environment.s))
@@ -572,7 +575,6 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
     }
 
     parse_conf(&env) ;
-
     verbo[uint_fmt(verbo, VERBOSITY)] = 0 ;
     bannerlen = strlen(banner) ;
     livelen = strlen(live) ;
