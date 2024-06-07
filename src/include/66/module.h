@@ -44,7 +44,7 @@ extern void parse_module_check_name(char const *src, char const *name) ;
 extern void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, char const *name) ;
 extern void regex_rename(stralloc *list, resolve_service_t *res, uint32_t element) ;
 extern void regex_replace(stralloc *list, resolve_service_t *res) ;
-extern uint8_t regex_get_file_name(stack *filename, char const *str) ;
+extern uint32_t regex_get_file_name(stack *filename, char const *str) ;
 
 extern void get_list(stralloc *list, char const *src, char const *name, mode_t mode, char const **exclude) ;
 #endif
