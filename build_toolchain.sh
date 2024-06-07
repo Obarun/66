@@ -26,8 +26,8 @@ build_skalibs() {
     check_tag "${skalibs_tag}"
     ./configure \
         --prefix=/usr \
-        --with-default-path=/usr/bin \
-        --enable-shared
+        --enable-shared \
+        --enable-static
 
     make install || return 1
     cd ..
@@ -41,11 +41,9 @@ build_execline() {
     check_tag "${execline_tag}"
     ./configure \
         --prefix=/usr \
-        --libexecdir=/usr/libexec \
-        --bindir=/usr/bin \
-        --sbindir=/usr/bin \
-        --shebangdir=/usr/bin \
-        --enable-shared
+        --enable-shared \
+        --enable-static \
+        --disable-allstatic
 
     make install || return 1
     cd ..
@@ -59,9 +57,10 @@ build_s6() {
     check_tag "${s6_tag}"
     ./configure \
         --prefix=/usr \
-        --bindir=/usr/bin \
-        --sbindir=/usr/bin \
-        --enable-shared
+        --libexecdir=/usr/libexec \
+        --enable-shared \
+        --enable-static \
+        --disable-allstatic
 
     make install || return 1
     cd ..
@@ -77,8 +76,7 @@ build_oblibs() {
 
     ./configure \
         --prefix=/usr \
-        --with-lib=/usr/lib/skalibs \
-        --with-lib=/usr/lib/execline \
+        --enable-static \
         --enable-shared
 
     make install || return 1

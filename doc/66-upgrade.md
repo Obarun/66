@@ -11,6 +11,16 @@ author: Eric Vidal <eric@obarun.org>
 
 ---
 
+# In 0.7.2.1
+
+- Bugs fix:
+
+    - Respect the VERBOSITY during the whole boot process.
+    - Fix importation of the kernel command line environment variables.
+    - Fix order of precedence for the build of the environment variable used during the whole boot process.
+
+---
+
 # In 0.7.2.0
 
 - Adapt to `oblibs` 0.3.0.1`
