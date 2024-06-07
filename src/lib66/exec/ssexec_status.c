@@ -29,6 +29,7 @@
 #include <oblibs/directory.h>
 #include <oblibs/graph.h>
 #include <oblibs/environ.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/lolstdio.h>
@@ -37,6 +38,7 @@
 #include <skalibs/cspawn.h>
 #include <skalibs/buffer.h>
 #include <skalibs/sgetopt.h>
+#include <skalibs/env.h>
 
 #include <66/info.h>
 #include <66/constants.h>
@@ -516,13 +518,13 @@ static void info_display_contents(char const *field, resolve_service_t *res)
     if (!sastr_clean_string(&sa, res->sa.s + res->dependencies.contents))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
+    if (!sa.len)
+        goto empty ;
+
     service_graph_g(sa.s, sa.len, &graph, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
-
-    if (!sa.len)
-        goto empty ;
 
     if (GRAPH) {
 
@@ -869,16 +871,98 @@ static void info_parse_options(char const *str,int *what)
     }
 }
 
+void info_status_all(void)
+{
+    _alloc_sa_(sa) ;
+    struct resolve_hash_tree_s *htres = NULL ;
+    graph_t graph = GRAPH_ZERO ;
+
+    graph_build_tree(&graph, &htres, pinfo->base.s, E_RESOLVE_TREE_MASTER_CONTENTS) ;
+
+    if (!graph_matrix_sort_tosa(&sa, &graph))
+        log_dieu(LOG_EXIT_SYS, "get the sorted list of trees") ;
+
+    graph_free_all(&graph) ;
+
+    if (sa.len) {
+
+        struct resolve_hash_tree_s *c, *tmp ;
+        struct resolve_hash_s *hres = NULL ;
+
+        HASH_ITER(hh, htres, c, tmp) {
+
+            if (c->tres.ncontents) {
+
+                _alloc_stk_(stk, strlen(c->tres.sa.s + c->tres.contents)) ;
+
+                if (!stack_string_clean(&stk, c->tres.sa.s + c->tres.contents))
+                    log_dieu(LOG_EXIT_SYS, "clean string") ;
+
+                char const *v[stk.count + 1]  ;
+
+                if (!env_make(v, stk.count, stk.s, stk.len))
+                    log_dieusys(LOG_EXIT_SYS, "build array of service") ;
+
+                service_graph_g(stk.s, stk.len, &graph, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP|STATE_FLAGS_WANTDOWN) ;
+
+                if (!graph.mlen)
+                    log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
+
+                if (!bprintf(buffer_1,"%s%s%s%s\n","In tree: ", log_color->info, c->tres.sa.s + c->tres.name, log_color->off))
+                    log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+                if (!bprintf(buffer_1,"%s\n","\\"))
+                    log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+
+                depth_t d = info_graph_init() ;
+
+                if (!info_walk(&graph, 0, 0, &info_graph_display_service, 0, REVERSE, &d, 0, S_STYLE))
+                    log_dieu(LOG_EXIT_SYS,"display the dependencies list") ;
+
+                if (buffer_puts(buffer_1,"\n") == -1)
+                    log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+
+                graph_free_all(&graph) ;
+                hash_free(&hres) ;
+            }
+        }
+
+    } else {
+        log_dieusys(LOG_EXIT_SYS, "find trees -- please make a bug report") ;
+    }
+
+    hash_free_tree(&htres) ;
+}
+
+void info_status_one(const char *service, int *what)
+{
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+
+    int r = service_is_g(service, STATE_FLAGS_ISPARSED) ;
+    if (r < 0)
+        log_dieusys(LOG_EXIT_SYS, "get information of service: ", service, " -- please make a bug report") ;
+
+    if (!r || r == STATE_FLAGS_FALSE)
+        log_die(LOG_EXIT_SYS, "service: ", service, " is not parsed -- try to parse it using '66 parse ", service, "'") ;
+
+    if (resolve_read_g(wres, pinfo->base.s, service) <= 0)
+        log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", service) ;
+
+    info_display_all(&res, what) ;
+
+    if (buffer_putsflush(buffer_1,"\n") == -1)
+        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+
+    resolve_free(wres) ;
+
+}
+
 int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
 {
-    unsigned int legacy = 1 ;
-    int r = 0 ;
+    short legacy = 1, all = 0 ;
     int what[MAXOPTS] = { 0 } ;
 
     pinfo = info ;
-
-    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
     char const *svname = 0 ;
 
@@ -933,7 +1017,7 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
     }
 
     if (!argc)
-        log_usage(info->usage, "\n", info->help) ;
+        all = 1 ;
 
     svname = *argv ;
 
@@ -953,22 +1037,11 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
     if(!strcmp(nl_langinfo(CODESET), "UTF-8"))
         S_STYLE = &graph_utf8;
 
-    r = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
-    if (r < 0)
-        log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please make a bug report") ;
-
-    if (!r || r == STATE_FLAGS_FALSE)
-        log_die(LOG_EXIT_SYS, "service: ", svname, " is not parsed -- try to parse it using '66 parse ", svname, "'") ;
-
-    if (resolve_read_g(wres, info->base.s, svname) <= 0)
-        log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", svname) ;
-
-    info_display_all(&res,what) ;
-
-    if (buffer_putsflush(buffer_1,"\n") == -1)
-        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
-
-    resolve_free(wres) ;
+    if (!all) {
+        info_status_one(svname, what) ;
+    } else {
+        info_status_all() ;
+    }
 
     return 0 ;
 
