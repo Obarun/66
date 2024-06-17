@@ -32,7 +32,39 @@ static char parse_char_next(char const *s, size_t slen, size_t *pos)
     return c ;
 }
 
-int parse_bracket(stack *store, lexer_config *kcfg)
+static void key_isvalid(const char *line, size_t *o, uint8_t *bracket, int *vp, int lvp, const int sid)
+{
+    unsigned int pos = 0 ;
+    const char **key_list = get_enum_list(sid) ;
+    size_t e = 0 ;
+    char key[50] ;
+    int r = get_sep_before(line + (*o), '=', '\n') ;
+    if (r < 0) {
+        e = get_len_until(line + (*o), '\n') + 1 ;
+        (*o) += e ;
+        return  ;
+    }
+
+    /** parse_char_next increase o by one
+     * reverse it to get the full name of the key
+     * */
+    memcpy(key, line + ((*o) - 1), r) ;
+    key[r] = 0 ;
+
+    while (key_list[pos]) {
+        if (!strcmp(key, key_list[pos])) {
+            (*o) = (size_t)lvp ;
+            (*bracket)-- ;
+            (*vp) = 0 ;
+            return ;
+        }
+        pos++ ;
+    }
+
+    return ;
+}
+
+int parse_bracket(stack *store, lexer_config *kcfg, const int sid)
 {
     log_flow() ;
 
@@ -46,8 +78,10 @@ int parse_bracket(stack *store, lexer_config *kcfg)
     cfg.slen = kcfg->slen - kcfg->cpos ;
     cfg.open = "(";
     cfg.olen = 1 ;
-    cfg.close = ")" ;
-    cfg.clen = 1 ;
+    cfg.close = ")\n" ;
+    cfg.clen = 2 ;
+    cfg.skip = " \t\r" ;
+    cfg.skiplen = 3 ;
     cfg.kopen = 0 ;
     cfg.kclose = 0 ;
 
@@ -129,16 +163,14 @@ int parse_bracket(stack *store, lexer_config *kcfg)
                         while(line[o] == ' ' || line[o] == '\t' || line[o] == '\r')
                             o++ ;
 
-                        if (line[o] != '#' && line[o] != '@')
+                        if (line[o] != '#' && (line[o] < 65 || line[o] > 90))
                             break ;
 
                         if (line[o] == '#') {
 
-                            if (line[o + 1] == '@') {
+                            if (line[o + 1] >= 65 && line[o + 1] <= 90) {
                                 /** a commented key validates the parenthese */
-                                o = lp ;
-                                bracket-- ;
-                                vp = 0 ;
+                                key_isvalid(line, &o, &bracket, &vp, lvp, sid) ;
                             } else {
                                 // this is a comment
                                 e = get_len_until(line + o, '\n') + 1 ;
@@ -165,10 +197,8 @@ int parse_bracket(stack *store, lexer_config *kcfg)
 
                     /** we previously coming from a comment.
                      * this validates the parenthese.*/
-                    if (line[o + 1] == '@') {
-                        o = lvp ;
-                        bracket-- ;
-                        vp = 0 ;
+                    if (line[o + 1] >= 65 && line[o + 1] <= 90) {
+                        key_isvalid(line, &o, &bracket, &vp, lvp, sid) ;
                     } else {
                         /** another comment, continue the check at the
                          * next line */
@@ -206,14 +236,37 @@ int parse_bracket(stack *store, lexer_config *kcfg)
                     }
                 }
                 break ;
-            case '@':
+            case 'A':
+            case 'B':
+            case 'C':
+            case 'D':
+            case 'E':
+            case 'F':
+            case 'G':
+            case 'H':
+            case 'I':
+            case 'J':
+            case 'K':
+            case 'L':
+            case 'M':
+            case 'N':
+            case 'O':
+            case 'P':
+            case 'Q':
+            case 'R':
+            case 'S':
+            case 'T':
+            case 'U':
+            case 'V':
+            case 'W':
+            case 'X':
+            case 'Y':
+            case 'Z':
                 /** we previously coming from a comment.
                  * this validates the parenthese.*/
-                if (vp) {
-                    o = lvp ;
-                    bracket-- ;
-                    vp = 0 ;
-                }
+                if (vp)
+                    key_isvalid(line, &o, &bracket, &vp, lvp, sid) ;
+
                 break ;
             case '\n':
                 break ;

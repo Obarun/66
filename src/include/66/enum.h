@@ -351,5 +351,6 @@ enum actions_e
 
 extern ssize_t get_enum_by_key(key_description_t const *list, char const *key) ;
 extern char const *get_key_by_enum(key_description_t const *list, int const key) ;
+extern const char **get_enum_list(const int sid) ;
 
 #endif

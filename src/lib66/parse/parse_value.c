@@ -45,7 +45,7 @@ int parse_value(stack *store, lexer_config *kcfg, const int sid, key_description
         case EXPECT_BRACKET:
 
             pos = 0 ;
-            if (!parse_bracket(store, kcfg))
+            if (!parse_bracket(store, kcfg, sid))
                 parse_error_return(LOG_EXIT_ZERO, 6, sid, list, kid) ;
             kcfg->pos += pos  ;
             break ;

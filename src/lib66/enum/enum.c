@@ -19,72 +19,72 @@
 #include <oblibs/log.h>
 
 char const *enum_str_section[] = {
-    "main" ,
-    "start" ,
-    "stop" ,
-    "logger" ,
-    "environment" ,
-    "regex" ,
+    "Main" ,
+    "Start" ,
+    "Stop" ,
+    "Logger" ,
+    "Environment" ,
+    "Regex" ,
     0
 } ;
 
 char const *enum_str_key_section_main[] = {
-    "@type" ,
-    "@version" ,
-    "@description" ,
-    "@depends" ,
-    "@requiredby",
-    "@optsdepends" ,
-    "@contents" ,
-    "@options" ,
-    "@notify" ,
-    "@user" ,
-    "@timeout-finish" ,
-    "@timeout-kill" ,
-    "@timeout-up" ,
-    "@timeout-down" ,
-    "@maxdeath" ,
-    "@hiercopy" ,
-    "@down-signal" ,
-    "@flags" ,
-    "@intree" ,
+    "Type" ,
+    "Version" ,
+    "Description" ,
+    "Depends" ,
+    "RequiredBy",
+    "OptsDepends" ,
+    "Contents" ,
+    "Options" ,
+    "Notify" ,
+    "User" ,
+    "TimeoutFinish" ,
+    "TimeoutKill" ,
+    "TimeoutUp" ,
+    "TimeoutDown" ,
+    "MaxDeath" ,
+    "Hiercopy" ,
+    "DownSignal" ,
+    "Flags" ,
+    "Intree" ,
     0
 } ;
 
 
 char const *enum_str_key_section_startstop[] = {
-    "@build" ,
-    "@runas" ,
-    "@shebang" ,
-    "@execute" ,
+    "Build" ,
+    "Runas" ,
+    "Shebang" ,
+    "Execute" ,
     0
 } ;
 
 char const *enum_str_key_section_logger[] = {
-    "@build" ,
-    "@runas" ,
-    "@shebang" ,
-    "@execute" ,
-    "@destination" ,
-    "@backup" ,
-    "@maxsize" ,
-    "@timestamp" ,
-    "@timeout-finish" ,
-    "@timeout-kill" ,
-    "@depends" ,
+    "Build" ,
+    "Runas" ,
+    "Shebang" ,
+    "Execute" ,
+    "Destination" ,
+    "Backup" ,
+    "Maxsize" ,
+    "Timestamp" ,
+    "TimeoutFinish" ,
+    "TimeoutKill" ,
+    "Depends" ,
     0
 } ;
 
 char const *enum_str_key_section_environ[] = {
-    "@environ" ,
+    "Environ" ,
     0
 } ;
 
 char const *enum_str_key_section_regex[] = {
-    "@configure" ,
-    "@directories" ,
-    "@files" ,
-    "@infiles" ,
+    "Configure" ,
+    "Directories" ,
+    "Files" ,
+    "Infiles" ,
     0
 } ;
 
@@ -162,4 +162,32 @@ ssize_t get_enum_by_key(key_description_t const *list, char const *key)
 char const *get_key_by_enum(key_description_t const *list, int const key)
 {
     return *list[key].name ;
+}
+
+const char **get_enum_list(int const sid)
+{
+    switch (sid) {
+
+        case SECTION_MAIN:
+            return enum_str_key_section_main ;
+
+        case SECTION_START:
+            return enum_str_key_section_startstop ;
+
+        case SECTION_STOP:
+            return enum_str_key_section_startstop ;
+
+        case SECTION_LOG:
+            return enum_str_key_section_logger ;
+
+        case SECTION_ENV:
+            return enum_str_key_section_environ ;
+
+        case SECTION_REGEX:
+            return enum_str_key_section_regex ;
+
+        default:
+            errno = EINVAL ;
+            return 0 ;
+    }
 }

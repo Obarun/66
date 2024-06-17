@@ -82,9 +82,8 @@ extern int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const 
 extern int parse_key(stack *key, lexer_config *cfg, key_description_t const *list) ;
 extern int parse_value(stack *store, lexer_config *kcfg, const int sid, key_description_t const *list, int const kid) ;
 extern int parse_list(stack *stk) ;
-extern int parse_bracket(stack *store, lexer_config *kcfg) ;
+extern int parse_bracket(stack *store, lexer_config *kcfg, const int sid) ;
 extern int parse_clean_runas(char const *str, int idsec, int idkey) ;
-extern int parse_bracket(stack *store, lexer_config *kcfg) ;
 extern int parse_get_value_of_key(stack *store, char const *str, const int sid, key_description_t const *list, const int kid) ;
 extern int parse_mandatory(resolve_service_t *res) ;
 extern void parse_error(int ierr, int idsec, key_description_t const *list, int idkey) ;

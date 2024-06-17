@@ -131,8 +131,8 @@ lexer_config LEXER_CONFIG_LIST = { \
 lexer_config LEXER_CONFIG_KEY = { \
     .str = 0,\
     .slen = 0,\
-    .open = "@",\
-    .olen = 1,\
+    .open = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",\
+    .olen = 26,\
     .close = "=\n",\
     .clen = 2,\
     .skip = " \t\r",\
