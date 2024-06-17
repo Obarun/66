@@ -9,7 +9,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # Service configuration file
 
-If the an `[environment]` section is set at service [frontend](66-frontend.html) file, the `[environment]` section is copied to the `%%service_admconf%%/<service_name>/<service_version>/.service_name` file.
+If the an `[Environment]` section is set at service [frontend](66-frontend.html) file, the `[Environment]` section is copied to the `%%service_admconf%%/<service_name>/<service_version>/.service_name` file.
 
 **Note**: The file name is prefixed with a dot.
 

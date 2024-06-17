@@ -55,7 +55,7 @@ int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, s
             }
 
             if (!pos && strcmp(stk.s, enum_str_section[SECTION_MAIN]))
-                log_warn_return(LOG_EXIT_ZERO, "invalid frontend file -- section [main] must be set first") ;
+                log_warn_return(LOG_EXIT_ZERO, "invalid frontend file -- section [Main] must be set first") ;
 
             log_trace("found section: ", stk.s) ;
 

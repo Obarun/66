@@ -67,8 +67,8 @@ struct resolve_service_addon_timeout_s
 typedef struct resolve_service_addon_scripts_s resolve_service_addon_scripts_t, *resolve_service_addon_scritps_t_ref ;
 struct resolve_service_addon_scripts_s
 {
-    uint32_t run ; // string, launch before @execute
-    uint32_t run_user ; // string, @execute field
+    uint32_t run ; // string, launch before Execute
+    uint32_t run_user ; // string, Execute field
     uint32_t build ; // string, custom or execline
     uint32_t shebang ; // string
     uint32_t runas ; // string

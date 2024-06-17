@@ -173,7 +173,7 @@ static void compute_wrapper_scripts_user(resolve_service_t *res, uint8_t runorfi
 
     /** shebang is deprecated*/
     if (script->shebang)
-        log_warn("@shebang field is deprecated -- please define it at the start of your @execute field instead") ;
+        log_warn("@shebang field is deprecated -- please define it at the start of your Execute field instead") ;
 
     if (build && script->shebang) {
         shebang = res->sa.s + script->shebang ;

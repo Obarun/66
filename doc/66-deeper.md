@@ -240,13 +240,13 @@ The `66 status <service>` command provides a subset of these information. Too mu
 
 Some precision is needed here:
 
-- The intree field corresponds to the `@intree` field in the [frontend](66-frontend.html) file, while `treename` indicates the current associated tree of the service. Changing the tree with `66 -t <tree> enable <service>` modifies `treename`, leaving `intree` unchanged.
+- The intree field corresponds to the `InTree` field in the [frontend](66-frontend.html) file, while `treename` indicates the current associated tree of the service. Changing the tree with `66 -t <tree> enable <service>` modifies `treename`, leaving `intree` unchanged.
 
 - The `inns` field indicates whether the service is a part of a `module`.
 
 - The `run` and `finish` field contains the content of the `%%system_dir%%/system/svc/service/svc/<service>/run` and `%%system_dir%%/system/svc/service/svc/<service>/finish` file respectively.
 
-- Meanwhile, `run_user`, and `finish_user` fields are derived from the [[start]](66-frontend.html#section-start) and [[stop]](66-frontend.html#section-stop) sections in the frontend file. Specifically, `run_user` corresponds to `@execute` in the [[start]](66-frontend.html#section-start) section, and the others function similarly but for the [[stop]](66-frontend.html#section-stop) section.
+- Meanwhile, `run_user`, and `finish_user` fields are derived from the [[Start]](66-frontend.html#section-start) and [[Stop]](66-frontend.html#section-stop) sections in the frontend file. Specifically, `run_user` corresponds to `Execute` in the [[Start]](66-frontend.html#section-start) section, and the others function similarly but for the [[Stop]](66-frontend.html#section-stop) section.
 
 - Other fields like `ownerstr`, `home`, `frontend`, `servicedir`, `livedir`, `status`, `servicedir`, `scandir`, `statedir`, `eventdir`, `notifdir`, `supervisedir`, `fdholderdir`, `oneshotddir`, `logname`, `logwant` and `env_overwrite` are used internally for `66`'s operations.
 
@@ -279,7 +279,7 @@ User may want to manage some subdirectories with the exception of the `%%service
 
 This directory is specified at compile time by using the `--with-sysadmin-service-conf=` option to `./configure`.
 
-This directory stores the configuration file of a service, which is the outcome of the [[environment]](66-frontend.html#section-environment) section parsed from the [frontend](66-frontend.html) file.
+This directory stores the configuration file of a service, which is the outcome of the [[Environment]](66-frontend.html#section-environment) section parsed from the [frontend](66-frontend.html) file.
 
 The `66 configure <service>` command handles this directory. It's advised for users, including system administrators, to avoid direct interaction with these directories and utilize the [configure](66-configure.html) command instead.
 
@@ -381,7 +381,7 @@ Each service, if a logger is associated, has its own subdirectory likely `%%syst
 
 User can control the rotation of the log file with:
 
-- the `@backup` field at the [[logger]](66-frontend.html#section-logger) section of the [frontend](66-frontend.html) file.
+- the `Backup` field at the [[Logger]](66-frontend.html#section-logger) section of the [frontend](66-frontend.html) file.
 
 - invocating `66 reload -P <service>` or `66 signal -aP <service>` command.
 

@@ -29,19 +29,19 @@ You can find a prototype with all valid section and all valid `key=value` pair a
 ### File content example
 
 ```
-    [main]
-    @type = classic
-    @description = "ntpd daemon"
-    @version = 0.1.0
-    @user = ( root )
+    [Main]
+    Type = classic
+    Description = "ntpd daemon"
+    Version = 0.1.0
+    User = ( root )
 
-    [start]
-    @execute = (
+    [Start]
+    Execute = (
         foreground { mkdir -p  -m 0755 ${RUNDIR} }
         execl-cmdline -s { ntpd ${CMD_ARGS} }
     )
 
-    [environment]
+    [Environment]
     RUNDIR=!/run/openntpd
     CMD_ARGS=!-d -s
 ```
@@ -50,20 +50,20 @@ The parser will **not** accept an empty value. If a *key* is set then the *value
 
 *Key* names are **case sensitive** and can not be modified. Most names should be specific enough to avoid confusion.
 
-The `[main]` section **must be** declared first.
+The `[Main]` section **must be** declared first.
 
 ## Sections
 
-All sections need to be declared with the name written between square brackets `[]` and **must be** of lowercase letters **only**. This means that special characters, uppercase letters and numbers are not allowed in the name of a section.
+All sections need to be declared with the name written between square brackets `[]` and **must begins** with a uppercase followed by lowercase letters **only**. This means that special characters and numbers are not allowed in the name of a section.
 
  The frontend service file allows the following section names:
 
-- [[main]](66-frontend.html#section-main)
-- [[start]](66-frontend.html#section-start)
-- [[stop]](66-frontend.html#section-stop)
-- [[logger]](66-frontend.html#section-logger)
-- [[environment]](66-frontend.html#section-environment)
-- [[regex]](66-frontend.html#section-regex)
+- [[Main]](66-frontend.html#section-main)
+- [[Start]](66-frontend.html#section-start)
+- [[Stop]](66-frontend.html#section-stop)
+- [[Logger]](66-frontend.html#section-logger)
+- [[Environment]](66-frontend.html#section-environment)
+- [[Regex]](66-frontend.html#section-regex)
 
 Although a section can be mandatory not all of its key fields must be necessarily so.
 
@@ -71,190 +71,210 @@ Although a section can be mandatory not all of its key fields must be necessaril
 
 ## Syntax legend
 
-The *value* of a *key* is parsed in a specific format depending on the key. The following is a break down of how to write these syntaxes:
+The *value* of a *key* is parsed in a specific format depending on the key. The following is a break down of how to write these syntaxes.
 
-- *inline*: An inline *value*. **Must** be on the same line with its corresponding *key*.
+---
 
-   * Valid syntax:
+## *inline*
 
-        ````
-        @type = classic
+An inline *value*. **Must** be on the same line with its corresponding *key*.
 
-        @type=classic
-        ````
+* Valid syntax:
 
-    * **(!)** Invalid syntax:
+    ````
+    Type = classic
 
-        ````
-        @type=
-        classic
-        ````
+    Type=classic
+    ````
 
-    ----
+* **(!)** Invalid syntax:
 
-- *quotes*: A *value* between double-quotes. **Must** be on the same line with its corresponding *key*.
-
-    * Valid syntax:
-
-        ````
-        @description = "some awesome description"
-
-        @description="some awesome description"
-        ````
-
-    * **(!)** Invalid syntax:
-
-        ````
-        @description=
-        "some awesome description"
-
-        @description = "line break inside a double-quote
-        is not allowed"
-        ````
-
-    ----
-
-- *brackets*: Multiple *values* between parentheses `()`. Values need to be separated with a space. A line break can be used instead.
-
-    * Valid syntax:
-
-        ````
-        @depends = ( fooA fooB fooC )
-
-        @depends=(fooA fooB fooC)
-
-        @depends=(
-        fooA
-        fooB
-        fooC
-        )
-
-        @depends=
-        (
-        fooA
-        fooB
-        fooC
-        )
-        ````
-
-    * **(!)** Invalid syntax:
-
-        ````
-        @depends = (fooAfooBfooC)
-        ````
-
-    ----
-
-- *uint*: A positive whole number. **Must** be on the same line with its corresponding *key*.
-
-    * Valid syntax:
-
-        ````
-        @notify = 3
-
-        @notify=3
-        ````
-
-    * **(!)** Invalid syntax:
-
-        ````
-        @notify=
-        3
-        ````
-
-    ----
-
-- *path*: An absolute path beginning with a forward slash `/`. **Must** be on the same line with its corresponding *key*.
-
-    * Valid syntax:
-
-        ````
-        @destination = /etc/66
-
-        @destination=/etc/66
-        ````
-
-    * **(!)** Invalid syntax:
-
-        ````
-        @destination=/a/very/
-        long/path
-        ````
-
-    ----
-
-- *pair*: same as *inline*.
-
-    * Valid syntax:
-
-        ````
-        MYKEY = MYVALUE
-
-        anotherkey=anothervalue
-
-        anotherkey=where_value=/can_contain/equal/Character
-        ````
-
-    * **(!)** Invalid syntax:
-
-        ````
-        MYKEY=
-        MYVALUE
-        ````
-
-    ----
-
-- *colon*: A value between double colons followed by a *pair* syntax. **Must** be one by line.
-
-    * Valid syntax:
-
-        ````
-        ::key=value
-
-        :filename:key=value
-        ````
-
-    * **(!)** Invalid syntax:
-
-        ````
-       ::MYKEY=
-        MYVALUE
-
-        ::
-        MYKEY=MYVALUE
-
-        ::key=value :filename:anotherkey=anothervalue
-        ````
-- *simple-colon*: A values separated by a colon. **Must** be on the same line with its corresponding *key*.
-
-    * Valid syntax:
-
-        ````
-        @runas = 1000:19
-        ````
-
-    * **(!)** Invalid syntax:
-
-        ````
-        @runas = 1000:
-        19
-        ````
+    ````
+    Type=
+    classic
+    ````
 
 ----
 
-## Section [main]
+## *quotes*
+
+A *value* between double-quotes. **Must** be on the same line with its corresponding *key*.
+
+* Valid syntax:
+
+    ````
+    Description = "some awesome description"
+
+    Description="some awesome description"
+    ````
+
+* **(!)** Invalid syntax:
+
+    ````
+    Description=
+    "some awesome description"
+
+    Description = "line break inside a double-quote
+    is not allowed"
+    ````
+
+----
+
+## *brackets*
+
+Multiple *values* between parentheses `()`. Values need to be separated with a space. A line break can be used instead.
+
+* Valid syntax:
+
+    ````
+    Depends = ( fooA fooB fooC )
+
+    Depends=(fooA fooB fooC)
+
+    Depends=(
+    fooA
+    fooB
+    fooC
+    )
+
+    Depends=
+    (
+    fooA
+    fooB
+    fooC
+    )
+    ````
+
+* **(!)** Invalid syntax:
+
+    ````
+    Depends = (fooAfooBfooC)
+    ````
+
+----
+
+## *uint*
+A positive whole number. **Must** be on the same line with its corresponding *key*.
+
+* Valid syntax:
+
+    ````
+    Notify = 3
+
+    Notify=3
+    ````
+
+* **(!)** Invalid syntax:
+
+    ````
+    Notify=
+    3
+    ````
+
+----
+
+## *path*
+
+An absolute path beginning with a forward slash `/`. **Must** be on the same line with its corresponding *key*.
+
+* Valid syntax:
+
+    ````
+    Destination = /etc/66
+
+    Destination=/etc/66
+    ````
+
+* **(!)** Invalid syntax:
+
+    ````
+    Destination=/a/very/
+    long/path
+    ````
+
+----
+
+## *pair*
+
+Same as [*inline*](#inline).
+
+* Valid syntax:
+
+    ````
+    MYKEY = MYVALUE
+
+    anotherkey=anothervalue
+
+    anotherkey=where_value=/can_contain/equal/Character
+    ````
+
+* **(!)** Invalid syntax:
+
+    ````
+    MYKEY=
+    MYVALUE
+    ````
+
+----
+
+## *colon*
+
+A value between double colons followed by a *pair* syntax. **Must** be one by line.
+
+* Valid syntax:
+
+    ````
+    ::key=value
+
+    :filename:key=value
+    ````
+
+* **(!)** Invalid syntax:
+
+    ````
+    ::MYKEY=
+    MYVALUE
+
+    ::
+    MYKEY=MYVALUE
+
+    ::key=value :filename:anotherkey=anothervalue
+    ````
+
+---
+
+## *simple-colon*
+
+A values separated by a colon. **Must** be on the same line with its corresponding *key*.
+
+* Valid syntax:
+
+    ````
+    RunAs = 1000:19
+    ````
+
+* **(!)** Invalid syntax:
+
+    ````
+    RunAs = 1000:
+    19
+    ````
+
+----
+
+## Section [Main]
 
 This section is *mandatory*. (!)
 
 ### Valid *key* names:
 
-- @type
+- Type
 
     Declare the type of the service.
 
     mandatory : yes (!)
 
-    syntax : inline
+    syntax : [inline](#inline)
 
     valid values :
 
@@ -264,13 +284,13 @@ This section is *mandatory*. (!)
 
     ---
 
-- @version
+- Version
 
     Version number of the service.
 
     mandatory : yes (!)
 
-    syntax : inline
+    syntax : [inline](#inline)
 
     valid values :
 
@@ -279,22 +299,22 @@ This section is *mandatory*. (!)
         For example, the following is valid:
 
         ````
-            @version = 0.1.0
+            Version = 0.1.0
         ````
 
         where:
 
         ````
-            @version = 0.1.0.1
-            @version = 0.1
-            @version = 0.1.rc1
+            Version = 0.1.0.1
+            Version = 0.1
+            Version = 0.1.rc1
         ````
 
         is not.
 
     ---
 
-- @description
+- Description
 
     A short description of the service.
 
@@ -308,13 +328,13 @@ This section is *mandatory*. (!)
 
     ---
 
-- @user
+- User
 
     Declare the permissions of the service.
 
     mandatory : yes (!)
 
-    syntax : bracket
+    syntax : [bracket](#bracket)
 
     valid values :
 
@@ -324,13 +344,13 @@ This section is *mandatory*. (!)
 
     ---
 
-- @depends
+- Depends
 
     Declare dependencies of the service.
 
     mandatory : no
 
-    syntax : bracket
+    syntax : [bracket](#bracket)
 
     valid values :
 
@@ -339,7 +359,7 @@ This section is *mandatory*. (!)
     The order is of **importance** (!). If fooA depends on fooB and fooB depends on fooC the order needs to be:
 
     ````
-        @depends=(fooA fooB fooC )
+        Depends=(fooA fooB fooC )
     ````
 
     It is unnecessary to manually define chained sets of dependencies, see [66](66.html#handling-dependencies).
@@ -347,18 +367,18 @@ This section is *mandatory*. (!)
     A service can be commented out by placing the number sign `#` at the begin of the name like this:
 
     ````
-        @depends = ( fooA #fooB fooC )
+        Depends = ( fooA #fooB fooC )
     ````
 
     ---
 
-- @requiredby
+- RequiredBy
 
     Declare required-by dependencies of the service.
 
     mandatory : no
 
-    syntax : bracket
+    syntax : [bracket](#bracket)
 
     valid values :
 
@@ -367,7 +387,7 @@ This section is *mandatory*. (!)
     The order is of **importance** (!). If fooA is required by fooB and fooB is required by fooC the order needs to be:
 
     ````
-        @requiredby=(fooA fooB fooC )
+        RequiredBy=(fooA fooB fooC )
     ````
 
     It is unnecessary to manually define chained sets of dependencies, see [66](66.html#handling-dependencies).
@@ -375,18 +395,18 @@ This section is *mandatory*. (!)
     A service can be commented out by placing the number sign `#` at the begin of the name like this:
 
     ````
-        @depends = ( fooA #fooB fooC )
+        Depends = ( fooA #fooB fooC )
     ````
 
     ---
 
-- @optsdepends
+- OptsDepends
 
     Declare optional dependencies of the service.
 
     mandatory : no
 
-    syntax : bracket
+    syntax : [bracket](#bracket)
 
     valid values :
 
@@ -396,40 +416,40 @@ This section is *mandatory*. (!)
             - If the frontend service file is found, it will enable it.
             - If it is not found, it will warn the user and do nothing.
 
-    The order is *important* (!). The first service found will be used and the parse process of the field will be stopped. So, you can considere `@optsdepends` field as: "enable one on this service or none".
+    The order is *important* (!). The first service found will be used and the parse process of the field will be stopped. So, you can considere `OptsDepends` field as: "enable one on this service or none".
 
     A service can be commented out by placing the number sign `#` at the begin of the name like this:
 
     ````
-        @optsdepends = ( fooA #fooB fooC )
+        OptsDepends = ( fooA #fooB fooC )
     ````
 
     ---
 
-- @options
+- Options
 
     mandatory : no
 
-    syntax : bracket
+    syntax : [bracket](#bracket)
 
     valid values :
 
     * log : automatically create a logger for the service. This is **default**. The logger will be created even if this options is not specified. If you want to avoid the creation of the logger, prefix the options with an exclamation mark:
 
         ````
-            @options = ( !log )
+            Options = ( !log )
         ````
 
-        The behavior of the logger can be configured in the corresponding section—see [[logger]](66-frontend.html#section-logger).
+        The behavior of the logger can be configured in the corresponding section—see [[Logger]](66-frontend.html#section-logger).
 
     ---
 
-- @flags
+- Flags
 
 
     mandatory : no
 
-    syntax : bracket
+    syntax : [bracket](#bracket)
 
     valid values :
 
@@ -440,11 +460,11 @@ This section is *mandatory*. (!)
 
     ---
 
-- @notify
+- Notify
 
     mandatory : no
 
-    syntax : uint
+    syntax : [uint](#uint)
 
     valid values :
 
@@ -454,13 +474,13 @@ This section is *mandatory*. (!)
 
     ---
 
-- @timeout-finish
+- TimeoutFinish
 
     *Corresponds to the file timeout-finish of [s6](https://skarnet.org/software/s6) program* and used by service of type `classic`.
 
     mandatory : no
 
-    syntax : uint
+    syntax : [uint](#uint)
 
     valid values :
 
@@ -470,13 +490,13 @@ This section is *mandatory*. (!)
 
     ---
 
-- @timeout-kill
+- TimeoutKill
 
     *Corresponds to the file timeout-kill of [s6](https://skarnet.org/software/s6) program* and used by service of type `classic`.
 
     mandatory : no
 
-    syntax : uint
+    syntax : [uint](#uint)
 
     valid values :
 
@@ -486,13 +506,13 @@ This section is *mandatory*. (!)
 
     ---
 
-- @timeout-up
+- TimeoutUp
 
     The file is used for type `oneshot`.
 
     mandatory : no
 
-    syntax : uint
+    syntax : [uint](#uint)
 
     valid value :
 
@@ -502,13 +522,13 @@ This section is *mandatory*. (!)
 
     ---
 
-- @timeout-down
+- TimeoutDown
 
     The file is used for type `oneshot`.
 
     mandatory : no
 
-    syntax : uint
+    syntax : [uint](#uint)
 
     valid value :
 
@@ -518,13 +538,13 @@ This section is *mandatory*. (!)
 
     ---
 
-- @maxdeath
+- MaxDeath
 
     *Corresponds to the file max-death-tally of [s6](https://skarnet.org/software/s6) program*.
 
     mandatory : no
 
-    syntax : uint
+    syntax : [uint](#uint)
 
     valid value :
 
@@ -534,13 +554,13 @@ This section is *mandatory*. (!)
 
     ---
 
-- @down-signal
+- DownSignal
 
     *Corresponds to the file "down-signal" of [s6](https://skarnet.org/software/s6) program*.
 
     mandatory : no
 
-    syntax : uint
+    syntax : [uint](#uint)
 
     valid value :
 
@@ -550,13 +570,13 @@ This section is *mandatory*. (!)
 
     ---
 
-- @hiercopy
+- Hiercopy
 
     Verbatim copy directories and files on the fly to the main service destination.
 
     mandatory : no
 
-    syntax : bracket
+    syntax : [bracket](#bracket)
 
     valid values :
 
@@ -564,64 +584,68 @@ This section is *mandatory*. (!)
 
         **Note**: `66` version must be higher than 0.3.0.1.
 
-- @intree
+- InTree
 
     mandatory : no
 
-    syntax : inline
+    syntax : [inline](#inline)
 
     valid values :
 
     * Any name.
 
-    The service will automatically be activated at the tree name set in the *@intree* key value.
+    The service will automatically be activated at the tree name set in the *InTree* key value.
 
     **Note**: If a corresponding [seed](66-tree.html#seed-files) file exist on your system, its will be used to create and configure the tree.
 
 ---
 
-## Section [start]
+## Section [Start]
 
 This section is *mandatory*. (!)
 
 ### Valid *key* names:
 
-- @build
+- Build
 
     mandatory : no
 
-    syntax : inline
+    syntax : [inline](#inline)
 
     valid value :
 
     * auto : creates the service script file as [execline](https://skarnet.org/software/execline) script. This is the **default**.
 
-        The corresponding file to start the service will automatically be written in [execline](https://skarnet.org/software/execline) format with the `@execute` key value.
+        The corresponding file to start the service will automatically be written in [execline](https://skarnet.org/software/execline) format with the `Execute` key value.
 
-    * custom : creates the service script file making a verbatim copy of the `@execute` field of the section. **Do not forget** to set the shebang of the script at `@execute` key.
+    * custom : creates the service script file making a verbatim copy of the `Execute` field of the section. **Do not forget** to set the shebang of the script at `Execute` key.
 
     ---
 
-- @runas
+- RunAs
 
     mandatory : no
 
-    syntax : inline,simple-colon
+    syntax : [inline](#inline),[simple-colon](#simple-colon)
 
     valid value :
 
     * Any valid user name set on the system or valid uid:gid number.
 
     ````
-        @runas = oblive
+        RunAs = oblive
 
-        @runas = 1000:19
+        RunAs = 1000:19
 
-        if uid is not specified, the uid of the owner of the process is pick by default
-        @runas = :19
+        # if uid is not specified,
+        # the uid of the owner of the process
+        # is pick by default
+        RunAs = :19
 
-        if gid is not specified, the gid of the owner of the process is pick by default
-        @runas = 1000:
+        # if gid is not specified,
+        # the gid of the owner of the process
+        # is pick by default
+        RunAs = 1000:
 
     ````
 
@@ -631,11 +655,11 @@ This section is *mandatory*. (!)
 
     ---
 
-- @execute
+- Execute
 
     mandatory : yes (!)
 
-    syntax : bracket
+    syntax : [bracket](#bracket)
 
     valid value :
 
@@ -645,36 +669,36 @@ This section is *mandatory*. (!)
 
 ---
 
-## Section [stop]
+## Section [Stop]
 
 This section is *optional*.
 
-This section is exactly the same as [[start]](66-frontend.html#section-start) and shares the same keys. With the exception that it will handle the stop process of the service.
+This section is exactly the same as [[Start]](66-frontend.html#section-start) and shares the same keys. With the exception that it will handle the stop process of the service.
 
 ---
 
-## Section [logger]
+## Section [Logger]
 
 This section is *optional*.
 
-It will only have effects if value *log* was **not** prefixed by an exclamation mark to the `@options` key in the [[main]](66-frontend.html#section-main) section.
+It will only have effects if value *log* was **not** prefixed by an exclamation mark to the `Options` key in the [[Main]](66-frontend.html#section-main) section.
 
-This section extends the `@build`, `@runas`, and `@execute` key fields from [[start]](66-frontend.html#section-start) and the `@timeout-finish` and `@timeout-kill` key fields from [[main]](66-frontend.html#section-main) . These are also valid keys for [[logger]](66-frontend.html#section-logger) and behave the same way they do in the other sections but they can not be specified except for the mandatory key `@build`—see example below. In such case the default behaviour for those key are apply.
+This section extends the `Build`, `RunAs`, and `Execute` key fields from [[Start]](66-frontend.html#section-start) and the `TimeoutFinish` and `TimeoutKill` key fields from [[Main]](66-frontend.html#section-main) . These are also valid keys for [[Logger]](66-frontend.html#section-logger) and behave the same way they do in the other sections but they can not be specified except for the mandatory key `Build`—see example below. In such case the default behaviour for those key are apply.
 
 Furthermore there are some keys specific to the log.
 
 ### Valid *key* names:
 
-- `@build`, `@runas`, and `@execute` — See [[start]](66-frontend.html#section-start)
-- `@timeout-finish`, `@timeout-kill` — See [[main]](66-frontend.html#section-main)
+- `Build`, `RunAs`, and `Execute` — See [[Start]](66-frontend.html#section-start)
+- `TimeoutFinish`, `TimeoutKill` — See [[Main]](66-frontend.html#section-main)
 
     ---
 
-- @destination
+- Destination
 
     mandatory : no
 
-    syntax : path
+    syntax : [path](#path)
 
     valid value :
 
@@ -684,11 +708,11 @@ Furthermore there are some keys specific to the log.
 
     ---
 
-- @backup
+- Backup
 
     mandatory : no
 
-    syntax : uint
+    syntax : [uint](#uint)
 
     valid value :
 
@@ -698,11 +722,11 @@ Furthermore there are some keys specific to the log.
 
     ---
 
-- @maxsize
+- MaxSize
 
     mandatory : no
 
-    syntax : uint
+    syntax : [uint](#uint)
 
     valid value :
 
@@ -712,11 +736,11 @@ Furthermore there are some keys specific to the log.
 
     ---
 
-- @timestamp
+- Timestamp
 
     mandatory : no
 
-    syntax : inline
+    syntax : [inline](#inline)
 
     valid value :
 
@@ -732,24 +756,24 @@ Furthermore there are some keys specific to the log.
 
     The logged line will not be preceded by any timestamp.
 
-    The following are two possible examples for the [[logger]](66-frontend.html#section-logger) section definition.
+    The following are two possible examples for the [[Logger]](66-frontend.html#section-logger) section definition.
 
     ````
-        [logger]
-        @runas = user
-        @timeout-finish = 10000
-        @destination = /run/log
-        @backup = 10
-        @timestamp = iso
+        [Logger]
+        RunAs = user
+        TimeoutFinish = 10000
+        Destination = /run/log
+        Backup = 10
+        Timestamp = iso
     ````
     ````
-        [logger]
-        @destination = /run/log
+        [Logger]
+        Destination = /run/log
     ````
 
 ---
 
-## Section [environment]
+## Section [Environment]
 
 This section is *optional*.
 
@@ -762,14 +786,14 @@ A file containing the `key=value` pair(s) will be created by default at `%%servi
 
     mandatory : no
 
-    syntax : pair
+    syntax : [pair](#pair)
 
     valid value :
 
     * You can define any variables that you want to add to the environment of the service. For example:
 
     ````
-        [environment]
+        [Environment]
         dir_run=/run/openntpd
         cmd_args=-d -s
     ````
@@ -779,14 +803,14 @@ A file containing the `key=value` pair(s) will be created by default at `%%servi
     the following syntax is valid
 
     ````
-        [environment]
+        [Environment]
         dir_run=!/run/openntpd
         cmd_args = !-d -s
     ````
     where this one is not
 
     ````
-        [environment]
+        [Environment]
         dir_run=! /run/openntpd
         cmd_args = ! -d -s
     ````
@@ -795,7 +819,7 @@ A file containing the `key=value` pair(s) will be created by default at `%%servi
 
 ---
 
-## Section [regex]
+## Section [Regex]
 
 This section is *optional*.
 
@@ -806,11 +830,11 @@ You can use the `@I` string as key field. It will be replaced by the `module` na
 ### Valid *key* names:
 
 
-- @configure
+- Configure
 
     mandatory : no
 
-    syntax : quotes
+    syntax : [quotes](#quotes)
 
     valid value :
 
@@ -818,48 +842,48 @@ You can use the `@I` string as key field. It will be replaced by the `module` na
 
     ---
 
-- @directories
+- Directories
 
     mandatory : no
 
-    syntax : pair inside bracket
+    syntax : [pair](#pair) inside [bracket](#bracket)
 
     valid value :
 
     * Any `key=value` pair where key is the regex to search on the directory name and value the replacement of that regex. For example:
 
     ````
-        @directories = ( DM=sddm TRACKER=consolekit )
+        Directories = ( DM=sddm TRACKER=consolekit )
     ````
 
     Where the module directory contains two sub-directories named use-DM and by-TRACKER directories. It will be renamed as use-sddm and by-consolekit respectively.
 
     ---
 
-- @files
+- Files
 
     mandatory : no
 
-    syntax : pair inside bracket
+    syntax : [pair](#pair) inside [bracket](#bracket)
 
     valid value :
 
-    * Reacts exactly as @directories field but on files name instead of directories name.
+    * Reacts exactly as Directories field but on files name instead of directories name.
 
     ---
 
-- @infiles
+- InFiles
 
     mandatory : no
 
-    syntax : colon inside bracket
+    syntax : [colon](#colon) inside [bracket](#bracket)
 
     valid value :
 
     * Any valid filename between the double colon with any `key=value` pair where key is the regex to search inside the file and value the replacement of that regex. The double colon **must** be present but the name between it can be omitted. In that case, the `key=value` pair will apply to all files contained on the module directories and to all keys (regex) found inside the same file.For example:
 
     ````
-    @infiles = ( :mount-tmp:args=-o noexec
+    InFiles = ( :mount-tmp:args=-o noexec
     ::user=@I )
     ````
 
@@ -869,13 +893,13 @@ You can use the `@I` string as key field. It will be replaced by the `module` na
 
 ---
 
-## A word about the @execute key
+## A word about the Execute key
 
-As described above the `@execute` key can be written in any language as long as you define the key `@build` as custom. For example if you want to write your `@execute` field with bash:
+As described above the `Execute` key can be written in any language as long as you define the key `Build` as custom. For example if you want to write your `Execute` field with bash:
 
 ```
-    @build = custom
-    @execute = (#!/usr/bin/bash
+    Build = custom
+    Execute = (#!/usr/bin/bash
         echo "This script displays available services"
         for i in $(ls %%service_system%%); do
             echo "daemon : ${i} is available"
@@ -896,7 +920,7 @@ This is an unnecessary example but it shows how to construct this use case. The 
 The parser creates an exact copy of what it finds between `(` and `)`. This means that regardless of the character found, it retains it. For instance, if you write
 
 ```
-    @execute = (
+    Execute = (
     #!/bin/bash echo hello world!
     )
 ```
@@ -905,57 +929,14 @@ the final result will contain a newline at the very beginning corresponding to t
 To avoid this issue, ALWAYS declare the shebang of your script directly after `(` and without any spaces, tabs, newlines, etc. For example,
 
 ```
-    @execute = (#!/bin/bash
+    Execute = (#!/bin/bash
     echo hello world!
     )
 ```
 
-When using the `@execute` field with your script language, ensure that the `)` character is not followed by a new line that begins with `@`, `#[A-Z]`, or `#`@ at the very start of the line. This is to ensure validity. For example, the following code snippets are invalid:
+When using this sort of custom function `RunAs` has **no effect**. You **must** define with care what you want to happen in a *custom* case.
 
-```
-    @execute = (#!/bin/sh
-
-    option="${1}"
-    case ${option} in
-    -f) FILE="${2}"
-    #@FILE: param for echo command
-        echo "File name is $FILE"
-        ;;
-    -d) DIR="${2}"
-        echo "Dir name is $DIR"
-        ;;
-    *)
-        echo "`basename ${0}`:usage: [-f file] | [-d directory]"
-        exit 1 # Command to come out of the program with status 1
-        ;;
-    esac
-```
-
-
-The parser looks for the sequence `@`, `#[A-Z]`, or `#@` to validate the last `)` character in the `@execute` field. To correct this, ensure that the sequence doesn’t start at the beginning of the line following the `)` character. The corrected examples show this by adding a tab or space in front of `#@FILE`.
-
-```
-    @execute = (#!/bin/sh
-    option="${1}"
-    case ${option} in
-    -f) FILE="${2}"
-        #@FILE: param for echo command
-        echo "File name is $FILE"
-        ;;
-    -d) DIR="${2}"
-        echo "Dir name is $DIR"
-        ;;
-    *)
-        echo "`basename ${0}`:usage: [-f file] | [-d directory]"
-        exit 1 # Command to come out of the program with status 1
-        ;;
-    esac
-    )
-```
-
-When using this sort of custom function `@runas` has **no effect**. You **must** define with care what you want to happen in a *custom* case.
-
-Furthermore when you set `@build` to auto the parser will take care about the redirection of the ouput of the service when the logger is activated. When setting `@build` to custom though the parser will not do this automatically. You need to explicitly tell it to:
+Furthermore when you set `Build` to auto the parser will take care about the redirection of the ouput of the service when the logger is activated. When setting `Build` to custom though the parser will not do this automatically. You need to explicitly tell it to:
 
 ```
     #!/usr/bin/bash
@@ -965,9 +946,9 @@ Furthermore when you set `@build` to auto the parser will take care about the re
     echo "the error of the daemon written into the appropriate file"
 ```
 
-Finally you need to take care about how you define your environment variable in the section [[environment]](66-frontend.html#section-environment). When setting `@build` to auto the parser will also take care about the `!` character if you use it. This character will have no **effect** in the case of custom.
+Finally you need to take care about how you define your environment variable in the section [[Environment]](66-frontend.html#section-environment). When setting `Build` to auto the parser will also take care about the `!` character if you use it. This character will have no **effect** in the case of custom.
 
-This same behavior applies to the [[logger]](66-frontend.html#section-logger) section. The fields `@destination`, `@backup`, `@maxsize` and `@timestamp` will have **no effect** in a custom case. You need to explicitly define the program to use the logger and the options for it in your `@execute` field.
+This same behavior applies to the [[Logger]](66-frontend.html#section-logger) section. The fields `Destination`, `Backup`, `MaxSize` and `Timestamp` will have **no effect** in a custom case. You need to explicitly define the program to use the logger and the options for it in your `Execute` field.
 
 ---
 
@@ -976,67 +957,67 @@ This same behavior applies to the [[logger]](66-frontend.html#section-logger) se
 The minimal template is e.g.:
 
 ```
-    [main]
-    @type = classic
-    @version = 0.0.1
-    @description = "Template example"
-    @user = ( root )
+    [Main]
+    Type = classic
+    Version = 0.0.1
+    Description = "Template example"
+    User = ( root )
 
-    [start]
-    @execute = ( /usr/bin/true )
+    [Start]
+    Execute = ( /usr/bin/true )
 ```
 
 This prototype contain all valid section with all valid `key=value` pair.
 
 ```
-    [main]
-    @type =
-    @description = ""
-    @version =
-    @depends = ()
-    @requiredby = ()
-    @optsdepends = ()
-    @options = ()
-    @flags = ()
-    @notify =
-    @user = ()
-    @timeout-finish =
-    @timeout-kill =
-    @timeout-up =
-    @timeout-down =
-    @maxdeath =
-    @down-signal =
-    @hiercopy = ()
-    @intree =
+    [Main]
+    Type =
+    Description = ""
+    Version =
+    Depends = ()
+    RequiredBy = ()
+    OptsDepends = ()
+    Options = ()
+    Flags = ()
+    Notify =
+    User = ()
+    TimeoutFinish =
+    TimeoutKill =
+    TimeoutUp =
+    TimeoutDown =
+    MaxDeath =
+    DownSignal =
+    Hiercopy = ()
+    InTree =
 
-    [start]
-    @build =
-    @runas =
-    @execute = ()
+    [Start]
+    Build =
+    RunAs =
+    Execute = ()
 
-    [stop]
-    @build =
-    @runas =
-    @execute = ()
+    [Stop]
+    Build =
+    RunAs =
+    Execute = ()
 
-    [logger]
-    @build =
-    @runas =
-    @destination =
-    @backup =
-    @maxsize =
-    @timestamp =
-    @timeout-finish =
-    @timeout-kill =
-    @execute = ()
+    [Logger]
+    Build =
+    RunAs =
+    Destination =
+    Backup =
+    MaxSize =
+    Timestamp =
+    TimeoutFinish =
+    TimeoutKill =
+    Execute = ()
 
-    [environment]
+    [Environment]
     mykey=myvalue
     ANOTHERKEY=!antohervalue
 
-    [regex]
-    @configure = ""
-    @directories = ()
-    @files = ()
-    @infiles = ()
+    [Regex]
+    Configure = ""
+    Directories = ()
+    Files = ()
+    InFiles = ()
 ```

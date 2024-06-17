@@ -51,7 +51,7 @@ int parse_store_logger(resolve_service_t *res, stack *store, int sid, int kid)
 
         case KEY_LOGGER_SHEBANG:
 
-             log_1_warn("deprecated key @shebang -- define your complete shebang directly inside your @execute key field") ;
+             log_1_warn("deprecated key @shebang -- define your complete shebang directly inside your Execute key field") ;
 
             if (!parse_store_start_stop(res, store, sid, KEY_STARTSTOP_SHEBANG))
                 goto err ;

@@ -23,42 +23,42 @@ int parse_mandatory(resolve_service_t *res)
     log_flow() ;
 
     if (!res->description)
-        log_warn_return(LOG_EXIT_ZERO,"key @description at section [main] must be set") ;
+        log_warn_return(LOG_EXIT_ZERO,"key Description at section [Main] must be set") ;
 
     if (!res->user)
-        log_warn_return(LOG_EXIT_ZERO,"key @user at section [main] must be set") ;
+        log_warn_return(LOG_EXIT_ZERO,"key User at section [Main] must be set") ;
 
     if (!res->version)
-        log_warn_return(LOG_EXIT_ZERO,"key @version at section [main] must be set") ;
+        log_warn_return(LOG_EXIT_ZERO,"key Version at section [Main] must be set") ;
 
     switch (res->type) {
 
         case TYPE_ONESHOT:
 
             if (res->execute.run.shebang)
-                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at @execute key") ;
+                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at Execute key") ;
 
             if (!res->execute.run.run_user)
-                log_warn_return(LOG_EXIT_ZERO,"key @execute at section [start] must be set") ;
+                log_warn_return(LOG_EXIT_ZERO,"key Execute at section [Start] must be set") ;
 
             if (res->execute.finish.shebang)
-                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at @execute key") ;
+                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at Execute key") ;
 
             break ;
 
         case TYPE_CLASSIC:
 
              if (res->execute.run.shebang)
-                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at @execute key") ;
+                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at Execute key") ;
 
             if (!res->execute.run.run_user)
-                log_warn_return(LOG_EXIT_ZERO,"key @execute at section [start] must be set") ;
+                log_warn_return(LOG_EXIT_ZERO,"key Execute at section [Start] must be set") ;
 
             if (res->execute.finish.shebang)
-                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at @execute key") ;
+                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at Execute key") ;
 
             if (res->logger.execute.finish.shebang)
-                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at @execute key") ;
+                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at Execute key") ;
 
             break ;
 
@@ -67,16 +67,16 @@ int parse_mandatory(resolve_service_t *res)
             /*
 
             if (!sasection->idx[SECTION_REGEX])
-                log_warn_return(LOG_EXIT_ZERO,"section [regex] must be set") ;
+                log_warn_return(LOG_EXIT_ZERO,"section [Regex] must be set") ;
 
             if (service->type.module.iddir < 0)
-                log_warn_return(LOG_EXIT_ZERO,"key @directories at section [regex] must be set") ;
+                log_warn_return(LOG_EXIT_ZERO,"key Directories at section [Regex] must be set") ;
 
             if (service->type.module.idfiles < 0)
-                log_warn_return(LOG_EXIT_ZERO,"key @files at section [regex] must be set") ;
+                log_warn_return(LOG_EXIT_ZERO,"key Files at section [Regex] must be set") ;
 
             if (service->type.module.start_infiles < 0)
-                log_warn_return(LOG_EXIT_ZERO,"key @infiles at section [regex] must be set") ;
+                log_warn_return(LOG_EXIT_ZERO,"key InFiles at section [Regex] must be set") ;
 
             break ;
 

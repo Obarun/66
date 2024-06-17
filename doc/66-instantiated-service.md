@@ -21,25 +21,25 @@ Example :
 
     Contents :
 
-    [main]
-    @type = classic
-    @version = 0.0.1
-    @description = "Launch @I"
-    @user = ( root )
+    [Main]
+    Type = classic
+    Version = 0.0.1
+    Description = "Launch @I"
+    User = ( root )
 
-    [start]
-    @execute = ( agetty -J 38400 @I )
+    [Start]
+    Execute = ( agetty -J 38400 @I )
 ```
 
 By using [66 parse tty@tty1](66-parse.html) or any other `66` command, the resulting file will then be:
 
 ```
-    [main]
-    @type = classic
-    @version = 0.0.1
-    @description = "Launch tty1"
-    @user = ( root )
+    [Main]
+    Type = classic
+    Version = 0.0.1
+    Description = "Launch tty1"
+    User = ( root )
 
-    [start]
-    @execute = ( agetty -J 38400 tty1 )
+    [Start]
+    Execute = ( agetty -J 38400 tty1 )
 ```

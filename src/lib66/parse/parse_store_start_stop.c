@@ -62,7 +62,7 @@ int parse_store_start_stop(resolve_service_t *res, stack *store, const int sid, 
 
         case KEY_STARTSTOP_SHEBANG:
 
-            log_1_warn("deprecated key @shebang -- define your complete shebang directly inside your @execute key field") ;
+            log_1_warn("deprecated key @shebang -- define your complete shebang directly inside your Execute key field") ;
 
             if (store->s[0] != '/')
                 parse_error_return(0, 4, sid, list_section_startstop, kid) ;

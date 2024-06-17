@@ -23,7 +23,7 @@ A module is defined with two elements:
 
 ## Frontend file
 
-The [instantiated frontend service](66-instantiated-service.html) is written as any other instantiated service with its own specification—see the section [[regex]](66-frontend.html#Section: [regex]).
+The [instantiated frontend service](66-instantiated-service.html) is written as any other instantiated service with its own specification—see the section [[Regex]](66-frontend.html#section-regex).
 
 ## Module directory
 
@@ -56,21 +56,20 @@ The frontend file of the module itself **must** be present at the root of the mo
 
 Any services that you need **must** be present **inside** the frontend directory. The parser only deals with these directories. If a service `fooA` has `fooB` as dependency, `fooA` ***and*** `fooB` **must** exist in the e.g. `%%service_system%%/<module_name>/frontend` directory.
 
-## A word about the [[main]](66-frontend.html#Section: [main]) section with the module type
+## A word about the [[Main]](66-frontend.html#section-main) section with the module type
 
-The valid fields in section [[main]](66-frontend.html#Section: [main]) are:
+The valid fields in section [[Main]](66-frontend.html#section-main) are:
 
-- @type
-- @description
-- @name
-- @version
-- @user
-- @depends
-- @requiredby
-- @optsdepends
-- @hiercopy
+- Type
+- Description
+- Version
+- User
+- Depends
+- RequiredBy
+- OptsDepends
+- Hiercopy
 
-All other fields from [[main]](66-frontend.html#Section: [main]) section are not allowed.
+All other fields from [[Main]](66-frontend.html#section-main) section are not allowed.
 
 ## Module process creation
 
@@ -86,11 +85,11 @@ When you do e.g. `66 parse foo@system`:
 
 - It verbatim copies the `%%service_system%%/foo` directory to `%%service_system%%/foo@system`.
 
-- It applies the regex defined with `@infiles` field to `%%service_system%%/foo@system/frontend` files.
+- It applies the regex defined with `InFiles` field to `%%service_system%%/foo@system/frontend` files.
 
-- It applies the regex defined with `@directories` field to `%%service_system%%/foo@system/frontend` directories, if any.
+- It applies the regex defined with `Directories` field to `%%service_system%%/foo@system/frontend` directories, if any.
 
-- It applies the regex defined with `@files` field to `%%service_system%%/foo@system/frontend` files.
+- It applies the regex defined with `Files` field to `%%service_system%%/foo@system/frontend` files.
 
 - It runs the `%%service_system%%/foo@system/configure` script if it exists.
 

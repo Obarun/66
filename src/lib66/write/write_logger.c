@@ -39,7 +39,7 @@
 #define FAKELEN strlen(run)
 #endif
 
-/** @destination -> /var/lib/66/system/service/svc/<name> */
+/** Destination -> /var/lib/66/system/service/svc/<name> */
 
 void write_logger(resolve_service_t *res, char const *destination, uint8_t force)
 {

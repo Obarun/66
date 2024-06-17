@@ -47,14 +47,14 @@ char const *enum_str_key_section_main[] = {
     "Hiercopy" ,
     "DownSignal" ,
     "Flags" ,
-    "Intree" ,
+    "InTree" ,
     0
 } ;
 
 
 char const *enum_str_key_section_startstop[] = {
     "Build" ,
-    "Runas" ,
+    "RunAs" ,
     "Shebang" ,
     "Execute" ,
     0
@@ -62,7 +62,7 @@ char const *enum_str_key_section_startstop[] = {
 
 char const *enum_str_key_section_logger[] = {
     "Build" ,
-    "Runas" ,
+    "RunAs" ,
     "Shebang" ,
     "Execute" ,
     "Destination" ,
@@ -84,7 +84,7 @@ char const *enum_str_key_section_regex[] = {
     "Configure" ,
     "Directories" ,
     "Files" ,
-    "Infiles" ,
+    "InFiles" ,
     0
 } ;
 

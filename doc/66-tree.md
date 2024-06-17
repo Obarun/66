@@ -652,4 +652,4 @@ Different manner to process can be used to associate a service to a specific *tr
 
 - The `66 -t treefoo enable foo` command will associate `foo` to `treefoo`. Every call of this command will switch the service to specified *tree*, e.g. `66 -t %%default_treename%% enable foo` switch `foo` to `%%default_treename%%` whatever the previous location of `foo`.
 - If the service **was never parsed** and you launch the command `66 -t treefoo start foo`, foo will be parsed first and associated to `treefoo`. In such case, `foo` is a part of `treefoo` but not *enabled*.
-- Automatically at parse process setting the `@intree=treefoo` key through the [frontend](66-frontend.html) service file of the service. In such case, at very first use of the service on the system, the service is associated to `treefoo`.
+- Automatically at parse process setting the `InTree=treefoo` key through the [frontend](66-frontend.html) service file of the service. In such case, at very first use of the service on the system, the service is associated to `treefoo`.

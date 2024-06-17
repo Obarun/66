@@ -145,7 +145,7 @@ static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
         } else {
 
             if (res->logger.execute.run.shebang)
-                log_warn("@shebang field is deprecated -- please define it at start of your @execute field instead") ;
+                log_warn("@shebang field is deprecated -- please define it at start of your Execute field instead") ;
 
             char *shebang = res->logger.execute.run.shebang ? res->sa.s + res->logger.execute.run.shebang : "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n" ;
             size_t shebanglen = strlen(shebang) ;

@@ -98,7 +98,7 @@ int parse_bracket(stack *store, lexer_config *kcfg, const int sid)
      * The following while loop receives a string starting after the last
      * closed bracket found by the previous lexer process and checks if
      * the closed bracket is valid or not. For instance,
-     * in an @execute field, we can also encounter a pair of opened
+     * in an Execute field, we can also encounter a pair of opened
      * and closed brackets if it's written in, for example, shell script.
      */
     while (bracket && o < len) {
@@ -156,7 +156,7 @@ int parse_bracket(stack *store, lexer_config *kcfg, const int sid)
                             break ;
                         }
 
-                        /** Outside of the context specified (e.g., @execute=()),
+                        /** Outside of the context specified (e.g., Execute=()),
                          * only '#' and '@' character combinaison are considered valid to
                          * validate the bracket. If neither of these is present,
                          * it signifies that we are inside a script.*/

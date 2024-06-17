@@ -79,7 +79,7 @@ void regex_replace(stralloc *filelist, resolve_service_t *res)
                     log_die(LOG_EXIT_SYS, "limit exceeded in service: ", res->sa.s + res->name) ;
 
                 if ((line[0] != ':') || (get_sep_before(line + 1, ':', '=') < 0))
-                    log_die(LOG_EXIT_SYS, "bad format in line: ", line, " of key @infiles field") ;
+                    log_die(LOG_EXIT_SYS, "bad format in line: ", line, " of key InFiles field") ;
 
                 r = (int)regex_get_file_name(&filename, line) ;
                 if (!r)
