@@ -73,7 +73,7 @@ Some are specific to `execline` where other can be used on classic shell.
 
 This Roadmap for the next release is not writting in the stone. Feel free to make a merge request to this roadmap.
 
-* [ ] Revise the frontend file's keyword field by excluding the `@` symbol:
+* [x] Revise the frontend file's keyword field by excluding the `@` symbol:
 
   For instance, `@depends` will be `Depends`. That will allow for a file that's closer to the original INI format and less confusing for users.
 
