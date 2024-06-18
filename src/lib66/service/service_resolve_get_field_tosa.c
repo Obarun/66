@@ -195,23 +195,13 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
             str = res->sa.s + res->execute.finish.runas ;
             break ;
 
-        case E_RESOLVE_SERVICE_TIMEOUTKILL:
-            fmt[uint32_fmt(fmt,res->execute.timeout.kill)] = 0 ;
+        case E_RESOLVE_SERVICE_TIMEOUTSTART:
+            fmt[uint32_fmt(fmt,res->execute.timeout.start)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_TIMEOUTFINISH:
-            fmt[uint32_fmt(fmt,res->execute.timeout.finish)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_TIMEOUTUP:
-            fmt[uint32_fmt(fmt,res->execute.timeout.up)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_TIMEOUTDOWN:
-            fmt[uint32_fmt(fmt,res->execute.timeout.down)] = 0 ;
+        case E_RESOLVE_SERVICE_TIMEOUTSTOP:
+            fmt[uint32_fmt(fmt,res->execute.timeout.stop)] = 0 ;
             str = fmt ;
             break ;
 
@@ -317,13 +307,13 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
             str = res->sa.s + res->logger.execute.run.runas ;
             break ;
 
-        case E_RESOLVE_SERVICE_LOGTIMEOUTKILL:
-            fmt[uint32_fmt(fmt,res->logger.timeout.kill)] = 0 ;
+        case E_RESOLVE_SERVICE_LOGTIMEOUTSTART:
+            fmt[uint32_fmt(fmt,res->logger.timeout.start)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_LOGTIMEOUTFINISH:
-            fmt[uint32_fmt(fmt,res->logger.timeout.finish)] = 0 ;
+        case E_RESOLVE_SERVICE_LOGTIMEOUTSTOP:
+            fmt[uint32_fmt(fmt,res->logger.timeout.stop)] = 0 ;
             str = fmt ;
             break ;
 

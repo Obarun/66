@@ -39,10 +39,8 @@ char const *enum_str_key_section_main[] = {
     "Options" ,
     "Notify" ,
     "User" ,
-    "TimeoutFinish" ,
-    "TimeoutKill" ,
-    "TimeoutUp" ,
-    "TimeoutDown" ,
+    "TimeoutStart" ,
+    "TimeoutStop" ,
     "MaxDeath" ,
     "Hiercopy" ,
     "DownSignal" ,
@@ -69,8 +67,8 @@ char const *enum_str_key_section_logger[] = {
     "Backup" ,
     "Maxsize" ,
     "Timestamp" ,
-    "TimeoutFinish" ,
-    "TimeoutKill" ,
+    "TimeoutStart" ,
+    "TimeoutStop" ,
     "Depends" ,
     0
 } ;

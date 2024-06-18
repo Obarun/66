@@ -206,8 +206,8 @@ static void compute_logger(resolve_service_t *res, resolve_service_t *log, ssexe
     log->execute.run.build = resolve_add_string(wres, str + res->logger.execute.run.build) ;
     log->execute.run.shebang = res->logger.execute.run.shebang ? resolve_add_string(wres, str + res->logger.execute.run.shebang) : 0 ;
     log->execute.run.runas = resolve_add_string(wres, str + res->logger.execute.run.runas) ;
-    log->execute.timeout.kill = res->logger.execute.timeout.kill ;
-    log->execute.timeout.finish = res->logger.execute.timeout.finish ;
+    log->execute.timeout.start = res->logger.execute.timeout.start ;
+    log->execute.timeout.stop = res->logger.execute.timeout.stop ;
     log->execute.down = res->logger.execute.down ;
     log->execute.downsignal = res->logger.execute.downsignal ;
 

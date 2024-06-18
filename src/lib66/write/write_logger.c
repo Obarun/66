@@ -55,15 +55,15 @@ void write_logger(resolve_service_t *res, char const *destination, uint8_t force
         log_dieusys(LOG_EXIT_SYS, "get uid and gid of: ", logrunner) ;
     }
 
-    if (res->execute.timeout.kill) {
-        if (!write_uint(destination, "timeout-kill", res->execute.timeout.kill)) {
+    if (res->execute.timeout.start) {
+        if (!write_uint(destination, "timeout-kill", res->execute.timeout.start)) {
             parse_cleanup(res, destination, force) ;
             log_dieusys(LOG_EXIT_SYS, "write uint file timeout-kill") ;
         }
     }
 
-    if (res->execute.timeout.finish) {
-        if (!write_uint(destination, "timeout-finish", res->execute.timeout.finish)) {
+    if (res->execute.timeout.stop) {
+        if (!write_uint(destination, "timeout-finish", res->execute.timeout.stop)) {
             parse_cleanup(res, destination, force) ;
             log_dieusys(LOG_EXIT_SYS, "write uint file timeout-finish") ;
         }

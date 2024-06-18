@@ -112,14 +112,10 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
     res->execute.finish.shebang = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     x = resolve_find_cdb(&tmp,c,"finish_runas") ;
     res->execute.finish.runas = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-    x = resolve_find_cdb(&tmp,c,"timeoutkill") ;
-    res->execute.timeout.kill = x ;
-    x = resolve_find_cdb(&tmp,c,"timeoutfinish") ;
-    res->execute.timeout.finish = x ;
-    x = resolve_find_cdb(&tmp,c,"timeoutup") ;
-    res->execute.timeout.up = x ;
-    x = resolve_find_cdb(&tmp,c,"timeoutdown") ;
-    res->execute.timeout.down = x ;
+    x = resolve_find_cdb(&tmp,c,"timeoutstart") ;
+    res->execute.timeout.start = x ;
+    x = resolve_find_cdb(&tmp,c,"timeoutstop") ;
+    res->execute.timeout.stop = x ;
     x = resolve_find_cdb(&tmp,c,"down") ;
     res->execute.down = x ;
     x = resolve_find_cdb(&tmp,c,"downsignal") ;
@@ -170,10 +166,10 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
     res->logger.execute.run.shebang = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     x = resolve_find_cdb(&tmp,c,"logrun_runas") ;
     res->logger.execute.run.runas = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-    x = resolve_find_cdb(&tmp,c,"logtimeoutkill") ;
-    res->logger.timeout.kill = x ;
-    x = resolve_find_cdb(&tmp,c,"logtimeoutfinish") ;
-    res->logger.timeout.finish = x ;
+    x = resolve_find_cdb(&tmp,c,"logtimeoutstart") ;
+    res->logger.timeout.start = x ;
+    x = resolve_find_cdb(&tmp,c,"logtimeoutstop") ;
+    res->logger.timeout.stop = x ;
 
     /* environment */
     resolve_find_cdb(&tmp,c,"env") ;

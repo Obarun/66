@@ -69,10 +69,8 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres)
     !resolve_add_cdb(c, "finish_build", str, sres->execute.finish.build, 1) ||
     !resolve_add_cdb(c, "finish_shebang", str, sres->execute.finish.shebang, 1) ||
     !resolve_add_cdb(c, "finish_runas", str, sres->execute.finish.runas, 1) ||
-    !resolve_add_cdb_uint(c, "timeoutkill", sres->execute.timeout.kill) ||
-    !resolve_add_cdb_uint(c, "timeoutfinish", sres->execute.timeout.finish) ||
-    !resolve_add_cdb_uint(c, "timeoutup", sres->execute.timeout.up) ||
-    !resolve_add_cdb_uint(c, "timeoutdown", sres->execute.timeout.down) ||
+    !resolve_add_cdb_uint(c, "timeoutstart", sres->execute.timeout.start) ||
+    !resolve_add_cdb_uint(c, "timeoutstop", sres->execute.timeout.stop) ||
     !resolve_add_cdb_uint(c, "down", sres->execute.down) ||
     !resolve_add_cdb_uint(c, "downsignal", sres->execute.downsignal) ||
 
@@ -100,8 +98,8 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres)
     !resolve_add_cdb(c, "logrun_build", str, sres->logger.execute.run.build, 1) ||
     !resolve_add_cdb(c, "logrun_shebang", str, sres->logger.execute.run.shebang, 1) ||
     !resolve_add_cdb(c, "logrun_runas", str, sres->logger.execute.run.runas, 1) ||
-    !resolve_add_cdb_uint(c, "logtimeoutkill", sres->logger.execute.timeout.kill) ||
-    !resolve_add_cdb_uint(c, "logtimeoutfinish", sres->logger.execute.timeout.finish) ||
+    !resolve_add_cdb_uint(c, "logtimeoutstart", sres->logger.execute.timeout.start) ||
+    !resolve_add_cdb_uint(c, "logtimeoutstop", sres->logger.execute.timeout.stop) ||
 
     // environ
     !resolve_add_cdb(c, "env", str, sres->environ.env, 1) ||

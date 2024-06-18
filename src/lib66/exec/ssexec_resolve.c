@@ -35,7 +35,7 @@
 #include <66/config.h>
 #include <66/state.h>
 
-#define MAXOPTS 75
+#define MAXOPTS 73
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -117,10 +117,8 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_string(fields[m++], res->sa.s, res->execute.finish.build, 1) ;
     info_display_string(fields[m++], res->sa.s, res->execute.finish.shebang, 1) ;
     info_display_string(fields[m++], res->sa.s, res->execute.finish.runas, 1) ;
-    info_display_int(fields[m++], res->execute.timeout.kill) ;
-    info_display_int(fields[m++], res->execute.timeout.finish) ;
-    info_display_int(fields[m++], res->execute.timeout.up) ;
-    info_display_int(fields[m++], res->execute.timeout.down) ;
+    info_display_int(fields[m++], res->execute.timeout.start) ;
+    info_display_int(fields[m++], res->execute.timeout.stop) ;
     info_display_int(fields[m++], res->execute.down) ;
     info_display_int(fields[m++], res->execute.downsignal) ;
 
@@ -146,8 +144,8 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_string(fields[m++], res->sa.s, res->logger.execute.run.build, 1) ;
     info_display_string(fields[m++], res->sa.s, res->logger.execute.run.shebang, 1) ;
     info_display_string(fields[m++], res->sa.s, res->logger.execute.run.runas, 1) ;
-    info_display_int(fields[m++], res->logger.execute.timeout.kill) ;
-    info_display_int(fields[m++], res->logger.execute.timeout.finish) ;
+    info_display_int(fields[m++], res->logger.execute.timeout.start) ;
+    info_display_int(fields[m++], res->logger.execute.timeout.stop) ;
 
     info_display_string(fields[m++], res->sa.s, res->environ.env, 1) ;
     info_display_string(fields[m++], res->sa.s, res->environ.envdir, 1) ;
@@ -212,10 +210,8 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "finish_build",
         "finish_shebang",
         "finish_runas",
-        "timeoutkill",
-        "timeoutfinish",
-        "timeoutup",
-        "timeoutdown",
+        "timeoutstart",
+        "timeoutstop",
         "down",
         "downsignal",
 
@@ -241,8 +237,8 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "logrun_build" ,
         "logrun_shebang" ,
         "logrun_runas" ,
-        "logtimeoutkill",
-        "logtimeoutfinish",
+        "logtimeoutstart",
+        "logtimeoutstop",
 
         "env",
         "envdir",

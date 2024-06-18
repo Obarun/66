@@ -44,10 +44,8 @@ enum enum_key_section_main_e
     KEY_MAIN_OPTIONS ,
     KEY_MAIN_NOTIFY ,
     KEY_MAIN_USER ,
-    KEY_MAIN_T_FINISH ,
-    KEY_MAIN_T_KILL ,
-    KEY_MAIN_T_UP ,
-    KEY_MAIN_T_DOWN ,
+    KEY_MAIN_T_START ,
+    KEY_MAIN_T_STOP ,
     KEY_MAIN_DEATH ,
     KEY_MAIN_HIERCOPY ,
     KEY_MAIN_SIGNAL ,
@@ -81,8 +79,8 @@ enum enum_key_section_logger_e
     KEY_LOGGER_BACKUP ,
     KEY_LOGGER_MAXSIZE ,
     KEY_LOGGER_TIMESTP ,
-    KEY_LOGGER_T_FINISH ,
-    KEY_LOGGER_T_KILL ,
+    KEY_LOGGER_T_START ,
+    KEY_LOGGER_T_STOP ,
     KEY_LOGGER_ENDOFKEY
 } ;
 
@@ -224,10 +222,8 @@ static key_description_t const list_section_main[] =
     { .name = &enum_str_key_section_main[KEY_MAIN_OPTIONS], .id = KEY_MAIN_OPTIONS, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_main[KEY_MAIN_NOTIFY], .id = KEY_MAIN_NOTIFY, .expected = EXPECT_UINT },
     { .name = &enum_str_key_section_main[KEY_MAIN_USER], .id = KEY_MAIN_USER, .expected = EXPECT_BRACKET },
-    { .name = &enum_str_key_section_main[KEY_MAIN_T_FINISH], .id = KEY_MAIN_T_FINISH, .expected = EXPECT_UINT },
-    { .name = &enum_str_key_section_main[KEY_MAIN_T_KILL], .id = KEY_MAIN_T_KILL, .expected = EXPECT_UINT },
-    { .name = &enum_str_key_section_main[KEY_MAIN_T_UP], .id = KEY_MAIN_T_UP, .expected = EXPECT_UINT },
-    { .name = &enum_str_key_section_main[KEY_MAIN_T_DOWN], .id = KEY_MAIN_T_DOWN, .expected = EXPECT_UINT },
+    { .name = &enum_str_key_section_main[KEY_MAIN_T_START], .id = KEY_MAIN_T_START, .expected = EXPECT_UINT },
+    { .name = &enum_str_key_section_main[KEY_MAIN_T_STOP], .id = KEY_MAIN_T_STOP, .expected = EXPECT_UINT },
     { .name = &enum_str_key_section_main[KEY_MAIN_DEATH], .id = KEY_MAIN_DEATH, .expected = EXPECT_UINT },
     { .name = &enum_str_key_section_main[KEY_MAIN_HIERCOPY], .id = KEY_MAIN_HIERCOPY, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_main[KEY_MAIN_SIGNAL], .id = KEY_MAIN_SIGNAL, .expected = EXPECT_UINT },
@@ -255,8 +251,8 @@ static key_description_t const list_section_logger[] =
     { .name = &enum_str_key_section_logger[KEY_LOGGER_BACKUP], .id = KEY_LOGGER_BACKUP, .expected = EXPECT_UINT },
     { .name = &enum_str_key_section_logger[KEY_LOGGER_MAXSIZE], .id = KEY_LOGGER_MAXSIZE, .expected = EXPECT_UINT },
     { .name = &enum_str_key_section_logger[KEY_LOGGER_TIMESTP], .id = KEY_LOGGER_TIMESTP, .expected = EXPECT_LINE },
-    { .name = &enum_str_key_section_logger[KEY_LOGGER_T_FINISH], .id = KEY_LOGGER_T_FINISH, .expected = EXPECT_UINT },
-    { .name = &enum_str_key_section_logger[KEY_LOGGER_T_KILL], .id = KEY_LOGGER_T_KILL, .expected = EXPECT_UINT },
+    { .name = &enum_str_key_section_logger[KEY_LOGGER_T_START], .id = KEY_LOGGER_T_START, .expected = EXPECT_UINT },
+    { .name = &enum_str_key_section_logger[KEY_LOGGER_T_STOP], .id = KEY_LOGGER_T_STOP, .expected = EXPECT_UINT },
     { .name = 0 }
 } ;
 

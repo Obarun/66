@@ -56,13 +56,11 @@ struct resolve_service_addon_dependencies_s
 typedef struct resolve_service_addon_timeout_s resolve_service_addon_timeout_t, *resolve_service_addon_timeout_t_ref ;
 struct resolve_service_addon_timeout_s
 {
-    uint32_t kill ; // integer
-    uint32_t finish ; // integer
-    uint32_t up ; // integer
-    uint32_t down ; // integer
+    uint32_t start ; // integer
+    uint32_t stop ; // integer
 } ;
 
-#define RESOLVE_SERVICE_ADDON_TIMEOUT_ZERO { 0,0,0,0 }
+#define RESOLVE_SERVICE_ADDON_TIMEOUT_ZERO { 0,0 }
 
 typedef struct resolve_service_addon_scripts_s resolve_service_addon_scripts_t, *resolve_service_addon_scritps_t_ref ;
 struct resolve_service_addon_scripts_s
@@ -252,10 +250,8 @@ enum resolve_service_enum_e
     E_RESOLVE_SERVICE_FINISH_BUILD,
     E_RESOLVE_SERVICE_FINISH_SHEBANG,
     E_RESOLVE_SERVICE_FINISH_RUNAS,
-    E_RESOLVE_SERVICE_TIMEOUTKILL,
-    E_RESOLVE_SERVICE_TIMEOUTFINISH,
-    E_RESOLVE_SERVICE_TIMEOUTUP,
-    E_RESOLVE_SERVICE_TIMEOUTDOWN,
+    E_RESOLVE_SERVICE_TIMEOUTSTART,
+    E_RESOLVE_SERVICE_TIMEOUTSTOP,
     E_RESOLVE_SERVICE_DOWN,
     E_RESOLVE_SERVICE_DOWNSIGNAL,
 
@@ -283,8 +279,8 @@ enum resolve_service_enum_e
     E_RESOLVE_SERVICE_LOGRUN_BUILD,
     E_RESOLVE_SERVICE_LOGRUN_SHEBANG,
     E_RESOLVE_SERVICE_LOGRUN_RUNAS,
-    E_RESOLVE_SERVICE_LOGTIMEOUTKILL,
-    E_RESOLVE_SERVICE_LOGTIMEOUTFINISH,
+    E_RESOLVE_SERVICE_LOGTIMEOUTSTART,
+    E_RESOLVE_SERVICE_LOGTIMEOUTSTOP,
 
     // environment
     E_RESOLVE_SERVICE_ENV,

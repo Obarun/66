@@ -65,16 +65,16 @@ int parse_store_logger(resolve_service_t *res, stack *store, int sid, int kid)
 
             break ;
 
-        case KEY_LOGGER_T_KILL:
+        case KEY_LOGGER_T_START:
 
-            if (!uint320_scan(store->s, &res->logger.execute.timeout.kill))
+            if (!uint320_scan(store->s, &res->logger.execute.timeout.start))
                 parse_error_return(0, 3, sid, list_section_logger, kid) ;
 
             break ;
 
-        case KEY_LOGGER_T_FINISH:
+        case KEY_LOGGER_T_STOP:
 
-            if (!uint320_scan(store->s, &res->logger.execute.timeout.finish))
+            if (!uint320_scan(store->s, &res->logger.execute.timeout.stop))
                 parse_error_return(0, 3, sid, list_section_logger, kid) ;
 
             break ;

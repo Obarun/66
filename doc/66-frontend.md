@@ -474,7 +474,7 @@ This section is *mandatory*. (!)
 
     ---
 
-- TimeoutFinish
+- TimeoutStop
 
     *Corresponds to the file timeout-finish of [s6](https://skarnet.org/software/s6) program* and used by service of type `classic`.
 
@@ -490,7 +490,7 @@ This section is *mandatory*. (!)
 
     ---
 
-- TimeoutKill
+- TimeoutStart
 
     *Corresponds to the file timeout-kill of [s6](https://skarnet.org/software/s6) program* and used by service of type `classic`.
 
@@ -506,37 +506,6 @@ This section is *mandatory*. (!)
 
     ---
 
-- TimeoutUp
-
-    The file is used for type `oneshot`.
-
-    mandatory : no
-
-    syntax : [uint](#uint)
-
-    valid value :
-
-    * Any valid number.
-
-    This will create the file *timeout-up*. Once this file is created the *value* will equal the maximum number of milliseconds that [start](66-start.html) command will wait for successful completion of the service start. If starting the service takes longer than this value, [start](66-start.html) command will declare the transition a failure. If the value is `0`, which is the default, no timeout is defined and [start](66-start.html) command will wait for the service to start until the *maxdeath* is reached.
-
-    ---
-
-- TimeoutDown
-
-    The file is used for type `oneshot`.
-
-    mandatory : no
-
-    syntax : [uint](#uint)
-
-    valid value :
-
-    * Any valid number.
-
-    This will create the file *timeout-down*. Once this file is created the value will equal the maximum number of milliseconds [stop](66-stop.html) command will wait for successful completion of the service stop. If starting the service takes longer than this value, [stop](66-stop.html) command will declare the transition a failure. If the value is `0`, no timeout is defined and [stop](66-stop.html) command will wait for the service to start until the *maxdeath* is reached. Without this file a value of `3000` (`3` seconds) will be used by default.
-
-    ---
 
 - MaxDeath
 
@@ -683,14 +652,14 @@ This section is *optional*.
 
 It will only have effects if value *log* was **not** prefixed by an exclamation mark to the `Options` key in the [[Main]](66-frontend.html#section-main) section.
 
-This section extends the `Build`, `RunAs`, and `Execute` key fields from [[Start]](66-frontend.html#section-start) and the `TimeoutFinish` and `TimeoutKill` key fields from [[Main]](66-frontend.html#section-main) . These are also valid keys for [[Logger]](66-frontend.html#section-logger) and behave the same way they do in the other sections but they can not be specified except for the mandatory key `Build`—see example below. In such case the default behaviour for those key are apply.
+This section extends the `Build`, `RunAs`, and `Execute` key fields from [[Start]](66-frontend.html#section-start) and the `TimeoutStop` and `TimeoutStart` key fields from [[Main]](66-frontend.html#section-main) . These are also valid keys for [[Logger]](66-frontend.html#section-logger) and behave the same way they do in the other sections but they can not be specified except for the mandatory key `Build`—see example below. In such case the default behaviour for those key are apply.
 
 Furthermore there are some keys specific to the log.
 
 ### Valid *key* names:
 
 - `Build`, `RunAs`, and `Execute` — See [[Start]](66-frontend.html#section-start)
-- `TimeoutFinish`, `TimeoutKill` — See [[Main]](66-frontend.html#section-main)
+- `TimeoutStop`, `TimeoutStart` — See [[Main]](66-frontend.html#section-main)
 
     ---
 
@@ -761,7 +730,7 @@ Furthermore there are some keys specific to the log.
     ````
         [Logger]
         RunAs = user
-        TimeoutFinish = 10000
+        TimeoutStop = 10000
         Destination = /run/log
         Backup = 10
         Timestamp = iso
@@ -981,10 +950,8 @@ This prototype contain all valid section with all valid `key=value` pair.
     Flags = ()
     Notify =
     User = ()
-    TimeoutFinish =
-    TimeoutKill =
-    TimeoutUp =
-    TimeoutDown =
+    TimeoutStart =
+    TimeoutStop =
     MaxDeath =
     DownSignal =
     Hiercopy = ()
@@ -1007,8 +974,8 @@ This prototype contain all valid section with all valid `key=value` pair.
     Backup =
     MaxSize =
     Timestamp =
-    TimeoutFinish =
-    TimeoutKill =
+    TimeoutStart =
+    TimeoutStop =
     Execute = ()
 
     [Environment]

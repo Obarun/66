@@ -64,10 +64,8 @@ resolve_field_table_t resolve_service_field_table[] = {
     [E_RESOLVE_SERVICE_FINISH_BUILD] = { .field = "finish_build" },
     [E_RESOLVE_SERVICE_FINISH_SHEBANG] = { .field = "finish_shebang" },
     [E_RESOLVE_SERVICE_FINISH_RUNAS] = { .field = "finish_runas" },
-    [E_RESOLVE_SERVICE_TIMEOUTKILL] = { .field = "timeoutkill" },
-    [E_RESOLVE_SERVICE_TIMEOUTFINISH] = { .field = "timeoutfinish" },
-    [E_RESOLVE_SERVICE_TIMEOUTUP] = { .field = "timeoutup" },
-    [E_RESOLVE_SERVICE_TIMEOUTDOWN] = { .field = "timeoutdown" },
+    [E_RESOLVE_SERVICE_TIMEOUTSTART] = { .field = "timeoutstart" },
+    [E_RESOLVE_SERVICE_TIMEOUTSTOP] = { .field = "timeoutstop" },
     [E_RESOLVE_SERVICE_DOWN] = { .field = "down" },
     [E_RESOLVE_SERVICE_DOWNSIGNAL] = { .field = "downsignal" },
 
@@ -95,8 +93,8 @@ resolve_field_table_t resolve_service_field_table[] = {
     [E_RESOLVE_SERVICE_LOGRUN_BUILD] = { .field = "logrun_build" },
     [E_RESOLVE_SERVICE_LOGRUN_SHEBANG] = { .field = "logrun_shebang" },
     [E_RESOLVE_SERVICE_LOGRUN_RUNAS] = { .field = "logrun_runas" },
-    [E_RESOLVE_SERVICE_LOGTIMEOUTKILL] = { .field = "logtimeoutkill" },
-    [E_RESOLVE_SERVICE_LOGTIMEOUTFINISH] = { .field = "logtimeoutfinish" },
+    [E_RESOLVE_SERVICE_LOGTIMEOUTSTART] = { .field = "logtimeoutstart" },
+    [E_RESOLVE_SERVICE_LOGTIMEOUTSTOP] = { .field = "logtimeoutstop" },
 
     // environment
     [E_RESOLVE_SERVICE_ENV] = { .field = "env" },
@@ -287,20 +285,12 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
             res->execute.finish.runas = resolve_add_string(wres, data) ;
             break ;
 
-        case E_RESOLVE_SERVICE_TIMEOUTKILL:
-            res->execute.timeout.kill = resolve_add_uint(data) ;
+        case E_RESOLVE_SERVICE_TIMEOUTSTART:
+            res->execute.timeout.start = resolve_add_uint(data) ;
             break ;
 
-        case E_RESOLVE_SERVICE_TIMEOUTFINISH:
-            res->execute.timeout.finish = resolve_add_uint(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_TIMEOUTUP:
-            res->execute.timeout.up = resolve_add_uint(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_TIMEOUTDOWN:
-            res->execute.timeout.down = resolve_add_uint(data) ;
+        case E_RESOLVE_SERVICE_TIMEOUTSTOP:
+            res->execute.timeout.stop = resolve_add_uint(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_DOWN:
@@ -399,12 +389,12 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
             res->logger.execute.run.runas = resolve_add_string(wres, data) ;
             break ;
 
-        case E_RESOLVE_SERVICE_LOGTIMEOUTKILL:
-            res->logger.timeout.kill = resolve_add_uint(data) ;
+        case E_RESOLVE_SERVICE_LOGTIMEOUTSTART:
+            res->logger.timeout.start = resolve_add_uint(data) ;
             break ;
 
-        case E_RESOLVE_SERVICE_LOGTIMEOUTFINISH:
-            res->logger.timeout.finish = resolve_add_uint(data) ;
+        case E_RESOLVE_SERVICE_LOGTIMEOUTSTOP:
+            res->logger.timeout.stop = resolve_add_uint(data) ;
             break ;
 
         // environment

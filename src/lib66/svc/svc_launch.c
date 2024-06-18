@@ -316,17 +316,12 @@ unsigned int compute_timeout(resolve_service_t *res, unsigned int what)
 
     if (!what) {
 
-        if (res->type == TYPE_ONESHOT && res->execute.timeout.up)
-            timeout = res->execute.timeout.up ;
-        else if (res->type == TYPE_CLASSIC && res->execute.timeout.kill)
-            timeout = res->execute.timeout.kill ;
-
+        if (res->execute.timeout.start)
+            timeout = res->execute.timeout.start ;
     } else {
 
-        if (res->type == TYPE_ONESHOT && res->execute.timeout.down)
-            timeout = res->execute.timeout.down ;
-        else if (res->type == TYPE_CLASSIC && res->execute.timeout.finish)
-            timeout = res->execute.timeout.finish ;
+        if (res->execute.timeout.stop)
+            timeout = res->execute.timeout.stop ;
     }
 
     if (!timeout && PINFO->opt_timeout)

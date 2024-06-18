@@ -143,38 +143,20 @@ int parse_store_main(resolve_service_t *res, stack *store, const int sid, const 
 
             break ;
 
-        case KEY_MAIN_T_KILL:
+        case KEY_MAIN_T_START:
 
             parse_error_type(res->type, list_section_main, kid) ;
 
-            if (!uint320_scan(store->s, &res->execute.timeout.kill))
+            if (!uint320_scan(store->s, &res->execute.timeout.start))
                 parse_error_return(0, 3, sid, list_section_main, kid) ;
 
             break ;
 
-        case KEY_MAIN_T_FINISH:
+        case KEY_MAIN_T_STOP:
 
             parse_error_type(res->type, list_section_main, kid) ;
 
-            if (!uint320_scan(store->s, &res->execute.timeout.finish))
-                parse_error_return(0, 3, sid, list_section_main, kid) ;
-
-            break ;
-
-        case KEY_MAIN_T_UP:
-
-            parse_error_type(res->type, list_section_main, kid) ;
-
-            if (!uint320_scan(store->s, &res->execute.timeout.up))
-                parse_error_return(0, 3, sid, list_section_main, kid) ;
-
-            break ;
-
-        case KEY_MAIN_T_DOWN:
-
-            parse_error_type(res->type, list_section_main, kid) ;
-
-            if (!uint320_scan(store->s, &res->execute.timeout.down))
+            if (!uint320_scan(store->s, &res->execute.timeout.stop))
                 parse_error_return(0, 3, sid, list_section_main, kid) ;
 
             break ;

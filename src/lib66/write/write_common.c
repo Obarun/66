@@ -54,12 +54,12 @@ int write_common(resolve_service_t *res, char const *dst, uint8_t force)
      * Only write timeout file for classic service.
      * S6-supervise need it otherwise it's read directly
      * from the resolve file at start process. */
-    if (res->execute.timeout.kill)
-        if (!write_uint(dst, "timeout-kill", res->execute.timeout.kill))
+    if (res->type == TYPE_CLASSIC && res->execute.timeout.start)
+        if (!write_uint(dst, "timeout-kill", res->execute.timeout.start))
             log_warnusys_return(LOG_EXIT_ZERO, "write uint file timeout-kill") ;
 
-    if (res->execute.timeout.finish)
-        if (!write_uint(dst, "timeout-finish", res->execute.timeout.finish))
+    if (res->type == TYPE_CLASSIC && res->execute.timeout.stop)
+        if (!write_uint(dst, "timeout-finish", res->execute.timeout.stop))
             log_warnusys_return(LOG_EXIT_ZERO, "write uint file timeout-finish") ;
 
     /** max-death-tally */
