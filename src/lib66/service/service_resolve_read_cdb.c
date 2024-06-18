@@ -98,8 +98,6 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
     res->execute.run.run_user = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     resolve_find_cdb(&tmp,c,"run_build") ;
     res->execute.run.build = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-    resolve_find_cdb(&tmp,c,"run_shebang") ;
-    res->execute.run.shebang = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     resolve_find_cdb(&tmp,c,"run_runas") ;
     res->execute.run.runas = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     resolve_find_cdb(&tmp,c,"finish") ;
@@ -108,8 +106,6 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
     res->execute.finish.run_user = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     resolve_find_cdb(&tmp,c,"finish_build") ;
     res->execute.finish.build = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-    x = resolve_find_cdb(&tmp,c,"finish_shebang") ;
-    res->execute.finish.shebang = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     x = resolve_find_cdb(&tmp,c,"finish_runas") ;
     res->execute.finish.runas = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     x = resolve_find_cdb(&tmp,c,"timeoutstart") ;
@@ -162,8 +158,6 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
     res->logger.execute.run.run_user = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     resolve_find_cdb(&tmp,c,"logrun_build") ;
     res->logger.execute.run.build = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-    x = resolve_find_cdb(&tmp,c,"logrun_shebang") ;
-    res->logger.execute.run.shebang = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     x = resolve_find_cdb(&tmp,c,"logrun_runas") ;
     res->logger.execute.run.runas = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
     x = resolve_find_cdb(&tmp,c,"logtimeoutstart") ;

@@ -167,10 +167,6 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
             str = res->sa.s + res->execute.run.build ;
             break ;
 
-        case E_RESOLVE_SERVICE_RUN_SHEBANG:
-            str = res->sa.s + res->execute.run.shebang ;
-            break ;
-
         case E_RESOLVE_SERVICE_RUN_RUNAS:
             str = res->sa.s + res->execute.run.runas ;
             break ;
@@ -185,10 +181,6 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
 
         case E_RESOLVE_SERVICE_FINISH_BUILD:
             str = res->sa.s + res->execute.finish.build ;
-            break ;
-
-        case E_RESOLVE_SERVICE_FINISH_SHEBANG:
-            str = res->sa.s + res->execute.finish.shebang ;
             break ;
 
         case E_RESOLVE_SERVICE_FINISH_RUNAS:
@@ -297,10 +289,6 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
 
         case E_RESOLVE_SERVICE_LOGRUN_BUILD:
             str = res->sa.s + res->logger.execute.run.build ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGRUN_SHEBANG:
-            str = res->sa.s + res->logger.execute.run.shebang ;
             break ;
 
         case E_RESOLVE_SERVICE_LOGRUN_RUNAS:

@@ -60,21 +60,6 @@ int parse_store_start_stop(resolve_service_t *res, stack *store, const int sid, 
             }
             break ;
 
-        case KEY_STARTSTOP_SHEBANG:
-
-            log_1_warn("deprecated key @shebang -- define your complete shebang directly inside your Execute key field") ;
-
-            if (store->s[0] != '/')
-                parse_error_return(0, 4, sid, list_section_startstop, kid) ;
-
-            if (sid == SECTION_START)
-                res->execute.run.shebang = resolve_add_string(wres, store->s) ;
-            else if (sid == SECTION_STOP)
-                res->execute.finish.shebang = resolve_add_string(wres, store->s) ;
-            else if (sid == SECTION_LOG)
-                res->logger.execute.run.shebang = resolve_add_string(wres, store->s) ;
-            break ;
-
         case KEY_STARTSTOP_EXEC:
 
             if (sid == SECTION_START)

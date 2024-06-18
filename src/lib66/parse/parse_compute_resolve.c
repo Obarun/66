@@ -164,29 +164,19 @@ static void compute_wrapper_scripts_user(resolve_service_t *res, uint8_t runorfi
 
     log_flow() ;
 
-    char *shebang = 0 ;
-    size_t fakelen = 0, shebanglen = 0 ;
+    char *shebang = "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P" ;
+    size_t fakelen = 0, shebanglen = strlen(shebang) ;
     resolve_service_addon_scripts_t *script = runorfinish ? &res->execute.run : &res->execute.finish ;
     size_t scriptlen = strlen(res->sa.s + script->run_user) ;
     int build = !strcmp(res->sa.s + script->build, "custom") ? BUILD_CUSTOM : BUILD_AUTO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-    /** shebang is deprecated*/
-    if (script->shebang)
-        log_warn("@shebang field is deprecated -- please define it at the start of your Execute field instead") ;
-
-    if (build && script->shebang) {
-        shebang = res->sa.s + script->shebang ;
-        shebanglen = strlen(shebang) ;
-    } else if (!build) {
-        shebang = "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P" ;
-        shebanglen = strlen(shebang) ;
-    }
-
     char run[shebanglen + 1 + scriptlen + 1 + 1] ;
 
-    auto_strings(run, shebang, "\n") ;
-    fakelen = FAKELEN ;
+    if (!build) {
+        auto_strings(run, shebang, "\n") ;
+        fakelen = FAKELEN ;
+    }
 
     if (script->run_user)
         auto_strings(run + fakelen, res->sa.s + script->run_user, "\n") ;

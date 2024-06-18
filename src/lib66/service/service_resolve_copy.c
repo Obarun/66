@@ -70,12 +70,10 @@ int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res)
     dst->execute.run.run = res->execute.run.run ;
     dst->execute.run.run_user = res->execute.run.run_user ;
     dst->execute.run.build = res->execute.run.build ;
-    dst->execute.run.shebang = res->execute.run.shebang ;
     dst->execute.run.runas = res->execute.run.runas ;
     dst->execute.finish.run = res->execute.finish.run ;
     dst->execute.finish.run_user = res->execute.finish.run_user ;
     dst->execute.finish.build = res->execute.finish.build ;
-    dst->execute.finish.shebang = res->execute.finish.shebang ;
     dst->execute.finish.runas = res->execute.finish.runas ;
     dst->execute.timeout.start = res->execute.timeout.start ;
     dst->execute.timeout.stop = res->execute.timeout.stop ;
@@ -104,7 +102,6 @@ int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res)
     dst->logger.execute.run.run = res->logger.execute.run.run ;
     dst->logger.execute.run.run_user = res->logger.execute.run.run_user ;
     dst->logger.execute.run.build = res->logger.execute.run.build ;
-    dst->logger.execute.run.shebang = res->logger.execute.run.shebang ;
     dst->logger.execute.run.runas = res->logger.execute.run.runas ;
     dst->logger.timeout.start = res->logger.timeout.start ;
     dst->logger.timeout.stop = res->logger.timeout.stop ;

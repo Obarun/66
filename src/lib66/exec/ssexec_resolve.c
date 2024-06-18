@@ -35,7 +35,7 @@
 #include <66/config.h>
 #include <66/state.h>
 
-#define MAXOPTS 73
+#define MAXOPTS 70
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -110,12 +110,10 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_string(fields[m++], res->sa.s, res->execute.run.run, 1) ;
     info_display_string(fields[m++], res->sa.s, res->execute.run.run_user, 1) ;
     info_display_string(fields[m++], res->sa.s, res->execute.run.build, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->execute.run.shebang, 1) ;
     info_display_string(fields[m++], res->sa.s, res->execute.run.runas, 1) ;
     info_display_string(fields[m++], res->sa.s, res->execute.finish.run, 1) ;
     info_display_string(fields[m++], res->sa.s, res->execute.finish.run_user, 1) ;
     info_display_string(fields[m++], res->sa.s, res->execute.finish.build, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->execute.finish.shebang, 1) ;
     info_display_string(fields[m++], res->sa.s, res->execute.finish.runas, 1) ;
     info_display_int(fields[m++], res->execute.timeout.start) ;
     info_display_int(fields[m++], res->execute.timeout.stop) ;
@@ -142,7 +140,6 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_string(fields[m++], res->sa.s, res->logger.execute.run.run, 1) ;
     info_display_string(fields[m++], res->sa.s, res->logger.execute.run.run_user, 1) ;
     info_display_string(fields[m++], res->sa.s, res->logger.execute.run.build, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->logger.execute.run.shebang, 1) ;
     info_display_string(fields[m++], res->sa.s, res->logger.execute.run.runas, 1) ;
     info_display_int(fields[m++], res->logger.execute.timeout.start) ;
     info_display_int(fields[m++], res->logger.execute.timeout.stop) ;
@@ -203,12 +200,10 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "run",
         "run_user",
         "run_build",
-        "run_shebang",
         "run_runas",
         "finish",
         "finish_user",
         "finish_build",
-        "finish_shebang",
         "finish_runas",
         "timeoutstart",
         "timeoutstop",
@@ -235,7 +230,6 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "logrun" ,
         "logrun_user" ,
         "logrun_build" ,
-        "logrun_shebang" ,
         "logrun_runas" ,
         "logtimeoutstart",
         "logtimeoutstop",

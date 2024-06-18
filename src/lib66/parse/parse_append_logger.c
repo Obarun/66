@@ -144,14 +144,8 @@ static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
 
         } else {
 
-            if (res->logger.execute.run.shebang)
-                log_warn("@shebang field is deprecated -- please define it at start of your Execute field instead") ;
-
-            char *shebang = res->logger.execute.run.shebang ? res->sa.s + res->logger.execute.run.shebang : "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n" ;
-            size_t shebanglen = strlen(shebang) ;
-
-            char run[shebanglen + strlen(res->sa.s + res->logger.execute.run.run_user) + 2] ;
-            auto_strings(run, shebang, res->sa.s + res->logger.execute.run.run_user, "\n") ;
+            char run[strlen(res->sa.s + res->logger.execute.run.run_user) + 2] ;
+            auto_strings(run, res->sa.s + res->logger.execute.run.run_user, "\n") ;
 
             log->execute.run.run_user = resolve_add_string(wres, run) ;
         }
@@ -204,7 +198,6 @@ static void compute_logger(resolve_service_t *res, resolve_service_t *log, ssexe
     log->dependencies.nrequiredby = 1 ;
 
     log->execute.run.build = resolve_add_string(wres, str + res->logger.execute.run.build) ;
-    log->execute.run.shebang = res->logger.execute.run.shebang ? resolve_add_string(wres, str + res->logger.execute.run.shebang) : 0 ;
     log->execute.run.runas = resolve_add_string(wres, str + res->logger.execute.run.runas) ;
     log->execute.timeout.start = res->logger.execute.timeout.start ;
     log->execute.timeout.stop = res->logger.execute.timeout.stop ;

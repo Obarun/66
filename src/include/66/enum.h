@@ -61,7 +61,6 @@ enum enum_key_section_startstop_e
 {
     KEY_STARTSTOP_BUILD = 0 ,
     KEY_STARTSTOP_RUNAS ,
-    KEY_STARTSTOP_SHEBANG ,
     KEY_STARTSTOP_EXEC ,
     KEY_STARTSTOP_ENDOFKEY
 } ;
@@ -73,7 +72,6 @@ enum enum_key_section_logger_e
 {
     KEY_LOGGER_BUILD = 0 ,
     KEY_LOGGER_RUNAS ,
-    KEY_LOGGER_SHEBANG ,
     KEY_LOGGER_EXEC ,
     KEY_LOGGER_DESTINATION ,
     KEY_LOGGER_BACKUP ,
@@ -236,7 +234,6 @@ static key_description_t const list_section_startstop[] =
 {
     { .name = &enum_str_key_section_startstop[KEY_STARTSTOP_BUILD], .id = KEY_STARTSTOP_BUILD, .expected = EXPECT_LINE },
     { .name = &enum_str_key_section_startstop[KEY_STARTSTOP_RUNAS], .id = KEY_STARTSTOP_RUNAS, .expected = EXPECT_LINE },
-    { .name = &enum_str_key_section_startstop[KEY_STARTSTOP_SHEBANG], .id = KEY_STARTSTOP_SHEBANG, .expected = EXPECT_QUOTE },
     { .name = &enum_str_key_section_startstop[KEY_STARTSTOP_EXEC], .id = KEY_STARTSTOP_EXEC, .expected = EXPECT_BRACKET },
     { .name = 0 }
 } ;
@@ -245,7 +242,6 @@ static key_description_t const list_section_logger[] =
 {
     { .name = &enum_str_key_section_logger[KEY_LOGGER_BUILD], .id = KEY_LOGGER_BUILD, .expected = EXPECT_LINE },
     { .name = &enum_str_key_section_logger[KEY_LOGGER_RUNAS], .id = KEY_LOGGER_RUNAS, .expected = EXPECT_LINE },
-    { .name = &enum_str_key_section_logger[KEY_LOGGER_SHEBANG], .id = KEY_LOGGER_SHEBANG, .expected = EXPECT_QUOTE },
     { .name = &enum_str_key_section_logger[KEY_LOGGER_EXEC], .id = KEY_LOGGER_EXEC, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_logger[KEY_LOGGER_DESTINATION], .id = KEY_LOGGER_DESTINATION, .expected = EXPECT_SLASH },
     { .name = &enum_str_key_section_logger[KEY_LOGGER_BACKUP], .id = KEY_LOGGER_BACKUP, .expected = EXPECT_UINT },

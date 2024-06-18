@@ -898,11 +898,6 @@ void info_status_all(void)
                 if (!stack_string_clean(&stk, c->tres.sa.s + c->tres.contents))
                     log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-                char const *v[stk.count + 1]  ;
-
-                if (!env_make(v, stk.count, stk.s, stk.len))
-                    log_dieusys(LOG_EXIT_SYS, "build array of service") ;
-
                 service_graph_g(stk.s, stk.len, &graph, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP|STATE_FLAGS_WANTDOWN) ;
 
                 if (!graph.mlen)

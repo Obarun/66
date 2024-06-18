@@ -35,30 +35,15 @@ int parse_mandatory(resolve_service_t *res)
 
         case TYPE_ONESHOT:
 
-            if (res->execute.run.shebang)
-                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at Execute key") ;
-
             if (!res->execute.run.run_user)
                 log_warn_return(LOG_EXIT_ZERO,"key Execute at section [Start] must be set") ;
-
-            if (res->execute.finish.shebang)
-                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at Execute key") ;
 
             break ;
 
         case TYPE_CLASSIC:
 
-             if (res->execute.run.shebang)
-                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at Execute key") ;
-
             if (!res->execute.run.run_user)
                 log_warn_return(LOG_EXIT_ZERO,"key Execute at section [Start] must be set") ;
-
-            if (res->execute.finish.shebang)
-                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at Execute key") ;
-
-            if (res->logger.execute.finish.shebang)
-                log_warn_return(LOG_EXIT_ZERO,"key @shebang is deprecated -- shebang should be define at Execute key") ;
 
             break ;
 

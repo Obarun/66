@@ -57,12 +57,10 @@ resolve_field_table_t resolve_service_field_table[] = {
     [E_RESOLVE_SERVICE_RUN] = { .field = "run" },
     [E_RESOLVE_SERVICE_RUN_USER] = { .field = "run_user" },
     [E_RESOLVE_SERVICE_RUN_BUILD] = { .field = "run_build" },
-    [E_RESOLVE_SERVICE_RUN_SHEBANG] = { .field = "run_shebang" },
     [E_RESOLVE_SERVICE_RUN_RUNAS] = { .field = "run_runas" },
     [E_RESOLVE_SERVICE_FINISH] = { .field = "finish" },
     [E_RESOLVE_SERVICE_FINISH_USER] = { .field = "finish_user" },
     [E_RESOLVE_SERVICE_FINISH_BUILD] = { .field = "finish_build" },
-    [E_RESOLVE_SERVICE_FINISH_SHEBANG] = { .field = "finish_shebang" },
     [E_RESOLVE_SERVICE_FINISH_RUNAS] = { .field = "finish_runas" },
     [E_RESOLVE_SERVICE_TIMEOUTSTART] = { .field = "timeoutstart" },
     [E_RESOLVE_SERVICE_TIMEOUTSTOP] = { .field = "timeoutstop" },
@@ -91,7 +89,6 @@ resolve_field_table_t resolve_service_field_table[] = {
     [E_RESOLVE_SERVICE_LOGRUN] = { .field = "logrun" },
     [E_RESOLVE_SERVICE_LOGRUN_USER] = { .field = "logrun_user" },
     [E_RESOLVE_SERVICE_LOGRUN_BUILD] = { .field = "logrun_build" },
-    [E_RESOLVE_SERVICE_LOGRUN_SHEBANG] = { .field = "logrun_shebang" },
     [E_RESOLVE_SERVICE_LOGRUN_RUNAS] = { .field = "logrun_runas" },
     [E_RESOLVE_SERVICE_LOGTIMEOUTSTART] = { .field = "logtimeoutstart" },
     [E_RESOLVE_SERVICE_LOGTIMEOUTSTOP] = { .field = "logtimeoutstop" },
@@ -257,10 +254,6 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
             res->execute.run.build = resolve_add_string(wres, data) ;
             break ;
 
-        case E_RESOLVE_SERVICE_RUN_SHEBANG:
-            res->execute.run.shebang = resolve_add_string(wres, data) ;
-            break ;
-
         case E_RESOLVE_SERVICE_RUN_RUNAS:
             res->execute.run.runas = resolve_add_string(wres, data) ;
             break ;
@@ -275,10 +268,6 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
 
         case E_RESOLVE_SERVICE_FINISH_BUILD:
             res->execute.finish.build = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_FINISH_SHEBANG:
-            res->execute.finish.shebang = resolve_add_string(wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_FINISH_RUNAS:
@@ -379,10 +368,6 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
 
         case E_RESOLVE_SERVICE_LOGRUN_BUILD:
             res->logger.execute.run.build = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGRUN_SHEBANG:
-            res->logger.execute.run.shebang = resolve_add_string(wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LOGRUN_RUNAS:

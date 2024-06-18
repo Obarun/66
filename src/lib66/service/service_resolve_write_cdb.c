@@ -62,12 +62,10 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres)
     !resolve_add_cdb(c, "run", str, sres->execute.run.run, 1) ||
     !resolve_add_cdb(c, "run_user", str, sres->execute.run.run_user, 1) ||
     !resolve_add_cdb(c, "run_build", str, sres->execute.run.build, 1) ||
-    !resolve_add_cdb(c, "run_shebang", str, sres->execute.run.shebang, 1) ||
     !resolve_add_cdb(c, "run_runas", str, sres->execute.run.runas, 1) ||
     !resolve_add_cdb(c, "finish", str, sres->execute.finish.run, 1) ||
     !resolve_add_cdb(c, "finish_user", str, sres->execute.finish.run_user, 1) ||
     !resolve_add_cdb(c, "finish_build", str, sres->execute.finish.build, 1) ||
-    !resolve_add_cdb(c, "finish_shebang", str, sres->execute.finish.shebang, 1) ||
     !resolve_add_cdb(c, "finish_runas", str, sres->execute.finish.runas, 1) ||
     !resolve_add_cdb_uint(c, "timeoutstart", sres->execute.timeout.start) ||
     !resolve_add_cdb_uint(c, "timeoutstop", sres->execute.timeout.stop) ||
@@ -96,7 +94,6 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres)
     !resolve_add_cdb(c, "logrun", str, sres->logger.execute.run.run, 1) ||
     !resolve_add_cdb(c, "logrun_user", str, sres->logger.execute.run.run_user, 1) ||
     !resolve_add_cdb(c, "logrun_build", str, sres->logger.execute.run.build, 1) ||
-    !resolve_add_cdb(c, "logrun_shebang", str, sres->logger.execute.run.shebang, 1) ||
     !resolve_add_cdb(c, "logrun_runas", str, sres->logger.execute.run.runas, 1) ||
     !resolve_add_cdb_uint(c, "logtimeoutstart", sres->logger.execute.timeout.start) ||
     !resolve_add_cdb_uint(c, "logtimeoutstop", sres->logger.execute.timeout.stop) ||

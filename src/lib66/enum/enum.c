@@ -53,7 +53,6 @@ char const *enum_str_key_section_main[] = {
 char const *enum_str_key_section_startstop[] = {
     "Build" ,
     "RunAs" ,
-    "Shebang" ,
     "Execute" ,
     0
 } ;
@@ -61,7 +60,6 @@ char const *enum_str_key_section_startstop[] = {
 char const *enum_str_key_section_logger[] = {
     "Build" ,
     "RunAs" ,
-    "Shebang" ,
     "Execute" ,
     "Destination" ,
     "Backup" ,

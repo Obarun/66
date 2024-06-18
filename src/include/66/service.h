@@ -68,11 +68,10 @@ struct resolve_service_addon_scripts_s
     uint32_t run ; // string, launch before Execute
     uint32_t run_user ; // string, Execute field
     uint32_t build ; // string, custom or execline
-    uint32_t shebang ; // string
     uint32_t runas ; // string
 } ;
 
-#define RESOLVE_SERVICE_ADDON_SCRIPTS_ZERO { 0,0,0,0,0 }
+#define RESOLVE_SERVICE_ADDON_SCRIPTS_ZERO { 0,0,0,0 }
 
 typedef struct resolve_service_addon_execute_s resolve_service_addon_execute_t, *resolve_service_addon_execute_t_ref ;
 struct resolve_service_addon_execute_s
@@ -243,12 +242,10 @@ enum resolve_service_enum_e
     E_RESOLVE_SERVICE_RUN,
     E_RESOLVE_SERVICE_RUN_USER,
     E_RESOLVE_SERVICE_RUN_BUILD,
-    E_RESOLVE_SERVICE_RUN_SHEBANG,
     E_RESOLVE_SERVICE_RUN_RUNAS,
     E_RESOLVE_SERVICE_FINISH,
     E_RESOLVE_SERVICE_FINISH_USER,
     E_RESOLVE_SERVICE_FINISH_BUILD,
-    E_RESOLVE_SERVICE_FINISH_SHEBANG,
     E_RESOLVE_SERVICE_FINISH_RUNAS,
     E_RESOLVE_SERVICE_TIMEOUTSTART,
     E_RESOLVE_SERVICE_TIMEOUTSTOP,
@@ -277,7 +274,6 @@ enum resolve_service_enum_e
     E_RESOLVE_SERVICE_LOGRUN,
     E_RESOLVE_SERVICE_LOGRUN_USER,
     E_RESOLVE_SERVICE_LOGRUN_BUILD,
-    E_RESOLVE_SERVICE_LOGRUN_SHEBANG,
     E_RESOLVE_SERVICE_LOGRUN_RUNAS,
     E_RESOLVE_SERVICE_LOGTIMEOUTSTART,
     E_RESOLVE_SERVICE_LOGTIMEOUTSTOP,
