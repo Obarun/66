@@ -78,6 +78,9 @@ static void execute_get_uidgid(uid_t *uid, gid_t *gid, resolve_service_t *res, u
 
 static void execute_create_log_destination(resolve_service_t *res)
 {
+    if (!res->logger.want)
+        return ;
+
     /** Creation of the logger destination. logger directory
      * may no exists on tmpfs filesystem i.e. boot time*/
     uid_t uid ;
@@ -443,7 +446,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
         if (action == EXECUTE_STOP) /* really nothing to do here */
             return 0 ;
         else /** should never happen*/
-            log_dieusys(LOG_EXIT_SYS, "find script of: ", service, " -- please make a bug report") ;
+            log_dieusys(LOG_EXIT_SYS, "find script: ", brun, " -- please make a bug report") ;
     }
 
     execute_create_log_destination(&res) ;
