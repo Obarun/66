@@ -16,6 +16,7 @@
 #include <errno.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 
 #include <skalibs/cdb.h>
 #include <skalibs/djbunix.h>
@@ -24,14 +25,17 @@
 #include <66/service.h>
 #include <66/tree.h>
 
-int resolve_read_cdb(resolve_wrapper_t *wres, char const *file)
+int resolve_read_cdb(resolve_wrapper_t *wres, char const *path, const char *name)
 {
     log_flow() ;
 
     int fd, e = -1, err = errno ;
+    char file[strlen(path) + strlen(name) + 1] ;
     cdb c = CDB_ZERO ;
 
     errno = 0 ;
+
+    auto_strings(file, path, name) ;
 
     fd = open_readb(file) ;
     if (fd < 0) {

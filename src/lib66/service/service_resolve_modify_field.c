@@ -108,7 +108,8 @@ resolve_field_table_t resolve_service_field_table[] = {
     [E_RESOLVE_SERVICE_REGEX_NINFILES] = { .field = "ninfiles" },
     [E_RESOLVE_SERVICE_ENDOFKEY] = { .field = 0 }
 } ;
-uint32_t resolve_add_uint(char const *data)
+
+static uint32_t resolve_add_uint(char const *data)
 {
     uint32_t u ;
 
@@ -119,11 +120,9 @@ uint32_t resolve_add_uint(char const *data)
     return u ;
 }
 
-int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t field, char const *data)
+void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t field, char const *data)
 {
     log_flow() ;
-
-    int e = 0 ;
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
@@ -427,12 +426,9 @@ int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t 
             break ;
 
         default:
-            return e ;
+            break ;
     }
 
-    e = 1 ;
-
-   free(wres) ;
-   return e ;
-
+    service_resolve_sanitize(res) ;
+    free(wres) ;
 }

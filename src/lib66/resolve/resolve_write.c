@@ -25,11 +25,10 @@ int resolve_write(resolve_wrapper_t *wres, char const *base, char const *name)
     log_flow() ;
 
     size_t baselen = strlen(base) ;
-    size_t namelen = strlen(name) ;
 
-    char file[baselen + SS_RESOLVE_LEN + 1 + namelen + 1] ;
-    auto_strings(file, base, SS_RESOLVE, "/", name) ;
+    char path[baselen + SS_RESOLVE_LEN + 2] ;
+    auto_strings(path, base, SS_RESOLVE, "/") ;
 
-    return resolve_write_cdb(wres, file) ;
+    return resolve_write_cdb(wres, path, name) ;
 
 }

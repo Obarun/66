@@ -162,7 +162,6 @@ struct resolve_service_addon_regex_s
 typedef struct resolve_service_s resolve_service_t, *resolve_service_t_ref ;
 struct resolve_service_s
 {
-    uint32_t salen ;
     stralloc sa ;
 
     // configuration
@@ -192,7 +191,7 @@ struct resolve_service_s
 
 } ;
 
-#define RESOLVE_SERVICE_ZERO { 0,STRALLOC_ZERO, \
+#define RESOLVE_SERVICE_ZERO { STRALLOC_ZERO, \
                                0,0,0,0,0,5,0,0,0,0,0,0,0,0,0, \
                                RESOLVE_SERVICE_ADDON_PATH_ZERO, \
                                RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO, \
@@ -312,9 +311,9 @@ extern int service_frontend_path(stralloc *sasrc,char const *sv, uid_t owner,cha
 extern int service_frontend_src(stralloc *sasrc, char const *name, char const *src, char const **exclude) ;
 extern int service_is_g(char const *name, uint32_t flag) ;
 extern int service_get_treename(char *atree, char const *name, uint32_t flag) ;
-extern int service_resolve_copy(resolve_service_t *dst, resolve_service_t *res) ;
+extern void service_resolve_sanitize(resolve_service_t *res) ;
 extern int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve_service_enum_t field) ;
-extern int service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t field, char const *data) ;
+extern void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t field, char const *data) ;
 extern int service_resolve_read_cdb(cdb *c, resolve_service_t *res) ;
 extern void service_resolve_write(resolve_service_t *res) ;
 extern void service_resolve_write_remote(resolve_service_t *res, char const *dst, uint8_t force) ;

@@ -29,16 +29,18 @@
 #include <66/service.h>
 #include <66/tree.h>
 
-int resolve_write_cdb(resolve_wrapper_t *wres, char const *file)
+int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *name)
 {
     log_flow() ;
 
     int fd ;
-    size_t filelen = strlen(file);
+    size_t pathlen = strlen(path), namelen = strlen(name) ;
     cdbmaker c = CDBMAKER_ZERO ;
-    char tfile[filelen + 9] ;
+    char file[pathlen + namelen + 1] ;
+    char tfile[5 + strlen(name) + 8] ;
 
-    auto_strings(tfile, file, ":", "XXXXXX") ;
+    auto_strings(file, path, name) ;
+    auto_strings(tfile, "/tmp/", name, ":", "XXXXXX") ;
 
     fd = mkstemp(tfile) ;
     if (fd < 0 || ndelay_off(fd)) {
@@ -75,10 +77,12 @@ int resolve_write_cdb(resolve_wrapper_t *wres, char const *file)
 
     close(fd) ;
 
-    if (rename(tfile, file) < 0) {
-        log_warnusys("rename ", tfile, " to ", file) ;
+    if (!filecopy_unsafe(tfile, file, 0600)) {
+        log_warnusys("copy: ", tfile, " to ", file) ;
         goto err_fd ;
     }
+
+    unlink_void(tfile) ;
 
     return 1 ;
 

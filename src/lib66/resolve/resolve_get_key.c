@@ -1,5 +1,5 @@
 /*
- * resolve_find_cdb.c
+ * resolve_get_key.c
  *
  * Copyright (c) 2018-2024 Eric Vidal <eric@obarun.org>
  *
@@ -13,30 +13,21 @@
  */
 
 #include <string.h>
-#include <stdint.h>
+#include <unistd.h>
 
 #include <oblibs/log.h>
-#include <oblibs/string.h>
 
-#include <skalibs/stralloc.h>
 #include <skalibs/cdb.h>
 #include <skalibs/types.h>
 
-#include <66/resolve.h>
-
-int resolve_find_cdb(stralloc *result, cdb const *c, char const *key)
+int resolve_get_key(const cdb *c, const char *key, uint32_t *field)
 {
-    //log_flow() ;
-
-    uint32_t x = 0 ;
     size_t klen = strlen(key) ;
     cdb_data cdata ;
 
-    result->len = 0 ;
-
     int r = cdb_find(c, &cdata, key, klen) ;
     if (r == -1)
-        log_warnusys_return(LOG_EXIT_LESSONE,"search on cdb key: ",key) ;
+        log_warnusys_return(LOG_EXIT_ZERO,"search on cdb key: ",key) ;
 
     if (!r)
         log_warn_return(LOG_EXIT_ZERO,"unknown cdb key: ",key) ;
@@ -45,11 +36,8 @@ int resolve_find_cdb(stralloc *result, cdb const *c, char const *key)
     memcpy(pack,cdata.s, cdata.len) ;
     pack[cdata.len] = 0 ;
 
-    uint32_unpack_big(pack, &x) ;
+    uint32_unpack_big(pack, field) ;
 
-    if (!auto_stra(result,pack))
-        log_warnusys_return(LOG_EXIT_LESSONE,"stralloc") ;
+    return 1 ;
 
-    return x ;
 }
-

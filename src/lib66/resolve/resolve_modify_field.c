@@ -30,7 +30,9 @@ int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *
 
         log_trace("store field ", resolve_service_field_table[field].field," of service ", res->sa.s + res->name, " with value: ", by) ;
 
-        return service_resolve_modify_field(res, field, by) ;
+        service_resolve_modify_field(res, field, by) ;
+
+        return 1 ;
 
     } else if (wres->type == DATA_TREE) {
 
@@ -38,7 +40,9 @@ int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *
 
         log_trace("store field ", resolve_tree_field_table[field].field," of tree ", res->sa.s + res->name, " with value: ", by) ;
 
-        return tree_resolve_modify_field(res, field, by) ;
+        tree_resolve_modify_field(res, field, by) ;
+
+        return 1 ;
 
     } else if (wres->type == DATA_TREE_MASTER) {
 
@@ -46,7 +50,9 @@ int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *
 
         log_trace("store field ", resolve_tree_master_field_table[field].field," of resolve Master file of trees with value: ", by) ;
 
-        return tree_resolve_master_modify_field(res, field, by) ;
+        tree_resolve_master_modify_field(res, field, by) ;
+
+        return 1 ;
 
     } else return 0 ;
 }

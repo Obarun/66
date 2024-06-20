@@ -90,10 +90,11 @@ extern int resolve_write(resolve_wrapper_t *wres, char const *base, char const *
 extern void resolve_remove(char const *base, char const *name) ;
 extern int resolve_get_field_tosa(stralloc *sa, resolve_wrapper_t_ref wres, uint8_t field) ;
 extern int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *by) ;
-extern int resolve_read_cdb(resolve_wrapper_t *wres, char const *file) ;
-extern int resolve_write_cdb(resolve_wrapper_t *wres, char const *file) ;
+extern int resolve_read_cdb(resolve_wrapper_t *wres, const char *path, const char *name) ;
+extern int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *name) ;
 extern int resolve_add_cdb(cdbmaker *c, char const *key, char const *str, uint32_t element, uint8_t check) ;
 extern int resolve_add_cdb_uint(cdbmaker *c, char const *key, uint32_t data) ;
-extern int resolve_find_cdb(stralloc *result, cdb const *c, char const *key) ;
+extern int resolve_get_sa(stralloc *sa, const cdb *c) ;
+extern int resolve_get_key(const cdb *c, const char *key, uint32_t *field) ;
 
 #endif

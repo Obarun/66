@@ -160,7 +160,36 @@ char const *get_key_by_enum(key_description_t const *list, int const key)
     return *list[key].name ;
 }
 
-const char **get_enum_list(int const sid)
+const key_description_t *get_enum_list(const int sid)
+{
+    switch (sid) {
+
+        case SECTION_MAIN:
+            return list_section_main ;
+
+        case SECTION_START:
+            return list_section_startstop ;
+
+        case SECTION_STOP:
+            return list_section_startstop ;
+
+        case SECTION_LOG:
+            return list_section_logger ;
+
+        case SECTION_ENV:
+            return list_section_environment ;
+
+        case SECTION_REGEX:
+            return list_section_regex ;
+
+        default:
+            errno = EINVAL ;
+            return 0 ;
+    }
+
+}
+
+const char **get_enum_str(const int sid)
 {
     switch (sid) {
 
