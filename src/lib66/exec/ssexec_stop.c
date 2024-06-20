@@ -168,8 +168,8 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
                 if (hash == NULL)
                     continue ;
 
-                nargv[nargc++] = hash->res.sa.s + hash->res.logger.name ;
-                idx = graph_hash_vertex_get_id(&graph, hash->res.sa.s + hash->res.logger.name) ;
+                nargv[nargc++] = hash->res.sa.s + hash->res.name ;
+                idx = graph_hash_vertex_get_id(&graph, hash->res.sa.s + hash->res.name) ;
                 if (!fvisit[idx]) {
                     flist[fnservice++] = idx ;
                     fvisit[idx] = 1 ;
