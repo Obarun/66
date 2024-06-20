@@ -34,31 +34,29 @@ static char parse_char_next(char const *s, size_t slen, size_t *pos)
 
 static void key_isvalid(const char *line, size_t *o, uint8_t *bracket, int *vp, int lvp, const int sid)
 {
-    unsigned int pos = 0 ;
-    const char **key_list = get_enum_list(sid) ;
-    size_t e = 0 ;
-    char key[50] ;
-    int r = get_sep_before(line + (*o), '=', '\n') ;
-    if (r < 0) {
-        e = get_len_until(line + (*o), '\n') + 1 ;
-        (*o) += e ;
-        return  ;
-    }
+    const key_description_t *list = get_enum_list(sid) ;
 
-    /** parse_char_next increase o by one
-     * reverse it to get the full name of the key
-     * */
-    memcpy(key, line + ((*o) - 1), r) ;
-    key[r] = 0 ;
+    lexer_config cfg = LEXER_CONFIG_KEY ;
+    _alloc_stk_(key, strlen(line + (*o) + 1)) ;
+    cfg.str = line ;
+    cfg.slen = strlen(line) ;
 
-    while (key_list[pos]) {
-        if (!strcmp(key, key_list[pos])) {
-            (*o) = (size_t)lvp ;
-            (*bracket)-- ;
-            (*vp) = 0 ;
+    if (!lexer(&key, &cfg) || !stack_close(&key))
+        return ;
+
+    if (cfg.found) {
+
+        int r = get_enum_by_key(list, key.s) ;
+        if (r < 0) {
+            r = get_len_until(line + (*o), '\n') + 1 ;
+            (*o) = r ;
             return ;
         }
-        pos++ ;
+
+        (*o) = (size_t)lvp ;
+        (*bracket)-- ;
+        (*vp) = 0 ;
+        return ;
     }
 
     return ;
