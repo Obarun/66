@@ -75,10 +75,6 @@ static void parse_service_instance(stralloc *frontend, char const *svsrc, char c
     }
 
     stralloc_free(&sa) ;
-
-    if (!instance_create(frontend, sv, SS_INSTANCE_REGEX, insta))
-        log_die(LOG_EXIT_SYS, "create instance service: ", sv) ;
-
 }
 
 /* @sv -> name of the service to parse with
@@ -143,6 +139,10 @@ int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info,
         if (read_svfile(&sa, svname, svsrc) <= 0)
             log_dieu(LOG_EXIT_SYS, "read frontend service at: ", sv) ;
     }
+
+    if (!identifier_replace(&sa, svname))
+        log_dieu(LOG_EXIT_SYS, "replace regex for service: ", svname) ;
+
     _alloc_stk_(store, sa.len + 1) ;
 
     isparsed = service_is_g(svname, STATE_FLAGS_ISPARSED) ;

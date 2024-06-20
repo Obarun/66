@@ -56,4 +56,29 @@ extern void set_treeinfo(ssexec_t *info) ;
 extern int version_compare(char const  *a, char const *b, uint8_t ndot) ;
 extern int version_store(stack *stk, char const *str, uint8_t ndot) ;
 
+/**
+ * Identifier
+*/
+
+typedef int identifier_func_t(char *store, const char *data) ;
+
+identifier_func_t identifier_replace_instance ;
+identifier_func_t identifier_replace_username ;
+identifier_func_t identifier_replace_useruid ;
+identifier_func_t identifier_replace_usergid ;
+identifier_func_t identifier_replace_usergroup ;
+identifier_func_t identifier_replace_home ;
+identifier_func_t identifier_replace_shell ;
+identifier_func_t identifier_replace_runtime ;
+
+typedef struct identifier_table_s identifier_table_t, *identifier_table_t_ref ;
+struct identifier_table_s
+{
+    const char *ident ;
+    identifier_func_t *func;
+} ;
+
+extern identifier_table_t identifier_table[] ;
+extern int identifier_replace(stralloc *sasv, char const *svname) ;
+
 #endif

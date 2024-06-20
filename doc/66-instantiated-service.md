@@ -12,9 +12,9 @@ author: Eric Vidal <eric@obarun.org>
 An *instantiated* service file is of the same syntax as decribed in the [frontend](66-frontend.html) document for any other service. It can be any *type* of service. However some differences exist :
 
 - the name of the file needs to be appended with an `@` (commercial at) character.
-- every value replaced in an instance file needs to be written with `@I`.
+- every value replaced in an instance file needs to be written with a valid [identifier](66-identifier.html).
 
-Example :
+Example
 
 ```
     File name : tty@

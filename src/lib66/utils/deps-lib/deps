@@ -1,4 +1,5 @@
 get_userhome.o
+identifier.o
 name_isvalid.o
 read_svfile.o
 set_environment.o
