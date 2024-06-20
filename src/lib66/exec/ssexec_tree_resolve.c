@@ -123,7 +123,7 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
         r = tree_isvalid(info->base.s, treename) ;
 
         if (r < 0)
-        log_dieu(LOG_EXIT_SYS, "check validity of tree: ", treename) ;
+            log_dieu(LOG_EXIT_SYS, "check validity of tree: ", treename) ;
 
         if (!r)
             log_dieusys(LOG_EXIT_SYS, "find tree: ", treename) ;

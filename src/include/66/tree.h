@@ -36,7 +36,6 @@
 typedef struct resolve_tree_s resolve_tree_t, *resolve_tree_t_ref ;
 struct resolve_tree_s
 {
-    uint32_t salen ;
     stralloc sa ;
 
     uint32_t name ;
@@ -56,7 +55,7 @@ struct resolve_tree_s
     uint32_t init ;//not initialized->0, initialized->1
     uint32_t supervised ;//not superviseded->0, supervised->1
 } ;
-#define RESOLVE_TREE_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_TREE_ZERO { STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
 typedef enum resolve_tree_enum_e resolve_tree_enum_t, *resolve_tree_enum_t_ref;
 enum resolve_tree_enum_e
@@ -81,7 +80,6 @@ enum resolve_tree_enum_e
 typedef struct resolve_tree_master_s resolve_tree_master_t, *resolve_tree_master_t_ref ;
 struct resolve_tree_master_s
 {
-    uint32_t salen ;
     stralloc sa ;
 
     uint32_t name ;
@@ -93,7 +91,7 @@ struct resolve_tree_master_s
     uint32_t ncontents ;
 
 } ;
-#define RESOLVE_TREE_MASTER_ZERO { 0,STRALLOC_ZERO,0,0,0,0,0,0 }
+#define RESOLVE_TREE_MASTER_ZERO { STRALLOC_ZERO,0,0,0,0,0,0 }
 
 typedef enum resolve_tree_master_enum_e resolve_tree_master_enum_t, *resolve_tree_master_enum_t_ref;
 enum resolve_tree_master_enum_e
@@ -187,8 +185,8 @@ extern int tree_switch_current(char const *base, char const *tree) ;
 /** tree */
 extern int tree_resolve_read_cdb(cdb *c, resolve_tree_t *tres) ;
 extern int tree_resolve_write_cdb(cdbmaker *c, resolve_tree_t *tres) ;
-extern int tree_resolve_copy(resolve_tree_t *dst, resolve_tree_t *tres) ;
-extern int tree_resolve_modify_field(resolve_tree_t *tres, uint8_t field, char const *data) ;
+extern void tree_resolve_sanitize(resolve_tree_t *tres) ;
+extern void tree_resolve_modify_field(resolve_tree_t *tres, uint8_t field, char const *data) ;
 extern int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree_enum_t field) ;
 extern void tree_service_add(char const *treename, char const *service, ssexec_t *info) ;
 extern void tree_service_remove(char const *base, char const *treename, char const *service) ;
@@ -196,8 +194,8 @@ extern void tree_service_remove(char const *base, char const *treename, char con
 extern int tree_resolve_master_read_cdb(cdb *c, resolve_tree_master_t *mres) ;
 extern int tree_resolve_master_write_cdb(cdbmaker *c, resolve_tree_master_t *mres) ;
 extern int tree_resolve_master_create(char const *base, uid_t owner) ;
-extern int tree_resolve_master_copy(resolve_tree_master_t *dst, resolve_tree_master_t *mres) ;
-extern int tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint8_t field, char const *data) ;
+extern void tree_resolve_master_sanitize(resolve_tree_master_t *mres) ;
+extern void tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint8_t field, char const *data) ;
 extern int tree_resolve_master_get_field_tosa(stralloc *sa, resolve_tree_master_t *mres, resolve_tree_master_enum_t field) ;
 
 /** Seed API */

@@ -41,12 +41,20 @@ resolve_field_table_t resolve_tree_field_table[] = {
     [E_RESOLVE_TREE_ENDOFKEY] = { .field = 0 }
 } ;
 
-int tree_resolve_modify_field(resolve_tree_t *tres, uint8_t field, char const *data)
+static uint32_t resolve_add_uint(char const *data)
+{
+    uint32_t u ;
+
+    if (!data)
+        data = "0" ;
+    if (!uint0_scan(data, &u))
+        return 0 ;
+    return u ;
+}
+
+void tree_resolve_modify_field(resolve_tree_t *tres, uint8_t field, char const *data)
 {
     log_flow() ;
-
-    uint32_t ifield = 0 ;
-    int e = 0 ;
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, tres) ;
 
@@ -57,10 +65,8 @@ int tree_resolve_modify_field(resolve_tree_t *tres, uint8_t field, char const *d
             break ;
 
         case E_RESOLVE_TREE_ENABLED:
-            if (!data)
-                data = "0" ;
-            if (!uint0_scan(data, &ifield)) goto err ;
-            tres->enabled = ifield ;
+
+            tres->enabled = resolve_add_uint(data) ;
             break ;
 
         case E_RESOLVE_TREE_DEPENDS:
@@ -84,62 +90,38 @@ int tree_resolve_modify_field(resolve_tree_t *tres, uint8_t field, char const *d
             break ;
 
         case E_RESOLVE_TREE_NDEPENDS:
-            if (!data)
-                data = "0" ;
-            if (!uint0_scan(data, &ifield)) goto err ;
-            tres->ndepends = ifield ;
+
+            tres->ndepends = resolve_add_uint(data) ;
             break ;
 
         case E_RESOLVE_TREE_NREQUIREDBY:
-            if (!data)
-                data = "0" ;
-            if (!uint0_scan(data, &ifield)) goto err ;
-            tres->nrequiredby = ifield ;
+            tres->nrequiredby = resolve_add_uint(data) ;
             break ;
 
         case E_RESOLVE_TREE_NALLOW:
-            if (!data)
-                data = "0" ;
-            if (!uint0_scan(data, &ifield)) goto err ;
-            tres->nallow = ifield ;
+            tres->nallow = resolve_add_uint(data) ;
             break ;
 
         case E_RESOLVE_TREE_NGROUPS:
-            if (!data)
-                data = "0" ;
-            if (!uint0_scan(data, &ifield)) goto err ;
-            tres->ngroups = ifield ;
+            tres->ngroups = resolve_add_uint(data) ;
             break ;
 
         case E_RESOLVE_TREE_NCONTENTS:
-            if (!data)
-                data = "0" ;
-            if (!uint0_scan(data, &ifield)) goto err ;
-            tres->ncontents = ifield ;
+            tres->ncontents = resolve_add_uint(data) ;
             break ;
 
         case E_RESOLVE_TREE_INIT:
-            if (!data)
-                data = "0" ;
-            if (!uint0_scan(data, &ifield)) goto err ;
-            tres->init = ifield ;
+            tres->init = resolve_add_uint(data) ;
             break ;
 
         case E_RESOLVE_TREE_SUPERVISED:
-            if (!data)
-                data = "0" ;
-            if (!uint0_scan(data, &ifield)) goto err ;
-            tres->supervised = ifield ;
+            tres->supervised = resolve_add_uint(data) ;
             break ;
 
         default:
             break ;
     }
 
-    e = 1 ;
-
-    err:
-        free(wres) ;
-        return e ;
-
+    tree_resolve_sanitize(tres) ;
+    free(wres) ;
 }

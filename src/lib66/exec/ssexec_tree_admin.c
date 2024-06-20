@@ -518,12 +518,12 @@ void tree_master_modify_contents(char const *base)
 
     char const *exclude[2] = { SS_MASTER + 1, 0 } ;
 
-    log_trace("modify field contents of resolve Master file of trees") ;
+    log_trace("modify field contents of resolve Master file") ;
 
     auto_strings(solve, base, SS_SYSTEM, SS_RESOLVE) ;
 
     if (!sastr_dir_get(&sa, solve, exclude, S_IFREG))
-        log_dieu(LOG_EXIT_SYS, "get resolve files of trees") ;
+        log_dieu(LOG_EXIT_SYS, "get trees resolve files") ;
 
     size_t ncontents = sa.len ? sastr_nelement(&sa) : 0 ;
 
@@ -532,7 +532,7 @@ void tree_master_modify_contents(char const *base)
             log_dieu(LOG_EXIT_SYS, "rebuild stralloc") ;
 
     if (resolve_read_g(wres, base, SS_MASTER + 1) <= 0)
-        log_dieusys(LOG_EXIT_SYS, "read resolve Master file of trees") ;
+        log_dieusys(LOG_EXIT_SYS, "read resolve Master file") ;
 
     mres.ncontents = (uint32_t)ncontents ;
 
@@ -542,7 +542,7 @@ void tree_master_modify_contents(char const *base)
         mres.contents = resolve_add_string(wres, "") ;
 
     if (!resolve_write_g(wres, base, SS_MASTER + 1))
-        log_dieusys(LOG_EXIT_SYS, "write resolve Master file of trees") ;
+        log_dieusys(LOG_EXIT_SYS, "write resolve Master file") ;
 
     stralloc_free(&sa) ;
     resolve_free(wres) ;

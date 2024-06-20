@@ -12,12 +12,10 @@
  * except according to the terms contained in the LICENSE file.
  */
 
-#include <stdint.h>
 #include <stdlib.h>//free
 
 #include <oblibs/log.h>
 
-#include <skalibs/stralloc.h>
 #include <skalibs/cdb.h>
 
 #include <66/resolve.h>
@@ -27,72 +25,30 @@ int tree_resolve_read_cdb(cdb *c, resolve_tree_t *tres)
 {
     log_flow() ;
 
-    stralloc tmp = STRALLOC_ZERO ;
-    resolve_wrapper_t_ref wres ;
-    uint32_t x ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, tres) ;
 
-    wres = resolve_set_struct(DATA_TREE, tres) ;
+    if (resolve_get_sa(&tres->sa,c) <= 0 || !tres->sa.len)
+        return 0 ;
 
-    resolve_init(wres) ;
-
-    /* name */
-    resolve_find_cdb(&tmp,c,"name") ;
-    tres->name = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-
-    /* enabled */
-    x = resolve_find_cdb(&tmp,c,"enabled") ;
-    tres->enabled = x ;
-
-    /* depends */
-    resolve_find_cdb(&tmp,c,"depends") ;
-    tres->depends = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-
-    /* requiredby */
-    resolve_find_cdb(&tmp,c,"requiredby") ;
-    tres->requiredby = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-
-    /* allow */
-    resolve_find_cdb(&tmp,c,"allow") ;
-    tres->allow = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-
-    /* groups */
-    resolve_find_cdb(&tmp,c,"groups") ;
-    tres->groups = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-
-    /* contents */
-    resolve_find_cdb(&tmp,c,"contents") ;
-    tres->contents = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-
-    /* ndepends */
-    x = resolve_find_cdb(&tmp,c,"ndepends") ;
-    tres->ndepends = x ;
-
-    /* nrequiredby */
-    x = resolve_find_cdb(&tmp,c,"nrequiredby") ;
-    tres->nrequiredby = x ;
-
-    /* nallow */
-    x = resolve_find_cdb(&tmp,c,"nallow") ;
-    tres->nallow = x ;
-
-    /* ngroups */
-    x = resolve_find_cdb(&tmp,c,"ngroups") ;
-    tres->ngroups = x ;
-
-    /* ncontents */
-    x = resolve_find_cdb(&tmp,c,"ncontents") ;
-    tres->ncontents = x ;
-
-    /* init */
-    x = resolve_find_cdb(&tmp,c,"init") ;
-    tres->init = x ;
-
-    /* supervised */
-    x = resolve_find_cdb(&tmp,c,"supervised") ;
-    tres->supervised = x ;
+    if (!resolve_get_key(c, "name", &tres->name) ||
+        !resolve_get_key(c, "enabled", &tres->enabled) ||
+        !resolve_get_key(c, "depends", &tres->depends) ||
+        !resolve_get_key(c, "requiredby", &tres->requiredby) ||
+        !resolve_get_key(c, "allow", &tres->allow) ||
+        !resolve_get_key(c, "groups", &tres->groups) ||
+        !resolve_get_key(c, "contents", &tres->contents) ||
+        !resolve_get_key(c, "ndepends", &tres->ndepends) ||
+        !resolve_get_key(c, "nrequiredby", &tres->nrequiredby) ||
+        !resolve_get_key(c, "nallow", &tres->nallow) ||
+        !resolve_get_key(c, "ngroups", &tres->ngroups) ||
+        !resolve_get_key(c, "ncontents", &tres->ncontents) ||
+        !resolve_get_key(c, "init", &tres->init) ||
+        !resolve_get_key(c, "supervised", &tres->supervised)) {
+            free(wres) ;
+            return 0 ;
+    }
 
     free(wres) ;
-    stralloc_free(&tmp) ;
 
     return 1 ;
 }

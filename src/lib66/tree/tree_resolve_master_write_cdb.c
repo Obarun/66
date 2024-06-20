@@ -23,25 +23,16 @@ int tree_resolve_master_write_cdb(cdbmaker *c, resolve_tree_master_t *mres)
 {
     log_flow() ;
 
-    char *str = mres->sa.s ;
+    if (!cdbmake_add(c, "sa", 2, mres->sa.s, mres->sa.len))
+        return 0 ;
 
-    /* name */
-    if (!resolve_add_cdb(c,"name",str, mres->name, 1) ||
-
-    /* allow */
-    !resolve_add_cdb(c,"allow",str, mres->allow, 1) ||
-
-    /* current */
-    !resolve_add_cdb(c,"current",str, mres->current, 1) ||
-
-    /* contents */
-    !resolve_add_cdb(c,"contents",str, mres->contents, 1) ||
-
-    /* nallow */
-    !resolve_add_cdb_uint(c,"nallow", mres->nallow) ||
-
-    /* ncontents */
-    !resolve_add_cdb_uint(c,"ncontents",mres->ncontents)) return 0 ;
+    if (!resolve_add_cdb_uint(c, "name", mres->name) ||
+        !resolve_add_cdb_uint(c, "allow", mres->allow) ||
+        !resolve_add_cdb_uint(c, "current", mres->current) ||
+        !resolve_add_cdb_uint(c, "contents", mres->contents) ||
+        !resolve_add_cdb_uint(c, "nallow", mres->nallow) ||
+        !resolve_add_cdb_uint(c, "ncontents", mres->ncontents))
+            return 0 ;
 
     return 1 ;
 }

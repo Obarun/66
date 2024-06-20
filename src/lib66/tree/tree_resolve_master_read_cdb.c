@@ -27,40 +27,24 @@ int tree_resolve_master_read_cdb(cdb *c, resolve_tree_master_t *mres)
 {
     log_flow() ;
 
-    stralloc tmp = STRALLOC_ZERO ;
     resolve_wrapper_t_ref wres ;
-    uint32_t x ;
 
     wres = resolve_set_struct(DATA_TREE_MASTER, mres) ;
 
-    resolve_init(wres) ;
+    if (resolve_get_sa(&mres->sa,c) <= 0 || !mres->sa.len)
+        return 0 ;
 
-    /* name */
-    resolve_find_cdb(&tmp,c,"name") ;
-    mres->name = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-
-    /* allow */
-    resolve_find_cdb(&tmp,c,"allow") ;
-    mres->allow = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-
-    /* current */
-    resolve_find_cdb(&tmp,c,"current") ;
-    mres->current = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-
-    /* contents */
-    resolve_find_cdb(&tmp,c,"contents") ;
-    mres->contents = tmp.len ? resolve_add_string(wres,tmp.s) : 0 ;
-
-    /* nallow */
-    x = resolve_find_cdb(&tmp,c,"nallow") ;
-    mres->nallow = x ;
-
-    /* ncontents */
-    x = resolve_find_cdb(&tmp,c,"ncontents") ;
-    mres->ncontents = x ;
+    if (!resolve_get_key(c, "name", &mres->name) ||
+        !resolve_get_key(c, "allow", &mres->allow) ||
+        !resolve_get_key(c, "current", &mres->current) ||
+        !resolve_get_key(c, "contents", &mres->contents) ||
+        !resolve_get_key(c, "nallow", &mres->nallow) ||
+        !resolve_get_key(c, "ncontents", &mres->ncontents)) {
+            free(wres) ;
+            return 0 ;
+    }
 
     free(wres) ;
-    stralloc_free(&tmp) ;
 
     return 1 ;
 }

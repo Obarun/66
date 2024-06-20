@@ -33,12 +33,20 @@ resolve_field_table_t resolve_tree_master_field_table[] = {
     [E_RESOLVE_TREE_MASTER_ENDOFKEY] = { .field = 0 }
 } ;
 
-int tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint8_t field, char const *data)
+static uint32_t resolve_add_uint(char const *data)
+{
+    uint32_t u ;
+
+    if (!data)
+        data = "0" ;
+    if (!uint0_scan(data, &u))
+        return 0 ;
+    return u ;
+}
+
+void tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint8_t field, char const *data)
 {
     log_flow() ;
-
-    uint32_t ifield ;
-    int e = 0 ;
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, mres) ;
 
@@ -61,27 +69,17 @@ int tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint8_t field,
             break ;
 
         case E_RESOLVE_TREE_MASTER_NALLOW:
-            if (!data)
-                data = "0" ;
-            if (!uint0_scan(data, &ifield)) goto err ;
-            mres->nallow = ifield ;
+            mres->nallow = resolve_add_uint(data) ;
             break ;
 
         case E_RESOLVE_TREE_MASTER_NCONTENTS:
-            if (!data)
-                data = "0" ;
-            if (!uint0_scan(data, &ifield)) goto err ;
-            mres->ncontents = ifield ;
+            mres->ncontents = resolve_add_uint(data) ;
             break ;
 
         default:
             break ;
     }
 
-    e = 1 ;
-
-    err:
-        free(wres) ;
-        return e ;
-
+    tree_resolve_master_sanitize(mres) ;
+    free(wres) ;
 }

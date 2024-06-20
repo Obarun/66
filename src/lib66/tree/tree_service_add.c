@@ -56,14 +56,13 @@ void tree_service_add(char const *treename, char const *service, ssexec_t *info)
         if (!stack_string_clean(&stk, tres.sa.s + tres.contents))
             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
-        stk.len++ ; // unclose the stack allowing appending string
-
-        if (stack_retrieve_element(&stk, service) < 0)
+        if (stack_retrieve_element(&stk, service) < 0) {
             if (!stack_add_g(&stk, service))
                 log_dieusys(LOG_EXIT_SYS, "add service: ", service, " to tree: ", treename) ;
 
-        if (!stack_close(&stk))
-            log_dieusys(LOG_EXIT_SYS, "close stack") ;
+            if (!stack_close(&stk))
+                log_dieusys(LOG_EXIT_SYS, "close stack") ;
+        }
 
     } else {
 

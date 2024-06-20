@@ -23,49 +23,25 @@ int tree_resolve_write_cdb(cdbmaker *c, resolve_tree_t *tres)
 {
     log_flow() ;
 
-    char *str = tres->sa.s ;
+    if (!cdbmake_add(c, "sa", 2, tres->sa.s, tres->sa.len))
+        return 0 ;
 
     /* name */
-    if (!resolve_add_cdb(c,"name",str, tres->name, 0) ||
-
-    /* depends */
-    !resolve_add_cdb(c,"depends",str, tres->depends, 1) ||
-
-    /* requiredby */
-    !resolve_add_cdb(c,"requiredby",str, tres->requiredby, 1) ||
-
-    /* allow */
-    !resolve_add_cdb(c,"allow",str, tres->allow, 1) ||
-
-    /* groups */
-    !resolve_add_cdb(c,"groups",str, tres->groups, 1) ||
-
-    /* contents */
-    !resolve_add_cdb(c,"contents",str, tres->contents, 1) ||
-
-    /* enabled */
-    !resolve_add_cdb_uint(c,"enabled",tres->enabled) ||
-
-    /* ndepends */
-    !resolve_add_cdb_uint(c,"ndepends",tres->ndepends) ||
-
-    /* nrequiredby */
-    !resolve_add_cdb_uint(c,"nrequiredby",tres->nrequiredby) ||
-
-    /* nallow */
-    !resolve_add_cdb_uint(c,"nallow",tres->nallow) ||
-
-    /* ngroups */
-    !resolve_add_cdb_uint(c,"ngroups",tres->ngroups) ||
-
-    /* ncontents */
-    !resolve_add_cdb_uint(c,"ncontents",tres->ncontents) ||
-
-    /* init */
-    !resolve_add_cdb_uint(c,"init",tres->init) ||
-
-    /* supervised */
-    !resolve_add_cdb_uint(c,"supervised",tres->supervised)) return 0 ;
+    if (!resolve_add_cdb_uint(c, "name", tres->name) ||
+        !resolve_add_cdb_uint(c, "depends", tres->depends) ||
+        !resolve_add_cdb_uint(c, "requiredby", tres->requiredby) ||
+        !resolve_add_cdb_uint(c, "allow", tres->allow) ||
+        !resolve_add_cdb_uint(c, "groups", tres->groups) ||
+        !resolve_add_cdb_uint(c, "contents", tres->contents) ||
+        !resolve_add_cdb_uint(c, "enabled", tres->enabled) ||
+        !resolve_add_cdb_uint(c, "ndepends", tres->ndepends) ||
+        !resolve_add_cdb_uint(c, "nrequiredby", tres->nrequiredby) ||
+        !resolve_add_cdb_uint(c, "nallow", tres->nallow) ||
+        !resolve_add_cdb_uint(c, "ngroups", tres->ngroups) ||
+        !resolve_add_cdb_uint(c, "ncontents", tres->ncontents) ||
+        !resolve_add_cdb_uint(c, "init", tres->init) ||
+        !resolve_add_cdb_uint(c, "supervised", tres->supervised))
+            return 0 ;
 
     return 1 ;
 }
