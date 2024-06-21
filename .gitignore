@@ -5,6 +5,7 @@
 .deps/
 /config.mak
 /66
+/66-execute
 /66-echo
 /66-fdholder-filler
 /66-hpr
