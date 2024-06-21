@@ -29,6 +29,9 @@
 #include <skalibs/sgetopt.h>
 #include <skalibs/types.h>
 #include <skalibs/tai.h>
+#include <skalibs/stralloc.h>
+#include <skalibs/genalloc.h>
+#include <skalibs/buffer.h>
 
 #include <66/constants.h>
 
@@ -50,9 +53,8 @@ static inline void info_help (void)
 
     log_info(USAGE,"\n",help) ;
 }
-#define N 4096
 
-static inline unsigned int class (char c)
+static inline uint8_t class (char c)
 {
     switch (c) {
 
@@ -66,40 +68,56 @@ static inline unsigned int class (char c)
     }
 }
 
-static inline unsigned int parse_servicenames (char *s, unsigned int *indices)
+static inline char cnext (void)
 {
-    static unsigned char const table[3][5] = {
+  char c ;
+  ssize_t r = buffer_get(buffer_0, &c, 1) ;
+  if (r == -1) log_dieusys(LOG_EXIT_SYS, "read from stdin") ;
+  return r ? c : 0 ;
+}
+
+
+static inline void parse_servicenames (stralloc *sa, genalloc *g)
+{
+    static uint8_t const table[3][5] = {
 
         { 3, 0, 1, 0, 6 },
         { 3, 0, 1, 1, 1 },
         { 3, 8, 2, 2, 2 }
     } ;
 
-    unsigned int pos = 0, n = 0, state = 0 ;
+    uint8_t state = 0 ;
 
-    for (; state < 3 ; pos++) {
+    while (state < 3) {
 
-        unsigned char c = table[state][class(s[pos])] ;
+        char cur = cnext() ;
+        uint8_t c = table[state][class(cur)] ;
         state = c & 3 ;
 
         if (c & 4)
-            indices[n++] = pos ;
+            if (!genalloc_append(size_t, g, &sa->len))
+                log_die_nomem("stralloc") ;
 
-        if (c & 8)
-            s[pos] = 0 ;
+        if (c & 8) {
+            if (!stralloc_0(sa))
+                log_die_nomem("stralloc") ;
+
+        } else {
+            if (!stralloc_catb(sa, &cur, 1))
+                log_die_nomem("stralloc") ;
+        }
     }
-    return n ;
 }
 
 int main(int argc, char const *const *argv)
 {
-    int notif = 0 ;
-    unsigned int n = 0, indices[N] ;
-    char buf[N<<1] ;
-
     s6_fdholder_t a = S6_FDHOLDER_ZERO ;
-
+    stralloc sa = STRALLOC_ZERO ;
+    genalloc ga = GENALLOC_ZERO ; // size_t
+    size_t n ;
+    size_t const *indices ;
     tain deadline ;
+    int notif = 0 ;
 
     PROG = "66-fdholder-filler" ;
     {
@@ -125,20 +143,15 @@ int main(int argc, char const *const *argv)
         else deadline = tain_infinite_relative ;
     }
 
-    {
-        size_t r = allread(0, buf, N<<1) ;
-        if (r >= N<<1)
-            log_die(LOG_EXIT_USER, "file ", argv[0], " is too big") ;
-        buf[r] = 0 ;
-    }
-
-    n = parse_servicenames(buf, indices) ;
+    parse_servicenames(&sa, &ga) ;
+    n = genalloc_len(size_t, &ga) ;
+    indices = genalloc_s(size_t, &ga) ;
 
     if (n) {
 
         tain offset = { .sec = TAI_ZERO } ;
         int p[2] ;
-        unsigned int i = 0 ;
+        size_t i = 0 ;
         s6_fdholder_fd_t dump[n<<1] ;
 
         close(0) ;
@@ -150,11 +163,11 @@ int main(int argc, char const *const *argv)
 
         for (; i < n ; i++) {
 
-            size_t len = strlen(buf + indices[i]) ;
+            size_t len = strlen(sa.s + indices[i]) ;
 
             if (len > S6_FDHOLDER_ID_SIZE) {
                 errno = ENAMETOOLONG ;
-                log_dieusys(LOG_EXIT_SYS, "create identifier for ", buf + indices[i]) ;
+                log_dieusys(LOG_EXIT_SYS, "create identifier for ", sa.s + indices[i]) ;
             }
 
             if (pipe(p) < 0)
@@ -164,11 +177,11 @@ int main(int argc, char const *const *argv)
             tain_add_g(&dump[i<<1].limit, &tain_infinite_relative) ;
             offset.nano = i << 1 ;
             tain_add(&dump[i<<1].limit, &dump[i<<1].limit, &offset) ;
-            memcpy(dump[i<<1].id, buf + indices[i], len + 1) ;
+            memcpy(dump[i<<1].id, sa.s + indices[i], len + 1) ;
             dump[(i<<1)+1].fd = p[1] ;
             offset.nano = 1 ;
             tain_add(&dump[(i<<1)+1].limit, &dump[i<<1].limit, &offset) ;
-            memcpy(dump[(i<<1)+1].id, buf + indices[i], len + 1) ;
+            memcpy(dump[(i<<1)+1].id, sa.s + indices[i], len + 1) ;
             dump[(i<<1)+1].id[8] = 'w' ;
         }
 
