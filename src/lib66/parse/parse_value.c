@@ -25,8 +25,11 @@ int parse_value(stack *store, lexer_config *kcfg, const int sid, key_description
 
     size_t pos = 0 ;
     lexer_config vcfg = LEXER_CONFIG_ZERO ;
+    _alloc_stk_(stk, kcfg->slen - kcfg->cpos) ;
 
     log_trace("parsing value of key: ", *list[kid].name) ;
+    memcpy(stk.s, kcfg->str + kcfg->cpos, strlen(kcfg->str + kcfg->cpos)) ;
+    stk.s[strlen(kcfg->str + kcfg->cpos)] = 0 ;
 
     switch(list[kid].expected) {
 
@@ -34,18 +37,17 @@ int parse_value(stack *store, lexer_config *kcfg, const int sid, key_description
 
             vcfg = LEXER_CONFIG_QUOTE ;
             lexer_reset(&vcfg) ;
-            vcfg.str = kcfg->str + kcfg->cpos ;
+            vcfg.str = stk.s ;
             vcfg.slen = kcfg->slen - kcfg->cpos ;
             if (!lexer(store, &vcfg))
                 parse_error_return(LOG_EXIT_ZERO, 6, sid, list, kid) ;
-
             kcfg->pos += vcfg.pos - 1 ;
             break ;
 
         case EXPECT_BRACKET:
 
             pos = 0 ;
-            if (!parse_bracket(store, kcfg, sid))
+            if (!parse_bracket(store, stk.s, sid))
                 parse_error_return(LOG_EXIT_ZERO, 6, sid, list, kid) ;
             kcfg->pos += pos  ;
             break ;
@@ -56,7 +58,7 @@ int parse_value(stack *store, lexer_config *kcfg, const int sid, key_description
 
             vcfg = LEXER_CONFIG_INLINE ;
             lexer_reset(&vcfg) ;
-            vcfg.str = kcfg->str + kcfg->cpos ;
+            vcfg.str = stk.s ;
             vcfg.slen = kcfg->slen - kcfg->cpos ;
             if (!lexer(store, &vcfg))
                 parse_error_return(LOG_EXIT_ZERO, 6, sid, list, kid) ;

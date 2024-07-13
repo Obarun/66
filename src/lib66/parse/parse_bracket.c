@@ -62,7 +62,7 @@ static void key_isvalid(const char *line, size_t *o, uint8_t *bracket, int *vp, 
     return ;
 }
 
-int parse_bracket(stack *store, lexer_config *kcfg, const int sid)
+int parse_bracket(stack *store, const char *str, const int sid)
 {
     log_flow() ;
 
@@ -72,8 +72,8 @@ int parse_bracket(stack *store, lexer_config *kcfg, const int sid)
 
     lexer_config cfg = LEXER_CONFIG_ZERO ;
 
-    cfg.str = kcfg->str + kcfg->cpos ;
-    cfg.slen = kcfg->slen - kcfg->cpos ;
+    cfg.str = str ;
+    cfg.slen = strlen(str) ;
     cfg.open = "(";
     cfg.olen = 1 ;
     cfg.close = ")\n" ;
