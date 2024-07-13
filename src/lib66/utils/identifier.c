@@ -189,8 +189,10 @@ int identifier_replace(stralloc *sasv, char const *svname)
     char store[SS_MAX_PATH_LEN] ;
     _alloc_sa_(sa) ;
 
-    if (!stralloc_copyb(&sa, sasv->s, sasv->len))
+    if (!stralloc_copyb(&sa, sasv->s, sasv->len) || !stralloc_0(&sa))
         return 0 ;
+
+    sa.len-- ;
 
     while(identifier_table[pos].ident) {
 

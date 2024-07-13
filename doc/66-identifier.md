@@ -31,12 +31,12 @@ By understanding these identifiers and their replacements, you can effectively c
     Original file: `dbus@`
 
     ```
-    [main]
+    [Main]
     Type = classic
     Version = 0.7.0
     Description = "dbus session daemon for @U user"
     User = ( user )
-    Maxdeath = 3
+    MaxDeath = 3
     Notify = 4
     TimeoutStart = 3000
 
@@ -50,7 +50,7 @@ By understanding these identifiers and their replacements, you can effectively c
         /usr/bin/s6-rmrf ${Socket}
     )
 
-    [environment]
+    [Environment]
     Args=!--session --print-pid=4 --nofork --nopidfile --address=unix:path=${Socket}
     Socket=!@R/bus
     ```
@@ -58,12 +58,12 @@ By understanding these identifiers and their replacements, you can effectively c
     Result after calling `66 parse dbus@oblive` where *oblive* has UID `1000`
 
     ```
-    [main]
+    [Main]
     Type = classic
     Version = 0.7.0
     Description = "dbus session daemon for oblive user"
     User = ( user )
-    Maxdeath = 3
+    MaxDeath = 3
     Notify = 4
     TimeoutStart = 3000
 
@@ -77,7 +77,7 @@ By understanding these identifiers and their replacements, you can effectively c
         /usr/bin/s6-rmrf ${Socket}
     )
 
-    [environment]
+    [Environment]
     Args=!--session --print-pid=4 --nofork --nopidfile --address=unix:path=${Socket}
     Socket=!/run/user/1000/bus
     ```
