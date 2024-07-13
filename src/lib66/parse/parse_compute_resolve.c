@@ -245,10 +245,12 @@ void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
     if (res->type == TYPE_ONESHOT || res->type == TYPE_CLASSIC) {
 
         compute_wrapper_scripts(res, 1) ; // run
-        compute_wrapper_scripts(res, 0) ; // finish
+        if (res->execute.finish.run)
+            compute_wrapper_scripts(res, 0) ; // finish
 
         compute_wrapper_scripts_user(res, 1) ; // run.user
-        compute_wrapper_scripts_user(res, 0) ; // finish.user
+        if (res->execute.finish.run_user)
+            compute_wrapper_scripts_user(res, 0) ; // finish.user
     }
 
     free(wres) ;
