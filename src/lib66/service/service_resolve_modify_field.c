@@ -22,6 +22,9 @@
 
 resolve_field_table_t resolve_service_field_table[] = {
 
+    [E_RESOLVE_SERVICE_RVERSION] = { .field = "rversion" },
+
+    // configuration
     [E_RESOLVE_SERVICE_NAME] = { .field = "name" },
     [E_RESOLVE_SERVICE_DESCRIPTION] = { .field = "description" },
     [E_RESOLVE_SERVICE_VERSION] = { .field = "version" },
@@ -37,6 +40,7 @@ resolve_field_table_t resolve_service_field_table[] = {
     [E_RESOLVE_SERVICE_USER] = { .field = "user" },
     [E_RESOLVE_SERVICE_INNS] = { .field = "inns" },
     [E_RESOLVE_SERVICE_ENABLED] = { .field = "enabled" },
+    [E_RESOLVE_SERVICE_ISLOG] = { .field = "islog" },
 
     // path
     [E_RESOLVE_SERVICE_HOME] = { .field = "home" },
@@ -106,6 +110,15 @@ resolve_field_table_t resolve_service_field_table[] = {
     [E_RESOLVE_SERVICE_REGEX_NDIRECTORIES] = { .field = "ndirectories" },
     [E_RESOLVE_SERVICE_REGEX_NFILES] = { .field = "nfiles" },
     [E_RESOLVE_SERVICE_REGEX_NINFILES] = { .field = "ninfiles" },
+
+    // IO
+    [E_RESOLVE_SERVICE_STDIN] = { .field = "stdintype" },
+    [E_RESOLVE_SERVICE_STDINDEST] = { .field = "stdindest" },
+    [E_RESOLVE_SERVICE_STDOUT] = { .field = "stdouttype" },
+    [E_RESOLVE_SERVICE_STDOUTDEST] = { .field = "stdoutdest" },
+    [E_RESOLVE_SERVICE_STDERR] = { .field = "stderrtype" },
+    [E_RESOLVE_SERVICE_STDERRDEST] = { .field = "stderrdest" },
+
     [E_RESOLVE_SERVICE_ENDOFKEY] = { .field = 0 }
 } ;
 
@@ -127,6 +140,10 @@ void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     switch(field) {
+
+        case E_RESOLVE_SERVICE_RVERSION:
+            res->rversion = resolve_add_string(wres, data) ;
+            break ;
 
         // configuration
 
@@ -188,6 +205,10 @@ void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t
 
         case E_RESOLVE_SERVICE_ENABLED:
             res->enabled = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_ISLOG:
+            res->islog = resolve_add_uint(data) ;
             break ;
 
 
@@ -423,6 +444,32 @@ void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t
 
         case E_RESOLVE_SERVICE_REGEX_NINFILES:
             res->regex.ninfiles = resolve_add_uint(data) ;
+            break ;
+
+        // IO
+
+        case E_RESOLVE_SERVICE_STDIN:
+            res->io.fdin.type = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_STDINDEST:
+            res->io.fdin.destination = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_STDOUT:
+            res->io.fdout.type = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_STDOUTDEST:
+            res->io.fdout.destination = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_STDERR:
+            res->io.fderr.type = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_STDERRDEST:
+            res->io.fderr.destination = resolve_add_uint(data) ;
             break ;
 
         default:

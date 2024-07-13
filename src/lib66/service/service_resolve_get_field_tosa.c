@@ -101,6 +101,11 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
             str = fmt ;
             break ;
 
+        case E_RESOLVE_SERVICE_ISLOG:
+            fmt[uint32_fmt(fmt,res->islog)] = 0 ;
+            str = fmt ;
+            break ;
+
         // path configuration
 
         case E_RESOLVE_SERVICE_HOME:
@@ -305,7 +310,6 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
             str = fmt ;
             break ;
 
-
         // environment
 
         case E_RESOLVE_SERVICE_ENV:
@@ -352,6 +356,39 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
         case E_RESOLVE_SERVICE_REGEX_NINFILES:
             fmt[uint32_fmt(fmt,res->regex.ninfiles)] = 0 ;
             str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_RVERSION:
+            fmt[uint32_fmt(fmt,res->rversion)] = 0 ;
+            str = fmt ;
+            break ;
+
+        // IO
+        case E_RESOLVE_SERVICE_STDIN:
+            fmt[uint32_fmt(fmt,res->io.fdin.type)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_STDINDEST:
+            str = res->sa.s + res->io.fdin.destination ;
+            break ;
+
+        case E_RESOLVE_SERVICE_STDOUT:
+            fmt[uint32_fmt(fmt,res->io.fdout.type)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_STDOUTDEST:
+            str = res->sa.s + res->io.fdout.destination ;
+            break ;
+
+        case E_RESOLVE_SERVICE_STDERR:
+            fmt[uint32_fmt(fmt,res->io.fderr.type)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_STDERRDEST:
+            str = res->sa.s + res->io.fderr.destination ;
             break ;
 
         default:

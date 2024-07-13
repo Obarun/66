@@ -31,7 +31,8 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
         return 0 ;
 
     /* configuration */
-    if (!resolve_get_key(c, "name", &res->name) ||
+    if (!resolve_get_key(c, "rversion", &res->rversion) ||
+        !resolve_get_key(c, "name", &res->name) ||
         !resolve_get_key(c, "description", &res->description) ||
         !resolve_get_key(c, "version", &res->version) ||
         !resolve_get_key(c, "type", &res->type) ||
@@ -46,6 +47,7 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
         !resolve_get_key(c, "user", &res->user) ||
         !resolve_get_key(c, "inns", &res->inns) ||
         !resolve_get_key(c, "enabled", &res->enabled) ||
+        !resolve_get_key(c, "islog", &res->islog) ||
 
     /* path configuration */
         !resolve_get_key(c, "home", &res->path.home) ||
@@ -114,7 +116,15 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
         !resolve_get_key(c, "infiles", &res->regex.infiles) ||
         !resolve_get_key(c, "ndirectories", &res->regex.ndirectories) ||
         !resolve_get_key(c, "nfiles", &res->regex.nfiles) ||
-        !resolve_get_key(c, "ninfiles", &res->regex.ninfiles)) {
+        !resolve_get_key(c, "ninfiles", &res->regex.ninfiles) ||
+
+    /* io */
+        !resolve_get_key(c, "stdintype", &res->io.fdin.type) ||
+        !resolve_get_key(c, "stdindest", &res->io.fdin.destination) ||
+        !resolve_get_key(c, "stdouttype", &res->io.fdout.type) ||
+        !resolve_get_key(c, "stdoutdest", &res->io.fdout.destination) ||
+        !resolve_get_key(c, "stderrtype", &res->io.fderr.type) ||
+        !resolve_get_key(c, "stderrdest", &res->io.fderr.destination)) {
             free(wres) ;
             return 0 ;
     }

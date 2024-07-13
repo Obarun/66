@@ -96,5 +96,10 @@ void service_resolve_sanitize(resolve_service_t *res)
     res->regex.files = res->regex.files ? resolve_add_string(wres, stk + res->regex.files) : 0 ;
     res->regex.infiles = res->regex.infiles ? resolve_add_string(wres, stk + res->regex.infiles) : 0 ;
 
+    // IO
+    res->io.fdin.destination = res->io.fdin.destination ? resolve_add_string(wres, stk + res->io.fdin.destination) : 0 ;
+    res->io.fdin.destination = res->io.fdout.destination ? resolve_add_string(wres, stk + res->io.fdout.destination) : 0 ;
+    res->io.fdin.destination = res->io.fderr.destination ? resolve_add_string(wres, stk + res->io.fderr.destination) : 0 ;
+
     free(wres) ;
 }

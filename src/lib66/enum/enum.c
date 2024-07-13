@@ -46,6 +46,9 @@ char const *enum_str_key_section_main[] = {
     "DownSignal" ,
     "Flags" ,
     "InTree" ,
+    "StdIn",
+    "StdOut",
+    "StdErr",
     0
 } ;
 
@@ -67,7 +70,6 @@ char const *enum_str_key_section_logger[] = {
     "Timestamp" ,
     "TimeoutStart" ,
     "TimeoutStop" ,
-    "Depends" ,
     0
 } ;
 
@@ -81,6 +83,21 @@ char const *enum_str_key_section_regex[] = {
     "Directories" ,
     "Files" ,
     "InFiles" ,
+    0
+} ;
+
+char const *enum_io_type[] = {
+
+    "tty",
+    "file",
+    "console",
+    "s6log",
+    "syslog",
+    "inherit",
+    "null",
+    "parent", // nope operation get fd from parent
+    "close",
+    "notset",
     0
 } ;
 

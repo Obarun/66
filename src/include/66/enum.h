@@ -51,6 +51,9 @@ enum enum_key_section_main_e
     KEY_MAIN_SIGNAL ,
     KEY_MAIN_FLAGS ,
     KEY_MAIN_INTREE ,
+    KEY_MAIN_STDIN ,
+    KEY_MAIN_STDOUT ,
+    KEY_MAIN_STDERR ,
     KEY_MAIN_ENDOFKEY
 } ;
 
@@ -104,6 +107,24 @@ enum enum_key_section_regex_e
 } ;
 
 extern char const *enum_str_key_section_regex[] ;
+
+typedef enum enum_io_type_e enum_io_type_t, *enum_io_type_t_ref ;
+enum enum_io_type_e
+{
+    IO_TYPE_TTY = 0,
+    IO_TYPE_FILE,
+    IO_TYPE_CONSOLE,
+    IO_TYPE_S6LOG,
+    IO_TYPE_SYSLOG,
+    IO_TYPE_INHERIT,
+    IO_TYPE_NULL,
+    IO_TYPE_PARENT,
+    IO_TYPE_CLOSE,
+    IO_TYPE_NOTSET,
+    IO_TYPE_ENDOFKEY
+} ;
+
+extern char const *enum_io_type[] ;
 
 typedef enum enum_type_e enum_type_t, *enum_type_t_ref ;
 enum enum_type_e
@@ -227,6 +248,9 @@ static key_description_t const list_section_main[] =
     { .name = &enum_str_key_section_main[KEY_MAIN_SIGNAL], .id = KEY_MAIN_SIGNAL, .expected = EXPECT_UINT },
     { .name = &enum_str_key_section_main[KEY_MAIN_FLAGS], .id = KEY_MAIN_FLAGS, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_main[KEY_MAIN_INTREE], .id = KEY_MAIN_INTREE, .expected = EXPECT_LINE },
+    { .name = &enum_str_key_section_main[KEY_MAIN_STDIN], .id = KEY_MAIN_STDIN, .expected = EXPECT_LINE },
+    { .name = &enum_str_key_section_main[KEY_MAIN_STDOUT], .id = KEY_MAIN_STDOUT, .expected = EXPECT_LINE },
+    { .name = &enum_str_key_section_main[KEY_MAIN_STDERR], .id = KEY_MAIN_STDERR, .expected = EXPECT_LINE },
     { .name = 0 }
 } ;
 
@@ -264,6 +288,21 @@ static key_description_t const list_section_regex[] =
     { .name = &enum_str_key_section_regex[KEY_REGEX_DIRECTORIES], .id = KEY_REGEX_DIRECTORIES, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_regex[KEY_REGEX_FILES], .id = KEY_REGEX_FILES, .expected = EXPECT_BRACKET },
     { .name = &enum_str_key_section_regex[KEY_REGEX_INFILES], .id = KEY_REGEX_INFILES, .expected = EXPECT_BRACKET },
+    { .name = 0 }
+} ;
+
+static key_description_t const list_io_type[] =
+{
+    { .name = &enum_io_type[IO_TYPE_TTY], .id = IO_TYPE_TTY, .expected = EXPECT_LINE },
+    { .name = &enum_io_type[IO_TYPE_FILE], .id = IO_TYPE_FILE, .expected = EXPECT_LINE },
+    { .name = &enum_io_type[IO_TYPE_CONSOLE], .id = IO_TYPE_CONSOLE, .expected = EXPECT_LINE },
+    { .name = &enum_io_type[IO_TYPE_S6LOG], .id = IO_TYPE_S6LOG, .expected = EXPECT_LINE },
+    { .name = &enum_io_type[IO_TYPE_SYSLOG], .id = IO_TYPE_SYSLOG, .expected = EXPECT_LINE },
+    { .name = &enum_io_type[IO_TYPE_INHERIT], .id = IO_TYPE_INHERIT, .expected = EXPECT_LINE },
+    { .name = &enum_io_type[IO_TYPE_NULL], .id = IO_TYPE_NULL, .expected = EXPECT_LINE },
+    { .name = &enum_io_type[IO_TYPE_PARENT], .id = IO_TYPE_PARENT, .expected = EXPECT_LINE },
+    { .name = &enum_io_type[IO_TYPE_CLOSE], .id = IO_TYPE_CLOSE, .expected = EXPECT_LINE },
+    { .name = &enum_io_type[IO_TYPE_NOTSET], .id = IO_TYPE_NOTSET, .expected = EXPECT_LINE },
     { .name = 0 }
 } ;
 

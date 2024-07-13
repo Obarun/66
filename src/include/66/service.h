@@ -26,6 +26,7 @@
 #include <66/ssexec.h>
 #include <66/resolve.h>
 #include <66/hash.h>
+#include <66/enum.h>
 
 typedef struct resolve_service_addon_path_s resolve_service_addon_path_t, *resolve_service_addon_path_t_ref ;
 struct resolve_service_addon_path_s
@@ -118,11 +119,10 @@ struct resolve_service_addon_logger_s
     uint32_t maxsize ; // integer
     /** integer, default 3 which mean not touched, in this case the value configured
      * at compilation take precedence */
-    uint32_t timestamp ;
+    uint32_t timestamp ; // integer
     uint32_t want ; // 1 want, 0 do not want. Want by default
     resolve_service_addon_execute_t execute ;
     resolve_service_addon_timeout_t timeout ;
-
 } ;
 
 #define RESOLVE_SERVICE_ADDON_LOGGER_ZERO { \
@@ -158,11 +158,39 @@ struct resolve_service_addon_regex_s
 
 #define RESOLVE_SERVICE_ADDON_REGEX_ZERO { 0,0,0,0,0,0,0 }
 
+/**
+ * Stdin: default -> /dev/null
+ * StdOut: default -> /var/log/66/<service>/current through s6-log
+ * StdErr: default -> inherit from StdOut
+ **/
+typedef struct IO_type_s IO_type_t, *IO_type_t_ref ;
+struct IO_type_s {
+
+    uint32_t type  ; // integer, flags
+    uint32_t destination ; // string
+} ;
+
+#define IO_TYPE_ZERO { 0, 0 }
+
+typedef struct IO_redirection_s IO_redirection_t, *IO_redirection_t_ref ;
+struct IO_redirection_s
+{
+    IO_type_t fdin ; // default close
+    IO_type_t fdout ; // default s6-log
+    IO_type_t fderr ; // default inherit
+} ;
+
+#define IO_REDIRECTION_ZERO { \
+    { IO_TYPE_NOTSET, 0 }, \
+    { IO_TYPE_NOTSET, 0 }, \
+    { IO_TYPE_NOTSET, 0 } \
+}
 
 typedef struct resolve_service_s resolve_service_t, *resolve_service_t_ref ;
 struct resolve_service_s
 {
     stralloc sa ;
+    uint32_t rversion ; //string, version of 66 of the resolve file at write time
 
     // configuration
     uint32_t name ; // string
@@ -180,6 +208,7 @@ struct resolve_service_s
     uint32_t user ; // string
     uint32_t inns ; // string, name of the namespace(module) which depend on
     uint32_t enabled ; // integer, 0 not enabled
+    uint32_t islog ; // integer, 0 not a logger service
 
     resolve_service_addon_path_t path ;
     resolve_service_addon_dependencies_t dependencies ;
@@ -189,24 +218,27 @@ struct resolve_service_s
     resolve_service_addon_environ_t environ ;
     resolve_service_addon_regex_t regex ;
 
+    IO_redirection_t io ;
 } ;
 
-#define RESOLVE_SERVICE_ZERO { STRALLOC_ZERO, \
-                               0,0,0,0,0,5,0,0,0,0,0,0,0,0,0, \
+#define RESOLVE_SERVICE_ZERO { STRALLOC_ZERO, 0, \
+                               0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0, \
                                RESOLVE_SERVICE_ADDON_PATH_ZERO, \
                                RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO, \
                                RESOLVE_SERVICE_ADDON_EXECUTE_ZERO, \
                                RESOLVE_SERVICE_ADDON_LIVE_ZERO, \
                                RESOLVE_SERVICE_ADDON_LOGGER_ZERO, \
                                RESOLVE_SERVICE_ADDON_ENVIRON_ZERO, \
-                               RESOLVE_SERVICE_ADDON_REGEX_ZERO }
+                               RESOLVE_SERVICE_ADDON_REGEX_ZERO, \
+                               IO_REDIRECTION_ZERO }
 
 
 
 typedef enum resolve_service_enum_e resolve_service_enum_t, *resolve_service_enum_t_ref;
 enum resolve_service_enum_e
 {
-    E_RESOLVE_SERVICE_NAME = 0,
+    E_RESOLVE_SERVICE_RVERSION = 0,
+    E_RESOLVE_SERVICE_NAME,
     E_RESOLVE_SERVICE_DESCRIPTION,
     E_RESOLVE_SERVICE_VERSION,
     E_RESOLVE_SERVICE_TYPE,
@@ -221,6 +253,7 @@ enum resolve_service_enum_e
     E_RESOLVE_SERVICE_USER,
     E_RESOLVE_SERVICE_INNS,
     E_RESOLVE_SERVICE_ENABLED,
+    E_RESOLVE_SERVICE_ISLOG,
 
     // path
     E_RESOLVE_SERVICE_HOME,
@@ -290,8 +323,16 @@ enum resolve_service_enum_e
     E_RESOLVE_SERVICE_REGEX_NDIRECTORIES,
     E_RESOLVE_SERVICE_REGEX_NFILES,
     E_RESOLVE_SERVICE_REGEX_NINFILES,
-    E_RESOLVE_SERVICE_ENDOFKEY
 
+    // IO
+    E_RESOLVE_SERVICE_STDIN,
+    E_RESOLVE_SERVICE_STDINDEST,
+    E_RESOLVE_SERVICE_STDOUT,
+    E_RESOLVE_SERVICE_STDOUTDEST,
+    E_RESOLVE_SERVICE_STDERR,
+    E_RESOLVE_SERVICE_STDERRDEST,
+
+    E_RESOLVE_SERVICE_ENDOFKEY
 } ;
 
 struct resolve_hash_s {
