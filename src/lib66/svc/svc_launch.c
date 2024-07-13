@@ -314,18 +314,20 @@ unsigned int compute_timeout(resolve_service_t *res, unsigned int what)
 {
     unsigned int timeout = 0 ;
 
-    if (!what) {
+    if (PINFO->opt_timeout) {
+
+        timeout = PINFO->timeout ;
+
+    } else if (!what) {
 
         if (res->execute.timeout.start)
             timeout = res->execute.timeout.start ;
+
     } else {
 
         if (res->execute.timeout.stop)
             timeout = res->execute.timeout.stop ;
     }
-
-    if (!timeout && PINFO->opt_timeout)
-        timeout = PINFO->timeout ;
 
     return timeout ;
 
