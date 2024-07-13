@@ -82,6 +82,7 @@ static void parse_service_instance(stralloc *frontend, char const *svsrc, char c
  * @Die on fail
  * @Return 1 on success
  * @Return 2 -> already parsed */
+
 int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree)
 {
     log_flow() ;
@@ -265,8 +266,11 @@ int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info,
 
     parse_compute_resolve(&res, info) ;
 
-    if (res.logger.want && res.type != TYPE_MODULE && !res.inns)
-        parse_append_logger(hres, &res, info) ;
+    if (res.logger.want &&
+        !res.inns &&
+        res.type != TYPE_MODULE &&
+        (res.io.fdin.type == IO_TYPE_S6LOG || res.io.fdout.type == IO_TYPE_S6LOG))
+            parse_append_logger(hres, &res, info) ;
 
     hash = hash_search(hres, res.sa.s + res.name) ;
     if (hash == NULL) {

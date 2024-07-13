@@ -190,14 +190,14 @@ static void compute_logger(resolve_service_t *res, resolve_service_t *log, ssexe
     log->user = resolve_add_string(wres, str + res->user) ;
     if (res->inns)
         log->inns = resolve_add_string(wres, str + res->inns) ;
+    log->islog = 1 ;
 
     log->path.home = resolve_add_string(wres, str + res->path.home) ;
     log->path.frontend = resolve_add_string(wres, str + res->path.frontend) ;
     log->path.servicedir = compute_src_servicedir(wres, info) ;
     log->dependencies.requiredby = resolve_add_string(wres, str + res->name) ;
     log->dependencies.nrequiredby = 1 ;
-
-    log->execute.run.build = resolve_add_string(wres, str + res->logger.execute.run.build) ;
+    log->execute.run.build = res->logger.execute.run.build ? resolve_add_string(wres, str + res->logger.execute.run.build) : 0 ;
     log->execute.run.runas = resolve_add_string(wres, str + res->logger.execute.run.runas) ;
     log->execute.timeout.start = res->logger.execute.timeout.start ;
     log->execute.timeout.stop = res->logger.execute.timeout.stop ;
@@ -220,6 +220,17 @@ static void compute_logger(resolve_service_t *res, resolve_service_t *log, ssexe
     log->logger.maxsize = res->logger.maxsize ;
     log->logger.timestamp = res->logger.timestamp ;
     log->logger.want = 0 ;
+
+    if (!strcmp(res->sa.s + res->logger.execute.run.build, "custom")) {
+
+        log->io.fdin.type = log->io.fdout.type = log->io.fderr.type = IO_TYPE_PARENT ;
+
+    } else {
+
+        log->io.fdin.type = log->io.fdout.type = IO_TYPE_S6LOG ;
+        log->io.fdin.destination = log->io.fdout.destination = compute_log_dir(wres, res) ;
+        log->io.fderr.type = IO_TYPE_INHERIT ;
+    }
 
     // oneshot do not use fdholder daemon
     if (res->type == TYPE_CLASSIC)
@@ -258,7 +269,7 @@ void parse_append_logger(struct resolve_hash_s **hres, resolve_service_t *res, s
 
         compute_logger(res, &lres, info) ;
 
-        /** sanitize_init use this field */
+        /** sanitize_init/execute_uidgid use this field */
         res->logger.execute.run.run = resolve_add_string(wres, lres.sa.s + lres.execute.run.run) ;
         res->logger.execute.run.run_user = resolve_add_string(wres, lres.sa.s + lres.execute.run.run_user) ;
 

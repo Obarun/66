@@ -34,6 +34,192 @@
 #include <66/enum.h>
 #include <66/utils.h>
 
+static void io_compute_stdin(resolve_service_t *res, char const *line, uint32_t type, int sid, int kid)
+{
+    log_flow() ;
+
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    res->io.fdin.type = type ;
+
+    switch(type) {
+
+        case IO_TYPE_TTY:
+
+            if (line[0] != '/')
+               log_dieusys(LOG_EXIT_SYS, "path must be absolute: ", line) ;
+
+            res->io.fdin.destination = resolve_add_string(wres, line) ;
+            break ;
+
+        case IO_TYPE_S6LOG:
+            res->io.fdin.destination = compute_log_dir(wres, res) ;
+            break;
+
+        case IO_TYPE_NULL:
+            res->io.fdin.destination = resolve_add_string(wres, "/dev/null") ;
+            break ;
+
+        case IO_TYPE_PARENT:
+        case IO_TYPE_CLOSE:
+            break ;
+
+        case IO_TYPE_CONSOLE:
+        case IO_TYPE_FILE:
+        case IO_TYPE_SYSLOG:
+        case IO_TYPE_INHERIT:
+        default:
+            res->io.fdin.type = IO_TYPE_NOTSET ;
+            break ;
+    }
+    free(wres) ;
+}
+
+static void io_compute_stdout(resolve_service_t *res, char const *line, uint32_t type, int sid, int kid)
+{
+    log_flow() ;
+
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    res->io.fdout.type = type ;
+
+    switch(type) {
+
+        case IO_TYPE_TTY:
+        case IO_TYPE_FILE:
+            if (line[0] != '/')
+                log_dieusys(LOG_EXIT_SYS, "path must be absolute: ", line) ;
+
+            res->io.fdout.destination = resolve_add_string(wres, line) ;
+            break ;
+
+        case IO_TYPE_CONSOLE:
+            res->io.fdout.destination = resolve_add_string(wres, "/sys/class/tty/tty0/active") ;
+            break ;
+
+        case IO_TYPE_S6LOG:
+            res->io.fdout.destination = compute_log_dir(wres, res) ;
+            break ;
+
+        case IO_TYPE_NULL:
+            res->io.fdout.destination = resolve_add_string(wres, "/dev/null") ;
+            break ;
+
+        case IO_TYPE_SYSLOG:
+            res->io.fdout.destination = resolve_add_string(wres, "/dev/log") ;
+            break ;
+
+        case IO_TYPE_PARENT:
+        case IO_TYPE_CLOSE:
+            break ;
+
+        case IO_TYPE_INHERIT:
+        default:
+            res->io.fdout.type = IO_TYPE_NOTSET ;
+            break ;
+    }
+    free(wres) ;
+}
+
+static void io_compute_stderr(resolve_service_t *res, char const *line, uint32_t type, int sid, int kid)
+{
+    log_flow() ;
+
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    res->io.fderr.type = type ;
+
+    switch(type) {
+
+        case IO_TYPE_TTY:
+        case IO_TYPE_FILE:
+            if (line[0] != '/')
+                log_dieusys(LOG_EXIT_SYS, "path must be absolute: ", line) ;
+
+            res->io.fderr.destination = resolve_add_string(wres, line) ;
+            break ;
+
+        case IO_TYPE_CONSOLE:
+            res->io.fderr.destination = resolve_add_string(wres, "/sys/class/tty/tty0/active") ;
+            break ;
+
+        case IO_TYPE_NULL:
+            res->io.fderr.destination = resolve_add_string(wres, "/dev/null") ;
+            break ;
+
+        case IO_TYPE_SYSLOG:
+            res->io.fderr.destination = resolve_add_string(wres, "/dev/log") ;
+            break ;
+
+        case IO_TYPE_PARENT:
+        case IO_TYPE_CLOSE:
+        case IO_TYPE_INHERIT:
+            break ;
+
+        case IO_TYPE_S6LOG:
+        default:
+            res->io.fderr.type = IO_TYPE_NOTSET ;
+            break ;
+    }
+    free(wres) ;
+}
+
+static int parse_io_type(resolve_service_t *res, char const *line, int sid, int kid)
+{
+    log_flow() ;
+
+    size_t len = strlen(line) ;
+    _alloc_stk_(stk, len) ;
+    ssize_t delim = get_len_until(line,':'), type = -1 ;
+
+    if (delim + 2 >= len)
+        parse_error_return(0, 10, sid, list_io_type, kid) ;
+
+    char *stype = (char *)line ;
+
+    if (delim > 0) {
+
+        memcpy(stk.s, stype, delim) ;
+        stk.s[delim] = 0 ;
+
+        stype = stk.s ;
+    }
+
+    type = get_enum_by_key(list_io_type, stype) ;
+
+    if (type == -1) {
+        /** default is applied */
+        log_warn("invalid type for ",get_key_by_enum(list_section_main, kid), " key in section main -- applying default") ;
+        return 1 ;
+    }
+
+    stack_reset(&stk) ;
+
+    if (delim > 0) {
+        if (!stack_add(&stk, line + delim + 1, len - delim + 1))
+            log_die_nomem("stack") ;
+    } else {
+        if (!stack_add(&stk, line, len))
+            log_die_nomem("stack") ;
+    }
+
+    switch(kid) {
+
+        case KEY_MAIN_STDIN:
+            io_compute_stdin(res, stk.s, (uint32_t)type, sid, kid) ;
+            break ;
+
+        case KEY_MAIN_STDOUT:
+            io_compute_stdout(res, stk.s, (uint32_t)type, sid, kid) ;
+            break ;
+
+        case KEY_MAIN_STDERR:
+            io_compute_stderr(res, stk.s, (uint32_t)type, sid, kid) ;
+            break ;
+
+        default:
+            break ;
+    }
+    return 1 ;
+}
+
 int parse_store_main(resolve_service_t *res, stack *store, const int sid, const int kid)
 {
     log_flow() ;
@@ -342,6 +528,14 @@ int parse_store_main(resolve_service_t *res, stack *store, const int sid, const 
 
             res->intree = resolve_add_string(wres, store->s) ;
 
+            break ;
+
+        case KEY_MAIN_STDIN:
+        case KEY_MAIN_STDOUT:
+        case KEY_MAIN_STDERR:
+
+            if (!parse_io_type(res, store->s, sid, kid))
+                return 0 ;
             break ;
 
         default:

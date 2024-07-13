@@ -35,7 +35,7 @@
 #include <66/config.h>
 #include <66/state.h>
 
-#define MAXOPTS 70
+#define MAXOPTS 78
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -47,16 +47,16 @@ static void info_display_string(char const *field, char const *str, uint32_t ele
     if (check && !element) {
 
         if (!bprintf(buffer_1,"%s%s", log_color->warning, "None"))
-            log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+            log_dieu(LOG_EXIT_SYS, "write to stdout") ;
 
     } else {
 
         if (!buffer_puts(buffer_1, str + element))
-            log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+            log_dieu(LOG_EXIT_SYS, "write to stdout") ;
     }
 
     if (buffer_putsflush(buffer_1, "\n") == -1)
-        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+        log_dieu(LOG_EXIT_SYS, "write to stdout") ;
 
 
 }
@@ -93,6 +93,7 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_string(fields[m++], res->sa.s, res->user, 1) ;
     info_display_string(fields[m++], res->sa.s, res->inns, 1) ;
     info_display_int(fields[m++], res->enabled) ;
+    info_display_int(fields[m++], res->islog) ;
 
     info_display_string(fields[m++], res->sa.s, res->path.home, 1) ;
     info_display_string(fields[m++], res->sa.s, res->path.frontend, 1) ;
@@ -154,7 +155,15 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_string(fields[m++], res->sa.s, res->regex.infiles, 1) ;
     info_display_int(fields[m++], res->regex.ndirectories) ;
     info_display_int(fields[m++], res->regex.nfiles) ;
-    info_display_int(fields[m], res->regex.ninfiles) ;
+    info_display_int(fields[m++], res->regex.ninfiles) ;
+
+    info_display_int(fields[m++], res->io.fdin.type) ;
+    info_display_string(fields[m++],res->sa.s, res->io.fdin.destination, 1) ;
+    info_display_int(fields[m++], res->io.fdout.type) ;
+    info_display_string(fields[m++], res->sa.s, res->io.fdout.destination, 1) ;
+    info_display_int(fields[m++], res->io.fderr.type) ;
+    info_display_string(fields[m++], res->sa.s, res->io.fderr.destination, 1) ;
+    info_display_string(fields[m], res->sa.s, res->rversion, 1) ;
 
 }
 
@@ -183,6 +192,7 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "user" ,
         "inns",
         "enabled",
+        "islog",
 
         "home",
         "frontend",
@@ -244,7 +254,15 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "infiles",
         "ndirectories",
         "nfiles",
-        "ninfiles"
+        "ninfiles",
+
+        "stdintype",
+        "stdindest",
+        "stdouttype",
+        "stdoutdest",
+        "stderrtype",
+        "stderrdest",
+        "rversion",
     } ;
 
     {
