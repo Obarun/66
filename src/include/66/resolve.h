@@ -62,7 +62,7 @@ extern void resolve_free(resolve_wrapper_t *wres) ;
  * */
 
 extern resolve_wrapper_t *resolve_set_struct(uint8_t type, void *s) ;
-extern int resolve_init(resolve_wrapper_t *wres) ;
+extern void resolve_init(resolve_wrapper_t *wres) ;
 
 /**
  *

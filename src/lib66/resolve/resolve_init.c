@@ -20,7 +20,7 @@
 #include <66/service.h>
 #include <66/tree.h>
 
-int resolve_init(resolve_wrapper_t *wres)
+void resolve_init(resolve_wrapper_t *wres)
 {
     log_flow() ;
 
@@ -28,5 +28,5 @@ int resolve_init(resolve_wrapper_t *wres)
 
     sawres->len = 0 ;
 
-    return resolve_add_string(wres,"") ;
+    resolve_add_string(wres, "") ;
 }
