@@ -567,6 +567,55 @@ This section is *mandatory*. (!)
 
     **Note**: If a corresponding [seed](66-tree.html#seed-files) file exist on your system, its will be used to create and configure the tree.
 
+- StdIn
+
+    mandatory: no
+
+    syntax: [inline](#inline),[simple-colon](#simple-colon)
+
+    valid values:
+
+    * tty:/path/to/tty: Redirects Standard Input to the given tty specified by the path and try to become the controlling process of the terminal. The path must be absolute and exist. If the terminal is already being controlled by another process and the operation returns an EPERM failure, 66 will warn the user and continue its execution. If the failure is other than EPERM, it will terminate.
+    * s6log: Redirects Standard Input to the socket of the s6-log program. This is the default.
+    * null: Redirects Standard Input to `/dev/null`
+    * parent: This is a no-op redirection. The Standard Input is inherited from the parent process, meaning the `s6-supervise` program.
+    * close: Close the Standard Input.
+
+    Please see [Standard IO redirection] documentation for further information.
+
+- StdOut
+
+    mandatory: no
+
+    syntax: [inline](#inline),[simple-colon](#simple-colon)
+
+    valid values:
+
+    * tty:/path/to/tty: Redirects Standard Output to the given tty specified by the path. The path must be absolute and exist. It does not try to take control of the terminal.
+    * file:/path/to/file: Redirects Standard Output to the given file specified by the path. The path must be absolute. If the directory of the file and the file itself do not exist, *66* will create it. In that case, the directory will get `0755` permissions and the file will be set with `0666` permissions.
+    * console: Redirects Standard Output to the active console. It does not try to take control of the console.
+    * s6log: Redirects Standard Output to the socket of the `s6-log` program. This is the default.
+    * syslog: Redirects Standard Output to the `/dev/log` socket.
+    * null: Redirects Standard Output to `/dev/null`.
+    * parent: This is a no-op redirection. The Standard Output is inherited from the parent process, meaning the `s6-supervise` program.
+    * close: Closes the Standard Output.
+
+- StdErr
+
+    mandatory: no
+
+    syntax: [inline](#inline),[simple-colon](#simple-colon)
+
+    valid values:
+
+    * tty:/path/to/tty: Redirects Standard Error to the given tty specified by the path. The path must be absolute and exist. It does not try to take control of the terminal.
+    * file:/path/to/file: Redirects Standard Erro to the given file specified by path. Path must be absolute. If the directory of file and the file itself doesn't exist, *66* create it. In that case, the directory get `0755` as permissions and the file is set with `0666` as permissions.
+    * console: Redirects Standard Error to the active console. It does not try to take control of the console.
+    * syslog: Redirects Standard Output to the `/dev/log` socket.
+    * null: Redirects Standard Output to `/dev/null`.
+    * parent: This is a no-op redirection. The Standard Error is inherited from the parent process, meaning the `s6-supervise` program.
+    * inherit: Duplicates the Standard Error to the Standard Output. This is the default.
+    * close: Closes the Standard Error.
 ---
 
 ## Section [Start]
@@ -648,9 +697,9 @@ This section is exactly the same as [[Start]](66-frontend.html#section-start) an
 
 ## Section [Logger]
 
-This section is *optional*.
+This section is optional and controls the behavior of the default logging system used by *66*, which utilizes the excellent `s6-log` program.
 
-It will only have effects if value *log* was **not** prefixed by an exclamation mark to the `Options` key in the [[Main]](66-frontend.html#section-main) section.
+It will only have effects if value *log* was **not** prefixed by an exclamation mark to the `Options` key in the [[Main]](66-frontend.html#section-main) section. Additionally, the `StdIn` or `StdOut` keys from the [[Main]](66-frontend.html#section-main) **must be set** to `s6log`, or these keys **must not** be defined at all.
 
 This section extends the `Build`, `RunAs`, and `Execute` key fields from [[Start]](66-frontend.html#section-start) and the `TimeoutStop` and `TimeoutStart` key fields from [[Main]](66-frontend.html#section-main) . These are also valid keys for [[Logger]](66-frontend.html#section-logger) and behave the same way they do in the other sections but they can not be specified except for the mandatory key `Build`—see example below. In such case the default behaviour for those key are apply.
 
@@ -956,6 +1005,9 @@ This prototype contain all valid section with all valid `key=value` pair.
     DownSignal =
     Hiercopy = ()
     InTree =
+    StdIn =
+    StdOut =
+    StdErr =
 
     [Start]
     Build =
