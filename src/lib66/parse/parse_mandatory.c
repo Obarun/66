@@ -50,9 +50,9 @@ int parse_mandatory(resolve_service_t *res)
             if (in->type == IO_TYPE_S6LOG || in->type == IO_TYPE_NOTSET)
                 in->type = IO_TYPE_PARENT ;
             if (out->type == IO_TYPE_S6LOG || out->type == IO_TYPE_NOTSET)
-                out->type == IO_TYPE_PARENT ;
+                out->type = IO_TYPE_PARENT ;
             if (err->type == IO_TYPE_S6LOG || err->type == IO_TYPE_NOTSET)
-                err->type == IO_TYPE_PARENT ;
+                err->type = IO_TYPE_PARENT ;
 
         } else {
 

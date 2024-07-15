@@ -275,7 +275,6 @@ static void io_open_terminal_ncontrol(resolve_service_t *res, int fd, const char
         else
             log_dieusys(LOG_EXIT_SYS, "tcsetpgrp") ;
     }
-        log_dieusys(LOG_EXIT_SYS, "tcgetpgrp") ;
 
     if (sigaction(SIGTTOU, &sold, NULL) < 0 ||
         sigaction(SIGHUP, &shug, NULL) < 0)
