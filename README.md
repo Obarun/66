@@ -93,7 +93,7 @@ This Roadmap for the next release is not writting in the stone. Feel free to mak
 
   Implementation of a daemon for event response to allow users to define services that dynamically start and stop when certain conditions are met, without needing to encode every possible condition in the service manager configuration.
 
-* [ ] Ability to redirect stdin, stdout and stderr
+* [x] Ability to redirect stdin, stdout and stderr
 
   Allow to specify to make redirection of standard output
 
