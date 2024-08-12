@@ -67,17 +67,17 @@ static int identifier_get_name(char *store)
 
 int identifier_replace_instance(char *store, const char *rid)
 {
-    ssize_t r = get_len_until(rid,'@'), more = 1 ;
+    size_t len = strlen(rid) ;
+    ssize_t r = get_rlen_until(rid,'@', len) ;
     /** identifier are used in any kind
      * of service not just instantiated one.
      * Make distinction between them. */
     if (r < 0) {
         r = 0 ;
-        more = 0 ;
-    }
-    size_t len = strlen(rid + r + more) ;
-    memcpy(store, rid + r + more, len) ;
-    store[len] = 0 ;
+    } else r++ ;
+
+    memcpy(store, rid + r, len - r) ;
+    store[len - r] = 0 ;
     return 1 ;
 }
 
@@ -189,10 +189,15 @@ int identifier_replace(stralloc *sasv, char const *svname)
     char store[SS_MAX_PATH_LEN] ;
     _alloc_sa_(sa) ;
 
+    memset(store, 0, sizeof(char) * SS_MAX_PATH_LEN) ;
+
     if (!stralloc_copyb(&sa, sasv->s, sasv->len) || !stralloc_0(&sa))
         return 0 ;
 
     sa.len-- ;
+
+    if (!sastr_split_string_in_nline(&sa))
+        return 0 ;
 
     while(identifier_table[pos].ident) {
 
@@ -201,11 +206,15 @@ int identifier_replace(stralloc *sasv, char const *svname)
             return 0 ;
 
         log_trace("replacing identifier: ", identifier_table[pos].ident, " by: ", store) ;
-        if (!sastr_replace_g(&sa, identifier_table[pos].ident, store))
+        if (!sastr_replace(&sa, identifier_table[pos].ident, store))
             log_warnu_return(LOG_EXIT_ZERO, "replace regex character: ", identifier_table[pos].ident, " by: ", store," for service: ", svname) ;
 
         pos++ ;
+
     }
+
+    if (!sastr_rebuild_in_nline(&sa))
+        return 0 ;
 
     sasv->len = 0 ;
 
