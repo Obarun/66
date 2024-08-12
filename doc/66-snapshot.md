@@ -17,7 +17,7 @@ This command handles snapshot of the 66 ecosystem of the owner of the process.
 snapshot [ -h ] create|restore|remove|list [<subcommand options>] name
 ```
 
-This command creates, removes, restores or list snapshot of the 66 ecosystem for the owner of the current process depending on the provided options.
+This command creates, removes, restores or list snapshot of the 66 ecosystem for the owner of the current process depending on the provided options. This command requires a functioning 66 ecosystem and does not verify the presence of mandatory 66 directories or files. Therefore, avoid using this command during the initial installation of 66 without first running another 66 command.
 
 **This command only handle 66 ecosystem for the owner of the process**. Making a snapshot as `root` do not handle users 66 ecosystem.
 
