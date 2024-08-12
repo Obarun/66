@@ -55,7 +55,7 @@ extern void start_parser(char const *sv, ssexec_t *info, uint8_t disable_module,
 extern void parse_service(struct resolve_hash_s **href, char const *sv, ssexec_t *info, uint8_t force, uint8_t conf) ;
 extern int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree) ;
 extern int parse_interdependences(char const *service, char const *list, unsigned int listlen, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree) ;
-extern void parse_append_logger(struct resolve_hash_s **hres, resolve_service_t *res, ssexec_t *info) ;
+extern void parse_create_logger(struct resolve_hash_s **hres, resolve_service_t *res, ssexec_t *info) ;
 
 /** split */
 extern int parse_section_main(resolve_service_t *res, const char *str) ;
@@ -77,7 +77,6 @@ extern int parse_store_environ(resolve_service_t *res, stack *store, int idsec, 
 extern int parse_store_regex(resolve_service_t *res, stack *store, int idsec, int idkey) ;
 
 /** helper */
-
 extern int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, size_t len) ;
 extern int parse_key(stack *key, lexer_config *cfg, key_description_t const *list) ;
 extern int parse_value(stack *store, lexer_config *kcfg, const int sid, key_description_t const *list, int const kid) ;
@@ -89,6 +88,7 @@ extern int parse_mandatory(resolve_service_t *res) ;
 extern void parse_error(int ierr, int idsec, key_description_t const *list, int idkey) ;
 extern void parse_rename_interdependences(resolve_service_t *res, char const *prefix, struct resolve_hash_s **hres, ssexec_t *info) ;
 extern void parse_db_migrate(resolve_service_t *res, ssexec_t *info) ;
+extern void parse_copy_to_source(char const *dst, char const *src, resolve_service_t *res, uint8_t force) ;
 
 /** module */
 extern void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force) ;
@@ -102,5 +102,6 @@ extern uint32_t compute_scan_dir(resolve_wrapper_t_ref wres, ssexec_t *info) ;
 extern uint32_t compute_state_dir(resolve_wrapper_t_ref wres, ssexec_t *info, char const *folder) ;
 extern uint32_t compute_pipe_service(resolve_wrapper_t_ref wres, ssexec_t *info, char const *name) ;
 extern uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res) ;
+extern void parse_compute_scripts(resolve_service_t *res) ;
 
 #endif

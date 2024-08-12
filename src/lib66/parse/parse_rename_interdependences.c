@@ -138,7 +138,7 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, s
 
                 c->res.logger.execute.run.runas = c->res.logger.execute.run.runas ? resolve_add_string(wres, c->res.sa.s + c->res.logger.execute.run.runas) : resolve_add_string(wres, SS_LOGGER_RUNNER) ;
 
-                parse_append_logger(hres, &c->res, info) ;
+                parse_create_logger(hres, &c->res, info) ;
 
                 if (c->res.type == TYPE_CLASSIC) {
                     if (!stack_add_g(&stk, logname))

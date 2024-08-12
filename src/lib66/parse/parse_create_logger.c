@@ -1,5 +1,5 @@
 /*
- * parse_append_logger.c
+ * parse_create_logger.c
  *
  * Copyright (c) 2018-2024 Eric Vidal <eric@obarun.org>
  *
@@ -240,7 +240,7 @@ static void compute_logger(resolve_service_t *res, resolve_service_t *log, ssexe
 
 }
 
-void parse_append_logger(struct resolve_hash_s **hres, resolve_service_t *res, ssexec_t *info)
+void parse_create_logger(struct resolve_hash_s **hres, resolve_service_t *res, ssexec_t *info)
 {
     log_flow() ;
 
