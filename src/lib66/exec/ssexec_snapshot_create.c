@@ -119,6 +119,7 @@ int ssexec_snapshot_create(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
+    short system = 0 ;
     char const *snapname = 0 ;
     size_t pos = 0, len = 0 ;
     _alloc_stk_(snapdir, SS_MAX_PATH_LEN) ;
@@ -140,6 +141,11 @@ int ssexec_snapshot_create(int argc, char const *const *argv, ssexec_t *info)
                     info_help(info->help, info->usage) ;
                     return 0 ;
 
+                case 's' :
+
+                    system = 1 ;
+                    break ;
+
                 default :
                     log_usage(info->usage, "\n", info->help) ;
             }
@@ -152,8 +158,9 @@ int ssexec_snapshot_create(int argc, char const *const *argv, ssexec_t *info)
 
     snapname = *argv ;
 
-    if (!str_start_with(snapname, "update@"))
-        log_die(LOG_EXIT_USER, "update@ is a reserved prefix for snapshot names -- please select a different one") ;
+    if (!system)
+        if (!str_start_with(snapname, "migrate@"))
+            log_die(LOG_EXIT_USER, "migrate@ is a reserved prefix for snapshot names -- please select a different one") ;
 
     auto_strings(snapdir.s, info->base.s, SS_SNAPSHOT + 1) ;
 
@@ -167,17 +174,21 @@ int ssexec_snapshot_create(int argc, char const *const *argv, ssexec_t *info)
 
     auto_strings(snapdir.s + len, "/", snapname) ;
 
-    if (!access(snapdir.s, F_OK))
-        log_dieu(LOG_EXIT_USER, "create snapshot: ", snapdir.s, " -- already exist") ;
+    if (!access(snapdir.s, F_OK)) {
+
+        if (!system) {
+            log_dieu(LOG_EXIT_USER, "create snapshot: ", snapdir.s, " -- already exist") ;
+        } else {
+            log_warn("snapshot: ", snapdir.s, " already exist -- keeping it") ;
+            return 0 ;
+        }
+    }
 
     len += 1 + strlen(snapname) ;
 
     log_trace("create snapshot directory: ", snapdir.s) ;
     if (!dir_create_parent(snapdir.s, 0755))
         log_dieusys(LOG_EXIT_SYS, "create directory: ", snapdir.s) ;
-
-
-    /** attention owner pour SS_USER_DIR*/
 
     if (!info->owner) {
 

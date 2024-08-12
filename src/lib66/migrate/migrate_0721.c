@@ -598,7 +598,7 @@ static void migrate_service_0721(void)
 
 static void migrate_create_snap_0721(ssexec_t *info)
 {
-    int argc = 3 ;
+    int argc = 4 ;
     int m = 0 ;
     char const *prog = PROG ;
     char const *newargv[argc] ;
@@ -610,12 +610,13 @@ static void migrate_create_snap_0721(ssexec_t *info)
     info->usage = usage_snapshot_create ;
 
     newargv[m++] = "snapshot" ;
-    newargv[m++] = "update@0.7.2.1" ;
+    newargv[m++] = "-s" ;
+    newargv[m++] = "migrate@0.7.2.1" ;
     newargv[m] = 0 ;
 
     PROG = "snapshot" ;
     if (ssexec_snapshot_create(m, newargv, info))
-        log_dieu(LOG_EXIT_SYS, "create snapshot update@0.7.2.1") ;
+        log_dieu(LOG_EXIT_SYS, "create snapshot migrate@0.7.2.1") ;
     PROG = prog ;
 
     info->help = help ;
@@ -626,7 +627,7 @@ void migrate_0721(ssexec_t *info)
 {
     log_flow() ;
 
-    log_info("upgrading system from version 0.7.2.1 to ", SS_VERSION) ;
+    log_info("Upgrading system from version: 0.7.2.1 to: ", SS_VERSION) ;
 
     migrate_create_snap_0721(info) ;
 
@@ -634,5 +635,5 @@ void migrate_0721(ssexec_t *info)
 
     migrate_service_0721() ;
 
-    log_info("system successfully updated to version ", SS_VERSION) ;
+    log_info("System successfully upgraded to version: ", SS_VERSION) ;
 }

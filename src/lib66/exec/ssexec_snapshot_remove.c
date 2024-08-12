@@ -36,7 +36,7 @@ int ssexec_snapshot_remove(int argc, char const *const *argv, ssexec_t *info)
 
         for (;;)
         {
-            int opt = subgetopt_r(argc, argv, OPTS_SNAPSHOT_RESTORE, &l) ;
+            int opt = subgetopt_r(argc, argv, OPTS_SNAPSHOT_REMOVE, &l) ;
             if (opt == -1) break ;
 
             switch (opt) {
