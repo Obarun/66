@@ -13,13 +13,10 @@
  */
 
 #include <unistd.h>
-#include <errno.h>
 
 #include <oblibs/log.h>
-#include <oblibs/string.h>
 
 #include <skalibs/cdb.h>
-#include <skalibs/djbunix.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
@@ -29,57 +26,35 @@ int resolve_read_cdb(resolve_wrapper_t *wres, char const *path, const char *name
 {
     log_flow() ;
 
-    int fd, e = -1, err = errno ;
-    char file[strlen(path) + strlen(name) + 1] ;
+    int fd, e = 0 ;
     cdb c = CDB_ZERO ;
 
-    errno = 0 ;
+    e = resolve_open_cdb(&fd, &c, path, name) ;
+    if (e <= 0)
+        return e ;
 
-    auto_strings(file, path, name) ;
-
-    fd = open_readb(file) ;
-    if (fd < 0) {
-
-        log_warnusys("open: ",file) ;
-        if (errno == ENOENT)
-            e = 0 ;
-        goto err_fd ;
-    }
-
-    errno = err ;
-
-    if (!cdb_init_fromfd(&c, fd)) {
-        log_warnusys("cdb_init: ", file) ;
-        goto err ;
-    }
+    e = 0 ;
 
     if (wres->type == DATA_SERVICE) {
 
-        if (!service_resolve_read_cdb(&c, ((resolve_service_t *)wres->obj))) {
-            e = 0 ;
+        if (!service_resolve_read_cdb(&c, ((resolve_service_t *)wres->obj)))
             goto err ;
-        }
 
     } else if (wres->type == DATA_TREE){
 
-        if (!tree_resolve_read_cdb(&c, ((resolve_tree_t *)wres->obj))) {
-            e = 0 ;
+        if (!tree_resolve_read_cdb(&c, ((resolve_tree_t *)wres->obj)))
             goto err ;
-        }
 
     } else if (wres->type == DATA_TREE_MASTER) {
 
-        if (!tree_resolve_master_read_cdb(&c, ((resolve_tree_master_t *)wres->obj))) {
-            e = 0 ;
+        if (!tree_resolve_master_read_cdb(&c, ((resolve_tree_master_t *)wres->obj)))
             goto err ;
-        }
     }
 
     e = 1 ;
 
     err:
         close(fd) ;
-    err_fd:
         cdb_free(&c) ;
         return e ;
 }

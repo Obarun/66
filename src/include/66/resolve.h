@@ -71,6 +71,7 @@ extern void resolve_init(resolve_wrapper_t *wres) ;
  * */
 
 extern int resolve_check_g(resolve_wrapper_t *wres, char const *base, char const *name) ;
+extern int resolve_open_cdb(int *fd, cdb *c, const char *path, const char *name) ;
 extern int resolve_read_g(resolve_wrapper_t *wres, char const *base, char const *name) ;
 extern int resolve_write_g(resolve_wrapper_t *wres, char const *base, char const *name) ;
 extern void resolve_remove_g(char const *base, char const *name, uint8_t data_type) ;
