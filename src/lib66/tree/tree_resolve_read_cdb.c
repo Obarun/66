@@ -13,6 +13,7 @@
  */
 
 #include <stdlib.h>//free
+#include <errno.h>
 
 #include <oblibs/log.h>
 
@@ -27,8 +28,21 @@ int tree_resolve_read_cdb(cdb *c, resolve_tree_t *tres)
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, tres) ;
 
-    if (resolve_get_sa(&tres->sa,c) <= 0 || !tres->sa.len)
-        return 0 ;
+    if (resolve_get_sa(&tres->sa,c) <= 0) {
+        free(wres) ;
+        return (errno = EINVAL, 0)  ;
+    }
+
+    if (!tres->sa.len) {
+        free(wres) ;
+        return (errno = EINVAL, 0) ;
+    }
+
+    /* configuration */
+    if (!resolve_get_key(c, "rversion", &tres->rversion)) {
+        free(wres) ;
+        return (errno = EINVAL, 0)  ;
+    }
 
     if (!resolve_get_key(c, "name", &tres->name) ||
         !resolve_get_key(c, "enabled", &tres->enabled) ||
@@ -45,7 +59,7 @@ int tree_resolve_read_cdb(cdb *c, resolve_tree_t *tres)
         !resolve_get_key(c, "init", &tres->init) ||
         !resolve_get_key(c, "supervised", &tres->supervised)) {
             free(wres) ;
-            return 0 ;
+            return (errno = EINVAL, 0)  ;
     }
 
     free(wres) ;

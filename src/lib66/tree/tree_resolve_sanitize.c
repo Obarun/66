@@ -41,6 +41,7 @@ void tree_resolve_sanitize(resolve_tree_t *tres)
     tres->allow = tres->allow ? resolve_add_string(wres, stk + tres->allow) : 0 ;
     tres->groups = tres->groups ? resolve_add_string(wres, stk + tres->groups) : 0 ;
     tres->contents = tres->contents ? resolve_add_string(wres, stk + tres->contents) : 0 ;
+    tres->rversion = tres->rversion ? resolve_add_string(wres, stk + tres->rversion) : 0 ;
 
     free(wres) ;
 }

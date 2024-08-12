@@ -12,16 +12,15 @@
  * except according to the terms contained in the LICENSE file.
  */
 
-#include <stdint.h>
 #include <stdlib.h>//free
+#include <errno.h>
 
 #include <oblibs/log.h>
 
-#include <skalibs/stralloc.h>
 #include <skalibs/cdb.h>
 
-#include <66/tree.h>
 #include <66/resolve.h>
+#include <66/tree.h>
 
 int tree_resolve_master_read_cdb(cdb *c, resolve_tree_master_t *mres)
 {
@@ -31,8 +30,21 @@ int tree_resolve_master_read_cdb(cdb *c, resolve_tree_master_t *mres)
 
     wres = resolve_set_struct(DATA_TREE_MASTER, mres) ;
 
-    if (resolve_get_sa(&mres->sa,c) <= 0 || !mres->sa.len)
-        return 0 ;
+    if (resolve_get_sa(&mres->sa,c) <= 0) {
+        free(wres) ;
+        return (errno = EINVAL, 0)  ;
+    }
+
+    if (!mres->sa.len) {
+        free(wres) ;
+        return (errno = EINVAL, 0)  ;
+    }
+
+    /* configuration */
+    if (!resolve_get_key(c, "rversion", &mres->rversion)) {
+        free(wres) ;
+        return (errno = EINVAL, 0)  ;
+    }
 
     if (!resolve_get_key(c, "name", &mres->name) ||
         !resolve_get_key(c, "allow", &mres->allow) ||

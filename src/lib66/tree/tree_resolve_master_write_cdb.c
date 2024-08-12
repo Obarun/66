@@ -19,14 +19,26 @@
 #include <66/tree.h>
 #include <66/resolve.h>
 
+static void add_version(resolve_tree_master_t *mres)
+{
+    log_flow() ;
+    log_trace("Master resolve file version set to: ", SS_VERSION) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, mres) ;
+    mres->rversion = resolve_add_string(wres, SS_VERSION) ;
+    free(wres) ;
+}
+
 int tree_resolve_master_write_cdb(cdbmaker *c, resolve_tree_master_t *mres)
 {
     log_flow() ;
 
+    add_version(mres) ;
+
     if (!cdbmake_add(c, "sa", 2, mres->sa.s, mres->sa.len))
         return 0 ;
 
-    if (!resolve_add_cdb_uint(c, "name", mres->name) ||
+    if (!resolve_add_cdb_uint(c, "rversion", mres->rversion) ||
+        !resolve_add_cdb_uint(c, "name", mres->name) ||
         !resolve_add_cdb_uint(c, "allow", mres->allow) ||
         !resolve_add_cdb_uint(c, "current", mres->current) ||
         !resolve_add_cdb_uint(c, "contents", mres->contents) ||

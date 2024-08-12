@@ -39,6 +39,6 @@ void tree_resolve_master_sanitize(resolve_tree_master_t *mres)
     mres->allow = mres->allow ? resolve_add_string(wres, stk + mres->allow) : 0 ;
     mres->current = mres->current ? resolve_add_string(wres, stk + mres->current) : 0 ;
     mres->current = mres->current ? resolve_add_string(wres, stk + mres->contents) : 0 ;
-
+    mres->rversion = mres->rversion ? resolve_add_string(wres, stk + mres->rversion) : 0 ;
     free(wres) ;
 }

@@ -55,6 +55,11 @@ int tree_resolve_master_get_field_tosa(stralloc *sa, resolve_tree_master_t *mres
             str = fmt ;
             break ;
 
+        case E_RESOLVE_TREE_MASTER_RVERSION:
+            fmt[uint32_fmt(fmt,mres->rversion)] = 0 ;
+            str = fmt ;
+            break ;
+
         default:
             return 0 ;
     }

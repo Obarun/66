@@ -24,6 +24,8 @@
 
 resolve_field_table_t resolve_tree_master_field_table[] = {
 
+    [E_RESOLVE_TREE_MASTER_RVERSION] = { .field = "rversion" },
+
     [E_RESOLVE_TREE_MASTER_NAME] = { .field = "name" },
     [E_RESOLVE_TREE_MASTER_ALLOW] = { .field = "allow" },
     [E_RESOLVE_TREE_MASTER_CURRENT] = { .field = "current" },
@@ -51,6 +53,10 @@ void tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint8_t field
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, mres) ;
 
     switch(field) {
+
+        case E_RESOLVE_TREE_MASTER_RVERSION:
+            mres->rversion = resolve_add_string(wres, data) ;
+            break ;
 
         case E_RESOLVE_TREE_MASTER_NAME:
             mres->name = resolve_add_string(wres,data) ;

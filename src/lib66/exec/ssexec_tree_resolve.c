@@ -109,6 +109,7 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
         //"supervised", // 13
         // Master
         "current",
+        "rversion",
     } ;
 
     if (!strcmp(argv[0], SS_MASTER + 1)) {
@@ -137,7 +138,6 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
     if (!master) {
 
         unsigned int m = 0 ;
-
         info_display_string(fields[m++], tres.sa.s, tres.name, 0) ;
         info_display_int(fields[m++], tres.enabled) ;
         info_display_string(fields[m++], tres.sa.s, tres.depends, 1) ;
@@ -152,6 +152,7 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
         info_display_int(fields[m++], tres.ncontents) ;
         //info_display_int(fields[m++], tres.init) ;
         //info_display_int(fields[m++], tres.supervised) ;
+        info_display_string(fields[13], tres.sa.s, tres.rversion, 1) ;
 
     } else {
 
@@ -161,6 +162,7 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
         info_display_string(fields[6], mres.sa.s, mres.contents, 1) ;
         info_display_int(fields[9], mres.nallow) ;
         info_display_int(fields[11], mres.ncontents) ;
+        info_display_string(fields[13], mres.sa.s, mres.rversion, 1) ;
     }
 
     resolve_free(wres) ;

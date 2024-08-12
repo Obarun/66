@@ -18,6 +18,7 @@ tree_resolve_modify_field.o
 tree_resolve_read_cdb.o
 tree_resolve_sanitize.o
 tree_resolve_write_cdb.o
+tree_resolve_zero.o
 tree_seed_file_isvalid.o
 tree_seed_free.o
 tree_seed_get_group_permissions.o

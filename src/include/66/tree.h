@@ -37,6 +37,7 @@ typedef struct resolve_tree_s resolve_tree_t, *resolve_tree_t_ref ;
 struct resolve_tree_s
 {
     stralloc sa ;
+    uint32_t rversion ; //string, version of 66 of the resolve file at write time
 
     uint32_t name ;
     uint32_t enabled ;
@@ -55,12 +56,15 @@ struct resolve_tree_s
     uint32_t init ;//not initialized->0, initialized->1
     uint32_t supervised ;//not superviseded->0, supervised->1
 } ;
-#define RESOLVE_TREE_ZERO { STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_TREE_ZERO { STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+
+extern const resolve_tree_t tree_resolve_zero ;
 
 typedef enum resolve_tree_enum_e resolve_tree_enum_t, *resolve_tree_enum_t_ref;
 enum resolve_tree_enum_e
 {
-    E_RESOLVE_TREE_NAME = 0,
+    E_RESOLVE_TREE_RVERSION = 0,
+    E_RESOLVE_TREE_NAME,
     E_RESOLVE_TREE_ENABLED,
     E_RESOLVE_TREE_DEPENDS,
     E_RESOLVE_TREE_REQUIREDBY,
@@ -81,6 +85,7 @@ typedef struct resolve_tree_master_s resolve_tree_master_t, *resolve_tree_master
 struct resolve_tree_master_s
 {
     stralloc sa ;
+    uint32_t rversion ; //string, version of 66 of the resolve file at write time
 
     uint32_t name ;
     uint32_t allow ;
@@ -91,12 +96,15 @@ struct resolve_tree_master_s
     uint32_t ncontents ;
 
 } ;
-#define RESOLVE_TREE_MASTER_ZERO { STRALLOC_ZERO,0,0,0,0,0,0 }
+#define RESOLVE_TREE_MASTER_ZERO { STRALLOC_ZERO,0,0,0,0,0,0,0 }
+
+extern const resolve_tree_master_t tree_resolve_master_zero ;
 
 typedef enum resolve_tree_master_enum_e resolve_tree_master_enum_t, *resolve_tree_master_enum_t_ref;
 enum resolve_tree_master_enum_e
 {
-    E_RESOLVE_TREE_MASTER_NAME = 0,
+    E_RESOLVE_TREE_MASTER_RVERSION = 0,
+    E_RESOLVE_TREE_MASTER_NAME,
     E_RESOLVE_TREE_MASTER_ALLOW,
     E_RESOLVE_TREE_MASTER_CURRENT,
     E_RESOLVE_TREE_MASTER_CONTENTS,
