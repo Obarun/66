@@ -1,8 +1,9 @@
-parse_append_logger.o
+parse_create_logger.o
 parse_bracket.o
 parse_clean_runas.o
 parse_compute_list.o
 parse_compute_resolve.o
+parse_compute_scripts.o
 parse_contents.o
 parse_db_migrate.o
 parse_error.o

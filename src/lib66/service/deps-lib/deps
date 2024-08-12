@@ -17,6 +17,7 @@ service_resolve_read_cdb.o
 service_resolve_sanitize.o
 service_resolve_write_remote.o
 service_resolve_write_cdb.o
+service_resolve_zero.o
 service_switch_tree.o
 -loblibs
 -lskarnet

@@ -2,6 +2,7 @@ sanitize_fdholder.o
 sanitize_graph.o
 sanitize_init.o
 sanitize_livestate.o
+sanitize_migrate.o
 sanitize_scandir.o
 sanitize_source.o
 sanitize_system.o

@@ -12,6 +12,7 @@ resolve_init.o
 resolve_modify_field.o
 resolve_modify_field_g.o
 resolve_read.o
+resolve_open_cdb.o
 resolve_read_cdb.o
 resolve_read_g.o
 resolve_remove.o

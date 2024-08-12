@@ -17,6 +17,11 @@ ssexec_scandir_signal.o
 ssexec_scandir_wrapper.o
 ssexec_shutdown_wrapper.o
 ssexec_signal.o
+ssexec_snapshot_create.o
+ssexec_snapshot_list.o
+ssexec_snapshot_remove.o
+ssexec_snapshot_restore.o
+ssexec_snapshot_wrapper.o
 ssexec_start.o
 ssexec_state.o
 ssexec_status.o
