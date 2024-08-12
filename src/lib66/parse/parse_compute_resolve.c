@@ -128,64 +128,6 @@ uint32_t compute_pipe_service(resolve_wrapper_t_ref wres, ssexec_t *info, char c
 
 }
 
-/**
- * @!runorfinish -> finish, @runorfinish -> run
- * */
-static void compute_wrapper_scripts(resolve_service_t *res, uint8_t runorfinish)
-{
-    log_flow() ;
-
-    resolve_service_addon_scripts_t *script = runorfinish ? &res->execute.run : &res->execute.finish ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-    char *shebang = "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -" ;
-    /** TODO:
-     *  -v${VERBOSITY} should use to correspond to the
-     *  request of the user.
-     *   */
-    char *exec = SS_EXTLIBEXECPREFIX "66-execute" ;
-    char run[strlen(shebang) + 3 + strlen(exec) + 7 + strlen(res->sa.s + res->name) + 4 + 1] ;
-
-    auto_strings(run, \
-        shebang, (!runorfinish) ? ((res->type == TYPE_CLASSIC) ? "S0\n" : "P\n") : "P\n", \
-        exec, \
-        !runorfinish ? " stop " : " start ", \
-        res->sa.s + res->name, (!runorfinish) ? " $@\n" : "\n") ;
-
-    script->run = resolve_add_string(wres, run) ;
-
-    free(wres) ;
-}
-
-/**
- * @!runorfinish -> finish.user, @runofinish -> run.user
- * */
-static void compute_wrapper_scripts_user(resolve_service_t *res, uint8_t runorfinish)
-{
-
-    log_flow() ;
-
-    char *shebang = "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P" ;
-    size_t fakelen = 0, shebanglen = strlen(shebang) ;
-    resolve_service_addon_scripts_t *script = runorfinish ? &res->execute.run : &res->execute.finish ;
-    size_t scriptlen = strlen(res->sa.s + script->run_user) ;
-    int build = !strcmp(res->sa.s + script->build, "custom") ? BUILD_CUSTOM : BUILD_AUTO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-
-    char run[shebanglen + 1 + scriptlen + 1 + 1] ;
-
-    if (!build) {
-        auto_strings(run, shebang, "\n") ;
-        fakelen = FAKELEN ;
-    }
-
-    if (script->run_user)
-        auto_strings(run + fakelen, res->sa.s + script->run_user, "\n") ;
-
-    script->run_user = resolve_add_string(wres, run) ;
-
-    free(wres) ;
-}
-
 void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
 {
     log_flow() ;
@@ -242,16 +184,7 @@ void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
         res->logger.execute.run.runas = res->logger.execute.run.runas ? resolve_add_string(wres, res->sa.s + res->logger.execute.run.runas) : resolve_add_string(wres, SS_LOGGER_RUNNER) ;
     }
 
-    if (res->type == TYPE_ONESHOT || res->type == TYPE_CLASSIC) {
-
-        compute_wrapper_scripts(res, 1) ; // run
-        if (res->execute.finish.run)
-            compute_wrapper_scripts(res, 0) ; // finish
-
-        compute_wrapper_scripts_user(res, 1) ; // run.user
-        if (res->execute.finish.run_user)
-            compute_wrapper_scripts_user(res, 0) ; // finish.user
-    }
+    parse_compute_scripts(res) ;
 
     free(wres) ;
 }
