@@ -60,7 +60,7 @@ int ssexec_snapshot_list(int argc, char const *const *argv, ssexec_t *info)
     auto_strings(snapdir.s, info->base.s, SS_SNAPSHOT + 1) ;
 
     if (access(snapdir.s, F_OK) < 0) {
-        log_info("there is no snapshot yet") ;
+        log_info("There is no snapshot yet") ;
         return 0 ;
     }
 
@@ -68,7 +68,7 @@ int ssexec_snapshot_list(int argc, char const *const *argv, ssexec_t *info)
         log_dieusys(LOG_EXIT_SYS, "list snapshot from: ", snapdir.s) ;
 
     if (!sa.len) {
-        log_info("there is no snapshot yet") ;
+        log_info("There is no snapshot yet") ;
         return 0 ;
     }
 

@@ -291,7 +291,7 @@ int ssexec_configure(int argc, char const *const *argv, ssexec_t *info)
             if (!atomic_symlink(src.s, sym, "ssexec_configure"))
                 log_warnu_return(LOG_EXIT_ZERO, "symlink: ", sym, " to: ", src.s) ;
 
-            log_info("symlink switched successfully to version: ", src.s) ;
+            log_info("Symlink switched successfully to version: ", src.s) ;
 
             resolve_free(wres) ;
             return 0 ;
@@ -345,7 +345,7 @@ int ssexec_configure(int argc, char const *const *argv, ssexec_t *info)
                     if (!stack_read_file(&list, file.s))
                         log_dieusys(LOG_EXIT_SYS,"read: ", file.s) ;
 
-                    log_info("contents of file: ", file.s, "\n", list.s) ;
+                    log_info("Contents of file: ", file.s, "\n", list.s) ;
                 }
             }
             break ;

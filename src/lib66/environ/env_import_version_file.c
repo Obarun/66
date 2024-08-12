@@ -82,7 +82,7 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
         if (lstat(s, &st) < 0)
             log_warnusys_return(LOG_EXIT_ZERO,"stat: ",s) ;
 
-        log_info("imports ",svname," configuration file from: ",s," to: ",d) ;
+        log_info("Imports ",svname," configuration file from: ",s," to: ",d) ;
 
         if (!filecopy_unsafe(s, d, st.st_mode))
             log_warnusys_return(LOG_EXIT_ZERO,"copy: ", s," to: ",d) ;
@@ -114,7 +114,7 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
             char d[dst_ver.len + 1 + namelen + 1] ;
             auto_strings(d,dst_ver.s,"/",name) ;
 
-            log_info("imports ",svname," configuration file from: ",s," to: ",d) ;
+            log_info("Imports ",svname," configuration file from: ",s," to: ",d) ;
 
             if (!hiercopy(s,d))
                 log_warnusys_return(LOG_EXIT_ZERO,"copy: ",s," to: ",d) ;

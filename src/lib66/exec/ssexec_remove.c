@@ -116,7 +116,7 @@ static void remove_logger(resolve_service_t *res, ssexec_t *info)
     if (res->type == TYPE_ONESHOT) {
 
         auto_remove(res->sa.s + res->logger.destination) ;
-        log_info("removed successfully logger of: ", res->sa.s + res->name) ;
+        log_info("Removed successfully logger of: ", res->sa.s + res->name) ;
         return ;
 
     }
@@ -143,7 +143,7 @@ static void remove_logger(resolve_service_t *res, ssexec_t *info)
     log_trace("remove symlink: ", lres.sa.s + lres.live.scandir) ;
     unlink_void(lres.sa.s + lres.live.scandir) ;
 
-    log_info("removed successfully: ", lres.sa.s + lres.name) ;
+    log_info("Removed successfully: ", lres.sa.s + lres.name) ;
 
     resolve_free(lwres) ;
 }
@@ -176,7 +176,7 @@ static void remove_service(resolve_service_t *res, ssexec_t *info)
     log_trace("remove symlink: ", res->sa.s + res->live.scandir) ;
     unlink_void(res->sa.s + res->live.scandir) ;
 
-    log_info("removed successfully: ", res->sa.s + res->name) ;
+    log_info("Removed successfully: ", res->sa.s + res->name) ;
 }
 
 int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)

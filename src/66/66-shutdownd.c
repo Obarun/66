@@ -454,7 +454,7 @@ int main (int argc, char const *const *argv)
     if (!inns)
     {
         sync() ;
-        log_info("sending all processes the TERM signal...") ;
+        log_info("Sending all processes the TERM signal...") ;
     }
 
     kill(-1, SIGTERM) ;
@@ -467,7 +467,7 @@ int main (int argc, char const *const *argv)
     if (!inns)
     {
         sync() ;
-        log_info("sending all processes the KILL signal...") ;
+        log_info("Sending all processes the KILL signal...") ;
     }
 
     kill(-1, SIGKILL) ;

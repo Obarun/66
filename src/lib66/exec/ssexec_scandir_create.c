@@ -160,7 +160,7 @@ static void inline auto_rm(char const *str)
     r = scan_mode(str,S_IFDIR) ;
     if (r > 0)
     {
-        log_info("removing: ",str,"...") ;
+        log_info("Removing: ",str,"...") ;
         if (!dir_rm_rf(str)) log_dieusys(LOG_EXIT_SYS,"remove: ",str) ;
     }
 }
@@ -819,11 +819,11 @@ int ssexec_scandir_create(int argc, char const *const *argv, ssexec_t *info)
 
         log_trace("sanitize ", info->live.s, " ...") ;
         sanitize_live(info->live.s) ;
-        log_info ("create scandir ", info->scandir.s, " ...") ;
+        log_info ("Create scandir ", info->scandir.s, " ...") ;
         create_scandir(info->live.s, info->scandir.s, info) ;
 
     } else
-        log_info("scandir: ", info->scandir.s, " already exist, keep it") ;
+        log_info("Scandir: ", info->scandir.s, " already exist, keeping it") ;
 
     return 0 ;
 }

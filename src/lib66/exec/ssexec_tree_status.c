@@ -538,7 +538,7 @@ int ssexec_tree_status(int argc, char const *const *argv, ssexec_t *info)
         auto_strings(src, info->base.s, SS_SYSTEM) ;
 
         if (!scan_mode(src, S_IFDIR)) {
-            log_info("no tree exist yet") ;
+            log_info("No tree exist yet") ;
             goto freed ;
         }
     }
@@ -573,7 +573,7 @@ int ssexec_tree_status(int argc, char const *const *argv, ssexec_t *info)
 
         } else {
 
-            log_info("no tree exist yet") ;
+            log_info("No tree exist yet") ;
             goto freed ;
         }
     }

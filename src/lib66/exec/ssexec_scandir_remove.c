@@ -28,7 +28,7 @@ static void inline auto_rm(char const *str)
     int r ;
     r = scan_mode(str, S_IFDIR) ;
     if (r > 0) {
-        log_info("removing: ", str, "...") ;
+        log_info("Removing: ", str, "...") ;
         if (!dir_rm_rf(str))
             log_dieusys(LOG_EXIT_SYS, "remove: ", str) ;
     }
