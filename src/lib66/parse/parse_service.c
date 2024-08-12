@@ -15,6 +15,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <unistd.h> //access
 
 #include <oblibs/log.h>
@@ -169,7 +170,7 @@ void parse_cleanup(resolve_service_t *res, char const *tmpdir, uint8_t force)
     }
 }
 
-static void parse_copy_to_source(char const *dst, char const *src, resolve_service_t *res, uint8_t force)
+void parse_copy_to_source(char const *dst, char const *src, resolve_service_t *res, uint8_t force)
 {
     log_flow() ;
 
@@ -274,47 +275,52 @@ void parse_service(struct resolve_hash_s **hres, char const *sv, ssexec_t *info,
 
     HASH_ITER(hh, *hres, c, tmp) {
 
-        sa.len = 0 ;
-        /** be paranoid */
-        rforce = 0 ;
-        size_t namelen = strlen(c->res.sa.s + c->res.name), homelen = strlen(c->res.sa.s + c->res.path.home) ;
+        if (!c->visit) {
 
-        char servicedir[homelen + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + namelen + 1] ;
+            sa.len = 0 ;
+            /** be paranoid */
+            rforce = 0 ;
+            size_t namelen = strlen(c->res.sa.s + c->res.name), homelen = strlen(c->res.sa.s + c->res.path.home) ;
 
-        auto_strings(servicedir, c->res.sa.s + c->res.path.home, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", c->res.sa.s + c->res.name) ;
+            char servicedir[homelen + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + namelen + 1] ;
 
-        if (sanitize_write(&c->res, force))
-            rforce = 1 ;
+            auto_strings(servicedir, c->res.sa.s + c->res.path.home, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", c->res.sa.s + c->res.name) ;
 
-        if (!auto_stra(&sa, "/tmp/", c->res.sa.s + c->res.name, ":XXXXXX"))
-            log_die_nomem("stralloc") ;
+            if (sanitize_write(&c->res, force))
+                rforce = 1 ;
 
-        if (!mkdtemp(sa.s))
-            log_dieusys(LOG_EXIT_SYS, "create temporary directory") ;
+            if (!auto_stra(&sa, "/tmp/", c->res.sa.s + c->res.name, ":XXXXXX"))
+                log_die_nomem("stralloc") ;
 
-        write_services(&c->res, sa.s, rforce) ;
+            if (!mkdtemp(sa.s))
+                log_dieusys(LOG_EXIT_SYS, "create temporary directory") ;
 
-        parse_write_state(&c->res, sa.s, rforce) ;
+            write_services(&c->res, sa.s, rforce) ;
 
-        service_resolve_write_remote(&c->res, sa.s, rforce) ;
+            parse_write_state(&c->res, sa.s, rforce) ;
 
-        parse_copy_to_source(servicedir, sa.s, &c->res, rforce) ;
+            service_resolve_write_remote(&c->res, sa.s, rforce) ;
 
-        /** do not die here, just warn the user */
-        log_trace("remove temporary directory: ", sa.s) ;
-        if (!dir_rm_rf(sa.s))
-            log_warnu("remove temporary directory: ", sa.s) ;
+            parse_copy_to_source(servicedir, sa.s, &c->res, rforce) ;
 
-        tree_service_add(c->res.sa.s + c->res.treename, c->res.sa.s + c->res.name, info) ;
+            /** do not die here, just warn the user */
+            log_trace("remove temporary directory: ", sa.s) ;
+            if (!dir_rm_rf(sa.s))
+                log_warnu("remove temporary directory: ", sa.s) ;
 
-        if (!symlink_make(&c->res))
-            log_dieusys(LOG_EXIT_SYS, "make service symlink") ;
+            tree_service_add(c->res.sa.s + c->res.treename, c->res.sa.s + c->res.name, info) ;
 
-        /** symlink may exist already, be sure to point to the correct location */
+            if (!symlink_make(&c->res))
+                log_dieusys(LOG_EXIT_SYS, "make service symlink") ;
 
-        if (!symlink_switch(&c->res, SYMLINK_SOURCE))
-            log_dieusys(LOG_EXIT_SYS, "sanitize_symlink") ;
+            /** symlink may exist already, be sure to point to the correct location */
 
-        log_info("Parsed successfully: ", c->res.sa.s + c->res.name, " at tree: ", c->res.sa.s + c->res.treename) ;
+            if (!symlink_switch(&c->res, SYMLINK_SOURCE))
+                log_dieusys(LOG_EXIT_SYS, "sanitize_symlink") ;
+
+            log_info("Parsed successfully: ", c->res.sa.s + c->res.name, " at tree: ", c->res.sa.s + c->res.treename) ;
+
+            c->visit = 1 ;
+        }
     }
 }
