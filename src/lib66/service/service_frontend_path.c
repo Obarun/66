@@ -27,6 +27,8 @@
 
 static void compute_exclude(char const **nexclude, char const **oexclude, uint8_t exlen, uid_t owner)
 {
+    log_flow() ;
+
     uint8_t pos = 0 ;
 
     if (exlen) {

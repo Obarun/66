@@ -31,7 +31,7 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src, cha
     log_flow() ;
 
     int insta, equal = 0, e = -1, r = 0, found = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
+    _alloc_sa_(sa) ;
     size_t pos = 0, dpos = 0, pathlen = strlen(src), namelen = strlen(name) ;
     char instaname[strlen(name) + 1] ;
 
@@ -43,20 +43,16 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src, cha
     if (path[pathlen - 1] == '/')
         path[pathlen - 1] = 0 ;
 
-    if (!sastr_dir_get_recursive(&sa, path, exclude, S_IFREG|S_IFDIR, 1)) {
-        stralloc_free(&sa) ;
+    if (!sastr_dir_get_recursive(&sa, path, exclude, S_IFREG|S_IFDIR, 1))
         return e ;
-    }
 
     size_t len = sa.len ;
     char tmp[len + 1] ;
     sastr_to_char(tmp, &sa) ;
 
     insta = instance_check(name) ;
-    if (!insta) {
-        log_warn("invalid instance name: ", name) ;
-        goto err ;
-    }
+    if (!insta)
+        log_warn_return(e,"invalid instance name: ", name) ;
 
     sa.len = 0 ;
 
@@ -78,17 +74,17 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src, cha
         struct stat st ;
         /** use stat instead of lstat to accept symlink */
         if (stat(dname,&st) == -1)
-            goto err ;
+            return e ;
 
         size_t dnamelen = strlen(dname) ;
         char bname[dnamelen + 1] ;
         char srcname[dnamelen + 1] ;
 
         if (!ob_basename(bname,dname))
-            goto err ;
+            return e ;
 
         if (!ob_dirname(srcname, dname))
-            goto err ;
+            return e ;
 
         equal = strcmp(instaname, bname) ;
 
@@ -105,7 +101,7 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src, cha
                 if (sastr_cmp(sasrc, result) == -1) {
                     if (!sastr_add_string(sasrc, result) ||
                         !stralloc_0(sasrc))
-                        goto err ;
+                            return e ;
                     sasrc->len-- ;
                 }
 
@@ -113,14 +109,12 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src, cha
 
             } else if (S_ISDIR(st.st_mode)) {
 
-                if (!insta) {
-                    log_warn("invalid name format for: ", dname," -- directory instance name are case reserved") ;
-                    goto err ;
-                }
+                if (!insta)
+                    log_warn_return(e,"invalid name format for: ", dname," -- directory instance name are case reserved") ;
 
                 int rd = service_endof_dir(dname, bname) ;
                 if (rd == -1)
-                    goto err ;
+                    return e ;
 
                 if (!rd) {
                     /** user ask to deal which each frontend file
@@ -128,7 +122,7 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src, cha
                     sa.len = 0 ;
 
                     if (!sastr_dir_get_recursive(&sa, dname, exclude, S_IFREG|S_IFDIR, 0))
-                        goto err ;
+                        return e ;
 
                     /** directory may be empty. */
                     if (!sa.len)
@@ -140,7 +134,7 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src, cha
                         r = service_frontend_src(sasrc, sa.s + dpos, dname, exclude) ;
                         if (r < 0)
                             /** system error */
-                            goto err ;
+                            return e ;
                         if (!r)
                             /** nothing found at empty sub-directory */
                             found = 0 ;
@@ -155,7 +149,5 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src, cha
 
     e = found ;
 
-    err:
-        stralloc_free(&sa) ;
-        return e ;
+    return e ;
 }

@@ -32,7 +32,7 @@ int tree_get_permissions(char const *base, char const *treename)
 
     int e = -1 ;
     size_t pos = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
+    _alloc_sa_(sa) ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
     uid_t uid = getuid(), treeuid = -1 ;
@@ -63,7 +63,6 @@ int tree_get_permissions(char const *base, char const *treename)
     }
 
     freed:
-        stralloc_free(&sa) ;
         resolve_free(wres) ;
         return e ;
 }
