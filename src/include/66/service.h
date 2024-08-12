@@ -233,6 +233,7 @@ struct resolve_service_s
                                IO_REDIRECTION_ZERO }
 
 
+extern const resolve_service_t service_resolve_zero ;
 
 typedef enum resolve_service_enum_e resolve_service_enum_t, *resolve_service_enum_t_ref;
 enum resolve_service_enum_e
