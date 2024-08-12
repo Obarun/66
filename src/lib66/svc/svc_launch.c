@@ -267,7 +267,7 @@ static int handle_signal(pidservice_t *apids, unsigned int what, graph_t *graph,
 
                     if (r < 0) {
 
-                        if (errno = ECHILD)
+                        if (errno == ECHILD)
                             break ;
                         else
                             log_dieusys(LOG_EXIT_SYS,"wait for children") ;
