@@ -66,7 +66,7 @@ static uint8_t check_current_version(char const *svconf,char const *version)
     char bname[sa.len + 1] ;
     if (!ob_basename(bname,sa.s)) log_dieu(LOG_EXIT_SYS,"get basename of: ",sa.s) ;
 
-    return !version_cmp(bname,version,SS_CONFIG_VERSION_NDOT) ? 1 : 0 ;
+    return !version_cmp(bname,version,SS_SERVICE_VERSION_NDOT) ? 1 : 0 ;
 }
 
 static void run_editor(char const *src, char const *sv)

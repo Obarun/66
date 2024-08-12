@@ -26,7 +26,7 @@ int env_check_version(stack *stk, char const *version)
 
     int r ;
 
-    r = version_store(stk,version,SS_CONFIG_VERSION_NDOT) ;
+    r = version_store(stk,version,SS_SERVICE_VERSION_NDOT) ;
 
     if (r == -1)
         log_warnusys_return(LOG_EXIT_ZERO,"stack") ;

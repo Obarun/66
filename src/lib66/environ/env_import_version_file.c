@@ -43,7 +43,7 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
 
     auto_strings(svname_dot,".",svname) ;
 
-    r = version_compare(sversion,dversion,SS_CONFIG_VERSION_NDOT) ;
+    r = version_compare(sversion,dversion,SS_SERVICE_VERSION_NDOT) ;
 
     if (!r) {
 

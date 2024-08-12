@@ -238,7 +238,7 @@ int parse_store_main(resolve_service_t *res, stack *store, const int sid, const 
         case KEY_MAIN_VERSION:
 
             {
-                r = version_store(store, store->s, SS_CONFIG_VERSION_NDOT) ;
+                r = version_store(store, store->s, SS_SERVICE_VERSION_NDOT) ;
                 if (r == -1)
                     goto err ;
 
