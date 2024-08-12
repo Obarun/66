@@ -152,6 +152,9 @@ int ssexec_snapshot_create(int argc, char const *const *argv, ssexec_t *info)
 
     snapname = *argv ;
 
+    if (!str_start_with(snapname, "update@"))
+        log_die(LOG_EXIT_USER, "update@ is a reserved prefix for snapshot names -- please select a different one") ;
+
     auto_strings(snapdir.s, info->base.s, SS_SNAPSHOT + 1) ;
 
     len = info->base.len + (SS_SNAPSHOT_LEN - 1) ;

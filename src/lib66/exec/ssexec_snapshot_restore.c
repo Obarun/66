@@ -20,6 +20,7 @@
 #include <oblibs/string.h>
 #include <oblibs/stack.h>
 #include <oblibs/sastr.h>
+#include <oblibs/directory.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/djbunix.h>
@@ -100,6 +101,17 @@ int ssexec_snapshot_restore(int argc, char const *const *argv, ssexec_t *info)
         log_trace("copy: ", src.s , " to: ", dst.s) ;
         if (!hiercopy(src.s, dst.s))
             log_dieusys(LOG_EXIT_SYS, "copy: ", src.s," to: ", dst.s) ;
+    }
+
+    auto_strings(src.s, snapdir.s, "/", SS_SYSTEM, "/.version") ;
+
+    /** remove .version file if it doesn't exist at snapshot dir.
+     * Typically version under 0.8.0.0 do not have this file.*/
+    if (access(src.s, F_OK) < 0) {
+        auto_strings(src.s, info->base.s, SS_SYSTEM, "/.version") ;
+
+        if (!dir_rm_rf(src.s))
+            log_warnusys("remove file: ", src.s) ;
     }
 
     log_info("Successfully restored snapshot: ", snapname) ;
