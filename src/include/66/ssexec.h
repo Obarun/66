@@ -128,6 +128,13 @@ extern ssexec_func_t ssexec_tree_init ;
 /** shutdown */
 extern ssexec_func_t ssexec_shutdown_wrapper ;
 
+/** snapshot */
+extern ssexec_func_t ssexec_snapshot_wrapper ;
+extern ssexec_func_t ssexec_snapshot_create ;
+extern ssexec_func_t ssexec_snapshot_restore ;
+extern ssexec_func_t ssexec_snapshot_remove ;
+extern ssexec_func_t ssexec_snapshot_list ;
+
 extern void info_help (char const *help,char const *usage) ;
 
 extern char const *usage_66 ;
@@ -226,6 +233,17 @@ extern char const *help_halt ;
 extern char const *usage_wall ;
 extern char const *help_wall ;
 
+extern char const *usage_snapshot_wrapper ;
+extern char const *help_snapshot_wrapper ;
+extern char const *usage_snapshot_create ;
+extern char const *help_snapshot_create ;
+extern char const *usage_snapshot_restore ;
+extern char const *help_snapshot_restore ;
+extern char const *usage_snapshot_remove ;
+extern char const *help_snapshot_remove ;
+extern char const *usage_snapshot_list ;
+extern char const *help_snapshot_list ;
+
 #define OPTS_MAIN "hv:l:t:T:z"
 #define OPTS_MAIN_LEN (sizeof OPTS_MAIN - 1)
 #define OPTS_SUBSTART "hP"
@@ -274,5 +292,16 @@ extern char const *help_wall ;
 
 #define OPTS_SHUTDOWN_WRAPPER "hFfat:m:W"
 #define OPTS_SHUTDOWN_WRAPPER_LEN (sizeof OPTS_SHUTDOWN_WRAPPER - 1)
+
+#define OPTS_SNAPSHOT_WRAPPER "h"
+#define OPTS_SNAPSHOT_WRAPPER_LEN (sizeof OPTS_SNAPSHOT_WRAPPER - 1)
+#define OPTS_SNAPSHOT_CREATE "h"
+#define OPTS_SNAPSHOT_CREATE_LEN (sizeof OPTS_SNAPSHOT_CREATE - 1)
+#define OPTS_SNAPSHOT_RESTORE "h"
+#define OPTS_SNAPSHOT_RESTORE_LEN (sizeof OPTS_SNAPSHOT_RESTORE - 1)
+#define OPTS_SNAPSHOT_REMOVE "h"
+#define OPTS_SNAPSHOT_REMOVE_LEN (sizeof OPTS_SNAPSHOT_REMOVE - 1)
+#define OPTS_SNAPSHOT_LIST "h"
+#define OPTS_SNAPSHOT_LIST_LEN (sizeof OPTS_SNAPSHOT_LIST - 1)
 
 #endif

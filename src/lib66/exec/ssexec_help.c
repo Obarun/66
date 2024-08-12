@@ -23,7 +23,7 @@ inline void info_help (char const *help,char const *usage)
 }
 
 
-char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|free|reconfigure|enable|disable|configure|status|resolve|state|remove|signal|tree|parse|scandir|boot|poweroff|reboot|halt|wall|version [<command options> or <subcommand options> ] service...|tree" ;
+char const *usage_66 = "66 [ -h ] [ -z ] [ -v verbosity ] [ -l live ] [ -T timeout ] [ -t tree ] start|stop|reload|restart|free|reconfigure|enable|disable|configure|status|resolve|state|remove|signal|snapshot|tree|parse|scandir|boot|poweroff|reboot|halt|wall|version [<command options> or <subcommand options> ] service...|tree" ;
 
 char const *help_66 =
 "\nprogram to init a system, control and manage services\n"
@@ -51,6 +51,7 @@ char const *help_66 =
 "   state: display service's state file contents\n"
 "   remove: remove service and cleanup all files belong to it within the system\n"
 "   signal: send signal to services\n"
+"   snapshot: manage system snapshot\n"
 "   tree: manage or see tree information\n"
 "   parse: parse the service frontend file\n"
 "   scandir: manage scandir\n"
@@ -655,6 +656,59 @@ char const *usage_wall = "66 wall [ -h ] message" ;
 
 char const *help_wall =
 "\nsend message to connected users\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+;
+
+char const *usage_snapshot_wrapper = "66 snapshot [ -h ] create|restore|remove|list [<subcommand options>] name..." ;
+
+char const *help_snapshot_wrapper =
+"\nmain subcommands to manage snapshot\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+"\n"
+"subcommand:\n"
+"   create: creates a snapshot of the entire system\n"
+"   restore: restores a snapshot\n"
+"   remove: deletes a snapshot\n"
+"   list: list available snapshot\n"
+"\n"
+"Use '66 snapshot <subcommand> -h' to see subcommand options\n"
+;
+
+char const *usage_snapshot_create = "66 snapshot create [-h] name" ;
+
+char const *help_snapshot_create =
+"\ncreate a snapshot of the entire 66 system\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+;
+
+char const *usage_snapshot_restore = "66 snapshot restore [-h] name" ;
+
+char const *help_snapshot_restore =
+"\nrestore a snapshot\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+;
+
+char const *usage_snapshot_remove = "66 snapshot remove [-h] name" ;
+
+char const *help_snapshot_remove =
+"\nremove a snapshot\n"
+"\n"
+"options:\n"
+"   -h: print this help\n"
+;
+
+char const *usage_snapshot_list = "66 snapshot list [-h] name" ;
+
+char const *help_snapshot_list =
+"\nlist available snapshot\n"
 "\n"
 "options:\n"
 "   -h: print this help\n"

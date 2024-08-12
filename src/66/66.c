@@ -352,6 +352,12 @@ int main(int argc, char const *const *argv)
         nargv[n++] = PROG ;
         func = &ssexec_tree_wrapper ;
 
+    } else if (!strcmp(argv[0], "snapshot")) {
+
+        PROG = "snapshot" ;
+        nargv[n++] = PROG ;
+        func = &ssexec_snapshot_wrapper ;
+
     } else if (!strcmp(argv[0], "scandir")) {
 
         PROG = "scandir" ;
@@ -393,18 +399,21 @@ int main(int argc, char const *const *argv)
 
         if (!strcmp(argv[1], "-h")) {
             info_help(help_wall, usage_wall) ;
+            ssexec_free(&info) ;
             return 0 ;
         }
 
         /** message need to be double quoted.
          * we don't check that here */
         hpr_wall(argv[1]) ;
+        ssexec_free(&info) ;
         return 0 ;
 
     } else if (!strcmp(argv[0], "version")) {
 
         PROG = "version" ;
         log_info(SS_VERSION) ;
+        ssexec_free(&info) ;
         return 0 ;
 
     } else {
@@ -412,6 +421,7 @@ int main(int argc, char const *const *argv)
         PROG = "66" ;
         if (!strcmp(argv[0], "-h")) {
             info_help(help_66, usage_66) ;
+            ssexec_free(&info) ;
             return 0 ;
         }
 

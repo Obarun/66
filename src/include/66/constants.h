@@ -84,7 +84,8 @@
 #define SS_SYM_VERSION "/version"
 #define SS_SYM_VERSION_LEN (sizeof SS_SYM_VERSION - 1)
 
-#define SS_CONFIG_VERSION_NDOT 2
+#define SS_SERVICE_VERSION_NDOT 2
+#define SS_SYSTEM_VERSION_NDOT 3
 
 #define SS_EVENTDIR "/event"
 #define SS_EVENTDIR_LEN (sizeof SS_EVENTDIR - 1)
@@ -128,6 +129,10 @@
 #define SS_INSTANCE_REGEX "@I"
 #define SS_INSTANCE_TEMPLATE 0
 #define SS_INSTANCE_NAME 1
+
+/** Snapshot */
+#define SS_SNAPSHOT "/.snapshot"
+#define SS_SNAPSHOT_LEN (sizeof SS_SNAPSHOT - 1)
 
 #define SS_MAX_PATH_LEN (SS_MAX_PATH + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + SS_MAX_TREENAME + SS_MAX_SERVICE_NAME + 63 + 1)
 
