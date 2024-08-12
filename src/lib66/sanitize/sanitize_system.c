@@ -20,6 +20,10 @@
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
+#include <oblibs/sastr.h>
+#include <oblibs/stack.h>
+#include <oblibs/files.h>
+#include <oblibs/lexer.h>
 
 #include <66/ssexec.h>
 #include <66/config.h>
@@ -28,6 +32,9 @@
 #include <66/utils.h>
 #include <66/state.h>
 #include <66/tree.h>
+#include <66/write.h>
+#include <66/parse.h>
+#include <66/resolve.h>
 
 static void auto_dir(char const *dst, mode_t mode)
 {
@@ -51,11 +58,12 @@ static void auto_check(char *dst)
         auto_dir(dst,0755) ;
 }
 
-int sanitize_system(ssexec_t *info)
+void sanitize_system(ssexec_t *info)
 {
     log_flow() ;
 
     int r ;
+    short first = 0 ;
     size_t baselen = info->base.len ;
     uid_t log_uid ;
     gid_t log_gid ;
@@ -64,8 +72,9 @@ int sanitize_system(ssexec_t *info)
 
     /** base is /var/lib/66 or $HOME/.66*/
     /** this verification is made in case of
-     * first use of 66 cmd tools */
+     * first use of 66.*/
     auto_check(dst) ;
+
     /** create extra directory for service part */
     if (!info->owner) {
 
@@ -132,9 +141,11 @@ int sanitize_system(ssexec_t *info)
 
     auto_strings(dst + baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN, SS_MASTER) ;
 
-    if (!scan_mode(dst, S_IFREG))
+    if (!scan_mode(dst, S_IFREG)) {
+        first = 1 ;
         if (!tree_resolve_master_create(info->base.s, info->owner))
             log_dieu(LOG_EXIT_SYS, "write Master resolve file of trees") ;
+    }
 
     auto_strings(dst + baselen + SS_SYSTEM_LEN, SS_SERVICE, SS_SVC) ;
     auto_check(dst) ;
@@ -164,5 +175,28 @@ int sanitize_system(ssexec_t *info)
         PROG = prog ;
     }
 
-    return 1 ;
+    auto_strings(dst, info->base.s, SS_SYSTEM, "/.version") ;
+    r = access(dst, F_OK) ;
+    if (r < 0) {
+        if (!first)
+            sanitize_migrate(info, "0.7.2.1", 0) ;
+
+        log_trace("write system version file with version: ", SS_VERSION) ;
+        if (!file_write_unsafe_g(dst, SS_VERSION))
+            log_dieusys(LOG_EXIT_SYS, "write system version file: ", dst) ;
+
+    } else {
+
+        ssize_t len = file_get_size(dst) ;
+        _alloc_stk_(file, len + 1) ;
+        if (!stack_read_file(&file, dst))
+            log_dieu(LOG_EXIT_SYS, "read system version file: ", dst) ;
+
+        if (sanitize_migrate(info, file.s, 1)) {
+            log_trace("write system version file with version: ", SS_VERSION) ;
+            if (!file_write_unsafe_g(dst, SS_VERSION))
+                log_dieusys(LOG_EXIT_SYS, "write system version file: ", dst) ;
+        }
+    }
+
 }

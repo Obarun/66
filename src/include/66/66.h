@@ -20,8 +20,12 @@
 #include <66/enum.h>
 #include <66/environ.h>
 #include <66/graph.h>
+#include <66/hash.h>
 #include <66/hpr.h>
 #include <66/info.h>
+#include <66/instance.h>
+#include <66/migrate.h>
+#include <66/module.h>
 #include <66/parse.h>
 #include <66/resolve.h>
 #include <66/sanitize.h>
@@ -33,6 +37,5 @@
 #include <66/tree.h>
 #include <66/utils.h>
 #include <66/write.h>
-#include <66/hash.h>
 
 #endif

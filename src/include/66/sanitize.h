@@ -21,8 +21,8 @@
 #include <66/ssexec.h>
 #include <66/state.h>
 
-extern int sanitize_system(ssexec_t *info) ;
-
+extern void sanitize_system(ssexec_t *info) ;
+extern int sanitize_migrate(ssexec_t *info, const char *oversion, short exist) ;
 extern void sanitize_source(char const *name, ssexec_t *info, uint32_t flag) ;
 extern int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag, uint8_t init) ;
 extern int sanitize_livestate(resolve_service_t *res, ss_state_t *sta) ;
