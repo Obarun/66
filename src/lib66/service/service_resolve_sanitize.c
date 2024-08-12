@@ -30,12 +30,12 @@ void service_resolve_sanitize(resolve_service_t *res)
 
     res->sa.len = 0 ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     resolve_init(wres) ;
 
     // configuration
-    res->name = res->name ? resolve_add_string(wres, stk + res->name) : 0 ;
+    res->name = resolve_add_string(wres, stk + res->name) ;
     res->description = res->description ? resolve_add_string(wres, stk + res->description) : 0 ;
     res->version = res->version ? resolve_add_string(wres, stk + res->version) : 0 ;
     res->hiercopy = res->hiercopy ? resolve_add_string(wres, stk + res->hiercopy) : 0 ;
@@ -98,8 +98,10 @@ void service_resolve_sanitize(resolve_service_t *res)
 
     // IO
     res->io.fdin.destination = res->io.fdin.destination ? resolve_add_string(wres, stk + res->io.fdin.destination) : 0 ;
-    res->io.fdin.destination = res->io.fdout.destination ? resolve_add_string(wres, stk + res->io.fdout.destination) : 0 ;
-    res->io.fdin.destination = res->io.fderr.destination ? resolve_add_string(wres, stk + res->io.fderr.destination) : 0 ;
+    res->io.fdout.destination = res->io.fdout.destination ? resolve_add_string(wres, stk + res->io.fdout.destination) : 0 ;
+    res->io.fderr.destination = res->io.fderr.destination ? resolve_add_string(wres, stk + res->io.fderr.destination) : 0 ;
+
+    res->rversion = res->rversion ? resolve_add_string(wres, stk + res->rversion) : 0 ;
 
     free(wres) ;
 }

@@ -19,10 +19,10 @@
 #include <66/resolve.h>
 #include <66/service.h>
 
-void add_version(resolve_service_t *res)
+static void add_version(resolve_service_t *res)
 {
     log_flow() ;
-    log_trace("resolve file version set to: ", SS_VERSION) ;
+    log_trace("resolve file version for: ", res->sa.s + res->name, " set to: ", SS_VERSION) ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     res->rversion = resolve_add_string(wres, SS_VERSION) ;
     free(wres) ;
@@ -38,7 +38,7 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *res)
     if (!cdbmake_add(c, "sa", 2, res->sa.s, res->sa.len))
         return 0 ;
 
-    if (!resolve_add_cdb_uint(c, "rversion", res->version) ||
+    if (!resolve_add_cdb_uint(c, "rversion", res->rversion) ||
         !resolve_add_cdb_uint(c, "name", res->name) ||
         !resolve_add_cdb_uint(c, "description", res->description) ||
         !resolve_add_cdb_uint(c, "version", res->version) ||

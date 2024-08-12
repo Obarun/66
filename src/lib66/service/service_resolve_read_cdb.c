@@ -13,6 +13,7 @@
  */
 
 #include <stdlib.h>//free
+#include <errno.h>
 
 #include <oblibs/log.h>
 
@@ -21,18 +22,30 @@
 #include <66/resolve.h>
 #include <66/service.h>
 
+
 int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
 {
     log_flow() ;
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-    if (resolve_get_sa(&res->sa,c) <= 0 || !res->sa.len)
-        return 0 ;
+    if (resolve_get_sa(&res->sa,c) <= 0) {
+        free(wres) ;
+        return (errno = EINVAL, 0)  ;
+    }
+
+    if (!res->sa.len) {
+        free(wres) ;
+        return (errno = EINVAL, 0)  ;
+    }
 
     /* configuration */
-    if (!resolve_get_key(c, "rversion", &res->rversion) ||
-        !resolve_get_key(c, "name", &res->name) ||
+    if (!resolve_get_key(c, "rversion", &res->rversion)) {
+        free(wres) ;
+        return (errno = EINVAL, 0)  ;
+    }
+
+    if (!resolve_get_key(c, "name", &res->name) ||
         !resolve_get_key(c, "description", &res->description) ||
         !resolve_get_key(c, "version", &res->version) ||
         !resolve_get_key(c, "type", &res->type) ||
@@ -126,7 +139,7 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
         !resolve_get_key(c, "stderrtype", &res->io.fderr.type) ||
         !resolve_get_key(c, "stderrdest", &res->io.fderr.destination)) {
             free(wres) ;
-            return 0 ;
+            return (errno = EINVAL, 0)  ;
     }
 
     free(wres) ;
