@@ -33,7 +33,8 @@ static void set_info(ssexec_t *info)
 
     int r ;
 
-    set_treeinfo(info) ;
+    if (!info->skip_opt_tree)
+        set_treeinfo(info) ;
 
     r = set_livedir(&info->live) ;
     if (!r)
@@ -354,6 +355,8 @@ int main(int argc, char const *const *argv)
 
     } else if (!strcmp(argv[0], "snapshot")) {
 
+        sanitize++ ;
+        info.skip_opt_tree = 1 ;
         PROG = "snapshot" ;
         nargv[n++] = PROG ;
         func = &ssexec_snapshot_wrapper ;
