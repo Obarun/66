@@ -58,7 +58,7 @@ int parse_mandatory(resolve_service_t *res)
 
             /** This is the resolve file of the logger itself.
              * This definition is only made here to provide convenient API.
-             * We are in parse process and the next call of the parse_append_logger
+             * We are in parse process and the next call of the parse_create_logger
              * will also set the Stdxxx key with the same as follow. */
             in->type = out->type = IO_TYPE_S6LOG ;
             in->destination = out->destination = compute_log_dir(wres, res) ;
@@ -187,7 +187,7 @@ int parse_mandatory(resolve_service_t *res)
     }
 
     if (res->logger.want) {
-        // avoid to call parse_append_logger
+        // avoid to call parse_create_logger
         if (in->type != IO_TYPE_S6LOG && out->type != IO_TYPE_S6LOG)
             res->logger.want = 0 ;
     }

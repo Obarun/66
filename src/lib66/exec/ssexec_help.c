@@ -661,7 +661,7 @@ char const *help_wall =
 "   -h: print this help\n"
 ;
 
-char const *usage_snapshot_wrapper = "66 snapshot [ -h ] create|restore|remove|list [<subcommand options>] name..." ;
+char const *usage_snapshot_wrapper = "66 snapshot [ -h ] create|restore|remove|list [<subcommand options>] name" ;
 
 char const *help_snapshot_wrapper =
 "\nmain subcommands to manage snapshot\n"

@@ -66,7 +66,7 @@ char const *enum_str_key_section_logger[] = {
     "Execute" ,
     "Destination" ,
     "Backup" ,
-    "Maxsize" ,
+    "MaxSize" ,
     "Timestamp" ,
     "TimeoutStart" ,
     "TimeoutStop" ,

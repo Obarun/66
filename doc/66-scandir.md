@@ -14,7 +14,7 @@ Handles the *scandir* for a given user. Designed to be either root or a branch o
 ## Interface
 
 ```
-scandir [ -h ] [ -o owner ] create|start|stop|remove|reconfigure|check|quit|abort|nuke|annihilate|zombies [<command options>]
+scandir [ -h ] [ -o owner ] create|start|stop|remove|reconfigure|check|quit|abort|nuke|annihilate|zombies [<subcommand options>]
 ```
 
 This program creates, removes or sends a signal to a *scandir* (directory containing a collection of s6‑supervise processes) for the current owner of the proccess depending on the provided options.

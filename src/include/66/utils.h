@@ -52,7 +52,12 @@ extern int set_ownerhome_stack(char *store) ;
 extern int set_ownersysdir_stack(char *base, uid_t owner) ;
 extern int set_ownerhome_stack_byuid(char *store, uid_t owner) ;
 extern void set_treeinfo(ssexec_t *info) ;
-
+/**
+ * if a < b return -1
+ * if a > b return 1
+ * if a == b return 0
+ * return -2 on system call failure
+*/
 extern int version_compare(char const  *a, char const *b, uint8_t ndot) ;
 extern int version_store(stack *stk, char const *str, uint8_t ndot) ;
 

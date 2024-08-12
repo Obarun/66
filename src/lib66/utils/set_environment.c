@@ -32,7 +32,7 @@ int set_environment(stralloc *sa, uid_t owner)
 
     if (!owner) {
 
-        if (!auto_stra(sa, SS_ENVIRONMENT_ADMDIR, "/"))
+        if (!auto_stra(sa, SS_ENVIRONMENT_ADMDIR))
             log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
 
     } else {
@@ -43,7 +43,7 @@ int set_environment(stralloc *sa, uid_t owner)
         if (!set_ownerhome(sa, owner))
             log_warnusys_return(LOG_EXIT_ZERO, "set home directory") ;
 
-        if (!auto_stra(sa, SS_ENVIRONMENT_USERDIR, "/"))
+        if (!auto_stra(sa, SS_ENVIRONMENT_USERDIR))
             log_die_nomem("stralloc") ;
     }
 
