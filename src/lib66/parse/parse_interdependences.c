@@ -30,7 +30,7 @@
 #include <66/instance.h>
 #include <66/module.h>
 
-int parse_interdependences(char const *service, char const *list, unsigned int listlen, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree)
+int parse_interdependences(char const *service, char const *list, unsigned int listlen, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree, resolve_service_t *moduleres)
 {
     log_flow() ;
 
@@ -92,7 +92,7 @@ int parse_interdependences(char const *service, char const *list, unsigned int l
              * forced_directory == 0 means that the service
              * comes from an external directory of the module.
              * In this case don't associated it at the module. */
-            parse_frontend(sa.s, hres, info, force, conf, forced_directory, main, !forced_directory ? 0 : inns, !forced_directory ? 0 : intree) ;
+            parse_frontend(sa.s, hres, info, force, conf, forced_directory, main, !forced_directory ? 0 : inns, !forced_directory ? 0 : intree, moduleres) ;
         }
 
     } else

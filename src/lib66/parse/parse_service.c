@@ -268,7 +268,7 @@ void parse_service(struct resolve_hash_s **hres, char const *sv, ssexec_t *info,
     if (!ob_basename(main, sv))
         log_dieu(LOG_EXIT_SYS, "get basename of: ", sv) ;
 
-    r = parse_frontend(sv, hres, info, force, conf, 0, main, 0, 0) ;
+    r = parse_frontend(sv, hres, info, force, conf, 0, main, 0, 0, 0) ;
     if (r == 2)
         /** already parsed */
         return ;

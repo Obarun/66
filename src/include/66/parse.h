@@ -53,8 +53,8 @@ extern void parse_cleanup(resolve_service_t *res, char const *tmpdir, uint8_t fo
 /** main */
 extern void start_parser(char const *sv, ssexec_t *info, uint8_t disable_module, char const *directory_forced) ;
 extern void parse_service(struct resolve_hash_s **href, char const *sv, ssexec_t *info, uint8_t force, uint8_t conf) ;
-extern int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree) ;
-extern int parse_interdependences(char const *service, char const *list, unsigned int listlen, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree) ;
+extern int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree, resolve_service_t *moduleres) ;
+extern int parse_interdependences(char const *service, char const *list, unsigned int listlen, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree, resolve_service_t *moduleres) ;
 extern void parse_create_logger(struct resolve_hash_s **hres, resolve_service_t *res, ssexec_t *info) ;
 
 /** split */

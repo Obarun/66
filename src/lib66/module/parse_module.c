@@ -79,7 +79,7 @@ static void parse_module_dependencies(stralloc *list, resolve_service_t *res, ui
 
         (*nfield)++ ;
 
-        parse_frontend(sa.s, hres, info, force, conf, 0, fname, 0, 0) ;
+        parse_frontend(sa.s, hres, info, force, conf, 0, fname, 0, 0, res) ;
 
     }
 
@@ -257,7 +257,7 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
             if (!auto_stra(&info->treename, res->sa.s + res->treename))
                 log_die_nomem("stralloc") ;
 
-            parse_frontend(sa.s, hres, info, force, conf, tmpdir.s, fname, name, res->intree ? res->sa.s + res->intree : 0) ;
+            parse_frontend(sa.s, hres, info, force, conf, tmpdir.s, fname, name, res->intree ? res->sa.s + res->intree : 0, res) ;
 
             info->opt_tree = opt_tree ;
         }

@@ -40,7 +40,7 @@
 #include <66/instance.h>
 #include <66/sanitize.h>
 
-static void parse_service_instance(stralloc *frontend, char const *svsrc, char const *sv, int insta)
+static void parse_read_instance(stralloc *frontend, char const *svsrc, char const *sv, int insta)
 {
     log_flow() ;
 
@@ -83,14 +83,23 @@ static void parse_service_instance(stralloc *frontend, char const *svsrc, char c
  * @Return 1 on success
  * @Return 2 -> already parsed */
 
-int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree)
+int parse_frontend(char const *sv,
+                   struct resolve_hash_s **hres,
+                   ssexec_t *info,
+                   uint8_t force,
+                   uint8_t conf,
+                   char const *forced_directory,
+                   char const *main,
+                   char const *inns,
+                   char const *intree,
+                   resolve_service_t *moduleres)
 {
     log_flow() ;
 
     int insta, isparsed ;
     uint8_t opt_tree_forced = 0 ;
     size_t svlen = strlen(sv) ;
-    char svname[svlen + 1], svsrc[svlen + 1] ;
+    char svname[svlen + 1], svsrc[svlen + 1], instaname[svlen + 1] ;
     stralloc sa = STRALLOC_ZERO ;
     struct resolve_hash_s *hash ;
 
@@ -131,7 +140,10 @@ int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info,
 
     if (insta > 0) {
 
-        parse_service_instance(&sa, svsrc, svname, insta) ;
+        auto_strings(instaname, svname) ;
+        instaname[insta + 1] = 0 ;
+
+        parse_read_instance(&sa, svsrc, svname, insta) ;
 
     } else {
 
@@ -202,7 +214,39 @@ int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info,
     res.owner = info->owner ;
     res.ownerstr = resolve_add_string(wres, info->ownerstr) ;
     res.path.home = resolve_add_string(wres, info->base.s) ;
-    res.path.frontend = resolve_add_string(wres, sv) ;
+
+    {
+        char *realname = 0 ;
+        if (insta > 0) {
+            realname = instaname ;
+        } else {
+            realname = svname ;
+        }
+
+        if (inns) {
+
+            char *path = moduleres->sa.s + moduleres->path.frontend ;
+            size_t mlen = strlen(path) ;
+            _alloc_stk_(dir, mlen) ;
+
+            if (!ob_dirname(dir.s, path))
+                log_dieu(LOG_EXIT_SYS, "get dirname of: ", path) ;
+
+            _alloc_stk_(frontend, mlen + SS_MODULE_FRONTEND_LEN + strlen(realname) + 2) ;
+
+            auto_strings(frontend.s, dir.s, SS_MODULE_FRONTEND + 1, "/", realname) ;
+
+            res.path.frontend = resolve_add_string(wres, frontend.s) ;
+
+        } else {
+
+            _alloc_stk_(frontend, svlen + 1) ;
+
+            auto_strings(frontend.s, svsrc, realname) ;
+
+            res.path.frontend = resolve_add_string(wres, frontend.s) ;
+        }
+    }
 
     /** logger is set by default. if service is a module
      * we don't want logger. So, set it false by default. */
@@ -257,7 +301,7 @@ int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info,
     /** parse interdependences if the service was never parsed */
     if (isparsed == STATE_FLAGS_FALSE) {
 
-        if (!parse_interdependences(svname, res.sa.s + res.dependencies.depends, res.dependencies.ndepends, hres, info, force, conf, forced_directory, main, inns, intree))
+        if (!parse_interdependences(svname, res.sa.s + res.dependencies.depends, res.dependencies.ndepends, hres, info, force, conf, forced_directory, main, inns, intree, moduleres))
             log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", svname) ;
     }
 
@@ -270,7 +314,7 @@ int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info,
         !res.inns &&
         res.type != TYPE_MODULE &&
         (res.io.fdin.type == IO_TYPE_S6LOG || res.io.fdout.type == IO_TYPE_S6LOG))
-            parse_append_logger(hres, &res, info) ;
+            parse_create_logger(hres, &res, info) ;
 
     hash = hash_search(hres, res.sa.s + res.name) ;
     if (hash == NULL) {
