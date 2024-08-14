@@ -106,7 +106,6 @@ static void io_fdholder_retrieve(resolve_service_t *res, int fd, const char *nam
     size_t len =  strlen(res->sa.s + res->live.fdholderdir) + 2 ;
     _alloc_stk_(sock, len + 1) ;
     auto_strings(sock.s, res->sa.s + res->live.fdholderdir, "/s") ;
-    sock.s[len] = 0 ;
     sock.len = len ;
 
     int fdhold ;
@@ -119,7 +118,6 @@ static void io_fdholder_retrieve(resolve_service_t *res, int fd, const char *nam
     _alloc_stk_(identifier, prefixlen + namelen + 1) ;
 
     auto_strings(identifier.s, prefix, name) ;
-    identifier.s[prefixlen + namelen] = 0 ;
     identifier.len = prefixlen + namelen ;
 
     tain_now_set_stopwatch_g() ;
@@ -137,8 +135,9 @@ static void io_fdholder_retrieve(resolve_service_t *res, int fd, const char *nam
     if (fd_move(fd, fdhold) < 0)
         log_dieusys(LOG_EXIT_SYS, "move fd") ;
 
-    if (uncoe(fd) < 0)
-        log_dieusys(LOG_EXIT_SYS, "uncoe fd") ;
+    if (!fdhold)
+        if (uncoe(fd) < 0)
+            log_dieusys(LOG_EXIT_SYS, "uncoe fd") ;
 }
 
 static void io_open_file(resolve_service_t *res,  int fd, char const *destination)
@@ -201,7 +200,6 @@ static void io_open_destination(int fd, const char *destination, int flags, mode
             log_dieusys(LOG_EXIT_SYS, "remove close-on-exec from fd") ;
     }
 }
-
 
 static void io_read_file(stack *stk, const char *file, size_t len)
 {
@@ -368,7 +366,7 @@ static void io_setup_stdin(resolve_service_t *res)
 
         case IO_TYPE_S6LOG:
             if (res->type == TYPE_CLASSIC && res->islog)
-                    io_fdholder_retrieve(res, 0, res->sa.s + res->name, 0) ;
+                io_fdholder_retrieve(res, 0, res->sa.s + res->name, 0) ;
             break ;
 
         case IO_TYPE_PARENT:
@@ -378,6 +376,7 @@ static void io_setup_stdin(resolve_service_t *res)
         case IO_TYPE_FILE:
         case IO_TYPE_SYSLOG:
         case IO_TYPE_INHERIT:
+            break ;
         default:
             log_warn("unknown StdIn type -- applying default") ;
             break ;
@@ -524,10 +523,11 @@ static void execute_script(const char *runuser, resolve_service_t *res, exlsn_t 
     _alloc_sa_(sa) ;
     uid_t owner = getuid() ;
     uint32_t want = (action == EXECUTE_START) ? res->execute.run.build : res->execute.finish.build ;
+    short build = !strcmp(res->sa.s + want, "custom") ? BUILD_CUSTOM : BUILD_AUTO ;
     char *script = res->sa.s + (action == EXECUTE_START ? res->execute.run.run_user : res->execute.finish.run_user) ;
     size_t scriptlen = strlen(script) ;
 
-    if (!want) {
+    if (!build) {
 
         r = el_substitute(&sa, script, scriptlen, info->vars.s, info->values.s,
             genalloc_s(elsubst_t const, &info->data), genalloc_len(elsubst_t const, &info->data)) ;
@@ -714,7 +714,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     /** We can now send message to a eventd handler socket.
      * For now, just send a simple message */
-    log_info(action == EXECUTE_START ? "starting" : "stopping", " service: ", service) ;
+    log_info(action == EXECUTE_START ? "Starting" : "Stopping", " service: ", service) ;
 
     xmexec_m(newargv, env.s, env.len) ;
 
