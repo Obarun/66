@@ -348,7 +348,7 @@ static void migrate_frontend_file_0721(const char *file, ssexec_t *info)
         { .regex = "@down-signal" , .by = "DownSignal" },
 
         { .regex = "@build" , .by = "Build" },
-        { .regex = "@runas" , .by = "Runas" },
+        { .regex = "@runas" , .by = "RunAs" },
         { .regex = "@shebang" , .by = "##@shebang this field was deprecated and removed from version 0.7.3.0" },
         { .regex = "@execute" , .by = "Execute" },
 
