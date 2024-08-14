@@ -35,15 +35,13 @@ static void compute_wrapper_scripts(resolve_service_t *res, uint8_t runorfinish)
     resolve_service_addon_scripts_t *script = runorfinish ? &res->execute.run : &res->execute.finish ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     char *shebang = "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -" ;
-    /** TODO:
-     *  -v${VERBOSITY} should use to correspond to the
-     *  request of the user.
-     *   */
-    char *exec = SS_EXTLIBEXECPREFIX "66-execute" ;
-    char run[strlen(shebang) + 3 + strlen(exec) + 7 + strlen(res->sa.s + res->name) + 4 + 1] ;
+    char *env = "importas -D2 VERBOSITY VERBOSITY\n" ;
+    char *exec = SS_EXTLIBEXECPREFIX "66-execute -v${VERBOSITY}" ;
+    char run[strlen(shebang) + 3 + strlen(env) + strlen(exec) + 7 + strlen(res->sa.s + res->name) + 4 + 1] ;
 
     auto_strings(run, \
         shebang, (!runorfinish) ? ((res->type == TYPE_CLASSIC) ? "S0\n" : "P\n") : "P\n", \
+        env,
         exec, \
         !runorfinish ? " stop " : " start ", \
         res->sa.s + res->name, (!runorfinish) ? " $@\n" : "\n") ;
