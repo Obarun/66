@@ -431,13 +431,13 @@ void tree_parse_seed(char const *treename, tree_seed_t *seed, tree_what_t *what)
         if (!tree_seed_setseed(seed, treename))
             log_dieu(LOG_EXIT_SYS, "parse seed file: ", treename) ;
 
-        if (seed->depends)
+        if (seed->depends > 0)
             what->depends = 1 ;
 
-        if (seed->requiredby)
+        if (seed->requiredby > 0)
             what->requiredby = 1 ;
 
-        if (seed->disen)
+        if (seed->disen > 0)
             what->enable = 1 ;
 
         if (seed->allow > 0) {
@@ -452,10 +452,10 @@ void tree_parse_seed(char const *treename, tree_seed_t *seed, tree_what_t *what)
             what->deny = 1 ;
         }
 
-        if (seed->current)
+        if (seed->current > 0)
             what->current = 1 ;
 
-        if (seed->groups) {
+        if (seed->groups > 0) {
 
             tree_parse_options_groups(what->gr, seed->sa.s + seed->groups) ;
             what->groups = 1 ;
@@ -1107,31 +1107,6 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
                     what.remove = 1 ;
                     what.create = 0 ;
                     what.nopts++ ;
-                    break ;
-
-                case 'n':
-
-                    log_1_warn("deprecated option -n -- use '66 tree create <treename>' instead") ;
-                    break ;
-
-                case 'a' :
-
-                    log_1_warn("deprecated option -a -- see allow field at -o options") ;
-                    break ;
-
-                case 'd' :
-
-                    log_1_warn("deprecated option -d -- see deny field at -o options") ;
-                    break ;
-
-                case 'C' :
-
-                    log_1_warn("deprecated option -C -- see clone field at -o options") ;
-                    break ;
-
-                case 'S' :
-
-                    log_1_warn("deprecated option -S -- see depends/requiredby fields at -o options") ;
                     break ;
 
                 default :
