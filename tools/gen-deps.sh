@@ -37,33 +37,7 @@ for dir in src/include/${package} src/* ; do
     done
 done
 
-for dir in src/* ; do
-    for file in $(ls -1 $dir | grep -- \\.c$) ; do
-
-    {
-        grep -F -- "#include <${package}/" < ${dir}/$file | cut -d'<' -f2 | cut -d'>' -f1 ;
-        grep -- '#include ".*\.h"' < ${dir}/$file | cut -d'"' -f2
-    } | sort -u | {
-
-        deps=" ${dir}/$file"
-        while read dep ; do
-            if echo $dep | grep -q "^${package}/" ; then
-                deps="$deps src/include/$dep"
-            elif test -f "${dir}/$dep" ; then
-                deps="$deps ${dir}/$dep"
-            else
-                deps="$deps src/include-local/$dep"
-            fi
-        done
-
-        o=$(echo $file | sed s/\\.c$/.o/)
-        lo=$(echo $file | sed s/\\.c$/.lo/)
-        echo "${dir}/${o} ${dir}/${lo}:${deps}"
-    }
-    done
-done
-
-for dir in src/lib66/* ; do
+for dir in src/* src/66/* src/lib66/*; do
     for file in $(ls -1 $dir | grep -- \\.c$) ; do
 
     {
@@ -119,29 +93,27 @@ deps_lib(){
     unset dir libs deps
 }
 
-for dir in $(ls -1 src | grep -v ^include) ; do
+deps_lib src/lib66
 
-    if [ $dir == "lib66" ]; then
-        deps_lib src/$dir
-    fi
+for dir in $(ls -1 src/66 | grep -v ^include) ; do
 
-    if [ -e src/$dir/deps-exe ]; then
-        for file in $(ls -1 src/$dir/deps-exe) ; do
+    if [ -e src/66/$dir/deps-exe ]; then
+        for file in $(ls -1 src/66/$dir/deps-exe) ; do
             deps=
             libs=
             while read dep ; do
                 if echo $dep | grep -q -- \\.o$ ; then
-                    dep="src/$dir/$dep"
+                    dep="src/66/$dir/$dep"
                 fi
                 if echo $dep | grep -q -e ^-l -e '^\${.*_LIB}' ; then
                     libs="$libs $dep"
                 else
                     deps="$deps $dep"
                 fi
-            done < src/$dir/deps-exe/$file
+            done < src/66/$dir/deps-exe/$file
 
             echo "$file: EXTRA_LIBS :=$libs"
-            echo "$file: src/$dir/$file.o$deps"
+            echo "$file: src/66/$dir/$file.o$deps"
         done
     fi
 done

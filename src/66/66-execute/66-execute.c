@@ -401,9 +401,9 @@ static void io_setup_stdout(resolve_service_t *res)
 
             } else if (res->type == TYPE_ONESHOT) {
 
-                _alloc_stk_(stk, strlen(res->sa.s + res->logger.destination) + SS_TREE_CURRENT_LEN + 2) ;
-                auto_strings(stk.s, res->sa.s + res->logger.destination, "/", SS_TREE_CURRENT) ;
-                stk.s[strlen(res->sa.s + res->logger.destination) + 1 + SS_TREE_CURRENT_LEN] = 0 ;
+                _alloc_stk_(stk, strlen(res->sa.s + res->io.fdout.destination) + SS_TREE_CURRENT_LEN + 2) ;
+                auto_strings(stk.s, res->sa.s + res->io.fdout.destination, "/", SS_TREE_CURRENT) ;
+                stk.s[strlen(res->sa.s + res->io.fdout.destination) + 1 + SS_TREE_CURRENT_LEN] = 0 ;
 
                 io_open_file(res, 1, stk.s) ;
             }

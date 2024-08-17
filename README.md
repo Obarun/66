@@ -42,7 +42,7 @@ Online [documentation](https://web.obarun.org/software/66/)
   https://web.obarun.org/
 
 * XMPP Channel:
-  obarun@xmpp.obarun.org
+  obarun@conference.xmpp.obarun.org
 
 
 ## Supports the project
@@ -71,13 +71,13 @@ Some are specific to `execline` where other can be used on classic shell.
 
 ## Roadmap
 
-This Roadmap for the next release is not writting in the stone. Feel free to make a merge request to this roadmap.
+This Roadmap for the next releases is not writting in the stone. Feel free to make a merge request to this roadmap.
 
 * [x] Revise the frontend file's keyword field by excluding the `@` symbol:
 
   For instance, `@depends` will be `Depends`. That will allow for a file that's closer to the original INI format and less confusing for users.
 
-* [ ] Provide a `[documentation]` section:
+* [ ] Provide a `[Documentation]` section:
 
   Enable the provision of documentation for each service using a [documentation] section. This documentation will be easily accessible by invoking the 66 doc command.
 
