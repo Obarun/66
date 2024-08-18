@@ -39,15 +39,19 @@ int parse_contents(resolve_service_t *res, char const *str)
 
     for (; n < ncfg ; n++) {
 
-        /* get characters between two sections or section and EOF*/
+        /** get characters between two sections or section and EOF
+         * and ensure to have a new line at the end of the string,
+         * Parser will looking for '=\n' to get a key. */
         if (n + 1 >= ncfg) {
             /* End of file */
             memcpy(tmp, str + acfg[n].cpos + 1, len - (acfg[n].cpos + 1)) ;
-            tmp[len - (acfg[n].cpos + 1)] = 0 ;
+            tmp[len - (acfg[n].cpos + 1)] = '\n' ;
+            tmp[(len - (acfg[n].cpos + 1)) + 1] = 0 ;
         } else {
             /* Next section exist */
             memcpy(tmp, str + acfg[n].cpos + 1, acfg[n+1].opos - (acfg[n].cpos + 1)) ;
-            tmp[acfg[n+1].opos - (acfg[n].cpos + 1)] = 0 ;
+            tmp[acfg[n+1].opos - (acfg[n].cpos + 1)] = '\n' ;
+            tmp[(acfg[n+1].opos - (acfg[n].cpos + 1)) + 1] = 0 ;
         }
 
         char secname[(acfg[n].cpos - (acfg[n].opos + 1)) + 1] ;
