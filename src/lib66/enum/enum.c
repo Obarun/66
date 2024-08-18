@@ -42,7 +42,7 @@ char const *enum_str_key_section_main[] = {
     "TimeoutStart" ,
     "TimeoutStop" ,
     "MaxDeath" ,
-    "Hiercopy" ,
+    "CopyFrom" ,
     "DownSignal" ,
     "Flags" ,
     "InTree" ,
