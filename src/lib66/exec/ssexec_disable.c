@@ -64,16 +64,6 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
                     stop = 1 ;
                     break ;
 
-                case 'F' :
-
-                    log_1_warn("options -F is dead -- skipping it") ;
-                    break ;
-
-                case 'R' :
-
-                    log_1_warn("options -F is deprecated -- use instead 66 remove <service>") ;
-                    break ;
-
                 case 'P' :
 
                     propagate = 0 ;

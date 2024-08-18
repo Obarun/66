@@ -74,16 +74,6 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
                     FLAGS_SET(flag, STATE_FLAGS_TOUNSUPERVISE|STATE_FLAGS_WANTUP) ;
                     break ;
 
-                case 'X' :
-
-                    log_1_warn("deprecated option -- use 66 signal -xd instead") ;
-                    return 0 ;
-
-                case 'K' :
-
-                    log_1_warn("deprecated option -- use 66 signal -kd instead") ;
-                    return 0 ;
-
                 default :
                     log_usage(info->usage, "\n", info->help) ;
             }

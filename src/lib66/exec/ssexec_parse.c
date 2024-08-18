@@ -66,11 +66,6 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
                     conf = 1 ;
                     break ;
 
-                case 'F' :  log_1_warn("deprecated option -- ignoring") ; break ;
-                case 'c' :  log_1_warn("deprecated option -- ignoring") ; break ;
-                case 'm' :  log_1_warn("deprecated option -- ignoring") ; break ;
-                case 'C' :  log_1_warn("deprecated option -- ignoring") ; break ;
-
                 default :
                     log_usage(info->usage, "\n", info->help) ;
             }
@@ -112,9 +107,9 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
         if (r >= 0) {
             size_t len = strlen(sv) ;
             _alloc_stk_(stk, len + 1) ;
-            stack_add(&stk, sv, len - (--r)) ; // do not check output here, we are dying anyway
+            stack_add(&stk, sv, --r) ; // do not check output here, we are dying anyway
             stack_close(&stk) ;
-            log_die(LOG_EXIT_USER, "parsing an individual service that is part of a module is not allowed -- please parse the entire module instead using \'66 parse ", stk.s, "\'") ;
+            log_die(LOG_EXIT_USER, "service: ", sv," is part of a module and cannot be parsed alone -- please parse the entire module instead using \'66 parse ", stk.s, "\'") ;
         }
 
         if (!service_frontend_path(&sa, sv, info->owner, directory_forced, exclude, exlen))
