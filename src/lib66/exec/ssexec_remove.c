@@ -115,7 +115,7 @@ static void remove_logger(resolve_service_t *res, ssexec_t *info)
 
     if (res->type == TYPE_ONESHOT) {
 
-        auto_remove(res->sa.s + res->logger.destination) ;
+        auto_remove(res->sa.s + res->io.fdout.destination) ;
         log_info("Removed successfully logger of: ", res->sa.s + res->name) ;
         return ;
 
@@ -133,7 +133,7 @@ static void remove_logger(resolve_service_t *res, ssexec_t *info)
 
     auto_remove(lres.sa.s + lres.path.servicedir) ;
 
-    auto_remove(lres.sa.s + lres.logger.destination) ;
+    auto_remove(lres.sa.s + lres.io.fdout.destination) ;
 
     tree_service_remove(info->base.s, lres.sa.s + lres.treename, lres.sa.s + lres.name) ;
 

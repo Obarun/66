@@ -99,7 +99,6 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *res)
 
         // logger
         !resolve_add_cdb_uint(c, "logname", res->logger.name) ||
-        !resolve_add_cdb_uint(c, "logdestination", res->logger.destination) ||
         !resolve_add_cdb_uint(c, "logbackup", res->logger.backup) ||
         !resolve_add_cdb_uint(c, "logmaxsize", res->logger.maxsize) ||
         !resolve_add_cdb_uint(c, "logwant", res->logger.want) ||

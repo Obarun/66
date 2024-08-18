@@ -75,7 +75,9 @@ int parse_store_logger(resolve_service_t *res, stack *store, int sid, int kid)
             if (store->s[0] != '/')
                 parse_error_return(0, 4, sid, list_section_logger, kid) ;
 
-            res->logger.destination = resolve_add_string(wres, store->s) ;
+            log_1_warn("Destination field is deprecated -- convert it automatically to StdOut=s6log:", store->s) ;
+
+            res->io.fdout.destination = resolve_add_string(wres, store->s) ;
 
            break ;
 

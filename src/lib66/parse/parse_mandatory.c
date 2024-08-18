@@ -61,9 +61,12 @@ int parse_mandatory(resolve_service_t *res)
              * We are in parse process and the next call of the parse_create_logger
              * will also set the Stdxxx key with the same as follow. */
             in->type = out->type = IO_TYPE_S6LOG ;
-            in->destination = out->destination = compute_log_dir(wres, res) ;
+            if (out->destination) {
+                in->destination = out->destination = compute_log_dir(wres, res, res->sa.s + out->destination) ;
+            } else {
+                in->destination = out->destination = compute_log_dir(wres, res, 0) ;
+            }
             err->type = IO_TYPE_INHERIT ;
-
         }
 
     } else {
@@ -85,10 +88,15 @@ int parse_mandatory(resolve_service_t *res)
                 case IO_TYPE_NOTSET:
                     if (out->type == IO_TYPE_NOTSET || out->type == IO_TYPE_S6LOG) {
                         in->type = IO_TYPE_S6LOG ;
-                        in->destination = compute_log_dir(wres, res) ;
+                        if (out->type == IO_TYPE_S6LOG) {
+                            if (out->destination) {
+                                in->destination = compute_log_dir(wres, res, res->sa.s + out->destination) ;
+                                break ;
+                            }
+                        }
+                        in->destination = compute_log_dir(wres, res, 0) ;
                         break ;
                     }
-
                     in->type = IO_TYPE_PARENT ;
                     break ;
 
@@ -99,7 +107,8 @@ int parse_mandatory(resolve_service_t *res)
 
         if (in->type == IO_TYPE_S6LOG) {
             out->type = in->type ;
-            out->destination = in->destination ;
+            if (!out->destination)
+                out->destination = in->destination ;
         }
 
         {
@@ -149,7 +158,7 @@ int parse_mandatory(resolve_service_t *res)
                     }
 
                     out->type = in->type = IO_TYPE_S6LOG ;
-                    out->destination = in->destination = compute_log_dir(wres, res) ;
+                    out->destination = in->destination = compute_log_dir(wres, res, 0) ;
 
                 default:
                     break ;

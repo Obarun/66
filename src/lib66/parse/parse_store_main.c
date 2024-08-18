@@ -52,7 +52,11 @@ static void io_compute_stdin(resolve_service_t *res, char const *line, uint32_t 
             break ;
 
         case IO_TYPE_S6LOG:
-            res->io.fdin.destination = compute_log_dir(wres, res) ;
+            if (!strcmp(line, enum_io_type[IO_TYPE_S6LOG])) {
+                res->io.fdin.destination = compute_log_dir(wres, res, 0) ;
+            } else {
+                res->io.fdin.destination = compute_log_dir(wres, res, line) ;
+            }
             break;
 
         case IO_TYPE_NULL:
@@ -96,7 +100,11 @@ static void io_compute_stdout(resolve_service_t *res, char const *line, uint32_t
             break ;
 
         case IO_TYPE_S6LOG:
-            res->io.fdout.destination = compute_log_dir(wres, res) ;
+            if (!strcmp(line, enum_io_type[IO_TYPE_S6LOG])) {
+                res->io.fdout.destination = compute_log_dir(wres, res, 0) ;
+            } else {
+                res->io.fdout.destination = compute_log_dir(wres, res, line) ;
+            }
             break ;
 
         case IO_TYPE_NULL:
@@ -255,12 +263,6 @@ int parse_store_main(resolve_service_t *res, stack *store, const int sid, const 
                 /** already passed through here */
                 break ;
 
-            if (!strcmp(store->s, "longrun")) {
-                log_1_warn("deprecated type longrun -- convert it automatically to classic type") ;
-                res->type = 0 ;
-                break ;
-            }
-
             r = get_enum_by_key(list_type, store->s) ;
             if (r == -1)
                 parse_error_return(0, 0, sid, list_section_main, kid) ;
@@ -347,7 +349,7 @@ int parse_store_main(resolve_service_t *res, stack *store, const int sid, const 
 
             break ;
 
-        case KEY_MAIN_HIERCOPY:
+        case KEY_MAIN_COPYFROM:
 
             if (!parse_list(store))
                 parse_error_return(0, 8, sid, list_section_main, kid) ;

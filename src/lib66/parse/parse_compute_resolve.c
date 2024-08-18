@@ -179,8 +179,6 @@ void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
 
         res->logger.name = resolve_add_string(wres, logname) ;
 
-        res->logger.destination = compute_log_dir(wres, res) ;
-
         res->logger.execute.run.runas = res->logger.execute.run.runas ? resolve_add_string(wres, res->sa.s + res->logger.execute.run.runas) : resolve_add_string(wres, SS_LOGGER_RUNNER) ;
     }
 

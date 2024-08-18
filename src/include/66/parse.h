@@ -101,7 +101,7 @@ extern uint32_t compute_status(resolve_wrapper_t_ref wres, ssexec_t *info) ;
 extern uint32_t compute_scan_dir(resolve_wrapper_t_ref wres, ssexec_t *info) ;
 extern uint32_t compute_state_dir(resolve_wrapper_t_ref wres, ssexec_t *info, char const *folder) ;
 extern uint32_t compute_pipe_service(resolve_wrapper_t_ref wres, ssexec_t *info, char const *name) ;
-extern uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res) ;
+extern uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res, const char *destination) ;
 extern void parse_compute_scripts(resolve_service_t *res) ;
 
 #endif

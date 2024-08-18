@@ -761,9 +761,9 @@ static void info_display_logdst(char const *field,resolve_service_t *res)
     if (NOFIELD) info_display_field_name(field) ;
     if (res->type != TYPE_MODULE)
     {
-        if (res->logger.name || (res->type == TYPE_ONESHOT && res->logger.destination))
+        if (res->logger.name || (res->type == TYPE_ONESHOT && res->io.fdout.destination))
         {
-            info_display_string(res->sa.s + res->logger.destination) ;
+            info_display_string(res->sa.s + res->io.fdout.destination) ;
         }
         else goto empty ;
     }
@@ -780,15 +780,15 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
     if (NOFIELD) info_display_field_name(field) ;
     if (res->type != TYPE_MODULE)
     {
-        if (res->logger.name || (res->type == TYPE_ONESHOT && res->logger.destination))
+        if (res->logger.name || (res->type == TYPE_ONESHOT && res->io.fdout.destination))
         {
             if (nlog)
             {
                 stralloc log = STRALLOC_ZERO ;
                 /** the file current may not exist if the service was never started*/
-                size_t dstlen = strlen(res->sa.s + res->logger.destination) ;
+                size_t dstlen = strlen(res->sa.s + res->io.fdout.destination) ;
                 char scan[dstlen + 9] ;
-                memcpy(scan,res->sa.s + res->logger.destination,dstlen) ;
+                memcpy(scan,res->sa.s + res->io.fdout.destination,dstlen) ;
                 memcpy(scan + dstlen,"/current",8) ;
                 scan[dstlen + 8] = 0 ;
                 int r = scan_mode(scan,S_IFREG) ;
@@ -800,7 +800,7 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
                 }
                 else
                 {
-                    if (!file_readputsa(&log,res->sa.s + res->logger.destination,"current")) log_dieusys(LOG_EXIT_SYS,"read log file of: ",res->sa.s + res->name) ;
+                    if (!file_readputsa(&log,res->sa.s + res->io.fdout.destination,"current")) log_dieusys(LOG_EXIT_SYS,"read log file of: ",res->sa.s + res->name) ;
                     /* we don't need to freed stralloc
                      * file_readputsa do it if the file is empty*/
                     if (!log.len) goto empty ;

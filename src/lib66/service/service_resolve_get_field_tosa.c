@@ -260,10 +260,6 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
             str = res->sa.s + res->logger.name ;
             break ;
 
-        case E_RESOLVE_SERVICE_LOGDESTINATION:
-            str = res->sa.s + res->logger.destination ;
-            break ;
-
         case E_RESOLVE_SERVICE_LOGBACKUP:
             fmt[uint32_fmt(fmt,res->logger.backup)] = 0 ;
             str = fmt ;

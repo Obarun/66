@@ -133,7 +133,7 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_string(fields[m++], res->sa.s, res->live.oneshotddir, 1) ;
 
     info_display_string(fields[m++], res->sa.s, res->logger.name, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->logger.destination, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->io.fdout.destination, 1) ;
     info_display_int(fields[m++], res->logger.backup) ;
     info_display_int(fields[m++], res->logger.maxsize) ;
     info_display_int(fields[m++], res->logger.timestamp) ;

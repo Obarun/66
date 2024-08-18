@@ -337,7 +337,7 @@ static void migrate_frontend_file_0721(const char *file, ssexec_t *info)
         { .regex = "@notify" , .by="Notify" },
         { .regex = "@user" , .by="User" },
         { .regex = "@maxdeath" , .by="MaxDeath" },
-        { .regex = "@hiercopy" , .by="Hiercopy" },
+        { .regex = "@hiercopy" , .by="CopyFrom" },
         { .regex = "@flags" , .by="Flags" },
         { .regex = "@intree" , .by="InTree" },
 
@@ -349,7 +349,7 @@ static void migrate_frontend_file_0721(const char *file, ssexec_t *info)
 
         { .regex = "@build" , .by = "Build" },
         { .regex = "@runas" , .by = "RunAs" },
-        { .regex = "@shebang" , .by = "##@shebang this field was deprecated and removed from version 0.7.3.0" },
+        { .regex = "@shebang" , .by = "##@shebang this field was deprecated from version 0.7.0.0 and removed from version 0.8.0.0" },
         { .regex = "@execute" , .by = "Execute" },
 
         { .regex = "@configure" , .by = "Configure" },
@@ -391,6 +391,21 @@ static void migrate_frontend_file_0721(const char *file, ssexec_t *info)
         pos++ ;
     }
 
+    {
+        _alloc_stk_(store, frontend.len + 1) ;
+        _alloc_stk_(stdout, frontend.len + 22) ;
+        int r = parse_get_value_of_key(&store, frontend.s, SECTION_LOG, list_section_logger, KEY_LOGGER_DESTINATION) ;
+        if (r) {
+            log_1_warn("Destination field is deprecated -- convert it automatically to StdOut=s6log:", store.s) ;
+            auto_strings(stdout.s, "StdOut=s6log:", store.s, "\n\n[Start]") ;
+            if (!sastr_replace(&frontend, "\n[Start]", stdout.s))
+                log_die(LOG_EXIT_ZERO, "replace deprecated field Destination with: ", stdout.s) ;
+
+            if (!sastr_replace(&frontend, "Destination", "#Destination"))
+                log_die(LOG_EXIT_ZERO, "replace deprecated field Destination with: ", stdout.s) ;
+        }
+
+    }
     log_trace("frontend result of migration process for: ", f.s, "\n", frontend.s) ;
     /** point of no return */
     log_trace("write frontend service file: ", f.s) ;

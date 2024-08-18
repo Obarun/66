@@ -105,7 +105,6 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
 
     /* logger */
         !resolve_get_key(c, "logname", &res->logger.name) ||
-        !resolve_get_key(c, "logdestination", &res->logger.destination) ||
         !resolve_get_key(c, "logbackup", &res->logger.backup) ||
         !resolve_get_key(c, "logmaxsize", &res->logger.maxsize) ||
         !resolve_get_key(c, "logtimestamp", &res->logger.timestamp) ||

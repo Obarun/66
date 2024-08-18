@@ -358,10 +358,6 @@ void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t
             res->logger.name = resolve_add_string(wres, data) ;
             break ;
 
-        case E_RESOLVE_SERVICE_LOGDESTINATION:
-            res->logger.destination = resolve_add_string(wres, data) ;
-            break ;
-
         case E_RESOLVE_SERVICE_LOGBACKUP:
             res->logger.backup = resolve_add_uint(data) ;
             break ;

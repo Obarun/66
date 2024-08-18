@@ -32,17 +32,17 @@
 #define FAKELEN strlen(run)
 #endif
 
-uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res)
+uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res, const char *destination)
 {
     log_flow() ;
 
     size_t namelen = strlen(res->sa.s + res->name) ;
     size_t syslen = res->owner ? strlen(res->sa.s + res->path.home) + strlen(SS_LOGGER_USERDIR) : strlen(SS_LOGGER_SYSDIR) ;
-    size_t dstlen = res->logger.destination ? strlen(res->sa.s + res->logger.destination) : strlen(SS_LOGGER_SYSDIR) ;
+    size_t dstlen = destination ? strlen(destination) : strlen(SS_LOGGER_SYSDIR) ;
 
     char dstlog[syslen + dstlen + namelen + 1] ;
 
-    if (!res->logger.destination) {
+    if (!destination) {
 
         if (res->owner) {
 
@@ -58,7 +58,7 @@ uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res)
 
     } else {
 
-        auto_strings(dstlog, res->sa.s + res->logger.destination) ;
+        auto_strings(dstlog, destination) ;
     }
 
     return resolve_add_string(wres, dstlog) ;
@@ -138,7 +138,7 @@ static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
             if (res->logger.timestamp < TIME_NONE)
                 auto_strings(run + FAKELEN, timestamp, " ") ;
 
-            auto_strings(run + FAKELEN, "s", pmax, " ", res->sa.s + res->logger.destination, "\n") ;
+            auto_strings(run + FAKELEN, "s", pmax, " ", res->sa.s + res->io.fdout.destination, "\n") ;
 
             log->execute.run.run_user = resolve_add_string(wres, run) ;
 
@@ -215,7 +215,6 @@ static void compute_logger(resolve_service_t *res, resolve_service_t *log, ssexe
     log->live.fdholderdir = compute_pipe_service(wres, info, SS_FDHOLDER) ;
     log->live.oneshotddir = compute_pipe_service(wres, info, SS_ONESHOTD) ;
 
-    log->logger.destination = resolve_add_string(wres, str + res->logger.destination) ;
     log->logger.backup = res->logger.backup ;
     log->logger.maxsize = res->logger.maxsize ;
     log->logger.timestamp = res->logger.timestamp ;
@@ -228,7 +227,7 @@ static void compute_logger(resolve_service_t *res, resolve_service_t *log, ssexe
     } else {
 
         log->io.fdin.type = log->io.fdout.type = IO_TYPE_S6LOG ;
-        log->io.fdin.destination = log->io.fdout.destination = compute_log_dir(wres, res) ;
+        log->io.fdin.destination = log->io.fdout.destination = resolve_add_string(wres, res->sa.s + res->io.fdout.destination) ;
         log->io.fderr.type = IO_TYPE_INHERIT ;
     }
 
