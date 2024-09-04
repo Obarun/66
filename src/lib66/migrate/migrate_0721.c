@@ -626,12 +626,12 @@ static void migrate_create_snap_0721(ssexec_t *info)
 
     newargv[m++] = "snapshot" ;
     newargv[m++] = "-s" ;
-    newargv[m++] = "migrate@0.7.2.1" ;
+    newargv[m++] = "system@0.7.2.1" ;
     newargv[m] = 0 ;
 
     PROG = "snapshot" ;
     if (ssexec_snapshot_create(m, newargv, info))
-        log_dieu(LOG_EXIT_SYS, "create snapshot migrate@0.7.2.1") ;
+        log_dieu(LOG_EXIT_SYS, "create snapshot system@0.7.2.1") ;
     PROG = prog ;
 
     info->help = help ;

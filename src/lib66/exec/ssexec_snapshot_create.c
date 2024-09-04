@@ -159,8 +159,8 @@ int ssexec_snapshot_create(int argc, char const *const *argv, ssexec_t *info)
     snapname = *argv ;
 
     if (!system)
-        if (!str_start_with(snapname, "migrate@"))
-            log_die(LOG_EXIT_USER, "migrate@ is a reserved prefix for snapshot names -- please select a different one") ;
+        if (!str_start_with(snapname, "system@"))
+            log_die(LOG_EXIT_USER, "system@ is a reserved prefix for snapshot names -- please select a different one") ;
 
     auto_strings(snapdir.s, info->base.s, SS_SNAPSHOT + 1) ;
 

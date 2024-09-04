@@ -76,7 +76,7 @@ This subcommand make a snapshot called *named* containing a verbatim copy of the
 
 `%%livedir%%`, `%%system_log%%` and `$HOME/%%user_log%%` for regular users are not taken into account.
 
-The prefix `migrate@` is reserved for snapshot names used in automatic upgrade processes. Please consider to choose a different prefix for your personal snapshot names.
+The prefix `system@` is reserved for snapshot names used in automatic upgrade processes. Please consider to choose a different prefix for your personal snapshot names.
 
 #### Options
 
