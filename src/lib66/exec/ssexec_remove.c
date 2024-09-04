@@ -41,11 +41,6 @@
 #include <66/utils.h>
 #include <66/hash.h>
 
-static ssize_t is_log(resolve_service_t *res)
-{
-    return get_rstrlen_until(res->sa.s + res->name, SS_LOG_SUFFIX) ;
-}
-
 static void auto_remove(char const *path)
 {
     log_trace("remove directory: ", path) ;
@@ -83,7 +78,7 @@ static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, s
             continue ;
         }
 
-        if (is_log(res) < 0) {
+        if (!res->islog) {
 
             if (!state_read(&ste, &dres))
                 log_dieusys(LOG_EXIT_SYS, "read state file of: ", stk.s + pos, " -- please make a bug report") ;
@@ -153,7 +148,7 @@ static void remove_service(resolve_service_t *res, ssexec_t *info)
 
     log_flow() ;
 
-    if (is_log(res) > 0)
+    if (res->islog)
         return ;
 
     if (res->logger.want)
@@ -185,7 +180,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
     int r ;
     size_t pos = 0 ;
-    uint8_t siglen = 0 ;
+    uint8_t siglen = 0, force = 0 ; // force is an inner option used by parse_module to delete service inside module
     ss_state_t ste = STATE_ZERO ;
     _alloc_sa_(sa) ;
     resolve_wrapper_t_ref wres = 0 ;
@@ -196,7 +191,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
         for (;;) {
 
-            int opt = subgetopt_r(argc,argv, OPTS_START, &l) ;
+            int opt = subgetopt_r(argc,argv, OPTS_REMOVE, &l) ;
             if (opt == -1) break ;
 
             switch (opt) {
@@ -209,6 +204,11 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
                 case 'P' :
 
                     siglen++ ;
+                    break ;
+
+                case 'f' :
+
+                    force++ ;
                     break ;
 
                 default :
@@ -234,7 +234,10 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
         if (!r)
             log_dieu(LOG_EXIT_USER, "find service: ", argv[pos], " -- did you parse it?") ;
 
-        if (is_log(&res) < 0) {
+        if (res.inns && !force)
+            log_die(LOG_EXIT_USER, "service: ", argv[pos]," is part of a module and cannot be removed alone -- please remove the entire module instead using \'66 remove ", res.sa.s + res.inns, "\'") ;
+
+        if (!res.islog) {
 
             if (!state_read(&ste, &res))
                 log_dieusys(LOG_EXIT_SYS, "read state file of: ", argv[pos], " -- please make a bug report") ;
@@ -300,8 +303,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
     HASH_ITER(hh, hres, c, tmp) {
 
-        if (!c->res.inns)
-            remove_service(&c->res, info) ;
+        remove_service(&c->res, info) ;
 
         if (c->res.dependencies.ncontents && c->res.type == TYPE_MODULE) {
 

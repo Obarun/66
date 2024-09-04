@@ -72,7 +72,7 @@ static void service_db_tree(resolve_service_t *old, resolve_service_t *new, ssex
         info->usage = usage_remove ;
 
         newargv[m++] = "remove" ;
-        newargv[m++] = "-P" ;
+        newargv[m++] = "-Pf" ;
 
         pos = 0 ;
         FOREACH_STK(&sremove, pos) {

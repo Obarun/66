@@ -258,6 +258,8 @@ extern char const *help_snapshot_list ;
 #define OPTS_START_LEN (sizeof OPTS_START - 1)
 #define OPTS_STOP "huP"
 #define OPTS_STOP_LEN (sizeof OPTS_STOP - 1)
+#define OPTS_REMOVE "hfP"
+#define OPTS_REMOVE_LEN (sizeof OPTS_REMOVE - 1)
 #define OPTS_STATUS "hno:grd:p:"
 #define OPTS_STATUS_LEN (sizeof OPTS_STATUS - 1)
 #define OPTS_SIGNAL "habqHkti12pcys:rodDuUxOQw:P"
