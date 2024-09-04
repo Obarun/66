@@ -104,8 +104,6 @@ This subcommand restores a previously created snapshot called *name*.
 
 You can get a list of available snapshot invocating the [list](#list) subcommand.
 
-The restoration process does not remove existing elements; instead, it overwrites any matching elements found in both the snapshot directory and the corresponding directory on the host
-
 #### Options
 
 - **-h**: prints this help.

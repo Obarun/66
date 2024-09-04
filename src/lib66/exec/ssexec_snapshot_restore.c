@@ -26,13 +26,52 @@
 #include <skalibs/djbunix.h>
 
 #include <66/ssexec.h>
+#include <66/snapshot.h>
 #include <66/constants.h>
+
+static void snapshot_remove_directory(ssexec_t *info, char const *target)
+{
+    size_t pos = 0 ;
+    snapshot_list_t *list = info->owner ? snapshot_user_list : snapshot_root_list ;
+    _alloc_stk_(stk, SS_MAX_PATH_LEN) ;
+
+    while(list[pos].name) {
+
+        if (!info->owner) {
+
+            auto_strings(stk.s, list[pos].name) ;
+
+        } else {
+
+            auto_strings(stk.s, target, list[pos].name) ;
+        }
+
+        log_trace("remove directory: ", stk.s) ;
+        if (!dir_rm_rf(stk.s))
+            log_warnusys("remove directory: ", stk.s) ;
+
+        pos++ ;
+    }
+
+    if (!info->owner) {
+
+        auto_strings(stk.s, SS_SYSTEM_DIR, SS_SYSTEM) ;
+
+    } else {
+
+        auto_strings(stk.s, target, SS_USER_DIR, SS_SYSTEM) ;
+    }
+
+    log_trace("remove directory: ", stk.s) ;
+    if (!dir_rm_rf(stk.s))
+        log_warnusys("remove directory: ", stk.s) ;
+}
 
 int ssexec_snapshot_restore(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    size_t pos = 0 ;
+    size_t pos = 0, dlen = 0 ;
     char const *snapname = 0 ;
     char const *exclude[1] = { 0 } ;
     _alloc_stk_(snapdir, SS_MAX_PATH_LEN) ;
@@ -74,44 +113,39 @@ int ssexec_snapshot_restore(int argc, char const *const *argv, ssexec_t *info)
     if (!sastr_dir_get(&sa, snapdir.s, exclude, S_IFDIR))
         log_dieusys(LOG_EXIT_SYS, "list snapshot directory: ", snapdir.s) ;
 
+    if (!info->owner) {
+
+        auto_strings(dst.s, "/") ;
+
+    } else {
+
+        int e = errno ;
+        struct passwd *st = getpwuid(info->owner) ;
+        errno = 0 ;
+        if (!st) {
+            if (!errno) errno = ESRCH ;
+            return 0 ;
+        }
+        errno = e ;
+        if (st->pw_dir == NULL)
+            log_warnusys(LOG_EXIT_ZERO, "get home directory") ;
+
+        auto_strings(dst.s, st->pw_dir, "/") ;
+    }
+
+    dlen = strlen(dst.s) ;
+
+    snapshot_remove_directory(info, dst.s) ;
+
     FOREACH_SASTR(&sa, pos) {
 
         auto_strings(src.s, snapdir.s, "/", sa.s + pos) ;
 
-        if (!info->owner) {
-
-            auto_strings(dst.s, "/", sa.s + pos) ;
-
-        } else {
-
-            int e = errno ;
-            struct passwd *st = getpwuid(info->owner) ;
-            errno = 0 ;
-            if (!st) {
-                if (!errno) errno = ESRCH ;
-                return 0 ;
-            }
-            errno = e ;
-            if (st->pw_dir == NULL)
-                log_warnusys(LOG_EXIT_ZERO, "get home directory") ;
-
-            auto_strings(dst.s, st->pw_dir, "/", sa.s + pos) ;
-        }
+        auto_strings(dst.s + dlen, sa.s + pos) ;
 
         log_trace("copy: ", src.s , " to: ", dst.s) ;
         if (!hiercopy(src.s, dst.s))
             log_dieusys(LOG_EXIT_SYS, "copy: ", src.s," to: ", dst.s) ;
-    }
-
-    auto_strings(src.s, snapdir.s, "/", SS_SYSTEM, "/.version") ;
-
-    /** remove .version file if it doesn't exist at snapshot dir.
-     * Typically version under 0.8.0.0 do not have this file.*/
-    if (access(src.s, F_OK) < 0) {
-        auto_strings(src.s, info->base.s, SS_SYSTEM, "/.version") ;
-
-        if (!dir_rm_rf(src.s))
-            log_warnusys("remove file: ", src.s) ;
     }
 
     log_info("Successfully restored snapshot: ", snapname) ;

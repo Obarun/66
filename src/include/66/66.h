@@ -30,6 +30,7 @@
 #include <66/resolve.h>
 #include <66/sanitize.h>
 #include <66/service.h>
+#include <66/snapshot.h>
 #include <66/ssexec.h>
 #include <66/state.h>
 #include <66/svc.h>

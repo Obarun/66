@@ -25,22 +25,15 @@
 #include <skalibs/sgetopt.h>
 #include <skalibs/djbunix.h>
 
+#include <66/snapshot.h>
 #include <66/ssexec.h>
 #include <66/constants.h>
 #include <66/utils.h>
 
-typedef struct snapshot_list_s snapshot_list_t ;
-struct snapshot_list_s
-{
-    char *name ;
-} ;
-
 snapshot_list_t snapshot_root_list[] = {
     { .name = SS_SKEL_DIR },
     { .name = SS_SERVICE_SYSDIR },
-    { .name = SS_SERVICE_SYSDIR_USER },
     { .name = SS_SERVICE_ADMDIR },
-    { .name = SS_SERVICE_ADMDIR_USER },
     { .name = SS_SERVICE_ADMCONFDIR },
     { .name = SS_SCRIPT_SYSDIR },
     { .name = SS_SEED_SYSDIR },
