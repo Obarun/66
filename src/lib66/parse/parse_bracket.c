@@ -279,10 +279,28 @@ int parse_bracket(stack *store, const char *str, const int sid)
         }
     }
 
-    if (vp && (o == len)) {
+    if (o == len) {
         /** end of string. this validate the parenthese */
-        bracket-- ;
-        o = lvp ;
+        if (vp) {
+
+            bracket-- ;
+            o = lvp ;
+
+        } else {
+            /** EOF can be reached without a valid parentheses.
+             * Typically,
+             *
+             * Options = ( log )
+             * UnknownKey = InvalidValues
+             * EOF
+             *
+             * The EOF is reached and vp is marked invalid. In this case,
+             * we validate the closed parenthese found by the lexer.*/
+            if (cfg.str[cfg.cpos] == ')') {
+                bracket-- ;
+                o = 1 ;
+            }
+        }
     }
 
     o -= 1 ; // remove the last bracket
