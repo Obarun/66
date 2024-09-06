@@ -548,6 +548,9 @@ int ssexec_tree_status(int argc, char const *const *argv, ssexec_t *info)
         if (!tree_isvalid(info->base.s, treename))
             log_dieusys(LOG_EXIT_SYS, "find tree: ", treename) ;
 
+        if (!strcmp(treename, SS_MASTER + 1))
+            log_die(LOG_EXIT_USER, "you can not view the status of the Master tree -- please use \'66 tree resolve Master\' instead") ;
+
         info_display_all(treename, what) ;
 
     } else {
