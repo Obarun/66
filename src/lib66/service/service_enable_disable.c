@@ -123,7 +123,7 @@ void service_enable_disable(graph_t *g, struct resolve_hash_s *hash, struct reso
 
                 h->visit = 1 ;
 
-                resolve_free(wres) ;
+                free(wres) ;
             }
         }
 
@@ -168,7 +168,7 @@ void service_enable_disable(graph_t *g, struct resolve_hash_s *hash, struct reso
 
                         log_info(!action ? "Disabled" : "Enabled"," successfully: ", h->res.sa.s + h->res.name) ;
 
-                        resolve_free(wres) ;
+                        free(wres) ;
                     }
                 }
             }
