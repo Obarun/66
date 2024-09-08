@@ -539,7 +539,7 @@ This section is *mandatory*. (!)
 
     ---
 
-- Hiercopy
+- CopyFrom
 
     Verbatim copy directories and files on the fly to the main service destination.
 
