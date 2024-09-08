@@ -57,7 +57,7 @@
 static unsigned int REVERSE = 0 ;
 static unsigned int NOFIELD = 1 ;
 static unsigned int GRAPH = 0 ;
-static unsigned int nlog = 20 ;
+static unsigned int nlog = 10 ;
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -82,8 +82,10 @@ static void info_display_start(char const *field, resolve_service_t *res) ;
 static void info_display_stop(char const *field, resolve_service_t *res) ;
 static void info_display_envat(char const *field, resolve_service_t *res) ;
 static void info_display_envfile(char const *field, resolve_service_t *res) ;
+static void info_display_stdin(char const *field, resolve_service_t *res) ;
+static void info_display_stdout(char const *field, resolve_service_t *res) ;
+static void info_display_stderr(char const *field, resolve_service_t *res) ;
 static void info_display_logname(char const *field, resolve_service_t *res) ;
-static void info_display_logdst(char const *field, resolve_service_t *res) ;
 static void info_display_logfile(char const *field, resolve_service_t *res) ;
 
 static info_graph_style *S_STYLE = &graph_default ;
@@ -112,13 +114,15 @@ static info_opts_map_t const opts_sv_table[] =
     { .str = "stop", .svfunc = &info_display_stop, .id = 17 },
     { .str = "envat", .svfunc = &info_display_envat, .id = 18 },
     { .str = "envfile", .svfunc = &info_display_envfile, .id = 19 },
-    { .str = "logname", .svfunc = &info_display_logname, .id = 20 },
-    { .str = "logdst", .svfunc = &info_display_logdst, .id = 21 },
-    { .str = "logfile", .svfunc = &info_display_logfile, .id = 22 },
+    { .str = "stdin", .svfunc = &info_display_stdin, .id = 20 },
+    { .str = "stdout", .svfunc = &info_display_stdout, .id = 21 },
+    { .str = "stderr", .svfunc = &info_display_stderr, .id = 22 },
+    { .str = "logname", .svfunc = &info_display_logname, .id = 23 },
+    { .str = "logfile", .svfunc = &info_display_logfile, .id = 24 },
     { .str = 0, .svfunc = 0, .id = -1 }
 } ;
 
-#define MAXOPTS 24
+#define MAXOPTS 26
 #define checkopts(n) if (n >= MAXOPTS) log_die(LOG_EXIT_USER, "too many options")
 #define DELIM ','
 
@@ -172,6 +176,12 @@ static void info_display_int(uint32_t element)
 
     if (buffer_putsflush(buffer_1, "\n") == -1)
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+}
+
+static void info_display_empty(void)
+{
+    if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
+        log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 }
 
 static void info_display_name(char const *field, resolve_service_t *res)
@@ -285,8 +295,10 @@ static void info_display_description(char const *field,resolve_service_t *res)
 static void info_display_inns(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
-    char *s = res->inns ? res->sa.s + res->inns : "None" ;
-    info_display_string(s) ;
+    if (!res->inns)
+        info_display_empty() ;
+    else
+        info_display_string(res->sa.s + res->inns) ;
 }
 
 static void info_display_notify(char const *field,resolve_service_t *res)
@@ -387,8 +399,7 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
         }
         else
         {
-            if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
-                log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+            info_display_empty() ;
         }
     freed:
         graph_free_all(&graph) ;
@@ -464,8 +475,7 @@ static void info_display_deps(char const *field, resolve_service_t *res)
         }
         else
         {
-            if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
-                log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+            info_display_empty() ;
         }
 
     freed:
@@ -476,12 +486,15 @@ static void info_display_deps(char const *field, resolve_service_t *res)
 
 static void info_display_optsdeps(char const *field, resolve_service_t *res)
 {
-    stralloc salist = STRALLOC_ZERO ;
+    _alloc_sa_(salist) ;
 
     if (NOFIELD) info_display_field_name(field) ;
     else field = 0 ;
 
-    if (!res->dependencies.noptsdeps) goto empty ;
+    if (!res->dependencies.noptsdeps) {
+        info_display_empty() ;
+        return ;
+    }
 
     if (!sastr_clean_string(&salist,res->sa.s + res->dependencies.optsdeps))
         log_dieu(LOG_EXIT_SYS,"build optionnal dependencies list") ;
@@ -491,15 +504,6 @@ static void info_display_optsdeps(char const *field, resolve_service_t *res)
                 log_dieu(LOG_EXIT_SYS,"reverse the selection list") ;
 
     info_display_list(field,&salist) ;
-
-    goto freed ;
-
-    empty:
-        if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
-            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-
-    freed:
-        stralloc_free(&salist) ;
 }
 
 static void info_display_contents(char const *field, resolve_service_t *res)
@@ -559,8 +563,7 @@ static void info_display_contents(char const *field, resolve_service_t *res)
         }
         else
         {
-            if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
-                log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+            info_display_empty() ;
         }
 
     freed:
@@ -582,8 +585,7 @@ static void info_display_start(char const *field,resolve_service_t *res)
     if (res->execute.run.run_user)
         info_display_nline(field, res->sa.s + res->execute.run.run_user) ;
     else
-        if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
-            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+        info_display_empty() ;
 }
 
 static void info_display_stop(char const *field,resolve_service_t *res)
@@ -599,14 +601,13 @@ static void info_display_stop(char const *field,resolve_service_t *res)
     if (res->execute.finish.run_user)
         info_display_nline(field,res->sa.s + res->execute.finish.run_user) ;
     else
-        if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
-            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+        info_display_empty() ;
 }
 
 static void info_display_envat(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
-    stralloc salink = STRALLOC_ZERO ;
+    _alloc_sa_(salink) ;
 
     if (res->environ.envdir) {
         stralloc salink = STRALLOC_ZERO ;
@@ -625,15 +626,10 @@ static void info_display_envat(char const *field,resolve_service_t *res)
 
         info_display_string(salink.s) ;
 
-        stralloc_free(&salink) ;
-
         return ;
     }
 
-    if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
-        log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-
-    stralloc_free(&salink) ;
+    info_display_empty() ;
 }
 
 static void info_display_envfile(char const *field,resolve_service_t *res)
@@ -642,9 +638,9 @@ static void info_display_envfile(char const *field,resolve_service_t *res)
     else field = 0 ;
 
     size_t pos = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
-    stralloc salink = STRALLOC_ZERO ;
-    stralloc list = STRALLOC_ZERO ;
+    _alloc_sa_(sa) ;
+    _alloc_sa_(salink) ;
+    _alloc_sa_(list) ;
     char const *exclude[1] = { 0 } ;
 
     if (res->environ.envdir)
@@ -728,51 +724,70 @@ static void info_display_envfile(char const *field,resolve_service_t *res)
     }
     else
     {
-        if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
-            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+        info_display_empty() ;
     }
 
-    stralloc_free(&sa) ;
-    stralloc_free(&list) ;
-    stralloc_free(&salink) ;
 }
 
 static void info_display_logname(char const *field,resolve_service_t *res)
 {
     if (NOFIELD) info_display_field_name(field) ;
-    if (res->type == TYPE_CLASSIC)
-    {
-        if (res->logger.name)
-        {
+    if (res->type == TYPE_CLASSIC) {
+        if (res->logger.want) {
             info_display_string(res->sa.s + res->logger.name) ;
+            return ;
         }
-        else goto empty ;
     }
-    else goto empty ;
 
-    return ;
-    empty:
-        if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
-            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+    info_display_empty() ;
 }
 
-static void info_display_logdst(char const *field,resolve_service_t *res)
+static void info_display_stdin(char const *field, resolve_service_t *res)
 {
+    _alloc_sa_(sa) ;
     if (NOFIELD) info_display_field_name(field) ;
-    if (res->type != TYPE_MODULE)
-    {
-        if (res->logger.name || (res->type == TYPE_ONESHOT && res->io.fdout.destination))
-        {
-            info_display_string(res->sa.s + res->io.fdout.destination) ;
-        }
-        else goto empty ;
-    }
-    else goto empty ;
+    if (res->type != TYPE_MODULE && res->io.fdin.destination) {
 
-    return ;
-    empty:
-        if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
-            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+        if (!auto_stra(&sa, get_key_by_enum(list_io_type, res->io.fdin.type), ":", res->sa.s + res->io.fdin.destination))
+            log_die_nomem("stralloc") ;
+
+        info_display_string(sa.s) ;
+        return ;
+    }
+
+    info_display_empty() ;
+}
+
+static void info_display_stdout(char const *field, resolve_service_t *res)
+{
+    _alloc_sa_(sa) ;
+    if (NOFIELD) info_display_field_name(field) ;
+    if (res->type != TYPE_MODULE && res->io.fdout.destination) {
+
+        if (!auto_stra(&sa, get_key_by_enum(list_io_type, res->io.fdout.type), ":", res->sa.s + res->io.fdout.destination))
+            log_die_nomem("stralloc") ;
+
+        info_display_string(sa.s) ;
+        return ;
+    }
+
+    info_display_empty() ;
+}
+
+static void info_display_stderr(char const *field, resolve_service_t *res)
+{
+    _alloc_sa_(sa) ;
+    if (NOFIELD) info_display_field_name(field) ;
+    if (res->type != TYPE_MODULE && res->io.fderr.destination) {
+
+        if (!auto_stra(&sa, get_key_by_enum(list_io_type, res->io.fderr.type), ":", res->sa.s + res->io.fderr.destination))
+            log_die_nomem("stralloc") ;
+
+        info_display_string(sa.s) ;
+        return ;
+    }
+
+    info_display_empty() ;
 }
 
 static void info_display_logfile(char const *field,resolve_service_t *res)
@@ -780,9 +795,9 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
     if (NOFIELD) info_display_field_name(field) ;
     if (res->type != TYPE_MODULE)
     {
-        if (res->logger.name || (res->type == TYPE_ONESHOT && res->io.fdout.destination))
+        if (res->logger.want || (res->type == TYPE_ONESHOT && res->io.fdout.destination))
         {
-            if (nlog)
+            if (nlog && res->io.fdout.type == IO_TYPE_S6LOG)
             {
                 stralloc log = STRALLOC_ZERO ;
                 /** the file current may not exist if the service was never started*/
@@ -824,8 +839,7 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
 
     return ;
     empty:
-        if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
-            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+        info_display_empty() ;
         return ;
     err:
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
@@ -985,9 +999,11 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
         "Stop script",
         "Environment source",
         "Environment file",
-        "Log name",
-        "Log destination",
-        "Log file" } ;
+        "StdIn",
+        "StdOut",
+        "StdErr",
+        "Logger name",
+        "Logger file" } ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;

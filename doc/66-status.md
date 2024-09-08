@@ -37,7 +37,7 @@ If no *service* is specified, it displays all services from all trees. This is a
 
 - **-r**: shows the dependency list of *services* in reverse mode.
 
-- **-p** *nline*: prints the *nline* last lines from the log file of the *service*. Default is 20.
+- **-p** *nline*: prints the *nline* last lines from the log file of the *service*. Default is 10.
 
 ## Valid fields for -o options
 
@@ -61,8 +61,10 @@ If no *service* is specified, it displays all services from all trees. This is a
 - **stop**: displays the service's stop script.
 - **envat**: displays the source of the environment file.
 - **envfile**: displays the contents of the environment file.
+- **stdin**: displays the Standard Input type and destination separated by a `(colon(:)`.
+- **stdout**: displays the Standard Output type and destination separated by a `(colon(:)`.
+- **stderr**: displays the Standard Error type and destination separated by a `(colon(:)`.
 - **logname**: displays the logger's name.
-- **logdst**: displays the logger's destination.
 - **logfile**: displays the contents of the log file.
 
 ## Usage examples
@@ -164,9 +166,11 @@ Environment file      : environment variables from: /etc/66/conf/dbus/0.0.1/.dbu
                         cmd_args=!--system --print-pid=4 --nofork --nopidfile --address=unix:path=${socket_name}
                         socket_name=!/run/dbus/system_bus_socket
 
-Log name              : dbus-log
-Log destination       : /var/log/66/dbus
-Log file              :
+StdIn                 : s6log:/run/66/scandir/0/fdholder
+StdOut                : s6log:/var/log/66/dbus
+StdErr                : inherit:/var/log/66/dbus
+Logger name           : dbus-log
+Logger file           :
 dbus-daemon[731]: [system] Activating service name='org.freedesktop.nm_dispatcher' requested by ':1.2' (uid=0 pid=747 comm="NetworkManager -d") (using servicehelper)
 dbus-daemon[731]: [system] Successfully activated service 'org.freedesktop.nm_dispatcher'
 dbus-daemon[731]: [system] Activating service name='org.freedesktop.nm_dispatcher' requested by ':1.2' (uid=0 pid=747 comm="NetworkManager -d") (using servicehelper)
