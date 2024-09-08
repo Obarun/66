@@ -376,10 +376,9 @@ static void migrate_frontend_file_0721(const char *file, ssexec_t *info)
         f.s[insta + 1] = 0;
 
     /** service for user declare inside root directory are handled by root.*/
-    if ((str_start_with(f.s, SS_SERVICE_SYSDIR_USER) || str_start_with(f.s, SS_SERVICE_ADMDIR_USER)) && info->owner) {
-
+    if ((!str_start_with(f.s, SS_SERVICE_SYSDIR_USER) || !str_start_with(f.s, SS_SERVICE_ADMDIR_USER)) && info->owner)
         return ;
-    }
+
     log_trace("read frontend service file: ", f.s) ;
     if (!file_readputsa_g(&frontend, f.s))
         log_dieu(LOG_EXIT_SYS, "read system version file: ", f.s) ;
