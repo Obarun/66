@@ -52,12 +52,8 @@ static void io_compute_stdin(resolve_service_t *res, char const *line, uint32_t 
             break ;
 
         case IO_TYPE_S6LOG:
-            if (!strcmp(line, enum_io_type[IO_TYPE_S6LOG])) {
-                res->io.fdin.destination = compute_log_dir(wres, res, 0) ;
-            } else {
-                res->io.fdin.destination = compute_log_dir(wres, res, line) ;
-            }
-            break;
+            res->io.fdin.destination = resolve_add_string(wres, res->sa.s + res->live.fdholderdir) ;
+            break ;
 
         case IO_TYPE_NULL:
             res->io.fdin.destination = resolve_add_string(wres, "/dev/null") ;

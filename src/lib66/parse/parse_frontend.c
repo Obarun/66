@@ -267,7 +267,7 @@ int parse_frontend(char const *sv,
     if (!parse_contents(&res, sa.s))
         log_dieu(LOG_EXIT_SYS, "parse file of service: ", svname) ;
 
-    if (!parse_mandatory(&res))
+    if (!parse_mandatory(&res, info))
         log_die(LOG_EXIT_SYS, "some mandatory field is missing for service: ", svname) ;
 
     /** try to create the tree if not exist yet with
@@ -310,10 +310,8 @@ int parse_frontend(char const *sv,
 
     parse_compute_resolve(&res, info) ;
 
-    if (res.logger.want &&
-        !res.inns &&
-        res.type != TYPE_MODULE &&
-        (res.io.fdin.type == IO_TYPE_S6LOG || res.io.fdout.type == IO_TYPE_S6LOG))
+    if ((res.logger.want && res.io.fdin.type == IO_TYPE_S6LOG) &&
+        (!res.inns && res.type != TYPE_MODULE))
             parse_create_logger(hres, &res, info) ;
 
     hash = hash_search(hres, res.sa.s + res.name) ;

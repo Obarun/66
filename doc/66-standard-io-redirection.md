@@ -25,13 +25,13 @@ If the key is not defined, it will take the value of StdOut if StdOut is set to 
 
 ### Redefinition of StdOut and StdErr based on the value of StdIn
 
-- tty:/path/to/tty:
+- StdIn = tty:/path/to/tty:
 
-In this case, the value of StdOut will be the same as StdIn regardless of the value set for StdOut.
+    In this case, the value of StdOut will be the same as StdIn regardless of the value set for StdOut.
 
-- s6log:
+- StdIn = s6log
 
-In this case, the value of StdOut will be `s6log` and the value of StdErr will be `inherit` regardless of the values set for StdOut and StdErr.
+    In this case, the value of StdOut will be `s6log` and the value of StdErr will be `inherit` regardless of the values set for StdOut and StdErr.
 
 - For the values null, parent, and close, the values of StdOut and StdErr will not be redefined.
 
@@ -51,11 +51,12 @@ This key takes precedence over StdErr depending on the chosen value.
 
 ### Redefinition of StdErr based on the value of StdOut
 
-If the value of StdOut is equal to StdErr, StdErr will be set to `inherit`.
 
-- syslog:
+- If the value of StdOut is equal to StdErr, StdErr will be set to `inherit`(e.g. StdOut = tty:/dev/tty2 AND StdErr = tty:/dev/tty2).
 
-In this case, the value of StdErr will be the same as StdOut regardless of the value set for StdErr.
+- StdOut = syslog:
+
+    In this case, the value of StdErr will be the same as StdOut regardless of the value set for StdErr.
 
 - For the values tty, file, console, s6log, inherit, null, parent, and close, StdErr will not be redefined.
 
@@ -69,7 +70,7 @@ In all other cases, no redefinition is made.
 
 ## Options defined on !log
 
-If the Options key in the [[Main]](66-frontend.html#section-main) section defines `!log`, the [[Logger]](66-frontend.html#section-logger) section will have no effect. Additionally, if the keys StdIn, StdOut, or StdErr are set to s6log or not defined at all, StdIn, StdOut, and StdErr will take the value parent.
+If the Options key in the [[Main]](66-frontend.html#section-main) section defines `!log`, the [[Logger]](66-frontend.html#section-logger) section will have no effect. Additionally, if the keys StdIn, StdOut, or StdErr are set to s6log or not defined at all, StdIn, StdOut, and StdErr will take the value of parent process.
 
 # Examples
 

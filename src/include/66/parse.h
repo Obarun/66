@@ -84,7 +84,7 @@ extern int parse_list(stack *stk) ;
 extern int parse_bracket(stack *store, const char *line, const int sid) ;
 extern int parse_clean_runas(char const *str, int idsec, int idkey) ;
 extern int parse_get_value_of_key(stack *store, char const *str, const int sid, key_description_t const *list, const int kid) ;
-extern int parse_mandatory(resolve_service_t *res) ;
+extern int parse_mandatory(resolve_service_t *res, ssexec_t *info) ;
 extern void parse_error(int ierr, int idsec, key_description_t const *list, int idkey) ;
 extern void parse_rename_interdependences(resolve_service_t *res, char const *prefix, struct resolve_hash_s **hres, ssexec_t *info) ;
 extern void parse_db_migrate(resolve_service_t *res, ssexec_t *info) ;
