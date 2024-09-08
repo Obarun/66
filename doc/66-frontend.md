@@ -712,20 +712,6 @@ Furthermore there are some keys specific to the log.
 
     ---
 
-- Destination
-
-    mandatory : no
-
-    syntax : [path](#path)
-
-    valid value :
-
-    * Any valid path on the system.
-
-    The directory where the log file is saved. This directory is automatically created. The current user of the process needs to have sufficient permissions on the destination directory to be able to create it. The default directory is `%%system_log%%/service_name` for root and `$HOME/%%user_log%%/service_name` for any user. The default can also be changed at compile-time by passing the `--with-system-logpath=DIR` option for root and `--with-user-logpath=DIR` for a user to `./configure`.
-
-    ---
-
 - Backup
 
     mandatory : no
