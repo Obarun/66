@@ -27,64 +27,78 @@ int info_walk(graph_t *g, char const *name, char const *treename, info_graph_fun
 {
     log_flow() ;
 
-    int e = 0, idx = 0, count ;
+    int idx = 0, count = -1 ;
     size_t pos = 0, len ;
+    _alloc_sa_(sa) ;
 
-    if ((unsigned int) depth->level > MAXDEPTH)
+    if ((unsigned int) depth->level > INFO_MAXDEPTH)
         return 1 ;
 
-    stralloc sa = STRALLOC_ZERO ;
-
     if (!name) {
-        if (!graph_matrix_sort_tosa(&sa, g)) {
-            stralloc_free(&sa) ;
-            return e ;
-        }
+        if (!graph_matrix_sort_tosa(&sa, g))
+            return 0 ;
+
         count = sastr_nelement(&sa) ;
 
     } else {
 
         count = graph_matrix_get_edge_g_sorted_sa(&sa, g, name, requiredby, 0) ;
-
-        if (count == -1) {
-            stralloc_free(&sa) ;
-            return e ;
-        }
     }
+
+    if (count == -1)
+        return 0 ;
 
     len = sa.len ;
     char vertex[len + 1] ;
+    memset(vertex, 0, sizeof(char) * len) ;
 
     if (!sa.len)
-        goto freed ;
+        return 1 ;
 
     if (reverse)
         if (!sastr_reverse(&sa))
-            goto err ;
+            return 0 ;
 
     sastr_to_char(vertex, &sa) ;
 
-    for (; pos < len ; pos += strlen(vertex + pos) + 1, idx++ ) {
+    if (treename) {
 
         sa.len = 0 ;
-        int last =  idx + 1 < count  ? 0 : 1 ;
-        char *name = vertex + pos ;
+        for (; pos < len ; pos += strlen(vertex + pos) + 1) {
 
-        if (depth->level == 1 && treename) {
             char atree[SS_MAX_TREENAME + 1] ;
+            char *name = vertex + pos ;
 
             if (!service_get_treename(atree, name, 0))
-                goto err ;
+                return 0 ;
 
-            if (strcmp(treename, atree))
-                continue ;
+            if (!strcmp(treename, atree)) {
+                if (!sastr_add_string(&sa, name))
+                    return 0 ;
+            } else if (depth->level > 1) {
+                // Displays dependencies even if it's not the same tree
+                if (!sastr_add_string(&sa, name))
+                    return 0 ;
+            }
         }
+        count = sastr_nelement(&sa) ;
+        memset(vertex, 0, sizeof(char) * len) ;
+        sastr_to_char(vertex, &sa) ;
+
+        len = sa.len ;
+    }
+
+    for (pos = 0 ; pos < len ; pos += strlen(vertex + pos) + 1, idx++ ) {
+
+        sa.len = 0 ;
+        int last =  idx + 1 < count ? 0 : 1 ;
+        char *name = vertex + pos ;
 
         if (!info_graph_display(name, func, depth, last, padding, style))
-            goto err ;
+            return 0 ;
 
         if (graph_matrix_get_edge_g_sorted_sa(&sa, g, name, requiredby, 0) == -1)
-            goto err ;
+            return 0 ;
 
         if (sa.len) {
 
@@ -107,17 +121,10 @@ int info_walk(graph_t *g, char const *name, char const *treename, info_graph_fun
                     d.prev = NULL;
             }
             if (!info_walk(g, name, treename, func, requiredby, reverse, &d, padding, style))
-                goto err ;
+                return 0 ;
             depth->next = NULL ;
         }
     }
 
-    freed:
-        e = 1 ;
-
-    err:
-        stralloc_free(&sa) ;
-
-    return e ;
-
+    return 1 ;
 }

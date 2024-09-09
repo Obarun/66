@@ -382,7 +382,7 @@ static void info_display_contents(char const *field, char const *treename)
 
         depth_t d = info_graph_init() ;
 
-        if (!info_walk(&graph, 0, 0, &info_graph_display_service, 0, REVERSE, &d, padding, T_STYLE))
+        if (!info_walk(&graph, 0, treename, &info_graph_display_service, 0, REVERSE, &d, padding, T_STYLE))
             log_dieu(LOG_EXIT_SYS,"display the graph dependencies") ;
 
         goto freed ;
@@ -504,7 +504,7 @@ int ssexec_tree_status(int argc, char const *const *argv, ssexec_t *info)
                 case 'o' :  legacy = 0 ; info_parse_options(l.arg,what) ; break ;
                 case 'g' :  GRAPH = 1 ; break ;
                 case 'r' :  REVERSE = 1 ; break ;
-                case 'd' :  if (!uint0_scan(l.arg, &MAXDEPTH)) log_usage(info->usage, "\n", info->help) ; break ;
+                case 'd' :  if (!uint0_scan(l.arg, &INFO_MAXDEPTH)) log_usage(info->usage, "\n", info->help) ; break ;
                 default :   log_usage(info->usage, "\n", info->help) ;
             }
         }

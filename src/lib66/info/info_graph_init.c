@@ -16,7 +16,7 @@
 
 #include <66/info.h>
 
-unsigned int MAXDEPTH = 1 ;
+unsigned int INFO_MAXDEPTH = 1 ;
 
 info_graph_style graph_utf8 = {
     UTF_VR UTF_H,

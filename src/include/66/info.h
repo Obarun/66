@@ -67,7 +67,7 @@ struct info_graph_style_s
     int indent;
 } ;
 
-extern unsigned int MAXDEPTH ;
+extern unsigned int INFO_MAXDEPTH ;
 extern info_graph_style *STYLE ;
 extern info_graph_style graph_utf8 ;
 extern info_graph_style graph_default ;

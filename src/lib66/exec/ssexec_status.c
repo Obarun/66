@@ -890,7 +890,7 @@ void info_status_all(void)
     _alloc_sa_(sa) ;
     struct resolve_hash_tree_s *htres = NULL ;
     graph_t graph = GRAPH_ZERO ;
-
+    int flag = STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP|STATE_FLAGS_WANTDOWN;
     graph_build_tree(&graph, &htres, pinfo->base.s, E_RESOLVE_TREE_MASTER_CONTENTS) ;
 
     if (!graph_matrix_sort_tosa(&sa, &graph))
@@ -912,7 +912,7 @@ void info_status_all(void)
                 if (!stack_string_clean(&stk, c->tres.sa.s + c->tres.contents))
                     log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-                service_graph_g(stk.s, stk.len, &graph, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP|STATE_FLAGS_WANTDOWN) ;
+                service_graph_g(stk.s, stk.len, &graph, &hres, pinfo, flag) ;
 
                 if (!graph.mlen)
                     log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
@@ -924,7 +924,7 @@ void info_status_all(void)
 
                 depth_t d = info_graph_init() ;
 
-                if (!info_walk(&graph, 0, 0, &info_graph_display_service, 0, REVERSE, &d, 0, S_STYLE))
+                if (!info_walk(&graph, 0, c->tres.sa.s + c->tres.name, &info_graph_display_service, 0, REVERSE, &d, 0, S_STYLE))
                     log_dieu(LOG_EXIT_SYS,"display the dependencies list") ;
 
                 if (buffer_puts(buffer_1,"\n") == -1)
@@ -1019,7 +1019,7 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
                 case 'o' :  legacy = 0 ; info_parse_options(l.arg,what) ; break ;
                 case 'g' :  GRAPH = 1 ; break ;
                 case 'r' :  REVERSE = 1 ; break ;
-                case 'd' :  if (!uint0_scan(l.arg, &MAXDEPTH)) log_usage(info->usage, "\n", info->help) ; break ;
+                case 'd' :  if (!uint0_scan(l.arg, &INFO_MAXDEPTH)) log_usage(info->usage, "\n", info->help) ; break ;
                 case 'p' :  if (!uint0_scan(l.arg, &nlog)) log_usage(info->usage, "\n", info->help) ; break ;
                 default :   log_usage(info->usage, "\n", info->help) ;
             }
