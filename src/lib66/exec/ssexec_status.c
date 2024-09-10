@@ -510,8 +510,11 @@ static void info_display_contents(char const *field, resolve_service_t *res)
 {
     size_t padding = 1 ;
     graph_t graph = GRAPH_ZERO ;
-    stralloc sa = STRALLOC_ZERO ;
+    _alloc_sa_(sa) ;
     struct resolve_hash_s *hres = NULL ;
+
+    if (res->type != TYPE_MODULE)
+        return ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
@@ -569,7 +572,6 @@ static void info_display_contents(char const *field, resolve_service_t *res)
     freed:
         graph_free_all(&graph) ;
         hash_free(&hres) ;
-        stralloc_free(&sa) ;
 }
 
 static void info_display_start(char const *field,resolve_service_t *res)
