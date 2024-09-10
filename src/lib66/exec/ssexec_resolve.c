@@ -35,7 +35,7 @@
 #include <66/config.h>
 #include <66/state.h>
 
-#define MAXOPTS 78
+#define MAXOPTS 77
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -133,7 +133,6 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_string(fields[m++], res->sa.s, res->live.oneshotddir, 1) ;
 
     info_display_string(fields[m++], res->sa.s, res->logger.name, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->io.fdout.destination, 1) ;
     info_display_int(fields[m++], res->logger.backup) ;
     info_display_int(fields[m++], res->logger.maxsize) ;
     info_display_int(fields[m++], res->logger.timestamp) ;
@@ -184,7 +183,7 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "notify",
         "maxdeath",
         "earlier",
-        "hiercopy",
+        "copyfrom",
         "intree",
         "ownerstr",
         "owner",
@@ -232,7 +231,6 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "oneshotddir",
 
         "logname" ,
-        "logdestination" ,
         "logbackup" ,
         "logmaxsize" ,
         "logtimestamp" ,
