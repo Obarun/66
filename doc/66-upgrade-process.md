@@ -1,4 +1,4 @@
-title: The 66 Suite: update process
+title: The 66 Suite: upgrade process
 author: Eric Vidal <eric@obarun.org>
 
 [66](index.html)

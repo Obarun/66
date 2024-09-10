@@ -75,6 +75,7 @@ See [changes](66-upgrade.html) between version.
 - [module service creation](66-module-creation.html)
 - [Service configuration file](66-service-configuration-file.html)
 - [Deeper understanding](66-deeper.html)
+- [Upgrade and Migration process](66-upgrade-process.html)
 
 ## Why is 66 necessary?
 

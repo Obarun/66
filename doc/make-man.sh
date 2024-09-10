@@ -4,7 +4,7 @@ man1='66 66-configure 66-disable 66-enable 66-free execl-envfile 66-halt 66-pars
 
 man8='66-boot 66-hpr 66-shutdown 66-shutdownd 66-umountall'
 
-man5='66-deeper 66-frontend 66-instantiated-service 66-module-creation 66-module-usage 66-service-configuration-file 66-standard-io-redirection'
+man5='66-deeper 66-frontend 66-instantiated-service 66-module-creation 66-module-usage 66-service-configuration-file 66-standard-io-redirection 66-upgrade-process'
 
 for i in 1 5 8;do
     if [ ! -d doc/man/man${i} ]; then
