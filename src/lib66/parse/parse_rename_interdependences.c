@@ -52,7 +52,7 @@ static void parse_prefix(char *result, stack *stk, struct resolve_hash_s **hres,
 
         /** check if the dependencies is a external one. In this
          * case, the service is not considered as part of the ns */
-        if (hash->res.inns && (!strcmp(hash->res.sa.s + hash->res.inns, prefix)) && !str_start_with(hash->res.sa.s + hash->res.name, prefix))
+        if (hash->res.inns && (!strcmp(hash->res.sa.s + hash->res.inns, prefix)) && str_start_with(hash->res.sa.s + hash->res.name, prefix))
             auto_strings(result + strlen(result), prefix, ":", stk->s + pos, " ") ;
         else
             auto_strings(result + strlen(result), hash->res.sa.s + hash->res.name, " ") ;
@@ -118,7 +118,7 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, s
     resolve_wrapper_t_ref wres = 0 ;
 
     HASH_ITER(hh, *hres, c, tmp) {
-
+log_info("[PREFIX] ", prefix, " [NS] ", c->res.sa.s + c->res.inns) ;
         if (!strcmp(c->res.sa.s + c->res.inns, prefix)) {
 
             if (c->res.dependencies.ndepends || c->res.dependencies.nrequiredby)
