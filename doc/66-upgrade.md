@@ -25,11 +25,11 @@ author: Eric Vidal <eric@obarun.org>
 
 ## New features
 
-- The `66 status` command without specifying the service return an overview of the services of the entire system classified by tree.
-- [Identifier](66-identifier.html) en plus de `@I`, 66 recognize a list of seven new identifier to facilitate generic frontend files.
-- A new keys concerning Input/Output redirection called StdIn, StdOut and StdErr to control the behavior of standard Input, standard Output and standard Error respectively.
-- A new command called `66 snapshot` to create, remove, list and restore snapshot to have the piece of mind concerning backup and reliability process.
-- An Automatic migration process when its necessary entirely transparent for user and triggered by a call of an 66 command after an upgrade of the 66 program.
+- The `66 status` command now provides an overview of all system services, organized by tree, when no specific service is specified.
+- The [Identifier](66-identifier.html) feature has been expanded: in addition to `@I`, 66 now recognizes seven new identifiers to facilitate the creation of more generic frontend files.
+- New keys for Input/Output redirection (`StdIn`, `StdOut`, `StdErr`) have been added to control the behavior of standard input, output, and error, respectively.
+- A new `66 snapshot` command allows users to create, remove, list, and restore snapshots, providing enhanced backup and reliability management.
+- An automatic migration process is now available, ensuring seamless upgrades. This process is completely transparent to the user and is triggered by any 66 command following an upgrade of the 66 program.
 
 ## Frontend files
 
