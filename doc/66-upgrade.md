@@ -11,6 +11,102 @@ author: Eric Vidal <eric@obarun.org>
 
 ---
 
+# In 0.8.0.0
+
+- Adaptation to `oblibs` 0.3.0.2
+
+## Synthesized Release Notes
+
+- End of Breaking Changes: This release signifies the conclusion of the programmed breaking changes for 66. Version `0.7.0.0` introduced stability in the directory hierarchy of the 66 ecosystem, and version `0.8.0.0` solidifies the stability of the frontend file keys.
+
+- Introduction of Snapshot Command: A new [snapshot](66-snapshot.html) command has been added, offering a comprehensive backup solution for the 66 ecosystem. This feature guarantees that you can restore the exact state of the ecosystem before any changes. It also enables the replication of ecosystems across different hosts to maintain consistent states and behaviors. Importantly, using snapshots **does not alter the state of running services**.
+
+- Transparent Upgrade Process: The release includes a new [upgrade process](66-upgrade-process.html) that is fully transparent to the user. Whether a migration involves changes to the resolve file or other components, 66 automatically detects version upgrades and makes the necessary adjustments, ensuring continuity with the new version. This process **does not affect the state of running services**, and an automatic snapshot is created during the migration to facilitate easy recovery if needed.
+
+## New features
+
+- The `66 status` command without specifying the service return an overview of the services of the entire system classified by tree.
+- [Identifier](66-identifier.html) en plus de `@I`, 66 recognize a list of seven new identifier to facilitate generic frontend files.
+- A new keys concerning Input/Output redirection called StdIn, StdOut and StdErr to control the behavior of standard Input, standard Output and standard Error respectively.
+- A new command called `66 snapshot` to create, remove, list and restore snapshot to have the piece of mind concerning backup and reliability process.
+- An Automatic migration process when its necessary entirely transparent for user and triggered by a call of an 66 command after an upgrade of the 66 program.
+
+## Frontend files
+
+- Key Name Formatting Changes: The `@` prefix in key names has been removed, and key names now start with a capital letter. Additionally, the `-` character has been removed from composite names and also replaced by a capital letter. 66 will automatically migrate the frontend files present on your system, but this will only apply to active services(i.e., those listed when running `66 tree status` with the field `contents`). You may need to manually translate your own frontend files.
+
+To help with this, use the script below by running:
+`./migration_service.sh /path/to/my/<FrontendFile>`
+
+```
+#!/bin/sh
+
+service="${1}"
+
+sed -e "s:\[main\]:\[Main\]:g" \
+    -e "s:@type:Type:g" \
+    -e "s:@description:Description:g" \
+    -e "s:@version:Version:g" \
+    -e "s:@depends:Depends:g" \
+    -e "s:@requiredby:RequiredBy:g" \
+    -e "s:@optsdepends:OptsDepends:g" \
+    -e "s:@options:Options:g" \
+    -e "s:@flags:Flags:g" \
+    -e "s:@notify:Notify:g" \
+    -e "s:@user:User:g" \
+    -e "s:@timeout-kill:TimeoutStart:g" \
+    -e "s:@timeout-up:TimeoutStart:g" \
+    -e "s:@timeout-finish:TimeoutStop:g" \
+    -e "s:@timeout-down:TimeoutStop:g" \
+    -e "s:@maxdeath:MaxDeath:g" \
+    -e "s:@down-signal:DownSignal:g" \
+    -e "s:@hiercopy:CopyFrom:g" \
+    -e "s:@intree:InTree:g" \
+    -e "s:\[start\]:\[Start\]:g" \
+    -e "s:@build:Build:g" \
+    -e "s:@runas:RunAs:g" \
+    -e "s:@execute:Execute:g" \
+    -e "s:\[stop\]:\[Stop\]:g" \
+    -e "s:\[logger\]:\[Logger\]:g" \
+    -e "s:@destination:Destination:g" \
+    -e "s:@backup:Backup:g" \
+    -e "s:@maxsize:MaxSize:g" \
+    -e "s:@timestamp:Timestamp:g" \
+    -e "s:\[environment\]:\[Environment\]:g" \
+    -e "s:\[regex\]:\[Regex\]:g" \
+    -e "s:@configure:Configure:g" \
+    -e "s:@directories:Directories:g" \
+    -e "s:@files:Files:g" \
+    -e "s:@infiles:InFiles:g" \
+    -i ${service}
+```
+
+See [Rosetta Stone](66-rosetta.html##keyword-table-convertion) for the list of keyword name changes.
+
+### Deprecated and Obsolete keywords
+
+The deprecated key `@shebang` has been completely removed and is no longer recognized by the parser.
+
+The `Destination` key (previously `@destination`) in the `[Logger]` section is now deprecated and replaced by new `StdIn`, `StdOut`, and `StdErr` keywords. For compatibility, the parser will automatically handle the conversion.
+
+Removal of Deprecated Options:
+
+- For the `disable` command: `-F`, `-R` options are removed.
+- For the `parse` command: `-F`, -C`, `-c`, `-m` options are removed.
+- For the `stop` command: `-X`, `-K` options are removed.
+
+## Bug Fixes
+
+- Command line-defined timeouts now take precedence.
+- Do not create finish script if section [Stop] doesn't exist.
+- Proper handling of errno during signal reception.
+- Fixed the resolution of the source frontend file in a module's resolve file for a service.
+- Prevented crashes when encountering an empty field in a seed file.
+- Corrected parsing errors when an unknown key is found at the end of the frontend file.
+- The 66 tree status command now only displays services associated with a specific tree.
+
+---
+
 # In 0.7.2.1
 
 - Bugs fix:

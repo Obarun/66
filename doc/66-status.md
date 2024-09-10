@@ -21,7 +21,7 @@ By default the dependency graph is rendered in the [start](66-start.html) order 
 
 Without specifying the `-o`, all fields are displayed.
 
-If no *service* is specified, it displays all services from all trees. This is a useful way to quickly get an overview of the entire service system. In that case, `-g` is implied and `-p`, `-o` and `-n` options have no effects.
+If no *service* is specified, it displays all services from all trees. This is a useful way to quickly get an overview of the entire service system. In that case, `-g` is implied and `-d` can be use but `-p`, `-o` and `-n` options have no effects.
 
 ## Options
 

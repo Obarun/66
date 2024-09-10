@@ -7,9 +7,108 @@ author: Eric Vidal <eric@obarun.org>
 
 [obarun.org](https://web.obarun.org)
 
-This documentation explains the differences in options and interface changes between versions `v0.6.1.3` and `0.7.0.0`. Futhers information can be found to the [upgrade](66-upgrade.html) page concerning behavior changes, frontend `@key` changes and more.
+This documentation explains the differences in options and interface changes between versions.
 
-# General Interface changes
+# Changes between `0.7.2.1` and `0.8.0.0`
+
+Futhers information can be found to the [upgrade](66-upgrade.html) page concerning behavior changes, frontend keyword changes and more.
+
+## Converting service frontend file
+
+The [upgrade process](66-upgrade-process.html) will take about the frontend file convertion but uniquely active services (i.e., those listed when running `66 tree status` with the field `contents`)
+
+So, you may need to convert manually inactive frontend file. This following little script can be used by calling `./migrate_service.sh /path/to/my/<FrontendFile>.
+
+```
+#!/bin/sh
+
+service="${1}"
+
+sed -e "s:\[main\]:\[Main\]:g" \
+    -e "s:@type:Type:g" \
+    -e "s:@description:Description:g" \
+    -e "s:@version:Version:g" \
+    -e "s:@depends:Depends:g" \
+    -e "s:@requiredby:RequiredBy:g" \
+    -e "s:@optsdepends:OptsDepends:g" \
+    -e "s:@options:Options:g" \
+    -e "s:@flags:Flags:g" \
+    -e "s:@notify:Notify:g" \
+    -e "s:@user:User:g" \
+    -e "s:@timeout-kill:TimeoutStart:g" \
+    -e "s:@timeout-up:TimeoutStart:g" \
+    -e "s:@timeout-finish:TimeoutStop:g" \
+    -e "s:@timeout-down:TimeoutStop:g" \
+    -e "s:@maxdeath:MaxDeath:g" \
+    -e "s:@down-signal:DownSignal:g" \
+    -e "s:@hiercopy:CopyFrom:g" \
+    -e "s:@intree:InTree:g" \
+    -e "s:\[start\]:\[Start\]:g" \
+    -e "s:@build:Build:g" \
+    -e "s:@runas:RunAs:g" \
+    -e "s:@execute:Execute:g" \
+    -e "s:\[stop\]:\[Stop\]:g" \
+    -e "s:\[logger\]:\[Logger\]:g" \
+    -e "s:@destination:Destination:g" \
+    -e "s:@backup:Backup:g" \
+    -e "s:@maxsize:MaxSize:g" \
+    -e "s:@timestamp:Timestamp:g" \
+    -e "s:\[environment\]:\[Environment\]:g" \
+    -e "s:\[regex\]:\[Regex\]:g" \
+    -e "s:@configure:Configure:g" \
+    -e "s:@directories:Directories:g" \
+    -e "s:@files:Files:g" \
+    -e "s:@infiles:InFiles:g" \
+    -i ${service}
+```
+
+## Keyword table convertion
+
+The table below give you the keyword convertion between versions
+
+| 0.7.2.1 | 0.8.0.0 |
+| --- | --- |
+|[main]|[Main]|
+|@type|Type|
+|@description|Description|
+|@version|Version|
+|@depends|Depends|
+|@requiredby|RequiredBy|
+|@optsdepends|OptsDepends|
+|@options|Options|
+|@flags|Flags|
+|@notify|Notify|
+|@user|User|
+|@timeout-kill|TimeoutStart|
+|@timeout-up|TimeoutStart|
+|@timeout-finish|TimeoutStop|
+|@timeout-down|TimeoutStop|
+|@maxdeath|MaxDeath|
+|@down-signal|DownSignal|
+|@hiercopy|CopyFrom|
+|@intree|InTree|
+|[start]|[Start]|
+|@build|Build|
+|@runas|RunAs|
+|@execute|Execute|
+|[stop]|[Stop]|
+|[logger]|[Logger]|
+|@destination|Destination|
+|@backup|Backup|
+|@maxsize|MaxSize|
+|@timestamp|Timestamp|
+|[environment]|[Environment]|
+|[regex]|[Regex]|
+|@configure|Configure|
+|@directories|Directories|
+|@files|Files|
+|@infiles|InFiles|
+
+# Changes between `v0.6.1.3` and `0.7.0.0`.
+
+Futhers information can be found to the [upgrade](66-upgrade.html) page concerning behavior changes, frontend keyword changes and more.
+
+## General Interface changes
 
 Generally, the prefix is removed from commands, for example, `66-enable` becomes `66 enable`, `66-start` becomes `66 start`, and so on except for a few special commands -- see below.
 
@@ -73,7 +172,7 @@ Generally, the prefix is removed from commands, for example, `66-enable` becomes
 | `66 halt` | halt the system |
 | `66 version` | get the version of 66 |
 
-# General options changes
+## General options changes
 
 Previous tools accepted the options `-h`, `-z`, `-l`, `-T` and `-t`. These options are now integrated into the general `66` command. Let's take an examples:
 
@@ -82,7 +181,7 @@ Previous tools accepted the options `-h`, `-z`, `-l`, `-T` and `-t`. These optio
 | `66-enable` -t root consolekit | `66` -t root `enable` consolekit |
 | `66-start` -l /run/66 sshd | `66` -l /run/66 `start` sshd |
 
-# Help accessibility
+## Help accessibility
 
 All commands and subcommands accept the `-h` option to access their respective help.
 
@@ -90,7 +189,7 @@ All commands and subcommands accept the `-h` option to access their respective h
 - `66` tree -h: get the help of the tree subcommand
 - `66` tree resolve -h: get the help of `resolve` subcommand of the `tree` subcommand
 
-# General exit codes
+## General exit codes
 
 All commands and subcommands return:
 
@@ -98,11 +197,11 @@ All commands and subcommands return:
 - 100 wrong usage
 - 111 system call failed
 
-# Interface and Options changes by command
+## Interface and Options changes by command
 
 If not specified, the interface (except for the name itself -- see [General Interface changes](#General-Interface-changes)) or the options do not change.
 
-## 66-scandir
+### 66-scandir
 ---
 
 `66-scandir` and `66-scanctl` was combined together into the command `66 scandir`.
@@ -124,7 +223,7 @@ New subcommands was integrated to `66 scandir` to avoid using options from `s6-s
 | `66` scandir annihilate | `s6-svscanctl` -N |
 | `66` scandir zombies | `s6-svscanctl` -z |
 
-## 66-init
+### 66-init
 ---
 
 As `s6-rc` was dropped, the specification of the type of the service is not needed anymore. This program was integrated to `66 tree` command -- see [66 tree init](66-tree.html#init) documentation for futhers information.
@@ -135,7 +234,7 @@ As `s6-rc` was dropped, the specification of the type of the service is not need
 | `66-init` database | `66` tree init *treename* |
 | `66-init` both | `66` tree init *treename* |
 
-## 66-svctl
+### 66-svctl
 ---
 
 This tool previously deals only with `classic` service whereas `66 signal` deals with all kind of services type.
@@ -146,7 +245,7 @@ This tool previously deals only with `classic` service whereas `66 signal` deals
 | `66-svctl` -X | `66` signal -x -d |
 | `66-svctl` -K | `66` signal -k -d |
 
-## 66-all
+### 66-all
 ---
 
 This tool previously handles all services for trees, the new command handles all **enabled** services for trees.
@@ -157,7 +256,7 @@ This tool previously handles all services for trees, the new command handles all
 | `66-all` down | `66` tree stop |
 | `66-all` unsupervise | `66` tree free |
 
-## 66-tree
+### 66-tree
 ---
 
 | old options | new options |
@@ -172,7 +271,7 @@ This tool previously handles all services for trees, the new command handles all
 | `66-tree` -R | `66` tree remove |
 | `66-tree` -C | removed |
 
-## 66-enable
+### 66-enable
 ---
 
 With the previous version, services must be enabled to be able to start the service. It is not mandatory anymore with the new version. A service can be started without enabling it first. As result, the enable process is not responsible of the parse process even if it parse the service if the service was never parsed before.
@@ -184,7 +283,7 @@ With the previous version, services must be enabled to be able to start the serv
 | `66-enable` -I | `66` parse -I |
 | `66-enable` -S | `66` enable -S |
 
-## 66-disable
+### 66-disable
 ---
 
 | old options | new options |
@@ -193,7 +292,7 @@ With the previous version, services must be enabled to be able to start the serv
 | `66-disable` -F | removed |
 | `66-disable` -R | `66` remove |
 
-## 66-start
+### 66-start
 ---
 
 | old options | new options |
@@ -201,7 +300,7 @@ With the previous version, services must be enabled to be able to start the serv
 | `66-start` -r | `66` reload |
 | `66-start` -R | `66` restart |
 
-## 66-stop
+### 66-stop
 ---
 
 | old options | new options |
@@ -210,7 +309,7 @@ With the previous version, services must be enabled to be able to start the serv
 | `66-stop` -X | `66` signal -x |
 | `66-stop` -K | `66` signal -k -d |
 
-# Converting service frontend file from 0.6.2.0 version to 0.7.0.0
+## Converting service frontend file
 
 Manual intervention is required to upgrade the frontend file to version 0.7.0.0, as both the `longrun` and `bundle` types have been eliminated. Additionally, certain fields have been altered, deprecated, or removed.
 
@@ -276,13 +375,13 @@ Manual intervention is required to upgrade the frontend file to version 0.7.0.0,
 
     Certainly, you can replace the `bundle` type with the `module` type. However, depending on your specific cases, the `module` type might overcomplicate the service itself.
 
-- The `module` type must be redefined from scratch due to significant changes in the directory `module` structure.. Refers to the [module-creation](66-module-creation.html) documentation for detailed information.
+- The `module` type must be redefined from scratch due to significant changes in the directory `module` structure. Refers to the [module-creation](66-module-creation.html) documentation for detailed information.
 
-# Cleaning the 66 directories and files
+## Cleaning the 66 directories and files
 
 The heart structure of `66` has been reframed, resulting in a simplified directory architecture. Clean unused files and directories from the previous release by following the instructions below. Additionally, refer to the [deeper understanding](66-deeper.html) documentation about the `66` architecture.
 
-## %%system_dir%%
+### %%system_dir%%
 
 You can safely remove the following directories and files:
 
@@ -294,6 +393,6 @@ You can safely remove the following directories and files:
 
 The exact same task applies to the `${HOME}/%%user_dir%%` directory. Also, you can remove the `${HOME}/%%user_dir%%/module` directory.
 
-## %%skel%%
+### %%skel%%
 
 You can safely remove the following `%%skel%%/module` directory.

@@ -27,7 +27,7 @@ If a migration is required, the following general tasks will be performed, with 
 
 - A snapshot is created to preserve the current state.
 - The resolve files for all service trees are migrated by reading the previous files, translating them to the new format (including any necessary name changes, additions, or deletions of keys), and writing them in the updated format.
-- The resolve files for all active services (i.e., those listed when running `66 tree status`) are also migrated by re-parsing the services and writing them in the new format.
+- The resolve files for all active services (i.e., those listed when running `66 tree status` with the field `contents`) are also migrated by re-parsing the services and writing them in the new format.
 - The interdependence graph of services is checked and sanitized.
 
 # Upgrade Path

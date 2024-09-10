@@ -46,7 +46,7 @@ Please refer to the [INSTALL.md](https://git.obarun.org/Obarun/66/-/blob/master/
 
 See [changes](66-upgrade.html) between version.
 
-**(!)** The significant changes in versions 0.7.0.0 and above render them incompatible with versions prior to 0.7.0.0. You can refer to the [Rosetta Stone](66-rosetta.html) to understand the interface and behavioral differences between versions below 0.7.0.0 and version 0.7.0.0
+**(!)** The significant changes in versions `0.7.0.0` and above render them incompatible with versions prior to `0.7.0.0`. You can refer to the [Rosetta Stone](66-rosetta.html#changes-between-v0613-and-0700) to understand the interface and behavioral differences between versions below `0.7.0.0` and version `0.7.0.0`
 
 ---
 
