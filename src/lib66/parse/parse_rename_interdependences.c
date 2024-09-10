@@ -118,7 +118,7 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, s
     resolve_wrapper_t_ref wres = 0 ;
 
     HASH_ITER(hh, *hres, c, tmp) {
-log_info("[PREFIX] ", prefix, " [NS] ", c->res.sa.s + c->res.inns) ;
+
         if (!strcmp(c->res.sa.s + c->res.inns, prefix)) {
 
             if (c->res.dependencies.ndepends || c->res.dependencies.nrequiredby)
