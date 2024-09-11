@@ -77,10 +77,12 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
             "MOD_SERVICE_ADMDIR=", SS_SERVICE_ADMDIR, "\n", \
             "MOD_SERVICE_ADMCONFDIR=", SS_SERVICE_ADMCONFDIR, "\n", \
             "MOD_SCRIPT_SYSDIR=", SS_SCRIPT_SYSDIR, "\n", \
+            "MOD_ENVIRONMENT_ADMDIR=", SS_ENVIRONMENT_ADMDIR, "\n", \
             "MOD_USER_DIR=", SS_USER_DIR, "\n", \
             "MOD_SERVICE_USERDIR=", SS_SERVICE_USERDIR, "\n", \
             "MOD_SERVICE_USERCONFDIR=", SS_SERVICE_USERCONFDIR, "\n", \
-            "MOD_SCRIPT_USERDIR=", SS_SCRIPT_USERDIR, "\n"))
+            "MOD_SCRIPT_USERDIR=", SS_SCRIPT_USERDIR, "\n", \
+            "MOD_ENVIRONMENT_USERDIR=", SS_ENVIRONMENT_USERDIR, "\n"))
                 log_dieu(LOG_EXIT_SYS, "append environment variables") ;
         }
 
