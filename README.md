@@ -1,3 +1,5 @@
+*This repository is only a mirror of the original [66 git project](https://git.obarun.org/Obarun/66) and can be outdated. Do not expect any human interaction on this platform. Please consider to [sign in](https://git.obarun.org) with your github account.* 
+
 ![GitLabl Build Status](https://git.obarun.org/Obarun/66/badges/master/pipeline.svg)
 
 # 66 - Service Manager Built Around the S6 Supervision Suite
