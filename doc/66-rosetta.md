@@ -17,7 +17,7 @@ Futhers information can be found to the [upgrade](66-upgrade.html) page concerni
 
 The [upgrade process](66-upgrade-process.html) will take about the frontend file convertion but uniquely active services (i.e., those listed when running `66 tree status` with the field `contents`)
 
-So, you may need to convert manually inactive frontend file. This following little script can be used by calling `./migrate_service.sh /path/to/my/<FrontendFile>.
+So, you may need to convert manually inactive frontend file. This following little script can be used by calling `./migrate_service.sh /path/to/my/<FrontendFile>`.
 
 ```
 #!/bin/sh
