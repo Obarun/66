@@ -6,29 +6,29 @@ Sixty-six (66) is a service manager designed around the [s6 supervision suite](h
 
 ## Key Features of 66 (not exhaustive):
 
-- Frontend Service Files Declaration: Service files are written in an INI format, making them straightforward to read and edit.
-- Simple Scandir Creation: Easily create [scandir](https://skarnet.org/software/s6/scandir.html) directories for both the root and regular users, allowing for efficient service management across different user levels.
-- Nested Scandir Supervision: Regular users have their own independent [scandir](https://skarnet.org/software/s6/scandir.html) directories, separate from the root, ensuring user-specific supervision without interference.
-- Instance Service File Creation: Supports instantiated service.
-- Identifier Interpretation: Supports specific identifiers that are replaced at parse time to simplify service file creation.
-- Service Configuration Changes: Includes built-in versioning for configuration files, including environment variables, to streamline service updates and changes.
-- Automatic Logger Creation (not mandatory): Automatically creates dedicated loggers for each service, covering both classic and oneshot service types.
-- Help on I/O Redirection: Provides keywords in frontend files for easy control over standard input, output, and error redirection.
-- Service Notification: Ensures services are fully ready before managing their dependency chains, using a readiness notification mechanism.
-- Service Organization as a Tree: Allows quick management and visualization of service groups within a tree structure.
-- Service Status Overview: Offers a comprehensive set of tools to monitor the state of services and access detailed information easily.
-- User Service Declaration: Users can declare and manage their own services, facilitating personalized service management.
-- Automatic Dependency Chains: Automatically handles and maintains service dependencies, ensuring smooth and reliable service operations.
-- Service Order Dependencies: Guarantees reliable, stable, and reproducible service order dependencies to maintain consistent service behavior.
-- Snapshot Management: Allows the creation and management of snapshots of your service system, enabling easy backup, recovery, and sharing of service states across multiple hosts.
+- **Frontend Service Files Declaration**: Service files are written in an INI format, making them straightforward to read and edit.
+- **Simple Scandir Creation**: Easily create [scandir](https://skarnet.org/software/s6/scandir.html) directories for both the root and regular users, allowing for efficient service management across different user levels.
+- **Nested Scandir Supervision**: Regular users have their own independent [scandir](https://skarnet.org/software/s6/scandir.html) directories, separate from the root, ensuring user-specific supervision without interference.
+- **Instance Service File Creation**: Supports instantiated service.
+- **Identifier Interpretation**: Supports specific identifiers that are replaced at parse time to simplify service file creation.
+- **Service Configuration Changes**: Includes built-in versioning for configuration files, including environment variables, to streamline service updates and changes.
+- **Automatic Logger Creation (not mandatory)**: Automatically creates dedicated loggers for each service, covering both classic and oneshot service types.
+- **Help on I/O Redirection**: Provides keywords in frontend files for easy control over standard input, output, and error redirection.
+- **Service Notification**: Ensures services are fully ready before managing their dependency chains, using a readiness notification mechanism.
+- **Service Organization as a Tree**: Allows quick management and visualization of service groups within a tree structure.
+- **Service Status Overview**: Offers a comprehensive set of tools to monitor the state of services and access detailed information easily.
+- **User Service Declaration**: Users can declare and manage their own services, facilitating personalized service management.
+- **Automatic Dependency Chains**: Automatically handles and maintains service dependencies, ensuring smooth and reliable service operations.
+- **Service Order Dependencies**: Guarantees reliable, stable, and reproducible service order dependencies to maintain consistent service behavior.
+- **Snapshot Management**: Allows the creation and management of snapshots of your service system, enabling easy backup, recovery, and sharing of service states across multiple hosts.
 
 ## Behavior Benefits:
 
-- No Reboot Required During Upgrades: Service updates do not require system reboots, ensuring continuous operation.
-- Independent of Boot Management: 66 can supervise services independently of the boot process, making it optional to use 66 from startup. It is also fully compatible with virtualization platforms like containerd, Podman, and Docker, allowing for easy monitoring of services within containers.
-- No Central Daemon: Operates without a central managing daemon, providing a lightweight and efficient service management experience while reducing the potential attack surface.
-- Readable Logs: Logs are stored in a human-readable format for easier analysis and debugging.
-- File Descriptor Holding for Log Pipes: Utilizes file descriptor holding for efficient log piping, enhancing reliability and performance.
+- **No Reboot Required During Upgrades**: Service updates do not require system reboots, ensuring continuous operation.
+- **Independent of Boot Management**: 66 can supervise services independently of the boot process, making it optional to use 66 from startup. It is also fully compatible with virtualization platforms like containerd, Podman, and Docker, allowing for easy monitoring of services within containers.
+- **No Central Daemon**: Operates without a central managing daemon, providing a lightweight and efficient service management experience while reducing the potential attack surface.
+- **Readable Logs**: Logs are stored in a human-readable format for easier analysis and debugging.
+- **File Descriptor Holding for Log Pipes**: Utilizes file descriptor holding for efficient log piping, enhancing reliability and performance.
 
 66 focuses on mechanisms, not policies, and can be compiled with either `glibc` or `musl` for flexibility across different systems.
 
