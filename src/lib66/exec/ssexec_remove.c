@@ -239,8 +239,12 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
         if (!res.islog) {
 
-            if (!state_read(&ste, &res))
-                log_dieusys(LOG_EXIT_SYS, "read state file of: ", argv[pos], " -- please make a bug report") ;
+            if (!state_read(&ste, &res)) {
+                /** Considere it down. We are on remove command, it should success
+                 * whatever its state*/
+                log_warnusys("read state file of: ", argv[pos], " -- ignoring its state") ;
+                goto add ;
+            }
 
             if (ste.issupervised == STATE_FLAGS_TRUE) {
                 /** services of group boot cannot be stopped, the changes will appear only at
@@ -254,7 +258,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
                     if (!sastr_add_string(&sa, argv[pos]))
                         log_dieusys(LOG_EXIT_SYS, "add service: ", argv[pos], " to stop selection") ;
             }
-
+        add:
             log_trace("add service: ", argv[pos], " to the service selection") ;
             if (!hash_add(&hres, argv[pos], res))
                 log_dieu(LOG_EXIT_SYS, "append service selection with: ", argv[pos]) ;
