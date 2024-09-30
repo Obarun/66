@@ -434,6 +434,9 @@ int main(int argc, char const *const *argv)
     argc-- ;
     argv++ ;
 
+    if (!fd_sanitize())
+        log_dieusys(LOG_EXIT_SYS, "sanitize stdin/stdout/stderr") ;
+
     if (!sanitize)
         sanitize_system(&info) ;
 
