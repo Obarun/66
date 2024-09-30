@@ -83,7 +83,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
         for (;;) {
 
-            int opt = subgetopt_r(argc, argv, "hv:l:", &l) ;
+            int opt = subgetopt_r(argc, argv, "hv:l", &l) ;
             if (opt == -1)
                 break ;
 
