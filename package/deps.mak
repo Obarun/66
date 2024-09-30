@@ -33,7 +33,7 @@ src/66/66-oneshot/66-oneshot.o src/66/66-oneshot/66-oneshot.lo: src/66/66-onesho
 src/66/66-shutdown/66-shutdown.o src/66/66-shutdown/66-shutdown.lo: src/66/66-shutdown/66-shutdown.c src/include/66/config.h src/include/66/hpr.h
 src/66/66-shutdown/66-shutdownd.o src/66/66-shutdown/66-shutdownd.lo: src/66/66-shutdown/66-shutdownd.c src/include/66/config.h src/include/66/constants.h
 src/66/66-umountall/66-umountall.o src/66/66-umountall/66-umountall.lo: src/66/66-umountall/66-umountall.c src/include/66/config.h
-src/66/execl-enfile/execl-envfile.o src/66/execl-enfile/execl-envfile.lo: src/66/execl-enfile/execl-envfile.c src/include/66/config.h
+src/66/execl-envfile/execl-envfile.o src/66/execl-envfile/execl-envfile.lo: src/66/execl-envfile/execl-envfile.c src/include/66/config.h
 src/lib66/enum/enum.o src/lib66/enum/enum.lo: src/lib66/enum/enum.c src/include/66/enum.h
 src/lib66/environ/env_append_version.o src/lib66/environ/env_append_version.lo: src/lib66/environ/env_append_version.c src/include/66/environ.h
 src/lib66/environ/env_check_version.o src/lib66/environ/env_check_version.lo: src/lib66/environ/env_check_version.c src/include/66/constants.h src/include/66/environ.h src/include/66/utils.h
@@ -122,7 +122,7 @@ src/lib66/parse/parse_get_value_of_key.o src/lib66/parse/parse_get_value_of_key.
 src/lib66/parse/parse_interdependences.o src/lib66/parse/parse_interdependences.lo: src/lib66/parse/parse_interdependences.c src/include/66/constants.h src/include/66/instance.h src/include/66/module.h src/include/66/parse.h src/include/66/resolve.h src/include/66/service.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/parse/parse_key.o src/lib66/parse/parse_key.lo: src/lib66/parse/parse_key.c src/include/66/enum.h src/include/66/parse.h
 src/lib66/parse/parse_list.o src/lib66/parse/parse_list.lo: src/lib66/parse/parse_list.c src/include/66/parse.h
-src/lib66/parse/parse_mandatory.o src/lib66/parse/parse_mandatory.lo: src/lib66/parse/parse_mandatory.c src/include/66/enum.h src/include/66/parse.h src/include/66/resolve.h
+src/lib66/parse/parse_mandatory.o src/lib66/parse/parse_mandatory.lo: src/lib66/parse/parse_mandatory.c src/include/66/constants.h src/include/66/enum.h src/include/66/parse.h src/include/66/resolve.h
 src/lib66/parse/parse_rename_interdependences.o src/lib66/parse/parse_rename_interdependences.lo: src/lib66/parse/parse_rename_interdependences.c src/include/66/constants.h src/include/66/enum.h src/include/66/hash.h src/include/66/parse.h src/include/66/resolve.h src/include/66/service.h
 src/lib66/parse/parse_section.o src/lib66/parse/parse_section.lo: src/lib66/parse/parse_section.c src/include/66/enum.h src/include/66/parse.h src/include/66/resolve.h
 src/lib66/parse/parse_service.o src/lib66/parse/parse_service.lo: src/lib66/parse/parse_service.c src/include/66/config.h src/include/66/constants.h src/include/66/enum.h src/include/66/graph.h src/include/66/hash.h src/include/66/parse.h src/include/66/resolve.h src/include/66/sanitize.h src/include/66/service.h src/include/66/ssexec.h src/include/66/state.h src/include/66/symlink.h src/include/66/tree.h src/include/66/write.h
@@ -292,4 +292,4 @@ lib66.so.xyzzy: src/lib66/enum/enum.lo src/lib66/environ/env_append_version.lo s
 66-umountall: EXTRA_LIBS := -loblibs -lskarnet
 66-umountall: src/66/66-umountall/66-umountall.o ${LIB66}
 execl-envfile: EXTRA_LIBS := -loblibs -lexecline -lskarnet
-execl-envfile: src/66/execl-enfile/execl-envfile.o ${LIBEXECLINE} 
+execl-envfile: src/66/execl-envfile/execl-envfile.o ${LIBEXECLINE} 
