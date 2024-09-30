@@ -43,7 +43,7 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
 
     memset(tostop, 0, sizeof(struct resolve_hash_s) * argc) ;
 
-    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTDOWN) ;
+    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTDOWN|STATE_FLAGS_WANTUP) ;
     {
         subgetopt l = SUBGETOPT_ZERO ;
 
