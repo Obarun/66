@@ -85,7 +85,7 @@ Dependencies:
   --with-dynlib=DIR                add DIR to the list of searched directories for shared libraries
 
 Optional features:
-  --enable-shared                  build shared libraries [disabled]
+  --enable-shared                  build shared libraries [enabled]
   --disable-static                 do not build static libraries [enabled]
   --disable-allstatic              do not prefer linking against static libraries [enabled]
   --enable-static-libc             make entirely static binaries [disabled]
@@ -221,10 +221,10 @@ seed_user='.66/seed'
 environment_user='.66/environment'
 sysdeps='$prefix/lib/skalibs/sysdeps'
 manualsysdeps=false
-shared=false
-static=true
-allpic=true
-allstatic=true
+shared=true
+static=false
+allpic=false
+allstatic=false
 evenmorestatic=false
 addincpath=''
 addlibspath=''
