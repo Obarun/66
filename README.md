@@ -65,13 +65,13 @@ Please consider to make [donation](https://web.obarun.org/index.php?id=18)
 
 ### Boot service file
 
-The boot sequence can be a tedious task to accomplish. A **portable** and **complete** set of services can be found [here](https://git.obarun.org/obmods/boot-66serv).
+The boot sequence can be a tedious task to accomplish. A **portable** and **complete** set of services can be found [here](https://git.obarun.org/66-service/arch/boot).
 This set of service work out of the box and highly configurable to suit needs of the distributions.
 POC was made on `Gentoo`, `Funtoo`, `Devuan`, `Void`, `Adelie`, `Antix`, `Arch` and `Obarun`.
 
 ### Runtime service file
 
-You can find several examples for common daemon [here](https://git.obarun.org/pkg/observice) or [here](https://github.com/mobinmob/void-66-services)(thanks to mobinmob).
+You can find several examples for common daemon [here](https://git.obarun.org/66-service) for several distribution(Thanks to all contributors).
 
 ### Frontend service file scripting
 
