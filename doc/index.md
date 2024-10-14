@@ -31,7 +31,6 @@ Sixty-six (66) is a service manager designed around the [s6 supervision suite](h
 
 - **No Reboot Required During Upgrades**: Service updates do not require system reboots, ensuring continuous operation.
 - **Independent of Boot Management**: 66 can supervise services independently of the boot process, making it optional to use 66 from startup. It is also fully compatible with virtualization platforms like containerd, Podman, and Docker, allowing for easy monitoring of services within containers.
-- **No Central Daemon**: Operates without a central managing daemon, providing a lightweight and efficient service management experience while reducing the potential attack surface.
 - **Readable Logs**: Logs are stored in a human-readable format for easier analysis and debugging.
 - **File Descriptor Holding for Log Pipes**: Utilizes file descriptor holding for efficient log piping, enhancing reliability and performance.
 
@@ -83,6 +82,7 @@ See [changes](66-upgrade.html) between version.
 - [Service configuration file](66-service-configuration-file.html)
 - [Deeper understanding](66-deeper.html)
 - [Upgrade and Migration process](66-upgrade-process.html)
+- [Standard I/O redirection](66-standard-io-redirection.html)
 
 ## Why is 66 necessary?
 

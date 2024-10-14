@@ -581,7 +581,7 @@ This section is *mandatory*. (!)
     * parent: This is a no-op redirection. The Standard Input is inherited from the parent process, meaning the `s6-supervise` program.
     * close: Close the Standard Input.
 
-    Please see [Standard IO redirection] documentation for further information.
+    Please see [Standard IO redirection](66-standard-io-redirection.html) documentation for further information.
 
 - StdOut
 
@@ -600,6 +600,8 @@ This section is *mandatory*. (!)
     * parent: This is a no-op redirection. The Standard Output is inherited from the parent process, meaning the `s6-supervise` program.
     * close: Closes the Standard Output.
 
+    Please see [Standard IO redirection](66-standard-io-redirection.html) documentation for further information.
+
 - StdErr
 
     mandatory: no
@@ -616,6 +618,9 @@ This section is *mandatory*. (!)
     * parent: This is a no-op redirection. The Standard Error is inherited from the parent process, meaning the `s6-supervise` program.
     * inherit: Duplicates the Standard Error to the Standard Output. This is the default.
     * close: Closes the Standard Error.
+
+    Please see [Standard IO redirection](66-standard-io-redirection.html) documentation for further information.
+
 ---
 
 ## Section [Start]

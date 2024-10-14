@@ -25,7 +25,7 @@ If the key is not defined, it will take the value of StdOut if StdOut is set to 
 
 ### Redefinition of StdOut and StdErr based on the value of StdIn
 
-- StdIn = tty:/path/to/tty:
+- StdIn = tty:/path/to/tty
 
     In this case, the value of StdOut will be the same as StdIn regardless of the value set for StdOut.
 
@@ -51,10 +51,9 @@ This key takes precedence over StdErr depending on the chosen value.
 
 ### Redefinition of StdErr based on the value of StdOut
 
-
 - If the value of StdOut is equal to StdErr, StdErr will be set to `inherit`(e.g. StdOut = tty:/dev/tty2 AND StdErr = tty:/dev/tty2).
 
-- StdOut = syslog:
+- StdOut = syslog
 
     In this case, the value of StdErr will be the same as StdOut regardless of the value set for StdErr.
 
@@ -104,6 +103,7 @@ Let's take some examples:
     [Start]
     Execute = ( connmand -n --nobacktrace --nodnsproxy )
     ```
+
 - A frontend file with
 
     ```
