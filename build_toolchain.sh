@@ -6,10 +6,10 @@ if [ "$1" == "commit" ]; then
     tag=0
 fi
 
-skalibs_tag="v2.14.1.1"
-execline_tag="v2.9.4.0"
-s6_tag="v2.12.0.3"
-oblibs_tag="0.3.0.1"
+skalibs_tag="v2.14.3.0"
+execline_tag="v2.9.6.1"
+s6_tag="v2.13.1.0"
+oblibs_tag="0.3.1.0"
 
 check_tag(){
 
@@ -25,9 +25,7 @@ build_skalibs() {
     cd skalibs
     check_tag "${skalibs_tag}"
     ./configure \
-        --prefix=/usr \
-        --enable-shared \
-        --enable-static
+        --prefix=/usr
 
     make install || return 1
     cd ..
@@ -42,7 +40,6 @@ build_execline() {
     ./configure \
         --prefix=/usr \
         --enable-shared \
-        --enable-static \
         --disable-allstatic
 
     make install || return 1
@@ -59,7 +56,6 @@ build_s6() {
         --prefix=/usr \
         --libexecdir=/usr/libexec \
         --enable-shared \
-        --enable-static \
         --disable-allstatic
 
     make install || return 1
@@ -75,9 +71,7 @@ build_oblibs() {
     check_tag "${oblibs_tag}"
 
     ./configure \
-        --prefix=/usr \
-        --enable-static \
-        --enable-shared
+        --prefix=/usr
 
     make install || return 1
     cd ..

@@ -13,11 +13,11 @@ author: Eric Vidal <eric@obarun.org>
 
 # In 0.8.0.0
 
-- Adaptation to `oblibs` 0.3.0.2
+- Adaptation to `oblibs` 0.3.1.0
 
 ## Synthesized Release Notes
 
-- End of Breaking Changes: This release signifies the conclusion of the programmed breaking changes for 66. Version `0.7.0.0` introduced stability in the directory hierarchy of the 66 ecosystem, and version `0.8.0.0` solidifies the stability of the frontend file keys.
+- Nearing the End of Breaking Changes: This release marks a major step towards the end of planned breaking changes for version 66. Version `0.7.0.0` introduced stability in the directory hierarchy of the 66 ecosystem, and version `0.8.0.0` solidified the stability of frontend file keys. While the implementation of events may happen in version `0.9.0.0`, this can potentially occur without breaking existing 66 components(see [roadmap](readme.html#roadmap)).
 
 - Introduction of Snapshot Command: A new [snapshot](66-snapshot.html) command has been added, offering a comprehensive backup solution for the 66 ecosystem. This feature guarantees that you can restore the exact state of the ecosystem before any changes. It also enables the replication of ecosystems across different hosts to maintain consistent states and behaviors. Importantly, using snapshots **does not alter the state of running services**.
 
@@ -25,11 +25,9 @@ author: Eric Vidal <eric@obarun.org>
 
 ## New features
 
-- The `66 status` command now provides an overview of all system services, organized by tree, when no specific service is specified.
-- The [Identifier](66-identifier.html) feature has been expanded: in addition to `@I`, 66 now recognizes seven new identifiers to facilitate the creation of more generic frontend files.
-- New keys for Input/Output redirection (`StdIn`, `StdOut`, `StdErr`) have been added to control the behavior of standard input, output, and error, respectively.
-- A new `66 snapshot` command allows users to create, remove, list, and restore snapshots, providing enhanced backup and reliability management.
-- An automatic migration process is now available, ensuring seamless upgrades. This process is completely transparent to the user and is triggered by any 66 command following an upgrade of the 66 program.
+- New keys for [Input/Output redirection](66-standard-io-redirection.html) (`StdIn`, `StdOut`, `StdErr`) have been added to control the behavior of standard input, output, and error, respectively.
+- A new [`66 snapshot`](66-snapshot.html) command allows users to create, remove, list, and restore snapshots, providing enhanced backup and reliability management.
+- An [automatic migration process](66-upgrade-process.html) is now available, ensuring seamless upgrades. This process is completely transparent to the user and is triggered by any 66 command following an upgrade of the 66 program.
 
 ## Frontend files
 
@@ -83,6 +81,13 @@ sed -e "s:\[main\]:\[Main\]:g" \
 
 See [Rosetta Stone](66-rosetta.html##keyword-table-convertion) for the list of keyword name changes.
 
+### Behavior enhancements
+
+- The [`66 status`](66-status.html) command now provides an overview of all system services, organized by tree, when no specific service is specified.
+- The [Identifier](66-identifier.html) feature has been expanded: in addition to `@I`, 66 now recognizes seven new identifiers to facilitate the creation of more generic frontend files.
+- Module configuration: Two more news variables are exported at execution time of the `configure` script called `MOD_ENVIRONMENT_ADMDIR=%%environment_adm%%` and `MOD_ENVIRONMENT_USERDIR=%%environment_user%%`.
+- The [`66 remove`](66-remove.html) command is designed to always succeed, ensuring that no service becomes impossible to remove.
+
 ### Deprecated and Obsolete keywords
 
 The deprecated key `@shebang` has been completely removed and is no longer recognized by the parser.
@@ -103,7 +108,9 @@ Removal of Deprecated Options:
 - Fixed the resolution of the source frontend file in a module's resolve file for a service.
 - Prevented crashes when encountering an empty field in a seed file.
 - Corrected parsing errors when an unknown key is found at the end of the frontend file.
-- The 66 tree status command now only displays services associated with a specific tree.
+- The `66 tree status` command now only displays services associated with a specific tree.
+- Fixed behavior of the `-l` option at execl-envfile program.
+- Always deal with logger at disable time.
 
 ---
 

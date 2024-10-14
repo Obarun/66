@@ -19,7 +19,7 @@ Before initiating any migration, 66 creates a [snapshot](66-snapshot.html) named
 
 Note that the prefix `system@` is reserved for snapshot names.
 
-The migration process is triggered whenever any 66 command is executed, except for the `66 boot` and `66 snapshot` commands. This means you can create a snapshot manually without triggering the migration process if desired.
+The migration process is triggered whenever any 66 command is executed, except for the `66 boot` and `66 snapshot` commands. This means you can create a snapshot manually without triggering the migration process if desired. The process should complete successfully. If you encounter a fatal error, [restore](66-snapshot.html#restore) your previous system and retry the migration with increased verbosity to diagnose the issue. Be sure to also downgrade any packages to match the versions used in your previous system.
 
 The migration process only applies to the user who owns the process. Therefore, running any 66 command as root does not affect the user's 66 ecosystem. To initiate the migration for user-specific settings, you must execute a 66 command as a regular user. **It's highly recommended to trigger the migration process for the root account before doing so as a regular user**.
 
@@ -36,7 +36,7 @@ Some versions may require specific intermediary versions for migration. The foll
 
 | current version | mandatory version | target version |
 | --- | --- | --- |
-| between 0.7.0.0 and 0.7.1.1  | 0.7.2.0 | 0.8.0.0 |
+| between `0.7.0.0` and `0.7.1.1`  | `0.7.2.0` | `0.8.0.0` |
 
 # Version E.O.L.
 
@@ -44,4 +44,4 @@ Releases under `0.8.0.0` are no longer supported.
 
 | Version | E.O.L. |
 | --- | --- |
-| 0.8.0.0 | january 2026 |
+| `0.8.0.0` | january 2026 |

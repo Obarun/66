@@ -111,6 +111,7 @@ At launch of the script `configure`, the parser passes the following variables t
 - `MOD_MODULE_DIR`: path of the module directory.
 - `MOD_SKEL_DIR`: `%%skel%%`
 - `MOD_SERVICE_SYSDIR`: `%%service_system%%`
+- `MOD_ENVIRONMENT_ADMDIR`: `%%environment_adm%%`
 - `MOD_SERVICE_ADMDIR`: `%%service_adm%%`
 - `MOD_SERVICE_ADMCONFDIR`: `%%service_admconf%%`
 - `MOD_SCRIPT_SYSDIR`: `%%script_system%%`
@@ -118,3 +119,5 @@ At launch of the script `configure`, the parser passes the following variables t
 - `MOD_SERVICE_USERDIR`: `%%service_user%%`
 - `MOD_SERVICE_USERCONFDIR`: `%%service_userconf%%`
 - `MOD_SCRIPT_USERDIR`: `%%script_user%%`
+- `MOD_ENVIRONMENT_USERDIR`: `%%environment_user%%`
+

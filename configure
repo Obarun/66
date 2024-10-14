@@ -233,7 +233,6 @@ vpaths=''
 vpathd=''
 build=
 
-
 for arg ; do
   case "$arg" in
     --help) usage ;;
