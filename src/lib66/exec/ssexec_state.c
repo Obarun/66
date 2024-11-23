@@ -16,11 +16,13 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
+#include <oblibs/stack.h>
 
 #include <skalibs/types.h>
 #include <skalibs/lolstdio.h>
 #include <skalibs/buffer.h>
 #include <skalibs/sgetopt.h>
+#include <skalibs/djbunix.h>
 
 #include <66/info.h>
 #include <66/resolve.h>
@@ -108,20 +110,33 @@ int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
 
     svname = *argv ;
 
-    r = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
-    if (r == -1)
-        log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please a bug report") ;
-    else if (!r || r == STATE_FLAGS_FALSE)
-        log_die(LOG_EXIT_USER, "service: ", svname, " is not parsed -- try to parse it using '66 parse ", svname, "'") ;
+    if (svname[0] == '/') {
 
-    r = resolve_read_g(wres, info->base.s, svname) ;
-    if (r <= 0)
-        log_dieu(LOG_EXIT_SYS, "read resolve file: ", svname) ;
+        char pack[STATE_STATE_SIZE] ;
+
+        r = openreadnclose(svname, pack, STATE_STATE_SIZE) ;
+            if (r < STATE_STATE_SIZE || r < 0)
+                log_dieusys(LOG_EXIT_SYS, "read status file") ;
+
+        state_unpack(pack, &sta) ;
+
+    } else {
+
+        r = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
+        if (r == -1)
+            log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please a bug report") ;
+        else if (!r || r == STATE_FLAGS_FALSE)
+            log_die(LOG_EXIT_USER, "service: ", svname, " is not parsed -- try to parse it using '66 parse ", svname, "'") ;
+
+        r = resolve_read_g(wres, info->base.s, svname) ;
+        if (r <= 0)
+            log_dieu(LOG_EXIT_SYS, "read resolve file: ", svname) ;
+
+        if (!state_read(&sta, &res))
+            log_dieusys(111,"read state file of: ", svname) ;
+    }
 
     info_field_align(buf,fields,field_suffix,MAXOPTS) ;
-
-    if (!state_read(&sta, &res))
-        log_dieusys(111,"read state file of: ", svname) ;
 
     info_display_int(fields[m++],sta.toinit) ;
     info_display_int(fields[m++],sta.toreload) ;
