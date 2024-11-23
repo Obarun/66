@@ -20,6 +20,7 @@
 #include <oblibs/sastr.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
+#include <oblibs/stack.h>
 
 #include <skalibs/types.h>
 #include <skalibs/stralloc.h>
@@ -290,14 +291,31 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
 
     svname = *argv ;
 
-    r = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
-    if (r == -1)
-        log_dieu(LOG_EXIT_SYS, "get information of service: ", svname, " -- please a bug report") ;
-    else if (!r || r == STATE_FLAGS_FALSE)
-        log_die(LOG_EXIT_USER, "service: ", svname, " is not parsed -- try to parse it first using '66 parse ", svname, "'") ;
+    if (svname[0] == '/') {
 
-    if (resolve_read_g(wres, info->base.s, svname) <= 0)
-        log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
+        _alloc_stk_(basename, strlen(svname) + 1) ;
+        _alloc_stk_(dirname, strlen(svname) + 1) ;
+
+        if (!ob_basename(basename.s, svname))
+            log_dieu(LOG_EXIT_SYS, "get basename of: ", svname) ;
+
+        if (!ob_dirname(dirname.s, svname))
+            log_dieu(LOG_EXIT_SYS, "get dirname of: ", svname) ;
+
+        if (resolve_read_cdb(wres, dirname.s, basename.s) <= 0)
+            log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
+
+    } else {
+
+        r = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
+        if (r == -1)
+            log_dieu(LOG_EXIT_SYS, "get information of service: ", svname, " -- please a bug report") ;
+        else if (!r || r == STATE_FLAGS_FALSE)
+            log_die(LOG_EXIT_USER, "service: ", svname, " is not parsed -- try to parse it first using '66 parse ", svname, "'") ;
+
+        if (resolve_read_g(wres, info->base.s, svname) <= 0)
+            log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
+    }
 
     info_field_align(service_buf, fields, field_suffix,MAXOPTS) ;
 
