@@ -19,6 +19,7 @@
 #include <oblibs/sastr.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
+#include <oblibs/stack.h>
 
 #include <skalibs/types.h>
 #include <skalibs/stralloc.h>
@@ -112,26 +113,53 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
         "rversion",
     } ;
 
-    if (!strcmp(argv[0], SS_MASTER + 1)) {
+    if (treename[0] == '/') {
 
-        master = 1 ;
-        wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+        _alloc_stk_(basename, strlen(treename) + 1) ;
+        _alloc_stk_(dirname, strlen(treename) + 1) ;
+
+        if (!ob_basename(basename.s, treename))
+            log_dieusys(LOG_EXIT_SYS, "get basename of: ", treename) ;
+
+        if (!strcmp(basename.s, SS_MASTER + 1)) {
+
+            master = 1 ;
+            wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+
+        } else {
+
+            wres = resolve_set_struct(DATA_TREE, &tres) ;
+        }
+
+        if (!ob_dirname(dirname.s, treename))
+            log_dieu(LOG_EXIT_SYS, "get dirname of: ", treename) ;
+
+        if (resolve_read_cdb(wres, dirname.s, basename.s) <= 0)
+            log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
 
     } else {
 
-        wres = resolve_set_struct(DATA_TREE, &tres) ;
+        if (!strcmp(treename, SS_MASTER + 1)) {
 
-        r = tree_isvalid(info->base.s, treename) ;
+            master = 1 ;
+            wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
 
-        if (r < 0)
-            log_dieu(LOG_EXIT_SYS, "check validity of tree: ", treename) ;
+        } else {
 
-        if (!r)
-            log_dieusys(LOG_EXIT_SYS, "find tree: ", treename) ;
+            wres = resolve_set_struct(DATA_TREE, &tres) ;
+
+            r = tree_isvalid(info->base.s, treename) ;
+
+            if (r < 0)
+                log_dieu(LOG_EXIT_SYS, "check validity of tree: ", treename) ;
+
+            if (!r)
+                log_dieusys(LOG_EXIT_SYS, "find tree: ", treename) ;
+        }
+
+        if (resolve_read_g(wres, info->base.s, treename)  <= 0)
+            log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
     }
-
-    if (resolve_read_g(wres, info->base.s, treename)  <= 0)
-        log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
 
     info_field_align(tree_buf, fields, field_suffix,MAXOPTS) ;
 
