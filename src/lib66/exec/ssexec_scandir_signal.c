@@ -70,6 +70,26 @@ static inline unsigned int parse_signal (char const *signal)
     return i ;
 }
 
+static void send_fdholder(char const *scandir, uint8_t down)
+{
+    char fdholder[strlen(scandir) + 1 + SS_FDHOLDER_LEN + 1] ;
+    char oneshotd[strlen(scandir) + 1 + SS_FDHOLDER_LEN + 1] ;
+
+    auto_strings(fdholder, scandir, "/", SS_FDHOLDER) ;
+    auto_strings(oneshotd, scandir, "/", SS_ONESHOTD) ;
+
+     if (!down) {
+
+        svc_send_fdholder(fdholder, "dx") ;
+        svc_send_fdholder(oneshotd, "dx") ;
+
+    } else {
+
+        svc_send_fdholder(fdholder, "U") ;
+        svc_send_fdholder(oneshotd, "U") ;
+    }
+}
+
 static int send_signal(char const *scandir, char const *signal)
 {
     log_flow() ;
@@ -78,11 +98,7 @@ static int send_signal(char const *scandir, char const *signal)
     uint8_t down = 0 ;
     char csig[3] ;
     sig = parse_signal(signal) ;
-    char fdholder[strlen(scandir) + 1 + SS_FDHOLDER_LEN + 1] ;
-    char oneshotd[strlen(scandir) + 1 + SS_FDHOLDER_LEN + 1] ;
 
-    auto_strings(fdholder, scandir, "/", SS_FDHOLDER) ;
-    auto_strings(oneshotd, scandir, "/", SS_ONESHOTD) ;
 
     switch(sig) {
 
@@ -145,16 +161,7 @@ static int send_signal(char const *scandir, char const *signal)
             log_die(LOG_EXIT_SYS, "unknown signal: ", signal) ;
     }
 
-    if (!down) {
-
-        svc_send_fdholder(fdholder, "dx") ;
-        svc_send_fdholder(oneshotd, "dx") ;
-
-    } else {
-
-        svc_send_fdholder(fdholder, "U") ;
-        svc_send_fdholder(oneshotd, "U") ;
-    }
+    send_fdholder(scandir, down) ;
 
     return svc_scandir_send(scandir,csig) ;
 }
@@ -331,10 +338,25 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
     }
 
     r = svc_scandir_ok(info->scandir.s) ;
-    if (r < 0)
-        log_dieusys(LOG_EXIT_SYS, "check: ", info->scandir.s) ;
-    else if (!r)
-       log_diesys(LOG_EXIT_SYS, "scandir: ", info->scandir.s, " is not running") ;
+    if (r <= 0) {
+       /** TODO:
+        *
+        * We have a race condition here with nested scandir.
+        * s6-supervise may have already sent a down signal to the
+        * scandir.
+        * When the stop script of nested scandir is executed,
+        * the scandir is already down and crash.
+        *
+        * For now, be sure to also remove the fdholder and oneshotd of
+        * the nested scandir to avoid issue at next start of the scandir.
+        */
+        send_fdholder(info->scandir.s, 0) ;
+
+        if (r < 0)
+            log_dieusys(LOG_EXIT_SYS, "check: ", info->scandir.s) ;
+        else
+            log_diesys(LOG_EXIT_SYS, "scandir: ", info->scandir.s, " is not running") ;
+    }
 
     if (send_signal(info->scandir.s, signal) <= 0)
         log_dieu(LOG_EXIT_SYS, "send signal to scandir: ", info->scandir.s) ;
