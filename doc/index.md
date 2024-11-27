@@ -83,6 +83,7 @@ See [changes](66-upgrade.html) between version.
 - [Deeper understanding](66-deeper.html)
 - [Upgrade and Migration process](66-upgrade-process.html)
 - [Standard I/O redirection](66-standard-io-redirection.html)
+- [Identifier interpretation](66-identifier.html)
 
 ## Why is 66 necessary?
 

@@ -67,7 +67,7 @@ The valid fields in section [[Main]](66-frontend.html#section-main) are:
 - Depends
 - RequiredBy
 - OptsDepends
-- Hiercopy
+- CopyFrom
 
 All other fields from [[Main]](66-frontend.html#section-main) section are not allowed.
 
