@@ -101,13 +101,10 @@ void read_cmdline(stack *stk, size_t len)
             break ;
         }
         n += r ;
-        // buffer is full
-        if (n == len) {
-            --n ;
+
+        // buffer is full or end of file
+        if (n == len || !r)
             break ;
-        }
-        // end of file
-        if (r == 0) break ;
     }
 
     if (close(fd) < 0)
@@ -188,7 +185,16 @@ static int read_kernel_parameters(stralloc *kernel, const char *file)
     return 1 ;
 }
 
-static void parse_conf(stralloc *env)
+static void set_env(stralloc *env, const char *key, const char *value)
+{
+    char tmp[strlen(key) + 1 + strlen(value) + 1] ;
+    auto_strings(tmp, key, "=", value) ;
+    if (!sastr_add_string(env, tmp))
+        sulogin("append environment variable: ", tmp) ;
+
+}
+
+static void parse_conf(const char *confile)
 {
     log_flow() ;
 
@@ -198,28 +204,30 @@ static void parse_conf(stralloc *env)
     unsigned int j = 0 ;
     uint8_t empty = 0 ;
     _alloc_sa_(kernel) ;
+    _alloc_sa_(env) ;
     _alloc_sa_(val) ;
-    _alloc_sa_(copy) ;
     char *kfile = "/proc/cmdline" ;
+
+    // init.conf
+    if (!environ_merge_file(&env, confile))
+        sulogin("merge environment file: ", confile) ;
 
     if (!read_kernel_parameters(&kernel, kfile))
         sulogin("read kernel parameters: ", kfile) ;
 
     // kernel key=value pair take precedence
-    if (!environ_merge_environ(env, &kernel))
+    if (!environ_merge_environ(&env, &kernel))
         sulogin("merge kernel parameters", "") ;
 
-    if (!stralloc_copyb(&copy, env->s, env->len))
-        sulogin("copy environment", "") ;
-
-    if (!environ_rebuild(&copy))
+    if (!environ_rebuild(&env))
         sulogin("rebuild environment", "") ;
 
     for (char const *const *p = valid; *p; p++, j++) {
 
         empty = 0 ;
         val.len = 0 ;
-        if (!stralloc_copys(&val, copy.s))
+
+        if (!stralloc_copys(&val, env.s))
             sulogin("copy stralloc", "") ;
 
         switch (j) {
@@ -332,13 +340,26 @@ static void parse_conf(stralloc *env)
         }
 
     }
-    if (container) {
-        if (!auto_stra(env,"CONTAINER_HALTCMD=",live,SS_BOOT_CONTAINER_DIR,"/0/",SS_BOOT_CONTAINER_HALTCMD,"\n")) {
-            char tmp[strlen(live) + SS_BOOT_CONTAINER_DIR_LEN + 1 + SS_BOOT_CONTAINER_HALTCMD_LEN +1] ;
-            auto_strings(tmp,live,SS_BOOT_CONTAINER_DIR,"/",SS_BOOT_CONTAINER_HALTCMD) ;
-            sulogin("append environment stralloc with key: CONTAINER_HALTCMD=",tmp) ;
-        }
+}
+
+static void opendevnull (void)
+{
+    if (open2("/dev/null", O_RDONLY)) {
+        /* ghetto /dev/null to the rescue */
+        int p[2] ;
+        log_warnusys("open /dev/null") ;
+        if (pipe(p) < 0)
+            sulogin("pipe", "") ;
+        close(p[1]) ;
+        if (fd_move(0, p[0]) < 0)
+            sulogin("fd_move to stdin", "") ;
     }
+}
+
+static void reset_stdin (void)
+{
+    close(0) ;
+    opendevnull() ;
 }
 
 static inline void wait_for_notif (int fd)
@@ -395,7 +416,7 @@ static void split_tmpfs(char *dst,char const *str)
     dst[len] = 0 ;
 }
 
-static inline void run_stage2 (stralloc *env)
+static inline void run_stage2 (stralloc *env, const char *tty)
 {
     log_flow() ;
 
@@ -412,7 +433,21 @@ static inline void run_stage2 (stralloc *env)
     newargv[1] = confile ;
     newargv[2] = 0 ;
 
-    setsid() ;
+    set_env(env, "VERBOSITY", cver) ;
+    set_env(env, "TREE", ttree) ;
+    set_env(env, "LIVE", tlive) ;
+
+    if (setsid() < 0)
+        sulogin("setsid to run stage2", "") ;
+
+    if (tty) {
+
+        close(0) ;
+        if (openb_read(tty)) {
+            log_warnusys("open ", tty) ;
+            opendevnull() ;
+        }
+    }
 
     if (!catch_log) {
 
@@ -422,7 +457,7 @@ static inline void run_stage2 (stralloc *env)
     } else {
 
         close(1) ;
-        if (open(fifo, O_WRONLY) != 1)  /* blocks until catch-all logger is up */
+        if (open2(fifo, O_WRONLY) != 1)  /* blocks until catch-all logger is up */
             sulogin("open for writing fifo: ",fifo) ;
         if (fd_copy(2, 1) == -1)
             sulogin("copy stderr to stdout","") ;
@@ -484,20 +519,23 @@ static void cad(void)
 
 #ifdef __linux__
     int fd ;
-    fd = open("/dev/tty0", O_RDONLY | O_NOCTTY) ;
+    fd = open2("/dev/tty0", O_RDONLY | O_NOCTTY) ;
     if (fd < 0) {
-        log_warnusys("open /dev/tty0 (kbrequest will not be handled)") ;
-    }
-    else {
+
+        if (errno == ENOENT)
+            log_warn("headless system detected") ;
+        else log_warnu("open tty0 (kbrequest will not be handled)") ;
+
+    } else {
 
         if (ioctl(fd, KDSIGACCEPT, SIGWINCH) < 0)
             log_warnusys("ioctl KDSIGACCEPT on tty0 (kbrequest will not be handled)") ;
+
         close(fd) ;
     }
-
-    sig_block(SIGINT) ; /* don't panic on early cad before s6-svscan catches it */
 #endif
 
+    sig_block(SIGINT) ; /* don't panic on early cad before s6-svscan catches it */
     if (reboot(RB_DISABLE_CAD) == -1)
         log_warnusys("trap ctrl-alt-del") ;
 
@@ -508,11 +546,12 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 	log_flow() ;
 
     stralloc env = STRALLOC_ZERO ;
-    unsigned int r , tmpfs = 0, opened = 0 ;
+    unsigned int r , tmpfs = 0, hasconsole = 1 ;
     size_t bannerlen, livelen ;
     pid_t pid ;
     char verbo[UINT_FMT] ;
     cver = verbo ;
+    char *tty = 0 ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -542,45 +581,27 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
         log_diesys(LOG_EXIT_USER, "nice try, but missing root privileges") ;
     }
 
+    /* Configuration file init.conf*/
     {
         if (skel[0] != '/')
             sulogin("skeleton directory must be an aboslute path: ",skel) ;
 
         auto_strings(confile, skel, "/", SS_BOOT_CONF) ;
 
-        // init.conf
-        if (!environ_merge_file(&env, confile))
-            sulogin("merge environment file: ", confile) ;
+        parse_conf(confile) ;
 
-        /** (char const *const *)environ
-         * This is the environment of the current process like HOME=/
-         * As we are on boot, less drop it to avoid to poluate
-         * all processes with it and only keep key=value pair from
-         * user. */
-        //if (!environ_import_arguments(&env, (char const *const *)environ, env_len((char const *const *)environ)))
-        //    sulogin("import environment", "") ;
-
-        // SS_ENVIRONMENT_ADMDIR
-        if (!environ_merge_dir(&env, info->environment.s))
-            sulogin("merge environment directory: ", info->environment.s) ;
-
-        if (envdir) {
-
-            if (envdir[0] != '/')
-                sulogin("environment directory must be absolute: ", envdir) ;
-
-            if (!environ_merge_dir(&env, envdir))
-                sulogin("merge environment directory", envdir) ;
-        }
+        env = stralloc_zero ;
     }
 
-    parse_conf(&env) ;
     verbo[uint_fmt(verbo, VERBOSITY)] = 0 ;
     bannerlen = strlen(banner) ;
     livelen = strlen(live) ;
     char tfifo[livelen + 1 + SS_BOOT_LOGFIFO_LEN + 1] ;
     auto_strings(tfifo,live,"/",SS_BOOT_LOGFIFO) ;
     fifo = tfifo ;
+
+    if (fcntl(1, F_GETFD) < 0)
+        hasconsole = 0 ;
 
     if (container) {
         /* If there's a Docker synchronization pipe, wait on it */
@@ -599,49 +620,56 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
           close(3) ;
         }
 
-    } else {
+        if (!slashdev && hasconsole && isatty(2 - (!catch_log))) {
+            tty = ttyname(2 - (!catch_log)) ;
+            if (!tty)
+                log_warnusys("ttyname std", (!catch_log) ? "err" : "out") ;
+        }
+
+    } else if (hasconsole) {
 
         allwrite(1, banner, bannerlen) ;
-        allwrite(1, "\n", 2) ;
+        allwrite(1, "\n", 1) ;
     }
 
     if (chdir("/") == -1) sulogin("chdir to ","/") ;
     umask(mask) ;
-    setpgid(0, 0) ;
-    close(0) ;
 
     if (container && slashdev)
         log_1_warn("-d options asked for a boot inside a container; are you sure your container does not come with a pre-mounted /dev?") ;
 
     if (slashdev)
     {
+        int nope, e ;
         log_info("Mount: ",slashdev) ;
+        close(0) ;
         close(1) ;
         close(2) ;
-        if (mount("dev", slashdev, "devtmpfs", MS_NOSUID | MS_NOEXEC, "") == -1)
-            { opened++ ; sulogin ("mount: ", slashdev) ; }
 
-        if (open("/dev/console", O_WRONLY) ||
-        fd_move(2, 0) == -1 ||
-        fd_copy(1, 2) == -1) return 111 ;
+        nope = mount("dev", slashdev, "devtmpfs", MS_NOSUID | MS_NOEXEC, "") == -1 ;
+        e = errno ;
+        if (open2("/dev/console", O_WRONLY) && open2("/dev/null", O_WRONLY))
+            sulogin("open /dev/console or /dev/null", "") ;
+        if (fd_move(2, 0) < 0)
+            sulogin("move stderr to stdin", "") ;
+        if (fd_copy(1, 2) < 0)
+            sulogin("copy stdout to stderr", "") ;
+
+        if (nope) {
+            errno = e ;
+            sulogin("mount a devtmpfs on /dev", "") ;
+        }
+
+        if (open2("/dev/console", O_RDONLY))
+            opendevnull() ;
     }
 
-    if (!opened) {
+    if (!hasconsole) {
 
-        if (open("/dev/null", O_RDONLY)) {
-
-            /* ghetto /dev/null to the rescue */
-            int p[2] ;
-            log_1_warnusys("open /dev/null") ;
-
-            if (pipe(p) < 0)
-                sulogin("pipe for /dev/null","") ;
-
-            close(p[1]) ;
-
-            if (fd_move(0, p[0]) < 0)
-                sulogin("fd_move to stdin","") ;
-        }
+        if (!slashdev)
+            reset_stdin() ;
+        if (open2("/dev/null", O_WRONLY) != 1 || fd_copy(2, 1) == -1)
+            sulogin("open /dev/null or copy stderr to stdout", "") ;
     }
 
     char fs[livelen + 1] ;
@@ -663,6 +691,8 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
                 sulogin("mount: ",fs) ;
         }
     }
+
+    set_env(&env, "PATH", tpath) ;
 
     /** create scandir */
     {
@@ -705,13 +735,37 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
         int fdr = open_read(fifo) ;
         if (fdr == -1) sulogin("open fifo: ",fifo) ;
         fd_close(1) ;
-        if (open(fifo, O_WRONLY) != 1) sulogin("open fifo: ",fifo) ;
+        if (open2(fifo, O_WRONLY) != 1) sulogin("open fifo: ",fifo) ;
         fd_close(fdr) ;
+    }
+
+    /* environment */
+    {
+        if (container)
+            set_env(&env, "CONTAINER_HALTCMD", tlive) ;
+
+        // SS_ENVIRONMENT_ADMDIR
+        if (!environ_merge_dir(&env, info->environment.s))
+            sulogin("merge environment directory: ", info->environment.s) ;
+
+        if (envdir) {
+
+            if (envdir[0] != '/')
+                sulogin("environment directory must be absolute: ", envdir) ;
+
+            if (!environ_merge_dir(&env, envdir))
+                sulogin("merge environment directory", envdir) ;
+        }
     }
 
     /** fork and starts scandir */
     {
         char fmtfd[2 + UINT_FMT] = "-" ;
+
+        if (!catch_log) {
+            fmtfd[1] = 'd' ;
+            fmtfd[2 + uint_fmt(fmtfd + 2, notifpipe[1])] = 0 ;
+        }
 
         size_t m = 0 ;
         static char const *newargv[8] ;
@@ -728,26 +782,40 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
         if (!catch_log && pipe(notifpipe) < 0)
             sulogin("pipe","") ;
 
+        if (tty && !slashdev && ioctl(2 - (!catch_log), TIOCNOTTY) == -1)
+            log_warnusys("relinquish control terminal") ;
+
         pid = fork() ;
 
         if (pid == -1)
             sulogin("fork: ",container ? rcinit_container : rcinit) ;
 
         if (!pid)
-            run_stage2(&env) ;
+            run_stage2(&env, tty) ;
+
+        reset_stdin() ;
+        setsid() ;
 
         if (!catch_log) {
 
             close(notifpipe[0]) ;
-            fmtfd[1] = 'd' ;
-            fmtfd[2 + uint_fmt(fmtfd + 2, notifpipe[1])] = 0 ;
             cad() ;
 
         } else {
 
+            int fd = dup(2) ;
+            if (fd < 0)
+                sulogin("dup stderr", "") ;
+            /** restore_console from
+             * https://github.com/skarnet/s6/blob/main/src/supervision/s6-svscan.c
+             * TODO: implement -X option at 66 scandir start command.*/
+            fd_move(2, fd) ;
+            if (fd_copy(1, 2) < 0)
+                sulogin("restore stdout", "") ;
+
             cad() ;
             if (fd_copy(2, 1) == -1)
-                sulogin("copy stderr to stdout","") ;
+                sulogin("copy stderr to stdout", "") ;
         }
 
         // it merge char const *const *environ with env.s where env.s take precedence
