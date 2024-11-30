@@ -29,6 +29,8 @@
 #include <oblibs/environ.h>
 #include <oblibs/files.h>
 #include <oblibs/log.h>
+#include <oblibs/string.h>
+#include <oblibs/stack.h>
 
 #include <skalibs/posixplz.h>
 #include <skalibs/uint32.h>
@@ -51,6 +53,7 @@
 
 #include <66/config.h>
 #include <66/constants.h>
+#include <66/svc.h>
 
 #define STAGE4_FILE "stage4"
 #define DOTPREFIX ".66-shutdownd:"
@@ -65,7 +68,7 @@ static int nologger = 0 ;
 
 #define USAGE "66-shutdownd [ -h ] [ -l live ] [ -s skel ] [ -g gracetime ] [ -B ] [ -c ]"
 
-static inline void info_help (void)
+static inline void help (void)
 {
     DEFAULT_MSG = 0 ;
 
@@ -87,13 +90,11 @@ static void restore_console (void)
 {
     log_flow() ;
 
-    if (!inns && !nologger)
-    {
-        fd_close(1) ;
-        if (open("/dev/console", O_WRONLY) != 1)
-            log_dieusys(LOG_EXIT_SYS,"open /dev/console for writing") ;
-        if (fd_copy(2, 1) < 0) log_warnusys("fd_copy") ;
-    }
+    fd_close(1) ;
+    if (open2("/dev/console", O_WRONLY) != 1 && open2("/dev/null", O_WRONLY) != 1)
+        log_warnusys("open /dev/console for writing") ;
+    else if (fd_copy(2, 1) < 0)
+        log_warnusys("fd_copy") ;
 }
 
 struct at_s
@@ -165,7 +166,7 @@ static inline void run_rcshut (void)
     auto_conf(confile,conflen) ;
     parse_conf(confile,rcshut,"RCSHUTDOWN") ;
     char const *rcshut_argv[3] = { rcshut, confile, 0 } ;
-    pid = child_spawn0(rcshut_argv[0], rcshut_argv,(char const *const *)environ) ;
+    pid = cspawn(rcshut_argv[0], rcshut_argv,(char const *const *)environ, CSPAWN_FLAGS_SIGBLOCKNONE, 0, 0) ;
     if (pid)
     {
         int wstat ;
@@ -245,22 +246,41 @@ static inline void prepare_stage4 (char what)
     char confile[conflen + 1 + SS_BOOT_CONF_LEN] ;
     auto_conf(confile,conflen) ;
     parse_conf(confile,shutfinal,"RCSHUTDOWNFINAL") ;
+
+    if (inns) {
+
+        char s[2] = { what, '\n' } ;
+        _alloc_stk_(stk, 30) ;
+        char ownerstr[UID_FMT] ;
+        size_t olen = uid_fmt(ownerstr, getuid()), livelen = strlen(live) ;
+        char tmp[livelen + SS_BOOT_CONTAINER_DIR_LEN + 1 + olen + 1 + SS_BOOT_CONTAINER_HALTFILE_LEN + 1] ;
+        ownerstr[olen] = 0 ;
+
+        auto_strings(tmp, live, SS_BOOT_CONTAINER_DIR, "/", ownerstr, "/", SS_BOOT_CONTAINER_HALTFILE) ;
+
+        auto_strings(stk.s, "HALTCODE=", s, "\nEXITCODE=0\n") ;
+        stk.len = 22 ;
+
+        if (!openwritenclose_unsafe(tmp, stk.s, stk.len))
+            log_dieusys(LOG_EXIT_SYS, "write file: ", tmp) ;
+    }
+
     unlink_void(STAGE4_FILE ".new") ;
     fd = open_excl(STAGE4_FILE ".new") ;
     if (fd == -1) log_dieusys(LOG_EXIT_SYS, "open ", STAGE4_FILE ".new", " for writing") ;
     buffer_init(&b, &buffer_write, fd, buf, 516) ;
 
-    if (inns)
-    {
+    if (inns) {
+
         if (buffer_puts(&b,
             "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n\n"
             EXECLINE_EXTBINPREFIX "foreground { "
-            S6_EXTBINPREFIX "s6-svc -x -- . }\n"
+            S6_EXTBINPREFIX "s6-svc -0x -- . }\n"
             EXECLINE_EXTBINPREFIX "background\n{\n  ") < 0
 
             || (!nologger && buffer_puts(&b,
             EXECLINE_EXTBINPREFIX "foreground { "
-            S6_EXTBINPREFIX "s6-svc -xc -- ") < 0
+            S6_EXTBINPREFIX "s6-svc -0xc -- ") < 0
             || buffer_puts(&b,live) < 0
             || buffer_puts(&b,SS_BOOT_LOG " }\n  ") < 0)
 
@@ -275,9 +295,9 @@ static inline void prepare_stage4 (char what)
             "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n\n"
             EXECLINE_EXTBINPREFIX "foreground { "
             SS_BINPREFIX "66-umountall }\n"
-            EXECLINE_EXTBINPREFIX "foreground { ") < 0
+            EXECLINE_EXTBINPREFIX "foreground { tryexec { ") < 0
             || buffer_put(&b,shutfinal,strlen(shutfinal)) < 0
-            || buffer_puts(&b," }\n"
+            || buffer_puts(&b," } }\n"
             SS_BINPREFIX "66-hpr -f -") < 0
             || buffer_put(&b, &what, 1) < 0
             || buffer_putsflush(&b, "\n") < 0) log_dieusys(LOG_EXIT_SYS, "write to ", STAGE4_FILE ".new") ;
@@ -292,10 +312,12 @@ static inline void unsupervise_tree (void)
 {
     log_flow() ;
 
-    char const *except[3] =
+    char const *except[5] =
     {
-        "66-shutdownd",
-        nologger ? 0 : SS_SCANDIR SS_LOG,
+        SS_BOOT_SHUTDOWND,
+        nologger ? 0 : SS_SCANDIR "-" SS_LOG,
+        SS_ONESHOTD,
+        SS_FDHOLDER,
         0
     } ;
     size_t livelen = strlen(live) ;
@@ -338,6 +360,8 @@ static inline void unsupervise_tree (void)
     }
     dir_close(dir) ;
     if (errno) log_dieusys(LOG_EXIT_SYS, "readdir: ",tmp) ;
+    if (svc_scandir_send(tmp, "an") <= 0)
+        log_warnu("reload scandir: ", tmp) ;
 }
 
 int main (int argc, char const *const *argv)
@@ -359,7 +383,7 @@ int main (int argc, char const *const *argv)
             if (opt == -1) break ;
             switch (opt)
             {
-                case 'h' : info_help(); return 0 ;
+                case 'h' : help(); return 0 ;
                 case 'l' : live = l.arg ; break ;
                 case 's' : conf = l.arg ; break ;
                 case 'g' : if (!uint0_scan(l.arg, &grace_time)) log_usage(USAGE) ; break ;
@@ -441,7 +465,7 @@ int main (int argc, char const *const *argv)
 
     fd_close(fdw) ;
     fd_close(fdr) ;
-    fd_close(1) ;
+
     if (!inns && !nologger)
         restore_console() ;
 
@@ -451,21 +475,20 @@ int main (int argc, char const *const *argv)
 
     if (!sig_ignore(SIGTERM)) log_warnusys("sig_ignore SIGTERM") ;
 
-    if (!inns)
-    {
+    if (!inns) {
         sync() ;
         log_info("Sending all processes the TERM signal...") ;
     }
 
     kill(-1, SIGTERM) ;
     kill(-1, SIGCONT) ;
+
     tain_from_millisecs(&deadline, grace_time) ;
     tain_now_g() ;
     tain_add_g(&deadline, &deadline) ;
     deepsleepuntil_g(&deadline) ;
 
-    if (!inns)
-    {
+    if (!inns) {
         sync() ;
         log_info("Sending all processes the KILL signal...") ;
     }
