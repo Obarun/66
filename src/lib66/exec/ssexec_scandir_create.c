@@ -380,9 +380,9 @@ void write_control(char const *scandir,char const *live, char const *filename, i
 
     buffer b ;
     size_t scandirlen = strlen(scandir), filen = strlen(filename), blen = 0 ;
-    char mode[scandirlen + SS_SVSCAN_LOG_LEN + filen + 1] ;
+    char mode[scandirlen + SS_SVSCAN_LEN + filen + 1] ;
 
-    auto_strings(mode,scandir,SS_SVSCAN_LOG) ;
+    auto_strings(mode,scandir,SS_SVSCAN) ;
 
     blen = compute_buf_size(live, scandir, 0) ;
     blen += 500 + CONFIG_STR_LEN ;
@@ -510,7 +510,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
 
         write_to_bufnclose(&b, mode, filename + 1) ;
 
-        auto_strings(mode + scandirlen + SS_SVSCAN_LOG_LEN, filename) ;
+        auto_strings(mode + scandirlen + SS_SVSCAN_LEN, filename) ;
 
         auto_chmod(mode,0755) ;
         auto_chown(mode) ;
@@ -683,8 +683,8 @@ static void create_scandir(char const *live, char const *scandir, ssexec_t *info
 
     auto_check(tmp,0755,0,AUTO_CRTE_CHW) ;
 
-    /** run/66/scandir/uid/.svscan */
-    auto_strings(tmp + scanlen, SS_SVSCAN_LOG) ;
+    /** run/66/scandir/uid/.s6-svscan */
+    auto_strings(tmp + scanlen, SS_SVSCAN) ;
 
     auto_check(tmp,0755,0,AUTO_CRTE_CHW) ;
 
@@ -726,10 +726,10 @@ void sanitize_live(char const *live)
     auto_check(tmp,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
 
     if (CONTAINER) {
-        /** run/66/container */
+        /** run/66/container/UID */
         auto_strings(tmp + livelen,SS_BOOT_CONTAINER_DIR,"/",OWNERSTR) ;
         auto_check(tmp,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
-        auto_file(tmp,SS_BOOT_CONTAINER_HALTCMD,"EXITCODE=0\nHALTCODE=p\n",22) ;
+        auto_file(tmp,SS_BOOT_CONTAINER_HALTFILE,"EXITCODE=0\nHALTCODE=p\n",22) ;
     }
 
     /** run/66/log */

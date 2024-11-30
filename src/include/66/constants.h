@@ -50,11 +50,11 @@
 #define SS_LOG "log"
 #define SS_LOG_LEN (sizeof SS_LOG - 1)
 
-#define SS_LOG_SUFFIX "-log"
+#define SS_LOG_SUFFIX "-" SS_LOG
 #define SS_LOG_SUFFIX_LEN (sizeof SS_LOG_SUFFIX - 1)
 
-#define SS_SVSCAN_LOG "/.s6-svscan"
-#define SS_SVSCAN_LOG_LEN (sizeof SS_SVSCAN_LOG - 1)
+#define SS_SVSCAN "/.s6-svscan"
+#define SS_SVSCAN_LEN (sizeof SS_SVSCAN - 1)
 
 /** environment and data */
 #define SS_ENVDIR "/conf"
@@ -120,10 +120,10 @@
 #define SS_BOOT_CONTAINER 0
 #define SS_BOOT_RCINIT_CONTAINER "rc.init.container"
 #define SS_BOOT_RCINIT_CONTAINER_LEN (sizeof SS_BOOT_RCINIT_CONTAINER - 1)
-#define SS_BOOT_CONTAINER_DIR "scandir/container"
+#define SS_BOOT_CONTAINER_DIR SS_SCANDIR "/container"
 #define SS_BOOT_CONTAINER_DIR_LEN (sizeof SS_BOOT_CONTAINER_DIR - 1)
-#define SS_BOOT_CONTAINER_HALTCMD "halt"
-#define SS_BOOT_CONTAINER_HALTCMD_LEN (sizeof SS_BOOT_CONTAINER_HALTCMD - 1)
+#define SS_BOOT_CONTAINER_HALTFILE "halt"
+#define SS_BOOT_CONTAINER_HALTFILE_LEN (sizeof SS_BOOT_CONTAINER_HALTFILE - 1)
 
 /** Instance */
 #define SS_INSTANCE_REGEX "@I"
