@@ -806,15 +806,15 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 
         } else {
 
-            int fd = dup(2) ;
-            if (fd < 0)
-                sulogin("dup stderr", "") ;
-            // restore_console from
-            // https://github.com/skarnet/s6/blob/main/src/supervision/s6-svscan.c
-            // TODO: implement -X option at 66 scandir start command.
-            fd_move(2, fd) ;
-            if (fd_copy(1, 2) < 0)
-                sulogin("restore stdout", "") ;
+            // int fd = dup(2) ;
+            // if (fd < 0)
+            //     sulogin("dup stderr", "") ;
+            // // restore_console from
+            // // https://github.com/skarnet/s6/blob/main/src/supervision/s6-svscan.c
+            // // TODO: implement -X option at 66 scandir start command.
+            // fd_move(2, fd) ;
+            // if (fd_copy(1, 2) < 0)
+            //     sulogin("restore stdout", "") ;
 
             cad() ;
             if (fd_copy(2, 1) == -1)
