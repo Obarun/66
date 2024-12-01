@@ -123,7 +123,7 @@ int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag, ui
         tain_add_g(&deadline, &deadline) ;
         tain_add_g(&limit, &limit) ;
 
-        if (!s6_fdholder_start_g(&a, sock, &deadline))
+        if (!s6_fdholder_start(&a, sock, &deadline, &limit))
             log_warnusys_return(LOG_EXIT_ZERO, "connect to socket: ", sock) ;
 
         if (FLAGS_ISSET(flag, STATE_FLAGS_TRUE)) {
