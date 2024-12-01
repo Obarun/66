@@ -692,6 +692,9 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
         }
     }
 
+    if (setenv("PATH", tpath, 1) < 0)
+        sulogin("set initial PATH", tpath) ;
+
     set_env(&env, "PATH", tpath) ;
 
     /** create scandir */
