@@ -22,20 +22,77 @@
 
 #include <66/migrate_0721.h>
 
-/** Return 0 if no migration was made else 1 */
-int sanitize_migrate(ssexec_t *info, const char *oversion, short exist)
-{
-    log_flow() ;
-    int r ;
-    r = version_compare(oversion, "0.7.2.1", SS_SYSTEM_VERSION_NDOT) ;
-    if (r <= 0) {
+#define MIGRATE_NVERSION 3
+static const char *version_list[MIGRATE_NVERSION] = {
+    "0.7.2.1",
+    "0.8.0.0",
+    "0.8.0.1"
+} ;
 
-        if (!exist) {
-            migrate_0721(info) ;
-            sanitize_graph(info) ;
-        }
-        return !r ? 0 : 1 ;
+enum migrate_version_e
+{
+    VERSION_0721 = 0,
+    VERSION_0800,
+    VERSION_0801,
+    VERSION_ENDOFKEY
+} ;
+
+static const uint8_t migrate_state [3][3] = {
+    { VERSION_ENDOFKEY, VERSION_0800, VERSION_0800 }, // VERSION_0721
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_0801 }, // VERSION_0800
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY }, // VERSION_0801
+} ;
+
+static uint8_t str_to_int(const char *version)
+{
+    uint8_t pos = 0 ;
+    for (; pos < MIGRATE_NVERSION ; pos++) {
+
+        if (!version_compare(version, version_list[pos], SS_SYSTEM_VERSION_NDOT))
+            return pos ;
     }
 
-    return 0 ;
+    log_dieu(LOG_EXIT_SYS, "unable to compare version -- please make a bug report") ;
+}
+
+/** Return 0 if no migration was made else 1 */
+int sanitize_migrate(ssexec_t *info, const char *sversion, short exist)
+{
+    log_flow() ;
+
+    uint8_t state = str_to_int(sversion), current = str_to_int(SS_VERSION), did = 0 ;
+
+    while (state < VERSION_ENDOFKEY) {
+
+        state = migrate_state[state][current] ;
+
+        switch (state) {
+
+            case VERSION_0721:
+                // should not be happen
+                return 0 ;
+
+            case VERSION_ENDOFKEY:
+                return did ;
+
+            case VERSION_0800:
+                if (!exist) {
+                    migrate_0721(info) ;
+                    sanitize_graph(info) ;
+                    did++ ;
+                }
+                state = VERSION_0800 ;
+                break ;
+
+            case VERSION_0801:
+                state = VERSION_ENDOFKEY ;
+                did++ ;
+                break ;
+
+            default:
+                log_dieu(LOG_EXIT_SYS, "invalid version state -- please make a bug report") ;
+                break ;
+        }
+    }
+    return did ;
 }
