@@ -230,6 +230,11 @@ static void parse_conf(const char *confile)
         if (!stralloc_copys(&val, env.s))
             sulogin("copy stralloc", "") ;
 
+        if (!stralloc_0(&val))
+            sulogin("close string", "") ;
+
+        val.len-- ;
+
         switch (j) {
 
             case 0:
@@ -691,9 +696,6 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
                 sulogin("mount: ",fs) ;
         }
     }
-
-    if (setenv("PATH", tpath, 1) < 0)
-        sulogin("set initial PATH", tpath) ;
 
     set_env(&env, "PATH", tpath) ;
 
