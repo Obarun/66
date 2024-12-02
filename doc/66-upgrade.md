@@ -11,6 +11,18 @@ author: Eric Vidal <eric@obarun.org>
 
 ---
 
+# IN 0.8.0.1
+
+## Bug Fixes
+
+- Always update state of `fdholder` and `oneshotd` daemon even in case of crash.
+- Avoid badly formatted environment variables coming from EFI.
+- Clean the algorithm of the shutdown procedure to avoid killing `fdholder` and `oneshotd` before the very end of the process.
+- Fix `connection refused` error at fdholder connection.
+- Prevent extra characters during the parse process of the `init.conf`.
+
+---
+
 # In 0.8.0.0
 
 - Adaptation to `oblibs` 0.3.1.0
