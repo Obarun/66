@@ -637,11 +637,9 @@ This section is *mandatory*. (!)
 
     valid value :
 
-    * auto : creates the service script file as [execline](https://skarnet.org/software/execline) script. This is the **default**.
+    * auto : creates a service script by copying the `Execute` field verbatim and prepending an [execline](https://skarnet.org/software/execline) shebang to the beginning of the script. This is the **default**.
 
-        The corresponding file to start the service will automatically be written in [execline](https://skarnet.org/software/execline) format with the `Execute` key value.
-
-    * custom : creates the service script file making a verbatim copy of the `Execute` field of the section. **Do not forget** to set the shebang of the script at `Execute` key.
+    * custom : Creates a service script by copying the `Execute` field verbatim and applying the specified shebang to execute the script. **Do not forget** to set the shebang at `Execute` key field.
 
     ---
 
@@ -943,21 +941,9 @@ To avoid this issue, ALWAYS declare the shebang of your script directly after `(
     )
 ```
 
-When using this sort of custom function `RunAs` has **no effect**. You **must** define with care what you want to happen in a *custom* case.
+Be mindful of how you define environment variables in the [[Environment]](66-frontend.html#section-environment) section. When `Build=auto` is set, the parser will handle the `!` character if used. However, with `Build=custom`, this character will **not be interpreted**, and variables will **not be substituted** with their corresponding environment values.
 
-Furthermore when you set `Build` to auto the parser will take care about the redirection of the ouput of the service when the logger is activated. When setting `Build` to custom though the parser will not do this automatically. You need to explicitly tell it to:
-
-```
-    #!/usr/bin/bash
-    exec 2>&1
-    echo "This script redirects file descriptor 2 to the file descriptor 1"
-    echo "Then the logger reads the file descriptor 1 and you have"
-    echo "the error of the daemon written into the appropriate file"
-```
-
-Finally you need to take care about how you define your environment variable in the section [[Environment]](66-frontend.html#section-environment). When setting `Build` to auto the parser will also take care about the `!` character if you use it. This character will have no **effect** in the case of custom.
-
-This same behavior applies to the [[Logger]](66-frontend.html#section-logger) section. The fields `Destination`, `Backup`, `MaxSize` and `Timestamp` will have **no effect** in a custom case. You need to explicitly define the program to use the logger and the options for it in your `Execute` field.
+This same behavior applies to the [[Logger]](66-frontend.html#section-logger) section. Also, The fields `Backup`, `MaxSize` and `Timestamp` will have **no effect** in a custom case. You need to explicitly define the program to use the logger and the options for it in your `Execute` field.
 
 ---
 
