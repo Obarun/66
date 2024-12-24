@@ -99,19 +99,26 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
     }
 
     char *sig[siglen] ;
+    sig[0] = "-wD" ;
+    sig[1] = "-D" ;
+
     if (siglen > 3) {
 
-        sig[0] = "-P" ;
-        sig[1] = "-wR" ;
-        sig[2] = "-ru" ;
+        sig[2] = "-P" ;
         sig[3] = 0 ;
 
     } else {
 
-        sig[0] = "-wR" ;
-        sig[1] = "-ru" ;
         sig[2] = 0 ;
     }
+
+    r = svc_send_wait(argv, argc, sig, siglen, info) ;
+
+    if (r)
+        log_warnusys("stop service selection") ;
+
+    sig[0] = "-wU" ;
+    sig[1] = "-U" ;
 
     r = svc_send_wait(argv, argc, sig, siglen, info) ;
 
