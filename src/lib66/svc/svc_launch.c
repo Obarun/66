@@ -354,12 +354,8 @@ static int doit(pidservice_t *apids, unsigned int napid, unsigned int idx, unsig
 
         char *scandir = apids[idx].res->sa.s + apids[idx].res->live.scandir ;
 
-        if (updown[2] == 'U' || updown[2] == 'D' || updown[2] == 'R') {
-
-            if (!apids[idx].res->notify)
-                updown[2] = updown[2] == 'U' ? 'u' : updown[2] == 'D' ? 'd' : updown[2] == 'R' ? 'r' : updown[2] ;
-
-        }
+        if (!apids[idx].res->notify)
+            updown[2] = updown[2] == 'U' ? 'u' : updown[2] == 'D' ? 'd' : updown[2] == 'R' ? 'r' : updown[2] ;
 
         char const *newargv[8] ;
         unsigned int m = 0 ;
