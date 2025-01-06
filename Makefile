@@ -263,6 +263,25 @@ lib%.a.xyzzy:
 lib%.so.xyzzy:
 	exec $(CC) -o $@ $(CFLAGS_ALL) $(CFLAGS_SHARED) $(LDFLAGS_ALL) $(LDFLAGS_SHARED) -Wl,-soname,$(patsubst lib%.so.xyzzy,lib%.so.$(version_M),$@) $^ $(EXTRA_LIBS) $(LDLIBS)
 
-.PHONY: it all clean distclean tgz strip install install-dynlib install-libexec install-bin install-lib install-include install-data install-html install-man install-init
+check:
+	@echo "Running tests..."
+	@find src/lib66 -type d -name test | while read testdir; do \
+		if [ -f $$testdir/Makefile ]; then \
+			echo "Building tests in $$testdir..."; \
+			$(MAKE) -C $$testdir LIB_PATH=$(PWD) all || exit 1; \
+			for binary in $$testdir/*; do \
+				if [ -x $$binary ]; then \
+					echo "Executing $$binary"; \
+					LD_LIBRARY_PATH=$(PWD):$$LD_LIBRARY_PATH $(MAKE) -C $$testdir run || exit 1; \
+				fi; \
+			done; \
+			echo "Cleaning up in $$testdir..."; \
+			$(MAKE) -C $$testdir clean; \
+		else \
+			echo "Skipping $$testdir: Makefile not found."; \
+		fi; \
+	done
+
+.PHONY: it all clean check distclean tgz strip install install-dynlib install-libexec install-bin install-lib install-include install-data install-html install-man install-init
 
 .DELETE_ON_ERROR:
