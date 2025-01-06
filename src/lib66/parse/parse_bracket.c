@@ -32,7 +32,7 @@ static char parse_char_next(char const *s, size_t slen, size_t *pos)
     return c ;
 }
 
-static void key_isvalid(const char *line, size_t *o, uint8_t *bracket, int *vp, int lvp, const int sid)
+static int key_isvalid(const char *line, size_t *o, const int sid)
 {
     const key_description_t *list = get_enum_list(sid) ;
 
@@ -42,31 +42,26 @@ static void key_isvalid(const char *line, size_t *o, uint8_t *bracket, int *vp, 
     cfg.slen = strlen(line) ;
 
     if (!lexer(&key, &cfg) || !stack_close(&key))
-        return ;
+        return 0 ;
 
     if (cfg.found) {
 
         int r = get_enum_by_key(list, key.s) ;
         if (r < 0) {
             r = get_len_until(line + (*o), '\n') + 1 ;
-            (*o) = r ;
-            return ;
+            (*o) += r ;
+            return 0 ;
         }
-
-        (*o) = (size_t)lvp ;
-        (*bracket)-- ;
-        (*vp) = 0 ;
-        return ;
     }
 
-    return ;
+    return 1 ;
 }
 
 int parse_bracket(stack *store, const char *str, const int sid)
 {
     log_flow() ;
 
-    int /* valid closed bracket */ vp = 1, /* last valid closed bracket position */ lvp = 0 ;
+    int /* need validation of the parentheses*/ vp = 1, /* last valid closed parenthese */ lvp = 0 ;
     uint8_t bracket = 1 ;
     size_t o = 0, e = 0 ;
 
@@ -82,6 +77,7 @@ int parse_bracket(stack *store, const char *str, const int sid)
     cfg.skiplen = 3 ;
     cfg.kopen = 0 ;
     cfg.kclose = 0 ;
+    cfg.style = 0 ;
 
     if (!lexer(store, &cfg))
         return 0 ;
@@ -91,6 +87,7 @@ int parse_bracket(stack *store, const char *str, const int sid)
 
     char const *line =  cfg.str + cfg.pos ;
     size_t len = strlen(line) ;
+    int olvp = cfg.cpos ;
 
     /**
      * The following while loop receives a string starting after the last
@@ -99,6 +96,7 @@ int parse_bracket(stack *store, const char *str, const int sid)
      * in an Execute field, we can also encounter a pair of opened
      * and closed brackets if it's written in, for example, shell script.
      */
+
     while (bracket && o < len) {
 
         char c = parse_char_next(line, len, &o) ;
@@ -107,17 +105,19 @@ int parse_bracket(stack *store, const char *str, const int sid)
 
             case '(':
                 if (vp) {
-                    vp-- ;
-                    lvp = 0 ;
+                    vp = 0 ;
+                    lvp = olvp ;
                 }
                 bracket++ ;
                 break ;
 
             case ')':
                 {
+
                     if (vp) {
                         vp = 0 ;
-                        lvp = 0 ;
+                        lvp = o + olvp ;
+                        break ;
                     }
 
                     if (bracket - 1 == 0) {
@@ -131,7 +131,7 @@ int parse_bracket(stack *store, const char *str, const int sid)
                          * the validity. If the validity check fails, it signifies
                          * that we remain within the script context*/
 
-                        int /* last parenthese */ lp = o ;
+                        int /* last parenthese */ lp = o + olvp ;
                         e = 0 ;
 
                         e = get_len_until(line + o, '\n') + 1 ;
@@ -139,7 +139,8 @@ int parse_bracket(stack *store, const char *str, const int sid)
                         if (o + e >= len) {
                             // end of string. this validate the parenthese
                             bracket-- ;
-                            o = lp ;
+                            o = len ;
+                            lvp = lp ;
                             vp = 0 ;
                             break ;
                         }
@@ -155,31 +156,46 @@ int parse_bracket(stack *store, const char *str, const int sid)
                         }
 
                         /** Outside of the context specified (e.g., Execute=()),
-                         * only '#' and '@' character combinaison are considered valid to
+                         * only '#' and upper case character combinaison are considered valid to
                          * validate the bracket. If neither of these is present,
                          * it signifies that we are inside a script.*/
                         while(line[o] == ' ' || line[o] == '\t' || line[o] == '\r')
                             o++ ;
 
-                        if (line[o] != '#' && (line[o] < 65 || line[o] > 90))
+                        if (line[o] != '#' && (line[o] < 65 || line[o] > 90)) {
+                            lvp = lp ;
+                            o++ ;
+                            vp = 0 ;
                             break ;
+                        }
 
                         if (line[o] == '#') {
 
                             if (line[o + 1] >= 65 && line[o + 1] <= 90) {
                                 /** a commented key validates the parenthese */
-                                key_isvalid(line, &o, &bracket, &vp, lvp, sid) ;
+                                if (!key_isvalid(line, &o, sid)) {
+                                    lvp = lp ;
+                                    vp = 0 ;
+                                    break ;
+                                }
+                                lvp = lp ;
+                                bracket = 0 ;
+                                vp = 0 ;
+
                             } else {
                                 // this is a comment
                                 e = get_len_until(line + o, '\n') + 1 ;
                                 o += e ;
                                 vp = 1 ;
-                                lvp = lp ;
+                                lvp = lp  ;
                             }
                             break ;
                         }
-                        o = lp ;
-                        bracket-- ;
+
+                        if (key_isvalid(line, &o, sid))
+                            bracket-- ;
+
+                        lvp = lp ;
                         vp = 0 ;
                         break ;
 
@@ -193,10 +209,14 @@ int parse_bracket(stack *store, const char *str, const int sid)
 
                 if (vp) {
 
-                    /** we previously coming from a comment.
+                    /** we previously coming from a comment or empty line.
                      * this validates the parenthese.*/
                     if (line[o + 1] >= 65 && line[o + 1] <= 90) {
-                        key_isvalid(line, &o, &bracket, &vp, lvp, sid) ;
+                        if (!key_isvalid(line, &o, sid))
+                            break ;
+
+                        bracket = 0 ;
+                        vp = 0 ;
                     } else {
                         /** another comment, continue the check at the
                          * next line */
@@ -217,6 +237,7 @@ int parse_bracket(stack *store, const char *str, const int sid)
                     if (r < 0) {
                         e = get_len_until(line + o, '\n') + 1 ;
                         o += e ;
+                        vp = 0 ;
                         break ;
                     }
 
@@ -225,8 +246,7 @@ int parse_bracket(stack *store, const char *str, const int sid)
                     unsigned int pos = 0 ;
                     while (enum_str_section[pos]) {
                         if (!strcmp(secname, enum_str_section[pos])) {
-                            o = lvp ;
-                            bracket-- ;
+                            bracket = 0 ;
                             vp = 0 ;
                             break ;
                         }
@@ -261,9 +281,21 @@ int parse_bracket(stack *store, const char *str, const int sid)
             case 'Y':
             case 'Z':
                 /** we previously coming from a comment.
-                 * this validates the parenthese.*/
-                if (vp)
-                    key_isvalid(line, &o, &bracket, &vp, lvp, sid) ;
+                 * this validates the parenthese or the beginning
+                 * of the parse process.*/
+                if (vp) {
+                    if (!key_isvalid(line, &o, sid)) {
+                        vp = 0 ;
+                        if (!lvp)
+                            lvp = olvp ;
+                        break ;
+                    }
+
+                    if (cfg.str[cfg.cpos] == ')') {
+                        bracket-- ;
+                        vp = 0 ;
+                    }
+                }
 
                 break ;
             case '\n':
@@ -281,38 +313,19 @@ int parse_bracket(stack *store, const char *str, const int sid)
 
     if (o == len) {
         /** end of string. this validate the parenthese */
-        if (vp) {
-
-            bracket-- ;
-            o = lvp ;
-
-        } else {
-            /** EOF can be reached without a valid parentheses.
-             * Typically,
-             *
-             * Options = ( log )
-             * UnknownKey = InvalidValues
-             * EOF
-             *
-             * The EOF is reached and vp is marked invalid. In this case,
-             * we validate the closed parenthese found by the lexer.*/
-            if (cfg.str[cfg.cpos] == ')') {
-                bracket-- ;
-                o = 1 ;
-            }
-        }
+        if (vp || cfg.str[lvp] == ')')
+            bracket = 0 ;
     }
-
-    o -= 1 ; // remove the last bracket
 
     if (bracket)
         return 0 ;
 
-    cfg.cpos = o + cfg.pos ;
+    if (!lvp)
+        lvp = cfg.cpos ;
 
     store->len = 0 ;
 
-    if (!stack_add(store, cfg.str + cfg.opos + 1, cfg.cpos - cfg.opos - 1) ||
+    if (!stack_add(store, cfg.str + cfg.opos + 1, lvp - (cfg.opos + 1)) ||
         !stack_close(store))
             return 0 ;
 
