@@ -139,7 +139,22 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
             if (r)
                 continue ;
 
-            graph_compute_visit(*hash, visit, list, &graph, &nservice, 1) ;
+            if (!siglen) {
+
+                graph_compute_visit(*hash, visit, list, &graph, &nservice, 1) ;
+
+            } else {
+                ssize_t idx = 0 ;
+
+                idx = graph_hash_vertex_get_id(&graph, pres->sa.s + pres->name) ;
+                if (idx < 0)
+                    log_dieu(LOG_EXIT_SYS, "get id of service: ", pres->sa.s + pres->name, " -- please make a bug report") ;
+
+                if (!visit[idx]) {
+                    list[nservice++] = idx ;
+                    visit[idx] = 1 ;
+                }
+            }
         }
     }
 
