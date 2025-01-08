@@ -487,15 +487,11 @@ static void io_setup_stderr(resolve_service_t *res)
     }
 }
 
-static void execute_environment(stralloc *env, exlsn_t *info, resolve_service_t *res)
+static void execute_environment(stralloc *e, char const **nenvp, char const *const *env, exlsn_t *info, resolve_service_t *res)
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
     _alloc_stk_(path, strlen(res->sa.s + res->environ.envdir) + SS_SYM_VERSION_LEN + 1) ;
-
-    if (!environ_import_arguments(env, (char const *const *)environ, env_len((char const *const *)environ)))
-        log_dieusys(LOG_EXIT_SYS, "merge system environment") ;
 
     if (res->environ.env > 0) {
 
@@ -504,15 +500,18 @@ static void execute_environment(stralloc *env, exlsn_t *info, resolve_service_t 
             !stack_close(&path))
                 log_die_nomem("stack") ;
 
-        if (!environ_merge_dir(env, path.s))
+        if (!environ_merge_dir(e, path.s))
             log_dieusys(LOG_EXIT_SYS, "merge environment directory: ", path.s) ;
 
-        if (!environ_substitute(env, info))
+        if (!environ_substitute(e, info))
             log_dieusys(LOG_EXIT_SYS, "substitue environment variables") ;
 
-        if (!environ_clean_unexport(env))
+        if (!environ_clean_unexport(e))
             log_dieusys(LOG_EXIT_SYS, "remove exclamation mark from environment") ;
     }
+
+    if (!environ_create_environ(nenvp, env, e))
+        log_dieusys(LOG_EXIT_SYS, "create environment") ;
 }
 
 static void execute_script(const char *runuser, resolve_service_t *res, exlsn_t *info)
@@ -565,8 +564,6 @@ static void execute_script(const char *runuser, resolve_service_t *res, exlsn_t 
             if (chown(runuser, uid, gid) < 0)
                 log_dieusys(LOG_EXIT_SYS, "chown: ", runuser) ;
     }
-
-    exlsn_free(info) ;
 }
 
 static void execute_io(resolve_service_t *res)
@@ -628,6 +625,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
     char const *service = 0 ;
     _alloc_stk_(base, SS_MAX_PATH + 1) ;
     _alloc_sa_(env) ;
+    char const *nenvp[MAXENV + 1] ;
     char *run = 0 ;
     char *runuser = 0 ;
 
@@ -704,7 +702,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
             log_dieusys(LOG_EXIT_SYS, "find script: ", brun, " -- please make a bug report") ;
     }
 
-    execute_environment(&env, &info, &res) ;
+    execute_environment(&env, nenvp, envp, &info, &res) ;
 
     execute_script(brunuser, &res, &info) ;
 
@@ -716,9 +714,8 @@ int main(int argc, char const *const *argv, char const *const *envp)
      * For now, just send a simple message */
     log_info(action == EXECUTE_START ? "Starting" : "Stopping", " service: ", service) ;
 
-    xmexec_m(newargv, env.s, env.len) ;
+    xmexec_em(newargv, nenvp, info.modifs.s, info.modifs.len) ;
 
     return 0 ;
 }
-
 
