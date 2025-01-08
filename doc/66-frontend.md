@@ -941,7 +941,7 @@ To avoid this issue, ALWAYS declare the shebang of your script directly after `(
     )
 ```
 
-Be mindful of how you define environment variables in the [[Environment]](66-frontend.html#section-environment) section. When `Build=auto` is set, the parser will handle the `!` character if used. However, with `Build=custom`, this character will **not be interpreted**, and variables will **not be substituted** with their corresponding environment values.
+Note that with `Build=custom`, variables will **not be replaced** by their corresponding environment values within the script, unlike the behavior with the execlineb script format. However, the exclamation mark character is still also **interpreted** even in custom script.
 
 This same behavior applies to the [[Logger]](66-frontend.html#section-logger) section. Also, The fields `Backup`, `MaxSize` and `Timestamp` will have **no effect** in a custom case. You need to explicitly define the program to use the logger and the options for it in your `Execute` field.
 
