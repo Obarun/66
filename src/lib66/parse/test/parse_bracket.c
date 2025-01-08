@@ -4,7 +4,7 @@
 #include <66/parse.h>
 #include <66/enum.h>
 
-void basic()
+void basic(void)
 {
     printf("Running test basic...\n") ;
 
@@ -19,7 +19,7 @@ void basic()
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void basic1()
+void basic1(void)
 {
     printf("Running test basic1...\n") ;
 
@@ -34,7 +34,7 @@ void basic1()
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void basic2()
+void basic2(void)
 {
     printf("Running test basic2...\n") ;
 
@@ -49,7 +49,7 @@ void basic2()
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void basic3()
+void basic3(void)
 {
     printf("Running test basic3...\n") ;
 
@@ -64,7 +64,7 @@ void basic3()
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void basic4()
+void basic4(void)
 {
     printf("Running test basic4...\n") ;
 
@@ -87,7 +87,7 @@ Bad=key\n" ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void basic5()
+void basic5(void)
 {
     printf("Running test basic5...\n") ;
 
@@ -109,7 +109,7 @@ Type=classic\n" ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void comment_inside()
+void comment_inside(void)
 {
     printf("Running test comment_inside...\n") ;
 
@@ -133,7 +133,7 @@ valid\n" ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void comment_outside()
+void comment_outside(void)
 {
     printf("Running test comment_outside...\n") ;
 
@@ -159,7 +159,7 @@ valid\n" ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void comment_outside_valid()
+void comment_outside_valid(void)
 {
     printf("Running test comment_outside_valid...\n") ;
 
@@ -186,7 +186,7 @@ valid\n" ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void odd_bracket()
+void odd_bracket(void)
 {
     printf("Running test odd_bracket...\n") ;
 
@@ -201,7 +201,7 @@ void odd_bracket()
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void odd_bracket_validkey()
+void odd_bracket_validkey(void)
 {
     printf("Running test odd_bracket_validkey...\n") ;
 
@@ -214,7 +214,7 @@ void odd_bracket_validkey()
     assert(r == 0) ;
 }
 
-void no_bracket()
+void no_bracket(void)
 {
     printf("Running test no_bracket...\n") ;
 
@@ -227,7 +227,7 @@ void no_bracket()
     assert(r == 0) ;
 }
 
-void nested_bracket()
+void nested_bracket(void)
 {
     printf("Running test nested_bracket...\n") ;
 
@@ -242,7 +242,7 @@ void nested_bracket()
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void bash()
+void bash(void)
 {
     printf("Running test bash...\n") ;
 
@@ -284,7 +284,7 @@ start-stop-daemon --start --quiet --pidfile ${pidfile}\n\
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void bash_case()
+void bash_case(void)
 {
     printf("Running test bash_case...\n") ;
 
@@ -336,7 +336,7 @@ esac" ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void invalid_key()
+void invalid_key(void)
 {
     printf("Running test invalid_key...\n") ;
 
@@ -351,7 +351,7 @@ void invalid_key()
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void invalid_key1()
+void invalid_key1(void)
 {
     printf("Running test invalid_key1...\n") ;
 
@@ -366,7 +366,7 @@ void invalid_key1()
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void eof()
+void eof(void)
 {
     printf("Running test eof...\n") ;
 
@@ -381,7 +381,7 @@ void eof()
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void eof_invalid()
+void eof_invalid(void)
 {
     printf("Running test eof_invalid...\n") ;
 
@@ -397,7 +397,7 @@ UnknownKey = InvalidValues\n"; ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void valid_section()
+void valid_section(void)
 {
     printf("Running test valid_section...\n") ;
 
@@ -412,7 +412,7 @@ void valid_section()
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void invalid_section()
+void invalid_section(void)
 {
     printf("Running test invalid_section...\n") ;
 

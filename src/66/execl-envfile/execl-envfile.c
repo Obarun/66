@@ -11,28 +11,22 @@
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file./
  */
-#include <string.h>
-#include <stdlib.h>
+
+#include <stddef.h>
+#include <stdint.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <errno.h>
 
-#include <oblibs/string.h>
 #include <oblibs/log.h>
-#include <oblibs/types.h>
-#include <oblibs/directory.h>
-#include <oblibs/files.h>
 #include <oblibs/environ.h>
+#include <oblibs/directory.h>
 #include <oblibs/sastr.h>
-#include <oblibs/lexer.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/env.h>
-#include <skalibs/djbunix.h>
-#include <skalibs/sgetopt.h>
 #include <skalibs/exec.h>
-
-#include <execline/execline.h>
+#include <skalibs/sgetopt.h>
+#include <skalibs/djbunix.h>
+#include <skalibs/env.h>
 
 #include <66/config.h>
 
@@ -73,8 +67,8 @@ int main (int argc, char const *const *argv, char const *const *envp)
     char const *path = 0 ;
     char tpath[SS_MAX_PATH + 1] ;
     struct stat st ;
-    stralloc modifs = STRALLOC_ZERO ;
-    stralloc sa = STRALLOC_ZERO ;
+    stralloc env = STRALLOC_ZERO ;
+    stralloc cmdline = STRALLOC_ZERO ;
     exlsn_t info = EXLSN_ZERO ;
 
     PROG = "execl-envfile" ;
@@ -135,12 +129,12 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
     if (S_ISREG(st.st_mode)) {
 
-        if (!environ_merge_file(&modifs, path))
+        if (!environ_merge_file(&env, path))
             die_or_exec(path, insist, argv, envp) ;
 
     } else if (S_ISDIR(st.st_mode)) {
 
-        if (!environ_merge_dir(&modifs, path))
+        if (!environ_merge_dir(&env, path))
             die_or_exec(path, insist, argv, envp) ;
     } else {
 
@@ -148,44 +142,50 @@ int main (int argc, char const *const *argv, char const *const *envp)
         log_diesys(LOG_EXIT_USER, "invalid format for path: ", path) ;
     }
 
-    if (!environ_substitute(&modifs, &info))
+    // substitute variable inside the environment
+    if (!environ_substitute(&env, &info))
         log_dieusys(LOG_EXIT_SYS, "substitue environment variables") ;
 
-    if (!environ_clean_unexport(&modifs))
+    // remove exclamation mark
+    if (!environ_clean_unexport(&env))
         log_dieusys(LOG_EXIT_SYS, "remove exclamation mark from environment") ;
 
-    size_t n = env_len(envp) + 1 + sastr_nelement(&modifs) ;
-    char const *newenv[n + 1] ;
+    // create new environment merging the default one
+    // with the variable found at file/directory
+    size_t elen = env_len(envp) ;
+    size_t n = elen + 1 + sastr_nelement(&env) ;
+    char const *nenvp[n + 1] ;
 
-    if (!env_merge(newenv, n , envp, env_len(envp), modifs.s, modifs.len))
+    if (!env_merge(nenvp, n , envp, elen, env.s, env.len))
         log_dieusys(LOG_EXIT_SYS, "build environment") ;
 
-    modifs.len = 0 ;
-
-    if (!environ_import_arguments(&modifs, argv, argc))
+    // import execline script
+    stralloc sa = STRALLOC_ZERO ;
+    if (!environ_import_arguments(&sa, argv, argc))
         log_dieusys(LOG_EXIT_SYS, "import arguments to environment") ;
 
-    r = el_substitute(&sa, modifs.s, modifs.len, info.vars.s, info.values.s,
-        genalloc_s(elsubst_t const, &info.data), genalloc_len(elsubst_t const, &info.data)) ;
+    // el_substandrun_str, substitute variable inside the execline script
+    r = el_substitute(&cmdline, sa.s, sa.len,
+                    info.vars.s, info.values.s,
+                    genalloc_s(elsubst_t const, &info.data),
+                    genalloc_len(elsubst_t const, &info.data)) ;
 
     if (r < 0)
         log_dieusys(LOG_EXIT_SYS, "el_substitute") ;
     else if (!r) {
+        stralloc_free(&cmdline) ;
+        stralloc_free(&env) ;
         stralloc_free(&sa) ;
+        exlsn_free(&info) ;
         _exit(0) ;
     }
+    stralloc_free(&sa) ;
 
-    if (!stralloc_copyb(&modifs, info.modifs.s, info.modifs.len) ||
-        !stralloc_0(&modifs))
-            log_die_nomem("stralloc") ;
-
-    exlsn_free(&info) ;
-
-    char const *v[r + 1] ;
-    if (!env_make (v, r , sa.s, sa.len))
+    char const *nargv[r + 1] ;
+    if (!env_make(nargv, r, cmdline.s, cmdline.len))
         log_dieusys(LOG_EXIT_SYS, "make environment") ;
+    nargv[r] = 0 ;
+    // end of el_substandrun_str
 
-    v[r] = 0 ;
-
-    mexec_fm(v, newenv, env_len(newenv), modifs.s, modifs.len) ;
+    xmexec_em(nargv, nenvp, info.modifs.s, info.modifs.len) ;
 }
