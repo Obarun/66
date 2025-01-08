@@ -265,21 +265,24 @@ lib%.so.xyzzy:
 
 check:
 	@echo "Running tests..."
-	@find src/lib66 -type d -name test | while read testdir; do \
-		if [ -f $$testdir/Makefile ]; then \
-			echo "Building tests in $$testdir..."; \
-			$(MAKE) -C $$testdir LIB_PATH=$(PWD) all || exit 1; \
-			for binary in $$testdir/*; do \
-				if [ -x $$binary ]; then \
-					echo "Executing $$binary"; \
-					LD_LIBRARY_PATH=$(PWD):$$LD_LIBRARY_PATH $(MAKE) -C $$testdir run || exit 1; \
-				fi; \
-			done; \
-			echo "Cleaning up in $$testdir..."; \
-			$(MAKE) -C $$testdir clean; \
-		else \
-			echo "Skipping $$testdir: Makefile not found."; \
-		fi; \
+	@for dir in src/lib66 src/66; do \
+		echo "Scanning $$dir for tests..."; \
+		find $$dir -type d -name test | while read testdir; do \
+			if [ -f $$testdir/Makefile ]; then \
+				echo "Building tests in $$testdir..."; \
+				$(MAKE) -C $$testdir LIB_PATH=$(PWD) all || exit 1; \
+				for binary in $$testdir/*; do \
+					if [ -x $$binary ]; then \
+						echo "Executing $$binary"; \
+						LD_LIBRARY_PATH=$(PWD):$$LD_LIBRARY_PATH $(MAKE) -C $$testdir run || exit 1; \
+					fi; \
+				done; \
+				echo "Cleaning up in $$testdir..."; \
+				$(MAKE) -C $$testdir clean; \
+			else \
+				echo "Skipping $$testdir: Makefile not found."; \
+			fi; \
+		done; \
 	done
 
 .PHONY: it all clean check distclean tgz strip install install-dynlib install-libexec install-bin install-lib install-include install-data install-html install-man install-init
