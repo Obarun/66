@@ -79,6 +79,7 @@ static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, s
         if (!r) {
             if (!propagate)
                 log_warn("service: ", stk.s + pos, " is already removed -- ignoring it") ;
+            resolve_free(wres) ;
             continue ;
         }
 
@@ -118,6 +119,7 @@ static void remove_logger(resolve_service_t *res, ssexec_t *info)
 
         auto_remove(res->sa.s + res->io.fdout.destination) ;
         log_info("Removed successfully logger of: ", res->sa.s + res->name) ;
+        resolve_free(lwres) ;
         return ;
 
     }
@@ -125,6 +127,7 @@ static void remove_logger(resolve_service_t *res, ssexec_t *info)
     r = resolve_read_g(lwres, info->base.s, name) ;
     if (r <= 0) {
         log_warn("service: ", name, " is already removed -- ignoring it") ;
+        resolve_free(lwres) ;
         return ;
     }
 
@@ -322,7 +325,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
             size_t pos = 0 ;
             resolve_service_t mres = RESOLVE_SERVICE_ZERO ;
-            wres = resolve_set_struct(DATA_SERVICE, &mres) ;
+            resolve_wrapper_t_ref dwres = resolve_set_struct(DATA_SERVICE, &mres) ;
             _alloc_stk_(stk, strlen(c->res.sa.s + c->res.dependencies.contents) + 1) ;
 
             if (!stack_string_clean(&stk, c->res.sa.s + c->res.dependencies.contents))
@@ -330,7 +333,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
             FOREACH_STK(&stk, pos) {
 
-                r = resolve_read_g(wres, info->base.s, stk.s + pos) ;
+                r = resolve_read_g(dwres, info->base.s, stk.s + pos) ;
                 if (r <= 0) {
                     log_warnusys("read resolve file of: ", stk.s + pos) ;
                     continue ;
@@ -338,7 +341,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
                 remove_service(&mres, info) ;
             }
-            resolve_free(wres) ;
+            resolve_free(dwres) ;
         }
     }
 
