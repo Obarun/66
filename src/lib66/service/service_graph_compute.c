@@ -130,7 +130,7 @@ void service_graph_compute(graph_t *g, struct resolve_hash_s **hres, uint32_t fl
         }
     }
 
-    if (!graph_matrix_build(g))
+    if (!graph_matrix_build(g, flag))
         log_dieu(LOG_EXIT_SYS, "build the graph") ;
 
     if (!graph_matrix_analyze_cycle(g))

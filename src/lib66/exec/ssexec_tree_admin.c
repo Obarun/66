@@ -753,7 +753,7 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
         graph_free_matrix(g) ;
         graph_free_sort(g) ;
 
-        if (!graph_matrix_build(g))
+        if (!graph_matrix_build(g, 0))
             log_die(LOG_EXIT_SYS, "build the graph") ;
 
         if (!graph_matrix_analyze_cycle(g))

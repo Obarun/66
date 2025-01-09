@@ -69,7 +69,7 @@ void graph_build_tree(graph_t *g, struct resolve_hash_tree_s **htres, char const
         }
     }
 
-    if (!graph_matrix_build(g))
+    if (!graph_matrix_build(g, 0))
         log_dieu(LOG_EXIT_SYS, "build the graph") ;
 
     if (!graph_matrix_analyze_cycle(g))
