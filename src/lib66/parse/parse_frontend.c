@@ -164,8 +164,11 @@ int parse_frontend(char const *sv,
     else if (!isparsed)
         isparsed = STATE_FLAGS_FALSE ;
 
-    if (isparsed == STATE_FLAGS_TRUE && !force)
+    if (isparsed == STATE_FLAGS_TRUE && !force) {
+        stralloc_free(&sa) ;
+        resolve_free(wres) ;
         log_warn_return(2, "ignoring service: ", svname, " -- already parsed") ;
+    }
 
     {
         if (!parse_get_value_of_key(&store, sa.s, SECTION_MAIN, list_section_main, KEY_MAIN_TYPE))
