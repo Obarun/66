@@ -1,7 +1,7 @@
 /*
  * ssexec_remove.c
  *
- * Copyright (c) 2018-2024 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2018-2025 Eric Vidal <eric@obarun.org>
  *
  * All rights reserved.
  *
@@ -48,7 +48,7 @@ static void auto_remove(char const *path)
         log_dieusys(LOG_EXIT_SYS, "remove directory: ", path) ;
 }
 
-static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, stralloc *sa, ssexec_t *info)
+static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, stralloc *sa, ssexec_t *info, uint8_t propagate)
 {
     log_flow() ;
 
@@ -64,6 +64,9 @@ static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, s
     if (!stack_string_clean(&stk, res->sa.s + res->dependencies.requiredby))
         log_dieu(LOG_EXIT_SYS, "convert string") ;
 
+    if (propagate)
+        log_1_warn("service: ", res->sa.s + res->name," can be started again by its required-by dependencies: ", res->sa.s + res->dependencies.requiredby) ;
+
     FOREACH_STK(&stk, pos) {
 
         resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
@@ -74,7 +77,8 @@ static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, s
             log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", stk.s + pos) ;
 
         if (!r) {
-            log_warn("service: ", stk.s + pos, " is already removed -- ignoring it") ;
+            if (!propagate)
+                log_warn("service: ", stk.s + pos, " is already removed -- ignoring it") ;
             continue ;
         }
 
@@ -83,16 +87,18 @@ static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, s
             if (!state_read(&ste, &dres))
                 log_dieusys(LOG_EXIT_SYS, "read state file of: ", stk.s + pos, " -- please make a bug report") ;
 
-            if (ste.issupervised == STATE_FLAGS_TRUE)
+            if (ste.issupervised == STATE_FLAGS_TRUE && !propagate)
                 if (!sastr_add_string(sa, stk.s + pos))
                     log_dieusys(LOG_EXIT_SYS, "add service: ", stk.s + pos, " to stop selection") ;
 
-            log_trace("add service: ", stk.s + pos, " to the service selection") ;
-            if (!hash_add(hres, stk.s + pos, dres))
-                log_dieu(LOG_EXIT_SYS, "append service selection with: ", stk.s + pos) ;
+            if (!propagate) {
+                log_trace("add service: ", stk.s + pos, " to the service selection") ;
+                if (!hash_add(hres, stk.s + pos, dres))
+                    log_dieu(LOG_EXIT_SYS, "append service selection with: ", stk.s + pos) ;
+            }
 
-            if (dres.dependencies.nrequiredby)
-                compute_deps(&dres, hres, sa, info) ;
+            if (dres.dependencies.nrequiredby && !propagate)
+                compute_deps(&dres, hres, sa, info, propagate) ;
         }
     }
 
@@ -263,8 +269,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
             if (!hash_add(&hres, argv[pos], res))
                 log_dieu(LOG_EXIT_SYS, "append service selection with: ", argv[pos]) ;
 
-            if (!siglen)
-                compute_deps(&res, &hres, &sa, info) ;
+            compute_deps(&res, &hres, &sa, info, siglen) ;
         }
     }
 
@@ -297,6 +302,10 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
         newargv[m] = 0 ;
 
         PROG = "stop" ;
+        /** TODO, it should be a new process
+         * to avoid to crash. This is the remove process,
+         * and should always return true as the main goal is
+         * to remove the service. */
         if (ssexec_stop(nargc, newargv, info))
             log_dieu(LOG_EXIT_SYS, "stop service selection") ;
         PROG = prog ;
@@ -313,7 +322,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
             size_t pos = 0 ;
             resolve_service_t mres = RESOLVE_SERVICE_ZERO ;
-            resolve_wrapper_t_ref mwres = resolve_set_struct(DATA_SERVICE, &mres) ;
+            wres = resolve_set_struct(DATA_SERVICE, &mres) ;
             _alloc_stk_(stk, strlen(c->res.sa.s + c->res.dependencies.contents) + 1) ;
 
             if (!stack_string_clean(&stk, c->res.sa.s + c->res.dependencies.contents))
@@ -321,7 +330,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
             FOREACH_STK(&stk, pos) {
 
-                r = resolve_read_g(mwres, info->base.s, stk.s + pos) ;
+                r = resolve_read_g(wres, info->base.s, stk.s + pos) ;
                 if (r <= 0) {
                     log_warnusys("read resolve file of: ", stk.s + pos) ;
                     continue ;
@@ -329,7 +338,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
                 remove_service(&mres, info) ;
             }
-            resolve_free(mwres) ;
+            resolve_free(wres) ;
         }
     }
 
