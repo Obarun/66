@@ -186,18 +186,24 @@ static void info_display_empty(void)
 
 static void info_display_name(char const *field, resolve_service_t *res)
 {
+    log_flow() ;
+
     if (NOFIELD) info_display_field_name(field) ;
     info_display_string(res->sa.s + res->name) ;
 }
 
 static void info_display_version(char const *field,resolve_service_t *res)
 {
+    log_flow() ;
+
     if (NOFIELD) info_display_field_name(field) ;
     info_display_string(res->sa.s + res->version) ;
 }
 
 static void info_display_intree(char const *field,resolve_service_t *res)
 {
+    log_flow() ;
+
     if (NOFIELD) info_display_field_name(field) ;
     info_display_string(res->sa.s + res->treename) ;
 }
@@ -260,6 +266,8 @@ static void info_get_status(resolve_service_t *res)
 
 static void info_display_status(char const *field,resolve_service_t *res)
 {
+    log_flow() ;
+
     ss_state_t ste = STATE_ZERO ;
     uint32_t disen = 0 ;
 
@@ -282,18 +290,24 @@ static void info_display_status(char const *field,resolve_service_t *res)
 
 static void info_display_type(char const *field,resolve_service_t *res)
 {
+    log_flow() ;
+
     if (NOFIELD) info_display_field_name(field) ;
     info_display_string(get_key_by_enum(list_type, res->type)) ;
 }
 
 static void info_display_description(char const *field,resolve_service_t *res)
 {
+    log_flow() ;
+
     if (NOFIELD) info_display_field_name(field) ;
     info_display_string(res->sa.s + res->description) ;
 }
 
 static void info_display_inns(char const *field,resolve_service_t *res)
 {
+    log_flow() ;
+
     if (NOFIELD) info_display_field_name(field) ;
     if (!res->inns)
         info_display_empty() ;
@@ -303,36 +317,48 @@ static void info_display_inns(char const *field,resolve_service_t *res)
 
 static void info_display_notify(char const *field,resolve_service_t *res)
 {
+    log_flow() ;
+
     if (NOFIELD) info_display_field_name(field) ;
     info_display_int(res->notify) ;
 }
 
 static void info_display_maxdeath(char const *field, resolve_service_t *res)
 {
+    log_flow() ;
+
     if (NOFIELD) info_display_field_name(field) ;
     info_display_int(res->maxdeath) ;
 }
 
 static void info_display_earlier(char const *field,resolve_service_t *res)
 {
+    log_flow() ;
+
     if (NOFIELD) info_display_field_name(field) ;
     info_display_int(res->earlier) ;
 }
 
 static void info_display_source(char const *field,resolve_service_t *res)
 {
+    log_flow() ;
+
     if (NOFIELD) info_display_field_name(field) ;
     info_display_string(res->sa.s + res->path.frontend) ;
 }
 
 static void info_display_live(char const *field,resolve_service_t *res)
 {
+    log_flow() ;
+
     if (NOFIELD) info_display_field_name(field) ;
     info_display_string(res->sa.s + res->live.scandir) ;
 }
 
 static void info_display_requiredby(char const *field, resolve_service_t *res)
 {
+    log_flow() ;
+
     size_t padding = 1 ;
     int r ;
     graph_t graph = GRAPH_ZERO ;
@@ -342,9 +368,9 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    service_graph_collect(&graph, res->sa.s + res->name, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTDOWN) ;
+    service_graph_collect(&graph, res->sa.s + res->name, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTDOWN|STATE_FLAGS_MISSING) ;
 
-    service_graph_compute(&graph, &hres, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTDOWN) ;
+    service_graph_compute(&graph, &hres, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTDOWN|STATE_FLAGS_MISSING) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
@@ -409,6 +435,8 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
 
 static void info_display_deps(char const *field, resolve_service_t *res)
 {
+    log_flow() ;
+
     int r ;
     size_t padding = 1 ;
     graph_t graph = GRAPH_ZERO ;
@@ -419,9 +447,9 @@ static void info_display_deps(char const *field, resolve_service_t *res)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    service_graph_collect(&graph, res->sa.s + res->name, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
+    service_graph_collect(&graph, res->sa.s + res->name, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP|STATE_FLAGS_MISSING) ;
 
-    service_graph_compute(&graph, &hres, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
+    service_graph_compute(&graph, &hres, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP|STATE_FLAGS_MISSING) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
@@ -486,6 +514,8 @@ static void info_display_deps(char const *field, resolve_service_t *res)
 
 static void info_display_optsdeps(char const *field, resolve_service_t *res)
 {
+    log_flow() ;
+
     _alloc_sa_(salist) ;
 
     if (NOFIELD) info_display_field_name(field) ;
@@ -508,6 +538,8 @@ static void info_display_optsdeps(char const *field, resolve_service_t *res)
 
 static void info_display_contents(char const *field, resolve_service_t *res)
 {
+    log_flow() ;
+
     size_t padding = 1 ;
     graph_t graph = GRAPH_ZERO ;
     _alloc_sa_(sa) ;
@@ -528,7 +560,7 @@ static void info_display_contents(char const *field, resolve_service_t *res)
     if (!sa.len)
         goto empty ;
 
-    service_graph_g(sa.s, sa.len, &graph, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
+    service_graph_g(sa.s, sa.len, &graph, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP|STATE_FLAGS_MISSING) ;
 
     if (!graph.mlen)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
@@ -576,6 +608,8 @@ static void info_display_contents(char const *field, resolve_service_t *res)
 
 static void info_display_start(char const *field,resolve_service_t *res)
 {
+    log_flow() ;
+
     if (NOFIELD) info_display_field_name(field) ;
     else field = 0 ;
 
@@ -592,6 +626,8 @@ static void info_display_start(char const *field,resolve_service_t *res)
 
 static void info_display_stop(char const *field,resolve_service_t *res)
 {
+    log_flow() ;
+
     if (NOFIELD) info_display_field_name(field) ;
     else field = 0 ;
 
@@ -608,6 +644,8 @@ static void info_display_stop(char const *field,resolve_service_t *res)
 
 static void info_display_envat(char const *field,resolve_service_t *res)
 {
+    log_flow() ;
+
     if (NOFIELD) info_display_field_name(field) ;
     _alloc_sa_(salink) ;
 
@@ -636,6 +674,8 @@ static void info_display_envat(char const *field,resolve_service_t *res)
 
 static void info_display_envfile(char const *field,resolve_service_t *res)
 {
+    log_flow() ;
+
     if (NOFIELD) info_display_field_name(field) ;
     else field = 0 ;
 
@@ -733,6 +773,8 @@ static void info_display_envfile(char const *field,resolve_service_t *res)
 
 static void info_display_logname(char const *field,resolve_service_t *res)
 {
+    log_flow() ;
+
     if (NOFIELD) info_display_field_name(field) ;
     if (res->type == TYPE_CLASSIC) {
         if (res->logger.want) {
@@ -746,6 +788,8 @@ static void info_display_logname(char const *field,resolve_service_t *res)
 
 static void info_display_stdin(char const *field, resolve_service_t *res)
 {
+    log_flow() ;
+
     _alloc_sa_(sa) ;
     if (NOFIELD) info_display_field_name(field) ;
     if (res->type != TYPE_MODULE && res->io.fdin.destination) {
@@ -762,6 +806,8 @@ static void info_display_stdin(char const *field, resolve_service_t *res)
 
 static void info_display_stdout(char const *field, resolve_service_t *res)
 {
+    log_flow() ;
+
     _alloc_sa_(sa) ;
     if (NOFIELD) info_display_field_name(field) ;
     if (res->type != TYPE_MODULE && res->io.fdout.destination) {
@@ -778,6 +824,8 @@ static void info_display_stdout(char const *field, resolve_service_t *res)
 
 static void info_display_stderr(char const *field, resolve_service_t *res)
 {
+    log_flow() ;
+
     _alloc_sa_(sa) ;
     if (NOFIELD) info_display_field_name(field) ;
     if (res->type != TYPE_MODULE && res->io.fderr.destination) {
@@ -794,6 +842,8 @@ static void info_display_stderr(char const *field, resolve_service_t *res)
 
 static void info_display_logfile(char const *field,resolve_service_t *res)
 {
+    log_flow() ;
+
     if (NOFIELD) info_display_field_name(field) ;
     if (res->type != TYPE_MODULE)
     {
@@ -892,7 +942,7 @@ void info_status_all(void)
     _alloc_sa_(sa) ;
     struct resolve_hash_tree_s *htres = NULL ;
     graph_t graph = GRAPH_ZERO ;
-    int flag = STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP|STATE_FLAGS_WANTDOWN;
+    int flag = STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP|STATE_FLAGS_WANTDOWN|STATE_FLAGS_MISSING;
     graph_build_tree(&graph, &htres, pinfo->base.s, E_RESOLVE_TREE_MASTER_CONTENTS) ;
 
     if (!graph_matrix_sort_tosa(&sa, &graph))
