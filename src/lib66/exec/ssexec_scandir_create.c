@@ -597,7 +597,7 @@ static void create_service_fdholder(char const *scandir, ssexec_t *info)
 
     create_service_skel(SS_FDHOLDER, scandir, "1\n", info) ;
 
-    char dst[fdlen + info->ownerlen + 20 + 1] ;
+    char dst[fdlen + info->ownerlen + 20 + 24 + 1] ;
     auto_strings(dst, scandir, "/", SS_FDHOLDER, "/data/rules/uid/", info->ownerstr, "/env") ;
 
     auto_dir(dst, 0755) ;
