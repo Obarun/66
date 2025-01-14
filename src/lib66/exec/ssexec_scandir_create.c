@@ -21,6 +21,7 @@
 
 #include <oblibs/string.h>
 #include <oblibs/log.h>
+#include <oblibs/io.h>
 #include <oblibs/directory.h>
 #include <oblibs/types.h>
 #include <oblibs/files.h>
@@ -227,7 +228,7 @@ static buffer init_buffer(char const *dst, char const *file, size_t len)
 
     fd = open_trunc(w) ;
 
-    if (fd < 0  || ndelay_off(fd) < 0)
+    if (fd < 0  || !io_set_block(fd))
         log_die(LOG_EXIT_SYS,"open trunc") ;
 
     buffer_init(&b,&fd_writev, fd, buf, len) ;

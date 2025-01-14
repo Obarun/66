@@ -4,8 +4,6 @@
 #include <oblibs/sastr.h>
 #include <oblibs/environ.h>
 
-#include <skalibs/env.h>
-
 void envfile(const char *efile, const char *script, const char **env, const char *expect)
 {
     _alloc_sa_(saenv) ;
@@ -16,11 +14,11 @@ void envfile(const char *efile, const char *script, const char **env, const char
     assert(environ_substitute(&saenv, &info) == 1) ;
     assert(environ_clean_unexport(&saenv) == 1) ;
 
-    size_t elen = env_len(env) ;
+    size_t elen = environ_length(env) ;
     size_t n = elen + 1 +  sastr_nelement(&saenv) ;
 
     char const *nenv[n + 1] ;
-    assert(env_merge(nenv, n , env, elen, saenv.s, saenv.len) != 0) ;
+    assert(environ_merge(nenv, n , env, elen, saenv.s, saenv.len) != 0) ;
 
 
     _alloc_sa_(t) ;
@@ -50,11 +48,11 @@ void envfile_fail(const char *efile, const char *script, const char **env, const
     assert(environ_substitute(&saenv, &info) == 1) ;
     assert(environ_clean_unexport(&saenv) == 1) ;
 
-    size_t elen = env_len(env) ;
+    size_t elen = environ_length(env) ;
     size_t n = elen + 1 +  sastr_nelement(&saenv) ;
 
     char const *nenv[n + 1] ;
-    assert(env_merge(nenv, n , env, elen, saenv.s, saenv.len) != 0) ;
+    assert(environ_merge(nenv, n , env, elen, saenv.s, saenv.len) != 0) ;
 
     int r = el_substitute(&cmdline, script, strlen(script),
                     info.vars.s, info.values.s,

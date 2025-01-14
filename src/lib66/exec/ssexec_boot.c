@@ -484,9 +484,8 @@ static inline void make_cmdline(char const *prog,char const **add,int len,char c
     size_t elen = sastr_nelement(env) ;
     char const *e[elen+1] ;
 
-    if (!env_make(e, elen, env->s, env->len))
+    if (!environ_make(e, elen, env->s, env->len))
         sulogin("make environment", "") ;
-    e[elen] = 0 ;
 
     pid_t pid ;
     int wstat ;

@@ -24,7 +24,6 @@
 
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
-#include <skalibs/env.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/cspawn.h>
 #include <skalibs/bytestr.h>
@@ -111,10 +110,10 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
             stralloc_free(&dst) ;
         }
 
-        n = env_len((const char *const *)environ) + 1 + byte_count(env.s, env.len, '\0') ;
+        n = environ_length((const char *const *)environ) + 1 + byte_count(env.s, env.len, '\0') ;
         char const *newenv[n + 1] ;
 
-        if (!env_merge(newenv, n ,(const char *const *)environ,env_len((const char *const *)environ), env.s, env.len))
+        if (!environ_merge(newenv, n ,(const char *const *)environ, environ_length((const char *const *)environ), env.s, env.len))
             log_dieu(LOG_EXIT_SYS, "build environment") ;
 
         if (chdir(pwd) < 0)

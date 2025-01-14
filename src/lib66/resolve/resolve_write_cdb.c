@@ -19,6 +19,7 @@
 #include <stdio.h>//rename
 
 #include <oblibs/log.h>
+#include <oblibs/io.h>
 #include <oblibs/string.h>
 
 #include <skalibs/djbunix.h>
@@ -43,7 +44,7 @@ int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *nam
     auto_strings(tfile, "/tmp/", name, ":", "XXXXXX") ;
 
     fd = mkstemp(tfile) ;
-    if (fd < 0 || ndelay_off(fd)) {
+    if (fd < 0 || !io_set_block(fd)) {
         log_warnusys("mkstemp: ", tfile) ;
         goto err_fd ;
     }

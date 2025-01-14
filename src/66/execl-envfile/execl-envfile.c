@@ -26,7 +26,6 @@
 #include <skalibs/exec.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/env.h>
 
 #include <66/config.h>
 
@@ -152,11 +151,11 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
     // create new environment merging the default one
     // with the variable found at file/directory
-    size_t elen = env_len(envp) ;
+    size_t elen = environ_length(envp) ;
     size_t n = elen + 1 + sastr_nelement(&env) ;
     char const *nenvp[n + 1] ;
 
-    if (!env_merge(nenvp, n , envp, elen, env.s, env.len))
+    if (!environ_merge(nenvp, n , envp, elen, env.s, env.len))
         log_dieusys(LOG_EXIT_SYS, "build environment") ;
 
     // import execline script
@@ -182,9 +181,9 @@ int main (int argc, char const *const *argv, char const *const *envp)
     stralloc_free(&sa) ;
 
     char const *nargv[r + 1] ;
-    if (!env_make(nargv, r, cmdline.s, cmdline.len))
+    if (!environ_make(nargv, r, cmdline.s, cmdline.len))
         log_dieusys(LOG_EXIT_SYS, "make environment") ;
-    nargv[r] = 0 ;
+
     // end of el_substandrun_str
 
     xmexec_em(nargv, nenvp, info.modifs.s, info.modifs.len) ;
