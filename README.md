@@ -115,3 +115,7 @@ This Roadmap for the next releases is not writting in the stone. Feel free to ma
   Every scandir will start with environment variable define by user through configuration file at specific directory, for instance `/etc/66/environment`.
 
 * [ ] Ability through a new command to update the general environment.
+
+* [ ] Provide Hook for boot process
+
+  Allow at specific point of the boot process to execute specific tasks given by user.
