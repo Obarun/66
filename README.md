@@ -94,6 +94,10 @@ This Roadmap for the next releases is not writting in the stone. Feel free to ma
 
   Allow to declare a conflicting service through the `Conflicts` field, e.g. `connmand` service will declare `Conflicts = ( Networkmanager )`.
 
+* [ ] Provide a `Replaces` keyword at frontend file:
+
+  Allow to declare a alias service through the `Replaces` field, e.g. `connmand` service will declare `Replaces = ( Network )`.
+
 * [ ] Provide keyword for basic operations:
 
   Certain repetitive tasks can be more efficiently managed directly by `66` in C rather than scripting them in the `Execute` field. For example, utilizing a `WorkDir` keyword can facilitate moving to the declared WorkDir value before executing the script.
