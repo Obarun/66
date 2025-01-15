@@ -20,11 +20,12 @@
 #include <oblibs/stack.h>
 #include <oblibs/string.h>
 #include <oblibs/lexer.h>
+#include <oblibs/hash.h>
 
 #include <66/service.h>
 #include <66/graph.h>
 #include <66/state.h>
-#include <66/hash.h>
+
 
 static void issupervised(char *store, struct resolve_hash_s **hres, char const *str)
 {

@@ -18,6 +18,7 @@
 #include <oblibs/types.h>
 #include <oblibs/graph.h>
 #include <oblibs/sastr.h>
+#include <oblibs/hash.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/genalloc.h>
@@ -30,7 +31,6 @@
 #include <66/sanitize.h>
 #include <66/service.h>
 #include <66/enum.h>
-#include <66/hash.h>
 
 int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
 {

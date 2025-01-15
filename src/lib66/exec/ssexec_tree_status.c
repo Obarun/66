@@ -26,6 +26,7 @@
 #include <oblibs/files.h>
 #include <oblibs/lexer.h>
 #include <oblibs/stack.h>
+#include <oblibs/hash.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/genalloc.h>
@@ -42,7 +43,6 @@
 #include <66/graph.h>
 #include <66/ssexec.h>
 #include <66/state.h>
-#include <66/hash.h>
 
 static unsigned int REVERSE = 0 ;
 static unsigned int NOFIELD = 1 ;

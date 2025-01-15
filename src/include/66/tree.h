@@ -18,13 +18,14 @@
 #include <sys/types.h>
 #include <stdint.h>
 
+#include <oblibs/hash.h>
+
 #include <skalibs/stralloc.h>
 #include <skalibs/cdb.h>
 #include <skalibs/cdbmake.h>
 
 #include <66/ssexec.h>
 #include <66/resolve.h>
-#include <66/hash.h>
 
 #define TREE_GROUPS_BOOT "boot"
 #define TREE_GROUPS_BOOT_LEN (sizeof TREE_GROUPS_BOOT - 1)

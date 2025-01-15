@@ -18,11 +18,11 @@
 #include <stdint.h>
 
 #include <oblibs/graph.h>
+#include <oblibs/hash.h>
 
 #include <66/service.h>
 #include <66/tree.h>
 #include <66/ssexec.h>
-#include <66/hash.h>
 
 extern void graph_build_tree(graph_t *g, struct resolve_hash_tree_s **htres, char const *base, resolve_tree_master_enum_t field) ;
 extern void graph_build_system(graph_t *g, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag) ;

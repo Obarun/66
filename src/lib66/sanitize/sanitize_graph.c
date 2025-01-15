@@ -20,6 +20,7 @@
 #include <oblibs/graph.h>
 #include <oblibs/string.h>
 #include <oblibs/sastr.h>
+#include <oblibs/hash.h>
 
 #include <skalibs/stralloc.h>
 
@@ -31,7 +32,6 @@
 #include <66/graph.h>
 #include <66/constants.h>
 #include <66/enum.h>
-#include <66/hash.h>
 
 /** rewrite depends/requiredby of each service
  * found on the system */

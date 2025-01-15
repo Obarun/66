@@ -24,6 +24,7 @@
 #include <oblibs/sastr.h>
 #include <oblibs/directory.h>
 #include <oblibs/lexer.h>
+#include <oblibs/hash.h>
 
 #include <skalibs/posixplz.h>
 #include <skalibs/stralloc.h>
@@ -39,7 +40,6 @@
 #include <66/constants.h>
 #include <66/svc.h>
 #include <66/utils.h>
-#include <66/hash.h>
 
 static void auto_remove(char const *path)
 {

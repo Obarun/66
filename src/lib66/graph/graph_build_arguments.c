@@ -17,9 +17,9 @@
 #include <oblibs/log.h>
 #include <oblibs/sastr.h>
 #include <oblibs/environ.h>
+#include <oblibs/hash.h>
 
 #include <66/graph.h>
-#include <66/hash.h>
 #include <66/ssexec.h>
 
 
