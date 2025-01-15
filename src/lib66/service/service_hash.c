@@ -17,10 +17,9 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/hash.h>
 
 #include <66/service.h>
-#include <66/hash.h>
-
 #include <66/resolve.h>
 
 int hash_add(struct resolve_hash_s **hash, char const *name, resolve_service_t res)

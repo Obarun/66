@@ -19,13 +19,14 @@
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/stack.h>
+#include <oblibs/hash.h>
 
 #include <66/service.h>
 #include <66/graph.h>
 #include <66/ssexec.h>
 #include <66/state.h>
 #include <66/enum.h>
-#include <66/hash.h>
+
 
 static void debug_flag(uint32_t flag)
 {

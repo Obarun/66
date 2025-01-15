@@ -21,6 +21,7 @@
 #include <oblibs/types.h>
 #include <oblibs/stack.h>
 #include <oblibs/lexer.h>
+#include <oblibs/hash.h>
 
 #include <66/service.h>
 #include <66/resolve.h>
@@ -28,7 +29,7 @@
 #include <66/state.h>
 #include <66/graph.h>
 #include <66/enum.h>
-#include <66/hash.h>
+
 
 /** keep services from slist dependending of the flag passed.
  * STATE_FLAGS_TOPARSE -> call sanitize_source

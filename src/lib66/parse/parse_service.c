@@ -23,6 +23,7 @@
 #include <oblibs/sastr.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
+#include <oblibs/hash.h>
 
 #include <skalibs/djbunix.h>
 
@@ -39,7 +40,6 @@
 #include <66/graph.h>
 #include <66/sanitize.h>
 #include <66/symlink.h>
-#include <66/hash.h>
 
 lexer_config LEXER_CONFIG_SECTION = { \
     .str = 0,\

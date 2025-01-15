@@ -20,13 +20,13 @@
 #include <oblibs/sastr.h>
 #include <oblibs/stack.h>
 #include <oblibs/lexer.h>
+#include <oblibs/hash.h>
 
 #include <66/parse.h>
 #include <66/service.h>
 #include <66/resolve.h>
 #include <66/enum.h>
 #include <66/constants.h>
-#include <66/hash.h>
 
 static void parse_prefix(char *result, stack *stk, struct resolve_hash_s **hres, char const *prefix)
 {

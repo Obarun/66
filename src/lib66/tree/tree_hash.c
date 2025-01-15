@@ -17,10 +17,9 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/hash.h>
 
 #include <66/tree.h>
-#include <66/hash.h>
-
 #include <66/resolve.h>
 
 int hash_add_tree(struct resolve_hash_tree_s **hash, char const *name, resolve_tree_t res)
