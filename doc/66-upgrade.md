@@ -11,7 +11,23 @@ author: Eric Vidal <eric@obarun.org>
 
 ---
 
-# IN 0.8.0.1
+# In 0.8.0.2
+
+- Adaptation to `oblibs` 0.3.2.0
+
+## Bug Fixes
+
+- Different documentation typo and bugs fix.
+- Restart command: explicitly call stop and start command separately to avoid notification readiness issues. Retrieve the exact same services states for interdependences services after a restart command.
+- Frontend parsing: handle all possible cases on '()' format.
+- reconfigure command: respect `-p` option.
+- 66-execute: respect exclamation mark to avoid polluting the environment variable.
+- status command: avoid to crash reading status of service just after using a `66 remove -P` command.
+- scandir command: fix stack overflow at `create` command.
+
+---
+
+# In 0.8.0.1
 
 ## Bug Fixes
 

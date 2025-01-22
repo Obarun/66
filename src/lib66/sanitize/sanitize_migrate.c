@@ -22,11 +22,12 @@
 
 #include <66/migrate_0721.h>
 
-#define MIGRATE_NVERSION 3
+#define MIGRATE_NVERSION 4
 static const char *version_list[MIGRATE_NVERSION] = {
     "0.7.2.1",
     "0.8.0.0",
-    "0.8.0.1"
+    "0.8.0.1",
+    "0.8.0.2",
 } ;
 
 enum migrate_version_e
@@ -34,13 +35,16 @@ enum migrate_version_e
     VERSION_0721 = 0,
     VERSION_0800,
     VERSION_0801,
+    VERSION_0802,
     VERSION_ENDOFKEY
 } ;
 
-static const uint8_t migrate_state [3][3] = {
-    { VERSION_ENDOFKEY, VERSION_0800, VERSION_0800 }, // VERSION_0721
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_0801 }, // VERSION_0800
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY }, // VERSION_0801
+static const uint8_t migrate_state [MIGRATE_NVERSION][MIGRATE_NVERSION] = {
+    //  VERSION_0721    VERSION_0800      VERSION_0801    VERSION_0802  installed
+    { VERSION_ENDOFKEY, VERSION_0800,     VERSION_0800,     VERSION_0800 }, // VERSION_0721 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_0801,     VERSION_0802 }, // VERSION_0800 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_0802 }, // VERSION_0801 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY }, // VERSION_0802 old
 } ;
 
 static uint8_t str_to_int(const char *version)
@@ -56,11 +60,11 @@ static uint8_t str_to_int(const char *version)
 }
 
 /** Return 0 if no migration was made else 1 */
-int sanitize_migrate(ssexec_t *info, const char *sversion, short exist)
+int sanitize_migrate(ssexec_t *info, const char *oversion, short exist)
 {
     log_flow() ;
 
-    uint8_t state = str_to_int(sversion), current = str_to_int(SS_VERSION), did = 0 ;
+    uint8_t state = str_to_int(oversion), current = str_to_int(SS_VERSION), did = 0 ;
 
     while (state < VERSION_ENDOFKEY) {
 
@@ -85,6 +89,7 @@ int sanitize_migrate(ssexec_t *info, const char *sversion, short exist)
                 break ;
 
             case VERSION_0801:
+            case VERSION_0802:
                 state = VERSION_ENDOFKEY ;
                 did++ ;
                 break ;
