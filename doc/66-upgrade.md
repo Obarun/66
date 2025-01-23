@@ -13,7 +13,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # In 0.8.0.2
 
-- Adaptation to `oblibs` 0.3.2.0
+- Adaptation to `oblibs` 0.3.2.1
 
 ## Bug Fixes
 
