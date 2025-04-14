@@ -40,7 +40,7 @@ int parse_compute_list(resolve_wrapper_t_ref wres, stack *store, uint32_t *res, 
     int r, found = 0 ;
     size_t len = store->len, pos = 0 ;
     size_t nelement = stack_count_element(store) ;
-    stralloc tmp = STRALLOC_ZERO ;
+    _alloc_sa_(tmp) ;
     char const *exclude[2] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1 } ;
     char f[len + nelement + 2] ;
 
@@ -74,9 +74,10 @@ int parse_compute_list(resolve_wrapper_t_ref wres, stack *store, uint32_t *res, 
             break ;
     }
 
-    f[strlen(f) - 1] = 0 ;
+    if (!(*res) && opts)
+        return 0 ;
 
-    stralloc_free(&tmp) ;
+    f[strlen(f) - 1] = 0 ;
 
     return resolve_add_string(wres, f) ;
 }

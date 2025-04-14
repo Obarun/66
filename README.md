@@ -1,4 +1,4 @@
-![GitLabl Build Status](https://git.obarun.org/Obarun/66/badges/master/pipeline.svg)
+![GitLabl Build Status](https://git.obarun.org/Obarun/66/badges/master/pipeline.svg) ![latest release](https://git.obarun.org/Obarun/66/-/badges/release.svg)
 
 # 66 - Service Manager Built Around the S6 Supervision Suite
 

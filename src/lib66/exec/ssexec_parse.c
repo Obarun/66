@@ -36,7 +36,7 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
 
     int r = 0 ;
     uint8_t force = 0 , conf = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
+    _alloc_sa_(sa) ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -126,7 +126,6 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
         hash_free(&hres) ;
     }
 
-    stralloc_free(&sa) ;
     sanitize_graph(info) ;
 
     return 0 ;

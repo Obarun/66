@@ -109,24 +109,17 @@ int parse_frontend(char const *sv,
     if (!ob_dirname(svsrc, sv))
         log_dieu(LOG_EXIT_SYS, "get dirname of: ", sv) ;
 
+    hash = hash_search(hres, svname) ;
+    if (hash != NULL)
+        log_warn_return(2, "ignoring: ", svname, " service -- already appended to the selection") ;
+
     if (inns) {
-
-        hash = hash_search(hres, svname) ;
-        if (hash != NULL)
-            log_warn_return(2, "ignoring: ", svname, " service -- already appended to the selection") ;
-
         char n[strlen(inns) + 1 + strlen(svname) + 1] ;
         auto_strings(n, inns, ":", svname) ;
 
         hash = hash_search(hres, n) ;
         if (hash != NULL)
             log_warn_return(2, "ignoring: ", n, " service -- already appended to the selection") ;
-
-    } else {
-
-        hash = hash_search(hres, svname) ;
-        if (hash != NULL)
-            log_warn_return(2, "ignoring: ", svname, " service -- already appended to the selection") ;
     }
 
     log_trace("parse service: ", sv) ;
@@ -237,6 +230,11 @@ int parse_frontend(char const *sv,
 
             _alloc_stk_(frontend, mlen + SS_MODULE_FRONTEND_LEN + strlen(realname) + 2) ;
 
+            /** TODO:
+             *
+             * BUG, the service can be inside a subdirectory.
+             *
+             * */
             auto_strings(frontend.s, dir.s, SS_MODULE_FRONTEND + 1, "/", realname) ;
 
             res.path.frontend = resolve_add_string(wres, frontend.s) ;

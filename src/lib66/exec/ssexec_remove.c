@@ -65,7 +65,7 @@ static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, s
         log_dieu(LOG_EXIT_SYS, "convert string") ;
 
     if (propagate)
-        log_1_warn("service: ", res->sa.s + res->name," can be started again by its required-by dependencies: ", res->sa.s + res->dependencies.requiredby) ;
+        log_1_warn("service: ", res->sa.s + res->name," is needed by its required-by dependencies: ", res->sa.s + res->dependencies.requiredby) ;
 
     FOREACH_STK(&stk, pos) {
 
@@ -78,7 +78,7 @@ static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, s
 
         if (!r) {
             if (!propagate)
-                log_warn("service: ", stk.s + pos, " is already removed -- ignoring it") ;
+                log_warn("service: ", stk.s + pos, " doesn't exist -- ignoring it") ;
             resolve_free(wres) ;
             continue ;
         }
