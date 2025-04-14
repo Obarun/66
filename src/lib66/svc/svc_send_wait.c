@@ -22,7 +22,7 @@
 #include <66/resolve.h>
 #include <66/ssexec.h>
 
-int svc_send_wait(char const *const *list, unsigned int nservice, char **sig, unsigned int siglen, ssexec_t *info)
+int svc_send_wait(char const *const *list, uint32_t nservice, char **sig, unsigned int siglen, ssexec_t *info)
 {
     log_flow() ;
 

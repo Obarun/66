@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -25,7 +26,6 @@
 #include <oblibs/environ.h>
 
 #include <skalibs/types.h>
-#include <skalibs/tai.h>
 #include <skalibs/selfpipe.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/cspawn.h>
@@ -40,7 +40,7 @@
 #include <66/state.h>
 #include <66/svc.h>
 
-static unsigned int napid = 0 ;
+static uint32_t napid = 0 ;
 static unsigned int npid = 0 ;
 
 static char data[DATASIZE + 1] ;
@@ -103,7 +103,7 @@ static inline void kill_all(pidservice_t *apids)
 {
     log_flow() ;
 
-    unsigned int j = napid ;
+    uint32_t j = napid ;
     while (j--) kill(apids[j].pid, SIGKILL) ;
 }
 
@@ -136,7 +136,7 @@ static void notify(pidservice_t *apids, unsigned int pos, char const *sig, unsig
 {
     log_flow() ;
 
-    unsigned int i = 0, idx = 0 ;
+    uint32_t i = 0, idx = 0 ;
     char fmt[UINT_FMT] ;
     uint8_t flag = what ? SVC_FLAGS_DOWN : SVC_FLAGS_UP ;
 
@@ -144,7 +144,7 @@ static void notify(pidservice_t *apids, unsigned int pos, char const *sig, unsig
 
         for (idx = 0 ; idx < napid ; idx++) {
 
-            if (apids[pos].notif[i] == apids[idx].vertex && !FLAGS_ISSET(apids[idx].state, flag))  {
+            if (apids[pos].notif[i]->index == apids[idx].index && !FLAGS_ISSET(apids[idx].state, flag))  {
 
                 size_t nlen = uint_fmt(fmt, pos) ;
                 fmt[nlen] = 0 ;
@@ -163,13 +163,14 @@ static void notify(pidservice_t *apids, unsigned int pos, char const *sig, unsig
 
 /**
  * @what: up or down
- * @success: 0 fail, 1 win
+ * @success: 0 success, 1 fail
  * */
 static void announce(unsigned int pos, pidservice_t *apids, unsigned int what, unsigned int success, unsigned int exitcode)
 {
     log_flow() ;
 
     int fd = 0 ;
+
     char fmt[UINT_FMT] ;
     char const *name = apids[pos].res->sa.s + apids[pos].res->name ;
     char const *scandir = apids[pos].res->sa.s + apids[pos].res->live.scandir ;
@@ -242,9 +243,10 @@ static void announce(unsigned int pos, pidservice_t *apids, unsigned int what, u
         FLAGS_CLEAR(apids[pos].state, SVC_FLAGS_BLOCK) ;
         FLAGS_SET(apids[pos].state, flag|SVC_FLAGS_UNBLOCK) ;
     }
+
 }
 
-static int handle_signal(pidservice_t *apids, unsigned int what, graph_t *graph, ssexec_t *info)
+static int handle_signal(pidservice_t *apids, unsigned int what)
 {
     log_flow() ;
 
@@ -261,7 +263,7 @@ static int handle_signal(pidservice_t *apids, unsigned int what, graph_t *graph,
 
                 for (;;) {
 
-                    unsigned int pos = 0 ;
+                    uint32_t pos = 0 ;
                     int wstat = 0 ;
                     pid_t r = wait_nohang(&wstat) ;
 
@@ -310,7 +312,7 @@ static int handle_signal(pidservice_t *apids, unsigned int what, graph_t *graph,
     return ok ;
 }
 
-unsigned int compute_timeout(resolve_service_t *res, unsigned int what)
+unsigned int compute_timeout(resolve_service_t *res, uint8_t what)
 {
     unsigned int timeout = 0 ;
 
@@ -333,7 +335,7 @@ unsigned int compute_timeout(resolve_service_t *res, unsigned int what)
 
 }
 
-static int doit(pidservice_t *apids, unsigned int napid, unsigned int idx, unsigned int what, tain *deadline)
+static int doit(pidservice_t *apids, unsigned int idx, uint8_t what, tain *deadline)
 {
     log_flow() ;
 
@@ -454,14 +456,14 @@ static int doit(pidservice_t *apids, unsigned int napid, unsigned int idx, unsig
 
     } else if (type == TYPE_MODULE) {
 
-        return svc_compute_ns(apids[idx].res, what, PINFO, updown, opt_updown, reloadmsg, data, PROPAGATE, apids, napid) ;
+        return svc_compute_ns(apids[idx].res, what, PINFO, updown, opt_updown, reloadmsg, data, PROPAGATE) ;
     }
 
     /* should be never reached*/
     return 0 ;
 }
 
-static int async_deps(struct resolve_hash_s **hres, pidservice_t *apids, unsigned int i, unsigned int what, ssexec_t *info, tain *deadline)
+static int async_deps(pidservice_t *apids, uint32_t i, uint8_t what, tain *deadline)
 {
     log_flow() ;
 
@@ -475,10 +477,10 @@ static int async_deps(struct resolve_hash_s **hres, pidservice_t *apids, unsigne
 
     iopause_fd x = { .fd = apids[i].pipe[0], .events = IOPAUSE_READ, 0 } ;
 
-    unsigned int n = apids[i].nedge ;
-    unsigned int visit[n + 1] ;
+    uint32_t n = apids[i].nedge ;
+    uint32_t visit[n + 1] ;
 
-    memset(visit, 0, (n + 1) * sizeof(unsigned int));
+    memset(visit, 0, (n + 1) * sizeof(uint32_t));
 
     log_trace("waiting dependencies for: ", apids[i].res->sa.s + apids[i].res->name) ;
 
@@ -558,19 +560,18 @@ static int async_deps(struct resolve_hash_s **hres, pidservice_t *apids, unsigne
             }
         }
         next:
-
     }
 
     return 1 ;
 }
 
-static int async(struct resolve_hash_s **hres, pidservice_t *apids, unsigned int napid, unsigned int i, unsigned int what, ssexec_t *info, graph_t *graph, tain *deadline)
+static int async(pidservice_t *apids, uint32_t i, uint8_t what, tain *deadline)
 {
     log_flow() ;
 
     int e = 0 ;
 
-    char *name = graph->data.s + genalloc_s(graph_hash_t,&graph->hash)[apids[i].vertex].vertex ;
+    char *name = apids[i].res->sa.s + apids[i].res->name ;
 
     log_trace("Initiating process of: ", name) ;
 
@@ -581,10 +582,10 @@ static int async(struct resolve_hash_s **hres, pidservice_t *apids, unsigned int
             FLAGS_SET(apids[i].state, SVC_FLAGS_BLOCK) ;
 
             if (apids[i].nedge)
-                if (!async_deps(hres, apids, i, what, info, deadline))
+                if (!async_deps(apids, i, what, deadline))
                     log_warnu_return(LOG_EXIT_SYS, !what ? "start" : "stop", " dependencies of service: ", name) ;
 
-            e = doit(apids, napid, i, what, deadline) ;
+            e = doit(apids, i, what, deadline) ;
 
         } else {
 
@@ -602,21 +603,21 @@ static int async(struct resolve_hash_s **hres, pidservice_t *apids, unsigned int
     return e ;
 }
 
-int svc_launch(pidservice_t *apids, unsigned int len, uint8_t what, graph_t *graph, struct resolve_hash_s **hres, ssexec_t *info, char const *rise, uint8_t rise_opt, uint8_t msg, char const *signal, uint8_t propagate)
+int svc_launch(pidservice_t *apids, uint32_t nservice, uint8_t what, ssexec_t *info, char const *rise, uint8_t rise_opt, uint8_t msg, char const *signal, uint8_t propagate)
 {
     log_flow() ;
 
-    unsigned int e = 0, pos = 0 ;
+    uint32_t pos = 0, e = 0 ;
     int r ;
     pid_t pid ;
-    pidservice_t apidservicetable[len] ;
+    pidservice_t apidservicetable[nservice] ;
     pidservice_t_ref apidservice = apidservicetable ;
     tain deadline ;
 
     npid = 0 ;
     PINFO = info ;
     PROPAGATE = propagate ;
-    napid = len ;
+    napid = nservice ;
     auto_strings(updown, rise) ;
     opt_updown = rise_opt ;
     reloadmsg = msg ;
@@ -666,7 +667,7 @@ int svc_launch(pidservice_t *apids, unsigned int len, uint8_t what, graph_t *gra
 
             close(apidservice[pos].pipe[1]) ;
 
-            e = async(hres, apidservice, napid, pos, what, info, graph, &deadline) ;
+            e = async(apidservice, pos, what, &deadline) ;
 
             goto end ;
         }
@@ -691,7 +692,7 @@ int svc_launch(pidservice_t *apids, unsigned int len, uint8_t what, graph_t *gra
         }
 
         if (x.revents & IOPAUSE_READ) {
-            e = handle_signal(apidservice, what, graph, info) ;
+            e = handle_signal(apidservice, what) ;
 
             if (e)
                 break ;
