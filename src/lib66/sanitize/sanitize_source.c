@@ -52,7 +52,7 @@ void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)
             log_dieu(LOG_EXIT_SYS, "parse service: ", name) ;
         PROG = prog ;
 
-    } else if (logname < 0 && FLAGS_ISSET(flag, STATE_FLAGS_TOPARSE)) {
+    } else if (logname < 0 && FLAGS_ISSET(flag, GRAPH_COLLECT_PARSE)) {
 
         int argc = 4 ;
         int m = 0 ;
@@ -74,6 +74,10 @@ void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)
 
         if (sta.toparse == STATE_FLAGS_TRUE) {
 
+            uint32_t opstree = info->opt_tree ;
+            _alloc_stk_(stk, info->treename.len + 1) ;
+            auto_strings(stk.s, info->treename.s) ;
+
             if (!info->opt_tree) {
 
                 info->treename.len = 0 ;
@@ -93,6 +97,13 @@ void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)
             if (ssexec_parse(argc, newargv, info))
                 log_dieu(LOG_EXIT_SYS, "parse service: ", name) ;
             PROG = prog ;
+
+            if (!opstree) {
+                info->treename.len = 0 ;
+                if (!auto_stra(&info->treename, stk.s))
+                    log_die_nomem("stralloc") ;
+                info->opt_tree = opstree ;
+            }
         }
         resolve_free(wres) ;
     }
