@@ -275,15 +275,15 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
      * The Module enable the service by the configure script
      * through the activated/requiredby directory.
      * It will mark the module name as requiredby dependencies
-     * at the service.
+     * for the service.
      *
      * Then the module deactivate the service. In this case
-     * if the corresponding resolve field is not corrected, the sanitize_graph
-     * function will found a module as requiredby field of the service
-     * which is not valid at the new state of the module.
+     * if the corresponding service resolve field is not corrected, the sanitize_graph
+     * function will found a module name as requiredby by the service
+     * which is not valid with the new state of the module.
      *
      * As long as the user asked for the force option, we can retrieve
-     * and read the old resolve file (meaning the current one) to
+     * and read the old resolve file (meaning the current in use) to
      * compare it with the new one.*/
     parse_db_migrate(res, info) ;
 
