@@ -1,0 +1,32 @@
+/*
+ * service_graph_new.c
+ *
+ * Copyright (c) 2025 Eric Vidal <eric@obarun.org>
+ *
+ * All rights reserved.
+ *
+ * This file is part of Obarun. It is subject to the license terms in
+ * the LICENSE file found in the top-level directory of this
+ * distribution.
+ * This file may not be copied, modified, propagated, or distributed
+ * except according to the terms contained in the LICENSE file./
+ */
+
+#include <stdint.h>
+
+#include <oblibs/log.h>
+#include <oblibs/graph2.h>
+
+#include <66/graph.h>
+
+int service_graph_new(service_graph_t *g, uint32_t len)
+{
+    log_flow() ;
+
+    if (!graph_init(&g->g, len))
+        return 0 ;
+
+    g->hres = NULL ;
+
+    return 1 ;
+}

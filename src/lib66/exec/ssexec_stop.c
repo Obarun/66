@@ -13,40 +13,30 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
 
-#include <oblibs/log.h>
 #include <oblibs/types.h>
-#include <oblibs/graph.h>
-#include <oblibs/sastr.h>
-#include <oblibs/string.h>
+#include <oblibs/log.h>
+#include <oblibs/hash.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/djbunix.h>
-#include <skalibs/genalloc.h>
 
-#include <66/graph.h>
-#include <66/config.h>
 #include <66/ssexec.h>
-#include <66/state.h>
-#include <66/svc.h>
+#include <66/graph.h>
 #include <66/service.h>
-#include <66/enum.h>
-#include <66/constants.h>
+#include <66/svc.h>
+#include <66/config.h>
 
 int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    uint32_t flag = 0 ;
-    graph_t graph = GRAPH_ZERO ;
+    service_graph_t graph = GRAPH_SERVICE_ZERO ;
+    vertex_t *c, *tmp ;
     uint8_t siglen = 3 ;
+    bool unsupervise = false ;
     int e = 0 ;
-    struct resolve_hash_s *hres = NULL ;
-    unsigned int list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0, pos = 0, idx = 0 ;
-
-    memset(list, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
-    memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
-    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_ISSUPERVISED|STATE_FLAGS_WANTDOWN) ;
+    uint32_t flag = GRAPH_WANT_SUPERVISED|GRAPH_WANT_REQUIREDBY, nservice = 0 ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -65,13 +55,14 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
 
                 case 'P' :
 
-                    FLAGS_CLEAR(flag, STATE_FLAGS_TOPROPAGATE) ;
+                    FLAGS_CLEAR(flag, GRAPH_WANT_REQUIREDBY) ;
                     siglen++ ;
                     break ;
 
                 case 'u' :
 
-                    FLAGS_SET(flag, STATE_FLAGS_TOUNSUPERVISE|STATE_FLAGS_WANTUP) ;
+                    unsupervise = true ;
+                    FLAGS_SET(flag, GRAPH_WANT_LOGGER) ;
                     break ;
 
                 default :
@@ -87,28 +78,15 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
     if ((svc_scandir_ok(info->scandir.s)) != 1)
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
 
-    graph_build_arguments(&graph, argv, argc, &hres, info, flag) ;
+    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+        log_dieusys(LOG_EXIT_SYS, "allocate the graph") ;
 
-    if (!graph.mlen)
+    nservice = service_graph_build_arguments(&graph, argv, argc, info, flag) ;
+    if (!nservice && errno == EINVAL)
         log_die(LOG_EXIT_USER, "services selection is not available -- did you start it first?") ;
 
-    for (; pos < argc ; pos++) {
-
-        /** The service may not be supervised, so it will be ignored by the
-         * function graph_build_arguments. In this case, the service does not
-         * exist at array.
-         *
-         * This the stop process, just ignore it as it already down anyway */
-        struct resolve_hash_s *hash = hash_search(&hres, argv[pos]) ;
-        if (hash == NULL) {
-            log_warn("service: ", argv[pos], " is already stopped or unsupervised -- ignoring it") ;
-            continue ;
-        }
-        graph_compute_visit(*hash, visit, list, &graph, &nservice, 1) ;
-    }
-
-    if (!nservice)
-        log_dieu(LOG_EXIT_USER, "find service: ", argv[0], " -- not currently in use") ;
+    if (!graph.g.nsort)
+        log_warn_return(e,"no services found to handle") ;
 
     char *sig[siglen] ;
     if (siglen > 3) {
@@ -125,58 +103,22 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
         sig[2] = 0 ;
     }
 
-    unsigned int flist[SS_MAX_SERVICE + 1], fvisit[SS_MAX_SERVICE + 1], fnservice = 0 ;
-    char const *nargv[(nservice * 2) + 1] ; // nservice * 2 -> at worse one logger per service
-    unsigned int nargc = 0 ;
+    char const *nargv[nservice + 1] ;
+    nservice = 0 ;
+    HASH_ITER(hh, graph.g.vertexes, c, tmp)
+        nargv[nservice++] = c->name ;
 
-    idx = 0 ;
-    memset(flist, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
-    memset(fvisit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
+    nargv[nservice] = 0 ;
 
-    for (pos = 0 ; pos < nservice ; pos++) {
+    e = svc_send_wait(nargv, nservice, sig, siglen, info) ;
 
-        char *name = graph.data.s + genalloc_s(graph_hash_t, &graph.hash)[list[pos]].vertex ;
-        nargv[nargc++] = name ;
+    if (e)
+        return e ;
 
-        idx = graph_hash_vertex_get_id(&graph, name) ;
+    if (unsupervise)
+        svc_unsupervise(&graph) ;
 
-        if (!fvisit[idx]) {
-            flist[fnservice++] = idx ;
-            fvisit[idx] = 1 ;
-        }
-
-        struct resolve_hash_s *hash = hash_search(&hres, name) ;
-        if (hash == NULL)
-            log_die(LOG_EXIT_USER, "service: ", name, " not available -- please make a bug report") ;
-
-        /** the logger need to be stopped in case of unsupervise request */
-        if (FLAGS_ISSET(flag, STATE_FLAGS_TOUNSUPERVISE)) {
-
-            if (get_rstrlen_until(name, SS_LOG_SUFFIX) < 0 && hash->res.logger.want) {
-
-                hash = hash_search(&hres, hash->res.sa.s + hash->res.logger.name) ;
-                if (hash == NULL)
-                    continue ;
-
-                nargv[nargc++] = hash->res.sa.s + hash->res.name ;
-                idx = graph_hash_vertex_get_id(&graph, hash->res.sa.s + hash->res.name) ;
-                if (!fvisit[idx]) {
-                    flist[fnservice++] = idx ;
-                    fvisit[idx] = 1 ;
-                }
-            }
-        }
-    }
-
-    nargv[nargc] = 0 ;
-
-    e = svc_send_wait(nargv, nargc, sig, siglen, info) ;
-
-    if (FLAGS_ISSET(flag, STATE_FLAGS_TOUNSUPERVISE))
-        svc_unsupervise(flist, fnservice, &graph, &hres, info) ;
-
-    hash_free(&hres) ;
-    graph_free_all(&graph) ;
+    service_graph_destroy(&graph) ;
 
     return e ;
 }

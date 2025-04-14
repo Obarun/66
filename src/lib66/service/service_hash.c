@@ -67,3 +67,10 @@ void hash_free(struct resolve_hash_s **hash)
 		free(c) ;
 	}
 }
+
+static void hash_reset_visit(struct resolve_hash_s *hash)
+{
+    struct resolve_hash_s *c, *tmp ;
+    HASH_ITER(hh, hash, c, tmp)
+        c->visit = 0 ;
+}

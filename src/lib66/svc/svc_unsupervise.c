@@ -12,19 +12,22 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <string.h>
+
 #include <oblibs/log.h>
+#include <oblibs/hash.h>
 #include <oblibs/stack.h>
 #include <oblibs/lexer.h>
 
+#include <66/service.h>
 #include <66/state.h>
 #include <66/sanitize.h>
+#include <66/symlink.h>
 #include <66/graph.h>
 #include <66/svc.h>
 #include <66/enum.h>
-#include <66/symlink.h>
-#include <66/constants.h>
 
-static void sanitize_it(resolve_service_t *res)
+static void sanitize_it(resolve_service_t *res, s6_fdholder_t *a)
 {
     log_flow() ;
 
@@ -33,16 +36,19 @@ static void sanitize_it(resolve_service_t *res)
     if (!state_read(&sta, res))
         log_dieu(LOG_EXIT_SYS, "read state file of: ", res->sa.s + res->name) ;
 
-    sanitize_fdholder(res, &sta, STATE_FLAGS_FALSE, 0) ;
+    if (!sanitize_fdholder(res, a, &sta, STATE_FLAGS_FALSE, 0))
+        log_warnusys("sanitize fdholder") ;
 
     state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_TRUE) ;
     state_set_flag(&sta, STATE_FLAGS_ISUP, STATE_FLAGS_FALSE) ;
 
-    sanitize_scandir(res, &sta) ;
+    if (!sanitize_scandir(res, &sta))
+        log_warnusys("sanitize scandir") ;
 
     state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_TRUE) ;
 
-    sanitize_livestate(res, &sta) ;
+    if (!sanitize_livestate(res, &sta))
+        log_warnusys("sanitize livestate") ;
 
     if (!symlink_switch(res, SYMLINK_SOURCE))
         log_dieusys(LOG_EXIT_SYS, "switch service symlink to source for: ", res->sa.s + res->name) ;
@@ -50,39 +56,46 @@ static void sanitize_it(resolve_service_t *res)
     log_info("Unsupervised successfully: ", res->sa.s + res->name) ;
 }
 
-/** this function considers that the service is already down except for the logger */
-void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, struct resolve_hash_s **hres, ssexec_t *info)
+/** this function assume that the services is already down */
+void svc_unsupervise(service_graph_t *g)
 {
     log_flow() ;
 
-    unsigned int pos = 0 ;
+    uint32_t pos = 0 ;
     size_t bpos = 0 ;
     char *fdholderdir = 0 ;
+    bool isstarted = false ;
+    s6_fdholder_t a = S6_FDHOLDER_ZERO ;
 
-    if (!alen)
-        return ;
+    hash_reset_visit(g->hres) ;
 
-    for (; pos < alen ; pos++) {
+    FOREACH_GRAPH_SORT(service_graph_t, g, pos) {
 
-        char *name = g->data.s + genalloc_s(graph_hash_t,&g->hash)[alist[pos]].vertex ;
-        struct resolve_hash_s *hash = hash_search(hres, name) ;
+        uint32_t index = g->g.sort[pos] ;
+        vertex_t *v = g->g.sindex[index] ;
+        char *name = v->name ;
+
+        struct resolve_hash_s *hash = hash_search(&g->hres, name) ;
 
         if (hash == NULL)
-        /** This would happen uniquely in case of module.
-         * Service inside module may not the same as the
-         * module itself. In this case, the function to build
-         * the graph do not append the selection list with
-         * that service resulting of an unrecognizable service id
-         * within the hash. This is also stuck us e.g. to remove
-         * properly an entire module.
-         * Well, ignore the service for now, the algorithm of the graph
-         * need to be review anynway on future release*/
-            //log_dieu(LOG_EXIT_SYS,"find hash id of: ", name, " -- please make a bug reports") ;
+            log_die(LOG_EXIT_USER, "service: ", name, " not available -- please make a bug report") ;
+
+        if (hash->visit)
             continue ;
+
+        hash->visit = 1 ;
 
         fdholderdir = hash->res.sa.s + hash->res.live.fdholderdir ;
 
-        sanitize_it(&hash->res) ;
+        if (!isstarted) {
+
+            if (!sanitize_fdholder_start(&a, fdholderdir))
+                log_dieu(LOG_EXIT_SYS, "start fdholder: ", fdholderdir) ;
+
+            isstarted = true ;
+        }
+
+        sanitize_it(&hash->res, &a) ;
 
         if (hash->res.type == TYPE_MODULE && hash->res.dependencies.ncontents) {
 
@@ -95,16 +108,21 @@ void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, struct 
 
             FOREACH_STK(&stk, bpos) {
 
-                struct resolve_hash_s *h = hash_search(hres, stk.s + bpos) ;
+                struct resolve_hash_s *h = hash_search(&g->hres, stk.s + bpos) ;
                 if (h == NULL)
-                    //log_dieu(LOG_EXIT_SYS,"find hash id of: ", stk.s + bpos, " -- please make a bug reports") ;
+                    log_dieu(LOG_EXIT_SYS,"find hash id of: ", stk.s + bpos, " -- please make a bug reports") ;
+
+                if (h->visit)
                     continue ;
 
-                sanitize_it(&h->res) ;
+                h->visit = 1 ;
+
+                sanitize_it(&h->res, &a) ;
             }
         }
     }
 
-    svc_send_fdholder(fdholderdir, "twR") ;
+    if (isstarted)
+        s6_fdholder_end(&a) ;
 }
 

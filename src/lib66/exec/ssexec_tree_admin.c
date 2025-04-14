@@ -27,7 +27,6 @@
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/sastr.h>
-#include <oblibs/graph.h>
 #include <oblibs/lexer.h>
 #include <oblibs/stack.h>
 
@@ -129,7 +128,7 @@ tree_what_t what_init(void)
     return what ;
 }
 
-void tree_enable_disable(graph_t *g, char const *base, char const *treename, uint8_t action) ;
+void tree_enable_disable(tree_graph_t *g, char const *base, char const *treename, uint8_t action) ;
 
 static void check_identifier(char const *name)
 {
@@ -223,7 +222,7 @@ void tree_parse_uid_list(uid_t *uids, char const *str)
     }
 }
 
-static void tree_parse_options_depends(graph_t *g, ssexec_t *info, char const *str, uint8_t requiredby, tree_what_t *what)
+static void tree_parse_options_depends(tree_graph_t *g, ssexec_t *info, char const *str, uint8_t requiredby, tree_what_t *what)
 {
     log_flow() ;
 
@@ -301,19 +300,19 @@ static void tree_parse_options_depends(graph_t *g, ssexec_t *info, char const *s
 
         if (!requiredby) {
 
-            if (!graph_vertex_add_with_edge(g, info->treename.s, name))
+            if (!graph_add_edge(&g->g, info->treename.s, name, true))
                 log_die(LOG_EXIT_SYS,"add edge: ", name, " to vertex: ", info->treename.s) ;
 
         } else if (r) {
             /** if TreeA is requiredby TreeB, we don't want to create TreeB.
              * We only manages it if it exist yet */
-            if (!graph_vertex_add_with_requiredby(g, info->treename.s, name))
+            if (!graph_add_edge(&g->g, info->treename.s, name, true))
                 log_die(LOG_EXIT_SYS,"add requiredby: ", name, " to: ", info->treename.s) ;
         }
     }
 }
 
-static void tree_parse_options(graph_t *g, char const *str, ssexec_t *info, tree_what_t *what)
+static void tree_parse_options(tree_graph_t *g, char const *str, ssexec_t *info, tree_what_t *what)
 {
     log_flow() ;
 
@@ -463,7 +462,7 @@ void tree_parse_seed(char const *treename, tree_seed_t *seed, tree_what_t *what)
     }
 }
 
-void tree_groups(graph_t *graph, char const *base, char const *treename, char const *value)
+void tree_groups(tree_graph_t *graph, char const *base, char const *treename, char const *value)
 {
     log_flow() ;
 
@@ -548,7 +547,7 @@ void tree_master_modify_contents(char const *base)
     resolve_free(wres) ;
 }
 
-void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what)
+void tree_create(tree_graph_t *g, ssexec_t *info, tree_what_t *what)
 {
     log_flow() ;
 
@@ -593,44 +592,46 @@ void tree_create(graph_t *g, ssexec_t *info, tree_what_t *what)
     log_info("Created successfully tree: ", info->treename.s) ;
 }
 
-void tree_enable_disable_deps(graph_t *g,char const *base, char const *treename, uint8_t action)
+void tree_enable_disable_deps(tree_graph_t *g,char const *base, char const *treename, uint8_t action)
 {
     log_flow() ;
 
     size_t pos = 0, element = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
+    vertex_t *v = NULL ;
 
-    if (graph_matrix_get_edge_g_sa(&sa, g, treename, action ? 0 : 1, 0) < 0)
-        log_dieu(LOG_EXIT_SYS, "get ", action ? "dependencies" : "required by" ," of: ", treename) ;
+    HASH_FIND_STR(g->g.vertexes, treename, v) ;
+    if (v == NULL)
+        return ;
 
-    size_t len = sastr_nelement(&sa) ;
-    unsigned int v[len + 1] ;
+    uint32_t nvertex = action ? v->ndepends : v->nrequiredby ;
+    _alloc_stk_(stk, nvertex * SS_MAX_TREENAME) ;
+    if (!graph_get_stkedge(&stk, &g->g, v, action ? false : true))
+        return ;
 
-    memset(v, 0, (len + 1) * sizeof(unsigned int)) ;
+    unsigned int visit[nvertex + 1] ;
 
+    memset(visit, 0, (nvertex + 1) * sizeof(unsigned int)) ;
 
-    if (sa.len) {
+    if (stk.len) {
 
-        FOREACH_SASTR(&sa, pos) {
+        FOREACH_STK(&stk, pos) {
 
-            if (!v[element]) {
+            if (!visit[element]) {
 
-                char *name = sa.s + pos ;
+                char *name = stk.s + pos ;
 
                 tree_enable_disable(g, base, name, action) ;
 
-                v[element] = 1 ;
+                visit[element] = 1 ;
             }
             element++ ;
         }
     }
-
-    stralloc_free(&sa) ;
 }
 
 /** @action -> 0 disable
  * @action -> 1 enable */
-void tree_enable_disable(graph_t *g, char const *base, char const *treename, uint8_t action)
+void tree_enable_disable(tree_graph_t *g, char const *base, char const *treename, uint8_t action)
 {
     log_flow() ;
 
@@ -669,13 +670,13 @@ void tree_enable_disable(graph_t *g, char const *base, char const *treename, uin
 
 /* !deps -> add
  * deps -> remove */
-void tree_depends_requiredby(graph_t *g, char const *base, char const *treename, uint8_t requiredby, uint8_t none, char const *deps)
+void tree_depends_requiredby(tree_graph_t *g, char const *base, char const *treename, uint8_t requiredby, uint8_t none, char const *deps)
 {
     log_flow() ;
 
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
-    size_t pos = 0, len = 0, nb = 0, element = 0 ;
+    size_t pos = 0, nb = 0, element = 0 ;
     uint8_t ewhat = !requiredby ? E_RESOLVE_TREE_DEPENDS : E_RESOLVE_TREE_REQUIREDBY ;
     uint8_t nwhat = !requiredby ? E_RESOLVE_TREE_NDEPENDS : E_RESOLVE_TREE_NREQUIREDBY ;
     stralloc sa = STRALLOC_ZERO ;
@@ -683,38 +684,41 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
 
     log_trace("manage ", !requiredby ? "dependencies" : "required by", " for tree: ", treename, "..." ) ;
 
-    if (graph_matrix_get_edge_g_sorted_sa(&sa, g, treename, requiredby, 0) < 0)
+    vertex_t *v = NULL ;
+    HASH_FIND_STR(g->g.vertexes, treename, v) ;
+    if (v == NULL)
+        log_dieu(LOG_EXIT_SYS, "get information of treename: ", treename, " -- please make a bug report") ;
+
+    uint32_t nvertex = requiredby ? v->nrequiredby : v->ndepends ;
+    _alloc_stk_(stk, nvertex * SS_MAX_TREENAME) ;
+
+    if (!graph_get_stkedge(&stk, &g->g, v, requiredby ? true : false))
         log_dieu(LOG_EXIT_SYS,"get sorted ", requiredby ? "required by" : "dependency", " list of tree: ", treename) ;
 
-    size_t vlen = sastr_nelement(&sa) ;
-    unsigned int v[vlen + 1] ;
+    size_t vlen = stk.count ;
+    unsigned int visit[vlen + 1] ;
 
-    memset(v, 0, (vlen + 1) * sizeof(unsigned int)) ;
+    memset(visit, 0, (vlen + 1) * sizeof(unsigned int)) ;
 
-    len = sa.len ;
     {
-        char t[len + 1] ;
+        FOREACH_STK(&stk, pos) {
 
-        sastr_to_char(t, &sa) ;
+            element++ ;
 
-        sa.len = 0 ;
+            if (!visit[element]) {
 
-        for(; pos < len ; pos += strlen(t + pos) + 1, element++) {
-
-            if (!v[element]) {
-
-                char *name = t + pos ;
+                char *name = stk.s + pos ;
 
                 if (!none) {
 
-                    if (!graph_edge_remove_g(g, treename, name))
-                       log_dieu(LOG_EXIT_SYS,"remove edge: ", name, " from vertex: ", treename);
+                    if (!graph_remove_edge(&g->g, treename, name, false))
+                        log_dieu(LOG_EXIT_SYS,"remove edge: ", name, " from vertex: ", treename);
 
                 } else {
 
                     if (deps) {
                         if (!strcmp(name, deps)) {
-                            v[element] = 1 ;
+                            visit[element] = 1 ;
                             continue ;
                         }
                     }
@@ -725,10 +729,11 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
                     nb++ ;
                 }
 
-                v[element] = 1 ;
+                visit[element] = 1 ;
             }
         }
     }
+
     if (sa.len)
         sa.len-- ; //remove last " "
 
@@ -750,18 +755,8 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
 
     if (!none) {
 
-        graph_free_matrix(g) ;
-        graph_free_sort(g) ;
-
-        if (!graph_matrix_build(g, 0))
-            log_die(LOG_EXIT_SYS, "build the graph") ;
-
-        if (!graph_matrix_analyze_cycle(g))
-            log_die(LOG_EXIT_SYS, "found cycle") ;
-
-        if (!graph_matrix_sort(g))
+        if (!graph_sort(&g->g, requiredby ? true : false))
             log_die(LOG_EXIT_SYS, "sort the graph") ;
-
     }
 
     stralloc_free(&sa) ;
@@ -770,42 +765,43 @@ void tree_depends_requiredby(graph_t *g, char const *base, char const *treename,
     log_info(requiredby ? "Required by " : "Dependencies ", "successfully managed for tree: ", treename) ;
 }
 
-void tree_depends_requiredby_deps(graph_t *g, char const *base, char const *treename, uint8_t requiredby, uint8_t none, char const *deps)
+void tree_depends_requiredby_deps(tree_graph_t *g, char const *base, char const *treename, uint8_t requiredby, uint8_t none, char const *deps)
 {
     log_flow() ;
 
-    size_t baselen = strlen(base), pos = 0, len = 0, element = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
+    size_t baselen = strlen(base), pos = 0, element = 0 ;
     char solve[baselen + SS_SYSTEM_LEN + 1] ;
+    vertex_t *v = NULL ;
 
-    if (graph_matrix_get_edge_g_sorted_sa(&sa, g, treename, requiredby, 0) < 0)
-        log_dieu(LOG_EXIT_SYS,"get sorted ", requiredby ? "required by" : "dependency", " list of tree: ", treename) ;
+    HASH_FIND_STR(g->g.vertexes, treename, v) ;
+    if (v == NULL)
+        log_dieu(LOG_EXIT_SYS, "get information of treename: ", treename, " -- please make a bug report") ;
 
-    size_t vlen = sastr_nelement(&sa) ;
-    unsigned int v[vlen + 1] ;
+    uint32_t nvertex = requiredby ? v->nrequiredby : v->ndepends ;
+    _alloc_stk_(stk, nvertex * SS_MAX_TREENAME) ;
 
-    memset(v, 0, (vlen + 1) * sizeof(unsigned int)) ;
+    if (!graph_get_stkedge(&stk, &g->g, v, requiredby ? true : false))
+        log_dieusys(LOG_EXIT_SYS, "get edge of treename: ", treename) ;
+
+    unsigned int visit[stk.count + 1] ;
+
+    memset(visit, 0, (stk.count + 1) * sizeof(unsigned int)) ;
 
     auto_strings(solve, base, SS_SYSTEM) ;
 
-    len = sa.len ;
-    char t[len + 1] ;
+    FOREACH_STK(&stk, pos) {
 
-    sastr_to_char(t, &sa) ;
+        element++ ;
 
-    for(; pos < len ; pos += strlen(t + pos) + 1, element++) {
+        if (!visit[element]) {
 
-        if (!v[element]) {
-
-            char *name = t + pos ;
+            char *name = stk.s + pos ;
 
             tree_depends_requiredby(g, base, name, !requiredby, none, deps) ;
 
-            v[element] = 1 ;
+            visit[element] = 1 ;
         }
     }
-
-    stralloc_free(&sa) ;
 }
 
 /** @what -> 0 deny
@@ -939,7 +935,7 @@ static void tree_service_switch_contents(char const *base, char const *treesrc, 
     resolve_free(swres) ;
 }
 
-void tree_remove(graph_t *g, char const *base, char const *treename, ssexec_t *info)
+void tree_remove(tree_graph_t *g, char const *base, char const *treename, ssexec_t *info)
 {
     log_flow() ;
 
@@ -1062,8 +1058,8 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
      * Therefore, retrieve the original name at the end of the process. */
     char oldtree[SS_MAX_TREENAME + 1] ;
     stralloc sa = STRALLOC_ZERO ;
-    graph_t graph = GRAPH_ZERO ;
-    struct resolve_hash_tree_s *htres = NULL ;
+    tree_graph_t graph = GRAPH_TREE_ZERO ;
+    uint32_t flag = GRAPH_WANT_DEPENDS|GRAPH_WANT_REQUIREDBY, ntree = 0 ;
 
     tree_what_t what = what_init() ;
 
@@ -1120,6 +1116,9 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
     if (argc < 1)
         log_usage(info->usage, "\n", info->help) ;
 
+    if (!graph_new(&graph, SS_MAX_SERVICE))
+        log_dieusys(LOG_EXIT_SYS, "initiate the graph") ;
+
     check_identifier(argv[0]) ;
 
     if (info->opt_tree) {
@@ -1158,7 +1157,10 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
     if (!r && what.remove)
         log_dieusys(LOG_EXIT_SYS,"find tree: ", info->treename.s) ;
 
-    graph_build_tree(&graph, &htres, info->base.s, E_RESOLVE_TREE_MASTER_CONTENTS) ;
+    ntree = tree_graph_build_master(&graph, info, flag) ;
+
+    if (!ntree)
+        log_dieusys(LOG_EXIT_SYS, "build the graph") ;
 
     if (what.remove) {
         tree_remove(&graph, info->base.s, info->treename.s, info) ;
@@ -1175,14 +1177,22 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
 
         tree_depends_requiredby_deps(&graph, info->base.s, info->treename.s, 0, what.ndepends, 0) ;
 
-        sa.len = 0 ;
         size_t pos = 0 ;
-        if (graph_matrix_get_edge_g_sorted_sa(&sa, &graph, info->treename.s, 0, 0) < 0)
-            log_dieu(LOG_EXIT_SYS,"get sorted dependency list of tree: ", info->treename.s) ;
+
+        vertex_t *v = NULL ;
+        HASH_FIND_STR(graph.g.vertexes, info->treename.s, v) ;
+        if (v == NULL)
+            log_dieu(LOG_EXIT_SYS, "get information of treename: ", info->treename.s, " -- please make a bug report") ;
+
+        uint32_t nvertex = v->ndepends ;
+        _alloc_stk_(stk, nvertex * SS_MAX_TREENAME) ;
+
+        if (!graph_get_stkedge(&stk, &graph.g, v, false))
+            log_dieu(LOG_EXIT_SYS,"get dependency list of tree: ", info->treename.s) ;
 
         if (tree_isenabled(info->base.s, info->treename.s)) {
-            FOREACH_SASTR(&sa, pos)
-                tree_enable_disable(&graph, info->base.s, sa.s + pos, 1) ;
+            FOREACH_STK(&stk, pos)
+                tree_enable_disable(&graph, info->base.s, stk.s + pos, 1) ;
         }
     }
 
@@ -1192,14 +1202,22 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
 
         tree_depends_requiredby_deps(&graph, info->base.s, info->treename.s, 1, what.nrequiredby, 0) ;
 
-        sa.len = 0 ;
         size_t pos = 0 ;
-        if (graph_matrix_get_edge_g_sorted_sa(&sa, &graph, info->treename.s, 1, 0) < 0)
-            log_dieu(LOG_EXIT_SYS,"get sorted dependency list of tree: ", info->treename.s) ;
+
+        vertex_t *v = NULL ;
+        HASH_FIND_STR(graph.g.vertexes, info->treename.s, v) ;
+        if (v == NULL)
+            log_dieu(LOG_EXIT_SYS, "get information of treename: ", info->treename.s, " -- please make a bug report") ;
+
+        uint32_t nvertex = v->nrequiredby ;
+        _alloc_stk_(stk, nvertex * SS_MAX_TREENAME) ;
+
+        if (!graph_get_stkedge(&stk, &graph.g, v, true))
+            log_dieu(LOG_EXIT_SYS,"get dependency list of tree: ", info->treename.s) ;
 
         if (!tree_isenabled(info->base.s, info->treename.s)) {
-            FOREACH_SASTR(&sa, pos)
-                tree_enable_disable(&graph, info->base.s, sa.s + pos, 0) ;
+            FOREACH_STK(&stk, pos)
+                tree_enable_disable(&graph, info->base.s, stk.s + pos, 0) ;
         }
     }
 
@@ -1227,8 +1245,8 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
             log_die_nomem("stralloc") ;
 
         stralloc_free(&sa) ;
-        graph_free_all(&graph) ;
-        hash_free_tree(&htres) ;
+        tree_graph_destroy(&graph) ;
+
 
     return 0 ;
 }

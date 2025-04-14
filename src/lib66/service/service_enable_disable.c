@@ -12,41 +12,69 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdlib.h>
 
 #include <oblibs/log.h>
-#include <oblibs/graph.h>
 #include <oblibs/stack.h>
 #include <oblibs/sastr.h>
 #include <oblibs/lexer.h>
+#include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>
 
 #include <66/service.h>
 #include <66/graph.h>
-#include <66/state.h>
+#include <66/resolve.h>
+#include <66/tree.h>
 #include <66/enum.h>
 #include <66/ssexec.h>
 
-static void service_enable_disable_deps(graph_t *g, struct resolve_hash_s *hash, struct resolve_hash_s **hres, uint8_t action, uint8_t propagate, ssexec_t *info)
+static bool isdone(struct resolve_hash_s *hres, const char *name)
+{
+    struct resolve_hash_s *t ;
+    t = hash_search(&hres, name) ;
+    if (t == NULL)
+        return false ;
+
+    return t->visit == 1 ? true : false ;
+}
+
+static void mark_isdone(struct resolve_hash_s *hres, const char *name)
+{
+    struct resolve_hash_s *t ;
+    t = hash_search(&hres, name) ;
+    t->visit = 1 ;
+}
+
+static void service_enable_disable_deps(service_graph_t *g, struct resolve_hash_s *hres, struct resolve_hash_s *hash, bool action, bool propagate, ssexec_t *info, stralloc *argv)
 {
     log_flow() ;
 
     size_t pos = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
+    _alloc_sa_(sa) ;
     resolve_service_t_ref res = &hash->res ;
+    vertex_t *v = NULL ;
 
-    if (graph_matrix_get_edge_g_sa(&sa, g, res->sa.s + res->name, action ? 0 : 1, 0) < 0)
+    HASH_FIND_STR(g->g.vertexes, res->sa.s + res->name, v) ;
+    if (v == NULL)
+        log_dieu(LOG_EXIT_SYS, "get information of service: ", res->sa.s + res->name, " -- please make a bug report") ;
+
+    uint32_t d = action ? res->dependencies.depends : res->dependencies.requiredby ;
+    _alloc_stk_(stk, strlen(res->sa.s + d)) ;
+
+    if (!graph_get_stkedge(&stk, &g->g, v, action ? false : true))
         log_dieu(LOG_EXIT_SYS, "get ", action ? "dependencies" : "required by" ," of: ", res->sa.s + res->name) ;
 
-    if (sa.len) {
+    if (stk.len) {
 
-        FOREACH_SASTR(&sa, pos) {
+        FOREACH_STK(&stk, pos) {
 
-            char *name = sa.s + pos ;
+            char *name = stk.s + pos ;
 
-            struct resolve_hash_s *h = hash_search(hres, name) ;
+            struct resolve_hash_s *h = hash_search(&g->hres, name) ;
             if (h == NULL)
                 log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
@@ -55,28 +83,29 @@ static void service_enable_disable_deps(graph_t *g, struct resolve_hash_s *hash,
                 continue ;
             }
 
-            if (!h->visit) {
-                service_enable_disable(g, h, hres, action, propagate, info) ;
-                h->visit = 1 ;
+            if (!isdone(hres, name)) {
+                service_enable_disable(g, h, action, propagate, info, argv) ;
+                mark_isdone(hres, name) ;
             }
         }
     }
 
-    stralloc_free(&sa) ;
 }
 
-/** @action -> 0 disable
- * @action -> 1 enable */
-void service_enable_disable(graph_t *g, struct resolve_hash_s *hash, struct resolve_hash_s **hres, uint8_t action, uint8_t propagate, ssexec_t *info)
+/** @action == false disable
+ * @action == true enable */
+void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, bool propagate, ssexec_t *info, stralloc *argv)
 {
     log_flow() ;
 
-    if (!hash->visit) {
+    if (!isdone(g->hres, hash->name)) {
 
         resolve_service_t_ref res = &hash->res ;
         resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
         char const *treename = 0 ;
-        if (info->opt_tree)
+        bool same = sastr_cmp(argv, hash->name) >= 0 ? true : false ;
+
+        if (info->opt_tree && ((hash->res.inns && sastr_cmp(argv, hash->res.sa.s + hash->res.inns) >= 0) || same))
             treename = info->treename.s ;
         else
             treename = res->sa.s + (res->intree ? res->intree : res->treename) ;
@@ -84,19 +113,19 @@ void service_enable_disable(graph_t *g, struct resolve_hash_s *hash, struct reso
         /** resolve file may already exist. Be sure to add it to the contents field of the tree.*/
         if (action) {
 
-            if (info->opt_tree)
-                service_switch_tree(res, res->sa.s + res->path.home, treename, info) ;
+            if (info->opt_tree && ((hash->res.inns && sastr_cmp(argv, hash->res.sa.s + hash->res.inns) >= 0) || same))
+                service_switch_tree(res, treename, info) ;
             else
                 tree_service_add(treename, res->sa.s + res->name, info) ;
         }
 
-        res->enabled = action ;
+        res->enabled = action ? 1 : 0 ;
 
         if (!resolve_write_g(wres, res->sa.s + res->path.home, res->sa.s + res->name))
             log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", res->sa.s + res->name) ;
 
         if (propagate)
-            service_enable_disable_deps(g, hash, hres, action, propagate, info) ;
+            service_enable_disable_deps(g, g->hres, hash, action, propagate, info, argv) ;
 
         free(wres) ;
 
@@ -106,22 +135,22 @@ void service_enable_disable(graph_t *g, struct resolve_hash_s *hash, struct reso
 
             char *name = res->sa.s + res->logger.name ;
 
-            struct resolve_hash_s *h = hash_search(hres, name) ;
+            struct resolve_hash_s *h = hash_search(&g->hres, name) ;
             if (h == NULL)
                 log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
-            if (!h->visit) {
+            if (!isdone(g->hres, name)) {
 
                 wres = resolve_set_struct(DATA_SERVICE,  &h->res) ;
 
-                h->res.enabled = action ;
+                h->res.enabled = action ? 1 : 0 ;
 
                 if (!resolve_write_g(wres, h->res.sa.s + h->res.path.home, h->res.sa.s + h->res.name))
                     log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", h->res.sa.s + h->res.name) ;
 
                 log_info("Disabled successfully: ", name) ;
 
-                h->visit = 1 ;
+                mark_isdone(g->hres, name) ;
 
                 free(wres) ;
             }
@@ -131,51 +160,64 @@ void service_enable_disable(graph_t *g, struct resolve_hash_s *hash, struct reso
 
             if (res->dependencies.ncontents) {
 
-                size_t pos = 0 ;
+                service_graph_t graph = GRAPH_SERVICE_ZERO ;
+                uint32_t nservice = 0, flag = GRAPH_WANT_DEPENDS|GRAPH_WANT_REQUIREDBY ;
+                vertex_t *v, *tmp ;
+                struct resolve_hash_s *h = NULL ;
                 _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.contents) + 1) ;
 
                 if (!stack_string_clean(&stk, res->sa.s + res->dependencies.contents))
                     log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-                FOREACH_STK(&stk, pos) {
+                if (!graph_new(&graph, res->dependencies.ncontents))
+                    log_dieusys(LOG_EXIT_SYS, "allocate the graph") ;
 
-                    char *name = stk.s + pos ;
+                /** build the graph of the ns */
+                nservice = service_graph_build_list(&graph, stk.s, stk.len, info, flag) ;
 
-                    struct resolve_hash_s *h = hash_search(hres, name) ;
+                if (!nservice)
+                    log_dieu(LOG_EXIT_USER, "build the graph of the module: ", res->sa.s + res->name," -- please make a bug report") ;
+
+                hash_reset_visit(graph.hres) ;
+
+                HASH_ITER(hh, graph.g.vertexes, v, tmp) {
+
+                    char *name = v->name ;
+
+                    h = hash_search(&graph.hres, name) ;
                     if (h == NULL)
                         log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
-                    if (!h->visit) {
+                    if (!isdone(g->hres, name)) {
 
                         wres = resolve_set_struct(DATA_SERVICE,  &h->res) ;
 
                         if (action) {
 
-                            if (info->opt_tree)
-                                service_switch_tree(&h->res, h->res.sa.s + h->res.path.home, treename, info) ;
+                            if (info->opt_tree && (hash->res.inns || sastr_cmp(argv, hash->name) >= 0))
+                                service_switch_tree(&h->res, treename, info) ;
                             else
                                 tree_service_add(treename, h->res.sa.s + h->res.name, info) ;
                         }
 
-                        h->res.enabled = action ;
+                        h->res.enabled = action ? 1 : 0 ;
 
                         if (!resolve_write_g(wres, h->res.sa.s + h->res.path.home, h->res.sa.s + h->res.name))
                             log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", h->res.sa.s + h->res.name) ;
 
-                        service_enable_disable_deps(g, h, hres, action, propagate, info) ;
-
-                        h->visit = 1 ;
+                        mark_isdone(g->hres, h->res.sa.s + h->res.name) ;
 
                         log_info(!action ? "Disabled" : "Enabled"," successfully: ", h->res.sa.s + h->res.name) ;
 
                         free(wres) ;
                     }
                 }
+                service_graph_destroy(&graph) ;
             }
         }
 
-        hash->visit = 1 ;
+        mark_isdone(g->hres, hash->name) ;
 
-        log_info(!action ? "Disabled" : "Enabled"," successfully: ", hash->res.sa.s + hash->res.name) ;
+        log_info(!action ? "Disabled" : "Enabled"," successfully: ", res->sa.s + res->name) ;
     }
 }

@@ -12,49 +12,49 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <stdint.h>
+#include <unistd.h>
+#include <stdbool.h>
 #include <string.h>
 #include <errno.h>
-#include <unistd.h>// unlink
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/hash.h>
 #include <oblibs/types.h>
-#include <oblibs/sastr.h>
-#include <oblibs/environ.h>
 #include <oblibs/directory.h>
 
-#include <skalibs/types.h>
-#include <skalibs/genalloc.h>
 #include <skalibs/tai.h>
-#include <skalibs/djbunix.h>
-#include <skalibs/unix-transactional.h>//atomic_symlink
+#include <skalibs/fcntl.h>
 
-#include <s6/supervise.h>
 #include <s6/ftrigr.h>
 #include <s6/ftrigw.h>
 
-#include <66/utils.h>
-#include <66/resolve.h>
-#include <66/constants.h>
-#include <66/ssexec.h>
+#include <66/graph.h>
 #include <66/state.h>
-#include <66/enum.h>
+#include <66/service.h>
 #include <66/sanitize.h>
-#include <66/symlink.h>
 #include <66/svc.h>
+#include <66/enum.h>
 
-void cleanup(struct resolve_hash_s *hash, unsigned int alen)
+#include <s6/fdholder.h>
+
+void cleanup(resolve_service_t *res, uint32_t nres)
 {
-    unsigned int pos = 0 ;
+    uint32_t pos = 0 ;
     int e = errno ;
     ss_state_t sta = STATE_ZERO ;
     resolve_service_t_ref pres = 0 ;
+    s6_fdholder_t a = S6_FDHOLDER_ZERO ;
 
-    for (; pos < alen ; pos++) {
+    if (!sanitize_fdholder_start(&a, pres->sa.s + pres->live.fdholderdir))
+        log_warnusys("start fdholder: ", pres->sa.s + pres->live.fdholderdir) ;
 
-        pres = &hash[pos].res ;
+    for (; pos < nres ; pos++) {
 
-        if (!sanitize_fdholder(pres, &sta, STATE_FLAGS_FALSE, 0))
+        pres = &res[pos] ;
+
+        if (!sanitize_fdholder(pres, &a, &sta, STATE_FLAGS_FALSE, 0))
             log_warnusys("sanitize fdholder directory: ", pres->sa.s + pres->live.fdholderdir);
 
         log_trace("remove directory: ", pres->sa.s + pres->live.servicedir) ;
@@ -66,54 +66,55 @@ void cleanup(struct resolve_hash_s *hash, unsigned int alen)
 
     }
 
-    if (alen)
-        svc_send_fdholder(hash[0].res.sa.s + hash[0].res.live.fdholderdir, "twR") ;
+    s6_fdholder_end(&a) ;
 
     errno = e ;
 }
 
-void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, struct resolve_hash_s **hres)
+void sanitize_init(service_graph_t *g, uint32_t flag)
 {
-    log_flow() ;
-
-    /* nothing to do */
-    if (!alen)
-        return ;
-
+    int r, issupervised = 0 ;
+    uint32_t pos = 0, ntoclean = 0, nsubscribe = 0, msg[g->g.nvertexes] ;
+    resolve_service_t toclean[g->g.nvertexes], tosubscribe[g->g.nvertexes] ;
+    vertex_t *c, *tmp ;
+    resolve_service_t *pres ;
     ftrigr_t fifo = FTRIGR_ZERO ;
-    uint32_t earlier, fdh = 0 ;
-    gid_t gid = getgid() ;
-    int is_supervised = 0 ;
-    unsigned int pos = 0, nsv = 0, msg[alen] ;
     ss_state_t sta = STATE_ZERO ;
-    resolve_service_t_ref pres = 0 ;
-    struct resolve_hash_s toclean[alen] ;
-    struct resolve_hash_s real[alen] ;
-    unsigned int ntoclean = 0 ;
+    bool earlier = false, isstarted = false ;
+    s6_fdholder_t a = S6_FDHOLDER_ZERO ;
 
-    memset(msg, 0, alen * sizeof(unsigned int)) ;
-    memset(toclean, 0, alen * sizeof(struct resolve_hash_s)) ;
-    memset(real, 0, alen * sizeof(struct resolve_hash_s)) ;
+    memset(msg, 0, g->g.nvertexes * sizeof(uint32_t)) ;
+    memset(toclean, 0, g->g.nvertexes * sizeof(resolve_service_t)) ;
+    memset(tosubscribe, 0, g->g.nvertexes * sizeof(resolve_service_t)) ;
 
-    for (; pos < alen ; pos++) {
+    HASH_ITER(hh, g->g.vertexes, c, tmp) {
 
-        char *name = g->data.s + genalloc_s(graph_hash_t,&g->hash)[alist[pos]].vertex ;
+        char *name = c->name ;
+        struct resolve_hash_s *hash = hash_search(&g->hres, name) ;
 
-        struct resolve_hash_s *hash = hash_search(hres,name) ;
         if (hash == NULL)
-            log_dieu(LOG_EXIT_SYS,"find ares id -- please make a bug reports") ;
+            log_die(LOG_EXIT_USER, "service: ", name, " not available -- please make a bug report") ;
 
         pres = &hash->res ;
+        toclean[ntoclean++] = hash->res ;
+        earlier = pres->earlier ? true : false ;
 
-        toclean[ntoclean++] = *hash ;
-        earlier = pres->earlier ;
         char *scandir = pres->sa.s + pres->live.scandir ;
         size_t scandirlen = strlen(scandir) ;
 
-        int r = state_read(&sta, pres) ;
+        r = state_read(&sta, pres) ;
 
         if (!r)
             log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug reports") ;
+
+        /**
+         * Oneshot are not supervised by a scandir.
+         * Check for state directory instead.
+        */
+        if (pres->type == TYPE_ONESHOT)
+            issupervised = access(pres->sa.s + pres->live.statedir, F_OK) ;
+        else
+            issupervised = access(scandir, F_OK) ;
 
         if (!sanitize_livestate(pres, &sta)) {
             cleanup(toclean, ntoclean) ;
@@ -126,20 +127,20 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, struct re
         if (pres->type == TYPE_MODULE)
             continue ;
 
-        is_supervised = access(scandir, F_OK) ;
-
-        if (!earlier && !is_supervised) {
-            log_trace(name," already initialized -- ignore it") ;
-            msg[pos] = 1 ;
+        if (!earlier && !issupervised) {
+            log_warn(name," already initialized -- ignore it") ;
+            msg[c->index] = 1 ;
             continue ;
         }
 
-        if (is_supervised == -1) {
+        if (issupervised == -1) {
 
+            state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_TRUE) ;
             if (!sanitize_scandir(pres, &sta)) {
                 cleanup(toclean, pos) ;
                 log_dieusys(LOG_EXIT_SYS, "sanitize_scandir directory: ", pres->sa.s + pres->live.scandir) ;
             }
+            state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_FALSE) ;
 
             if (pres->type == TYPE_ONESHOT) {
 
@@ -147,39 +148,48 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, struct re
                     cleanup(toclean, pos) ;
                     log_dieusys(LOG_EXIT_SYS, "write status file of: ", pres->sa.s + pres->name) ;
                 }
-
+                msg[c->index] = 1 ;
                 continue ;
             }
         }
 
         /* down file */
-        if (!earlier) {
+        if (!FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
 
             char downfile[scandirlen + 6] ;
+            int fd = -1 ;
             auto_strings(downfile, scandir, "/down") ;
             log_trace("create file: ", downfile) ;
-            int fd = open_trunc(downfile) ;
+            {
+                do fd = open(downfile, O_WRONLY | O_NONBLOCK | O_TRUNC | O_CREAT, 0666) ;
+                while (fd == -1 && errno == EINTR) ;
+            }
             if (fd < 0) {
                 cleanup(toclean, pos) ;
                 log_dieusys(LOG_EXIT_SYS, "create file: ", downfile) ;
             }
-            fd_close(fd) ;
-        }
+            close(fd) ;
 
-        if (!earlier && is_supervised) {
+            if (issupervised) {
 
-            if (!sanitize_fdholder(pres, &sta, STATE_FLAGS_TRUE, 1)) {
-                cleanup(toclean, pos) ;
-                log_dieusys(LOG_EXIT_SYS, "sanitize fdholder directory: ", pres->sa.s + pres->live.fdholderdir) ;
+                if (!isstarted) {
+                    if (!sanitize_fdholder_start(&a, pres->sa.s + pres->live.fdholderdir))
+                        log_dieu(LOG_EXIT_SYS, "start fdholder: ", pres->sa.s + pres->live.fdholderdir) ;
+                    isstarted = true ;
+                }
+
+                if (!sanitize_fdholder(pres, &a, &sta, STATE_FLAGS_TRUE, 1)) {
+                    cleanup(toclean, pos) ;
+                    log_dieusys(LOG_EXIT_SYS, "sanitize fdholder directory for: ", pres->sa.s + pres->name) ;
+                }
+
+                log_trace("create fifo: ", pres->sa.s + pres->live.eventdir) ;
+                if (!ftrigw_fifodir_make(pres->sa.s + pres->live.eventdir, getgid(), 0)) {
+                    cleanup(toclean, pos) ;
+                    log_dieusys(LOG_EXIT_SYS, "create fifo: ", pres->sa.s + pres->live.eventdir) ;
+                }
             }
 
-            log_trace("create fifo: ", pres->sa.s + pres->live.eventdir) ;
-            if (!ftrigw_fifodir_make(pres->sa.s + pres->live.eventdir, gid, 0)) {
-                cleanup(toclean, pos) ;
-                log_dieusys(LOG_EXIT_SYS, "create fifo: ", pres->sa.s + pres->live.eventdir) ;
-            }
-
-            fdh = 1 ;
         }
 
         if (!state_write(&sta, pres)) {
@@ -187,22 +197,23 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, struct re
             log_dieu(LOG_EXIT_SYS, "write state file of: ", name) ;
         }
 
-        real[nsv++] = *hash ;
+        tosubscribe[nsubscribe++] = hash->res ;
+
     }
 
-    if (!earlier && fdh && nsv)
-        svc_send_fdholder(real[0].res.sa.s + real[0].res.live.fdholderdir, "twR") ;
+    if (isstarted)
+        s6_fdholder_end(&a) ;
 
     /**
      * scandir is already running, we need to synchronize with it
      * */
-    if (!earlier && nsv) {
+    if (!FLAGS_ISSET(flag, GRAPH_WANT_EARLIER) && nsubscribe) {
 
-        uint16_t ids[nsv] ;
+        uint16_t ids[nsubscribe] ;
         unsigned int nids = 0, fake = 0 ;
         tain deadline ;
 
-        memset(ids, 0, nsv * sizeof(uint16_t)) ;
+        memset(ids, 0, nsubscribe * sizeof(uint16_t)) ;
 
         tain_now_set_stopwatch_g() ;
         /** TODO
@@ -216,13 +227,13 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, struct re
             log_dieusys(LOG_EXIT_SYS, "ftrigr") ;
         }
 
-        for (pos = 0 ; pos < nsv ; pos++) {
+        for (pos = 0 ; pos < nsubscribe ; pos++) {
 
-            if (real[pos].res.type == TYPE_CLASSIC && !real[pos].res.earlier) {
+            if (tosubscribe[pos].type == TYPE_CLASSIC && !tosubscribe[pos].earlier) {
 
                 fake = pos ;
-                char *sa = real[pos].res.sa.s ;
-                char *eventdir = sa + real[pos].res.live.eventdir ;
+                char *sa = tosubscribe[pos].sa.s ;
+                char *eventdir = sa + tosubscribe[pos].live.eventdir ;
 
                 log_trace("subcribe to fifo: ", eventdir) ;
                 /** unsubscribe automatically, options is 0 */
@@ -239,9 +250,9 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, struct re
 
             state_set_flag(&sta, STATE_FLAGS_TORELOAD, STATE_FLAGS_TRUE) ;
 
-            if (!sanitize_scandir(&real[fake].res, &sta)) {
+            if (!sanitize_scandir(&tosubscribe[fake], &sta)) {
                 cleanup(toclean, ntoclean) ;
-                log_dieusys(LOG_EXIT_SYS, "sanitize scandir directory: ", real[fake].res.sa.s + real[fake].res.live.scandir) ;
+                log_dieusys(LOG_EXIT_SYS, "sanitize scandir directory: ", tosubscribe[fake].sa.s + tosubscribe[fake].live.scandir) ;
             }
 
             log_trace("waiting for events on fifo...") ;
@@ -259,12 +270,12 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, struct re
      * We need to write the state file anyway. Thus can always
      * be consider as initialized.
      * */
-    for (pos = 0 ; pos < alen ; pos++) {
+    HASH_ITER(hh, g->g.vertexes, c, tmp) {
 
         ss_state_t sta = STATE_ZERO ;
-        char *name = g->data.s + genalloc_s(graph_hash_t,&g->hash)[alist[pos]].vertex ;
+        char *name = c->name ;
+        struct resolve_hash_s *hash = hash_search(&g->hres, c->name) ;
 
-        struct resolve_hash_s *hash = hash_search(hres, name) ;
         if (hash == NULL) {
             cleanup(toclean, ntoclean) ;
             log_dieu(LOG_EXIT_SYS, "find hash id of: ", name, " -- please make a bug reports") ;
@@ -280,7 +291,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, struct re
 
         if (pres->type == TYPE_CLASSIC) {
 
-            if (!earlier) {
+            if (!FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
 
                 log_trace("clean event directory: ", sa + pres->live.eventdir) ;
                 if (!ftrigw_clean(sa + pres->live.eventdir))
@@ -297,7 +308,7 @@ void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, struct re
             log_dieusys(LOG_EXIT_SYS, "write status file of: ", sa + pres->name) ;
         }
 
-        if (!msg[pos])
+        if (!msg[c->index])
             log_info("Initialized successfully: ", name) ;
     }
 }

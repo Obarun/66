@@ -1,5 +1,5 @@
 /*
- * graph_build_arguments.c
+ * service_graph_build_arguments.c
  *
  * Copyright (c) 2018-2025 Eric Vidal <eric@obarun.org>
  *
@@ -17,13 +17,11 @@
 #include <oblibs/log.h>
 #include <oblibs/sastr.h>
 #include <oblibs/environ.h>
-#include <oblibs/hash.h>
 
 #include <66/graph.h>
 #include <66/ssexec.h>
 
-
-void graph_build_arguments(graph_t *graph, char const *const *argv, int argc, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag)
+uint32_t service_graph_build_arguments(service_graph_t *g, char const *const *argv, int argc, ssexec_t *info, uint32_t flag)
 {
     log_flow() ;
 
@@ -32,5 +30,5 @@ void graph_build_arguments(graph_t *graph, char const *const *argv, int argc, st
     if (!environ_import_arguments(&sa, argv, argc))
         log_dieusys(LOG_EXIT_SYS, "import arguments") ;
 
-    service_graph_g(sa.s, sa.len, graph, hres, info, flag) ;
+    return service_graph_build_list(g, sa.s, sa.len, info, flag) ;
 }

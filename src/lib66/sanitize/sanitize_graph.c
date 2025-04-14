@@ -13,81 +13,79 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
 
 #include <oblibs/log.h>
-#include <oblibs/types.h>
-#include <oblibs/graph.h>
-#include <oblibs/string.h>
-#include <oblibs/sastr.h>
+#include <oblibs/stack.h>
 #include <oblibs/hash.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/string.h>
 
 #include <66/ssexec.h>
+#include <66/config.h>
 #include <66/service.h>
 #include <66/resolve.h>
-#include <66/parse.h>
-#include <66/state.h>
 #include <66/graph.h>
-#include <66/constants.h>
-#include <66/enum.h>
+#include <66/parse.h>
 
-/** rewrite depends/requiredby of each service
- * found on the system */
 void sanitize_graph(ssexec_t *info)
 {
     log_flow() ;
 
-    uint32_t flag = 0 ;
-    _alloc_sa_(sa) ;
-    struct resolve_hash_s *hres = NULL, *c, *tmp ;
-    graph_t graph = GRAPH_ZERO ;
+    service_graph_t graph = GRAPH_SERVICE_ZERO ;
+    uint32_t flag = GRAPH_COLLECT_PARSE|GRAPH_WANT_DEPENDS|GRAPH_WANT_REQUIREDBY, nservice = 0, nvertex = 0 ;
+    struct resolve_hash_s *c, *tmp ;
+    vertex_t *v = NULL ;
     resolve_wrapper_t_ref wres = 0 ;
-
-    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOPARSE|STATE_FLAGS_WANTUP|STATE_FLAGS_WANTDOWN) ;
 
     log_trace("sanitize system graph") ;
 
+    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+        log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
+
     /** build the graph of the entire system */
-    graph_build_system(&graph, &hres, info, flag) ;
+    nservice = service_graph_build_system(&graph, info, flag) ;
 
-    HASH_ITER(hh, hres, c, tmp) {
+    if (!nservice && errno == EINVAL)
+        log_dieusys(LOG_EXIT_SYS, "build system graph -- please make a bug report") ;
 
-        sa.len = 0 ;
+    HASH_ITER(hh, graph.hres, c, tmp) {
 
         wres = resolve_set_struct(DATA_SERVICE, &c->res) ;
         char name[strlen(c->res.sa.s + c->res.name) + 1] ;
         auto_strings(name, c->res.sa.s + c->res.name) ;
 
-        if (graph_matrix_get_edge_g_sa(&sa, &graph, name, 0, 0) < 0)
-            log_dieu(LOG_EXIT_SYS, "get dependencies of service: ", name) ;
+        HASH_FIND_STR(graph.g.vertexes, name, v) ;
+        if (v == NULL)
+            log_dieu(LOG_EXIT_SYS, "get information of service: ", name, " -- please make a bug report") ;
 
-        c->res.dependencies.ndepends = 0 ;
-        c->res.dependencies.depends = 0 ;
+        nvertex = v->ndepends >= v->nrequiredby ? v->ndepends : v->nrequiredby ;
+        _alloc_stk_(stk, nvertex * SS_MAX_SERVICE_NAME + 1) ;
 
-        if (sa.len) {
-            _alloc_stk_(stk, sa.len + 1) ;
-            if (!stack_copy(&stk, sa.s, sa.len))
-                log_die_nomem("stack overflow") ;
+        if (v->ndepends) {
 
-            c->res.dependencies.depends = parse_compute_list(wres, &stk, &c->res.dependencies.ndepends, 0) ;
+            if (!graph_get_stkedge(&stk, &graph.g, v, false))
+                log_die_nomem("stack") ;
+
+            c->res.dependencies.ndepends = 0 ;
+            c->res.dependencies.depends = 0 ;
+
+            if (stk.len)
+                c->res.dependencies.depends = parse_compute_list(wres, &stk, &c->res.dependencies.ndepends, 0) ;
         }
 
-        sa.len = 0 ;
+        stack_reset(&stk) ;
 
-        if (graph_matrix_get_edge_g_sa(&sa, &graph, name, 1, 0) < 0)
-            log_dieu(LOG_EXIT_SYS, "get requiredby of service: ", name) ;
+        if (v->nrequiredby) {
 
-        c->res.dependencies.nrequiredby = 0 ;
-        c->res.dependencies.requiredby = 0 ;
+            if (!graph_get_stkedge(&stk, &graph.g, v, true))
+                log_die_nomem("stack") ;
 
-        if (sa.len) {
-            _alloc_stk_(stk, sa.len + 1) ;
-            if (!stack_copy(&stk, sa.s, sa.len))
-                log_die_nomem("stack overflow") ;
+            c->res.dependencies.nrequiredby = 0 ;
+            c->res.dependencies.requiredby = 0 ;
 
-            c->res.dependencies.requiredby = parse_compute_list(wres, &stk, &c->res.dependencies.nrequiredby, 0) ;
+            if (stk.len)
+                c->res.dependencies.requiredby = parse_compute_list(wres, &stk, &c->res.dependencies.nrequiredby, 0) ;
         }
 
         if (!resolve_write_g(wres, info->base.s, name))
@@ -95,7 +93,5 @@ void sanitize_graph(ssexec_t *info)
 
         resolve_free(wres) ;
     }
-
-    hash_free(&hres) ;
-    graph_free_all(&graph) ;
+    service_graph_destroy(&graph) ;
 }

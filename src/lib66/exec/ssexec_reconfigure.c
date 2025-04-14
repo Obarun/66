@@ -13,45 +13,44 @@
  */
 
 #include <stdint.h>
+#include <string.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
+#include <oblibs/sastr.h>
 #include <oblibs/types.h>
-#include <oblibs/graph.h>
+#include <oblibs/hash.h>
+#include <oblibs/environ.h>
 #include <oblibs/string.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/genalloc.h>
 
 #include <66/ssexec.h>
-#include <66/config.h>
 #include <66/graph.h>
+#include <66/service.h>
+#include <66/config.h>
 #include <66/state.h>
 #include <66/svc.h>
 #include <66/sanitize.h>
-#include <66/service.h>
-#include <66/constants.h>
 #include <66/tree.h>
+#include <66/constants.h>
 
 int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    int r, e = 0 ;
-    uint32_t flag = 0 ;
-    uint8_t siglen = 0, issupervised = 0 ;
-    graph_t graph = GRAPH_ZERO ;
-    struct resolve_hash_s *hres = NULL ;
+    int r, rscan, e = 0 ;
+    uint8_t siglen = 0 ;
+    service_graph_t graph = GRAPH_SERVICE_ZERO ;
+    uint32_t flag = GRAPH_COLLECT_PARSE|GRAPH_WANT_REQUIREDBY|GRAPH_WANT_SUPERVISED, nservice = 0, pos = 0 ;
+    struct resolve_hash_s *c, *tmp ;
     resolve_service_t_ref pres = 0 ;
-    struct resolve_hash_s tostate[argc] ;
-    struct resolve_hash_s toenable[argc] ;
-    unsigned int list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], ntostate = 0, ntoenable = 0, nservice = 0, n = 0 ;
+    resolve_service_t tostate[SS_MAX_SERVICE], toenable[SS_MAX_SERVICE] ;
+    uint32_t ntostate = 0, ntoenable = 0, n = 0 ;
     ss_state_t sta = STATE_ZERO ;
 
-    memset(list, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
-    memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
-    memset(tostate, 0, argc * sizeof(struct resolve_hash_s)) ;
-    memset(toenable, 0, argc * sizeof(struct resolve_hash_s)) ;
-    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOPARSE|STATE_FLAGS_WANTDOWN) ;
+    memset(tostate, 0, SS_MAX_SERVICE * sizeof(resolve_service_t)) ;
+    memset(toenable, 0, SS_MAX_SERVICE * sizeof(resolve_service_t)) ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -70,6 +69,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 
                 case 'P' :
 
+                    FLAGS_CLEAR(flag, GRAPH_WANT_REQUIREDBY) ;
                     siglen++ ;
                     break ;
 
@@ -84,85 +84,88 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     if (argc < 1)
         log_usage(info->usage, "\n", info->help) ;
 
-    graph_build_arguments(&graph, argv, argc, &hres, info, flag) ;
+    rscan = svc_scandir_ok(info->scandir.s) ;
+    if (rscan < 0)
+        log_dieusys(LOG_EXIT_SYS, "check: ", info->scandir.s) ;
 
-    if (!graph.mlen)
+    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+        log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
+
+    _alloc_sa_(sa) ;
+
+    if (!environ_import_arguments(&sa, argv, argc))
+        log_dieusys(LOG_EXIT_SYS, "import arguments") ;
+
+    nservice = service_graph_ncollect(&graph, sa.s, sa.len, info, flag) ;
+
+    if (!nservice) {
+        if (errno == EINVAL)
+            log_dieusys(LOG_EXIT_SYS, "build the graph") ;
+
         log_die(LOG_EXIT_USER, "services selection is not available -- have you already parsed a service?") ;
+    }
 
-    for (; n < argc ; n++) {
+    _alloc_stk_(stk, nservice * SS_MAX_SERVICE_NAME) ;
 
-        struct resolve_hash_s *hash = hash_search(&hres, argv[n]) ;
-        if (hash == NULL)
-            log_dieu(LOG_EXIT_USER, "find service: ", argv[n], " -- did you parse it?") ;
+    HASH_ITER(hh, graph.hres, c, tmp) {
 
-        pres = &hash->res ;
-        if (pres->inns)
-            log_die(LOG_EXIT_USER, "reconfiguring an individual service that is part of a module is not allowed -- please reconfigure the entire module instead using \'66 reconfigure ", pres->sa.s + pres->inns, "\'") ;
+        pres = &c->res ;
+        char *name = pres->sa.s + pres->name ;
+
+        if (pres->inns) {
+            // search first into the user commandline
+            if (sastr_cmp(&sa, pres->sa.s + pres->inns) < 0) {
+                // it may be a service of a another dependending module
+                struct resolve_hash_s *t = hash_search(&graph.hres, pres->sa.s + pres->inns) ;
+                if (t == NULL)
+                    log_die(LOG_EXIT_USER, "reconfiguring an individual service that is part of a module is not allowed -- please reconfigure the entire module instead using \'66 reconfigure ", pres->sa.s + pres->inns, "\'") ;
+            }
+        }
+
 
         char status[strlen(pres->sa.s + pres->path.servicedir) + SS_STATE_LEN + 1] ;
 
         auto_strings(status, pres->sa.s + pres->path.servicedir, SS_STATE) ;
 
         if (!state_read(&sta, pres))
-            log_dieu(LOG_EXIT_SYS, "read state file of: ", argv[n]) ;
+            log_dieu(LOG_EXIT_SYS, "read state file of: ", name) ;
 
         sta.toparse = STATE_FLAGS_TRUE ;
 
         if (!state_write(&sta, pres))
-            log_dieusys(LOG_EXIT_SYS, "write status file of: ", argv[n]) ;
+            log_dieusys(LOG_EXIT_SYS, "write status file of: ", name) ;
 
         /** need to reverse the previous state change to
          * for current live service.*/
-        tostate[ntostate++] = *hash ;
-
-        issupervised = sta.issupervised == STATE_FLAGS_TRUE ? 1 : 0 ;
+        tostate[ntostate++] = c->res ;
 
         if (pres->enabled && !pres->inns)
-            toenable[ntoenable++] = *hash ;
+            toenable[ntoenable++] = c->res ;
 
-        if (!issupervised) {
-            /* parse it again only if force was requested */
+        if (!state_write_remote(&sta, status))
+            log_dieusys(LOG_EXIT_SYS, "write status file of: ", name) ;
+
+        /** services of group boot cannot be restarted, the changes will appear only at
+         * next reboot.*/
+        r = tree_ongroups(pres->sa.s + pres->path.home, pres->sa.s + pres->treename, TREE_GROUPS_BOOT) ;
+
+        if (r < 0)
+            log_dieu(LOG_EXIT_SYS, "get groups of service: ", name) ;
+
+        if (r)
             continue ;
 
-        } else {
+        if (!stack_add_g(&stk, pres->sa.s + pres->name))
+            log_die_nomem("stralloc") ;
 
-            if (!state_write_remote(&sta, status))
-                log_dieusys(LOG_EXIT_SYS, "write status file of: ", argv[n]) ;
-
-            /** services of group boot cannot be restarted, the changes will appear only at
-             * next reboot.*/
-            r = tree_ongroups(pres->sa.s + pres->path.home, pres->sa.s + pres->treename, TREE_GROUPS_BOOT) ;
-
-            if (r < 0)
-                log_dieu(LOG_EXIT_SYS, "get groups of service: ", argv[n]) ;
-
-            if (r)
-                continue ;
-
-            if (!siglen) {
-
-                graph_compute_visit(*hash, visit, list, &graph, &nservice, 1) ;
-
-            } else {
-                ssize_t idx = 0 ;
-
-                idx = graph_hash_vertex_get_id(&graph, pres->sa.s + pres->name) ;
-                if (idx < 0)
-                    log_dieu(LOG_EXIT_SYS, "get id of service: ", pres->sa.s + pres->name, " -- please make a bug report") ;
-
-                if (!visit[idx]) {
-                    list[nservice++] = idx ;
-                    visit[idx] = 1 ;
-                }
-            }
-        }
     }
 
-    r = svc_scandir_ok(info->scandir.s) ;
-    if (r < 0)
-        log_dieusys(LOG_EXIT_SYS, "check: ", info->scandir.s) ;
+    if (!service_graph_nresolve(&graph, stk.s, stk.len, flag))
+        log_dieusys(LOG_EXIT_SYS, "build the graph") ;
 
-    if (nservice && r) {
+    nservice = graph.g.nsort ;
+
+    if (nservice && rscan) {
 
         /** User may request for a specific tree with the -t options.
          * The tree specified may be different from the actual one.
@@ -190,12 +193,11 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
             newargv[m++] = "-P" ;
         newargv[m++] = "-u" ;
 
-        for (n = 0 ; n < nservice ; n++) {
+        FOREACH_GRAPH_SORT(service_graph_t, &graph, pos) {
 
-            char *name = graph.data.s + genalloc_s(graph_hash_t,&graph.hash)[list[n]].vertex ;
-            /** the stop process will handle logger. Remove those from the list.*/
-            if (get_rstrlen_until(name,SS_LOG_SUFFIX) < 0)
-                newargv[m++] = name ;
+            uint32_t index = graph.g.sort[pos] ;
+            char *name = graph.g.sindex[index]->name ;
+            newargv[m++] = name ;
         }
 
         newargv[m] = 0 ;
@@ -223,16 +225,16 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 
         /** live of the service still exist.
          * Reverse to the previous state of the toparse flag. */
-        if (state_read_remote(&sta, tostate[n].res.sa.s + tostate[n].res.live.statedir)) {
+        if (state_read_remote(&sta, tostate[n].sa.s + tostate[n].live.statedir)) {
 
             sta.toparse = STATE_FLAGS_FALSE ;
 
-            if (!state_write_remote(&sta, tostate[n].res.sa.s + tostate[n].res.live.statedir))
-                log_warnusys("write status file of: ", tostate[n].res.sa.s + tostate[n].res.live.statedir) ;
+            if (!state_write_remote(&sta, tostate[n].sa.s + tostate[n].live.statedir))
+                log_warnusys("write status file of: ", tostate[n].sa.s + tostate[n].live.statedir) ;
         }
     }
 
-    if (nservice && r) {
+    if (nservice && rscan) {
 
         unsigned int m = 0 ;
         int nargc = 2 + nservice + siglen ;
@@ -249,16 +251,17 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         if (siglen)
             newargv[m++] = "-P" ;
 
-        for (n = 0 ; n < nservice ; n++) {
+        pos = 0 ;
+        FOREACH_GRAPH_SORT(service_graph_t, &graph, pos) {
 
-            char *name = graph.data.s + genalloc_s(graph_hash_t,&graph.hash)[list[n]].vertex ;
-            if (get_rstrlen_until(name,SS_LOG_SUFFIX) < 0)
-                newargv[m++] = name ;
+            uint32_t index = graph.g.sort[pos] ;
+            char *name = graph.g.sindex[index]->name ;
+            newargv[m++] = name ;
         }
 
         newargv[m] = 0 ;
 
-        PROG= "start" ;
+        PROG = "start" ;
         e = ssexec_start(m, newargv, info) ;
         PROG = prog ;
 
@@ -285,8 +288,8 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         n = 0 ;
         for (; n < ntoenable ; n++) {
 
-            char *name = toenable[n].name ;
-             if (get_rstrlen_until(name,SS_LOG_SUFFIX) < 0)
+            char *name = toenable[n].sa.s + toenable[n].name ;
+            if (get_rstrlen_until(name,SS_LOG_SUFFIX) < 0)
                 newargv[m++] = name ;
         }
 
@@ -301,8 +304,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     }
 
     freed:
-        hash_free(&hres) ;
-        graph_free_all(&graph) ;
+        service_graph_destroy(&graph) ;
 
     return e ;
 }

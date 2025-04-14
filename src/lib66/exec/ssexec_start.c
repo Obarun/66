@@ -16,37 +16,25 @@
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
-#include <oblibs/graph.h>
-#include <oblibs/sastr.h>
 #include <oblibs/hash.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/genalloc.h>
 
 #include <66/ssexec.h>
-#include <66/config.h>
 #include <66/graph.h>
-#include <66/state.h>
 #include <66/svc.h>
 #include <66/sanitize.h>
-#include <66/service.h>
-#include <66/enum.h>
+#include <66/config.h>
 
 int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    int n = 0 ;
-    uint32_t flag = 0 ;
-    graph_t graph = GRAPH_ZERO ;
+    service_graph_t graph = GRAPH_SERVICE_ZERO ;
+    vertex_t *c, *tmp ;
     uint8_t siglen = 3 ;
-    unsigned int list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0 ;
-
-    struct resolve_hash_s *hres = NULL ;
-
-    memset(list, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
-    memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
-    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TOPARSE|STATE_FLAGS_WANTUP) ;
+    uint32_t flag = GRAPH_WANT_DEPENDS|GRAPH_COLLECT_PARSE|/* sanitize_init */GRAPH_WANT_LOGGER, nservice = 0 ;
+    int e = 0 ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -65,7 +53,7 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
 
                 case 'P' :
 
-                    FLAGS_CLEAR(flag, STATE_FLAGS_TOPROPAGATE) ;
+                    FLAGS_CLEAR(flag, GRAPH_WANT_DEPENDS) ;
                     siglen++ ;
                     break ;
 
@@ -83,39 +71,18 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
     if ((svc_scandir_ok(info->scandir.s)) !=  1 )
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;
 
-    for (; n < argc ; n++){
-        /** If it's the first use of 66 or we don't have any resolve files available,
-         * or the service was never parsed, the graph is empty in the first case,
-         * or the later call of service_array_search does not find the corresponding
-         * resolve file in the second case.
-         * At least try to parse the corresponding frontend file. */
-        sanitize_source(argv[n], info, flag) ;
-        service_graph_collect(&graph, argv[n], &hres, info, flag) ;
-    }
+    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+        log_dieusys(LOG_EXIT_SYS, "allocate the graph") ;
 
-    if (!HASH_COUNT(hres))
-        /* avoid empty graph */
-        log_die(LOG_EXIT_USER,"no services requested found") ;
+    nservice = service_graph_build_arguments(&graph, argv, argc, info, flag) ;
+    if (!nservice)
+        log_dieusys(LOG_EXIT_SYS, "build the service selection graph") ;
 
-    service_graph_compute(&graph, &hres, flag) ;
-
-    if (!graph.mlen)
-        log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
-
-    for (n = 0 ; n < argc ; n++) {
-
-        struct resolve_hash_s *hash = hash_search(&hres, argv[n]) ;
-        if (hash == NULL)
-            log_die(LOG_EXIT_USER, "service: ", argv[n], " not available -- did you parse it?") ;
-
-        graph_compute_visit(*hash, visit, list, &graph, &nservice, 0) ;
-    }
+    if (!graph.g.nsort)
+        log_warn_return(e,"no services found to handle") ;
 
     /** initiate services at the corresponding scandir */
-    sanitize_init(list, nservice, &graph, &hres) ;
-
-    hash_free(&hres) ;
-    graph_free_all(&graph) ;
+    sanitize_init(&graph, flag) ;
 
     char *sig[siglen] ;
     if (siglen > 3) {
@@ -132,5 +99,16 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
         sig[2] = 0 ;
     }
 
-    return svc_send_wait(argv, argc, sig, siglen, info) ;
+    char const *nargv[nservice + 1] ;
+    nservice = 0 ;
+    HASH_ITER(hh, graph.g.vertexes, c, tmp)
+        nargv[nservice++] = c->name ;
+
+    nargv[nservice] = 0 ;
+
+    e = svc_send_wait(nargv, nservice, sig, siglen, info) ;
+
+    service_graph_destroy(&graph) ;
+
+    return e ;
 }

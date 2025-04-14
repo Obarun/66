@@ -20,6 +20,7 @@
 #include <wchar.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include <oblibs/sastr.h>
 #include <oblibs/log.h>
@@ -27,7 +28,6 @@
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 #include <oblibs/directory.h>
-#include <oblibs/graph.h>
 #include <oblibs/environ.h>
 #include <oblibs/sastr.h>
 
@@ -359,30 +359,27 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
 {
     log_flow() ;
 
+    _alloc_sa_(sa) ;
     size_t padding = 1 ;
-    int r ;
-    graph_t graph = GRAPH_ZERO ;
-    struct resolve_hash_s *hres = NULL ;
-    stralloc deps = STRALLOC_ZERO ;
+    service_graph_t graph = GRAPH_SERVICE_ZERO ;
+    uint32_t flag = GRAPH_WANT_REQUIREDBY|GRAPH_COLLECT_PARSE, nservice = 0 ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    service_graph_collect(&graph, res->sa.s + res->name, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTDOWN|STATE_FLAGS_MISSING) ;
+    if (!res->dependencies.nrequiredby)
+        goto empty ;
 
-    service_graph_compute(&graph, &hres, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTDOWN|STATE_FLAGS_MISSING) ;
+    if (!sastr_clean_string(&sa, res->sa.s + res->dependencies.requiredby))
+        log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    if (!graph.mlen)
-        log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
+    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+        log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
-    unsigned int list[graph.mlen] ;
+    nservice = service_graph_build_list(&graph, sa.s, sa.len, pinfo, flag) ;
 
-    int count = graph_matrix_get_requiredby(list, &graph, res->sa.s + res->name , 0) ;
-
-    if (count == -1)
-        log_dieu(LOG_EXIT_SYS,"get the requiredby list for service: ", res->sa.s + res->name) ;
-
-    if (!count) goto empty ;
+    if (!nservice && errno == EINVAL)
+        log_dieusys(LOG_EXIT_SYS, "collect resolve file of service: ", res->sa.s + res->name) ;
 
     if (GRAPH) {
 
@@ -391,125 +388,118 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
 
         depth_t d = info_graph_init() ;
 
-        if (!info_walk(&graph, res->sa.s + res->name, 0, &info_graph_display_service, 1, REVERSE, &d, padding, S_STYLE))
+        if (!service_info_walk(&graph, 0, 0, 1, REVERSE, &d, padding, S_STYLE, pinfo))
             log_dieu(LOG_EXIT_SYS,"display the requiredby list") ;
 
         goto freed ;
 
     } else {
 
-        deps.len = 0 ;
-        r = graph_matrix_get_edge_g_sorted_sa(&deps,&graph, res->sa.s + res->name, 1, 0) ;
-        if (r == -1)
-            log_dieu(LOG_EXIT_SYS, "get the requiredby list") ;
+        uint32_t pos = 0 ;
+        sa.len = 0 ;
+        FOREACH_GRAPH_SORT(service_graph_t, &graph, pos) {
+            uint32_t index = graph.g.sort[pos] ;
+            char *name = graph.g.sindex[index]->name ;
 
-        if (!r)
-            goto empty ;
+            if (!sastr_add_string(&sa, name))
+                log_die_nomem("stralloc") ;
+        }
 
         if (REVERSE)
-            if (!sastr_reverse(&deps))
+            if (!sastr_reverse(&sa))
                 log_dieu(LOG_EXIT_SYS,"reverse the selection list") ;
 
-        info_display_list(field,&deps) ;
+        info_display_list(field,&sa) ;
 
         goto freed ;
     }
 
     empty:
-        if (GRAPH)
-        {
+        if (GRAPH) {
             if (!bprintf(buffer_1,"%s\n","\\"))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
             if (!bprintf(buffer_1,"%*s%s%s%s%s\n",padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-        }
-        else
-        {
+        } else {
             info_display_empty() ;
         }
     freed:
-        graph_free_all(&graph) ;
-        hash_free(&hres) ;
-        stralloc_free(&deps) ;
+        service_graph_destroy(&graph) ;
 }
 
 static void info_display_deps(char const *field, resolve_service_t *res)
 {
     log_flow() ;
 
-    int r ;
+    _alloc_sa_(sa) ;
     size_t padding = 1 ;
-    graph_t graph = GRAPH_ZERO ;
-    struct resolve_hash_s *hres = NULL ;
-
-    stralloc deps = STRALLOC_ZERO ;
+    service_graph_t graph = GRAPH_SERVICE_ZERO ;
+    uint32_t flag = GRAPH_WANT_DEPENDS|GRAPH_COLLECT_PARSE, nservice = 0 ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    service_graph_collect(&graph, res->sa.s + res->name, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP|STATE_FLAGS_MISSING) ;
+    if (!res->dependencies.ndepends)
+        goto empty ;
 
-    service_graph_compute(&graph, &hres, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP|STATE_FLAGS_MISSING) ;
+    if (!sastr_clean_string(&sa, res->sa.s + res->dependencies.depends))
+        log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    if (!graph.mlen)
-        log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
+    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+        log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
-    unsigned int list[graph.mlen] ;
+    nservice = service_graph_build_list(&graph, sa.s, sa.len, pinfo, flag) ;
 
-    int count = graph_matrix_get_edge(list, &graph, res->sa.s + res->name , 0) ;
+    if (!nservice && errno == EINVAL)
+        log_dieusys(LOG_EXIT_SYS, "collect resolve file of service: ", res->sa.s + res->name) ;
 
-    if (count == -1)
-        log_dieu(LOG_EXIT_SYS,"get the dependencies list for service: ", res->sa.s + res->name) ;
+    if (GRAPH) {
 
-    if (!count) goto empty ;
-
-    if (GRAPH)
-    {
         if (!bprintf(buffer_1,"%s\n","\\"))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
         depth_t d = info_graph_init() ;
 
-        if (!info_walk(&graph, res->sa.s + res->name, 0, &info_graph_display_service, 0, REVERSE, &d, padding, S_STYLE))
+        if (!service_info_walk(&graph, 0, 0, 0, REVERSE, &d, padding, S_STYLE, pinfo))
             log_dieu(LOG_EXIT_SYS,"display the dependencies list") ;
 
         goto freed ;
-    }
-    else
-    {
-        r = graph_matrix_get_edge_g_sorted_sa(&deps,&graph, res->sa.s + res->name, 0, 0) ;
-        if (r == -1)
-            log_dieu(LOG_EXIT_SYS, "get the dependencies list") ;
 
-        if (!r)
-            goto empty ;
+    } else {
+
+        uint32_t pos = 0 ;
+        sa.len = 0 ;
+        FOREACH_GRAPH_SORT(service_graph_t, &graph, pos) {
+            uint32_t index = graph.g.sort[pos] ;
+            char *name = graph.g.sindex[index]->name ;
+
+            if (!sastr_add_string(&sa, name))
+                log_die_nomem("stralloc") ;
+        }
 
         if (REVERSE)
-            if (!sastr_reverse(&deps))
+            if (!sastr_reverse(&sa))
                 log_dieu(LOG_EXIT_SYS,"reverse the selection list") ;
 
-        info_display_list(field,&deps) ;
+        info_display_list(field,&sa) ;
 
         goto freed ;
     }
+
     empty:
-        if (GRAPH)
-        {
+        if (GRAPH) {
             if (!bprintf(buffer_1,"%s\n","\\"))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
             if (!bprintf(buffer_1,"%*s%s%s%s%s\n",padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-        }
-        else
-        {
+        } else {
             info_display_empty() ;
         }
 
     freed:
-        graph_free_all(&graph) ;
-        hash_free(&hres) ;
-        stralloc_free(&deps) ;
+        service_graph_destroy(&graph) ;
+
 }
 
 static void info_display_optsdeps(char const *field, resolve_service_t *res)
@@ -540,10 +530,10 @@ static void info_display_contents(char const *field, resolve_service_t *res)
 {
     log_flow() ;
 
-    size_t padding = 1 ;
-    graph_t graph = GRAPH_ZERO ;
     _alloc_sa_(sa) ;
-    struct resolve_hash_s *hres = NULL ;
+    size_t padding = 1 ;
+    service_graph_t graph = GRAPH_SERVICE_ZERO ;
+    uint32_t nservice = 0, flag = GRAPH_WANT_DEPENDS|GRAPH_WANT_REQUIREDBY ;
 
     if (res->type != TYPE_MODULE)
         return ;
@@ -557,12 +547,12 @@ static void info_display_contents(char const *field, resolve_service_t *res)
     if (!sastr_clean_string(&sa, res->sa.s + res->dependencies.contents))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    if (!sa.len)
-        goto empty ;
+    if (!graph_new(&graph, res->dependencies.ncontents))
+        log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
-    service_graph_g(sa.s, sa.len, &graph, &hres, pinfo, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP|STATE_FLAGS_MISSING) ;
+    nservice = service_graph_build_list(&graph, sa.s, sa.len, pinfo, flag) ;
 
-    if (!graph.mlen)
+    if (!nservice && errno == EINVAL)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
 
     if (GRAPH) {
@@ -572,12 +562,23 @@ static void info_display_contents(char const *field, resolve_service_t *res)
 
         depth_t d = info_graph_init() ;
 
-        if (!info_walk(&graph, 0, 0, &info_graph_display_service, 0, REVERSE, &d, padding, S_STYLE))
+        if (!service_info_walk(&graph, 0, 0, 0, REVERSE, &d, padding, S_STYLE, pinfo))
             log_dieu(LOG_EXIT_SYS,"display the dependencies list") ;
 
         goto freed ;
 
     } else {
+
+        sa.len = 0 ;
+        uint32_t pos = 0 ;
+
+        FOREACH_GRAPH_SORT(service_graph_t, &graph, pos) {
+            uint32_t index = graph.g.sort[pos] ;
+            char *name = graph.g.sindex[index]->name ;
+
+            if (!sastr_add_string(&sa, name))
+                log_die_nomem("stralloc") ;
+        }
 
         if (REVERSE)
             if (!sastr_reverse(&sa))
@@ -588,22 +589,18 @@ static void info_display_contents(char const *field, resolve_service_t *res)
         goto freed ;
     }
     empty:
-        if (GRAPH)
-        {
+        if (GRAPH) {
             if (!bprintf(buffer_1,"%s\n","\\"))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
             if (!bprintf(buffer_1,"%*s%s%s%s%s\n",padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-        }
-        else
-        {
+        } else {
             info_display_empty() ;
         }
 
     freed:
-        graph_free_all(&graph) ;
-        hash_free(&hres) ;
+        service_graph_destroy(&graph) ;
 }
 
 static void info_display_start(char const *field,resolve_service_t *res)
@@ -939,51 +936,75 @@ static void info_parse_options(char const *str,int *what)
 
 void info_status_all(void)
 {
+    log_flow() ;
+
     _alloc_sa_(sa) ;
-    struct resolve_hash_tree_s *htres = NULL ;
-    graph_t graph = GRAPH_ZERO ;
-    int flag = STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP|STATE_FLAGS_WANTDOWN|STATE_FLAGS_MISSING;
-    graph_build_tree(&graph, &htres, pinfo->base.s, E_RESOLVE_TREE_MASTER_CONTENTS) ;
+    tree_graph_t graph = GRAPH_TREE_ZERO ;
+    uint32_t f = REVERSE ? GRAPH_WANT_REQUIREDBY : GRAPH_WANT_DEPENDS ;
+    uint32_t nservice = 0 , pos = 0, flag = f|GRAPH_COLLECT_PARSE ;
 
-    if (!graph_matrix_sort_tosa(&sa, &graph))
-        log_dieu(LOG_EXIT_SYS, "get the sorted list of trees") ;
+    if (!graph_new(&graph, SS_MAX_SERVICE))
+        log_dieusys(LOG_EXIT_SYS, "allocate the graph") ;
 
-    graph_free_all(&graph) ;
+    nservice = tree_graph_build_master(&graph, pinfo, flag) ;
 
-    if (sa.len) {
+    if (!nservice && errno == EINVAL)
+        log_dieusys(LOG_EXIT_SYS, "find trees -- please make a bug report") ;
 
-        struct resolve_hash_tree_s *c, *tmp ;
-        struct resolve_hash_s *hres = NULL ;
+    _alloc_stk_(stk, graph.g.nsort * SS_MAX_TREENAME) ;
 
-        HASH_ITER(hh, htres, c, tmp) {
+    FOREACH_GRAPH_SORT(tree_graph_t, &graph, pos) {
+        uint32_t index = graph.g.sort[pos] ;
+        char *name = graph.g.sindex[index]->name ;
+        if (!stack_add_g(&stk, name)) {
+            errno = EINVAL ;
+            log_dieu(LOG_EXIT_SYS, "get the sorted list of trees") ;
+        }
+    }
 
-            if (c->tres.ncontents) {
+    if (stk.len) {
 
-                _alloc_stk_(stk, strlen(c->tres.sa.s + c->tres.contents)) ;
+        struct resolve_hash_tree_s *h ;
+        service_graph_t sg = GRAPH_SERVICE_ZERO ;
 
-                if (!stack_string_clean(&stk, c->tres.sa.s + c->tres.contents))
+        pos = 0 ;
+        FOREACH_STK(&stk, pos) {
+
+            h = hash_search_tree(&graph.hres, stk.s + pos) ;
+            if (h == NULL)
+                log_dieusys(LOG_EXIT_ZERO, "get information of tree: ", stk.s + pos, " -- please make a bug report") ;
+
+            if (h->tres.ncontents) {
+
+                _alloc_stk_(sv, strlen(h->tres.sa.s + h->tres.contents)) ;
+
+                if (!stack_string_clean(&sv, h->tres.sa.s + h->tres.contents))
                     log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-                service_graph_g(stk.s, stk.len, &graph, &hres, pinfo, flag) ;
+                /** A dependencies service can be on another tree,
+                 * so used SS_MAX_SERVICE instead of stk.count. */
+                if (!graph_new(&sg, SS_MAX_SERVICE))
+                    log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
-                if (!graph.mlen)
-                    log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
+                nservice = service_graph_build_list(&sg, sv.s, sv.len, pinfo, flag) ;
 
-                if (!bprintf(buffer_1,"%s%s%s%s\n","In tree: ", log_color->info, c->tres.sa.s + c->tres.name, log_color->off))
+                if (!nservice && errno == EINVAL)
+                    log_die(LOG_EXIT_USER, "build the graph -- please make a bug report") ;
+
+                if (!bprintf(buffer_1,"%s%s%s%s\n","In tree: ", log_color->info, h->tres.sa.s + h->tres.name, log_color->off))
                     log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
                 if (!bprintf(buffer_1,"%s\n","\\"))
                     log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
                 depth_t d = info_graph_init() ;
 
-                if (!info_walk(&graph, 0, c->tres.sa.s + c->tres.name, &info_graph_display_service, 0, REVERSE, &d, 0, S_STYLE))
+                if (!service_info_walk(&sg, 0, h->tres.sa.s + h->tres.name, 0, REVERSE, &d, 0, S_STYLE, pinfo))
                     log_dieu(LOG_EXIT_SYS,"display the dependencies list") ;
 
                 if (buffer_puts(buffer_1,"\n") == -1)
                     log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
-                graph_free_all(&graph) ;
-                hash_free(&hres) ;
+                service_graph_destroy(&sg) ;
             }
         }
 
@@ -991,7 +1012,7 @@ void info_status_all(void)
         log_dieusys(LOG_EXIT_SYS, "find trees -- please make a bug report") ;
     }
 
-    hash_free_tree(&htres) ;
+    tree_graph_destroy(&graph) ;
 }
 
 void info_status_one(const char *service, int *what)
@@ -1107,5 +1128,4 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
     }
 
     return 0 ;
-
 }
