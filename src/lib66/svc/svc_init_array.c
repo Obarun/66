@@ -15,7 +15,7 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
-#include <oblibs/graph.h>
+#include <oblibs/hash.h>
 #include <oblibs/types.h>
 #include <oblibs/stack.h>
 
@@ -24,10 +24,11 @@
 #include <66/ssexec.h>
 #include <66/state.h>
 #include <66/enum.h>
+#include <66/graph.h>
 
 #include <s6/supervise.h>
 
-static pidservice_t pidservice_init(unsigned int len)
+static pidservice_t pidservice_init(uint32_t len)
 {
     log_flow() ;
 
@@ -36,48 +37,43 @@ static pidservice_t pidservice_init(unsigned int len)
     if (len > SS_MAX_SERVICE)
         log_die(LOG_EXIT_SYS, "too many services") ;
 
-    memset(pids.edge, 0, len * sizeof(unsigned int)) ;
-    memset(pids.notif, 0, len * sizeof(unsigned int)) ;
+    for (uint32_t i = 0 ; i < len; i++)
+        pids.notif[i] = NULL ;
 
     return pids ;
 }
 
-void svc_init_array(unsigned int *list, unsigned int listlen, pidservice_t *apids, graph_t *g, struct resolve_hash_s **hres, ssexec_t *info, uint8_t requiredby, uint32_t flag)
+void svc_init_array(pidservice_t *apids, service_graph_t *g, uint8_t requiredby, uint32_t flag)
 {
     log_flow() ;
 
     int r = 0 ;
-    unsigned int pos = 0 ;
+    vertex_t *v ;
+    uint32_t pos = 0 ;
+    struct resolve_hash_s *hash = NULL ;
 
-    for (; pos < listlen ; pos++) {
+    FOREACH_GRAPH_SORT(service_graph_t, g, pos) {
 
-        pidservice_t pids = pidservice_init(g->mlen) ;
+        uint32_t index = g->g.sort[pos] ;
+        pidservice_t pids = pidservice_init(g->g.nvertexes) ;
+        v = g->g.sindex[index] ;
+        char *name = v->name ;
 
-        char *name = g->data.s + genalloc_s(graph_hash_t,&g->hash)[list[pos]].vertex ;
-
-        struct resolve_hash_s *hash = hash_search(hres, name) ;
+        hash = hash_search(&g->hres, name) ;
         if (hash == NULL)
             log_dieu(LOG_EXIT_SYS,"find hash id of: ", name, " -- please make a bug reports") ;
 
         pids.res = &hash->res ;
 
-        if (FLAGS_ISSET(flag, STATE_FLAGS_TOPROPAGATE)) {
+        if (FLAGS_ISSET(flag, GRAPH_WANT_DEPENDS) || FLAGS_ISSET(flag, GRAPH_WANT_REQUIREDBY)) {
 
-            pids.nedge = graph_matrix_get_edge_g_sorted_list(pids.edge, g, name, requiredby, 0) ;
+            pids.nedge = !requiredby ? v->ndepends : v->nrequiredby ;
+            pids.nnotif = requiredby ? v->ndepends : v->nrequiredby ;
+            graph_get_edge(&g->g, v, pids.notif, requiredby ? false : true) ;
 
-            if (pids.nedge < 0)
-                log_dieu(LOG_EXIT_SYS,"get sorted ", requiredby ? "required by" : "dependency", " list of service: ", name) ;
-
-            pids.nnotif = graph_matrix_get_edge_g_sorted_list(pids.notif, g, name, !requiredby, 0) ;
-
-            if (pids.nnotif < 0)
-                log_dieu(LOG_EXIT_SYS,"get sorted ", !requiredby ? "required by" : "dependency", " list of service: ", name) ;
         }
 
-        pids.vertex = graph_hash_vertex_get_id(g, name) ;
-
-        if (pids.vertex < 0)
-            log_dieu(LOG_EXIT_SYS, "get vertex id -- please make a bug report") ;
+        pids.index = v->index ;
 
         if (pids.res->type != TYPE_CLASSIC) {
 

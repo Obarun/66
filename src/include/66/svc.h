@@ -24,6 +24,7 @@
 #include <skalibs/tai.h>
 
 #include <66/service.h>
+#include <66/graph.h>
 
 #define DATASIZE 65
 
@@ -40,36 +41,32 @@ struct pidservice_s
 {
     int pipe[2] ;
     pid_t pid ;
-    resolve_service_t *res ; // resolve of service through hash
-    unsigned int vertex ; // id at graph_hash_t struct
-    uint8_t state ;
-    int nedge ;
-    unsigned int edge[SS_MAX_SERVICE + 1] ; // array of id at graph_hash_t struct
-    int nnotif ;
-    /** id at graph_hash_t struct of depends/requiredby service
-     * to notify when a service is started/stopped */
-    unsigned int notif[SS_MAX_SERVICE + 1] ;
+    resolve_service_t *res ;
+    uint32_t index ; // index number of the vertex
+    uint8_t state ; // current state of the vertex
+    uint32_t nedge ; // number
+    vertex_t *notif[SS_MAX_SERVICE] ; // array of vertex_t to notif when a edge is done
+    uint32_t nnotif ; // number
 } ;
 
 #define PIDSERVICE_ZERO { \
     .pipe[0] = -1, \
     .pipe[1] = -1, \
     .res = NULL, \
-    .vertex = -1, \
+    .index = 0, \
     .state = 0, \
-    .nedge =  0, \
-    .edge = { 0 }, \
-    .nnotif = 0, \
-    .notif = { 0 } \
+    .nedge = 0, \
+    .notif = {NULL}, \
+    .nnotif = 0 \
 }
 
-extern void svc_init_array(unsigned int *list, unsigned int listlen, pidservice_t *apids, graph_t *g, struct resolve_hash_s **hres, ssexec_t *info, uint8_t requiredby, uint32_t flag) ;
-extern int svc_launch(pidservice_t *apids, unsigned int napid, uint8_t what, graph_t *graph, struct resolve_hash_s **hres, ssexec_t *info, char const *rise, uint8_t rise_opt, uint8_t msg, char const *signal, uint8_t propagate) ;
-extern int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char const *updown, uint8_t opt_updown, uint8_t reloadmsg,char const *data, uint8_t propagate, pidservice_t *apids, unsigned int napids) ;
+extern void svc_init_array(pidservice_t *apids, service_graph_t *g, uint8_t requiredby, uint32_t flag) ;
+extern int svc_launch(pidservice_t *apids, uint32_t nservice, uint8_t what, ssexec_t *info, char const *rise, uint8_t rise_opt, uint8_t msg, char const *signal, uint8_t propagate) ;
+extern int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char const *updown, uint8_t opt_updown, uint8_t reloadmsg,char const *data, uint8_t propagate) ;
 extern int svc_scandir_ok (char const *dir) ;
 extern int svc_scandir_send(char const *scandir,char const *signal) ;
-extern int svc_send_wait(char const *const *list, unsigned int nservice, char **sig, unsigned int siglen, ssexec_t *info) ;
-extern void svc_unsupervise(unsigned int *alist, unsigned int alen, graph_t *g, struct resolve_hash_s **hres, ssexec_t *info) ;
+extern int svc_send_wait(char const *const *list, uint32_t nservice, char **sig, unsigned int siglen, ssexec_t *info) ;
+extern void svc_unsupervise(service_graph_t *g) ;
 extern void svc_send_fdholder(char const *socket, char const *signal) ;
 
 #endif

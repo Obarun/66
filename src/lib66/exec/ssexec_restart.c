@@ -13,39 +13,29 @@
  */
 
 #include <stdint.h>
+#include <string.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
-#include <oblibs/graph.h>
-
 
 #include <skalibs/sgetopt.h>
 
 #include <66/ssexec.h>
-#include <66/config.h>
 #include <66/graph.h>
-#include <66/state.h>
 #include <66/svc.h>
+#include <66/config.h>
 #include <66/sanitize.h>
-#include <66/service.h>
-#include <66/enum.h>
 
 int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    int r, n = 0 ;
-    uint32_t flag = 0 ;
+    int r ;
+    unsigned int m = 0 ;
     uint8_t siglen = 3 ;
-    graph_t graph = GRAPH_ZERO ;
-    struct resolve_hash_s *hres = NULL ;
-    ss_state_t sta = STATE_ZERO ;
-    unsigned int list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0 ;
-    const char *const *pargv = 0 ;
-
-    memset(list, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
-    memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
-    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_TORESTART|STATE_FLAGS_WANTUP|STATE_FLAGS_WANTDOWN) ;
+    service_graph_t graph = GRAPH_SERVICE_ZERO ;
+    uint32_t flag = GRAPH_WANT_REQUIREDBY|GRAPH_WANT_SUPERVISED, nservice = 0, pos = 0 ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -64,7 +54,7 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
 
                 case 'P' :
 
-                    FLAGS_CLEAR(flag, STATE_FLAGS_TOPROPAGATE) ;
+                    FLAGS_CLEAR(flag, GRAPH_WANT_REQUIREDBY) ;
                     siglen++ ;
                     break ;
 
@@ -82,39 +72,18 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
     if ((svc_scandir_ok(info->scandir.s)) !=  1 )
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;
 
+    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+        log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
-    graph_build_arguments(&graph, argv, argc, &hres, info, flag) ;
+    nservice = service_graph_build_arguments(&graph, argv, argc, info, flag) ;
 
-    if (!graph.mlen)
-        log_die(LOG_EXIT_USER, "services selection is not available -- have you already parsed a service?") ;
-
-    for (n = 0 ; n < argc ; n++) {
-
-        struct resolve_hash_s *hash = hash_search(&hres, argv[n]) ;
-        if (hash == NULL)
-            log_dieu(LOG_EXIT_USER, "find service: ", argv[n], " -- did you parse it?") ;
-
-        if (!state_read(&sta, &hash->res))
-            log_dieu(LOG_EXIT_SYS, "read state file of: ", argv[n]) ;
-
-        if (sta.issupervised == STATE_FLAGS_FALSE)
-            /** nothing to do */
-            log_warn_return(LOG_EXIT_ZERO, "service: ", argv[n], " is not supervised -- try to start it first using '66 start ", argv[n], "'") ;
-
-        /** be sure to retrieve the exact same service selection state
-         * with its own dependencies after bringing it down.
-         * ssexec_signal will not be aware about its requiredby dependencies at up time.
-         * The service selection list is therefore explicitly passed.
-        */
-        if (siglen <= 3)
-            graph_compute_visit(*hash, visit, list, &graph, &nservice, 1) ;
-        else
-            nservice++ ;
+    if (!nservice) {
+        if (errno == EINVAL)
+            log_dieusys(LOG_EXIT_SYS, "unable to build service selection graph") ;
+        log_die(LOG_EXIT_SYS, "service selection is not supervised -- try to start it first") ;
     }
 
-    char const *newargv[nservice + 1] ;
-
-    memset(newargv, 0, (nservice + 1) * sizeof(char)) ;
+    sanitize_init(&graph, flag) ;
 
     char *sig[siglen] ;
     sig[0] = "-wD" ;
@@ -125,28 +94,7 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
         sig[2] = "-P" ;
         sig[3] = 0 ;
 
-        pargv = argv ;
-        nservice = argc ;
-
-    } else {
-
-        sig[2] = 0 ;
-        unsigned int m = 0 ;
-        for (n = 0 ; n < nservice ; n++) {
-
-            char *name = graph.data.s + genalloc_s(graph_hash_t,&graph.hash)[list[n]].vertex ;
-
-            r = service_is_g(name, STATE_FLAGS_ISSUPERVISED) ;
-            if (r < 0)
-                log_warnusys("get information of service: ", name, " -- please make a bug report") ;
-
-            if (r || r == STATE_FLAGS_TRUE)
-                newargv[m++] = name ;
-
-        }
-        newargv[m] = 0 ;
-        pargv = newargv ;
-    }
+    } else sig[2] = 0 ;
 
     r = svc_send_wait(argv, argc, sig, siglen, info) ;
 
@@ -156,10 +104,47 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
     sig[0] = "-wU" ;
     sig[1] = "-U" ;
 
-    r = svc_send_wait(pargv, nservice, sig, siglen, info) ;
+    {
+        /** use ssexec_start here to handle freed
+         * services before calling ssexec_signal.
+         * For instance, 66 free -P sA, 66 start sB,
+         * where sB depends on sA */
+        int nargc = 2 + nservice + siglen ;
+        char const *prog = PROG ;
+        char const *newargv[nargc] ;
 
-    hash_free(&hres) ;
-    graph_free_all(&graph) ;
+        char const *help = info->help ;
+        char const *usage = info->usage ;
+
+        info->help = help_start ;
+        info->usage = usage_start ;
+
+        newargv[m++] = "start" ;
+        if (siglen > 3)
+            newargv[m++] = "-P" ;
+
+        pos = 0 ;
+        FOREACH_GRAPH_SORT(service_graph_t, &graph, pos) {
+
+            uint32_t index = graph.g.sort[pos] ;
+            char *name = graph.g.sindex[index]->name ;
+            newargv[m++] = name ;
+        }
+
+        newargv[m] = 0 ;
+
+        PROG = "start" ;
+        r = ssexec_start(m, newargv, info) ;
+        PROG = prog ;
+
+        info->help = help ;
+        info->usage = usage ;
+    }
+
+    service_graph_destroy(&graph) ;
 
     return r ;
 }
+
+
+

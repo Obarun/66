@@ -1,5 +1,5 @@
 /*
- * graph_build_system.c
+ * service_graph_build_system.c
  *
  * Copyright (c) 2018-2025 Eric Vidal <eric@obarun.org>
  *
@@ -16,15 +16,14 @@
 #include <sys/stat.h>
 
 #include <oblibs/log.h>
-#include <oblibs/string.h>
 #include <oblibs/sastr.h>
+#include <oblibs/string.h>
 
-#include <66/constants.h>
-#include <66/graph.h>
-#include <66/service.h>
 #include <66/ssexec.h>
+#include <66/graph.h>
+#include <66/constants.h>
 
-void graph_build_system(graph_t *graph, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag)
+uint32_t service_graph_build_system(service_graph_t *g, ssexec_t *info, uint32_t flag)
 {
     log_flow() ;
 
@@ -35,7 +34,7 @@ void graph_build_system(graph_t *graph, struct resolve_hash_s **hres, ssexec_t *
     auto_strings(solve, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE) ;
 
     if (!sastr_dir_get_recursive(&sa, solve, exclude, S_IFLNK, 0))
-        log_dieu(LOG_EXIT_SYS, "get resolve files") ;
+        log_warnu_return(LOG_EXIT_ZERO, "get resolve files") ;
 
-    service_graph_g(sa.s, sa.len, graph, hres, info, flag) ;
+    return service_graph_build_list(g, sa.s, sa.len, info, flag) ;
 }

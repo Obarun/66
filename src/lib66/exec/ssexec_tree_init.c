@@ -19,7 +19,6 @@
 #include <oblibs/types.h>
 #include <oblibs/sastr.h>
 #include <oblibs/string.h>
-#include <oblibs/graph.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/sgetopt.h>
@@ -38,113 +37,48 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 {
     log_flow() ;
 
-    uint32_t flag = 0 ;
-    graph_t graph = GRAPH_ZERO ;
-    struct resolve_hash_s *hres = NULL ;
-    unsigned int list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1], nservice = 0, n = 0 ;
-
-    memset(list, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
-    memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
-    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
+    service_graph_t graph = GRAPH_SERVICE_ZERO ;
+    uint32_t flag = GRAPH_WANT_DEPENDS, nservice = 0 ;
+    struct resolve_hash_s *c, *tmp ;
 
     if (earlier)
-        FLAGS_SET(flag, STATE_FLAGS_ISEARLIER) ;
+        FLAGS_SET(flag, GRAPH_WANT_EARLIER) ;
 
-    service_graph_g(sa->s, sa->len, &graph, &hres, info, flag) ;
+    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+        log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
-    if (!graph.mlen && earlier) {
-        hash_free(&hres) ;
-        graph_free_all(&graph) ;
+    nservice = service_graph_ncollect(&graph, sa->s, sa->len, info, flag) ;
+
+    if (!nservice && earlier) {
+        service_graph_destroy(&graph) ;
         log_warn("no earlier service to initiate") ;
         return ;
     }
 
-    if (!graph.mlen)
+    if (!nservice)
         log_die(LOG_EXIT_USER, "services selection is not available -- have you already parsed a service?") ;
 
-    FOREACH_SASTR(sa, n) {
+    sa->len = 0 ;
 
-        struct resolve_hash_s *hash ;
-        hash = hash_search(&hres, sa->s + n) ;
-        if (hash == NULL) {
+    HASH_ITER(hh, graph.hres, c, tmp) {
 
-            if (earlier) {
-                log_trace("ignoring none earlier service: ", sa->s + n) ;
-                continue ;
-            }
-            log_die(LOG_EXIT_USER, "service: ", sa->s + n, " not available -- please execute \"66 parse ", sa->s + n,"\" command first") ;
-        }
+        if (c->res.enabled) {
 
-        unsigned int l[graph.mlen], c = 0, pos = 0, idx = 0 ;
+            if (!sastr_add_string(sa, c->name))
+                log_die_nomem("stack") ;
 
-        idx = graph_hash_vertex_get_id(&graph, sa->s + n) ;
-
-        if (!visit[idx]) {
-
-            if (earlier) {
-
-                if (hash->res.earlier) {
-
-                    list[nservice++] = idx ;
-                    visit[idx] = 1 ;
-                }
-
-            } else {
-
-                if (hash->res.enabled) {
-
-                    list[nservice++] = idx ;
-                    visit[idx] = 1 ;
-
-                } else {
-
-                    log_trace("ignoring not enabled service: ", hash->res.sa.s + hash->res.name) ;
-
-                }
-            }
-
-        }
-
-        /** find dependencies of the service from the graph, do it recursively */
-        c = graph_matrix_get_edge_g_list(l, &graph, sa->s + n, 0, 1) ;
-
-        /** append to the list to deal with */
-        for (; pos < c ; pos++) {
-
-            if (!visit[l[pos]]) {
-
-                char *name = graph.data.s + genalloc_s(graph_hash_t,&graph.hash)[l[pos]].vertex ;
-
-                struct resolve_hash_s *h ;
-                h = hash_search(&hres, name) ;
-                if (hash == NULL)
-                    log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
-
-                if (earlier) {
-
-                    if (h->res.earlier) {
-
-                        list[nservice++] = l[pos] ;
-                        visit[l[pos]] = 1 ;
-                    }
-
-                } else {
-
-                    if (h->res.enabled) {
-
-                        list[nservice++] = l[pos] ;
-                        visit[l[pos]] = 1 ;
-
-                    }
-                }
-            }
-        }
+        } else
+            log_trace("ignoring not enabled service: ", c->name) ;
     }
 
-    sanitize_init(list, nservice, &graph, &hres) ;
+    if (!service_graph_nresolve(&graph, sa->s, sa->len, flag)) {
+        errno = EINVAL ;
+        log_dieusys(LOG_EXIT_SYS, "resolve the graph") ;
+    }
 
-    hash_free(&hres) ;
-    graph_free_all(&graph) ;
+    sanitize_init(&graph, flag) ;
+
+    service_graph_destroy(&graph) ;
 }
 
 int ssexec_tree_init(int argc, char const *const *argv, ssexec_t *info)
@@ -155,7 +89,7 @@ int ssexec_tree_init(int argc, char const *const *argv, ssexec_t *info)
     uint8_t earlier = 0 ;
     char const *treename = 0 ;
 
-    stralloc sa = STRALLOC_ZERO ;
+    _alloc_sa_(sa) ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -209,6 +143,5 @@ int ssexec_tree_init(int argc, char const *const *argv, ssexec_t *info)
         log_info("Report: no services to initiate at tree: ", treename) ;
     }
 
-    stralloc_free(&sa) ;
     return 0 ;
 }

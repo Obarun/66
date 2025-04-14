@@ -15,47 +15,35 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
-#include <oblibs/graph.h>
 #include <oblibs/types.h>
 #include <oblibs/stack.h>
 #include <oblibs/lexer.h>
 
 #include <66/svc.h>
+#include <66/graph.h>
 #include <66/config.h>
-#include <66/resolve.h>
 #include <66/ssexec.h>
-#include <66/state.h>
 #include <66/service.h>
 #include <66/sanitize.h>
 
 /** sares -> services ares */
-int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char const *updown, uint8_t opt_updown, uint8_t reloadmsg,char const *data, uint8_t propagate, pidservice_t *handled, unsigned int nhandled)
+int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char const *updown, uint8_t opt_updown, uint8_t reloadmsg,char const *data, uint8_t propagate)
 {
     log_flow() ;
 
     int r ;
     uint8_t requiredby = 0 ;
-    size_t pos = 0 ;
-    graph_t graph = GRAPH_ZERO ;
+    service_graph_t graph = GRAPH_SERVICE_ZERO ;
+    uint32_t nservice = 0, flag = GRAPH_SKIP_EARLIER ;
+    _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.contents) + 1) ;
 
-    unsigned int napid = 0 ;
-    unsigned int list[SS_MAX_SERVICE + 1], visit[SS_MAX_SERVICE + 1] ;
-    struct resolve_hash_s *hash = NULL ;
+    if (propagate) {
 
-    memset(list, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
-    memset(visit, 0, (SS_MAX_SERVICE + 1) * sizeof(unsigned int)) ;
-    uint32_t gflag = STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP ;
-
-    if (!propagate)
-        FLAGS_CLEAR(gflag, STATE_FLAGS_TOPROPAGATE) ;
-
-    if (what) {
-        requiredby = 1 ;
-        FLAGS_SET(gflag, STATE_FLAGS_WANTDOWN) ;
-        FLAGS_CLEAR(gflag, STATE_FLAGS_WANTUP) ;
+        if (what) {
+            requiredby = 1 ;
+            FLAGS_SET(flag, GRAPH_WANT_REQUIREDBY) ;
+        } else FLAGS_SET(flag, GRAPH_WANT_DEPENDS) ;
     }
-
-     _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.contents) + 1) ;
 
     if (res->dependencies.ncontents) {
 
@@ -67,38 +55,25 @@ int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char co
         return 0 ;
     }
 
+    if (!graph_new(&graph, res->dependencies.ncontents))
+        log_dieusys(LOG_EXIT_SYS, "allocate the graph") ;
+
     /** build the graph of the ns */
-    service_graph_g(stk.s, stk.len, &graph, &hash, info, gflag) ;
+    nservice = service_graph_build_list(&graph, stk.s, stk.len, info, flag) ;
 
-    if (!graph.mlen)
-        log_die(LOG_EXIT_USER, "services selection is not supervised -- initiate its first") ;
-
-    FOREACH_STK(&stk, pos) {
-
-        char const *name = stk.s + pos ;
-
-        struct resolve_hash_s *h = hash_search(&hash, name) ;
-        if (h == NULL)
-            log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
-
-        if (h->res.earlier) {
-            log_warn("ignoring ealier service: ", h->res.sa.s + h->res.name) ;
-            continue ;
-        }
-        graph_compute_visit(*h, visit, list, &graph, &napid, requiredby) ;
-    }
+    if (!nservice)
+        log_dieu(LOG_EXIT_USER, "build the graph of the module: ", res->sa.s + res->name," -- please make a bug report") ;
 
     if (!what)
-        sanitize_init(list, napid, &graph, &hash) ;
+        sanitize_init(&graph, flag) ;
 
-    pidservice_t apids[napid] ;
+    pidservice_t apids[graph.g.nsort] ;
 
-    svc_init_array(list, napid, apids, &graph, &hash, info, requiredby, gflag) ;
+    svc_init_array(apids, &graph, requiredby, flag) ;
 
-    r = svc_launch(apids, napid, what, &graph, &hash, info, updown, opt_updown, reloadmsg, data, propagate) ;
+    r = svc_launch(apids, graph.g.nsort, what, info, updown, opt_updown, reloadmsg, data, propagate) ;
 
-    hash_free(&hash) ;
-    graph_free_all(&graph) ;
+    service_graph_destroy(&graph) ;
 
     return r ;
 }

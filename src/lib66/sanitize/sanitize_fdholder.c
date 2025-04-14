@@ -95,14 +95,28 @@ static int fdholder_delete(s6_fdholder_t *a, char const *name, tain *deadline)
     return 1 ;
 }
 
+int sanitize_fdholder_start(s6_fdholder_t *a, const char *socket)
+{
+    tain deadline = tain_infinite_relative ;
+    _alloc_stk_(sock, strlen(socket) + 3) ;
+    auto_strings(sock.s, socket, "/s") ;
+
+    tain_now_set_stopwatch_g() ;
+    tain_add_g(&deadline, &deadline) ;
+
+    if (!s6_fdholder_start_g(a, sock.s, &deadline))
+        log_warnusys_return(LOG_EXIT_ZERO, "connect to socket: ", sock.s) ;
+
+    return 1 ;
+}
+
 /**
  * Accepted flag are
  *      - STATE_FLAGS_TRUE -> store the service A.K.A identifier
  *      - STATE_FLAGS_FALSE -> delete the service A.K.A identifier
  * @init: come form sanitize_init 0 -> no, 1 -> yes
  * */
-
-int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag, uint8_t init)
+int sanitize_fdholder(resolve_service_t *res, s6_fdholder_t *a, ss_state_t *sta, uint32_t flag, uint8_t init)
 {
     log_flow() ;
 
@@ -113,18 +127,11 @@ int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag, ui
         char *name = sa + res->logger.name ;
         char *socket = sa + res->live.fdholderdir ;
         size_t socketlen = strlen(socket) ;
-        s6_fdholder_t a = S6_FDHOLDER_ZERO ;
         tain deadline = tain_infinite_relative, limit = tain_infinite_relative ;
-        char sock[socketlen + 3] ;
-
-        auto_strings(sock, socket, "/s") ;
 
         tain_now_set_stopwatch_g() ;
         tain_add_g(&deadline, &deadline) ;
         tain_add_g(&limit, &limit) ;
-
-        if (!s6_fdholder_start(&a, sock, &deadline, &limit))
-            log_warnusys_return(LOG_EXIT_ZERO, "connect to socket: ", sock) ;
 
         if (FLAGS_ISSET(flag, STATE_FLAGS_TRUE)) {
 
@@ -133,26 +140,24 @@ int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag, ui
                 sta->torestart == STATE_FLAGS_TRUE) && !init) {
 
                 log_trace("delete fdholder entry: ", name) ;
-                if (!fdholder_delete(&a, name, &deadline))
+                if (!fdholder_delete(a, name, &deadline))
                     return 0 ;
             }
 
             log_trace("store fdholder entry: ", name) ;
-            if (!fdholder_store(&a, name, &deadline, &limit))
+            if (!fdholder_store(a, name, &deadline, &limit))
                 return 0 ;
 
         } else if (FLAGS_ISSET(flag, STATE_FLAGS_FALSE)) {
 
             log_trace("delete fdholder entry: ", name) ;
-            if (!fdholder_delete(&a, name, &deadline))
+            if (!fdholder_delete(a, name, &deadline))
                 return 0 ;
 
         }
 
-        if (s6_fdholder_list_g(&a, &list, &deadline) < 0)
+        if (s6_fdholder_list_g(a, &list, &deadline) < 0)
             log_warnusys_return(LOG_EXIT_ZERO, "list identifier") ;
-
-        s6_fdholder_end(&a) ;
 
         if (!stralloc_0(&list))
             log_die_nomem("stralloc") ;
@@ -181,8 +186,6 @@ int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag, ui
         log_trace("create fdholder autofilled file") ;
         if (!openwritenclose_unsafe(file, list.s, list.len))
             log_warnusys_return(LOG_EXIT_ZERO, "write file: ", file) ;
-
-        //svc_send_fdholder(socket, "twR") ;
 
         stralloc_free(&list) ;
     }

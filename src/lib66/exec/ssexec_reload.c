@@ -13,19 +13,17 @@
  */
 
 #include <stdint.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
-#include <oblibs/graph.h>
 
 #include <skalibs/sgetopt.h>
 
 #include <66/ssexec.h>
 #include <66/config.h>
 #include <66/graph.h>
-#include <66/state.h>
 #include <66/svc.h>
-#include <66/sanitize.h>
 #include <66/service.h>
 #include <66/enum.h>
 
@@ -33,14 +31,14 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    int r, nargc = 0, n = 0 ;
-    uint32_t flag = 0 ;
+    int r, nargc = 0 ;
+    char const *nargv[argc] ;
     uint8_t siglen = 2 ;
-    graph_t graph = GRAPH_ZERO ;
-    struct resolve_hash_s *hres = NULL ;
-    unsigned int m = 0 ;
+    vertex_t *c, *tmp ;
+    service_graph_t graph = GRAPH_SERVICE_ZERO ;
+    uint32_t flag = GRAPH_WANT_SUPERVISED|GRAPH_WANT_DEPENDS, nservice = 0 ;
 
-    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTUP) ;
+    unsigned int m = 0 ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -57,10 +55,9 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
                     info_help(info->help, info->usage) ;
                     return 0 ;
 
-
                 case 'P' :
 
-                    FLAGS_CLEAR(flag, STATE_FLAGS_TOPROPAGATE) ;
+                    FLAGS_CLEAR(flag, GRAPH_WANT_DEPENDS) ;
                     siglen++ ;
                     break ;
 
@@ -78,50 +75,16 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
     if ((svc_scandir_ok(info->scandir.s)) !=  1 )
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;
 
-    char const *nargv[argc] ;
+    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+        log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
-    for (; n < argc ; n++) {
+    nservice = service_graph_build_arguments(&graph, argv, argc, info, flag) ;
 
-        r = service_is_g(argv[n], STATE_FLAGS_ISPARSED) ;
-        if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "get information of service: ", argv[n], " -- please make a bug report") ;
-
-        if (!r || r == STATE_FLAGS_FALSE) {
-            /** nothing to do */
-            log_warn(argv[n], " is not parsed -- try to start it first using '66 start ", argv[n], "'") ;
-            return 0 ;
-        }
-
-        r = service_is_g(argv[n], STATE_FLAGS_ISSUPERVISED) ;
-        if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "get information of service: ", argv[n], " -- please make a bug report") ;
-
-        if (!r || r == STATE_FLAGS_FALSE) {
-            /** nothing to do */
-            log_warn(argv[n], " is not running -- try to start it first using '66 start ", argv[n], "'") ;
-            return 0 ;
-        }
+    if (!nservice) {
+        if (errno == EINVAL)
+            log_dieusys(LOG_EXIT_SYS, "unable to build service selection graph") ;
+        log_warn_return(LOG_EXIT_ZERO, "service selection is not supervised -- try to start it first") ;
     }
-
-    graph_build_arguments(&graph, argv, argc, &hres, info, flag) ;
-
-    if (!graph.mlen)
-        log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
-
-    for (n = 0 ; n < argc ; n++) {
-
-        struct resolve_hash_s *hash = hash_search(&hres, argv[n]) ;
-        if (hash == NULL)
-            log_die(LOG_EXIT_USER, "service: ", *argv, " not available -- did you pars it?") ;
-
-        if (hash->res.type == TYPE_ONESHOT) {
-            nargc++ ;
-            nargv[m++] = hash->res.sa.s + hash->res.name ;
-        }
-    }
-
-    if (nargc)
-        nargv[m] = 0 ;
 
     char *sig[siglen] ;
     if (siglen > 2) {
@@ -137,15 +100,33 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
     }
 
     r = svc_send_wait(argv, argc, sig, siglen, info) ;
-    if (r)
-        goto err ;
+    if (r) {
+        service_graph_destroy(&graph) ;
+        return r ;
+    }
+
     /** s6-supervise do not deal with oneshot service:
      * The previous send command will bring it down but
      * s6-supervise will not bring it up automatically.
      * Well, do it manually */
 
+    HASH_ITER(hh, graph.g.vertexes, c, tmp) {
+
+        struct resolve_hash_s *h = NULL ;
+        h = hash_search(&graph.hres, c->name) ;
+        if (h == NULL)
+            log_dieusys(LOG_EXIT_SYS, "find service: ", c->name, " -- please make a bug report") ;
+
+        if (h->res.type == TYPE_ONESHOT) {
+            nargc++ ;
+            nargv[m++] = c->name ;
+        }
+
+    }
+
     if (nargc) {
 
+        nargv[m] = 0 ;
         int verbo = VERBOSITY ;
         VERBOSITY = 0 ;
         char *nsig[siglen + 1] ;
@@ -168,9 +149,7 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
         VERBOSITY = verbo ;
     }
 
-    err:
-        hash_free(&hres) ;
-        graph_free_all(&graph) ;
+    service_graph_destroy(&graph) ;
 
-        return r ;
+    return r ;
 }

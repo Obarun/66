@@ -23,9 +23,11 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/cdb.h>
 #include <skalibs/cdbmake.h>
+#include <skalibs/tai.h>
 
 #include <66/ssexec.h>
 #include <66/resolve.h>
+#include <66/graph.h>
 
 #define TREE_GROUPS_BOOT "boot"
 #define TREE_GROUPS_BOOT_LEN (sizeof TREE_GROUPS_BOOT - 1)
@@ -146,6 +148,38 @@ struct resolve_hash_tree_s {
 } ;
 #define RESOLVE_HASH_TREE_ZERO { 0, 0, RESOLVE_TREE_ZERO, NULL }
 
+#define TREE_FLAGS_STARTING 1 // 1 starting not really up
+#define TREE_FLAGS_STOPPING (1 << 1) // 2 stopping not really down
+#define TREE_FLAGS_UP (1 << 2) // 4 really up
+#define TREE_FLAGS_DOWN (1 << 3) // 8 really down
+#define TREE_FLAGS_BLOCK (1 << 4) // 16 all deps are not up/down
+#define TREE_FLAGS_UNBLOCK (1 << 5) // 32 all deps up/down
+#define TREE_FLAGS_FATAL (1 << 6) // 64 process crashed
+
+typedef struct pidtree_s pidtree_t, *pidtree_t_ref ;
+struct pidtree_s
+{
+    int pipe[2] ;
+    pid_t pid ;
+    resolve_tree_t *tres ;
+    uint32_t index ; // index number of the vertex
+    uint8_t state ; // current state of the vertex
+    uint32_t nedge ; // number
+    vertex_t *notif[SS_MAX_SERVICE] ; // array of vertex_t to notif when a edge is done
+    uint32_t nnotif ;// number
+} ;
+
+#define PIDTREE_ZERO { \
+    .pipe[0] = -1, \
+    .pipe[1] = -1, \
+    .tres = NULL, \
+    .index = 0, \
+    .state = 0, \
+    .nedge = 0, \
+    .notif = {NULL}, \
+    .nnotif = 0 \
+}
+
 /** @Return 1 on success
  * @Return 0 if not valid
  * @Return -1 on system error */
@@ -189,7 +223,6 @@ extern int tree_sethome(ssexec_t *info) ;
 
 extern int tree_switch_current(char const *base, char const *tree) ;
 
-
 /** Resolve API */
 /** tree */
 extern int tree_resolve_read_cdb(cdb *c, resolve_tree_t *tres) ;
@@ -222,5 +255,9 @@ extern int hash_add_tree(struct resolve_hash_tree_s **hash, char const *name, re
 extern struct resolve_hash_tree_s *hash_search_tree(struct resolve_hash_tree_s **hash, char const *name) ;
 extern int hash_count_tree(struct resolve_hash_tree_s **hash) ;
 extern void hash_free_tree(struct resolve_hash_tree_s **hash) ;
+
+/** signal */
+extern void tree_init_array(pidtree_t *apidt, tree_graph_t *g, uint8_t requiredby, uint8_t flag) ;
+extern int tree_launch(pidtree_t *apidt, uint32_t ntree, unsigned int what, tain *deadline, ssexec_t *info) ;
 
 #endif

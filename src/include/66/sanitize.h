@@ -20,14 +20,18 @@
 #include <66/service.h>
 #include <66/ssexec.h>
 #include <66/state.h>
+#include <66/graph.h>
+
+#include <s6/fdholder.h>
 
 extern void sanitize_system(ssexec_t *info) ;
 extern int sanitize_migrate(ssexec_t *info, const char *oversion, short exist) ;
 extern void sanitize_source(char const *name, ssexec_t *info, uint32_t flag) ;
-extern int sanitize_fdholder(resolve_service_t *res, ss_state_t *sta, uint32_t flag, uint8_t init) ;
+extern int sanitize_fdholder_start(s6_fdholder_t *a, const char *socket) ;
+extern int sanitize_fdholder(resolve_service_t *res, s6_fdholder_t *a, ss_state_t *sta, uint32_t flag, uint8_t init) ;
 extern int sanitize_livestate(resolve_service_t *res, ss_state_t *sta) ;
 extern int sanitize_scandir(resolve_service_t *res, ss_state_t *sta) ;
-extern void sanitize_init(unsigned int *alist, unsigned int alen, graph_t *g, struct resolve_hash_s **hres) ;
+extern void sanitize_init(service_graph_t *g, uint32_t flag) ;
 extern void sanitize_graph(ssexec_t *info) ;
 /** @Return 0 the service is already written
  * @Return 1 the service will be overwritten

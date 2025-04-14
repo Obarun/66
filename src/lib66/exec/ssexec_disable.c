@@ -12,38 +12,33 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <oblibs/log.h>
+#include <oblibs/hash.h>
 #include <oblibs/types.h>
-#include <oblibs/string.h>
+#include <oblibs/environ.h>
+#include <oblibs/sastr.h>
 
 #include <skalibs/sgetopt.h>
 
-#include <66/constants.h>
 #include <66/ssexec.h>
-#include <66/config.h>
 #include <66/service.h>
 #include <66/graph.h>
-#include <66/resolve.h>
-#include <66/state.h>
+#include <66/config.h>
 
 int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    uint32_t flag = 0 ;
-    uint8_t stop = 0, propagate = 1 ;
-    int n = 0, e = 1 ;
-    size_t pos = 0 ;
-    graph_t graph = GRAPH_ZERO ;
-    struct resolve_hash_s *hres = NULL ;
-    struct resolve_hash_s tostop[argc] ;
+    _alloc_sa_(sa) ;
+    bool stop = false, propagate = true, action = false ;
+    service_graph_t graph = GRAPH_SERVICE_ZERO ;
+    vertex_t *c, *tmp ;
+    int e = 1 ;
+    uint32_t flag = GRAPH_WANT_REQUIREDBY, nservice = 0 ;
 
-    memset(tostop, 0, sizeof(struct resolve_hash_s) * argc) ;
-
-    FLAGS_SET(flag, STATE_FLAGS_TOPROPAGATE|STATE_FLAGS_WANTDOWN|STATE_FLAGS_WANTUP) ;
     {
         subgetopt l = SUBGETOPT_ZERO ;
 
@@ -61,12 +56,13 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
 
                 case 'S' :
 
-                    stop = 1 ;
+                    stop = true ;
                     break ;
 
                 case 'P' :
 
-                    propagate = 0 ;
+                    FLAGS_CLEAR(flag, GRAPH_WANT_REQUIREDBY) ;
+                    propagate = false ;
                     break ;
 
                 default :
@@ -79,28 +75,39 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
     if (argc < 1)
         log_usage(info->usage, "\n", info->help) ;
 
-    graph_build_arguments(&graph, argv, argc, &hres, info, flag) ;
+    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+        log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
-    if (!graph.mlen)
+    if (!environ_import_arguments(&sa, argv, argc))
+        log_dieusys(LOG_EXIT_SYS, "import arguments") ;
+
+    nservice = service_graph_build_list(&graph, sa.s, sa.len, info, flag) ;
+
+    if (!nservice)
         log_die(LOG_EXIT_USER, "services selection is not available -- try to parse it first") ;
 
-    for (; n < argc ; n++) {
+    hash_reset_visit(graph.hres) ;
 
-        struct resolve_hash_s *hash = hash_search(&hres, argv[n]) ;
+    nservice = 0 ;
+    FOREACH_GRAPH_SORT(service_graph_t, &graph, nservice) {
+
+        uint32_t index = graph.g.sort[nservice] ;
+        vertex_t *v = graph.g.sindex[index] ;
+        char *name = v->name ;
+        struct resolve_hash_s *hash = hash_search(&graph.hres, name) ;
+
         if (hash == NULL)
-            log_dieu(LOG_EXIT_USER, "find service: ", argv[n], " -- did you parse it?") ;
+            log_die(LOG_EXIT_SYS, "get information of service: ", name, " -- please make a bug report") ;
 
-        service_enable_disable(&graph, hash, &hres, 0, propagate, info) ;
-
-        tostop[n] = *hash ;
+        if (!hash->visit)
+            service_enable_disable(&graph, hash, action, propagate, info, &sa) ;
     }
 
-    graph_free_all(&graph) ;
     e = 0 ;
 
-    if (stop && n) {
+    if (stop && graph.g.nvertexes) {
 
-        int nargc = 3 + n ;
+        int nargc = 3 + graph.g.nvertexes ;
         char const *prog = PROG ;
         char const *newargv[nargc] ;
         unsigned int m = 0 ;
@@ -113,8 +120,8 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
 
         newargv[m++] = "stop" ;
         newargv[m++] = "-u" ;
-        for (; pos < n ; pos++)
-            newargv[m++] = tostop[pos].name ;
+        HASH_ITER(hh, graph.g.vertexes, c, tmp)
+            newargv[m++] = c->name ;
         newargv[m] = 0 ;
 
         PROG = "stop" ;
@@ -125,7 +132,7 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
         info->usage = usage ;
     }
 
-    hash_free(&hres) ;
+    service_graph_destroy(&graph) ;
 
     return e ;
 }

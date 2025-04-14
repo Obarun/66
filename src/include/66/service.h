@@ -16,8 +16,8 @@
 #define SS_SERVICE_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
-#include <oblibs/graph.h>
 #include <oblibs/hash.h>
 
 #include <skalibs/stralloc.h>
@@ -27,6 +27,7 @@
 #include <66/ssexec.h>
 #include <66/resolve.h>
 #include <66/enum.h>
+#include <66/graph.h>
 
 typedef struct resolve_service_addon_path_s resolve_service_addon_path_t, *resolve_service_addon_path_t_ref ;
 struct resolve_service_addon_path_s
@@ -360,23 +361,19 @@ extern int service_resolve_read_cdb(cdb *c, resolve_service_t *res) ;
 extern void service_resolve_write(resolve_service_t *res) ;
 extern void service_resolve_write_remote(resolve_service_t *res, char const *dst, uint8_t force) ;
 extern int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres) ;
-extern void service_enable_disable(graph_t *g, struct resolve_hash_s *hash, struct resolve_hash_s **hres, uint8_t action, uint8_t propagate, ssexec_t *info) ;
-extern void service_switch_tree(resolve_service_t *res, char const *base, char const *totreename, ssexec_t *info) ;
+extern void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, bool propagate, ssexec_t *info, stralloc *argv) ;
+extern void service_switch_tree(resolve_service_t *res, char const *totreename, ssexec_t *info) ;
 extern void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char const *base, uint8_t requiredby) ;
 /* avoid circular dependencies by prototyping the ss_state_t instead
  * of calling the state.h header file*/
 typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;
 
-/** Graph */
-extern void service_graph_g(char const *slist, size_t slen, graph_t *graph, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag) ;
-extern void service_graph_collect_list(graph_t *g, char const *alist, size_t alen, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag) ;
-extern void service_graph_collect(graph_t *g, const char *name, struct resolve_hash_s **hres, ssexec_t *info, uint32_t flag) ;
-extern void service_graph_compute(graph_t *g, struct resolve_hash_s **hres, uint32_t flag) ;
 
 /** Hash */
 extern int hash_add(struct resolve_hash_s **hres, char const *name, resolve_service_t res) ;
 extern struct resolve_hash_s *hash_search(struct resolve_hash_s **hres, char const *name) ;
 extern int hash_count(struct resolve_hash_s **hres) ;
 extern void hash_free(struct resolve_hash_s **hres) ;
+extern void hash_reset_visit(struct resolve_hash_s *hres) ;
 
 #endif
