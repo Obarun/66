@@ -21,19 +21,19 @@
 #include <66/tree.h>
 #include <66/ssexec.h>
 
-void service_switch_tree(resolve_service_t *res, char const *base, char const *totreename, ssexec_t *info)
+void service_switch_tree(resolve_service_t *res, char const *totreename, ssexec_t *info)
 {
     log_flow() ;
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-    tree_service_remove(base, res->sa.s + res->treename, res->sa.s + res->name) ;
+    tree_service_remove(info->base.s, res->sa.s + res->treename, res->sa.s + res->name) ;
 
     tree_service_add(totreename, res->sa.s + res->name, info) ;
 
     service_resolve_modify_field(res, E_RESOLVE_SERVICE_TREENAME, totreename) ;
 
-    if (!resolve_write_g(wres, res->sa.s + res->path.home, res->sa.s + res->name))
+    if (!resolve_write_g(wres, info->base.s, res->sa.s + res->name))
         log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", res->sa.s + res->name) ;
 
     free(wres) ;
