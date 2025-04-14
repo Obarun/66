@@ -33,7 +33,40 @@
 #include <66/state.h>
 #include <66/svc.h>
 
-static void scandir_scandir_to_livestate(resolve_service_t *res)
+/*
+int sanitize_supervision_dir(resolve_service_t *res)
+{
+    log_flow() ;
+
+    mode_t hmod = umask(0) ;
+    char *event = res->sa.s + res->live.eventdir ;
+    char *supervise = res->sa.s + res->live.supervisedir ;
+
+    // event dir
+    log_trace("create directory: ", event) ;
+    int r = dir_create_parent(event, 0700) ;
+    if (!r)
+        log_warnusys_return(LOG_EXIT_ZERO, "create directory: ", event) ;
+
+    if (chown(event, -1, getegid()) < 0)
+        log_warnusys_return(LOG_EXIT_ZERO, "chown: ", event) ;
+
+    if (chmod(event, 03730) < 0)
+        log_warnusys_return(LOG_EXIT_ZERO, "chmod: ", event) ;
+
+    // supervise dir
+    log_trace("create directory: ", supervise) ;
+    r = dir_create_parent(supervise, 0700) ;
+    if (!r)
+        log_warnusys_return(LOG_EXIT_ZERO, "create directory: ", event) ;
+
+    umask(hmod) ;
+
+    return 1 ;
+}
+*/
+
+static void scandir_to_livestate(resolve_service_t *res)
 {
     log_flow() ;
 
@@ -51,37 +84,6 @@ static void scandir_scandir_to_livestate(resolve_service_t *res)
        log_dieu(LOG_EXIT_SYS, "symlink: ", sym, " to: ", res->sa.s + res->live.servicedir) ;
 }
 
-int scandir_supervision_dir(resolve_service_t *res)
-{
-    log_flow() ;
-
-    mode_t hmod = umask(0) ;
-    char *event = res->sa.s + res->live.eventdir ;
-    char *supervise = res->sa.s + res->live.supervisedir ;
-
-    /* event dir */
-    log_trace("create directory: ", event) ;
-    int r = dir_create_parent(event, 0700) ;
-    if (!r)
-        log_warnusys_return(LOG_EXIT_ZERO, "create directory: ", event) ;
-
-    if (chown(event, -1, getegid()) < 0)
-        log_warnusys_return(LOG_EXIT_ZERO, "chown: ", event) ;
-
-    if (chmod(event, 03730) < 0)
-        log_warnusys_return(LOG_EXIT_ZERO, "chmod: ", event) ;
-
-    /* supervise dir */
-    log_trace("create directory: ", supervise) ;
-    r = dir_create_parent(supervise, 0700) ;
-    if (!r)
-        log_warnusys_return(LOG_EXIT_ZERO, "create directory: ", event) ;
-
-    umask(hmod) ;
-
-    return 1 ;
-}
-
 int sanitize_scandir(resolve_service_t *res, ss_state_t *sta)
 {
     log_flow() ;
@@ -97,12 +99,18 @@ int sanitize_scandir(resolve_service_t *res, ss_state_t *sta)
     if (r == -1 && (sta->toinit == STATE_FLAGS_TRUE || res->earlier)) {
 
         if (res->type == TYPE_CLASSIC)
-            scandir_scandir_to_livestate(res) ;
+            scandir_to_livestate(res) ;
 
         state_set_flag(sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE) ;
         state_set_flag(sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE) ;
 
     } else {
+
+        if (sta->toinit == STATE_FLAGS_TRUE) {
+
+            unlink_void(res->sa.s + res->live.scandir) ;
+            scandir_to_livestate(res) ;
+        }
 
         if (sta->tounsupervise == STATE_FLAGS_TRUE) {
 
