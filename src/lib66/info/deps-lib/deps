@@ -8,7 +8,8 @@ info_graph_display_service.o
 info_graph_display_tree.o
 info_graph_init.o
 info_length_from_wchar.o
-info_walk.o
+service_info_walk.o
+tree_info_walk.o
 -ls6
 -loblibs
 -lskarnet
