@@ -610,40 +610,11 @@ static void migrate_service_0721(void)
     ssexec_free(&info) ;
 }
 
-static void migrate_create_snap_0721(ssexec_t *info)
-{
-    int argc = 4 ;
-    int m = 0 ;
-    char const *prog = PROG ;
-    char const *newargv[argc] ;
-
-    char const *help = info->help ;
-    char const *usage = info->usage ;
-
-    info->help = help_snapshot_create ;
-    info->usage = usage_snapshot_create ;
-
-    newargv[m++] = "snapshot" ;
-    newargv[m++] = "-s" ;
-    newargv[m++] = "system@0.7.2.1" ;
-    newargv[m] = 0 ;
-
-    PROG = "snapshot" ;
-    if (ssexec_snapshot_create(m, newargv, info))
-        log_dieu(LOG_EXIT_SYS, "create snapshot system@0.7.2.1") ;
-    PROG = prog ;
-
-    info->help = help ;
-    info->usage = usage ;
-
-}
 void migrate_0721(ssexec_t *info)
 {
     log_flow() ;
 
     log_info("Upgrading system from version: 0.7.2.1 to: ", SS_VERSION) ;
-
-    migrate_create_snap_0721(info) ;
 
     migrate_tree_0721(info) ;
 

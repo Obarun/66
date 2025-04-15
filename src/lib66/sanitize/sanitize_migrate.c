@@ -14,6 +14,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/stack.h>
+#include <oblibs/string.h>
 
 #include <66/ssexec.h>
 #include <66/utils.h>
@@ -59,10 +60,43 @@ static uint8_t str_to_int(const char *version)
     log_dieu(LOG_EXIT_SYS, "unable to compare version -- please make a bug report") ;
 }
 
+void migrate_create_snap(ssexec_t *info, const char *version)
+{
+    _alloc_stk_(stk, 7 + strlen(version)) ;
+    int argc = 4 ;
+    int m = 0 ;
+    char const *prog = PROG ;
+    char const *newargv[argc] ;
+
+    char const *help = info->help ;
+    char const *usage = info->usage ;
+
+    info->help = help_snapshot_create ;
+    info->usage = usage_snapshot_create ;
+
+    auto_strings(stk.s, "system@", version) ;
+
+    newargv[m++] = "snapshot" ;
+    newargv[m++] = "-s" ;
+    newargv[m++] = stk.s ;
+    newargv[m] = 0 ;
+
+    PROG = "snapshot" ;
+    if (ssexec_snapshot_create(m, newargv, info))
+        log_dieu(LOG_EXIT_SYS, "create snapshot", stk.s) ;
+    PROG = prog ;
+
+    info->help = help ;
+    info->usage = usage ;
+
+}
+
 /** Return 0 if no migration was made else 1 */
 int sanitize_migrate(ssexec_t *info, const char *oversion, short exist)
 {
     log_flow() ;
+
+    migrate_create_snap(info, oversion) ;
 
     uint8_t state = str_to_int(oversion), current = str_to_int(SS_VERSION), did = 0 ;
 
