@@ -209,7 +209,7 @@ src/lib66/state/state_unpack.o src/lib66/state/state_unpack.lo: src/lib66/state/
 src/lib66/state/state_write.o src/lib66/state/state_write.lo: src/lib66/state/state_write.c src/include/66/constants.h src/include/66/service.h src/include/66/state.h
 src/lib66/state/state_write_remote.o src/lib66/state/state_write_remote.lo: src/lib66/state/state_write_remote.c src/include/66/constants.h src/include/66/state.h
 src/lib66/svc/svc_compute_ns.o src/lib66/svc/svc_compute_ns.lo: src/lib66/svc/svc_compute_ns.c src/include/66/config.h src/include/66/graph.h src/include/66/sanitize.h src/include/66/service.h src/include/66/ssexec.h src/include/66/svc.h
-src/lib66/svc/svc_init_array.o src/lib66/svc/svc_init_array.lo: src/lib66/svc/svc_init_array.c src/include/66/enum.h src/include/66/service.h src/include/66/ssexec.h src/include/66/state.h src/include/66/svc.h
+src/lib66/svc/svc_init_array.o src/lib66/svc/svc_init_array.lo: src/lib66/svc/svc_init_array.c src/include/66/enum.h src/include/66/graph.h src/include/66/service.h src/include/66/ssexec.h src/include/66/state.h src/include/66/svc.h
 src/lib66/svc/svc_launch.o src/lib66/svc/svc_launch.lo: src/lib66/svc/svc_launch.c src/include/66/constants.h src/include/66/enum.h src/include/66/service.h src/include/66/ssexec.h src/include/66/state.h src/include/66/svc.h
 src/lib66/svc/svc_scandir_ok.o src/lib66/svc/svc_scandir_ok.lo: src/lib66/svc/svc_scandir_ok.c src/include/66/svc.h
 src/lib66/svc/svc_scandir_send.o src/lib66/svc/svc_scandir_send.lo: src/lib66/svc/svc_scandir_send.c src/include/66/svc.h

@@ -17,4 +17,6 @@
 
 #include <66/migrate_0721.h>
 
+extern void migrate_create_snap(ssexec_t *info, const char *version) ;
+
 #endif
