@@ -74,7 +74,7 @@ int parse_compute_list(resolve_wrapper_t_ref wres, stack *store, uint32_t *res, 
             break ;
     }
 
-    if (!(*res) && opts)
+    if (!(*res))
         return 0 ;
 
     f[strlen(f) - 1] = 0 ;
