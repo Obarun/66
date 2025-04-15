@@ -19,6 +19,25 @@
 #include <66/enum.h>
 #include <66/constants.h>
 
+static int get_shebang(stack *stk, char const *line)
+{
+    size_t len = strlen(line) ;
+    uint32_t i = 0 ;
+
+    while (line[i] == ' ' || line[i] == '\t' || line[i] == '\r' || line[i] == '\n')
+        i++ ;
+
+    if (i >= len || line[i] != '#' || line[i + 1] != '!' || line[i + 2] != '/')
+        log_warn_return(LOG_EXIT_ZERO, "invalid shebang at Execute field from section [Start]") ;
+
+    if (!stack_add(stk, line + i, len - i))
+        log_warnsys_return(LOG_EXIT_ZERO, "stack add") ;
+
+    stack_close(stk) ;
+
+    return 1 ;
+}
+
 int parse_mandatory(resolve_service_t *res, ssexec_t *info)
 {
     log_flow() ;
@@ -204,20 +223,47 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
             res->logger.want = 0 ;
     }
 
-
     switch (res->type) {
 
+        case TYPE_CLASSIC:
         case TYPE_ONESHOT:
 
             if (!res->execute.run.run_user)
                 log_warn_return(LOG_EXIT_ZERO,"key Execute at section [Start] must be set") ;
 
-            break ;
+            if (!strcmp(res->sa.s + res->execute.run.build, "custom")) {
 
-        case TYPE_CLASSIC:
+                size_t len = strlen(res->sa.s + res->execute.run.run_user) ;
+                _alloc_stk_(stk, len) ;
 
-            if (!res->execute.run.run_user)
-                log_warn_return(LOG_EXIT_ZERO,"key Execute at section [Start] must be set") ;
+                if (!get_shebang(&stk, res->sa.s + res->execute.run.run_user))
+                    return 0 ;
+
+                res->execute.run.run_user = resolve_add_string(wres, stk.s) ;
+            }
+
+            if (res->execute.finish.run_user && !strcmp(res->sa.s + res->execute.finish.build, "custom")) {
+
+                size_t len = strlen(res->sa.s + res->execute.finish.run_user) ;
+                _alloc_stk_(stk, len) ;
+
+                if (!get_shebang(&stk, res->sa.s + res->execute.finish.run_user))
+                    return 0 ;
+
+                res->execute.finish.run_user = resolve_add_string(wres, stk.s) ;
+            }
+
+            if (res->logger.execute.run.run_user && !strcmp(res->sa.s + res->logger.execute.run.build, "custom")) {
+
+                size_t len = strlen(res->sa.s + res->logger.execute.run.run_user) ;
+                _alloc_stk_(stk, len) ;
+
+                if (!get_shebang(&stk, res->sa.s + res->logger.execute.run.run_user))
+                    return 0 ;
+
+                res->logger.execute.run.run_user = resolve_add_string(wres, stk.s) ;
+            }
+
             break ;
 
         case TYPE_MODULE:
