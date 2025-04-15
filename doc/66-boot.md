@@ -33,7 +33,7 @@ Command *boot* never exits. It spawns the `rc.init` script and execs into [scand
 
 - **-l** *log_user*: the `catch-all` logger will run as *log_user*. Default is `%%s6log_user%%`. The default can also be changed at compile-time by passing the `--with-s6-log-user=user` option to `./configure`.
 
-- **-e** *environment*: an absolute path. *stage 1 init* empties its environment before spawning the `rc.init` skeleton file and executing into [scandir start](66-scandir.html) in order to prevent kernel environment variables from leaking into the process tree. The *PATH* variable is the only variable set for the environment. If you want to define additional environment variables then use this option. Behaves the same as [scandir start -e](66-scandir.html).
+- **-e** *environment*: an absolute path. *stage 1 init* empties its environment except the *PATH* variable before spawning the `rc.init` skeleton file and executing into [scandir start](66-scandir.html) in order to prevent kernel environment variables from leaking into the process tree. Then, it import environment from files found at the %%environment_adm%% directory (See [Environment importation](#environment-importation)). If you want to define additional environment variables then use this option. Behaves the same as [scandir start -e](66-scandir.html).
 
 - **-d** *dev*: mounts a devtmpfs on *dev*. By default, no such mount is performed - it is assumed that a devtmpfs is automounted on `/dev` at boot time by the kernel or an initramfs.
 
