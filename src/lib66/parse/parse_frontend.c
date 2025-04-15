@@ -221,21 +221,21 @@ int parse_frontend(char const *sv,
 
         if (inns) {
 
+            char *tmpath = strstr(sv, SS_MODULE_FRONTEND) ;
+            char *result = tmpath + SS_MODULE_FRONTEND_LEN ;
             char *path = moduleres->sa.s + moduleres->path.frontend ;
-            size_t mlen = strlen(path) ;
-            _alloc_stk_(dir, mlen) ;
+            _alloc_stk_(pdir, strlen(path)) ;
+            _alloc_stk_(tdir, strlen(result)) ;
 
-            if (!ob_dirname(dir.s, path))
+            if (!ob_dirname(pdir.s, path))
                 log_dieu(LOG_EXIT_SYS, "get dirname of: ", path) ;
 
-            _alloc_stk_(frontend, mlen + SS_MODULE_FRONTEND_LEN + strlen(realname) + 2) ;
+            if (!ob_dirname(tdir.s, result))
+                log_dieu(LOG_EXIT_SYS, "get dirname of: ", result) ;
 
-            /** TODO:
-             *
-             * BUG, the service can be inside a subdirectory.
-             *
-             * */
-            auto_strings(frontend.s, dir.s, SS_MODULE_FRONTEND + 1, "/", realname) ;
+            _alloc_stk_(frontend, strlen(pdir.s) + SS_MODULE_FRONTEND_LEN + strlen(tdir.s) + strlen(realname) + 2) ;
+
+            auto_strings(frontend.s, pdir.s, SS_MODULE_FRONTEND + 1, tdir.s,  realname) ;
 
             res.path.frontend = resolve_add_string(wres, frontend.s) ;
 
