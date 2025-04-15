@@ -9,7 +9,7 @@ author: Eric Vidal <eric@obarun.org>
 
 # scandir
 
-Handles the *scandir* for a given user. Designed to be either root or a branch of the supervision tree(nested *scandir*).
+Handles the *scandir* for a given user. Designed to be either root or a branch of the supervision tree (nested *scandir*).
 
 ## Interface
 

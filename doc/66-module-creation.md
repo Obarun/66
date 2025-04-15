@@ -44,7 +44,7 @@ The module directory have the following structure:
 
 - *activated/depends* and *activated/requiredby*: These directories function similarly to their parent directory, with the exception that they pertain to the dependencies and required-by relationships of the module. Hence, these directories allow you to define dependencies or required-by relationships either through the `configure` script or by manually creating empty files, similar to what can be done in the *activated* directory. These directory **are not** mandatory and created at parse process of the module if they doesn't exist yet.
 
-- *configure*: This directory can contain an **executable** file script named configure. For example, `%%service_system%%/foo/configure/configure`. The sub-directory **must** be named *configure* and the file script **must** be named *configure*. This file **is not** mandatory. The parser will detect if the file exists and it runs it if it's the case. It's up to you to write the *configure* script file with the language of your choice as long as you define a correct *shebang*.
+- *configure*: This directory may contain an **executable** file script named configure. For example, `%%service_system%%/foo/configure/configure`. The sub-directory **must** be named *configure* and the file script **must** be named *configure*. This file **is not** mandatory. The parser will detect if the file exists and it runs it if it's the case. It's up to you to write the *configure* script file with the language of your choice as long as you define a correct *shebang*.
 
     Also, this directory can contain any files or directories that you need to configure your module. It's the responsability of the module creator to properly use or dispatch files or directories found inside the *configure* directory with the help of the *configure* script or during the module installation phase. The parser will not handle any other file than the *configure* script for you.
 
@@ -79,7 +79,7 @@ When you do e.g. `66 parse foo@system`:
 
 - It searches for the corresponding `%%service_system%%/foo/foo@` frontend service file.
 
-- It reads, parses, and replaces `@I` character by `system` as any intantiated service.
+- It reads, parses, and replaces [identifier](66-identifier.html).
 
 - It checks if the `%%service_system%%/foo/configure`, `%%service_system%%/foo/frontend` and `%%service_system%%/foo/activated/{depends,requiredby}` directories exist and create it if it is not the case.
 

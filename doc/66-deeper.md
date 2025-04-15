@@ -11,7 +11,7 @@ author: Eric Vidal <eric@obarun.org>
 
 This documentation explains the internal structure of `66` on the system and the roles of the different directories and file components.
 
-**Never manually changes** any directories or files within the `66` ecosystem,as this is the best way to break it.
+**Never manually changes** any directories or files within the `66` ecosystem, as this is the best way to break it.
 
 ## %%system_dir%%
 
@@ -64,7 +64,7 @@ The `%%system_dir%%/system/service/svc` directory includes service directories, 
 
 ### %%system_dir%%/system/.resolve/<tree>
 
-The content of the resolve file for a tree, such as `%%default_treename%%`, can be viewed using the [66 resolve](66-resolve.html) command in the following manner
+The content of the resolve file for a tree, such as `%%default_treename%%`, can be viewed using the [66 tree resolve](66-tree.html#resolve) command in the following manner
 
 ```
 66 tree resolve global

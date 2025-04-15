@@ -11,71 +11,67 @@ author: Eric Vidal <eric@obarun.org>
 
 The [s6](https://skarnet.org/software/s6) programs use different files. It is quite complex to understand and manage the relationship between all those files. If you're interested in the details you should read [the documentation for the s6 servicedir](https://skarnet.org/software/s6/servicedir.html) and also about [classic](https://skarnet.org/software/s6/servicedir.html) and [module](66-module-creation.html) services. The frontend service file of `66` program allows you to deal with all these different services in a centralized manner and in one single location.
 
-By default `66` program expects to find service files in `%%service_system%%` and `%%service_adm%%` for root user, `%%service_system%%/user` and `%%service_adm/user%%` for regular accounts. For regular accounts, `$HOME/%%service_user%%` will take priority over the previous ones. Although this can be changed at compile time by passing the `--with-system-service=DIR`, `--with-sysadmin-service=DIR` and `--with-user-service=DIRoption` to `./configure`.
+By default `66` program expects to find service files in `%%service_system%%` and `%%service_adm%%` for root user, `%%service_system%%/user` and `%%service_adm%%/user` for regular accounts. For regular accounts, `$HOME/%%service_user%%` will take priority over the previous ones. Although this can be changed at compile time by passing the `--with-system-service=DIR`, `--with-sysadmin-service=DIR` and `--with-user-service=DIR` option to `./configure`.
 
 The frontend service file has a format of `INI` with a specific syntax on the key field. The name of the file usually corresponds to the name of the daemon and does not have any extension or prefix.
 
-The file is made of *sections* which can contain one or more `key value` pairs where the *key* name can contain special characters like `-` (hyphen) or `_` (low line) except the character `@` (commercial at) which is reserved.
+The file is made of *sections* which can contain one or more `key = value` pairs where the *key* name can contain special characters like `-` (hyphen) or `_` (low line) except the character `@` (commercial at) which is reserved.
 
-You can find a prototype with all valid section and all valid `key=value` pair at the end of this [document](66-frontend.html#prototype-of-a-frontend-file).
+You can find a prototype with all valid section and all valid `key=value` pair at the end of this [document](#prototype-of-a-frontend-file).
 
 ### File names examples
 
 ```
-    %%service_system%%/dhcpcd
-    %%service_system%%/very_long_name_which_make_no_sense
+%%service_system%%/dhcpcd
+%%service_system%%/very_long_name_which_make_no_sense
 ```
 
 ### File content example
 
 ```
-    [Main]
-    Type = classic
-    Description = "ntpd daemon"
-    Version = 0.1.0
-    User = ( root )
+[Main]
+Type = classic
+Description = "ntpd daemon"
+Version = 0.1.0
+User = ( root )
 
-    [Start]
-    Execute = (
-        foreground { mkdir -p  -m 0755 ${RUNDIR} }
-        execl-cmdline -s { ntpd ${CMD_ARGS} }
-    )
+[Start]
+Execute = (
+    foreground { mkdir -p  -m 0755 ${RUNDIR} }
+    execl-cmdline -s { ntpd ${CMD_ARGS} }
+)
 
-    [Environment]
-    RUNDIR=!/run/openntpd
-    CMD_ARGS=!-d -s
+[Environment]
+RUNDIR=!/run/openntpd
+CMD_ARGS=!-d -s
 ```
 
 The parser will **not** accept an empty value. If a *key* is set then the *value* **can not** be empty. Comments are allowed using the number sign `#`. Empty lines are also allowed.
 
 *Key* names are **case sensitive** and can not be modified. Most names should be specific enough to avoid confusion.
 
-The `[Main]` section **must be** declared first.
-
 ## Sections
 
 All sections need to be declared with the name written between square brackets `[]` and **must begins** with a uppercase followed by lowercase letters **only**. This means that special characters and numbers are not allowed in the name of a section.
 
- The frontend service file allows the following section names:
+The `[Main]` section **must be** declared first.
 
-- [[Main]](66-frontend.html#section-main)
-- [[Start]](66-frontend.html#section-start)
-- [[Stop]](66-frontend.html#section-stop)
-- [[Logger]](66-frontend.html#section-logger)
-- [[Environment]](66-frontend.html#section-environment)
-- [[Regex]](66-frontend.html#section-regex)
+The frontend service file allows the following section names:
+
+- [[Main]](#section-main)
+- [[Start]](#section-start)
+- [[Stop]](#section-stop)
+- [[Logger]](#section-logger)
+- [[Environment]](#section-environment)
+- [[Regex]](#section-regex)
 
 Although a section can be mandatory not all of its key fields must be necessarily so.
 
----
-
-## Syntax legend
+### Syntax legend
 
 The *value* of a *key* is parsed in a specific format depending on the key. The following is a break down of how to write these syntaxes.
 
----
-
-## *inline*
+#### *inline*
 
 An inline *value*. **Must** be on the same line with its corresponding *key*.
 
@@ -93,10 +89,7 @@ An inline *value*. **Must** be on the same line with its corresponding *key*.
     Type=
     classic
     ````
-
-----
-
-## *quotes*
+#### *quotes*
 
 A *value* between double-quotes. **Must** be on the same line with its corresponding *key*.
 
@@ -118,9 +111,7 @@ A *value* between double-quotes. **Must** be on the same line with its correspon
     is not allowed"
     ````
 
-----
-
-## *brackets*
+#### *brackets*
 
 Multiple *values* between parentheses `()`. Values need to be separated with a space. A line break can be used instead.
 
@@ -151,9 +142,8 @@ Multiple *values* between parentheses `()`. Values need to be separated with a s
     Depends = (fooAfooBfooC)
     ````
 
-----
+#### *uint*
 
-## *uint*
 A positive whole number. **Must** be on the same line with its corresponding *key*.
 
 * Valid syntax:
@@ -171,9 +161,7 @@ A positive whole number. **Must** be on the same line with its corresponding *ke
     3
     ````
 
-----
-
-## *path*
+#### *path*
 
 An absolute path beginning with a forward slash `/`. **Must** be on the same line with its corresponding *key*.
 
@@ -192,9 +180,7 @@ An absolute path beginning with a forward slash `/`. **Must** be on the same lin
     long/path
     ````
 
-----
-
-## *pair*
+#### *pair*
 
 Same as [*inline*](#inline).
 
@@ -215,9 +201,7 @@ Same as [*inline*](#inline).
     MYVALUE
     ````
 
-----
-
-## *colon*
+#### *colon*
 
 A value between double colons followed by a *pair* syntax. **Must** be one by line.
 
@@ -241,9 +225,7 @@ A value between double colons followed by a *pair* syntax. **Must** be one by li
     ::key=value :filename:anotherkey=anothervalue
     ````
 
----
-
-## *simple-colon*
+#### *simple-colon*
 
 A values separated by a colon. **Must** be on the same line with its corresponding *key*.
 
@@ -260,37 +242,31 @@ A values separated by a colon. **Must** be on the same line with its correspondi
     19
     ````
 
-----
-
-## Section [Main]
+### Section [Main]
 
 This section is *mandatory*. (!)
 
-### Valid *key* names:
+#### Type
 
-- Type
+Declare the type of the service.
 
-    Declare the type of the service.
+* mandatory : yes (!)
 
-    mandatory : yes (!)
+* syntax : [inline](#inline)
 
-    syntax : [inline](#inline)
-
-    valid values :
+* valid values :
 
     * classic : declares the service as a `classic` service.
     * oneshot : declares the service as a `oneshot` service.
     * module : declares the service as a `module` service.
 
-    ---
+#### Version
 
-- Version
+Version number of the service.
 
-    Version number of the service.
+* mandatory : yes (!)
 
-    mandatory : yes (!)
-
-    syntax : [inline](#inline)
+* syntax : [inline](#inline)
 
     valid values :
 
@@ -299,42 +275,38 @@ This section is *mandatory*. (!)
         For example, the following is valid:
 
         ````
-            Version = 0.1.0
+        Version = 0.1.0
         ````
 
         where:
 
         ````
-            Version = 0.1.0.1
-            Version = 0.1
-            Version = 0.1.rc1
+        Version = 0.1.0.1
+        Version = 0.1
+        Version = 0.1.rc1
         ````
 
         is not.
 
-    ---
+#### Description
 
-- Description
+A short description of the service.
 
-    A short description of the service.
+* mandatory : yes (!)
 
-    mandatory : yes (!)
-
-    syntax : quote
+* syntax : [quote](#quote)
 
     valid values :
 
     * Anything you want.
 
-    ---
+#### User
 
-- User
+Declare the permissions of the service.
 
-    Declare the permissions of the service.
+* mandatory : yes (!)
 
-    mandatory : yes (!)
-
-    syntax : [bracket](#bracket)
+* syntax : [brackets](#brackets)
 
     valid values :
 
@@ -342,71 +314,53 @@ This section is *mandatory*. (!)
 
     (!) Be aware that `root` is not automatically added. If you don't declare `root` in this field, you will not be able to use the service even with `root` privileges.
 
-    ---
+#### Depends
 
-- Depends
+Declare dependencies of the service.
 
-    Declare dependencies of the service.
+* mandatory : no
 
-    mandatory : no
-
-    syntax : [bracket](#bracket)
+* syntax : [brackets](#brackets)
 
     valid values :
 
     * The name of any valid service.
-
-    The order is of **importance** (!). If fooA depends on fooB and fooB depends on fooC the order needs to be:
-
-    ````
-        Depends=(fooA fooB fooC )
-    ````
 
     It is unnecessary to manually define chained sets of dependencies, see [66](66.html#handling-dependencies).
 
     A service can be commented out by placing the number sign `#` at the begin of the name like this:
 
     ````
-        Depends = ( fooA #fooB fooC )
+    Depends = ( fooA #fooB fooC )
     ````
 
-    ---
+#### RequiredBy
 
-- RequiredBy
+Declare required-by dependencies of the service.
 
-    Declare required-by dependencies of the service.
+* mandatory : no
 
-    mandatory : no
-
-    syntax : [bracket](#bracket)
+* syntax : [brackets](#brackets)
 
     valid values :
 
     * The name of any valid service.
-
-    The order is of **importance** (!). If fooA is required by fooB and fooB is required by fooC the order needs to be:
-
-    ````
-        RequiredBy=(fooA fooB fooC )
-    ````
 
     It is unnecessary to manually define chained sets of dependencies, see [66](66.html#handling-dependencies).
 
     A service can be commented out by placing the number sign `#` at the begin of the name like this:
 
     ````
-        Depends = ( fooA #fooB fooC )
+    Depends = ( fooA #fooB fooC )
     ````
 
-    ---
+#### OptsDepends
 
-- OptsDepends
+Declare optional dependencies of the service.
 
-    Declare optional dependencies of the service.
+* mandatory : no
 
-    mandatory : no
-
-    syntax : [bracket](#bracket)
+* syntax : [brackets](#brackets)
 
     valid values :
 
@@ -421,35 +375,30 @@ This section is *mandatory*. (!)
     A service can be commented out by placing the number sign `#` at the begin of the name like this:
 
     ````
-        OptsDepends = ( fooA #fooB fooC )
+    OptsDepends = ( fooA #fooB fooC )
     ````
 
-    ---
+#### Options
 
-- Options
+* mandatory : no
 
-    mandatory : no
-
-    syntax : [bracket](#bracket)
+* syntax : [brackets](#brackets)
 
     valid values :
 
     * log : automatically create a logger for the service. This is **default**. The logger will be created even if this options is not specified. If you want to avoid the creation of the logger, prefix the options with an exclamation mark:
 
         ````
-            Options = ( !log )
+        Options = ( !log )
         ````
 
         The behavior of the logger can be configured in the corresponding section—see [[Logger]](66-frontend.html#section-logger).
 
-    ---
+#### Flags
 
-- Flags
+* mandatory : no
 
-
-    mandatory : no
-
-    syntax : [bracket](#bracket)
+* syntax : [brackets](#brackets)
 
     valid values :
 
@@ -458,13 +407,11 @@ This section is *mandatory*. (!)
 
     Once this file was created the default state of the service will be considered down, not up: the service will not automatically be started until it receives a [66 start](66-start.html) command. Without this file the default state of the service will be up and started automatically.
 
-    ---
+#### Notify
 
-- Notify
+* mandatory : no
 
-    mandatory : no
-
-    syntax : [uint](#uint)
+* syntax : [uint](#uint)
 
     valid values :
 
@@ -472,15 +419,13 @@ This section is *mandatory*. (!)
 
     This will create the file *notification-fd*. Once this file is created the service supports [readiness notification](https://skarnet.org/software/s6/notifywhenup.html). The value equals the number of the file descriptor that the service writes its readiness notification to. (For instance, it should be 1 if the daemon is [s6-ipcserverd](https://skarnet.org/software/s6/s6-ipcserverd.html) run with the -1 option.) When the service reseive signal and this file is present containing a valid descriptor number, [66](66.html) command will wait for the notification from the service and broadcast its readiness.
 
-    ---
+#### TimeoutStop
 
-- TimeoutStop
+*Corresponds to the file timeout-finish of [s6](https://skarnet.org/software/s6) program* and used by service of type `classic`.
 
-    *Corresponds to the file timeout-finish of [s6](https://skarnet.org/software/s6) program* and used by service of type `classic`.
+* mandatory : no
 
-    mandatory : no
-
-    syntax : [uint](#uint)
+* syntax : [uint](#uint)
 
     valid values :
 
@@ -488,15 +433,13 @@ This section is *mandatory*. (!)
 
     This will create the file *timeout-finish*. Once this file is created the value will equal the number of milliseconds after which the *./finish* script—if it exists—will be killed with a `SIGKILL`. The default is `0` allowing finish scripts to run forever.
 
-    ---
+#### TimeoutStart
 
-- TimeoutStart
+*Corresponds to the file timeout-kill of [s6](https://skarnet.org/software/s6) program* and used by service of type `classic`.
 
-    *Corresponds to the file timeout-kill of [s6](https://skarnet.org/software/s6) program* and used by service of type `classic`.
+* mandatory : no
 
-    mandatory : no
-
-    syntax : [uint](#uint)
+* syntax : [uint](#uint)
 
     valid values :
 
@@ -504,62 +447,62 @@ This section is *mandatory*. (!)
 
     This will create the file *timeout-kill*. Once this file is created and the value is not `0`, then on reception of a [stop](66-stop.html) command—which sends a `SIGTERM` and a `SIGCONT` to the service — a timeout of value in milliseconds is set. If the service is still not dead, after *value* in milliseconds, it will receive a `SIGKILL`. If the file does not exist, or contains `0`, or an invalid value, then the service is never forcibly killed.
 
-    ---
 
+#### MaxDeath
 
-- MaxDeath
+*Corresponds to the file max-death-tally of [s6](https://skarnet.org/software/s6) program*.
 
-    *Corresponds to the file max-death-tally of [s6](https://skarnet.org/software/s6) program*.
+* mandatory : no
 
-    mandatory : no
+* syntax : [uint](#uint)
 
-    syntax : [uint](#uint)
-
-    valid value :
+* valid value :
 
     * Any valid number.
 
     This will create the file *max-death-tally*. Once this file was created the value will equal the maximum number of service death events that the supervisor will keep track of. If the service dies more than this number of times, the oldest event will be forgotten and the transition ([start](66-start.html) or [stop](66-stop.html)) will be declared as failed. Tracking death events is useful, for example, when throttling service restarts. The value cannot be greater than 4096. Without this file a default of 10 is used.
 
-    ---
+#### DownSignal
 
-- DownSignal
+*Corresponds to the file "down-signal" of [s6](https://skarnet.org/software/s6) program*.
 
-    *Corresponds to the file "down-signal" of [s6](https://skarnet.org/software/s6) program*.
+* mandatory : no
 
-    mandatory : no
+* syntax : [uint](#uint)
 
-    syntax : [uint](#uint)
-
-    valid value :
+* valid value :
 
     * The name or number of a signal.
 
     This will create the file *down-signal* which is used to kill the supervised process when a [reload](66-reload.html), [restart](66-restart.html) or [stop](66-stop.html) command is used. If the file does not exist `SIGTERM` will be used by default.
 
-    ---
+#### CopyFrom
 
-- CopyFrom
+Verbatim copy directories and files on the fly to the main service destination. When dealing with directories, it copies all found files and directories recursively. In case of file, it copy it to the root of the service directory.
 
-    Verbatim copy directories and files on the fly to the main service destination.
+* mandatory : no
 
-    mandatory : no
-
-    syntax : [bracket](#bracket)
+* syntax : [path](#path) inside [brackets](#brackets)
 
     valid values :
 
     * Any files or directories. It accepts *absolute* or *relative* path.
 
-        **Note**: `66` version must be higher than 0.3.0.1.
+        ```
+        CopyFrom = ( data
+        ./.env
+        /etc/resolv.conf)
+        ```
 
-- InTree
+    **Note**: `66` version must be higher than 0.3.0.1.
 
-    mandatory : no
+#### InTree
 
-    syntax : [inline](#inline)
+* mandatory : no
 
-    valid values :
+* syntax : [inline](#inline)
+
+* valid values :
 
     * Any name.
 
@@ -567,13 +510,13 @@ This section is *mandatory*. (!)
 
     **Note**: If a corresponding [seed](66-tree.html#seed-files) file exist on your system, its will be used to create and configure the tree.
 
-- StdIn
+#### StdIn
 
-    mandatory: no
+* mandatory: no
 
-    syntax: [inline](#inline),[simple-colon](#simple-colon)
+* syntax: [inline](#inline),[simple-colon](#simple-colon)
 
-    valid values:
+* valid values:
 
     * tty:/path/to/tty: Redirects Standard Input to the given tty specified by the path and try to become the controlling process of the terminal. The path must be absolute and exist. If the terminal is already being controlled by another process and the operation returns an EPERM failure, 66 will warn the user and continue its execution. If the failure is other than EPERM, it will terminate.
     * s6log: Redirects Standard Input to the socket of the s6-log program. This is the default.
@@ -583,13 +526,13 @@ This section is *mandatory*. (!)
 
     Please see [Standard IO redirection](66-standard-io-redirection.html) documentation for further information.
 
-- StdOut
+#### StdOut
 
-    mandatory: no
+* mandatory: no
 
-    syntax: [inline](#inline),[simple-colon](#simple-colon)
+* syntax: [inline](#inline),[simple-colon](#simple-colon)
 
-    valid values:
+* valid values:
 
     * tty:/path/to/tty: Redirects Standard Output to the given tty specified by the path. The path must be absolute and exist. It does not try to take control of the terminal.
     * file:/path/to/file: Redirects Standard Output to the given file specified by the path. The path must be absolute. If the directory of the file and the file itself do not exist, *66* will create it. In that case, the directory will get `0755` permissions and the file will be set with `0666` permissions.
@@ -602,13 +545,13 @@ This section is *mandatory*. (!)
 
     Please see [Standard IO redirection](66-standard-io-redirection.html) documentation for further information.
 
-- StdErr
+#### StdErr
 
-    mandatory: no
+* mandatory: no
 
-    syntax: [inline](#inline),[simple-colon](#simple-colon)
+* syntax: [inline](#inline),[simple-colon](#simple-colon)
 
-    valid values:
+* valid values:
 
     * tty:/path/to/tty: Redirects Standard Error to the given tty specified by the path. The path must be absolute and exist. It does not try to take control of the terminal.
     * file:/path/to/file: Redirects Standard Erro to the given file specified by path. Path must be absolute. If the directory of file and the file itself doesn't exist, *66* create it. In that case, the directory get `0755` as permissions and the file is set with `0666` as permissions.
@@ -621,39 +564,33 @@ This section is *mandatory*. (!)
 
     Please see [Standard IO redirection](66-standard-io-redirection.html) documentation for further information.
 
----
-
-## Section [Start]
+### Section [Start]
 
 This section is *mandatory*. (!)
 
-### Valid *key* names:
+#### Build
 
-- Build
+* mandatory : no
 
-    mandatory : no
+* syntax : [inline](#inline)
 
-    syntax : [inline](#inline)
-
-    valid value :
+* valid value :
 
     * auto : creates a service script by copying the `Execute` field verbatim and prepending an [execline](https://skarnet.org/software/execline) shebang to the beginning of the script. This is the **default**.
 
     * custom : Creates a service script by copying the `Execute` field verbatim and applying the specified shebang to execute the script. **Do not forget** to set the shebang at `Execute` key field.
 
-    ---
+#### RunAs
 
-- RunAs
+* mandatory : no
 
-    mandatory : no
+* syntax : [inline](#inline),[simple-colon](#simple-colon)
 
-    syntax : [inline](#inline),[simple-colon](#simple-colon)
-
-    valid value :
+* valid value :
 
     * Any valid user name set on the system or valid uid:gid number.
 
-    ````
+        ````
         RunAs = oblive
 
         RunAs = 1000:19
@@ -667,38 +604,31 @@ This section is *mandatory*. (!)
         # the gid of the owner of the process
         # is pick by default
         RunAs = 1000:
+        ````
 
-    ````
-
-    This will pass the privileges of the service to the given user before starting the run script of the service.
+        This will pass the privileges of the service to the given user before starting the run script of the service.
 
     **Note**: (!) The service needs to be first started with root if you want to hand over priviliges to a user. Only root can pass on privileges. This field has no effect for other use cases.
 
-    ---
+#### Execute
 
-- Execute
+* mandatory : yes (!)
 
-    mandatory : yes (!)
+* syntax : [brackets](#brackets)
 
-    syntax : [bracket](#bracket)
-
-    valid value :
+* valid value :
 
     * The command to execute when starting the service.
 
-    **Note**: The field will be used as is. No changes will be applied at all. It's the responsability of the author to make sure that the content of this field is correct.
+    **Note**: The field will be used as is. No changes will be applied at all except in `custom` case(see [A word about the execute key](#a-word-about-the-execute-key)). It's the responsability of the author to make sure that the content of this field is correct.
 
----
-
-## Section [Stop]
+### Section [Stop]
 
 This section is *optional*.
 
 This section is exactly the same as [[Start]](66-frontend.html#section-start) and shares the same keys. With the exception that it will handle the stop process of the service.
 
----
-
-## Section [Logger]
+### Section [Logger]
 
 This section is optional and controls the behavior of the default logging system used by *66*, which utilizes the excellent `s6-log` program.
 
@@ -708,312 +638,290 @@ This section extends the `Build`, `RunAs`, and `Execute` key fields from [[Start
 
 Furthermore there are some keys specific to the log.
 
-### Valid *key* names:
+The following key names are also valid:
 
 - `Build`, `RunAs`, and `Execute` — See [[Start]](66-frontend.html#section-start)
 - `TimeoutStop`, `TimeoutStart` — See [[Main]](66-frontend.html#section-main)
 
-    ---
+#### Backup
 
-- Backup
+* mandatory : no
 
-    mandatory : no
+* syntax : [uint](#uint)
 
-    syntax : [uint](#uint)
-
-    valid value :
+* valid value :
 
     * Any valid number.
 
-    The log directory will keep *value* files. The next log to be saved will replace the oldest file present. By default `3` files are kept.
+        The log directory will keep *value* files. The next log to be saved will replace the oldest file present. By default `3` files are kept.
 
-    ---
+#### MaxSize
 
-- MaxSize
+* mandatory : no
 
-    mandatory : no
+* syntax : [uint](#uint)
 
-    syntax : [uint](#uint)
-
-    valid value :
+* valid value :
 
     * Any valid number.
 
-    A new log file will be created every time the current one approaches *value* bytes. By default, filesize is `1000000`; it cannot be set lower than `4096` or higher than `268435455`.
+        A new log file will be created every time the current one approaches *value* bytes. By default, filesize is `1000000`; it cannot be set lower than `4096` or higher than `268435455`.
 
-    ---
+#### Timestamp
 
-- Timestamp
+* mandatory : no
 
-    mandatory : no
+* syntax : [inline](#inline)
 
-    syntax : [inline](#inline)
-
-    valid value :
+* valid value :
 
     * tai
 
-    The logged line will be preceded by a TAI64N timestamp (and a space) before being processed by the next action directive.
+        The logged line will be preceded by a TAI64N timestamp (and a space) before being processed by the next action directive.
 
     * iso
 
-    The selected line will be preceded by a ISO 8601 timestamp for combined date and time representing local time according to the systems timezone, with a space (not a `T`) between the date and the time and two spaces after the time, before being processed by the next action directive.
+        The selected line will be preceded by a ISO 8601 timestamp for combined date and time representing local time according to the systems timezone, with a space (not a `T`) between the date and the time and two spaces after the time, before being processed by the next action directive.
 
     * none
 
-    The logged line will not be preceded by any timestamp.
+        The logged line will not be preceded by any timestamp.
 
-    The following are two possible examples for the [[Logger]](66-frontend.html#section-logger) section definition.
+        The following are two possible examples for the [[Logger]](66-frontend.html#section-logger) section definition.
 
-    ````
+        ````
         [Logger]
         RunAs = user
         TimeoutStop = 10000
         Destination = /run/log
         Backup = 10
         Timestamp = iso
-    ````
-    ````
+        ````
+        ````
         [Logger]
         Destination = /run/log
-    ````
+        ````
 
----
-
-## Section [Environment]
+### Section [Environment]
 
 This section is *optional*.
 
 A file containing the `key=value` pair(s) will be created by default at `%%service_admconf%%/name_of_service` directory. The default can also be changed at compile-time by passing the `--with-sysadmin-service-conf=DIR` option to `./configure`.
 
-### Valid *key* names:
+#### Any `key=value` pair
 
+* mandatory : no
 
-- Any `key=value` pair
+* syntax : [pair](#pair)
 
-    mandatory : no
-
-    syntax : [pair](#pair)
-
-    valid value :
+* valid value :
 
     * You can define any variables that you want to add to the environment of the service. For example:
 
-    ````
+        ````
         [Environment]
         dir_run=/run/openntpd
         cmd_args=-d -s
-    ````
+        ````
 
-    The `!` character can precede the value. Ensure **no** space exists between the exclamation mark and the *value*. This action explicitly avoids setting the value of the *key* for the runtime process but only applies it at the start of the service. For intance, the following valid example unset the `key=value` pair `dir_run=!/run/openntpd` from the general environment variables of the service.
+        The `!` character can precede the value. Ensure **no** space exists between the exclamation mark and the *value*. This action explicitly avoids setting the value of the *key* for the runtime process but only applies it at the start of the service. For intance, the following valid example unset the `key=value` pair `dir_run=!/run/openntpd` from the general environment variables of the service.
 
-    the following syntax is valid
+        the following syntax is valid
 
-    ````
+        ````
         [Environment]
         dir_run=!/run/openntpd
         cmd_args = !-d -s
-    ````
-    where this one is not
+        ````
+        where this one is not
 
-    ````
+        ````
         [Environment]
         dir_run=! /run/openntpd
         cmd_args = ! -d -s
-    ````
+        ````
 
-    Refers to [execl-envfile](execl-envfile.html) for futhers information.
+        Refers to [execl-envfile](execl-envfile.html) for futhers information.
 
----
-
-## Section [Regex]
+### Section [Regex]
 
 This section is *optional*.
 
 It will only have an effect when the service is a `module` type—see the section [Module service creation](66-module-creation.html).
 
-You can use the `@I` string as key field. It will be replaced by the `module` name as you do for instantiated service before applying the regex section.
+[identifier](66-identifier.html) are replaced before applying the regex section.
 
-### Valid *key* names:
+#### Configure
 
+* mandatory : no
 
-- Configure
+* syntax : [quotes](#quotes)
 
-    mandatory : no
-
-    syntax : [quotes](#quotes)
-
-    valid value :
+* valid value :
 
     * You can define any arguments to pass to the module's configure script.
 
-    ---
+#### Directories
 
-- Directories
+* mandatory : no
 
-    mandatory : no
+* syntax : [pair](#pair) inside [brackets](#brackets)
 
-    syntax : [pair](#pair) inside [bracket](#bracket)
-
-    valid value :
+* valid value :
 
     * Any `key=value` pair where key is the regex to search on the directory name and value the replacement of that regex. For example:
 
-    ````
+        ````
         Directories = ( DM=sddm TRACKER=consolekit )
-    ````
+        ````
 
-    Where the module directory contains two sub-directories named use-DM and by-TRACKER directories. It will be renamed as use-sddm and by-consolekit respectively.
+        Where the module directory contains two sub-directories named use-DM and by-TRACKER directories. It will be renamed as use-sddm and by-consolekit respectively.
 
-    ---
+#### Files
 
-- Files
+* mandatory : no
 
-    mandatory : no
+* syntax : [pair](#pair) inside [brackets](#brackets)
 
-    syntax : [pair](#pair) inside [bracket](#bracket)
-
-    valid value :
+* valid value :
 
     * Reacts exactly as Directories field but on files name instead of directories name.
 
-    ---
+#### InFiles
 
-- InFiles
+* mandatory : no
 
-    mandatory : no
+* syntax : [colon](#colon) inside [brackets](#brackets)
 
-    syntax : [colon](#colon) inside [bracket](#bracket)
-
-    valid value :
+* valid value :
 
     * Any valid filename between the double colon with any `key=value` pair where key is the regex to search inside the file and value the replacement of that regex. The double colon **must** be present but the name between it can be omitted. In that case, the `key=value` pair will apply to all files contained on the module directories and to all keys (regex) found inside the same file.For example:
 
-    ````
-    InFiles = ( :mount-tmp:args=-o noexec
-    ::user=@I )
-    ````
+        ````
+        InFiles = ( :mount-tmp:args=-o noexec
+        ::user=@I )
+        ````
 
-    * It replaces first the term `@I` by the name of the module.
-    * It opens the file named mount-tmp, search for the args regex and replaces it by the value of the regex.
-    * It opens all files found on the module directory and replaces all regex 'user' found by the name of the module in each file.
-
----
+        * It replaces first the term `@I` by the name of the module.
+        * It opens the file named mount-tmp, search for the args regex and replaces it by the value of the regex.
+        * It opens all files found on the module directory and replaces all regex 'user' found by the name of the module in each file.
 
 ## A word about the Execute key
 
-As described above the `Execute` key can be written in any language as long as you define the key `Build` as custom. For example if you want to write your `Execute` field with bash:
+As described above the `Execute` key can be written in any language as long as you define the key `Build` as `custom`. For example if you want to write your `Execute` field with bash:
 
 ```
-    Build = custom
-    Execute = (#!/usr/bin/bash
-        echo "This script displays available services"
-        for i in $(ls %%service_system%%); do
-            echo "daemon : ${i} is available"
-        done
-    )
+Build = custom
+Execute = (#!/usr/bin/bash
+echo "This script displays available services"
+for i in $(ls %%service_system%%); do
+    echo "daemon : ${i} is available"
+done
+)
 ```
 
 This is an unnecessary example but it shows how to construct this use case. The resulting file will be :
 
 ```
-    #!/usr/bin/bash
-        echo "This script displays available services"
-        for i in $(ls %%service_system%%); do
-            echo "daemon : ${i} is available"
-        done
+#!/usr/bin/bash
+echo "This script displays available services"
+for i in $(ls %%service_system%%); do
+    echo "daemon : ${i} is available"
+done
 ```
 
-The parser creates an exact copy of what it finds between `(` and `)`. This means that regardless of the character found, it retains it. For instance, if you write
+The parser duplicates exactly what appears between `(` and `)`, preserving all characters as they are. However, it removes any carriage return (`\r`), tab (`\t`), space, or newline (`\n`) located between the opening parenthesis and the `#` of the shebang declaration. No other characters are permitted in this span. For instance, if you write
 
 ```
-    Execute = (
-    #!/bin/bash echo hello world!
-    )
-```
-the final result will contain a newline at the very beginning corresponding to the newline found between `(` and the definition of the shebang `#!/bin/bash`. In this case, when executing the service, you'll encounter an ***Exec format error*** because the very first line corresponds to a newline instead of the shebang declaration.
+Execute = (
 
-To avoid this issue, ALWAYS declare the shebang of your script directly after `(` and without any spaces, tabs, newlines, etc. For example,
-
-```
-    Execute = (#!/bin/bash
+    #!/bin/bash
     echo hello world!
-    )
+)
 ```
 
-Note that with `Build=custom`, variables will **not be replaced** by their corresponding environment values within the script, unlike the behavior with the execlineb script format. However, the exclamation mark character is still also **interpreted** even in custom script.
+the final result will be
 
-This same behavior applies to the [[Logger]](66-frontend.html#section-logger) section. Also, The fields `Backup`, `MaxSize` and `Timestamp` will have **no effect** in a custom case. You need to explicitly define the program to use the logger and the options for it in your `Execute` field.
+```
+#!/bin/bash
+    echo hello world!
+```
 
----
+ensuring that the very first line of the script is the declaration of the shebang to avoid an ***Exec format error***.
+
+Note that with `Build=custom`, variables will **not be replaced** by their corresponding environment values within the script, unlike the behavior with the execlineb script format.
+
+[identifier](66-identifier.html) is still also **interpreted** even in custom script.
+
+This same behavior applies to the [[Logger]](#section-logger) section. Also, The fields `Backup`, `MaxSize` and `Timestamp` will have **no effect** in a custom case. You need to explicitly define the program to use the logger and the options for it in your `Execute` field.
 
 ## Prototype of a frontend file
 
 The minimal template is e.g.:
 
 ```
-    [Main]
-    Type = classic
-    Version = 0.0.1
-    Description = "Template example"
-    User = ( root )
+[Main]
+Type = classic
+Version = 0.0.1
+Description = "Template example"
+User = ( root )
 
-    [Start]
-    Execute = ( /usr/bin/true )
+[Start]
+Execute = ( /usr/bin/true )
 ```
 
 This prototype contain all valid section with all valid `key=value` pair.
 
 ```
-    [Main]
-    Type =
-    Description = ""
-    Version =
-    Depends = ()
-    RequiredBy = ()
-    OptsDepends = ()
-    Options = ()
-    Flags = ()
-    Notify =
-    User = ()
-    TimeoutStart =
-    TimeoutStop =
-    MaxDeath =
-    DownSignal =
-    CopyFrom = ()
-    InTree =
-    StdIn =
-    StdOut =
-    StdErr =
+[Main]
+Type =
+Description = ""
+Version =
+Depends = ()
+RequiredBy = ()
+OptsDepends = ()
+Options = ()
+Flags = ()
+Notify =
+User = ()
+TimeoutStart =
+TimeoutStop =
+MaxDeath =
+DownSignal =
+CopyFrom = ()
+InTree =
+StdIn =
+StdOut =
+StdErr =
 
-    [Start]
-    Build =
-    RunAs =
-    Execute = ()
+[Start]
+Build =
+RunAs =
+Execute = ()
 
-    [Stop]
-    Build =
-    RunAs =
-    Execute = ()
+[Stop]
+Build =
+RunAs =
+Execute = ()
 
-    [Logger]
-    Build =
-    RunAs =
-    Destination =
-    Backup =
-    MaxSize =
-    Timestamp =
-    TimeoutStart =
-    TimeoutStop =
-    Execute = ()
+[Logger]
+Build =
+RunAs =
+Destination =
+Backup =
+MaxSize =
+Timestamp =
+TimeoutStart =
+TimeoutStop =
+Execute = ()
 
-    [Environment]
-    mykey=myvalue
-    ANOTHERKEY=!antohervalue
+[Environment]
+mykey=myvalue
+ANOTHERKEY=!antohervalue
 
-    [Regex]
-    Configure = ""
-    Directories = ()
-    Files = ()
-    InFiles = ()
+[Regex]
+Configure = ""
+Directories = ()
+Files = ()
+InFiles = ()
 ```

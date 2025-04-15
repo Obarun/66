@@ -57,7 +57,7 @@ Change the value of the `CMD_ARGS` variable for the service `nginx`
 66 configure -r CMD_ARGS='-c /etc/nginx/nginx.conf -g "daemon off;"' nginx
 ```
 
-Import the configuration file from the 0.1.6 version to th e0.1.7 version of the service `foo`
+Import the configuration file from the 0.1.6 version to the 0.1.7 version of the service `foo`
 
 ```
 66 configure -i 0.1.6,0.1.7 foo
