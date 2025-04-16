@@ -37,5 +37,6 @@ extern void sanitize_graph(ssexec_t *info) ;
  * @Return 1 the service will be overwritten
  * die on system error */
 extern int sanitize_write(resolve_service_t *res, uint8_t force) ;
+extern int sanitize_resolve(ssexec_t *info, uint8_t type) ;
 
 #endif
