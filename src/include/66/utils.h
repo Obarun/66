@@ -42,12 +42,7 @@ extern int set_ownerhome(stralloc *base,uid_t owner) ;
 extern int set_ownersysdir(stralloc *base,uid_t owner) ;
 extern int set_environment(stralloc *env,uid_t owner) ;
 extern int read_svfile(stralloc *sasv,char const *name,char const *src) ;
-
-extern int sa_pointo(stralloc *sa, ssexec_t *info, int type, unsigned int where) ;
-extern int create_live_state(ssexec_t *info, char const *treename) ;
-extern int create_live_tree(ssexec_t *info) ;
 extern void name_isvalid(char const *name) ;
-
 extern int set_ownerhome_stack(char *store) ;
 extern int set_ownersysdir_stack(char *base, uid_t owner) ;
 extern int set_ownerhome_stack_byuid(char *store, uid_t owner) ;
