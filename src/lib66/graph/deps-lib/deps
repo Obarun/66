@@ -12,6 +12,7 @@ service_graph_resolve.o
 tree_graph_build_list.o
 tree_graph_build_master.o
 tree_graph_build_name.o
+tree_graph_build_system.o
 tree_graph_collect.o
 tree_graph_destroy.o
 tree_graph_new.o
