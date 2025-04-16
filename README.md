@@ -119,3 +119,7 @@ This Roadmap for the next releases is not writting in the stone. Feel free to ma
 * [ ] Provide Hook for boot process
 
   Allow at specific point of the boot process to execute specific tasks given by user.
+
+* [ ] Hacking s6-supervise
+
+  Hack the s6-supervise program to include support for a `[Reload]` section, handling tasks before executing the service and managing jobs events.
