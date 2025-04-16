@@ -96,8 +96,6 @@ int sanitize_migrate(ssexec_t *info, const char *oversion, short exist)
 {
     log_flow() ;
 
-    migrate_create_snap(info, oversion) ;
-
     uint8_t state = str_to_int(oversion), current = str_to_int(SS_VERSION), did = 0 ;
 
     while (state < VERSION_ENDOFKEY) {
@@ -107,7 +105,7 @@ int sanitize_migrate(ssexec_t *info, const char *oversion, short exist)
         switch (state) {
 
             case VERSION_0721:
-                // should not be happen
+                // should not happen
                 return 0 ;
 
             case VERSION_ENDOFKEY:
@@ -115,6 +113,7 @@ int sanitize_migrate(ssexec_t *info, const char *oversion, short exist)
 
             case VERSION_0800:
                 if (!exist) {
+                    migrate_create_snap(info, oversion) ;
                     migrate_0721(info) ;
                     sanitize_graph(info) ;
                     did++ ;
@@ -124,6 +123,11 @@ int sanitize_migrate(ssexec_t *info, const char *oversion, short exist)
 
             case VERSION_0801:
             case VERSION_0802:
+                migrate_create_snap(info, oversion) ;
+                if (!sanitize_resolve(info, DATA_SERVICE))
+                    log_dieusys(LOG_EXIT_SYS, "sanitize services resolve files") ;
+                if (!sanitize_resolve(info, DATA_TREE))
+                    log_dieusys(LOG_EXIT_SYS, "sanitize trees resolve files") ;
                 state = VERSION_ENDOFKEY ;
                 did++ ;
                 break ;
