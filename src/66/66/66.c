@@ -27,34 +27,6 @@
 #include <66/tree.h>
 #include <66/hpr.h>
 
-static void set_info(ssexec_t *info)
-{
-    log_flow() ;
-
-    int r ;
-
-    if (!info->skip_opt_tree)
-        set_treeinfo(info) ;
-
-    r = set_livedir(&info->live) ;
-    if (!r)
-        log_die_nomem("stralloc") ;
-    if(r < 0)
-        log_die(LOG_EXIT_SYS, "live: ", info->live.s, " must be an absolute path") ;
-
-    if (!stralloc_copy(&info->scandir, &info->live))
-        log_die_nomem("stralloc") ;
-
-    r = set_livescan(&info->scandir, info->owner) ;
-    if (!r)
-        log_die_nomem("stralloc") ;
-    if(r < 0)
-        log_die(LOG_EXIT_SYS, "scandir: ", info->scandir.s, " must be an absolute path") ;
-
-    if (!set_environment(&info->environment, info->owner))
-        log_dieusys(LOG_EXIT_ZERO, "set environment") ;
-}
-
 static void info_clean(ssexec_t *info)
 {
     info->base.len = 0 ;
