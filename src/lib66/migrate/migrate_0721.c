@@ -28,7 +28,6 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/cdb.h>
 
-
 #include <66/ssexec.h>
 #include <66/tree.h>
 #include <66/resolve.h>
@@ -65,33 +64,6 @@ static void conf_init(conf_t *conf)
     memset(conf->frontend, 0, sizeof(char) * SS_MAX_PATH_LEN) ;
     conf->toenable = 0 ;
 
-}
-
-static void set_info(ssexec_t *info)
-{
-    log_flow() ;
-
-    int r ;
-
-    set_treeinfo(info) ;
-
-    r = set_livedir(&info->live) ;
-    if (!r)
-        log_die_nomem("stralloc") ;
-    if(r < 0)
-        log_die(LOG_EXIT_SYS, "live: ", info->live.s, " must be an absolute path") ;
-
-    if (!stralloc_copy(&info->scandir, &info->live))
-        log_die_nomem("stralloc") ;
-
-    r = set_livescan(&info->scandir, info->owner) ;
-    if (!r)
-        log_die_nomem("stralloc") ;
-    if(r < 0)
-        log_die(LOG_EXIT_SYS, "scandir: ", info->scandir.s, " must be an absolute path") ;
-
-    if (!set_environment(&info->environment, info->owner))
-        log_dieusys(LOG_EXIT_ZERO, "set environment") ;
 }
 
 static int resolve_find_cdb_0721(stralloc *result, cdb const *c, char const *key)
@@ -479,7 +451,6 @@ static void migrate_user_service(ssexec_t *info)
             migrate_frontend_file_0721(sa.s + pos, info) ;
     }
 }
-
 
 static void migrate_service_0721(void)
 {

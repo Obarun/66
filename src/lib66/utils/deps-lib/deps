@@ -3,6 +3,7 @@ identifier.o
 name_isvalid.o
 read_svfile.o
 set_environment.o
+set_info.o
 set_livedir.o
 set_livescan.o
 set_livestate.o
