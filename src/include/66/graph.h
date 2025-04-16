@@ -387,6 +387,7 @@ extern uint32_t service_graph_build_arguments(service_graph_t *g, char const *co
  * - This function recursively retrieves service resolve files from the system directories.
  */
 extern uint32_t service_graph_build_system(service_graph_t *g, ssexec_t *info, uint32_t flag) ;
+extern uint32_t tree_graph_build_system(tree_graph_t *g, ssexec_t *info, uint32_t flag) ;
 
 /**
  * @brief Builds a service graph for a specific service name.
