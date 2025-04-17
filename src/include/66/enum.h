@@ -91,6 +91,7 @@ typedef enum enum_key_section_environ_e enum_key_section_environ_t, *enum_key_se
 enum enum_key_section_environ_e
 {
     KEY_ENVIRON_ENVAL = 0 ,
+    KEY_ENVIRON_IMPORTFILE ,
     KEY_ENVIRON_ENDOFKEY
 } ;
 

@@ -138,10 +138,11 @@ struct resolve_service_addon_environ_s
     uint32_t env ; // string
     uint32_t envdir ; // string, /etc/66/conf or /home/user/.66/conf
     uint32_t env_overwrite ; // integer, overwrite the environment
-
+    uint32_t importfile ; // string, field ImportFile
+    uint32_t nimportfile ; // integer
 } ;
 
-#define RESOLVE_SERVICE_ADDON_ENVIRON_ZERO { 0,0,0 }
+#define RESOLVE_SERVICE_ADDON_ENVIRON_ZERO { 0,0,0,0,0 }
 
 typedef struct resolve_service_addon_regex_s resolve_service_addon_regex_t, *resolve_service_addon_regex_t_ref ;
 struct resolve_service_addon_regex_s
@@ -316,6 +317,8 @@ enum resolve_service_enum_e
     E_RESOLVE_SERVICE_ENV,
     E_RESOLVE_SERVICE_ENVDIR,
     E_RESOLVE_SERVICE_ENV_OVERWRITE,
+    E_RESOLVE_SERVICE_ENV_IMPORTFILE,
+    E_RESOLVE_SERVICE_ENV_NIMPORTFILE,
 
     // regex
     E_RESOLVE_SERVICE_REGEX_CONFIGURE,

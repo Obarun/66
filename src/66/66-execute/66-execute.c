@@ -26,6 +26,7 @@
 #include <oblibs/stack.h>
 #include <oblibs/directory.h>
 #include <oblibs/io.h>
+#include <oblibs/lexer.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/tai.h>
@@ -487,7 +488,7 @@ static void io_setup_stderr(resolve_service_t *res)
     }
 }
 
-static void execute_environment(stralloc *e, char const **nenvp, char const *const *env, exlsn_t *info, resolve_service_t *res)
+static void execute_environment(char const **nenvp, char const *const *env, stralloc *eram, exlsn_t *info, resolve_service_t *res)
 {
     log_flow() ;
 
@@ -500,17 +501,32 @@ static void execute_environment(stralloc *e, char const **nenvp, char const *con
             !stack_close(&path))
                 log_die_nomem("stack") ;
 
-        if (!environ_merge_dir(e, path.s))
+        if (!environ_merge_dir(eram, path.s))
             log_dieusys(LOG_EXIT_SYS, "merge environment directory: ", path.s) ;
 
-        if (!environ_substitute(e, info))
+        if (res->environ.nimportfile) {
+
+            _alloc_stk_(stk, strlen(res->sa.s + res->environ.importfile)) ;
+            size_t pos = 0 ;
+
+            if (!stack_string_clean(&stk, res->sa.s + res->environ.importfile))
+                log_dieusys(LOG_EXIT_ZERO, "clean string") ;
+
+            FOREACH_STK(&stk, pos) {
+
+                if (!environ_merge_file(eram, stk.s + pos))
+                    log_dieusys(LOG_EXIT_ZERO, "merge environment file: ", stk.s + pos) ;
+            }
+        }
+
+        if (!environ_substitute(eram, info))
             log_dieusys(LOG_EXIT_SYS, "substitue environment variables") ;
 
-        if (!environ_clean_unexport(e))
+        if (!environ_clean_unexport(eram))
             log_dieusys(LOG_EXIT_SYS, "remove exclamation mark from environment") ;
     }
 
-    if (!environ_create_environ(nenvp, env, e))
+    if (!environ_create_environ(nenvp, env, eram))
         log_dieusys(LOG_EXIT_SYS, "create environment") ;
 }
 
@@ -624,7 +640,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     char const *service = 0 ;
     _alloc_stk_(base, SS_MAX_PATH + 1) ;
-    _alloc_sa_(env) ;
+    _alloc_sa_(eram) ; // envrionment in memory
     char const *nenvp[MAXENV + 1] ;
     char *run = 0 ;
     char *runuser = 0 ;
@@ -702,7 +718,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
             log_dieusys(LOG_EXIT_SYS, "find script: ", brun, " -- please make a bug report") ;
     }
 
-    execute_environment(&env, nenvp, envp, &info, &res) ;
+    execute_environment(nenvp, envp, &eram, &info, &res) ;
 
     execute_script(brunuser, &res, &info) ;
 

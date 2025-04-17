@@ -75,6 +75,7 @@ char const *enum_str_key_section_logger[] = {
 
 char const *enum_str_key_section_environ[] = {
     "Environ" ,
+    "ImportFile" ,
     0
 } ;
 

@@ -88,6 +88,8 @@ void service_resolve_sanitize(resolve_service_t *res)
     // environment
     res->environ.env = res->environ.env ? resolve_add_string(wres, stk + res->environ.env) : 0 ;
     res->environ.envdir = res->environ.envdir ? resolve_add_string(wres, stk + res->environ.envdir) : 0 ;
+    res->environ.importfile = res->environ.importfile ? resolve_add_string(wres, stk + res->environ.importfile) : 0 ;
+    res->environ.nimportfile = res->environ.nimportfile ? resolve_add_string(wres, stk + res->environ.nimportfile) : 0 ;
 
     // regex
     res->regex.configure = res->regex.configure ? resolve_add_string(wres, stk + res->regex.configure) : 0 ;
