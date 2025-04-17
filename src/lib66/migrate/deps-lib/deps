@@ -1,3 +1,4 @@
 migrate_0721.o
+migrate_0802.o
 -loblibs
 -lskarnet
