@@ -321,6 +321,15 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
             str = fmt ;
             break ;
 
+        case E_RESOLVE_SERVICE_ENV_IMPORTFILE:
+            str = res->sa.s + res->environ.importfile ;
+            break ;
+
+        case E_RESOLVE_SERVICE_ENV_NIMPORTFILE:
+            fmt[uint32_fmt(fmt,res->environ.nimportfile)] = 0 ;
+            str = fmt ;
+            break ;
+
         // regex
 
         case E_RESOLVE_SERVICE_REGEX_CONFIGURE:

@@ -120,6 +120,8 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
         !resolve_get_key(c, "env", &res->environ.env) ||
         !resolve_get_key(c, "envdir", &res->environ.envdir) ||
         !resolve_get_key(c, "env_overwrite", &res->environ.env_overwrite) ||
+        !resolve_get_key(c, "importfile", &res->environ.importfile) ||
+        !resolve_get_key(c, "nimportfile", &res->environ.nimportfile) ||
 
     /* regex */
         !resolve_get_key(c, "configure", &res->regex.configure) ||

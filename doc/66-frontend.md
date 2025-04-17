@@ -250,9 +250,9 @@ This section is *mandatory*. (!)
 
 Declare the type of the service.
 
-* mandatory : yes (!)
+* mandatory: yes (!)
 
-* syntax : [inline](#inline)
+* syntax: [inline](#inline)
 
 * valid values :
 
@@ -264,9 +264,9 @@ Declare the type of the service.
 
 Version number of the service.
 
-* mandatory : yes (!)
+* mandatory: yes (!)
 
-* syntax : [inline](#inline)
+* syntax: [inline](#inline)
 
     valid values :
 
@@ -292,9 +292,9 @@ Version number of the service.
 
 A short description of the service.
 
-* mandatory : yes (!)
+* mandatory: yes (!)
 
-* syntax : [quote](#quote)
+* syntax: [quote](#quote)
 
     valid values :
 
@@ -304,9 +304,9 @@ A short description of the service.
 
 Declare the permissions of the service.
 
-* mandatory : yes (!)
+* mandatory: yes (!)
 
-* syntax : [brackets](#brackets)
+* syntax: [brackets](#brackets)
 
     valid values :
 
@@ -318,9 +318,9 @@ Declare the permissions of the service.
 
 Declare dependencies of the service.
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [brackets](#brackets)
+* syntax: [brackets](#brackets)
 
     valid values :
 
@@ -338,9 +338,9 @@ Declare dependencies of the service.
 
 Declare required-by dependencies of the service.
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [brackets](#brackets)
+* syntax: [brackets](#brackets)
 
     valid values :
 
@@ -358,9 +358,9 @@ Declare required-by dependencies of the service.
 
 Declare optional dependencies of the service.
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [brackets](#brackets)
+* syntax: [brackets](#brackets)
 
     valid values :
 
@@ -380,9 +380,9 @@ Declare optional dependencies of the service.
 
 #### Options
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [brackets](#brackets)
+* syntax: [brackets](#brackets)
 
     valid values :
 
@@ -396,9 +396,9 @@ Declare optional dependencies of the service.
 
 #### Flags
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [brackets](#brackets)
+* syntax: [brackets](#brackets)
 
     valid values :
 
@@ -409,9 +409,9 @@ Declare optional dependencies of the service.
 
 #### Notify
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [uint](#uint)
+* syntax: [uint](#uint)
 
     valid values :
 
@@ -423,9 +423,9 @@ Declare optional dependencies of the service.
 
 *Corresponds to the file timeout-finish of [s6](https://skarnet.org/software/s6) program* and used by service of type `classic`.
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [uint](#uint)
+* syntax: [uint](#uint)
 
     valid values :
 
@@ -437,9 +437,9 @@ Declare optional dependencies of the service.
 
 *Corresponds to the file timeout-kill of [s6](https://skarnet.org/software/s6) program* and used by service of type `classic`.
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [uint](#uint)
+* syntax: [uint](#uint)
 
     valid values :
 
@@ -452,11 +452,11 @@ Declare optional dependencies of the service.
 
 *Corresponds to the file max-death-tally of [s6](https://skarnet.org/software/s6) program*.
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [uint](#uint)
+* syntax: [uint](#uint)
 
-* valid value :
+* valid value:
 
     * Any valid number.
 
@@ -466,11 +466,11 @@ Declare optional dependencies of the service.
 
 *Corresponds to the file "down-signal" of [s6](https://skarnet.org/software/s6) program*.
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [uint](#uint)
+* syntax: [uint](#uint)
 
-* valid value :
+* valid value:
 
     * The name or number of a signal.
 
@@ -480,9 +480,9 @@ Declare optional dependencies of the service.
 
 Verbatim copy directories and files on the fly to the main service destination. When dealing with directories, it copies all found files and directories recursively. In case of file, it copy it to the root of the service directory.
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [path](#path) inside [brackets](#brackets)
+* syntax: [path](#path) inside [brackets](#brackets)
 
     valid values :
 
@@ -498,9 +498,9 @@ Verbatim copy directories and files on the fly to the main service destination. 
 
 #### InTree
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [inline](#inline)
+* syntax: [inline](#inline)
 
 * valid values :
 
@@ -570,11 +570,11 @@ This section is *mandatory*. (!)
 
 #### Build
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [inline](#inline)
+* syntax: [inline](#inline)
 
-* valid value :
+* valid value:
 
     * auto : creates a service script by copying the `Execute` field verbatim and prepending an [execline](https://skarnet.org/software/execline) shebang to the beginning of the script. This is the **default**.
 
@@ -582,11 +582,11 @@ This section is *mandatory*. (!)
 
 #### RunAs
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [inline](#inline),[simple-colon](#simple-colon)
+* syntax: [inline](#inline),[simple-colon](#simple-colon)
 
-* valid value :
+* valid value:
 
     * Any valid user name set on the system or valid uid:gid number.
 
@@ -612,11 +612,11 @@ This section is *mandatory*. (!)
 
 #### Execute
 
-* mandatory : yes (!)
+* mandatory: yes (!)
 
-* syntax : [brackets](#brackets)
+* syntax: [brackets](#brackets)
 
-* valid value :
+* valid value:
 
     * The command to execute when starting the service.
 
@@ -645,11 +645,11 @@ The following key names are also valid:
 
 #### Backup
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [uint](#uint)
+* syntax: [uint](#uint)
 
-* valid value :
+* valid value:
 
     * Any valid number.
 
@@ -657,11 +657,11 @@ The following key names are also valid:
 
 #### MaxSize
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [uint](#uint)
+* syntax: [uint](#uint)
 
-* valid value :
+* valid value:
 
     * Any valid number.
 
@@ -669,11 +669,11 @@ The following key names are also valid:
 
 #### Timestamp
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [inline](#inline)
+* syntax: [inline](#inline)
 
-* valid value :
+* valid value:
 
     * tai
 
@@ -710,11 +710,11 @@ A file containing the `key=value` pair(s) will be created by default at `%%servi
 
 #### Any `key=value` pair
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [pair](#pair)
+* syntax: [pair](#pair)
 
-* valid value :
+* valid value:
 
     * You can define any variables that you want to add to the environment of the service. For example:
 
@@ -743,6 +743,41 @@ A file containing the `key=value` pair(s) will be created by default at `%%servi
 
         Refers to [execl-envfile](execl-envfile.html) for futhers information.
 
+#### ImportFile
+
+The `ImportFile` variable is recognized by `66` and treated as a `key=value` pair, similar to other environment variables. However, `ImportFile` itself is not exported to the environment.
+
+The target file must adhere to the environment definition syntax specified in the [file syntax](execl-envfile.html#file-syntax) guidelines.
+
+* mandatory: no
+
+* syntax: [path](#path)
+
+* valid value:
+
+    * Any valid absolute file path can be specified. The `ImportFile` variable can be defined multiple times. For example:
+
+        ````
+        [Environment]
+        dir_run=/run/openntpd
+        ImportFile=/etc/66/init.conf
+        ````
+
+        The `!` character has no effect on `ImportFile`.
+
+        `ImportFile` processing occurs at the end of the environment setup. If a key is defined both in the `[Environment]` section and in a file specified by `ImportFile`, the value from the `ImportFile` takes precedence.
+
+        For multiple `ImportFile` declarations, the last declared file takes precedence for any duplicate keys found across the specified files.
+
+        [identifier](66-identifier.html) is still also **interpreted**. For example:
+
+        ````
+        [Environment]
+        dir_run=/run/openntpd
+        ImportFile=/etc/66/init.conf
+        ImportFile=@H/.66/environment/my.conf
+        ````
+
 ### Section [Regex]
 
 This section is *optional*.
@@ -753,21 +788,21 @@ It will only have an effect when the service is a `module` type—see the sectio
 
 #### Configure
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [quotes](#quotes)
+* syntax: [quotes](#quotes)
 
-* valid value :
+* valid value:
 
     * You can define any arguments to pass to the module's configure script.
 
 #### Directories
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [pair](#pair) inside [brackets](#brackets)
+* syntax: [pair](#pair) inside [brackets](#brackets)
 
-* valid value :
+* valid value:
 
     * Any `key=value` pair where key is the regex to search on the directory name and value the replacement of that regex. For example:
 
@@ -779,21 +814,21 @@ It will only have an effect when the service is a `module` type—see the sectio
 
 #### Files
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [pair](#pair) inside [brackets](#brackets)
+* syntax: [pair](#pair) inside [brackets](#brackets)
 
-* valid value :
+* valid value:
 
     * Reacts exactly as Directories field but on files name instead of directories name.
 
 #### InFiles
 
-* mandatory : no
+* mandatory: no
 
-* syntax : [colon](#colon) inside [brackets](#brackets)
+* syntax: [colon](#colon) inside [brackets](#brackets)
 
-* valid value :
+* valid value:
 
     * Any valid filename between the double colon with any `key=value` pair where key is the regex to search inside the file and value the replacement of that regex. The double colon **must** be present but the name between it can be omitted. In that case, the `key=value` pair will apply to all files contained on the module directories and to all keys (regex) found inside the same file.For example:
 

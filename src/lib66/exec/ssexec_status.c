@@ -82,6 +82,7 @@ static void info_display_start(char const *field, resolve_service_t *res) ;
 static void info_display_stop(char const *field, resolve_service_t *res) ;
 static void info_display_envat(char const *field, resolve_service_t *res) ;
 static void info_display_envfile(char const *field, resolve_service_t *res) ;
+static void info_display_importfile(char const *field, resolve_service_t *res) ;
 static void info_display_stdin(char const *field, resolve_service_t *res) ;
 static void info_display_stdout(char const *field, resolve_service_t *res) ;
 static void info_display_stderr(char const *field, resolve_service_t *res) ;
@@ -114,15 +115,16 @@ static info_opts_map_t const opts_sv_table[] =
     { .str = "stop", .svfunc = &info_display_stop, .id = 17 },
     { .str = "envat", .svfunc = &info_display_envat, .id = 18 },
     { .str = "envfile", .svfunc = &info_display_envfile, .id = 19 },
-    { .str = "stdin", .svfunc = &info_display_stdin, .id = 20 },
-    { .str = "stdout", .svfunc = &info_display_stdout, .id = 21 },
-    { .str = "stderr", .svfunc = &info_display_stderr, .id = 22 },
-    { .str = "logname", .svfunc = &info_display_logname, .id = 23 },
-    { .str = "logfile", .svfunc = &info_display_logfile, .id = 24 },
+    { .str = "importfile", .svfunc = &info_display_importfile, .id = 20 },
+    { .str = "stdin", .svfunc = &info_display_stdin, .id = 21 },
+    { .str = "stdout", .svfunc = &info_display_stdout, .id = 22 },
+    { .str = "stderr", .svfunc = &info_display_stderr, .id = 23 },
+    { .str = "logname", .svfunc = &info_display_logname, .id = 24 },
+    { .str = "logfile", .svfunc = &info_display_logfile, .id = 25 },
     { .str = 0, .svfunc = 0, .id = -1 }
 } ;
 
-#define MAXOPTS 26
+#define MAXOPTS 27
 #define checkopts(n) if (n >= MAXOPTS) log_die(LOG_EXIT_USER, "too many options")
 #define DELIM ','
 
@@ -768,6 +770,22 @@ static void info_display_envfile(char const *field,resolve_service_t *res)
 
 }
 
+static void info_display_importfile(char const *field,resolve_service_t *res)
+{
+    log_flow() ;
+
+    if (NOFIELD) info_display_field_name(field) ;
+
+    if (res->environ.nimportfile) {
+
+        info_display_string(res->sa.s + res->environ.importfile) ;
+
+        return ;
+    }
+
+    info_display_empty() ;
+}
+
 static void info_display_logname(char const *field,resolve_service_t *res)
 {
     log_flow() ;
@@ -1072,6 +1090,7 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
         "Stop script",
         "Environment source",
         "Environment file",
+        "Environment ImportFile",
         "StdIn",
         "StdOut",
         "StdErr",

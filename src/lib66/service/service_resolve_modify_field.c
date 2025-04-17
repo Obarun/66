@@ -412,6 +412,14 @@ void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t
             res->environ.env_overwrite = resolve_add_uint(data) ;
             break ;
 
+        case E_RESOLVE_SERVICE_ENV_IMPORTFILE:
+            res->environ.importfile = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_ENV_NIMPORTFILE:
+            res->environ.nimportfile = resolve_add_uint(data) ;
+            break ;
+
         // regex
 
         case E_RESOLVE_SERVICE_REGEX_CONFIGURE:

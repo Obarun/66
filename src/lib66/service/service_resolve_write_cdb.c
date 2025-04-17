@@ -114,6 +114,8 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "env", res->environ.env) ||
         !resolve_add_cdb_uint(c, "envdir", res->environ.envdir) ||
         !resolve_add_cdb_uint(c, "env_overwrite", res->environ.env_overwrite) ||
+        !resolve_add_cdb_uint(c, "importfile", res->environ.importfile) ||
+        !resolve_add_cdb_uint(c, "nimportfile", res->environ.nimportfile) ||
 
         // regex
         !resolve_add_cdb_uint(c, "configure", res->regex.configure) ||
