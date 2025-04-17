@@ -317,6 +317,4 @@ enum enum_section_e_0721
     SECTION_ENDOFKEY_0721
 } ;
 
-extern void migrate_0721(ssexec_t *info) ;
-
 #endif

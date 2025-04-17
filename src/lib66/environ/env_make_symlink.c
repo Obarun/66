@@ -48,7 +48,7 @@ int env_make_symlink(resolve_service_t *res)
     /** atomic_symlink check if exist
      * if it doesn't exist, it create it*/
     log_trace("point symlink: ", sym_version, " to ", dst) ;
-    if (!atomic_symlink(dst,sym_version,"env_compute"))
+    if (!atomic_symlink(dst,sym_version,"env_make_symlink"))
         log_warnu_return(LOG_EXIT_ZERO,"symlink: ",sym_version," to: ",dst) ;
 
     return 1 ;
