@@ -363,9 +363,12 @@ static void migrate_frontend_file_0721(const char *file, ssexec_t *info)
     }
 
     {
+        resolve_enum_table_t table = E_TABLE_PARSER_SECTION_LOGGER_ZERO ;
+        table.u.parser.id = E_PARSER_SECTION_LOGGER_DESTINATION ;
+
         _alloc_stk_(store, frontend.len + 1) ;
         _alloc_stk_(stdout, frontend.len + 22) ;
-        int r = parse_get_value_of_key(&store, frontend.s, SECTION_LOG, list_section_logger, KEY_LOGGER_DESTINATION) ;
+        int r = parse_get_value_of_key(&store, frontend.s, table) ;
         if (r) {
             log_1_warn("Destination field is deprecated -- convert it automatically to StdOut=s6log:", store.s) ;
             auto_strings(stdout.s, "StdOut=s6log:", store.s, "\n\n[Start]") ;
