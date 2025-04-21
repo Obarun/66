@@ -36,9 +36,11 @@ Some versions may require specific intermediary versions for migration. The foll
 
 | current version                   | target version | mandatory version path|
 | ---                               | ---            | ---            |
-| between `0.7.0.0` and `0.7.1.1`   | `0.8.1.0`     | `0.7.2.0` -> `0.8.0.0` -> `0.8.0.2` -> `0.8.1.0`  |
-| `0.7.2.0`                         | `0.8.1.0`     | `0.8.0.0` -> `0.8.0.2` -> `0.8.1.0`    |
-| between `0.8.0.0` and `0.8.0.2`   | `0.8.1.0`     | `0.8.1.0`   |
+| between `0.7.0.0` and `0.7.1.1`   | `0.8.1.0`      | `0.7.2.0` -> `0.8.0.0` -> `0.8.0.2` -> `0.8.1.0`  |
+| `0.7.2.0`                         | `0.8.1.0`      | `0.8.0.0` -> `0.8.0.2` -> `0.8.1.0`    |
+| between `0.8.0.0` and `0.8.0.2`   | `0.8.1.0`      | `0.8.1.0`   |
+
+The automatic migration process adheres to predefined paths. For instance, when upgrading from version `0.7.2.0` to `0.8.1.0`, it will first migrate to `0.8.0.0` before proceeding to `0.8.1.0`.
 
 
 # Version E.O.L.
