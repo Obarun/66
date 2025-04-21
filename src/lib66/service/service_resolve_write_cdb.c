@@ -46,7 +46,7 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "notify", res->notify) ||
         !resolve_add_cdb_uint(c, "maxdeath", res->maxdeath) ||
         !resolve_add_cdb_uint(c, "earlier", res->earlier) ||
-        !resolve_add_cdb_uint(c, "hiercopy", res->hiercopy) ||
+        !resolve_add_cdb_uint(c, "copyfrom", res->copyfrom) ||
         !resolve_add_cdb_uint(c, "intree", res->intree) ||
         !resolve_add_cdb_uint(c, "ownerstr", res->ownerstr) ||
         !resolve_add_cdb_uint(c, "owner", res->owner) ||
