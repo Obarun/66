@@ -25,7 +25,7 @@
 #include <66/graph.h>
 #include <66/svc.h>
 #include <66/service.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 
 int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
 {
@@ -117,7 +117,7 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
         if (h == NULL)
             log_dieusys(LOG_EXIT_SYS, "find service: ", c->name, " -- please make a bug report") ;
 
-        if (h->res.type == TYPE_ONESHOT) {
+        if (h->res.type == E_PARSER_TYPE_ONESHOT) {
             nargc++ ;
             nargv[m++] = c->name ;
         }

@@ -22,7 +22,7 @@
 #include <skalibs/types.h>
 #include <skalibs/stralloc.h>
 
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/constants.h>
 #include <66/resolve.h>
 #include <66/state.h>
@@ -169,7 +169,7 @@ void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
     /* oneshotd */
     res->live.oneshotddir = compute_pipe_service(wres, info, SS_ONESHOTD) ;
 
-    if (res->logger.want && res->type != TYPE_MODULE && !res->inns) {
+    if (res->logger.want && res->type != E_PARSER_TYPE_MODULE && !res->inns) {
 
         char *name = res->sa.s + res->name ;
         size_t namelen = strlen(name) ;

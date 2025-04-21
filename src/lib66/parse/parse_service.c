@@ -27,7 +27,7 @@
 
 #include <skalibs/djbunix.h>
 
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/constants.h>
 #include <66/parse.h>
 #include <66/ssexec.h>

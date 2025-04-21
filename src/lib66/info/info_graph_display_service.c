@@ -26,7 +26,7 @@
 #include <66/config.h>
 #include <66/constants.h>
 #include <66/state.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 
 #include <s6/supervise.h>
 
@@ -60,7 +60,7 @@ int info_graph_display_service(char const *name)
         goto freed ;
     }
 
-    if (res.type == TYPE_CLASSIC) {
+    if (res.type == E_PARSER_TYPE_CLASSIC) {
 
         s6_svstatus_read(res.sa.s + res.live.scandir ,&status) ;
         pid_color = !status.pid ? 1 : 2 ;
@@ -109,7 +109,7 @@ int info_graph_display_service(char const *name)
         "type",
         log_color->off, \
         "=", \
-        get_key_by_enum(list_type,res.type), \
+        enum_to_key(enum_list_parser_type,res.type), \
 
         log_color->magenta, \
         "tree", \

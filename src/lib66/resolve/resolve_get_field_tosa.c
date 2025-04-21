@@ -22,7 +22,7 @@
 #include <66/service.h>
 #include <66/tree.h>
 
-int resolve_get_field_tosa(stralloc *sa, resolve_wrapper_t_ref wres, uint8_t field)
+int resolve_get_field_tosa(stralloc *sa, resolve_wrapper_t_ref wres, resolve_enum_table_t table)
 {
     log_flow() ;
 
@@ -30,19 +30,19 @@ int resolve_get_field_tosa(stralloc *sa, resolve_wrapper_t_ref wres, uint8_t fie
 
         resolve_service_t_ref res = (resolve_service_t *)wres->obj  ;
 
-        return service_resolve_get_field_tosa(sa, res, field) ;
+        return service_resolve_get_field_tosa(sa, res, table.u.service) ;
 
     } else if (wres->type == DATA_TREE) {
 
         resolve_tree_t_ref res = (resolve_tree_t *)wres->obj  ;
 
-        return tree_resolve_get_field_tosa(sa, res, field) ;
+        return tree_resolve_get_field_tosa(sa, res, table.u.tree) ;
 
     } else if (wres->type == DATA_TREE_MASTER) {
 
         resolve_tree_master_t_ref res = (resolve_tree_master_t *)wres->obj  ;
 
-        return tree_resolve_master_get_field_tosa(sa, res, field) ;
+        return tree_resolve_master_get_field_tosa(sa, res, table.u.tree) ;
 
     } else return 0 ;
 }

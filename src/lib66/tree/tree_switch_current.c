@@ -26,14 +26,16 @@ int tree_switch_current(char const *base, char const *treename)
 
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+    resolve_enum_table_t table = E_TABLE_TREE_MASTER_ZERO ;
+    table.u.tree.id = E_RESOLVE_TREE_MASTER_CURRENT ;
 
     if (tree_ongroups(base, treename, TREE_GROUPS_BOOT)) {
         log_1_warn("you can't mark a tree current if it is part of the boot group") ;
         goto freed ;
     }
 
-    if (!resolve_modify_field_g(wres, base, SS_MASTER + 1, E_RESOLVE_TREE_MASTER_CURRENT,  treename)) {
-        log_warnu("modify field: ", resolve_tree_master_field_table[E_RESOLVE_TREE_MASTER_CURRENT].field," of Master resolve file with value: ", treename) ;
+    if (!resolve_modify_field_g(wres, base, SS_MASTER + 1, table,  treename)) {
+        log_warnu("modify field: ", enum_to_key(table.u.tree.list, table.u.tree.id)," of Master resolve file with value: ", treename) ;
         goto freed ;
     }
 

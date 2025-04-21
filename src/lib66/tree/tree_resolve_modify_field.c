@@ -22,27 +22,6 @@
 #include <66/resolve.h>
 #include <66/tree.h>
 
-resolve_field_table_t resolve_tree_field_table[] = {
-
-    [E_RESOLVE_TREE_RVERSION] = { .field = "rversion" },
-
-    [E_RESOLVE_TREE_NAME] = { .field = "name" },
-    [E_RESOLVE_TREE_NAME] = { .field = "enabled" },
-    [E_RESOLVE_TREE_DEPENDS] = { .field = "depends" },
-    [E_RESOLVE_TREE_REQUIREDBY] = { .field = "requiredby" },
-    [E_RESOLVE_TREE_ALLOW] = { .field = "allow" },
-    [E_RESOLVE_TREE_GROUPS] = { .field = "groups" },
-    [E_RESOLVE_TREE_CONTENTS] = { .field = "contents" },
-    [E_RESOLVE_TREE_NDEPENDS] = { .field = "ndepends" },
-    [E_RESOLVE_TREE_NREQUIREDBY] = { .field = "nrequiredby" },
-    [E_RESOLVE_TREE_NALLOW] = { .field = "nallow" },
-    [E_RESOLVE_TREE_NGROUPS] = { .field = "ngroups" },
-    [E_RESOLVE_TREE_NCONTENTS] = { .field = "ncontents" },
-    [E_RESOLVE_TREE_INIT] = { .field = "init" },
-    [E_RESOLVE_TREE_SUPERVISED] = { .field = "supervised" },
-    [E_RESOLVE_TREE_ENDOFKEY] = { .field = 0 }
-} ;
-
 static uint32_t resolve_add_uint(char const *data)
 {
     uint32_t u ;
@@ -54,7 +33,7 @@ static uint32_t resolve_add_uint(char const *data)
     return u ;
 }
 
-void tree_resolve_modify_field(resolve_tree_t *tres, uint8_t field, char const *data)
+void tree_resolve_modify_field(resolve_tree_t *tres, uint32_t field, char const *data)
 {
     log_flow() ;
 
@@ -96,7 +75,6 @@ void tree_resolve_modify_field(resolve_tree_t *tres, uint8_t field, char const *
             break ;
 
         case E_RESOLVE_TREE_NDEPENDS:
-
             tres->ndepends = resolve_add_uint(data) ;
             break ;
 

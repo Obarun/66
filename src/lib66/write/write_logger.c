@@ -27,7 +27,6 @@
 
 #include <66/config.h>
 #include <66/write.h>
-#include <66/enum.h>
 #include <66/utils.h>
 #include <s6/config.h>
 #include <66/constants.h>

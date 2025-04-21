@@ -21,13 +21,13 @@
 #include <66/parse.h>
 #include <66/enum.h>
 
-int parse_get_value_of_key(stack *store, char const *str, const int sid, key_description_t const *list, const int kid)
+int parse_get_value_of_key(stack *store, char const *str, resolve_enum_table_t table)
 {
     log_flow() ;
 
     lexer_config cfg = LEXER_CONFIG_KEY ;
     int tkid = -1 ;
-
+    uint32_t kid = table.u.parser.id ;
     cfg.str = str ;
     cfg.slen = strlen(str) ;
     _alloc_stk_(k, cfg.slen + 1) ;
@@ -36,13 +36,13 @@ int parse_get_value_of_key(stack *store, char const *str, const int sid, key_des
 
         k.len = 0 ;
         cfg.found = 0 ;
-        tkid = parse_key(&k, &cfg, list) ;
+        tkid = parse_key(&k, &cfg, table) ;
         if (tkid < 0)
-            log_warnu_return(LOG_EXIT_ZERO, "parse key: ", *list[kid].name) ;
+            log_warnu_return(LOG_EXIT_ZERO, "parse key: ", *table.u.parser.list[kid].name) ;
 
         if (cfg.found && tkid == kid) {
 
-            if (!parse_value(store, &cfg, sid, list, kid))
+            if (!parse_value(store, &cfg, table))
                 log_warnu_return(LOG_EXIT_ZERO, "get value of key: ", k.s) ;
 
             break ;

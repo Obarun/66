@@ -1,5 +1,5 @@
 /*
- * tree_resolve_master_get_field_tosa.c
+ * tree_resolve_master_get_table_tosa.c
  *
  * Copyright (c) 2018-2025 Eric Vidal <eric@obarun.org>
  *
@@ -19,15 +19,16 @@
 #include <skalibs/types.h>//UINT_FMT
 
 #include <66/tree.h>
+#include <66/enum_tree.h>
 
-int tree_resolve_master_get_field_tosa(stralloc *sa, resolve_tree_master_t *mres, resolve_tree_master_enum_t field)
+int tree_resolve_master_get_field_tosa(stralloc *sa, resolve_tree_master_t *mres, resolve_tree_enum_table_t table)
 {
     log_flow() ;
 
     char fmt[UINT32_FMT] ;
     char const *str = 0 ;
 
-    switch(field) {
+    switch(table.id) {
 
         case E_RESOLVE_TREE_MASTER_NAME:
             str = mres->sa.s + mres->name ;

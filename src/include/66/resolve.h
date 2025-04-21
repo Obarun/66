@@ -22,6 +22,8 @@
 #include <skalibs/cdb.h>
 #include <skalibs/cdbmake.h>
 
+#include <66/enum.h>
+
 #define DATA_TREE 1
 #define DATA_TREE_MASTER 2
 #define DATA_SERVICE 0
@@ -40,12 +42,6 @@ struct resolve_wrapper_s
     else if (wres->type == DATA_TREE) sawres = (&((resolve_tree_t *)wres->obj)->sa) ; \
     else if (wres->type == DATA_TREE_MASTER) sawres = (&((resolve_tree_master_t *)wres->obj)->sa) ;
 #endif
-
-typedef struct resolve_field_table_s resolve_field_table_t, *resolve_field_table_t_ref ;
-struct resolve_field_table_s
-{
-    char *field ;
-} ;
 
 /**
  *
@@ -75,8 +71,8 @@ extern int resolve_open_cdb(int *fd, cdb *c, const char *path, const char *name)
 extern int resolve_read_g(resolve_wrapper_t *wres, char const *base, char const *name) ;
 extern int resolve_write_g(resolve_wrapper_t *wres, char const *base, char const *name) ;
 extern void resolve_remove_g(char const *base, char const *name, uint8_t data_type) ;
-extern int resolve_get_field_tosa_g(stralloc *sa, char const *base, char const *name, uint8_t data_type, uint8_t field) ;
-extern int resolve_modify_field_g(resolve_wrapper_t_ref wres, char const *base, char const *name, uint8_t field, char const *value) ;
+extern int resolve_get_field_tosa_g(stralloc *sa, char const *base, char const *name, uint8_t data_type, resolve_enum_table_t table) ;
+extern int resolve_modify_field_g(resolve_wrapper_t_ref wres, char const *base, char const *name, resolve_enum_table_t table, char const *value) ;
 extern ssize_t resolve_add_string(resolve_wrapper_t *wres, char const *data) ;
 
 /**
@@ -89,8 +85,8 @@ extern int resolve_check(char const *base, char const *name) ;
 extern int resolve_read(resolve_wrapper_t *wres, char const *base, char const *name) ;
 extern int resolve_write(resolve_wrapper_t *wres, char const *base, char const *name) ;
 extern void resolve_remove(char const *base, char const *name) ;
-extern int resolve_get_field_tosa(stralloc *sa, resolve_wrapper_t_ref wres, uint8_t field) ;
-extern int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *by) ;
+extern int resolve_get_field_tosa(stralloc *sa, resolve_wrapper_t_ref wres, resolve_enum_table_t table) ;
+extern int resolve_modify_field(resolve_wrapper_t_ref wres, resolve_enum_table_t table, char const *by) ;
 extern int resolve_read_cdb(resolve_wrapper_t *wres, const char *path, const char *name) ;
 extern int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *name) ;
 extern int resolve_add_cdb(cdbmaker *c, char const *key, char const *str, uint32_t element, uint8_t check) ;

@@ -20,7 +20,7 @@
 #include <66/parse.h>
 #include <66/enum.h>
 
-int parse_key(stack *key, lexer_config *cfg, key_description_t const *list)
+int parse_key(stack *key, lexer_config *cfg, resolve_enum_table_t table)
 {
     log_flow() ;
 
@@ -30,7 +30,7 @@ int parse_key(stack *key, lexer_config *cfg, key_description_t const *list)
         return -1 ;
 
     if (cfg->found) {
-        kid = get_enum_by_key(list, key->s) ;
+        kid = key_to_enum(table.u.parser.list, key->s) ;
         if (kid < 0) {
             log_warn("unknown key: ", key->s, " -- ignoring it") ;
             cfg->found = 0 ;

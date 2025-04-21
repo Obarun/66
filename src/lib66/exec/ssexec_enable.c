@@ -26,7 +26,7 @@
 #include <66/ssexec.h>
 #include <66/service.h>
 #include <66/graph.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/config.h>
 
 int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
@@ -111,7 +111,7 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
 
             service_switch_tree(&hash->res, info->treename.s, info) ;
 
-            if (hash->res.logger.want && hash->res.type == TYPE_CLASSIC) {
+            if (hash->res.logger.want && hash->res.type == E_PARSER_TYPE_CLASSIC) {
 
                 struct resolve_hash_s *log = hash_search(&graph.hres, hash->res.sa.s + hash->res.logger.name) ;
                 if (log == NULL)

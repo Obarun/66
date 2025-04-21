@@ -28,6 +28,7 @@
 #include <66/ssexec.h>
 #include <66/resolve.h>
 #include <66/graph.h>
+#include <66/enum_tree.h>
 
 #define TREE_GROUPS_BOOT "boot"
 #define TREE_GROUPS_BOOT_LEN (sizeof TREE_GROUPS_BOOT - 1)
@@ -59,30 +60,10 @@ struct resolve_tree_s
     uint32_t init ;//not initialized->0, initialized->1
     uint32_t supervised ;//not superviseded->0, supervised->1
 } ;
+
 #define RESOLVE_TREE_ZERO { STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
 extern const resolve_tree_t tree_resolve_zero ;
-
-typedef enum resolve_tree_enum_e resolve_tree_enum_t, *resolve_tree_enum_t_ref;
-enum resolve_tree_enum_e
-{
-    E_RESOLVE_TREE_RVERSION = 0,
-    E_RESOLVE_TREE_NAME,
-    E_RESOLVE_TREE_ENABLED,
-    E_RESOLVE_TREE_DEPENDS,
-    E_RESOLVE_TREE_REQUIREDBY,
-    E_RESOLVE_TREE_ALLOW,
-    E_RESOLVE_TREE_GROUPS,
-    E_RESOLVE_TREE_CONTENTS,
-    E_RESOLVE_TREE_NDEPENDS,
-    E_RESOLVE_TREE_NREQUIREDBY,
-    E_RESOLVE_TREE_NALLOW,
-    E_RESOLVE_TREE_NGROUPS,
-    E_RESOLVE_TREE_NCONTENTS,
-    E_RESOLVE_TREE_INIT,
-    E_RESOLVE_TREE_SUPERVISED,
-    E_RESOLVE_TREE_ENDOFKEY
-} ;
 
 typedef struct resolve_tree_master_s resolve_tree_master_t, *resolve_tree_master_t_ref ;
 struct resolve_tree_master_s
@@ -99,25 +80,10 @@ struct resolve_tree_master_s
     uint32_t ncontents ;
 
 } ;
+
 #define RESOLVE_TREE_MASTER_ZERO { STRALLOC_ZERO,0,0,0,0,0,0,0 }
 
 extern const resolve_tree_master_t tree_resolve_master_zero ;
-
-typedef enum resolve_tree_master_enum_e resolve_tree_master_enum_t, *resolve_tree_master_enum_t_ref;
-enum resolve_tree_master_enum_e
-{
-    E_RESOLVE_TREE_MASTER_RVERSION = 0,
-    E_RESOLVE_TREE_MASTER_NAME,
-    E_RESOLVE_TREE_MASTER_ALLOW,
-    E_RESOLVE_TREE_MASTER_CURRENT,
-    E_RESOLVE_TREE_MASTER_CONTENTS,
-    E_RESOLVE_TREE_MASTER_NALLOW,
-    E_RESOLVE_TREE_MASTER_NCONTENTS,
-    E_RESOLVE_TREE_MASTER_ENDOFKEY
-} ;
-
-extern resolve_field_table_t resolve_tree_field_table[] ;
-extern resolve_field_table_t resolve_tree_master_field_table[] ;
 
 typedef struct tree_seed_s tree_seed_t, tree_seed_t_ref ;
 struct tree_seed_s
@@ -137,6 +103,7 @@ struct tree_seed_s
 
     uint8_t nopts ;
 } ;
+
 #define TREE_SEED_ZERO { STRALLOC_ZERO, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0 }
 
 struct resolve_hash_tree_s {
@@ -146,6 +113,7 @@ struct resolve_hash_tree_s {
 	UT_hash_handle hh ;
 
 } ;
+
 #define RESOLVE_HASH_TREE_ZERO { 0, 0, RESOLVE_TREE_ZERO, NULL }
 
 #define TREE_FLAGS_STARTING 1 // 1 starting not really up
@@ -228,8 +196,8 @@ extern int tree_switch_current(char const *base, char const *tree) ;
 extern int tree_resolve_read_cdb(cdb *c, resolve_tree_t *tres) ;
 extern int tree_resolve_write_cdb(cdbmaker *c, resolve_tree_t *tres) ;
 extern void tree_resolve_sanitize(resolve_tree_t *tres) ;
-extern void tree_resolve_modify_field(resolve_tree_t *tres, uint8_t field, char const *data) ;
-extern int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree_enum_t field) ;
+extern void tree_resolve_modify_field(resolve_tree_t *tres, uint32_t field, char const *data) ;
+extern int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree_enum_table_t table) ;
 extern void tree_service_add(char const *treename, char const *service, ssexec_t *info) ;
 extern void tree_service_remove(char const *base, char const *treename, char const *service) ;
 /** Master */
@@ -237,8 +205,8 @@ extern int tree_resolve_master_read_cdb(cdb *c, resolve_tree_master_t *mres) ;
 extern int tree_resolve_master_write_cdb(cdbmaker *c, resolve_tree_master_t *mres) ;
 extern int tree_resolve_master_create(char const *base, uid_t owner) ;
 extern void tree_resolve_master_sanitize(resolve_tree_master_t *mres) ;
-extern void tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint8_t field, char const *data) ;
-extern int tree_resolve_master_get_field_tosa(stralloc *sa, resolve_tree_master_t *mres, resolve_tree_master_enum_t field) ;
+extern void tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint32_t field, char const *data) ;
+extern int tree_resolve_master_get_field_tosa(stralloc *sa, resolve_tree_master_t *mres, resolve_tree_enum_table_t table) ;
 
 /** Seed API */
 extern int tree_seed_file_isvalid(char const *seedpath, char const *treename) ;

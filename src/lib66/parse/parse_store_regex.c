@@ -21,49 +21,50 @@
 
 #include <66/parse.h>
 #include <66/resolve.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 
-int parse_store_regex(resolve_service_t *res, stack *store, const int sid, const int kid)
+int parse_store_regex(resolve_service_t *res, stack *store, resolve_enum_table_t table)
 {
     log_flow() ;
 
-    if (res->type != TYPE_MODULE)
+    if (res->type != E_PARSER_TYPE_MODULE)
         return 1 ;
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    uint32_t kid = table.u.parser.id ;
 
     switch(kid) {
 
-        case KEY_REGEX_CONFIGURE:
+        case E_PARSER_SECTION_REGEX_CONFIGURE:
 
             res->regex.configure = resolve_add_string(wres, store->s) ;
 
             break ;
 
-        case KEY_REGEX_DIRECTORIES:
+        case E_PARSER_SECTION_REGEX_DIRECTORIES:
 
             if (!parse_list(store))
-                parse_error_return(0, 8, sid, list_section_regex, kid) ;
+                parse_error_return(0, 8, table) ;
 
             if (store->len)
                 res->regex.directories = parse_compute_list(wres, store, &res->regex.ndirectories, 0) ;
 
             break ;
 
-        case KEY_REGEX_FILES:
+        case E_PARSER_SECTION_REGEX_FILES:
 
             if (!parse_list(store))
-                parse_error_return(0, 8, sid, list_section_regex, kid) ;
+                parse_error_return(0, 8, table) ;
 
             if (store->len)
                 res->regex.files = parse_compute_list(wres, store, &res->regex.nfiles, 0) ;
 
             break ;
 
-        case KEY_REGEX_INFILES:
+        case E_PARSER_SECTION_REGEX_INFILES:
 
             if (!parse_list(store))
-                parse_error_return(0, 8, sid, list_section_regex, kid) ;
+                parse_error_return(0, 8, table) ;
 
             if (store->len)
                 res->regex.infiles = parse_compute_list(wres, store, &res->regex.ninfiles, 0) ;

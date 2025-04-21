@@ -24,7 +24,7 @@
 
 #include <66/service.h>
 #include <66/resolve.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/write.h>
 #include <66/constants.h>
 #include <66/sanitize.h>
@@ -48,11 +48,11 @@ void write_services(resolve_service_t *res, char const *workdir, uint8_t force)
 
     switch(type) {
 
-        case TYPE_MODULE:
+        case E_PARSER_TYPE_MODULE:
             break ;
 
-        case TYPE_CLASSIC:
-        case TYPE_ONESHOT:
+        case E_PARSER_TYPE_CLASSIC:
+        case E_PARSER_TYPE_ONESHOT:
             write_common(res, workdir, force) ;
             break ;
 
@@ -63,7 +63,7 @@ void write_services(resolve_service_t *res, char const *workdir, uint8_t force)
 
         default:
             parse_cleanup(res, workdir, force) ;
-            log_die(LOG_EXIT_SYS, "unkown type: ", get_key_by_enum(list_type, type)) ;
+            log_die(LOG_EXIT_SYS, "unkown type: ", enum_to_key(enum_list_parser_section_main, type)) ;
     }
 
 }

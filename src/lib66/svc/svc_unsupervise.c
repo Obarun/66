@@ -25,7 +25,7 @@
 #include <66/symlink.h>
 #include <66/graph.h>
 #include <66/svc.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 
 static void sanitize_it(resolve_service_t *res, s6_fdholder_t *a)
 {
@@ -97,7 +97,7 @@ void svc_unsupervise(service_graph_t *g)
 
         sanitize_it(&hash->res, &a) ;
 
-        if (hash->res.type == TYPE_MODULE && hash->res.dependencies.ncontents) {
+        if (hash->res.type == E_PARSER_TYPE_MODULE && hash->res.dependencies.ncontents) {
 
             bpos = 0 ;
 

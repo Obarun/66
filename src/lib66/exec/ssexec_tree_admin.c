@@ -39,12 +39,13 @@
 #include <66/config.h>
 #include <66/utils.h>
 #include <66/constants.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/state.h>
 #include <66/service.h>
 #include <66/resolve.h>
 #include <66/graph.h>
 #include <66/sanitize.h>
+#include <66/enum_tree.h>
 
 #include <s6/supervise.h>
 
@@ -468,6 +469,7 @@ void tree_groups(tree_graph_t *graph, char const *base, char const *treename, ch
 
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    resolve_enum_table_t table = E_TABLE_TREE_ZERO ;
     size_t nb = 0 ;
     char pack[UINT_FMT] ;
     char const *val ;
@@ -493,8 +495,14 @@ void tree_groups(tree_graph_t *graph, char const *base, char const *treename, ch
     if (resolve_read_g(wres, base, treename) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", treename) ;
 
-    if (!resolve_modify_field(wres, E_RESOLVE_TREE_GROUPS, val) ||
-        !resolve_modify_field(wres, E_RESOLVE_TREE_NGROUPS, pack))
+    table.u.tree.id = E_RESOLVE_TREE_GROUPS ;
+
+    if (!resolve_modify_field(wres, table, val))
+        log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
+
+    table.u.tree.id = E_RESOLVE_TREE_NGROUPS ;
+
+    if (!resolve_modify_field(wres, table, pack))
             log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
 
     if (!resolve_write_g(wres, base, treename))
@@ -676,6 +684,7 @@ void tree_depends_requiredby(tree_graph_t *g, char const *base, char const *tree
 
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    resolve_enum_table_t table = E_TABLE_TREE_ZERO ;
     size_t pos = 0, nb = 0, element = 0 ;
     uint8_t ewhat = !requiredby ? E_RESOLVE_TREE_DEPENDS : E_RESOLVE_TREE_REQUIREDBY ;
     uint8_t nwhat = !requiredby ? E_RESOLVE_TREE_NDEPENDS : E_RESOLVE_TREE_NREQUIREDBY ;
@@ -746,8 +755,14 @@ void tree_depends_requiredby(tree_graph_t *g, char const *base, char const *tree
     if (resolve_read_g(wres, base, treename) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", treename) ;
 
-    if (!resolve_modify_field(wres, ewhat, sa.s) ||
-        !resolve_modify_field(wres, nwhat, pack))
+    table.u.tree.id = ewhat ;
+
+    if (!resolve_modify_field(wres, table, sa.s))
+        log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
+
+    table.u.tree.id = nwhat ;
+
+    if (!resolve_modify_field(wres, table, pack))
             log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
 
     if (!resolve_write_g(wres, base, treename))
@@ -817,6 +832,7 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
     stralloc sa = STRALLOC_ZERO ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    resolve_enum_table_t table = E_TABLE_TREE_ZERO ;
 
     log_trace("set ", !what ? "denied" : "allowed", " user for tree: ", treename, "..." ) ;
 
@@ -883,7 +899,9 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
     if (!sastr_rebuild_in_oneline(&sa))
         log_dieu(LOG_EXIT_SYS, "rebuild string") ;
 
-    if (!resolve_modify_field(wres, E_RESOLVE_TREE_ALLOW, sa.s))
+    table.u.tree.id = E_RESOLVE_TREE_ALLOW ;
+
+    if (!resolve_modify_field(wres, table, sa.s))
         log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
 
     if (!resolve_write_g(wres, base, treename))
@@ -899,14 +917,18 @@ static void tree_service_switch_contents(char const *base, char const *treesrc, 
 {
     log_flow() ;
 
+    _alloc_sa_(sa) ;
     size_t pos = 0 ; ssize_t r = -1 ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref swres = resolve_set_struct(DATA_SERVICE, &res) ;
-    stralloc sa = STRALLOC_ZERO ;
+    resolve_enum_table_t table = E_TABLE_TREE_ZERO ;
+    table.u.tree.id = E_RESOLVE_TREE_CONTENTS ;
+    resolve_enum_table_t stable = E_TABLE_SERVICE_CONFIG_ZERO ;
+    stable.u.service.id = E_RESOLVE_SERVICE_CONFIG_TREENAME ;
 
-    if (!resolve_get_field_tosa_g(&sa, base, treesrc, DATA_TREE, E_RESOLVE_TREE_CONTENTS))
+    if (!resolve_get_field_tosa_g(&sa, base, treesrc, DATA_TREE, table))
         log_dieu(LOG_EXIT_SYS, "get contents list of tree: ", treesrc) ;
 
     FOREACH_SASTR(&sa, pos) {
@@ -926,11 +948,10 @@ static void tree_service_switch_contents(char const *base, char const *treesrc, 
 
         tree_service_add(treedst, sa.s + pos, info) ;
 
-        if (!resolve_modify_field_g(swres, base, sa.s + pos, E_RESOLVE_SERVICE_TREENAME, treedst))
+        if (!resolve_modify_field_g(swres, base, sa.s + pos, stable, treedst))
             log_dieu(LOG_EXIT_SYS, "modify resolve file of: ", sa.s + pos) ;
     }
 
-    stralloc_free(&sa) ;
     resolve_free(wres) ;
     resolve_free(swres) ;
 }
@@ -1005,6 +1026,8 @@ void tree_clone(char const *clone, ssexec_t *info)
     struct stat st ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    resolve_enum_table_t table = E_TABLE_TREE_ZERO ;
+
     size_t syslen = info->base.len + SS_SYSTEM_LEN, clonelen = strlen(clone) ;
 
     if (resolve_check_g(wres, info->base.s, clone))
@@ -1028,13 +1051,35 @@ void tree_clone(char const *clone, ssexec_t *info)
     if (resolve_read_g(wres, info->base.s, clone) <= 0)
         log_dieu(LOG_EXIT_SYS, "read resolve file of tree: ", clone) ;
 
-    if (!resolve_modify_field(wres, E_RESOLVE_TREE_INIT, 0) ||
-        !resolve_modify_field(wres, E_RESOLVE_TREE_SUPERVISED, 0) ||
-        !resolve_modify_field(wres, E_RESOLVE_TREE_CONTENTS, "") ||
-        !resolve_modify_field(wres, E_RESOLVE_TREE_NCONTENTS, 0) ||
-        !resolve_modify_field(wres, E_RESOLVE_TREE_ENABLED, 0) ||
-        !resolve_modify_field(wres, E_RESOLVE_TREE_NAME, clone))
-            log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", clone) ;
+    table.u.tree.id = E_RESOLVE_TREE_INIT ;
+
+    if (!resolve_modify_field(wres, table, 0))
+        log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", clone) ;
+
+    table.u.tree.id = E_RESOLVE_TREE_SUPERVISED ;
+
+    if (!resolve_modify_field(wres, table, 0))
+        log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", clone) ;
+
+    table.u.tree.id = E_RESOLVE_TREE_CONTENTS ;
+
+    if (!resolve_modify_field(wres, table, ""))
+        log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", clone) ;
+
+    table.u.tree.id = E_RESOLVE_TREE_NCONTENTS ;
+
+    if (!resolve_modify_field(wres, table, 0))
+        log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", clone) ;
+
+    table.u.tree.id = E_RESOLVE_TREE_ENABLED ;
+
+    if (!resolve_modify_field(wres, table, 0))
+        log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", clone) ;
+
+    table.u.tree.id = E_RESOLVE_TREE_NAME ;
+
+    if (!resolve_modify_field(wres, table, clone))
+        log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", clone) ;
 
     if (!resolve_write_g(wres, info->base.s, clone))
         log_dieusys(LOG_EXIT_SYS, "write resolve file of tree: ", clone) ;

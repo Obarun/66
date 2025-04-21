@@ -29,7 +29,7 @@
 #include <66/service.h>
 #include <66/sanitize.h>
 #include <66/constants.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/state.h>
 #include <66/svc.h>
 
@@ -98,7 +98,7 @@ int sanitize_scandir(resolve_service_t *res, ss_state_t *sta)
     r = access(res->sa.s + res->live.scandir, F_OK) ;
     if (r == -1 && (sta->toinit == STATE_FLAGS_TRUE || res->earlier)) {
 
-        if (res->type == TYPE_CLASSIC)
+        if (res->type == E_PARSER_TYPE_CLASSIC)
             scandir_to_livestate(res) ;
 
         state_set_flag(sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE) ;

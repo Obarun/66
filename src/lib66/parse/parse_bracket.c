@@ -22,6 +22,7 @@
 
 #include <66/parse.h>
 #include <66/enum.h>
+#include <66/enum_parser.h>
 
 static char parse_char_next(char const *s, size_t slen, size_t *pos)
 {
@@ -32,9 +33,9 @@ static char parse_char_next(char const *s, size_t slen, size_t *pos)
     return c ;
 }
 
-static int key_isvalid(const char *line, size_t *o, const int sid)
+static int key_isvalid(const char *line, size_t *o, resolve_enum_table_t table)
 {
-    const key_description_t *list = get_enum_list(sid) ;
+    key_description_t const *list = table.u.parser.list  ;
 
     lexer_config cfg = LEXER_CONFIG_KEY ;
     _alloc_stk_(key, strlen(line + (*o) + 1)) ;
@@ -46,7 +47,7 @@ static int key_isvalid(const char *line, size_t *o, const int sid)
 
     if (cfg.found) {
 
-        int r = get_enum_by_key(list, key.s) ;
+        int r = key_to_enum(list, key.s) ;
         if (r < 0) {
             r = get_len_until(line + (*o), '\n') + 1 ;
             (*o) += r ;
@@ -57,7 +58,7 @@ static int key_isvalid(const char *line, size_t *o, const int sid)
     return 1 ;
 }
 
-int parse_bracket(stack *store, const char *str, const int sid)
+int parse_bracket(stack *store, const char *str, resolve_enum_table_t table)
 {
     log_flow() ;
 
@@ -173,7 +174,7 @@ int parse_bracket(stack *store, const char *str, const int sid)
 
                             if (line[o + 1] >= 65 && line[o + 1] <= 90) {
                                 /** a commented key validates the parenthese */
-                                if (!key_isvalid(line, &o, sid)) {
+                                if (!key_isvalid(line, &o, table)) {
                                     lvp = lp ;
                                     vp = 0 ;
                                     break ;
@@ -192,7 +193,7 @@ int parse_bracket(stack *store, const char *str, const int sid)
                             break ;
                         }
 
-                        if (key_isvalid(line, &o, sid))
+                        if (key_isvalid(line, &o, table))
                             bracket-- ;
 
                         lvp = lp ;
@@ -212,7 +213,7 @@ int parse_bracket(stack *store, const char *str, const int sid)
                     /** we previously coming from a comment or empty line.
                      * this validates the parenthese.*/
                     if (line[o + 1] >= 65 && line[o + 1] <= 90) {
-                        if (!key_isvalid(line, &o, sid))
+                        if (!key_isvalid(line, &o, table))
                             break ;
 
                         bracket = 0 ;
@@ -244,8 +245,8 @@ int parse_bracket(stack *store, const char *str, const int sid)
                     memcpy(secname, line + o, r) ;
                     secname[r] = 0 ;
                     unsigned int pos = 0 ;
-                    while (enum_str_section[pos]) {
-                        if (!strcmp(secname, enum_str_section[pos])) {
+                    while (enum_str_parser_section[pos]) {
+                        if (!strcmp(secname, enum_str_parser_section[pos])) {
                             bracket = 0 ;
                             vp = 0 ;
                             break ;
@@ -284,7 +285,7 @@ int parse_bracket(stack *store, const char *str, const int sid)
                  * this validates the parenthese or the beginning
                  * of the parse process.*/
                 if (vp) {
-                    if (!key_isvalid(line, &o, sid)) {
+                    if (!key_isvalid(line, &o, table)) {
                         vp = 0 ;
                         if (!lvp)
                             lvp = olvp ;

@@ -25,12 +25,14 @@
 
 #include <66/parse.h>
 #include <66/resolve.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/utils.h>
 #include <66/environ.h>
 
 static int get_import_field(resolve_service_t *res, stack *store)
 {
+    log_flow() ;
+
     _alloc_sa_(sa) ;
     _alloc_sa_(list) ;
     _alloc_sa_(modif) ;
@@ -53,7 +55,7 @@ static int get_import_field(resolve_service_t *res, stack *store)
         if (!environ_get_key(&key, line))
             return 0 ;
 
-        if (!strcmp(key.s, enum_str_key_section_environ[KEY_ENVIRON_IMPORTFILE])) {
+        if (!strcmp(key.s, enum_str_parser_section_environ[E_PARSER_SECTION_ENVIRON_IMPORTFILE])) {
 
             if (!environ_get_value(&val, line))
                 return 0 ;
@@ -74,11 +76,14 @@ static int get_import_field(resolve_service_t *res, stack *store)
         }
     }
 
-    if (!sastr_rebuild_in_oneline(&list))
-        return 0 ;
+    if (list.len) {
 
-    res->environ.nimportfile = n ;
-    res->environ.importfile = resolve_add_string(wres, list.s) ;
+        if (!sastr_rebuild_in_oneline(&list))
+            return 0 ;
+
+        res->environ.nimportfile = n ;
+        res->environ.importfile = resolve_add_string(wres, list.s) ;
+    }
 
     if (!environ_rebuild(&modif))
         return 0 ;
@@ -116,13 +121,15 @@ static int store_environ(resolve_service_t *res, stack *store)
     return 1 ;
 }
 
-int parse_store_environ(resolve_service_t *res, stack *store, const int sid, const int kid)
+int parse_store_environ(resolve_service_t *res, stack *store, resolve_enum_table_t table)
 {
     log_flow() ;
 
+    uint32_t kid = table.u.parser.id ;
+
     switch(kid) {
 
-        case KEY_ENVIRON_ENVAL:
+        case E_PARSER_SECTION_ENVIRON_ENVAL:
 
             if (!store_environ(res, store))
                 return 0 ;

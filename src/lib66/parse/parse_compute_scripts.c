@@ -40,7 +40,7 @@ static void compute_wrapper_scripts(resolve_service_t *res, uint8_t runorfinish)
     char run[strlen(shebang) + 3 + strlen(env) + strlen(exec) + 7 + strlen(res->sa.s + res->name) + 4 + 1] ;
 
     auto_strings(run, \
-        shebang, (!runorfinish) ? ((res->type == TYPE_CLASSIC) ? "S0\n" : "P\n") : "P\n", \
+        shebang, (!runorfinish) ? ((res->type == E_PARSER_TYPE_CLASSIC) ? "S0\n" : "P\n") : "P\n", \
         env,
         exec, \
         !runorfinish ? " stop " : " start ", \
@@ -63,7 +63,7 @@ static void compute_wrapper_scripts_user(resolve_service_t *res, uint8_t runorfi
     size_t fakelen = 0, shebanglen = strlen(shebang) ;
     resolve_service_addon_scripts_t *script = runorfinish ? &res->execute.run : &res->execute.finish ;
     size_t scriptlen = strlen(res->sa.s + script->run_user) ;
-    int build = !strcmp(res->sa.s + script->build, "custom") ? BUILD_CUSTOM : BUILD_AUTO ;
+    int build = !strcmp(res->sa.s + script->build, "custom") ? E_PARSER_BUILD_CUSTOM : E_PARSER_BUILD_AUTO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     char run[shebanglen + 1 + scriptlen + 1 + 1] ;
@@ -83,7 +83,7 @@ static void compute_wrapper_scripts_user(resolve_service_t *res, uint8_t runorfi
 
 void parse_compute_scripts(resolve_service_t *res)
 {
-    if (res->type != TYPE_MODULE) {
+    if (res->type != E_PARSER_TYPE_MODULE) {
 
         compute_wrapper_scripts(res, 1) ; // run
         compute_wrapper_scripts_user(res, 1) ; // run.user

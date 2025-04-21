@@ -38,7 +38,7 @@ void service_resolve_sanitize(resolve_service_t *res)
     res->name = resolve_add_string(wres, stk + res->name) ;
     res->description = res->description ? resolve_add_string(wres, stk + res->description) : 0 ;
     res->version = res->version ? resolve_add_string(wres, stk + res->version) : 0 ;
-    res->hiercopy = res->hiercopy ? resolve_add_string(wres, stk + res->hiercopy) : 0 ;
+    res->copyfrom = res->copyfrom ? resolve_add_string(wres, stk + res->copyfrom) : 0 ;
     res->intree = res->intree ? resolve_add_string(wres, stk + res->intree) : 0 ;
     res->ownerstr = res->ownerstr ? resolve_add_string(wres, stk + res->ownerstr) : 0 ;
     res->treename = res->treename ? resolve_add_string(wres, stk + res->treename) : 0 ;

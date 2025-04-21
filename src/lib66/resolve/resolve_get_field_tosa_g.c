@@ -26,7 +26,7 @@
 #include <66/service.h>
 #include <66/tree.h>
 
-int resolve_get_field_tosa_g(stralloc *sa, char const *base, char const *name, uint8_t data_type, uint8_t field)
+int resolve_get_field_tosa_g(stralloc *sa, char const *base, char const *name, uint8_t data_type, resolve_enum_table_t table)
 {
     log_flow() ;
 
@@ -57,7 +57,7 @@ int resolve_get_field_tosa_g(stralloc *sa, char const *base, char const *name, u
     if (resolve_read_g(wres, base, name) <= 0)
         goto err ;
 
-    if (!resolve_get_field_tosa(sa, wres, field))
+    if (!resolve_get_field_tosa(sa, wres, table))
         goto err ;
 
     /**

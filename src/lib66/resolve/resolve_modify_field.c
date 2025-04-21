@@ -19,18 +19,22 @@
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/tree.h>
+#include <66/enum_service.h>
+#include <66/enum_tree.h>
 
-int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *by)
+int resolve_modify_field(resolve_wrapper_t_ref wres, resolve_enum_table_t table, char const *by)
 {
     log_flow() ;
+
+    key_description_t const *list = enum_get_list(table) ;
 
     if (wres->type == DATA_SERVICE) {
 
         resolve_service_t_ref res = (resolve_service_t *)wres->obj  ;
 
-        log_trace("store field ", resolve_service_field_table[field].field," of service ", res->sa.s + res->name, " with value: ", by) ;
+        log_trace("store field ", list->name[table.u.service.id], " of service ", res->sa.s + res->name, " with value: ", by) ;
 
-        service_resolve_modify_field(res, field, by) ;
+        service_resolve_modify_field(res, table.u.service, by) ;
 
         return 1 ;
 
@@ -38,9 +42,9 @@ int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *
 
         resolve_tree_t_ref res = (resolve_tree_t *)wres->obj  ;
 
-        log_trace("store field ", resolve_tree_field_table[field].field," of tree ", res->sa.s + res->name, " with value: ", by) ;
+        log_trace("store field ", list->name[table.u.tree.id], " of tree ", res->sa.s + res->name, " with value: ", by) ;
 
-        tree_resolve_modify_field(res, field, by) ;
+        tree_resolve_modify_field(res, table.u.tree.id, by) ;
 
         return 1 ;
 
@@ -48,9 +52,9 @@ int resolve_modify_field(resolve_wrapper_t_ref wres, uint8_t field, char const *
 
         resolve_tree_master_t_ref res = (resolve_tree_master_t *)wres->obj  ;
 
-        log_trace("store field ", resolve_tree_master_field_table[field].field," of resolve Master file of trees with value: ", by) ;
+        log_trace("store field ", list->name[table.u.tree.id], " of resolve Master file of trees with value: ", by) ;
 
-        tree_resolve_master_modify_field(res, field, by) ;
+        tree_resolve_master_modify_field(res, table.u.tree.id, by) ;
 
         return 1 ;
 

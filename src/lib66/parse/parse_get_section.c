@@ -20,7 +20,7 @@
 #include <oblibs/lexer.h>
 
 #include <66/parse.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 
 int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, size_t len)
 {
@@ -42,7 +42,7 @@ int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, s
 
         if (cfg.found) {
 
-            ssize_t id = get_enum_by_key(list_section, stk.s) ;
+            ssize_t id = key_to_enum(enum_list_parser_section, stk.s) ;
             if (id < 0 || cfg.str[!cfg.opos ? 0 : cfg.opos - 1] == '#') {
                 log_warn(id < 0 ? "invalid section name: " : "commented section: ", stk.s, " -- ignoring it") ;
                 id = get_len_until(cfg.str + cfg.cpos, '\n') ;
@@ -54,7 +54,7 @@ int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, s
                 continue ;
             }
 
-            if (!pos && strcmp(stk.s, enum_str_section[SECTION_MAIN]))
+            if (!pos && strcmp(stk.s, *enum_list_parser_section[E_PARSER_SECTION_MAIN].name))
                 log_warn_return(LOG_EXIT_ZERO, "invalid frontend file -- section [Main] must be set first") ;
 
             log_trace("found section: ", stk.s) ;

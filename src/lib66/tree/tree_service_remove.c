@@ -25,6 +25,7 @@ void tree_service_remove(char const *base, char const *treename, char const *ser
 
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    resolve_enum_table_t table = E_TABLE_TREE_ZERO ;
     char *str = 0 ;
 
     if (resolve_read_g(wres, base, treename) <= 0)
@@ -56,7 +57,9 @@ void tree_service_remove(char const *base, char const *treename, char const *ser
             str = "" ;
         }
 
-        if (!resolve_modify_field(wres, E_RESOLVE_TREE_CONTENTS, str))
+        table.u.tree.id = E_RESOLVE_TREE_CONTENTS ;
+
+        if (!resolve_modify_field(wres, table, str))
             log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
 
         if (!resolve_write_g(wres, base, treename))

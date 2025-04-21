@@ -35,7 +35,7 @@
 #include <66/service.h>
 #include <66/sanitize.h>
 #include <66/svc.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 
 #include <s6/fdholder.h>
 
@@ -111,7 +111,7 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
          * Oneshot are not supervised by a scandir.
          * Check for state directory instead.
         */
-        if (pres->type == TYPE_ONESHOT)
+        if (pres->type == E_PARSER_TYPE_ONESHOT)
             issupervised = access(pres->sa.s + pres->live.statedir, F_OK) ;
         else
             issupervised = access(scandir, F_OK) ;
@@ -124,7 +124,7 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
         /**
          * Module type are not a daemons. We don't need to supervise it.
          * Special case for Oneshot, we only deal with the scandir symlink. */
-        if (pres->type == TYPE_MODULE)
+        if (pres->type == E_PARSER_TYPE_MODULE)
             continue ;
 
         if (!earlier && !issupervised) {
@@ -142,7 +142,7 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
             }
             state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_FALSE) ;
 
-            if (pres->type == TYPE_ONESHOT) {
+            if (pres->type == E_PARSER_TYPE_ONESHOT) {
 
                 if (!state_write(&sta, pres)) {
                     cleanup(toclean, pos) ;
@@ -229,7 +229,7 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
 
         for (pos = 0 ; pos < nsubscribe ; pos++) {
 
-            if (tosubscribe[pos].type == TYPE_CLASSIC && !tosubscribe[pos].earlier) {
+            if (tosubscribe[pos].type == E_PARSER_TYPE_CLASSIC && !tosubscribe[pos].earlier) {
 
                 fake = pos ;
                 char *sa = tosubscribe[pos].sa.s ;
@@ -289,7 +289,7 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
             log_dieusys(LOG_EXIT_SYS, "read status file of: ", sa + pres->name) ;
         }
 
-        if (pres->type == TYPE_CLASSIC) {
+        if (pres->type == E_PARSER_TYPE_CLASSIC) {
 
             if (!FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
 

@@ -27,6 +27,7 @@ void tree_service_add(char const *treename, char const *service, ssexec_t *info)
     size_t len = strlen(service) ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    resolve_enum_table_t table = E_TABLE_TREE_ZERO ;
 
     if (!tree_isvalid(info->base.s, treename)) {
 
@@ -79,7 +80,9 @@ void tree_service_add(char const *treename, char const *service, ssexec_t *info)
     if (!stack_string_rebuild_with_delim(&stk, ' '))
         log_dieu(LOG_EXIT_SYS, "convert stack to string") ;
 
-    if (!resolve_modify_field(wres, E_RESOLVE_TREE_CONTENTS, stk.s))
+    table.u.tree.id = E_RESOLVE_TREE_CONTENTS ;
+
+    if (!resolve_modify_field(wres, table, stk.s))
         log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", treename) ;
 
     if (!resolve_write_g(wres, info->base.s, treename))

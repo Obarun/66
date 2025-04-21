@@ -25,6 +25,7 @@
 #include <skalibs/djbunix.h>
 
 #include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/tree.h>
 
 int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
@@ -56,11 +57,11 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
         key = tmp ;
         val = line + r ;
 
-        ssize_t e = get_enum_by_key(list_seed, key) ;
+        ssize_t e = key_to_enum(enum_list_parser_seed, key) ;
 
         switch (e) {
 
-            case SEED_DEPENDS :
+            case E_PARSER_SEED_DEPENDS :
 
                 seed->depends = seed->sa.len ;
                 if (!sastr_add_string(&seed->sa, val))
@@ -70,7 +71,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 
                 break ;
 
-            case SEED_REQUIREDBY :
+            case E_PARSER_SEED_REQUIREDBY :
 
                 seed->requiredby = seed->sa.len ;
                 if (!sastr_add_string(&seed->sa, val))
@@ -80,7 +81,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 
                 break ;
 
-            case SEED_ENABLE :
+            case E_PARSER_SEED_ENABLE :
 
                 if (!strcmp(val,"true") || !strcmp(val,"True"))
                     seed->disen = 1 ;
@@ -89,7 +90,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 
                 break ;
 
-            case SEED_ALLOW :
+            case E_PARSER_SEED_ALLOW :
 
                 seed->allow = seed->sa.len ;
                 if (!sastr_add_string(&seed->sa, val))
@@ -99,7 +100,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 
                 break ;
 
-            case SEED_DENY :
+            case E_PARSER_SEED_DENY :
 
                 seed->deny = seed->sa.len ;
                 if (!sastr_add_string(&seed->sa, val))
@@ -109,7 +110,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 
                 break ;
 
-            case SEED_CURRENT :
+            case E_PARSER_SEED_CURRENT :
 
                 if (!strcmp(val,"true") || !strcmp(val,"True"))
                     seed->current = 1 ;
@@ -118,7 +119,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 
                 break ;
 
-            case SEED_GROUPS :
+            case E_PARSER_SEED_GROUPS :
 
                 if (strcmp(val,TREE_GROUPS_BOOT) && strcmp(val,TREE_GROUPS_ADM) && strcmp(val,TREE_GROUPS_USER)) {
 
