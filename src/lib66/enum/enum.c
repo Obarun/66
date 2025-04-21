@@ -1,5 +1,5 @@
 /*
- * get_enum.c
+ * enum.c
  *
  * Copyright (c) 2018-2025 Eric Vidal <eric@obarun.org>
  *
@@ -9,162 +9,67 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
- */
-
-#include <66/enum.h>
+ * except according to the terms contained in the LICENSE file.
+ * */
 
 #include <string.h>
+#include <sys/types.h>
+#include <sys/errno.h>
+#include <66/enum.h>
+#include <66/enum_struct.h>
+#include <66/enum_parser.h>
+#include <66/enum_service.h>
+#include <66/enum_tree.h>
 
-#include <oblibs/log.h>
+#define ENDOFKEY_MAPPING \
+    X(enum_list_parser_expected, E_PARSER_EXPECT_ENDOFKEY) \
+    X(enum_list_parser_section, E_PARSER_SECTION_ENDOFKEY) \
+    X(enum_list_parser_section_main, E_PARSER_SECTION_MAIN_ENDOFKEY) \
+    X(enum_list_parser_section_startstop, E_PARSER_SECTION_STARTSTOP_ENDOFKEY) \
+    X(enum_list_parser_section_logger, E_PARSER_SECTION_LOGGER_ENDOFKEY) \
+    X(enum_list_parser_section_environ, E_PARSER_SECTION_ENVIRON_ENDOFKEY) \
+    X(enum_list_parser_section_regex, E_PARSER_SECTION_REGEX_ENDOFKEY) \
+    X(enum_list_parser_io_type, E_PARSER_IO_TYPE_ENDOFKEY) \
+    X(enum_list_parser_type, E_PARSER_TYPE_ENDOFKEY) \
+    X(enum_list_parser_opts, E_PARSER_OPTS_ENDOFKEY) \
+    X(enum_list_parser_flags, E_PARSER_FLAGS_ENDOFKEY) \
+    X(enum_list_parser_build, E_PARSER_BUILD_ENDOFKEY) \
+    X(enum_list_parser_time, E_PARSER_TIME_ENDOFKEY) \
+    X(enum_list_parser_seed, E_PARSER_SEED_ENDOFKEY) \
+    X(enum_list_parser_mandatory, E_PARSER_MANDATORY_ENDOFKEY) \
+    X(enum_list_service_config, E_RESOLVE_SERVICE_CONFIG_ENDOFKEY) \
+    X(enum_list_service_path, E_RESOLVE_SERVICE_PATH_ENDOFKEY) \
+    X(enum_list_service_deps, E_RESOLVE_SERVICE_DEPS_ENDOFKEY) \
+    X(enum_list_service_execute, E_RESOLVE_SERVICE_EXECUTE_ENDOFKEY) \
+    X(enum_list_service_live, E_RESOLVE_SERVICE_LIVE_ENDOFKEY) \
+    X(enum_list_service_logger, E_RESOLVE_SERVICE_LOGGER_ENDOFKEY) \
+    X(enum_list_service_environ, E_RESOLVE_SERVICE_ENVIRON_ENDOFKEY) \
+    X(enum_list_service_regex, E_RESOLVE_SERVICE_REGEX_ENDOFKEY) \
+    X(enum_list_service_io, E_RESOLVE_SERVICE_IO_ENDOFKEY) \
+    X(enum_list_tree, E_RESOLVE_TREE_ENDOFKEY) \
+    X(enum_list_tree_master, E_RESOLVE_TREE_MASTER_ENDOFKEY)
 
-char const *enum_str_section[] = {
-    "Main" ,
-    "Start" ,
-    "Stop" ,
-    "Logger" ,
-    "Environment" ,
-    "Regex" ,
-    0
-} ;
+#define X(list, endofkey) if (list_ptr == list) return endofkey ;
 
-char const *enum_str_key_section_main[] = {
-    "Type" ,
-    "Version" ,
-    "Description" ,
-    "Depends" ,
-    "RequiredBy",
-    "OptsDepends" ,
-    "Contents" ,
-    "Options" ,
-    "Notify" ,
-    "User" ,
-    "TimeoutStart" ,
-    "TimeoutStop" ,
-    "MaxDeath" ,
-    "CopyFrom" ,
-    "DownSignal" ,
-    "Flags" ,
-    "InTree" ,
-    "StdIn",
-    "StdOut",
-    "StdErr",
-    0
-} ;
-
-
-char const *enum_str_key_section_startstop[] = {
-    "Build" ,
-    "RunAs" ,
-    "Execute" ,
-    0
-} ;
-
-char const *enum_str_key_section_logger[] = {
-    "Build" ,
-    "RunAs" ,
-    "Execute" ,
-    "Destination" ,
-    "Backup" ,
-    "MaxSize" ,
-    "Timestamp" ,
-    "TimeoutStart" ,
-    "TimeoutStop" ,
-    0
-} ;
-
-char const *enum_str_key_section_environ[] = {
-    "Environ" ,
-    "ImportFile" ,
-    0
-} ;
-
-char const *enum_str_key_section_regex[] = {
-    "Configure" ,
-    "Directories" ,
-    "Files" ,
-    "InFiles" ,
-    0
-} ;
-
-char const *enum_io_type[] = {
-
-    "tty",
-    "file",
-    "console",
-    "s6log",
-    "syslog",
-    "inherit",
-    "null",
-    "parent", // nope operation get fd from parent
-    "close",
-    "notset",
-    0
-} ;
-
-char const *enum_str_type[] = {
-    "classic" ,
-    "oneshot" ,
-    "module" ,
-    0
-} ;
-
-char const *enum_str_expected[] = {
-    "line" ,
-    "bracket" ,
-    "uint" ,
-    "slash" ,
-    "quote" ,
-    "keyval" ,
-    0
-} ;
-
-char const *enum_str_opts[] = {
-    "log" ,
-    0
-} ;
-
-char const *enum_str_flags[] = {
-    "down" ,
-    "earlier" ,
-    0
-} ;
-
-char const *enum_str_build[] = {
-    "auto" ,
-    "custom" ,
-    0
-} ;
-
-char const *enum_str_mandatory[] = {
-    "need" ,
-    "opts" ,
-    "custom" ,
-    0
-} ;
-
-char const *enum_str_time[] = {
-    "tai" ,
-    "iso" ,
-    "none" ,
-    0
-} ;
-
-char const *enum_str_seed[] = {
-
-    "depends" ,
-    "requiredby" ,
-    "enable" ,
-    "allow" ,
-    "deny" ,
-    "current" ,
-    "groups" ,
-    "contents" ,
-    0
-} ;
-
-ssize_t get_enum_by_key(key_description_t const *list, char const *key)
+int get_endofkey(key_description_t const *list_ptr)
 {
+    ENDOFKEY_MAPPING
+    return -1 ; // Invalid or unrecognized list
+}
+
+#undef X
+#undef ENDOFKEY_MAPPING
+
+char const *enum_to_key(key_description_t const *list, int const key)
+{
+    int const endofkey = get_endofkey(list) ;
+    if (endofkey < 0 || !list || key < 0 || key >= endofkey) return NULL ;
+    return *list[key].name ;
+}
+
+ssize_t key_to_enum(key_description_t const *list, char const *key)
+{
+    if (!list || !key) return -1 ;
     int i = 0 ;
     for(; list[i].name ; i++) {
         if(!strcmp(key, *list[i].name))
@@ -173,64 +78,17 @@ ssize_t get_enum_by_key(key_description_t const *list, char const *key)
     return -1 ;
 }
 
-char const *get_key_by_enum(key_description_t const *list, int const key)
+key_description_t const *enum_get_list(resolve_enum_table_t table)
 {
-    return *list[key].name ;
-}
-
-const key_description_t *get_enum_list(const int sid)
-{
-    switch (sid) {
-
-        case SECTION_MAIN:
-            return list_section_main ;
-
-        case SECTION_START:
-            return list_section_startstop ;
-
-        case SECTION_STOP:
-            return list_section_startstop ;
-
-        case SECTION_LOG:
-            return list_section_logger ;
-
-        case SECTION_ENV:
-            return list_section_environment ;
-
-        case SECTION_REGEX:
-            return list_section_regex ;
-
+    switch (table.category) {
+        case E_RESOLVE_CATEGORY_PARSER:
+            return enum_get_list_parser(table.u.parser) ;
+        case E_RESOLVE_CATEGORY_SERVICE:
+            return enum_get_list_service(table.u.service) ;
+        case E_RESOLVE_CATEGORY_TREE:
+            return enum_get_list_tree(table.u.tree) ;
         default:
             errno = EINVAL ;
-            return 0 ;
-    }
-
-}
-
-const char **get_enum_str(const int sid)
-{
-    switch (sid) {
-
-        case SECTION_MAIN:
-            return enum_str_key_section_main ;
-
-        case SECTION_START:
-            return enum_str_key_section_startstop ;
-
-        case SECTION_STOP:
-            return enum_str_key_section_startstop ;
-
-        case SECTION_LOG:
-            return enum_str_key_section_logger ;
-
-        case SECTION_ENV:
-            return enum_str_key_section_environ ;
-
-        case SECTION_REGEX:
-            return enum_str_key_section_regex ;
-
-        default:
-            errno = EINVAL ;
-            return 0 ;
+            return NULL ;
     }
 }
