@@ -86,7 +86,7 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_int(fields[m++], res->notify) ;
     info_display_int(fields[m++], res->maxdeath) ;
     info_display_int(fields[m++], res->earlier) ;
-    info_display_string(fields[m++], res->sa.s, res->hiercopy, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->copyfrom, 1) ;
     info_display_string(fields[m++], res->sa.s, res->intree, 1) ;
     info_display_string(fields[m++], res->sa.s, res->ownerstr, 1) ;
     info_display_int(fields[m++], res->owner) ;

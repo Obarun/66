@@ -26,8 +26,9 @@
 
 #include <66/ssexec.h>
 #include <66/resolve.h>
-#include <66/enum.h>
 #include <66/graph.h>
+#include <66/config.h>
+#include <66/enum_service.h>
 
 typedef struct resolve_service_addon_path_s resolve_service_addon_path_t, *resolve_service_addon_path_t_ref ;
 struct resolve_service_addon_path_s
@@ -183,9 +184,9 @@ struct IO_redirection_s
 } ;
 
 #define IO_REDIRECTION_ZERO { \
-    { IO_TYPE_NOTSET, 0 }, \
-    { IO_TYPE_NOTSET, 0 }, \
-    { IO_TYPE_NOTSET, 0 } \
+    { E_PARSER_IO_TYPE_NOTSET, 0 }, \
+    { E_PARSER_IO_TYPE_NOTSET, 0 }, \
+    { E_PARSER_IO_TYPE_NOTSET, 0 } \
 }
 
 typedef struct resolve_service_s resolve_service_t, *resolve_service_t_ref ;
@@ -202,7 +203,7 @@ struct resolve_service_s
     uint32_t notify ; // integer
     uint32_t maxdeath ; // integer
     uint32_t earlier ; // integer
-    uint32_t hiercopy ; // string
+    uint32_t copyfrom ; // string
     uint32_t intree ; // string
     uint32_t ownerstr ; // string
     uint32_t owner ; // integer, uid of the owner
@@ -237,109 +238,6 @@ struct resolve_service_s
 
 extern const resolve_service_t service_resolve_zero ;
 
-typedef enum resolve_service_enum_e resolve_service_enum_t, *resolve_service_enum_t_ref;
-enum resolve_service_enum_e
-{
-    E_RESOLVE_SERVICE_RVERSION = 0,
-    E_RESOLVE_SERVICE_NAME,
-    E_RESOLVE_SERVICE_DESCRIPTION,
-    E_RESOLVE_SERVICE_VERSION,
-    E_RESOLVE_SERVICE_TYPE,
-    E_RESOLVE_SERVICE_NOTIFY,
-    E_RESOLVE_SERVICE_MAXDEATH,
-    E_RESOLVE_SERVICE_EARLIER,
-    E_RESOLVE_SERVICE_HIERCOPY,
-    E_RESOLVE_SERVICE_INTREE,
-    E_RESOLVE_SERVICE_OWNERSTR,
-    E_RESOLVE_SERVICE_OWNER,
-    E_RESOLVE_SERVICE_TREENAME,
-    E_RESOLVE_SERVICE_USER,
-    E_RESOLVE_SERVICE_INNS,
-    E_RESOLVE_SERVICE_ENABLED,
-    E_RESOLVE_SERVICE_ISLOG,
-
-    // path
-    E_RESOLVE_SERVICE_HOME,
-    E_RESOLVE_SERVICE_FRONTEND,
-    E_RESOLVE_SERVICE_SERVICEDIR,
-
-    // dependencies
-    E_RESOLVE_SERVICE_DEPENDS,
-    E_RESOLVE_SERVICE_REQUIREDBY,
-    E_RESOLVE_SERVICE_OPTSDEPS,
-    E_RESOLVE_SERVICE_CONTENTS,
-    E_RESOLVE_SERVICE_NDEPENDS,
-    E_RESOLVE_SERVICE_NREQUIREDBY,
-    E_RESOLVE_SERVICE_NOPTSDEPS,
-    E_RESOLVE_SERVICE_NCONTENTS,
-
-    // execute
-    E_RESOLVE_SERVICE_RUN,
-    E_RESOLVE_SERVICE_RUN_USER,
-    E_RESOLVE_SERVICE_RUN_BUILD,
-    E_RESOLVE_SERVICE_RUN_RUNAS,
-    E_RESOLVE_SERVICE_FINISH,
-    E_RESOLVE_SERVICE_FINISH_USER,
-    E_RESOLVE_SERVICE_FINISH_BUILD,
-    E_RESOLVE_SERVICE_FINISH_RUNAS,
-    E_RESOLVE_SERVICE_TIMEOUTSTART,
-    E_RESOLVE_SERVICE_TIMEOUTSTOP,
-    E_RESOLVE_SERVICE_DOWN,
-    E_RESOLVE_SERVICE_DOWNSIGNAL,
-
-    // live
-    E_RESOLVE_SERVICE_LIVEDIR,
-    E_RESOLVE_SERVICE_STATUS,
-    E_RESOLVE_SERVICE_SERVICEDIR_LIVE,
-    E_RESOLVE_SERVICE_SCANDIR,
-    E_RESOLVE_SERVICE_STATEDIR,
-    E_RESOLVE_SERVICE_EVENTDIR,
-    E_RESOLVE_SERVICE_NOTIFDIR,
-    E_RESOLVE_SERVICE_SUPERVISEDIR,
-    E_RESOLVE_SERVICE_FDHOLDERDIR,
-    E_RESOLVE_SERVICE_ONESHOTDDIR,
-
-    // logger
-    E_RESOLVE_SERVICE_LOGNAME,
-    E_RESOLVE_SERVICE_LOGDESTINATION,
-    E_RESOLVE_SERVICE_LOGBACKUP,
-    E_RESOLVE_SERVICE_LOGMAXSIZE,
-    E_RESOLVE_SERVICE_LOGTIMESTAMP,
-    E_RESOLVE_SERVICE_LOGWANT,
-    E_RESOLVE_SERVICE_LOGRUN,
-    E_RESOLVE_SERVICE_LOGRUN_USER,
-    E_RESOLVE_SERVICE_LOGRUN_BUILD,
-    E_RESOLVE_SERVICE_LOGRUN_RUNAS,
-    E_RESOLVE_SERVICE_LOGTIMEOUTSTART,
-    E_RESOLVE_SERVICE_LOGTIMEOUTSTOP,
-
-    // environment
-    E_RESOLVE_SERVICE_ENV,
-    E_RESOLVE_SERVICE_ENVDIR,
-    E_RESOLVE_SERVICE_ENV_OVERWRITE,
-    E_RESOLVE_SERVICE_ENV_IMPORTFILE,
-    E_RESOLVE_SERVICE_ENV_NIMPORTFILE,
-
-    // regex
-    E_RESOLVE_SERVICE_REGEX_CONFIGURE,
-    E_RESOLVE_SERVICE_REGEX_DIRECTORIES,
-    E_RESOLVE_SERVICE_REGEX_FILES,
-    E_RESOLVE_SERVICE_REGEX_INFILES,
-    E_RESOLVE_SERVICE_REGEX_NDIRECTORIES,
-    E_RESOLVE_SERVICE_REGEX_NFILES,
-    E_RESOLVE_SERVICE_REGEX_NINFILES,
-
-    // IO
-    E_RESOLVE_SERVICE_STDIN,
-    E_RESOLVE_SERVICE_STDINDEST,
-    E_RESOLVE_SERVICE_STDOUT,
-    E_RESOLVE_SERVICE_STDOUTDEST,
-    E_RESOLVE_SERVICE_STDERR,
-    E_RESOLVE_SERVICE_STDERRDEST,
-
-    E_RESOLVE_SERVICE_ENDOFKEY
-} ;
-
 struct resolve_hash_s {
 	char name[SS_MAX_SERVICE_NAME + 1] ; // name as key
 	uint8_t visit ;
@@ -347,9 +245,8 @@ struct resolve_hash_s {
 	UT_hash_handle hh ;
 
 } ;
-#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, NULL }
 
-extern resolve_field_table_t resolve_service_field_table[] ;
+#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, NULL }
 
 extern int service_cmp_basedir(char const *dir) ;
 extern int service_endof_dir(char const *dir, char const *name) ;
@@ -358,8 +255,8 @@ extern int service_frontend_src(stralloc *sasrc, char const *name, char const *s
 extern int service_is_g(char const *name, uint32_t flag) ;
 extern int service_get_treename(char *atree, char const *name, uint32_t flag) ;
 extern void service_resolve_sanitize(resolve_service_t *res) ;
-extern int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve_service_enum_t field) ;
-extern void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t field, char const *data) ;
+extern int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve_service_enum_table_t table) ;
+extern void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_table_t table, char const *data) ;
 extern int service_resolve_read_cdb(cdb *c, resolve_service_t *res) ;
 extern void service_resolve_write(resolve_service_t *res) ;
 extern void service_resolve_write_remote(resolve_service_t *res, char const *dst, uint8_t force) ;
@@ -370,7 +267,6 @@ extern void service_db_migrate(resolve_service_t *old, resolve_service_t *new, c
 /* avoid circular dependencies by prototyping the ss_state_t instead
  * of calling the state.h header file*/
 typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;
-
 
 /** Hash */
 extern int hash_add(struct resolve_hash_s **hres, char const *name, resolve_service_t res) ;
