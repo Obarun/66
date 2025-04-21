@@ -1,3 +1,6 @@
+enum_parser.o
+enum_service.o
+enum_tree.o
 enum.o
 -loblibs
 -lskarnet

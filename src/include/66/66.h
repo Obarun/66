@@ -17,6 +17,10 @@
 
 #include <66/config.h>
 #include <66/constants.h>
+#include <66/enum_parser.h>
+#include <66/enum_service.h>
+#include <66/enum_struct.h>
+#include <66/enum_tree.h>
 #include <66/enum.h>
 #include <66/environ.h>
 #include <66/graph.h>
