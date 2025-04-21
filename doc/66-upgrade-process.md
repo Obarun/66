@@ -34,11 +34,11 @@ If a migration is required, the following general tasks will be performed, with 
 
 Some versions may require specific intermediary versions for migration. The following table outlines the target version and any mandatory versions that must be installed along the way.
 
-| current version | mandatory version | target version |
-| --- | --- | --- |
-| between `0.7.0.0` and `0.7.1.1`  | `0.7.2.0`, `0.8.0.1` | `0.8.0.1` |
-| `0.7.2.0` | `0.8.0.0` | `0.8.0.1` |
-| `0.8.0.0`, `0.8.0.1` |  | `0.8.0.2` |
+| current version                   | target version | mandatory version path|
+| ---                               | ---            | ---            |
+| between `0.7.0.0` and `0.7.1.1`   | `0.8.1.0`     | `0.7.2.0` -> `0.8.0.0` -> `0.8.0.2` -> `0.8.1.0`  |
+| `0.7.2.0`                         | `0.8.1.0`     | `0.8.0.0` -> `0.8.0.2` -> `0.8.1.0`    |
+| between `0.8.0.0` and `0.8.0.2`   | `0.8.1.0`     | `0.8.1.0`   |
 
 
 # Version E.O.L.
