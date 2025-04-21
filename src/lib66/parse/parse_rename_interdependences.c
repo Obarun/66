@@ -25,7 +25,7 @@
 #include <66/parse.h>
 #include <66/service.h>
 #include <66/resolve.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/constants.h>
 
 static void parse_prefix(char *result, stack *stk, struct resolve_hash_s **hres, char const *prefix)
@@ -124,7 +124,7 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, s
             if (c->res.dependencies.ndepends || c->res.dependencies.nrequiredby)
                 parse_prefix_name(&c->res, hres, prefix) ;
 
-            if (c->res.logger.want && (c->res.type == TYPE_CLASSIC || c->res.type == TYPE_ONESHOT)) {
+            if (c->res.logger.want && (c->res.type == E_PARSER_TYPE_CLASSIC || c->res.type == E_PARSER_TYPE_ONESHOT)) {
 
                 size_t namelen = strlen(c->res.sa.s + c->res.name) ;
                 char logname[namelen + SS_LOG_SUFFIX_LEN + 1] ;
@@ -138,7 +138,7 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, s
 
                 parse_create_logger(hres, &c->res, info) ;
 
-                if (c->res.type == TYPE_CLASSIC) {
+                if (c->res.type == E_PARSER_TYPE_CLASSIC) {
                     if (!stack_add_g(&stk, logname))
                         log_die_nomem("stack overflow") ;
                 }

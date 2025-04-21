@@ -22,19 +22,6 @@
 #include <66/tree.h>
 #include <66/resolve.h>
 
-resolve_field_table_t resolve_tree_master_field_table[] = {
-
-    [E_RESOLVE_TREE_MASTER_RVERSION] = { .field = "rversion" },
-
-    [E_RESOLVE_TREE_MASTER_NAME] = { .field = "name" },
-    [E_RESOLVE_TREE_MASTER_ALLOW] = { .field = "allow" },
-    [E_RESOLVE_TREE_MASTER_CURRENT] = { .field = "current" },
-    [E_RESOLVE_TREE_MASTER_CONTENTS] = { .field = "contents" },
-    [E_RESOLVE_TREE_MASTER_NALLOW] = { .field = "nallow" },
-    [E_RESOLVE_TREE_MASTER_NCONTENTS] = { .field = "ncontents" },
-    [E_RESOLVE_TREE_MASTER_ENDOFKEY] = { .field = 0 }
-} ;
-
 static uint32_t resolve_add_uint(char const *data)
 {
     uint32_t u ;
@@ -46,7 +33,7 @@ static uint32_t resolve_add_uint(char const *data)
     return u ;
 }
 
-void tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint8_t field, char const *data)
+void tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint32_t field, char const *data)
 {
     log_flow() ;
 

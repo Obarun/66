@@ -26,7 +26,7 @@
 #include <66/parse.h>
 #include <66/utils.h>
 
-int parse_clean_runas(char const *str, int idsec, int idkey)
+int parse_clean_runas(char const *str, resolve_enum_table_t table)
 {
     log_flow() ;
 
@@ -56,11 +56,11 @@ int parse_clean_runas(char const *str, int idsec, int idkey)
         else {
 
             if (!uint320_scan(file, &uid))
-                parse_error_return(0, 3, idsec, list_section_startstop, idkey) ;
+                parse_error_return(0, 3, table) ;
 
             if (!getpwuid(uid)) {
                 log_warnu("get uid of user: ", file) ;
-                parse_error_return(0, 0, idsec, list_section_startstop, idkey) ;
+                parse_error_return(0, 0, table) ;
             }
         }
 
@@ -71,12 +71,12 @@ int parse_clean_runas(char const *str, int idsec, int idkey)
         if (!*(colon + 1)) {
 
             if (!yourgid(&gid,uid))
-                parse_error_return(0, 0, idsec, list_section_startstop, idkey) ;
+                parse_error_return(0, 0, table) ;
 
         }
         else {
             if (!uint320_scan(colon + 1, &gid))
-                parse_error_return(0, 0, idsec, list_section_startstop, idkey) ;
+                parse_error_return(0, 0, table) ;
         }
 
         gid_str[gid_fmt(gid_str, gid)] = 0 ;
@@ -93,7 +93,7 @@ int parse_clean_runas(char const *str, int idsec, int idkey)
 
             uid_t uid = -1 ;
             if (!uint320_scan(str, &uid))
-                parse_error_return(0, 3, idsec, list_section_startstop, idkey) ;
+                parse_error_return(0, 3, table) ;
             pw = getpwuid(uid) ;
 
         } else {
@@ -106,7 +106,7 @@ int parse_clean_runas(char const *str, int idsec, int idkey)
                 errno = ESRCH ;
 
             log_warnsys("invalid user: ", str) ;
-            parse_error_return(0, 0, idsec, list_section_startstop, idkey) ;
+            parse_error_return(0, 0, table) ;
         }
 
         errno = e ;

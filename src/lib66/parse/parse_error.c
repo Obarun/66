@@ -15,13 +15,14 @@
 #include <oblibs/log.h>
 
 #include <66/enum.h>
+#include <66/enum_parser.h>
 
-void parse_error(int ierr, const int sid, key_description_t const *list, const int idkey)
+void parse_error(int ierr, resolve_enum_table_t table)
 {
     log_flow() ;
 
-    char const *section = enum_str_section[sid] ;
-    char const *key = get_key_by_enum(list, idkey) ;
+    char const *section = enum_str_parser_section[table.u.parser.sid] ;
+    char const *key = enum_to_key(table.u.parser.list, table.u.parser.id) ;
 
     switch(ierr)
     {

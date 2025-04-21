@@ -33,7 +33,8 @@ static void get_frontend_list(stralloc *sa, const char *name, const char *fronte
 {
     resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &dres) ;
-
+    resolve_enum_table_t table = E_TABLE_PARSER_SECTION_MAIN_ZERO ;
+    table.u.parser.id = E_PARSER_SECTION_MAIN_DEPENDS ;
     size_t len = strlen(frontend) ;
     char dirname[len], basename[len] ;
 
@@ -52,8 +53,8 @@ static void get_frontend_list(stralloc *sa, const char *name, const char *fronte
      _alloc_stk_(stk, sa->len + 1) ;
 
     /** field may not exist*/
-    if (!parse_get_value_of_key(&stk, sa->s, SECTION_MAIN, list_section_main, KEY_MAIN_DEPENDS)) {
-        log_warn("no field ", get_key_by_enum(list_section_main, KEY_MAIN_DEPENDS)," exist for service: ", basename) ;
+    if (!parse_get_value_of_key(&stk, sa->s, table)) {
+        log_warn("no field ", enum_to_key(table.u.parser.list, table.u.parser.id)," exist for service: ", basename) ;
         resolve_free(wres) ;
         return ;
     }
@@ -61,7 +62,9 @@ static void get_frontend_list(stralloc *sa, const char *name, const char *fronte
     if (!stack_close(&stk))
         log_die_nomem("stack overflow") ;
 
-    if (!parse_store_main(&dres, &stk, SECTION_MAIN, requiredby ? KEY_MAIN_REQUIREDBY :  KEY_MAIN_DEPENDS))
+    table.u.parser.id = requiredby ? E_PARSER_SECTION_MAIN_REQUIREDBY :  E_PARSER_SECTION_MAIN_DEPENDS ;
+
+    if (!parse_store_main(&dres, &stk, table))
         log_dieu(LOG_EXIT_SYS, "get field depends of service: ", basename) ;
 
     sa->len = 0 ;

@@ -31,7 +31,7 @@
 #include <skalibs/sgetopt.h>
 
 #include <66/state.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/ssexec.h>
 #include <66/resolve.h>
 #include <66/service.h>
@@ -115,7 +115,7 @@ static void remove_logger(resolve_service_t *res, ssexec_t *info)
     resolve_service_t lres = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref lwres = resolve_set_struct(DATA_SERVICE, &lres) ;
 
-    if (res->type == TYPE_ONESHOT) {
+    if (res->type == E_PARSER_TYPE_ONESHOT) {
 
         auto_remove(res->sa.s + res->io.fdout.destination) ;
         log_info("Removed successfully logger of: ", res->sa.s + res->name) ;
@@ -321,7 +321,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
         remove_service(&c->res, info) ;
 
-        if (c->res.dependencies.ncontents && c->res.type == TYPE_MODULE) {
+        if (c->res.dependencies.ncontents && c->res.type == E_PARSER_TYPE_MODULE) {
 
             size_t pos = 0 ;
             resolve_service_t mres = RESOLVE_SERVICE_ZERO ;

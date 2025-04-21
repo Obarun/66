@@ -30,8 +30,11 @@ uint32_t tree_graph_build_master(tree_graph_t *g, ssexec_t *info, uint32_t flag)
 
     uint32_t n = 0 ;
     _alloc_sa_(sa) ;
+    resolve_enum_table_t table = E_TABLE_TREE_MASTER_ZERO ;
 
-    if (!resolve_get_field_tosa_g(&sa, info->base.s, SS_MASTER + 1, DATA_TREE_MASTER, E_RESOLVE_TREE_MASTER_CONTENTS))
+    table.u.tree.id = E_RESOLVE_TREE_MASTER_CONTENTS ;
+
+    if (!resolve_get_field_tosa_g(&sa, info->base.s, SS_MASTER + 1, DATA_TREE_MASTER, table))
         log_dieu(LOG_EXIT_SYS, "get resolve Master file of trees") ;
 
     n = tree_graph_ncollect(g, sa.s, sa.len, info) ;

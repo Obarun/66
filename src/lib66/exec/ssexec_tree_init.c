@@ -85,11 +85,11 @@ int ssexec_tree_init(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
+    _alloc_sa_(sa) ;
     int r ;
     uint8_t earlier = 0 ;
     char const *treename = 0 ;
-
-    _alloc_sa_(sa) ;
+    resolve_enum_table_t table = E_TABLE_TREE_ZERO ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -131,7 +131,8 @@ int ssexec_tree_init(int argc, char const *const *argv, ssexec_t *info)
     r = svc_scandir_ok(info->scandir.s) ;
     if (r != 1) earlier = 1 ;
 
-    if (!resolve_get_field_tosa_g(&sa, info->base.s, treename, DATA_TREE, E_RESOLVE_TREE_CONTENTS))
+    table.u.tree.id = E_RESOLVE_TREE_CONTENTS ;
+    if (!resolve_get_field_tosa_g(&sa, info->base.s, treename, DATA_TREE, table))
         log_dieu(LOG_EXIT_SYS, "get services list from tree: ", treename) ;
 
     if (sa.len) {

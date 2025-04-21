@@ -16,7 +16,7 @@
 
 #include <66/parse.h>
 #include <66/resolve.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/constants.h>
 
 static int get_shebang(stack *stk, char const *line)
@@ -67,12 +67,12 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
          * We keep that except for the s6log type. */
         if (!res->islog) {
 
-            if (in->type == IO_TYPE_S6LOG || in->type == IO_TYPE_NOTSET)
-                in->type = IO_TYPE_PARENT ;
-            if (out->type == IO_TYPE_S6LOG || out->type == IO_TYPE_NOTSET)
-                out->type = IO_TYPE_PARENT ;
-            if (err->type == IO_TYPE_S6LOG || err->type == IO_TYPE_NOTSET)
-                err->type = IO_TYPE_PARENT ;
+            if (in->type == E_PARSER_IO_TYPE_S6LOG || in->type == E_PARSER_IO_TYPE_NOTSET)
+                in->type = E_PARSER_IO_TYPE_PARENT ;
+            if (out->type == E_PARSER_IO_TYPE_S6LOG || out->type == E_PARSER_IO_TYPE_NOTSET)
+                out->type = E_PARSER_IO_TYPE_PARENT ;
+            if (err->type == E_PARSER_IO_TYPE_S6LOG || err->type == E_PARSER_IO_TYPE_NOTSET)
+                err->type = E_PARSER_IO_TYPE_PARENT ;
 
         } else {
 
@@ -80,12 +80,12 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
              * This definition is only made here to provide convenient API.
              * We are in parse process and the next call of the parse_create_logger
              * will also set the Stdxxx key with the same as follow. */
-            in->type = out->type = IO_TYPE_S6LOG ;
+            in->type = out->type = E_PARSER_IO_TYPE_S6LOG ;
             in->destination = compute_pipe_service(wres, info, SS_FDHOLDER) ;
             if (!out->destination)
                 out->destination = compute_log_dir(wres, res, 0) ;
 
-            err->type = IO_TYPE_INHERIT ;
+            err->type = E_PARSER_IO_TYPE_INHERIT ;
             err->destination = out->destination ;
         }
 
@@ -94,25 +94,25 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
         {
             switch(in->type) {
 
-                case IO_TYPE_TTY:
-                case IO_TYPE_CONSOLE:
-                case IO_TYPE_SYSLOG:
-                case IO_TYPE_FILE:
-                case IO_TYPE_S6LOG:
-                case IO_TYPE_INHERIT:
-                case IO_TYPE_NULL:
-                case IO_TYPE_PARENT:
-                case IO_TYPE_CLOSE:
+                case E_PARSER_IO_TYPE_TTY:
+                case E_PARSER_IO_TYPE_CONSOLE:
+                case E_PARSER_IO_TYPE_SYSLOG:
+                case E_PARSER_IO_TYPE_FILE:
+                case E_PARSER_IO_TYPE_S6LOG:
+                case E_PARSER_IO_TYPE_INHERIT:
+                case E_PARSER_IO_TYPE_NULL:
+                case E_PARSER_IO_TYPE_PARENT:
+                case E_PARSER_IO_TYPE_CLOSE:
                         break ;
 
-                case IO_TYPE_NOTSET:
-                    if (out->type == IO_TYPE_NOTSET || out->type == IO_TYPE_S6LOG) {
-                        in->type = IO_TYPE_S6LOG ;
+                case E_PARSER_IO_TYPE_NOTSET:
+                    if (out->type == E_PARSER_IO_TYPE_NOTSET || out->type == E_PARSER_IO_TYPE_S6LOG) {
+                        in->type = E_PARSER_IO_TYPE_S6LOG ;
                         in->destination = compute_pipe_service(wres, info, SS_FDHOLDER) ;
                         break ;
                     }
 
-                    in->type = IO_TYPE_PARENT ;
+                    in->type = E_PARSER_IO_TYPE_PARENT ;
                     break ;
 
                 default:
@@ -120,7 +120,7 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
             }
         }
 
-        if (in->type == IO_TYPE_S6LOG) {
+        if (in->type == E_PARSER_IO_TYPE_S6LOG) {
             out->type = in->type ;
             if (!out->destination)
                 out->destination = compute_log_dir(wres, res, 0) ;
@@ -128,51 +128,51 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
 
         {
             switch(out->type) {
-                case IO_TYPE_TTY:
-                    if (in->type == IO_TYPE_TTY)
+                case E_PARSER_IO_TYPE_TTY:
+                    if (in->type == E_PARSER_IO_TYPE_TTY)
                         out->destination = in->destination ;
                     break ;
-                case IO_TYPE_FILE:
-                case IO_TYPE_CONSOLE:
-                case IO_TYPE_S6LOG:
-                case IO_TYPE_SYSLOG:
-                case IO_TYPE_INHERIT:
+                case E_PARSER_IO_TYPE_FILE:
+                case E_PARSER_IO_TYPE_CONSOLE:
+                case E_PARSER_IO_TYPE_S6LOG:
+                case E_PARSER_IO_TYPE_SYSLOG:
+                case E_PARSER_IO_TYPE_INHERIT:
                     break ;
 
-                case IO_TYPE_NULL:
-                    if (in->type == IO_TYPE_NULL) {
-                        out->type == IO_TYPE_INHERIT ;
+                case E_PARSER_IO_TYPE_NULL:
+                    if (in->type == E_PARSER_IO_TYPE_NULL) {
+                        out->type == E_PARSER_IO_TYPE_INHERIT ;
                         break ;
                     }
                     break ;
 
-                case IO_TYPE_PARENT:
-                case IO_TYPE_CLOSE:
+                case E_PARSER_IO_TYPE_PARENT:
+                case E_PARSER_IO_TYPE_CLOSE:
                     break ;
 
-                case IO_TYPE_NOTSET:
-                    if (in->type == IO_TYPE_TTY || in->type == IO_TYPE_S6LOG) {
+                case E_PARSER_IO_TYPE_NOTSET:
+                    if (in->type == E_PARSER_IO_TYPE_TTY || in->type == E_PARSER_IO_TYPE_S6LOG) {
                         out->type = in->type ;
-                        out->destination = (in->type == IO_TYPE_TTY) ? in->destination : compute_log_dir(wres, res, 0) ;
+                        out->destination = (in->type == E_PARSER_IO_TYPE_TTY) ? in->destination : compute_log_dir(wres, res, 0) ;
                         break ;
                     }
 
-                    if (in->type == IO_TYPE_NULL) {
-                        out->type = IO_TYPE_INHERIT ;
+                    if (in->type == E_PARSER_IO_TYPE_NULL) {
+                        out->type = E_PARSER_IO_TYPE_INHERIT ;
                         break ;
                     }
 
-                    if (in->type == IO_TYPE_PARENT) {
+                    if (in->type == E_PARSER_IO_TYPE_PARENT) {
                         out->type = in->type ;
                         break ;
                     }
 
-                    if (in->type == IO_TYPE_CLOSE) {
-                        out->type = IO_TYPE_PARENT ;
+                    if (in->type == E_PARSER_IO_TYPE_CLOSE) {
+                        out->type = E_PARSER_IO_TYPE_PARENT ;
                         break ;
                     }
 
-                    out->type = in->type = IO_TYPE_S6LOG ;
+                    out->type = in->type = E_PARSER_IO_TYPE_S6LOG ;
                     out->destination = compute_log_dir(wres, res, 0) ;
                     in->destination = compute_pipe_service(wres, info, SS_FDHOLDER) ;
 
@@ -182,11 +182,11 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
         }
 
         if ((err->type == out->type) && (in->type == out->type)) {
-            err->type = IO_TYPE_INHERIT ;
+            err->type = E_PARSER_IO_TYPE_INHERIT ;
             err->destination = out->destination ;
         }
 
-        if (out->type == IO_TYPE_SYSLOG) {
+        if (out->type == E_PARSER_IO_TYPE_SYSLOG) {
             err->type = out->type ;
             err->destination = out->destination ;
         }
@@ -194,21 +194,21 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
         {
             switch(err->type) {
 
-                case IO_TYPE_TTY:
-                case IO_TYPE_FILE:
-                case IO_TYPE_CONSOLE:
+                case E_PARSER_IO_TYPE_TTY:
+                case E_PARSER_IO_TYPE_FILE:
+                case E_PARSER_IO_TYPE_CONSOLE:
                     break ;
-                case IO_TYPE_S6LOG:
+                case E_PARSER_IO_TYPE_S6LOG:
                     err->destination = out->destination ;
                     break ;
-                case IO_TYPE_SYSLOG:
-                case IO_TYPE_NULL:
-                case IO_TYPE_PARENT:
-                case IO_TYPE_CLOSE:
+                case E_PARSER_IO_TYPE_SYSLOG:
+                case E_PARSER_IO_TYPE_NULL:
+                case E_PARSER_IO_TYPE_PARENT:
+                case E_PARSER_IO_TYPE_CLOSE:
                     break ;
-                case IO_TYPE_INHERIT:
-                case IO_TYPE_NOTSET:
-                    err->type = IO_TYPE_INHERIT ;
+                case E_PARSER_IO_TYPE_INHERIT:
+                case E_PARSER_IO_TYPE_NOTSET:
+                    err->type = E_PARSER_IO_TYPE_INHERIT ;
                     err->destination = out->destination ;
                     break ;
                 default:
@@ -219,14 +219,14 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
 
     if (res->logger.want) {
         // avoid to call parse_create_logger
-        if (in->type != IO_TYPE_S6LOG && out->type != IO_TYPE_S6LOG)
+        if (in->type != E_PARSER_IO_TYPE_S6LOG && out->type != E_PARSER_IO_TYPE_S6LOG)
             res->logger.want = 0 ;
     }
 
     switch (res->type) {
 
-        case TYPE_CLASSIC:
-        case TYPE_ONESHOT:
+        case E_PARSER_TYPE_CLASSIC:
+        case E_PARSER_TYPE_ONESHOT:
 
             if (!res->execute.run.run_user)
                 log_warn_return(LOG_EXIT_ZERO,"key Execute at section [Start] must be set") ;
@@ -266,7 +266,7 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
 
             break ;
 
-        case TYPE_MODULE:
+        case E_PARSER_TYPE_MODULE:
         default:
             break ;
     }

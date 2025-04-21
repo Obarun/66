@@ -1,5 +1,5 @@
 /*
- * service_resolve_get_field_tosa.c
+ * service_resolve_get_table_tosa.c
  *
  * Copyright (c) 2018-2025 Eric Vidal <eric@obarun.org>
  *
@@ -12,8 +12,6 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <stdint.h>
-
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 
@@ -22,8 +20,9 @@
 
 #include <66/resolve.h>
 #include <66/service.h>
+#include <66/enum_service.h>
 
-int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve_service_enum_t field)
+static int get_config(stralloc *sa, resolve_service_t *res, resolve_service_enum_config_t table)
 {
     log_flow() ;
 
@@ -31,306 +30,439 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
     char const *str = 0 ;
     int e = 0 ;
 
-    switch(field) {
+    switch(table) {
 
-        // configuration
+        case E_RESOLVE_SERVICE_CONFIG_RVERSION:
+            fmt[uint32_fmt(fmt,res->rversion)] = 0 ;
+            str = fmt ;
+        break ;
 
-        case E_RESOLVE_SERVICE_NAME:
+        case E_RESOLVE_SERVICE_CONFIG_NAME:
             str = res->sa.s + res->name ;
             break ;
 
-        case E_RESOLVE_SERVICE_DESCRIPTION:
+        case E_RESOLVE_SERVICE_CONFIG_DESCRIPTION:
             str = res->sa.s + res->description ;
             break ;
 
-        case E_RESOLVE_SERVICE_VERSION:
+        case E_RESOLVE_SERVICE_CONFIG_VERSION:
             str = res->sa.s + res->version ;
             break ;
 
-        case E_RESOLVE_SERVICE_TYPE:
+        case E_RESOLVE_SERVICE_CONFIG_TYPE:
             fmt[uint32_fmt(fmt,res->type)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_NOTIFY:
+        case E_RESOLVE_SERVICE_CONFIG_NOTIFY:
             fmt[uint32_fmt(fmt,res->notify)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_MAXDEATH:
+        case E_RESOLVE_SERVICE_CONFIG_MAXDEATH:
             fmt[uint32_fmt(fmt,res->maxdeath)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_EARLIER:
+        case E_RESOLVE_SERVICE_CONFIG_EARLIER:
             fmt[uint32_fmt(fmt,res->earlier)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_HIERCOPY:
-            str = res->sa.s + res->hiercopy ;
+        case E_RESOLVE_SERVICE_CONFIG_COPYFROM:
+            str = res->sa.s + res->copyfrom ;
             break ;
 
-        case E_RESOLVE_SERVICE_INTREE:
+        case E_RESOLVE_SERVICE_CONFIG_INTREE:
             str = res->sa.s + res->intree ;
             break ;
 
-        case E_RESOLVE_SERVICE_OWNERSTR:
+        case E_RESOLVE_SERVICE_CONFIG_OWNERSTR:
             str = res->sa.s + res->ownerstr ;
             break ;
 
-        case E_RESOLVE_SERVICE_OWNER:
+        case E_RESOLVE_SERVICE_CONFIG_OWNER:
             fmt[uint32_fmt(fmt,res->owner)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_TREENAME:
+        case E_RESOLVE_SERVICE_CONFIG_TREENAME:
             str = res->sa.s + res->treename ;
             break ;
 
-        case E_RESOLVE_SERVICE_USER:
+        case E_RESOLVE_SERVICE_CONFIG_USER:
             str = res->sa.s + res->user ;
             break ;
 
-        case E_RESOLVE_SERVICE_INNS:
+        case E_RESOLVE_SERVICE_CONFIG_INNS:
             str = res->sa.s + res->inns ;
             break ;
 
-        case E_RESOLVE_SERVICE_ENABLED:
+        case E_RESOLVE_SERVICE_CONFIG_ENABLED:
             fmt[uint32_fmt(fmt,res->enabled)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_ISLOG:
+        case E_RESOLVE_SERVICE_CONFIG_ISLOG:
             fmt[uint32_fmt(fmt,res->islog)] = 0 ;
             str = fmt ;
             break ;
 
-        // path configuration
+        default:
+            return e ;
+    }
 
-        case E_RESOLVE_SERVICE_HOME:
+    if (!auto_stra(sa,str))
+        return e ;
+
+    e = 1 ;
+    return e ;
+}
+
+static int get_path(stralloc *sa, resolve_service_t *res, resolve_service_enum_path_t table)
+{
+    log_flow() ;
+
+    char const *str = 0 ;
+    int e = 0 ;
+
+    switch(table) {
+
+        case E_RESOLVE_SERVICE_PATH_HOME:
             str = res->sa.s + res->path.home ;
             break ;
 
-        case E_RESOLVE_SERVICE_FRONTEND:
+        case E_RESOLVE_SERVICE_PATH_FRONTEND:
             str = res->sa.s + res->path.frontend ;
             break ;
 
-        case E_RESOLVE_SERVICE_SERVICEDIR:
+        case E_RESOLVE_SERVICE_PATH_SERVICEDIR:
             str = res->sa.s + res->path.servicedir ;
             break ;
 
-        // dependencies
+        default:
+            return e ;
+    }
 
-        case E_RESOLVE_SERVICE_DEPENDS:
+    if (!auto_stra(sa,str))
+        return e ;
+
+    e = 1 ;
+    return e ;
+}
+
+static int get_deps(stralloc *sa, resolve_service_t *res, resolve_service_enum_deps_t table)
+{
+    log_flow() ;
+
+    char fmt[UINT32_FMT] ;
+    char const *str = 0 ;
+    int e = 0 ;
+
+    switch(table) {
+
+        case E_RESOLVE_SERVICE_DEPS_DEPENDS:
             str = res->sa.s + res->dependencies.depends ;
             break ;
 
-        case E_RESOLVE_SERVICE_REQUIREDBY:
+        case E_RESOLVE_SERVICE_DEPS_REQUIREDBY:
             str = res->sa.s + res->dependencies.requiredby ;
             break ;
 
-        case E_RESOLVE_SERVICE_OPTSDEPS:
+        case E_RESOLVE_SERVICE_DEPS_OPTSDEPS:
             str = res->sa.s + res->dependencies.optsdeps ;
             break ;
 
-        case E_RESOLVE_SERVICE_CONTENTS:
+        case E_RESOLVE_SERVICE_DEPS_CONTENTS:
             str = res->sa.s + res->dependencies.contents ;
             break ;
 
-        case E_RESOLVE_SERVICE_NDEPENDS:
+        case E_RESOLVE_SERVICE_DEPS_NDEPENDS:
             fmt[uint32_fmt(fmt,res->dependencies.ndepends)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_NREQUIREDBY:
+        case E_RESOLVE_SERVICE_DEPS_NREQUIREDBY:
             fmt[uint32_fmt(fmt,res->dependencies.nrequiredby)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_NOPTSDEPS:
+        case E_RESOLVE_SERVICE_DEPS_NOPTSDEPS:
             fmt[uint32_fmt(fmt,res->dependencies.noptsdeps)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_NCONTENTS:
+        case E_RESOLVE_SERVICE_DEPS_NCONTENTS:
             fmt[uint32_fmt(fmt,res->dependencies.ncontents)] = 0 ;
             str = fmt ;
             break ;
 
-        // execute
+        default:
+            return e ;
+    }
 
-        case E_RESOLVE_SERVICE_RUN:
+    if (!auto_stra(sa,str))
+        return e ;
+
+    e = 1 ;
+    return e ;
+}
+
+static int get_exec(stralloc *sa, resolve_service_t *res, resolve_service_enum_execute_t table)
+{
+    log_flow() ;
+
+    char fmt[UINT32_FMT] ;
+    char const *str = 0 ;
+    int e = 0 ;
+
+    switch(table) {
+
+        case E_RESOLVE_SERVICE_EXECUTE_RUN:
             str = res->sa.s + res->execute.run.run ;
             break ;
 
-        case E_RESOLVE_SERVICE_RUN_USER:
+        case E_RESOLVE_SERVICE_EXECUTE_RUN_USER:
             str = res->sa.s + res->execute.run.run_user ;
             break ;
 
-        case E_RESOLVE_SERVICE_RUN_BUILD:
+        case E_RESOLVE_SERVICE_EXECUTE_RUN_BUILD:
             str = res->sa.s + res->execute.run.build ;
             break ;
 
-        case E_RESOLVE_SERVICE_RUN_RUNAS:
+        case E_RESOLVE_SERVICE_EXECUTE_RUN_RUNAS:
             str = res->sa.s + res->execute.run.runas ;
             break ;
 
-        case E_RESOLVE_SERVICE_FINISH:
+        case E_RESOLVE_SERVICE_EXECUTE_FINISH:
             str = res->sa.s + res->execute.finish.run ;
             break ;
 
-        case E_RESOLVE_SERVICE_FINISH_USER:
+        case E_RESOLVE_SERVICE_EXECUTE_FINISH_USER:
             str = res->sa.s + res->execute.finish.run_user ;
             break ;
 
-        case E_RESOLVE_SERVICE_FINISH_BUILD:
+        case E_RESOLVE_SERVICE_EXECUTE_FINISH_BUILD:
             str = res->sa.s + res->execute.finish.build ;
             break ;
 
-        case E_RESOLVE_SERVICE_FINISH_RUNAS:
+        case E_RESOLVE_SERVICE_EXECUTE_FINISH_RUNAS:
             str = res->sa.s + res->execute.finish.runas ;
             break ;
 
-        case E_RESOLVE_SERVICE_TIMEOUTSTART:
+        case E_RESOLVE_SERVICE_EXECUTE_TIMEOUTSTART:
             fmt[uint32_fmt(fmt,res->execute.timeout.start)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_TIMEOUTSTOP:
+        case E_RESOLVE_SERVICE_EXECUTE_TIMEOUTSTOP:
             fmt[uint32_fmt(fmt,res->execute.timeout.stop)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_DOWN:
+        case E_RESOLVE_SERVICE_EXECUTE_DOWN:
             fmt[uint32_fmt(fmt,res->execute.down)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_DOWNSIGNAL:
+        case E_RESOLVE_SERVICE_EXECUTE_DOWNSIGNAL:
             fmt[uint32_fmt(fmt,res->execute.downsignal)] = 0 ;
             str = fmt ;
             break ;
 
-        // live
+        default:
+            return e ;
+    }
 
-        case E_RESOLVE_SERVICE_LIVEDIR:
+    if (!auto_stra(sa,str))
+        return e ;
+
+    e = 1 ;
+    return e ;
+}
+
+static int get_live(stralloc *sa, resolve_service_t *res, resolve_service_enum_live_t table)
+{
+    log_flow() ;
+
+    char const *str = 0 ;
+    int e = 0 ;
+
+    switch(table) {
+
+        case E_RESOLVE_SERVICE_LIVE_LIVEDIR:
             str = res->sa.s + res->live.livedir ;
             break ;
 
-        case E_RESOLVE_SERVICE_STATUS:
+        case E_RESOLVE_SERVICE_LIVE_STATUS:
             str = res->sa.s + res->live.status ;
             break ;
 
-        case E_RESOLVE_SERVICE_SERVICEDIR_LIVE:
+        case E_RESOLVE_SERVICE_LIVE_SERVICEDIR:
             str = res->sa.s + res->live.servicedir ;
             break ;
 
-        case E_RESOLVE_SERVICE_SCANDIR:
+        case E_RESOLVE_SERVICE_LIVE_SCANDIR:
             str = res->sa.s + res->live.scandir ;
             break ;
 
-        case E_RESOLVE_SERVICE_STATEDIR:
+        case E_RESOLVE_SERVICE_LIVE_STATEDIR:
             str = res->sa.s + res->live.statedir ;
             break ;
 
-        case E_RESOLVE_SERVICE_EVENTDIR:
+        case E_RESOLVE_SERVICE_LIVE_EVENTDIR:
             str = res->sa.s + res->live.eventdir ;
             break ;
 
-        case E_RESOLVE_SERVICE_NOTIFDIR:
+        case E_RESOLVE_SERVICE_LIVE_NOTIFDIR:
             str = res->sa.s + res->live.notifdir ;
             break ;
 
-        case E_RESOLVE_SERVICE_SUPERVISEDIR:
+        case E_RESOLVE_SERVICE_LIVE_SUPERVISEDIR:
             str = res->sa.s + res->live.supervisedir ;
             break ;
 
-        case E_RESOLVE_SERVICE_FDHOLDERDIR:
+        case E_RESOLVE_SERVICE_LIVE_FDHOLDERDIR:
             str = res->sa.s + res->live.fdholderdir ;
             break ;
 
-        case E_RESOLVE_SERVICE_ONESHOTDDIR:
+        case E_RESOLVE_SERVICE_LIVE_ONESHOTDDIR:
             str = res->sa.s + res->live.oneshotddir ;
             break ;
 
-        // logger
+        default:
+            return e ;
+    }
 
-        case E_RESOLVE_SERVICE_LOGNAME:
+    if (!auto_stra(sa,str))
+        return e ;
+
+    e = 1 ;
+    return e ;
+}
+
+static int get_logger(stralloc *sa, resolve_service_t *res, resolve_service_enum_logger_t table)
+{
+    log_flow() ;
+
+    char fmt[UINT32_FMT] ;
+    char const *str = 0 ;
+    int e = 0 ;
+
+    switch(table) {
+
+        case E_RESOLVE_SERVICE_LOGGER_LOGNAME:
             str = res->sa.s + res->logger.name ;
             break ;
 
-        case E_RESOLVE_SERVICE_LOGBACKUP:
+        case E_RESOLVE_SERVICE_LOGGER_LOGBACKUP:
             fmt[uint32_fmt(fmt,res->logger.backup)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_LOGMAXSIZE:
+        case E_RESOLVE_SERVICE_LOGGER_LOGMAXSIZE:
             fmt[uint32_fmt(fmt,res->logger.maxsize)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_LOGTIMESTAMP:
+        case E_RESOLVE_SERVICE_LOGGER_LOGTIMESTAMP:
             fmt[uint32_fmt(fmt,res->logger.timestamp)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_LOGWANT:
+        case E_RESOLVE_SERVICE_LOGGER_LOGWANT:
             fmt[uint32_fmt(fmt,res->logger.want)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_LOGRUN:
+        case E_RESOLVE_SERVICE_LOGGER_LOGRUN:
             str = res->sa.s + res->logger.execute.run.run ;
             break ;
 
-        case E_RESOLVE_SERVICE_LOGRUN_USER:
+        case E_RESOLVE_SERVICE_LOGGER_LOGRUN_USER:
             str = res->sa.s + res->logger.execute.run.run_user ;
             break ;
 
-        case E_RESOLVE_SERVICE_LOGRUN_BUILD:
+        case E_RESOLVE_SERVICE_LOGGER_LOGRUN_BUILD:
             str = res->sa.s + res->logger.execute.run.build ;
             break ;
 
-        case E_RESOLVE_SERVICE_LOGRUN_RUNAS:
+        case E_RESOLVE_SERVICE_LOGGER_LOGRUN_RUNAS:
             str = res->sa.s + res->logger.execute.run.runas ;
             break ;
 
-        case E_RESOLVE_SERVICE_LOGTIMEOUTSTART:
+        case E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTART:
             fmt[uint32_fmt(fmt,res->logger.timeout.start)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_LOGTIMEOUTSTOP:
+        case E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTOP:
             fmt[uint32_fmt(fmt,res->logger.timeout.stop)] = 0 ;
             str = fmt ;
             break ;
+        default:
+            return e ;
+    }
 
-        // environment
+    if (!auto_stra(sa,str))
+        return e ;
 
-        case E_RESOLVE_SERVICE_ENV:
-            str = res->sa.s + res->environ.env ;
-            break ;
+    e = 1 ;
+    return e ;
+}
 
-        case E_RESOLVE_SERVICE_ENVDIR:
+static int get_environ(stralloc *sa, resolve_service_t *res, resolve_service_enum_environ_t table)
+{
+    log_flow() ;
+
+    char fmt[UINT32_FMT] ;
+    char const *str = 0 ;
+    int e = 0 ;
+
+    switch(table) {
+
+        case E_RESOLVE_SERVICE_ENVIRON_ENV:
+        str = res->sa.s + res->environ.env ;
+        break ;
+
+        case E_RESOLVE_SERVICE_ENVIRON_ENVDIR:
             str = res->sa.s + res->environ.envdir ;
             break ;
 
-        case E_RESOLVE_SERVICE_ENV_OVERWRITE:
+        case E_RESOLVE_SERVICE_ENVIRON_ENV_OVERWRITE:
             fmt[uint32_fmt(fmt,res->environ.env_overwrite)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_ENV_IMPORTFILE:
+        case E_RESOLVE_SERVICE_ENVIRON_IMPORTFILE:
             str = res->sa.s + res->environ.importfile ;
             break ;
 
-        case E_RESOLVE_SERVICE_ENV_NIMPORTFILE:
+        case E_RESOLVE_SERVICE_ENVIRON_NIMPORTFILE:
             fmt[uint32_fmt(fmt,res->environ.nimportfile)] = 0 ;
             str = fmt ;
             break ;
 
-        // regex
+        default:
+            return e ;
+    }
+
+    if (!auto_stra(sa,str))
+        return e ;
+
+    e = 1 ;
+    return e ;
+}
+
+static int get_regex(stralloc *sa, resolve_service_t *res, resolve_service_enum_regex_t table)
+{
+    log_flow() ;
+
+    char fmt[UINT32_FMT] ;
+    char const *str = 0 ;
+    int e = 0 ;
+
+    switch(table) {
 
         case E_RESOLVE_SERVICE_REGEX_CONFIGURE:
             str = res->sa.s + res->regex.directories ;
@@ -363,36 +495,51 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_RVERSION:
-            fmt[uint32_fmt(fmt,res->rversion)] = 0 ;
-            str = fmt ;
-            break ;
+        default:
+            return e ;
+    }
 
-        // IO
-        case E_RESOLVE_SERVICE_STDIN:
+    if (!auto_stra(sa,str))
+        return e ;
+
+    e = 1 ;
+    return e ;
+}
+
+static int get_io(stralloc *sa, resolve_service_t *res, resolve_service_enum_io_t table)
+{
+    log_flow() ;
+
+    char fmt[UINT32_FMT] ;
+    char const *str = 0 ;
+    int e = 0 ;
+
+    switch(table) {
+
+        case E_RESOLVE_SERVICE_IO_STDIN:
             fmt[uint32_fmt(fmt,res->io.fdin.type)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_STDINDEST:
+        case E_RESOLVE_SERVICE_IO_STDINDEST:
             str = res->sa.s + res->io.fdin.destination ;
             break ;
 
-        case E_RESOLVE_SERVICE_STDOUT:
+        case E_RESOLVE_SERVICE_IO_STDOUT:
             fmt[uint32_fmt(fmt,res->io.fdout.type)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_STDOUTDEST:
+        case E_RESOLVE_SERVICE_IO_STDOUTDEST:
             str = res->sa.s + res->io.fdout.destination ;
             break ;
 
-        case E_RESOLVE_SERVICE_STDERR:
+        case E_RESOLVE_SERVICE_IO_STDERR:
             fmt[uint32_fmt(fmt,res->io.fderr.type)] = 0 ;
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_STDERRDEST:
+        case E_RESOLVE_SERVICE_IO_STDERRDEST:
             str = res->sa.s + res->io.fderr.destination ;
             break ;
 
@@ -405,4 +552,44 @@ int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve
 
     e = 1 ;
     return e ;
+}
+
+int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve_service_enum_table_t table)
+{
+    log_flow() ;
+
+    switch(table.category) {
+
+        case E_RESOLVE_SERVICE_CATEGORY_CONFIG :
+            return get_config(sa, res, table.id) ;
+
+        case E_RESOLVE_SERVICE_CATEGORY_PATH:
+            return get_path(sa, res, table.id) ;
+
+        case E_RESOLVE_SERVICE_CATEGORY_DEPS:
+            return get_deps(sa, res, table.id) ;
+
+        case E_RESOLVE_SERVICE_CATEGORY_EXECUTE:
+            return get_exec(sa, res, table.id) ;
+
+        case E_RESOLVE_SERVICE_CATEGORY_LIVE:
+            return get_live(sa, res, table.id) ;
+
+        case E_RESOLVE_SERVICE_CATEGORY_LOGGER:
+            return get_logger(sa, res, table.id) ;
+
+        case E_RESOLVE_SERVICE_CATEGORY_ENVIRON:
+            return get_environ(sa, res, table.id) ;
+
+        case E_RESOLVE_SERVICE_CATEGORY_REGEX:
+            return get_regex(sa, res, table.id) ;
+
+        case E_RESOLVE_SERVICE_CATEGORY_IO:
+            return get_io(sa, res, table.id) ;
+
+        default:
+            return 0 ;
+    }
+
+    return 1 ;
 }

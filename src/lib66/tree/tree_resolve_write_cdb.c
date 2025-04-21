@@ -40,12 +40,12 @@ int tree_resolve_write_cdb(cdbmaker *c, resolve_tree_t *tres)
     /* name */
     if (!resolve_add_cdb_uint(c, "rversion", tres->rversion) ||
         !resolve_add_cdb_uint(c, "name", tres->name) ||
+        !resolve_add_cdb_uint(c, "enabled", tres->enabled) ||
         !resolve_add_cdb_uint(c, "depends", tres->depends) ||
         !resolve_add_cdb_uint(c, "requiredby", tres->requiredby) ||
         !resolve_add_cdb_uint(c, "allow", tres->allow) ||
         !resolve_add_cdb_uint(c, "groups", tres->groups) ||
         !resolve_add_cdb_uint(c, "contents", tres->contents) ||
-        !resolve_add_cdb_uint(c, "enabled", tres->enabled) ||
         !resolve_add_cdb_uint(c, "ndepends", tres->ndepends) ||
         !resolve_add_cdb_uint(c, "nrequiredby", tres->nrequiredby) ||
         !resolve_add_cdb_uint(c, "nallow", tres->nallow) ||

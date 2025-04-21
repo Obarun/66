@@ -29,7 +29,7 @@
 #include <66/service.h>
 #include <66/constants.h>
 #include <66/state.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/svc.h>
 
 #include <s6/fdholder.h>
@@ -120,7 +120,7 @@ int sanitize_fdholder(resolve_service_t *res, s6_fdholder_t *a, ss_state_t *sta,
 {
     log_flow() ;
 
-    if (res->logger.want && res->type == TYPE_CLASSIC) {
+    if (res->logger.want && res->type == E_PARSER_TYPE_CLASSIC) {
 
         stralloc list = STRALLOC_ZERO ;
         char *sa = res->sa.s ;

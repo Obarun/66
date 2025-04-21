@@ -29,7 +29,7 @@
 #include <66/graph.h>
 #include <66/resolve.h>
 #include <66/tree.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/ssexec.h>
 
 static bool isdone(struct resolve_hash_s *hres, const char *name)
@@ -131,7 +131,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
 
         /** the logger must be disabled to avoid to start it
          * with the 66 tree start <tree> command */
-        if (res->logger.want && !action && res->type == TYPE_CLASSIC && !res->inns) {
+        if (res->logger.want && !action && res->type == E_PARSER_TYPE_CLASSIC && !res->inns) {
 
             char *name = res->sa.s + res->logger.name ;
 
@@ -156,7 +156,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
             }
         }
 
-        if (res->type == TYPE_MODULE) {
+        if (res->type == E_PARSER_TYPE_MODULE) {
 
             if (res->dependencies.ncontents) {
 

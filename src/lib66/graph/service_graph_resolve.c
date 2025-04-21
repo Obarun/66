@@ -23,7 +23,7 @@
 #include <66/graph.h>
 #include <66/service.h>
 #include <66/state.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 
 static int graph_action(service_graph_t *g, resolve_service_t *res, uint32_t flag) ;
 static int graph_action_logger(service_graph_t *g, resolve_service_t *res, uint32_t flag) ;
@@ -251,7 +251,7 @@ static int graph_action_logger(service_graph_t *g, resolve_service_t *res, uint3
 {
     log_flow() ;
 
-    if (res->type == TYPE_CLASSIC && res->logger.want && !FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
+    if (res->type == E_PARSER_TYPE_CLASSIC && res->logger.want && !FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
 
         if (isdone(g, res->sa.s + res->logger.name) || res->earlier)
             return 1 ;
@@ -284,7 +284,7 @@ static int graph_build_module(service_graph_t *g, resolve_service_t *res, uint32
 
     size_t pos = 0 ;
     struct resolve_hash_s *h = NULL ;
-    if (res->type == TYPE_MODULE && res->dependencies.ncontents) {
+    if (res->type == E_PARSER_TYPE_MODULE && res->dependencies.ncontents) {
 
         _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.contents)) ;
 

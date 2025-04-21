@@ -21,59 +21,70 @@
 #include <66/parse.h>
 #include <66/resolve.h>
 #include <66/service.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 
-int parse_store_logger(resolve_service_t *res, stack *store, int sid, int kid)
+int parse_store_logger(resolve_service_t *res, stack *store, resolve_enum_table_t table)
 {
     log_flow() ;
 
-    if (res->type == TYPE_MODULE)
+    if (res->type == E_PARSER_TYPE_MODULE)
         return 1 ;
 
     int r = 0, e = 0 ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    uint32_t kid = table.u.parser.id ;
+    resolve_enum_table_t ttable ;
+    ttable.category = table.category ; ttable.u.parser.category = table.u.parser.category ;
+    ttable.u.parser.list = table.u.parser.list ; ttable.u.parser.sid = table.u.parser.sid ;
+
 
     switch(kid) {
 
-        case KEY_LOGGER_BUILD:
+        case E_PARSER_SECTION_LOGGER_BUILD:
 
-            if (!parse_store_start_stop(res, store, sid, KEY_STARTSTOP_BUILD))
+            ttable.u.parser.id = E_PARSER_SECTION_STARTSTOP_BUILD ;
+
+            if (!parse_store_start_stop(res, store, ttable))
                 goto err ;
 
             break ;
 
-        case KEY_LOGGER_RUNAS:
+        case E_PARSER_SECTION_LOGGER_RUNAS:
 
-            if (!parse_store_start_stop(res, store, sid, KEY_STARTSTOP_RUNAS))
+            ttable.u.parser.id = E_PARSER_SECTION_STARTSTOP_RUNAS ;
+
+            if (!parse_store_start_stop(res, store, ttable))
                 goto err ;
 
             break ;
 
-        case KEY_LOGGER_EXEC:
+        case E_PARSER_SECTION_LOGGER_EXEC:
 
-            if (!parse_store_start_stop(res, store, sid, KEY_STARTSTOP_EXEC))
+            ttable.u.parser.id = E_PARSER_SECTION_STARTSTOP_EXEC ;
+
+            if (!parse_store_start_stop(res, store, ttable))
                 goto err ;
 
             break ;
 
-        case KEY_LOGGER_T_START:
+        case E_PARSER_SECTION_LOGGER_TIMESTART:
 
             if (!uint320_scan(store->s, &res->logger.execute.timeout.start))
-                parse_error_return(0, 3, sid, list_section_logger, kid) ;
+                parse_error_return(0, 3, table) ;
 
             break ;
 
-        case KEY_LOGGER_T_STOP:
+        case E_PARSER_SECTION_LOGGER_TIMESTOP:
 
             if (!uint320_scan(store->s, &res->logger.execute.timeout.stop))
-                parse_error_return(0, 3, sid, list_section_logger, kid) ;
+                parse_error_return(0, 3, table) ;
 
             break ;
 
-        case KEY_LOGGER_DESTINATION:
+        case E_PARSER_SECTION_LOGGER_DESTINATION:
 
             if (store->s[0] != '/')
-                parse_error_return(0, 4, sid, list_section_logger, kid) ;
+                parse_error_return(0, 4, table) ;
 
             log_1_warn("Destination field is deprecated -- convert it automatically to StdOut=s6log:", store->s) ;
 
@@ -81,28 +92,28 @@ int parse_store_logger(resolve_service_t *res, stack *store, int sid, int kid)
 
            break ;
 
-        case KEY_LOGGER_BACKUP:
+        case E_PARSER_SECTION_LOGGER_BACKUP:
 
             if (!uint320_scan(store->s, &res->logger.backup))
-                parse_error_return(0, 3, sid, list_section_logger, kid) ;
+                parse_error_return(0, 3, table) ;
 
             break ;
 
-        case KEY_LOGGER_MAXSIZE:
+        case E_PARSER_SECTION_LOGGER_MAXSIZE:
 
             if (!uint320_scan(store->s, &res->logger.maxsize))
-                parse_error_return(0, 3, sid, list_section_logger, kid) ;
+                parse_error_return(0, 3, table) ;
 
             if (res->logger.maxsize < 4096 || res->logger.maxsize > 268435455)
-                parse_error_return(0, 0, sid, list_section_logger, kid) ;
+                parse_error_return(0, 0, table) ;
 
             break ;
 
-        case KEY_LOGGER_TIMESTP:
+        case E_PARSER_SECTION_LOGGER_TIMESTAMP:
 
-            r = get_enum_by_key(list_timestamp, store->s) ;
+            r = key_to_enum(enum_list_parser_time, store->s) ;
             if (r == -1)
-                parse_error_return(0, 0, sid, list_section_logger, kid) ;
+                parse_error_return(0, 0, table) ;
 
             res->logger.timestamp = (uint32_t)r ;
 

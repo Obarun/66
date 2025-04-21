@@ -17,6 +17,7 @@
 #include <stdlib.h> //free
 #include <sys/stat.h>
 
+
 #include <oblibs/log.h>
 #include <oblibs/sastr.h>
 #include <oblibs/string.h>
@@ -33,7 +34,7 @@
 #include <66/config.h>
 #include <66/resolve.h>
 #include <66/environ.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/state.h> // service_is_g flag
 #include <66/parse.h>
 #include <66/module.h>
@@ -126,6 +127,7 @@ int parse_frontend(char const *sv,
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    resolve_enum_table_t table = E_TABLE_PARSER_SECTION_MAIN_ZERO ;
 
     resolve_init(wres) ;
 
@@ -164,13 +166,16 @@ int parse_frontend(char const *sv,
     }
 
     {
-        if (!parse_get_value_of_key(&store, sa.s, SECTION_MAIN, list_section_main, KEY_MAIN_TYPE))
-            log_dieu(LOG_EXIT_SYS, "get field ", get_key_by_enum(list_section_main, KEY_MAIN_TYPE)," of service: ", svname) ;
+
+        table.u.parser.id = E_PARSER_SECTION_MAIN_TYPE ;
+
+        if (!parse_get_value_of_key(&store, sa.s, table))
+            log_dieu(LOG_EXIT_SYS, "get field ", enum_to_key(table.u.parser.list, table.u.parser.id), " of service: ", svname) ;
 
         if (!stack_close(&store))
             log_die_nomem("stack overflow") ;
 
-        if (!parse_store_main(&res, &store, SECTION_MAIN, KEY_MAIN_TYPE))
+        if (!parse_store_main(&res, &store, table))
             log_dieu(LOG_EXIT_SYS, "store field type of service: ", svname) ;
     }
 
@@ -178,11 +183,12 @@ int parse_frontend(char const *sv,
 
         stack_reset(&store) ;
 
+        table.u.parser.id = E_PARSER_SECTION_MAIN_INTREE ;
         /** search for the intree field.
          * This field is not mandatory, do not crash if it not found */
-        if (parse_get_value_of_key(&store, sa.s, SECTION_MAIN, list_section_main, KEY_MAIN_INTREE)) {
+        if (parse_get_value_of_key(&store, sa.s, table)) {
 
-            if (!parse_store_main(&res, &store, SECTION_MAIN, KEY_MAIN_INTREE))
+            if (!parse_store_main(&res, &store, table))
                 log_dieu(LOG_EXIT_SYS, "store field intree of service: ", svname) ;
 
             info->treename.len = 0 ;
@@ -251,7 +257,7 @@ int parse_frontend(char const *sv,
 
     /** logger is set by default. if service is a module
      * we don't want logger. So, set it false by default. */
-    if (res.type == TYPE_MODULE)
+    if (res.type == E_PARSER_TYPE_MODULE)
         res.logger.want = 0 ;
 
     // keep overwrite_conf
@@ -259,7 +265,7 @@ int parse_frontend(char const *sv,
 
     /** contents of directory should be listed by service_frontend_path
      * except for module type */
-    if (scan_mode(sv, S_IFDIR) == 1 && res.type != TYPE_MODULE) {
+    if (scan_mode(sv, S_IFDIR) == 1 && res.type != E_PARSER_TYPE_MODULE) {
         stralloc_free(&sa) ;
         resolve_free(wres) ;
         return 1 ;
@@ -306,13 +312,13 @@ int parse_frontend(char const *sv,
             log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", svname) ;
     }
 
-    if (res.type == TYPE_MODULE)
+    if (res.type == E_PARSER_TYPE_MODULE)
         parse_module(&res, hres, info, force) ;
 
     parse_compute_resolve(&res, info) ;
 
-    if ((res.logger.want && res.io.fdin.type == IO_TYPE_S6LOG) &&
-        (!res.inns && res.type != TYPE_MODULE))
+    if ((res.logger.want && res.io.fdin.type == E_PARSER_IO_TYPE_S6LOG) &&
+        (!res.inns && res.type != E_PARSER_TYPE_MODULE))
             parse_create_logger(hres, &res, info) ;
 
     hash = hash_search(hres, res.sa.s + res.name) ;

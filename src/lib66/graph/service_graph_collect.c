@@ -29,7 +29,7 @@
 #include <66/service.h>
 #include <66/resolve.h>
 #include <66/sanitize.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 
 uint32_t service_graph_ncollect(service_graph_t *g, const char *list, size_t len, ssexec_t *info, uint32_t flag)
 {
@@ -136,7 +136,7 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
          *
          * At the end of any process, the ssexec_signal will deal properly
          * with the current state and the desire state of the service. */
-        if (res.type == TYPE_MODULE && res.dependencies.ncontents) {
+        if (res.type == E_PARSER_TYPE_MODULE && res.dependencies.ncontents) {
 
             size_t len = strlen(res.sa.s + res.dependencies.contents) ;
             _alloc_stk_(stk, len + 1) ;

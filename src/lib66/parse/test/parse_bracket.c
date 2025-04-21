@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <oblibs/stack.h>
 #include <66/parse.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 
-void basic(void)
+void basic(resolve_enum_table_t table)
 {
     printf("Running test basic...\n") ;
 
@@ -14,12 +14,12 @@ void basic(void)
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void basic1(void)
+void basic1(resolve_enum_table_t table)
 {
     printf("Running test basic1...\n") ;
 
@@ -29,12 +29,12 @@ void basic1(void)
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void basic2(void)
+void basic2(resolve_enum_table_t table)
 {
     printf("Running test basic2...\n") ;
 
@@ -44,12 +44,12 @@ void basic2(void)
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void basic3(void)
+void basic3(resolve_enum_table_t table)
 {
     printf("Running test basic3...\n") ;
 
@@ -59,12 +59,12 @@ void basic3(void)
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void basic4(void)
+void basic4(resolve_enum_table_t table)
 {
     printf("Running test basic4...\n") ;
 
@@ -82,12 +82,12 @@ Bad=key\n" ;
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void basic5(void)
+void basic5(resolve_enum_table_t table)
 {
     printf("Running test basic5...\n") ;
 
@@ -104,12 +104,12 @@ Type=classic\n" ;
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void comment_inside(void)
+void comment_inside(resolve_enum_table_t table)
 {
     printf("Running test comment_inside...\n") ;
 
@@ -128,12 +128,12 @@ valid\n" ;
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void comment_outside(void)
+void comment_outside(resolve_enum_table_t table)
 {
     printf("Running test comment_outside...\n") ;
 
@@ -154,12 +154,12 @@ valid\n" ;
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void comment_outside_valid(void)
+void comment_outside_valid(resolve_enum_table_t table)
 {
     printf("Running test comment_outside_valid...\n") ;
 
@@ -181,12 +181,12 @@ valid\n" ;
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void odd_bracket(void)
+void odd_bracket(resolve_enum_table_t table)
 {
     printf("Running test odd_bracket...\n") ;
 
@@ -196,12 +196,12 @@ void odd_bracket(void)
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 0) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void odd_bracket_validkey(void)
+void odd_bracket_validkey(resolve_enum_table_t table)
 {
     printf("Running test odd_bracket_validkey...\n") ;
 
@@ -210,11 +210,11 @@ void odd_bracket_validkey(void)
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 0) ;
 }
 
-void no_bracket(void)
+void no_bracket(resolve_enum_table_t table)
 {
     printf("Running test no_bracket...\n") ;
 
@@ -223,11 +223,11 @@ void no_bracket(void)
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 0) ;
 }
 
-void nested_bracket(void)
+void nested_bracket(resolve_enum_table_t table)
 {
     printf("Running test nested_bracket...\n") ;
 
@@ -237,12 +237,12 @@ void nested_bracket(void)
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void bash(void)
+void bash(resolve_enum_table_t table)
 {
     printf("Running test bash...\n") ;
 
@@ -279,12 +279,12 @@ start-stop-daemon --start --quiet --pidfile ${pidfile}\n\
     -- ${NVPD_USER_ARG} ${ARGS}\n" ;
 
     _alloc_stk_(stk, strlen(a) + 1) ;
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void bash_case(void)
+void bash_case(resolve_enum_table_t table)
 {
     printf("Running test bash_case...\n") ;
 
@@ -331,12 +331,12 @@ esac" ;
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void invalid_key(void)
+void invalid_key(resolve_enum_table_t table)
 {
     printf("Running test invalid_key...\n") ;
 
@@ -346,12 +346,12 @@ void invalid_key(void)
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void invalid_key1(void)
+void invalid_key1(resolve_enum_table_t table)
 {
     printf("Running test invalid_key1...\n") ;
 
@@ -361,12 +361,12 @@ void invalid_key1(void)
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void eof(void)
+void eof(resolve_enum_table_t table)
 {
     printf("Running test eof...\n") ;
 
@@ -376,12 +376,12 @@ void eof(void)
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void eof_invalid(void)
+void eof_invalid(resolve_enum_table_t table)
 {
     printf("Running test eof_invalid...\n") ;
 
@@ -392,12 +392,12 @@ UnknownKey = InvalidValues\n"; ;
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void valid_section(void)
+void valid_section(resolve_enum_table_t table)
 {
     printf("Running test valid_section...\n") ;
 
@@ -407,12 +407,12 @@ void valid_section(void)
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
-void invalid_section(void)
+void invalid_section(resolve_enum_table_t table)
 {
     printf("Running test invalid_section...\n") ;
 
@@ -422,34 +422,37 @@ void invalid_section(void)
 
     _alloc_stk_(stk, strlen(a) + 1) ;
 
-    r = parse_bracket(&stk, a, SECTION_MAIN) ;
+    r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
 }
 
 int main(void) {
 
-    basic() ;
-    basic1() ;
-    basic2() ;
-    basic3() ;
-    basic4() ;
-    basic5() ;
-    comment_inside() ;
-    comment_outside() ;
-    comment_outside_valid() ;
-    odd_bracket() ;
-    odd_bracket_validkey() ;
-    no_bracket() ;
-    nested_bracket() ;
-    bash() ;
-    bash_case() ;
-    invalid_key() ;
-    invalid_key1() ;
-    eof() ;
-    eof_invalid() ;
-    valid_section() ;
-    invalid_section() ;
+    resolve_enum_table_t table = E_TABLE_PARSER_SECTION_MAIN_ZERO ;
+    table.u.parser.id = E_PARSER_SECTION_STARTSTOP_EXEC ;
+
+    basic(table) ;
+    basic1(table) ;
+    basic2(table) ;
+    basic3(table) ;
+    basic4(table) ;
+    basic5(table) ;
+    comment_inside(table) ;
+    comment_outside(table) ;
+    comment_outside_valid(table) ;
+    odd_bracket(table) ;
+    odd_bracket_validkey(table) ;
+    no_bracket(table) ;
+    nested_bracket(table) ;
+    bash(table) ;
+    bash_case(table) ;
+    invalid_key(table) ;
+    invalid_key1(table) ;
+    eof(table) ;
+    eof_invalid(table) ;
+    valid_section(table) ;
+    invalid_section(table) ;
 
     printf("All tests passed successfully.\n") ;
 

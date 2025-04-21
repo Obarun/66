@@ -23,7 +23,7 @@
 #include <66/service.h>
 #include <66/ssexec.h>
 #include <66/state.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/graph.h>
 
 #include <s6/supervise.h>
@@ -75,7 +75,7 @@ void svc_init_array(pidservice_t *apids, service_graph_t *g, uint8_t requiredby,
 
         pids.index = v->index ;
 
-        if (pids.res->type != TYPE_CLASSIC) {
+        if (pids.res->type != E_PARSER_TYPE_CLASSIC) {
 
                 ss_state_t sta = STATE_ZERO ;
 

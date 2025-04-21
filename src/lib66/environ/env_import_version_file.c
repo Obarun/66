@@ -13,6 +13,7 @@
  */
 
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <string.h>
 
 #include <oblibs/log.h>
@@ -24,7 +25,7 @@
 
 #include <66/environ.h>
 #include <66/constants.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/utils.h>
 
 
@@ -35,9 +36,9 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
     int r ;
     struct stat st ;
     size_t pos = 0, svname_len = strlen(svname) ;
-    stralloc salist = STRALLOC_ZERO ;
-    stralloc src_ver = STRALLOC_ZERO ;
-    stralloc dst_ver = STRALLOC_ZERO ;
+    _alloc_sa_(salist) ;
+    _alloc_sa_(src_ver) ;
+    _alloc_sa_(dst_ver) ;
 
     char svname_dot[svname_len + 1 + 1] ;
 
@@ -45,20 +46,14 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
 
     r = version_compare(sversion,dversion,SS_SERVICE_VERSION_NDOT) ;
 
-    if (!r) {
-
+    if (!r)
         log_warn_return(LOG_EXIT_ONE,"same configuration file version for: ",svname," -- nothing to import") ;
-        goto freed ;
-    }
 
     if (r == -2)
         log_warn_return(LOG_EXIT_ZERO,"compare ",svname," version: ",sversion," vs: ",dversion) ;
 
-    if (r == 1) {
-
+    if (r == 1)
         log_warn_return(LOG_EXIT_ONE,"configuration file version regression for ",svname," -- ignoring importation request") ;
-        goto freed ;
-    }
 
     if (!env_append_version(&src_ver,svconf,sversion) ||
         !env_append_version(&dst_ver,svconf,dversion))
@@ -94,7 +89,7 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
      * the previous configuration doesn't exist and so this function do not
      * import anything */
 
-    if (svtype == TYPE_MODULE) {
+    if (svtype == E_PARSER_TYPE_MODULE) {
 
         salist.len = 0 ;
         pos = 0 ;
@@ -121,11 +116,6 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
         }
 
     }
-
-    freed:
-    stralloc_free(&src_ver) ;
-    stralloc_free(&dst_ver) ;
-    stralloc_free(&salist) ;
 
     return 1 ;
 }

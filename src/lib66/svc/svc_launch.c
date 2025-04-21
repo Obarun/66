@@ -36,7 +36,7 @@
 #include <66/ssexec.h>
 #include <66/constants.h>
 #include <66/service.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/state.h>
 #include <66/svc.h>
 
@@ -183,7 +183,7 @@ static void announce(unsigned int pos, pidservice_t *apids, unsigned int what, u
 
     if (success) {
 
-        if (apids[pos].res->type == TYPE_CLASSIC) {
+        if (apids[pos].res->type == E_PARSER_TYPE_CLASSIC) {
 
             fd = open_trunc(file) ;
             if (fd < 0)
@@ -209,7 +209,7 @@ static void announce(unsigned int pos, pidservice_t *apids, unsigned int what, u
                                                         ? STATE_FLAGS_TRUE : what ? STATE_FLAGS_FALSE : STATE_FLAGS_TRUE))
             log_dieu(LOG_EXIT_SYS, "send message to state of: ", name) ;
 
-        if (!apids[pos].res->execute.down && apids[pos].res->type == TYPE_CLASSIC) {
+        if (!apids[pos].res->execute.down && apids[pos].res->type == E_PARSER_TYPE_CLASSIC) {
 
             if (!what) {
 
@@ -352,7 +352,7 @@ static int doit(pidservice_t *apids, unsigned int idx, uint8_t what, tain *deadl
 
     tfmt[uint_fmt(tfmt, timeout)] = 0 ;
 
-    if (type == TYPE_CLASSIC) {
+    if (type == E_PARSER_TYPE_CLASSIC) {
 
         char *scandir = apids[idx].res->sa.s + apids[idx].res->live.scandir ;
 
@@ -386,7 +386,7 @@ static int doit(pidservice_t *apids, unsigned int idx, uint8_t what, tain *deadl
         else
             return WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat) ;
 
-    } else if (type == TYPE_ONESHOT) {
+    } else if (type == E_PARSER_TYPE_ONESHOT) {
 
         char *servicedir = apids[idx].res->sa.s + apids[idx].res->live.servicedir ;
         char *oneshotdir = apids[idx].res->sa.s + apids[idx].res->live.oneshotddir ;
@@ -454,7 +454,7 @@ static int doit(pidservice_t *apids, unsigned int idx, uint8_t what, tain *deadl
             return WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat) ;
         }
 
-    } else if (type == TYPE_MODULE) {
+    } else if (type == E_PARSER_TYPE_MODULE) {
 
         return svc_compute_ns(apids[idx].res, what, PINFO, updown, opt_updown, reloadmsg, data, PROPAGATE) ;
     }

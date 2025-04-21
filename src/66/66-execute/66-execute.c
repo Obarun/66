@@ -38,7 +38,6 @@
 #include <66/service.h>
 #include <66/constants.h>
 #include <66/utils.h>
-#include <66/enum.h>
 
 #include <s6/fdholder.h>
 
@@ -353,30 +352,30 @@ static void io_setup_stdin(resolve_service_t *res)
 
     switch(res->io.fdin.type) {
 
-        case IO_TYPE_TTY:
+        case E_PARSER_IO_TYPE_TTY:
             io_open_terminal_ncontrol(res, 0, res->sa.s + res->io.fdin.destination, O_RDWR | O_NOCTTY) ;
             break ;
 
-        case IO_TYPE_NULL:
+        case E_PARSER_IO_TYPE_NULL:
             io_open_destination(0, res->sa.s +  res->io.fdin.destination, O_RDONLY | O_NOCTTY, 0, 0) ;
             break ;
 
-        case IO_TYPE_CLOSE:
+        case E_PARSER_IO_TYPE_CLOSE:
             fd_close(0) ;
             break ;
 
-        case IO_TYPE_S6LOG:
-            if (res->type == TYPE_CLASSIC && res->islog)
+        case E_PARSER_IO_TYPE_S6LOG:
+            if (res->type == E_PARSER_TYPE_CLASSIC && res->islog)
                 io_fdholder_retrieve(res, 0, res->sa.s + res->name, 0) ;
             break ;
 
-        case IO_TYPE_PARENT:
+        case E_PARSER_IO_TYPE_PARENT:
             break ;
 
-        case IO_TYPE_CONSOLE:
-        case IO_TYPE_FILE:
-        case IO_TYPE_SYSLOG:
-        case IO_TYPE_INHERIT:
+        case E_PARSER_IO_TYPE_CONSOLE:
+        case E_PARSER_IO_TYPE_FILE:
+        case E_PARSER_IO_TYPE_SYSLOG:
+        case E_PARSER_IO_TYPE_INHERIT:
             break ;
         default:
             log_warn("unknown StdIn type -- applying default") ;
@@ -390,17 +389,17 @@ static void io_setup_stdout(resolve_service_t *res)
 
     switch(res->io.fdout.type) {
 
-        case IO_TYPE_CONSOLE:
+        case E_PARSER_IO_TYPE_CONSOLE:
             io_open_active_console(1, res) ;
             break ;
 
-        case IO_TYPE_S6LOG:
+        case E_PARSER_IO_TYPE_S6LOG:
 
-            if (res->type == TYPE_CLASSIC && !res->islog) {
+            if (res->type == E_PARSER_TYPE_CLASSIC && !res->islog) {
 
                 io_fdholder_retrieve(res, 1, res->sa.s + res->logger.name, 1) ;
 
-            } else if (res->type == TYPE_ONESHOT) {
+            } else if (res->type == E_PARSER_TYPE_ONESHOT) {
 
                 _alloc_stk_(stk, strlen(res->sa.s + res->io.fdout.destination) + SS_TREE_CURRENT_LEN + 2) ;
                 auto_strings(stk.s, res->sa.s + res->io.fdout.destination, "/", SS_TREE_CURRENT) ;
@@ -410,30 +409,30 @@ static void io_setup_stdout(resolve_service_t *res)
             }
             break ;
 
-        case IO_TYPE_TTY:
+        case E_PARSER_IO_TYPE_TTY:
             io_open_terminal(res, 1, res->sa.s + res->io.fdout.destination, O_WRONLY | O_NOCTTY) ;
             break ;
 
-        case IO_TYPE_NULL:
+        case E_PARSER_IO_TYPE_NULL:
             io_open_destination(1, res->sa.s + res->io.fdout.destination, O_WRONLY, 0, 0) ;
             break ;
 
-        case IO_TYPE_FILE:
+        case E_PARSER_IO_TYPE_FILE:
             io_open_file(res, 1, res->sa.s + res->io.fdout.destination) ;
             break ;
 
-        case IO_TYPE_SYSLOG:
+        case E_PARSER_IO_TYPE_SYSLOG:
             io_open_syslog(1) ;
             break ;
 
-        case IO_TYPE_CLOSE:
+        case E_PARSER_IO_TYPE_CLOSE:
             fd_close(1) ;
             break ;
 
-        case IO_TYPE_PARENT:
+        case E_PARSER_IO_TYPE_PARENT:
             break ;
 
-        case IO_TYPE_INHERIT:
+        case E_PARSER_IO_TYPE_INHERIT:
             if (fd_copy(1, 0) < 0)
                 log_dieusys(LOG_EXIT_SYS, "copy stdout to stderr") ;
             break ;
@@ -450,36 +449,36 @@ static void io_setup_stderr(resolve_service_t *res)
 
     switch(res->io.fderr.type) {
 
-        case IO_TYPE_CONSOLE:
+        case E_PARSER_IO_TYPE_CONSOLE:
             io_open_active_console(2, res) ;
             break ;
 
-        case IO_TYPE_TTY:
+        case E_PARSER_IO_TYPE_TTY:
             io_open_terminal(res, 2, res->sa.s + res->io.fderr.destination, O_WRONLY | O_NOCTTY) ;
             break ;
 
-        case IO_TYPE_NULL:
+        case E_PARSER_IO_TYPE_NULL:
             io_open_destination(2, res->sa.s + res->io.fdout.destination, O_WRONLY, 0, 0) ;
             break ;
 
-        case IO_TYPE_FILE:
+        case E_PARSER_IO_TYPE_FILE:
             io_open_file(res, 2, res->sa.s + res->io.fderr.destination) ;
             break ;
 
-        case IO_TYPE_SYSLOG:
+        case E_PARSER_IO_TYPE_SYSLOG:
             io_open_syslog(2) ;
             break ;
 
-        case IO_TYPE_CLOSE:
+        case E_PARSER_IO_TYPE_CLOSE:
             fd_close(2) ;
             break ;
 
-        case IO_TYPE_INHERIT:
+        case E_PARSER_IO_TYPE_INHERIT:
             if (fd_copy(2, 1) < 0)
                 log_dieusys(LOG_EXIT_SYS, "copy stderr to stdout") ;
             break ;
 
-        case IO_TYPE_PARENT:
+        case E_PARSER_IO_TYPE_PARENT:
             break ;
 
         default:
@@ -538,7 +537,7 @@ static void execute_script(const char *runuser, resolve_service_t *res, exlsn_t 
     _alloc_sa_(sa) ;
     uid_t owner = getuid() ;
     uint32_t want = (action == EXECUTE_START) ? res->execute.run.build : res->execute.finish.build ;
-    short build = !strcmp(res->sa.s + want, "custom") ? BUILD_CUSTOM : BUILD_AUTO ;
+    short build = !strcmp(res->sa.s + want, "custom") ? E_PARSER_BUILD_CUSTOM : E_PARSER_BUILD_AUTO ;
     char *script = res->sa.s + (action == EXECUTE_START ? res->execute.run.run_user : res->execute.finish.run_user) ;
     size_t scriptlen = strlen(script) ;
 

@@ -20,59 +20,61 @@
 #include <66/parse.h>
 #include <66/resolve.h>
 #include <66/service.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 
-int parse_store_start_stop(resolve_service_t *res, stack *store, const int sid, const int kid)
+int parse_store_start_stop(resolve_service_t *res, stack *store, resolve_enum_table_t table)
 {
     log_flow() ;
 
-    if (res->type == TYPE_MODULE)
+    if (res->type == E_PARSER_TYPE_MODULE)
         return 1 ;
 
     int e = 0 ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    uint32_t kid = table.u.parser.id ;
+    uint32_t sid = table.u.parser.sid ;
 
     switch(kid) {
 
-        case KEY_STARTSTOP_BUILD:
+        case E_PARSER_SECTION_STARTSTOP_BUILD:
 
-            if (sid == SECTION_START)
+            if (sid == E_PARSER_SECTION_START)
                 res->execute.run.build = resolve_add_string(wres, store->s) ;
-            else if (sid == SECTION_STOP)
+            else if (sid == E_PARSER_SECTION_STOP)
                 res->execute.finish.build = resolve_add_string(wres, store->s) ;
-            else if (sid == SECTION_LOG)
+            else if (sid == E_PARSER_SECTION_LOGGER)
                 res->logger.execute.run.build = resolve_add_string(wres, store->s) ;
             break ;
 
-        case KEY_STARTSTOP_RUNAS:
+        case E_PARSER_SECTION_STARTSTOP_RUNAS:
             {
                 char tmp[store->len + 1] ;
                 auto_strings(tmp, store->s) ;
-                if (!parse_clean_runas(tmp, sid, kid))
+                if (!parse_clean_runas(tmp, table))
                     goto err ;
 
-                if (sid == SECTION_START)
+                if (sid == E_PARSER_SECTION_START)
                     res->execute.run.runas = resolve_add_string(wres, tmp) ;
-                else if (sid == SECTION_STOP)
+                else if (sid == E_PARSER_SECTION_STOP)
                     res->execute.finish.runas = resolve_add_string(wres, tmp) ;
-                else if (sid == SECTION_LOG)
+                else if (sid == E_PARSER_SECTION_LOGGER)
                     res->logger.execute.run.runas = resolve_add_string(wres, tmp) ;
             }
             break ;
 
-        case KEY_STARTSTOP_EXEC:
+        case E_PARSER_SECTION_STARTSTOP_EXEC:
 
-            if (sid == SECTION_START)
+            if (sid == E_PARSER_SECTION_START)
                 res->execute.run.run_user = resolve_add_string(wres, store->s) ;
-            else if (sid == SECTION_STOP)
+            else if (sid == E_PARSER_SECTION_STOP)
                 res->execute.finish.run_user = resolve_add_string(wres, store->s) ;
-            else if (sid == SECTION_LOG)
+            else if (sid == E_PARSER_SECTION_LOGGER)
                 res->logger.execute.run.run_user = resolve_add_string(wres, store->s) ;
             break ;
 
         default:
             /** never happen*/
-            log_warn_return(LOG_EXIT_ZERO, "unknown id key in section ", *list_section_startstop[sid].name, "  -- please make a bug report") ;
+            log_warn_return(LOG_EXIT_ZERO, "unknown id key in section ", *table.u.parser.list[sid].name, "  -- please make a bug report") ;
     }
 
     e = 1 ;

@@ -34,7 +34,7 @@
 #include <66/utils.h>
 #include <66/config.h>
 #include <66/ssexec.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 
 #include <execline/config.h>
 #include <s6/config.h>
@@ -358,8 +358,8 @@ void write_bootlog(char const *live, char const *scandir)
             "\n" S6_BINPREFIX "s6-log -bpd3 -- 1"))
                 log_die_nomem("buffer") ;
 
-    if (SS_LOGGER_TIMESTAMP < TIME_NONE)
-        if (!auto_buf(&b, SS_LOGGER_TIMESTAMP == TIME_ISO ? " T " : " t "))
+    if (SS_LOGGER_TIMESTAMP < E_PARSER_TIME_NONE)
+        if (!auto_buf(&b, SS_LOGGER_TIMESTAMP == E_PARSER_TIME_ISO ? " T " : " t "))
             log_die_nomem("buffer") ;
 
     if (!auto_buf(&b,path,"\n"))

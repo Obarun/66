@@ -43,7 +43,7 @@
 #include <66/info.h>
 #include <66/constants.h>
 #include <66/tree.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/resolve.h>
 #include <66/environ.h>
 #include <66/state.h>
@@ -217,7 +217,7 @@ static void info_get_status(resolve_service_t *res)
 
     ss_state_t sta = STATE_ZERO ;
 
-    if (res->type == TYPE_CLASSIC) {
+    if (res->type == E_PARSER_TYPE_CLASSIC) {
 
         r = s6_svc_ok(res->sa.s + res->live.scandir) ;
         if (r != 1) {
@@ -295,7 +295,7 @@ static void info_display_type(char const *field,resolve_service_t *res)
     log_flow() ;
 
     if (NOFIELD) info_display_field_name(field) ;
-    info_display_string(get_key_by_enum(list_type, res->type)) ;
+    info_display_string(enum_to_key(enum_list_parser_type, res->type)) ;
 }
 
 static void info_display_description(char const *field,resolve_service_t *res)
@@ -537,7 +537,7 @@ static void info_display_contents(char const *field, resolve_service_t *res)
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     uint32_t nservice = 0, flag = GRAPH_WANT_DEPENDS|GRAPH_WANT_REQUIREDBY ;
 
-    if (res->type != TYPE_MODULE)
+    if (res->type != E_PARSER_TYPE_MODULE)
         return ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
@@ -791,7 +791,7 @@ static void info_display_logname(char const *field,resolve_service_t *res)
     log_flow() ;
 
     if (NOFIELD) info_display_field_name(field) ;
-    if (res->type == TYPE_CLASSIC) {
+    if (res->type == E_PARSER_TYPE_CLASSIC) {
         if (res->logger.want) {
             info_display_string(res->sa.s + res->logger.name) ;
             return ;
@@ -807,9 +807,9 @@ static void info_display_stdin(char const *field, resolve_service_t *res)
 
     _alloc_sa_(sa) ;
     if (NOFIELD) info_display_field_name(field) ;
-    if (res->type != TYPE_MODULE && res->io.fdin.destination) {
+    if (res->type != E_PARSER_TYPE_MODULE && res->io.fdin.destination) {
 
-        if (!auto_stra(&sa, get_key_by_enum(list_io_type, res->io.fdin.type), ":", res->sa.s + res->io.fdin.destination))
+        if (!auto_stra(&sa, enum_to_key(enum_list_parser_io_type, res->io.fdin.type), ":", res->sa.s + res->io.fdin.destination))
             log_die_nomem("stralloc") ;
 
         info_display_string(sa.s) ;
@@ -825,9 +825,9 @@ static void info_display_stdout(char const *field, resolve_service_t *res)
 
     _alloc_sa_(sa) ;
     if (NOFIELD) info_display_field_name(field) ;
-    if (res->type != TYPE_MODULE && res->io.fdout.destination) {
+    if (res->type != E_PARSER_TYPE_MODULE && res->io.fdout.destination) {
 
-        if (!auto_stra(&sa, get_key_by_enum(list_io_type, res->io.fdout.type), ":", res->sa.s + res->io.fdout.destination))
+        if (!auto_stra(&sa, enum_to_key(enum_list_parser_io_type, res->io.fdout.type), ":", res->sa.s + res->io.fdout.destination))
             log_die_nomem("stralloc") ;
 
         info_display_string(sa.s) ;
@@ -843,9 +843,9 @@ static void info_display_stderr(char const *field, resolve_service_t *res)
 
     _alloc_sa_(sa) ;
     if (NOFIELD) info_display_field_name(field) ;
-    if (res->type != TYPE_MODULE && res->io.fderr.destination) {
+    if (res->type != E_PARSER_TYPE_MODULE && res->io.fderr.destination) {
 
-        if (!auto_stra(&sa, get_key_by_enum(list_io_type, res->io.fderr.type), ":", res->sa.s + res->io.fderr.destination))
+        if (!auto_stra(&sa, enum_to_key(enum_list_parser_io_type, res->io.fderr.type), ":", res->sa.s + res->io.fderr.destination))
             log_die_nomem("stralloc") ;
 
         info_display_string(sa.s) ;
@@ -860,11 +860,11 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
     log_flow() ;
 
     if (NOFIELD) info_display_field_name(field) ;
-    if (res->type != TYPE_MODULE)
+    if (res->type != E_PARSER_TYPE_MODULE)
     {
-        if (res->logger.want || (res->type == TYPE_ONESHOT && res->io.fdout.destination))
+        if (res->logger.want || (res->type == E_PARSER_TYPE_ONESHOT && res->io.fdout.destination))
         {
-            if (nlog && res->io.fdout.type == IO_TYPE_S6LOG)
+            if (nlog && res->io.fdout.type == E_PARSER_IO_TYPE_S6LOG)
             {
                 stralloc log = STRALLOC_ZERO ;
                 /** the file current may not exist if the service was never started*/
@@ -888,7 +888,7 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
                     if (!log.len) goto empty ;
                     log.len-- ;
                     if (!auto_stra(&log,"\n")) log_dieusys(LOG_EXIT_SYS,"append newline") ;
-                    if (log.len < 10 && res->type != TYPE_ONESHOT)
+                    if (log.len < 10 && res->type != E_PARSER_TYPE_ONESHOT)
                     {
                         if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off)) goto err ;
                     }

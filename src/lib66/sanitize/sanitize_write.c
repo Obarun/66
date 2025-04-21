@@ -30,7 +30,7 @@
 #include <66/sanitize.h>
 #include <66/resolve.h>
 #include <66/constants.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/tree.h>
 #include <66/state.h>
 #include <66/svc.h>
@@ -57,7 +57,10 @@ static void resolve_compare(resolve_service_t *res)
         if (sta.issupervised == STATE_FLAGS_TRUE) {
 
             if (fres.type != res->type)
-                log_die(LOG_EXIT_SYS, "Detection of incompatible type format for supervised service: ", name, " -- current: ", get_key_by_enum(list_type, res->type), " previous: ", get_key_by_enum(list_type, fres.type), ". Please unsupervise it with '66 free ", name,"' before trying the conversion") ;
+                log_die(LOG_EXIT_SYS,   "Detection of incompatible type format for supervised service: ", name, \
+                                        " -- current: ", enum_to_key(enum_list_parser_type, res->type), \
+                                        " previous: ", enum_to_key(enum_list_parser_type, fres.type), \
+                                        ". Please unsupervise it with '66 free ", name,"' before trying the conversion") ;
         }
 
         if (strcmp(res->sa.s + res->treename, fres.sa.s + fres.treename))

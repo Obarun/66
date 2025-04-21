@@ -19,7 +19,7 @@
 
 #include <66/resolve.h>
 #include <66/service.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 #include <66/constants.h>
 #include <66/config.h>
 #include <66/utils.h>
@@ -72,7 +72,7 @@ static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, log) ;
 
-    int build = !strcmp(res->sa.s + res->logger.execute.run.build, "custom") ? BUILD_CUSTOM : BUILD_AUTO ;
+    int build = !strcmp(res->sa.s + res->logger.execute.run.build, "custom") ? E_PARSER_BUILD_CUSTOM : E_PARSER_BUILD_AUTO ;
 
     char *pmax = 0 ;
     char *pback = 0 ;
@@ -86,9 +86,9 @@ static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
 
     /** timestamp */
     if (res->logger.timestamp != 3)
-        timestamp = res->logger.timestamp == TIME_NONE ? "" : res->logger.timestamp == TIME_ISO ? "T" : "t" ;
+        timestamp = res->logger.timestamp == E_PARSER_TIME_NONE ? "" : res->logger.timestamp == E_PARSER_TIME_ISO ? "T" : "t" ;
     else
-        timestamp = itimestamp == TIME_NONE ? "" : itimestamp == TIME_ISO ? "T" : "t" ;
+        timestamp = itimestamp == E_PARSER_TIME_NONE ? "" : itimestamp == E_PARSER_TIME_ISO ? "T" : "t" ;
 
     /** backup */
     if (res->logger.backup) {
@@ -135,7 +135,7 @@ static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
 
             auto_strings(run + FAKELEN, "n", pback, " ") ;
 
-            if (res->logger.timestamp < TIME_NONE)
+            if (res->logger.timestamp < E_PARSER_TIME_NONE)
                 auto_strings(run + FAKELEN, timestamp, " ") ;
 
             auto_strings(run + FAKELEN, "s", pmax, " ", res->sa.s + res->io.fdout.destination, "\n") ;
@@ -222,18 +222,18 @@ static void compute_logger(resolve_service_t *res, resolve_service_t *log, ssexe
 
     if (!strcmp(res->sa.s + res->logger.execute.run.build, "custom")) {
 
-        log->io.fdin.type = log->io.fdout.type = log->io.fderr.type = IO_TYPE_PARENT ;
+        log->io.fdin.type = log->io.fdout.type = log->io.fderr.type = E_PARSER_IO_TYPE_PARENT ;
 
     } else {
 
-        log->io.fdin.type = log->io.fdout.type = IO_TYPE_S6LOG ;
+        log->io.fdin.type = log->io.fdout.type = E_PARSER_IO_TYPE_S6LOG ;
         log->io.fdin.destination = resolve_add_string(wres, res->sa.s + res->live.fdholderdir) ;
         log->io.fdout.destination = log->io.fderr.destination = resolve_add_string(wres, res->sa.s + res->io.fdout.destination) ;
-        log->io.fderr.type = IO_TYPE_INHERIT ;
+        log->io.fderr.type = E_PARSER_IO_TYPE_INHERIT ;
     }
 
     // oneshot do not use fdholder daemon
-    if (res->type == TYPE_CLASSIC)
+    if (res->type == E_PARSER_TYPE_CLASSIC)
         compute_log_script(res, log) ;
 
     free(wres) ;
@@ -250,7 +250,7 @@ void parse_create_logger(struct resolve_hash_s **hres, resolve_service_t *res, s
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     hash = hash_search(hres, logname) ;
-    if (hash == NULL && res->type == TYPE_CLASSIC) {
+    if (hash == NULL && res->type == E_PARSER_TYPE_CLASSIC) {
         /** the logger is not a service with oneshot type */
 
         if (res->dependencies.ndepends) {

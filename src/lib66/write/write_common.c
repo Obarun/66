@@ -12,7 +12,7 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-
+#include <sys/types.h>
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -32,7 +32,7 @@
 #include <66/write.h>
 #include <66/constants.h>
 #include <66/environ.h>
-#include <66/enum.h>
+#include <66/enum_parser.h>
 
 int write_common(resolve_service_t *res, char const *dst, uint8_t force)
 {
@@ -54,11 +54,11 @@ int write_common(resolve_service_t *res, char const *dst, uint8_t force)
      * Only write timeout file for classic service.
      * S6-supervise need it otherwise it's read directly
      * from the resolve file at start process. */
-    if (res->type == TYPE_CLASSIC && res->execute.timeout.start)
+    if (res->type == E_PARSER_TYPE_CLASSIC && res->execute.timeout.start)
         if (!write_uint(dst, "timeout-kill", res->execute.timeout.start))
             log_warnusys_return(LOG_EXIT_ZERO, "write uint file timeout-kill") ;
 
-    if (res->type == TYPE_CLASSIC && res->execute.timeout.stop)
+    if (res->type == E_PARSER_TYPE_CLASSIC && res->execute.timeout.stop)
         if (!write_uint(dst, "timeout-finish", res->execute.timeout.stop))
             log_warnusys_return(LOG_EXIT_ZERO, "write uint file timeout-finish") ;
 
@@ -73,7 +73,7 @@ int write_common(resolve_service_t *res, char const *dst, uint8_t force)
             log_warnusys_return(LOG_EXIT_ZERO, "write uint file down-signal") ;
 
     /** environment for module is already written by the regex_configure() function */
-    if (res->environ.env && res->type != TYPE_MODULE) {
+    if (res->environ.env && res->type != E_PARSER_TYPE_MODULE) {
 
         stralloc dst = STRALLOC_ZERO ;
         stralloc contents = STRALLOC_ZERO ;
@@ -91,7 +91,7 @@ int write_common(resolve_service_t *res, char const *dst, uint8_t force)
     }
 
     /** hierarchy copy */
-    if (res->hiercopy) {
+    if (res->copyfrom) {
 
         int r ;
         size_t pos = 0 ;
@@ -103,7 +103,7 @@ int write_common(resolve_service_t *res, char const *dst, uint8_t force)
         if (!ob_dirname(basedir, src))
             log_warnusys_return(LOG_EXIT_ZERO, "get dirname of: ", src) ;
 
-        if (!sastr_clean_string(&sa, res->sa.s + res->hiercopy))
+        if (!sastr_clean_string(&sa, res->sa.s + res->copyfrom))
             log_warnusys_return(LOG_EXIT_ZERO, "clean string") ;
 
         FOREACH_SASTR(&sa, pos) {

@@ -17,7 +17,6 @@
 #include <oblibs/string.h>
 #include <oblibs/log.h>
 
-#include <66/enum.h>
 #include <66/service.h>
 #include <66/tree.h>
 #include <66/graph.h>

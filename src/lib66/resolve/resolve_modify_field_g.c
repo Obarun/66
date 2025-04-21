@@ -18,14 +18,14 @@
 
 #include <66/resolve.h>
 
-int resolve_modify_field_g(resolve_wrapper_t_ref wres, char const *base, char const *name, uint8_t field, char const *value)
+int resolve_modify_field_g(resolve_wrapper_t_ref wres, char const *base, char const *name, resolve_enum_table_t table, char const *value)
 {
     log_flow() ;
 
     if (resolve_read_g(wres, base, name) <= 0)
         return 0 ;
 
-    if (!resolve_modify_field(wres, field, value))
+    if (!resolve_modify_field(wres, table, value))
         return 0 ;
 
     if (!resolve_write_g(wres, base, name))
