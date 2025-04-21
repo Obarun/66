@@ -20,3 +20,16 @@ src/include/66/config.h
 /doc/*/
 TODO
 hidden/
+.vscode/
+66.code-workspace
+build.sh
+migrate_service.h
+make-mkdocs.sh
+fake
+66-execute.c
+migrate_service.sh
+service.h
+service(resolve with mount).h
+TODO_UPGRADE.md
+_66
+doc.tar.gz
