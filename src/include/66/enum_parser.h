@@ -81,7 +81,9 @@ enum resolve_parser_enum_section_e
     macro(INTREE,       "InTree",       E_PARSER_EXPECT_LINE), \
     macro(STDIN,        "StdIn",        E_PARSER_EXPECT_LINE), \
     macro(STDOUT,       "StdOut",       E_PARSER_EXPECT_LINE), \
-    macro(STDERR,       "StdErr",       E_PARSER_EXPECT_LINE)
+    macro(STDERR,       "StdErr",       E_PARSER_EXPECT_LINE), \
+    macro(PROVIDE,      "Provide",      E_PARSER_EXPECT_BRACKET) \
+
 
 typedef enum resolve_parser_enum_section_main_e resolve_parser_enum_section_main_t ;
 enum resolve_parser_enum_section_main_e

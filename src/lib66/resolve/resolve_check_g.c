@@ -19,20 +19,23 @@
 
 #include <66/resolve.h>
 #include <66/constants.h>
+#include <66/symlink.h>
 
 int resolve_check_g(resolve_wrapper_t *wres, char const *base, char const *name)
 {
-
     log_flow() ;
 
-    size_t baselen = strlen(base) ;
-    size_t namelen = strlen(name) ;
+    char path[SS_MAX_PATH_LEN] ;
+    char lname[SS_MAX_SERVICE_NAME + 1] ;
 
-    char path[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + 1] ;
+    auto_strings(lname, name) ;
 
     if (wres->type == DATA_SERVICE) {
 
         auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+
+        if (!service_resolve_symlink(base, path, lname))
+            log_warnusys_return(LOG_EXIT_ZERO, "resolve symlink path") ;
 
     } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
 
@@ -40,6 +43,6 @@ int resolve_check_g(resolve_wrapper_t *wres, char const *base, char const *name)
 
     } else return 0 ;
 
-    return resolve_check(path, name) ;
+    return resolve_check(path, lname) ;
 
 }

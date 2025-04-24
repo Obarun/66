@@ -55,6 +55,7 @@ void service_resolve_sanitize(resolve_service_t *res)
     res->dependencies.requiredby = res->dependencies.requiredby ? resolve_add_string(wres, stk + res->dependencies.requiredby) : 0 ;
     res->dependencies.optsdeps = res->dependencies.optsdeps ? resolve_add_string(wres, stk + res->dependencies.optsdeps) : 0 ;
     res->dependencies.contents = res->dependencies.contents ? resolve_add_string(wres, stk + res->dependencies.contents) : 0 ;
+    res->dependencies.provide = res->dependencies.provide ? resolve_add_string(wres, stk + res->dependencies.provide) : 0 ;
 
     // execute
     res->execute.run.run = res->execute.run.run ? resolve_add_string(wres, stk + res->execute.run.run) : 0 ;

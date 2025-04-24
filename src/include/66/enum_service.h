@@ -80,10 +80,12 @@ enum resolve_service_enum_path_e
     macro(REQUIREDBY  ,"requiredby"), \
     macro(OPTSDEPS    ,"optsdeps"), \
     macro(CONTENTS    ,"contents"), \
+    macro(PROVIDE     ,"provide"), \
     macro(NDEPENDS    ,"ndepends"), \
     macro(NREQUIREDBY ,"nrequiredby"), \
     macro(NOPTSDEPS   ,"noptsdeps"), \
-    macro(NCONTENTS   ,"ncontents")
+    macro(NCONTENTS   ,"ncontents"), \
+    macro(NPROVIDE    ,"nprovide")
 
 typedef enum resolve_service_enum_deps_e resolve_service_enum_deps_t ;
 enum resolve_service_enum_deps_e

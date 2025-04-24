@@ -13,12 +13,15 @@
  */
 
 #include <string.h>
+#include <sys/stat.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/stack.h>
 
 #include <66/resolve.h>
 #include <66/constants.h>
+#include <66/symlink.h>
 
 int resolve_read_g(resolve_wrapper_t *wres, char const *base, char const *name)
 {
@@ -27,20 +30,22 @@ int resolve_read_g(resolve_wrapper_t *wres, char const *base, char const *name)
     if (!resolve_check_g(wres, base, name))
         return 0 ;
 
-    size_t baselen = strlen(base) ;
-    size_t namelen = strlen(name) ;
+    char path[SS_MAX_PATH_LEN] ;
+    char lname[SS_MAX_PATH_LEN + 1] ;
 
-    char path[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + 1] ;
+    auto_strings(lname, name) ;
 
     if (wres->type == DATA_SERVICE) {
 
         auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 
+        if (!service_resolve_symlink(base, path, lname))
+            log_warnusys_return(LOG_EXIT_ZERO, "resolve symlink path") ;
+
     } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
 
         auto_strings(path, base, SS_SYSTEM) ;
-
     }
 
-    return resolve_read(wres, path, name) ;
+    return resolve_read(wres, path, lname) ;
 }

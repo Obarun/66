@@ -34,7 +34,7 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
     log_flow() ;
 
     _alloc_sa_(sa) ;
-    bool start = false, propagate = true, action = true ;
+    bool start = false, propagate = true, action = true ; /* action=true -> enable */
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     vertex_t *c, *tmp ;
     int e = 1 ;

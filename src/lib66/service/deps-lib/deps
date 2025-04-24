@@ -10,6 +10,7 @@ service_resolve_get_field_tosa.o
 service_resolve_modify_field.o
 service_resolve_read_cdb.o
 service_resolve_sanitize.o
+service_resolve_symlink.o
 service_resolve_write_cdb.o
 service_resolve_write_remote.o
 service_resolve_write.o

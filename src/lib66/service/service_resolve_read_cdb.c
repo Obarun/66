@@ -72,10 +72,12 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
         !resolve_get_key(c, "requiredby", &res->dependencies.requiredby) ||
         !resolve_get_key(c, "optsdeps", &res->dependencies.optsdeps) ||
         !resolve_get_key(c, "contents", &res->dependencies.contents) ||
+        !resolve_get_key(c, "provide", &res->dependencies.provide) ||
         !resolve_get_key(c, "ndepends", &res->dependencies.ndepends) ||
         !resolve_get_key(c, "nrequiredby", &res->dependencies.nrequiredby) ||
         !resolve_get_key(c, "noptsdeps", &res->dependencies.noptsdeps) ||
         !resolve_get_key(c, "ncontents", &res->dependencies.ncontents) ||
+        !resolve_get_key(c, "nprovide", &res->dependencies.nprovide) ||
 
     /* execute */
         !resolve_get_key(c, "run", &res->execute.run.run) ||
