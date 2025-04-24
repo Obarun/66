@@ -40,6 +40,7 @@
 #include <66/constants.h>
 #include <66/svc.h>
 #include <66/utils.h>
+#include <66/symlink.h>
 
 static void auto_remove(char const *path)
 {
@@ -106,6 +107,43 @@ static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, s
     free(wres) ;
 }
 
+static void remove_provide(resolve_service_t *res, ssexec_t *info)
+{
+    size_t pos = 0 ;
+
+    _alloc_stk_(path, SS_MAX_PATH_LEN) ;
+    _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.provide)) ;
+    _alloc_stk_(lnk, info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME) ;
+    _alloc_stk_(lname, SS_MAX_PATH_LEN) ;
+
+    if (!stack_string_clean(&stk, res->sa.s + res->dependencies.provide))
+        log_dieu(LOG_EXIT_SYS, "clean string") ;
+
+    FOREACH_STK(&stk, pos) {
+
+        char *name = stk.s + pos ;
+
+        auto_strings(lnk.s, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+
+        auto_strings(path.s, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+
+        if (symlink_type(lnk.s) > 0) {
+
+            auto_strings(lname.s, name) ;
+
+            if (!service_resolve_symlink(info->base.s, path.s, lname.s)) {
+                log_warnusys("resolve symlink path: ", lnk.s) ;
+                continue ;
+            }
+
+            if (!strcmp(lname.s, res->sa.s + res->name)) {
+                log_trace("remove provide symlink: ", lnk.s) ;
+                unlink(lnk.s) ;
+            }
+        }
+    }
+}
+
 static void remove_logger(resolve_service_t *res, ssexec_t *info)
 {
     log_flow() ;
@@ -160,6 +198,9 @@ static void remove_service(resolve_service_t *res, ssexec_t *info)
     if (res->islog)
         return ;
 
+    if (res->dependencies.nprovide)
+        remove_provide(res, info) ;
+
     if (res->logger.want)
         remove_logger(res, info) ;
 
@@ -179,6 +220,7 @@ static void remove_service(resolve_service_t *res, ssexec_t *info)
 
     log_trace("remove symlink: ", res->sa.s + res->live.scandir) ;
     unlink_void(res->sa.s + res->live.scandir) ;
+
 
     log_info("Removed successfully: ", res->sa.s + res->name) ;
 }

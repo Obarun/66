@@ -47,14 +47,16 @@ struct resolve_service_addon_dependencies_s
     uint32_t requiredby ; // string,
     uint32_t optsdeps ; // string, optional dependencies
     uint32_t contents ; // string
+    uint32_t provide ; // string
 
     uint32_t ndepends ; // integer
     uint32_t nrequiredby ; // integer
     uint32_t noptsdeps ; // integer
     uint32_t ncontents ; // integer
+    uint32_t nprovide ; // integer
 } ;
 
-#define RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO { 0,0,0,0,0,0,0,0 }
+#define RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO { 0,0,0,0,0,0,0,0,0,0 }
 
 typedef struct resolve_service_addon_timeout_s resolve_service_addon_timeout_t, *resolve_service_addon_timeout_t_ref ;
 struct resolve_service_addon_timeout_s
@@ -264,6 +266,8 @@ extern int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres) ;
 extern void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, bool propagate, ssexec_t *info, stralloc *argv) ;
 extern void service_switch_tree(resolve_service_t *res, char const *totreename, ssexec_t *info) ;
 extern void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char const *base, uint8_t requiredby) ;
+extern int service_resolve_symlink(char const *base, char *path, char *name) ;
+
 /* avoid circular dependencies by prototyping the ss_state_t instead
  * of calling the state.h header file*/
 typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;

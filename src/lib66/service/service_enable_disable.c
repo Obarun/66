@@ -22,6 +22,7 @@
 #include <oblibs/sastr.h>
 #include <oblibs/lexer.h>
 #include <oblibs/types.h>
+#include <oblibs/string.h>
 
 #include <skalibs/stralloc.h>
 
@@ -31,6 +32,8 @@
 #include <66/tree.h>
 #include <66/enum_parser.h>
 #include <66/ssexec.h>
+#include <66/constants.h>
+#include <66/symlink.h>
 
 static bool isdone(struct resolve_hash_s *hres, const char *name)
 {
@@ -104,8 +107,13 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
         resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
         char const *treename = 0 ;
         bool same = sastr_cmp(argv, hash->name) >= 0 ? true : false ;
+        bool ns = hash->res.sa.s + hash->res.inns >= 0 ? true : false ;
 
-        if (info->opt_tree && ((hash->res.inns && sastr_cmp(argv, hash->res.sa.s + hash->res.inns) >= 0) || same))
+        if (hash->res.dependencies.nprovide)
+            if (!symlink_provide(info->base.s, res, action))
+                log_dieusys(LOG_EXIT_SYS, "make provide symlink") ;
+
+        if (info->opt_tree && ((hash->res.inns && ns) || same))
             treename = info->treename.s ;
         else
             treename = res->sa.s + (res->intree ? res->intree : res->treename) ;
@@ -113,7 +121,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
         /** resolve file may already exist. Be sure to add it to the contents field of the tree.*/
         if (action) {
 
-            if (info->opt_tree && ((hash->res.inns && sastr_cmp(argv, hash->res.sa.s + hash->res.inns) >= 0) || same))
+            if (info->opt_tree && ((hash->res.inns && ns) || same))
                 service_switch_tree(res, treename, info) ;
             else
                 tree_service_add(treename, res->sa.s + res->name, info) ;

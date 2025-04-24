@@ -248,7 +248,12 @@ This section is *mandatory*. (!)
 
 #### Type
 
-Declare the type of the service.
+**Source Snippet**:
+```ini
+Type = classic
+```
+
+Defines the service type. Determines how **66** orchestrates startup and supervision.
 
 * mandatory: yes (!)
 
@@ -256,13 +261,18 @@ Declare the type of the service.
 
 * valid values :
 
-    * classic : declares the service as a `classic` service.
-    * oneshot : declares the service as a `oneshot` service.
-    * module : declares the service as a `module` service.
+    * classic : Standard supervised service. Runs continuously and is automatically restarted if it crashes.
+    * oneshot : Executes once and does not restart. Suitable for initialization tasks.
+    * module : Configurable set of different type of service; integrates with the [`[Regex]`](#section-regex) section for file and directory transformations.
 
 #### Version
 
-Version number of the service.
+**Source Snippet**:
+```ini
+Version = 0.1.0
+```
+
+Specifies the semantic version of the service, following `major.minor.patch` format. This helps track updates and compatibility.
 
 * mandatory: yes (!)
 
@@ -290,7 +300,12 @@ Version number of the service.
 
 #### Description
 
-A short description of the service.
+**Source Snippet**:
+```ini
+Description = "ntpd daemon"
+```
+
+Provides a concise, human-readable summary of the service’s purpose. Enclosed in double quotes.
 
 * mandatory: yes (!)
 
@@ -302,7 +317,12 @@ A short description of the service.
 
 #### User
 
-Declare the permissions of the service.
+**Source Snippet**:
+```ini
+User = ( root )
+```
+
+Lists the system user(s) permitted to manage and run the service. By default, only specified users can start, stop, or interact with the service.
 
 * mandatory: yes (!)
 
@@ -316,7 +336,12 @@ Declare the permissions of the service.
 
 #### Depends
 
-Declare dependencies of the service.
+**Source Snippet**:
+```ini
+Depends = ( fooA fooB fooC )
+```
+
+Declares the mandatory service dependencies. Each listed service must start successfully before this service launches.
 
 * mandatory: no
 
@@ -336,7 +361,12 @@ Declare dependencies of the service.
 
 #### RequiredBy
 
-Declare required-by dependencies of the service.
+**Source Snippet**:
+```ini
+RequiredBy = ( fooX fooY )
+```
+
+Specifies reverse dependencies—services that depend on this service. Starting or enabling this service automatically updates those listed.
 
 * mandatory: no
 
@@ -356,7 +386,12 @@ Declare required-by dependencies of the service.
 
 #### OptsDepends
 
-Declare optional dependencies of the service.
+**Source Snippet**:
+```ini
+OptsDepends = ( fooA fooB )
+```
+
+Lists optional dependencies. **66** will enable the first available service from this list at startup.
 
 * mandatory: no
 
@@ -380,6 +415,13 @@ Declare optional dependencies of the service.
 
 #### Options
 
+**Source Snippet**:
+```ini
+Options = (log)
+```
+
+Configures optional behaviors for the service. Wrap options in parentheses for multiple entries.
+
 * mandatory: no
 
 * syntax: [brackets](#brackets)
@@ -396,18 +438,29 @@ Declare optional dependencies of the service.
 
 #### Flags
 
+**Source Snippet**:
+```ini
+Flags = (down earlier)
+```
+
 * mandatory: no
 
 * syntax: [brackets](#brackets)
 
     valid values :
 
-    * down: This will create the file down corresponding to the file down of [s6](https://skarnet.org/software/s6) program.
+    * down: This will create the file down corresponding to the file down of [s6](https://skarnet.org/software/s6) program. Once this file was created the default state of the service will be considered down, not up: the service will not automatically be started until it receives a [66 start](66-start.html) command. Without this file the default state of the service will be up and started automatically.
     * earlier: This set the service as an *earlier* service meaning starts the service as soon as the [scandir](66-scandir.html) is up.
 
-    Once this file was created the default state of the service will be considered down, not up: the service will not automatically be started until it receives a [66 start](66-start.html) command. Without this file the default state of the service will be up and started automatically.
 
 #### Notify
+
+**Source Snippet**:
+```ini
+Notify = 3
+```
+
+Enables readiness notification. Creates `notification-fd` containing the specified file descriptor number.
 
 * mandatory: no
 
@@ -421,7 +474,12 @@ Declare optional dependencies of the service.
 
 #### TimeoutStop
 
-*Corresponds to the file timeout-finish of [s6](https://skarnet.org/software/s6) program* and used by service of type `classic`.
+**Source Snippet**:
+```ini
+TimeoutStop = 5000
+```
+
+Specifies the maximum time (ms) to wait for the stop script (`finish`) to complete before forcibly killing it.
 
 * mandatory: no
 
@@ -435,7 +493,11 @@ Declare optional dependencies of the service.
 
 #### TimeoutStart
 
-*Corresponds to the file timeout-kill of [s6](https://skarnet.org/software/s6) program* and used by service of type `classic`.
+**Source Snippet**:
+```ini
+TimeoutStart = 2000
+```
+Defines the grace period (ms) after SIGTERM before sending SIGKILL on stop commands.
 
 * mandatory: no
 
@@ -450,7 +512,12 @@ Declare optional dependencies of the service.
 
 #### MaxDeath
 
-*Corresponds to the file max-death-tally of [s6](https://skarnet.org/software/s6) program*.
+**Source Snippet**:
+```ini
+MaxDeath = 10
+```
+
+Limits the number of recorded service crashes. Exceeding this resets the oldest record when tallying failures.
 
 * mandatory: no
 
@@ -464,7 +531,12 @@ Declare optional dependencies of the service.
 
 #### DownSignal
 
-*Corresponds to the file "down-signal" of [s6](https://skarnet.org/software/s6) program*.
+**Source Snippet**:
+```ini
+DownSignal = SIGTERM
+```
+
+Specifies which signal to send when stopping or reloading the service.
 
 * mandatory: no
 
@@ -478,11 +550,16 @@ Declare optional dependencies of the service.
 
 #### CopyFrom
 
+**Source Snippet**:
+```ini
+CopyFrom = (./config /etc/default/service)
+```
+
 Verbatim copy directories and files on the fly to the main service destination. When dealing with directories, it copies all found files and directories recursively. In case of file, it copy it to the root of the service directory.
 
 * mandatory: no
 
-* syntax: [path](#path) inside [brackets](#brackets)
+* syntax: [brackets](#brackets) with [path](#path) entries.
 
     valid values :
 
@@ -498,6 +575,13 @@ Verbatim copy directories and files on the fly to the main service destination. 
 
 #### InTree
 
+**Source Snippet**:
+```ini
+InTree = my-tree
+```
+
+Automatically activate the service within a named service tree. If a corresponding seed file exists, it will be applied.
+
 * mandatory: no
 
 * syntax: [inline](#inline)
@@ -511,6 +595,13 @@ Verbatim copy directories and files on the fly to the main service destination. 
     **Note**: If a corresponding [seed](66-tree.html#seed-files) file exist on your system, its will be used to create and configure the tree.
 
 #### StdIn
+
+**Source Snippet**:
+```ini
+StdIn = null
+```
+
+Controls standard I/O redirection for the standard input entries.
 
 * mandatory: no
 
@@ -527,6 +618,13 @@ Verbatim copy directories and files on the fly to the main service destination. 
     Please see [Standard IO redirection](66-standard-io-redirection.html) documentation for further information.
 
 #### StdOut
+
+**Source Snippet**:
+```ini
+StdOut = s6log
+```
+
+Controls standard I/O redirection for the standard output entries.
 
 * mandatory: no
 
@@ -547,6 +645,13 @@ Verbatim copy directories and files on the fly to the main service destination. 
 
 #### StdErr
 
+**Source Snippet**:
+```ini
+StdErr = inherit
+```
+
+Controls standard I/O redirection for the standard error entries.
+
 * mandatory: no
 
 * syntax: [inline](#inline),[simple-colon](#simple-colon)
@@ -564,11 +669,35 @@ Verbatim copy directories and files on the fly to the main service destination. 
 
     Please see [Standard IO redirection](66-standard-io-redirection.html) documentation for further information.
 
+#### Provide
+
+**Source Snippet**:
+```ini
+Provide = ( network networking )
+```
+
+Defines one or more service aliases—alternate names under which this service can be referenced. These aliases behave like symbolic links, allowing the same service to be managed with different identifiers.
+
+* mandatory: no
+
+* syntax: [brackets](#brackets)
+
+* valid values:
+
+    * Any abitrary name.
+
 ### Section [Start]
 
 This section is *mandatory*. (!)
 
 #### Build
+
+**Source Snippet**:
+```ini
+Build = auto
+```
+
+Determines how the service script is generated from the `Execute` field.
 
 * mandatory: no
 
@@ -581,6 +710,12 @@ This section is *mandatory*. (!)
     * custom : Creates a service script by copying the `Execute` field verbatim and applying the specified shebang to execute the script. **Do not forget** to set the shebang at `Execute` key field.
 
 #### RunAs
+
+**Source Snippet**:
+```ini
+RunAs = oblive
+```
+Drops privileges to the specified user or UID:GID before executing the service.
 
 * mandatory: no
 
@@ -612,6 +747,12 @@ This section is *mandatory*. (!)
 
 #### Execute
 
+**Source Snippet**:
+```ini
+Execute = ( /usr/bin/auditd -f )
+```
+Defines the command(s) executed to start the service. Enclose multiple lines in brackets.
+
 * mandatory: yes (!)
 
 * syntax: [brackets](#brackets)
@@ -632,7 +773,7 @@ This section is exactly the same as [[Start]](66-frontend.html#section-start) an
 
 This section is optional and controls the behavior of the default logging system used by *66*, which utilizes the excellent `s6-log` program.
 
-It will only have effects if value *log* was **not** prefixed by an exclamation mark to the `Options` key in the [[Main]](66-frontend.html#section-main) section. Additionally, the `StdIn` or `StdOut` keys from the [[Main]](66-frontend.html#section-main) **must be set** to `s6log`, or these keys **must not** be defined at all.
+It will only have effects if value *log* was **not** prefixed by an exclamation mark to the [`Options`](#options) key in the [[Main]](#section-main) section. Additionally, the `StdIn` or `StdOut` keys from the [[Main]](#section-main) **must be set** to `s6log`, or these keys **must not** be defined at all.
 
 This section extends the `Build`, `RunAs`, and `Execute` key fields from [[Start]](66-frontend.html#section-start) and the `TimeoutStop` and `TimeoutStart` key fields from [[Main]](66-frontend.html#section-main) . These are also valid keys for [[Logger]](66-frontend.html#section-logger) and behave the same way they do in the other sections but they can not be specified except for the mandatory key `Build`—see example below. In such case the default behaviour for those key are apply.
 
@@ -644,6 +785,12 @@ The following key names are also valid:
 - `TimeoutStop`, `TimeoutStart` — See [[Main]](66-frontend.html#section-main)
 
 #### Backup
+
+**Source Snippet**:
+```ini
+Backup = 3
+```
+Number of rotated log files to retain before overwriting the oldest.
 
 * mandatory: no
 
@@ -657,6 +804,12 @@ The following key names are also valid:
 
 #### MaxSize
 
+**Source Snippet**:
+```ini
+MaxSize = 1000000
+```
+Byte threshold to trigger log rotation when the current file grows too large.
+
 * mandatory: no
 
 * syntax: [uint](#uint)
@@ -668,6 +821,13 @@ The following key names are also valid:
         A new log file will be created every time the current one approaches *value* bytes. By default, filesize is `1000000`; it cannot be set lower than `4096` or higher than `268435455`.
 
 #### Timestamp
+
+**Source Snippet**:
+```ini
+Timestamp = iso
+```
+
+Specifies timestamp format prefixed to each log entry.
 
 * mandatory: no
 
@@ -710,6 +870,11 @@ A file containing the `key=value` pair(s) will be created by default at `%%servi
 
 #### Any `key=value` pair
 
+**Source Snippet**:
+```ini
+DirRun=/run/openntpd
+```
+
 * mandatory: no
 
 * syntax: [pair](#pair)
@@ -744,6 +909,11 @@ A file containing the `key=value` pair(s) will be created by default at `%%servi
         Refers to [execl-envfile](execl-envfile.html) for futhers information.
 
 #### ImportFile
+
+**Source Snippet**:
+```ini
+ImportFile=/etc/66/init.conf
+```
 
 The `ImportFile` variable is recognized by `66` and treated as a `key=value` pair, similar to other environment variables. However, `ImportFile` itself is not exported to the environment.
 
@@ -788,6 +958,13 @@ It will only have an effect when the service is a `module` type—see the sectio
 
 #### Configure
 
+**Source Snippet**:
+```ini
+Configure = "--enable-feature"
+```
+
+Arguments passed to the module’s `configure` script.
+
 * mandatory: no
 
 * syntax: [quotes](#quotes)
@@ -797,6 +974,13 @@ It will only have an effect when the service is a `module` type—see the sectio
     * You can define any arguments to pass to the module's configure script.
 
 #### Directories
+
+**Source Snippet**:
+```ini
+Directories = ( DM=sddm )
+```
+
+Regex-based renaming rules for module subdirectories. Each entry is `regex=replacement`.
 
 * mandatory: no
 
@@ -814,6 +998,13 @@ It will only have an effect when the service is a `module` type—see the sectio
 
 #### Files
 
+**Source Snippet**:
+```ini
+Directories = ( servicename=newname )
+```
+
+Regex-based renaming rules for files. Each entry is `regex=replacement`.
+
 * mandatory: no
 
 * syntax: [pair](#pair) inside [brackets](#brackets)
@@ -823,6 +1014,13 @@ It will only have an effect when the service is a `module` type—see the sectio
     * Reacts exactly as Directories field but on files name instead of directories name.
 
 #### InFiles
+
+**Source Snippet**:
+```ini
+InFiles = ( :mount-tmp:args=-o noexec )
+```
+
+In-file regex replacements for module files. Use `:filename:regex=replacement` or `::regex=replacement` for all files.
 
 * mandatory: no
 
@@ -928,6 +1126,7 @@ InTree =
 StdIn =
 StdOut =
 StdErr =
+Provide = ()
 
 [Start]
 Build =
@@ -951,6 +1150,7 @@ TimeoutStop =
 Execute = ()
 
 [Environment]
+ImportFile=/path/to/file
 mykey=myvalue
 ANOTHERKEY=!antohervalue
 

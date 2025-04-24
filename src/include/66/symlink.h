@@ -23,5 +23,7 @@
 
 extern int symlink_switch(resolve_service_t *res, uint8_t flag) ;
 extern int symlink_make(resolve_service_t *res) ;
+extern int symlink_type(const char *path) ;
+extern int symlink_provide(const char *base, resolve_service_t *res, bool action) ;
 
 #endif

@@ -537,6 +537,16 @@ int parse_store_main(resolve_service_t *res, stack *store, resolve_enum_table_t 
                 return 0 ;
             break ;
 
+        case E_PARSER_SECTION_MAIN_PROVIDE:
+
+            if (!parse_list(store))
+                parse_error_return(0, 8, table) ;
+
+            if (store->len)
+                res->dependencies.provide = parse_compute_list(wres, store, &res->dependencies.nprovide, 0) ;
+
+            break ;
+
         default:
             /** never happen*/
             log_warn_return(LOG_EXIT_ZERO, "unknown id key in section main -- please make a bug report") ;
