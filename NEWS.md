@@ -1,3 +1,3 @@
 # Changelog for 66
 
-see doc/upgrade.md file
+see doc/66-upgrade.md file

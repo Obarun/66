@@ -11,6 +11,68 @@ author: Eric Vidal <eric@obarun.org>
 
 ---
 
+# In 0.8.1.0
+
+- Adaptation to `oblibs` 0.3.3.0
+
+
+## Overview
+
+This release of the 66 project includes several bug fixes, new features, and improvements to enhance the functionality and maintainability of the service management system. Below is a summary of the key changes introduced in this release.
+
+## New Features
+
+- Service Alias Support (a36a4fad): Added a new `Provide` key to allow defining aliases for service names, improving service management flexibility.
+- Environment File Import (4426ab70): Introduced a new `ImporFile` field in the [Environment] section to support importing environment files.
+- Simplified Execute Field Writing (099872e0): Enhanced the `Execute` field to permit spaces, tabs, carriage returns, and newlines (removed during processing) for custom builds, improving readability and usability.
+- Sanitize Resolve Function (c91ff167): Added a new sanitize_resolve function to ensure the validity of resolve files for trees and services for the targeted version.
+- Tree Graph Build System (afb18e68): Implemented a new `tree_graph_build_system` function to improve system graph generation.
+- Split Info Walk Functions (a058225c): Separated info_walk into `service_info_walk` and `tree_info_walk` for better modularity and clarity.
+- Enum and Macro Enhancements (ddc04da2): Split enum definitions and introduced macros to automate enum, string table, and struct generation. This reduces error-prone code, improves readability, and simplifies maintenance. Added an enum test suite.
+
+## Bug Fixes
+
+- Dependency Cleanup (e2b2c539): Fixed unnecessary entries from the dependency field of the requiredby dependency for the service to remove.
+- Empty Field Values (b4be03f2): Fixed handling of empty values for fields like contents, dependencies, requiredby, optional depends, and regex fields for directories, files, and infiles, allowing modules to set empty strings (e.g., when services are commented out).
+- Frontend Field in Modules (a9e7ce23): Corrected the setting of the frontend field for services inside modules.
+- Frontend Dependencies Preservation (7bc3cab2): Ensured that dependencies declared in the `frontend` file for a module are always retained.
+- Tree Name Respect (2b306df2): Fixed an issue where the previous tree name was not respected for services in a selection when the `-t` option was not used.
+- Scandir Symlink (df68b262): Added support to remake the service scandir symlink, ensuring its presence.
+
+## Improvements
+
+- Migration Support:
+
+    * Continued support for `0.7.2.1` version migration (1cb94c73).
+    * Provided migration processes for version `0.8.1.0` (d2288e73) and `hiercopy` field changes (958ee60c).
+    * Ensured snapshots are created in all migration cases (0270ebda).
+
+- Code Maintenance:
+
+    * Renamed `hiercopy` to `copyfrom` internally (3411e29f) for consistency.
+    * Adapted to a new enum interface (cf8359c2) and graph algorithm (33287ebd) with new structures, functions, and macros.
+    * Made the `set_info` function public (958a0964) for broader usability.
+    * Removed redundant `graph_remove_deps` function (10c83ba7) and moved hash functionality to oblibs (7c491133).
+    * Cleaned up header files (a83db505) and removed unnecessary parameters (8ea7f830) for cleaner code.
+
+
+- Documentation:
+
+    * Fixed typos and improved documentation (5f5c8ee9, 89ef88d8).
+    * Updated the project roadmap (fc97c4e3) to reflect current plans.
+
+- Miscellaneous
+
+    * Minor Changes (4767cdc4, 89ef88d8): Addressed typos and minor code adjustments with no significant user-facing impact.
+
+## Notes
+
+- This release ensures that users upgrading from previous versions will have an operational system without manual intervention. Migration processes for `hiercopy` internal field changes and version `0.8.1.0` are handled automatically.
+
+- For detailed information on new fields and functions, refer to the updated documentation.
+
+---
+
 # In 0.8.0.2
 
 - Adaptation to `oblibs` 0.3.2.1

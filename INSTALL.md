@@ -8,7 +8,7 @@ Build Instructions
 - skalibs version 2.14.3.0 or later: http://skarnet.org/software/skalibs/
 - execline version 2.9.6.1 or later: http://skarnet.org/software/execline/
 - s6 version 2.13.1.0 or later: http://skarnet.org/software/s6/
-- oblibs version 0.3.2.1 or later: https://git.obarun.org/Obarun/oblibs/
+- oblibs version 0.3.3.0 or later: https://git.obarun.org/Obarun/oblibs/
 - lowdown version 0.6.4 or later for man and html pages: https://kristaps.bsd.lv/lowdown/
 - linux-api-headers 5.8 or later: https://www.gnu.org/software/libc (only for linux system)
 
@@ -51,7 +51,7 @@ You can invoke make with a few variables for more configuration.
 
 By default, binaries are linked against static versions of all the libraries they depend on, except for the libc. You can enforce linking against the static libc with *--enable-static-libc*.
 
-(If you are using a GNU/Linux system, be aware that the GNU libc behaves badly with static linking and produces huge executables, which is why it is not the default. Other libcs are better suited to static linking, for instance [musl](http://musl-libc.org/)
+If you are using a GNU/Linux system, be aware that the GNU libc behaves badly with static linking and produces huge executables, which is why it is not the default. Other libcs are better suited to static linking, for instance [musl](http://musl-libc.org/).
 
 ## Cross-compilation
 

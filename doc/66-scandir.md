@@ -419,7 +419,7 @@ Removes zombies from a *scandir* for the owner `owner`
 
 ## Boot specification
 
-The **-b**, **-B**, **-c** and **-s** option are called by [66 boot](66-boot.html). **‑b** and **-B** will create `.s6‑svscan` control files (see [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) interface documentation) specifically for stage1 (PID1 process). This special *scandir* is controlled by [66 halt](66-halt.html), [66 poweroff](66-poweroff.html) and  [66 reboot](66-reboot.html) command. The [66-shutdownd](66‑shutdownd.html) daemon which controls the shutdown request will be created automatically at the correct location. Further this specific task needs to read the skeleton file `init.conf` containing the *live* directory location which is the purpose of the **‑s** option.
+The **-b**, **-B**, **-c** and **-s** option are called by [66 boot](66-boot.html). **‑b** and **-B** will create `.s6‑svscan` control files (see [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) interface documentation) specifically for stage1 (PID1 process). This special *scandir* is controlled by [66 halt](66-halt.html), [66 poweroff](66-poweroff.html) and  [66 reboot](66-reboot.html) command. The [66-shutdownd](66-shutdownd.html) daemon which controls the shutdown request will be created automatically at the correct location. Further this specific task needs to read the skeleton file `init.conf` containing the *live* directory location which is the purpose of the **‑s** option.
 
 The *live* directory for the boot process requires writable directories and an executable filesystem. In order to accommodate for read‑only root filesystems there needs to be a tmpfs mounted before [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) can be run.
 
