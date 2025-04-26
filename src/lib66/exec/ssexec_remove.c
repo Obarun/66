@@ -109,6 +109,8 @@ static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, s
 
 static void remove_provide(resolve_service_t *res, ssexec_t *info)
 {
+    log_flow() ;
+
     size_t pos = 0 ;
 
     _alloc_stk_(path, SS_MAX_PATH_LEN) ;
@@ -141,6 +143,73 @@ static void remove_provide(resolve_service_t *res, ssexec_t *info)
                 unlink(lnk.s) ;
             }
         }
+    }
+}
+
+static void clean_depends(resolve_service_t *res, ssexec_t *info, uint8_t propagate)
+{
+    log_flow() ;
+
+    if (!res->dependencies.ndepends)
+        return ;
+
+    if (propagate)
+        return ;
+
+    int r ;
+    size_t pos = 0 ;
+    resolve_wrapper_t_ref wres = 0 ;
+    _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.depends)) ;
+
+    if (!stack_string_clean(&stk, res->sa.s + res->dependencies.depends))
+        log_dieusys(LOG_EXIT_SYS, "clean string") ;
+
+    FOREACH_STK(&stk, pos) {
+
+        char *name = stk.s + pos ;
+        resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
+        wres = resolve_set_struct(DATA_SERVICE, &dres) ;
+
+        r = resolve_read_g(wres, info->base.s, name) ;
+        if (r < 0)
+            log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", name) ;
+
+        if (!r || dres.islog)
+            continue ;
+
+        if (dres.dependencies.nrequiredby) {
+
+            resolve_enum_table_t table = E_TABLE_SERVICE_DEPS_ZERO ;
+            _alloc_stk_(deps, strlen(dres.sa.s + dres.dependencies.requiredby)) ;
+
+            if (!stack_string_clean(&deps, dres.sa.s + dres.dependencies.requiredby))
+                log_dieusys(LOG_EXIT_SYS, "clean string") ;
+
+            if (!stack_remove_element_g(&deps, res->sa.s + res->name))
+                log_dieu(LOG_EXIT_SYS, "remove service: ", res->sa.s + res->name, " from requiredby dependencies list of: ", name) ;
+
+
+            if (!deps.len) {
+
+                dres.dependencies.nrequiredby = 0 ;
+                dres.dependencies.requiredby = 0 ;
+
+            } else {
+
+                if (!stack_string_rebuild_with_delim(&deps, ' '))
+                    log_dieu(LOG_EXIT_SYS, "convert stack to string") ;
+
+                table.u.service.id = E_RESOLVE_SERVICE_DEPS_REQUIREDBY ;
+
+                if (!resolve_modify_field(wres, table, deps.len ? deps.s : ""))
+                    log_dieusys(LOG_EXIT_SYS, "modify resolve file of service: ", dres.sa.s + dres.name) ;
+            }
+
+            if (!resolve_write_g(wres, info->base.s, dres.sa.s + dres.name))
+                log_dieusys(LOG_EXIT_SYS, "write resolve file of service: ", dres.sa.s + dres.name) ;
+
+        }
+        resolve_free(wres) ;
     }
 }
 
@@ -190,9 +259,8 @@ static void remove_logger(resolve_service_t *res, ssexec_t *info)
     resolve_free(lwres) ;
 }
 
-static void remove_service(resolve_service_t *res, ssexec_t *info)
+static void remove_service(resolve_service_t *res, ssexec_t *info, uint8_t propagate)
 {
-
     log_flow() ;
 
     if (res->islog)
@@ -203,6 +271,9 @@ static void remove_service(resolve_service_t *res, ssexec_t *info)
 
     if (res->logger.want)
         remove_logger(res, info) ;
+
+    if (res->dependencies.ndepends)
+        clean_depends(res, info, propagate) ;
 
     char sym[strlen(res->sa.s + res->path.home) + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME + 1] ;
 
@@ -220,7 +291,6 @@ static void remove_service(resolve_service_t *res, ssexec_t *info)
 
     log_trace("remove symlink: ", res->sa.s + res->live.scandir) ;
     unlink_void(res->sa.s + res->live.scandir) ;
-
 
     log_info("Removed successfully: ", res->sa.s + res->name) ;
 }
@@ -361,7 +431,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
     HASH_ITER(hh, hres, c, tmp) {
 
-        remove_service(&c->res, info) ;
+        remove_service(&c->res, info, siglen) ;
 
         if (c->res.dependencies.ncontents && c->res.type == E_PARSER_TYPE_MODULE) {
 
@@ -381,7 +451,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
                     continue ;
                 }
 
-                remove_service(&mres, info) ;
+                remove_service(&mres, info, siglen) ;
             }
             resolve_free(dwres) ;
         }

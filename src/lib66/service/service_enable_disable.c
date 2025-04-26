@@ -111,7 +111,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
 
         if (hash->res.dependencies.nprovide)
             if (!symlink_provide(info->base.s, res, action))
-                log_dieusys(LOG_EXIT_SYS, "make provide symlink") ;
+                log_dieu(LOG_EXIT_SYS, "make provide symlink") ;
 
         if (info->opt_tree && ((hash->res.inns && ns) || same))
             treename = info->treename.s ;
