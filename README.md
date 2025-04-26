@@ -94,9 +94,9 @@ This Roadmap for the next releases is not writting in the stone. Feel free to ma
 
   Allow to declare a conflicting service through the `Conflicts` field, e.g. `connmand` service will declare `Conflicts = ( Networkmanager )`.
 
-* [ ] Provide a `Replaces` keyword at frontend file:
+* [x] Provide a `Provide` keyword at frontend file:
 
-  Allow to declare a alias service through the `Replaces` field, e.g. `connmand` service will declare `Replaces = ( Network )`.
+  Allow to declare a alias service through the `Provide` field, e.g. `connmand` service will declare `Provide = ( Network )`.
 
 * [ ] Provide keyword for basic operations:
 
