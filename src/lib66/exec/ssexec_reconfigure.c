@@ -112,6 +112,9 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         pres = &c->res ;
         char *name = pres->sa.s + pres->name ;
 
+        if (sastr_cmp(&sa, name) && siglen)
+            continue ;
+
         if (pres->inns) {
             // search first into the user commandline
             if (sastr_cmp(&sa, pres->sa.s + pres->inns) < 0) {
@@ -121,7 +124,6 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
                     log_die(LOG_EXIT_USER, "reconfiguring an individual service that is part of a module is not allowed -- please reconfigure the entire module instead using \'66 reconfigure ", pres->sa.s + pres->inns, "\'") ;
             }
         }
-
 
         char status[strlen(pres->sa.s + pres->path.servicedir) + SS_STATE_LEN + 1] ;
 
