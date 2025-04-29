@@ -82,7 +82,7 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
 
     if (!nservice) {
         if (errno == EINVAL)
-            log_dieusys(LOG_EXIT_SYS, "unable to build service selection graph") ;
+            log_dieusys(LOG_EXIT_SYS, "build the graph") ;
         log_warn_return(LOG_EXIT_ZERO, "service selection is not supervised -- try to start it first") ;
     }
 
