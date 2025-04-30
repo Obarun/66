@@ -11,6 +11,14 @@ author: Eric Vidal <eric@obarun.org>
 
 ---
 
+# In 0.8.1.1
+
+## Bug Fixes
+
+- Adapt correctly `reconfigure` command to the new graph API and respect `-P` option.
+
+---
+
 # In 0.8.1.0
 
 - Adaptation to `oblibs` 0.3.3.0

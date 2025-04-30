@@ -24,13 +24,14 @@
 #include <66/migrate_0721.h>
 #include <66/migrate.h>
 
-#define MIGRATE_NVERSION 5
+#define MIGRATE_NVERSION 6
 static const char *version_list[MIGRATE_NVERSION] = {
     "0.7.2.1",
     "0.8.0.0",
     "0.8.0.1",
     "0.8.0.2",
     "0.8.1.0",
+    "0.8.1.1",
 } ;
 
 enum migrate_version_e
@@ -40,16 +41,18 @@ enum migrate_version_e
     VERSION_0801,
     VERSION_0802,
     VERSION_0810,
+    VERSION_0811,
     VERSION_ENDOFKEY
 } ;
 
 static const uint8_t migrate_state [MIGRATE_NVERSION][MIGRATE_NVERSION] = {
-    //  VERSION_0721    VERSION_0800      VERSION_0801      VERSION_0802        VERSION_0810 current
-    { VERSION_ENDOFKEY, VERSION_0800,     VERSION_0800,     VERSION_0800,       VERSION_0800 }, // VERSION_0721 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_0801,     VERSION_0802,       VERSION_0810 }, // VERSION_0800 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_0802,       VERSION_0810 }, // VERSION_0801 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_0810 }, // VERSION_0802 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY }, // VERSION_0810 old
+    //  VERSION_0721    VERSION_0800      VERSION_0801      VERSION_0802        VERSION_0810        VERSION_0811
+    { VERSION_ENDOFKEY, VERSION_0800,     VERSION_0800,     VERSION_0800,       VERSION_0800,       VERSION_0800 },     // VERSION_0721 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_0801,     VERSION_0802,       VERSION_0810,       VERSION_0810 },     // VERSION_0800 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_0802,       VERSION_0810,       VERSION_0810 },     // VERSION_0801 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_0810,       VERSION_0810 },     // VERSION_0802 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0811 },     // VERSION_0810 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY }, // VERSION_0811 old
 } ;
 
 static uint8_t str_to_int(const char *version)
@@ -137,8 +140,21 @@ int sanitize_migrate(ssexec_t *info, const char *oversion, short exist)
                 break ;
 
             case VERSION_0810:
+                migrate_create_snap(info, oversion) ;
                 migrate_0802() ;
-                state = VERSION_ENDOFKEY ;
+                if (!sanitize_resolve(info, DATA_TREE))
+                    log_dieusys(LOG_EXIT_SYS, "sanitize trees resolve files") ;
+                state = VERSION_0810 ;
+                did++ ;
+                break ;
+
+            case VERSION_0811:
+                migrate_create_snap(info, oversion) ;
+                if (!sanitize_resolve(info, DATA_SERVICE))
+                    log_dieusys(LOG_EXIT_SYS, "sanitize services resolve files") ;
+                if (!sanitize_resolve(info, DATA_TREE))
+                    log_dieusys(LOG_EXIT_SYS, "sanitize trees resolve files") ;
+                state = VERSION_0811 ;
                 did++ ;
                 break ;
 
