@@ -26,6 +26,7 @@
 #include <66/service.h>
 #include <66/tree.h>
 #include <66/graph.h>
+#include <66/constants.h>
 
 static int sanitize_service(ssexec_t *info)
 {
@@ -113,6 +114,28 @@ static int sanitize_tree(ssexec_t *info)
     return 1 ;
 }
 
+static int sanitize_tree_master(ssexec_t *info)
+{
+    log_flow() ;
+
+    log_trace("sanitize Master resolve") ;
+
+    resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+
+    if (resolve_read_g(wres, info->base.s, SS_MASTER + 1) <= 0)
+        log_warnusys_return(LOG_EXIT_ZERO, "read Master resolve file") ;
+
+    tree_resolve_master_sanitize(&mres) ;
+
+    if (!resolve_write_g(wres, info->base.s, SS_MASTER + 1))
+        log_warnusys_return(LOG_EXIT_ZERO, "write Master resolve file") ;
+
+    resolve_free(wres) ;
+
+    return 1 ;
+}
+
 int sanitize_resolve(ssexec_t *info, uint8_t type)
 {
     log_flow() ;
@@ -122,6 +145,9 @@ int sanitize_resolve(ssexec_t *info, uint8_t type)
 
     if (type == DATA_TREE)
         return sanitize_tree(info) ;
+
+    if (type == DATA_TREE_MASTER)
+        return sanitize_tree_master(info) ;
 
     return 1 ;
 }

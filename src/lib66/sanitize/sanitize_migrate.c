@@ -135,6 +135,8 @@ int sanitize_migrate(ssexec_t *info, const char *oversion, short exist)
                     log_dieusys(LOG_EXIT_SYS, "sanitize services resolve files") ;
                 if (!sanitize_resolve(info, DATA_TREE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize trees resolve files") ;
+                if (!sanitize_resolve(info, DATA_TREE_MASTER))
+                    log_dieusys(LOG_EXIT_SYS, "sanitize Master resolve files") ;
                 state = VERSION_0802 ;
                 did++ ;
                 break ;
@@ -144,6 +146,8 @@ int sanitize_migrate(ssexec_t *info, const char *oversion, short exist)
                 migrate_0802() ;
                 if (!sanitize_resolve(info, DATA_TREE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize trees resolve files") ;
+                if (!sanitize_resolve(info, DATA_TREE_MASTER))
+                    log_dieusys(LOG_EXIT_SYS, "sanitize Master resolve files") ;
                 state = VERSION_0810 ;
                 did++ ;
                 break ;
@@ -154,6 +158,8 @@ int sanitize_migrate(ssexec_t *info, const char *oversion, short exist)
                     log_dieusys(LOG_EXIT_SYS, "sanitize services resolve files") ;
                 if (!sanitize_resolve(info, DATA_TREE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize trees resolve files") ;
+                if (!sanitize_resolve(info, DATA_TREE_MASTER))
+                    log_dieusys(LOG_EXIT_SYS, "sanitize Master resolve files") ;
                 state = VERSION_0811 ;
                 did++ ;
                 break ;
