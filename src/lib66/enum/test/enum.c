@@ -351,7 +351,8 @@ void test_parser_enums(void) {
     assert(E_PARSER_SECTION_MAIN_STDIN == 17);
     assert(E_PARSER_SECTION_MAIN_STDOUT == 18);
     assert(E_PARSER_SECTION_MAIN_STDERR == 19);
-    assert(E_PARSER_SECTION_MAIN_ENDOFKEY == 20);
+    assert(E_PARSER_SECTION_MAIN_PROVIDE == 20);
+    assert(E_PARSER_SECTION_MAIN_ENDOFKEY == 21);
 
     // resolve_parser_enum_section_startstop_t
     assert(E_PARSER_SECTION_STARTSTOP_BUILD == 0);
@@ -493,11 +494,13 @@ void test_service_enums(void) {
     assert(E_RESOLVE_SERVICE_DEPS_REQUIREDBY == 1);
     assert(E_RESOLVE_SERVICE_DEPS_OPTSDEPS == 2);
     assert(E_RESOLVE_SERVICE_DEPS_CONTENTS == 3);
-    assert(E_RESOLVE_SERVICE_DEPS_NDEPENDS == 4);
-    assert(E_RESOLVE_SERVICE_DEPS_NREQUIREDBY == 5);
-    assert(E_RESOLVE_SERVICE_DEPS_NOPTSDEPS == 6);
-    assert(E_RESOLVE_SERVICE_DEPS_NCONTENTS == 7);
-    assert(E_RESOLVE_SERVICE_DEPS_ENDOFKEY == 8);
+    assert(E_RESOLVE_SERVICE_DEPS_PROVIDE == 4);
+    assert(E_RESOLVE_SERVICE_DEPS_NDEPENDS == 5);
+    assert(E_RESOLVE_SERVICE_DEPS_NREQUIREDBY == 6);
+    assert(E_RESOLVE_SERVICE_DEPS_NOPTSDEPS == 7);
+    assert(E_RESOLVE_SERVICE_DEPS_NCONTENTS == 8);
+    assert(E_RESOLVE_SERVICE_DEPS_NPROVIDE == 9);
+    assert(E_RESOLVE_SERVICE_DEPS_ENDOFKEY == 10);
 
     // resolve_service_enum_execute_t
     assert(E_RESOLVE_SERVICE_EXECUTE_RUN == 0);
@@ -649,9 +652,9 @@ void test_parser_lists(void) {
     }
 
     // enum_list_parser_section_main
-    assert(count_key_description_entries(enum_list_parser_section_main) == 20);
-    assert(count_string_array_entries(enum_str_parser_section_main) == 20);
-    for (size_t i = 0; i < 20; i++) {
+    assert(count_key_description_entries(enum_list_parser_section_main) == 21);
+    assert(count_string_array_entries(enum_str_parser_section_main) == 21);
+    for (size_t i = 0; i < 21; i++) {
         assert(enum_list_parser_section_main[i].id == (int)i);
         assert(strcmp(*enum_list_parser_section_main[i].name, enum_str_parser_section_main[i]) == 0);
         // Check expected values (from SECTION_MAIN_TEMPLATE)
@@ -660,7 +663,7 @@ void test_parser_lists(void) {
             E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_BRACKET,
             E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_UINT,
             E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_BRACKET,
-            E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE
+            E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_BRACKET
         };
         assert(enum_list_parser_section_main[i].expected == expected_values[i]);
     }
@@ -803,9 +806,9 @@ void test_service_lists(void) {
     }
 
     // enum_list_service_deps
-    assert(count_key_description_entries(enum_list_service_deps) == 8);
-    assert(count_string_array_entries(enum_str_service_deps) == 8);
-    for (size_t i = 0; i < 8; i++) {
+    assert(count_key_description_entries(enum_list_service_deps) == 10);
+    assert(count_string_array_entries(enum_str_service_deps) == 10);
+    for (size_t i = 0; i < 10; i++) {
         assert(enum_list_service_deps[i].id == (int)i);
         assert(strcmp(*enum_list_service_deps[i].name, enum_str_service_deps[i]) == 0);
         assert(enum_list_service_deps[i].expected == 0);
