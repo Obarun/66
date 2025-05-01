@@ -44,7 +44,7 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
 
     auto_strings(svname_dot,".",svname) ;
 
-    r = version_compare(sversion,dversion,SS_SERVICE_VERSION_NDOT) ;
+    r = version_compare(sversion,dversion) ;
 
     if (!r)
         log_warn_return(LOG_EXIT_ONE,"same configuration file version for: ",svname," -- nothing to import") ;

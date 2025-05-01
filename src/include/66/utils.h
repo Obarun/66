@@ -53,10 +53,9 @@ extern void set_info(ssexec_t *info) ;
  * if a < b return -1
  * if a > b return 1
  * if a == b return 0
- * return -2 on system call failure
+ * set errno to EINVAL and return -2 on system call failure
 */
-extern int version_compare(char const  *a, char const *b, uint8_t ndot) ;
-extern int version_store(stack *stk, char const *str, uint8_t ndot) ;
+extern int version_compare(char const  *a, char const *b) ;
 
 /**
  * Identifier

@@ -84,8 +84,7 @@
 #define SS_SYM_VERSION "/version"
 #define SS_SYM_VERSION_LEN (sizeof SS_SYM_VERSION - 1)
 
-#define SS_SERVICE_VERSION_NDOT 2
-#define SS_SYSTEM_VERSION_NDOT 3
+#define SS_SERVICE_VERSION_MAXLEN 50
 
 #define SS_EVENTDIR "/event"
 #define SS_EVENTDIR_LEN (sizeof SS_EVENTDIR - 1)

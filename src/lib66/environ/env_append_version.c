@@ -30,8 +30,7 @@ int env_append_version(stralloc *saversion, char const *svconf, char const *vers
 
     _alloc_stk_(stk, strlen(version) + 1) ;
 
-    if (!env_check_version(&stk,version))
-        return 0 ;
+    auto_strings(stk.s, version) ;
 
     if (!auto_stra(saversion,svconf,"/",stk.s))
         log_warnusys_return(LOG_EXIT_ZERO,"stralloc") ;

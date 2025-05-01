@@ -242,16 +242,14 @@ int parse_store_main(resolve_service_t *res, stack *store, resolve_enum_table_t 
 
         case E_PARSER_SECTION_MAIN_VERSION:
 
-            {
-                r = version_store(store, store->s, SS_SERVICE_VERSION_NDOT) ;
-                if (r == -1)
-                    goto err ;
+            if (!parse_list(store))
+                parse_error_return(0, 8, table) ;
 
-                if (!r)
-                    parse_error_return(0, 0, table) ;
+            if (store->len > SS_SERVICE_VERSION_MAXLEN)
+                parse_error_return(0, 0, table) ;
 
-                res->version = resolve_add_string(wres, store->s) ;
-            }
+            res->version = resolve_add_string(wres, store->s) ;
+
             break ;
 
         case E_PARSER_SECTION_MAIN_TYPE:

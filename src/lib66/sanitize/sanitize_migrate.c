@@ -60,7 +60,7 @@ static uint8_t str_to_int(const char *version)
     uint8_t pos = 0 ;
     for (; pos < MIGRATE_NVERSION ; pos++) {
 
-        if (!version_compare(version, version_list[pos], SS_SYSTEM_VERSION_NDOT))
+        if (!version_compare(version, version_list[pos]))
             return pos ;
     }
 
