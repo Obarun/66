@@ -129,6 +129,7 @@ valid fields for `-o` options are:
    - **deny=**: comma separated list of account to deny at *tree*. Account must be valid on the system. **name account is expected** not the corresponding `UID` of the account. The term `user` is also accepted to significate that all user neither root of the system can use *tree*.
    - **clone=**: make a clone of *tree*. This create an exact copy of the configuration of the *tree*, with the exception that no services are associated with the cloned *tree*. The name of the clone **must not** already exists int the system.
    - **noseed**: do not use seed file to build the *tree*. Even if a seed file exists, ignore it and create tree only with options passed or [basic creation configuration](#basic-creation-configuration).
+   - **enable**: activate the tree at the next boot.
 
 #### Usage examples
 

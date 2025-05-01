@@ -51,7 +51,7 @@
 
 #define TREE_COLON_DELIM ':'
 #define TREE_COMMA_DELIM ','
-#define TREE_MAXOPTS 9
+#define TREE_MAXOPTS 10
 #define tree_checkopts(n) if (n >= TREE_MAXOPTS) log_die(LOG_EXIT_USER, "too many -o options")
 
 typedef struct tree_opts_map_s tree_opts_map_t ;
@@ -66,6 +66,7 @@ enum enum_ns_opts_e
 {
     TREE_OPTS_DEPENDS = 0,
     TREE_OPTS_REQUIREDBY,
+    TREE_OPTS_ENABLE,
     TREE_OPTS_RENAME,
     TREE_OPTS_GROUPS,
     TREE_OPTS_NOSEED,
@@ -79,6 +80,7 @@ tree_opts_map_t const tree_opts_table[] =
 {
     { .str = "depends",     .id = TREE_OPTS_DEPENDS },
     { .str = "requiredby",  .id = TREE_OPTS_REQUIREDBY },
+    { .str = "enable",      .id = TREE_OPTS_ENABLE },
     { .str = "rename",      .id = TREE_OPTS_RENAME },
     { .str = "groups",      .id = TREE_OPTS_GROUPS },
     { .str = "noseed",      .id = TREE_OPTS_NOSEED },
@@ -345,10 +347,10 @@ static void tree_parse_options(tree_graph_t *g, char const *str, ssexec_t *info,
             char tmp[len + 1] ;
 
             r = tree_get_key(tmp,line) ;
-            if (r == -1 && strcmp(line, "noseed"))
+            if (r == -1 && (strcmp(line, "noseed") && strcmp(line, "enable")))
                 log_die(LOG_EXIT_USER,"invalid key: ", line) ;
 
-            if (!strcmp(line, "noseed")) {
+            if (!strcmp(line, "noseed") || !strcmp(line, "enable")) {
                 key = line ;
             } else {
                 key = tmp ;
@@ -368,6 +370,10 @@ static void tree_parse_options(tree_graph_t *g, char const *str, ssexec_t *info,
 
                         tree_parse_options_depends(g, info, val, 1, what) ;
                         what->requiredby = 1 ;
+                        break ;
+
+                    case TREE_OPTS_ENABLE :
+                        what->enable = 1 ;
                         break ;
 
                     case TREE_OPTS_RENAME:

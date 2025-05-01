@@ -336,6 +336,7 @@ char const *help_tree_create =
 "   deny= user: comma separated list of user account to deny at tree\n"
 "   clone= name: make a clone name of tree\n"
 "   noseed: do not use seed file to build the tree\n"
+"   enable: activate the tree at next boot\n"
 ;
 
 char const *usage_tree_admin = "66 tree admin [ -h ] [ -o depends=:requiredby=:... ] tree" ;
