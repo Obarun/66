@@ -272,31 +272,16 @@ Defines the service type. Determines how **66** orchestrates startup and supervi
 Version = 0.1.0
 ```
 
-Specifies the semantic version of the service, following `major.minor.patch` format. This helps track updates and compatibility.
+Specifies the semantic version of the service. This helps track updates and compatibility. If not specified, defaults to the actual installed version of *66*.
 
-* mandatory: yes (!)
+* mandatory: no
 
 * syntax: [inline](#inline)
 
     valid values :
 
-    * Any valid version number under the form `digit.digit.digit`.
+    * Any valid version with number, alphabetical, release or mixed components. See [A word about the Version key](#a-word-about-the-version-key) below.
 
-        For example, the following is valid:
-
-        ````
-        Version = 0.1.0
-        ````
-
-        where:
-
-        ````
-        Version = 0.1.0.1
-        Version = 0.1
-        Version = 0.1.rc1
-        ````
-
-        is not.
 
 #### Description
 
@@ -305,9 +290,9 @@ Specifies the semantic version of the service, following `major.minor.patch` for
 Description = "ntpd daemon"
 ```
 
-Provides a concise, human-readable summary of the service’s purpose. Enclosed in double quotes.
+Provides a concise, human-readable summary of the service’s purpose. Enclosed in double quotes. If not specified, defaults to "<service_name> service".
 
-* mandatory: yes (!)
+* mandatory: no
 
 * syntax: [quote](#quote)
 
@@ -322,17 +307,17 @@ Provides a concise, human-readable summary of the service’s purpose. Enclosed 
 User = ( root )
 ```
 
-Lists the system user(s) permitted to manage and run the service. By default, only specified users can start, stop, or interact with the service.
+Specifies the system user(s) list allowed to manage and operate the service. If not defined, defaults to the current process owner's username. *66* automatically distinguishes between user services and root services based on their installation paths. By default, only the specified users can start, stop, or interact with the service
 
-* mandatory: yes (!)
+* mandatory: no
 
 * syntax: [brackets](#brackets)
 
     valid values :
 
-    * Any valid user of the system. If you don't know in advance the name of the user who will deal with the service, you can use the term `user`. In that case every user of the system will be able to deal with the service.
+    * Any valid user of the system. If you don't know in advance the name of the user who will deal with the service, you can use the term `user`. In that case every user of the system will be able to deal with the service. You can also use the `@U` identifier to be more specific.
 
-    (!) Be aware that `root` is not automatically added. If you don't declare `root` in this field, you will not be able to use the service even with `root` privileges.
+    (!) Be aware that `root` is not automatically added for a user service. If you don't declare `root` in this field, you will not be able to use the service even with `root` privileges.
 
 #### Depends
 
@@ -1088,6 +1073,99 @@ Note that with `Build=custom`, variables will **not be replaced** by their corre
 
 This same behavior applies to the [[Logger]](#section-logger) section. Also, The fields `Backup`, `MaxSize` and `Timestamp` will have **no effect** in a custom case. You need to explicitly define the program to use the logger and the options for it in your `Execute` field.
 
+## A word about the Version key
+
+The `Version` key supports formats inspired by semantic versioning (e.g., `"1.0.0"`) but is flexible enough to handle any number of components separated by dots or other non-alphanumeric characters, pre-release tags (e.g., `"1.0.0-alpha"`), mixed components (e.g., `"0ab"`), and complex strings (e.g., `"1.0ab.01-1"`). This following explains what constitutes a valid version string and what does not, helping users effectively utilize the field.
+
+### What Can Be Used as a Version String
+
+The `Version` key accepts version strings composed of components separated by any number of non-alphanumeric characters (e.g., dots, hyphens). Components can be numeric (e.g., `"123"`), alphabetic (e.g., `"alpha"`), or mixed (e.g., `"123abc"`). The function handles leading zeros, pre-release tags, letter suffixes, and any number of components (not limited to three dots). Below are the characteristics of valid version strings:
+
+**Numeric Versions with Any Number of Components**:
+   - Strings like `"1"`, `"1.0"`, `"1.0.0"`, `"1.0.0.0"`, or `"10.0.1.2.3"`.
+   - The number of dots (or other separators) is not restricted to three; you can have zero, one, two, three, four, or more components (e.g., `"1.0"` or `"1.0.0.0.0"`).
+   - Numbers can include leading zeros, which are ignored during comparison (e.g., `"01.00.00"` is equivalent to `"1.0.0"`).
+   - Components are separated by any non-alphanumeric characters (e.g., `"1-0-0"`, `"1..0--0"`, `"1.0.0.0_0"`).
+
+**Pre-release Versions**:
+   - Versions with alphabetic pre-release tags, such as `"1.0.0-alpha"`, `"2.0.0-beta"`, or `"1.0.0.0-rc1"`.
+   - Pre-release tags (e.g., `"alpha"`, `"beta"`) are treated as higher precedence than stable versions (e.g., `"1.0.0-alpha" < "1.0.0"`).
+   - Tags are case-insensitive (e.g., `"1.0.0-ALPHA"` is equivalent to `"1.0.0-alpha"`).
+   - Only the first letter is taken into account whatever le lenght of the string.
+
+**Mixed Components**:
+   - Components that combine numeric and alphabetic parts without a separator, such as `"123abc"` or `"0ab"`, are valid.
+   - These are parsed as a numeric component followed by an alphabetic suffix:
+     - `"123abc"` splits into numeric `"123"` and alphabetic `"abc"`.
+     - `"0ab"` splits into numeric `"0"` and alphabetic `"ab"`.
+   - Example: `"1.0.0-123abc"` is parsed as numeric `"123"` followed by an alphabetic suffix `"abc"`.
+   - Only the first letter is taken into account whatever le lenght of the string.
+
+**Letter Suffixes**:
+   - Versions with an alphabetic suffix after a pre-release tag or mixed component, such as `"1.0.0-alpha.1"`, `"1.0.0-beta.patch"`, or `"1.0ab.01-1"`.
+   - The alphabetic part is treated as a separate component with lower precedence than numeric components.
+
+**Complex Version Strings**:
+   - Strings combining multiple component types with any number of separators, such as `"1.0ab.01-1"` or `"1.0.0.0.0-alpha.2"`, are valid.
+   - Example breakdown of `"1.0ab.01-1"`:
+     - `"1"`: Numeric component.
+     - `"0ab"`: Numeric `"0"` + alphabetic suffix `"ab"`.
+     - `"01"`: Numeric component (equivalent to `"1"`).
+     - `"1"`: Numeric component.
+
+**Shortened or Extended Versions**:
+   - Versions with any number of components are valid, from a single component (e.g., `"1"`) to many (e.g., `"1.0.0.0.0"`).
+   - Shorter versions are treated as equivalent to versions padded with zeros (e.g., `"1.0"` is equivalent to `"1.0.0"`, `"1"` is equivalent to `"1.0.0.0"`).
+   - Extended versions with more components are compared component-by-component (e.g., `"1.0.0.0" == "1.0.0"`).
+
+**Empty Strings**:
+   - An empty string (`""`) is valid and treated as a version with a single zero component (equivalent to `"0"`).
+
+**Separators**:
+   - Any non-alphanumeric character (e.g., `.`, `-`, `_`, `+`) can act as a separator, and any number of consecutive separators is allowed and ignored (e.g., `"1..0"` is equivalent to `"1.0"`, `"1---0..0"` is equivalent to `"1.0.0"`).
+   - Separators are flexible, so `"1-0-0"`, `"1_0_0"`, and `"1.0.0"` are equivalent.
+
+**Examples of Valid Version Strings**:
+- `"1"`
+- `"1.0"`
+- `"1.0.0"`
+- `"1.0.0.0"`
+- `"1.0.0.0.0"`
+- `"2.0.0-alpha"`
+- `"1.0.0-beta.1"`
+- `"01.00.00"`
+- `"1-0-0"`
+- `"1.0.0-rc.2"`
+- `"1.0ab.01-1"`
+- `"1.0.0-123abc"`
+- `""`
+- `"2.0.0--alpha..patch"`
+- `"1-0ab-01--1"`
+- `"10.0.1.2.3"`
+
+### What Cannot Be Used as a Version String
+
+While the `Version` key is robust, certain inputs are invalid or problematic. Users should avoid the following:
+
+**Special Characters in Components**:
+   - Components should consist of numeric (`0-9`) or alphabetic (`a-z`, `A-Z`) characters. Special characters like `@`, `#`, or `$` within components (not as separators) are not supported and may lead to incorrect parsing.
+   - Example: `"1.0.0@alpha"` is invalid because `@alpha` contains an unsupported character in the component.
+
+**Whitespace in Components**:
+   - Whitespace within components (e.g., `"1.0.0 alpha"`) is treated as a separator, which may split components unexpectedly. Use hyphens or dots for pre-release tags (e.g., `"1.0.0-alpha"`).
+   - Example: `"1.0.0 alpha"` is valid from an algorithm point of view but the parsed will only consider the first element.
+
+**Excessively Long Strings**:
+   - Extremely long version strings (e.g., thousands of characters or hundreds of components) may cause performance issues or stack overflows due to the fixed-size arrays in the function. Keep version strings reasonably short (e.g., under 50 characters).
+   - Example: A string with hundreds of components is technically valid but impractical.
+
+**Examples of Invalid or Problematic Version Strings**:
+- `NULL` (causes undefined behavior).
+- `"1.0.0@alpha"` (invalid character `@` in component).
+- `"1.0.0#patch"` (invalid character `#` in component).
+- `"1.0.0 alpha"` (whitespace splits components unexpectedly, likely not intended).
+- A 51-character or higher string is invalid.
+
 ## Prototype of a frontend file
 
 The minimal template is e.g.:
@@ -1095,9 +1173,6 @@ The minimal template is e.g.:
 ```
 [Main]
 Type = classic
-Version = 0.0.1
-Description = "Template example"
-User = ( root )
 
 [Start]
 Execute = ( /usr/bin/true )

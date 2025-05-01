@@ -12,12 +12,20 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+
+#include <string.h>
+#include <stdint.h>
+#include <pwd.h>
+
 #include <oblibs/log.h>
+#include <oblibs/string.h>
+#include <oblibs/stack.h>
 
 #include <66/parse.h>
 #include <66/resolve.h>
 #include <66/enum_parser.h>
 #include <66/constants.h>
+#include <66/service.h>
 
 static int get_shebang(stack *stk, char const *line)
 {
@@ -47,14 +55,44 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
     IO_type_t_ref err = &res->io.fderr ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-    if (!res->description)
-        log_warn_return(LOG_EXIT_ZERO,"key Description at section [Main] must be set") ;
+    if (!res->description) {
 
-    if (!res->user)
-        log_warn_return(LOG_EXIT_ZERO,"key User at section [Main] must be set") ;
+        _alloc_stk_(d, strlen(res->sa.s + res->name) + 8) ;
+        auto_strings(d.s, res->sa.s + res->name, " service") ;
+        res->description = resolve_add_string(wres, d.s) ;
+        log_warn("key Description at section [Main] was not set -- define it to: ", d.s) ;
+    }
 
-    if (!res->version)
-        log_warn_return(LOG_EXIT_ZERO,"key Version at section [Main] must be set") ;
+    if (!res->user) {
+
+        /** The service_frontend_path function restricts the frontend file's location to
+         * $HOME, SS_SERVICE_ADMDIR_USER, or SS_SERVICE_SYSDIR_USER for a user service.
+         * Consequently, the process owner's account can be used as the default
+         * to determine which account manages the parsing process.
+         * */
+
+        if (!info->owner) {
+
+            res->user = resolve_add_string(wres, "root") ;
+            log_warn("key User at section [Main] was not set -- define it to: root") ;
+
+        } else {
+
+            struct passwd *pw = getpwuid(info->owner);
+            if (!pw) {
+                if (!errno) errno = ESRCH ;
+                    log_warnu_return(LOG_EXIT_ZERO,"get user name") ;
+            }
+            res->user = resolve_add_string(wres, pw->pw_name) ;
+            log_warn("key User at section [Main] was not set -- define it to: ", pw->pw_name) ;
+        }
+    }
+
+    if (!res->version) {
+
+        res->version = resolve_add_string(wres, SS_VERSION) ;
+        log_warn("key Version at section [Main] was not set -- define it to: ", SS_VERSION) ;
+    }
 
     if (!res->logger.want) {
         /**
