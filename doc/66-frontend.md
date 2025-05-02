@@ -1559,4 +1559,21 @@ Configure = ""
 Directories = ()
 Files = ()
 InFiles = ()
+
+[Execute]
+LimitAS =
+LimitCORE =
+LimitCPU =
+LimitDATA =
+LimitFSIZE =
+LimitLOCKS =
+LimitMEMLOCK =
+LimitMSGQUEUE =
+LimitNICE =
+LimitNOFILE =
+LimitNPROC =
+LimitRTPRIO =
+LimitRTTIME =
+LimitSIGPENDING =
+LimitSTACK =
 ```

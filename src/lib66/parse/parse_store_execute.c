@@ -54,7 +54,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
         case E_PARSER_SECTION_EXECUTE_LIMITAS:
 
-            parse_error_type(res->limit.limitas, enum_list_parser_section_main, kid) ;
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
             if (!limit_compute(store, &res->limit.limitas, table))
                 return 0 ;
 
@@ -62,7 +62,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
         case E_PARSER_SECTION_EXECUTE_LIMITCORE:
 
-            parse_error_type(res->limit.limitcore, enum_list_parser_section_main, kid) ;
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
             if (!limit_compute(store, &res->limit.limitcore, table))
                 return 0 ;
 
@@ -70,7 +70,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
         case E_PARSER_SECTION_EXECUTE_LIMITCPU:
 
-            parse_error_type(res->limit.limitcpu, enum_list_parser_section_main, kid) ;
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
             if (!limit_compute(store, &res->limit.limitcpu, table))
                 return 0 ;
 
@@ -78,7 +78,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
         case E_PARSER_SECTION_EXECUTE_LIMITDATA:
 
-            parse_error_type(res->limit.limitdata, enum_list_parser_section_main, kid) ;
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
             if (!limit_compute(store, &res->limit.limitdata, table))
                 return 0 ;
 
@@ -86,7 +86,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
         case E_PARSER_SECTION_EXECUTE_LIMITFSIZE:
 
-            parse_error_type(res->limit.limitfsize, enum_list_parser_section_main, kid) ;
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
             if (!limit_compute(store, &res->limit.limitfsize, table))
                 return 0 ;
 
@@ -94,7 +94,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
         case E_PARSER_SECTION_EXECUTE_LIMITLOCKS:
 
-            parse_error_type(res->limit.limitlocks, enum_list_parser_section_main, kid) ;
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
             if (!limit_compute(store, &res->limit.limitlocks, table))
                 return 0 ;
 
@@ -102,7 +102,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
         case E_PARSER_SECTION_EXECUTE_LIMITMEMLOCK:
 
-            parse_error_type(res->limit.limitmemlock, enum_list_parser_section_main, kid) ;
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
             if (!limit_compute(store, &res->limit.limitmemlock, table))
                 return 0 ;
 
@@ -110,7 +110,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
         case E_PARSER_SECTION_EXECUTE_LIMITMSGQUEUE:
 
-            parse_error_type(res->limit.limitmsgqueue, enum_list_parser_section_main, kid) ;
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
             if (!limit_compute(store, &res->limit.limitmsgqueue, table))
                 return 0 ;
 
@@ -118,7 +118,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
         case E_PARSER_SECTION_EXECUTE_LIMITNICE:
 
-            parse_error_type(res->limit.limitnice, enum_list_parser_section_main, kid) ;
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
 
             if (store->s[0] == 'u') {
                 res->limit.limitnice = RLIM_INFINITY;
@@ -138,7 +138,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
         case E_PARSER_SECTION_EXECUTE_LIMITNOFILE:
 
-            parse_error_type(res->limit.limitnofile, enum_list_parser_section_main, kid) ;
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
             if (!limit_compute(store, &res->limit.limitnofile, table))
                 return 0 ;
 
@@ -146,7 +146,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
         case E_PARSER_SECTION_EXECUTE_LIMITNPROC:
 
-            parse_error_type(res->limit.limitnproc, enum_list_parser_section_main, kid) ;
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
             if (!limit_compute(store, &res->limit.limitnproc, table))
                 return 0 ;
 
@@ -154,7 +154,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
         case E_PARSER_SECTION_EXECUTE_LIMITRTPRIO:
 
-            parse_error_type(res->limit.limitrtprio, enum_list_parser_section_main, kid) ;
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
             if (!limit_compute(store, &res->limit.limitrtprio, table))
                 return 0 ;
 
@@ -165,7 +165,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
         case E_PARSER_SECTION_EXECUTE_LIMITRTTIME:
 
-            parse_error_type(res->limit.limitrttime, enum_list_parser_section_main, kid) ;
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
             if (!limit_compute(store, &res->limit.limitrttime, table))
                 return 0 ;
 
@@ -173,7 +173,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
         case E_PARSER_SECTION_EXECUTE_LIMITSIGPENDING:
 
-            parse_error_type(res->limit.limitsigpending, enum_list_parser_section_main, kid) ;
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
             if (!limit_compute(store, &res->limit.limitsigpending, table))
                 return 0 ;
 
@@ -181,7 +181,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
         case E_PARSER_SECTION_EXECUTE_LIMITSTACK:
 
-            parse_error_type(res->limit.limitstack, enum_list_parser_section_main, kid) ;
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
             if (!limit_compute(store, &res->limit.limitstack, table))
                 return 0 ;
 
