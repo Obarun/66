@@ -278,7 +278,7 @@ Specifies the semantic version of the service. This helps track updates and comp
 
 * syntax: [inline](#inline)
 
-    valid values :
+* valid values:
 
     * Any valid version with number, alphabetical, release or mixed components. See [A word about the Version key](#a-word-about-the-version-key) below.
 
@@ -296,7 +296,7 @@ Provides a concise, human-readable summary of the service’s purpose. Enclosed 
 
 * syntax: [quote](#quote)
 
-    valid values :
+* valid values:
 
     * Anything you want.
 
@@ -313,7 +313,7 @@ Specifies the system user(s) list allowed to manage and operate the service. If 
 
 * syntax: [brackets](#brackets)
 
-    valid values :
+* valid values :
 
     * Any valid user of the system. If you don't know in advance the name of the user who will deal with the service, you can use the term `user`. In that case every user of the system will be able to deal with the service. You can also use the `@U` identifier to be more specific.
 
@@ -332,7 +332,7 @@ Declares the mandatory service dependencies. Each listed service must start succ
 
 * syntax: [brackets](#brackets)
 
-    valid values :
+* valid values:
 
     * The name of any valid service.
 
@@ -357,7 +357,7 @@ Specifies reverse dependencies—services that depend on this service. Starting 
 
 * syntax: [brackets](#brackets)
 
-    valid values :
+* valid values:
 
     * The name of any valid service.
 
@@ -382,7 +382,7 @@ Lists optional dependencies. **66** will enable the first available service from
 
 * syntax: [brackets](#brackets)
 
-    valid values :
+* valid values:
 
     * The name of any valid service. A service declared as optional dependencies is not mandatory. The parser will look the corresponding service:
         - If enabled, it will warn the user and do nothing.
@@ -411,7 +411,7 @@ Configures optional behaviors for the service. Wrap options in parentheses for m
 
 * syntax: [brackets](#brackets)
 
-    valid values :
+* valid values:
 
     * log : automatically create a logger for the service. This is **default**. The logger will be created even if this options is not specified. If you want to avoid the creation of the logger, prefix the options with an exclamation mark:
 
@@ -432,7 +432,7 @@ Flags = (down earlier)
 
 * syntax: [brackets](#brackets)
 
-    valid values :
+* valid values:
 
     * down: This will create the file down corresponding to the file down of [s6](https://skarnet.org/software/s6) program. Once this file was created the default state of the service will be considered down, not up: the service will not automatically be started until it receives a [66 start](66-start.html) command. Without this file the default state of the service will be up and started automatically.
     * earlier: This set the service as an *earlier* service meaning starts the service as soon as the [scandir](66-scandir.html) is up.
@@ -451,7 +451,7 @@ Enables readiness notification. Creates `notification-fd` containing the specifi
 
 * syntax: [uint](#uint)
 
-    valid values :
+* valid values:
 
     * Any valid number.
 
@@ -470,7 +470,7 @@ Specifies the maximum time (ms) to wait for the stop script (`finish`) to comple
 
 * syntax: [uint](#uint)
 
-    valid values :
+* valid values:
 
     * Any valid number.
 
@@ -488,7 +488,7 @@ Defines the grace period (ms) after SIGTERM before sending SIGKILL on stop comma
 
 * syntax: [uint](#uint)
 
-    valid values :
+* valid values:
 
     * Any valid number.
 
@@ -546,7 +546,7 @@ Verbatim copy directories and files on the fly to the main service destination. 
 
 * syntax: [brackets](#brackets) with [path](#path) entries.
 
-    valid values :
+* valid values:
 
     * Any files or directories. It accepts *absolute* or *relative* path.
 
@@ -1023,6 +1023,331 @@ In-file regex replacements for module files. Use `:filename:regex=replacement` o
         * It replaces first the term `@I` by the name of the module.
         * It opens the file named mount-tmp, search for the args regex and replaces it by the value of the regex.
         * It opens all files found on the module directory and replaces all regex 'user' found by the name of the module in each file.
+
+### Section [Execute]
+
+This section is *optional*.
+
+This section configures tasks executed just before calling `exec` for the service’s start and stop processes. It includes settings for resource limits applied via `setrlimit()`.
+
+All `LimitXXX` keys accept the value `unlimited` to set the corresponding `RLIMIT_*` resource to `RLIM_INFINITY`, allowing unrestricted use of that resource. For unprivileged services (non-root users), `unlimited` or values exceeding the current hard limit (`rlim_max`) are capped at `rlim_max` to prevent errors. Setting `unlimited` or raising limits beyond `rlim_max` requires root privileges or `CAP_SYS_RESOURCE`. Linux-specific limits (e.g., `LimitNICE`, `LimitRTPRIO`) are ignored on systems where they are not supported, with a warning logged via *66*. Check hard limits with `ulimit -H` (e.g., `ulimit -Hn` for `LimitNOFILE`) or system configurations like `/etc/security/limits.conf`.
+
+#### LimitAS
+
+**Source Snippet**:
+```ini
+LimitAS = unlimited
+```
+
+Specifies the maximum address space (virtual memory) for the service process, in bytes. Corresponds to the `RLIMIT_AS` resource limit.
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+        * A non-negative integer (e.g., 1048576 for 1 MB).
+
+#### LimitCORE
+
+**Source Snippet**:
+```ini
+LimitCORE = 0
+```
+
+Specifies the maximum size of core dump files generated by the service process, in bytes. Corresponds to the `RLIMIT_CORE` resource limit.
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+        * A non-negative integer (e.g., 0 to disable core dumps, 1048576 for 1 MB).
+
+* notes:
+
+    Setting to 0 disables core dumps.
+
+#### LimitCPU
+
+**Source Snippet**:
+```ini
+LimitCPU = unlimited
+```
+
+Specifies the maximum CPU time the service process can use, in seconds. Corresponds to the `RLIMIT_CPU` resource limit.
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+        * A non-negative integer (e.g., 3600 for 1 hour).
+
+* notes:
+
+    Exceeding the limit sends SIGXCPU to the process.
+
+#### LimitDATA
+
+**Source Snippet**:
+```ini
+LimitDATA = 5242880
+```
+
+Specifies the maximum size of the service process’s data segment, in bytes. Corresponds to the `RLIMIT_DATA` resource limit.
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+        * A non-negative integer (e.g., 5242880 for 5 MB).
+
+* notes:
+
+    Affects memory allocations (e.g., malloc()).
+
+#### LimitFSIZE
+
+**Source Snippet**:
+```ini
+LimitFSIZE = unlimited
+```
+
+Specifies the maximum size of files the service process can create, in bytes. Corresponds to the `RLIMIT_FSIZE` resource limit.
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+        * A non-negative integer (e.g., 1048576 for 1 MB).
+
+* notes:
+
+    Exceeding the limit sends SIGXFSZ to the process.
+
+#### LimitLOCKS
+
+**Source Snippet**:
+```ini
+LimitLOCKS = 1024
+```
+
+Specifies the maximum number of file locks the service process can hold. Corresponds to the `RLIMIT_LOCKS` resource limit (Linux-specific).
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+        * A non-negative integer (e.g., 1024).
+
+* notes:
+
+    Only available on Linux; ignored on systems lacking RLIMIT_LOCKS.
+
+#### LimitMEMLOCK
+
+**Source Snippet**:
+```ini
+LimitMEMLOCK = 65536
+```
+
+Specifies the maximum amount of memory the service process can lock into RAM, in bytes. Corresponds to the `RLIMIT_MEMLOCK` resource limit.
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+        * A non-negative integer (e.g., 65536 for 64 KB).
+
+* notes:
+
+    Affects mlock() and similar calls.
+
+#### LimitMSGQUEUE
+
+**Source Snippet**:
+```ini
+LimitMSGQUEUE = 819200
+```
+
+Specifies the maximum size of POSIX message queues the service process can create, in bytes. Corresponds to the `RLIMIT_MSGQUEUE` resource limit (Linux-specific).
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+        * A non-negative integer (e.g., 819200).
+
+* notes:
+
+    Only available on Linux; ignored on systems lacking `RLIMIT_MSGQUEUE`.
+
+#### LimitNICE
+
+**Source Snippet**:
+```ini
+LimitNICE = -20
+```
+
+Specifies the maximum nice value (scheduling priority) the service process can set. Corresponds to the `RLIMIT_NICE` resource limit (Linux-specific).
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+        * An integer between `-20` and `19` (e.g., `-20` for highest priority, `19` for lowest).
+
+* notes:
+
+    Lower values (e.g., `0`) give higher CPU priority; higher values (e.g., `19`) give lower priority.
+    Only available on Linux; ignored on systems lacking RLIMIT_NICE.
+
+    Numeric values are adjusted to the hard limit if exceeded (e.g., `-20` may be capped to 0 if `ulimit -He` is `20`).
+
+    Setting negative nice values may require `CAP_SYS_NICE` for unprivileged processes.
+
+#### LimitNOFILE
+
+**Source Snippet**:
+```ini
+LimitNOFILE = 1024
+```
+
+Specifies the maximum number of open file descriptors the service process can have. Corresponds to the `RLIMIT_NOFILE` resource limit.
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+        * A non-negative integer (e.g., 1024).
+
+* notes:
+
+    Affects files, sockets, and pipes.
+
+#### LimitNPROC
+
+**Source Snippet**:
+```ini
+LimitNPROC = 4096
+```
+
+Specifies the maximum number of processes the service process’s user can create. Corresponds to the `RLIMIT_NPROC` resource limit.
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+        * A non-negative integer (e.g., 4096).
+
+* notes:
+
+    Applies to the user’s total processes, not just the service.
+
+#### LimitRTPRIO
+
+**Source Snippet**:
+```ini
+LimitRTPRIO = 50
+```
+
+Specifies the maximum real-time priority the service process can set. Corresponds to the `RLIMIT_RTPRIO` resource limit (Linux-specific).
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+        * An integer between 0 and 100 (e.g., 50; 0 disables real-time priority).
+
+* notes:
+
+    Higher values give higher real-time scheduling priority.
+    Only available on Linux; ignored on systems lacking RLIMIT_RTPRIO.
+
+#### LimitRTTIME
+
+**Source Snippet**:
+```ini
+LimitRTTIME = unlimited
+```
+
+Specifies the maximum real-time CPU time the service process can use, in microseconds. Corresponds to the `RLIMIT_RTTIME` resource limit (Linux-specific).
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+        * A non-negative integer (e.g., 1000000 for 1 second).
+
+* notes:
+
+    Only available on Linux; ignored on systems lacking RLIMIT_RTTIME.
+
+#### LimitSIGPENDING
+
+**Source Snippet**:
+```ini
+LimitSIGPENDING = 8192
+```
+
+Specifies the maximum number of queued signals the service process can have. Corresponds to the `RLIMIT_SIGPENDING` resource limit (Linux-specific).
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+        * A non-negative integer (e.g., 8192).
+
+* notes:
+
+    Only available on Linux; ignored on systems lacking `RLIMIT_SIGPENDING`.
+
+#### LimitSTACK
+
+**Source Snippet**:
+```ini
+LimitSTACK = 8388608
+```
+
+Specifies the maximum stack size for the service process, in bytes. Corresponds to the RLIMIT_STACK resource limit.
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+        * A non-negative integer (e.g., 8388608 for 8 MB).
+
+* notes:
+
+    Affects thread stacks and recursion depth.
 
 ## A word about the Execute key
 

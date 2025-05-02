@@ -50,9 +50,9 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
 {
     log_flow() ;
 
-    IO_type_t_ref in = &res->io.fdin ;
-    IO_type_t_ref out = &res->io.fdout ;
-    IO_type_t_ref err = &res->io.fderr ;
+    resolve_service_addon_io_type_t_ref in = &res->io.fdin ;
+    resolve_service_addon_io_type_t_ref out = &res->io.fdout ;
+    resolve_service_addon_io_type_t_ref err = &res->io.fderr ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     if (!res->description) {

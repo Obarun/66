@@ -115,7 +115,8 @@ enum resolve_service_enum_deps_e
     macro(DOWNSIGNAL,   "downsignal")
 
 typedef enum resolve_service_enum_execute_e resolve_service_enum_execute_t ;
-enum resolve_service_enum_execute_e {
+enum resolve_service_enum_execute_e
+{
     EXECUTE_TEMPLATE(ENUM_SERVICE_EXECUTE),
     E_RESOLVE_SERVICE_EXECUTE_ENDOFKEY
 } ;
@@ -139,10 +140,11 @@ enum resolve_service_enum_execute_e {
     macro(ONESHOTDDIR,      "oneshotddir")
 
 typedef enum resolve_service_enum_live_e resolve_service_enum_live_t ;
-enum resolve_service_enum_live_e {
+enum resolve_service_enum_live_e
+{
     LIVE_TEMPLATE(ENUM_SERVICE_LIVE),
     E_RESOLVE_SERVICE_LIVE_ENDOFKEY
-};
+} ;
 
 // logger
 
@@ -165,10 +167,11 @@ enum resolve_service_enum_live_e {
     macro(LOGTIMEOUTSTOP,   "logtimeoutstop")
 
 typedef enum resolve_service_enum_logger_e resolve_service_enum_logger_t ;
-enum resolve_service_enum_logger_e {
+enum resolve_service_enum_logger_e
+{
     LOGGER_TEMPLATE(ENUM_SERVICE_LOGGER),
     E_RESOLVE_SERVICE_LOGGER_ENDOFKEY
-};
+} ;
 
 #define ENUM_SERVICE_ENVIRON(id, str) E_RESOLVE_SERVICE_ENVIRON_##id
 #define STR_SERVICE_ENVIRON(id, str) [E_RESOLVE_SERVICE_ENVIRON_##id] = str
@@ -183,10 +186,11 @@ enum resolve_service_enum_logger_e {
 
 
 typedef enum resolve_service_enum_environ_e resolve_service_enum_environ_t ;
-enum resolve_service_enum_environ_e {
+enum resolve_service_enum_environ_e
+{
     ENVIRON_TEMPLATE(ENUM_SERVICE_ENVIRON),
     E_RESOLVE_SERVICE_ENVIRON_ENDOFKEY
-};
+} ;
 
 // regex
 
@@ -203,12 +207,12 @@ enum resolve_service_enum_environ_e {
     macro(NFILES,       "nfiles"), \
     macro(NINFILES,     "ninfiles")
 
-
 typedef enum resolve_service_enum_regex_e resolve_service_enum_regex_t ;
-enum resolve_service_enum_regex_e {
+enum resolve_service_enum_regex_e
+{
     REGEX_TEMPLATE(ENUM_SERVICE_REGEX),
     E_RESOLVE_SERVICE_REGEX_ENDOFKEY
-};
+} ;
 
 // io
 
@@ -225,10 +229,41 @@ enum resolve_service_enum_regex_e {
     macro(STDERRDEST,   "stderrdest")
 
 typedef enum resolve_service_enum_io_e resolve_service_enum_io_t ;
-enum resolve_service_enum_io_e {
+enum resolve_service_enum_io_e
+{
     IO_TEMPLATE(ENUM_SERVICE_IO),
     E_RESOLVE_SERVICE_IO_ENDOFKEY
-};
+} ;
+
+// limit
+
+#define ENUM_SERVICE_LIMIT(id, str) E_RESOLVE_SERVICE_LIMIT_##id
+#define STR_SERVICE_LIMIT(id, str) [E_RESOLVE_SERVICE_LIMIT_##id] = str
+#define KEY_SERVICE_LIMIT(idy, str) { .name = &enum_str_service_limit[E_RESOLVE_SERVICE_LIMIT_##idy], .id = E_RESOLVE_SERVICE_LIMIT_##idy }
+
+#define LIMIT_TEMPLATE(macro) \
+    macro(AS,          "limitas"), \
+    macro(CORE,        "limitcore"), \
+    macro(CPU,         "limitcpu"), \
+    macro(DATA,        "limitdata"), \
+    macro(FSIZE,       "limitfsize"), \
+    macro(LOCKS,       "limitlocks"), \
+    macro(MEMLOCK,     "limitmemlock"), \
+    macro(MSGQUEUE,    "limitmsgqueue"), \
+    macro(NICE,        "limitnice"), \
+    macro(NOFILE,      "limitnofile"), \
+    macro(NPROC,       "limitnproc"), \
+    macro(RTPRIO,      "limitrtprio"), \
+    macro(RTTIME,      "limitrttime"), \
+    macro(SIGPENDING,  "limitsigpending"), \
+    macro(STACK,       "limitstack")
+
+typedef enum resolve_service_enum_limit_e resolve_service_enum_limit_t ;
+enum resolve_service_enum_limit_e
+{
+    LIMIT_TEMPLATE(ENUM_SERVICE_LIMIT),
+    E_RESOLVE_SERVICE_LIMIT_ENDOFKEY
+} ;
 
 #define CATEGORY_SERVICE(id) E_RESOLVE_SERVICE_CATEGORY_##id
 
@@ -241,10 +276,12 @@ enum resolve_service_enum_io_e {
     macro(LOGGER), \
     macro(ENVIRON), \
     macro(REGEX), \
-    macro(IO)
+    macro(IO) , \
+    macro(LIMIT)
 
 typedef enum resolve_service_enum_category_e resolve_service_enum_category_t ;
-enum resolve_service_enum_category_e {
+enum resolve_service_enum_category_e
+{
     SERVICE_CATEGORY(CATEGORY_SERVICE),
     E_RESOLVE_SERVICE_CATEGORY_ENDOFKEY
 } ;
@@ -311,6 +348,12 @@ struct resolve_service_enum_table_s
     .u.service.list = enum_list_service_io \
 }
 
+#define E_TABLE_SERVICE_LIMIT_ZERO { \
+    .category = E_RESOLVE_CATEGORY_SERVICE, \
+    .u.service.category = E_RESOLVE_SERVICE_CATEGORY_LIMIT, \
+    .u.service.list = enum_list_service_limit \
+}
+
 extern const char *enum_str_service_config[] ;
 extern const char *enum_str_service_path[] ;
 extern const char *enum_str_service_deps[] ;
@@ -320,6 +363,7 @@ extern const char *enum_str_service_logger[] ;
 extern const char *enum_str_service_environ[] ;
 extern const char *enum_str_service_regex[] ;
 extern const char *enum_str_service_io[] ;
+extern const char *enum_str_service_limit[] ;
 extern key_description_t const enum_list_service_config[] ;
 extern key_description_t const enum_list_service_path[] ;
 extern key_description_t const enum_list_service_deps[] ;
@@ -329,6 +373,7 @@ extern key_description_t const enum_list_service_logger[] ;
 extern key_description_t const enum_list_service_environ[] ;
 extern key_description_t const enum_list_service_regex[] ;
 extern key_description_t const enum_list_service_io[] ;
+extern key_description_t const enum_list_service_limit[] ;
 extern key_description_t const *enum_get_list_service(resolve_service_enum_table_t table) ;
 
 #endif

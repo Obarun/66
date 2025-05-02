@@ -492,6 +492,81 @@ static void modify_io(resolve_service_t *res, char const *data, uint32_t field)
     free(wres) ;
 }
 
+static void modify_limit(resolve_service_t *res, char const *data, uint32_t field)
+{
+    log_flow() ;
+
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+
+    switch (field) {
+
+        case E_RESOLVE_SERVICE_LIMIT_AS:
+            res->limit.limitas = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LIMIT_CORE:
+            res->limit.limitcore = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LIMIT_CPU:
+            res->limit.limitcpu = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LIMIT_DATA:
+            res->limit.limitdata = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LIMIT_FSIZE:
+            res->limit.limitfsize = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LIMIT_LOCKS:
+            res->limit.limitlocks = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LIMIT_MEMLOCK:
+            res->limit.limitmemlock = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LIMIT_MSGQUEUE:
+            res->limit.limitmsgqueue = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LIMIT_NICE:
+            res->limit.limitnice = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LIMIT_NOFILE:
+            res->limit.limitnofile = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LIMIT_NPROC:
+            res->limit.limitnproc = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LIMIT_RTPRIO:
+            res->limit.limitrtprio = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LIMIT_RTTIME:
+            res->limit.limitrttime = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LIMIT_SIGPENDING:
+            res->limit.limitsigpending = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_LIMIT_STACK:
+            res->limit.limitstack = resolve_add_uint(data) ;
+            break ;
+
+        default:
+            break ;
+    }
+
+    free(wres) ;
+}
+
 void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_table_t table, char const *data)
 {
     log_flow() ;
@@ -532,6 +607,10 @@ void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t
 
         case E_RESOLVE_SERVICE_CATEGORY_IO:
             modify_io(res, data, table.id) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_CATEGORY_LIMIT:
+            modify_limit(res, data, table.id) ;
             break ;
 
         default:

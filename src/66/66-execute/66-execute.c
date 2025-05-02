@@ -18,6 +18,8 @@
 #include <sys/un.h>
 #include <signal.h>
 #include <sys/ioctl.h>
+#include <sys/resource.h> // limit
+#include <stdint.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -633,6 +635,81 @@ static void execute_uidgid(resolve_service_t *res)
     }
 }
 
+static void limit_setup(resolve_service_t *res, int ressource, uint64_t rval)
+{
+    log_flow() ;
+
+    if (!rval)
+        return ;
+
+    struct rlimit r ;
+    uint64_t n = rval ;
+
+    if (getrlimit(ressource, &r) < 0)
+        log_dieusys(LOG_EXIT_SYS, "get limit") ;
+
+    if (res->owner)
+        if (n == (uint64_t)(RLIM_INFINITY) || n > r.rlim_max)
+            n = r.rlim_max ;
+
+    r.rlim_cur = n ;
+
+    if (setrlimit(ressource, &r) < 0)
+        log_warnsys("set limit") ;
+}
+
+static void execute_limit(resolve_service_t *res)
+{
+    log_flow() ;
+
+#ifdef RLIMIT_AS
+    limit_setup(res, RLIMIT_AS, res->limit.limitas ? res->limit.limitas : 0) ;
+#endif
+#ifdef RLIMIT_CORE
+    limit_setup(res, RLIMIT_CORE, res->limit.limitcore ? res->limit.limitcore : 0) ;
+#endif
+#ifdef RLIMIT_CPU
+    limit_setup(res, RLIMIT_CPU, res->limit.limitcpu ? res->limit.limitcpu : 0) ;
+#endif
+#ifdef RLIMIT_DATA
+    limit_setup(res, RLIMIT_DATA, res->limit.limitdata ? res->limit.limitdata : 0) ;
+#endif
+#ifdef RLIMIT_FSIZE
+    limit_setup(res, RLIMIT_FSIZE, res->limit.limitfsize ? res->limit.limitfsize : 0) ;
+#endif
+#ifdef RLIMIT_LOCKS
+    limit_setup(res, RLIMIT_LOCKS, res->limit.limitlocks ? res->limit.limitlocks : 0) ;
+#endif
+#ifdef RLIMIT_MEMLOCK
+    limit_setup(res, RLIMIT_MEMLOCK, res->limit.limitmemlock ? res->limit.limitmemlock : 0) ;
+#endif
+#ifdef RLIMIT_MSGQUEUE
+    limit_setup(res, RLIMIT_MSGQUEUE, res->limit.limitmsgqueue ? res->limit.limitmsgqueue : 0) ;
+#endif
+#ifdef RLIMIT_NICE
+    limit_setup(res, RLIMIT_NICE, res->limit.limitnice ? res->limit.limitnice : 0) ;
+#endif
+#ifdef RLIMIT_NOFILE
+    limit_setup(res, RLIMIT_NOFILE, res->limit.limitnofile ? res->limit.limitnofile : 0) ;
+#endif
+#ifdef RLIMIT_NPROC
+    limit_setup(res, RLIMIT_NPROC, res->limit.limitnproc ? res->limit.limitnproc : 0) ;
+#endif
+#ifdef RLIMIT_RTPRIO
+    limit_setup(res, RLIMIT_RTPRIO, res->limit.limitrtprio ? res->limit.limitrtprio : 0) ;
+#endif
+#ifdef RLIMIT_RTTIME
+    limit_setup(res, RLIMIT_RTTIME, res->limit.limitrttime ? res->limit.limitrttime : 0) ;
+#endif
+#ifdef RLIMIT_SIGPENDING
+    limit_setup(res, RLIMIT_SIGPENDING, res->limit.limitsigpending ? res->limit.limitsigpending : 0) ;
+#endif
+#ifdef RLIMIT_STACK
+    limit_setup(res, RLIMIT_STACK, res->limit.limitstack ? res->limit.limitstack : 0) ;
+#endif
+
+}
+
 int main(int argc, char const *const *argv, char const *const *envp)
 {
     log_flow() ;
@@ -724,6 +801,8 @@ int main(int argc, char const *const *argv, char const *const *envp)
     execute_io(&res) ;
 
     execute_uidgid(&res) ;
+
+    execute_limit(&res) ;
 
     /** We can now send message to a eventd handler socket.
      * For now, just send a simple message */

@@ -168,28 +168,51 @@ struct resolve_service_addon_regex_s
  * StdOut: default -> /var/log/66/<service>/current through s6-log
  * StdErr: default -> inherit from StdOut
  **/
-typedef struct IO_type_s IO_type_t, *IO_type_t_ref ;
-struct IO_type_s {
+typedef struct resolve_service_addon_io_type_s resolve_service_addon_io_type_t, *resolve_service_addon_io_type_t_ref ;
+struct resolve_service_addon_io_type_s {
 
     uint32_t type  ; // integer, flags
     uint32_t destination ; // string
 } ;
 
-#define IO_TYPE_ZERO { 0, 0 }
+#define RESOLVE_SERVICE_ADDON_IO_TYPE_ZERO { 0, 0 }
 
-typedef struct IO_redirection_s IO_redirection_t, *IO_redirection_t_ref ;
-struct IO_redirection_s
+typedef struct resolve_service_addon_io_s resolve_service_addon_io_t, *resolve_service_addon_io_t_ref ;
+struct resolve_service_addon_io_s
 {
-    IO_type_t fdin ; // default close
-    IO_type_t fdout ; // default s6-log
-    IO_type_t fderr ; // default inherit
+    resolve_service_addon_io_type_t fdin ; // default close
+    resolve_service_addon_io_type_t fdout ; // default s6-log
+    resolve_service_addon_io_type_t fderr ; // default inherit
 } ;
 
-#define IO_REDIRECTION_ZERO { \
+#define RESOLVE_SERVICE_ADDON_IO_ZERO { \
     { E_PARSER_IO_TYPE_NOTSET, 0 }, \
     { E_PARSER_IO_TYPE_NOTSET, 0 }, \
     { E_PARSER_IO_TYPE_NOTSET, 0 } \
 }
+
+typedef struct resolve_service_addon_limit_s resolve_service_addon_limit_t, *resolve_service_addon_limit_t_ref;
+struct resolve_service_addon_limit_s
+{
+    // all integer
+    uint64_t limitas ;        // RLIMIT_AS (address space/virtual memory)
+    uint64_t limitcore ;      // RLIMIT_CORE (core dump size)
+    uint64_t limitcpu ;       // RLIMIT_CPU (CPU time)
+    uint64_t limitdata ;      // RLIMIT_DATA (data segment size)
+    uint64_t limitfsize ;     // RLIMIT_FSIZE (file size)
+    uint64_t limitlocks ;     // RLIMIT_LOCKS (file locks)
+    uint64_t limitmemlock ;   // RLIMIT_MEMLOCK (locked memory)
+    uint64_t limitmsgqueue ;  // RLIMIT_MSGQUEUE (POSIX message queues)
+    uint64_t limitnice ;      // RLIMIT_NICE (nice value/priority)
+    uint64_t limitnofile ;    // RLIMIT_NOFILE (open file descriptors)
+    uint64_t limitnproc ;     // RLIMIT_NPROC (number of processes)
+    uint64_t limitrtprio ;    // RLIMIT_RTPRIO (real-time priority)
+    uint64_t limitrttime ;    // RLIMIT_RTTIME (real-time CPU time)
+    uint64_t limitsigpending ;// RLIMIT_SIGPENDING (queued signals)
+    uint64_t limitstack ;     // RLIMIT_STACK (stack size)
+} ;
+
+#define RESOLVE_SERVICE_ADDON_LIMIT_ZERO { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
 typedef struct resolve_service_s resolve_service_t, *resolve_service_t_ref ;
 struct resolve_service_s
@@ -222,8 +245,8 @@ struct resolve_service_s
     resolve_service_addon_logger_t logger ;
     resolve_service_addon_environ_t environ ;
     resolve_service_addon_regex_t regex ;
-
-    IO_redirection_t io ;
+    resolve_service_addon_io_t io ;
+    resolve_service_addon_limit_t limit ;
 } ;
 
 #define RESOLVE_SERVICE_ZERO { STRALLOC_ZERO, 0, \
@@ -235,7 +258,8 @@ struct resolve_service_s
                                RESOLVE_SERVICE_ADDON_LOGGER_ZERO, \
                                RESOLVE_SERVICE_ADDON_ENVIRON_ZERO, \
                                RESOLVE_SERVICE_ADDON_REGEX_ZERO, \
-                               IO_REDIRECTION_ZERO }
+                               RESOLVE_SERVICE_ADDON_IO_ZERO, \
+                               RESOLVE_SERVICE_ADDON_LIMIT_ZERO }
 
 
 extern const resolve_service_t service_resolve_zero ;

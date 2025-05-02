@@ -134,7 +134,24 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "stdouttype", res->io.fdout.type) ||
         !resolve_add_cdb_uint(c, "stdoutdest", res->io.fdout.destination) ||
         !resolve_add_cdb_uint(c, "stderrtype", res->io.fderr.type) ||
-        !resolve_add_cdb_uint(c, "stderrdest", res->io.fderr.destination))
+        !resolve_add_cdb_uint(c, "stderrdest", res->io.fderr.destination) ||
+
+        // limit
+        !resolve_add_cdb_uint(c, "limitas", res->limit.limitas) ||
+        !resolve_add_cdb_uint(c, "limitcore", res->limit.limitcore) ||
+        !resolve_add_cdb_uint(c, "limitcpu", res->limit.limitcpu) ||
+        !resolve_add_cdb_uint(c, "limitdata", res->limit.limitdata) ||
+        !resolve_add_cdb_uint(c, "limitfsize", res->limit.limitfsize) ||
+        !resolve_add_cdb_uint(c, "limitlocks", res->limit.limitlocks) ||
+        !resolve_add_cdb_uint(c, "limitmemlock", res->limit.limitmemlock) ||
+        !resolve_add_cdb_uint(c, "limitmsgqueue", res->limit.limitmsgqueue) ||
+        !resolve_add_cdb_uint(c, "limitnice", res->limit.limitnice) ||
+        !resolve_add_cdb_uint(c, "limitnofile", res->limit.limitnofile) ||
+        !resolve_add_cdb_uint(c, "limitnproc", res->limit.limitnproc) ||
+        !resolve_add_cdb_uint(c, "limitrtprio", res->limit.limitrtprio) ||
+        !resolve_add_cdb_uint(c, "limitrttime", res->limit.limitrttime) ||
+        !resolve_add_cdb_uint(c, "limitsigpending", res->limit.limitsigpending) ||
+        !resolve_add_cdb_uint(c, "limitstack", res->limit.limitstack))
             return 0 ;
 
     return 1 ;

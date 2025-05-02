@@ -14,14 +14,38 @@
 
 #include <stdlib.h>//free
 #include <errno.h>
+#include <stdint.h>
+#include <string.h>
 
 #include <oblibs/log.h>
 
 #include <skalibs/cdb.h>
+#include <skalibs/types.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
 
+static int resolve_get_key_u64(const cdb *c, const char *key, uint64_t *field)
+{
+    size_t klen = strlen(key) ;
+    cdb_data cdata ;
+
+    int r = cdb_find(c, &cdata, key, klen) ;
+    if (r == -1)
+        log_warnusys_return(LOG_EXIT_ZERO,"search on cdb key: ",key) ;
+
+    if (!r)
+        log_warn_return(LOG_EXIT_ZERO,"unknown cdb key: ",key) ;
+
+    char pack[cdata.len + 1] ;
+    memcpy(pack,cdata.s, cdata.len) ;
+    pack[cdata.len] = 0 ;
+
+    uint64_unpack_big(pack, field) ;
+
+    return 1 ;
+
+}
 
 int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
 {
@@ -140,7 +164,24 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
         !resolve_get_key(c, "stdouttype", &res->io.fdout.type) ||
         !resolve_get_key(c, "stdoutdest", &res->io.fdout.destination) ||
         !resolve_get_key(c, "stderrtype", &res->io.fderr.type) ||
-        !resolve_get_key(c, "stderrdest", &res->io.fderr.destination)) {
+        !resolve_get_key(c, "stderrdest", &res->io.fderr.destination) ||
+
+    /* limit */
+        !resolve_get_key_u64(c, "limitas", &res->limit.limitas) ||
+        !resolve_get_key_u64(c, "limitcore", &res->limit.limitcore) ||
+        !resolve_get_key_u64(c, "limitcpu", &res->limit.limitcpu) ||
+        !resolve_get_key_u64(c, "limitdata", &res->limit.limitdata) ||
+        !resolve_get_key_u64(c, "limitfsize", &res->limit.limitfsize) ||
+        !resolve_get_key_u64(c, "limitlocks", &res->limit.limitlocks) ||
+        !resolve_get_key_u64(c, "limitmemlock", &res->limit.limitmemlock) ||
+        !resolve_get_key_u64(c, "limitmsgqueue", &res->limit.limitmsgqueue) ||
+        !resolve_get_key_u64(c, "limitnice", &res->limit.limitnice) ||
+        !resolve_get_key_u64(c, "limitnofile", &res->limit.limitnofile) ||
+        !resolve_get_key_u64(c, "limitnproc", &res->limit.limitnproc) ||
+        !resolve_get_key_u64(c, "limitrtprio", &res->limit.limitrtprio) ||
+        !resolve_get_key_u64(c, "limitrttime", &res->limit.limitrttime) ||
+        !resolve_get_key_u64(c, "limitsigpending", &res->limit.limitsigpending) ||
+        !resolve_get_key_u64(c, "limitstack", &res->limit.limitstack)) {
             free(wres) ;
             return (errno = EINVAL, 0)  ;
     }
