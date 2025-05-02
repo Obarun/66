@@ -18,6 +18,7 @@ parse_rename_interdependences.o
 parse_section.o
 parse_service.o
 parse_store_environ.o
+parse_store_execute.o
 parse_store_g.o
 parse_store_logger.o
 parse_store_main.o

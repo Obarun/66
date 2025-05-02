@@ -60,6 +60,7 @@ extern int parse_section_stop(resolve_service_t *res, const char *str) ;
 extern int parse_section_logger(resolve_service_t *res, const char *str) ;
 extern int parse_section_environment(resolve_service_t *res, const char *str) ;
 extern int parse_section_regex(resolve_service_t *res, const char *str) ;
+extern int parse_section_execute(resolve_service_t *res, const char *str) ;
 extern int parse_section(resolve_service_t *res, char const *str, resolve_enum_table_t table) ;
 extern int parse_contents(resolve_service_t *res, char const *str) ;
 extern int parse_compute_list(resolve_wrapper_t_ref wres, stack *store, uint32_t *res, uint8_t opts) ;
@@ -71,6 +72,7 @@ extern int parse_store_start_stop(resolve_service_t *res, stack *store, resolve_
 extern int parse_store_logger(resolve_service_t *res, stack *store, resolve_enum_table_t table) ;
 extern int parse_store_environ(resolve_service_t *res, stack *store, resolve_enum_table_t table) ;
 extern int parse_store_regex(resolve_service_t *res, stack *store, resolve_enum_table_t table) ;
+extern int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table_t table) ;
 
 /** helper */
 extern int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, size_t len) ;

@@ -66,6 +66,13 @@ int parse_store_g(resolve_service_t *res, stack *store, resolve_enum_table_t tab
                 log_warnu_return(LOG_EXIT_ZERO, "store value of section: ", enum_str_parser_section[E_PARSER_SECTION_REGEX]);
 
             break ;
+
+        case E_PARSER_SECTION_EXECUTE:
+
+            if (!parse_store_execute(res, store, table))
+                log_warnu_return(LOG_EXIT_ZERO, "store value of section: ", enum_str_parser_section[E_PARSER_SECTION_EXECUTE]);
+
+            break ;
     }
 
     return 1 ;

@@ -87,6 +87,16 @@ key_description_t const enum_list_parser_section_regex[] = {
     { .name = 0 }
 } ;
 
+const char *enum_str_parser_section_execute[] = {
+    SECTION_EXECUTE_TEMPLATE(STR_SECTION_EXECUTE),
+    0
+} ;
+
+key_description_t const enum_list_parser_section_execute[] = {
+    SECTION_EXECUTE_TEMPLATE(KEY_SECTION_EXECUTE),
+    { .name = 0 }
+} ;
+
 const char *enum_str_parser_io_type[] = {
     IO_TYPE_TEMPLATE(STR_IO_TYPE),
     0

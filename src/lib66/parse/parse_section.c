@@ -73,6 +73,12 @@ int parse_section_regex(resolve_service_t *res, const char *str)
     return parse_section(res, str, table) ;
 }
 
+int parse_section_execute(resolve_service_t *res, const char *str)
+{
+    resolve_enum_table_t table = E_TABLE_PARSER_SECTION_EXECUTE_ZERO ;
+    return parse_section(res, str, table) ;
+}
+
 int parse_section(resolve_service_t *res, char const *str, resolve_enum_table_t table)
 {
     log_flow() ;

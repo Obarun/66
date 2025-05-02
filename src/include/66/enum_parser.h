@@ -47,8 +47,8 @@ enum resolve_parser_enum_expected_e
     macro(STOP,         "Stop"), \
     macro(LOGGER,       "Logger"), \
     macro(ENVIRONMENT,  "Environment"), \
-    macro(REGEX,        "Regex")
-
+    macro(REGEX,        "Regex"), \
+    macro(EXECUTE,      "Execute")
 
 typedef enum resolve_parser_enum_section_e resolve_parser_enum_section_t ;
 enum resolve_parser_enum_section_e
@@ -62,28 +62,27 @@ enum resolve_parser_enum_section_e
 #define KEY_SECTION_MAIN(idy, str, exp) { .name = &enum_str_parser_section_main[E_PARSER_SECTION_MAIN_##idy], .id = E_PARSER_SECTION_MAIN_##idy, .expected = exp }
 
 #define SECTION_MAIN_TEMPLATE(macro) \
-    macro(TYPE,         "Type",         E_PARSER_EXPECT_LINE), \
-    macro(VERSION,      "Version",      E_PARSER_EXPECT_LINE), \
-    macro(DESCRIPTION,  "Description",  E_PARSER_EXPECT_QUOTE), \
-    macro(DEPENDS,      "Depends",      E_PARSER_EXPECT_BRACKET), \
-    macro(REQUIREDBY,   "RequiredBy",   E_PARSER_EXPECT_BRACKET), \
-    macro(OPTSDEPS,     "OptsDepends",  E_PARSER_EXPECT_BRACKET), \
-    macro(CONTENTS,     "Contents",     E_PARSER_EXPECT_BRACKET), \
-    macro(OPTIONS,      "Options",      E_PARSER_EXPECT_BRACKET), \
-    macro(NOTIFY,       "Notify",       E_PARSER_EXPECT_UINT), \
-    macro(USER,         "User",         E_PARSER_EXPECT_BRACKET), \
-    macro(TIMESTART,    "TimeoutStart", E_PARSER_EXPECT_UINT), \
-    macro(TIMESTOP,     "TimeoutStop",  E_PARSER_EXPECT_UINT), \
-    macro(DEATH,        "MaxDeath",     E_PARSER_EXPECT_UINT), \
-    macro(COPYFROM,     "CopyFrom",     E_PARSER_EXPECT_BRACKET), \
-    macro(SIGNAL,       "DownSignal",   E_PARSER_EXPECT_UINT), \
-    macro(FLAGS,        "Flags",        E_PARSER_EXPECT_BRACKET), \
-    macro(INTREE,       "InTree",       E_PARSER_EXPECT_LINE), \
-    macro(STDIN,        "StdIn",        E_PARSER_EXPECT_LINE), \
-    macro(STDOUT,       "StdOut",       E_PARSER_EXPECT_LINE), \
-    macro(STDERR,       "StdErr",       E_PARSER_EXPECT_LINE), \
-    macro(PROVIDE,      "Provide",      E_PARSER_EXPECT_BRACKET) \
-
+    macro(TYPE,             "Type",             E_PARSER_EXPECT_LINE), \
+    macro(VERSION,          "Version",          E_PARSER_EXPECT_LINE), \
+    macro(DESCRIPTION,      "Description",      E_PARSER_EXPECT_QUOTE), \
+    macro(DEPENDS,          "Depends",          E_PARSER_EXPECT_BRACKET), \
+    macro(REQUIREDBY,       "RequiredBy",       E_PARSER_EXPECT_BRACKET), \
+    macro(OPTSDEPS,         "OptsDepends",      E_PARSER_EXPECT_BRACKET), \
+    macro(CONTENTS,         "Contents",         E_PARSER_EXPECT_BRACKET), \
+    macro(OPTIONS,          "Options",          E_PARSER_EXPECT_BRACKET), \
+    macro(NOTIFY,           "Notify",           E_PARSER_EXPECT_UINT), \
+    macro(USER,             "User",             E_PARSER_EXPECT_BRACKET), \
+    macro(TIMESTART,        "TimeoutStart",     E_PARSER_EXPECT_UINT), \
+    macro(TIMESTOP,         "TimeoutStop",      E_PARSER_EXPECT_UINT), \
+    macro(DEATH,            "MaxDeath",         E_PARSER_EXPECT_UINT), \
+    macro(COPYFROM,         "CopyFrom",         E_PARSER_EXPECT_BRACKET), \
+    macro(SIGNAL,           "DownSignal",       E_PARSER_EXPECT_UINT), \
+    macro(FLAGS,            "Flags",            E_PARSER_EXPECT_BRACKET), \
+    macro(INTREE,           "InTree",           E_PARSER_EXPECT_LINE), \
+    macro(STDIN,            "StdIn",            E_PARSER_EXPECT_LINE), \
+    macro(STDOUT,           "StdOut",           E_PARSER_EXPECT_LINE), \
+    macro(STDERR,           "StdErr",           E_PARSER_EXPECT_LINE), \
+    macro(PROVIDE,          "Provide",          E_PARSER_EXPECT_BRACKET)
 
 typedef enum resolve_parser_enum_section_main_e resolve_parser_enum_section_main_t ;
 enum resolve_parser_enum_section_main_e
@@ -100,7 +99,6 @@ enum resolve_parser_enum_section_main_e
     macro(BUILD, "Build",   E_PARSER_EXPECT_LINE), \
     macro(RUNAS, "RunAs",   E_PARSER_EXPECT_LINE), \
     macro(EXEC,  "Execute", E_PARSER_EXPECT_BRACKET)
-
 
 typedef enum resolve_parser_enum_section_startstop_e resolve_parser_enum_section_startstop_t ;
 enum resolve_parser_enum_section_startstop_e
@@ -162,6 +160,34 @@ enum resolve_parser_enum_section_regex_e
 {
     SECTION_REGEX_TEMPLATE(ENUM_SECTION_REGEX),
     E_PARSER_SECTION_REGEX_ENDOFKEY
+} ;
+
+#define ENUM_SECTION_EXECUTE(id, str, exp) E_PARSER_SECTION_EXECUTE_##id
+#define STR_SECTION_EXECUTE(id, str, exp) [E_PARSER_SECTION_EXECUTE_##id] = str
+#define KEY_SECTION_EXECUTE(idy, str, exp) { .name = &enum_str_parser_section_execute[E_PARSER_SECTION_EXECUTE_##idy], .id = E_PARSER_SECTION_EXECUTE_##idy, .expected = exp }
+
+#define SECTION_EXECUTE_TEMPLATE(macro) \
+    macro(LIMITAS,          "LimitAS",          E_PARSER_EXPECT_UINT), \
+    macro(LIMITCORE,        "LimitCORE",        E_PARSER_EXPECT_UINT), \
+    macro(LIMITCPU,         "LimitCPU",         E_PARSER_EXPECT_UINT), \
+    macro(LIMITDATA,        "LimitDATA",        E_PARSER_EXPECT_UINT), \
+    macro(LIMITFSIZE,       "LimitFSIZE",       E_PARSER_EXPECT_UINT), \
+    macro(LIMITLOCKS,       "LimitLOCKS",       E_PARSER_EXPECT_UINT), \
+    macro(LIMITMEMLOCK,     "LimitMEMLOCK",     E_PARSER_EXPECT_UINT), \
+    macro(LIMITMSGQUEUE,    "LimitMSGQUEUE",    E_PARSER_EXPECT_UINT), \
+    macro(LIMITNICE,        "LimitNICE",        E_PARSER_EXPECT_UINT), \
+    macro(LIMITNOFILE,      "LimitNOFILE",      E_PARSER_EXPECT_UINT), \
+    macro(LIMITNPROC,       "LimitNPROC",       E_PARSER_EXPECT_UINT), \
+    macro(LIMITRTPRIO,      "LimitRTPRIO",      E_PARSER_EXPECT_UINT), \
+    macro(LIMITRTTIME,      "LimitRTTIME",      E_PARSER_EXPECT_UINT), \
+    macro(LIMITSIGPENDING,  "LimitSIGPENDING",  E_PARSER_EXPECT_UINT), \
+    macro(LIMITSTACK,       "LimitSTACK",       E_PARSER_EXPECT_UINT)
+
+typedef enum resolve_parser_enum_section_execute_e resolve_parser_enum_section_execute_t ;
+enum resolve_parser_enum_section_execute_e
+{
+    SECTION_EXECUTE_TEMPLATE(ENUM_SECTION_EXECUTE),
+    E_PARSER_SECTION_EXCUTE_ENDOFKEY
 } ;
 
 #define ENUM_IO_TYPE(id, str, exp) E_PARSER_IO_TYPE_##id
@@ -310,6 +336,7 @@ enum resolve_parser_enum_mandatory_e
     macro(SECTION_LOGGER), \
     macro(SECTION_ENVIRON), \
     macro(SECTION_REGEX), \
+    macro(SECTION_EXECUTE), \
     macro(SECTION), \
     macro(IO_TYPE), \
     macro(TYPE), \
@@ -376,6 +403,13 @@ struct resolve_parser_enum_table_s {
     .u.parser.category = E_PARSER_CATEGORY_SECTION_REGEX, \
     .u.parser.list = enum_list_parser_section_regex, \
     .u.parser.sid = E_PARSER_SECTION_REGEX \
+}
+
+#define E_TABLE_PARSER_SECTION_EXECUTE_ZERO { \
+    .category = E_RESOLVE_CATEGORY_PARSER, \
+    .u.parser.category = E_PARSER_CATEGORY_SECTION_EXECUTE, \
+    .u.parser.list = enum_list_parser_section_execute, \
+    .u.parser.sid = E_PARSER_SECTION_EXECUTE \
 }
 
 #define E_TABLE_PARSER_SECTION { \
@@ -459,6 +493,7 @@ extern char const *enum_str_parser_section_startstop[] ;
 extern char const *enum_str_parser_section_logger[] ;
 extern char const *enum_str_parser_section_environ[] ;
 extern char const *enum_str_parser_section_regex[] ;
+extern char const *enum_str_parser_section_execute[] ;
 extern char const *enum_str_parser_io_type[] ;
 extern char const *enum_str_parser_type[] ;
 extern char const *enum_str_parser_opts[] ;
@@ -474,6 +509,7 @@ extern key_description_t const enum_list_parser_section_startstop[] ;
 extern key_description_t const enum_list_parser_section_logger[] ;
 extern key_description_t const enum_list_parser_section_environ[] ;
 extern key_description_t const enum_list_parser_section_regex[] ;
+extern key_description_t const enum_list_parser_section_execute[] ;
 extern key_description_t const enum_list_parser_io_type[] ;
 extern key_description_t const enum_list_parser_type[] ;
 extern key_description_t const enum_list_parser_opts[] ;
