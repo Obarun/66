@@ -724,6 +724,30 @@ static void execute_privileges(void)
 }
 #endif
 
+static void execute_umask(resolve_service_t *res)
+{
+    log_flow() ;
+
+    if (res->execute.want_umask)
+        umask((mode_t)res->execute.umask) ;
+}
+
+static void execute_nice(resolve_service_t *res)
+{
+    log_flow();
+
+    if (res->execute.want_nice) {
+
+        int p = 20 - (int)(res->execute.nice) ;
+        if (setpriority(PRIO_PROCESS, 0, p) < 0) {
+            if (errno == EPERM)
+                log_warnusys("setting nice value requires CAP_SYS_NICE or root") ;
+
+            log_dieusys(LOG_EXIT_SYS, "set nice value");
+        }
+    }
+}
+
 int main(int argc, char const *const *argv, char const *const *envp)
 {
     log_flow() ;
@@ -816,14 +840,16 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     execute_limit(&res) ;
 
+    execute_nice(&res) ;
+
 #ifdef __linux__
     execute_privileges() ;
 #endif
 
     execute_uidgid(&res) ;
 
-    if (res.execute.want_umask)
-        umask((mode_t)res.execute.umask) ;
+    execute_umask(&res) ;
+
 
     /** We can now send message to a eventd handler socket.
      * For now, just send a simple message */

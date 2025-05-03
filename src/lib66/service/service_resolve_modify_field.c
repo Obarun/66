@@ -265,6 +265,14 @@ static void modify_execute(resolve_service_t *res, char const *data, uint32_t fi
             res->execute.want_umask = resolve_add_uint(data) ;
             break ;
 
+        case E_RESOLVE_SERVICE_EXECUTE_NICE:
+            res->execute.nice = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_EXECUTE_WANT_NICE:
+            res->execute.want_nice = resolve_add_uint(data) ;
+            break ;
+
         default:
             break ;
     }

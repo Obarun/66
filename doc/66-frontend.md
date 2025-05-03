@@ -1419,6 +1419,33 @@ Sets the file creation mask for the service process via `umask()`, controlling d
 
     * Undefined: Defaults to system-wide configuration.
 
+#### Nice
+
+**Source Snippet**:
+```ini
+Nice = -10
+```
+
+Sets the CPU scheduling priority (nice value) for the service process via `setpriority()`, affecting how the kernel allocates CPU time. Lower values increase priority; higher values decrease it.
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+    * An integer between `-20` (highest priority) and `19` (lowest priority).
+
+    * Undefined: Defaults to system-wide configuration.
+
+* notes:
+
+    Negative values (e.g., `-10`) require `CAP_SYS_NICE` for unprivileged services (non-root users) or root privileges.
+
+    Must be within the `RLIMIT_NICE` limit set by `LimitNICE`.
+
+    Affects the service process and its children.
+
 ## A word about the Execute key
 
 As described above the `Execute` key can be written in any language as long as you define the key `Build` as `custom`. For example if you want to write your `Execute` field with bash:

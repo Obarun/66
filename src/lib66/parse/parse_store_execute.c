@@ -118,22 +118,23 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
         case E_PARSER_SECTION_EXECUTE_LIMITNICE:
 
-            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
+            {
+                parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
 
-            if (store->s[0] == 'u') {
-                res->limit.limitnice = RLIM_INFINITY;
-                break;
+                if (store->s[0] == 'u') {
+                    res->limit.limitnice = RLIM_INFINITY;
+                    break;
+                }
+
+                int64_t n = 0 ;
+                if (!int64_scan_base_max(store->s, &n, 10, INT64_MAX))
+                    parse_error_return(0, 3, table) ;
+
+                if (n < -20 || n > 19)
+                    parse_error_return(0, 0, table) ;
+
+                res->limit.limitnice = (uint64_t)(20 - n) ;
             }
-
-            int64_t n = 0 ;
-            if (!int64_scan_base_max(store->s, &n, 10, INT64_MAX))
-                parse_error_return(0, 3, table) ;
-
-            if (n < -20 || n > 19)
-                parse_error_return(0, 0, table) ;
-
-            res->limit.limitnice = (uint64_t)(20 - n) ;
-
             break ;
 
         case E_PARSER_SECTION_EXECUTE_LIMITNOFILE:
@@ -207,6 +208,22 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
             res->execute.umask = mode ;
             res->execute.want_umask = 1 ;
+
+        case E_PARSER_SECTION_EXECUTE_NICE:
+            {
+                parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
+
+                int64_t n = 0 ;
+                if (!int64_scan_base_max(store->s, &n, 10, INT64_MAX))
+                    parse_error_return(0, 3, table) ;
+
+                if (n < -20 || n > 19)
+                    parse_error_return(0, 0, table) ;
+
+                res->execute.nice = (uint32_t)(20 - n) ;
+                res->execute.want_nice = 1 ;
+            }
+            break ;
 
         default:
             /** never happen*/

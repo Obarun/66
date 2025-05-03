@@ -119,6 +119,8 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
         !resolve_get_key(c, "blockprivileges", &res->execute.blockprivileges) ||
         !resolve_get_key(c, "umask", &res->execute.umask) ||
         !resolve_get_key(c, "want_umask", &res->execute.want_umask) ||
+        !resolve_get_key(c, "nice", &res->execute.nice) ||
+        !resolve_get_key(c, "want_nice", &res->execute.want_nice) ||
 
     /* live */
         !resolve_get_key(c, "livedir", &res->live.livedir) ||

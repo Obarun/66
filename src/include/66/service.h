@@ -89,6 +89,8 @@ struct resolve_service_addon_execute_s
     uint32_t blockprivileges ; // integer
     uint32_t umask ; // integer
     uint32_t want_umask ; // integer
+    uint32_t nice ; // integer
+    uint32_t want_nice ; // integer
 } ;
 
 #define RESOLVE_SERVICE_ADDON_EXECUTE_ZERO { \

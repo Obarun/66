@@ -36,7 +36,7 @@
 #include <66/config.h>
 #include <66/state.h>
 
-#define MAXOPTS 99
+#define MAXOPTS 101
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -126,6 +126,8 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_int(fields[m++], res->execute.blockprivileges) ;
     info_display_int(fields[m++], res->execute.umask) ;
     info_display_int(fields[m++], res->execute.want_umask) ;
+    info_display_int(fields[m++], res->execute.nice) ;
+    info_display_int(fields[m++], res->execute.want_nice) ;
 
     info_display_string(fields[m++], res->sa.s, res->live.livedir, 1) ;
     info_display_string(fields[m++], res->sa.s, res->live.status, 1) ;
@@ -247,6 +249,8 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "blockprivileges",
         "umask",
         "want_umask",
+        "nice",
+        "want_nice",
 
         "livedir",
         "status",

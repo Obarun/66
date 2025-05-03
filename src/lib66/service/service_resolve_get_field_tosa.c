@@ -294,6 +294,16 @@ static int get_exec(stralloc *sa, resolve_service_t *res, resolve_service_enum_e
             str = fmt ;
             break ;
 
+        case E_RESOLVE_SERVICE_EXECUTE_NICE:
+            fmt[uint32_fmt(fmt,res->execute.nice)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_EXECUTE_WANT_NICE:
+            fmt[uint32_fmt(fmt,res->execute.want_nice)] = 0 ;
+            str = fmt ;
+            break ;
+
         default:
             return e ;
     }
