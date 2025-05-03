@@ -64,6 +64,7 @@ The frontend service file allows the following section names:
 - [[Logger]](#section-logger)
 - [[Environment]](#section-environment)
 - [[Regex]](#section-regex)
+- [[Execute]](#section-execute)
 
 Although a section can be mandatory not all of its key fields must be necessarily so.
 
@@ -241,6 +242,33 @@ A values separated by a colon. **Must** be on the same line with its correspondi
     RunAs = 1000:
     19
     ````
+
+#### *boolean*
+
+A value specifying a true state for the key. **Must** be on the same line with its corresponding *key*. If the key is not defined, it defaults to `false`.
+
+* **Valid syntax**:
+
+    ````
+    BlockPrivileges = true
+    BlockPrivileges = True
+    BlockPrivileges = TRUE
+    BlockPrivileges = 1
+    BlockPrivileges = false
+    BlockPrivileges = False
+    BlockPrivileges = FALSE
+    BlockPrivileges = 0
+    ````
+
+* **(!)** **Invalid syntax**:
+
+    ````
+    BlockPrivileges =
+    true
+    BlockPrivileges =
+    ````
+
+* note: For code simplicity and rapidity, setting e.g. `key = T` is strictly equivalent to `key = True` or `key = TRUE` as the parser only check the first letter of the string value.
 
 ### Section [Main]
 
@@ -1349,6 +1377,29 @@ Specifies the maximum stack size for the service process, in bytes. Corresponds 
 
     Affects thread stacks and recursion depth.
 
+#### BlockPrivileges
+
+**Source Snippet**:
+```ini
+BlockPrivileges = true
+```
+
+Enables the Linux `PR_SET_NO_NEW_PRIVS` flag via `prctl()`, preventing the service process and its children from gaining additional privileges (e.g., via `setuid` binaries or capability inheritance).
+
+* mandatory: no
+
+* syntax: [boolean](#boolean)
+
+* valid values:
+
+    * A boolean value
+
+* notes:
+
+    Only available on Linux; ignored on other systems.
+
+    Once set, cannot be unset for the process or its children.
+
 ## A word about the Execute key
 
 As described above the `Execute` key can be written in any language as long as you define the key `Build` as `custom`. For example if you want to write your `Execute` field with bash:
@@ -1576,4 +1627,5 @@ LimitRTPRIO =
 LimitRTTIME =
 LimitSIGPENDING =
 LimitSTACK =
+BlockPrivileges =
 ```
