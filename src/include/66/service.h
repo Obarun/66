@@ -123,7 +123,6 @@ struct resolve_service_addon_logger_s
 {
     // logger
     uint32_t name ; // string, typically "name-log" or 0 if it's the resolve of the logger
-    //uint32_t destination ; // string
     uint32_t backup ; // integer
     uint32_t maxsize ; // integer
     /** integer, default 3 which mean not touched, in this case the value configured

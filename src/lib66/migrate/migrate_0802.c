@@ -34,14 +34,6 @@
 
 #include <66/migrate_0802.h>
 
-
-#include <string.h>
-
-#include <oblibs/log.h>
-
-#include <66/resolve.h>
-#include <66/service.h>
-
 static void service_resolve_sanitize_0802(resolve_service_t *new, resolve_service_t_0802 *old)
 {
     log_flow() ;

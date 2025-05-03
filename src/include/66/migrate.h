@@ -17,9 +17,11 @@
 
 #include <66/migrate_0721.h>
 #include <66/migrate_0802.h>
+#include <66/migrate_0811.h>
 
 extern void migrate_create_snap(ssexec_t *info, const char *version) ;
 extern void migrate_0721(ssexec_t *info) ;
 extern void migrate_0802() ;
+extern void migrate_0811() ;
 
 #endif
