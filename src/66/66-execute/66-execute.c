@@ -822,6 +822,9 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     execute_uidgid(&res) ;
 
+    if (res.execute.want_umask)
+        umask((mode_t)res.execute.umask) ;
+
     /** We can now send message to a eventd handler socket.
      * For now, just send a simple message */
     log_info(action == EXECUTE_START ? "Starting" : "Stopping", " service: ", service) ;

@@ -257,6 +257,14 @@ static void modify_execute(resolve_service_t *res, char const *data, uint32_t fi
             res->execute.blockprivileges = resolve_add_uint(data) ;
             break ;
 
+        case E_RESOLVE_SERVICE_EXECUTE_UMASK:
+            res->execute.umask = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_EXECUTE_WANT_UMASK:
+            res->execute.want_umask = resolve_add_uint(data) ;
+            break ;
+
         default:
             break ;
     }

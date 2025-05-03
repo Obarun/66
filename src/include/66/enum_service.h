@@ -113,7 +113,9 @@ enum resolve_service_enum_deps_e
     macro(TIMEOUTSTOP,      "timeoutstop"), \
     macro(DOWN,             "down"), \
     macro(DOWNSIGNAL,       "downsignal"), \
-    macro(BLOCK_PRIVILEGES, "blockprivileges")
+    macro(BLOCK_PRIVILEGES, "blockprivileges"), \
+    macro(UMASK,            "umask"), \
+    macro(WANT_UMASK,       "want_umask")
 
 typedef enum resolve_service_enum_execute_e resolve_service_enum_execute_t ;
 enum resolve_service_enum_execute_e

@@ -1400,6 +1400,25 @@ Enables the Linux `PR_SET_NO_NEW_PRIVS` flag via `prctl()`, preventing the servi
 
     Once set, cannot be unset for the process or its children.
 
+#### UMask
+
+**Source Snippet**:
+```ini
+UMask = 022
+```
+
+Sets the file creation mask for the service process via `umask()`, controlling default permissions for newly created files and directories. The value is specified in octal notation, determining which permission bits are masked from the default mode.
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+    * An octal number between `000` and `777` (e.g., `022`, `002`, `077`).
+
+    * Undefined: Defaults to system-wide configuration.
+
 ## A word about the Execute key
 
 As described above the `Execute` key can be written in any language as long as you define the key `Build` as `custom`. For example if you want to write your `Execute` field with bash:
@@ -1628,4 +1647,5 @@ LimitRTTIME =
 LimitSIGPENDING =
 LimitSTACK =
 BlockPrivileges =
+UMask =
 ```

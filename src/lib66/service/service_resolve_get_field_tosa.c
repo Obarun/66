@@ -284,6 +284,16 @@ static int get_exec(stralloc *sa, resolve_service_t *res, resolve_service_enum_e
             str = fmt ;
             break ;
 
+        case E_RESOLVE_SERVICE_EXECUTE_UMASK:
+            fmt[uint32_fmt(fmt,res->execute.umask)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_EXECUTE_WANT_UMASK:
+            fmt[uint32_fmt(fmt,res->execute.want_umask)] = 0 ;
+            str = fmt ;
+            break ;
+
         default:
             return e ;
     }

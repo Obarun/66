@@ -87,13 +87,15 @@ struct resolve_service_addon_execute_s
     uint32_t down ; // integer
     uint32_t downsignal ; // integer
     uint32_t blockprivileges ; // integer
+    uint32_t umask ; // integer
+    uint32_t want_umask ; // integer
 } ;
 
 #define RESOLVE_SERVICE_ADDON_EXECUTE_ZERO { \
     RESOLVE_SERVICE_ADDON_SCRIPTS_ZERO, \
     RESOLVE_SERVICE_ADDON_SCRIPTS_ZERO, \
     RESOLVE_SERVICE_ADDON_TIMEOUT_ZERO, \
-    0, 0, 0 \
+    0, 0, 0, 0, 0 \
 }
 
 typedef struct resolve_service_addon_live_s resolve_service_addon_live_t, *resolve_service_addon_live_t_ref ;

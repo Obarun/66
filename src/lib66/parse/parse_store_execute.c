@@ -195,6 +195,19 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
             break ;
 
+        case E_PARSER_SECTION_EXECUTE_UMASK:
+
+            uint32_t mode ;
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
+            if (!uint32_oscan(store->s, &mode))
+                parse_error_return(0, 3, table) ;
+
+            if (mode > 0777)
+                parse_error_return(0, 0, table) ;
+
+            res->execute.umask = mode ;
+            res->execute.want_umask = 1 ;
+
         default:
             /** never happen*/
             log_warn_return(LOG_EXIT_ZERO, "unknown id key in section regex -- please make a bug report") ;
