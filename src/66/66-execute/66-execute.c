@@ -748,6 +748,18 @@ static void execute_nice(resolve_service_t *res)
     }
 }
 
+static void execute_chdir(resolve_service_t *res)
+{
+    log_flow() ;
+
+    if (res->execute.chdir) {
+
+        if (chdir(res->sa.s + res->execute.chdir) < 0)
+            log_dieusys(LOG_EXIT_ZERO, "chdir") ;
+
+    }
+}
+
 int main(int argc, char const *const *argv, char const *const *envp)
 {
     log_flow() ;
@@ -850,6 +862,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     execute_umask(&res) ;
 
+    execute_chdir(&res) ;
 
     /** We can now send message to a eventd handler socket.
      * For now, just send a simple message */

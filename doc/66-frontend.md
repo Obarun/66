@@ -1446,6 +1446,31 @@ Sets the CPU scheduling priority (nice value) for the service process via `setpr
 
     Affects the service process and its children.
 
+#### ChangeDirectory
+
+**Source Snippet**:
+```ini
+ChangeDirectory = /var/lib/myservice
+```
+
+Sets the working directory for the service process via `chdir()`, affecting the default directory for file operations (e.g., opening files with relative paths).
+
+* mandatory: no
+
+* syntax: [path](#path)
+
+* valid values:
+
+    * Any valid absolute file path can be specified.
+
+    * Undefined: Inherits the working directory from the parent process (default, typically the supervision directory).
+
+* notes:
+
+    The directory must exist and be accessible (readable and executable) by the service’s user. Permission or non-existent directory errors cause the service to fail with a logged warning.
+
+    Affects the service process and its children.
+
 ## A word about the Execute key
 
 As described above the `Execute` key can be written in any language as long as you define the key `Build` as `custom`. For example if you want to write your `Execute` field with bash:

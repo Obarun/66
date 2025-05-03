@@ -116,8 +116,9 @@ enum resolve_service_enum_deps_e
     macro(BLOCK_PRIVILEGES, "blockprivileges"), \
     macro(UMASK,            "umask"), \
     macro(WANT_UMASK,       "want_umask"), \
-    macro(NICE,            "nice"), \
-    macro(WANT_NICE,       "want_nice")
+    macro(NICE,             "nice"), \
+    macro(WANT_NICE,        "want_nice"), \
+    macro(CHDIR,            "chdir")
 
 typedef enum resolve_service_enum_execute_e resolve_service_enum_execute_t ;
 enum resolve_service_enum_execute_e

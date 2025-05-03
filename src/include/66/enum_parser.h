@@ -184,7 +184,8 @@ enum resolve_parser_enum_section_regex_e
     macro(LIMITSTACK,       "LimitSTACK",       E_PARSER_EXPECT_UINT), \
     macro(BLOCK_PRIVILEGES, "BlockPrivileges",  E_PARSER_EXPECT_LINE), \
     macro(UMASK,            "UMask",            E_PARSER_EXPECT_UINT), \
-    macro(NICE,             "Nice",             E_PARSER_EXPECT_UINT)
+    macro(NICE,             "Nice",             E_PARSER_EXPECT_UINT), \
+    macro(CHDIR,            "ChangeDirectory",  E_PARSER_EXPECT_LINE)
 
 typedef enum resolve_parser_enum_section_execute_e resolve_parser_enum_section_execute_t ;
 enum resolve_parser_enum_section_execute_e

@@ -91,6 +91,7 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "want_umask", res->execute.want_umask) ||
         !resolve_add_cdb_uint(c, "nice", res->execute.nice) ||
         !resolve_add_cdb_uint(c, "want_nice", res->execute.want_nice) ||
+        !resolve_add_cdb_uint(c, "chdir", res->execute.chdir) ||
 
         //live
         !resolve_add_cdb_uint(c, "livedir", res->live.livedir) ||

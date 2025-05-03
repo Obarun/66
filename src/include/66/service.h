@@ -91,6 +91,7 @@ struct resolve_service_addon_execute_s
     uint32_t want_umask ; // integer
     uint32_t nice ; // integer
     uint32_t want_nice ; // integer
+    uint32_t chdir ; // string
 } ;
 
 #define RESOLVE_SERVICE_ADDON_EXECUTE_ZERO { \

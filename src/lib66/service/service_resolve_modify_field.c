@@ -273,6 +273,10 @@ static void modify_execute(resolve_service_t *res, char const *data, uint32_t fi
             res->execute.want_nice = resolve_add_uint(data) ;
             break ;
 
+        case E_RESOLVE_SERVICE_EXECUTE_CHDIR:
+            res->execute.chdir = resolve_add_string(wres, data) ;
+            break ;
+
         default:
             break ;
     }

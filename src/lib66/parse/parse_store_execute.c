@@ -225,6 +225,16 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
             }
             break ;
 
+        case E_PARSER_SECTION_EXECUTE_CHDIR:
+
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
+
+            if (store->s[0] != '/')
+                parse_error_return(0, 4, table) ;
+
+            res->execute.chdir = resolve_add_string(wres, store->s) ;
+            break ;
+
         default:
             /** never happen*/
             log_warn_return(LOG_EXIT_ZERO, "unknown id key in section regex -- please make a bug report") ;

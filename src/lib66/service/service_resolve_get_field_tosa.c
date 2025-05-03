@@ -304,6 +304,10 @@ static int get_exec(stralloc *sa, resolve_service_t *res, resolve_service_enum_e
             str = fmt ;
             break ;
 
+        case E_RESOLVE_SERVICE_EXECUTE_CHDIR:
+            str = res->sa.s + res->execute.chdir ;
+            break ;
+
         default:
             return e ;
     }
