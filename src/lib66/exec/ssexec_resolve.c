@@ -36,7 +36,7 @@
 #include <66/config.h>
 #include <66/state.h>
 
-#define MAXOPTS 81
+#define MAXOPTS 96
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -167,7 +167,6 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_string(fields[m++], res->sa.s, res->io.fdout.destination, 1) ;
     info_display_int(fields[m++], res->io.fderr.type) ;
     info_display_string(fields[m++], res->sa.s, res->io.fderr.destination, 1) ;
-    info_display_string(fields[m], res->sa.s, res->rversion, 1) ;
 
     info_display_int(fields[m++],res->limit.limitas) ;
     info_display_int(fields[m++],res->limit.limitcore) ;
@@ -184,6 +183,8 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_int(fields[m++],res->limit.limitrttime) ;
     info_display_int(fields[m++],res->limit.limitsigpending) ;
     info_display_int(fields[m++],res->limit.limitstack) ;
+
+    info_display_string(fields[m], res->sa.s, res->rversion, 1) ;
 }
 
 int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
@@ -284,7 +285,24 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "stdoutdest",
         "stderrtype",
         "stderrdest",
-        "rversion",
+
+        "limitas",
+        "limitcore",
+        "limitcpu",
+        "limitdata",
+        "limitfsize",
+        "limitlocks",
+        "limitmemlock",
+        "limitmsgqueue",
+        "limitnice",
+        "limitnofile",
+        "limitnproc",
+        "limitrtprio",
+        "limitrttime",
+        "limitsigpending",
+        "limitstack",
+
+        "rversion"
     } ;
 
     {

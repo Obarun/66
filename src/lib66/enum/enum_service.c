@@ -107,6 +107,16 @@ key_description_t const enum_list_service_io[] = {
     { .name = 0 }
 } ;
 
+const char *enum_str_service_limit[] = {
+    LIMIT_TEMPLATE(STR_SERVICE_LIMIT),
+    0
+} ;
+
+key_description_t const enum_list_service_limit[] = {
+    LIMIT_TEMPLATE(KEY_SERVICE_LIMIT),
+    { .name = 0 }
+} ;
+
 key_description_t const *enum_get_list_service(resolve_service_enum_table_t table)
 {
     switch (table.category) {
@@ -137,6 +147,9 @@ key_description_t const *enum_get_list_service(resolve_service_enum_table_t tabl
 
         case E_RESOLVE_SERVICE_CATEGORY_IO:
             return enum_list_service_io ;
+
+        case E_RESOLVE_SERVICE_CATEGORY_LIMIT:
+            return enum_list_service_limit ;
 
         default:
             errno = EINVAL ;
