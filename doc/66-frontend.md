@@ -866,13 +866,12 @@ Specifies timestamp format prefixed to each log entry.
         [Logger]
         RunAs = user
         TimeoutStop = 10000
-        Destination = /run/log
         Backup = 10
         Timestamp = iso
         ````
         ````
         [Logger]
-        Destination = /run/log
+        Backup = 10
         ````
 
 ### Section [Environment]
@@ -1700,4 +1699,5 @@ LimitSIGPENDING =
 LimitSTACK =
 BlockPrivileges =
 UMask =
+ChangeDirectory = /directory/path
 ```
