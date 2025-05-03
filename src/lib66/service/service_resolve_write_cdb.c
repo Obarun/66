@@ -86,6 +86,7 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "timeoutstop", res->execute.timeout.stop) ||
         !resolve_add_cdb_uint(c, "down", res->execute.down) ||
         !resolve_add_cdb_uint(c, "downsignal", res->execute.downsignal) ||
+        !resolve_add_cdb_uint(c, "blockprivileges", res->execute.blockprivileges) ||
 
         //live
         !resolve_add_cdb_uint(c, "livedir", res->live.livedir) ||

@@ -181,7 +181,8 @@ enum resolve_parser_enum_section_regex_e
     macro(LIMITRTPRIO,      "LimitRTPRIO",      E_PARSER_EXPECT_UINT), \
     macro(LIMITRTTIME,      "LimitRTTIME",      E_PARSER_EXPECT_UINT), \
     macro(LIMITSIGPENDING,  "LimitSIGPENDING",  E_PARSER_EXPECT_UINT), \
-    macro(LIMITSTACK,       "LimitSTACK",       E_PARSER_EXPECT_UINT)
+    macro(LIMITSTACK,       "LimitSTACK",       E_PARSER_EXPECT_UINT), \
+    macro(BLOCK_PRIVILEGES, "BlockPrivileges",  E_PARSER_EXPECT_LINE)
 
 typedef enum resolve_parser_enum_section_execute_e resolve_parser_enum_section_execute_t ;
 enum resolve_parser_enum_section_execute_e

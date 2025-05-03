@@ -279,6 +279,11 @@ static int get_exec(stralloc *sa, resolve_service_t *res, resolve_service_enum_e
             str = fmt ;
             break ;
 
+        case E_RESOLVE_SERVICE_EXECUTE_BLOCK_PRIVILEGES:
+            fmt[uint32_fmt(fmt,res->execute.blockprivileges)] = 0 ;
+            str = fmt ;
+            break ;
+
         default:
             return e ;
     }

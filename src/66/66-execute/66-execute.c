@@ -20,6 +20,10 @@
 #include <sys/ioctl.h>
 #include <sys/resource.h> // limit
 #include <stdint.h>
+#ifdef __linux__
+#include <sys/prctl.h>
+#endif
+
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -655,7 +659,7 @@ static void limit_setup(resolve_service_t *res, int ressource, uint64_t rval)
     r.rlim_cur = n ;
 
     if (setrlimit(ressource, &r) < 0)
-        log_warnsys("set limit") ;
+        log_dieusys(LOG_EXIT_SYS, "set limit") ;
 }
 
 static void execute_limit(resolve_service_t *res)
@@ -709,6 +713,16 @@ static void execute_limit(resolve_service_t *res)
 #endif
 
 }
+
+#ifdef __linux__
+static void execute_privileges(void)
+{
+    log_flow() ;
+
+    if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) < 0)
+        log_dieusys(LOG_EXIT_SYS, "set NO_NEW_PRIVILEGES") ;
+}
+#endif
 
 int main(int argc, char const *const *argv, char const *const *envp)
 {
@@ -800,9 +814,13 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     execute_io(&res) ;
 
-    execute_uidgid(&res) ;
-
     execute_limit(&res) ;
+
+#ifdef __linux__
+    execute_privileges() ;
+#endif
+
+    execute_uidgid(&res) ;
 
     /** We can now send message to a eventd handler socket.
      * For now, just send a simple message */

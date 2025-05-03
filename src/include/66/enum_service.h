@@ -76,16 +76,16 @@ enum resolve_service_enum_path_e
 #define KEY_SERVICE_DEPS(idy, str) { .name = &enum_str_service_deps[E_RESOLVE_SERVICE_DEPS_##idy], .id = E_RESOLVE_SERVICE_DEPS_##idy }
 
 #define DEPS_TEMPLATE(macro) \
-    macro(DEPENDS     ,"depends"), \
-    macro(REQUIREDBY  ,"requiredby"), \
-    macro(OPTSDEPS    ,"optsdeps"), \
-    macro(CONTENTS    ,"contents"), \
-    macro(PROVIDE     ,"provide"), \
-    macro(NDEPENDS    ,"ndepends"), \
-    macro(NREQUIREDBY ,"nrequiredby"), \
-    macro(NOPTSDEPS   ,"noptsdeps"), \
-    macro(NCONTENTS   ,"ncontents"), \
-    macro(NPROVIDE    ,"nprovide")
+    macro(DEPENDS,      "depends"), \
+    macro(REQUIREDBY,   "requiredby"), \
+    macro(OPTSDEPS,     "optsdeps"), \
+    macro(CONTENTS,     "contents"), \
+    macro(PROVIDE,      "provide"), \
+    macro(NDEPENDS,     "ndepends"), \
+    macro(NREQUIREDBY,  "nrequiredby"), \
+    macro(NOPTSDEPS,    "noptsdeps"), \
+    macro(NCONTENTS,    "ncontents"), \
+    macro(NPROVIDE,     "nprovide")
 
 typedef enum resolve_service_enum_deps_e resolve_service_enum_deps_t ;
 enum resolve_service_enum_deps_e
@@ -101,18 +101,19 @@ enum resolve_service_enum_deps_e
 #define KEY_SERVICE_EXECUTE(idy, str) { .name = &enum_str_service_execute[E_RESOLVE_SERVICE_EXECUTE_##idy], .id = E_RESOLVE_SERVICE_EXECUTE_##idy }
 
 #define EXECUTE_TEMPLATE(macro) \
-    macro(RUN,          "run"), \
-    macro(RUN_USER,     "run_user"), \
-    macro(RUN_BUILD,    "run_build"), \
-    macro(RUN_RUNAS,    "run_runas"), \
-    macro(FINISH,       "finish"), \
-    macro(FINISH_USER,  "finish_user"), \
-    macro(FINISH_BUILD, "finish_build"), \
-    macro(FINISH_RUNAS, "finish_runas"), \
-    macro(TIMEOUTSTART, "timeoutstart"), \
-    macro(TIMEOUTSTOP,  "timeoutstop"), \
-    macro(DOWN,         "down"), \
-    macro(DOWNSIGNAL,   "downsignal")
+    macro(RUN,              "run"), \
+    macro(RUN_USER,         "run_user"), \
+    macro(RUN_BUILD,        "run_build"), \
+    macro(RUN_RUNAS,        "run_runas"), \
+    macro(FINISH,           "finish"), \
+    macro(FINISH_USER,      "finish_user"), \
+    macro(FINISH_BUILD,     "finish_build"), \
+    macro(FINISH_RUNAS,     "finish_runas"), \
+    macro(TIMEOUTSTART,     "timeoutstart"), \
+    macro(TIMEOUTSTOP,      "timeoutstop"), \
+    macro(DOWN,             "down"), \
+    macro(DOWNSIGNAL,       "downsignal"), \
+    macro(BLOCK_PRIVILEGES, "blockprivileges")
 
 typedef enum resolve_service_enum_execute_e resolve_service_enum_execute_t ;
 enum resolve_service_enum_execute_e

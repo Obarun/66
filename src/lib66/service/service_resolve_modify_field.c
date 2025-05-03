@@ -253,6 +253,10 @@ static void modify_execute(resolve_service_t *res, char const *data, uint32_t fi
             res->execute.downsignal = resolve_add_uint(data) ;
             break ;
 
+        case E_RESOLVE_SERVICE_EXECUTE_BLOCK_PRIVILEGES:
+            res->execute.blockprivileges = resolve_add_uint(data) ;
+            break ;
+
         default:
             break ;
     }
