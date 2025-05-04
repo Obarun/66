@@ -91,6 +91,7 @@ extern int resolve_read_cdb(resolve_wrapper_t *wres, const char *path, const cha
 extern int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *name) ;
 extern int resolve_add_cdb(cdbmaker *c, char const *key, char const *str, uint32_t element, uint8_t check) ;
 extern int resolve_add_cdb_uint(cdbmaker *c, char const *key, uint32_t data) ;
+extern int resolve_add_cdb_uint64(cdbmaker *c, char const *key, uint64_t data) ;
 extern int resolve_get_sa(stralloc *sa, const cdb *c) ;
 extern int resolve_get_key(const cdb *c, const char *key, uint32_t *field) ;
 

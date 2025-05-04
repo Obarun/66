@@ -62,6 +62,20 @@ static void info_display_string(char const *field, char const *str, uint32_t ele
 
 }
 
+static void info_display_int64(char const *field, uint64_t element)
+{
+    info_display_field_name(field) ;
+
+    char ui[UINT64_FMT] ;
+    ui[uint64_fmt(ui, element)] = 0 ;
+
+    if (!buffer_puts(buffer_1, ui))
+        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+
+    if (buffer_putsflush(buffer_1, "\n") == -1)
+        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+}
+
 static void info_display_int(char const *field, uint32_t element)
 {
     info_display_field_name(field) ;
@@ -174,21 +188,21 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_int(fields[m++], res->io.fderr.type) ;
     info_display_string(fields[m++], res->sa.s, res->io.fderr.destination, 1) ;
 
-    info_display_int(fields[m++],res->limit.limitas) ;
-    info_display_int(fields[m++],res->limit.limitcore) ;
-    info_display_int(fields[m++],res->limit.limitcpu) ;
-    info_display_int(fields[m++],res->limit.limitdata) ;
-    info_display_int(fields[m++],res->limit.limitfsize) ;
-    info_display_int(fields[m++],res->limit.limitlocks) ;
-    info_display_int(fields[m++],res->limit.limitmemlock) ;
-    info_display_int(fields[m++],res->limit.limitmsgqueue) ;
-    info_display_int(fields[m++],res->limit.limitnice) ;
-    info_display_int(fields[m++],res->limit.limitnofile) ;
-    info_display_int(fields[m++],res->limit.limitnproc) ;
-    info_display_int(fields[m++],res->limit.limitrtprio) ;
-    info_display_int(fields[m++],res->limit.limitrttime) ;
-    info_display_int(fields[m++],res->limit.limitsigpending) ;
-    info_display_int(fields[m++],res->limit.limitstack) ;
+    info_display_int64(fields[m++],res->limit.limitas) ;
+    info_display_int64(fields[m++],res->limit.limitcore) ;
+    info_display_int64(fields[m++],res->limit.limitcpu) ;
+    info_display_int64(fields[m++],res->limit.limitdata) ;
+    info_display_int64(fields[m++],res->limit.limitfsize) ;
+    info_display_int64(fields[m++],res->limit.limitlocks) ;
+    info_display_int64(fields[m++],res->limit.limitmemlock) ;
+    info_display_int64(fields[m++],res->limit.limitmsgqueue) ;
+    info_display_int64(fields[m++],res->limit.limitnice) ;
+    info_display_int64(fields[m++],res->limit.limitnofile) ;
+    info_display_int64(fields[m++],res->limit.limitnproc) ;
+    info_display_int64(fields[m++],res->limit.limitrtprio) ;
+    info_display_int64(fields[m++],res->limit.limitrttime) ;
+    info_display_int64(fields[m++],res->limit.limitsigpending) ;
+    info_display_int64(fields[m++],res->limit.limitstack) ;
 
     info_display_string(fields[m], res->sa.s, res->rversion, 1) ;
 }

@@ -21,6 +21,17 @@
 #include <66/service.h>
 #include <66/enum_service.h>
 
+static uint64_t resolve_add_uint64(char const *data)
+{
+    uint64_t u ;
+
+    if (!data)
+        data = "0" ;
+    if (!uint640_scan(data, &u))
+        return 0 ;
+    return u ;
+}
+
 static uint32_t resolve_add_uint(char const *data)
 {
     uint32_t u ;
@@ -525,63 +536,63 @@ static void modify_limit(resolve_service_t *res, char const *data, uint32_t fiel
     switch (field) {
 
         case E_RESOLVE_SERVICE_LIMIT_AS:
-            res->limit.limitas = resolve_add_uint(data) ;
+            res->limit.limitas = resolve_add_uint64(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LIMIT_CORE:
-            res->limit.limitcore = resolve_add_uint(data) ;
+            res->limit.limitcore = resolve_add_uint64(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LIMIT_CPU:
-            res->limit.limitcpu = resolve_add_uint(data) ;
+            res->limit.limitcpu = resolve_add_uint64(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LIMIT_DATA:
-            res->limit.limitdata = resolve_add_uint(data) ;
+            res->limit.limitdata = resolve_add_uint64(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LIMIT_FSIZE:
-            res->limit.limitfsize = resolve_add_uint(data) ;
+            res->limit.limitfsize = resolve_add_uint64(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LIMIT_LOCKS:
-            res->limit.limitlocks = resolve_add_uint(data) ;
+            res->limit.limitlocks = resolve_add_uint64(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LIMIT_MEMLOCK:
-            res->limit.limitmemlock = resolve_add_uint(data) ;
+            res->limit.limitmemlock = resolve_add_uint64(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LIMIT_MSGQUEUE:
-            res->limit.limitmsgqueue = resolve_add_uint(data) ;
+            res->limit.limitmsgqueue = resolve_add_uint64(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LIMIT_NICE:
-            res->limit.limitnice = resolve_add_uint(data) ;
+            res->limit.limitnice = resolve_add_uint64(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LIMIT_NOFILE:
-            res->limit.limitnofile = resolve_add_uint(data) ;
+            res->limit.limitnofile = resolve_add_uint64(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LIMIT_NPROC:
-            res->limit.limitnproc = resolve_add_uint(data) ;
+            res->limit.limitnproc = resolve_add_uint64(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LIMIT_RTPRIO:
-            res->limit.limitrtprio = resolve_add_uint(data) ;
+            res->limit.limitrtprio = resolve_add_uint64(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LIMIT_RTTIME:
-            res->limit.limitrttime = resolve_add_uint(data) ;
+            res->limit.limitrttime = resolve_add_uint64(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LIMIT_SIGPENDING:
-            res->limit.limitsigpending = resolve_add_uint(data) ;
+            res->limit.limitsigpending = resolve_add_uint64(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LIMIT_STACK:
-            res->limit.limitstack = resolve_add_uint(data) ;
+            res->limit.limitstack = resolve_add_uint64(data) ;
             break ;
 
         default:

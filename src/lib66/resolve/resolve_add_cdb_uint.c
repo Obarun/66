@@ -22,6 +22,19 @@
 
 #include <66/resolve.h>
 
+int resolve_add_cdb_uint64(cdbmaker *c, char const *key, uint64_t data)
+{
+
+    char pack[8] ;
+    size_t klen = strlen(key) ;
+
+    uint64_pack_big(pack, data) ;
+    if (!cdbmake_add(c,key,klen,pack,8))
+        log_warnsys_return(LOG_EXIT_ZERO,"cdb_make_add: ",key) ;
+
+    return 1 ;
+}
+
 int resolve_add_cdb_uint(cdbmaker *c, char const *key, uint32_t data)
 {
 
