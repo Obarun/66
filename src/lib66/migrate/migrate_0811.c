@@ -231,7 +231,7 @@ void service_resolve_sanitize_0811(resolve_service_t *new, resolve_service_t_081
     new->live.oneshotddir = old->live.oneshotddir ? resolve_add_string(wres, old->sa.s + old->live.oneshotddir) : 0 ;
 
     // logger
-    new->logger.name = old->logger.name ;
+    new->logger.name = old->logger.name ? resolve_add_string(wres, old->sa.s + old->logger.name) : 0 ;
     new->logger.backup = old->logger.backup ;
     new->logger.maxsize = old->logger.maxsize ;
     new->logger.timestamp = old->logger.timestamp ;

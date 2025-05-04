@@ -1055,9 +1055,11 @@ In-file regex replacements for module files. Use `:filename:regex=replacement` o
 
 This section is *optional*.
 
-This section configures tasks executed just before calling `exec` for the service’s start and stop processes. It includes settings for resource limits applied via `setrlimit()`.
+This section configures tasks executed just before calling `exec` for the service’s start and stop processes.
 
-All `LimitXXX` keys accept the value `unlimited` to set the corresponding `RLIMIT_*` resource to `RLIM_INFINITY`, allowing unrestricted use of that resource. For unprivileged services (non-root users), `unlimited` or values exceeding the current hard limit (`rlim_max`) are capped at `rlim_max` to prevent errors. Setting `unlimited` or raising limits beyond `rlim_max` requires root privileges or `CAP_SYS_RESOURCE`. Linux-specific limits (e.g., `LimitNICE`, `LimitRTPRIO`) are ignored on systems where they are not supported, with a warning logged via *66*. Check hard limits with `ulimit -H` (e.g., `ulimit -Hn` for `LimitNOFILE`) or system configurations like `/etc/security/limits.conf`.
+Resource limits (e.g., `LimitNICE`, `LimitAS`) sets soft (rlim_cur) and hard (rlim_max) limits by retrieving current limits with `getrlimit()`, adjusting the hard limit for root-owned services if needed, capping the soft limit to the hard limit for non-root services, and applying the new limits with `setrlimit()`. If a limit is zero, no changes are made.
+
+All LimitXXX keys accept the value `unlimited` to set the corresponding `RLIMIT_*` resource to `RLIM_INFINITY`, allowing unrestricted use of that resource. For unprivileged services (non-root users), `unlimited` or values exceeding the current hard limit (`rlim_max`) are capped at `rlim_max` to prevent errors. Setting `unlimited` or raising limits beyond `rlim_max` requires root privileges or `CAP_SYS_RESOURCE`. Linux-specific limits (e.g., LimitNICE, LimitRTPRIO) are ignored on systems where they are not supported.
 
 #### LimitAS
 

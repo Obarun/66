@@ -26,7 +26,6 @@
 #include <66/resolve.h>
 #include <66/enum_parser.h>
 
-
 static int limit_compute(stack *store, uint64_t *u, resolve_enum_table_t table)
 {
     if (store->s[0] == 'u') {
@@ -43,9 +42,6 @@ static int limit_compute(stack *store, uint64_t *u, resolve_enum_table_t table)
 int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table_t table)
 {
     log_flow() ;
-
-    if (res->type != E_PARSER_TYPE_MODULE)
-        return 1 ;
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     uint32_t kid = table.u.parser.id ;
@@ -133,7 +129,11 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
                 if (n < -20 || n > 19)
                     parse_error_return(0, 0, table) ;
 
-                res->limit.limitnice = (uint64_t)(20 - n) ;
+                if (!n) {
+                    res->limit.limitnice = 1 ;
+                } else {
+                    res->limit.limitnice = (uint64_t)(20 - n) ;
+                }
             }
             break ;
 
@@ -220,7 +220,12 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
                 if (n < -20 || n > 19)
                     parse_error_return(0, 0, table) ;
 
-                res->execute.nice = (uint32_t)(20 - n) ;
+                if (!n) {
+                    res->execute.nice = 1 ;
+                } else {
+                    res->execute.nice = (uint32_t)(20 - n) ;
+                }
+
                 res->execute.want_nice = 1 ;
             }
             break ;

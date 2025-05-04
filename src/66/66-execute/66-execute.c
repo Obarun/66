@@ -639,7 +639,7 @@ static void execute_uidgid(resolve_service_t *res)
     }
 }
 
-static void limit_setup(resolve_service_t *res, int ressource, uint64_t rval)
+static void limit_setup(resolve_service_t *res, int resource, uint64_t rval)
 {
     log_flow() ;
 
@@ -649,16 +649,21 @@ static void limit_setup(resolve_service_t *res, int ressource, uint64_t rval)
     struct rlimit r ;
     uint64_t n = rval ;
 
-    if (getrlimit(ressource, &r) < 0)
+    if (getrlimit(resource, &r) < 0)
         log_dieusys(LOG_EXIT_SYS, "get limit") ;
 
-    if (res->owner)
-        if (n == (uint64_t)(RLIM_INFINITY) || n > r.rlim_max)
-            n = r.rlim_max ;
+    // n == (uint64_t)(RLIM_INFINITY) is implied
+    if (!r.rlim_max && !res->owner)
+        r.rlim_max = n ;
+
+    if (n > r.rlim_max)
+        if (n == (uint64_t)(RLIM_INFINITY) && !res->owner)
+            r.rlim_max = n ;
+        else n = r.rlim_max ;
 
     r.rlim_cur = n ;
 
-    if (setrlimit(ressource, &r) < 0)
+    if (setrlimit(resource, &r) < 0)
         log_dieusys(LOG_EXIT_SYS, "set limit") ;
 }
 
@@ -739,8 +744,14 @@ static void execute_nice(resolve_service_t *res)
 
     if (res->execute.want_nice) {
 
-        int p = 20 - (int)(res->execute.nice) ;
-        if (setpriority(PRIO_PROCESS, 0, p) < 0) {
+        int64_t p = 20 - (int64_t)(res->execute.nice) ;
+        /** were are root and service is badly define. Be smart
+         * and respect the limit defined by the service itself. */
+        if (!res->owner && (res->execute.nice > res->limit.limitnice))
+            p = 20 - res->limit.limitnice ;
+
+        errno = 0 ; // see: https://pubs.opengroup.org/onlinepubs/9699919799/
+        if (setpriority(PRIO_PROCESS, 0, (int)p) < 0) {
             if (errno == EPERM)
                 log_warnusys("setting nice value requires CAP_SYS_NICE or root") ;
 
@@ -845,11 +856,15 @@ int main(int argc, char const *const *argv, char const *const *envp)
             log_dieusys(LOG_EXIT_SYS, "find script: ", brun, " -- please make a bug report") ;
     }
 
+    execute_io(&res) ;
+
+    /** We can now send message to a eventd handler socket.
+     * For now, just send a simple message */
+    log_info(action == EXECUTE_START ? "Starting" : "Stopping", " service: ", service) ;
+
     execute_environment(nenvp, envp, &eram, &info, &res) ;
 
     execute_script(brunuser, &res, &info) ;
-
-    execute_io(&res) ;
 
     execute_limit(&res) ;
 
@@ -865,9 +880,6 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     execute_chdir(&res) ;
 
-    /** We can now send message to a eventd handler socket.
-     * For now, just send a simple message */
-    log_info(action == EXECUTE_START ? "Starting" : "Stopping", " service: ", service) ;
 
     xmexec_em(newargv, nenvp, info.modifs.s, info.modifs.len) ;
 
