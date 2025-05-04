@@ -715,12 +715,13 @@ static void execute_limit(resolve_service_t *res)
 }
 
 #ifdef __linux__
-static void execute_privileges(void)
+static void execute_privileges(resolve_service_t *res)
 {
     log_flow() ;
 
-    if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) < 0)
-        log_dieusys(LOG_EXIT_SYS, "set NO_NEW_PRIVILEGES") ;
+    if (res->execute.blockprivileges)
+        if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) < 0)
+            log_dieusys(LOG_EXIT_SYS, "set NO_NEW_PRIVILEGES") ;
 }
 #endif
 
@@ -855,7 +856,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
     execute_nice(&res) ;
 
 #ifdef __linux__
-    execute_privileges() ;
+    execute_privileges(&res) ;
 #endif
 
     execute_uidgid(&res) ;
