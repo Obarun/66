@@ -1,0 +1,15 @@
+RlimitAs
+RlimitCore
+RlimitCpu
+RlimitData
+RlimitFsize
+RlimitLocks
+RlimitMemlock
+RlimitMsgqueue
+RlimitNice
+RlimitNofile
+RlimitNproc
+RlimitRtprio
+RlimitRttime
+RlimitSigpending
+RlimitStack

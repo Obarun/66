@@ -860,49 +860,63 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
     log_flow() ;
 
     if (NOFIELD) info_display_field_name(field) ;
-    if (res->type != E_PARSER_TYPE_MODULE)
-    {
-        if (res->logger.want || (res->type == E_PARSER_TYPE_ONESHOT && res->io.fdout.destination))
-        {
-            if (nlog && res->io.fdout.type == E_PARSER_IO_TYPE_S6LOG)
-            {
-                stralloc log = STRALLOC_ZERO ;
-                /** the file current may not exist if the service was never started*/
-                size_t dstlen = strlen(res->sa.s + res->io.fdout.destination) ;
-                char scan[dstlen + 9] ;
-                memcpy(scan,res->sa.s + res->io.fdout.destination,dstlen) ;
-                memcpy(scan + dstlen,"/current",8) ;
-                scan[dstlen + 8] = 0 ;
-                int r = scan_mode(scan,S_IFREG) ;
-                if (r < 0) { errno = EEXIST ; log_diesys(LOG_EXIT_SYS,"conflicting format of: ",scan) ; }
-                if (!r)
-                {
-                    if (!bprintf(buffer_1,"%s%s%s\n",log_color->error,"unable to find the log file",log_color->off))
-                    goto err ;
-                }
-                else
-                {
-                    if (!file_readputsa(&log,res->sa.s + res->io.fdout.destination,"current")) log_dieusys(LOG_EXIT_SYS,"read log file of: ",res->sa.s + res->name) ;
+    if (res->type != E_PARSER_TYPE_MODULE) {
+
+        if (res->logger.want || (res->type == E_PARSER_TYPE_ONESHOT && res->io.fdout.destination)) {
+
+            if (nlog) {
+
+                _alloc_sa_(log) ;
+
+                if (res->io.fdout.type == E_PARSER_IO_TYPE_S6LOG) {
+
+
+                    /** the file current may not exist if the service was never started*/
+                    size_t dstlen = strlen(res->sa.s + res->io.fdout.destination) ;
+                    char scan[dstlen + 9] ;
+                    memcpy(scan,res->sa.s + res->io.fdout.destination,dstlen) ;
+                    memcpy(scan + dstlen,"/current",8) ;
+                    scan[dstlen + 8] = 0 ;
+                    int r = scan_mode(scan,S_IFREG) ;
+                    if (r < 0) { errno = EEXIST ; log_diesys(LOG_EXIT_SYS,"conflicting format of: ",scan) ; }
+                    if (!r) {
+                        if (!bprintf(buffer_1,"%s%s%s\n",log_color->error,"unable to find the log file",log_color->off))
+                        goto err ;
+
+                    } else {
+
+                        if (!file_readputsa(&log,res->sa.s + res->io.fdout.destination,"current")) log_dieusys(LOG_EXIT_SYS,"read log file of: ",res->sa.s + res->name) ;
+                        /* we don't need to freed stralloc
+                        * file_readputsa do it if the file is empty*/
+                        if (!log.len) goto empty ;
+                        log.len-- ;
+                        if (!auto_stra(&log,"\n")) log_dieusys(LOG_EXIT_SYS,"append newline") ;
+                        if (log.len < 10 && res->type != E_PARSER_TYPE_ONESHOT) {
+                            if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off)) goto err ;
+                        } else {
+                            if (!bprintf(buffer_1,"\n")) goto err ;
+                            if (!bprintf(buffer_1,"%s\n",print_nlog(log.s,nlog))) goto err ;
+                        }
+                    }
+
+                } else if (res->io.fdout.type == E_PARSER_IO_TYPE_FILE) {
+
+                    if (!file_readputsa_g(&log,res->sa.s + res->io.fdout.destination)) log_dieusys(LOG_EXIT_SYS,"read log file of: ",res->sa.s + res->name) ;
                     /* we don't need to freed stralloc
-                     * file_readputsa do it if the file is empty*/
+                    * file_readputsa do it if the file is empty*/
                     if (!log.len) goto empty ;
                     log.len-- ;
                     if (!auto_stra(&log,"\n")) log_dieusys(LOG_EXIT_SYS,"append newline") ;
-                    if (log.len < 10 && res->type != E_PARSER_TYPE_ONESHOT)
-                    {
+                    if (log.len < 10 && res->type != E_PARSER_TYPE_ONESHOT) {
                         if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off)) goto err ;
-                    }
-                    else
-                    {
+                    } else {
                         if (!bprintf(buffer_1,"\n")) goto err ;
                         if (!bprintf(buffer_1,"%s\n",print_nlog(log.s,nlog))) goto err ;
                     }
                 }
-                stralloc_free(&log) ;
             }
-        }else goto empty ;
-    }
-    else goto empty ;
+        } else goto empty ;
+    } else goto empty ;
 
     return ;
     empty:
