@@ -15,7 +15,7 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
-#include <oblibs/graph2.h>
+#include <oblibs/graph.h>
 
 #include <66/graph.h>
 

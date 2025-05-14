@@ -14,7 +14,7 @@
 
 #include <errno.h>
 
-#include <oblibs/graph2.h>
+#include <oblibs/graph.h>
 #include <oblibs/log.h>
 
 #include <66/graph.h>

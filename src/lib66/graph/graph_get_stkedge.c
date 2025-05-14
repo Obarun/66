@@ -16,7 +16,7 @@
 #include <errno.h>
 #include <stdbool.h>
 
-#include <oblibs/graph2.h>
+#include <oblibs/graph.h>
 #include <oblibs/stack.h>
 
 int graph_get_stkedge(stack *stk, graph *g, vertex_t *v, bool requiredby)

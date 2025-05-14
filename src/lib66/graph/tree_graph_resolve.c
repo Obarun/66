@@ -17,7 +17,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include <oblibs/graph2.h>
+#include <oblibs/graph.h>
 #include <oblibs/hash.h>
 #include <oblibs/log.h>
 #include <oblibs/types.h>

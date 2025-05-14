@@ -19,7 +19,7 @@
 #include <stdbool.h>
 
 #include <oblibs/queue.h>
-#include <oblibs/graph2.h>
+#include <oblibs/graph.h>
 
 #include <66/ssexec.h>
 
