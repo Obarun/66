@@ -28,7 +28,8 @@
     X(enum_list_parser_section_startstop, E_PARSER_SECTION_STARTSTOP_ENDOFKEY) \
     X(enum_list_parser_section_logger, E_PARSER_SECTION_LOGGER_ENDOFKEY) \
     X(enum_list_parser_section_environ, E_PARSER_SECTION_ENVIRON_ENDOFKEY) \
-    X(enum_list_parser_section_regex, E_PARSER_SECTION_REGEX_ENDOFKEY) \
+    X(enum_list_parser_section_regex, E_PARSER_SECTION_EXECUTE_ENDOFKEY) \
+    X(enum_list_parser_section_execute, E_PARSER_SECTION_EXECUTE_ENDOFKEY) \
     X(enum_list_parser_io_type, E_PARSER_IO_TYPE_ENDOFKEY) \
     X(enum_list_parser_type, E_PARSER_TYPE_ENDOFKEY) \
     X(enum_list_parser_opts, E_PARSER_OPTS_ENDOFKEY) \
@@ -37,6 +38,7 @@
     X(enum_list_parser_time, E_PARSER_TIME_ENDOFKEY) \
     X(enum_list_parser_seed, E_PARSER_SEED_ENDOFKEY) \
     X(enum_list_parser_mandatory, E_PARSER_MANDATORY_ENDOFKEY) \
+    X(enum_list_parser_caps, E_PARSER_CAPS_ENDOFKEY) \
     X(enum_list_service_config, E_RESOLVE_SERVICE_CONFIG_ENDOFKEY) \
     X(enum_list_service_path, E_RESOLVE_SERVICE_PATH_ENDOFKEY) \
     X(enum_list_service_deps, E_RESOLVE_SERVICE_DEPS_ENDOFKEY) \
@@ -46,6 +48,7 @@
     X(enum_list_service_environ, E_RESOLVE_SERVICE_ENVIRON_ENDOFKEY) \
     X(enum_list_service_regex, E_RESOLVE_SERVICE_REGEX_ENDOFKEY) \
     X(enum_list_service_io, E_RESOLVE_SERVICE_IO_ENDOFKEY) \
+    X(enum_list_service_limit, E_RESOLVE_SERVICE_LIMIT_ENDOFKEY) \
     X(enum_list_tree, E_RESOLVE_TREE_ENDOFKEY) \
     X(enum_list_tree_master, E_RESOLVE_TREE_MASTER_ENDOFKEY)
 

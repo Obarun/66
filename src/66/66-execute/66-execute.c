@@ -20,9 +20,7 @@
 #include <sys/ioctl.h>
 #include <sys/resource.h> // limit
 #include <stdint.h>
-#ifdef __linux__
 #include <sys/prctl.h>
-#endif
 
 
 #include <oblibs/log.h>
@@ -44,6 +42,7 @@
 #include <66/service.h>
 #include <66/constants.h>
 #include <66/utils.h>
+#include <66/caps.h>
 
 #include <s6/fdholder.h>
 
@@ -515,12 +514,12 @@ static void execute_environment(char const **nenvp, char const *const *env, stra
             size_t pos = 0 ;
 
             if (!stack_string_clean(&stk, res->sa.s + res->environ.importfile))
-                log_dieusys(LOG_EXIT_ZERO, "clean string") ;
+                log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
             FOREACH_STK(&stk, pos) {
 
                 if (!environ_merge_file(eram, stk.s + pos))
-                    log_dieusys(LOG_EXIT_ZERO, "merge environment file: ", stk.s + pos) ;
+                    log_dieusys(LOG_EXIT_SYS, "merge environment file: ", stk.s + pos) ;
             }
         }
 
@@ -719,7 +718,6 @@ static void execute_limit(resolve_service_t *res)
 
 }
 
-#ifdef __linux__
 static void execute_privileges(resolve_service_t *res)
 {
     log_flow() ;
@@ -728,7 +726,6 @@ static void execute_privileges(resolve_service_t *res)
         if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) < 0)
             log_dieusys(LOG_EXIT_SYS, "set NO_NEW_PRIVILEGES") ;
 }
-#endif
 
 static void execute_umask(resolve_service_t *res)
 {
@@ -870,16 +867,15 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     execute_nice(&res) ;
 
-#ifdef __linux__
     execute_privileges(&res) ;
-#endif
+
+    execute_caps(&res) ;
 
     execute_uidgid(&res) ;
 
     execute_umask(&res) ;
 
     execute_chdir(&res) ;
-
 
     xmexec_em(newargv, nenvp, info.modifs.s, info.modifs.len) ;
 

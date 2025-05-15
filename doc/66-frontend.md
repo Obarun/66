@@ -1472,6 +1472,72 @@ Sets the working directory for the service process via `chdir()`, affecting the 
 
     Affects the service process and its children.
 
+#### CapsBound
+
+**Source Snippet**:
+```ini
+CapsBound = (CAP_SYS_NICE CAP_CHOWN)
+```
+
+Defines the Linux capabilities allowed in the capability bounding set for a root-owned service’s process. This setting controls which special permissions (like adjusting process priorities or changing file ownership) the service can use, restricting it to only the listed capabilities or excluding specific ones.
+
+* mandatory: no
+
+* syntax: [brackets](#brackets)
+
+* valid values:
+
+    * A space-separated list of capability names in parentheses, such as (`CAP_SYS_NICE` `CAP_CHOWN` `CAP_DAC_OVERRIDE`).
+
+    * Capability names can be prefixed with `!` to exclude them, allowing all other capabilities. For example, (`CAP_NET_ADMIN` `!CAP_SYS_ADMIN` `CAP_MAC_OVERRIDE` `!CAP_SYS_RESOURCE`) allows all capabilities except `CAP_SYS_ADMIN` and `CAP_SYS_RESOURCE`.
+
+    * Valid capability names include `CAP_SYS_NICE`, `CAP_CHOWN`, `CAP_DAC_OVERRIDE`, `CAP_SYS_ADMIN`, and others (see Linux documentation for the full list).
+
+    * Undefined: No changes are made to the bounding set, and the service uses the system’s default permissions.
+
+* notes:
+
+    Only applies to services running as the root user. For non-root services, this setting is silently ignored.
+
+    Clears all existing capabilities in the bounding set before applying the listed ones, ensuring only specified capabilities are allowed.
+
+    If any capability name is prefixed with `!`, the list is interpreted as allowing all capabilities except those marked with `!`. For example, (`CAP_NET_ADMIN` `!CAP_SYS_ADMIN`) allows all capabilities except `CAP_SYS_ADMIN`. Where doing, (`CAP_SYS_NICE` `CAP_CHOWN`) restricts the bounding set to only `CAP_SYS_NICE` and `CAP_CHOWN`.
+
+    Invalid capability names are ignored, and a warning is logged when the service configuration is parsed.
+
+    Requires Linux kernel version `5.6` or later.
+
+#### CapsAmbient
+
+**Source Snippet**:
+```ini
+CapsAmbient = (CAP_SYS_NICE)
+```
+
+Specifies Linux capabilities that a service and its child processes automatically retain, even when starting new programs. This allows permissions, such as adjusting process priorities, to be passed to child processes without requiring root privileges.
+
+* mandatory: no
+
+* syntax: [brackets](#brackets)
+
+* valid values:
+
+    * A space-separated list of capability names in parentheses, such as `(CAP_SYS_NICE CAP_CHOWN CAP_DAC_OVERRIDE)`.
+
+    * Capability names can be prefixed with `!` to exclude them, allowing all other capabilities. For example, `(CAP_SYS_NICE !CAP_SYS_ADMIN)` includes all capabilities except `CAP_SYS_ADMIN`.
+
+    * Undefined: No ambient capabilities are set, and child processes inherit no special permissions.
+
+* notes:
+
+    Applies to both root-owned services and non-root services.
+
+    The bounding set must contain at least `CAP_SETPCAT` capability and each listed capability. If not, it is skipped, and a warning is logged. If `CAP_SETPCAT` is not in bounding set, the process die.
+
+    For root-owned services, if `CapsBound` is not set, the service checks the system’s current set of allowed permissions to decide which capabilities can be used. If `CapsBound` is set, only the capabilities listed in `CapsBound` are considered. For example, if `CapsBound = (CAP_SYS_NICE)` and `CapsAmbient = (CAP_DAC_OVERRIDE)`, the `CAP_DAC_OVERRIDE` capability will be skipped because it is not in the `CapsBound` list, and a warning will be logged.
+
+    Requires Linux kernel version `5.6` or later.
+
 ## A word about the Execute key
 
 As described above the `Execute` key can be written in any language as long as you define the key `Build` as `custom`. For example if you want to write your `Execute` field with bash:
@@ -1702,4 +1768,6 @@ LimitSTACK =
 BlockPrivileges =
 UMask =
 ChangeDirectory = /directory/path
+CapsBound = ()
+CapsAmbient = ()
 ```

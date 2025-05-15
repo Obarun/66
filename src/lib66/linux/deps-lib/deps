@@ -1,0 +1,4 @@
+caps.o
+-loblibs
+-lskarnet
+

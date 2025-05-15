@@ -308,6 +308,14 @@ static int get_exec(stralloc *sa, resolve_service_t *res, resolve_service_enum_e
             str = res->sa.s + res->execute.chdir ;
             break ;
 
+        case E_RESOLVE_SERVICE_EXECUTE_CAPS_BOUND:
+            str = res->sa.s + res->execute.capsbound ;
+            break ;
+
+        case E_RESOLVE_SERVICE_EXECUTE_CAPS_AMBIENT:
+            str = res->sa.s + res->execute.capsambient ;
+            break ;
+
         default:
             return e ;
     }

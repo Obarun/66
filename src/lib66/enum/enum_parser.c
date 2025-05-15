@@ -14,6 +14,8 @@
 
 #include <stddef.h>
 #include <errno.h>
+#include <linux/capability.h> // needed populate correctly enum_str_parser_caps
+
 #include <66/enum_struct.h>
 #include <66/enum_parser.h>
 
@@ -177,6 +179,16 @@ key_description_t const enum_list_parser_mandatory[] = {
     { .name = 0 }
 } ;
 
+const char *enum_str_parser_caps[] = {
+    CAPS_TEMPLATE(STR_CAPS),
+    0
+} ;
+
+key_description_t const enum_list_parser_caps[] = {
+    CAPS_TEMPLATE(KEY_CAPS),
+    { .name = 0 }
+} ;
+
 key_description_t const *enum_get_list_parser(resolve_parser_enum_table_t table)
 {
     switch (table.category) {
@@ -195,6 +207,9 @@ key_description_t const *enum_get_list_parser(resolve_parser_enum_table_t table)
 
         case E_PARSER_CATEGORY_SECTION_REGEX:
             return enum_list_parser_section_regex ;
+
+        case E_PARSER_CATEGORY_SECTION_EXECUTE:
+            return enum_list_parser_section_execute ;
 
         case E_PARSER_CATEGORY_SECTION:
             return enum_list_parser_section ;
@@ -225,6 +240,9 @@ key_description_t const *enum_get_list_parser(resolve_parser_enum_table_t table)
 
         case E_PARSER_CATEGORY_MANDATORY:
             return enum_list_parser_mandatory ;
+
+        case E_PARSER_CATEGORY_CAPS:
+            return enum_list_parser_caps ;
 
         default:
             errno = EINVAL ;

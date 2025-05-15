@@ -122,6 +122,10 @@ int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
         !resolve_get_key(c, "nice", &res->execute.nice) ||
         !resolve_get_key(c, "want_nice", &res->execute.want_nice) ||
         !resolve_get_key(c, "chdir", &res->execute.chdir) ||
+        !resolve_get_key(c, "capsbound", &res->execute.capsbound) ||
+        !resolve_get_key(c, "capsambient", &res->execute.capsambient) ||
+        !resolve_get_key(c, "ncapsbound", &res->execute.ncapsbound) ||
+        !resolve_get_key(c, "ncapsambient", &res->execute.ncapsambient) ||
 
     /* live */
         !resolve_get_key(c, "livedir", &res->live.livedir) ||

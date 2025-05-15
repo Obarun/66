@@ -36,7 +36,7 @@
 #include <66/config.h>
 #include <66/state.h>
 
-#define MAXOPTS 102
+#define MAXOPTS 106
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -143,6 +143,10 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_int(fields[m++], res->execute.nice) ;
     info_display_int(fields[m++], res->execute.want_nice) ;
     info_display_string(fields[m++], res->sa.s, res->execute.chdir, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->execute.capsbound, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->execute.capsambient, 1) ;
+    info_display_int(fields[m++], res->execute.ncapsbound) ;
+    info_display_int(fields[m++], res->execute.ncapsambient) ;
 
     info_display_string(fields[m++], res->sa.s, res->live.livedir, 1) ;
     info_display_string(fields[m++], res->sa.s, res->live.status, 1) ;
@@ -267,6 +271,10 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "nice",
         "want_nice",
         "chdir",
+        "capsbound",
+        "capsambient",
+        "ncapsbound",
+        "ncapsambient",
 
         "livedir",
         "status",

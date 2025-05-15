@@ -15,8 +15,10 @@
 #ifndef SS_ENUM_PARSER_H
 #define SS_ENUM_PARSER_H
 
-#include <66/enum_struct.h>
 #include <stdint.h>
+#include <linux/capability.h> // _LINUX_CAPABILITY_VERSION_3
+
+#include <66/enum_struct.h>
 
 #define ENUM_EXPECTED(id, str) E_PARSER_EXPECT_##id
 #define STR_EXPECTED(id, str) [E_PARSER_EXPECT_##id] = str
@@ -185,14 +187,17 @@ enum resolve_parser_enum_section_regex_e
     macro(BLOCK_PRIVILEGES, "BlockPrivileges",  E_PARSER_EXPECT_LINE), \
     macro(UMASK,            "UMask",            E_PARSER_EXPECT_UINT), \
     macro(NICE,             "Nice",             E_PARSER_EXPECT_UINT), \
-    macro(CHDIR,            "ChangeDirectory",  E_PARSER_EXPECT_LINE)
+    macro(CHDIR,            "ChangeDirectory",  E_PARSER_EXPECT_LINE), \
+    macro(CAPS_BOUND,       "CapsBound",        E_PARSER_EXPECT_BRACKET), \
+    macro(CAPS_AMBIENT,     "CapsAmbient",      E_PARSER_EXPECT_BRACKET)
 
 typedef enum resolve_parser_enum_section_execute_e resolve_parser_enum_section_execute_t ;
 enum resolve_parser_enum_section_execute_e
 {
     SECTION_EXECUTE_TEMPLATE(ENUM_SECTION_EXECUTE),
-    E_PARSER_SECTION_EXCUTE_ENDOFKEY
+    E_PARSER_SECTION_EXECUTE_ENDOFKEY
 } ;
+
 
 #define ENUM_IO_TYPE(id, str, exp) E_PARSER_IO_TYPE_##id
 #define STR_IO_TYPE(id, str, exp) [E_PARSER_IO_TYPE_##id] = str
@@ -332,6 +337,76 @@ enum resolve_parser_enum_mandatory_e
     E_PARSER_MANDATORY_ENDOFKEY
 } ;
 
+// Valid key for field CapsBound and CapsAmbient
+#define ENUM_CAPS(id, str) E_PARSER_CAPS_##id
+#define STR_CAPS(id, str) [E_PARSER_CAPS_##id] = str
+#define KEY_CAPS(idy, str) { .name = &enum_str_parser_caps[E_PARSER_CAPS_##idy], .id = E_PARSER_CAPS_##idy, .expected = 0 }
+
+#define CAPS_TEMPLATE_COMMON(macro) \
+    macro(CHOWN,            "CAP_CHOWN"), \
+    macro(DAC_OVERRIDE,     "CAP_DAC_OVERRIDE"), \
+    macro(DAC_READ_SEARCH,  "CAP_DAC_READ_SEARCH"), \
+    macro(FOWNER,           "CAP_FOWNER"), \
+    macro(FSETID,           "CAP_FSETID"), \
+    macro(KILL,             "CAP_KILL"), \
+    macro(SETGID,           "CAP_SETGID"), \
+    macro(SETUID,           "CAP_SETUID"), \
+    macro(SETPCAP,          "CAP_SETPCAP"), \
+    macro(LINUX_IMMUTABLE,  "CAP_LINUX_IMMUTABLE"), \
+    macro(NET_BIND_SERVICE, "CAP_NET_BIND_SERVICE"), \
+    macro(NET_BROADCAST,    "CAP_NET_BROADCAST"), \
+    macro(NET_ADMIN,        "CAP_NET_ADMIN"), \
+    macro(NET_RAW,          "CAP_NET_RAW"), \
+    macro(IPC_LOCK,         "CAP_IPC_LOCK"), \
+    macro(IPC_OWNER,        "CAP_IPC_OWNER"), \
+    macro(SYS_MODULE,       "CAP_SYS_MODULE"), \
+    macro(SYS_RAWIO,        "CAP_SYS_RAWIO"), \
+    macro(SYS_CHROOT,       "CAP_SYS_CHROOT"), \
+    macro(SYS_PTRACE,       "CAP_SYS_PTRACE"), \
+    macro(SYS_PACCT,        "CAP_SYS_PACCT"), \
+    macro(SYS_ADMIN,        "CAP_SYS_ADMIN"), \
+    macro(SYS_BOOT,         "CAP_SYS_BOOT"), \
+    macro(SYS_NICE,         "CAP_SYS_NICE"), \
+    macro(SYS_RESOURCE,     "CAP_SYS_RESOURCE"), \
+    macro(SYS_TIME,         "CAP_SYS_TIME"), \
+    macro(SYS_TTY_CONFIG,   "CAP_SYS_TTY_CONFIG"), \
+    macro(MKNOD,            "CAP_MKNOD"), \
+    macro(LEASE,            "CAP_LEASE"), \
+    macro(AUDIT_WRITE,      "CAP_AUDIT_WRITE"), \
+    macro(AUDIT_CONTROL,    "CAP_AUDIT_CONTROL"), \
+    macro(SETFCAP,          "CAP_SETFCAP"), \
+    macro(MAC_OVERRIDE,     "CAP_MAC_OVERRIDE"), \
+    macro(MAC_ADMIN,        "CAP_MAC_ADMIN"), \
+    macro(SYSLOG,           "CAP_SYSLOG"), \
+    macro(WAKE_ALARM,       "CAP_WAKE_ALARM"), \
+    macro(BLOCK_SUSPEND,    "CAP_BLOCK_SUSPEND"), \
+    macro(AUDIT_READ,       "CAP_AUDIT_READ")
+
+#ifdef _LINUX_CAPABILITY_VERSION_3
+#define CAPS_TEMPLATE_LINUX(macro) , \
+    macro(PERFMON,          "CAP_PERFMON"), \
+    macro(BPF,              "CAP_BPF"), \
+    macro(CHECKPOINT_RESTORE, "CAP_CHECKPOINT_RESTORE")
+#else
+#define CAPS_TEMPLATE_LINUX(macro) /* Empty if condition not met */
+#endif
+
+/** Experimental
+    macro(PIDFD_OPEN,       "CAP_PIDFD_OPEN"), \
+    macro(PIDFD_GETFD,      "CAP_PIDFD_GETFD")
+*/
+
+#define CAPS_TEMPLATE(macro) \
+    CAPS_TEMPLATE_COMMON(macro) \
+    CAPS_TEMPLATE_LINUX(macro)
+
+typedef enum resolve_parser_enum_caps_e resolve_parser_enum_caps_t ;
+enum resolve_parser_enum_caps_e
+{
+    CAPS_TEMPLATE(ENUM_CAPS),
+    E_PARSER_CAPS_ENDOFKEY
+} ;
+
 #define CATEGORY_PARSER(id) E_PARSER_CATEGORY_##id
 
 #define PARSER_CATEGORY(macro) \
@@ -350,7 +425,8 @@ enum resolve_parser_enum_mandatory_e
     macro(TIME), \
     macro(SEED), \
     macro(EXPECTED), \
-    macro(MANDATORY)
+    macro(MANDATORY), \
+    macro(CAPS)
 
 typedef enum resolve_parser_enum_category_e resolve_parser_enum_category_t ;
 enum resolve_parser_enum_category_e
@@ -490,6 +566,13 @@ struct resolve_parser_enum_table_s {
     .u.parser.list = enum_list_parser_mandatory \
 }
 
+#define E_TABLE_PARSER_CAPS_ZERO { \
+    .category = E_RESOLVE_CATEGORY_PARSER, \
+    .u.parser.category = E_PARSER_CATEGORY_CAPS, \
+    .u.parser.list = enum_list_parser_caps, \
+    .u.parser.sid = E_PARSER_SECTION_EXECUTE \
+}
+
 extern char const *enum_str_parser_expected[] ;
 extern char const *enum_str_parser_section[] ;
 extern char const *enum_str_parser_section_main[] ;
@@ -506,6 +589,7 @@ extern char const *enum_str_parser_build[] ;
 extern char const *enum_str_parser_time[] ;
 extern char const *enum_str_parser_seed[] ;
 extern char const *enum_str_parser_mandatory[] ;
+extern char const *enum_str_parser_caps[] ;
 extern key_description_t const enum_list_parser_expected[] ;
 extern key_description_t const enum_list_parser_section[] ;
 extern key_description_t const enum_list_parser_section_main[] ;
@@ -522,6 +606,7 @@ extern key_description_t const enum_list_parser_build[] ;
 extern key_description_t const enum_list_parser_time[] ;
 extern key_description_t const enum_list_parser_seed[] ;
 extern key_description_t const enum_list_parser_mandatory[] ;
+extern key_description_t const enum_list_parser_caps[] ;
 extern key_description_t const *enum_get_list_parser(resolve_parser_enum_table_t table) ;
 
 #endif

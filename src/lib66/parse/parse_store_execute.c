@@ -25,6 +25,7 @@
 #include <66/parse.h>
 #include <66/resolve.h>
 #include <66/enum_parser.h>
+#include <66/caps.h>
 
 static int limit_compute(stack *store, uint64_t *u, resolve_enum_table_t table)
 {
@@ -238,6 +239,37 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
                 parse_error_return(0, 4, table) ;
 
             res->execute.chdir = resolve_add_string(wres, store->s) ;
+
+            break ;
+
+        case E_PARSER_SECTION_EXECUTE_CAPS_BOUND:
+
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
+
+            if (!parse_list(store))
+                parse_error_return(0, 8, table) ;
+
+            if (store->len && !res->owner) {
+                _alloc_stk_(stk, 2048) ; // ~ (70 CAPS * 30)
+                parse_store_caps(&stk, store, &res->execute.ncapsbound) ;
+                if (stk.len)
+                    res->execute.capsbound = resolve_add_string(wres, stk.s) ;
+            }
+            break ;
+
+        case E_PARSER_SECTION_EXECUTE_CAPS_AMBIENT:
+
+            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
+
+            if (!parse_list(store))
+                parse_error_return(0, 8, table) ;
+
+            if (store->len) {
+                _alloc_stk_(stk, 2048) ; // ~ (70 CAPS * 30)
+                parse_store_caps(&stk, store, &res->execute.ncapsambient) ;
+                if (stk.len)
+                    res->execute.capsambient = resolve_add_string(wres, stk.s) ;
+            }
             break ;
 
         default:

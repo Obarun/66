@@ -15,6 +15,7 @@
 #ifndef SS_CONFIG_H
 #define SS_CONFIG_H
 
+#include <66/caps.h>
 #include <66/config.h>
 #include <66/constants.h>
 #include <66/enum_parser.h>

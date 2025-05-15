@@ -288,6 +288,14 @@ static void modify_execute(resolve_service_t *res, char const *data, uint32_t fi
             res->execute.chdir = resolve_add_string(wres, data) ;
             break ;
 
+        case E_RESOLVE_SERVICE_EXECUTE_CAPS_BOUND:
+            res->execute.capsbound = resolve_add_string(wres, data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_EXECUTE_CAPS_AMBIENT:
+            res->execute.capsambient = resolve_add_string(wres, data) ;
+            break ;
+
         default:
             break ;
     }

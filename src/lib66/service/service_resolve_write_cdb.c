@@ -92,6 +92,10 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "nice", res->execute.nice) ||
         !resolve_add_cdb_uint(c, "want_nice", res->execute.want_nice) ||
         !resolve_add_cdb_uint(c, "chdir", res->execute.chdir) ||
+        !resolve_add_cdb_uint(c, "capsbound", res->execute.capsbound) ||
+        !resolve_add_cdb_uint(c, "capsambient", res->execute.capsambient) ||
+        !resolve_add_cdb_uint(c, "ncapsbound", res->execute.ncapsbound) ||
+        !resolve_add_cdb_uint(c, "ncapsambient", res->execute.ncapsambient) ||
 
         //live
         !resolve_add_cdb_uint(c, "livedir", res->live.livedir) ||

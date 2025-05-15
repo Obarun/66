@@ -18,7 +18,6 @@
 #include <stdint.h>
 #include <66/enum_struct.h>
 
-
 // configuration
 
 #define ENUM_SERVICE_CONFIG(id, str) E_RESOLVE_SERVICE_CONFIG_##id
@@ -118,7 +117,9 @@ enum resolve_service_enum_deps_e
     macro(WANT_UMASK,       "want_umask"), \
     macro(NICE,             "nice"), \
     macro(WANT_NICE,        "want_nice"), \
-    macro(CHDIR,            "chdir")
+    macro(CHDIR,            "chdir"), \
+    macro(CAPS_BOUND,       "capsbound"), \
+    macro(CAPS_AMBIENT,     "capsambient")
 
 typedef enum resolve_service_enum_execute_e resolve_service_enum_execute_t ;
 enum resolve_service_enum_execute_e
@@ -271,6 +272,7 @@ enum resolve_service_enum_limit_e
     E_RESOLVE_SERVICE_LIMIT_ENDOFKEY
 } ;
 
+// Category
 #define CATEGORY_SERVICE(id) E_RESOLVE_SERVICE_CATEGORY_##id
 
 #define SERVICE_CATEGORY(macro) \
