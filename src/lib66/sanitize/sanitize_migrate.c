@@ -67,7 +67,7 @@ static uint8_t str_to_int(const char *version)
             return pos ;
     }
 
-    log_dieu(LOG_EXIT_SYS, "unable to compare version -- please make a bug report") ;
+    log_dieu(LOG_EXIT_SYS, "compare version -- please make a bug report") ;
 }
 
 void migrate_create_snap(ssexec_t *info, const char *version)

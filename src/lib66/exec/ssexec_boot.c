@@ -20,11 +20,8 @@
 #include <sys/stat.h>
 #include <sys/mount.h>
 #include <sys/reboot.h>
-
-#ifdef __linux__
-    #include <linux/kd.h>
-    #include <skalibs/sig.h>
-#endif
+#include <linux/kd.h>
+#include <skalibs/sig.h>
 
 #include <oblibs/log.h>
 #include <oblibs/files.h>
@@ -521,7 +518,6 @@ static void cad(void)
     if (container)
         return ;
 
-#ifdef __linux__
     int fd ;
     fd = open2("/dev/tty0", O_RDONLY | O_NOCTTY) ;
     if (fd < 0) {
@@ -537,7 +533,6 @@ static void cad(void)
 
         close(fd) ;
     }
-#endif
 
     sig_block(SIGINT) ; /* don't panic on early cad before s6-svscan catches it */
     if (reboot(RB_DISABLE_CAD) == -1)

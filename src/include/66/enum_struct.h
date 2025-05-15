@@ -1,5 +1,5 @@
 /*
- * enum_parser.h
+ * enum_struct.h
  *
  * Copyright (c) 2025 Eric Vidal <eric@obarun.org>
  *
@@ -12,8 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#ifndef SS_ENUM_KEY_H
-#define SS_ENUM_KEY_H
+#ifndef SS_ENUM_STRUCT_H
+#define SS_ENUM_STRUCT_H
 
 // this is avoid circular dependencies between enum.h and enum_xxx.h
 typedef struct key_description_s key_description_t ;
