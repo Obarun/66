@@ -14,7 +14,7 @@ src/include/66/graph.h: src/include/66/ssexec.h
 src/include/66/hpr.h: src/include/66/constants.h
 src/include/66/info.h: src/include/66/graph.h src/include/66/service.h src/include/66/tree.h
 src/include/66/instance.h: src/include/66/service.h src/include/66/ssexec.h
-src/include/66/migrate.h: src/include/66/migrate_0721.h src/include/66/migrate_0802.h src/include/66/migrate_0811.h
+src/include/66/migrate.h: src/include/66/migrate_0721.h src/include/66/migrate_0802.h src/include/66/migrate_0811.h src/include/66/service.h src/include/66/ssexec.h
 src/include/66/migrate_0721.h: src/include/66/ssexec.h
 src/include/66/migrate_0802.h: src/include/66/ssexec.h
 src/include/66/migrate_0811.h: src/include/66/config.h src/include/66/enum_service.h src/include/66/graph.h src/include/66/resolve.h src/include/66/ssexec.h
@@ -125,8 +125,8 @@ src/lib66/instance/instance_splitname.o src/lib66/instance/instance_splitname.lo
 src/lib66/instance/instance_splitname_to_char.o src/lib66/instance/instance_splitname_to_char.lo: src/lib66/instance/instance_splitname_to_char.c
 src/lib66/linux/caps.o src/lib66/linux/caps.lo: src/lib66/linux/caps.c src/include/66/caps.h src/include/66/enum.h src/include/66/service.h
 src/lib66/migrate/migrate_0721.o src/lib66/migrate/migrate_0721.lo: src/lib66/migrate/migrate_0721.c src/include/66/constants.h src/include/66/enum.h src/include/66/instance.h src/include/66/migrate_0721.h src/include/66/module.h src/include/66/parse.h src/include/66/resolve.h src/include/66/ssexec.h src/include/66/tree.h src/include/66/utils.h src/include/66/write.h
-src/lib66/migrate/migrate_0802.o src/lib66/migrate/migrate_0802.lo: src/lib66/migrate/migrate_0802.c src/include/66/config.h src/include/66/constants.h src/include/66/migrate_0802.h src/include/66/module.h src/include/66/resolve.h src/include/66/service.h src/include/66/ssexec.h src/include/66/utils.h
-src/lib66/migrate/migrate_0811.o src/lib66/migrate/migrate_0811.lo: src/lib66/migrate/migrate_0811.c src/include/66/config.h src/include/66/constants.h src/include/66/migrate_0811.h src/include/66/module.h src/include/66/resolve.h src/include/66/service.h src/include/66/ssexec.h src/include/66/utils.h
+src/lib66/migrate/migrate_0802.o src/lib66/migrate/migrate_0802.lo: src/lib66/migrate/migrate_0802.c src/include/66/config.h src/include/66/constants.h src/include/66/migrate.h src/include/66/migrate_0802.h src/include/66/module.h src/include/66/resolve.h src/include/66/service.h src/include/66/ssexec.h src/include/66/utils.h
+src/lib66/migrate/migrate_0811.o src/lib66/migrate/migrate_0811.lo: src/lib66/migrate/migrate_0811.c src/include/66/config.h src/include/66/constants.h src/include/66/migrate.h src/include/66/migrate_0811.h src/include/66/module.h src/include/66/resolve.h src/include/66/service.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/module/get_list.o src/lib66/module/get_list.lo: src/lib66/module/get_list.c src/include/66/module.h
 src/lib66/module/parse_module.o src/lib66/module/parse_module.lo: src/lib66/module/parse_module.c src/include/66/constants.h src/include/66/info.h src/include/66/instance.h src/include/66/module.h src/include/66/parse.h src/include/66/resolve.h src/include/66/sanitize.h src/include/66/state.h src/include/66/utils.h
 src/lib66/module/parse_module_check_dir.o src/lib66/module/parse_module_check_dir.lo: src/lib66/module/parse_module_check_dir.c
@@ -188,7 +188,7 @@ src/lib66/sanitize/sanitize_fdholder.o src/lib66/sanitize/sanitize_fdholder.lo: 
 src/lib66/sanitize/sanitize_graph.o src/lib66/sanitize/sanitize_graph.lo: src/lib66/sanitize/sanitize_graph.c src/include/66/config.h src/include/66/graph.h src/include/66/parse.h src/include/66/resolve.h src/include/66/service.h src/include/66/ssexec.h
 src/lib66/sanitize/sanitize_init.o src/lib66/sanitize/sanitize_init.lo: src/lib66/sanitize/sanitize_init.c src/include/66/enum_parser.h src/include/66/graph.h src/include/66/sanitize.h src/include/66/service.h src/include/66/state.h src/include/66/svc.h
 src/lib66/sanitize/sanitize_livestate.o src/lib66/sanitize/sanitize_livestate.lo: src/lib66/sanitize/sanitize_livestate.c src/include/66/constants.h src/include/66/sanitize.h src/include/66/service.h src/include/66/state.h src/include/66/utils.h
-src/lib66/sanitize/sanitize_migrate.o src/lib66/sanitize/sanitize_migrate.lo: src/lib66/sanitize/sanitize_migrate.c src/include/66/constants.h src/include/66/migrate.h src/include/66/migrate_0721.h src/include/66/sanitize.h src/include/66/ssexec.h src/include/66/utils.h
+src/lib66/sanitize/sanitize_migrate.o src/lib66/sanitize/sanitize_migrate.lo: src/lib66/sanitize/sanitize_migrate.c src/include/66/constants.h src/include/66/migrate.h src/include/66/sanitize.h src/include/66/ssexec.h src/include/66/utils.h
 src/lib66/sanitize/sanitize_resolve.o src/lib66/sanitize/sanitize_resolve.lo: src/lib66/sanitize/sanitize_resolve.c src/include/66/constants.h src/include/66/graph.h src/include/66/resolve.h src/include/66/service.h src/include/66/ssexec.h src/include/66/tree.h
 src/lib66/sanitize/sanitize_scandir.o src/lib66/sanitize/sanitize_scandir.lo: src/lib66/sanitize/sanitize_scandir.c src/include/66/constants.h src/include/66/enum_parser.h src/include/66/sanitize.h src/include/66/service.h src/include/66/state.h src/include/66/svc.h
 src/lib66/sanitize/sanitize_source.o src/lib66/sanitize/sanitize_source.lo: src/lib66/sanitize/sanitize_source.c src/include/66/constants.h src/include/66/resolve.h src/include/66/sanitize.h src/include/66/service.h src/include/66/state.h

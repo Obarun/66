@@ -689,7 +689,7 @@ Controls standard I/O redirection for the standard error entries.
 Provide = ( network networking )
 ```
 
-Defines one or more service aliases—alternate names under which this service can be referenced. These aliases behave like symbolic links, allowing the same service to be managed with different identifiers.
+Defines one or more service aliases—alternate names under which this service can be referenced. These aliases behave like symbolic links, allowing the same service to be managed with different name.
 
 * mandatory: no
 
@@ -698,6 +698,23 @@ Defines one or more service aliases—alternate names under which this service c
 * valid values:
 
     * Any abitrary name.
+
+#### Conflict
+
+**Source Snippet**:
+```ini
+Conflict = ( connmand networkmanager )
+```
+
+Defines one or more services that cannot run or be enabled simultaneously with this service. If a conflicting service is running, attempts to start this service will fail. Similarly, if a conflicting service is enabled, attempts to enable this service will be rejected.
+
+* mandatory: no
+
+* syntax: [brackets](#brackets)
+
+* valid values:
+
+    * Any valid service name.
 
 ### Section [Start]
 

@@ -36,7 +36,7 @@
 #include <66/config.h>
 #include <66/state.h>
 
-#define MAXOPTS 106
+#define MAXOPTS 108
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -119,11 +119,13 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_string(fields[m++], res->sa.s, res->dependencies.optsdeps, 1) ;
     info_display_string(fields[m++], res->sa.s, res->dependencies.contents, 1) ;
     info_display_string(fields[m++], res->sa.s, res->dependencies.provide, 1) ;
+    info_display_string(fields[m++], res->sa.s, res->dependencies.conflict, 1) ;
     info_display_int(fields[m++], res->dependencies.ndepends) ;
     info_display_int(fields[m++], res->dependencies.nrequiredby) ;
     info_display_int(fields[m++], res->dependencies.noptsdeps) ;
     info_display_int(fields[m++], res->dependencies.ncontents) ;
     info_display_int(fields[m++], res->dependencies.nprovide) ;
+    info_display_int(fields[m++], res->dependencies.nconflict) ;
 
     info_display_string(fields[m++], res->sa.s, res->execute.run.run, 1) ;
     info_display_string(fields[m++], res->sa.s, res->execute.run.run_user, 1) ;
@@ -246,11 +248,13 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "optsdeps",
         "contents",
         "provide",
+        "conflict",
         "ndepends",
         "nrequiredby",
         "noptsdeps",
         "ncontents",
         "nprovide",
+        "nconflict",
 
         "run",
         "run_user",

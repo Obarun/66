@@ -37,7 +37,7 @@ See the INSTALL.md file.
 
 ## Documentation
 
-Online [documentation](https://web.obarun.org/software/66/)
+Online [documentation](https://web.obarun.org/software/66/latest)
 
 ## Contact information
 
@@ -90,7 +90,7 @@ This Roadmap for the next releases is not writting in the stone. Feel free to ma
 
   Enable the provision of documentation for each service using a [Documentation] section. This documentation will be easily accessible by invoking the 66 doc command.
 
-* [ ] Provide a `Conflicts` keyword at frontend file:
+* [x] Provide a `Conflicts` keyword at frontend file:
 
   Allow to declare a conflicting service through the `Conflicts` field, e.g. `connmand` service will declare `Conflicts = ( Networkmanager )`.
 
@@ -98,9 +98,9 @@ This Roadmap for the next releases is not writting in the stone. Feel free to ma
 
   Allow to declare a alias service through the `Provide` field, e.g. `connmand` service will declare `Provide = ( Network )`.
 
-* [ ] Provide keyword for basic operations:
+* [x] Provide keyword for basic operations:
 
-  Certain repetitive tasks can be more efficiently managed directly by `66` in C rather than scripting them in the `Execute` field. For example, utilizing a `WorkDir` keyword can facilitate moving to the declared WorkDir value before executing the script.
+  Certain repetitive tasks can be more efficiently managed directly by `66` in C rather than scripting them in the `Execute` field. For example, utilizing a `ChangeDirectory` keyword can facilitate moving to the declared WorkDir value before executing the script.
 
 * [ ] Reacts on event:
 
@@ -123,3 +123,15 @@ This Roadmap for the next releases is not writting in the stone. Feel free to ma
 * [ ] Hacking s6-supervise
 
   Hack the s6-supervise program to include support for a `[Reload]` section, handling tasks before executing the service and managing jobs events.
+
+* [x] Provide capabilities management
+
+  Implementation of `CapsBound` and `CapsAmbient` to manage bounding set and Ambient capabilities respectively.
+
+* [ ] Provide namespace management
+
+  Implementation of a new `[Namespace]` section to control build and control sandboxing.
+
+* [ ] Provice cgroups management
+
+  Ability to configure and control cgroups of the process and sub-process.

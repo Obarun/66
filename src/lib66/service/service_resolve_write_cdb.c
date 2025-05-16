@@ -67,11 +67,13 @@ int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "optsdeps", res->dependencies.optsdeps) ||
         !resolve_add_cdb_uint(c, "contents", res->dependencies.contents) ||
         !resolve_add_cdb_uint(c, "provide", res->dependencies.provide) ||
+        !resolve_add_cdb_uint(c, "conflict", res->dependencies.conflict) ||
         !resolve_add_cdb_uint(c, "ndepends", res->dependencies.ndepends) ||
         !resolve_add_cdb_uint(c, "nrequiredby", res->dependencies.nrequiredby) ||
         !resolve_add_cdb_uint(c, "noptsdeps", res->dependencies.noptsdeps) ||
         !resolve_add_cdb_uint(c, "ncontents", res->dependencies.ncontents) ||
         !resolve_add_cdb_uint(c, "nprovide", res->dependencies.nprovide) ||
+        !resolve_add_cdb_uint(c, "nconflict", res->dependencies.nconflict) ||
 
         // execute
         !resolve_add_cdb_uint(c, "run", res->execute.run.run) ||

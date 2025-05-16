@@ -181,6 +181,10 @@ static void modify_deps(resolve_service_t *res, char const *data, uint32_t field
             res->dependencies.provide = resolve_add_string(wres, data) ;
             break ;
 
+        case E_RESOLVE_SERVICE_DEPS_CONFLICT:
+            res->dependencies.conflict = resolve_add_string(wres, data) ;
+            break ;
+
         case E_RESOLVE_SERVICE_DEPS_NDEPENDS:
             res->dependencies.ndepends = resolve_add_uint(data) ;
             break ;
@@ -199,6 +203,10 @@ static void modify_deps(resolve_service_t *res, char const *data, uint32_t field
 
         case E_RESOLVE_SERVICE_DEPS_NPROVIDE:
             res->dependencies.nprovide = resolve_add_uint(data) ;
+            break ;
+
+        case E_RESOLVE_SERVICE_DEPS_NCONFLICT:
+            res->dependencies.nconflict = resolve_add_uint(data) ;
             break ;
 
         default:

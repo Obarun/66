@@ -113,6 +113,25 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
             if (!symlink_provide(info->base.s, res, action))
                 log_dieu(LOG_EXIT_SYS, "make provide symlink") ;
 
+        if (hash->res.dependencies.nconflict && action) {
+
+            _alloc_stk_(stk, strlen(hash->res.sa.s + hash->res.dependencies.conflict)) ;
+            resolve_service_t c = RESOLVE_SERVICE_ZERO ;
+            resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE, &c) ;
+            size_t pos = 0 ;
+
+            if (!stack_string_clean(&stk, hash->res.sa.s + hash->res.dependencies.conflict))
+                log_dieu(LOG_EXIT_SYS, "clean string") ;
+
+            FOREACH_STK(&stk, pos) {
+
+                if (resolve_read_g(w, info->base.s, stk.s + pos) > 0 && c.enabled)
+                    log_die(LOG_EXIT_SYS,"conflicting service for '", hash->res.sa.s + hash->res.name, "' -- please disable the '", c.sa.s + c.name, "' service first.") ;
+            }
+
+            resolve_free(w) ;
+        }
+
         if (info->opt_tree && ((hash->res.inns && ns) || same))
             treename = info->treename.s ;
         else

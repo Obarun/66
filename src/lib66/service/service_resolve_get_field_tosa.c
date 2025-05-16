@@ -181,6 +181,10 @@ static int get_deps(stralloc *sa, resolve_service_t *res, resolve_service_enum_d
             str = res->sa.s + res->dependencies.provide ;
             break ;
 
+        case E_RESOLVE_SERVICE_DEPS_CONFLICT:
+            str = res->sa.s + res->dependencies.conflict ;
+            break ;
+
         case E_RESOLVE_SERVICE_DEPS_NDEPENDS:
             fmt[uint32_fmt(fmt,res->dependencies.ndepends)] = 0 ;
             str = fmt ;
@@ -203,6 +207,11 @@ static int get_deps(stralloc *sa, resolve_service_t *res, resolve_service_enum_d
 
         case E_RESOLVE_SERVICE_DEPS_NPROVIDE:
             fmt[uint32_fmt(fmt,res->dependencies.nprovide)] = 0 ;
+            str = fmt ;
+            break ;
+
+        case E_RESOLVE_SERVICE_DEPS_NCONFLICT:
+            fmt[uint32_fmt(fmt,res->dependencies.nconflict)] = 0 ;
             str = fmt ;
             break ;
 

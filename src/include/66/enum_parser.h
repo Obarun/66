@@ -84,7 +84,8 @@ enum resolve_parser_enum_section_e
     macro(STDIN,            "StdIn",            E_PARSER_EXPECT_LINE), \
     macro(STDOUT,           "StdOut",           E_PARSER_EXPECT_LINE), \
     macro(STDERR,           "StdErr",           E_PARSER_EXPECT_LINE), \
-    macro(PROVIDE,          "Provide",          E_PARSER_EXPECT_BRACKET)
+    macro(PROVIDE,          "Provide",          E_PARSER_EXPECT_BRACKET), \
+    macro(CONFLICT,         "Conflict",         E_PARSER_EXPECT_BRACKET)
 
 typedef enum resolve_parser_enum_section_main_e resolve_parser_enum_section_main_t ;
 enum resolve_parser_enum_section_main_e
@@ -197,7 +198,6 @@ enum resolve_parser_enum_section_execute_e
     SECTION_EXECUTE_TEMPLATE(ENUM_SECTION_EXECUTE),
     E_PARSER_SECTION_EXECUTE_ENDOFKEY
 } ;
-
 
 #define ENUM_IO_TYPE(id, str, exp) E_PARSER_IO_TYPE_##id
 #define STR_IO_TYPE(id, str, exp) [E_PARSER_IO_TYPE_##id] = str

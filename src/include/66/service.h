@@ -48,15 +48,17 @@ struct resolve_service_addon_dependencies_s
     uint32_t optsdeps ; // string, optional dependencies
     uint32_t contents ; // string
     uint32_t provide ; // string
+    uint32_t conflict ; // string
 
     uint32_t ndepends ; // integer
     uint32_t nrequiredby ; // integer
     uint32_t noptsdeps ; // integer
     uint32_t ncontents ; // integer
     uint32_t nprovide ; // integer
+    uint32_t nconflict ; // integer
 } ;
 
-#define RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO { 0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO { 0,0,0,0,0,0,0,0,0,0,0,0 }
 
 typedef struct resolve_service_addon_timeout_s resolve_service_addon_timeout_t, *resolve_service_addon_timeout_t_ref ;
 struct resolve_service_addon_timeout_s

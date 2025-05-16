@@ -17,6 +17,9 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/hash.h>
+#include <oblibs/stack.h>
+#include <oblibs/lexer.h>
+#include <oblibs/graph.h>
 
 #include <skalibs/sgetopt.h>
 
@@ -25,6 +28,35 @@
 #include <66/svc.h>
 #include <66/sanitize.h>
 #include <66/config.h>
+
+static void ensure_no_conflict(service_graph_t *graph, int argc, char const *const *argv)
+{
+    int i = 0 ;
+    for (; i < argc ; i++) {
+
+        struct resolve_hash_s *hash = hash_search(&graph->hres, argv[i]) ;
+
+        if (hash == NULL)
+            log_die(LOG_EXIT_USER, "service: ", argv[i], " not available -- please make a bug report") ;
+
+        if (hash->res.dependencies.nconflict) {
+
+            _alloc_stk_(stk, strlen(hash->res.sa.s + hash->res.dependencies.conflict)) ;
+            size_t pos = 0 ;
+            int r ;
+
+            if (!stack_string_clean(&stk, hash->res.sa.s + hash->res.dependencies.conflict))
+                log_dieu(LOG_EXIT_SYS, "clean string") ;
+
+            FOREACH_STK(&stk, pos) {
+
+                r = service_is_g(stk.s + pos, STATE_FLAGS_ISUP) ;
+                if (r > 0 && r == STATE_FLAGS_TRUE)
+                    log_die(LOG_EXIT_SYS, "conflicting service for '", hash->res.sa.s + hash->res.name, "' -- please stop the '", stk.s + pos, "' service first.") ;
+            }
+        }
+    }
+}
 
 int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
 {
@@ -80,6 +112,8 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
 
     if (!graph.g.nsort)
         log_warn_return(e,"no services found to handle") ;
+
+    ensure_no_conflict(&graph, argc, argv) ;
 
     /** initiate services at the corresponding scandir */
     sanitize_init(&graph, flag) ;
