@@ -135,11 +135,14 @@ void migrate_ensure_log_owner(resolve_service_t *res)
         if (!sastr_dir_get_recursive(&sa, dest, exclude, S_IFREG|S_IFDIR,1))
             log_dieu(LOG_EXIT_SYS, "get content of logger directory") ;
 
-        FOREACH_SASTR(&sa, pos)
+        FOREACH_SASTR(&sa, pos) {
             if (chown(sa.s + pos, uid, gid) < 0)
                 log_dieusys(LOG_EXIT_SYS, "chown: ", sa.s + pos) ;
+        }
 
+        free(wres) ;
     }
+
 }
 
 /** Return 0 if no migration was made else 1 */
