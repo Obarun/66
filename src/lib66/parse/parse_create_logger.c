@@ -64,7 +64,6 @@ uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res, con
     return resolve_add_string(wres, dstlog) ;
 }
 
-
 static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
 {
 
@@ -219,6 +218,7 @@ static void compute_logger(resolve_service_t *res, resolve_service_t *log, ssexe
     log->logger.maxsize = res->logger.maxsize ;
     log->logger.timestamp = res->logger.timestamp ;
     log->logger.want = 0 ;
+    log->logger.execute.run.runas = resolve_add_string(wres, str + res->logger.execute.run.runas) ;
 
     if (!strcmp(res->sa.s + res->logger.execute.run.build, "custom")) {
 

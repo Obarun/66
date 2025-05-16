@@ -92,7 +92,8 @@ static void execute_setup_destination(resolve_service_t *res, const char *dest)
     uid_t uid ;
     gid_t gid ;
 
-    setup_uidgid(&uid, &gid, res, res->islog ? res->logger.execute.run.runas : 0) ;
+    // root by default as !res->logger.execute.run.runas if not set
+    setup_uidgid(&uid, &gid, res, res->logger.execute.run.runas) ;
 
     log_trace("check logger destination directory: ", dest) ;
     if (!dir_create_parent(dest, 0755))
@@ -406,9 +407,9 @@ static void io_setup_stdout(resolve_service_t *res)
 
             } else if (res->type == E_PARSER_TYPE_ONESHOT) {
 
-                _alloc_stk_(stk, strlen(res->sa.s + res->io.fdout.destination) + SS_TREE_CURRENT_LEN + 2) ;
-                auto_strings(stk.s, res->sa.s + res->io.fdout.destination, "/", SS_TREE_CURRENT) ;
-                stk.s[strlen(res->sa.s + res->io.fdout.destination) + 1 + SS_TREE_CURRENT_LEN] = 0 ;
+                _alloc_stk_(stk, strlen(res->sa.s + res->io.fdout.destination) + SS_CURRENT_LEN + 2) ;
+                auto_strings(stk.s, res->sa.s + res->io.fdout.destination, "/", SS_CURRENT) ;
+                stk.s[strlen(res->sa.s + res->io.fdout.destination) + 1 + SS_CURRENT_LEN] = 0 ;
 
                 io_open_file(res, 1, stk.s) ;
             }

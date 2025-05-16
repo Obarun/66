@@ -282,6 +282,8 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
 
     service_resolve_sanitize_0802(&new, &res) ;
 
+    migrate_ensure_log_owner(&new) ;
+
     if (!resolve_write_g(wres, info->base.s, name))
         log_dieusys(LOG_EXIT_SYS, "write resolve file of service: ", name) ;
 

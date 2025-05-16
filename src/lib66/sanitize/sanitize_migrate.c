@@ -12,16 +12,17 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <sys/stat.h>
+
 #include <oblibs/log.h>
 #include <oblibs/stack.h>
+#include <oblibs/sastr.h>
 #include <oblibs/string.h>
 
 #include <66/ssexec.h>
 #include <66/utils.h>
 #include <66/constants.h>
 #include <66/sanitize.h>
-
-#include <66/migrate_0721.h>
 #include <66/migrate.h>
 
 #define MIGRATE_NVERSION 7
@@ -99,6 +100,46 @@ void migrate_create_snap(ssexec_t *info, const char *version)
     info->help = help ;
     info->usage = usage ;
 
+}
+
+/**
+ * Version between 0.8.0.0 and 0.8.1.1 introduce a bug
+ * not respecting the owner of the logger destination directory.
+ * This function fix it, but its should only valuable for version
+ * under 0.8.2.0 which fix the bug.
+ */
+void migrate_ensure_log_owner(resolve_service_t *res)
+{
+    if (res->logger.want && !res->owner && res->io.fdout.type == E_PARSER_IO_TYPE_S6LOG) {
+
+        _alloc_sa_(sa) ;
+        char const *exclude[1] = { 0 } ;
+        char *dest = res->sa.s + res->io.fdout.destination ;
+        size_t pos = 0 ;
+        uid_t uid ;
+        gid_t gid ;
+
+        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+
+        res->logger.execute.run.runas = resolve_add_string(wres, SS_LOGGER_RUNNER) ;
+
+        if (!youruid(&uid, res->sa.s + res->logger.execute.run.runas))
+            log_dieusys(LOG_EXIT_SYS, "get uid of account: ", res->sa.s + res->logger.execute.run.runas) ;
+
+        if (!yourgid(&gid, uid))
+            log_dieusys(LOG_EXIT_SYS, "get gid") ;
+
+        if (chown(dest, uid, gid) < 0)
+            log_dieusys(LOG_EXIT_SYS, "chown: ", dest) ;
+
+        if (!sastr_dir_get_recursive(&sa, dest, exclude, S_IFREG|S_IFDIR,1))
+            log_dieu(LOG_EXIT_SYS, "get content of logger directory") ;
+
+        FOREACH_SASTR(&sa, pos)
+            if (chown(sa.s + pos, uid, gid) < 0)
+                log_dieusys(LOG_EXIT_SYS, "chown: ", sa.s + pos) ;
+
+    }
 }
 
 /** Return 0 if no migration was made else 1 */
