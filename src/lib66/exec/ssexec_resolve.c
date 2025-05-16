@@ -143,6 +143,21 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_int(fields[m++], res->execute.nice) ;
     info_display_int(fields[m++], res->execute.want_nice) ;
     info_display_string(fields[m++], res->sa.s, res->execute.chdir, 1) ;
+    info_display_int64(fields[m++],res->limit.limitas) ;
+    info_display_int64(fields[m++],res->limit.limitcore) ;
+    info_display_int64(fields[m++],res->limit.limitcpu) ;
+    info_display_int64(fields[m++],res->limit.limitdata) ;
+    info_display_int64(fields[m++],res->limit.limitfsize) ;
+    info_display_int64(fields[m++],res->limit.limitlocks) ;
+    info_display_int64(fields[m++],res->limit.limitmemlock) ;
+    info_display_int64(fields[m++],res->limit.limitmsgqueue) ;
+    info_display_int64(fields[m++],res->limit.limitnice) ;
+    info_display_int64(fields[m++],res->limit.limitnofile) ;
+    info_display_int64(fields[m++],res->limit.limitnproc) ;
+    info_display_int64(fields[m++],res->limit.limitrtprio) ;
+    info_display_int64(fields[m++],res->limit.limitrttime) ;
+    info_display_int64(fields[m++],res->limit.limitsigpending) ;
+    info_display_int64(fields[m++],res->limit.limitstack) ;
     info_display_string(fields[m++], res->sa.s, res->execute.capsbound, 1) ;
     info_display_string(fields[m++], res->sa.s, res->execute.capsambient, 1) ;
     info_display_int(fields[m++], res->execute.ncapsbound) ;
@@ -191,22 +206,6 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_string(fields[m++], res->sa.s, res->io.fdout.destination, 1) ;
     info_display_int(fields[m++], res->io.fderr.type) ;
     info_display_string(fields[m++], res->sa.s, res->io.fderr.destination, 1) ;
-
-    info_display_int64(fields[m++],res->limit.limitas) ;
-    info_display_int64(fields[m++],res->limit.limitcore) ;
-    info_display_int64(fields[m++],res->limit.limitcpu) ;
-    info_display_int64(fields[m++],res->limit.limitdata) ;
-    info_display_int64(fields[m++],res->limit.limitfsize) ;
-    info_display_int64(fields[m++],res->limit.limitlocks) ;
-    info_display_int64(fields[m++],res->limit.limitmemlock) ;
-    info_display_int64(fields[m++],res->limit.limitmsgqueue) ;
-    info_display_int64(fields[m++],res->limit.limitnice) ;
-    info_display_int64(fields[m++],res->limit.limitnofile) ;
-    info_display_int64(fields[m++],res->limit.limitnproc) ;
-    info_display_int64(fields[m++],res->limit.limitrtprio) ;
-    info_display_int64(fields[m++],res->limit.limitrttime) ;
-    info_display_int64(fields[m++],res->limit.limitsigpending) ;
-    info_display_int64(fields[m++],res->limit.limitstack) ;
 
     info_display_string(fields[m], res->sa.s, res->rversion, 1) ;
 }
@@ -271,6 +270,21 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "nice",
         "want_nice",
         "chdir",
+        "limitas",
+        "limitcore",
+        "limitcpu",
+        "limitdata",
+        "limitfsize",
+        "limitlocks",
+        "limitmemlock",
+        "limitmsgqueue",
+        "limitnice",
+        "limitnofile",
+        "limitnproc",
+        "limitrtprio",
+        "limitrttime",
+        "limitsigpending",
+        "limitstack",
         "capsbound",
         "capsambient",
         "ncapsbound",
@@ -319,22 +333,6 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "stdoutdest",
         "stderrtype",
         "stderrdest",
-
-        "limitas",
-        "limitcore",
-        "limitcpu",
-        "limitdata",
-        "limitfsize",
-        "limitlocks",
-        "limitmemlock",
-        "limitmsgqueue",
-        "limitnice",
-        "limitnofile",
-        "limitnproc",
-        "limitrtprio",
-        "limitrttime",
-        "limitsigpending",
-        "limitstack",
 
         "rversion"
     } ;
