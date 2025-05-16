@@ -33,6 +33,7 @@
 #include <66/utils.h>
 
 #include <66/migrate_0802.h>
+#include <66/migrate.h>
 
 static void service_resolve_sanitize_0802(resolve_service_t *new, resolve_service_t_0802 *old)
 {

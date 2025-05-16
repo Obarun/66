@@ -33,6 +33,7 @@
 #include <66/utils.h>
 
 #include <66/migrate_0811.h>
+#include <66/migrate.h>
 
 static int service_resolve_read_cdb_0811(cdb *c, resolve_service_t_0811 *res)
 {
