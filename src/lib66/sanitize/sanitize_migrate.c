@@ -123,6 +123,11 @@ void migrate_ensure_log_owner(resolve_service_t *res)
 
         res->logger.execute.run.runas = resolve_add_string(wres, SS_LOGGER_RUNNER) ;
 
+        if (access(dest, F_OK) < 0) {
+            log_warnusys("find logger directory: '", dest, "' -- ignoring it") ;
+            return ;
+        }
+
         if (!youruid(&uid, res->sa.s + res->logger.execute.run.runas))
             log_dieusys(LOG_EXIT_SYS, "get uid of account: ", res->sa.s + res->logger.execute.run.runas) ;
 
