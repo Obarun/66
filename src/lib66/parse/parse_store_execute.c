@@ -210,6 +210,8 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
             res->execute.umask = mode ;
             res->execute.want_umask = 1 ;
 
+            break ;
+
         case E_PARSER_SECTION_EXECUTE_NICE:
             {
                 parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
@@ -229,6 +231,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
                 res->execute.want_nice = 1 ;
             }
+
             break ;
 
         case E_PARSER_SECTION_EXECUTE_CHDIR:
@@ -255,6 +258,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
                 if (stk.len)
                     res->execute.capsbound = resolve_add_string(wres, stk.s) ;
             }
+
             break ;
 
         case E_PARSER_SECTION_EXECUTE_CAPS_AMBIENT:
@@ -270,6 +274,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
                 if (stk.len)
                     res->execute.capsambient = resolve_add_string(wres, stk.s) ;
             }
+
             break ;
 
         default:
