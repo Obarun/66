@@ -174,7 +174,7 @@ inline static void log_perm(char const *str,uid_t *uid,gid_t *gid)
     if (!yourgid(gid,*uid)) log_dieusys(LOG_EXIT_SYS,"set gid of: ",str) ;
 }
 
-inline void shebang(buffer *b, char const *opts)
+inline static void shebang(buffer *b, char const *opts)
 {
     log_flow() ;
 
