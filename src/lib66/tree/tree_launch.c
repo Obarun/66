@@ -102,7 +102,7 @@ static inline void kill_all(pidtree_t *apidt)
     while (j--) kill(apidt[j].pid, SIGKILL) ;
 }
 
-static int check_action(pidtree_t *apidt, unsigned int pos, unsigned int receive, unsigned int what)
+static int check_action(pidtree_t *apidt, int pos, unsigned int receive, unsigned int what)
 {
     unsigned int p = char2enum[receive] ;
     unsigned char action = actions[what][p] ;
@@ -333,7 +333,7 @@ static int ssexec_callback(stack *stk, ssexec_t *info, unsigned int what)
     return e ;
 }
 
-static int doit(pidtree_t apid, ssexec_t *info, unsigned int what, tain *deadline)
+static int doit(pidtree_t apid, ssexec_t *info, unsigned int what)
 {
     log_flow() ;
 
@@ -374,8 +374,8 @@ static int async_deps(pidtree_t *apidt, unsigned int i, unsigned int what, tain 
 {
     log_flow() ;
 
-    int r ;
-    unsigned int pos = 0, id = 0, idx = 0 ;
+    int r, id = 0 ;
+    unsigned int pos = 0, idx = 0 ;
     char buf[(UINT_FMT*2)*SS_MAX_SERVICE + 1] ;
 
     tain dead ;
@@ -500,7 +500,7 @@ static int async(pidtree_t *apidt, unsigned int i, unsigned int what, ssexec_t *
                 }
             }
 
-            e = doit(apidt[i], &sinfo, what, deadline) ;
+            e = doit(apidt[i], &sinfo, what) ;
 
         } else {
 

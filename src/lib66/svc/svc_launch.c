@@ -107,7 +107,7 @@ static inline void kill_all(pidservice_t *apids)
     while (j--) kill(apids[j].pid, SIGKILL) ;
 }
 
-static int check_action(pidservice_t *apids, unsigned int pos, unsigned int receive, unsigned int what)
+static int check_action(pidservice_t *apids, int pos, unsigned int receive, unsigned int what)
 {
     unsigned int p = char2enum[receive] ;
     unsigned char action = actions[what][p] ;
@@ -335,7 +335,7 @@ unsigned int compute_timeout(resolve_service_t *res, uint8_t what)
 
 }
 
-static int doit(pidservice_t *apids, unsigned int idx, uint8_t what, tain *deadline)
+static int doit(pidservice_t *apids, unsigned int idx, uint8_t what)
 {
     log_flow() ;
 
@@ -467,8 +467,8 @@ static int async_deps(pidservice_t *apids, uint32_t i, uint8_t what, tain *deadl
 {
     log_flow() ;
 
-    int r ;
-    unsigned int pos = 0, id = 0, idx = 0 ;
+    int r, id = 0 ;
+    unsigned int pos = 0, idx = 0 ;
     char buf[(UINT_FMT*2)*SS_MAX_SERVICE + 1] ;
 
     tain dead ;
@@ -585,7 +585,7 @@ static int async(pidservice_t *apids, uint32_t i, uint8_t what, tain *deadline)
                 if (!async_deps(apids, i, what, deadline))
                     log_warnu_return(LOG_EXIT_SYS, !what ? "start" : "stop", " dependencies of service: ", name) ;
 
-            e = doit(apids, i, what, deadline) ;
+            e = doit(apids, i, what) ;
 
         } else {
 

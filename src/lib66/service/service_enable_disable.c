@@ -107,7 +107,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
         resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
         char const *treename = 0 ;
         bool same = sastr_cmp(argv, hash->name) >= 0 ? true : false ;
-        bool ns = hash->res.sa.s + hash->res.inns >= 0 ? true : false ;
+        bool ns = hash->res.inns ? true : false ;
 
         if (hash->res.dependencies.nprovide)
             if (!symlink_provide(info->base.s, res, action))
