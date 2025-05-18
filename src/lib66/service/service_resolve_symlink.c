@@ -34,7 +34,7 @@ int service_resolve_symlink(char const *base, char *path, char *name)
     if (len < 0)
         return 1 ;
 
-    if (len >= SS_MAX_PATH_LEN)
+    if ((long unsigned int)len >= SS_MAX_PATH_LEN)
         return (errno = EINVAL, 0) ;
 
     l[len] = 0 ;

@@ -343,7 +343,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
     if (argc < 1)
         log_usage(info->usage, "\n", info->help) ;
 
-    for(; pos < argc ; pos++) {
+    for(; pos < (size_t)argc ; pos++) {
 
         resolve_service_t res = RESOLVE_SERVICE_ZERO ;
         wres = resolve_set_struct(DATA_SERVICE, &res) ;

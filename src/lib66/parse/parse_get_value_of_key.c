@@ -40,7 +40,7 @@ int parse_get_value_of_key(stack *store, char const *str, resolve_enum_table_t t
         if (tkid < 0)
             log_warnu_return(LOG_EXIT_ZERO, "parse key: ", *table.u.parser.list[kid].name) ;
 
-        if (cfg.found && tkid == kid) {
+        if (cfg.found && (uint32_t)tkid == kid) {
 
             if (!parse_value(store, &cfg, table))
                 log_warnu_return(LOG_EXIT_ZERO, "get value of key: ", k.s) ;

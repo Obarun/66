@@ -28,7 +28,7 @@ static int info_add_name(stralloc *sa, const char *name, uint32_t *count, const 
 
         char atree[SS_MAX_TREENAME + 1] ;
 
-        if (!service_get_treename(atree, name, 0))
+        if (!service_get_treename(atree, name))
             return 0 ;
 
         if (strcmp(treename, atree) && depth->level <= 1)
@@ -63,9 +63,8 @@ int service_info_walk(service_graph_t *g, char const *name, char const *treename
     log_flow() ;
 
     _alloc_sa_(sa) ;
-    int idx = 0 ;
     uint32_t of = requiredby ? GRAPH_WANT_REQUIREDBY : GRAPH_WANT_DEPENDS ;
-    uint32_t flag = GRAPH_COLLECT_PARSE|of, pos = 0, count = 0 ;
+    uint32_t flag = GRAPH_COLLECT_PARSE|of, pos = 0, count = 0, idx = 0 ;
     vertex_t *v = NULL ;
 
     if ((unsigned int) depth->level > INFO_MAXDEPTH)

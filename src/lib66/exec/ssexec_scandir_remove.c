@@ -21,7 +21,7 @@
 #include <66/svc.h>
 #include <66/constants.h>
 
-static void inline auto_rm(char const *str)
+inline static void auto_rm(char const *str)
 {
     log_flow() ;
 
@@ -36,6 +36,9 @@ static void inline auto_rm(char const *str)
 
 int ssexec_scandir_remove(int argc, char const *const *argv, ssexec_t *info)
 {
+    (void)argc ;
+    (void)argv ;
+
     int r ;
 
     r = svc_scandir_ok(info->scandir.s) ;

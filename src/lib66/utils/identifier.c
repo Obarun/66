@@ -83,17 +83,20 @@ int identifier_replace_instance(char *store, const char *rid)
 
 int identifier_replace_username(char *store, const char *rid)
 {
+    (void)rid ;
     return identifier_get_name(store) ;
 } ;
 
 int identifier_replace_useruid(char *store, const char *rid)
 {
+    (void)rid ;
     store[uid_fmt(store, getuid())] = 0 ;
     return 1 ;
 } ;
 
 int identifier_replace_usergid(char *store, const char *rid)
 {
+    (void)rid ;
     uid_t uid = getuid() ;
 
     if (!uid) {
@@ -107,6 +110,7 @@ int identifier_replace_usergid(char *store, const char *rid)
 
 int identifier_replace_usergroup(char *store, const char *rid)
 {
+    (void)rid ;
     uid_t uid = getuid() ;
 
     if (!uid) {
@@ -130,6 +134,7 @@ int identifier_replace_usergroup(char *store, const char *rid)
 
 int identifier_replace_home(char *store, const char *rid)
 {
+    (void)rid ;
     uid_t uid = getuid() ;
 
     if (!uid) {
@@ -152,6 +157,7 @@ int identifier_replace_home(char *store, const char *rid)
 
 int identifier_replace_shell(char *store, const char *rid)
 {
+    (void)rid ;
     int e = errno ;
     errno = 0 ;
     struct passwd *pw = getpwuid(getuid());
@@ -168,6 +174,7 @@ int identifier_replace_shell(char *store, const char *rid)
 
 int identifier_replace_runtime(char *store, const char *rid)
 {
+    (void)rid ;
     uid_t uid = getuid() ;
     char runtime[10 + UID_FMT + 1] ; // SS_MAX_PATH should be sufficient
 

@@ -14,7 +14,7 @@
 
 #include <string.h>
 #include <sys/types.h>
-#include <sys/errno.h>
+#include <errno.h>
 #include <66/enum.h>
 #include <66/enum_struct.h>
 #include <66/enum_parser.h>

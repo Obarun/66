@@ -184,7 +184,7 @@ static void io_open_file(resolve_service_t *res,  int fd, char const *destinatio
         log_dieusys(LOG_EXIT_SYS, "remove close-on-exec from fd") ;
 }
 
-static void io_open_destination(int fd, const char *destination, int flags, mode_t mode, uint8_t cloexec)
+static void io_open_destination(int fd, const char *destination, int flags, uint8_t cloexec)
 {
     log_flow() ;
 
@@ -240,19 +240,19 @@ static void io_read_file(stack *stk, const char *file, size_t len)
     stk->s[n] = 0 ;
 }
 
-static void io_open_terminal(resolve_service_t *res, int fd, const char *destination, int flags)
+static void io_open_terminal(int fd, const char *destination, int flags)
 {
     log_flow() ;
 
     int e = errno ;
-    io_open_destination(fd, destination, flags, 0, 0) ;
+    io_open_destination(fd, destination, flags, 0) ;
     errno = 0 ;
     if (!isatty(fd) && errno != EBADF)
         log_dieusys(LOG_EXIT_ZERO, "associate fd to: ", destination) ;
     errno = e ;
 }
 
-static void io_open_terminal_ncontrol(resolve_service_t *res, int fd, const char *destination, int flags)
+static void io_open_terminal_ncontrol(int fd, const char *destination, int flags)
 {
     log_flow() ;
 
@@ -264,7 +264,7 @@ static void io_open_terminal_ncontrol(resolve_service_t *res, int fd, const char
     sigemptyset(&snew.sa_mask) ;
     snew.sa_flags = 0 ;
 
-    io_open_terminal(res, fd, destination, flags) ;
+    io_open_terminal(fd, destination, flags) ;
 
     if (sigaction(SIGTTOU, &snew, &sold) < 0)
         log_dieusys(LOG_EXIT_SYS, "ignore SIGTTOU") ;
@@ -287,7 +287,7 @@ static void io_open_terminal_ncontrol(resolve_service_t *res, int fd, const char
     errno = e ;
 }
 
-static void io_open_active_console(int fd, resolve_service_t *res)
+static void io_open_active_console(int fd)
 {
     log_flow() ;
 
@@ -305,7 +305,7 @@ static void io_open_active_console(int fd, resolve_service_t *res)
 
     stk.s[stk.len - 1] = 0 ; // remove the last '\n'
 
-    io_open_terminal(res, fd, stk.s, O_WRONLY | O_NOCTTY) ;
+    io_open_terminal(fd, stk.s, O_WRONLY | O_NOCTTY) ;
     errno = e ;
 }
 
@@ -359,11 +359,11 @@ static void io_setup_stdin(resolve_service_t *res)
     switch(res->io.fdin.type) {
 
         case E_PARSER_IO_TYPE_TTY:
-            io_open_terminal_ncontrol(res, 0, res->sa.s + res->io.fdin.destination, O_RDWR | O_NOCTTY) ;
+            io_open_terminal_ncontrol(0, res->sa.s + res->io.fdin.destination, O_RDWR | O_NOCTTY) ;
             break ;
 
         case E_PARSER_IO_TYPE_NULL:
-            io_open_destination(0, res->sa.s +  res->io.fdin.destination, O_RDONLY | O_NOCTTY, 0, 0) ;
+            io_open_destination(0, res->sa.s +  res->io.fdin.destination, O_RDONLY | O_NOCTTY, 0) ;
             break ;
 
         case E_PARSER_IO_TYPE_CLOSE:
@@ -396,7 +396,7 @@ static void io_setup_stdout(resolve_service_t *res)
     switch(res->io.fdout.type) {
 
         case E_PARSER_IO_TYPE_CONSOLE:
-            io_open_active_console(1, res) ;
+            io_open_active_console(1) ;
             break ;
 
         case E_PARSER_IO_TYPE_S6LOG:
@@ -416,11 +416,11 @@ static void io_setup_stdout(resolve_service_t *res)
             break ;
 
         case E_PARSER_IO_TYPE_TTY:
-            io_open_terminal(res, 1, res->sa.s + res->io.fdout.destination, O_WRONLY | O_NOCTTY) ;
+            io_open_terminal(1, res->sa.s + res->io.fdout.destination, O_WRONLY | O_NOCTTY) ;
             break ;
 
         case E_PARSER_IO_TYPE_NULL:
-            io_open_destination(1, res->sa.s + res->io.fdout.destination, O_WRONLY, 0, 0) ;
+            io_open_destination(1, res->sa.s + res->io.fdout.destination, O_WRONLY, 0) ;
             break ;
 
         case E_PARSER_IO_TYPE_FILE:
@@ -456,15 +456,15 @@ static void io_setup_stderr(resolve_service_t *res)
     switch(res->io.fderr.type) {
 
         case E_PARSER_IO_TYPE_CONSOLE:
-            io_open_active_console(2, res) ;
+            io_open_active_console(2) ;
             break ;
 
         case E_PARSER_IO_TYPE_TTY:
-            io_open_terminal(res, 2, res->sa.s + res->io.fderr.destination, O_WRONLY | O_NOCTTY) ;
+            io_open_terminal(2, res->sa.s + res->io.fderr.destination, O_WRONLY | O_NOCTTY) ;
             break ;
 
         case E_PARSER_IO_TYPE_NULL:
-            io_open_destination(2, res->sa.s + res->io.fdout.destination, O_WRONLY, 0, 0) ;
+            io_open_destination(2, res->sa.s + res->io.fdout.destination, O_WRONLY, 0) ;
             break ;
 
         case E_PARSER_IO_TYPE_FILE:

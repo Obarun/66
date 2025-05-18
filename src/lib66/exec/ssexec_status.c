@@ -131,32 +131,31 @@ static info_opts_map_t const opts_sv_table[] =
 static char *print_nlog(char *str, int n)
 {
     int r = 0 ;
-    int delim ='\n' ;
+    int delim ='\n', ndelim = 0 ;
     size_t slen = strlen(str) ;
 
-    if (n <= 0) return NULL;
+    if (n <= 0) return NULL ;
 
-    size_t ndelim = 0;
-    char *target_pos = NULL;
+    char *target_pos = NULL ;
 
     r = get_rlen_until(str,delim,slen) ;
 
     target_pos = str + r ;
 
-    if (target_pos == NULL) return NULL;
+    if (target_pos == NULL) return NULL ;
 
     while (ndelim <= n)
     {
         while (str < target_pos && *target_pos != delim)
-            --target_pos;
+            --target_pos ;
 
         if (*target_pos ==  delim)
-            --target_pos, ++ndelim;
-        else break;
+            --target_pos, ++ndelim ;
+        else break ;
     }
 
     if (str < target_pos)
-        target_pos += 2;
+        target_pos += 2 ;
 
     return target_pos ;
 }

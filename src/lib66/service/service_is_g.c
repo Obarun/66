@@ -59,7 +59,7 @@ static int service_is(ss_state_t *ste, uint32_t flag)
     return STATE_FLAGS_FALSE ;
 }
 
-int service_get_treename(char *atree, char const *name, uint32_t flag)
+int service_get_treename(char *atree, char const *name)
 {
     log_flow() ;
 

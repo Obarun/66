@@ -46,9 +46,8 @@ int tree_info_walk(tree_graph_t *g, char const *name, uint8_t requiredby, uint8_
     log_flow() ;
 
     _alloc_sa_(sa) ;
-    int idx = 0 ;
     uint32_t of = requiredby ? GRAPH_WANT_REQUIREDBY : GRAPH_WANT_DEPENDS ;
-    uint32_t flag = GRAPH_COLLECT_PARSE|of, pos = 0, count = 0 ;
+    uint32_t flag = GRAPH_COLLECT_PARSE|of, pos = 0, count = 0, idx = 0 ;
     vertex_t *v = NULL ;
 
     if ((unsigned int) depth->level > INFO_MAXDEPTH)

@@ -38,6 +38,8 @@ static char const *exclude_type[EXCLUDEN] = { "devtmpfs", "proc", "sysfs" } ;
 
 int main (int argc, char const *const *argv)
 {
+    (void)argc ;
+    (void)argv ;
     size_t mountpoints[MAXLINES], tmplen = strlen(SS_LIVE), len = 0 ;
     char tmpdir[tmplen + 1] ;
     ob_dirname(tmpdir,SS_LIVE) ;

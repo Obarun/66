@@ -68,7 +68,7 @@ static size_t CONFIG_STR_LEN = 0 ;
 static int BUF_FD ; // general buffer fd
 
 
-static void inline auto_chown(char const *str)
+inline static void auto_chown(char const *str)
 {
     log_flow() ;
 
@@ -77,7 +77,7 @@ static void inline auto_chown(char const *str)
         log_dieusys(LOG_EXIT_SYS,"chown: ",str) ;
 }
 
-static void inline auto_dir(char const *str,mode_t mode)
+inline static void auto_dir(char const *str,mode_t mode)
 {
     log_flow() ;
 
@@ -101,7 +101,7 @@ static void inline auto_dir(char const *str,mode_t mode)
     auto_chown(str) ;
 }
 
-static void inline auto_chmod(char const *str,mode_t mode)
+inline static void auto_chmod(char const *str,mode_t mode)
 {
     log_flow() ;
 
@@ -109,7 +109,7 @@ static void inline auto_chmod(char const *str,mode_t mode)
         log_dieusys(LOG_EXIT_SYS,"chmod: ",str) ;
 }
 
-static void inline auto_file(char const *dst,char const *file,char const *contents,size_t conlen)
+inline static void auto_file(char const *dst,char const *file,char const *contents,size_t conlen)
 {
     log_flow() ;
 
@@ -123,7 +123,7 @@ static void inline auto_file(char const *dst,char const *file,char const *conten
     auto_chown(f) ;
 }
 
-static void inline auto_check(char const *str,mode_t type,mode_t perm,int what)
+inline static void auto_check(char const *str,mode_t type,mode_t perm,int what)
 {
     log_flow() ;
 
@@ -138,7 +138,7 @@ static void inline auto_check(char const *str,mode_t type,mode_t perm,int what)
     }
 }
 
-static void inline auto_fifo(char const *str)
+inline static void auto_fifo(char const *str)
 {
     log_flow() ;
 
@@ -153,7 +153,7 @@ static void inline auto_fifo(char const *str)
     }
 }
 
-static void inline auto_rm(char const *str)
+inline static void auto_rm(char const *str)
 {
     log_flow() ;
 
@@ -166,7 +166,7 @@ static void inline auto_rm(char const *str)
     }
 }
 
-static void inline log_perm(char const *str,uid_t *uid,gid_t *gid)
+inline static void log_perm(char const *str,uid_t *uid,gid_t *gid)
 {
     log_flow() ;
 
@@ -174,7 +174,7 @@ static void inline log_perm(char const *str,uid_t *uid,gid_t *gid)
     if (!yourgid(gid,*uid)) log_dieusys(LOG_EXIT_SYS,"set gid of: ",str) ;
 }
 
-void inline shebang(buffer *b, char const *opts)
+inline void shebang(buffer *b, char const *opts)
 {
     log_flow() ;
 

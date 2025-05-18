@@ -173,7 +173,7 @@ static int parse_io_type(resolve_service_t *res, char const *line, resolve_enum_
     _alloc_stk_(stk, len) ;
     ssize_t delim = get_len_until(line,':'), type = -1 ;
 
-    if (delim + 2 >= len)
+    if (delim + 2 >= (ssize_t)len)
         parse_error_return(0, 10, table) ;
 
     char *stype = (char *)line ;
