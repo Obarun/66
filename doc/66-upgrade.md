@@ -9,6 +9,50 @@ author: Eric Vidal <eric@obarun.org>
 
 # Changelog for 66
 
+# In 0.8.2.0
+
+- Adaptation to `oblibs` `0.3.4.0`
+
+## Overview
+
+This release of the 66 Service Manager introduces powerful new features, critical bug fixes, and performance enhancements. Key additions, an `[Execute]` section with advanced configuration options, and relaxed requirements for mandatory fields. This release also addresses significant bugs, optimizes resource usage, and ensures smoother migrations.
+
+## New Features
+
+- **Conflict Key in [Main] Section** (731f708): Added a new `Conflict` key to the `[Main]` section, enabling the declaration of conflicting services to prevent simultaneous execution of incompatible services.
+- **Execute Section for Pre-Exec Configuration** (30647e8): Introduced the `[Execute]` section to configure tasks executed before calling `exec` for service start and stop processes. Supported keys include:
+  - `ChangeDirectory` (a6f4bfa): Sets the working directory via `chdir()`.
+  - `Nice` (de8aefc): Configures CPU scheduling priority via `setpriority()`.
+  - `UMask` (b0e24b4): Sets the file creation mask via `umask()`.
+  - `BlockPrivileges` (edfa67d): Restricts privileges using `prctl()` for enhanced security.
+  - `LimitXXX` Keys (de8bccd): Configures resource limits (e.g., `LimitNICE`, `LimitNOFILE`, `LimitRTPRIO`,...) via `setrlimit()`.
+  - `CapsBound` and `CapsAmbient` (9e9fd64): Sets bounding and ambient capabilities without `libcap` dependencies.
+- **Tree Enablement at Creation** (dceeb88): Added support for enabling a service tree at creation time, streamlining setup.
+- **Relaxed Mandatory Fields** (d3fbcee): Made `Description`, `User`, and `Version` keys optional, with defaults:
+  - `Description`: "<service_name> service".
+  - `User`: Process owner’s name.
+  - `Version`: Installed 66 version.
+
+## Bug Fixes
+
+- **Logger Destination Ownership** (6079cf7): Fixed a critical bug from version `0.8.0.0` where loggers incorrectly set the destination owner to `root`, ignoring the intended owner. Also resolved a migration issue that removed `runas` field information.
+- **Log File Display for E_PARSER_IO_TYPE_FILE** (fe7f14e): Corrected an issue preventing log file display for `E_PARSER_IO_TYPE_FILE` type services.
+- **uint64_t Read/Write Handling** (e028da2): Fixed reading and writing of `uint64_t` values to prevent data corruption.
+- **Frontend Prototype and Migration** (9e8d6c9, b8a963b): Fixed the frontend prototype removing invalid `destination` keys. Provided a migration process for version `0.8.2.0`.
+
+## Improvements
+
+- **Memory Leak Prevention** (7a36e5a): Addressed potential memory leaks for improved stability.
+- **Algorithm Optimization** (29a6505): Denied module type in `[Execute]`, and fixed `logger.name` during migration.
+- **Frontend Enhancements** (b8a963b): Updated the frontend prototype and cleaned up examples.
+- **Boolean Syntax for BlockPrivileges** (67de347): Introduced new boolean syntax and updated documentation.
+- **Version Comparison API** (044d4ff): Updated to the new `version_compare` API and added tests.
+
+## Notes
+
+- A migration process for version `0.8.2.0` is included to ensure seamless upgrades.
+- For detailed documentation on new keys and features, refer to the [documentation](https://web.obarun.org/software/66/latest).
+
 ---
 
 # In 0.8.1.1
