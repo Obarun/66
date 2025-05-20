@@ -78,6 +78,7 @@ void test_get_endofkey(void) {
     assert(get_endofkey(enum_list_parser_section_logger) == E_PARSER_SECTION_LOGGER_ENDOFKEY);
     assert(get_endofkey(enum_list_parser_section_environ) == E_PARSER_SECTION_ENVIRON_ENDOFKEY);
     assert(get_endofkey(enum_list_parser_section_regex) == E_PARSER_SECTION_REGEX_ENDOFKEY);
+    assert(get_endofkey(enum_list_parser_section_execute) == E_PARSER_SECTION_EXECUTE_ENDOFKEY);
     assert(get_endofkey(enum_list_parser_io_type) == E_PARSER_IO_TYPE_ENDOFKEY);
     assert(get_endofkey(enum_list_parser_type) == E_PARSER_TYPE_ENDOFKEY);
     assert(get_endofkey(enum_list_parser_opts) == E_PARSER_OPTS_ENDOFKEY);
@@ -86,6 +87,7 @@ void test_get_endofkey(void) {
     assert(get_endofkey(enum_list_parser_time) == E_PARSER_TIME_ENDOFKEY);
     assert(get_endofkey(enum_list_parser_seed) == E_PARSER_SEED_ENDOFKEY);
     assert(get_endofkey(enum_list_parser_mandatory) == E_PARSER_MANDATORY_ENDOFKEY);
+    assert(get_endofkey(enum_list_parser_caps) == E_PARSER_CAPS_ENDOFKEY);
 
     // Service lists
     assert(get_endofkey(enum_list_service_config) == E_RESOLVE_SERVICE_CONFIG_ENDOFKEY);
@@ -97,6 +99,7 @@ void test_get_endofkey(void) {
     assert(get_endofkey(enum_list_service_environ) == E_RESOLVE_SERVICE_ENVIRON_ENDOFKEY);
     assert(get_endofkey(enum_list_service_regex) == E_RESOLVE_SERVICE_REGEX_ENDOFKEY);
     assert(get_endofkey(enum_list_service_io) == E_RESOLVE_SERVICE_IO_ENDOFKEY);
+    assert(get_endofkey(enum_list_service_limit) == E_RESOLVE_SERVICE_LIMIT_ENDOFKEY);
 
     // Tree lists
     assert(get_endofkey(enum_list_tree) == E_RESOLVE_TREE_ENDOFKEY);
@@ -117,6 +120,7 @@ void test_enum_to_key(void) {
     test_enum_to_key_list(enum_list_parser_section_logger, "parser_section_logger", enum_str_parser_section_logger, E_PARSER_SECTION_LOGGER_ENDOFKEY);
     test_enum_to_key_list(enum_list_parser_section_environ, "parser_section_environ", enum_str_parser_section_environ, E_PARSER_SECTION_ENVIRON_ENDOFKEY);
     test_enum_to_key_list(enum_list_parser_section_regex, "parser_section_regex", enum_str_parser_section_regex, E_PARSER_SECTION_REGEX_ENDOFKEY);
+    test_enum_to_key_list(enum_list_parser_section_execute, "parser_section_execute", enum_str_parser_section_execute, E_PARSER_SECTION_EXECUTE_ENDOFKEY);
     test_enum_to_key_list(enum_list_parser_io_type, "parser_io_type", enum_str_parser_io_type, E_PARSER_IO_TYPE_ENDOFKEY);
     test_enum_to_key_list(enum_list_parser_type, "parser_type", enum_str_parser_type, E_PARSER_TYPE_ENDOFKEY);
     test_enum_to_key_list(enum_list_parser_opts, "parser_opts", enum_str_parser_opts, E_PARSER_OPTS_ENDOFKEY);
@@ -125,6 +129,7 @@ void test_enum_to_key(void) {
     test_enum_to_key_list(enum_list_parser_time, "parser_time", enum_str_parser_time, E_PARSER_TIME_ENDOFKEY);
     test_enum_to_key_list(enum_list_parser_seed, "parser_seed", enum_str_parser_seed, E_PARSER_SEED_ENDOFKEY);
     test_enum_to_key_list(enum_list_parser_mandatory, "parser_mandatory", enum_str_parser_mandatory, E_PARSER_MANDATORY_ENDOFKEY);
+    test_enum_to_key_list(enum_list_parser_caps, "parser_caps", enum_str_parser_caps, E_PARSER_CAPS_ENDOFKEY);
 
     // Service lists
     test_enum_to_key_list(enum_list_service_config, "service_config", enum_str_service_config, E_RESOLVE_SERVICE_CONFIG_ENDOFKEY);
@@ -136,6 +141,7 @@ void test_enum_to_key(void) {
     test_enum_to_key_list(enum_list_service_environ, "service_environ", enum_str_service_environ, E_RESOLVE_SERVICE_ENVIRON_ENDOFKEY);
     test_enum_to_key_list(enum_list_service_regex, "service_regex", enum_str_service_regex, E_RESOLVE_SERVICE_REGEX_ENDOFKEY);
     test_enum_to_key_list(enum_list_service_io, "service_io", enum_str_service_io, E_RESOLVE_SERVICE_IO_ENDOFKEY);
+    test_enum_to_key_list(enum_list_service_limit, "service_limit", enum_str_service_limit, E_RESOLVE_SERVICE_LIMIT_ENDOFKEY);
 
     // Tree lists
     test_enum_to_key_list(enum_list_tree, "tree", enum_str_tree, E_RESOLVE_TREE_ENDOFKEY);
@@ -152,6 +158,7 @@ void test_key_to_enum(void) {
     test_key_to_enum_list(enum_list_parser_section_logger, "parser_section_logger", enum_str_parser_section_logger);
     test_key_to_enum_list(enum_list_parser_section_environ, "parser_section_environ", enum_str_parser_section_environ);
     test_key_to_enum_list(enum_list_parser_section_regex, "parser_section_regex", enum_str_parser_section_regex);
+    test_key_to_enum_list(enum_list_parser_section_execute, "parser_section_execute", enum_str_parser_section_execute);
     test_key_to_enum_list(enum_list_parser_io_type, "parser_io_type", enum_str_parser_io_type);
     test_key_to_enum_list(enum_list_parser_type, "parser_type", enum_str_parser_type);
     test_key_to_enum_list(enum_list_parser_opts, "parser_opts", enum_str_parser_opts);
@@ -160,6 +167,7 @@ void test_key_to_enum(void) {
     test_key_to_enum_list(enum_list_parser_time, "parser_time", enum_str_parser_time);
     test_key_to_enum_list(enum_list_parser_seed, "parser_seed", enum_str_parser_seed);
     test_key_to_enum_list(enum_list_parser_mandatory, "parser_mandatory", enum_str_parser_mandatory);
+    test_key_to_enum_list(enum_list_parser_caps, "parser_caps", enum_str_parser_caps);
 
     // Service lists
     test_key_to_enum_list(enum_list_service_config, "service_config", enum_str_service_config);
@@ -171,6 +179,7 @@ void test_key_to_enum(void) {
     test_key_to_enum_list(enum_list_service_environ, "service_environ", enum_str_service_environ);
     test_key_to_enum_list(enum_list_service_regex, "service_regex", enum_str_service_regex);
     test_key_to_enum_list(enum_list_service_io, "service_io", enum_str_service_io);
+    test_key_to_enum_list(enum_list_service_limit, "service_limit", enum_str_service_limit);
 
     // Tree lists
     test_key_to_enum_list(enum_list_tree, "tree", enum_str_tree);
@@ -230,6 +239,8 @@ void test_enum_get_list_parser(void) {
     assert(enum_get_list_parser(table) == enum_list_parser_section_environ);
     table.category = E_PARSER_CATEGORY_SECTION_REGEX;
     assert(enum_get_list_parser(table) == enum_list_parser_section_regex);
+    table.category = E_PARSER_CATEGORY_SECTION_EXECUTE;
+    assert(enum_get_list_parser(table) == enum_list_parser_section_execute);
     table.category = E_PARSER_CATEGORY_SECTION;
     assert(enum_get_list_parser(table) == enum_list_parser_section);
     table.category = E_PARSER_CATEGORY_IO_TYPE;
@@ -250,6 +261,8 @@ void test_enum_get_list_parser(void) {
     assert(enum_get_list_parser(table) == enum_list_parser_expected);
     table.category = E_PARSER_CATEGORY_MANDATORY;
     assert(enum_get_list_parser(table) == enum_list_parser_mandatory);
+    table.category = E_PARSER_CATEGORY_CAPS;
+    assert(enum_get_list_parser(table) == enum_list_parser_caps);
 
     // Edge case: Invalid category
     errno = 0;
@@ -280,8 +293,12 @@ void test_enum_get_list_service(void) {
     assert(enum_get_list_service(table) == enum_list_service_environ);
     table.category = E_RESOLVE_SERVICE_CATEGORY_REGEX;
     assert(enum_get_list_service(table) == enum_list_service_regex);
+    table.category = E_RESOLVE_SERVICE_CATEGORY_EXECUTE;
+    assert(enum_get_list_service(table) == enum_list_service_execute);
     table.category = E_RESOLVE_SERVICE_CATEGORY_IO;
     assert(enum_get_list_service(table) == enum_list_service_io);
+    table.category = E_RESOLVE_SERVICE_CATEGORY_LIMIT;
+    assert(enum_get_list_service(table) == enum_list_service_limit);
 
     // Edge case: Invalid category
     errno = 0;
@@ -311,322 +328,390 @@ void test_enum_get_list_tree(void) {
 // Test parser enums (all values)
 void test_parser_enums(void) {
     printf("Testing parser enums...\n");
-
+    unsigned int m = 0 ;
     // resolve_parser_enum_expected_t
-    assert(E_PARSER_EXPECT_LINE == 0);
-    assert(E_PARSER_EXPECT_BRACKET == 1);
-    assert(E_PARSER_EXPECT_UINT == 2);
-    assert(E_PARSER_EXPECT_SLASH == 3);
-    assert(E_PARSER_EXPECT_QUOTE == 4);
-    assert(E_PARSER_EXPECT_KEYVAL == 5);
-    assert(E_PARSER_EXPECT_ENDOFKEY == 6);
+    assert(E_PARSER_EXPECT_LINE == (m)++);
+    assert(E_PARSER_EXPECT_BRACKET == (m)++);
+    assert(E_PARSER_EXPECT_UINT == (m)++);
+    assert(E_PARSER_EXPECT_SLASH == (m)++);
+    assert(E_PARSER_EXPECT_QUOTE == (m)++);
+    assert(E_PARSER_EXPECT_KEYVAL == (m)++);
+    assert(E_PARSER_EXPECT_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_parser_enum_section_t
-    assert(E_PARSER_SECTION_MAIN == 0);
-    assert(E_PARSER_SECTION_START == 1);
-    assert(E_PARSER_SECTION_STOP == 2);
-    assert(E_PARSER_SECTION_LOGGER == 3);
-    assert(E_PARSER_SECTION_ENVIRONMENT == 4);
-    assert(E_PARSER_SECTION_REGEX == 5);
-    assert(E_PARSER_SECTION_ENDOFKEY == 6);
+    assert(E_PARSER_SECTION_MAIN == (m)++);
+    assert(E_PARSER_SECTION_START == (m)++);
+    assert(E_PARSER_SECTION_STOP == (m)++);
+    assert(E_PARSER_SECTION_LOGGER == (m)++);
+    assert(E_PARSER_SECTION_ENVIRONMENT == (m)++);
+    assert(E_PARSER_SECTION_REGEX == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE == (m)++);
+    assert(E_PARSER_SECTION_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_parser_enum_section_main_t
-    assert(E_PARSER_SECTION_MAIN_TYPE == 0);
-    assert(E_PARSER_SECTION_MAIN_VERSION == 1);
-    assert(E_PARSER_SECTION_MAIN_DESCRIPTION == 2);
-    assert(E_PARSER_SECTION_MAIN_DEPENDS == 3);
-    assert(E_PARSER_SECTION_MAIN_REQUIREDBY == 4);
-    assert(E_PARSER_SECTION_MAIN_OPTSDEPS == 5);
-    assert(E_PARSER_SECTION_MAIN_CONTENTS == 6);
-    assert(E_PARSER_SECTION_MAIN_OPTIONS == 7);
-    assert(E_PARSER_SECTION_MAIN_NOTIFY == 8);
-    assert(E_PARSER_SECTION_MAIN_USER == 9);
-    assert(E_PARSER_SECTION_MAIN_TIMESTART == 10);
-    assert(E_PARSER_SECTION_MAIN_TIMESTOP == 11);
-    assert(E_PARSER_SECTION_MAIN_DEATH == 12);
-    assert(E_PARSER_SECTION_MAIN_COPYFROM == 13);
-    assert(E_PARSER_SECTION_MAIN_SIGNAL == 14);
-    assert(E_PARSER_SECTION_MAIN_FLAGS == 15);
-    assert(E_PARSER_SECTION_MAIN_INTREE == 16);
-    assert(E_PARSER_SECTION_MAIN_STDIN == 17);
-    assert(E_PARSER_SECTION_MAIN_STDOUT == 18);
-    assert(E_PARSER_SECTION_MAIN_STDERR == 19);
-    assert(E_PARSER_SECTION_MAIN_PROVIDE == 20);
-    assert(E_PARSER_SECTION_MAIN_ENDOFKEY == 21);
+    assert(E_PARSER_SECTION_MAIN_TYPE == (m)++);
+    assert(E_PARSER_SECTION_MAIN_VERSION == (m)++);
+    assert(E_PARSER_SECTION_MAIN_DESCRIPTION == (m)++);
+    assert(E_PARSER_SECTION_MAIN_DEPENDS == (m)++);
+    assert(E_PARSER_SECTION_MAIN_REQUIREDBY == (m)++);
+    assert(E_PARSER_SECTION_MAIN_OPTSDEPS == (m)++);
+    assert(E_PARSER_SECTION_MAIN_CONTENTS == (m)++);
+    assert(E_PARSER_SECTION_MAIN_OPTIONS == (m)++);
+    assert(E_PARSER_SECTION_MAIN_NOTIFY == (m)++);
+    assert(E_PARSER_SECTION_MAIN_USER == (m)++);
+    assert(E_PARSER_SECTION_MAIN_TIMESTART == (m)++);
+    assert(E_PARSER_SECTION_MAIN_TIMESTOP == (m)++);
+    assert(E_PARSER_SECTION_MAIN_DEATH == (m)++);
+    assert(E_PARSER_SECTION_MAIN_COPYFROM == (m)++);
+    assert(E_PARSER_SECTION_MAIN_SIGNAL == (m)++);
+    assert(E_PARSER_SECTION_MAIN_FLAGS == (m)++);
+    assert(E_PARSER_SECTION_MAIN_INTREE == (m)++);
+    assert(E_PARSER_SECTION_MAIN_STDIN == (m)++);
+    assert(E_PARSER_SECTION_MAIN_STDOUT == (m)++);
+    assert(E_PARSER_SECTION_MAIN_STDERR == (m)++);
+    assert(E_PARSER_SECTION_MAIN_PROVIDE == (m)++);
+    assert(E_PARSER_SECTION_MAIN_CONFLICT == (m)++);
+    assert(E_PARSER_SECTION_MAIN_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_parser_enum_section_startstop_t
-    assert(E_PARSER_SECTION_STARTSTOP_BUILD == 0);
-    assert(E_PARSER_SECTION_STARTSTOP_RUNAS == 1);
-    assert(E_PARSER_SECTION_STARTSTOP_EXEC == 2);
-    assert(E_PARSER_SECTION_STARTSTOP_ENDOFKEY == 3);
+    assert(E_PARSER_SECTION_STARTSTOP_BUILD == (m)++);
+    assert(E_PARSER_SECTION_STARTSTOP_RUNAS == (m)++);
+    assert(E_PARSER_SECTION_STARTSTOP_EXEC == (m)++);
+    assert(E_PARSER_SECTION_STARTSTOP_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_parser_enum_section_logger_t
-    assert(E_PARSER_SECTION_LOGGER_BUILD == 0);
-    assert(E_PARSER_SECTION_LOGGER_RUNAS == 1);
-    assert(E_PARSER_SECTION_LOGGER_EXEC == 2);
-    assert(E_PARSER_SECTION_LOGGER_DESTINATION == 3);
-    assert(E_PARSER_SECTION_LOGGER_BACKUP == 4);
-    assert(E_PARSER_SECTION_LOGGER_MAXSIZE == 5);
-    assert(E_PARSER_SECTION_LOGGER_TIMESTAMP == 6);
-    assert(E_PARSER_SECTION_LOGGER_TIMESTART == 7);
-    assert(E_PARSER_SECTION_LOGGER_TIMESTOP == 8);
-    assert(E_PARSER_SECTION_LOGGER_ENDOFKEY == 9);
+    assert(E_PARSER_SECTION_LOGGER_BUILD == (m)++);
+    assert(E_PARSER_SECTION_LOGGER_RUNAS == (m)++);
+    assert(E_PARSER_SECTION_LOGGER_EXEC == (m)++);
+    assert(E_PARSER_SECTION_LOGGER_DESTINATION == (m)++);
+    assert(E_PARSER_SECTION_LOGGER_BACKUP == (m)++);
+    assert(E_PARSER_SECTION_LOGGER_MAXSIZE == (m)++);
+    assert(E_PARSER_SECTION_LOGGER_TIMESTAMP == (m)++);
+    assert(E_PARSER_SECTION_LOGGER_TIMESTART == (m)++);
+    assert(E_PARSER_SECTION_LOGGER_TIMESTOP == (m)++);
+    assert(E_PARSER_SECTION_LOGGER_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_parser_enum_section_environ_t
-    assert(E_PARSER_SECTION_ENVIRON_ENVAL == 0);
-    assert(E_PARSER_SECTION_ENVIRON_IMPORTFILE == 1);
-    assert(E_PARSER_SECTION_ENVIRON_ENDOFKEY == 2);
+    assert(E_PARSER_SECTION_ENVIRON_ENVAL == (m)++);
+    assert(E_PARSER_SECTION_ENVIRON_IMPORTFILE == (m)++);
+    assert(E_PARSER_SECTION_ENVIRON_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_parser_enum_section_regex_t
-    assert(E_PARSER_SECTION_REGEX_CONFIGURE == 0);
-    assert(E_PARSER_SECTION_REGEX_DIRECTORIES == 1);
-    assert(E_PARSER_SECTION_REGEX_FILES == 2);
-    assert(E_PARSER_SECTION_REGEX_INFILES == 3);
-    assert(E_PARSER_SECTION_REGEX_ENDOFKEY == 4);
+    assert(E_PARSER_SECTION_REGEX_CONFIGURE == (m)++);
+    assert(E_PARSER_SECTION_REGEX_DIRECTORIES == (m)++);
+    assert(E_PARSER_SECTION_REGEX_FILES == (m)++);
+    assert(E_PARSER_SECTION_REGEX_INFILES == (m)++);
+    assert(E_PARSER_SECTION_REGEX_ENDOFKEY == (m)++);
 
+    m = 0 ;
+    // resolve_parser_enum_section_execute_t
+    assert(E_PARSER_SECTION_EXECUTE_LIMITAS == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_LIMITCORE == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_LIMITCPU == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_LIMITDATA == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_LIMITFSIZE == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_LIMITLOCKS == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_LIMITMEMLOCK == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_LIMITMSGQUEUE == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_LIMITNICE == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_LIMITNOFILE == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_LIMITNPROC == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_LIMITRTPRIO == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_LIMITRTTIME == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_LIMITSIGPENDING == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_LIMITSTACK == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_BLOCK_PRIVILEGES == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_UMASK == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_NICE == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_CHDIR == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_CAPS_BOUND == (m)++);
+    assert(E_PARSER_SECTION_EXECUTE_CAPS_AMBIENT == (m)++);
+
+    m = 0 ;
     // resolve_parser_enum_io_type_t
-    assert(E_PARSER_IO_TYPE_TTY == 0);
-    assert(E_PARSER_IO_TYPE_FILE == 1);
-    assert(E_PARSER_IO_TYPE_CONSOLE == 2);
-    assert(E_PARSER_IO_TYPE_S6LOG == 3);
-    assert(E_PARSER_IO_TYPE_SYSLOG == 4);
-    assert(E_PARSER_IO_TYPE_INHERIT == 5);
-    assert(E_PARSER_IO_TYPE_NULL == 6);
-    assert(E_PARSER_IO_TYPE_PARENT == 7);
-    assert(E_PARSER_IO_TYPE_CLOSE == 8);
-    assert(E_PARSER_IO_TYPE_NOTSET == 9);
-    assert(E_PARSER_IO_TYPE_ENDOFKEY == 10);
+    assert(E_PARSER_IO_TYPE_TTY == (m)++);
+    assert(E_PARSER_IO_TYPE_FILE == (m)++);
+    assert(E_PARSER_IO_TYPE_CONSOLE == (m)++);
+    assert(E_PARSER_IO_TYPE_S6LOG == (m)++);
+    assert(E_PARSER_IO_TYPE_SYSLOG == (m)++);
+    assert(E_PARSER_IO_TYPE_INHERIT == (m)++);
+    assert(E_PARSER_IO_TYPE_NULL == (m)++);
+    assert(E_PARSER_IO_TYPE_PARENT == (m)++);
+    assert(E_PARSER_IO_TYPE_CLOSE == (m)++);
+    assert(E_PARSER_IO_TYPE_NOTSET == (m)++);
+    assert(E_PARSER_IO_TYPE_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_parser_enum_type_t
-    assert(E_PARSER_TYPE_CLASSIC == 0);
-    assert(E_PARSER_TYPE_ONESHOT == 1);
-    assert(E_PARSER_TYPE_MODULE == 2);
-    assert(E_PARSER_TYPE_ENDOFKEY == 3);
+    assert(E_PARSER_TYPE_CLASSIC == (m)++);
+    assert(E_PARSER_TYPE_ONESHOT == (m)++);
+    assert(E_PARSER_TYPE_MODULE == (m)++);
+    assert(E_PARSER_TYPE_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_parser_enum_opts_t
-    assert(E_PARSER_OPTS_LOGGER == 0);
-    assert(E_PARSER_OPTS_ENDOFKEY == 1);
+    assert(E_PARSER_OPTS_LOGGER == (m)++);
+    assert(E_PARSER_OPTS_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_parser_enum_flags_t
-    assert(E_PARSER_FLAGS_DOWN == 0);
-    assert(E_PARSER_FLAGS_EARLIER == 1);
-    assert(E_PARSER_FLAGS_ENDOFKEY == 2);
+    assert(E_PARSER_FLAGS_DOWN == (m)++);
+    assert(E_PARSER_FLAGS_EARLIER == (m)++);
+    assert(E_PARSER_FLAGS_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_parser_enum_build_t
-    assert(E_PARSER_BUILD_AUTO == 0);
-    assert(E_PARSER_BUILD_CUSTOM == 1);
-    assert(E_PARSER_BUILD_ENDOFKEY == 2);
+    assert(E_PARSER_BUILD_AUTO == (m)++);
+    assert(E_PARSER_BUILD_CUSTOM == (m)++);
+    assert(E_PARSER_BUILD_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_parser_enum_time_t
-    assert(E_PARSER_TIME_TAI == 0);
-    assert(E_PARSER_TIME_ISO == 1);
-    assert(E_PARSER_TIME_NONE == 2);
-    assert(E_PARSER_TIME_ENDOFKEY == 3);
+    assert(E_PARSER_TIME_TAI == (m)++);
+    assert(E_PARSER_TIME_ISO == (m)++);
+    assert(E_PARSER_TIME_NONE == (m)++);
+    assert(E_PARSER_TIME_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_parser_enum_seed_t
-    assert(E_PARSER_SEED_DEPENDS == 0);
-    assert(E_PARSER_SEED_REQUIREDBY == 1);
-    assert(E_PARSER_SEED_ENABLE == 2);
-    assert(E_PARSER_SEED_ALLOW == 3);
-    assert(E_PARSER_SEED_DENY == 4);
-    assert(E_PARSER_SEED_CURRENT == 5);
-    assert(E_PARSER_SEED_GROUPS == 6);
-    assert(E_PARSER_SEED_CONTENTS == 7);
-    assert(E_PARSER_SEED_ENDOFKEY == 8);
+    assert(E_PARSER_SEED_DEPENDS == (m)++);
+    assert(E_PARSER_SEED_REQUIREDBY == (m)++);
+    assert(E_PARSER_SEED_ENABLE == (m)++);
+    assert(E_PARSER_SEED_ALLOW == (m)++);
+    assert(E_PARSER_SEED_DENY == (m)++);
+    assert(E_PARSER_SEED_CURRENT == (m)++);
+    assert(E_PARSER_SEED_GROUPS == (m)++);
+    assert(E_PARSER_SEED_CONTENTS == (m)++);
+    assert(E_PARSER_SEED_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_parser_enum_mandatory_t
-    assert(E_PARSER_MANDATORY_NEED == 0);
-    assert(E_PARSER_MANDATORY_OPTS == 1);
-    assert(E_PARSER_MANDATORY_CUSTOM == 2);
-    assert(E_PARSER_MANDATORY_ENDOFKEY == 3);
+    assert(E_PARSER_MANDATORY_NEED == (m)++);
+    assert(E_PARSER_MANDATORY_OPTS == (m)++);
+    assert(E_PARSER_MANDATORY_CUSTOM == (m)++);
+    assert(E_PARSER_MANDATORY_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_parser_enum_category_t
-    assert(E_PARSER_CATEGORY_SECTION_MAIN == 0);
-    assert(E_PARSER_CATEGORY_SECTION_STARTSTOP == 1);
-    assert(E_PARSER_CATEGORY_SECTION_LOGGER == 2);
-    assert(E_PARSER_CATEGORY_SECTION_ENVIRON == 3);
-    assert(E_PARSER_CATEGORY_SECTION_REGEX == 4);
-    assert(E_PARSER_CATEGORY_SECTION == 5);
-    assert(E_PARSER_CATEGORY_IO_TYPE == 6);
-    assert(E_PARSER_CATEGORY_TYPE == 7);
-    assert(E_PARSER_CATEGORY_OPTS == 8);
-    assert(E_PARSER_CATEGORY_FLAGS == 9);
-    assert(E_PARSER_CATEGORY_BUILD == 10);
-    assert(E_PARSER_CATEGORY_TIME == 11);
-    assert(E_PARSER_CATEGORY_SEED == 12);
-    assert(E_PARSER_CATEGORY_EXPECTED == 13);
-    assert(E_PARSER_CATEGORY_MANDATORY == 14);
-    assert(E_PARSER_CATEGORY_ENDOFKEY == 15);
+    assert(E_PARSER_CATEGORY_SECTION_MAIN == (m)++);
+    assert(E_PARSER_CATEGORY_SECTION_STARTSTOP == (m)++);
+    assert(E_PARSER_CATEGORY_SECTION_LOGGER == (m)++);
+    assert(E_PARSER_CATEGORY_SECTION_ENVIRON == (m)++);
+    assert(E_PARSER_CATEGORY_SECTION_REGEX == (m)++);
+    assert(E_PARSER_CATEGORY_SECTION_EXECUTE == (m)++);
+    assert(E_PARSER_CATEGORY_SECTION == (m)++);
+    assert(E_PARSER_CATEGORY_IO_TYPE == (m)++);
+    assert(E_PARSER_CATEGORY_TYPE == (m)++);
+    assert(E_PARSER_CATEGORY_OPTS == (m)++);
+    assert(E_PARSER_CATEGORY_FLAGS == (m)++);
+    assert(E_PARSER_CATEGORY_BUILD == (m)++);
+    assert(E_PARSER_CATEGORY_TIME == (m)++);
+    assert(E_PARSER_CATEGORY_SEED == (m)++);
+    assert(E_PARSER_CATEGORY_EXPECTED == (m)++);
+    assert(E_PARSER_CATEGORY_MANDATORY == (m)++);
+    assert(E_PARSER_CATEGORY_CAPS == (m)++);
+    assert(E_PARSER_CATEGORY_ENDOFKEY == (m)++);
 }
 
 // Test service enums (all values)
 void test_service_enums(void) {
     printf("Testing service enums...\n");
 
+    unsigned int m = 0 ;
     // resolve_service_enum_config_t
-    assert(E_RESOLVE_SERVICE_CONFIG_RVERSION == 0);
-    assert(E_RESOLVE_SERVICE_CONFIG_NAME == 1);
-    assert(E_RESOLVE_SERVICE_CONFIG_DESCRIPTION == 2);
-    assert(E_RESOLVE_SERVICE_CONFIG_VERSION == 3);
-    assert(E_RESOLVE_SERVICE_CONFIG_TYPE == 4);
-    assert(E_RESOLVE_SERVICE_CONFIG_NOTIFY == 5);
-    assert(E_RESOLVE_SERVICE_CONFIG_MAXDEATH == 6);
-    assert(E_RESOLVE_SERVICE_CONFIG_EARLIER == 7);
-    assert(E_RESOLVE_SERVICE_CONFIG_COPYFROM == 8);
-    assert(E_RESOLVE_SERVICE_CONFIG_INTREE == 9);
-    assert(E_RESOLVE_SERVICE_CONFIG_OWNERSTR == 10);
-    assert(E_RESOLVE_SERVICE_CONFIG_OWNER == 11);
-    assert(E_RESOLVE_SERVICE_CONFIG_TREENAME == 12);
-    assert(E_RESOLVE_SERVICE_CONFIG_USER == 13);
-    assert(E_RESOLVE_SERVICE_CONFIG_INNS == 14);
-    assert(E_RESOLVE_SERVICE_CONFIG_ENABLED == 15);
-    assert(E_RESOLVE_SERVICE_CONFIG_ISLOG == 16);
-    assert(E_RESOLVE_SERVICE_CONFIG_ENDOFKEY == 17);
+    assert(E_RESOLVE_SERVICE_CONFIG_RVERSION == (m)++);
+    assert(E_RESOLVE_SERVICE_CONFIG_NAME == (m)++);
+    assert(E_RESOLVE_SERVICE_CONFIG_DESCRIPTION == (m)++);
+    assert(E_RESOLVE_SERVICE_CONFIG_VERSION == (m)++);
+    assert(E_RESOLVE_SERVICE_CONFIG_TYPE == (m)++);
+    assert(E_RESOLVE_SERVICE_CONFIG_NOTIFY == (m)++);
+    assert(E_RESOLVE_SERVICE_CONFIG_MAXDEATH == (m)++);
+    assert(E_RESOLVE_SERVICE_CONFIG_EARLIER == (m)++);
+    assert(E_RESOLVE_SERVICE_CONFIG_COPYFROM == (m)++);
+    assert(E_RESOLVE_SERVICE_CONFIG_INTREE == (m)++);
+    assert(E_RESOLVE_SERVICE_CONFIG_OWNERSTR == (m)++);
+    assert(E_RESOLVE_SERVICE_CONFIG_OWNER == (m)++);
+    assert(E_RESOLVE_SERVICE_CONFIG_TREENAME == (m)++);
+    assert(E_RESOLVE_SERVICE_CONFIG_USER == (m)++);
+    assert(E_RESOLVE_SERVICE_CONFIG_INNS == (m)++);
+    assert(E_RESOLVE_SERVICE_CONFIG_ENABLED == (m)++);
+    assert(E_RESOLVE_SERVICE_CONFIG_ISLOG == (m)++);
+    assert(E_RESOLVE_SERVICE_CONFIG_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_service_enum_path_t
-    assert(E_RESOLVE_SERVICE_PATH_HOME == 0);
-    assert(E_RESOLVE_SERVICE_PATH_FRONTEND == 1);
-    assert(E_RESOLVE_SERVICE_PATH_SERVICEDIR == 2);
-    assert(E_RESOLVE_SERVICE_PATH_ENDOFKEY == 3);
+    assert(E_RESOLVE_SERVICE_PATH_HOME == (m)++);
+    assert(E_RESOLVE_SERVICE_PATH_FRONTEND == (m)++);
+    assert(E_RESOLVE_SERVICE_PATH_SERVICEDIR == (m)++);
+    assert(E_RESOLVE_SERVICE_PATH_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_service_enum_deps_t
-    assert(E_RESOLVE_SERVICE_DEPS_DEPENDS == 0);
-    assert(E_RESOLVE_SERVICE_DEPS_REQUIREDBY == 1);
-    assert(E_RESOLVE_SERVICE_DEPS_OPTSDEPS == 2);
-    assert(E_RESOLVE_SERVICE_DEPS_CONTENTS == 3);
-    assert(E_RESOLVE_SERVICE_DEPS_PROVIDE == 4);
-    assert(E_RESOLVE_SERVICE_DEPS_NDEPENDS == 5);
-    assert(E_RESOLVE_SERVICE_DEPS_NREQUIREDBY == 6);
-    assert(E_RESOLVE_SERVICE_DEPS_NOPTSDEPS == 7);
-    assert(E_RESOLVE_SERVICE_DEPS_NCONTENTS == 8);
-    assert(E_RESOLVE_SERVICE_DEPS_NPROVIDE == 9);
-    assert(E_RESOLVE_SERVICE_DEPS_ENDOFKEY == 10);
+    assert(E_RESOLVE_SERVICE_DEPS_DEPENDS == (m)++);
+    assert(E_RESOLVE_SERVICE_DEPS_REQUIREDBY == (m)++);
+    assert(E_RESOLVE_SERVICE_DEPS_OPTSDEPS == (m)++);
+    assert(E_RESOLVE_SERVICE_DEPS_CONTENTS == (m)++);
+    assert(E_RESOLVE_SERVICE_DEPS_PROVIDE == (m)++);
+    assert(E_RESOLVE_SERVICE_DEPS_CONFLICT == (m)++);
+    assert(E_RESOLVE_SERVICE_DEPS_NDEPENDS == (m)++);
+    assert(E_RESOLVE_SERVICE_DEPS_NREQUIREDBY == (m)++);
+    assert(E_RESOLVE_SERVICE_DEPS_NOPTSDEPS == (m)++);
+    assert(E_RESOLVE_SERVICE_DEPS_NCONTENTS == (m)++);
+    assert(E_RESOLVE_SERVICE_DEPS_NPROVIDE == (m)++);
+    assert(E_RESOLVE_SERVICE_DEPS_NCONFLICT == (m)++);
+    assert(E_RESOLVE_SERVICE_DEPS_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_service_enum_execute_t
-    assert(E_RESOLVE_SERVICE_EXECUTE_RUN == 0);
-    assert(E_RESOLVE_SERVICE_EXECUTE_RUN_USER == 1);
-    assert(E_RESOLVE_SERVICE_EXECUTE_RUN_BUILD == 2);
-    assert(E_RESOLVE_SERVICE_EXECUTE_RUN_RUNAS == 3);
-    assert(E_RESOLVE_SERVICE_EXECUTE_FINISH == 4);
-    assert(E_RESOLVE_SERVICE_EXECUTE_FINISH_USER == 5);
-    assert(E_RESOLVE_SERVICE_EXECUTE_FINISH_BUILD == 6);
-    assert(E_RESOLVE_SERVICE_EXECUTE_FINISH_RUNAS == 7);
-    assert(E_RESOLVE_SERVICE_EXECUTE_TIMEOUTSTART == 8);
-    assert(E_RESOLVE_SERVICE_EXECUTE_TIMEOUTSTOP == 9);
-    assert(E_RESOLVE_SERVICE_EXECUTE_DOWN == 10);
-    assert(E_RESOLVE_SERVICE_EXECUTE_DOWNSIGNAL == 11);
-    assert(E_RESOLVE_SERVICE_EXECUTE_ENDOFKEY == 12);
+    assert(E_RESOLVE_SERVICE_EXECUTE_RUN == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_RUN_USER == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_RUN_BUILD == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_RUN_RUNAS == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_FINISH == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_FINISH_USER == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_FINISH_BUILD == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_FINISH_RUNAS == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_TIMEOUTSTART == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_TIMEOUTSTOP == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_DOWN == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_DOWNSIGNAL == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_BLOCK_PRIVILEGES == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_UMASK == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_WANT_UMASK == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_NICE == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_WANT_NICE == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_CHDIR == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_CAPS_BOUND == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_CAPS_AMBIENT == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_service_enum_live_t
-    assert(E_RESOLVE_SERVICE_LIVE_LIVEDIR == 0);
-    assert(E_RESOLVE_SERVICE_LIVE_STATUS == 1);
-    assert(E_RESOLVE_SERVICE_LIVE_SERVICEDIR == 2);
-    assert(E_RESOLVE_SERVICE_LIVE_SCANDIR == 3);
-    assert(E_RESOLVE_SERVICE_LIVE_STATEDIR == 4);
-    assert(E_RESOLVE_SERVICE_LIVE_EVENTDIR == 5);
-    assert(E_RESOLVE_SERVICE_LIVE_NOTIFDIR == 6);
-    assert(E_RESOLVE_SERVICE_LIVE_SUPERVISEDIR == 7);
-    assert(E_RESOLVE_SERVICE_LIVE_FDHOLDERDIR == 8);
-    assert(E_RESOLVE_SERVICE_LIVE_ONESHOTDDIR == 9);
-    assert(E_RESOLVE_SERVICE_LIVE_ENDOFKEY == 10);
+    assert(E_RESOLVE_SERVICE_LIVE_LIVEDIR == (m)++);
+    assert(E_RESOLVE_SERVICE_LIVE_STATUS == (m)++);
+    assert(E_RESOLVE_SERVICE_LIVE_SERVICEDIR == (m)++);
+    assert(E_RESOLVE_SERVICE_LIVE_SCANDIR == (m)++);
+    assert(E_RESOLVE_SERVICE_LIVE_STATEDIR == (m)++);
+    assert(E_RESOLVE_SERVICE_LIVE_EVENTDIR == (m)++);
+    assert(E_RESOLVE_SERVICE_LIVE_NOTIFDIR == (m)++);
+    assert(E_RESOLVE_SERVICE_LIVE_SUPERVISEDIR == (m)++);
+    assert(E_RESOLVE_SERVICE_LIVE_FDHOLDERDIR == (m)++);
+    assert(E_RESOLVE_SERVICE_LIVE_ONESHOTDDIR == (m)++);
+    assert(E_RESOLVE_SERVICE_LIVE_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_service_enum_logger_t
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGNAME == 0);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGDESTINATION == 1);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGBACKUP == 2);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGMAXSIZE == 3);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGTIMESTAMP == 4);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGWANT == 5);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGRUN == 6);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGRUN_USER == 7);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGRUN_BUILD == 8);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGRUN_RUNAS == 9);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTART == 10);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTOP == 11);
-    assert(E_RESOLVE_SERVICE_LOGGER_ENDOFKEY == 12);
+    assert(E_RESOLVE_SERVICE_LOGGER_LOGNAME == (m)++);
+    assert(E_RESOLVE_SERVICE_LOGGER_LOGDESTINATION == (m)++);
+    assert(E_RESOLVE_SERVICE_LOGGER_LOGBACKUP == (m)++);
+    assert(E_RESOLVE_SERVICE_LOGGER_LOGMAXSIZE == (m)++);
+    assert(E_RESOLVE_SERVICE_LOGGER_LOGTIMESTAMP == (m)++);
+    assert(E_RESOLVE_SERVICE_LOGGER_LOGWANT == (m)++);
+    assert(E_RESOLVE_SERVICE_LOGGER_LOGRUN == (m)++);
+    assert(E_RESOLVE_SERVICE_LOGGER_LOGRUN_USER == (m)++);
+    assert(E_RESOLVE_SERVICE_LOGGER_LOGRUN_BUILD == (m)++);
+    assert(E_RESOLVE_SERVICE_LOGGER_LOGRUN_RUNAS == (m)++);
+    assert(E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTART == (m)++);
+    assert(E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTOP == (m)++);
+    assert(E_RESOLVE_SERVICE_LOGGER_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_service_enum_environ_t
-    assert(E_RESOLVE_SERVICE_ENVIRON_ENV == 0);
-    assert(E_RESOLVE_SERVICE_ENVIRON_ENVDIR == 1);
-    assert(E_RESOLVE_SERVICE_ENVIRON_ENV_OVERWRITE == 2);
-    assert(E_RESOLVE_SERVICE_ENVIRON_IMPORTFILE == 3);
-    assert(E_RESOLVE_SERVICE_ENVIRON_NIMPORTFILE == 4);
-    assert(E_RESOLVE_SERVICE_ENVIRON_ENDOFKEY == 5);
+    assert(E_RESOLVE_SERVICE_ENVIRON_ENV == (m)++);
+    assert(E_RESOLVE_SERVICE_ENVIRON_ENVDIR == (m)++);
+    assert(E_RESOLVE_SERVICE_ENVIRON_ENV_OVERWRITE == (m)++);
+    assert(E_RESOLVE_SERVICE_ENVIRON_IMPORTFILE == (m)++);
+    assert(E_RESOLVE_SERVICE_ENVIRON_NIMPORTFILE == (m)++);
+    assert(E_RESOLVE_SERVICE_ENVIRON_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_service_enum_regex_t
-    assert(E_RESOLVE_SERVICE_REGEX_CONFIGURE == 0);
-    assert(E_RESOLVE_SERVICE_REGEX_DIRECTORIES == 1);
-    assert(E_RESOLVE_SERVICE_REGEX_FILES == 2);
-    assert(E_RESOLVE_SERVICE_REGEX_INFILES == 3);
-    assert(E_RESOLVE_SERVICE_REGEX_NDIRECTORIES == 4);
-    assert(E_RESOLVE_SERVICE_REGEX_NFILES == 5);
-    assert(E_RESOLVE_SERVICE_REGEX_NINFILES == 6);
-    assert(E_RESOLVE_SERVICE_REGEX_ENDOFKEY == 7);
+    assert(E_RESOLVE_SERVICE_REGEX_CONFIGURE == (m)++);
+    assert(E_RESOLVE_SERVICE_REGEX_DIRECTORIES == (m)++);
+    assert(E_RESOLVE_SERVICE_REGEX_FILES == (m)++);
+    assert(E_RESOLVE_SERVICE_REGEX_INFILES == (m)++);
+    assert(E_RESOLVE_SERVICE_REGEX_NDIRECTORIES == (m)++);
+    assert(E_RESOLVE_SERVICE_REGEX_NFILES == (m)++);
+    assert(E_RESOLVE_SERVICE_REGEX_NINFILES == (m)++);
+    assert(E_RESOLVE_SERVICE_REGEX_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_service_enum_io_t
-    assert(E_RESOLVE_SERVICE_IO_STDIN == 0);
-    assert(E_RESOLVE_SERVICE_IO_STDINDEST == 1);
-    assert(E_RESOLVE_SERVICE_IO_STDOUT == 2);
-    assert(E_RESOLVE_SERVICE_IO_STDOUTDEST == 3);
-    assert(E_RESOLVE_SERVICE_IO_STDERR == 4);
-    assert(E_RESOLVE_SERVICE_IO_STDERRDEST == 5);
-    assert(E_RESOLVE_SERVICE_IO_ENDOFKEY == 6);
+    assert(E_RESOLVE_SERVICE_IO_STDIN == (m)++);
+    assert(E_RESOLVE_SERVICE_IO_STDINDEST == (m)++);
+    assert(E_RESOLVE_SERVICE_IO_STDOUT == (m)++);
+    assert(E_RESOLVE_SERVICE_IO_STDOUTDEST == (m)++);
+    assert(E_RESOLVE_SERVICE_IO_STDERR == (m)++);
+    assert(E_RESOLVE_SERVICE_IO_STDERRDEST == (m)++);
+    assert(E_RESOLVE_SERVICE_IO_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_service_enum_category_t
-    assert(E_RESOLVE_SERVICE_CATEGORY_CONFIG == 0);
-    assert(E_RESOLVE_SERVICE_CATEGORY_PATH == 1);
-    assert(E_RESOLVE_SERVICE_CATEGORY_DEPS == 2);
-    assert(E_RESOLVE_SERVICE_CATEGORY_EXECUTE == 3);
-    assert(E_RESOLVE_SERVICE_CATEGORY_LIVE == 4);
-    assert(E_RESOLVE_SERVICE_CATEGORY_LOGGER == 5);
-    assert(E_RESOLVE_SERVICE_CATEGORY_ENVIRON == 6);
-    assert(E_RESOLVE_SERVICE_CATEGORY_REGEX == 7);
-    assert(E_RESOLVE_SERVICE_CATEGORY_IO == 8);
-    assert(E_RESOLVE_SERVICE_CATEGORY_ENDOFKEY == 9);
+    assert(E_RESOLVE_SERVICE_CATEGORY_CONFIG == (m)++);
+    assert(E_RESOLVE_SERVICE_CATEGORY_PATH == (m)++);
+    assert(E_RESOLVE_SERVICE_CATEGORY_DEPS == (m)++);
+    assert(E_RESOLVE_SERVICE_CATEGORY_EXECUTE == (m)++);
+    assert(E_RESOLVE_SERVICE_CATEGORY_LIVE == (m)++);
+    assert(E_RESOLVE_SERVICE_CATEGORY_LOGGER == (m)++);
+    assert(E_RESOLVE_SERVICE_CATEGORY_ENVIRON == (m)++);
+    assert(E_RESOLVE_SERVICE_CATEGORY_REGEX == (m)++);
+    assert(E_RESOLVE_SERVICE_CATEGORY_IO == (m)++);
+    assert(E_RESOLVE_SERVICE_CATEGORY_LIMIT == (m)++);
+    assert(E_RESOLVE_SERVICE_CATEGORY_ENDOFKEY == (m)++);
 }
 
 // Test tree enums (all values)
 void test_tree_enums(void) {
     printf("Testing tree enums...\n");
 
+    unsigned int m = 0 ;
     // resolve_tree_enum_t
-    assert(E_RESOLVE_TREE_RVERSION == 0);
-    assert(E_RESOLVE_TREE_NAME == 1);
-    assert(E_RESOLVE_TREE_ENABLED == 2);
-    assert(E_RESOLVE_TREE_DEPENDS == 3);
-    assert(E_RESOLVE_TREE_REQUIREDBY == 4);
-    assert(E_RESOLVE_TREE_ALLOW == 5);
-    assert(E_RESOLVE_TREE_GROUPS == 6);
-    assert(E_RESOLVE_TREE_CONTENTS == 7);
-    assert(E_RESOLVE_TREE_NDEPENDS == 8);
-    assert(E_RESOLVE_TREE_NREQUIREDBY == 9);
-    assert(E_RESOLVE_TREE_NALLOW == 10);
-    assert(E_RESOLVE_TREE_NGROUPS == 11);
-    assert(E_RESOLVE_TREE_NCONTENTS == 12);
-    assert(E_RESOLVE_TREE_INIT == 13);
-    assert(E_RESOLVE_TREE_SUPERVISED == 14);
-    assert(E_RESOLVE_TREE_ENDOFKEY == 15);
+    assert(E_RESOLVE_TREE_RVERSION == (m)++);
+    assert(E_RESOLVE_TREE_NAME == (m)++);
+    assert(E_RESOLVE_TREE_ENABLED == (m)++);
+    assert(E_RESOLVE_TREE_DEPENDS == (m)++);
+    assert(E_RESOLVE_TREE_REQUIREDBY == (m)++);
+    assert(E_RESOLVE_TREE_ALLOW == (m)++);
+    assert(E_RESOLVE_TREE_GROUPS == (m)++);
+    assert(E_RESOLVE_TREE_CONTENTS == (m)++);
+    assert(E_RESOLVE_TREE_NDEPENDS == (m)++);
+    assert(E_RESOLVE_TREE_NREQUIREDBY == (m)++);
+    assert(E_RESOLVE_TREE_NALLOW == (m)++);
+    assert(E_RESOLVE_TREE_NGROUPS == (m)++);
+    assert(E_RESOLVE_TREE_NCONTENTS == (m)++);
+    assert(E_RESOLVE_TREE_INIT == (m)++);
+    assert(E_RESOLVE_TREE_SUPERVISED == (m)++);
+    assert(E_RESOLVE_TREE_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_tree_master_enum_t
-    assert(E_RESOLVE_TREE_MASTER_RVERSION == 0);
-    assert(E_RESOLVE_TREE_MASTER_NAME == 1);
-    assert(E_RESOLVE_TREE_MASTER_ALLOW == 2);
-    assert(E_RESOLVE_TREE_MASTER_CURRENT == 3);
-    assert(E_RESOLVE_TREE_MASTER_CONTENTS == 4);
-    assert(E_RESOLVE_TREE_MASTER_NALLOW == 5);
-    assert(E_RESOLVE_TREE_MASTER_NCONTENTS == 6);
-    assert(E_RESOLVE_TREE_MASTER_ENDOFKEY == 7);
+    assert(E_RESOLVE_TREE_MASTER_RVERSION == (m)++);
+    assert(E_RESOLVE_TREE_MASTER_NAME == (m)++);
+    assert(E_RESOLVE_TREE_MASTER_ALLOW == (m)++);
+    assert(E_RESOLVE_TREE_MASTER_CURRENT == (m)++);
+    assert(E_RESOLVE_TREE_MASTER_CONTENTS == (m)++);
+    assert(E_RESOLVE_TREE_MASTER_NALLOW == (m)++);
+    assert(E_RESOLVE_TREE_MASTER_NCONTENTS == (m)++);
+    assert(E_RESOLVE_TREE_MASTER_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_tree_enum_category_t
-    assert(E_RESOLVE_TREE_CATEGORY_TREE == 0);
-    assert(E_RESOLVE_TREE_CATEGORY_MASTER == 1);
-    assert(E_RESOLVE_TREE_CATEGORY_ENDOFKEY == 2);
+    assert(E_RESOLVE_TREE_CATEGORY_TREE == (m)++);
+    assert(E_RESOLVE_TREE_CATEGORY_MASTER == (m)++);
+    assert(E_RESOLVE_TREE_CATEGORY_ENDOFKEY == (m)++);
 
+    m = 0 ;
     // resolve_enum_category_t
-    assert(E_RESOLVE_CATEGORY_PARSER == 0);
-    assert(E_RESOLVE_CATEGORY_SERVICE == 1);
-    assert(E_RESOLVE_CATEGORY_TREE == 2);
-    assert(E_RESOLVE_CATEGORY_ENDOFKEY == 3);
+    assert(E_RESOLVE_CATEGORY_PARSER == (m)++);
+    assert(E_RESOLVE_CATEGORY_SERVICE == (m)++);
+    assert(E_RESOLVE_CATEGORY_TREE == (m)++);
+    assert(E_RESOLVE_CATEGORY_ENDOFKEY == (m)++);
 }
 
 // Test parser lists (all entries)
@@ -634,27 +719,27 @@ void test_parser_lists(void) {
     printf("Testing parser lists...\n");
 
     // enum_list_parser_expected
-    assert(count_key_description_entries(enum_list_parser_expected) == 6);
-    assert(count_string_array_entries(enum_str_parser_expected) == 6);
-    for (size_t i = 0; i < 6; i++) {
+    assert(count_key_description_entries(enum_list_parser_expected) == E_PARSER_EXPECT_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_parser_expected) == E_PARSER_EXPECT_ENDOFKEY);
+    for (size_t i = 0; i < E_PARSER_EXPECT_ENDOFKEY; i++) {
         assert(enum_list_parser_expected[i].id == (int)i);
         assert(strcmp(*enum_list_parser_expected[i].name, enum_str_parser_expected[i]) == 0);
         assert(enum_list_parser_expected[i].expected == 0);
     }
 
     // enum_list_parser_section
-    assert(count_key_description_entries(enum_list_parser_section) == 6);
-    assert(count_string_array_entries(enum_str_parser_section) == 6);
-    for (size_t i = 0; i < 6; i++) {
+    assert(count_key_description_entries(enum_list_parser_section) == E_PARSER_SECTION_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_parser_section) == E_PARSER_SECTION_ENDOFKEY);
+    for (size_t i = 0; i < E_PARSER_SECTION_ENDOFKEY; i++) {
         assert(enum_list_parser_section[i].id == (int)i);
         assert(strcmp(*enum_list_parser_section[i].name, enum_str_parser_section[i]) == 0);
         assert(enum_list_parser_section[i].expected == 0);
     }
 
     // enum_list_parser_section_main
-    assert(count_key_description_entries(enum_list_parser_section_main) == 21);
-    assert(count_string_array_entries(enum_str_parser_section_main) == 21);
-    for (size_t i = 0; i < 21; i++) {
+    assert(count_key_description_entries(enum_list_parser_section_main) == E_PARSER_SECTION_MAIN_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_parser_section_main) == E_PARSER_SECTION_MAIN_ENDOFKEY);
+    for (size_t i = 0; i < E_PARSER_SECTION_MAIN_ENDOFKEY; i++) {
         assert(enum_list_parser_section_main[i].id == (int)i);
         assert(strcmp(*enum_list_parser_section_main[i].name, enum_str_parser_section_main[i]) == 0);
         // Check expected values (from SECTION_MAIN_TEMPLATE)
@@ -663,15 +748,15 @@ void test_parser_lists(void) {
             E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_BRACKET,
             E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_UINT,
             E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_BRACKET,
-            E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_BRACKET
+            E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_BRACKET
         };
         assert(enum_list_parser_section_main[i].expected == expected_values[i]);
     }
 
     // enum_list_parser_section_startstop
-    assert(count_key_description_entries(enum_list_parser_section_startstop) == 3);
-    assert(count_string_array_entries(enum_str_parser_section_startstop) == 3);
-    for (size_t i = 0; i < 3; i++) {
+    assert(count_key_description_entries(enum_list_parser_section_startstop) == E_PARSER_SECTION_STARTSTOP_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_parser_section_startstop) == E_PARSER_SECTION_STARTSTOP_ENDOFKEY);
+    for (size_t i = 0; i < E_PARSER_SECTION_STARTSTOP_ENDOFKEY; i++) {
         assert(enum_list_parser_section_startstop[i].id == (int)i);
         assert(strcmp(*enum_list_parser_section_startstop[i].name, enum_str_parser_section_startstop[i]) == 0);
         int expected_values[] = { E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_BRACKET };
@@ -679,9 +764,9 @@ void test_parser_lists(void) {
     }
 
     // enum_list_parser_section_logger
-    assert(count_key_description_entries(enum_list_parser_section_logger) == 9);
-    assert(count_string_array_entries(enum_str_parser_section_logger) == 9);
-    for (size_t i = 0; i < 9; i++) {
+    assert(count_key_description_entries(enum_list_parser_section_logger) == E_PARSER_SECTION_LOGGER_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_parser_section_logger) == E_PARSER_SECTION_LOGGER_ENDOFKEY);
+    for (size_t i = 0; i < E_PARSER_SECTION_LOGGER_ENDOFKEY; i++) {
         assert(enum_list_parser_section_logger[i].id == (int)i);
         assert(strcmp(*enum_list_parser_section_logger[i].name, enum_str_parser_section_logger[i]) == 0);
         int expected_values[] = {
@@ -693,9 +778,9 @@ void test_parser_lists(void) {
     }
 
     // enum_list_parser_section_environ
-    assert(count_key_description_entries(enum_list_parser_section_environ) == 2);
-    assert(count_string_array_entries(enum_str_parser_section_environ) == 2);
-    for (size_t i = 0; i < 2; i++) {
+    assert(count_key_description_entries(enum_list_parser_section_environ) == E_PARSER_SECTION_ENVIRON_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_parser_section_environ) == E_PARSER_SECTION_ENVIRON_ENDOFKEY);
+    for (size_t i = 0; i < E_PARSER_SECTION_ENVIRON_ENDOFKEY; i++) {
         assert(enum_list_parser_section_environ[i].id == (int)i);
         assert(strcmp(*enum_list_parser_section_environ[i].name, enum_str_parser_section_environ[i]) == 0);
         int expected_values[] = { E_PARSER_EXPECT_KEYVAL, E_PARSER_EXPECT_BRACKET };
@@ -703,9 +788,9 @@ void test_parser_lists(void) {
     }
 
     // enum_list_parser_section_regex
-    assert(count_key_description_entries(enum_list_parser_section_regex) == 4);
-    assert(count_string_array_entries(enum_str_parser_section_regex) == 4);
-    for (size_t i = 0; i < 4; i++) {
+    assert(count_key_description_entries(enum_list_parser_section_regex) == E_PARSER_SECTION_REGEX_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_parser_section_regex) == E_PARSER_SECTION_REGEX_ENDOFKEY);
+    for (size_t i = 0; i < E_PARSER_SECTION_REGEX_ENDOFKEY; i++) {
         assert(enum_list_parser_section_regex[i].id == (int)i);
         assert(strcmp(*enum_list_parser_section_regex[i].name, enum_str_parser_section_regex[i]) == 0);
         int expected_values[] = { E_PARSER_EXPECT_QUOTE, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_BRACKET };
@@ -713,8 +798,8 @@ void test_parser_lists(void) {
     }
 
     // enum_list_parser_io_type
-    assert(count_key_description_entries(enum_list_parser_io_type) == 10);
-    assert(count_string_array_entries(enum_str_parser_io_type) == 10);
+    assert(count_key_description_entries(enum_list_parser_io_type) == E_PARSER_IO_TYPE_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_parser_io_type) == E_PARSER_IO_TYPE_ENDOFKEY);
     for (size_t i = 0; i < 10; i++) {
         assert(enum_list_parser_io_type[i].id == (int)i);
         assert(strcmp(*enum_list_parser_io_type[i].name, enum_str_parser_io_type[i]) == 0);
@@ -722,8 +807,8 @@ void test_parser_lists(void) {
     }
 
     // enum_list_parser_type
-    assert(count_key_description_entries(enum_list_parser_type) == 3);
-    assert(count_string_array_entries(enum_str_parser_type) == 3);
+    assert(count_key_description_entries(enum_list_parser_type) == E_PARSER_TYPE_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_parser_type) == E_PARSER_TYPE_ENDOFKEY);
     for (size_t i = 0; i < 3; i++) {
         assert(enum_list_parser_type[i].id == (int)i);
         assert(strcmp(*enum_list_parser_type[i].name, enum_str_parser_type[i]) == 0);
@@ -731,15 +816,15 @@ void test_parser_lists(void) {
     }
 
     // enum_list_parser_opts
-    assert(count_key_description_entries(enum_list_parser_opts) == 1);
-    assert(count_string_array_entries(enum_str_parser_opts) == 1);
+    assert(count_key_description_entries(enum_list_parser_opts) == E_PARSER_OPTS_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_parser_opts) == E_PARSER_OPTS_ENDOFKEY);
     assert(enum_list_parser_opts[0].id == 0);
     assert(strcmp(*enum_list_parser_opts[0].name, enum_str_parser_opts[0]) == 0);
     assert(enum_list_parser_opts[0].expected == E_PARSER_EXPECT_BRACKET);
 
     // enum_list_parser_flags
-    assert(count_key_description_entries(enum_list_parser_flags) == 2);
-    assert(count_string_array_entries(enum_str_parser_flags) == 2);
+    assert(count_key_description_entries(enum_list_parser_flags) == E_PARSER_FLAGS_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_parser_flags) == E_PARSER_FLAGS_ENDOFKEY);
     for (size_t i = 0; i < 2; i++) {
         assert(enum_list_parser_flags[i].id == (int)i);
         assert(strcmp(*enum_list_parser_flags[i].name, enum_str_parser_flags[i]) == 0);
@@ -747,8 +832,8 @@ void test_parser_lists(void) {
     }
 
     // enum_list_parser_build
-    assert(count_key_description_entries(enum_list_parser_build) == 2);
-    assert(count_string_array_entries(enum_str_parser_build) == 2);
+    assert(count_key_description_entries(enum_list_parser_build) == E_PARSER_BUILD_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_parser_build) == E_PARSER_BUILD_ENDOFKEY);
     for (size_t i = 0; i < 2; i++) {
         assert(enum_list_parser_build[i].id == (int)i);
         assert(strcmp(*enum_list_parser_build[i].name, enum_str_parser_build[i]) == 0);
@@ -756,8 +841,8 @@ void test_parser_lists(void) {
     }
 
     // enum_list_parser_time
-    assert(count_key_description_entries(enum_list_parser_time) == 3);
-    assert(count_string_array_entries(enum_str_parser_time) == 3);
+    assert(count_key_description_entries(enum_list_parser_time) == E_PARSER_TIME_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_parser_time) == E_PARSER_TIME_ENDOFKEY);
     for (size_t i = 0; i < 3; i++) {
         assert(enum_list_parser_time[i].id == (int)i);
         assert(strcmp(*enum_list_parser_time[i].name, enum_str_parser_time[i]) == 0);
@@ -765,8 +850,8 @@ void test_parser_lists(void) {
     }
 
     // enum_list_parser_seed
-    assert(count_key_description_entries(enum_list_parser_seed) == 8);
-    assert(count_string_array_entries(enum_str_parser_seed) == 8);
+    assert(count_key_description_entries(enum_list_parser_seed) == E_PARSER_SEED_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_parser_seed) == E_PARSER_SEED_ENDOFKEY);
     for (size_t i = 0; i < 8; i++) {
         assert(enum_list_parser_seed[i].id == (int)i);
         assert(strcmp(*enum_list_parser_seed[i].name, enum_str_parser_seed[i]) == 0);
@@ -774,8 +859,8 @@ void test_parser_lists(void) {
     }
 
     // enum_list_parser_mandatory
-    assert(count_key_description_entries(enum_list_parser_mandatory) == 3);
-    assert(count_string_array_entries(enum_str_parser_mandatory) == 3);
+    assert(count_key_description_entries(enum_list_parser_mandatory) == E_PARSER_MANDATORY_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_parser_mandatory) == E_PARSER_MANDATORY_ENDOFKEY);
     for (size_t i = 0; i < 3; i++) {
         assert(enum_list_parser_mandatory[i].id == (int)i);
         assert(strcmp(*enum_list_parser_mandatory[i].name, enum_str_parser_mandatory[i]) == 0);
@@ -788,8 +873,8 @@ void test_service_lists(void) {
     printf("Testing service lists...\n");
 
     // enum_list_service_config
-    assert(count_key_description_entries(enum_list_service_config) == 17);
-    assert(count_string_array_entries(enum_str_service_config) == 17);
+    assert(count_key_description_entries(enum_list_service_config) == E_RESOLVE_SERVICE_CONFIG_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_service_config) == E_RESOLVE_SERVICE_CONFIG_ENDOFKEY);
     for (size_t i = 0; i < 17; i++) {
         assert(enum_list_service_config[i].id == (int)i);
         assert(strcmp(*enum_list_service_config[i].name, enum_str_service_config[i]) == 0);
@@ -797,8 +882,8 @@ void test_service_lists(void) {
     }
 
     // enum_list_service_path
-    assert(count_key_description_entries(enum_list_service_path) == 3);
-    assert(count_string_array_entries(enum_str_service_path) == 3);
+    assert(count_key_description_entries(enum_list_service_path) == E_RESOLVE_SERVICE_PATH_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_service_path) == E_RESOLVE_SERVICE_PATH_ENDOFKEY);
     for (size_t i = 0; i < 3; i++) {
         assert(enum_list_service_path[i].id == (int)i);
         assert(strcmp(*enum_list_service_path[i].name, enum_str_service_path[i]) == 0);
@@ -806,8 +891,8 @@ void test_service_lists(void) {
     }
 
     // enum_list_service_deps
-    assert(count_key_description_entries(enum_list_service_deps) == 10);
-    assert(count_string_array_entries(enum_str_service_deps) == 10);
+    assert(count_key_description_entries(enum_list_service_deps) == E_RESOLVE_SERVICE_DEPS_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_service_deps) == E_RESOLVE_SERVICE_DEPS_ENDOFKEY);
     for (size_t i = 0; i < 10; i++) {
         assert(enum_list_service_deps[i].id == (int)i);
         assert(strcmp(*enum_list_service_deps[i].name, enum_str_service_deps[i]) == 0);
@@ -815,8 +900,8 @@ void test_service_lists(void) {
     }
 
     // enum_list_service_execute
-    assert(count_key_description_entries(enum_list_service_execute) == 12);
-    assert(count_string_array_entries(enum_str_service_execute) == 12);
+    assert(count_key_description_entries(enum_list_service_execute) == E_RESOLVE_SERVICE_EXECUTE_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_service_execute) == E_RESOLVE_SERVICE_EXECUTE_ENDOFKEY);
     for (size_t i = 0; i < 12; i++) {
         assert(enum_list_service_execute[i].id == (int)i);
         assert(strcmp(*enum_list_service_execute[i].name, enum_str_service_execute[i]) == 0);
@@ -824,8 +909,8 @@ void test_service_lists(void) {
     }
 
     // enum_list_service_live
-    assert(count_key_description_entries(enum_list_service_live) == 10);
-    assert(count_string_array_entries(enum_str_service_live) == 10);
+    assert(count_key_description_entries(enum_list_service_live) == E_RESOLVE_SERVICE_LIVE_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_service_live) == E_RESOLVE_SERVICE_LIVE_ENDOFKEY);
     for (size_t i = 0; i < 10; i++) {
         assert(enum_list_service_live[i].id == (int)i);
         assert(strcmp(*enum_list_service_live[i].name, enum_str_service_live[i]) == 0);
@@ -833,8 +918,8 @@ void test_service_lists(void) {
     }
 
     // enum_list_service_logger
-    assert(count_key_description_entries(enum_list_service_logger) == 12);
-    assert(count_string_array_entries(enum_str_service_logger) == 12);
+    assert(count_key_description_entries(enum_list_service_logger) == E_RESOLVE_SERVICE_LOGGER_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_service_logger) == E_RESOLVE_SERVICE_LOGGER_ENDOFKEY);
     for (size_t i = 0; i < 12; i++) {
         assert(enum_list_service_logger[i].id == (int)i);
         assert(strcmp(*enum_list_service_logger[i].name, enum_str_service_logger[i]) == 0);
@@ -842,8 +927,8 @@ void test_service_lists(void) {
     }
 
     // enum_list_service_environ
-    assert(count_key_description_entries(enum_list_service_environ) == 5);
-    assert(count_string_array_entries(enum_str_service_environ) == 5);
+    assert(count_key_description_entries(enum_list_service_environ) == E_RESOLVE_SERVICE_ENVIRON_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_service_environ) == E_RESOLVE_SERVICE_ENVIRON_ENDOFKEY);
     for (size_t i = 0; i < 5; i++) {
         assert(enum_list_service_environ[i].id == (int)i);
         assert(strcmp(*enum_list_service_environ[i].name, enum_str_service_environ[i]) == 0);
@@ -851,8 +936,8 @@ void test_service_lists(void) {
     }
 
     // enum_list_service_regex
-    assert(count_key_description_entries(enum_list_service_regex) == 7);
-    assert(count_string_array_entries(enum_str_service_regex) == 7);
+    assert(count_key_description_entries(enum_list_service_regex) == E_RESOLVE_SERVICE_REGEX_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_service_regex) == E_RESOLVE_SERVICE_REGEX_ENDOFKEY);
     for (size_t i = 0; i < 7; i++) {
         assert(enum_list_service_regex[i].id == (int)i);
         assert(strcmp(*enum_list_service_regex[i].name, enum_str_service_regex[i]) == 0);
@@ -860,8 +945,8 @@ void test_service_lists(void) {
     }
 
     // enum_list_service_io
-    assert(count_key_description_entries(enum_list_service_io) == 6);
-    assert(count_string_array_entries(enum_str_service_io) == 6);
+    assert(count_key_description_entries(enum_list_service_io) == E_RESOLVE_SERVICE_IO_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_service_io) == E_RESOLVE_SERVICE_IO_ENDOFKEY);
     for (size_t i = 0; i < 6; i++) {
         assert(enum_list_service_io[i].id == (int)i);
         assert(strcmp(*enum_list_service_io[i].name, enum_str_service_io[i]) == 0);
@@ -874,8 +959,8 @@ void test_tree_lists(void) {
     printf("Testing tree lists...\n");
 
     // enum_list_tree
-    assert(count_key_description_entries(enum_list_tree) == 15);
-    assert(count_string_array_entries(enum_str_tree) == 15);
+    assert(count_key_description_entries(enum_list_tree) == E_RESOLVE_TREE_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_tree) == E_RESOLVE_TREE_ENDOFKEY);
     for (size_t i = 0; i < 15; i++) {
         assert(enum_list_tree[i].id == (int)i);
         assert(strcmp(*enum_list_tree[i].name, enum_str_tree[i]) == 0);
@@ -883,8 +968,8 @@ void test_tree_lists(void) {
     }
 
     // enum_list_tree_master
-    assert(count_key_description_entries(enum_list_tree_master) == 7);
-    assert(count_string_array_entries(enum_str_tree_master) == 7);
+    assert(count_key_description_entries(enum_list_tree_master) == E_RESOLVE_TREE_MASTER_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_tree_master) == E_RESOLVE_TREE_MASTER_ENDOFKEY);
     for (size_t i = 0; i < 7; i++) {
         assert(enum_list_tree_master[i].id == (int)i);
         assert(strcmp(*enum_list_tree_master[i].name, enum_str_tree_master[i]) == 0);
