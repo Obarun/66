@@ -115,8 +115,8 @@ foreach dir : exe_dirs
       pie: get_option('enable-pie')
     )
 
-    # Optional tests
-    if get_option('tests')
+    # Optional test
+    if get_option('test')
       test_dir = exe_dir / 'test'
       if fs.is_dir(test_dir)
         find_test_files_cmd = run_command('sh', '-c', 'find "@0@" -type f -name "*.c"'.format(test_dir), check: false)

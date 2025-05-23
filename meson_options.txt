@@ -138,7 +138,7 @@ type: 'boolean',
 value: false,
 description: 'Build documentation in manpages and htlm format')
 
-option('tests',
+option('test',
 type: 'boolean',
 value: false,
 description: 'Build and run tests')

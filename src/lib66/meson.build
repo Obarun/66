@@ -106,7 +106,7 @@ else
 endif
 
 
-if get_option('tests')
+if get_option('test')
   find_test_dirs_cmd = run_command('sh', '-c', 'find "@0@" -type d -name "test"'.format(lib66_dir), check: false)
   if find_test_dirs_cmd.returncode() != 0
     error('Failed to run find command for test directories: ' + find_test_dirs_cmd.stderr())
