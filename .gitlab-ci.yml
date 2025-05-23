@@ -13,7 +13,7 @@ request:
   stage: request
   script:
   - ./build_toolchain.sh "commit"
-  - meson setup build -D tests=true
+  - meson setup build -D test=true
   - meson compile -C build
   - DESTDIR=gitlab-ci meson install -C build
 
@@ -24,7 +24,7 @@ build:
   stage: build
   script:
   - ./build_toolchain.sh "commit"
-  - meson setup build -D tests=true
+  - meson setup build -D test=true
   - meson compile -C build
   - meson test -C build
   - DESTDIR=gitlab-ci meson install -C build
@@ -37,7 +37,7 @@ release:
   stage: release
   script:
   - ./build_toolchain.sh
-  - meson setup build -D tests=true
+  - meson setup build -D test=true -D with-doc=true -D s6-log-user=s6log
   - meson compile -C build
   - meson test -C build
   - DESTDIR=gitlab-ci meson install -C build
