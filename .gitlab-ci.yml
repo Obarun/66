@@ -7,7 +7,7 @@ stages:
 
 before_script:
   - pacman -Syu --noconfirm
-  - pacman -S base-devel meson --noconfirm
+  - pacman -S base-devel meson git --noconfirm
 
 request:
   stage: request
