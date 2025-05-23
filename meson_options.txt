@@ -1,0 +1,196 @@
+option('shebangdir',
+type: 'string',
+value: '/usr/bin',
+description: 'Absolute path for execline #! invocations')
+
+option('livedir',
+type: 'string',
+value: '/run/66',
+description: 'Default live directory')
+
+option('max-service',
+type: 'integer',
+value: 500,
+description: 'Maximum number of services handled by s6-svscan')
+
+option('max-path-size',
+type: 'integer',
+value: 1024,
+description: 'Maximum size of a path in KB. Each *-dir option (including the $HOME prefix) can not exceed max-path-size')
+
+option('max-service-size',
+type: 'integer',
+value: 256,
+description: 'Maximum size of a frontend service name in KB (e.g., foo@bar must not exceed this)')
+
+option('max-tree-name-size',
+type: 'integer',
+value: 256,
+description: 'Maximum size of a tree name in KB')
+
+option('default-tree-name',
+type: 'string',
+value: 'global',
+description: 'Name of the default tree')
+
+option('skeleton-dir',
+type: 'string',
+value: '/etc/66',
+description: 'Skeleton files directory')
+
+option('system-dir',
+type: 'string',
+value: '/var/lib/66',
+description: '66 tools system working directory')
+
+option('system-log-dir',
+type: 'string',
+value: '/var/log/66',
+description: 'System service log directory')
+
+option('system-service-dir',
+type: 'string',
+value: '/usr/share/66/service',
+description: 'System service frontend directory (must be different from sysadmin-service-dir)')
+
+option('system-script-dir',
+type: 'string',
+value: '/usr/share/66/script',
+description: 'System script directory')
+
+option('system-seed-dir',
+type: 'string',
+value: '/usr/share/66/seed',
+description: 'System trees default configuration directory')
+
+option('sysadmin-service-dir',
+type: 'string',
+value: '/etc/66/service',
+description: 'Sysadmin service frontend directory (must be different from system-service-dir)')
+
+option('sysadmin-service-conf-dir',
+type: 'string',
+value: '/etc/66/conf',
+description: 'Sysadmin service configuration directory')
+
+option('sysadmin-seed-dir',
+type: 'string',
+value: '/etc/66/seed',
+description: 'Sysadmin trees default configuration')
+
+option('sysadmin-environment-dir',
+type: 'string',
+value: '/etc/66/environment',
+description: 'Sysadmin environment directory')
+
+option('user-dir',
+type: 'string',
+value: '.66',
+description: '66 tools user working directory. Do not use absolute paths, it will be prefixed with $HOME')
+
+option('user-log-dir',
+type: 'string',
+value: '.66/log',
+description: 'User service log directory. Do not use absolute paths, it will be prefixed with $HOME')
+
+option('user-service-dir',
+type: 'string',
+value: '.66/service',
+description: 'User service directory. Do not use absolute paths, it will be prefixed with $HOME')
+
+option('user-service-conf-dir',
+type: 'string',
+value: '.66/conf',
+description: 'User service configuration directory. Do not use absolute paths, it will be prefixed with $HOME')
+
+option('user-script-dir',
+type: 'string',
+value: '.66/script',
+description: 'User script directory. Do not use absolute paths, it will be prefixed with $HOME')
+
+option('user-seed-dir',
+type: 'string',
+value: '.66/seed',
+description: 'User trees default configuration. Do not use absolute paths, it will be prefixed with $HOME')
+
+option('user-environment-dir',
+type: 'string',
+value: '.66/environment',
+description: 'User environment directory. Do not use absolute paths, it will be prefixed with $HOME')
+
+option('s6-log-user',
+type: 'string',
+value: 'root',
+description: 'User for running s6-log program')
+
+option('s6-log-timestamp',
+type: 'string',
+value: 'iso',
+description: 'Default timestamp for s6-log program (valid values: tai, iso, none)')
+
+option('s6-log-notification',
+type: 'boolean',
+value: true,
+description: 'Enable s6-log notification')
+
+option('with-doc',
+type: 'boolean',
+value: false,
+description: 'Build documentation in manpages and htlm format')
+
+option('tests',
+type: 'boolean',
+value: false,
+description: 'Build and run tests')
+
+option('sysdeps-dir',
+type: 'string',
+value: '/usr/lib/skalibs/sysdeps',
+description: 'Use sysdeps in directory')
+
+option('with-include-dir',
+type: 'array',
+value: [],
+description: 'Additional include directories')
+
+option('with-staticlib-dir',
+type: 'array',
+value: [],
+description: 'Additional static library directories')
+
+option('with-dynamiclib-dir',
+type: 'array',
+value: [],
+description: 'Additional shared library directories')
+
+option('enable-shared',
+type: 'boolean',
+value: true,
+description: 'Build shared libraries for dynamic linking')
+
+option('enable-static',
+type: 'boolean',
+value: false,
+description: 'Build static libraries for static linking')
+
+option('enable-static-deps',
+type: 'boolean',
+value: false,
+description: 'Prefer static linking for all dependencies (e.g., skalibs, s6), reducing runtime dependencies (requires enable-static=true)')
+
+option('enable-static-executable',
+type: 'boolean',
+value: false,
+description: 'Build fully static executables, including static libc, for maximum portability')
+
+option('enable-all-pic',
+type: 'boolean',
+value: false,
+description: 'Compile static libraries with position-independent code (PIC) for use in shared libraries or PIE executables')
+
+option('enable-pie',
+type: 'boolean',
+value: false,
+description: 'Build executables as position-independent (PIE) for enhanced security via ASLR')
+
+
