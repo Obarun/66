@@ -52,12 +52,90 @@ version_s6 = '>=2.13.1.0'
 version_oblibs = '>=0.3.4.0'
 version_lowdown = '>=0.6.4'
 
+# Compiler setup
+cc = meson.get_compiler('c')
+
+# Define dependency checks
+# Common include and library paths
+default_include_dirs = [get_option('prefix') / get_option('includedir')]
+default_lib_dirs = [get_option('prefix') / get_option('libdir')]
+user_include_dirs = get_option('with-include-dir')
+user_staticlib_dirs = get_option('with-staticlib-dir')
+user_dynamiclib_dirs = get_option('with-dynamiclib-dir')
+
+# Combine default and user-provided paths
+include_dirs = default_include_dirs + user_include_dirs
+lib_dirs = default_lib_dirs + user_staticlib_dirs + user_dynamiclib_dirs
+
+# Dependency: skalibs
+skalibs_lib = cc.find_library('skarnet', dirs: lib_dirs, static: get_option('enable-static'), required: false)
+skalibs_header = cc.has_header('skalibs.h', args: ['-I', include_dirs], required: false)
+if not skalibs_lib.found() # or not skalibs_header
+  error('skalibs ' + version_skalibs + ' not found. Ensure libskalibs and skalibs.h are installed, or specify paths with with-include-dir and with-staticlib-dir/with-dynamiclib-dir.')
+endif
+dep_skalibs = declare_dependency(
+  dependencies: skalibs_lib,
+  include_directories: include_dirs
+)
+
+# Dependency: execline
+execline_lib = cc.find_library('execline', dirs: lib_dirs, static: get_option('enable-static'), required: false)
+execline_header = cc.has_header('execline.h', args: ['-I', include_dirs], required: false)
+if not execline_lib.found() or not execline_header
+  error('execline ' + version_execline + ' not found. Ensure libexecline and execline/execline.h are installed, or specify paths with with-include-dir and with-staticlib-dir/with-dynamiclib-dir.')
+endif
+dep_execline = declare_dependency(
+  dependencies: execline_lib,
+  include_directories: include_dirs
+)
+
+# Dependency: s6
+s6_lib = cc.find_library('s6', dirs: lib_dirs, static: get_option('enable-static'), required: false)
+s6_header = cc.has_header('s6.h', args: ['-I', include_dirs], required: false)
+if not s6_lib.found() or not s6_header
+  error('s6 ' + version_s6 + ' not found. Ensure libs6 and s6/s6.h are installed, or specify paths with with-include-dir and with-staticlib-dir/with-dynamiclib-dir.')
+endif
+dep_s6 = declare_dependency(
+  dependencies: s6_lib,
+  include_directories: include_dirs
+)
+
+# Dependency: oblibs
+oblibs_lib = cc.find_library('oblibs', dirs: lib_dirs, static: get_option('enable-static'), required: false)
+oblibs_header = cc.has_header('oblibs.h', args: ['-I', include_dirs], required: false)
+if not oblibs_lib.found() or not oblibs_header
+  error('oblibs ' + version_oblibs + ' not found. Ensure liboblibs and oblibs.h are installed, or specify paths with with-include-dir and with-staticlib-dir/with-dynamiclib-dir.')
+endif
+dep_oblibs = declare_dependency(
+  dependencies: oblibs_lib,
+  include_directories: include_dirs
+)
+
 # Define global dependencies
-skalibs_dep = dependency('skalibs', version: version_skalibs, required: true, static: get_option('enable-static'))
-execline_dep = dependency('execline', version: version_execline, required: true, static: get_option('enable-static'))
-s6_dep = dependency('s6', version: version_s6, required: true, static: get_option('enable-static'))
-oblibs_dep = dependency('oblibs', version: version_oblibs, required: true, static: get_option('enable-static'))
+skalibs_dep = dep_skalibs
+execline_dep = dep_execline
+s6_dep = dep_s6
+oblibs_dep = dep_oblibs
 doc_dep = dependency('lowdown', version: version_lowdown, required: false, static: get_option('enable-static'))
+
+# Read sysdeps libraries
+pthread_lib = ''
+spawn_lib = ''
+socket_lib = ''
+sysclock_lib = ''
+timer_lib = ''
+util_lib = ''
+foreach name : ['pthread', 'spawn', 'socket', 'sysclock', 'timer', 'util']
+  file = get_option('sysdeps-dir') / name + '.lib'
+  if not fs.is_file(file)
+    warning('sysdeps file ' + file + ' does not exist')
+  else
+    content = fs.read(file).strip()
+    if content != ''
+      set_variable(name + '_lib', content)
+    endif
+  endif
+endforeach
 
 # Special case for default_options
 BINDIR = get_option('prefix') / get_option('bindir')
@@ -94,26 +172,6 @@ user_seed_dir = get_option('user-seed-dir')
 user_environment_dir = get_option('user-environment-dir')
 sysdeps_dir = get_option('sysdeps-dir')
 
-# Read sysdeps libraries
-foreach lib_name : ['spawn', 'socket', 'sysclock', 'timer', 'util']
-  lib_file = sysdeps_dir / lib_name + '.lib'
-  if not fs.is_file(lib_file)
-    warning('Sysdeps file ' + lib_file + ' does not exist')
-    set_variable(lib_name + '_lib', '')
-  else
-    lib_content = fs.read(lib_file).strip()
-    if lib_content == ''
-      warning('Sysdeps file ' + lib_file + ' is empty')
-      set_variable(lib_name + '_lib', '')
-    else
-      set_variable(lib_name + '_lib', lib_content)
-    endif
-  endif
-endforeach
-
-# Compiler setup
-cc = meson.get_compiler('c')
-
 # Common compiler flags
 base_c_args = [
   '-pipe',
@@ -132,7 +190,7 @@ base_c_args = [
   '-D_POSIX_C_SOURCE=200809L',
   '-D_XOPEN_SOURCE=700',
   '-D_GNU_SOURCE',
-  '-I' + meson.project_source_root() / 'src/include'
+  '-I' + get_option('includedir')
 ]
 
 # Compiler flags
@@ -149,6 +207,7 @@ shared_link_args = [
   '-Wl,--sort-section=alignment',
   '-Wl,--sort-common'
 ]
+
 if cc.has_link_argument('-Wl,--hash-style=both')
   shared_link_args += ['-Wl,--hash-style=both']
 endif
@@ -222,3 +281,22 @@ subdir('src/lib66')
 subdir('src/66')
 subdir('skel')
 subdir('doc')
+
+if get_option('with-pkgconf')
+  # Generate and install pkg-config file for lib66
+  private_libs = []
+  if get_option('enable-static') or get_option('enable-static-deps')
+    private_libs += ['-lskalibs', '-lexecline', '-ls6', '-loblibs']
+  endif
+
+  pkg = import('pkgconfig')
+  pkg.generate(
+    name: 'lib66',
+    filebase: 'lib66',
+    description: 'Library for the 66 service management system',
+    version: meson.project_version(),
+    libraries: ['-l66'],
+    libraries_private: private_libs,
+    subdirs: ['66'], # Headers in ${includedir}/66
+  )
+endif

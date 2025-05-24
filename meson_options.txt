@@ -138,6 +138,11 @@ type: 'boolean',
 value: false,
 description: 'Build documentation in manpages and htlm format')
 
+option('with-pkgconf',
+type: 'boolean',
+value: true,
+description: 'Build and install a /usr/lib/pkgconfig/lib66.pc file')
+
 option('test',
 type: 'boolean',
 value: false,

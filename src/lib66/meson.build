@@ -20,10 +20,31 @@ endif
 soversion_66 = meson.project_version()
 lib66_shared = []
 lib66_static = []
-is_enabled = get_option('enable-shared')
+is_shared = get_option('enable-shared')
 is_static = get_option('enable-static') or get_option('enable-static-deps')
 
-if is_enabled
+sysdeps_libs = []
+
+if pthread_lib != ''
+  sysdeps_libs += pthread_lib
+endif
+if spawn_lib != ''
+  sysdeps_libs += spawn_lib
+endif
+if socket_lib != ''
+  sysdeps_libs += socket_lib
+endif
+if sysclock_lib != ''
+  sysdeps_libs += sysclock_lib
+endif
+if timer_lib != ''
+  sysdeps_libs += timer_lib
+endif
+if spawn_lib != ''
+  util_libs += util_lib
+endif
+
+if is_shared
   lib66_shared = shared_library('66',
     sources: lib66_sources,
     include_directories: incdir,
@@ -32,17 +53,12 @@ if is_enabled
       oblibs_dep,
       s6_dep,
       execline_dep,
-      cc.find_library(spawn_lib, required: false),
-      cc.find_library(socket_lib, required: false),
-      cc.find_library(sysclock_lib, required: false),
-      cc.find_library(timer_lib, required: false),
-      cc.find_library(util_lib, required: false)
     ],
     install: true,
     install_dir: get_option('libdir'),
     soversion: '@0@'.format(soversion_66),
     c_args: shared_c_args,
-    link_args: shared_link_args,
+    link_args: shared_link_args + sysdeps_libs,
     install_rpath: get_option('libdir'),
     build_rpath: meson.current_build_dir()
   )
@@ -58,20 +74,15 @@ if is_static
       oblibs_dep,
       s6_dep,
       execline_dep,
-      cc.find_library(spawn_lib, required: false),
-      cc.find_library(socket_lib, required: false),
-      cc.find_library(sysclock_lib, required: false),
-      cc.find_library(timer_lib, required: false),
-      cc.find_library(util_lib, required: false)
     ],
     install: true,
     install_dir: lib_static_path,
     c_args: static_c_args,
-    link_args: static_link_args
+    link_args: static_link_args + sysdeps_libs
   )
 endif
 
-if is_enabled == false and is_static == false
+if is_shared == false and is_static == false
   error('At least one of enable-shared or enable-static must be true to define lib66_dep')
 endif
 

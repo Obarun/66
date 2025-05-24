@@ -138,6 +138,15 @@ meson setup build --cross-file=cross-file.ini -D sysdeps-dir=/path/to/target/sys
 meson compile -C build
 meson install -C build
 ```
+
+## Using lib66 with pkg-config
+
+The build generates a `lib66.pc` file for use with `pkg-config`, installed to `${libdir}/pkgconfig` (e.g., `/usr/lib/pkgconfig`). To link against `lib66`:
+
+```bash
+pkg-config --cflags --libs lib66
+```
+
 ## Notes
 
 - If `enable-static-executable` is enabled, the build will fail with a clear error if a static `libc` is not found. Ensure the appropriate development package is installed (e.g., `libc6-dev`, `musl-dev`).
@@ -147,4 +156,3 @@ meson install -C build
 - For security-sensitive systems, consider enabling `enable-pie` to benefit from `ASLR`.
 
 - Documentation requires `lowdown`. If unavailable or `with-doc=false`, no documentation will be installed.
-

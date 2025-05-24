@@ -1,66 +1,70 @@
 fs = import('fs')
 
+sys_lib = ''
+if sysclock_lib != ''
+  sys_lib += sysclock_lib
+endif
+if socket_lib != ''
+  sys_lib += socket_lib
+endif
+
 exe_configs = {
   '66': {
     'sources': ['66.c'],
-    'deps': [lib66_dep]
+    'deps': [lib66_dep],
+    'sysdeps': ''
   },
   '66-echo': {
     'sources': ['66-echo.c'],
-    'deps': [oblibs_dep, skalibs_dep]
+    'deps': [oblibs_dep, skalibs_dep],
+    'sysdeps': ''
   },
   '66-execute': {
     'sources': ['66-execute.c'],
-    'deps': [lib66_dep]
+    'deps': [lib66_dep],
+    'sysdeps': ''
   },
   '66-fdholder-filler': {
     'sources': ['66-fdholder-filler.c'],
-    'deps': [lib66_dep]
+    'deps': [lib66_dep],
+    'sysdeps': ''
   },
   '66-hpr': {
     'sources': ['66-hpr.c'],
-    'deps': [lib66_dep]
+    'deps': [lib66_dep],
+    'sysdeps': sys_lib
   },
   '66-nuke': {
     'sources': ['66-nuke.c'],
-    'deps': [oblibs_dep, skalibs_dep]
+    'deps': [oblibs_dep, skalibs_dep],
+    'sysdeps': ''
   },
   '66-oneshot': {
     'sources': ['66-oneshot.c'],
-    'deps': [lib66_dep]
+    'deps': [lib66_dep],
+    'sysdeps': ''
   },
   '66-shutdown': {
     'sources': ['66-shutdown.c'],
-    'deps': [lib66_dep]
+    'deps': [lib66_dep],
+    'sysdeps': sys_lib
   },
   '66-shutdownd': {
     'sources': ['66-shutdownd.c'],
-    'deps': [lib66_dep]
+    'deps': [lib66_dep],
+    'sysdeps': sys_lib
   },
   '66-umountall': {
     'sources': ['66-umountall.c'],
-    'deps': [lib66_dep]
+    'deps': [lib66_dep],
+    'sysdeps': ''
   },
   'execl-envfile': {
     'sources': ['execl-envfile.c'],
-    'deps': [oblibs_dep, execline_dep, skalibs_dep]
+    'deps': [oblibs_dep, execline_dep, skalibs_dep],
+    'sysdeps': ''
   }
 }
-
-new_exe_configs = {}
-foreach exe, config : exe_configs
-  deps = config['deps']
-  if exe in ['66-hpr', '66-shutdown', '66-shutdownd']
-    if sysclock_lib != ''
-      deps += [cc.find_library(sysclock_lib, required: false)]
-    endif
-    if socket_lib != ''
-      deps += [cc.find_library(socket_lib, required: false)]
-    endif
-  endif
-  new_exe_configs += {exe: {'sources': config['sources'], 'deps': deps}}
-endforeach
-exe_configs = new_exe_configs
 
 libexec_exes = ['66-execute', '66-fdholder-filler', '66-oneshot', '66-shutdownd']
 exe_install_dirs = {}
@@ -103,6 +107,9 @@ foreach dir : exe_dirs
     install_dir = exe_install_dirs.get(exe, get_option('bindir'))
 
     link_args = get_option('enable-static-executable') ? static_link_args : exe_link_args
+    if config['sysdeps'] != ''
+      link_args += config['sysdeps']
+    endif
 
     executable(exe,
       sources: exe_sources,
