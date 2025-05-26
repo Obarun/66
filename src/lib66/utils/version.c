@@ -27,7 +27,6 @@
 
 #define VMIN(a, b) ((a) < (b) ? (a) : (b))
 
-typedef enum metaorder_e metaorder_t ;
 enum metaorder_e
 {
 	METAORDER_PRE_RELEASE,
@@ -35,6 +34,7 @@ enum metaorder_e
 	METAORDER_NONZERO,
 	METAORDER_LETTER_SUFFIX,
 } ;
+typedef enum metaorder_e metaorder_t ;
 
 typedef struct version_metaorder_s version_metaorder_t ;
 struct version_metaorder_s

@@ -28,5 +28,5 @@ resolve_wrapper_t *resolve_set_struct(uint8_t type, void *s)
     wres->obj = s ;
     wres->type = type ;
     return wres ;
-} ;
+}
 

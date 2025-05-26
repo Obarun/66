@@ -44,7 +44,6 @@ static uint32_t napid = 0 ;
 static unsigned int npid = 0 ;
 static uint8_t reloadmsg = 0 ;
 
-typedef enum fifo_e fifo_t, *fifo_t_ref ;
 enum fifo_e
 {
     FIFO_u = 0,
@@ -55,8 +54,8 @@ enum fifo_e
     FIFO_b,
     FIFO_B
 } ;
+typedef enum fifo_e fifo_t, *fifo_t_ref ;
 
-typedef enum tree_action_e tree_action_t, *tree_action_t_ref ;
 enum tree_action_e
 {
     TREE_ACTION_GOTIT = 0,
@@ -64,6 +63,7 @@ enum tree_action_e
     TREE_ACTION_FATAL,
     TREE_ACTION_UNKNOWN
 } ;
+typedef enum tree_action_e tree_action_t, *tree_action_t_ref ;
 
 static const unsigned char actions[3][7] = {
     // u                    U                       d                       D                       F                   b                   B
@@ -420,9 +420,11 @@ static int async_deps(pidtree_t *apidt, unsigned int i, unsigned int what, tain 
                  * signal received.*/
                 r = get_len_until(buf + idx, '@') ;
 
-                if (r < 0)
+                if (r < 0) {
                     /* no more signal */
-                    goto next ;
+                    r = -1 ;
+                    continue ;
+                }
 
                 char line[r + 1] ;
                 memcpy(line, buf + idx, r) ;
@@ -466,8 +468,6 @@ static int async_deps(pidtree_t *apidt, unsigned int i, unsigned int what, tain 
                 }
             }
         }
-        next:
-
     }
 
     return 1 ;

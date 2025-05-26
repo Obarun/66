@@ -32,12 +32,12 @@
     macro(QUOTE,    "quote"), \
     macro(KEYVAL,   "keyval")
 
-typedef enum resolve_parser_enum_expected_e resolve_parser_enum_expected_t ;
 enum resolve_parser_enum_expected_e
 {
     EXPECTED_TEMPLATE(ENUM_EXPECTED),
     E_PARSER_EXPECT_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_expected_e resolve_parser_enum_expected_t ;
 
 #define ENUM_SECTION(id, str) E_PARSER_SECTION_##id
 #define STR_SECTION(id, str) [E_PARSER_SECTION_##id] = str
@@ -52,12 +52,12 @@ enum resolve_parser_enum_expected_e
     macro(REGEX,        "Regex"), \
     macro(EXECUTE,      "Execute")
 
-typedef enum resolve_parser_enum_section_e resolve_parser_enum_section_t ;
 enum resolve_parser_enum_section_e
 {
     SECTION_TEMPLATE(ENUM_SECTION),
     E_PARSER_SECTION_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_section_e resolve_parser_enum_section_t ;
 
 #define ENUM_SECTION_MAIN(id, str, exp) E_PARSER_SECTION_MAIN_##id
 #define STR_SECTION_MAIN(id, str, exp) [E_PARSER_SECTION_MAIN_##id] = str
@@ -87,12 +87,12 @@ enum resolve_parser_enum_section_e
     macro(PROVIDE,          "Provide",          E_PARSER_EXPECT_BRACKET), \
     macro(CONFLICT,         "Conflict",         E_PARSER_EXPECT_BRACKET)
 
-typedef enum resolve_parser_enum_section_main_e resolve_parser_enum_section_main_t ;
 enum resolve_parser_enum_section_main_e
 {
     SECTION_MAIN_TEMPLATE(ENUM_SECTION_MAIN),
     E_PARSER_SECTION_MAIN_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_section_main_e resolve_parser_enum_section_main_t ;
 
 #define ENUM_SECTION_STARTSTOP(id, str, exp) E_PARSER_SECTION_STARTSTOP_##id
 #define STR_SECTION_STARTSTOP(id, str, exp) [E_PARSER_SECTION_STARTSTOP_##id] = str
@@ -103,12 +103,12 @@ enum resolve_parser_enum_section_main_e
     macro(RUNAS, "RunAs",   E_PARSER_EXPECT_LINE), \
     macro(EXEC,  "Execute", E_PARSER_EXPECT_BRACKET)
 
-typedef enum resolve_parser_enum_section_startstop_e resolve_parser_enum_section_startstop_t ;
 enum resolve_parser_enum_section_startstop_e
 {
     SECTION_STARTSTOP_TEMPLATE(ENUM_SECTION_STARTSTOP),
     E_PARSER_SECTION_STARTSTOP_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_section_startstop_e resolve_parser_enum_section_startstop_t ;
 
 #define ENUM_SECTION_LOGGER(id, str, exp) E_PARSER_SECTION_LOGGER_##id
 #define STR_SECTION_LOGGER(id, str, exp) [E_PARSER_SECTION_LOGGER_##id] = str
@@ -125,12 +125,12 @@ enum resolve_parser_enum_section_startstop_e
     macro(TIMESTART,     "TimeoutStart",    E_PARSER_EXPECT_UINT), \
     macro(TIMESTOP,      "TimeoutStop",     E_PARSER_EXPECT_UINT)
 
-typedef enum resolve_parser_enum_section_logger_e resolve_parser_enum_section_logger_t ;
 enum resolve_parser_enum_section_logger_e
 {
     SECTION_LOGGER_TEMPLATE(ENUM_SECTION_LOGGER),
     E_PARSER_SECTION_LOGGER_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_section_logger_e resolve_parser_enum_section_logger_t ;
 
 #define ENUM_SECTION_ENVIRON(id, str, exp) E_PARSER_SECTION_ENVIRON_##id
 #define STR_SECTION_ENVIRON(id, str, exp) [E_PARSER_SECTION_ENVIRON_##id] = str
@@ -141,12 +141,12 @@ enum resolve_parser_enum_section_logger_e
     macro(IMPORTFILE,   "ImportFile",   E_PARSER_EXPECT_BRACKET)
 
 
-typedef enum resolve_parser_enum_section_environ_e resolve_parser_enum_section_environ_t ;
 enum resolve_parser_enum_section_environ_e
 {
     SECTION_ENVIRON_TEMPLATE(ENUM_SECTION_ENVIRON),
     E_PARSER_SECTION_ENVIRON_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_section_environ_e resolve_parser_enum_section_environ_t ;
 
 #define ENUM_SECTION_REGEX(id, str, exp) E_PARSER_SECTION_REGEX_##id
 #define STR_SECTION_REGEX(id, str, exp) [E_PARSER_SECTION_REGEX_##id] = str
@@ -158,12 +158,12 @@ enum resolve_parser_enum_section_environ_e
     macro(FILES,        "Files",        E_PARSER_EXPECT_BRACKET), \
     macro(INFILES,      "InFiles",      E_PARSER_EXPECT_BRACKET)
 
-typedef enum resolve_parser_enum_section_regex_e resolve_parser_enum_section_regex_t ;
 enum resolve_parser_enum_section_regex_e
 {
     SECTION_REGEX_TEMPLATE(ENUM_SECTION_REGEX),
     E_PARSER_SECTION_REGEX_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_section_regex_e resolve_parser_enum_section_regex_t ;
 
 #define ENUM_SECTION_EXECUTE(id, str, exp) E_PARSER_SECTION_EXECUTE_##id
 #define STR_SECTION_EXECUTE(id, str, exp) [E_PARSER_SECTION_EXECUTE_##id] = str
@@ -192,12 +192,12 @@ enum resolve_parser_enum_section_regex_e
     macro(CAPS_BOUND,       "CapsBound",        E_PARSER_EXPECT_BRACKET), \
     macro(CAPS_AMBIENT,     "CapsAmbient",      E_PARSER_EXPECT_BRACKET)
 
-typedef enum resolve_parser_enum_section_execute_e resolve_parser_enum_section_execute_t ;
 enum resolve_parser_enum_section_execute_e
 {
     SECTION_EXECUTE_TEMPLATE(ENUM_SECTION_EXECUTE),
     E_PARSER_SECTION_EXECUTE_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_section_execute_e resolve_parser_enum_section_execute_t ;
 
 #define ENUM_IO_TYPE(id, str, exp) E_PARSER_IO_TYPE_##id
 #define STR_IO_TYPE(id, str, exp) [E_PARSER_IO_TYPE_##id] = str
@@ -215,12 +215,12 @@ enum resolve_parser_enum_section_execute_e
     macro(CLOSE,    "close",    E_PARSER_EXPECT_LINE), \
     macro(NOTSET,   "notset",   E_PARSER_EXPECT_LINE)
 
-typedef enum resolve_parser_enum_io_type_e resolve_parser_enum_io_type_t ;
 enum resolve_parser_enum_io_type_e
 {
     IO_TYPE_TEMPLATE(ENUM_IO_TYPE),
     E_PARSER_IO_TYPE_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_io_type_e resolve_parser_enum_io_type_t ;
 
 #define ENUM_TYPE(id, str, exp) E_PARSER_TYPE_##id
 #define STR_TYPE(id, str, exp) [E_PARSER_TYPE_##id] = str
@@ -231,12 +231,12 @@ enum resolve_parser_enum_io_type_e
     macro(ONESHOT, "oneshot", E_PARSER_EXPECT_LINE), \
     macro(MODULE,  "module",  E_PARSER_EXPECT_LINE)
 
-typedef enum resolve_parser_enum_type_e resolve_parser_enum_type_t ;
 enum resolve_parser_enum_type_e
 {
     TYPE_TEMPLATE(ENUM_TYPE),
     E_PARSER_TYPE_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_type_e resolve_parser_enum_type_t ;
 
 #define ENUM_OPTS(id, str, exp) E_PARSER_OPTS_##id
 #define STR_OPTS(id, str, exp) [E_PARSER_OPTS_##id] = str
@@ -245,12 +245,12 @@ enum resolve_parser_enum_type_e
 #define OPTS_TEMPLATE(macro) \
     macro(LOGGER, "log", E_PARSER_EXPECT_BRACKET)
 
-typedef enum resolve_parser_enum_opts_e resolve_parser_enum_opts_t ;
 enum resolve_parser_enum_opts_e
 {
     OPTS_TEMPLATE(ENUM_OPTS),
     E_PARSER_OPTS_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_opts_e resolve_parser_enum_opts_t ;
 
 #define ENUM_FLAGS(id, str, exp) E_PARSER_FLAGS_##id
 #define STR_FLAGS(id, str, exp) [E_PARSER_FLAGS_##id] = str
@@ -260,12 +260,12 @@ enum resolve_parser_enum_opts_e
     macro(DOWN,     "down",     E_PARSER_EXPECT_BRACKET), \
     macro(EARLIER,  "earlier",  E_PARSER_EXPECT_BRACKET)
 
-typedef enum resolve_parser_enum_flags_e resolve_parser_enum_flags_t ;
 enum resolve_parser_enum_flags_e
 {
     FLAGS_TEMPLATE(ENUM_FLAGS),
     E_PARSER_FLAGS_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_flags_e resolve_parser_enum_flags_t ;
 
 #define ENUM_BUILD(id, str, exp) E_PARSER_BUILD_##id
 #define STR_BUILD(id, str, exp) [E_PARSER_BUILD_##id] = str
@@ -275,12 +275,12 @@ enum resolve_parser_enum_flags_e
     macro(AUTO,     "auto",     E_PARSER_EXPECT_LINE), \
     macro(CUSTOM,   "custom",   E_PARSER_EXPECT_LINE)
 
-typedef enum resolve_parser_enum_build_e resolve_parser_enum_build_t ;
 enum resolve_parser_enum_build_e
 {
     BUILD_TEMPLATE(ENUM_BUILD),
     E_PARSER_BUILD_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_build_e resolve_parser_enum_build_t ;
 
 #define ENUM_TIME(id, str, exp) E_PARSER_TIME_##id
 #define STR_TIME(id, str, exp) [E_PARSER_TIME_##id] = str
@@ -292,12 +292,12 @@ enum resolve_parser_enum_build_e
     macro(NONE, "none", E_PARSER_EXPECT_LINE)
 
 
-typedef enum resolve_parser_enum_time_e resolve_parser_enum_time_t ;
 enum resolve_parser_enum_time_e
 {
     TIME_TEMPLATE(ENUM_TIME),
     E_PARSER_TIME_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_time_e resolve_parser_enum_time_t ;
 
 #define ENUM_SEED(id, str, exp) E_PARSER_SEED_##id
 #define STR_SEED(id, str, exp) [E_PARSER_SEED_##id] = str
@@ -313,12 +313,12 @@ enum resolve_parser_enum_time_e
     macro(GROUPS,       "groups",       E_PARSER_EXPECT_LINE), \
     macro(CONTENTS,     "contents",     E_PARSER_EXPECT_LINE)
 
-typedef enum resolve_parser_enum_seed_e resolve_parser_enum_seed_t ;
 enum resolve_parser_enum_seed_e
 {
     SEED_TEMPLATE(ENUM_SEED),
     E_PARSER_SEED_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_seed_e resolve_parser_enum_seed_t ;
 
 #define ENUM_MANDATORY(id, str) E_PARSER_MANDATORY_##id
 #define STR_MANDATORY(id, str) [E_PARSER_MANDATORY_##id] = str
@@ -329,13 +329,12 @@ enum resolve_parser_enum_seed_e
     macro(OPTS,     "opts"), \
     macro(CUSTOM,   "custom")
 
-
-typedef enum resolve_parser_enum_mandatory_e resolve_parser_enum_mandatory_t ;
 enum resolve_parser_enum_mandatory_e
 {
     MANDATORY_TEMPLATE(ENUM_MANDATORY),
     E_PARSER_MANDATORY_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_mandatory_e resolve_parser_enum_mandatory_t ;
 
 // Valid key for field CapsBound and CapsAmbient
 #define ENUM_CAPS(id, str) E_PARSER_CAPS_##id
@@ -400,12 +399,12 @@ enum resolve_parser_enum_mandatory_e
     CAPS_TEMPLATE_COMMON(macro) \
     CAPS_TEMPLATE_LINUX(macro)
 
-typedef enum resolve_parser_enum_caps_e resolve_parser_enum_caps_t ;
 enum resolve_parser_enum_caps_e
 {
     CAPS_TEMPLATE(ENUM_CAPS),
     E_PARSER_CAPS_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_caps_e resolve_parser_enum_caps_t ;
 
 #define CATEGORY_PARSER(id) E_PARSER_CATEGORY_##id
 
@@ -428,12 +427,12 @@ enum resolve_parser_enum_caps_e
     macro(MANDATORY), \
     macro(CAPS)
 
-typedef enum resolve_parser_enum_category_e resolve_parser_enum_category_t ;
 enum resolve_parser_enum_category_e
 {
     PARSER_CATEGORY(CATEGORY_PARSER),
     E_PARSER_CATEGORY_ENDOFKEY
 } ;
+typedef enum resolve_parser_enum_category_e resolve_parser_enum_category_t ;
 
 typedef struct resolve_parser_enum_table_s resolve_parser_enum_table_t ;
 struct resolve_parser_enum_table_s {

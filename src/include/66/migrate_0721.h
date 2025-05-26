@@ -199,7 +199,6 @@
                                 RESOLVE_SERVICE_ADDON_ENVIRON_ZERO_0721, \
                                 RESOLVE_SERVICE_ADDON_REGEX_ZERO_0721 }
 
- typedef enum resolve_service_enum_e_0721 resolve_service_enum_t_0721, *resolve_service_enum_t_ref_0721;
  enum resolve_service_enum_e_0721
  {
      E_RESOLVE_SERVICE_NAME_0721 = 0,
@@ -294,8 +293,8 @@
      E_RESOLVE_SERVICE_ENDOFKEY_0721
 
  } ;
+ typedef enum resolve_service_enum_e_0721 resolve_service_enum_t_0721, *resolve_service_enum_t_ref_0721;
 
- typedef enum enum_key_section_startstop_e_0721 enum_key_section_startstop_t_0721, *enum_key_section_startstop_t_ref_0721 ;
  enum enum_key_section_startstop_e_0721
  {
      KEY_STARTSTOP_BUILD_0721 = 0 ,
@@ -304,8 +303,8 @@
      KEY_STARTSTOP_EXEC_0721 ,
      KEY_STARTSTOP_ENDOFKEY_0721
  } ;
+ typedef enum enum_key_section_startstop_e_0721 enum_key_section_startstop_t_0721, *enum_key_section_startstop_t_ref_0721 ;
 
- typedef enum enum_section_e_0721 enum_section_t_0721, *enum_section_t_ref_0721 ;
  enum enum_section_e_0721
  {
      SECTION_MAIN_0721 = 0 ,
@@ -316,6 +315,7 @@
      SECTION_REGEX_0721 ,
      SECTION_ENDOFKEY_0721
  } ;
+ typedef enum enum_section_e_0721 enum_section_t_0721, *enum_section_t_ref_0721 ;
 
  extern void migrate_0721(ssexec_t *info) ;
 

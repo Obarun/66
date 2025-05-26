@@ -61,8 +61,7 @@ struct tree_opts_map_s
     int const id ;
 } ;
 
-typedef enum enum_tree_opts_e enum_tree_opts_t, *enum_tree_opts_t_ref ;
-enum enum_ns_opts_e
+enum enum_tree_opts_e
 {
     TREE_OPTS_DEPENDS = 0,
     TREE_OPTS_REQUIREDBY,
@@ -75,6 +74,7 @@ enum enum_ns_opts_e
     TREE_OPTS_CLONE,
     TREE_OPTS_ENDOFKEY
 } ;
+typedef enum enum_tree_opts_e enum_tree_opts_t, *enum_tree_opts_t_ref ;
 
 tree_opts_map_t const tree_opts_table[] =
 {

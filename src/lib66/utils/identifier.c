@@ -85,14 +85,14 @@ int identifier_replace_username(char *store, const char *rid)
 {
     (void)rid ;
     return identifier_get_name(store) ;
-} ;
+}
 
 int identifier_replace_useruid(char *store, const char *rid)
 {
     (void)rid ;
     store[uid_fmt(store, getuid())] = 0 ;
     return 1 ;
-} ;
+}
 
 int identifier_replace_usergid(char *store, const char *rid)
 {
@@ -106,7 +106,7 @@ int identifier_replace_usergid(char *store, const char *rid)
         store[gid_fmt(store, getgid())] = 0 ;
     }
     return 1 ;
-} ;
+}
 
 int identifier_replace_usergroup(char *store, const char *rid)
 {
@@ -130,7 +130,7 @@ int identifier_replace_usergroup(char *store, const char *rid)
     }
     return 1 ;
 
-} ;
+}
 
 int identifier_replace_home(char *store, const char *rid)
 {

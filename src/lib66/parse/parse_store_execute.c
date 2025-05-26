@@ -38,7 +38,7 @@ static int limit_compute(stack *store, uint64_t *u, resolve_enum_table_t table)
         parse_error_return(0, 3, table) ;
 
     return 1 ;
-} ;
+}
 
 int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table_t table)
 {
@@ -199,17 +199,18 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
 
         case E_PARSER_SECTION_EXECUTE_UMASK:
 
-            uint32_t mode ;
-            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-            if (!uint32_oscan(store->s, &mode))
-                parse_error_return(0, 3, table) ;
+            {
+                uint32_t mode ;
+                parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
+                if (!uint32_oscan(store->s, &mode))
+                    parse_error_return(0, 3, table) ;
 
-            if (mode > 0777)
-                parse_error_return(0, 0, table) ;
+                if (mode > 0777)
+                    parse_error_return(0, 0, table) ;
 
-            res->execute.umask = mode ;
-            res->execute.want_umask = 1 ;
-
+                res->execute.umask = mode ;
+                res->execute.want_umask = 1 ;
+            }
             break ;
 
         case E_PARSER_SECTION_EXECUTE_NICE:

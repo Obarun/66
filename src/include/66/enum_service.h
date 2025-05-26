@@ -43,12 +43,12 @@
     macro(ENABLED,      "enabled"), \
     macro(ISLOG,        "islog")
 
-typedef enum resolve_service_enum_config_e resolve_service_enum_config_t ;
 enum resolve_service_enum_config_e
 {
     CONFIG_TEMPLATE(ENUM_SERVICE_CONFIG),
     E_RESOLVE_SERVICE_CONFIG_ENDOFKEY
 } ;
+typedef enum resolve_service_enum_config_e resolve_service_enum_config_t ;
 
 // path
 
@@ -61,12 +61,12 @@ enum resolve_service_enum_config_e
     macro(FRONTEND,     "frontend"), \
     macro(SERVICEDIR,   "servicedir")
 
-typedef enum resolve_service_enum_path_e resolve_service_enum_path_t ;
 enum resolve_service_enum_path_e
 {
     PATH_TEMPLATE(ENUM_SERVICE_PATH),
     E_RESOLVE_SERVICE_PATH_ENDOFKEY
 } ;
+typedef enum resolve_service_enum_path_e resolve_service_enum_path_t ;
 
 // dependencies
 
@@ -88,12 +88,12 @@ enum resolve_service_enum_path_e
     macro(NPROVIDE,     "nprovide"), \
     macro(NCONFLICT,    "nconflict")
 
-typedef enum resolve_service_enum_deps_e resolve_service_enum_deps_t ;
 enum resolve_service_enum_deps_e
 {
     DEPS_TEMPLATE(ENUM_SERVICE_DEPS),
     E_RESOLVE_SERVICE_DEPS_ENDOFKEY
 } ;
+typedef enum resolve_service_enum_deps_e resolve_service_enum_deps_t ;
 
 // execute
 
@@ -123,12 +123,12 @@ enum resolve_service_enum_deps_e
     macro(CAPS_BOUND,       "capsbound"), \
     macro(CAPS_AMBIENT,     "capsambient")
 
-typedef enum resolve_service_enum_execute_e resolve_service_enum_execute_t ;
 enum resolve_service_enum_execute_e
 {
     EXECUTE_TEMPLATE(ENUM_SERVICE_EXECUTE),
     E_RESOLVE_SERVICE_EXECUTE_ENDOFKEY
 } ;
+typedef enum resolve_service_enum_execute_e resolve_service_enum_execute_t ;
 
 // live
 
@@ -148,12 +148,12 @@ enum resolve_service_enum_execute_e
     macro(FDHOLDERDIR,      "fdholderdir"), \
     macro(ONESHOTDDIR,      "oneshotddir")
 
-typedef enum resolve_service_enum_live_e resolve_service_enum_live_t ;
 enum resolve_service_enum_live_e
 {
     LIVE_TEMPLATE(ENUM_SERVICE_LIVE),
     E_RESOLVE_SERVICE_LIVE_ENDOFKEY
 } ;
+typedef enum resolve_service_enum_live_e resolve_service_enum_live_t ;
 
 // logger
 
@@ -175,12 +175,12 @@ enum resolve_service_enum_live_e
     macro(LOGTIMEOUTSTART,  "logtimeoutstart"), \
     macro(LOGTIMEOUTSTOP,   "logtimeoutstop")
 
-typedef enum resolve_service_enum_logger_e resolve_service_enum_logger_t ;
 enum resolve_service_enum_logger_e
 {
     LOGGER_TEMPLATE(ENUM_SERVICE_LOGGER),
     E_RESOLVE_SERVICE_LOGGER_ENDOFKEY
 } ;
+typedef enum resolve_service_enum_logger_e resolve_service_enum_logger_t ;
 
 #define ENUM_SERVICE_ENVIRON(id, str) E_RESOLVE_SERVICE_ENVIRON_##id
 #define STR_SERVICE_ENVIRON(id, str) [E_RESOLVE_SERVICE_ENVIRON_##id] = str
@@ -194,12 +194,12 @@ enum resolve_service_enum_logger_e
     macro(NIMPORTFILE,   "nimportfile")
 
 
-typedef enum resolve_service_enum_environ_e resolve_service_enum_environ_t ;
 enum resolve_service_enum_environ_e
 {
     ENVIRON_TEMPLATE(ENUM_SERVICE_ENVIRON),
     E_RESOLVE_SERVICE_ENVIRON_ENDOFKEY
 } ;
+typedef enum resolve_service_enum_environ_e resolve_service_enum_environ_t ;
 
 // regex
 
@@ -216,12 +216,12 @@ enum resolve_service_enum_environ_e
     macro(NFILES,       "nfiles"), \
     macro(NINFILES,     "ninfiles")
 
-typedef enum resolve_service_enum_regex_e resolve_service_enum_regex_t ;
 enum resolve_service_enum_regex_e
 {
     REGEX_TEMPLATE(ENUM_SERVICE_REGEX),
     E_RESOLVE_SERVICE_REGEX_ENDOFKEY
 } ;
+typedef enum resolve_service_enum_regex_e resolve_service_enum_regex_t ;
 
 // io
 
@@ -237,12 +237,12 @@ enum resolve_service_enum_regex_e
     macro(STDERR,       "stderrtype"), \
     macro(STDERRDEST,   "stderrdest")
 
-typedef enum resolve_service_enum_io_e resolve_service_enum_io_t ;
 enum resolve_service_enum_io_e
 {
     IO_TEMPLATE(ENUM_SERVICE_IO),
     E_RESOLVE_SERVICE_IO_ENDOFKEY
 } ;
+typedef enum resolve_service_enum_io_e resolve_service_enum_io_t ;
 
 // limit
 
@@ -267,12 +267,12 @@ enum resolve_service_enum_io_e
     macro(SIGPENDING,  "limitsigpending"), \
     macro(STACK,       "limitstack")
 
-typedef enum resolve_service_enum_limit_e resolve_service_enum_limit_t ;
 enum resolve_service_enum_limit_e
 {
     LIMIT_TEMPLATE(ENUM_SERVICE_LIMIT),
     E_RESOLVE_SERVICE_LIMIT_ENDOFKEY
 } ;
+typedef enum resolve_service_enum_limit_e resolve_service_enum_limit_t ;
 
 // Category
 #define CATEGORY_SERVICE(id) E_RESOLVE_SERVICE_CATEGORY_##id
@@ -289,12 +289,12 @@ enum resolve_service_enum_limit_e
     macro(IO) , \
     macro(LIMIT)
 
-typedef enum resolve_service_enum_category_e resolve_service_enum_category_t ;
 enum resolve_service_enum_category_e
 {
     SERVICE_CATEGORY(CATEGORY_SERVICE),
     E_RESOLVE_SERVICE_CATEGORY_ENDOFKEY
 } ;
+typedef enum resolve_service_enum_category_e resolve_service_enum_category_t ;
 
 typedef struct resolve_service_enum_table_s resolve_service_enum_table_t ;
 struct resolve_service_enum_table_s

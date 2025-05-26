@@ -56,26 +56,26 @@
     macro(TREE), \
     macro(MASTER)
 
-typedef enum resolve_tree_enum_e resolve_tree_enum_t ;
 enum resolve_tree_enum_e
 {
     TREE_TEMPLATE(ENUM_TREE),
     E_RESOLVE_TREE_ENDOFKEY
 } ;
+typedef enum resolve_tree_enum_e resolve_tree_enum_t ;
 
-typedef enum resolve_tree_master_enum_e resolve_tree_master_enum_t ;
 enum resolve_tree_master_enum_e
 {
     MASTER_TEMPLATE(ENUM_MASTER),
     E_RESOLVE_TREE_MASTER_ENDOFKEY
 } ;
+typedef enum resolve_tree_master_enum_e resolve_tree_master_enum_t ;
 
-typedef enum resolve_tree_enum_category_e resolve_tree_enum_category_t ;
 enum resolve_tree_enum_category_e
 {
     TREE_CATEGORY(CATEGORY_TREE),
     E_RESOLVE_TREE_CATEGORY_ENDOFKEY
 } ;
+typedef enum resolve_tree_enum_category_e resolve_tree_enum_category_t ;
 
 typedef struct resolve_tree_enum_table_s resolve_tree_enum_table_t ;
 struct resolve_tree_enum_table_s

@@ -217,7 +217,6 @@ struct resolve_service_s_0802
                                RESOLVE_SERVICE_ADDON_REGEX_ZERO_0802, \
                                IO_REDIRECTION_ZERO_0802 }
 
-typedef enum resolve_service_enum_e_0802 resolve_service_enum_t_0802, *resolve_service_enum_t_ref_0802;
 enum resolve_service_enum_e_0802
 {
     E_RESOLVE_SERVICE_RVERSION_0802 = 0,
@@ -316,8 +315,8 @@ enum resolve_service_enum_e_0802
     E_RESOLVE_SERVICE_STDERRDEST_0802,
     E_RESOLVE_SERVICE_ENDOFKEY
 } ;
+typedef enum resolve_service_enum_e_0802 resolve_service_enum_t_0802, *resolve_service_enum_t_ref_0802;
 
-typedef enum enum_io_type_e_0802 enum_io_type_t_0802, *enum_io_type_t_ref_0802 ;
 enum enum_io_type_e_0802
 {
     IO_TYPE_TTY_0802 = 0,
@@ -332,5 +331,6 @@ enum enum_io_type_e_0802
     IO_TYPE_NOTSET_0802,
     IO_TYPE_ENDOFKEY
 } ;
+typedef enum enum_io_type_e_0802 enum_io_type_t_0802, *enum_io_type_t_ref_0802 ;
 
 #endif

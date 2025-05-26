@@ -50,7 +50,6 @@ static uint8_t reloadmsg = 0 ;
 static uint8_t PROPAGATE = 1 ;
 static ssexec_t_ref PINFO = 0 ;
 
-typedef enum fifo_e fifo_t, *fifo_t_ref ;
 enum fifo_e
 {
     FIFO_u = 0,
@@ -61,8 +60,8 @@ enum fifo_e
     FIFO_b,
     FIFO_B
 } ;
+typedef enum fifo_e fifo_t, *fifo_t_ref ;
 
-typedef enum service_action_e service_action_t, *service_action_t_ref ;
 enum service_action_e
 {
     SERVICE_ACTION_GOTIT = 0,
@@ -70,6 +69,7 @@ enum service_action_e
     SERVICE_ACTION_FATAL,
     SERVICE_ACTION_UNKNOWN
 } ;
+typedef enum service_action_e service_action_t, *service_action_t_ref ;
 
 static const unsigned char actions[2][7] = {
     // u U d D F b B
@@ -513,9 +513,11 @@ static int async_deps(pidservice_t *apids, uint32_t i, uint8_t what, tain *deadl
                  * signal received.*/
                 r = get_len_until(buf + idx, '@') ;
 
-                if (r < 0)
+                if (r < 0) {
                     /* no more signal */
-                    goto next ;
+                    r = -1 ;
+                    continue ;
+                }
 
                 char line[r + 1] ;
                 memcpy(line, buf + idx, r) ;
@@ -559,7 +561,6 @@ static int async_deps(pidservice_t *apids, uint32_t i, uint8_t what, tain *deadl
                 }
             }
         }
-        next:
     }
 
     return 1 ;

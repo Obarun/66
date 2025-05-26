@@ -43,7 +43,6 @@
 #define STATE_FLAGS_ISEARLIER (1 << 15)
 #define STATE_FLAGS_MISSING (1 << 16)
 
-typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;
 struct ss_state_s
 {
     /** STATE_FLAGS_FALSE -> no,

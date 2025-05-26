@@ -28,12 +28,12 @@
     macro(SERVICE), \
     macro(TREE)
 
-typedef enum resolve_enum_category_e resolve_enum_category_t ;
 enum resolve_enum_category_e
 {
     RESOLVE_CATEGORY(CATEGORY_RESOLVE),
     E_RESOLVE_CATEGORY_ENDOFKEY
 } ;
+typedef enum resolve_enum_category_e resolve_enum_category_t ;
 
 typedef struct resolve_enum_table_s resolve_enum_table_t ;
 struct resolve_enum_table_s
