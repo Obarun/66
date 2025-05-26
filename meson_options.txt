@@ -136,9 +136,9 @@ description: 'Enable s6-log notification')
 option('with-doc',
 type: 'boolean',
 value: false,
-description: 'Build documentation in manpages and htlm format')
+description: 'Build and install documentation in manpages and htlm format')
 
-option('with-pkgconf',
+option('with-pkgconfig',
 type: 'boolean',
 value: true,
 description: 'Build and install a /usr/lib/pkgconfig/lib66.pc file')

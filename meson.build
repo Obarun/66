@@ -8,34 +8,35 @@ project('66',
           'prefix=/usr',
           'shebangdir=/usr/bin',
           'livedir=/run/66',
-          'max_service=500',
-          'max_path_size=1024',
-          'max_service_size=256',
-          'max_tree_name_size=256',
-          'default_tree_name=global',
-          'skeleton_dir=/etc/66',
-          'system_dir=/var/lib/66',
-          'system_log_dir=/var/log/66',
-          's6_log_user=root',
-          's6_log_timestamp=iso',
-          's6_log_notification=true',
-          'system_service_dir=/usr/share/66/service',
-          'system_script_dir=/usr/share/66/script',
-          'system_seed_dir=/usr/share/66/seed',
-          'sysadmin_service_dir=/etc/66/service',
-          'sysadmin_service_conf_dir=/etc/66/conf',
-          'sysadmin_seed_dir=/etc/66/seed',
-          'sysadmin_environment_dir=/etc/66/environment',
-          'user_dir=.66',
-          'user_log_dir=.66/log',
-          'user_service_dir=.66/service',
-          'user_service_conf_dir=.66/conf',
-          'user_script_dir=.66/script',
-          'user_seed_dir=.66/seed',
-          'user_environment_dir=.66/environment',
-          'sysdeps_dir=/usr/lib/skalibs/sysdeps',
+          'max-service=500',
+          'max-path-size=1024',
+          'max-service-size=256',
+          'max-tree-name-size=256',
+          'default-tree-name=global',
+          'skeleton-dir=/etc/66',
+          'system-dir=/var/lib/66',
+          'system-log-dir=/var/log/66',
+          's6_log-user=root',
+          's6_log-timestamp=iso',
+          's6_log-notification=true',
+          'system-service-dir=/usr/share/66/service',
+          'system-script-dir=/usr/share/66/script',
+          'system-seed-dir=/usr/share/66/seed',
+          'sysadmin-service-dir=/etc/66/service',
+          'sysadmin-service-conf_dir=/etc/66/conf',
+          'sysadmin-seed-dir=/etc/66/seed',
+          'sysadmin-environment-dir=/etc/66/environment',
+          'user-dir=.66',
+          'user-log-dir=.66/log',
+          'user-service-dir=.66/service',
+          'user-service-conf-dir=.66/conf',
+          'user-script-dir=.66/script',
+          'user-seed-dir=.66/seed',
+          'user-environment-dir=.66/environment',
+          'sysdeps-dir=/usr/lib/skalibs/sysdeps',
           'enable-shared=true',
-          'with_doc=false',
+          'with-doc=false',
+          'with-pkgconfig=false',
           'warning_level=2',
           'optimization=2',
           'buildtype=plain',
@@ -43,6 +44,7 @@ project('66',
         ])
 
 message('See INSTALL_MESON.md for detailed configuration instructions and warnings.')
+
 fs = import('fs')
 
 # Versioning
@@ -68,7 +70,7 @@ include_dirs = default_include_dirs + user_include_dirs
 lib_dirs = default_lib_dirs + user_staticlib_dirs + user_dynamiclib_dirs
 
 # Dependency: skalibs
-skalibs_lib = cc.find_library('skarnet', dirs: lib_dirs, static: get_option('enable-static'), required: false)
+skalibs_lib = cc.find_library('skarnet', dirs: lib_dirs, static: get_option('enable-static-deps'), required: false)
 skalibs_header = cc.has_header('skalibs.h', args: ['-I', include_dirs], required: false)
 if not skalibs_lib.found() # or not skalibs_header
   error('skalibs ' + version_skalibs + ' not found. Ensure libskalibs and skalibs.h are installed, or specify paths with with-include-dir and with-staticlib-dir/with-dynamiclib-dir.')
@@ -79,7 +81,7 @@ dep_skalibs = declare_dependency(
 )
 
 # Dependency: execline
-execline_lib = cc.find_library('execline', dirs: lib_dirs, static: get_option('enable-static'), required: false)
+execline_lib = cc.find_library('execline', dirs: lib_dirs, static: get_option('enable-static-deps'), required: false)
 execline_header = cc.has_header('execline.h', args: ['-I', include_dirs], required: false)
 if not execline_lib.found() or not execline_header
   error('execline ' + version_execline + ' not found. Ensure libexecline and execline/execline.h are installed, or specify paths with with-include-dir and with-staticlib-dir/with-dynamiclib-dir.')
@@ -90,7 +92,7 @@ dep_execline = declare_dependency(
 )
 
 # Dependency: s6
-s6_lib = cc.find_library('s6', dirs: lib_dirs, static: get_option('enable-static'), required: false)
+s6_lib = cc.find_library('s6', dirs: lib_dirs, static: get_option('enable-static-deps'), required: false)
 s6_header = cc.has_header('s6.h', args: ['-I', include_dirs], required: false)
 if not s6_lib.found() or not s6_header
   error('s6 ' + version_s6 + ' not found. Ensure libs6 and s6/s6.h are installed, or specify paths with with-include-dir and with-staticlib-dir/with-dynamiclib-dir.')
@@ -101,7 +103,7 @@ dep_s6 = declare_dependency(
 )
 
 # Dependency: oblibs
-oblibs_lib = cc.find_library('oblibs', dirs: lib_dirs, static: get_option('enable-static'), required: false)
+oblibs_lib = cc.find_library('oblibs', dirs: lib_dirs, static: get_option('enable-static-deps'), required: false)
 oblibs_header = cc.has_header('oblibs.h', args: ['-I', include_dirs], required: false)
 if not oblibs_lib.found() or not oblibs_header
   error('oblibs ' + version_oblibs + ' not found. Ensure liboblibs and oblibs.h are installed, or specify paths with with-include-dir and with-staticlib-dir/with-dynamiclib-dir.')
@@ -116,7 +118,7 @@ skalibs_dep = dep_skalibs
 execline_dep = dep_execline
 s6_dep = dep_s6
 oblibs_dep = dep_oblibs
-doc_dep = dependency('lowdown', version: version_lowdown, required: false, static: get_option('enable-static'))
+doc_dep = dependency('lowdown', version: version_lowdown, required: false, static: get_option('enable-static-deps'))
 
 # Read sysdeps libraries
 pthread_lib = ''
@@ -261,7 +263,7 @@ if get_option('enable-static-deps') and get_option('enable-shared')
   error('Cannot enable both enable-static-deps and enable-shared')
 endif
 if get_option('enable-static-deps') and not get_option('enable-static')
-  warning('enable-static-deps requires enable-static to build lib66.a; enabling enable-static')
+  error('enable-static-deps requires enable-static to build lib66.a')
 endif
 if get_option('system-service-dir') == get_option('sysadmin-service-dir')
   error('system-service-dir and sysadmin-service-dir must be different paths.')
@@ -282,7 +284,7 @@ subdir('src/66')
 subdir('skel')
 subdir('doc')
 
-if get_option('with-pkgconf')
+if get_option('with-pkgconfig')
   # Generate and install pkg-config file for lib66
   private_libs = []
   if get_option('enable-static') or get_option('enable-static-deps')
