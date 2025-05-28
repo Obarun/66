@@ -15,42 +15,110 @@ author: Eric Vidal <eric@obarun.org>
 
 ## Overview
 
-This release of the 66 Service Manager introduces powerful new features, critical bug fixes, and performance enhancements. Key additions, an `[Execute]` section with advanced configuration options, and relaxed requirements for mandatory fields. This release also addresses significant bugs, optimizes resource usage, and ensures smoother migrations.
+This document outlines the changes, new features, and bug fixes introduced in the *66* service management system from version `0.8.1.1` to `0.8.2.0`. It is intended for users and administrators upgrading their systems to version `0.8.2.0`. Please read these notes carefully to understand the changes.
 
-## New Features
+### New Features
 
-- **Conflict Key in [Main] Section** (731f708): Added a new `Conflict` key to the `[Main]` section, enabling the declaration of conflicting services to prevent simultaneous execution of incompatible services.
-- **Execute Section for Pre-Exec Configuration** (30647e8): Introduced the `[Execute]` section to configure tasks executed before calling `exec` for service start and stop processes. Supported keys include:
-  - `ChangeDirectory` (a6f4bfa): Sets the working directory via `chdir()`.
-  - `Nice` (de8aefc): Configures CPU scheduling priority via `setpriority()`.
-  - `UMask` (b0e24b4): Sets the file creation mask via `umask()`.
-  - `BlockPrivileges` (edfa67d): Restricts privileges using `prctl()` for enhanced security.
-  - `LimitXXX` Keys (de8bccd): Configures resource limits (e.g., `LimitNICE`, `LimitNOFILE`, `LimitRTPRIO`,...) via `setrlimit()`.
-  - `CapsBound` and `CapsAmbient` (9e9fd64): Sets bounding and ambient capabilities without `libcap` dependencies.
-- **Tree Enablement at Creation** (dceeb88): Added support for enabling a service tree at creation time, streamlining setup.
-- **Relaxed Mandatory Fields** (d3fbcee): Made `Description`, `User`, and `Version` keys optional, with defaults:
-  - `Description`: "<service_name> service".
-  - `User`: Process owner’s name.
-  - `Version`: Installed 66 version.
+- **Introduction of the `[Execute]` Section** (30647e8):
 
-## Bug Fixes
+   A new `[Execute]` section has been added to configure tasks executed just before calling `exec` for a service’s start and stop processes. This section enhances service configuration flexibility.
 
-- **Logger Destination Ownership** (6079cf7): Fixed a critical bug from version `0.8.0.0` where loggers incorrectly set the destination owner to `root`, ignoring the intended owner. Also resolved a migration issue that removed `runas` field information.
-- **Log File Display for E_PARSER_IO_TYPE_FILE** (fe7f14e): Corrected an issue preventing log file display for `E_PARSER_IO_TYPE_FILE` type services.
-- **uint64_t Read/Write Handling** (e028da2): Fixed reading and writing of `uint64_t` values to prevent data corruption.
-- **Frontend Prototype and Migration** (9e8d6c9, b8a963b): Fixed the frontend prototype removing invalid `destination` keys. Provided a migration process for version `0.8.2.0`.
+   - New Keys in `[Execute]` Section:
+     - `ChangeDirectory` (a6f4bfa): Sets the working directory via `chdir()`.
+     - `Nice` (de8aefc): Configures CPU scheduling priority via `setpriority()`.
+     - `UMask` (b0e24b4): Sets the file creation mask via `umask()`.
+     - `BlockPrivileges` (edfa67d): Restricts privileges via `prctl()`.
+     - `LimitXXX` (de8bccd): A family of keys (e.g., `LimitNICE`, `LimitNOFILE`, `LimitRTPRIO`) to configure resource limits via `setrlimit()`.
+     - `CapsBound` and `CapsAmbient` (9e9fd64): Sets bounding set and ambient capabilities without requiring `libcap` dependencies.
 
-## Improvements
+- **New `Conflict` Key in `[Main]` Section** (731f708):
 
-- **Memory Leak Prevention** (7a36e5a): Addressed potential memory leaks for improved stability.
-- **Algorithm Optimization** (29a6505): Denied module type in `[Execute]`, and fixed `logger.name` during migration.
-- **Frontend Enhancements** (b8a963b): Updated the frontend prototype and cleaned up examples.
-- **Boolean Syntax for BlockPrivileges** (67de347): Introduced new boolean syntax and updated documentation.
-- **Version Comparison API** (044d4ff): Updated to the new `version_compare` API and added tests.
+   A new `Conflict` key allows the declaration of conflicting services, improving service dependency management.
+
+- **Non-Mandatory Keys in Service Files** (d3fbcee):
+
+   The `Description`, `User`, and `Version` keys are no longer mandatory.
+
+   Defaults are:
+
+   - `Description`: Set to "<service_name> service".
+   - `User`: Set to the name of the process owner.
+   - `Version`: Set to the installed version of 66.
+
+- **Tree Creation with Enable Option** (dceeb88):
+
+   Trees can now be enabled at creation time, streamlining tree administration.
+
+- **Meson Build System Adoption** (1f68ff1):
+
+   The project has transitioned to the Meson build system, offering improved cross-platform support and build efficiency. The traditional `configure` and `make` system remains functional during the transition. Users are encouraged to test the Meson system and provide feedback. See [`INSTALL_MESON.md`](https://git.obarun.org/Obarun/66/-/blob/master/INSTALL_MESON.md?ref_type=heads) for details.
+
+### Bug Fixes
+
+- **Logger Destination Ownership** (Critical) (6079cf7):
+
+   Fixed a significant bug introduced in version `0.8.0.0` that incorrectly set the logger destination owner to `root` for `s6log` type loggers and removed the `runas` field during migration. This release fix the ownership of the logger destination during the migration phase but only for service logger of type `StdOut=s6log`.
+
+- **Service Crash Handling** (c035a94):
+
+   Ensured a fatal error is triggered when a service crashes, improving reliability.
+
+- **Compiler Warnings** (c440c4d, cd9a0c2):
+
+   - Removed GCC/Clang warning messages.
+   - Fixed a compiler warning message.
+
+- **Migration Process Fixes** (96d4b49, 6a3aae7, 9e8d6c9):
+
+   - Ignored unknown logger directories during migration.
+   - Fixed handling of `Master` resolve file during migration.
+
+- **File Descriptor and Resource Handling** (e028da2, fe7f14e):
+
+   - Fixed reading and writing of `uint64_t` values.
+   - Fixed log file display with `status` command for `StdOut=file:/path/to/file` redirection type.
+
+- **Memory Leak Prevention** (7a36e5a):
+
+   Addressed a memory leak issue.
+
+- **Miscellaneous Fixes** (b8a963b, 2d96003, b138e98, 6ab8a36, a04c574):
+
+   - Fixed option name and removed invalid key destination in examples.
+   - Fixed headers and reorganized display order fields.
+   - Fixed typo and ensured Linux-specific compatibility.
+   - Removed useless header file.
+
+### Enhancements
+
+- **CI/CD Enhancements** (1afbec5, 3677099):
+
+   - Switched CI/CD pipeline to use the Meson build system.
+
+- **New Boolean Syntax** (67de347):
+
+   A new boolean syntax has been introduced, documented for the `BlockPrivileges` key.
+
+- **Version Comparison API** (044d4ff):
+
+   Adapted to the new `version_compare` API interface and added tests for the function.
+
+### Migration Notes
+
+- **Migration Process for 0.8.2.0** (9e8d6c9):
+
+   A dedicated migration process has been provided to ensure a smooth transition to version `0.8.2.0`. Please, consider the introduced bug below. The migration try its best to fix this issue by itself but it may impact your migration process as the migration process only handle with service logger of type `StdOut=s6log`. If after a restart of a service logger you get a down process, ensure that your loggers directories have the correct permissions. The error should be visible at the `/run/66/log/0/current` uncaught-logs file.
+
+- **Logger Destination Ownership** (6079cf7):
+
+   If you are upgrading from version `0.8.0.0` or `0.8.1.1`, verify the ownership of logger destinations for `s6log` type loggers, as the bug fix may affect existing configurations and upgrade process.
+
+- **Meson Build System** (1f68ff1):
+
+   Users are encouraged to switch to the Meson build system and to consider the old build system as deprecated. The old `configure` and `make` system remains supported during the transition. Refer to `INSTALL_MESON.md` for setup instructions.
 
 ## Notes
 
-- A migration process for version `0.8.2.0` is included to ensure seamless upgrades.
 - For detailed documentation on new keys and features, refer to the [documentation](https://web.obarun.org/software/66/latest).
 
 ---
