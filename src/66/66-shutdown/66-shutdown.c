@@ -235,7 +235,7 @@ static inline void access_control (void)
         fmt[uint32_fmt(fmt, AC_BUFSIZE - 1)] = 0 ;
         log_die(LOG_EXIT_ONE, AC_FILE, " is too big: it needs to be ", fmt, " bytes or less") ;
     }
-    if (allread(fd, buf, st.st_size) < st.st_size)
+    if (allread(fd, buf, st.st_size) < (size_t)st.st_size)
         log_dieusys(LOG_EXIT_SYS, "read ", AC_FILE) ;
     fd_close(fd) ;
     buf[st.st_size] = 0 ;

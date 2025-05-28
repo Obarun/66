@@ -78,6 +78,7 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
                             log_die(LOG_EXIT_USER, l.arg, " is not in the list of user-available signals") ;
                         opt = cmdsig[sig] ;
                     }
+                    __attribute__((fallthrough)) ;
                 case 'a' :
                 case 'b' :
                 case 'q' :
