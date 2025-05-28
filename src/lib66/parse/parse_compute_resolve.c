@@ -31,7 +31,6 @@
 #include <66/utils.h>
 #include <66/service.h>
 #include <66/sanitize.h>
-#include <s6/config.h>
 
 #ifndef FAKELEN
 #define FAKELEN strlen(run)

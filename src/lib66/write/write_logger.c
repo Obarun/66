@@ -28,11 +28,8 @@
 #include <66/config.h>
 #include <66/write.h>
 #include <66/utils.h>
-#include <s6/config.h>
 #include <66/constants.h>
 #include <66/parse.h>
-
-#include <s6/config.h>
 
 #ifndef FAKELEN
 #define FAKELEN strlen(run)
