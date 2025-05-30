@@ -70,10 +70,10 @@ build_oblibs() {
 
     check_tag "${oblibs_tag}"
 
-    ./configure \
-        --prefix=/usr
+    meson setup builddir -D prefix=/usr || return 1
+    meson compile -C builddir || return 1
+    meson install -C builddir || return 1
 
-    make install || return 1
     cd ..
 }
 
