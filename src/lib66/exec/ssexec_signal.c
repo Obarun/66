@@ -53,7 +53,7 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
 
     int r ;
     uint8_t requiredby = 1, propagate = 1, opt_updown = 0, reloadmsg = 0 ;
-    char updown[4] = "-w \0" ;
+    char updown[5] = "-w \0" ;
     char data[DATASIZE + 1] = "-" ;
     unsigned int datalen = 1 ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
