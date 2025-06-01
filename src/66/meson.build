@@ -66,7 +66,7 @@ exe_configs = {
   }
 }
 
-libexec_exes = ['66-execute', '66-fdholder-filler', '66-oneshot', '66-shutdownd']
+libexec_exes = ['66-execute', '66-fdholder-filler', '66-oneshot']
 exe_install_dirs = {}
 foreach exe : libexec_exes
   exe_install_dirs += {exe: get_option('libexecdir')}
