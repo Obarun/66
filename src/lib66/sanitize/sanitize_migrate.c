@@ -25,7 +25,7 @@
 #include <66/sanitize.h>
 #include <66/migrate.h>
 
-#define MIGRATE_NVERSION 7
+#define MIGRATE_NVERSION 8
 static const char *version_list[MIGRATE_NVERSION] = {
     "0.7.2.1",
     "0.8.0.0",
@@ -34,6 +34,7 @@ static const char *version_list[MIGRATE_NVERSION] = {
     "0.8.1.0",
     "0.8.1.1",
     "0.8.2.0",
+    "0.8.2.1"
 } ;
 
 enum migrate_version_e
@@ -45,18 +46,20 @@ enum migrate_version_e
     VERSION_0810,
     VERSION_0811,
     VERSION_0820,
+    VERSION_0821,
     VERSION_ENDOFKEY
 } ;
 
 static const uint8_t migrate_state [MIGRATE_NVERSION][MIGRATE_NVERSION] = {
-    //  VERSION_0721    VERSION_0800      VERSION_0801      VERSION_0802        VERSION_0810        VERSION_0811        VERSION_0820
-    { VERSION_ENDOFKEY, VERSION_0800,     VERSION_0800,     VERSION_0800,       VERSION_0800,       VERSION_0800,       VERSION_0800 },     // VERSION_0721 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_0801,     VERSION_0802,       VERSION_0810,       VERSION_0810,       VERSION_0810 },     // VERSION_0800 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_0802,       VERSION_0810,       VERSION_0810,       VERSION_0810 },     // VERSION_0801 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_0810,       VERSION_0810,       VERSION_0810 },     // VERSION_0802 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0811,       VERSION_0811 },     // VERSION_0810 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0820 },     // VERSION_0811 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY }  // VERSION_0820 old
+    //  VERSION_0721    VERSION_0800      VERSION_0801      VERSION_0802        VERSION_0810        VERSION_0811        VERSION_0820        VERSION_0821
+    { VERSION_ENDOFKEY, VERSION_0800,     VERSION_0800,     VERSION_0800,       VERSION_0800,       VERSION_0800,       VERSION_0800,       VERSION_0800 },     // VERSION_0721 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_0801,     VERSION_0802,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810 },     // VERSION_0800 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_0802,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810 },     // VERSION_0801 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810 },     // VERSION_0802 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0811,       VERSION_0811,       VERSION_0811 },     // VERSION_0810 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0820,       VERSION_0820 },     // VERSION_0811 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0821 },     // VERSION_0820 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY }  // VERSION_0821 old
 } ;
 
 static uint8_t str_to_int(const char *version)
@@ -224,6 +227,19 @@ int sanitize_migrate(ssexec_t *info, const char *oversion, short exist)
                 if (!sanitize_resolve(info, DATA_TREE_MASTER))
                     log_dieusys(LOG_EXIT_SYS, "sanitize Master resolve files") ;
                 did++ ;
+                state = VERSION_0820 ;
+                break ;
+
+            case VERSION_0821:
+                migrate_create_snap(info, oversion) ;
+                if (!sanitize_resolve(info, DATA_SERVICE))
+                    log_dieusys(LOG_EXIT_SYS, "sanitize services resolve files") ;
+                if (!sanitize_resolve(info, DATA_TREE))
+                    log_dieusys(LOG_EXIT_SYS, "sanitize trees resolve files") ;
+                if (!sanitize_resolve(info, DATA_TREE_MASTER))
+                    log_dieusys(LOG_EXIT_SYS, "sanitize Master resolve files") ;
+                did++ ;
+                state = VERSION_0821 ;
                 break ;
 
             default:

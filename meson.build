@@ -1,6 +1,6 @@
 project('66',
         'c',
-        version: '0.8.2.0',
+        version: '0.8.2.1',
         meson_version: '>=1.1.0',
         license: 'ISC',
         default_options: [

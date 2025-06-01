@@ -9,6 +9,20 @@ author: Eric Vidal <eric@obarun.org>
 
 # Changelog for 66
 
+# In 0.8.2.1
+
+## Overview
+
+This is an hot fix release and only concern a build make by the Meson build system. Compilation with the previous build system is not affected.
+
+##  Bug Fixes
+
+- **66-shutdownd installation** (d75acc6):
+
+    Fixed the path installation of the `66-shutdownd` program to `/usr/bin` instead of `/usr/libexec`.
+
+---
+
 # In 0.8.2.0
 
 - Adaptation to `oblibs` `0.3.4.0`
