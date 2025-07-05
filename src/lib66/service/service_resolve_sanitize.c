@@ -67,6 +67,9 @@ void service_resolve_sanitize(resolve_service_t *res)
     res->execute.finish.run_user = res->execute.finish.run_user ? resolve_add_string(wres, stk + res->execute.finish.run_user) : 0 ;
     res->execute.finish.build = res->execute.finish.build ? resolve_add_string(wres, stk + res->execute.finish.build) : 0 ;
     res->execute.finish.runas = res->execute.finish.runas ? resolve_add_string(wres, stk + res->execute.finish.runas) : 0 ;
+    res->execute.chdir = res->execute.chdir ? resolve_add_string(wres, stk + res->execute.chdir) : 0 ;
+    res->execute.capsbound = res->execute.capsbound ? resolve_add_string(wres, stk + res->execute.capsbound) : 0 ;
+    res->execute.capsambient = res->execute.capsambient ? resolve_add_string(wres, stk + res->execute.capsambient) : 0 ;
 
     // live
     res->live.livedir = res->live.livedir ? resolve_add_string(wres, stk + res->live.livedir) : 0 ;
