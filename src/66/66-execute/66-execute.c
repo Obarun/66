@@ -556,8 +556,8 @@ static void execute_script(const char *runuser, resolve_service_t *res, exlsn_t 
             log_dieusys(LOG_EXIT_SYS, "el_substitute") ;
         if (!r) {
             /** No other arguments
-            * This should never happen. At least we have the shebang */
-            log_dieusys(LOG_EXIT_SYS, "get arguments of run.user script -- please make a bug report") ;
+            * This should never happen except in case of empty value. At least we have the shebang */
+            log_dieusys(LOG_EXIT_SYS, "get arguments of run.user script") ;
         }
 
     } else {

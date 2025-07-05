@@ -111,7 +111,7 @@ Meson supports a few environment variables for build customization, but passing 
 
 ## Build Variables
 
-You can pass variables to meson compile or meson install for fine-grained control, though this should be used sparingly:
+You can pass variables to meson compile or meson install for fine-grained control:
 
 - `CC`, `CFLAGS`, `CPPFLAGS`, `LDFLAGS`, `LDLIBS`: Override compiler, flags, or libraries.
 - `AR`, `RANLIB`, `STRIP`, `INSTALL`: Customize archiver, ranlib, strip, or install tools.

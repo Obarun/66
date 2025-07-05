@@ -1414,8 +1414,6 @@ Enables the Linux `PR_SET_NO_NEW_PRIVS` flag via `prctl()`, preventing the servi
 
 * notes:
 
-    Only available on Linux; ignored on other systems.
-
     Once set, cannot be unset for the process or its children.
 
 #### UMask
@@ -1521,6 +1519,8 @@ Defines the Linux capabilities allowed in the capability bounding set for a root
     If any capability name is prefixed with `!`, the list is interpreted as allowing all capabilities except those marked with `!`. For example, (`CAP_NET_ADMIN` `!CAP_SYS_ADMIN`) allows all capabilities except `CAP_SYS_ADMIN`. Where doing, (`CAP_SYS_NICE` `CAP_CHOWN`) restricts the bounding set to only `CAP_SYS_NICE` and `CAP_CHOWN`.
 
     Invalid capability names are ignored, and a warning is logged when the service configuration is parsed.
+
+    To allow privileges to be dropped, it is necessary to set `CAP_SETUID` and `CAP_SETGID` to the capability bounding set if you use the `RunAs` key.
 
     Requires Linux kernel version `5.6` or later.
 
