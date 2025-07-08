@@ -56,7 +56,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     int rscan, e = 0 ;
     uint8_t siglen = 0 ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
-    uint32_t flag = GRAPH_COLLECT_PARSE|GRAPH_WANT_REQUIREDBY|GRAPH_WANT_SUPERVISED, nservice = 0, pos = 0 ;
+    uint32_t flag = GRAPH_COLLECT_PARSE|GRAPH_WANT_REQUIREDBY, nservice = 0, pos = 0 ;
     resolve_service_t_ref pres = 0 ;
     _alloc_stk_(tostop, SS_MAX_SERVICE * SS_MAX_SERVICE_NAME) ;
     _alloc_stk_(toenable, SS_MAX_SERVICE * SS_MAX_SERVICE_NAME) ;
@@ -164,8 +164,10 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         if (on_groups(pres))
             continue ;
 
-        if (!stack_add_g(&tostop, pres->sa.s + pres->name))
-            log_die_nomem("stralloc") ;
+        if (sta.issupervised == STATE_FLAGS_TRUE) {
+            if (!stack_add_g(&tostop, pres->sa.s + pres->name))
+                log_die_nomem("stralloc") ;
+        }
     }
 
     if (tostop.count && rscan) {
