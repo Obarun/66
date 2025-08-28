@@ -32,8 +32,6 @@ You can find a prototype with all valid section and all valid `key=value` pair a
 [Main]
 Type = classic
 Description = "ntpd daemon"
-Version = 0.1.0
-User = ( root )
 
 [Start]
 Execute = (
