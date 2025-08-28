@@ -25,11 +25,11 @@
 #include <oblibs/string.h>
 #include <oblibs/stack.h>
 #include <oblibs/lexer.h>
+#include <oblibs/linux.h>
 
 #include <skalibs/djbunix.h>
 #include <skalibs/tai.h>
 #include <skalibs/iopause.h>
-#include <skalibs/selfpipe.h>
 #include <skalibs/tai.h>
 #include <skalibs/sig.h>//sig_ignore
 #include <skalibs/types.h>
@@ -200,10 +200,10 @@ static int handle_signal(pidtree_t *apidt, unsigned int what)
 
     for (;;) {
 
-        int s = selfpipe_read() ;
+        int s = lx_signalfd_read() ;
         switch (s) {
 
-            case -1 : log_dieusys(LOG_EXIT_SYS,"selfpipe_read") ;
+            case -1 : log_dieusys(LOG_EXIT_SYS,"lx_signalfd_read") ;
             case 0 : return ok ;
             case SIGCHLD :
 
@@ -251,7 +251,7 @@ static int handle_signal(pidtree_t *apidt, unsigned int what)
                     kill_all(apidt) ;
                     ok = 111 ;
                     break ;
-            default : log_die(LOG_EXIT_SYS, "unexpected data in selfpipe") ;
+            default : log_die(LOG_EXIT_SYS, "unexpected data in lx_signalfd") ;
         }
     }
 
@@ -538,17 +538,17 @@ int tree_launch(pidtree_t *apidt, uint32_t ntree, unsigned int what, tain *deadl
     napid = ntree ;
     reloadmsg = what ;
 
-    int spfd = selfpipe_init() ;
+    int spfd = lx_signalfd_init() ;
 
     if (spfd < 0)
-        log_dieusys(LOG_EXIT_SYS, "selfpipe_init") ;
+        log_dieusys(LOG_EXIT_SYS, "lx_signalfd_init") ;
 
-    if (!selfpipe_trap(SIGCHLD) ||
-        !selfpipe_trap(SIGINT) ||
-        !selfpipe_trap(SIGKILL) ||
-        !selfpipe_trap(SIGTERM) ||
-        !sig_altignore(SIGPIPE))
-            log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
+    if (!lx_signalfd_add(SIGCHLD) ||
+        !lx_signalfd_add(SIGINT) ||
+        !lx_signalfd_add(SIGKILL) ||
+        !lx_signalfd_add(SIGTERM) ||
+        !lx_signalfd_ignore(SIGPIPE))
+            log_dieusys(LOG_EXIT_SYS, "lx_signalfd_add") ;
 
     iopause_fd x = { .fd = spfd, .events = IOPAUSE_READ, .revents = 0 } ;
 
@@ -569,7 +569,7 @@ int tree_launch(pidtree_t *apidt, uint32_t ntree, unsigned int what, tain *deadl
 
         if (!pid) {
 
-            selfpipe_finish() ;
+            lx_signalfd_end() ;
 
             close(apidtree[pos].pipe[1]) ;
 
@@ -605,7 +605,7 @@ int tree_launch(pidtree_t *apidt, uint32_t ntree, unsigned int what, tain *deadl
         }
     }
 
-    selfpipe_finish() ;
+    lx_signalfd_end() ;
 
     for (pos = 0 ; pos < napid ; pos++) {
         close(apidtree[pos].pipe[1]) ;

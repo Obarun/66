@@ -24,9 +24,9 @@
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/environ.h>
+#include <oblibs/linux.h>
 
 #include <skalibs/types.h>
-#include <skalibs/selfpipe.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/cspawn.h>
 #include <skalibs/genalloc.h>
@@ -254,10 +254,10 @@ static int handle_signal(pidservice_t *apids, unsigned int what)
 
     for (;;) {
 
-        int s = selfpipe_read() ;
+        int s = lx_signalfd_read() ;
         switch (s) {
 
-            case -1 : log_dieusys(LOG_EXIT_SYS,"selfpipe_read") ;
+            case -1 : log_dieusys(LOG_EXIT_SYS,"lx_signalfd_read") ;
             case 0 : return ok ;
             case SIGCHLD :
 
@@ -305,7 +305,7 @@ static int handle_signal(pidservice_t *apids, unsigned int what)
                     kill_all(apids) ;
                     ok = 111 ;
                     break ;
-            default : log_die(LOG_EXIT_SYS, "unexpected data in selfpipe") ;
+            default : log_die(LOG_EXIT_SYS, "unexpected data in lx_signalfd") ;
         }
     }
 
@@ -629,17 +629,17 @@ int svc_launch(pidservice_t *apids, uint32_t nservice, uint8_t what, ssexec_t *i
     else
         deadline = tain_infinite_relative ;
 
-    int spfd = selfpipe_init() ;
+    int spfd = lx_signalfd_init() ;
 
     if (spfd < 0)
-        log_dieusys(LOG_EXIT_SYS, "selfpipe_init") ;
+        log_dieusys(LOG_EXIT_SYS, "lx_signalfd_init") ;
 
-    if (!selfpipe_trap(SIGCHLD) ||
-        !selfpipe_trap(SIGINT) ||
-        !selfpipe_trap(SIGKILL) ||
-        !selfpipe_trap(SIGTERM) ||
-        !sig_altignore(SIGPIPE))
-            log_dieusys(LOG_EXIT_SYS, "selfpipe_trap") ;
+    if (!lx_signalfd_add(SIGCHLD) ||
+        !lx_signalfd_add(SIGINT) ||
+        !lx_signalfd_add(SIGKILL) ||
+        !lx_signalfd_add(SIGTERM) ||
+        !lx_signalfd_ignore(SIGPIPE))
+            log_dieusys(LOG_EXIT_SYS, "lx_signalfd_add") ;
 
     iopause_fd x = { .fd = spfd, .events = IOPAUSE_READ, .revents = 0 } ;
 
@@ -664,7 +664,7 @@ int svc_launch(pidservice_t *apids, uint32_t nservice, uint8_t what, ssexec_t *i
 
         if (!pid) {
 
-            selfpipe_finish() ;
+            lx_signalfd_end() ;
 
             close(apidservice[pos].pipe[1]) ;
 
@@ -700,7 +700,7 @@ int svc_launch(pidservice_t *apids, uint32_t nservice, uint8_t what, ssexec_t *i
         }
     }
 
-    selfpipe_finish() ;
+    lx_signalfd_end() ;
 
     for (pos = 0 ; pos < napid ; pos++) {
         close(apidservice[pos].pipe[1]) ;
