@@ -38,8 +38,8 @@ void parse_store_caps(stack *result, stack *store, uint32_t *ncaps)
 
     char *t = 0 ;
 
-    bitset_t aflags = bitset_create_empty(CAPS_MYLAST_CAP) ;
-    bitset_t dflags = bitset_create_empty(CAPS_MYLAST_CAP) ;
+    bitset32_t aflags = bitset32_init(CAPS_MYLAST_CAP) ;
+    bitset32_t dflags = bitset32_init(CAPS_MYLAST_CAP) ;
 
     FOREACH_STK(store, pos) {
 
@@ -57,11 +57,11 @@ void parse_store_caps(stack *result, stack *store, uint32_t *ncaps)
             log_die(LOG_EXIT_SYS, "capability out of range: ", t);
         }
 
-        bitset_set(&aflags, (uint32_t)tflag) ;
+        bitset32_set(&aflags, (uint32_t)tflag) ;
 
         if (todel) {
             has_dflags = true ;
-            bitset_set(&dflags, (uint32_t)tflag) ;
+            bitset32_set(&dflags, (uint32_t)tflag) ;
         }
     }
 
@@ -69,7 +69,7 @@ void parse_store_caps(stack *result, stack *store, uint32_t *ncaps)
 
         for (; cap < CAPS_MYLAST_CAP ; cap++) {
 
-            if (bitset_isvalid(&dflags, cap))
+            if (bitset32_isvalid(&dflags, cap))
                  continue ;
 
             if (!stack_add_g(result, *table.u.parser.list[cap].name))
@@ -80,7 +80,7 @@ void parse_store_caps(stack *result, stack *store, uint32_t *ncaps)
 
         for (; cap < CAPS_MYLAST_CAP ; cap++) {
 
-            if (bitset_isvalid(&aflags, cap))
+            if (bitset32_isvalid(&aflags, cap))
                 if (!stack_add_g(result, *table.u.parser.list[cap].name))
                     log_die_nomem("stack") ;
         }
@@ -104,7 +104,7 @@ static int cap_get(cap_user_header_t header, cap_user_data_t data)
 }
 
 /*
-static int get_bset(bitset_t *bset)
+static int get_bset(bitset32_t *bset)
 {
     struct __user_cap_header_struct header = { .version = _LINUX_CAPABILITY_VERSION_3, .pid = 0 };
     struct __user_cap_data_struct data[2] = { {0}, {0} };
@@ -117,9 +117,9 @@ static int get_bset(bitset_t *bset)
         uint32_t word = pos / 32;
         uint32_t bit = pos % 32;
         if (data[word].inheritable & (1U << bit)) { // Bounding set is part of inheritable in some contexts
-            bitset_set(bset, pos);
+            bitset32_set(bset, pos);
         } else {
-            bitset_clear(bset, pos);
+            bitset32_clear(bset, pos);
         }
     }
 
@@ -135,7 +135,7 @@ static int get_bset(bitset_t *bset)
  * KISS for now keeping the following declaration for
  * get_bset().
  * */
-static int get_bset(bitset_t *bset)
+static int get_bset(bitset32_t *bset)
 {
     uint32_t pos = 0 ;
 
@@ -146,16 +146,16 @@ static int get_bset(bitset_t *bset)
             return 0 ;
 
         if (ret) {
-            bitset_set(bset, pos) ;
+            bitset32_set(bset, pos) ;
         } else {
-            bitset_clear(bset, pos) ;
+            bitset32_clear(bset, pos) ;
         }
     }
 
     return 1 ;
 }
 
-static void string_to_bitset(bitset_t *bset, const char *s)
+static void string_to_bitset(bitset32_t *bset, const char *s)
 {
     _alloc_stk_(stk, strlen(s)) ;
     size_t pos = 0 ;
@@ -170,12 +170,12 @@ static void string_to_bitset(bitset_t *bset, const char *s)
         if (flag < 0)
             log_die(LOG_EXIT_SYS, "unknown capability flag: ", stk.s + pos) ;
 
-        bitset_set(bset, (uint32_t)flag) ;
+        bitset32_set(bset, (uint32_t)flag) ;
     }
 }
 
 // Configure bounding set and thread capabilities
-static void execute_caps_bound(bitset_t *caps)
+static void execute_caps_bound(bitset32_t *caps)
 {
     struct __user_cap_header_struct header = { .version = _LINUX_CAPABILITY_VERSION_3, .pid = 0 } ;
     struct __user_cap_data_struct data[2] = { {0}, {0} } ;
@@ -200,7 +200,7 @@ static void execute_caps_bound(bitset_t *caps)
 
     // Build capability bitmasks
     for (; pos < CAPS_MYLAST_CAP ; pos++) {
-        if (bitset_isvalid(caps, pos) || pos == CAP_SETPCAP) {
+        if (bitset32_isvalid(caps, pos) || pos == CAP_SETPCAP) {
             ncaps = true ;
             uint32_t word = pos / 32 ;
             uint32_t bit = pos % 32 ;
@@ -221,7 +221,7 @@ static void execute_caps_bound(bitset_t *caps)
     pos = 0 ;
     for (; pos < CAPS_MYLAST_CAP ; pos++) {
 
-        if (!bitset_isvalid(caps, pos)) {
+        if (!bitset32_isvalid(caps, pos)) {
 
             if (prctl(PR_CAPBSET_DROP, pos, 0, 0, 0) < 0)
                 log_dieusys(LOG_EXIT_SYS, "drop capabilities") ;
@@ -232,10 +232,10 @@ static void execute_caps_bound(bitset_t *caps)
 // Configure ambient capabilities
 static void execute_caps_ambient(resolve_service_t *res)
 {
-    bitset_t capsbound = bitset_create_empty(CAPS_MYLAST_CAP) ;
-    bitset_t capsambient = bitset_create_empty(CAPS_MYLAST_CAP) ;
-    bitset_t bset = bitset_create_empty(CAPS_MYLAST_CAP) ;
-    bitset_t *pbset = 0 ;
+    bitset32_t capsbound = bitset32_init(CAPS_MYLAST_CAP) ;
+    bitset32_t capsambient = bitset32_init(CAPS_MYLAST_CAP) ;
+    bitset32_t bset = bitset32_init(CAPS_MYLAST_CAP) ;
+    bitset32_t *pbset = 0 ;
     uint32_t pos = 0 ;
 
     if (res->execute.capsbound)
@@ -260,9 +260,9 @@ static void execute_caps_ambient(resolve_service_t *res)
 
     for (; pos < CAPS_MYLAST_CAP ; pos++) {
 
-        if (bitset_isvalid(&capsambient, pos)) {
+        if (bitset32_isvalid(&capsambient, pos)) {
 
-            if (!bitset_isvalid(pbset, pos)) {
+            if (!bitset32_isvalid(pbset, pos)) {
                 log_warn("ambient capability ", enum_str_parser_caps[pos], " not in bounding set -- ignoring it") ;
                 continue ;
             }
@@ -277,7 +277,7 @@ static void execute_caps_ambient(resolve_service_t *res)
 void execute_caps(resolve_service_t *res)
 {
     if (res->execute.capsbound && !res->owner) {
-        bitset_t c = bitset_create_empty(CAPS_MYLAST_CAP) ;
+        bitset32_t c = bitset32_init(CAPS_MYLAST_CAP) ;
         string_to_bitset(&c, res->sa.s + res->execute.capsbound) ;
         execute_caps_bound(&c) ;
     }
