@@ -18,6 +18,7 @@
 #include <66/caps.h>
 #include <66/config.h>
 #include <66/constants.h>
+#include <66/cron.h>
 #include <66/enum_parser.h>
 #include <66/enum_service.h>
 #include <66/enum_struct.h>
@@ -35,6 +36,7 @@
 #include <66/sanitize.h>
 #include <66/service.h>
 #include <66/snapshot.h>
+#include <66/sse.h>
 #include <66/ssexec.h>
 #include <66/state.h>
 #include <66/svc.h>
