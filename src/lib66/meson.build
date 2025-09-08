@@ -133,13 +133,14 @@ if get_option('test')
 
       test_files = find_test_files_cmd.stdout().strip().split('\n')
       foreach test_file : test_files
-        if test_file != '' and fs.is_file(file)
+        if test_file != '' and fs.is_file(test_file)
           # Extract subdirectory name for test executable
           test_name = fs.stem(test_file)
           subdir_name = test_dir.split('/').get(-2)  # Get parent directory of test/
+
           test_exe = executable('test_@0@_@1@'.format(subdir_name, test_name),
             sources: [test_file],
-            include_directories: incdir,
+            include_directories: ['.', incdir],
             dependencies: [lib66_dep],
             build_by_default: false,
             c_args: exe_c_args,

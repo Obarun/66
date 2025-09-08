@@ -18,7 +18,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <oblibs/queue.h>
 #include <oblibs/graph.h>
 
 #include <66/ssexec.h>
