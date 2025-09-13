@@ -109,7 +109,7 @@ static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
 
     {
         /** run scripts */
-        char run[strlen(shebang) + 17 + strlen(res->sa.s + res->name) + 1 + 1] ;
+        char run[strlen(shebang) + strlen(SS_EXTLIBEXECPREFIX) + 17 + strlen(log->sa.s + log->name) + 1 + 1] ;
 
         auto_strings(run, \
                     shebang, \
