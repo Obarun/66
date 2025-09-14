@@ -261,9 +261,6 @@ static bool test_timer_error_handling(void) {
     TEST_ASSERT(!sse_start_timer(&loop, NULL, test_timer_callback, &cb_data2, 100, 0, 1),
                "Should fail with NULL watcher");
 
-    TEST_ASSERT(!sse_start_timer(&loop, &watcher2, test_timer_callback, &cb_data2, -1, 0, 1),
-               "Should fail with negative timeout");
-
     /* Test zero timeout (should work) */
     TEST_ASSERT(sse_start_timer(&loop, &watcher2, test_timer_callback, &cb_data2, 0, 0, 2),
                "Zero timeout should be valid");

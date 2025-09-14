@@ -23,8 +23,17 @@
 // timeout and period in ms
 static bool populate_timeout(sse_watcher_t *w, int timeout, int period)
 {
-    if (!w || !w->sdata || timeout < 0)
+    if (!w || !w->sdata)
         return false ;
+
+    if (timeout < 0) {
+        // dearm the timer, this will be used as an infinite timeout
+        ((sse_timer_t *)w->sdata)->timeout.it_value.tv_sec = 0 ;
+        ((sse_timer_t *)w->sdata)->timeout.it_value.tv_nsec = 0 ;
+        ((sse_timer_t *)w->sdata)->timeout.it_interval.tv_sec = 0 ;
+        ((sse_timer_t *)w->sdata)->timeout.it_interval.tv_nsec = 0 ;
+        return true ;
+    }
 
     int ftimeout = !timeout ? 1 : timeout ;
 
@@ -38,7 +47,7 @@ static bool populate_timeout(sse_watcher_t *w, int timeout, int period)
 
 int sse_start_timer(sse_epoll_t *p, sse_watcher_t *w, sse_callback_t *cb, void *cbdata, int timeout, int period, int priority)
 {
-    if (!w || !p || timeout < 0) {
+    if (!w || !p) {
         errno = EINVAL ;
         log_warnsys_return(LOG_EXIT_ZERO, "watcher is NULL") ;
     }
