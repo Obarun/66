@@ -13,8 +13,10 @@
  */
 
 #include <errno.h>
+#include <stdbool.h>
 #include <sys/syscall.h> // For syscall(SYS_pidfd_open)
 #include <unistd.h>
+#include <signal.h>
 
 #include <oblibs/log.h>
 
@@ -26,39 +28,40 @@ static int get_pidfd(pid_t pid)
     return syscall(SYS_pidfd_open, pid, 0) ;
 }
 
-int sse_start_child(sse_epoll_t *p, sse_watcher_t *w, sse_callback_t *cb, void *cbdata, pid_t pid, int priority/*, int flags*/)
+int sse_start_child(sse_epoll_t *p, sse_watcher_t *w, sse_callback_t *cb, void *cbdata, pid_t pid, int priority, bool sigchild)
 {
     if (!w || !p || pid <= 0) {
         errno = EINVAL ;
         log_warnsys_return(LOG_EXIT_ZERO, "child watcher is NULL") ;
     }
 
+    sigset_t set, oldset ;
     struct sse_watcher_hash_s *h = sse_hash_search(p, w) ;
     if (h != NULL)
         return 1 ;
 
-    // // Block SIGCHLD if requested
-    // sigset_t set, oldset ;
-    // bool block = true ;// flags & SSE_BLOCK_SIGCHLD ? true : false ;
-    // if (block) {
-    //     sigemptyset(&set) ;
-    //     sigaddset(&set, SIGCHLD) ;
-    //     if (sigprocmask(SIG_BLOCK, &set, &oldset) < 0)
-    //         return 0 ;
-    // }
+    // Block SIGCHLD if requested
+    if (sigchild) {
+        sigemptyset(&set) ;
+        sigaddset(&set, SIGCHLD) ;
+        if (sigprocmask(SIG_BLOCK, &set, &oldset) < 0)
+            return 0 ;
+    }
 
     int fd = get_pidfd(pid) ;
-    if (fd < 0)
-        log_warnusys_return(LOG_EXIT_ZERO, "get_pidfd") ; // { if (block) sigprocmask(SIG_SETMASK, &oldset, NULL) ; return 0 ; }
+    if (fd < 0) {
+        if (sigchild)
+            sigprocmask(SIG_SETMASK, &oldset, NULL) ;
+        log_warnusys_return(LOG_EXIT_ZERO, "get_pidfd") ;
+    }
+
 
     if (!sse_watcher_init(p, w, SSE_TYPE_CHILD, cb, cbdata, fd, SSE_READ, priority)) {
         close(fd) ;
-        log_warnusys_return(LOG_EXIT_ZERO, "initiate child watcher") ; // { if (block) sigprocmask(SIG_SETMASK, &oldset, NULL) ; return 0 ; }
+        if (sigchild)
+            sigprocmask(SIG_SETMASK, &oldset, NULL) ;
+        log_warnusys_return(LOG_EXIT_ZERO, "initiate child watcher") ;
     }
-
-    // // Restore mask on success
-    // if (block)
-    //     sigprocmask(SIG_SETMASK, &oldset, NULL) ;
 
     w->sdata = malloc(sizeof(sse_child_t)) ;
     if (w->sdata == NULL) {
@@ -70,7 +73,13 @@ int sse_start_child(sse_epoll_t *p, sse_watcher_t *w, sse_callback_t *cb, void *
     ((sse_child_t *)w->sdata)->pid = pid ;
     ((sse_child_t *)w->sdata)->status = 0 ;
 
-    return sse_watcher_add(w) ;
+    int r = sse_watcher_add(w) ;
+
+    // Restore mask on success
+    if (sigchild)
+        sigprocmask(SIG_SETMASK, &oldset, NULL) ;
+
+    return r ;
 }
 
 int sse_restart_child(sse_watcher_t *w)

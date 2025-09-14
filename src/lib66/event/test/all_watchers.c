@@ -82,7 +82,7 @@ static bool test_all_watchers_comprehensive(void) {
     }
     TEST_ASSERT(child_pid > 0, "Failed to spawn child process");
     TEST_ASSERT(sse_start_child(&loop, &child_watcher, test_mixed_callback, &child_data,
-                               child_pid, 2),
+                               child_pid, 2, false),
                "Failed to start child watcher");
 
     /* === Setup I/O watcher === */

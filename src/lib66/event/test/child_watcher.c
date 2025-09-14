@@ -93,19 +93,19 @@ static bool test_child_watchers_comprehensive(void) {
 
     /* === Start watchers with different priorities === */
     TEST_ASSERT(sse_start_child(&loop, &quick_watcher, test_child_callback, &quick_data,
-                               quick_pid, 1),
+                               quick_pid, 1, false),
                "Failed to start quick child watcher");
 
     TEST_ASSERT(sse_start_child(&loop, &slow_watcher, test_child_callback, &slow_data,
-                               slow_pid, 2),
+                               slow_pid, 2, false),
                "Failed to start slow child watcher");
 
     TEST_ASSERT(sse_start_child(&loop, &delayed_watcher, test_child_callback, &delayed_data,
-                               delayed_pid, 3),
+                               delayed_pid, 3, false),
                "Failed to start delayed child watcher");
 
     TEST_ASSERT(sse_start_child(&loop, &infinite_watcher, test_child_callback, &infinite_data,
-                               infinite_pid, 4),
+                               infinite_pid, 4, false),
                "Failed to start infinite child watcher");
 
     /* === Verify all watchers are active === */
@@ -207,20 +207,20 @@ static bool test_child_watchers_error_handling(void) {
 
     /* Start first watcher successfully */
     TEST_ASSERT(sse_start_child(&loop, &watcher1, test_child_callback, &cb_data1,
-                               child_pid, 1),
+                               child_pid, 1, false),
                "Failed to start child watcher");
 
     /* Test error conditions */
-    TEST_ASSERT(!sse_start_child(NULL, &watcher2, test_child_callback, &cb_data2, 999, 1),
+    TEST_ASSERT(!sse_start_child(NULL, &watcher2, test_child_callback, &cb_data2, 999, 1, false),
                "Should fail with NULL epoll");
 
-    TEST_ASSERT(!sse_start_child(&loop, NULL, test_child_callback, &cb_data2, 999, 1),
+    TEST_ASSERT(!sse_start_child(&loop, NULL, test_child_callback, &cb_data2, 999, 1, false),
                "Should fail with NULL watcher");
 
-    TEST_ASSERT(!sse_start_child(&loop, &watcher2, test_child_callback, &cb_data2, 0, 1),
+    TEST_ASSERT(!sse_start_child(&loop, &watcher2, test_child_callback, &cb_data2, 0, 1, false),
                "Should fail with invalid PID (0)");
 
-    TEST_ASSERT(!sse_start_child(&loop, &watcher2, test_child_callback, &cb_data2, -1, 1),
+    TEST_ASSERT(!sse_start_child(&loop, &watcher2, test_child_callback, &cb_data2, -1, 1, false),
                "Should fail with invalid PID (-1)");
 
     /* Test that first watcher still works */
@@ -258,11 +258,11 @@ static bool test_child_watchers_lifecycle(void) {
     TEST_ASSERT(child_pid2 > 0, "Failed to spawn second child");
 
     TEST_ASSERT(sse_start_child(&loop, &watcher1, test_child_callback, &cb_data1,
-                               child_pid1, 1),
+                               child_pid1, 1, false),
                "Failed to start first child watcher");
 
     TEST_ASSERT(sse_start_child(&loop, &watcher2, test_child_callback, &cb_data2,
-                               child_pid2, 2),
+                               child_pid2, 2, false),
                "Failed to start second child watcher");
 
     /* Test stop/restart operations */

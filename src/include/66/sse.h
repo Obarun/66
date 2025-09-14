@@ -248,7 +248,7 @@ extern time_t sse_getfire_schedule(sse_watcher_t *w) ;
  *  A “zombie trigger” (EPOLLIN with no subsequent EPOLLHUP) is a bit tricky to work out.
  *  There is no guarantee the two events have to be in the same epoll, especially if the parent is a bit tardy on their wait() call.
  */
-extern int sse_start_child(sse_epoll_t *p, sse_watcher_t *w, sse_callback_t *cb, void *cbdata, pid_t pid, int priority) ;
+extern int sse_start_child(sse_epoll_t *p, sse_watcher_t *w, sse_callback_t *cb, void *cbdata, pid_t pid, int priority, bool sigchild) ;
 extern int sse_restart_child(sse_watcher_t *w) ;
 extern int sse_stop_child(sse_watcher_t *w) ;
 extern int sse_free_child(sse_watcher_t *w) ;

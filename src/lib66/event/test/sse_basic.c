@@ -191,7 +191,7 @@ void test_sse_child(void) {
     }
 
     assert(sse_new(&loop, 16) == 1);
-    assert(sse_start_child(&loop, &w, dummy_cb, NULL, pid, 0) == 1);
+    assert(sse_start_child(&loop, &w, dummy_cb, NULL, pid, 0, false) == 1);
 
     assert(sse_restart_child(&w) == 1);
     assert(sse_stop_child(&w) == 1);
