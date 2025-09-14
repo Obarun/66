@@ -105,6 +105,9 @@ int sse_stop_inotify(sse_watcher_t *w)
 int sse_free_inotify(sse_watcher_t *w)
 {
     lx_inotify_end() ;
+    if (w->fd >= 0)
+        close(w->fd) ;
+    w->fd = -1 ;
     return sse_watcher_free(w) ;
 }
 

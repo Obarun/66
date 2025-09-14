@@ -116,12 +116,12 @@ int sse_epoll_add(sse_watcher_t *w)
         if (epoll_ctl(w->p->fd, EPOLL_CTL_ADD, w->fd, &e) < 0) {
 
             if (errno == EEXIST) {
-                log_warn("watcher already added to epoll") ;
+                log_warnsys("watcher already added to epoll") ;
                 return 1 ;
             }
 
             if (errno != EPERM || w->type != SSE_TYPE_IO || w->events != SSE_READ || w->fd) {
-                log_warnu("add watcher to epoll") ;
+                log_warnusys("add watcher to epoll") ;
                 sse_err_return(w, errno) ;
             }
 
@@ -148,11 +148,13 @@ int sse_epoll_del(sse_watcher_t *w)
     if (w->p->fd > 0) {
 
         w->active = false ;
-
-        if (epoll_ctl(w->p->fd, EPOLL_CTL_DEL, w->fd, NULL) < 0) {
-            if (errno != ENOENT) {
-                log_warnu("remove watcher from epoll") ;
-                sse_err_return(w, errno) ;
+        // signalfd and inotify watcher may have already closed the fd
+        if (w->fd >= 0) {
+            if (epoll_ctl(w->p->fd, EPOLL_CTL_DEL, w->fd, NULL) < 0) {
+                if (errno != ENOENT) {
+                    log_warnusys("remove watcher from epoll") ;
+                    sse_err_return(w, errno) ;
+                }
             }
         }
     }
@@ -176,7 +178,7 @@ int sse_epoll_modify(sse_watcher_t *w)
 
         if (epoll_ctl(w->p->fd, EPOLL_CTL_MOD, w->fd, &e) < 0) {
             if (errno != ENOENT) {
-                log_warnu("modify watcher to epoll") ;
+                log_warnusys("modify watcher to epoll") ;
                 sse_err_return(w, errno) ;
             }
         }
@@ -558,7 +560,7 @@ int sse_prepare(sse_epoll_t *p)
                 break ;
 
             default:
-                break;
+                break ;
         }
 
     }
@@ -588,22 +590,28 @@ static void sse_dispatch_signal(sse_watcher_t *w)
         return ;
     }
 
+    if (!w->sdata) {
+        sse_err(w, EINVAL);
+        sse_stop_child(w);
+        return;
+    }
+
     if (w->revents & SSE_HUP) {
         sse_stop_signal(w) ;
         sse_err(w, ENODEV) ; // no signal delivery possible
         return ;
     }
 
-    sse_signal_t *s = (sse_signal_t *)w->sdata;
-    struct signalfd_siginfo si;
-    ssize_t n;
+    sse_signal_t *s = (sse_signal_t *)w->sdata ;
+    struct signalfd_siginfo si ;
+    ssize_t n ;
 
     while ((n = lx_signalfd_read(&si)) > 0)
-        s->si = si;  // Coalesce: keep last signal
+        s->si = si ;  // Coalesce: keep last signal
 
     if (n < 0) {
-        sse_err(w, errno);
-        sse_stop_signal(w);
+        sse_err(w, errno) ;
+        sse_stop_signal(w) ;
     }
 }
 
@@ -615,17 +623,34 @@ static void sse_dispatch_child(sse_watcher_t *w)
         return ;
     }
 
+    if (!w->sdata) {
+        sse_err(w, EINVAL);
+        sse_stop_child(w);
+        return;
+    }
+
     if (w->revents & (SSE_HUP | SSE_ERROR)) {
+        // Reap zombie if possible
+        pid_t pid = ((sse_child_t *)w->sdata)->pid ;
+        int wstat ;
+        waitpid(pid, &wstat, WNOHANG) ;
         sse_stop_child(w) ;
         sse_err_zero(w) ;
+        return ;
     }
 
     pid_t pid = ((sse_child_t *)w->sdata)->pid ;
     int wstat ;
 
-    if (waitpid(pid, &wstat, WNOHANG) > 0) {
+    int r = waitpid(pid, &wstat, WNOHANG) ;
+    if (r > 0) {
         // Child exited, store status
         ((sse_child_t *)w->sdata)->status = wstat ;
+
+    } else if (!r) {
+        // Child still running
+        errno = 0 ;
+        sse_err_zero(w) ;
 
     } else if (errno != EAGAIN && errno != ECHILD) {
         if (errno == EBADF || errno == EINVAL) {
@@ -646,6 +671,7 @@ static void sse_dispatch_inotify(sse_watcher_t *w)
     if (w->revents & (SSE_HUP | SSE_ERROR)) {
         sse_stop_inotify(w) ;
         sse_err(w, EBADF) ; // inotify instance dead
+        return ;
     }
 
     ssize_t rlen = lx_inotify_read() ;
@@ -666,6 +692,7 @@ static void sse_dispatch_timer(sse_watcher_t *w)
     if (w->revents & SSE_HUP) {
         sse_stop_timer(w) ;
         sse_err_zero(w) ;
+        return ;
     }
 
     uint64_t expirations ;
@@ -728,6 +755,7 @@ static void sse_dispatch_eventfd(sse_watcher_t *w)
     if (w->revents & (SSE_HUP | SSE_ERROR)) {
         sse_stop_eventfd(w) ;
         sse_err(w, EBADF) ;
+        return ;
     }
 
     uint64_t counter;
