@@ -1,68 +1,171 @@
-Build Instructions
-------------------
+# Build Instructions
 
 ## Requirements
 
-- A POSIX-compliant C development environment
-- GNU make version 3.81 or later
-- skalibs version 2.14.3.0 or later: http://skarnet.org/software/skalibs/
-- execline version 2.9.6.1 or later: http://skarnet.org/software/execline/
-- s6 version 2.13.1.0 or later: http://skarnet.org/software/s6/
-- oblibs version 0.3.4.0 or later: https://git.obarun.org/Obarun/oblibs/
-- lowdown version 0.6.4 or later for man and html pages: https://kristaps.bsd.lv/lowdown/
-- linux-api-headers 5.8 or later: https://www.gnu.org/software/libc (only for linux system)
+To build and install the 66 project, you need:
 
-This software will install on any operating system that implements POSIX.1-2008, available at [opengroup](http://pubs.opengroup.org/onlinepubs/9699919799/).
+- A POSIX-compliant C development environment (conforming to POSIX.1-2008, available at Open Group).
 
+- `Meson` version `1.1.0` or later: [mesonbuild.com](https://mesonbuild.com).
 
-## Standard usage
+- `Ninja` (typically installed with Meson).
 
-`./configure && make && sudo make install` will work for most users.
-It will install the static libraries in /usr/lib/66, the shared libraries in /lib.
+- `skalibs` version `2.14.3.0` or later: [skarnet.org/software/skalibs](https://skarnet.org/software/skalibs/).
 
-Please note that static libraries in /usr/lib/66 *will not* be found by a default linker invocation: you need -L/usr/lib/66.
-Other [obarun](https://web.obarun.org) software automatically handles that case if the default configuration is used, but if you change the configuration, remember to use the appropriate *--with-lib* configure option.
+- `execline` version `2.9.6.1` or later: [skarnet.org/software/execline](https://skarnet.org/software/execline).
 
-You can strip the libraries of their extra symbols via `make strip` before the `make install` phase. It will shave a few bytes off them.
+- `s6` version `2.13.1.0` or later: [skarnet.org/software/s6](https://skarnet.org/software/s6).
 
-Note: the man and html documentation pages will always be generated if *lowdown* is installed on your system. However, if you don't ask to build the documentation the final `DESTDIR` directory will do not contains any documentation at all.
+- `oblibs` version `0.3.4.0` or later: [git.obarun.org/Obarun/oblibs](https://git.obarun.org/Obarun/oblibs).
+
+- `lowdown` version `0.6.4` or later (optional, for generating man pages and HTML documentation): [kristaps.bsd.lv/lowdown](https://kristaps.bsd.lv/lowdown).
+
+- Linux API headers version 5.8 or later (required for Linux systems): [gnu.org/software/libc](https://gnu.org/software/libc).
+
+The software is designed to install on any operating system implementing `POSIX.1-2008`.
+
+## Standard Usage
+
+For most users, the following commands will configure, build, and install the 66 project with default settings:
+
+```bash
+meson setup build
+meson compile -C build
+meson install -C build
+```
+
+This installs:
+
+- Shared libraries (e.g., lib66.so) to `/usr/lib` (or the system’s library directory).
+- Executables to `/usr/bin` or `/usr/libexec` (depending on the executable).
+- Header files to `/usr/include/66`.
+- Configuration files to `/etc/66`.
+- Documentation to `/usr/share/doc/66` (HTML) and `/usr/share/man` (man pages).
+
+To reduce binary size, you can strip symbols before installation:
+
+```bash
+meson compile -C build --strip
+meson install -C build
+```
+
+Documentation (man pages and HTML) is generated and installed only if **lowdown is installed** and the `with-doc` option is enabled (default: true).
 
 ## Customization
 
-You can customize the installation process via flags given to configure. See `./configure --help` for a list of all available configure options.
+You can customize the build using Meson options. To see all available options, run:
 
-## Environment variables
+```bash
+meson configure build
+```
 
-Controlling a build process via environment variables is a big and dangerous hammer. You should try and pass flags to configure instead; nevertheless, a few standard environment variables are recognized.
+Example customization:
 
-If the CC environment variable is set, its value will override compiler detection by configure. The *--host=HOST* option will still add a HOST- prefix to the value of CC.
+```bash
+meson setup build -D prefix=/usr/local -D enable-shared=false -D enable-static=true -D enable-static-deps=true -D tests=true
+meson compile -C build
+meson install -C build
+```
 
-The values of *CFLAGS*, *CPPFLAGS* and *LDFLAGS* will be appended to the default flags set by configure. To override those defaults instead of appending to them, use the *CPPFLAGS*, *CFLAGS* and *LDFLAGS* *make variables* instead of environment variables.
+## Key options include:
 
-## Make variables
+- `with-skeleton`, `with-system-dir`, `with-system-log`, etc.: Set paths for 66 system and user directories (e.g., `/etc/66`, `/var/lib/66`).
+- `enable-shared`: Build shared libraries (e.g., `lib66.so`) for dynamic linking (default: `true`).
+- `enable-static`: Build static libraries (e.g., `lib66.a`) for static linking (default: `false`).
+- `enable-static-deps`: Prefer static linking for dependencies (e.g., `skalibs`, `s6`) to reduce runtime dependencies; requires `-D enable-static=true` (default: `false`).
+- `enable-static-executable`: Build fully static executables, including a static `libc`, for maximum portability; requires a static `libc` (e.g., `libc.a`) on the system (default: `false`).
+- `enable-all-pic`: Compile static libraries with position-independent code (`PIC`) for use in shared libraries or `PIE` executables (default: `false`).
+- `enable-pie`: Build executables as position-independent (`PIE`) for enhanced security via Address Space Layout Randomization (`ASLR`) (default: `false`).
+- `with-doc`: Build and install man pages and HTML documentation (default: `false`).
+- `test`: Build and run tests (default: `false`).
+- `with-pkgconfig`: Build and install a `/usr/lib/pkgconfig/lib66.pc` file.
 
-You can invoke make with a few variables for more configuration.
+## Option Combinations
 
-*CC*, *CFLAGS*, *CPPFLAGS*, *LDFLAGS*, *LDLIBS*, *AR*, *RANLIB*, *STRIP*, *INSTALL* and *CROSS_COMPILE* can all be overridden on the make command line. This is an even bigger hammer than running `./configure` with environment variables, so it is advised to only do this when it is the only way of obtaining the behaviour you want.
+- You can enable both `enable-shared` and `enable-static` to build **both** shared and static libraries.
+- `enable-static-deps` requires `enable-static=true` to ensure `lib66.a` is built.
+- `enable-static-executable` conflicts with `enable-shared` and requires a static `libc`.
+- `enable-static-deps` conflicts with `enable-shared` due to incompatible linking models.
+- `enable-pie` is compatible with most options but may not work with `enable-static-executable` on some systems due to toolchain limitations.
+- `enable-all-pic` applies only to static libraries and is compatible with all options.
 
-*DESTDIR* can be given on the `make install` command line in order to install to a staging directory.
+### Important Notes on Configuration Options
 
-## Static binaries
+- User-Related Directories: Do not set absolute paths for `user-dir`, `user-log-dir`, `user-service-dir`, `user-service-conf-dir`, `user-script-dir`, `user-seed-dir`, `user-environment-dir`. Use paths relative to `$HOME`, which will be automatically prepended. For example, `user-dir=.66` becomes `$HOME/.66`.
 
-By default, binaries are linked against static versions of all the libraries they depend on, except for the libc. You can enforce linking against the static libc with *--enable-static-libc*.
+- Service Directories: `system-service-dir` and `sysadmin-service-dir` must be distinct paths. For example, avoid setting `sysadmin-service=/etc/66/service/sysadmin` if `system-service=/etc/66/service`.
 
-If you are using a GNU/Linux system, be aware that the GNU libc behaves badly with static linking and produces huge executables, which is why it is not the default. Other libcs are better suited to static linking, for instance [musl](http://musl-libc.org/).
+- s6-log Timestamp: Valid values for `s6-log-timestamp` are `tai`, `iso`, or `none`.
 
-## Cross-compilation
+- Path and Service Size Limits:
+  - `max-path-size`: Sets the maximum path length (in KB) for configuration directories. Each `*-dir` path, including the `$HOME` prefix, must not exceed this value.
+  - `max-service-size`: Sets the maximum size (in KB) for frontend service names. For a service `foo@`, the runtime name (e.g., `foo@bar`) must not exceed this limit.
 
-skarnet.org packages centralize all the difficulty of cross-compilation in one place: skalibs. Once you have
-cross-compiled skalibs, the rest is easy.
+## Environment Variables
 
-- Use the *--host=HOST* option to configure, *HOST* being the triplet for your target.
-- Make sure your cross-toolchain binaries (i.e. prefixed with HOST-) are accessible via your *PATH* environment variable.
-- Make sure to use the correct version of skalibs for your target, and the correct sysdeps directory, making use of the *--with-include*, *--with-lib*, *--with-dynlib* and *--with-sysdeps*
-options as necessary.
+Meson supports a few environment variables for build customization, but passing options directly to meson setup is preferred for clarity:
 
-## Out-of-tree builds
+- `CC`: Overrides the compiler (e.g., `CC=clang meson setup build`). When cross-compiling, the `--cross-file` option may prefix the compiler with the target triplet.
 
-obarun.org packages do not support out-of-tree builds. They are small, so it does not cost much to duplicate the entire source tree if parallel builds are needed.
+- `CFLAGS`, `CPPFLAGS`, LDF`LAGS: Appended to Meson’s default flags. To override defaults, use Meson options or build variables instead.
+
+## Build Variables
+
+You can pass variables to meson compile or meson install for fine-grained control:
+
+- `CC`, `CFLAGS`, `CPPFLAGS`, `LDFLAGS`, `LDLIBS`: Override compiler, flags, or libraries.
+- `AR`, `RANLIB`, `STRIP`, `INSTALL`: Customize archiver, ranlib, strip, or install tools.
+- `DESTDIR`: Specify a staging directory for installation.
+
+Example:
+
+```bash
+CFLAGS="-O3 -march=native" meson compile -C build
+DESTDIR=/tmp/staging meson install -C build
+```
+
+# Static Binaries
+
+By default, executables are linked dynamically with `libc` and other dependencies, even if `enable-static` is used. To build fully static executables (including a static `libc`):
+
+- Use `enable-static-executable`. This requires a static `libc` (e.g., `libc.a`) on the system, such as `libc6-dev` (Debian/Ubuntu), `glibc-static` (Fedora), or `musl-dev` (Alpine Linux).
+
+- Note: GNU `libc` produces larger static binaries compared to alternatives like `musl`. For smaller, portable binaries, consider using `musl`.
+
+To reduce runtime dependencies without fully static executables, use `enable-static-deps` with `enable-static=true` to link dependencies (e.g., `skalibs`, `s6`) statically.
+
+## Cross-Compilation
+
+Cross-compilation is simplified once `skalibs` is built for the target platform.
+To cross-compile:
+
+- Create a Meson cross file (e.g., `cross-file.ini`) specifying the target triplet (e.g., `arm-linux-gnueabihf`) and toolchain paths.
+- Ensure the cross-toolchain binaries (e.g., `arm-linux-gnueabihf-gcc`) are in your `PATH`.
+- Use the correct `skalibs` sysdeps directory for the target, specified via `sysdeps-dir`.
+- Customize include and library paths with `with-include-dir`, `with-staticlib-dir`, and `with-dynamiclib-dir` if needed.
+
+Example:
+
+```bash
+meson setup build --cross-file=cross-file.ini -D sysdeps-dir=/path/to/target/sysdeps
+meson compile -C build
+meson install -C build
+```
+
+## Using lib66 with pkg-config
+
+The build generates a `lib66.pc` file for use with `with-pkgconfig`, installed to `${libdir}/pkgconfig` (e.g., `/usr/lib/pkgconfig`). To link against `lib66`:
+
+```bash
+pkg-config --cflags --libs lib66
+```
+
+## Notes
+
+- If `enable-static-executable` is enabled, the build will fail with a clear error if a static `libc` is not found. Ensure the appropriate development package is installed (e.g., `libc6-dev`, `musl-dev`).
+
+- If `enable-static-deps` is enabled without `enable-static`, the build will fail to ensure `lib66.a` is available.
+
+- For security-sensitive systems, consider enabling `enable-pie` to benefit from `ASLR`.
+
+- Documentation requires `lowdown`. If unavailable or `with-doc=false`, no documentation will be installed.

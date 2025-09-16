@@ -1,8 +1,0 @@
-symlink_make.o
-symlink_provide.o
-symlink_switch.o
-symlink_type.o
--ls6
--loblibs
--lskarnet
-

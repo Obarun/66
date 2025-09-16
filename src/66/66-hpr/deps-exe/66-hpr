@@ -1,7 +1,0 @@
-${LIB66}
-${LIBUTMPS}
--loblibs
--lskarnet
-${SYSCLOCK_LIB}
-${SOCKET_LIB}
-
