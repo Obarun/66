@@ -12,206 +12,171 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <string.h>
 #include <stdint.h>
-#include <unistd.h> // access, unlink
+#include <unistd.h>
 #include <errno.h>
+#include <spawn.h>
+#include <stdbool.h>
 #include <signal.h>
-#include <sys/types.h>
-#include <sys/wait.h>
+#include <time.h>
+#include <string.h>
+#include <sys/stat.h>
 
-#include <oblibs/log.h>
-#include <oblibs/string.h>
+#include <oblibs/io.h>
 #include <oblibs/types.h>
+#include <oblibs/log.h>
 #include <oblibs/environ.h>
-#include <oblibs/linux.h>
+#include <oblibs/string.h>
 
-#include <skalibs/types.h>
-#include <skalibs/djbunix.h>
-#include <skalibs/cspawn.h>
-#include <skalibs/genalloc.h>
-#include <skalibs/iopause.h>
-#include <skalibs/sig.h>//sig_ignore
+#include <skalibs/types.h> // uint_fmt
 
-#include <66/ssexec.h>
-#include <66/constants.h>
+#include <66/sse.h>
 #include <66/service.h>
-#include <66/enum_parser.h>
 #include <66/state.h>
+#include <66/enum_parser.h>
 #include <66/svc.h>
 
-static uint32_t napid = 0 ;
-static unsigned int npid = 0 ;
-
-static char data[DATASIZE + 1] ;
-static char updown[4] ;
-static uint8_t opt_updown = 0 ;
-static uint8_t reloadmsg = 0 ;
-static uint8_t PROPAGATE = 1 ;
-static ssexec_t_ref PINFO = 0 ;
-
-enum fifo_e
+// Internal event types for coordination
+enum svc_event_type_e
 {
-    FIFO_u = 0,
-    FIFO_U,
-    FIFO_d,
-    FIFO_D,
-    FIFO_F,
-    FIFO_b,
-    FIFO_B
+    SVC_EVENT_CHILD_SUCCESS,
+    SVC_EVENT_CHILD_FAILED,
+    SVC_EVENT_TIMEOUT,
+    SVC_EVENT_SHUTDOWN_REQUEST
 } ;
-typedef enum fifo_e fifo_t, *fifo_t_ref ;
+typedef enum svc_event_type_e svc_event_type_t ;
 
-enum service_action_e
+// Internal coordination message
+struct svc_event_msg_s {
+    svc_event_type_t type ; // type of the event
+    uint32_t id ; // id of the service
+    uint64_t timestamp ; // For debugging/logging
+} ;
+typedef struct svc_event_msg_s svc_event_msg_t ;
+
+static svc_manager_t *pmanager ;
+static uint32_t npid = 0 ;
+static uint32_t *v2svc ;
+
+// prototype
+static int launch_service(uint32_t id) ;
+static void child_cb(sse_watcher_t *w, void *cbdata, int event) ;
+static void timeout_cb(sse_watcher_t *w, void *cbdata, int event) ;
+
+// helpers
+static uint32_t get_asvc_id(vertex_t *v)
 {
-    SERVICE_ACTION_GOTIT = 0,
-    SERVICE_ACTION_WAIT,
-    SERVICE_ACTION_FATAL,
-    SERVICE_ACTION_UNKNOWN
-} ;
-typedef enum service_action_e service_action_t, *service_action_t_ref ;
+    log_flow() ;
+    uint32_t id = v->index ;
+    return v2svc[id] ;
+}
 
-static const unsigned char actions[2][7] = {
-    // u U d D F b B
-    { SERVICE_ACTION_WAIT, SERVICE_ACTION_GOTIT, SERVICE_ACTION_UNKNOWN, SERVICE_ACTION_UNKNOWN, SERVICE_ACTION_FATAL, SERVICE_ACTION_WAIT, SERVICE_ACTION_WAIT }, // !what -> up
-    { SERVICE_ACTION_UNKNOWN, SERVICE_ACTION_UNKNOWN, SERVICE_ACTION_WAIT, SERVICE_ACTION_GOTIT, SERVICE_ACTION_FATAL, SERVICE_ACTION_WAIT, SERVICE_ACTION_WAIT } // what -> down
-
-} ;
-
-//  convert signal into enum number
-static const unsigned int char2enum[128] =
-{
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //8
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //16
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //24
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //32
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //40
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //48
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //56
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //64
-    0 ,  0 ,  FIFO_B ,  0 ,  FIFO_D ,  0 ,  FIFO_F ,  0 , //72
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //80
-    0 ,  0 ,  0 ,  0 ,  0 ,  FIFO_U,   0 ,  0 , //88
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //96
-    0 ,  0 ,  FIFO_b ,  0 ,  FIFO_d ,  0 ,  0 ,  0 , //104
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //112
-    0 ,  0 ,  0 ,  0 ,  0 ,  FIFO_u ,  0 ,  0 , //120
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0   //128
-} ;
-
-static inline void kill_all(pidservice_t *apids)
+static bool deps_satisfied(uint32_t id)
 {
     log_flow() ;
 
-    uint32_t j = napid ;
-    while (j--) kill(apids[j].pid, SIGKILL) ;
-}
+    uint32_t pos = 0 ;
+    svc_ctx_t *svc = &pmanager->asvc[id];
+    int flag = !pmanager->operation ? SVC_FLAGS_UP : SVC_FLAGS_DOWN ;
 
-static int check_action(pidservice_t *apids, int pos, unsigned int receive, unsigned int what)
-{
-    unsigned int p = char2enum[receive] ;
-    unsigned char action = actions[what][p] ;
+    for (; pos < svc->ndepends ; pos++) {
 
-    switch(action) {
+        uint32_t did = get_asvc_id(svc->depends[pos]) ;
+        svc_ctx_t *dep = &pmanager->asvc[did] ;
 
-        case SERVICE_ACTION_GOTIT:
-            FLAGS_SET(apids[pos].state, (!what ? SVC_FLAGS_UP : SVC_FLAGS_DOWN)) ;
-            return 1 ;
-
-        case SERVICE_ACTION_FATAL:
-            FLAGS_SET(apids[pos].state, SVC_FLAGS_FATAL) ;
-            return -1 ;
-
-        case SERVICE_ACTION_WAIT:
-            return 0 ;
-
-        case SERVICE_ACTION_UNKNOWN:
-        default:
-            log_die(LOG_EXIT_ZERO,"invalid action -- please make a bug report") ;
+        if (!FLAGS_ISSET(dep->state, flag))
+            return false ;
     }
 
+    return true ;
 }
 
-static void notify(pidservice_t *apids, unsigned int pos, char const *sig, unsigned int what)
+static void wait_deps(uint32_t id)
 {
     log_flow() ;
 
-    uint32_t i = 0, idx = 0 ;
-    char fmt[UINT_FMT] ;
-    uint8_t flag = what ? SVC_FLAGS_DOWN : SVC_FLAGS_UP ;
+    uint32_t pos = 0 ;
+    svc_ctx_t *svc = &pmanager->asvc[id];
 
-    for (; i < apids[pos].nnotif ; i++) {
+    // Check all dependents of this service
+    for (; pos < svc->nrequiredby ; pos++) {
 
-        for (idx = 0 ; idx < napid ; idx++) {
+        uint32_t did = get_asvc_id(svc->requiredby[pos]) ;
+        svc_ctx_t *dep = &pmanager->asvc[did] ;
 
-            if (apids[pos].notif[i]->index == apids[idx].index && !FLAGS_ISSET(apids[idx].state, flag))  {
+        if (dep->state == SVC_FLAGS_WAITING_DEPS && deps_satisfied(did))
+            launch_service(did) ;
+    }
+}
 
-                size_t nlen = uint_fmt(fmt, pos) ;
-                fmt[nlen] = 0 ;
-                size_t len = nlen + 1 + 2 ;
-                char s[len + 1] ;
-                auto_strings(s, fmt, ":", sig, "@") ;
+static void propagate_failure(uint32_t id)
+{
+    log_flow() ;
 
-                log_trace("sends notification ", sig, " to: ", apids[idx].res->sa.s + apids[idx].res->name, " from: ", apids[pos].res->sa.s + apids[pos].res->name) ;
+    uint32_t pos = 0 ;
+    svc_ctx_t *svc = &pmanager->asvc[id] ;
 
-                if (write(apids[idx].pipe[1], s, strlen(s)) < 0)
-                    log_dieusys(LOG_EXIT_SYS, "send notif to: ", apids[idx].res->sa.s + apids[idx].res->name) ;
-            }
+    for (; pos < svc->ndepends ; pos++) {
+
+        uint32_t did = get_asvc_id(svc->depends[pos]) ;
+        svc_ctx_t *dep = &pmanager->asvc[did];
+
+        // Only propagate to services that were supposed to start
+        if (dep->target_state == SVC_FLAGS_UP && (dep->state == SVC_FLAGS_WAITING_DEPS || dep->state == SVC_FLAGS_STARTING)) {
+
+            // Stop any watchers that might be active */
+            if (dep->pid > 0)
+                kill(dep->pid, SIGTERM) ;
+
+            // Recursively propagate
+            if (pmanager->propagate)
+                propagate_failure(did) ;
         }
     }
 }
 
-/**
- * @what: up or down
- * @success: 0 success, 1 fail
- * */
-static void announce(unsigned int pos, pidservice_t *apids, unsigned int what, unsigned int success, unsigned int exitcode)
+static inline int svc_send_event(svc_event_type_t type, uint32_t id)
 {
     log_flow() ;
 
-    int fd = 0 ;
+    svc_event_msg_t msg = {
+        .type = type,
+        .id = id,
+        .timestamp = time(NULL)
+    } ;
 
+    ssize_t written = io_write(pmanager->notifd[1], (char *)&msg, sizeof(msg)) ;
+    return (written == sizeof(msg)) ? 1 : 0 ;
+}
+
+// state = true > success
+static void announce(uint32_t id, bool success)
+{
+    log_flow() ;
+
+    int fd ;
+    svc_ctx_t *svc = &pmanager->asvc[id] ;
     char fmt[UINT_FMT] ;
-    char const *name = apids[pos].res->sa.s + apids[pos].res->name ;
-    char const *scandir = apids[pos].res->sa.s + apids[pos].res->live.scandir ;
+    char const *name = svc->res->sa.s + svc->res->name ;
+    char const *scandir = svc->res->sa.s + svc->res->live.scandir ;
     size_t scandirlen = strlen(scandir) ;
     char file[scandirlen +  6] ;
 
     auto_strings(file, scandir, "/down") ;
 
-    uint8_t flag = what ? SVC_FLAGS_DOWN : SVC_FLAGS_UP ;
-
     if (success) {
 
-        if (apids[pos].res->type == E_PARSER_TYPE_CLASSIC) {
+        if (!state_messenger(svc->res, STATE_FLAGS_ISUP, \
+            pmanager->signal[1] == 'a' || \
+            pmanager->signal[1] == 'h' || \
+            pmanager->signal[1] == 'U' || \
+            pmanager->signal[1] == 'r' \
+            ? STATE_FLAGS_TRUE : pmanager->operation ? STATE_FLAGS_FALSE : STATE_FLAGS_TRUE))
+                log_dieu(LOG_EXIT_SYS, "send message to state of: ", name) ;
 
-            fd = open_trunc(file) ;
-            if (fd < 0)
-                log_dieusys(LOG_EXIT_SYS, "create file: ", scandir) ;
-            fd_close(fd) ;
-        }
+        if (!svc->res->execute.down && svc->res->type == E_PARSER_TYPE_CLASSIC) {
 
-        fmt[uint_fmt(fmt, exitcode)] = 0 ;
-
-        log_1_warn("unable to ", reloadmsg == 1 ? "restart" : reloadmsg > 1 ? "reload" : what ? "stop" : "start", " service: ", name, " -- exited with signal: ", fmt) ;
-
-        notify(apids, pos, "F", what) ;
-
-        FLAGS_SET(apids[pos].state, SVC_FLAGS_BLOCK|SVC_FLAGS_FATAL) ;
-
-    } else {
-
-        if (!state_messenger(apids[pos].res, STATE_FLAGS_ISUP, \
-                                                        data[1] == 'a' || \
-                                                        data[1] == 'h' || \
-                                                        data[1] == 'U' || \
-                                                        data[1] == 'r' \
-                                                        ? STATE_FLAGS_TRUE : what ? STATE_FLAGS_FALSE : STATE_FLAGS_TRUE))
-            log_dieu(LOG_EXIT_SYS, "send message to state of: ", name) ;
-
-        if (!apids[pos].res->execute.down && apids[pos].res->type == E_PARSER_TYPE_CLASSIC) {
-
-            if (!what) {
+            if (!pmanager->operation) {
 
                 if (!access(scandir, F_OK)) {
                     log_trace("delete down file: ", file) ;
@@ -221,7 +186,7 @@ static void announce(unsigned int pos, pidservice_t *apids, unsigned int what, u
 
             } else {
 
-                fd = open_trunc(file) ;
+                fd = io_open_mode(file, O_WRONLY | O_NONBLOCK | O_TRUNC | O_CREAT, 0666) ;
                 /** The directory and file may not exist. Typically,
                  * a service inside a module can not match the state
                  * of the module and may occur in case of crash of a
@@ -232,481 +197,570 @@ static void announce(unsigned int pos, pidservice_t *apids, unsigned int what, u
                  * from scratch anyway.*/
                 if (fd < 0 && errno != ENOENT)
                     log_dieusys(LOG_EXIT_SYS, "create file: ", file) ;
-                fd_close(fd) ;
+                close(fd) ;
             }
         }
 
-        log_info("Successfully ", reloadmsg == 1 ? "restarted" : reloadmsg > 1 ? "reloaded" : what ? "stopped" : "started", " service: ", name) ;
+        log_info("Successfully ", pmanager->cmdmsg ? pmanager->cmdmsg : pmanager->operation ? "stopped" : "started", pmanager->cmdmsg ? "ed" : "", " service: ", name) ;
 
-        notify(apids, pos, what ? "D" : "U", what) ;
-
-        FLAGS_CLEAR(apids[pos].state, SVC_FLAGS_BLOCK) ;
-        FLAGS_SET(apids[pos].state, flag|SVC_FLAGS_UNBLOCK) ;
-    }
-
-}
-
-static int handle_signal(pidservice_t *apids, unsigned int what)
-{
-    log_flow() ;
-
-    int ok = 0 ;
-
-    for (;;) {
-
-        int s = lx_signalfd_read() ;
-        switch (s) {
-
-            case -1 : log_dieusys(LOG_EXIT_SYS,"lx_signalfd_read") ;
-            case 0 : return ok ;
-            case SIGCHLD :
-
-                for (;;) {
-
-                    uint32_t pos = 0 ;
-                    int wstat = 0 ;
-                    pid_t r = wait_nohang(&wstat) ;
-
-                    if (r < 0) {
-
-                        if (errno == ECHILD)
-                            break ;
-                        else
-                            log_dieusys(LOG_EXIT_SYS,"wait for children") ;
-
-                    } else if (!r) break ;
-
-                    for (; pos < napid ; pos++)
-                        if (apids[pos].pid == r)
-                            break ;
-
-                    if (pos < napid) {
-
-                        if (!WIFSIGNALED(wstat) && !WEXITSTATUS(wstat)) {
-
-                            announce(pos, apids, what, 0, 0) ;
-                            npid-- ;
-
-                        } else {
-
-                            ok = WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat) ;
-                            announce(pos, apids, what, 1, ok) ;
-                            npid-- ;
-                            kill_all(apids) ;
-                            break ;
-                        }
-                    }
-                }
-                break ;
-            case SIGTERM :
-            case SIGKILL :
-            case SIGINT :
-                    log_1_warn("received SIGINT, aborting transaction") ;
-                    kill_all(apids) ;
-                    ok = 111 ;
-                    break ;
-            default : log_die(LOG_EXIT_SYS, "unexpected data in lx_signalfd") ;
-        }
-    }
-
-    return ok ;
-}
-
-unsigned int compute_timeout(resolve_service_t *res, uint8_t what)
-{
-    unsigned int timeout = 0 ;
-
-    if (PINFO->opt_timeout) {
-
-        timeout = PINFO->timeout ;
-
-    } else if (!what) {
-
-        if (res->execute.timeout.start)
-            timeout = res->execute.timeout.start ;
+        svc_send_event(SVC_EVENT_CHILD_SUCCESS, id) ;
 
     } else {
 
-        if (res->execute.timeout.stop)
-            timeout = res->execute.timeout.stop ;
+        if (svc->res->type == E_PARSER_TYPE_CLASSIC) {
+
+            fd = io_open_mode(file, O_WRONLY | O_NONBLOCK | O_TRUNC | O_CREAT, 0666) ;
+            if (fd < 0)
+                log_dieusys(LOG_EXIT_SYS, "create file: ", scandir) ;
+            close(fd) ;
+        }
+
+        fmt[uint_fmt(fmt, svc->exitcode)] = 0 ;
+
+        log_1_warnu(pmanager->cmdmsg ? pmanager->cmdmsg : pmanager->operation ? "stop" : "start", " service: ", name, " -- exited with signal: ", fmt) ;
+
+        svc_send_event(SVC_EVENT_CHILD_FAILED, id) ;
     }
-
-    return timeout ;
-
 }
 
-static int doit(pidservice_t *apids, unsigned int idx, uint8_t what)
+static int launch_service(uint32_t id)
 {
     log_flow() ;
 
-    uint8_t type = apids[idx].res->type ;
+    svc_ctx_t *svc = &pmanager->asvc[id] ;
 
-    pid_t pid ;
-    int wstat ;
-
-    char tfmt[UINT32_FMT] ;
-
-    unsigned int timeout = 0 ;
-
-    timeout = compute_timeout(apids[idx].res, what) ;
-
-    tfmt[uint_fmt(tfmt, timeout)] = 0 ;
+    uint8_t type = svc->res->type ;
 
     if (type == E_PARSER_TYPE_CLASSIC) {
 
-        char *scandir = apids[idx].res->sa.s + apids[idx].res->live.scandir ;
+        char *scandir = svc->res->sa.s + svc->res->live.scandir ;
 
-        if (!apids[idx].res->notify)
-            updown[2] = updown[2] == 'U' ? 'u' : updown[2] == 'D' ? 'd' : updown[2] == 'R' ? 'r' : updown[2] ;
+        if (!svc->res->notify)
+            pmanager->wsignal[2] = pmanager->wsignal[2] == 'U' ? 'u' : pmanager->wsignal[2] == 'D' ? 'd' : pmanager->wsignal[2] == 'R' ? 'r' : pmanager->wsignal[2] ;
 
-        char const *newargv[8] ;
+        char *newargv[5] ;
         unsigned int m = 0 ;
 
         newargv[m++] = "s6-svc" ;
-        newargv[m++] = data ;
+        newargv[m++] = pmanager->signal ;
 
-        if (opt_updown)
-            newargv[m++] = updown ;
+        if (pmanager->woption)
+            newargv[m++] = pmanager->wsignal ;
 
-        newargv[m++] = "-T" ;
-        newargv[m++] = tfmt ;
-        newargv[m++] = "--" ;
         newargv[m++] = scandir ;
         newargv[m++] = 0 ;
 
-        log_trace("sending ", opt_updown ? newargv[2] : "", opt_updown ? " " : "", data, " to: ", scandir) ;
+        log_trace("sending ", pmanager->woption ? newargv[2] : "", pmanager->woption ? " " : "", pmanager->signal, " to: ", scandir) ;
 
-        pid = child_spawn0(newargv[0], newargv, (char const *const *) environ) ;
-
-        if (waitpid_nointr(pid, &wstat, 0) < 0)
-            log_warnusys_return(LOG_EXIT_ZERO, "wait for s6-svc") ;
-
-        if (!WIFSIGNALED(wstat) && !WEXITSTATUS(wstat))
-            return WEXITSTATUS(wstat) ;
-        else
-            return WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat) ;
+        if (posix_spawnp(&svc->pid, newargv[0], NULL, NULL, newargv, environ)) {
+            FLAGS_SET(svc->state, SVC_FLAGS_FAILED) ;
+            log_warnusys_return(LOG_EXIT_ZERO, "spawn service: ", svc->res->sa.s + svc->res->name) ;
+        }
 
     } else if (type == E_PARSER_TYPE_ONESHOT) {
 
-        char *servicedir = apids[idx].res->sa.s + apids[idx].res->live.servicedir ;
-        char *oneshotdir = apids[idx].res->sa.s + apids[idx].res->live.oneshotddir ;
-        char *scandir = apids[idx].res->sa.s + apids[idx].res->live.scandir ;
+        char *servicedir = svc->res->sa.s + svc->res->live.servicedir ;
+        char *oneshotdir = svc->res->sa.s + svc->res->live.oneshotddir ;
+        char *scandir = svc->res->sa.s + svc->res->live.scandir ;
         char oneshot[strlen(oneshotdir) + 2 + 1] ;
         auto_strings(oneshot, oneshotdir, "/s") ;
 
-        char const *newargv[11] ;
+        char *newargv[9] ;
         unsigned int m = 0 ;
         newargv[m++] = "s6-sudo" ;
         newargv[m++] = VERBOSITY >= 4 ? "-vel0" : "-el0" ;
         newargv[m++] = "-t" ;
         newargv[m++] = "30000" ;
-        newargv[m++] = "-T" ;
-        newargv[m++] = tfmt ;
         newargv[m++] = "--" ;
         newargv[m++] = oneshot ;
-        newargv[m++] = !what ? "up" : "down" ;
+        newargv[m++] = !pmanager->operation ? "up" : "down" ;
         newargv[m++] = servicedir ;
         newargv[m++] = 0 ;
 
-        log_trace("sending ", !what ? "start" : "stop", " to: ", scandir) ;
+        log_trace("sending ", !pmanager->operation ? "start" : "stop", " to: ", scandir) ;
 
-        pid = child_spawn0(newargv[0], newargv, (char const *const *) environ) ;
-
-        if (waitpid_nointr(pid, &wstat, 0) < 0)
-            log_warnusys_return(LOG_EXIT_ZERO, "wait for s6-sudo") ;
-
-        if (!WIFSIGNALED(wstat) && !WEXITSTATUS(wstat)) {
-
-            if (data[1] == 'r') {
-                /** oneshot service are not handled automatically by
-                 * s6-supervise. Signal is restart, so let it down first
-                 * and force to bring it up again .*/
-
-                log_trace("sending up to: ", scandir) ;
-
-                char const *newargv[11] ;
-                unsigned int m = 0 ;
-                newargv[m++] = "s6-sudo" ;
-                newargv[m++] = VERBOSITY >= 4 ? "-vel0" : "-el0" ;
-                newargv[m++] = "-t" ;
-                newargv[m++] = "30000" ;
-                newargv[m++] = "-T" ;
-                newargv[m++] = tfmt ;
-                newargv[m++] = "--" ;
-                newargv[m++] = oneshot ;
-                newargv[m++] = "up" ;
-                newargv[m++] = servicedir ;
-                newargv[m++] = 0 ;
-
-                pid = child_spawn0(newargv[0], newargv, (char const *const *) environ) ;
-
-                if (waitpid_nointr(pid, &wstat, 0) < 0)
-                    log_warnusys_return(LOG_EXIT_ZERO, "wait for s6-sudo") ;
-
-                if (WIFSIGNALED(wstat) && WEXITSTATUS(wstat))
-                    return WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat) ;
-            }
-
-            return WEXITSTATUS(wstat) ;
-
-        } else {
-
-            return WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat) ;
+        if (posix_spawnp(&svc->pid, newargv[0], NULL, NULL, newargv, environ)) {
+            FLAGS_SET(svc->state, SVC_FLAGS_FAILED) ;
+            log_warnusys_return(LOG_EXIT_ZERO, "spawn service: ", svc->res->sa.s + svc->res->name) ;
         }
 
     } else if (type == E_PARSER_TYPE_MODULE) {
 
-        return svc_compute_ns(apids[idx].res, what, PINFO, updown, opt_updown, reloadmsg, data, PROPAGATE) ;
+        int r = svc_compute_ns(pmanager, id) ;
+        announce(id, !r ? true : false) ;
+        return r ? 0 : 1 ;
     }
 
-    /* should be never reached*/
-    return 0 ;
+    // Setup child watcher/
+    if (!sse_start_child(&pmanager->loop, &svc->child, child_cb, (void *)(uintptr_t)id, svc->pid, 2, true)) {
+        if (svc->pid)
+            kill(svc->pid, SIGKILL);
+        svc->state = SVC_FLAGS_FAILED ;
+        log_warnusys_return(LOG_EXIT_ZERO, "start child watcher for service: ", svc->res->sa.s + svc->res->name) ;
+    }
+
+    // Setup timeout watcher if any
+    uint64_t timeout = !pmanager->operation ? svc->res->execute.timeout.start : svc->res->execute.timeout.stop ;
+    if (timeout) {
+        if (!sse_start_timer(&pmanager->loop, &svc->timeout, timeout_cb, (void *)(uintptr_t)id, svc->res->execute.timeout.start, 0, 1))
+            log_warnusys_return(LOG_EXIT_ZERO, "start timer watcher for service: ",  svc->res->sa.s + svc->res->name) ;
+    }
+
+    return 1 ;
 }
 
-static int async_deps(pidservice_t *apids, uint32_t i, uint8_t what, tain *deadline)
+// callback
+static void signalfd_cb(sse_watcher_t *w, void *cbdata, int event)
 {
     log_flow() ;
 
-    int r, id = 0 ;
-    unsigned int pos = 0, idx = 0 ;
-    char buf[(UINT_FMT*2)*SS_MAX_SERVICE + 1] ;
+    (void)cbdata ;
 
-    tain dead ;
-    tain_now_set_stopwatch_g() ;
-    tain_add_g(&dead, deadline) ;
+    // Check for watcher errors first
+    if (w->api_errno != 0) {
+        log_warn("signalfd watcher error: ", strerror(w->api_errno)) ;
+        sse_free_signal(w) ;
+        pmanager->loop.running = false ;
+        return ;
+    }
 
-    iopause_fd x = { .fd = apids[i].pipe[0], .events = IOPAUSE_READ, 0 } ;
+    if (!(event & SSE_READ)) {
+        log_warn("unexpected event on signalfd callback") ;
+        sse_free_signal(w) ;
+        pmanager->loop.running = false ;
+        return ;
+    }
 
-    uint32_t n = apids[i].nedge ;
-    uint32_t visit[n + 1] ;
+    sse_signal_t *s = (sse_signal_t *)w->sdata;
+    if (!s) {
+        log_warn("signalfd sdata is NULL") ;
+        sse_free_signal(w) ;
+        pmanager->loop.running = false ;
+        return ;
+    }
 
-    memset(visit, 0, (n + 1) * sizeof(uint32_t));
+    switch (s->si.ssi_signo) {
 
-    log_trace("waiting dependencies for: ", apids[i].res->sa.s + apids[i].res->name) ;
+        case SIGTERM :
+        case SIGKILL :
+        case SIGINT :
+            log_1_warn("received SIGTERM or SIGKILL or SIGINT, aborting transaction") ;
+            svc_send_event(SVC_EVENT_SHUTDOWN_REQUEST, 0) ;
+            break ;
+        default :
+            log_die(LOG_EXIT_SYS, "unexpected signal") ;
+    }
+}
 
-    while (pos < n) {
+static void deadline_cb(sse_watcher_t *w, void *cbdata, int event)
+{
+    log_flow() ;
 
-        r = iopause_g(&x, 1, &dead) ;
+    (void)cbdata ;
+    (void)event ;
 
-        if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "iopause") ;
+    // Check for watcher errors
+    if (w->api_errno != 0) {
+        log_warn("deadline watcher error: ", strerror(w->api_errno)) ;
+        // Still trigger shutdown, then free
+        svc_send_event(SVC_EVENT_SHUTDOWN_REQUEST, 0) ;
+        sse_free_timer(w) ;
+        return ;
+    }
 
-        if (!r) {
-            errno = ETIMEDOUT ;
-            log_dieusys(LOG_EXIT_SYS,"timed out", apids[i].res->sa.s + apids[i].res->name) ;
+    log_warn("global deadline reached, shutting down") ;
+    svc_send_event(SVC_EVENT_SHUTDOWN_REQUEST, 0) ;
+    // one-shot timer
+    sse_free_timer(w) ;
+}
+
+static void notifier_cb(sse_watcher_t *w, void *cbdata, int event)
+{
+    log_flow() ;
+
+    (void)cbdata ;
+    svc_event_msg_t msg ;
+    ssize_t n ;
+
+    // Check for watcher errors
+    if (w->api_errno != 0) {
+        log_warn("notifier watcher error: ", strerror(w->api_errno)) ;
+        pmanager->loop.running = false ;
+        // simply return and let cleanup handle it
+        return ;
+    }
+
+    if (!(event & SSE_READ)) {
+        log_warn("unexpected event on notifier callback") ;
+        pmanager->loop.running = false ;
+        return ;
+    }
+
+    while ((n = io_read(pmanager->notifd[0], (char *)&msg, sizeof(msg))) == sizeof(msg)) {
+
+        if (msg.id >= pmanager->nsvc) {
+            log_warn("invalid service id in notification") ;
+            continue ;
         }
 
-        if (x.revents & IOPAUSE_READ) {
+        svc_ctx_t *svc = &pmanager->asvc[msg.id] ;
 
-            memset(buf, 0, ((UINT_FMT*2)*SS_MAX_SERVICE + 1) * sizeof(char)) ;
-            r = read(apids[i].pipe[0], buf, sizeof(buf)) ;
-            if (r < 0)
-                log_dieu(LOG_EXIT_SYS, "read from pipe") ;
-            buf[r] = 0 ;
+        switch (msg.type) {
 
-            idx = 0 ;
+            case SVC_EVENT_CHILD_SUCCESS:
+                svc->state = 0 ;
+                FLAGS_SET(svc->state, !pmanager->operation ? SVC_FLAGS_UP : SVC_FLAGS_DOWN) ;
+                wait_deps(msg.id) ;
+                break ;
 
-            while (r != -1) {
-                /** The buf might contain multiple signal coming
-                 * from the dependencies if they finished before
-                 * the start of this read process. Check every
-                 * signal received.*/
-                r = get_len_until(buf + idx, '@') ;
+            case SVC_EVENT_CHILD_FAILED:
+                svc->state = 0 ;
+                FLAGS_SET(svc->state, SVC_FLAGS_FAILED) ;
 
-                if (r < 0) {
-                    /* no more signal */
-                    r = -1 ;
-                    continue ;
-                }
+                if (pmanager->propagate)
+                    propagate_failure(msg.id) ;
+                break ;
 
-                char line[r + 1] ;
-                memcpy(line, buf + idx, r) ;
-                line[r] = 0 ;
+            case SVC_EVENT_TIMEOUT:
+                svc->state = 0 ;
+                FLAGS_SET(svc->state, SVC_FLAGS_TIMEOUT) ;
+                break ;
 
-                idx += r + 1 ;
+            case SVC_EVENT_SHUTDOWN_REQUEST:
+                pmanager->loop.running = false ;
+                break ;
 
-                /**
-                 * the received string have the format:
-                 *      apids_array_id:signal_receive
-                 *
-                 * typically:
-                 *      - 10:D
-                 *      - 8:u
-                 *      - ...
-                 *
-                 * Split it and check the signal receive.*/
-                int sep = get_len_until(line, ':') ;
-                if (sep < 0)
-                    log_die(LOG_EXIT_SYS, "received bad signal format -- please make a bug report") ;
+            default:
+                log_warn("unexpected event type") ;
+                break ;
+        }
 
-                unsigned int c = line[sep + 1] ;
-                char pc[2] = { c, 0 } ;
-                line[sep] = 0 ;
+        // Check if we're done
+        if (!npid)
+            pmanager->loop.running = false ;
+    }
 
-                if (!uint0_scan(line, &id))
-                    log_dieusys(LOG_EXIT_SYS, "retrieve service number -- please make a bug report") ;
+    if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+        log_warnusys("read from notifier pipe");
+        pmanager->loop.running = false;
+    }
+}
 
-                log_trace(apids[i].res->sa.s + apids[i].res->name, " acknowledges: ", pc, " from: ", apids[id].res->sa.s + apids[id].res->name) ;
+static void child_cb(sse_watcher_t *w, void *cbdata, int event)
+{
+    log_flow() ;
 
-                if (!visit[pos]) {
+    uint32_t id = (uint32_t)(uintptr_t)cbdata;
+    svc_ctx_t *svc = &pmanager->asvc[id];
 
-                    id = check_action(apids, id, c, what) ;
-                    if (id < 0)
-                        log_die(LOG_EXIT_SYS, "service dependency: ", apids[id].res->sa.s + apids[id].res->name, " of: ", apids[i].res->sa.s + apids[i].res->name," crashed") ;
+    if (w->api_errno != 0) {
+        log_warn("child watcher error: ", strerror(w->api_errno)) ;
+        npid--;
+        svc->state = SVC_FLAGS_FAILED ;
+        announce(id, false) ;
+        sse_free_child(w) ;
+        return ;
+    }
 
-                    if (!id)
-                        continue ;
+    if (!(event & SSE_READ)) {
+        log_warn("unexpected event on child callback") ;
+        return ;
+    }
 
-                    visit[pos++] ;
-                }
+    if (event & (SSE_HUP | SSE_READ)) {
+
+        sse_child_t *data = (sse_child_t *)w->sdata;
+        if (!data) {
+            log_warn("child watcher sdata is NULL") ;
+            sse_free_child(w) ;
+            return ;
+        }
+
+        int wstat = data->status ;
+        npid-- ;
+
+        svc->exitcode = WEXITSTATUS(wstat) ;
+
+        bool success = !WIFSIGNALED(wstat) && !WEXITSTATUS(wstat) ;
+        announce(id, success) ;
+
+        if (svc->timeout.fd > 0)
+            sse_free_timer(&svc->timeout) ;
+
+        sse_free_child(&svc->child) ;
+    }
+}
+
+static void timeout_cb(sse_watcher_t *w, void *cbdata, int event)
+{
+    log_flow() ;
+
+    uint32_t id = (uint32_t)(uintptr_t)cbdata ;
+    svc_ctx_t *svc = &pmanager->asvc[id] ;
+    (void)event ;
+    if (w->api_errno != 0) {
+        log_warn("timeout watcher error: ", strerror(w->api_errno)) ;
+        sse_free_timer(w) ;
+        return ;
+    }
+
+    if (!svc && svc->pid > 0) {
+        // Kill the service
+        log_warn("service timeout, killing: ", svc->res->sa.s + svc->res->name) ;
+        kill(svc->pid, SIGTERM) ;
+
+        svc_send_event(SVC_EVENT_TIMEOUT, id) ;
+    }
+
+    // one-shot timer
+    sse_free_timer(w) ;
+}
+
+// main API
+static int svc_manager_init(svc_ctx_t *asvc, uint32_t nsvc, uint8_t operation, ssexec_t *info, char const *wsignal, uint8_t woption, char const *signal, char *cmdmsg, uint8_t propagate)
+{
+    log_flow() ;
+
+    if (!asvc || nsvc == 0) {
+        errno = EINVAL ;
+        log_dieusys(LOG_EXIT_SYS, "bad parameter") ;
+    }
+
+    /* Initialize manager structure */
+    pmanager->asvc = asvc ;
+    pmanager->nsvc = nsvc ;
+    pmanager->shutdown_requested = false ;
+    pmanager->info = info ;
+    pmanager->timeout = (uint64_t)info->timeout ;
+    pmanager->propagate = propagate ? true : false ;
+    pmanager->operation = operation ;
+    pmanager->woption = woption ;
+    auto_strings(pmanager->wsignal, wsignal) ;
+    auto_strings(pmanager->signal, signal) ;
+    pmanager->cmdmsg = cmdmsg ;
+
+    if (!sse_new(&pmanager->loop, nsvc))
+        log_dieusys(LOG_EXIT_SYS, "initiate events loop") ;
+
+    pmanager->loop.running = true ;
+
+    // general signal
+    if (!sse_start_signal(&pmanager->loop, &pmanager->signalfd, signalfd_cb, NULL, 0))
+        log_dieusys(LOG_EXIT_SYS, "start signal watcher") ;
+
+    if (!sse_attach_signal(&pmanager->signalfd, SIGINT))
+        log_dieusys(LOG_EXIT_SYS, "block signal SIGINT") ;
+
+    if (!sse_attach_signal(&pmanager->signalfd, SIGKILL))
+        log_dieusys(LOG_EXIT_SYS, "block signal SIGKILL") ;
+
+    if (!sse_attach_signal(&pmanager->signalfd, SIGTERM))
+        log_dieusys(LOG_EXIT_SYS, "block signal SIGTERM") ;
+
+    if (!sse_ignore_signal(&pmanager->signalfd, SIGPIPE))
+        log_dieusys(LOG_EXIT_SYS, "ignore signal SIGPIPE") ;
+
+    // Create notifier pipe
+    if (pipe(pmanager->notifd) < 0)
+        log_dieusys(LOG_EXIT_SYS, "create notifier pipe") ;
+
+    // Set pipes non-blocking
+    if (!io_set_nonblock(pmanager->notifd[0]) || !io_set_nonblock(pmanager->notifd[1]))
+        log_dieusys(LOG_EXIT_SYS, "set none blocking notifier pipe") ;
+
+    // Setup notifier pipe watcher
+    if (!sse_start_io(&pmanager->loop, &pmanager->notifier, notifier_cb, NULL, pmanager->notifd[0], SSE_READ, 0))
+        log_dieusys(LOG_EXIT_SYS, "start notifier watcher") ;
+
+    // Setup global deadline timer if timeout specified
+    if (pmanager->timeout) {
+        if (!sse_start_timer(&pmanager->loop, &pmanager->deadline, deadline_cb, NULL, pmanager->timeout, 0, 0))
+            log_dieusys(LOG_EXIT_SYS, "start deadline watcher") ;
+    }
+
+    return 1;
+}
+
+static int svc_manager_start(void)
+{
+    log_flow() ;
+
+    uint32_t pos = 0 ;
+
+    for (; pos < pmanager->nsvc ; pos++) {
+
+        svc_ctx_t *svc = &pmanager->asvc[pos] ;
+
+        FLAGS_SET(svc->target_state, SVC_FLAGS_UP) ;
+
+        if (FLAGS_ISSET(svc->state, SVC_FLAGS_UP)) {
+            log_warn("skipping already up service: ", svc->res->sa.s + svc->res->name) ;
+            continue ;
+        }
+
+        // Skip if service is already running
+        if (FLAGS_ISSET(svc->state, SVC_FLAGS_STARTING | SVC_FLAGS_PROCESSING)) {
+            log_warn("skipping already processing service: ", svc->res->sa.s + svc->res->name) ;
+            continue ;
+        }
+
+        npid++ ;
+
+        // Check if we can start this service now
+        if (deps_satisfied(pos)) {
+
+            svc->state = SVC_FLAGS_STARTING ;
+            log_trace("initiate start process for service: ", svc->res->sa.s + svc->res->name) ;
+
+            if (!launch_service(pos)) {
+
+                log_warn("failed to start service: ", svc->res->sa.s + svc->res->name);
+                svc->state = SVC_FLAGS_FAILED ;
+                if (svc->pid)
+                    kill(svc->pid, SIGKILL) ;
+                svc->pid = 0 ;
+
+                // Propagate failure to dependents if enabled
+                if (pmanager->propagate)
+                    propagate_failure(pos) ;
             }
+
+        } else {
+            // Mark as waiting for dependencies
+            svc->state = SVC_FLAGS_WAITING_DEPS ;
+            log_trace("service waiting for dependencies: ", svc->res->sa.s + svc->res->name) ;
         }
     }
 
     return 1 ;
 }
 
-static int async(pidservice_t *apids, uint32_t i, uint8_t what, tain *deadline)
+static int svc_manager_stop(void)
 {
     log_flow() ;
 
-    int e = 0 ;
+    uint32_t pos = 0 ;
 
-    char *name = apids[i].res->sa.s + apids[i].res->name ;
+    for (; pos < pmanager->nsvc ; pos++) {
 
-    log_trace("Initiating process of: ", name) ;
+        svc_ctx_t *svc = &pmanager->asvc[pos] ;
 
-    if (FLAGS_ISSET(apids[i].state, (!what ? SVC_FLAGS_DOWN : SVC_FLAGS_UP))) {
+        FLAGS_SET(svc->target_state, SVC_FLAGS_DOWN) ;
 
-        if (!FLAGS_ISSET(apids[i].state, SVC_FLAGS_BLOCK)) {
-
-            FLAGS_SET(apids[i].state, SVC_FLAGS_BLOCK) ;
-
-            if (apids[i].nedge)
-                if (!async_deps(apids, i, what, deadline))
-                    log_warnu_return(LOG_EXIT_SYS, !what ? "start" : "stop", " dependencies of service: ", name) ;
-
-            e = doit(apids, i, what) ;
-
-        } else {
-
-            log_warn("skipping service: ", name, " -- already in ", what ? "stopping" : "starting", " process") ;
-            notify(apids, i, what ? "d" : "u", what) ;
+        if (FLAGS_ISSET(svc->state, SVC_FLAGS_DOWN)) {
+            log_warn("skipping already down service: ", svc->res->sa.s + svc->res->name) ;
+            continue ;
         }
 
-    } else {
-
-        /** do not notify here, the handle will make it for us */
-        log_warn("skipping service: ", name, " -- already ", what ? "down" : "up") ;
-
-    }
-
-    return e ;
-}
-
-int svc_launch(pidservice_t *apids, uint32_t nservice, uint8_t what, ssexec_t *info, char const *rise, uint8_t rise_opt, uint8_t msg, char const *signal, uint8_t propagate)
-{
-    log_flow() ;
-
-    uint32_t pos = 0, e = 0 ;
-    int r ;
-    pid_t pid ;
-    pidservice_t apidservicetable[nservice] ;
-    pidservice_t_ref apidservice = apidservicetable ;
-    tain deadline ;
-
-    npid = 0 ;
-    PINFO = info ;
-    PROPAGATE = propagate ;
-    napid = nservice ;
-    auto_strings(updown, rise) ;
-    opt_updown = rise_opt ;
-    reloadmsg = msg ;
-    auto_strings(data, signal) ;
-
-    if (info->opt_timeout)
-        tain_from_millisecs(&deadline, info->timeout) ;
-    else
-        deadline = tain_infinite_relative ;
-
-    int spfd = lx_signalfd_init() ;
-
-    if (spfd < 0)
-        log_dieusys(LOG_EXIT_SYS, "lx_signalfd_init") ;
-
-    if (!lx_signalfd_add(SIGCHLD) ||
-        !lx_signalfd_add(SIGINT) ||
-        !lx_signalfd_add(SIGKILL) ||
-        !lx_signalfd_add(SIGTERM) ||
-        !lx_signalfd_ignore(SIGPIPE))
-            log_dieusys(LOG_EXIT_SYS, "lx_signalfd_add") ;
-
-    iopause_fd x = { .fd = spfd, .events = IOPAUSE_READ, .revents = 0 } ;
-
-    for (; pos < napid ; pos++) {
-
-        apidservice[pos] = apids[pos] ;
-
-        if (pipe(apidservice[pos].pipe) < 0)
-            log_dieusys(LOG_EXIT_SYS, "pipe");
-
-    }
-
-    tain_now_set_stopwatch_g() ;
-    tain_add_g(&deadline, &deadline) ;
-
-    for (pos = 0 ; pos < napid ; pos++) {
-
-        pid = fork() ;
-
-        if (pid < 0)
-            log_dieusys(LOG_EXIT_SYS, "fork") ;
-
-        if (!pid) {
-
-            lx_signalfd_end() ;
-
-            close(apidservice[pos].pipe[1]) ;
-
-            e = async(apidservice, pos, what, &deadline) ;
-
-            goto end ;
+        if (FLAGS_ISSET(svc->state, SVC_FLAGS_STOPPING | SVC_FLAGS_PROCESSING)) {
+            log_warn("skipping already processing service: ", svc->res->sa.s + svc->res->name) ;
+            continue ;
         }
-
-        apidservice[pos].pid = pid ;
-
-        close(apidservice[pos].pipe[0]) ;
 
         npid++ ;
-    }
 
-    while (npid) {
+        // Check if we can start this service now
+        if (deps_satisfied(pos)) {
 
-        r = iopause_g(&x, 1, &deadline) ;
+            svc->state = SVC_FLAGS_STOPPING ;
+            log_trace("initiate stop process for service: ", svc->res->sa.s + svc->res->name) ;
 
-        if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "iopause") ;
+            if (!launch_service(pos)) {
 
-        if (!r) {
-            errno = ETIMEDOUT ;
-            log_diesys(LOG_EXIT_SYS,"time out") ;
+                log_warn("failed to stop service: ", svc->res->sa.s + svc->res->name) ;
+                svc->state = SVC_FLAGS_FAILED ;
+                if (svc->pid)
+                    kill(svc->pid, SIGKILL) ;
+                svc->pid = 0 ;
+            }
+
+        } else {
+            // Mark as waiting for dependencies
+            svc->state = SVC_FLAGS_WAITING_DEPS ;
+            log_trace("service waiting for dependencies: ", svc->res->sa.s + svc->res->name) ;
         }
-
-        if (x.revents & IOPAUSE_READ) {
-            e = handle_signal(apidservice, what) ;
-
-            if (e)
-                break ;
-        }
     }
 
-    lx_signalfd_end() ;
+    return 1 ;
+}
 
-    for (pos = 0 ; pos < napid ; pos++) {
-        close(apidservice[pos].pipe[1]) ;
-        close(apidservice[pos].pipe[0]) ;
+static int svc_manager_run(void)
+{
+    log_flow() ;
+
+    pmanager->loop.running = true ;
+
+    while (pmanager->loop.running && npid) {
+
+        if (!sse_run(&pmanager->loop, SSE_TIMEOUT_INFINITE))
+            return 0 ;
+
+        // Check if we are done
+        if (!npid)
+            pmanager->loop.running = false ;
     }
 
-    end:
-        return e ;
+    return 1 ;
+}
+
+static void svc_manager_free(void)
+{
+    log_flow() ;
+
+    pmanager->loop.running = false ;
+
+    sse_free(&pmanager->loop) ;
+
+    if (pmanager->notifd[0])
+        close(pmanager->notifd[0]) ;
+    if (pmanager->notifd[1])
+        close(pmanager->notifd[1]) ;
+}
+
+int svc_launch(svc_ctx_t *asvc, uint32_t nsvc, uint8_t operation, ssexec_t *info, char const *wsignal, uint8_t woption, char const *signal, char *cmdmsg, uint8_t propagate)
+{
+    log_flow() ;
+
+    svc_manager_t manager ;
+    svc_manager_t *saved_manager = pmanager ;
+    pmanager = &manager ;
+
+    uint32_t vertex_to_asvc[SS_MAX_SERVICE] ;
+    uint32_t *saved_v2svc = v2svc ;
+
+    npid = 0 ;
+
+    if (!svc_manager_init(asvc, nsvc, operation, info, wsignal, woption, signal, cmdmsg, propagate))
+        log_dieusys(LOG_EXIT_SYS, "initiate manager") ;
+
+    // table mapping for depends array
+    for (uint32_t pos = 0 ; pos < nsvc ; pos++){
+
+        uint32_t idx = asvc[pos].index ;
+        if (idx >= SS_MAX_SERVICE)
+            log_dieusys(LOG_EXIT_SYS, "build correspondence table for dependencies") ;
+
+        vertex_to_asvc[idx] = pos ;
+    }
+
+    v2svc = vertex_to_asvc ;
+
+    int result ;
+    if (!operation) {
+        result = svc_manager_start() ;
+    } else {
+        result = svc_manager_stop() ;
+    }
+
+    if (result) {
+        result = svc_manager_run() ;
+    }
+
+    svc_manager_free() ;
+    /** svc_compute_ns call svc_launch and ovewritte the
+     * pmanager global pointer. Be sure to reassign to the
+     * original one. */
+    pmanager = saved_manager ;
+    v2svc = saved_v2svc ;
+    return !result ? 1 : 0 ;
 }

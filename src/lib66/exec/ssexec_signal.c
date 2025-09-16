@@ -52,9 +52,10 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
     log_flow() ;
 
     int r ;
-    uint8_t requiredby = 1, propagate = 1, opt_updown = 0, reloadmsg = 0 ;
-    char updown[5] = "-w \0" ;
-    char data[DATASIZE + 1] = "-" ;
+    uint8_t requiredby = 1, propagate = 1, woption = 0 ;
+    char *cmdmsg = 0 ;
+    char wsignal[5] = "-w \0" ;
+    char signal[DATASIZE + 1] = "-" ;
     unsigned int datalen = 1 ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     uint32_t flag = GRAPH_SKIP_MODULECONTENTS, nservice = 0 ;
@@ -104,7 +105,7 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
                     if (datalen >= DATASIZE)
                         log_die(LOG_EXIT_USER, "too many arguments") ;
 
-                    data[datalen++] = opt == 'H' ? 'h' : opt ;
+                    signal[datalen++] = opt == 'H' ? 'h' : opt ;
                     break ;
 
                 case 'w' :
@@ -112,8 +113,8 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
                     if (!memchr("dDuUrR", l.arg[0], 6))
                         log_usage(info->usage, "\n", info->help) ;
 
-                    updown[2] = l.arg[0] ;
-                    opt_updown = 1 ;
+                    wsignal[2] = l.arg[0] ;
+                    woption = 1 ;
                     break ;
 
                 case 'P':
@@ -130,13 +131,13 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
     if (argc < 1 || datalen < 2)
         log_usage(info->usage, "\n", info->help) ;
 
-    if (data[1] == 'u' || data[1] == 'U')
+    if (signal[1] == 'u' || signal[1] == 'U')
         requiredby = 0 ;
 
-    if (data[1] == 'r')
-        reloadmsg = 1 ;
-    else if (data[1] == 'h')
-        reloadmsg = 2 ;
+    if (signal[1] == 'r')
+        cmdmsg = "restart" ;
+    else if (signal[1] == 'h')
+        cmdmsg = "reload" ;
 
     if (propagate) {
         if (requiredby) {
@@ -159,11 +160,11 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
         log_die(LOG_EXIT_USER, "services selection is not supervised -- initiate its first") ;
     }
 
-    pidservice_t apids[graph.g.nsort] ;
+    svc_ctx_t asvc[graph.g.nsort] ;
 
-    svc_init_array(apids, &graph, requiredby, flag) ;
+    svc_init_ctx(asvc, &graph, requiredby, flag) ;
 
-    r = svc_launch(apids, graph.g.nsort, requiredby, info, updown, opt_updown, reloadmsg, data, propagate) ;
+    r = svc_launch(asvc, graph.g.nsort, requiredby, info, wsignal, woption, signal, cmdmsg, propagate) ;
 
     service_graph_destroy(&graph) ;
 

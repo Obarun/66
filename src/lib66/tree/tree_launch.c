@@ -13,256 +13,153 @@
  */
 
 #include <stdint.h>
+#include <unistd.h> // pipe, close
+#include <stdbool.h>
+#include <time.h>
 #include <string.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <errno.h>
 #include <signal.h>
-#include <sys/wait.h>
+#include <spawn.h>
 
 #include <oblibs/log.h>
-#include <oblibs/types.h>
+#include <oblibs/graph.h>
+#include <oblibs/io.h>
 #include <oblibs/string.h>
 #include <oblibs/stack.h>
 #include <oblibs/lexer.h>
-#include <oblibs/linux.h>
+#include <oblibs/types.h>
+#include <oblibs/environ.h>
 
-#include <skalibs/djbunix.h>
-#include <skalibs/tai.h>
-#include <skalibs/iopause.h>
-#include <skalibs/tai.h>
-#include <skalibs/sig.h>//sig_ignore
 #include <skalibs/types.h>
 
-#include <66/tree.h>
-#include <66/state.h>
+#include <66/sse.h>
 #include <66/resolve.h>
-#include <66/ssexec.h>
+#include <66/tree.h>
+#include <66/service.h>
+#include <66/state.h>
 #include <66/constants.h>
+#include <66/config.h> // SS_MAX_SERVICE
+#include <66/ssexec.h>
 
-static uint32_t napid = 0 ;
-static unsigned int npid = 0 ;
-static uint8_t reloadmsg = 0 ;
-
-enum fifo_e
+// Internal event types for coordination
+enum tree_event_type_e
 {
-    FIFO_u = 0,
-    FIFO_U,
-    FIFO_d,
-    FIFO_D,
-    FIFO_F,
-    FIFO_b,
-    FIFO_B
+    TREE_EVENT_CHILD_SUCCESS,
+    TREE_EVENT_CHILD_FAILED,
+    TREE_EVENT_TIMEOUT,
+    TREE_EVENT_SHUTDOWN_REQUEST
 } ;
-typedef enum fifo_e fifo_t, *fifo_t_ref ;
+typedef enum tree_event_type_e tree_event_type_t ;
 
-enum tree_action_e
+// Internal coordination message
+struct tree_event_msg_s {
+    tree_event_type_t type ; // type of the event
+    uint32_t id ; // id of the service
+    uint64_t timestamp ; // For debugging/logging
+} ;
+typedef struct tree_event_msg_s tree_event_msg_t ;
+
+static tree_manager_t *pmanager ;
+static uint32_t npid = 0 ;
+static uint32_t *v2tree ;
+
+// prototype
+static int launch_tree(uint32_t id) ;
+static void child_cb(sse_watcher_t *w, void *cbdata, int event) ;
+static void timeout_cb(sse_watcher_t *w, void *cbdata, int event) ;
+
+// helpers
+static uint32_t get_atree_id(vertex_t *v)
 {
-    TREE_ACTION_GOTIT = 0,
-    TREE_ACTION_WAIT,
-    TREE_ACTION_FATAL,
-    TREE_ACTION_UNKNOWN
-} ;
-typedef enum tree_action_e tree_action_t, *tree_action_t_ref ;
+    log_flow() ;
+    uint32_t id = v->index ;
+    return v2tree[id] ;
+}
 
-static const unsigned char actions[3][7] = {
-    // u                    U                       d                       D                       F                   b                   B
-    { TREE_ACTION_WAIT,     TREE_ACTION_GOTIT,      TREE_ACTION_UNKNOWN,    TREE_ACTION_UNKNOWN,    TREE_ACTION_FATAL,  TREE_ACTION_WAIT,   TREE_ACTION_WAIT }, // !what -> up
-    { TREE_ACTION_UNKNOWN,  TREE_ACTION_UNKNOWN,    TREE_ACTION_WAIT,       TREE_ACTION_GOTIT,      TREE_ACTION_FATAL,  TREE_ACTION_WAIT,   TREE_ACTION_WAIT }, // what -> down
-    { TREE_ACTION_UNKNOWN,  TREE_ACTION_UNKNOWN,    TREE_ACTION_WAIT,       TREE_ACTION_GOTIT,      TREE_ACTION_FATAL,  TREE_ACTION_WAIT,   TREE_ACTION_WAIT } // what -> free
-
-} ;
-
-//  convert signal into enum number
-static const unsigned int char2enum[128] =
-{
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //8
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //16
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //24
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //32
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //40
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //48
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //56
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //64
-    0 ,  0 ,  FIFO_B ,  0 ,  FIFO_D ,  0 ,  FIFO_F ,  0 , //72
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //80
-    0 ,  0 ,  0 ,  0 ,  0 ,  FIFO_U,   0 ,  0 , //88
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //96
-    0 ,  0 ,  FIFO_b ,  0 ,  FIFO_d ,  0 ,  0 ,  0 , //104
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 , //112
-    0 ,  0 ,  0 ,  0 ,  0 ,  FIFO_u ,  0 ,  0 , //120
-    0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0   //128
-} ;
-
-static inline void kill_all(pidtree_t *apidt)
+static bool deps_satisfied(uint32_t id)
 {
     log_flow() ;
 
-    unsigned int j = napid ;
-    while (j--) kill(apidt[j].pid, SIGKILL) ;
-}
+    uint32_t pos = 0 ;
+    tree_ctx_t *tree = &pmanager->atree[id];
+    int flag = !pmanager->operation ? TREE_FLAGS_UP : TREE_FLAGS_DOWN ;
 
-static int check_action(pidtree_t *apidt, int pos, unsigned int receive, unsigned int what)
-{
-    unsigned int p = char2enum[receive] ;
-    unsigned char action = actions[what][p] ;
+    for (; pos < tree->ndepends ; pos++) {
 
-    switch(action) {
+        uint32_t did = get_atree_id(tree->depends[pos]) ;
+        tree_ctx_t *dep = &pmanager->atree[did] ;
 
-        case TREE_ACTION_GOTIT:
-            FLAGS_SET(apidt[pos].state, (!what ? TREE_FLAGS_UP : TREE_FLAGS_DOWN)) ;
-            return 1 ;
-
-        case TREE_ACTION_FATAL:
-            FLAGS_SET(apidt[pos].state, TREE_FLAGS_FATAL) ;
-            return -1 ;
-
-        case TREE_ACTION_WAIT:
-            return 0 ;
-
-        case TREE_ACTION_UNKNOWN:
-        default:
-            log_die(LOG_EXIT_ZERO,"invalid action -- please make a bug report") ;
+        if (!FLAGS_ISSET(dep->state, flag))
+            return false ;
     }
 
+    return true ;
 }
 
-static void notify(pidtree_t *apidt, unsigned int pos, char const *sig, unsigned int what)
+static void wait_deps(uint32_t id)
 {
     log_flow() ;
 
-    uint32_t i = 0, idx = 0 ;
-    char fmt[UINT_FMT] ;
-    uint8_t flag = what ? TREE_FLAGS_DOWN : TREE_FLAGS_UP ;
+    uint32_t pos = 0 ;
+    tree_ctx_t *tree = &pmanager->atree[id];
 
-    for (; i < apidt[pos].nnotif ; i++) {
+    // Check all dependents of this service
+    for (; pos < tree->nrequiredby ; pos++) {
 
-        for (idx = 0 ; idx < napid ; idx++) {
+        uint32_t did = get_atree_id(tree->requiredby[pos]) ;
+        tree_ctx_t *dep = &pmanager->atree[did] ;
 
-            if (apidt[pos].notif[i]->index == apidt[idx].index && !FLAGS_ISSET(apidt[idx].state, flag))  {
-
-                size_t nlen = uint_fmt(fmt, pos) ;
-                fmt[nlen] = 0 ;
-                size_t len = nlen + 1 + 2 ;
-                char s[len + 1] ;
-                auto_strings(s, fmt, ":", sig, "@") ;
-
-                log_trace("sends notification ", sig, " to: ", apidt[idx].tres->sa.s + apidt[idx].tres->name, " from: ", apidt[pos].tres->sa.s + apidt[pos].tres->name) ;
-
-                if (write(apidt[idx].pipe[1], s, strlen(s)) < 0)
-                    log_dieusys(LOG_EXIT_SYS, "send notif to: ", apidt[idx].tres->sa.s + apidt[idx].tres->name) ;
-            }
-        }
+        if (dep->state == TREE_FLAGS_WAITING_DEPS && deps_satisfied(did))
+            launch_tree(did) ;
     }
 }
 
-/**
- * @what: up or down
- * @success: 0 success, 1 fail
- * */
-static void announce(unsigned int pos, pidtree_t *apidt, unsigned int what, unsigned int success, unsigned int exitcode)
+static inline int tree_send_event(tree_event_type_t type, uint32_t id)
 {
     log_flow() ;
 
-    char fmt[UINT_FMT] ;
-    char const *treename = apidt[pos].tres->sa.s + apidt[pos].tres->name ;
+    tree_event_msg_t msg = {
+        .type = type,
+        .id = id,
+        .timestamp = time(NULL)
+    } ;
 
-    uint8_t flag = what ? TREE_FLAGS_DOWN : TREE_FLAGS_UP ;
+    ssize_t written = io_write(pmanager->notifd[1], (char *)&msg, sizeof(msg)) ;
+    return (written == sizeof(msg)) ? 1 : 0 ;
+}
+
+// state = true > success
+static void announce(uint32_t id, bool success)
+{
+    log_flow() ;
+
+    tree_ctx_t *tree = &pmanager->atree[id] ;
+    char fmt[UINT_FMT] ;
+    char const *treename = tree->tres->sa.s + tree->tres->name ;
 
     if (success) {
 
-        fmt[uint_fmt(fmt, exitcode)] = 0 ;
+        log_info("Successfully executed", pmanager->cmdmsg, " on tree: ", treename) ;
 
-        log_1_warnu(reloadmsg == 0 ? "start" : reloadmsg > 1 ? "unsupervise" : what == 0 ? "start" : "stop", " tree: ", treename, " -- exited with signal: ", fmt) ;
-
-        notify(apidt, pos, "F", what) ;
-
-        FLAGS_SET(apidt[pos].state, TREE_FLAGS_BLOCK|TREE_FLAGS_FATAL) ;
+        tree_send_event(TREE_EVENT_CHILD_SUCCESS, id) ;
 
     } else {
 
-        log_info("Successfully ", reloadmsg == 0 ? "started" : reloadmsg > 1 ? "unsupervised" : what == 0 ? "started" : "stopped", " tree: ", treename) ;
+        fmt[uint_fmt(fmt, tree->exitcode)] = 0 ;
 
-        notify(apidt, pos, what ? "D" : "U", what) ;
+        log_1_warnu(pmanager->cmdmsg, " tree: ", treename, " -- exited with signal: ", fmt) ;
 
-        FLAGS_CLEAR(apidt[pos].state, TREE_FLAGS_BLOCK) ;
-        FLAGS_SET(apidt[pos].state, flag|TREE_FLAGS_UNBLOCK) ;
-
+        tree_send_event(TREE_EVENT_CHILD_FAILED, id) ;
     }
 
 }
 
-static int handle_signal(pidtree_t *apidt, unsigned int what)
+static int ssexec_callback(tree_ctx_t *tree, uint32_t id, stack *stk, ssexec_t *info)
 {
     log_flow() ;
 
-    int ok = 0 ;
-
-    for (;;) {
-
-        int s = lx_signalfd_read() ;
-        switch (s) {
-
-            case -1 : log_dieusys(LOG_EXIT_SYS,"lx_signalfd_read") ;
-            case 0 : return ok ;
-            case SIGCHLD :
-
-                for (;;) {
-
-                    uint32_t pos = 0 ;
-                    int wstat ;
-                    pid_t r = wait_nohang(&wstat) ;
-
-                    if (r < 0) {
-
-                        if (errno == ECHILD)
-                            break ;
-                        else
-                            log_dieusys(LOG_EXIT_SYS,"wait for children") ;
-
-                    } else if (!r) break ;
-
-                    for (; pos < napid ; pos++)
-                        if (apidt[pos].pid == r)
-                            break ;
-
-                    if (pos < napid) {
-
-                        if (!WIFSIGNALED(wstat) && !WEXITSTATUS(wstat)) {
-
-                            announce(pos, apidt, what, 0, 0) ;
-                            npid-- ;
-
-                        } else {
-
-                            ok = WIFSIGNALED(wstat) ? WTERMSIG(wstat) : WEXITSTATUS(wstat) ;
-                            announce(pos, apidt, what, 1, ok) ;
-                            npid-- ;
-                            kill_all(apidt) ;
-                            break ;
-                        }
-                    }
-                }
-                break ;
-            case SIGTERM :
-            case SIGKILL :
-            case SIGINT :
-                    log_1_warn("aborting transaction") ;
-                    kill_all(apidt) ;
-                    ok = 111 ;
-                    break ;
-            default : log_die(LOG_EXIT_SYS, "unexpected data in lx_signalfd") ;
-        }
-    }
-
-    return ok ;
-}
-
-static int ssexec_callback(stack *stk, ssexec_t *info, unsigned int what)
-{
-    log_flow() ;
-
-    int r, e = 1 ;
+    int r ;
     size_t pos = 0, len = stk->len ;
     ss_state_t ste = STATE_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
@@ -272,24 +169,26 @@ static int ssexec_callback(stack *stk, ssexec_t *info, unsigned int what)
 
     /** only deal with enabled service at up time and
      * supervised service at down time */
-    FOREACH_STK(stk, pos) {
+    {
+        FOREACH_STK(stk, pos) {
 
-        char *name = stk->s + pos ;
+            char *name = stk->s + pos ;
 
-        r = resolve_read_g(wres, info->base.s, name) ;
-        if (r == -1)
-            log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name) ;
-        if (!r)
-            log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name, " -- please make a bug report") ;
+            r = resolve_read_g(wres, info->base.s, name) ;
+            if (r == -1)
+                log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name) ;
+            if (!r)
+                log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name, " -- please make a bug report") ;
 
-        if (!state_read(&ste, &res))
-            log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug report") ;
+            if (!state_read(&ste, &res))
+                log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug report") ;
 
-        if (!what ? res.enabled : ste.issupervised == STATE_FLAGS_TRUE && !res.earlier) {
+            if (!pmanager->operation ? res.enabled : ste.issupervised == STATE_FLAGS_TRUE && !res.earlier) {
 
-            if (get_rstrlen_until(name, SS_LOG_SUFFIX) < 0 && !res.inns)
-                if (!stack_add_g(&t, name))
-                    log_dieu(LOG_EXIT_SYS, "add string") ;
+                if (get_rstrlen_until(name, SS_LOG_SUFFIX) < 0 && !res.inns)
+                    if (!stack_add_g(&t, name))
+                        log_dieu(LOG_EXIT_SYS, "add string") ;
+            }
         }
     }
 
@@ -300,318 +199,531 @@ static int ssexec_callback(stack *stk, ssexec_t *info, unsigned int what)
 
     pos = 0, len = t.count ;
 
-    int n = what == 2 ? 2 : 1 ;
+    int n = pmanager->operation == 2 ? 4 : 3 ;
     int nargc = n + len ;
-    char const *prog = PROG ;
-    char const *newargv[nargc + 1] ;
+    char *newargv[nargc] ;
     unsigned int m = 0 ;
 
-    newargv[m++] = "tree" ;
-    if (what == 2)
+    newargv[m++] = "66" ;
+    newargv[m++] = !pmanager->operation ? "start" : "stop" ;
+    if (pmanager->operation == 2)
         newargv[m++] = "-u" ;
 
-    {
-        FOREACH_STK(&t, pos)
-            newargv[m++] = t.s + pos ;
-    }
+    FOREACH_STK(&t, pos)
+        newargv[m++] = t.s + pos ;
 
     newargv[m] = 0 ;
 
-    if (!what) {
+    if (!pmanager->operation) {
 
-        PROG = "start" ;
-        e = ssexec_start(nargc, newargv, info) ;
-        PROG = prog ;
+        log_trace("sending start command to service of tree: ", tree->tres->sa.s + tree->tres->name) ;
 
-    } else {
-
-        PROG = "stop" ;
-        e = ssexec_stop(nargc, newargv, info) ;
-        PROG = prog ;
-    }
-
-    return e ;
-}
-
-static int doit(pidtree_t apid, ssexec_t *info, unsigned int what)
-{
-    log_flow() ;
-
-    int r ;
-    const char *treename = apid.tres->sa.s + apid.tres->name ;
-
-    info->treename.len = 0 ;
-    info->opt_tree = 1 ;
-
-    if (!auto_stra(&info->treename, treename))
-        log_die_nomem("stralloc") ;
-
-    r = tree_sethome(info) ;
-    if (r <= 0)
-        log_warnu_return(LOG_EXIT_ONE, "find tree: ", info->treename.s) ;
-
-    if (!tree_get_permissions(info->base.s, info->treename.s))
-        log_warn_return(LOG_EXIT_ONE, "You're not allowed to use the tree: ", info->treename.s) ;
-
-    if (!apid.tres->ncontents) {
-
-        log_info("Empty tree: ", info->treename.s, " -- nothing to do") ;
-
-    } else {
-
-        _alloc_stk_(stk, strlen(apid.tres->sa.s + apid.tres->contents) + 1) ;
-
-        if (!stack_string_clean(&stk, apid.tres->sa.s + apid.tres->contents))
-            log_warn_return(LOG_EXIT_ONE, "clean string") ;
-
-        return ssexec_callback(&stk, info, what) ;
-    }
-
-    return 0 ;
-}
-
-static int async_deps(pidtree_t *apidt, unsigned int i, unsigned int what, tain *deadline)
-{
-    log_flow() ;
-
-    int r, id = 0 ;
-    unsigned int pos = 0, idx = 0 ;
-    char buf[(UINT_FMT*2)*SS_MAX_SERVICE + 1] ;
-
-    tain dead ;
-    tain_now_set_stopwatch_g() ;
-    tain_add_g(&dead, deadline) ;
-
-    iopause_fd x = { .fd = apidt[i].pipe[0], .events = IOPAUSE_READ, 0 } ;
-
-    unsigned int n = apidt[i].nedge ;
-    unsigned int visit[n + 1] ;
-
-    memset(visit, 0, (n + 1) * sizeof (unsigned int));
-
-    log_trace("waiting dependencies for: ", apidt[i].tres->sa.s + apidt[i].tres->name) ;
-
-    while (pos < n) {
-
-        r = iopause_g(&x, 1, &dead) ;
-
-        if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "iopause") ;
-
-        if (!r) {
-            errno = ETIMEDOUT ;
-            log_dieusys(LOG_EXIT_SYS,"time out", apidt[i].tres->sa.s + apidt[i].tres->name) ;
+        if (posix_spawnp(&tree->pid, newargv[0], NULL, NULL, newargv, environ)) {
+            FLAGS_SET(tree->state, TREE_FLAGS_FAILED) ;
+            log_warnusys_return(LOG_EXIT_ZERO, "start services of tree: ", tree->tres->sa.s + tree->tres->name) ;
         }
 
-        if (x.revents & IOPAUSE_READ) {
+    } else {
 
-            memset(buf, 0, ((UINT_FMT*2)*SS_MAX_SERVICE + 1) * sizeof(char)) ;
-            r = read(apidt[i].pipe[0], buf, sizeof(buf)) ;
-            if (r < 0)
-                log_dieu(LOG_EXIT_SYS, "read from pipe") ;
-            buf[r] = 0 ;
+        log_trace("sending stop command to service of tree: ", tree->tres->sa.s + tree->tres->name) ;
 
-            idx = 0 ;
+        if (posix_spawnp(&tree->pid, newargv[0], NULL, NULL, newargv, environ)) {
+            FLAGS_SET(tree->state, TREE_FLAGS_FAILED) ;
+            log_warnusys_return(LOG_EXIT_ZERO, "stop services of tree: ", tree->tres->sa.s + tree->tres->name) ;
+        }
+    }
 
-            while (r != -1) {
-                /** The buf might contain multiple signal coming
-                 * from the dependencies if they finished before
-                 * the start of this read process. Check every
-                 * signal received.*/
-                r = get_len_until(buf + idx, '@') ;
+    if (!sse_start_child(&pmanager->loop, &tree->child, child_cb, (void*)(uintptr_t)id, tree->pid, 2, true)) {
+        if (tree->pid)
+            kill(tree->pid, SIGKILL);
+        tree->state = TREE_FLAGS_FAILED ;
+        log_warnusys_return(LOG_EXIT_ZERO, "start child watcher for tree: ", tree->tres->sa.s + tree->tres->name) ;
+    }
 
-                if (r < 0) {
-                    /* no more signal */
-                    r = -1 ;
-                    continue ;
-                }
+    if (pmanager->timeout) {
+        if (!sse_start_timer(&pmanager->loop, &tree->timeout, timeout_cb, (void*)(uintptr_t)id, pmanager->timeout, 0, 1))
+            log_warnusys_return(LOG_EXIT_ZERO, "start timer watcher for tree: ",  tree->tres->sa.s + tree->tres->name) ;
+    }
 
-                char line[r + 1] ;
-                memcpy(line, buf + idx, r) ;
-                line[r] = 0 ;
+    return 1 ;
+}
 
-                idx += r + 1 ;
+static int launch_tree(uint32_t id)
+{
+    log_flow() ;
 
-                /**
-                 * the received string have the format:
-                 *      apids_array_id:signal_receive
-                 *
-                 * typically:
-                 *      - 10:D
-                 *      - 30:u
-                 *      - ...
-                 *
-                 * Split it and check the signal receive.*/
-                int sep = get_len_until(line, ':') ;
-                if (sep < 0)
-                    log_die(LOG_EXIT_SYS, "received bad signal format -- please make a bug report") ;
+    tree_ctx_t *tree = &pmanager->atree[id] ;
+    ssexec_t sinfo = SSEXEC_ZERO ;
+    ssexec_copy(&sinfo, pmanager->info) ;
 
-                unsigned int c = line[sep + 1] ;
-                char pc[2] = { c, 0 } ;
-                line[sep] = 0 ;
+    int r ;
+    const char *treename = tree->tres->sa.s + tree->tres->name ;
 
-                if (!uint0_scan(line, &id))
-                    log_dieusys(LOG_EXIT_SYS, "retrieve service number -- please make a bug report") ;
+    sinfo.treename.len = 0 ;
+    sinfo.opt_tree = 1 ;
 
-                log_trace(apidt[i].tres->sa.s + apidt[i].tres->name, " acknowledges: ", pc, " from: ", apidt[id].tres->sa.s + apidt[id].tres->name) ;
+    if (!auto_stra(&sinfo.treename, treename))
+        log_die_nomem("stralloc") ;
 
-                if (!visit[pos]) {
+    r = tree_sethome(&sinfo) ;
+    if (r <= 0)
+        log_warnu_return(LOG_EXIT_ONE, "find tree: ", sinfo.treename.s) ;
 
-                    id = check_action(apidt, id, c, what) ;
-                    if (id < 0)
-                        log_die(LOG_EXIT_SYS, "tree dependency: ", apidt[id].tres->sa.s + apidt[id].tres->name, " of: ", apidt[id].tres->sa.s + apidt[id].tres->name," crashed") ;
+    if (!tree_get_permissions(sinfo.base.s, sinfo.treename.s))
+        log_warn_return(LOG_EXIT_ONE, "You're not allowed to use the tree: ", sinfo.treename.s) ;
 
-                    if (!id)
-                        continue ;
+    if (!tree->tres->ncontents) {
 
-                    visit[pos++]++ ;
-                }
+        log_info("Empty tree: ", sinfo.treename.s, " -- nothing to do") ;
+
+    } else {
+
+        _alloc_stk_(stk, strlen(tree->tres->sa.s + tree->tres->contents) + 1) ;
+
+        if (!stack_string_clean(&stk, tree->tres->sa.s + tree->tres->contents))
+            log_warn_return(LOG_EXIT_ONE, "clean string") ;
+
+        int r = ssexec_callback(tree, id, &stk, &sinfo) ;
+        ssexec_free(&sinfo) ;
+        return r ;
+    }
+
+    ssexec_free(&sinfo) ;
+    return 1 ;
+}
+
+// callback
+static void signalfd_cb(sse_watcher_t *w, void *cbdata, int event)
+{
+    log_flow() ;
+
+    (void)cbdata ;
+
+    // Check for watcher errors first
+    if (w->api_errno != 0) {
+        log_warn("signalfd watcher error: ", strerror(w->api_errno)) ;
+        sse_free_signal(w) ;
+        pmanager->loop.running = false ;
+        return ;
+    }
+
+    if (!(event & SSE_READ)) {
+        log_warn("unexpected event on signalfd callback") ;
+        sse_free_signal(w) ;
+        pmanager->loop.running = false ;
+        return ;
+    }
+
+    sse_signal_t *s = (sse_signal_t *)w->sdata;
+    if (!s) {
+        log_warn("signalfd sdata is NULL") ;
+        sse_free_signal(w) ;
+        pmanager->loop.running = false ;
+        return ;
+    }
+
+    switch (s->si.ssi_signo) {
+
+        case SIGTERM :
+        case SIGKILL :
+        case SIGINT :
+            log_1_warn("received SIGTERM or SIGKILL or SIGINT, aborting transaction") ;
+            tree_send_event(TREE_EVENT_SHUTDOWN_REQUEST, 0) ;
+            break ;
+        default :
+            log_die(LOG_EXIT_SYS, "unexpected signal") ;
+    }
+}
+
+static void deadline_cb(sse_watcher_t *w, void *cbdata, int event)
+{
+    log_flow() ;
+
+    (void)cbdata ;
+    (void)event ;
+
+    // Check for watcher errors
+    if (w->api_errno != 0) {
+        log_warn("deadline watcher error: ", strerror(w->api_errno)) ;
+        // Still trigger shutdown, then free
+        tree_send_event(TREE_EVENT_SHUTDOWN_REQUEST, 0) ;
+        sse_free_timer(w) ;
+        return ;
+    }
+
+    log_warn("global deadline reached, shutting down") ;
+    tree_send_event(TREE_EVENT_SHUTDOWN_REQUEST, 0) ;
+    // one-shot timer
+    sse_free_timer(w) ;
+}
+
+static void notifier_cb(sse_watcher_t *w, void *cbdata, int event)
+{
+    log_flow() ;
+
+    (void)cbdata ;
+    tree_event_msg_t msg ;
+    ssize_t n ;
+
+    // Check for watcher errors
+    if (w->api_errno != 0) {
+        log_warn("notifier watcher error: ", strerror(w->api_errno)) ;
+        pmanager->loop.running = false ;
+        // simply return and let cleanup handle it
+        return ;
+    }
+
+    if (!(event & SSE_READ)) {
+        log_warn("unexpected event on notifier callback") ;
+        pmanager->loop.running = false ;
+        return ;
+    }
+
+    while ((n = io_read(pmanager->notifd[0], (char *)&msg, sizeof(msg))) == sizeof(msg)) {
+
+        if (msg.id >= pmanager->ntree) {
+            log_warn("invalid tree id in notification") ;
+            continue ;
+        }
+
+        tree_ctx_t *tree = &pmanager->atree[msg.id] ;
+
+        switch (msg.type) {
+
+            case TREE_EVENT_CHILD_SUCCESS:
+                tree->state = 0 ;
+                FLAGS_SET(tree->state, !pmanager->operation ? TREE_FLAGS_UP : TREE_FLAGS_DOWN) ;
+                wait_deps(msg.id) ;
+                break ;
+
+            case TREE_EVENT_CHILD_FAILED:
+                tree->state = 0 ;
+                FLAGS_SET(tree->state, TREE_FLAGS_FAILED) ;
+                break ;
+
+            case TREE_EVENT_TIMEOUT:
+                tree->state = 0 ;
+                FLAGS_SET(tree->state, TREE_FLAGS_TIMEOUT) ;
+                break ;
+
+            case TREE_EVENT_SHUTDOWN_REQUEST:
+                pmanager->loop.running = false ;
+                break ;
+
+            default:
+                log_warn("unexpected event type") ;
+                break ;
+        }
+
+        // Check if we're done
+        if (!npid)
+            pmanager->loop.running = false ;
+    }
+
+    if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+        log_warnusys("read from notifier pipe");
+        pmanager->loop.running = false;
+    }
+}
+
+static void child_cb(sse_watcher_t *w, void *cbdata, int event)
+{
+    log_flow() ;
+
+    uint32_t id = (uint32_t)(uintptr_t)cbdata;
+    tree_ctx_t *tree = &pmanager->atree[id];
+
+    if (w->api_errno != 0) {
+        log_warn("child watcher error: ", strerror(w->api_errno)) ;
+        npid--;
+        tree->state = TREE_FLAGS_FAILED ;
+        announce(id, false) ;
+        sse_free_child(w) ;
+        return ;
+    }
+
+    if (!(event & SSE_READ)) {
+        log_warn("unexpected event on child callback") ;
+        return ;
+    }
+
+    if (event & (SSE_HUP | SSE_READ)) {
+
+        sse_child_t *data = (sse_child_t *)w->sdata;
+        if (!data) {
+            log_warn("child watcher sdata is NULL") ;
+            sse_free_child(w) ;
+            return ;
+        }
+
+        int wstat = data->status ;
+        npid-- ;
+
+        tree->exitcode = WEXITSTATUS(wstat) ;
+
+        bool success = !WIFSIGNALED(wstat) && !WEXITSTATUS(wstat) ;
+        announce(id, success) ;
+
+        if (tree->timeout.fd > 0)
+            sse_free_timer(&tree->timeout) ;
+
+        sse_free_child(&tree->child) ;
+    }
+}
+
+static void timeout_cb(sse_watcher_t *w, void *cbdata, int event)
+{
+    log_flow() ;
+
+    uint32_t id = (uint32_t)(uintptr_t)cbdata ;
+    tree_ctx_t *tree = &pmanager->atree[id] ;
+    (void)event ;
+    if (w->api_errno != 0) {
+        log_warn("timeout watcher error: ", strerror(w->api_errno)) ;
+        sse_free_timer(w) ;
+        return ;
+    }
+
+    if (!tree && tree->pid > 0) {
+        // Kill the service
+        log_warn("tree timeout, killing: ", tree->tres->sa.s + tree->tres->name) ;
+        kill(tree->pid, SIGTERM) ;
+
+        tree_send_event(TREE_EVENT_TIMEOUT, id) ;
+    }
+
+    // one-shot timer
+    sse_free_timer(w) ;
+}
+
+// main API
+static int tree_manager_init(tree_ctx_t *atree, uint32_t ntree, uint8_t operation, ssexec_t *info)
+{
+    log_flow() ;
+
+    if (!atree || ntree == 0) {
+        errno = EINVAL ;
+        log_dieusys(LOG_EXIT_SYS, "bad parameter") ;
+    }
+
+    pmanager->atree = atree ;
+    pmanager->ntree = ntree ;
+    pmanager->shutdown_requested = false ;
+    pmanager->info = info ;
+    pmanager->timeout = (uint64_t)info->timeout ;
+    pmanager->operation = operation ;
+    pmanager->cmdmsg = operation > 1 ? "unsupervise" : !operation ? "start" : "stop" ;
+
+    // Initialize SSE event loop
+    if (!sse_new(&pmanager->loop, ntree))
+        log_dieusys(LOG_EXIT_SYS, "initiate events loop") ;
+
+    pmanager->loop.running = true ;
+
+    // general signal
+    if (!sse_start_signal(&pmanager->loop, &pmanager->signalfd, signalfd_cb, NULL, 0))
+        log_dieusys(LOG_EXIT_SYS, "start signal watcher") ;
+
+    if (!sse_attach_signal(&pmanager->signalfd, SIGINT))
+        log_dieusys(LOG_EXIT_SYS, "block signal SIGINT") ;
+
+    if (!sse_attach_signal(&pmanager->signalfd, SIGKILL))
+        log_dieusys(LOG_EXIT_SYS, "block signal SIGKILL") ;
+
+    if (!sse_attach_signal(&pmanager->signalfd, SIGTERM))
+        log_dieusys(LOG_EXIT_SYS, "block signal SIGTERM") ;
+
+    if (!sse_ignore_signal(&pmanager->signalfd, SIGPIPE))
+        log_dieusys(LOG_EXIT_SYS, "ignore signal SIGPIPE") ;
+
+    // Create notifier pipe
+    if (pipe(pmanager->notifd) < 0)
+        log_dieusys(LOG_EXIT_SYS, "create notifier pipe") ;
+
+    // Set pipes non-blocking
+    if (!io_set_nonblock(pmanager->notifd[0]) || !io_set_nonblock(pmanager->notifd[1]))
+        log_dieusys(LOG_EXIT_SYS, "set none blocking notifier pipe") ;
+
+    // Setup notifier pipe watcher
+    if (!sse_start_io(&pmanager->loop, &pmanager->notifier, notifier_cb, NULL, pmanager->notifd[0], SSE_READ, 0))
+        log_dieusys(LOG_EXIT_SYS, "start notifier watcher") ;
+
+    // Setup global deadline timer if timeout specified
+    if (pmanager->timeout) {
+        if (!sse_start_timer(&pmanager->loop, &pmanager->deadline, deadline_cb, NULL, pmanager->timeout, 0, 0))
+            log_dieusys(LOG_EXIT_SYS, "start deadline watcher") ;
+    }
+
+    return 1;
+}
+
+static int tree_manager_start(void)
+{
+    log_flow() ;
+
+    uint32_t pos = 0 ;
+
+    for (; pos < pmanager->ntree ; pos++) {
+
+        tree_ctx_t *tree = &pmanager->atree[pos] ;
+
+        FLAGS_SET(tree->target_state, TREE_FLAGS_UP) ;
+
+        if (FLAGS_ISSET(tree->state, TREE_FLAGS_UP)) {
+            log_warn("skipping already up tree: ", tree->tres->sa.s + tree->tres->name) ;
+            continue ;
+        }
+
+        // Skip if service is already running
+        if (FLAGS_ISSET(tree->state, TREE_FLAGS_STARTING | TREE_FLAGS_PROCESSING)) {
+            log_warn("skipping already processing tree: ", tree->tres->sa.s + tree->tres->name) ;
+            continue ;
+        }
+
+        npid++ ;
+        // Check if we can start this service now
+        if (deps_satisfied(pos)) {
+
+            tree->state = TREE_FLAGS_STARTING ;
+            log_trace("initiate start process for tree: ", tree->tres->sa.s + tree->tres->name) ;
+
+            if (!launch_tree(pos)) {
+
+                log_warn("failed to start tree: ", tree->tres->sa.s + tree->tres->name);
+                tree->state = TREE_FLAGS_FAILED ;
+                if (tree->pid)
+                    kill(tree->pid, SIGKILL) ;
             }
+
+        } else {
+            // Mark as waiting for dependencies
+            tree->state = TREE_FLAGS_WAITING_DEPS ;
+            log_trace("tree waiting for dependencies: ", tree->tres->sa.s + tree->tres->name) ;
         }
     }
 
     return 1 ;
 }
 
-static int async(pidtree_t *apidt, unsigned int i, unsigned int what, ssexec_t *info, tain *deadline)
+static int tree_manager_stop(void)
 {
     log_flow() ;
 
-    int e = 0 ;
-    ssexec_t sinfo = SSEXEC_ZERO ;
-    char *name = apidt[i].tres->sa.s + apidt[i].tres->name ;
+    uint32_t pos = 0 ;
 
-    ssexec_copy(&sinfo, info) ;
+    for (; pos < pmanager->ntree ; pos++) {
 
-    log_trace("beginning of the process of tree: ", name) ;
-    if (FLAGS_ISSET(apidt[i].state, (!what ? TREE_FLAGS_DOWN : TREE_FLAGS_UP)) ||
-        /** force to pass through unsupersive process even
-         * if the tree is marked down */
-        FLAGS_ISSET(apidt[i].state, (what ? TREE_FLAGS_DOWN : TREE_FLAGS_UP)) && what == 2) {
+        tree_ctx_t *tree = &pmanager->atree[pos] ;
 
-        if (!FLAGS_ISSET(apidt[i].state, TREE_FLAGS_BLOCK)) {
+        FLAGS_SET(tree->target_state, TREE_FLAGS_DOWN) ;
 
-            FLAGS_SET(apidt[i].state, TREE_FLAGS_BLOCK) ;
-
-            if (apidt[i].nedge) {
-                if (!async_deps(apidt, i, what, deadline)) {
-                    ssexec_free(&sinfo) ;
-                    log_warnu_return(LOG_EXIT_ZERO, !what ? "start" : "stop", " dependencies of tree: ", name) ;
-                }
-            }
-
-            e = doit(apidt[i], &sinfo, what) ;
-
-        } else {
-
-            log_trace("skipping tree: ", name, " -- already in ", what ? "stopping" : "starting", " process") ;
-
-            notify(apidt, i, what ? "d" : "u", what) ;
+        if (FLAGS_ISSET(tree->state, TREE_FLAGS_DOWN)) {
+            log_warn("skipping already down tree: ", tree->tres->sa.s + tree->tres->name) ;
+            continue ;
         }
 
-    } else {
-
-        /** do not notify here, the handle will make it for us */
-        log_trace("skipping tree: ", name, " -- already ", what ? "down" : "up") ;
-
-    }
-
-    ssexec_free(&sinfo) ;
-
-    return e ;
-}
-
-int tree_launch(pidtree_t *apidt, uint32_t ntree, unsigned int what, tain *deadline, ssexec_t *info)
-{
-    log_flow() ;
-
-    uint32_t pos = 0, e = 0 ;
-    int r ;
-    pid_t pid ;
-    pidtree_t apidtreetable[ntree] ;
-    pidtree_t_ref apidtree = apidtreetable ;
-
-    tain_now_set_stopwatch_g() ;
-    tain_add_g(deadline, deadline) ;
-
-    npid = 0 ;
-    napid = ntree ;
-    reloadmsg = what ;
-
-    int spfd = lx_signalfd_init() ;
-
-    if (spfd < 0)
-        log_dieusys(LOG_EXIT_SYS, "lx_signalfd_init") ;
-
-    if (!lx_signalfd_add(SIGCHLD) ||
-        !lx_signalfd_add(SIGINT) ||
-        !lx_signalfd_add(SIGKILL) ||
-        !lx_signalfd_add(SIGTERM) ||
-        !lx_signalfd_ignore(SIGPIPE))
-            log_dieusys(LOG_EXIT_SYS, "lx_signalfd_add") ;
-
-    iopause_fd x = { .fd = spfd, .events = IOPAUSE_READ, .revents = 0 } ;
-
-    for (; pos < napid ; pos++) {
-
-        apidtree[pos] = apidt[pos] ;
-
-        if (pipe(apidtree[pos].pipe) < 0)
-            log_dieusys(LOG_EXIT_SYS, "pipe");
-    }
-
-    for (pos = 0 ; pos < napid ; pos++) {
-
-        pid = fork() ;
-
-        if (pid < 0)
-            log_dieusys(LOG_EXIT_SYS, "fork") ;
-
-        if (!pid) {
-
-            lx_signalfd_end() ;
-
-            close(apidtree[pos].pipe[1]) ;
-
-            e = async(apidtree, pos, what, info, deadline) ;
-
-            goto end ;
+        if (FLAGS_ISSET(tree->state, TREE_FLAGS_STOPPING | TREE_FLAGS_PROCESSING)) {
+            log_warn("skipping already processing tree: ", tree->tres->sa.s + tree->tres->name) ;
+            continue ;
         }
-
-        apidtree[pos].pid = pid ;
-
-        close(apidtree[pos].pipe[0]) ;
 
         npid++ ;
-    }
 
-    while (npid) {
+        /* Check if we can start this service now */
+        if (deps_satisfied(pos)) {
 
-        r = iopause_g(&x, 1, deadline) ;
+            tree->state = TREE_FLAGS_STOPPING ;
+            log_trace("initiate stop process for tree: ", tree->tres->sa.s + tree->tres->name) ;
 
-        if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "iopause") ;
+            if (!launch_tree(pos)) {
 
-        if (!r) {
-            errno = ETIMEDOUT ;
-            log_diesys(LOG_EXIT_SYS,"time out") ;
+                log_warn("failed to stop tree: ", tree->tres->sa.s + tree->tres->name) ;
+                tree->state = TREE_FLAGS_FAILED ;
+                if (tree->pid)
+                    kill(tree->pid, SIGKILL) ;
+                tree->pid = 0 ;
+            }
+
+        } else {
+            // Mark as waiting for dependencies
+            tree->state = TREE_FLAGS_WAITING_DEPS ;
+            log_trace("tree waiting for dependencies: ", tree->tres->sa.s + tree->tres->name) ;
         }
-
-        if (x.revents & IOPAUSE_READ) {
-            e = handle_signal(apidtree, what) ;
-
-            if (e)
-                break ;
-        }
     }
 
-    lx_signalfd_end() ;
+    return 1 ;
+}
 
-    for (pos = 0 ; pos < napid ; pos++) {
-        close(apidtree[pos].pipe[1]) ;
-        close(apidtree[pos].pipe[0]) ;
+static int tree_manager_run(void)
+{
+    log_flow() ;
+
+    pmanager->loop.running = true ;
+
+    while (pmanager->loop.running && npid) {
+
+        if (!sse_run(&pmanager->loop, SSE_TIMEOUT_INFINITE))
+            return 0 ;
+
+        // Check if all services have reached their target states
+        if (!npid)
+            pmanager->loop.running = false ;
     }
 
-    end:
-        return e ;
+    return 1 ;
+}
+
+static void tree_manager_free(void)
+{
+    log_flow() ;
+
+    pmanager->loop.running = false ;
+
+    sse_free(&pmanager->loop) ;
+
+    if (pmanager->notifd[0])
+        close(pmanager->notifd[0]) ;
+    if (pmanager->notifd[1])
+        close(pmanager->notifd[1]) ;
+}
+
+int tree_launch(tree_ctx_t *atree, uint32_t ntree, uint8_t operation, ssexec_t *info)
+{
+    log_flow() ;
+
+    tree_manager_t manager ;
+    pmanager = &manager ;
+
+    uint32_t vertex_to_atree[SS_MAX_SERVICE] ;
+
+    npid = 0 ;
+
+    if (!tree_manager_init(atree, ntree, operation, info))
+        log_dieusys(LOG_EXIT_SYS, "initiate manager") ;
+
+    // table mapping for depends array
+    for (uint32_t pos = 0 ; pos < ntree ; pos++){
+
+        uint32_t idx = atree[pos].index ;
+        if (idx >= SS_MAX_SERVICE)
+            log_dieusys(LOG_EXIT_SYS, "build correspondence table for dependencies") ;
+
+        vertex_to_atree[idx] = pos ;
+    }
+
+    v2tree = vertex_to_atree ;
+
+    int result ;
+    if (!operation) {
+        result = tree_manager_start() ;
+    } else {
+        result = tree_manager_stop() ;
+    }
+
+    if (result) {
+        result = tree_manager_run() ;
+    }
+
+    tree_manager_free() ;
+    return !result ? 1 : 0 ;
 }

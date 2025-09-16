@@ -29,6 +29,7 @@
 #include <66/resolve.h>
 #include <66/graph.h>
 #include <66/enum_tree.h>
+#include <66/sse.h>
 
 #define TREE_GROUPS_BOOT "boot"
 #define TREE_GROUPS_BOOT_LEN (sizeof TREE_GROUPS_BOOT - 1)
@@ -116,37 +117,80 @@ struct resolve_hash_tree_s {
 
 #define RESOLVE_HASH_TREE_ZERO { 0, 0, RESOLVE_TREE_ZERO, NULL }
 
-#define TREE_FLAGS_STARTING 1 // 1 starting not really up
-#define TREE_FLAGS_STOPPING (1 << 1) // 2 stopping not really down
-#define TREE_FLAGS_UP (1 << 2) // 4 really up
-#define TREE_FLAGS_DOWN (1 << 3) // 8 really down
-#define TREE_FLAGS_BLOCK (1 << 4) // 16 all deps are not up/down
-#define TREE_FLAGS_UNBLOCK (1 << 5) // 32 all deps up/down
-#define TREE_FLAGS_FATAL (1 << 6) // 64 process crashed
+#define TREE_FLAGS_DOWN 1
+#define TREE_FLAGS_UP (1 << 1)
+#define TREE_FLAGS_PROCESSING (1 << 2)
+#define TREE_FLAGS_STARTING (1 << 3)
+#define TREE_FLAGS_STOPPING (1 << 4)
+#define TREE_FLAGS_FAILED (1 << 5)
+#define TREE_FLAGS_WAITING_DEPS (1 << 6)
+#define TREE_FLAGS_TIMEOUT (1 << 7)
 
-typedef struct pidtree_s pidtree_t, *pidtree_t_ref ;
-struct pidtree_s
+struct tree_ctx_s
 {
-    int pipe[2] ;
-    pid_t pid ;
-    resolve_tree_t *tres ;
-    uint32_t index ; // index number of the vertex
-    uint8_t state ; // current state of the vertex
-    uint32_t nedge ; // number
-    vertex_t *notif[SS_MAX_SERVICE] ; // array of vertex_t to notif when a edge is done
-    uint32_t nnotif ;// number
-} ;
+    pid_t pid ; // Process ID when running
+    resolve_tree_t *tres ; // Service resolution data
 
-#define PIDTREE_ZERO { \
-    .pipe[0] = -1, \
-    .pipe[1] = -1, \
+    // Watchers
+    sse_watcher_t child ;   // Child process watcher
+    sse_watcher_t timeout ; // Timeout watcher
+
+    // State management
+    uint8_t state ; // Current state
+    uint8_t target_state ; // Desired state
+
+    // Dependencies
+    uint32_t index ; // vertex index of the service
+    vertex_t *depends[SS_MAX_SERVICE] ; // Services depends
+    uint32_t ndepends ;
+    vertex_t *requiredby[SS_MAX_SERVICE] ; // requiredby dependencies of the service
+    uint32_t nrequiredby ;
+
+    // Runtime data
+    int exitcode ; // Last exit code
+} ;
+typedef struct tree_ctx_s tree_ctx_t ;
+
+#define TREE_CTX_ZERO { \
+    .pid = -1, \
     .tres = NULL, \
-    .index = 0, \
+    .child = {0}, \
+    .timeout = {0}, \
     .state = 0, \
-    .nedge = 0, \
-    .notif = {NULL}, \
-    .nnotif = 0 \
+    .target_state = 0, \
+    .index = 0, \
+    .depends = { NULL }, \
+    .ndepends = 0, \
+    .requiredby = { NULL }, \
+    .nrequiredby = 0, \
+    .exitcode = 0 \
 }
+
+struct tree_manager_s
+{
+    sse_epoll_t loop ; // Main event loop
+    tree_ctx_t *atree ; // Service array
+    uint32_t ntree ; // Number of services
+
+    // Global watchers
+    sse_watcher_t signalfd ; // Global signal handler
+    sse_watcher_t notifier ; // Internal notifier pipe
+    sse_watcher_t deadline ; // Global deadline timer if any
+
+    // notifier mechanism
+    int notifd[2] ; // Internal event notifier pipe
+
+    // State
+    bool shutdown_requested ; // Shutdown in progress
+
+    // Configuration
+    ssexec_t *info ;
+    uint64_t timeout ; // Global operation timeout
+    uint8_t operation ; // START/STOP operation
+    char *cmdmsg ; // echo start/stop or unsupervise
+} ;
+typedef struct tree_manager_s tree_manager_t ;
+
 
 /** @Return 1 on success
  * @Return 0 if not valid
@@ -225,7 +269,7 @@ extern int hash_count_tree(struct resolve_hash_tree_s **hash) ;
 extern void hash_free_tree(struct resolve_hash_tree_s **hash) ;
 
 /** signal */
-extern void tree_init_array(pidtree_t *apidt, tree_graph_t *g, uint8_t requiredby, uint8_t flag) ;
-extern int tree_launch(pidtree_t *apidt, uint32_t ntree, unsigned int what, tain *deadline, ssexec_t *info) ;
+extern void tree_init_ctx(tree_ctx_t *atree, tree_graph_t *g, uint8_t requiredby, uint32_t flag) ;
+extern int tree_launch(tree_ctx_t *atree, uint32_t ntree, uint8_t operation, ssexec_t *info) ;
 
 #endif

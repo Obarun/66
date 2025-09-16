@@ -92,7 +92,6 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
     log_flow() ;
 
     int r, shut = 0 ;
-    tain deadline ;
     uint8_t what = 0, requiredby = 0 ;
     tree_graph_t graph = GRAPH_TREE_ZERO ;
     uint32_t flag = 0, ntree = 0 ;
@@ -122,11 +121,6 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
         if (!auto_stra(&info->treename, argv[1]))
             log_die_nomem("stralloc") ;
     }
-
-    if (info->timeout)
-        tain_from_millisecs(&deadline, info->timeout) ;
-    else
-        deadline = tain_infinite_relative ;
 
     what = parse_signal(*argv, info) ;
 
@@ -169,9 +163,9 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
 
     }
 
-    pidtree_t apidt[graph.g.nsort] ;
+    tree_ctx_t atree[graph.g.nsort] ;
 
-    tree_init_array(apidt, &graph, requiredby, flag) ;
+    tree_init_ctx(atree, &graph, requiredby, flag) ;
 
     if (shut) {
 
@@ -188,7 +182,7 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
         }
     }
 
-    r = tree_launch(apidt, graph.g.nsort, what, &deadline, info) ;
+    r = tree_launch(atree, graph.g.nsort, what, info) ;
 
     tree_graph_destroy(&graph) ;
 

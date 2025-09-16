@@ -1,5 +1,5 @@
 /*
- * svc_init_array.c
+ * svc_init_ctx.c
  *
  * Copyright (c) 2018-2025 Eric Vidal <eric@obarun.org>
  *
@@ -25,25 +25,29 @@
 #include <66/state.h>
 #include <66/enum_parser.h>
 #include <66/graph.h>
+#include <66/sse.h>
 
 #include <s6/supervise.h>
 
-static pidservice_t pidservice_init(uint32_t len)
+static svc_ctx_t ctx_init(uint32_t len)
 {
     log_flow() ;
 
-    pidservice_t pids = PIDSERVICE_ZERO ;
+    svc_ctx_t svc = SVC_CTX_ZERO ;
 
     if (len > SS_MAX_SERVICE)
         log_die(LOG_EXIT_SYS, "too many services") ;
 
-    for (uint32_t i = 0 ; i < len; i++)
-        pids.notif[i] = NULL ;
+    for (uint32_t i = 0 ; i < len; i++) {
+        svc.depends[i] = NULL ;
+        svc.requiredby[i] = NULL ;
+    }
+    svc.ndepends = svc.nrequiredby = 0 ;
 
-    return pids ;
+    return svc ;
 }
 
-void svc_init_array(pidservice_t *apids, service_graph_t *g, uint8_t requiredby, uint32_t flag)
+void svc_init_ctx(svc_ctx_t *asvc, service_graph_t *g, uint8_t requiredby, uint32_t flag)
 {
     log_flow() ;
 
@@ -55,7 +59,7 @@ void svc_init_array(pidservice_t *apids, service_graph_t *g, uint8_t requiredby,
     FOREACH_GRAPH_SORT(service_graph_t, g, pos) {
 
         uint32_t index = g->g.sort[pos] ;
-        pidservice_t pids = pidservice_init(g->g.nvertexes) ;
+        svc_ctx_t svc = ctx_init(g->g.nvertexes) ;
         v = g->g.sindex[index] ;
         char *name = v->name ;
 
@@ -63,46 +67,46 @@ void svc_init_array(pidservice_t *apids, service_graph_t *g, uint8_t requiredby,
         if (hash == NULL)
             log_dieu(LOG_EXIT_SYS,"find hash id of: ", name, " -- please make a bug reports") ;
 
-        pids.res = &hash->res ;
+        svc.res = &hash->res ;
 
         if (FLAGS_ISSET(flag, GRAPH_WANT_DEPENDS) || FLAGS_ISSET(flag, GRAPH_WANT_REQUIREDBY)) {
 
-            pids.nedge = !requiredby ? v->ndepends : v->nrequiredby ;
-            pids.nnotif = requiredby ? v->ndepends : v->nrequiredby ;
-            graph_get_edge(&g->g, v, pids.notif, requiredby ? false : true) ;
-
+            svc.ndepends = !requiredby ? v->ndepends : v->nrequiredby ;
+            graph_get_edge(&g->g, v, svc.depends, !requiredby ? false : true) ;
+            svc.nrequiredby = !requiredby ? v->nrequiredby : v->ndepends ;
+            graph_get_edge(&g->g, v, svc.requiredby, !requiredby ? true : false) ;
         }
 
-        pids.index = v->index ;
+        svc.index = v->index ;
 
-        if (pids.res->type != E_PARSER_TYPE_CLASSIC) {
+        if (svc.res->type != E_PARSER_TYPE_CLASSIC) {
 
                 ss_state_t sta = STATE_ZERO ;
 
-                if (!state_read(&sta, pids.res))
+                if (!state_read(&sta, svc.res))
                     log_dieusys(LOG_EXIT_SYS, "read state file of: ", name) ;
 
                 if (sta.isup == STATE_FLAGS_TRUE)
-                    FLAGS_SET(pids.state, SVC_FLAGS_UP) ;
+                    FLAGS_SET(svc.state, SVC_FLAGS_UP) ;
                 else
-                    FLAGS_SET(pids.state, SVC_FLAGS_DOWN) ;
+                    FLAGS_SET(svc.state, SVC_FLAGS_DOWN) ;
 
         } else {
 
             s6_svstatus_t status ;
 
-            r = s6_svstatus_read(pids.res->sa.s + pids.res->live.scandir, &status) ;
+            r = s6_svstatus_read(svc.res->sa.s + svc.res->live.scandir, &status) ;
 
             pid_t pid = !r ? 0 : status.pid ;
 
             if (pid > 0) {
 
-                FLAGS_SET(pids.state, SVC_FLAGS_UP) ;
+                FLAGS_SET(svc.state, SVC_FLAGS_UP) ;
             }
             else
-                FLAGS_SET(pids.state, SVC_FLAGS_DOWN) ;
+                FLAGS_SET(svc.state, SVC_FLAGS_DOWN) ;
         }
 
-        apids[pos] = pids ;
+        asvc[pos] = svc ;
     }
 }

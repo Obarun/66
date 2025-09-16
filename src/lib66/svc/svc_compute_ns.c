@@ -27,51 +27,53 @@
 #include <66/sanitize.h>
 
 /** sares -> services ares */
-int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char const *updown, uint8_t opt_updown, uint8_t reloadmsg,char const *data, uint8_t propagate)
+int svc_compute_ns(svc_manager_t *mgr, uint32_t id)
 {
     log_flow() ;
+
+    svc_ctx_t *svc = &mgr->asvc[id];
 
     int r ;
     uint8_t requiredby = 0 ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     uint32_t nservice = 0, flag = GRAPH_SKIP_EARLIER ;
-    _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.contents) + 1) ;
+    _alloc_stk_(stk, strlen(svc->res->sa.s + svc->res->dependencies.contents) + 1) ;
 
-    if (propagate) {
+    if (mgr->propagate) {
 
-        if (what) {
+        if (mgr->operation) {
             requiredby = 1 ;
             FLAGS_SET(flag, GRAPH_WANT_REQUIREDBY) ;
         } else FLAGS_SET(flag, GRAPH_WANT_DEPENDS) ;
     }
 
-    if (res->dependencies.ncontents) {
+    if (svc->res->dependencies.ncontents) {
 
-        if (!stack_string_clean(&stk, res->sa.s + res->dependencies.contents))
+        if (!stack_string_clean(&stk, svc->res->sa.s + svc->res->dependencies.contents))
             log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     } else {
-        log_warn("empty ns: ", res->sa.s + res->name) ;
+        log_warn("empty ns: ", svc->res->sa.s + svc->res->name) ;
         return 0 ;
     }
 
-    if (!graph_new(&graph, res->dependencies.ncontents))
+    if (!graph_new(&graph, svc->res->dependencies.ncontents))
         log_dieusys(LOG_EXIT_SYS, "allocate the graph") ;
 
     /** build the graph of the ns */
-    nservice = service_graph_build_list(&graph, stk.s, stk.len, info, flag) ;
+    nservice = service_graph_build_list(&graph, stk.s, stk.len, mgr->info, flag) ;
 
     if (!nservice)
-        log_dieu(LOG_EXIT_USER, "build the graph of the module: ", res->sa.s + res->name," -- please make a bug report") ;
+        log_dieu(LOG_EXIT_USER, "build the graph of the module: ", svc->res->sa.s + svc->res->name," -- please make a bug report") ;
 
-    if (!what)
+    if (!mgr->operation)
         sanitize_init(&graph, flag) ;
 
-    pidservice_t apids[graph.g.nsort] ;
+    svc_ctx_t asvc[graph.g.nsort] ;
 
-    svc_init_array(apids, &graph, requiredby, flag) ;
+    svc_init_ctx(asvc, &graph, requiredby, flag) ;
 
-    r = svc_launch(apids, graph.g.nsort, what, info, updown, opt_updown, reloadmsg, data, propagate) ;
+    r = svc_launch(asvc, graph.g.nsort, mgr->operation, mgr->info, mgr->wsignal, mgr->woption, mgr->signal, mgr->cmdmsg, mgr->propagate) ;
 
     service_graph_destroy(&graph) ;
 

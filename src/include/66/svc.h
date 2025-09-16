@@ -25,44 +25,92 @@
 
 #include <66/service.h>
 #include <66/graph.h>
+#include <66/sse.h>
 
 #define DATASIZE 65
 
-#define SVC_FLAGS_STARTING 1 // 1 starting not really up
-#define SVC_FLAGS_STOPPING (1 << 1) // 2 stopping not really down
-#define SVC_FLAGS_UP (1 << 2) // 4 really up
-#define SVC_FLAGS_DOWN (1 << 3) // 8 really down
-#define SVC_FLAGS_BLOCK (1 << 4) // 16 all deps are not up/down
-#define SVC_FLAGS_UNBLOCK (1 << 5) // 32 all deps are up/down
-#define SVC_FLAGS_FATAL (1 << 6) // 64 process crashed
+#define SVC_FLAGS_DOWN 1
+#define SVC_FLAGS_UP (1 << 1)
+#define SVC_FLAGS_PROCESSING (1 << 2)
+#define SVC_FLAGS_STARTING (1 << 3)
+#define SVC_FLAGS_STOPPING (1 << 4)
+#define SVC_FLAGS_FAILED (1 << 5)
+#define SVC_FLAGS_WAITING_DEPS (1 << 6)
+#define SVC_FLAGS_TIMEOUT (1 << 7)
 
-typedef struct pidservice_s pidservice_t, *pidservice_t_ref ;
-struct pidservice_s
+struct svc_ctx_s
 {
-    int pipe[2] ;
-    pid_t pid ;
-    resolve_service_t *res ;
-    uint32_t index ; // index number of the vertex
-    uint8_t state ; // current state of the vertex
-    uint32_t nedge ; // number
-    vertex_t *notif[SS_MAX_SERVICE] ; // array of vertex_t to notif when a edge is done
-    uint32_t nnotif ; // number
-} ;
+    pid_t pid ; // Process ID when running
+    resolve_service_t *res ; // Service resolution data
 
-#define PIDSERVICE_ZERO { \
-    .pipe[0] = -1, \
-    .pipe[1] = -1, \
+    // Watchers
+    sse_watcher_t child ;   // Child process watcher
+    sse_watcher_t timeout ; // Timeout watcher
+
+    // State management
+    uint8_t state ; // Current state
+    uint8_t target_state ; // Desired state
+
+    // Dependencies
+    uint32_t index ; // vertex index of the service
+    vertex_t *depends[SS_MAX_SERVICE] ; // Services depends
+    uint32_t ndepends ;
+    vertex_t *requiredby[SS_MAX_SERVICE] ; // requiredby dependencies of the service
+    uint32_t nrequiredby ;
+
+    // Runtime data
+    int exitcode ; // Last exit code
+} ;
+typedef struct svc_ctx_s svc_ctx_t ;
+
+#define SVC_CTX_ZERO { \
+    .pid = -1, \
     .res = NULL, \
-    .index = 0, \
+    .child = {0}, \
+    .timeout = {0}, \
     .state = 0, \
-    .nedge = 0, \
-    .notif = {NULL}, \
-    .nnotif = 0 \
+    .target_state = 0, \
+    .index = 0, \
+    .depends = { NULL }, \
+    .ndepends = 0, \
+    .requiredby = { NULL }, \
+    .nrequiredby = 0, \
+    .exitcode = 0 \
 }
 
-extern void svc_init_array(pidservice_t *apids, service_graph_t *g, uint8_t requiredby, uint32_t flag) ;
-extern int svc_launch(pidservice_t *apids, uint32_t nservice, uint8_t what, ssexec_t *info, char const *rise, uint8_t rise_opt, uint8_t msg, char const *signal, uint8_t propagate) ;
-extern int svc_compute_ns(resolve_service_t *res, uint8_t what, ssexec_t *info, char const *updown, uint8_t opt_updown, uint8_t reloadmsg,char const *data, uint8_t propagate) ;
+struct svc_manager_s
+{
+    sse_epoll_t loop ; // Main event loop
+    svc_ctx_t *asvc ; // Service array
+    uint32_t nsvc ; // Number of services
+
+    // Global watchers
+    sse_watcher_t signalfd ; // Global signal handler
+    sse_watcher_t notifier ; // Internal notifier pipe
+    sse_watcher_t deadline ; // Global deadline timer if any
+
+    // notifier mechanism
+    int notifd[2] ; // Internal event notifier pipe
+
+    // State
+    bool shutdown_requested ; // Shutdown in progress
+
+    // Configuration
+    ssexec_t *info ;
+    uint64_t timeout ; // Global operation timeout
+    uint8_t operation ; // START/STOP operation
+    bool propagate ; // Propagate failures to dependents
+
+    char signal[DATASIZE + 1] ; // signal to sent
+    char wsignal[4] ; // -w svc signal
+    bool woption ; // -w is used or not
+    char *cmdmsg ; // echo restart or reload
+} ;
+typedef struct svc_manager_s svc_manager_t ;
+
+extern void svc_init_ctx(svc_ctx_t *asvc, service_graph_t *g, uint8_t requiredby, uint32_t flag) ;
+extern int svc_launch(svc_ctx_t *asvc, uint32_t nsvc, uint8_t operation, ssexec_t *info, char const *wsignal, uint8_t woption, char const *signal, char *cmdmsg, uint8_t propagate) ;
+extern int svc_compute_ns(svc_manager_t *mgr, uint32_t id) ;
 extern int svc_scandir_ok (char const *dir) ;
 extern int svc_scandir_send(char const *scandir,char const *signal) ;
 extern int svc_send_wait(char const *const *list, uint32_t nservice, char **sig, unsigned int siglen, ssexec_t *info) ;
