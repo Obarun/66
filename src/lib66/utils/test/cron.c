@@ -16,6 +16,7 @@ void print_time(const char *label, time_t t) {
 
 time_t parse_time(const char *str) {
     struct tm tm = {0};
+    tm.tm_isdst = -1;
     strptime(str, "%Y-%m-%d %H:%M:%S", &tm);
     return mktime(&tm);
 }
