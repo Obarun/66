@@ -51,7 +51,7 @@ struct ssexec_s
     uid_t owner ;
     char ownerstr[UID_FMT] ;
     size_t ownerlen ;
-    uint32_t timeout ;
+    uint64_t timeout ;
     char const *prog ;
     char const *help ;
     char const *usage ;
