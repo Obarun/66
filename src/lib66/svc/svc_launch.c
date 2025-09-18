@@ -27,10 +27,10 @@
 #include <oblibs/log.h>
 #include <oblibs/environ.h>
 #include <oblibs/string.h>
+#include <oblibs/sse.h>
 
 #include <skalibs/types.h> // uint_fmt
 
-#include <66/sse.h>
 #include <66/service.h>
 #include <66/state.h>
 #include <66/enum_parser.h>

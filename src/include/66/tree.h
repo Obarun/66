@@ -19,6 +19,7 @@
 #include <stdint.h>
 
 #include <oblibs/hash.h>
+#include <oblibs/sse.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/cdb.h>
@@ -29,7 +30,6 @@
 #include <66/resolve.h>
 #include <66/graph.h>
 #include <66/enum_tree.h>
-#include <66/sse.h>
 
 #define TREE_GROUPS_BOOT "boot"
 #define TREE_GROUPS_BOOT_LEN (sizeof TREE_GROUPS_BOOT - 1)

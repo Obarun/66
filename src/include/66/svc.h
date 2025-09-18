@@ -17,15 +17,13 @@
 
 #include <unistd.h>
 
-#include <66/service.h>
-#include <66/ssexec.h>
-#include <66/graph.h>
+#include <oblibs/sse.h>
 
 #include <skalibs/tai.h>
 
 #include <66/service.h>
 #include <66/graph.h>
-#include <66/sse.h>
+#include <66/ssexec.h>
 
 #define DATASIZE 65
 

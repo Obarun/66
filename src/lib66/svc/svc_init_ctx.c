@@ -18,6 +18,7 @@
 #include <oblibs/hash.h>
 #include <oblibs/types.h>
 #include <oblibs/stack.h>
+#include <oblibs/sse.h>
 
 #include <66/svc.h>
 #include <66/service.h>
@@ -25,7 +26,6 @@
 #include <66/state.h>
 #include <66/enum_parser.h>
 #include <66/graph.h>
-#include <66/sse.h>
 
 #include <s6/supervise.h>
 

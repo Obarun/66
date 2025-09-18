@@ -30,10 +30,10 @@
 #include <oblibs/lexer.h>
 #include <oblibs/types.h>
 #include <oblibs/environ.h>
+#include <oblibs/sse.h>
 
 #include <skalibs/types.h>
 
-#include <66/sse.h>
 #include <66/resolve.h>
 #include <66/tree.h>
 #include <66/service.h>
