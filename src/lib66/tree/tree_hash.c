@@ -27,7 +27,7 @@ int hash_add_tree(struct resolve_hash_tree_s **hash, char const *name, resolve_t
     log_flow() ;
 
 	struct resolve_hash_tree_s *s ;
-	s = (struct resolve_hash_tree_s *)malloc(sizeof(*s));
+	s = malloc(sizeof(*s));
 	if (s == NULL)
 		return 0 ;
 

@@ -27,7 +27,7 @@ int hash_add(struct resolve_hash_s **hash, char const *name, resolve_service_t r
     log_flow() ;
 
 	struct resolve_hash_s *s ;
-	s = (struct resolve_hash_s *)malloc(sizeof(*s));
+	s = malloc(sizeof(*s));
 	if (s == NULL)
 		return 0 ;
 
