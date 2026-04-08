@@ -10,11 +10,11 @@ To build and install the 66 project, you need:
 
 - `Ninja` (typically installed with Meson).
 
-- `skalibs` version `2.14.3.0` or later: [skarnet.org/software/skalibs](https://skarnet.org/software/skalibs/).
+- `skalibs` version `2.14.5.1` or later: [skarnet.org/software/skalibs](https://skarnet.org/software/skalibs/).
 
-- `execline` version `2.9.6.1` or later: [skarnet.org/software/execline](https://skarnet.org/software/execline).
+- `execline` version `2.9.8.1` or later: [skarnet.org/software/execline](https://skarnet.org/software/execline).
 
-- `s6` version `2.13.1.0` or later: [skarnet.org/software/s6](https://skarnet.org/software/s6).
+- `s6` version `2.14.0.1` or later: [skarnet.org/software/s6](https://skarnet.org/software/s6).
 
 - `oblibs` version `0.3.4.0` or later: [git.obarun.org/Obarun/oblibs](https://git.obarun.org/Obarun/oblibs).
 

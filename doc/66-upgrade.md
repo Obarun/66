@@ -9,6 +9,30 @@ author: Eric Vidal <eric@obarun.org>
 
 # Changelog for 66
 
+# In 0.8.2.2
+
+## Overview
+
+This is a bug fix release and convenient build against the latest skarnet software version.
+
+## Behavior Changes
+
+- **Allow to reconfigure an unsupervised service** (e855a0d):
+
+    Previously, reconfiguring a service required it to be supervised. This change allows the `reconfigure` command to work on services that are not currently supervised — only supervised services will be stopped during the reconfiguration process.
+
+## Bug Fixes
+
+- **ChangeDirectory, CapsBound and CapsAmbient sanitization** (497eda3):
+
+    Fixed a bug where the `ChangeDirectory`, `CapsBound` and `CapsAmbient` entries from the `[Execute]` section were not correctly sanitized during the resolve phase, potentially leading to missing or corrupted values.
+
+- **Meson build default option typos** (b096fa1):
+
+    Fixed typos in `meson.build` default options where `s6_log-user`, `s6_log-timestamp` and `s6_log-notification` were using underscores instead of hyphens, causing build failures.
+
+---
+
 # In 0.8.2.1
 
 ## Overview
