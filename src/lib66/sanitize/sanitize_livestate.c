@@ -97,7 +97,7 @@ static int sanitize_copy_source(resolve_service_t *res)
         log_warnusys_return(LOG_EXIT_ZERO, "remove live directory: ", sym) ;
 
     log_trace("symlink: ", sym, " to: ", dst) ;
-    if (!atomic_symlink(dst, sym, "livestate"))
+    if (!atomic_symlink4(dst, sym, 0, 0))
        log_warnusys_return(LOG_EXIT_ZERO, "symlink: ", sym, " to: ", dst) ;
 
     return 1 ;

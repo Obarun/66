@@ -30,7 +30,7 @@
 #include <skalibs/buffer.h>
 #include <skalibs/diuint32.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/unix-transactional.h>//atomic_symlink
+#include <skalibs/unix-transactional.h>//atomic_symlink4
 #include <skalibs/exec.h>
 
 #include <66/ssexec.h>
@@ -288,7 +288,7 @@ int ssexec_configure(int argc, char const *const *argv, ssexec_t *info)
             char sym[conflen + SS_SYM_VERSION_LEN + 1] ;
             auto_strings(sym, svconf, SS_SYM_VERSION) ;
 
-            if (!atomic_symlink(src.s, sym, "ssexec_configure"))
+            if (!atomic_symlink4(src.s, sym, 0, 0))
                 log_warnu_return(LOG_EXIT_ZERO, "symlink: ", sym, " to: ", src.s) ;
 
             log_info("Symlink switched successfully to version: ", src.s) ;

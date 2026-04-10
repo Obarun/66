@@ -80,7 +80,7 @@ static void scandir_to_livestate(resolve_service_t *res)
     auto_strings(sym, res->sa.s + res->live.livedir, SS_SCANDIR, "/", res->sa.s + res->ownerstr, "/", name) ;
 
     log_trace("symlink: ", sym, " to: ", res->sa.s + res->live.servicedir) ;
-    if (!atomic_symlink(res->sa.s + res->live.servicedir, sym, "scandir"))
+    if (!atomic_symlink4(res->sa.s + res->live.servicedir, sym, 0, 0))
        log_dieu(LOG_EXIT_SYS, "symlink: ", sym, " to: ", res->sa.s + res->live.servicedir) ;
 }
 
