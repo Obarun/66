@@ -1,6 +1,6 @@
 project('66',
         'c',
-        version: '0.8.2.1',
+        version: '0.8.2.2',
         meson_version: '>=1.1.0',
         license: 'ISC',
         default_options: [
@@ -48,9 +48,9 @@ message('See INSTALL_MESON.md for detailed configuration instructions and warnin
 fs = import('fs')
 
 # Versioning
-version_skalibs = '>=2.14.3.0'
-version_execline = '>=2.9.6.1'
-version_s6 = '>=2.13.1.0'
+version_skalibs = '>=2.14.5.1'
+version_execline = '>=2.9.8.1'
+version_s6 = '>=2.14.0.1'
 version_oblibs = '>=0.3.4.0'
 version_lowdown = '>=0.6.4'
 
