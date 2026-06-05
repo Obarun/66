@@ -20,6 +20,7 @@
 #include <errno.h>
 
 #include <oblibs/log.h>
+#include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>

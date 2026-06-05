@@ -18,6 +18,7 @@
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/log.h>
+#include <oblibs/files.h>
 
 #include <66/tree.h>
 

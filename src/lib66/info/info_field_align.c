@@ -16,6 +16,8 @@
 #include <string.h>
 #include <wchar.h>
 
+#include <oblibs/files.h>
+
 #include <66/info.h>
 
 void info_field_align (char buf[][INFO_FIELD_MAXLEN],char fields[][INFO_FIELD_MAXLEN],wchar_t const field_suffix[],size_t buflen)

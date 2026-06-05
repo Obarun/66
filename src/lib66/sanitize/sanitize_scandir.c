@@ -19,6 +19,7 @@
 #include <sys/stat.h> // umask
 
 #include <oblibs/log.h>
+#include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
 #include <oblibs/types.h>

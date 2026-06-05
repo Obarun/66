@@ -19,6 +19,7 @@
 #include <sys/types.h>
 
 #include <oblibs/log.h>
+#include <oblibs/files.h>
 #include <oblibs/directory.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>

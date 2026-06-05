@@ -22,6 +22,7 @@
 
 #include <oblibs/sastr.h>
 #include <oblibs/log.h>
+#include <oblibs/account.h>
 #include <oblibs/types.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>

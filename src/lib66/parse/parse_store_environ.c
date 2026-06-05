@@ -18,6 +18,7 @@
 
 #include <oblibs/string.h>
 #include <oblibs/log.h>
+#include <oblibs/files.h>
 #include <oblibs/sastr.h>
 #include <oblibs/stack.h>
 #include <oblibs/environ.h>
