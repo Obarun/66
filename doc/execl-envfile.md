@@ -1,12 +1,3 @@
-title: The 66 Suite: execl-envfile
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # execl-envfile
 
 A mix of [s6-envdir](https://skarnet.org/software/s6/s6-envdir.html) and [importas](https://skarnet.org/software/execline/importas.html). Reads files containing variable assignments in the given *file/directory*, adds the variables to the environment and then executes a program.

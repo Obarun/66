@@ -1,12 +1,3 @@
-title: The 66 Suite: remove
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # remove
 
 This command remove all components of a service. This operation **cannot be** undone. Process with caution.

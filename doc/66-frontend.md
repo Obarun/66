@@ -1,12 +1,3 @@
-title: The 66 Suite: frontend
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # The frontend service file
 
 The [s6](https://skarnet.org/software/s6) programs use different files. It is quite complex to understand and manage the relationship between all those files. If you're interested in the details you should read [the documentation for the s6 servicedir](https://skarnet.org/software/s6/servicedir.html) and also about [classic](https://skarnet.org/software/s6/servicedir.html) and [module](66-module-creation.html) services. The frontend service file of `66` program allows you to deal with all these different services in a centralized manner and in one single location.
@@ -320,7 +311,7 @@ Provides a concise, human-readable summary of the service’s purpose. Enclosed 
 
 * mandatory: no
 
-* syntax: [quote](#quote)
+* syntax: [quote](#quotes)
 
 * valid values:
 

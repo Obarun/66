@@ -1,12 +1,3 @@
-title: The 66 Suite: 66-hpr
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # 66-hpr
 
 Triggers the software shutdown procedure. Performs an immediate hardware shutdown with the **‑f** option. It is normally invoked by `66 halt`, `66 poweroff` or `66 reboot` command. This program is a modified copy of [s6-linux-init-hpr](https://skarnet.org/software/s6-linux-init/s6-linux-init-hpr.html).

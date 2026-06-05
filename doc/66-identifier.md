@@ -1,12 +1,3 @@
-title: The 66 Suite: identifier
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # Identifier interpretation
 
 The following table provides a comprehensive understanding of various identifiers used in the system. These identifiers are replaced with specific values before the parsing process to write generic frontend files. If an identifier is invalid, it will remain unchanged. In this context, the term `user` refers to the owner of the process.

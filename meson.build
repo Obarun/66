@@ -47,6 +47,18 @@ message('See INSTALL_MESON.md for detailed configuration instructions and warnin
 
 fs = import('fs')
 
+# doc-only mode: build only the documentation. Skips C sources and the
+# skalibs/execline/s6/oblibs dependency lookups entirely. Useful for CI
+# documentation jobs that do not need the C toolchain.
+if get_option('doc-only')
+  if not get_option('with-doc')
+    error('doc-only=true requires with-doc=true')
+  endif
+  BINDIR = get_option('prefix') / get_option('bindir')
+  subdir('doc')
+  subdir_done()
+endif
+
 # Versioning
 version_skalibs = '>=2.14.3.0'
 version_execline = '>=2.9.6.1'
@@ -67,7 +79,7 @@ user_dynamiclib_dirs = get_option('with-dynamiclib-dir')
 
 # Combine default and user-provided paths
 include_dirs = default_include_dirs + user_include_dirs
-lib_dirs = default_lib_dirs + user_staticlib_dirs + user_dynamiclib_dirs
+lib_dirs = user_staticlib_dirs + user_dynamiclib_dirs + default_lib_dirs
 
 # Dependency: skalibs
 skalibs_lib = cc.find_library('skarnet', dirs: lib_dirs, static: get_option('enable-static-deps'), required: false)

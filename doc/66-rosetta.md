@@ -1,12 +1,3 @@
-title: The 66 Suite: rosetta
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 This documentation explains the differences in options and interface changes between versions.
 
 # Changes between `0.7.2.1` and `0.8.0.0`
@@ -199,7 +190,7 @@ All commands and subcommands return:
 
 ## Interface and Options changes by command
 
-If not specified, the interface (except for the name itself -- see [General Interface changes](#General-Interface-changes)) or the options do not change.
+If not specified, the interface (except for the name itself -- see [General Interface changes](#general-interface-changes)) or the options do not change.
 
 ### 66-scandir
 ---

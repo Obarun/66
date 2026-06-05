@@ -1,250 +1,158 @@
-fs = import('fs')
-
-ss_version = meson.project_version()
-
 if not get_option('with-doc')
   subdir_done()
 endif
 
-# Find lowdown program (required only if doc option is enabled)
-lowdown = find_program('lowdown', required: get_option('with-doc'))
+ss_version = meson.project_version()
+lowdown = find_program('lowdown', required: true)
 
-# Generate HTML files
-html_result = run_command('sh', 'make-html-meson.sh', ss_version, check: false)
-if html_result.returncode() != 0
-  warning('make-html.sh failed: ' + html_result.stderr())
-endif
+build_html = files('tools/build-html.sh')
+build_man = files('tools/build-man.sh')
+build_mkdocs = files('tools/build-mkdocs.sh')
+html_header = files('html-header.md.in')
 
-# Generate man pages
-man_result = run_command('sh', 'make-man-meson.sh', check: false)
-if man_result.returncode() != 0
-  warning('make-man.sh failed: ' + man_result.stderr())
-endif
+# 21 placeholder substitutions shared by all formats.
+sed_args = [
+  '-e', 's|%%bindir%%|@0@|g'.format(BINDIR),
+  '-e', 's|%%default_treename%%|@0@|g'.format(get_option('default-tree-name')),
+  '-e', 's|%%environment_adm%%|@0@|g'.format(get_option('sysadmin-environment-dir')),
+  '-e', 's|%%environment_user%%|@0@|g'.format(get_option('user-environment-dir')),
+  '-e', 's|%%livedir%%|@0@|g'.format(get_option('livedir')),
+  '-e', 's|%%s6log_user%%|@0@|g'.format(get_option('s6-log-user')),
+  '-e', 's|%%script_system%%|@0@|g'.format(get_option('system-script-dir')),
+  '-e', 's|%%script_user%%|@0@|g'.format(get_option('user-script-dir')),
+  '-e', 's|%%seed_adm%%|@0@|g'.format(get_option('sysadmin-seed-dir')),
+  '-e', 's|%%seed_system%%|@0@|g'.format(get_option('system-seed-dir')),
+  '-e', 's|%%seed_user%%|@0@|g'.format(get_option('user-seed-dir')),
+  '-e', 's|%%service_adm%%|@0@|g'.format(get_option('sysadmin-service-dir')),
+  '-e', 's|%%service_admconf%%|@0@|g'.format(get_option('sysadmin-service-conf-dir')),
+  '-e', 's|%%service_system%%|@0@|g'.format(get_option('system-service-dir')),
+  '-e', 's|%%service_user%%|@0@|g'.format(get_option('user-service-dir')),
+  '-e', 's|%%service_userconf%%|@0@|g'.format(get_option('user-service-conf-dir')),
+  '-e', 's|%%skel%%|@0@|g'.format(get_option('skeleton-dir')),
+  '-e', 's|%%system_dir%%|@0@|g'.format(get_option('system-dir')),
+  '-e', 's|%%system_log%%|@0@|g'.format(get_option('system-log-dir')),
+  '-e', 's|%%user_dir%%|@0@|g'.format(get_option('user-dir')),
+  '-e', 's|%%user_log%%|@0@|g'.format(get_option('user-log-dir')),
+]
 
-# HTML
-html_path = join_paths('doc', ss_version, 'html')
-html_list = run_command('sh', '-c', 'find "$path" -maxdepth 1 -type f', env: ['path=' + html_path], check: false)
-if html_list.returncode() != 0
-  error('Failed to run find command for files in: ' + html_path + html_list.stderr())
-endif
+# 44 pages — HTML output (strict mirror of make-html.sh)
+html_pages = [
+  '66', '66-boot', '66-configure', '66-deeper', '66-disable', '66-echo',
+  '66-enable', '66-free', '66-frontend', '66-halt', '66-hpr',
+  '66-identifier', '66-instantiated-service', '66-module-creation',
+  '66-module-usage', '66-nuke', '66-parse', '66-poweroff', '66-reboot',
+  '66-reconfigure', '66-reload', '66-remove', '66-resolve', '66-restart',
+  '66-rosetta', '66-scandir', '66-service-configuration-file',
+  '66-shutdown', '66-shutdownd', '66-signal', '66-snapshot',
+  '66-standard-io-redirection', '66-start', '66-state', '66-status',
+  '66-stop', '66-tree', '66-umountall', '66-upgrade', '66-upgrade-process',
+  '66-version', '66-wall', 'execl-envfile', 'index',
+]
 
-# Process all documentation files
-foreach doc_html : html_list.stdout().strip().split('\n')
-  if not fs.is_file(doc_html)
-    warning('Documentation file ' + doc_html + ' not found')
-    continue
-  endif
+# 27 pages — man section 1 (strict mirror of make-man.sh)
+man1_pages = [
+  '66', '66-configure', '66-disable', '66-enable', '66-free', '66-halt',
+  '66-parse', '66-poweroff', '66-reboot', '66-reconfigure', '66-reload',
+  '66-remove', '66-resolve', '66-restart', '66-rosetta', '66-scandir',
+  '66-signal', '66-snapshot', '66-start', '66-state', '66-status',
+  '66-stop', '66-tree', '66-upgrade', '66-version', '66-wall',
+  'execl-envfile',
+]
 
-  doc_output = doc_html.split('/').get(-1)
+# 9 pages — man section 5 (strict mirror of make-man.sh)
+man5_pages = [
+  '66-deeper', '66-frontend', '66-identifier', '66-instantiated-service',
+  '66-module-creation', '66-module-usage', '66-service-configuration-file',
+  '66-standard-io-redirection', '66-upgrade-process',
+]
 
-  # Determine installation directory
-  install_dir = join_paths(get_option('datadir'), 'doc', '66', ss_version, 'html')
+# 5 pages — man section 8 (strict mirror of make-man.sh)
+man8_pages = [
+  '66-boot', '66-hpr', '66-shutdown', '66-shutdownd', '66-umountall',
+]
 
-  # Perform sed replacements
-  configure_file(
-    input: doc_html,
-    output: doc_output,
+# Mkdocs uses the same set as HTML.
+mkdocs_pages = html_pages
+
+# Mkdocs needs all placeholder substitutions PLUS rewriting internal links
+# from (NAME.html) to (NAME.md). Build the extended sed args once.
+mkdocs_sed_args = sed_args
+foreach name : html_pages
+  mkdocs_sed_args += ['-e', 's|(@0@.html|(@0@.md|g'.format(name)]
+endforeach
+
+# Collected to build a single `doc` alias target. Use
+# `meson compile -C build doc` to build only the documentation (HTML,
+# man pages, mkdocs sources) without recompiling the C code — useful
+# for the CI docbuild job.
+doc_targets = []
+
+html_install_dir = get_option('datadir') / 'doc' / '66' / ss_version / 'html'
+
+foreach page : html_pages
+  doc_targets += custom_target(
+    page + '.html',
+    input: page + '.md',
+    output: page + '.html',
     command: [
-      'sed',
-      '-e', 's|%%shebangdir%%|' + get_option('shebangdir') + '|g',
-      '-e', 's|%%skel%%|' + get_option('skeleton-dir') + '|g',
-      '-e', 's|%%bindir%%|' + BINDIR + '|g',
-      '-e', 's|%%livedir%%|' + get_option('livedir') + '|g',
-      '-e', 's|%%system-dir%%|' + get_option('system-dir') + '|g',
-      '-e', 's|%%system_log%%|' + get_option('system-log-dir') + '|g',
-      '-e', 's|%%s6log_user%%|' + get_option('s6-log-user') + '|g',
-      '-e', 's|%%s6log_timestamp%%|' + get_option('s6-log-timestamp') + '|g',
-      '-e', 's|%%s6log_notify%%|' + (get_option('s6-log-notification') ? '0' : '1') + '|g',
-      '-e', 's|%%service_system%%|' + get_option('system-service-dir') + '|g',
-      '-e', 's|%%script_system%%|' + get_option('system-script-dir') + '|g',
-      '-e', 's|%%seed_system%%|' + get_option('system-seed-dir') + '|g',
-      '-e', 's|%%seed_adm%%|' + get_option('sysadmin-seed-dir') + '|g',
-      '-e', 's|%%environment_adm%%|' + get_option('sysadmin-environment-dir') + '|g',
-      '-e', 's|%%service_adm%%|' + get_option('sysadmin-service-dir') + '|g',
-      '-e', 's|%%service_admconf%%|' + get_option('sysadmin-service-conf-dir') + '|g',
-      '-e', 's|%%user_dir%%|' + get_option('user-dir') + '|g',
-      '-e', 's|%%service_user%%|' + get_option('user-service-dir') + '|g',
-      '-e', 's|%%script_user%%|' + get_option('user-script-dir') + '|g',
-      '-e', 's|%%service_userconf%%|' + get_option('user-service-conf-dir') + '|g',
-      '-e', 's|%%user_log%%|' + get_option('user-log-dir') + '|g',
-      '-e', 's|%%seed_user%%|' + get_option('user-seed-dir') + '|g',
-      '-e', 's|%%environment_user%%|' + get_option('user-environment-dir') + '|g',
-      '-e', 's|%%default_treename%%|' + get_option('default-tree-name') + '|g',
-      '@INPUT@'
-    ],
-    capture: true,
+      'sh', build_html, page, html_header, '@INPUT@', '@OUTPUT@',
+    ] + sed_args,
     install: true,
-    install_dir: install_dir,
-    install_mode: 'rw-r--r--',
-    install_tag: 'html'
+    install_dir: html_install_dir,
+    install_tag: 'html',
+    build_by_default: true,
   )
 endforeach
 
-# MAN1
-man1_path = join_paths('doc', 'man', 'man1')
-man1_list = run_command('sh', '-c', 'find "$path" -maxdepth 1 -type f', env: ['path=' + man1_path], check: false)
-if man1_list.returncode() != 0
-  error('Failed to run find command for files in: ' + man1_path + man1_list.stderr())
-endif
+man1_install_dir = get_option('mandir') / 'man1'
+man5_install_dir = get_option('mandir') / 'man5'
+man8_install_dir = get_option('mandir') / 'man8'
 
-
-foreach doc_man1 : man1_list.stdout().strip().split('\n')
-  if not fs.is_file(doc_man1)
-    warning('Documentation file ' + doc_man1 + ' not found')
-    continue
-  endif
-
-  doc_output = doc_man1.split('/').get(-1)
-
-  install_dir = join_paths(get_option('datadir'), 'man', 'man1')
-
-  configure_file(
-    input: doc_man1,
-    output: doc_output,
+foreach page : man1_pages
+  doc_targets += custom_target(
+    page + '.1',
+    input: page + '.md',
+    output: page + '.1',
     command: [
-      'sed',
-      '-e', 's|%%shebangdir%%|' + get_option('shebangdir') + '|g',
-      '-e', 's|%%skel%%|' + get_option('skeleton-dir') + '|g',
-      '-e', 's|%%bindir%%|' + BINDIR + '|g',
-      '-e', 's|%%livedir%%|' + get_option('livedir') + '|g',
-      '-e', 's|%%system-dir%%|' + get_option('system-dir') + '|g',
-      '-e', 's|%%system_log%%|' + get_option('system-log-dir') + '|g',
-      '-e', 's|%%s6log_user%%|' + get_option('s6-log-user') + '|g',
-      '-e', 's|%%s6log_timestamp%%|' + get_option('s6-log-timestamp') + '|g',
-      '-e', 's|%%s6log_notify%%|' + (get_option('s6-log-notification') ? '0' : '1') + '|g',
-      '-e', 's|%%service_system%%|' + get_option('system-service-dir') + '|g',
-      '-e', 's|%%script_system%%|' + get_option('system-script-dir') + '|g',
-      '-e', 's|%%seed_system%%|' + get_option('system-seed-dir') + '|g',
-      '-e', 's|%%seed_adm%%|' + get_option('sysadmin-seed-dir') + '|g',
-      '-e', 's|%%environment_adm%%|' + get_option('sysadmin-environment-dir') + '|g',
-      '-e', 's|%%service_adm%%|' + get_option('sysadmin-service-dir') + '|g',
-      '-e', 's|%%service_admconf%%|' + get_option('sysadmin-service-conf-dir') + '|g',
-      '-e', 's|%%user_dir%%|' + get_option('user-dir') + '|g',
-      '-e', 's|%%service_user%%|' + get_option('user-service-dir') + '|g',
-      '-e', 's|%%script_user%%|' + get_option('user-script-dir') + '|g',
-      '-e', 's|%%service_userconf%%|' + get_option('user-service-conf-dir') + '|g',
-      '-e', 's|%%user_log%%|' + get_option('user-log-dir') + '|g',
-      '-e', 's|%%seed_user%%|' + get_option('user-seed-dir') + '|g',
-      '-e', 's|%%environment_user%%|' + get_option('user-environment-dir') + '|g',
-      '-e', 's|%%default_treename%%|' + get_option('default-tree-name') + '|g',
-      '@INPUT@'
-    ],
-    capture: true,
+      'sh', build_man, page, '1', ss_version, '@INPUT@', '@OUTPUT@',
+    ] + sed_args,
     install: true,
-    install_dir: install_dir,
-    install_mode: 'rw-r--r--',
-    install_tag: 'man1'
+    install_dir: man1_install_dir,
+    install_tag: 'man1',
+    build_by_default: true,
   )
 endforeach
 
-# MAN5
-man5_path = join_paths('doc', 'man', 'man5')
-man5_list = run_command('sh', '-c', 'find "$path" -maxdepth 1 -type f', env: ['path=' + man5_path], check: false)
-if man5_list.returncode() != 0
-  error('Failed to run find command for files in: ' + man5_path + man5_list.stderr())
-endif
-
-foreach doc_man5 : man5_list.stdout().strip().split('\n')
-  if not fs.is_file(doc_man5)
-    warning('Documentation file ' + doc_man5 + ' not found')
-    continue
-  endif
-
-  doc_output = doc_man5.split('/').get(-1)
-
-  install_dir = join_paths(get_option('datadir'), 'man', 'man5')
-
-  configure_file(
-    input: doc_man5,
-    output: doc_output,
+foreach page : man5_pages
+  doc_targets += custom_target(
+    page + '.5',
+    input: page + '.md',
+    output: page + '.5',
     command: [
-      'sed',
-      '-e', 's|%%shebangdir%%|' + get_option('shebangdir') + '|g',
-      '-e', 's|%%skel%%|' + get_option('skeleton-dir') + '|g',
-      '-e', 's|%%bindir%%|' + BINDIR + '|g',
-      '-e', 's|%%livedir%%|' + get_option('livedir') + '|g',
-      '-e', 's|%%system-dir%%|' + get_option('system-dir') + '|g',
-      '-e', 's|%%system_log%%|' + get_option('system-log-dir') + '|g',
-      '-e', 's|%%s6log_user%%|' + get_option('s6-log-user') + '|g',
-      '-e', 's|%%s6log_timestamp%%|' + get_option('s6-log-timestamp') + '|g',
-      '-e', 's|%%s6log_notify%%|' + (get_option('s6-log-notification') ? '0' : '1') + '|g',
-      '-e', 's|%%service_system%%|' + get_option('system-service-dir') + '|g',
-      '-e', 's|%%script_system%%|' + get_option('system-script-dir') + '|g',
-      '-e', 's|%%seed_system%%|' + get_option('system-seed-dir') + '|g',
-      '-e', 's|%%seed_adm%%|' + get_option('sysadmin-seed-dir') + '|g',
-      '-e', 's|%%environment_adm%%|' + get_option('sysadmin-environment-dir') + '|g',
-      '-e', 's|%%service_adm%%|' + get_option('sysadmin-service-dir') + '|g',
-      '-e', 's|%%service_admconf%%|' + get_option('sysadmin-service-conf-dir') + '|g',
-      '-e', 's|%%user_dir%%|' + get_option('user-dir') + '|g',
-      '-e', 's|%%service_user%%|' + get_option('user-service-dir') + '|g',
-      '-e', 's|%%script_user%%|' + get_option('user-script-dir') + '|g',
-      '-e', 's|%%service_userconf%%|' + get_option('user-service-conf-dir') + '|g',
-      '-e', 's|%%user_log%%|' + get_option('user-log-dir') + '|g',
-      '-e', 's|%%seed_user%%|' + get_option('user-seed-dir') + '|g',
-      '-e', 's|%%environment_user%%|' + get_option('user-environment-dir') + '|g',
-      '-e', 's|%%default_treename%%|' + get_option('default-tree-name') + '|g',
-      '@INPUT@'
-    ],
-    capture: true,
+      'sh', build_man, page, '5', ss_version, '@INPUT@', '@OUTPUT@',
+    ] + sed_args,
     install: true,
-    install_dir: install_dir,
-    install_mode: 'rw-r--r--',
-    install_tag: 'man5'
+    install_dir: man5_install_dir,
+    install_tag: 'man5',
+    build_by_default: true,
   )
 endforeach
 
-# MAN8
-man8_path = join_paths('doc', 'man', 'man8')
-man8_list = run_command('sh', '-c', 'find "$path" -maxdepth 1 -type f', env: ['path=' + man8_path], check: false)
-if man8_list.returncode() != 0
-  error('Failed to run find command for files in: ' + man8_path + man8_list.stderr())
-endif
-
-foreach doc_man8 : man8_list.stdout().strip().split('\n')
-  if not fs.is_file(doc_man8)
-    warning('Documentation file ' + doc_man8 + ' not found')
-    continue
-  endif
-
-  doc_output = doc_man8.split('/').get(-1)
-
-  install_dir = join_paths(get_option('datadir'), 'man', 'man8')
-
-  configure_file(
-    input: doc_man8,
-    output: doc_output,
+foreach page : man8_pages
+  doc_targets += custom_target(
+    page + '.8',
+    input: page + '.md',
+    output: page + '.8',
     command: [
-      'sed',
-      '-e', 's|%%shebangdir%%|' + get_option('shebangdir') + '|g',
-      '-e', 's|%%skel%%|' + get_option('skeleton-dir') + '|g',
-      '-e', 's|%%bindir%%|' + BINDIR + '|g',
-      '-e', 's|%%livedir%%|' + get_option('livedir') + '|g',
-      '-e', 's|%%system-dir%%|' + get_option('system-dir') + '|g',
-      '-e', 's|%%system_log%%|' + get_option('system-log-dir') + '|g',
-      '-e', 's|%%s6log_user%%|' + get_option('s6-log-user') + '|g',
-      '-e', 's|%%s6log_timestamp%%|' + get_option('s6-log-timestamp') + '|g',
-      '-e', 's|%%s6log_notify%%|' + (get_option('s6-log-notification') ? '0' : '1') + '|g',
-      '-e', 's|%%service_system%%|' + get_option('system-service-dir') + '|g',
-      '-e', 's|%%script_system%%|' + get_option('system-script-dir') + '|g',
-      '-e', 's|%%seed_system%%|' + get_option('system-seed-dir') + '|g',
-      '-e', 's|%%seed_adm%%|' + get_option('sysadmin-seed-dir') + '|g',
-      '-e', 's|%%environment_adm%%|' + get_option('sysadmin-environment-dir') + '|g',
-      '-e', 's|%%service_adm%%|' + get_option('sysadmin-service-dir') + '|g',
-      '-e', 's|%%service_admconf%%|' + get_option('sysadmin-service-conf-dir') + '|g',
-      '-e', 's|%%user_dir%%|' + get_option('user-dir') + '|g',
-      '-e', 's|%%service_user%%|' + get_option('user-service-dir') + '|g',
-      '-e', 's|%%script_user%%|' + get_option('user-script-dir') + '|g',
-      '-e', 's|%%service_userconf%%|' + get_option('user-service-conf-dir') + '|g',
-      '-e', 's|%%user_log%%|' + get_option('user-log-dir') + '|g',
-      '-e', 's|%%seed_user%%|' + get_option('user-seed-dir') + '|g',
-      '-e', 's|%%environment_user%%|' + get_option('user-environment-dir') + '|g',
-      '-e', 's|%%default_treename%%|' + get_option('default-tree-name') + '|g',
-      '@INPUT@'
-    ],
-    capture: true,
+      'sh', build_man, page, '8', ss_version, '@INPUT@', '@OUTPUT@',
+    ] + sed_args,
     install: true,
-    install_dir: install_dir,
-    install_mode: 'rw-r--r--',
-    install_tag: 'man8'
+    install_dir: man8_install_dir,
+    install_tag: 'man8',
+    build_by_default: true,
   )
 endforeach
+
+subdir('mkdocs')
+
+alias_target('doc', doc_targets)

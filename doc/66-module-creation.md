@@ -1,12 +1,3 @@
-title: The 66 Suite: module service creation
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # Module service creation
 
 A module is an [instantiated](66-instantiated-service.html) service. It works the same way as a service frontend file but allows the user/admin to configure a set of different kind of services before executing the parse process. Also, the set of services can be configured with the conjunction of a script called *configure* which can be made in any language.

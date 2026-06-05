@@ -1,12 +1,3 @@
-title: The 66 Suite: enable
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # enable
 
 This command enables one or more services within a specified *tree* depending of the method used.

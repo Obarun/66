@@ -138,6 +138,11 @@ type: 'boolean',
 value: false,
 description: 'Build and install documentation in manpages and htlm format')
 
+option('doc-only',
+type: 'boolean',
+value: false,
+description: 'Build only documentation, skip C sources and their dependencies (requires with-doc=true)')
+
 option('with-pkgconfig',
 type: 'boolean',
 value: true,

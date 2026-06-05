@@ -1,12 +1,3 @@
-title: The 66 Suite: service configuration file
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # Service configuration file
 
 If the an `[Environment]` section is set at service [frontend](66-frontend.html) file, the `[Environment]` section is copied to the `%%service_admconf%%/<service_name>/<service_version>/.service_name` file.

@@ -1,12 +1,3 @@
-title: The 66 Suite: start
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # start
 
 This command starts one ore more *services*.

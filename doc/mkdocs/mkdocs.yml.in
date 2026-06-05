@@ -1,0 +1,103 @@
+site_name: 66 documentation
+site_description: Service manager built around s6
+site_url: https://docs.obarun.org/66/
+docs_dir: docs
+use_directory_urls: false
+
+repo_url: https://git.obarun.org/Obarun/66
+repo_name: Obarun/66
+edit_uri: ""
+
+theme:
+  name: material
+  logo: assets/logo.svg
+  favicon: assets/favicon.ico
+  icon:
+    repo: fontawesome/brands/gitlab
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.instant
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    - media: '(prefers-color-scheme: light)'
+      scheme: default
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - media: '(prefers-color-scheme: dark)'
+      scheme: slate
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+
+extra_css:
+  - assets/extra.css
+
+extra_javascript:
+  - assets/version-selector.js
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.details
+  - tables
+
+nav:
+  - Home: index.md
+  - 66 commands:
+    - 66 commands: 66.md
+    - boot: 66-boot.md
+    - configure: 66-configure.md
+    - disable: 66-disable.md
+    - enable: 66-enable.md
+    - free: 66-free.md
+    - halt: 66-halt.md
+    - parse: 66-parse.md
+    - poweroff: 66-poweroff.md
+    - reboot: 66-reboot.md
+    - reconfigure: 66-reconfigure.md
+    - reload: 66-reload.md
+    - remove: 66-remove.md
+    - resolve: 66-resolve.md
+    - restart: 66-restart.md
+    - rosetta: 66-rosetta.md
+    - scandir: 66-scandir.md
+    - signal: 66-signal.md
+    - snapshot: 66-snapshot.md
+    - start: 66-start.md
+    - state: 66-state.md
+    - status: 66-status.md
+    - stop: 66-stop.md
+    - tree: 66-tree.md
+    - upgrade: 66-upgrade.md
+    - version: 66-version.md
+    - wall: 66-wall.md
+  - Extra tools:
+    - 66-echo: 66-echo.md
+    - 66-nuke: 66-nuke.md
+    - 66-umountall: 66-umountall.md
+    - execl-envfile: execl-envfile.md
+  - Internal tools:
+    - 66-hpr: 66-hpr.md
+    - 66-shutdown: 66-shutdown.md
+    - 66-shutdownd: 66-shutdownd.md
+  - Reference:
+    - Frontend service file: 66-frontend.md
+    - Instantiated service file: 66-instantiated-service.md
+    - Module service usage: 66-module-usage.md
+    - Module service creation: 66-module-creation.md
+    - Service configuration file: 66-service-configuration-file.md
+    - Deeper understanding: 66-deeper.md
+    - Upgrade and Migration process: 66-upgrade-process.md
+    - Standard I/O redirection: 66-standard-io-redirection.md
+    - Identifier interpretation: 66-identifier.md

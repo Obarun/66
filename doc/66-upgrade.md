@@ -1,12 +1,3 @@
-title: The 66 Suite: upgrade
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # Changelog for 66
 
 # In 0.8.2.1
@@ -303,7 +294,7 @@ sed -e "s:\[main\]:\[Main\]:g" \
     -i ${service}
 ```
 
-See [Rosetta Stone](66-rosetta.html##keyword-table-convertion) for the list of keyword name changes.
+See [Rosetta Stone](66-rosetta.html#keyword-table-convertion) for the list of keyword name changes.
 
 ### Behavior enhancements
 
@@ -464,7 +455,7 @@ Frontend files for regular account **must be** now localized at `%%service_syste
     - `pipeline`: This option was removed. It was only present for `s6-rc`.
     - `env`: This option was removed. The simple declaration of the [environment] section is sufficient to activate the options.
 
-- `@shebang`: Deprecated but kept for compatibility reasons. Declare your shebang directly within the `@execute` field. Refers to [frontend](66-frontend.html#a-word-about-the-@execute-key) documentation for futhers information.
+- `@shebang`: Deprecated but kept for compatibility reasons. Declare your shebang directly within the `@execute` field. Refers to [frontend](66-frontend.html#a-word-about-the-execute-key) documentation for futhers information.
 
 - `@build`: Not mandatory anymore, as it will be declared 'auto' by default.
 
@@ -695,10 +686,10 @@ The code for the module part was revamped and greatly simplified.
     - The *up* option is passed to *66-scanctl*.
     - The **-e** option is passed to *66-scanctl*.
     - New options:
-        - **-B**: specifies to create a scandir for a container. In this case, a `/run/66/scandir/container/halt` file is created(see [66-boot](66-66-boot.html) for further information).
+        - **-B**: specifies to create a scandir for a container. In this case, a `/run/66/scandir/container/halt` file is created(see [66-boot](66-boot.html) for further information).
         - **-c**: do not set the `catch-all` logger.
 
-- *skeleton file*: (see [66-boot](66-66-boot.html) for further information).
+- *skeleton file*: (see [66-boot](66-boot.html) for further information).
     - *init.conf*:
         - New variables:
             - *CONTAINER*: specifies to boot inside a container.

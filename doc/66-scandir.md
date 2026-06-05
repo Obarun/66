@@ -1,12 +1,3 @@
-title: The 66 Suite: scandir
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # scandir
 
 Handles the *scandir* for a given user. Designed to be either root or a branch of the supervision tree (nested *scandir*).
@@ -134,7 +125,7 @@ The *scandir* is created if it wasn't made previously, but you don't a fine-grai
 
 - **-d** *notif*: notify readiness on file descriptor notif. When *scandir* is ready to accept signal, it will write a newline to *notif*. *notif* **cannot be** lesser than `3`. By default, no notification is sent. If **-b** is set, this option have no effects.
 
-- **-t** *rescan*: perform a scan every *rescan* milliseconds. If *rescan* is set to 0 (the default), automatic scans are never performed after the first one and [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) will only detect new services by issuing either [scandir reload](66-scandir.html#reload) or [scandir check](66-scandir.html#check). It is **strongly** discouraged to set *rescan* to a positive value under `500`.
+- **-t** *rescan*: perform a scan every *rescan* milliseconds. If *rescan* is set to 0 (the default), automatic scans are never performed after the first one and [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) will only detect new services by issuing either [scandir reload](66-scandir.html#reconfigure) or [scandir check](66-scandir.html#check). It is **strongly** discouraged to set *rescan* to a positive value under `500`.
 
 - **-e** *environment*: an absolute path. Merge the current environment variables with variables found in this directory before starting the *scandir*. Any file in environment not beginning with a dot and not containing the `=` character will be read and parsed. Each services started within the *scandir* will inherit of the `key=value` pair define within *environment*. By default, *66* import the %%environment_adm%% environment directory by default for the root user and the %%environment_user%% directory for the regular user. Although this can be changed at compile time by passing the `--with-sysadmin-environment=DIR `, `--with-user-environment=DIR` for root and regular user respectively. In case of same `key=value` pair, the environment directory define with the `-e` take precedence. Also, see [Environment](#environment) for further information about the syntax and the limitations.
 

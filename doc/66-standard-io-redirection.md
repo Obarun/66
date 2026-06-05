@@ -1,12 +1,3 @@
-title: The 66 Suite: Standard IO redirection
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # Standard IO Redirection
 
 The control of IO (Input/Output) redirection can be managed using the keys `StdIn`, `StdOut`, and `StdErr` within the [[Main]](66-frontend.html#section-main) section.

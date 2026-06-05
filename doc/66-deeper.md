@@ -1,12 +1,3 @@
-title: The 66 Suite: deeper understanding
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # Deeper understanding
 
 This documentation explains the internal structure of `66` on the system and the roles of the different directories and file components.

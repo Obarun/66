@@ -1,12 +1,3 @@
-title: The 66 Suite: upgrade process
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # Upgrade and Migration Process
 
 Starting from version `0.8.0.0`, 66 provides an internal migration process to handle upgrades when necessary. While this process mainly focuses on the [resolve files](66-deeper.html#resolve-files) (CDB databases), it may also address other components of the 66 ecosystem as required.

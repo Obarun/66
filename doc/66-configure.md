@@ -1,12 +1,3 @@
-title: The 66 Suite: configure
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # configure
 
 Handles an environment file and variable of a service depending on the options passed.

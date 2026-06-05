@@ -1,12 +1,3 @@
-title: The 66 Suite: parse
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # parse
 
 Parses a [frontend](66-frontend.html) service file and writes the result to a directory.

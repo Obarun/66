@@ -1,12 +1,3 @@
-title: The 66 Suite: module service usage
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # Module service usage
 
 This documentation describe how to use *module* from an user point of view. If you want to create a *module*, refers to [service module creation](66-module-creation.html) page.

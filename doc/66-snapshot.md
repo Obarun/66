@@ -1,12 +1,3 @@
-title: The 66 Suite: snapshot
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # snapshot
 
 This command handles snapshot of the 66 ecosystem of the owner of the process.

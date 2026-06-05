@@ -1,12 +1,3 @@
-title: The 66 Suite: instantiatied service
-author: Eric Vidal <eric@obarun.org>
-
-[66](index.html)
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
 # Instantiated service file creation
 
 An *instantiated* service file is of the same syntax as decribed in the [frontend](66-frontend.html) document for any other service. It can be any *type* of service. However some differences exist :

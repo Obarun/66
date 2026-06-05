@@ -1,12 +1,3 @@
-title: The 66 Suite: index
-author: Eric Vidal <eric@obarun.org>
-
-[Software](https://web.obarun.org/software)
-
-[obarun.org](https://web.obarun.org)
-
-
-
 # What is 66?
 
 Sixty-six (66) is a service manager designed around the [s6 supervision suite](http://skarnet.org/software/s6) to simplify the implementation and management of service files on your machine. It provides a comprehensive toolbox for declaring, implementing, and administering services with minimal code while delivering powerful functionality.
