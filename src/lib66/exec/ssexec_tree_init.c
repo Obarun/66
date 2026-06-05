@@ -19,6 +19,7 @@
 #include <oblibs/types.h>
 #include <oblibs/sastr.h>
 #include <oblibs/string.h>
+#include <oblibs/files.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/sgetopt.h>

@@ -45,7 +45,7 @@
 static void auto_remove(char const *path)
 {
     log_trace("remove directory: ", path) ;
-    if (!dir_rm_rf(path))
+    if (!dir_destroy(path))
         log_dieusys(LOG_EXIT_SYS, "remove directory: ", path) ;
 }
 

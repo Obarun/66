@@ -158,14 +158,14 @@ void parse_cleanup(resolve_service_t *res, char const *tmpdir, uint8_t force)
     size_t namelen = strlen(res->sa.s + res->name), homelen = strlen(res->sa.s + res->path.home) ;
     char dir[homelen + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + namelen + 1] ;
 
-    if (!dir_rm_rf(tmpdir))
+    if (!dir_destroy(tmpdir))
         log_warnu("remove temporary directory: ", tmpdir) ;
 
     if (!force) {
 
         auto_strings(dir, res->sa.s + res->path.home, SS_SYSTEM, SS_SERVICE, SS_SVC, "/", res->sa.s + res->name) ;
 
-        if (!dir_rm_rf(dir))
+        if (!dir_destroy(dir))
             log_warnu("remove service directory: ", dir) ;
     }
 }
@@ -202,7 +202,7 @@ void parse_copy_to_source(char const *dst, char const *src, resolve_service_t *r
 
             if (access(element, F_OK) < 0) {
                 log_trace("remove element: ", sa.s + pos) ;
-                if (!dir_rm_rf(sa.s + pos)) {
+                if (!dir_destroy(sa.s + pos)) {
                     parse_cleanup(res, src, force) ;
                     stralloc_free(&sa) ;
                     log_dieusys(LOG_EXIT_SYS, "remove element: ", sa.s + pos) ;
@@ -305,7 +305,7 @@ void parse_service(struct resolve_hash_s **hres, char const *sv, ssexec_t *info,
 
             /** do not die here, just warn the user */
             log_trace("remove temporary directory: ", sa.s) ;
-            if (!dir_rm_rf(sa.s))
+            if (!dir_destroy(sa.s))
                 log_warnu("remove temporary directory: ", sa.s) ;
 
             tree_service_add(c->res.sa.s + c->res.treename, c->res.sa.s + c->res.name, info) ;

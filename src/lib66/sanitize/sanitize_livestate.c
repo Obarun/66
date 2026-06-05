@@ -93,7 +93,7 @@ static int sanitize_copy_source(resolve_service_t *res)
     auto_strings(dst, home, SS_RESOLVE) ;
 
     log_trace("remove directory: ", sym) ;
-    if (!dir_rm_rf(sym))
+    if (!dir_destroy(sym))
         log_warnusys_return(LOG_EXIT_ZERO, "remove live directory: ", sym) ;
 
     log_trace("symlink: ", sym, " to: ", dst) ;
@@ -118,7 +118,7 @@ int sanitize_livestate(resolve_service_t *res, ss_state_t *sta)
     } else if (sta->tounsupervise == STATE_FLAGS_TRUE) {
 
         log_trace("remove directory: ", res->sa.s + res->live.servicedir) ;
-        if (!dir_rm_rf(res->sa.s + res->live.servicedir))
+        if (!dir_destroy(res->sa.s + res->live.servicedir))
             log_warnusys_return(LOG_EXIT_ZERO, "remove live directory: ", res->sa.s + res->live.servicedir) ;
     }
     return 1 ;

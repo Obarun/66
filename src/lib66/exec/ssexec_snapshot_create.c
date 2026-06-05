@@ -53,7 +53,7 @@ snapshot_list_t snapshot_user_list[] = {
 
 static void snapshot_cleanup(const char *dir)
 {
-    if (!dir_rm_rf(dir))
+    if (!dir_destroy(dir))
         log_warnu("remove service directory: ", dir) ;
 }
 

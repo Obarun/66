@@ -29,6 +29,7 @@
 #include <oblibs/sastr.h>
 #include <oblibs/lexer.h>
 #include <oblibs/stack.h>
+#include <oblibs/account.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/stralloc.h>

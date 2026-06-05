@@ -16,6 +16,7 @@
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
 #include <oblibs/string.h>
+#include <oblibs/files.h>
 
 #include <66/ssexec.h>
 #include <66/svc.h>
@@ -29,7 +30,7 @@ inline static void auto_rm(char const *str)
     r = scan_mode(str, S_IFDIR) ;
     if (r > 0) {
         log_info("Removing: ", str, "...") ;
-        if (!dir_rm_rf(str))
+        if (!dir_destroy(str))
             log_dieusys(LOG_EXIT_SYS, "remove: ", str) ;
     }
 }

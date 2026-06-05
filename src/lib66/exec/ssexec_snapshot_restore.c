@@ -47,7 +47,7 @@ static void snapshot_remove_directory(ssexec_t *info, char const *target)
         }
 
         log_trace("remove directory: ", stk.s) ;
-        if (!dir_rm_rf(stk.s))
+        if (!dir_destroy(stk.s))
             log_warnusys("remove directory: ", stk.s) ;
 
         pos++ ;
@@ -63,7 +63,7 @@ static void snapshot_remove_directory(ssexec_t *info, char const *target)
     }
 
     log_trace("remove directory: ", stk.s) ;
-    if (!dir_rm_rf(stk.s))
+    if (!dir_destroy(stk.s))
         log_warnusys("remove directory: ", stk.s) ;
 }
 

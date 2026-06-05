@@ -12,16 +12,12 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
-#include <errno.h>
 #include <stdlib.h>
-#include <unistd.h> //chdir, unlink
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/types.h>
 #include <oblibs/sastr.h>
 #include <oblibs/directory.h>
 #include <oblibs/stack.h>
@@ -31,13 +27,10 @@
 
 #include <66/module.h>
 #include <66/resolve.h>
-#include <66/info.h>
 #include <66/constants.h>
-#include <66/instance.h>
-#include <66/utils.h>
 #include <66/parse.h>
-#include <66/sanitize.h>
-#include <66/state.h>
+#include <66/service.h>
+#include <66/ssexec.h>
 
 static void parse_module_dependencies(stralloc *list, resolve_service_t *res, uint8_t requiredby, struct resolve_hash_s **hres, uint8_t force, uint8_t conf, ssexec_t *info)
 {
@@ -290,7 +283,7 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
     /** do not die here, just warn the user */
     tmpdir.s[tmplen] = 0 ;
     log_trace("remove temporary directory: ", tmpdir.s) ;
-    if (!dir_rm_rf(tmpdir.s))
+    if (!dir_destroy(tmpdir.s))
         log_warnu("remove temporary directory: ", tmpdir.s) ;
 
     free(wres) ;

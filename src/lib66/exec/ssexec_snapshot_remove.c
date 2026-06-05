@@ -64,7 +64,7 @@ int ssexec_snapshot_remove(int argc, char const *const *argv, ssexec_t *info)
         log_dieusys(LOG_EXIT_SYS, "find snapshot: ", snapdir.s) ;
 
     log_trace("delete directory: ", snapdir.s) ;
-    if (!dir_rm_rf(snapdir.s))
+    if (!dir_destroy(snapdir.s))
         log_dieusys(LOG_EXIT_SYS, "delete snapshot: ", snapdir.s) ;
 
     log_info("Successfully removed snapshot: ", snapname) ;
