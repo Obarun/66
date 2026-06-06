@@ -24,6 +24,7 @@
 #include <oblibs/files.h>
 #include <oblibs/directory.h>
 #include <oblibs/lexer.h>
+#include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/cdb.h>
@@ -472,7 +473,7 @@ static void migrate_service_0721(void)
     memset(lconf, 0, sizeof(conf_t) * SS_MAX_SERVICE) ;
 
     info.owner = getuid() ;
-    info.ownerlen = uid_fmt(info.ownerstr, info.owner) ;
+    info.ownerlen = uid_format(info.ownerstr, info.owner) ;
     info.ownerstr[info.ownerlen] = 0 ;
 
     if (!set_ownersysdir(&info.base, info.owner))

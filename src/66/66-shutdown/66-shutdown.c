@@ -26,9 +26,9 @@
 #include <utmpx.h>
 
 #include <oblibs/log.h>
+#include <oblibs/types.h>
 
 #include <skalibs/uint32.h>
-#include <skalibs/types.h>
 #include <skalibs/allreadwrite.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/sig.h>
@@ -179,9 +179,7 @@ static inline unsigned int parse_authorized_users (char *buf, char const **users
         {
             if (n >= max)
             {
-                char fmt[UINT32_FMT] ;
-                fmt[uint32_fmt(fmt, AC_MAX)] = 0 ;
-                log_warn(AC_FILE, " lists more than ", fmt, " authorized users - ignoring the extra ones") ;
+                flog_warn(AC_FILE, " lists more than %d authorized users - ignoring the extra ones", AC_MAX) ;
                 break ;
             }
             buf[pos] = 0 ;
@@ -230,11 +228,8 @@ static inline void access_control (void)
     if (fstat(fd, &st) == -1)
         log_dieusys(LOG_EXIT_SYS, "stat ", AC_FILE) ;
     if (st.st_size >= AC_BUFSIZE)
-    {
-        char fmt[UINT32_FMT] ;
-        fmt[uint32_fmt(fmt, AC_BUFSIZE - 1)] = 0 ;
-        log_die(LOG_EXIT_ONE, AC_FILE, " is too big: it needs to be ", fmt, " bytes or less") ;
-    }
+        log_die(LOG_EXIT_ONE, AC_FILE, " is too big: it needs to be %d bytes or less", AC_BUFSIZE) ;
+
     if (allread(fd, buf, st.st_size) < (size_t)st.st_size)
         log_dieusys(LOG_EXIT_SYS, "read ", AC_FILE) ;
     fd_close(fd) ;

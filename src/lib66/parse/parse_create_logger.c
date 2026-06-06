@@ -16,6 +16,7 @@
 
 #include <oblibs/string.h>
 #include <oblibs/log.h>
+#include <oblibs/types.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
@@ -75,8 +76,8 @@ static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
 
     char *pmax = 0 ;
     char *pback = 0 ;
-    char max[UINT32_FMT] ;
-    char back[UINT32_FMT] ;
+    char max[U32_FMT] ;
+    char back[U32_FMT] ;
     char *timestamp = 0 ;
     int itimestamp = SS_LOGGER_TIMESTAMP ;
     char *logrunner = res->logger.execute.run.runas ? res->sa.s + res->logger.execute.run.runas : SS_LOGGER_RUNNER ;
@@ -92,7 +93,7 @@ static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
     /** backup */
     if (res->logger.backup) {
 
-        back[uint32_fmt(back,res->logger.backup)] = 0 ;
+        back[u32_fmt(back,res->logger.backup)] = 0 ;
         pback = back ;
 
     }
@@ -100,7 +101,7 @@ static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
     /** file size */
     if (res->logger.maxsize) {
 
-        max[uint32_fmt(max,res->logger.maxsize)] = 0 ;
+        max[u32_fmt(max,res->logger.maxsize)] = 0 ;
         pmax = max ;
 
     }

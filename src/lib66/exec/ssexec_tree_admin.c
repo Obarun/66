@@ -30,6 +30,7 @@
 #include <oblibs/lexer.h>
 #include <oblibs/stack.h>
 #include <oblibs/account.h>
+#include <oblibs/types.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/stralloc.h>
@@ -139,11 +140,8 @@ static void check_identifier(char const *name)
     if (!memcmp(name, SS_MASTER + 1, 6))
         log_die(LOG_EXIT_USER,"tree name: ",name,": starts with reserved prefix Master") ;
 
-    char str[UINT_FMT] ;
-    str[uint_fmt(str, SS_MAX_TREENAME)] = 0 ;
-
     if (strlen(name) > SS_MAX_TREENAME)
-        log_die(LOG_EXIT_USER,"tree name is too long -- it can not exceed ", str) ;
+        flog_die(LOG_EXIT_USER,"tree name is too long -- it can not exceed %d", SS_MAX_TREENAME) ;
 
 }
 
@@ -478,7 +476,7 @@ void tree_groups(tree_graph_t *graph, char const *base, char const *treename, ch
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
     resolve_enum_table_t table = E_TABLE_TREE_ZERO ;
     size_t nb = 0 ;
-    char pack[UINT_FMT] ;
+    char pack[U32_FMT] ;
     char const *val ;
 
     log_trace("set: ", treename," to group ..." ) ;
@@ -497,7 +495,7 @@ void tree_groups(tree_graph_t *graph, char const *base, char const *treename, ch
     write:
 
     uint_pack(pack, nb) ;
-    pack[uint_fmt(pack, nb)] = 0 ;
+    pack[u32_fmt(pack, nb)] = 0 ;
 
     if (resolve_read_g(wres, base, treename) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", treename) ;
@@ -696,7 +694,7 @@ void tree_depends_requiredby(tree_graph_t *g, char const *base, char const *tree
     uint8_t ewhat = !requiredby ? E_RESOLVE_TREE_DEPENDS : E_RESOLVE_TREE_REQUIREDBY ;
     uint8_t nwhat = !requiredby ? E_RESOLVE_TREE_NDEPENDS : E_RESOLVE_TREE_NREQUIREDBY ;
     stralloc sa = STRALLOC_ZERO ;
-    char pack[UINT_FMT] ;
+    char pack[U32_FMT] ;
 
     log_trace("manage ", !requiredby ? "dependencies" : "required by", " for tree: ", treename, "..." ) ;
 
@@ -757,7 +755,7 @@ void tree_depends_requiredby(tree_graph_t *g, char const *base, char const *tree
         log_die_nomem("stralloc") ;
 
     uint_pack(pack, nb) ;
-    pack[uint_fmt(pack, nb)] = 0 ;
+    pack[u32_fmt(pack, nb)] = 0 ;
 
     if (resolve_read_g(wres, base, treename) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", treename) ;
@@ -874,7 +872,7 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
     for (; pos < uidn ; pos++) {
 
         uint32_pack(pack,uids[pos+1]) ;
-        pack[uint_fmt(pack,uids[pos+1])] = 0 ;
+        pack[u32_fmt(pack,uids[pos+1])] = 0 ;
 
         r = sastr_cmp(&sa, pack) ;
 

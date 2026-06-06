@@ -16,9 +16,10 @@
 #include <unistd.h>
 
 #include <oblibs/log.h>
+#include <oblibs/types.h>
 
 #include <skalibs/lolstdio.h>
-#include <skalibs/types.h>
+
 
 #include <66/service.h>
 #include <66/utils.h>
@@ -37,7 +38,7 @@ int info_graph_display_service(char const *name)
     int err = 0 ;
     uint8_t pid_color = 0 ;
 
-    char str_pid[UINT_FMT] ;
+    char str_pid[PID_FMT] ;
     char *ppid ;
 
     ss_state_t sta = STATE_ZERO ;
@@ -64,7 +65,7 @@ int info_graph_display_service(char const *name)
 
         s6_svstatus_read(res.sa.s + res.live.scandir ,&status) ;
         pid_color = !status.pid ? 1 : 2 ;
-        str_pid[uint_fmt(str_pid, status.pid)] = 0 ;
+        str_pid[pid_format(str_pid, status.pid)] = 0 ;
         ppid = &str_pid[0] ;
 
     } else {

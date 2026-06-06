@@ -14,8 +14,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-
-#include <skalibs/types.h>//UINT_FMT
+#include <oblibs/types.h>
 
 #include <66/tree.h>
 #include <66/enum_tree.h>
@@ -24,7 +23,7 @@ int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree
 {
     log_flow() ;
 
-    char fmt[UINT32_FMT] ;
+    char fmt[U32_FMT] ;
     char const *str = 0 ;
 
     switch(table.id) {
@@ -34,7 +33,7 @@ int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree
             break ;
 
         case E_RESOLVE_TREE_ENABLED:
-            fmt[uint32_fmt(fmt,tres->enabled)] = 0 ;
+            fmt[u32_fmt(fmt,tres->enabled)] = 0 ;
             str = fmt ;
             break ;
 
@@ -59,42 +58,42 @@ int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree
             break ;
 
         case E_RESOLVE_TREE_NDEPENDS:
-            fmt[uint32_fmt(fmt,tres->ndepends)] = 0 ;
+            fmt[u32_fmt(fmt,tres->ndepends)] = 0 ;
             str = fmt ;
             break ;
 
         case E_RESOLVE_TREE_NREQUIREDBY:
-            fmt[uint32_fmt(fmt,tres->nrequiredby)] = 0 ;
+            fmt[u32_fmt(fmt,tres->nrequiredby)] = 0 ;
             str = fmt ;
             break ;
 
         case E_RESOLVE_TREE_NALLOW:
-            fmt[uint32_fmt(fmt,tres->nallow)] = 0 ;
+            fmt[u32_fmt(fmt,tres->nallow)] = 0 ;
             str = fmt ;
             break ;
 
         case E_RESOLVE_TREE_NGROUPS:
-            fmt[uint32_fmt(fmt,tres->ngroups)] = 0 ;
+            fmt[u32_fmt(fmt,tres->ngroups)] = 0 ;
             str = fmt ;
             break ;
 
         case E_RESOLVE_TREE_NCONTENTS:
-            fmt[uint32_fmt(fmt,tres->ncontents)] = 0 ;
+            fmt[u32_fmt(fmt,tres->ncontents)] = 0 ;
             str = fmt ;
             break ;
 
         case E_RESOLVE_TREE_INIT:
-            fmt[uint32_fmt(fmt,tres->init)] = 0 ;
+            fmt[u32_fmt(fmt,tres->init)] = 0 ;
             str = fmt ;
             break ;
 
         case E_RESOLVE_TREE_SUPERVISED:
-            fmt[uint32_fmt(fmt,tres->supervised)] = 0 ;
+            fmt[u32_fmt(fmt,tres->supervised)] = 0 ;
             str = fmt ;
             break ;
 
         case E_RESOLVE_TREE_RVERSION:
-            fmt[uint32_fmt(fmt,tres->rversion)] = 0 ;
+            fmt[u32_fmt(fmt,tres->rversion)] = 0 ;
             str = fmt ;
             break ;
 

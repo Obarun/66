@@ -21,6 +21,7 @@
 #include <oblibs/stack.h>
 #include <oblibs/string.h>
 #include <oblibs/log.h>
+#include <oblibs/types.h>
 
 #include <skalibs/cdb.h>
 
@@ -301,7 +302,7 @@ static void migrate_service_0802(void)
     _alloc_sa_(sa) ;
 
     info.owner = getuid() ;
-    info.ownerlen = uid_fmt(info.ownerstr, info.owner) ;
+    info.ownerlen = uid_format(info.ownerstr, info.owner) ;
     info.ownerstr[info.ownerlen] = 0 ;
 
     if (!set_ownersysdir(&info.base, info.owner))

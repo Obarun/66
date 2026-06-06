@@ -17,17 +17,16 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
-
-#include <skalibs/types.h>
+#include <oblibs/types.h>
 
 int write_uint(char const *dst, char const *name, uint32_t ui)
 {
     log_flow() ;
 
-    char number[UINT32_FMT] ;
+    char number[U32_FMT] ;
 
     log_trace("write file: ", dst, "/", name) ;
-    if (!file_write_unsafe(dst, name, number, uint32_fmt(number,ui)))
+    if (!file_write_unsafe(dst, name, number, u32_fmt(number,ui)))
         log_warnusys_return(LOG_EXIT_ZERO, "write: ", dst, "/", name) ;
 
     return 1 ;

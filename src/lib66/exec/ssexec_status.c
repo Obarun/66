@@ -30,6 +30,7 @@
 #include <oblibs/directory.h>
 #include <oblibs/environ.h>
 #include <oblibs/sastr.h>
+#include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/lolstdio.h>
@@ -169,8 +170,8 @@ static void info_display_string(char const *str)
 
 static void info_display_int(uint32_t element)
 {
-    char ui[UINT_FMT] ;
-    ui[uint_fmt(ui, element)] = 0 ;
+    char ui[U32_FMT] ;
+    ui[u32_fmt(ui, element)] = 0 ;
 
     if (!buffer_puts(buffer_1, ui))
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;

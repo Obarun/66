@@ -17,9 +17,9 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/types.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/types.h>
 
 #include <66/ssexec.h>
 #include <66/utils.h>
@@ -47,7 +47,6 @@ int main(int argc, char const *const *argv)
 
     int r, n = 0, i = 0 ;
     uint8_t sanitize = 0 ;
-    char str[UINT_FMT] ;
     char const *nargv[argc + 3] ;
 
     ssexec_t info = SSEXEC_ZERO ;
@@ -57,7 +56,7 @@ int main(int argc, char const *const *argv)
     info_clean(&info) ;
 
     info.owner = getuid() ;
-    info.ownerlen = uid_fmt(info.ownerstr, info.owner) ;
+    info.ownerlen = uid_format(info.ownerstr, info.owner) ;
     info.ownerstr[info.ownerlen] = 0 ;
 
     if (!set_ownersysdir(&info.base, info.owner))
@@ -88,10 +87,8 @@ int main(int argc, char const *const *argv)
 
                 case 'l' :
 
-                    str[uint_fmt(str, SS_MAX_PATH)] = 0 ;
-
                     if (strlen(l.arg) > SS_MAX_PATH)
-                        log_die(LOG_EXIT_USER, "live path is too long -- it can not exceed ", str) ;
+                        flog_die(LOG_EXIT_USER, "live path is too long -- it can not exceed %d", SS_MAX_PATH) ;
 
                     if (!auto_stra(&info.live, l.arg))
                         log_die_nomem("stralloc") ;
@@ -101,10 +98,8 @@ int main(int argc, char const *const *argv)
 
                 case 't' :
 
-                    str[uint_fmt(str, SS_MAX_TREENAME)] = 0 ;
-
                     if (strlen(l.arg) > SS_MAX_TREENAME)
-                        log_die(LOG_EXIT_USER, "tree name is too long -- it can not exceed ", str) ;
+                        flog_die(LOG_EXIT_USER, "tree name is too long -- it can not exceed %d", SS_MAX_TREENAME) ;
 
                     if (!auto_stra(&info.treename, l.arg))
                         log_die_nomem("stralloc") ;

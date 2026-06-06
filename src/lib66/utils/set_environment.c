@@ -17,9 +17,9 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/types.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
@@ -37,7 +37,7 @@ int set_environment(stralloc *sa, uid_t owner)
 
     } else {
 
-        size_t ownerlen = uid_fmt(ownerpack,owner) ;
+        size_t ownerlen = uid_format(ownerpack,owner) ;
         ownerpack[ownerlen] = 0 ;
 
         if (!set_ownerhome(sa, owner))

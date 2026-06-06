@@ -263,7 +263,7 @@ void write_bootlog(char const *live, char const *scandir)
     int r ;
     uid_t uid = -1 ;
     gid_t gid = -1 ;
-    size_t livelen = strlen(live), scandirlen = strlen(scandir), ownerlen = uid_fmt(OWNERSTR,OWNER), loglen = 0 ;
+    size_t livelen = strlen(live), scandirlen = strlen(scandir), ownerlen = uid_format(OWNERSTR,OWNER), loglen = 0 ;
     strbuf b = STRBUF_ZERO ;
     char path[livelen + 4 + ownerlen + 1] ;
     char logdir[scandirlen + SS_SCANDIR_LEN + SS_LOG_SUFFIX_LEN + 1 + 5 + 1] ;
@@ -764,7 +764,7 @@ int ssexec_scandir_create(int argc, char const *const *argv, ssexec_t *info)
     if (!yourgid(&GIDOWNER,OWNER))
         log_dieusys(LOG_EXIT_SYS, "set gid of: ", OWNERSTR) ;
 
-    GIDSTR[gid_fmt(GIDSTR,GIDOWNER)] = 0 ;
+    GIDSTR[gid_format(GIDSTR,GIDOWNER)] = 0 ;
 
     if (BOOT && skel[0] != '/')
         log_die(LOG_EXIT_USER, "rc.shutdown: ", skel, " must be an absolute path") ;

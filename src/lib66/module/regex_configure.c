@@ -22,9 +22,9 @@
 #include <oblibs/types.h>
 #include <oblibs/sastr.h>
 #include <oblibs/environ.h>
+#include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/types.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/cspawn.h>
 #include <skalibs/bytestr.h>
@@ -60,8 +60,8 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
     {
         /** export ssexec_t info value on the environment */
         {
-            char verbo[UINT_FMT];
-            verbo[uid_fmt(verbo, VERBOSITY)] = 0 ;
+            char verbo[U32_FMT];
+            verbo[u32_fmt(verbo, VERBOSITY)] = 0 ;
             if (!auto_stra(&env, \
             "MOD_NAME=", name, "\n", \
             "MOD_BASE=", res->sa.s + res->path.home, "\n", \

@@ -22,8 +22,8 @@
 #include <oblibs/string.h>
 #include <oblibs/log.h>
 #include <oblibs/sastr.h>
+#include <oblibs/types.h>
 
-#include <skalibs/types.h>
 #include <skalibs/stralloc.h>
 
 #include <66/constants.h>
@@ -90,7 +90,7 @@ int identifier_replace_username(char *store, const char *rid)
 int identifier_replace_useruid(char *store, const char *rid)
 {
     (void)rid ;
-    store[uid_fmt(store, getuid())] = 0 ;
+    store[uid_format(store, getuid())] = 0 ;
     return 1 ;
 }
 
@@ -103,7 +103,7 @@ int identifier_replace_usergid(char *store, const char *rid)
         store[0] = '0' ;
         store[1] = '\0' ;
     } else {
-        store[gid_fmt(store, getgid())] = 0 ;
+        store[gid_format(store, getgid())] = 0 ;
     }
     return 1 ;
 }

@@ -31,10 +31,10 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/stack.h>
+#include <oblibs/types.h>
 
 #include <skalibs/posixplz.h>
 #include <skalibs/uint32.h>
-#include <skalibs/types.h>
 #include <skalibs/allreadwrite.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/sgetopt.h>
@@ -170,18 +170,11 @@ static inline void run_rcshut (void)
     if (pid)
     {
         int wstat ;
-        char fmt[UINT_FMT] ;
         if (wait_pid(pid, &wstat) == -1) log_dieusys(LOG_EXIT_SYS, "waitpid") ;
         if (WIFSIGNALED(wstat))
-        {
-            fmt[uint_fmt(fmt, WTERMSIG(wstat))] = 0 ;
-            log_warn(rcshut, " was killed by signal ", fmt) ;
-        }
+            flog_warn(rcshut, " was killed by signal %d", WTERMSIG(wstat)) ;
         else if (WEXITSTATUS(wstat))
-        {
-            fmt[uint_fmt(fmt, WEXITSTATUS(wstat))] = 0 ;
-            log_warn(rcshut, " exited ", fmt) ;
-        }
+            log_warn(rcshut, " exited %d", WEXITSTATUS(wstat)) ;
     }
     else log_warnusys("spawn ", rcshut) ;
 }
@@ -252,7 +245,7 @@ static inline void prepare_stage4 (char what)
         char s[2] = { what, '\n' } ;
         _alloc_stk_(stk, 30) ;
         char ownerstr[UID_FMT] ;
-        size_t olen = uid_fmt(ownerstr, getuid()), livelen = strlen(live) ;
+        size_t olen = uid_format(ownerstr, getuid()), livelen = strlen(live) ;
         char tmp[livelen + SS_BOOT_CONTAINER_DIR_LEN + 1 + olen + 1 + SS_BOOT_CONTAINER_HALTFILE_LEN + 1] ;
         ownerstr[olen] = 0 ;
 

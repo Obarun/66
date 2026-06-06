@@ -16,6 +16,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/types.h>
 
 #include <skalibs/sgetopt.h>
 
@@ -65,7 +66,7 @@ int ssexec_scandir_wrapper(int argc, char const *const *argv, ssexec_t *info)
                         log_dieusys(LOG_EXIT_SYS, "get uid of: ", l.arg) ;
 
                     info->owner = owner ;
-                    info->ownerlen = uid_fmt(info->ownerstr, info->owner) ;
+                    info->ownerlen = uid_format(info->ownerstr, info->owner) ;
                     info->ownerstr[info->ownerlen] = 0 ;
 
                     info->scandir.len = 0 ;

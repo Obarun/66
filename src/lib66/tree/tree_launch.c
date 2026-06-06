@@ -31,8 +31,7 @@
 #include <oblibs/types.h>
 #include <oblibs/environ.h>
 #include <oblibs/sse.h>
-
-#include <skalibs/types.h>
+#include <oblibs/types.h>
 
 #include <66/resolve.h>
 #include <66/tree.h>
@@ -135,7 +134,6 @@ static void announce(uint32_t id, bool success)
     log_flow() ;
 
     tree_ctx_t *tree = &pmanager->atree[id] ;
-    char fmt[UINT_FMT] ;
     char const *treename = tree->tres->sa.s + tree->tres->name ;
 
     if (success) {
@@ -146,9 +144,7 @@ static void announce(uint32_t id, bool success)
 
     } else {
 
-        fmt[uint_fmt(fmt, tree->exitcode)] = 0 ;
-
-        log_1_warnu(pmanager->cmdmsg, " tree: ", treename, " -- exited with signal: ", fmt) ;
+        flog_1_warnu("%s tree: %s -- exited with signal: %d", pmanager->cmdmsg, treename, tree->exitcod) ;
 
         tree_send_event(TREE_EVENT_CHILD_FAILED, id) ;
     }

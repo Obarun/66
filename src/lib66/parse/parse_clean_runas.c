@@ -21,8 +21,6 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 
-#include <skalibs/types.h>
-
 #include <66/parse.h>
 #include <66/utils.h>
 
@@ -64,7 +62,7 @@ int parse_clean_runas(char const *str, resolve_enum_table_t table)
             }
         }
 
-        uid_str[uid_fmt(uid_str,uid)] = 0 ;
+        uid_str[uid_format(uid_str,uid)] = 0 ;
 
         /** on format uid:, get the gid of
          * the owner of the process */
@@ -79,7 +77,7 @@ int parse_clean_runas(char const *str, resolve_enum_table_t table)
                 parse_error_return(0, 0, table) ;
         }
 
-        gid_str[gid_fmt(gid_str, gid)] = 0 ;
+        gid_str[gid_format(gid_str, gid)] = 0 ;
 
         auto_strings((char *)str, uid_str, ":", gid_str) ;
 

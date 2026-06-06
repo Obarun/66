@@ -30,11 +30,11 @@
 #include <oblibs/sastr.h>
 #include <oblibs/stack.h>
 #include <oblibs/io.h>
+#include <oblibs/types.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/stralloc.h>
-#include <skalibs/types.h>
 #include <skalibs/exec.h>
 #include <skalibs/cspawn.h>
 
@@ -548,7 +548,7 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
     unsigned int r , tmpfs = 0, hasconsole = 1 ;
     size_t bannerlen, livelen ;
     pid_t pid ;
-    char verbo[UINT_FMT] ;
+    char verbo[U32_FMT] ;
     cver = verbo ;
     char *tty = 0 ;
 
@@ -592,7 +592,7 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
         env = stralloc_zero ;
     }
 
-    verbo[uint_fmt(verbo, VERBOSITY)] = 0 ;
+    verbo[u32_fmt(verbo, VERBOSITY)] = 0 ;
     bannerlen = strlen(banner) ;
     livelen = strlen(live) ;
     char tfifo[livelen + 1 + SS_BOOT_LOGFIFO_LEN + 1] ;
@@ -762,11 +762,11 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 
     /** fork and starts scandir */
     {
-        char fmtfd[2 + UINT_FMT] = "-" ;
+        char fmtfd[2 + U32_FMT] = "-" ;
 
         if (!catch_log) {
             fmtfd[1] = 'd' ;
-            fmtfd[2 + uint_fmt(fmtfd + 2, notifpipe[1])] = 0 ;
+            fmtfd[2 + u32_fmt(fmtfd + 2, notifpipe[1])] = 0 ;
         }
 
         size_t m = 0 ;

@@ -28,8 +28,7 @@
 #include <oblibs/environ.h>
 #include <oblibs/string.h>
 #include <oblibs/sse.h>
-
-#include <skalibs/types.h> // uint_fmt
+#include <oblibs/types.h>
 
 #include <66/service.h>
 #include <66/state.h>
@@ -156,7 +155,7 @@ static void announce(uint32_t id, bool success)
 
     int fd ;
     svc_ctx_t *svc = &pmanager->asvc[id] ;
-    char fmt[UINT_FMT] ;
+    char fmt[U32_FMT] ;
     char const *name = svc->res->sa.s + svc->res->name ;
     char const *scandir = svc->res->sa.s + svc->res->live.scandir ;
     size_t scandirlen = strlen(scandir) ;
@@ -215,7 +214,7 @@ static void announce(uint32_t id, bool success)
             close(fd) ;
         }
 
-        fmt[uint_fmt(fmt, svc->exitcode)] = 0 ;
+        fmt[u32_fmt(fmt, svc->exitcode)] = 0 ;
 
         log_1_warnu(pmanager->cmdmsg ? pmanager->cmdmsg : pmanager->operation ? "stop" : "start", " service: ", name, " -- exited with signal: ", fmt) ;
 

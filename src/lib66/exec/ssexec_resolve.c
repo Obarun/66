@@ -21,8 +21,8 @@
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/stack.h>
+#include <oblibs/types.h>
 
-#include <skalibs/types.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/lolstdio.h>
 #include <skalibs/buffer.h>
@@ -66,8 +66,8 @@ static void info_display_int64(char const *field, uint64_t element)
 {
     info_display_field_name(field) ;
 
-    char ui[UINT64_FMT] ;
-    ui[uint64_fmt(ui, element)] = 0 ;
+    char ui[U64_FMT] ;
+    ui[u64_fmt(ui, element)] = 0 ;
 
     if (!buffer_puts(buffer_1, ui))
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
@@ -80,8 +80,8 @@ static void info_display_int(char const *field, uint32_t element)
 {
     info_display_field_name(field) ;
 
-    char ui[UINT_FMT] ;
-    ui[uint_fmt(ui, element)] = 0 ;
+    char ui[U32_FMT] ;
+    ui[u32_fmt(ui, element)] = 0 ;
 
     if (!buffer_puts(buffer_1, ui))
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;

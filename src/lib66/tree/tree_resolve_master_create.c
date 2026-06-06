@@ -20,8 +20,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-
-#include <skalibs/types.h>
+#include <oblibs/types.h>
 
 #include <66/tree.h>
 #include <66/resolve.h>
@@ -45,7 +44,7 @@ int tree_resolve_master_create(char const *base, uid_t owner)
 
     resolve_init(wres) ;
     char ownerstr[UID_FMT];
-    ownerstr[uid_fmt(ownerstr, owner)] = 0 ;
+    ownerstr[uid_format(ownerstr, owner)] = 0 ;
     mres.name = resolve_add_string(wres, SS_MASTER + 1) ;
     mres.allow = resolve_add_string(wres, ownerstr) ; ;
     mres.nallow++ ;

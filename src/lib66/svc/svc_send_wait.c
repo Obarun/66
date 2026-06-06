@@ -14,6 +14,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/environ.h>
+#include <oblibs/types.h>
 
 #include <skalibs/djbunix.h>
 #include <skalibs/cspawn.h>
@@ -32,13 +33,13 @@ int svc_send_wait(char const *const *list, uint32_t nservice, char **sig, unsign
     int nargc = 5 + nservice + siglen + info->opt_color + (info->opt_timeout ? 2 : 0) ;
     char const *newargv[nargc] ;
     unsigned int m = 0 ;
-    char verbo[UINT_FMT] ;
-    char fmt[UINT32_FMT] ;
+    char verbo[U32_FMT] ;
+    char fmt[U32_FMT] ;
 
-    verbo[uint_fmt(verbo, VERBOSITY)] = 0 ;
+    verbo[u32_fmt(verbo, VERBOSITY)] = 0 ;
 
     if (info->opt_timeout)
-        fmt[uint32_fmt(fmt,info->timeout)] = 0 ;
+        fmt[u32_fmt(fmt,info->timeout)] = 0 ;
 
     newargv[m++] = "66" ;
 

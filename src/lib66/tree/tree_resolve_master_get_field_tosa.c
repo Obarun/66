@@ -14,9 +14,9 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/types.h>//UINT_FMT
 
 #include <66/tree.h>
 #include <66/enum_tree.h>
@@ -25,7 +25,7 @@ int tree_resolve_master_get_field_tosa(stralloc *sa, resolve_tree_master_t *mres
 {
     log_flow() ;
 
-    char fmt[UINT32_FMT] ;
+    char fmt[U32_FMT] ;
     char const *str = 0 ;
 
     switch(table.id) {
@@ -47,17 +47,17 @@ int tree_resolve_master_get_field_tosa(stralloc *sa, resolve_tree_master_t *mres
             break ;
 
         case E_RESOLVE_TREE_MASTER_NALLOW:
-            fmt[uint32_fmt(fmt,mres->nallow)] = 0 ;
+            fmt[u32_fmt(fmt,mres->nallow)] = 0 ;
             str = fmt ;
             break ;
 
         case E_RESOLVE_TREE_MASTER_NCONTENTS:
-            fmt[uint32_fmt(fmt,mres->ncontents)] = 0 ;
+            fmt[u32_fmt(fmt,mres->ncontents)] = 0 ;
             str = fmt ;
             break ;
 
         case E_RESOLVE_TREE_MASTER_RVERSION:
-            fmt[uint32_fmt(fmt,mres->rversion)] = 0 ;
+            fmt[u32_fmt(fmt,mres->rversion)] = 0 ;
             str = fmt ;
             break ;
 

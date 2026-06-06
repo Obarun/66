@@ -16,8 +16,8 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/types.h>
 
-#include <skalibs/types.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/cspawn.h>
 
@@ -27,8 +27,8 @@ void svc_send_fdholder(char const *socket, char const *signal)
 {
     log_flow() ;
 
-    char tfmt[UINT32_FMT] ;
-    tfmt[uint_fmt(tfmt, 3000)] = 0 ;
+    char tfmt[U32_FMT] ;
+    tfmt[u32_fmt(tfmt, 3000)] = 0 ;
     pid_t pid ;
     int wstat ;
 

@@ -18,9 +18,9 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
+#include <oblibs/types.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/types.h>
 #include <skalibs/stralloc.h>
 
 #include <66/constants.h>
@@ -45,8 +45,6 @@ static inline void help_oneshot (void)
 
 int main(int argc, char const *const *argv)
 {
-    char upath[UINT_FMT] ;
-    upath[uint_fmt(upath, SS_MAX_PATH)] = 0 ;
     char const *path = 0 ;
     char *file = "run" ;
 
@@ -79,7 +77,7 @@ int main(int argc, char const *const *argv)
         log_die(LOG_EXIT_USER, "only up or down signals are allowed") ;
 
     if (strlen(argv[1]) >= SS_MAX_PATH_LEN)
-        log_die(LOG_EXIT_USER, "path of script file is too long -- it cannot exceed: ", upath) ;
+        flog_die(LOG_EXIT_USER, "path of script file is too long -- it cannot exceed: %d", SS_MAX_PATH_LEN) ;
 
     else if (argv[1][0] != '/')
         log_die(LOG_EXIT_USER, "path of script file must be absolute") ;

@@ -16,9 +16,9 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/types.h>
 
 #include <66/utils.h>
 #include <66/constants.h>
@@ -34,7 +34,7 @@ int set_livescan(stralloc *scandir,uid_t owner)
     if (r < 0) return -1 ;
     if (!r) return 0 ;
 
-    size_t ownerlen = uid_fmt(ownerpack,owner) ;
+    size_t ownerlen = uid_format(ownerpack,owner) ;
     ownerpack[ownerlen] = 0 ;
 
     if (!auto_stra(scandir,SS_SCANDIR "/", ownerpack))
