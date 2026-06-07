@@ -53,7 +53,7 @@ int parse_clean_runas(char const *str, resolve_enum_table_t table)
         }
         else {
 
-            if (!uint320_scan(file, &uid))
+            if (!uid_parse_strict(file, &uid))
                 parse_error_return(0, 3, table) ;
 
             if (!getpwuid(uid)) {
@@ -73,7 +73,7 @@ int parse_clean_runas(char const *str, resolve_enum_table_t table)
 
         }
         else {
-            if (!uint320_scan(colon + 1, &gid))
+            if (!gid_parse_strict(colon + 1, &gid))
                 parse_error_return(0, 0, table) ;
         }
 
@@ -90,7 +90,7 @@ int parse_clean_runas(char const *str, resolve_enum_table_t table)
         if (str[0] >= '0' && str[0] <= '9') {
 
             uid_t uid = -1 ;
-            if (!uint320_scan(str, &uid))
+            if (!uid_parse_strict(str, &uid))
                 parse_error_return(0, 3, table) ;
             pw = getpwuid(uid) ;
 

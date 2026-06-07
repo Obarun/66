@@ -31,6 +31,7 @@
 #include <oblibs/directory.h>
 #include <oblibs/io.h>
 #include <oblibs/lexer.h>
+#include <oblibs/types.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/tai.h>
@@ -615,10 +616,10 @@ static void execute_uidgid(resolve_service_t *res)
 
         if (colon) {
 
-            if (!uid0_scan(as, &uid))
+            if (!uid_parse_strict(as, &uid))
                 log_dieusys(LOG_EXIT_SYS,  "get uid of: ", as) ;
 
-            if (!gid0_scan(colon + 1, &gid))
+            if (!gid_parse_strict(colon + 1, &gid))
                 log_dieusys(LOG_EXIT_SYS, "get gid of: ", as) ;
 
         } else {
@@ -803,7 +804,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
                 case 'v' :
 
-                    if (!uint0_scan(l.arg, &VERBOSITY))
+                    if (!u32_scan_strict(l.arg, &VERBOSITY))
                         log_usage(USAGE) ;
 
                     break ;

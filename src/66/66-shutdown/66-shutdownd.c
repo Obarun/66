@@ -382,7 +382,7 @@ int main (int argc, char const *const *argv)
                 case 'h' : help(); return 0 ;
                 case 'l' : live = l.arg ; break ;
                 case 's' : conf = l.arg ; break ;
-                case 'g' : if (!uint0_scan(l.arg, &grace_time)) log_usage(USAGE) ; break ;
+                case 'g' : if (!u32_scan_strict(l.arg, &grace_time)) log_usage(USAGE) ; break ;
                 case 'B' : inns = 1 ; break ;
                 case 'c' : nologger = 1 ; break ;
                 default : log_usage(USAGE) ;

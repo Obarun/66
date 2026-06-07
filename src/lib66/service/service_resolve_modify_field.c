@@ -16,6 +16,7 @@
 #include <stdlib.h>//free
 
 #include <oblibs/log.h>
+#include <oblibs/types.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
@@ -27,7 +28,7 @@ static uint64_t resolve_add_uint64(char const *data)
 
     if (!data)
         data = "0" ;
-    if (!uint640_scan(data, &u))
+    if (!u64_scan_strict(data, &u))
         return 0 ;
     return u ;
 }
@@ -38,7 +39,7 @@ static uint32_t resolve_add_uint(char const *data)
 
     if (!data)
         data = "0" ;
-    if (!uint0_scan(data, &u))
+    if (!u32_scan_strict(data, &u))
         return 0 ;
     return u ;
 }

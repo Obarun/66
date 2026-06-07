@@ -25,9 +25,9 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
+#include <oblibs/types.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/types.h>
 #include <skalibs/tai.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
@@ -132,9 +132,9 @@ int main(int argc, char const *const *argv)
             switch (opt)
             {
                 case 'h' :  info_help(); return 0 ;
-                case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
+                case 'v' :  if (!u32_scan_strict(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
                 case '1' :  notif = 1 ; break ;
-                case 't' :  if (!uint0_scan(l.arg, &t)) log_usage(USAGE) ; break ;
+                case 't' :  if (!u32_scan_strict(l.arg, &t)) log_usage(USAGE) ; break ;
                 default  :  log_usage(USAGE) ;
             }
         }

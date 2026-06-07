@@ -16,6 +16,7 @@
 #include <stdlib.h>
 
 #include <oblibs/log.h>
+#include <oblibs/types.h>
 
 #include <66/tree.h>
 #include <66/resolve.h>
@@ -26,7 +27,7 @@ static uint32_t resolve_add_uint(char const *data)
 
     if (!data)
         data = "0" ;
-    if (!uint0_scan(data, &u))
+    if (!u32_scan_strict(data, &u))
         return 0 ;
     return u ;
 }

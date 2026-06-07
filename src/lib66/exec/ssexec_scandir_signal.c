@@ -234,7 +234,7 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
 
                 case 'd' :
 
-                    if (!uint0_scan(l.arg, &notif))
+                    if (!u32_scan_strict(l.arg, &notif))
                         log_usage(info->usage, "\n", info->help) ;
 
                     if (notif < 3)
@@ -247,7 +247,7 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
 
                 case 's' :
 
-                    if (!uint0_scan(l.arg, &timeout))
+                    if (!u32_scan_strict(l.arg, &timeout))
                         log_usage(info->usage, "\n", info->help) ;
 
                     break ;

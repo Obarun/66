@@ -168,7 +168,7 @@ static void info_display_allow(char const *field, resolve_tree_t *res)
 
             char *suid = t + pos ;
             uid_t uid = 0 ;
-            if (!uid0_scan(suid, &uid))
+            if (!uid_parse_strict(suid, &uid))
                 log_dieusys(LOG_EXIT_SYS,"get uid of: ",suid) ;
             if (pos)
                 if (!stralloc_cats(&sa," ")) log_die_nomem("stralloc") ;
@@ -520,7 +520,7 @@ int ssexec_tree_status(int argc, char const *const *argv, ssexec_t *info)
                 case 'o' :  legacy = 0 ; info_parse_options(l.arg,what) ; break ;
                 case 'g' :  GRAPH = 1 ; break ;
                 case 'r' :  REVERSE = 1 ; break ;
-                case 'd' :  if (!uint0_scan(l.arg, &INFO_MAXDEPTH)) log_usage(info->usage, "\n", info->help) ; break ;
+                case 'd' :  if (!u32_scan_strict(l.arg, &INFO_MAXDEPTH)) log_usage(info->usage, "\n", info->help) ; break ;
                 default :   log_usage(info->usage, "\n", info->help) ;
             }
         }

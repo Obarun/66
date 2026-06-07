@@ -1125,8 +1125,8 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
                 case 'o' :  legacy = 0 ; info_parse_options(l.arg,what) ; break ;
                 case 'g' :  GRAPH = 1 ; break ;
                 case 'r' :  REVERSE = 1 ; break ;
-                case 'd' :  if (!uint0_scan(l.arg, &INFO_MAXDEPTH)) log_usage(info->usage, "\n", info->help) ; break ;
-                case 'p' :  if (!uint0_scan(l.arg, &nlog)) log_usage(info->usage, "\n", info->help) ; break ;
+                case 'd' :  if (!u32_scan_strict(l.arg, &INFO_MAXDEPTH)) log_usage(info->usage, "\n", info->help) ; break ;
+                case 'p' :  if (!u32_scan_strict(l.arg, &nlog)) log_usage(info->usage, "\n", info->help) ; break ;
                 default :   log_usage(info->usage, "\n", info->help) ;
             }
         }

@@ -29,7 +29,6 @@
 #include <oblibs/types.h>
 #include <oblibs/clock.h>
 
-#include <skalibs/uint32.h>
 #include <skalibs/allreadwrite.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/sig.h>
@@ -96,11 +95,11 @@ static inline void parse_hourmin (struct timespec *when, struct timespec const *
     struct timespec thents ;
     struct tm tmthen ;
     unsigned int hour, minute ;
-    size_t len = uint_scan(s, &hour) ;
+    size_t len = u32_scan(s, &hour) ;
     if (!len || len > 2 || s[len] != ':' || hour > 23)
         log_die(LOG_EXIT_USER, "invalid time format") ;
     s += len+1 ;
-    len = uint0_scan(s, &minute) ;
+    len = u32_scan_strict(s, &minute) ;
     if (!len || len != 2 || minute > 59)
         log_die(LOG_EXIT_USER, "invalid time format") ;
     if (!clock_to_localtm(&tmthen, now))
@@ -124,7 +123,7 @@ static void parse_mins (struct timespec *when, struct timespec const *now, char 
     log_flow() ;
 
     unsigned int mins ;
-    if (!uint0_scan(s, &mins)) log_usage(USAGE) ;
+    if (!u32_scan_strict(s, &mins)) log_usage(USAGE) ;
     clock_addsec(when, now, (int64_t)mins * 60) ;
 }
 
@@ -260,7 +259,7 @@ int main (int argc, char const *const *argv)
             switch (opt)
             {
                 case 'H' : info_help() ; return 0 ;
-                case 'v' : if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
+                case 'v' : if (!u32_scan_strict(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
                 case 'l' : live = l.arg ; break ;
                 case 'h' : what = 1 ; break ;
                 case 'p' : what = 2 ; break ;
@@ -270,7 +269,7 @@ int main (int argc, char const *const *argv)
                 case 'f' : /* talk to the hand */ break ;
                 case 'F' : /* no, the other hand */ break ;
                 case 'c' : docancel = 1 ; break ;
-                case 't' : if (!uint0_scan(l.arg, &gracetime)) log_usage(USAGE) ; break ;
+                case 't' : if (!u32_scan_strict(l.arg, &gracetime)) log_usage(USAGE) ; break ;
                 default : log_usage(USAGE) ;
             }
         }

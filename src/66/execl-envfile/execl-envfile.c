@@ -21,6 +21,7 @@
 #include <oblibs/environ.h>
 #include <oblibs/directory.h>
 #include <oblibs/sastr.h>
+#include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/exec.h>
@@ -89,7 +90,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
                 case 'v' :
 
-                    if (!uint0_scan(l.arg, &VERBOSITY))
+                    if (!u32_scan_strict(l.arg, &VERBOSITY))
                         log_usage(USAGE) ;
 
                     break ;

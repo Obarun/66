@@ -126,7 +126,7 @@ static inline uint8_t string_to_uint(char const *str, unsigned int *ui, uint8_t 
     log_flow() ;
 
     if (!empty)
-        if (!uint0_oscan(str,ui))
+        if (!u32_scan_strict_base(str, ui, 8))
             return 0 ;
 
     return 1 ;

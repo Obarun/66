@@ -60,7 +60,7 @@ int main(int argc, char const *const *argv)
             switch (opt)
             {
                 case 'h' :  help_oneshot(); return 0 ;
-                case 'v' :  if (!uint0_scan(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
+                case 'v' :  if (!u32_scan_strict(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
                 default :   log_usage(USAGE) ;
             }
         }
