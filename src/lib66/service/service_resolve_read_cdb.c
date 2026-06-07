@@ -19,8 +19,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/cdb.h>
-
-#include <skalibs/types.h>
+#include <oblibs/types.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
@@ -41,7 +40,7 @@ static int resolve_get_key_u64(const ocdb *c, const char *key, uint64_t *field)
     memcpy(pack,cdata.s, cdata.len) ;
     pack[cdata.len] = 0 ;
 
-    uint64_unpack_big(pack, field) ;
+    u64_unpack_big(pack, field) ;
 
     return 1 ;
 

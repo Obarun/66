@@ -13,8 +13,7 @@
  */
 
 #include <oblibs/log.h>
-
-#include <skalibs/uint32.h>
+#include <oblibs/types.h>
 
 #include <66/state.h>
 
@@ -22,12 +21,12 @@ void state_pack(char *pack, ss_state_t *sta)
 {
     log_flow() ;
 
-    uint32_pack_big(pack, sta->toinit) ;
-    uint32_pack_big(pack + 4, sta->toreload) ;
-    uint32_pack_big(pack + 8, sta->torestart) ;
-    uint32_pack_big(pack + 12, sta->tounsupervise) ;
-    uint32_pack_big(pack + 16, sta->toparse) ;
-    uint32_pack_big(pack + 20, sta->isparsed) ;
-    uint32_pack_big(pack + 24, sta->issupervised) ;
-    uint32_pack_big(pack + 28, sta->isup) ;
+    u32_pack_big(pack, sta->toinit) ;
+    u32_pack_big(pack + 4, sta->toreload) ;
+    u32_pack_big(pack + 8, sta->torestart) ;
+    u32_pack_big(pack + 12, sta->tounsupervise) ;
+    u32_pack_big(pack + 16, sta->toparse) ;
+    u32_pack_big(pack + 20, sta->isparsed) ;
+    u32_pack_big(pack + 24, sta->issupervised) ;
+    u32_pack_big(pack + 28, sta->isup) ;
 }

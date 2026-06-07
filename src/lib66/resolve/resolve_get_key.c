@@ -17,8 +17,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/cdb.h>
-
-#include <skalibs/types.h>
+#include <oblibs/types.h>
 
 int resolve_get_key(const ocdb *c, const char *key, uint32_t *field)
 {
@@ -36,7 +35,7 @@ int resolve_get_key(const ocdb *c, const char *key, uint32_t *field)
     memcpy(pack,cdata.s, cdata.len) ;
     pack[cdata.len] = 0 ;
 
-    uint32_unpack_big(pack, field) ;
+    u32_unpack_big(pack, field) ;
 
     return 1 ;
 

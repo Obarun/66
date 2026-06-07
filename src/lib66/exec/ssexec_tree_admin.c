@@ -494,7 +494,7 @@ void tree_groups(tree_graph_t *graph, char const *base, char const *treename, ch
 
     write:
 
-    uint_pack(pack, nb) ;
+    u32_pack(pack, nb) ;
     pack[u32_fmt(pack, nb)] = 0 ;
 
     if (resolve_read_g(wres, base, treename) <= 0)
@@ -754,7 +754,7 @@ void tree_depends_requiredby(tree_graph_t *g, char const *base, char const *tree
     if (!stralloc_0(&sa))
         log_die_nomem("stralloc") ;
 
-    uint_pack(pack, nb) ;
+    u32_pack(pack, nb) ;
     pack[u32_fmt(pack, nb)] = 0 ;
 
     if (resolve_read_g(wres, base, treename) <= 0)
@@ -871,7 +871,7 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
 
     for (; pos < uidn ; pos++) {
 
-        uint32_pack(pack,uids[pos+1]) ;
+        u32_pack(pack,uids[pos+1]) ;
         pack[u32_fmt(pack,uids[pos+1])] = 0 ;
 
         r = sastr_cmp(&sa, pack) ;

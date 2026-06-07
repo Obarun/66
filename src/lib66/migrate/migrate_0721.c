@@ -86,7 +86,7 @@ static int resolve_find_cdb_0721(stralloc *result, ocdb const *c, char const *ke
     memcpy(pack,cdata.s, cdata.len) ;
     pack[cdata.len] = 0 ;
 
-    uint32_unpack_big(pack, &x) ;
+    u32_unpack_big(pack, &x) ;
 
     if (!auto_stra(result,pack))
         log_warnusys_return(LOG_EXIT_LESSONE,"stralloc") ;

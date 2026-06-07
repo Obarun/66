@@ -20,8 +20,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/clock.h>
-
-#include <skalibs/uint32.h>
+#include <oblibs/types.h>
 
 #include <66/hpr.h>
 
@@ -31,6 +30,6 @@ int hpr_shutdown (char const *live, unsigned int what, struct timespec const *wh
 
     char pack[5 + CLOCK_PACK] = { "Shpr"[what] } ;
     clock_pack(pack+1, when) ;
-    uint32_pack_big(pack + 1 + CLOCK_PACK, (uint32_t)grace) ;
+    u32_pack_big(pack + 1 + CLOCK_PACK, (uint32_t)grace) ;
     return hpr_send(live,pack, 5 + CLOCK_PACK) ;
 }

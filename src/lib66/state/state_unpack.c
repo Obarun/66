@@ -15,8 +15,7 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
-
-#include <skalibs/uint32.h>
+#include <oblibs/types.h>
 
 #include <66/state.h>
 
@@ -33,27 +32,27 @@ void state_unpack(char *pack,ss_state_t *sta)
     uint32_t issupervised ;
     uint32_t isup ;
 
-    uint32_unpack_big(pack, &toinit) ;
+    u32_unpack_big(pack, &toinit) ;
     sta->toinit = toinit ;
 
-    uint32_unpack_big(pack + 4, &toreload) ;
+    u32_unpack_big(pack + 4, &toreload) ;
     sta->toreload = toreload ;
 
-    uint32_unpack_big(pack + 8, &torestart) ;
+    u32_unpack_big(pack + 8, &torestart) ;
     sta->torestart = torestart ;
 
-    uint32_unpack_big(pack + 12, &tounsupervise) ;
+    u32_unpack_big(pack + 12, &tounsupervise) ;
     sta->tounsupervise = tounsupervise ;
 
-    uint32_unpack_big(pack + 16, &toparse) ;
+    u32_unpack_big(pack + 16, &toparse) ;
     sta->toparse = toparse ;
 
-    uint32_unpack_big(pack + 20, &isparsed) ;
+    u32_unpack_big(pack + 20, &isparsed) ;
     sta->isparsed = isparsed ;
 
-    uint32_unpack_big(pack + 24, &issupervised) ;
+    u32_unpack_big(pack + 24, &issupervised) ;
     sta->issupervised = issupervised ;
 
-    uint32_unpack_big(pack + 28, &isup) ;
+    u32_unpack_big(pack + 28, &isup) ;
     sta->isup = isup ;
 }

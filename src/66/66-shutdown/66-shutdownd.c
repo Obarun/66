@@ -35,7 +35,6 @@
 #include <oblibs/clock.h>
 
 #include <skalibs/posixplz.h>
-#include <skalibs/uint32.h>
 #include <skalibs/allreadwrite.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/sgetopt.h>
@@ -193,7 +192,7 @@ static inline void prepare_shutdown (buffer *b, tain *deadline, unsigned int *gr
     clock_unpack(pack, &rel) ;
     tain trel = { .sec = { .x = (uint64_t)rel.tv_sec }, .nano = (uint32_t)rel.tv_nsec } ;
     tain_add_g(deadline, &trel) ;   /* relative (wire) -> absolute monotonic for iopause_g */
-    uint32_unpack_big(pack + CLOCK_PACK, &u) ;
+    u32_unpack_big(pack + CLOCK_PACK, &u) ;
     if (u && u <= 300000) *grace_time = u ;
 }
 

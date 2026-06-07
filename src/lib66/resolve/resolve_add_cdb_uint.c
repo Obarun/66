@@ -17,8 +17,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/cdb.h>
-
-#include <skalibs/types.h>//uint##_pack
+#include <oblibs/types.h>
 
 #include <66/resolve.h>
 
@@ -28,7 +27,7 @@ int resolve_add_cdb_uint64(ocdbmaker *c, char const *key, uint64_t data)
     char pack[8] ;
     size_t klen = strlen(key) ;
 
-    uint64_pack_big(pack, data) ;
+    u64_pack_big(pack, data) ;
     if (!ocdb_make_add(c,key,klen,pack,8))
         log_warnsys_return(LOG_EXIT_ZERO,"cdb_make_add: ",key) ;
 
@@ -41,7 +40,7 @@ int resolve_add_cdb_uint(ocdbmaker *c, char const *key, uint32_t data)
     char pack[4] ;
     size_t klen = strlen(key) ;
 
-    uint32_pack_big(pack, data) ;
+    u32_pack_big(pack, data) ;
     if (!ocdb_make_add(c,key,klen,pack,4))
         log_warnsys_return(LOG_EXIT_ZERO,"cdb_make_add: ",key) ;
 
