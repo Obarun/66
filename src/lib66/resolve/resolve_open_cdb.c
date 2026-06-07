@@ -18,11 +18,11 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/cdb.h>
 
-#include <skalibs/cdb.h>
 #include <skalibs/djbunix.h>
 
-int resolve_open_cdb(int *fd, cdb *c, const char *path, const char *name)
+int resolve_open_cdb(int *fd, ocdb *c, const char *path, const char *name)
 {
     log_flow() ;
 
@@ -39,10 +39,10 @@ int resolve_open_cdb(int *fd, cdb *c, const char *path, const char *name)
 
     errno = err ;
 
-    if (!cdb_init_fromfd(c, (*fd))) {
+    if (!ocdb_init_fromfd(c, (*fd))) {
         log_warnusys("cdb_init: ", file) ;
         close((*fd)) ;
-        cdb_free(c) ;
+        ocdb_free(c) ;
         return -1 ;
     }
 

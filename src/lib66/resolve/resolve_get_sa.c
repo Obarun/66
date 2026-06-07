@@ -13,17 +13,17 @@
  */
 
 #include <oblibs/log.h>
+#include <oblibs/cdb.h>
 
-#include <skalibs/cdb.h>
 #include <skalibs/stralloc.h>
 
-int resolve_get_sa(stralloc *sa, const cdb *c)
+int resolve_get_sa(stralloc *sa, const ocdb *c)
 {
     log_flow() ;
 
-    cdb_data cdata ;
+    ocdb_data cdata ;
     sa->len = 0 ;
-    int r = cdb_find(c, &cdata, "sa", 2) ;
+    int r = ocdb_find(c, &cdata, "sa", 2) ;
     if (r == -1)
         log_warnusys_return(LOG_EXIT_ZERO,"search on cdb key: sa") ;
 

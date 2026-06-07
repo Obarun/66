@@ -15,12 +15,11 @@
 #include <string.h>
 
 #include <oblibs/log.h>
-
-#include <skalibs/cdbmake.h>
+#include <oblibs/cdb.h>
 
 #include <66/resolve.h>
 
-int resolve_add_cdb(cdbmaker *c, char const *key, char const *str, uint32_t element, uint8_t check)
+int resolve_add_cdb(ocdbmaker *c, char const *key, char const *str, uint32_t element, uint8_t check)
 {
     char const *data = str + element ;
     size_t klen = strlen(key), dlen = strlen(data) ;
@@ -30,7 +29,7 @@ int resolve_add_cdb(cdbmaker *c, char const *key, char const *str, uint32_t elem
         dlen = 1 ;
     }
 
-    if (!cdbmake_add(c,key,klen, data, dlen))
+    if (!ocdb_make_add(c,key,klen, data, dlen))
         log_warnsys_return(LOG_EXIT_ZERO,"cdb_make_add: ",key) ;
 
     return 1 ;

@@ -23,8 +23,6 @@
 #include <oblibs/hash.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/cdb.h>
-#include <skalibs/cdbmake.h>
 
 #include <66/ssexec.h>
 #include <66/resolve.h>

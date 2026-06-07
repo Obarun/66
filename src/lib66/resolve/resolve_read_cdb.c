@@ -15,8 +15,7 @@
 #include <unistd.h>
 
 #include <oblibs/log.h>
-
-#include <skalibs/cdb.h>
+#include <oblibs/cdb.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
@@ -27,7 +26,7 @@ int resolve_read_cdb(resolve_wrapper_t *wres, char const *path, const char *name
     log_flow() ;
 
     int fd, e = 0 ;
-    cdb c = CDB_ZERO ;
+    ocdb c = OCDB_ZERO ;
 
     e = resolve_open_cdb(&fd, &c, path, name) ;
     if (e <= 0)
@@ -55,6 +54,6 @@ int resolve_read_cdb(resolve_wrapper_t *wres, char const *path, const char *name
 
     err:
         close(fd) ;
-        cdb_free(&c) ;
+        ocdb_free(&c) ;
         return e ;
 }

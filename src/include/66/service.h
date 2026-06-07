@@ -19,10 +19,9 @@
 #include <stdbool.h>
 
 #include <oblibs/hash.h>
+#include <oblibs/cdb.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/cdb.h>
-#include <skalibs/cdbmake.h>
 
 #include <66/ssexec.h>
 #include <66/resolve.h>
@@ -293,10 +292,10 @@ extern int service_get_treename(char *atree, char const *name) ;
 extern void service_resolve_sanitize(resolve_service_t *res) ;
 extern int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve_service_enum_table_t table) ;
 extern void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_table_t table, char const *data) ;
-extern int service_resolve_read_cdb(cdb *c, resolve_service_t *res) ;
+extern int service_resolve_read_cdb(ocdb *c, resolve_service_t *res) ;
 extern void service_resolve_write(resolve_service_t *res) ;
 extern void service_resolve_write_remote(resolve_service_t *res, char const *dst, uint8_t force) ;
-extern int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *sres) ;
+extern int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *sres) ;
 extern void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, bool propagate, ssexec_t *info, stralloc *argv) ;
 extern void service_switch_tree(resolve_service_t *res, char const *totreename, ssexec_t *info) ;
 extern void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char const *base, uint8_t requiredby) ;

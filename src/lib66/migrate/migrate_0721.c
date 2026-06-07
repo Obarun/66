@@ -25,9 +25,9 @@
 #include <oblibs/directory.h>
 #include <oblibs/lexer.h>
 #include <oblibs/types.h>
+#include <oblibs/cdb.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/cdb.h>
 
 #include <66/ssexec.h>
 #include <66/tree.h>
@@ -67,15 +67,15 @@ static void conf_init(conf_t *conf)
 
 }
 
-static int resolve_find_cdb_0721(stralloc *result, cdb const *c, char const *key)
+static int resolve_find_cdb_0721(stralloc *result, ocdb const *c, char const *key)
 {
     uint32_t x = 0 ;
     size_t klen = strlen(key) ;
-    cdb_data cdata ;
+    ocdb_data cdata ;
 
     result->len = 0 ;
 
-    int r = cdb_find(c, &cdata, key, klen) ;
+    int r = ocdb_find(c, &cdata, key, klen) ;
     if (r == -1)
         log_warnusys_return(LOG_EXIT_LESSONE,"search on cdb key: ",key) ;
 
@@ -94,7 +94,7 @@ static int resolve_find_cdb_0721(stralloc *result, cdb const *c, char const *key
     return x ;
 }
 
-static void tree_resolve_master_read_cdb_0721(cdb *c, resolve_tree_master_t *mres)
+static void tree_resolve_master_read_cdb_0721(ocdb *c, resolve_tree_master_t *mres)
 {
     log_flow() ;
 
@@ -133,7 +133,7 @@ static void tree_resolve_master_read_cdb_0721(cdb *c, resolve_tree_master_t *mre
     free(wres) ;
 }
 
-static void tree_resolve_read_cdb_0721(cdb *c, resolve_tree_t *tres)
+static void tree_resolve_read_cdb_0721(ocdb *c, resolve_tree_t *tres)
 {
     log_flow() ;
 
@@ -220,7 +220,7 @@ static void migrate_tree_0721(ssexec_t *info)
 
     size_t pos = 0 ;
     int fd ;
-    cdb c = CDB_ZERO ;
+    ocdb c = OCDB_ZERO ;
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wmres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
@@ -247,7 +247,7 @@ static void migrate_tree_0721(ssexec_t *info)
         if (!resolve_write_g(wmres, info->base.s, SS_MASTER + 1))
             log_dieu(LOG_EXIT_SYS, "write resolve master file") ;
 
-        cdb_free(&c) ;
+        ocdb_free(&c) ;
 
     } else log_trace("master resolve already migrated -- ignoring it") ;
 
@@ -262,7 +262,7 @@ static void migrate_tree_0721(ssexec_t *info)
 
         FOREACH_STK(&stk, pos) {
 
-            c = cdb_zero ;
+            c = ocdb_zero ;
             tres = tree_resolve_zero ;
             wtres = resolve_set_struct(DATA_TREE, &tres) ;
 
@@ -397,7 +397,7 @@ static void get_config(conf_t *lconf, conf_t *conf, size_t *nservice, const char
 
     resolve_service_t_0721 res_0721 = RESOLVE_SERVICE_ZERO_0721 ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res_0721) ;
-    cdb c = CDB_ZERO ;
+    ocdb c = OCDB_ZERO ;
 
     resolve_init(wres) ;
 
@@ -424,7 +424,7 @@ static void get_config(conf_t *lconf, conf_t *conf, size_t *nservice, const char
     lconf[(*nservice)++] = *conf ;
 
     close(fd) ;
-    cdb_free(&c) ;
+    ocdb_free(&c) ;
     resolve_free(wres) ;
 }
 

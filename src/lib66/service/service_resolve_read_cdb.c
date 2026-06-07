@@ -18,19 +18,19 @@
 #include <string.h>
 
 #include <oblibs/log.h>
+#include <oblibs/cdb.h>
 
-#include <skalibs/cdb.h>
 #include <skalibs/types.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
 
-static int resolve_get_key_u64(const cdb *c, const char *key, uint64_t *field)
+static int resolve_get_key_u64(const ocdb *c, const char *key, uint64_t *field)
 {
     size_t klen = strlen(key) ;
-    cdb_data cdata ;
+    ocdb_data cdata ;
 
-    int r = cdb_find(c, &cdata, key, klen) ;
+    int r = ocdb_find(c, &cdata, key, klen) ;
     if (r == -1)
         log_warnusys_return(LOG_EXIT_ZERO,"search on cdb key: ",key) ;
 
@@ -47,7 +47,7 @@ static int resolve_get_key_u64(const cdb *c, const char *key, uint64_t *field)
 
 }
 
-int service_resolve_read_cdb(cdb *c, resolve_service_t *res)
+int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
 {
     log_flow() ;
 

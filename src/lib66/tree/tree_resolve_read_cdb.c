@@ -16,13 +16,12 @@
 #include <errno.h>
 
 #include <oblibs/log.h>
-
-#include <skalibs/cdb.h>
+#include <oblibs/cdb.h>
 
 #include <66/resolve.h>
 #include <66/tree.h>
 
-int tree_resolve_read_cdb(cdb *c, resolve_tree_t *tres)
+int tree_resolve_read_cdb(ocdb *c, resolve_tree_t *tres)
 {
     log_flow() ;
 

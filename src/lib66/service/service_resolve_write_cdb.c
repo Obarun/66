@@ -13,8 +13,7 @@
  */
 
 #include <oblibs/log.h>
-
-#include <skalibs/cdbmake.h>
+#include <oblibs/cdb.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
@@ -28,14 +27,14 @@ static void add_version(resolve_service_t *res)
     free(wres) ;
 }
 
-int service_resolve_write_cdb(cdbmaker *c, resolve_service_t *res)
+int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
 {
 
     log_flow() ;
 
     add_version(res) ;
 
-    if (!cdbmake_add(c, "sa", 2, res->sa.s, res->sa.len))
+    if (!ocdb_make_add(c, "sa", 2, res->sa.s, res->sa.len))
         return 0 ;
 
     if (!resolve_add_cdb_uint(c, "rversion", res->rversion) ||

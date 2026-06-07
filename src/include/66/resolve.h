@@ -18,9 +18,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <oblibs/cdb.h>
+
 #include <skalibs/stralloc.h>
-#include <skalibs/cdb.h>
-#include <skalibs/cdbmake.h>
 
 #include <66/enum.h>
 
@@ -67,7 +67,7 @@ extern void resolve_init(resolve_wrapper_t *wres) ;
  * */
 
 extern int resolve_check_g(resolve_wrapper_t *wres, char const *base, char const *name) ;
-extern int resolve_open_cdb(int *fd, cdb *c, const char *path, const char *name) ;
+extern int resolve_open_cdb(int *fd, ocdb *c, const char *path, const char *name) ;
 extern int resolve_read_g(resolve_wrapper_t *wres, char const *base, char const *name) ;
 extern int resolve_write_g(resolve_wrapper_t *wres, char const *base, char const *name) ;
 extern void resolve_remove_g(char const *base, char const *name, uint8_t data_type) ;
@@ -89,10 +89,10 @@ extern int resolve_get_field_tosa(stralloc *sa, resolve_wrapper_t_ref wres, reso
 extern int resolve_modify_field(resolve_wrapper_t_ref wres, resolve_enum_table_t table, char const *by) ;
 extern int resolve_read_cdb(resolve_wrapper_t *wres, const char *path, const char *name) ;
 extern int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *name) ;
-extern int resolve_add_cdb(cdbmaker *c, char const *key, char const *str, uint32_t element, uint8_t check) ;
-extern int resolve_add_cdb_uint(cdbmaker *c, char const *key, uint32_t data) ;
-extern int resolve_add_cdb_uint64(cdbmaker *c, char const *key, uint64_t data) ;
-extern int resolve_get_sa(stralloc *sa, const cdb *c) ;
-extern int resolve_get_key(const cdb *c, const char *key, uint32_t *field) ;
+extern int resolve_add_cdb(ocdbmaker *c, char const *key, char const *str, uint32_t element, uint8_t check) ;
+extern int resolve_add_cdb_uint(ocdbmaker *c, char const *key, uint32_t data) ;
+extern int resolve_add_cdb_uint64(ocdbmaker *c, char const *key, uint64_t data) ;
+extern int resolve_get_sa(stralloc *sa, const ocdb *c) ;
+extern int resolve_get_key(const ocdb *c, const char *key, uint32_t *field) ;
 
 #endif

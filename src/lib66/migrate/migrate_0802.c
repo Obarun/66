@@ -22,8 +22,7 @@
 #include <oblibs/string.h>
 #include <oblibs/log.h>
 #include <oblibs/types.h>
-
-#include <skalibs/cdb.h>
+#include <oblibs/cdb.h>
 
 #include <66/ssexec.h>
 #include <66/config.h>
@@ -145,7 +144,7 @@ static void service_resolve_sanitize_0802(resolve_service_t *new, resolve_servic
     free(wres) ;
 }
 
-static int service_resolve_read_cdb_0802(cdb *c, resolve_service_t_0802 *res)
+static int service_resolve_read_cdb_0802(ocdb *c, resolve_service_t_0802 *res)
 {
     log_flow() ;
 
@@ -271,7 +270,7 @@ static int service_resolve_read_cdb_0802(cdb *c, resolve_service_t_0802 *res)
 static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
 {
     int fd ;
-    cdb c = CDB_ZERO ;
+    ocdb c = OCDB_ZERO ;
     resolve_service_t_0802 res = RESOLVE_SERVICE_ZERO_0802 ;
     resolve_service_t new = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &new) ;

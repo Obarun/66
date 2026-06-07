@@ -16,33 +16,33 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
+#include <oblibs/cdb.h>
 
-#include <skalibs/cdbmake.h>
 #include <skalibs/types.h>//uint##_pack
 
 #include <66/resolve.h>
 
-int resolve_add_cdb_uint64(cdbmaker *c, char const *key, uint64_t data)
+int resolve_add_cdb_uint64(ocdbmaker *c, char const *key, uint64_t data)
 {
 
     char pack[8] ;
     size_t klen = strlen(key) ;
 
     uint64_pack_big(pack, data) ;
-    if (!cdbmake_add(c,key,klen,pack,8))
+    if (!ocdb_make_add(c,key,klen,pack,8))
         log_warnsys_return(LOG_EXIT_ZERO,"cdb_make_add: ",key) ;
 
     return 1 ;
 }
 
-int resolve_add_cdb_uint(cdbmaker *c, char const *key, uint32_t data)
+int resolve_add_cdb_uint(ocdbmaker *c, char const *key, uint32_t data)
 {
 
     char pack[4] ;
     size_t klen = strlen(key) ;
 
     uint32_pack_big(pack, data) ;
-    if (!cdbmake_add(c,key,klen,pack,4))
+    if (!ocdb_make_add(c,key,klen,pack,4))
         log_warnsys_return(LOG_EXIT_ZERO,"cdb_make_add: ",key) ;
 
     return 1 ;

@@ -13,8 +13,7 @@
  */
 
 #include <oblibs/log.h>
-
-#include <skalibs/cdbmake.h>
+#include <oblibs/cdb.h>
 
 #include <66/tree.h>
 #include <66/resolve.h>
@@ -28,13 +27,13 @@ static void add_version(resolve_tree_master_t *mres)
     free(wres) ;
 }
 
-int tree_resolve_master_write_cdb(cdbmaker *c, resolve_tree_master_t *mres)
+int tree_resolve_master_write_cdb(ocdbmaker *c, resolve_tree_master_t *mres)
 {
     log_flow() ;
 
     add_version(mres) ;
 
-    if (!cdbmake_add(c, "sa", 2, mres->sa.s, mres->sa.len))
+    if (!ocdb_make_add(c, "sa", 2, mres->sa.s, mres->sa.len))
         return 0 ;
 
     if (!resolve_add_cdb_uint(c, "rversion", mres->rversion) ||

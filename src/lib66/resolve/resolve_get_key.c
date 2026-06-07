@@ -16,16 +16,16 @@
 #include <unistd.h>
 
 #include <oblibs/log.h>
+#include <oblibs/cdb.h>
 
-#include <skalibs/cdb.h>
 #include <skalibs/types.h>
 
-int resolve_get_key(const cdb *c, const char *key, uint32_t *field)
+int resolve_get_key(const ocdb *c, const char *key, uint32_t *field)
 {
     size_t klen = strlen(key) ;
-    cdb_data cdata ;
+    ocdb_data cdata ;
 
-    int r = cdb_find(c, &cdata, key, klen) ;
+    int r = ocdb_find(c, &cdata, key, klen) ;
     if (r == -1)
         log_warnusys_return(LOG_EXIT_ZERO,"search on cdb key: ",key) ;
 

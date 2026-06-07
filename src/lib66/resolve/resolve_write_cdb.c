@@ -21,9 +21,9 @@
 #include <oblibs/log.h>
 #include <oblibs/io.h>
 #include <oblibs/string.h>
+#include <oblibs/cdb.h>
 
 #include <skalibs/djbunix.h>
-#include <skalibs/cdbmake.h>
 #include <skalibs/posixplz.h>//unlink
 
 #include <66/resolve.h>
@@ -36,7 +36,7 @@ int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *nam
 
     int fd ;
     size_t pathlen = strlen(path), namelen = strlen(name) ;
-    cdbmaker c = CDBMAKER_ZERO ;
+    ocdbmaker c = OCDBMAKER_ZERO ;
     char file[pathlen + namelen + 1] ;
     char tfile[5 + strlen(name) + 8] ;
 
@@ -49,7 +49,7 @@ int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *nam
         goto err_fd ;
     }
 
-    if (!cdbmake_start(&c, fd)) {
+    if (!ocdb_make_start(&c, fd)) {
         log_warnusys("cdbmake_start") ;
         goto err ;
     }
@@ -71,7 +71,7 @@ int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *nam
 
     }
 
-    if (!cdbmake_finish(&c) || fsync(fd) < 0) {
+    if (!ocdb_make_finish(&c) || fsync(fd) < 0) {
         log_warnusys("write to: ", tfile) ;
         goto err ;
     }

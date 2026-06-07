@@ -20,10 +20,9 @@
 
 #include <oblibs/hash.h>
 #include <oblibs/sse.h>
+#include <oblibs/cdb.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/cdb.h>
-#include <skalibs/cdbmake.h>
 #include <skalibs/tai.h>
 
 #include <66/ssexec.h>
@@ -237,16 +236,16 @@ extern int tree_switch_current(char const *base, char const *tree) ;
 
 /** Resolve API */
 /** tree */
-extern int tree_resolve_read_cdb(cdb *c, resolve_tree_t *tres) ;
-extern int tree_resolve_write_cdb(cdbmaker *c, resolve_tree_t *tres) ;
+extern int tree_resolve_read_cdb(ocdb *c, resolve_tree_t *tres) ;
+extern int tree_resolve_write_cdb(ocdbmaker *c, resolve_tree_t *tres) ;
 extern void tree_resolve_sanitize(resolve_tree_t *tres) ;
 extern void tree_resolve_modify_field(resolve_tree_t *tres, uint32_t field, char const *data) ;
 extern int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree_enum_table_t table) ;
 extern void tree_service_add(char const *treename, char const *service, ssexec_t *info) ;
 extern void tree_service_remove(char const *base, char const *treename, char const *service) ;
 /** Master */
-extern int tree_resolve_master_read_cdb(cdb *c, resolve_tree_master_t *mres) ;
-extern int tree_resolve_master_write_cdb(cdbmaker *c, resolve_tree_master_t *mres) ;
+extern int tree_resolve_master_read_cdb(ocdb *c, resolve_tree_master_t *mres) ;
+extern int tree_resolve_master_write_cdb(ocdbmaker *c, resolve_tree_master_t *mres) ;
 extern int tree_resolve_master_create(char const *base, uid_t owner) ;
 extern void tree_resolve_master_sanitize(resolve_tree_master_t *mres) ;
 extern void tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint32_t field, char const *data) ;
