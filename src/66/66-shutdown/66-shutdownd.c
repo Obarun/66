@@ -32,6 +32,7 @@
 #include <oblibs/string.h>
 #include <oblibs/stack.h>
 #include <oblibs/types.h>
+#include <oblibs/clock.h>
 
 #include <skalibs/posixplz.h>
 #include <skalibs/uint32.h>
@@ -184,13 +185,15 @@ static inline void prepare_shutdown (buffer *b, tain *deadline, unsigned int *gr
     log_flow() ;
 
     uint32_t u ;
-    char pack[TAIN_PACK + 4] ;
-    ssize_t r = sanitize_read(buffer_get(b, pack, TAIN_PACK + 4)) ;
+    char pack[CLOCK_PACK + 4] ;
+    ssize_t r = sanitize_read(buffer_get(b, pack, CLOCK_PACK + 4)) ;
     if (r == -1) log_dieusys(LOG_EXIT_SYS, "read from pipe") ;
-    if (r < TAIN_PACK + 4) log_dieusys(101, "bad shutdown protocol") ;
-    tain_unpack(pack, deadline) ;
-    tain_add_g(deadline,deadline) ;
-    uint32_unpack_big(pack + TAIN_PACK, &u) ;
+    if (r < CLOCK_PACK + 4) log_dieusys(101, "bad shutdown protocol") ;
+    struct timespec rel ;
+    clock_unpack(pack, &rel) ;
+    tain trel = { .sec = { .x = (uint64_t)rel.tv_sec }, .nano = (uint32_t)rel.tv_nsec } ;
+    tain_add_g(deadline, &trel) ;   /* relative (wire) -> absolute monotonic for iopause_g */
+    uint32_unpack_big(pack + CLOCK_PACK, &u) ;
     if (u && u <= 300000) *grace_time = u ;
 }
 
@@ -476,10 +479,11 @@ int main (int argc, char const *const *argv)
     kill(-1, SIGTERM) ;
     kill(-1, SIGCONT) ;
 
-    tain_from_millisecs(&deadline, grace_time) ;
-    tain_now_g() ;
-    tain_add_g(&deadline, &deadline) ;
-    deepsleepuntil_g(&deadline) ;
+    struct timespec gnow, gd ;
+    clock_now_mono(&gnow) ;
+    clock_from_ms(&gd, grace_time) ;
+    clock_add(&gd, &gnow, &gd) ;
+    clock_deepsleep(&gd) ;
 
     if (!inns) {
         sync() ;

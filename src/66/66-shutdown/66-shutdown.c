@@ -27,14 +27,13 @@
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
+#include <oblibs/clock.h>
 
 #include <skalibs/uint32.h>
 #include <skalibs/allreadwrite.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/sig.h>
-#include <skalibs/tai.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/djbtime.h>
 #include <skalibs/buffer.h>
 
 #include <66/config.h>
@@ -90,11 +89,11 @@ static inline void add_one_day (struct tm *tm)
     tm->tm_year++ ;
 }
 
-static inline void parse_hourmin (tain *when, char const *s)
+static inline void parse_hourmin (struct timespec *when, struct timespec const *now, char const *s)
 {
     log_flow() ;
 
-    tai taithen ;
+    struct timespec thents ;
     struct tm tmthen ;
     unsigned int hour, minute ;
     size_t len = uint_scan(s, &hour) ;
@@ -104,40 +103,39 @@ static inline void parse_hourmin (tain *when, char const *s)
     len = uint0_scan(s, &minute) ;
     if (!len || len != 2 || minute > 59)
         log_die(LOG_EXIT_USER, "invalid time format") ;
-    if (!localtm_from_tai(&tmthen, tain_secp(&STAMP), 1))
+    if (!clock_to_localtm(&tmthen, now))
         log_dieusys(LOG_EXIT_SYS, "break down current time into struct tm") ;
     tmthen.tm_hour = hour ;
     tmthen.tm_min = minute ;
     tmthen.tm_sec = 0 ;
-    if (!tai_from_localtm(&taithen, &tmthen))
-        log_dieusys(LOG_EXIT_SYS, "assemble broken-down time into tain") ;
-    if (tai_less(&taithen, tain_secp(&STAMP)))
+    if (!clock_from_localtm(&thents, &tmthen))
+        log_dieusys(LOG_EXIT_SYS, "assemble broken-down time into timespec") ;
+    if (clock_cmp(&thents, now) < 0)
     {
         add_one_day(&tmthen) ;
-        if (!tai_from_localtm(&taithen, &tmthen))
-            log_dieusys(LOG_EXIT_SYS, "assemble broken-down time into tain") ;
+        if (!clock_from_localtm(&thents, &tmthen))
+            log_dieusys(LOG_EXIT_SYS, "assemble broken-down time into timespec") ;
     }
-    when->sec = taithen ;
-    when->nano = 0 ;
+    *when = thents ;
 }
 
-static void parse_mins (tain *when, char const *s)
+static void parse_mins (struct timespec *when, struct timespec const *now, char const *s)
 {
     log_flow() ;
 
     unsigned int mins ;
     if (!uint0_scan(s, &mins)) log_usage(USAGE) ;
-    tain_addsec_g(when, mins * 60) ;
+    clock_addsec(when, now, (int64_t)mins * 60) ;
 }
 
-static inline void parse_time (tain *when, char const *s)
+static inline void parse_time (struct timespec *when, struct timespec const *now, char const *s)
 {
     log_flow() ;
 
-    if (!strcmp(s, "now")) tain_copynow(when) ;
-    else if (s[0] == '+') parse_mins(when, s+1) ;
-    else if (strchr(s, ':')) parse_hourmin(when, s) ;
-    else parse_mins(when, s) ;
+    if (!strcmp(s, "now")) *when = *now ;
+    else if (s[0] == '+') parse_mins(when, now, s+1) ;
+    else if (strchr(s, ':')) parse_hourmin(when, now, s) ;
+    else parse_mins(when, now, s) ;
 }
 
 
@@ -248,7 +246,8 @@ int main (int argc, char const *const *argv)
     int what = 0 ;
     int doactl = 0 ;
     int docancel = 0 ;
-    tain when ;
+    struct timespec when ;
+    struct timespec now ;
 
     PROG = "66-shutdown" ;
     {
@@ -292,7 +291,7 @@ int main (int argc, char const *const *argv)
         log_dieusys(LOG_EXIT_SYS, "shutdown") ;
     }
     if (doactl) access_control() ;
-    if (!tain_now_g()) log_warnsys("get current time") ;
+    if (!clock_now(&now)) log_warnsys("get current time") ;
     if (docancel)
     {
         if (argv[0]) hpr_wall(argv[0]) ;
@@ -300,8 +299,8 @@ int main (int argc, char const *const *argv)
         return 0 ;
     }
     if (!argc) log_usage(USAGE) ;
-    parse_time(&when, argv[0]) ;
-    tain_sub(&when, &when, &STAMP) ;
+    parse_time(&when, &now, argv[0]) ;
+    clock_sub(&when, &when, &now) ;
     if (argv[1])
     {
         size_t len = strlen(argv[1]) ;

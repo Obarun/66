@@ -20,9 +20,10 @@
 #define SS_HPR_H
 
 #include <stddef.h>
+#include <time.h>
 
-#include <skalibs/tai.h>
 #include <skalibs/djbunix.h>
+
 #include <66/constants.h>
 
 #define INITCTL "/" SS_SCANDIR "/0/66-shutdownd/fifo"
@@ -32,7 +33,7 @@
 
 #define hpr_send(l,s, n) openwritenclose_unsafe(l, (s), n)
 #define hpr_cancel(l) hpr_send(l,"c", 1)
-extern int hpr_shutdown (char const *live, unsigned int, tain const *, unsigned int) ;
+extern int hpr_shutdown (char const *live, unsigned int, struct timespec const *, unsigned int) ;
 extern void hpr_wall (char const *s) ;
 extern void hpr_wallv (struct iovec const *v, unsigned int n) ;
 

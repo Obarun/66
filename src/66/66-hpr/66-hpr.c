@@ -25,10 +25,10 @@
 #include <sys/reboot.h>
 
 #include <oblibs/log.h>
+#include <oblibs/clock.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/sig.h>
-#include <skalibs/tai.h>
 #include <skalibs/djbunix.h>
 
 #include <66/hpr.h>
@@ -86,6 +86,7 @@ int main (int argc, char const *const *argv)
     int dowtmp = 1 ;
     int dowall = 1 ;
     int dosync = 1 ;
+    struct timespec now ;
 
     PROG = "66-hpr" ;
     {
@@ -132,7 +133,7 @@ int main (int argc, char const *const *argv)
             log_dieusys(LOG_EXIT_SYS, "reboot()") ;
     }
 
-    if (!tain_now_g()) log_warnsys("get current time") ;
+    if (!clock_now(&now)) log_warnsys("get current time") ;
 
     size_t livelen = strlen(live) ;
     char tlive[livelen + INITCTL_LEN + 1] ;
@@ -167,14 +168,12 @@ int main (int argc, char const *const *argv)
 #ifdef  __WORDSIZE_TIME64_COMPAT32
     {
         struct timeval tv ;
-        if (!timeval_from_tain(&tv, &STAMP))
-            log_warnusys("timeval_from_tain") ;
+        clock_to_timeval(&tv, &now) ;
         utx.ut_tv.tv_sec = tv.tv_sec ;
         utx.ut_tv.tv_usec = tv.tv_usec ;
     }
 #else
-    if (!timeval_from_tain(&utx.ut_tv, &STAMP))
-        log_warnusys("timeval_from_tain") ;
+    clock_to_timeval(&utx.ut_tv, &now) ;
 #endif
 
         updwtmpx(_PATH_WTMP, &utx) ;
@@ -187,7 +186,7 @@ int main (int argc, char const *const *argv)
         memcpy(tlive,live,livelen) ;
         memcpy(tlive + livelen,INITCTL,INITCTL_LEN) ;
         tlive[livelen + INITCTL_LEN] = 0 ;
-        if (!hpr_shutdown(tlive,what, &tain_zero, 0))
+        if (!hpr_shutdown(tlive,what, &(struct timespec){0,0}, 0))
             log_dieusys(LOG_EXIT_SYS, "notify 66-shutdownd") ;
     }
     return 0 ;

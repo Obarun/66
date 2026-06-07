@@ -19,18 +19,18 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
+#include <oblibs/clock.h>
 
 #include <skalibs/uint32.h>
-#include <skalibs/tai.h>
 
 #include <66/hpr.h>
 
-int hpr_shutdown (char const *live, unsigned int what, tain const *when, unsigned int grace)
+int hpr_shutdown (char const *live, unsigned int what, struct timespec const *when, unsigned int grace)
 {
     log_flow() ;
 
-    char pack[5 + TAIN_PACK] = { "Shpr"[what] } ;
-    tain_pack(pack+1, when) ;
-    uint32_pack_big(pack + 1 + TAIN_PACK, (uint32_t)grace) ;
-    return hpr_send(live,pack, 5 + TAIN_PACK) ;
+    char pack[5 + CLOCK_PACK] = { "Shpr"[what] } ;
+    clock_pack(pack+1, when) ;
+    uint32_pack_big(pack + 1 + CLOCK_PACK, (uint32_t)grace) ;
+    return hpr_send(live,pack, 5 + CLOCK_PACK) ;
 }
