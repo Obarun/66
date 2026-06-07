@@ -25,7 +25,6 @@
 #include <oblibs/types.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/tai.h>
 
 #include <66/config.h>
 #include <66/ssexec.h>
