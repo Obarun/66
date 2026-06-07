@@ -24,7 +24,6 @@
 
 #include <skalibs/tai.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/types.h>
 
 #include <66/service.h>
 #include <66/constants.h>

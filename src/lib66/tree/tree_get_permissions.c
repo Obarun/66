@@ -16,10 +16,11 @@
 #include <stddef.h>
 
 #include <oblibs/log.h>
+#include <oblibs/types.h>
 #include <oblibs/sastr.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/types.h>
+
 
 #include <66/utils.h>
 #include <66/tree.h>
@@ -47,7 +48,7 @@ int tree_get_permissions(char const *base, char const *treename)
 
         FOREACH_SASTR(&sa, pos) {
 
-            if (!uint0_scan(sa.s + pos, &treeuid))
+            if (!u32_scan_strict(sa.s + pos, &treeuid))
                 goto freed ;
 
             if (uid == treeuid) {

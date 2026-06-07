@@ -18,9 +18,10 @@
 
 #include <oblibs/log.h>
 #include <oblibs/sastr.h>
+#include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/types.h>
+
 
 #include <66/parse.h>
 #include <66/resolve.h>
@@ -34,7 +35,7 @@ static int limit_compute(stack *store, uint64_t *u, resolve_enum_table_t table)
         return 1 ;
     }
 
-    if (!uint640_scan(store->s, u))
+    if (!u64_scan_strict(store->s, u))
         parse_error_return(0, 3, table) ;
 
     return 1 ;
@@ -124,7 +125,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
                 }
 
                 int64_t n = 0 ;
-                if (!int64_scan_base_max(store->s, &n, 10, INT64_MAX))
+                if (!i64_scan_base_max(store->s, &n, 10, INT64_MAX))
                     parse_error_return(0, 3, table) ;
 
                 if (n < -20 || n > 19)
@@ -202,7 +203,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
             {
                 uint32_t mode ;
                 parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-                if (!uint32_oscan(store->s, &mode))
+                if (!u32_scan_strict(store->s, &mode))
                     parse_error_return(0, 3, table) ;
 
                 if (mode > 0777)
@@ -218,7 +219,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
                 parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
 
                 int64_t n = 0 ;
-                if (!int64_scan_base_max(store->s, &n, 10, INT64_MAX))
+                if (!i64_scan_base_max(store->s, &n, 10, INT64_MAX))
                     parse_error_return(0, 3, table) ;
 
                 if (n < -20 || n > 19)

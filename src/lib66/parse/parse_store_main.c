@@ -25,8 +25,6 @@
 #include <oblibs/types.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/types.h>
-#include <skalibs/sig.h>
 
 #include <66/parse.h>
 #include <66/resolve.h>
@@ -271,7 +269,7 @@ int parse_store_main(resolve_service_t *res, stack *store, resolve_enum_table_t 
 
             parse_error_type(res->type, enum_list_parser_section_main, kid) ;
 
-            if (!uint320_scan(store->s, &res->notify))
+            if (!u32_scan_strict(store->s, &res->notify))
                 parse_error_return(0, 3, table) ;
 
             if (res->notify < 3)
@@ -281,7 +279,7 @@ int parse_store_main(resolve_service_t *res, stack *store, resolve_enum_table_t 
 
         case E_PARSER_SECTION_MAIN_DEATH:
 
-            if (!uint320_scan(store->s, &res->maxdeath))
+            if (!u32_scan_strict(store->s, &res->maxdeath))
                 parse_error_return(0, 3, table) ;
 
             if (res->maxdeath > 4096)
@@ -320,7 +318,7 @@ int parse_store_main(resolve_service_t *res, stack *store, resolve_enum_table_t 
             parse_error_type(res->type, enum_list_parser_section_main, kid) ;
 
             int t = 0 ;
-            if (!sig0_scan(store->s, &t))
+            if (!sig_parse(store->s, &t))
                 parse_error_return(0, 3, table) ;
 
             res->execute.downsignal = (uint32_t)t ;
@@ -331,7 +329,7 @@ int parse_store_main(resolve_service_t *res, stack *store, resolve_enum_table_t 
 
             parse_error_type(res->type, enum_list_parser_section_main, kid) ;
 
-            if (!uint320_scan(store->s, &res->execute.timeout.start))
+            if (!u32_scan_strict(store->s, &res->execute.timeout.start))
                 parse_error_return(0, 3, table) ;
 
             break ;
@@ -340,7 +338,7 @@ int parse_store_main(resolve_service_t *res, stack *store, resolve_enum_table_t 
 
             parse_error_type(res->type, enum_list_parser_section_main, kid) ;
 
-            if (!uint320_scan(store->s, &res->execute.timeout.stop))
+            if (!u32_scan_strict(store->s, &res->execute.timeout.stop))
                 parse_error_return(0, 3, table) ;
 
             break ;

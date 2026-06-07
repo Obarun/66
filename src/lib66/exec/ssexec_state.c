@@ -18,7 +18,6 @@
 #include <oblibs/log.h>
 #include <oblibs/stack.h>
 
-#include <skalibs/types.h>
 #include <skalibs/lolstdio.h>
 #include <skalibs/buffer.h>
 #include <skalibs/sgetopt.h>

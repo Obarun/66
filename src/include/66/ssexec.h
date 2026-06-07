@@ -18,7 +18,6 @@
 #include <stdint.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/types.h>
 
 #include <66/config.h>
 

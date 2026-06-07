@@ -14,12 +14,13 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
 
-#include <skalibs/types.h>
+
 #include <skalibs/stralloc.h>
 
 #include <66/enum_parser.h>

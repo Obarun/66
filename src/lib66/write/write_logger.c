@@ -23,8 +23,6 @@
 #include <oblibs/directory.h>
 #include <oblibs/files.h>
 
-#include <skalibs/types.h>
-
 #include <66/config.h>
 #include <66/write.h>
 #include <66/utils.h>

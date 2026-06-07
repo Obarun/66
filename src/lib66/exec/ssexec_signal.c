@@ -20,7 +20,6 @@
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/nsig.h> // NSIG
-#include <skalibs/sig.h> // sig0_scan
 
 #include <66/svc.h>
 #include <66/graph.h>
@@ -73,7 +72,7 @@ int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
                 case 's' :
                     {
                         int sig ;
-                        if (!sig0_scan(l.arg, &sig))
+                        if (!sig_parse(l.arg, &sig))
                             log_die(LOG_EXIT_USER, "invalid signal: ", l.arg) ;
                         if (!cmdsig[sig])
                             log_die(LOG_EXIT_USER, l.arg, " is not in the list of user-available signals") ;

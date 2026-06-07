@@ -15,8 +15,7 @@
 #include <stdlib.h> //free
 
 #include <oblibs/log.h>
-
-#include <skalibs/types.h>
+#include <oblibs/types.h>
 
 #include <66/parse.h>
 #include <66/resolve.h>
@@ -69,14 +68,14 @@ int parse_store_logger(resolve_service_t *res, stack *store, resolve_enum_table_
 
         case E_PARSER_SECTION_LOGGER_TIMESTART:
 
-            if (!uint320_scan(store->s, &res->logger.execute.timeout.start))
+            if (!u32_scan_strict(store->s, &res->logger.execute.timeout.start))
                 parse_error_return(0, 3, table) ;
 
             break ;
 
         case E_PARSER_SECTION_LOGGER_TIMESTOP:
 
-            if (!uint320_scan(store->s, &res->logger.execute.timeout.stop))
+            if (!u32_scan_strict(store->s, &res->logger.execute.timeout.stop))
                 parse_error_return(0, 3, table) ;
 
             break ;
@@ -94,14 +93,14 @@ int parse_store_logger(resolve_service_t *res, stack *store, resolve_enum_table_
 
         case E_PARSER_SECTION_LOGGER_BACKUP:
 
-            if (!uint320_scan(store->s, &res->logger.backup))
+            if (!u32_scan_strict(store->s, &res->logger.backup))
                 parse_error_return(0, 3, table) ;
 
             break ;
 
         case E_PARSER_SECTION_LOGGER_MAXSIZE:
 
-            if (!uint320_scan(store->s, &res->logger.maxsize))
+            if (!u32_scan_strict(store->s, &res->logger.maxsize))
                 parse_error_return(0, 3, table) ;
 
             if (res->logger.maxsize < 4096 || res->logger.maxsize > 268435455)

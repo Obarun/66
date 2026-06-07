@@ -16,10 +16,9 @@
 #define SS_SVC_H
 
 #include <unistd.h>
+#include <stdint.h>
 
 #include <oblibs/sse.h>
-
-#include <skalibs/tai.h>
 
 #include <66/service.h>
 #include <66/graph.h>

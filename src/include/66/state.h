@@ -16,8 +16,7 @@
 #define SS_STATE_H
 
 #include <stddef.h>
-
-#include <skalibs/uint32.h>
+#include <stdint.h>
 
 #include <66/service.h>
 
