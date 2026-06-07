@@ -19,6 +19,7 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/sastr.h>
+#include <oblibs/directory.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
@@ -111,7 +112,7 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
 
             log_info("Imports ",svname," configuration file from: ",s," to: ",d) ;
 
-            if (!hiercopy(s,d))
+            if (!tree_copy(s,d))
                 log_warnusys_return(LOG_EXIT_ZERO,"copy: ",s," to: ",d) ;
         }
 

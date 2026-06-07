@@ -178,7 +178,7 @@ int write_common(resolve_service_t *res, char const *dst, uint8_t force)
             auto_strings(dest, dst, "/", what) ;
 
             log_trace("copy: ", tmp, " to: ", dest) ;
-            if (!hiercopy(tmp, dest))
+            if (!tree_copy(tmp, dest))
                 log_warnusys_return(LOG_EXIT_ZERO, "copy: ", tmp, " to: ", dest) ;
         }
 

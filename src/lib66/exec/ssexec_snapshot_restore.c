@@ -144,7 +144,7 @@ int ssexec_snapshot_restore(int argc, char const *const *argv, ssexec_t *info)
         auto_strings(dst.s + dlen, sa.s + pos) ;
 
         log_trace("copy: ", src.s , " to: ", dst.s) ;
-        if (!hiercopy(src.s, dst.s))
+        if (!tree_copy(src.s, dst.s))
             log_dieusys(LOG_EXIT_SYS, "copy: ", src.s," to: ", dst.s) ;
     }
 

@@ -89,7 +89,7 @@ static int copy_dir(const char *src, char *dst, size_t len, ssexec_t *info)
         auto_strings(home.s + homelen, "/", src) ;
 
         log_trace("copy: ", home.s , " to: ", dst) ;
-        if (!hiercopy(home.s, dst))
+        if (!tree_copy(home.s, dst))
             log_warnusys_return(LOG_EXIT_ZERO, "copy: ", home.s, " to: ", dst) ;
 
     } else {
@@ -101,7 +101,7 @@ static int copy_dir(const char *src, char *dst, size_t len, ssexec_t *info)
             log_warnusys_return(LOG_EXIT_ZERO, "create directory: ", dst) ;
 
         log_trace("copy: ", src , " to: ", dst) ;
-        if (!hiercopy(src, dst))
+        if (!tree_copy(src, dst))
             log_warnusys_return(LOG_EXIT_ZERO, "copy: ", src, " to: ", dst) ;
     }
 
@@ -195,7 +195,7 @@ int ssexec_snapshot_create(int argc, char const *const *argv, ssexec_t *info)
         auto_strings(system_dir.s, SS_SYSTEM_DIR, SS_SYSTEM) ;
 
         log_trace("copy: ", system_dir.s , " to: ", src.s) ;
-        if (!hiercopy(system_dir.s, src.s)) {
+        if (!tree_copy(system_dir.s, src.s)) {
             snapshot_cleanup(snapdir.s) ;
             log_dieusys(LOG_EXIT_SYS, "copy: ", system_dir.s," to: ", src.s) ;
         }
@@ -212,7 +212,7 @@ int ssexec_snapshot_create(int argc, char const *const *argv, ssexec_t *info)
         auto_strings(system_dir.s, info->base.s, SS_SYSTEM) ;
 
         log_trace("copy: ", system_dir.s , " to: ", src.s) ;
-        if (!hiercopy(system_dir.s, src.s)) {
+        if (!tree_copy(system_dir.s, src.s)) {
             snapshot_cleanup(snapdir.s) ;
             log_dieusys(LOG_EXIT_SYS, "copy: ", system_dir.s," to: ", src.s) ;
         }

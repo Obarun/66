@@ -23,7 +23,6 @@
 #include <oblibs/stack.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/djbunix.h> //hiercopy
 
 #include <66/module.h>
 #include <66/resolve.h>
@@ -168,7 +167,7 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
     tmplen = tmpdir.len = strlen(tmpdir.s) ;
 
     log_trace("copy: ", dirname, " to: ", tmpdir.s) ;
-    if (!hiercopy(dirname, tmpdir.s))
+    if (!tree_copy(dirname, tmpdir.s))
         log_dieusys(LOG_EXIT_SYS, "copy: ", dirname, " to: ", tmpdir.s) ;
 
     parse_module_regex(res, tmpdir.s, tmplen, info) ;

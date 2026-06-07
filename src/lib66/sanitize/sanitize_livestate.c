@@ -87,7 +87,7 @@ static int sanitize_copy_source(resolve_service_t *res)
         return 0 ;
 
     log_trace("copy: ", home, " to: ", live) ;
-    if (!hiercopy(home, live))
+    if (!tree_copy(home, live))
         log_warnusys_return(LOG_EXIT_ZERO, "copy: ", home, " to: ", live) ;
 
     auto_strings(sym, live, SS_RESOLVE) ;

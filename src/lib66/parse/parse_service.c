@@ -223,12 +223,12 @@ void parse_copy_to_source(char const *dst, char const *src, resolve_service_t *r
     }
 
     log_trace("copy:", src, " to: ", dst) ;
-    if (!hiercopy(src, dst)) {
+    if (!tree_copy(src, dst)) {
         parse_cleanup(res, src, force) ;
         log_dieusys(LOG_EXIT_SYS, "copy: ", src, " to: ", dst) ;
     }
 
-    /** be paranoid after the use of hiercopy and be sure
+    /** be paranoid after the use of tree_copy and be sure
      * to have dst in 0755 mode. If not the log cannot be
      * executed with other permissions than root */
     if (chmod(dst, 0755)< 0) {
