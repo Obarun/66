@@ -33,6 +33,7 @@
 #include <oblibs/stack.h>
 #include <oblibs/types.h>
 #include <oblibs/clock.h>
+#include <oblibs/fd.h>
 
 #include <skalibs/posixplz.h>
 #include <skalibs/allreadwrite.h>
@@ -90,11 +91,11 @@ static void restore_console (void)
 {
     log_flow() ;
 
-    fd_close(1) ;
+    close_fd(1) ;
     if (open2("/dev/console", O_WRONLY) != 1 && open2("/dev/null", O_WRONLY) != 1)
         log_warnusys("open /dev/console for writing") ;
-    else if (fd_copy(2, 1) < 0)
-        log_warnusys("fd_copy") ;
+    else if (copy_fd(2, 1) < 0)
+        log_warnusys("copy_fd") ;
 }
 
 struct at_s
@@ -298,7 +299,7 @@ static inline void prepare_stage4 (char what)
             || buffer_putsflush(&b, "\n") < 0) log_dieusys(LOG_EXIT_SYS, "write to ", STAGE4_FILE ".new") ;
     }
     if (fchmod(fd, S_IRWXU) == -1) log_dieusys(LOG_EXIT_SYS, "fchmod ", STAGE4_FILE ".new") ;
-    fd_close(fd) ;
+    close_fd(fd) ;
     if (rename(STAGE4_FILE ".new", STAGE4_FILE) == -1)
         log_dieusys(LOG_EXIT_SYS, "rename ", STAGE4_FILE ".new", " to ", STAGE4_FILE) ;
 }
@@ -430,10 +431,10 @@ int main (int argc, char const *const *argv)
     }
 
     fdr = open_read(SHUTDOWND_FIFO) ;
-    if (fdr == -1 || coe(fdr) == -1)
+    if (fdr == -1 || cloexec_fd(fdr) == -1)
         log_dieusys(LOG_EXIT_SYS, "open ", SHUTDOWND_FIFO, " for reading") ;
     fdw = open_write(SHUTDOWND_FIFO) ;
-    if (fdw == -1 || coe(fdw) == -1)
+    if (fdw == -1 || cloexec_fd(fdw) == -1)
         log_dieusys(LOG_EXIT_SYS, "open ", SHUTDOWND_FIFO, " for writing") ;
     if (!sig_ignore(SIGPIPE))
         log_dieusys(LOG_EXIT_SYS, "sig_ignore SIGPIPE") ;
@@ -458,8 +459,8 @@ int main (int argc, char const *const *argv)
             handle_fifo(&b, &what, &deadline, &grace_time) ;
     }
 
-    fd_close(fdw) ;
-    fd_close(fdr) ;
+    close_fd(fdw) ;
+    close_fd(fdr) ;
 
     if (!inns && !nologger)
         restore_console() ;

@@ -21,6 +21,7 @@
 #include <utmpx.h>
 
 #include <oblibs/log.h>
+#include <oblibs/fd.h>
 
 #include <skalibs/allreadwrite.h>
 #include <skalibs/djbunix.h>
@@ -49,7 +50,7 @@ void hpr_wallv (struct iovec const *v, unsigned int n)
         fd = open_append(tty) ;
         if (fd == -1) continue ;
         allwritev(fd, v, n) ;
-        fd_close(fd) ;
+        close_fd(fd) ;
     }
     endutxent() ;
 }

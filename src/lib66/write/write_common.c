@@ -23,6 +23,7 @@
 #include <oblibs/sastr.h>
 #include <oblibs/directory.h>
 #include <oblibs/types.h>
+#include <oblibs/fd.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
@@ -136,22 +137,22 @@ int write_common(resolve_service_t *res, char const *dst, uint8_t force)
                     log_warnusys_return(LOG_EXIT_ZERO, "open current directory") ;
 
                 if (chdir(b) < 0) {
-                    fd_close(fd) ;
+                    close_fd(fd) ;
                     log_warnusys_return(LOG_EXIT_ZERO, "change directory") ;
                 }
 
                 char *p = realpath(what, tmp) ;
                 if (!p) {
-                    fd_close(fd) ;
+                    close_fd(fd) ;
                     log_warnusys_return(LOG_EXIT_ZERO, "get absolute path of: ", what) ;
                 }
 
-                if (fd_chdir(fd) < 0) {
-                    fd_close(fd) ;
+                if (chdir_fd(fd) < 0) {
+                    close_fd(fd) ;
                     log_warnusys_return(LOG_EXIT_ZERO, "change directory") ;
                 }
 
-                fd_close(fd) ;
+                close_fd(fd) ;
 
                 if (!ob_basename(basename, what))
                     log_warnusys_return(LOG_EXIT_ZERO, "get basename of: ", what) ;

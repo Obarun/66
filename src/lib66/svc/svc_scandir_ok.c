@@ -17,6 +17,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/fd.h>
 
 #include <skalibs/djbunix.h>
 
@@ -44,7 +45,7 @@ int svc_scandir_ok (char const *dir)
         if ((errno == ENXIO) || (errno == ENOENT)) return 0 ;
         else return -1 ;
     }
-    fd_close(fd) ;
+    close_fd(fd) ;
 
     return 1 ;
 }

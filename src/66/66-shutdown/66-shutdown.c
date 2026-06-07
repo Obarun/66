@@ -28,6 +28,7 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/clock.h>
+#include <oblibs/fd.h>
 
 #include <skalibs/allreadwrite.h>
 #include <skalibs/sgetopt.h>
@@ -229,7 +230,7 @@ static inline void access_control (void)
 
     if (allread(fd, buf, st.st_size) < (size_t)st.st_size)
         log_dieusys(LOG_EXIT_SYS, "read ", AC_FILE) ;
-    fd_close(fd) ;
+    close_fd(fd) ;
     buf[st.st_size] = 0 ;
     n = parse_authorized_users(buf, users, AC_MAX) ;
     if (!n || !match_users_with_utmp(users, n))

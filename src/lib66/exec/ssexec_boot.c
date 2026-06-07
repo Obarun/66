@@ -31,6 +31,7 @@
 #include <oblibs/stack.h>
 #include <oblibs/io.h>
 #include <oblibs/types.h>
+#include <oblibs/fd.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/djbunix.h>
@@ -353,8 +354,8 @@ static void opendevnull (void)
         if (pipe(p) < 0)
             sulogin("pipe", "") ;
         close(p[1]) ;
-        if (fd_move(0, p[0]) < 0)
-            sulogin("fd_move to stdin", "") ;
+        if (move_fd(0, p[0]) < 0)
+            sulogin("move_fd to stdin", "") ;
     }
 }
 
@@ -461,7 +462,7 @@ static inline void run_stage2 (stralloc *env, const char *tty)
         close(1) ;
         if (open2(fifo, O_WRONLY) != 1)  /* blocks until catch-all logger is up */
             sulogin("open for writing fifo: ",fifo) ;
-        if (fd_copy(2, 1) == -1)
+        if (copy_fd(2, 1) == -1)
             sulogin("copy stderr to stdout","") ;
     }
 
@@ -649,9 +650,9 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
         e = errno ;
         if (open2("/dev/console", O_WRONLY) && open2("/dev/null", O_WRONLY))
             sulogin("open /dev/console or /dev/null", "") ;
-        if (fd_move(2, 0) < 0)
+        if (move_fd(2, 0) < 0)
             sulogin("move stderr to stdin", "") ;
-        if (fd_copy(1, 2) < 0)
+        if (copy_fd(1, 2) < 0)
             sulogin("copy stdout to stderr", "") ;
 
         if (nope) {
@@ -667,7 +668,7 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 
         if (!slashdev)
             reset_stdin() ;
-        if (open2("/dev/null", O_WRONLY) != 1 || fd_copy(2, 1) == -1)
+        if (open2("/dev/null", O_WRONLY) != 1 || copy_fd(2, 1) == -1)
             sulogin("open /dev/null or copy stderr to stdout", "") ;
     }
 
@@ -733,9 +734,9 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
         log_info("Starts boot logger at: ",live,"/log/0") ;
         int fdr = open_read(fifo) ;
         if (fdr == -1) sulogin("open fifo: ",fifo) ;
-        fd_close(1) ;
+        close_fd(1) ;
         if (open2(fifo, O_WRONLY) != 1) sulogin("open fifo: ",fifo) ;
-        fd_close(fdr) ;
+        close_fd(fdr) ;
     }
 
     /* environment */
@@ -811,12 +812,12 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
             // // restore_console from
             // // https://github.com/skarnet/s6/blob/main/src/supervision/s6-svscan.c
             // // TODO: implement -X option at 66 scandir start command.
-            // fd_move(2, fd) ;
-            // if (fd_copy(1, 2) < 0)
+            // move_fd(2, fd) ;
+            // if (copy_fd(1, 2) < 0)
             //     sulogin("restore stdout", "") ;
 
             cad() ;
-            if (fd_copy(2, 1) == -1)
+            if (copy_fd(2, 1) == -1)
                 sulogin("copy stderr to stdout", "") ;
         }
 

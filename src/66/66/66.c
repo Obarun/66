@@ -18,6 +18,7 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
+#include <oblibs/fd.h>
 
 #include <skalibs/sgetopt.h>
 
@@ -401,7 +402,7 @@ int main(int argc, char const *const *argv)
     argc-- ;
     argv++ ;
 
-    if (!fd_sanitize())
+    if (!ensure_stdfds())
         log_dieusys(LOG_EXIT_SYS, "sanitize stdin/stdout/stderr") ;
 
     if (!sanitize)

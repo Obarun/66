@@ -210,7 +210,7 @@ static void write_strbuf(strbuf *b, char const *dst, char const *file)
     if (io_allwrite(fd, b->s, b->len) != b->len)
         log_dieusys(LOG_EXIT_SYS, "write to: ", dst, "/", file) ;
 
-    fd_close(fd) ;
+    close_fd(fd) ;
     strbuf_free(b) ;
 }
 

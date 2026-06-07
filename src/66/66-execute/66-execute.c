@@ -32,6 +32,7 @@
 #include <oblibs/io.h>
 #include <oblibs/lexer.h>
 #include <oblibs/types.h>
+#include <oblibs/fd.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/tai.h>
@@ -139,12 +140,12 @@ static void io_fdholder_retrieve(resolve_service_t *res, int fd, const char *nam
 
     s6_fdholder_end(&a) ;
 
-    if (fd_move(fd, fdhold) < 0)
+    if (move_fd(fd, fdhold) < 0)
         log_dieusys(LOG_EXIT_SYS, "move fd") ;
 
     if (!fdhold)
-        if (uncoe(fd) < 0)
-            log_dieusys(LOG_EXIT_SYS, "uncoe fd") ;
+        if (uncloexec_fd(fd) < 0)
+            log_dieusys(LOG_EXIT_SYS, "uncloexec_fd fd") ;
 }
 
 static void io_open_file(resolve_service_t *res,  int fd, char const *destination)
@@ -172,16 +173,16 @@ static void io_open_file(resolve_service_t *res,  int fd, char const *destinatio
 
         fdest = open3(destination, flags, 0666) ;
 
-        fd_close(fdr) ;
+        close_fd(fdr) ;
     }
 
     if (fdest == -1)
         log_dieusys(LOG_EXIT_SYS, "open ", destination) ;
 
-    if (fd_move(fd, fdest) == -1)
+    if (move_fd(fd, fdest) == -1)
         log_dieusys(LOG_EXIT_SYS, "redirect io to: ", destination) ;
 
-    if (uncoe(fd) < 0)
+    if (uncloexec_fd(fd) < 0)
         log_dieusys(LOG_EXIT_SYS, "remove close-on-exec from fd") ;
 }
 
@@ -193,17 +194,17 @@ static void io_open_destination(int fd, const char *destination, int flags, uint
     int fdo = io_open(destination, flags | O_CLOEXEC) ;
     if (fdo < 0)
         log_dieusys(LOG_EXIT_SYS, "open: ", destination) ;
-    if (fd_move(fd, fdo) < 0)
+    if (move_fd(fd, fdo) < 0)
         log_dieusys(LOG_EXIT_SYS, "move stdin to: ", destination) ;
 
     if (cloexec) {
 
-        if (coe(fd) < 0)
+        if (cloexec_fd(fd) < 0)
             log_dieusys(LOG_EXIT_SYS, "make fd close-on-exec") ;
 
     } else {
-        // be paranoid: fd_move use dup2 which disable O_CLOEXEC flag to the new fd.
-        if (uncoe(fd) < 0)
+        // be paranoid: move_fd use dup2 which disable O_CLOEXEC flag to the new fd.
+        if (uncloexec_fd(fd) < 0)
             log_dieusys(LOG_EXIT_SYS, "remove close-on-exec from fd") ;
     }
 }
@@ -330,7 +331,7 @@ static void io_open_syslog(int fd)
         strcpy(addr.sun_path, "/dev/log");
         int r = connect(sock, (struct sockaddr *)&addr, sizeof (addr)) ;
         if (r < 0) {
-            fd_close(sock) ;
+            close_fd(sock) ;
             if (errno == EPROTOTYPE) {
                 socktype = SOCK_STREAM ;
                 sock = -1 ;
@@ -344,10 +345,10 @@ static void io_open_syslog(int fd)
     if (shutdown(sock, SHUT_RD) < 0)
         log_dieusys(LOG_EXIT_SYS, "close reading part of socket") ;
 
-    if (fd_move(fd, sock) < 0)
+    if (move_fd(fd, sock) < 0)
         log_dieusys(LOG_EXIT_SYS, "move fd to socket") ;
 
-    if (uncoe(fd) < 0)
+    if (uncloexec_fd(fd) < 0)
         log_dieusys(LOG_EXIT_SYS, "remove close-on-exec from fd") ;
 
     errno = e ;
@@ -368,7 +369,7 @@ static void io_setup_stdin(resolve_service_t *res)
             break ;
 
         case E_PARSER_IO_TYPE_CLOSE:
-            fd_close(0) ;
+            close_fd(0) ;
             break ;
 
         case E_PARSER_IO_TYPE_S6LOG:
@@ -433,14 +434,14 @@ static void io_setup_stdout(resolve_service_t *res)
             break ;
 
         case E_PARSER_IO_TYPE_CLOSE:
-            fd_close(1) ;
+            close_fd(1) ;
             break ;
 
         case E_PARSER_IO_TYPE_PARENT:
             break ;
 
         case E_PARSER_IO_TYPE_INHERIT:
-            if (fd_copy(1, 0) < 0)
+            if (copy_fd(1, 0) < 0)
                 log_dieusys(LOG_EXIT_SYS, "copy stdout to stderr") ;
             break ;
 
@@ -477,11 +478,11 @@ static void io_setup_stderr(resolve_service_t *res)
             break ;
 
         case E_PARSER_IO_TYPE_CLOSE:
-            fd_close(2) ;
+            close_fd(2) ;
             break ;
 
         case E_PARSER_IO_TYPE_INHERIT:
-            if (fd_copy(2, 1) < 0)
+            if (copy_fd(2, 1) < 0)
                 log_dieusys(LOG_EXIT_SYS, "copy stderr to stdout") ;
             break ;
 
