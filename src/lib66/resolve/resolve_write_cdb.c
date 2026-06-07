@@ -22,8 +22,8 @@
 #include <oblibs/io.h>
 #include <oblibs/string.h>
 #include <oblibs/cdb.h>
+#include <oblibs/files.h>
 
-#include <skalibs/djbunix.h>
 #include <skalibs/posixplz.h>//unlink
 
 #include <66/resolve.h>
@@ -78,7 +78,7 @@ int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *nam
 
     close(fd) ;
 
-    if (!filecopy_unsafe(tfile, file, 0600)) {
+    if (!file_copy(tfile, file, 0600)) {
         log_warnusys("copy: ", tfile, " to ", file) ;
         goto err_fd ;
     }

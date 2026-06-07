@@ -27,7 +27,6 @@
 
 #include <skalibs/unix-transactional.h>
 #include <skalibs/posixplz.h>
-#include <skalibs/djbunix.h>
 
 #include <66/constants.h>
 #include <66/sanitize.h>

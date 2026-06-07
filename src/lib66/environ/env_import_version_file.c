@@ -20,9 +20,9 @@
 #include <oblibs/string.h>
 #include <oblibs/sastr.h>
 #include <oblibs/directory.h>
+#include <oblibs/files.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/djbunix.h>
 
 #include <66/environ.h>
 #include <66/constants.h>
@@ -80,7 +80,7 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
 
         log_info("Imports ",svname," configuration file from: ",s," to: ",d) ;
 
-        if (!filecopy_unsafe(s, d, st.st_mode))
+        if (!file_copy(s, d, st.st_mode))
             log_warnusys_return(LOG_EXIT_ZERO,"copy: ", s," to: ",d) ;
     }
 

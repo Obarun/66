@@ -34,7 +34,6 @@
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/stralloc.h>
-#include <skalibs/djbunix.h>
 #include <skalibs/bytestr.h>//byte_count
 #include <skalibs/posixplz.h>//unlink_void
 
@@ -1047,7 +1046,7 @@ void tree_clone(char const *clone, ssexec_t *info)
     if (stat(src, &st) < 0)
         log_dieusys(LOG_EXIT_SYS, "stat: ", src) ;
 
-    if (!filecopy_unsafe(src, dst, st.st_mode))
+    if (!file_copy(src, dst, st.st_mode))
         log_dieusys(LOG_EXIT_SYS, "copy: ", src, " to: ", dst) ;
 
     if (lchown(dst, st.st_uid, st.st_gid) < 0)

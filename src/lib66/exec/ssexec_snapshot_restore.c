@@ -23,7 +23,6 @@
 #include <oblibs/directory.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/djbunix.h>
 
 #include <66/ssexec.h>
 #include <66/snapshot.h>
