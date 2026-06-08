@@ -214,9 +214,7 @@ static void announce(uint32_t id, bool success)
             close(fd) ;
         }
 
-        fmt[u32_fmt(fmt, svc->exitcode)] = 0 ;
-
-        log_1_warnu(pmanager->cmdmsg ? pmanager->cmdmsg : pmanager->operation ? "stop" : "start", " service: ", name, " -- exited with signal: ", fmt) ;
+        flog_1_warnu("%s service: %s -- exited with signal: %u", pmanager->cmdmsg ? pmanager->cmdmsg : pmanager->operation ? "stop" : "start",  name, svc->exitcode) ;
 
         svc_send_event(SVC_EVENT_CHILD_FAILED, id) ;
     }
