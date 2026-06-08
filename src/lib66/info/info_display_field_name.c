@@ -15,8 +15,8 @@
 #include <stddef.h>
 
 #include <oblibs/log.h>
+#include <oblibs/stream.h>
 
-#include <skalibs/lolstdio.h>
 
 #include <66/info.h>
 
@@ -28,7 +28,7 @@ size_t info_display_field_name(char const *field)
     if(field)
     {
         len = info_length_from_wchar(field) + 1 ;
-        if (!bprintf(buffer_1,"%s%s%s ", log_color->info, field, log_color->off)) log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+        if (!ostream_fmt(ostream_1,"%s%s%s ", log_color->info, field, log_color->off)) log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
     }
     return len ;
 }

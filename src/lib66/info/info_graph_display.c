@@ -13,9 +13,8 @@
  * */
 
 #include <oblibs/log.h>
+#include <oblibs/stream.h>
 
-#include <skalibs/buffer.h>
-#include <skalibs/lolstdio.h>
 
 #include <66/info.h>
 
@@ -34,21 +33,21 @@ int info_graph_display(char const *name, info_graph_func *func, depth_t *depth, 
 
     while(depth->next)
     {
-        if (!bprintf(buffer_1,"%*s%-*s",style->indent * (depth->level - level) + (level == 1 ? padding : 0), "", style->indent, style->limb))
+        if (!ostream_fmt(ostream_1,"%*s%-*s",style->indent * (depth->level - level) + (level == 1 ? padding : 0), "", style->indent, style->limb))
             return 0 ;
 
         level = depth->level + 1 ;
         depth = depth->next ;
     }
 
-    if (!bprintf(buffer_1,"%*s%*s%s", \
+    if (!ostream_fmt(ostream_1,"%*s%*s%s", \
                 level == 1 ? padding : 0,"", \
                 style->indent * (depth->level - level), "", \
                 tip)) return 0 ;
 
     int r = (*func)(name) ;
     if (!r) return 0 ;
-    if (buffer_putsflush(buffer_1,"\n") < 0)
+    if (!ostream_putflush(ostream_1, "\n", 1))
         return 0 ;
 
     return 1 ;

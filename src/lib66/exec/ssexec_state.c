@@ -17,9 +17,8 @@
 
 #include <oblibs/log.h>
 #include <oblibs/stack.h>
+#include <oblibs/stream.h>
 
-#include <skalibs/lolstdio.h>
-#include <skalibs/buffer.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/djbunix.h>
 
@@ -41,15 +40,15 @@ static void info_display_string(char const *field,char const *str)
 
     if (!*str)
     {
-        if (!bprintf(buffer_1,"%s%s",log_color->warning,"None"))
+        if (!ostream_fmt(ostream_1,"%s%s",log_color->warning,"None"))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
     }
     else
     {
-        if (!buffer_puts(buffer_1,str))
+        if (!ostream_puts(ostream_1,str))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
     }
-    if (buffer_putsflush(buffer_1,"\n") == -1)
+    if (!ostream_putflush(ostream_1, "\n", 1))
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 }
 

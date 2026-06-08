@@ -17,10 +17,9 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/stream.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/lolstdio.h>
-#include <skalibs/buffer.h>
 
 #include <66/tree.h>
 #include <66/resolve.h>
@@ -75,8 +74,8 @@ int info_graph_display_tree(char const *name)
     if (enabled < 0)
         goto freed ;
 
-    //if (!bprintf(buffer_1,"%s (%s%s%s,%s%s%s,%s%s%s)",
-    if (!bprintf(buffer_1,"%s (%s%s%s)", \
+    //if (!ostream_fmt(ostream_1,"%s (%s%s%s,%s%s%s,%s%s%s)",
+    if (!ostream_fmt(ostream_1,"%s (%s%s%s)", \
 
                 name, \
                 /*

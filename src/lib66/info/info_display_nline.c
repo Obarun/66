@@ -17,9 +17,9 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/sastr.h>
+#include <oblibs/stream.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/lolstdio.h>
 
 #include <66/info.h>
 
@@ -50,7 +50,7 @@ void info_display_nline(char const *field,char const *str)
 
         if (field) {
             if (pos) {
-                if (!bprintf(buffer_1,"%*s",padding,""))
+                if (!ostream_fmt(ostream_1,"%*s",padding,""))
                     log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
             }
         }

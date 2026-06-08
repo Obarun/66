@@ -22,10 +22,9 @@
 #include <oblibs/types.h>
 #include <oblibs/stack.h>
 #include <oblibs/types.h>
+#include <oblibs/stream.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/lolstdio.h>
-#include <skalibs/buffer.h>
 #include <skalibs/sgetopt.h>
 
 #include <66/resolve.h>
@@ -47,16 +46,16 @@ static void info_display_string(char const *field, char const *str, uint32_t ele
 
     if (check && !element) {
 
-        if (!bprintf(buffer_1,"%s%s", log_color->warning, "None"))
+        if (!ostream_fmt(ostream_1,"%s%s", log_color->warning, "None"))
             log_dieu(LOG_EXIT_SYS, "write to stdout") ;
 
     } else {
 
-        if (!buffer_puts(buffer_1, str + element))
+        if (!ostream_puts(ostream_1, str + element))
             log_dieu(LOG_EXIT_SYS, "write to stdout") ;
     }
 
-    if (buffer_putsflush(buffer_1, "\n") == -1)
+    if (!ostream_putflush(ostream_1, "\n", 1))
         log_dieu(LOG_EXIT_SYS, "write to stdout") ;
 
 
@@ -69,10 +68,10 @@ static void info_display_int64(char const *field, uint64_t element)
     char ui[U64_FMT] ;
     ui[u64_fmt(ui, element)] = 0 ;
 
-    if (!buffer_puts(buffer_1, ui))
+    if (!ostream_puts(ostream_1, ui))
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 
-    if (buffer_putsflush(buffer_1, "\n") == -1)
+    if (!ostream_putflush(ostream_1, "\n", 1))
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
@@ -83,10 +82,10 @@ static void info_display_int(char const *field, uint32_t element)
     char ui[U32_FMT] ;
     ui[u32_fmt(ui, element)] = 0 ;
 
-    if (!buffer_puts(buffer_1, ui))
+    if (!ostream_puts(ostream_1, ui))
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 
-    if (buffer_putsflush(buffer_1, "\n") == -1)
+    if (!ostream_putflush(ostream_1, "\n", 1))
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 

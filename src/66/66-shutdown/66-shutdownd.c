@@ -34,9 +34,10 @@
 #include <oblibs/types.h>
 #include <oblibs/clock.h>
 #include <oblibs/fd.h>
+#include <oblibs/stream.h>
+#include <oblibs/io.h>
 
 #include <skalibs/posixplz.h>
-#include <skalibs/allreadwrite.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/sig.h>
@@ -180,15 +181,16 @@ static inline void run_rcshut (void)
     else log_warnusys("spawn ", rcshut) ;
 }
 
-static inline void prepare_shutdown (buffer *b, tain *deadline, unsigned int *grace_time)
+static inline void prepare_shutdown (istream *b, tain *deadline, unsigned int *grace_time)
 {
     log_flow() ;
 
     uint32_t u ;
     char pack[CLOCK_PACK + 4] ;
-    ssize_t r = sanitize_read(buffer_get(b, pack, CLOCK_PACK + 4)) ;
-    if (r == -1) log_dieusys(LOG_EXIT_SYS, "read from pipe") ;
-    if (r < CLOCK_PACK + 4) log_dieusys(101, "bad shutdown protocol") ;
+    size_t w = 0 ;
+    int r = istream_getall(b, pack, CLOCK_PACK + 4, &w) ;
+    if (r < 0 && errno != EPIPE) log_dieusys(LOG_EXIT_SYS, "read from pipe") ;
+    if (r != 1) log_dieusys(LOG_EXIT_SYS, "bad shutdown protocol") ;
     struct timespec rel ;
     clock_unpack(pack, &rel) ;
     tain trel = { .sec = { .x = (uint64_t)rel.tv_sec }, .nano = (uint32_t)rel.tv_nsec } ;
@@ -197,16 +199,17 @@ static inline void prepare_shutdown (buffer *b, tain *deadline, unsigned int *gr
     if (u && u <= 300000) *grace_time = u ;
 }
 
-static inline void handle_fifo (buffer *b, char *what, tain *deadline, unsigned int *grace_time)
+static inline void handle_fifo (istream *b, char *what, tain *deadline, unsigned int *grace_time)
 {
     log_flow() ;
 
     for (;;)
     {
         char c ;
-        ssize_t r = sanitize_read(buffer_get(b, &c, 1)) ;
-        if (r == -1) log_dieusys(LOG_EXIT_SYS, "read from pipe") ;
-        else if (!r) break ;
+        size_t w = 0 ;
+        if (istream_getall(b, &c, 1, &w) < 0 && errno != EPIPE)
+            log_dieusys(LOG_EXIT_SYS, "read from pipe") ;
+        if (!w) break ;   // would-block or EOF: nothing more -> back to iopause
         switch (c)
         {
             case 'S' :
@@ -234,7 +237,7 @@ static inline void prepare_stage4 (char what)
 {
     log_flow() ;
 
-    buffer b ;
+    ostream b ;
     int fd ;
     char buf[512] ;
     char shutfinal[4096] ; //huge path allowed
@@ -264,39 +267,39 @@ static inline void prepare_stage4 (char what)
     unlink_void(STAGE4_FILE ".new") ;
     fd = open_excl(STAGE4_FILE ".new") ;
     if (fd == -1) log_dieusys(LOG_EXIT_SYS, "open ", STAGE4_FILE ".new", " for writing") ;
-    buffer_init(&b, &buffer_write, fd, buf, 516) ;
+    ostream_init(&b, fd, buf, 516) ;
 
     if (inns) {
 
-        if (buffer_puts(&b,
+        if (!ostream_puts(&b,
             "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n\n"
             EXECLINE_EXTBINPREFIX "foreground { "
             S6_EXTBINPREFIX "s6-svc -0x -- . }\n"
-            EXECLINE_EXTBINPREFIX "background\n{\n  ") < 0
+            EXECLINE_EXTBINPREFIX "background\n{\n  ")
 
-            || (!nologger && buffer_puts(&b,
+            || (!nologger && !ostream_puts(&b,
             EXECLINE_EXTBINPREFIX "foreground { "
-            S6_EXTBINPREFIX "s6-svc -0xc -- ") < 0
-            || buffer_puts(&b,live) < 0
-            || buffer_puts(&b,SS_BOOT_LOG " }\n  ") < 0)
+            S6_EXTBINPREFIX "s6-svc -0xc -- ")
+            || !ostream_puts(&b,live)
+            || !ostream_puts(&b,SS_BOOT_LOG " }\n  "))
 
-            || buffer_puts(&b, S6_EXTBINPREFIX "66 -l ") < 0
-            || buffer_puts(&b, live) < 0
-            || buffer_puts(&b, " scandir abort\n}\n") < 0)
+            || !ostream_puts(&b, S6_EXTBINPREFIX "66 -l ")
+            || !ostream_puts(&b, live)
+            || !ostream_puts(&b, " scandir abort\n}\n"))
             log_dieusys(LOG_EXIT_SYS, "write to ", STAGE4_FILE ".new") ;
     }
     else
     {
-        if (buffer_puts(&b,
+        if (!ostream_puts(&b,
             "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n\n"
             EXECLINE_EXTBINPREFIX "foreground { "
             SS_BINPREFIX "66-umountall }\n"
-            EXECLINE_EXTBINPREFIX "foreground { tryexec { ") < 0
-            || buffer_put(&b,shutfinal,strlen(shutfinal)) < 0
-            || buffer_puts(&b," } }\n"
-            SS_BINPREFIX "66-hpr -f -") < 0
-            || buffer_put(&b, &what, 1) < 0
-            || buffer_putsflush(&b, "\n") < 0) log_dieusys(LOG_EXIT_SYS, "write to ", STAGE4_FILE ".new") ;
+            EXECLINE_EXTBINPREFIX "foreground { tryexec { ")
+            || !ostream_put(&b,shutfinal,strlen(shutfinal))
+            || !ostream_puts(&b," } }\n"
+            SS_BINPREFIX "66-hpr -f -")
+            || !ostream_put(&b, &what, 1)
+            || !ostream_putflush(&b, "\n", 1)) log_dieusys(LOG_EXIT_SYS, "write to ", STAGE4_FILE ".new") ;
     }
     if (fchmod(fd, S_IRWXU) == -1) log_dieusys(LOG_EXIT_SYS, "fchmod ", STAGE4_FILE ".new") ;
     close_fd(fd) ;
@@ -365,7 +368,7 @@ int main (int argc, char const *const *argv)
     unsigned int grace_time = 3000 ;
     tain deadline ;
     int fdr, fdw ;
-    buffer b ;
+    istream b ;
     char what = 'S' ;
     char buf[64] ;
 
@@ -438,7 +441,7 @@ int main (int argc, char const *const *argv)
         log_dieusys(LOG_EXIT_SYS, "open ", SHUTDOWND_FIFO, " for writing") ;
     if (!sig_ignore(SIGPIPE))
         log_dieusys(LOG_EXIT_SYS, "sig_ignore SIGPIPE") ;
-    buffer_init(&b, &buffer_read, fdr, buf, 64) ;
+    istream_init(&b, fdr, buf, 64) ;
     tain_now_set_stopwatch_g() ;
     tain_add_g(&deadline, &tain_infinite_relative) ;
 

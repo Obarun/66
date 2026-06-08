@@ -17,9 +17,9 @@
  * */
 
 #include <oblibs/log.h>
+#include <oblibs/stream.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/buffer.h>
 
 #define USAGE "66-echo [ -h ] [ -n ] [ -s sep ] args..."
 
@@ -59,11 +59,11 @@ int main (int argc, char const *const *argv)
         argc -= l.ind ; argv += l.ind ;
     }
     for ( ; *argv ; argv++)
-        if ((buffer_puts(buffer_1small, *argv) < 0)
-        || (argv[1] && (buffer_put(buffer_1small, &sep, 1) < 0)))
+        if ((!ostream_puts(ostream_1, *argv))
+        || (argv[1] && (!ostream_put(ostream_1, &sep, 1))))
         goto err ;
-    if (donl && (buffer_put(buffer_1small, "\n", 1) < 0)) goto err ;
-    if (!buffer_flush(buffer_1small)) goto err ;
+    if (donl && (!ostream_put(ostream_1, "\n", 1))) goto err ;
+    if (!ostream_flush(ostream_1)) goto err ;
     return 0 ;
     err:
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;

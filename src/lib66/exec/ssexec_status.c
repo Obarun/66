@@ -31,13 +31,12 @@
 #include <oblibs/environ.h>
 #include <oblibs/sastr.h>
 #include <oblibs/types.h>
+#include <oblibs/stream.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/lolstdio.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/cspawn.h>
-#include <skalibs/buffer.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/env.h>
 
@@ -163,8 +162,8 @@ static char *print_nlog(char *str, int n)
 
 static void info_display_string(char const *str)
 {
-    if (!bprintf(buffer_1,"%s",str) ||
-        buffer_putsflush(buffer_1,"\n") == -1)
+    if (!ostream_puts(ostream_1,str) ||
+        !ostream_putflush(ostream_1, "\n", 1))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 }
 
@@ -173,16 +172,16 @@ static void info_display_int(uint32_t element)
     char ui[U32_FMT] ;
     ui[u32_fmt(ui, element)] = 0 ;
 
-    if (!buffer_puts(buffer_1, ui))
+    if (!ostream_puts(ostream_1, ui))
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 
-    if (buffer_putsflush(buffer_1, "\n") == -1)
+    if (!ostream_putflush(ostream_1, "\n", 1))
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
 static void info_display_empty(void)
 {
-    if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
+    if (!ostream_fmt(ostream_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 }
 
@@ -221,7 +220,7 @@ static void info_get_status(resolve_service_t *res)
 
         r = s6_svc_ok(res->sa.s + res->live.scandir) ;
         if (r != 1) {
-            if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
+            if (!ostream_fmt(ostream_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
             return ;
         }
@@ -261,7 +260,7 @@ static void info_get_status(resolve_service_t *res)
             warn_color = 2 ;
         }
 
-        if (!bprintf(buffer_1, "%s%s%s\n", warn_color > 1 ? log_color->valid : warn_color ? log_color->error : log_color->warning, status, log_color->off))
+        if (!ostream_fmt(ostream_1, "%s%s%s\n", warn_color > 1 ? log_color->valid : warn_color ? log_color->error : log_color->warning, status, log_color->off))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
     }
 }
@@ -280,10 +279,10 @@ static void info_display_status(char const *field,resolve_service_t *res)
 
     disen = res->enabled ;
 
-    if (!bprintf(buffer_1,"%s%s%s%s", disen ? log_color->valid : log_color->warning, disen ? "enabled" : "disabled", log_color->off, ", "))
+    if (!ostream_fmt(ostream_1,"%s%s%s%s", disen ? log_color->valid : log_color->warning, disen ? "enabled" : "disabled", log_color->off, ", "))
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
-    if (buffer_putsflush(buffer_1,"") == -1)
+    if (!ostream_putflush(ostream_1, "", 0))
         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
     info_get_status(res) ;
@@ -385,7 +384,7 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
 
     if (GRAPH) {
 
-        if (!bprintf(buffer_1,"%s\n","\\"))
+        if (!ostream_fmt(ostream_1,"%s\n","\\"))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
         depth_t d = info_graph_init() ;
@@ -418,9 +417,9 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
 
     empty:
         if (GRAPH) {
-            if (!bprintf(buffer_1,"%s\n","\\"))
+            if (!ostream_fmt(ostream_1,"%s\n","\\"))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-            if (!bprintf(buffer_1,"%*s%s%s%s%s\n",padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
+            if (!ostream_fmt(ostream_1,"%*s%s%s%s%s\n",padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
         } else {
             info_display_empty() ;
@@ -457,7 +456,7 @@ static void info_display_deps(char const *field, resolve_service_t *res)
 
     if (GRAPH) {
 
-        if (!bprintf(buffer_1,"%s\n","\\"))
+        if (!ostream_fmt(ostream_1,"%s\n","\\"))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
         depth_t d = info_graph_init() ;
@@ -490,10 +489,10 @@ static void info_display_deps(char const *field, resolve_service_t *res)
 
     empty:
         if (GRAPH) {
-            if (!bprintf(buffer_1,"%s\n","\\"))
+            if (!ostream_fmt(ostream_1,"%s\n","\\"))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
-            if (!bprintf(buffer_1,"%*s%s%s%s%s\n",padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
+            if (!ostream_fmt(ostream_1,"%*s%s%s%s%s\n",padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
         } else {
             info_display_empty() ;
@@ -559,7 +558,7 @@ static void info_display_contents(char const *field, resolve_service_t *res)
 
     if (GRAPH) {
 
-        if (!bprintf(buffer_1,"%s\n","\\"))
+        if (!ostream_fmt(ostream_1,"%s\n","\\"))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
         depth_t d = info_graph_init() ;
@@ -592,10 +591,10 @@ static void info_display_contents(char const *field, resolve_service_t *res)
     }
     empty:
         if (GRAPH) {
-            if (!bprintf(buffer_1,"%s\n","\\"))
+            if (!ostream_fmt(ostream_1,"%s\n","\\"))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
-            if (!bprintf(buffer_1,"%*s%s%s%s%s\n",padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
+            if (!ostream_fmt(ostream_1,"%*s%s%s%s%s\n",padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
         } else {
             info_display_empty() ;
@@ -614,7 +613,7 @@ static void info_display_start(char const *field,resolve_service_t *res)
 
     size_t padding = info_length_from_wchar(field) + 1 ;
     if (field)
-        if (!bprintf(buffer_1,"\n%*s",padding,""))
+        if (!ostream_fmt(ostream_1,"\n%*s",padding,""))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
     if (res->execute.run.run_user)
@@ -632,7 +631,7 @@ static void info_display_stop(char const *field,resolve_service_t *res)
 
     size_t padding = info_length_from_wchar(field) + 1 ;
     if (field)
-        if (!bprintf(buffer_1,"\n%*s",padding,""))
+        if (!ostream_fmt(ostream_1,"\n%*s",padding,""))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
     if (res->execute.finish.run_user)
@@ -752,14 +751,14 @@ static void info_display_envfile(char const *field,resolve_service_t *res)
             {
                 if (NOFIELD) {
                     size_t padding = info_length_from_wchar(field) + 1 ;
-                    if (!bprintf(buffer_1,"%*s",padding,""))
+                    if (!ostream_fmt(ostream_1,"%*s",padding,""))
                         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
                 }
                 info_display_nline(field,sa.s) ;
             }
             else info_display_nline(field,sa.s) ;
 
-            if (!bprintf(buffer_1,"%s","\n"))
+            if (!ostream_puts(ostream_1,"\n"))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
         }
     }
@@ -880,7 +879,7 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
                     int r = scan_mode(scan,S_IFREG) ;
                     if (r < 0) { errno = EEXIST ; log_diesys(LOG_EXIT_SYS,"conflicting format of: ",scan) ; }
                     if (!r) {
-                        if (!bprintf(buffer_1,"%s%s%s\n",log_color->error,"unable to find the log file",log_color->off))
+                        if (!ostream_fmt(ostream_1,"%s%s%s\n",log_color->error,"unable to find the log file",log_color->off))
                         goto err ;
 
                     } else {
@@ -892,10 +891,10 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
                         log.len-- ;
                         if (!auto_stra(&log,"\n")) log_dieusys(LOG_EXIT_SYS,"append newline") ;
                         if (log.len < 10 && res->type != E_PARSER_TYPE_ONESHOT) {
-                            if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off)) goto err ;
+                            if (!ostream_fmt(ostream_1,"%s%s%s\n",log_color->warning,"None",log_color->off)) goto err ;
                         } else {
-                            if (!bprintf(buffer_1,"\n")) goto err ;
-                            if (!bprintf(buffer_1,"%s\n",print_nlog(log.s,nlog))) goto err ;
+                            if (!ostream_fmt(ostream_1,"\n")) goto err ;
+                            if (!ostream_fmt(ostream_1,"%s\n",print_nlog(log.s,nlog))) goto err ;
                         }
                     }
 
@@ -908,10 +907,10 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
                     log.len-- ;
                     if (!auto_stra(&log,"\n")) log_dieusys(LOG_EXIT_SYS,"append newline") ;
                     if (log.len < 10 && res->type != E_PARSER_TYPE_ONESHOT) {
-                        if (!bprintf(buffer_1,"%s%s%s\n",log_color->warning,"None",log_color->off)) goto err ;
+                        if (!ostream_fmt(ostream_1,"%s%s%s\n",log_color->warning,"None",log_color->off)) goto err ;
                     } else {
-                        if (!bprintf(buffer_1,"\n")) goto err ;
-                        if (!bprintf(buffer_1,"%s\n",print_nlog(log.s,nlog))) goto err ;
+                        if (!ostream_fmt(ostream_1,"\n")) goto err ;
+                        if (!ostream_fmt(ostream_1,"%s\n",print_nlog(log.s,nlog))) goto err ;
                     }
                 }
             }
@@ -1023,9 +1022,9 @@ void info_status_all(void)
                 if (!nservice && errno == EINVAL)
                     log_die(LOG_EXIT_USER, "build the graph -- please make a bug report") ;
 
-                if (!bprintf(buffer_1,"%s%s%s%s\n","In tree: ", log_color->info, h->tres.sa.s + h->tres.name, log_color->off))
+                if (!ostream_fmt(ostream_1,"%s%s%s%s\n","In tree: ", log_color->info, h->tres.sa.s + h->tres.name, log_color->off))
                     log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-                if (!bprintf(buffer_1,"%s\n","\\"))
+                if (!ostream_fmt(ostream_1,"%s\n","\\"))
                     log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
                 depth_t d = info_graph_init() ;
@@ -1033,7 +1032,7 @@ void info_status_all(void)
                 if (!service_info_walk(&sg, 0, h->tres.sa.s + h->tres.name, 0, REVERSE, &d, 0, S_STYLE, pinfo))
                     log_dieu(LOG_EXIT_SYS,"display the dependencies list") ;
 
-                if (buffer_puts(buffer_1,"\n") == -1)
+                if (!ostream_puts(ostream_1,"\n"))
                     log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
                 service_graph_destroy(&sg) ;
@@ -1064,7 +1063,7 @@ void info_status_one(const char *service, int *what)
 
     info_display_all(&res, what) ;
 
-    if (buffer_putsflush(buffer_1,"\n") == -1)
+    if (!ostream_putflush(ostream_1, "\n", 1))
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 
     resolve_free(wres) ;

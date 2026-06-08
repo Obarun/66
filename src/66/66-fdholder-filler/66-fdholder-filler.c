@@ -26,12 +26,12 @@
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 #include <oblibs/types.h>
+#include <oblibs/stream.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/tai.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
-#include <skalibs/buffer.h>
 
 #include <66/constants.h>
 
@@ -71,7 +71,7 @@ static inline uint8_t class (char c)
 static inline char cnext (void)
 {
   char c ;
-  ssize_t r = buffer_get(buffer_0, &c, 1) ;
+  ssize_t r = istream_get(istream_0, &c, 1) ;
   if (r == -1) log_dieusys(LOG_EXIT_SYS, "read from stdin") ;
   return r ? c : 0 ;
 }

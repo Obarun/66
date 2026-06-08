@@ -23,11 +23,11 @@
 #include <oblibs/sastr.h>
 #include <oblibs/stack.h>
 #include <oblibs/environ.h>
+#include <oblibs/stream.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
-#include <skalibs/buffer.h>
 #include <skalibs/diuint32.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/unix-transactional.h>//atomic_symlink
@@ -313,15 +313,15 @@ int ssexec_configure(int argc, char const *const *argv, ssexec_t *info)
                 pos = 0 ;
                 FOREACH_SASTR(&satmp, pos) {
 
-                    if (buffer_puts(buffer_1, svconf) < 0 ||
-                        buffer_puts(buffer_1, "/") < 0 ||
-                        buffer_puts(buffer_1, satmp.s + pos) < 0)
+                    if (!ostream_puts(ostream_1, svconf) ||
+                        !ostream_puts(ostream_1, "/") ||
+                        !ostream_puts(ostream_1, satmp.s + pos))
                         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
                     if (check_current_version(svconf, satmp.s + pos)) {
-                        if (buffer_putsflush(buffer_1, " current") < 0)
+                        if (!ostream_putflush(ostream_1, " current", 8))
                             log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
                     }
-                    if (buffer_putsflush(buffer_1, "\n") < 0)
+                    if (!ostream_putflush(ostream_1, "\n", 1))
                         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
                 }
             }

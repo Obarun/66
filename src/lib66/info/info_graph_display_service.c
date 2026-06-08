@@ -17,8 +17,8 @@
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
+#include <oblibs/stream.h>
 
-#include <skalibs/lolstdio.h>
 
 
 #include <66/service.h>
@@ -90,7 +90,7 @@ int info_graph_display_service(char const *name)
 
     dis:
 
-    if (!bprintf(buffer_1,"%s (%s%s%s%s%s, %s%s%s%s%s, %s%s%s%s%s, %s%s%s%s%s)", \
+    if (!ostream_fmt(ostream_1,"%s (%s%s%s%s%s, %s%s%s%s%s, %s%s%s%s%s, %s%s%s%s%s)", \
 
         name, \
 

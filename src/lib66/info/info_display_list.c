@@ -15,10 +15,9 @@
 #include <stddef.h>
 
 #include <oblibs/log.h>
+#include <oblibs/stream.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/buffer.h>
-#include <skalibs/lolstdio.h>
 
 #include <66/info.h>
 
@@ -41,19 +40,19 @@ void info_display_list(char const *field, stralloc *list)
         if((maxcols > padding) && (cols + slen + 2 >= maxcols))
         {
             cols = padding ;
-            if (buffer_puts(buffer_1,"\n") == -1) goto err ;
+            if (!ostream_puts(ostream_1,"\n")) goto err ;
             for(b = 1 ; b <= padding ; b++)
-                if (buffer_puts(buffer_1," ") == -1) goto err ;
+                if (!ostream_puts(ostream_1," ")) goto err ;
         }
         else if (cols != padding)
         {
-            if (buffer_puts(buffer_1," ") == -1) goto err ;
+            if (!ostream_puts(ostream_1," ")) goto err ;
             cols += 2 ;
         }
-        if (!bprintf(buffer_1,"%s",str)) goto err ;
+        if (!ostream_puts(ostream_1,str)) goto err ;
         cols += slen ;
     }
-    if (buffer_puts(buffer_1,"\n") == -1) goto err ;
+    if (!ostream_puts(ostream_1,"\n")) goto err ;
 
     return ;
     err:
