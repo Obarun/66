@@ -344,6 +344,8 @@ int main(int argc, char const *const *argv)
         info.usage = usage_poweroff ;
         func = &ssexec_shutdown_wrapper ;
 
+        sanitize++ ;
+
     } else if (!strcmp(argv[0], "reboot")) {
 
         PROG = "reboot" ;
@@ -353,6 +355,8 @@ int main(int argc, char const *const *argv)
         info.usage = usage_reboot ;
         func = &ssexec_shutdown_wrapper ;
 
+        sanitize++ ;
+
     } else if (!strcmp(argv[0], "halt")) {
 
         PROG = "halt" ;
@@ -361,6 +365,8 @@ int main(int argc, char const *const *argv)
         info.help = help_halt ;
         info.usage = usage_halt ;
         func = &ssexec_shutdown_wrapper ;
+
+        sanitize++ ;
 
     } else if (!strcmp(argv[0], "wall")) {
 
