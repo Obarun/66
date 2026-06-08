@@ -18,13 +18,13 @@
 
 #include <string.h>
 #include <sys/uio.h>
+#include <fcntl.h>
 #include <utmpx.h>
 
 #include <oblibs/log.h>
 #include <oblibs/fd.h>
+#include <oblibs/io.h>
 
-#include <skalibs/allreadwrite.h>
-#include <skalibs/djbunix.h>
 #include <skalibs/posixishard.h>
 
 #include <66/hpr.h>
@@ -47,9 +47,9 @@ void hpr_wallv (struct iovec const *v, unsigned int n)
         linelen = strnlen(utx->ut_line, UT_LINESIZE) ;
         memcpy(tty + 5, utx->ut_line, linelen) ;
         tty[5 + linelen] = 0 ;
-        fd = open_append(tty) ;
+        fd = io_open_mode(tty, O_WRONLY|O_NONBLOCK|O_APPEND|O_CREAT, 0666) ;
         if (fd == -1) continue ;
-        allwritev(fd, v, n) ;
+        io_allwritev(fd, v, n) ;
         close_fd(fd) ;
     }
     endutxent() ;

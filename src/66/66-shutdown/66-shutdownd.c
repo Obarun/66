@@ -93,7 +93,7 @@ static void restore_console (void)
     log_flow() ;
 
     close_fd(1) ;
-    if (open2("/dev/console", O_WRONLY) != 1 && open2("/dev/null", O_WRONLY) != 1)
+    if (io_open("/dev/console", O_WRONLY) != 1 && io_open("/dev/null", O_WRONLY) != 1)
         log_warnusys("open /dev/console for writing") ;
     else if (copy_fd(2, 1) < 0)
         log_warnusys("copy_fd") ;
@@ -265,7 +265,7 @@ static inline void prepare_stage4 (char what)
     }
 
     unlink_void(STAGE4_FILE ".new") ;
-    fd = open_excl(STAGE4_FILE ".new") ;
+    fd = io_open_mode(STAGE4_FILE ".new", O_WRONLY|O_CREAT|O_EXCL|O_NONBLOCK, 0666) ;
     if (fd == -1) log_dieusys(LOG_EXIT_SYS, "open ", STAGE4_FILE ".new", " for writing") ;
     ostream_init(&b, fd, buf, 512) ;
 
@@ -433,10 +433,10 @@ int main (int argc, char const *const *argv)
         }
     }
 
-    fdr = open_read(SHUTDOWND_FIFO) ;
+    fdr = io_open(SHUTDOWND_FIFO, O_RDONLY|O_NONBLOCK) ;
     if (fdr == -1 || cloexec_fd(fdr) == -1)
         log_dieusys(LOG_EXIT_SYS, "open ", SHUTDOWND_FIFO, " for reading") ;
-    fdw = open_write(SHUTDOWND_FIFO) ;
+    fdw = io_open(SHUTDOWND_FIFO, O_WRONLY|O_NONBLOCK) ;
     if (fdw == -1 || cloexec_fd(fdw) == -1)
         log_dieusys(LOG_EXIT_SYS, "open ", SHUTDOWND_FIFO, " for writing") ;
     if (!sig_ignore(SIGPIPE))

@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -29,11 +30,10 @@
 #include <oblibs/types.h>
 #include <oblibs/clock.h>
 #include <oblibs/fd.h>
+#include <oblibs/io.h>
 
-#include <skalibs/allreadwrite.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/sig.h>
-#include <skalibs/djbunix.h>
 #include <skalibs/buffer.h>
 
 #include <66/config.h>
@@ -217,7 +217,8 @@ static inline void access_control (void)
     char const *users[AC_MAX] ;
     unsigned int n ;
     struct stat st ;
-    int fd = open_readb(AC_FILE) ;
+    int fd = io_open(AC_FILE, O_RDONLY | O_NONBLOCK) ;
+    if (fd >= 0 && !io_set_block(fd)) { close_fd(fd) ; fd = -1 ; }
     if (fd == -1)
     {
         if (errno == ENOENT) return ;
@@ -228,7 +229,7 @@ static inline void access_control (void)
     if (st.st_size >= AC_BUFSIZE)
         log_die(LOG_EXIT_ONE, AC_FILE, " is too big: it needs to be %d bytes or less", AC_BUFSIZE) ;
 
-    if (allread(fd, buf, st.st_size) < (size_t)st.st_size)
+    if (io_allread(fd, buf, st.st_size) < (size_t)st.st_size)
         log_dieusys(LOG_EXIT_SYS, "read ", AC_FILE) ;
     close_fd(fd) ;
     buf[st.st_size] = 0 ;

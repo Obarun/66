@@ -13,6 +13,7 @@
  */
 
 #include <sys/types.h>
+#include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -24,9 +25,9 @@
 #include <oblibs/directory.h>
 #include <oblibs/types.h>
 #include <oblibs/fd.h>
+#include <oblibs/io.h>
 
 #include <skalibs/stralloc.h>
-#include <skalibs/djbunix.h>
 #include <skalibs/unix-transactional.h>
 
 #include <66/service.h>
@@ -132,7 +133,7 @@ int write_common(resolve_service_t *res, char const *dst, uint8_t force)
                 if (!ob_dirname(b, src))
                     log_warnusys_return(LOG_EXIT_ZERO, "get dirname of: ", src) ;
 
-                fd = open_read(".") ;
+                fd = io_open(".", O_RDONLY|O_NONBLOCK) ;
                 if (fd < 0)
                     log_warnusys_return(LOG_EXIT_ZERO, "open current directory") ;
 

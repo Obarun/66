@@ -15,12 +15,12 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/cdb.h>
-
-#include <skalibs/djbunix.h>
+#include <oblibs/io.h>
 
 int resolve_open_cdb(int *fd, ocdb *c, const char *path, const char *name)
 {
@@ -33,7 +33,12 @@ int resolve_open_cdb(int *fd, ocdb *c, const char *path, const char *name)
 
     auto_strings(file, path, name) ;
 
-    (*fd) = open_readb(file) ;
+    (*fd) = io_open(file, O_RDONLY | O_NONBLOCK) ;
+    if ((*fd) >= 0 && !io_set_block(*fd)) {
+        close_fd(*fd) ;
+        (*fd) = -1 ;
+    }
+
     if ((*fd) < 0)
         log_warnusys_return(errno == ENOENT ? 0 : -1, "open: ",file) ;
 

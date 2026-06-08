@@ -14,12 +14,12 @@
 
 #include <string.h>
 #include <errno.h>
+#include <fcntl.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/fd.h>
-
-#include <skalibs/djbunix.h>
+#include <oblibs/io.h>
 
 #include <66/svc.h>
 
@@ -39,7 +39,7 @@ int svc_scandir_ok (char const *dir)
 
     auto_strings(fn, dir, "/", S6_SVSCAN_CTLDIR, "/control") ;
 
-    fd = open_write(fn) ;
+    fd = io_open(fn, O_WRONLY|O_NONBLOCK) ;
     if (fd < 0)
     {
         if ((errno == ENXIO) || (errno == ENOENT)) return 0 ;

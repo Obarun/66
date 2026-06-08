@@ -22,7 +22,6 @@
 #include <stdint.h>
 #include <sys/prctl.h>
 
-
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
@@ -39,7 +38,6 @@
 #include <skalibs/tai.h>
 #include <skalibs/exec.h>
 #include <skalibs/stralloc.h>
-#include <skalibs/djbunix.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
@@ -164,15 +162,15 @@ static void io_open_file(resolve_service_t *res,  int fd, char const *destinatio
 
     execute_setup_destination(res, dir) ;
 
-    fdest = open3(destination, flags, 0666) ;
+    fdest = io_open_mode(destination, flags, 0666) ;
 
     if ((fdest == -1) && (errno == ENXIO)) {
 
-        fdr = open_read(destination) ;
+        fdr = io_open(destination, O_RDONLY|O_NONBLOCK) ;
         if (fdr == -1)
             log_dieusys(LOG_EXIT_SYS, "open for reading ", destination) ;
 
-        fdest = open3(destination, flags, 0666) ;
+        fdest = io_open_mode(destination, flags, 0666) ;
 
         close_fd(fdr) ;
     }

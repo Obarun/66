@@ -34,10 +34,10 @@
 #include <oblibs/fd.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/djbunix.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/exec.h>
 #include <skalibs/cspawn.h>
+#include <skalibs/djbunix.h>
 
 #include <66/config.h>
 #include <66/constants.h>
@@ -347,7 +347,7 @@ static void parse_conf(const char *confile)
 
 static void opendevnull (void)
 {
-    if (open2("/dev/null", O_RDONLY)) {
+    if (io_open("/dev/null", O_RDONLY)) {
         /* ghetto /dev/null to the rescue */
         int p[2] ;
         log_warnusys("open /dev/null") ;
@@ -446,7 +446,7 @@ static inline void run_stage2 (stralloc *env, const char *tty)
     if (tty) {
 
         close(0) ;
-        if (openb_read(tty)) {
+        if (io_open(tty, O_RDONLY)) {
             log_warnusys("open ", tty) ;
             opendevnull() ;
         }
@@ -460,7 +460,7 @@ static inline void run_stage2 (stralloc *env, const char *tty)
     } else {
 
         close(1) ;
-        if (open2(fifo, O_WRONLY) != 1)  /* blocks until catch-all logger is up */
+        if (io_open(fifo, O_WRONLY) != 1)  /* blocks until catch-all logger is up */
             sulogin("open for writing fifo: ",fifo) ;
         if (copy_fd(2, 1) == -1)
             sulogin("copy stderr to stdout","") ;
@@ -520,7 +520,7 @@ static void cad(void)
         return ;
 
     int fd ;
-    fd = open2("/dev/tty0", O_RDONLY | O_NOCTTY) ;
+    fd = io_open("/dev/tty0", O_RDONLY | O_NOCTTY) ;
     if (fd < 0) {
 
         if (errno == ENOENT)
@@ -628,8 +628,8 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 
     } else if (hasconsole) {
 
-        allwrite(1, banner, bannerlen) ;
-        allwrite(1, "\n", 1) ;
+        io_allwrite(1, banner, bannerlen) ;
+        io_allwrite(1, "\n", 1) ;
     }
 
     if (chdir("/") == -1) sulogin("chdir to ","/") ;
@@ -648,7 +648,7 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 
         nope = mount("dev", slashdev, "devtmpfs", MS_NOSUID | MS_NOEXEC, "") == -1 ;
         e = errno ;
-        if (open2("/dev/console", O_WRONLY) && open2("/dev/null", O_WRONLY))
+        if (io_open("/dev/console", O_WRONLY) && io_open("/dev/null", O_WRONLY))
             sulogin("open /dev/console or /dev/null", "") ;
         if (move_fd(2, 0) < 0)
             sulogin("move stderr to stdin", "") ;
@@ -660,7 +660,7 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
             sulogin("mount a devtmpfs on /dev", "") ;
         }
 
-        if (open2("/dev/console", O_RDONLY))
+        if (io_open("/dev/console", O_RDONLY))
             opendevnull() ;
     }
 
@@ -668,7 +668,7 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 
         if (!slashdev)
             reset_stdin() ;
-        if (open2("/dev/null", O_WRONLY) != 1 || copy_fd(2, 1) == -1)
+        if (io_open("/dev/null", O_WRONLY) != 1 || copy_fd(2, 1) == -1)
             sulogin("open /dev/null or copy stderr to stdout", "") ;
     }
 
@@ -732,10 +732,10 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
     if (catch_log)
     {
         log_info("Starts boot logger at: ",live,"/log/0") ;
-        int fdr = open_read(fifo) ;
+        int fdr = io_open(fifo, O_RDONLY|O_NONBLOCK) ;
         if (fdr == -1) sulogin("open fifo: ",fifo) ;
         close_fd(1) ;
-        if (open2(fifo, O_WRONLY) != 1) sulogin("open fifo: ",fifo) ;
+        if (io_open(fifo, O_WRONLY) != 1) sulogin("open fifo: ",fifo) ;
         close_fd(fdr) ;
     }
 
