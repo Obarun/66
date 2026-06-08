@@ -96,7 +96,7 @@ void regex_replace(stralloc *filelist, resolve_service_t *res)
                     if (!sastr_replace_g(&frontend, key.s, val.s))
                         log_dieu(LOG_EXIT_SYS, "replace: ", key.s, " by: ", val.s, " in file: ", file) ;
 
-                    if (!file_write_unsafe(dname, bname, frontend.s, frontend.len))
+                    if (!file_write_at(dname, bname, frontend.s, frontend.len))
                         log_dieusys(LOG_EXIT_SYS, "write: ", dname, "/", bname) ;
                 }
             }

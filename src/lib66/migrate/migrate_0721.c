@@ -384,7 +384,7 @@ static void migrate_frontend_file_0721(const char *file, ssexec_t *info)
     log_trace("frontend result of migration process for: ", f.s, "\n", frontend.s) ;
     /** point of no return */
     log_trace("write frontend service file: ", f.s) ;
-    if (!file_write_unsafe_g(f.s, frontend.s))
+    if (!file_write(f.s, frontend.s, strlen(frontend.s)))
         log_dieusys(LOG_EXIT_SYS, "write frontend file: ", f.s) ;
 
 }

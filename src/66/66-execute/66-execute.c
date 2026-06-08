@@ -33,6 +33,7 @@
 #include <oblibs/lexer.h>
 #include <oblibs/types.h>
 #include <oblibs/fd.h>
+#include <oblibs/files.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/tai.h>
@@ -570,7 +571,7 @@ static void execute_script(const char *runuser, resolve_service_t *res, exlsn_t 
     }
 
     log_trace("write file: ", runuser) ;
-    if (!openwritenclose_unsafe(runuser, sa.s, strlen(sa.s)))
+    if (!file_write(runuser, sa.s, strlen(sa.s)))
         log_dieusys(LOG_EXIT_SYS,"create and write file: ", runuser) ;
 
     if (chmod(runuser, 0755) < 0)

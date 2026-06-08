@@ -18,9 +18,9 @@
 #include <oblibs/log.h>
 #include <oblibs/stack.h>
 #include <oblibs/stream.h>
+#include <oblibs/files.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/djbunix.h>
 
 #include <66/info.h>
 #include <66/resolve.h>
@@ -112,7 +112,7 @@ int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
 
         char pack[STATE_STATE_SIZE] ;
 
-        r = openreadnclose(svname, pack, STATE_STATE_SIZE) ;
+        r = file_read(svname, pack, STATE_STATE_SIZE) ;
             if (r < STATE_STATE_SIZE || r < 0)
                 log_dieusys(LOG_EXIT_SYS, "read status file") ;
 

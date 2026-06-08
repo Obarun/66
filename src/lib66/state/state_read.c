@@ -17,8 +17,8 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/files.h>
 
-#include <skalibs/djbunix.h>
 
 #include <66/state.h>
 #include <66/constants.h>
@@ -41,7 +41,7 @@ int state_read(ss_state_t *sta, resolve_service_t *res)
         path = status ;
     }
 
-    r = openreadnclose(path, pack, STATE_STATE_SIZE) ;
+    r = file_read(path, pack, STATE_STATE_SIZE) ;
     if (r < STATE_STATE_SIZE || r < 0)
         return 0 ;
 

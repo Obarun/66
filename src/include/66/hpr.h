@@ -22,7 +22,7 @@
 #include <stddef.h>
 #include <time.h>
 
-#include <skalibs/djbunix.h>
+#include <oblibs/files.h>
 
 #include <66/constants.h>
 
@@ -31,7 +31,7 @@
 
 #define HPR_WALL_BANNER "\n\n*** WARNING ***\nThe system is going down NOW!\n"
 
-#define hpr_send(l,s, n) openwritenclose_unsafe(l, (s), n)
+#define hpr_send(l,s, n) file_write(l, (s), n)
 #define hpr_cancel(l) hpr_send(l,"c", 1)
 extern int hpr_shutdown (char const *live, unsigned int, struct timespec const *, unsigned int) ;
 extern void hpr_wall (char const *s) ;

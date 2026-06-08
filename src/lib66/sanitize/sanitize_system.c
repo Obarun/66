@@ -182,7 +182,7 @@ void sanitize_system(ssexec_t *info)
             sanitize_migrate(info, "0.7.2.1", 0) ;
 
         log_trace("write system version file with version: ", SS_VERSION) ;
-        if (!file_write_unsafe_g(dst, SS_VERSION))
+        if (!file_write(dst, SS_VERSION, strlen(SS_VERSION)))
             log_dieusys(LOG_EXIT_SYS, "write system version file: ", dst) ;
 
     } else {
@@ -194,7 +194,7 @@ void sanitize_system(ssexec_t *info)
 
         if (sanitize_migrate(info, file.s, 1)) {
             log_trace("write system version file with version: ", SS_VERSION) ;
-            if (!file_write_unsafe_g(dst, SS_VERSION))
+            if (!file_write(dst, SS_VERSION, strlen(SS_VERSION)))
                 log_dieusys(LOG_EXIT_SYS, "write system version file: ", dst) ;
         }
     }

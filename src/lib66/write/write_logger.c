@@ -75,7 +75,7 @@ void write_logger(resolve_service_t *res, char const *destination, uint8_t force
 
     /** run script */
     log_trace("write file: ", destination, "/run") ;
-    if (!file_write_unsafe(destination, "run", res->sa.s + res->execute.run.run, strlen(res->sa.s + res->execute.run.run))) {
+    if (!file_write_at(destination, "run", res->sa.s + res->execute.run.run, strlen(res->sa.s + res->execute.run.run))) {
         parse_cleanup(res, destination, force) ;
         log_dieusys(LOG_EXIT_SYS, "write: ", destination, "/run.user") ;
     }

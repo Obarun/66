@@ -18,8 +18,8 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
+#include <oblibs/files.h>
 
-#include <skalibs/djbunix.h>
 
 #include <66/state.h>
 #include <66/constants.h>
@@ -50,7 +50,7 @@ int state_write(ss_state_t *sta, resolve_service_t *res)
     state_pack(pack, sta) ;
 
     log_trace("write status file at: ", path) ;
-    if (!openwritenclose_unsafe(path, pack, STATE_STATE_SIZE))
+    if (!file_write_atomic(path, pack, STATE_STATE_SIZE))
         return 0 ;
 
     return 1 ;

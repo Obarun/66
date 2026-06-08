@@ -28,7 +28,6 @@
 #include <oblibs/types.h>
 #include <oblibs/files.h>
 
-#include <skalibs/djbunix.h>
 #include <skalibs/sgetopt.h>
 
 #include <66/constants.h>
@@ -115,7 +114,7 @@ inline static void auto_file(char const *dst,char const *file,char const *conten
     auto_strings(f, dst, "/", file) ;
 
     log_trace("write file: ", f) ;
-    if (!file_write_unsafe(dst,file,contents,conlen))
+    if (!file_write_at(dst,file,contents,conlen))
         log_dieusys(LOG_EXIT_SYS,"write file: ",dst,"/",file) ;
 
     auto_chown(f) ;
@@ -481,7 +480,7 @@ void auto_empty_file(char const *dst, char const *filename, char const *contents
     char tmp[dstlen + filen + 1] ;
     auto_strings(tmp, dst, filename) ;
 
-    if (!file_write_unsafe_g(tmp, contents))
+    if (!file_write(tmp, contents, strlen(contents)))
         log_dieusys(LOG_EXIT_SYS, "create file: ", tmp) ;
 
     auto_chown(tmp) ;
@@ -538,8 +537,8 @@ static void create_service_oneshot(char const *scandir, ssexec_t *info)
     char dst[fdlen + 5] ;
     auto_strings(dst, scandir, "/", SS_ONESHOTD, "/run") ;
 
-    // -1 openwritenclose_unsafe do not accept closed string
-    if (!openwritenclose_unsafe(dst, run, runlen))
+    // -1 file_write do not accept closed string
+    if (!file_write(dst, run, runlen))
         log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
 
     if (chmod(dst, 0755) < 0)
@@ -566,7 +565,7 @@ static void create_service_fdholder(char const *scandir, ssexec_t *info)
 
     auto_strings(dst + fdlen + info->ownerlen + 20, "/S6_FDHOLDER_STORE_REGEX" ) ;
 
-    if(!openwritenclose_unsafe(dst, "^" SS_FDHOLDER_PIPENAME "\n", SS_FDHOLDER_PIPENAME_LEN + 2))
+    if(!file_write(dst, "^" SS_FDHOLDER_PIPENAME "\n", SS_FDHOLDER_PIPENAME_LEN + 2))
         log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
 
     auto_chown(dst) ;
@@ -613,8 +612,8 @@ static void create_service_fdholder(char const *scandir, ssexec_t *info)
 
     auto_strings(dst, scandir, "/", SS_FDHOLDER, "/run") ;
 
-    // -1 openwritenclose_unsafe do not accept closed string
-    if (!openwritenclose_unsafe(dst, run, strlen(run) - 1))
+    // -1 file_write do not accept closed string
+    if (!file_write(dst, run, strlen(run) - 1))
         log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
 
     auto_chmod(dst, 0755) ;
@@ -622,8 +621,8 @@ static void create_service_fdholder(char const *scandir, ssexec_t *info)
 
     auto_strings(dst, scandir, "/", SS_FDHOLDER, "/data/autofilled") ;
 
-    // -1 openwritenclose_unsafe do not accept closed string
-    if(!openwritenclose_unsafe(dst, "\n", 1))
+    // -1 file_write do not accept closed string
+    if(!file_write(dst, "\n", 1))
         log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
 
     auto_chown(dst) ;

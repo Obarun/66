@@ -21,9 +21,9 @@
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/sastr.h>
+#include <oblibs/files.h>
 
 #include <skalibs/tai.h>
-#include <skalibs/djbunix.h>
 
 #include <66/service.h>
 #include <66/constants.h>
@@ -183,7 +183,7 @@ int sanitize_fdholder(resolve_service_t *res, s6_fdholder_t *a, ss_state_t *sta,
         auto_strings(file, socket, "/data/autofilled") ;
 
         log_trace("create fdholder autofilled file") ;
-        if (!openwritenclose_unsafe(file, list.s, list.len))
+        if (!file_write(file, list.s, list.len))
             log_warnusys_return(LOG_EXIT_ZERO, "write file: ", file) ;
 
         stralloc_free(&list) ;

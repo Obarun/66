@@ -260,7 +260,7 @@ static inline void prepare_stage4 (char what)
         auto_strings(stk.s, "HALTCODE=", s, "\nEXITCODE=0\n") ;
         stk.len = 22 ;
 
-        if (!openwritenclose_unsafe(tmp, stk.s, stk.len))
+        if (!file_write(tmp, stk.s, stk.len))
             log_dieusys(LOG_EXIT_SYS, "write file: ", tmp) ;
     }
 

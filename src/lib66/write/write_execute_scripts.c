@@ -40,7 +40,7 @@ int write_execute_scripts(char const *file, char const *contents, char const *ds
     auto_strings(run, contents) ;
 
     log_trace("write file: ", dst, "/", file) ;
-    if (!file_write_unsafe(dst, file, run, FAKELEN))
+    if (!file_write_at(dst, file, run, FAKELEN))
         log_warnusys_return(LOG_EXIT_ZERO, "write: ", dst, "/", file) ;
 
     if (chmod(write, 0755) < 0)

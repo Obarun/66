@@ -14,8 +14,8 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/files.h>
 
-#include <skalibs/djbunix.h>
 
 #include <66/state.h>
 #include <66/constants.h>
@@ -30,7 +30,7 @@ int state_read_remote(ss_state_t *sta, char const *dst)
 
     auto_strings(dir, dst, "/", SS_STATUS) ;
 
-    r = openreadnclose(dir, pack, STATE_STATE_SIZE) ;
+    r = file_read(dir, pack, STATE_STATE_SIZE) ;
     if (r < STATE_STATE_SIZE || r < 0)
         return 0 ;
 

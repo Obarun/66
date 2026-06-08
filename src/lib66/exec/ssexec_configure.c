@@ -29,7 +29,6 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 #include <skalibs/diuint32.h>
-#include <skalibs/djbunix.h>
 #include <skalibs/unix-transactional.h>//atomic_symlink
 #include <skalibs/exec.h>
 
@@ -372,7 +371,7 @@ int ssexec_configure(int argc, char const *const *argv, ssexec_t *info)
                 if (!environ_rebuild(&env))
                     log_dieusys(LOG_EXIT_SYS, "rebuild environment") ;
 
-                if (!openwritenclose_unsafe(file.s, env.s, env.len))
+                if (!file_write(file.s, env.s, env.len))
                     log_dieusys(LOG_EXIT_SYS,"write file: ", file.s) ;
             }
             break ;

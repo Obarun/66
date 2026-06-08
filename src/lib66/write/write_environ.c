@@ -32,7 +32,7 @@ int write_environ(char const *name, char const *contents, char const *dst)
     else if (!r)
         log_warnusys_return(LOG_EXIT_ZERO, "find environment directory: ", dst) ;
 
-    if (!file_write_unsafe(dst, name, contents, len))
+    if (!file_write_at(dst, name, contents, len))
         log_warnusys_return(LOG_EXIT_ZERO, "create file: ", dst, "/", name) ;
 
     return 1 ;

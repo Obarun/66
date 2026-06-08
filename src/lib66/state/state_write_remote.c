@@ -18,8 +18,8 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
+#include <oblibs/files.h>
 
-#include <skalibs/djbunix.h>
 
 #include <66/state.h>
 #include <66/constants.h>
@@ -45,7 +45,7 @@ int state_write_remote(ss_state_t *sta, char const *dst)
     auto_strings(dir + len, "/", SS_STATUS) ;
 
     log_trace("write status file: ", dir) ;
-    if (!openwritenclose_unsafe(dir, pack, STATE_STATE_SIZE))
+    if (!file_write_atomic(dir, pack, STATE_STATE_SIZE))
         log_warnusys_return(LOG_EXIT_ZERO, "write status file: ", dir) ;
 
     return 1 ;
