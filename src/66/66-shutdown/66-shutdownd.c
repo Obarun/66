@@ -421,7 +421,7 @@ int main (int argc, char const *const *argv)
             execv(stage4_argv[0], (char **)stage4_argv) ;
 
             e = errno ;
-            if (fd_move2(1, fd[0], 2, fd[1]) < 0)
+            if (remap_fds(1, fd[0], 2, fd[1]) < 0)
                 log_warnusys("restore fds") ;
             errno = e ;
 
