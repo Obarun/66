@@ -394,7 +394,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
                 EXECLINE_BINPREFIX "fdmove -c 1 2\n" \
                 SS_BINPREFIX "66-echo \"scandir crashed. Killing everythings and exiting.\"\n}\n" \
                 EXECLINE_BINPREFIX "foreground {\n" \
-                EXECLINE_BINPREFIX "66-nuke\n}\n" \
+                SS_BINPREFIX "66-nuke\n}\n" \
                 EXECLINE_BINPREFIX "wait { }\n" \
                 SS_BINPREFIX "66-hpr -f -n -p -l ",live,"\n"))
                     log_die_nomem("strbuf") ;
