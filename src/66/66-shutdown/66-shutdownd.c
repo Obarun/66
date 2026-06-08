@@ -267,7 +267,7 @@ static inline void prepare_stage4 (char what)
     unlink_void(STAGE4_FILE ".new") ;
     fd = open_excl(STAGE4_FILE ".new") ;
     if (fd == -1) log_dieusys(LOG_EXIT_SYS, "open ", STAGE4_FILE ".new", " for writing") ;
-    ostream_init(&b, fd, buf, 516) ;
+    ostream_init(&b, fd, buf, 512) ;
 
     if (inns) {
 
