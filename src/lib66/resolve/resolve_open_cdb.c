@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include <oblibs/fd.h>
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/cdb.h>

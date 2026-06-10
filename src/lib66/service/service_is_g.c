@@ -12,6 +12,7 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <sys/stat.h>
 #include <stdint.h>
 #include <string.h>
 #include <errno.h>
@@ -20,9 +21,6 @@
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
-#include <oblibs/sastr.h>
-
-#include <skalibs/stralloc.h>
 
 #include <66/service.h>
 #include <66/tree.h>

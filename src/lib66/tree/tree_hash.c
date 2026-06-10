@@ -62,7 +62,7 @@ void hash_free_tree(struct resolve_hash_tree_s **hash)
 	struct resolve_hash_tree_s *c, *tmp ;
 
 	HASH_ITER(hh, *hash, c, tmp) {
-		stralloc_free(&c->tres.sa) ;
+		strbuf_free(&c->tres.sa) ;
 		HASH_DEL(*hash, c) ;
 		free(c) ;
 	}

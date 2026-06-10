@@ -227,7 +227,7 @@ static inline void access_control (void)
     if (fstat(fd, &st) == -1)
         log_dieusys(LOG_EXIT_SYS, "stat ", AC_FILE) ;
     if (st.st_size >= AC_BUFSIZE)
-        log_die(LOG_EXIT_ONE, AC_FILE, " is too big: it needs to be %d bytes or less", AC_BUFSIZE) ;
+        flog_die(LOG_EXIT_ONE, "%s is too big: it needs to be %d bytes or less", AC_FILE, AC_BUFSIZE) ;
 
     if (io_allread(fd, buf, st.st_size) < (size_t)st.st_size)
         log_dieusys(LOG_EXIT_SYS, "read ", AC_FILE) ;

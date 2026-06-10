@@ -12,6 +12,7 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <fcntl.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <errno.h>
