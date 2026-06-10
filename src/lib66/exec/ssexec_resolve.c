@@ -20,7 +20,6 @@
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/types.h>
 #include <oblibs/stream.h>
 
 #include <skalibs/sgetopt.h>

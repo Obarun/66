@@ -18,7 +18,6 @@
 #include <sys/types.h>
 #include <unistd.h> //getuid
 
-#include <oblibs/log.h>
 #include <oblibs/strbuf.h>
 
 

@@ -12,19 +12,16 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#ifndef SS_INFO_H
+#define SS_INFO_H
+
 #include <wchar.h>
 
-#include <oblibs/string.h>
-#include <oblibs/log.h>
 #include <oblibs/strbuf.h>
 
 #include <66/service.h>
 #include <66/tree.h>
 #include <66/graph.h>
-
-
-#ifndef SS_INFO_H
-#define SS_INFO_H
 
 #define INFO_FIELD_MAXLEN 30
 #define INFO_NKEY 150

@@ -30,6 +30,7 @@
 #include <oblibs/files.h>
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/sbl.h>
 #include <oblibs/types.h>
 #include <oblibs/clock.h>
@@ -46,7 +47,6 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/cspawn.h>
 #include <skalibs/iopause.h>
-#include <skalibs/skamisc.h>
 
 #include <execline/config.h>
 

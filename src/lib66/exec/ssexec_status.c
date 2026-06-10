@@ -30,7 +30,7 @@
 #include <oblibs/directory.h>
 #include <oblibs/environ.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/types.h>
+#include <oblibs/lexer.h>
 #include <oblibs/stream.h>
 
 #include <skalibs/bytestr.h>

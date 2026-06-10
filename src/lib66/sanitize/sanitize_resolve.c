@@ -25,7 +25,6 @@
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/tree.h>
-#include <66/graph.h>
 #include <66/constants.h>
 
 static int sanitize_service(ssexec_t *info)

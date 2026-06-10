@@ -23,14 +23,13 @@
 #include <string.h>
 
 #include <oblibs/log.h>
-#include <oblibs/string.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/files.h>
 #include <oblibs/types.h>
 #include <oblibs/stream.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/tai.h>
-#include <oblibs/strbuf.h>
 #include <skalibs/genalloc.h>
 
 #include <66/constants.h>

@@ -20,7 +20,6 @@
 #include <oblibs/strbuf.h>
 
 #include <66/service.h>
-#include <66/info.h>
 
 #define SS_MODULE_CONFIG_DIR "/configure"
 #define SS_MODULE_CONFIG_DIR_LEN (sizeof SS_MODULE_CONFIG_DIR - 1)

@@ -18,12 +18,11 @@
 #include <stdint.h>
 #include <linux/capability.h> // CAP_LAST_CAP
 
-#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 
 #include <66/service.h>
 
 #define CAPS_MYLAST_CAP CAP_LAST_CAP + 1
-#define CAPSET_ARRAY_SIZE ((CAPS_MYLAST_CAP + UINT_NBITS - 1) / UINT_NBITS)
 
 #ifndef SYS_capset
 #define SYS_capset __NR_capset

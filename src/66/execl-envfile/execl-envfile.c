@@ -16,18 +16,18 @@
 #include <stdint.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include <oblibs/log.h>
 #include <oblibs/environ.h>
 #include <oblibs/directory.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/sbl.h>
 #include <oblibs/subst.h>
 #include <oblibs/types.h>
 
-#include <oblibs/strbuf.h>
 #include <skalibs/exec.h>
 #include <skalibs/sgetopt.h>
-#include <skalibs/djbunix.h>
 
 #include <66/config.h>
 

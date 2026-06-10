@@ -26,12 +26,12 @@
 #include <oblibs/graph.h>
 #include <oblibs/io.h>
 #include <oblibs/string.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
 #include <oblibs/types.h>
 #include <oblibs/environ.h>
 #include <oblibs/sse.h>
-#include <oblibs/types.h>
 
 #include <66/resolve.h>
 #include <66/tree.h>

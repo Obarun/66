@@ -23,7 +23,6 @@
 #include <oblibs/types.h>
 #include <oblibs/sbl.h>
 #include <oblibs/environ.h>
-#include <oblibs/types.h>
 #include <oblibs/strbuf.h>
 
 #include <skalibs/djbunix.h>

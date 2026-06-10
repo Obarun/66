@@ -21,13 +21,13 @@
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/sbl.h>
-#include <oblibs/sbl.h>
+#include <oblibs/lexer.h>
 #include <oblibs/environ.h>
 #include <oblibs/stream.h>
 
 #include <skalibs/sgetopt.h>
-#include <oblibs/strbuf.h>
 #include <skalibs/diuint32.h>
 #include <skalibs/unix-transactional.h>//atomic_symlink
 #include <skalibs/exec.h>

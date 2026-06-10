@@ -19,6 +19,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/types.h>
 #include <oblibs/sbl.h>
 #include <oblibs/lexer.h>

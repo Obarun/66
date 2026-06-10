@@ -18,6 +18,7 @@
 #include <stdbool.h>
 
 #include <oblibs/log.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/sbl.h>
 #include <oblibs/types.h>
 #include <oblibs/hash.h>

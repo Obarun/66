@@ -17,14 +17,11 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/environ.h>
 #include <oblibs/types.h>
 
 #include <skalibs/sgetopt.h>
 
 #include <66/constants.h>
-#include <66/service.h>
-#include <66/resolve.h>
 
 #define USAGE "66-oneshot [ -h ] [ -v verbosity ] up|down /run/66/state/<uid>/<service>"
 

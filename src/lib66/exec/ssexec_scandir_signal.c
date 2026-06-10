@@ -25,7 +25,6 @@
 #include <oblibs/directory.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/files.h>
-#include <oblibs/types.h>
 
 #include <skalibs/bytestr.h>
 #include <skalibs/env.h>

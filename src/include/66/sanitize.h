@@ -17,12 +17,12 @@
 
 #include <stdint.h>
 
+#include <s6/fdholder.h>
+
 #include <66/service.h>
 #include <66/ssexec.h>
 #include <66/state.h>
 #include <66/graph.h>
-
-#include <s6/fdholder.h>
 
 extern void sanitize_system(ssexec_t *info) ;
 extern int sanitize_migrate(ssexec_t *info, const char *oversion, short exist) ;

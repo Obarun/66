@@ -16,6 +16,8 @@
 #include <string.h>
 #include <wchar.h>
 
+#include <oblibs/log.h>
+#include <oblibs/string.h>
 #include <oblibs/files.h>
 
 #include <66/info.h>

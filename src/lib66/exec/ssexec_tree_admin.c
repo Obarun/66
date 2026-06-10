@@ -30,7 +30,6 @@
 #include <oblibs/lexer.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/account.h>
-#include <oblibs/types.h>
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/bytestr.h>//byte_count

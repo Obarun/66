@@ -17,6 +17,7 @@
 #include <stdio.h>//rename
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/lexer.h>

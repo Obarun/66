@@ -24,12 +24,12 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/environ.h>
 #include <oblibs/sbl.h>
 #include <oblibs/subst.h>
 #include <oblibs/directory.h>
 #include <oblibs/io.h>
-#include <oblibs/lexer.h>
 #include <oblibs/types.h>
 #include <oblibs/fd.h>
 #include <oblibs/files.h>
@@ -37,7 +37,6 @@
 #include <skalibs/sgetopt.h>
 #include <skalibs/tai.h>
 #include <skalibs/exec.h>
-#include <oblibs/strbuf.h>
 
 #include <66/resolve.h>
 #include <66/service.h>

@@ -23,7 +23,6 @@
 #include <oblibs/strbuf.h>
 #include <oblibs/files.h>
 #include <oblibs/directory.h>
-#include <oblibs/lexer.h>
 #include <oblibs/types.h>
 #include <oblibs/cdb.h>
 
