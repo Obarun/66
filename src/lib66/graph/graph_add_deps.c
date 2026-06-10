@@ -16,7 +16,7 @@
 #include <string.h>
 
 #include <oblibs/log.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
 #include <oblibs/graph.h>
 
@@ -26,9 +26,9 @@ int graph_add_deps(graph *g, const char *vertex, char const *edge, bool required
 {
     log_flow() ;
 
-    _alloc_stk_(stk, strlen(edge) + 1) ;
+    _alloc_sbl_(stk, strlen(edge) + 1) ;
 
-    if (!stack_string_clean(&stk, edge))
+    if (!sbl_clean_string(&stk, edge))
         log_warnu_return(LOG_EXIT_ZERO, "clean string") ;
 
     if (!graph_add_nedge(g, vertex, &stk, requiredby, true))

@@ -12,6 +12,7 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <sys/stat.h>
 #include <string.h>
 #include <stdlib.h>//getenv
 #include <unistd.h>//_exit,access
@@ -20,14 +21,13 @@
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
-#include <oblibs/sastr.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
+#include <oblibs/sbl.h>
 #include <oblibs/environ.h>
 #include <oblibs/stream.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/stralloc.h>
-#include <skalibs/genalloc.h>
+#include <oblibs/strbuf.h>
 #include <skalibs/diuint32.h>
 #include <skalibs/unix-transactional.h>//atomic_symlink
 #include <skalibs/exec.h>
@@ -60,7 +60,7 @@ static uint8_t check_current_version(char const *svconf,char const *version)
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     if (!env_find_current_version(&sa,svconf)) log_dieu(LOG_EXIT_SYS,"find current version") ;
     char bname[sa.len + 1] ;
     if (!ob_basename(bname,sa.s)) log_dieu(LOG_EXIT_SYS,"get basename of: ",sa.s) ;
@@ -95,7 +95,7 @@ static void do_import(char const *svname, char const *svconf, char const *versio
     log_flow() ;
 
     size_t pos = 0 ;
-    _alloc_stk_(stk, strlen(version) + 1) ;
+    _alloc_sbl_(stk, strlen(version) + 1) ;
 
     char *src_version = 0 ;
     char *dst_version = 0 ;
@@ -103,7 +103,7 @@ static void do_import(char const *svname, char const *svconf, char const *versio
     if (!lexer_trim_with_delim(&stk,version,DELIM))
         log_dieu(LOG_EXIT_SYS,"clean string: ",version) ;
 
-    checkopts(stk.count) ;
+    checkopts(sbl_count(&stk)) ;
 
     src_version = stk.s ;
     pos = strlen(stk.s) + 1 ;
@@ -117,7 +117,7 @@ static void write_user_env_file(char const *src, char const *sv)
 {
     size_t srclen = strlen(src), svlen = strlen(sv) ;
     int r ;
-    stralloc sa = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     char tsrc[srclen + 2 + svlen + 1] ;
 
     auto_strings(tsrc,src,"/",sv) ;
@@ -130,7 +130,7 @@ static void write_user_env_file(char const *src, char const *sv)
 
             auto_strings(tsrc,src,"/.",sv) ;
 
-            if (!file_readputsa_g(&sa,tsrc))
+            if (!strbuf_read_file(&sa,tsrc))
                 log_dieusys(LOG_EXIT_SYS,"read environment file from: ",tsrc) ;
 
             r = str_contain(sa.s,"[ENDWARN]") ;
@@ -145,7 +145,6 @@ static void write_user_env_file(char const *src, char const *sv)
             log_diesys(LOG_EXIT_SYS,"conflicting format of file: ",tsrc) ;
     }
 
-    stralloc_free(&sa) ;
 }
 
 int ssexec_configure(int argc, char const *const *argv, ssexec_t *info)
@@ -154,9 +153,9 @@ int ssexec_configure(int argc, char const *const *argv, ssexec_t *info)
 
     int r ;
     size_t pos = 0 ;
-    _alloc_sa_(satmp) ;
-    _alloc_sa_(src) ;
-    _alloc_sa_(savar) ;
+    _cleanup_strbuf_ strbuf satmp = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf src = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf savar = STRBUF_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
@@ -184,8 +183,8 @@ int ssexec_configure(int argc, char const *const *argv, ssexec_t *info)
                         if (satmp.len)
                             log_die(LOG_EXIT_USER, "-c and -s options are mutually exclusive") ;
 
-                        if (!auto_stra(&satmp, l.arg))
-                            log_die_nomem("stralloc") ;
+                        if (!auto_strbuf(&satmp, l.arg))
+                            log_die_nomem("strbuf") ;
 
                         current++ ;
 
@@ -196,8 +195,8 @@ int ssexec_configure(int argc, char const *const *argv, ssexec_t *info)
                         if (satmp.len)
                             log_die(LOG_EXIT_USER, "-c and -s options are mutually exclusive") ;
 
-                        if (!auto_stra(&satmp, l.arg))
-                            log_die_nomem("stralloc") ;
+                        if (!auto_strbuf(&satmp, l.arg))
+                            log_die_nomem("strbuf") ;
 
                         break ;
 
@@ -216,8 +215,8 @@ int ssexec_configure(int argc, char const *const *argv, ssexec_t *info)
 
                 case 'r' :
 
-                        if (!sastr_add_string(&savar,l.arg))
-                            log_die_nomem("stralloc") ;
+                        if (!sbl_add(&savar,l.arg))
+                            log_die_nomem("strbuf") ;
 
                         if (todo != T_UNSET && todo != T_REPLACE) log_usage(info->usage, "\n", info->help) ;
                         todo = T_REPLACE ;
@@ -306,11 +305,11 @@ int ssexec_configure(int argc, char const *const *argv, ssexec_t *info)
         case T_VLIST:
             {
                 char const *exclude[2] = { SS_SYM_VERSION + 1, 0 } ;
-                if (!sastr_dir_get(&satmp, svconf, exclude, S_IFDIR))
+                if (!sbl_dir_get(&satmp, svconf, exclude, S_IFDIR))
                     log_dieu(LOG_EXIT_SYS, "get versioned directory of: ", svconf) ;
 
                 pos = 0 ;
-                FOREACH_SASTR(&satmp, pos) {
+                FOREACH_SBL(&satmp, pos) {
 
                     if (!ostream_puts(ostream_1, svconf) ||
                         !ostream_puts(ostream_1, "/") ||
@@ -329,19 +328,19 @@ int ssexec_configure(int argc, char const *const *argv, ssexec_t *info)
         case T_LIST:
             {
                 char const *exclude[2] = { SS_SYM_VERSION + 1, 0 } ;
-                if (!sastr_dir_get(&satmp, src.s, exclude, S_IFREG))
+                if (!sbl_dir_get(&satmp, src.s, exclude, S_IFREG))
                     log_dieu(LOG_EXIT_SYS, "get versioned directory at: ", src.s) ;
 
                 pos = 0 ;
-                FOREACH_SASTR(&satmp, pos) {
+                FOREACH_SBL(&satmp, pos) {
 
                     char *name = satmp.s + pos ;
-                    _alloc_stk_(file, src.len + strlen(name) + 2) ;
+                    _alloc_strbuf_(file, src.len + strlen(name) + 2) ;
                     auto_strings(file.s, src.s, "/", name) ;
                     size_t filen = file_get_size(file.s) ;
-                    _alloc_stk_(list, filen + 1) ;
+                    _alloc_strbuf_(list, filen + 1) ;
 
-                    if (!stack_read_file(&list, file.s))
+                    if (!strbuf_read_file(&list, file.s))
                         log_dieusys(LOG_EXIT_SYS,"read: ", file.s) ;
 
                     log_info("Contents of file: ", file.s, "\n", list.s) ;
@@ -357,8 +356,8 @@ int ssexec_configure(int argc, char const *const *argv, ssexec_t *info)
                  * the change to the user file */
                 write_user_env_file(src.s, sv) ;
 
-                _alloc_stk_(file, strlen(src.s) + strlen(sv) + 2) ;
-                _alloc_sa_(env) ;
+                _alloc_strbuf_(file, strlen(src.s) + strlen(sv) + 2) ;
+                _cleanup_strbuf_ strbuf env = STRBUF_ZERO ;
 
                 auto_strings(file.s, src.s, "/", sv) ;
 

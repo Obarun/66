@@ -17,18 +17,17 @@
 #include <stdio.h>//rename
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/lexer.h>
 #include <oblibs/environ.h>
 
-#include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 
 #include <66/module.h>
 #include <66/constants.h>
 
-void regex_rename(stralloc *list, resolve_service_t *res, uint32_t element)
+void regex_rename(strbuf *list, resolve_service_t *res, uint32_t element)
 {
     log_flow() ;
 
@@ -36,18 +35,18 @@ void regex_rename(stralloc *list, resolve_service_t *res, uint32_t element)
         return ;
 
     size_t pos = 0, idx = 0 ;
-    _alloc_sa_(sa) ;
-    _alloc_stk_(stk, strlen(res->sa.s + element)) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
+    _alloc_sbl_(stk, strlen(res->sa.s + element)) ;
 
-    if (!stack_string_clean(&stk, res->sa.s + element))
+    if (!sbl_clean_string(&stk, res->sa.s + element))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    FOREACH_STK(&stk, pos) {
+    FOREACH_SBL(&stk, pos) {
 
         idx = 0 ;
         char *line = stk.s + pos ;
-        _alloc_stk_(key, strlen(line) + 1) ;
-        _alloc_stk_(val, strlen(line) + 1) ;
+        _alloc_sbl_(key, strlen(line) + 1) ;
+        _alloc_sbl_(val, strlen(line) + 1) ;
 
         if (!environ_get_key(&key, line))
             log_dieusys(LOG_EXIT_SYS, "get key at line: ",  line) ;
@@ -55,7 +54,7 @@ void regex_rename(stralloc *list, resolve_service_t *res, uint32_t element)
         if (!environ_get_value(&val, line))
             log_dieusys(LOG_EXIT_SYS, "get value at line: ",  line) ;
 
-        FOREACH_SASTR(list, idx) {
+        FOREACH_SBL(list, idx) {
 
             sa.len = 0 ;
             char *str = list->s + idx ;
@@ -65,17 +64,18 @@ void regex_rename(stralloc *list, resolve_service_t *res, uint32_t element)
             if (!ob_dirname(dname, str))
                 log_dieu(LOG_EXIT_SYS, "get dirname of: ", str) ;
 
-            if (!sabasename(&sa, str, len))
+            char bname[len + 1] ;
+            if (!ob_basename(bname, str))
                 log_dieu(LOG_EXIT_SYS, "get basename of: ", str) ;
 
-            if (!stralloc_0(&sa))
-                log_die_nomem("stralloc") ;
+            if (!strbuf_copys(&sa, bname) || !strbuf_terminate(&sa))
+                log_die_nomem("strbuf") ;
 
-            if (!sastr_replace(&sa, key.s, val.s))
+            if (!sbl_replace(&sa, key.s, val.s))
                 log_dieu(LOG_EXIT_SYS, "replace: ", key.s, " by: ", val.s, " in file: ", str) ;
 
-            if (!stralloc_0(&sa))
-                log_die_nomem("stralloc") ;
+            if (!strbuf_terminate(&sa))
+                log_die_nomem("strbuf") ;
 
             char new[len + sa.len + 1] ;
             auto_strings(new, dname, sa.s) ;

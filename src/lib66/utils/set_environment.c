@@ -18,13 +18,12 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
 
-int set_environment(stralloc *sa, uid_t owner)
+int set_environment(strbuf *sa, uid_t owner)
 {
     log_flow() ;
 
@@ -32,8 +31,8 @@ int set_environment(stralloc *sa, uid_t owner)
 
     if (!owner) {
 
-        if (!auto_stra(sa, SS_ENVIRONMENT_ADMDIR))
-            log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+        if (!auto_strbuf(sa, SS_ENVIRONMENT_ADMDIR))
+            log_warnsys_return(LOG_EXIT_ZERO,"strbuf") ;
 
     } else {
 
@@ -43,8 +42,8 @@ int set_environment(stralloc *sa, uid_t owner)
         if (!set_ownerhome(sa, owner))
             log_warnusys_return(LOG_EXIT_ZERO, "set home directory") ;
 
-        if (!auto_stra(sa, SS_ENVIRONMENT_USERDIR))
-            log_die_nomem("stralloc") ;
+        if (!auto_strbuf(sa, SS_ENVIRONMENT_USERDIR))
+            log_die_nomem("strbuf") ;
     }
 
     return 1 ;

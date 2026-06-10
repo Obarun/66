@@ -12,14 +12,15 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <unistd.h>
 #include <string.h>
 #include <pwd.h>
 #include <sys/stat.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/stack.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/directory.h>
 
 #include <skalibs/sgetopt.h>
@@ -32,7 +33,7 @@ static void snapshot_remove_directory(ssexec_t *info, char const *target)
 {
     size_t pos = 0 ;
     snapshot_list_t *list = info->owner ? snapshot_user_list : snapshot_root_list ;
-    _alloc_stk_(stk, SS_MAX_PATH_LEN) ;
+    _alloc_strbuf_(stk, SS_MAX_PATH_LEN) ;
 
     while(list[pos].name) {
 
@@ -73,10 +74,10 @@ int ssexec_snapshot_restore(int argc, char const *const *argv, ssexec_t *info)
     size_t pos = 0, dlen = 0 ;
     char const *snapname = 0 ;
     char const *exclude[1] = { 0 } ;
-    _alloc_stk_(snapdir, SS_MAX_PATH_LEN) ;
-    _alloc_stk_(src, SS_MAX_PATH_LEN) ;
-    _alloc_stk_(dst, SS_MAX_PATH_LEN) ;
-    _alloc_sa_(sa) ;
+    _alloc_strbuf_(snapdir, SS_MAX_PATH_LEN) ;
+    _alloc_strbuf_(src, SS_MAX_PATH_LEN) ;
+    _alloc_strbuf_(dst, SS_MAX_PATH_LEN) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     {
         subgetopt l = SUBGETOPT_ZERO ;
 
@@ -109,7 +110,7 @@ int ssexec_snapshot_restore(int argc, char const *const *argv, ssexec_t *info)
     if (access(snapdir.s, F_OK) < 0)
         log_dieusys(LOG_EXIT_SYS, "find snapshot: ", snapdir.s) ;
 
-    if (!sastr_dir_get(&sa, snapdir.s, exclude, S_IFDIR))
+    if (!sbl_dir_get(&sa, snapdir.s, exclude, S_IFDIR))
         log_dieusys(LOG_EXIT_SYS, "list snapshot directory: ", snapdir.s) ;
 
     if (!info->owner) {
@@ -136,7 +137,7 @@ int ssexec_snapshot_restore(int argc, char const *const *argv, ssexec_t *info)
 
     snapshot_remove_directory(info, dst.s) ;
 
-    FOREACH_SASTR(&sa, pos) {
+    FOREACH_SBL(&sa, pos) {
 
         auto_strings(src.s, snapdir.s, "/", sa.s + pos) ;
 

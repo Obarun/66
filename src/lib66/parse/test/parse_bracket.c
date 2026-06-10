@@ -1,6 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 #include <66/parse.h>
 #include <66/enum_parser.h>
 
@@ -12,7 +12,7 @@ void basic(resolve_enum_table_t table)
     const char *a = "= test(valid()))\n" ;
     const char *b = "valid())" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
@@ -27,7 +27,7 @@ void basic1(resolve_enum_table_t table)
     const char *a = "= test(valid)\n" ;
     const char *b = "valid" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
@@ -42,7 +42,7 @@ void basic2(resolve_enum_table_t table)
     const char *a = "= \n(\n\tvalid\n)\n\nype=\n" ;
     const char *b = "\n\tvalid\n" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
@@ -57,7 +57,7 @@ void basic3(resolve_enum_table_t table)
     const char *a = "Execute = ( umask 027 %%BINDIR%%/deluge-web -d )# comment\n" ;
     const char *b = " umask 027 %%BINDIR%%/deluge-web -d " ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
@@ -80,7 +80,7 @@ Bad=key\n" ;
     execl-toc -d /run/fail2ban\n\
     %%BINDIR%%/fail2ban-server -xf --logtarget=SYSOUT start\n" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
@@ -102,7 +102,7 @@ Type=classic\n" ;
     execl-toc -d /run/fail2ban\n\
     %%BINDIR%%/fail2ban-server -xf --logtarget=SYSOUT start\n" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
@@ -126,7 +126,7 @@ valid\n\
     # comment1\n\
 valid\n" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
@@ -152,7 +152,7 @@ valid\n\
     # comment1\n\
 valid\n" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
@@ -179,7 +179,7 @@ Description = \"valid\"" ;
     # comment1\n\
 valid\n" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
@@ -194,7 +194,7 @@ void odd_bracket(resolve_enum_table_t table)
     const char *a = "= (valid\nTpe=classic\n" ;
     const char *b = "valid" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 0) ;
@@ -208,7 +208,7 @@ void odd_bracket_validkey(resolve_enum_table_t table)
     int r ;
     const char *a = "= (valid\nType=classic\n" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 0) ;
@@ -221,7 +221,7 @@ void no_bracket(resolve_enum_table_t table)
     int r ;
     const char *a = "= testvalid\n" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 0) ;
@@ -235,7 +235,7 @@ void nested_bracket(resolve_enum_table_t table)
     const char *a = "= ((nested)(brackets))\nType=classic\n"; ;
     const char *b = "(nested)(brackets)" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
@@ -278,7 +278,7 @@ start-stop-daemon --start --quiet --pidfile ${pidfile}\n\
     --background --exec /usr/bin/nvidia-persistenced\n\
     -- ${NVPD_USER_ARG} ${ARGS}\n" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
     assert(strcmp(stk.s, b) == 0) ;
@@ -329,7 +329,7 @@ case EXPRESSION in\n\
     ;;\n\
 esac" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
@@ -344,7 +344,7 @@ void invalid_key(resolve_enum_table_t table)
     const char *a = "((nested)(brackets))\nTpe=classic\n"; ;
     const char *b = "(nested)(brackets)" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
@@ -359,7 +359,7 @@ void invalid_key1(resolve_enum_table_t table)
     const char *a = "((nested)(brackets))\nTpe=classic\nDescription = \"test\""; ;
     const char *b = "(nested)(brackets)" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
@@ -374,7 +374,7 @@ void eof(resolve_enum_table_t table)
     const char *a = "((nested)(brackets))\n"; ;
     const char *b = "(nested)(brackets)" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
@@ -390,7 +390,7 @@ void eof_invalid(resolve_enum_table_t table)
 UnknownKey = InvalidValues\n"; ;
     const char *b = "log" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
@@ -405,7 +405,7 @@ void valid_section(resolve_enum_table_t table)
     const char *a = "= ((nested)(brackets))\n\n[Start]\nExecute=\n"; ;
     const char *b = "(nested)(brackets)" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;
@@ -420,7 +420,7 @@ void invalid_section(resolve_enum_table_t table)
     const char *a = "= ((nested)(brackets))\n\n[start]\nExecute=\n"; ;
     const char *b = "(nested)(brackets)" ;
 
-    _alloc_stk_(stk, strlen(a) + 1) ;
+    _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, table) ;
     assert(r == 1) ;

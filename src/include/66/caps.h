@@ -18,7 +18,7 @@
 #include <stdint.h>
 #include <linux/capability.h> // CAP_LAST_CAP
 
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 
 #include <66/service.h>
 
@@ -32,7 +32,7 @@
 #define SYS_capget __NR_capget
 #endif
 
-extern void parse_store_caps(stack *result, stack *store, uint32_t *ncaps) ;
+extern void parse_store_caps(strbuf *result, strbuf *store, uint32_t *ncaps) ;
 extern void execute_caps(resolve_service_t *res) ;
 
 /** Complete list of Linux capabilities (up to CAP_LAST_CAP = CAP_PERFMON, kernel 6.11)

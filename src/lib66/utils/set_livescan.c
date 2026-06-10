@@ -17,13 +17,12 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/utils.h>
 #include <66/constants.h>
 
-int set_livescan(stralloc *scandir,uid_t owner)
+int set_livescan(strbuf *scandir,uid_t owner)
 {
     log_flow() ;
 
@@ -37,8 +36,8 @@ int set_livescan(stralloc *scandir,uid_t owner)
     size_t ownerlen = uid_format(ownerpack,owner) ;
     ownerpack[ownerlen] = 0 ;
 
-    if (!auto_stra(scandir,SS_SCANDIR "/", ownerpack))
-        log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+    if (!auto_strbuf(scandir,SS_SCANDIR "/", ownerpack))
+        log_warnsys_return(LOG_EXIT_ZERO,"strbuf") ;
 
     return 1 ;
 }

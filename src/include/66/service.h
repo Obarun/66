@@ -20,8 +20,7 @@
 
 #include <oblibs/hash.h>
 #include <oblibs/cdb.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/ssexec.h>
 #include <66/resolve.h>
@@ -226,7 +225,7 @@ struct resolve_service_addon_limit_s
 typedef struct resolve_service_s resolve_service_t, *resolve_service_t_ref ;
 struct resolve_service_s
 {
-    stralloc sa ;
+    strbuf sa ;
     uint32_t rversion ; //string, version of 66 of the resolve file at write time
 
     // configuration
@@ -258,7 +257,7 @@ struct resolve_service_s
     resolve_service_addon_limit_t limit ;
 } ;
 
-#define RESOLVE_SERVICE_ZERO { STRALLOC_ZERO, 0, \
+#define RESOLVE_SERVICE_ZERO { STRBUF_ZERO, 0, \
                                0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0, \
                                RESOLVE_SERVICE_ADDON_PATH_ZERO, \
                                RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO, \
@@ -285,18 +284,18 @@ struct resolve_hash_s {
 
 extern int service_cmp_basedir(char const *dir) ;
 extern int service_endof_dir(char const *dir, char const *name) ;
-extern int service_frontend_path(stralloc *sasrc,char const *sv, uid_t owner,char const *directory_forced, char const **exclude, uint8_t exlen) ;
-extern int service_frontend_src(stralloc *sasrc, char const *name, char const *src, char const **exclude) ;
+extern int service_frontend_path(strbuf *sasrc,char const *sv, uid_t owner,char const *directory_forced, char const **exclude, uint8_t exlen) ;
+extern int service_frontend_src(strbuf *sasrc, char const *name, char const *src, char const **exclude) ;
 extern int service_is_g(char const *name, uint32_t flag) ;
 extern int service_get_treename(char *atree, char const *name) ;
 extern void service_resolve_sanitize(resolve_service_t *res) ;
-extern int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve_service_enum_table_t table) ;
+extern int service_resolve_get_field_tosa(strbuf *sa, resolve_service_t *res, resolve_service_enum_table_t table) ;
 extern void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_table_t table, char const *data) ;
 extern int service_resolve_read_cdb(ocdb *c, resolve_service_t *res) ;
 extern void service_resolve_write(resolve_service_t *res) ;
 extern void service_resolve_write_remote(resolve_service_t *res, char const *dst, uint8_t force) ;
 extern int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *sres) ;
-extern void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, bool propagate, ssexec_t *info, stralloc *argv) ;
+extern void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, bool propagate, ssexec_t *info, strbuf *argv) ;
 extern void service_switch_tree(resolve_service_t *res, char const *totreename, ssexec_t *info) ;
 extern void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char const *base, uint8_t requiredby) ;
 extern int service_resolve_symlink(char const *base, char *path, char *name) ;

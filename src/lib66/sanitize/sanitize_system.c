@@ -12,6 +12,7 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <string.h>
@@ -20,8 +21,7 @@
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
-#include <oblibs/sastr.h>
-#include <oblibs/stack.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/files.h>
 #include <oblibs/lexer.h>
 
@@ -188,8 +188,8 @@ void sanitize_system(ssexec_t *info)
     } else {
 
         ssize_t len = file_get_size(dst) ;
-        _alloc_stk_(file, len + 1) ;
-        if (!stack_read_file(&file, dst))
+        _alloc_strbuf_(file, len + 1) ;
+        if (!strbuf_read_file(&file, dst))
             log_dieu(LOG_EXIT_SYS, "read system version file: ", dst) ;
 
         if (sanitize_migrate(info, file.s, 1)) {

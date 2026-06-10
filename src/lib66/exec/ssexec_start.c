@@ -17,7 +17,7 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/hash.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
 #include <oblibs/graph.h>
 
@@ -41,14 +41,14 @@ static void ensure_no_conflict(service_graph_t *graph, int argc, char const *con
 
         if (hash->res.dependencies.nconflict) {
 
-            _alloc_stk_(stk, strlen(hash->res.sa.s + hash->res.dependencies.conflict)) ;
+            _alloc_sbl_(stk, strlen(hash->res.sa.s + hash->res.dependencies.conflict)) ;
             size_t pos = 0 ;
             int r ;
 
-            if (!stack_string_clean(&stk, hash->res.sa.s + hash->res.dependencies.conflict))
+            if (!sbl_clean_string(&stk, hash->res.sa.s + hash->res.dependencies.conflict))
                 log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-            FOREACH_STK(&stk, pos) {
+            FOREACH_SBL(&stk, pos) {
 
                 r = service_is_g(stk.s + pos, STATE_FLAGS_ISUP) ;
                 if (r > 0 && r == STATE_FLAGS_TRUE)

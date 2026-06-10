@@ -15,12 +15,14 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #include <linux/capability.h>
 
 #include <oblibs/log.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/lexer.h>
 #include <oblibs/bits.h>
 
@@ -28,7 +30,7 @@
 #include <66/caps.h>
 #include <66/enum.h>
 
-void parse_store_caps(stack *result, stack *store, uint32_t *ncaps)
+void parse_store_caps(strbuf *result, strbuf *store, uint32_t *ncaps)
 {
     size_t pos = 0 ;
     bool todel = false, has_dflags = false ;
@@ -41,7 +43,7 @@ void parse_store_caps(stack *result, stack *store, uint32_t *ncaps)
     bitset32_t aflags = bitset32_init(CAPS_MYLAST_CAP) ;
     bitset32_t dflags = bitset32_init(CAPS_MYLAST_CAP) ;
 
-    FOREACH_STK(store, pos) {
+    FOREACH_SBL(store, pos) {
 
         todel = false ;
         t = store->s + pos ;
@@ -72,8 +74,8 @@ void parse_store_caps(stack *result, stack *store, uint32_t *ncaps)
             if (bitset32_isvalid(&dflags, cap))
                  continue ;
 
-            if (!stack_add_g(result, *table.u.parser.list[cap].name))
-                log_die_nomem("stack") ;
+            if (!sbl_add(result, *table.u.parser.list[cap].name))
+                log_die_nomem("sbl") ;
         }
 
     } else {
@@ -81,15 +83,15 @@ void parse_store_caps(stack *result, stack *store, uint32_t *ncaps)
         for (; cap < CAPS_MYLAST_CAP ; cap++) {
 
             if (bitset32_isvalid(&aflags, cap))
-                if (!stack_add_g(result, *table.u.parser.list[cap].name))
-                    log_die_nomem("stack") ;
+                if (!sbl_add(result, *table.u.parser.list[cap].name))
+                    log_die_nomem("sbl") ;
         }
     }
 
     if (result->len) {
-        (*ncaps) = result->count ;
-        if (!stack_string_rebuild_with_delim(result, ' '))
-            log_dieusys(LOG_EXIT_SYS, "rebuild stack") ;
+        (*ncaps) = sbl_count(result) ;
+        if (!sbl_rebuild_with_delim(result, ' '))
+            log_dieusys(LOG_EXIT_SYS, "rebuild sbl") ;
     }
 }
 
@@ -157,15 +159,15 @@ static int get_bset(bitset32_t *bset)
 
 static void string_to_bitset(bitset32_t *bset, const char *s)
 {
-    _alloc_stk_(stk, strlen(s)) ;
+    _alloc_sbl_(stk, strlen(s)) ;
     size_t pos = 0 ;
     ssize_t flag ;
     resolve_enum_table_t table = E_TABLE_PARSER_CAPS_ZERO ;
 
-    if (!stack_string_clean(&stk, s))
+    if (!sbl_clean_string(&stk, s))
         log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
-    FOREACH_STK(&stk, pos) {
+    FOREACH_SBL(&stk, pos) {
         flag = key_to_enum(table.u.parser.list, stk.s + pos) ;
         if (flag < 0)
             log_die(LOG_EXIT_SYS, "unknown capability flag: ", stk.s + pos) ;

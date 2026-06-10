@@ -16,7 +16,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/hash.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
 
 #include <66/service.h>
@@ -101,12 +101,12 @@ void svc_unsupervise(service_graph_t *g)
 
             bpos = 0 ;
 
-            _alloc_stk_(stk, strlen(hash->res.sa.s + hash->res.dependencies.contents) + 1) ;
+            _alloc_sbl_(stk, strlen(hash->res.sa.s + hash->res.dependencies.contents) + 1) ;
 
-            if (!stack_string_clean(&stk, hash->res.sa.s + hash->res.dependencies.contents))
+            if (!sbl_clean_string(&stk, hash->res.sa.s + hash->res.dependencies.contents))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
-            FOREACH_STK(&stk, bpos) {
+            FOREACH_SBL(&stk, bpos) {
 
                 struct resolve_hash_s *h = hash_search(&g->hres, stk.s + bpos) ;
                 if (h == NULL)

@@ -18,11 +18,10 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/sastr.h>
 #include <oblibs/directory.h>
 #include <oblibs/files.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
+#include <oblibs/sbl.h>
 
 #include <66/environ.h>
 #include <66/constants.h>
@@ -37,9 +36,9 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
     int r ;
     struct stat st ;
     size_t pos = 0, svname_len = strlen(svname) ;
-    _alloc_sa_(salist) ;
-    _alloc_sa_(src_ver) ;
-    _alloc_sa_(dst_ver) ;
+    _cleanup_strbuf_ strbuf salist = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf src_ver = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf dst_ver = STRBUF_ZERO ;
 
     char svname_dot[svname_len + 1 + 1] ;
 
@@ -61,10 +60,10 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
         return 0 ;
 
     char const *exclude[2] = { svname_dot, 0 } ;
-    if (!sastr_dir_get(&salist,src_ver.s,exclude,S_IFREG))
+    if (!sbl_dir_get(&salist,src_ver.s,exclude,S_IFREG))
         log_warnusys_return(LOG_EXIT_ZERO,"get configuration file from directory: ",src_ver.s) ;
 
-    FOREACH_SASTR(&salist,pos) {
+    FOREACH_SBL(&salist,pos) {
 
         char *name = salist.s + pos ;
         size_t namelen = strlen(name) ;
@@ -96,10 +95,10 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
         pos = 0 ;
 
         char const *exclude[1] = { 0 } ;
-        if (!sastr_dir_get(&salist,src_ver.s,exclude,S_IFDIR))
+        if (!sbl_dir_get(&salist,src_ver.s,exclude,S_IFDIR))
             log_warnusys_return(LOG_EXIT_ZERO,"get configuration directories from directory: ",src_ver.s) ;
 
-        FOREACH_SASTR(&salist,pos) {
+        FOREACH_SBL(&salist,pos) {
 
             char *name = salist.s + pos ;
             size_t namelen = strlen(name) ;

@@ -21,7 +21,6 @@
 #include <oblibs/types.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/stralloc.h>
 
 #include <66/constants.h>
 #include <66/service.h>

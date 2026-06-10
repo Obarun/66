@@ -23,7 +23,6 @@
 #include <oblibs/directory.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
-#include <oblibs/sastr.h>
 
 #include <skalibs/djbunix.h>
 #include <skalibs/unix-transactional.h>

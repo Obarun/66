@@ -16,7 +16,6 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
-#include <oblibs/stack.h>
 #include <oblibs/stream.h>
 #include <oblibs/files.h>
 

@@ -13,9 +13,8 @@
  */
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 
 #include <66/tree.h>
 
@@ -24,13 +23,13 @@ int tree_seed_setseed(tree_seed_t *seed, char const *treename)
     log_flow() ;
 
     int e = 0 ;
-    stralloc src = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf src = STRBUF_ZERO ;
 
     if (!tree_seed_resolve_path(&src, treename))
         goto err ;
 
     seed->name = seed->sa.len ;
-    if (!sastr_add_string(&seed->sa, treename))
+    if (!sbl_add(&seed->sa, treename))
         goto err ;
 
     if (!tree_seed_parse_file(seed, src.s) ||
@@ -39,6 +38,5 @@ int tree_seed_setseed(tree_seed_t *seed, char const *treename)
 
     e = 1 ;
     err:
-        stralloc_free(&src) ;
         return e ;
 }

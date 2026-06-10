@@ -12,16 +12,17 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <sys/stat.h>
 #include <string.h>
 #include <stdint.h>
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
+#include <oblibs/strbuf.h>
 
-#include <skalibs/stralloc.h>
 #include <skalibs/sgetopt.h>
 
 #include <66/constants.h>
@@ -34,7 +35,7 @@
 #include <66/graph.h>
 #include <66/sanitize.h>
 
-static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
+static void doit(strbuf *sa, ssexec_t *info, uint8_t earlier)
 {
     log_flow() ;
 
@@ -65,7 +66,7 @@ static void doit(stralloc *sa, ssexec_t *info, uint8_t earlier)
 
         if (c->res.enabled) {
 
-            if (!sastr_add_string(sa, c->name))
+            if (!sbl_add(sa, c->name))
                 log_die_nomem("stack") ;
 
         } else
@@ -86,7 +87,7 @@ int ssexec_tree_init(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     int r ;
     uint8_t earlier = 0 ;
     char const *treename = 0 ;

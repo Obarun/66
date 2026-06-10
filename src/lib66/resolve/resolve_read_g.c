@@ -17,7 +17,6 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/stack.h>
 
 #include <66/resolve.h>
 #include <66/constants.h>

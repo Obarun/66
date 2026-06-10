@@ -20,7 +20,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
 #include <oblibs/hash.h>
@@ -177,21 +177,19 @@ void parse_copy_to_source(char const *dst, char const *src, resolve_service_t *r
 
     if (!access(dst, F_OK)) {
 
-        stralloc sa = STRALLOC_ZERO ;
+        _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
         char const *exclude[6] = { SS_EVENTDIR + 1, SS_SUPERVISEDIR + 1, SS_SCANDIR, SS_STATE + 1, SS_RESOLVE + 1, 0 } ;
-        if (!sastr_dir_get_recursive(&sa, dst, exclude, S_IFDIR|S_IFREG, 1)) {
+        if (!sbl_dir_get_recursive(&sa, dst, exclude, S_IFDIR|S_IFREG, 1)) {
             parse_cleanup(res, src, force) ;
-            stralloc_free(&sa) ;
             log_dieusys(LOG_EXIT_SYS, "get file list of: ", dst) ;
         }
 
-        FOREACH_SASTR(&sa, pos) {
+        FOREACH_SBL(&sa, pos) {
 
             char base[strlen(sa.s + pos) + 1] ;
             if (!ob_basename(base, sa.s + pos)) {
                 parse_cleanup(res, src, force) ;
-                stralloc_free(&sa) ;
                 log_dieusys(LOG_EXIT_SYS, "basename of: ", sa.s + pos) ;
             }
 
@@ -203,13 +201,11 @@ void parse_copy_to_source(char const *dst, char const *src, resolve_service_t *r
                 log_trace("remove element: ", sa.s + pos) ;
                 if (!dir_destroy(sa.s + pos)) {
                     parse_cleanup(res, src, force) ;
-                    stralloc_free(&sa) ;
                     log_dieusys(LOG_EXIT_SYS, "remove element: ", sa.s + pos) ;
                 }
             }
         }
 
-        stralloc_free(&sa) ;
     }
 
     if (access(dst, F_OK) < 0) {
@@ -260,7 +256,7 @@ void parse_service(struct resolve_hash_s **hres, char const *sv, ssexec_t *info,
 
     int r ;
     uint8_t rforce = 0 ;
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     struct resolve_hash_s *c, *tmp ;
 
     char main[strlen(sv) + 1] ;
@@ -288,8 +284,8 @@ void parse_service(struct resolve_hash_s **hres, char const *sv, ssexec_t *info,
             if (sanitize_write(&c->res, force))
                 rforce = 1 ;
 
-            if (!auto_stra(&sa, "/tmp/", c->res.sa.s + c->res.name, ":XXXXXX"))
-                log_die_nomem("stralloc") ;
+            if (!auto_strbuf(&sa, "/tmp/", c->res.sa.s + c->res.name, ":XXXXXX"))
+                log_die_nomem("strbuf") ;
 
             if (!mkdtemp(sa.s))
                 log_dieusys(LOG_EXIT_SYS, "create temporary directory") ;

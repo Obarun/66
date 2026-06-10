@@ -27,14 +27,13 @@
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
-#include <oblibs/sastr.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/io.h>
 #include <oblibs/types.h>
 #include <oblibs/fd.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/stralloc.h>
 #include <skalibs/exec.h>
 #include <skalibs/cspawn.h>
 #include <skalibs/djbunix.h>
@@ -80,7 +79,7 @@ static void sulogin(char const *msg,char const *arg)
         log_dieusys(LOG_EXIT_SYS,"close stdin -- you are on your own") ;
 }
 
-void read_cmdline(stack *stk, size_t len)
+void read_cmdline(strbuf *stk, size_t len)
 {
     log_flow() ;
 
@@ -133,61 +132,58 @@ static inline uint8_t string_to_uint(char const *str, unsigned int *ui, uint8_t 
     return 1 ;
 }
 
-static int get_value(stralloc *val,char const *key)
+static int get_value(strbuf *val,char const *key)
 {
     log_flow() ;
 
-    _alloc_stk_(stk, val->len + 1) ;
+    _alloc_strbuf_(stk, val->len + 1) ;
     if (!environ_search_value(&stk, val->s, key))
         return 0 ;
     val->len = 0 ;
-    if (!stralloc_copyb(val, stk.s, stk.len) ||
-        !stralloc_0(val))
-            sulogin("stralloc in get_value","") ;
+    if (!strbuf_copyb(val, stk.s, stk.len) ||
+        !strbuf_terminate(val))
+            sulogin("strbuf in get_value","") ;
     val->len-- ;
     return 1 ;
 }
 
-static int read_kernel_parameters(stralloc *kernel, const char *file)
+static int read_kernel_parameters(strbuf *kernel, const char *file)
 {
     log_flow() ;
     size_t len = 2048 ; // should be sufficient for a kernel command line
-    _alloc_stk_(f, len) ;
-    _alloc_stk_(trim, len + 1) ;
-    _alloc_stk_(res, len + 1) ;
+    _alloc_sbl_(f, len) ;
+    _alloc_sbl_(trim, len + 1) ;
+    _alloc_sbl_(res, len + 1) ;
     size_t pos = 0 ;
 
     read_cmdline(&f, len) ;
 
-    if (!stack_string_clean(&trim, f.s))
+    if (!sbl_clean_string(&trim, f.s))
         sulogin("clean file: ", file) ;
 
-    FOREACH_STK(&trim, pos) {
+    FOREACH_SBL(&trim, pos) {
         ssize_t r = get_len_until(trim.s + pos, '=') ;
         if (r >= 0) {
             len = strlen(trim.s + pos) ;
-            if (!stack_add(&res, trim.s + pos, len + 1))
+            if (!sbl_addb(&res, trim.s + pos, len))
                 sulogin("stack overflow", "") ;
         }
     }
 
-    if (!stack_close(&res))
-        sulogin("stack overflow", "") ;
-
-    if (!stralloc_copyb(kernel, res.s, res.len) ||
-        !stralloc_0(kernel))
-            sulogin("stralloc", "") ;
+    if (!strbuf_copyb(kernel, res.s, res.len) ||
+        !strbuf_terminate(kernel))
+            sulogin("strbuf", "") ;
 
     kernel->len-- ;
 
     return 1 ;
 }
 
-static void set_env(stralloc *env, const char *key, const char *value)
+static void set_env(strbuf *env, const char *key, const char *value)
 {
     char tmp[strlen(key) + 1 + strlen(value) + 1] ;
     auto_strings(tmp, key, "=", value) ;
-    if (!sastr_add_string(env, tmp))
+    if (!sbl_add(env, tmp))
         sulogin("append environment variable: ", tmp) ;
 
 }
@@ -201,9 +197,9 @@ static void parse_conf(const char *confile)
 
     unsigned int j = 0 ;
     uint8_t empty = 0 ;
-    _alloc_sa_(kernel) ;
-    _alloc_sa_(env) ;
-    _alloc_sa_(val) ;
+    _cleanup_strbuf_ strbuf kernel = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf env = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf val = STRBUF_ZERO ;
     char *kfile = "/proc/cmdline" ;
 
     // init.conf
@@ -225,10 +221,10 @@ static void parse_conf(const char *confile)
         empty = 0 ;
         val.len = 0 ;
 
-        if (!stralloc_copys(&val, env.s))
-            sulogin("copy stralloc", "") ;
+        if (!strbuf_copys(&val, env.s))
+            sulogin("copy strbuf", "") ;
 
-        if (!stralloc_0(&val))
+        if (!strbuf_terminate(&val))
             sulogin("close string", "") ;
 
         val.len-- ;
@@ -419,7 +415,7 @@ static void split_tmpfs(char *dst,char const *str)
     dst[len] = 0 ;
 }
 
-static inline void run_stage2 (stralloc *env, const char *tty)
+static inline void run_stage2 (strbuf *env, const char *tty)
 {
     log_flow() ;
 
@@ -470,16 +466,16 @@ static inline void run_stage2 (stralloc *env, const char *tty)
     char t[tlen + 1] ;
     memcpy(t,env->s,tlen) ;
     t[tlen] = 0 ;
-    stralloc_free(env) ;
+    strbuf_free(env) ;
 
     xmexec_m(newargv, t, tlen) ;
 }
 
-static inline void make_cmdline(char const *prog,char const **add,int len,char const *msg,char const *arg, stralloc *env)
+static inline void make_cmdline(char const *prog,char const **add,int len,char const *msg,char const *arg, strbuf *env)
 {
     log_flow() ;
 
-    size_t elen = sastr_nelement(env) ;
+    size_t elen = sbl_count(env) ;
     char const *e[elen+1] ;
 
     if (!environ_make(e, elen, env->s, env->len))
@@ -545,7 +541,7 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
 {
 	log_flow() ;
 
-    stralloc env = STRALLOC_ZERO ;
+    strbuf env = STRBUF_ZERO ;
     unsigned int r , tmpfs = 0, hasconsole = 1 ;
     size_t bannerlen, livelen ;
     pid_t pid ;
@@ -589,8 +585,6 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
         auto_strings(confile, skel, "/", SS_BOOT_CONF) ;
 
         parse_conf(confile) ;
-
-        env = stralloc_zero ;
     }
 
     verbo[u32_fmt(verbo, VERBOSITY)] = 0 ;

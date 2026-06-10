@@ -26,7 +26,7 @@
 #include <oblibs/graph.h>
 #include <oblibs/io.h>
 #include <oblibs/string.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
 #include <oblibs/types.h>
 #include <oblibs/environ.h>
@@ -144,14 +144,14 @@ static void announce(uint32_t id, bool success)
 
     } else {
 
-        flog_1_warnu("%s tree: %s -- exited with signal: %d", pmanager->cmdmsg, treename, tree->exitcod) ;
+        flog_1_warnu("%s tree: %s -- exited with signal: %d", pmanager->cmdmsg, treename, tree->exitcode) ;
 
         tree_send_event(TREE_EVENT_CHILD_FAILED, id) ;
     }
 
 }
 
-static int ssexec_callback(tree_ctx_t *tree, uint32_t id, stack *stk, ssexec_t *info)
+static int ssexec_callback(tree_ctx_t *tree, uint32_t id, strbuf *stk, ssexec_t *info)
 {
     log_flow() ;
 
@@ -160,13 +160,13 @@ static int ssexec_callback(tree_ctx_t *tree, uint32_t id, stack *stk, ssexec_t *
     ss_state_t ste = STATE_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-    _alloc_stk_(t, stk->len) ;
+    _alloc_sbl_(t, stk->len) ;
 
 
     /** only deal with enabled service at up time and
      * supervised service at down time */
     {
-        FOREACH_STK(stk, pos) {
+        FOREACH_SBL(stk, pos) {
 
             char *name = stk->s + pos ;
 
@@ -182,7 +182,7 @@ static int ssexec_callback(tree_ctx_t *tree, uint32_t id, stack *stk, ssexec_t *
             if (!pmanager->operation ? res.enabled : ste.issupervised == STATE_FLAGS_TRUE && !res.earlier) {
 
                 if (get_rstrlen_until(name, SS_LOG_SUFFIX) < 0 && !res.inns)
-                    if (!stack_add_g(&t, name))
+                    if (!sbl_add(&t, name))
                         log_dieu(LOG_EXIT_SYS, "add string") ;
             }
         }
@@ -193,7 +193,7 @@ static int ssexec_callback(tree_ctx_t *tree, uint32_t id, stack *stk, ssexec_t *
     if (!t.len)
         return 0 ;
 
-    pos = 0, len = t.count ;
+    pos = 0, len = sbl_count(&t) ;
 
     int n = pmanager->operation == 2 ? 4 : 3 ;
     int nargc = n + len ;
@@ -205,7 +205,7 @@ static int ssexec_callback(tree_ctx_t *tree, uint32_t id, stack *stk, ssexec_t *
     if (pmanager->operation == 2)
         newargv[m++] = "-u" ;
 
-    FOREACH_STK(&t, pos)
+    FOREACH_SBL(&t, pos)
         newargv[m++] = t.s + pos ;
 
     newargv[m] = 0 ;
@@ -258,8 +258,8 @@ static int launch_tree(uint32_t id)
     sinfo.treename.len = 0 ;
     sinfo.opt_tree = 1 ;
 
-    if (!auto_stra(&sinfo.treename, treename))
-        log_die_nomem("stralloc") ;
+    if (!auto_strbuf(&sinfo.treename, treename))
+        log_die_nomem("strbuf") ;
 
     r = tree_sethome(&sinfo) ;
     if (r <= 0)
@@ -274,9 +274,9 @@ static int launch_tree(uint32_t id)
 
     } else {
 
-        _alloc_stk_(stk, strlen(tree->tres->sa.s + tree->tres->contents) + 1) ;
+        _alloc_sbl_(stk, strlen(tree->tres->sa.s + tree->tres->contents) + 1) ;
 
-        if (!stack_string_clean(&stk, tree->tres->sa.s + tree->tres->contents))
+        if (!sbl_clean_string(&stk, tree->tres->sa.s + tree->tres->contents))
             log_warn_return(LOG_EXIT_ONE, "clean string") ;
 
         int r = ssexec_callback(tree, id, &stk, &sinfo) ;

@@ -16,8 +16,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
@@ -33,7 +32,7 @@ int service_cmp_basedir(char const *dir)
     int e = 0 ;
     size_t len = strlen(dir) ;
     uid_t owner = MYUID ;
-    stralloc home = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf home = STRBUF_ZERO ;
 
     char system[len + 1] ;
     char adm[len + 1] ;
@@ -42,7 +41,7 @@ int service_cmp_basedir(char const *dir)
     if (owner)
     {
         if (!set_ownerhome(&home,owner)) { log_warnusys("set home directory") ; goto err ; }
-        if (!auto_stra(&home,SS_SERVICE_USERDIR)) { log_warnsys("stralloc") ; goto err ; }
+        if (!auto_strbuf(&home,SS_SERVICE_USERDIR)) { log_warnsys("strbuf") ; goto err ; }
         auto_strings(user,dir) ;
         user[strlen(home.s)] = 0 ;
     }
@@ -70,6 +69,5 @@ int service_cmp_basedir(char const *dir)
     e = 1 ;
 
     err:
-        stralloc_free(&home) ;
         return e ;
 }

@@ -15,14 +15,13 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/enum_service.h>
 
-static int get_config(stralloc *sa, resolve_service_t *res, resolve_service_enum_config_t table)
+static int get_config(strbuf *sa, resolve_service_t *res, resolve_service_enum_config_t table)
 {
     log_flow() ;
 
@@ -112,14 +111,14 @@ static int get_config(stralloc *sa, resolve_service_t *res, resolve_service_enum
             return e ;
     }
 
-    if (!auto_stra(sa,str))
+    if (!auto_strbuf(sa,str))
         return e ;
 
     e = 1 ;
     return e ;
 }
 
-static int get_path(stralloc *sa, resolve_service_t *res, resolve_service_enum_path_t table)
+static int get_path(strbuf *sa, resolve_service_t *res, resolve_service_enum_path_t table)
 {
     log_flow() ;
 
@@ -144,14 +143,14 @@ static int get_path(stralloc *sa, resolve_service_t *res, resolve_service_enum_p
             return e ;
     }
 
-    if (!auto_stra(sa,str))
+    if (!auto_strbuf(sa,str))
         return e ;
 
     e = 1 ;
     return e ;
 }
 
-static int get_deps(stralloc *sa, resolve_service_t *res, resolve_service_enum_deps_t table)
+static int get_deps(strbuf *sa, resolve_service_t *res, resolve_service_enum_deps_t table)
 {
     log_flow() ;
 
@@ -219,14 +218,14 @@ static int get_deps(stralloc *sa, resolve_service_t *res, resolve_service_enum_d
             return e ;
     }
 
-    if (!auto_stra(sa,str))
+    if (!auto_strbuf(sa,str))
         return e ;
 
     e = 1 ;
     return e ;
 }
 
-static int get_exec(stralloc *sa, resolve_service_t *res, resolve_service_enum_execute_t table)
+static int get_exec(strbuf *sa, resolve_service_t *res, resolve_service_enum_execute_t table)
 {
     log_flow() ;
 
@@ -329,14 +328,14 @@ static int get_exec(stralloc *sa, resolve_service_t *res, resolve_service_enum_e
             return e ;
     }
 
-    if (!auto_stra(sa,str))
+    if (!auto_strbuf(sa,str))
         return e ;
 
     e = 1 ;
     return e ;
 }
 
-static int get_live(stralloc *sa, resolve_service_t *res, resolve_service_enum_live_t table)
+static int get_live(strbuf *sa, resolve_service_t *res, resolve_service_enum_live_t table)
 {
     log_flow() ;
 
@@ -389,14 +388,14 @@ static int get_live(stralloc *sa, resolve_service_t *res, resolve_service_enum_l
             return e ;
     }
 
-    if (!auto_stra(sa,str))
+    if (!auto_strbuf(sa,str))
         return e ;
 
     e = 1 ;
     return e ;
 }
 
-static int get_logger(stralloc *sa, resolve_service_t *res, resolve_service_enum_logger_t table)
+static int get_logger(strbuf *sa, resolve_service_t *res, resolve_service_enum_logger_t table)
 {
     log_flow() ;
 
@@ -459,14 +458,14 @@ static int get_logger(stralloc *sa, resolve_service_t *res, resolve_service_enum
             return e ;
     }
 
-    if (!auto_stra(sa,str))
+    if (!auto_strbuf(sa,str))
         return e ;
 
     e = 1 ;
     return e ;
 }
 
-static int get_environ(stralloc *sa, resolve_service_t *res, resolve_service_enum_environ_t table)
+static int get_environ(strbuf *sa, resolve_service_t *res, resolve_service_enum_environ_t table)
 {
     log_flow() ;
 
@@ -502,14 +501,14 @@ static int get_environ(stralloc *sa, resolve_service_t *res, resolve_service_enu
             return e ;
     }
 
-    if (!auto_stra(sa,str))
+    if (!auto_strbuf(sa,str))
         return e ;
 
     e = 1 ;
     return e ;
 }
 
-static int get_regex(stralloc *sa, resolve_service_t *res, resolve_service_enum_regex_t table)
+static int get_regex(strbuf *sa, resolve_service_t *res, resolve_service_enum_regex_t table)
 {
     log_flow() ;
 
@@ -554,14 +553,14 @@ static int get_regex(stralloc *sa, resolve_service_t *res, resolve_service_enum_
             return e ;
     }
 
-    if (!auto_stra(sa,str))
+    if (!auto_strbuf(sa,str))
         return e ;
 
     e = 1 ;
     return e ;
 }
 
-static int get_io(stralloc *sa, resolve_service_t *res, resolve_service_enum_limit_t table)
+static int get_io(strbuf *sa, resolve_service_t *res, resolve_service_enum_limit_t table)
 {
     log_flow() ;
 
@@ -602,14 +601,14 @@ static int get_io(stralloc *sa, resolve_service_t *res, resolve_service_enum_lim
             return e ;
     }
 
-    if (!auto_stra(sa,str))
+    if (!auto_strbuf(sa,str))
         return e ;
 
     e = 1 ;
     return e ;
 }
 
-static int get_limit(stralloc *sa, resolve_service_t *res, resolve_service_enum_limit_t table)
+static int get_limit(strbuf *sa, resolve_service_t *res, resolve_service_enum_limit_t table)
 {
     log_flow() ;
 
@@ -699,14 +698,14 @@ static int get_limit(stralloc *sa, resolve_service_t *res, resolve_service_enum_
             return e ;
     }
 
-    if (!auto_stra(sa,str))
+    if (!auto_strbuf(sa,str))
         return e ;
 
     e = 1 ;
     return e ;
 }
 
-int service_resolve_get_field_tosa(stralloc *sa, resolve_service_t *res, resolve_service_enum_table_t table)
+int service_resolve_get_field_tosa(strbuf *sa, resolve_service_t *res, resolve_service_enum_table_t table)
 {
     log_flow() ;
 

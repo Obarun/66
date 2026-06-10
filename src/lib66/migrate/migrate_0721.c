@@ -17,17 +17,15 @@
 #include <fcntl.h>
 
 #include <oblibs/log.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
 #include <oblibs/string.h>
-#include <oblibs/sastr.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/files.h>
 #include <oblibs/directory.h>
 #include <oblibs/lexer.h>
 #include <oblibs/types.h>
 #include <oblibs/cdb.h>
-
-#include <skalibs/stralloc.h>
 
 #include <66/ssexec.h>
 #include <66/tree.h>
@@ -67,7 +65,7 @@ static void conf_init(conf_t *conf)
 
 }
 
-static int resolve_find_cdb_0721(stralloc *result, ocdb const *c, char const *key)
+static int resolve_find_cdb_0721(strbuf *result, ocdb const *c, char const *key)
 {
     uint32_t x = 0 ;
     size_t klen = strlen(key) ;
@@ -88,8 +86,8 @@ static int resolve_find_cdb_0721(stralloc *result, ocdb const *c, char const *ke
 
     u32_unpack_big(pack, &x) ;
 
-    if (!auto_stra(result,pack))
-        log_warnusys_return(LOG_EXIT_LESSONE,"stralloc") ;
+    if (!auto_strbuf(result,pack))
+        log_warnusys_return(LOG_EXIT_LESSONE,"strbuf") ;
 
     return x ;
 }
@@ -98,7 +96,7 @@ static void tree_resolve_master_read_cdb_0721(ocdb *c, resolve_tree_master_t *mr
 {
     log_flow() ;
 
-    _alloc_sa_(tmp) ;
+    _cleanup_strbuf_ strbuf tmp = STRBUF_ZERO ;
     resolve_wrapper_t_ref wres ;
     uint32_t x ;
 
@@ -137,7 +135,7 @@ static void tree_resolve_read_cdb_0721(ocdb *c, resolve_tree_t *tres)
 {
     log_flow() ;
 
-    _alloc_sa_(tmp) ;
+    _cleanup_strbuf_ strbuf tmp = STRBUF_ZERO ;
     resolve_wrapper_t_ref wres ;
     uint32_t x ;
 
@@ -195,11 +193,11 @@ static void tree_resolve_read_cdb_0721(ocdb *c, resolve_tree_t *tres)
      * the number of service associated to the tree. */
     if (x > 0) {
 
-        _alloc_stk_(stk, strlen(tres->sa.s + tres->contents)) ;
-        if (!stack_string_clean(&stk, tres->sa.s + tres->contents))
+        _alloc_sbl_(stk, strlen(tres->sa.s + tres->contents)) ;
+        if (!sbl_clean_string(&stk, tres->sa.s + tres->contents))
             log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-        tres->ncontents = stack_count_element(&stk) ;
+        tres->ncontents = sbl_count(&stk) ;
     }
 
     /* init */
@@ -225,7 +223,7 @@ static void migrate_tree_0721(ssexec_t *info)
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wmres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
     resolve_wrapper_t_ref wtres = 0 ;
-    _alloc_stk_(path, info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 2) ;
+    _alloc_strbuf_(path, info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 2) ;
 
     /** migrate the Master resolve file of trees*/
     auto_strings(path.s, info->base.s, SS_SYSTEM, SS_RESOLVE, "/") ;
@@ -256,11 +254,11 @@ static void migrate_tree_0721(ssexec_t *info)
     /** migrate the all resolve file of trees */
     if (mres.ncontents) {
 
-        _alloc_stk_(stk, strlen(mres.sa.s + mres.contents) + 1) ;
-        if (!stack_string_clean(&stk, mres.sa.s + mres.contents))
+        _alloc_sbl_(stk, strlen(mres.sa.s + mres.contents) + 1) ;
+        if (!sbl_clean_string(&stk, mres.sa.s + mres.contents))
             log_dieu(LOG_EXIT_SYS, "convert string") ;
 
-        FOREACH_STK(&stk, pos) {
+        FOREACH_SBL(&stk, pos) {
 
             c = ocdb_zero ;
             tres = tree_resolve_zero ;
@@ -340,8 +338,8 @@ static void migrate_frontend_file_0721(const char *file, ssexec_t *info)
     int pos = 0 ;
     size_t len = strlen(file) ;
     ssize_t insta = get_rlen_until(file, '@', len) ;
-    _alloc_sa_(frontend) ;
-    _alloc_stk_(f, len + 1) ;
+    _cleanup_strbuf_ strbuf frontend = STRBUF_ZERO ;
+    _alloc_strbuf_(f, len + 1) ;
 
     auto_strings(f.s, file) ;
 
@@ -353,12 +351,12 @@ static void migrate_frontend_file_0721(const char *file, ssexec_t *info)
         return ;
 
     log_trace("read frontend service file: ", f.s) ;
-    if (!file_readputsa_g(&frontend, f.s))
+    if (!strbuf_read_file(&frontend, f.s))
         log_dieu(LOG_EXIT_SYS, "read system version file: ", f.s) ;
 
     while(field[pos].regex) {
         log_trace("replacing field: ", field[pos].regex, " by: ", field[pos].by) ;
-        if (!sastr_replace(&frontend, field[pos].regex, field[pos].by))
+        if (!sbl_replace(&frontend, field[pos].regex, field[pos].by))
             log_die(LOG_EXIT_ZERO, "replace regex character: ", field[pos].regex, " by: ", field[pos].by," for service: ", f.s) ;
         pos++ ;
     }
@@ -367,16 +365,16 @@ static void migrate_frontend_file_0721(const char *file, ssexec_t *info)
         resolve_enum_table_t table = E_TABLE_PARSER_SECTION_LOGGER_ZERO ;
         table.u.parser.id = E_PARSER_SECTION_LOGGER_DESTINATION ;
 
-        _alloc_stk_(store, frontend.len + 1) ;
-        _alloc_stk_(stdout, frontend.len + 22) ;
+        _alloc_sbl_(store, frontend.len + 1) ;
+        _alloc_strbuf_(stdout, frontend.len + 22) ;
         int r = parse_get_value_of_key(&store, frontend.s, table) ;
         if (r) {
             log_1_warn("Destination field is deprecated -- convert it automatically to StdOut=s6log:", store.s) ;
             auto_strings(stdout.s, "StdOut=s6log:", store.s, "\n\n[Start]") ;
-            if (!sastr_replace(&frontend, "\n[Start]", stdout.s))
+            if (!sbl_replace(&frontend, "\n[Start]", stdout.s))
                 log_die(LOG_EXIT_ZERO, "replace deprecated field Destination with: ", stdout.s) ;
 
-            if (!sastr_replace(&frontend, "Destination", "#Destination"))
+            if (!sbl_replace(&frontend, "Destination", "#Destination"))
                 log_die(LOG_EXIT_ZERO, "replace deprecated field Destination with: ", stdout.s) ;
         }
 
@@ -392,8 +390,8 @@ static void migrate_frontend_file_0721(const char *file, ssexec_t *info)
 static void get_config(conf_t *lconf, conf_t *conf, size_t *nservice, const char *name, const char *frontend, ssexec_t *info)
 {
     int fd ;
-    _alloc_sa_(sa) ;
-    _alloc_stk_(path, info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + strlen(name) + SS_RESOLVE_LEN + 2) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
+    _alloc_strbuf_(path, info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + strlen(name) + SS_RESOLVE_LEN + 2) ;
 
     resolve_service_t_0721 res_0721 = RESOLVE_SERVICE_ZERO_0721 ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res_0721) ;
@@ -431,27 +429,27 @@ static void get_config(conf_t *lconf, conf_t *conf, size_t *nservice, const char
 static void migrate_user_service(ssexec_t *info)
 {
     char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, 0 } ;
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     size_t syslen = strlen(SS_SERVICE_SYSDIR_USER), admlen = strlen(SS_SERVICE_ADMDIR_USER), pos = 0 ;
-    _alloc_stk_(path, (syslen > admlen ? syslen : admlen) + 1) ;
+    _alloc_strbuf_(path, (syslen > admlen ? syslen : admlen) + 1) ;
 
     {
         auto_strings(path.s, SS_SERVICE_SYSDIR_USER) ;
 
-        if (!sastr_dir_get_recursive(&sa, path.s, exclude, S_IFLNK, 1))
+        if (!sbl_dir_get_recursive(&sa, path.s, exclude, S_IFLNK, 1))
             log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
-        FOREACH_SASTR(&sa, pos)
+        FOREACH_SBL(&sa, pos)
             migrate_frontend_file_0721(sa.s + pos, info) ;
     }
     {
         auto_strings(path.s, SS_SERVICE_ADMDIR_USER) ;
 
         sa.len = 0 ;
-        if (!sastr_dir_get_recursive(&sa, path.s, exclude, S_IFLNK, 1))
+        if (!sbl_dir_get_recursive(&sa, path.s, exclude, S_IFLNK, 1))
             log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
-        FOREACH_SASTR(&sa, pos)
+        FOREACH_SBL(&sa, pos)
             migrate_frontend_file_0721(sa.s + pos, info) ;
     }
 }
@@ -466,8 +464,8 @@ static void migrate_service_0721(void)
     char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, 0 } ;
     conf_t lconf[SS_MAX_SERVICE + 1] ;
     ssexec_t info = SSEXEC_ZERO ;
-    _alloc_sa_(sa) ;
-    _alloc_sa_(frontend) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf frontend = STRBUF_ZERO ;
     struct resolve_hash_s *hres = NULL ;
 
     memset(lconf, 0, sizeof(conf_t) * SS_MAX_SERVICE) ;
@@ -485,17 +483,17 @@ static void migrate_service_0721(void)
      * and /etc/66/service/user */
     migrate_user_service(&info) ;
 
-    _alloc_stk_(path, info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1) ;
+    _alloc_strbuf_(path, info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1) ;
     auto_strings(path.s, info.base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE) ;
 
-    if (!sastr_dir_get_recursive(&sa, path.s, exclude, S_IFLNK, 0))
+    if (!sbl_dir_get_recursive(&sa, path.s, exclude, S_IFLNK, 0))
         log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
     /** get old configuration of the service:
      * - associated tree name
      * - enabled or not. */
     {
-        FOREACH_SASTR(&sa, pos) {
+        FOREACH_SBL(&sa, pos) {
 
             conf_t conf ;
 
@@ -521,7 +519,7 @@ static void migrate_service_0721(void)
             {
                 /** In case of module we need to migrate the frontend
                  * of each service inside the ns. */
-                _alloc_stk_(module, frontend.len + 1 + SS_MODULE_FRONTEND_LEN + 1) ;
+                _alloc_strbuf_(module, frontend.len + 1 + SS_MODULE_FRONTEND_LEN + 1) ;
 
                 if (!ob_dirname(module.s, frontend.s))
                     log_dieusys(LOG_EXIT_SYS, "get dirname of: ", frontend.s) ;
@@ -534,10 +532,10 @@ static void migrate_service_0721(void)
                     char const *ex[1] = { 0 } ;
                     frontend.len = svpos = 0 ;
 
-                    if (!sastr_dir_get_recursive(&frontend, module.s, ex, S_IFREG, 1))
+                    if (!sbl_dir_get_recursive(&frontend, module.s, ex, S_IFREG, 1))
                         log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
-                    FOREACH_SASTR(&frontend, svpos)
+                    FOREACH_SBL(&frontend, svpos)
                         migrate_frontend_file_0721(frontend.s + svpos, &info) ;
                 }
             }
@@ -554,8 +552,8 @@ static void migrate_service_0721(void)
 
             info.opt_tree = 1 ;
             info.treename.len = 0 ;
-            if (!auto_stra(&info.treename, lconf[pos].treename))
-                log_die_nomem("stralloc") ;
+            if (!auto_strbuf(&info.treename, lconf[pos].treename))
+                log_die_nomem("strbuf") ;
 
             int argc = 3 ;
             int m = 0 ;

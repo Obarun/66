@@ -16,9 +16,9 @@
 
 #include <oblibs/log.h>
 #include <oblibs/lexer.h>
-#include <oblibs/stack.h>
+#include <oblibs/strbuf.h>
 
-uint32_t regex_get_file_name(stack *filename, char const *str)
+uint32_t regex_get_file_name(strbuf *filename, char const *str)
 {
     log_flow() ;
 

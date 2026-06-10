@@ -20,7 +20,7 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
 
 #include <66/graph.h>
@@ -75,8 +75,8 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
 
                 info->treename.len = 0 ;
 
-                if (!auto_stra(&info->treename, res.sa.s + res.treename))
-                    log_die_nomem("stralloc") ;
+                if (!auto_strbuf(&info->treename, res.sa.s + res.treename))
+                    log_die_nomem("strbuf") ;
             }
 
         }
@@ -107,9 +107,9 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
         if (res.dependencies.ndepends) {
 
             size_t len = strlen(res.sa.s + res.dependencies.depends) ;
-            _alloc_stk_(stk, len + 1) ;
+            _alloc_sbl_(stk, len + 1) ;
 
-            if (!stack_string_clean(&stk, res.sa.s + res.dependencies.depends))
+            if (!sbl_clean_string(&stk, res.sa.s + res.dependencies.depends))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
             n += service_graph_ncollect(g, stk.s, stk.len, info, flag) ;
@@ -118,9 +118,9 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
         if (res.dependencies.nrequiredby) {
 
             size_t len = strlen(res.sa.s + res.dependencies.requiredby) ;
-            _alloc_stk_(stk, len + 1) ;
+            _alloc_sbl_(stk, len + 1) ;
 
-            if (!stack_string_clean(&stk, res.sa.s + res.dependencies.requiredby))
+            if (!sbl_clean_string(&stk, res.sa.s + res.dependencies.requiredby))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
             n += service_graph_ncollect(g, stk.s, stk.len, info, flag) ;
@@ -139,9 +139,9 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
         if (res.type == E_PARSER_TYPE_MODULE && res.dependencies.ncontents) {
 
             size_t len = strlen(res.sa.s + res.dependencies.contents) ;
-            _alloc_stk_(stk, len + 1) ;
+            _alloc_sbl_(stk, len + 1) ;
 
-            if (!stack_string_clean(&stk, res.sa.s + res.dependencies.contents))
+            if (!sbl_clean_string(&stk, res.sa.s + res.dependencies.contents))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
             n += service_graph_ncollect(g, stk.s, stk.len, info, flag) ;

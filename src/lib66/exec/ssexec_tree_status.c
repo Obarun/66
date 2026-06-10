@@ -12,6 +12,7 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <sys/stat.h>
 #include <string.h>
 #include <locale.h>
 #include <langinfo.h>
@@ -20,19 +21,18 @@
 #include <unistd.h>//access
 #include <errno.h>
 
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/log.h>
 #include <oblibs/account.h>
 #include <oblibs/types.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 #include <oblibs/lexer.h>
-#include <oblibs/stack.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/hash.h>
 #include <oblibs/stream.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/genalloc.h>
 #include <skalibs/bytestr.h>
 
 #include <66/info.h>
@@ -143,14 +143,14 @@ static void info_display_init(char const *field,resolve_tree_t *res)
 static void info_display_allow(char const *field, resolve_tree_t *res)
 {
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
     if (NOFIELD)
         info_display_field_name(field) ;
 
     if (res->nallow) {
 
-        if (!sastr_clean_string(&sa, res->sa.s + res->allow))
+        if (!sbl_clean_string(&sa, res->sa.s + res->allow))
             log_dieu(LOG_EXIT_SYS,"clean groups string") ;
 
         if (!sa.len)
@@ -159,7 +159,7 @@ static void info_display_allow(char const *field, resolve_tree_t *res)
         size_t len = sa.len, pos = 0 ;
         char t[len + 1] ;
 
-        sastr_to_char(t, &sa) ;
+        sbl_to_char(t, &sa) ;
 
         sa.len = 0 ;
 
@@ -170,15 +170,15 @@ static void info_display_allow(char const *field, resolve_tree_t *res)
             if (!uid_parse_strict(suid, &uid))
                 log_dieusys(LOG_EXIT_SYS,"get uid of: ",suid) ;
             if (pos)
-                if (!stralloc_cats(&sa," ")) log_die_nomem("stralloc") ;
+                if (!strbuf_cats(&sa," ")) log_die_nomem("strbuf") ;
             if (!get_namebyuid(uid,&sa))
                 log_dieusys(LOG_EXIT_SYS, "get name of uid: ", suid) ;
         }
 
-        if (!stralloc_0(&sa)) log_die_nomem("stralloc") ;
-        if (!sastr_rebuild_in_oneline(&sa)) log_dieu(LOG_EXIT_SYS,"rebuild list") ;
+        if (!strbuf_terminate(&sa)) log_die_nomem("strbuf") ;
+        if (!sbl_rebuild_oneline(&sa)) log_dieu(LOG_EXIT_SYS,"rebuild list") ;
 
-        if (!stralloc_0(&sa)) log_die_nomem("stralloc") ;
+        if (!strbuf_terminate(&sa)) log_die_nomem("strbuf") ;
 
         info_display_list(field,&sa) ;
 
@@ -192,14 +192,14 @@ static void info_display_allow(char const *field, resolve_tree_t *res)
 
 static void info_display_groups(char const *field, resolve_tree_t *res)
 {
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
     if (NOFIELD)
         info_display_field_name(field) ;
 
     if (res->ngroups) {
 
-        if (!sastr_clean_string(&sa, res->sa.s + res->groups))
+        if (!sbl_clean_string(&sa, res->sa.s + res->groups))
             log_dieu(LOG_EXIT_SYS,"clean groups string") ;
 
         info_display_list(field,&sa) ;
@@ -216,7 +216,7 @@ static void info_display_depends(char const *field, resolve_tree_t *res)
     size_t padding = 1 ;
     tree_graph_t graph = GRAPH_TREE_ZERO ;
     uint32_t flag = GRAPH_WANT_DEPENDS, ntree = 0 ;
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
@@ -224,7 +224,7 @@ static void info_display_depends(char const *field, resolve_tree_t *res)
     if (!res->ndepends)
         goto empty ;
 
-    if (!sastr_clean_string(&sa, res->sa.s + res->depends))
+    if (!sbl_clean_string(&sa, res->sa.s + res->depends))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
@@ -255,12 +255,12 @@ static void info_display_depends(char const *field, resolve_tree_t *res)
             uint32_t index = graph.g.sort[pos] ;
             char *name = graph.g.sindex[index]->name ;
 
-            if (!sastr_add_string(&sa, name))
-                log_die_nomem("stralloc") ;
+            if (!sbl_add(&sa, name))
+                log_die_nomem("strbuf") ;
         }
 
         if (REVERSE)
-            if (!sastr_reverse(&sa))
+            if (!sbl_reverse(&sa))
                 log_dieu(LOG_EXIT_SYS,"reverse the dependencies list") ;
 
         info_display_list(field,&sa) ;
@@ -291,7 +291,7 @@ static void info_display_requiredby(char const *field, resolve_tree_t *res)
     size_t padding = 1 ;
     tree_graph_t graph = GRAPH_TREE_ZERO ;
     uint32_t flag = GRAPH_WANT_REQUIREDBY, ntree = 0 ;
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
@@ -299,7 +299,7 @@ static void info_display_requiredby(char const *field, resolve_tree_t *res)
     if (!res->nrequiredby)
         goto empty ;
 
-    if (!sastr_clean_string(&sa, res->sa.s + res->requiredby))
+    if (!sbl_clean_string(&sa, res->sa.s + res->requiredby))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     if (!graph_new(&graph, SS_MAX_SERVICE))
@@ -330,12 +330,12 @@ static void info_display_requiredby(char const *field, resolve_tree_t *res)
             uint32_t index = graph.g.sort[pos] ;
             char *name = graph.g.sindex[index]->name ;
 
-            if (!sastr_add_string(&sa, name))
-                log_die_nomem("stralloc") ;
+            if (!sbl_add(&sa, name))
+                log_die_nomem("strbuf") ;
         }
 
         if (REVERSE)
-            if (!sastr_reverse(&sa))
+            if (!sbl_reverse(&sa))
                 log_dieu(LOG_EXIT_SYS,"reverse the dependencies list") ;
 
         info_display_list(field,&sa) ;
@@ -368,7 +368,7 @@ static void info_display_contents(char const *field, resolve_tree_t *res)
     size_t padding = 1 ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     uint32_t flag = GRAPH_WANT_DEPENDS|GRAPH_COLLECT_PARSE, nservice = 0 ;
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
@@ -376,7 +376,7 @@ static void info_display_contents(char const *field, resolve_tree_t *res)
     if (!res->ncontents)
         goto empty ;
 
-    if (!sastr_clean_string(&sa, res->sa.s + res->contents))
+    if (!sbl_clean_string(&sa, res->sa.s + res->contents))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     if (!graph_new(&graph, SS_MAX_SERVICE))
@@ -405,7 +405,7 @@ static void info_display_contents(char const *field, resolve_tree_t *res)
     } else {
 
         if (REVERSE)
-            if (!sastr_reverse(&sa))
+            if (!sbl_reverse(&sa))
                 log_dieu(LOG_EXIT_SYS,"reverse the dependencies list") ;
 
         info_display_list(field,&sa) ;
@@ -453,16 +453,16 @@ static void info_display_all(const char *treename,int *what)
 static void info_parse_options(char const *str,int *what)
 {
     size_t pos = 0 ;
-    _alloc_stk_(stk, strlen(str) + 1) ;
+    _alloc_sbl_(stk, strlen(str) + 1) ;
 
     if (!lexer_trim_with_delim(&stk, str, DELIM))
         log_dieu(LOG_EXIT_SYS,"parse options") ;
 
     unsigned int nopts = 0 , old ;
-    checkopts(stk.count) ;
+    checkopts(sbl_count(&stk)) ;
     info_opts_map_t const *t ;
 
-    FOREACH_STK(&stk, pos) {
+    FOREACH_SBL(&stk, pos) {
 
         char *o = stk.s + pos ;
         t = opts_tree_table ;

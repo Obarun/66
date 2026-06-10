@@ -21,10 +21,9 @@
 
 #include <oblibs/string.h>
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/types.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
@@ -189,21 +188,21 @@ int identifier_replace_runtime(char *store, const char *rid)
     return 1 ;
 }
 
-int identifier_replace(stralloc *sasv, char const *svname)
+int identifier_replace(strbuf *sasv, char const *svname)
 {
     size_t pos = 0 ;
     int r = 0 ;
     char store[SS_MAX_PATH_LEN] ;
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
     memset(store, 0, sizeof(char) * SS_MAX_PATH_LEN) ;
 
-    if (!stralloc_copyb(&sa, sasv->s, sasv->len) || !stralloc_0(&sa))
+    if (!strbuf_copyb(&sa, sasv->s, sasv->len) || !strbuf_terminate(&sa))
         return 0 ;
 
     sa.len-- ;
 
-    if (!sastr_split_string_in_nline(&sa))
+    if (!sbl_split_string_in_nline(&sa))
         return 0 ;
 
     while(identifier_table[pos].ident) {
@@ -213,17 +212,17 @@ int identifier_replace(stralloc *sasv, char const *svname)
             return 0 ;
 
         log_trace("replacing identifier: ", identifier_table[pos].ident, " by: ", store) ;
-        if (!sastr_replace(&sa, identifier_table[pos].ident, store))
+        if (!sbl_replace(&sa, identifier_table[pos].ident, store))
             log_warnu_return(LOG_EXIT_ZERO, "replace regex character: ", identifier_table[pos].ident, " by: ", store," for service: ", svname) ;
 
         pos++ ;
 
     }
 
-    if (!sastr_rebuild_in_nline(&sa))
+    if (!sbl_rebuild_nline(&sa))
         return 0 ;
 
     sasv->len = 0 ;
 
-    return auto_stra(sasv, sa.s) ;
+    return auto_strbuf(sasv, sa.s) ;
 }

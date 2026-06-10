@@ -17,9 +17,8 @@
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
-#include <oblibs/sastr.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 
 
 #include <66/utils.h>
@@ -33,7 +32,7 @@ int tree_get_permissions(char const *base, char const *treename)
 
     int e = -1 ;
     size_t pos = 0 ;
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
     uid_t uid = getuid(), treeuid = -1 ;
@@ -43,10 +42,10 @@ int tree_get_permissions(char const *base, char const *treename)
 
     if (tres.nallow) {
 
-        if (!sastr_clean_string(&sa, tres.sa.s + tres.allow))
+        if (!sbl_clean_string(&sa, tres.sa.s + tres.allow))
             goto freed ;
 
-        FOREACH_SASTR(&sa, pos) {
+        FOREACH_SBL(&sa, pos) {
 
             if (!u32_scan_strict(sa.s + pos, &treeuid))
                 goto freed ;

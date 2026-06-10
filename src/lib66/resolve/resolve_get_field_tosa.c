@@ -15,14 +15,13 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/tree.h>
 
-int resolve_get_field_tosa(stralloc *sa, resolve_wrapper_t_ref wres, resolve_enum_table_t table)
+int resolve_get_field_tosa(strbuf *sa, resolve_wrapper_t_ref wres, resolve_enum_table_t table)
 {
     log_flow() ;
 

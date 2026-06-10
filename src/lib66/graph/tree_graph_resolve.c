@@ -22,7 +22,7 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/lexer.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 
 #include <66/resolve.h>
 #include <66/tree.h>
@@ -73,16 +73,16 @@ static int graph_action_depends(tree_graph_t *g, resolve_tree_t *tres, uint32_t 
 
     if (FLAGS_ISSET(flag, GRAPH_WANT_DEPENDS) && tres->ndepends) {
 
-        _alloc_stk_(stk, strlen(tres->sa.s + tres->depends) + 1) ;
+        _alloc_sbl_(stk, strlen(tres->sa.s + tres->depends) + 1) ;
 
-        if (!stack_string_clean(&stk, tres->sa.s + tres->depends))
+        if (!sbl_clean_string(&stk, tres->sa.s + tres->depends))
             log_warnusys_return(LOG_EXIT_ZERO, "clean string") ;
 
         if (!graph_add_nedge(&g->g, treename, &stk, /*requiredby*/false, true))
             log_warnu_return(LOG_EXIT_ZERO, "add depends of tree: ", treename) ;
 
         // do it recursively
-        FOREACH_STK(&stk, pos) {
+        FOREACH_SBL(&stk, pos) {
 
             h = hash_search_tree(&g->hres, stk.s + pos) ;
             if (h == NULL)
@@ -109,16 +109,16 @@ static int graph_action_requiredby(tree_graph_t *g, resolve_tree_t *tres, uint32
 
     if (FLAGS_ISSET(flag, GRAPH_WANT_REQUIREDBY) && tres->nrequiredby) {
 
-        _alloc_stk_(stk, strlen(tres->sa.s + tres->requiredby) + 1) ;
+        _alloc_sbl_(stk, strlen(tres->sa.s + tres->requiredby) + 1) ;
 
-        if (!stack_string_clean(&stk, tres->sa.s + tres->requiredby))
+        if (!sbl_clean_string(&stk, tres->sa.s + tres->requiredby))
             log_warnusys_return(LOG_EXIT_ZERO, "clean string") ;
 
         if (!graph_add_nedge(&g->g, treename, &stk, /*requiredby*/true, true))
             log_warnu_return(LOG_EXIT_ZERO, "add requiredby dependencies of tree: ", treename) ;
 
         // do it recursively
-        FOREACH_STK(&stk, pos) {
+        FOREACH_SBL(&stk, pos) {
 
             h = hash_search_tree(&g->hres, stk.s + pos) ;
             if (h == NULL)

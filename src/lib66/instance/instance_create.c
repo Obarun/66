@@ -16,27 +16,26 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 
-#include <skalibs/stralloc.h>
-
-int instance_create(stralloc *sasv,char const *svname, char const *regex, int len)
+int instance_create(strbuf *sasv,char const *svname, char const *regex, int len)
 {
     log_flow() ;
 
     char const *copy ;
     size_t tlen = len + 1 ;
 
-    _alloc_sa_(tmp) ;
+    _cleanup_strbuf_ strbuf tmp = STRBUF_ZERO ;
 
-    if (!auto_stra(&tmp,sasv->s)) return 0 ;
+    if (!auto_strbuf(&tmp,sasv->s)) return 0 ;
 
     copy = svname + tlen ;
 
-    if (!sastr_replace_g(&tmp,regex,copy))
+    if (!sbl_replace_nline(&tmp,regex,copy))
         log_warnu_return(LOG_EXIT_ZERO, "replace instance character for service: ",svname) ;
 
     sasv->len = 0 ;
 
-    return auto_stra(sasv, tmp.s) ;
+    return auto_strbuf(sasv, tmp.s) ;
 }

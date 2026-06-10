@@ -174,7 +174,7 @@ struct IO_redirection_s_0802
 typedef struct resolve_service_s_0802 resolve_service_t_0802, *resolve_service_t_ref_0802 ;
 struct resolve_service_s_0802
 {
-    stralloc sa ;
+    strbuf sa ;
     uint32_t rversion ; //string, version of 66 of the resolve file at write time
 
     // configuration
@@ -206,7 +206,7 @@ struct resolve_service_s_0802
     IO_redirection_t_0802 io ;
 } ;
 
-#define RESOLVE_SERVICE_ZERO_0802 { STRALLOC_ZERO, 0, \
+#define RESOLVE_SERVICE_ZERO_0802 { STRBUF_ZERO, 0, \
                                0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0, \
                                RESOLVE_SERVICE_ADDON_PATH_ZERO_0802, \
                                RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO_0802, \

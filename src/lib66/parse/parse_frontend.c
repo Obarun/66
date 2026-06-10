@@ -20,12 +20,11 @@
 
 #include <oblibs/log.h>
 #include <oblibs/files.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/environ.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/utils.h>
 #include <66/constants.h>
@@ -42,11 +41,11 @@
 #include <66/instance.h>
 #include <66/sanitize.h>
 
-static void parse_read_instance(stralloc *frontend, char const *svsrc, char const *sv, int insta)
+static void parse_read_instance(strbuf *frontend, char const *svsrc, char const *sv, int insta)
 {
     log_flow() ;
 
-    stralloc sa = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     uint8_t exlen = 0 ; // see service_frontend_path file and compute_exclude()
     char const *exclude[1] = { 0 } ;
 
@@ -76,7 +75,6 @@ static void parse_read_instance(stralloc *frontend, char const *svsrc, char cons
             log_dieusys(LOG_EXIT_SYS, "read frontend service at: ", svsrc, instaname) ;
     }
 
-    stralloc_free(&sa) ;
 }
 
 /* @sv -> name of the service to parse with
@@ -102,7 +100,7 @@ int parse_frontend(char const *sv,
     uint8_t opt_tree_forced = 0 ;
     size_t svlen = strlen(sv) ;
     char svname[svlen + 1], svsrc[svlen + 1], instaname[svlen + 1] ;
-    stralloc sa = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     struct resolve_hash_s *hash ;
 
     if (!ob_basename(svname, sv))
@@ -152,7 +150,7 @@ int parse_frontend(char const *sv,
     if (!identifier_replace(&sa, svname))
         log_dieu(LOG_EXIT_SYS, "replace regex for service: ", svname) ;
 
-    _alloc_stk_(store, sa.len + 1) ;
+    _alloc_sbl_(store, sa.len + 1) ;
 
     isparsed = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
     if (isparsed == -1)
@@ -161,7 +159,6 @@ int parse_frontend(char const *sv,
         isparsed = STATE_FLAGS_FALSE ;
 
     if (isparsed == STATE_FLAGS_TRUE && !force) {
-        stralloc_free(&sa) ;
         resolve_free(wres) ;
         log_warn_return(2, "ignoring service: ", svname, " -- already parsed") ;
     }
@@ -173,16 +170,13 @@ int parse_frontend(char const *sv,
         if (!parse_get_value_of_key(&store, sa.s, table))
             log_dieu(LOG_EXIT_SYS, "get field ", enum_to_key(table.u.parser.list, table.u.parser.id), " of service: ", svname) ;
 
-        if (!stack_close(&store))
-            log_die_nomem("stack overflow") ;
-
         if (!parse_store_main(&res, &store, table))
             log_dieu(LOG_EXIT_SYS, "store field type of service: ", svname) ;
     }
 
     if (!info->opt_tree) {
 
-        stack_reset(&store) ;
+        store.len = 0 ;
 
         table.u.parser.id = E_PARSER_SECTION_MAIN_INTREE ;
         /** search for the intree field.
@@ -196,8 +190,8 @@ int parse_frontend(char const *sv,
             info->opt_tree = 1 ;
             opt_tree_forced = 1 ;
 
-            if (!auto_stra(&info->treename, res.sa.s + res.intree))
-                log_die_nomem("stralloc") ;
+            if (!auto_strbuf(&info->treename, res.sa.s + res.intree))
+                log_die_nomem("strbuf") ;
         }
     }
 
@@ -231,8 +225,8 @@ int parse_frontend(char const *sv,
             char *tmpath = strstr(sv, SS_MODULE_FRONTEND) ;
             char *result = tmpath + SS_MODULE_FRONTEND_LEN ;
             char *path = moduleres->sa.s + moduleres->path.frontend ;
-            _alloc_stk_(pdir, strlen(path)) ;
-            _alloc_stk_(tdir, strlen(result)) ;
+            _alloc_strbuf_(pdir, strlen(path)) ;
+            _alloc_strbuf_(tdir, strlen(result)) ;
 
             if (!ob_dirname(pdir.s, path))
                 log_dieu(LOG_EXIT_SYS, "get dirname of: ", path) ;
@@ -240,7 +234,7 @@ int parse_frontend(char const *sv,
             if (!ob_dirname(tdir.s, result))
                 log_dieu(LOG_EXIT_SYS, "get dirname of: ", result) ;
 
-            _alloc_stk_(frontend, strlen(pdir.s) + SS_MODULE_FRONTEND_LEN + strlen(tdir.s) + strlen(realname) + 2) ;
+            _alloc_strbuf_(frontend, strlen(pdir.s) + SS_MODULE_FRONTEND_LEN + strlen(tdir.s) + strlen(realname) + 2) ;
 
             auto_strings(frontend.s, pdir.s, SS_MODULE_FRONTEND + 1, tdir.s,  realname) ;
 
@@ -248,7 +242,7 @@ int parse_frontend(char const *sv,
 
         } else {
 
-            _alloc_stk_(frontend, svlen + 1) ;
+            _alloc_strbuf_(frontend, svlen + 1) ;
 
             auto_strings(frontend.s, svsrc, realname) ;
 
@@ -267,7 +261,6 @@ int parse_frontend(char const *sv,
     /** contents of directory should be listed by service_frontend_path
      * except for module type */
     if (scan_mode(sv, S_IFDIR) == 1 && res.type != E_PARSER_TYPE_MODULE) {
-        stralloc_free(&sa) ;
         resolve_free(wres) ;
         return 1 ;
     }
@@ -334,7 +327,6 @@ int parse_frontend(char const *sv,
             log_dieu(LOG_EXIT_SYS, "append service selection with: ", name) ;
     }
 
-    stralloc_free(&sa) ;
     free(wres) ;
     return 1 ;
 }

@@ -16,13 +16,14 @@
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
+#include <oblibs/strbuf.h>
 
 #include <66/parse.h>
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/enum_parser.h>
 
-int parse_store_logger(resolve_service_t *res, stack *store, resolve_enum_table_t table)
+int parse_store_logger(resolve_service_t *res, strbuf *store, resolve_enum_table_t table)
 {
     log_flow() ;
 

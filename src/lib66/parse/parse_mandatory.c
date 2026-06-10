@@ -19,7 +19,8 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 
 #include <66/parse.h>
 #include <66/resolve.h>
@@ -27,7 +28,7 @@
 #include <66/constants.h>
 #include <66/service.h>
 
-static int get_shebang(stack *stk, char const *line)
+static int get_shebang(strbuf *stk, char const *line)
 {
     size_t len = strlen(line) ;
     uint32_t i = 0 ;
@@ -38,10 +39,9 @@ static int get_shebang(stack *stk, char const *line)
     if (i >= len || line[i] != '#' || line[i + 1] != '!' || line[i + 2] != '/')
         log_warn_return(LOG_EXIT_ZERO, "invalid shebang at Execute field from section [Start]") ;
 
-    if (!stack_add(stk, line + i, len - i))
+    if (!sbl_addb(stk, line + i, len - i))
         log_warnsys_return(LOG_EXIT_ZERO, "stack add") ;
 
-    stack_close(stk) ;
 
     return 1 ;
 }
@@ -57,7 +57,7 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
 
     if (!res->description) {
 
-        _alloc_stk_(d, strlen(res->sa.s + res->name) + 8) ;
+        _alloc_strbuf_(d, strlen(res->sa.s + res->name) + 8) ;
         auto_strings(d.s, res->sa.s + res->name, " service") ;
         res->description = resolve_add_string(wres, d.s) ;
         log_warn("key Description at section [Main] was not set -- define it to: ", d.s) ;
@@ -272,7 +272,7 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
             if (!strcmp(res->sa.s + res->execute.run.build, "custom")) {
 
                 size_t len = strlen(res->sa.s + res->execute.run.run_user) ;
-                _alloc_stk_(stk, len) ;
+                _alloc_sbl_(stk, len) ;
 
                 if (!get_shebang(&stk, res->sa.s + res->execute.run.run_user))
                     return 0 ;
@@ -283,7 +283,7 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
             if (res->execute.finish.run_user && !strcmp(res->sa.s + res->execute.finish.build, "custom")) {
 
                 size_t len = strlen(res->sa.s + res->execute.finish.run_user) ;
-                _alloc_stk_(stk, len) ;
+                _alloc_sbl_(stk, len) ;
 
                 if (!get_shebang(&stk, res->sa.s + res->execute.finish.run_user))
                     return 0 ;
@@ -294,7 +294,7 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
             if (res->logger.execute.run.run_user && !strcmp(res->sa.s + res->logger.execute.run.build, "custom")) {
 
                 size_t len = strlen(res->sa.s + res->logger.execute.run.run_user) ;
-                _alloc_stk_(stk, len) ;
+                _alloc_sbl_(stk, len) ;
 
                 if (!get_shebang(&stk, res->sa.s + res->logger.execute.run.run_user))
                     return 0 ;

@@ -20,10 +20,11 @@
 #include <oblibs/log.h>
 #include <oblibs/environ.h>
 #include <oblibs/directory.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
+#include <oblibs/subst.h>
 #include <oblibs/types.h>
 
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 #include <skalibs/exec.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/djbunix.h>
@@ -67,9 +68,9 @@ int main (int argc, char const *const *argv, char const *const *envp)
     char const *path = 0 ;
     char tpath[SS_MAX_PATH + 1] ;
     struct stat st ;
-    stralloc env = STRALLOC_ZERO ;
-    stralloc cmdline = STRALLOC_ZERO ;
-    exlsn_t info = EXLSN_ZERO ;
+    strbuf env = STRBUF_ZERO ;
+    strbuf cmdline = STRBUF_ZERO ;
+    subst_t info = SUBST_ZERO ;
 
     PROG = "execl-envfile" ;
     {
@@ -153,33 +154,30 @@ int main (int argc, char const *const *argv, char const *const *envp)
     // create new environment merging the default one
     // with the variable found at file/directory
     size_t elen = environ_length(envp) ;
-    size_t n = elen + 1 + sastr_nelement(&env) ;
+    size_t n = elen + 1 + sbl_count(&env) ;
     char const *nenvp[n + 1] ;
 
     if (!environ_merge(nenvp, n , envp, elen, env.s, env.len))
         log_dieusys(LOG_EXIT_SYS, "build environment") ;
 
     // import execline script
-    stralloc sa = STRALLOC_ZERO ;
+    strbuf sa = STRBUF_ZERO ;
     if (!environ_import_arguments(&sa, argv, argc))
         log_dieusys(LOG_EXIT_SYS, "import arguments to environment") ;
 
-    // el_substandrun_str, substitute variable inside the execline script
-    r = el_substitute(&cmdline, sa.s, sa.len,
-                    info.vars.s, info.values.s,
-                    genalloc_s(elsubst_t const, &info.data),
-                    genalloc_len(elsubst_t const, &info.data)) ;
+    // substitute variable inside the execline script
+    r = subst(&cmdline, sa.s, sa.len, &info) ;
 
     if (r < 0)
         log_dieusys(LOG_EXIT_SYS, "el_substitute") ;
     else if (!r) {
-        stralloc_free(&cmdline) ;
-        stralloc_free(&env) ;
-        stralloc_free(&sa) ;
-        exlsn_free(&info) ;
+        strbuf_free(&cmdline) ;
+        strbuf_free(&env) ;
+        strbuf_free(&sa) ;
+        subst_free(&info) ;
         _exit(0) ;
     }
-    stralloc_free(&sa) ;
+    strbuf_free(&sa) ;
 
     char const *nargv[r + 1] ;
     if (!environ_make(nargv, r, cmdline.s, cmdline.len))

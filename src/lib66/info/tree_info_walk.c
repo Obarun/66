@@ -16,23 +16,22 @@
 #include <string.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/hash.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/info.h>
 #include <66/graph.h>
 #include <66/config.h>
 
-static int info_add_sort(stralloc *sa, tree_graph_t *g, uint32_t *count)
+static int info_add_sort(strbuf *sa, tree_graph_t *g, uint32_t *count)
 {
     uint32_t pos = 0 ;
     FOREACH_GRAPH_SORT(tree_graph_t, g, pos) {
         uint32_t index = g->g.sort[pos] ;
         char *name = g->g.sindex[index]->name ;
 
-        if (!sastr_add_string(sa, name))
+        if (!sbl_add(sa, name))
             return (errno = ENOMEM, 0) ;
 
         (*count)++ ;
@@ -45,7 +44,7 @@ int tree_info_walk(tree_graph_t *g, char const *name, uint8_t requiredby, uint8_
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     uint32_t of = requiredby ? GRAPH_WANT_REQUIREDBY : GRAPH_WANT_DEPENDS ;
     uint32_t flag = GRAPH_COLLECT_PARSE|of, pos = 0, count = 0, idx = 0 ;
     vertex_t *v = NULL ;
@@ -77,7 +76,7 @@ int tree_info_walk(tree_graph_t *g, char const *name, uint8_t requiredby, uint8_
             graph_get_edge(&g->g, v, vl, requiredby) ;
 
             for (; pos < nvertex ; pos++){
-                if (!sastr_add_string(&sa, vl[pos]->name))
+                if (!sbl_add(&sa, vl[pos]->name))
                     return (errno = ENOMEM, 0) ;
             }
 
@@ -98,11 +97,11 @@ int tree_info_walk(tree_graph_t *g, char const *name, uint8_t requiredby, uint8_
         return 1 ;
 
      if (reverse)
-        if (!sastr_reverse(&sa))
+        if (!sbl_reverse(&sa))
             return 0 ;
 
     pos = 0 ;
-    FOREACH_SASTR(&sa, pos) {
+    FOREACH_SBL(&sa, pos) {
 
         v = NULL ;
         idx++ ;

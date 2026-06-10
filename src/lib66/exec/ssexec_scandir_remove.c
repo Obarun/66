@@ -12,6 +12,7 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <sys/stat.h>
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
@@ -67,14 +68,14 @@ int ssexec_scandir_remove(int argc, char const *const *argv, ssexec_t *info)
 
     /** /run/66/scandir/container */
     info->scandir.len = 0 ;
-    if (!auto_stra(&info->scandir, info->live.s, SS_SCANDIR, "/", SS_BOOT_CONTAINER_DIR))
-        log_die_nomem("stralloc") ;
+    if (!auto_strbuf(&info->scandir, info->live.s, SS_SCANDIR, "/", SS_BOOT_CONTAINER_DIR))
+        log_die_nomem("strbuf") ;
     auto_rm(info->scandir.s) ;
 
     /** run/66/state/uid */
     info->scandir.len = 0 ;
-    if (!auto_stra(&info->scandir, info->live.s, SS_STATE + 1, "/", info->ownerstr))
-        log_die_nomem("stralloc") ;
+    if (!auto_strbuf(&info->scandir, info->live.s, SS_STATE + 1, "/", info->ownerstr))
+        log_die_nomem("strbuf") ;
     auto_rm(info->scandir.s) ;
 
     return 0 ;

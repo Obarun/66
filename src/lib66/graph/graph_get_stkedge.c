@@ -17,9 +17,10 @@
 #include <stdbool.h>
 
 #include <oblibs/graph.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 
-int graph_get_stkedge(stack *stk, graph *g, vertex_t *v, bool requiredby)
+int graph_get_stkedge(strbuf *stk, graph *g, vertex_t *v, bool requiredby)
 {
     uint32_t nvertex = !requiredby ? v->ndepends : v->nrequiredby, pos = 0 ;
     vertex_t *vl[nvertex] ;
@@ -27,7 +28,7 @@ int graph_get_stkedge(stack *stk, graph *g, vertex_t *v, bool requiredby)
     graph_get_edge(g, v, vl, requiredby) ;
 
     for (; pos < nvertex ; pos++) {
-        if (!stack_add_g(stk, vl[pos]->name))
+        if (!sbl_add(stk, vl[pos]->name))
             return (errno = ENOMEM, 0) ;
     }
 

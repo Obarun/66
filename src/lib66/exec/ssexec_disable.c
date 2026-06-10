@@ -19,7 +19,7 @@
 #include <oblibs/hash.h>
 #include <oblibs/types.h>
 #include <oblibs/environ.h>
-#include <oblibs/sastr.h>
+#include <oblibs/strbuf.h>
 
 #include <skalibs/sgetopt.h>
 
@@ -32,7 +32,7 @@ int ssexec_disable(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     bool stop = false, propagate = true, action = false ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     vertex_t *c, *tmp ;

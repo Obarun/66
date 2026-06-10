@@ -25,8 +25,8 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
-#include <oblibs/sastr.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
+#include <oblibs/subst.h>
 #include <oblibs/directory.h>
 #include <oblibs/io.h>
 #include <oblibs/lexer.h>
@@ -37,7 +37,7 @@
 #include <skalibs/sgetopt.h>
 #include <skalibs/tai.h>
 #include <skalibs/exec.h>
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
@@ -46,8 +46,6 @@
 #include <66/caps.h>
 
 #include <s6/fdholder.h>
-
-#include <execline/execline.h>
 
 #define EXECUTE_START 0
 #define EXECUTE_STOP 1
@@ -111,7 +109,7 @@ static void io_fdholder_retrieve(resolve_service_t *res, int fd, const char *nam
     log_flow() ;
 
     size_t len =  strlen(res->sa.s + res->live.fdholderdir) + 2 ;
-    _alloc_stk_(sock, len + 1) ;
+    _alloc_strbuf_(sock, len + 1) ;
     auto_strings(sock.s, res->sa.s + res->live.fdholderdir, "/s") ;
     sock.len = len ;
 
@@ -122,7 +120,7 @@ static void io_fdholder_retrieve(resolve_service_t *res, int fd, const char *nam
 
     char *prefix = !reader ? SS_FDHOLDER_PIPENAME "r-" : SS_FDHOLDER_PIPENAME "w-" ;
     size_t prefixlen = SS_FDHOLDER_PIPENAME_LEN + 2 ;
-    _alloc_stk_(identifier, prefixlen + namelen + 1) ;
+    _alloc_strbuf_(identifier, prefixlen + namelen + 1) ;
 
     auto_strings(identifier.s, prefix, name) ;
     identifier.len = prefixlen + namelen ;
@@ -208,7 +206,7 @@ static void io_open_destination(int fd, const char *destination, int flags, uint
     }
 }
 
-static void io_read_file(stack *stk, const char *file, size_t len)
+static void io_read_file(strbuf *stk, const char *file, size_t len)
 {
     log_flow() ;
 
@@ -296,12 +294,12 @@ static void io_open_active_console(int fd)
     int e = errno ;
     errno = 0 ;
     size_t len = 1024 ; //sysfs type here, 1024 should be large enough
-    _alloc_stk_(stk, 4 + len + 1) ;
+    _alloc_sbl_(stk, 4 + len + 1) ;
 
     io_read_file(&stk, path, len) ;
     stk.len = strlen(stk.s) ;
 
-    if (!stack_insert(&stk, 0, "/dev/"))
+    if (!strbuf_inserts(&stk, 0, "/dev/"))
         log_dieusys(LOG_EXIT_SYS, "invert prefix path") ;
 
     stk.s[stk.len - 1] = 0 ; // remove the last '\n'
@@ -408,7 +406,7 @@ static void io_setup_stdout(resolve_service_t *res)
 
             } else if (res->type == E_PARSER_TYPE_ONESHOT) {
 
-                _alloc_stk_(stk, strlen(res->sa.s + res->io.fdout.destination) + SS_CURRENT_LEN + 2) ;
+                _alloc_sbl_(stk, strlen(res->sa.s + res->io.fdout.destination) + SS_CURRENT_LEN + 2) ;
                 auto_strings(stk.s, res->sa.s + res->io.fdout.destination, "/", SS_CURRENT) ;
                 stk.s[strlen(res->sa.s + res->io.fdout.destination) + 1 + SS_CURRENT_LEN] = 0 ;
 
@@ -494,17 +492,17 @@ static void io_setup_stderr(resolve_service_t *res)
     }
 }
 
-static void execute_environment(char const **nenvp, char const *const *env, stralloc *eram, exlsn_t *info, resolve_service_t *res)
+static void execute_environment(char const **nenvp, char const *const *env, strbuf *eram, subst_t *info, resolve_service_t *res)
 {
     log_flow() ;
 
-    _alloc_stk_(path, strlen(res->sa.s + res->environ.envdir) + SS_SYM_VERSION_LEN + 1) ;
+    _alloc_strbuf_(path, strlen(res->sa.s + res->environ.envdir) + SS_SYM_VERSION_LEN + 1) ;
 
     if (res->environ.env > 0) {
 
-        if (!stack_add(&path, res->sa.s + res->environ.envdir, strlen(res->sa.s + res->environ.envdir)) ||
-            !stack_add(&path, SS_SYM_VERSION, SS_SYM_VERSION_LEN) ||
-            !stack_close(&path))
+        if (!strbuf_catb(&path, res->sa.s + res->environ.envdir, strlen(res->sa.s + res->environ.envdir)) ||
+            !strbuf_catb(&path, SS_SYM_VERSION, SS_SYM_VERSION_LEN) ||
+            !strbuf_terminate(&path))
                 log_die_nomem("stack") ;
 
         if (!environ_merge_dir(eram, path.s))
@@ -512,13 +510,13 @@ static void execute_environment(char const **nenvp, char const *const *env, stra
 
         if (res->environ.nimportfile) {
 
-            _alloc_stk_(stk, strlen(res->sa.s + res->environ.importfile)) ;
+            _alloc_sbl_(stk, strlen(res->sa.s + res->environ.importfile)) ;
             size_t pos = 0 ;
 
-            if (!stack_string_clean(&stk, res->sa.s + res->environ.importfile))
+            if (!sbl_clean_string(&stk, res->sa.s + res->environ.importfile))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
-            FOREACH_STK(&stk, pos) {
+            FOREACH_SBL(&stk, pos) {
 
                 if (!environ_merge_file(eram, stk.s + pos))
                     log_dieusys(LOG_EXIT_SYS, "merge environment file: ", stk.s + pos) ;
@@ -536,12 +534,12 @@ static void execute_environment(char const **nenvp, char const *const *env, stra
         log_dieusys(LOG_EXIT_SYS, "create environment") ;
 }
 
-static void execute_script(const char *runuser, resolve_service_t *res, exlsn_t *info)
+static void execute_script(const char *runuser, resolve_service_t *res, subst_t *info)
 {
     log_flow() ;
 
     int r = 0 ;
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     uid_t owner = getuid() ;
     uint32_t want = (action == EXECUTE_START) ? res->execute.run.build : res->execute.finish.build ;
     short build = !strcmp(res->sa.s + want, "custom") ? E_PARSER_BUILD_CUSTOM : E_PARSER_BUILD_AUTO ;
@@ -550,8 +548,7 @@ static void execute_script(const char *runuser, resolve_service_t *res, exlsn_t 
 
     if (!build) {
 
-        r = el_substitute(&sa, script, scriptlen, info->vars.s, info->values.s,
-            genalloc_s(elsubst_t const, &info->data), genalloc_len(elsubst_t const, &info->data)) ;
+        r = subst(&sa, script, scriptlen, info) ;
 
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "el_substitute") ;
@@ -564,8 +561,8 @@ static void execute_script(const char *runuser, resolve_service_t *res, exlsn_t 
     } else {
 
         char *s = res->sa.s + ((action == EXECUTE_START) ? res->execute.run.run_user : res->execute.finish.run_user) ;
-        if (!auto_stra(&sa, s))
-            log_die_nomem("stralloc") ;
+        if (!auto_strbuf(&sa, s))
+            log_die_nomem("strbuf") ;
     }
 
     log_trace("write file: ", runuser) ;
@@ -776,13 +773,13 @@ int main(int argc, char const *const *argv, char const *const *envp)
     log_flow() ;
 
     char const *service = 0 ;
-    _alloc_stk_(base, SS_MAX_PATH + 1) ;
-    _alloc_sa_(eram) ; // envrionment in memory
+    _alloc_strbuf_(base, SS_MAX_PATH + 1) ;
+    _cleanup_strbuf_ strbuf eram = STRBUF_ZERO ; // envrionment in memory
     char const *nenvp[MAXENV + 1] ;
     char *run = 0 ;
     char *runuser = 0 ;
 
-    exlsn_t info = EXLSN_ZERO ;
+    subst_t info = SUBST_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 

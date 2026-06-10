@@ -16,7 +16,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
 
 #include <66/parse.h>
@@ -27,7 +27,7 @@ int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, s
     log_flow() ;
 
     size_t pos = 0 ;
-    _alloc_stk_(stk, len + 1) ;
+    _alloc_sbl_(stk, len + 1) ;
 
     while (pos < len) {
 
@@ -35,10 +35,11 @@ int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, s
         cfg.str = str ;
         cfg.slen = len ;
         cfg.pos = pos ;
-        stack_reset(&stk) ;
+        stk.len = 0 ;
 
-        if (!lexer(&stk, &cfg) || !stack_close(&stk))
+        if (!lexer(&stk, &cfg) || !strbuf_terminate(&stk))
             return 0 ;
+        stk.len-- ;
 
         if (cfg.found) {
 

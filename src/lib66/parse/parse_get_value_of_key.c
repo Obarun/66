@@ -15,13 +15,14 @@
 #include <string.h>
 
 #include <oblibs/log.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/lexer.h>
 
 #include <66/parse.h>
 #include <66/enum.h>
 
-int parse_get_value_of_key(stack *store, char const *str, resolve_enum_table_t table)
+int parse_get_value_of_key(strbuf *store, char const *str, resolve_enum_table_t table)
 {
     log_flow() ;
 
@@ -30,7 +31,7 @@ int parse_get_value_of_key(stack *store, char const *str, resolve_enum_table_t t
     uint32_t kid = table.u.parser.id ;
     cfg.str = str ;
     cfg.slen = strlen(str) ;
-    _alloc_stk_(k, cfg.slen + 1) ;
+    _alloc_sbl_(k, cfg.slen + 1) ;
 
     while (cfg.pos < cfg.slen) {
 

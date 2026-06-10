@@ -15,20 +15,18 @@
 #include <string.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/files.h>
-#include <oblibs/stack.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/lexer.h>
 #include <oblibs/environ.h>
-
-#include <skalibs/stralloc.h>
 
 #include <66/resolve.h>
 #include <66/utils.h>
 #include <66/constants.h>
 #include <66/module.h>
 
-void regex_replace(stralloc *filelist, resolve_service_t *res)
+void regex_replace(strbuf *filelist, resolve_service_t *res)
 {
     log_flow() ;
 
@@ -38,13 +36,13 @@ void regex_replace(stralloc *filelist, resolve_service_t *res)
     if (!res->regex.ninfiles)
         return ;
 
-    _alloc_sa_(frontend) ;
-    _alloc_stk_(infiles, strlen(res->sa.s + res->regex.infiles)) ;
+    _cleanup_strbuf_ strbuf frontend = STRBUF_ZERO ;
+    _alloc_sbl_(infiles, strlen(res->sa.s + res->regex.infiles)) ;
 
-    if (!stack_string_clean(&infiles, res->sa.s + res->regex.infiles))
+    if (!sbl_clean_string(&infiles, res->sa.s + res->regex.infiles))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    FOREACH_SASTR(filelist, pos) {
+    FOREACH_SBL(filelist, pos) {
 
         frontend.len = idx = 0 ;
         char *file = filelist->s + pos ;
@@ -66,14 +64,14 @@ void regex_replace(stralloc *filelist, resolve_service_t *res)
             continue ;
 
         {
-            FOREACH_STK(&infiles, idx) {
+            FOREACH_SBL(&infiles, idx) {
 
                 uint8_t r = 0 ;
                 char const *line = infiles.s + idx ;
                 size_t linelen = strlen(line) ;
-                _alloc_stk_(filename, linelen + 1) ;
-                _alloc_stk_(key, linelen + 1) ;
-                _alloc_stk_(val, linelen + 1) ;
+                _alloc_sbl_(filename, linelen + 1) ;
+                _alloc_sbl_(key, linelen + 1) ;
+                _alloc_sbl_(val, linelen + 1) ;
 
                 if (linelen >= SS_MAX_PATH_LEN)
                     log_die(LOG_EXIT_SYS, "limit exceeded in service: ", res->sa.s + res->name) ;
@@ -93,7 +91,7 @@ void regex_replace(stralloc *filelist, resolve_service_t *res)
 
                 if (!strcmp(bname, filename.s) || !filename.len) {
 
-                    if (!sastr_replace_g(&frontend, key.s, val.s))
+                    if (!sbl_replace_nline(&frontend, key.s, val.s))
                         log_dieu(LOG_EXIT_SYS, "replace: ", key.s, " by: ", val.s, " in file: ", file) ;
 
                     if (!file_write_at(dname, bname, frontend.s, frontend.len))

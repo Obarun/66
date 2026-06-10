@@ -13,8 +13,7 @@
  */
 
 #include <oblibs/log.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/tree.h>
 
@@ -22,5 +21,5 @@ void tree_seed_free(tree_seed_t *seed)
 {
     log_flow() ;
 
-    stralloc_free(&seed->sa) ;
+    strbuf_free(&seed->sa) ;
 }

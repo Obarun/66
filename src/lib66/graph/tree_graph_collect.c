@@ -16,6 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <oblibs/sbl.h>
 #include <oblibs/log.h>
 #include <oblibs/lexer.h>
 
@@ -63,9 +64,9 @@ uint32_t tree_graph_collect(tree_graph_t *g, const char *treename, ssexec_t *inf
         if (tres.ndepends) {
 
             size_t len = strlen(tres.sa.s + tres.depends) ;
-            _alloc_stk_(stk, len + 1) ;
+            _alloc_sbl_(stk, len + 1) ;
 
-            if (!stack_string_clean(&stk, tres.sa.s + tres.depends))
+            if (!sbl_clean_string(&stk, tres.sa.s + tres.depends))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
             n += tree_graph_ncollect(g, stk.s, stk.len, info) ;
@@ -74,9 +75,9 @@ uint32_t tree_graph_collect(tree_graph_t *g, const char *treename, ssexec_t *inf
         if (tres.nrequiredby) {
 
             size_t len = strlen(tres.sa.s + tres.requiredby) ;
-            _alloc_stk_(stk, len + 1) ;
+            _alloc_sbl_(stk, len + 1) ;
 
-            if (!stack_string_clean(&stk, tres.sa.s + tres.requiredby))
+            if (!sbl_clean_string(&stk, tres.sa.s + tres.requiredby))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
             n += tree_graph_ncollect(g, stk.s, stk.len, info) ;

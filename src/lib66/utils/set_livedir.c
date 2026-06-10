@@ -14,13 +14,12 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
 
-int set_livedir(stralloc *live)
+int set_livedir(strbuf *live)
 {
     log_flow() ;
 
@@ -30,10 +29,10 @@ int set_livedir(stralloc *live)
             return -1 ;
 
         if (live->s[live->len - 1] != '/')
-            if (!auto_stra(live,"/")) log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+            if (!auto_strbuf(live,"/")) log_warnsys_return(LOG_EXIT_ZERO,"strbuf") ;
 
-    } else if (!auto_stra(live,SS_LIVE))
-        log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+    } else if (!auto_strbuf(live,SS_LIVE))
+        log_warnsys_return(LOG_EXIT_ZERO,"strbuf") ;
 
     return 1 ;
 }

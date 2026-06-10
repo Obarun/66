@@ -16,10 +16,9 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/stream.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/info.h>
 
@@ -29,24 +28,24 @@ void info_display_nline(char const *field,char const *str)
 
     size_t pos = 0, padding = info_length_from_wchar(field) + 1, len ;
 
-    stralloc sa = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
-    if (!auto_stra(&sa, str))
-        log_die_nomem("stralloc") ;
+    if (!auto_strbuf(&sa, str))
+        log_die_nomem("strbuf") ;
 
-    if (!sastr_split_string_in_nline(&sa))
+    if (!sbl_split_string_in_nline(&sa))
         log_dieu(LOG_EXIT_SYS,"split string in nline") ;
 
     len = sa.len ;
     char tmp[sa.len + 1] ;
-    sastr_to_char(tmp, &sa) ;
+    sbl_to_char(tmp, &sa) ;
 
     for (;pos < len ; pos += strlen(tmp + pos) + 1) {
 
         sa.len = 0 ;
 
-        if (!auto_stra(&sa,tmp + pos))
-            log_die_nomem("stralloc") ;
+        if (!auto_strbuf(&sa,tmp + pos))
+            log_die_nomem("strbuf") ;
 
         if (field) {
             if (pos) {
@@ -56,5 +55,4 @@ void info_display_nline(char const *field,char const *str)
         }
         info_display_list(field,&sa) ;
     }
-    stralloc_free(&sa) ;
 }

@@ -15,6 +15,8 @@
 #include <errno.h>
 #include <stdint.h>
 
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/hash.h>
@@ -50,14 +52,14 @@ static bool issupervised(resolve_service_t *res)
     return true ;
 }
 
-static int issupervised_list(service_graph_t *g, stack *stk)
+static int issupervised_list(service_graph_t *g, strbuf *stk)
 {
     log_flow() ;
 
     size_t pos = 0 ;
-    _alloc_stk_(c, stk->len) ;
+    _alloc_sbl_(c, stk->len) ;
 
-    FOREACH_STK(stk, pos) {
+    FOREACH_SBL(stk, pos) {
 
         char *name = stk->s + pos ;
         struct resolve_hash_s *h = hash_search(&g->hres, name) ;
@@ -68,14 +70,11 @@ static int issupervised_list(service_graph_t *g, stack *stk)
             continue ;
         }
 
-        if (!stack_add_g(&c, name))
+        if (!sbl_add(&c, name))
             return 0 ;
     }
 
-    if (!stack_close(&c))
-        return 0 ;
-
-    if (!stack_copy_stack(stk,&c))
+    if (c.len && !strbuf_copy(stk,&c))
         return 0 ;
 
     return 1 ;
@@ -91,13 +90,13 @@ static bool isdone(service_graph_t *g, const char *name)
     return false ;
 }
 
-static int graph_add_depends(service_graph_t *g, const char *vertex, stack *edge, uint32_t flag, bool requiredby)
+static int graph_add_depends(service_graph_t *g, const char *vertex, strbuf *edge, uint32_t flag, bool requiredby)
 {
     log_flow() ;
 
-    _alloc_stk_(stk, edge->len) ;
+    _alloc_sbl_(stk, edge->len) ;
 
-    if (!stack_copy_stack(&stk, edge))
+    if (!strbuf_copy(&stk, edge))
         return 0 ;
 
     if (FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
@@ -177,9 +176,9 @@ static int graph_action_depends(service_graph_t *g, resolve_service_t *res, uint
 
     if (FLAGS_ISSET(flag, GRAPH_WANT_DEPENDS) && res->dependencies.ndepends) {
 
-        _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.depends) + 1) ;
+        _alloc_sbl_(stk, strlen(res->sa.s + res->dependencies.depends) + 1) ;
 
-        if (!stack_string_clean(&stk, res->sa.s + res->dependencies.depends))
+        if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.depends))
             log_warnusys_return(LOG_EXIT_ZERO, "clean string") ;
 
         if (!graph_add_depends(g, res->sa.s + res->name, &stk, flag, false)) {
@@ -190,7 +189,7 @@ static int graph_action_depends(service_graph_t *g, resolve_service_t *res, uint
         }
 
         // do it recursively
-        FOREACH_STK(&stk, pos) {
+        FOREACH_SBL(&stk, pos) {
 
             h = hash_search(&g->hres, stk.s + pos) ;
             if (h == NULL)
@@ -217,9 +216,9 @@ static int graph_action_requiredby(service_graph_t *g, resolve_service_t *res, u
 
     if (FLAGS_ISSET(flag, GRAPH_WANT_REQUIREDBY) && res->dependencies.nrequiredby) {
 
-        _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.requiredby) + 1) ;
+        _alloc_sbl_(stk, strlen(res->sa.s + res->dependencies.requiredby) + 1) ;
 
-        if (!stack_string_clean(&stk, res->sa.s + res->dependencies.requiredby))
+        if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.requiredby))
             log_warnusys_return(LOG_EXIT_ZERO, "clean string") ;
 
         if (!graph_add_depends(g, res->sa.s + res->name, &stk, flag, true)) {
@@ -230,7 +229,7 @@ static int graph_action_requiredby(service_graph_t *g, resolve_service_t *res, u
         }
 
         // do it recursively
-        FOREACH_STK(&stk, pos) {
+        FOREACH_SBL(&stk, pos) {
 
             h = hash_search(&g->hres, stk.s + pos) ;
             if (h == NULL)
@@ -287,12 +286,12 @@ static int graph_build_module(service_graph_t *g, resolve_service_t *res, uint32
     struct resolve_hash_s *h = NULL ;
     if (res->type == E_PARSER_TYPE_MODULE && res->dependencies.ncontents) {
 
-        _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.contents)) ;
+        _alloc_sbl_(stk, strlen(res->sa.s + res->dependencies.contents)) ;
 
-        if (!stack_string_clean(&stk, res->sa.s + res->dependencies.contents))
+        if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.contents))
             log_warnusys_return(LOG_EXIT_ZERO, "clean string") ;
 
-        FOREACH_STK(&stk, pos) {
+        FOREACH_SBL(&stk, pos) {
 
             h = hash_search(&g->hres, stk.s + pos) ;
             if (h == NULL)

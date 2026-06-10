@@ -17,14 +17,13 @@
 
 #include <oblibs/string.h>
 #include <oblibs/log.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/environ.h>
 #include <66/service.h>
 #include <66/parse.h>
 
-int env_compute(stralloc *result, resolve_service_t *res)
+int env_compute(strbuf *result, resolve_service_t *res)
 {
     log_flow() ;
 
@@ -43,9 +42,9 @@ int env_compute(stralloc *result, resolve_service_t *res)
 
     /** previous version, this is the current version before
      * the switch with env_make_symlink() */
-    stralloc pversion = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf pversion = STRBUF_ZERO ;
     // future version, the one which we want
-    stralloc fversion = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf fversion = STRBUF_ZERO ;
 
     /** store current configure file version before the switch
      * of the symlink with the env_make_symlink() function */
@@ -78,14 +77,12 @@ int env_compute(stralloc *result, resolve_service_t *res)
 
     }
 
-    if (!auto_stra(result, \
+    if (!auto_strbuf(result, \
     "## [STARTWARN]\n## DO NOT MODIFY THIS FILE, IT OVERWRITTEN AT UPGRADE TIME.\n## Uses \'66 configure ", \
     name,"\' command instead.\n## Or make a copy of this file at ", src, "/", name, \
     " and modify it.\n## [ENDWARN]\n", res->sa.s + res->environ.env))
-        log_warnu_return(LOG_EXIT_ZERO,"stralloc") ;
+        log_warnu_return(LOG_EXIT_ZERO,"strbuf") ;
 
-    stralloc_free(&pversion) ;
-    stralloc_free(&fversion) ;
 
     return 1 ;
 }

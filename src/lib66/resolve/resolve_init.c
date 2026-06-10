@@ -14,7 +14,7 @@
 
 #include <oblibs/log.h>
 
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/resolve.h>
 #include <66/service.h>

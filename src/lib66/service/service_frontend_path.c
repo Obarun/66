@@ -18,7 +18,7 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/config.h>
 #include <66/utils.h>
@@ -51,7 +51,7 @@ static void compute_exclude(char const **nexclude, char const **oexclude, uint8_
     }
 }
 
-int service_frontend_path(stralloc *sasrc, char const *sv, uid_t owner, char const *directory_forced, char const **exclude, uint8_t exlen)
+int service_frontend_path(strbuf *sasrc, char const *sv, uid_t owner, char const *directory_forced, char const **exclude, uint8_t exlen)
 {
     log_flow() ;
 

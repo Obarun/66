@@ -18,7 +18,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 
-#include <oblibs/stack.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/lexer.h>
 
 #include <66/ssexec.h>
@@ -44,7 +44,6 @@ extern lexer_config LEXER_CONFIG_LIST ;
 extern lexer_config LEXER_CONFIG_KEY ;
 
 /** freed and cleanup*/
-extern void ssexec_enable_cleanup(void) ;
 extern void parse_cleanup(resolve_service_t *res, char const *tmpdir, uint8_t force) ;
 
 /** main */
@@ -63,25 +62,25 @@ extern int parse_section_regex(resolve_service_t *res, const char *str) ;
 extern int parse_section_execute(resolve_service_t *res, const char *str) ;
 extern int parse_section(resolve_service_t *res, char const *str, resolve_enum_table_t table) ;
 extern int parse_contents(resolve_service_t *res, char const *str) ;
-extern int parse_compute_list(resolve_wrapper_t_ref wres, stack *store, uint32_t *res, uint8_t opts) ;
+extern int parse_compute_list(resolve_wrapper_t_ref wres, strbuf *store, uint32_t *res, uint8_t opts) ;
 
 /** store */
-extern int parse_store_g(resolve_service_t *res, stack *store, resolve_enum_table_t table) ;
-extern int parse_store_main(resolve_service_t *res, stack *store, resolve_enum_table_t table) ;
-extern int parse_store_start_stop(resolve_service_t *res, stack *store, resolve_enum_table_t table) ;
-extern int parse_store_logger(resolve_service_t *res, stack *store, resolve_enum_table_t table) ;
-extern int parse_store_environ(resolve_service_t *res, stack *store, resolve_enum_table_t table) ;
-extern int parse_store_regex(resolve_service_t *res, stack *store, resolve_enum_table_t table) ;
-extern int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table_t table) ;
+extern int parse_store_g(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
+extern int parse_store_main(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
+extern int parse_store_start_stop(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
+extern int parse_store_logger(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
+extern int parse_store_environ(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
+extern int parse_store_regex(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
+extern int parse_store_execute(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
 
 /** helper */
 extern int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, size_t len) ;
-extern int parse_key(stack *key, lexer_config *cfg, resolve_enum_table_t table) ;
-extern int parse_value(stack *store, lexer_config *kcfg, resolve_enum_table_t table) ;
-extern int parse_list(stack *stk) ;
-extern int parse_bracket(stack *store, const char *line, resolve_enum_table_t table) ;
+extern int parse_key(strbuf *key, lexer_config *cfg, resolve_enum_table_t table) ;
+extern int parse_value(strbuf *store, lexer_config *kcfg, resolve_enum_table_t table) ;
+extern int parse_list(strbuf *stk) ;
+extern int parse_bracket(strbuf *store, const char *line, resolve_enum_table_t table) ;
 extern int parse_clean_runas(char const *str, resolve_enum_table_t table) ;
-extern int parse_get_value_of_key(stack *store, char const *str, resolve_enum_table_t table) ;
+extern int parse_get_value_of_key(strbuf *store, char const *str, resolve_enum_table_t table) ;
 extern int parse_mandatory(resolve_service_t *res, ssexec_t *info) ;
 extern void parse_error(int ierr, resolve_enum_table_t table) ;
 extern void parse_rename_interdependences(resolve_service_t *res, char const *prefix, struct resolve_hash_s **hres, ssexec_t *info) ;

@@ -16,21 +16,20 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/environ.h>
 #include <66/constants.h>
 #include <66/utils.h>
 #include <66/service.h>
 
-int env_resolve_conf(stralloc *env, resolve_service_t *res)
+int env_resolve_conf(strbuf *env, resolve_service_t *res)
 {
     log_flow() ;
 
     if (!res->owner) {
 
-        if (!stralloc_cats(env, SS_SERVICE_ADMCONFDIR))
+        if (!strbuf_cats(env, SS_SERVICE_ADMCONFDIR))
             return 0 ;
 
     } else {
@@ -38,15 +37,15 @@ int env_resolve_conf(stralloc *env, resolve_service_t *res)
         if (!set_ownerhome(env, res->owner))
             return 0 ;
 
-        if (!stralloc_cats(env, SS_SERVICE_USERCONFDIR))
+        if (!strbuf_cats(env, SS_SERVICE_USERCONFDIR))
             return 0 ;
     }
 
     if (res->inns)
-        if (!auto_stra(env, res->sa.s + res->inns, SS_SYM_VERSION, "/"))
+        if (!auto_strbuf(env, res->sa.s + res->inns, SS_SYM_VERSION, "/"))
             return 0 ;
 
-    if (!auto_stra(env, res->sa.s + res->name))
+    if (!auto_strbuf(env, res->sa.s + res->name))
         return 0 ;
 
     return 1 ;

@@ -18,8 +18,7 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/stream.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/tree.h>
 #include <66/resolve.h>
@@ -32,7 +31,7 @@ int info_graph_display_tree(char const *name)
     log_flow() ;
 
     int err = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
 
@@ -41,7 +40,6 @@ int info_graph_display_tree(char const *name)
     if (!set_ownersysdir(&sa, owner)) {
         log_warnusys("set owner directory") ;
         resolve_free(wres) ;
-        stralloc_free(&sa) ;
         return err ;
     }
 
@@ -98,7 +96,6 @@ int info_graph_display_tree(char const *name)
 
     freed:
         resolve_free(wres) ;
-        stralloc_free(&sa) ;
 
     return err ;
 

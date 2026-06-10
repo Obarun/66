@@ -17,7 +17,6 @@
 #include <oblibs/log.h>
 #include <oblibs/hash.h>
 #include <oblibs/types.h>
-#include <oblibs/stack.h>
 #include <oblibs/sse.h>
 
 #include <66/svc.h>

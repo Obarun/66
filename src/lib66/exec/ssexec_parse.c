@@ -20,7 +20,8 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 
 #include <skalibs/sgetopt.h>
 
@@ -36,7 +37,7 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
 
     int r = 0 ;
     uint8_t force = 0 , conf = 0 ;
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -106,21 +107,20 @@ int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
         r = str_contain(sv, ":") ;
         if (r >= 0) {
             size_t len = strlen(sv) ;
-            _alloc_stk_(stk, len + 1) ;
-            stack_add(&stk, sv, --r) ; // do not check output here, we are dying anyway
-            stack_close(&stk) ;
+            _alloc_sbl_(stk, len + 1) ;
+            sbl_addb(&stk, sv, --r) ; // do not check output here, we are dying anyway
             log_die(LOG_EXIT_USER, "service: ", sv," is part of a module and cannot be parsed alone -- please parse the entire module instead using \'66 parse ", stk.s, "\'") ;
         }
 
         if (!service_frontend_path(&sa, sv, info->owner, directory_forced, exclude, exlen))
             log_dieu(LOG_EXIT_USER, "find service frontend file of: ", sv) ;
 
-        /** need to check all the contents of the stralloc.
+        /** need to check all the contents of the strbuf.
          * service can be a directory name. In this case
          * we parse all services inside. */
         size_t pos = 0 ;
         struct resolve_hash_s *hres = NULL ;
-        FOREACH_SASTR(&sa, pos)
+        FOREACH_SBL(&sa, pos)
             parse_service(&hres, sa.s + pos, info, force, conf) ;
 
         hash_free(&hres) ;

@@ -18,23 +18,22 @@
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/environ.h>
 
-int env_append_version(stralloc *saversion, char const *svconf, char const *version)
+int env_append_version(strbuf *saversion, char const *svconf, char const *version)
 {
     log_flow() ;
 
     int r ;
 
-    _alloc_stk_(stk, strlen(version) + 1) ;
+    _alloc_strbuf_(stk, strlen(version) + 1) ;
 
     auto_strings(stk.s, version) ;
 
-    if (!auto_stra(saversion,svconf,"/",stk.s))
-        log_warnusys_return(LOG_EXIT_ZERO,"stralloc") ;
+    if (!auto_strbuf(saversion,svconf,"/",stk.s))
+        log_warnusys_return(LOG_EXIT_ZERO,"strbuf") ;
 
     r = scan_mode(saversion->s,S_IFDIR) ;
     if (r == -1 || !r)

@@ -13,8 +13,7 @@
  */
 
 #include <oblibs/log.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/ssexec.h>
 #include <66/utils.h>
@@ -31,16 +30,17 @@ void set_info(ssexec_t *info)
 
     r = set_livedir(&info->live) ;
     if (!r)
-        log_die_nomem("stralloc") ;
+        log_die_nomem("strbuf") ;
     if(r < 0)
         log_die(LOG_EXIT_SYS, "live: ", info->live.s, " must be an absolute path") ;
 
-    if (!stralloc_copy(&info->scandir, &info->live))
-        log_die_nomem("stralloc") ;
+    if (!strbuf_copy(&info->scandir, &info->live) || !strbuf_terminate(&info->scandir))
+        log_die_nomem("strbuf") ;
+    info->scandir.len-- ;
 
     r = set_livescan(&info->scandir, info->owner) ;
     if (!r)
-        log_die_nomem("stralloc") ;
+        log_die_nomem("strbuf") ;
     if(r < 0)
         log_die(LOG_EXIT_SYS, "scandir: ", info->scandir.s, " must be an absolute path") ;
 

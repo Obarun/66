@@ -12,6 +12,7 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <string.h>
 #include <pwd.h>
@@ -20,11 +21,11 @@
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/environ.h>
 #include <oblibs/types.h>
+#include <oblibs/strbuf.h>
 
-#include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/cspawn.h>
 #include <skalibs/bytestr.h>
@@ -44,7 +45,7 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
     size_t clen = res->regex.configure > 0 ? 1 : 0 ;
     size_t pathlen = strlen(path), n ;
 
-    stralloc env = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf env = STRBUF_ZERO ;
 
     char const *newargv[2 + clen] ;
     unsigned int m = 0 ;
@@ -62,7 +63,7 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
         {
             char verbo[U32_FMT];
             verbo[u32_fmt(verbo, VERBOSITY)] = 0 ;
-            if (!auto_stra(&env, \
+            if (!auto_strbuf(&env, \
             "MOD_NAME=", name, "\n", \
             "MOD_BASE=", res->sa.s + res->path.home, "\n", \
             "MOD_LIVE=", info->live.s, "\n", \
@@ -86,14 +87,14 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
                 log_dieu(LOG_EXIT_SYS, "append environment variables") ;
         }
 
-        if (!sastr_clean_string(&env, env.s))
+        if (!sbl_clean_string(&env, env.s))
             log_dieu(LOG_EXIT_SYS, "clean string") ;
 
         /** environment is not mandatory */
         if (res->environ.env > 0)
         {
-            stralloc oenv = STRALLOC_ZERO ;
-            stralloc dst = STRALLOC_ZERO ;
+            _cleanup_strbuf_ strbuf oenv = STRBUF_ZERO ;
+            _cleanup_strbuf_ strbuf dst = STRBUF_ZERO ;
             char name[strlen(res->sa.s + res->name) + 2] ;
             auto_strings(name, ".", res->sa.s + res->name) ;
 
@@ -107,8 +108,6 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
             if (!environ_merge_dir_g(&env, dst.s))
                 log_dieu(LOG_EXIT_SYS, "clean environment") ;
 
-            stralloc_free(&oenv) ;
-            stralloc_free(&dst) ;
         }
 
         n = environ_length((const char *const *)environ) + 1 + byte_count(env.s, env.len, '\0') ;
@@ -139,5 +138,4 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
             log_dieu(LOG_EXIT_SYS, "run: ", config_script) ;
     }
 
-    stralloc_free(&env) ;
 }

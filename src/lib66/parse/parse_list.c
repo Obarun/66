@@ -13,22 +13,23 @@
  */
 
 #include <oblibs/log.h>
-#include <oblibs/stack.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/lexer.h>
 
 #include <66/parse.h>
 
-int parse_list(stack *stk)
+int parse_list(strbuf *stk)
 {
     log_flow() ;
 
     lexer_config cfg = LEXER_CONFIG_LIST ;
-    _alloc_stk_(tmp, stk->len + 1) ;
+    _alloc_strbuf_(tmp, stk->len + 1) ;
 
-    if (!stack_copy_stack(&tmp, stk))
+    if (!strbuf_copy(&tmp, stk) || !strbuf_terminate(&tmp))
         return 0 ;
+    tmp.len-- ;
 
-    stack_reset(stk) ;
+    stk->len = 0 ;
 
     if (!lexer_trim_with_g(stk, tmp.s, &cfg))
         return 0 ;

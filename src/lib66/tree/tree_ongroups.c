@@ -16,9 +16,9 @@
 
 #include <oblibs/string.h>
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/constants.h>
 #include <66/resolve.h>
@@ -30,7 +30,7 @@ int tree_ongroups(char const *base, char const *treename, char const *group)
 
     int e = -1 ;
     size_t pos = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
 
@@ -39,12 +39,12 @@ int tree_ongroups(char const *base, char const *treename, char const *group)
 
     if (tres.ngroups) {
 
-        if (!sastr_clean_string(&sa, tres.sa.s + tres.groups))
+        if (!sbl_clean_string(&sa, tres.sa.s + tres.groups))
             goto err ;
 
         e = 0 ;
 
-        FOREACH_SASTR(&sa, pos) {
+        FOREACH_SBL(&sa, pos) {
 
             if (!strcmp(group, sa.s + pos)) {
                 e = 1 ;
@@ -56,6 +56,5 @@ int tree_ongroups(char const *base, char const *treename, char const *group)
 
     err:
        resolve_free(wres) ;
-       stralloc_free(&sa) ;
        return e ;
 }

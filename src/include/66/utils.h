@@ -19,9 +19,8 @@
 #include <unistd.h> //getuid
 
 #include <oblibs/log.h>
-#include <oblibs/stack.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 
 #include <66/ssexec.h>
 
@@ -34,14 +33,13 @@
 extern char const *get_userhome(uid_t myuid) ;
 extern int youruid(uid_t *passto,char const *owner) ;
 extern int yourgid(gid_t *passto,uid_t owner) ;
-extern int set_livedir(stralloc *live) ;
-extern int set_livescan(stralloc *live,uid_t owner) ;
-extern int set_livetree(stralloc *live,uid_t owner) ;
-extern int set_livestate(stralloc *live,uid_t owner) ;
-extern int set_ownerhome(stralloc *base,uid_t owner) ;
-extern int set_ownersysdir(stralloc *base,uid_t owner) ;
-extern int set_environment(stralloc *env,uid_t owner) ;
-extern int read_svfile(stralloc *sasv,char const *name,char const *src) ;
+extern int set_livedir(strbuf *live) ;
+extern int set_livescan(strbuf *live,uid_t owner) ;
+extern int set_livestate(strbuf *live,uid_t owner) ;
+extern int set_ownerhome(strbuf *base,uid_t owner) ;
+extern int set_ownersysdir(strbuf *base,uid_t owner) ;
+extern int set_environment(strbuf *env,uid_t owner) ;
+extern int read_svfile(strbuf *sasv,char const *name,char const *src) ;
 extern void name_isvalid(char const *name) ;
 extern int set_ownerhome_stack(char *store) ;
 extern int set_ownersysdir_stack(char *base, uid_t owner) ;
@@ -80,6 +78,6 @@ struct identifier_table_s
 } ;
 
 extern identifier_table_t identifier_table[] ;
-extern int identifier_replace(stralloc *sasv, char const *svname) ;
+extern int identifier_replace(strbuf *sasv, char const *svname) ;
 
 #endif

@@ -17,6 +17,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/strbuf.h>
 
 #include <66/config.h>
 #include <66/constants.h>
@@ -46,11 +47,11 @@ int tree_sethome(ssexec_t *info)
         info->treename.len = 0 ;
         if (!r) {
             /** no current tree found. Use the default one.*/
-            if (!auto_stra(&info->treename, SS_DEFAULT_TREENAME))
+            if (!auto_strbuf(&info->treename, SS_DEFAULT_TREENAME))
                 return -1 ;
         } else {
 
-            if (!auto_stra(&info->treename, t))
+            if (!auto_strbuf(&info->treename, t))
                 return -1 ;
         }
 

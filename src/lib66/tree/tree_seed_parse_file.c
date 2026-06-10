@@ -19,9 +19,8 @@
 #include <oblibs/files.h>
 #include <oblibs/log.h>
 #include <oblibs/environ.h>
-#include <oblibs/sastr.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 #include <skalibs/djbunix.h>
 
 #include <66/enum.h>
@@ -34,12 +33,12 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
 
     int r ;
     size_t pos = 0 ;
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
     if (!environ_merge_file(&sa, seedpath))
         log_warn_return(LOG_EXIT_ZERO, "merge seed file: ", seedpath) ;
 
-    FOREACH_SASTR(&sa, pos) {
+    FOREACH_SBL(&sa, pos) {
 
         char *line = sa.s + pos, *key = 0, *val = 0 ;
         size_t len = strlen(line) ;
@@ -64,7 +63,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
             case E_PARSER_SEED_DEPENDS :
 
                 seed->depends = seed->sa.len ;
-                if (!sastr_add_string(&seed->sa, val))
+                if (!sbl_add(&seed->sa, val))
                     return 0 ;
 
                 seed->nopts++ ;
@@ -74,7 +73,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
             case E_PARSER_SEED_REQUIREDBY :
 
                 seed->requiredby = seed->sa.len ;
-                if (!sastr_add_string(&seed->sa, val))
+                if (!sbl_add(&seed->sa, val))
                     return 0 ;
 
                 seed->nopts++ ;
@@ -93,7 +92,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
             case E_PARSER_SEED_ALLOW :
 
                 seed->allow = seed->sa.len ;
-                if (!sastr_add_string(&seed->sa, val))
+                if (!sbl_add(&seed->sa, val))
                     return 0 ;
 
                 seed->nopts++ ;
@@ -103,7 +102,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
             case E_PARSER_SEED_DENY :
 
                 seed->deny = seed->sa.len ;
-                if (!sastr_add_string(&seed->sa, val))
+                if (!sbl_add(&seed->sa, val))
                     return 0 ;
 
                 seed->nopts++ ;
@@ -128,7 +127,7 @@ int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath)
                 }
 
                 seed->groups = seed->sa.len ;
-                if (!sastr_add_string(&seed->sa, val))
+                if (!sbl_add(&seed->sa, val))
                     return 0 ;
 
                 seed->nopts++ ;

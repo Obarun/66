@@ -157,7 +157,7 @@ extern int graph_add_deps(graph *g, const char *vertex, char const *edge, bool r
  * @note
  * - If memory allocation for storing edges fails, the function returns immediately with an error.
  */
-extern int graph_get_stkedge(stack *stk, graph *g, vertex_t *v, bool requiredby) ;
+extern int graph_get_stkedge(strbuf *stk, graph *g, vertex_t *v, bool requiredby) ;
 
 /**
  * @brief Initializes a service graph structure.

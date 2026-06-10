@@ -18,6 +18,7 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/hash.h>
+#include <oblibs/strbuf.h>
 
 #include <66/service.h>
 #include <66/resolve.h>
@@ -62,7 +63,7 @@ void hash_free(struct resolve_hash_s **hash)
 	struct resolve_hash_s *c, *tmp ;
 
 	HASH_ITER(hh, *hash, c, tmp) {
-		stralloc_free(&c->res.sa) ;
+		strbuf_free(&c->res.sa) ;
 		HASH_DEL(*hash, c) ;
 		free(c) ;
 	}

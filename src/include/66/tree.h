@@ -21,8 +21,7 @@
 #include <oblibs/hash.h>
 #include <oblibs/sse.h>
 #include <oblibs/cdb.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/ssexec.h>
 #include <66/resolve.h>
@@ -39,7 +38,7 @@
 typedef struct resolve_tree_s resolve_tree_t, *resolve_tree_t_ref ;
 struct resolve_tree_s
 {
-    stralloc sa ;
+    strbuf sa ;
     uint32_t rversion ; //string, version of 66 of the resolve file at write time
 
     uint32_t name ;
@@ -60,14 +59,14 @@ struct resolve_tree_s
     uint32_t supervised ;//not superviseded->0, supervised->1
 } ;
 
-#define RESOLVE_TREE_ZERO { STRALLOC_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_TREE_ZERO { STRBUF_ZERO,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
 extern const resolve_tree_t tree_resolve_zero ;
 
 typedef struct resolve_tree_master_s resolve_tree_master_t, *resolve_tree_master_t_ref ;
 struct resolve_tree_master_s
 {
-    stralloc sa ;
+    strbuf sa ;
     uint32_t rversion ; //string, version of 66 of the resolve file at write time
 
     uint32_t name ;
@@ -80,14 +79,14 @@ struct resolve_tree_master_s
 
 } ;
 
-#define RESOLVE_TREE_MASTER_ZERO { STRALLOC_ZERO,0,0,0,0,0,0,0 }
+#define RESOLVE_TREE_MASTER_ZERO { STRBUF_ZERO,0,0,0,0,0,0,0 }
 
 extern const resolve_tree_master_t tree_resolve_master_zero ;
 
 typedef struct tree_seed_s tree_seed_t, tree_seed_t_ref ;
 struct tree_seed_s
 {
-    stralloc sa ;
+    strbuf sa ;
 
     int name ;
     int depends ;
@@ -103,7 +102,7 @@ struct tree_seed_s
     uint8_t nopts ;
 } ;
 
-#define TREE_SEED_ZERO { STRALLOC_ZERO, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0 }
+#define TREE_SEED_ZERO { STRBUF_ZERO, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0 }
 
 struct resolve_hash_tree_s {
 	char name[SS_MAX_SERVICE_NAME + 1] ; // name as key
@@ -225,8 +224,6 @@ extern int tree_isenabled(char const *base, char const *treename) ;
  * @Return -1 on system error */
 extern int tree_ongroups(char const *base, char const *treename, char const *group) ;
 
-extern int tree_copy(stralloc *dir, char const *tree,char const *treename) ;
-
 extern int tree_get_permissions(char const *base, char const *treename) ;
 
 extern int tree_sethome(ssexec_t *info) ;
@@ -239,7 +236,7 @@ extern int tree_resolve_read_cdb(ocdb *c, resolve_tree_t *tres) ;
 extern int tree_resolve_write_cdb(ocdbmaker *c, resolve_tree_t *tres) ;
 extern void tree_resolve_sanitize(resolve_tree_t *tres) ;
 extern void tree_resolve_modify_field(resolve_tree_t *tres, uint32_t field, char const *data) ;
-extern int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree_enum_table_t table) ;
+extern int tree_resolve_get_field_tosa(strbuf *sa, resolve_tree_t *tres, resolve_tree_enum_table_t table) ;
 extern void tree_service_add(char const *treename, char const *service, ssexec_t *info) ;
 extern void tree_service_remove(char const *base, char const *treename, char const *service) ;
 /** Master */
@@ -248,7 +245,7 @@ extern int tree_resolve_master_write_cdb(ocdbmaker *c, resolve_tree_master_t *mr
 extern int tree_resolve_master_create(char const *base, uid_t owner) ;
 extern void tree_resolve_master_sanitize(resolve_tree_master_t *mres) ;
 extern void tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint32_t field, char const *data) ;
-extern int tree_resolve_master_get_field_tosa(stralloc *sa, resolve_tree_master_t *mres, resolve_tree_enum_table_t table) ;
+extern int tree_resolve_master_get_field_tosa(strbuf *sa, resolve_tree_master_t *mres, resolve_tree_enum_table_t table) ;
 
 /** Seed API */
 extern int tree_seed_file_isvalid(char const *seedpath, char const *treename) ;
@@ -257,7 +254,7 @@ extern int tree_seed_get_group_permissions(tree_seed_t *seed) ;
 extern ssize_t tree_seed_get_key(char *table,char const *str) ;
 extern int tree_seed_isvalid(char const *seed) ;
 extern int tree_seed_parse_file(tree_seed_t *seed, char const *seedpath) ;
-extern int tree_seed_resolve_path(stralloc *sa, char const *seed) ;
+extern int tree_seed_resolve_path(strbuf *sa, char const *seed) ;
 extern int tree_seed_setseed(tree_seed_t *seed, char const *treename) ;
 
 /** HASH API*/

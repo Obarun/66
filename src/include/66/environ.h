@@ -18,22 +18,20 @@
 #include <sys/types.h>
 #include <stdint.h>
 
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/parse.h>
 #include <66/service.h>
 
-extern int env_resolve_conf(stralloc *env, resolve_service_t *res) ;
+extern int env_resolve_conf(strbuf *env, resolve_service_t *res) ;
 extern int env_make_symlink(resolve_service_t *res) ;
-extern int env_compute(stralloc *result, resolve_service_t *res) ;
-extern int env_clean_with_comment(stralloc *sa) ;
-extern int env_prepare_for_write(stralloc *dst, stralloc *contents, resolve_service_t *res) ;
-extern int env_get_destination(stralloc *sa, resolve_service_t *res) ;
+extern int env_compute(strbuf *result, resolve_service_t *res) ;
+extern int env_prepare_for_write(strbuf *dst, strbuf *contents, resolve_service_t *res) ;
+extern int env_get_destination(strbuf *sa, resolve_service_t *res) ;
 
 /** version function */
-extern int env_find_current_version(stralloc *sa,char const *svconf) ;
-extern int env_check_version(stack *stk, char const *version) ;
-extern int env_append_version(stralloc *saversion, char const *svconf, char const *version) ;
+extern int env_find_current_version(strbuf *sa,char const *svconf) ;
+extern int env_append_version(strbuf *saversion, char const *svconf, char const *version) ;
 extern int env_import_version_file(char const *svname, char const *svconf, char const *sversion, char const *dversion,int svtype) ;
 
 #endif

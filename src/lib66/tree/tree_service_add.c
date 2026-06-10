@@ -13,7 +13,7 @@
  */
 
 #include <oblibs/log.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
 
 #include <66/resolve.h>
@@ -50,34 +50,28 @@ void tree_service_add(char const *treename, char const *service, ssexec_t *info)
     if (resolve_read_g(wres, info->base.s, treename) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of tree: ", treename) ;
 
-    _alloc_stk_(stk, strlen(tres.sa.s + tres.contents) + len + 3) ;
+    _alloc_sbl_(stk, strlen(tres.sa.s + tres.contents) + len + 3) ;
 
     if (tres.ncontents) {
 
-        if (!stack_string_clean(&stk, tres.sa.s + tres.contents))
+        if (!sbl_clean_string(&stk, tres.sa.s + tres.contents))
             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
-        if (stack_retrieve_element(&stk, service) < 0) {
-            if (!stack_add_g(&stk, service))
+        if (sbl_search(&stk, service) < 0) {
+            if (!sbl_add(&stk, service))
                 log_dieusys(LOG_EXIT_SYS, "add service: ", service, " to tree: ", treename) ;
-
-            if (!stack_close(&stk))
-                log_dieusys(LOG_EXIT_SYS, "close stack") ;
         }
 
     } else {
 
-        if (!stack_add_g(&stk, service))
+        if (!sbl_add(&stk, service))
             log_dieu(LOG_EXIT_SYS, "add string to stack") ;
-
-        if (!stack_close(&stk))
-            log_dieusys(LOG_EXIT_SYS, "close stack") ;
 
     }
 
-    tres.ncontents = stack_count_element(&stk) ;
+    tres.ncontents = sbl_count(&stk) ;
 
-    if (!stack_string_rebuild_with_delim(&stk, ' '))
+    if (!sbl_rebuild_with_delim(&stk, ' '))
         log_dieu(LOG_EXIT_SYS, "convert stack to string") ;
 
     table.u.tree.id = E_RESOLVE_TREE_CONTENTS ;

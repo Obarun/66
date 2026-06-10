@@ -91,8 +91,8 @@ int main(int argc, char const *const *argv)
                     if (strlen(l.arg) > SS_MAX_PATH)
                         flog_die(LOG_EXIT_USER, "live path is too long -- it can not exceed %d", SS_MAX_PATH) ;
 
-                    if (!auto_stra(&info.live, l.arg))
-                        log_die_nomem("stralloc") ;
+                    if (!auto_strbuf(&info.live, l.arg))
+                        log_die_nomem("strbuf") ;
 
                     info.opt_live = 1 ;
                     break ;
@@ -102,15 +102,15 @@ int main(int argc, char const *const *argv)
                     if (strlen(l.arg) > SS_MAX_TREENAME)
                         flog_die(LOG_EXIT_USER, "tree name is too long -- it can not exceed %d", SS_MAX_TREENAME) ;
 
-                    if (!auto_stra(&info.treename, l.arg))
-                        log_die_nomem("stralloc") ;
+                    if (!auto_strbuf(&info.treename, l.arg))
+                        log_die_nomem("strbuf") ;
 
                     info.opt_tree = 1 ;
                     break ;
 
                 case 'T' :
 
-                    if (!u32_scan_strict(l.arg, &info.timeout))
+                    if (!u64_scan_strict(l.arg, &info.timeout))
                         log_usage(usage_66, "\n", help_66) ;
                     info.opt_timeout = 1 ;
                     break ;

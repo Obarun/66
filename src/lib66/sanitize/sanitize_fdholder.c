@@ -20,10 +20,11 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/files.h>
 
 #include <skalibs/tai.h>
+#include <skalibs/stralloc.h>
 
 #include <66/service.h>
 #include <66/constants.h>
@@ -97,7 +98,7 @@ static int fdholder_delete(s6_fdholder_t *a, char const *name, tain *deadline)
 int sanitize_fdholder_start(s6_fdholder_t *a, const char *socket)
 {
     tain deadline = tain_infinite_relative ;
-    _alloc_stk_(sock, strlen(socket) + 3) ;
+    _alloc_strbuf_(sock, strlen(socket) + 3) ;
     auto_strings(sock.s, socket, "/s") ;
 
     tain_now_set_stopwatch_g() ;
@@ -121,7 +122,7 @@ int sanitize_fdholder(resolve_service_t *res, s6_fdholder_t *a, ss_state_t *sta,
 
     if (res->logger.want && res->type == E_PARSER_TYPE_CLASSIC) {
 
-        stralloc list = STRALLOC_ZERO ;
+        _cleanup_strbuf_ strbuf list = STRBUF_ZERO ;
         char *sa = res->sa.s ;
         char *name = sa + res->logger.name ;
         char *socket = sa + res->live.fdholderdir ;
@@ -155,16 +156,20 @@ int sanitize_fdholder(resolve_service_t *res, s6_fdholder_t *a, ss_state_t *sta,
 
         }
 
-        if (s6_fdholder_list_g(a, &list, &deadline) < 0)
+        stralloc slist = STRALLOC_ZERO ;
+        int lr = s6_fdholder_list_g(a, &slist, &deadline) ;
+        if (lr >= 0 && !strbuf_copyb(&list, slist.s, slist.len)) lr = -1 ;
+        stralloc_free(&slist) ;
+        if (lr < 0)
             log_warnusys_return(LOG_EXIT_ZERO, "list identifier") ;
 
-        if (!stralloc_0(&list))
-            log_die_nomem("stralloc") ;
+        if (!strbuf_terminate(&list))
+            log_die_nomem("strbuf") ;
 
         size_t pos = 0, tlen = list.len ;
         char t[tlen + 1] ;
 
-        sastr_to_char(t, &list) ;
+        sbl_to_char(t, &list) ;
 
         list.len = 0 ;
 
@@ -173,8 +178,8 @@ int sanitize_fdholder(resolve_service_t *res, s6_fdholder_t *a, ss_state_t *sta,
             if (!str_start_with(t + pos, SS_FDHOLDER_PIPENAME "r-")) {
                 /** only keep the reader, the writer is automatically created
                  * by the 66-fdholder-filler. see format of it */
-                if (!auto_stra(&list, t + pos, "\n"))
-                    log_die_nomem("stralloc") ;
+                if (!auto_strbuf(&list, t + pos, "\n"))
+                    log_die_nomem("strbuf") ;
             }
         }
 
@@ -186,7 +191,6 @@ int sanitize_fdholder(resolve_service_t *res, s6_fdholder_t *a, ss_state_t *sta,
         if (!file_write(file, list.s, list.len))
             log_warnusys_return(LOG_EXIT_ZERO, "write file: ", file) ;
 
-        stralloc_free(&list) ;
     }
 
     return 1 ;

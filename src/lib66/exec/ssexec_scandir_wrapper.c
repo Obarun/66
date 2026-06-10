@@ -70,8 +70,8 @@ int ssexec_scandir_wrapper(int argc, char const *const *argv, ssexec_t *info)
                     info->ownerstr[info->ownerlen] = 0 ;
 
                     info->scandir.len = 0 ;
-                    if (!auto_stra(&info->scandir, info->live.s, SS_SCANDIR, "/", info->ownerstr))
-                        log_die_nomem("stralloc") ;
+                    if (!auto_strbuf(&info->scandir, info->live.s, SS_SCANDIR, "/", info->ownerstr))
+                        log_die_nomem("strbuf") ;
 
                     break ;
 

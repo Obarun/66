@@ -17,16 +17,15 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/sastr.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 
 #include <66/constants.h>
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/tree.h>
 
-int resolve_get_field_tosa_g(stralloc *sa, char const *base, char const *name, uint8_t data_type, resolve_enum_table_t table)
+int resolve_get_field_tosa_g(strbuf *sa, char const *base, char const *name, uint8_t data_type, resolve_enum_table_t table)
 {
     log_flow() ;
 
@@ -65,7 +64,7 @@ int resolve_get_field_tosa_g(stralloc *sa, char const *base, char const *name, u
      * */
 
     if (sa->len)
-        if (!sastr_clean_string(sa, sa->s))
+        if (!sbl_clean_string(sa, sa->s))
             goto err ;
 
     e = 1 ;

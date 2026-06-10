@@ -23,14 +23,13 @@
 #include <oblibs/environ.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
-#include <oblibs/sastr.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/files.h>
 #include <oblibs/types.h>
 
 #include <skalibs/bytestr.h>
 #include <skalibs/env.h>
 #include <skalibs/sgetopt.h>
-#include <skalibs/stralloc.h>
 #include <skalibs/exec.h>
 
 #include <66/ssexec.h>
@@ -167,7 +166,7 @@ static int send_signal(char const *scandir, char const *signal)
     return svc_scandir_send(scandir,csig) ;
 }
 
-static void scandir_up(char const *scandir, unsigned int timeout, unsigned int notif, stralloc *env, ssexec_t *info)
+static void scandir_up(char const *scandir, unsigned int timeout, unsigned int notif, strbuf *env, ssexec_t *info)
 {
     uid_t uid = getuid() ;
     gid_t gid = getgid() ;
@@ -220,7 +219,7 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
     unsigned int timeout = 0, notif = 0, sig = 0, container = 0, boot = 0 ;
     char const *signal ;
     char const *userenv = 0 ;
-    _alloc_sa_(env) ;
+    _cleanup_strbuf_ strbuf env = STRBUF_ZERO ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;

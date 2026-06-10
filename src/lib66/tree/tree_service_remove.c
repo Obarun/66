@@ -13,7 +13,7 @@
  */
 
 #include <oblibs/log.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
 
 #include <66/resolve.h>
@@ -34,22 +34,22 @@ void tree_service_remove(char const *base, char const *treename, char const *ser
     if (tres.ncontents) {
 
         size_t clen = strlen(tres.sa.s + tres.contents) ;
-        _alloc_stk_(stk, clen + 1) ;
+        _alloc_sbl_(stk, clen + 1) ;
 
-        if (!stack_string_clean(&stk, tres.sa.s + tres.contents))
+        if (!sbl_clean_string(&stk, tres.sa.s + tres.contents))
             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
-        if (!stack_remove_element_g(&stk, service))
+        if (!sbl_remove(&stk, service))
             log_dieu(LOG_EXIT_SYS, "remove service: ", service, " from selection") ;
 
         if (stk.len) {
 
-            if (!stack_string_rebuild_with_delim(&stk, ' '))
+            if (!sbl_rebuild_with_delim(&stk, ' '))
                 log_dieu(LOG_EXIT_SYS, "convert stack to string") ;
 
             str = stk.s ;
 
-            tres.ncontents = stack_count_element(&stk) ;
+            tres.ncontents = sbl_count(&stk) ;
 
         } else {
 

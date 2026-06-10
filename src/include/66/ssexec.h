@@ -17,34 +17,20 @@
 
 #include <stdint.h>
 
-#include <skalibs/stralloc.h>
+#include <oblibs/types.h>
+
+#include <oblibs/strbuf.h>
 
 #include <66/config.h>
 
 typedef struct ssexec_s ssexec_t , *ssexec_t_ref ;
 struct ssexec_s
 {
-    stralloc base ;
-
-    //char base[SS_MAX_SERVICE] ;
-    //size_t baselen ;
-
-    stralloc live ;
-
-    //char live[SS_MAX_SERVICE] ;
-    //size_t livelen ;
-
-    stralloc scandir ;
-
-    //char scandir[SS_MAX_SERVICE] ;
-    //size_t scandirlen ;
-
-    stralloc treename ;
-
-    //char treename[SS_MAX_SERVICE] ;
-    //size_t treenamelen ;
-
-    stralloc environment ;
+    strbuf base ;
+    strbuf live ;
+    strbuf scandir ;
+    strbuf treename ;
+    strbuf environment ;
 
     uint8_t treeallow ; //1 yes , 0 no
     uid_t owner ;
@@ -64,11 +50,11 @@ struct ssexec_s
     uint8_t skip_opt_tree ; // tree,treename, treeallow will not be set. Also, trees permissions is not checked.
 } ;
 
-#define SSEXEC_ZERO {   .base = STRALLOC_ZERO, \
-                        .live = STRALLOC_ZERO, \
-                        .scandir = STRALLOC_ZERO, \
-                        .treename = STRALLOC_ZERO, \
-                        .environment = STRALLOC_ZERO, \
+#define SSEXEC_ZERO {   .base = STRBUF_ZERO, \
+                        .live = STRBUF_ZERO, \
+                        .scandir = STRBUF_ZERO, \
+                        .treename = STRBUF_ZERO, \
+                        .environment = STRBUF_ZERO, \
                         .treeallow = 0, \
                         .owner = 0, \
                         .ownerstr = { 0 }, \

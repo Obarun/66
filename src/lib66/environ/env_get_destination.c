@@ -13,18 +13,17 @@
  */
 
 #include <string.h>
+#include <unistd.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-
-#include <skalibs/stralloc.h>
-#include <skalibs/djbunix.h>
+#include <oblibs/strbuf.h>
 
 #include <66/environ.h>
 #include <66/constants.h>
 #include <66/service.h>
 
-int env_get_destination(stralloc *sa, resolve_service_t *res)
+int env_get_destination(strbuf *sa, resolve_service_t *res)
 {
     log_flow() ;
 
@@ -34,11 +33,17 @@ int env_get_destination(stralloc *sa, resolve_service_t *res)
 
     auto_strings(sym, conf, SS_SYM_VERSION) ;
 
-    if (sareadlink(sa, sym) == -1)
-        log_warnusys_return(LOG_EXIT_ZERO, "read link of: ", sym) ;
+    {
+        char lnk[SS_MAX_PATH + 1] ;
+        ssize_t lnklen = readlink(sym, lnk, sizeof(lnk) - 1) ;
+        if (lnklen == -1)
+            log_warnusys_return(LOG_EXIT_ZERO, "read link of: ", sym) ;
+        if (!strbuf_copyb(sa, lnk, lnklen))
+            log_warnusys_return(LOG_EXIT_ZERO, "strbuf") ;
+    }
 
-    if (!stralloc_0(sa))
-        log_warnusys_return(LOG_EXIT_ZERO, "stralloc") ;
+    if (!strbuf_terminate(sa))
+        log_warnusys_return(LOG_EXIT_ZERO, "strbuf") ;
 
     return 1 ;
 }

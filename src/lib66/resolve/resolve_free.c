@@ -16,7 +16,7 @@
 
 #include <oblibs/log.h>
 
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/resolve.h>
 #include <66/constants.h>
@@ -29,7 +29,7 @@ void resolve_free(resolve_wrapper_t *wres)
 
     RESOLVE_SET_SAWRES(wres) ;
 
-    stralloc_free(sawres) ;
+    strbuf_free(sawres) ;
 
     free(wres) ;
 }

@@ -17,10 +17,9 @@
 #include <unistd.h> // getuid
 
 #include <oblibs/string.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/log.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/parse.h>
 #include <66/resolve.h>
@@ -30,7 +29,7 @@
 /**
  * @opts -> 1 : build list removing commented optional deps
  * */
-int parse_compute_list(resolve_wrapper_t_ref wres, stack *store, uint32_t *res, uint8_t opts)
+int parse_compute_list(resolve_wrapper_t_ref wres, strbuf *store, uint32_t *res, uint8_t opts)
 {
     log_flow() ;
 
@@ -39,14 +38,14 @@ int parse_compute_list(resolve_wrapper_t_ref wres, stack *store, uint32_t *res, 
 
     int r, found = 0 ;
     size_t len = store->len, pos = 0 ;
-    size_t nelement = stack_count_element(store) ;
-    _alloc_sa_(tmp) ;
+    size_t nelement = sbl_count(store) ;
+    _cleanup_strbuf_ strbuf tmp = STRBUF_ZERO ;
     char const *exclude[2] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1 } ;
     char f[len + nelement + 2] ;
 
     memset(f, 0, (len + nelement + 2) * sizeof(char)) ;
 
-    FOREACH_STK(store, pos) {
+    FOREACH_SBL(store, pos) {
 
         if (store->s[pos] == '#')
             continue ;

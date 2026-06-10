@@ -13,8 +13,7 @@
  */
 
 #include <oblibs/log.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/tree.h>
 
@@ -23,12 +22,11 @@ int tree_seed_isvalid(char const *seed)
     log_flow() ;
 
     int e = 1 ;
-    stralloc src = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf src = STRBUF_ZERO ;
 
     if (!tree_seed_resolve_path(&src, seed))
         e = 0 ;
 
-    stralloc_free(&src) ;
 
     return e ;
 }

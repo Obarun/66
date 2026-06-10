@@ -17,14 +17,13 @@
 
 #include <oblibs/string.h>
 #include <oblibs/log.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
 #include <66/tree.h>
 
-int tree_seed_resolve_path(stralloc *sa, char const *seed)
+int tree_seed_resolve_path(strbuf *sa, char const *seed)
 {
     log_flow() ;
 
@@ -41,8 +40,8 @@ int tree_seed_resolve_path(stralloc *sa, char const *seed)
         if (!set_ownerhome(sa, uid))
             log_warnusys_return(LOG_EXIT_ZERO, "set home directory") ;
 
-        if (!auto_stra(sa, SS_SEED_USERDIR))
-            log_warnsys_return(LOG_EXIT_ZERO, "stralloc") ;
+        if (!auto_strbuf(sa, SS_SEED_USERDIR))
+            log_warnsys_return(LOG_EXIT_ZERO, "strbuf") ;
 
         src = sa->s ;
     }
@@ -70,8 +69,8 @@ int tree_seed_resolve_path(stralloc *sa, char const *seed)
     }
 
     sa->len = 0 ;
-    if (!auto_stra(sa,src, seed))
-        log_warnsys_return(LOG_EXIT_ZERO, "stralloc") ;
+    if (!auto_strbuf(sa,src, seed))
+        log_warnsys_return(LOG_EXIT_ZERO, "strbuf") ;
 
     return 1 ;
 

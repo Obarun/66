@@ -17,8 +17,8 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/stack.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
+#include <oblibs/sbl.h>
 #include <oblibs/directory.h>
 
 #include <skalibs/sgetopt.h>
@@ -32,8 +32,8 @@ int ssexec_snapshot_list(int argc, char const *const *argv, ssexec_t *info)
 
     size_t pos = 0 ;
     char const *exclude[1] = { 0 } ;
-    _alloc_stk_(snapdir, SS_MAX_PATH_LEN) ;
-    _alloc_sa_(sa) ;
+    _alloc_strbuf_(snapdir, SS_MAX_PATH_LEN) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;
@@ -64,7 +64,7 @@ int ssexec_snapshot_list(int argc, char const *const *argv, ssexec_t *info)
         return 0 ;
     }
 
-    if (!sastr_dir_get(&sa, snapdir.s, exclude, S_IFDIR))
+    if (!sbl_dir_get(&sa, snapdir.s, exclude, S_IFDIR))
         log_dieusys(LOG_EXIT_SYS, "list snapshot from: ", snapdir.s) ;
 
     if (!sa.len) {
@@ -74,7 +74,7 @@ int ssexec_snapshot_list(int argc, char const *const *argv, ssexec_t *info)
 
     set_default_msg(0) ;
     set_clock_enable(0) ;
-    FOREACH_SASTR(&sa, pos)
+    FOREACH_SBL(&sa, pos)
         log_info(sa.s + pos) ;
 
     return 0 ;

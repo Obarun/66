@@ -17,7 +17,7 @@
 #include <string.h>
 
 #include <oblibs/log.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 #include <oblibs/hash.h>
 #include <oblibs/string.h>
 
@@ -60,7 +60,7 @@ void sanitize_graph(ssexec_t *info)
             log_dieu(LOG_EXIT_SYS, "get information of service: ", name, " -- please make a bug report") ;
 
         nvertex = v->ndepends >= v->nrequiredby ? v->ndepends : v->nrequiredby ;
-        _alloc_stk_(stk, nvertex * SS_MAX_SERVICE_NAME + 1) ;
+        _alloc_sbl_(stk, nvertex * SS_MAX_SERVICE_NAME + 1) ;
 
         if (v->ndepends) {
 
@@ -74,7 +74,7 @@ void sanitize_graph(ssexec_t *info)
                 c->res.dependencies.depends = parse_compute_list(wres, &stk, &c->res.dependencies.ndepends, 0) ;
         }
 
-        stack_reset(&stk) ;
+        stk.len = 0 ;
 
         if (v->nrequiredby) {
 

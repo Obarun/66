@@ -17,7 +17,8 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/stack.h>
+#include <oblibs/strbuf.h>
+#include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
 
 #include <66/parse.h>
@@ -38,12 +39,13 @@ static int key_isvalid(const char *line, size_t *o, resolve_enum_table_t table)
     key_description_t const *list = table.u.parser.list  ;
 
     lexer_config cfg = LEXER_CONFIG_KEY ;
-    _alloc_stk_(key, strlen(line + (*o) + 1)) ;
+    _alloc_strbuf_(key, strlen(line + (*o) + 1)) ;
     cfg.str = line ;
     cfg.slen = strlen(line) ;
 
-    if (!lexer(&key, &cfg) || !stack_close(&key))
+    if (!lexer(&key, &cfg) || !strbuf_terminate(&key))
         return 0 ;
+    key.len-- ;
 
     if (cfg.found) {
 
@@ -58,7 +60,7 @@ static int key_isvalid(const char *line, size_t *o, resolve_enum_table_t table)
     return 1 ;
 }
 
-int parse_bracket(stack *store, const char *str, resolve_enum_table_t table)
+int parse_bracket(strbuf *store, const char *str, resolve_enum_table_t table)
 {
     log_flow() ;
 
@@ -80,8 +82,9 @@ int parse_bracket(stack *store, const char *str, resolve_enum_table_t table)
     cfg.kclose = 0 ;
     cfg.style = 0 ;
 
-    if (!lexer(store, &cfg))
+    if (!lexer(store, &cfg) || !strbuf_terminate(store))
         return 0 ;
+    store->len-- ;
 
     if (!cfg.found)
         return 0 ;
@@ -326,8 +329,7 @@ int parse_bracket(stack *store, const char *str, resolve_enum_table_t table)
 
     store->len = 0 ;
 
-    if (!stack_add(store, cfg.str + cfg.opos + 1, lvp - (cfg.opos + 1)) ||
-        !stack_close(store))
+    if (!sbl_addb(store, cfg.str + cfg.opos + 1, lvp - (cfg.opos + 1)))
             return 0 ;
 
     return 1 ;

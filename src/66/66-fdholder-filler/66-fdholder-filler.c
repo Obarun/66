@@ -30,7 +30,7 @@
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/tai.h>
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 #include <skalibs/genalloc.h>
 
 #include <66/constants.h>
@@ -77,7 +77,7 @@ static inline char cnext (void)
 }
 
 
-static inline void parse_servicenames (stralloc *sa, genalloc *g)
+static inline void parse_servicenames (strbuf *sa, genalloc *g)
 {
     static uint8_t const table[3][5] = {
 
@@ -96,15 +96,15 @@ static inline void parse_servicenames (stralloc *sa, genalloc *g)
 
         if (c & 4)
             if (!genalloc_append(size_t, g, &sa->len))
-                log_die_nomem("stralloc") ;
+                log_die_nomem("strbuf") ;
 
         if (c & 8) {
-            if (!stralloc_0(sa))
-                log_die_nomem("stralloc") ;
+            if (!strbuf_terminate(sa))
+                log_die_nomem("strbuf") ;
 
         } else {
-            if (!stralloc_catb(sa, &cur, 1))
-                log_die_nomem("stralloc") ;
+            if (!strbuf_catb(sa, &cur, 1))
+                log_die_nomem("strbuf") ;
         }
     }
 }
@@ -112,7 +112,7 @@ static inline void parse_servicenames (stralloc *sa, genalloc *g)
 int main(int argc, char const *const *argv)
 {
     s6_fdholder_t a = S6_FDHOLDER_ZERO ;
-    stralloc sa = STRALLOC_ZERO ;
+    strbuf sa = STRBUF_ZERO ;
     genalloc ga = GENALLOC_ZERO ; // size_t
     size_t n ;
     size_t const *indices ;

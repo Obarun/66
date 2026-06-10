@@ -17,8 +17,7 @@
 #include <pwd.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
-#include <oblibs/stack.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
 
@@ -62,7 +61,7 @@ static int copy_dir(const char *src, char *dst, size_t len, ssexec_t *info)
 
     if (info->owner) {
 
-        _alloc_stk_(home, SS_MAX_PATH_LEN + 1) ;
+        _alloc_strbuf_(home, SS_MAX_PATH_LEN + 1) ;
         size_t homelen = 0 ;
         int e = errno ;
         struct passwd *st = getpwuid(info->owner) ;
@@ -114,8 +113,8 @@ int ssexec_snapshot_create(int argc, char const *const *argv, ssexec_t *info)
     short system = 0 ;
     char const *snapname = 0 ;
     size_t pos = 0, len = 0 ;
-    _alloc_stk_(snapdir, SS_MAX_PATH_LEN) ;
-    _alloc_stk_(src, SS_MAX_PATH_LEN) ;
+    _alloc_strbuf_(snapdir, SS_MAX_PATH_LEN) ;
+    _alloc_strbuf_(src, SS_MAX_PATH_LEN) ;
     snapshot_list_t *list = info->owner ? snapshot_user_list : snapshot_root_list ;
 
     {
@@ -190,7 +189,7 @@ int ssexec_snapshot_create(int argc, char const *const *argv, ssexec_t *info)
         if (!dir_create_parent(src.s, 0755))
             log_dieusys(LOG_EXIT_SYS, "create directory: ", src.s) ;
 
-        _alloc_stk_(system_dir, strlen(SS_SYSTEM_DIR) + SS_SYSTEM_LEN + 1) ;
+        _alloc_strbuf_(system_dir, strlen(SS_SYSTEM_DIR) + SS_SYSTEM_LEN + 1) ;
         auto_strings(system_dir.s, SS_SYSTEM_DIR, SS_SYSTEM) ;
 
         log_trace("copy: ", system_dir.s , " to: ", src.s) ;
@@ -207,7 +206,7 @@ int ssexec_snapshot_create(int argc, char const *const *argv, ssexec_t *info)
         if (!dir_create_parent(src.s, 0755))
             log_dieusys(LOG_EXIT_SYS, "create directory: ", src.s) ;
 
-        _alloc_stk_(system_dir, info->base.len + SS_SYSTEM_LEN + 1) ;
+        _alloc_strbuf_(system_dir, info->base.len + SS_SYSTEM_LEN + 1) ;
         auto_strings(system_dir.s, info->base.s, SS_SYSTEM) ;
 
         log_trace("copy: ", system_dir.s , " to: ", src.s) ;

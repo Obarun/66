@@ -16,8 +16,7 @@
 #include <sys/types.h>//ssize_t
 
 #include <oblibs/log.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/resolve.h>
 #include <66/constants.h>
@@ -33,16 +32,16 @@ ssize_t resolve_add_string(resolve_wrapper_t *wres, char const *data)
 
     if (!data) {
 
-        if (!stralloc_catb(sawres,"",1))
-            log_warnusys_return(LOG_EXIT_LESSONE,"stralloc") ;
+        if (!strbuf_catb(sawres,"",1))
+            log_warnusys_return(LOG_EXIT_LESSONE,"strbuf") ;
 
         return baselen ;
     }
 
     size_t datalen = strlen(data) ;
 
-    if (!stralloc_catb(sawres,data,datalen + 1))
-        log_warnusys_return(LOG_EXIT_LESSONE,"stralloc") ;
+    if (!strbuf_catb(sawres,data,datalen + 1))
+        log_warnusys_return(LOG_EXIT_LESSONE,"strbuf") ;
 
     return baselen ;
 }

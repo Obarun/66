@@ -16,7 +16,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
 
 #include <66/parse.h>
@@ -54,9 +54,8 @@ int parse_section_environment(resolve_service_t *res, const char *str)
         r = 0 ;
     r++ ;
     size_t len = strlen(str + r) ;
-    _alloc_stk_(store, len + 1) ;
-    if (!stack_copy_g(&store, str + r) ||
-        !stack_close(&store))
+    _alloc_sbl_(store, len + 1) ;
+    if (!sbl_add(&store, str + r))
         log_warnu_return(LOG_EXIT_ZERO, "stack overflow") ;
 
     resolve_enum_table_t table = E_TABLE_PARSER_SECTION_ENVIRON_ZERO ;
@@ -90,7 +89,7 @@ int parse_section(resolve_service_t *res, char const *str, resolve_enum_table_t 
     kcfg.str = str ;
     kcfg.slen = strlen(str) ;
 
-    _alloc_stk_(key, kcfg.slen + 1) ;
+    _alloc_sbl_(key, kcfg.slen + 1) ;
 
     log_trace("parsing section: ", secname) ;
 
@@ -110,7 +109,7 @@ int parse_section(resolve_service_t *res, char const *str, resolve_enum_table_t 
 
         if (kcfg.found) {
 
-            _alloc_stk_(store, kcfg.slen + 1) ;
+            _alloc_sbl_(store, kcfg.slen + 1) ;
 
             if (!parse_value(&store, &kcfg, table))
                 log_warnu_return(LOG_EXIT_ZERO, "get value of key: ", key.s) ;

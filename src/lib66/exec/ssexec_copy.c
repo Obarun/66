@@ -14,8 +14,7 @@
 
 #include <oblibs/string.h>
 #include <oblibs/log.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/ssexec.h>
 
@@ -23,10 +22,10 @@ void ssexec_copy(ssexec_t *dest, ssexec_t *src)
 {
     log_flow() ;
 
-    auto_stra(&dest->base, src->base.s) ;
-    auto_stra(&dest->live, src->live.s) ;
-    auto_stra(&dest->scandir, src->scandir.s) ;
-    auto_stra(&dest->treename, src->treename.s) ;
+    auto_strbuf(&dest->base, src->base.s) ;
+    auto_strbuf(&dest->live, src->live.s) ;
+    auto_strbuf(&dest->scandir, src->scandir.s) ;
+    auto_strbuf(&dest->treename, src->treename.s) ;
 
     dest->treeallow = src->treeallow ;
     dest->owner = src->owner ;

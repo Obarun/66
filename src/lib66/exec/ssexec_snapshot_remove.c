@@ -16,7 +16,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/stack.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/directory.h>
 
 #include <skalibs/sgetopt.h>
@@ -29,7 +29,7 @@ int ssexec_snapshot_remove(int argc, char const *const *argv, ssexec_t *info)
     log_flow() ;
 
     char const *snapname = 0 ;
-    _alloc_stk_(snapdir, SS_MAX_PATH_LEN) ;
+    _alloc_strbuf_(snapdir, SS_MAX_PATH_LEN) ;
 
     {
         subgetopt l = SUBGETOPT_ZERO ;

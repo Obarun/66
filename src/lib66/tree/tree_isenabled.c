@@ -14,9 +14,6 @@
 
 #include <oblibs/string.h>
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
-
-#include <skalibs/stralloc.h>
 
 #include <66/constants.h>
 #include <66/resolve.h>

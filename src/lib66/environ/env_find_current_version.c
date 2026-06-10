@@ -14,17 +14,16 @@
 
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-
-#include <skalibs/stralloc.h>
-#include <skalibs/djbunix.h>
+#include <oblibs/strbuf.h>
 
 #include <66/environ.h>
 #include <66/constants.h>
 
-int env_find_current_version(stralloc *sa,char const *svconf)
+int env_find_current_version(strbuf *sa,char const *svconf)
 {
     log_flow() ;
 
@@ -38,11 +37,17 @@ int env_find_current_version(stralloc *sa,char const *svconf)
     if (lstat(tmp,&st) == -1)
         return 0 ;
 
-    if (sareadlink(sa,tmp) == -1)
-        return -1 ;
+    {
+        char lnk[SS_MAX_PATH + 1] ;
+        ssize_t lnklen = readlink(tmp, lnk, sizeof(lnk) - 1) ;
+        if (lnklen == -1)
+            return -1 ;
+        if (!strbuf_copyb(sa, lnk, lnklen))
+            return -1 ;
+    }
 
-    if (!stralloc_0(sa))
-        log_warnusys_return(LOG_EXIT_ZERO,"stralloc") ;
+    if (!strbuf_terminate(sa))
+        log_warnusys_return(LOG_EXIT_ZERO,"strbuf") ;
 
     return 1 ;
 }

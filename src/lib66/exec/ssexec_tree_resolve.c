@@ -16,14 +16,11 @@
 #include <wchar.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
-#include <oblibs/stack.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/types.h>
 #include <oblibs/stream.h>
-
-#include <skalibs/stralloc.h>
 
 #include <66/resolve.h>
 #include <66/ssexec.h>
@@ -114,8 +111,8 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
 
     if (treename[0] == '/') {
 
-        _alloc_stk_(basename, strlen(treename) + 1) ;
-        _alloc_stk_(dirname, strlen(treename) + 1) ;
+        _alloc_strbuf_(basename, strlen(treename) + 1) ;
+        _alloc_strbuf_(dirname, strlen(treename) + 1) ;
 
         if (!ob_basename(basename.s, treename))
             log_dieusys(LOG_EXIT_SYS, "get basename of: ", treename) ;

@@ -19,12 +19,12 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/utils.h>
 #include <66/constants.h>
 
-int set_ownerhome(stralloc *base,uid_t owner)
+int set_ownerhome(strbuf *base,uid_t owner)
 {
     log_flow() ;
 
@@ -41,8 +41,8 @@ int set_ownerhome(stralloc *base,uid_t owner)
     errno = e ;
     if (!user_home) return 0 ;
 
-    if (!auto_stra(base,user_home, "/"))
-        log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+    if (!auto_strbuf(base,user_home, "/"))
+        log_warnsys_return(LOG_EXIT_ZERO,"strbuf") ;
 
     return 1 ;
 }

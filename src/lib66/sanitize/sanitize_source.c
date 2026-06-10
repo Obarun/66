@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <oblibs/strbuf.h>
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
@@ -75,15 +76,15 @@ void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)
         if (sta.toparse == STATE_FLAGS_TRUE) {
 
             uint32_t opstree = info->opt_tree ;
-            _alloc_stk_(stk, info->treename.len + 1) ;
+            _alloc_strbuf_(stk, info->treename.len + 1) ;
             auto_strings(stk.s, info->treename.s) ;
 
             if (!info->opt_tree) {
 
                 info->treename.len = 0 ;
 
-                if (!auto_stra(&info->treename, res.sa.s + res.treename))
-                    log_die_nomem("stralloc") ;
+                if (!auto_strbuf(&info->treename, res.sa.s + res.treename))
+                    log_die_nomem("strbuf") ;
 
                 info->opt_tree = 1 ;
             }
@@ -100,8 +101,8 @@ void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)
 
             if (!opstree) {
                 info->treename.len = 0 ;
-                if (!auto_stra(&info->treename, stk.s))
-                    log_die_nomem("stralloc") ;
+                if (!auto_strbuf(&info->treename, stk.s))
+                    log_die_nomem("strbuf") ;
                 info->opt_tree = opstree ;
             }
         }

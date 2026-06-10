@@ -16,10 +16,9 @@
 #include <unistd.h> // getuid
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/string.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
@@ -36,20 +35,20 @@ int parse_interdependences(char const *service, char const *list, unsigned int l
 
     int r, e = 0 ;
     size_t pos = 0, len = 0 ;
-    stralloc sa = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     uint8_t exlen = 3 ;
     char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, SS_MODULE_CONFIG_DIR } ;
 
     if (listlen) {
 
-        if (!sastr_clean_string(&sa, list)) {
+        if (!sbl_clean_string(&sa, list)) {
             log_warnu("clean the string") ;
             goto freed ;
         }
 
         char t[sa.len + 1] ;
 
-        sastr_to_char(t, &sa) ;
+        sbl_to_char(t, &sa) ;
 
         len = sa.len ;
 
@@ -85,8 +84,6 @@ int parse_interdependences(char const *service, char const *list, unsigned int l
                 goto freed ;
             }
 
-            if (!stralloc_0(&sa))
-                log_die_nomem("stralloc") ;
 
             /** nothing to do with the exit code.
              * forced_directory == 0 means that the service
@@ -101,6 +98,5 @@ int parse_interdependences(char const *service, char const *list, unsigned int l
     e = 1 ;
 
     freed:
-        stralloc_free(&sa) ;
         return e ;
 }

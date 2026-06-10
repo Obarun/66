@@ -16,12 +16,11 @@
 
 #include <oblibs/log.h>
 #include <oblibs/stream.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/info.h>
 
-void info_display_list(char const *field, stralloc *list)
+void info_display_list(char const *field, strbuf *list)
 {
     log_flow() ;
 

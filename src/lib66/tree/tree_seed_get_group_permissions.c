@@ -16,8 +16,7 @@
 #include <string.h>
 
 #include <oblibs/log.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/tree.h>
 
@@ -28,7 +27,7 @@ int tree_seed_get_group_permissions(tree_seed_t *seed)
     int e = 0 ;
     uid_t uid = getuid() ;
 
-    stralloc sv = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf sv = STRBUF_ZERO ;
 
     char *groups = seed->sa.s + seed->groups ;
 
@@ -51,6 +50,5 @@ int tree_seed_get_group_permissions(tree_seed_t *seed)
 
     e = 1 ;
     err:
-        stralloc_free(&sv) ;
         return e ;
 }

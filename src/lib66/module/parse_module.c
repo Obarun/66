@@ -18,11 +18,11 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/directory.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/module.h>
 #include <66/resolve.h>
@@ -31,7 +31,7 @@
 #include <66/service.h>
 #include <66/ssexec.h>
 
-static void parse_module_dependencies(stralloc *list, resolve_service_t *res, uint8_t requiredby, struct resolve_hash_s **hres, uint8_t force, uint8_t conf, ssexec_t *info)
+static void parse_module_dependencies(strbuf *list, resolve_service_t *res, uint8_t requiredby, struct resolve_hash_s **hres, uint8_t force, uint8_t conf, ssexec_t *info)
 {
     log_flow() ;
 
@@ -41,8 +41,8 @@ static void parse_module_dependencies(stralloc *list, resolve_service_t *res, ui
     char *name = res->sa.s + res->name ;
     size_t pos = 0 ;
     uint8_t opt_tree = info->opt_tree ;
-    _alloc_stk_(stk, list->len + 1) ;
-    _alloc_sa_(sa) ;
+    _alloc_sbl_(stk, list->len + 1) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     uint32_t *field = !requiredby ? &res->dependencies.depends : &res->dependencies.requiredby ;
     uint32_t *nfield = !requiredby ? &res->dependencies.ndepends : &res->dependencies.nrequiredby ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
@@ -51,7 +51,7 @@ static void parse_module_dependencies(stralloc *list, resolve_service_t *res, ui
 
     info->opt_tree = 0 ;
 
-    FOREACH_SASTR(list, pos) {
+    FOREACH_SBL(list, pos) {
 
         sa.len = 0 ;
         char fname[strlen(list->s + pos)] ;
@@ -66,7 +66,7 @@ static void parse_module_dependencies(stralloc *list, resolve_service_t *res, ui
         if (!service_frontend_path(&sa, fname, info->owner, 0, exclude, exlen))
             log_dieu(LOG_EXIT_USER, "find service frontend file of: ", fname) ;
 
-        if (!stack_add_g(&stk, fname))
+        if (!sbl_add(&stk, fname))
             log_dieusys(LOG_EXIT_SYS, "handle service dependencies list") ;
 
         (*nfield)++ ;
@@ -77,10 +77,7 @@ static void parse_module_dependencies(stralloc *list, resolve_service_t *res, ui
 
     info->opt_tree = opt_tree ;
 
-    if (!stack_close(&stk))
-        log_dieusys(LOG_EXIT_SYS, "close stack") ;
-
-    if (!stack_string_rebuild_with_delim(&stk, ' '))
+    if (!sbl_rebuild_with_delim(&stk, ' '))
         log_dieusys(LOG_EXIT_SYS, "rebuild stack list") ;
 
     if (*nfield) {
@@ -103,7 +100,7 @@ static void parse_module_regex(resolve_service_t *res, char *dir, size_t copylen
     log_flow() ;
 
     char *name = res->sa.s + res->name ;
-    _alloc_sa_(list) ;
+    _cleanup_strbuf_ strbuf list = STRBUF_ZERO ;
 
     /** contents */
     {
@@ -141,8 +138,8 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
     uint8_t opt_tree = info->opt_tree, conf = res->environ.env_overwrite ;
     char name[namelen + 1] ;
     char dirname[strlen(res->sa.s + res->path.frontend) + 1] ;
-    _alloc_sa_(sa) ;
-    _alloc_stk_(tmpdir, namelen + 12 + strlen(SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) + 1 + SS_MAX_SERVICE_NAME + 1) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
+    _alloc_strbuf_(tmpdir, namelen + 12 + strlen(SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) + 1 + SS_MAX_SERVICE_NAME + 1) ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     auto_strings(name,res->sa.s + res->name) ;
@@ -201,7 +198,7 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
         size_t len = sa.len ;
         uint8_t exlen = 0 ; // see service_frontend_path file and compute_exclude()
         char const *exclude[1] = { 0 } ;
-        _alloc_stk_(stk, len + 1) ;
+        _alloc_sbl_(stk, len + 1) ;
         char ebase[tmplen + 1] ;
         memcpy(ebase, tmpdir.s, tmplen) ;
         ebase[tmplen] = 0 ;
@@ -212,10 +209,10 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
         if (!ob_basename(ebase, ebase))
             log_dieusys(LOG_EXIT_SYS, "get basename of: ", dirname) ;
 
-        if (!stack_copy(&stk, sa.s, sa.len))
+        if (!strbuf_copyb(&stk, sa.s, sa.len))
             log_die_nomem("stack") ;
 
-        FOREACH_STK(&stk, pos) {
+        FOREACH_SBL(&stk, pos) {
 
             sa.len = 0 ;
             char fname[strlen(stk.s + pos) + 1] ;
@@ -246,8 +243,8 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
 
             info->opt_tree = 1 ;
             info->treename.len = 0 ;
-            if (!auto_stra(&info->treename, res->sa.s + res->treename))
-                log_die_nomem("stralloc") ;
+            if (!auto_strbuf(&info->treename, res->sa.s + res->treename))
+                log_die_nomem("strbuf") ;
 
             parse_frontend(sa.s, hres, info, force, conf, tmpdir.s, fname, name, res->intree ? res->sa.s + res->intree : 0, res) ;
 

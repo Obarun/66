@@ -16,7 +16,8 @@
 #include <sys/stat.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/string.h>
 
 #include <66/ssexec.h>
@@ -27,13 +28,13 @@ uint32_t service_graph_build_system(service_graph_t *g, ssexec_t *info, uint32_t
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     char const *exclude[1] = { 0 } ;
     char solve[info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1] ;
 
     auto_strings(solve, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE) ;
 
-    if (!sastr_dir_get_recursive(&sa, solve, exclude, S_IFLNK, 0))
+    if (!sbl_dir_get_recursive(&sa, solve, exclude, S_IFLNK, 0))
         log_warnu_return(LOG_EXIT_ZERO, "get resolve files") ;
 
     return service_graph_build_list(g, sa.s, sa.len, info, flag) ;

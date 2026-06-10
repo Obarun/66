@@ -15,7 +15,7 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 #include <oblibs/string.h>
 #include <oblibs/lexer.h>
 
@@ -33,25 +33,25 @@ static void service_db_tree(resolve_service_t *old, resolve_service_t *new, ssex
     char *ncontents = new->sa.s + new->dependencies.contents ;
 
     size_t pos = 0, olen = strlen(ocontents) ;
-    _alloc_stk_(sremove, olen + 1) ;
+    _alloc_sbl_(sremove, olen + 1) ;
 
     {
-        _alloc_stk_(sold, olen + 1) ;
+        _alloc_sbl_(sold, olen + 1) ;
 
-        if (!stack_string_clean(&sold, ocontents))
+        if (!sbl_clean_string(&sold, ocontents))
             log_dieusys(LOG_EXIT_SYS, "convert string") ;
 
         if (new->dependencies.ncontents) {
 
             size_t nlen = strlen(ncontents) ;
-            _alloc_stk_(snew, nlen + 1) ;
+            _alloc_sbl_(snew, nlen + 1) ;
 
-            if (!stack_string_clean(&snew, ncontents))
+            if (!sbl_clean_string(&snew, ncontents))
                 log_dieusys(LOG_EXIT_SYS, "convert string") ;
 
-            FOREACH_STK(&sold, pos) {
-                if (stack_retrieve_element(&snew, sold.s + pos) < 0) {
-                    if (!stack_add_g(&sremove, sold.s + pos))
+            FOREACH_SBL(&sold, pos) {
+                if (sbl_search(&snew, sold.s + pos) < 0) {
+                    if (!sbl_add(&sremove, sold.s + pos))
                         log_dieu(LOG_EXIT_SYS, "add string") ;
                 }
             }
@@ -61,7 +61,7 @@ static void service_db_tree(resolve_service_t *old, resolve_service_t *new, ssex
     if (sremove.len) {
 
         unsigned int m = 0 ;
-        int nargc = 3 + sremove.count  ;
+        int nargc = 3 + sbl_count(&sremove)  ;
         char const *prog = PROG ;
         char const *newargv[nargc] ;
 
@@ -75,7 +75,7 @@ static void service_db_tree(resolve_service_t *old, resolve_service_t *new, ssex
         newargv[m++] = "-Pf" ;
 
         pos = 0 ;
-        FOREACH_STK(&sremove, pos) {
+        FOREACH_SBL(&sremove, pos) {
 
             char *name = sremove.s + pos ;
               if (get_rstrlen_until(name, SS_LOG_SUFFIX) < 0)

@@ -16,19 +16,18 @@
 #include <string.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 
 #include <66/module.h>
 
-void get_list(stralloc *list, char const *src, char const *name, mode_t mode, char const **exclude)
+void get_list(strbuf *list, char const *src, char const *name, mode_t mode, char const **exclude)
 {
     log_flow() ;
 
     list->len = 0 ;
 
-    if (!sastr_dir_get_recursive(list, src, exclude, mode, 1))
+    if (!sbl_dir_get_recursive(list, src, exclude, mode, 1))
         log_dieusys(LOG_EXIT_SYS,"get files of module: ", name) ;
 
 }

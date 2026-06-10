@@ -25,7 +25,7 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 #include <skalibs/skamisc.h>
 
 #include <66/config.h>
@@ -47,7 +47,7 @@ int main (int argc, char const *const *argv)
     if (tmpdir[len-1] == '/')
         tmpdir[len-1] = 0 ;
     unsigned int got[EXCLUDEN] = { 0, 0, 0 } ;
-    stralloc sa = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     unsigned int line = 0 ;
     FILE *fp = setmntent("/proc/mounts", "r") ;
     int e = 0 ;
@@ -76,7 +76,7 @@ int main (int argc, char const *const *argv)
         if (line >= MAXLINES)
             log_die(100, "too many mount points") ;
         mountpoints[line++] = sa.len ;
-        if (!stralloc_cats(&sa, p->mnt_dir) || !stralloc_0(&sa))
+        if (!strbuf_cats(&sa, p->mnt_dir) || !strbuf_terminate(&sa))
             log_dieusys(LOG_EXIT_SYS, "add mount point to list") ;
     }
     if (errno) log_dieusys(LOG_EXIT_SYS, "read /proc/mounts") ;
@@ -90,7 +90,6 @@ int main (int argc, char const *const *argv)
             log_warnusys("umount ", sa.s + mountpoints[line]) ;
         }
     }
-    stralloc_free(&sa) ;
 
     return e ;
 }

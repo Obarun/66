@@ -14,20 +14,21 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/stack.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/lexer.h>
 
 #include <66/parse.h>
 #include <66/enum.h>
 
-int parse_key(stack *key, lexer_config *cfg, resolve_enum_table_t table)
+int parse_key(strbuf *key, lexer_config *cfg, resolve_enum_table_t table)
 {
     log_flow() ;
 
     int kid = -1, next = -1 ;
 
-    if (!lexer(key, cfg) || !stack_close(key))
+    if (!lexer(key, cfg) || !strbuf_terminate(key))
         return -1 ;
+    key->len-- ;
 
     if (cfg->found) {
         kid = key_to_enum(table.u.parser.list, key->s) ;

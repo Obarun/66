@@ -12,6 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <unistd.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <string.h>
@@ -21,13 +23,13 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/directory.h>
 #include <oblibs/types.h>
 #include <oblibs/fd.h>
 #include <oblibs/io.h>
+#include <oblibs/strbuf.h>
 
-#include <skalibs/stralloc.h>
 #include <skalibs/unix-transactional.h>
 
 #include <66/service.h>
@@ -77,8 +79,8 @@ int write_common(resolve_service_t *res, char const *dst, uint8_t force)
     /** environment for module is already written by the regex_configure() function */
     if (res->environ.env && res->type != E_PARSER_TYPE_MODULE) {
 
-        stralloc dst = STRALLOC_ZERO ;
-        stralloc contents = STRALLOC_ZERO ;
+        _cleanup_strbuf_ strbuf dst = STRBUF_ZERO ;
+        _cleanup_strbuf_ strbuf contents = STRBUF_ZERO ;
         char name[strlen(res->sa.s + res->name) + 2] ;
         auto_strings(name, ".", res->sa.s + res->name) ;
 
@@ -88,8 +90,6 @@ int write_common(resolve_service_t *res, char const *dst, uint8_t force)
         if (!write_environ(name, contents.s, dst.s))
             log_warnusys_return(LOG_EXIT_ZERO, "write environment for: ", res->sa.s + res->name) ;
 
-        stralloc_free(&dst) ;
-        stralloc_free(&contents) ;
     }
 
     /** hierarchy copy */
@@ -97,7 +97,7 @@ int write_common(resolve_service_t *res, char const *dst, uint8_t force)
 
         int r ;
         size_t pos = 0 ;
-        stralloc sa = STRALLOC_ZERO ;
+        _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
         char *src = res->sa.s + res->path.frontend ;
         size_t srclen = strlen(src), dstlen = strlen(dst) ;
         char basedir[srclen + 1] ;
@@ -105,10 +105,10 @@ int write_common(resolve_service_t *res, char const *dst, uint8_t force)
         if (!ob_dirname(basedir, src))
             log_warnusys_return(LOG_EXIT_ZERO, "get dirname of: ", src) ;
 
-        if (!sastr_clean_string(&sa, res->sa.s + res->copyfrom))
+        if (!sbl_clean_string(&sa, res->sa.s + res->copyfrom))
             log_warnusys_return(LOG_EXIT_ZERO, "clean string") ;
 
-        FOREACH_SASTR(&sa, pos) {
+        FOREACH_SBL(&sa, pos) {
 
             char *what = sa.s + pos ;
             int fd ;
@@ -184,7 +184,6 @@ int write_common(resolve_service_t *res, char const *dst, uint8_t force)
                 log_warnusys_return(LOG_EXIT_ZERO, "copy: ", tmp, " to: ", dest) ;
         }
 
-        stralloc_free(&sa) ;
     }
 
     /** run file */

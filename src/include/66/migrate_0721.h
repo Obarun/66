@@ -160,7 +160,7 @@
  struct resolve_service_s_0721
  {
      uint32_t salen ;
-     stralloc sa ;
+     strbuf sa ;
 
      // configuration
      uint32_t name ; // string
@@ -189,7 +189,7 @@
 
  } ;
 
- #define RESOLVE_SERVICE_ZERO_0721 { 0,STRALLOC_ZERO, \
+ #define RESOLVE_SERVICE_ZERO_0721 { 0,STRBUF_ZERO, \
                                 0,0,0,0,0,5,0,0,0,0,0,0,0,0,0, \
                                 RESOLVE_SERVICE_ADDON_PATH_ZERO_0721, \
                                 RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO_0721, \

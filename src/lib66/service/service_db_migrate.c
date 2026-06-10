@@ -16,20 +16,20 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 #include <oblibs/log.h>
 #include <oblibs/lexer.h>
-#include <oblibs/sastr.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/string.h>
 
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/service.h>
 #include <66/resolve.h>
 #include <66/utils.h>
 #include <66/parse.h>
 
-static void get_frontend_list(stralloc *sa, const char *name, const char *frontend, bool requiredby)
+static void get_frontend_list(strbuf *sa, const char *name, const char *frontend, bool requiredby)
 {
     resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &dres) ;
@@ -50,7 +50,7 @@ static void get_frontend_list(stralloc *sa, const char *name, const char *fronte
     if (!identifier_replace(sa, name))
         log_dieu(LOG_EXIT_SYS, "replace regex for service: ", frontend) ;
 
-     _alloc_stk_(stk, sa->len + 1) ;
+     _alloc_sbl_(stk, sa->len + 1) ;
 
     /** field may not exist*/
     if (!parse_get_value_of_key(&stk, sa->s, table)) {
@@ -59,8 +59,6 @@ static void get_frontend_list(stralloc *sa, const char *name, const char *fronte
         return ;
     }
 
-    if (!stack_close(&stk))
-        log_die_nomem("stack overflow") ;
 
     table.u.parser.id = requiredby ? E_PARSER_SECTION_MAIN_REQUIREDBY :  E_PARSER_SECTION_MAIN_DEPENDS ;
 
@@ -69,7 +67,7 @@ static void get_frontend_list(stralloc *sa, const char *name, const char *fronte
 
     sa->len = 0 ;
     if ((requiredby ? dres.dependencies.nrequiredby : dres.dependencies.ndepends))
-       if (!sastr_clean_string(sa, dres.sa.s + (requiredby ? dres.dependencies.requiredby : dres.dependencies.depends)))
+       if (!sbl_clean_string(sa, dres.sa.s + (requiredby ? dres.dependencies.requiredby : dres.dependencies.depends)))
            log_dieusys(LOG_EXIT_SYS,"clean the string") ;
 
     resolve_free(wres) ;
@@ -86,27 +84,27 @@ void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char con
 
     if (*onfield) {
 
-        _alloc_sa_(frontend) ; _alloc_sa_(dfront) ;
+        _cleanup_strbuf_ strbuf frontend = STRBUF_ZERO ; _cleanup_strbuf_ strbuf dfront = STRBUF_ZERO ;
         size_t pos = 0, olen = strlen(old->sa.s + *ofield) ;
-        _alloc_stk_(sold, olen + 1) ;
+        _alloc_sbl_(sold, olen + 1) ;
         size_t clen = strlen(new->sa.s + *nfield) ;
-        _alloc_stk_(snew, clen + 1) ;
+        _alloc_sbl_(snew, clen + 1) ;
         resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
         resolve_wrapper_t_ref dwres = resolve_set_struct(DATA_SERVICE, &dres) ;
         int r ;
 
         get_frontend_list(&frontend, old->sa.s + old->name, old->sa.s + old->path.frontend, (!requiredby ? false : true)) ;
 
-        if (!stack_string_clean(&sold, old->sa.s + *ofield))
+        if (!sbl_clean_string(&sold, old->sa.s + *ofield))
             log_dieusys(LOG_EXIT_SYS, "convert string") ;
 
         /** new module configuration depends field may be empty.*/
         if (clen)
-            if (!stack_string_clean(&snew, new->sa.s + *nfield))
+            if (!sbl_clean_string(&snew, new->sa.s + *nfield))
                 log_dieusys(LOG_EXIT_SYS, "convert string") ;
 
         /** check if the service was deactivated.*/
-        FOREACH_STK(&sold, pos) {
+        FOREACH_SBL(&sold, pos) {
 
             dfront.len = 0 ;
             char *dname = sold.s + pos ;
@@ -120,7 +118,7 @@ void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char con
 
             get_frontend_list(&dfront, dres.sa.s + dres.name, dres.sa.s + dres.path.frontend, (!requiredby ? false : true)) ;
 
-            if ((stack_retrieve_element(&snew, dname) < 0 || !clen) && sastr_cmp(&frontend, dname) < 0 && sastr_cmp(&dfront, old->sa.s + old->name) < 0) {
+            if ((sbl_search(&snew, dname) < 0 || !clen) && sbl_search(&frontend, dname) < 0 && sbl_search(&dfront, old->sa.s + old->name) < 0) {
 
                 uint32_t *dfield = requiredby ? &dres.dependencies.depends : &dres.dependencies.requiredby ;
                 uint32_t *dnfield = requiredby ? &dres.dependencies.ndepends : &dres.dependencies.nrequiredby ;
@@ -128,20 +126,20 @@ void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char con
                 if (*dnfield) {
 
                     size_t len = strlen(dres.sa.s + *dfield) ;
-                    _alloc_stk_(stk, len + 1) ;
+                    _alloc_sbl_(stk, len + 1) ;
 
-                    if (!stack_string_clean(&stk, dres.sa.s + *dfield))
+                    if (!sbl_clean_string(&stk, dres.sa.s + *dfield))
                         log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
                     /** remove the module name to the depends field of the old service dependency*/
-                    if (!stack_remove_element_g(&stk, new->sa.s + new->name))
+                    if (!sbl_remove(&stk, new->sa.s + new->name))
                         log_dieusys(LOG_EXIT_SYS, "remove element") ;
 
-                    (*dnfield) = (uint32_t)stack_count_element(&stk) ;
+                    (*dnfield) = (uint32_t)sbl_count(&stk) ;
 
                     if (*dnfield) {
 
-                        if (!stack_string_rebuild_with_delim(&stk, ' '))
+                        if (!sbl_rebuild_with_delim(&stk, ' '))
                             log_dieusys(LOG_EXIT_SYS, "convert stack to string") ;
 
                         (*dfield) = resolve_add_string(dwres, stk.s) ;

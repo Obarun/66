@@ -15,11 +15,12 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
+#include <oblibs/strbuf.h>
 
 #include <66/tree.h>
 #include <66/enum_tree.h>
 
-int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree_enum_table_t table)
+int tree_resolve_get_field_tosa(strbuf *sa, resolve_tree_t *tres, resolve_tree_enum_table_t table)
 {
     log_flow() ;
 
@@ -101,7 +102,7 @@ int tree_resolve_get_field_tosa(stralloc *sa, resolve_tree_t *tres, resolve_tree
             return 0 ;
     }
 
-    if (!auto_stra(sa,str))
+    if (!auto_strbuf(sa,str))
         return 0 ;
 
     return 1 ;

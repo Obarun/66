@@ -12,7 +12,7 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-// #include <sys/stat.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -117,8 +117,8 @@ int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
     info->treename.len = 0 ;
 
     if (argv[1]) {
-        if (!auto_stra(&info->treename, argv[1]))
-            log_die_nomem("stralloc") ;
+        if (!auto_strbuf(&info->treename, argv[1]))
+            log_die_nomem("strbuf") ;
     }
 
     what = parse_signal(*argv, info) ;

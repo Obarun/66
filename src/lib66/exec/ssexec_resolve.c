@@ -17,14 +17,12 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
-#include <oblibs/stack.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/types.h>
 #include <oblibs/stream.h>
 
-#include <skalibs/stralloc.h>
 #include <skalibs/sgetopt.h>
 
 #include <66/resolve.h>
@@ -369,8 +367,8 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
 
     if (svname[0] == '/') {
 
-        _alloc_stk_(basename, strlen(svname) + 1) ;
-        _alloc_stk_(dirname, strlen(svname) + 1) ;
+        _alloc_strbuf_(basename, strlen(svname) + 1) ;
+        _alloc_strbuf_(dirname, strlen(svname) + 1) ;
 
         if (!ob_basename(basename.s, svname))
             log_dieu(LOG_EXIT_SYS, "get basename of: ", svname) ;

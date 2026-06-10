@@ -30,7 +30,7 @@
 #include <oblibs/files.h>
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 #include <oblibs/types.h>
 #include <oblibs/clock.h>
 #include <oblibs/fd.h>
@@ -147,9 +147,9 @@ static void parse_conf(char const *confile,char *rcshut,char const *key)
     log_flow() ;
 
     size_t filesize = file_get_size(confile) ;
-    _alloc_stk_(stk, filesize + 1) ;
-    _alloc_stk_(val, filesize + 1) ;
-    if (!stack_read_file(&stk, confile))
+    _alloc_strbuf_(stk, filesize + 1) ;
+    _alloc_sbl_(val, filesize + 1) ;
+    if (!strbuf_read_file(&stk, confile))
         log_dieusys(LOG_EXIT_SYS,"read file: ",confile) ;
     if (environ_search_value(&val, stk.s, key)) {
         memcpy(rcshut,val.s,val.len) ;
@@ -176,7 +176,7 @@ static inline void run_rcshut (void)
         if (WIFSIGNALED(wstat))
             flog_warn(rcshut, " was killed by signal %d", WTERMSIG(wstat)) ;
         else if (WEXITSTATUS(wstat))
-            log_warn(rcshut, " exited %d", WEXITSTATUS(wstat)) ;
+            flog_warn("%s exited %d", rcshut, WEXITSTATUS(wstat)) ;
     }
     else log_warnusys("spawn ", rcshut) ;
 }
@@ -249,7 +249,7 @@ static inline void prepare_stage4 (char what)
     if (inns) {
 
         char s[2] = { what, '\n' } ;
-        _alloc_stk_(stk, 30) ;
+        _alloc_strbuf_(stk, 30) ;
         char ownerstr[UID_FMT] ;
         size_t olen = uid_format(ownerstr, getuid()), livelen = strlen(live) ;
         char tmp[livelen + SS_BOOT_CONTAINER_DIR_LEN + 1 + olen + 1 + SS_BOOT_CONTAINER_HALTFILE_LEN + 1] ;

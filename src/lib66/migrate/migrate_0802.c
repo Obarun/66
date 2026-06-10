@@ -17,8 +17,8 @@
 #include <sys/stat.h>
 #include <string.h>
 
-#include <oblibs/sastr.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/string.h>
 #include <oblibs/log.h>
 #include <oblibs/types.h>
@@ -298,7 +298,7 @@ static void migrate_service_0802(void)
     size_t pos = 0 ;
     char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, 0 } ;
     ssexec_t info = SSEXEC_ZERO ;
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
     info.owner = getuid() ;
     info.ownerlen = uid_format(info.ownerstr, info.owner) ;
@@ -309,14 +309,14 @@ static void migrate_service_0802(void)
 
     set_info(&info) ;
 
-    _alloc_stk_(path, info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME + SS_RESOLVE_LEN + 1 + 1) ;
+    _alloc_strbuf_(path, info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME + SS_RESOLVE_LEN + 1 + 1) ;
     auto_strings(path.s, info.base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/") ;
     size_t len = info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 ;
 
-    if (!sastr_dir_get_recursive(&sa, path.s, exclude, S_IFLNK, 0))
+    if (!sbl_dir_get_recursive(&sa, path.s, exclude, S_IFLNK, 0))
         log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
-    FOREACH_SASTR(&sa, pos) {
+    FOREACH_SBL(&sa, pos) {
 
         char *name = sa.s + pos ;
 

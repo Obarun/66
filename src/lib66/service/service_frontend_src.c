@@ -16,22 +16,21 @@
 #include <sys/stat.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/string.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
 #include <66/service.h>
 #include <66/instance.h>
 
-int service_frontend_src(stralloc *sasrc, char const *name, char const *src, char const **exclude)
+int service_frontend_src(strbuf *sasrc, char const *name, char const *src, char const **exclude)
 {
     log_flow() ;
 
     int insta, equal = 0, e = -1, r = 0, found = 0 ;
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     size_t pos = 0, dpos = 0, pathlen = strlen(src), namelen = strlen(name) ;
     char instaname[strlen(name) + 1] ;
 
@@ -43,12 +42,12 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src, cha
     if (path[pathlen - 1] == '/')
         path[pathlen - 1] = 0 ;
 
-    if (!sastr_dir_get_recursive(&sa, path, exclude, S_IFREG|S_IFDIR, 1))
+    if (!sbl_dir_get_recursive(&sa, path, exclude, S_IFREG|S_IFDIR, 1))
         return e ;
 
     size_t len = sa.len ;
     char tmp[len + 1] ;
-    sastr_to_char(tmp, &sa) ;
+    sbl_to_char(tmp, &sa) ;
 
     insta = instance_check(name) ;
     if (!insta)
@@ -98,9 +97,9 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src, cha
 
                 auto_strings(result, srcname, name) ;
 
-                if (sastr_cmp(sasrc, result) == -1) {
-                    if (!sastr_add_string(sasrc, result) ||
-                        !stralloc_0(sasrc))
+                if (sbl_search(sasrc, result) == -1) {
+                    if (!sbl_add(sasrc, result) ||
+                        !strbuf_terminate(sasrc))
                             return e ;
                     sasrc->len-- ;
                 }
@@ -121,7 +120,7 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src, cha
                      * inside the directory */
                     sa.len = 0 ;
 
-                    if (!sastr_dir_get_recursive(&sa, dname, exclude, S_IFREG|S_IFDIR, 0))
+                    if (!sbl_dir_get_recursive(&sa, dname, exclude, S_IFREG|S_IFDIR, 0))
                         return e ;
 
                     /** directory may be empty. */
@@ -129,7 +128,7 @@ int service_frontend_src(stralloc *sasrc, char const *name, char const *src, cha
                         found = 0 ;
 
                     dpos = 0 ;
-                    FOREACH_SASTR(&sa, dpos) {
+                    FOREACH_SBL(&sa, dpos) {
 
                         r = service_frontend_src(sasrc, sa.s + dpos, dname, exclude) ;
                         if (r < 0)

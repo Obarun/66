@@ -16,7 +16,7 @@
 #include <errno.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
+#include <oblibs/strbuf.h>
 
 #include <66/graph.h>
 #include <66/ssexec.h>
@@ -29,7 +29,7 @@ uint32_t tree_graph_build_master(tree_graph_t *g, ssexec_t *info, uint32_t flag)
     log_flow() ;
 
     uint32_t n = 0 ;
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     resolve_enum_table_t table = E_TABLE_TREE_MASTER_ZERO ;
 
     table.u.tree.id = E_RESOLVE_TREE_MASTER_CONTENTS ;

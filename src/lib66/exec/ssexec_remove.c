@@ -20,14 +20,13 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
-#include <oblibs/stack.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/directory.h>
 #include <oblibs/lexer.h>
 #include <oblibs/hash.h>
 
 #include <skalibs/posixplz.h>
-#include <skalibs/stralloc.h>
 #include <skalibs/sgetopt.h>
 
 #include <66/state.h>
@@ -49,7 +48,7 @@ static void auto_remove(char const *path)
         log_dieusys(LOG_EXIT_SYS, "remove directory: ", path) ;
 }
 
-static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, stralloc *sa, ssexec_t *info, uint8_t propagate)
+static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, strbuf *sa, ssexec_t *info, uint8_t propagate)
 {
     log_flow() ;
 
@@ -60,15 +59,15 @@ static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, s
     unsigned int pos = 0 ;
     ss_state_t ste = STATE_ZERO ;
     resolve_wrapper_t_ref wres = 0 ;
-    _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.requiredby) + 1) ;
+    _alloc_sbl_(stk, strlen(res->sa.s + res->dependencies.requiredby) + 1) ;
 
-    if (!stack_string_clean(&stk, res->sa.s + res->dependencies.requiredby))
+    if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.requiredby))
         log_dieu(LOG_EXIT_SYS, "convert string") ;
 
     if (propagate)
         log_1_warn("service: ", res->sa.s + res->name," is needed by its required-by dependencies: ", res->sa.s + res->dependencies.requiredby) ;
 
-    FOREACH_STK(&stk, pos) {
+    FOREACH_SBL(&stk, pos) {
 
         resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
         wres = resolve_set_struct(DATA_SERVICE, &dres) ;
@@ -90,7 +89,7 @@ static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, s
                 log_dieusys(LOG_EXIT_SYS, "read state file of: ", stk.s + pos, " -- please make a bug report") ;
 
             if (ste.issupervised == STATE_FLAGS_TRUE && !propagate)
-                if (!sastr_add_string(sa, stk.s + pos))
+                if (!sbl_add(sa, stk.s + pos))
                     log_dieusys(LOG_EXIT_SYS, "add service: ", stk.s + pos, " to stop selection") ;
 
             if (!propagate) {
@@ -113,15 +112,15 @@ static void remove_provide(resolve_service_t *res, ssexec_t *info)
 
     size_t pos = 0 ;
 
-    _alloc_stk_(path, SS_MAX_PATH_LEN) ;
-    _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.provide)) ;
-    _alloc_stk_(lnk, info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME) ;
-    _alloc_stk_(lname, SS_MAX_PATH_LEN) ;
+    _alloc_strbuf_(path, SS_MAX_PATH_LEN) ;
+    _alloc_sbl_(stk, strlen(res->sa.s + res->dependencies.provide)) ;
+    _alloc_strbuf_(lnk, info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME) ;
+    _alloc_strbuf_(lname, SS_MAX_PATH_LEN) ;
 
-    if (!stack_string_clean(&stk, res->sa.s + res->dependencies.provide))
+    if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.provide))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    FOREACH_STK(&stk, pos) {
+    FOREACH_SBL(&stk, pos) {
 
         char *name = stk.s + pos ;
 
@@ -159,12 +158,12 @@ static void clean_depends(resolve_service_t *res, ssexec_t *info, uint8_t propag
     int r ;
     size_t pos = 0 ;
     resolve_wrapper_t_ref wres = 0 ;
-    _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.depends)) ;
+    _alloc_sbl_(stk, strlen(res->sa.s + res->dependencies.depends)) ;
 
-    if (!stack_string_clean(&stk, res->sa.s + res->dependencies.depends))
+    if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.depends))
         log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
-    FOREACH_STK(&stk, pos) {
+    FOREACH_SBL(&stk, pos) {
 
         char *name = stk.s + pos ;
         resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
@@ -180,12 +179,12 @@ static void clean_depends(resolve_service_t *res, ssexec_t *info, uint8_t propag
         if (dres.dependencies.nrequiredby) {
 
             resolve_enum_table_t table = E_TABLE_SERVICE_DEPS_ZERO ;
-            _alloc_stk_(deps, strlen(dres.sa.s + dres.dependencies.requiredby)) ;
+            _alloc_sbl_(deps, strlen(dres.sa.s + dres.dependencies.requiredby)) ;
 
-            if (!stack_string_clean(&deps, dres.sa.s + dres.dependencies.requiredby))
+            if (!sbl_clean_string(&deps, dres.sa.s + dres.dependencies.requiredby))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
-            if (!stack_remove_element_g(&deps, res->sa.s + res->name))
+            if (!sbl_remove(&deps, res->sa.s + res->name))
                 log_dieu(LOG_EXIT_SYS, "remove service: ", res->sa.s + res->name, " from requiredby dependencies list of: ", name) ;
 
 
@@ -196,7 +195,7 @@ static void clean_depends(resolve_service_t *res, ssexec_t *info, uint8_t propag
 
             } else {
 
-                if (!stack_string_rebuild_with_delim(&deps, ' '))
+                if (!sbl_rebuild_with_delim(&deps, ' '))
                     log_dieu(LOG_EXIT_SYS, "convert stack to string") ;
 
                 table.u.service.id = E_RESOLVE_SERVICE_DEPS_REQUIREDBY ;
@@ -303,7 +302,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
     size_t pos = 0 ;
     uint8_t siglen = 0, force = 0 ; // force is an inner option used by parse_module to delete service inside module
     ss_state_t ste = STATE_ZERO ;
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     resolve_wrapper_t_ref wres = 0 ;
     struct resolve_hash_s *hres = NULL, *c, *tmp ;
 
@@ -376,7 +375,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
                     log_dieu(LOG_EXIT_SYS, "get groups of service: ", argv[pos]) ;
 
                 if (!r)
-                    if (!sastr_add_string(&sa, argv[pos]))
+                    if (!sbl_add(&sa, argv[pos]))
                         log_dieusys(LOG_EXIT_SYS, "add service: ", argv[pos], " to stop selection") ;
             }
         add:
@@ -396,7 +395,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
         pos = 0 ;
         char const *prog = PROG ;
-        int nargc = 2 + siglen + sastr_nelement(&sa) ;
+        int nargc = 2 + siglen + sbl_count(&sa) ;
         char const *newargv[nargc] ;
         unsigned int m = 0 ;
 
@@ -411,7 +410,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
         if (siglen)
             newargv[m++] = "-P" ;
 
-        FOREACH_SASTR(&sa, pos)
+        FOREACH_SBL(&sa, pos)
             newargv[m++] = sa.s + pos ;
 
         newargv[m] = 0 ;
@@ -438,12 +437,12 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
             size_t pos = 0 ;
             resolve_service_t mres = RESOLVE_SERVICE_ZERO ;
             resolve_wrapper_t_ref dwres = resolve_set_struct(DATA_SERVICE, &mres) ;
-            _alloc_stk_(stk, strlen(c->res.sa.s + c->res.dependencies.contents) + 1) ;
+            _alloc_sbl_(stk, strlen(c->res.sa.s + c->res.dependencies.contents) + 1) ;
 
-            if (!stack_string_clean(&stk, c->res.sa.s + c->res.dependencies.contents))
+            if (!sbl_clean_string(&stk, c->res.sa.s + c->res.dependencies.contents))
                 log_dieu(LOG_EXIT_SYS, "convert string") ;
 
-            FOREACH_STK(&stk, pos) {
+            FOREACH_SBL(&stk, pos) {
 
                 r = resolve_read_g(dwres, info->base.s, stk.s + pos) ;
                 if (r <= 0) {

@@ -19,8 +19,8 @@
 #include <oblibs/string.h>
 #include <oblibs/log.h>
 #include <oblibs/files.h>
-#include <oblibs/sastr.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/environ.h>
 #include <oblibs/types.h>
 
@@ -30,28 +30,28 @@
 #include <66/utils.h>
 #include <66/environ.h>
 
-static int get_import_field(resolve_service_t *res, stack *store)
+static int get_import_field(resolve_service_t *res, strbuf *store)
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
-    _alloc_sa_(list) ;
-    _alloc_sa_(modif) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf list = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf modif = STRBUF_ZERO ;
     size_t pos = 0 ;
     uint32_t n = 0 ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-    if (!auto_stra(&modif, store->s))
+    if (!auto_strbuf(&modif, store->s))
         log_warnusys_return(LOG_EXIT_SYS, "clean string") ;
 
     if (!environ_merge_string(&sa, store->s))
         log_warnusys_return(LOG_EXIT_SYS, "merge environment string") ;
 
-    FOREACH_SASTR(&sa, pos) {
+    FOREACH_SBL(&sa, pos) {
 
         char *line = sa.s + pos ;
-        _alloc_stk_(key, strlen(line)) ;
-        _alloc_stk_(val, strlen(line)) ;
+        _alloc_sbl_(key, strlen(line)) ;
+        _alloc_sbl_(val, strlen(line)) ;
 
         if (!environ_get_key(&key, line))
             return 0 ;
@@ -67,10 +67,10 @@ static int get_import_field(resolve_service_t *res, stack *store)
             if (scan_mode(val.s, S_IFDIR) > 0)
                 log_warnu_return(LOG_EXIT_ZERO, "ImportFile is a directory: ", val.s, " -- only file are allowed") ;
 
-            if (!sastr_add_string(&list, val.s))
+            if (!sbl_add(&list, val.s))
                 return 0 ;
 
-            if (!sastr_replace_g(&modif, line, " "))
+            if (!sbl_replace_nline(&modif, line, " "))
                 return 0 ;
 
             n++ ;
@@ -79,7 +79,7 @@ static int get_import_field(resolve_service_t *res, stack *store)
 
     if (list.len) {
 
-        if (!sastr_rebuild_in_oneline(&list))
+        if (!sbl_rebuild_oneline(&list))
             return 0 ;
 
         res->environ.nimportfile = n ;
@@ -89,10 +89,8 @@ static int get_import_field(resolve_service_t *res, stack *store)
     if (!environ_rebuild(&modif))
         return 0 ;
 
-    stack_reset(store) ;
+    store->len = 0 ;
 
-    if (modif.len > store->maxlen)
-        return (errno = EOVERFLOW, 0) ;
 
     auto_strings(store->s, modif.s) ;
     store->len = strlen(store->s) ;
@@ -102,9 +100,9 @@ static int get_import_field(resolve_service_t *res, stack *store)
     return 1 ;
 }
 
-static int store_environ(resolve_service_t *res, stack *store)
+static int store_environ(resolve_service_t *res, strbuf *store)
 {
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     if (!get_import_field(res, store))
@@ -122,7 +120,7 @@ static int store_environ(resolve_service_t *res, stack *store)
     return 1 ;
 }
 
-int parse_store_environ(resolve_service_t *res, stack *store, resolve_enum_table_t table)
+int parse_store_environ(resolve_service_t *res, strbuf *store, resolve_enum_table_t table)
 {
     log_flow() ;
 

@@ -18,13 +18,12 @@
 #include <pwd.h>
 
 #include <oblibs/string.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/log.h>
 #include <oblibs/account.h>
 #include <oblibs/directory.h>
 #include <oblibs/types.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/parse.h>
 #include <66/resolve.h>
@@ -169,7 +168,7 @@ static int parse_io_type(resolve_service_t *res, char const *line, resolve_enum_
     log_flow() ;
 
     size_t len = strlen(line) ;
-    _alloc_stk_(stk, len) ;
+    _alloc_sbl_(stk, len) ;
     ssize_t delim = get_len_until(line,':'), type = -1 ;
 
     if (delim + 2 >= (ssize_t)len)
@@ -193,13 +192,13 @@ static int parse_io_type(resolve_service_t *res, char const *line, resolve_enum_
         return 1 ;
     }
 
-    stack_reset(&stk) ;
+    stk.len = 0 ;
 
     if (delim > 0) {
-        if (!stack_add(&stk, line + delim + 1, len - delim + 1))
+        if (!sbl_addb(&stk, line + delim + 1, len - delim + 1))
             log_die_nomem("stack") ;
     } else {
-        if (!stack_add(&stk, line, len))
+        if (!sbl_addb(&stk, line, len))
             log_die_nomem("stack") ;
     }
 
@@ -223,7 +222,7 @@ static int parse_io_type(resolve_service_t *res, char const *line, resolve_enum_
     return 1 ;
 }
 
-int parse_store_main(resolve_service_t *res, stack *store, resolve_enum_table_t table)
+int parse_store_main(resolve_service_t *res, strbuf *store, resolve_enum_table_t table)
 {
     log_flow() ;
 
@@ -296,7 +295,7 @@ int parse_store_main(resolve_service_t *res, stack *store, resolve_enum_table_t 
 
             {
                 pos = 0 ;
-                FOREACH_STK(store, pos) {
+                FOREACH_SBL(store, pos) {
 
                     r = key_to_enum(enum_list_parser_flags, store->s + pos) ;
 
@@ -357,17 +356,16 @@ int parse_store_main(resolve_service_t *res, stack *store, resolve_enum_table_t 
                 memcpy(t, store->s, store->len) ;
                 t[store->len] = 0 ;
 
-                stack_reset(store) ;
+                store->len = 0 ;
 
                 for (pos = 0 ; pos < len ; pos += strlen(t + pos) + 1) {
-                    if (!stack_add(store, t + pos, strlen(t + pos)) ||
-                        !stack_add(store, " ", 1) ||
-                        !stack_close(store))
+                    if (!strbuf_catb(store, t + pos, strlen(t + pos)) ||
+                        !strbuf_catb(store, " ", 1))
                         goto err ;
                 }
 
                 store->len-- ;
-                if (!stack_close(store))
+                if (!strbuf_terminate(store))
                     goto err ;
 
                 res->copyfrom = resolve_add_string(wres, store->s) ;
@@ -383,7 +381,7 @@ int parse_store_main(resolve_service_t *res, stack *store, resolve_enum_table_t 
             if (store->len) {
 
                 pos = 0 ;
-                FOREACH_STK(store, pos) {
+                FOREACH_SBL(store, pos) {
 
                     uint8_t reverse = store->s[pos] == '!' ? 1 : 0 ;
 
@@ -407,7 +405,7 @@ int parse_store_main(resolve_service_t *res, stack *store, resolve_enum_table_t 
 
             if (store->len) {
 
-                stralloc sa = STRALLOC_ZERO ;
+                _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
                 uid_t user[256] ;
                 memset(user, 0, 256 * sizeof(uid_t)) ;
@@ -415,15 +413,15 @@ int parse_store_main(resolve_service_t *res, stack *store, resolve_enum_table_t 
                 uid_t owner = MYUID ;
                 if (!owner) {
 
-                    if (stack_retrieve_element(store, "root") == -1)
+                    if (sbl_search(store, "root") == -1)
                         log_warnu_return(LOG_EXIT_ZERO, "use the service -- permission denied") ;
                 }
                 /** special case, we don't know which user want to use
                  * the service, we need a general name to allow the current owner
                  * of the process. The term "user" is took here to allow him */
-                ssize_t p = stack_retrieve_element(store, "user") ;
+                ssize_t p = sbl_search(store, "user") ;
                 pos = 0 ;
-                FOREACH_STK(store, pos) {
+                FOREACH_SBL(store, pos) {
 
                     if (pos == (size_t)p) {
 
@@ -443,8 +441,8 @@ int parse_store_main(resolve_service_t *res, stack *store, resolve_enum_table_t 
                         if (!scan_uidlist(pw->pw_name, user))
                             parse_error_return(0, 0, table) ;
 
-                        if (!auto_stra(&sa, pw->pw_name, " "))
-                            log_warnu_return(LOG_EXIT_ZERO, "stralloc") ;
+                        if (!auto_strbuf(&sa, pw->pw_name, " "))
+                            log_warnu_return(LOG_EXIT_ZERO, "strbuf") ;
 
                         continue ;
                     }
@@ -452,8 +450,8 @@ int parse_store_main(resolve_service_t *res, stack *store, resolve_enum_table_t 
                     if (!scan_uidlist(store->s + pos, user))
                         parse_error_return(0, 0, table) ;
 
-                    if (!auto_stra(&sa, store->s + pos, " "))
-                        log_warnu_return(LOG_EXIT_ZERO, "stralloc") ;
+                    if (!auto_strbuf(&sa, store->s + pos, " "))
+                        log_warnu_return(LOG_EXIT_ZERO, "strbuf") ;
 
                 }
                 int nb = (int)user[0] ;
@@ -471,7 +469,6 @@ int parse_store_main(resolve_service_t *res, stack *store, resolve_enum_table_t 
                 }
 
                 res->user = resolve_add_string(wres, sa.s) ;
-                stralloc_free(&sa) ;
             }
 
             break ;

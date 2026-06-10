@@ -13,19 +13,19 @@
  */
 
 #include <oblibs/log.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
 
 #include <66/parse.h>
 #include <66/enum_parser.h>
 
-int parse_value(stack *store, lexer_config *kcfg, resolve_enum_table_t table)
+int parse_value(strbuf *store, lexer_config *kcfg, resolve_enum_table_t table)
 {
     log_flow() ;
 
     size_t pos = 0 ;
     lexer_config vcfg = LEXER_CONFIG_ZERO ;
-    _alloc_stk_(stk, kcfg->slen - kcfg->cpos) ;
+    _alloc_strbuf_(stk, kcfg->slen - kcfg->cpos) ;
     uint32_t kid = table.u.parser.id ;
     key_description_t const *list = table.u.parser.list ;
 
@@ -70,8 +70,9 @@ int parse_value(stack *store, lexer_config *kcfg, resolve_enum_table_t table)
             return 0 ;
     }
 
-    if (!stack_close(store))
-        log_warnu_return(LOG_EXIT_ZERO, "stack overflow") ;
+    if (!strbuf_terminate(store))
+        log_warnu_return(LOG_EXIT_ZERO, "strbuf") ;
+    store->len-- ;
 
     return 1 ;
 }

@@ -17,8 +17,8 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/sastr.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/lexer.h>
 #include <oblibs/hash.h>
 
@@ -28,14 +28,14 @@
 #include <66/enum_parser.h>
 #include <66/constants.h>
 
-static void parse_prefix(char *result, stack *stk, struct resolve_hash_s **hres, char const *prefix)
+static void parse_prefix(char *result, strbuf *stk, struct resolve_hash_s **hres, char const *prefix)
 {
     log_flow() ;
 
     size_t pos = 0, mlen = strlen(prefix) ;
     struct resolve_hash_s *hash ;
 
-    FOREACH_STK(stk, pos) {
+    FOREACH_SBL(stk, pos) {
 
         hash = hash_search(hres, stk->s + pos) ;
         if (hash == NULL) {
@@ -71,9 +71,9 @@ static void parse_prefix_name(resolve_service_t *res, struct resolve_hash_s **hr
     if (res->dependencies.ndepends) {
 
         size_t depslen = strlen(res->sa.s + res->dependencies.depends) ;
-        _alloc_stk_(stk, depslen + 1) ;
+        _alloc_sbl_(stk, depslen + 1) ;
 
-        if (!stack_string_clean(&stk, res->sa.s + res->dependencies.depends))
+        if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.depends))
             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
         size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * res->dependencies.ndepends ;
@@ -90,9 +90,9 @@ static void parse_prefix_name(resolve_service_t *res, struct resolve_hash_s **hr
     if (res->dependencies.nrequiredby) {
 
         size_t depslen = strlen(res->sa.s + res->dependencies.requiredby) ;
-        _alloc_stk_(stk, depslen + 1) ;
+        _alloc_sbl_(stk, depslen + 1) ;
 
-        if (!stack_string_clean(&stk, res->sa.s + res->dependencies.requiredby))
+        if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.requiredby))
             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
         size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * res->dependencies.nrequiredby ;
@@ -114,7 +114,7 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, s
     log_flow() ;
 
     struct resolve_hash_s *c, *tmp ;
-    _alloc_stk_(stk, hash_count(hres) * SS_MAX_SERVICE_NAME + 1) ;
+    _alloc_sbl_(stk, hash_count(hres) * SS_MAX_SERVICE_NAME + 1) ;
     resolve_wrapper_t_ref wres = 0 ;
 
     HASH_ITER(hh, *hres, c, tmp) {
@@ -139,7 +139,7 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, s
                 parse_create_logger(hres, &c->res, info) ;
 
                 if (c->res.type == E_PARSER_TYPE_CLASSIC) {
-                    if (!stack_add_g(&stk, logname))
+                    if (!sbl_add(&stk, logname))
                         log_die_nomem("stack overflow") ;
                 }
 
@@ -147,8 +147,8 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, s
 
             }
 
-            if (stack_retrieve_element(&stk, c->res.sa.s + c->res.name) < 0 )
-                if (!stack_add_g(&stk, c->res.sa.s + c->res.name))
+            if (sbl_search(&stk, c->res.sa.s + c->res.name) < 0 )
+                if (!sbl_add(&stk, c->res.sa.s + c->res.name))
                     log_die_nomem("stack overflow") ;
         }
     }

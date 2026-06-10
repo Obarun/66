@@ -15,7 +15,7 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/environ.h>
 
 #include <66/graph.h>
@@ -25,7 +25,7 @@ uint32_t service_graph_build_arguments(service_graph_t *g, char const *const *ar
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
     if (!environ_import_arguments(&sa, argv, argc))
         log_dieusys(LOG_EXIT_SYS, "import arguments") ;

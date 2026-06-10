@@ -18,7 +18,8 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/lexer.h>
 
 #include <66/service.h>
@@ -33,15 +34,15 @@ int symlink_provide(const char *base, resolve_service_t *res, bool action)
         return 1 ;
 
     size_t pos = 0 ;
-    _alloc_stk_(path, SS_MAX_PATH_LEN) ;
-    _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.provide)) ;
-    _alloc_stk_(lnk, strlen(base) + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME) ;
-    _alloc_stk_(lname, SS_MAX_PATH_LEN) ;
+    _alloc_strbuf_(path, SS_MAX_PATH_LEN) ;
+    _alloc_sbl_(stk, strlen(res->sa.s + res->dependencies.provide)) ;
+    _alloc_strbuf_(lnk, strlen(base) + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME) ;
+    _alloc_strbuf_(lname, SS_MAX_PATH_LEN) ;
 
-    if (!stack_string_clean(&stk, res->sa.s + res->dependencies.provide))
+    if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.provide))
         log_warnusys_return(LOG_EXIT_ZERO, "clean string") ;
 
-    FOREACH_STK(&stk, pos) {
+    FOREACH_SBL(&stk, pos) {
 
         char *name = stk.s + pos ;
 

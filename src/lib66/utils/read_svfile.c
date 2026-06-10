@@ -17,13 +17,13 @@
 #include <oblibs/log.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
+#include <oblibs/strbuf.h>
 
-#include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 
 #include <66/utils.h>
 
-int read_svfile(stralloc *sasv,char const *name,char const *src)
+int read_svfile(strbuf *sasv,char const *name,char const *src)
 {
     log_flow() ;
 
@@ -38,14 +38,14 @@ int read_svfile(stralloc *sasv,char const *name,char const *src)
     if (!filesize)
         log_warn_return(LOG_EXIT_LESSONE,svtmp," is empty") ;
 
-    r = openreadfileclose(svtmp,sasv,filesize) ;
+    r = strbuf_read_file(sasv, svtmp) ;
     if(!r)
         log_warnusys_return(LOG_EXIT_ZERO,"open ", svtmp) ;
 
 
     /** ensure that we have an empty line at the end of the string*/
-    if (!auto_stra(sasv, "\n"))
-        log_warnsys_return(LOG_EXIT_ZERO,"stralloc") ;
+    if (!auto_strbuf(sasv, "\n"))
+        log_warnsys_return(LOG_EXIT_ZERO,"strbuf") ;
 
     return 1 ;
 }

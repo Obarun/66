@@ -14,10 +14,9 @@
 
 #include <oblibs/log.h>
 #include <oblibs/cdb.h>
+#include <oblibs/strbuf.h>
 
-#include <skalibs/stralloc.h>
-
-int resolve_get_sa(stralloc *sa, const ocdb *c)
+int resolve_get_sa(strbuf *sa, const ocdb *c)
 {
     log_flow() ;
 
@@ -30,7 +29,7 @@ int resolve_get_sa(stralloc *sa, const ocdb *c)
     if (!r)
         log_warn_return(LOG_EXIT_ZERO,"unknown cdb key: sa") ;
 
-    if (!stralloc_copyb(sa, cdata.s, cdata.len))
+    if (!strbuf_copyb(sa, cdata.s, cdata.len))
         return 0 ;
 
     sa->len = cdata.len ;

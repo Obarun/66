@@ -15,8 +15,8 @@
 #include <sys/stat.h>
 
 #include <oblibs/log.h>
-#include <oblibs/stack.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/string.h>
 
 #include <66/ssexec.h>
@@ -76,7 +76,7 @@ static uint8_t str_to_int(const char *version)
 
 void migrate_create_snap(ssexec_t *info, const char *version)
 {
-    _alloc_stk_(stk, 7 + strlen(version)) ;
+    _alloc_strbuf_(stk, 7 + strlen(version)) ;
     int argc = 4 ;
     int m = 0 ;
     char const *prog = PROG ;
@@ -115,7 +115,7 @@ void migrate_ensure_log_owner(resolve_service_t *res)
 {
     if (res->logger.want && !res->owner && res->io.fdout.type == E_PARSER_IO_TYPE_S6LOG) {
 
-        _alloc_sa_(sa) ;
+        _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
         char const *exclude[1] = { 0 } ;
         char *dest = res->sa.s + res->io.fdout.destination ;
         size_t pos = 0 ;
@@ -140,10 +140,10 @@ void migrate_ensure_log_owner(resolve_service_t *res)
         if (chown(dest, uid, gid) < 0)
             log_dieusys(LOG_EXIT_SYS, "chown: ", dest) ;
 
-        if (!sastr_dir_get_recursive(&sa, dest, exclude, S_IFREG|S_IFDIR,1))
+        if (!sbl_dir_get_recursive(&sa, dest, exclude, S_IFREG|S_IFDIR,1))
             log_dieu(LOG_EXIT_SYS, "get content of logger directory") ;
 
-        FOREACH_SASTR(&sa, pos) {
+        FOREACH_SBL(&sa, pos) {
             if (chown(sa.s + pos, uid, gid) < 0)
                 log_dieusys(LOG_EXIT_SYS, "chown: ", sa.s + pos) ;
         }

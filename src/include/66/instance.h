@@ -19,8 +19,7 @@
 #include <unistd.h> //getuid
 
 #include <oblibs/log.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 
 #include <66/ssexec.h>
@@ -28,8 +27,8 @@
 
 /** ss_instance.c file */
 extern int instance_check(char const *svname) ;
-extern int instance_splitname(stralloc *sa,char const *name,int len,int what) ;
-extern int instance_create(stralloc *sasv,char const *svname, char const *regex, int len) ;
+extern int instance_splitname(strbuf *sa,char const *name,int len,int what) ;
+extern int instance_create(strbuf *sasv,char const *svname, char const *regex, int len) ;
 extern void instance_splitname_to_char(char *store, char const *name, int len, int what) ;
 
 #endif

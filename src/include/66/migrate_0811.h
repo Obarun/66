@@ -22,7 +22,7 @@
 
 #include <oblibs/hash.h>
 
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/ssexec.h>
 #include <66/resolve.h>
@@ -196,7 +196,7 @@ struct IO_redirection_s_0811
 typedef struct resolve_service_s_0811 resolve_service_t_0811, *resolve_service_t_ref_0811 ;
 struct resolve_service_s_0811
 {
-    stralloc sa ;
+    strbuf sa ;
     uint32_t rversion ; //string, version of 66 of the resolve file at write time
 
     // configuration
@@ -228,7 +228,7 @@ struct resolve_service_s_0811
     IO_redirection_t_0811 io ;
 } ;
 
-#define RESOLVE_SERVICE_ZERO_0811 { STRALLOC_ZERO, 0, \
+#define RESOLVE_SERVICE_ZERO_0811 { STRBUF_ZERO, 0, \
                                0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0, \
                                RESOLVE_SERVICE_ADDON_PATH_ZERO_0811, \
                                RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO_0811, \

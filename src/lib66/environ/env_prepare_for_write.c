@@ -17,16 +17,14 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-
-#include <skalibs/stralloc.h>
-#include <skalibs/djbunix.h>
+#include <oblibs/strbuf.h>
 
 #include <66/environ.h>
 #include <66/constants.h>
 #include <66/service.h>
 #include <66/parse.h>
 
-int env_prepare_for_write(stralloc *dst, stralloc *contents, resolve_service_t *res)
+int env_prepare_for_write(strbuf *dst, strbuf *contents, resolve_service_t *res)
 {
     log_flow() ;
 

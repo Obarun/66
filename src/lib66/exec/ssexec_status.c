@@ -22,18 +22,17 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 #include <oblibs/directory.h>
 #include <oblibs/environ.h>
-#include <oblibs/sastr.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/types.h>
 #include <oblibs/stream.h>
 
-#include <skalibs/stralloc.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/cspawn.h>
@@ -360,7 +359,7 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     size_t padding = 1 ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     uint32_t flag = GRAPH_WANT_REQUIREDBY|GRAPH_COLLECT_PARSE, nservice = 0 ;
@@ -371,7 +370,7 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
     if (!res->dependencies.nrequiredby)
         goto empty ;
 
-    if (!sastr_clean_string(&sa, res->sa.s + res->dependencies.requiredby))
+    if (!sbl_clean_string(&sa, res->sa.s + res->dependencies.requiredby))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
@@ -402,12 +401,12 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
             uint32_t index = graph.g.sort[pos] ;
             char *name = graph.g.sindex[index]->name ;
 
-            if (!sastr_add_string(&sa, name))
-                log_die_nomem("stralloc") ;
+            if (!sbl_add(&sa, name))
+                log_die_nomem("strbuf") ;
         }
 
         if (REVERSE)
-            if (!sastr_reverse(&sa))
+            if (!sbl_reverse(&sa))
                 log_dieu(LOG_EXIT_SYS,"reverse the selection list") ;
 
         info_display_list(field,&sa) ;
@@ -432,7 +431,7 @@ static void info_display_deps(char const *field, resolve_service_t *res)
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     size_t padding = 1 ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     uint32_t flag = GRAPH_WANT_DEPENDS|GRAPH_COLLECT_PARSE, nservice = 0 ;
@@ -443,7 +442,7 @@ static void info_display_deps(char const *field, resolve_service_t *res)
     if (!res->dependencies.ndepends)
         goto empty ;
 
-    if (!sastr_clean_string(&sa, res->sa.s + res->dependencies.depends))
+    if (!sbl_clean_string(&sa, res->sa.s + res->dependencies.depends))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
@@ -474,12 +473,12 @@ static void info_display_deps(char const *field, resolve_service_t *res)
             uint32_t index = graph.g.sort[pos] ;
             char *name = graph.g.sindex[index]->name ;
 
-            if (!sastr_add_string(&sa, name))
-                log_die_nomem("stralloc") ;
+            if (!sbl_add(&sa, name))
+                log_die_nomem("strbuf") ;
         }
 
         if (REVERSE)
-            if (!sastr_reverse(&sa))
+            if (!sbl_reverse(&sa))
                 log_dieu(LOG_EXIT_SYS,"reverse the selection list") ;
 
         info_display_list(field,&sa) ;
@@ -507,7 +506,7 @@ static void info_display_optsdeps(char const *field, resolve_service_t *res)
 {
     log_flow() ;
 
-    _alloc_sa_(salist) ;
+    _cleanup_strbuf_ strbuf salist = STRBUF_ZERO ;
 
     if (NOFIELD) info_display_field_name(field) ;
     else field = 0 ;
@@ -517,11 +516,11 @@ static void info_display_optsdeps(char const *field, resolve_service_t *res)
         return ;
     }
 
-    if (!sastr_clean_string(&salist,res->sa.s + res->dependencies.optsdeps))
+    if (!sbl_clean_string(&salist,res->sa.s + res->dependencies.optsdeps))
         log_dieu(LOG_EXIT_SYS,"build optionnal dependencies list") ;
 
     if (REVERSE)
-        if (!sastr_reverse(&salist))
+        if (!sbl_reverse(&salist))
                 log_dieu(LOG_EXIT_SYS,"reverse the selection list") ;
 
     info_display_list(field,&salist) ;
@@ -531,7 +530,7 @@ static void info_display_contents(char const *field, resolve_service_t *res)
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     size_t padding = 1 ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     uint32_t nservice = 0, flag = GRAPH_WANT_DEPENDS|GRAPH_WANT_REQUIREDBY ;
@@ -545,7 +544,7 @@ static void info_display_contents(char const *field, resolve_service_t *res)
     if (!res->dependencies.ncontents)
         goto empty ;
 
-    if (!sastr_clean_string(&sa, res->sa.s + res->dependencies.contents))
+    if (!sbl_clean_string(&sa, res->sa.s + res->dependencies.contents))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     if (!graph_new(&graph, res->dependencies.ncontents))
@@ -577,12 +576,12 @@ static void info_display_contents(char const *field, resolve_service_t *res)
             uint32_t index = graph.g.sort[pos] ;
             char *name = graph.g.sindex[index]->name ;
 
-            if (!sastr_add_string(&sa, name))
-                log_die_nomem("stralloc") ;
+            if (!sbl_add(&sa, name))
+                log_die_nomem("strbuf") ;
         }
 
         if (REVERSE)
-            if (!sastr_reverse(&sa))
+            if (!sbl_reverse(&sa))
                 log_dieu(LOG_EXIT_SYS,"reverse the selection list") ;
 
         info_display_list(field,&sa) ;
@@ -645,10 +644,10 @@ static void info_display_envat(char const *field,resolve_service_t *res)
     log_flow() ;
 
     if (NOFIELD) info_display_field_name(field) ;
-    _alloc_sa_(salink) ;
+    _cleanup_strbuf_ strbuf salink = STRBUF_ZERO ;
 
     if (res->environ.envdir) {
-        stralloc salink = STRALLOC_ZERO ;
+        strbuf salink = STRBUF_ZERO ;
         char *src = res->sa.s + res->environ.envdir ;
 
         size_t srclen = strlen(src) ;
@@ -656,11 +655,17 @@ static void info_display_envat(char const *field,resolve_service_t *res)
 
         auto_strings(sym,src,SS_SYM_VERSION) ;
 
-        if (sareadlink(&salink, sym) == -1)
-            log_dieusys(LOG_EXIT_SYS,"read link of: ",sym) ;
+        {
+            char lnk[SS_MAX_PATH + 1] ;
+            ssize_t lnklen = readlink(sym, lnk, sizeof(lnk) - 1) ;
+            if (lnklen == -1)
+                log_dieusys(LOG_EXIT_SYS,"read link of: ",sym) ;
+            if (!strbuf_copyb(&salink, lnk, lnklen))
+                log_dieusys(LOG_EXIT_SYS,"strbuf") ;
+        }
 
-        if (!stralloc_0(&salink))
-            log_die_nomem("stralloc") ;
+        if (!strbuf_terminate(&salink))
+            log_die_nomem("strbuf") ;
 
         info_display_string(salink.s) ;
 
@@ -678,9 +683,9 @@ static void info_display_envfile(char const *field,resolve_service_t *res)
     else field = 0 ;
 
     size_t pos = 0 ;
-    _alloc_sa_(sa) ;
-    _alloc_sa_(salink) ;
-    _alloc_sa_(list) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf salink = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf list = STRBUF_ZERO ;
     char const *exclude[1] = { 0 } ;
 
     if (res->environ.envdir)
@@ -691,30 +696,36 @@ static void info_display_envfile(char const *field,resolve_service_t *res)
 
         auto_strings(sym,src,SS_SYM_VERSION) ;
 
-        if (sareadlink(&salink, sym) == -1)
-            log_dieusys(LOG_EXIT_SYS,"read link of: ",sym) ;
+        {
+            char lnk[SS_MAX_PATH + 1] ;
+            ssize_t lnklen = readlink(sym, lnk, sizeof(lnk) - 1) ;
+            if (lnklen == -1)
+                log_dieusys(LOG_EXIT_SYS,"read link of: ",sym) ;
+            if (!strbuf_copyb(&salink, lnk, lnklen))
+                log_dieusys(LOG_EXIT_SYS,"strbuf") ;
+        }
 
-        if (!stralloc_0(&salink))
-            log_dieusys(LOG_EXIT_SYS,"stralloc") ;
+        if (!strbuf_terminate(&salink))
+            log_dieusys(LOG_EXIT_SYS,"strbuf") ;
 
         newlen = salink.len - 1 ;
 
-        if (!sastr_dir_get(&list,salink.s,exclude,S_IFREG))
+        if (!sbl_dir_get(&list,salink.s,exclude,S_IFREG))
             log_dieusys(LOG_EXIT_SYS,"get list of environment file from: ",src) ;
 
-        if (!sastr_sort(&list))
+        if (!sbl_sort(&list))
             log_dieu(LOG_EXIT_SYS,"sort environment file name") ;
 
-        FOREACH_SASTR(&list,pos) {
+        FOREACH_SBL(&list,pos) {
 
             ssize_t upstream = 0 ;
             sa.len = 0 ;
             salink.len = newlen ;
-            if (!stralloc_cats(&salink,"/") ||
-            !stralloc_cats(&salink,list.s + pos) ||
-            !stralloc_0(&salink)) log_die_nomem("stralloc") ;
+            if (!strbuf_cats(&salink,"/") ||
+            !strbuf_cats(&salink,list.s + pos) ||
+            !strbuf_terminate(&salink)) log_die_nomem("strbuf") ;
 
-            if (!file_readputsa_g(&sa,salink.s))
+            if (!strbuf_read_file(&sa,salink.s))
                 log_dieusys(LOG_EXIT_SYS,"read environment file") ;
 
             /** Remove warning message */
@@ -731,8 +742,8 @@ static void info_display_envfile(char const *field,resolve_service_t *res)
 
                 sa.len = 0 ;
 
-                if (!auto_stra(&sa,t))
-                    log_die_nomem("stralloc") ;
+                if (!auto_strbuf(&sa,t))
+                    log_die_nomem("strbuf") ;
             }
 
             if (NOFIELD) {
@@ -741,9 +752,9 @@ static void info_display_envfile(char const *field,resolve_service_t *res)
                 size_t mlen = strlen(m) ;
                 char msg[mlen + salink.len + 2] ;
                 auto_strings(msg,m,salink.s,"\n") ;
-                if (!stralloc_inserts(&sa,0,msg) ||
-                !stralloc_0(&sa))
-                    log_die_nomem("stralloc") ;
+                if (!strbuf_inserts(&sa,0,msg) ||
+                !strbuf_terminate(&sa))
+                    log_die_nomem("strbuf") ;
 
             }
 
@@ -804,12 +815,12 @@ static void info_display_stdin(char const *field, resolve_service_t *res)
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     if (NOFIELD) info_display_field_name(field) ;
     if (res->type != E_PARSER_TYPE_MODULE && res->io.fdin.destination) {
 
-        if (!auto_stra(&sa, enum_to_key(enum_list_parser_io_type, res->io.fdin.type), ":", res->sa.s + res->io.fdin.destination))
-            log_die_nomem("stralloc") ;
+        if (!auto_strbuf(&sa, enum_to_key(enum_list_parser_io_type, res->io.fdin.type), ":", res->sa.s + res->io.fdin.destination))
+            log_die_nomem("strbuf") ;
 
         info_display_string(sa.s) ;
         return ;
@@ -822,12 +833,12 @@ static void info_display_stdout(char const *field, resolve_service_t *res)
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     if (NOFIELD) info_display_field_name(field) ;
     if (res->type != E_PARSER_TYPE_MODULE && res->io.fdout.destination) {
 
-        if (!auto_stra(&sa, enum_to_key(enum_list_parser_io_type, res->io.fdout.type), ":", res->sa.s + res->io.fdout.destination))
-            log_die_nomem("stralloc") ;
+        if (!auto_strbuf(&sa, enum_to_key(enum_list_parser_io_type, res->io.fdout.type), ":", res->sa.s + res->io.fdout.destination))
+            log_die_nomem("strbuf") ;
 
         info_display_string(sa.s) ;
         return ;
@@ -840,12 +851,12 @@ static void info_display_stderr(char const *field, resolve_service_t *res)
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     if (NOFIELD) info_display_field_name(field) ;
     if (res->type != E_PARSER_TYPE_MODULE && res->io.fderr.destination) {
 
-        if (!auto_stra(&sa, enum_to_key(enum_list_parser_io_type, res->io.fderr.type), ":", res->sa.s + res->io.fderr.destination))
-            log_die_nomem("stralloc") ;
+        if (!auto_strbuf(&sa, enum_to_key(enum_list_parser_io_type, res->io.fderr.type), ":", res->sa.s + res->io.fderr.destination))
+            log_die_nomem("strbuf") ;
 
         info_display_string(sa.s) ;
         return ;
@@ -865,7 +876,7 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
 
             if (nlog) {
 
-                _alloc_sa_(log) ;
+                _cleanup_strbuf_ strbuf log = STRBUF_ZERO ;
 
                 if (res->io.fdout.type == E_PARSER_IO_TYPE_S6LOG) {
 
@@ -884,12 +895,14 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
 
                     } else {
 
-                        if (!file_readputsa(&log,res->sa.s + res->io.fdout.destination,"current")) log_dieusys(LOG_EXIT_SYS,"read log file of: ",res->sa.s + res->name) ;
-                        /* we don't need to freed stralloc
+                        char fcur[strlen(res->sa.s + res->io.fdout.destination) + 9] ;
+                        auto_strings(fcur, res->sa.s + res->io.fdout.destination, "/current") ;
+                        if (scan_mode(fcur, S_IFREG) == 1 && !strbuf_read_file(&log, fcur)) log_dieusys(LOG_EXIT_SYS,"read log file of: ",res->sa.s + res->name) ;
+                        /* we don't need to freed strbuf
                         * file_readputsa do it if the file is empty*/
                         if (!log.len) goto empty ;
                         log.len-- ;
-                        if (!auto_stra(&log,"\n")) log_dieusys(LOG_EXIT_SYS,"append newline") ;
+                        if (!auto_strbuf(&log,"\n")) log_dieusys(LOG_EXIT_SYS,"append newline") ;
                         if (log.len < 10 && res->type != E_PARSER_TYPE_ONESHOT) {
                             if (!ostream_fmt(ostream_1,"%s%s%s\n",log_color->warning,"None",log_color->off)) goto err ;
                         } else {
@@ -900,12 +913,12 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
 
                 } else if (res->io.fdout.type == E_PARSER_IO_TYPE_FILE) {
 
-                    if (!file_readputsa_g(&log,res->sa.s + res->io.fdout.destination)) log_dieusys(LOG_EXIT_SYS,"read log file of: ",res->sa.s + res->name) ;
-                    /* we don't need to freed stralloc
+                    if (!strbuf_read_file(&log,res->sa.s + res->io.fdout.destination)) log_dieusys(LOG_EXIT_SYS,"read log file of: ",res->sa.s + res->name) ;
+                    /* we don't need to freed strbuf
                     * file_readputsa do it if the file is empty*/
                     if (!log.len) goto empty ;
                     log.len-- ;
-                    if (!auto_stra(&log,"\n")) log_dieusys(LOG_EXIT_SYS,"append newline") ;
+                    if (!auto_strbuf(&log,"\n")) log_dieusys(LOG_EXIT_SYS,"append newline") ;
                     if (log.len < 10 && res->type != E_PARSER_TYPE_ONESHOT) {
                         if (!ostream_fmt(ostream_1,"%s%s%s\n",log_color->warning,"None",log_color->off)) goto err ;
                     } else {
@@ -942,14 +955,14 @@ static void info_parse_options(char const *str,int *what)
     size_t pos = 0 ;
     unsigned int nopts = 0 , old = 0 ;
     info_opts_map_t const *t ;
-    _alloc_stk_(stk, strlen(str) + 1) ;
+    _alloc_sbl_(stk, strlen(str) + 1) ;
 
     if (!lexer_trim_with_delim(&stk,str,DELIM))
         log_dieu(LOG_EXIT_SYS,"parse options") ;
 
-    checkopts(stk.count) ;
+    checkopts(sbl_count(&stk)) ;
 
-    FOREACH_STK(&stk, pos) {
+    FOREACH_SBL(&stk, pos) {
 
         char *o = stk.s + pos ;
         t = opts_sv_table ;
@@ -969,7 +982,7 @@ void info_status_all(void)
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     tree_graph_t graph = GRAPH_TREE_ZERO ;
     uint32_t f = REVERSE ? GRAPH_WANT_REQUIREDBY : GRAPH_WANT_DEPENDS ;
     uint32_t nservice = 0 , pos = 0, flag = f|GRAPH_COLLECT_PARSE ;
@@ -982,12 +995,12 @@ void info_status_all(void)
     if (!nservice && errno == EINVAL)
         log_dieusys(LOG_EXIT_SYS, "find trees -- please make a bug report") ;
 
-    _alloc_stk_(stk, graph.g.nsort * SS_MAX_TREENAME) ;
+    _alloc_sbl_(stk, graph.g.nsort * SS_MAX_TREENAME) ;
 
     FOREACH_GRAPH_SORT(tree_graph_t, &graph, pos) {
         uint32_t index = graph.g.sort[pos] ;
         char *name = graph.g.sindex[index]->name ;
-        if (!stack_add_g(&stk, name)) {
+        if (!sbl_add(&stk, name)) {
             errno = EINVAL ;
             log_dieu(LOG_EXIT_SYS, "get the sorted list of trees") ;
         }
@@ -999,7 +1012,7 @@ void info_status_all(void)
         service_graph_t sg = GRAPH_SERVICE_ZERO ;
 
         pos = 0 ;
-        FOREACH_STK(&stk, pos) {
+        FOREACH_SBL(&stk, pos) {
 
             h = hash_search_tree(&graph.hres, stk.s + pos) ;
             if (h == NULL)
@@ -1007,13 +1020,13 @@ void info_status_all(void)
 
             if (h->tres.ncontents) {
 
-                _alloc_stk_(sv, strlen(h->tres.sa.s + h->tres.contents)) ;
+                _alloc_sbl_(sv, strlen(h->tres.sa.s + h->tres.contents)) ;
 
-                if (!stack_string_clean(&sv, h->tres.sa.s + h->tres.contents))
+                if (!sbl_clean_string(&sv, h->tres.sa.s + h->tres.contents))
                     log_dieu(LOG_EXIT_SYS, "clean string") ;
 
                 /** A dependencies service can be on another tree,
-                 * so used SS_MAX_SERVICE instead of stk.count. */
+                 * so used SS_MAX_SERVICE instead of sbl_count(&stk). */
                 if (!graph_new(&sg, SS_MAX_SERVICE))
                     log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 

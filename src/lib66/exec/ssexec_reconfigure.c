@@ -18,7 +18,7 @@
 #include <stdbool.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/types.h>
 #include <oblibs/hash.h>
 #include <oblibs/environ.h>
@@ -58,8 +58,8 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     uint32_t flag = GRAPH_COLLECT_PARSE|GRAPH_WANT_REQUIREDBY, nservice = 0, pos = 0 ;
     resolve_service_t_ref pres = 0 ;
-    _alloc_stk_(tostop, SS_MAX_SERVICE * SS_MAX_SERVICE_NAME) ;
-    _alloc_stk_(toenable, SS_MAX_SERVICE * SS_MAX_SERVICE_NAME) ;
+    _alloc_sbl_(tostop, SS_MAX_SERVICE * SS_MAX_SERVICE_NAME) ;
+    _alloc_sbl_(toenable, SS_MAX_SERVICE * SS_MAX_SERVICE_NAME) ;
     ss_state_t sta = STATE_ZERO ;
 
     {
@@ -101,7 +101,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
     if (!environ_import_arguments(&sa, argv, argc))
         log_dieusys(LOG_EXIT_SYS, "import arguments") ;
@@ -132,7 +132,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
 
         if (pres->inns) {
             // search first into the user commandline
-            if (sastr_cmp(&sa, pres->sa.s + pres->inns) < 0) {
+            if (sbl_search(&sa, pres->sa.s + pres->inns) < 0) {
                 // it may be a service of a another dependending module
                 struct resolve_hash_s *t = hash_search(&graph.hres, pres->sa.s + pres->inns) ;
                 if (t == NULL)
@@ -153,7 +153,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
             log_dieusys(LOG_EXIT_SYS, "write status file of: ", name) ;
 
         if (pres->enabled && !pres->inns)
-            if (!stack_add_g(&toenable, pres->sa.s + pres->name))
+            if (!sbl_add(&toenable, pres->sa.s + pres->name))
                 log_die_nomem("stack") ;
 
         if (!state_write_remote(&sta, status))
@@ -165,12 +165,12 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
             continue ;
 
         if (sta.issupervised == STATE_FLAGS_TRUE) {
-            if (!stack_add_g(&tostop, pres->sa.s + pres->name))
-                log_die_nomem("stralloc") ;
+            if (!sbl_add(&tostop, pres->sa.s + pres->name))
+                log_die_nomem("strbuf") ;
         }
     }
 
-    if (tostop.count && rscan) {
+    if (sbl_count(&tostop) && rscan) {
 
         /** User may request for a specific tree with the -t options.
          * The tree specified may be different from the actual one.
@@ -199,7 +199,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         newargv[m++] = "-u" ;
 
         pos = 0 ;
-        FOREACH_STK(&tostop, pos)
+        FOREACH_SBL(&tostop, pos)
             newargv[m++] = tostop.s + pos ;
 
         newargv[m] = 0 ;
@@ -214,8 +214,8 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         info->usage = usage ;
 
         info->treename.len = 0 ;
-        if (!auto_stra(&info->treename, tree))
-            log_die_nomem("stralloc") ;
+        if (!auto_strbuf(&info->treename, tree))
+            log_die_nomem("strbuf") ;
 
         info->opt_tree = opstree ;
     }
@@ -234,7 +234,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
                 log_die(LOG_EXIT_SYS, "get information of service: ", name, " -- please make a bug report") ;
 
             /** only deal with service found in arguments */
-            if (!hash->res.inns && sastr_cmp(&sa, name) >= 0)
+            if (!hash->res.inns && sbl_search(&sa, name) >= 0)
                 sanitize_source(name, info, flag) ;
 
             /** need to reverse the previous state change to
@@ -250,7 +250,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         }
     }
 
-    if (tostop.count && rscan) {
+    if (sbl_count(&tostop) && rscan) {
 
         unsigned int m = 0 ;
         int nargc = 2 + nservice + siglen ;
@@ -285,11 +285,11 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         info->usage = usage ;
     }
 
-    if (toenable.count) {
+    if (sbl_count(&toenable)) {
 
         /** enable again the service if it was enabled */
         unsigned int m = 0 ;
-        int nargc = 2 + toenable.count ;
+        int nargc = 2 + sbl_count(&toenable) ;
         char const *prog = PROG ;
         char const *newargv[nargc] ;
 
@@ -302,7 +302,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         newargv[m++] = "enable" ;
 
         pos = 0 ;
-        FOREACH_STK(&toenable, pos) {
+        FOREACH_SBL(&toenable, pos) {
 
             char *name = toenable.s + pos ;
             if (get_rstrlen_until(name,SS_LOG_SUFFIX) < 0)

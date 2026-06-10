@@ -17,10 +17,9 @@
 #include <sys/resource.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/types.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 
 #include <66/parse.h>
@@ -28,7 +27,7 @@
 #include <66/enum_parser.h>
 #include <66/caps.h>
 
-static int limit_compute(stack *store, uint64_t *u, resolve_enum_table_t table)
+static int limit_compute(strbuf *store, uint64_t *u, resolve_enum_table_t table)
 {
     if (store->s[0] == 'u') {
         (*u) = (uint64_t)(RLIM_INFINITY) ;
@@ -41,7 +40,7 @@ static int limit_compute(stack *store, uint64_t *u, resolve_enum_table_t table)
     return 1 ;
 }
 
-int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table_t table)
+int parse_store_execute(resolve_service_t *res, strbuf *store, resolve_enum_table_t table)
 {
     log_flow() ;
 
@@ -255,7 +254,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
                 parse_error_return(0, 8, table) ;
 
             if (store->len && !res->owner) {
-                _alloc_stk_(stk, 2048) ; // ~ (70 CAPS * 30)
+                _alloc_sbl_(stk, 2048) ; // ~ (70 CAPS * 30)
                 parse_store_caps(&stk, store, &res->execute.ncapsbound) ;
                 if (stk.len)
                     res->execute.capsbound = resolve_add_string(wres, stk.s) ;
@@ -271,7 +270,7 @@ int parse_store_execute(resolve_service_t *res, stack *store, resolve_enum_table
                 parse_error_return(0, 8, table) ;
 
             if (store->len) {
-                _alloc_stk_(stk, 2048) ; // ~ (70 CAPS * 30)
+                _alloc_sbl_(stk, 2048) ; // ~ (70 CAPS * 30)
                 parse_store_caps(&stk, store, &res->execute.ncapsambient) ;
                 if (stk.len)
                     res->execute.capsambient = resolve_add_string(wres, stk.s) ;

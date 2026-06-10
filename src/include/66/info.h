@@ -16,6 +16,7 @@
 
 #include <oblibs/string.h>
 #include <oblibs/log.h>
+#include <oblibs/strbuf.h>
 
 #include <66/service.h>
 #include <66/tree.h>
@@ -76,7 +77,7 @@ extern int info_getcols_fd(int fd) ;
 extern void info_field_align (char buf[][INFO_FIELD_MAXLEN],char fields[][INFO_FIELD_MAXLEN],wchar_t const field_suffix[],size_t buflen) ;
 extern size_t info_length_from_wchar(char const *str) ;
 extern size_t info_display_field_name(char const *field) ;
-extern void info_display_list(char const *field, stralloc *list) ;
+extern void info_display_list(char const *field, strbuf *list) ;
 extern void info_display_nline(char const *field,char const *str) ;
 
 extern depth_t info_graph_init(void) ;

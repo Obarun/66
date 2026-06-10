@@ -26,14 +26,13 @@
 #include <oblibs/directory.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
-#include <oblibs/stack.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/account.h>
 #include <oblibs/types.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/stralloc.h>
 #include <skalibs/bytestr.h>//byte_count
 #include <skalibs/posixplz.h>//unlink_void
 
@@ -189,7 +188,7 @@ void tree_parse_uid_list(uid_t *uids, char const *str)
 
     size_t pos = 0 ;
 
-    _alloc_stk_(stk, strlen(str) + 1) ;
+    _alloc_sbl_(stk, strlen(str) + 1) ;
 
     if (!lexer_trim_with_delim(&stk, str, TREE_COMMA_DELIM))
         log_dieu(LOG_EXIT_SYS,"parse options") ;
@@ -198,9 +197,9 @@ void tree_parse_uid_list(uid_t *uids, char const *str)
     /** special case, we don't know which user want to use
      *  the tree, we need a general name to allow all users.
      *  The term "user" is took here to allow the current user*/
-    ssize_t p = stack_retrieve_element(&stk, "user") ;
+    ssize_t p = sbl_search(&stk, "user") ;
 
-    FOREACH_STK(&stk, pos) {
+    FOREACH_SBL(&stk, pos) {
 
         if (pos == (size_t)p) {
 
@@ -233,12 +232,12 @@ static void tree_parse_options_depends(tree_graph_t *g, ssexec_t *info, char con
     int r ;
     size_t pos = 0 ;
     char *name = 0 ;
-    _alloc_stk_(stk, strlen(str) + 1) ;
+    _alloc_sbl_(stk, strlen(str) + 1) ;
 
     if (!lexer_trim_with_delim(&stk, str, TREE_COMMA_DELIM))
         log_dieu(LOG_EXIT_SYS,"clean sub options") ;
 
-    if (stack_retrieve_element(&stk, "none") >= 0) {
+    if (sbl_search(&stk, "none") >= 0) {
         if (!requiredby)
             what->ndepends = 0 ;
         else
@@ -247,7 +246,7 @@ static void tree_parse_options_depends(tree_graph_t *g, ssexec_t *info, char con
         return ;
     }
 
-    FOREACH_STK(&stk, pos) {
+    FOREACH_SBL(&stk, pos) {
 
         name = stk.s + pos ;
 
@@ -260,9 +259,9 @@ static void tree_parse_options_depends(tree_graph_t *g, ssexec_t *info, char con
         if (!r && !requiredby) {
 
             ssexec_t newinfo = SSEXEC_ZERO ;
-            if (!auto_stra(&newinfo.base, info->base.s) ||
-                !auto_stra(&newinfo.treename, name))
-                    log_die_nomem("stralloc") ;
+            if (!auto_strbuf(&newinfo.base, info->base.s) ||
+                !auto_strbuf(&newinfo.treename, name))
+                    log_die_nomem("strbuf") ;
             newinfo.owner = info->owner ;
             newinfo.prog = info->prog ;
             newinfo.help = info->help ;
@@ -323,7 +322,7 @@ static void tree_parse_options(tree_graph_t *g, char const *str, ssexec_t *info,
     size_t pos = 0, len = 0 ;
     ssize_t r ;
     char *line = 0, *key = 0, *val = 0 ;
-    _alloc_stk_(stk, strlen(str) + 1) ;
+    _alloc_sbl_(stk, strlen(str) + 1) ;
     tree_opts_map_t const *t ;
 
     if (!lexer_trim_with_delim(&stk, str, TREE_COLON_DELIM))
@@ -331,9 +330,9 @@ static void tree_parse_options(tree_graph_t *g, char const *str, ssexec_t *info,
 
     unsigned int nopts = 0 , old ;
 
-    tree_checkopts(stk.count) ;
+    tree_checkopts(sbl_count(&stk)) ;
 
-    FOREACH_STK(&stk, pos) {
+    FOREACH_SBL(&stk, pos) {
 
         line = stk.s + pos ;
         t = tree_opts_table ;
@@ -521,7 +520,7 @@ void tree_master_modify_contents(char const *base)
 {
     log_flow() ;
 
-    stralloc sa = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
     size_t baselen = strlen(base) ;
@@ -533,14 +532,14 @@ void tree_master_modify_contents(char const *base)
 
     auto_strings(solve, base, SS_SYSTEM, SS_RESOLVE) ;
 
-    if (!sastr_dir_get(&sa, solve, exclude, S_IFREG))
+    if (!sbl_dir_get(&sa, solve, exclude, S_IFREG))
         log_dieu(LOG_EXIT_SYS, "get trees resolve files") ;
 
-    size_t ncontents = sa.len ? sastr_nelement(&sa) : 0 ;
+    size_t ncontents = sa.len ? sbl_count(&sa) : 0 ;
 
     if (ncontents)
-        if (!sastr_rebuild_in_oneline(&sa))
-            log_dieu(LOG_EXIT_SYS, "rebuild stralloc") ;
+        if (!sbl_rebuild_oneline(&sa))
+            log_dieu(LOG_EXIT_SYS, "rebuild strbuf") ;
 
     if (resolve_read_g(wres, base, SS_MASTER + 1) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve Master file") ;
@@ -555,7 +554,6 @@ void tree_master_modify_contents(char const *base)
     if (!resolve_write_g(wres, base, SS_MASTER + 1))
         log_dieusys(LOG_EXIT_SYS, "write resolve Master file") ;
 
-    stralloc_free(&sa) ;
     resolve_free(wres) ;
 }
 
@@ -604,7 +602,7 @@ void tree_create(tree_graph_t *g, ssexec_t *info, tree_what_t *what)
     log_info("Created successfully tree: ", info->treename.s) ;
 }
 
-void tree_enable_disable_deps(tree_graph_t *g,char const *base, char const *treename, uint8_t action)
+void tree_enable_disable_deps(tree_graph_t *g, char const *base, char const *treename, uint8_t action)
 {
     log_flow() ;
 
@@ -616,7 +614,7 @@ void tree_enable_disable_deps(tree_graph_t *g,char const *base, char const *tree
         return ;
 
     uint32_t nvertex = action ? v->ndepends : v->nrequiredby ;
-    _alloc_stk_(stk, nvertex * SS_MAX_TREENAME) ;
+    _alloc_sbl_(stk, nvertex * SS_MAX_TREENAME) ;
     if (!graph_get_stkedge(&stk, &g->g, v, action ? false : true))
         return ;
 
@@ -626,7 +624,7 @@ void tree_enable_disable_deps(tree_graph_t *g,char const *base, char const *tree
 
     if (stk.len) {
 
-        FOREACH_STK(&stk, pos) {
+        FOREACH_SBL(&stk, pos) {
 
             if (!visit[element]) {
 
@@ -692,7 +690,7 @@ void tree_depends_requiredby(tree_graph_t *g, char const *base, char const *tree
     size_t pos = 0, nb = 0, element = 0 ;
     uint8_t ewhat = !requiredby ? E_RESOLVE_TREE_DEPENDS : E_RESOLVE_TREE_REQUIREDBY ;
     uint8_t nwhat = !requiredby ? E_RESOLVE_TREE_NDEPENDS : E_RESOLVE_TREE_NREQUIREDBY ;
-    stralloc sa = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     char pack[U32_FMT] ;
 
     log_trace("manage ", !requiredby ? "dependencies" : "required by", " for tree: ", treename, "..." ) ;
@@ -703,18 +701,18 @@ void tree_depends_requiredby(tree_graph_t *g, char const *base, char const *tree
         log_dieu(LOG_EXIT_SYS, "get information of treename: ", treename, " -- please make a bug report") ;
 
     uint32_t nvertex = requiredby ? v->nrequiredby : v->ndepends ;
-    _alloc_stk_(stk, nvertex * SS_MAX_TREENAME) ;
+    _alloc_sbl_(stk, nvertex * SS_MAX_TREENAME) ;
 
     if (!graph_get_stkedge(&stk, &g->g, v, requiredby ? true : false))
         log_dieu(LOG_EXIT_SYS,"get sorted ", requiredby ? "required by" : "dependency", " list of tree: ", treename) ;
 
-    size_t vlen = stk.count ;
+    size_t vlen = sbl_count(&stk) ;
     unsigned int visit[vlen + 1] ;
 
     memset(visit, 0, (vlen + 1) * sizeof(unsigned int)) ;
 
     {
-        FOREACH_STK(&stk, pos) {
+        FOREACH_SBL(&stk, pos) {
 
             element++ ;
 
@@ -736,8 +734,8 @@ void tree_depends_requiredby(tree_graph_t *g, char const *base, char const *tree
                         }
                     }
 
-                    if (!auto_stra(&sa, name, " "))
-                        log_die_nomem("stralloc") ;
+                    if (!auto_strbuf(&sa, name, " "))
+                        log_die_nomem("strbuf") ;
 
                     nb++ ;
                 }
@@ -750,8 +748,8 @@ void tree_depends_requiredby(tree_graph_t *g, char const *base, char const *tree
     if (sa.len)
         sa.len-- ; //remove last " "
 
-    if (!stralloc_0(&sa))
-        log_die_nomem("stralloc") ;
+    if (!strbuf_terminate(&sa))
+        log_die_nomem("strbuf") ;
 
     u32_pack(pack, nb) ;
     pack[u32_fmt(pack, nb)] = 0 ;
@@ -778,7 +776,6 @@ void tree_depends_requiredby(tree_graph_t *g, char const *base, char const *tree
             log_die(LOG_EXIT_SYS, "sort the graph") ;
     }
 
-    stralloc_free(&sa) ;
     resolve_free(wres) ;
 
     log_info(requiredby ? "Required by " : "Dependencies ", "successfully managed for tree: ", treename) ;
@@ -797,18 +794,18 @@ void tree_depends_requiredby_deps(tree_graph_t *g, char const *base, char const 
         log_dieu(LOG_EXIT_SYS, "get information of treename: ", treename, " -- please make a bug report") ;
 
     uint32_t nvertex = requiredby ? v->nrequiredby : v->ndepends ;
-    _alloc_stk_(stk, nvertex * SS_MAX_TREENAME) ;
+    _alloc_sbl_(stk, nvertex * SS_MAX_TREENAME) ;
 
     if (!graph_get_stkedge(&stk, &g->g, v, requiredby ? true : false))
         log_dieusys(LOG_EXIT_SYS, "get edge of treename: ", treename) ;
 
-    unsigned int visit[stk.count + 1] ;
+    unsigned int visit[sbl_count(&stk) + 1] ;
 
-    memset(visit, 0, (stk.count + 1) * sizeof(unsigned int)) ;
+    memset(visit, 0, (sbl_count(&stk) + 1) * sizeof(unsigned int)) ;
 
     auto_strings(solve, base, SS_SYSTEM) ;
 
-    FOREACH_STK(&stk, pos) {
+    FOREACH_SBL(&stk, pos) {
 
         element++ ;
 
@@ -833,7 +830,7 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
     size_t uidn = uids[0], pos = 0 ;
     uid_t owner = MYUID ;
     char pack[256] ;
-    stralloc sa = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
     resolve_enum_table_t table = E_TABLE_TREE_ZERO ;
@@ -844,7 +841,7 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", treename) ;
 
     if (tres.nallow)
-        if (!sastr_clean_string(&sa, tres.sa.s + tres.allow))
+        if (!sbl_clean_string(&sa, tres.sa.s + tres.allow))
             log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     /** fresh creation of the tree */
@@ -873,12 +870,12 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
         u32_pack(pack,uids[pos+1]) ;
         pack[u32_fmt(pack,uids[pos+1])] = 0 ;
 
-        r = sastr_cmp(&sa, pack) ;
+        r = sbl_search(&sa, pack) ;
 
         if (r < 0 && what) {
 
-            if (!sastr_add_string(&sa, pack))
-                log_die_nomem("stralloc") ;
+            if (!sbl_add(&sa, pack))
+                log_die_nomem("strbuf") ;
 
             tres.nallow++ ;
 
@@ -891,7 +888,7 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
                 continue ;
             }
 
-            if (!sastr_remove_element(&sa, pack))
+            if (!sbl_remove(&sa, pack))
                 log_dieu(LOG_EXIT_SYS, "remove: ", pack, " from list") ;
 
             tres.nallow-- ;
@@ -900,7 +897,7 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
         }
     }
 
-    if (!sastr_rebuild_in_oneline(&sa))
+    if (!sbl_rebuild_oneline(&sa))
         log_dieu(LOG_EXIT_SYS, "rebuild string") ;
 
     table.u.tree.id = E_RESOLVE_TREE_ALLOW ;
@@ -911,7 +908,6 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
     if (!resolve_write_g(wres, base, treename))
         log_dieusys(LOG_EXIT_SYS, "write resolve file of: ", treename) ;
 
-    stralloc_free(&sa) ;
     resolve_free(wres) ;
 
     log_info("Permissions rules set successfully for tree: ", treename) ;
@@ -921,7 +917,7 @@ static void tree_service_switch_contents(char const *base, char const *treesrc, 
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     size_t pos = 0 ; ssize_t r = -1 ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
@@ -935,7 +931,7 @@ static void tree_service_switch_contents(char const *base, char const *treesrc, 
     if (!resolve_get_field_tosa_g(&sa, base, treesrc, DATA_TREE, table))
         log_dieu(LOG_EXIT_SYS, "get contents list of tree: ", treesrc) ;
 
-    FOREACH_SASTR(&sa, pos) {
+    FOREACH_SBL(&sa, pos) {
         log_trace("switch service: ", sa.s + pos, " to tree: ", treedst) ;
 
         /** Tree may be corrupted, check the validity of the service
@@ -1106,7 +1102,7 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
      * correcting the info structure.
      * Therefore, retrieve the original name at the end of the process. */
     char oldtree[SS_MAX_TREENAME + 1] ;
-    stralloc sa = STRALLOC_ZERO ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     tree_graph_t graph = GRAPH_TREE_ZERO ;
     uint32_t flag = GRAPH_WANT_DEPENDS|GRAPH_WANT_REQUIREDBY, ntree = 0 ;
 
@@ -1130,8 +1126,8 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
 
                case 'o' :
 
-                    if (!auto_stra(&sa, l.arg))
-                        log_die_nomem("stralloc") ;
+                    if (!auto_strbuf(&sa, l.arg))
+                        log_die_nomem("strbuf") ;
                     what.nopts++ ;
                     break ;
 
@@ -1180,8 +1176,8 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
     }
 
     info->treename.len = 0 ;
-    if (!auto_stra(&info->treename, argv[0]))
-        log_die_nomem("stralloc") ;
+    if (!auto_strbuf(&info->treename, argv[0]))
+        log_die_nomem("strbuf") ;
 
     r = tree_isvalid(info->base.s, info->treename.s) ;
     if (r < 0)
@@ -1234,13 +1230,13 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
             log_dieu(LOG_EXIT_SYS, "get information of treename: ", info->treename.s, " -- please make a bug report") ;
 
         uint32_t nvertex = v->ndepends ;
-        _alloc_stk_(stk, nvertex * SS_MAX_TREENAME) ;
+        _alloc_sbl_(stk, nvertex * SS_MAX_TREENAME) ;
 
         if (!graph_get_stkedge(&stk, &graph.g, v, false))
             log_dieu(LOG_EXIT_SYS,"get dependency list of tree: ", info->treename.s) ;
 
         if (tree_isenabled(info->base.s, info->treename.s)) {
-            FOREACH_STK(&stk, pos)
+            FOREACH_SBL(&stk, pos)
                 tree_enable_disable(&graph, info->base.s, stk.s + pos, 1) ;
         }
     }
@@ -1259,13 +1255,13 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
             log_dieu(LOG_EXIT_SYS, "get information of treename: ", info->treename.s, " -- please make a bug report") ;
 
         uint32_t nvertex = v->nrequiredby ;
-        _alloc_stk_(stk, nvertex * SS_MAX_TREENAME) ;
+        _alloc_sbl_(stk, nvertex * SS_MAX_TREENAME) ;
 
         if (!graph_get_stkedge(&stk, &graph.g, v, true))
             log_dieu(LOG_EXIT_SYS,"get dependency list of tree: ", info->treename.s) ;
 
         if (!tree_isenabled(info->base.s, info->treename.s)) {
-            FOREACH_STK(&stk, pos)
+            FOREACH_SBL(&stk, pos)
                 tree_enable_disable(&graph, info->base.s, stk.s + pos, 0) ;
         }
     }
@@ -1290,10 +1286,9 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
 
     freed:
         info->treename.len = 0 ;
-        if (!auto_stra(&info->treename, oldtree))
-            log_die_nomem("stralloc") ;
+        if (!auto_strbuf(&info->treename, oldtree))
+            log_die_nomem("strbuf") ;
 
-        stralloc_free(&sa) ;
         tree_graph_destroy(&graph) ;
 
 

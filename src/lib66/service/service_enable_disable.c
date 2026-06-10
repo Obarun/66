@@ -18,13 +18,11 @@
 #include <stdlib.h>
 
 #include <oblibs/log.h>
-#include <oblibs/stack.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/lexer.h>
 #include <oblibs/types.h>
 #include <oblibs/string.h>
-
-#include <skalibs/stralloc.h>
 
 #include <66/service.h>
 #include <66/graph.h>
@@ -52,12 +50,12 @@ static void mark_isdone(struct resolve_hash_s *hres, const char *name)
     t->visit = 1 ;
 }
 
-static void service_enable_disable_deps(service_graph_t *g, struct resolve_hash_s *hres, struct resolve_hash_s *hash, bool action, bool propagate, ssexec_t *info, stralloc *argv)
+static void service_enable_disable_deps(service_graph_t *g, struct resolve_hash_s *hres, struct resolve_hash_s *hash, bool action, bool propagate, ssexec_t *info, strbuf *argv)
 {
     log_flow() ;
 
     size_t pos = 0 ;
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     resolve_service_t_ref res = &hash->res ;
     vertex_t *v = NULL ;
 
@@ -66,14 +64,14 @@ static void service_enable_disable_deps(service_graph_t *g, struct resolve_hash_
         log_dieu(LOG_EXIT_SYS, "get information of service: ", res->sa.s + res->name, " -- please make a bug report") ;
 
     uint32_t d = action ? res->dependencies.depends : res->dependencies.requiredby ;
-    _alloc_stk_(stk, strlen(res->sa.s + d)) ;
+    _alloc_sbl_(stk, strlen(res->sa.s + d)) ;
 
     if (!graph_get_stkedge(&stk, &g->g, v, action ? false : true))
         log_dieu(LOG_EXIT_SYS, "get ", action ? "dependencies" : "required by" ," of: ", res->sa.s + res->name) ;
 
     if (stk.len) {
 
-        FOREACH_STK(&stk, pos) {
+        FOREACH_SBL(&stk, pos) {
 
             char *name = stk.s + pos ;
 
@@ -97,7 +95,7 @@ static void service_enable_disable_deps(service_graph_t *g, struct resolve_hash_
 
 /** @action == false disable
  * @action == true enable */
-void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, bool propagate, ssexec_t *info, stralloc *argv)
+void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, bool propagate, ssexec_t *info, strbuf *argv)
 {
     log_flow() ;
 
@@ -106,7 +104,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
         resolve_service_t_ref res = &hash->res ;
         resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
         char const *treename = 0 ;
-        bool same = sastr_cmp(argv, hash->name) >= 0 ? true : false ;
+        bool same = sbl_search(argv, hash->name) >= 0 ? true : false ;
         bool ns = hash->res.inns ? true : false ;
 
         if (hash->res.dependencies.nprovide)
@@ -115,15 +113,15 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
 
         if (hash->res.dependencies.nconflict && action) {
 
-            _alloc_stk_(stk, strlen(hash->res.sa.s + hash->res.dependencies.conflict)) ;
+            _alloc_sbl_(stk, strlen(hash->res.sa.s + hash->res.dependencies.conflict)) ;
             resolve_service_t c = RESOLVE_SERVICE_ZERO ;
             resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE, &c) ;
             size_t pos = 0 ;
 
-            if (!stack_string_clean(&stk, hash->res.sa.s + hash->res.dependencies.conflict))
+            if (!sbl_clean_string(&stk, hash->res.sa.s + hash->res.dependencies.conflict))
                 log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-            FOREACH_STK(&stk, pos) {
+            FOREACH_SBL(&stk, pos) {
 
                 if (resolve_read_g(w, info->base.s, stk.s + pos) > 0 && c.enabled)
                     log_die(LOG_EXIT_SYS,"conflicting service for '", hash->res.sa.s + hash->res.name, "' -- please disable the '", c.sa.s + c.name, "' service first.") ;
@@ -191,9 +189,9 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
                 uint32_t nservice = 0, flag = GRAPH_WANT_DEPENDS|GRAPH_WANT_REQUIREDBY ;
                 vertex_t *v, *tmp ;
                 struct resolve_hash_s *h = NULL ;
-                _alloc_stk_(stk, strlen(res->sa.s + res->dependencies.contents) + 1) ;
+                _alloc_sbl_(stk, strlen(res->sa.s + res->dependencies.contents) + 1) ;
 
-                if (!stack_string_clean(&stk, res->sa.s + res->dependencies.contents))
+                if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.contents))
                     log_dieu(LOG_EXIT_SYS, "clean string") ;
 
                 if (!graph_new(&graph, res->dependencies.ncontents))
@@ -221,7 +219,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
 
                         if (action) {
 
-                            if (info->opt_tree && (hash->res.inns || sastr_cmp(argv, hash->name) >= 0))
+                            if (info->opt_tree && (hash->res.inns || sbl_search(argv, hash->name) >= 0))
                                 service_switch_tree(&h->res, treename, info) ;
                             else
                                 tree_service_add(treename, h->res.sa.s + h->res.name, info) ;

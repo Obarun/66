@@ -16,7 +16,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
-#include <oblibs/stack.h>
+#include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
 
 #include <66/svc.h>
@@ -37,7 +37,7 @@ int svc_compute_ns(svc_manager_t *mgr, uint32_t id)
     uint8_t requiredby = 0 ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     uint32_t nservice = 0, flag = GRAPH_SKIP_EARLIER ;
-    _alloc_stk_(stk, strlen(svc->res->sa.s + svc->res->dependencies.contents) + 1) ;
+    _alloc_sbl_(stk, strlen(svc->res->sa.s + svc->res->dependencies.contents) + 1) ;
 
     if (mgr->propagate) {
 
@@ -49,7 +49,7 @@ int svc_compute_ns(svc_manager_t *mgr, uint32_t id)
 
     if (svc->res->dependencies.ncontents) {
 
-        if (!stack_string_clean(&stk, svc->res->sa.s + svc->res->dependencies.contents))
+        if (!sbl_clean_string(&stk, svc->res->sa.s + svc->res->dependencies.contents))
             log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     } else {

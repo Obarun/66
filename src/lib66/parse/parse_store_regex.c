@@ -15,15 +15,13 @@
 #include <stdlib.h> //free
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/parse.h>
 #include <66/resolve.h>
 #include <66/enum_parser.h>
 
-int parse_store_regex(resolve_service_t *res, stack *store, resolve_enum_table_t table)
+int parse_store_regex(resolve_service_t *res, strbuf *store, resolve_enum_table_t table)
 {
     log_flow() ;
 

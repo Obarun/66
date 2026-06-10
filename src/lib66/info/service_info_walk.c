@@ -16,13 +16,14 @@
 #include <string.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 
 #include <66/info.h>
 #include <66/graph.h>
 #include <66/config.h>
 
-static int info_add_name(stralloc *sa, const char *name, uint32_t *count, const char *treename, depth_t *depth)
+static int info_add_name(strbuf *sa, const char *name, uint32_t *count, const char *treename, depth_t *depth)
 {
     if (treename) {
 
@@ -35,7 +36,7 @@ static int info_add_name(stralloc *sa, const char *name, uint32_t *count, const 
             return 1 ;
     }
 
-    if (!sastr_add_string(sa, name))
+    if (!sbl_add(sa, name))
         return (errno = ENOMEM, 0) ;
 
     (*count)++ ;
@@ -43,7 +44,7 @@ static int info_add_name(stralloc *sa, const char *name, uint32_t *count, const 
     return 1 ;
 }
 
-static int info_add_sort(stralloc *sa, service_graph_t *g, uint32_t *count, const char *treename, depth_t *depth)
+static int info_add_sort(strbuf *sa, service_graph_t *g, uint32_t *count, const char *treename, depth_t *depth)
 {
     uint32_t pos = 0 ;
     FOREACH_GRAPH_SORT(service_graph_t, g, pos) {
@@ -62,7 +63,7 @@ int service_info_walk(service_graph_t *g, char const *name, char const *treename
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     uint32_t of = requiredby ? GRAPH_WANT_REQUIREDBY : GRAPH_WANT_DEPENDS ;
     uint32_t flag = GRAPH_COLLECT_PARSE|of, pos = 0, count = 0, idx = 0 ;
     vertex_t *v = NULL ;
@@ -90,13 +91,13 @@ int service_info_walk(service_graph_t *g, char const *name, char const *treename
             graph_get_edge(&g->g, v, vl, requiredby) ;
 
             for (; pos < nvertex ; pos++) {
-                if (!sastr_add_string(&sa, vl[pos]->name))
+                if (!sbl_add(&sa, vl[pos]->name))
                     return (errno = ENOMEM, 0) ;
             }
 
         } else {
 
-            if (!sastr_add_string(&sa, v->name))
+            if (!sbl_add(&sa, v->name))
                 return (errno = ENOMEM, 0) ;
         }
 
@@ -119,11 +120,11 @@ int service_info_walk(service_graph_t *g, char const *name, char const *treename
         return 1 ;
 
     if (reverse)
-        if (!sastr_reverse(&sa))
+        if (!sbl_reverse(&sa))
             return 0 ;
 
     pos = 0 ;
-    FOREACH_SASTR(&sa, pos) {
+    FOREACH_SBL(&sa, pos) {
 
         v = NULL ;
         idx++ ;

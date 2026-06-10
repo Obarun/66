@@ -15,12 +15,11 @@
 #include <string.h>
 
 #include <oblibs/log.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/utils.h>
 
-int instance_splitname(stralloc *sa,char const *name,int len,int what)
+int instance_splitname(strbuf *sa,char const *name,int len,int what)
 {
     log_flow() ;
 
@@ -36,13 +35,13 @@ int instance_splitname(stralloc *sa,char const *name,int len,int what)
     sa->len = 0 ;
     if (!what)
     {
-        if (!stralloc_cats(sa,template) ||
-        !stralloc_0(sa)) return 0 ;
+        if (!strbuf_cats(sa,template) ||
+        !strbuf_terminate(sa)) return 0 ;
     }
     else
     {
-        if (!stralloc_catb(sa,copy,strlen(copy)) ||
-        !stralloc_0(sa)) return 0 ;
+        if (!strbuf_catb(sa,copy,strlen(copy)) ||
+        !strbuf_terminate(sa)) return 0 ;
     }
     return 1 ;
 }

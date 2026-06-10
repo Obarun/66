@@ -15,8 +15,7 @@
 #include <stdlib.h>
 
 #include <oblibs/log.h>
-
-#include <skalibs/stralloc.h>
+#include <oblibs/strbuf.h>
 
 #include <66/ssexec.h>
 
@@ -26,11 +25,11 @@ void ssexec_free(ssexec_t *info)
 {
     log_flow() ;
 
-    stralloc_free(&info->base) ;
-    stralloc_free(&info->live) ;
-    stralloc_free(&info->scandir) ;
-    stralloc_free(&info->treename) ;
-    stralloc_free(&info->environment) ;
+    strbuf_free(&info->base) ;
+    strbuf_free(&info->live) ;
+    strbuf_free(&info->scandir) ;
+    strbuf_free(&info->treename) ;
+    strbuf_free(&info->environment) ;
 }
 
 

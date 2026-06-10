@@ -18,7 +18,8 @@
 #include <oblibs/log.h>
 #include <oblibs/hash.h>
 #include <oblibs/types.h>
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/graph.h>
 #include <oblibs/environ.h>
 
@@ -34,7 +35,7 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
 {
     log_flow() ;
 
-    _alloc_sa_(sa) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     bool start = false, propagate = true, action = true ; /* action=true -> enable */
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     vertex_t *c, *tmp ;
@@ -108,7 +109,7 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
          * We only want the service asked by user. Doing '66 -t test enable sB'
          * where sB depends on sA should only move the associated tree for
          * service sB leaving sA at its initial state.*/
-        if (info->opt_tree && ((hash->res.inns && sastr_cmp(&sa, hash->res.sa.s + hash->res.inns) >= 0) || sastr_cmp(&sa, name) >= 0)) {
+        if (info->opt_tree && ((hash->res.inns && sbl_search(&sa, hash->res.sa.s + hash->res.inns) >= 0) || sbl_search(&sa, name) >= 0)) {
 
             service_switch_tree(&hash->res, info->treename.s, info) ;
 

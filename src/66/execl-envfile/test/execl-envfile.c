@@ -1,71 +1,61 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include <oblibs/sastr.h>
+#include <oblibs/sbl.h>
+#include <oblibs/subst.h>
 #include <oblibs/environ.h>
 
 void envfile(const char *efile, const char *script, const char **env, const char *expect)
 {
-    _alloc_sa_(saenv) ;
-    _alloc_sa_(cmdline) ;
-    exlsn_t info = EXLSN_ZERO ;
+    _cleanup_strbuf_ strbuf saenv = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf cmdline = STRBUF_ZERO ;
+    subst_t info = SUBST_ZERO ;
 
     assert(environ_merge_string(&saenv, efile) == 1) ;
     assert(environ_substitute(&saenv, &info) == 1) ;
     assert(environ_clean_unexport(&saenv) == 1) ;
 
     size_t elen = environ_length(env) ;
-    size_t n = elen + 1 +  sastr_nelement(&saenv) ;
+    size_t n = elen + 1 +  sbl_count(&saenv) ;
 
     char const *nenv[n + 1] ;
     assert(environ_merge(nenv, n , env, elen, saenv.s, saenv.len) != 0) ;
 
-
-    _alloc_sa_(t) ;
-    stralloc_cats(&t, script) ;
-    sastr_split_string_in_nline(&t) ;
-
-    int r = el_substitute(&cmdline, script, strlen(script),
-                    info.vars.s, info.values.s,
-                    genalloc_s(elsubst_t const, &info.data),
-                    genalloc_len(elsubst_t const, &info.data)) ;
+    int r = subst(&cmdline, script, strlen(script), &info) ;
 
     assert(r >= 0) ;
     if (!r)
       return ;
 
-    assert(sastr_rebuild_in_oneline(&cmdline) == 1) ;
+    assert(sbl_rebuild_oneline(&cmdline) == 1) ;
     assert(strcmp(cmdline.s, expect) == 0) ;
-    exlsn_free(&info) ;
+    subst_free(&info) ;
 }
 
 void envfile_fail(const char *efile, const char *script, const char **env, const char *expect)
 {
-    _alloc_sa_(saenv) ;
-    _alloc_sa_(cmdline) ;
-    exlsn_t info = EXLSN_ZERO ;
+    _cleanup_strbuf_ strbuf saenv = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf cmdline = STRBUF_ZERO ;
+    subst_t info = SUBST_ZERO ;
     assert(environ_merge_string(&saenv, efile) == 1) ;
     assert(environ_substitute(&saenv, &info) == 1) ;
     assert(environ_clean_unexport(&saenv) == 1) ;
 
     size_t elen = environ_length(env) ;
-    size_t n = elen + 1 +  sastr_nelement(&saenv) ;
+    size_t n = elen + 1 +  sbl_count(&saenv) ;
 
     char const *nenv[n + 1] ;
     assert(environ_merge(nenv, n , env, elen, saenv.s, saenv.len) != 0) ;
 
-    int r = el_substitute(&cmdline, script, strlen(script),
-                    info.vars.s, info.values.s,
-                    genalloc_s(elsubst_t const, &info.data),
-                    genalloc_len(elsubst_t const, &info.data)) ;
+    int r = subst(&cmdline, script, strlen(script), &info) ;
 
     assert(r >= 0) ;
     if (!r)
       return ;
 
-    assert(sastr_rebuild_in_oneline(&cmdline) == 1) ;
+    assert(sbl_rebuild_oneline(&cmdline) == 1) ;
     assert(strcmp(cmdline.s, expect) != 0) ;
-    exlsn_free(&info) ;
+    subst_free(&info) ;
 }
 
 void basic(void)
