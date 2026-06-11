@@ -23,6 +23,7 @@
 #include <sys/prctl.h>
 
 #include <oblibs/log.h>
+#include <oblibs/exec.h>
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/environ.h>
@@ -36,7 +37,6 @@
 
 #include <skalibs/sgetopt.h>
 #include <skalibs/tai.h>
-#include <skalibs/exec.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
@@ -875,7 +875,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     execute_chdir(&res) ;
 
-    xmexec_em(newargv, nenvp, info.modifs.s, info.modifs.len) ;
+    exec_path_merge_die(newargv[0], newargv, nenvp, info.modifs.s, info.modifs.len) ;
 
     return 0 ;
 }

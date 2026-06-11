@@ -19,6 +19,7 @@
 #include <sys/stat.h>
 
 #include <oblibs/log.h>
+#include <oblibs/exec.h>
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
 #include <oblibs/types.h>
@@ -29,7 +30,6 @@
 #include <skalibs/bytestr.h>
 #include <skalibs/env.h>
 #include <skalibs/sgetopt.h>
-#include <skalibs/exec.h>
 
 #include <66/ssexec.h>
 #include <66/svc.h>
@@ -206,7 +206,7 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
 
     ssexec_free(info) ;
     // it merge char const *const *environ with en->s where env->s take precedence
-    xmexec_m(newup, env->s, env->len) ;
+    exec_path_merge_die(newup[0], newup, (char const *const *)environ, env->s, env->len) ;
 }
 
 int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)

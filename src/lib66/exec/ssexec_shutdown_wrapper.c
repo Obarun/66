@@ -16,11 +16,11 @@
 #include <sys/types.h>
 
 #include <oblibs/log.h>
+#include <oblibs/exec.h>
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/exec.h>
 
 #include <66/ssexec.h>
 #include <66/config.h>
@@ -126,7 +126,7 @@ int ssexec_shutdown_wrapper(int argc, char const *const *argv, ssexec_t *info)
         newargv[m++] = info->live.s ;
         newargv[m] = 0 ;
 
-        xexec_ae(newargv[0], newargv, (char const *const *) environ) ;
+        exec_path_die(newargv[0], newargv, (char const *const *) environ) ;
     }
 
     unsigned int nargc = 5 + (time ? 2 : 0) + (acl ? 1 : 0) + (msg ? 1 : 0) ;
@@ -148,5 +148,5 @@ int ssexec_shutdown_wrapper(int argc, char const *const *argv, ssexec_t *info)
         newargv[m++] = msg ;
     newargv[m] = 0 ;
 
-    xexec_ae(newargv[0], newargv, (char const *const *) environ) ;
+    exec_path_die(newargv[0], newargv, (char const *const *) environ) ;
 }

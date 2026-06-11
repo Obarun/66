@@ -24,6 +24,7 @@
 #include <skalibs/sig.h>
 
 #include <oblibs/log.h>
+#include <oblibs/exec.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
@@ -34,7 +35,6 @@
 #include <oblibs/fd.h>
 
 #include <skalibs/sgetopt.h>
-#include <skalibs/exec.h>
 #include <skalibs/cspawn.h>
 #include <skalibs/djbunix.h>
 
@@ -468,7 +468,7 @@ static inline void run_stage2 (strbuf *env, const char *tty)
     t[tlen] = 0 ;
     strbuf_free(env) ;
 
-    xmexec_m(newargv, t, tlen) ;
+    exec_path_merge_die(newargv[0], newargv, (char const *const *)environ, t, tlen) ;
 }
 
 static inline void make_cmdline(char const *prog,char const **add,int len,char const *msg,char const *arg, strbuf *env)
@@ -816,6 +816,6 @@ int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
         }
 
         // it merge char const *const *environ with env.s where env.s take precedence
-        xmexec_m(newargv, env.s, env.len) ;
+        exec_path_merge_die(newargv[0], newargv, (char const *const *)environ, env.s, env.len) ;
     }
 }

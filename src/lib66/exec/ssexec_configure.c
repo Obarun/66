@@ -18,6 +18,7 @@
 #include <unistd.h>//_exit,access
 
 #include <oblibs/log.h>
+#include <oblibs/exec.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
@@ -30,7 +31,6 @@
 #include <skalibs/sgetopt.h>
 #include <skalibs/diuint32.h>
 #include <skalibs/unix-transactional.h>//atomic_symlink
-#include <skalibs/exec.h>
 
 #include <66/ssexec.h>
 #include <66/utils.h>
@@ -87,7 +87,7 @@ static void run_editor(char const *src, char const *sv)
         }
     }
     char const *const newarg[3] = { EDITOR, tsrc, 0 } ;
-    xexec_ae (newarg[0],newarg, (char const *const *)environ) ;
+    exec_path_die(newarg[0], newarg, (char const *const *)environ) ;
 }
 
 static void do_import(char const *svname, char const *svconf, char const *version, int svtype)

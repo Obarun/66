@@ -19,6 +19,7 @@
 #include <unistd.h>
 
 #include <oblibs/log.h>
+#include <oblibs/exec.h>
 #include <oblibs/environ.h>
 #include <oblibs/directory.h>
 #include <oblibs/strbuf.h>
@@ -26,7 +27,6 @@
 #include <oblibs/subst.h>
 #include <oblibs/types.h>
 
-#include <skalibs/exec.h>
 #include <skalibs/sgetopt.h>
 
 #include <66/config.h>
@@ -53,7 +53,7 @@ static void die_or_exec(char const *path, uint8_t insist, char const *const *arg
     else
         log_warnu("get environment from: ", path) ;
 
-    xexec_ae(argv[0], argv, envp) ;
+    exec_path_die(argv[0], argv, envp) ;
 }
 
 /** allowing to import uniquely one specific key
@@ -185,5 +185,5 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
     // end of el_substandrun_str
 
-    xmexec_em(nargv, nenvp, info.modifs.s, info.modifs.len) ;
+    exec_path_merge_die(nargv[0], nargv, nenvp, info.modifs.s, info.modifs.len) ;
 }
