@@ -448,6 +448,7 @@ static void info_display_all(const char *treename,int *what)
         (*opts_tree_table[idx].func)(fields[opts_tree_table[idx].id],&tres) ;
     }
 
+    resolve_free(wres) ;
 }
 
 static void info_parse_options(char const *str,int *what)
