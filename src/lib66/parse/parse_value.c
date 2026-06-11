@@ -26,7 +26,7 @@ int parse_value(strbuf *store, lexer_config *kcfg, resolve_enum_table_t table)
 
     size_t pos = 0 ;
     lexer_config vcfg = LEXER_CONFIG_ZERO ;
-    _alloc_strbuf_(stk, kcfg->slen - kcfg->cpos) ;
+    _alloc_strbuf_(stk, kcfg->slen - kcfg->cpos + 1) ;
     uint32_t kid = table.u.parser.id ;
     key_description_t const *list = table.u.parser.list ;
 
