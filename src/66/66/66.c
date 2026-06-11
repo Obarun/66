@@ -77,6 +77,7 @@ int main(int argc, char const *const *argv)
                 case 'h' :
 
                     info_help(help_66, usage_66) ;
+                    ssexec_free(&info) ;
                     return 0 ;
 
                 case 'v' :
