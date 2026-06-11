@@ -29,6 +29,7 @@
 #include <oblibs/environ.h>
 #include <oblibs/files.h>
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/sbl.h>
@@ -40,7 +41,6 @@
 
 #include <skalibs/posixplz.h>
 #include <skalibs/bytestr.h>
-#include <skalibs/sgetopt.h>
 #include <skalibs/sig.h>
 #include <skalibs/tai.h>
 #include <skalibs/direntry.h>
@@ -68,25 +68,20 @@ static char const *live = 0 ;
 static int inns = 0 ;
 static int nologger = 0 ;
 
-#define USAGE "66-shutdownd [ -h ] [ -l live ] [ -s skel ] [ -g gracetime ] [ -B ] [ -c ]"
+static opt_t const opts[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",      .arg = OPT_NONE,                                .help = "print this help" },
+    { .id = 'l',         .shortname = 'l', .longname = "live",      .arg = OPT_REQUIRED, .argname = "live",         .help = "live directory" },
+    { .id = 's',         .shortname = 's', .longname = "skeleton",  .arg = OPT_REQUIRED, .argname = "skel",         .help = "skeleton directory" },
+    { .id = 'g',         .shortname = 'g', .longname = "grace-time",.arg = OPT_REQUIRED, .argname = "milliseconds", .help = "grace time between the SIGTERM and the SIGKILL" },
+    { .id = 'B',         .shortname = 'B', .longname = "container", .arg = OPT_NONE,                                .help = "the system is running inside a container" },
+    { .id = 'c',         .shortname = 'c', .longname = "no-logger", .arg = OPT_NONE,                                .help = "the catch-all logger do not exist" },
+} ;
 
-static inline void help (void)
-{
-    DEFAULT_MSG = 0 ;
-
-    static char const *help =
-"\n"
-"options :\n"
-"   -h: print this help\n"
-"   -l: live directory\n"
-"   -s: skeleton directory\n"
-"   -g: grace time between the SIGTERM and the SIGKILL\n"
-"   -B: the system is running inside a container\n"
-"   -c: the catch-all logger do not exist\n"
-;
-
-    log_info(USAGE,"\n",help) ;
-}
+static opt_cmd_t const cmd = {
+    .name = "66-shutdownd",
+    .opts = opts,
+    .nopts = OPT_COUNT(opts),
+} ;
 
 static void restore_console (void)
 {
@@ -374,24 +369,27 @@ int main (int argc, char const *const *argv)
 
     PROG = "66-shutdownd" ;
     {
-        subgetopt l = SUBGETOPT_ZERO ;
+        opt_scan_t st = OPT_SCAN_ZERO ;
 
         for (;;)
         {
-            int opt = subgetopt_r(argc, argv, "hl:s:g:CB", &l) ;
-            if (opt == -1) break ;
-            switch (opt)
+            int o = opt_scan(argc, argv, opts, OPT_COUNT(opts), &st) ;
+            if (o == OPT_END) break ;
+            switch (o)
             {
-                case 'h' : help(); return 0 ;
-                case 'l' : live = l.arg ; break ;
-                case 's' : conf = l.arg ; break ;
-                case 'g' : if (!u32_scan_strict(l.arg, &grace_time)) log_usage(USAGE) ; break ;
+                case OPT_ID_HELP : return opt_emit_help(&cmd) ;
+                case 'l' : live = st.arg ; break ;
+                case 's' : conf = st.arg ; break ;
+                case 'g' :
+                    if (!u32_scan_strict(st.arg, &grace_time))
+                        return opt_emit_usage(&cmd) ;
+                    break ;
                 case 'B' : inns = 1 ; break ;
                 case 'c' : nologger = 1 ; break ;
-                default : log_usage(USAGE) ;
+                default : return opt_emit_error(&cmd, o, &st) ;
             }
         }
-        argc -= l.ind ; argv += l.ind ;
+        argc -= st.ind ; argv += st.ind ;
     }
     if (conf[0] != '/') log_dieusys(LOG_EXIT_USER, "skeleton: ",conf," must be an absolute path") ;
     if (live && live[0] != '/') log_die(LOG_EXIT_USER,"live: ",live," must be an absolute path") ;

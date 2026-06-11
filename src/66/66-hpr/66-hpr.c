@@ -25,9 +25,9 @@
 #include <sys/reboot.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/clock.h>
 
-#include <skalibs/sgetopt.h>
 #include <skalibs/sig.h>
 #include <skalibs/djbunix.h>
 
@@ -51,33 +51,28 @@
 #endif
 #endif
 
-#define USAGE "66-hpr [ -H ] [ -l live ] [ -b banner ] [ -f ] [ -h | -p | -r ] [ -n ] [ -d | -w ] [ -W ]"
-
 char const *banner = 0 ;
 char const *live = 0 ;
 
-static inline void info_help (void)
-{
-    DEFAULT_MSG = 0 ;
+static opt_t const opts[] = {
+    { .id = OPT_ID_HELP, .shortname = 'H', .longname = "help",     .arg = OPT_NONE,                          .help = "print this help" },
+    { .id = 'l',         .shortname = 'l', .longname = "live",     .arg = OPT_REQUIRED, .argname = "live",   .help = "live directory" },
+    { .id = 'b',         .shortname = 'b', .longname = "banner",   .arg = OPT_REQUIRED, .argname = "banner", .help = "end banner to display" },
+    { .id = 'f',         .shortname = 'f', .longname = "force",    .arg = OPT_NONE,                          .help = "force" },
+    { .id = 'h',         .shortname = 'h', .longname = "halt",     .arg = OPT_NONE,                          .help = "halt the system" },
+    { .id = 'p',         .shortname = 'p', .longname = "poweroff", .arg = OPT_NONE,                          .help = "poweroff the system" },
+    { .id = 'r',         .shortname = 'r', .longname = "reboot",   .arg = OPT_NONE,                          .help = "reboot the system" },
+    { .id = 'n',         .shortname = 'n', .longname = "no-sync",  .arg = OPT_NONE,                          .help = "do not sync" },
+    { .id = 'd',         .shortname = 'd', .longname = "no-wtmp",  .arg = OPT_NONE,                          .help = "do not write wtmp shutdown entry" },
+    { .id = 'w',         .shortname = 'w', .longname = "wtmp-only", .arg = OPT_NONE,                         .help = "only write wtmp shutdown entry" },
+    { .id = 'W',         .shortname = 'W', .longname = "no-wall",  .arg = OPT_NONE,                          .help = "do not send a wall message" },
+} ;
 
-    static char const *help =
-"\n"
-"options :\n"
-"   -H: print this help\n"
-"   -l: live directory\n"
-"   -b: end banner to display\n"
-"   -f: force\n"
-"   -h: halt the system\n"
-"   -p: poweroff the system\n"
-"   -r: reboot the system\n"
-"   -n: do not sync\n"
-"   -d: do not write wtmp shutdown entry\n"
-"   -w: only write wtmp shutdown entry\n"
-"   -W: do not send a wall message\n"
-;
-
-    log_info(USAGE,"\n",help) ;
-}
+static opt_cmd_t const cmd = {
+    .name = "66-hpr",
+    .opts = opts,
+    .nopts = OPT_COUNT(opts),
+} ;
 
 int main (int argc, char const *const *argv)
 {
@@ -90,16 +85,15 @@ int main (int argc, char const *const *argv)
 
     PROG = "66-hpr" ;
     {
-        subgetopt l = SUBGETOPT_ZERO ;
+        opt_scan_t st = OPT_SCAN_ZERO ;
 
         for (;;)
         {
-            int opt = subgetopt_r(argc, argv, "Hl:hprfdwWb:n", &l) ;
-            if (opt == -1) break ;
-            switch (opt)
-            {
-                case 'H' : info_help() ; return 0 ;
-                case 'l' : live = l.arg ; break ;
+            int o = opt_scan(argc, argv, opts, OPT_COUNT(opts), &st) ;
+            if (o == OPT_END) break ;
+            switch (o) {
+                case OPT_ID_HELP : return opt_emit_help(&cmd) ;
+                case 'l' : live = st.arg ; break ;
                 case 'h' : what = 1 ; break ;
                 case 'p' : what = 2 ; break ;
                 case 'r' : what = 3 ; break ;
@@ -108,11 +102,11 @@ int main (int argc, char const *const *argv)
                 case 'w' : dowtmp = 2 ; break ;
                 case 'W' : dowall = 0 ; break ;
                 case 'n' : dosync = 0 ; break ;
-                case 'b' : banner = l.arg ; break ;
-                default :  log_usage(USAGE) ;
+                case 'b' : banner = st.arg ; break ;
+                default : return opt_emit_error(&cmd, o, &st) ;
             }
         }
-        argc -= l.ind ; argv += l.ind ;
+        argc -= st.ind ; argv += st.ind ;
     }
     if (!banner) banner = HPR_WALL_BANNER ;
     if (live && live[0] != '/') log_die(LOG_EXIT_USER,"live: ",live," must be an absolute path") ;

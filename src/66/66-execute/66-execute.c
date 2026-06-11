@@ -24,6 +24,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/exec.h>
+#include <oblibs/opt.h>
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/environ.h>
@@ -35,7 +36,6 @@
 #include <oblibs/fd.h>
 #include <oblibs/files.h>
 
-#include <skalibs/sgetopt.h>
 #include <skalibs/tai.h>
 
 #include <66/resolve.h>
@@ -50,21 +50,17 @@
 #define EXECUTE_STOP 1
 uint8_t action = EXECUTE_START ; // start by default
 
-#define USAGE "66-execute [ -h ] [ -v verbosity ] start|stop servicename"
+static opt_t const opts[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                             .help = "print this help" },
+    { .id = 'v',         .shortname = 'v', .longname = "verbose", .arg = OPT_REQUIRED, .argname = "verbosity", .help = "increase/decrease verbosity" },
+} ;
 
-static inline void help_execute (void)
-{
-    DEFAULT_MSG = 0 ;
-
-    static char const *help =
-"\n"
-"options :\n"
-"   -h: print this help\n"
-"   -v: increase/decrease verbosity\n"
-;
-
-    log_info(USAGE,"\n", help) ;
-}
+static opt_cmd_t const cmd = {
+    .name = "66-execute",
+    .operands = "start|stop service",
+    .opts = opts,
+    .nopts = OPT_COUNT(opts),
+} ;
 
 static void setup_uidgid(uid_t *uid, gid_t *gid, resolve_service_t *res, uint32_t element)
 {
@@ -784,37 +780,27 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     PROG = "66-execute" ;
     {
-        subgetopt l = SUBGETOPT_ZERO ;
+        opt_scan_t st = OPT_SCAN_ZERO ;
 
         for (;;) {
 
-            int opt = subgetopt_r(argc,argv, "hv:", &l) ;
-            if (opt == -1) break ;
+            int o = opt_scan(argc, argv, opts, OPT_COUNT(opts), &st) ;
+            if (o == OPT_END) break ;
 
-            switch (opt) {
-
-                case 'h' :
-
-                    help_execute() ;
-                    return 0 ;
-
+            switch (o) {
+                case OPT_ID_HELP : return opt_emit_help(&cmd) ;
                 case 'v' :
-
-                    if (!u32_scan_strict(l.arg, &VERBOSITY))
-                        log_usage(USAGE) ;
-
+                    if (!u32_scan_strict(st.arg, &VERBOSITY))
+                        return opt_emit_usage(&cmd) ;
                     break ;
-
-                default :
-
-                    log_usage(USAGE) ;
+                default : return opt_emit_error(&cmd, o, &st) ;
             }
         }
-        argc -= l.ind ; argv += l.ind ;
+        argc -= st.ind ; argv += st.ind ;
     }
 
     if (argc < 2)
-        log_usage(USAGE) ;
+        return opt_emit_usage(&cmd) ;
 
     if (argv[0][0] != 's')
         log_die(LOG_EXIT_USER, "invalid command argument -- please use start|stop") ;

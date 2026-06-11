@@ -27,12 +27,12 @@
 #include <utmpx.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/types.h>
 #include <oblibs/clock.h>
 #include <oblibs/fd.h>
 #include <oblibs/io.h>
 
-#include <skalibs/sgetopt.h>
 #include <skalibs/sig.h>
 #include <skalibs/buffer.h>
 
@@ -43,37 +43,33 @@
 #define UT_NAMESIZE 32
 #endif
 
-#define USAGE "66-shutdown [ -H ] [ -v verbosity ] [ -l live ] [ -h | -p | -r | -k ] [ -f | -F ] [ -a ] [ -t sec ] time [ message ]  or  66-shutdown -c [ message ]"
-
 #define AC_FILE SS_SKEL_DIR "shutdown.allow"
 #define AC_BUFSIZE 4096
 #define AC_MAX 64
 
 static char const *live = 0 ;
 
-static inline void info_help (void)
-{
-    DEFAULT_MSG = 0 ;
+static opt_t const opts[] = {
+    { .id = OPT_ID_HELP, .shortname = 'H', .longname = "help",          .arg = OPT_NONE,                            .help = "print this help" },
+    { .id = 'v',         .shortname = 'v', .longname = "verbose",       .arg = OPT_REQUIRED, .argname = "verbosity",.help = "increase/decrease verbosity" },
+    { .id = 'l',         .shortname = 'l', .longname = "live",          .arg = OPT_REQUIRED, .argname = "live",     .help = "live directory" },
+    { .id = 'h',         .shortname = 'h', .longname = "halt",          .arg = OPT_NONE,                            .help = "halt the system" },
+    { .id = 'p',         .shortname = 'p', .longname = "poweroff",      .arg = OPT_NONE,                            .help = "poweroff the system" },
+    { .id = 'r',         .shortname = 'r', .longname = "reboot",        .arg = OPT_NONE,                            .help = "reboot the system" },
+    { .id = 'k',         .shortname = 'k', .longname = "warn-users",    .arg = OPT_NONE,                            .help = "only warn users" },
+    { .id = 'f',         .shortname = 'f', .longname = 0,               .arg = OPT_NONE,                            .help = "ignored (compatibility option)" },
+    { .id = 'F',         .shortname = 'F', .longname = 0,               .arg = OPT_NONE,                            .help = "ignored (compatibility option)" },
+    { .id = 'a',         .shortname = 'a', .longname = "access-control",.arg = OPT_NONE,                            .help = "check users access control" },
+    { .id = 'c',         .shortname = 'c', .longname = "cancel",        .arg = OPT_NONE,                            .help = "cancel planned shutdown" },
+    { .id = 't',         .shortname = 't', .longname = "grace-time",    .arg = OPT_REQUIRED, .argname = "seconds",  .help = "grace time between the SIGTERM and the SIGKILL" },
+} ;
 
-    static char const *help =
-"\n"
-"options :\n"
-"   -H: print this help\n"
-"   -v: increase/decrease verbosity\n"
-"   -l: live directory\n"
-"   -h: halt the system\n"
-"   -p: poweroff the system\n"
-"   -r: reboot the system\n"
-"   -f: ignored(compatibility option)\n"
-"   -F: ignored(compatibility option)\n"
-"   -k: only warn users\n"
-"   -a: check users access control\n"
-"   -t: grace time between the SIGTERM and the SIGKILL\n"
-"   -c: cancel planned shutdown\n"
-;
-
-    log_info(USAGE,"\n",help) ;
-}
+static opt_cmd_t const cmd = {
+    .name = "66-shutdown",
+    .operands = "time [ message ] or 66-shutdown -c [ message ]",
+    .opts = opts,
+    .nopts = OPT_COUNT(opts),
+} ;
 
 /* shutdown 01:23: date/time format parsing */
 
@@ -124,7 +120,7 @@ static void parse_mins (struct timespec *when, struct timespec const *now, char 
     log_flow() ;
 
     unsigned int mins ;
-    if (!u32_scan_strict(s, &mins)) log_usage(USAGE) ;
+    if (!u32_scan_strict(s, &mins)) _exit(opt_emit_usage(&cmd)) ;
     clock_addsec(when, now, (int64_t)mins * 60) ;
 }
 
@@ -252,17 +248,16 @@ int main (int argc, char const *const *argv)
 
     PROG = "66-shutdown" ;
     {
-        subgetopt l = SUBGETOPT_ZERO ;
+        opt_scan_t st = OPT_SCAN_ZERO ;
 
         for (;;)
         {
-            int opt = subgetopt_r(argc, argv, "v:Hl:hprkafFct:", &l) ;
-            if (opt == -1) break ;
-            switch (opt)
-            {
-                case 'H' : info_help() ; return 0 ;
-                case 'v' : if (!u32_scan_strict(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
-                case 'l' : live = l.arg ; break ;
+            int o = opt_scan(argc, argv, opts, OPT_COUNT(opts), &st) ;
+            if (o == OPT_END) break ;
+            switch (o) {
+                case OPT_ID_HELP : return opt_emit_help(&cmd) ;
+                case 'v' : if (!u32_scan_strict(st.arg, &VERBOSITY)) return opt_emit_usage(&cmd) ; break ;
+                case 'l' : live = st.arg ; break ;
                 case 'h' : what = 1 ; break ;
                 case 'p' : what = 2 ; break ;
                 case 'r' : what = 3 ; break ;
@@ -271,11 +266,11 @@ int main (int argc, char const *const *argv)
                 case 'f' : /* talk to the hand */ break ;
                 case 'F' : /* no, the other hand */ break ;
                 case 'c' : docancel = 1 ; break ;
-                case 't' : if (!u32_scan_strict(l.arg, &gracetime)) log_usage(USAGE) ; break ;
-                default : log_usage(USAGE) ;
+                case 't' : if (!u32_scan_strict(st.arg, &gracetime)) return opt_emit_usage(&cmd) ; break ;
+                default : return opt_emit_error(&cmd, o, &st) ;
             }
         }
-        argc -= l.ind ; argv += l.ind ;
+        argc -= st.ind ; argv += st.ind ;
     }
     if (live && live[0] != '/') log_die(LOG_EXIT_USER,"live: ",live," must be an absolute path") ;
     else live = SS_LIVE ;
@@ -299,7 +294,7 @@ int main (int argc, char const *const *argv)
         if (!hpr_cancel(tlive)) goto err ;
         return 0 ;
     }
-    if (!argc) log_usage(USAGE) ;
+    if (!argc) return opt_emit_usage(&cmd) ;
     parse_time(&when, &now, argv[0]) ;
     clock_sub(&when, &when, &now) ;
     if (argv[1])

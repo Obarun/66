@@ -20,45 +20,30 @@
 #include <unistd.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 
-#include <skalibs/sgetopt.h>
+static opt_t const opts[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE, .help = "print this help" },
+} ;
 
-#define USAGE "66-nuke"
-
-static inline void info_help (void)
-{
-    DEFAULT_MSG = 0 ;
-
-    static char const *help =
-"\n"
-"options :\n"
-"   -h: print this help\n"
-;
-
-    log_info(USAGE,"\n",help) ;
-}
+static opt_cmd_t const cmd = {
+    .name = "66-nuke",
+    .opts = opts,
+    .nopts = OPT_COUNT(opts),
+} ;
 
 int main (int argc, char const *const *argv)
 {
-
     {
-        subgetopt l = SUBGETOPT_ZERO ;
+        opt_scan_t st = OPT_SCAN_ZERO ;
 
         for (;;)
         {
-            int opt = subgetopt_r(argc,argv, "h", &l) ;
-
-            if (opt == -1) break ;
-            switch (opt)
-            {
-                case 'h' :
-
-                    info_help();
-                    return 0 ;
-
-                default :
-
-                    log_usage(USAGE) ;
+            int o = opt_scan(argc, argv, opts, OPT_COUNT(opts), &st) ;
+            if (o == OPT_END) break ;
+            switch (o) {
+                case OPT_ID_HELP : return opt_emit_help(&cmd) ;
+                default : return opt_emit_error(&cmd, o, &st) ;
             }
         }
     }

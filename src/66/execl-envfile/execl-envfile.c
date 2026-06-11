@@ -20,6 +20,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/exec.h>
+#include <oblibs/opt.h>
 #include <oblibs/environ.h>
 #include <oblibs/directory.h>
 #include <oblibs/strbuf.h>
@@ -27,24 +28,20 @@
 #include <oblibs/subst.h>
 #include <oblibs/types.h>
 
-#include <skalibs/sgetopt.h>
-
 #include <66/config.h>
 
-#define USAGE "execl-envfile [ -h ] [ -v verbosity ] [ -l ] src prog"
+static opt_t const opts[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                             .help = "print this help" },
+    { .id = 'v',         .shortname = 'v', .longname = "verbose", .arg = OPT_REQUIRED, .argname = "verbosity", .help = "increase/decrease verbosity" },
+    { .id = 'l',         .shortname = 'l', .longname = "loose",   .arg = OPT_NONE,                             .help = "loose" },
+} ;
 
-static inline void info_help (void)
-{
-  static char const *help =
-"\n"
-"options :\n"
-"   -h: print this help\n"
-"   -v: increase/decrease verbosity\n"
-"   -l: loose\n"
-;
-
-    log_info(USAGE,"\n",help) ;
-}
+static opt_cmd_t const cmd = {
+    .name = "execl-envfile",
+    .operands = "src prog",
+    .opts = opts,
+    .nopts = OPT_COUNT(opts),
+} ;
 
 static void die_or_exec(char const *path, uint8_t insist, char const *const *argv, char const *const *envp)
 {
@@ -74,43 +71,31 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
     PROG = "execl-envfile" ;
     {
-        subgetopt l = SUBGETOPT_ZERO ;
+        opt_scan_t st = OPT_SCAN_ZERO ;
 
         for (;;) {
 
-            int opt = subgetopt_r(argc, argv, "hv:l", &l) ;
-            if (opt == -1)
+            int o = opt_scan(argc, argv, opts, OPT_COUNT(opts), &st) ;
+            if (o == OPT_END)
                 break ;
 
-            switch (opt) {
-
-                case 'h' :
-
-                    info_help();
-                    return 0 ;
-
+            switch (o) {
+                case OPT_ID_HELP : return opt_emit_help(&cmd) ;
                 case 'v' :
-
-                    if (!u32_scan_strict(l.arg, &VERBOSITY))
-                        log_usage(USAGE) ;
-
+                    if (!u32_scan_strict(st.arg, &VERBOSITY))
+                        return opt_emit_usage(&cmd) ;
                     break ;
-
                 case 'l' :
-
                     insist = 0 ;
                     break ;
-
-                default :
-
-                    log_usage(USAGE) ;
+                default : return opt_emit_error(&cmd, o, &st) ;
             }
         }
-        argc -= l.ind ; argv += l.ind ;
+        argc -= st.ind ; argv += st.ind ;
     }
 
     if (argc < 2)
-        log_usage(USAGE) ;
+        return opt_emit_usage(&cmd) ;
 
     path = *argv ;
     argv++;

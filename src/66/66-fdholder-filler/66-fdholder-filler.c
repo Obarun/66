@@ -23,12 +23,12 @@
 #include <string.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/files.h>
 #include <oblibs/types.h>
 #include <oblibs/stream.h>
 
-#include <skalibs/sgetopt.h>
 #include <skalibs/tai.h>
 #include <skalibs/genalloc.h>
 
@@ -36,22 +36,18 @@
 
 #include <s6/fdholder.h>
 
-#define USAGE "66-fdholder-filler [ -h ] [ -v verbosity ] [ -1 ] [ -t timeout ]"
+static opt_t const opts[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                                .help = "print this help" },
+    { .id = 'v',         .shortname = 'v', .longname = "verbose", .arg = OPT_REQUIRED, .argname = "verbosity",    .help = "increase/decrease verbosity" },
+    { .id = '1',         .shortname = '1', .longname = "notify",  .arg = OPT_NONE,                                .help = "notify readiness on file descriptor 1" },
+    { .id = 't',         .shortname = 't', .longname = "timeout", .arg = OPT_REQUIRED, .argname = "milliseconds", .help = "timeout to apply" },
+} ;
 
-static inline void info_help (void)
-{
-    DEFAULT_MSG = 0 ;
-
-    static char const *help =
-"\n"
-"options :\n"
-"   -h: print this help\n"
-"   -v: increase/decrease verbosity\n"
-"\n"
-;
-
-    log_info(USAGE,"\n",help) ;
-}
+static opt_cmd_t const cmd = {
+    .name = "66-fdholder-filler",
+    .opts = opts,
+    .nopts = OPT_COUNT(opts),
+} ;
 
 static inline uint8_t class (char c)
 {
@@ -121,23 +117,28 @@ int main(int argc, char const *const *argv)
     PROG = "66-fdholder-filler" ;
     {
         unsigned int t = 0 ;
-        subgetopt l = SUBGETOPT_ZERO ;
+        opt_scan_t st = OPT_SCAN_ZERO ;
 
         for (;;)
         {
-            int opt = subgetopt_r(argc,argv, "hv:t:1", &l) ;
-            if (opt == -1) break ;
+            int o = opt_scan(argc, argv, opts, OPT_COUNT(opts), &st) ;
+            if (o == OPT_END) break ;
 
-            switch (opt)
-            {
-                case 'h' :  info_help(); return 0 ;
-                case 'v' :  if (!u32_scan_strict(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
-                case '1' :  notif = 1 ; break ;
-                case 't' :  if (!u32_scan_strict(l.arg, &t)) log_usage(USAGE) ; break ;
-                default  :  log_usage(USAGE) ;
+            switch (o) {
+                case OPT_ID_HELP : return opt_emit_help(&cmd) ;
+                case 'v' :
+                    if (!u32_scan_strict(st.arg, &VERBOSITY))
+                        return opt_emit_usage(&cmd) ;
+                    break ;
+                case '1' : notif = 1 ; break ;
+                case 't' :
+                    if (!u32_scan_strict(st.arg, &t))
+                        return opt_emit_usage(&cmd) ;
+                    break ;
+                default : return opt_emit_error(&cmd, o, &st) ;
             }
         }
-        argc -= l.ind ; argv += l.ind ;
+        argc -= st.ind ; argv += st.ind ;
         if (t) tain_from_millisecs(&deadline, t) ;
         else deadline = tain_infinite_relative ;
     }

@@ -10,31 +10,24 @@
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file./
- *
- * This file is a strict copy of s6-echo.c file
- * coming from skarnet software at https://skarnet.org/software/s6-portable-utils.
- * All credits goes to Laurent Bercot <ska-remove-this-if-you-are-not-a-bot@skarnet.org>
  * */
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/stream.h>
 
-#include <skalibs/sgetopt.h>
+static opt_t const opts[] = {
+    { .id = OPT_ID_HELP,    .shortname = 'h', .longname = "help",       .arg = OPT_NONE,                             .help = "print this help" },
+    { .id = 'n',            .shortname = 'n', .longname = "no-newline", .arg = OPT_NONE,                             .help = "do not output a trailing newline" },
+    { .id = 's',            .shortname = 's', .longname = "separator",  .arg = OPT_REQUIRED, .argname = "separator", .help = "use as character separator" },
+} ;
 
-#define USAGE "66-echo [ -h ] [ -n ] [ -s sep ] args..."
-
-static inline void info_help (void)
-{
-  static char const *help =
-"\n"
-"options :\n"
-"   -h: print this help\n"
-"   -n: do not output a trailing newline\n"
-"   -s: use as character separator\n"
-;
-
-    log_info(USAGE,"\n",help) ;
-}
+static opt_cmd_t const cmd = {
+    .name = "66-echo",
+    .operands = "args...",
+    .opts = opts,
+    .nopts = OPT_COUNT(opts),
+} ;
 
 int main (int argc, char const *const *argv)
 {
@@ -42,21 +35,20 @@ int main (int argc, char const *const *argv)
     char donl = 1 ;
     PROG = "66-echo" ;
     {
-        subgetopt l = SUBGETOPT_ZERO ;
+        opt_scan_t st = OPT_SCAN_ZERO ;
 
         for (;;)
         {
-            int opt = subgetopt_r(argc, argv, "hns:", &l) ;
-            if (opt == -1) break ;
-            switch (opt)
-            {
-                case 'h': info_help() ; return 0 ;
+            int o = opt_scan(argc, argv, opts, OPT_COUNT(opts), &st) ;
+            if (o == OPT_END) break ;
+            switch (o) {
+                case OPT_ID_HELP: return opt_emit_help(&cmd) ;
                 case 'n': donl = 0 ; break ;
-                case 's': sep = *l.arg ; break ;
-                default : log_usage(USAGE) ;
+                case 's': sep = *st.arg ; break ;
+                default : return opt_emit_error(&cmd, o, &st) ;
             }
         }
-        argc -= l.ind ; argv += l.ind ;
+        argc -= st.ind ; argv += st.ind ;
     }
     for ( ; *argv ; argv++)
         if ((!ostream_puts(ostream_1, *argv))

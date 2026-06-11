@@ -16,28 +16,23 @@
 #include <string.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 
-#include <skalibs/sgetopt.h>
-
 #include <66/constants.h>
 
-#define USAGE "66-oneshot [ -h ] [ -v verbosity ] up|down /run/66/state/<uid>/<service>"
+static opt_t const opts[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                             .help = "print this help" },
+    { .id = 'v',         .shortname = 'v', .longname = "verbose", .arg = OPT_REQUIRED, .argname = "verbosity", .help = "increase/decrease verbosity" },
+} ;
 
-static inline void help_oneshot (void)
-{
-    DEFAULT_MSG = 0 ;
-
-    static char const *help =
-"\n"
-"options :\n"
-"   -h: print this help\n"
-"   -v: increase/decrease verbosity\n"
-;
-
-    log_info(USAGE,"\n",help) ;
-}
+static opt_cmd_t const cmd = {
+    .name = "66-oneshot",
+    .operands = "up|down /run/66/state/<uid>/<service>",
+    .opts = opts,
+    .nopts = OPT_COUNT(opts),
+} ;
 
 int main(int argc, char const *const *argv)
 {
@@ -46,25 +41,27 @@ int main(int argc, char const *const *argv)
 
     PROG = "66-oneshot" ;
     {
-        subgetopt l = SUBGETOPT_ZERO ;
+        opt_scan_t st = OPT_SCAN_ZERO ;
 
         for (;;)
         {
-            int opt = subgetopt_r(argc, argv, "hv:", &l) ;
-            if (opt == -1) break ;
+            int o = opt_scan(argc, argv, opts, OPT_COUNT(opts), &st) ;
+            if (o == OPT_END) break ;
 
-            switch (opt)
-            {
-                case 'h' :  help_oneshot(); return 0 ;
-                case 'v' :  if (!u32_scan_strict(l.arg, &VERBOSITY)) log_usage(USAGE) ; break ;
-                default :   log_usage(USAGE) ;
+            switch (o) {
+                case OPT_ID_HELP : return opt_emit_help(&cmd) ;
+                case 'v' :
+                    if (!u32_scan_strict(st.arg, &VERBOSITY))
+                        return opt_emit_usage(&cmd) ;
+                    break ;
+                default : return opt_emit_error(&cmd, o, &st) ;
             }
         }
-        argc -= l.ind ; argv += l.ind ;
+        argc -= st.ind ; argv += st.ind ;
     }
 
     if (argc < 1)
-        log_usage(USAGE) ;
+        return opt_emit_usage(&cmd) ;
 
     if (argv[0][0] == 'd')
         file = "finish" ;
