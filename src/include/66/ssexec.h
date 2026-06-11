@@ -254,7 +254,7 @@ extern char const *help_snapshot_list ;
 #define OPTS_STATE "h"
 #define OPTS_STATE_LEN (sizeof OPTS_STATE - 1)
 #define OPTS_RESOLVE "h"
-#define OPTS_RESOVLE_LEN (sizeof OPTS_RESOLVE - 1)
+#define OPTS_RESOLVE_LEN (sizeof OPTS_RESOLVE - 1)
 
 #define OPTS_TREE_WRAPPER "h"
 #define OPTS_TREE_WRAPPER_LEN (sizeof OPTS_TREE_WRAPPER - 1)
@@ -271,7 +271,7 @@ extern char const *help_snapshot_list ;
 #define OPTS_BOOT_LEN (sizeof OPTS_BOOT - 1)
 
 #define OPTS_SCANDIR_WRAPPER "ho:"
-#define OPTS_SCANCTL_WRAPPER_LEN (sizeof OPTS_SCANDIR_WRAPPER - 1)
+#define OPTS_SCANDIR_WRAPPER_LEN (sizeof OPTS_SCANDIR_WRAPPER - 1)
 #define OPTS_SCANDIR_SIGNAL "d:s:e:bB"
 #define OPTS_SCANDIR_SIGNAL_LEN (sizeof OPTS_SCANDIR_SIGNAL - 1)
 #define OPTS_SCANDIR_CREATE "bBs:cL:"
