@@ -33,7 +33,7 @@ void resolve_remove(char const *base, char const *name)
     char file[baselen + SS_RESOLVE_LEN + 1 + namelen +1] ;
     auto_strings(file, base, SS_RESOLVE, "/", name) ;
 
-    unlink(file) ;
+    (void)unlink(file) ;
     errno = e ;
 }
 

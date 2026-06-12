@@ -18,8 +18,6 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 
-#include <skalibs/posixplz.h>
-
 #include <66/service.h>
 #include <66/sanitize.h>
 #include <66/constants.h>
@@ -70,14 +68,14 @@ int sanitize_scandir(resolve_service_t *res, ss_state_t *sta)
 
         if (sta->toinit == STATE_FLAGS_TRUE) {
 
-            unlink_void(res->sa.s + res->live.scandir) ;
+            (void)unlink(res->sa.s + res->live.scandir) ;
             scandir_to_livestate(res) ;
         }
 
         if (sta->tounsupervise == STATE_FLAGS_TRUE) {
 
             log_trace("remove symlink: ", res->sa.s + res->live.scandir) ;
-            unlink_void(res->sa.s + res->live.scandir) ;
+            (void)unlink(res->sa.s + res->live.scandir) ;
 
             state_set_flag(sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_FALSE) ;
             state_set_flag(sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE) ;

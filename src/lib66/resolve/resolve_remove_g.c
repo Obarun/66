@@ -38,7 +38,7 @@ void resolve_remove_g(char const *base, char const *name, uint8_t data_type)
 
         resolve_remove(path, name) ;
 
-        unlink(path) ;
+        (void)unlink(path) ;
         errno = e ;
 
     } else if (data_type == DATA_TREE || data_type == DATA_TREE_MASTER) {

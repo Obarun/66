@@ -58,7 +58,7 @@ int symlink_atomic(char const *target, char const *name)
 
     if (rename(tmp, name) < 0) {
         int e = errno ;
-        unlink(tmp) ;
+        (void)unlink(tmp) ;
         return (errno = e, 0) ;
     }
 

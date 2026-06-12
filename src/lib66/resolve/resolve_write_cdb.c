@@ -23,8 +23,6 @@
 #include <oblibs/cdb.h>
 #include <oblibs/files.h>
 
-#include <skalibs/posixplz.h>//unlink
-
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/tree.h>
@@ -82,13 +80,13 @@ int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *nam
         goto err_fd ;
     }
 
-    unlink_void(tfile) ;
+    (void)unlink(tfile) ;
 
     return 1 ;
 
     err:
         close(fd) ;
     err_fd:
-        unlink_void(tfile) ;
+        (void)unlink(tfile) ;
         return 0 ;
 }

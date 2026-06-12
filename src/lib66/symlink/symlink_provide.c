@@ -67,7 +67,7 @@ int symlink_provide(const char *base, resolve_service_t *res, bool action)
             } else if (!strcmp(lname.s, res->sa.s + res->name)) {
 
                 log_trace("remove provide symlink: ", lnk.s) ;
-                unlink(lnk.s) ;
+                (void)unlink(lnk.s) ;
             }
 
         } else if (action) {

@@ -134,7 +134,7 @@ static void remove_provide(resolve_service_t *res, ssexec_t *info)
 
             if (!strcmp(lname.s, res->sa.s + res->name)) {
                 log_trace("remove provide symlink: ", lnk.s) ;
-                unlink(lnk.s) ;
+                (void)unlink(lnk.s) ;
             }
         }
     }
@@ -243,10 +243,10 @@ static void remove_logger(resolve_service_t *res, ssexec_t *info)
     tree_service_remove(info->base.s, lres.sa.s + lres.treename, lres.sa.s + lres.name) ;
 
     log_trace("remove symlink: ", sym) ;
-    unlink(sym) ;
+    (void)unlink(sym) ;
 
     log_trace("remove symlink: ", lres.sa.s + lres.live.scandir) ;
-    unlink(lres.sa.s + lres.live.scandir) ;
+    (void)unlink(lres.sa.s + lres.live.scandir) ;
 
     log_info("Removed successfully: ", lres.sa.s + lres.name) ;
 
@@ -281,10 +281,10 @@ static void remove_service(resolve_service_t *res, ssexec_t *info, uint8_t propa
     auto_strings(sym, res->sa.s + res->path.home, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", res->sa.s + res->name) ;
 
     log_trace("remove symlink: ", sym) ;
-    unlink(sym) ;
+    (void)unlink(sym) ;
 
     log_trace("remove symlink: ", res->sa.s + res->live.scandir) ;
-    unlink(res->sa.s + res->live.scandir) ;
+    (void)unlink(res->sa.s + res->live.scandir) ;
 
     log_info("Removed successfully: ", res->sa.s + res->name) ;
 }

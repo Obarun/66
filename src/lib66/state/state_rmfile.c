@@ -18,8 +18,6 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 
-#include <skalibs/posixplz.h>
-
 #include <66/state.h>
 #include <66/constants.h>
 #include <66/service.h>
@@ -33,8 +31,8 @@ void state_rmfile(resolve_service_t *res)
     auto_strings(status, res->sa.s + res->live.statedir, "/", SS_STATUS) ;
 
     if (access(status, F_OK) < 0) {
-        unlink_void(res->sa.s + res->live.status) ;
+        (void)unlink(res->sa.s + res->live.status) ;
     } else {
-        unlink_void(status) ;
+        (void)unlink(status) ;
     }
 }
