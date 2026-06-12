@@ -15,7 +15,6 @@
 #include <stdlib.h>
 
 #include <oblibs/log.h>
-
 #include <oblibs/strbuf.h>
 
 #include <66/resolve.h>

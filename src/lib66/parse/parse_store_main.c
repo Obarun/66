@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <stdlib.h> //free
 #include <pwd.h>
+#include <errno.h>
 
 #include <oblibs/string.h>
 #include <oblibs/sbl.h>

@@ -21,9 +21,11 @@
 #include <oblibs/types.h>
 
 #include <66/constants.h>
+#include <66/ssexec.h>
 #include <66/sanitize.h>
 #include <66/service.h>
 #include <66/resolve.h>
+#include <66/graph.h>
 #include <66/state.h>
 
 void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)

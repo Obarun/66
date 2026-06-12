@@ -34,7 +34,6 @@
 #include <66/state.h>
 #include <66/service.h>
 #include <66/sanitize.h>
-#include <66/svc.h>
 #include <66/enum_parser.h>
 
 #include <s6/fdholder.h>

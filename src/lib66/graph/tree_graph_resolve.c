@@ -21,7 +21,6 @@
 #include <oblibs/hash.h>
 #include <oblibs/log.h>
 #include <oblibs/types.h>
-#include <oblibs/lexer.h>
 #include <oblibs/sbl.h>
 
 #include <66/resolve.h>

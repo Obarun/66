@@ -17,6 +17,8 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 
+#include <66/instance.h>
+
 void instance_splitname_to_char(char *store, char const *name, int len, int what)
 {
     log_flow() ;

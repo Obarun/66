@@ -1,5 +1,5 @@
 /*
- * parser_clean_runas.c
+ * parse_clean_runas.c
  *
  * Copyright (c) 2018-2025 Eric Vidal <eric@obarun.org>
  *
@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <oblibs/string.h>
 #include <oblibs/log.h>

@@ -16,12 +16,10 @@
 #include <string.h>
 
 #include <oblibs/string.h>
-#include <oblibs/files.h>
 #include <oblibs/log.h>
 #include <oblibs/environ.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
-#include <skalibs/djbunix.h>
 
 #include <66/enum.h>
 #include <66/enum_parser.h>

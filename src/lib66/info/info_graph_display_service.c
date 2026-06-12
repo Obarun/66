@@ -19,17 +19,14 @@
 #include <oblibs/types.h>
 #include <oblibs/stream.h>
 
-
+#include <s6/supervise.h>
 
 #include <66/service.h>
 #include <66/utils.h>
 #include <66/resolve.h>
-#include <66/config.h>
 #include <66/constants.h>
 #include <66/state.h>
 #include <66/enum_parser.h>
-
-#include <s6/supervise.h>
 
 int info_graph_display_service(char const *name)
 {

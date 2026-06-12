@@ -14,6 +14,7 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>

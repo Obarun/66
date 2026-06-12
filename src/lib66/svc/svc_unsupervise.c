@@ -17,7 +17,8 @@
 #include <oblibs/log.h>
 #include <oblibs/hash.h>
 #include <oblibs/sbl.h>
-#include <oblibs/lexer.h>
+
+#include <s6/fdholder.h>
 
 #include <66/service.h>
 #include <66/state.h>

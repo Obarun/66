@@ -19,7 +19,6 @@
 #include <oblibs/strbuf.h>
 
 #include <66/resolve.h>
-#include <66/constants.h>
 #include <66/service.h>
 #include <66/tree.h>
 

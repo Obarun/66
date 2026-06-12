@@ -13,6 +13,7 @@
  */
 
 #include <string.h>
+#include <stdint.h>
 #include <unistd.h> // getuid
 
 #include <oblibs/log.h>

@@ -16,6 +16,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <pwd.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -26,6 +27,7 @@
 #include <66/resolve.h>
 #include <66/enum_parser.h>
 #include <66/constants.h>
+#include <66/config.h>
 #include <66/service.h>
 
 static int get_shebang(strbuf *stk, char const *line)

@@ -20,7 +20,7 @@
 
 #include <66/resolve.h>
 #include <66/constants.h>
-#include <66/symlink.h>
+#include <66/service.h>
 
 int resolve_read_g(resolve_wrapper_t *wres, char const *base, char const *name)
 {

@@ -13,6 +13,7 @@
  * */
 
 #include <stddef.h>
+#include <string.h>
 
 #include <oblibs/log.h>
 #include <oblibs/stream.h>

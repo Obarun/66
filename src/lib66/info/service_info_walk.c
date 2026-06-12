@@ -18,6 +18,7 @@
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
+#include <oblibs/hash.h>
 
 #include <66/info.h>
 #include <66/graph.h>

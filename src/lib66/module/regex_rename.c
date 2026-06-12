@@ -20,13 +20,9 @@
 #include <oblibs/string.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/lexer.h>
 #include <oblibs/environ.h>
 
-#include <skalibs/djbunix.h>
-
 #include <66/module.h>
-#include <66/constants.h>
 
 void regex_rename(strbuf *list, resolve_service_t *res, uint32_t element)
 {

@@ -13,27 +13,20 @@
  */
 
 #include <string.h>
-#include <unistd.h>
-#include <errno.h>
+#include <stdint.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
 #include <oblibs/log.h>
 #include <oblibs/files.h>
-#include <oblibs/directory.h>
 #include <oblibs/string.h>
-#include <oblibs/types.h>
-
-#include <skalibs/djbunix.h>
-#include <skalibs/unix-transactional.h>
 
 #include <66/sanitize.h>
+#include <66/service.h>
 #include <66/resolve.h>
-#include <66/constants.h>
 #include <66/enum_parser.h>
 #include <66/tree.h>
 #include <66/state.h>
-#include <66/svc.h>
 
 static void resolve_compare(resolve_service_t *res)
 {

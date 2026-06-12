@@ -15,7 +15,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <string.h>
-#include <pwd.h>
+#include <unistd.h>
 
 #include <oblibs/log.h>
 #include <oblibs/files.h>
@@ -31,7 +31,6 @@
 
 #include <66/module.h>
 #include <66/resolve.h>
-#include <66/info.h>
 #include <66/environ.h>
 #include <66/write.h>
 

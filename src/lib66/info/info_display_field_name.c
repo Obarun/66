@@ -17,7 +17,6 @@
 #include <oblibs/log.h>
 #include <oblibs/stream.h>
 
-
 #include <66/info.h>
 
 size_t info_display_field_name(char const *field)

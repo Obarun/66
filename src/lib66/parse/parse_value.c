@@ -12,9 +12,11 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <stdint.h>
+#include <string.h>
+
 #include <oblibs/log.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
 
 #include <66/parse.h>

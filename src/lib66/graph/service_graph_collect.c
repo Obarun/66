@@ -22,7 +22,6 @@
 #include <oblibs/strbuf.h>
 #include <oblibs/types.h>
 #include <oblibs/sbl.h>
-#include <oblibs/lexer.h>
 
 #include <66/graph.h>
 #include <66/ssexec.h>

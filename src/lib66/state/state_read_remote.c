@@ -12,10 +12,11 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <string.h>
+
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
-
 
 #include <66/state.h>
 #include <66/constants.h>

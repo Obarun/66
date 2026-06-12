@@ -22,24 +22,19 @@
 #include <oblibs/files.h>
 #include <oblibs/sbl.h>
 #include <oblibs/string.h>
-#include <oblibs/types.h>
-#include <oblibs/environ.h>
 #include <oblibs/strbuf.h>
 
 #include <66/utils.h>
 #include <66/constants.h>
 #include <66/ssexec.h>
 #include <66/service.h>
-#include <66/tree.h>
 #include <66/config.h>
 #include <66/resolve.h>
-#include <66/environ.h>
 #include <66/enum_parser.h>
 #include <66/state.h> // service_is_g flag
 #include <66/parse.h>
 #include <66/module.h>
 #include <66/instance.h>
-#include <66/sanitize.h>
 
 static void parse_read_instance(strbuf *frontend, char const *svsrc, char const *sv, int insta)
 {

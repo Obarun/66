@@ -1,5 +1,5 @@
 /*
- * ssexec_compute_ns.c
+ * svc_compute_ns.c
  *
  * Copyright (c) 2018-2025 Eric Vidal <eric@obarun.org>
  *
@@ -17,11 +17,9 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/sbl.h>
-#include <oblibs/lexer.h>
 
 #include <66/svc.h>
 #include <66/graph.h>
-#include <66/config.h>
 #include <66/ssexec.h>
 #include <66/service.h>
 #include <66/sanitize.h>

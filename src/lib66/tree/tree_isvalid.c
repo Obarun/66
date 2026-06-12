@@ -12,13 +12,10 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <string.h>
-
 #include <oblibs/log.h>
 
 #include <66/tree.h>
 #include <66/resolve.h>
-#include <66/constants.h>
 
 int tree_isvalid(char const *base, char const *treename)
 {

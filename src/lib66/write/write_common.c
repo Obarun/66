@@ -25,18 +25,16 @@
 #include <oblibs/files.h>
 #include <oblibs/sbl.h>
 #include <oblibs/directory.h>
-#include <oblibs/types.h>
 #include <oblibs/fd.h>
 #include <oblibs/io.h>
 #include <oblibs/strbuf.h>
-
-#include <skalibs/unix-transactional.h>
 
 #include <66/service.h>
 #include <66/write.h>
 #include <66/constants.h>
 #include <66/environ.h>
 #include <66/enum_parser.h>
+#include <66/parse.h>
 
 int write_common(resolve_service_t *res, char const *dst, uint8_t force)
 {

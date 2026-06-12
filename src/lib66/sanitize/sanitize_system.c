@@ -19,22 +19,16 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/types.h>
 #include <oblibs/directory.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/files.h>
-#include <oblibs/lexer.h>
 
 #include <66/ssexec.h>
 #include <66/config.h>
 #include <66/constants.h>
 #include <66/sanitize.h>
 #include <66/utils.h>
-#include <66/state.h>
 #include <66/tree.h>
-#include <66/write.h>
-#include <66/parse.h>
-#include <66/resolve.h>
 
 static void auto_dir(char const *dst, mode_t mode)
 {

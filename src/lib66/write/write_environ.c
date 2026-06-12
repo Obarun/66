@@ -17,7 +17,6 @@
 
 #include <oblibs/log.h>
 #include <oblibs/files.h>
-#include <oblibs/types.h>
 
 int write_environ(char const *name, char const *contents, char const *dst)
 {

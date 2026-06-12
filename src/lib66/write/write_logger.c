@@ -19,8 +19,6 @@
 
 #include <oblibs/string.h>
 #include <oblibs/log.h>
-#include <oblibs/types.h>
-#include <oblibs/directory.h>
 #include <oblibs/files.h>
 
 #include <66/config.h>

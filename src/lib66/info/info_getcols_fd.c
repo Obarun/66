@@ -14,7 +14,6 @@
 
 #include <unistd.h>
 #include <sys/ioctl.h>
-#include <wchar.h>
 
 #include <66/info.h>
 

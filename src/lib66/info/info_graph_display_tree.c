@@ -23,7 +23,6 @@
 #include <66/tree.h>
 #include <66/resolve.h>
 #include <66/utils.h>
-#include <66/constants.h>
 #include <66/info.h>
 
 int info_graph_display_tree(char const *name)

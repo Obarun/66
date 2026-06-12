@@ -21,7 +21,6 @@
 #include <fcntl.h>
 #include <utmpx.h>
 
-#include <oblibs/log.h>
 #include <oblibs/fd.h>
 #include <oblibs/io.h>
 

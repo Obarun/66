@@ -14,15 +14,9 @@
 
 #include <string.h>
 #include <unistd.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <sys/stat.h> // umask
 
 #include <oblibs/log.h>
-#include <oblibs/files.h>
 #include <oblibs/string.h>
-#include <oblibs/directory.h>
-#include <oblibs/types.h>
 
 #include <skalibs/unix-transactional.h>
 #include <skalibs/posixplz.h>
@@ -33,39 +27,6 @@
 #include <66/enum_parser.h>
 #include <66/state.h>
 #include <66/svc.h>
-
-/*
-int sanitize_supervision_dir(resolve_service_t *res)
-{
-    log_flow() ;
-
-    mode_t hmod = umask(0) ;
-    char *event = res->sa.s + res->live.eventdir ;
-    char *supervise = res->sa.s + res->live.supervisedir ;
-
-    // event dir
-    log_trace("create directory: ", event) ;
-    int r = dir_create_parent(event, 0700) ;
-    if (!r)
-        log_warnusys_return(LOG_EXIT_ZERO, "create directory: ", event) ;
-
-    if (chown(event, -1, getegid()) < 0)
-        log_warnusys_return(LOG_EXIT_ZERO, "chown: ", event) ;
-
-    if (chmod(event, 03730) < 0)
-        log_warnusys_return(LOG_EXIT_ZERO, "chmod: ", event) ;
-
-    // supervise dir
-    log_trace("create directory: ", supervise) ;
-    r = dir_create_parent(supervise, 0700) ;
-    if (!r)
-        log_warnusys_return(LOG_EXIT_ZERO, "create directory: ", event) ;
-
-    umask(hmod) ;
-
-    return 1 ;
-}
-*/
 
 static void scandir_to_livestate(resolve_service_t *res)
 {

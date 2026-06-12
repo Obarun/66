@@ -13,6 +13,11 @@
  */
 
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <string.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
@@ -22,6 +27,10 @@
 #include <66/ssexec.h>
 #include <66/utils.h>
 #include <66/constants.h>
+#include <66/config.h>
+#include <66/service.h>
+#include <66/resolve.h>
+#include <66/enum_parser.h>
 #include <66/sanitize.h>
 #include <66/migrate.h>
 

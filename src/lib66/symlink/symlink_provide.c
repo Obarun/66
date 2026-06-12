@@ -15,12 +15,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/lexer.h>
 
 #include <66/service.h>
 #include <66/symlink.h>

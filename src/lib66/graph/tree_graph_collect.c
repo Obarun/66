@@ -18,7 +18,6 @@
 
 #include <oblibs/sbl.h>
 #include <oblibs/log.h>
-#include <oblibs/lexer.h>
 
 #include <66/graph.h>
 #include <66/ssexec.h>

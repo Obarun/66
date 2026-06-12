@@ -22,6 +22,7 @@
 #include <time.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 
 #include <oblibs/io.h>
 #include <oblibs/types.h>

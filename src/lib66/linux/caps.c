@@ -23,7 +23,6 @@
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/lexer.h>
 #include <oblibs/bits.h>
 
 #include <66/service.h>

@@ -17,10 +17,8 @@
 #include <oblibs/string.h>
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
-
 #include <oblibs/strbuf.h>
 
-#include <66/constants.h>
 #include <66/resolve.h>
 #include <66/tree.h>
 

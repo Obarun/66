@@ -30,7 +30,6 @@
 #include <66/constants.h>
 #include <66/state.h>
 #include <66/enum_parser.h>
-#include <66/svc.h>
 
 #include <s6/fdholder.h>
 

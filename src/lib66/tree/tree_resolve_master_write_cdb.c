@@ -12,11 +12,14 @@
  * except according to the terms contained in the LICENSE file.
  */
 
+#include <stdlib.h>
+
 #include <oblibs/log.h>
 #include <oblibs/cdb.h>
 
 #include <66/tree.h>
 #include <66/resolve.h>
+#include <66/config.h>
 
 static void add_version(resolve_tree_master_t *mres)
 {

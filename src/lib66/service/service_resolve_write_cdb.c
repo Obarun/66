@@ -12,6 +12,8 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <stdlib.h>
+
 #include <oblibs/log.h>
 #include <oblibs/cdb.h>
 

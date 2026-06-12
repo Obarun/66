@@ -19,7 +19,6 @@
 #include <oblibs/sbl.h>
 #include <oblibs/files.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/lexer.h>
 #include <oblibs/environ.h>
 
 #include <66/resolve.h>

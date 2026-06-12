@@ -15,7 +15,7 @@
 #include <stdlib.h>//free
 #include <errno.h>
 #include <sys/stat.h>
-#include <string.h>
+#include <unistd.h>
 
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>

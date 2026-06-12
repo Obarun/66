@@ -20,8 +20,6 @@
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/lexer.h>
-#include <oblibs/types.h>
 #include <oblibs/string.h>
 
 #include <66/service.h>
@@ -30,7 +28,6 @@
 #include <66/tree.h>
 #include <66/enum_parser.h>
 #include <66/ssexec.h>
-#include <66/constants.h>
 #include <66/symlink.h>
 
 static bool isdone(struct resolve_hash_s *hres, const char *name)

@@ -17,7 +17,7 @@
 #include <oblibs/log.h>
 #include <oblibs/strbuf.h>
 
-#include <66/utils.h>
+#include <66/instance.h>
 
 int instance_splitname(strbuf *sa,char const *name,int len,int what)
 {

@@ -18,11 +18,10 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-
 #include <oblibs/strbuf.h>
 
-#include <66/utils.h>
 #include <66/constants.h>
+#include <66/utils.h>
 
 int set_ownerhome(strbuf *base,uid_t owner)
 {

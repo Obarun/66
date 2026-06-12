@@ -12,7 +12,6 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <string.h>
 #include <errno.h>
 
 #include <oblibs/log.h>

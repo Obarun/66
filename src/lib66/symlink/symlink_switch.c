@@ -23,7 +23,7 @@
 
 #include <skalibs/unix-transactional.h>//atomic_symlink
 
-#include <66/resolve.h>
+#include <66/service.h>
 #include <66/sanitize.h>
 #include <66/constants.h>
 

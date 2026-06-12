@@ -27,7 +27,6 @@
 #include <66/parse.h>
 #include <66/resolve.h>
 #include <66/enum_parser.h>
-#include <66/utils.h>
 #include <66/environ.h>
 
 static int get_import_field(resolve_service_t *res, strbuf *store)

@@ -13,7 +13,6 @@
  */
 
 #include <string.h>
-#include <unistd.h>
 
 #include <oblibs/log.h>
 #include <oblibs/cdb.h>

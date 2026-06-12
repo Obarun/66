@@ -13,6 +13,7 @@
  */
 
 #include <stdlib.h> //free
+#include <stdint.h>
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>

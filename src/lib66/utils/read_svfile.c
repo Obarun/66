@@ -19,8 +19,6 @@
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>
 
-#include <skalibs/djbunix.h>
-
 #include <66/utils.h>
 
 int read_svfile(strbuf *sasv,char const *name,char const *src)

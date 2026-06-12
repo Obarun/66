@@ -20,8 +20,6 @@
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>
 
-#include <66/constants.h>
-#include <66/utils.h>
 #include <66/service.h>
 #include <66/instance.h>
 

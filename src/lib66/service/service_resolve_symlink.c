@@ -1,5 +1,5 @@
 /*
- * service_resolve_symlink.h
+ * service_resolve_symlink.c
  *
  * Copyright (c) 2025 Eric Vidal <eric@obarun.org>
  *
@@ -12,7 +12,6 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <stddef.h>
 #include <unistd.h>
 #include <errno.h>
 

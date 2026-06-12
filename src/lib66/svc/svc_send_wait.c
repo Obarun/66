@@ -20,7 +20,6 @@
 #include <skalibs/djbunix.h>
 
 #include <66/svc.h>
-#include <66/resolve.h>
 #include <66/ssexec.h>
 
 int svc_send_wait(char const *const *list, uint32_t nservice, char **sig, unsigned int siglen, ssexec_t *info)

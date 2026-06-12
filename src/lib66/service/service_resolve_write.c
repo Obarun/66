@@ -14,7 +14,7 @@
 
 #include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
+#include <string.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>

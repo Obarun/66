@@ -1,5 +1,5 @@
 /*
- * parse_rename_interdependencies.c
+ * parse_rename_interdependences.c
  *
  * Copyright (c) 2018-2025 Eric Vidal <eric@obarun.org>
  *
@@ -19,7 +19,6 @@
 #include <oblibs/string.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/lexer.h>
 #include <oblibs/hash.h>
 
 #include <66/parse.h>

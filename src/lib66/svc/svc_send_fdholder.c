@@ -12,11 +12,12 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <stdlib.h>
+#include <string.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
+#include <oblibs/environ.h>
 #include <oblibs/spawn.h>
 
 #include <skalibs/djbunix.h>

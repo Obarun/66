@@ -19,6 +19,8 @@
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
 
+#include <66/instance.h>
+
 int instance_create(strbuf *sasv,char const *svname, char const *regex, int len)
 {
     log_flow() ;

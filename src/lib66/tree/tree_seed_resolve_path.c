@@ -19,7 +19,7 @@
 #include <oblibs/log.h>
 #include <oblibs/strbuf.h>
 
-#include <66/constants.h>
+#include <66/config.h>
 #include <66/utils.h>
 #include <66/tree.h>
 

@@ -15,7 +15,6 @@
 #include <oblibs/log.h>
 #include <oblibs/stream.h>
 
-
 #include <66/info.h>
 
 int info_graph_display(char const *name, info_graph_func *func, depth_t *depth, int last, int padding, info_graph_style *style)

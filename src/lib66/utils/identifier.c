@@ -16,7 +16,6 @@
 #include <pwd.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <stdlib.h>
 #include <grp.h>
 
 #include <oblibs/string.h>

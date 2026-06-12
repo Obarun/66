@@ -19,7 +19,6 @@
 #include <oblibs/log.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
-#include <oblibs/types.h>
 #include <oblibs/directory.h>
 
 void parse_module_check_dir(char const *src,char const *dir)

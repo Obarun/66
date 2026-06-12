@@ -15,7 +15,6 @@
 #include <errno.h>
 #include <pwd.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 
 #include <oblibs/log.h>
 #include <66/utils.h>

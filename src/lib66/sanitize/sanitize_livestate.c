@@ -13,20 +13,16 @@
  */
 
 #include <string.h>
-#include <stdint.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
-#include <oblibs/types.h>
 #include <oblibs/directory.h>
 
 #include <skalibs/unix-transactional.h>
-#include <skalibs/posixplz.h>
 
 #include <66/constants.h>
 #include <66/sanitize.h>

@@ -22,7 +22,6 @@
 
 #include <66/info.h>
 #include <66/graph.h>
-#include <66/config.h>
 
 static int info_add_sort(strbuf *sa, tree_graph_t *g, uint32_t *count)
 {

@@ -13,6 +13,7 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
@@ -22,7 +23,6 @@
 #include <66/service.h>
 #include <66/resolve.h>
 #include <66/ssexec.h>
-#include <66/tree.h>
 #include <66/constants.h>
 
 static void service_db_tree(resolve_service_t *old, resolve_service_t *new, ssexec_t *info)

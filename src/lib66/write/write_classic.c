@@ -15,7 +15,6 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
-#include <oblibs/string.h>
 
 #include <66/service.h>
 #include <66/write.h>
