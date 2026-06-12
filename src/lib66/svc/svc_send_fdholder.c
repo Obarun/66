@@ -17,9 +17,9 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
+#include <oblibs/spawn.h>
 
 #include <skalibs/djbunix.h>
-#include <skalibs/cspawn.h>
 
 #include <66/svc.h>
 
@@ -47,7 +47,7 @@ void svc_send_fdholder(char const *socket, char const *signal)
 
     log_trace("sending -", signal, " signal to: ", socket) ;
 
-    pid = child_spawn0(newargv[0], newargv, (char const *const *) environ) ;
+    pid = spawn_path(newargv[0], newargv, (char const *const *) environ) ;
 
     if (waitpid_nointr(pid, &wstat, 0) < 0)
         log_dieusys(LOG_EXIT_SYS, "waiting reload of the fdholder daemon") ;

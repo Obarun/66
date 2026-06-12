@@ -38,6 +38,7 @@
 #include <oblibs/fd.h>
 #include <oblibs/stream.h>
 #include <oblibs/io.h>
+#include <oblibs/spawn.h>
 
 #include <skalibs/posixplz.h>
 #include <skalibs/bytestr.h>
@@ -45,7 +46,6 @@
 #include <skalibs/tai.h>
 #include <skalibs/direntry.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/cspawn.h>
 #include <skalibs/iopause.h>
 
 #include <execline/config.h>
@@ -163,7 +163,7 @@ static inline void run_rcshut (void)
     auto_conf(confile,conflen) ;
     parse_conf(confile,rcshut,"RCSHUTDOWN") ;
     char const *rcshut_argv[3] = { rcshut, confile, 0 } ;
-    pid = cspawn(rcshut_argv[0], rcshut_argv,(char const *const *)environ, CSPAWN_FLAGS_SIGBLOCKNONE, 0, 0) ;
+    pid = spawn_path(rcshut_argv[0], rcshut_argv, (char const *const *)environ) ;
     if (pid)
     {
         int wstat ;

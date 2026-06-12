@@ -24,9 +24,9 @@
 #include <oblibs/sbl.h>
 #include <oblibs/environ.h>
 #include <oblibs/strbuf.h>
+#include <oblibs/spawn.h>
 
 #include <skalibs/djbunix.h>
-#include <skalibs/cspawn.h>
 #include <skalibs/bytestr.h>
 
 #include <66/module.h>
@@ -128,7 +128,7 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
 
         log_info("Launch configure script of module: ", name) ;
 
-        pid = child_spawn0(newargv[0], newargv, newenv) ;
+        pid = spawn_path(newargv[0], newargv, newenv) ;
 
         if (waitpid_nointr(pid, &wstat, 0) < 0)
             log_dieusys(LOG_EXIT_SYS, "wait for: ", config_script) ;

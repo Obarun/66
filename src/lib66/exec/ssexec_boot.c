@@ -34,8 +34,8 @@
 #include <oblibs/io.h>
 #include <oblibs/types.h>
 #include <oblibs/fd.h>
+#include <oblibs/spawn.h>
 
-#include <skalibs/cspawn.h>
 #include <skalibs/djbunix.h>
 
 #include <66/config.h>
@@ -72,7 +72,7 @@ static void sulogin(char const *msg,char const *arg)
     pid_t pid ;
     int wstat ;
     if (msg) log_warnusys(msg,arg) ;
-    pid = child_spawn0(newarg[0],newarg,(char const *const *)environ) ;
+    pid = spawn_path(newarg[0],newarg,(char const *const *)environ) ;
     if (waitpid_nointr(pid,&wstat, 0) < 0)
         log_dieusys(LOG_EXIT_SYS,"wait for sulogin -- you are on your own") ;
     if (close(0) < 0)
@@ -498,7 +498,7 @@ static inline void make_cmdline(char const *prog,char const **add,int len,char c
 
     newargv[n] = 0 ;
 
-    pid = child_spawn0(newargv[0], newargv, e) ;
+    pid = spawn_path(newargv[0], newargv, e) ;
 
     if (waitpid_nointr(pid, &wstat, 0) < 0)
         sulogin("wait for: ", newargv[0]) ;

@@ -33,10 +33,10 @@
 #include <oblibs/strbuf.h>
 #include <oblibs/lexer.h>
 #include <oblibs/stream.h>
+#include <oblibs/spawn.h>
 
 #include <skalibs/bytestr.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/cspawn.h>
 #include <skalibs/env.h>
 
 #include <66/info.h>
@@ -230,7 +230,7 @@ static void info_get_status(resolve_service_t *res)
         newargv[m++] = res->sa.s + res->live.scandir ;
         newargv[m++] = 0 ;
 
-        pid = child_spawn0(newargv[0],newargv,(char const *const *)environ) ;
+        pid = spawn_path(newargv[0],newargv,(char const *const *)environ) ;
         if (waitpid_nointr(pid,&wstat, 0) < 0)
             log_dieusys(LOG_EXIT_SYS,"wait for ",newargv[0]) ;
 
