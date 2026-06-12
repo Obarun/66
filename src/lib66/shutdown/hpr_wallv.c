@@ -24,8 +24,6 @@
 #include <oblibs/fd.h>
 #include <oblibs/io.h>
 
-#include <skalibs/posixishard.h>
-
 #include <66/hpr.h>
 
 #ifndef UT_LINESIZE

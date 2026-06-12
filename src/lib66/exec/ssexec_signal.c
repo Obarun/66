@@ -14,13 +14,12 @@
 
 #include <string.h>
 #include <stdint.h>
+#include <signal.h>
 
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/types.h>
 #include <oblibs/attributes.h>
-
-#include <skalibs/nsig.h> // NSIG
 
 #include <66/svc.h>
 #include <66/graph.h>

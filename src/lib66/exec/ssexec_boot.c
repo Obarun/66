@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <sys/mount.h>
 #include <sys/reboot.h>
@@ -34,8 +35,6 @@
 #include <oblibs/fd.h>
 #include <oblibs/spawn.h>
 #include <oblibs/process.h>
-
-#include <skalibs/sig.h>
 
 #include <66/config.h>
 #include <66/constants.h>
@@ -530,7 +529,11 @@ static void cad(void)
         close(fd) ;
     }
 
-    sig_block(SIGINT) ; /* don't panic on early cad before s6-svscan catches it */
+    sigset_t ss ;
+    sigemptyset(&ss) ;
+    sigaddset(&ss, SIGINT) ;   /* don't panic on early cad before s6-svscan catches it */
+    sigprocmask(SIG_BLOCK, &ss, 0) ;
+
     if (reboot(RB_DISABLE_CAD) == -1)
         log_warnusys("trap ctrl-alt-del") ;
 

@@ -27,12 +27,17 @@
 #include <oblibs/spawn.h>
 #include <oblibs/process.h>
 
-#include <skalibs/bytestr.h>
-
 #include <66/module.h>
 #include <66/resolve.h>
 #include <66/environ.h>
 #include <66/write.h>
+
+size_t bcount (char const *s, size_t len, char b)
+{
+  size_t n = 0 ;
+  while (len--) if (*s++ == b) n++ ;
+  return n ;
+}
 
 void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, char const *name)
 {
@@ -108,7 +113,7 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
 
         }
 
-        n = environ_length((const char *const *)environ) + 1 + byte_count(env.s, env.len, '\0') ;
+        n = environ_length((const char *const *)environ) + 1 + bcount(env.s, env.len, '\0') ;
         char const *newenv[n + 1] ;
 
         if (!environ_merge(newenv, n ,(const char *const *)environ, environ_length((const char *const *)environ), env.s, env.len))

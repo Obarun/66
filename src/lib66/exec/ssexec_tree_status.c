@@ -33,8 +33,6 @@
 #include <oblibs/hash.h>
 #include <oblibs/stream.h>
 
-#include <skalibs/bytestr.h>
-
 #include <66/info.h>
 #include <66/constants.h>
 #include <66/tree.h>
@@ -532,7 +530,7 @@ int ssexec_tree_status(int argc, char const *const *argv, void *data)
 
     setlocale(LC_ALL, "");
 
-    if(!str_diff(nl_langinfo(CODESET), "UTF-8"))
+    if(!strcmp(nl_langinfo(CODESET), "UTF-8"))
         T_STYLE = &graph_utf8;
 
     {

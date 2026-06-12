@@ -15,8 +15,7 @@
 /* Tests for symlink_atomic: the created link points to exactly @target (byte
  * for byte), an existing symlink or regular file at @name is replaced, the swap
  * leaves no temporary residue in the directory, and a failure (non-existent
- * parent dir) leaves any previous @name untouched. The resulting link target is
- * checked against the bytes the test asked for, matching skalibs atomic_symlink. */
+ * parent dir) leaves any previous @name untouched. */
 
 #include <stdio.h>
 #include <stdlib.h>
