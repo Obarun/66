@@ -23,6 +23,7 @@
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 #include <oblibs/strbuf.h>
+#include <oblibs/hash.h>
 
 #include <66/constants.h>
 #include <66/config.h>
@@ -30,7 +31,6 @@
 #include <66/tree.h>
 #include <66/svc.h>
 #include <66/ssexec.h>
-#include <66/state.h>
 #include <66/graph.h>
 #include <66/sanitize.h>
 

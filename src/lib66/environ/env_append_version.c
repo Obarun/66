@@ -1,5 +1,5 @@
 /*
- * env_appand_version.c
+ * env_append_version.c
  *
  * Copyright (c) 2018-2025 Eric Vidal <eric@obarun.org>
  *
@@ -12,12 +12,12 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <string.h>
 #include <sys/stat.h>
 
 #include <oblibs/log.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
-#include <oblibs/types.h>
 #include <oblibs/strbuf.h>
 
 #include <66/environ.h>

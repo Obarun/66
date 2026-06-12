@@ -29,7 +29,6 @@
 #include <oblibs/environ.h>
 #include <oblibs/stream.h>
 
-#include <skalibs/diuint32.h>
 #include <skalibs/unix-transactional.h>//atomic_symlink
 
 #include <66/ssexec.h>
@@ -40,6 +39,7 @@
 #include <66/resolve.h>
 #include <66/write.h>
 #include <66/state.h>
+#include <66/service.h>
 
 static char const *EDITOR = 0 ;
 

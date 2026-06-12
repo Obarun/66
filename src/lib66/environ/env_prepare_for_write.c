@@ -12,17 +12,12 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <stdint.h>
-#include <string.h>
-
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>
 
 #include <66/environ.h>
-#include <66/constants.h>
 #include <66/service.h>
-#include <66/parse.h>
 
 int env_prepare_for_write(strbuf *dst, strbuf *contents, resolve_service_t *res)
 {

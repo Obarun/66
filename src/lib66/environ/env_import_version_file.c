@@ -13,7 +13,6 @@
  */
 
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <string.h>
 
 #include <oblibs/log.h>
@@ -24,7 +23,6 @@
 #include <oblibs/sbl.h>
 
 #include <66/environ.h>
-#include <66/constants.h>
 #include <66/enum_parser.h>
 #include <66/utils.h>
 

@@ -20,7 +20,6 @@
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/types.h>
-#include <oblibs/directory.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
 

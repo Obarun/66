@@ -29,22 +29,18 @@
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 #include <oblibs/directory.h>
-#include <oblibs/environ.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/lexer.h>
 #include <oblibs/stream.h>
 #include <oblibs/spawn.h>
 
-#include <skalibs/bytestr.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/env.h>
 
 #include <66/info.h>
 #include <66/constants.h>
 #include <66/tree.h>
 #include <66/enum_parser.h>
 #include <66/resolve.h>
-#include <66/environ.h>
 #include <66/state.h>
 #include <66/service.h>
 #include <66/graph.h>

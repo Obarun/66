@@ -24,7 +24,6 @@
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/directory.h>
-#include <oblibs/lexer.h>
 #include <oblibs/hash.h>
 
 #include <skalibs/posixplz.h>
@@ -35,10 +34,8 @@
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/tree.h>
-#include <66/config.h>
 #include <66/constants.h>
 #include <66/svc.h>
-#include <66/utils.h>
 #include <66/symlink.h>
 
 static void auto_remove(char const *path)

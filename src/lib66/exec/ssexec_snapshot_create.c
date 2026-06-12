@@ -25,7 +25,6 @@
 #include <66/snapshot.h>
 #include <66/ssexec.h>
 #include <66/constants.h>
-#include <66/utils.h>
 
 snapshot_list_t snapshot_root_list[] = {
     { .name = SS_SKEL_DIR },

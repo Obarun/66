@@ -12,8 +12,6 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <sys/types.h>
-
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>

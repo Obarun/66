@@ -1,5 +1,5 @@
 /*
- * env_resolve_conf.c
+ * env_get_destination.c
  *
  * Copyright (c) 2018-2025 Eric Vidal <eric@obarun.org>
  *

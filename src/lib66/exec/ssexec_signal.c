@@ -18,6 +18,7 @@
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/types.h>
+#include <oblibs/attributes.h>
 
 #include <skalibs/nsig.h> // NSIG
 

@@ -21,12 +21,10 @@
 #include <sys/mount.h>
 #include <sys/reboot.h>
 #include <linux/kd.h>
-#include <skalibs/sig.h>
 
 #include <oblibs/log.h>
 #include <oblibs/exec.h>
 #include <oblibs/opt.h>
-#include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
 #include <oblibs/sbl.h>
@@ -37,6 +35,7 @@
 #include <oblibs/spawn.h>
 
 #include <skalibs/djbunix.h>
+#include <skalibs/sig.h>
 
 #include <66/config.h>
 #include <66/constants.h>

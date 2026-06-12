@@ -20,7 +20,6 @@
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/sbl.h>
-#include <oblibs/directory.h>
 
 #include <66/ssexec.h>
 #include <66/constants.h>

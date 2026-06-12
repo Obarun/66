@@ -12,13 +12,11 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <string.h>
 #include <sys/types.h>
 
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/exec.h>
-#include <oblibs/string.h>
 #include <oblibs/environ.h>
 
 #include <66/ssexec.h>

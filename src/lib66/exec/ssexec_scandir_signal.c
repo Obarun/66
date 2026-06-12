@@ -24,12 +24,8 @@
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
 #include <oblibs/types.h>
-#include <oblibs/directory.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/files.h>
-
-#include <skalibs/bytestr.h>
-#include <skalibs/env.h>
 
 #include <66/ssexec.h>
 #include <66/svc.h>

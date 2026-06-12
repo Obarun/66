@@ -15,14 +15,12 @@
 #include <string.h>
 
 #include <oblibs/log.h>
-#include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
 
 #include <skalibs/unix-transactional.h>//atomic_symlink
 
 #include <66/environ.h>
-#include <66/parse.h>
 #include <66/constants.h>
 #include <66/service.h>
 
