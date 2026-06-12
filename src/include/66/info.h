@@ -77,6 +77,30 @@ extern size_t info_display_field_name(char const *field) ;
 extern void info_display_list(char const *field, strbuf *list) ;
 extern void info_display_nline(char const *field,char const *str) ;
 
+/* Generic resolve-file display engine. A resolve struct stores each cdb field
+ * inline: a string is a uint32 offset into its blob, an integer is the value
+ * itself, a limit is a uint64. One row per cdb key describes how to render it. */
+
+enum info_field_type_e { INFO_FIELD_STR, INFO_FIELD_U32, INFO_FIELD_U64 } ;
+
+typedef struct info_field_s info_field_t ;
+struct info_field_s {
+    char const *key ;       // cdb key, also what -f matches
+    uint8_t type ;          // info_field_type_e
+    size_t offset ;         // offsetof the member in the resolve struct
+} ;
+
+/**
+ * @brief Display the fields of a resolve struct from a declarative table.
+ * @param[in] base     Pointer to the resolve struct.
+ * @param[in] blob     The struct's string blob (res->sa.s).
+ * @param[in] fields   Field table, one row per cdb key, in display order.
+ * @param[in] nfields  Number of rows in @fields.
+ * @param[in] select   Comma-separated list of keys to show, or 0 for all.
+ * @param[in] noname   If non-zero, print only the values, not the field names.
+ */
+extern void info_resolve_display(void const *base, char const *rblob, info_field_t const *fields, size_t nfields, char const *select, uint8_t noname) ;
+
 extern depth_t info_graph_init(void) ;
 extern int service_info_walk(service_graph_t *g, char const *name, char const *treename, uint8_t requiredby, uint8_t reverse, depth_t *depth, int padding, info_graph_style *style, ssexec_t *info) ;
 extern int tree_info_walk(tree_graph_t *g, char const *name, uint8_t requiredby, uint8_t reverse, depth_t *depth, int padding, info_graph_style *style, ssexec_t *info) ;
