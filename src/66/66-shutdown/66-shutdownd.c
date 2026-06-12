@@ -41,7 +41,6 @@
 #include <oblibs/spawn.h>
 
 #include <skalibs/posixplz.h>
-#include <skalibs/bytestr.h>
 #include <skalibs/sig.h>
 #include <skalibs/tai.h>
 #include <skalibs/direntry.h>
