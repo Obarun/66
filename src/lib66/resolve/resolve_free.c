@@ -27,9 +27,9 @@ void resolve_free(resolve_wrapper_t *wres)
 {
     log_flow() ;
 
-    RESOLVE_SET_SAWRES(wres) ;
+    RESOLVE_SET_SBWRES(wres) ;
 
-    strbuf_free(sawres) ;
+    strbuf_free(sbwres) ;
 
     free(wres) ;
 }

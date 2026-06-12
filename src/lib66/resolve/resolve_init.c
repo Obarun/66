@@ -24,9 +24,9 @@ void resolve_init(resolve_wrapper_t *wres)
 {
     log_flow() ;
 
-    RESOLVE_SET_SAWRES(wres) ;
+    RESOLVE_SET_SBWRES(wres) ;
 
-    sawres->len = 0 ;
+    sbwres->len = 0 ;
 
     resolve_add_string(wres, "") ;
 }

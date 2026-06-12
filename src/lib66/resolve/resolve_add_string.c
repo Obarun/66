@@ -26,13 +26,13 @@
 ssize_t resolve_add_string(resolve_wrapper_t *wres, char const *data)
 {
 
-    RESOLVE_SET_SAWRES(wres) ;
+    RESOLVE_SET_SBWRES(wres) ;
 
-    ssize_t baselen = sawres->len ;
+    ssize_t baselen = sbwres->len ;
 
     if (!data) {
 
-        if (!strbuf_catb(sawres,"",1))
+        if (!strbuf_catb(sbwres,"",1))
             log_warnusys_return(LOG_EXIT_LESSONE,"strbuf") ;
 
         return baselen ;
@@ -40,7 +40,7 @@ ssize_t resolve_add_string(resolve_wrapper_t *wres, char const *data)
 
     size_t datalen = strlen(data) ;
 
-    if (!strbuf_catb(sawres,data,datalen + 1))
+    if (!strbuf_catb(sbwres,data,datalen + 1))
         log_warnusys_return(LOG_EXIT_LESSONE,"strbuf") ;
 
     return baselen ;

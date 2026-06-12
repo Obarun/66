@@ -36,12 +36,12 @@ struct resolve_wrapper_s
     void *obj ;
 } ;
 
-#ifndef RESOLVE_SET_SAWRES
-#define RESOLVE_SET_SAWRES(wres) \
-    strbuf_ref sawres = 0 ; \
-    if (wres->type == DATA_SERVICE) sawres = (&((resolve_service_t *)wres->obj)->sa) ; \
-    else if (wres->type == DATA_TREE) sawres = (&((resolve_tree_t *)wres->obj)->sa) ; \
-    else if (wres->type == DATA_TREE_MASTER) sawres = (&((resolve_tree_master_t *)wres->obj)->sa) ;
+#ifndef RESOLVE_SET_SBWRES
+#define RESOLVE_SET_SBWRES(wres) \
+    strbuf_ref sbwres = 0 ; \
+    if (wres->type == DATA_SERVICE) sbwres = (&((resolve_service_t *)wres->obj)->sa) ; \
+    else if (wres->type == DATA_TREE) sbwres = (&((resolve_tree_t *)wres->obj)->sa) ; \
+    else if (wres->type == DATA_TREE_MASTER) sbwres = (&((resolve_tree_master_t *)wres->obj)->sa) ;
 #endif
 
 /**
