@@ -12,15 +12,17 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <stddef.h>
 #include <string.h>
-#include <wchar.h>
 #include <stdint.h>
+#include <wchar.h>
 
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/strbuf.h>
+#include <oblibs/sbl.h>
 #include <oblibs/stream.h>
 
 #include <66/resolve.h>
@@ -31,185 +33,225 @@
 #include <66/config.h>
 #include <66/state.h>
 
-#define MAXOPTS 108
+/* One row per cdb key, in the exact order and with the exact names written by
+ * service_resolve_write_cdb.c -- the key is what lives in the resolve file and
+ * is what -f selects (and what a future modify-by-field would target). The type
+ * tells how to render the value held in the resolve_service_t: a T_STR field is
+ * a uint32 offset into res->sa, a T_U32 field is the value itself, a T_U64 field
+ * (the limits) is a 64-bit value. */
+
+enum field_type_e { T_STR, T_U32, T_U64 } ;
+
+typedef struct field_s field_t ;
+struct field_s {
+    char const *key ;
+    uint8_t type ;
+    size_t offset ;
+} ;
+
+static field_t const fields[] = {
+    { "name",            T_STR, offsetof(resolve_service_t, name) },
+    { "description",     T_STR, offsetof(resolve_service_t, description) },
+    { "version",         T_STR, offsetof(resolve_service_t, version) },
+    { "type",            T_U32, offsetof(resolve_service_t, type) },
+    { "notify",          T_U32, offsetof(resolve_service_t, notify) },
+    { "maxdeath",        T_U32, offsetof(resolve_service_t, maxdeath) },
+    { "earlier",         T_U32, offsetof(resolve_service_t, earlier) },
+    { "copyfrom",        T_STR, offsetof(resolve_service_t, copyfrom) },
+    { "intree",          T_STR, offsetof(resolve_service_t, intree) },
+    { "ownerstr",        T_STR, offsetof(resolve_service_t, ownerstr) },
+    { "owner",           T_U32, offsetof(resolve_service_t, owner) },
+    { "treename",        T_STR, offsetof(resolve_service_t, treename) },
+    { "user",            T_STR, offsetof(resolve_service_t, user) },
+    { "inns",            T_STR, offsetof(resolve_service_t, inns) },
+    { "enabled",         T_U32, offsetof(resolve_service_t, enabled) },
+    { "islog",           T_U32, offsetof(resolve_service_t, islog) },
+
+    { "home",            T_STR, offsetof(resolve_service_t, path.home) },
+    { "frontend",        T_STR, offsetof(resolve_service_t, path.frontend) },
+    { "src_servicedir",  T_STR, offsetof(resolve_service_t, path.servicedir) },
+
+    { "depends",         T_STR, offsetof(resolve_service_t, dependencies.depends) },
+    { "requiredby",      T_STR, offsetof(resolve_service_t, dependencies.requiredby) },
+    { "optsdeps",        T_STR, offsetof(resolve_service_t, dependencies.optsdeps) },
+    { "contents",        T_STR, offsetof(resolve_service_t, dependencies.contents) },
+    { "provide",         T_STR, offsetof(resolve_service_t, dependencies.provide) },
+    { "conflict",        T_STR, offsetof(resolve_service_t, dependencies.conflict) },
+    { "ndepends",        T_U32, offsetof(resolve_service_t, dependencies.ndepends) },
+    { "nrequiredby",     T_U32, offsetof(resolve_service_t, dependencies.nrequiredby) },
+    { "noptsdeps",       T_U32, offsetof(resolve_service_t, dependencies.noptsdeps) },
+    { "ncontents",       T_U32, offsetof(resolve_service_t, dependencies.ncontents) },
+    { "nprovide",        T_U32, offsetof(resolve_service_t, dependencies.nprovide) },
+    { "nconflict",       T_U32, offsetof(resolve_service_t, dependencies.nconflict) },
+
+    { "run",             T_STR, offsetof(resolve_service_t, execute.run.run) },
+    { "run_user",        T_STR, offsetof(resolve_service_t, execute.run.run_user) },
+    { "run_build",       T_STR, offsetof(resolve_service_t, execute.run.build) },
+    { "run_runas",       T_STR, offsetof(resolve_service_t, execute.run.runas) },
+    { "finish",          T_STR, offsetof(resolve_service_t, execute.finish.run) },
+    { "finish_user",     T_STR, offsetof(resolve_service_t, execute.finish.run_user) },
+    { "finish_build",    T_STR, offsetof(resolve_service_t, execute.finish.build) },
+    { "finish_runas",    T_STR, offsetof(resolve_service_t, execute.finish.runas) },
+    { "timeoutstart",    T_U32, offsetof(resolve_service_t, execute.timeout.start) },
+    { "timeoutstop",     T_U32, offsetof(resolve_service_t, execute.timeout.stop) },
+    { "down",            T_U32, offsetof(resolve_service_t, execute.down) },
+    { "downsignal",      T_U32, offsetof(resolve_service_t, execute.downsignal) },
+    { "blockprivileges", T_U32, offsetof(resolve_service_t, execute.blockprivileges) },
+    { "umask",           T_U32, offsetof(resolve_service_t, execute.umask) },
+    { "want_umask",      T_U32, offsetof(resolve_service_t, execute.want_umask) },
+    { "nice",            T_U32, offsetof(resolve_service_t, execute.nice) },
+    { "want_nice",       T_U32, offsetof(resolve_service_t, execute.want_nice) },
+    { "chdir",           T_STR, offsetof(resolve_service_t, execute.chdir) },
+    { "capsbound",       T_STR, offsetof(resolve_service_t, execute.capsbound) },
+    { "capsambient",     T_STR, offsetof(resolve_service_t, execute.capsambient) },
+    { "ncapsbound",      T_U32, offsetof(resolve_service_t, execute.ncapsbound) },
+    { "ncapsambient",    T_U32, offsetof(resolve_service_t, execute.ncapsambient) },
+
+    { "livedir",         T_STR, offsetof(resolve_service_t, live.livedir) },
+    { "status",          T_STR, offsetof(resolve_service_t, live.status) },
+    { "live_servicedir", T_STR, offsetof(resolve_service_t, live.servicedir) },
+    { "scandir",         T_STR, offsetof(resolve_service_t, live.scandir) },
+    { "statedir",        T_STR, offsetof(resolve_service_t, live.statedir) },
+    { "eventdir",        T_STR, offsetof(resolve_service_t, live.eventdir) },
+    { "notifdir",        T_STR, offsetof(resolve_service_t, live.notifdir) },
+    { "supervisedir",    T_STR, offsetof(resolve_service_t, live.supervisedir) },
+    { "fdholderdir",     T_STR, offsetof(resolve_service_t, live.fdholderdir) },
+    { "oneshotddir",     T_STR, offsetof(resolve_service_t, live.oneshotddir) },
+
+    { "logname",         T_STR, offsetof(resolve_service_t, logger.name) },
+    { "logbackup",       T_U32, offsetof(resolve_service_t, logger.backup) },
+    { "logmaxsize",      T_U32, offsetof(resolve_service_t, logger.maxsize) },
+    { "logwant",         T_U32, offsetof(resolve_service_t, logger.want) },
+    { "logtimestamp",    T_U32, offsetof(resolve_service_t, logger.timestamp) },
+    { "logrun",          T_STR, offsetof(resolve_service_t, logger.execute.run.run) },
+    { "logrun_user",     T_STR, offsetof(resolve_service_t, logger.execute.run.run_user) },
+    { "logrun_build",    T_STR, offsetof(resolve_service_t, logger.execute.run.build) },
+    { "logrun_runas",    T_STR, offsetof(resolve_service_t, logger.execute.run.runas) },
+    { "logtimeoutstart", T_U32, offsetof(resolve_service_t, logger.execute.timeout.start) },
+    { "logtimeoutstop",  T_U32, offsetof(resolve_service_t, logger.execute.timeout.stop) },
+
+    { "env",             T_STR, offsetof(resolve_service_t, environ.env) },
+    { "envdir",          T_STR, offsetof(resolve_service_t, environ.envdir) },
+    { "env_overwrite",   T_U32, offsetof(resolve_service_t, environ.env_overwrite) },
+    { "importfile",      T_STR, offsetof(resolve_service_t, environ.importfile) },
+    { "nimportfile",     T_U32, offsetof(resolve_service_t, environ.nimportfile) },
+
+    { "configure",       T_STR, offsetof(resolve_service_t, regex.configure) },
+    { "directories",     T_STR, offsetof(resolve_service_t, regex.directories) },
+    { "files",           T_STR, offsetof(resolve_service_t, regex.files) },
+    { "infiles",         T_STR, offsetof(resolve_service_t, regex.infiles) },
+    { "ndirectories",    T_U32, offsetof(resolve_service_t, regex.ndirectories) },
+    { "nfiles",          T_U32, offsetof(resolve_service_t, regex.nfiles) },
+    { "ninfiles",        T_U32, offsetof(resolve_service_t, regex.ninfiles) },
+
+    { "stdintype",       T_U32, offsetof(resolve_service_t, io.fdin.type) },
+    { "stdindest",       T_STR, offsetof(resolve_service_t, io.fdin.destination) },
+    { "stdouttype",      T_U32, offsetof(resolve_service_t, io.fdout.type) },
+    { "stdoutdest",      T_STR, offsetof(resolve_service_t, io.fdout.destination) },
+    { "stderrtype",      T_U32, offsetof(resolve_service_t, io.fderr.type) },
+    { "stderrdest",      T_STR, offsetof(resolve_service_t, io.fderr.destination) },
+
+    { "limitas",         T_U64, offsetof(resolve_service_t, limit.limitas) },
+    { "limitcore",       T_U64, offsetof(resolve_service_t, limit.limitcore) },
+    { "limitcpu",        T_U64, offsetof(resolve_service_t, limit.limitcpu) },
+    { "limitdata",       T_U64, offsetof(resolve_service_t, limit.limitdata) },
+    { "limitfsize",      T_U64, offsetof(resolve_service_t, limit.limitfsize) },
+    { "limitlocks",      T_U64, offsetof(resolve_service_t, limit.limitlocks) },
+    { "limitmemlock",    T_U64, offsetof(resolve_service_t, limit.limitmemlock) },
+    { "limitmsgqueue",   T_U64, offsetof(resolve_service_t, limit.limitmsgqueue) },
+    { "limitnice",       T_U64, offsetof(resolve_service_t, limit.limitnice) },
+    { "limitnofile",     T_U64, offsetof(resolve_service_t, limit.limitnofile) },
+    { "limitnproc",      T_U64, offsetof(resolve_service_t, limit.limitnproc) },
+    { "limitrtprio",     T_U64, offsetof(resolve_service_t, limit.limitrtprio) },
+    { "limitrttime",     T_U64, offsetof(resolve_service_t, limit.limitrttime) },
+    { "limitsigpending", T_U64, offsetof(resolve_service_t, limit.limitsigpending) },
+    { "limitstack",      T_U64, offsetof(resolve_service_t, limit.limitstack) },
+
+    { "rversion",        T_STR, offsetof(resolve_service_t, rversion) },
+} ;
 
 static wchar_t const field_suffix[] = L" :" ;
-static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
 
-static void info_display_string(char const *field, char const *str, uint32_t element, uint8_t check)
+/* option state, set by on_resolve, drained at the top of ssexec_resolve */
+static char const *opt_field = 0 ;
+static uint8_t opt_noname = 0 ;
+
+/* runtime flag honoured by the display helpers (drained from opt_noname) */
+static uint8_t noname = 0 ;
+
+static void display_field_value(resolve_service_t const *res, field_t const *f)
 {
-    info_display_field_name(field) ;
+    void const *p = (char const *)res + f->offset ;
 
-    if (check && !element) {
+    if (f->type == T_STR) {
 
-        if (!ostream_fmt(ostream_1,"%s%s", log_color->warning, "None"))
-            log_dieu(LOG_EXIT_SYS, "write to stdout") ;
+        uint32_t off = *(uint32_t const *)p ;
+
+        if (!off) {
+
+            if (!ostream_fmt(ostream_1, "%s%s", log_color->warning, "None"))
+                log_dieu(LOG_EXIT_SYS, "write to stdout") ;
+
+        } else {
+
+            if (!ostream_puts(ostream_1, res->sa.s + off))
+                log_dieu(LOG_EXIT_SYS, "write to stdout") ;
+        }
+
+    } else if (f->type == T_U32) {
+
+        char ui[U32_FMT] ;
+        ui[u32_fmt(ui, *(uint32_t const *)p)] = 0 ;
+
+        if (!ostream_puts(ostream_1, ui))
+            log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 
     } else {
 
-        if (!ostream_puts(ostream_1, str + element))
-            log_dieu(LOG_EXIT_SYS, "write to stdout") ;
+        char ui[U64_FMT] ;
+        ui[u64_fmt(ui, *(uint64_t const *)p)] = 0 ;
+
+        if (!ostream_puts(ostream_1, ui))
+            log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
     }
 
     if (!ostream_putflush(ostream_1, "\n", 1))
-        log_dieu(LOG_EXIT_SYS, "write to stdout") ;
-
-
-}
-
-static void info_display_int64(char const *field, uint64_t element)
-{
-    info_display_field_name(field) ;
-
-    char ui[U64_FMT] ;
-    ui[u64_fmt(ui, element)] = 0 ;
-
-    if (!ostream_puts(ostream_1, ui))
-        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
-
-    if (!ostream_putflush(ostream_1, "\n", 1))
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
-static void info_display_int(char const *field, uint32_t element)
+static void display_field(resolve_service_t const *res, field_t const *f, char const *aligned)
 {
-    info_display_field_name(field) ;
+    if (!noname)
+        info_display_field_name(aligned) ;
 
-    char ui[U32_FMT] ;
-    ui[u32_fmt(ui, element)] = 0 ;
-
-    if (!ostream_puts(ostream_1, ui))
-        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
-
-    if (!ostream_putflush(ostream_1, "\n", 1))
-        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
-}
-
-static void info_display_service_field(resolve_service_t *res)
-{
-    uint8_t m = 0 ;
-    info_display_string(fields[m++], res->sa.s, res->name, 0) ;
-    info_display_string(fields[m++], res->sa.s, res->description, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->version, 1) ;
-    info_display_int(fields[m++], res->type) ;
-    info_display_int(fields[m++], res->notify) ;
-    info_display_int(fields[m++], res->maxdeath) ;
-    info_display_int(fields[m++], res->earlier) ;
-    info_display_string(fields[m++], res->sa.s, res->copyfrom, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->intree, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->ownerstr, 1) ;
-    info_display_int(fields[m++], res->owner) ;
-    info_display_string(fields[m++], res->sa.s, res->treename, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->user, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->inns, 1) ;
-    info_display_int(fields[m++], res->enabled) ;
-    info_display_int(fields[m++], res->islog) ;
-
-    info_display_string(fields[m++], res->sa.s, res->path.home, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->path.frontend, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->path.servicedir, 1) ;
-
-    info_display_string(fields[m++], res->sa.s, res->dependencies.depends, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->dependencies.requiredby, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->dependencies.optsdeps, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->dependencies.contents, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->dependencies.provide, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->dependencies.conflict, 1) ;
-    info_display_int(fields[m++], res->dependencies.ndepends) ;
-    info_display_int(fields[m++], res->dependencies.nrequiredby) ;
-    info_display_int(fields[m++], res->dependencies.noptsdeps) ;
-    info_display_int(fields[m++], res->dependencies.ncontents) ;
-    info_display_int(fields[m++], res->dependencies.nprovide) ;
-    info_display_int(fields[m++], res->dependencies.nconflict) ;
-
-    info_display_string(fields[m++], res->sa.s, res->execute.run.run, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->execute.run.run_user, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->execute.run.build, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->execute.run.runas, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->execute.finish.run, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->execute.finish.run_user, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->execute.finish.build, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->execute.finish.runas, 1) ;
-    info_display_int(fields[m++], res->execute.timeout.start) ;
-    info_display_int(fields[m++], res->execute.timeout.stop) ;
-    info_display_int(fields[m++], res->execute.down) ;
-    info_display_int(fields[m++], res->execute.downsignal) ;
-    info_display_int(fields[m++], res->execute.blockprivileges) ;
-    info_display_int(fields[m++], res->execute.umask) ;
-    info_display_int(fields[m++], res->execute.want_umask) ;
-    info_display_int(fields[m++], res->execute.nice) ;
-    info_display_int(fields[m++], res->execute.want_nice) ;
-    info_display_string(fields[m++], res->sa.s, res->execute.chdir, 1) ;
-    info_display_int64(fields[m++],res->limit.limitas) ;
-    info_display_int64(fields[m++],res->limit.limitcore) ;
-    info_display_int64(fields[m++],res->limit.limitcpu) ;
-    info_display_int64(fields[m++],res->limit.limitdata) ;
-    info_display_int64(fields[m++],res->limit.limitfsize) ;
-    info_display_int64(fields[m++],res->limit.limitlocks) ;
-    info_display_int64(fields[m++],res->limit.limitmemlock) ;
-    info_display_int64(fields[m++],res->limit.limitmsgqueue) ;
-    info_display_int64(fields[m++],res->limit.limitnice) ;
-    info_display_int64(fields[m++],res->limit.limitnofile) ;
-    info_display_int64(fields[m++],res->limit.limitnproc) ;
-    info_display_int64(fields[m++],res->limit.limitrtprio) ;
-    info_display_int64(fields[m++],res->limit.limitrttime) ;
-    info_display_int64(fields[m++],res->limit.limitsigpending) ;
-    info_display_int64(fields[m++],res->limit.limitstack) ;
-    info_display_string(fields[m++], res->sa.s, res->execute.capsbound, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->execute.capsambient, 1) ;
-    info_display_int(fields[m++], res->execute.ncapsbound) ;
-    info_display_int(fields[m++], res->execute.ncapsambient) ;
-
-    info_display_string(fields[m++], res->sa.s, res->live.livedir, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->live.status, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->live.servicedir, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->live.scandir, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->live.statedir, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->live.eventdir, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->live.notifdir, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->live.supervisedir, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->live.fdholderdir, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->live.oneshotddir, 1) ;
-
-    info_display_string(fields[m++], res->sa.s, res->logger.name, 1) ;
-    info_display_int(fields[m++], res->logger.backup) ;
-    info_display_int(fields[m++], res->logger.maxsize) ;
-    info_display_int(fields[m++], res->logger.timestamp) ;
-    info_display_int(fields[m++], res->logger.want) ;
-    info_display_string(fields[m++], res->sa.s, res->logger.execute.run.run, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->logger.execute.run.run_user, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->logger.execute.run.build, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->logger.execute.run.runas, 1) ;
-    info_display_int(fields[m++], res->logger.execute.timeout.start) ;
-    info_display_int(fields[m++], res->logger.execute.timeout.stop) ;
-
-    info_display_string(fields[m++], res->sa.s, res->environ.env, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->environ.envdir, 1) ;
-    info_display_int(fields[m++], res->environ.env_overwrite) ;
-    info_display_string(fields[m++], res->sa.s, res->environ.importfile, 1) ;
-    info_display_int(fields[m++], res->environ.nimportfile) ;
-
-    info_display_string(fields[m++], res->sa.s, res->regex.configure, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->regex.directories, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->regex.files, 1) ;
-    info_display_string(fields[m++], res->sa.s, res->regex.infiles, 1) ;
-    info_display_int(fields[m++], res->regex.ndirectories) ;
-    info_display_int(fields[m++], res->regex.nfiles) ;
-    info_display_int(fields[m++], res->regex.ninfiles) ;
-
-    info_display_int(fields[m++], res->io.fdin.type) ;
-    info_display_string(fields[m++],res->sa.s, res->io.fdin.destination, 1) ;
-    info_display_int(fields[m++], res->io.fdout.type) ;
-    info_display_string(fields[m++], res->sa.s, res->io.fdout.destination, 1) ;
-    info_display_int(fields[m++], res->io.fderr.type) ;
-    info_display_string(fields[m++], res->sa.s, res->io.fderr.destination, 1) ;
-
-    info_display_string(fields[m], res->sa.s, res->rversion, 1) ;
+    display_field_value(res, f) ;
 }
 
 static opt_t const opts_resolve[] = {
-    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE, .help = "print this help" },
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",   .arg = OPT_NONE,                             .help = "print this help" },
+    { .id = 'f',         .shortname = 'f', .longname = "field",  .arg = OPT_REQUIRED, .argname = "field,...", .help = "display only these comma-separated fields" },
+    { .id = 'n',         .shortname = 'n', .longname = "noname", .arg = OPT_NONE,                             .help = "display only the value, not the field name" },
 } ;
+
+static int on_resolve(int id, char const *arg, void *data)
+{
+    (void)data ;
+
+    switch (id) {
+
+        case 'f' :
+
+            opt_field = arg ;
+            break ;
+
+        case 'n' :
+
+            opt_noname = 1 ;
+            break ;
+    }
+
+    return 0 ;
+}
 
 opt_cmd_t const cmd_resolve = {
     .name = "66 resolve",
@@ -217,6 +259,7 @@ opt_cmd_t const cmd_resolve = {
     .operands = "service",
     .opts = opts_resolve,
     .nopts = OPT_COUNT(opts_resolve),
+    .on_option = &on_resolve,
     .fn = &ssexec_resolve,
 } ;
 
@@ -224,132 +267,18 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
 {
     ssexec_t *info = data ;
 
-    int r = 0 ;
+    /* drain option state into locals, then reset the statics for re-entrancy */
+    char const *field = opt_field ;
+    noname = opt_noname ;
+    opt_field = 0 ;
+    opt_noname = 0 ;
 
+    int r = 0 ;
     char const *svname = 0 ;
+    size_t const nfields = OPT_COUNT(fields) ;
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-
-    char service_buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
-        "name",
-        "description" ,
-        "version",
-        "type",
-        "notify",
-        "maxdeath",
-        "earlier",
-        "copyfrom",
-        "intree",
-        "ownerstr",
-        "owner",
-        "treename",
-        "user" ,
-        "inns",
-        "enabled",
-        "islog",
-
-        "home",
-        "frontend",
-        "servicedir",
-
-        "depends",
-        "requiredby",
-        "optsdeps",
-        "contents",
-        "provide",
-        "conflict",
-        "ndepends",
-        "nrequiredby",
-        "noptsdeps",
-        "ncontents",
-        "nprovide",
-        "nconflict",
-
-        "run",
-        "run_user",
-        "run_build",
-        "run_runas",
-        "finish",
-        "finish_user",
-        "finish_build",
-        "finish_runas",
-        "timeoutstart",
-        "timeoutstop",
-        "down",
-        "downsignal",
-        "blockprivileges",
-        "umask",
-        "want_umask",
-        "nice",
-        "want_nice",
-        "chdir",
-        "limitas",
-        "limitcore",
-        "limitcpu",
-        "limitdata",
-        "limitfsize",
-        "limitlocks",
-        "limitmemlock",
-        "limitmsgqueue",
-        "limitnice",
-        "limitnofile",
-        "limitnproc",
-        "limitrtprio",
-        "limitrttime",
-        "limitsigpending",
-        "limitstack",
-        "capsbound",
-        "capsambient",
-        "ncapsbound",
-        "ncapsambient",
-
-        "livedir",
-        "status",
-        "servicedir",
-        "scandir",
-        "statedir",
-        "eventdir",
-        "notifdir",
-        "supervisedir",
-        "fdholderdir",
-        "oneshotddir",
-
-        "logname" ,
-        "logbackup" ,
-        "logmaxsize" ,
-        "logtimestamp" ,
-        "logwant",
-        "logrun" ,
-        "logrun_user" ,
-        "logrun_build" ,
-        "logrun_runas" ,
-        "logtimeoutstart",
-        "logtimeoutstop",
-
-        "env",
-        "envdir",
-        "env_overwrite",
-        "importfile",
-        "nimportfile",
-
-        "configure",
-        "directories",
-        "files",
-        "infiles",
-        "ndirectories",
-        "nfiles",
-        "ninfiles",
-
-        "stdintype",
-        "stdindest",
-        "stdouttype",
-        "stdoutdest",
-        "stderrtype",
-        "stderrdest",
-
-        "rversion"
-    } ;
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
@@ -382,9 +311,60 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
             log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
     }
 
-    info_field_align(service_buf, fields, field_suffix,MAXOPTS) ;
+    /* build the list of fields to display, in display order */
+    size_t idx[nfields] ;
+    size_t n = 0 ;
 
-    info_display_service_field(&res) ;
+    if (field) {
+
+        _alloc_sbl_(sel, 256) ;
+
+        if (!opt_list(&sel, field, ','))
+            log_dieu(LOG_EXIT_SYS, "parse field list: ", field) ;
+
+        size_t pos = 0 ;
+        FOREACH_SBL(&sel, pos) {
+
+            char const *key = sel.s + pos ;
+            size_t i = 0 ;
+
+            for (; i < nfields ; i++)
+                if (!strcmp(fields[i].key, key))
+                    break ;
+
+            if (i == nfields)
+                log_die(LOG_EXIT_USER, "unknown field: ", key) ;
+
+            idx[n++] = i ;
+        }
+
+    } else {
+
+        for (; n < nfields ; n++)
+            idx[n] = n ;
+    }
+
+    if (noname) {
+
+        for (size_t i = 0 ; i < n ; i++)
+            display_field(&res, &fields[idx[i]], 0) ;
+
+    } else {
+
+        char buf[nfields][INFO_FIELD_MAXLEN] ;
+        char aligned[nfields][INFO_FIELD_MAXLEN] ;
+
+        for (size_t i = 0 ; i < n ; i++) {
+
+            char const *key = fields[idx[i]].key ;
+            memcpy(buf[i], key, strlen(key) + 1) ;
+        }
+
+        info_field_align(buf, aligned, field_suffix, n) ;
+
+        for (size_t i = 0 ; i < n ; i++)
+            display_field(&res, &fields[idx[i]], aligned[i]) ;
+    }
 
     resolve_free(wres) ;
 
