@@ -156,7 +156,6 @@ static void announce(uint32_t id, bool success)
 
     int fd ;
     svc_ctx_t *svc = &pmanager->asvc[id] ;
-    char fmt[U32_FMT] ;
     char const *name = svc->res->sa.s + svc->res->name ;
     char const *scandir = svc->res->sa.s + svc->res->live.scandir ;
     size_t scandirlen = strlen(scandir) ;
