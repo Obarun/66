@@ -26,6 +26,7 @@
 extern opt_on_option_fn on_tree_admin ;
 extern opt_on_option_fn on_tree_signal ;
 extern opt_on_option_fn on_tree_status ;
+extern opt_on_option_fn on_tree_resolve ;
 
 extern opt_cmd_fn do_tree_start ;
 extern opt_cmd_fn do_tree_stop ;
@@ -60,12 +61,18 @@ static opt_t const opts_help[] = {
 } ;
 
 static opt_t const opts_tree_admin[] = {
-    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                                   .help = "print this help" },
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                             .help = "print this help" },
     { .id = 'o',         .shortname = 'o', .longname = "options", .arg = OPT_REQUIRED, .argname = "field,...", .help = "list of options separated by colons" },
-    { .id = 'c',         .shortname = 'c',                        .arg = OPT_NONE,                                   .help = "mark tree as current (injected by the tree wrapper)", .hidden = true },
-    { .id = 'E',         .shortname = 'E',                        .arg = OPT_NONE,                                   .help = "enable tree (injected by the tree wrapper)", .hidden = true },
-    { .id = 'D',         .shortname = 'D',                        .arg = OPT_NONE,                                   .help = "disable tree (injected by the tree wrapper)", .hidden = true },
-    { .id = 'R',         .shortname = 'R',                        .arg = OPT_NONE,                                   .help = "remove tree (injected by the tree wrapper)", .hidden = true },
+    { .id = 'c',         .shortname = 'c',                        .arg = OPT_NONE,                             .help = "mark tree as current (injected by the tree wrapper)", .hidden = true },
+    { .id = 'E',         .shortname = 'E',                        .arg = OPT_NONE,                             .help = "enable tree (injected by the tree wrapper)", .hidden = true },
+    { .id = 'D',         .shortname = 'D',                        .arg = OPT_NONE,                             .help = "disable tree (injected by the tree wrapper)", .hidden = true },
+    { .id = 'R',         .shortname = 'R',                        .arg = OPT_NONE,                             .help = "remove tree (injected by the tree wrapper)", .hidden = true },
+} ;
+
+static opt_t const opts_tree_resolve[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",   .arg = OPT_NONE,                             .help = "print this help" },
+    { .id = 'f',         .shortname = 'f', .longname = "field",  .arg = OPT_REQUIRED, .argname = "field,...", .help = "display only these comma-separated fields" },
+    { .id = 'n',         .shortname = 'n', .longname = "noname", .arg = OPT_NONE,                             .help = "display only the value, not the field name" },
 } ;
 
 static opt_t const opts_tree_signal[] = {
@@ -96,7 +103,7 @@ static opt_cmd_t const tree_sub[] = {
     { .name = "current", .help = "mark a tree as the current one", .operands = "tree",
       .opts = opts_tree_admin, .nopts = OPT_COUNT(opts_tree_admin), .on_option = &on_tree_admin, .fn = &do_tree_current },
     { .name = "resolve", .help = "display the resolve files contents of tree", .operands = "tree",
-      .opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &ssexec_tree_resolve },
+      .opts = opts_tree_resolve, .nopts = OPT_COUNT(opts_tree_resolve), .on_option = &on_tree_resolve, .fn = &ssexec_tree_resolve },
     { .name = "status",  .help = "display information about tree", .operands = "tree",
       .opts = opts_tree_status, .nopts = OPT_COUNT(opts_tree_status), .on_option = &on_tree_status, .fn = &ssexec_tree_status },
     { .name = "init",    .help = "initiate all enabled services of a tree to a scandir", .operands = "tree",

@@ -12,15 +12,14 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <stddef.h>
 #include <string.h>
-#include <wchar.h>
+#include <stdint.h>
 
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/string.h>
-#include <oblibs/types.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/stream.h>
 
 #include <66/resolve.h>
 #include <66/ssexec.h>
@@ -29,53 +28,73 @@
 #include <66/constants.h>
 #include <66/config.h>
 
-#define MAXOPTS 17
+/* One row per cdb key, in the order and with the names written by
+ * tree_resolve_write_cdb.c (init and supervised are stored but not displayed). */
 
-static wchar_t const field_suffix[] = L" :" ;
-static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
+static info_field_t const fields_tree[] = {
+    { "name",        INFO_FIELD_STR, offsetof(resolve_tree_t, name) },
+    { "enabled",     INFO_FIELD_U32, offsetof(resolve_tree_t, enabled) },
+    { "depends",     INFO_FIELD_STR, offsetof(resolve_tree_t, depends) },
+    { "requiredby",  INFO_FIELD_STR, offsetof(resolve_tree_t, requiredby) },
+    { "allow",       INFO_FIELD_STR, offsetof(resolve_tree_t, allow) },
+    { "groups",      INFO_FIELD_STR, offsetof(resolve_tree_t, groups) },
+    { "contents",    INFO_FIELD_STR, offsetof(resolve_tree_t, contents) },
+    { "ndepends",    INFO_FIELD_U32, offsetof(resolve_tree_t, ndepends) },
+    { "nrequiredby", INFO_FIELD_U32, offsetof(resolve_tree_t, nrequiredby) },
+    { "nallow",      INFO_FIELD_U32, offsetof(resolve_tree_t, nallow) },
+    { "ngroups",     INFO_FIELD_U32, offsetof(resolve_tree_t, ngroups) },
+    { "ncontents",   INFO_FIELD_U32, offsetof(resolve_tree_t, ncontents) },
+    { "rversion",    INFO_FIELD_STR, offsetof(resolve_tree_t, rversion) },
+} ;
 
-static void info_display_string(char const *field, char const *str, uint32_t element, uint8_t check)
+/* One row per cdb key, as written by tree_resolve_master_write_cdb.c. */
+
+static info_field_t const fields_master[] = {
+    { "name",        INFO_FIELD_STR, offsetof(resolve_tree_master_t, name) },
+    { "allow",       INFO_FIELD_STR, offsetof(resolve_tree_master_t, allow) },
+    { "current",     INFO_FIELD_STR, offsetof(resolve_tree_master_t, current) },
+    { "contents",    INFO_FIELD_STR, offsetof(resolve_tree_master_t, contents) },
+    { "nallow",      INFO_FIELD_U32, offsetof(resolve_tree_master_t, nallow) },
+    { "ncontents",   INFO_FIELD_U32, offsetof(resolve_tree_master_t, ncontents) },
+    { "rversion",    INFO_FIELD_STR, offsetof(resolve_tree_master_t, rversion) },
+} ;
+
+/* option state, set by on_tree_resolve, drained at the top of ssexec_tree_resolve */
+static char const *opt_field = 0 ;
+static uint8_t opt_noname = 0 ;
+
+int on_tree_resolve(int id, char const *arg, void *data)
 {
-    info_display_field_name(field) ;
+    (void)data ;
 
-    if (check && !element) {
+    switch (id) {
 
-        if (!ostream_fmt(ostream_1,"%s%s", log_color->warning, "None"))
-            log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+        case 'f' :
 
-    } else {
+            opt_field = arg ;
+            break ;
 
-        if (!ostream_puts(ostream_1, str + element))
-            log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+        case 'n' :
+
+            opt_noname = 1 ;
+            break ;
     }
 
-    if (!ostream_putflush(ostream_1, "\n", 1))
-        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
-
-
-}
-
-static void info_display_int(char const *field, uint32_t element)
-{
-    info_display_field_name(field) ;
-
-    char ui[U32_FMT] ;
-    ui[u32_fmt(ui, element)] = 0 ;
-
-    if (!ostream_puts(ostream_1, ui))
-        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
-
-    if (!ostream_putflush(ostream_1, "\n", 1))
-        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+    return 0 ;
 }
 
 int ssexec_tree_resolve(int argc, char const *const *argv, void *data)
 {
     ssexec_t *info = data ;
 
+    /* drain option state into locals, then reset the statics for re-entrancy */
+    char const *field = opt_field ;
+    uint8_t noname = opt_noname ;
+    opt_field = 0 ;
+    opt_noname = 0 ;
+
     int r = 0 ;
     uint8_t master = 0 ;
-
     char const *treename = 0 ;
 
     resolve_wrapper_t_ref wres = 0 ;
@@ -86,26 +105,6 @@ int ssexec_tree_resolve(int argc, char const *const *argv, void *data)
         log_die(LOG_EXIT_USER, "missing tree argument") ;
 
     treename = argv[0] ;
-
-    char tree_buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
-        "name",
-        "enabled",
-        "depends" ,
-        "requiredby",
-        "allow",
-        "groups",
-        "contents",
-        "ndepends",
-        "nrequiredby",
-        "nallow",
-        "ngroups",
-        "ncontents",
-        //"init" ,
-        //"supervised", // 13
-        // Master
-        "current",
-        "rversion",
-    } ;
 
     if (treename[0] == '/') {
 
@@ -151,44 +150,16 @@ int ssexec_tree_resolve(int argc, char const *const *argv, void *data)
                 log_dieusys(LOG_EXIT_SYS, "find tree: ", treename) ;
         }
 
-        if (resolve_read_g(wres, info->base.s, treename)  <= 0)
+        if (resolve_read_g(wres, info->base.s, treename) <= 0)
             log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
     }
 
-    info_field_align(tree_buf, fields, field_suffix,MAXOPTS) ;
-
-    if (!master) {
-
-        unsigned int m = 0 ;
-        info_display_string(fields[m++], tres.sa.s, tres.name, 0) ;
-        info_display_int(fields[m++], tres.enabled) ;
-        info_display_string(fields[m++], tres.sa.s, tres.depends, 1) ;
-        info_display_string(fields[m++], tres.sa.s, tres.requiredby, 1) ;
-        info_display_string(fields[m++], tres.sa.s, tres.allow, 1) ;
-        info_display_string(fields[m++], tres.sa.s, tres.groups, 1) ;
-        info_display_string(fields[m++], tres.sa.s, tres.contents, 1) ;
-        info_display_int(fields[m++], tres.ndepends) ;
-        info_display_int(fields[m++], tres.nrequiredby) ;
-        info_display_int(fields[m++], tres.nallow) ;
-        info_display_int(fields[m++], tres.ngroups) ;
-        info_display_int(fields[m++], tres.ncontents) ;
-        //info_display_int(fields[m++], tres.init) ;
-        //info_display_int(fields[m++], tres.supervised) ;
-        info_display_string(fields[13], tres.sa.s, tres.rversion, 1) ;
-
-    } else {
-
-        info_display_string(fields[0], mres.sa.s, mres.name, 1) ;
-        info_display_string(fields[4], mres.sa.s, mres.allow, 1) ;
-        info_display_string(fields[12], mres.sa.s, mres.current, 1) ;
-        info_display_string(fields[6], mres.sa.s, mres.contents, 1) ;
-        info_display_int(fields[9], mres.nallow) ;
-        info_display_int(fields[11], mres.ncontents) ;
-        info_display_string(fields[13], mres.sa.s, mres.rversion, 1) ;
-    }
+    if (master)
+        info_resolve_display(&mres, mres.sa.s, fields_master, OPT_COUNT(fields_master), field, noname) ;
+    else
+        info_resolve_display(&tres, tres.sa.s, fields_tree, OPT_COUNT(fields_tree), field, noname) ;
 
     resolve_free(wres) ;
 
     return 0 ;
 }
-

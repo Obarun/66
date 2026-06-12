@@ -28,7 +28,7 @@
 
 static wchar_t const field_suffix[] = L" :" ;
 
-static void display_value(void const *base, char const *sa, info_field_t const *f)
+static void display_value(void const *base, char const *rblob, info_field_t const *f)
 {
     void const *p = (char const *)base + f->offset ;
 
@@ -43,7 +43,7 @@ static void display_value(void const *base, char const *sa, info_field_t const *
 
         } else {
 
-            if (!ostream_puts(ostream_1, sa + off))
+            if (!ostream_puts(ostream_1, rblob + off))
                 log_dieu(LOG_EXIT_SYS, "write to stdout") ;
         }
 
@@ -68,7 +68,7 @@ static void display_value(void const *base, char const *sa, info_field_t const *
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
-void info_resolve_display(void const *base, char const *sa, info_field_t const *fields, size_t nfields, char const *select, uint8_t noname)
+void info_resolve_display(void const *base, char const *rblob, info_field_t const *fields, size_t nfields, char const *select, uint8_t noname)
 {
     log_flow() ;
 
@@ -108,7 +108,7 @@ void info_resolve_display(void const *base, char const *sa, info_field_t const *
     if (noname) {
 
         for (size_t i = 0 ; i < n ; i++)
-            display_value(base, sa, &fields[idx[i]]) ;
+            display_value(base, rblob, &fields[idx[i]]) ;
 
     } else {
 
@@ -126,7 +126,7 @@ void info_resolve_display(void const *base, char const *sa, info_field_t const *
         for (size_t i = 0 ; i < n ; i++) {
 
             info_display_field_name(aligned[i]) ;
-            display_value(base, sa, &fields[idx[i]]) ;
+            display_value(base, rblob, &fields[idx[i]]) ;
         }
     }
 }
