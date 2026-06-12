@@ -538,13 +538,13 @@ static void cad(void)
 }
 
 static opt_t const opts_boot[] = {
-    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",        .arg = OPT_NONE,                               .help = "print this help" },
-    { .id = 'm',         .shortname = 'm', .longname = "mount",       .arg = OPT_NONE,                               .help = "mount parent live directory" },
-    { .id = 's',         .shortname = 's', .longname = "skeleton",    .arg = OPT_REQUIRED, .argname = "directory",   .help = "skeleton directory to use" },
-    { .id = 'e',         .shortname = 'e', .longname = "environment", .arg = OPT_REQUIRED, .argname = "directory",   .help = "environment directory or file to use" },
-    { .id = 'd',         .shortname = 'd', .longname = "dev",         .arg = OPT_REQUIRED, .argname = "path",        .help = "mount dev directory" },
-    { .id = 'b',         .shortname = 'b', .longname = "banner",      .arg = OPT_REQUIRED, .argname = "message",     .help = "print banner at begins of the init process" },
-    { .id = 'l',         .shortname = 'l', .longname = "log-user",    .arg = OPT_REQUIRED, .argname = "username",    .help = "run catch-all logger as log_user user" },
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",        .arg = OPT_NONE,                            .help = "print this help" },
+    { .id = 'm',         .shortname = 'm', .longname = "mount",       .arg = OPT_NONE,                            .help = "mount parent live directory" },
+    { .id = 's',         .shortname = 's', .longname = "skeleton",    .arg = OPT_REQUIRED, .argname = "path",     .help = "skeleton directory to use" },
+    { .id = 'e',         .shortname = 'e', .longname = "environment", .arg = OPT_REQUIRED, .argname = "path",     .help = "environment directory or file to use" },
+    { .id = 'd',         .shortname = 'd', .longname = "dev",         .arg = OPT_REQUIRED, .argname = "path",     .help = "mount dev directory" },
+    { .id = 'b',         .shortname = 'b', .longname = "banner",      .arg = OPT_REQUIRED, .argname = "message",  .help = "print banner at begins of the init process" },
+    { .id = 'l',         .shortname = 'l', .longname = "log-user",    .arg = OPT_REQUIRED, .argname = "username", .help = "run catch-all logger as log_user user" },
 } ;
 
 static uint8_t boot_tmpfs = 0 ;

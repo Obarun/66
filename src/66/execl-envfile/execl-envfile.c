@@ -31,9 +31,9 @@
 #include <66/config.h>
 
 static opt_t const opts[] = {
-    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                             .help = "print this help" },
-    { .id = 'v',         .shortname = 'v', .longname = "verbose", .arg = OPT_REQUIRED, .argname = "verbosity", .help = "increase/decrease verbosity" },
-    { .id = 'l',         .shortname = 'l', .longname = "loose",   .arg = OPT_NONE,                             .help = "loose" },
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                          .help = "print this help" },
+    { .id = 'v',         .shortname = 'v', .longname = "verbose", .arg = OPT_REQUIRED, .argname = "number", .help = "increase/decrease verbosity" },
+    { .id = 'l',         .shortname = 'l', .longname = "loose",   .arg = OPT_NONE,                          .help = "loose" },
 } ;
 
 static opt_cmd_t const cmd = {

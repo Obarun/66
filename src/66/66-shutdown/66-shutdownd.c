@@ -70,8 +70,8 @@ static int nologger = 0 ;
 
 static opt_t const opts[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",      .arg = OPT_NONE,                                .help = "print this help" },
-    { .id = 'l',         .shortname = 'l', .longname = "live",      .arg = OPT_REQUIRED, .argname = "live",         .help = "live directory" },
-    { .id = 's',         .shortname = 's', .longname = "skeleton",  .arg = OPT_REQUIRED, .argname = "skel",         .help = "skeleton directory" },
+    { .id = 'l',         .shortname = 'l', .longname = "live",      .arg = OPT_REQUIRED, .argname = "path",         .help = "live directory" },
+    { .id = 's',         .shortname = 's', .longname = "skeleton",  .arg = OPT_REQUIRED, .argname = "path",         .help = "skeleton directory" },
     { .id = 'g',         .shortname = 'g', .longname = "grace-time",.arg = OPT_REQUIRED, .argname = "milliseconds", .help = "grace time between the SIGTERM and the SIGKILL" },
     { .id = 'B',         .shortname = 'B', .longname = "container", .arg = OPT_NONE,                                .help = "the system is running inside a container" },
     { .id = 'c',         .shortname = 'c', .longname = "no-logger", .arg = OPT_NONE,                                .help = "the catch-all logger do not exist" },

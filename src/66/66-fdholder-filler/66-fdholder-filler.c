@@ -38,7 +38,7 @@
 
 static opt_t const opts[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                                .help = "print this help" },
-    { .id = 'v',         .shortname = 'v', .longname = "verbose", .arg = OPT_REQUIRED, .argname = "verbosity",    .help = "increase/decrease verbosity" },
+    { .id = 'v',         .shortname = 'v', .longname = "verbose", .arg = OPT_REQUIRED, .argname = "number",       .help = "increase/decrease verbosity" },
     { .id = '1',         .shortname = '1', .longname = "notify",  .arg = OPT_NONE,                                .help = "notify readiness on file descriptor 1" },
     { .id = 't',         .shortname = 't', .longname = "timeout", .arg = OPT_REQUIRED, .argname = "milliseconds", .help = "timeout to apply" },
 } ;

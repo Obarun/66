@@ -56,8 +56,8 @@ char const *live = 0 ;
 
 static opt_t const opts[] = {
     { .id = OPT_ID_HELP, .shortname = 'H', .longname = "help",     .arg = OPT_NONE,                          .help = "print this help" },
-    { .id = 'l',         .shortname = 'l', .longname = "live",     .arg = OPT_REQUIRED, .argname = "live",   .help = "live directory" },
-    { .id = 'b',         .shortname = 'b', .longname = "banner",   .arg = OPT_REQUIRED, .argname = "banner", .help = "end banner to display" },
+    { .id = 'l',         .shortname = 'l', .longname = "live",     .arg = OPT_REQUIRED, .argname = "path",   .help = "live directory" },
+    { .id = 'b',         .shortname = 'b', .longname = "banner",   .arg = OPT_REQUIRED, .argname = "message",.help = "end banner to display" },
     { .id = 'f',         .shortname = 'f', .longname = "force",    .arg = OPT_NONE,                          .help = "force" },
     { .id = 'h',         .shortname = 'h', .longname = "halt",     .arg = OPT_NONE,                          .help = "halt the system" },
     { .id = 'p',         .shortname = 'p', .longname = "poweroff", .arg = OPT_NONE,                          .help = "poweroff the system" },

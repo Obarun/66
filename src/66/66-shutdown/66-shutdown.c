@@ -20,7 +20,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <signal.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <time.h>
@@ -32,9 +31,6 @@
 #include <oblibs/clock.h>
 #include <oblibs/fd.h>
 #include <oblibs/io.h>
-
-#include <skalibs/sig.h>
-#include <skalibs/buffer.h>
 
 #include <66/config.h>
 #include <66/hpr.h>
@@ -50,18 +46,18 @@
 static char const *live = 0 ;
 
 static opt_t const opts[] = {
-    { .id = OPT_ID_HELP, .shortname = 'H', .longname = "help",          .arg = OPT_NONE,                            .help = "print this help" },
-    { .id = 'v',         .shortname = 'v', .longname = "verbose",       .arg = OPT_REQUIRED, .argname = "verbosity",.help = "increase/decrease verbosity" },
-    { .id = 'l',         .shortname = 'l', .longname = "live",          .arg = OPT_REQUIRED, .argname = "live",     .help = "live directory" },
-    { .id = 'h',         .shortname = 'h', .longname = "halt",          .arg = OPT_NONE,                            .help = "halt the system" },
-    { .id = 'p',         .shortname = 'p', .longname = "poweroff",      .arg = OPT_NONE,                            .help = "poweroff the system" },
-    { .id = 'r',         .shortname = 'r', .longname = "reboot",        .arg = OPT_NONE,                            .help = "reboot the system" },
-    { .id = 'k',         .shortname = 'k', .longname = "warn-users",    .arg = OPT_NONE,                            .help = "only warn users" },
-    { .id = 'f',         .shortname = 'f', .longname = 0,               .arg = OPT_NONE,                            .help = "ignored (compatibility option)" },
-    { .id = 'F',         .shortname = 'F', .longname = 0,               .arg = OPT_NONE,                            .help = "ignored (compatibility option)" },
-    { .id = 'a',         .shortname = 'a', .longname = "access-control",.arg = OPT_NONE,                            .help = "check users access control" },
-    { .id = 'c',         .shortname = 'c', .longname = "cancel",        .arg = OPT_NONE,                            .help = "cancel planned shutdown" },
-    { .id = 't',         .shortname = 't', .longname = "grace-time",    .arg = OPT_REQUIRED, .argname = "seconds",  .help = "grace time between the SIGTERM and the SIGKILL" },
+    { .id = OPT_ID_HELP, .shortname = 'H', .longname = "help",          .arg = OPT_NONE,                           .help = "print this help" },
+    { .id = 'v',         .shortname = 'v', .longname = "verbose",       .arg = OPT_REQUIRED, .argname = "number",  .help = "increase/decrease verbosity" },
+    { .id = 'l',         .shortname = 'l', .longname = "live",          .arg = OPT_REQUIRED, .argname = "path",    .help = "live directory" },
+    { .id = 'h',         .shortname = 'h', .longname = "halt",          .arg = OPT_NONE,                           .help = "halt the system" },
+    { .id = 'p',         .shortname = 'p', .longname = "poweroff",      .arg = OPT_NONE,                           .help = "poweroff the system" },
+    { .id = 'r',         .shortname = 'r', .longname = "reboot",        .arg = OPT_NONE,                           .help = "reboot the system" },
+    { .id = 'k',         .shortname = 'k', .longname = "warn-users",    .arg = OPT_NONE,                           .help = "only warn users" },
+    { .id = 'f',         .shortname = 'f', .longname = 0,               .arg = OPT_NONE,                           .help = "ignored (compatibility option)" },
+    { .id = 'F',         .shortname = 'F', .longname = 0,               .arg = OPT_NONE,                           .help = "ignored (compatibility option)" },
+    { .id = 'a',         .shortname = 'a', .longname = "access-control",.arg = OPT_NONE,                           .help = "check users access control" },
+    { .id = 'c',         .shortname = 'c', .longname = "cancel",        .arg = OPT_NONE,                           .help = "cancel planned shutdown" },
+    { .id = 't',         .shortname = 't', .longname = "grace-time",    .arg = OPT_REQUIRED, .argname = "seconds", .help = "grace time between the SIGTERM and the SIGKILL" },
 } ;
 
 static opt_cmd_t const cmd = {
