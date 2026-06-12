@@ -643,7 +643,7 @@ static void info_display_envat(char const *field,resolve_service_t *res)
     _cleanup_strbuf_ strbuf salink = STRBUF_ZERO ;
 
     if (res->environ.envdir) {
-        strbuf salink = STRBUF_ZERO ;
+
         char *src = res->sa.s + res->environ.envdir ;
 
         size_t srclen = strlen(src) ;
