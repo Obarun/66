@@ -19,8 +19,7 @@
 #include <oblibs/types.h>
 #include <oblibs/environ.h>
 #include <oblibs/spawn.h>
-
-#include <skalibs/djbunix.h>
+#include <oblibs/process.h>
 
 #include <66/svc.h>
 
@@ -50,7 +49,7 @@ void svc_send_fdholder(char const *socket, char const *signal)
 
     pid = spawn_path(newargv[0], newargv, (char const *const *) environ) ;
 
-    if (waitpid_nointr(pid, &wstat, 0) < 0)
+    if (process_wait(pid, &wstat) < 0)
         log_dieusys(LOG_EXIT_SYS, "waiting reload of the fdholder daemon") ;
 
     if (wstat)

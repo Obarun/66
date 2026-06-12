@@ -16,8 +16,7 @@
 #include <oblibs/environ.h>
 #include <oblibs/types.h>
 #include <oblibs/spawn.h>
-
-#include <skalibs/djbunix.h>
+#include <oblibs/process.h>
 
 #include <66/svc.h>
 #include <66/ssexec.h>
@@ -64,7 +63,7 @@ int svc_send_wait(char const *const *list, uint32_t nservice, char **sig, unsign
 
     pid = spawn_path(newargv[0], newargv, (char const *const *) environ) ;
 
-    if (waitpid_nointr(pid, &wstat, 0) < 0)
+    if (process_wait(pid, &wstat) < 0)
         log_warnusys_return(LOG_EXIT_SYS, "wait for svctl") ;
 
     if (wstat)

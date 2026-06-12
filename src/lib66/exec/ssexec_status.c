@@ -33,8 +33,7 @@
 #include <oblibs/lexer.h>
 #include <oblibs/stream.h>
 #include <oblibs/spawn.h>
-
-#include <skalibs/djbunix.h>
+#include <oblibs/process.h>
 
 #include <66/info.h>
 #include <66/constants.h>
@@ -227,7 +226,7 @@ static void info_get_status(resolve_service_t *res)
         newargv[m++] = 0 ;
 
         pid = spawn_path(newargv[0],newargv,(char const *const *)environ) ;
-        if (waitpid_nointr(pid,&wstat, 0) < 0)
+        if (process_wait(pid,&wstat) < 0)
             log_dieusys(LOG_EXIT_SYS,"wait for ",newargv[0]) ;
 
         if (wstat)
