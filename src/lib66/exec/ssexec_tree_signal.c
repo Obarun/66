@@ -25,6 +25,8 @@
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/types.h>
+#include <oblibs/io.h>
+#include <oblibs/fd.h>
 
 #include <66/config.h>
 #include <66/ssexec.h>
@@ -58,24 +60,22 @@ static void all_redir_fd(void)
 {
     log_flow();
 
-    int fd = open("/var/log/shutdown.log", O_WRONLY | O_CREAT | O_APPEND, 0644) ;
+    int fd = io_open_mode("/var/log/shutdown.log", O_WRONLY | O_CREAT | O_APPEND, 0644) ;
     if (fd < 0)
         log_dieusys(LOG_EXIT_SYS, "open /var/log/shutdown.log") ;
 
-    if (dup2(fd, 1) < 0)
+    if (copy_fd(1, fd) < 0)
         log_dieusys(LOG_EXIT_SYS, "dup2 stdout") ;
 
-    if (dup2(fd, 2) < 0)
+    if (copy_fd(2, fd) < 0)
         log_dieusys(LOG_EXIT_SYS, "dup2 stderr") ;
 
-    int null_fd = open("/dev/null", O_RDONLY) ;
-    if (null_fd >= 0) {
-        dup2(null_fd, 0) ; // stdin
-        close(null_fd) ;
-    }
+    int null_fd = io_open("/dev/null", O_RDONLY) ;
+    if (null_fd >= 0)
+        move_fd(0, null_fd) ; // stdin -> /dev/null (closes null_fd)
 
     if (fd > 2)
-        close(fd);
+        close_fd(fd) ;
 
     if (setsid() < 0)
         log_dieusys(LOG_EXIT_SYS, "setsid");
@@ -85,6 +85,7 @@ static void all_redir_fd(void)
 
     umask(022);
 }
+
 
 /** The sub-command name selects the signal. The thin entries
  * (do_tree_start/stop/free) post it here; the body reads it. */

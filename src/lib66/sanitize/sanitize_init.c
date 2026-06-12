@@ -23,9 +23,9 @@
 #include <oblibs/hash.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
+#include <oblibs/files.h>
 
 #include <skalibs/tai.h>
-#include <skalibs/fcntl.h>
 
 #include <s6/ftrigr.h>
 #include <s6/ftrigw.h>
@@ -156,18 +156,12 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
         if (!FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
 
             char downfile[scandirlen + 6] ;
-            int fd = -1 ;
             auto_strings(downfile, scandir, "/down") ;
             log_trace("create file: ", downfile) ;
-            {
-                do fd = open(downfile, O_WRONLY | O_NONBLOCK | O_TRUNC | O_CREAT, 0666) ;
-                while (fd == -1 && errno == EINTR) ;
-            }
-            if (fd < 0) {
+            if (!file_write(downfile, "", 0)) {
                 cleanup(toclean, pos) ;
                 log_dieusys(LOG_EXIT_SYS, "create file: ", downfile) ;
             }
-            close(fd) ;
 
             if (issupervised) {
 
