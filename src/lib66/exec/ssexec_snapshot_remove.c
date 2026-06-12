@@ -15,46 +15,26 @@
 #include <unistd.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/directory.h>
 
-#include <skalibs/sgetopt.h>
-
 #include <66/ssexec.h>
 #include <66/constants.h>
 
-int ssexec_snapshot_remove(int argc, char const *const *argv, ssexec_t *info)
+
+int ssexec_snapshot_remove(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
+
+    ssexec_t *info = data ;
 
     char const *snapname = 0 ;
     _alloc_strbuf_(snapdir, SS_MAX_PATH_LEN) ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;)
-        {
-            int opt = subgetopt_r(argc, argv, OPTS_SNAPSHOT_REMOVE, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-
-                case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
-
-                default :
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
-    if (!argc)
-        log_usage(info->usage, "\n", info->help) ;
+    if (argc < 1)
+        log_die(LOG_EXIT_USER, "missing name argument") ;
 
     snapname = *argv ;
 

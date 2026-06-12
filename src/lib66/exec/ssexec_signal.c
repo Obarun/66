@@ -16,9 +16,9 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/types.h>
 
-#include <skalibs/sgetopt.h>
 #include <skalibs/nsig.h> // NSIG
 
 #include <66/svc.h>
@@ -46,89 +46,147 @@ static char const cmdsig[NSIG] = {
  * This function assume that the list
  * of service are at least supervised.
  * */
-int ssexec_signal(int argc, char const *const *argv, ssexec_t *info)
+static opt_t const opts_signal[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",         .arg = OPT_NONE,                          .help = "print this help" },
+    { .id = 'P',         .shortname = 'P', .longname = "no-propagate", .arg = OPT_NONE,                          .help = "do not propagate signal to its dependencies" },
+    { .id = 'a',         .shortname = 'a', .longname = "alarm",        .arg = OPT_NONE,                          .help = "send a SIGALRM signal" },
+    { .id = 'b',         .shortname = 'b', .longname = "abort",        .arg = OPT_NONE,                          .help = "send a SIGABRT signal" },
+    { .id = 'q',         .shortname = 'q', .longname = "quit",         .arg = OPT_NONE,                          .help = "send a SIGQUIT signal" },
+    { .id = 'H',         .shortname = 'H', .longname = "hangup",       .arg = OPT_NONE,                          .help = "send a SIGHUP signal" },
+    { .id = 'k',         .shortname = 'k', .longname = "kill",         .arg = OPT_NONE,                          .help = "send a SIGKILL signal" },
+    { .id = 't',         .shortname = 't', .longname = "term",         .arg = OPT_NONE,                          .help = "send a SIGTERM signal" },
+    { .id = 'i',         .shortname = 'i', .longname = "interrupt",    .arg = OPT_NONE,                          .help = "send a SIGINT signal" },
+    { .id = '1',         .shortname = '1', .longname = "usr1",         .arg = OPT_NONE,                          .help = "send a SIGUSR1 signal" },
+    { .id = '2',         .shortname = '2', .longname = "usr2",         .arg = OPT_NONE,                          .help = "send a SIGUSR2 signal" },
+    { .id = 'p',         .shortname = 'p', .longname = "stop",         .arg = OPT_NONE,                          .help = "send a SIGSTOP signal" },
+    { .id = 'c',         .shortname = 'c', .longname = "cont",         .arg = OPT_NONE,                          .help = "send a SIGCONT signal" },
+    { .id = 'y',         .shortname = 'y', .longname = "winch",        .arg = OPT_NONE,                          .help = "send a SIGWINCH signal" },
+    { .id = 's',         .shortname = 's', .longname = "signal",       .arg = OPT_REQUIRED, .argname = "signal", .help = "send signal to the supervised process by signal name or its number" },
+    { .id = 'r',         .shortname = 'r', .longname = "restart",      .arg = OPT_NONE,                          .help = "restart service by sending it a signal (default SIGTERM)" },
+    { .id = 'o',         .shortname = 'o', .longname = "once",         .arg = OPT_NONE,                          .help = "once. Equivalent to '-uO'" },
+    { .id = 'd',         .shortname = 'd', .longname = "down",         .arg = OPT_NONE,                          .help = "send a SIGTERM signal then a SIGCONT signal" },
+    { .id = 'D',         .shortname = 'D', .longname = "down-keep",    .arg = OPT_NONE,                          .help = "bring down service and avoid to be bring it up automatically" },
+    { .id = 'u',         .shortname = 'u', .longname = "up",           .arg = OPT_NONE,                          .help = "bring up service" },
+    { .id = 'U',         .shortname = 'U', .longname = "up-restart",   .arg = OPT_NONE,                          .help = "bring up service and ensure that service can be restarted automatically" },
+    { .id = 'x',         .shortname = 'x', .longname = "exit",         .arg = OPT_NONE,                          .help = "bring down the service and propagate to its supervisor" },
+    { .id = 'O',         .shortname = 'O', .longname = "once-at-most", .arg = OPT_NONE,                          .help = "mark the service to run once at most" },
+    { .id = 'Q',         .shortname = 'Q',                             .arg = OPT_NONE,                          .help = "synthetic accumulator option", .hidden = true },
+    { .id = 'w',         .shortname = 'w', .longname = "wait",         .arg = OPT_REQUIRED, .argname = "uUdDrR", .help = "do not exit until the service reaches the wanted state" },
+} ;
+
+static char sig_signal[DATASIZE + 1] = "-" ;
+static unsigned int sig_datalen = 1 ;
+static char sig_wsignal[5] = "-w \0" ;
+static uint8_t sig_woption = 0 ;
+static uint8_t sig_propagate = 1 ;
+
+static int on_signal(int id, char const *arg, void *data)
+{
+    (void)data ;
+
+    switch (id) {
+
+        case 's' :
+            {
+                int sig ;
+                if (!sig_parse(arg, &sig))
+                    log_die(LOG_EXIT_USER, "invalid signal: ", arg) ;
+                if (!cmdsig[sig])
+                    log_die(LOG_EXIT_USER, arg, " is not in the list of user-available signals") ;
+                id = cmdsig[sig] ;
+            }
+            attribute_fallthrough ;
+        case 'a' :
+        case 'b' :
+        case 'q' :
+        case 'H' :
+        case 'k' :
+        case 't' :
+        case 'i' :
+        case '1' :
+        case '2' :
+        case 'p' :
+        case 'c' :
+        case 'y' :
+        case 'r' :
+        case 'o' :
+        case 'd' :
+        case 'D' :
+        case 'u' :
+        case 'U' :
+        case 'x' :
+        case 'O' :
+        case 'Q' :
+
+            if (sig_datalen >= DATASIZE)
+                log_die(LOG_EXIT_USER, "too many arguments") ;
+
+            sig_signal[sig_datalen++] = id == 'H' ? 'h' : id ;
+            break ;
+
+        case 'w' :
+
+            if (!memchr("dDuUrR", arg[0], 6))
+                log_die(LOG_EXIT_USER, "invalid value for -w -- expected one of u/U/d/D/r/R") ;
+
+            sig_wsignal[2] = arg[0] ;
+            sig_woption = 1 ;
+            break ;
+
+        case 'P' :
+            sig_propagate = 0 ;
+            break ;
+    }
+
+    return 0 ;
+}
+
+opt_cmd_t const cmd_signal = {
+    .name = "66 signal",
+    .help = "send a signal to services",
+    .operands = "service...",
+    .opts = opts_signal,
+    .nopts = OPT_COUNT(opts_signal),
+    .on_option = &on_signal,
+    .fn = &ssexec_signal,
+    .epilog =
+        "values for -w (do not exit until the service reaches the wanted state):\n"
+        "    u  the service is up\n"
+        "    U  the service is up and ready and has notified readiness\n"
+        "    d  the service is down\n"
+        "    D  the service is down and ready to be brought up and has notified readiness\n"
+        "    r  the service has been started or restarted\n"
+        "    R  the service has been started or restarted and has notified readiness",
+} ;
+
+int ssexec_signal(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
 
+    ssexec_t *info = data ;
+
     int r ;
-    uint8_t requiredby = 1, propagate = 1, woption = 0 ;
+    uint8_t requiredby = 1, propagate = sig_propagate, woption = sig_woption ;
     char *cmdmsg = 0 ;
-    char wsignal[5] = "-w \0" ;
-    char signal[DATASIZE + 1] = "-" ;
-    unsigned int datalen = 1 ;
+    char wsignal[5] ;
+    char signal[DATASIZE + 1] ;
+    unsigned int datalen = sig_datalen ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     uint32_t flag = GRAPH_SKIP_MODULECONTENTS, nservice = 0 ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
+    memcpy(wsignal, sig_wsignal, sizeof wsignal) ;
+    memcpy(signal, sig_signal, sizeof signal) ;
 
-        for (;;)
-        {
-            int opt = subgetopt_r(argc,argv, OPTS_SIGNAL, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-                case 'h' : info_help(info->help, info->usage) ; return 0 ;
-                case 's' :
-                    {
-                        int sig ;
-                        if (!sig_parse(l.arg, &sig))
-                            log_die(LOG_EXIT_USER, "invalid signal: ", l.arg) ;
-                        if (!cmdsig[sig])
-                            log_die(LOG_EXIT_USER, l.arg, " is not in the list of user-available signals") ;
-                        opt = cmdsig[sig] ;
-                    }
-                    __attribute__((fallthrough)) ;
-                case 'a' :
-                case 'b' :
-                case 'q' :
-                case 'H' :
-                case 'k' :
-                case 't' :
-                case 'i' :
-                case '1' :
-                case '2' :
-                case 'p' :
-                case 'c' :
-                case 'y' :
-                case 'r' :
-                case 'o' :
-                case 'd' :
-                case 'D' :
-                case 'u' :
-                case 'U' :
-                case 'x' :
-                case 'O' :
-                case 'Q' :
-
-                    if (datalen >= DATASIZE)
-                        log_die(LOG_EXIT_USER, "too many arguments") ;
-
-                    signal[datalen++] = opt == 'H' ? 'h' : opt ;
-                    break ;
-
-                case 'w' :
-
-                    if (!memchr("dDuUrR", l.arg[0], 6))
-                        log_usage(info->usage, "\n", info->help) ;
-
-                    wsignal[2] = l.arg[0] ;
-                    woption = 1 ;
-                    break ;
-
-                case 'P':
-                    propagate = 0 ;
-                    break ;
-
-                default :
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
+    /* the locals now hold the whole option state: reset the statics to their
+     * initial values so a nested re-dispatch of "signal" starts clean. */
+    sig_propagate = 1 ;
+    sig_woption = 0 ;
+    sig_datalen = 1 ;
+    sig_signal[0] = '-' ;
+    sig_wsignal[2] = ' ' ;
 
     if (argc < 1 || datalen < 2)
-        log_usage(info->usage, "\n", info->help) ;
+        return opt_emit_usage(cmd_signal.name, &cmd_signal) ;
 
     if (signal[1] == 'u' || signal[1] == 'U')
         requiredby = 0 ;

@@ -17,11 +17,10 @@
 #include <pwd.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
-
-#include <skalibs/sgetopt.h>
 
 #include <66/snapshot.h>
 #include <66/ssexec.h>
@@ -106,46 +105,41 @@ static int copy_dir(const char *src, char *dst, size_t len, ssexec_t *info)
     return 1 ;
 }
 
-int ssexec_snapshot_create(int argc, char const *const *argv, ssexec_t *info)
+static short opt_system = 0 ;
+
+int on_snapshot_create(int id, char const *arg, void *data)
+{
+    (void)arg ;
+    (void)data ;
+
+    switch (id) {
+
+        case 's' :
+
+            opt_system = 1 ;
+            break ;
+    }
+
+    return 0 ;
+}
+
+int ssexec_snapshot_create(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
 
-    short system = 0 ;
+    ssexec_t *info = data ;
+
+    short system = opt_system ;
+    /* drain option state into the local, then reset the static for re-entrancy. */
+    opt_system = 0 ;
     char const *snapname = 0 ;
     size_t pos = 0, len = 0 ;
     _alloc_strbuf_(snapdir, SS_MAX_PATH_LEN) ;
     _alloc_strbuf_(src, SS_MAX_PATH_LEN) ;
     snapshot_list_t *list = info->owner ? snapshot_user_list : snapshot_root_list ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;)
-        {
-            int opt = subgetopt_r(argc, argv, OPTS_SNAPSHOT_CREATE, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-
-                case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
-
-                case 's' :
-
-                    system = 1 ;
-                    break ;
-
-                default :
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
-    if (!argc )
-        log_usage(info->usage, "\n", info->help) ;
+    if (argc < 1)
+        log_die(LOG_EXIT_USER, "missing name argument") ;
 
     snapname = *argv ;
 

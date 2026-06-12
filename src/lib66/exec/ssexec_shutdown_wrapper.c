@@ -16,99 +16,83 @@
 #include <sys/types.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/exec.h>
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
 
-#include <skalibs/sgetopt.h>
-
 #include <66/ssexec.h>
 #include <66/config.h>
 
-int ssexec_shutdown_wrapper(int argc, char const *const *argv, ssexec_t *info)
+static opt_t const opts_shutdown[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",         .arg = OPT_NONE,                           .help = "print this help" },
+    { .id = 'a',         .shortname = 'a', .longname = "access",       .arg = OPT_NONE,                           .help = "use access control" },
+    { .id = 'f',         .shortname = 'f', .longname = "force",        .arg = OPT_NONE,                           .help = "sync filesytem and immediately stop the system" },
+    { .id = 'F',         .shortname = 'F', .longname = "force-nosync", .arg = OPT_NONE,                           .help = "do not sync filesytem and immediately stop the system" },
+    { .id = 'm',         .shortname = 'm', .longname = "message",      .arg = OPT_REQUIRED, .argname = "message", .help = "replace the default message by message" },
+    { .id = 't',         .shortname = 't', .longname = "timeout",      .arg = OPT_REQUIRED, .argname = "seconds", .help = "grace time between the SIGTERM and the SIGKILL" },
+    { .id = 'W',         .shortname = 'W', .longname = "no-wall",      .arg = OPT_NONE,                           .help = "do not send a wall message to users" },
+} ;
+
+static uint8_t opt_acl = 0, opt_force = 0, opt_nowall = 0 ;
+static char const *opt_msg = 0 ;
+static char const *opt_time = 0 ;
+static char const *hpr_command = 0 ;
+
+static int on_shutdown(int id, char const *arg, void *data)
+{
+    (void)data ;
+
+    switch (id) {
+
+        case 'f' :
+            opt_force = 1 ;
+            break ;
+
+        case 'F' :
+            opt_force = 2 ;
+            break ;
+
+        case 'm' :
+            opt_msg = arg ;
+            break ;
+
+        case 'a' :
+            opt_acl++ ;
+            break ;
+
+        case 't' :
+            opt_time = arg ;
+            break ;
+
+        case 'W' :
+            opt_nowall++ ;
+            break ;
+    }
+
+    return 0 ;
+}
+
+static int shutdown_run(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
 
-    uint8_t acl = 0, force = 0, nowall = 0 ;
-    char what[strlen(argv[0])] ;
-    char const *msg = 0 ;
-    char const *time = 0 ;
+    ssexec_t *info = data ;
+
+    /* drain option state into locals, then reset the statics for re-entrancy. */
+    uint8_t acl = opt_acl, force = opt_force, nowall = opt_nowall ;
+    char const *msg = opt_msg, *time = opt_time, *command = hpr_command ;
+    opt_acl = 0 ;
+    opt_force = 0 ;
+    opt_nowall = 0 ;
+    opt_msg = 0 ;
+    opt_time = 0 ;
+    hpr_command = 0 ;
+
     char *when = "now" ;
-    char *command = 0 ;
 
-    auto_strings(what, argv[0]) ;
-
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;) {
-
-            int opt = subgetopt_r(argc, argv, OPTS_SHUTDOWN_WRAPPER, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-
-                case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
-
-                case 'f' :
-
-                    force = 1 ;
-                    break ;
-
-                case 'F' :
-
-                    force = 2 ;
-                    break ;
-
-                case 'm' :
-
-                    msg = l.arg ;
-                    break ;
-
-                case 'a' :
-
-                    acl++ ;
-                    break ;
-
-                case 't' :
-
-                    time = l.arg ;
-                    break ;
-
-                case 'W' :
-
-                    nowall++ ;
-                    break ;
-
-                default:
-
-                    log_usage(info->usage, "\n", info->help) ;
-
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
-    if (argv[0])
+    if (argc && argv[0])
         when = (char *) argv[0] ;
-
-    if (!strcmp(what, "poweroff")) {
-
-        command = "-p" ;
-
-    } else if (!strcmp(what, "reboot")) {
-
-        command = "-r" ;
-
-    } else if (!strcmp(what, "halt")) {
-
-        command = "-h" ;
-
-    } else
-        log_die(LOG_EXIT_USER, "invalid shutdown command: ", what) ;
 
     if (force) {
 
@@ -150,3 +134,51 @@ int ssexec_shutdown_wrapper(int argc, char const *const *argv, ssexec_t *info)
 
     exec_path_die(newargv[0], newargv, (char const *const *) environ) ;
 }
+
+static int do_poweroff(int argc, char const *const *argv, void *data)
+{
+    hpr_command = "-p" ;
+    return shutdown_run(argc, argv, data) ;
+}
+
+static int do_reboot(int argc, char const *const *argv, void *data)
+{
+    hpr_command = "-r" ;
+    return shutdown_run(argc, argv, data) ;
+}
+
+static int do_halt(int argc, char const *const *argv, void *data)
+{
+    hpr_command = "-h" ;
+    return shutdown_run(argc, argv, data) ;
+}
+
+opt_cmd_t const cmd_poweroff = {
+    .name = "66 poweroff",
+    .help = "poweroff the system",
+    .operands = "when",
+    .opts = opts_shutdown,
+    .nopts = OPT_COUNT(opts_shutdown),
+    .on_option = &on_shutdown,
+    .fn = &do_poweroff,
+} ;
+
+opt_cmd_t const cmd_reboot = {
+    .name = "66 reboot",
+    .help = "reboot the system",
+    .operands = "when",
+    .opts = opts_shutdown,
+    .nopts = OPT_COUNT(opts_shutdown),
+    .on_option = &on_shutdown,
+    .fn = &do_reboot,
+} ;
+
+opt_cmd_t const cmd_halt = {
+    .name = "66 halt",
+    .help = "halt the system",
+    .operands = "when",
+    .opts = opts_shutdown,
+    .nopts = OPT_COUNT(opts_shutdown),
+    .on_option = &on_shutdown,
+    .fn = &do_halt,
+} ;

@@ -80,22 +80,22 @@ int main (int argc, char const *const *argv, char const *const *envp)
                 break ;
 
             switch (o) {
-                case OPT_ID_HELP : return opt_emit_help(&cmd) ;
+                case OPT_ID_HELP : return opt_emit_help(cmd.name, &cmd) ;
                 case 'v' :
                     if (!u32_scan_strict(st.arg, &VERBOSITY))
-                        return opt_emit_usage(&cmd) ;
+                        return opt_emit_usage(cmd.name, &cmd) ;
                     break ;
                 case 'l' :
                     insist = 0 ;
                     break ;
-                default : return opt_emit_error(&cmd, o, &st) ;
+                default : return opt_emit_error(cmd.name, &cmd, o, &st) ;
             }
         }
         argc -= st.ind ; argv += st.ind ;
     }
 
     if (argc < 2)
-        return opt_emit_usage(&cmd) ;
+        return opt_emit_usage(cmd.name, &cmd) ;
 
     path = *argv ;
     argv++;

@@ -19,6 +19,7 @@
 #include <sys/stat.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/exec.h>
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
@@ -29,7 +30,6 @@
 
 #include <skalibs/bytestr.h>
 #include <skalibs/env.h>
-#include <skalibs/sgetopt.h>
 
 #include <66/ssexec.h>
 #include <66/svc.h>
@@ -37,6 +37,8 @@
 #include <66/constants.h>
 
 #include <s6/config.h>
+
+extern opt_on_option_fn on_scandir_create ;
 
 static inline unsigned int lookup (char const *const *table, char const *signal)
 {
@@ -209,74 +211,92 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
     exec_path_merge_die(newup[0], newup, (char const *const *)environ, env->s, env->len) ;
 }
 
-int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
+static char const *scandir_signal_name = 0 ;
+static unsigned int signal_timeout = 0 ;
+static unsigned int signal_notif = 0 ;
+static unsigned int signal_container = 0 ;
+static unsigned int signal_boot = 0 ;
+static char const *signal_userenv = 0 ;
+
+void scandir_signal_set_name(char const *name)
+{
+    scandir_signal_name = name ;
+}
+
+int on_scandir_signal(int id, char const *arg, void *data)
+{
+    (void)data ;
+
+    switch (id) {
+
+        case 'd' :
+
+            if (!u32_scan_strict(arg, &signal_notif))
+                log_die(LOG_EXIT_USER, "invalid notification fd: ", arg) ;
+
+            if (signal_notif < 3)
+                log_die(LOG_EXIT_USER, "notification fd must be 3 or more") ;
+
+            if (fcntl(signal_notif, F_GETFD) < 0)
+                log_diesys(LOG_EXIT_USER, "invalid notification fd") ;
+
+            break ;
+
+        case 's' :
+
+            if (!u32_scan_strict(arg, &signal_timeout))
+                log_die(LOG_EXIT_USER, "invalid rescan value: ", arg) ;
+
+            break ;
+
+        case 'e' :
+
+            signal_userenv = arg ;
+
+            break ;
+
+        case 'b' :
+
+            signal_boot = 1 ;
+
+            break ;
+
+        case 'B' :
+
+            signal_container = 1 ;
+
+            break ;
+    }
+
+    return 0 ;
+}
+
+int ssexec_scandir_signal(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
 
+    (void)argc ;
+    (void)argv ;
+
+    ssexec_t *info = data ;
+
     int r ;
 
-    unsigned int timeout = 0, notif = 0, sig = 0, container = 0, boot = 0 ;
-    char const *signal ;
-    char const *userenv = 0 ;
+    unsigned int timeout = signal_timeout, notif = signal_notif, sig = 0 ;
+    unsigned int container = signal_container, boot = signal_boot ;
+    char const *signal = scandir_signal_name ;
+    char const *userenv = signal_userenv ;
+
+    /* the locals now hold the whole option state: reset the statics so a nested
+     * re-dispatch of a scandir signal starts clean. */
+    signal_timeout = 0 ;
+    signal_notif = 0 ;
+    signal_container = 0 ;
+    signal_boot = 0 ;
+    scandir_signal_name = 0 ;
+    signal_userenv = 0 ;
+
     _cleanup_strbuf_ strbuf env = STRBUF_ZERO ;
-
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;) {
-
-            int opt = subgetopt_r(argc,argv, OPTS_SCANDIR_SIGNAL, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-
-                case 'd' :
-
-                    if (!u32_scan_strict(l.arg, &notif))
-                        log_usage(info->usage, "\n", info->help) ;
-
-                    if (notif < 3)
-                        log_die(LOG_EXIT_USER, "notification fd must be 3 or more") ;
-
-                    if (fcntl(notif, F_GETFD) < 0)
-                        log_diesys(LOG_EXIT_USER, "invalid notification fd") ;
-
-                    break ;
-
-                case 's' :
-
-                    if (!u32_scan_strict(l.arg, &timeout))
-                        log_usage(info->usage, "\n", info->help) ;
-
-                    break ;
-
-                case 'e' :
-
-                    userenv = l.arg ;
-
-                    break ;
-
-                case 'b' :
-
-                    boot = 1 ;
-
-                    break ;
-
-                case 'B' :
-
-                    container = 1 ;
-
-                    break ;
-
-                default :
-
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
-    signal = argv[0] ;
 
     if (!environ_merge_dir(&env, info->environment.s))
         log_dieusys(LOG_EXIT_SYS, "merge environment directory: ", info->environment.s) ;
@@ -305,22 +325,15 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
 
         if (!r) {
 
-            unsigned int m = 0 ;
-            int nargc = 3 + (container ? 1 : 0) + (boot ? 1 : 0) ;
-            char const *newargv[nargc] ;
-
-            newargv[m++] = "create" ;
+            char const *newargv[] = { "create", 0 } ;
 
             if (container)
-                newargv[m++] = "-B" ;
+                on_scandir_create('B', 0, info) ;
 
             if (boot)
-                newargv[m++] = "-b" ;
+                on_scandir_create('b', 0, info) ;
 
-            newargv[m++] = "create" ;
-            newargv[m] = 0 ;
-
-            if (ssexec_scandir_create(m, newargv, info))
+            if (ssexec_scandir_create(1, newargv, info))
                 log_dieu(LOG_EXIT_SYS, "create scandir: ", scandir) ;
         }
 
@@ -362,5 +375,4 @@ int ssexec_scandir_signal(int argc, char const *const *argv, ssexec_t *info)
 
     return 0 ;
 }
-
 

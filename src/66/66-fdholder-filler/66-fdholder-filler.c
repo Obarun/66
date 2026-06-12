@@ -125,17 +125,17 @@ int main(int argc, char const *const *argv)
             if (o == OPT_END) break ;
 
             switch (o) {
-                case OPT_ID_HELP : return opt_emit_help(&cmd) ;
+                case OPT_ID_HELP : return opt_emit_help(cmd.name, &cmd) ;
                 case 'v' :
                     if (!u32_scan_strict(st.arg, &VERBOSITY))
-                        return opt_emit_usage(&cmd) ;
+                        return opt_emit_usage(cmd.name, &cmd) ;
                     break ;
                 case '1' : notif = 1 ; break ;
                 case 't' :
                     if (!u32_scan_strict(st.arg, &t))
-                        return opt_emit_usage(&cmd) ;
+                        return opt_emit_usage(cmd.name, &cmd) ;
                     break ;
-                default : return opt_emit_error(&cmd, o, &st) ;
+                default : return opt_emit_error(cmd.name, &cmd, o, &st) ;
             }
         }
         argc -= st.ind ; argv += st.ind ;

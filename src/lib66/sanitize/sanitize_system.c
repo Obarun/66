@@ -157,19 +157,17 @@ void sanitize_system(ssexec_t *info)
 
     if (!r) {
 
-        int nargc = 4 ;
-        char const *newargv[nargc] ;
-        unsigned int m = 0 ;
+        extern opt_on_option_fn on_tree_admin ;
 
-        newargv[m++] = "tree" ;
-        newargv[m++] = "-E" ;
-        newargv[m++] = SS_DEFAULT_TREENAME ;
-        newargv[m++] = 0 ;
+        char const *newargv[2] = { SS_DEFAULT_TREENAME, 0 } ;
 
         char const *prog = PROG ;
         PROG = "tree" ;
 
-        if (ssexec_tree_admin(nargc, newargv, info))
+        /* enable the default tree: preset the -E action then run the handler. */
+        on_tree_admin('E', 0, info) ;
+
+        if (ssexec_tree_admin(1, newargv, info))
             log_dieu(LOG_EXIT_SYS, "create tree: ", SS_DEFAULT_TREENAME) ;
 
         PROG = prog ;

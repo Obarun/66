@@ -12,197 +12,154 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <string.h>
-
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/types.h>
-
-#include <skalibs/sgetopt.h>
 
 #include <66/ssexec.h>
 #include <66/constants.h>
 #include <66/config.h>
 #include <66/utils.h>
 
-int ssexec_scandir_wrapper(int argc, char const *const *argv, ssexec_t *info)
+/* The dispatch tree lives here: each sub-command's option table is defined in
+ * this file (so OPT_COUNT is a constant), while the leaves export only their
+ * option applier (on_*) and their handler (ssexec_*). The signal sub-commands
+ * all share ssexec_scandir_signal and only differ by the name set with
+ * scandir_signal_set_name before the handler runs. */
+
+extern opt_on_option_fn on_scandir_create ;
+extern opt_on_option_fn on_scandir_signal ;
+extern void scandir_signal_set_name(char const *name) ;
+
+static int do_scandir_signal(char const *name, int argc, char const *const *argv, void *data)
 {
-    log_flow() ;
-
-    if (!argv[1]) {
-        PROG = "scandir" ;
-        log_usage(usage_scandir_wrapper, "\n", help_scandir_wrapper) ;
-    }
-
-    int r, n = 0, i = 0 ;
-    uid_t owner = -1 ;
-    uint8_t ctl = 0 ;
-    ssexec_func_t_ref func = 0 ;
-    char const *nargv[argc + 1] ;
-
-    if (argv[1][0] == '-') {
-
-        ctl++ ;
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;) {
-
-            int opt = subgetopt_r(argc, argv, OPTS_SCANDIR_WRAPPER, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-
-                case 'h' :
-
-                    info_help(help_scandir_wrapper, usage_scandir_wrapper) ;
-                    return 0 ;
-
-                case 'o' :
-
-                    if (MYUID)
-                        log_die(LOG_EXIT_USER, "only root can use -o option") ;
-
-                    if (!youruid(&owner,l.arg))
-                        log_dieusys(LOG_EXIT_SYS, "get uid of: ", l.arg) ;
-
-                    info->owner = owner ;
-                    info->ownerlen = uid_format(info->ownerstr, info->owner) ;
-                    info->ownerstr[info->ownerlen] = 0 ;
-
-                    info->scandir.len = 0 ;
-                    if (!auto_strbuf(&info->scandir, info->live.s, SS_SCANDIR, "/", info->ownerstr))
-                        log_die_nomem("strbuf") ;
-
-                    break ;
-
-                default:
-
-                    log_usage(usage_scandir_wrapper, "\n", help_scandir_wrapper) ;
-
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
-    if (!ctl) {
-        argc-- ;
-        argv++ ;
-    }
-
-    if (!argc)
-        log_usage(usage_scandir_wrapper, "\n", help_scandir_wrapper) ;
-
-    if (!strcmp(argv[0], "create")) {
-
-        nargv[n++] = argv[0] ;
-        info->prog = PROG ;
-        info->help = help_scandir_create ;
-        info->usage = usage_scandir_create ;
-        func = &ssexec_scandir_create ;
-
-    } else if (!strcmp(argv[0], "start")) {
-
-
-        nargv[n++] = argv[0] ;
-        info->prog = PROG ;
-        info->help = help_scandir_start ;
-        info->usage = usage_scandir_start ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[0], "stop")) {
-
-
-        nargv[n++] = argv[0] ;
-        info->prog = PROG ;
-        info->help = help_scandir_stop ;
-        info->usage = usage_scandir_stop ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[0], "remove")) {
-
-        nargv[n++] = argv[0] ;
-        info->prog = PROG ;
-        info->help = help_scandir_remove ;
-        info->usage = usage_scandir_remove ;
-        func = &ssexec_scandir_remove ;
-
-    } else if (!strcmp(argv[0], "reconfigure") || !strcmp(argv[0], "reload")) {
-
-        uint8_t p = strcmp(argv[0], "reload") ;
-        if (!p)
-            log_1_warn("reload is a deprecated command -- please use reconfigure instead") ;
-
-        nargv[n++] = !p ? "reconfigure" : argv[0] ;
-        info->prog = PROG ;
-        info->help = help_scandir_reconfigure ;
-        info->usage = usage_scandir_reconfigure ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[0], "check")) {
-
-        nargv[n++] = PROG ;
-        nargv[n++] = argv[0] ;
-        info->prog = PROG ;
-        info->help = help_scandir_check ;
-        info->usage = usage_scandir_check ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[0], "quit")) {
-
-        nargv[n++] = argv[0] ;
-        info->prog = PROG ;
-        info->help = help_scandir_quit ;
-        info->usage = usage_scandir_quit ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[0], "abort")) {
-
-
-        nargv[n++] = argv[0] ;
-        info->prog = PROG ;
-        info->help = help_scandir_abort ;
-        info->usage = usage_scandir_abort ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[0], "nuke")) {
-
-        nargv[n++] = argv[0] ;
-        info->prog = PROG ;
-        info->help = help_scandir_nuke ;
-        info->usage = usage_scandir_nuke ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[0], "annihilate")) {
-
-        nargv[n++] = argv[0] ;
-        info->prog = PROG ;
-        info->help = help_scandir_annihilate ;
-        info->usage = usage_scandir_annihilate ;
-        func = &ssexec_scandir_signal ;
-
-    } else if (!strcmp(argv[0], "zombies")) {
-
-        nargv[n++] = argv[0] ;
-        info->prog = PROG ;
-        info->help = help_scandir_zombies ;
-        info->usage = usage_scandir_zombies ;
-        func = &ssexec_scandir_signal ;
-
-    } else
-        log_usage(usage_scandir_wrapper, "\n", help_scandir_wrapper) ;
-
-
-    argc-- ;
-    argv++ ;
-
-    for (i = 0 ; i < argc ; i++ , argv++)
-        nargv[n++] = *argv ;
-
-    nargv[n++] = nargv[0] ;
-    nargv[n] = 0 ;
-
-    r = (*func)(n, nargv, info) ;
-
-    return r ;
+    scandir_signal_set_name(name) ;
+    return ssexec_scandir_signal(argc, argv, data) ;
 }
+
+static int do_scandir_start(int argc, char const *const *argv, void *data)
+{
+    return do_scandir_signal("start", argc, argv, data) ;
+}
+
+static int do_scandir_stop(int argc, char const *const *argv, void *data)
+{
+    return do_scandir_signal("stop", argc, argv, data) ;
+}
+
+static int do_scandir_reconfigure(int argc, char const *const *argv, void *data)
+{
+    return do_scandir_signal("reconfigure", argc, argv, data) ;
+}
+
+static int do_scandir_check(int argc, char const *const *argv, void *data)
+{
+    return do_scandir_signal("check", argc, argv, data) ;
+}
+
+static int do_scandir_quit(int argc, char const *const *argv, void *data)
+{
+    return do_scandir_signal("quit", argc, argv, data) ;
+}
+
+static int do_scandir_abort(int argc, char const *const *argv, void *data)
+{
+    return do_scandir_signal("abort", argc, argv, data) ;
+}
+
+static int do_scandir_nuke(int argc, char const *const *argv, void *data)
+{
+    return do_scandir_signal("nuke", argc, argv, data) ;
+}
+
+static int do_scandir_annihilate(int argc, char const *const *argv, void *data)
+{
+    return do_scandir_signal("annihilate", argc, argv, data) ;
+}
+
+static int do_scandir_zombies(int argc, char const *const *argv, void *data)
+{
+    return do_scandir_signal("zombies", argc, argv, data) ;
+}
+
+static int on_scandir_wrapper(int id, char const *arg, void *data)
+{
+    ssexec_t *info = data ;
+
+    switch (id) {
+
+        case 'o' :
+
+            if (MYUID)
+                log_die(LOG_EXIT_USER, "only root can use -o option") ;
+
+            uid_t owner = -1 ;
+            if (!youruid(&owner, arg))
+                log_dieusys(LOG_EXIT_SYS, "get uid of: ", arg) ;
+
+            info->owner = owner ;
+            info->ownerlen = uid_format(info->ownerstr, info->owner) ;
+            info->ownerstr[info->ownerlen] = 0 ;
+
+            info->scandir.len = 0 ;
+            if (!auto_strbuf(&info->scandir, info->live.s, SS_SCANDIR, "/", info->ownerstr))
+                log_die_nomem("strbuf") ;
+
+            break ;
+    }
+
+    return 0 ;
+}
+
+static opt_t const opts_help[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE, .help = "print this help" },
+} ;
+
+static opt_t const opts_scandir_wrapper[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",  .arg = OPT_NONE,                         .help = "print this help" },
+    { .id = 'o',         .shortname = 'o', .longname = "owner", .arg = OPT_REQUIRED, .argname = "owner", .help = "handles scandir of owner" },
+} ;
+
+static opt_t const opts_scandir_create[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE,                            .help = "print this help" },
+    { .id = 'b', .shortname = 'b', .longname = "boot",         .arg = OPT_NONE,                            .help = "create scandir for a boot process" },
+    { .id = 'B', .shortname = 'B', .longname = "container",    .arg = OPT_NONE,                            .help = "create scandir for a boot process inside a container" },
+    { .id = 's', .shortname = 's', .longname = "skeleton",     .arg = OPT_REQUIRED, .argname = "path",.help = "use directory as skeleton directory" },
+    { .id = 'c', .shortname = 'c', .longname = "no-logger",    .arg = OPT_NONE,                            .help = "do not catch logs" },
+    { .id = 'L', .shortname = 'L', .longname = "log-user",     .arg = OPT_REQUIRED, .argname = "username", .help = "run catch-all logger as username user" },
+} ;
+
+static opt_t const opts_scandir_signal[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE,                               .help = "print this help" },
+    { .id = 'd', .shortname = 'd', .longname = "notify",       .arg = OPT_REQUIRED, .argname = "number",      .help = "notify readiness on file descriptor number" },
+    { .id = 's', .shortname = 's', .longname = "rescan",       .arg = OPT_REQUIRED, .argname = "milliseconds",.help = "scan scandir every milliseconds milliseconds" },
+    { .id = 'e', .shortname = 'e', .longname = "environment",  .arg = OPT_REQUIRED, .argname = "path",        .help = "use path as environment directory" },
+    { .id = 'b', .shortname = 'b', .longname = "boot",         .arg = OPT_NONE,                               .help = "create scandir (if it doesn't exist yet) for a boot process" },
+    { .id = 'B', .shortname = 'B', .longname = "container",    .arg = OPT_NONE,                               .help = "create scandir (if it doesn't exist yet) for a boot process inside a container" },
+} ;
+
+static opt_cmd_t const scandir_sub[] = {
+    { .name = "create",      .help = "create a scandir",                      .opts = opts_scandir_create, .nopts = OPT_COUNT(opts_scandir_create), .on_option = &on_scandir_create, .fn = &ssexec_scandir_create },
+    { .name = "remove",      .help = "remove a scandir",                      .opts = opts_help,           .nopts = OPT_COUNT(opts_help),                                            .fn = &ssexec_scandir_remove },
+    { .name = "start",       .help = "start a scandir",                       .opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_start },
+    { .name = "stop",        .help = "stop a running scandir",                .opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_stop },
+    { .name = "reconfigure", .help = "reconfigure a running scandir",         .opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_reconfigure },
+    { .name = "check",       .help = "check a running scandir",               .opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_check },
+    { .name = "quit",        .help = "quit a running scandir",                .opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_quit },
+    { .name = "abort",       .help = "abort a running scandir",               .opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_abort },
+    { .name = "nuke",        .help = "nuke a running scandir",                .opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_nuke },
+    { .name = "annihilate",  .help = "annihilate a running scandir",          .opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_annihilate },
+    { .name = "zombies",     .help = "destroy zombies from a running scandir",.opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_zombies },
+} ;
+
+opt_cmd_t const cmd_scandir = {
+    .name = "66 scandir",
+    .help = "main subcommands to manage scandir",
+    .opts = opts_scandir_wrapper,
+    .nopts = OPT_COUNT(opts_scandir_wrapper),
+    .on_option = &on_scandir_wrapper,
+    .sub = scandir_sub,
+    .nsub = OPT_COUNT(scandir_sub),
+} ;

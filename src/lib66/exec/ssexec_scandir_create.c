@@ -21,14 +21,13 @@
 
 #include <oblibs/string.h>
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/io.h>
 #include <oblibs/fd.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/directory.h>
 #include <oblibs/types.h>
 #include <oblibs/files.h>
-
-#include <skalibs/sgetopt.h>
 
 #include <66/constants.h>
 #include <66/utils.h>
@@ -698,64 +697,62 @@ void sanitize_live(char const *live)
     auto_check(tmp,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
 }
 
-int ssexec_scandir_create(int argc, char const *const *argv, ssexec_t *info)
+int on_scandir_create(int id, char const *arg, void *data)
+{
+    ssexec_t *info = data ;
+
+    switch (id) {
+
+        case 'b' :
+
+            if (info->owner)
+                log_die(LOG_EXIT_USER, "-b options can be set only with root") ;
+
+            BOOT = 1 ;
+            break ;
+
+        case 'B' :
+
+            if (info->owner)
+                log_die(LOG_EXIT_USER, "-B options can be set only with root") ;
+
+            CONTAINER = 1 ;
+            BOOT = 1 ;
+            break ;
+
+        case 's' :
+
+            skel = arg ;
+            break ;
+
+        case 'c' :
+
+            CATCH_LOG = 0 ;
+            break ;
+
+        case 'L' :
+
+            log_user = arg ;
+            break ;
+    }
+
+    return 0 ;
+}
+
+
+int ssexec_scandir_create(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
+
+    (void)argc ;
+    (void)argv ;
+
+    ssexec_t *info = data ;
 
     int r ;
 
     OWNER = info->owner ;
     OWNERSTR = info->ownerstr ;
-
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;)
-        {
-            int opt = subgetopt_r(argc, argv, OPTS_SCANDIR_CREATE, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-
-                case 'b' :
-
-                    if (OWNER)
-                        log_die(LOG_EXIT_USER, "-b options can be set only with root") ;
-
-                    BOOT = 1 ;
-                    break ;
-
-                case 'B' :
-
-                    if (OWNER)
-                        log_die(LOG_EXIT_USER, "-B options can be set only with root") ;
-
-                    CONTAINER = 1 ;
-                    BOOT = 1 ;
-                    break ;
-
-                case 's' :
-
-                    skel = l.arg ;
-                    break ;
-
-                case 'c' :
-
-                    CATCH_LOG = 0 ;
-                    break ;
-
-                case 'L' :
-
-                    log_user = l.arg ;
-                    break ;
-
-                default :
-
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
 
     if (BOOT && OWNER && !CONTAINER)
         log_die(LOG_EXIT_USER, "-b options can be set only with root") ;

@@ -18,6 +18,7 @@
 #include <unistd.h>// unlink
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/sbl.h>
@@ -27,7 +28,6 @@
 #include <oblibs/hash.h>
 
 #include <skalibs/posixplz.h>
-#include <skalibs/sgetopt.h>
 
 #include <66/state.h>
 #include <66/enum_parser.h>
@@ -294,53 +294,65 @@ static void remove_service(resolve_service_t *res, ssexec_t *info, uint8_t propa
     log_info("Removed successfully: ", res->sa.s + res->name) ;
 }
 
-int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
+static opt_t const opts_remove[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",         .arg = OPT_NONE, .help = "print this help" },
+    { .id = 'P',         .shortname = 'P', .longname = "no-propagate", .arg = OPT_NONE, .help = "do not propagate signal to its dependencies at stop process" },
+    { .id = 'f',         .shortname = 'f',                             .arg = OPT_NONE, .help = "force removal of a service that is part of a module", .hidden = true },
+} ;
+
+static uint8_t opt_nopropagate = 0 ;
+static uint8_t opt_force = 0 ; // force is an inner option used by parse_module to delete service inside module
+
+static int on_remove(int id, char const *arg, void *data)
+{
+    (void)arg ; (void)data ;
+
+    switch (id) {
+
+        case 'P' :
+
+            opt_nopropagate = 1 ;
+            break ;
+
+        case 'f' :
+
+            opt_force = 1 ;
+            break ;
+    }
+
+    return 0 ;
+}
+
+opt_cmd_t const cmd_remove = {
+    .name = "66 remove",
+    .help = "remove services and cleanup all files belong to it from the system",
+    .operands = "service...",
+    .opts = opts_remove,
+    .nopts = OPT_COUNT(opts_remove),
+    .on_option = &on_remove,
+    .fn = &ssexec_remove,
+} ;
+
+int ssexec_remove(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
 
+    ssexec_t *info = data ;
+
+    /* drain option state into locals, then reset the statics for re-entrancy. */
     int r ;
     size_t pos = 0 ;
-    uint8_t siglen = 0, force = 0 ; // force is an inner option used by parse_module to delete service inside module
+    uint8_t propagate = opt_nopropagate ;
+    uint8_t force = opt_force ;
+    opt_nopropagate = 0 ;
+    opt_force = 0 ;
     ss_state_t ste = STATE_ZERO ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     resolve_wrapper_t_ref wres = 0 ;
     struct resolve_hash_s *hres = NULL, *c, *tmp ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;) {
-
-            int opt = subgetopt_r(argc,argv, OPTS_REMOVE, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-
-                case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
-
-                case 'P' :
-
-                    siglen++ ;
-                    break ;
-
-                case 'f' :
-
-                    force++ ;
-                    break ;
-
-                default :
-
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
     if (argc < 1)
-        log_usage(info->usage, "\n", info->help) ;
+        log_die(LOG_EXIT_USER, "missing service argument") ;
 
     for(; pos < (size_t)argc ; pos++) {
 
@@ -383,7 +395,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
             if (!hash_add(&hres, argv[pos], res))
                 log_dieu(LOG_EXIT_SYS, "append service selection with: ", argv[pos]) ;
 
-            compute_deps(&res, &hres, &sa, info, siglen) ;
+            compute_deps(&res, &hres, &sa, info, propagate) ;
         }
     }
 
@@ -395,19 +407,13 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
 
         pos = 0 ;
         char const *prog = PROG ;
-        int nargc = 2 + siglen + sbl_count(&sa) ;
+        int nargc = 2 + propagate + sbl_count(&sa) ;
         char const *newargv[nargc] ;
         unsigned int m = 0 ;
 
-        char const *help = info->help ;
-        char const *usage = info->usage ;
-
-        info->help = help_stop ;
-        info->usage = usage_stop ;
-
         newargv[m++] = "stop" ;
         newargv[m++] = "-u" ;
-        if (siglen)
+        if (propagate)
             newargv[m++] = "-P" ;
 
         FOREACH_SBL(&sa, pos)
@@ -420,17 +426,14 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
          * to avoid to crash. This is the remove process,
          * and should always return true as the main goal is
          * to remove the service. */
-        if (ssexec_stop(nargc, newargv, info))
+        if (opt_dispatch(nargc, newargv, &cmd_stop, info))
             log_dieu(LOG_EXIT_SYS, "stop service selection") ;
         PROG = prog ;
-
-        info->help = help ;
-        info->usage = usage ;
     }
 
     HASH_ITER(hh, hres, c, tmp) {
 
-        remove_service(&c->res, info, siglen) ;
+        remove_service(&c->res, info, propagate) ;
 
         if (c->res.dependencies.ncontents && c->res.type == E_PARSER_TYPE_MODULE) {
 
@@ -450,7 +453,7 @@ int ssexec_remove(int argc, char const *const *argv, ssexec_t *info)
                     continue ;
                 }
 
-                remove_service(&mres, info, siglen) ;
+                remove_service(&mres, info, propagate) ;
             }
             resolve_free(dwres) ;
         }

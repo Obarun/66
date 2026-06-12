@@ -18,12 +18,11 @@
 
 #include <oblibs/string.h>
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
-
-#include <skalibs/sgetopt.h>
 
 #include <66/parse.h>
 #include <66/ssexec.h>
@@ -31,51 +30,64 @@
 #include <66/sanitize.h>
 #include <66/module.h>
 
-int ssexec_parse(int argc, char const *const *argv, ssexec_t *info)
+static uint8_t opt_force = 0 ;
+static uint8_t opt_conf = 0 ;
+
+static opt_t const opts_parse[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",      .arg = OPT_NONE, .help = "print this help" },
+    { .id = 'f',         .shortname = 'f', .longname = "force",     .arg = OPT_NONE, .help = "force to overwrite existing destination" },
+    { .id = 'I',         .shortname = 'I', .longname = "no-import", .arg = OPT_NONE, .help = "do not import modified configuration files from previous version" },
+} ;
+
+static int on_parse(int id, char const *arg, void *data)
+{
+    (void)arg ;
+    (void)data ;
+
+    switch (id) {
+
+        case 'f' :
+
+            /** only rewrite the service itself */
+            opt_force = 1 ;
+            break ;
+
+        case 'I' :
+
+            opt_conf = 1 ;
+            break ;
+    }
+
+    return 0 ;
+}
+
+opt_cmd_t const cmd_parse = {
+    .name = "66 parse",
+    .help = "parse a frontend service file and install its result to resolve files",
+    .operands = "service...",
+    .opts = opts_parse,
+    .nopts = OPT_COUNT(opts_parse),
+    .on_option = &on_parse,
+    .fn = &ssexec_parse,
+} ;
+
+int ssexec_parse(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
 
+    ssexec_t *info = data ;
+
     int r = 0 ;
-    uint8_t force = 0 , conf = 0 ;
+    /* drain the option state into locals and reset the statics: parsing a
+     * service re-dispatches "parse" for its dependencies (without -f), so the
+     * statics must not leak across that re-entry. */
+    uint8_t force = opt_force , conf = opt_conf ;
+    opt_force = 0 ;
+    opt_conf = 0 ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;)
-        {
-            int opt = subgetopt_r(argc, argv, OPTS_PARSE, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt)
-            {
-                case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
-
-                case 'f' :
-
-                    /** only rewrite the service itself */
-                    if (force)
-                        log_usage(info->usage, "\n", info->help) ;
-                    force = 1 ;
-                    break ;
-
-                case 'I' :
-
-                    conf = 1 ;
-                    break ;
-
-                default :
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
     if (argc < 1)
-        log_usage(info->usage, "\n", info->help) ;
+        log_die(LOG_EXIT_USER, "missing service argument") ;
 
     for (int n = 0 ; n < argc && argv[n] ; n++) {
 

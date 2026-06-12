@@ -18,14 +18,13 @@
 #include <stdbool.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/sbl.h>
 #include <oblibs/types.h>
 #include <oblibs/hash.h>
 #include <oblibs/environ.h>
 #include <oblibs/string.h>
-
-#include <skalibs/sgetopt.h>
 
 #include <66/ssexec.h>
 #include <66/graph.h>
@@ -50,12 +49,51 @@ static bool on_groups(resolve_service_t *res)
     return false ;
 }
 
-int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
+static uint8_t opt_nopropagate = 0 ;
+
+static opt_t const opts_reconfigure[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",         .arg = OPT_NONE, .help = "print this help" },
+    { .id = 'P',         .shortname = 'P', .longname = "no-propagate", .arg = OPT_NONE, .help = "do not propagate signal to its dependencies" },
+} ;
+
+static int on_reconfigure(int id, char const *arg, void *data)
+{
+    (void)arg ;
+    (void)data ;
+
+    switch (id) {
+
+        case 'P' :
+
+            opt_nopropagate = 1 ;
+            break ;
+    }
+
+    return 0 ;
+}
+
+opt_cmd_t const cmd_reconfigure = {
+    .name = "66 reconfigure",
+    .help = "convenient command to bring down, unsupervise, parse again and bring up services in one pass",
+    .operands = "service...",
+    .opts = opts_reconfigure,
+    .nopts = OPT_COUNT(opts_reconfigure),
+    .on_option = &on_reconfigure,
+    .fn = &ssexec_reconfigure,
+} ;
+
+int ssexec_reconfigure(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
 
+    ssexec_t *info = data ;
+
+    /* drain option state into locals, then reset the statics for re-entrancy. */
+    uint8_t nopropagate = opt_nopropagate ;
+    opt_nopropagate = 0 ;
+
     int rscan, e = 0 ;
-    uint8_t siglen = 0 ;
+    uint8_t propagate = 0 ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     uint32_t flag = GRAPH_COLLECT_PARSE|GRAPH_WANT_REQUIREDBY, nservice = 0, pos = 0 ;
     resolve_service_t_ref pres = 0 ;
@@ -63,37 +101,13 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     _alloc_sbl_(toenable, SS_MAX_SERVICE * SS_MAX_SERVICE_NAME) ;
     ss_state_t sta = STATE_ZERO ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;) {
-
-            int opt = subgetopt_r(argc, argv, OPTS_SUBSTART, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-
-                case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
-
-                case 'P' :
-
-                    FLAGS_CLEAR(flag, GRAPH_WANT_REQUIREDBY) ;
-                    siglen++ ;
-                    break ;
-
-                default :
-
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
+    if (nopropagate) {
+        FLAGS_CLEAR(flag, GRAPH_WANT_REQUIREDBY) ;
+        propagate++ ;
     }
 
     if (argc < 1)
-        log_usage(info->usage, "\n", info->help) ;
+        log_die(LOG_EXIT_USER, "missing service argument") ;
 
     rscan = svc_scandir_ok(info->scandir.s) ;
     if (rscan < 0)
@@ -184,18 +198,12 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         info->opt_tree = 0 ;
 
         unsigned int m = 0 ;
-        int nargc = 3 + nservice + siglen ;
+        int nargc = 3 + nservice + propagate ;
         char const *prog = PROG ;
         char const *newargv[nargc] ;
 
-        char const *help = info->help ;
-        char const *usage = info->usage ;
-
-        info->help = help_stop ;
-        info->usage = usage_stop ;
-
         newargv[m++] = "stop" ;
-        if (siglen)
+        if (propagate)
             newargv[m++] = "-P" ;
         newargv[m++] = "-u" ;
 
@@ -206,13 +214,10 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         newargv[m] = 0 ;
 
         PROG = "stop" ;
-        e = ssexec_stop(m, newargv, info) ;
+        e = opt_dispatch(m, newargv, &cmd_stop, info) ;
         PROG = prog ;
         if (e)
             goto freed ;
-
-        info->help = help ;
-        info->usage = usage ;
 
         info->treename.len = 0 ;
         if (!auto_strbuf(&info->treename, tree))
@@ -254,18 +259,12 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
     if (sbl_count(&tostop) && rscan) {
 
         unsigned int m = 0 ;
-        int nargc = 2 + nservice + siglen ;
+        int nargc = 2 + nservice + propagate ;
         char const *prog = PROG ;
         char const *newargv[nargc] ;
 
-        char const *help = info->help ;
-        char const *usage = info->usage ;
-
-        info->help = help_start ;
-        info->usage = usage_start ;
-
         newargv[m++] = "start" ;
-        if (siglen)
+        if (propagate)
             newargv[m++] = "-P" ;
 
         pos = 0 ;
@@ -279,11 +278,8 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         newargv[m] = 0 ;
 
         PROG = "start" ;
-        e = ssexec_start(m, newargv, info) ;
+        e = opt_dispatch(m, newargv, &cmd_start, info) ;
         PROG = prog ;
-
-        info->help = help ;
-        info->usage = usage ;
     }
 
     if (sbl_count(&toenable)) {
@@ -293,12 +289,6 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         int nargc = 2 + sbl_count(&toenable) ;
         char const *prog = PROG ;
         char const *newargv[nargc] ;
-
-        char const *help = info->help ;
-        char const *usage = info->usage ;
-
-        info->help = help_enable ;
-        info->usage = usage_enable ;
 
         newargv[m++] = "enable" ;
 
@@ -313,11 +303,8 @@ int ssexec_reconfigure(int argc, char const *const *argv, ssexec_t *info)
         newargv[m] = 0 ;
 
         PROG= "enable" ;
-        e = ssexec_enable(m, newargv, info) ;
+        e = opt_dispatch(m, newargv, &cmd_enable, info) ;
         PROG = prog ;
-
-        info->help = help ;
-        info->usage = usage ;
     }
 
     freed:

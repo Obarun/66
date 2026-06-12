@@ -32,9 +32,6 @@ void ssexec_copy(ssexec_t *dest, ssexec_t *src)
     auto_strings(dest->ownerstr, src->ownerstr) ;
     dest->ownerlen = src->ownerlen ;
     dest->timeout = src->timeout ;
-    dest->prog = src->prog ;
-    dest->help = src->help ;
-    dest->usage = src->usage ;
     dest->opt_verbo = src->opt_verbo ;
     dest->opt_live = src->opt_live ;
     dest->opt_timeout = src->opt_timeout ;

@@ -24,6 +24,7 @@
 
 #include <oblibs/sbl.h>
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/types.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
@@ -36,7 +37,6 @@
 #include <skalibs/bytestr.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/cspawn.h>
-#include <skalibs/sgetopt.h>
 #include <skalibs/env.h>
 
 #include <66/info.h>
@@ -1083,17 +1083,88 @@ void info_status_one(const char *service, int *what)
 
 }
 
-int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
+static opt_t const opts_status[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",     .arg = OPT_NONE,                          .help = "print this help" },
+    { .id = 'n',         .shortname = 'n', .longname = "no-field", .arg = OPT_NONE,                          .help = "do not display the field name" },
+    { .id = 'o',         .shortname = 'o', .longname = "options",  .arg = OPT_REQUIRED, .argname = "fields", .help = "comma separated list of options" },
+    { .id = 'g',         .shortname = 'g', .longname = "graph",    .arg = OPT_NONE,                          .help = "displays interdependences as graph" },
+    { .id = 'r',         .shortname = 'r', .longname = "reverse",  .arg = OPT_NONE,                          .help = "reverse the interdependence graph" },
+    { .id = 'd',         .shortname = 'd', .longname = "depth",    .arg = OPT_REQUIRED, .argname = "depth",  .help = "limit the depth of interdependence graph recursion by depth" },
+    { .id = 'p',         .shortname = 'p', .longname = "print",    .arg = OPT_REQUIRED, .argname = "nline",  .help = "print nline last lines of the log file" },
+} ;
+
+static short sta_legacy = 1 ;
+static int sta_what[MAXOPTS] = { 0 } ;
+static uint8_t sta_what_init = 0 ;
+
+static int on_status(int id, char const *arg, void *data)
 {
-    short legacy = 1, all = 0 ;
-    int what[MAXOPTS] = { 0 } ;
+    (void)data ;
+
+    switch (id) {
+
+        case 'n' :
+            NOFIELD = 0 ;
+            break ;
+
+        case 'o' :
+            if (!sta_what_init) {
+                for (int i = 0 ; i < MAXOPTS ; i++)
+                    sta_what[i] = -1 ;
+                sta_what_init = 1 ;
+            }
+            sta_legacy = 0 ;
+            info_parse_options(arg, sta_what) ;
+            break ;
+
+        case 'g' :
+            GRAPH = 1 ;
+            break ;
+
+        case 'r' :
+            REVERSE = 1 ;
+            break ;
+
+        case 'd' :
+            if (!u32_scan_strict(arg, &INFO_MAXDEPTH))
+                log_die(LOG_EXIT_USER, "invalid depth value: ", arg) ;
+            break ;
+
+        case 'p' :
+            if (!u32_scan_strict(arg, &nlog))
+                log_die(LOG_EXIT_USER, "invalid line count: ", arg) ;
+            break ;
+    }
+
+    return 0 ;
+}
+
+opt_cmd_t const cmd_status = {
+    .name = "66 status",
+    .help = "display services informations",
+    .operands = "service",
+    .opts = opts_status,
+    .nopts = OPT_COUNT(opts_status),
+    .on_option = &on_status,
+    .fn = &ssexec_status,
+} ;
+
+int ssexec_status(int argc, char const *const *argv, void *data)
+{
+    ssexec_t *info = data ;
+
+    /* drain option state into locals (a private copy of the field selection),
+     * then reset the statics so a nested re-dispatch of "status" starts clean. */
+    short legacy = sta_legacy, all = 0 ;
+    int what[MAXOPTS] ;
+    memcpy(what, sta_what, sizeof what) ;
+    sta_legacy = 1 ;
+    sta_what_init = 0 ;
+    memset(sta_what, 0, sizeof sta_what) ;
 
     pinfo = info ;
 
     char const *svname = 0 ;
-
-    for (int i = 0 ; i < MAXOPTS ; i++)
-        what[i] = -1 ;
 
     char buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
         "Name",
@@ -1122,28 +1193,6 @@ int ssexec_status(int argc, char const *const *argv, ssexec_t *info)
         "StdErr",
         "Logger name",
         "Logger file" } ;
-
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;)
-        {
-            int opt = subgetopt_r(argc,argv, OPTS_STATUS, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-                case 'h' :  info_help(info->help, info->usage) ; return 0 ;
-                case 'n' :  NOFIELD = 0 ; break ;
-                case 'o' :  legacy = 0 ; info_parse_options(l.arg,what) ; break ;
-                case 'g' :  GRAPH = 1 ; break ;
-                case 'r' :  REVERSE = 1 ; break ;
-                case 'd' :  if (!u32_scan_strict(l.arg, &INFO_MAXDEPTH)) log_usage(info->usage, "\n", info->help) ; break ;
-                case 'p' :  if (!u32_scan_strict(l.arg, &nlog)) log_usage(info->usage, "\n", info->help) ; break ;
-                default :   log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
 
     if (!argc)
         all = 1 ;

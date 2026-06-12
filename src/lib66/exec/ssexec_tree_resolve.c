@@ -16,6 +16,7 @@
 #include <wchar.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/strbuf.h>
@@ -69,8 +70,10 @@ static void info_display_int(char const *field, uint32_t element)
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
-int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_tree_resolve(int argc, char const *const *argv, void *data)
 {
+    ssexec_t *info = data ;
+
     int r = 0 ;
     uint8_t master = 0 ;
 
@@ -80,13 +83,10 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
 
-    argc-- ;
-    argv++ ;
-
     if (argc < 1)
-        log_usage(usage_tree_resolve, "\n", help_tree_resolve) ;
+        log_die(LOG_EXIT_USER, "missing tree argument") ;
 
-    treename = *argv ;
+    treename = argv[0] ;
 
     char tree_buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
         "name",
@@ -192,3 +192,4 @@ int ssexec_tree_resolve(int argc, char const *const *argv, ssexec_t *info)
 
     return 0 ;
 }
+

@@ -17,9 +17,8 @@
 
 #include <oblibs/types.h>
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/hash.h>
-
-#include <skalibs/sgetopt.h>
 
 #include <66/ssexec.h>
 #include <66/graph.h>
@@ -27,53 +26,73 @@
 #include <66/svc.h>
 #include <66/config.h>
 
-int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
+static uint8_t opt_unsupervise = 0 ;
+static uint8_t opt_nopropagate = 0 ;
+
+static opt_t const opts_stop[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",         .arg = OPT_NONE, .help = "print this help" },
+    { .id = 'u',         .shortname = 'u',                             .arg = OPT_NONE, .help = "unsupervise the service", .hidden = true },
+    { .id = 'P',         .shortname = 'P', .longname = "no-propagate", .arg = OPT_NONE, .help = "do not propagate signal to its requiredby" },
+} ;
+
+static int on_stop(int id, char const *arg, void *data)
+{
+    (void)arg ;
+    (void)data ;
+
+    switch (id) {
+
+        case 'u' :
+
+            opt_unsupervise = 1 ;
+            break ;
+
+        case 'P' :
+
+            opt_nopropagate = 1 ;
+            break ;
+    }
+
+    return 0 ;
+}
+
+opt_cmd_t const cmd_stop = {
+    .name = "66 stop",
+    .help = "bring down services",
+    .operands = "service...",
+    .opts = opts_stop,
+    .nopts = OPT_COUNT(opts_stop),
+    .on_option = &on_stop,
+    .fn = &ssexec_stop,
+} ;
+
+int ssexec_stop(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
 
+    ssexec_t *info = data ;
+
+    /* drain option state into locals, then reset the statics for re-entrancy. */
+    uint8_t unsupervise = opt_unsupervise, nopropagate = opt_nopropagate ;
+    opt_unsupervise = 0 ;
+    opt_nopropagate = 0 ;
+
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     vertex_t *c, *tmp ;
-    uint8_t siglen = 3 ;
-    bool unsupervise = false ;
+    uint8_t propagate = 3 ;
     int e = 0 ;
     uint32_t flag = GRAPH_WANT_SUPERVISED|GRAPH_WANT_REQUIREDBY, nservice = 0 ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;) {
-
-            int opt = subgetopt_r(argc,argv, OPTS_STOP, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-
-                case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
-
-                case 'P' :
-
-                    FLAGS_CLEAR(flag, GRAPH_WANT_REQUIREDBY) ;
-                    siglen++ ;
-                    break ;
-
-                case 'u' :
-
-                    unsupervise = true ;
-                    FLAGS_SET(flag, GRAPH_WANT_LOGGER) ;
-                    break ;
-
-                default :
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
+    if (nopropagate) {
+        FLAGS_CLEAR(flag, GRAPH_WANT_REQUIREDBY) ;
+        propagate++ ;
     }
 
+    if (unsupervise)
+        FLAGS_SET(flag, GRAPH_WANT_LOGGER) ;
+
     if (argc < 1)
-        log_usage(info->usage, "\n", info->help) ;
+        log_die(LOG_EXIT_USER, "missing service argument") ;
 
     if ((svc_scandir_ok(info->scandir.s)) != 1)
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
@@ -88,8 +107,8 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
     if (!graph.g.nsort)
         log_warn_return(e,"no services found to handle") ;
 
-    char *sig[siglen] ;
-    if (siglen > 3) {
+    char *sig[propagate] ;
+    if (propagate > 3) {
 
         sig[0] = "-P" ;
         sig[1] = "-wD" ;
@@ -110,7 +129,7 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
 
     nargv[nservice] = 0 ;
 
-    e = svc_send_wait(nargv, nservice, sig, siglen, info) ;
+    e = svc_send_wait(nargv, nservice, sig, propagate, info) ;
 
     if (e)
         return e ;
@@ -122,3 +141,34 @@ int ssexec_stop(int argc, char const *const *argv, ssexec_t *info)
 
     return e ;
 }
+
+/* "66 free" is "66 stop -u": bring services down and unsupervise them. It is a
+ * distinct command (own help) that re-enters the dispatcher on the stop node
+ * with the -u flag injected. */
+
+static opt_t const opts_free[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE, .help = "print this help" },
+} ;
+
+static int do_free(int argc, char const *const *argv, void *data)
+{
+    int m = 0, i = 0 ;
+    char const *nargv[argc + 3] ;
+
+    nargv[m++] = "free" ;
+    nargv[m++] = "-u" ;
+    for (; i < argc ; i++)
+        nargv[m++] = argv[i] ;
+    nargv[m] = 0 ;
+
+    return opt_dispatch(m, nargv, &cmd_stop, data) ;
+}
+
+opt_cmd_t const cmd_free = {
+    .name = "66 free",
+    .help = "bring down services and remove them from the scandir",
+    .operands = "service...",
+    .opts = opts_free,
+    .nopts = OPT_COUNT(opts_free),
+    .fn = &do_free,
+} ;

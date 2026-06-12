@@ -72,17 +72,11 @@ int tree_sethome(ssexec_t *info)
              * if (!tree_seed_isvalid(info->treename.s))
              *   log_warnu_return(LOG_EXIT_ZERO,"find a seed file to create the tree: ", info->treename.s) ; */
 
-            int nargc = 3 ;
-            char const *newargv[nargc] ;
-            unsigned int m = 0 ;
-
-            newargv[m++] = "tree" ;
-            newargv[m++] = info->treename.s ;
-            newargv[m++] = 0 ;
+            char const *newargv[2] = { info->treename.s, 0 } ;
 
             char const *prog = PROG ;
             PROG = "tree" ;
-            if (ssexec_tree_admin(nargc, newargv, info))
+            if (ssexec_tree_admin(1, newargv, info))
                 log_warnu_return(LOG_EXIT_LESSONE,"create tree: ",info->treename.s) ;
             PROG = prog ;
         }

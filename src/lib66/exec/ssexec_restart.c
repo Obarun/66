@@ -17,9 +17,8 @@
 #include <errno.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/types.h>
-
-#include <skalibs/sgetopt.h>
 
 #include <66/ssexec.h>
 #include <66/graph.h>
@@ -27,47 +26,62 @@
 #include <66/config.h>
 #include <66/sanitize.h>
 
-int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
+static uint8_t opt_nopropagate = 0 ;
+
+static opt_t const opts_restart[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",         .arg = OPT_NONE, .help = "print this help" },
+    { .id = 'P',         .shortname = 'P', .longname = "no-propagate", .arg = OPT_NONE, .help = "do not propagate signal to its dependencies" },
+} ;
+
+static int on_restart(int id, char const *arg, void *data)
+{
+    (void)arg ;
+    (void)data ;
+
+    switch (id) {
+
+        case 'P' :
+
+            opt_nopropagate = 1 ;
+            break ;
+    }
+
+    return 0 ;
+}
+
+opt_cmd_t const cmd_restart = {
+    .name = "66 restart",
+    .help = "convenient command to bring down then bring up services in one pass",
+    .operands = "service...",
+    .opts = opts_restart,
+    .nopts = OPT_COUNT(opts_restart),
+    .on_option = &on_restart,
+    .fn = &ssexec_restart,
+} ;
+
+int ssexec_restart(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
 
+    ssexec_t *info = data ;
+
+    /* drain option state into locals, then reset the statics for re-entrancy. */
+    uint8_t nopropagate = opt_nopropagate ;
+    opt_nopropagate = 0 ;
+
     int r ;
     unsigned int m = 0 ;
-    uint8_t siglen = 3 ;
+    uint8_t propagate = 3 ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     uint32_t flag = GRAPH_WANT_REQUIREDBY|GRAPH_WANT_SUPERVISED, nservice = 0, pos = 0 ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;) {
-
-            int opt = subgetopt_r(argc, argv, OPTS_SUBSTART, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-
-                case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
-
-                case 'P' :
-
-                    FLAGS_CLEAR(flag, GRAPH_WANT_REQUIREDBY) ;
-                    siglen++ ;
-                    break ;
-
-                default :
-
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
+    if (nopropagate) {
+        FLAGS_CLEAR(flag, GRAPH_WANT_REQUIREDBY) ;
+        propagate++ ;
     }
 
     if (argc < 1)
-        log_usage(info->usage, "\n", info->help) ;
+        log_die(LOG_EXIT_USER, "missing service argument") ;
 
     if ((svc_scandir_ok(info->scandir.s)) !=  1 )
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;
@@ -85,18 +99,18 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
 
     sanitize_init(&graph, flag) ;
 
-    char *sig[siglen] ;
+    char *sig[propagate] ;
     sig[0] = "-wD" ;
     sig[1] = "-D" ;
 
-    if (siglen > 3) {
+    if (propagate > 3) {
 
         sig[2] = "-P" ;
         sig[3] = 0 ;
 
     } else sig[2] = 0 ;
 
-    r = svc_send_wait(argv, argc, sig, siglen, info) ;
+    r = svc_send_wait(argv, argc, sig, propagate, info) ;
 
     if (r)
         log_warnusys("stop service selection") ;
@@ -109,18 +123,12 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
          * services before calling ssexec_signal.
          * For instance, 66 free -P sA, 66 start sB,
          * where sB depends on sA */
-        int nargc = 2 + nservice + siglen ;
+        int nargc = 2 + nservice + propagate ;
         char const *prog = PROG ;
         char const *newargv[nargc] ;
 
-        char const *help = info->help ;
-        char const *usage = info->usage ;
-
-        info->help = help_start ;
-        info->usage = usage_start ;
-
         newargv[m++] = "start" ;
-        if (siglen > 3)
+        if (propagate > 3)
             newargv[m++] = "-P" ;
 
         pos = 0 ;
@@ -134,11 +142,8 @@ int ssexec_restart(int argc, char const *const *argv, ssexec_t *info)
         newargv[m] = 0 ;
 
         PROG = "start" ;
-        r = ssexec_start(m, newargv, info) ;
+        r = opt_dispatch(m, newargv, &cmd_start, info) ;
         PROG = prog ;
-
-        info->help = help ;
-        info->usage = usage ;
     }
 
     service_graph_destroy(&graph) ;

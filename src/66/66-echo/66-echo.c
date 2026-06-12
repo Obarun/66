@@ -42,10 +42,10 @@ int main (int argc, char const *const *argv)
             int o = opt_scan(argc, argv, opts, OPT_COUNT(opts), &st) ;
             if (o == OPT_END) break ;
             switch (o) {
-                case OPT_ID_HELP: return opt_emit_help(&cmd) ;
+                case OPT_ID_HELP: return opt_emit_help(cmd.name, &cmd) ;
                 case 'n': donl = 0 ; break ;
                 case 's': sep = *st.arg ; break ;
-                default : return opt_emit_error(&cmd, o, &st) ;
+                default : return opt_emit_error(cmd.name, &cmd, o, &st) ;
             }
         }
         argc -= st.ind ; argv += st.ind ;

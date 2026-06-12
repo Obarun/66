@@ -15,13 +15,12 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/types.h>
 #include <oblibs/hash.h>
 #include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
 #include <oblibs/graph.h>
-
-#include <skalibs/sgetopt.h>
 
 #include <66/ssexec.h>
 #include <66/graph.h>
@@ -58,47 +57,62 @@ static void ensure_no_conflict(service_graph_t *graph, int argc, char const *con
     }
 }
 
-int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
+static uint8_t opt_nopropagate = 0 ;
+
+static opt_t const opts_start[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",         .arg = OPT_NONE, .help = "print this help" },
+    { .id = 'P',         .shortname = 'P', .longname = "no-propagate", .arg = OPT_NONE, .help = "do not propagate signal to its dependencies" },
+} ;
+
+static int on_start(int id, char const *arg, void *data)
+{
+    (void)arg ;
+    (void)data ;
+
+    switch (id) {
+
+        case 'P' :
+
+            opt_nopropagate = 1 ;
+            break ;
+    }
+
+    return 0 ;
+}
+
+opt_cmd_t const cmd_start = {
+    .name = "66 start",
+    .help = "bring up services",
+    .operands = "service...",
+    .opts = opts_start,
+    .nopts = OPT_COUNT(opts_start),
+    .on_option = &on_start,
+    .fn = &ssexec_start,
+} ;
+
+int ssexec_start(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
 
+    ssexec_t *info = data ;
+
+    /* drain option state into locals, then reset the statics for re-entrancy. */
+    uint8_t nopropagate = opt_nopropagate ;
+    opt_nopropagate = 0 ;
+
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     vertex_t *c, *tmp ;
-    uint8_t siglen = 3 ;
+    uint8_t propagate = 3 ;
     uint32_t flag = GRAPH_WANT_DEPENDS|GRAPH_COLLECT_PARSE|/* sanitize_init */GRAPH_WANT_LOGGER, nservice = 0 ;
     int e = 0 ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;) {
-
-            int opt = subgetopt_r(argc,argv, OPTS_START, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-
-                case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
-
-                case 'P' :
-
-                    FLAGS_CLEAR(flag, GRAPH_WANT_DEPENDS) ;
-                    siglen++ ;
-                    break ;
-
-                default :
-
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
+    if (nopropagate) {
+        FLAGS_CLEAR(flag, GRAPH_WANT_DEPENDS) ;
+        propagate++ ;
     }
 
     if (argc < 1)
-        log_usage(info->usage, "\n", info->help) ;
+        log_die(LOG_EXIT_USER, "missing service argument") ;
 
     if ((svc_scandir_ok(info->scandir.s)) !=  1 )
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;
@@ -118,8 +132,8 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
     /** initiate services at the corresponding scandir */
     sanitize_init(&graph, flag) ;
 
-    char *sig[siglen] ;
-    if (siglen > 3) {
+    char *sig[propagate] ;
+    if (propagate > 3) {
 
         sig[0] = "-P" ;
         sig[1] = "-wU" ;
@@ -140,7 +154,7 @@ int ssexec_start(int argc, char const *const *argv, ssexec_t *info)
 
     nargv[nservice] = 0 ;
 
-    e = svc_send_wait(nargv, nservice, sig, siglen, info) ;
+    e = svc_send_wait(nargv, nservice, sig, propagate, info) ;
 
     service_graph_destroy(&graph) ;
 

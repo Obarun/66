@@ -17,13 +17,12 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/types.h>
 #include <oblibs/sbl.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 #include <oblibs/strbuf.h>
-
-#include <skalibs/sgetopt.h>
 
 #include <66/constants.h>
 #include <66/config.h>
@@ -83,9 +82,11 @@ static void doit(strbuf *sa, ssexec_t *info, uint8_t earlier)
     service_graph_destroy(&graph) ;
 }
 
-int ssexec_tree_init(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_tree_init(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
+
+    ssexec_t *info = data ;
 
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     int r ;
@@ -93,30 +94,8 @@ int ssexec_tree_init(int argc, char const *const *argv, ssexec_t *info)
     char const *treename = 0 ;
     resolve_enum_table_t table = E_TABLE_TREE_ZERO ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;)
-        {
-            int opt = subgetopt_r(argc, argv, OPTS_TREE_INIT, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-
-                case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
-
-                default :
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
     if (!argc)
-        log_usage(info->usage, "\n", info->help) ;
+        log_die(LOG_EXIT_USER, "missing tree argument") ;
 
     treename = argv[0] ;
 
@@ -148,3 +127,4 @@ int ssexec_tree_init(int argc, char const *const *argv, ssexec_t *info)
 
     return 0 ;
 }
+

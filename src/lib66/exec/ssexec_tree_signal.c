@@ -21,11 +21,10 @@
 #include <errno.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/types.h>
-
-#include <skalibs/sgetopt.h>
 
 #include <66/config.h>
 #include <66/ssexec.h>
@@ -40,7 +39,7 @@ static inline unsigned int lookup (char const *const *table, char const *signal)
     return i ;
 }
 
-static inline unsigned int parse_signal (char const *signal, ssexec_t *info)
+static inline unsigned int parse_signal (char const *signal)
 {
     log_flow() ;
 
@@ -51,7 +50,7 @@ static inline unsigned int parse_signal (char const *signal, ssexec_t *info)
         0
     } ;
     unsigned int i = lookup(signal_table, signal) ;
-    if (!signal_table[i]) log_usage(info->usage, "\n", info->help) ;
+    if (!signal_table[i]) log_die(LOG_EXIT_USER, "unknown tree signal: ", signal) ;
     return i ;
 }
 
@@ -87,42 +86,71 @@ static void all_redir_fd(void)
     umask(022);
 }
 
-int ssexec_tree_signal(int argc, char const *const *argv, ssexec_t *info)
+/** The sub-command name selects the signal. The thin entries
+ * (do_tree_start/stop/free) post it here; the body reads it. */
+static char const *tree_signal_name = 0 ;
+static uint8_t tree_signal_fork = 0 ;
+
+int on_tree_signal(int id, char const *arg, void *data)
+{
+    (void)arg ;
+    (void)data ;
+
+    switch (id) {
+        case 'f' : tree_signal_fork = 1 ; break ;
+    }
+
+    return 0 ;
+}
+
+/** Select the signal from the sub-command name, then run the handler. The leaf
+ * options (-f) have already been scanned by opt_dispatch at the sub-node. */
+
+int do_tree_start(int argc, char const *const *argv, void *data)
+{
+    tree_signal_name = "start" ;
+    return ssexec_tree_signal(argc, argv, data) ;
+}
+
+int do_tree_stop(int argc, char const *const *argv, void *data)
+{
+    tree_signal_name = "stop" ;
+    return ssexec_tree_signal(argc, argv, data) ;
+}
+
+int do_tree_free(int argc, char const *const *argv, void *data)
+{
+    tree_signal_name = "free" ;
+    return ssexec_tree_signal(argc, argv, data) ;
+}
+
+int ssexec_tree_signal(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
+
+    ssexec_t *info = data ;
+
+    /* drain option state into locals, then reset the statics for re-entrancy. */
+    uint8_t dofork = tree_signal_fork ;
+    char const *signame = tree_signal_name ;
+    tree_signal_fork = 0 ;
+    tree_signal_name = 0 ;
 
     int r, shut = 0 ;
     uint8_t what = 0, requiredby = 0 ;
     tree_graph_t graph = GRAPH_TREE_ZERO ;
     uint32_t flag = 0, ntree = 0 ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
+    shut = dofork ;
 
-        for (;;)
-        {
-            int opt = subgetopt_r(argc, argv, OPTS_TREE_SIGNAL, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-                case 'f' :  shut = 1 ; break ;
-                default :   log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
-    if (argc < 1)
-        log_usage(info->usage, "\n", info->help) ;
+    what = parse_signal(signame) ;
 
     info->treename.len = 0 ;
 
-    if (argv[1]) {
-        if (!auto_strbuf(&info->treename, argv[1]))
+    if (argc >= 1) {
+        if (!auto_strbuf(&info->treename, argv[0]))
             log_die_nomem("strbuf") ;
     }
-
-    what = parse_signal(*argv, info) ;
 
     if (what) {
         requiredby = 1 ;

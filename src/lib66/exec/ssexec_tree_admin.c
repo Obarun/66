@@ -22,6 +22,7 @@
 #include <stdlib.h>//free
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
 #include <oblibs/files.h>
@@ -31,7 +32,6 @@
 #include <oblibs/strbuf.h>
 #include <oblibs/account.h>
 
-#include <skalibs/sgetopt.h>
 #include <skalibs/bytestr.h>//byte_count
 #include <skalibs/posixplz.h>//unlink_void
 
@@ -131,6 +131,20 @@ tree_what_t what_init(void)
 }
 
 void tree_enable_disable(tree_graph_t *g, char const *base, char const *treename, uint8_t action) ;
+
+/** Forward declaration: the internal re-creation of a dependency tree posts
+ * its "noseed" option through the applier before re-entering the handler. */
+int on_tree_admin(int id, char const *arg, void *data) ;
+
+/** Action posted by the option appliers (on_tree_admin). The body copies
+ * them into a local tree_what_t and resets them immediately, so the
+ * recursive re-creation of dependency trees starts from a clean slate. */
+static strbuf admin_options = STRBUF_ZERO ;
+static uint8_t admin_current = 0 ;
+static uint8_t admin_enable = 0 ;
+static uint8_t admin_disable = 0 ;
+static uint8_t admin_remove = 0 ;
+static uint8_t admin_nopts = 0 ;
 
 static void check_identifier(char const *name)
 {
@@ -262,32 +276,22 @@ static void tree_parse_options_depends(tree_graph_t *g, ssexec_t *info, char con
                 !auto_strbuf(&newinfo.treename, name))
                     log_die_nomem("strbuf") ;
             newinfo.owner = info->owner ;
-            newinfo.prog = info->prog ;
-            newinfo.help = info->help ;
-            newinfo.usage = info->usage ;
             newinfo.opt_color = info->opt_color ;
             newinfo.opt_tree = info->opt_tree ;
 
 
-            int nwhat = what->noseed ? 2 : 0 ;
-            int nargc = 3 + nwhat ;
             char const *prog = PROG ;
-            char const *newargv[nargc] ;
-            uint8_t m = 0 ;
-            newargv[m++] = "tree" ;
-
-            if (nwhat) {
-                newargv[m++] = "-o" ;
-                newargv[m++] = "noseed" ;
-            }
-
-            newargv[m++] = name ;
-            newargv[m++] = 0 ;
+            char const *newargv[2] = { name, 0 } ;
 
             log_trace("launch 66 tree sub-process for tree: ", name) ;
 
+            /* recreate the dependency tree with a default "create" action;
+             * propagate noseed through the option applier directly. */
+            if (what->noseed)
+                on_tree_admin('o', "noseed", &newinfo) ;
+
             PROG = "tree (child)" ;
-            if (ssexec_tree_admin(nargc, newargv, &newinfo))
+            if (ssexec_tree_admin(1, newargv, &newinfo))
                 log_dieusys(LOG_EXIT_SYS, "create tree: ", name) ;
             PROG = prog ;
 
@@ -1091,9 +1095,52 @@ void tree_clone(char const *clone, ssexec_t *info)
     log_info("Cloned successfully: ", info->treename.s, " to: ", clone) ;
 }
 
-int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
+int on_tree_admin(int id, char const *arg, void *data)
+{
+    (void)data ;
+
+    switch (id) {
+
+        case 'c' :
+
+            admin_current = 1 ;
+            admin_nopts++ ;
+            break ;
+
+        case 'o' :
+
+            if (!auto_strbuf(&admin_options, arg))
+                log_die_nomem("strbuf") ;
+            admin_nopts++ ;
+            break ;
+
+        case 'E' :
+
+            admin_enable = 1 ;
+            admin_nopts++ ;
+            break ;
+
+        case 'D' :
+
+            admin_disable = 1 ;
+            admin_nopts++ ;
+            break ;
+
+        case 'R' :
+
+            admin_remove = 1 ;
+            admin_nopts++ ;
+            break ;
+    }
+
+    return 0 ;
+}
+
+int ssexec_tree_admin(int argc, char const *const *argv, void *data)
 {
     log_flow();
+
+    ssexec_t *info = data ;
 
     int r ;
     /** We can arrive here from other ssexec_xxx functions that
@@ -1107,58 +1154,34 @@ int ssexec_tree_admin(int argc, char const *const *argv, ssexec_t *info)
 
     tree_what_t what = what_init() ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;)
-        {
-            int opt = subgetopt_r(argc, argv, OPTS_TREE_ADMIN, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt)
-            {
-                case 'c' :
-
-                    what.current = 1 ;
-                    what.nopts++ ;
-                    break ;
-
-               case 'o' :
-
-                    if (!auto_strbuf(&sa, l.arg))
-                        log_die_nomem("strbuf") ;
-                    what.nopts++ ;
-                    break ;
-
-                case 'E' :
-
-                    what.enable = 1 ;
-                    what.nopts++ ;
-                    break ;
-
-                case 'D' :
-
-                    what.disable = 1 ;
-                    what.nopts++ ;
-                    break ;
-
-                case 'R' :
-
-                    what.remove = 1 ;
-                    what.create = 0 ;
-                    what.nopts++ ;
-                    break ;
-
-                default :
-
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
+    /** Drain the action posted by on_tree_admin / do_tree_* into the local
+     * what, then reset the statics immediately: tree_parse_options below may
+     * recursively re-create dependency trees and must start clean. */
+    if (admin_current)
+        what.current = 1 ;
+    if (admin_enable)
+        what.enable = 1 ;
+    if (admin_disable)
+        what.disable = 1 ;
+    if (admin_remove) {
+        what.remove = 1 ;
+        what.create = 0 ;
     }
+    what.nopts = admin_nopts ;
+
+    if (admin_options.len)
+        if (!auto_strbuf(&sa, admin_options.s))
+            log_die_nomem("strbuf") ;
+
+    admin_current = 0 ;
+    admin_enable = 0 ;
+    admin_disable = 0 ;
+    admin_remove = 0 ;
+    admin_nopts = 0 ;
+    admin_options.len = 0 ;
 
     if (argc < 1)
-        log_usage(info->usage, "\n", info->help) ;
+        log_die(LOG_EXIT_USER, "missing tree argument") ;
 
     if (!graph_new(&graph, SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "initiate the graph") ;

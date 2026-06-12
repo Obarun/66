@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
 #include <oblibs/string.h>
@@ -38,10 +39,12 @@ inline static void auto_rm(char const *str)
     }
 }
 
-int ssexec_scandir_remove(int argc, char const *const *argv, ssexec_t *info)
+int ssexec_scandir_remove(int argc, char const *const *argv, void *data)
 {
     (void)argc ;
     (void)argv ;
+
+    ssexec_t *info = data ;
 
     int r ;
 

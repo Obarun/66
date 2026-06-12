@@ -82,27 +82,19 @@ void migrate_create_snap(ssexec_t *info, const char *version)
     char const *prog = PROG ;
     char const *newargv[argc] ;
 
-    char const *help = info->help ;
-    char const *usage = info->usage ;
-
-    info->help = help_snapshot_create ;
-    info->usage = usage_snapshot_create ;
+    extern opt_on_option_fn on_snapshot_create ;
 
     auto_strings(stk.s, "system@", version) ;
 
-    newargv[m++] = "snapshot" ;
-    newargv[m++] = "-s" ;
     newargv[m++] = stk.s ;
     newargv[m] = 0 ;
 
     PROG = "snapshot" ;
+    /* internal system snapshot: allow the reserved system@ prefix (-s). */
+    on_snapshot_create('s', 0, info) ;
     if (ssexec_snapshot_create(m, newargv, info))
         log_dieu(LOG_EXIT_SYS, "create snapshot", stk.s) ;
     PROG = prog ;
-
-    info->help = help ;
-    info->usage = usage ;
-
 }
 
 /**

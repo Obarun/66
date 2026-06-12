@@ -65,12 +65,6 @@ static void service_db_tree(resolve_service_t *old, resolve_service_t *new, ssex
         char const *prog = PROG ;
         char const *newargv[nargc] ;
 
-        char const *help = info->help ;
-        char const *usage = info->usage ;
-
-        info->help = help_remove ;
-        info->usage = usage_remove ;
-
         newargv[m++] = "remove" ;
         newargv[m++] = "-Pf" ;
 
@@ -85,11 +79,8 @@ static void service_db_tree(resolve_service_t *old, resolve_service_t *new, ssex
         newargv[m] = 0 ;
 
         PROG= "remove" ;
-        int e = ssexec_remove(m, newargv, info) ;
+        int e = opt_dispatch(m, newargv, &cmd_remove, info) ;
         PROG = prog ;
-
-        info->help = help ;
-        info->usage = usage ;
 
         if (e)
             log_dieu(LOG_EXIT_SYS, "unable to remove selection from module: ", new->sa.s + new->name) ;

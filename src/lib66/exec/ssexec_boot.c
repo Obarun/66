@@ -25,6 +25,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/exec.h>
+#include <oblibs/opt.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/environ.h>
@@ -34,7 +35,6 @@
 #include <oblibs/types.h>
 #include <oblibs/fd.h>
 
-#include <skalibs/sgetopt.h>
 #include <skalibs/cspawn.h>
 #include <skalibs/djbunix.h>
 
@@ -537,40 +537,60 @@ static void cad(void)
 
 }
 
-int ssexec_boot(int argc, char const *const *argv, ssexec_t *info)
+static opt_t const opts_boot[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",        .arg = OPT_NONE,                               .help = "print this help" },
+    { .id = 'm',         .shortname = 'm', .longname = "mount",       .arg = OPT_NONE,                               .help = "mount parent live directory" },
+    { .id = 's',         .shortname = 's', .longname = "skeleton",    .arg = OPT_REQUIRED, .argname = "directory",   .help = "skeleton directory to use" },
+    { .id = 'e',         .shortname = 'e', .longname = "environment", .arg = OPT_REQUIRED, .argname = "directory",   .help = "environment directory or file to use" },
+    { .id = 'd',         .shortname = 'd', .longname = "dev",         .arg = OPT_REQUIRED, .argname = "path",        .help = "mount dev directory" },
+    { .id = 'b',         .shortname = 'b', .longname = "banner",      .arg = OPT_REQUIRED, .argname = "message",     .help = "print banner at begins of the init process" },
+    { .id = 'l',         .shortname = 'l', .longname = "log-user",    .arg = OPT_REQUIRED, .argname = "username",    .help = "run catch-all logger as log_user user" },
+} ;
+
+static uint8_t boot_tmpfs = 0 ;
+
+static int on_boot(int id, char const *arg, void *data)
+{
+    (void)data ;
+
+    switch (id) {
+        case 'm' : boot_tmpfs = 1 ; break ;
+        case 's' : skel = arg ; break ;
+        case 'e' : envdir = arg ; break ;
+        case 'd' : slashdev = arg ; break ;
+        case 'b' : banner = arg ; break ;
+        case 'l' : log_user = arg ; break ;
+    }
+
+    return 0 ;
+}
+
+opt_cmd_t const cmd_boot = {
+    .name = "66 boot",
+    .help = "boot a system with 66",
+    .opts = opts_boot,
+    .nopts = OPT_COUNT(opts_boot),
+    .on_option = &on_boot,
+    .fn = &ssexec_boot,
+} ;
+
+int ssexec_boot(int argc, char const *const *argv, void *data)
 {
 	log_flow() ;
 
+    ssexec_t *info = data ;
+    (void)argc ;
+    (void)argv ;
+
     strbuf env = STRBUF_ZERO ;
-    unsigned int r , tmpfs = 0, hasconsole = 1 ;
+    unsigned int r , tmpfs = boot_tmpfs, hasconsole = 1 ;
+    /* drain option state into the local, then reset the static for re-entrancy. */
+    boot_tmpfs = 0 ;
     size_t bannerlen, livelen ;
     pid_t pid ;
     char verbo[U32_FMT] ;
     cver = verbo ;
     char *tty = 0 ;
-
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;)
-        {
-            int opt = subgetopt_r(argc, argv, OPTS_BOOT, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt)
-            {
-                case 'h' : VERBOSITY = 1 ; info_help(info->help, info->usage) ; return 0 ;
-                case 'm' : tmpfs = 1 ; break ;
-                case 's' : skel = l.arg ; break ;
-                case 'e' : envdir = l.arg ; break ;
-                case 'd' : slashdev = l.arg ; break ;
-                case 'b' : banner = l.arg ; break ;
-                case 'l' : log_user = l.arg ; break ;
-                default :  log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
 
     if (geteuid()) {
         errno = EPERM ;

@@ -559,23 +559,14 @@ static void migrate_service_0721(void)
             char const *prog = PROG ;
             char const *newargv[argc] ;
 
-            char const *help = info.help ;
-            char const *usage = info.usage ;
-
-            info.help = help_enable ;
-            info.usage = usage_enable ;
-
             newargv[m++] = "enable" ;
             newargv[m++] = lconf[pos].name ;
             newargv[m] = 0 ;
 
             PROG = "enable" ;
-            if (ssexec_enable(m, newargv, &info))
+            if (opt_dispatch(m, newargv, &cmd_enable, &info))
                 log_dieu(LOG_EXIT_SYS, "enable service: ", lconf[pos].name) ;
             PROG = prog ;
-
-            info.help = help ;
-            info.usage = usage ;
         }
     }
     hash_free(&hres) ;

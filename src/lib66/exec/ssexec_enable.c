@@ -16,6 +16,7 @@
 #include <stdbool.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/hash.h>
 #include <oblibs/types.h>
 #include <oblibs/sbl.h>
@@ -23,16 +24,54 @@
 #include <oblibs/graph.h>
 #include <oblibs/environ.h>
 
-#include <skalibs/sgetopt.h>
-
 #include <66/ssexec.h>
 #include <66/service.h>
 #include <66/graph.h>
 #include <66/enum_parser.h>
 #include <66/config.h>
 
-int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
+static opt_t const opts_enable[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",  .arg = OPT_NONE, .help = "print this help" },
+    { .id = 'S',         .shortname = 'S', .longname = "start", .arg = OPT_NONE, .help = "also start the service immediately" },
+    { .id = 'P',         .shortname = 'P', .longname = 0,       .arg = OPT_NONE, .help = "do not propagate to dependencies", .hidden = true },
+} ;
+
+static uint8_t opt_start = 0 ;
+static uint8_t opt_nopropagate = 0 ;
+
+static int on_enable(int id, char const *arg, void *data)
 {
+    (void)arg ;
+    (void)data ;
+
+    switch (id) {
+
+        case 'S' : opt_start = 1 ; break ;
+        case 'P' : opt_nopropagate = 1 ; break ;
+    }
+
+    return 0 ;
+}
+
+opt_cmd_t const cmd_enable = {
+    .name = "66 enable",
+    .help = "activate services at the next boot",
+    .operands = "service...",
+    .opts = opts_enable,
+    .nopts = OPT_COUNT(opts_enable),
+    .on_option = &on_enable,
+    .fn = &ssexec_enable,
+} ;
+
+int ssexec_enable(int argc, char const *const *argv, void *data)
+{
+    ssexec_t *info = data ;
+
+    /* drain option state into locals, then reset the statics for re-entrancy. */
+    uint8_t start_opt = opt_start, nopropagate = opt_nopropagate ;
+    opt_start = 0 ;
+    opt_nopropagate = 0 ;
+
     log_flow() ;
 
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
@@ -42,41 +81,16 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
     int e = 1 ;
     uint32_t flag = GRAPH_WANT_DEPENDS|GRAPH_COLLECT_PARSE, nservice = 0 ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
+    if (start_opt)
+        start = true ;
 
-        for (;;)
-        {
-            int opt = subgetopt_r(argc, argv, OPTS_ENABLE, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-
-                case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
-
-                case 'S' :
-
-                    start = true ;
-                    break ;
-
-                case 'P' :
-
-                    FLAGS_CLEAR(flag, GRAPH_WANT_DEPENDS) ;
-                    propagate = false ;
-                    break ;
-
-                default :
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
+    if (nopropagate) {
+        FLAGS_CLEAR(flag, GRAPH_WANT_DEPENDS) ;
+        propagate = false ;
     }
 
     if (argc < 1)
-        log_usage(info->usage, "\n", info->help) ;
+        log_die(LOG_EXIT_USER, "missing service argument") ;
 
     if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
@@ -133,23 +147,14 @@ int ssexec_enable(int argc, char const *const *argv, ssexec_t *info)
         char const *newargv[nargc] ;
         unsigned int m = 0 ;
 
-        char const *help = info->help ;
-        char const *usage = info->usage ;
-
-        info->help = help_start ;
-        info->usage = usage_start ;
-
         newargv[m++] = "start" ;
         HASH_ITER(hh, graph.g.vertexes, c, tmp)
             newargv[m++] = c->name ;
         newargv[m] = 0 ;
 
         PROG = "start" ;
-        e = ssexec_start(m, newargv, info) ;
+        e = opt_dispatch(m, newargv, &cmd_start, info) ;
         PROG = prog ;
-
-        info->help = help ;
-        info->usage = usage ;
     }
 
     service_graph_destroy(&graph) ;

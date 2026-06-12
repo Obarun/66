@@ -23,6 +23,7 @@
 
 #include <oblibs/sbl.h>
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/account.h>
 #include <oblibs/types.h>
 #include <oblibs/string.h>
@@ -32,7 +33,6 @@
 #include <oblibs/hash.h>
 #include <oblibs/stream.h>
 
-#include <skalibs/sgetopt.h>
 #include <skalibs/bytestr.h>
 
 #include <66/info.h>
@@ -48,6 +48,8 @@
 static unsigned int REVERSE = 0 ;
 static unsigned int NOFIELD = 1 ;
 static unsigned int GRAPH = 0 ;
+static unsigned int LEGACY = 1 ;
+static int WHAT[9] = { -1, -1, -1, -1, -1, -1, -1, -1, -1 } ;
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -479,21 +481,32 @@ static void info_parse_options(char const *str,int *what)
     }
 }
 
-int ssexec_tree_status(int argc, char const *const *argv, ssexec_t *info)
+int on_tree_status(int id, char const *arg, void *data)
+{
+    (void)data ;
+
+    switch (id) {
+        case 'n' :  NOFIELD = 0 ; break ;
+        case 'o' :  LEGACY = 0 ; info_parse_options(arg, WHAT) ; break ;
+        case 'g' :  GRAPH = 1 ; break ;
+        case 'r' :  REVERSE = 1 ; break ;
+        case 'd' :  if (!u32_scan_strict(arg, &INFO_MAXDEPTH)) log_die(LOG_EXIT_USER, "invalid depth value: ", arg) ; break ;
+    }
+
+    return 0 ;
+}
+
+int ssexec_tree_status(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
 
-    unsigned int legacy = 1 ;
+    ssexec_t *info = data ;
 
-    int what[MAXOPTS] = { 0 } ;
+    int *what = WHAT ;
 
     pinfo = info ;
 
     char const *treename = 0 ;
-
-    for (int i = 0 ; i < MAXOPTS ; i++)
-        what[i] = -1 ;
-
 
     char buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
         "Name",
@@ -506,30 +519,9 @@ int ssexec_tree_status(int argc, char const *const *argv, ssexec_t *info)
         "Required by",
         "Contents" } ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
+    if (argc >= 1) treename = argv[0] ;
 
-        for (;;)
-        {
-            int opt = subgetopt_r(argc, argv, OPTS_TREE_STATUS, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt)
-            {
-                case 'n' :  NOFIELD = 0 ; break ;
-                case 'o' :  legacy = 0 ; info_parse_options(l.arg,what) ; break ;
-                case 'g' :  GRAPH = 1 ; break ;
-                case 'r' :  REVERSE = 1 ; break ;
-                case 'd' :  if (!u32_scan_strict(l.arg, &INFO_MAXDEPTH)) log_usage(info->usage, "\n", info->help) ; break ;
-                default :   log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
-    if (argv[0]) treename = argv[0] ;
-
-    if (legacy) {
+    if (LEGACY) {
 
         unsigned int i = 0 ;
         for (; i < MAXOPTS - 1 ; i++)
@@ -613,3 +605,4 @@ int ssexec_tree_status(int argc, char const *const *argv, ssexec_t *info)
 
     return 0 ;
 }
+

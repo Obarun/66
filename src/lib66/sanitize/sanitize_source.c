@@ -46,10 +46,10 @@ void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)
 
         newargv[m++] = "parse" ;
         newargv[m++] = name ;
-        newargv[m++] = 0 ;
+        newargv[m] = 0 ;
 
         PROG = "parse" ;
-        if (ssexec_parse(argc, newargv, info))
+        if (opt_dispatch(m, newargv, &cmd_parse, info))
             log_dieu(LOG_EXIT_SYS, "parse service: ", name) ;
         PROG = prog ;
 
@@ -92,10 +92,10 @@ void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)
             newargv[m++] = "parse" ;
             newargv[m++] = "-f" ;
             newargv[m++] = name ;
-            newargv[m++] = 0 ;
+            newargv[m] = 0 ;
 
             PROG = "parse" ;
-            if (ssexec_parse(argc, newargv, info))
+            if (opt_dispatch(m, newargv, &cmd_parse, info))
                 log_dieu(LOG_EXIT_SYS, "parse service: ", name) ;
             PROG = prog ;
 

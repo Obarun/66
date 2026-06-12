@@ -16,9 +16,8 @@
 #include <errno.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/types.h>
-
-#include <skalibs/sgetopt.h>
 
 #include <66/ssexec.h>
 #include <66/config.h>
@@ -27,9 +26,48 @@
 #include <66/service.h>
 #include <66/enum_parser.h>
 
-int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
+static uint8_t opt_nopropagate = 0 ;
+
+static opt_t const opts_reload[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",         .arg = OPT_NONE, .help = "print this help" },
+    { .id = 'P',         .shortname = 'P', .longname = "no-propagate", .arg = OPT_NONE, .help = "do not propagate signal to its dependencies" },
+} ;
+
+static int on_reload(int id, char const *arg, void *data)
+{
+    (void)arg ;
+    (void)data ;
+
+    switch (id) {
+
+        case 'P' :
+
+            opt_nopropagate = 1 ;
+            break ;
+    }
+
+    return 0 ;
+}
+
+opt_cmd_t const cmd_reload = {
+    .name = "66 reload",
+    .help = "convenient command to send a SIGHUP signal to services",
+    .operands = "service...",
+    .opts = opts_reload,
+    .nopts = OPT_COUNT(opts_reload),
+    .on_option = &on_reload,
+    .fn = &ssexec_reload,
+} ;
+
+int ssexec_reload(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
+
+    ssexec_t *info = data ;
+
+    /* drain option state into locals, then reset the statics for re-entrancy. */
+    uint8_t nopropagate = opt_nopropagate ;
+    opt_nopropagate = 0 ;
 
     int r, nargc = 0 ;
     char const *nargv[argc] ;
@@ -40,37 +78,13 @@ int ssexec_reload(int argc, char const *const *argv, ssexec_t *info)
 
     unsigned int m = 0 ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;) {
-
-            int opt = subgetopt_r(argc, argv, OPTS_SUBSTART, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-
-                case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
-
-                case 'P' :
-
-                    FLAGS_CLEAR(flag, GRAPH_WANT_DEPENDS) ;
-                    siglen++ ;
-                    break ;
-
-                default :
-
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
+    if (nopropagate) {
+        FLAGS_CLEAR(flag, GRAPH_WANT_DEPENDS) ;
+        siglen++ ;
     }
 
     if (argc < 1)
-        log_usage(info->usage, "\n", info->help) ;
+        log_die(LOG_EXIT_USER, "missing service argument") ;
 
     if ((svc_scandir_ok(info->scandir.s)) !=  1 )
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;

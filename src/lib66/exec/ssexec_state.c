@@ -16,10 +16,9 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/stream.h>
 #include <oblibs/files.h>
-
-#include <skalibs/sgetopt.h>
 
 #include <66/info.h>
 #include <66/resolve.h>
@@ -60,8 +59,22 @@ static void info_display_int(char const *field, unsigned int id)
     info_display_string(field, str) ;
 }
 
-int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
+static opt_t const opts_state[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE, .help = "print this help" },
+} ;
+
+opt_cmd_t const cmd_state = {
+    .name = "66 state",
+    .help = "display state files contents of services",
+    .operands = "service",
+    .opts = opts_state,
+    .nopts = OPT_COUNT(opts_state),
+    .fn = &ssexec_state,
+} ;
+
+int ssexec_state(int argc, char const *const *argv, void *data)
 {
+    ssexec_t *info = data ;
     int r = -1 ;
     uint8_t m = 0 ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
@@ -80,30 +93,8 @@ int ssexec_state(int argc, char const *const *argv, ssexec_t *info)
         "issupervised",
         "isup" } ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;)
-        {
-            int opt = subgetopt_r(argc, argv, OPTS_STATE, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-
-                case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
-
-                default :
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
-    if (!argc)
-        log_usage(info->usage, "\n", info->help) ;
+    if (argc < 1)
+        log_die(LOG_EXIT_USER, "missing service argument") ;
 
     svname = *argv ;
 

@@ -31,17 +31,11 @@ void tree_service_add(char const *treename, char const *service, ssexec_t *info)
 
     if (!tree_isvalid(info->base.s, treename)) {
 
-        int nargc = 3 ;
-        char const *newargv[nargc] ;
-        unsigned int m = 0 ;
-
-        newargv[m++] = "tree" ;
-        newargv[m++] = treename ;
-        newargv[m++] = 0 ;
+        char const *newargv[2] = { treename, 0 } ;
 
         char const *prog = PROG ;
         PROG = "tree" ;
-        if (ssexec_tree_admin(nargc, newargv, info))
+        if (ssexec_tree_admin(1, newargv, info))
             log_dieusys(LOG_EXIT_SYS, "create tree: ", treename) ;
         PROG = prog ;
 

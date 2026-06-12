@@ -20,6 +20,7 @@
 #include <oblibs/types.h>
 
 #include <oblibs/strbuf.h>
+#include <oblibs/opt.h>
 
 #include <66/config.h>
 
@@ -37,9 +38,6 @@ struct ssexec_s
     char ownerstr[UID_FMT] ;
     size_t ownerlen ;
     uint64_t timeout ;
-    char const *prog ;
-    char const *help ;
-    char const *usage ;
     // argument passed or not at commandline 0->no,1->yes
     uint8_t opt_verbo ;
     uint8_t opt_live ;
@@ -60,9 +58,6 @@ struct ssexec_s
                         .ownerstr = { 0 }, \
                         .ownerlen = 0, \
                         .timeout = 0, \
-                        .prog = 0, \
-                        .help = 0, \
-                        .usage = 0, \
                         .opt_verbo = 0, \
                         .opt_live = 0, \
                         .opt_tree = 0, \
@@ -70,225 +65,73 @@ struct ssexec_s
                         .opt_color = 0, \
                         .skip_opt_tree = 0 }
 
-typedef int ssexec_func_t(int argc, char const *const *argv, ssexec_t *info) ;
-typedef ssexec_func_t *ssexec_func_t_ref ;
-
 extern void ssexec_free(ssexec_t *info) ;
 extern void ssexec_copy(ssexec_t *dest, ssexec_t *src) ;
 extern ssexec_t const ssexec_zero ;
 
-/** main */
-extern ssexec_func_t ssexec_parse ;
-extern ssexec_func_t ssexec_enable ;
-extern ssexec_func_t ssexec_disable ;
-extern ssexec_func_t ssexec_start ;
-extern ssexec_func_t ssexec_stop ;
-extern ssexec_func_t ssexec_configure ;
-extern ssexec_func_t ssexec_reconfigure ;
-extern ssexec_func_t ssexec_reload ;
-extern ssexec_func_t ssexec_restart ;
+/** The leaf handler matches
+ *  opt_cmd_fn (data is the ssexec_t *); the exported cmd_<name> node carries its
+ *  option table and is the entry point both for the top dispatcher and for any
+ *  internal re-dispatch (reconfigure, restart, free, ...). */
+extern opt_cmd_fn ssexec_start ;
+extern opt_cmd_fn ssexec_stop ;
+extern opt_cmd_fn ssexec_enable ;
+extern opt_cmd_fn ssexec_disable ;
+extern opt_cmd_fn ssexec_parse ;
+extern opt_cmd_fn ssexec_reload ;
+extern opt_cmd_fn ssexec_restart ;
+extern opt_cmd_fn ssexec_reconfigure ;
+extern opt_cmd_fn ssexec_configure ;
+extern opt_cmd_fn ssexec_resolve ;
+extern opt_cmd_fn ssexec_state ;
+extern opt_cmd_fn ssexec_remove ;
+extern opt_cmd_fn ssexec_status ;
+extern opt_cmd_fn ssexec_signal ;
+
+extern opt_cmd_t const cmd_start ;
+extern opt_cmd_t const cmd_stop ;
+extern opt_cmd_t const cmd_free ;
+extern opt_cmd_t const cmd_enable ;
+extern opt_cmd_t const cmd_disable ;
+extern opt_cmd_t const cmd_parse ;
+extern opt_cmd_t const cmd_reload ;
+extern opt_cmd_t const cmd_restart ;
+extern opt_cmd_t const cmd_reconfigure ;
+extern opt_cmd_t const cmd_configure ;
+extern opt_cmd_t const cmd_resolve ;
+extern opt_cmd_t const cmd_state ;
+extern opt_cmd_t const cmd_remove ;
+extern opt_cmd_t const cmd_status ;
+extern opt_cmd_t const cmd_signal ;
+
+/** wrapper sub-command handlers (opt_dispatch leaves) */
+extern opt_cmd_fn ssexec_scandir_create ;
+extern opt_cmd_fn ssexec_scandir_remove ;
+extern opt_cmd_fn ssexec_scandir_signal ;
+extern opt_cmd_fn ssexec_tree_admin ;
+extern opt_cmd_fn ssexec_tree_signal ;
+extern opt_cmd_fn ssexec_tree_status ;
+extern opt_cmd_fn ssexec_tree_resolve ;
+extern opt_cmd_fn ssexec_tree_init ;
+extern opt_cmd_fn ssexec_snapshot_create ;
+extern opt_cmd_fn ssexec_snapshot_restore ;
+extern opt_cmd_fn ssexec_snapshot_remove ;
+extern opt_cmd_fn ssexec_snapshot_list ;
+
+/** wrapper command nodes (sub-trees) */
+extern opt_cmd_t const cmd_scandir ;
+extern opt_cmd_t const cmd_tree ;
+extern opt_cmd_t const cmd_snapshot ;
+extern opt_cmd_t const cmd_poweroff ;
+extern opt_cmd_t const cmd_reboot ;
+extern opt_cmd_t const cmd_halt ;
 
 /** PID1 and supervision */
-extern ssexec_func_t ssexec_boot ;
-extern ssexec_func_t ssexec_scandir_wrapper ;
-extern ssexec_func_t ssexec_scandir_create ;
-extern ssexec_func_t ssexec_scandir_remove ;
-extern ssexec_func_t ssexec_scandir_signal ;
+extern opt_cmd_fn ssexec_boot ;
+extern opt_cmd_t const cmd_boot ;
 
-/** service */
-extern ssexec_func_t ssexec_status ;
-extern ssexec_func_t ssexec_resolve ;
-extern ssexec_func_t ssexec_state ;
-extern ssexec_func_t ssexec_remove ;
-extern ssexec_func_t ssexec_signal ;
-
-/** tree */
-extern ssexec_func_t ssexec_tree_wrapper ;
-extern ssexec_func_t ssexec_tree_signal ;
-extern ssexec_func_t ssexec_tree_admin ;
-extern ssexec_func_t ssexec_tree_status ;
-extern ssexec_func_t ssexec_tree_resolve ;
-extern ssexec_func_t ssexec_tree_init ;
-
-/** shutdown */
-extern ssexec_func_t ssexec_shutdown_wrapper ;
-
-/** snapshot */
-extern ssexec_func_t ssexec_snapshot_wrapper ;
-extern ssexec_func_t ssexec_snapshot_create ;
-extern ssexec_func_t ssexec_snapshot_restore ;
-extern ssexec_func_t ssexec_snapshot_remove ;
-extern ssexec_func_t ssexec_snapshot_list ;
-
-extern void info_help (char const *help,char const *usage) ;
-
-extern char const *usage_66 ;
-extern char const *help_66 ;
-extern char const *usage_boot ;
-extern char const *help_boot ;
-extern char const *usage_enable ;
-extern char const *help_enable ;
-extern char const *usage_disable ;
-extern char const *help_disable ;
-extern char const *usage_start ;
-extern char const *help_start ;
-extern char const *usage_stop ;
-extern char const *help_stop ;
-extern char const *usage_env ;
-extern char const *help_env ;
-extern char const *usage_parse ;
-extern char const *help_parse ;
-extern char const *usage_reconfigure ;
-extern char const *help_reconfigure ;
-extern char const *usage_reload ;
-extern char const *help_reload ;
-extern char const *usage_restart ;
-extern char const *help_restart ;
-extern char const *usage_free ;
-extern char const *help_free ;
-extern char const *usage_status ;
-extern char const *help_status ;
-extern char const *usage_resolve ;
-extern char const *help_resolve ;
-extern char const *usage_state ;
-extern char const *help_state ;
-extern char const *usage_remove ;
-extern char const *help_remove ;
-extern char const *usage_signal ;
-extern char const *help_signal ;
-
-extern char const *usage_tree_wrapper ;
-extern char const *help_tree_wrapper ;
-extern char const *usage_tree_create ;
-extern char const *help_tree_create ;
-extern char const *usage_tree_admin ;
-extern char const *help_tree_admin ;
-extern char const *usage_tree_remove ;
-extern char const *help_tree_remove ;
-extern char const *usage_tree_enable ;
-extern char const *help_tree_enable ;
-extern char const *usage_tree_disable ;
-extern char const *help_tree_disable ;
-extern char const *usage_tree_current ;
-extern char const *help_tree_current ;
-extern char const *usage_tree_resolve ;
-extern char const *help_tree_resolve ;
-extern char const *usage_tree_status ;
-extern char const *help_tree_status ;
-extern char const *usage_tree_init ;
-extern char const *help_tree_init ;
-extern char const *usage_tree_start ;
-extern char const *help_tree_start ;
-extern char const *usage_tree_stop ;
-extern char const *help_tree_stop ;
-extern char const *usage_tree_unsupervise ;
-extern char const *help_tree_unsupervise ;
-
-extern char const *usage_scandir_wrapper ;
-extern char const *help_scandir_wrapper ;
-extern char const *usage_scandir_create ;
-extern char const *help_scandir_create ;
-extern char const *usage_scandir_start ;
-extern char const *help_scandir_start ;
-extern char const *usage_scandir_stop ;
-extern char const *help_scandir_stop ;
-extern char const *usage_scandir_remove ;
-extern char const *help_scandir_remove ;
-extern char const *usage_scandir_reconfigure ;
-extern char const *help_scandir_reconfigure ;
-extern char const *usage_scandir_check ;
-extern char const *help_scandir_check ;
-extern char const *usage_scandir_quit ;
-extern char const *help_scandir_quit ;
-extern char const *usage_scandir_abort ;
-extern char const *help_scandir_abort ;
-extern char const *usage_scandir_nuke ;
-extern char const *help_scandir_nuke ;
-extern char const *usage_scandir_annihilate ;
-extern char const *help_scandir_annihilate ;
-extern char const *usage_scandir_zombies ;
-extern char const *help_scandir_zombies ;
-
-extern char const *usage_poweroff ;
-extern char const *help_poweroff ;
-extern char const *usage_reboot ;
-extern char const *help_reboot ;
-extern char const *usage_halt ;
-extern char const *help_halt ;
-extern char const *usage_wall ;
-extern char const *help_wall ;
-
-extern char const *usage_snapshot_wrapper ;
-extern char const *help_snapshot_wrapper ;
-extern char const *usage_snapshot_create ;
-extern char const *help_snapshot_create ;
-extern char const *usage_snapshot_restore ;
-extern char const *help_snapshot_restore ;
-extern char const *usage_snapshot_remove ;
-extern char const *help_snapshot_remove ;
-extern char const *usage_snapshot_list ;
-extern char const *help_snapshot_list ;
-
-#define OPTS_MAIN "hv:l:t:T:z"
-#define OPTS_MAIN_LEN (sizeof OPTS_MAIN - 1)
-#define OPTS_SUBSTART "hP"
-#define OPTS_SUBSTART_LEN (sizeof OPTS_SUBSTART - 1)
-#define OPTS_PARSE "hfFcmCI"
-#define OPTS_PARSE_LEN (sizeof OPTS_PARSE - 1)
-#define OPTS_ENABLE "hSP"
-#define OPTS_ENABLE_LEN (sizeof OPTS_ENABLE - 1)
-#define OPTS_DISABLE "hSFRP"
-#define OPTS_DISABLE_LEN (sizeof OPTS_DISABLE - 1)
-#define OPTS_START "hP"
-#define OPTS_START_LEN (sizeof OPTS_START - 1)
-#define OPTS_STOP "huP"
-#define OPTS_STOP_LEN (sizeof OPTS_STOP - 1)
-#define OPTS_REMOVE "hfP"
-#define OPTS_REMOVE_LEN (sizeof OPTS_REMOVE - 1)
-#define OPTS_STATUS "hno:grd:p:"
-#define OPTS_STATUS_LEN (sizeof OPTS_STATUS - 1)
-#define OPTS_SIGNAL "habqHkti12pcys:rodDuUxOQw:P"
-#define OPTS_SIGNAL_LEN (sizeof OPTS_SIGNAL - 1)
-#define OPTS_ENV "hc:s:VLr:e:i:"
-#define OPTS_ENV_LEN (sizeof OPTS_ENV - 1)
-#define OPTS_STATE "h"
-#define OPTS_STATE_LEN (sizeof OPTS_STATE - 1)
-#define OPTS_RESOLVE "h"
-#define OPTS_RESOLVE_LEN (sizeof OPTS_RESOLVE - 1)
-
-#define OPTS_TREE_WRAPPER "h"
-#define OPTS_TREE_WRAPPER_LEN (sizeof OPTS_TREE_WRAPPER - 1)
-#define OPTS_TREE_STATUS "no:grd:"
-#define OPTS_TREE_STATUS_LEN (sizeof OPTS_TREE_STATUS - 1)
-#define OPTS_TREE_SIGNAL "f"
-#define OPTS_TREE_SIGNAL_LEN (sizeof OPTS_TREE_SIGNAL - 1)
-#define OPTS_TREE_ADMIN "co:EDRnadC:S:"
-#define OPTS_TREE_ADMIN_LEN (sizeof OPTS_TREE_ADMIN - 1)
-#define OPTS_TREE_INIT "h"
-#define OPTS_TREE_INIT_LEN (sizeof OPTS_TREE_INIT - 1)
-
-#define OPTS_BOOT "hms:e:d:b:l:"
-#define OPTS_BOOT_LEN (sizeof OPTS_BOOT - 1)
-
-#define OPTS_SCANDIR_WRAPPER "ho:"
-#define OPTS_SCANDIR_WRAPPER_LEN (sizeof OPTS_SCANDIR_WRAPPER - 1)
-#define OPTS_SCANDIR_SIGNAL "d:s:e:bB"
-#define OPTS_SCANDIR_SIGNAL_LEN (sizeof OPTS_SCANDIR_SIGNAL - 1)
-#define OPTS_SCANDIR_CREATE "bBs:cL:"
-#define OPTS_SCANDIR_CREATE_LEN (sizeof OPTS_SCANDIR_CREATE - 1)
-
-#define OPTS_SHUTDOWN_WRAPPER "hFfat:m:W"
-#define OPTS_SHUTDOWN_WRAPPER_LEN (sizeof OPTS_SHUTDOWN_WRAPPER - 1)
-
-#define OPTS_SNAPSHOT_WRAPPER "h"
-#define OPTS_SNAPSHOT_WRAPPER_LEN (sizeof OPTS_SNAPSHOT_WRAPPER - 1)
-#define OPTS_SNAPSHOT_CREATE "hs"
-#define OPTS_SNAPSHOT_CREATE_LEN (sizeof OPTS_SNAPSHOT_CREATE - 1)
-#define OPTS_SNAPSHOT_RESTORE "h"
-#define OPTS_SNAPSHOT_RESTORE_LEN (sizeof OPTS_SNAPSHOT_RESTORE - 1)
-#define OPTS_SNAPSHOT_REMOVE "h"
-#define OPTS_SNAPSHOT_REMOVE_LEN (sizeof OPTS_SNAPSHOT_REMOVE - 1)
-#define OPTS_SNAPSHOT_LIST "h"
-#define OPTS_SNAPSHOT_LIST_LEN (sizeof OPTS_SNAPSHOT_LIST - 1)
+/** Top-level dispatcher: builds the 66 command tree and routes argv to the
+ *  selected (sub)command. 66.c is just owner setup + this call. */
+extern int ssexec_main(int argc, char const *const *argv, ssexec_t *info) ;
 
 #endif

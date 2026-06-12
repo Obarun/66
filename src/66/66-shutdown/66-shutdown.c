@@ -120,7 +120,7 @@ static void parse_mins (struct timespec *when, struct timespec const *now, char 
     log_flow() ;
 
     unsigned int mins ;
-    if (!u32_scan_strict(s, &mins)) _exit(opt_emit_usage(&cmd)) ;
+    if (!u32_scan_strict(s, &mins)) _exit(opt_emit_usage(cmd.name, &cmd)) ;
     clock_addsec(when, now, (int64_t)mins * 60) ;
 }
 
@@ -255,8 +255,8 @@ int main (int argc, char const *const *argv)
             int o = opt_scan(argc, argv, opts, OPT_COUNT(opts), &st) ;
             if (o == OPT_END) break ;
             switch (o) {
-                case OPT_ID_HELP : return opt_emit_help(&cmd) ;
-                case 'v' : if (!u32_scan_strict(st.arg, &VERBOSITY)) return opt_emit_usage(&cmd) ; break ;
+                case OPT_ID_HELP : return opt_emit_help(cmd.name, &cmd) ;
+                case 'v' : if (!u32_scan_strict(st.arg, &VERBOSITY)) return opt_emit_usage(cmd.name, &cmd) ; break ;
                 case 'l' : live = st.arg ; break ;
                 case 'h' : what = 1 ; break ;
                 case 'p' : what = 2 ; break ;
@@ -266,8 +266,8 @@ int main (int argc, char const *const *argv)
                 case 'f' : /* talk to the hand */ break ;
                 case 'F' : /* no, the other hand */ break ;
                 case 'c' : docancel = 1 ; break ;
-                case 't' : if (!u32_scan_strict(st.arg, &gracetime)) return opt_emit_usage(&cmd) ; break ;
-                default : return opt_emit_error(&cmd, o, &st) ;
+                case 't' : if (!u32_scan_strict(st.arg, &gracetime)) return opt_emit_usage(cmd.name, &cmd) ; break ;
+                default : return opt_emit_error(cmd.name, &cmd, o, &st) ;
             }
         }
         argc -= st.ind ; argv += st.ind ;
@@ -294,7 +294,7 @@ int main (int argc, char const *const *argv)
         if (!hpr_cancel(tlive)) goto err ;
         return 0 ;
     }
-    if (!argc) return opt_emit_usage(&cmd) ;
+    if (!argc) return opt_emit_usage(cmd.name, &cmd) ;
     parse_time(&when, &now, argv[0]) ;
     clock_sub(&when, &when, &now) ;
     if (argv[1])

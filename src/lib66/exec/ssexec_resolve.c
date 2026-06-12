@@ -17,12 +17,11 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/stream.h>
-
-#include <skalibs/sgetopt.h>
 
 #include <66/resolve.h>
 #include <66/ssexec.h>
@@ -208,8 +207,23 @@ static void info_display_service_field(resolve_service_t *res)
     info_display_string(fields[m], res->sa.s, res->rversion, 1) ;
 }
 
-int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
+static opt_t const opts_resolve[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE, .help = "print this help" },
+} ;
+
+opt_cmd_t const cmd_resolve = {
+    .name = "66 resolve",
+    .help = "display the resolve file contents of services",
+    .operands = "service",
+    .opts = opts_resolve,
+    .nopts = OPT_COUNT(opts_resolve),
+    .fn = &ssexec_resolve,
+} ;
+
+int ssexec_resolve(int argc, char const *const *argv, void *data)
 {
+    ssexec_t *info = data ;
+
     int r = 0 ;
 
     char const *svname = 0 ;
@@ -337,30 +351,8 @@ int ssexec_resolve(int argc, char const *const *argv, ssexec_t *info)
         "rversion"
     } ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;)
-        {
-            int opt = subgetopt_r(argc, argv, OPTS_RESOLVE, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-
-                case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
-
-                default :
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
     if (argc < 1)
-        log_usage(info->usage, "\n", info->help) ;
+        log_die(LOG_EXIT_USER, "missing service argument") ;
 
     svname = *argv ;
 

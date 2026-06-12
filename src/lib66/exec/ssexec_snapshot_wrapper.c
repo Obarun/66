@@ -12,108 +12,37 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <string.h>
-#include <stdint.h>
-
-#include <oblibs/log.h>
-
-#include <skalibs/sgetopt.h>
+#include <oblibs/opt.h>
 
 #include <66/ssexec.h>
 
-int ssexec_snapshot_wrapper(int argc, char const *const *argv, ssexec_t *info)
-{
-    log_flow() ;
+/* The dispatch tree lives here: each sub-command's option table is defined in
+ * this file (so OPT_COUNT is a constant), while the leaves export only their
+ * option applier (on_*) and their handler (ssexec_*). */
 
-    if (!argv[1]) {
-        PROG = "snapshot" ;
-        log_usage(usage_snapshot_wrapper, "\n", help_snapshot_wrapper) ;
-    }
+extern opt_on_option_fn on_snapshot_create ;
 
-    int r, n = 0, i = 0 ;
-    uint8_t ctl = 0 ;
-    ssexec_func_t_ref func = 0 ;
-    char const *nargv[argc + 1] ;
+static opt_t const opts_help[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE, .help = "print this help" },
+} ;
 
-    if (argv[1][0] == '-') {
+static opt_t const opts_snapshot_create[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE, .help = "print this help" },
+    { .id = 's',         .shortname = 's',                     .arg = OPT_NONE, .help = "allow the reserved system@ prefix (injected internally by version migration)", .hidden = true },
+} ;
 
-        ctl++ ;
-        subgetopt l = SUBGETOPT_ZERO ;
+static opt_cmd_t const snapshot_sub[] = {
+    { .name = "create",  .help = "create a snapshot of the entire 66 system", .operands = "name", .opts = opts_snapshot_create, .nopts = OPT_COUNT(opts_snapshot_create), .on_option = &on_snapshot_create, .fn = &ssexec_snapshot_create },
+    { .name = "restore", .help = "restore a snapshot",                        .operands = "name", .opts = opts_help,            .nopts = OPT_COUNT(opts_help),                                              .fn = &ssexec_snapshot_restore },
+    { .name = "remove",  .help = "remove a snapshot",                         .operands = "name", .opts = opts_help,            .nopts = OPT_COUNT(opts_help),                                              .fn = &ssexec_snapshot_remove },
+    { .name = "list",    .help = "list available snapshots",                                      .opts = opts_help,            .nopts = OPT_COUNT(opts_help),                                              .fn = &ssexec_snapshot_list },
+} ;
 
-        for (;;) {
-
-            int opt = subgetopt_r(argc, argv, OPTS_SNAPSHOT_WRAPPER, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt) {
-
-                case 'h' :
-
-                    info_help(help_snapshot_wrapper, usage_snapshot_wrapper) ;
-                    return 0 ;
-
-                default:
-
-                    log_usage(usage_snapshot_wrapper, "\n", help_snapshot_wrapper) ;
-
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
-    if (!ctl) {
-        argc-- ;
-        argv++ ;
-    }
-
-    if (!argc)
-        log_usage(usage_snapshot_wrapper, "\n", help_snapshot_wrapper) ;
-
-    if (!strcmp(argv[0], "create")) {
-
-        nargv[n++] = argv[0] ;
-        info->prog = PROG ;
-        info->help = help_snapshot_create ;
-        info->usage = usage_snapshot_create ;
-        func = &ssexec_snapshot_create ;
-
-    } else if (!strcmp(argv[0], "restore")) {
-
-        nargv[n++] = argv[0] ;
-        info->prog = PROG ;
-        info->help = help_snapshot_restore ;
-        info->usage = usage_snapshot_restore ;
-        func = &ssexec_snapshot_restore ;
-
-    } else if (!strcmp(argv[0], "remove")) {
-
-        nargv[n++] = argv[0] ;
-        info->prog = PROG ;
-        info->help = help_snapshot_remove ;
-        info->usage = usage_snapshot_remove ;
-        func = &ssexec_snapshot_remove ;
-
-    } else if (!strcmp(argv[0], "list")) {
-
-        nargv[n++] = argv[0] ;
-        info->prog = PROG ;
-        info->help = help_snapshot_list ;
-        info->usage = usage_snapshot_list ;
-        func = &ssexec_snapshot_list ;
-
-    } else
-        log_usage(usage_snapshot_wrapper, "\n", help_snapshot_wrapper) ;
-
-
-    argc-- ;
-    argv++ ;
-
-    for (i = 0 ; i < argc ; i++ , argv++)
-        nargv[n++] = *argv ;
-
-    nargv[n] = 0 ;
-
-    r = (*func)(n, nargv, info) ;
-
-    return r ;
-}
+opt_cmd_t const cmd_snapshot = {
+    .name = "66 snapshot",
+    .help = "main subcommands to manage snapshot",
+    .opts = opts_help,
+    .nopts = OPT_COUNT(opts_help),
+    .sub = snapshot_sub,
+    .nsub = OPT_COUNT(snapshot_sub),
+} ;

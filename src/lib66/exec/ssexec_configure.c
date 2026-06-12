@@ -19,6 +19,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/exec.h>
+#include <oblibs/opt.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
@@ -28,7 +29,6 @@
 #include <oblibs/environ.h>
 #include <oblibs/stream.h>
 
-#include <skalibs/sgetopt.h>
 #include <skalibs/diuint32.h>
 #include <skalibs/unix-transactional.h>//atomic_symlink
 
@@ -147,102 +147,126 @@ static void write_user_env_file(char const *src, char const *sv)
 
 }
 
-int ssexec_configure(int argc, char const *const *argv, ssexec_t *info)
+static opt_t const opts_configure[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",     .arg = OPT_NONE,                             .help = "print this help" },
+    { .id = 'c',         .shortname = 'c', .longname = "current",  .arg = OPT_REQUIRED, .argname = "number",    .help = "set version to use as default" },
+    { .id = 's',         .shortname = 's', .longname = "specific", .arg = OPT_REQUIRED, .argname = "number",    .help = "specifies the version to handle" },
+    { .id = 'V',         .shortname = 'V', .longname = "versions", .arg = OPT_NONE,                             .help = "lists available versioned configuration directories of the service" },
+    { .id = 'L',         .shortname = 'L', .longname = "list",     .arg = OPT_NONE,                             .help = "lists the environment variables of the service" },
+    { .id = 'r',         .shortname = 'r', .longname = "replace",  .arg = OPT_REQUIRED, .argname = "key=value", .help = "replace the value of the key" },
+    { .id = 'e',         .shortname = 'e', .longname = "editor",   .arg = OPT_REQUIRED, .argname = "editor",    .help = "edit the file with editor" },
+    { .id = 'i',         .shortname = 'i', .longname = "import",   .arg = OPT_REQUIRED, .argname = "src,dst",   .help = "import configuration files from src version to dst version" },
+} ;
+
+static strbuf cfg_satmp = STRBUF_ZERO ;
+static strbuf cfg_savar = STRBUF_ZERO ;
+static uint8_t opt_todo = T_UNSET ;
+static uint8_t opt_current = 0 ;
+static char const *opt_import = 0 ;
+
+static int on_configure(int id, char const *arg, void *data)
+{
+    (void)data ;
+
+    switch (id) {
+
+        case 'c' :
+
+            if (cfg_satmp.len)
+                log_die(LOG_EXIT_USER, "-c and -s options are mutually exclusive") ;
+
+            if (!auto_strbuf(&cfg_satmp, arg))
+                log_die_nomem("strbuf") ;
+
+            opt_current++ ;
+            break ;
+
+        case 's' :
+
+            if (cfg_satmp.len)
+                log_die(LOG_EXIT_USER, "-c and -s options are mutually exclusive") ;
+
+            if (!auto_strbuf(&cfg_satmp, arg))
+                log_die_nomem("strbuf") ;
+
+            break ;
+
+        case 'V' :
+
+            if (opt_todo != T_UNSET)
+                log_die(LOG_EXIT_USER, "options -V, -L and -r are mutually exclusive") ;
+            opt_todo = T_VLIST ;
+            break ;
+
+        case 'L' :
+
+            if (opt_todo != T_UNSET)
+                log_die(LOG_EXIT_USER, "options -V, -L and -r are mutually exclusive") ;
+            opt_todo = T_LIST ;
+            break ;
+
+        case 'r' :
+
+            if (!sbl_add(&cfg_savar, arg))
+                log_die_nomem("strbuf") ;
+
+            if (opt_todo != T_UNSET && opt_todo != T_REPLACE)
+                log_die(LOG_EXIT_USER, "options -V, -L and -r are mutually exclusive") ;
+            opt_todo = T_REPLACE ;
+            break ;
+
+        case 'e' :
+
+            EDITOR = arg ;
+            break ;
+
+        case 'i' :
+
+            opt_import = arg ;
+            break ;
+    }
+
+    return 0 ;
+}
+
+opt_cmd_t const cmd_configure = {
+    .name = "66 configure",
+    .help = "manage environment service files and its contents",
+    .operands = "service",
+    .opts = opts_configure,
+    .nopts = OPT_COUNT(opts_configure),
+    .on_option = &on_configure,
+    .fn = &ssexec_configure,
+} ;
+
+int ssexec_configure(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
 
+    ssexec_t *info = data ;
+
     int r ;
     size_t pos = 0 ;
-    _cleanup_strbuf_ strbuf satmp = STRBUF_ZERO ;
     _cleanup_strbuf_ strbuf src = STRBUF_ZERO ;
-    _cleanup_strbuf_ strbuf savar = STRBUF_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
-    uint8_t todo = T_UNSET, current = 0 ;
+    /* drain option state into locals, then reset the statics for re-entrancy.
+     * the two strbufs are moved (ownership transferred to the auto-freed locals)
+     * and the statics emptied, so a nested re-dispatch starts clean. */
+    _cleanup_strbuf_ strbuf satmp = cfg_satmp ;
+    _cleanup_strbuf_ strbuf savar = cfg_savar ;
+    cfg_satmp = (strbuf)STRBUF_ZERO ;
+    cfg_savar = (strbuf)STRBUF_ZERO ;
+    uint8_t todo = opt_todo, current = opt_current ;
+    char const *sv = 0, *svconf = 0, *import = opt_import ;
+    opt_todo = T_UNSET ;
+    opt_current = 0 ;
+    opt_import = 0 ;
 
-    char const *sv = 0, *svconf = 0, *import = 0 ;
+    if (argc < 1)
+        log_die(LOG_EXIT_USER, "missing service argument") ;
 
-    {
-        subgetopt l = SUBGETOPT_ZERO ;
-
-        for (;;)
-        {
-            int opt = subgetopt_r(argc, argv, OPTS_ENV, &l) ;
-            if (opt == -1) break ;
-
-            switch (opt)
-            {
-                case 'h' :
-
-                    info_help(info->help, info->usage) ;
-                    return 0 ;
-
-                case 'c' :
-
-                        if (satmp.len)
-                            log_die(LOG_EXIT_USER, "-c and -s options are mutually exclusive") ;
-
-                        if (!auto_strbuf(&satmp, l.arg))
-                            log_die_nomem("strbuf") ;
-
-                        current++ ;
-
-                        break ;
-
-                case 's' :
-
-                        if (satmp.len)
-                            log_die(LOG_EXIT_USER, "-c and -s options are mutually exclusive") ;
-
-                        if (!auto_strbuf(&satmp, l.arg))
-                            log_die_nomem("strbuf") ;
-
-                        break ;
-
-                case 'V' :
-
-                        if (todo != T_UNSET) log_usage(info->usage, "\n", info->help) ;
-                        todo = T_VLIST ;
-
-                        break ;
-                case 'L' :
-
-                        if (todo != T_UNSET) log_usage(info->usage, "\n", info->help) ;
-                        todo = T_LIST ;
-
-                        break ;
-
-                case 'r' :
-
-                        if (!sbl_add(&savar,l.arg))
-                            log_die_nomem("strbuf") ;
-
-                        if (todo != T_UNSET && todo != T_REPLACE) log_usage(info->usage, "\n", info->help) ;
-                        todo = T_REPLACE ;
-
-                        break ;
-
-                case 'e' :
-
-                        EDITOR = l.arg ;
-                        break ;
-
-                case 'i' :
-
-                        import = l.arg ;
-
-                        break ;
-
-                default :
-
-                    log_usage(info->usage, "\n", info->help) ;
-            }
-        }
-        argc -= l.ind ; argv += l.ind ;
-    }
-
-    if (argc < 1) log_usage(info->usage, "\n", info->help) ;
     sv = argv[0] ;
 
     if (todo == T_UNSET && !import && !current) todo = T_EDIT ;
