@@ -29,8 +29,6 @@
 #include <oblibs/environ.h>
 #include <oblibs/stream.h>
 
-#include <skalibs/unix-transactional.h>//atomic_symlink
-
 #include <66/ssexec.h>
 #include <66/utils.h>
 #include <66/config.h>
@@ -40,6 +38,7 @@
 #include <66/write.h>
 #include <66/state.h>
 #include <66/service.h>
+#include <66/symlink.h>
 
 static char const *EDITOR = 0 ;
 
@@ -310,7 +309,7 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
             char sym[conflen + SS_SYM_VERSION_LEN + 1] ;
             auto_strings(sym, svconf, SS_SYM_VERSION) ;
 
-            if (!atomic_symlink(src.s, sym, "ssexec_configure"))
+            if (!symlink_atomic(src.s, sym))
                 log_warnu_return(LOG_EXIT_ZERO, "symlink: ", sym, " to: ", src.s) ;
 
             log_info("Symlink switched successfully to version: ", src.s) ;

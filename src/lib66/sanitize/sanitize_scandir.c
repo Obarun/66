@@ -18,7 +18,6 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 
-#include <skalibs/unix-transactional.h>
 #include <skalibs/posixplz.h>
 
 #include <66/service.h>
@@ -27,6 +26,7 @@
 #include <66/enum_parser.h>
 #include <66/state.h>
 #include <66/svc.h>
+#include <66/symlink.h>
 
 static void scandir_to_livestate(resolve_service_t *res)
 {
@@ -42,7 +42,7 @@ static void scandir_to_livestate(resolve_service_t *res)
     auto_strings(sym, res->sa.s + res->live.livedir, SS_SCANDIR, "/", res->sa.s + res->ownerstr, "/", name) ;
 
     log_trace("symlink: ", sym, " to: ", res->sa.s + res->live.servicedir) ;
-    if (!atomic_symlink(res->sa.s + res->live.servicedir, sym, "scandir"))
+    if (!symlink_atomic(res->sa.s + res->live.servicedir, sym))
        log_dieu(LOG_EXIT_SYS, "symlink: ", sym, " to: ", res->sa.s + res->live.servicedir) ;
 }
 

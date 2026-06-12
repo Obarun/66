@@ -18,11 +18,10 @@
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
 
-#include <skalibs/unix-transactional.h>//atomic_symlink
-
 #include <66/environ.h>
 #include <66/constants.h>
 #include <66/service.h>
+#include <66/symlink.h>
 
 int env_make_symlink(resolve_service_t *res)
 {
@@ -44,10 +43,10 @@ int env_make_symlink(resolve_service_t *res)
     if (!dir_create_parent(dst,0755))
         log_warnsys_return(LOG_EXIT_ZERO,"create directory: ",dst) ;
 
-    /** atomic_symlink check if exist
+    /** symlink_atomic check if exist
      * if it doesn't exist, it create it*/
     log_trace("point symlink: ", sym_version, " to ", dst) ;
-    if (!atomic_symlink(dst,sym_version,"env_make_symlink"))
+    if (!symlink_atomic(dst,sym_version))
         log_warnu_return(LOG_EXIT_ZERO,"symlink: ",sym_version," to: ",dst) ;
 
     return 1 ;

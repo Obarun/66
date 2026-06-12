@@ -22,11 +22,10 @@
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
 
-#include <skalibs/unix-transactional.h>
-
 #include <66/constants.h>
 #include <66/sanitize.h>
 #include <66/service.h>
+#include <66/symlink.h>
 #include <66/utils.h>
 #include <66/state.h>
 
@@ -93,7 +92,7 @@ static int sanitize_copy_source(resolve_service_t *res)
         log_warnusys_return(LOG_EXIT_ZERO, "remove live directory: ", sym) ;
 
     log_trace("symlink: ", sym, " to: ", dst) ;
-    if (!atomic_symlink(dst, sym, "livestate"))
+    if (!symlink_atomic(dst, sym))
        log_warnusys_return(LOG_EXIT_ZERO, "symlink: ", sym, " to: ", dst) ;
 
     return 1 ;

@@ -21,11 +21,10 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 
-#include <skalibs/unix-transactional.h>//atomic_symlink
-
 #include <66/service.h>
 #include <66/sanitize.h>
 #include <66/constants.h>
+#include <66/symlink.h>
 
 
 int symlink_switch(resolve_service_t *res, uint8_t flag)
@@ -49,7 +48,7 @@ int symlink_switch(resolve_service_t *res, uint8_t flag)
     }
 
     log_trace("switch symlink: ", sym, " to: ", dst) ;
-    if (!atomic_symlink(dst, sym, "symlink_switch"))
+    if (!symlink_atomic(dst, sym))
         log_warnusys_return(LOG_EXIT_ZERO, "point symlink: ", sym, " to: ", dst) ;
 
     return 1 ;
