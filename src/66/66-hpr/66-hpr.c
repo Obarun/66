@@ -16,10 +16,12 @@
  * All credits goes to Laurent Bercot <ska-remove-this-if-you-are-not-a-bot@skarnet.org>
  * */
 
-#include <skalibs/nonposix.h>
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 
+#include <string.h>
 #include <unistd.h>
-#include <signal.h>
 #include <errno.h>
 #include <utmpx.h>
 #include <sys/reboot.h>
@@ -27,9 +29,7 @@
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/clock.h>
-
-#include <skalibs/sig.h>
-#include <skalibs/djbunix.h>
+#include <oblibs/files.h> // macro hpr_send
 
 #include <66/hpr.h>
 #include <66/config.h>
