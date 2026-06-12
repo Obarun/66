@@ -26,4 +26,12 @@ extern int symlink_make(resolve_service_t *res) ;
 extern int symlink_type(const char *path) ;
 extern int symlink_provide(const char *base, resolve_service_t *res, bool action) ;
 
+/** Create the symbolic link @name pointing to @target, atomically replacing any
+ * existing @name. If @name does not exist, symlink() is used directly; otherwise
+ * the new link is built under a temporary name in the same directory then
+ * rename()d onto @name, so @name appears all-or-nothing and a failure leaves any
+ * previous @name untouched.
+ * @Return 1 on success
+ * @Return 0 on fail and set errno */
+extern int symlink_atomic(char const *target, char const *name) ;
 #endif
