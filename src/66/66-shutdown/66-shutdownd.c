@@ -11,9 +11,8 @@
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file./
  *
- * This file is a modified copy of s6-linux-init-shutdownd.c file
+ * This file is largely inspired by s6-linux-init-shutdownd.c
  * coming from skarnet software at https://skarnet.org/software/s6-linux-init.
- * All credits goes to Laurent Bercot <ska-remove-this-if-you-are-not-a-bot@skarnet.org>
  * */
 
 #include <sys/types.h>
@@ -24,6 +23,8 @@
 #include <signal.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <limits.h>
+#include <dirent.h>
 #include <sys/wait.h>
 
 #include <oblibs/environ.h>
@@ -39,13 +40,9 @@
 #include <oblibs/stream.h>
 #include <oblibs/io.h>
 #include <oblibs/spawn.h>
-
-#include <skalibs/posixplz.h>
-#include <skalibs/sig.h>
-#include <skalibs/tai.h>
-#include <skalibs/direntry.h>
-#include <skalibs/djbunix.h>
-#include <skalibs/iopause.h>
+#include <oblibs/sse.h>
+#include <oblibs/process.h>
+#include <oblibs/directory.h>
 
 #include <execline/config.h>
 
@@ -66,6 +63,14 @@ static char const *conf = SS_SKEL_DIR ;
 static char const *live = 0 ;
 static int inns = 0 ;
 static int nologger = 0 ;
+
+typedef struct shutdownd_ctx_s
+{
+    istream *b ;
+    char *what ;
+    unsigned int *grace_time ;
+    sse_watcher_t *timer ;   /* deadline watcher, (re)armed/disarmed by handle_fifo */
+} shutdownd_ctx_t ;
 
 static opt_t const opts[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",      .arg = OPT_NONE,                                .help = "print this help" },
@@ -91,29 +96,6 @@ static void restore_console (void)
         log_warnusys("open /dev/console for writing") ;
     else if (copy_fd(2, 1) < 0)
         log_warnusys("copy_fd") ;
-}
-
-struct at_s
-{
-    int fd ;
-    char const *name ;
-} ;
-
-static int renametemp (char const *s, mode_t mode, void *data)
-{
-    log_flow() ;
-
-    struct at_s *at = data ;
-    (void)mode ;
-    return renameat(at->fd, at->name, at->fd, s) ;
-}
-
-static int mkrenametemp (int fd, char const *src, char *dst)
-{
-    log_flow() ;
-
-    struct at_s at = { .fd = fd, .name = src } ;
-    return mkfiletemp(dst, &renametemp, 0700, &at) ;
 }
 
 ssize_t file_get_size(const char* filename)
@@ -166,7 +148,7 @@ static inline void run_rcshut (void)
     if (pid)
     {
         int wstat ;
-        if (wait_pid(pid, &wstat) == -1) log_dieusys(LOG_EXIT_SYS, "waitpid") ;
+        if (process_wait(pid, &wstat) == -1) log_dieusys(LOG_EXIT_SYS, "waitpid") ;
         if (WIFSIGNALED(wstat))
             flog_warn(rcshut, " was killed by signal %d", WTERMSIG(wstat)) ;
         else if (WEXITSTATUS(wstat))
@@ -175,7 +157,28 @@ static inline void run_rcshut (void)
     else log_warnusys("spawn ", rcshut) ;
 }
 
-static inline void prepare_shutdown (istream *b, tain *deadline, unsigned int *grace_time)
+static void schedule_deadline (sse_watcher_t *tw, int ms)
+{
+    log_flow() ;
+
+    if (sse_watcher_active(tw)) {
+        if (!sse_modify_timer(tw, ms, 0))
+            log_dieusys(LOG_EXIT_SYS, "arm deadline timer") ;
+    } else {
+        if (!sse_modify_timer(tw, ms, 0) || !sse_restart_timer(tw))
+            log_dieusys(LOG_EXIT_SYS, "rearm deadline timer") ;
+    }
+}
+
+static void cancel_deadline (sse_watcher_t *tw)
+{
+    log_flow() ;
+
+    if (sse_watcher_active(tw) && !sse_stop_timer(tw))
+        log_warnusys("disarm deadline timer") ;
+}
+
+static inline void prepare_shutdown (istream *b, sse_watcher_t *timer, unsigned int *grace_time)
 {
     log_flow() ;
 
@@ -187,13 +190,15 @@ static inline void prepare_shutdown (istream *b, tain *deadline, unsigned int *g
     if (r != 1) log_dieusys(LOG_EXIT_SYS, "bad shutdown protocol") ;
     struct timespec rel ;
     clock_unpack(pack, &rel) ;
-    tain trel = { .sec = { .x = (uint64_t)rel.tv_sec }, .nano = (uint32_t)rel.tv_nsec } ;
-    tain_add_g(deadline, &trel) ;   /* relative (wire) -> absolute monotonic for iopause_g */
+    int64_t ms = (int64_t)rel.tv_sec * 1000 + rel.tv_nsec / 1000000 ;   /* relative delay -> ms */
+    if (ms < 0) ms = 0 ;
+    if (ms > INT_MAX) ms = INT_MAX ;
+    schedule_deadline(timer, (int)ms) ;
     u32_unpack_big(pack + CLOCK_PACK, &u) ;
     if (u && u <= 300000) *grace_time = u ;
 }
 
-static inline void handle_fifo (istream *b, char *what, tain *deadline, unsigned int *grace_time)
+static inline void handle_fifo (istream *b, char *what, sse_watcher_t *timer, unsigned int *grace_time)
 {
     log_flow() ;
 
@@ -203,7 +208,10 @@ static inline void handle_fifo (istream *b, char *what, tain *deadline, unsigned
         size_t w = 0 ;
         if (istream_getall(b, &c, 1, &w) < 0 && errno != EPIPE)
             log_dieusys(LOG_EXIT_SYS, "read from pipe") ;
-        if (!w) break ;   // would-block or EOF: nothing more -> back to iopause
+
+        if (!w)
+            break ;   // would-block or EOF: nothing more -> back to the event loop
+
         switch (c)
         {
             case 'S' :
@@ -211,11 +219,11 @@ static inline void handle_fifo (istream *b, char *what, tain *deadline, unsigned
             case 'p' :
             case 'r' :
                 *what = c ;
-                prepare_shutdown(b, deadline, grace_time) ;
+                prepare_shutdown(b, timer, grace_time) ;
                 break ;
             case 'c' :
                 *what = 'S' ;
-                tain_add_g(deadline, &tain_infinite_relative) ;
+                cancel_deadline(timer) ;
                 break ;
             default :
                 {
@@ -258,7 +266,7 @@ static inline void prepare_stage4 (char what)
             log_dieusys(LOG_EXIT_SYS, "write file: ", tmp) ;
     }
 
-    unlink_void(STAGE4_FILE ".new") ;
+    (void)unlink(STAGE4_FILE ".new") ;
     fd = io_open_mode(STAGE4_FILE ".new", O_WRONLY|O_CREAT|O_EXCL|O_NONBLOCK, 0666) ;
     if (fd == -1) log_dieusys(LOG_EXIT_SYS, "open ", STAGE4_FILE ".new", " for writing") ;
     ostream_init(&b, fd, buf, 512) ;
@@ -276,7 +284,6 @@ static inline void prepare_stage4 (char what)
             S6_EXTBINPREFIX "s6-svc -0xc -- ")
             || !ostream_puts(&b,live)
             || !ostream_puts(&b,SS_BOOT_LOG " }\n  "))
-
             || !ostream_puts(&b, S6_EXTBINPREFIX "66 -l ")
             || !ostream_puts(&b, live)
             || !ostream_puts(&b, " scandir abort\n}\n"))
@@ -328,7 +335,7 @@ static inline void unsupervise_tree (void)
     for (;;)
     {
         char const *const *p = except ;
-        direntry *d ;
+        struct dirent *d ;
         errno = 0 ;
         d = readdir(dir) ;
         if (!d) break ;
@@ -342,7 +349,13 @@ static inline void unsupervise_tree (void)
             memcpy(fn + newlen,DOTPREFIX,DOTPREFIXLEN) ;
             memcpy(fn + newlen + DOTPREFIXLEN, d->d_name, dlen) ;
             memcpy(fn + newlen + DOTPREFIXLEN + dlen, DOTSUFFIX, DOTSUFFIXLEN + 1) ;
-            if (mkrenametemp(fdd, d->d_name, fn + newlen) == -1)
+            char *x = fn + newlen + DOTPREFIXLEN + dlen + 1 ;   /* the 'X' run, after ':' */
+            int rt ;
+            do {
+                if (!file_tmpname(x, DOTSUFFIXLEN - 1)) { rt = -1 ; break ; }
+                rt = renameat(fdd, d->d_name, fdd, fn + newlen) ;
+            } while (rt == -1 && errno == EEXIST) ;
+            if (rt == -1)
             {
                 log_warnusys("rename ",tmp, d->d_name, " to something based on ", fn) ;
                 unlinkat(fdd, d->d_name, 0) ;
@@ -357,10 +370,37 @@ static inline void unsupervise_tree (void)
         log_warnu("reload scandir: ", tmp) ;
 }
 
+static void on_fifo (sse_watcher_t *w, void *cbdata, int event)
+{
+    log_flow() ;
+
+    (void)w ;
+    shutdownd_ctx_t *ctx = cbdata ;
+
+    if (event & (SSE_ERROR | SSE_HUP))   /* fdw is held open => should not happen */
+        log_dieusys(LOG_EXIT_SYS, "read from ", SHUTDOWND_FIFO) ;
+
+    if (event & SSE_READ)
+        handle_fifo(ctx->b, ctx->what, ctx->timer, ctx->grace_time) ;
+}
+
+static void on_deadline (sse_watcher_t *w, void *cbdata, int event)
+{
+    log_flow() ;
+
+    (void)event ;
+    shutdownd_ctx_t *ctx = cbdata ;
+
+    run_rcshut() ;
+
+    if (*ctx->what != 'S')
+        w->p->running = false ;   /* was the loop `break`: proceed to shutdown */
+    /* else: one-shot timer already disarmed (= infinite deadline), keep looping */
+}
+
 int main (int argc, char const *const *argv)
 {
     unsigned int grace_time = 3000 ;
-    tain deadline ;
     int fdr, fdw ;
     istream b ;
     char what = 'S' ;
@@ -436,27 +476,31 @@ int main (int argc, char const *const *argv)
     fdw = io_open(SHUTDOWND_FIFO, O_WRONLY|O_NONBLOCK) ;
     if (fdw == -1 || cloexec_fd(fdw) == -1)
         log_dieusys(LOG_EXIT_SYS, "open ", SHUTDOWND_FIFO, " for writing") ;
-    if (!sig_ignore(SIGPIPE))
-        log_dieusys(LOG_EXIT_SYS, "sig_ignore SIGPIPE") ;
+    struct sigaction sa = { .sa_handler = SIG_IGN } ;   /* sa_mask/flags zero-init = empty mask */
+    if (sigaction(SIGPIPE, &sa, 0) == -1)
+        log_dieusys(LOG_EXIT_SYS, "ignore SIGPIPE") ;
     istream_init(&b, fdr, buf, 64) ;
-    tain_now_set_stopwatch_g() ;
-    tain_add_g(&deadline, &tain_infinite_relative) ;
 
-    for (;;)
     {
-        iopause_fd x = { .fd = fdr, .events = IOPAUSE_READ } ;
-        int r = iopause_g(&x, 1, &deadline) ;
-        if (r == -1) log_dieusys(LOG_EXIT_SYS, "iopause") ;
-        if (!r)
-        {
-            run_rcshut() ;
-            tain_now_g() ;
-            if (what != 'S') break ;
-            tain_add_g(&deadline, &tain_infinite_relative) ;
-            continue ;
-        }
-        if (x.revents & IOPAUSE_READ)
-            handle_fifo(&b, &what, &deadline, &grace_time) ;
+        sse_epoll_t loop = SSE_EPOLL_ZERO ;
+        if (!sse_new(&loop, 2))
+            log_dieusys(LOG_EXIT_SYS, "sse_new") ;
+
+        sse_watcher_t timer_w = SSE_WATCHER_ZERO ;
+        sse_watcher_t io_w = SSE_WATCHER_ZERO ;
+        shutdownd_ctx_t ctx = { .b = &b, .what = &what, .grace_time = &grace_time, .timer = &timer_w } ;
+
+        if (!sse_start_io(&loop, &io_w, &on_fifo, &ctx, fdr, SSE_READ, 0))
+            log_dieusys(LOG_EXIT_SYS, "watch ", SHUTDOWND_FIFO) ;
+
+        /* active but disarmed timer = initial infinite deadline */
+        if (!sse_start_timer(&loop, &timer_w, &on_deadline, &ctx, SSE_TIMEOUT_INFINITE, 0, 0))
+            log_dieusys(LOG_EXIT_SYS, "create deadline timer") ;
+
+        if (!sse_poll(&loop, SSE_TIMEOUT_INFINITE))
+            log_dieusys(LOG_EXIT_SYS, "sse_poll") ;
+
+        sse_free(&loop) ;
     }
 
     close_fd(fdw) ;
@@ -469,7 +513,8 @@ int main (int argc, char const *const *argv)
     prepare_stage4(what) ;
     unsupervise_tree() ;
 
-    if (!sig_ignore(SIGTERM)) log_warnusys("sig_ignore SIGTERM") ;
+    if (sigaction(SIGTERM, &sa, 0) == -1)
+        log_warnusys("ignore SIGTERM") ;
 
     if (!inns) {
         sync() ;
