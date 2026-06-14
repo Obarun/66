@@ -36,7 +36,7 @@
 #include <66/sanitize.h>
 #include <66/enum_parser.h>
 
-#include <s6/fdholder.h>
+#include <66/fdholder.h>
 
 void cleanup(resolve_service_t *res, uint32_t nres)
 {
@@ -44,16 +44,18 @@ void cleanup(resolve_service_t *res, uint32_t nres)
     int e = errno ;
     ss_state_t sta = STATE_ZERO ;
     resolve_service_t_ref pres = 0 ;
-    s6_fdholder_t a = S6_FDHOLDER_ZERO ;
+    fdholder_client_t a ;
 
-    if (!sanitize_fdholder_start(&a, pres->sa.s + pres->live.fdholderdir))
-        log_warnusys("start fdholder: ", pres->sa.s + pres->live.fdholderdir) ;
+    /* the fdholder socket is the scandir's, shared by every service here */
+    int connected = nres && sanitize_fdholder_start(&a, res[0].sa.s + res[0].live.fdholderdir) ;
+    if (nres && !connected)
+        log_warnusys("start fdholder: ", res[0].sa.s + res[0].live.fdholderdir) ;
 
     for (; pos < nres ; pos++) {
 
         pres = &res[pos] ;
 
-        if (!sanitize_fdholder(pres, &a, &sta, STATE_FLAGS_FALSE, 0))
+        if (connected && !sanitize_fdholder(pres, &a, &sta, STATE_FLAGS_FALSE, 0))
             log_warnusys("sanitize fdholder directory: ", pres->sa.s + pres->live.fdholderdir);
 
         log_trace("remove directory: ", pres->sa.s + pres->live.servicedir) ;
@@ -65,7 +67,8 @@ void cleanup(resolve_service_t *res, uint32_t nres)
 
     }
 
-    s6_fdholder_end(&a) ;
+    if (connected)
+        fdholder_client_end(&a) ;
 
     errno = e ;
 }
@@ -79,8 +82,7 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
     resolve_service_t *pres ;
     ftrigr_t fifo = FTRIGR_ZERO ;
     ss_state_t sta = STATE_ZERO ;
-    bool earlier = false, isstarted = false ;
-    s6_fdholder_t a = S6_FDHOLDER_ZERO ;
+    bool earlier = false ;
 
     memset(msg, 0, g->g.nvertexes * sizeof(uint32_t)) ;
     memset(toclean, 0, g->g.nvertexes * sizeof(resolve_service_t)) ;
@@ -165,16 +167,8 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
 
             if (issupervised) {
 
-                if (!isstarted) {
-                    if (!sanitize_fdholder_start(&a, pres->sa.s + pres->live.fdholderdir))
-                        log_dieu(LOG_EXIT_SYS, "start fdholder: ", pres->sa.s + pres->live.fdholderdir) ;
-                    isstarted = true ;
-                }
-
-                if (!sanitize_fdholder(pres, &a, &sta, STATE_FLAGS_TRUE, 1)) {
-                    cleanup(toclean, pos) ;
-                    log_dieusys(LOG_EXIT_SYS, "sanitize fdholder directory for: ", pres->sa.s + pres->name) ;
-                }
+                /* the log pipe is created on demand by 66-execute (fdholder
+                 * get-or-create), so there is nothing to pre-seed here */
 
                 log_trace("create fifo: ", pres->sa.s + pres->live.eventdir) ;
                 if (!ftrigw_fifodir_make(pres->sa.s + pres->live.eventdir, getgid(), 0)) {
@@ -194,8 +188,6 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
 
     }
 
-    if (isstarted)
-        s6_fdholder_end(&a) ;
 
     /**
      * scandir is already running, we need to synchronize with it

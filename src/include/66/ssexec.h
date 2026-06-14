@@ -117,11 +117,16 @@ extern opt_cmd_fn ssexec_snapshot_create ;
 extern opt_cmd_fn ssexec_snapshot_restore ;
 extern opt_cmd_fn ssexec_snapshot_remove ;
 extern opt_cmd_fn ssexec_snapshot_list ;
+extern opt_cmd_fn ssexec_fdholder_signal ;
+extern opt_cmd_fn ssexec_fdholder_store ;
+extern opt_cmd_fn ssexec_fdholder_retrieve ;
+extern opt_cmd_fn ssexec_fdholder_list ;
 
 /** wrapper command nodes (sub-trees) */
 extern opt_cmd_t const cmd_scandir ;
 extern opt_cmd_t const cmd_tree ;
 extern opt_cmd_t const cmd_snapshot ;
+extern opt_cmd_t const cmd_fdholder ;
 extern opt_cmd_t const cmd_poweroff ;
 extern opt_cmd_t const cmd_reboot ;
 extern opt_cmd_t const cmd_halt ;

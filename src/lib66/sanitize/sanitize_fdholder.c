@@ -14,182 +14,55 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <unistd.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/types.h>
-#include <oblibs/sbl.h>
-#include <oblibs/files.h>
-
-#include <skalibs/tai.h>
-#include <skalibs/stralloc.h>
 
 #include <66/service.h>
-#include <66/constants.h>
 #include <66/state.h>
 #include <66/enum_parser.h>
+#include <66/fdholder.h>
 
-#include <s6/fdholder.h>
-
-static int fdholder_store(s6_fdholder_t *a, char const *name, tain *deadline, tain *limit)
+int sanitize_fdholder_start(fdholder_client_t *c, const char *socket)
 {
     log_flow() ;
 
-    size_t namelen = strlen(name) ;
-    char fdname[SS_FDHOLDER_PIPENAME_LEN + 2 + namelen + 1] ;
-
-    int fd[2] ;
-    if (pipe(fd) < 0)
-        log_warnu_return(LOG_EXIT_ZERO, "pipe") ;
-
-    auto_strings(fdname, SS_FDHOLDER_PIPENAME, "r-", name) ;
-
-    log_trace("store identifier: ", fdname) ;
-    if (!s6_fdholder_store_g(a, fd[0], fdname, limit, deadline)) {
-        close(fd[0]) ;
-        close(fd[1]) ;
-        log_warnusys_return(LOG_EXIT_ZERO, "store fd: ", fdname) ;
-    }
-
-    close(fd[0]) ;
-
-    fdname[strlen(SS_FDHOLDER_PIPENAME)] = 'w' ;
-
-    log_trace("store identifier: ", fdname) ;
-    if (!s6_fdholder_store_g(a, fd[1], fdname, limit, deadline)) {
-        close(fd[1]) ;
-        log_warnusys_return(LOG_EXIT_ZERO, "store fd: ", fdname) ;
-    }
-
-    close(fd[1]) ;
-
-    return 1 ;
-}
-
-static int fdholder_delete(s6_fdholder_t *a, char const *name, tain *deadline)
-{
-    log_flow() ;
-
-    size_t namelen = strlen(name) ;
-    char fdname[SS_FDHOLDER_PIPENAME_LEN + 2 + namelen + 1] ;
-
-    auto_strings(fdname, SS_FDHOLDER_PIPENAME, "r-", name) ;
-
-    if (s6_fdholder_retrieve_g(a, fdname, deadline) >= 0) {
-        log_trace("delete identifier: ", fdname) ;
-        if (!s6_fdholder_delete_g(a, fdname, deadline))
-            log_warnusys_return(LOG_EXIT_ZERO, "delete fd: ", fdname) ;
-    }
-
-    fdname[strlen(SS_FDHOLDER_PIPENAME)] = 'w' ;
-
-    if (s6_fdholder_retrieve_g(a, fdname, deadline) >= 0) {
-
-        log_trace("delete identifier: ", fdname) ;
-        if (!s6_fdholder_delete_g(a, fdname, deadline))
-            log_warnusys_return(LOG_EXIT_ZERO, "delete fd: ", fdname) ;
-    }
-    return 1 ;
-}
-
-int sanitize_fdholder_start(s6_fdholder_t *a, const char *socket)
-{
-    tain deadline = tain_infinite_relative ;
     _alloc_strbuf_(sock, strlen(socket) + 3) ;
     auto_strings(sock.s, socket, "/s") ;
 
-    tain_now_set_stopwatch_g() ;
-    tain_add_g(&deadline, &deadline) ;
-
-    if (!s6_fdholder_start_g(a, sock.s, &deadline))
+    if (!fdholder_client_init(c, sock.s))
         log_warnusys_return(LOG_EXIT_ZERO, "connect to socket: ", sock.s) ;
 
     return 1 ;
 }
 
 /**
- * Accepted flag are
- *      - STATE_FLAGS_TRUE -> store the service A.K.A identifier
- *      - STATE_FLAGS_FALSE -> delete the service A.K.A identifier
- * @init: come form sanitize_init 0 -> no, 1 -> yes
- * */
-int sanitize_fdholder(resolve_service_t *res, s6_fdholder_t *a, ss_state_t *sta, uint32_t flag, uint8_t init)
+ * The log pipe of a service is now created on demand by 66-execute (the daemon's
+ * get-or-create pipe op), and the daemon holds both ends so it survives a
+ * restart of either side. There is therefore nothing to pre-seed: the only
+ * lifecycle action left is to drop a service's pipe flow when it is removed.
+ *
+ * @flag STATE_FLAGS_FALSE -> delete the service's pipe flow ; other flags are no-ops.
+ * @init kept for call-site compatibility (unused).
+ */
+int sanitize_fdholder(resolve_service_t *res, fdholder_client_t *c, ss_state_t *sta, uint32_t flag, uint8_t init)
 {
     log_flow() ;
 
+    (void)sta ;
+    (void)init ;
+
     if (res->logger.want && res->type == E_PARSER_TYPE_CLASSIC) {
 
-        _cleanup_strbuf_ strbuf list = STRBUF_ZERO ;
-        char *sa = res->sa.s ;
-        char *name = sa + res->logger.name ;
-        char *socket = sa + res->live.fdholderdir ;
-        size_t socketlen = strlen(socket) ;
-        tain deadline = tain_infinite_relative, limit = tain_infinite_relative ;
+        if (FLAGS_ISSET(flag, STATE_FLAGS_FALSE)) {
 
-        tain_now_set_stopwatch_g() ;
-        tain_add_g(&deadline, &deadline) ;
-        tain_add_g(&limit, &limit) ;
+            char *name = res->sa.s + res->logger.name ;
 
-        if (FLAGS_ISSET(flag, STATE_FLAGS_TRUE)) {
-
-            if ((sta->issupervised == STATE_FLAGS_TRUE ||
-                sta->toreload == STATE_FLAGS_TRUE ||
-                sta->torestart == STATE_FLAGS_TRUE) && !init) {
-
-                log_trace("delete fdholder entry: ", name) ;
-                if (!fdholder_delete(a, name, &deadline))
-                    return 0 ;
-            }
-
-            log_trace("store fdholder entry: ", name) ;
-            if (!fdholder_store(a, name, &deadline, &limit))
+            log_trace("delete fdholder flow: ", name) ;
+            if (!fdholder_pipe_delete(c, name, -1) && c->status != FDHOLDER_NOTFOUND)
                 return 0 ;
-
-        } else if (FLAGS_ISSET(flag, STATE_FLAGS_FALSE)) {
-
-            log_trace("delete fdholder entry: ", name) ;
-            if (!fdholder_delete(a, name, &deadline))
-                return 0 ;
-
         }
-
-        stralloc slist = STRALLOC_ZERO ;
-        int lr = s6_fdholder_list_g(a, &slist, &deadline) ;
-        if (lr >= 0 && !strbuf_copyb(&list, slist.s, slist.len)) lr = -1 ;
-        stralloc_free(&slist) ;
-        if (lr < 0)
-            log_warnusys_return(LOG_EXIT_ZERO, "list identifier") ;
-
-        if (!strbuf_terminate(&list))
-            log_die_nomem("strbuf") ;
-
-        size_t pos = 0, tlen = list.len ;
-        char t[tlen + 1] ;
-
-        sbl_to_char(t, &list) ;
-
-        list.len = 0 ;
-
-        for (; pos < tlen ; pos += strlen(t + pos) + 1) {
-
-            if (!str_start_with(t + pos, SS_FDHOLDER_PIPENAME "r-")) {
-                /** only keep the reader, the writer is automatically created
-                 * by the 66-fdholder-filler. see format of it */
-                if (!auto_strbuf(&list, t + pos, "\n"))
-                    log_die_nomem("strbuf") ;
-            }
-        }
-
-        char file[socketlen + 17] ;
-
-        auto_strings(file, socket, "/data/autofilled") ;
-
-        log_trace("create fdholder autofilled file") ;
-        if (!file_write(file, list.s, list.len))
-            log_warnusys_return(LOG_EXIT_ZERO, "write file: ", file) ;
-
     }
 
     return 1 ;

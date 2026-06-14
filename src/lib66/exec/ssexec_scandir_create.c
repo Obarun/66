@@ -548,66 +548,30 @@ static void create_service_oneshot(char const *scandir, ssexec_t *info)
 
 static void create_service_fdholder(char const *scandir, ssexec_t *info)
 {
+    log_flow() ;
+
+    (void)info ;
+
     size_t scandirlen = strlen(scandir) ;
     size_t fdlen = scandirlen + 1 + SS_FDHOLDER_LEN ;
 
-    create_service_skel(SS_FDHOLDER, scandir, "1\n", info) ;
+    char dst[fdlen + 16] ;
 
-    char dst[fdlen + info->ownerlen + 20 + 24 + 1] ;
-    auto_strings(dst, scandir, "/", SS_FDHOLDER, "/data/rules/uid/", info->ownerstr, "/env") ;
-
+    /* 66-fdholderd binds its own socket and self-protects (no s6-ipcserver
+     * access chain, no ACL, no pre-seeded autofilled): just a service dir,
+     * a readiness fd (>= 3) and a one-line run. */
+    auto_strings(dst, scandir, "/", SS_FDHOLDER) ;
     auto_dir(dst, 0755) ;
-
-    auto_empty_file(dst, "/S6_FDHOLDER_GETDUMP", "\n") ;
-    auto_empty_file(dst, "/S6_FDHOLDER_LIST", "\n") ;
-    auto_empty_file(dst, "/S6_FDHOLDER_SETDUMP", "\n") ;
-
-    auto_strings(dst + fdlen + info->ownerlen + 20, "/S6_FDHOLDER_STORE_REGEX" ) ;
-
-    if(!file_write(dst, "^" SS_FDHOLDER_PIPENAME "\n", SS_FDHOLDER_PIPENAME_LEN + 2))
-        log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
-
     auto_chown(dst) ;
 
-    char sym[fdlen + info->ownerlen + 47 + 1] ;
-    auto_strings(sym, scandir, "/", SS_FDHOLDER, "/data/rules/uid/",info->ownerstr,"/env/S6_FDHOLDER_RETRIEVE_REGEX") ;
+    auto_file(dst, SS_NOTIFICATION, "3\n", 2) ;
 
-    auto_strings(dst, "S6_FDHOLDER_STORE_REGEX") ;
-
-    log_trace("point symlink: ", sym, " to ", dst) ;
-    if (symlink(dst, sym) < 0)
-        log_dieusys(LOG_EXIT_SYS, "symlink: ", dst) ;
-
-    if (lchown(sym, OWNER, GIDOWNER) < 0)
-        log_dieusys(LOG_EXIT_SYS, "chown: ", sym) ;
-
-    auto_strings(sym, scandir, "/", SS_FDHOLDER, "/data/rules/gid/", info->ownerstr, "/env") ;
-    auto_strings(dst, "../../uid/", info->ownerstr, "/env") ;
-
-    log_trace("point symlink: ", sym, " to ", dst) ;
-    if (symlink(dst, sym) < 0)
-        log_dieusys(LOG_EXIT_SYS, "symlink: ", dst) ;
-
-    if (lchown(sym, OWNER, GIDOWNER) < 0)
-        log_dieusys(LOG_EXIT_SYS, "chown: ", sym) ;
-
-    size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + strlen(SS_LIBEXECPREFIX) + 277 + 1 ;
+    size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + strlen(SS_LIBEXECPREFIX) + 64 + 1 ;
 
     char run[runlen] ;
     auto_strings(run, "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n", \
-                "pipeline -dw -- {\n",
-                "   if -- {\n", \
-                "       forstdin -x0 -- i\n", \
-                "           exit 0\n", \
-                "   }\n", \
-                "   if -nt -- {\n", \
-                "       redirfd -r 0 ./data/autofilled\n", \
-                "       s6-ipcclient -l0 -- s\n", \
-                "       ", SS_LIBEXECPREFIX "66-fdholder-filler -1 --\n", \
-                "   }\n", \
-                "   s6-svc -t .\n", \
-                "}\n", \
-                "s6-fdholder-daemon -1 -i data/rules -- s\n") ;
+                "fdmove -c 2 1\n", \
+                SS_LIBEXECPREFIX "66-fdholderd -d 3 -- s\n") ;
 
     auto_strings(dst, scandir, "/", SS_FDHOLDER, "/run") ;
 
@@ -616,14 +580,6 @@ static void create_service_fdholder(char const *scandir, ssexec_t *info)
         log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
 
     auto_chmod(dst, 0755) ;
-    auto_chown(dst) ;
-
-    auto_strings(dst, scandir, "/", SS_FDHOLDER, "/data/autofilled") ;
-
-    // -1 file_write do not accept closed string
-    if(!file_write(dst, "\n", 1))
-        log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
-
     auto_chown(dst) ;
 }
 

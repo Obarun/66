@@ -36,15 +36,13 @@
 #include <oblibs/fd.h>
 #include <oblibs/files.h>
 
-#include <skalibs/tai.h>
-
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/constants.h>
 #include <66/utils.h>
 #include <66/caps.h>
 
-#include <s6/fdholder.h>
+#include <66/fdholder.h>
 
 #define EXECUTE_START 0
 #define EXECUTE_STOP 1
@@ -103,39 +101,29 @@ static void io_fdholder_retrieve(resolve_service_t *res, int fd, const char *nam
 {
     log_flow() ;
 
-    size_t len =  strlen(res->sa.s + res->live.fdholderdir) + 2 ;
+    size_t len = strlen(res->sa.s + res->live.fdholderdir) + 2 ;
     _alloc_strbuf_(sock, len + 1) ;
     auto_strings(sock.s, res->sa.s + res->live.fdholderdir, "/s") ;
-    sock.len = len ;
 
-    int fdhold ;
-    s6_fdholder_t a = S6_FDHOLDER_ZERO ;
-    tain deadline = tain_infinite_relative ;
-    size_t namelen = strlen(name) ;
-
-    char *prefix = !reader ? SS_FDHOLDER_PIPENAME "r-" : SS_FDHOLDER_PIPENAME "w-" ;
-    size_t prefixlen = SS_FDHOLDER_PIPENAME_LEN + 2 ;
-    _alloc_strbuf_(identifier, prefixlen + namelen + 1) ;
-
-    auto_strings(identifier.s, prefix, name) ;
-    identifier.len = prefixlen + namelen ;
-
-    tain_now_set_stopwatch_g() ;
-    tain_add_g(&deadline, &deadline) ;
-
-    if (!s6_fdholder_start_g(&a, sock.s, &deadline))
+    fdholder_client_t c ;
+    if (!fdholder_client_init(&c, sock.s))
         log_dieusys(LOG_EXIT_SYS, "connect to socket: ", sock.s) ;
 
-    fdhold = s6_fdholder_retrieve_g(&a, identifier.s, &deadline) ;
-    if (fdhold < 0)
-        log_dieusys(LOG_EXIT_SYS, "retrieve fd for id ", identifier.s) ;
+    /* reader 0 -> read end, 1 -> write end ; the named pipe pair is created
+     * atomically by the daemon on first request (no pre-seeding needed) */
+    if (!fdholder_pipe(&c, name, reader, -1)) {
+        uint8_t status = c.status ;
+        fdholder_client_end(&c) ;
+        log_die(LOG_EXIT_SYS, "get pipe flow '", name, "': ", fdholder_status_str(status)) ;
+    }
 
-    s6_fdholder_end(&a) ;
+    int got = c.received_fd ;
+    fdholder_client_end(&c) ;
 
-    if (move_fd(fd, fdhold) < 0)
+    if (move_fd(fd, got) < 0)
         log_dieusys(LOG_EXIT_SYS, "move fd") ;
 
-    if (!fdhold)
+    if (!fd)
         if (uncloexec_fd(fd) < 0)
             log_dieusys(LOG_EXIT_SYS, "uncloexec_fd fd") ;
 }

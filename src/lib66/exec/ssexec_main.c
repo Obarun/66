@@ -155,6 +155,7 @@ static struct { opt_cmd_t const *node ; char const *name ; } const cmd66_reg[] =
     { &cmd_tree,        "tree" },
     { &cmd_snapshot,    "snapshot" },
     { &cmd_scandir,     "scandir" },
+    { &cmd_fdholder,    "fdholder" },
     { &cmd_poweroff,    "poweroff" },
     { &cmd_reboot,      "reboot" },
     { &cmd_halt,        "halt" },

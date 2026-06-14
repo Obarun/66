@@ -24,10 +24,10 @@ exe_configs = {
     'deps': [lib66_dep],
     'sysdeps': ''
   },
-  '66-fdholder-filler': {
-    'sources': ['66-fdholder-filler.c'],
+  '66-fdholderd': {
+    'sources': ['66-fdholderd.c'],
     'deps': [lib66_dep],
-    'sysdeps': ''
+    'sysdeps': sys_lib
   },
   '66-hpr': {
     'sources': ['66-hpr.c'],
@@ -66,7 +66,7 @@ exe_configs = {
   }
 }
 
-libexec_exes = ['66-execute', '66-fdholder-filler', '66-oneshot']
+libexec_exes = ['66-execute', '66-fdholderd', '66-oneshot']
 exe_install_dirs = {}
 foreach exe : libexec_exes
   exe_install_dirs += {exe: get_option('libexecdir')}

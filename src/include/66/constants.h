@@ -76,8 +76,6 @@
 
 #define SS_FDHOLDER "fdholder"
 #define SS_FDHOLDER_LEN (sizeof SS_FDHOLDER - 1)
-#define SS_FDHOLDER_PIPENAME "pipe:66-"
-#define SS_FDHOLDER_PIPENAME_LEN (sizeof SS_FDHOLDER_PIPENAME - 1)
 #define SS_ONESHOTD "oneshotd"
 #define SS_ONESHOTD_LEN (sizeof SS_ONESHOTD - 1)
 

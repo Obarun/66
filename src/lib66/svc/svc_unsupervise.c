@@ -18,7 +18,7 @@
 #include <oblibs/hash.h>
 #include <oblibs/sbl.h>
 
-#include <s6/fdholder.h>
+#include <66/fdholder.h>
 
 #include <66/service.h>
 #include <66/state.h>
@@ -28,7 +28,7 @@
 #include <66/svc.h>
 #include <66/enum_parser.h>
 
-static void sanitize_it(resolve_service_t *res, s6_fdholder_t *a)
+static void sanitize_it(resolve_service_t *res, fdholder_client_t *a)
 {
     log_flow() ;
 
@@ -66,7 +66,7 @@ void svc_unsupervise(service_graph_t *g)
     size_t bpos = 0 ;
     char *fdholderdir = 0 ;
     bool isstarted = false ;
-    s6_fdholder_t a = S6_FDHOLDER_ZERO ;
+    fdholder_client_t a ;
 
     hash_reset_visit(g->hres) ;
 
@@ -124,6 +124,6 @@ void svc_unsupervise(service_graph_t *g)
     }
 
     if (isstarted)
-        s6_fdholder_end(&a) ;
+        fdholder_client_end(&a) ;
 }
 
