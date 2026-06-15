@@ -60,6 +60,12 @@ int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, s
 
             log_trace("found section: ", stk.s) ;
 
+            /** acfg holds at most one slot per section type; a frontend with
+             * more sections than that (e.g. a duplicated section) would overrun
+             * it. */
+            if (*ncfg >= E_PARSER_SECTION_ENDOFKEY)
+                log_warn_return(LOG_EXIT_ZERO, "too many sections in frontend file") ;
+
             acfg[(*ncfg)++] = cfg ;
         }
         pos = cfg.pos ;
