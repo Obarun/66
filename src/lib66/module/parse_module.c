@@ -197,15 +197,6 @@ void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t
         uint8_t exlen = 0 ; // see service_frontend_path file and compute_exclude()
         char const *exclude[1] = { 0 } ;
         _alloc_sbl_(stk, len + 1) ;
-        char ebase[tmplen + 1] ;
-        memcpy(ebase, tmpdir.s, tmplen) ;
-        ebase[tmplen] = 0 ;
-
-        if (!ob_basename(dirname, dirname))
-            log_dieusys(LOG_EXIT_SYS, "get basename of: ", dirname) ;
-
-        if (!ob_basename(ebase, ebase))
-            log_dieusys(LOG_EXIT_SYS, "get basename of: ", dirname) ;
 
         if (!strbuf_copyb(&stk, sa.s, sa.len))
             log_die_nomem("stack") ;
