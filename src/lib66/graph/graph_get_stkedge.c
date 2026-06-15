@@ -23,6 +23,10 @@
 int graph_get_stkedge(strbuf *stk, graph *g, vertex_t *v, bool requiredby)
 {
     uint32_t nvertex = !requiredby ? v->ndepends : v->nrequiredby, pos = 0 ;
+
+    if (!nvertex)
+        return 1 ;
+
     vertex_t *vl[nvertex] ;
 
     graph_get_edge(g, v, vl, requiredby) ;
