@@ -19,6 +19,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/files.h>
 
 #include <66/resolve.h>
 #include <66/constants.h>
@@ -38,7 +39,7 @@ void resolve_remove_g(char const *base, char const *name, uint8_t data_type)
 
         resolve_remove(path, name) ;
 
-        (void)unlink(path) ;
+        file_tryunlink(path) ;
         errno = e ;
 
     } else if (data_type == DATA_TREE || data_type == DATA_TREE_MASTER) {

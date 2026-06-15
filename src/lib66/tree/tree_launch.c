@@ -32,6 +32,7 @@
 #include <oblibs/types.h>
 #include <oblibs/environ.h>
 #include <oblibs/sse.h>
+#include <oblibs/fd.h>
 
 #include <66/resolve.h>
 #include <66/tree.h>
@@ -678,9 +679,9 @@ static void tree_manager_free(void)
     sse_free(&pmanager->loop) ;
 
     if (pmanager->notifd[0])
-        close(pmanager->notifd[0]) ;
+        close_fd(pmanager->notifd[0]) ;
     if (pmanager->notifd[1])
-        close(pmanager->notifd[1]) ;
+        close_fd(pmanager->notifd[1]) ;
 }
 
 int tree_launch(tree_ctx_t *atree, uint32_t ntree, uint8_t operation, ssexec_t *info)

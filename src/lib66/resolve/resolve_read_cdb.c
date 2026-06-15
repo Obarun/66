@@ -16,6 +16,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/cdb.h>
+#include <oblibs/fd.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
@@ -53,7 +54,7 @@ int resolve_read_cdb(resolve_wrapper_t *wres, char const *path, const char *name
     e = 1 ;
 
     err:
-        close(fd) ;
+        close_fd(fd) ;
         ocdb_free(&c) ;
         return e ;
 }

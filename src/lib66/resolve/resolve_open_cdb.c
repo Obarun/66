@@ -47,7 +47,7 @@ int resolve_open_cdb(int *fd, ocdb *c, const char *path, const char *name)
 
     if (!ocdb_init_fromfd(c, (*fd))) {
         log_warnusys("cdb_init: ", file) ;
-        close((*fd)) ;
+        close_fd((*fd)) ;
         ocdb_free(c) ;
         return -1 ;
     }

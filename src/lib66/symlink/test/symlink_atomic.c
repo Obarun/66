@@ -81,7 +81,7 @@ static void test_create(void)
     assert_points_to(p, "/some/target") ;
     TEST_ASSERT(count_entries() == 1, "unexpected residue after create") ;
 
-    unlink(p) ;
+    file_tryunlink(p) ;
     TEST_END() ;
 }
 
@@ -99,7 +99,7 @@ static void test_replace_symlink(void)
     assert_points_to(p, "/new/longer/target") ;
     TEST_ASSERT(count_entries() == 1, "temp residue left after replace") ;
 
-    unlink(p) ;
+    file_tryunlink(p) ;
     TEST_END() ;
 }
 
@@ -112,13 +112,13 @@ static void test_replace_regular(void)
 
     int fd = open(p, O_WRONLY | O_CREAT | O_TRUNC, 0644) ;
     TEST_ASSERT(fd >= 0, "create regular file failed") ;
-    close(fd) ;
+    close_fd(fd) ;
 
     TEST_ASSERT(symlink_atomic("/target", p) == 1, "replace regular failed") ;
     assert_points_to(p, "/target") ;
     TEST_ASSERT(count_entries() == 1, "temp residue left after replacing regular") ;
 
-    unlink(p) ;
+    file_tryunlink(p) ;
     TEST_END() ;
 }
 

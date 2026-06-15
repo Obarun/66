@@ -53,7 +53,7 @@ static void client_response_handler(io_rb_iovec_t *msg, void *data)
 
     if (command != FDHOLDER_CMD_RESPONSE) {
         for (int i = 0 ; i < msg->nfd ; i++)
-            close(msg->afd[i]) ;
+            close_fd(msg->afd[i]) ;
         c->status = FDHOLDER_ERR ;
         goto done ;
     }
@@ -63,7 +63,7 @@ static void client_response_handler(io_rb_iovec_t *msg, void *data)
     if (msg->nfd > 0) {
         c->received_fd = msg->afd[0] ;
         for (int i = 1 ; i < msg->nfd ; i++)   /* protocol hands out at most one */
-            close(msg->afd[i]) ;
+            close_fd(msg->afd[i]) ;
     }
 
     /* a list reply leaves its NUL-separated names sitting in paybuf */

@@ -38,17 +38,17 @@ int symlink_atomic(char const *target, char const *name)
     char tmp[namelen + 7 + 1] ;               /* "<name>.XXXXXX" + NUL */
 
     for (;;) {
+
         auto_strings(tmp, name, ".XXXXXX") ;
 
         int fd = mkstemp(tmp) ;               /* reserve a unique name atomically */
         if (fd < 0)
             return 0 ;
+
         close_fd(fd) ;
 
-        if (unlink(tmp) < 0) {                /* free the name for the symlink */
-            int e = errno ;
-            return (errno = e, 0) ;
-        }
+        if (unlink(tmp) < 0)                /* free the name for the symlink */
+            return  0 ;
 
         if (symlink(target, tmp) == 0)
             break ;
@@ -57,9 +57,8 @@ int symlink_atomic(char const *target, char const *name)
     }
 
     if (rename(tmp, name) < 0) {
-        int e = errno ;
-        (void)unlink(tmp) ;
-        return (errno = e, 0) ;
+        file_tryunlink(tmp) ;
+        return 0 ;
     }
 
     return 1 ;

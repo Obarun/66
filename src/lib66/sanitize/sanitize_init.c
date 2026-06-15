@@ -63,7 +63,7 @@ void cleanup(resolve_service_t *res, uint32_t nres)
             log_warnusys("remove live directory: ", pres->sa.s + pres->live.servicedir) ;
 
         log_trace("remove symlink: ", pres->sa.s + pres->live.scandir) ;
-        (void)unlink(pres->sa.s + pres->live.scandir) ;
+        file_tryunlink(pres->sa.s + pres->live.scandir) ;
 
     }
 

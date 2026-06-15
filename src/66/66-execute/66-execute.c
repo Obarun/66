@@ -217,7 +217,7 @@ static void io_read_file(strbuf *stk, const char *file, size_t len)
         if (r == 0) break ;
     }
 
-    close(fd) ;
+    close_fd(fd) ;
     stk->len = n ;
     stk->s[n] = 0 ;
 }

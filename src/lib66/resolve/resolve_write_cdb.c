@@ -22,6 +22,7 @@
 #include <oblibs/string.h>
 #include <oblibs/cdb.h>
 #include <oblibs/files.h>
+#include <oblibs/fd.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
@@ -73,20 +74,20 @@ int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *nam
         goto err ;
     }
 
-    close(fd) ;
+    close_fd(fd) ;
 
     if (!file_copy(tfile, file, 0600)) {
         log_warnusys("copy: ", tfile, " to ", file) ;
         goto err_fd ;
     }
 
-    (void)unlink(tfile) ;
+    file_tryunlink(tfile) ;
 
     return 1 ;
 
     err:
-        close(fd) ;
+        close_fd(fd) ;
     err_fd:
-        (void)unlink(tfile) ;
+        file_tryunlink(tfile) ;
         return 0 ;
 }

@@ -35,6 +35,7 @@
 #include <oblibs/fd.h>
 #include <oblibs/spawn.h>
 #include <oblibs/process.h>
+#include <oblibs/files.h>
 
 #include <66/config.h>
 #include <66/constants.h>
@@ -347,7 +348,7 @@ static void opendevnull (void)
         log_warnusys("open /dev/null") ;
         if (pipe(p) < 0)
             sulogin("pipe", "") ;
-        close(p[1]) ;
+        close_fd(p[1]) ;
         if (move_fd(0, p[0]) < 0)
             sulogin("move_fd to stdin", "") ;
     }
@@ -355,7 +356,7 @@ static void opendevnull (void)
 
 static void reset_stdin (void)
 {
-    close(0) ;
+    close_fd(0) ;
     opendevnull() ;
 }
 
@@ -379,7 +380,7 @@ static inline void wait_for_notif (int fd)
             break ;
     }
 
-    close(fd) ;
+    close_fd(fd) ;
 }
 
 static int is_mnt(char const *str)
@@ -439,7 +440,7 @@ static inline void run_stage2 (strbuf *env, const char *tty)
 
     if (tty) {
 
-        close(0) ;
+        close_fd(0) ;
         if (io_open(tty, O_RDONLY)) {
             log_warnusys("open ", tty) ;
             opendevnull() ;
@@ -448,12 +449,12 @@ static inline void run_stage2 (strbuf *env, const char *tty)
 
     if (!catch_log) {
 
-        close(notifpipe[1]) ;
+        close_fd(notifpipe[1]) ;
         wait_for_notif(notifpipe[0]) ;
 
     } else {
 
-        close(1) ;
+        close_fd(1) ;
         if (io_open(fifo, O_WRONLY) != 1)  /* blocks until catch-all logger is up */
             sulogin("open for writing fifo: ",fifo) ;
         if (copy_fd(2, 1) == -1)
@@ -526,7 +527,7 @@ static void cad(void)
         if (ioctl(fd, KDSIGACCEPT, SIGWINCH) < 0)
             log_warnusys("ioctl KDSIGACCEPT on tty0 (kbrequest will not be handled)") ;
 
-        close(fd) ;
+        close_fd(fd) ;
     }
 
     sigset_t ss ;
@@ -633,7 +634,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
           if (r)
             log_warn("parent wrote to fd 3!") ;
 
-          close(3) ;
+          close_fd(3) ;
         }
 
         if (!slashdev && hasconsole && isatty(2 - (!catch_log))) {
@@ -658,9 +659,9 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
 
         int nope, e ;
         log_info("Mount: ",slashdev) ;
-        close(0) ;
-        close(1) ;
-        close(2) ;
+        close_fd(0) ;
+        close_fd(1) ;
+        close_fd(2) ;
 
         nope = mount("dev", slashdev, "devtmpfs", MS_NOSUID | MS_NOEXEC, "") == -1 ;
         e = errno ;
@@ -817,7 +818,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
 
         if (!catch_log) {
 
-            close(notifpipe[0]) ;
+            close_fd(notifpipe[0]) ;
             cad() ;
 
         } else {

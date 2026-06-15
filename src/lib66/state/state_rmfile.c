@@ -17,6 +17,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/files.h>
 
 #include <66/state.h>
 #include <66/constants.h>
@@ -31,8 +32,8 @@ void state_rmfile(resolve_service_t *res)
     auto_strings(status, res->sa.s + res->live.statedir, "/", SS_STATUS) ;
 
     if (access(status, F_OK) < 0) {
-        (void)unlink(res->sa.s + res->live.status) ;
+        file_tryunlink(res->sa.s + res->live.status) ;
     } else {
-        (void)unlink(status) ;
+        file_tryunlink(status) ;
     }
 }

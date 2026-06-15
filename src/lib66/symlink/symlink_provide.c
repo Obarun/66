@@ -21,6 +21,7 @@
 #include <oblibs/string.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
+#include <oblibs/files.h>
 
 #include <66/service.h>
 #include <66/symlink.h>
@@ -67,7 +68,7 @@ int symlink_provide(const char *base, resolve_service_t *res, bool action)
             } else if (!strcmp(lname.s, res->sa.s + res->name)) {
 
                 log_trace("remove provide symlink: ", lnk.s) ;
-                (void)unlink(lnk.s) ;
+                file_tryunlink(lnk.s) ;
             }
 
         } else if (action) {

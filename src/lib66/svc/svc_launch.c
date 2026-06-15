@@ -30,6 +30,7 @@
 #include <oblibs/environ.h>
 #include <oblibs/string.h>
 #include <oblibs/sse.h>
+#include <oblibs/fd.h>
 
 #include <66/service.h>
 #include <66/state.h>
@@ -196,7 +197,7 @@ static void announce(uint32_t id, bool success)
                  * from scratch anyway.*/
                 if (fd < 0 && errno != ENOENT)
                     log_dieusys(LOG_EXIT_SYS, "create file: ", file) ;
-                close(fd) ;
+                close_fd(fd) ;
             }
         }
 
@@ -211,7 +212,7 @@ static void announce(uint32_t id, bool success)
             fd = io_open_mode(file, O_WRONLY | O_NONBLOCK | O_TRUNC | O_CREAT, 0666) ;
             if (fd < 0)
                 log_dieusys(LOG_EXIT_SYS, "create file: ", scandir) ;
-            close(fd) ;
+            close_fd(fd) ;
         }
 
         flog_1_warnu("%s service: %s -- exited with signal: %u", pmanager->cmdmsg ? pmanager->cmdmsg : pmanager->operation ? "stop" : "start",  name, svc->exitcode) ;
@@ -709,9 +710,9 @@ static void svc_manager_free(void)
     sse_free(&pmanager->loop) ;
 
     if (pmanager->notifd[0])
-        close(pmanager->notifd[0]) ;
+        close_fd(pmanager->notifd[0]) ;
     if (pmanager->notifd[1])
-        close(pmanager->notifd[1]) ;
+        close_fd(pmanager->notifd[1]) ;
 }
 
 int svc_launch(svc_ctx_t *asvc, uint32_t nsvc, uint8_t operation, ssexec_t *info, char const *wsignal, uint8_t woption, char const *signal, char *cmdmsg, uint8_t propagate)

@@ -35,39 +35,40 @@
 #include <oblibs/io_rb.h>
 #include <oblibs/hash.h>
 #include <oblibs/fd.h>
+#include <oblibs/files.h>
 
 #include <66/fdholder.h>
 
-/* one stored descriptor, keyed by name */
+// one stored descriptor, keyed by name
 typedef struct fdholder_entry_s fdholder_entry_t ;
 struct fdholder_entry_s
 {
     int fd ;
-    time_t expire_abs ;                  /* absolute expiry, 0 = never */
+    time_t expire_abs ; // absolute expiry, 0 = never
     char name[FDHOLDER_NAME_MAX + 1] ;
     UT_hash_handle hh ;
 } ;
 
-/* one named pipe pair, keyed by name ; both ends held by the daemon */
+// one named pipe pair, keyed by name ; both ends held by the daemon
 typedef struct fdholder_pipe_s fdholder_pipe_t ;
 struct fdholder_pipe_s
 {
-    int rfd ;                            /* read end  (p[0]) */
-    int wfd ;                            /* write end (p[1]) */
+    int rfd ; // read end  (p[0])
+    int wfd ; // write end (p[1])
     char name[FDHOLDER_NAME_MAX + 1] ;
     UT_hash_handle hh ;
 } ;
 
-/* one connected client, keyed by socket fd */
+// one connected client, keyed by socket fd
 typedef struct fdholder_conn_s fdholder_conn_t ;
 struct fdholder_conn_s
 {
-    int key ;                            /* stream fd, hash key */
+    int key ; // stream fd, hash key
     sse_stream_t *stream ;
     stream_message_t reader ;
     char *hdrbuf ;
     char *paybuf ;
-    int *pclose ;                        /* fds to close once the response has flushed */
+    int *pclose ; // fds to close once the response has flushed
     size_t npclose ;
     size_t capclose ;
     bool closing ;
@@ -85,9 +86,9 @@ struct fdholder_daemon_s
     int sfd ;
     char const *socket_path ;
     uint32_t maxfds ;
-    fdholder_entry_t *entries ;          /* uthash by name */
-    fdholder_pipe_t *pipes ;             /* uthash by name (named pipe pairs) */
-    fdholder_conn_t *conns ;             /* uthash by fd */
+    fdholder_entry_t *entries ; // uthash by name
+    fdholder_pipe_t *pipes ; // uthash by name (named pipe pairs)
+    fdholder_conn_t *conns ; // uthash by fd
 } ;
 
 static fdholder_daemon_t fdh = {
@@ -159,7 +160,7 @@ static void daemon_rearm_timer(void)
     int64_t secs = (int64_t)min - (int64_t)now ;
     if (secs < 0)
         secs = 0 ;
-    /* clamp so the relative millisecond delay never overflows an int (~24 days) */
+    // clamp so the relative millisecond delay never overflows an int (~24 days)
     int64_t ms = secs > 2000000 ? 2000000000 : secs * 1000 ;
     if (ms < 1)
         ms = 1 ;
@@ -189,7 +190,7 @@ static void expiry_timer_cb(sse_watcher_t *w, void *data, int revents)
     HASH_ITER(hh, fdh.entries, e, t) {
         if (e->expire_abs && e->expire_abs <= now) {
             flog_info("'%s' (fd %d) expired", e->name, e->fd) ;
-            close(e->fd) ;
+            close_fd(e->fd) ;
             HASH_DEL(fdh.entries, e) ;
             free(e) ;
         }
@@ -202,7 +203,7 @@ static void close_all(int const *afd, int nfd)
 {
     for (int i = 0 ; i < nfd ; i++)
         if (afd[i] >= 0)
-            close(afd[i]) ;
+            close_fd(afd[i]) ;
 }
 
 static int conn_pclose_add(fdholder_conn_t *conn, int fd)
@@ -338,7 +339,7 @@ static void handle_retrieve(fdholder_conn_t *conn, uint8_t flags, char const *pl
         HASH_DEL(fdh.entries, e) ;
         if (!conn_pclose_add(conn, fd)) {
             log_warnusys("defer close of fd; closing now") ;
-            close(fd) ;
+            close_fd(fd) ;
         }
         free(e) ;
         daemon_rearm_timer() ;
@@ -364,7 +365,7 @@ static void handle_delete(fdholder_conn_t *conn, char const *pl, size_t pll, int
 
     int fd = e->fd ;
     HASH_DEL(fdh.entries, e) ;
-    close(fd) ;
+    close_fd(fd) ;
     free(e) ;
     daemon_rearm_timer() ;
 
@@ -394,8 +395,7 @@ static void handle_list(fdholder_conn_t *conn)
     respond(conn, FDHOLDER_OK, buf, off, -1) ;
 }
 
-/*
- * Get-or-create one end of a named pipe pair. Atomic: the pipe() + insertion run
+/** Get-or-create one end of a named pipe pair. Atomic: the pipe() + insertion run
  * in a single dispatch, so two clients can never receive ends of different pipes.
  * The daemon keeps both ends (the kernel dups the requested one at send time), so
  * the pair survives either side restarting. Pipe ends never expire.
@@ -430,7 +430,7 @@ static void handle_pipe(fdholder_conn_t *conn, char const *pl, size_t pll, int c
     HASH_FIND_STR(fdh.pipes, name, fp) ;
 
     if (!fp) {
-        /* each pair holds two descriptors ; bound against maxfds */
+        // each pair holds two descriptors ; bound against maxfds
         if (2 * HASH_COUNT(fdh.pipes) + HASH_COUNT(fdh.entries) + 2 > fdh.maxfds) {
             respond(conn, FDHOLDER_FULL, NULL, 0, -1) ;
             return ;
@@ -443,7 +443,7 @@ static void handle_pipe(fdholder_conn_t *conn, char const *pl, size_t pll, int c
         }
         fp = malloc(sizeof(*fp)) ;
         if (!fp) {
-            close(p[0]) ; close(p[1]) ;
+            close_fd(p[0]) ; close_fd(p[1]) ;
             respond(conn, FDHOLDER_ERR, NULL, 0, -1) ;
             return ;
         }
@@ -474,8 +474,8 @@ static void handle_pipe_delete(fdholder_conn_t *conn, char const *pl, size_t pll
         return ;
     }
 
-    close(fp->rfd) ;
-    close(fp->wfd) ;
+    close_fd(fp->rfd) ;
+    close_fd(fp->wfd) ;
     HASH_DEL(fdh.pipes, fp) ;
     free(fp) ;
 
@@ -544,7 +544,7 @@ static void conn_destroy(fdholder_conn_t *conn)
     HASH_DEL(fdh.conns, conn) ;
 
     for (size_t i = 0 ; i < conn->npclose ; i++)
-        close(conn->pclose[i]) ;
+        close_fd(conn->pclose[i]) ;
     free(conn->pclose) ;
 
     if (conn->stream) {
@@ -591,7 +591,7 @@ static void conn_write_cb(sse_stream_t *stream, void *data)
         return ;
 
     for (size_t i = 0 ; i < conn->npclose ; i++)
-        close(conn->pclose[i]) ;
+        close_fd(conn->pclose[i]) ;
     conn->npclose = 0 ;
 }
 
@@ -754,15 +754,15 @@ static void server_cleanup(void)
     fdholder_entry_t *e, *te ;
     HASH_ITER(hh, fdh.entries, e, te) {
         HASH_DEL(fdh.entries, e) ;
-        close(e->fd) ;
+        close_fd(e->fd) ;
         free(e) ;
     }
 
     fdholder_pipe_t *fp, *tfp ;
     HASH_ITER(hh, fdh.pipes, fp, tfp) {
         HASH_DEL(fdh.pipes, fp) ;
-        close(fp->rfd) ;
-        close(fp->wfd) ;
+        close_fd(fp->rfd) ;
+        close_fd(fp->wfd) ;
         free(fp) ;
     }
 
@@ -773,14 +773,13 @@ static void server_cleanup(void)
 
     if (fdh.timer_started)
         sse_free_timer(&fdh.wtimer) ;
+
     sse_free_io(&fdh.wserver) ;
     sse_free_signal(&fdh.wsignal) ;
     sse_free(&fdh.epoll) ;
 
-    if (fdh.sfd >= 0)
-        close(fdh.sfd) ;
     if (fdh.socket_path)
-        unlink(fdh.socket_path) ;
+        file_tryunlink(fdh.socket_path) ;
 
     log_info("fdholder daemon stopped") ;
 }
@@ -794,7 +793,7 @@ int main(int argc, char const *const *argv)
 
     PROG = "66-fdholderd" ;
 
-    /* keep 0/1/2 reserved so accepted client sockets never land on them */
+    // keep 0/1/2 reserved so accepted client sockets never land on them
     if (!ensure_stdfds())
         log_dieusys(LOG_EXIT_SYS, "ensure standard descriptors") ;
 

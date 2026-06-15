@@ -266,7 +266,7 @@ static inline void prepare_stage4 (char what)
             log_dieusys(LOG_EXIT_SYS, "write file: ", tmp) ;
     }
 
-    (void)unlink(STAGE4_FILE ".new") ;
+    file_tryunlink(STAGE4_FILE ".new") ;
     fd = io_open_mode(STAGE4_FILE ".new", O_WRONLY|O_CREAT|O_EXCL|O_NONBLOCK, 0666) ;
     if (fd == -1) log_dieusys(LOG_EXIT_SYS, "open ", STAGE4_FILE ".new", " for writing") ;
     ostream_init(&b, fd, buf, 512) ;

@@ -18,6 +18,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
+#include <oblibs/files.h>
 
 #include <66/resolve.h>
 #include <66/constants.h>
@@ -33,7 +34,7 @@ void resolve_remove(char const *base, char const *name)
     char file[baselen + SS_RESOLVE_LEN + 1 + namelen +1] ;
     auto_strings(file, base, SS_RESOLVE, "/", name) ;
 
-    (void)unlink(file) ;
+    file_tryunlink(file) ;
     errno = e ;
 }
 

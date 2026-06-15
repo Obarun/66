@@ -26,6 +26,7 @@
 #include <oblibs/files.h>
 #include <oblibs/types.h>
 #include <oblibs/cdb.h>
+#include <oblibs/fd.h>
 
 #include <66/ssexec.h>
 #include <66/tree.h>
@@ -249,7 +250,7 @@ static void migrate_tree_0721(ssexec_t *info)
 
     } else log_trace("master resolve already migrated -- ignoring it") ;
 
-    close(fd) ;
+    close_fd(fd) ;
 
     /** migrate the all resolve file of trees */
     if (mres.ncontents) {
@@ -275,7 +276,7 @@ static void migrate_tree_0721(ssexec_t *info)
                 if (!resolve_write_g(wtres, info->base.s, tres.sa.s + tres.name))
                     log_dieu(LOG_EXIT_SYS, "write resolve file of tree: ", tres.sa.s + tres.name) ;
 
-                close(fd) ;
+                close_fd(fd) ;
 
             } else log_trace("resolve file of tree: ", stk.s + pos, " already migrated -- ignoring it") ;
 
@@ -421,7 +422,7 @@ static void get_config(conf_t *lconf, conf_t *conf, size_t *nservice, const char
 
     lconf[(*nservice)++] = *conf ;
 
-    close(fd) ;
+    close_fd(fd) ;
     ocdb_free(&c) ;
     resolve_free(wres) ;
 }

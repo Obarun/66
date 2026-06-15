@@ -15,7 +15,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <unistd.h>// unlink
 
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
@@ -25,6 +24,7 @@
 #include <oblibs/strbuf.h>
 #include <oblibs/directory.h>
 #include <oblibs/hash.h>
+#include <oblibs/files.h>
 
 #include <66/state.h>
 #include <66/enum_parser.h>
@@ -134,7 +134,7 @@ static void remove_provide(resolve_service_t *res, ssexec_t *info)
 
             if (!strcmp(lname.s, res->sa.s + res->name)) {
                 log_trace("remove provide symlink: ", lnk.s) ;
-                (void)unlink(lnk.s) ;
+                file_tryunlink(lnk.s) ;
             }
         }
     }
@@ -243,10 +243,10 @@ static void remove_logger(resolve_service_t *res, ssexec_t *info)
     tree_service_remove(info->base.s, lres.sa.s + lres.treename, lres.sa.s + lres.name) ;
 
     log_trace("remove symlink: ", sym) ;
-    (void)unlink(sym) ;
+    file_tryunlink(sym) ;
 
     log_trace("remove symlink: ", lres.sa.s + lres.live.scandir) ;
-    (void)unlink(lres.sa.s + lres.live.scandir) ;
+    file_tryunlink(lres.sa.s + lres.live.scandir) ;
 
     log_info("Removed successfully: ", lres.sa.s + lres.name) ;
 
@@ -281,10 +281,10 @@ static void remove_service(resolve_service_t *res, ssexec_t *info, uint8_t propa
     auto_strings(sym, res->sa.s + res->path.home, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", res->sa.s + res->name) ;
 
     log_trace("remove symlink: ", sym) ;
-    (void)unlink(sym) ;
+    file_tryunlink(sym) ;
 
     log_trace("remove symlink: ", res->sa.s + res->live.scandir) ;
-    (void)unlink(res->sa.s + res->live.scandir) ;
+    file_tryunlink(res->sa.s + res->live.scandir) ;
 
     log_info("Removed successfully: ", res->sa.s + res->name) ;
 }
