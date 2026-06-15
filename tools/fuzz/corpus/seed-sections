@@ -1,0 +1,8 @@
+[Main]
+Type = module
+
+[Regex]
+InFiles = ( ::x=y )
+
+[Environment]
+A=b

@@ -1,0 +1,9 @@
+[Main]
+Type = oneshot
+Description = "oneshot demo"
+
+[Start]
+Execute = ( echo hello )
+
+[Stop]
+Execute = ( echo bye )

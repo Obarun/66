@@ -1,0 +1,7 @@
+[Main]
+Type = oneshot
+Description = "depends on deps-b"
+Depends = ( deps-b )
+
+[Start]
+Execute = ( echo a )

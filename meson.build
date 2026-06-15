@@ -216,11 +216,17 @@ exe_c_args = base_c_args
 shared_link_args = [
   '-shared',
   '-Wl,--as-needed',
-  '-Wl,--no-undefined',
   '-Wl,-O2',
   '-Wl,--sort-section=alignment',
   '-Wl,--sort-common'
 ]
+
+# Under fuzzing, lib66 carries sanitizer/coverage instrumentation whose runtime
+# symbols are provided by the libFuzzer driver executable, not the shared lib,
+# so it must be allowed to leave them undefined.
+if not get_option('fuzz')
+  shared_link_args += ['-Wl,--no-undefined']
+endif
 
 if cc.has_link_argument('-Wl,--hash-style=both')
   shared_link_args += ['-Wl,--hash-style=both']
@@ -289,9 +295,18 @@ endforeach
 # Include directories
 incdir = include_directories(['src/include'])
 
+# Fuzzing harnesses (libFuzzer, clang only). The coverage instrumentation must
+# reach lib66, so it is added project-wide before any target is built.
+if get_option('fuzz')
+  add_project_arguments('-fsanitize=fuzzer-no-link', language: 'c')
+endif
+
 # Subdirectories
 subdir('src/include/66')
 subdir('src/lib66')
+if get_option('fuzz')
+  subdir('tools/fuzz')
+endif
 subdir('src/66')
 subdir('skel')
 subdir('doc')
