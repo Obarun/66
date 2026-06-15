@@ -245,6 +245,11 @@ int parse_bracket(strbuf *store, const char *str, resolve_enum_table_t table)
                         break ;
                     }
 
+                    /** too long to be a known section name (the longest is
+                     * "Environment"): not a section, stay in script context. */
+                    if (r >= (int)sizeof(secname))
+                        break ;
+
                     memcpy(secname, line + o, r) ;
                     secname[r] = 0 ;
                     unsigned int pos = 0 ;
@@ -330,7 +335,7 @@ int parse_bracket(strbuf *store, const char *str, resolve_enum_table_t table)
     store->len = 0 ;
 
     if (!sbl_addb(store, cfg.str + cfg.opos + 1, lvp - (cfg.opos + 1)))
-            return 0 ;
+        return 0 ;
 
     return 1 ;
 }
