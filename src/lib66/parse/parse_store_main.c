@@ -229,7 +229,7 @@ int parse_store_main(resolve_service_t *res, strbuf *store, resolve_enum_table_t
 
     int r = 0, e = 0 ;
     size_t pos = 0 ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     uint32_t kid = table.u.parser.id ;
 
     switch(kid) {
@@ -560,6 +560,5 @@ int parse_store_main(resolve_service_t *res, strbuf *store, resolve_enum_table_t
     e = 1 ;
 
     err :
-        free(wres) ;
         return e ;
 }

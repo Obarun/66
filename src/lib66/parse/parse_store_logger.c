@@ -32,7 +32,7 @@ int parse_store_logger(resolve_service_t *res, strbuf *store, resolve_enum_table
         return 1 ;
 
     int r = 0, e = 0 ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     uint32_t kid = table.u.parser.id ;
     resolve_enum_table_t ttable ;
     ttable.category = table.category ; ttable.u.parser.category = table.u.parser.category ;
@@ -128,6 +128,5 @@ int parse_store_logger(resolve_service_t *res, strbuf *store, resolve_enum_table
     e = 1 ;
 
     err :
-        free(wres) ;
         return e ;
 }

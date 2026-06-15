@@ -32,7 +32,7 @@ int parse_store_start_stop(resolve_service_t *res, strbuf *store, resolve_enum_t
         return 1 ;
 
     int e = 0 ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     uint32_t kid = table.u.parser.id ;
     uint32_t sid = table.u.parser.sid ;
 
@@ -82,6 +82,5 @@ int parse_store_start_stop(resolve_service_t *res, strbuf *store, resolve_enum_t
     e = 1 ;
 
     err :
-        free(wres) ;
         return e ;
 }

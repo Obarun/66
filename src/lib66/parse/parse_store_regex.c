@@ -29,7 +29,7 @@ int parse_store_regex(resolve_service_t *res, strbuf *store, resolve_enum_table_
     if (res->type != E_PARSER_TYPE_MODULE)
         return 1 ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     uint32_t kid = table.u.parser.id ;
 
     switch(kid) {

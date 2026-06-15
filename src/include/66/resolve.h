@@ -61,6 +61,11 @@ extern void resolve_free(resolve_wrapper_t *wres) ;
 extern resolve_wrapper_t *resolve_set_struct(uint8_t type, void *s) ;
 extern void resolve_init(resolve_wrapper_t *wres) ;
 
+/** Frees the malloc'd wrapper itself, not the resolve payload it points to.
+ *  Use with _cleanup_wres_ so early error returns do not leak the wrapper. */
+extern void resolve_wrapper_free(resolve_wrapper_t **wres) ;
+#define _cleanup_wres_ __attribute__((cleanup(resolve_wrapper_free)))
+
 /**
  *
  * General API

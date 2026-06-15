@@ -38,7 +38,7 @@ static int get_import_field(resolve_service_t *res, strbuf *store)
     _cleanup_strbuf_ strbuf modif = STRBUF_ZERO ;
     size_t pos = 0 ;
     uint32_t n = 0 ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     if (!auto_strbuf(&modif, store->s))
         log_warnusys_return(LOG_EXIT_SYS, "clean string") ;
@@ -94,15 +94,13 @@ static int get_import_field(resolve_service_t *res, strbuf *store)
     auto_strings(store->s, modif.s) ;
     store->len = strlen(store->s) ;
 
-    free(wres) ;
-
     return 1 ;
 }
 
 static int store_environ(resolve_service_t *res, strbuf *store)
 {
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     if (!get_import_field(res, store))
         return 0 ;
@@ -113,8 +111,6 @@ static int store_environ(resolve_service_t *res, strbuf *store)
         return 0 ;
 
     res->environ.envdir = resolve_add_string(wres, sa.s) ;
-
-    free(wres) ;
 
     return 1 ;
 }

@@ -30,3 +30,8 @@ resolve_wrapper_t *resolve_set_struct(uint8_t type, void *s)
     return wres ;
 }
 
+void resolve_wrapper_free(resolve_wrapper_t **wres)
+{
+    free(*wres) ;
+}
+

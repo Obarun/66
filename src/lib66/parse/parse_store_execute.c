@@ -44,7 +44,7 @@ int parse_store_execute(resolve_service_t *res, strbuf *store, resolve_enum_tabl
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     uint32_t kid = table.u.parser.id ;
 
     switch(kid) {
@@ -283,6 +283,5 @@ int parse_store_execute(resolve_service_t *res, strbuf *store, resolve_enum_tabl
             log_warn_return(LOG_EXIT_ZERO, "unknown id key in section regex -- please make a bug report") ;
     }
 
-    free(wres) ;
     return 1 ;
 }
