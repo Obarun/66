@@ -245,7 +245,9 @@ void parse_create_logger(struct resolve_hash_s **hres, resolve_service_t *res, s
 {
     log_flow() ;
 
-    char *logname = res->sa.s + res->logger.name ;
+    char logname[strlen(res->sa.s + res->logger.name) + 1] ;
+    auto_strings(logname, res->sa.s + res->logger.name) ;
+
     struct resolve_hash_s *hash ;
     resolve_service_t lres = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
