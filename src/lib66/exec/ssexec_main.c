@@ -1,7 +1,7 @@
 /*
  * ssexec_main.c
  *
- * Copyright (c) 2026 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2019 Eric Vidal <eric@obarun.org>
  *
  * All rights reserved.
  *

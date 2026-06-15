@@ -1,7 +1,7 @@
 /*
  * tree_service_remove.c
  *
- * Copyright (c) 2018-2025 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2023 Eric Vidal <eric@obarun.org>
  *
  * All rights reserved.
  *
