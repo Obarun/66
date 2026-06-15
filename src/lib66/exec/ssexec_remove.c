@@ -96,9 +96,9 @@ static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, s
             if (dres.dependencies.nrequiredby && !propagate)
                 compute_deps(&dres, hres, sa, info, propagate) ;
         }
-    }
 
-    free(wres) ;
+        free(wres) ;
+    }
 }
 
 static void remove_provide(resolve_service_t *res, ssexec_t *info)
@@ -168,8 +168,10 @@ static void clean_depends(resolve_service_t *res, ssexec_t *info, uint8_t propag
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", name) ;
 
-        if (!r || dres.islog)
+        if (!r || dres.islog) {
+            resolve_free(wres) ;
             continue ;
+        }
 
         if (dres.dependencies.nrequiredby) {
 
