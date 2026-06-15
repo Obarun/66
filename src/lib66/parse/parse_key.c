@@ -40,9 +40,8 @@ int parse_key(strbuf *key, lexer_config *cfg, resolve_enum_table_t table)
             cfg->pos = cfg->opos + next + 1 ;
         }
 
-        /** check for commented key */
-        char c = cfg->str[cfg->opos - 1] ;
-        if (c == '#')
+        /** check for commented key (no char precedes a key at offset 0) */
+        if (cfg->opos > 0 && cfg->str[cfg->opos - 1] == '#')
             cfg->found = 0 ;
     }
 
