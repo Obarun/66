@@ -85,7 +85,7 @@ static uint8_t str_to_int(const char *version)
 
 void migrate_create_snap(ssexec_t *info, const char *version)
 {
-    _alloc_strbuf_(stk, 7 + strlen(version)) ;
+    _alloc_strbuf_(stk, 7 + strlen(version) + 1) ;
     int argc = 4 ;
     int m = 0 ;
     char const *prog = PROG ;
