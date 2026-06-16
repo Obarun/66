@@ -150,17 +150,36 @@ int ssexec_stop(int argc, char const *const *argv, void *data)
  * distinct command (own help) that re-enters the dispatcher on the stop node
  * with the -u flag injected. */
 
+static uint8_t opt_free_nopropagate = 0 ;
+
 static opt_t const opts_free[] = {
-    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE, .help = "print this help" },
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",         .arg = OPT_NONE, .help = "print this help" },
+    { .id = 'P',         .shortname = 'P', .longname = "no-propagate", .arg = OPT_NONE, .help = "do not propagate to its requiredby", .hidden = true },
 } ;
+
+static int on_free(int id, char const *arg, void *data)
+{
+    (void)arg ;
+    (void)data ;
+
+    if (id == 'P')
+        opt_free_nopropagate = 1 ;
+
+    return 0 ;
+}
 
 static int do_free(int argc, char const *const *argv, void *data)
 {
+    uint8_t nopropagate = opt_free_nopropagate ;
+    opt_free_nopropagate = 0 ;
+
     int m = 0, i = 0 ;
-    char const *nargv[argc + 3] ;
+    char const *nargv[argc + 4] ;
 
     nargv[m++] = "free" ;
     nargv[m++] = "-u" ;
+    if (nopropagate)
+        nargv[m++] = "-P" ;
     for (; i < argc ; i++)
         nargv[m++] = argv[i] ;
     nargv[m] = 0 ;
@@ -174,5 +193,6 @@ opt_cmd_t const cmd_free = {
     .operands = "service...",
     .opts = opts_free,
     .nopts = OPT_COUNT(opts_free),
+    .on_option = &on_free,
     .fn = &do_free,
 } ;
