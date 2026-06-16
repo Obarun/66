@@ -41,27 +41,26 @@
 #include <66/constants.h>
 #include <66/ssexec.h>
 
-static mode_t mask = SS_BOOT_UMASK ;
+static unsigned int mask = SS_BOOT_UMASK ;
 static unsigned int rescan = SS_BOOT_RESCAN ;
 static unsigned int container = SS_BOOT_CONTAINER ;
 static unsigned int catch_log = SS_BOOT_CATCH_LOG ;
+
 static char const *skel = SS_SKEL_DIR ;
-static char const *live = SS_LIVE ;
-static char const *path = SS_BOOT_PATH ;
-static char const *tree = SS_BOOT_TREE ;
-static char const *rcinit = SS_SKEL_DIR SS_BOOT_RCINIT ;
-static char const *rcinit_container = SS_SKEL_DIR SS_BOOT_RCINIT_CONTAINER ;
 static char const *banner = "\n[Starts stage1 process...]" ;
 static char const *slashdev = 0 ;
 static char const *envdir = 0 ;
 static char const *fifo = 0 ;
 static char const *log_user = SS_LOGGER_RUNNER ;
 static char const *cver = 0 ;
-static char tpath[SS_MAX_PATH_LEN + 1] ;
-static char trcinit[SS_MAX_PATH_LEN + 1] ;
-static char trcinit_container[SS_MAX_PATH_LEN + 1] ;
-static char tlive[SS_MAX_PATH_LEN + 1] ;
-static char ttree[SS_MAX_PATH_LEN + 1] ;
+
+/* init.conf / cmdline overridable values, pre-seeded with their default so they
+ * are never empty even when the key is absent from the configuration */
+static char path[SS_MAX_PATH_LEN + 1] = SS_BOOT_PATH ;
+static char live[SS_MAX_PATH_LEN + 1] = SS_LIVE ;
+static char tree[SS_MAX_PATH_LEN + 1] = SS_BOOT_TREE ;
+static char rcinit[SS_MAX_PATH_LEN + 1] = SS_SKEL_DIR SS_BOOT_RCINIT ;
+static char rcinit_container[SS_MAX_PATH_LEN + 1] = SS_SKEL_DIR SS_BOOT_RCINIT_CONTAINER ;
 static char confile[SS_MAX_PATH_LEN + 1 + SS_BOOT_CONF_LEN + 1] ;
 static int notifpipe[2] ;
 
@@ -111,39 +110,18 @@ static void read_cmdline(strbuf *stk, size_t len)
     stk->s[n] = 0 ;
 }
 
-static inline void string_to_table(char *table,char const **pointer,char const *str, uint8_t empty)
+static int get_value(strbuf *out, char const *env, char const *key)
 {
     log_flow() ;
 
-    if (!empty) {
-        auto_strings(table,str) ;
-        *pointer = table ;
-    }
-}
-
-static inline uint8_t string_to_uint(char const *str, unsigned int *ui, uint8_t empty)
-{
-    log_flow() ;
-
-    if (!empty)
-        if (!u32_scan_strict_base(str, ui, 8))
-            return 0 ;
-
-    return 1 ;
-}
-
-static int get_value(strbuf *val,char const *key)
-{
-    log_flow() ;
-
-    _alloc_strbuf_(stk, val->len + 1) ;
-    if (!environ_search_value(&stk, val->s, key))
+    _alloc_strbuf_(stk, strlen(env) + 1) ;
+    if (!environ_search_value(&stk, env, key))
         return 0 ;
-    val->len = 0 ;
-    if (!strbuf_copyb(val, stk.s, stk.len) ||
-        !strbuf_terminate(val))
+    out->len = 0 ;
+    if (!strbuf_copyb(out, stk.s, stk.len) ||
+        !strbuf_terminate(out))
             sulogin("strbuf in get_value","") ;
-    val->len-- ;
+    out->len-- ;
     return 1 ;
 }
 
@@ -188,15 +166,35 @@ static void set_env(strbuf *env, const char *key, const char *value)
 
 }
 
+typedef enum conf_type_e conf_type_e ;
+enum conf_type_e { CONF_UINT, CONF_STR } ;
+
+typedef struct conf_entry_s conf_entry_t ;
+struct conf_entry_s {
+    char const *key ;
+    conf_type_e type ;
+    void *target ;      // unsigned int* (CONF_UINT) | buffer char* (CONF_STR)
+    uint8_t absolute ;  // require an absolute path
+} ;
+
 static void parse_conf(const char *confile)
 {
     log_flow() ;
 
-    static char const *valid[] =
-    { "VERBOSITY", "PATH", "LIVE", "TREE", "RCINIT", "UMASK", "RESCAN", "CONTAINER", "CATCHLOG", "RCINIT_CONTAINER", 0 } ;
+    static conf_entry_t const conf_table[] = {
+        { "VERBOSITY",        CONF_UINT, &VERBOSITY,       0 },
+        { "PATH",             CONF_STR,  path,             0 },
+        { "LIVE",             CONF_STR,  live,             1 },
+        { "TREE",             CONF_STR,  tree,             0 },
+        { "RCINIT",           CONF_STR,  rcinit,           1 },
+        { "UMASK",            CONF_UINT, &mask,            0 },
+        { "RESCAN",           CONF_UINT, &rescan,          0 },
+        { "CONTAINER",        CONF_UINT, &container,       0 },
+        { "CATCHLOG",         CONF_UINT, &catch_log,       0 },
+        { "RCINIT_CONTAINER", CONF_STR,  rcinit_container, 1 },
+        { 0, 0, 0, 0 }
+    } ;
 
-    unsigned int j = 0 ;
-    uint8_t empty = 0 ;
     _cleanup_strbuf_ strbuf kernel = STRBUF_ZERO ;
     _cleanup_strbuf_ strbuf env = STRBUF_ZERO ;
     _cleanup_strbuf_ strbuf val = STRBUF_ZERO ;
@@ -216,128 +214,23 @@ static void parse_conf(const char *confile)
     if (!environ_rebuild(&env))
         sulogin("rebuild environment", "") ;
 
-    for (char const *const *p = valid; *p; p++, j++) {
+    for (conf_entry_t const *e = conf_table ; e->key ; e++) {
 
-        empty = 0 ;
-        val.len = 0 ;
+        if (!get_value(&val, env.s, e->key))
+            continue ; // key absent: keep the static default
 
-        if (!strbuf_copys(&val, env.s))
-            sulogin("copy strbuf", "") ;
+        if (e->type == CONF_UINT) {
 
-        if (!strbuf_terminate(&val))
-            sulogin("close string", "") ;
+            if (!u32_scan_strict_base(val.s, e->target, 8))
+                sulogin("invalid value for: ", e->key) ;
 
-        val.len-- ;
+        } else {
 
-        switch (j) {
+            auto_strings(e->target, val.s) ;
 
-            case 0:
-
-                if (!get_value(&val, "VERBOSITY"))
-                    empty = 1 ;
-
-                if (!string_to_uint(val.s,&VERBOSITY,empty))
-                    sulogin("parse VERBOSITY value: ",val.s) ;
-
-                break ;
-
-            case 1:
-
-                if (!get_value(&val, "PATH"))
-                    empty = 1 ;
-
-                string_to_table(tpath,&path,val.s,empty) ;
-
-                break ;
-
-            case 2:
-
-                if (!get_value(&val, "LIVE"))
-                    empty = 1 ;
-
-                string_to_table(tlive,&live,val.s,empty) ;
-
-                if (live[0] != '/')
-                    sulogin ("LIVE must be an absolute path",live) ;
-
-                break ;
-
-            case 3:
-
-                if (!get_value(&val, "TREE"))
-                    empty = 1 ;
-
-                string_to_table(ttree,&tree,val.s,empty) ;
-
-                break ;
-
-            case 4:
-
-                if (!get_value(&val, "RCINIT"))
-                    empty = 1 ;
-
-                string_to_table(trcinit,&rcinit,val.s,empty) ;
-
-                if (rcinit[0] != '/')
-                    sulogin ("RCINIT must be an absolute path: ",rcinit) ;
-
-                break ;
-
-            case 5:
-
-                if (!get_value(&val, "UMASK"))
-                    empty = 1 ;
-
-                if (!string_to_uint(val.s,&mask,empty))
-                    sulogin("invalid UMASK value: ",val.s) ;
-
-                break ;
-
-            case 6:
-
-                if (!get_value(&val, "RESCAN"))
-                    empty = 1 ;
-
-                if (!string_to_uint(val.s,&rescan,empty))
-                    sulogin("invalid RESCAN value: ",val.s) ;
-
-                break ;
-
-            case 7:
-
-                if (!get_value(&val, "CONTAINER"))
-                    empty = 1 ;
-
-                if (!string_to_uint(val.s,&container,empty))
-                    sulogin("invalid CONTAINER value: ",val.s) ;
-
-                break ;
-
-            case 8:
-
-                if (!get_value(&val, "CATCHLOG"))
-                    empty = 1 ;
-
-                if (!string_to_uint(val.s,&catch_log,empty))
-                    sulogin("invalid CATCHLOG value: ",val.s) ;
-
-                break ;
-
-            case 9:
-
-                if (!get_value(&val, "RCINIT_CONTAINER"))
-                    empty = 1 ;
-
-                string_to_table(trcinit_container,&rcinit_container,val.s,empty) ;
-
-                if (rcinit_container[0] != '/')
-                    sulogin ("RCINIT_CONTAINER must be an absolute path: ",rcinit_container) ;
-
-                break ;
-
-            default: break ;
+            if (e->absolute && *(char const *)e->target != '/')
+                sulogin("must be an absolute path: ", e->target) ;
         }
-
     }
 }
 
@@ -438,8 +331,8 @@ static inline void run_stage2 (strbuf *env, const char *tty)
     newargv[2] = 0 ;
 
     set_env(env, "VERBOSITY", cver) ;
-    set_env(env, "TREE", ttree) ;
-    set_env(env, "LIVE", tlive) ;
+    set_env(env, "TREE", tree) ;
+    set_env(env, "LIVE", live) ;
 
     if (setsid() < 0)
         sulogin("setsid to run stage2", "") ;
@@ -711,7 +604,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
         }
     }
 
-    set_env(&env, "PATH", tpath) ;
+    set_env(&env, "PATH", path) ;
 
     /** create scandir */
     {
@@ -761,8 +654,8 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
     /* environment */
     {
         if (container) {
-            char tmp[strlen(tlive) + SS_BOOT_CONTAINER_DIR_LEN + 1 + info->ownerlen + 1 + SS_BOOT_CONTAINER_HALTFILE_LEN + 1] ;
-            auto_strings(tmp, tlive, SS_BOOT_CONTAINER_DIR, "/", info->ownerstr, "/", SS_BOOT_CONTAINER_HALTFILE) ;
+            char tmp[strlen(live) + SS_BOOT_CONTAINER_DIR_LEN + 1 + info->ownerlen + 1 + SS_BOOT_CONTAINER_HALTFILE_LEN + 1] ;
+            auto_strings(tmp, live, SS_BOOT_CONTAINER_DIR, "/", info->ownerstr, "/", SS_BOOT_CONTAINER_HALTFILE) ;
             set_env(&env, "CONTAINER_HALTCMD", tmp) ;
         }
 
