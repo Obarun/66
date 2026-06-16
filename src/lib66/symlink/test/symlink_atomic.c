@@ -28,6 +28,9 @@
 #include <sys/types.h>
 
 #include <oblibs/files.h>
+#include <oblibs/fd.h>
+
+#include <66/symlink.h>
 
 #define TEST_ASSERT(condition, message) \
     do { \
