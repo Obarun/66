@@ -65,6 +65,14 @@ static char ttree[SS_MAX_PATH_LEN + 1] ;
 static char confile[SS_MAX_PATH_LEN + 1 + SS_BOOT_CONF_LEN + 1] ;
 static int notifpipe[2] ;
 
+/**
+ * @brief Last-resort boot recovery: log the error, hand the admin a rescue
+ * shell, then RETURN so the boot resumes best-effort.
+ *
+ * This is deliberately not a log_die: the contract is that callers regain
+ * control once the admin leaves the shell. Sites that read data produced by the
+ * failed operation must therefore guarantee a defined state after the call.
+ */
 static void sulogin(char const *msg,char const *arg)
 {
     static char const *const newarg[2] = { SS_EXTBINPREFIX "sulogin" , 0 } ;
@@ -72,13 +80,14 @@ static void sulogin(char const *msg,char const *arg)
     int wstat ;
     if (msg) log_warnusys(msg,arg) ;
     pid = spawn_path(newarg[0],newarg,(char const *const *)environ) ;
+    if (!pid)
+        log_dieusys(LOG_EXIT_SYS,"spawn sulogin -- you are on your own") ;
     if (process_wait(pid,&wstat) < 0)
         log_dieusys(LOG_EXIT_SYS,"wait for sulogin -- you are on your own") ;
-    if (close(0) < 0)
-        log_dieusys(LOG_EXIT_SYS,"close stdin -- you are on your own") ;
+    close_fd(0) ;
 }
 
-void read_cmdline(strbuf *stk, size_t len)
+static void read_cmdline(strbuf *stk, size_t len)
 {
     log_flow() ;
 
@@ -87,8 +96,13 @@ void read_cmdline(strbuf *stk, size_t len)
     unsigned int n = 0 ;
 
     int fd = io_open("/proc/cmdline", O_RDONLY) ;
-    if (fd == -1)
+    if (fd == -1) {
+        // sulogin returns: leave the cmdline empty so init.conf defaults apply
         sulogin("open: ", "/proc/cmdline") ;
+        stk->len = 0 ;
+        stk->s[0] = 0 ;
+        return ;
+    }
 
     for(;;) {
         r = read(fd,stk->s + n,len - n);
@@ -390,7 +404,12 @@ static int is_mnt(char const *str)
     struct stat st;
     size_t slen = strlen(str) ;
     int is_not_mnt = 0 ;
-    if (lstat(str,&st) < 0) sulogin("lstat: ",str) ;
+    if (lstat(str,&st) < 0) {
+        // sulogin returns: report the path as a mount point so we don't lay a
+        // fresh tmpfs over an unknown state
+        sulogin("lstat: ",str) ;
+        return 1 ;
+    }
     if (S_ISDIR(st.st_mode))
     {
         dev_t st_dev = st.st_dev ; ino_t st_ino = st.st_ino ;
@@ -498,6 +517,8 @@ static inline void make_cmdline(char const *prog,char const **add,int len,char c
     newargv[n] = 0 ;
 
     pid = spawn_path(newargv[0], newargv, e) ;
+    if (!pid)
+        sulogin("spawn: ", newargv[0]) ;
 
     if (process_wait(pid, &wstat) < 0)
         sulogin("wait for: ", newargv[0]) ;
