@@ -782,11 +782,6 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
     {
         char fmtfd[2 + U32_FMT] = "-" ;
 
-        if (!catch_log) {
-            fmtfd[1] = 'd' ;
-            fmtfd[2 + u32_fmt(fmtfd + 2, notifpipe[1])] = 0 ;
-        }
-
         size_t m = 0 ;
         static char const *newargv[8] ;
         newargv[m++] = "66" ;
@@ -796,7 +791,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
         newargv[m++] = "scandir" ;
         newargv[m++] = "start" ;
         if (!catch_log)
-            newargv[m++] = fmtfd ;
+            newargv[m++] = fmtfd ; /* contents filled in the parent branch below, once the pipe exists */
         newargv[m++] = 0 ;
 
         if (!catch_log && pipe(notifpipe) < 0)
@@ -819,6 +814,10 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
         if (!catch_log) {
 
             close_fd(notifpipe[0]) ;
+            /* format the readiness fd now that the pipe exists; notifpipe[1] is
+             * >= 3 here (fds 0,1,2 are taken) as 66 scandir start requires it */
+            fmtfd[1] = 'd' ;
+            fmtfd[2 + u32_fmt(fmtfd + 2, notifpipe[1])] = 0 ;
             cad() ;
 
         } else {
