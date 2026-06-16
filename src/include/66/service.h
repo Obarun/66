@@ -295,7 +295,7 @@ extern int service_resolve_read_cdb(ocdb *c, resolve_service_t *res) ;
 extern void service_resolve_write(resolve_service_t *res) ;
 extern void service_resolve_write_remote(resolve_service_t *res, char const *dst, uint8_t force) ;
 extern int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *sres) ;
-extern void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, bool propagate, ssexec_t *info, strbuf *argv) ;
+extern void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, ssexec_t *info, strbuf *argv) ;
 extern void service_switch_tree(resolve_service_t *res, char const *totreename, ssexec_t *info) ;
 extern void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char const *base, uint8_t requiredby) ;
 extern int service_resolve_symlink(char const *base, char *path, char *name) ;

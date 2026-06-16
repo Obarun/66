@@ -47,52 +47,9 @@ static void mark_isdone(struct resolve_hash_s *hres, const char *name)
     t->visit = 1 ;
 }
 
-static void service_enable_disable_deps(service_graph_t *g, struct resolve_hash_s *hres, struct resolve_hash_s *hash, bool action, bool propagate, ssexec_t *info, strbuf *argv)
-{
-    log_flow() ;
-
-    size_t pos = 0 ;
-    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-    resolve_service_t_ref res = &hash->res ;
-    vertex_t *v = NULL ;
-
-    HASH_FIND_STR(g->g.vertexes, res->sa.s + res->name, v) ;
-    if (v == NULL)
-        log_dieu(LOG_EXIT_SYS, "get information of service: ", res->sa.s + res->name, " -- please make a bug report") ;
-
-    uint32_t d = action ? res->dependencies.depends : res->dependencies.requiredby ;
-    _alloc_sbl_(stk, strlen(res->sa.s + d)) ;
-
-    if (!graph_get_stkedge(&stk, &g->g, v, action ? false : true))
-        log_dieu(LOG_EXIT_SYS, "get ", action ? "dependencies" : "required by" ," of: ", res->sa.s + res->name) ;
-
-    if (stk.len) {
-
-        FOREACH_SBL(&stk, pos) {
-
-            char *name = stk.s + pos ;
-
-            struct resolve_hash_s *h = hash_search(&g->hres, name) ;
-            if (h == NULL)
-                log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
-
-            if ((action ? h->res.enabled : !h->res.enabled) && !h->res.inns) {
-                log_warn("service: ", h->res.sa.s + h->res.name, " already ", action ? "enabled" : "disabled", " -- ignoring it") ;
-                continue ;
-            }
-
-            if (!isdone(hres, name)) {
-                service_enable_disable(g, h, action, propagate, info, argv) ;
-                mark_isdone(hres, name) ;
-            }
-        }
-    }
-
-}
-
 /** @action == false disable
  * @action == true enable */
-void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, bool propagate, ssexec_t *info, strbuf *argv)
+void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, ssexec_t *info, strbuf *argv)
 {
     log_flow() ;
 
@@ -145,9 +102,6 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
 
         if (!resolve_write_g(wres, res->sa.s + res->path.home, res->sa.s + res->name))
             log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", res->sa.s + res->name) ;
-
-        if (propagate)
-            service_enable_disable_deps(g, g->hres, hash, action, propagate, info, argv) ;
 
         free(wres) ;
 

@@ -75,7 +75,7 @@ int ssexec_enable(int argc, char const *const *argv, void *data)
     log_flow() ;
 
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-    bool start = false, propagate = true, action = true ; /* action=true -> enable */
+    bool start = false, action = true ; /* action=true -> enable */
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     vertex_t *c, *tmp ;
     int e = 1 ;
@@ -84,10 +84,8 @@ int ssexec_enable(int argc, char const *const *argv, void *data)
     if (start_opt)
         start = true ;
 
-    if (nopropagate) {
+    if (nopropagate)
         FLAGS_CLEAR(flag, GRAPH_WANT_DEPENDS) ;
-        propagate = false ;
-    }
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
@@ -117,7 +115,7 @@ int ssexec_enable(int argc, char const *const *argv, void *data)
             log_die(LOG_EXIT_SYS, "get information of service: ", name, " -- please make a bug report") ;
 
         if (!hash->visit)
-            service_enable_disable(&graph, hash, action, propagate, info, &sa) ;
+            service_enable_disable(&graph, hash, action, info, &sa) ;
 
         /**
          * We only want the service asked by user. Doing '66 -t test enable sB'

@@ -72,7 +72,7 @@ int ssexec_disable(int argc, char const *const *argv, void *data)
     log_flow() ;
 
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-    bool stop = false, propagate = true, action = false ;
+    bool stop = false, action = false ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     vertex_t *c, *tmp ;
     int e = 1 ;
@@ -81,10 +81,8 @@ int ssexec_disable(int argc, char const *const *argv, void *data)
     if (stop_opt)
         stop = true ;
 
-    if (nopropagate) {
+    if (nopropagate)
         FLAGS_CLEAR(flag, GRAPH_WANT_REQUIREDBY) ;
-        propagate = false ;
-    }
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
@@ -114,7 +112,7 @@ int ssexec_disable(int argc, char const *const *argv, void *data)
             log_die(LOG_EXIT_SYS, "get information of service: ", name, " -- please make a bug report") ;
 
         if (!hash->visit)
-            service_enable_disable(&graph, hash, action, propagate, info, &sa) ;
+            service_enable_disable(&graph, hash, action, info, &sa) ;
     }
 
     e = 0 ;
