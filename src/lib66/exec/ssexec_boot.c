@@ -140,11 +140,11 @@ static int read_kernel_parameters(strbuf *kernel, const char *file)
         sulogin("clean file: ", file) ;
 
     FOREACH_SBL(&trim, pos) {
-        ssize_t r = get_len_until(trim.s + pos, '=') ;
-        if (r >= 0) {
-            len = strlen(trim.s + pos) ;
-            if (!sbl_addb(&res, trim.s + pos, len))
-                sulogin("stack overflow", "") ;
+        // keep only key=value tokens
+        if (get_len_until(trim.s + pos, '=') >= 0) {
+            size_t toklen = strlen(trim.s + pos) ;
+            if (!sbl_addb(&res, trim.s + pos, toklen))
+                sulogin("append kernel parameter: ", trim.s + pos) ;
         }
     }
 
@@ -177,7 +177,7 @@ struct conf_entry_s {
     uint8_t absolute ;  // require an absolute path
 } ;
 
-static void parse_conf(const char *confile)
+static void parse_conf(const char *conf)
 {
     log_flow() ;
 
@@ -201,8 +201,8 @@ static void parse_conf(const char *confile)
     char *kfile = "/proc/cmdline" ;
 
     // init.conf
-    if (!environ_merge_file(&env, confile))
-        sulogin("merge environment file: ", confile) ;
+    if (!environ_merge_file(&env, conf))
+        sulogin("merge environment file: ", conf) ;
 
     if (!read_kernel_parameters(&kernel, kfile))
         sulogin("read kernel parameters: ", kfile) ;
@@ -234,6 +234,10 @@ static void parse_conf(const char *confile)
     }
 }
 
+/* fd idiom used throughout boot: io_open returns the fd it got.
+ * `if (io_open(...))` works because the caller guarantees fd 0 is the lowest
+ * free descriptor, so a success returns 0 (falsy) and only a -1 failure is
+ * truthy. Its counterpart `io_open(...) != 1` is used where fd 1 is expected. */
 static void opendevnull (void)
 {
     if (io_open("/dev/null", O_RDONLY)) {
@@ -290,16 +294,15 @@ static int is_mnt(char const *str)
         sulogin("lstat: ",str) ;
         return 1 ;
     }
-    if (S_ISDIR(st.st_mode))
-    {
+    if (S_ISDIR(st.st_mode)) {
         dev_t st_dev = st.st_dev ; ino_t st_ino = st.st_ino ;
         char p[slen+4] ;
-        memcpy(p,str,slen) ;
-        memcpy(p + slen,"/..",3) ;
-        p[slen+3] = 0 ;
+        auto_strings(p, str, "/..") ;
         if (!stat(p,&st))
             is_not_mnt = (st_dev == st.st_dev) && (st_ino != st.st_ino) ;
-    }else return 0 ;
+
+    } else return 0 ;
+
     return is_not_mnt ? 0 : 1 ;
 }
 
@@ -320,6 +323,7 @@ static inline void run_stage2 (strbuf *env, const char *tty)
     char const *newargv[3] ;
 
     if (container) {
+
         newargv[0]= rcinit_container ;
 
     } else {
@@ -354,7 +358,7 @@ static inline void run_stage2 (strbuf *env, const char *tty)
     } else {
 
         close_fd(1) ;
-        if (io_open(fifo, O_WRONLY) != 1)  /* blocks until catch-all logger is up */
+        if (io_open(fifo, O_WRONLY) != 1)  // blocks until catch-all logger is up
             sulogin("open for writing fifo: ",fifo) ;
         if (copy_fd(2, 1) == -1)
             sulogin("copy stderr to stdout","") ;
@@ -399,7 +403,6 @@ static inline void make_cmdline(char const *prog,char const **add,int len,char c
 
     if (wstat)
         sulogin(msg, arg) ;
-
 }
 
 static void cad(void)
@@ -427,7 +430,7 @@ static void cad(void)
 
     sigset_t ss ;
     sigemptyset(&ss) ;
-    sigaddset(&ss, SIGINT) ;   /* don't panic on early cad before s6-svscan catches it */
+    sigaddset(&ss, SIGINT) ; // don't panic on early cad before s6-svscan catches it
     sigprocmask(SIG_BLOCK, &ss, 0) ;
 
     if (reboot(RB_DISABLE_CAD) == -1)
@@ -441,7 +444,7 @@ static opt_t const opts_boot[] = {
     { .id = 's',         .shortname = 's', .longname = "skeleton",    .arg = OPT_REQUIRED, .argname = "path",     .help = "skeleton directory to use" },
     { .id = 'e',         .shortname = 'e', .longname = "environment", .arg = OPT_REQUIRED, .argname = "path",     .help = "environment directory or file to use" },
     { .id = 'd',         .shortname = 'd', .longname = "dev",         .arg = OPT_REQUIRED, .argname = "path",     .help = "mount dev directory" },
-    { .id = 'b',         .shortname = 'b', .longname = "banner",      .arg = OPT_REQUIRED, .argname = "message",  .help = "print banner at begins of the init process" },
+    { .id = 'b',         .shortname = 'b', .longname = "banner",      .arg = OPT_REQUIRED, .argname = "message",  .help = "print banner at the beginning of the init process" },
     { .id = 'l',         .shortname = 'l', .longname = "log-user",    .arg = OPT_REQUIRED, .argname = "username", .help = "run catch-all logger as log_user user" },
 } ;
 
@@ -481,9 +484,8 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
     (void)argv ;
 
     strbuf env = STRBUF_ZERO ;
+    // boot is one-shot: ssexec_boot always ends in exec/sulogin, never returns
     unsigned int r , tmpfs = boot_tmpfs, hasconsole = 1 ;
-    /* drain option state into the local, then reset the static for re-entrancy. */
-    boot_tmpfs = 0 ;
     size_t bannerlen, livelen ;
     pid_t pid ;
     char verbo[U32_FMT] ;
@@ -495,10 +497,10 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
         log_diesys(LOG_EXIT_USER, "nice try, but missing root privileges") ;
     }
 
-    /* Configuration file init.conf*/
+    // Configuration file init.conf
     {
         if (skel[0] != '/')
-            sulogin("skeleton directory must be an aboslute path: ",skel) ;
+            sulogin("skeleton directory must be an absolute path: ",skel) ;
 
         auto_strings(confile, skel, "/", SS_BOOT_CONF) ;
 
@@ -506,45 +508,48 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
     }
 
     verbo[u32_fmt(verbo, VERBOSITY)] = 0 ;
+    int ttyfd = catch_log ? 2 : 1 ; // the terminal is on stderr (logger) or stdout (no logger)
     bannerlen = strlen(banner) ;
     livelen = strlen(live) ;
     char tfifo[livelen + 1 + SS_BOOT_LOGFIFO_LEN + 1] ;
-    auto_strings(tfifo,live,"/",SS_BOOT_LOGFIFO) ;
+    auto_strings(tfifo, live, "/", SS_BOOT_LOGFIFO) ;
     fifo = tfifo ;
 
     if (fcntl(1, F_GETFD) < 0)
         hasconsole = 0 ;
 
     if (container) {
-        /* If there's a Docker synchronization pipe, wait on it */
+        // If there's a Docker synchronization pipe, wait on it
         char c ;
-        ssize_t r = io_read(3, &c, 1) ;
-        if (r < 0) {
+        ssize_t rd = io_read(3, &c, 1) ;
+        if (rd < 0) {
 
           if (errno != EBADF)
             sulogin("read from fd 3","") ;
 
         } else {
 
-          if (r)
+          if (rd)
             log_warn("parent wrote to fd 3!") ;
 
           close_fd(3) ;
         }
 
-        if (!slashdev && hasconsole && isatty(2 - (!catch_log))) {
-            tty = ttyname(2 - (!catch_log)) ;
+        if (!slashdev && hasconsole && isatty(ttyfd)) {
+            tty = ttyname(ttyfd) ;
             if (!tty)
                 log_warnusys("ttyname std", (!catch_log) ? "err" : "out") ;
         }
 
     } else if (hasconsole) {
 
-        io_allwrite(1, banner, bannerlen) ;
+        io_allwrite(1, (char *)banner, bannerlen) ;
         io_allwrite(1, "\n", 1) ;
     }
 
-    if (chdir("/") == -1) sulogin("chdir to ","/") ;
+    if (chdir("/") == -1)
+        sulogin("chdir to ","/") ;
+
     umask(mask) ;
 
     if (container && slashdev)
@@ -596,7 +601,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
             if (mount("tmpfs", fs, "tmpfs", MS_NODEV | MS_NOSUID, "mode=0755") == -1)
                 sulogin("mount: ",fs) ;
 
-        } else if (tmpfs) {
+        } else {
 
             log_info("Remount: ",fs) ;
             if (mount("tmpfs", fs, "tmpfs", MS_REMOUNT | MS_NODEV | MS_NOSUID, "mode=0755") == -1)
@@ -606,7 +611,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
 
     set_env(&env, "PATH", path) ;
 
-    /** create scandir */
+    // create scandir
     {
         size_t ncatch = !catch_log ? 1 : 0 ;
         size_t nargc = 6 + ncatch ;
@@ -634,7 +639,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
         make_cmdline("scandir", t, nargc, "create live scandir at: ", live, &env) ;
     }
 
-    /** initiate earlier service */
+    // initiate earlier service
     {
         char const *t[] = { "init", tree } ;
         log_info("Initiate earlier service of tree: ",tree) ;
@@ -645,13 +650,15 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
     {
         log_info("Starts boot logger at: ",live,"/log/0") ;
         int fdr = io_open(fifo, O_RDONLY|O_NONBLOCK) ;
-        if (fdr == -1) sulogin("open fifo: ",fifo) ;
+        if (fdr == -1)
+            sulogin("open fifo: ",fifo) ;
         close_fd(1) ;
-        if (io_open(fifo, O_WRONLY) != 1) sulogin("open fifo: ",fifo) ;
+        if (io_open(fifo, O_WRONLY) != 1)
+            sulogin("open fifo: ",fifo) ;
         close_fd(fdr) ;
     }
 
-    /* environment */
+    // environment
     {
         if (container) {
             char tmp[strlen(live) + SS_BOOT_CONTAINER_DIR_LEN + 1 + info->ownerlen + 1 + SS_BOOT_CONTAINER_HALTFILE_LEN + 1] ;
@@ -673,12 +680,12 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
         }
     }
 
-    /** fork and starts scandir */
+    // fork and starts scandir
     {
         char fmtfd[2 + U32_FMT] = "-" ;
 
         size_t m = 0 ;
-        static char const *newargv[8] ;
+        char const *newargv[8] ;
         newargv[m++] = "66" ;
         newargv[m++] = "-v0" ;
         newargv[m++] = "-l" ;
@@ -686,13 +693,13 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
         newargv[m++] = "scandir" ;
         newargv[m++] = "start" ;
         if (!catch_log)
-            newargv[m++] = fmtfd ; /* contents filled in the parent branch below, once the pipe exists */
+            newargv[m++] = fmtfd ; // contents filled in the parent branch below, once the pipe exists
         newargv[m++] = 0 ;
 
         if (!catch_log && pipe(notifpipe) < 0)
             sulogin("pipe","") ;
 
-        if (tty && !slashdev && ioctl(2 - (!catch_log), TIOCNOTTY) == -1)
+        if (tty && !slashdev && ioctl(ttyfd, TIOCNOTTY) == -1)
             log_warnusys("relinquish control terminal") ;
 
         pid = fork() ;
@@ -716,16 +723,6 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
             cad() ;
 
         } else {
-
-            // int fd = dup(2) ;
-            // if (fd < 0)
-            //     sulogin("dup stderr", "") ;
-            // // restore_console from
-            // // https://github.com/skarnet/s6/blob/main/src/supervision/s6-svscan.c
-            // // TODO: implement -X option at 66 scandir start command.
-            // move_fd(2, fd) ;
-            // if (copy_fd(1, 2) < 0)
-            //     sulogin("restore stdout", "") ;
 
             cad() ;
             if (copy_fd(2, 1) == -1)
