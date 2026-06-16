@@ -15,7 +15,6 @@
 #include <sys/types.h>
 #include <fcntl.h> // O_WRONLY,...
 #include <sys/socket.h>
-#include <sys/un.h>
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <sys/resource.h> // limit
@@ -32,6 +31,7 @@
 #include <oblibs/subst.h>
 #include <oblibs/directory.h>
 #include <oblibs/io.h>
+#include <oblibs/socket.h>
 #include <oblibs/types.h>
 #include <oblibs/fd.h>
 #include <oblibs/files.h>
@@ -189,39 +189,6 @@ static void io_open_destination(int fd, const char *destination, int flags, uint
     }
 }
 
-static void io_read_file(strbuf *stk, const char *file, size_t len)
-{
-    log_flow() ;
-
-    ssize_t r ;
-    unsigned int n = 0 ;
-    errno = 0 ;
-    int fd = io_open(file, O_RDONLY) ;
-    if (fd == -1)
-        log_dieusys(LOG_EXIT_SYS, "open: ", file) ;
-
-    for(;;) {
-        r = read(fd,stk->s + n,len - n);
-        if (r == -1) {
-            if (errno == EINTR)
-                continue ;
-            break ;
-        }
-        n += r ;
-        // buffer is full
-        if (n == len) {
-            --n ;
-            break ;
-        }
-        // end of file
-        if (r == 0) break ;
-    }
-
-    close_fd(fd) ;
-    stk->len = n ;
-    stk->s[n] = 0 ;
-}
-
 static void io_open_terminal(int fd, const char *destination, int flags)
 {
     log_flow() ;
@@ -279,7 +246,10 @@ static void io_open_active_console(int fd)
     size_t len = 1024 ; //sysfs type here, 1024 should be large enough
     _alloc_sbl_(stk, 4 + len + 1) ;
 
-    io_read_file(&stk, path, len) ;
+    ssize_t r = file_read(path, stk.s, len) ;
+    if (r == -1)
+        log_dieusys(LOG_EXIT_SYS, "read: ", path) ;
+    stk.s[r] = 0 ;
     stk.len = strlen(stk.s) ;
 
     if (!strbuf_inserts(&stk, 0, "/dev/"))
@@ -295,22 +265,17 @@ static void io_open_syslog(int fd)
 {
     log_flow() ;
 
-    int sock = -1, socktype= SOCK_DGRAM, e = errno ;
+    int sock = -1, socktype = SOCK_DGRAM, e = errno ;
     errno = 0 ;
-    struct sockaddr_un addr ;
-    memset(&addr, 0, sizeof(addr)) ;
 
     int l = 0 ;
     while(sock < 0 && l < 2) {
 
-        sock = socket(AF_UNIX, socktype | SOCK_CLOEXEC, 0) ;
+        sock = socket_private(AF_UNIX, socktype, 0, O_CLOEXEC) ;
         if (sock < 0)
             log_dieusys(LOG_EXIT_SYS, "create socket") ;
 
-        addr.sun_family = AF_UNIX ;
-        strcpy(addr.sun_path, "/dev/log");
-        int r = connect(sock, (struct sockaddr *)&addr, sizeof (addr)) ;
-        if (r < 0) {
+        if (socketunix_connect(sock, "/dev/log") < 0) {
             close_fd(sock) ;
             if (errno == EPROTOTYPE) {
                 socktype = SOCK_STREAM ;
