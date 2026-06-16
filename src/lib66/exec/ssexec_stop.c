@@ -81,15 +81,19 @@ int ssexec_stop(int argc, char const *const *argv, void *data)
     vertex_t *c, *tmp ;
     uint8_t propagate = 3 ;
     int e = 0 ;
-    uint32_t flag = GRAPH_WANT_SUPERVISED|GRAPH_WANT_REQUIREDBY, nservice = 0 ;
+    uint32_t flag = GRAPH_WANT_SUPERVISED, nservice = 0 ;
 
-    if (nopropagate) {
-        FLAGS_CLEAR(flag, GRAPH_WANT_REQUIREDBY) ;
+    if (nopropagate)
         propagate++ ;
-    }
 
-    if (unsupervise)
+    /* the requiredby closure is only consumed by svc_unsupervise: 66 signal
+     * re-collects it on its own for the plain down signal. Build it only when
+     * the unsupervise path actually walks the graph. */
+    if (unsupervise) {
         FLAGS_SET(flag, GRAPH_WANT_LOGGER) ;
+        if (!nopropagate)
+            FLAGS_SET(flag, GRAPH_WANT_REQUIREDBY) ;
+    }
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
