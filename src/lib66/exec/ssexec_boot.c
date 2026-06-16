@@ -467,13 +467,7 @@ static inline void run_stage2 (strbuf *env, const char *tty)
             sulogin("copy stderr to stdout","") ;
     }
 
-    size_t tlen = env->len ;
-    char t[tlen + 1] ;
-    memcpy(t,env->s,tlen) ;
-    t[tlen] = 0 ;
-    strbuf_free(env) ;
-
-    exec_path_merge_die(newargv[0], newargv, (char const *const *)environ, t, tlen) ;
+    exec_path_merge_die(newargv[0], newargv, (char const *const *)environ, env->s, env->len) ;
 }
 
 static inline void make_cmdline(char const *prog,char const **add,int len,char const *msg,char const *arg, strbuf *env)
