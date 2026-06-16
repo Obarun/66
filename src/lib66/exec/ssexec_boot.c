@@ -91,10 +91,6 @@ static void read_cmdline(strbuf *stk, size_t len)
 {
     log_flow() ;
 
-    // Open /proc/cmdline for reading
-    ssize_t r ;
-    unsigned int n = 0 ;
-
     int fd = io_open("/proc/cmdline", O_RDONLY) ;
     if (fd == -1) {
         // sulogin returns: leave the cmdline empty so init.conf defaults apply
@@ -104,21 +100,12 @@ static void read_cmdline(strbuf *stk, size_t len)
         return ;
     }
 
-    for(;;) {
-        r = read(fd,stk->s + n,len - n);
-        if (r == -1) {
-            if (errno == EINTR) continue ;
-            break ;
-        }
-        n += r ;
+    /* /proc/cmdline is procfs: stat() reports st_size 0, so a slurp would read
+     * nothing. io_allread reads into our own sized buffer and stops at EOF;
+     * len - 1 keeps room for the terminating NUL. */
+    size_t n = io_allread(fd, stk->s, len - 1) ;
 
-        // buffer is full or end of file
-        if (n == len || !r)
-            break ;
-    }
-
-    if (close(fd) < 0)
-        sulogin("close fd", "") ;
+    close_fd(fd) ;
 
     stk->len = n ;
     stk->s[n] = 0 ;
@@ -381,7 +368,7 @@ static inline void wait_for_notif (int fd)
     char buf[16] ;
     for (;;) {
 
-        ssize_t r = read(fd, buf, 16) ;
+        ssize_t r = io_read(fd, buf, 16) ;
         if (r < 0)
             sulogin("read from notification pipe","") ;
 
@@ -644,7 +631,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
     if (container) {
         /* If there's a Docker synchronization pipe, wait on it */
         char c ;
-        ssize_t r = read(3, &c, 1) ;
+        ssize_t r = io_read(3, &c, 1) ;
         if (r < 0) {
 
           if (errno != EBADF)
