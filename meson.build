@@ -64,7 +64,6 @@ version_skalibs = '>=2.14.3.0'
 version_execline = '>=2.9.6.1'
 version_s6 = '>=2.13.1.0'
 version_oblibs = '>=0.3.4.0'
-version_lowdown = '>=0.6.4'
 
 # Compiler setup
 cc = meson.get_compiler('c')
@@ -130,7 +129,6 @@ skalibs_dep = dep_skalibs
 execline_dep = dep_execline
 s6_dep = dep_s6
 oblibs_dep = dep_oblibs
-doc_dep = dependency('lowdown', version: version_lowdown, required: false, static: get_option('enable-static-deps'))
 
 # Read sysdeps libraries
 pthread_lib = ''
