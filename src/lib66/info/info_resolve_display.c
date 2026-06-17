@@ -25,6 +25,7 @@
 #include <oblibs/stream.h>
 
 #include <66/info.h>
+#include <66/state.h>
 
 static wchar_t const field_suffix[] = L" :" ;
 
@@ -55,12 +56,19 @@ static void display_value(void const *base, char const *rblob, info_field_t cons
         if (!ostream_puts(ostream_1, ui))
             log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 
-    } else {
+    } else if (f->type == INFO_FIELD_U64) {
 
         char ui[U64_FMT] ;
         ui[u64_fmt(ui, *(uint64_t const *)p)] = 0 ;
 
         if (!ostream_puts(ostream_1, ui))
+            log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+
+    } else if (f->type == INFO_FIELD_FLAG) {
+
+        char const *str = (*(uint32_t const *)p == STATE_FLAGS_TRUE) ? "1" : "0" ;
+
+        if (!ostream_puts(ostream_1, str))
             log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
     }
 
