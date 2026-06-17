@@ -150,8 +150,8 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key(c, "logrun_user", &res->logger.execute.run.run_user) ||
         !resolve_get_key(c, "logrun_build", &res->logger.execute.run.build) ||
         !resolve_get_key(c, "logrun_runas", &res->logger.execute.run.runas) ||
-        !resolve_get_key(c, "logtimeoutstart", &res->logger.timeout.start) ||
-        !resolve_get_key(c, "logtimeoutstop", &res->logger.timeout.stop) ||
+        !resolve_get_key(c, "logtimeoutstart", &res->logger.execute.timeout.start) ||
+        !resolve_get_key(c, "logtimeoutstop", &res->logger.execute.timeout.stop) ||
 
     /* environment */
         !resolve_get_key(c, "env", &res->environ.env) ||

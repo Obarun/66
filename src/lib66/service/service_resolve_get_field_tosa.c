@@ -446,12 +446,12 @@ static int get_logger(strbuf *sa, resolve_service_t *res, resolve_service_enum_l
             break ;
 
         case E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTART:
-            fmt[u32_fmt(fmt,res->logger.timeout.start)] = 0 ;
+            fmt[u32_fmt(fmt,res->logger.execute.timeout.start)] = 0 ;
             str = fmt ;
             break ;
 
         case E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTOP:
-            fmt[u32_fmt(fmt,res->logger.timeout.stop)] = 0 ;
+            fmt[u32_fmt(fmt,res->logger.execute.timeout.stop)] = 0 ;
             str = fmt ;
             break ;
         default:

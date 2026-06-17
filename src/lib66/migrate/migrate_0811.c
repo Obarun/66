@@ -127,8 +127,8 @@ static int service_resolve_read_cdb_0811(ocdb *c, resolve_service_t_0811 *res)
         !resolve_get_key(c, "logrun_user", &res->logger.execute.run.run_user) ||
         !resolve_get_key(c, "logrun_build", &res->logger.execute.run.build) ||
         !resolve_get_key(c, "logrun_runas", &res->logger.execute.run.runas) ||
-        !resolve_get_key(c, "logtimeoutstart", &res->logger.timeout.start) ||
-        !resolve_get_key(c, "logtimeoutstop", &res->logger.timeout.stop) ||
+        !resolve_get_key(c, "logtimeoutstart", &res->logger.execute.timeout.start) ||
+        !resolve_get_key(c, "logtimeoutstop", &res->logger.execute.timeout.stop) ||
 
     /* environment */
         !resolve_get_key(c, "env", &res->environ.env) ||
@@ -241,8 +241,8 @@ void service_resolve_sanitize_0811(resolve_service_t *new, resolve_service_t_081
     new->logger.execute.run.run_user = old->execute.run.run_user ? resolve_add_string(wres, old->sa.s + old->execute.run.run_user) : 0 ;
     new->logger.execute.run.build = old->execute.run.build ? resolve_add_string(wres, old->sa.s + old->execute.run.build) : 0 ;
     new->logger.execute.run.runas = old->execute.run.runas ? resolve_add_string(wres, old->sa.s + old->execute.run.runas) : 0 ;
-    new->logger.timeout.start = old->logger.timeout.start ;
-    new->logger.timeout.stop = old->logger.timeout.stop ;
+    new->logger.execute.timeout.start = old->logger.execute.timeout.start ;
+    new->logger.execute.timeout.stop = old->logger.execute.timeout.stop ;
 
     // environ
     new->environ.env = old->environ.env ? resolve_add_string(wres, old->sa.s + old->environ.env) : 0 ;

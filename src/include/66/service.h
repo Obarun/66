@@ -134,13 +134,11 @@ struct resolve_service_addon_logger_s
     uint32_t timestamp ; // integer
     uint32_t want ; // 1 want, 0 do not want. Want by default
     resolve_service_addon_execute_t execute ;
-    resolve_service_addon_timeout_t timeout ;
 } ;
 
 #define RESOLVE_SERVICE_ADDON_LOGGER_ZERO { \
     0,3,1000000,3,1, \
-    RESOLVE_SERVICE_ADDON_EXECUTE_ZERO, \
-    RESOLVE_SERVICE_ADDON_TIMEOUT_ZERO \
+    RESOLVE_SERVICE_ADDON_EXECUTE_ZERO \
 }
 
 typedef struct resolve_service_addon_environ_s resolve_service_addon_environ_t, *resolve_service_addon_environ_t_ref ;

@@ -412,11 +412,11 @@ static void modify_logger(resolve_service_t *res, char const *data, uint32_t fie
             break ;
 
         case E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTART:
-            res->logger.timeout.start = resolve_add_uint(data) ;
+            res->logger.execute.timeout.start = resolve_add_uint(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTOP:
-            res->logger.timeout.stop = resolve_add_uint(data) ;
+            res->logger.execute.timeout.stop = resolve_add_uint(data) ;
             break ;
 
         default:
