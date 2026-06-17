@@ -87,39 +87,46 @@ static info_graph_style *S_STYLE = &graph_default ;
 
 static ssexec_t_ref pinfo = 0 ;
 
-static info_opts_map_t const opts_sv_table[] =
-{
-    { .str = "name", .svfunc = &info_display_name, .id = 0 },
-    { .str = "version", .svfunc = &info_display_version, .id = 1 },
-    { .str = "intree", .svfunc = &info_display_intree, .id = 2 },
-    { .str = "status", .svfunc = &info_display_status, .id = 3 },
-    { .str = "type", .svfunc = &info_display_type, .id = 4 },
-    { .str = "description", .svfunc = &info_display_description, .id = 5 },
-    { .str = "partof", .svfunc = &info_display_inns, .id = 6 },
-    { .str = "notify", .svfunc = &info_display_notify, .id = 7 },
-    { .str = "maxdeath", .svfunc = &info_display_maxdeath, .id = 8 },
-    { .str = "earlier", .svfunc = &info_display_earlier, .id = 9 },
-    { .str = "source", .svfunc = &info_display_source, .id = 10 },
-    { .str = "live", .svfunc = &info_display_live, .id = 11 },
-    { .str = "depends", .svfunc = &info_display_deps, .id = 12 },
-    { .str = "requiredby", .svfunc = &info_display_requiredby, .id = 13 },
-    { .str = "contents", .svfunc = &info_display_contents, .id = 14 },
-    { .str = "optsdepends", .svfunc = &info_display_optsdeps, .id = 15 },
-    { .str = "start", .svfunc = &info_display_start, .id = 16 },
-    { .str = "stop", .svfunc = &info_display_stop, .id = 17 },
-    { .str = "envat", .svfunc = &info_display_envat, .id = 18 },
-    { .str = "envfile", .svfunc = &info_display_envfile, .id = 19 },
-    { .str = "importfile", .svfunc = &info_display_importfile, .id = 20 },
-    { .str = "stdin", .svfunc = &info_display_stdin, .id = 21 },
-    { .str = "stdout", .svfunc = &info_display_stdout, .id = 22 },
-    { .str = "stderr", .svfunc = &info_display_stderr, .id = 23 },
-    { .str = "logname", .svfunc = &info_display_logname, .id = 24 },
-    { .str = "logfile", .svfunc = &info_display_logfile, .id = 25 },
-    { .str = 0, .svfunc = 0, .id = -1 }
+/* One row per displayable field, in display order. The single source of truth:
+ * key is what -o selects, label is the printed field name, render does the work. */
+
+typedef struct status_field_s status_field_t ;
+struct status_field_s {
+    char const *key ;
+    char const *label ;
+    void (*render)(char const *field, resolve_service_t *res) ;
 } ;
 
-#define MAXOPTS 27
-#define checkopts(n) if (n >= MAXOPTS) log_die(LOG_EXIT_USER, "too many options")
+static status_field_t const fields_sv[] = {
+    { "name",        "Name",                   &info_display_name },
+    { "version",     "Version",                &info_display_version },
+    { "intree",      "In tree",                &info_display_intree },
+    { "status",      "Status",                 &info_display_status },
+    { "type",        "Type",                   &info_display_type },
+    { "description", "Description",            &info_display_description },
+    { "partof",      "Part of",                &info_display_inns },
+    { "notify",      "Notify",                 &info_display_notify },
+    { "maxdeath",    "Max death",              &info_display_maxdeath },
+    { "earlier",     "Earlier",                &info_display_earlier },
+    { "source",      "Source",                 &info_display_source },
+    { "live",        "Live",                   &info_display_live },
+    { "depends",     "Dependencies",           &info_display_deps },
+    { "requiredby",  "Required by",            &info_display_requiredby },
+    { "contents",    "Contents",               &info_display_contents },
+    { "optsdepends", "Optional dependencies",  &info_display_optsdeps },
+    { "start",       "Start script",           &info_display_start },
+    { "stop",        "Stop script",            &info_display_stop },
+    { "envat",       "Environment source",     &info_display_envat },
+    { "envfile",     "Environment file",       &info_display_envfile },
+    { "importfile",  "Environment ImportFile", &info_display_importfile },
+    { "stdin",       "StdIn",                  &info_display_stdin },
+    { "stdout",      "StdOut",                 &info_display_stdout },
+    { "stderr",      "StdErr",                 &info_display_stderr },
+    { "logname",     "Logger name",            &info_display_logname },
+    { "logfile",     "Logger file",            &info_display_logfile },
+} ;
+
+#define NFIELD OPT_COUNT(fields_sv)
 #define DELIM ','
 
 static char *print_nlog(char *str, int n)
@@ -413,7 +420,7 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
         if (GRAPH) {
             if (!ostream_fmt(ostream_1,"%s\n","\\"))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-            if (!ostream_fmt(ostream_1,"%*s%s%s%s%s\n",padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
+            if (!ostream_fmt(ostream_1,"%*s%s%s%s%s\n",(int)padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
         } else {
             info_display_empty() ;
@@ -486,7 +493,7 @@ static void info_display_deps(char const *field, resolve_service_t *res)
             if (!ostream_fmt(ostream_1,"%s\n","\\"))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
-            if (!ostream_fmt(ostream_1,"%*s%s%s%s%s\n",padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
+            if (!ostream_fmt(ostream_1,"%*s%s%s%s%s\n",(int)padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
         } else {
             info_display_empty() ;
@@ -588,7 +595,7 @@ static void info_display_contents(char const *field, resolve_service_t *res)
             if (!ostream_fmt(ostream_1,"%s\n","\\"))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
-            if (!ostream_fmt(ostream_1,"%*s%s%s%s%s\n",padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
+            if (!ostream_fmt(ostream_1,"%*s%s%s%s%s\n",(int)padding, "", S_STYLE->last, log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
         } else {
             info_display_empty() ;
@@ -607,7 +614,7 @@ static void info_display_start(char const *field,resolve_service_t *res)
 
     size_t padding = info_length_from_wchar(field) + 1 ;
     if (field)
-        if (!ostream_fmt(ostream_1,"\n%*s",padding,""))
+        if (!ostream_fmt(ostream_1,"\n%*s",(int)padding,""))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
     if (res->execute.run.run_user)
@@ -625,7 +632,7 @@ static void info_display_stop(char const *field,resolve_service_t *res)
 
     size_t padding = info_length_from_wchar(field) + 1 ;
     if (field)
-        if (!ostream_fmt(ostream_1,"\n%*s",padding,""))
+        if (!ostream_fmt(ostream_1,"\n%*s",(int)padding,""))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
     if (res->execute.finish.run_user)
@@ -757,7 +764,7 @@ static void info_display_envfile(char const *field,resolve_service_t *res)
             {
                 if (NOFIELD) {
                     size_t padding = info_length_from_wchar(field) + 1 ;
-                    if (!ostream_fmt(ostream_1,"%*s",padding,""))
+                    if (!ostream_fmt(ostream_1,"%*s",(int)padding,""))
                         log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
                 }
                 info_display_nline(field,sa.s) ;
@@ -940,7 +947,7 @@ static void info_display_all(resolve_service_t *res,int *what)
     for (; what[i] >= 0 ; i++)
     {
         unsigned int idx = what[i] ;
-        (*opts_sv_table[idx].svfunc)(fields[opts_sv_table[idx].id],res) ;
+        (*fields_sv[idx].render)(fields[idx],res) ;
     }
 
 }
@@ -948,28 +955,28 @@ static void info_display_all(resolve_service_t *res,int *what)
 static void info_parse_options(char const *str,int *what)
 {
     size_t pos = 0 ;
-    unsigned int nopts = 0 , old = 0 ;
-    info_opts_map_t const *t ;
+    unsigned int nopts = 0 ;
     _alloc_sbl_(stk, strlen(str) + 1) ;
 
     if (!lexer_trim_with_delim(&stk,str,DELIM))
         log_dieu(LOG_EXIT_SYS,"parse options") ;
 
-    checkopts(sbl_count(&stk)) ;
+    if (sbl_count(&stk) > NFIELD)
+        log_die(LOG_EXIT_USER, "too many options") ;
 
     FOREACH_SBL(&stk, pos) {
 
         char *o = stk.s + pos ;
-        t = opts_sv_table ;
-        old = nopts ;
-        for (; t->str; t++) {
+        size_t i = 0 ;
 
-            if (!strcmp(o,t->str))
-                what[nopts++] = t->id ;
-        }
+        for (; i < NFIELD ; i++)
+            if (!strcmp(o, fields_sv[i].key))
+                break ;
 
-        if (old == nopts)
+        if (i == NFIELD)
             log_die(LOG_EXIT_SYS,"invalid option: ",o) ;
+
+        what[nopts++] = i ;
     }
 }
 
@@ -1081,7 +1088,8 @@ void info_status_one(const char *service, int *what)
 static opt_t const opts_status[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",     .arg = OPT_NONE,                             .help = "print this help" },
     { .id = 'n',         .shortname = 'n', .longname = "no-field", .arg = OPT_NONE,                             .help = "do not display the field name" },
-    { .id = 'o',         .shortname = 'o', .longname = "options",  .arg = OPT_REQUIRED, .argname = "field,...", .help = "comma separated list of options" },
+    { .id = 'o',         .shortname = 'o', .longname = "options",  .arg = OPT_REQUIRED, .argname = "field,...", .help = "deprecated options, please use -f instead", .hidden = true },
+    { .id = 'f',         .shortname = 'o', .longname = "field",    .arg = OPT_REQUIRED, .argname = "field,...", .help = "comma separated list of options" },
     { .id = 'g',         .shortname = 'g', .longname = "graph",    .arg = OPT_NONE,                             .help = "displays interdependences as graph" },
     { .id = 'r',         .shortname = 'r', .longname = "reverse",  .arg = OPT_NONE,                             .help = "reverse the interdependence graph" },
     { .id = 'd',         .shortname = 'd', .longname = "depth",    .arg = OPT_REQUIRED, .argname = "number",    .help = "limit the depth of interdependence graph recursion by depth" },
@@ -1089,7 +1097,7 @@ static opt_t const opts_status[] = {
 } ;
 
 static short sta_legacy = 1 ;
-static int sta_what[MAXOPTS] = { 0 } ;
+static int sta_what[NFIELD + 1] = { 0 } ;
 static uint8_t sta_what_init = 0 ;
 
 static int on_status(int id, char const *arg, void *data)
@@ -1103,8 +1111,11 @@ static int on_status(int id, char const *arg, void *data)
             break ;
 
         case 'o' :
+            log_1_warn("deprecated options, please use -f instead") ;
+            attribute_fallthrough ;
+        case 'f' :
             if (!sta_what_init) {
-                for (int i = 0 ; i < MAXOPTS ; i++)
+                for (size_t i = 0 ; i < NFIELD + 1 ; i++)
                     sta_what[i] = -1 ;
                 sta_what_init = 1 ;
             }
@@ -1151,7 +1162,7 @@ int ssexec_status(int argc, char const *const *argv, void *data)
     /* drain option state into locals (a private copy of the field selection),
      * then reset the statics so a nested re-dispatch of "status" starts clean. */
     short legacy = sta_legacy, all = 0 ;
-    int what[MAXOPTS] ;
+    int what[NFIELD + 1] ;
     memcpy(what, sta_what, sizeof what) ;
     sta_legacy = 1 ;
     sta_what_init = 0 ;
@@ -1161,33 +1172,9 @@ int ssexec_status(int argc, char const *const *argv, void *data)
 
     char const *svname = 0 ;
 
-    char buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
-        "Name",
-        "Version" ,
-        "In tree",
-        "Status",
-        "Type",
-        "Description",
-        "Part of",
-        "Notify",
-        "Max death",
-        "Earlier",
-        "Source",
-        "Live",
-        "Dependencies",
-        "Required by",
-        "Contents",
-        "Optional dependencies" ,
-        "Start script",
-        "Stop script",
-        "Environment source",
-        "Environment file",
-        "Environment ImportFile",
-        "StdIn",
-        "StdOut",
-        "StdErr",
-        "Logger name",
-        "Logger file" } ;
+    char buf[NFIELD][INFO_FIELD_MAXLEN] ;
+    for (size_t i = 0 ; i < NFIELD ; i++)
+        memcpy(buf[i], fields_sv[i].label, strlen(fields_sv[i].label) + 1) ;
 
     if (!argc)
         all = 1 ;
@@ -1196,14 +1183,14 @@ int ssexec_status(int argc, char const *const *argv, void *data)
 
     if (legacy) {
 
-        unsigned int i = 0 ;
-        for (; i < MAXOPTS - 1 ; i++)
+        size_t i = 0 ;
+        for (; i < NFIELD ; i++)
             what[i] = i ;
 
         what[i] = -1 ;
     }
 
-    info_field_align(buf,fields,field_suffix,MAXOPTS) ;
+    info_field_align(buf,fields,field_suffix,NFIELD) ;
 
     setlocale(LC_ALL, "");
 

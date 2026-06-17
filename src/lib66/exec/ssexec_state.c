@@ -12,12 +12,11 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <wchar.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
-#include <oblibs/stream.h>
 #include <oblibs/files.h>
 
 #include <66/info.h>
@@ -27,41 +26,48 @@
 #include <66/config.h>
 #include <66/ssexec.h>
 
-#define MAXOPTS 12
+/* One row per state flag, in display order -- the key is what -f selects. */
 
-static wchar_t const field_suffix[] = L" :" ;
-static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
+static info_field_t const fields_state[] = {
+    { "toinit",        INFO_FIELD_FLAG, offsetof(ss_state_t, toinit) },
+    { "toreload",      INFO_FIELD_FLAG, offsetof(ss_state_t, toreload) },
+    { "torestart",     INFO_FIELD_FLAG, offsetof(ss_state_t, torestart) },
+    { "tounsupervise", INFO_FIELD_FLAG, offsetof(ss_state_t, tounsupervise) },
+    { "toparse",       INFO_FIELD_FLAG, offsetof(ss_state_t, toparse) },
+    { "isparsed",      INFO_FIELD_FLAG, offsetof(ss_state_t, isparsed) },
+    { "issupervised",  INFO_FIELD_FLAG, offsetof(ss_state_t, issupervised) },
+    { "isup",          INFO_FIELD_FLAG, offsetof(ss_state_t, isup) },
+} ;
 
-static void info_display_string(char const *field,char const *str)
-{
-    info_display_field_name(field) ;
-
-    if (!*str)
-    {
-        if (!ostream_fmt(ostream_1,"%s%s",log_color->warning,"None"))
-            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-    }
-    else
-    {
-        if (!ostream_puts(ostream_1,str))
-            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-    }
-    if (!ostream_putflush(ostream_1, "\n", 1))
-        log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-}
-
-static void info_display_int(char const *field, unsigned int id)
-{
-    char *str = "0" ;
-    if (id == STATE_FLAGS_TRUE)
-        str = "1" ;
-
-    info_display_string(field, str) ;
-}
+/* option state, set by on_state, drained at the top of ssexec_state */
+static char const *opt_field = 0 ;
+static uint8_t opt_noname = 0 ;
 
 static opt_t const opts_state[] = {
-    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE, .help = "print this help" },
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",   .arg = OPT_NONE,                             .help = "print this help" },
+    { .id = 'f',         .shortname = 'f', .longname = "field",  .arg = OPT_REQUIRED, .argname = "field,...", .help = "display only these comma-separated fields" },
+    { .id = 'n',         .shortname = 'n', .longname = "noname", .arg = OPT_NONE,                             .help = "display only the value, not the field name" },
 } ;
+
+static int on_state(int id, char const *arg, void *data)
+{
+    (void)data ;
+
+    switch (id) {
+
+        case 'f' :
+
+            opt_field = arg ;
+            break ;
+
+        case 'n' :
+
+            opt_noname = 1 ;
+            break ;
+    }
+
+    return 0 ;
+}
 
 opt_cmd_t const cmd_state = {
     .name = "66 state",
@@ -69,29 +75,26 @@ opt_cmd_t const cmd_state = {
     .operands = "service",
     .opts = opts_state,
     .nopts = OPT_COUNT(opts_state),
+    .on_option = &on_state,
     .fn = &ssexec_state,
 } ;
 
 int ssexec_state(int argc, char const *const *argv, void *data)
 {
     ssexec_t *info = data ;
+
+    /* drain option state into locals, then reset the statics for re-entrancy */
+    char const *field = opt_field ;
+    uint8_t noname = opt_noname ;
+    opt_field = 0 ;
+    opt_noname = 0 ;
+
     int r = -1 ;
-    uint8_t m = 0 ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
     ss_state_t sta = STATE_ZERO ;
     char const *svname = 0 ;
-
-    char buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
-        "toinit",
-        "toreload",
-        "torestart",
-        "tounsupervise",
-        "toparse",
-        "isparsed" ,
-        "issupervised",
-        "isup" } ;
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
@@ -124,16 +127,7 @@ int ssexec_state(int argc, char const *const *argv, void *data)
             log_dieusys(111,"read state file of: ", svname) ;
     }
 
-    info_field_align(buf,fields,field_suffix,MAXOPTS) ;
-
-    info_display_int(fields[m++],sta.toinit) ;
-    info_display_int(fields[m++],sta.toreload) ;
-    info_display_int(fields[m++],sta.torestart) ;
-    info_display_int(fields[m++],sta.tounsupervise) ;
-    info_display_int(fields[m++],sta.toparse) ;
-    info_display_int(fields[m++],sta.isparsed) ;
-    info_display_int(fields[m++],sta.issupervised) ;
-    info_display_int(fields[m],sta.isup) ;
+    info_resolve_display(&sta, 0, fields_state, OPT_COUNT(fields_state), field, noname) ;
 
     resolve_free(wres) ;
 

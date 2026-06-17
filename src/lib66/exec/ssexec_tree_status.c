@@ -45,7 +45,6 @@ static unsigned int REVERSE = 0 ;
 static unsigned int NOFIELD = 1 ;
 static unsigned int GRAPH = 0 ;
 static unsigned int LEGACY = 1 ;
-static int WHAT[9] = { -1, -1, -1, -1, -1, -1, -1, -1, -1 } ;
 
 static wchar_t const field_suffix[] = L" :" ;
 static char fields[INFO_NKEY][INFO_FIELD_MAXLEN] = {{ 0 }} ;
@@ -62,23 +61,32 @@ static info_graph_style *T_STYLE = &graph_default ;
 
 static ssexec_t_ref pinfo = 0 ;
 
-info_opts_map_t const opts_tree_table[] =
-{
-    { .str = "name", .func = &info_display_name, .id = 0 },
-    { .str = "current", .func = &info_display_current, .id = 1 },
-    { .str = "enabled", .func = &info_display_enabled, .id = 2 },
-//    { .str = "init", .func = &info_display_init, .id = 3 },
-    { .str = "allowed", .func = &info_display_allow, .id = 3 },
-    { .str = "groups", .func = &info_display_groups, .id = 4 },
-    { .str = "depends", .func = &info_display_depends, .id = 5 },
-    { .str = "requiredby", .func = &info_display_requiredby, .id = 6 },
-    { .str = "contents", .func = &info_display_contents, .id = 7 },
-    { .str = 0, .func = 0, .id = -1 }
+/* One row per displayable field, in display order. The single source of truth:
+ * key is what -o selects, label is the printed field name, render does the work. */
+
+typedef struct tree_field_s tree_field_t ;
+struct tree_field_s {
+    char const *key ;
+    char const *label ;
+    void (*render)(char const *field, resolve_tree_t *res) ;
 } ;
 
-#define MAXOPTS 9
-#define checkopts(n) if (n >= MAXOPTS) log_die(LOG_EXIT_USER, "too many options")
+static tree_field_t const fields_tree[] = {
+    { "name",       "Name",        &info_display_name },
+    { "current",    "Current",     &info_display_current },
+    { "enabled",    "Enabled",     &info_display_enabled },
+//  { "init",       "Initialized", &info_display_init },
+    { "allowed",    "Allowed",     &info_display_allow },
+    { "groups",     "Groups",      &info_display_groups },
+    { "depends",    "Depends",     &info_display_depends },
+    { "requiredby", "Required by", &info_display_requiredby },
+    { "contents",   "Contents",    &info_display_contents },
+} ;
+
+#define NFIELD OPT_COUNT(fields_tree)
 #define DELIM ','
+
+static int WHAT[NFIELD + 1] = { -1 } ;
 
 static void info_display_name(char const *field, resolve_tree_t *res)
 {
@@ -271,7 +279,7 @@ static void info_display_depends(char const *field, resolve_tree_t *res)
             if (!ostream_fmt(ostream_1,"%s\n","\\"))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
-            if (!ostream_fmt(ostream_1,"%*s%s%s%s%s\n",padding, "", T_STYLE->last, log_color->warning,"None",log_color->off))
+            if (!ostream_fmt(ostream_1,"%*s%s%s%s%s\n",(int)padding, "", T_STYLE->last, log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
         } else {
@@ -347,7 +355,7 @@ static void info_display_requiredby(char const *field, resolve_tree_t *res)
             if (!ostream_fmt(ostream_1,"%s\n","\\"))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
-            if (!ostream_fmt(ostream_1,"%*s%s%s%s%s\n",padding, "", T_STYLE->last, log_color->warning,"None",log_color->off))
+            if (!ostream_fmt(ostream_1,"%*s%s%s%s%s\n",(int)padding, "", T_STYLE->last, log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
         } else {
@@ -418,7 +426,7 @@ static void info_display_contents(char const *field, resolve_tree_t *res)
             if (!ostream_fmt(ostream_1,"%s\n","\\"))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
-            if (!ostream_fmt(ostream_1,"%*s%s%s%s%s\n",padding, "", T_STYLE->last, log_color->warning,"None",log_color->off))
+            if (!ostream_fmt(ostream_1,"%*s%s%s%s%s\n",(int)padding, "", T_STYLE->last, log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
         } else {
@@ -443,7 +451,7 @@ static void info_display_all(const char *treename,int *what)
 
     for (; what[i] >= 0 ; i++) {
         unsigned int idx = what[i] ;
-        (*opts_tree_table[idx].func)(fields[opts_tree_table[idx].id],&tres) ;
+        (*fields_tree[idx].render)(fields[idx],&tres) ;
     }
 
     resolve_free(wres) ;
@@ -452,28 +460,31 @@ static void info_display_all(const char *treename,int *what)
 static void info_parse_options(char const *str,int *what)
 {
     size_t pos = 0 ;
+    unsigned int nopts = 0 ;
     _alloc_sbl_(stk, strlen(str) + 1) ;
+
+    for (size_t i = 0 ; i < NFIELD + 1 ; i++)
+        what[i] = -1 ;
 
     if (!lexer_trim_with_delim(&stk, str, DELIM))
         log_dieu(LOG_EXIT_SYS,"parse options") ;
 
-    unsigned int nopts = 0 , old ;
-    checkopts(sbl_count(&stk)) ;
-    info_opts_map_t const *t ;
+    if (sbl_count(&stk) > NFIELD)
+        log_die(LOG_EXIT_USER, "too many options") ;
 
     FOREACH_SBL(&stk, pos) {
 
         char *o = stk.s + pos ;
-        t = opts_tree_table ;
-        old = nopts ;
-        for (; t->str; t++) {
+        size_t i = 0 ;
 
-            if (!strcmp(o,t->str))
-                what[nopts++] = t->id ;
-        }
+        for (; i < NFIELD ; i++)
+            if (!strcmp(o, fields_tree[i].key))
+                break ;
 
-        if (old == nopts)
+        if (i == NFIELD)
             log_die(LOG_EXIT_SYS,"invalid option: ",o) ;
+
+        what[nopts++] = i ;
     }
 }
 
@@ -504,29 +515,22 @@ int ssexec_tree_status(int argc, char const *const *argv, void *data)
 
     char const *treename = 0 ;
 
-    char buf[MAXOPTS][INFO_FIELD_MAXLEN] = {
-        "Name",
-        "Current",
-        "Enabled",
-        //"Initialized",
-        "Allowed",
-        "Groups",
-        "Depends",
-        "Required by",
-        "Contents" } ;
+    char buf[NFIELD][INFO_FIELD_MAXLEN] ;
+    for (size_t i = 0 ; i < NFIELD ; i++)
+        memcpy(buf[i], fields_tree[i].label, strlen(fields_tree[i].label) + 1) ;
 
     if (argc >= 1) treename = argv[0] ;
 
     if (LEGACY) {
 
-        unsigned int i = 0 ;
-        for (; i < MAXOPTS - 1 ; i++)
+        size_t i = 0 ;
+        for (; i < NFIELD ; i++)
             what[i] = i ;
 
         what[i] = -1 ;
     }
 
-    info_field_align(buf,fields,field_suffix,MAXOPTS) ;
+    info_field_align(buf,fields,field_suffix,NFIELD) ;
 
     setlocale(LC_ALL, "");
 

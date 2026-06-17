@@ -37,20 +37,6 @@ struct depth_s
     int level ;
 } ;
 
-typedef void info_opts_func_t (char const *field,resolve_tree_t *res) ;
-typedef info_opts_func_t *info_opts_func_t_ref ;
-typedef void info_opts_svfunc_t (char const *field,resolve_service_t *res) ;
-typedef info_opts_svfunc_t *info_opts_svfunc_t_ref ;
-
-typedef struct info_opts_map_s info_opts_map_t ;
-struct info_opts_map_s
-{
-    char const *str ;
-    info_opts_func_t *func ;
-    info_opts_svfunc_t *svfunc ;
-    unsigned int id ;
-} ;
-
 #define UTF_V   "\342\224\202"  /* U+2502, Vertical line drawing char */
 #define UTF_VR  "\342\224\234"  /* U+251C, Vertical and right */
 #define UTF_H   "\342\224\200"  /* U+2500, Horizontal */
@@ -81,7 +67,7 @@ extern void info_display_nline(char const *field,char const *str) ;
  * inline: a string is a uint32 offset into its blob, an integer is the value
  * itself, a limit is a uint64. One row per cdb key describes how to render it. */
 
-enum info_field_type_e { INFO_FIELD_STR, INFO_FIELD_U32, INFO_FIELD_U64 } ;
+enum info_field_type_e { INFO_FIELD_STR, INFO_FIELD_U32, INFO_FIELD_U64, INFO_FIELD_FLAG } ;
 
 typedef struct info_field_s info_field_t ;
 struct info_field_s {
