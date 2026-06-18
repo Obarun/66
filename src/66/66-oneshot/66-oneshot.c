@@ -13,13 +13,17 @@
  * */
 
 #include <unistd.h>
+#include <signal.h>
 #include <string.h>
+#include <stdint.h>
+#include <sys/wait.h>
 
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 
+#include <66/oneshot.h>
 #include <66/constants.h>
 
 static opt_t const opts[] = {
@@ -29,16 +33,13 @@ static opt_t const opts[] = {
 
 static opt_cmd_t const cmd = {
     .name = "66-oneshot",
-    .operands = "up|down /run/66/state/<uid>/<service>",
+    .operands = "socket up|down /run/66/state/<uid>/<service>",
     .opts = opts,
     .nopts = OPT_COUNT(opts),
 } ;
 
 int main(int argc, char const *const *argv)
 {
-    char const *path = 0 ;
-    char *file = "run" ;
-
     PROG = "66-oneshot" ;
     {
         opt_scan_t st = OPT_SCAN_ZERO ;
@@ -60,69 +61,61 @@ int main(int argc, char const *const *argv)
         argc -= st.ind ; argv += st.ind ;
     }
 
-    if (argc < 1)
+    if (argc < 3)
         return opt_emit_usage(cmd.name, &cmd) ;
 
-    if (argv[0][0] == 'd')
-        file = "finish" ;
+    char const *socket = argv[0] ;
+    char const *op = argv[1] ;
+    char const *servicedir = argv[2] ;
 
-    if (argv[0][0] != 'd' && argv[0][0] != 'u')
+    if (op[0] != 'd' && op[0] != 'u')
         log_die(LOG_EXIT_USER, "only up or down signals are allowed") ;
 
-    if (strlen(argv[1]) >= SS_MAX_PATH_LEN)
-        flog_die(LOG_EXIT_USER, "path of script file is too long -- it cannot exceed: %d", SS_MAX_PATH_LEN) ;
+    uint8_t down = op[0] == 'd' ;
 
-    else if (argv[1][0] != '/')
-        log_die(LOG_EXIT_USER, "path of script file must be absolute") ;
+    size_t len = strlen(servicedir) ;
 
-    if (access(argv[1], F_OK) < 0) {
+    if (len >= SS_MAX_PATH_LEN)
+        flog_die(LOG_EXIT_USER, "service directory is too long -- it cannot exceed: %zu", (size_t)SS_MAX_PATH_LEN) ;
 
-        if (file[0] == 'f')
-            /* really nothing to do here */
-            return 0 ;
+    if (servicedir[0] != '/')
+        log_die(LOG_EXIT_USER, "service directory must be an absolute path: ", servicedir) ;
 
-        else
-            log_dieusys(LOG_EXIT_SYS, "find: ", argv[1]) ;
-    }
+    char script[len + 1 + 6 + 1] ;
+    auto_strings(script, servicedir, "/", down ? "finish" : "run") ;
 
-    path = argv[1] ;
-    size_t len = strlen(path) ;
-
-    char script[len + 1 + strlen(file) + 1] ;
-    auto_strings(script, path, "/", file) ;
-
-    /** Keep compatibility with previous version */
     if (access(script, F_OK) < 0) {
-        // try with the old name
-        auto_strings(script + len + 1, (file[0] == 'f') ? "down" : "up") ;
-        if (access(script, F_OK) < 0){
-            if (file[0] == 'f')
-                _exit(0) ;
-            else
-                log_dieusys(LOG_EXIT_SYS, "find: ", script) ;
-        }
-
-        file = (file[0] == 'f') ? "down" : "up" ;
+        /* a oneshot with no down script has nothing to bring down */
+        if (down)
+            _exit(0) ;
+        log_dieusys(LOG_EXIT_SYS, "find: ", script) ;
     }
 
-    /**
-     * be paranoid and avoid to crash just for a
-     * not executable script
-     * Cannot be possible to a read-only filesystem
-    if (chmod(script, 0755) < 0)
-        log_dieusys(LOG_EXIT_SYS,"chmod: ", script) ;
-    */
+    oneshot_client_t c ;
+    if (!oneshot_client_init(&c, socket))
+        log_dieu(LOG_EXIT_SYS, "connect to oneshot daemon: ", socket) ;
 
-    char const *newargv[3] ;
-    unsigned int m = 0 ;
-    newargv[m++] = script ;
-    newargv[m++] = file ;
-    newargv[m] = 0 ;
+    /* no client-side guard timer: the start/stop timeout is owned by the
+     * service manager, which kills us on expiry, which the daemon turns into
+     * killing the running script */
+    int got = oneshot_run(&c, down, servicedir, 0) ;
+    uint8_t status = c.status ;
+    uint32_t wstat = c.wstat ;
 
-    if (chdir(path) < 0)
-        log_dieusys(LOG_EXIT_SYS, "chdir to: ", path) ;
+    oneshot_client_end(&c) ;
 
-    execve(script, (char *const *)newargv, (char *const *)environ) ;
+    if (!got || status != ONESHOT_OK)
+        log_die(LOG_EXIT_SYS, "run ", down ? "down" : "up", " script of: ", servicedir, status != ONESHOT_OK ? " -- " : "", status != ONESHOT_OK ? oneshot_status_str(status) : "") ;
 
-    log_dieusys(errno == ENOENT ? 127 : 126, "exec: ", script) ;
+    /* mirror the script's own termination so the manager's child watcher reads
+     * the genuine status (4-byte wstat is preserved end to end) */
+    if (WIFSIGNALED(wstat)) {
+        int sig = WTERMSIG(wstat) ;
+        signal(sig, SIG_DFL) ; // be sure that the signal is not ignored
+        raise(sig) ; // send it signal to itself by kill it.
+        // never reached
+        _exit(128 + sig) ;
+    }
+
+    _exit(WEXITSTATUS(wstat)) ;
 }

@@ -44,6 +44,11 @@ exe_configs = {
     'deps': [lib66_dep],
     'sysdeps': ''
   },
+  '66-oneshotd': {
+    'sources': ['66-oneshotd.c'],
+    'deps': [lib66_dep],
+    'sysdeps': sys_lib
+  },
   '66-shutdown': {
     'sources': ['66-shutdown.c'],
     'deps': [lib66_dep],
@@ -66,7 +71,7 @@ exe_configs = {
   }
 }
 
-libexec_exes = ['66-execute', '66-fdholderd', '66-oneshot']
+libexec_exes = ['66-execute', '66-fdholderd', '66-oneshot', '66-oneshotd']
 exe_install_dirs = {}
 foreach exe : libexec_exes
   exe_install_dirs += {exe: get_option('libexecdir')}

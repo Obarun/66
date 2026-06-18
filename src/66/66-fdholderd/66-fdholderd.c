@@ -25,6 +25,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
@@ -36,6 +38,7 @@
 #include <oblibs/hash.h>
 #include <oblibs/fd.h>
 #include <oblibs/files.h>
+#include <oblibs/socket.h>
 
 #include <66/fdholder.h>
 
@@ -85,6 +88,7 @@ struct fdholder_daemon_s
     bool timer_started ;
     int sfd ;
     char const *socket_path ;
+    uid_t owner ;
     uint32_t maxfds ;
     fdholder_entry_t *entries ; // uthash by name
     fdholder_pipe_t *pipes ; // uthash by name (named pipe pairs)
@@ -99,6 +103,7 @@ static fdholder_daemon_t fdh = {
     .timer_started = false,
     .sfd = -1,
     .socket_path = NULL,
+    .owner = 0,
     .maxfds = FDHOLDER_MAXFDS_DEFAULT,
     .entries = NULL,
     .pipes = NULL,
@@ -688,6 +693,20 @@ static void server_accept_cb(sse_watcher_t *w, void *data, int revents)
             log_warnusys("accept connection") ;
             return ;
         }
+
+        struct ucred cred ;
+        if (socketunix_getucred(fd, &cred) < 0) {
+            log_warnusys("get peer credentials") ;
+            close_fd(fd) ;
+            return ;
+        }
+
+        if (cred.uid != fdh.owner) {
+            flog_warn("rejecting connection from uid %d", (int)cred.uid) ;
+            close_fd(fd) ;
+            return ;
+        }
+
         conn_create(fd) ;
     }
 }
@@ -844,6 +863,8 @@ int main(int argc, char const *const *argv)
 
     if (!fdh.maxfds)
         fdh.maxfds = FDHOLDER_MAXFDS_DEFAULT ;
+
+    fdh.owner = geteuid() ;
 
     if (!server_init(argv[0], backlog))
         log_dieu(LOG_EXIT_SYS, "initialize fdholder daemon") ;

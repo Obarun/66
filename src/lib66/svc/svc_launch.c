@@ -36,6 +36,7 @@
 #include <66/state.h>
 #include <66/enum_parser.h>
 #include <66/svc.h>
+#include <66/config.h>
 
 // Internal event types for coordination
 enum svc_event_type_e
@@ -263,13 +264,9 @@ static int launch_service(uint32_t id)
         char oneshot[strlen(oneshotdir) + 2 + 1] ;
         auto_strings(oneshot, oneshotdir, "/s") ;
 
-        char *newargv[9] ;
+        char *newargv[5] ;
         unsigned int m = 0 ;
-        newargv[m++] = "s6-sudo" ;
-        newargv[m++] = VERBOSITY >= 4 ? "-vel0" : "-el0" ;
-        newargv[m++] = "-t" ;
-        newargv[m++] = "30000" ;
-        newargv[m++] = "--" ;
+        newargv[m++] = SS_LIBEXECPREFIX "66-oneshot" ;
         newargv[m++] = oneshot ;
         newargv[m++] = !pmanager->operation ? "up" : "down" ;
         newargv[m++] = servicedir ;

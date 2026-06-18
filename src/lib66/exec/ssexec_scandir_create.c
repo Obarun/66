@@ -472,77 +472,40 @@ void write_control(char const *scandir,char const *live, char const *filename, i
         auto_chown(mode) ;
 }
 
-void auto_empty_file(char const *dst, char const *filename, char const *contents)
-{
-    size_t dstlen = strlen(dst), filen = strlen(filename) ;
-
-    char tmp[dstlen + filen + 1] ;
-    auto_strings(tmp, dst, filename) ;
-
-    if (!file_write(tmp, contents, strlen(contents)))
-        log_dieusys(LOG_EXIT_SYS, "create file: ", tmp) ;
-
-    auto_chown(tmp) ;
-}
-
-static void create_service_skel(char const *service, char const *target, char const *notif, ssexec_t *info)
-{
-    size_t targetlen = strlen(target) ;
-    size_t servicelen = strlen(service) + 1 ;
-
-    char dst[targetlen + 1 + servicelen + info->ownerlen + 21 + 1] ;
-    auto_strings(dst, target, "/", service, "/data/rules/uid/", info->ownerstr) ;
-
-    auto_dir(dst, 0755) ;
-    auto_empty_file(dst, "/allow", "") ;
-
-    char sym[targetlen + 1 + servicelen + 22 + 1] ;
-    auto_strings(sym, target, "/", service, "/data/rules/uid/self") ;
-
-    log_trace("point symlink: ", sym, " to ", info->ownerstr) ;
-    if (symlink(info->ownerstr, sym) < 0)
-        log_dieusys(LOG_EXIT_SYS, "symlink: ", sym) ;
-
-    if (lchown(sym, OWNER, GIDOWNER) < 0)
-        log_dieusys(LOG_EXIT_SYS, "chown: ", sym) ;
-
-    auto_strings(dst, target, "/", service, "/data/rules/gid/", info->ownerstr) ;
-    auto_dir(dst, 0755) ;
-
-    auto_empty_file(dst, "/allow", "") ;
-
-    auto_strings(dst, target, "/", service, "/") ;
-    auto_file(dst, SS_NOTIFICATION, notif, strlen(notif)) ;
-}
-
 static void create_service_oneshot(char const *scandir, ssexec_t *info)
 {
+    log_flow() ;
+
+    (void)info ;
+
     size_t scandirlen = strlen(scandir) ;
     size_t fdlen = scandirlen + 1 + SS_ONESHOTD_LEN ;
 
-    create_service_skel(SS_ONESHOTD, scandir, "3\n", info) ;
-    size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + strlen(SS_LIBEXECPREFIX) + 174 ;
-    char run[runlen + 1] ;
-    auto_strings(run,"#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n", \
-                    "fdmove -c 2 1\n", \
-                    "fdmove 1 3\n", \
-                    "s6-ipcserver-socketbinder -- s\n", \
-                    "s6-ipcserverd -1 --\n", \
-                    "s6-ipcserver-access -v0 -E -l0 -i data/rules --\n", \
-                    "s6-sudod -t 30000 --\n", \
-                    SS_LIBEXECPREFIX "66-oneshot --\n") ;
+    char dst[fdlen + 16] ;
 
+    /* 66-oneshotd binds its own socket and self-protects via SO_PEERCRED (no
+     * s6-ipcserver access chain, no ACL): just a service dir, a readiness fd
+     * (>= 3) and a one-line run. */
+    auto_strings(dst, scandir, "/", SS_ONESHOTD) ;
+    auto_dir(dst, 0755) ;
+    auto_chown(dst) ;
 
-    char dst[fdlen + 5] ;
+    auto_file(dst, SS_NOTIFICATION, "3\n", 2) ;
+
+    size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + strlen(SS_LIBEXECPREFIX) + 64 + 1 ;
+
+    char run[runlen] ;
+    auto_strings(run, "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n", \
+                "fdmove -c 2 1\n", \
+                SS_LIBEXECPREFIX "66-oneshotd -d 3 -- s\n") ;
+
     auto_strings(dst, scandir, "/", SS_ONESHOTD, "/run") ;
 
     // -1 file_write do not accept closed string
-    if (!file_write(dst, run, runlen))
+    if (!file_write(dst, run, strlen(run) - 1))
         log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
 
-    if (chmod(dst, 0755) < 0)
-        log_dieusys(LOG_EXIT_SYS, "chmod: ", dst) ;
-
+    auto_chmod(dst, 0755) ;
     auto_chown(dst) ;
 }
 
