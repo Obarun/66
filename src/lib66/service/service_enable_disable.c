@@ -89,6 +89,13 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
         else
             treename = res->sa.s + (res->intree ? res->intree : res->treename) ;
 
+        /** detach treename: resolve_write_g() below appends SS_VERSION to res->sa
+         * (service_resolve_write_cdb), which reallocates it and would leave treename
+         * (a pointer into res->sa) dangling for the tree_service_add() calls. */
+        char treename_buf[strlen(treename) + 1] ;
+        auto_strings(treename_buf, treename) ;
+        treename = treename_buf ;
+
         /** resolve file may already exist. Be sure to add it to the contents field of the tree.*/
         if (action) {
 
