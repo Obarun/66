@@ -289,7 +289,11 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
     if (!env_get_destination(&src, &res))
         log_dieusys(LOG_EXIT_SYS, "get current environment version") ;
 
-    svconf = res.sa.s + res.environ.envdir ;
+    /** detach svconf from res.sa: resolve_free(wres) below frees res.sa while
+     * the T_VLIST branch still reads svconf after the free. */
+    char svconf_buf[strlen(res.sa.s + res.environ.envdir) + 1] ;
+    auto_strings(svconf_buf, res.sa.s + res.environ.envdir) ;
+    svconf = svconf_buf ;
 
     if (import) {
         do_import(sv,svconf,import,res.type) ;

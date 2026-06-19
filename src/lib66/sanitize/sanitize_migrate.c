@@ -118,7 +118,6 @@ void migrate_ensure_log_owner(resolve_service_t *res)
 
         _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
         char const *exclude[1] = { 0 } ;
-        char *dest = res->sa.s + res->io.fdout.destination ;
         size_t pos = 0 ;
         uid_t uid ;
         gid_t gid ;
@@ -126,6 +125,10 @@ void migrate_ensure_log_owner(resolve_service_t *res)
         resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
         res->logger.execute.run.runas = resolve_add_string(wres, SS_LOGGER_RUNNER) ;
+
+        /** derive dest after resolve_add_string above: it appends to res->sa and
+         * may relocate it, which would dangle a pointer taken earlier. */
+        char *dest = res->sa.s + res->io.fdout.destination ;
 
         if (access(dest, F_OK) < 0) {
             log_warnusys("find logger directory: '", dest, "' -- ignoring it") ;
