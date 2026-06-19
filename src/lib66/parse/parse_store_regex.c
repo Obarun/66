@@ -75,6 +75,5 @@ int parse_store_regex(resolve_service_t *res, strbuf *store, resolve_enum_table_
             log_warn_return(LOG_EXIT_ZERO, "unknown id key in section regex -- please make a bug report") ;
     }
 
-    free(wres) ;
     return 1 ;
 }
