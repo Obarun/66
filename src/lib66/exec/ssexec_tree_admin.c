@@ -29,7 +29,7 @@
 #include <oblibs/lexer.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/account.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 #include <oblibs/graph.h>
 
 #include <66/tree.h>
@@ -606,7 +606,7 @@ void tree_enable_disable_deps(tree_graph_t *g, char const *base, char const *tre
     size_t pos = 0, element = 0 ;
     vertex_t *v = NULL ;
 
-    HASH_FIND_STR(g->g.vertexes, treename, v) ;
+    v = hash_find(&g->g.vertexes, treename, strlen(treename)) ;
     if (v == NULL)
         return ;
 
@@ -693,7 +693,7 @@ void tree_depends_requiredby(tree_graph_t *g, char const *base, char const *tree
     log_trace("manage ", !requiredby ? "dependencies" : "required by", " for tree: ", treename, "..." ) ;
 
     vertex_t *v = NULL ;
-    HASH_FIND_STR(g->g.vertexes, treename, v) ;
+    v = hash_find(&g->g.vertexes, treename, strlen(treename)) ;
     if (v == NULL)
         log_dieu(LOG_EXIT_SYS, "get information of treename: ", treename, " -- please make a bug report") ;
 
@@ -786,7 +786,7 @@ void tree_depends_requiredby_deps(tree_graph_t *g, char const *base, char const 
     char solve[baselen + SS_SYSTEM_LEN + 1] ;
     vertex_t *v = NULL ;
 
-    HASH_FIND_STR(g->g.vertexes, treename, v) ;
+    v = hash_find(&g->g.vertexes, treename, strlen(treename)) ;
     if (v == NULL)
         log_dieu(LOG_EXIT_SYS, "get information of treename: ", treename, " -- please make a bug report") ;
 
@@ -1177,7 +1177,7 @@ int ssexec_tree_admin(int argc, char const *const *argv, void *data)
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing tree argument") ;
 
-    if (!graph_new(&graph, SS_MAX_SERVICE))
+    if (!tree_graph_new(&graph, SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "initiate the graph") ;
 
     check_identifier(argv[0]) ;
@@ -1241,7 +1241,7 @@ int ssexec_tree_admin(int argc, char const *const *argv, void *data)
         size_t pos = 0 ;
 
         vertex_t *v = NULL ;
-        HASH_FIND_STR(graph.g.vertexes, info->treename.s, v) ;
+        v = hash_find(&graph.g.vertexes, info->treename.s, strlen(info->treename.s)) ;
         if (v == NULL)
             log_dieu(LOG_EXIT_SYS, "get information of treename: ", info->treename.s, " -- please make a bug report") ;
 
@@ -1266,7 +1266,7 @@ int ssexec_tree_admin(int argc, char const *const *argv, void *data)
         size_t pos = 0 ;
 
         vertex_t *v = NULL ;
-        HASH_FIND_STR(graph.g.vertexes, info->treename.s, v) ;
+        v = hash_find(&graph.g.vertexes, info->treename.s, strlen(info->treename.s)) ;
         if (v == NULL)
             log_dieu(LOG_EXIT_SYS, "get information of treename: ", info->treename.s, " -- please make a bug report") ;
 

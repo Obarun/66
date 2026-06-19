@@ -15,7 +15,7 @@
 #include <string.h>
 
 #include <oblibs/log.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 #include <oblibs/sbl.h>
 
 #include <66/fdholder.h>
@@ -68,7 +68,7 @@ void svc_unsupervise(service_graph_t *g)
     bool isstarted = false ;
     fdholder_client_t a ;
 
-    hash_reset_visit(g->hres) ;
+    resolve_hash_reset_visit(&g->hres) ;
 
     FOREACH_GRAPH_SORT(service_graph_t, g, pos) {
 
@@ -76,7 +76,7 @@ void svc_unsupervise(service_graph_t *g)
         vertex_t *v = g->g.sindex[index] ;
         char *name = v->name ;
 
-        struct resolve_hash_s *hash = hash_search(&g->hres, name) ;
+        struct resolve_hash_s *hash = resolve_hash_search(&g->hres, name) ;
 
         if (hash == NULL)
             log_die(LOG_EXIT_USER, "service: ", name, " not available -- please make a bug report") ;
@@ -109,7 +109,7 @@ void svc_unsupervise(service_graph_t *g)
 
             FOREACH_SBL(&stk, bpos) {
 
-                struct resolve_hash_s *h = hash_search(&g->hres, stk.s + bpos) ;
+                struct resolve_hash_s *h = resolve_hash_search(&g->hres, stk.s + bpos) ;
                 if (h == NULL)
                     log_dieu(LOG_EXIT_SYS,"find hash id of: ", stk.s + bpos, " -- please make a bug reports") ;
 

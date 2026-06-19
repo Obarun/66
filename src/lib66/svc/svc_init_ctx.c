@@ -15,7 +15,7 @@
 #include <stdint.h>
 
 #include <oblibs/log.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 #include <oblibs/types.h>
 #include <oblibs/sse.h>
 
@@ -62,7 +62,7 @@ void svc_init_ctx(svc_ctx_t *asvc, service_graph_t *g, uint8_t requiredby, uint3
         v = g->g.sindex[index] ;
         char *name = v->name ;
 
-        hash = hash_search(&g->hres, name) ;
+        hash = resolve_hash_search(&g->hres, name) ;
         if (hash == NULL)
             log_dieu(LOG_EXIT_SYS,"find hash id of: ", name, " -- please make a bug reports") ;
 

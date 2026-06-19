@@ -163,7 +163,7 @@ int ssexec_tree_signal(int argc, char const *const *argv, void *data)
     if ((svc_scandir_ok(info->scandir.s)) <= 0)
         log_die(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
 
-    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+    if (!tree_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "initiate the graph") ;
 
     /** only one tree */

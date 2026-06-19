@@ -19,7 +19,7 @@
 #include <oblibs/strbuf.h>
 #include <oblibs/log.h>
 #include <oblibs/types.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 #include <oblibs/graph.h>
 
 #include <66/graph.h>
@@ -61,7 +61,7 @@ static int issupervised_list(service_graph_t *g, strbuf *stk)
     FOREACH_SBL(stk, pos) {
 
         char *name = stk->s + pos ;
-        struct resolve_hash_s *h = hash_search(&g->hres, name) ;
+        struct resolve_hash_s *h = resolve_hash_search(&g->hres, name) ;
         if (h == NULL || !issupervised(&h->res)) {
             if (errno == EINVAL)
                 return 0 ;
@@ -81,8 +81,7 @@ static int issupervised_list(service_graph_t *g, strbuf *stk)
 
 static bool isdone(service_graph_t *g, const char *name)
 {
-    vertex_t *v = NULL ;
-    HASH_FIND_STR(g->g.vertexes, name, v) ;
+    vertex_t *v = hash_find(&g->g.vertexes, name, strlen(name)) ;
     if (v)
         return true ;
 
@@ -100,7 +99,7 @@ static int graph_add_depends(service_graph_t *g, const char *vertex, strbuf *edg
 
     if (FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
 
-        struct resolve_hash_s *h = hash_search(&g->hres, vertex) ;
+        struct resolve_hash_s *h = resolve_hash_search(&g->hres, vertex) ;
         if (!h)
             log_warnu_return(LOG_EXIT_ZERO, "get information of service: ", vertex, " -- please make a bug report.") ;
 
@@ -190,7 +189,7 @@ static int graph_action_depends(service_graph_t *g, resolve_service_t *res, uint
         // do it recursively
         FOREACH_SBL(&stk, pos) {
 
-            h = hash_search(&g->hres, stk.s + pos) ;
+            h = resolve_hash_search(&g->hres, stk.s + pos) ;
             if (h == NULL)
                 log_warnusys_return(LOG_EXIT_ZERO,"get information of service: ", stk.s + pos) ;
 
@@ -230,7 +229,7 @@ static int graph_action_requiredby(service_graph_t *g, resolve_service_t *res, u
         // do it recursively
         FOREACH_SBL(&stk, pos) {
 
-            h = hash_search(&g->hres, stk.s + pos) ;
+            h = resolve_hash_search(&g->hres, stk.s + pos) ;
             if (h == NULL)
                 log_warnusys_return(LOG_EXIT_ZERO,"get information of service: ", stk.s + pos) ;
 
@@ -265,7 +264,7 @@ static int graph_action_logger(service_graph_t *g, resolve_service_t *res, uint3
             }
         }
 
-        struct resolve_hash_s *h = hash_search(&g->hres, res->sa.s + res->logger.name) ;
+        struct resolve_hash_s *h = resolve_hash_search(&g->hres, res->sa.s + res->logger.name) ;
         if (h == NULL)
             return (errno = EINVAL, 0) ;
 
@@ -292,7 +291,7 @@ static int graph_build_module(service_graph_t *g, resolve_service_t *res, uint32
 
         FOREACH_SBL(&stk, pos) {
 
-            h = hash_search(&g->hres, stk.s + pos) ;
+            h = resolve_hash_search(&g->hres, stk.s + pos) ;
             if (h == NULL)
                 log_warnu_return(LOG_EXIT_ZERO, "find service of module: ", stk.s + pos, " -- please make a bug report.") ;
 
@@ -310,7 +309,7 @@ static int graph_action(service_graph_t *g, resolve_service_t *res, uint32_t fla
 
     int r ;
     char *name = res->sa.s + res->name ;
-    struct resolve_hash_s *h = hash_search(&g->hres, name) ;
+    struct resolve_hash_s *h = resolve_hash_search(&g->hres, name) ;
 
     if (h->visit)
         return 1 ;
@@ -359,14 +358,14 @@ static int sanitize_module_service(service_graph_t *g, uint32_t flag)
 
     vertex_t *c, *tmp, *ns ;
     struct resolve_hash_s *h = NULL ;
-    HASH_ITER(hh, g->g.vertexes, c, tmp) {
+    HASH_FOREACH(&g->g.vertexes, c, tmp) {
         char *name = c->name ;
-        h = hash_search(&g->hres, name) ;
+        h = resolve_hash_search(&g->hres, name) ;
         if (h == NULL)
             log_warnusys_return(LOG_EXIT_ZERO, "get information of service: ", name) ;
 
         if (h->res.inns) {
-            HASH_FIND_STR(g->g.vertexes, h->res.sa.s + h->res.inns, ns) ;
+            ns = hash_find(&g->g.vertexes, h->res.sa.s + h->res.inns, strlen(h->res.sa.s + h->res.inns)) ;
             if (ns != NULL) {
                 if (!graph_remove_vertex(&g->g, name, false, false))
                     return 0 ;
@@ -382,7 +381,7 @@ int service_graph_resolve(service_graph_t *g, const char *name, uint32_t flag)
     log_flow() ;
 
     bool reverse = false ;
-    struct resolve_hash_s *h = hash_search(&g->hres, name) ;
+    struct resolve_hash_s *h = resolve_hash_search(&g->hres, name) ;
     if (h == NULL)
         log_warnusys_return(LOG_EXIT_ZERO, "get information of service: ", name) ;
 
@@ -412,7 +411,7 @@ int service_graph_nresolve(service_graph_t *g, const char *list, size_t len, uin
 
     for (; pos < len ; pos += strlen(list + pos) + 1) {
 
-        h = hash_search(&g->hres, list + pos) ;
+        h = resolve_hash_search(&g->hres, list + pos) ;
         if (h == NULL)
             log_warnusys_return(LOG_EXIT_ZERO, "get information of service: ", list + pos) ;
 

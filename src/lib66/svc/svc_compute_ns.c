@@ -55,7 +55,7 @@ int svc_compute_ns(svc_manager_t *mgr, uint32_t id)
         return 0 ;
     }
 
-    if (!graph_new(&graph, svc->res->dependencies.ncontents))
+    if (!service_graph_new(&graph, svc->res->dependencies.ncontents))
         log_dieusys(LOG_EXIT_SYS, "allocate the graph") ;
 
     /** build the graph of the ns */

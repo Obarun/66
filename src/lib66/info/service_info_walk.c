@@ -18,7 +18,7 @@
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 
 #include <66/info.h>
 #include <66/graph.h>
@@ -76,10 +76,10 @@ int service_info_walk(service_graph_t *g, char const *name, char const *treename
 
         service_graph_t gt = GRAPH_SERVICE_ZERO ;
 
-        if (!graph_new(&gt, g->g.len))
+        if (!service_graph_new(&gt, g->g.len))
             return (errno = ENOMEM, 0) ;
 
-        HASH_FIND_STR(g->g.vertexes, name, v) ;
+        v = hash_find(&g->g.vertexes, name, strlen(name)) ;
         if (v == NULL)
             log_dieu(LOG_EXIT_SYS, "get information of service: ", name, " -- please make a bug report") ;
 
@@ -134,7 +134,7 @@ int service_info_walk(service_graph_t *g, char const *name, char const *treename
         if (!info_graph_display(sa.s + pos, &info_graph_display_service, depth, last, padding, style))
             return 0 ;
 
-        HASH_FIND_STR(g->g.vertexes, sa.s + pos, v) ;
+        v = hash_find(&g->g.vertexes, sa.s + pos, strlen(sa.s + pos)) ;
         if (v == NULL)
             log_dieu(LOG_EXIT_SYS, "get information of service: ", sa.s + pos, " -- please make a bug report") ;
 

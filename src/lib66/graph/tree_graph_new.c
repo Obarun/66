@@ -12,12 +12,15 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include <oblibs/log.h>
 #include <oblibs/graph.h>
+#include <oblibs/hash2.h>
 
 #include <66/graph.h>
+#include <66/tree.h>
 
 int tree_graph_new(tree_graph_t *g, uint32_t len)
 {
@@ -26,7 +29,10 @@ int tree_graph_new(tree_graph_t *g, uint32_t len)
     if (!graph_init(&g->g, len))
         return 0 ;
 
-    g->hres = NULL ;
+    if (!hash_init(&g->hres, len, offsetof(struct resolve_hash_tree_s, node))) {
+        graph_free(&g->g) ;
+        return 0 ;
+    }
 
     return 1 ;
 }

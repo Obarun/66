@@ -18,12 +18,12 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 
 #include <66/tree.h>
 #include <66/resolve.h>
 
-int hash_add_tree(struct resolve_hash_tree_s **hash, char const *name, resolve_tree_t res)
+int hash_add_tree(hash_t *hash, char const *name, resolve_tree_t res)
 {
     log_flow() ;
 
@@ -36,35 +36,37 @@ int hash_add_tree(struct resolve_hash_tree_s **hash, char const *name, resolve_t
 	s->visit = 0 ;
 	auto_strings(s->name, name) ;
 	s->tres = res ;
-	HASH_ADD_STR(*hash, name, s) ;
+
+	if (!hash_add(hash, s->name, strlen(s->name), s)) {
+		free(s) ;
+		return 0 ;
+	}
 
 	return 1 ;
 }
 
-struct resolve_hash_tree_s *hash_search_tree(struct resolve_hash_tree_s **hash, char const *name)
+struct resolve_hash_tree_s *hash_search_tree(hash_t *hash, char const *name)
 {
     log_flow() ;
 
-	struct resolve_hash_tree_s *s ;
-	HASH_FIND_STR(*hash, name, s) ;
-	return s ;
-
+	return hash_find(hash, name, strlen(name)) ;
 }
 
-int hash_count_tree(struct resolve_hash_tree_s **hash)
+int hash_count_tree(hash_t *hash)
 {
-	return HASH_COUNT(*hash) ;
+	return hash_count(hash) ;
 }
 
-void hash_free_tree(struct resolve_hash_tree_s **hash)
+void hash_free_tree(hash_t *hash)
 {
     log_flow() ;
 
 	struct resolve_hash_tree_s *c, *tmp ;
 
-	HASH_ITER(hh, *hash, c, tmp) {
+	HASH_FOREACH(hash, c, tmp) {
 		strbuf_free(&c->tres.sa) ;
-		HASH_DEL(*hash, c) ;
 		free(c) ;
 	}
+
+	hash_free(hash) ;
 }

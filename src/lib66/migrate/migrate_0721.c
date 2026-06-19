@@ -467,7 +467,10 @@ static void migrate_service_0721(void)
     ssexec_t info = SSEXEC_ZERO ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     _cleanup_strbuf_ strbuf frontend = STRBUF_ZERO ;
-    struct resolve_hash_s *hres = NULL ;
+    hash_t hres = HASH_ZERO ;
+
+    if (!hash_init(&hres, 0, offsetof(struct resolve_hash_s, node)))
+        log_dieusys(LOG_EXIT_SYS, "initialize hash table") ;
 
     memset(lconf, 0, sizeof(conf_t) * SS_MAX_SERVICE) ;
 
@@ -571,7 +574,7 @@ static void migrate_service_0721(void)
             PROG = prog ;
         }
     }
-    hash_free(&hres) ;
+    resolve_hash_free(&hres) ;
     ssexec_free(&info) ;
 }
 

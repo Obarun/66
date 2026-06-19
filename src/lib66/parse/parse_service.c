@@ -25,7 +25,7 @@
 #include <oblibs/lexer.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 
 
 #include <66/enum_parser.h>
@@ -250,7 +250,7 @@ static void parse_write_state(resolve_service_t *res, char const *dst, uint8_t f
     }
 }
 
-void parse_service(struct resolve_hash_s **hres, char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
+void parse_service(hash_t *hres, char const *sv, ssexec_t *info, uint8_t force, uint8_t conf)
 {
     log_flow();
 
@@ -268,7 +268,7 @@ void parse_service(struct resolve_hash_s **hres, char const *sv, ssexec_t *info,
         /** already parsed */
         return ;
 
-    HASH_ITER(hh, *hres, c, tmp) {
+    HASH_FOREACH(hres, c, tmp) {
 
         if (!c->visit) {
 

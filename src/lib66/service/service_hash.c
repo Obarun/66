@@ -18,13 +18,13 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 #include <oblibs/strbuf.h>
 
 #include <66/service.h>
 #include <66/resolve.h>
 
-int hash_add(struct resolve_hash_s **hash, char const *name, resolve_service_t res)
+int resolve_hash_add(hash_t *hash, char const *name, resolve_service_t res)
 {
     log_flow() ;
 
@@ -37,42 +37,44 @@ int hash_add(struct resolve_hash_s **hash, char const *name, resolve_service_t r
 	s->visit = 0 ;
 	auto_strings(s->name, name) ;
 	s->res = res ;
-	HASH_ADD_STR(*hash, name, s) ;
+
+	if (!hash_add(hash, s->name, strlen(s->name), s)) {
+		free(s) ;
+		return 0 ;
+	}
 
 	return 1 ;
 }
 
-struct resolve_hash_s *hash_search(struct resolve_hash_s **hash, char const *name)
+struct resolve_hash_s *resolve_hash_search(hash_t *hash, char const *name)
 {
     log_flow() ;
 
-	struct resolve_hash_s *s ;
-	HASH_FIND_STR(*hash, name, s) ;
-	return s ;
-
+	return hash_find(hash, name, strlen(name)) ;
 }
 
-int hash_count(struct resolve_hash_s **hash)
+int resolve_hash_count(hash_t *hash)
 {
-	return HASH_COUNT(*hash) ;
+	return hash_count(hash) ;
 }
 
-void hash_free(struct resolve_hash_s **hash)
+void resolve_hash_free(hash_t *hash)
 {
     log_flow() ;
 
 	struct resolve_hash_s *c, *tmp ;
 
-	HASH_ITER(hh, *hash, c, tmp) {
+	HASH_FOREACH(hash, c, tmp) {
 		strbuf_free(&c->res.sa) ;
-		HASH_DEL(*hash, c) ;
 		free(c) ;
 	}
+
+	hash_free(hash) ;
 }
 
-void hash_reset_visit(struct resolve_hash_s *hash)
+void resolve_hash_reset_visit(hash_t *hash)
 {
     struct resolve_hash_s *c, *tmp ;
-    HASH_ITER(hh, hash, c, tmp)
+    HASH_FOREACH(hash, c, tmp)
         c->visit = 0 ;
 }

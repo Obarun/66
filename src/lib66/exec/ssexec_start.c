@@ -17,7 +17,7 @@
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/types.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 #include <oblibs/sbl.h>
 #include <oblibs/graph.h>
 
@@ -32,7 +32,7 @@ static void ensure_no_conflict(service_graph_t *graph, int argc, char const *con
     int i = 0 ;
     for (; i < argc ; i++) {
 
-        struct resolve_hash_s *hash = hash_search(&graph->hres, argv[i]) ;
+        struct resolve_hash_s *hash = resolve_hash_search(&graph->hres, argv[i]) ;
 
         if (hash == NULL)
             log_die(LOG_EXIT_USER, "service: ", argv[i], " not available -- please make a bug report") ;
@@ -116,7 +116,7 @@ int ssexec_start(int argc, char const *const *argv, void *data)
     if ((svc_scandir_ok(info->scandir.s)) !=  1 )
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;
 
-    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+    if (!service_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "allocate the graph") ;
 
     nservice = service_graph_build_arguments(&graph, argv, argc, info, flag) ;
@@ -148,7 +148,7 @@ int ssexec_start(int argc, char const *const *argv, void *data)
 
     char const *nargv[nservice + 1] ;
     nservice = 0 ;
-    HASH_ITER(hh, graph.g.vertexes, c, tmp)
+    HASH_FOREACH(&graph.g.vertexes, c, tmp)
         nargv[nservice++] = c->name ;
 
     nargv[nservice] = 0 ;

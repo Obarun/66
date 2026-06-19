@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 
 #include <oblibs/strbuf.h>
 

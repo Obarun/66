@@ -16,6 +16,7 @@
  * waitpid status back over the Unix socket.
  */
 
+#include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -35,7 +36,7 @@
 #include <oblibs/sse_stream.h>
 #include <oblibs/stream_message.h>
 #include <oblibs/io_rb.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 #include <oblibs/fd.h>
 #include <oblibs/files.h>
 #include <oblibs/socket.h>
@@ -61,7 +62,7 @@ struct oneshot_conn_s
     char *paybuf ;
     oneshot_job_t *job ; // in-flight RUN, NULL if none
     bool closing ;
-    UT_hash_handle hh ;
+    hash_node_t node ;
 } ;
 
 typedef struct oneshot_daemon_s oneshot_daemon_t ;
@@ -73,7 +74,7 @@ struct oneshot_daemon_s
     int sfd ;
     char const *socket_path ;
     uid_t owner ;
-    oneshot_conn_t *conns ; // uthash by fd
+    hash_t conns ; // hash table by fd
 } ;
 
 static oneshot_daemon_t osd = {
@@ -83,7 +84,7 @@ static oneshot_daemon_t osd = {
     .sfd = -1,
     .socket_path = NULL,
     .owner = 0,
-    .conns = NULL
+    .conns = HASH_ZERO
 } ;
 
 static opt_t const opts[] = {
@@ -272,7 +273,7 @@ static void conn_destroy(oneshot_conn_t *conn)
         return ;
 
     conn->closing = true ;
-    HASH_DEL(osd.conns, conn) ;
+    hash_del(&osd.conns, conn) ;
 
     /* detach the in-flight job and kill its script: oneshot_child_cb still owns
      * the watcher and will reap the child and free the job (conn now NULL) */
@@ -340,7 +341,7 @@ static int conn_create(int fd)
 {
     log_flow() ;
 
-    if (HASH_COUNT(osd.conns) >= ONESHOT_MAXCLIENTS_DEFAULT) {
+    if (hash_count(&osd.conns) >= ONESHOT_MAXCLIENTS_DEFAULT) {
         close_fd(fd) ;
         log_warnusys_return(LOG_EXIT_ZERO, "too many clients - refusing connection") ;
     }
@@ -385,7 +386,7 @@ static int conn_create(int fd)
         log_warnusys_return(LOG_EXIT_ZERO, "attach client stream") ;
     }
 
-    HASH_ADD_INT(osd.conns, key, conn) ;
+    hash_add(&osd.conns, &conn->key, sizeof conn->key, conn) ;
     flog_info("client connected on fd %d", fd) ;
 
     return 1 ;
@@ -488,9 +489,10 @@ static void server_cleanup(void)
     log_flow() ;
 
     oneshot_conn_t *c, *tc ;
-    HASH_ITER(hh, osd.conns, c, tc) {
+    HASH_FOREACH(&osd.conns, c, tc) {
         conn_destroy(c) ;
     }
+    hash_free(&osd.conns) ;
 
     sse_free_io(&osd.wserver) ;
     sse_free_signal(&osd.wsignal) ;
@@ -566,6 +568,9 @@ int main(int argc, char const *const *argv)
         return opt_emit_usage(cmd.name, &cmd) ;
 
     osd.owner = geteuid() ;
+
+    if (!hash_init(&osd.conns, 0, offsetof(oneshot_conn_t, node)))
+        log_dieusys(LOG_EXIT_SYS, "initialize connection table") ;
 
     if (!server_init(argv[0], backlog))
         log_dieu(LOG_EXIT_SYS, "initialize oneshot daemon") ;

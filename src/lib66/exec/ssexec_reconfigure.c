@@ -22,7 +22,7 @@
 #include <oblibs/strbuf.h>
 #include <oblibs/sbl.h>
 #include <oblibs/types.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 #include <oblibs/environ.h>
 #include <oblibs/string.h>
 
@@ -113,7 +113,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, void *data)
     if (rscan < 0)
         log_dieusys(LOG_EXIT_SYS, "check: ", info->scandir.s) ;
 
-    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+    if (!service_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
@@ -138,7 +138,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, void *data)
         uint32_t index = graph.g.sort[pos] ;
         char *name = graph.g.sindex[index]->name ;
 
-        struct resolve_hash_s *hash = hash_search(&graph.hres, name) ;
+        struct resolve_hash_s *hash = resolve_hash_search(&graph.hres, name) ;
 
         if (hash == NULL)
             log_die(LOG_EXIT_SYS, "get information of service: ", name, " -- please make a bug report") ;
@@ -149,7 +149,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, void *data)
             // search first into the user commandline
             if (sbl_search(&sa, pres->sa.s + pres->inns) < 0) {
                 // it may be a service of a another dependending module
-                struct resolve_hash_s *t = hash_search(&graph.hres, pres->sa.s + pres->inns) ;
+                struct resolve_hash_s *t = resolve_hash_search(&graph.hres, pres->sa.s + pres->inns) ;
                 if (t == NULL)
                     log_die(LOG_EXIT_USER, "reconfiguring an individual service that is part of a module is not allowed -- please reconfigure the entire module instead using \'66 reconfigure ", pres->sa.s + pres->inns, "\'") ;
             }
@@ -234,7 +234,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, void *data)
             uint32_t index = graph.g.sort[pos] ;
             char *name = graph.g.sindex[index]->name ;
 
-            struct resolve_hash_s *hash = hash_search(&graph.hres, name) ;
+            struct resolve_hash_s *hash = resolve_hash_search(&graph.hres, name) ;
 
             if (hash == NULL)
                 log_die(LOG_EXIT_SYS, "get information of service: ", name, " -- please make a bug report") ;

@@ -17,7 +17,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 #include <oblibs/strbuf.h>
 
 #include <66/info.h>
@@ -60,10 +60,10 @@ int tree_info_walk(tree_graph_t *g, char const *name, uint8_t requiredby, uint8_
 
         tree_graph_t gt = GRAPH_TREE_ZERO ;
 
-        if (!graph_new(&gt, g->g.len))
+        if (!tree_graph_new(&gt, g->g.len))
             return (errno = ENOMEM, 0) ;
 
-        HASH_FIND_STR(g->g.vertexes, name, v) ;
+        v = hash_find(&g->g.vertexes, name, strlen(name)) ;
         if (v == NULL)
             log_dieu(LOG_EXIT_SYS, "get information of tree: ", name, " -- please make a bug report") ;
 
@@ -109,7 +109,7 @@ int tree_info_walk(tree_graph_t *g, char const *name, uint8_t requiredby, uint8_
         if (!info_graph_display(sa.s + pos, &info_graph_display_tree, depth, last, padding, style))
             return 0 ;
 
-        HASH_FIND_STR(g->g.vertexes, sa.s + pos, v) ;
+        v = hash_find(&g->g.vertexes, sa.s + pos, strlen(sa.s + pos)) ;
         if (v == NULL)
             log_dieu(LOG_EXIT_SYS, "get information of tree: ", sa.s + pos, " -- please make a bug report") ;
 

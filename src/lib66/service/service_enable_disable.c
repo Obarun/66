@@ -30,20 +30,20 @@
 #include <66/ssexec.h>
 #include <66/symlink.h>
 
-static bool isdone(struct resolve_hash_s *hres, const char *name)
+static bool isdone(hash_t *hres, const char *name)
 {
     struct resolve_hash_s *t ;
-    t = hash_search(&hres, name) ;
+    t = resolve_hash_search(hres, name) ;
     if (t == NULL)
         return false ;
 
     return t->visit == 1 ? true : false ;
 }
 
-static void mark_isdone(struct resolve_hash_s *hres, const char *name)
+static void mark_isdone(hash_t *hres, const char *name)
 {
     struct resolve_hash_s *t ;
-    t = hash_search(&hres, name) ;
+    t = resolve_hash_search(hres, name) ;
     t->visit = 1 ;
 }
 
@@ -53,7 +53,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
 {
     log_flow() ;
 
-    if (!isdone(g->hres, hash->name)) {
+    if (!isdone(&g->hres, hash->name)) {
 
         resolve_service_t_ref res = &hash->res ;
         resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
@@ -111,11 +111,11 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
 
             char *name = res->sa.s + res->logger.name ;
 
-            struct resolve_hash_s *h = hash_search(&g->hres, name) ;
+            struct resolve_hash_s *h = resolve_hash_search(&g->hres, name) ;
             if (h == NULL)
                 log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
-            if (!isdone(g->hres, name)) {
+            if (!isdone(&g->hres, name)) {
 
                 wres = resolve_set_struct(DATA_SERVICE,  &h->res) ;
 
@@ -126,7 +126,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
 
                 log_info("Disabled successfully: ", name) ;
 
-                mark_isdone(g->hres, name) ;
+                mark_isdone(&g->hres, name) ;
 
                 free(wres) ;
             }
@@ -145,7 +145,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
                 if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.contents))
                     log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-                if (!graph_new(&graph, res->dependencies.ncontents))
+                if (!service_graph_new(&graph, res->dependencies.ncontents))
                     log_dieusys(LOG_EXIT_SYS, "allocate the graph") ;
 
                 /** build the graph of the ns */
@@ -154,17 +154,17 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
                 if (!nservice)
                     log_dieu(LOG_EXIT_USER, "build the graph of the module: ", res->sa.s + res->name," -- please make a bug report") ;
 
-                hash_reset_visit(graph.hres) ;
+                resolve_hash_reset_visit(&graph.hres) ;
 
-                HASH_ITER(hh, graph.g.vertexes, v, tmp) {
+                HASH_FOREACH(&graph.g.vertexes, v, tmp) {
 
                     char *name = v->name ;
 
-                    h = hash_search(&graph.hres, name) ;
+                    h = resolve_hash_search(&graph.hres, name) ;
                     if (h == NULL)
                         log_die(LOG_EXIT_USER, "service: ", name, " not available -- did you parse it?") ;
 
-                    if (!isdone(g->hres, name)) {
+                    if (!isdone(&g->hres, name)) {
 
                         wres = resolve_set_struct(DATA_SERVICE,  &h->res) ;
 
@@ -181,7 +181,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
                         if (!resolve_write_g(wres, h->res.sa.s + h->res.path.home, h->res.sa.s + h->res.name))
                             log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", h->res.sa.s + h->res.name) ;
 
-                        mark_isdone(g->hres, h->res.sa.s + h->res.name) ;
+                        mark_isdone(&g->hres, h->res.sa.s + h->res.name) ;
 
                         log_info(!action ? "Disabled" : "Enabled"," successfully: ", h->res.sa.s + h->res.name) ;
 
@@ -192,7 +192,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
             }
         }
 
-        mark_isdone(g->hres, hash->name) ;
+        mark_isdone(&g->hres, hash->name) ;
 
         log_info(!action ? "Disabled" : "Enabled"," successfully: ", res->sa.s + res->name) ;
     }

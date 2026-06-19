@@ -17,7 +17,7 @@
 
 void service_graph_destroy(service_graph_t *g)
 {
-    hash_free(&g->hres) ;
+    resolve_hash_free(&g->hres) ;
     graph_free(&g->g) ;
 }
 

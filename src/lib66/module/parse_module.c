@@ -29,7 +29,7 @@
 #include <66/service.h>
 #include <66/ssexec.h>
 
-static void parse_module_dependencies(strbuf *list, resolve_service_t *res, uint8_t requiredby, struct resolve_hash_s **hres, uint8_t force, uint8_t conf, ssexec_t *info)
+static void parse_module_dependencies(strbuf *list, resolve_service_t *res, uint8_t requiredby, hash_t *hres, uint8_t force, uint8_t conf, ssexec_t *info)
 {
     log_flow() ;
 
@@ -128,7 +128,7 @@ static void parse_module_regex(resolve_service_t *res, char *dir, size_t copylen
     regex_configure(res, info, dir, name) ;
 }
 
-void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force)
+void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t force)
 {
     log_flow() ;
 

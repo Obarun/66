@@ -18,7 +18,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 #include <oblibs/sse.h>
 #include <oblibs/cdb.h>
 #include <oblibs/strbuf.h>
@@ -108,11 +108,11 @@ struct resolve_hash_tree_s {
 	char name[SS_MAX_SERVICE_NAME + 1] ; // name as key
 	uint8_t visit ;
 	resolve_tree_t tres ;
-	UT_hash_handle hh ;
+	hash_node_t node ;
 
 } ;
 
-#define RESOLVE_HASH_TREE_ZERO { 0, 0, RESOLVE_TREE_ZERO, NULL }
+#define RESOLVE_HASH_TREE_ZERO { 0, 0, RESOLVE_TREE_ZERO, HASH_NODE_ZERO }
 
 #define TREE_FLAGS_DOWN 1
 #define TREE_FLAGS_UP (1 << 1)
@@ -258,10 +258,10 @@ extern int tree_seed_resolve_path(strbuf *sa, char const *seed) ;
 extern int tree_seed_setseed(tree_seed_t *seed, char const *treename) ;
 
 /** HASH API*/
-extern int hash_add_tree(struct resolve_hash_tree_s **hash, char const *name, resolve_tree_t res) ;
-extern struct resolve_hash_tree_s *hash_search_tree(struct resolve_hash_tree_s **hash, char const *name) ;
-extern int hash_count_tree(struct resolve_hash_tree_s **hash) ;
-extern void hash_free_tree(struct resolve_hash_tree_s **hash) ;
+extern int hash_add_tree(hash_t *hash, char const *name, resolve_tree_t res) ;
+extern struct resolve_hash_tree_s *hash_search_tree(hash_t *hash, char const *name) ;
+extern int hash_count_tree(hash_t *hash) ;
+extern void hash_free_tree(hash_t *hash) ;
 
 /** signal */
 extern void tree_init_ctx(tree_ctx_t *atree, tree_graph_t *g, uint8_t requiredby, uint32_t flag) ;

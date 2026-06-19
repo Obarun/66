@@ -56,7 +56,7 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     struct resolve_hash_s *hash = NULL ;
 
-    hash = hash_search(&g->hres, name) ;
+    hash = resolve_hash_search(&g->hres, name) ;
 
     if (hash == NULL) {
 
@@ -99,7 +99,7 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
             log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug report") ;
 
         log_trace("add service: ", name, " to the service selection") ;
-        if (!hash_add(&g->hres, name, res))
+        if (!resolve_hash_add(&g->hres, name, res))
             log_dieu(LOG_EXIT_SYS, "append service selection with: ", name) ;
 
         n++ ;

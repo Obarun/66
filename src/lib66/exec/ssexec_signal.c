@@ -205,7 +205,7 @@ int ssexec_signal(int argc, char const *const *argv, void *data)
     if ((svc_scandir_ok(info->scandir.s)) != 1)
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
 
-    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+    if (!service_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "allocate the graph") ;
 
     nservice = service_graph_build_arguments(&graph, argv, argc, info, flag) ;

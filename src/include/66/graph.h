@@ -52,25 +52,23 @@ typedef struct service_graph_s service_graph_t, *service_graph_t_ref ;
 struct service_graph_s
 {
     graph g ;
-    struct resolve_hash_s *hres ;
+    hash_t hres ;
 } ;
 
-#define GRAPH_SERVICE_ZERO { .g = GRAPH_ZERO, .hres = NULL }
+#define GRAPH_SERVICE_ZERO { .g = GRAPH_ZERO, .hres = HASH_ZERO }
 
 typedef struct tree_graph_s tree_graph_t, *tree_graph_t_ref ;
 struct tree_graph_s
 {
     graph g ;
-    struct resolve_hash_tree_s *hres ;
+    hash_t hres ;
 } ;
 
-#define GRAPH_TREE_ZERO { GRAPH_ZERO, NULL }
+#define GRAPH_TREE_ZERO { GRAPH_ZERO, HASH_ZERO }
 
 #define FOREACH_GRAPH_SORT(type,gn,pos) \
     type *__g__##__LINE__ = gn; \
     for (; (uint32_t)pos < __g__##__LINE__->g.nsort; pos++)
-
-#define graph_new(gr, len) graph_init(&(gr)->g, len)
 
 /**
  * @brief Adds a vertex to the graph.

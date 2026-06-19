@@ -19,7 +19,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 
 #include <66/graph.h>
 #include <66/ssexec.h>
@@ -40,7 +40,7 @@ static int sanitize_service(ssexec_t *info)
 
     log_trace("sanitize services resolve files") ;
 
-    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+    if (!service_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_warnusys_return(LOG_EXIT_ZERO, "allocate the service graph") ;
 
     /** build the graph of the entire system */
@@ -49,13 +49,13 @@ static int sanitize_service(ssexec_t *info)
     if (!nservice && errno == EINVAL)
         log_warnusys_return(LOG_EXIT_ZERO, "build system graph -- please make a bug report") ;
 
-    HASH_ITER(hh, graph.hres, c, tmp) {
+    HASH_FOREACH(&graph.hres, c, tmp) {
 
         wres = resolve_set_struct(DATA_SERVICE, &c->res) ;
         char name[strlen(c->res.sa.s + c->res.name) + 1] ;
         auto_strings(name, c->res.sa.s + c->res.name) ;
 
-        HASH_FIND_STR(graph.g.vertexes, name, v) ;
+        v = hash_find(&graph.g.vertexes, name, strlen(name)) ;
         if (v == NULL)
             log_warnusys_return(LOG_EXIT_ZERO, "get information of service: ", name, " -- please make a bug report") ;
 
@@ -83,7 +83,7 @@ static int sanitize_tree(ssexec_t *info)
 
     log_trace("sanitize trees resolve files") ;
 
-    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+    if (!tree_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_warnusys_return(LOG_EXIT_ZERO, "allocate the tree graph") ;
 
     /** build the graph of the entire system */
@@ -92,13 +92,13 @@ static int sanitize_tree(ssexec_t *info)
     if (!ntree && errno == EINVAL)
         log_warnusys_return(LOG_EXIT_ZERO, "build system graph -- please make a bug report") ;
 
-    HASH_ITER(hh, graph.hres, c, tmp) {
+    HASH_FOREACH(&graph.hres, c, tmp) {
 
         wres = resolve_set_struct(DATA_TREE, &c->tres) ;
         char name[strlen(c->tres.sa.s + c->tres.name) + 1] ;
         auto_strings(name, c->tres.sa.s + c->tres.name) ;
 
-        HASH_FIND_STR(graph.g.vertexes, name, v) ;
+        v = hash_find(&graph.g.vertexes, name, strlen(name)) ;
         if (v == NULL)
             log_warnusys_return(LOG_EXIT_ZERO, "get information of tree: ", name, " -- please make a bug report") ;
 

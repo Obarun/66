@@ -23,7 +23,7 @@
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/directory.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 #include <oblibs/files.h>
 
 #include <66/state.h>
@@ -43,7 +43,7 @@ static void auto_remove(char const *path)
         log_dieusys(LOG_EXIT_SYS, "remove directory: ", path) ;
 }
 
-static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, strbuf *sa, ssexec_t *info, uint8_t propagate)
+static void compute_deps(resolve_service_t *res, hash_t *hres, strbuf *sa, ssexec_t *info, uint8_t propagate)
 {
     log_flow() ;
 
@@ -89,7 +89,7 @@ static void compute_deps(resolve_service_t *res, struct resolve_hash_s **hres, s
 
             if (!propagate) {
                 log_trace("add service: ", stk.s + pos, " to the service selection") ;
-                if (!hash_add(hres, stk.s + pos, dres))
+                if (!resolve_hash_add(hres, stk.s + pos, dres))
                     log_dieu(LOG_EXIT_SYS, "append service selection with: ", stk.s + pos) ;
             }
 
@@ -346,10 +346,14 @@ int ssexec_remove(int argc, char const *const *argv, void *data)
     ss_state_t ste = STATE_ZERO ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     resolve_wrapper_t_ref wres = 0 ;
-    struct resolve_hash_s *hres = NULL, *c, *tmp ;
+    hash_t hres = HASH_ZERO ;
+    struct resolve_hash_s *c, *tmp ;
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
+
+    if (!hash_init(&hres, 0, offsetof(struct resolve_hash_s, node)))
+        log_dieusys(LOG_EXIT_SYS, "initialize hash table") ;
 
     for(; pos < (size_t)argc ; pos++) {
 
@@ -389,7 +393,7 @@ int ssexec_remove(int argc, char const *const *argv, void *data)
             }
         add:
             log_trace("add service: ", argv[pos], " to the service selection") ;
-            if (!hash_add(&hres, argv[pos], res))
+            if (!resolve_hash_add(&hres, argv[pos], res))
                 log_dieu(LOG_EXIT_SYS, "append service selection with: ", argv[pos]) ;
 
             compute_deps(&res, &hres, &sa, info, propagate) ;
@@ -428,7 +432,7 @@ int ssexec_remove(int argc, char const *const *argv, void *data)
         PROG = prog ;
     }
 
-    HASH_ITER(hh, hres, c, tmp) {
+    HASH_FOREACH(&hres, c, tmp) {
 
         remove_service(&c->res, info, propagate) ;
 
@@ -456,7 +460,7 @@ int ssexec_remove(int argc, char const *const *argv, void *data)
         }
     }
 
-    hash_free(&hres) ;
+    resolve_hash_free(&hres) ;
     free(wres) ;
 
     return 0 ;

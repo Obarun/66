@@ -30,7 +30,7 @@
 #include <66/instance.h>
 #include <66/module.h>
 
-int parse_interdependences(char const *service, char const *list, unsigned int listlen, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree, resolve_service_t *moduleres)
+int parse_interdependences(char const *service, char const *list, unsigned int listlen, hash_t *hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree, resolve_service_t *moduleres)
 {
     log_flow() ;
 

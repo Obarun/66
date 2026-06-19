@@ -18,7 +18,7 @@
 #include <stdbool.h>
 
 #include <oblibs/graph.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/sbl.h>
@@ -31,8 +31,7 @@ static int graph_action(tree_graph_t *g, resolve_tree_t *tres, uint32_t flag) ;
 
 static bool isdone(tree_graph_t *g, const char *name)
 {
-    vertex_t *v = NULL ;
-    HASH_FIND_STR(g->g.vertexes, name, v) ;
+    vertex_t *v = hash_find(&g->g.vertexes, name, strlen(name)) ;
     if (v)
         return true ;
 

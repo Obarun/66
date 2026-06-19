@@ -18,7 +18,7 @@
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/types.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 
 #include <66/ssexec.h>
 #include <66/config.h>
@@ -90,7 +90,7 @@ int ssexec_reload(int argc, char const *const *argv, void *data)
     if ((svc_scandir_ok(info->scandir.s)) !=  1 )
         log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;
 
-    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+    if (!service_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
     nservice = service_graph_build_arguments(&graph, argv, argc, info, flag) ;
@@ -125,10 +125,10 @@ int ssexec_reload(int argc, char const *const *argv, void *data)
      * s6-supervise will not bring it up automatically.
      * Well, do it manually */
 
-    HASH_ITER(hh, graph.g.vertexes, c, tmp) {
+    HASH_FOREACH(&graph.g.vertexes, c, tmp) {
 
         struct resolve_hash_s *h = NULL ;
-        h = hash_search(&graph.hres, c->name) ;
+        h = resolve_hash_search(&graph.hres, c->name) ;
         if (h == NULL)
             log_dieusys(LOG_EXIT_SYS, "find service: ", c->name, " -- please make a bug report") ;
 

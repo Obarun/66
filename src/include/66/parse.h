@@ -47,10 +47,10 @@ extern lexer_config LEXER_CONFIG_KEY ;
 extern void parse_cleanup(resolve_service_t *res, char const *tmpdir, uint8_t force) ;
 
 /** main */
-extern void parse_service(struct resolve_hash_s **href, char const *sv, ssexec_t *info, uint8_t force, uint8_t conf) ;
-extern int parse_frontend(char const *sv, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree, resolve_service_t *moduleres) ;
-extern int parse_interdependences(char const *service, char const *list, unsigned int listlen, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree, resolve_service_t *moduleres) ;
-extern void parse_create_logger(struct resolve_hash_s **hres, resolve_service_t *res, ssexec_t *info) ;
+extern void parse_service(hash_t *href, char const *sv, ssexec_t *info, uint8_t force, uint8_t conf) ;
+extern int parse_frontend(char const *sv, hash_t *hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree, resolve_service_t *moduleres) ;
+extern int parse_interdependences(char const *service, char const *list, unsigned int listlen, hash_t *hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree, resolve_service_t *moduleres) ;
+extern void parse_create_logger(hash_t *hres, resolve_service_t *res, ssexec_t *info) ;
 
 /** split */
 extern int parse_section_main(resolve_service_t *res, const char *str) ;
@@ -83,12 +83,12 @@ extern int parse_clean_runas(char const *str, resolve_enum_table_t table) ;
 extern int parse_get_value_of_key(strbuf *store, char const *str, resolve_enum_table_t table) ;
 extern int parse_mandatory(resolve_service_t *res, ssexec_t *info) ;
 extern void parse_error(int ierr, resolve_enum_table_t table) ;
-extern void parse_rename_interdependences(resolve_service_t *res, char const *prefix, struct resolve_hash_s **hres, ssexec_t *info) ;
+extern void parse_rename_interdependences(resolve_service_t *res, char const *prefix, hash_t *hres, ssexec_t *info) ;
 extern void parse_db_migrate(resolve_service_t *res, ssexec_t *info) ;
 extern void parse_copy_to_source(char const *dst, char const *src, resolve_service_t *res, uint8_t force) ;
 
 /** module */
-extern void parse_module(resolve_service_t *res, struct resolve_hash_s **hres, ssexec_t *info, uint8_t force) ;
+extern void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t force) ;
 
 /** resolve */
 extern void parse_compute_resolve(resolve_service_t *res, ssexec_t *info) ;

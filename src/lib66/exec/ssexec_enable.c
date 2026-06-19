@@ -17,7 +17,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 #include <oblibs/types.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
@@ -90,7 +90,7 @@ int ssexec_enable(int argc, char const *const *argv, void *data)
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
 
-    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+    if (!service_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
     if (!environ_import_arguments(&sa, argv, argc))
@@ -101,7 +101,7 @@ int ssexec_enable(int argc, char const *const *argv, void *data)
     if (!nservice)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
 
-    hash_reset_visit(graph.hres) ;
+    resolve_hash_reset_visit(&graph.hres) ;
     nservice = 0 ;
 
     FOREACH_GRAPH_SORT(service_graph_t, &graph, nservice) {
@@ -109,7 +109,7 @@ int ssexec_enable(int argc, char const *const *argv, void *data)
         uint32_t index = graph.g.sort[nservice] ;
         vertex_t *v = graph.g.sindex[index] ;
         char *name = v->name ;
-        struct resolve_hash_s *hash = hash_search(&graph.hres, name) ;
+        struct resolve_hash_s *hash = resolve_hash_search(&graph.hres, name) ;
 
         if (hash == NULL)
             log_die(LOG_EXIT_SYS, "get information of service: ", name, " -- please make a bug report") ;
@@ -127,7 +127,7 @@ int ssexec_enable(int argc, char const *const *argv, void *data)
 
             if (hash->res.logger.want && hash->res.type == E_PARSER_TYPE_CLASSIC) {
 
-                struct resolve_hash_s *log = hash_search(&graph.hres, hash->res.sa.s + hash->res.logger.name) ;
+                struct resolve_hash_s *log = resolve_hash_search(&graph.hres, hash->res.sa.s + hash->res.logger.name) ;
                 if (log == NULL)
                     log_die(LOG_EXIT_USER, "service: ", hash->res.sa.s + hash->res.logger.name, " not available -- please make a bug report") ;
 
@@ -146,7 +146,7 @@ int ssexec_enable(int argc, char const *const *argv, void *data)
         unsigned int m = 0 ;
 
         newargv[m++] = "start" ;
-        HASH_ITER(hh, graph.g.vertexes, c, tmp)
+        HASH_FOREACH(&graph.g.vertexes, c, tmp)
             newargv[m++] = c->name ;
         newargv[m] = 0 ;
 

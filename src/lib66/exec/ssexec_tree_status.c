@@ -30,7 +30,7 @@
 #include <oblibs/files.h>
 #include <oblibs/lexer.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 #include <oblibs/stream.h>
 
 #include <66/info.h>
@@ -233,7 +233,7 @@ static void info_display_depends(char const *field, resolve_tree_t *res)
     if (!sbl_clean_string(&sa, res->sa.s + res->depends))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+    if (!tree_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "initiate the graph") ;
 
     ntree = tree_graph_build_list(&graph, sa.s, sa.len, pinfo, flag) ;
@@ -308,7 +308,7 @@ static void info_display_requiredby(char const *field, resolve_tree_t *res)
     if (!sbl_clean_string(&sa, res->sa.s + res->requiredby))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    if (!graph_new(&graph, SS_MAX_SERVICE))
+    if (!tree_graph_new(&graph, SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "initiate the graph") ;
 
     ntree = tree_graph_build_list(&graph, sa.s, sa.len, pinfo, flag) ;
@@ -385,7 +385,7 @@ static void info_display_contents(char const *field, resolve_tree_t *res)
     if (!sbl_clean_string(&sa, res->sa.s + res->contents))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    if (!graph_new(&graph, SS_MAX_SERVICE))
+    if (!service_graph_new(&graph, SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "initiate the graph") ;
 
     nservice = service_graph_build_list(&graph, sa.s, sa.len, pinfo, flag) ;
@@ -566,7 +566,7 @@ int ssexec_tree_status(int argc, char const *const *argv, void *data)
         uint32_t flag = REVERSE ? GRAPH_WANT_REQUIREDBY : GRAPH_WANT_DEPENDS, ntree = 0, pos = 0 ;
         vertex_t *v = NULL ;
 
-        if (!graph_new(&graph, SS_MAX_SERVICE))
+        if (!tree_graph_new(&graph, SS_MAX_SERVICE))
             log_dieusys(LOG_EXIT_SYS, "allocate the graph") ;
 
         ntree = tree_graph_build_master(&graph, info, flag) ;

@@ -130,11 +130,15 @@ int ssexec_parse(int argc, char const *const *argv, void *data)
          * service can be a directory name. In this case
          * we parse all services inside. */
         size_t pos = 0 ;
-        struct resolve_hash_s *hres = NULL ;
+        hash_t hres = HASH_ZERO ;
+
+        if (!hash_init(&hres, 0, offsetof(struct resolve_hash_s, node)))
+            log_dieusys(LOG_EXIT_SYS, "initialize hash table") ;
+
         FOREACH_SBL(&sa, pos)
             parse_service(&hres, sa.s + pos, info, force, conf) ;
 
-        hash_free(&hres) ;
+        resolve_hash_free(&hres) ;
     }
 
     sanitize_graph(info) ;

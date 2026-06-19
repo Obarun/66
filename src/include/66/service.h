@@ -18,7 +18,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 #include <oblibs/cdb.h>
 #include <oblibs/strbuf.h>
 
@@ -274,11 +274,11 @@ struct resolve_hash_s {
 	char name[SS_MAX_SERVICE_NAME + 1] ; // name as key
 	uint8_t visit ;
 	resolve_service_t res ;
-	UT_hash_handle hh ;
+	hash_node_t node ;
 
 } ;
 
-#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, NULL }
+#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, HASH_NODE_ZERO }
 
 extern int service_cmp_basedir(char const *dir) ;
 extern int service_endof_dir(char const *dir, char const *name) ;
@@ -303,10 +303,10 @@ extern int service_resolve_symlink(char const *base, char *path, char *name) ;
 typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;
 
 /** Hash */
-extern int hash_add(struct resolve_hash_s **hres, char const *name, resolve_service_t res) ;
-extern struct resolve_hash_s *hash_search(struct resolve_hash_s **hres, char const *name) ;
-extern int hash_count(struct resolve_hash_s **hres) ;
-extern void hash_free(struct resolve_hash_s **hres) ;
-extern void hash_reset_visit(struct resolve_hash_s *hres) ;
+extern int resolve_hash_add(hash_t *hres, char const *name, resolve_service_t res) ;
+extern struct resolve_hash_s *resolve_hash_search(hash_t *hres, char const *name) ;
+extern int resolve_hash_count(hash_t *hres) ;
+extern void resolve_hash_free(hash_t *hres) ;
+extern void resolve_hash_reset_visit(hash_t *hres) ;
 
 #endif

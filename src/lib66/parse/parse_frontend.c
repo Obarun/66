@@ -79,7 +79,7 @@ static void parse_read_instance(strbuf *frontend, char const *svsrc, char const 
  * @Return 2 -> already parsed */
 
 int parse_frontend(char const *sv,
-                   struct resolve_hash_s **hres,
+                   hash_t *hres,
                    ssexec_t *info,
                    uint8_t force,
                    uint8_t conf,
@@ -104,7 +104,7 @@ int parse_frontend(char const *sv,
     if (!ob_dirname(svsrc, sv))
         log_dieu(LOG_EXIT_SYS, "get dirname of: ", sv) ;
 
-    hash = hash_search(hres, svname) ;
+    hash = resolve_hash_search(hres, svname) ;
     if (hash != NULL)
         log_warn_return(2, "ignoring: ", svname, " service -- already appended to the selection") ;
 
@@ -112,7 +112,7 @@ int parse_frontend(char const *sv,
         char n[strlen(inns) + 1 + strlen(svname) + 1] ;
         auto_strings(n, inns, ":", svname) ;
 
-        hash = hash_search(hres, n) ;
+        hash = resolve_hash_search(hres, n) ;
         if (hash != NULL)
             log_warn_return(2, "ignoring: ", n, " service -- already appended to the selection") ;
     }
@@ -310,15 +310,15 @@ int parse_frontend(char const *sv,
         (!res.inns && res.type != E_PARSER_TYPE_MODULE))
             parse_create_logger(hres, &res, info) ;
 
-    hash = hash_search(hres, res.sa.s + res.name) ;
+    hash = resolve_hash_search(hres, res.sa.s + res.name) ;
     if (hash == NULL) {
 
-        if (hash_count(hres) > SS_MAX_SERVICE)
+        if (resolve_hash_count(hres) > SS_MAX_SERVICE)
             log_die(LOG_EXIT_SYS, "too many services to parse -- compile again 66 changing the --max-service options") ;
 
         log_trace("add service: ", res.sa.s + res.name, " to the service selection") ;
-        char *name = res.sa.s + res.name ; // hash_add + log_dieu doesn't accept res.sa.s + res.name
-        if (!hash_add(hres, name, res))
+        char *name = res.sa.s + res.name ; // resolve_hash_add + log_dieu doesn't accept res.sa.s + res.name
+        if (!resolve_hash_add(hres, name, res))
             log_dieu(LOG_EXIT_SYS, "append service selection with: ", name) ;
     }
 

@@ -20,7 +20,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
 #include <oblibs/files.h>
@@ -88,10 +88,10 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
     memset(toclean, 0, g->g.nvertexes * sizeof(resolve_service_t)) ;
     memset(tosubscribe, 0, g->g.nvertexes * sizeof(resolve_service_t)) ;
 
-    HASH_ITER(hh, g->g.vertexes, c, tmp) {
+    HASH_FOREACH(&g->g.vertexes, c, tmp) {
 
         char *name = c->name ;
-        struct resolve_hash_s *hash = hash_search(&g->hres, name) ;
+        struct resolve_hash_s *hash = resolve_hash_search(&g->hres, name) ;
 
         if (hash == NULL)
             log_die(LOG_EXIT_USER, "service: ", name, " not available -- please make a bug report") ;
@@ -255,11 +255,11 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
      * We need to write the state file anyway. Thus can always
      * be consider as initialized.
      * */
-    HASH_ITER(hh, g->g.vertexes, c, tmp) {
+    HASH_FOREACH(&g->g.vertexes, c, tmp) {
 
         ss_state_t sta = STATE_ZERO ;
         char *name = c->name ;
-        struct resolve_hash_s *hash = hash_search(&g->hres, c->name) ;
+        struct resolve_hash_s *hash = resolve_hash_search(&g->hres, c->name) ;
 
         if (hash == NULL) {
             cleanup(toclean, ntoclean) ;

@@ -23,7 +23,7 @@
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 
 #include <66/constants.h>
 #include <66/config.h>
@@ -45,7 +45,7 @@ static void doit(strbuf *sa, ssexec_t *info, uint8_t earlier)
     if (earlier)
         FLAGS_SET(flag, GRAPH_WANT_EARLIER) ;
 
-    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+    if (!service_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
     nservice = service_graph_ncollect(&graph, sa->s, sa->len, info, flag) ;
@@ -61,7 +61,7 @@ static void doit(strbuf *sa, ssexec_t *info, uint8_t earlier)
 
     sa->len = 0 ;
 
-    HASH_ITER(hh, graph.hres, c, tmp) {
+    HASH_FOREACH(&graph.hres, c, tmp) {
 
         if (c->res.enabled) {
 

@@ -241,7 +241,7 @@ static void compute_logger(resolve_service_t *res, resolve_service_t *log, ssexe
 
 }
 
-void parse_create_logger(struct resolve_hash_s **hres, resolve_service_t *res, ssexec_t *info)
+void parse_create_logger(hash_t *hres, resolve_service_t *res, ssexec_t *info)
 {
     log_flow() ;
 
@@ -252,7 +252,7 @@ void parse_create_logger(struct resolve_hash_s **hres, resolve_service_t *res, s
     resolve_service_t lres = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-    hash = hash_search(hres, logname) ;
+    hash = resolve_hash_search(hres, logname) ;
     if (hash == NULL && res->type == E_PARSER_TYPE_CLASSIC) {
         /** the logger is not a service with oneshot type */
 
@@ -276,11 +276,11 @@ void parse_create_logger(struct resolve_hash_s **hres, resolve_service_t *res, s
         res->logger.execute.run.run = resolve_add_string(wres, lres.sa.s + lres.execute.run.run) ;
         res->logger.execute.run.run_user = resolve_add_string(wres, lres.sa.s + lres.execute.run.run_user) ;
 
-        if (hash_count(hres) > SS_MAX_SERVICE)
+        if (resolve_hash_count(hres) > SS_MAX_SERVICE)
             log_die(LOG_EXIT_SYS, "too many services to parse -- compile again 66 changing the --max-service options") ;
 
         log_trace("add service: ", logname, " to the service selection") ;
-        if (!hash_add(hres, logname, lres))
+        if (!resolve_hash_add(hres, logname, lres))
             log_dieu(LOG_EXIT_SYS, "append service selection with: ", logname) ;
     }
 

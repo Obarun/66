@@ -19,7 +19,7 @@
 #include <oblibs/string.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/hash.h>
+#include <oblibs/hash2.h>
 
 #include <66/parse.h>
 #include <66/service.h>
@@ -27,7 +27,7 @@
 #include <66/enum_parser.h>
 #include <66/constants.h>
 
-static void parse_prefix(char *result, strbuf *stk, struct resolve_hash_s **hres, char const *prefix)
+static void parse_prefix(char *result, strbuf *stk, hash_t *hres, char const *prefix)
 {
     log_flow() ;
 
@@ -36,7 +36,7 @@ static void parse_prefix(char *result, strbuf *stk, struct resolve_hash_s **hres
 
     FOREACH_SBL(stk, pos) {
 
-        hash = hash_search(hres, stk->s + pos) ;
+        hash = resolve_hash_search(hres, stk->s + pos) ;
         if (hash == NULL) {
 
             /** try with the name of the prefix as prefix */
@@ -44,7 +44,7 @@ static void parse_prefix(char *result, strbuf *stk, struct resolve_hash_s **hres
 
             auto_strings(tmp, prefix, ":", stk->s + pos) ;
 
-            hash = hash_search(hres, tmp) ;
+            hash = resolve_hash_search(hres, tmp) ;
             if (hash == NULL)
                 log_die(LOG_EXIT_USER, "service: ", stk->s + pos, " not available -- please make a bug report") ;
         }
@@ -60,7 +60,7 @@ static void parse_prefix(char *result, strbuf *stk, struct resolve_hash_s **hres
     result[strlen(result) - 1] = 0 ;
 }
 
-static void parse_prefix_name(resolve_service_t *res, struct resolve_hash_s **hres, char const *prefix)
+static void parse_prefix_name(resolve_service_t *res, hash_t *hres, char const *prefix)
 {
     log_flow() ;
 
@@ -108,15 +108,15 @@ static void parse_prefix_name(resolve_service_t *res, struct resolve_hash_s **hr
     free(wres) ;
 }
 
-void parse_rename_interdependences(resolve_service_t *res, char const *prefix, struct resolve_hash_s **hres, ssexec_t *info)
+void parse_rename_interdependences(resolve_service_t *res, char const *prefix, hash_t *hres, ssexec_t *info)
 {
     log_flow() ;
 
     struct resolve_hash_s *c, *tmp ;
-    _alloc_sbl_(stk, hash_count(hres) * SS_MAX_SERVICE_NAME + 1) ;
+    _alloc_sbl_(stk, resolve_hash_count(hres) * SS_MAX_SERVICE_NAME + 1) ;
     resolve_wrapper_t_ref wres = 0 ;
 
-    HASH_ITER(hh, *hres, c, tmp) {
+    HASH_FOREACH(hres, c, tmp) {
 
         if (!strcmp(c->res.sa.s + c->res.inns, prefix)) {
 

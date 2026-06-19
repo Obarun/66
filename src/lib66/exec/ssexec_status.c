@@ -375,7 +375,7 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
     if (!sbl_clean_string(&sa, res->sa.s + res->dependencies.requiredby))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+    if (!service_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
     nservice = service_graph_build_list(&graph, sa.s, sa.len, pinfo, flag) ;
@@ -447,7 +447,7 @@ static void info_display_deps(char const *field, resolve_service_t *res)
     if (!sbl_clean_string(&sa, res->sa.s + res->dependencies.depends))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    if (!graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
+    if (!service_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
     nservice = service_graph_build_list(&graph, sa.s, sa.len, pinfo, flag) ;
@@ -549,7 +549,7 @@ static void info_display_contents(char const *field, resolve_service_t *res)
     if (!sbl_clean_string(&sa, res->sa.s + res->dependencies.contents))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    if (!graph_new(&graph, res->dependencies.ncontents))
+    if (!service_graph_new(&graph, res->dependencies.ncontents))
         log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
     nservice = service_graph_build_list(&graph, sa.s, sa.len, pinfo, flag) ;
@@ -989,7 +989,7 @@ void info_status_all(void)
     uint32_t f = REVERSE ? GRAPH_WANT_REQUIREDBY : GRAPH_WANT_DEPENDS ;
     uint32_t nservice = 0 , pos = 0, flag = f|GRAPH_COLLECT_PARSE ;
 
-    if (!graph_new(&graph, SS_MAX_SERVICE))
+    if (!tree_graph_new(&graph, SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "allocate the graph") ;
 
     nservice = tree_graph_build_master(&graph, pinfo, flag) ;
@@ -1029,7 +1029,7 @@ void info_status_all(void)
 
                 /** A dependencies service can be on another tree,
                  * so used SS_MAX_SERVICE instead of sbl_count(&stk). */
-                if (!graph_new(&sg, SS_MAX_SERVICE))
+                if (!service_graph_new(&sg, SS_MAX_SERVICE))
                     log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
                 nservice = service_graph_build_list(&sg, sv.s, sv.len, pinfo, flag) ;
