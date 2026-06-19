@@ -251,7 +251,7 @@ static inline void prepare_stage4 (char what)
     if (inns) {
 
         char s[2] = { what, '\n' } ;
-        _alloc_strbuf_(stk, 30) ;
+        char stk[30] ;
         char ownerstr[UID_FMT] ;
         size_t olen = uid_format(ownerstr, getuid()), livelen = strlen(live) ;
         char tmp[livelen + SS_BOOT_CONTAINER_DIR_LEN + 1 + olen + 1 + SS_BOOT_CONTAINER_HALTFILE_LEN + 1] ;
@@ -259,10 +259,9 @@ static inline void prepare_stage4 (char what)
 
         auto_strings(tmp, live, SS_BOOT_CONTAINER_DIR, "/", ownerstr, "/", SS_BOOT_CONTAINER_HALTFILE) ;
 
-        auto_strings(stk.s, "HALTCODE=", s, "\nEXITCODE=0\n") ;
-        stk.len = 22 ;
+        auto_strings(stk, "HALTCODE=", s, "\nEXITCODE=0\n") ;
 
-        if (!file_write(tmp, stk.s, stk.len))
+        if (!file_write(tmp, stk, 22))
             log_dieusys(LOG_EXIT_SYS, "write file: ", tmp) ;
     }
 

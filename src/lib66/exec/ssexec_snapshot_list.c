@@ -36,18 +36,18 @@ int ssexec_snapshot_list(int argc, char const *const *argv, void *data)
 
     size_t pos = 0 ;
     char const *exclude[1] = { 0 } ;
-    _alloc_strbuf_(snapdir, SS_MAX_PATH_LEN) ;
+    char snapdir[SS_MAX_PATH_LEN] ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
-    auto_strings(snapdir.s, info->base.s, SS_SNAPSHOT + 1) ;
+    auto_strings(snapdir, info->base.s, SS_SNAPSHOT + 1) ;
 
-    if (access(snapdir.s, F_OK) < 0) {
+    if (access(snapdir, F_OK) < 0) {
         log_info("There is no snapshot yet") ;
         return 0 ;
     }
 
-    if (!sbl_dir_get(&sa, snapdir.s, exclude, S_IFDIR))
-        log_dieusys(LOG_EXIT_SYS, "list snapshot from: ", snapdir.s) ;
+    if (!sbl_dir_get(&sa, snapdir, exclude, S_IFDIR))
+        log_dieusys(LOG_EXIT_SYS, "list snapshot from: ", snapdir) ;
 
     if (!sa.len) {
         log_info("There is no snapshot yet") ;

@@ -78,8 +78,8 @@ void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)
         if (sta.toparse == STATE_FLAGS_TRUE) {
 
             uint32_t opstree = info->opt_tree ;
-            _alloc_strbuf_(stk, info->treename.len + 1) ;
-            auto_strings(stk.s, info->treename.s) ;
+            char stk[info->treename.len + 1] ;
+            auto_strings(stk, info->treename.s) ;
 
             if (!info->opt_tree) {
 
@@ -103,7 +103,7 @@ void sanitize_source(char const *name, ssexec_t *info, uint32_t flag)
 
             if (!opstree) {
                 info->treename.len = 0 ;
-                if (!auto_strbuf(&info->treename, stk.s))
+                if (!auto_strbuf(&info->treename, stk))
                     log_die_nomem("strbuf") ;
                 info->opt_tree = opstree ;
             }

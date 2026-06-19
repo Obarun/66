@@ -176,13 +176,14 @@ static int parse_io_type(resolve_service_t *res, char const *line, resolve_enum_
         parse_error_return(0, 10, table) ;
 
     char *stype = (char *)line ;
+    char stype_buf[delim > 0 ? (size_t)delim + 1 : 1] ;
 
     if (delim > 0) {
 
-        memcpy(stk.s, stype, delim) ;
-        stk.s[delim] = 0 ;
+        memcpy(stype_buf, line, delim) ;
+        stype_buf[delim] = 0 ;
 
-        stype = stk.s ;
+        stype = stype_buf ;
     }
 
     type = key_to_enum(enum_list_parser_io_type, stype) ;

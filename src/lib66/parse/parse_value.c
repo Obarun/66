@@ -13,7 +13,6 @@
  */
 
 #include <stdint.h>
-#include <string.h>
 
 #include <oblibs/log.h>
 #include <oblibs/strbuf.h>
@@ -33,8 +32,12 @@ int parse_value(strbuf *store, lexer_config *kcfg, resolve_enum_table_t table)
     key_description_t const *list = table.u.parser.list ;
 
     log_trace("parsing value of key: ", *list[kid].name) ;
-    memcpy(stk.s, kcfg->str + kcfg->cpos, strlen(kcfg->str + kcfg->cpos)) ;
-    stk.s[strlen(kcfg->str + kcfg->cpos)] = 0 ;
+
+    /* the value can be arbitrarily large (env, module contents, scripts): write
+     * through the API so stk grows onto the heap instead of overflowing the seed. */
+    if (!strbuf_copyb(&stk, kcfg->str + kcfg->cpos, kcfg->slen - kcfg->cpos) ||
+        !strbuf_uncounted(&stk))
+            parse_error_return(LOG_EXIT_ZERO, 6, table) ;
 
     switch(list[kid].expected) {
 

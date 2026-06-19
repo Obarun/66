@@ -67,8 +67,8 @@ int ssexec_fdholder_signal(int argc, char const *const *argv, void *data)
     else
         flag = "-t" ;
 
-    _alloc_strbuf_(dir, info->scandir.len + sizeof("/" SS_FDHOLDER) + 1) ;
-    auto_strings(dir.s, info->scandir.s, "/" SS_FDHOLDER) ;
+    char dir[info->scandir.len + sizeof("/" SS_FDHOLDER) + 1] ;
+    auto_strings(dir, info->scandir.s, "/" SS_FDHOLDER) ;
 
     char tfmt[U32_FMT] ;
     tfmt[u32_fmt(tfmt, fdh_sig_timeout)] = 0 ;
@@ -80,10 +80,10 @@ int ssexec_fdholder_signal(int argc, char const *const *argv, void *data)
     newargv[m++] = "-T" ;
     newargv[m++] = tfmt ;
     newargv[m++] = "--" ;
-    newargv[m++] = dir.s ;
+    newargv[m++] = dir ;
     newargv[m] = 0 ;
 
-    log_trace(fdh_signame, " fdholder service: ", dir.s) ;
+    log_trace(fdh_signame, " fdholder service: ", dir) ;
 
     pid_t pid = spawn_path(newargv[0], newargv, (char const *const *)environ) ;
     int wstat ;

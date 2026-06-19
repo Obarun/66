@@ -35,10 +35,10 @@ int symlink_provide(const char *base, resolve_service_t *res, bool action)
         return 1 ;
 
     size_t pos = 0 ;
-    _alloc_strbuf_(path, SS_MAX_PATH_LEN) ;
+    char path[SS_MAX_PATH_LEN] ;
     _alloc_sbl_(stk, strlen(res->sa.s + res->dependencies.provide)) ;
-    _alloc_strbuf_(lnk, strlen(base) + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME) ;
-    _alloc_strbuf_(lname, SS_MAX_PATH_LEN) ;
+    char lnk[strlen(base) + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME] ;
+    char lname[SS_MAX_PATH_LEN] ;
 
     if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.provide))
         log_warnusys_return(LOG_EXIT_ZERO, "clean string") ;
@@ -47,36 +47,36 @@ int symlink_provide(const char *base, resolve_service_t *res, bool action)
 
         char *name = stk.s + pos ;
 
-        auto_strings(lnk.s, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+        auto_strings(lnk, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 
-        auto_strings(path.s, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 
-        if (symlink_type(lnk.s) > 0) {
+        if (symlink_type(lnk) > 0) {
 
-            auto_strings(lname.s, name) ;
+            auto_strings(lname, name) ;
 
-            if (!service_resolve_symlink(base, path.s, lname.s)) {
-                log_warnusys("resolve symlink path: ", lnk.s) ;
+            if (!service_resolve_symlink(base, path, lname)) {
+                log_warnusys("resolve symlink path: ", lnk) ;
                 continue ;
             }
 
             if (action) {
 
-                if (strcmp(lname.s, res->sa.s + res->name))
-                    log_1_warn_return(LOG_EXIT_ZERO, lname.s, " is already providing: ", name, " -- disable it first with '66 disable ", name, "' command") ;
+                if (strcmp(lname, res->sa.s + res->name))
+                    log_1_warn_return(LOG_EXIT_ZERO, lname, " is already providing: ", name, " -- disable it first with '66 disable ", name, "' command") ;
 
-            } else if (!strcmp(lname.s, res->sa.s + res->name)) {
+            } else if (!strcmp(lname, res->sa.s + res->name)) {
 
-                log_trace("remove provide symlink: ", lnk.s) ;
-                file_tryunlink(lnk.s) ;
+                log_trace("remove provide symlink: ", lnk) ;
+                file_tryunlink(lnk) ;
             }
 
         } else if (action) {
 
-            log_trace("symlink: ", path.s, " to: ", res->sa.s + res->name) ;
-            int r = symlink(res->sa.s + res->name, path.s) ;
+            log_trace("symlink: ", path, " to: ", res->sa.s + res->name) ;
+            int r = symlink(res->sa.s + res->name, path) ;
             if (r < 0 && errno != EEXIST)
-                log_warnusys_return(LOG_EXIT_ZERO, "make symlink: ", path.s, " to: ", res->sa.s + res->name) ;
+                log_warnusys_return(LOG_EXIT_ZERO, "make symlink: ", path, " to: ", res->sa.s + res->name) ;
         }
     }
 

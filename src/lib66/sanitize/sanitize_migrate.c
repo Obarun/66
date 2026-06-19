@@ -85,7 +85,7 @@ static uint8_t str_to_int(const char *version)
 
 void migrate_create_snap(ssexec_t *info, const char *version)
 {
-    _alloc_strbuf_(stk, 7 + strlen(version) + 1) ;
+    char stk[7 + strlen(version) + 1] ;
     int argc = 4 ;
     int m = 0 ;
     char const *prog = PROG ;
@@ -93,16 +93,16 @@ void migrate_create_snap(ssexec_t *info, const char *version)
 
     extern opt_on_option_fn on_snapshot_create ;
 
-    auto_strings(stk.s, "system@", version) ;
+    auto_strings(stk, "system@", version) ;
 
-    newargv[m++] = stk.s ;
+    newargv[m++] = stk ;
     newargv[m] = 0 ;
 
     PROG = "snapshot" ;
     /* internal system snapshot: allow the reserved system@ prefix (-s). */
     on_snapshot_create('s', 0, info) ;
     if (ssexec_snapshot_create(m, newargv, info))
-        log_dieu(LOG_EXIT_SYS, "create snapshot", stk.s) ;
+        log_dieu(LOG_EXIT_SYS, "create snapshot", stk) ;
     PROG = prog ;
 }
 

@@ -358,15 +358,15 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
                 FOREACH_SBL(&satmp, pos) {
 
                     char *name = satmp.s + pos ;
-                    _alloc_strbuf_(file, src.len + strlen(name) + 2) ;
-                    auto_strings(file.s, src.s, "/", name) ;
-                    size_t filen = file_get_size(file.s) ;
+                    char file[src.len + strlen(name) + 2] ;
+                    auto_strings(file, src.s, "/", name) ;
+                    size_t filen = file_get_size(file) ;
                     _alloc_strbuf_(list, filen + 1) ;
 
-                    if (!strbuf_read_file(&list, file.s))
-                        log_dieusys(LOG_EXIT_SYS,"read: ", file.s) ;
+                    if (!strbuf_read_file(&list, file))
+                        log_dieusys(LOG_EXIT_SYS,"read: ", file) ;
 
-                    log_info("Contents of file: ", file.s, "\n", list.s) ;
+                    log_info("Contents of file: ", file, "\n", list.s) ;
                 }
             }
             break ;
@@ -379,13 +379,13 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
                  * the change to the user file */
                 write_user_env_file(src.s, sv) ;
 
-                _alloc_strbuf_(file, strlen(src.s) + strlen(sv) + 2) ;
+                char file[strlen(src.s) + strlen(sv) + 2] ;
                 _cleanup_strbuf_ strbuf env = STRBUF_ZERO ;
 
-                auto_strings(file.s, src.s, "/", sv) ;
+                auto_strings(file, src.s, "/", sv) ;
 
-                if (!environ_merge_file(&env, file.s))
-                    log_dieusys(LOG_EXIT_SYS, "merge environment file: ", file.s) ;
+                if (!environ_merge_file(&env, file))
+                    log_dieusys(LOG_EXIT_SYS, "merge environment file: ", file) ;
 
                 if (!environ_merge_environ(&env, &savar))
                     log_dieusys(LOG_EXIT_SYS, "merge environment from command line") ;
@@ -393,8 +393,8 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
                 if (!environ_rebuild(&env))
                     log_dieusys(LOG_EXIT_SYS, "rebuild environment") ;
 
-                if (!file_write(file.s, env.s, env.len))
-                    log_dieusys(LOG_EXIT_SYS,"write file: ", file.s) ;
+                if (!file_write(file, env.s, env.len))
+                    log_dieusys(LOG_EXIT_SYS,"write file: ", file) ;
             }
             break ;
 

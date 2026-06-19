@@ -309,20 +309,20 @@ static void migrate_service_0802(void)
 
     set_info(&info) ;
 
-    _alloc_strbuf_(path, info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME + SS_RESOLVE_LEN + 1 + 1) ;
-    auto_strings(path.s, info.base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/") ;
+    char path[info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME + SS_RESOLVE_LEN + 1 + 1] ;
+    auto_strings(path, info.base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/") ;
     size_t len = info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 ;
 
-    if (!sbl_dir_get_recursive(&sa, path.s, exclude, S_IFLNK, 0))
+    if (!sbl_dir_get_recursive(&sa, path, exclude, S_IFLNK, 0))
         log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
     FOREACH_SBL(&sa, pos) {
 
         char *name = sa.s + pos ;
 
-        auto_strings(path.s + len, name, SS_RESOLVE, "/") ;
+        auto_strings(path + len, name, SS_RESOLVE, "/") ;
 
-        migrate_resolve(&info, path.s, name) ;
+        migrate_resolve(&info, path, name) ;
     }
 
     ssexec_free(&info) ;

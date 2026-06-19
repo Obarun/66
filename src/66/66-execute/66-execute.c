@@ -102,12 +102,12 @@ static void io_fdholder_retrieve(resolve_service_t *res, int fd, const char *nam
     log_flow() ;
 
     size_t len = strlen(res->sa.s + res->live.fdholderdir) + 2 ;
-    _alloc_strbuf_(sock, len + 1) ;
-    auto_strings(sock.s, res->sa.s + res->live.fdholderdir, "/s") ;
+    char sock[len + 1] ;
+    auto_strings(sock, res->sa.s + res->live.fdholderdir, "/s") ;
 
     fdholder_client_t c ;
-    if (!fdholder_client_init(&c, sock.s))
-        log_dieusys(LOG_EXIT_SYS, "connect to socket: ", sock.s) ;
+    if (!fdholder_client_init(&c, sock))
+        log_dieusys(LOG_EXIT_SYS, "connect to socket: ", sock) ;
 
     /* reader 0 -> read end, 1 -> write end ; the named pipe pair is created
      * atomically by the daemon on first request (no pre-seeding needed) */
@@ -244,20 +244,17 @@ static void io_open_active_console(int fd)
     int e = errno ;
     errno = 0 ;
     size_t len = 1024 ; //sysfs type here, 1024 should be large enough
-    _alloc_sbl_(stk, 4 + len + 1) ;
+    char stk[5 + len + 1] ;
 
-    ssize_t r = file_read(path, stk.s, len) ;
+    auto_strings(stk, "/dev/") ;
+    ssize_t r = file_read(path, stk + 5, len) ;
     if (r == -1)
         log_dieusys(LOG_EXIT_SYS, "read: ", path) ;
-    stk.s[r] = 0 ;
-    stk.len = strlen(stk.s) ;
+    if (r && stk[5 + r - 1] == '\n')
+        r-- ; // drop the trailing newline
+    stk[5 + r] = 0 ;
 
-    if (!strbuf_inserts(&stk, 0, "/dev/"))
-        log_dieusys(LOG_EXIT_SYS, "invert prefix path") ;
-
-    stk.s[stk.len - 1] = 0 ; // remove the last '\n'
-
-    io_open_terminal(fd, stk.s, O_WRONLY | O_NOCTTY) ;
+    io_open_terminal(fd, stk, O_WRONLY | O_NOCTTY) ;
     errno = e ;
 }
 
@@ -354,11 +351,11 @@ static void io_setup_stdout(resolve_service_t *res)
 
             } else if (res->type == E_PARSER_TYPE_ONESHOT) {
 
-                _alloc_sbl_(stk, strlen(res->sa.s + res->io.fdout.destination) + SS_CURRENT_LEN + 2) ;
-                auto_strings(stk.s, res->sa.s + res->io.fdout.destination, "/", SS_CURRENT) ;
-                stk.s[strlen(res->sa.s + res->io.fdout.destination) + 1 + SS_CURRENT_LEN] = 0 ;
+                char stk[strlen(res->sa.s + res->io.fdout.destination) + SS_CURRENT_LEN + 2] ;
+                auto_strings(stk, res->sa.s + res->io.fdout.destination, "/", SS_CURRENT) ;
+                stk[strlen(res->sa.s + res->io.fdout.destination) + 1 + SS_CURRENT_LEN] = 0 ;
 
-                io_open_file(res, 1, stk.s) ;
+                io_open_file(res, 1, stk) ;
             }
             break ;
 
@@ -721,7 +718,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
     log_flow() ;
 
     char const *service = 0 ;
-    _alloc_strbuf_(base, SS_MAX_PATH + 1) ;
+    char base[SS_MAX_PATH + 1] ;
     _cleanup_strbuf_ strbuf eram = STRBUF_ZERO ; // envrionment in memory
     char const *nenvp[MAXENV + 1] ;
     char *run = 0 ;
@@ -768,10 +765,10 @@ int main(int argc, char const *const *argv, char const *const *envp)
     if (chdir(".") < 0)
         log_dieusys(LOG_EXIT_ZERO, "chdir") ;
 
-    if (!set_ownersysdir_stack(base.s, getuid()))
+    if (!set_ownersysdir_stack(base, getuid()))
         log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-    if (!resolve_read_g(wres, base.s, service))
+    if (!resolve_read_g(wres, base, service))
         log_dieusys(LOG_EXIT_SYS,"read resolve file of: ", service) ;
 
     run = (action == EXECUTE_START) ? "/run" : "/finish" ;

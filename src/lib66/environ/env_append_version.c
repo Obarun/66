@@ -28,11 +28,11 @@ int env_append_version(strbuf *saversion, char const *svconf, char const *versio
 
     int r ;
 
-    _alloc_strbuf_(stk, strlen(version) + 1) ;
+    char stk[strlen(version) + 1] ;
 
-    auto_strings(stk.s, version) ;
+    auto_strings(stk, version) ;
 
-    if (!auto_strbuf(saversion,svconf,"/",stk.s))
+    if (!auto_strbuf(saversion,svconf,"/",stk))
         log_warnusys_return(LOG_EXIT_ZERO,"strbuf") ;
 
     r = scan_mode(saversion->s,S_IFDIR) ;

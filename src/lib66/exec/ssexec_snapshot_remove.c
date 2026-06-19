@@ -31,21 +31,21 @@ int ssexec_snapshot_remove(int argc, char const *const *argv, void *data)
     ssexec_t *info = data ;
 
     char const *snapname = 0 ;
-    _alloc_strbuf_(snapdir, SS_MAX_PATH_LEN) ;
+    char snapdir[SS_MAX_PATH_LEN] ;
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing name argument") ;
 
     snapname = *argv ;
 
-    auto_strings(snapdir.s, info->base.s, SS_SNAPSHOT + 1, "/", snapname) ;
+    auto_strings(snapdir, info->base.s, SS_SNAPSHOT + 1, "/", snapname) ;
 
-    if (access(snapdir.s, F_OK) < 0)
-        log_dieusys(LOG_EXIT_SYS, "find snapshot: ", snapdir.s) ;
+    if (access(snapdir, F_OK) < 0)
+        log_dieusys(LOG_EXIT_SYS, "find snapshot: ", snapdir) ;
 
-    log_trace("delete directory: ", snapdir.s) ;
-    if (!dir_destroy(snapdir.s))
-        log_dieusys(LOG_EXIT_SYS, "delete snapshot: ", snapdir.s) ;
+    log_trace("delete directory: ", snapdir) ;
+    if (!dir_destroy(snapdir))
+        log_dieusys(LOG_EXIT_SYS, "delete snapshot: ", snapdir) ;
 
     log_info("Successfully removed snapshot: ", snapname) ;
 

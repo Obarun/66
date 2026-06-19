@@ -28,11 +28,11 @@ int sanitize_fdholder_start(fdholder_client_t *c, const char *socket)
 {
     log_flow() ;
 
-    _alloc_strbuf_(sock, strlen(socket) + 3) ;
-    auto_strings(sock.s, socket, "/s") ;
+    char sock[strlen(socket) + 3] ;
+    auto_strings(sock, socket, "/s") ;
 
-    if (!fdholder_client_init(c, sock.s))
-        log_warnusys_return(LOG_EXIT_ZERO, "connect to socket: ", sock.s) ;
+    if (!fdholder_client_init(c, sock))
+        log_warnusys_return(LOG_EXIT_ZERO, "connect to socket: ", sock) ;
 
     return 1 ;
 }

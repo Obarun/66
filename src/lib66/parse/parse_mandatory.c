@@ -59,10 +59,10 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
 
     if (!res->description) {
 
-        _alloc_strbuf_(d, strlen(res->sa.s + res->name) + 8 + 1) ;
-        auto_strings(d.s, res->sa.s + res->name, " service") ;
-        res->description = resolve_add_string(wres, d.s) ;
-        log_warn("key Description at section [Main] was not set -- define it to: ", d.s) ;
+        char d[strlen(res->sa.s + res->name) + 8 + 1] ;
+        auto_strings(d, res->sa.s + res->name, " service") ;
+        res->description = resolve_add_string(wres, d) ;
+        log_warn("key Description at section [Main] was not set -- define it to: ", d) ;
     }
 
     if (!res->user) {

@@ -137,7 +137,7 @@ void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t 
     char name[namelen + 1] ;
     char dirname[strlen(res->sa.s + res->path.frontend) + 1] ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-    _alloc_strbuf_(tmpdir, namelen + 12 + strlen(SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) + 1 + SS_MAX_SERVICE_NAME + 1) ;
+    char tmpdir[namelen + 12 + strlen(SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) + 1 + SS_MAX_SERVICE_NAME + 1] ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     auto_strings(name,res->sa.s + res->name) ;
@@ -154,42 +154,42 @@ void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t 
     parse_module_check_dir(dirname, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) ;
     parse_module_check_dir(dirname, SS_MODULE_FRONTEND) ;
 
-    auto_strings(tmpdir.s, "/tmp/", name, ":XXXXXX") ;
+    auto_strings(tmpdir, "/tmp/", name, ":XXXXXX") ;
 
-    if (!mkdtemp(tmpdir.s))
+    if (!mkdtemp(tmpdir))
         log_dieusys(LOG_EXIT_SYS, "create temporary directory") ;
 
-    tmplen = tmpdir.len = strlen(tmpdir.s) ;
+    tmplen = strlen(tmpdir) ;
 
-    log_trace("copy: ", dirname, " to: ", tmpdir.s) ;
-    if (!tree_copy(dirname, tmpdir.s))
-        log_dieusys(LOG_EXIT_SYS, "copy: ", dirname, " to: ", tmpdir.s) ;
+    log_trace("copy: ", dirname, " to: ", tmpdir) ;
+    if (!tree_copy(dirname, tmpdir))
+        log_dieusys(LOG_EXIT_SYS, "copy: ", dirname, " to: ", tmpdir) ;
 
-    parse_module_regex(res, tmpdir.s, tmplen, info) ;
+    parse_module_regex(res, tmpdir, tmplen, info) ;
 
     /** handle new activated depends/requiredby service.*/
     {
         char const *exclude[1] = { 0 } ;
-        auto_strings(tmpdir.s + tmplen, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS) ;
-        get_list(&sa, tmpdir.s, name, S_IFREG, exclude) ;
+        auto_strings(tmpdir + tmplen, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS) ;
+        get_list(&sa, tmpdir, name, S_IFREG, exclude) ;
 
         parse_module_dependencies(&sa, res, 0, hres, force, conf, info) ;
 
-        auto_strings(tmpdir.s + tmplen, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) ;
-        get_list(&sa, tmpdir.s, name, S_IFREG, exclude) ;
+        auto_strings(tmpdir + tmplen, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) ;
+        get_list(&sa, tmpdir, name, S_IFREG, exclude) ;
 
         parse_module_dependencies(&sa, res, 1, hres, force, conf, info) ;
     }
 
-    auto_strings(tmpdir.s + tmplen, SS_MODULE_ACTIVATED) ;
+    auto_strings(tmpdir + tmplen, SS_MODULE_ACTIVATED) ;
 
     {
         char const *exclude[3] = { SS_MODULE_DEPENDS + 1, SS_MODULE_REQUIREDBY + 1, 0 } ;
 
-        get_list(&sa, tmpdir.s, name, S_IFREG, exclude) ;
+        get_list(&sa, tmpdir, name, S_IFREG, exclude) ;
     }
 
-    auto_strings(tmpdir.s + tmplen, SS_MODULE_FRONTEND) ;
+    auto_strings(tmpdir + tmplen, SS_MODULE_FRONTEND) ;
 
     {
         /* parse each activated services */
@@ -215,16 +215,15 @@ void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t 
 
             /** Search first inside the module directory.
              * If not found, warn user about what to do.*/
-            if (!service_frontend_path(&sa, fname, info->owner, tmpdir.s, exclude, exlen)) {
+            if (!service_frontend_path(&sa, fname, info->owner, tmpdir, exclude, exlen)) {
 
-                tmpdir.s[tmplen] = 0 ;
-                tmpdir.len = tmplen ;
+                tmpdir[tmplen] = 0 ;
                 char deps[tmplen + SS_MODULE_ACTIVATED_LEN + SS_MODULE_DEPENDS_LEN + 1 + strlen(fname) + 1] ;
                 char require[tmplen + SS_MODULE_ACTIVATED_LEN + SS_MODULE_REQUIREDBY_LEN + 1 + strlen(fname) + 1] ;
 
-                auto_strings(deps, tmpdir.s, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS, "/", fname) ;
-                auto_strings(require, tmpdir.s, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY, "/", fname) ;
-                log_die(LOG_EXIT_USER, "you can not activate the service ", fname, " without providing its frontend file at ",tmpdir.s, \
+                auto_strings(deps, tmpdir, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS, "/", fname) ;
+                auto_strings(require, tmpdir, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY, "/", fname) ;
+                log_die(LOG_EXIT_USER, "you can not activate the service ", fname, " without providing its frontend file at ",tmpdir, \
                                     ". If you want to add an depends/requiredby service to the module, consider creating a named empty file at ", \
                                     deps, " or ", require) ;
 
@@ -235,7 +234,7 @@ void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t 
             if (!auto_strbuf(&info->treename, res->sa.s + res->treename))
                 log_die_nomem("strbuf") ;
 
-            parse_frontend(sa.s, hres, info, force, conf, tmpdir.s, fname, name, res->intree ? res->sa.s + res->intree : 0, res) ;
+            parse_frontend(sa.s, hres, info, force, conf, tmpdir, fname, name, res->intree ? res->sa.s + res->intree : 0, res) ;
 
             info->opt_tree = opt_tree ;
         }
@@ -266,10 +265,10 @@ void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t 
     parse_db_migrate(res, info) ;
 
     /** do not die here, just warn the user */
-    tmpdir.s[tmplen] = 0 ;
-    log_trace("remove temporary directory: ", tmpdir.s) ;
-    if (!dir_destroy(tmpdir.s))
-        log_warnu("remove temporary directory: ", tmpdir.s) ;
+    tmpdir[tmplen] = 0 ;
+    log_trace("remove temporary directory: ", tmpdir) ;
+    if (!dir_destroy(tmpdir))
+        log_warnu("remove temporary directory: ", tmpdir) ;
 
     free(wres) ;
 }

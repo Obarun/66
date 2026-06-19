@@ -224,10 +224,10 @@ static void migrate_tree_0721(ssexec_t *info)
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref wmres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
     resolve_wrapper_t_ref wtres = 0 ;
-    _alloc_strbuf_(path, info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 2) ;
+    char path[info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + 2] ;
 
     /** migrate the Master resolve file of trees*/
-    auto_strings(path.s, info->base.s, SS_SYSTEM, SS_RESOLVE, "/") ;
+    auto_strings(path, info->base.s, SS_SYSTEM, SS_RESOLVE, "/") ;
 
     /** Check if we are not on the current format already.
      * The update can crash at some point and relaunched. In that
@@ -237,7 +237,7 @@ static void migrate_tree_0721(ssexec_t *info)
 
         mres = tree_resolve_master_zero ;
 
-        if (resolve_open_cdb(&fd, &c, path.s, SS_MASTER + 1) <= 0)
+        if (resolve_open_cdb(&fd, &c, path, SS_MASTER + 1) <= 0)
             log_dieusys(LOG_EXIT_SYS, "open resolve master file") ;
 
         log_trace("upgrading master resolve file") ;
@@ -267,7 +267,7 @@ static void migrate_tree_0721(ssexec_t *info)
 
             if (resolve_read_g(wtres, info->base.s, stk.s + pos) <= 0) {
 
-                if (resolve_open_cdb(&fd, &c, path.s, stk.s + pos) <= 0)
+                if (resolve_open_cdb(&fd, &c, path, stk.s + pos) <= 0)
                     log_dieusys(LOG_EXIT_SYS, "open resolve file of tree: ", stk.s + pos) ;
 
                 log_trace("upgrading resolve file of tree: ", stk.s + pos) ;
@@ -340,25 +340,25 @@ static void migrate_frontend_file_0721(const char *file, ssexec_t *info)
     size_t len = strlen(file) ;
     ssize_t insta = get_rlen_until(file, '@', len) ;
     _cleanup_strbuf_ strbuf frontend = STRBUF_ZERO ;
-    _alloc_strbuf_(f, len + 1) ;
+    char f[len + 1] ;
 
-    auto_strings(f.s, file) ;
+    auto_strings(f, file) ;
 
     if (insta > 0)
-        f.s[insta + 1] = 0;
+        f[insta + 1] = 0;
 
     /** service for user declare inside root directory are handled by root.*/
-    if ((!str_start_with(f.s, SS_SERVICE_SYSDIR_USER) || !str_start_with(f.s, SS_SERVICE_ADMDIR_USER)) && info->owner)
+    if ((!str_start_with(f, SS_SERVICE_SYSDIR_USER) || !str_start_with(f, SS_SERVICE_ADMDIR_USER)) && info->owner)
         return ;
 
-    log_trace("read frontend service file: ", f.s) ;
-    if (!strbuf_read_file(&frontend, f.s))
-        log_dieu(LOG_EXIT_SYS, "read system version file: ", f.s) ;
+    log_trace("read frontend service file: ", f) ;
+    if (!strbuf_read_file(&frontend, f))
+        log_dieu(LOG_EXIT_SYS, "read system version file: ", f) ;
 
     while(field[pos].regex) {
         log_trace("replacing field: ", field[pos].regex, " by: ", field[pos].by) ;
         if (!sbl_replace(&frontend, field[pos].regex, field[pos].by))
-            log_die(LOG_EXIT_ZERO, "replace regex character: ", field[pos].regex, " by: ", field[pos].by," for service: ", f.s) ;
+            log_die(LOG_EXIT_ZERO, "replace regex character: ", field[pos].regex, " by: ", field[pos].by," for service: ", f) ;
         pos++ ;
     }
 
@@ -367,24 +367,24 @@ static void migrate_frontend_file_0721(const char *file, ssexec_t *info)
         table.u.parser.id = E_PARSER_SECTION_LOGGER_DESTINATION ;
 
         _alloc_sbl_(store, frontend.len + 1) ;
-        _alloc_strbuf_(stdout, frontend.len + 22) ;
         int r = parse_get_value_of_key(&store, frontend.s, table) ;
         if (r) {
             log_1_warn("Destination field is deprecated -- convert it automatically to StdOut=s6log:", store.s) ;
-            auto_strings(stdout.s, "StdOut=s6log:", store.s, "\n\n[Start]") ;
-            if (!sbl_replace(&frontend, "\n[Start]", stdout.s))
-                log_die(LOG_EXIT_ZERO, "replace deprecated field Destination with: ", stdout.s) ;
+            char stdout[store.len + sizeof("StdOut=s6log:") + sizeof("\n\n[Start]")] ;
+            auto_strings(stdout, "StdOut=s6log:", store.s, "\n\n[Start]") ;
+            if (!sbl_replace(&frontend, "\n[Start]", stdout))
+                log_die(LOG_EXIT_ZERO, "replace deprecated field Destination with: ", stdout) ;
 
             if (!sbl_replace(&frontend, "Destination", "#Destination"))
-                log_die(LOG_EXIT_ZERO, "replace deprecated field Destination with: ", stdout.s) ;
+                log_die(LOG_EXIT_ZERO, "replace deprecated field Destination with: ", stdout) ;
         }
 
     }
-    log_trace("frontend result of migration process for: ", f.s, "\n", frontend.s) ;
+    log_trace("frontend result of migration process for: ", f, "\n", frontend.s) ;
     /** point of no return */
-    log_trace("write frontend service file: ", f.s) ;
-    if (!file_write(f.s, frontend.s, strlen(frontend.s)))
-        log_dieusys(LOG_EXIT_SYS, "write frontend file: ", f.s) ;
+    log_trace("write frontend service file: ", f) ;
+    if (!file_write(f, frontend.s, strlen(frontend.s)))
+        log_dieusys(LOG_EXIT_SYS, "write frontend file: ", f) ;
 
 }
 
@@ -392,7 +392,7 @@ static void get_config(conf_t *lconf, conf_t *conf, size_t *nservice, const char
 {
     int fd ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-    _alloc_strbuf_(path, info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + strlen(name) + SS_RESOLVE_LEN + 2) ;
+    char path[info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + strlen(name) + SS_RESOLVE_LEN + 2] ;
 
     resolve_service_t_0721 res_0721 = RESOLVE_SERVICE_ZERO_0721 ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res_0721) ;
@@ -400,9 +400,9 @@ static void get_config(conf_t *lconf, conf_t *conf, size_t *nservice, const char
 
     resolve_init(wres) ;
 
-    auto_strings(path.s, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name, SS_RESOLVE, "/") ;
+    auto_strings(path, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name, SS_RESOLVE, "/") ;
 
-    if (resolve_open_cdb(&fd, &c, path.s, name) <= 0)
+    if (resolve_open_cdb(&fd, &c, path, name) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of service: ", name) ;
 
     conf->toenable = resolve_find_cdb_0721(&sa, &c, "enabled") ;
@@ -432,22 +432,22 @@ static void migrate_user_service(ssexec_t *info)
     char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, 0 } ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     size_t syslen = strlen(SS_SERVICE_SYSDIR_USER), admlen = strlen(SS_SERVICE_ADMDIR_USER), pos = 0 ;
-    _alloc_strbuf_(path, (syslen > admlen ? syslen : admlen) + 1) ;
+    char path[(syslen > admlen ? syslen : admlen) + 1] ;
 
     {
-        auto_strings(path.s, SS_SERVICE_SYSDIR_USER) ;
+        auto_strings(path, SS_SERVICE_SYSDIR_USER) ;
 
-        if (!sbl_dir_get_recursive(&sa, path.s, exclude, S_IFLNK, 1))
+        if (!sbl_dir_get_recursive(&sa, path, exclude, S_IFLNK, 1))
             log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
         FOREACH_SBL(&sa, pos)
             migrate_frontend_file_0721(sa.s + pos, info) ;
     }
     {
-        auto_strings(path.s, SS_SERVICE_ADMDIR_USER) ;
+        auto_strings(path, SS_SERVICE_ADMDIR_USER) ;
 
         sa.len = 0 ;
-        if (!sbl_dir_get_recursive(&sa, path.s, exclude, S_IFLNK, 1))
+        if (!sbl_dir_get_recursive(&sa, path, exclude, S_IFLNK, 1))
             log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
         FOREACH_SBL(&sa, pos)
@@ -487,10 +487,10 @@ static void migrate_service_0721(void)
      * and /etc/66/service/user */
     migrate_user_service(&info) ;
 
-    _alloc_strbuf_(path, info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1) ;
-    auto_strings(path.s, info.base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE) ;
+    char path[info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1] ;
+    auto_strings(path, info.base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE) ;
 
-    if (!sbl_dir_get_recursive(&sa, path.s, exclude, S_IFLNK, 0))
+    if (!sbl_dir_get_recursive(&sa, path, exclude, S_IFLNK, 0))
         log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
     /** get old configuration of the service:
@@ -523,20 +523,20 @@ static void migrate_service_0721(void)
             {
                 /** In case of module we need to migrate the frontend
                  * of each service inside the ns. */
-                _alloc_strbuf_(module, frontend.len + 1 + SS_MODULE_FRONTEND_LEN + 1) ;
+                char module[frontend.len + 1 + SS_MODULE_FRONTEND_LEN + 1] ;
 
-                if (!ob_dirname(module.s, frontend.s))
+                if (!ob_dirname(module, frontend.s))
                     log_dieusys(LOG_EXIT_SYS, "get dirname of: ", frontend.s) ;
 
-                auto_strings(module.s + strlen(module.s), SS_MODULE_FRONTEND + 1) ;
+                auto_strings(module + strlen(module), SS_MODULE_FRONTEND + 1) ;
 
-                r = access(module.s, F_OK) ;
+                r = access(module, F_OK) ;
                 if (!r) {
 
                     char const *ex[1] = { 0 } ;
                     frontend.len = svpos = 0 ;
 
-                    if (!sbl_dir_get_recursive(&frontend, module.s, ex, S_IFREG, 1))
+                    if (!sbl_dir_get_recursive(&frontend, module, ex, S_IFREG, 1))
                         log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
                     FOREACH_SBL(&frontend, svpos)

@@ -220,28 +220,28 @@ int parse_frontend(char const *sv,
             char *tmpath = strstr(sv, SS_MODULE_FRONTEND) ;
             char *result = tmpath + SS_MODULE_FRONTEND_LEN ;
             char *path = moduleres->sa.s + moduleres->path.frontend ;
-            _alloc_strbuf_(pdir, strlen(path)) ;
-            _alloc_strbuf_(tdir, strlen(result)) ;
+            char pdir[strlen(path)] ;
+            char tdir[strlen(result)] ;
 
-            if (!ob_dirname(pdir.s, path))
+            if (!ob_dirname(pdir, path))
                 log_dieu(LOG_EXIT_SYS, "get dirname of: ", path) ;
 
-            if (!ob_dirname(tdir.s, result))
+            if (!ob_dirname(tdir, result))
                 log_dieu(LOG_EXIT_SYS, "get dirname of: ", result) ;
 
-            _alloc_strbuf_(frontend, strlen(pdir.s) + SS_MODULE_FRONTEND_LEN + strlen(tdir.s) + strlen(realname) + 2) ;
+            char frontend[strlen(pdir) + SS_MODULE_FRONTEND_LEN + strlen(tdir) + strlen(realname) + 2] ;
 
-            auto_strings(frontend.s, pdir.s, SS_MODULE_FRONTEND + 1, tdir.s,  realname) ;
+            auto_strings(frontend, pdir, SS_MODULE_FRONTEND + 1, tdir,  realname) ;
 
-            res.path.frontend = resolve_add_string(wres, frontend.s) ;
+            res.path.frontend = resolve_add_string(wres, frontend) ;
 
         } else {
 
-            _alloc_strbuf_(frontend, svlen + 1) ;
+            char frontend[svlen + 1] ;
 
-            auto_strings(frontend.s, svsrc, realname) ;
+            auto_strings(frontend, svsrc, realname) ;
 
-            res.path.frontend = resolve_add_string(wres, frontend.s) ;
+            res.path.frontend = resolve_add_string(wres, frontend) ;
         }
     }
 

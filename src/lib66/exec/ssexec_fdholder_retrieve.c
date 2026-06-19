@@ -62,12 +62,12 @@ int ssexec_fdholder_retrieve(int argc, char const *const *argv, void *data)
     char const *id = argv[0] ;
     char const *const *prog = argv + 1 ;
 
-    _alloc_strbuf_(sock, info->scandir.len + sizeof("/" SS_FDHOLDER "/s") + 1) ;
-    auto_strings(sock.s, info->scandir.s, "/" SS_FDHOLDER "/s") ;
+    char sock[info->scandir.len + sizeof("/" SS_FDHOLDER "/s") + 1] ;
+    auto_strings(sock, info->scandir.s, "/" SS_FDHOLDER "/s") ;
 
     fdholder_client_t c ;
-    if (!fdholder_client_init(&c, sock.s))
-        log_dieusys(LOG_EXIT_SYS, "connect to fdholder daemon: ", sock.s) ;
+    if (!fdholder_client_init(&c, sock))
+        log_dieusys(LOG_EXIT_SYS, "connect to fdholder daemon: ", sock) ;
 
     int ok = fdholder_retrieve(&c, id, fdh_ret_delete, fdh_ret_timeout) ;
     uint8_t status = c.status ;

@@ -53,12 +53,12 @@ int ssexec_fdholder_list(int argc, char const *const *argv, void *data)
 
     ssexec_t *info = data ;
 
-    _alloc_strbuf_(sock, info->scandir.len + sizeof("/" SS_FDHOLDER "/s") + 1) ;
-    auto_strings(sock.s, info->scandir.s, "/" SS_FDHOLDER "/s") ;
+    char sock[info->scandir.len + sizeof("/" SS_FDHOLDER "/s") + 1] ;
+    auto_strings(sock, info->scandir.s, "/" SS_FDHOLDER "/s") ;
 
     fdholder_client_t c ;
-    if (!fdholder_client_init(&c, sock.s))
-        log_dieusys(LOG_EXIT_SYS, "connect to fdholder daemon: ", sock.s) ;
+    if (!fdholder_client_init(&c, sock))
+        log_dieusys(LOG_EXIT_SYS, "connect to fdholder daemon: ", sock) ;
 
     int ok = fdholder_list(&c, fdh_list_timeout) ;
     uint8_t status = c.status ;

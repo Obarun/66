@@ -32,38 +32,38 @@ static void snapshot_remove_directory(ssexec_t *info, char const *target)
 {
     size_t pos = 0 ;
     snapshot_list_t *list = info->owner ? snapshot_user_list : snapshot_root_list ;
-    _alloc_strbuf_(stk, SS_MAX_PATH_LEN) ;
+    char stk[SS_MAX_PATH_LEN] ;
 
     while(list[pos].name) {
 
         if (!info->owner) {
 
-            auto_strings(stk.s, list[pos].name) ;
+            auto_strings(stk, list[pos].name) ;
 
         } else {
 
-            auto_strings(stk.s, target, list[pos].name) ;
+            auto_strings(stk, target, list[pos].name) ;
         }
 
-        log_trace("remove directory: ", stk.s) ;
-        if (!dir_destroy(stk.s))
-            log_warnusys("remove directory: ", stk.s) ;
+        log_trace("remove directory: ", stk) ;
+        if (!dir_destroy(stk))
+            log_warnusys("remove directory: ", stk) ;
 
         pos++ ;
     }
 
     if (!info->owner) {
 
-        auto_strings(stk.s, SS_SYSTEM_DIR, SS_SYSTEM) ;
+        auto_strings(stk, SS_SYSTEM_DIR, SS_SYSTEM) ;
 
     } else {
 
-        auto_strings(stk.s, target, SS_USER_DIR, SS_SYSTEM) ;
+        auto_strings(stk, target, SS_USER_DIR, SS_SYSTEM) ;
     }
 
-    log_trace("remove directory: ", stk.s) ;
-    if (!dir_destroy(stk.s))
-        log_warnusys("remove directory: ", stk.s) ;
+    log_trace("remove directory: ", stk) ;
+    if (!dir_destroy(stk))
+        log_warnusys("remove directory: ", stk) ;
 }
 
 int ssexec_snapshot_restore(int argc, char const *const *argv, void *data)
@@ -75,9 +75,9 @@ int ssexec_snapshot_restore(int argc, char const *const *argv, void *data)
     size_t pos = 0, dlen = 0 ;
     char const *snapname = 0 ;
     char const *exclude[1] = { 0 } ;
-    _alloc_strbuf_(snapdir, SS_MAX_PATH_LEN) ;
-    _alloc_strbuf_(src, SS_MAX_PATH_LEN) ;
-    _alloc_strbuf_(dst, SS_MAX_PATH_LEN) ;
+    char snapdir[SS_MAX_PATH_LEN] ;
+    char src[SS_MAX_PATH_LEN] ;
+    char dst[SS_MAX_PATH_LEN] ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
     if (argc < 1)
@@ -85,17 +85,17 @@ int ssexec_snapshot_restore(int argc, char const *const *argv, void *data)
 
     snapname = *argv ;
 
-    auto_strings(snapdir.s, info->base.s, SS_SNAPSHOT + 1, "/", snapname) ;
+    auto_strings(snapdir, info->base.s, SS_SNAPSHOT + 1, "/", snapname) ;
 
-    if (access(snapdir.s, F_OK) < 0)
-        log_dieusys(LOG_EXIT_SYS, "find snapshot: ", snapdir.s) ;
+    if (access(snapdir, F_OK) < 0)
+        log_dieusys(LOG_EXIT_SYS, "find snapshot: ", snapdir) ;
 
-    if (!sbl_dir_get(&sa, snapdir.s, exclude, S_IFDIR))
-        log_dieusys(LOG_EXIT_SYS, "list snapshot directory: ", snapdir.s) ;
+    if (!sbl_dir_get(&sa, snapdir, exclude, S_IFDIR))
+        log_dieusys(LOG_EXIT_SYS, "list snapshot directory: ", snapdir) ;
 
     if (!info->owner) {
 
-        auto_strings(dst.s, "/") ;
+        auto_strings(dst, "/") ;
 
     } else {
 
@@ -110,22 +110,22 @@ int ssexec_snapshot_restore(int argc, char const *const *argv, void *data)
         if (st->pw_dir == NULL)
             log_warnusys(LOG_EXIT_ZERO, "get home directory") ;
 
-        auto_strings(dst.s, st->pw_dir, "/") ;
+        auto_strings(dst, st->pw_dir, "/") ;
     }
 
-    dlen = strlen(dst.s) ;
+    dlen = strlen(dst) ;
 
-    snapshot_remove_directory(info, dst.s) ;
+    snapshot_remove_directory(info, dst) ;
 
     FOREACH_SBL(&sa, pos) {
 
-        auto_strings(src.s, snapdir.s, "/", sa.s + pos) ;
+        auto_strings(src, snapdir, "/", sa.s + pos) ;
 
-        auto_strings(dst.s + dlen, sa.s + pos) ;
+        auto_strings(dst + dlen, sa.s + pos) ;
 
-        log_trace("copy: ", src.s , " to: ", dst.s) ;
-        if (!tree_copy(src.s, dst.s))
-            log_dieusys(LOG_EXIT_SYS, "copy: ", src.s," to: ", dst.s) ;
+        log_trace("copy: ", src , " to: ", dst) ;
+        if (!tree_copy(src, dst))
+            log_dieusys(LOG_EXIT_SYS, "copy: ", src," to: ", dst) ;
     }
 
     log_info("Successfully restored snapshot: ", snapname) ;
