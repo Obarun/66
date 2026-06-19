@@ -62,9 +62,15 @@ int resolve_get_field_tosa_g(strbuf *sa, char const *base, char const *name, uin
      * check if field isn't empty
      * */
 
-    if (sa->len)
-        if (!sbl_clean_string(sa, sa->s))
+    if (sa->len) {
+        /** sbl_clean_string forbids aliasing its source with the destination
+         * buffer: clean into a separate strbuf, then copy back. */
+        _cleanup_strbuf_ strbuf clean = STRBUF_ZERO ;
+        if (!sbl_clean_string(&clean, sa->s))
             goto err ;
+        if (!strbuf_copy(sa, &clean))
+            goto err ;
+    }
 
     e = 1 ;
     err:

@@ -90,8 +90,15 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
                 log_dieu(LOG_EXIT_SYS, "append environment variables") ;
         }
 
-        if (!sbl_clean_string(&env, env.s))
-            log_dieu(LOG_EXIT_SYS, "clean string") ;
+        {
+            /** sbl_clean_string forbids aliasing its source with the destination
+             * buffer: clean into a separate strbuf, then copy back. */
+            _cleanup_strbuf_ strbuf clean = STRBUF_ZERO ;
+            if (!sbl_clean_string(&clean, env.s))
+                log_dieu(LOG_EXIT_SYS, "clean string") ;
+            if (!strbuf_copy(&env, &clean))
+                log_dieu(LOG_EXIT_SYS, "clean string") ;
+        }
 
         /** environment is not mandatory */
         if (res->environ.env > 0)
