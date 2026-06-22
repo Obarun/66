@@ -144,14 +144,14 @@ static opt_cmd_t const scandir_sub[] = {
     { .name = "create",      .help = "create a scandir",                      .opts = opts_scandir_create, .nopts = OPT_COUNT(opts_scandir_create), .on_option = &on_scandir_create, .fn = &ssexec_scandir_create },
     { .name = "remove",      .help = "remove a scandir",                      .opts = opts_help,           .nopts = OPT_COUNT(opts_help),                                            .fn = &ssexec_scandir_remove },
     { .name = "start",       .help = "start a scandir",                       .opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_start },
-    { .name = "stop",        .help = "stop a running scandir",                .opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_stop },
-    { .name = "reconfigure", .help = "reconfigure a running scandir",         .opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_reconfigure },
-    { .name = "check",       .help = "check a running scandir",               .opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_check },
-    { .name = "quit",        .help = "quit a running scandir",                .opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_quit },
-    { .name = "abort",       .help = "abort a running scandir",               .opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_abort },
-    { .name = "nuke",        .help = "nuke a running scandir",                .opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_nuke },
-    { .name = "annihilate",  .help = "annihilate a running scandir",          .opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_annihilate },
-    { .name = "zombies",     .help = "destroy zombies from a running scandir",.opts = opts_scandir_signal, .nopts = OPT_COUNT(opts_scandir_signal), .on_option = &on_scandir_signal, .fn = &do_scandir_zombies },
+    { .name = "stop",        .help = "stop a running scandir",                .opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &do_scandir_stop },
+    { .name = "reconfigure", .help = "reconfigure a running scandir",         .opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &do_scandir_reconfigure },
+    { .name = "check",       .help = "check a running scandir",               .opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &do_scandir_check },
+    { .name = "quit",        .help = "quit a running scandir",                .opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &do_scandir_quit },
+    { .name = "abort",       .help = "abort a running scandir",               .opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &do_scandir_abort },
+    { .name = "nuke",        .help = "nuke a running scandir",                .opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &do_scandir_nuke },
+    { .name = "annihilate",  .help = "annihilate a running scandir",          .opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &do_scandir_annihilate },
+    { .name = "zombies",     .help = "destroy zombies from a running scandir",.opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &do_scandir_zombies },
 } ;
 
 opt_cmd_t const cmd_scandir = {
