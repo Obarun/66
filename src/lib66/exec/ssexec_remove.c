@@ -23,7 +23,7 @@
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/directory.h>
-#include <oblibs/hash2.h>
+#include <oblibs/hash.h>
 #include <oblibs/files.h>
 
 #include <66/state.h>

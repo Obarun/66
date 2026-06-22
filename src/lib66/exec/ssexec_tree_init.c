@@ -23,7 +23,7 @@
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/hash2.h>
+#include <oblibs/hash.h>
 
 #include <66/constants.h>
 #include <66/config.h>

@@ -25,7 +25,7 @@
 #include <oblibs/lexer.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
-#include <oblibs/hash2.h>
+#include <oblibs/hash.h>
 
 
 #include <66/enum_parser.h>

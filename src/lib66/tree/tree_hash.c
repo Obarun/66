@@ -18,7 +18,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/hash2.h>
+#include <oblibs/hash.h>
 
 #include <66/tree.h>
 #include <66/resolve.h>

@@ -36,7 +36,7 @@
 #include <oblibs/sse_stream.h>
 #include <oblibs/stream_message.h>
 #include <oblibs/io_rb.h>
-#include <oblibs/hash2.h>
+#include <oblibs/hash.h>
 #include <oblibs/fd.h>
 #include <oblibs/files.h>
 #include <oblibs/socket.h>

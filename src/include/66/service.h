@@ -18,7 +18,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <oblibs/hash2.h>
+#include <oblibs/hash.h>
 #include <oblibs/cdb.h>
 #include <oblibs/strbuf.h>
 

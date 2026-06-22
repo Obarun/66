@@ -30,7 +30,7 @@
 #include <oblibs/files.h>
 #include <oblibs/lexer.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/hash2.h>
+#include <oblibs/hash.h>
 #include <oblibs/stream.h>
 
 #include <66/info.h>

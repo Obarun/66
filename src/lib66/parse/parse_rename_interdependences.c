@@ -19,7 +19,7 @@
 #include <oblibs/string.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/hash2.h>
+#include <oblibs/hash.h>
 
 #include <66/parse.h>
 #include <66/service.h>

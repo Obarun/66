@@ -15,7 +15,7 @@
 #include <string.h>
 
 #include <oblibs/log.h>
-#include <oblibs/hash2.h>
+#include <oblibs/hash.h>
 #include <oblibs/sbl.h>
 
 #include <66/fdholder.h>

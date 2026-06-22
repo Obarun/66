@@ -18,7 +18,7 @@
 #include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
-#include <oblibs/hash2.h>
+#include <oblibs/hash.h>
 
 #include <66/ssexec.h>
 #include <66/graph.h>

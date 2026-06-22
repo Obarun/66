@@ -19,7 +19,7 @@
 #include <oblibs/strbuf.h>
 #include <oblibs/log.h>
 #include <oblibs/types.h>
-#include <oblibs/hash2.h>
+#include <oblibs/hash.h>
 #include <oblibs/graph.h>
 
 #include <66/graph.h>

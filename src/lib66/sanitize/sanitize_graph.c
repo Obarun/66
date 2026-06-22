@@ -19,7 +19,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
-#include <oblibs/hash2.h>
+#include <oblibs/hash.h>
 #include <oblibs/string.h>
 
 #include <66/ssexec.h>

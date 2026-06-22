@@ -18,7 +18,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 
-#include <oblibs/hash2.h>
+#include <oblibs/hash.h>
 #include <oblibs/sse.h>
 #include <oblibs/cdb.h>
 #include <oblibs/strbuf.h>

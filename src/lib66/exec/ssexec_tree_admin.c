@@ -29,7 +29,7 @@
 #include <oblibs/lexer.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/account.h>
-#include <oblibs/hash2.h>
+#include <oblibs/hash.h>
 #include <oblibs/graph.h>
 
 #include <66/tree.h>

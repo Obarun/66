@@ -17,7 +17,7 @@
 
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
-#include <oblibs/hash2.h>
+#include <oblibs/hash.h>
 #include <oblibs/strbuf.h>
 
 #include <66/info.h>
