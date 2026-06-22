@@ -1089,7 +1089,7 @@ static opt_t const opts_status[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",     .arg = OPT_NONE,                             .help = "print this help" },
     { .id = 'n',         .shortname = 'n', .longname = "no-field", .arg = OPT_NONE,                             .help = "do not display the field name" },
     { .id = 'o',         .shortname = 'o', .longname = "options",  .arg = OPT_REQUIRED, .argname = "field,...", .help = "deprecated options, please use -f instead", .hidden = true },
-    { .id = 'f',         .shortname = 'o', .longname = "field",    .arg = OPT_REQUIRED, .argname = "field,...", .help = "comma separated list of options" },
+    { .id = 'f',         .shortname = 'f', .longname = "field",    .arg = OPT_REQUIRED, .argname = "field,...", .help = "comma separated list of options" },
     { .id = 'g',         .shortname = 'g', .longname = "graph",    .arg = OPT_NONE,                             .help = "displays interdependences as graph" },
     { .id = 'r',         .shortname = 'r', .longname = "reverse",  .arg = OPT_NONE,                             .help = "reverse the interdependence graph" },
     { .id = 'd',         .shortname = 'd', .longname = "depth",    .arg = OPT_REQUIRED, .argname = "number",    .help = "limit the depth of interdependence graph recursion by depth" },
