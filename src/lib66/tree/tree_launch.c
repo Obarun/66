@@ -139,7 +139,7 @@ static void announce(uint32_t id, bool success)
 
     if (success) {
 
-        log_info("Successfully executed", pmanager->cmdmsg, " on tree: ", treename) ;
+        log_info("Successfully executed ", pmanager->cmdmsg, " on tree: ", treename) ;
 
         tree_send_event(TREE_EVENT_CHILD_SUCCESS, id) ;
 
