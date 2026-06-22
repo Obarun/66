@@ -202,7 +202,8 @@ int parse_store_execute(resolve_service_t *res, strbuf *store, resolve_enum_tabl
             {
                 uint32_t mode ;
                 parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-                if (!u32_scan_strict(store->s, &mode))
+                /** UMask is octal notation (e.g. 022): scan base 8, not base 10. */
+                if (!u32_scan_strict_base(store->s, &mode, 8))
                     parse_error_return(0, 3, table) ;
 
                 if (mode > 0777)
