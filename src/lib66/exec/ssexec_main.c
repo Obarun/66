@@ -132,10 +132,10 @@ static opt_cmd_t const cmd_version = {
 /* A static aggregate initialiser cannot copy command nodes defined in other
  * translation units (a struct copy is not a constant expression across a TU
  * boundary) -- but their addresses are. This registry maps each node to the
- * short name it must carry inside the tree; cmd66_build() copies the nodes into
- * cmd66_sub at startup, overriding the name, so opt_dispatch builds the
+ * short name it must carry inside the tree; cmd_build() copies the nodes into
+ * cmd_sub at startup, overriding the name, so opt_dispatch builds the
  * "66 <cmd>" / "66 <cmd> <sub>" paths itself. */
-static struct { opt_cmd_t const *node ; char const *name ; } const cmd66_reg[] = {
+static struct { opt_cmd_t const *node ; char const *name ; } const cmd_reg[] = {
     { &cmd_boot,        "boot" },
     { &cmd_enable,      "enable" },
     { &cmd_disable,     "disable" },
@@ -163,26 +163,25 @@ static struct { opt_cmd_t const *node ; char const *name ; } const cmd66_reg[] =
     { &cmd_version,     "version" },
 } ;
 
-#define CMD66_NSUB OPT_COUNT(cmd66_reg)
+#define CMD_NSUB OPT_COUNT(cmd_reg)
 
-static opt_cmd_t cmd66_sub[CMD66_NSUB] ;
+static opt_cmd_t cmd_sub[CMD_NSUB] ;
 
-static opt_cmd_t const cmd66 = {
+static opt_cmd_t const global_cmd = {
     .name = "66",
     .help = "init a system, control and manage services",
     .opts = opts_main,
     .nopts = OPT_COUNT(opts_main),
-    .on_option = &on_global,
-    .sub = cmd66_sub,
-    .nsub = CMD66_NSUB,
+    .sub = cmd_sub,
+    .nsub = CMD_NSUB,
     .operands = "service...|tree",
 } ;
 
-static void cmd66_build(void)
+static void cmd_build(void)
 {
-    for (size_t i = 0 ; i < CMD66_NSUB ; i++) {
-        cmd66_sub[i] = *cmd66_reg[i].node ;
-        cmd66_sub[i].name = cmd66_reg[i].name ;
+    for (size_t i = 0 ; i < CMD_NSUB ; i++) {
+        cmd_sub[i] = *cmd_reg[i].node ;
+        cmd_sub[i].name = cmd_reg[i].name ;
     }
 }
 
@@ -195,13 +194,13 @@ static uint8_t cmd_skips_sanitize(char const *cmd)
     return 0 ;
 }
 
-static opt_cmd_t const *cmd66_find(char const *name)
+static opt_cmd_t const *cmd_find(char const *name)
 {
     if (!name)
         return 0 ;
-    for (size_t i = 0 ; i < CMD66_NSUB ; i++)
-        if (!strcmp(name, cmd66_sub[i].name))
-            return &cmd66_sub[i] ;
+    for (size_t i = 0 ; i < CMD_NSUB ; i++)
+        if (!strcmp(name, cmd_sub[i].name))
+            return &cmd_sub[i] ;
     return 0 ;
 }
 
@@ -219,7 +218,7 @@ int ssexec_main(int argc, char const *const *argv, ssexec_t *info)
     PROG = "66" ;
     log_color = &log_color_disable ;
 
-    cmd66_build() ;
+    cmd_build() ;
     info_clean(info) ;
 
     info->owner = getuid() ;
@@ -255,7 +254,7 @@ int ssexec_main(int argc, char const *const *argv, ssexec_t *info)
     if (!ensure_stdfds())
         log_dieusys(LOG_EXIT_SYS, "sanitize stdin/stdout/stderr") ;
 
-    if (cmd66_find(cmd) && strcmp(cmd, "wall") && strcmp(cmd, "version")) {
+    if (cmd_find(cmd) && strcmp(cmd, "wall") && strcmp(cmd, "version")) {
 
         if (!strcmp(cmd, "snapshot"))
             info->skip_opt_tree = 1 ;
@@ -266,5 +265,5 @@ int ssexec_main(int argc, char const *const *argv, ssexec_t *info)
         set_info(info) ;
     }
 
-    return opt_dispatch(argc, argv, &cmd66, info) ;
+    return opt_dispatch(argc, argv, &global_cmd, info) ;
 }
