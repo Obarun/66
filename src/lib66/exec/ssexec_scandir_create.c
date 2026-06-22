@@ -315,7 +315,7 @@ void write_bootlog(char const *live, char const *scandir)
             EXECLINE_BINPREFIX "redirfd -rnb 0 fifo\n" \
             S6_BINPREFIX "s6-setuidgid ",
             log_user,
-            "\n" S6_BINPREFIX "s6-log -bpd3 -- 1"))
+            "\n" SS_BINPREFIX "s6-log -bpd3 -- 1"))
                 log_die_nomem("strbuf") ;
 
     if (SS_LOGGER_TIMESTAMP < E_PARSER_TIME_NONE)
