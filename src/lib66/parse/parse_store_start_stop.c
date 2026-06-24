@@ -40,12 +40,7 @@ int parse_store_start_stop(resolve_service_t *res, strbuf *store, resolve_enum_t
 
         case E_PARSER_SECTION_STARTSTOP_BUILD:
 
-            if (sid == E_PARSER_SECTION_START)
-                res->execute.run.build = resolve_add_string(wres, store->s) ;
-            else if (sid == E_PARSER_SECTION_STOP)
-                res->execute.finish.build = resolve_add_string(wres, store->s) ;
-            else if (sid == E_PARSER_SECTION_LOGGER)
-                res->logger.execute.run.build = resolve_add_string(wres, store->s) ;
+            log_warn("key Build is deprecated and ignored -- declare a shebang (#!) at the start of the Execute field instead") ;
             break ;
 
         case E_PARSER_SECTION_STARTSTOP_RUNAS:

@@ -38,12 +38,11 @@ static int get_shebang(strbuf *stk, char const *line)
     while (line[i] == ' ' || line[i] == '\t' || line[i] == '\r' || line[i] == '\n')
         i++ ;
 
-    if (i >= len || line[i] != '#' || line[i + 1] != '!' || line[i + 2] != '/')
-        log_warn_return(LOG_EXIT_ZERO, "invalid shebang at Execute field from section [Start]") ;
+    if (i >= len || line[i] != '#' || line[i + 1] != '!')
+        return 0 ;
 
     if (!sbl_addb(stk, line + i, len - i))
-        log_warnsys_return(LOG_EXIT_ZERO, "stack add") ;
-
+        log_warnsys_return(LOG_EXIT_LESSONE, "stack add") ;
 
     return 1 ;
 }
@@ -271,37 +270,45 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
             if (!res->execute.run.run_user)
                 log_warn_return(LOG_EXIT_ZERO,"key Execute at section [Start] must be set") ;
 
-            if (!strcmp(res->sa.s + res->execute.run.build, "custom")) {
-
+            {
                 size_t len = strlen(res->sa.s + res->execute.run.run_user) ;
                 _alloc_sbl_(stk, len) ;
 
-                if (!get_shebang(&stk, res->sa.s + res->execute.run.run_user))
+                int r = get_shebang(&stk, res->sa.s + res->execute.run.run_user) ;
+                if (r < 0)
                     return 0 ;
-
-                res->execute.run.run_user = resolve_add_string(wres, stk.s) ;
+                if (r) {
+                    res->execute.run.run_user = resolve_add_string(wres, stk.s) ;
+                    res->execute.run.build = resolve_add_string(wres, "custom") ;
+                }
             }
 
-            if (res->execute.finish.run_user && !strcmp(res->sa.s + res->execute.finish.build, "custom")) {
+            if (res->execute.finish.run_user) {
 
                 size_t len = strlen(res->sa.s + res->execute.finish.run_user) ;
                 _alloc_sbl_(stk, len) ;
 
-                if (!get_shebang(&stk, res->sa.s + res->execute.finish.run_user))
+                int r = get_shebang(&stk, res->sa.s + res->execute.finish.run_user) ;
+                if (r < 0)
                     return 0 ;
-
-                res->execute.finish.run_user = resolve_add_string(wres, stk.s) ;
+                if (r) {
+                    res->execute.finish.run_user = resolve_add_string(wres, stk.s) ;
+                    res->execute.finish.build = resolve_add_string(wres, "custom") ;
+                }
             }
 
-            if (res->logger.execute.run.run_user && !strcmp(res->sa.s + res->logger.execute.run.build, "custom")) {
+            if (res->logger.execute.run.run_user) {
 
                 size_t len = strlen(res->sa.s + res->logger.execute.run.run_user) ;
                 _alloc_sbl_(stk, len) ;
 
-                if (!get_shebang(&stk, res->sa.s + res->logger.execute.run.run_user))
+                int r = get_shebang(&stk, res->sa.s + res->logger.execute.run.run_user) ;
+                if (r < 0)
                     return 0 ;
-
-                res->logger.execute.run.run_user = resolve_add_string(wres, stk.s) ;
+                if (r) {
+                    res->logger.execute.run.run_user = resolve_add_string(wres, stk.s) ;
+                    res->logger.execute.run.build = resolve_add_string(wres, "custom") ;
+                }
             }
 
             break ;
