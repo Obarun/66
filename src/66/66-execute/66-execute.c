@@ -445,10 +445,8 @@ static void execute_environment(char const **nenvp, char const *const *env, strb
 
     if (res->environ.env > 0) {
 
-        if (!strbuf_catb(&path, res->sa.s + res->environ.envdir, strlen(res->sa.s + res->environ.envdir)) ||
-            !strbuf_catb(&path, SS_SYM_VERSION, SS_SYM_VERSION_LEN) ||
-            !strbuf_terminate(&path))
-                log_die_nomem("stack") ;
+        if (!auto_strbuf(&path, res->sa.s + res->environ.envdir, SS_SYM_VERSION))
+            log_die_nomem("stack") ;
 
         if (!environ_merge_dir(eram, path.s))
             log_dieusys(LOG_EXIT_SYS, "merge environment directory: ", path.s) ;

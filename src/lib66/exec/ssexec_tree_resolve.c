@@ -108,13 +108,13 @@ int ssexec_tree_resolve(int argc, char const *const *argv, void *data)
 
     if (treename[0] == '/') {
 
-        _alloc_strbuf_(basename, strlen(treename) + 1) ;
-        _alloc_strbuf_(dirname, strlen(treename) + 1) ;
+        char basename[strlen(treename) + 1] ;
+        char dirname[strlen(treename) + 1] ;
 
-        if (!ob_basename(basename.s, treename))
+        if (!ob_basename(basename, treename))
             log_dieusys(LOG_EXIT_SYS, "get basename of: ", treename) ;
 
-        if (!strcmp(basename.s, SS_MASTER + 1)) {
+        if (!strcmp(basename, SS_MASTER + 1)) {
 
             master = 1 ;
             wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
@@ -124,10 +124,10 @@ int ssexec_tree_resolve(int argc, char const *const *argv, void *data)
             wres = resolve_set_struct(DATA_TREE, &tres) ;
         }
 
-        if (!ob_dirname(dirname.s, treename))
+        if (!ob_dirname(dirname, treename))
             log_dieu(LOG_EXIT_SYS, "get dirname of: ", treename) ;
 
-        if (resolve_read_cdb(wres, dirname.s, basename.s) <= 0)
+        if (resolve_read_cdb(wres, dirname, basename) <= 0)
             log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
 
     } else {

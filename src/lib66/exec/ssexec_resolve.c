@@ -170,15 +170,9 @@ static int on_resolve(int id, char const *arg, void *data)
 
     switch (id) {
 
-        case 'f' :
-
-            opt_field = arg ;
-            break ;
-
-        case 'n' :
-
-            opt_noname = 1 ;
-            break ;
+        case 'f' : opt_field = arg ; break ;
+        case 'n' : opt_noname = 1 ; break ;
+        default: break ;
     }
 
     return 0 ;
@@ -217,16 +211,16 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
 
     if (svname[0] == '/') {
 
-        _alloc_strbuf_(basename, strlen(svname) + 1) ;
-        _alloc_strbuf_(dirname, strlen(svname) + 1) ;
+        char basename[strlen(svname) + 1] ;
+        char dirname[strlen(svname) + 1] ;
 
-        if (!ob_basename(basename.s, svname))
+        if (!ob_basename(basename, svname))
             log_dieu(LOG_EXIT_SYS, "get basename of: ", svname) ;
 
-        if (!ob_dirname(dirname.s, svname))
+        if (!ob_dirname(dirname, svname))
             log_dieu(LOG_EXIT_SYS, "get dirname of: ", svname) ;
 
-        if (resolve_read_cdb(wres, dirname.s, basename.s) <= 0)
+        if (resolve_read_cdb(wres, dirname, basename) <= 0)
             log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
 
     } else {

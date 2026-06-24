@@ -34,9 +34,9 @@ void set_info(ssexec_t *info)
     if(r < 0)
         log_die(LOG_EXIT_SYS, "live: ", info->live.s, " must be an absolute path") ;
 
-    if (!strbuf_copy(&info->scandir, &info->live) || !strbuf_terminate(&info->scandir))
+    if (!strbuf_copy(&info->scandir, &info->live) || !strbuf_uncounted(&info->scandir))
         log_die_nomem("strbuf") ;
-    info->scandir.len-- ;
+
 
     r = set_livescan(&info->scandir, info->owner) ;
     if (!r)

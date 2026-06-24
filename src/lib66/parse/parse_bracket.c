@@ -43,9 +43,8 @@ static int key_isvalid(const char *line, size_t *o, resolve_enum_table_t table)
     cfg.str = line ;
     cfg.slen = strlen(line) ;
 
-    if (!lexer(&key, &cfg) || !strbuf_terminate(&key))
+    if (!lexer(&key, &cfg) || !strbuf_uncounted(&key))
         return 0 ;
-    key.len-- ;
 
     if (cfg.found) {
 
@@ -82,9 +81,8 @@ int parse_bracket(strbuf *store, const char *str, resolve_enum_table_t table)
     cfg.kclose = 0 ;
     cfg.style = 0 ;
 
-    if (!lexer(store, &cfg) || !strbuf_terminate(store))
+    if (!lexer(store, &cfg) || !strbuf_uncounted(store))
         return 0 ;
-    store->len-- ;
 
     if (!cfg.found)
         return 0 ;

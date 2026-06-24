@@ -118,14 +118,19 @@ static void remove_provide(resolve_service_t *res, ssexec_t *info)
     FOREACH_SBL(&stk, pos) {
 
         char *name = stk.s + pos ;
+        lnk.len = path.len = 0 ;
 
-        auto_strings(lnk.s, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+        if (!auto_strbuf(&lnk, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name))
+            log_die_nomem("strbuf") ;
 
-        auto_strings(path.s, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+        if (!auto_strbuf(&path, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name))
+            log_die_nomem("strbuf") ;
 
         if (symlink_type(lnk.s) > 0) {
 
-            auto_strings(lname.s, name) ;
+            lname.len = 0 ;
+            if (!auto_strbuf(&lname, name))
+                log_die_nomem("strbuf") ;
 
             if (!service_resolve_symlink(info->base.s, path.s, lname.s)) {
                 log_warnusys("resolve symlink path: ", lnk.s) ;

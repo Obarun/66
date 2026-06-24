@@ -25,9 +25,8 @@ int parse_list(strbuf *stk)
     lexer_config cfg = LEXER_CONFIG_LIST ;
     _alloc_strbuf_(tmp, stk->len + 1) ;
 
-    if (!strbuf_copy(&tmp, stk) || !strbuf_terminate(&tmp))
+    if (!strbuf_copy(&tmp, stk) || !strbuf_uncounted(&tmp))
         return 0 ;
-    tmp.len-- ;
 
     stk->len = 0 ;
 

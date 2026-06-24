@@ -119,9 +119,9 @@ static int get_value(strbuf *out, char const *env, char const *key)
         return 0 ;
     out->len = 0 ;
     if (!strbuf_copyb(out, stk.s, stk.len) ||
-        !strbuf_terminate(out))
+        !strbuf_uncounted(out))
             sulogin("strbuf in get_value","") ;
-    out->len-- ;
+
     return 1 ;
 }
 

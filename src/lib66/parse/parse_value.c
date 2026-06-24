@@ -76,9 +76,8 @@ int parse_value(strbuf *store, lexer_config *kcfg, resolve_enum_table_t table)
             return 0 ;
     }
 
-    if (!strbuf_terminate(store))
+    if (!strbuf_uncounted(store))
         log_warnu_return(LOG_EXIT_ZERO, "strbuf") ;
-    store->len-- ;
 
     return 1 ;
 }
