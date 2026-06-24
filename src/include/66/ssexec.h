@@ -130,6 +130,8 @@ extern opt_cmd_t const cmd_fdholder ;
 extern opt_cmd_t const cmd_poweroff ;
 extern opt_cmd_t const cmd_reboot ;
 extern opt_cmd_t const cmd_halt ;
+extern opt_cmd_t const cmd_suspend ;
+extern opt_cmd_t const cmd_hibernate ;
 
 /** PID1 and supervision */
 extern opt_cmd_fn ssexec_boot ;

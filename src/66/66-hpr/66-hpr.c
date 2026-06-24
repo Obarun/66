@@ -23,16 +23,20 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <utmpx.h>
 #include <sys/reboot.h>
 
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/clock.h>
+#include <oblibs/io.h>
 #include <oblibs/files.h> // macro hpr_send
 
 #include <66/hpr.h>
 #include <66/config.h>
+
+#define HPR_POWER_STATE "/sys/power/state"
 
 #ifndef UT_NAMESIZE
 #define UT_NAMESIZE 32
@@ -62,6 +66,8 @@ static opt_t const opts[] = {
     { .id = 'h',         .shortname = 'h', .longname = "halt",     .arg = OPT_NONE,                          .help = "halt the system" },
     { .id = 'p',         .shortname = 'p', .longname = "poweroff", .arg = OPT_NONE,                          .help = "poweroff the system" },
     { .id = 'r',         .shortname = 'r', .longname = "reboot",   .arg = OPT_NONE,                          .help = "reboot the system" },
+    { .id = 's',         .shortname = 's', .longname = "suspend",  .arg = OPT_NONE,                          .help = "suspend the system to RAM" },
+    { .id = 'i',         .shortname = 'i', .longname = "hibernate",.arg = OPT_NONE,                          .help = "hibernate the system to disk" },
     { .id = 'n',         .shortname = 'n', .longname = "no-sync",  .arg = OPT_NONE,                          .help = "do not sync" },
     { .id = 'd',         .shortname = 'd', .longname = "no-wtmp",  .arg = OPT_NONE,                          .help = "do not write wtmp shutdown entry" },
     { .id = 'w',         .shortname = 'w', .longname = "wtmp-only", .arg = OPT_NONE,                         .help = "only write wtmp shutdown entry" },
@@ -97,6 +103,8 @@ int main (int argc, char const *const *argv)
                 case 'h' : what = 1 ; break ;
                 case 'p' : what = 2 ; break ;
                 case 'r' : what = 3 ; break ;
+                case 's' : what = 4 ; break ;
+                case 'i' : what = 5 ; break ;
                 case 'f' : force = 1 ; break ;
                 case 'd' : dowtmp = 0 ; break ;
                 case 'w' : dowtmp = 2 ; break ;
@@ -112,12 +120,22 @@ int main (int argc, char const *const *argv)
     if (live && live[0] != '/') log_die(LOG_EXIT_USER,"live: ",live," must be an absolute path") ;
     else live = SS_LIVE ;
     if (!what)
-        log_die(LOG_EXIT_USER, "one of the -h, -p or -r options must be given") ;
+        log_die(LOG_EXIT_USER, "one of the -h, -p, -r, -s or -i options must be given") ;
 
     if (geteuid())
     {
         errno = EPERM ;
         log_diesys(LOG_EXIT_USER, "nice try, peon") ;
+    }
+
+    if (what >= 4)
+    {
+        char const *state = what == 5 ? "disk\n" : "mem\n" ;
+        if (dosync) sync() ;
+        // io_writenclose blocks until the system wakes up, then closes the fd
+        if (!io_writenclose(io_open(HPR_POWER_STATE, O_WRONLY | O_CLOEXEC), state, strlen(state)))
+            log_dieusys(LOG_EXIT_SYS, "write to ", HPR_POWER_STATE) ;
+        return 0 ;
     }
 
     if (force)
