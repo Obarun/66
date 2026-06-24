@@ -385,6 +385,7 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
 
                 char file[strlen(src.s) + strlen(sv) + 2] ;
                 _cleanup_strbuf_ strbuf env = STRBUF_ZERO ;
+                _cleanup_strbuf_ strbuf out = STRBUF_ZERO ;
 
                 auto_strings(file, src.s, "/", sv) ;
 
@@ -394,10 +395,10 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
                 if (!environ_merge_environ(&env, &savar))
                     log_dieusys(LOG_EXIT_SYS, "merge environment from command line") ;
 
-                if (!environ_rebuild(&env))
+                if (!environ_untrim(&out, &env))
                     log_dieusys(LOG_EXIT_SYS, "rebuild environment") ;
 
-                if (!file_write(file, env.s, env.len))
+                if (!file_write(file, out.s, out.len))
                     log_dieusys(LOG_EXIT_SYS,"write file: ", file) ;
             }
             break ;

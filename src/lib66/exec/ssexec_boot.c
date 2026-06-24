@@ -197,6 +197,7 @@ static void parse_conf(const char *conf)
 
     _cleanup_strbuf_ strbuf kernel = STRBUF_ZERO ;
     _cleanup_strbuf_ strbuf env = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf text = STRBUF_ZERO ;
     _cleanup_strbuf_ strbuf val = STRBUF_ZERO ;
     char *kfile = "/proc/cmdline" ;
 
@@ -211,12 +212,12 @@ static void parse_conf(const char *conf)
     if (!environ_merge_environ(&env, &kernel))
         sulogin("merge kernel parameters", "") ;
 
-    if (!environ_rebuild(&env))
+    if (!environ_untrim(&text, &env))
         sulogin("rebuild environment", "") ;
 
     for (conf_entry_t const *e = conf_table ; e->key ; e++) {
 
-        if (!get_value(&val, env.s, e->key))
+        if (!get_value(&val, text.s, e->key))
             continue ; // key absent: keep the static default
 
         if (e->type == CONF_UINT) {
