@@ -36,7 +36,7 @@ The functionality extends further: say, you now wish to watch a video, requiring
 
 ## Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 ## Subcommands
 
@@ -107,9 +107,9 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
-- **-o**: list of options separated by colons.
+- **-o, --options**: list of options separated by colons.
 
 valid fields for `-o` options are:
 
@@ -152,9 +152,9 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
-- **-o**: list of options separated by colons.
+- **-o, --options**: list of options separated by colons.
 
 valid fields for `-o` options are:
 
@@ -195,7 +195,7 @@ Tree dependencies, including required-by dependencies, are managed. For instance
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 
@@ -222,7 +222,7 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 
@@ -246,7 +246,7 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 
@@ -270,7 +270,7 @@ After marking a *tree* as current, the `66` command using the `-t` reacts to tha
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 
@@ -294,12 +294,13 @@ If *tree* is not specified, the command return information of all trees availabl
 
 #### Options
 
-- **-h**: prints this help.
-- **-n**: do not display the names of fields. Combining this options with the `-o` facilitates scripting usage.
-- **-o**: comma separated list of field to display.
-- **-g**: displays the contents field as graph allowing to view interdependencies of services.
-- **-d**: increase the depth view of the contents field recursion. Default value is `1`. Only have effect with the `-g` option.
-- **-r**: reverse the contents field. By default, the order corresponds to a `start` process.
+- **-h, --help**: prints this help.
+- **-n, --no-name**: do not display the names of fields. Combining this options with the `-o` facilitates scripting usage.
+- **-o, --options**: comma separated list of field to display.
+- **-f, --field** *field,...*: display only these comma-separated fields.
+- **-g, --graph**: displays the contents field as graph allowing to view interdependencies of services.
+- **-d, --depth**: increase the depth view of the contents field recursion. Default value is `1`. Only have effect with the `-g` option.
+- **-r, --reverse**: reverse the contents field. By default, the order corresponds to a `start` process.
 
 valid fields for `-o` options are:
 
@@ -415,7 +416,11 @@ Resolve file are used internally by `66` to know *tree* information. This subcom
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
+
+- **-n, --no-name**: display only the value, not the field name.
+
+- **-f, --field** *field,...*: display only these comma-separated fields.
 
 #### Usage examples
 
@@ -440,7 +445,7 @@ Users, even system administrator, should not need to directly invoke this comman
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Initialization process
 
@@ -470,7 +475,7 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 
@@ -502,8 +507,8 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 #### Options
 
-- **-h**: prints this help.
-- **-f**: fork the process and lose the controlling terminal. This option should be used only for a shutdown process.
+- **-h, --help**: prints this help.
+- **-f, --fork**: fork the process and lose the controlling terminal. This option should be used only for a shutdown process.
 
 #### Usage examples
 
@@ -535,8 +540,8 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 #### Options
 
-- **-h**: prints this help.
-- **-f**: fork the process and lose the controlling terminal. This option should be used only for a shutdown process.
+- **-h, --help**: prints this help.
+- **-f, --fork**: fork the process and lose the controlling terminal. This option should be used only for a shutdown process.
 
 #### Usage examples
 

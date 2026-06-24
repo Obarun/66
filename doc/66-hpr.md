@@ -22,33 +22,33 @@ This is the traditional sysvinit interface for the `halt`, `poweroff` and `reboo
 
 ## Options
 
-- **-H**: prints this help.
+- **-H, --help**: prints this help.
 
-- **-l** *live*: changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66 scandir](66-scandir.html).
+- **-l, --live** *live*: changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66 scandir](66-scandir.html).
 
-- **-b** *banner*: Text to display before executing the shutdown process. Defaults to:
+- **-b, --banner** *banner*: Text to display before executing the shutdown process. Defaults to:
 
 ```
 *** WARNING ***
 The system is going down NOW!
 ```
 
-- **-f**: force. The command will not trigger a clean shutdown procedure; it will only sync the filesystems then tell the kernel to immediately `halt`, `poweroff` and `reboot`. This should be the last step in the lifetime cycle of the machine.
+- **-f, --force**: force. The command will not trigger a clean shutdown procedure; it will only sync the filesystems then tell the kernel to immediately `halt`, `poweroff` and `reboot`. This should be the last step in the lifetime cycle of the machine.
 
-- **-h**: halt. The system will be shut down but the power will remain connected.
+- **-h, --halt**: halt. The system will be shut down but the power will remain connected.
 
-- **-p**: poweroff. Like halt but the power will also be turned off.
+- **-p, --poweroff**: poweroff. Like halt but the power will also be turned off.
 
-- **-r**: reboot. The system will initialize a warm boot without disconnecting power.
+- **-r, --reboot**: reboot. The system will initialize a warm boot without disconnecting power.
 
-- **-s**: suspend. The system is suspended to RAM by writing `mem` to `/sys/power/state`. The call blocks until the machine wakes up; no service is stopped.
+- **-s, --suspend**: suspend. The system is suspended to RAM by writing `mem` to `/sys/power/state`. The call blocks until the machine wakes up; no service is stopped.
 
-- **-i**: hibernate. The system is hibernated to disk by writing `disk` to `/sys/power/state`. This requires a properly configured swap device. The call blocks until the machine wakes up; no service is stopped.
+- **-i, --hibernate**: hibernate. The system is hibernated to disk by writing `disk` to `/sys/power/state`. This requires a properly configured swap device. The call blocks until the machine wakes up; no service is stopped.
 
-- **-n**: Do not call [sync()](https://pubs.opengroup.org/onlinepubs/9699919799/functions/sync.html) before the hardware shutdown. The default is to sync, just in case. This option is relevant when combined with **-f**, **-s** or **-i**; without one of them, it has no effect.
+- **-n, --no-sync**: Do not call [sync()](https://pubs.opengroup.org/onlinepubs/9699919799/functions/sync.html) before the hardware shutdown. The default is to sync, just in case. This option is relevant when combined with **-f**, **-s** or **-i**; without one of them, it has no effect.
 
-- **-d**: Do not write a wtmp shutdown entry—see [utmp,wtmp and btmp](https://en.wikipedia.org/wiki/Utmp).
+- **-d, --no-wtmp**: Do not write a wtmp shutdown entry—see [utmp,wtmp and btmp](https://en.wikipedia.org/wiki/Utmp).
 
-- **-w**: Only write a wtmp shutdown entry; does not actually shut down the system.
+- **-w, --wtmp-only**: Only write a wtmp shutdown entry; does not actually shut down the system.
 
-- **-W**: Do not send a *wall* message to users before shutting down the system. Some other implementations of the `halt`, `poweroff` and `reboot` commands use the `‑‑no‑wall` long option to achieve this.
+- **-W, --no-wall**: Do not send a *wall* message to users before shutting down the system. Some other implementations of the `halt`, `poweroff` and `reboot` commands use the `‑‑no‑wall` long option to achieve this.

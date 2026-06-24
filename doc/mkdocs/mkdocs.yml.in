@@ -54,6 +54,13 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Guides:
+    - Getting started: 66-getting-started.md
+    - Cheatsheet: 66-cheatsheet.md
+    - Dependencies and ordering: 66-dependencies.md
+    - Logging: 66-logging.md
+    - Troubleshooting & FAQ: 66-troubleshooting.md
+    - Coming from systemd, OpenRC or runit: 66-migration.md
   - 66 commands:
     - 66 commands: 66.md
     - boot: 66-boot.md

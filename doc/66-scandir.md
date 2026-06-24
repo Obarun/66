@@ -14,9 +14,9 @@ When the `start` subcommand is invoked, this command launches the [s6-svscan](ht
 
 ## Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
-- **-o** *owner*: handles the *scandir* for the given *owner*. Only the root user can use this option. Note that *owner* can be any valid user on the system. However, the given user must have sufficient permissions to create the necessary directories at its location. That is `%%livedir%%` by default or the resulting path provided by the `66  ‑l` option.
+- **-o, --owner** *owner*: handles the *scandir* for the given *owner*. Only the root user can use this option. Note that *owner* can be any valid user on the system. However, the given user must have sufficient permissions to create the necessary directories at its location. That is `%%livedir%%` by default or the resulting path provided by the `66  ‑l` option.
 
 ## Subcommands
 
@@ -80,20 +80,20 @@ Various files and directories is created at `%%livedir%%`. Refers to [deeper und
 
 #### Options
 
-- **-h**: print this help.
-- **-b**: create scandir for a boot process. Only the root user can use this option. It is not meant to be used directly even with root. [66 boot](66-boot.html) calls it during the boot process.
-- **-B**: create scandir for a boot process inside a container. This option modifies some behaviors:
+- **-h, --help**: print this help.
+- **-b, --boot**: create scandir for a boot process. Only the root user can use this option. It is not meant to be used directly even with root. [66 boot](66-boot.html) calls it during the boot process.
+- **-B, --container**: create scandir for a boot process inside a container. This option modifies some behaviors:
 
     The ultimate output fallback (i.e. the place where error messages go when nothing catches them, e.g. the error messages from the catch-all logger and the [s6-supervise](https://skarnet.org/software/s6/s6-supervise.html) process managing the catch-all logger) is not `/dev/console`, but the descriptor that was init's standard error.
     Stopping the container with reboot will make the container's init program report being killed by a `SIGHUP`. Stopping it with [66 poweroff](66-poweroff.html) will make it report being killed by a `SIGINT`. This is according to the reboot(2) specification.
     Stopping the container with [66 halt](66-halt.html), however, is different. It will make the container's pid 1 read a number in the `/run/66/container/<UID>/halt` file which contents the variable `EXITCODE`, and exit with the code it has read. (Default is 0.) This means that in order to run a command in a container managed by [66 boot](66-boot.html) and exit the container when the command dies while reporting the exit code to its parent, [66 boot](66-boot.html) use the `/etc/66/rc.init.container` file instead of the `/etc/66/rc.init` file. This file should be modified to launch the command that you want to start inside this container. Then you need to stop that container calling [66 halt](66-halt.html).
     All the running services will be killed, all the zombies will be reaped, and the container will exit with the required exit code.
 
-- **-c**: do not catch logs. On a non-containerized system, that means that all the logs from the *scandir* will go to `/dev/console`, and that `/dev/console` will also be the default `stdout` and `stderr` for services running under the supervision tree: use of this option is discouraged. On a containerized system (when paired with the `-B` option), it simply means that these outputs go to the default `stdout` and `stderr` given to the container's init - this should generally not be the default, but might be useful in some cases.
+- **-c, --no-logger**: do not catch logs. On a non-containerized system, that means that all the logs from the *scandir* will go to `/dev/console`, and that `/dev/console` will also be the default `stdout` and `stderr` for services running under the supervision tree: use of this option is discouraged. On a containerized system (when paired with the `-B` option), it simply means that these outputs go to the default `stdout` and `stderr` given to the container's init - this should generally not be the default, but might be useful in some cases.
 
-- **-L** *log_user*: run catch-all logger as *log_user* user. Default is `%%s6log_user%%`. The default can also be changed at compile-time by passing the `‑‑with‑s6‑log‑user=user` option to `./configure`.
+- **-L, --log-user** *log_user*: run catch-all logger as *log_user* user. Default is `%%s6log_user%%`. The default can also be changed at compile-time by passing the `‑‑with‑s6‑log‑user=user` option to `./configure`.
 
-- **-s** *skel*: use *skel* as skeleton directory. Directory containing *skeleton* files. This option is not meant to be used directly even with root. [66 boot](66-boot.html) calls it during the boot process. Default is `%%skel%%`.
+- **-s, --skeleton** *skel*: use *skel* as skeleton directory. Directory containing *skeleton* files. This option is not meant to be used directly even with root. [66 boot](66-boot.html) calls it during the boot process. Default is `%%skel%%`.
 
 #### Usage examples
 
@@ -121,13 +121,13 @@ The *scandir* is created if it wasn't made previously, but you don't a fine-grai
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
-- **-d** *notif*: notify readiness on file descriptor notif. When *scandir* is ready to accept signal, it will write a newline to *notif*. *notif* **cannot be** lesser than `3`. By default, no notification is sent. If **-b** is set, this option have no effects.
+- **-d, --notify** *notif*: notify readiness on file descriptor notif. When *scandir* is ready to accept signal, it will write a newline to *notif*. *notif* **cannot be** lesser than `3`. By default, no notification is sent. If **-b** is set, this option have no effects.
 
-- **-t** *rescan*: perform a scan every *rescan* milliseconds. If *rescan* is set to 0 (the default), automatic scans are never performed after the first one and [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) will only detect new services by issuing either [scandir reload](66-scandir.html#reconfigure) or [scandir check](66-scandir.html#check). It is **strongly** discouraged to set *rescan* to a positive value under `500`.
+- **-s, --rescan** *rescan*: perform a scan every *rescan* milliseconds. If *rescan* is set to 0 (the default), automatic scans are never performed after the first one and [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) will only detect new services by issuing either [scandir reload](66-scandir.html#reconfigure) or [scandir check](66-scandir.html#check). It is **strongly** discouraged to set *rescan* to a positive value under `500`.
 
-- **-e** *environment*: an absolute path. Merge the current environment variables with variables found in this directory before starting the *scandir*. Any file in environment not beginning with a dot and not containing the `=` character will be read and parsed. Each services started within the *scandir* will inherit of the `key=value` pair define within *environment*. By default, *66* import the %%environment_adm%% environment directory by default for the root user and the %%environment_user%% directory for the regular user. Although this can be changed at compile time by passing the `--with-sysadmin-environment=DIR `, `--with-user-environment=DIR` for root and regular user respectively. In case of same `key=value` pair, the environment directory define with the `-e` take precedence. Also, see [Environment](#environment) for further information about the syntax and the limitations.
+- **-e, --environment** *environment*: an absolute path. Merge the current environment variables with variables found in this directory before starting the *scandir*. Any file in environment not beginning with a dot and not containing the `=` character will be read and parsed. Each services started within the *scandir* will inherit of the `key=value` pair define within *environment*. By default, *66* import the %%environment_adm%% environment directory by default for the root user and the %%environment_user%% directory for the regular user. Although this can be changed at compile time by passing the `--with-sysadmin-environment=DIR `, `--with-user-environment=DIR` for root and regular user respectively. In case of same `key=value` pair, the environment directory define with the `-e` take precedence. Also, see [Environment](#environment) for further information about the syntax and the limitations.
 
 #### Usage examples
 
@@ -155,7 +155,7 @@ This command stops the *scandir* sending a `SIGTERM` to all the [s6-supervise](h
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 
@@ -185,7 +185,7 @@ Certain directories within the scandir will not be removed. Specifically, `%%liv
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 
@@ -213,7 +213,7 @@ scandir reconfigure [ -h ]
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 
@@ -243,7 +243,7 @@ scandir check [ -h ]
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 
@@ -273,7 +273,7 @@ scandir quit [ -h ]
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 
@@ -303,7 +303,7 @@ scandir abort [ -h ]
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 
@@ -332,7 +332,7 @@ scandir nuke [ -h ]
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 
@@ -362,7 +362,7 @@ Does the same thing as [nuke](#nuke), except that `SIGTERM` is sent to all the r
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 
@@ -392,7 +392,7 @@ Immediately triggers s6-svscan's reaper mechanism.
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 

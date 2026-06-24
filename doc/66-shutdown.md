@@ -28,27 +28,29 @@ The *66-shutdown* program abides to the standards of the LSB-3.0.0 [shutdown](ht
 
 ## Options
 
-- **-H**: prints this help.
+- **-H, --help**: prints this help.
 
-- **-l** *live*: changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66 scandir](66-scandir.html).
+- **-v, --verbose** *number*: increase/decrease the verbosity of the command.
 
-- **-a**: access control. The shutdown sequence will only be launched if one of the users listed in `%%skel%%/shutdown.allow` is currently logged in (as tracked by utmp). `%%skel%%/shutdown.allow` is a text file which accepts one user per line. Lines starting with `#` are commented out.
+- **-l, --live** *live*: changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66 scandir](66-scandir.html).
 
-- **-t** *sec*: have a "grace time" period of sec seconds between the `SIGTERM` and the `SIGKILL` at the end of the shutdown sequence when it is time to kill all processes (allows processes to receive `SIGTERM` to exit cleanly). Default is `3` seconds.
+- **-a, --access-control**: access control. The shutdown sequence will only be launched if one of the users listed in `%%skel%%/shutdown.allow` is currently logged in (as tracked by utmp). `%%skel%%/shutdown.allow` is a text file which accepts one user per line. Lines starting with `#` are commented out.
 
-- **-k**: do not shut down; send a warning message to all logged in users.
+- **-t, --grace-time** *sec*: have a "grace time" period of sec seconds between the `SIGTERM` and the `SIGKILL` at the end of the shutdown sequence when it is time to kill all processes (allows processes to receive `SIGTERM` to exit cleanly). Default is `3` seconds.
 
-- **-h**: halt the system at the end of the shutdown sequence.
+- **-k, --warn-users**: do not shut down; send a warning message to all logged in users.
 
-- **-p**: power off the system at the end of the shutdown sequence. This option is provided as an extension it is not required-by the LSB interface.
+- **-h, --halt**: halt the system at the end of the shutdown sequence.
 
-- **-r**: reboot the system at the end of the shutdown sequence.
+- **-p, --poweroff**: power off the system at the end of the shutdown sequence. This option is provided as an extension it is not required-by the LSB interface.
+
+- **-r, --reboot**: reboot the system at the end of the shutdown sequence.
 
 - **-f**: ignored.
 
 - **-F**: ignored.
 
-- **-c**: cancel a planned shutdown. Can only cancel the effect of a previous call to *shutdown* with a time argument that was not *now*. This cannot be used to interrupt a shutdown sequence that has already started.
+- **-c, --cancel**: cancel a planned shutdown. Can only cancel the effect of a previous call to *shutdown* with a time argument that was not *now*. This cannot be used to interrupt a shutdown sequence that has already started.
 
 ## Notes
 

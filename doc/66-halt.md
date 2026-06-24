@@ -18,13 +18,13 @@ The *when* provided **must be** on these formats:
 
 ## Options
 
-- **-h**: print this help.
-- **-a**: use access control. The halt sequence will only be launched if one of the users listed in `/etc/66/shutdown.allow` is currently logged in (as tracked by utmp). `/etc/66/shutdown.allow` is a text file which accepts one user per line. Lines starting with # are commented out.
-- **-f**: do not trigger a clean shutdown procedure; it will just sync the filesystems then tell the kernel to immediately halt. This should be the last step in the lifetime of the machine.
-- **-F**: same as `-f` but do not sync the filesystems.
-- **-m** *message*: replace the default message by message. message is broadcast to all logged in users (as tracked by utmp).
-- **-t** *time*: have a grace time period of *time* seconds between the `SIGTERM` and the `SIGKILL` at the end of the halt sequence when it is time to kill all processes (allows processes to receive `SIGTERM` to exit cleanly). The default is `3` seconds.
-- **-W**: do not send a wall message to users.
+- **-h, --help**: print this help.
+- **-a, --access**: use access control. The halt sequence will only be launched if one of the users listed in `/etc/66/shutdown.allow` is currently logged in (as tracked by utmp). `/etc/66/shutdown.allow` is a text file which accepts one user per line. Lines starting with # are commented out.
+- **-f, --force**: do not trigger a clean shutdown procedure; it will just sync the filesystems then tell the kernel to immediately halt. This should be the last step in the lifetime of the machine.
+- **-F, --force-nosync**: same as `-f` but do not sync the filesystems.
+- **-m, --message** *message*: replace the default message by message. message is broadcast to all logged in users (as tracked by utmp).
+- **-t, --timeout** *time*: have a grace time period of *time* seconds between the `SIGTERM` and the `SIGKILL` at the end of the halt sequence when it is time to kill all processes (allows processes to receive `SIGTERM` to exit cleanly). The default is `3` seconds.
+- **-W, --no-wall**: do not send a wall message to users.
 
 ## Usage examples
 

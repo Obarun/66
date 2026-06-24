@@ -46,7 +46,7 @@ static uint8_t opt_noname = 0 ;
 static opt_t const opts_state[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",   .arg = OPT_NONE,                             .help = "print this help" },
     { .id = 'f',         .shortname = 'f', .longname = "field",  .arg = OPT_REQUIRED, .argname = "field,...", .help = "display only these comma-separated fields" },
-    { .id = 'n',         .shortname = 'n', .longname = "noname", .arg = OPT_NONE,                             .help = "display only the value, not the field name" },
+    { .id = 'n',         .shortname = 'n', .longname = "no-name", .arg = OPT_NONE,                            .help = "display only the value, not the field name" },
 } ;
 
 static int on_state(int id, char const *arg, void *data)
@@ -77,6 +77,11 @@ opt_cmd_t const cmd_state = {
     .nopts = OPT_COUNT(opts_state),
     .on_option = &on_state,
     .fn = &ssexec_state,
+    .epilog =
+        "field:\n"
+        "    toinit          toreload        torestart\n"
+        "    tounsupervise   toparse         isparsed\n"
+        "    issupervised    isup",
 } ;
 
 int ssexec_state(int argc, char const *const *argv, void *data)

@@ -158,15 +158,15 @@ An absolute path beginning with a forward slash `/`. **Must** be on the same lin
 * Valid syntax:
 
     ````
-    Destination = /etc/66
+    ChangeDirectory = /etc/66
 
-    Destination=/etc/66
+    ChangeDirectory=/etc/66
     ````
 
 * **(!)** Invalid syntax:
 
     ````
-    Destination=/a/very/
+    ChangeDirectory=/a/very/
     long/path
     ````
 
@@ -383,7 +383,7 @@ Specifies reverse dependencies—services that depend on this service. Starting 
     A service can be commented out by placing the number sign `#` at the begin of the name like this:
 
     ````
-    Depends = ( fooA #fooB fooC )
+    RequiredBy = ( fooX #fooY )
     ````
 
 #### OptsDepends
@@ -472,7 +472,7 @@ Enables readiness notification. Creates `notification-fd` containing the specifi
 
     * Any valid number.
 
-    This will create the file *notification-fd*. Once this file is created the service supports [readiness notification](https://skarnet.org/software/s6/notifywhenup.html). The value equals the number of the file descriptor that the service writes its readiness notification to. (For instance, it should be 1 if the daemon is [s6-ipcserverd](https://skarnet.org/software/s6/s6-ipcserverd.html) run with the -1 option.) When the service reseive signal and this file is present containing a valid descriptor number, [66](66.html) command will wait for the notification from the service and broadcast its readiness.
+    This will create the file *notification-fd*. Once this file is created the service supports [readiness notification](https://skarnet.org/software/s6/notifywhenup.html). The value equals the number of the file descriptor that the service writes its readiness notification to. (For instance, it should be 1 if the daemon is [s6-ipcserverd](https://skarnet.org/software/s6/s6-ipcserverd.html) run with the -1 option.) When the service receive signal and this file is present containing a valid descriptor number, [66](66.html) command will wait for the notification from the service and broadcast its readiness.
 
 #### TimeoutStop
 
@@ -481,7 +481,9 @@ Enables readiness notification. Creates `notification-fd` containing the specifi
 TimeoutStop = 5000
 ```
 
-Specifies the maximum time (ms) to wait for the stop script (`finish`) to complete before forcibly killing it.
+Specifies the maximum time (in milliseconds) the service's **stop** sequence may
+take. If the stop transition — the stop/`finish` script — does not complete within
+this time, `66` kills the service.
 
 * mandatory: no
 
@@ -489,9 +491,8 @@ Specifies the maximum time (ms) to wait for the stop script (`finish`) to comple
 
 * valid values:
 
-    * Any valid number.
-
-    This will create the file *timeout-finish*. Once this file is created the value will equal the number of milliseconds after which the *./finish* script—if it exists—will be killed with a `SIGKILL`. The default is `0` allowing finish scripts to run forever.
+    * Any valid number, in milliseconds. The default is `0`, which means no stop
+      timeout — the stop script may run as long as it needs.
 
 #### TimeoutStart
 
@@ -499,7 +500,9 @@ Specifies the maximum time (ms) to wait for the stop script (`finish`) to comple
 ```ini
 TimeoutStart = 2000
 ```
-Defines the grace period (ms) after SIGTERM before sending SIGKILL on stop commands.
+Specifies the maximum time (in milliseconds) the service may take to **start**. If
+the start transition does not complete within this time, `66` kills the service
+and reports the transition as failed.
 
 * mandatory: no
 
@@ -507,9 +510,8 @@ Defines the grace period (ms) after SIGTERM before sending SIGKILL on stop comma
 
 * valid values:
 
-    * Any valid number.
-
-    This will create the file *timeout-kill*. Once this file is created and the value is not `0`, then on reception of a [stop](66-stop.html) command—which sends a `SIGTERM` and a `SIGCONT` to the service — a timeout of value in milliseconds is set. If the service is still not dead, after *value* in milliseconds, it will receive a `SIGKILL`. If the file does not exist, or contains `0`, or an invalid value, then the service is never forcibly killed.
+    * Any valid number, in milliseconds. The default is `0`, which means no start
+      timeout — the service may take as long as it needs to come up.
 
 
 #### MaxDeath
@@ -542,7 +544,7 @@ Specifies which signal to send when stopping or reloading the service.
 
 * mandatory: no
 
-* syntax: [uint](#uint)
+* syntax: [inline](#inline)
 
 * valid value:
 
@@ -661,10 +663,10 @@ Controls standard I/O redirection for the standard error entries.
 * valid values:
 
     * tty:/path/to/tty: Redirects Standard Error to the given tty specified by the path. The path must be absolute and exist. It does not try to take control of the terminal.
-    * file:/path/to/file: Redirects Standard Erro to the given file specified by path. Path must be absolute. If the directory of file and the file itself doesn't exist, *66* create it. In that case, the directory get `0755` as permissions and the file is set with `0666` as permissions.
+    * file:/path/to/file: Redirects Standard Error to the given file specified by path. Path must be absolute. If the directory of file and the file itself doesn't exist, *66* create it. In that case, the directory get `0755` as permissions and the file is set with `0666` as permissions.
     * console: Redirects Standard Error to the active console. It does not try to take control of the console.
-    * syslog: Redirects Standard Output to the `/dev/log` socket.
-    * null: Redirects Standard Output to `/dev/null`.
+    * syslog: Redirects Standard Error to the `/dev/log` socket.
+    * null: Redirects Standard Error to `/dev/null`.
     * parent: This is a no-op redirection. The Standard Error is inherited from the parent process, meaning the `s6-supervise` program.
     * inherit: Duplicates the Standard Error to the Standard Output. This is the default.
     * close: Closes the Standard Error.
@@ -686,7 +688,7 @@ Defines one or more service aliases—alternate names under which this service c
 
 * valid values:
 
-    * Any abitrary name.
+    * Any arbitrary name.
 
 #### Conflict
 
@@ -762,7 +764,7 @@ Drops privileges to the specified user or UID:GID before executing the service.
 
         This will pass the privileges of the service to the given user before starting the run script of the service.
 
-    **Note**: (!) The service needs to be first started with root if you want to hand over priviliges to a user. Only root can pass on privileges. This field has no effect for other use cases.
+    **Note**: (!) The service needs to be first started with root if you want to hand over privileges to a user. Only root can pass on privileges. This field has no effect for other use cases.
 
 #### Execute
 
@@ -780,7 +782,7 @@ Defines the command(s) executed to start the service. Enclose multiple lines in 
 
     * The command to execute when starting the service.
 
-    **Note**: The field will be used as is. No changes will be applied at all except in `custom` case(see [A word about the execute key](#a-word-about-the-execute-key)). It's the responsability of the author to make sure that the content of this field is correct.
+    **Note**: The field will be used as is. No changes will be applied at all except in `custom` case(see [A word about the execute key](#a-word-about-the-execute-key)). It's the responsibility of the author to make sure that the content of this field is correct.
 
 ### Section [Stop]
 
@@ -924,7 +926,7 @@ DirRun=/run/openntpd
         cmd_args = ! -d -s
         ````
 
-        Refers to [execl-envfile](execl-envfile.html) for futhers information.
+        Refers to [execl-envfile](execl-envfile.html) for further information.
 
 #### ImportFile
 
@@ -1018,7 +1020,7 @@ Regex-based renaming rules for module subdirectories. Each entry is `regex=repla
 
 **Source Snippet**:
 ```ini
-Directories = ( servicename=newname )
+Files = ( servicename=newname )
 ```
 
 Regex-based renaming rules for files. Each entry is `regex=replacement`.
@@ -1538,7 +1540,7 @@ Specifies Linux capabilities that a service and its child processes automaticall
 
     Applies to both root-owned services and non-root services.
 
-    The bounding set must contain at least `CAP_SETPCAT` capability and each listed capability. If not, it is skipped, and a warning is logged. If `CAP_SETPCAT` is not in bounding set, the process die.
+    The bounding set must contain at least `CAP_SETPCAP` capability and each listed capability. If not, it is skipped, and a warning is logged. If `CAP_SETPCAP` is not in bounding set, the process dies.
 
     For root-owned services, if `CapsBound` is not set, the service checks the system’s current set of allowed permissions to decide which capabilities can be used. If `CapsBound` is set, only the capabilities listed in `CapsBound` are considered. For example, if `CapsBound = (CAP_SYS_NICE)` and `CapsAmbient = (CAP_DAC_OVERRIDE)`, the `CAP_DAC_OVERRIDE` capability will be skipped because it is not in the `CapsBound` list, and a warning will be logged.
 
@@ -1611,7 +1613,7 @@ The `Version` key accepts version strings composed of components separated by an
    - Versions with alphabetic pre-release tags, such as `"1.0.0-alpha"`, `"2.0.0-beta"`, or `"1.0.0.0-rc1"`.
    - Pre-release tags (e.g., `"alpha"`, `"beta"`) are treated as higher precedence than stable versions (e.g., `"1.0.0-alpha" < "1.0.0"`).
    - Tags are case-insensitive (e.g., `"1.0.0-ALPHA"` is equivalent to `"1.0.0-alpha"`).
-   - Only the first letter is taken into account whatever le lenght of the string.
+   - Only the first letter is taken into account whatever the length of the string.
 
 **Mixed Components**:
    - Components that combine numeric and alphabetic parts without a separator, such as `"123abc"` or `"0ab"`, are valid.
@@ -1619,7 +1621,7 @@ The `Version` key accepts version strings composed of components separated by an
      - `"123abc"` splits into numeric `"123"` and alphabetic `"abc"`.
      - `"0ab"` splits into numeric `"0"` and alphabetic `"ab"`.
    - Example: `"1.0.0-123abc"` is parsed as numeric `"123"` followed by an alphabetic suffix `"abc"`.
-   - Only the first letter is taken into account whatever le lenght of the string.
+   - Only the first letter is taken into account whatever the length of the string.
 
 **Letter Suffixes**:
    - Versions with an alphabetic suffix after a pre-release tag or mixed component, such as `"1.0.0-alpha.1"`, `"1.0.0-beta.patch"`, or `"1.0ab.01-1"`.
@@ -1722,6 +1724,7 @@ StdIn =
 StdOut =
 StdErr =
 Provide = ()
+Conflict = ()
 
 [Start]
 Build =
@@ -1736,7 +1739,6 @@ Execute = ()
 [Logger]
 Build =
 RunAs =
-Destination =
 Backup =
 MaxSize =
 Timestamp =
@@ -1747,7 +1749,7 @@ Execute = ()
 [Environment]
 ImportFile=/path/to/file
 mykey=myvalue
-ANOTHERKEY=!antohervalue
+ANOTHERKEY=!anothervalue
 
 [Regex]
 Configure = ""

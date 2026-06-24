@@ -159,9 +159,9 @@ static char const *opt_field = 0 ;
 static uint8_t opt_noname = 0 ;
 
 static opt_t const opts_resolve[] = {
-    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",   .arg = OPT_NONE,                             .help = "print this help" },
-    { .id = 'f',         .shortname = 'f', .longname = "field",  .arg = OPT_REQUIRED, .argname = "field,...", .help = "display only these comma-separated fields" },
-    { .id = 'n',         .shortname = 'n', .longname = "noname", .arg = OPT_NONE,                             .help = "display only the value, not the field name" },
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                             .help = "print this help" },
+    { .id = 'f',         .shortname = 'f', .longname = "field",   .arg = OPT_REQUIRED, .argname = "field,...", .help = "display only these comma-separated fields" },
+    { .id = 'n',         .shortname = 'n', .longname = "no-name", .arg = OPT_NONE,                             .help = "display only the value, not the field name" },
 } ;
 
 static int on_resolve(int id, char const *arg, void *data)
@@ -186,6 +186,9 @@ opt_cmd_t const cmd_resolve = {
     .nopts = OPT_COUNT(opts_resolve),
     .on_option = &on_resolve,
     .fn = &ssexec_resolve,
+    .epilog =
+        "-f selects fields by name: the valid names are the field names a plain\n"
+        "'66 resolve <service>' prints.",
 } ;
 
 int ssexec_resolve(int argc, char const *const *argv, void *data)

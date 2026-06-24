@@ -20,9 +20,9 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 ## Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
-- **-S**: stops the *service* on the fly directly after disabling it. If the state of the *service* is already down, this option will have no effect. This also applies to the required-by  dependencies of the service.
+- **-S, --stop**: stops the *service* on the fly directly after disabling it. If the state of the *service* is already down, this option will have no effect. This also applies to the required-by  dependencies of the service.
 
 ## Usage examples
 

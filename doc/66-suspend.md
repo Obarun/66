@@ -16,7 +16,7 @@ This command requires root privileges.
 
 ## Options
 
-- **-h**: print this help.
+- **-h, --help**: print this help.
 
 ## Usage examples
 

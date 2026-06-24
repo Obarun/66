@@ -18,9 +18,9 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 ## Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
-- **-P**: Do not handle service dependencies. In such cases, the *free* command will not attempt to stop the services that are dependent on the service, regardless of their current state.
+- **-P, --no-propagate**: Do not handle service dependencies. In such cases, the *free* command will not attempt to stop the services that are dependent on the service, regardless of their current state.
 
 ## Usage examples
 

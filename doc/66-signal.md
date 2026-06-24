@@ -18,34 +18,35 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 ## Options
 
-- **-h**: print this help.
-- **-P**: Do not handle service dependencies. In such cases, the *signal* command will not attempt to send signal to the services that are dependent on the service, regardless of their current state.
-- **-wu**: do not exit until the service is up.
-- **-wU**: do not exit until the service is up and ready and has notified readiness.
-- **-wd**: do not exit until the service is down.
-- **-wD**: do not exit until the service is down and ready to be brought up and has notified readiness.
-- **-wr**: do not exit until the service has been started or restarted.
-- **-wR**: do not exit until the service has been started or restarted and has notified readiness.
-- **-a**: send a SIGALRM signal.
-- **-b**: send a SIGABRT signal.
-- **-q**: send a SIGQUIT signal.
-- **-H**: send a SIGHUP signal.
-- **-k**: send a SIGKILL signal.
-- **-t**: send a SIGTERM signal.
-- **-i**: send a SIGINT signal.
-- **-1**: send a SIGUSR1 signal.
-- **-2**: send a SIGUSR2 signal.
-- **-p**: send a SIGSTOP signal.
-- **-c**: send a SIGCONT signal.
-- **-y**: send a SIGWINCH signal.
-- **-o**: once. Equivalent to '-uO'.
-- **-d**: send a SIGTERM signal then a SIGCONT signal.
-- **-D**: bring down service and avoid to be bring it up automatically.
-- **-u**: bring up service.
-- **-U**: bring up service and ensure that service can be restarted automatically.
-- **-x**: bring down the service and propagate to its supervisor.
-- **-O**: mark the service to run once at most.
-- **-r**: restart service by sending it a signal(default SIGTERM).
+- **-h, --help**: print this help.
+- **-P, --no-propagate**: Do not handle service dependencies. In such cases, the *signal* command will not attempt to send signal to the services that are dependent on the service, regardless of their current state.
+- **-wu, --wait u**: do not exit until the service is up.
+- **-wU, --wait U**: do not exit until the service is up and ready and has notified readiness.
+- **-wd, --wait d**: do not exit until the service is down.
+- **-wD, --wait D**: do not exit until the service is down and ready to be brought up and has notified readiness.
+- **-wr, --wait r**: do not exit until the service has been started or restarted.
+- **-wR, --wait R**: do not exit until the service has been started or restarted and has notified readiness.
+- **-s, --signal** *signal*: send signal to the supervised process by signal name or its number.
+- **-a, --alarm**: send a SIGALRM signal.
+- **-b, --abort**: send a SIGABRT signal.
+- **-q, --quit**: send a SIGQUIT signal.
+- **-H, --hangup**: send a SIGHUP signal.
+- **-k, --kill**: send a SIGKILL signal.
+- **-t, --term**: send a SIGTERM signal.
+- **-i, --interrupt**: send a SIGINT signal.
+- **-1, --usr1**: send a SIGUSR1 signal.
+- **-2, --usr2**: send a SIGUSR2 signal.
+- **-p, --stop**: send a SIGSTOP signal.
+- **-c, --cont**: send a SIGCONT signal.
+- **-y, --winch**: send a SIGWINCH signal.
+- **-o, --once**: once. Equivalent to '-uO'.
+- **-d, --down**: send a SIGTERM signal then a SIGCONT signal.
+- **-D, --down-keep**: bring down service and avoid to be bring it up automatically.
+- **-u, --up**: bring up service.
+- **-U, --up-restart**: bring up service and ensure that service can be restarted automatically.
+- **-x, --exit**: bring down the service and propagate to its supervisor.
+- **-O, --once-at-most**: mark the service to run once at most.
+- **-r, --restart**: restart service by sending it a signal(default SIGTERM).
 
 ## Usage examples
 

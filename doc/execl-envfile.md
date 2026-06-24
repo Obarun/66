@@ -23,15 +23,15 @@ This program expects to find a regular file or a directory in *src* containing o
 
 ## Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
-- **-v** *verbosity*: increases/decreases the verbosity of the command.
+- **-v, --verbose** *verbosity*: increases/decreases the verbosity of the command.
     * *1*: only print error messages. This is the default.
     * *2*: also print warning messages.
     * *3*: also print tracing messages.
     * *4*: also print debugging messages.
 
-- **-l**: loose; do nothing and execute *prog* directly if *src* does not contain any regular file(s) or *src* does not exist.
+- **-l, --loose**: loose; do nothing and execute *prog* directly if *src* does not contain any regular file(s) or *src* does not exist.
 
 ## File syntax
 

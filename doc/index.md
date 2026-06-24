@@ -31,6 +31,22 @@ Sixty-six (66) is a service manager designed around the [s6 supervision suite](h
 
 **Note**: This documentation tries to be complete and self-contained. However, if you have never heard of [s6](https://skarnet.org/software/s6) you might be confused at first. Please refer to the skarnet documentation if in doubt.
 
+## Where to begin
+
+New to 66? Follow these two, in order:
+
+1. **[Getting started](66-getting-started.html)** — write, run and supervise your first service, step by step.
+2. **[Cheatsheet](66-cheatsheet.html)** — every day-to-day command on a single page.
+
+Then dig in as your needs grow:
+
+- **Writing service files** — [frontend service file](66-frontend.html), [dependencies and ordering](66-dependencies.html), [logging](66-logging.html), [identifier interpretation](66-identifier.html), [instantiated service](66-instantiated-service.html)
+- **Organising services** — [tree](66-tree.html), [module service usage](66-module-usage.html)
+- **Coming from another init** — [systemd, OpenRC or runit](66-migration.html)
+- **When something breaks** — [troubleshooting & FAQ](66-troubleshooting.html)
+- **Administration & boot** — [boot](66-boot.html), [scandir](66-scandir.html), [upgrade and migration](66-upgrade-process.html)
+- **Going deeper** — [deeper understanding](66-deeper.html), [standard I/O redirection](66-standard-io-redirection.html), [service configuration file](66-service-configuration-file.html)
+
 ## Installation
 
 ### Requirements
@@ -50,6 +66,17 @@ See [changes](66-upgrade.html) between version.
 ---
 
 ## Commands
+
+### Guides
+
+- [Getting started](66-getting-started.html)
+- [Cheatsheet](66-cheatsheet.html)
+- [Dependencies and ordering](66-dependencies.html)
+- [Logging](66-logging.html)
+- [Troubleshooting & FAQ](66-troubleshooting.html)
+- [Coming from systemd, OpenRC or runit](66-migration.html)
+
+### Main command
 
 - [66](66.html)
 

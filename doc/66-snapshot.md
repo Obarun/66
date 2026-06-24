@@ -18,7 +18,7 @@ This command can also usefull to transfert the exact same 66 ecosystem from a ma
 
 ## Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 ## Subcommands
 
@@ -71,7 +71,7 @@ The prefix `system@` is reserved for snapshot names used in automatic upgrade pr
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 
@@ -97,7 +97,7 @@ You can get a list of available snapshot invocating the [list](#list) subcommand
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 
@@ -123,7 +123,7 @@ You can get a list of available snapshot invocating the [list](#list) subcommand
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 
@@ -147,7 +147,7 @@ This subcommand list all available snapshot for the owner of the current process
 
 #### Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
 #### Usage examples
 

@@ -4,6 +4,25 @@ This documentation explains the internal structure of `66` on the system and the
 
 **Never manually changes** any directories or files within the `66` ecosystem, as this is the best way to break it.
 
+## The service pipeline
+
+Everything below is a stage in one pipeline, from the file you write to a
+running, supervised process:
+
+```
+ frontend file ─▶ parse ─▶ resolve (CDB) ─▶ tree ─▶ scandir ─▶ s6-supervise ─▶ running service
+   you write      compile   parsed state    group    live dir   one per svc
+```
+
+- **frontend file** — your INI declaration. See [frontend](66-frontend.html).
+- **parse** — compiles it, applying [identifiers](66-identifier.html) and validation. See [parse](66-parse.html).
+- **resolve** — the compiled result, stored as a CDB-backed [resolve file](#resolve-files). See [resolve](66-resolve.html).
+- **tree** — the named group the service belongs to. See [tree](66-tree.html).
+- **scandir** — the live supervision directory that `s6-svscan` watches. See [scandir](66-scandir.html).
+- **s6-supervise** — one per service, keeps it in the state you asked for.
+
+The rest of this page walks the on-disk directories that hold these stages.
+
 ## %%system_dir%%
 
 This directory is specified at compile time by using the `--with-system-dir=` option to `./configure`.

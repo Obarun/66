@@ -1087,7 +1087,7 @@ void info_status_one(const char *service, int *what)
 
 static opt_t const opts_status[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",     .arg = OPT_NONE,                             .help = "print this help" },
-    { .id = 'n',         .shortname = 'n', .longname = "no-field", .arg = OPT_NONE,                             .help = "do not display the field name" },
+    { .id = 'n',         .shortname = 'n', .longname = "no-name",  .arg = OPT_NONE,                             .help = "do not display the field name" },
     { .id = 'o',         .shortname = 'o', .longname = "options",  .arg = OPT_REQUIRED, .argname = "field,...", .help = "deprecated options, please use -f instead", .hidden = true },
     { .id = 'f',         .shortname = 'f', .longname = "field",    .arg = OPT_REQUIRED, .argname = "field,...", .help = "comma separated list of options" },
     { .id = 'g',         .shortname = 'g', .longname = "graph",    .arg = OPT_NONE,                             .help = "displays interdependences as graph" },
@@ -1153,6 +1153,17 @@ opt_cmd_t const cmd_status = {
     .nopts = OPT_COUNT(opts_status),
     .on_option = &on_status,
     .fn = &ssexec_status,
+    .epilog =
+        "field:\n"
+        "    name          version       intree\n"
+        "    status        type          description\n"
+        "    partof        notify        maxdeath\n"
+        "    earlier       source        live\n"
+        "    depends       requiredby    contents\n"
+        "    optsdepends   start         stop\n"
+        "    envat         envfile       importfile\n"
+        "    stdin         stdout        stderr\n"
+        "    logname       logfile",
 } ;
 
 int ssexec_status(int argc, char const *const *argv, void *data)

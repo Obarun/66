@@ -5,32 +5,34 @@ This command displays information about service.
 ## Interface
 
 ```
-status [ -h ] [ -n ] [ -o name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -p nline ] service
+status [ -h ] [ -n ] [ -f name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -p nline ] service
 ```
 
 By default the dependency graph is rendered in the [start](66-start.html) order of execution. You can reverse the rendered order, meaning the [stop](66-stop.html) execution, with the `-r` option.
 
-Without specifying the `-o`, all fields are displayed.
+Without specifying `-f`, all fields are displayed.
 
-If no *service* is specified, it displays all services from all trees. This is a useful way to quickly get an overview of the entire service system. In that case, `-g` is implied and `-d` can be use but `-p`, `-o` and `-n` options have no effects.
+If no *service* is specified, it displays all services from all trees. This is a useful way to quickly get an overview of the entire service system. In that case, `-g` is implied and `-d` can be use but `-p`, `-f` and `-n` options have no effects.
 
 ## Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
-- **-n**: do not display the field name(s) specified. Combining this options with the `-o` facilitates scripting usage.
+- **-n, --no-name**: do not display the field name(s) specified. Combining this option with `-f` facilitates scripting usage.
 
-- **-o**: comma separated list of fields to display.
+- **-f, --field** *field,...*: comma separated list of fields to display.
 
-- **-g**: shows the dependency list of the *service* as a hierarchical graph instead of a list.
+- **-o, --options** *field,...*: deprecated alias for `-f`; use `-f` instead.
 
-- **-d** *depth*: limits the depth of the dependency list visualisation; default is 1. This implies **-g** option.
+- **-g, --graph**: shows the dependency list of the *service* as a hierarchical graph instead of a list.
 
-- **-r**: shows the dependency list of *services* in reverse mode.
+- **-d, --depth** *depth*: limits the depth of the dependency list visualisation; default is 1. This implies **-g** option.
 
-- **-p** *nline*: prints the *nline* last lines from the log file of the *service*. Default is 10.
+- **-r, --reverse**: shows the dependency list of *services* in reverse mode.
 
-## Valid fields for -o options
+- **-p, --print** *nline*: prints the *nline* last lines from the log file of the *service*. Default is 10.
+
+## Valid fields for -f options
 
 - **name**: displays the name.
 - **version**: displays the version of the service.
@@ -58,6 +60,26 @@ If no *service* is specified, it displays all services from all trees. This is a
 - **logname**: displays the logger's name.
 - **logfile**: displays the contents of the log file.
 
+## Reading the status field
+
+The `status` field combines two independent states:
+
+- **enable state** — `enabled` (the service comes up at boot) or `disabled` (it does not).
+- **run state** — `up` (running) or `down` (stopped).
+
+For a running service it also shows the live `pid`, how long it has been up,
+and — if the service uses [readiness notification](66-frontend.html#notify) —
+how long it has been `ready`:
+
+```
+Status : enabled, up (pid 731) 34829 seconds, ready 34829 seconds
+```
+
+The two axes are independent: a service can be `disabled, up` (started by hand,
+it will not return after a reboot) or `enabled, down` (it will come up next
+boot). For the granular internal flags behind these states, see
+[66 state](66-state.html).
+
 ## Usage examples
 
 Displays all information of service `foo`
@@ -69,25 +91,25 @@ Displays all information of service `foo`
 Only displays the field `name` and `status` of service `foo`
 
 ```
-66 status -o name,status foo
+66 status -f name,status foo
 ```
 
 Also, do not display the name of the field `name` and `status` of service `foo`
 
 ```
-66 status -no name,status foo
+66 status -nf name,status foo
 ```
 
 Only displays the contents of the log file of the service `foo`
 
 ```
-66 status -o logfile foo
+66 status -f logfile foo
 ```
 
 Also, displays the last 100 lines of the log file of the service `foo`
 
 ```
-66 status -o logfile -p100 foo
+66 status -f logfile -p100 foo
 ```
 
 In a script you can do
@@ -96,7 +118,7 @@ In a script you can do
 #!/bin/sh
 
 service="${1}"
-type=$(66 status -no type ${service})
+type=$(66 status -nf type ${service})
 
 if [ ${type} = "classic" ]; then
     echo ${service} is a classic service

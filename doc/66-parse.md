@@ -22,11 +22,11 @@ This command handles [interdependencies](66.html#handling-dependencies) and pars
 
 ## Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
-- **-f**: force. Owerwrite an existing parsing result.
+- **-f, --force**: force. Owerwrite an existing parsing result.
 
-- **-I**: do not imports modified configuration files from the previous version used. Refer to [Service configuration file](66-service-configuration-file.html) for further information.
+- **-I, --no-import**: do not imports modified configuration files from the previous version used. Refer to [Service configuration file](66-service-configuration-file.html) for further information.
 
 ## Usage examples
 

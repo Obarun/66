@@ -20,9 +20,9 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 ## Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
-- **-S**: starts the *service* on the fly directly after enabling it. If the state of the *service* is already up, this option will have no effect. This also applies to the dependencies of the service.
+- **-S, --start**: starts the *service* on the fly directly after enabling it. If the state of the *service* is already up, this option will have no effect. This also applies to the dependencies of the service.
 
 ## Usage examples
 

@@ -232,7 +232,7 @@ This release of the 66 project includes several bug fixes, new features, and imp
 
 ## Synthesized Release Notes
 
-- Nearing the End of Breaking Changes: This release marks a major step towards the end of planned breaking changes for version 66. Version `0.7.0.0` introduced stability in the directory hierarchy of the 66 ecosystem, and version `0.8.0.0` solidified the stability of frontend file keys. While the implementation of events may happen in version `0.9.0.0`, this can potentially occur without breaking existing 66 components(see [roadmap](readme.html#roadmap)).
+- Nearing the End of Breaking Changes: This release marks a major step towards the end of planned breaking changes for version 66. Version `0.7.0.0` introduced stability in the directory hierarchy of the 66 ecosystem, and version `0.8.0.0` solidified the stability of frontend file keys. While the implementation of events may happen in version `0.9.0.0`, this can potentially occur without breaking existing 66 components(see [roadmap](https://git.obarun.org/Obarun/66/-/blob/master/README.md#roadmap)).
 
 - Introduction of Snapshot Command: A new [snapshot](66-snapshot.html) command has been added, offering a comprehensive backup solution for the 66 ecosystem. This feature guarantees that you can restore the exact state of the ecosystem before any changes. It also enables the replication of ecosystems across different hosts to maintain consistent states and behaviors. Importantly, using snapshots **does not alter the state of running services**.
 

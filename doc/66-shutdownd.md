@@ -20,17 +20,17 @@ This program is a modified copy of [s6-linux-init-shudownd](https://skarnet.org/
 
 ## Options
 
-- **-h**: prints this help.
+- **-h, --help**: prints this help.
 
-- **-l** *live*: changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66 scandir](66-scandir.html).
+- **-l, --live** *live*: changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66 scandir](66-scandir.html).
 
-- **-s** *skel*: an absolute path; directory of the skeleton file `rc.init`. Default is `%%skel%%`.
+- **-s, --skeleton** *skel*: an absolute path; directory of the skeleton file `rc.init`. Default is `%%skel%%`.
 
-- **-g** *gracetime*: specify a grace time between the `SIGTERM` and the `SIGKILL` in milliseconds if the shutdown command does not provide one. Defaults to `3000`.
+- **-g, --grace-time** *gracetime*: specify a grace time between the `SIGTERM` and the `SIGKILL` in milliseconds if the shutdown command does not provide one. Defaults to `3000`.
 
-- **-B**: inform the shutdown daemon that it is running in a container. This changes the nature of *stage 4*, since exiting a container is slightly different from rebooting a real machine (in particular, pid 1 has to exit, and great care must be given not to leave any zombie hanging around).
+- **-B, --container**: inform the shutdown daemon that it is running in a container. This changes the nature of *stage 4*, since exiting a container is slightly different from rebooting a real machine (in particular, pid 1 has to exit, and great care must be given not to leave any zombie hanging around).
 
-- **-c**: inform the shutdown daemon that no catch-all logger is running. This also changes the shutdown procedure slightly, since some operations are specific to the existence of a catch-all logger.
+- **-c, --no-logger**: inform the shutdown daemon that no catch-all logger is running. This also changes the shutdown procedure slightly, since some operations are specific to the existence of a catch-all logger.
 
 ## Note
 

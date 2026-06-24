@@ -18,7 +18,7 @@ This command sends a *message* to all connected users. It uses `UTMP` to find ou
 
 ## Options
 
-- **-h**: prints this help;
+- **-h, --help**: prints this help;
 
 ## Usage examples
 
