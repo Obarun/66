@@ -121,7 +121,7 @@ Generally, the prefix is removed from commands, for example, `66-enable` becomes
 | `66-init` | `66 init` |
 | `66-svctl` | `66 signal` |
 | `66-dbctl` | removed |
-| `66-hpr` | `66-hpr`. This command should not be used directly. Prefer using `66 poweroff`, `66 reboot`, `66 halt` to power off, reboot and halt the machine respectively |
+| `66-hpr` | `66-hpr`. This command should not be used directly. Prefer using `66 poweroff`, `66 reboot`, `66 halt`, `66 suspend`, `66 hibernate` to power off, reboot, halt, suspend and hibernate the machine respectively |
 | `66-shutdownd` | `66-shutdownd` |
 | `66-update` | removed |
 
@@ -161,6 +161,8 @@ Generally, the prefix is removed from commands, for example, `66-enable` becomes
 | `66 poweroff` | poweroff the system |
 | `66 reboot` | reboot the system |
 | `66 halt` | halt the system |
+| `66 suspend` | suspend the system to RAM |
+| `66 hibernate` | hibernate the system to disk |
 | `66 version` | get the version of 66 |
 
 ## General options changes

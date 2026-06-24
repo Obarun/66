@@ -62,6 +62,7 @@ nav:
     - enable: 66-enable.md
     - free: 66-free.md
     - halt: 66-halt.md
+    - hibernate: 66-hibernate.md
     - parse: 66-parse.md
     - poweroff: 66-poweroff.md
     - reboot: 66-reboot.md
@@ -78,6 +79,7 @@ nav:
     - state: 66-state.md
     - status: 66-status.md
     - stop: 66-stop.md
+    - suspend: 66-suspend.md
     - tree: 66-tree.md
     - upgrade: 66-upgrade.md
     - version: 66-version.md
