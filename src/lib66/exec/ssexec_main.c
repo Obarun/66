@@ -196,6 +196,15 @@ static uint8_t cmd_skips_sanitize(char const *cmd)
     return 0 ;
 }
 
+static uint8_t cmd_skips_tree(char const *cmd)
+{
+    static char const *const skip[] = { "snapshot", "poweroff", "reboot", "halt", "suspend", "hibernate", 0 } ;
+    for (size_t i = 0 ; skip[i] ; i++)
+        if (!strcmp(cmd, skip[i]))
+            return 1 ;
+    return 0 ;
+}
+
 static opt_cmd_t const *cmd_find(char const *name)
 {
     if (!name)
@@ -258,7 +267,7 @@ int ssexec_main(int argc, char const *const *argv, ssexec_t *info)
 
     if (cmd_find(cmd) && strcmp(cmd, "wall") && strcmp(cmd, "version")) {
 
-        if (!strcmp(cmd, "snapshot"))
+        if (cmd_skips_tree(cmd))
             info->skip_opt_tree = 1 ;
 
         if (!cmd_skips_sanitize(cmd))
