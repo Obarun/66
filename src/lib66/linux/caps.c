@@ -277,12 +277,19 @@ static void execute_caps_ambient(resolve_service_t *res)
 
 void execute_caps(resolve_service_t *res)
 {
-    if (res->execute.capsbound && !res->owner) {
+    /** execute_caps_ambient() applies the bounding set itself before raising
+     * the ambient capabilities, so it must be the only path that touches the
+     * bounding set when both are configured -- otherwise execute_caps_bound()
+     * runs twice and the second call dies: the first one already dropped
+     * CAP_SETPCAP, which the second one requires. */
+    if (res->execute.capsambient) {
+
+        execute_caps_ambient(res) ;
+
+    } else if (res->execute.capsbound && !res->owner) {
+
         bitset32_t c = bitset32_init(CAPS_MYLAST_CAP) ;
         string_to_bitset(&c, res->sa.s + res->execute.capsbound) ;
         execute_caps_bound(&c) ;
     }
-
-    if (res->execute.capsambient)
-        execute_caps_ambient(res) ;
 }
