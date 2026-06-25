@@ -68,6 +68,11 @@ exe_configs = {
     'sources': ['execl-envfile.c'],
     'deps': [oblibs_dep, execline_dep, skalibs_dep],
     'sysdeps': ''
+  },
+  'execl-runas': {
+    'sources': ['execl-runas.c'],
+    'deps': [oblibs_dep],
+    'sysdeps': ''
   }
 }
 
