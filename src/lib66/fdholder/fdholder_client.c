@@ -211,7 +211,7 @@ int fdholder_client_init(fdholder_client_t *c, char const *socket)
     return 1 ;
 }
 
-void fdholder_client_end (fdholder_client_t *c)
+void fdholder_client_end(fdholder_client_t *c)
 {
     log_flow() ;
 
@@ -229,7 +229,7 @@ void fdholder_client_end (fdholder_client_t *c)
     free(c->paybuf) ; c->paybuf = NULL ;
 }
 
-static int client_wait (fdholder_client_t *c, int timeout)
+static int client_wait(fdholder_client_t *c, int timeout)
 {
     if (timeout > 0 && sse_start_timer(&c->epoll, &c->wtimer, client_timeout_cb, c, timeout, 0, 5))
         c->timer_active = true ;
@@ -244,7 +244,7 @@ static int client_wait (fdholder_client_t *c, int timeout)
     return c->response_received ? 1 : 0 ;
 }
 
-int fdholder_client_request (fdholder_client_t *c, uint8_t cmd, uint8_t flags, void const *payload, size_t paylen, int const *fds, int nfd, int timeout)
+int fdholder_client_request(fdholder_client_t *c, uint8_t cmd, uint8_t flags, void const *payload, size_t paylen, int const *fds, int nfd, int timeout)
 {
     log_flow() ;
 
@@ -268,7 +268,7 @@ int fdholder_client_request (fdholder_client_t *c, uint8_t cmd, uint8_t flags, v
     return 1 ;
 }
 
-int fdholder_store (fdholder_client_t *c, char const *name, int fd, uint64_t expire, int timeout)
+int fdholder_store(fdholder_client_t *c, char const *name, int fd, uint64_t expire, int timeout)
 {
     log_flow() ;
 
@@ -287,7 +287,7 @@ int fdholder_store (fdholder_client_t *c, char const *name, int fd, uint64_t exp
     return c->status == FDHOLDER_OK ;
 }
 
-int fdholder_retrieve (fdholder_client_t *c, char const *name, bool dodelete, int timeout)
+int fdholder_retrieve(fdholder_client_t *c, char const *name, bool dodelete, int timeout)
 {
     log_flow() ;
 
@@ -302,7 +302,7 @@ int fdholder_retrieve (fdholder_client_t *c, char const *name, bool dodelete, in
     return c->status == FDHOLDER_OK ;
 }
 
-int fdholder_delete (fdholder_client_t *c, char const *name, int timeout)
+int fdholder_delete(fdholder_client_t *c, char const *name, int timeout)
 {
     log_flow() ;
 
@@ -316,7 +316,7 @@ int fdholder_delete (fdholder_client_t *c, char const *name, int timeout)
     return c->status == FDHOLDER_OK ;
 }
 
-int fdholder_list (fdholder_client_t *c, int timeout)
+int fdholder_list(fdholder_client_t *c, int timeout)
 {
     log_flow() ;
 
@@ -326,7 +326,7 @@ int fdholder_list (fdholder_client_t *c, int timeout)
     return c->status == FDHOLDER_OK ;
 }
 
-int fdholder_pipe (fdholder_client_t *c, char const *name, uint8_t end, int timeout)
+int fdholder_pipe(fdholder_client_t *c, char const *name, uint8_t end, int timeout)
 {
     log_flow() ;
 
@@ -346,7 +346,7 @@ int fdholder_pipe (fdholder_client_t *c, char const *name, uint8_t end, int time
     return c->status == FDHOLDER_OK ;    /* requested end in c->received_fd */
 }
 
-int fdholder_pipe_delete (fdholder_client_t *c, char const *name, int timeout)
+int fdholder_pipe_delete(fdholder_client_t *c, char const *name, int timeout)
 {
     log_flow() ;
 
