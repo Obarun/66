@@ -16,10 +16,6 @@
  * All credits goes to Laurent Bercot <ska-remove-this-if-you-are-not-a-bot@skarnet.org>
  * */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>

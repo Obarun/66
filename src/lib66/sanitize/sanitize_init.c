@@ -25,17 +25,13 @@
 #include <oblibs/directory.h>
 #include <oblibs/files.h>
 
-#include <skalibs/tai.h>
-
-#include <s6/ftrigr.h>
-#include <s6/ftrigw.h>
-
 #include <66/graph.h>
 #include <66/state.h>
 #include <66/service.h>
 #include <66/sanitize.h>
 #include <66/enum_parser.h>
 
+#include <66/event.h>
 #include <66/fdholder.h>
 
 void cleanup(resolve_service_t *res, uint32_t nres)
@@ -80,7 +76,6 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
     resolve_service_t toclean[g->g.nvertexes], tosubscribe[g->g.nvertexes] ;
     vertex_t *c, *tmp ;
     resolve_service_t *pres ;
-    ftrigr_t fifo = FTRIGR_ZERO ;
     ss_state_t sta = STATE_ZERO ;
     bool earlier = false ;
 
@@ -171,7 +166,7 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
                  * get-or-create), so there is nothing to pre-seed here */
 
                 log_trace("create fifo: ", pres->sa.s + pres->live.eventdir) ;
-                if (!ftrigw_fifodir_make(pres->sa.s + pres->live.eventdir, getgid(), 0)) {
+                if (!event_fifodir_make(pres->sa.s + pres->live.eventdir, getgid())) {
                     cleanup(toclean, pos) ;
                     log_dieusys(LOG_EXIT_SYS, "create fifo: ", pres->sa.s + pres->live.eventdir) ;
                 }
@@ -194,61 +189,57 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
      * */
     if (!FLAGS_ISSET(flag, GRAPH_WANT_EARLIER) && nsubscribe) {
 
-        uint16_t ids[nsubscribe] ;
-        unsigned int nids = 0, fake = 0 ;
-        tain deadline ;
-
-        memset(ids, 0, nsubscribe * sizeof(uint16_t)) ;
-
-        tain_now_set_stopwatch_g() ;
-        /** TODO
-         * waiting for 3 seconds here,
-         * it should be the -T option if exist.
-        */
-        tain_addsec(&deadline, &STAMP, 3) ;
-
-        if (!ftrigr_startf_g(&fifo, &deadline)) {
-            cleanup(toclean, ntoclean) ;
-            log_dieusys(LOG_EXIT_SYS, "ftrigr") ;
-        }
+        char const *eventdirs[nsubscribe] ;
+        size_t neventdirs = 0 ;
+        unsigned int fake = 0 ;
 
         for (pos = 0 ; pos < nsubscribe ; pos++) {
 
             if (tosubscribe[pos].type == E_PARSER_TYPE_CLASSIC && !tosubscribe[pos].earlier) {
 
                 fake = pos ;
-                char *sa = tosubscribe[pos].sa.s ;
-                char *eventdir = sa + tosubscribe[pos].live.eventdir ;
-
-                log_trace("subcribe to fifo: ", eventdir) ;
-                /** unsubscribe automatically, options is 0 */
-                ids[nids] = ftrigr_subscribe_g(&fifo, eventdir, "s", 0, &deadline) ;
-
-                if (!ids[nids++]) {
-                    cleanup(toclean, ntoclean) ;
-                    log_dieusys(LOG_EXIT_SYS, "subcribe to fifo: ", eventdir) ;
-                }
+                eventdirs[neventdirs++] = tosubscribe[pos].sa.s + tosubscribe[pos].live.eventdir ;
+                log_trace("subscribe to fifo: ", eventdirs[neventdirs - 1]) ;
             }
         }
 
-        if (nids) {
+        if (neventdirs) {
+
+            event_wait_t fifo ;
+
+            if (!event_wait_init(&fifo, eventdirs, neventdirs, EVENT_S6_SUPERVISE_UP)) {
+                cleanup(toclean, ntoclean) ;
+                log_dieusys(LOG_EXIT_SYS, "subscribe to event fifos") ;
+            }
 
             state_set_flag(&sta, STATE_FLAGS_TORELOAD, STATE_FLAGS_TRUE) ;
 
             if (!sanitize_scandir(&tosubscribe[fake], &sta)) {
+                event_wait_free(&fifo) ;
                 cleanup(toclean, ntoclean) ;
                 log_dieusys(LOG_EXIT_SYS, "sanitize scandir directory: ", tosubscribe[fake].sa.s + tosubscribe[fake].live.scandir) ;
             }
 
             log_trace("waiting for events on fifo...") ;
-            if (ftrigr_wait_and_g(&fifo, ids, nids, &deadline) < 0) {
+
+            /** TODO
+             * waiting for 3 seconds here,
+             * it should be the -T option if exist.
+            */
+            int w = event_wait_run(&fifo, 3000) ;
+            event_wait_free(&fifo) ;
+
+            if (w < 0) {
                 cleanup(toclean, ntoclean) ;
                 log_dieusys(LOG_EXIT_SYS, "wait for events") ;
             }
+
+            if (!w) {
+                cleanup(toclean, ntoclean) ;
+                log_die(LOG_EXIT_SYS, "timed out waiting for services to be supervised") ;
+            }
         }
     }
-
-    ftrigr_end(&fifo) ;
 
     /**
      * We pass through here even for Module and Oneshot.
@@ -279,7 +270,7 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
             if (!FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
 
                 log_trace("clean event directory: ", sa + pres->live.eventdir) ;
-                if (!ftrigw_clean(sa + pres->live.eventdir))
+                if (!event_fifodir_clean(sa + pres->live.eventdir))
                     log_warnu("clean event directory: ", sa + pres->live.eventdir) ;
             }
         }

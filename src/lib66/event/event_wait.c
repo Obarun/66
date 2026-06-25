@@ -1,0 +1,159 @@
+/*
+ * event_wait.c
+ *
+ * Copyright (c) 2026 Eric Vidal <eric@obarun.org>
+ *
+ * All rights reserved.
+ *
+ * This file is part of Obarun. It is subject to the license terms in
+ * the LICENSE file found in the top-level directory of this
+ * distribution.
+ * This file may not be copied, modified, propagated, or distributed
+ * except according to the terms contained in the LICENSE file.
+ *
+ * wait_and over a set of service event fifo sources, replacing ftrigr's
+ * subscribe/wait_and. The caller subscribes (event_wait_init), triggers the
+ * events (reloads the scandir), then blocks on event_wait_run. A consumer of the
+ * pump: each source carries a per-source cookie as its `data`, so the handler
+ * needs no shared index table — the cookie holds the back-pointer and the
+ * "already matched" flag.
+ */
+
+#include <errno.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stddef.h>
+
+#include <oblibs/log.h>
+#include <oblibs/sse.h>
+
+#include <66/event.h>
+
+typedef struct wait_slot_s
+{
+    event_wait_t *w ;
+    unsigned char got ;
+} wait_slot_t ;
+
+static void event_wait_timeout_cb(sse_watcher_t *w, void *data, int revents)
+{
+    log_flow() ;
+
+    (void)data ; (void)revents ;
+
+    w->p->running = false ;
+}
+
+static void event_wait_handler(event_reader_t *r, char const *buf, size_t len, void *data)
+{
+    log_flow() ;
+
+    (void)r ;
+
+    wait_slot_t *slot = data ;
+    event_wait_t *w = slot->w ;
+
+    if (slot->got)
+        return ;   // this source already matched: ignore the rest of its stream
+
+    for (size_t i = 0 ; i < len ; i++) {
+        if (buf[i] == w->wanted) {
+            slot->got = 1 ;
+            if (++w->triggered == w->n)
+                w->epoll.running = false ;
+            return ;
+        }
+    }
+}
+
+int event_wait_init(event_wait_t *w, char const *const *eventdirs, size_t n, char wanted)
+{
+    log_flow() ;
+
+    memset(w, 0, sizeof(*w)) ;
+    w->n = n ;
+    w->wanted = wanted ;
+
+    if (!sse_new(&w->epoll, n ? (uint32_t)n : 1))
+        log_warnusys_return(LOG_EXIT_ZERO, "create event loop") ;
+
+    if (!n)
+        return 1 ;
+
+    w->fifos = malloc(n * sizeof(event_fifo_t)) ;
+    if (!w->fifos) {
+        sse_free(&w->epoll) ;
+        log_warnusys_return(LOG_EXIT_ZERO, "allocate event fifo sources") ;
+    }
+
+    wait_slot_t *slots = calloc(n, sizeof(wait_slot_t)) ;
+    if (!slots) {
+        free(w->fifos) ; w->fifos = NULL ;
+        sse_free(&w->epoll) ;
+        log_warnusys_return(LOG_EXIT_ZERO, "allocate event wait slots") ;
+    }
+    w->slots = slots ;
+
+    for (size_t i = 0 ; i < n ; i++) {
+
+        slots[i].w = w ;
+
+        if (!event_fifo_subscribe(&w->fifos[i], &w->epoll, eventdirs[i], &event_wait_handler, &slots[i], 0)) {
+
+            for (size_t j = 0 ; j < i ; j++)
+                event_fifo_unsubscribe(&w->fifos[j]) ;
+
+            free(w->slots) ; w->slots = NULL ;
+            free(w->fifos) ; w->fifos = NULL ;
+            sse_free(&w->epoll) ;
+            log_warnusys_return(LOG_EXIT_ZERO, "subscribe to event fifo: ", eventdirs[i]) ;
+        }
+    }
+
+    return 1 ;
+}
+
+int event_wait_run(event_wait_t *w, int timeout_ms)
+{
+    log_flow() ;
+
+    if (!w->n)
+        return 1 ;   // nothing to wait for
+
+    if (timeout_ms > 0 && sse_start_timer(&w->epoll, &w->timer, event_wait_timeout_cb, w, timeout_ms, 0, 0))
+        w->timer_active = 1 ;
+
+    int r = sse_poll(&w->epoll, SSE_TIMEOUT_INFINITE) ;
+
+    if (w->timer_active) {
+        sse_free_timer(&w->timer) ;
+        w->timer_active = 0 ;
+    }
+
+    if (!r)
+        log_warnusys_return(LOG_EXIT_LESSONE, "run event loop") ;
+
+    return w->triggered == w->n ? 1 : 0 ;
+}
+
+void event_wait_free(event_wait_t *w)
+{
+    log_flow() ;
+
+    if (w->fifos) {
+
+        for (size_t i = 0 ; i < w->n ; i++)
+            event_fifo_unsubscribe(&w->fifos[i]) ;
+
+        free(w->fifos) ;
+        w->fifos = NULL ;
+    }
+
+    free(w->slots) ;
+    w->slots = NULL ;
+
+    sse_free(&w->epoll) ;
+    w->n = 0 ;
+    w->triggered = 0 ;
+}
