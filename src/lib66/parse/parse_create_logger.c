@@ -128,7 +128,7 @@ static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
 
             auto_strings(run, shebang) ;
 
-            auto_strings(run + FAKELEN, S6_BINPREFIX "s6-log ") ;
+            auto_strings(run + FAKELEN, SS_BINPREFIX "66-log ") ;
 
             if (SS_LOGGER_NOTIFY)
                 auto_strings(run + FAKELEN, "-d3 ") ;

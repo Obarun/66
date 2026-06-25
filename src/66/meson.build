@@ -34,6 +34,11 @@ exe_configs = {
     'deps': [lib66_dep],
     'sysdeps': sys_lib
   },
+  '66-log': {
+    'sources': ['66-log.c'],
+    'deps': [oblibs_dep],
+    'sysdeps': sys_lib
+  },
   '66-nuke': {
     'sources': ['66-nuke.c'],
     'deps': [oblibs_dep, skalibs_dep],
