@@ -26,6 +26,7 @@
 #include <sys/types.h>
 
 #include <oblibs/log.h>
+#include <oblibs/io.h>
 #include <oblibs/fd.h>
 
 #include <66/event.h>
@@ -44,7 +45,8 @@ int event_fifodir_make(char const *path, gid_t gid)
         if (errno != EEXIST)
             log_warnusys_return(LOG_EXIT_ZERO, "create directory: ", path) ;
 
-        if (stat(path, &st) < 0)
+        // lstat, not stat: a symlink planted at path must be rejected, not followed
+        if (lstat(path, &st) < 0)
             log_warnusys_return(LOG_EXIT_ZERO, "stat directory: ", path) ;
 
         if (st.st_uid != getuid()) {
@@ -57,10 +59,9 @@ int event_fifodir_make(char const *path, gid_t gid)
             log_warnusys_return(LOG_EXIT_ZERO, "not a directory: ", path) ;
         }
 
-        /* already there and ours: leave its permissions untouched */
-        return 1 ;
-    }
-    umask(m) ;
+        // exists, ours, a real directory: fall through to re-apply chown+chmod
+        // below, so the postcondition (correct perms) holds however it was created
+    } else umask(m) ;
 
     if (gid != (gid_t)-1 && chown(path, (uid_t)-1, gid) < 0)
         log_warnusys_return(LOG_EXIT_ZERO, "chown directory: ", path) ;
@@ -80,7 +81,7 @@ int event_fifodir_clean(char const *path)
     if (!dir)
         log_warnusys_return(LOG_EXIT_ZERO, "open directory: ", path) ;
 
-    int e = 0 ;
+    int e = 0 ;   // first error, deferred past closedir so the DIR is never leaked
     char tmp[pathlen + 1 + EVENT_FIFO_NAMELEN + 1] ;
     memcpy(tmp, path, pathlen) ;
     tmp[pathlen] = '/' ;
@@ -89,8 +90,10 @@ int event_fifodir_clean(char const *path)
 
         errno = 0 ;
         struct dirent *d = readdir(dir) ;
-        if (!d)
+        if (!d) {
+            if (errno && !e) e = errno ;   // readdir failed (errno==0 means clean end)
             break ;
+        }
 
         if (strncmp(d->d_name, EVENT_FIFO_PREFIX, EVENT_FIFO_PREFIXLEN))
             continue ;
@@ -99,17 +102,15 @@ int event_fifodir_clean(char const *path)
 
         memcpy(tmp + pathlen + 1, d->d_name, EVENT_FIFO_NAMELEN + 1) ;
 
-        /* a subscriber fifo with no reader left rejects an O_WRONLY|O_NONBLOCK
-         * open with ENXIO; that is the orphan we sweep. */
-        int fd = open(tmp, O_WRONLY | O_NONBLOCK | O_CLOEXEC) ;
+        /* an orphan fifo (no reader) rejects O_WRONLY|O_NONBLOCK with ENXIO: sweep
+         * it. A live reader (open succeeds) or any other open error is left alone;
+         * the sweep only fails on an unlink that itself fails. */
+        int fd = io_open(tmp, O_WRONLY | O_NONBLOCK | O_CLOEXEC) ;
         if (fd >= 0)
             close_fd(fd) ;
-        else if (errno == ENXIO && unlink(tmp) < 0)
-            e = errno ;
+        else if (errno == ENXIO && unlink(tmp) < 0 && !e)
+            e = errno ; // capture the unlink errno right where it happens
     }
-
-    if (errno)
-        e = errno ;
 
     closedir(dir) ;
 
