@@ -49,6 +49,8 @@ cmd_args=-g \"daemon off;\"
 
 C escapes, including hexadecimal and octal sequences, are supported in quoted values. Unicode codepoint sequences are not supported.
 
+A *value* that decodes to a newline (`\n`, or its octal `\012` / hexadecimal `\x0a` form) or a NUL (`\0`, `\000`, `\x00`) is **rejected** as a syntax error. The environment is held internally as a NUL-separated list of entries and re-emitted as newline-separated text, so a value containing either byte could not survive that round-trip; the parse fails loudly instead of silently corrupting the value. (This diverges from execline's `envfile`, which permits a newline in a value.)
+
 If *value* is empty, *key* is still added to the environment, with an empty value.
 
 If you do not want *key* to be added to the environment at all, prefix the *value* with an exclamation mark `!`. Whitespace **are not permitted** between the `!` and `value`. For instance,
