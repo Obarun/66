@@ -36,7 +36,6 @@
 #include <66/enum_parser.h>
 
 #include <execline/config.h>
-#include <s6/config.h>
 
 #define CRASH 0
 #define FINISH 1
@@ -313,7 +312,7 @@ void write_bootlog(char const *live, char const *scandir)
 
     if (!auto_strbuf(&b,
             EXECLINE_BINPREFIX "redirfd -rnb 0 fifo\n" \
-            S6_BINPREFIX "s6-setuidgid ",
+            SS_BINPREFIX "execl-runas ",
             log_user,
             "\n" SS_BINPREFIX "s6-log -bpd3 -- 1"))
                 log_die_nomem("strbuf") ;
