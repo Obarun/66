@@ -1,6 +1,6 @@
 # execl-runas
 
-Runs a program as a given user *account*: it sets the process credentials (uid, primary gid and supplementary groups) to those of *account* and then executes *prog...*. It depends only on `oblibs`, with no `s6` or `skalibs` runtime.
+Runs a program as a given user *account*: it sets the process credentials (uid, primary gid and supplementary groups) to those of *account* and then executes *prog...*.
 
 It is the self-contained replacement for the privilege-dropping role previously filled by [s6-setuidgid](https://skarnet.org/software/s6/s6-setuidgid.html), with a simpler and more predictable contract — see [Differences with s6-setuidgid](#differences-with-s6-setuidgid).
 
