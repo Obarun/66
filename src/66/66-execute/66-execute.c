@@ -684,10 +684,6 @@ static void execute_nice(resolve_service_t *res)
     if (res->execute.want_nice) {
 
         int64_t p = 20 - (int64_t)(res->execute.nice) ;
-        /** were are root and service is badly define. Be smart
-         * and respect the limit defined by the service itself. */
-        if (!res->owner && (res->execute.nice > res->limit.limitnice))
-            p = 20 - res->limit.limitnice ;
 
         errno = 0 ; // see: https://pubs.opengroup.org/onlinepubs/9699919799/
         if (setpriority(PRIO_PROCESS, 0, (int)p) < 0) {

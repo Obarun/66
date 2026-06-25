@@ -225,12 +225,7 @@ int parse_store_execute(resolve_service_t *res, strbuf *store, resolve_enum_tabl
                 if (n < -20 || n > 19)
                     parse_error_return(0, 0, table) ;
 
-                if (!n) {
-                    res->execute.nice = 1 ;
-                } else {
-                    res->execute.nice = (uint32_t)(20 - n) ;
-                }
-
+                res->execute.nice = (uint32_t)(20 - n) ;
                 res->execute.want_nice = 1 ;
             }
 
