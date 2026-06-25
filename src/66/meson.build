@@ -59,6 +59,11 @@ exe_configs = {
     'deps': [lib66_dep],
     'sysdeps': sys_lib
   },
+  '66-scandir': {
+    'sources': ['66-scandir.c', 'lib/svpool.c'],
+    'deps': [lib66_dep],
+    'sysdeps': sys_lib
+  },
   '66-umountall': {
     'sources': ['66-umountall.c'],
     'deps': [lib66_dep],
@@ -164,3 +169,30 @@ foreach dir : exe_dirs
     endif
   endforeach
 endforeach
+
+# 66-scandir ships its own data-structure lib under 66-scandir/lib (svpool,
+# deliberately not part of lib66). Its unit suites each have their own main(), so the
+# generic per-exe test wiring above does not fit: wire them explicitly here, one
+# executable per suite, each linking the lib .c plus oblibs (for fhash_cb).
+if get_option('test')
+  scandir_lib_dir = bin_dir / '66-scandir' / 'lib'
+  scandir_test_dir = scandir_lib_dir / 'test'
+  if fs.is_dir(scandir_test_dir)
+    scandir_lib_srcs = files(scandir_lib_dir / 'svpool.c')
+    scandir_test_inc = include_directories('66-scandir/lib', '66-scandir/lib/test')
+    scandir_link_args = get_option('enable-static-executable') ? static_link_args : exe_link_args
+    foreach t : ['svpool', 'index']
+      scandir_test_exe = executable('test_66-scandir_' + t,
+        sources: [files(scandir_test_dir / (t + '.c'))] + scandir_lib_srcs,
+        include_directories: [incdir, scandir_test_inc],
+        dependencies: [oblibs_dep],
+        build_by_default: false,
+        c_args: exe_c_args,
+        link_args: scandir_link_args,
+        pie: get_option('enable-pie')
+      )
+      test('66-scandir_' + t + '_test', scandir_test_exe,
+        env: {'LD_LIBRARY_PATH': meson.current_build_dir()})
+    endforeach
+  endif
+endif

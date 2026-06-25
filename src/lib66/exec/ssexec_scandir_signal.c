@@ -168,24 +168,23 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
     uid_t uid = getuid() ;
     gid_t gid = getgid() ;
     unsigned int no = notif ? 2 : 0 ;
-    char const *newup[7 + no] ;
+    char const *newup[5 + no] ;
     unsigned int m = 0 ;
     char fmt[U32_FMT] ;
     fmt[u32_fmt(fmt, timeout)] = 0 ;
     char snotif[U32_FMT] ;
     snotif[u32_fmt(snotif, notif)] = 0 ;
-    char maxservice[U32_FMT] ;
-    maxservice[u32_fmt(maxservice, SS_MAX_SERVICE_NAME)] = 0 ;
 
-    newup[m++] = S6_BINPREFIX "s6-svscan" ;
+    /* name-max is a 66 compile-time constant (SS_MAX_SERVICE_NAME), hardcoded in
+     * 66-scandir: no -L to pass. Likewise services-max (SS_MAX_SERVICE) and the
+     * console holder are not 66-scandir options anymore. */
+    newup[m++] = SS_BINPREFIX "66-scandir" ;
     if (no) {
         newup[m++] = "-d" ;
         newup[m++] = snotif ;
     }
     newup[m++] = "-t" ;
     newup[m++] = fmt ;
-    newup[m++] = "-L" ;
-    newup[m++] = maxservice ;
     newup[m++] = scandir ;
     newup[m++] = 0 ;
 
