@@ -16,7 +16,6 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#include <oblibs/string.h>
 #include <oblibs/log.h>
 #include <oblibs/files.h>
 #include <oblibs/sbl.h>
@@ -35,13 +34,10 @@ static int get_import_field(resolve_service_t *res, strbuf *store)
 
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     _cleanup_strbuf_ strbuf list = STRBUF_ZERO ;
-    _cleanup_strbuf_ strbuf modif = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf clean = STRBUF_ZERO ;
     size_t pos = 0 ;
     uint32_t n = 0 ;
     _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-
-    if (!auto_strbuf(&modif, store->s))
-        log_warnusys_return(LOG_EXIT_SYS, "clean string") ;
 
     if (!environ_merge_string(&sa, store->s))
         log_warnusys_return(LOG_EXIT_SYS, "merge environment string") ;
@@ -50,12 +46,13 @@ static int get_import_field(resolve_service_t *res, strbuf *store)
 
         char *line = sa.s + pos ;
         _alloc_sbl_(key, strlen(line)) ;
-        _alloc_sbl_(val, strlen(line)) ;
 
         if (!environ_get_key(&key, line))
             return 0 ;
 
         if (!strcmp(key.s, enum_str_parser_section_environ[E_PARSER_SECTION_ENVIRON_IMPORTFILE])) {
+
+            _alloc_sbl_(val, strlen(line)) ;
 
             if (!environ_get_value(&val, line))
                 return 0 ;
@@ -69,11 +66,10 @@ static int get_import_field(resolve_service_t *res, strbuf *store)
             if (!sbl_add(&list, val.s))
                 return 0 ;
 
-            if (!sbl_replace_nline(&modif, line, " "))
-                return 0 ;
-
             n++ ;
-        }
+
+        } else if (!sbl_add(&clean, line))
+            return 0 ;
     }
 
     if (list.len) {
@@ -85,14 +81,10 @@ static int get_import_field(resolve_service_t *res, strbuf *store)
         res->environ.importfile = resolve_add_string(wres, list.s) ;
     }
 
-    if (!environ_rebuild(&modif))
-        return 0 ;
-
     store->len = 0 ;
 
-
-    auto_strings(store->s, modif.s) ;
-    store->len = strlen(store->s) ;
+    if (!environ_untrim(store, &clean) || !strbuf_uncounted(store))
+        return 0 ;
 
     return 1 ;
 }
