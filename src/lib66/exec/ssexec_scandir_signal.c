@@ -77,13 +77,13 @@ static void send_fdholder(char const *scandir, uint8_t down)
 
      if (!down) {
 
-        svc_send_fdholder(fdholder, "dx") ;
-        svc_send_fdholder(oneshotd, "dx") ;
+        svc_send_daemon(fdholder, "dx") ;
+        svc_send_daemon(oneshotd, "dx") ;
 
     } else {
 
-        svc_send_fdholder(fdholder, "U") ;
-        svc_send_fdholder(oneshotd, "U") ;
+        svc_send_daemon(fdholder, "U") ;
+        svc_send_daemon(oneshotd, "U") ;
     }
 }
 
