@@ -69,6 +69,11 @@ exe_configs = {
     'deps': [lib66_dep],
     'sysdeps': sys_lib
   },
+  '66-supervise': {
+    'sources': ['66-supervise.c'],
+    'deps': [lib66_dep],
+    'sysdeps': sys_lib
+  },
   '66-umountall': {
     'sources': ['66-umountall.c'],
     'deps': [lib66_dep],
