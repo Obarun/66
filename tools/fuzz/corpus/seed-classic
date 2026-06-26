@@ -1,6 +1,0 @@
-[Main]
-Type = classic
-Description = "test daemon"
-
-[Start]
-Execute = ( sleep 3600 )

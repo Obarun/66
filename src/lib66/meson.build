@@ -126,7 +126,9 @@ if get_option('test')
   test_dirs = find_test_dirs_cmd.stdout().strip().split('\n')
   foreach test_dir : test_dirs
     if test_dir != '' and fs.is_dir(test_dir)
-      find_test_files_cmd = run_command('sh', '-c', 'find "@0@" -type f -name "*.c"'.format(test_dir), check: false)
+      # fuzz_*.c are libFuzzer harnesses (no main): they are built separately with
+      # clang -fsanitize=fuzzer, not wired as meson unit tests.
+      find_test_files_cmd = run_command('sh', '-c', 'find "@0@" -type f -name "*.c" ! -name "fuzz_*.c"'.format(test_dir), check: false)
       if find_test_files_cmd.returncode() != 0
         error('Failed to run find command for test files in ' + test_dir + ': ' + find_test_files_cmd.stderr())
       endif
