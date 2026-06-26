@@ -46,9 +46,6 @@
 
 #include <execline/config.h>
 
-#include <s6/supervise.h>
-#include <s6/config.h>
-
 #include <66/config.h>
 #include <66/constants.h>
 #include <66/svc.h>
@@ -275,15 +272,15 @@ static inline void prepare_stage4 (char what)
         if (!ostream_puts(&b,
             "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n\n"
             EXECLINE_EXTBINPREFIX "foreground { "
-            S6_EXTBINPREFIX "s6-svc -0x -- . }\n"
+            SS_LIBEXECPREFIX "66-svctl -dx -- . }\n"
             EXECLINE_EXTBINPREFIX "background\n{\n  ")
 
             || (!nologger && !ostream_puts(&b,
             EXECLINE_EXTBINPREFIX "foreground { "
-            S6_EXTBINPREFIX "s6-svc -0xc -- ")
+            SS_LIBEXECPREFIX "66-svctl -dx -- ")
             || !ostream_puts(&b,live)
             || !ostream_puts(&b,SS_BOOT_LOG " }\n  "))
-            || !ostream_puts(&b, S6_EXTBINPREFIX "66 -l ")
+            || !ostream_puts(&b, SS_BINPREFIX "66 -l ")
             || !ostream_puts(&b, live)
             || !ostream_puts(&b, " scandir abort\n}\n"))
             log_dieusys(LOG_EXIT_SYS, "write to ", STAGE4_FILE ".new") ;
@@ -360,7 +357,7 @@ static inline void unsupervise_tree (void)
                 unlinkat(fdd, d->d_name, 0) ;
                 /* if it still fails, too bad, it will restart in stage 4 and race */
             }
-            else s6_svc_writectl(fn, S6_SUPERVISE_CTLDIR, "dx", 2) ;
+            else svc_control_send(fn, "dx", 2) ;
         }
     }
     dir_close(dir) ;

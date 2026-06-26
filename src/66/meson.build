@@ -69,6 +69,16 @@ exe_configs = {
     'deps': [lib66_dep],
     'sysdeps': sys_lib
   },
+  '66-supervise': {
+    'sources': ['66-supervise.c'],
+    'deps': [lib66_dep],
+    'sysdeps': sys_lib
+  },
+  '66-svctl': {
+    'sources': ['66-svctl.c'],
+    'deps': [lib66_dep],
+    'sysdeps': sys_lib
+  },
   '66-umountall': {
     'sources': ['66-umountall.c'],
     'deps': [lib66_dep],
@@ -86,7 +96,7 @@ exe_configs = {
   }
 }
 
-libexec_exes = ['66-execute', '66-fdholderd', '66-oneshot', '66-oneshotd']
+libexec_exes = ['66-execute', '66-fdholderd', '66-oneshot', '66-oneshotd', '66-shutdownd', '66-svctl']
 exe_install_dirs = {}
 foreach exe : libexec_exes
   exe_install_dirs += {exe: get_option('libexecdir')}
@@ -146,7 +156,9 @@ foreach dir : exe_dirs
     if get_option('test')
       test_dir = exe_dir / 'test'
       if fs.is_dir(test_dir)
-        find_test_files_cmd = run_command('sh', '-c', 'find "@0@" -type f -name "*.c"'.format(test_dir), check: false)
+        # fuzz_*.c are libFuzzer harnesses (no main): they are built separately with
+        # clang -fsanitize=fuzzer, not wired as meson unit tests.
+        find_test_files_cmd = run_command('sh', '-c', 'find "@0@" -type f -name "*.c" ! -name "fuzz_*.c"'.format(test_dir), check: false)
         if find_test_files_cmd.returncode() != 0
           error('Failed to run find command for test files in ' + test_dir + ': ' + find_test_files_cmd.stderr())
         endif

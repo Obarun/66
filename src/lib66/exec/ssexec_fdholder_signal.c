@@ -17,12 +17,9 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/string.h>
-#include <oblibs/strbuf.h>
-#include <oblibs/environ.h>
-#include <oblibs/spawn.h>
-#include <oblibs/process.h>
 
 #include <66/ssexec.h>
+#include <66/svc.h>
 #include <66/constants.h>
 
 /* set by the start/stop/restart trampolines in ssexec_fdholder_wrapper.c */
@@ -57,38 +54,25 @@ int ssexec_fdholder_signal(int argc, char const *const *argv, void *data)
 
     ssexec_t *info = data ;
 
-    /* map the lifecycle action onto an s6-svc flag ; restart sends SIGTERM and
-     * the supervisor brings the service back up (it stays wanted-up) */
-    char const *flag ;
-    if (!strcmp(fdh_signame, "start"))
-        flag = "-u" ;
-    else if (!strcmp(fdh_signame, "stop"))
-        flag = "-d" ;
-    else
-        flag = "-t" ;
+    /* map the lifecycle action onto a control sequence and the state to confirm.
+     * start/stop use the uppercase U/D so the wanted state persists (they edit
+     * the down file: deldown / adddown); restart sends SIGTERM and the
+     * supervisor brings the service back up (down then up). */
+    char const *control ;
+    event_t wanted ;
+    if (!strcmp(fdh_signame, "start")) {
+        control = "U" ; wanted = EVENT_READY ;
+    } else if (!strcmp(fdh_signame, "stop")) {
+        control = "D" ; wanted = EVENT_DOWN_READY ;
+    } else {
+        control = "t" ; wanted = EVENT_RESTART_READY ;
+    }
 
     char dir[info->scandir.len + sizeof("/" SS_FDHOLDER) + 1] ;
     auto_strings(dir, info->scandir.s, "/" SS_FDHOLDER) ;
 
-    char tfmt[U32_FMT] ;
-    tfmt[u32_fmt(tfmt, fdh_sig_timeout)] = 0 ;
-
-    char const *newargv[7] ;
-    unsigned int m = 0 ;
-    newargv[m++] = "s6-svc" ;
-    newargv[m++] = flag ;
-    newargv[m++] = "-T" ;
-    newargv[m++] = tfmt ;
-    newargv[m++] = "--" ;
-    newargv[m++] = dir ;
-    newargv[m] = 0 ;
-
     log_trace(fdh_signame, " fdholder service: ", dir) ;
 
-    pid_t pid = spawn_path(newargv[0], newargv, (char const *const *)environ) ;
-    int wstat ;
-    if (process_wait(pid, &wstat) < 0)
-        log_dieusys(LOG_EXIT_SYS, "wait for s6-svc") ;
-
-    return wstat ? LOG_EXIT_SYS : 0 ;
+    svc_send_daemon(dir, control, wanted, (int)fdh_sig_timeout) ;
+    return 0 ;
 }

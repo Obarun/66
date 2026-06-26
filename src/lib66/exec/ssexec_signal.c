@@ -42,6 +42,12 @@ static char const cmdsig[NSIG] = {
     [SIGWINCH] = 'y'
 } ;
 
+enum {
+    OPT_ID_GROUP_STOP = 257,
+    OPT_ID_GROUP_CONT,
+    OPT_ID_GROUP_KILL,
+} ;
+
 /**
  * This function assume that the list
  * of service are at least supervised.
@@ -61,6 +67,9 @@ static opt_t const opts_signal[] = {
     { .id = 'p',         .shortname = 'p', .longname = "stop",         .arg = OPT_NONE,                          .help = "send a SIGSTOP signal" },
     { .id = 'c',         .shortname = 'c', .longname = "cont",         .arg = OPT_NONE,                          .help = "send a SIGCONT signal" },
     { .id = 'y',         .shortname = 'y', .longname = "winch",        .arg = OPT_NONE,                          .help = "send a SIGWINCH signal" },
+    { .id = OPT_ID_GROUP_STOP, .shortname = 0, .longname = "stop-group", .arg = OPT_NONE,                        .help = "send a SIGSTOP to the process group" },
+    { .id = OPT_ID_GROUP_CONT, .shortname = 0, .longname = "cont-group", .arg = OPT_NONE,                        .help = "send a SIGCONT to the process group" },
+    { .id = OPT_ID_GROUP_KILL, .shortname = 0, .longname = "kill-group", .arg = OPT_NONE,                        .help = "send a SIGKILL to the process group" },
     { .id = 's',         .shortname = 's', .longname = "signal",       .arg = OPT_REQUIRED, .argname = "signal", .help = "send signal to the supervised process by signal name or its number" },
     { .id = 'r',         .shortname = 'r', .longname = "restart",      .arg = OPT_NONE,                          .help = "restart service by sending it a signal (default SIGTERM)" },
     { .id = 'o',         .shortname = 'o', .longname = "once",         .arg = OPT_NONE,                          .help = "once. Equivalent to '-uO'" },
@@ -122,6 +131,16 @@ static int on_signal(int id, char const *arg, void *data)
                 log_die(LOG_EXIT_USER, "too many arguments") ;
 
             sig_signal[sig_datalen++] = id == 'H' ? 'h' : id ;
+            break ;
+
+        case OPT_ID_GROUP_STOP :
+        case OPT_ID_GROUP_CONT :
+        case OPT_ID_GROUP_KILL :
+
+            if (sig_datalen >= DATASIZE)
+                log_die(LOG_EXIT_USER, "too many arguments") ;
+
+            sig_signal[sig_datalen++] = id == OPT_ID_GROUP_STOP ? 'P' : id == OPT_ID_GROUP_CONT ? 'C' : 'K' ;
             break ;
 
         case 'w' :

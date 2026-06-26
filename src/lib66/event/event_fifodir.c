@@ -59,8 +59,6 @@ int event_fifodir_make(char const *path, gid_t gid)
             log_warnusys_return(LOG_EXIT_ZERO, "not a directory: ", path) ;
         }
 
-        // exists, ours, a real directory: fall through to re-apply chown+chmod
-        // below, so the postcondition (correct perms) holds however it was created
     } else umask(m) ;
 
     if (gid != (gid_t)-1 && chown(path, (uid_t)-1, gid) < 0)
@@ -120,4 +118,78 @@ int event_fifodir_clean(char const *path)
     }
 
     return 1 ;
+}
+
+int event_fifodir_notify(char const *path, char const *s, size_t len)
+{
+    log_flow() ;
+
+    size_t pathlen = strlen(path) ;
+    DIR *dir = opendir(path) ;
+    if (!dir)
+        log_warnusys_return(LOG_EXIT_ZERO, "open directory: ", path) ;
+
+    int e = 0 ;   // first error, deferred past closedir so the DIR is never leaked
+    char tmp[pathlen + 1 + EVENT_FIFO_NAMELEN + 1] ;
+    memcpy(tmp, path, pathlen) ;
+    tmp[pathlen] = '/' ;
+
+    for (;;) {
+
+        errno = 0 ;
+        struct dirent *d = readdir(dir) ;
+        if (!d) {
+            if (errno && !e) e = errno ;   // readdir failed (errno==0 means clean end)
+            break ;
+        }
+
+        if (strncmp(d->d_name, EVENT_FIFO_PREFIX, EVENT_FIFO_PREFIXLEN))
+            continue ;
+        if (strlen(d->d_name) != EVENT_FIFO_NAMELEN)
+            continue ;
+
+        memcpy(tmp + pathlen + 1, d->d_name, EVENT_FIFO_NAMELEN + 1) ;
+
+        /** Fan the message out: open the subscriber fifo non-blocking and write
+         * @s into it. A fifo with no reader (ENXIO) or whose reader has gone
+         * (EPIPE) is unlinked; a full fifo (EAGAIN) or any short write is dropped.
+         * The producer NEVER blocks: a bad subscriber must not jam the supervisor.
+         * Only a failing unlink (and opendir/readdir above) is a real error. */
+        int fd = io_open(tmp, O_WRONLY | O_NONBLOCK | O_CLOEXEC) ;
+        if (fd < 0) {
+            if (errno == ENXIO && unlink(tmp) < 0 && !e)
+                e = errno ;
+
+            continue ;
+        }
+
+        ssize_t r = io_write(fd, (char *)s, len) ;
+        if ((r < 0 || (size_t)r < len) && errno == EPIPE && unlink(tmp) < 0 && !e)
+            e = errno ;
+
+        close_fd(fd) ;
+    }
+
+    closedir(dir) ;
+
+    if (e) {
+        errno = e ;
+        log_warnusys_return(LOG_EXIT_ZERO, "notify directory: ", path) ;
+    }
+
+    return 1 ;
+}
+
+int event_fifodir_emit(char const *path, event_t const *ev, size_t n)
+{
+    log_flow() ;
+
+    if (!n)
+        return 1 ;
+
+    char buf[n] ;
+    for (size_t i = 0 ; i < n ; i++)
+        buf[i] = event_to_byte(ev[i]) ;
+
+    return event_fifodir_notify(path, buf, n) ;
 }

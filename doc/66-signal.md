@@ -39,6 +39,9 @@ This command handles [interdependencies](66.html#handling-dependencies).
 - **-p, --stop**: send a SIGSTOP signal.
 - **-c, --cont**: send a SIGCONT signal.
 - **-y, --winch**: send a SIGWINCH signal.
+- **--stop-group**: send a SIGSTOP signal to the whole process group of the supervised process.
+- **--cont-group**: send a SIGCONT signal to the whole process group of the supervised process.
+- **--kill-group**: send a SIGKILL signal to the whole process group of the supervised process.
 - **-o, --once**: once. Equivalent to '-uO'.
 - **-d, --down**: send a SIGTERM signal then a SIGCONT signal.
 - **-D, --down-keep**: bring down service and avoid to be bring it up automatically.

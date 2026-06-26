@@ -17,12 +17,14 @@
 
 #include <unistd.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <oblibs/sse.h>
 
 #include <66/service.h>
 #include <66/graph.h>
 #include <66/ssexec.h>
+#include <66/event.h>
 
 #define DATASIZE 65
 
@@ -41,8 +43,15 @@ struct svc_ctx_s
     resolve_service_t *res ; // Service resolution data
 
     // Watchers
-    sse_watcher_t child ;   // Child process watcher
+    sse_watcher_t child ; // Child process watcher
     sse_watcher_t timeout ; // Timeout watcher
+
+    // Native readiness wait (CLASSIC services: no child, transitions read from
+    // the service event fifodir instead of a spawned s6-svc -w)
+    event_fifo_t fifo ; // subscriber on the service event fifodir
+    event_match_t match ; // transition interpreter for this service's wait
+    bool native ; // uses the native CLASSIC path (no child process)
+    bool done ; // completion already emitted (guards event vs timeout)
 
     // State management
     uint8_t state ; // Current state
@@ -65,6 +74,8 @@ typedef struct svc_ctx_s svc_ctx_t ;
     .res = NULL, \
     .child = {0}, \
     .timeout = {0}, \
+    .native = false, \
+    .done = false, \
     .state = 0, \
     .target_state = 0, \
     .index = 0, \
@@ -110,8 +121,10 @@ extern int svc_launch(svc_ctx_t *asvc, uint32_t nsvc, uint8_t operation, ssexec_
 extern int svc_compute_ns(svc_manager_t *mgr, uint32_t id) ;
 extern int svc_scandir_ok (char const *dir) ;
 extern int svc_scandir_send(char const *scandir,char const *signal) ;
+extern int svc_control_send(char const *scandir, char const *bytes, size_t len) ;
 extern int svc_send_wait(char const *const *list, uint32_t nservice, char **sig, unsigned int siglen, ssexec_t *info) ;
 extern void svc_unsupervise(service_graph_t *g) ;
-extern void svc_send_fdholder(char const *socket, char const *signal) ;
+extern void svc_send_daemon(char const *dir, char const *control, event_t wanted, int timeout_ms) ;
+extern int svc_status_state(char const *dir, unsigned char *up, unsigned char *ready) ;
 
 #endif

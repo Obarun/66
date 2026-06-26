@@ -33,7 +33,8 @@
 typedef struct wait_slot_s
 {
     event_wait_t *w ;
-    unsigned char got ;
+    event_match_t m ; // per-source transition interpreter
+    unsigned char done ; // this source has reached OK or FAIL: ignore its stream
 } wait_slot_t ;
 
 static void event_wait_timeout_cb(sse_watcher_t *w, void *data, int revents)
@@ -54,20 +55,27 @@ static void event_wait_handler(event_reader_t *r, char const *buf, size_t len, v
     wait_slot_t *slot = data ;
     event_wait_t *w = slot->w ;
 
-    if (slot->got)
-        return ;   // this source already matched: ignore the rest of its stream
+    if (slot->done)
+        return ;
 
-    for (size_t i = 0 ; i < len ; i++) {
-        if (buf[i] == w->wanted) {
-            slot->got = 1 ;
-            if (++w->triggered == w->n)
-                w->epoll.running = false ;
-            return ;
-        }
+    int verdict = event_match_feed(&slot->m, buf, len) ;
+
+    if (verdict == EVENT_MATCH_OK) {
+        slot->done = 1 ;
+        if (++w->triggered == w->n)
+            w->epoll.running = false ;
+    } else if (verdict == EVENT_MATCH_FAIL) {
+        /* permanent failure ('O' while waiting up, or supervisor 'x'): a wait_and
+         * can never complete, so end the wait now. w->failed lets
+         * event_wait_run report failure distinctly from a timeout; the caller
+         * reconciles against the real status. */
+        slot->done = 1 ;
+        w->failed = 1 ;
+        w->epoll.running = false ;
     }
 }
 
-int event_wait_init(event_wait_t *w, char const *const *eventdirs, size_t n, char wanted)
+int event_wait_init(event_wait_t *w, char const *const *eventdirs, size_t n, event_t wanted)
 {
     log_flow() ;
 
@@ -98,6 +106,8 @@ int event_wait_init(event_wait_t *w, char const *const *eventdirs, size_t n, cha
     for (size_t i = 0 ; i < n ; i++) {
 
         slots[i].w = w ;
+        slots[i].done = 0 ;
+        event_match_init(&slots[i].m, wanted, 0, 0) ;
 
         if (!event_fifo_subscribe(&w->fifos[i], &w->epoll, eventdirs[i], &event_wait_handler, &slots[i], 0)) {
 
@@ -118,8 +128,8 @@ int event_wait_run(event_wait_t *w, int timeout_ms)
 {
     log_flow() ;
 
-    if (!w->n)
-        return 1 ;   // nothing to wait for
+    if (w->triggered == w->n)
+        return 1 ;
 
     if (timeout_ms > 0 && sse_start_timer(&w->epoll, &w->timer, event_wait_timeout_cb, w, timeout_ms, 0, 0))
         w->timer_active = 1 ;

@@ -37,6 +37,7 @@
 #include <66/enum_parser.h>
 #include <66/svc.h>
 #include <66/config.h>
+#include <66/event.h>
 
 // Internal event types for coordination
 enum svc_event_type_e
@@ -62,8 +63,12 @@ static uint32_t *v2svc ;
 
 // prototype
 static int launch_service(uint32_t id) ;
+static int launch_classic(uint32_t id) ;
 static void child_cb(sse_watcher_t *w, void *cbdata, int event) ;
 static void timeout_cb(sse_watcher_t *w, void *cbdata, int event) ;
+static void wait_timeout_cb(sse_watcher_t *w, void *cbdata, int event) ;
+static void svc_wait_handler(event_reader_t *r, char const *buf, size_t len, void *data) ;
+static void complete(uint32_t id, bool success) ;
 
 // helpers
 static uint32_t get_asvc_id(vertex_t *v)
@@ -222,6 +227,148 @@ static void announce(uint32_t id, bool success)
     }
 }
 
+static void svc_wait_teardown(void *data)
+{
+    log_flow() ;
+
+    uint32_t id = (uint32_t)(uintptr_t)data ;
+    svc_ctx_t *svc = &pmanager->asvc[id] ;
+
+    if (svc->fifo.fifopath[0])
+        event_fifo_unsubscribe(&svc->fifo) ;
+
+    if (svc->timeout.fd > 0)
+        sse_free_timer(&svc->timeout) ;
+}
+
+static void complete(uint32_t id, bool success)
+{
+    log_flow() ;
+
+    svc_ctx_t *svc = &pmanager->asvc[id] ;
+
+    if (svc->done)
+        return ;
+
+    svc->done = true ;
+    announce(id, success) ;
+
+    if (!sse_defer(&pmanager->loop, &svc_wait_teardown, (void *)(uintptr_t)id))
+        log_warnusys("defer wait teardown for service: ", svc->res->sa.s + svc->res->name) ;
+}
+
+static void svc_wait_handler(event_reader_t *r, char const *buf, size_t len, void *data)
+{
+    log_flow() ;
+
+    (void)r ;
+
+    uint32_t id = (uint32_t)(uintptr_t)data ;
+    svc_ctx_t *svc = &pmanager->asvc[id] ;
+
+    if (svc->done)
+        return ;
+
+    int verdict = event_match_feed(&svc->match, buf, len) ;
+    if (verdict == EVENT_MATCH_OK)
+        complete(id, true) ;
+    else if (verdict == EVENT_MATCH_FAIL)
+        complete(id, false) ;
+}
+
+static void wait_timeout_cb(sse_watcher_t *w, void *cbdata, int event)
+{
+    log_flow() ;
+
+    (void)event ;
+
+    uint32_t id = (uint32_t)(uintptr_t)cbdata ;
+    svc_ctx_t *svc = &pmanager->asvc[id] ;
+
+    if (w->api_errno != 0)
+        log_warn("timeout watcher error: ", strerror(w->api_errno)) ;
+
+    if (svc->done)
+        return ;
+
+    log_warn("transition timeout for service: ", svc->res->sa.s + svc->res->name) ;
+    complete(id, false) ;
+}
+
+/** Native CLASSIC launch: send the control command over supervise/control and,
+ * when a wait was requested (-w), watch the event fifodir for the transition.
+ * Owns its service's completion: it always returns 1 and reports success/failure
+ * through complete()/announce() (so npid is decremented once, in notifier_cb). */
+static int launch_classic(uint32_t id)
+{
+    log_flow() ;
+
+    svc_ctx_t *svc = &pmanager->asvc[id] ;
+    char *scandir = svc->res->sa.s + svc->res->live.scandir ;
+
+    svc->native = true ;
+
+    if (pmanager->woption) {
+
+        char *eventdir = svc->res->sa.s + svc->res->live.eventdir ;
+
+        // map the wait char to a wanted state (the s6 -w alphabet)
+        event_t wanted ;
+        switch (pmanager->wsignal[2]) {
+            case 'u' : wanted = EVENT_UP ; break ;
+            case 'U' : wanted = EVENT_READY ; break ;
+            case 'd' : wanted = EVENT_DOWN ; break ;
+            case 'D' : wanted = EVENT_DOWN_READY ; break ;
+            case 'r' : wanted = EVENT_RESTART ; break ;
+            case 'R' : wanted = EVENT_RESTART_READY ; break ;
+            default :  wanted = EVENT_UP ; break ;
+        }
+
+        if (!svc->res->notify) {
+            if (wanted == EVENT_READY) wanted = EVENT_UP ;
+            else if (wanted == EVENT_DOWN_READY) wanted = EVENT_DOWN ;
+            else if (wanted == EVENT_RESTART_READY) wanted = EVENT_RESTART ;
+        }
+
+        event_match_init(&svc->match, wanted, pmanager->operation ? 1 : 0, 0) ;
+
+        // create the fifodir if missing, then subscribe BEFORE sending the command
+        // so no transition is missed (mirrors s6-svlisten ordering)
+        if (!event_fifodir_make(eventdir, getgid())) {
+            log_warnusys("create event fifodir: ", eventdir) ;
+            complete(id, false) ;
+            return 1 ;
+        }
+
+        if (!event_fifo_subscribe(&svc->fifo, &pmanager->loop, eventdir, &svc_wait_handler, (void *)(uintptr_t)id, 0)) {
+            log_warnusys("subscribe to event fifo: ", eventdir) ;
+            complete(id, false) ;
+            return 1 ;
+        }
+
+        uint64_t timeout = !pmanager->operation ? svc->res->execute.timeout.start : svc->res->execute.timeout.stop ;
+        if (timeout) {
+            if (!sse_start_timer(&pmanager->loop, &svc->timeout, wait_timeout_cb, (void *)(uintptr_t)id, timeout, 0, 1)) {
+                log_warnusys("start timeout watcher for service: ", svc->res->sa.s + svc->res->name) ;
+                complete(id, false) ;
+                return 1 ;
+            }
+        }
+    }
+
+    log_trace("sending ", pmanager->signal + 1, " to: ", scandir) ;
+    if (!svc_control_send(scandir, pmanager->signal + 1, strlen(pmanager->signal) - 1)) {
+        complete(id, false) ;
+        return 1 ;
+    }
+
+    if (!pmanager->woption)
+        // fire-and-forget command: nothing to wait for, complete immediately
+        complete(id, true) ;
+
+    return 1 ;
+}
+
 static int launch_service(uint32_t id)
 {
     log_flow() ;
@@ -232,29 +379,7 @@ static int launch_service(uint32_t id)
 
     if (type == E_PARSER_TYPE_CLASSIC) {
 
-        char *scandir = svc->res->sa.s + svc->res->live.scandir ;
-
-        if (!svc->res->notify)
-            pmanager->wsignal[2] = pmanager->wsignal[2] == 'U' ? 'u' : pmanager->wsignal[2] == 'D' ? 'd' : pmanager->wsignal[2] == 'R' ? 'r' : pmanager->wsignal[2] ;
-
-        char *newargv[5] ;
-        unsigned int m = 0 ;
-
-        newargv[m++] = "s6-svc" ;
-        newargv[m++] = pmanager->signal ;
-
-        if (pmanager->woption)
-            newargv[m++] = pmanager->wsignal ;
-
-        newargv[m++] = scandir ;
-        newargv[m++] = 0 ;
-
-        log_trace("sending ", pmanager->woption ? newargv[2] : "", pmanager->woption ? " " : "", pmanager->signal, " to: ", scandir) ;
-
-        if (posix_spawnp(&svc->pid, newargv[0], NULL, NULL, newargv, environ)) {
-            FLAGS_SET(svc->state, SVC_FLAGS_FAILED) ;
-            log_warnusys_return(LOG_EXIT_ZERO, "spawn service: ", svc->res->sa.s + svc->res->name) ;
-        }
+        return launch_classic(id) ;
 
     } else if (type == E_PARSER_TYPE_ONESHOT) {
 
@@ -403,12 +528,18 @@ static void notifier_cb(sse_watcher_t *w, void *cbdata, int event)
         switch (msg.type) {
 
             case SVC_EVENT_CHILD_SUCCESS:
+                /* native CLASSIC services have no child watcher: account the
+                 * completion here (the child path decrements in child_cb) */
+                if (svc->native)
+                    npid-- ;
                 svc->state = 0 ;
                 FLAGS_SET(svc->state, !pmanager->operation ? SVC_FLAGS_UP : SVC_FLAGS_DOWN) ;
                 wait_deps(msg.id) ;
                 break ;
 
             case SVC_EVENT_CHILD_FAILED:
+                if (svc->native)
+                    npid-- ;
                 svc->state = 0 ;
                 FLAGS_SET(svc->state, SVC_FLAGS_FAILED) ;
 

@@ -105,20 +105,20 @@ static opt_t const opts_fdholder_signal[] = {
 
 static opt_t const opts_fdholder_store[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                                .help = "print this help" },
-    { .id = 't',         .shortname = 't', .longname = "timeout", .arg = OPT_REQUIRED, .argname = "milliseconds", .help = "timeout for the operation" },
-    { .id = 'd',         .shortname = 'd', .longname = "fd",      .arg = OPT_REQUIRED, .argname = "fd",           .help = "file descriptor to store (default 0)" },
-    { .id = 'T',         .shortname = 'T', .longname = "expire",  .arg = OPT_REQUIRED, .argname = "seconds",      .help = "expiry in seconds (0 = never)" },
+    { .id = 'T',         .shortname = 'T', .longname = "timeout", .arg = OPT_REQUIRED, .argname = "milliseconds", .help = "timeout for the operation" },
+    { .id = 'd',         .shortname = 'd', .longname = "fd",      .arg = OPT_REQUIRED, .argname = "number",       .help = "file descriptor to store (default 0)" },
+    { .id = 'e',         .shortname = 'e', .longname = "expire",  .arg = OPT_REQUIRED, .argname = "seconds",      .help = "expiry in seconds (0 = never)" },
 } ;
 
 static opt_t const opts_fdholder_retrieve[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                                .help = "print this help" },
-    { .id = 't',         .shortname = 't', .longname = "timeout", .arg = OPT_REQUIRED, .argname = "milliseconds", .help = "timeout for the operation" },
+    { .id = 'T',         .shortname = 'T', .longname = "timeout", .arg = OPT_REQUIRED, .argname = "milliseconds", .help = "timeout for the operation" },
     { .id = 'D',         .shortname = 'D', .longname = "delete",  .arg = OPT_NONE,                                .help = "delete the entry after retrieval" },
 } ;
 
 static opt_t const opts_fdholder_list[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                                .help = "print this help" },
-    { .id = 't',         .shortname = 't', .longname = "timeout", .arg = OPT_REQUIRED, .argname = "milliseconds", .help = "timeout for the operation" },
+    { .id = 'T',         .shortname = 'T', .longname = "timeout", .arg = OPT_REQUIRED, .argname = "milliseconds", .help = "timeout for the operation" },
 } ;
 
 static opt_cmd_t const fdholder_sub[] = {

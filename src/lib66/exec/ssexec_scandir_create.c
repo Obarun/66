@@ -34,6 +34,8 @@
 #include <66/config.h>
 #include <66/ssexec.h>
 #include <66/enum_parser.h>
+#include <66/resolve.h>
+#include <66/service.h>
 
 #include <execline/config.h>
 
@@ -133,6 +135,31 @@ inline static void auto_check(char const *str,mode_t type,mode_t perm,int what)
     }
 }
 
+inline static void write_min_resolve(char const *dir, char const *name, uint32_t notify)
+{
+    log_flow() ;
+
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    resolve_init(wres) ;
+
+    res.name = resolve_add_string(wres, name) ;
+    res.type = E_PARSER_TYPE_CLASSIC ;
+    res.notify = notify ;
+
+    /* resolve_write_cdb only copies the cdb into <dir>/.resolve/ -- it does not
+     * create that directory, so make it first. */
+    char rdir[strlen(dir) + SS_RESOLVE_LEN + 1] ;
+    auto_strings(rdir, dir, SS_RESOLVE) ;
+    auto_dir(rdir, 0755) ;
+
+    log_trace("write resolve of: ", name, " at: ", dir) ;
+    if (!resolve_write(wres, dir, name))
+        log_dieusys(LOG_EXIT_SYS, "write resolve of: ", name) ;
+
+    resolve_free(wres) ;
+}
+
 inline static void auto_fifo(char const *str)
 {
     log_flow() ;
@@ -229,9 +256,11 @@ void write_shutdownd(char const *live, char const *scandir)
 
     shut[scandirlen + 1 + SS_BOOT_SHUTDOWND_LEN] = 0 ;
 
+    write_min_resolve(shut, SS_BOOT_SHUTDOWND, 0) ;
+
     shebang(&b, "-P") ;
     if (!auto_strbuf(&b,
-        SS_BINPREFIX "66-shutdownd -l ",
+        SS_LIBEXECPREFIX "66-shutdownd -l ",
         live," -s ",skel," -g 3000"))
             log_die_nomem("strbuf") ;
 
@@ -295,6 +324,8 @@ void write_bootlog(char const *live, char const *scandir)
     auto_chmod(path,02755) ;
 
     logdir[loglen] = 0 ;
+
+    write_min_resolve(logdir, SS_SCANDIR SS_LOG_SUFFIX, 3) ;
 
     /** make run file */
     shebang(&b,"-P") ;
@@ -489,6 +520,8 @@ static void create_service_oneshot(char const *scandir, ssexec_t *info)
     auto_dir(dst, 0755) ;
     auto_chown(dst) ;
 
+    write_min_resolve(dst, SS_ONESHOTD, 3) ;
+
     auto_file(dst, SS_NOTIFICATION, "3\n", 2) ;
 
     size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + strlen(SS_LIBEXECPREFIX) + 64 + 1 ;
@@ -526,6 +559,8 @@ static void create_service_fdholder(char const *scandir, ssexec_t *info)
     auto_dir(dst, 0755) ;
     auto_chown(dst) ;
 
+    write_min_resolve(dst, SS_FDHOLDER, 3) ;
+
     auto_file(dst, SS_NOTIFICATION, "3\n", 2) ;
 
     size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + strlen(SS_LIBEXECPREFIX) + 64 + 1 ;
@@ -550,14 +585,14 @@ static void create_scandir(char const *live, char const *scandir, ssexec_t *info
     log_flow() ;
 
     size_t scanlen = strlen(scandir) ;
-    char tmp[scanlen + 11 + 1] ;
+    char tmp[scanlen + SS_SVSCAN_LEN + 1] ;
 
     /** run/66/scandir/<uid> */
     auto_strings(tmp,scandir) ;
 
     auto_check(tmp,0755,0,AUTO_CRTE_CHW) ;
 
-    /** run/66/scandir/uid/.s6-svscan */
+    /** run/66/scandir/uid/.66-scandir */
     auto_strings(tmp + scanlen, SS_SVSCAN) ;
 
     auto_check(tmp,0755,0,AUTO_CRTE_CHW) ;
