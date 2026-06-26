@@ -16,7 +16,7 @@ exe_configs = {
   },
   '66-echo': {
     'sources': ['66-echo.c'],
-    'deps': [oblibs_dep, skalibs_dep],
+    'deps': [oblibs_dep],
     'sysdeps': ''
   },
   '66-execute': {
@@ -41,7 +41,7 @@ exe_configs = {
   },
   '66-nuke': {
     'sources': ['66-nuke.c'],
-    'deps': [oblibs_dep, skalibs_dep],
+    'deps': [oblibs_dep],
     'sysdeps': ''
   },
   '66-oneshot': {
@@ -86,7 +86,7 @@ exe_configs = {
   },
   'execl-envfile': {
     'sources': ['execl-envfile.c'],
-    'deps': [oblibs_dep, execline_dep, skalibs_dep],
+    'deps': [oblibs_dep],
     'sysdeps': ''
   },
   'execl-runas': {

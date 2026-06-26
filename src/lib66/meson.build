@@ -49,10 +49,8 @@ if is_shared
     sources: lib66_sources,
     include_directories: incdir,
     dependencies: [
-      skalibs_dep,
       oblibs_dep,
       s6_dep,
-      execline_dep,
     ],
     install: true,
     install_dir: get_option('libdir'),
@@ -70,10 +68,8 @@ if is_static
     sources: lib66_sources,
     include_directories: incdir,
     dependencies: [
-      skalibs_dep,
       oblibs_dep,
       s6_dep,
-      execline_dep,
     ],
     install: true,
     install_dir: lib_static_path,
@@ -90,10 +86,8 @@ lib66_dep = declare_dependency(
   include_directories: incdir,
   link_with: get_option('enable-shared') ? lib66_shared : lib66_static,
   dependencies: [
-    skalibs_dep,
     oblibs_dep,
-    s6_dep,
-    execline_dep
+    s6_dep
   ]
 )
 

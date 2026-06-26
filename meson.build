@@ -299,7 +299,7 @@ if get_option('with-pkgconfig')
   # Generate and install pkg-config file for lib66
   private_libs = []
   if get_option('enable-static') or get_option('enable-static-deps')
-    private_libs += ['-lskalibs', '-lexecline', '-ls6', '-loblibs']
+    private_libs += ['-lskalibs', '-ls6', '-loblibs']
   endif
 
   pkg = import('pkgconfig')
