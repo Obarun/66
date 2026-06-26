@@ -31,8 +31,6 @@ int svc_control_send(char const *scandir, char const *bytes, size_t len)
     char fn[slen + sizeof("/supervise/control")] ;
     auto_strings(fn, scandir, "/supervise/control") ;
 
-    /* O_NONBLOCK so a missing reader fails with ENXIO instead of blocking the
-     * open forever; the supervisor holds the read end open, so it succeeds. */
     int fd = io_open(fn, O_WRONLY | O_NONBLOCK) ;
     if (fd < 0) {
         if (errno == ENXIO)
@@ -40,7 +38,6 @@ int svc_control_send(char const *scandir, char const *bytes, size_t len)
         log_warnusys_return(LOG_EXIT_ZERO, "open control fifo: ", fn) ;
     }
 
-    /* clear O_NONBLOCK so the write blocks rather than risking EAGAIN */
     if (!io_unsetfl(fd, O_NONBLOCK)) {
         close_fd(fd) ;
         log_warnusys_return(LOG_EXIT_ZERO, "set blocking on control fifo: ", fn) ;

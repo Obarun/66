@@ -585,14 +585,14 @@ static void create_scandir(char const *live, char const *scandir, ssexec_t *info
     log_flow() ;
 
     size_t scanlen = strlen(scandir) ;
-    char tmp[scanlen + 11 + 1] ;
+    char tmp[scanlen + SS_SVSCAN_LEN + 1] ;
 
     /** run/66/scandir/<uid> */
     auto_strings(tmp,scandir) ;
 
     auto_check(tmp,0755,0,AUTO_CRTE_CHW) ;
 
-    /** run/66/scandir/uid/.s6-svscan */
+    /** run/66/scandir/uid/.66-scandir */
     auto_strings(tmp + scanlen, SS_SVSCAN) ;
 
     auto_check(tmp,0755,0,AUTO_CRTE_CHW) ;

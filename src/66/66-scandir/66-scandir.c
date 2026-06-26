@@ -28,12 +28,12 @@
  *   skalibs djbunix/strerr             -> oblibs fd/io/log
  *
  * Minimal-divergence: the control fifo keeps the native s6 single-byte alphabet
- * (.s6-svscan/control), the .s6-svscan/{finish,crash,SIG*} scripts and the `max`
+ * (.66-scandir/control), the .66-scandir/{finish,crash,SIG*} scripts and the `max`
  * service bound are kept.
  *
  * Signals: sse_start_signal now delivers one callback per distinct pending signal
  * (level-triggered, no coalescing), so a single signal watcher correctly drives
- * both SIGCHLD reaping AND the per-signal .s6-svscan/SIG<name> scripts -- exactly
+ * both SIGCHLD reaping AND the per-signal .66-scandir/SIG<name> scripts -- exactly
  * what s6-svscan's handle_signals did, with no manual signalfd draining.
  */
 
@@ -79,7 +79,7 @@
 #error "SS_MAX_SERVICE exceeds bitset32_t capacity (1024); use a wider bitset for active/occupancy"
 #endif
 
-#define CTLDIR ".s6-svscan"
+#define CTLDIR ".66-scandir"
 #define CTL CTLDIR "/control"
 #define LCK CTLDIR "/lock"
 #define FINISH_PROG CTLDIR "/finish"

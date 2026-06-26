@@ -22,22 +22,19 @@
 #include <oblibs/io.h>
 
 #include <66/svc.h>
+#include <66/constants.h>
 
-#include <s6/supervise.h>
-
-/** this following function come from Laurent Bercot
- * author of s6 library all rights reserved on this author
- * It was just modified a little bit to be able to scan
- * a scandir directory instead of a service directory */
+/** Probe whether a scandir is running by opening its control fifo write-only:
+ * an absent reader (ENXIO) or a missing fifo (ENOENT) means it is not. */
 int svc_scandir_ok (char const *dir)
 {
     log_flow() ;
 
     size_t dirlen = strlen(dir) ;
     int fd ;
-    char fn[dirlen + 1 + strlen(S6_SVSCAN_CTLDIR) + 9] ;
+    char fn[dirlen + SS_SVSCAN_LEN + sizeof("/control")] ;
 
-    auto_strings(fn, dir, "/", S6_SVSCAN_CTLDIR, "/control") ;
+    auto_strings(fn, dir, SS_SVSCAN, "/control") ;
 
     fd = io_open(fn, O_WRONLY|O_NONBLOCK) ;
     if (fd < 0)

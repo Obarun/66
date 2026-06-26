@@ -55,7 +55,7 @@
 #define SS_LOG_SUFFIX "-" SS_LOG
 #define SS_LOG_SUFFIX_LEN (sizeof SS_LOG_SUFFIX - 1)
 
-#define SS_SVSCAN "/.s6-svscan"
+#define SS_SVSCAN "/.66-scandir"
 #define SS_SVSCAN_LEN (sizeof SS_SVSCAN - 1)
 
 /** environment and data */
