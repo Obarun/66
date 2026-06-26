@@ -35,7 +35,7 @@ int on_fdholder_retrieve(int id, char const *arg, void *data)
     (void)data ;
 
     switch (id) {
-        case 't' : {
+        case 'T' : {
             uint32_t t ;
             if (!u32_scan_strict(arg, &t))
                 log_dieu(LOG_EXIT_USER, "parse timeout: ", arg) ;
