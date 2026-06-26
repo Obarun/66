@@ -557,6 +557,69 @@ static void test_subscribe_double_fd_no_eof(void)
     rm_rf(ev) ; rm_rf(base) ;
 }
 
+/* PRODUCER fanout: event_fifodir_notify must reach a live subscriber with the
+ * exact bytes, including a multi-byte combo like the "dD" set_down_and_ready
+ * emits, and report success. */
+static void test_notify_delivers_to_subscriber(void)
+{
+    char tmpl[] = "/tmp/ev_nf_XXXXXX" ;
+    char *base = mkdir_scratch(tmpl) ;
+    char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
+    T_ASSERT_EQ(1, event_fifodir_make(ev, (gid_t)-1), "make eventdir") ;
+
+    sse_epoll_t ep ;
+    T_ASSERT_EQ(1, sse_new(&ep, 1), "sse_new") ;
+    sink_t s = {0} ;
+    event_fifo_t r ;
+    T_ASSERT_EQ(1, event_fifo_subscribe(&r, &ep, ev, sink_handler, &s, 0), "subscribe") ;
+
+    /* single transition byte */
+    T_ASSERT_EQ(1, event_fifodir_notify(ev, "U", 1), "notify returns 1") ;
+    T_ASSERT_EQ(1, sse_run(&ep, 200), "sse_run ok") ;
+    T_ASSERT_EQ(1, (long long)s.n, "exactly one byte delivered") ;
+    T_ASSERT_EQ(EVENT_S6_READY, s.buf[0], "the delivered byte is 'U'") ;
+
+    /* multi-byte combo arrives intact */
+    s.n = 0 ;
+    T_ASSERT_EQ(1, event_fifodir_notify(ev, "dD", 2), "notify combo returns 1") ;
+    T_ASSERT_EQ(1, sse_run(&ep, 200), "sse_run ok 2") ;
+    T_ASSERT_EQ(2, (long long)s.n, "two bytes delivered") ;
+    T_ASSERT_EQ(EVENT_S6_DOWN, s.buf[0], "first byte is 'd'") ;
+    T_ASSERT_EQ(EVENT_S6_DOWN_READY, s.buf[1], "second byte is 'D'") ;
+
+    event_fifo_unsubscribe(&r) ;
+    sse_free(&ep) ;
+    rm_rf(ev) ; rm_rf(base) ;
+}
+
+/* event_fifodir_notify sweeps an orphan fifo (no reader -> ENXIO -> unlink) and
+ * still succeeds; a missing fifodir is a hard error (returns 0). */
+static void test_notify_sweeps_orphan_and_missing_dir(void)
+{
+    char tmpl[] = "/tmp/ev_no_XXXXXX" ;
+    char *base = mkdir_scratch(tmpl) ;
+    char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
+    T_ASSERT_EQ(1, event_fifodir_make(ev, (gid_t)-1), "make eventdir") ;
+
+    /* a producer-eligible fifo with NO reader: "ftrig1:" + filler, 39 chars */
+    char name[EVENT_FIFO_NAMELEN + 1] ;
+    memset(name, 'a', EVENT_FIFO_NAMELEN) ;
+    memcpy(name, EVENT_FIFO_PREFIX, EVENT_FIFO_PREFIXLEN) ;
+    name[EVENT_FIFO_NAMELEN] = 0 ;
+    char orphan[1024] ; snprintf(orphan, sizeof(orphan), "%s/%s", ev, name) ;
+    T_ASSERT_EQ(0, mkfifo(orphan, 0622), "create orphan fifo") ;
+    T_ASSERT_EQ(1, fanout_count(ev), "orphan is producer-eligible") ;
+
+    /* open hits ENXIO (no reader) -> unlink; the fanout still returns 1 */
+    T_ASSERT_EQ(1, event_fifodir_notify(ev, "u", 1), "notify sweeps orphan, returns 1") ;
+    T_ASSERT_EQ(0, fanout_count(ev), "orphan unlinked") ;
+
+    /* a missing fifodir cannot be opened: hard error */
+    T_ASSERT_EQ(0, event_fifodir_notify("/tmp/ev_absent_zzz_QQQ", "u", 1), "missing dir returns 0") ;
+
+    rm_rf(ev) ; rm_rf(base) ;
+}
+
 static void test_subscribe_nametoolong(void)
 {
     /* build an eventdir path long enough that strlen+2+39+1 > SS_MAX_PATH,
@@ -967,6 +1030,10 @@ T_SUITE("event module")
     T_RUN(test_clean_ignores_nonmatching) ;
     T_RUN(test_clean_mixed_orphan_and_live) ;
     T_RUN(test_clean_missing_dir_returns_0) ;
+
+    /* fifodir_notify (producer fanout) */
+    T_RUN(test_notify_delivers_to_subscriber) ;
+    T_RUN(test_notify_sweeps_orphan_and_missing_dir) ;
 
     /* reader subscribe / the trick */
     T_RUN(test_subscribe_effects_and_mode) ;

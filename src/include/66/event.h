@@ -354,6 +354,40 @@ extern int event_fifodir_make(char const *path, gid_t gid) ;
 extern int event_fifodir_clean(char const *path) ;
 
 /**
+ * @brief Fan a message out to every subscriber fifo in a fifodir. The producer
+ * side of the broadcast, byte-compatible with s6's ftrigw fanout.
+ *
+ * Scans @path and, for every entry matching the subscriber naming (the
+ * `EVENT_FIFO_PREFIX` prefix AND the exact `EVENT_FIFO_NAMELEN` length), opens it
+ * `O_WRONLY | O_NONBLOCK` and writes the @len bytes at @s into it. This is how
+ * 66-supervise emits a transition byte (`EVENT_S6_*`) to all current readers.
+ *
+ * The producer NEVER blocks on a bad subscriber: a fifo with no reader (`ENXIO`)
+ * or whose reader has gone (`EPIPE`) is unlinked, and a full fifo (`EAGAIN`) or
+ * any short write is dropped. Errors are deferred past `closedir` so the
+ * directory stream is never leaked, and the FIRST error is the one reported.
+ *
+ * @param[in] path Fifodir to fan out into.
+ * @param[in] s    Bytes to write to each subscriber (typically one `EVENT_S6_*`).
+ * @param[in] len  Number of bytes at @s.
+ *
+ * @return 1 on success (message delivered to every live subscriber; orphans
+ *         swept).
+ * @return 0 on failure; errno is set and per path is:
+ *         - the `opendir` errno if @path cannot be opened.
+ *         - the `unlink` errno if removing an orphan/broken fifo fails (first
+ *           such).
+ *         - the `readdir` errno if iterating the directory fails (first error
+ *           wins; a clean end of directory is not an error).
+ *
+ * @note A short or failed write that is NOT `EPIPE` (e.g. `EAGAIN` on a full
+ *       fifo) is dropped silently and does NOT cause failure; the producer must
+ *       not stall on a slow reader.
+ * @see event_fifodir_clean
+ */
+extern int event_fifodir_notify(char const *path, char const *s, size_t len) ;
+
+/**
  * @struct event_wait_s
  * @brief A wait_and over a set of service event fifodirs.
  *
