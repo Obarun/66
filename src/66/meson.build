@@ -74,6 +74,11 @@ exe_configs = {
     'deps': [lib66_dep],
     'sysdeps': sys_lib
   },
+  '66-svctl': {
+    'sources': ['66-svctl.c'],
+    'deps': [lib66_dep],
+    'sysdeps': sys_lib
+  },
   '66-umountall': {
     'sources': ['66-umountall.c'],
     'deps': [lib66_dep],
@@ -91,7 +96,7 @@ exe_configs = {
   }
 }
 
-libexec_exes = ['66-execute', '66-fdholderd', '66-oneshot', '66-oneshotd', '66-shutdownd']
+libexec_exes = ['66-execute', '66-fdholderd', '66-oneshot', '66-oneshotd', '66-shutdownd', '66-svctl']
 exe_install_dirs = {}
 foreach exe : libexec_exes
   exe_install_dirs += {exe: get_option('libexecdir')}
