@@ -67,6 +67,7 @@ nav:
     - configure: 66-configure.md
     - disable: 66-disable.md
     - enable: 66-enable.md
+    - fdholder: 66-fdholder.md
     - free: 66-free.md
     - halt: 66-halt.md
     - hibernate: 66-hibernate.md
@@ -100,6 +101,7 @@ nav:
     - 66-hpr: 66-hpr.md
     - 66-shutdown: 66-shutdown.md
     - 66-shutdownd: 66-shutdownd.md
+    - 66-svctl: 66-svctl.md
   - Reference:
     - Frontend service file: 66-frontend.md
     - Instantiated service file: 66-instantiated-service.md

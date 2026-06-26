@@ -35,17 +35,17 @@ sed_args = [
   '-e', 's|%%user_log%%|@0@|g'.format(get_option('user-log-dir')),
 ]
 
-# 52 pages — HTML output (strict mirror of make-html.sh)
+# 54 pages — HTML output (strict mirror of make-html.sh)
 html_pages = [
   '66', '66-boot', '66-cheatsheet', '66-configure', '66-deeper',
   '66-dependencies', '66-disable',
-  '66-echo', '66-enable', '66-free', '66-frontend', '66-getting-started',
+  '66-echo', '66-enable', '66-fdholder', '66-free', '66-frontend', '66-getting-started',
   '66-halt', '66-hpr',
   '66-identifier', '66-instantiated-service', '66-module-creation',
   '66-module-usage', '66-nuke', '66-parse', '66-poweroff', '66-reboot',
   '66-reconfigure', '66-reload', '66-remove', '66-resolve', '66-restart',
   '66-rosetta', '66-scandir', '66-service-configuration-file',
-  '66-shutdown', '66-shutdownd', '66-signal', '66-snapshot',
+  '66-shutdown', '66-shutdownd', '66-signal', '66-snapshot', '66-svctl',
   '66-standard-io-redirection', '66-start', '66-state', '66-status',
   '66-stop', '66-suspend', '66-hibernate', '66-tree', '66-umountall',
   '66-upgrade', '66-upgrade-process', '66-version', '66-wall',
@@ -53,9 +53,9 @@ html_pages = [
   'execl-envfile', 'index',
 ]
 
-# 29 pages — man section 1 (strict mirror of make-man.sh)
+# 30 pages — man section 1 (strict mirror of make-man.sh)
 man1_pages = [
-  '66', '66-configure', '66-disable', '66-enable', '66-free', '66-halt',
+  '66', '66-configure', '66-disable', '66-enable', '66-fdholder', '66-free', '66-halt',
   '66-hibernate', '66-parse', '66-poweroff', '66-reboot', '66-reconfigure',
   '66-reload', '66-remove', '66-resolve', '66-restart', '66-rosetta',
   '66-scandir', '66-signal', '66-snapshot', '66-start', '66-state',
@@ -70,9 +70,9 @@ man5_pages = [
   '66-standard-io-redirection', '66-upgrade-process',
 ]
 
-# 5 pages — man section 8 (strict mirror of make-man.sh)
+# 6 pages — man section 8 (strict mirror of make-man.sh)
 man8_pages = [
-  '66-boot', '66-hpr', '66-shutdown', '66-shutdownd', '66-umountall',
+  '66-boot', '66-hpr', '66-shutdown', '66-shutdownd', '66-svctl', '66-umountall',
 ]
 
 # Mkdocs uses the same set as HTML.
