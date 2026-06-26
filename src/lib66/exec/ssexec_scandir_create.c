@@ -260,7 +260,7 @@ void write_shutdownd(char const *live, char const *scandir)
 
     shebang(&b, "-P") ;
     if (!auto_strbuf(&b,
-        SS_BINPREFIX "66-shutdownd -l ",
+        SS_LIBEXECPREFIX "66-shutdownd -l ",
         live," -s ",skel," -g 3000"))
             log_die_nomem("strbuf") ;
 
